@@ -2,20 +2,13 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.metadata.catalog.application.MetaEntityApplicationService;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
-import com.bone.metadata.catalog.application.command.handler.BatchDeleteMetaEntityCommandHandler;
-import com.bone.metadata.catalog.application.command.handler.BatchPublishMetaEntityCommandHandler;
-import com.bone.metadata.catalog.application.command.handler.CreateMetaEntityHandler;
-import com.bone.metadata.catalog.application.command.handler.DeleteMetaEntityHandler;
-import com.bone.metadata.catalog.application.command.handler.PublishMetaEntityHandler;
-import com.bone.metadata.catalog.application.command.handler.UpdateMetaEntityHandler;
 import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
-import com.bone.metadata.catalog.application.query.handler.MetaEntityDetailQueryHandler;
-import com.bone.metadata.catalog.application.query.handler.MetaEntityPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
@@ -32,31 +25,22 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 元数据目录：实体建模 API（与扩展字段 /api/v1/metadata/fields:* 分离）。
  *
- * <p>权限 scope：read → {@code metadata:read}，write/publish → {@code metadata:write}（ Target 态发布操作可独立为
- * {@code metadata:publish}，见详设 §5.1）。
- *
- * <p>横切：创建 {@code 201+Location}；更新 {@code If-Match → 412}；发布 {@code Idempotency-Key}。
+ * <p>入站边界仅依赖 {@link MetaEntityApplicationService}（ADR-0028）。横切关注点（创建 201+Location、更新 If-Match→412、
+ * 发布 Idempotency-Key）保留在控制器层。
  */
 @RestController
 @RequestMapping("/api/v1/metadata/entities")
 @RequiredArgsConstructor
 public class MetaEntityCatalogController {
 
-  private final CreateMetaEntityHandler createMetaEntityHandler;
-  private final UpdateMetaEntityHandler updateMetaEntityHandler;
-  private final DeleteMetaEntityHandler deleteMetaEntityHandler;
-  private final PublishMetaEntityHandler publishMetaEntityHandler;
-  private final MetaEntityPageQueryHandler metaEntityPageQueryHandler;
-  private final MetaEntityDetailQueryHandler metaEntityDetailQueryHandler;
+  private final MetaEntityApplicationService metaEntityApplicationService;
   private final CatalogIdempotencyService catalogIdempotencyService;
-  private final BatchPublishMetaEntityCommandHandler batchPublishMetaEntityCommandHandler;
-  private final BatchDeleteMetaEntityCommandHandler batchDeleteMetaEntityCommandHandler;
   private final ObjectMapper objectMapper;
 
   @PostMapping
   @PreAuthorize("hasAuthority('metadata:write')")
   public ResponseEntity<ApiResponse<Long>> create(@Valid @RequestBody CreateMetaEntityCommand cmd) {
-    Long id = createMetaEntityHandler.handle(cmd);
+    Long id = metaEntityApplicationService.createEntity(cmd);
     return ResponseEntity.created(URI.create("/api/v1/metadata/entities/" + id))
         .body(ApiResponse.success(id));
   }
@@ -68,7 +52,7 @@ public class MetaEntityCatalogController {
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @Valid @RequestBody UpdateMetaEntityCommand cmd) {
     Integer version =
-        updateMetaEntityHandler.handle(
+        metaEntityApplicationService.updateEntity(
             id, cmd, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
     return ResponseEntity.ok()
         .eTag(CatalogHttpSupport.formatEtag(version))
@@ -78,13 +62,15 @@ public class MetaEntityCatalogController {
   @GetMapping
   @PreAuthorize("hasAuthority('metadata:read')")
   public ApiResponse<PageResult<MetaEntityDTO>> page(MetaEntityPageQuery qry) {
-    return ApiResponse.success(metaEntityPageQueryHandler.handle(qry));
+    return ApiResponse.success(
+        metaEntityApplicationService.pageEntities(
+            qry.getKeyword(), qry.getStatus(), qry.getPageNum(), qry.getPageSize()));
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:read')")
   public ResponseEntity<ApiResponse<MetaEntityDTO>> detail(@PathVariable Long id) {
-    MetaEntityDTO dto = metaEntityDetailQueryHandler.handle(id);
+    MetaEntityDTO dto = metaEntityApplicationService.getEntity(id);
     return ResponseEntity.ok()
         .eTag(CatalogHttpSupport.formatEtag(dto.getVersion()))
         .body(ApiResponse.success(dto));
@@ -106,7 +92,7 @@ public class MetaEntityCatalogController {
       return replay.get();
     }
     Integer version =
-        publishMetaEntityHandler.handle(
+        metaEntityApplicationService.publishEntity(
             id, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
     ResponseEntity<ApiResponse<Void>> response =
         ResponseEntity.ok()
@@ -120,7 +106,7 @@ public class MetaEntityCatalogController {
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteMetaEntityHandler.handle(id);
+    metaEntityApplicationService.deleteEntity(id);
     return ApiResponse.success();
   }
 
@@ -128,13 +114,13 @@ public class MetaEntityCatalogController {
   @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:write')")
   public ApiResponse<BatchOperateResult> batchPublish(
       @Valid @RequestBody BatchPublishMetaEntityCommand cmd) {
-    return ApiResponse.success(batchPublishMetaEntityCommandHandler.handle(cmd));
+    return ApiResponse.success(metaEntityApplicationService.batchPublishEntities(cmd));
   }
 
   @PostMapping("/batch-delete")
   @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<BatchOperateResult> batchDelete(
       @Valid @RequestBody BatchDeleteMetaEntityCommand cmd) {
-    return ApiResponse.success(batchDeleteMetaEntityCommandHandler.handle(cmd));
+    return ApiResponse.success(metaEntityApplicationService.batchDeleteEntities(cmd));
   }
 }

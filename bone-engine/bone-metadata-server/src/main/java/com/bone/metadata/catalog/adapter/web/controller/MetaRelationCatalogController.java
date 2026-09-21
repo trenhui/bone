@@ -2,83 +2,80 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.metadata.catalog.application.MetaRelationApplicationService;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCommand;
-import com.bone.metadata.catalog.application.command.handler.CreateMetaRelationHandler;
-import com.bone.metadata.catalog.application.command.handler.DeleteMetaRelationHandler;
-import com.bone.metadata.catalog.application.command.handler.UpdateMetaRelationHandler;
 import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
-import com.bone.metadata.catalog.application.query.handler.MetaRelationDetailQueryHandler;
-import com.bone.metadata.catalog.application.query.handler.MetaRelationPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaRelationPageQuery;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.net.URI;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 元数据目录：实体关系 API。
- *
- * <p>类名 {@code MetaRelation*}（短称）与 DDL 表 {@code meta_entity_relation} / 领域聚合根 {@code
- * MetaEntityRelation} 对齐；HTTP 路径仍用语义化 {@code relationships}。
- */
+/** 元数据关系建模 REST 接口。入站边界仅依赖 {@link MetaRelationApplicationService}（ADR-0028）。 */
 @RestController
 @RequestMapping("/api/v1/metadata/relationships")
 @RequiredArgsConstructor
+@Tag(name = "元数据关系建模", description = "实体间关系 CRUD")
 public class MetaRelationCatalogController {
 
-  private final CreateMetaRelationHandler createMetaRelationHandler;
-  private final UpdateMetaRelationHandler updateMetaRelationHandler;
-  private final DeleteMetaRelationHandler deleteMetaRelationHandler;
-  private final MetaRelationPageQueryHandler metaRelationPageQueryHandler;
-  private final MetaRelationDetailQueryHandler metaRelationDetailQueryHandler;
+  private final MetaRelationApplicationService metaRelationApplicationService;
 
   @PostMapping
+  @Operation(summary = "创建关系", description = "创建实体间关系")
   @PreAuthorize("hasAuthority('metadata:write')")
   public ResponseEntity<ApiResponse<Long>> create(
       @Valid @RequestBody CreateMetaRelationCommand cmd) {
-    Long id = createMetaRelationHandler.handle(cmd);
-    return ResponseEntity.created(URI.create("/api/v1/metadata/relationships/" + id))
-        .body(ApiResponse.success(id));
-  }
-
-  @PutMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:write')")
-  public ResponseEntity<ApiResponse<Void>> update(
-      @PathVariable Long id,
-      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
-      @Valid @RequestBody UpdateMetaRelationCommand cmd) {
-    Integer version =
-        updateMetaRelationHandler.handle(
-            id, cmd, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
-    return ResponseEntity.ok()
-        .eTag(CatalogHttpSupport.formatEtag(version))
-        .body(ApiResponse.success());
-  }
-
-  @GetMapping
-  @PreAuthorize("hasAuthority('metadata:read')")
-  public ApiResponse<PageResult<MetaRelationDTO>> page(MetaRelationPageQuery qry) {
-    return ApiResponse.success(metaRelationPageQueryHandler.handle(qry));
+    Long newId = metaRelationApplicationService.createRelation(cmd);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .eTag("\"v1\"")
+        .body(ApiResponse.success(newId));
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "获取关系详情", description = "根据关系 ID 查询详情")
   @PreAuthorize("hasAuthority('metadata:read')")
-  public ResponseEntity<ApiResponse<MetaRelationDTO>> detail(@PathVariable Long id) {
-    MetaRelationDTO dto = metaRelationDetailQueryHandler.handle(id);
+  public ApiResponse<MetaRelationDTO> detail(@PathVariable("id") Long id) {
+    return ApiResponse.success(metaRelationApplicationService.getRelation(id));
+  }
+
+  @PutMapping("/{id}")
+  @Operation(summary = "更新关系", description = "更新关系元数据（含乐观锁）")
+  @PreAuthorize("hasAuthority('metadata:write')")
+  public ResponseEntity<ApiResponse<Void>> update(
+      @PathVariable("id") Long id,
+      @RequestHeader(value = "If-Match", required = false) String ifMatch,
+      @Valid @RequestBody UpdateMetaRelationCommand cmd) {
+    Integer version = CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null);
+    Integer newVersion = metaRelationApplicationService.updateRelation(id, cmd, version);
     return ResponseEntity.ok()
-        .eTag(CatalogHttpSupport.formatEtag(dto.getVersion()))
-        .body(ApiResponse.success(dto));
+        .eTag(CatalogHttpSupport.formatEtag(newVersion))
+        .body(ApiResponse.success());
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "删除关系", description = "删除关系（草稿态）")
   @PreAuthorize("hasAuthority('metadata:write')")
-  public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteMetaRelationHandler.handle(id);
+  public ApiResponse<Void> delete(@PathVariable("id") Long id) {
+    metaRelationApplicationService.deleteRelation(id);
     return ApiResponse.success();
+  }
+
+  @GetMapping
+  @Operation(summary = "分页查询关系", description = "按源/目标实体或关键字分页查询关系")
+  @PreAuthorize("hasAuthority('metadata:read')")
+  public ApiResponse<PageResult<MetaRelationDTO>> page(MetaRelationPageQuery qry) {
+    return ApiResponse.success(
+        metaRelationApplicationService.pageRelations(
+            qry.getSourceEntityId(),
+            qry.getTargetEntityId(),
+            qry.getKeyword(),
+            qry.getPageNum(),
+            qry.getPageSize()));
   }
 }

@@ -1,5 +1,7 @@
 package com.bone.metadata.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
 import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -52,6 +54,12 @@ public class ArchitectureTest {
   static final ArchRule command_no_query_builder =
       FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
 
+  // CORE-05（E-4.2 主判据，蓝图范式）：读侧 DSL（Criteria / FluentQuery）只许出现在 domain.repository
+  // 或 infrastructure 的 SDK 集成点；application 层收敛后仅经仓储读模型方法取数，不得持有读侧 DSL。
+  @ArchTest
+  static final ArchRule read_side_dsl_only_in_query_layer =
+      BoneDddArchRules.readSideDslOnlyInQueryLayer();
+
   // CORE-02 + E-6（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
   @ArchTest
   static final ArchRule aggregate_identity_immutable =
@@ -100,6 +108,32 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule adapter_no_domain_service =
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
+
+  // CORE-04（蓝图 module-level）：入站适配器（任意 ..adapter.. 包）只许依赖 application，不得直连 domain.repository。
+  // catalog 收敛为 *ApplicationService 门面后，控制器仅注入门面，本规则稳定为零违规。
+  @ArchTest
+  static final ArchRule adapter_no_domain_repository_all_packages =
+      noClasses()
+          .that()
+          .resideInAPackage("..adapter..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("..domain.repository..")
+          .allowEmptyShould(true)
+          .because("入站适配器只许依赖 application；catalog 收敛为 *ApplicationService 后控制器不再直连仓储");
+
+  // ADR-0028：一个用例只选一种构件，CommandHandler 禁止依赖 application 层（套娃 ApplicationService）。
+  // 收敛后 handler 包已清空，allowEmptyShould 保持规则在基线收缩期间不误判。
+  @ArchTest
+  static final ArchRule command_handlers_must_not_depend_on_application_service =
+      noClasses()
+          .that()
+          .resideInAPackage("..application.command.handler..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("..application..")
+          .allowEmptyShould(true)
+          .because("ADR-0028: one use case, one artifact — CommandHandler 禁止依赖 application 层");
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。
