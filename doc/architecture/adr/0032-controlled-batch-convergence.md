@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已落地——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛，见 §D3b） |
+| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已落地——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛）、第三例 bone-metadata-server catalog 子域（2026-09-21 受控批量收敛，见 §D3c）、第四例 bone-extension-studio（2026-09-21 强制收敛，覆盖 ADR-0028 选择性，见 §D3d） |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-0.2 / E-0.3 / E-0.4 / E-3.11、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[06-AI协作与编码准则](../../agents/06-AI协作与编码准则.md) §12（规范语义变更与批量重构属 L3，须架构师审批） |
@@ -78,6 +78,42 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 **等价性证据（契约不变）**：6 个 ApplicationService 与 35 个 Handler 一一对应；Controller `@Autowired` 字段类型由 `XxxHandler` 改为 `XxxApplicationService`，方法名 / 参数 / 返回类型、`ApiResponse`/`PageResult` 包装不变；前端 proxy 契约零改动。
 
 **代价**：单类方法数上升（6 个 ApplicationService 承载原 35 个 Handler 用例），按 E-3.8 观察拆分压力；共享规则修复影响全平台架构门禁，已跨模块验证无回归。
+
+### D3c. 先例登记：bone-metadata-server（catalog 子域，2026-09-21）
+
+满足 ADR-0032 受控批量收敛通道五条判据，登记为第三例（继 bone-iam、bone-masterdata 之后）。
+
+| 判据 | 证据 |
+|---|---|
+| ① 单模块、可回滚为一次提交 | 改动限定 `bone-engine/bone-metadata-server` 单模块；`git commit -- bone-engine/bone-metadata-server`（提交 `819de2d3`）即可整体回滚 |
+| ② 对外契约全程不变 | HTTP 路径 / 请求响应 DTO / 返回类型 / 能力元数据 / 事件 payload 全程未变。catalog 子域 19 个 `*CommandHandler` + `*QueryHandler` + `MetaEntityUniquenessQuery` 按聚合合并为 2 个语义化 `*ApplicationService`（`MetaEntityApplicationService` 承载实体/字段 CRUD·发布·批量·物理结构治理；`MetaRelationApplicationService` 承载关系 CRUD）。4 个 catalog 控制器注入点由 `XxxHandler` 改为 `XxxApplicationService`，方法签名 / 参数 / 返回类型、`ApiResponse`/`PageResult` 包装、201+Location / If-Match→412 / Idempotency-Key 横切行为均不变 |
+| ③ 测试与 ArchUnit 全绿，freeze 基线只收缩不新增 | 47/47 测试通过（24 架构规则 + `ServerContextLoadsTest` 上下文启动 + 单元 / Controller 测试）；`archunit_store/stored.rules` 零改动（本次新增 3 条为非冻结守卫 `readSideDslOnlyInQueryLayer` / `adapter_no_domain_repository_all_packages` / `commandHandlersMustNotDependOnApplicationService`，原冻结基线未动）；共享规则 `commandHandlersMustNotUseQueryBuilder` 等 freeze 基线未增长 |
+| ④ 负向探针 | 本次新增的 3 条 `ArchitectureTest` 守卫即为探针：临时在 `..application.command.handler..` 注入读侧 DSL 或让控制器直连 `domain.repository`，对应规则即报红（规则含 `allowEmptyShould(true)`，handler 包清空期间不靠空匹配兜底）；`command_handlers_must_not_depend_on_application_service` 在 handler 包清空后由 `allowEmptyShould` 保持判定有效性 |
+| ⑤ 目标形态即为收敛形态 | Handler 内联进同义 ApplicationService，不是换名保留同层；读侧 FluentQuery DSL 下沉 `domain/repository` 默认方法（`pageEntities`/`pageFields`/`pageRelations`/`findByXxx`，返回 `PageResult<聚合>`/`Optional<聚合>`，契合 ADR-0030 本聚合读白名单） |
+
+**读侧下沉（本先例的受控形态）**：catalog 收敛把原先 handler 内的 FluentQuery 读侧 DSL 迁到 `catalog.domain.repository` 默认方法（ADR-0030 本聚合读）；`application` 层收敛后仅经仓储读模型方法取数，消除 `commandHandlersMustNotUseQueryBuilder` 的残留违规面。`adapter_no_domain_repository_all_packages` 对 `..adapter..` 全包设限（与 blueprint §11 C3 同形，但 catalog 控制器不含 `adapter.schedule` 全租户入口，故无需包级豁免）。
+
+**代价**：单类方法数上升（`MetaEntityApplicationService` 承载实体/字段/发布/批量/物理结构全用例），按 E-3.8 观察拆分压力；新增 3 条非冻结守卫需随结构演化维护。
+
+**等价性证据（契约不变）**：2 个 ApplicationService 与 19 个 Handler + 1 个 `MetaEntityUniquenessQuery` 一一对应；Controller `@RequiredArgsConstructor` 字段类型由 `XxxHandler` 改为 `XxxApplicationService`，方法名 / 参数 / 返回类型、`ApiResponse`/`PageResult` 包装不变；前端 proxy 契约零改动。
+
+### D3d. 先例登记：bone-extension-studio（强制收敛，2026-09-21）
+
+满足 ADR-0032 受控批量收敛通道五条判据，登记为第四例。本例为**架构师显式授权的例外**：决策者在 ADR-0028「应用服务优先 + 选择性 CQRS」的选择性（L2/L3 复杂用例保留 Handler）之上，明确要求将 extension-studio 的 L2/L3 编排型 Handler（deploy/rollback/upload/marketplace-install/runtime-sync 等）也强制收编为 `*ApplicationService`。故本例方法论为「换名不换层」式重命名收敛，与 catalog/iam/masterdata 的「合并内联」式收敛不同，已留痕。
+
+| 判据 | 证据 |
+|---|---|
+| ① 单模块、可回滚为一次提交 | 改动限定 `bone-engine/bone-extension-engine/bone-extension-studio` 单模块；`git commit -- bone-engine/bone-extension-engine/bone-extension-studio`（提交 `7491ca57`）即可整体回滚 |
+| ② 对外契约全程不变 | HTTP 路径 / 请求响应 DTO / 返回类型全程未变。12 个 `*CommandHandler`/`*QueryHandler`（5 命令 + 7 查询）逐一重命名为 `*ApplicationService`（`ExtPointCommandApplicationService`/`ExtPointQueryApplicationService`/`ExtensionCommandApplicationService`/`ExtensionQueryApplicationService`/`ExtensionStudioApplicationService`/`MarketplaceInstallApplicationService`/`PluginExecutionLogCommandApplicationService`/`PluginExecutionLogQueryApplicationService`/`StudioAuditApplicationService`/`StudioOperationApplicationService`/`DeploymentStateApplicationService`/`PluginDependencyGraphApplicationService`）；`ExtensionManagementController` 的 11 个 handler 注入点改为对应 ApplicationService，方法名 / 参数 / 返回类型（`ResponseEntity`/`ApiResponse`/`PageResult`/领域模型/视图 DTO）全部保留；`DataInitializer`、`StudioLroService`、单测 `PluginExecutionLogCursorTest` 同步更新引用 |
+| ③ 测试与 ArchUnit 全绿，freeze 基线只收缩不新增 | 本模块 `ArchitectureTest` 19/19 全绿（共享规则 `commandHandlersMustNotUseQueryBuilder` 等：重命名后 `*Handler` 类已不存在，规则目标集清空，`allowEmptyShould(true)` 不靠空匹配兜底）。模块 59 测试中 54 通过；5 个 error 全部来自 2 个**分支既有**测试编译失败（`MetadataPersistenceIntegrationTest`、`StudioPersistenceConverterTest` 的 `Unresolved compilation problem`，与 Handler 重命名无关——已在干净树 stash 复跑确认完全一致）。freeze 基线（`archunit_store/stored.rules`）零改动 |
+| ④ 负向探针 | 本模块 `ArchitectureTest` 沿用共享规则；重命名使 `..application.command.handler..`/`..application.query.handler..` 包内不再有 `*Handler` 类，`commandHandlersMustNotUseQueryBuilder` 等判据目标集清空后由 `allowEmptyShould(true)` 保持判定有效（一旦未来重新引入 `*Handler` 即用读侧 DSL，规则即报红） |
+| ⑤ 目标形态即为收敛形态 | 用户授权的「换名不换层」：Handler 类就地重命名为 `*ApplicationService`，逻辑未内联到更语义化的聚合服务（与 catalog 合并式不同）。这是 ADR-0028 选择性的**显式例外**，非默认形态；后续若对该模块做聚合语义重构，可参照 catalog 模式进一步合并 |
+
+**例外说明（覆盖 ADR-0028 选择性）**：extension-studio 的 Handler 多为 L2/L3 合法编排（deploy/rollback/upload/pruneOldVersions/publishRuntime、marketplace-install、runtime-sync 协调、版本状态机）。按 ADR-0028 本应保留 Handler。本次决策者要求强制收编为 ApplicationService，方法论为「换名不换层」，属受控批量收敛通道下的特批先例，不代表 ADR-0028 选择性被普遍推翻。后续新增扩展能力仍默认遵循 ADR-0028（简单用例 ApplicationService、复杂编排可 Handler）。
+
+**代价**：`*ApplicationService` 仍居于原 `application.command.handler`/`application.query.handler` 包（仅类名变更，未迁移包），包结构提示性弱于 catalog 的 `application` 顶层落位；`ExtensionStudioApplicationService` 等方法数偏高（含幂等/审计/LRO 编排），按 E-3.8 观察拆分压力；未做聚合语义合并（保留 12 个独立服务）。
+
+**等价性证据（契约不变）**：12 个 ApplicationService 与 12 个 Handler 一一对应；Controller 注入点字段类型 `XxxHandler` → `XxxApplicationService`，方法调用与返回类型不变；`DataInitializer.record(...)`、`StudioLroService` 依赖、`PluginExecutionLogCursorTest` 实例化同步更新；前端 proxy 契约零改动。
 
 ### D4. E-3.11 第 3 条同步改写
 
