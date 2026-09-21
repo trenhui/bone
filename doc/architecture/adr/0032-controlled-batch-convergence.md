@@ -70,8 +70,8 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 
 **共享规则修复（本先例的必要使能项）**：masterdata 收敛触发 `bone-framework/bone-architecture-test` 的 `BoneDddArchRules` 两处修复——
 
-- `domainMustNotUseQueryBuilder`：原仓储豁免正则对 FluentQuery DSL 失效（把 `domain/repository` 默认方法里的 `.where()/.like()/.orderBy()` 误判为违规，使冻结基线被错误放大）。修复为同时豁免 `FluentQuery`/`QueryBuilder`/`Criteria` 三类 DSL 的 repository 引用，使"仓储承载本聚合读写（ADR-0030）"真正成立。
-- `commandHandlersMustNotUseQueryBuilder`：`allowEmptyShould()` 放宽——存量 Handler 形态模块（iam / metadata）仍保留各自 handler 包且无违规，规则语义不变；仅消除"无 should 即空匹配所有类"的脆弱性。
+- `domainMustNotUseQueryBuilder`：新增 `.and().resideOutsideOfPackage("..domain.repository")` 与 `allowEmptyShould(true)`——把原先 blueprint / iam / system **各自在模块级复制**的「domain.repository 例外」收敛回共享规则（E-4.1：domain 内只允许 `domain.repository` 触碰读侧 DSL；ADR-0030 把「本聚合读」落在域仓储 default 方法上）。这是**包级排除**：凡 `@ReadSideOnly` 标注的读侧 DSL（Criteria / QueryBuilder / FluentQuery 通道）在 `domain.repository` 内一律放行，避免「每个模块抄一遍、抄漏就静默失去约束」。从而使"仓储承载本聚合读写（ADR-0030）"真正成立。
+- `commandHandlersMustNotUseQueryBuilder`：新增 `allowEmptyShould(true)`（diff hunk `@@ -173,6 +185,7 @@` 可核对）——存量 Handler 形态模块（iam / metadata）仍保留各自 handler 包且无违规，规则语义不变；仅消除"无 should 即空匹配所有类"的脆弱性。
 
 修复后跨 5 模块 ArchitectureTest 无回归（iam 26 / system 18 / integration 22 / metadata 21 / blueprint 30，全 0 失败），且 blueprint 原 1 项失败消除。
 
