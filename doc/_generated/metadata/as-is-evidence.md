@@ -1,6 +1,6 @@
 # 元数据模块 As-Is 证据
 
-> **生成时间**：2026-09-18T22:24:31Z（UTC）  
+> **生成时间**：2026-09-21T06:49:23Z（UTC）  
 > **收集器**：`tools/metadata-compliance-collector/collect.py`
 
 | ID | 能力 | 摘要 |

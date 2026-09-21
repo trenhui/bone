@@ -1,6 +1,6 @@
 # 扩展模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-09-17T03:20:47Z（UTC）  
+> **生成时间**：2026-09-21T06:49:07Z（UTC）  
 > **勿手改**：由 `tools/extension-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |

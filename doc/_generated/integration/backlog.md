@@ -1,6 +1,6 @@
 # integration [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-11T01:31:15Z（UTC）  
+> **生成时间**：2026-09-21T06:49:31Z（UTC）  
 > **维护源**：[`backlog.yaml`](../../../tools/integration-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |

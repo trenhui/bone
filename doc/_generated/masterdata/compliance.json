@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-15T04:23:26Z",
+  "generated_at": "2026-09-21T06:49:32Z",
   "module": "masterdata",
   "as_is": [
     {
@@ -32,7 +32,8 @@
           "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/DataQualityController.java",
           "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataEntityController.java",
           "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataFieldController.java",
-          "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordController.java"
+          "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/adapter/web/controller/MasterDataRecordController.java",
+          "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/application/QualityApplicationService.java"
         ]
       }
     },

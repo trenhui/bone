@@ -1,6 +1,6 @@
 # 元数据模块 [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-18T22:24:31Z（UTC）  
+> **生成时间**：2026-09-21T06:49:23Z（UTC）  
 > **维护源**：[`backlog.yaml`](../../../tools/metadata-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |

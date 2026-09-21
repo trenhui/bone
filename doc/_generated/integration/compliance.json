@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-11T01:31:15Z",
+  "generated_at": "2026-09-21T06:49:31Z",
   "module": "integration",
   "as_is": [
     {
@@ -31,7 +31,8 @@
         "java": [
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java"
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java"
         ]
       }
     },

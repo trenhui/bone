@@ -1,6 +1,6 @@
 # masterdata [Target] / [Vision] Backlog
 
-> **生成时间**：2026-08-15T04:23:26Z（UTC）  
+> **生成时间**：2026-09-21T06:49:32Z（UTC）  
 > **维护源**：[`backlog.yaml`](../../../tools/masterdata-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |

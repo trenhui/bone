@@ -1,6 +1,6 @@
 # IAM 模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-09-20T08:03:45Z（UTC）  
+> **生成时间**：2026-09-21T06:49:12Z（UTC）  
 > **勿手改**：由 `tools/iam-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |

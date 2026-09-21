@@ -1,6 +1,6 @@
 # bone-blueprint [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-19T13:27:55Z（UTC）
+> **生成时间**：2026-09-21T06:49:34Z（UTC）
 > **维护源**：[`backlog.yaml`](../../../tools/blueprint-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |
