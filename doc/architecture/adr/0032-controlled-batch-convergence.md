@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已落地——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛）、第三例 bone-metadata-server catalog 子域（2026-09-21 受控批量收敛，见 §D3c）、第四例 bone-extension-studio（2026-09-21 强制收敛，覆盖 ADR-0028 选择性，见 §D3d） |
+| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已落地——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛）、第三例 bone-metadata-server catalog 子域（2026-09-21 受控批量收敛，见 §D3c）、第四例 bone-extension-studio（2026-09-21 强制收敛，覆盖 ADR-0028 选择性，见 §D3d）、第五例 bone-integration（2026-09-21 换名不换层，见 §D3e）、第六例 studio-generator（2026-09-21 换名不换层，见 §D3f） |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-0.2 / E-0.3 / E-0.4 / E-3.11、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[06-AI协作与编码准则](../../agents/06-AI协作与编码准则.md) §12（规范语义变更与批量重构属 L3，须架构师审批） |
@@ -114,6 +114,32 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 **代价**：`*ApplicationService` 仍居于原 `application.command.handler`/`application.query.handler` 包（仅类名变更，未迁移包），包结构提示性弱于 catalog 的 `application` 顶层落位；`ExtensionStudioApplicationService` 等方法数偏高（含幂等/审计/LRO 编排），按 E-3.8 观察拆分压力；未做聚合语义合并（保留 12 个独立服务）。
 
 **等价性证据（契约不变）**：12 个 ApplicationService 与 12 个 Handler 一一对应；Controller 注入点字段类型 `XxxHandler` → `XxxApplicationService`，方法调用与返回类型不变；`DataInitializer.record(...)`、`StudioLroService` 依赖、`PluginExecutionLogCursorTest` 实例化同步更新；前端 proxy 契约零改动。
+
+### D3e. 先例登记：bone-integration（受控批量收敛，2026-09-21）
+
+满足 ADR-0032 受控批量收敛通道五条判据，登记为第五例（继 bone-iam、bone-masterdata、catalog 子域、extension-studio 之后）。方法论属「换名不换层」式重命名（与 extension-studio 同形，区别于 catalog/iam/masterdata 的「合并内联」式）。
+
+| 判据 | 证据 |
+|---|---|
+| ① 单模块、可回滚为一次提交 | 改动限定 `bone-platform/bone-integration` 单模块；`git commit -- bone-platform/bone-integration`（提交 `16525e8e`）即可整体回滚 |
+| ② 对外契约全程不变 | HTTP 路径 / 请求响应 DTO / 返回类型全程未变。21 个 `*CommandHandler`/`*QueryHandler`（12 命令 + 9 查询）逐一重命名为 `*ApplicationService`（`CreateConnectorApplicationService`/`CreateFlowApplicationService`/`ExecuteFlowApplicationService`/`ConnectorPageQueryApplicationService`/`FlowStatisticsQueryApplicationService` 等）；`ConnectorController`/`FlowController`/`MonitorController` 的注入点改为对应 ApplicationService，方法名 / 参数 / 返回类型（`ResponseEntity`/`ApiResponse`/`PageResult`/领域模型/视图 DTO）全部保留；前端 proxy 契约零改动。`application/event/**` 下的 7 个事件监听器 `*Handler` 属 `@EventListener` 订阅端（非 ADR-0028 入站边界），按 extension-studio 先例保留不动 |
+| ③ 测试与 ArchUnit 全绿，freeze 基线只收缩不新增 | 本模块 `ArchitectureTest` 22/22 全绿（`clean` 重建复跑确认）。freeze 基线两条均**收缩**：`446b2abc`（读侧 DSL 规则）违规文件清空、`bcdd358f`（E-2 租户规则）违规文件清空，`stored.rules` 无新增条目 |
+| ④ 负向探针 | `..application.command.handler..`/`..application.query.handler..` 包内重命名后不再有 `*Handler` 类，`commandHandlersMustNotUseQueryBuilder` 目标集清空后由 `allowEmptyShould(true)` 保持判定有效（未来重新引入 `*Handler` 即报红）；`businessLayersMustNotReadTenantContextDirectly` 对新端口负向判定（直读即红） |
+| ⑤ 目标形态即为收敛形态 | 换名不换层：Handler 就地重命名为 `*ApplicationService`，保留原 `command.handler`/`query.handler` 包，未做聚合语义合并 |
+
+**顺带修复分支既有 E-2 违规（非本次收敛引入，随本批提交）**：`IntegrationEventEnvelopeFactory`（`application/event/outbox`）直调 `TenantContext.getTenantIdAsLong()`，违反 E-2。该违规此前被 pre-commit 增量编译（`scripts/check.sh` 不执行 `clean`）下的陈旧 `target/classes` 长期掩盖，`clean` 重建即暴露。修复方式与 sibling 同形：新增 `domain/gateway/TenantProvider` 端口 + `infrastructure/gateway/TenantProviderAdapter` 适配器，工厂经端口读租户；`business_layers_no_direct_tenant_context` 冻结违规因此**收缩为 0**（合规方向），故判据 ③ 「只收缩不新增」成立。
+
+### D3f. 先例登记：studio-generator（受控批量收敛，2026-09-21）
+
+满足 ADR-0032 受控批量收敛通道五条判据，登记为第六例。方法论同属「换名不换层」式重命名。
+
+| 判据 | 证据 |
+|---|---|
+| ① 单模块、可回滚为一次提交 | 改动限定 `bone-engine/studio-generator` 单模块；提交 `16525e8e` 即可整体回滚 |
+| ② 对外契约全程不变 | HTTP 路径 / 请求响应 DTO / 返回类型未变。`application/command/handler` 与 `application/query/handler` 包内全部 `*Handler` 重命名为 `*ApplicationService`，控制器（`CodeGenerationController`/`CodeTemplateController`/`DataSourceController`/`GenerationTaskController`/`GeneratorShortcutController`/`MetadataEntitySnapshotController`）注入点同步；方法名 / 参数 / 返回类型全部保留 |
+| ③ 测试与 ArchUnit 全绿，freeze 基线只收缩不新增 | 本模块 `ArchitectureTest` 20/20 全绿（`clean` 重建复跑确认）。基线随共享规则谓词改写而重键（`@ReadSideOnly` 规则描述由 `..application.command.handler..` 收归 `..application..`，见 `b106a619`），属规则描述变更而非新增违规 |
+| ④ 负向探针 | 重命名后 `command.handler`/`query.handler` 包内不再有 `*Handler` 类，`allowEmptyShould(true)` 保持判定有效；同时新增脚手架 `ApplicationServiceGenerator` + `applicationService.ftl`，令后续代码生成直接产出 `*ApplicationService`（弃用 `handler.ftl`），并同步 `controller.ftl`/`repository.ftl` 产物引用 |
+| ⑤ 目标形态即为收敛形态 | 换名不换层：Handler 就地重命名为 `*ApplicationService`，保留原包 |
 
 ### D4. E-3.11 第 3 条同步改写
 

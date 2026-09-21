@@ -27,8 +27,7 @@ public class IntegrationEventEnvelopeFactory {
 
   private final TenantProvider tenantProvider;
 
-  public IntegrationEventEnvelopeFactory(
-      ObjectMapper objectMapper, TenantProvider tenantProvider) {
+  public IntegrationEventEnvelopeFactory(ObjectMapper objectMapper, TenantProvider tenantProvider) {
     this.objectMapper = objectMapper;
     this.tenantProvider = tenantProvider;
   }
