@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.iam.application.command.cmd.ChangeMyPasswordCommand;
-import com.bone.iam.application.service.PasswordPolicyValidator;
+import com.bone.iam.application.policy.PasswordPolicyValidator;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;

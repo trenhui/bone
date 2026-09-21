@@ -12,25 +12,27 @@
 - 应用入口：语义化 `{X}ApplicationService` 平铺 `application/` 根目录（Application Service First，见 ADR-0028）；`application/app/`（应用/模块/应用权限聚合）已并入主包，不再保留平行 CQRS 树。
 - ArchUnit：仅扫描 `src/main`（`ImportOption.DoNotIncludeTests`）；`application_no_infra` / 仓储白名单 **直接门禁**。
 
-## 应用层协作服务（`application/service/`）
+## 应用层协作服务
 
-落点定义与判据见 [ADR-0033](../../doc/architecture/adr/0033-application-collaboration-service.md) D4：可依赖 `domain`，**不持有事务、不承载聚合不变量、不得出现读侧 DSL**（E-10.2 / E-4.2）。本模块现行构件：
+落点定义与判据见 [ADR-0033](../../doc/architecture/adr/0033-application-collaboration-service.md) D4：可依赖 `domain`，**不持有事务、不承载聚合不变量、不得出现读侧 DSL**（E-10.2 / E-4.2）。按窄职责拆为三个子包：
 
-| 类 | 用途 | 命中判据 | 备注 |
-|---|---|---|---|
-| `AccountRoleBindingService` | 账号-角色绑定替换与回读（含权限缓存失效） | D4-3① | 被 4 个用例调用；**待收敛**：`Criteria` 出现在 application（E-4.2） |
-| `RolePermissionBindingService` | 角色-权限绑定替换（含权限缓存失效） | D4-3③ | 与上者同构的协作步骤；**待收敛**：`Criteria` 出现在 application（E-4.2） |
-| `AuthService` | 认证辅助：按用户名查账号、密码比对（经 `PasswordEncoderPort`） | D4-3② | — |
-| `AuditService` | 审计日志落库（`AuditLog.create` + 保存） | D4-3② | 由 `common/util/AuditUtils` 调用 |
-| `TenantQuotaEnforcer` | 租户配额校验（账号 / 角色上限，跨 3 个仓储） | D4-3② | 被 2 个应用服务调用；**待收敛**：`Criteria` + `countByCriteria` 出现在 application（E-4.2） |
-| `PasswordPolicyValidator` | 密码强度策略（长度 + 弱口令拒绝） | 暂留 | 无 IO 的纯规则，形式命中 D4-1；但失败语义是 `IamErrors` 的业务码→HTTP 状态配对（`BizException`），迁 `domain/service` 须先改造为 `DomainException` + 应用层转换（E-5.3.1）。按触达即收敛 |
-| `RoleHierarchyResolver` | 角色祖先闭包解析（按层批量查询、最多 5 层、含环检测） | **待收敛** | 在 application 内直接使用 `QueryBuilder` / `FluentQuery`，属 E-4.2 违规（目前仅由 `archunit_store` 冻结基线兜住）；取数应下沉 `domain/repository` 的 `default` 方法或 `infrastructure/query` |
-| `RoleService` | 仅 `RoleRepository` 单点透传 | **待删除** | 全仓零调用方（死代码，E-3.11 第 2 条） |
-| `PermissionService` | 仅 `PermissionRepository` 单点透传 | **待删除** | 全仓零调用方（死代码，E-3.11 第 2 条） |
+- `application/service/`：`AuthService`（认证辅助）、`AuditService`（审计落库）、`RoleHierarchyResolver`（角色祖先闭包解析）。
+- `application/binding/`：账号-角色、角色-权限绑定的替换与回读（含权限缓存失效）。
+- `application/policy/`：密码强度策略、租户配额校验。
 
-新增同类构件前按 D4 判据顺序核对（纯规则无 IO 且异常语义可表达 → `domain/service`；只协调技术端口 → `support/`；单点透传或无调用方 → 不建）。
+本模块现行构件：
 
-> **4 个"待收敛"是同一件事**：条件构造与取数应下沉 `domain/repository` 的 `default` 方法（ADR-0030——域仓储是 `QueryBuilder` / `Criteria` 的 SDK 集成点，`updateByCriteria` 由基类自带）或 `infrastructure/query`，application 只留语义化调用（如"解绑账号全部角色"、"统计租户内账号数"）。`archunit_store` 里 `readSideDslOnlyInQueryLayer` 的**全部 14 行残留都在这 4 个类**——未报红只是被冻结基线兜住，不等于合规。
+| 类 | 包 | 用途 | 命中判据 | 备注 |
+|---|---|---|---|---|
+| `AccountRoleBindingService` | `binding` | 账号-角色绑定替换与回读（含权限缓存失效） | D4-3① | 条件构造下沉 `AccountRoleRepository#replaceBindingsForAccount`（E-4.2 已收敛，ADR-0030） |
+| `RolePermissionBindingService` | `binding` | 角色-权限绑定替换（含权限缓存失效） | D4-3③ | 条件构造下沉 `RolePermissionRepository#replaceBindingsForRole`（E-4.2 已收敛） |
+| `AuthService` | `service` | 认证辅助：按用户名查账号、密码比对（经 `PasswordEncoderPort`） | D4-3② | 全租户登录定位入口，`allTenantEntryPointsOnlyCalledBy` 白名单登记点（FQN `com.bone.iam.application.service.AuthService`） |
+| `AuditService` | `service` | 审计日志落库（`AuditLog.create` + 保存） | D4-3② | 由 `common/util/AuditUtils` 调用 |
+| `TenantQuotaEnforcer` | `policy` | 租户配额校验（账号 / 角色上限，跨 2 个仓储） | D4-3② | 计数下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
+| `PasswordPolicyValidator` | `policy` | 密码强度策略（长度 + 弱口令拒绝） | 暂留 | 纯规则，失败语义为 `IamErrors` 业务码→HTTP 状态配对（`BizException`）；迁 `domain/service` 须先改 `DomainException` + 应用层转换（E-5.3.1），按触达即收敛 |
+| `RoleHierarchyResolver` | `service` | 角色祖先闭包解析（按层批量查询、最多 5 层、含环检测） | — | 取数已下沉 `RoleRepository#findByIds`（E-4.2 已收敛），仅保留纯图算法（BFS + 环检测 + 深度截断） |
+
+> **E-4.2 收口已完成**：原 4 个在 application 内直写 `Criteria` / `QueryBuilder` 的类（`AccountRoleBindingService`、`RolePermissionBindingService`、`TenantQuotaEnforcer`、`RoleHierarchyResolver`），其读侧 DSL 已全部下沉 `domain/repository` 的 `default` 方法（ADR-0030）；`archunit_store` 中对应的 `readSideDslOnlyInQueryLayer` 残留基线已随本次改动被 FreezingArchRule 清除，该门禁可解除冻结转真门禁。`RoleService` / `PermissionService` 因全仓零调用方（死代码）已删除。
 
 ## 本上下文拥有的表（E-1.2 数据所有权声明）
 

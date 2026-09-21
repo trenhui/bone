@@ -3,8 +3,11 @@ package com.bone.iam.domain.repository;
 import com.bone.core.model.PageResult;
 import com.bone.iam.domain.role.Role;
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * 角色聚合的域仓储（写 + 本聚合读，ADR-0030）。
@@ -33,5 +36,18 @@ public interface RoleRepository extends Repository<Role, Long> {
       query.where(Role::getTenantId).eq(tenantId);
     }
     return query.orderByDesc(Role::getCreatedAt).page(pageNo, pageSize);
+  }
+
+  /** 某租户角色数（配额校验用，本聚合读）。 */
+  default long countByTenant(Long tenantId) {
+    return countByCriteria(Criteria.<Role>create().eq("tenantId", tenantId));
+  }
+
+  /** 按 id 批量取角色（角色继承闭包解析用，本聚合读）。 */
+  default List<Role> findByIds(Collection<Long> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
+    return QueryBuilder.from(Role.class).where(Role::getId).in(ids).list();
   }
 }

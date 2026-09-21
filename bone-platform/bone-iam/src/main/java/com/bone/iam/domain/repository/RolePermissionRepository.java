@@ -3,8 +3,11 @@ package com.bone.iam.domain.repository;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.role.RolePermission;
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 角色-权限绑定聚合的域仓储（写 + 本聚合读，ADR-0030）。
@@ -49,5 +52,24 @@ public interface RolePermissionRepository extends Repository<RolePermission, Lon
     List<Long> permissionIds =
         links.stream().map(RolePermission::getPermissionId).distinct().toList();
     return QueryBuilder.from(Permission.class).where(Permission::getId).in(permissionIds).list();
+  }
+
+  /** 重建某角色的全部权限绑定（物理删除后插入，表无软删列）。application 层只调本方法（E-4.2）。 */
+  default void replaceBindingsForRole(Long roleId, Long[] permissionIds) {
+    if (roleId == null) {
+      return;
+    }
+    deleteByCriteria(Criteria.<RolePermission>create().eq("roleId", roleId));
+    if (permissionIds != null && permissionIds.length > 0) {
+      List<RolePermission> links =
+          Arrays.stream(permissionIds)
+              .filter(Objects::nonNull)
+              .distinct()
+              .map(permissionId -> RolePermission.of(null, roleId, permissionId))
+              .toList();
+      if (!links.isEmpty()) {
+        batchInsert(links);
+      }
+    }
   }
 }

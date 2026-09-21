@@ -87,7 +87,7 @@ public class ArchitectureTest {
 
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_adapter =
-      FreezingArchRule.freeze(BoneDddArchRules.readSideDslOnlyInQueryLayer());
+      BoneDddArchRules.readSideDslOnlyInQueryLayer();
 
   @ArchTest
   static final ArchRule business_layers_no_direct_tenant_context =

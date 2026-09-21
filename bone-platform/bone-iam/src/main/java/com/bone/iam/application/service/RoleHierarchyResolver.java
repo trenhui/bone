@@ -1,7 +1,7 @@
 package com.bone.iam.application.service;
 
+import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.iam.domain.role.Role;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,14 +25,17 @@ import org.springframework.stereotype.Service;
  *   <li>按层批量查询父角色，避免 N+1
  * </ul>
  *
- * <p>注：已从 {@code domain.service} 迁移至 {@code application.service}，因核心逻辑为批量查询父角色的应用层编排。 QueryBuilder
- * 仅在 QueryHandler 调用链中使用，符合 DDD 读侧 DSL 规范。
+ * <p>注：已从 {@code domain.service} 迁移至 {@code application.service}；父角色批量查询委托 {@code
+ * RoleRepository#findByIds}（DSL 落在其 {@code default} 方法，E-4.2 唯一合法落点），本类只保留纯图算法（BFS + 环检测 + 深度截断）。
  */
 @Service("applicationRoleHierarchyResolver")
+@RequiredArgsConstructor
 public class RoleHierarchyResolver {
 
   /** 闭包遍历最大深度（包含根层），与详设保持一致。 */
   public static final int MAX_DEPTH = 5;
+
+  private final RoleRepository roleRepository;
 
   /**
    * 返回 {@code seedRoleIds} 的祖先闭包（包含 seed 本身）。
@@ -53,8 +57,7 @@ public class RoleHierarchyResolver {
 
     int depth = 1;
     while (!currentLayer.isEmpty() && depth < MAX_DEPTH) {
-      List<Role> parents =
-          QueryBuilder.from(Role.class).where(Role::getId).in(List.copyOf(currentLayer)).list();
+      List<Role> parents = roleRepository.findByIds(List.copyOf(currentLayer));
       Deque<Long> nextLayer = new ArrayDeque<>();
       for (Role role : parents) {
         Long parentId = role.getParentRoleId();

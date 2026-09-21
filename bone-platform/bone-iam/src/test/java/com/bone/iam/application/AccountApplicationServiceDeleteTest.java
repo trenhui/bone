@@ -4,7 +4,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.bone.iam.application.service.AccountRoleBindingService;
+import com.bone.iam.application.binding.AccountRoleBindingService;
 import com.bone.iam.domain.repository.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

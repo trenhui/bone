@@ -82,4 +82,9 @@ public interface AccountRepository extends Repository<Account, Long> {
     }
     return query.orderByDesc(Account::getCreatedAt).page(pageNo, pageSize);
   }
+
+  /** 某租户账号数（配额校验用，本聚合读）。 */
+  default long countByTenant(Long tenantId) {
+    return countByCriteria(Criteria.<Account>create().eq("tenantId", tenantId));
+  }
 }
