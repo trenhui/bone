@@ -179,10 +179,18 @@ public final class BoneDddArchRules {
                 + "(updateByCriteria / Criteria channel, ADR-0030)");
   }
 
+  /**
+   * P0-6：写入站构件不得依赖读侧 DSL。
+   *
+   * <p><b>谓词范围（2026-09-21 收口）</b>：原谓词只写 {@code ..application.command.handler..}， ADR-0028 之后大量模块的
+   * Handler 已被 {@code *ApplicationService} 取代（如 masterdata 的 ADR-0032 收敛）， 该子包被删除 ⇒ 规则 0 命中、恒绿。改为
+   * {@code ..application..} 后，ApplicationService / Handler / Orchestrator 全部纳入。注：{@link
+   * #readSideDslOnlyInQueryLayer()} 用的是同一个 {@code ..application..} 谓词， 其绿色结果可作旁证。
+   */
   public static ArchRule commandHandlersMustNotUseQueryBuilder() {
     return noClasses()
         .that()
-        .resideInAPackage("..application.command.handler..")
+        .resideInAPackage("..application..")
         .should()
         .dependOnClassesThat(areAnnotatedWithReadSideOnly())
         .allowEmptyShould(true)
@@ -735,10 +743,15 @@ public final class BoneDddArchRules {
    * <p><b>为何单列一条</b>：聚合在 DDD 中的定义即「一致性边界」。若一个事务内同时写多个聚合，等于宣称
    * 二者的不变量必须同时成立——那它们本就该是同一个聚合；若不是，则事务边界与一致性边界背离，既放大锁 竞争，又把最终一致伪装成强一致（本地事务只能保证本库原子）。
    *
-   * <p><b>判定方式</b>：对 {@code ..application.command.handler..} / {@code ..application.service..} /
-   * {@code ..application.orchestration..} 下具体类的<strong>入口方法</strong>（{@code handle} / {@code
+   * <p><b>判定方式</b>：对 {@code ..application..} 下具体类的<strong>入口方法</strong>（{@code handle} / {@code
    * execute}；不存在时回退到全部 public 实例方法），收集其直接调用中目标位于 {@code ..domain.repository..} 的持久化方法，按
    * <strong>Repository 接口类型</strong>去重计数， {@code > 1} 即违规。
+   *
+   * <p><b>谓词范围（2026-09-21 收口）</b>：原谓词锚在 {@code ..application.command.handler..} / {@code
+   * ..application.service..} / {@code ..application.orchestration..} 三个子包上，而 ADR-0028 之后应用层构件
+   * （{@code *ApplicationService} / Handler）直接住在 {@code ..application..}，这三个子包被删除 ⇒ 规则 0 命中、全仓恒绿。
+   * 现放宽为 {@code ..application..}，覆盖所有写事务入口。注：本规则无 {@code .because(...)} 冻结键，放宽不影响各模块 {@code
+   * FreezingArchRule} 基线。
    *
    * <p><b>为何扫描范围含 service / orchestration（v4.7 修正）</b>：Handler 委托给 ApplicationService /
    * Orchestrator 后， 直接在 Handler 上扫描 save 调用将完全不可见（v4.6 的盲区）——ApplicationService 同样可能是写事务入口，须受 R9 约束
@@ -756,10 +769,7 @@ public final class BoneDddArchRules {
   public static ArchRule oneAggregatePerTransaction() {
     return classes()
         .that()
-        .resideInAnyPackage(
-            "..application.command.handler..",
-            "..application.service..",
-            "..application.orchestration..")
+        .resideInAPackage("..application..")
         .and()
         .areNotInterfaces()
         .and()
@@ -960,7 +970,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * E-6.4（v4.6 内容禁令）：{@code application/service} 可承载<strong>用例级编排</strong>，但不得承载 领域规则——具体禁止两件事：
+   * E-6.4（v4.6 内容禁令）：应用层可承载<strong>用例级编排</strong>，但不得承载 领域规则——具体禁止两件事：
    *
    * <ol>
    *   <li>{@code new} 领域对象（须经聚合工厂方法或 Repository 获取）；
@@ -969,11 +979,16 @@ public final class BoneDddArchRules {
    *
    * <p>v4.5 曾全面禁止 {@code application/service} 这一<strong>名称</strong>，结果真实需求被逼进 Orchestrator / Facade
    * / ApplicationService 三套例外通道。v4.6 改为约束<strong>内容</strong>——管住 「里面不许有什么」，比管「不许叫什么」更紧，且可机器判定。
+   *
+   * <p><b>谓词范围（2026-09-21 收口）</b>：原谓词锚在 {@code ..application.service..}，ADR-0028 之后该子包不复存在
+   * （应用层构件直接住在 {@code ..application..}）⇒ 规则 0 命中、全仓恒绿。现放宽为 {@code ..application..}， 对
+   * ApplicationService / Handler / Orchestrator 一视同仁。注：本规则无 {@code .because(...)} 冻结键，放宽不影响各模块
+   * {@code FreezingArchRule} 基线。
    */
   public static ArchRule applicationServicesMustNotOwnDomainRules() {
     return classes()
         .that()
-        .resideInAPackage("..application.service..")
+        .resideInAPackage("..application..")
         .and()
         .areNotInterfaces()
         .and()
