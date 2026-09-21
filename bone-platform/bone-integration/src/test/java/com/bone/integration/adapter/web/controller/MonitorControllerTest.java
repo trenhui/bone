@@ -8,12 +8,12 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
-import com.bone.integration.application.command.handler.ExecuteFlowHandler;
+import com.bone.integration.application.command.handler.ExecuteFlowApplicationService;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
-import com.bone.integration.application.query.handler.ExecutionDetailQueryHandler;
-import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
-import com.bone.integration.application.query.handler.FlowStatisticsQueryHandler;
+import com.bone.integration.application.query.handler.ExecutionDetailQueryApplicationService;
+import com.bone.integration.application.query.handler.ExecutionLogListQueryApplicationService;
+import com.bone.integration.application.query.handler.FlowStatisticsQueryApplicationService;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
@@ -32,17 +32,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MonitorControllerTest {
 
-  @Mock private ExecuteFlowHandler executeFlowHandler;
+  @Mock private ExecuteFlowApplicationService executeFlowHandler;
 
-  @Mock private ExecutionLogListQueryHandler executionLogListQueryHandler;
+  @Mock private ExecutionLogListQueryApplicationService executionLogListQueryHandler;
 
   @Mock private IntegrationLogRepository logRepository;
 
   @Mock private IntegrationFlowRepository flowRepository;
 
   @Mock private FlowMonitorService flowMonitorService;
-  @Mock private ExecutionDetailQueryHandler executionDetailQueryHandler;
-  @Mock private FlowStatisticsQueryHandler flowStatisticsQueryHandler;
+  @Mock private ExecutionDetailQueryApplicationService executionDetailQueryHandler;
+  @Mock private FlowStatisticsQueryApplicationService flowStatisticsQueryHandler;
 
   @InjectMocks private MonitorController monitorController;
 

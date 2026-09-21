@@ -6,12 +6,12 @@ import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateComma
 import com.bone.studio.generator.application.command.cmd.DeleteCodeTemplateCommand;
 import com.bone.studio.generator.application.command.cmd.PublishCodeTemplateCommand;
 import com.bone.studio.generator.application.command.cmd.UpdateCodeTemplateCommand;
-import com.bone.studio.generator.application.command.handler.CreateCodeTemplateHandler;
-import com.bone.studio.generator.application.command.handler.DeleteCodeTemplateHandler;
-import com.bone.studio.generator.application.command.handler.PublishCodeTemplateHandler;
-import com.bone.studio.generator.application.command.handler.UpdateCodeTemplateHandler;
-import com.bone.studio.generator.application.query.handler.GetCodeTemplateDetailQueryHandler;
-import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryHandler;
+import com.bone.studio.generator.application.command.handler.CreateCodeTemplateApplicationService;
+import com.bone.studio.generator.application.command.handler.DeleteCodeTemplateApplicationService;
+import com.bone.studio.generator.application.command.handler.PublishCodeTemplateApplicationService;
+import com.bone.studio.generator.application.command.handler.UpdateCodeTemplateApplicationService;
+import com.bone.studio.generator.application.query.handler.GetCodeTemplateDetailQueryApplicationService;
+import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateDetailQuery;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
@@ -32,12 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CodeTemplateController {
 
-  private final CreateCodeTemplateHandler createCodeTemplateHandler;
-  private final UpdateCodeTemplateHandler updateCodeTemplateHandler;
-  private final DeleteCodeTemplateHandler deleteCodeTemplateHandler;
-  private final PublishCodeTemplateHandler publishCodeTemplateHandler;
-  private final GetCodeTemplateListQueryHandler queryHandler;
-  private final GetCodeTemplateDetailQueryHandler detailQueryHandler;
+  private final CreateCodeTemplateApplicationService createCodeTemplateHandler;
+  private final UpdateCodeTemplateApplicationService updateCodeTemplateHandler;
+  private final DeleteCodeTemplateApplicationService deleteCodeTemplateHandler;
+  private final PublishCodeTemplateApplicationService publishCodeTemplateHandler;
+  private final GetCodeTemplateListQueryApplicationService queryHandler;
+  private final GetCodeTemplateDetailQueryApplicationService detailQueryHandler;
 
   @PostMapping
   public ApiResponse<Long> createCodeTemplate(@RequestBody CreateCodeTemplateCommand command) {

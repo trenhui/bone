@@ -1,9 +1,11 @@
 package com.bone.integration.domain.repository;
 
+import com.bone.core.model.PageResult;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import java.util.List;
 
 public interface IntegrationLogRepository extends Repository<IntegrationLog, Long> {
 
@@ -23,6 +25,37 @@ public interface IntegrationLogRepository extends Repository<IntegrationLog, Lon
                 .eq("flowId", flowId)
                 .eq("status", status)
                 .disableTenantFilter());
+    return count != null ? count : 0L;
+  }
+
+  /** 本聚合执行记录分页。 */
+  default PageResult<IntegrationLog> findPage(
+      Long flowId, ExecutionStatus status, int pageNum, int pageSize) {
+    Criteria<IntegrationLog> criteria =
+        Criteria.<IntegrationLog>create()
+            .eq(flowId != null, IntegrationLog::getFlowId, flowId)
+            .eq(status != null, IntegrationLog::getStatus, status)
+            .orderByDesc(IntegrationLog::getId)
+            .page(pageNum, pageSize);
+    return pageByCriteria(criteria);
+  }
+
+  default List<IntegrationLog> findByFlowId(Long flowId) {
+    return findByCriteria(Criteria.<IntegrationLog>create().eq(IntegrationLog::getFlowId, flowId));
+  }
+
+  default long countByFlow(Long flowId) {
+    Long count =
+        countByCriteria(Criteria.<IntegrationLog>create().eq(IntegrationLog::getFlowId, flowId));
+    return count != null ? count : 0L;
+  }
+
+  default long countByFlowAndStatus(Long flowId, ExecutionStatus status) {
+    Long count =
+        countByCriteria(
+            Criteria.<IntegrationLog>create()
+                .eq(IntegrationLog::getFlowId, flowId)
+                .eq(IntegrationLog::getStatus, status));
     return count != null ? count : 0L;
   }
 }

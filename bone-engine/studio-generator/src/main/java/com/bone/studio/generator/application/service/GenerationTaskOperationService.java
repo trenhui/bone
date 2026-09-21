@@ -1,7 +1,6 @@
 package com.bone.studio.generator.application.service;
 
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.domain.data.GenerationTask;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
@@ -22,8 +21,7 @@ public class GenerationTaskOperationService {
 
   public GenerationTask findByTaskId(String taskId) {
     try {
-      return generationTaskRepository.findOneByCriteria(
-          Criteria.<GenerationTask>create().eq("taskId", taskId));
+      return generationTaskRepository.findByTaskId(taskId);
     } catch (MultipleResultsException ex) {
       throw new IllegalStateException("duplicate generation task: " + taskId, ex);
     } catch (RuntimeException ex) {

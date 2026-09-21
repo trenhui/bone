@@ -9,15 +9,15 @@ import com.bone.integration.application.command.cmd.DisableConnectorCommand;
 import com.bone.integration.application.command.cmd.EnableConnectorCommand;
 import com.bone.integration.application.command.cmd.TestConnectorCommand;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.command.handler.CreateConnectorHandler;
-import com.bone.integration.application.command.handler.DeleteConnectorHandler;
-import com.bone.integration.application.command.handler.DisableConnectorHandler;
-import com.bone.integration.application.command.handler.EnableConnectorHandler;
-import com.bone.integration.application.command.handler.TestConnectorHandler;
-import com.bone.integration.application.command.handler.UpdateConnectorHandler;
+import com.bone.integration.application.command.handler.CreateConnectorApplicationService;
+import com.bone.integration.application.command.handler.DeleteConnectorApplicationService;
+import com.bone.integration.application.command.handler.DisableConnectorApplicationService;
+import com.bone.integration.application.command.handler.EnableConnectorApplicationService;
+import com.bone.integration.application.command.handler.TestConnectorApplicationService;
+import com.bone.integration.application.command.handler.UpdateConnectorApplicationService;
 import com.bone.integration.application.query.dto.ConnectorDTO;
-import com.bone.integration.application.query.handler.ConnectorDetailQueryHandler;
-import com.bone.integration.application.query.handler.ConnectorPageQueryHandler;
+import com.bone.integration.application.query.handler.ConnectorDetailQueryApplicationService;
+import com.bone.integration.application.query.handler.ConnectorPageQueryApplicationService;
 import com.bone.integration.application.query.qry.ConnectorDetailQuery;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.INTEGRATION_V1 + "/connectors")
 @RequiredArgsConstructor
 public class ConnectorController {
-  private final CreateConnectorHandler createConnectorHandler;
-  private final UpdateConnectorHandler updateConnectorHandler;
-  private final ConnectorPageQueryHandler connectorPageQueryHandler;
-  private final ConnectorDetailQueryHandler connectorDetailQueryHandler;
-  private final DeleteConnectorHandler deleteConnectorHandler;
-  private final TestConnectorHandler testConnectorHandler;
-  private final EnableConnectorHandler enableConnectorHandler;
-  private final DisableConnectorHandler disableConnectorHandler;
+  private final CreateConnectorApplicationService createConnectorHandler;
+  private final UpdateConnectorApplicationService updateConnectorHandler;
+  private final ConnectorPageQueryApplicationService connectorPageQueryHandler;
+  private final ConnectorDetailQueryApplicationService connectorDetailQueryHandler;
+  private final DeleteConnectorApplicationService deleteConnectorHandler;
+  private final TestConnectorApplicationService testConnectorHandler;
+  private final EnableConnectorApplicationService enableConnectorHandler;
+  private final DisableConnectorApplicationService disableConnectorHandler;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateConnectorCommand cmd) {

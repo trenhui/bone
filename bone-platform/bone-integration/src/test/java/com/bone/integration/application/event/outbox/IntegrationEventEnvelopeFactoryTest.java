@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class IntegrationEventEnvelopeFactoryTest {
 
   private final IntegrationEventEnvelopeFactory factory =
-      new IntegrationEventEnvelopeFactory(new ObjectMapper());
+      new IntegrationEventEnvelopeFactory(new ObjectMapper(), () -> null);
 
   @Test
   void create_buildsEnvelopeWithRegisteredEventType() {

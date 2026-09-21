@@ -13,9 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class GenerateCodeHandlerTest {
+class GenerateCodeApplicationServiceTest {
 
-  @Mock private GenerateCodeHandler generateCodeHandler;
+  @Mock private GenerateCodeApplicationService generateCodeHandler;
 
   @Test
   void shouldGenerateCodeSuccessfully() {

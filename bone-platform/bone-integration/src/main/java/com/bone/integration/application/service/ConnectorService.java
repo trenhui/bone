@@ -4,7 +4,6 @@ import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.client.ExternalSystemClient;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -40,8 +39,7 @@ public class ConnectorService {
   }
 
   public void validateConnectorName(String name, Long excludeId) {
-    Connector existing =
-        connectorRepository.findOneByCriteria(Criteria.<Connector>create().eq("name", name));
+    Connector existing = connectorRepository.findByName(name);
     if (existing != null && (excludeId == null || !excludeId.equals(existing.getId()))) {
       throw new DomainException("连接器名称已存在");
     }

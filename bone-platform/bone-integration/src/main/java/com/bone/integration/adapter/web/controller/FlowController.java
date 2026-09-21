@@ -9,18 +9,18 @@ import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
 import com.bone.integration.application.command.cmd.DeleteFlowCommand;
 import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.command.cmd.UpdateFlowCommand;
-import com.bone.integration.application.command.handler.ActivateFlowCommandHandler;
-import com.bone.integration.application.command.handler.CreateFlowHandler;
-import com.bone.integration.application.command.handler.DeactivateFlowCommandHandler;
-import com.bone.integration.application.command.handler.DeleteFlowCommandHandler;
-import com.bone.integration.application.command.handler.ExecuteFlowHandler;
-import com.bone.integration.application.command.handler.UpdateFlowHandler;
+import com.bone.integration.application.command.handler.ActivateFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.CreateFlowApplicationService;
+import com.bone.integration.application.command.handler.DeactivateFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.DeleteFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.ExecuteFlowApplicationService;
+import com.bone.integration.application.command.handler.UpdateFlowApplicationService;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.dto.FlowDetailDTO;
 import com.bone.integration.application.query.dto.FlowVersionDTO;
-import com.bone.integration.application.query.handler.FlowDetailQueryHandler;
-import com.bone.integration.application.query.handler.FlowPageQueryHandler;
-import com.bone.integration.application.query.handler.FlowVersionListQueryHandler;
+import com.bone.integration.application.query.handler.FlowDetailQueryApplicationService;
+import com.bone.integration.application.query.handler.FlowPageQueryApplicationService;
+import com.bone.integration.application.query.handler.FlowVersionListQueryApplicationService;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
 import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,15 +33,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.INTEGRATION_V1 + "/flows")
 @RequiredArgsConstructor
 public class FlowController {
-  private final CreateFlowHandler createFlowHandler;
-  private final UpdateFlowHandler updateFlowHandler;
-  private final FlowPageQueryHandler flowPageQueryHandler;
-  private final FlowDetailQueryHandler flowDetailQueryHandler;
-  private final ActivateFlowCommandHandler activateFlowCommandHandler;
-  private final DeactivateFlowCommandHandler deactivateFlowCommandHandler;
-  private final DeleteFlowCommandHandler deleteFlowCommandHandler;
-  private final ExecuteFlowHandler executeFlowHandler;
-  private final FlowVersionListQueryHandler flowVersionListQueryHandler;
+  private final CreateFlowApplicationService createFlowHandler;
+  private final UpdateFlowApplicationService updateFlowHandler;
+  private final FlowPageQueryApplicationService flowPageQueryHandler;
+  private final FlowDetailQueryApplicationService flowDetailQueryHandler;
+  private final ActivateFlowCommandApplicationService activateFlowCommandHandler;
+  private final DeactivateFlowCommandApplicationService deactivateFlowCommandHandler;
+  private final DeleteFlowCommandApplicationService deleteFlowCommandHandler;
+  private final ExecuteFlowApplicationService executeFlowHandler;
+  private final FlowVersionListQueryApplicationService flowVersionListQueryHandler;
   private final ObjectMapper objectMapper;
 
   @PostMapping

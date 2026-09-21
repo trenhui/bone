@@ -9,10 +9,10 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.command.handler.CreateConnectorHandler;
-import com.bone.integration.application.command.handler.UpdateConnectorHandler;
+import com.bone.integration.application.command.handler.CreateConnectorApplicationService;
+import com.bone.integration.application.command.handler.UpdateConnectorApplicationService;
 import com.bone.integration.application.query.dto.ConnectorDTO;
-import com.bone.integration.application.query.handler.ConnectorPageQueryHandler;
+import com.bone.integration.application.query.handler.ConnectorPageQueryApplicationService;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import java.util.Collections;
 import java.util.Map;
@@ -25,11 +25,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConnectorControllerTest {
 
-  @Mock private CreateConnectorHandler createConnectorHandler;
+  @Mock private CreateConnectorApplicationService createConnectorHandler;
 
-  @Mock private UpdateConnectorHandler updateConnectorHandler;
+  @Mock private UpdateConnectorApplicationService updateConnectorHandler;
 
-  @Mock private ConnectorPageQueryHandler connectorPageQueryHandler;
+  @Mock private ConnectorPageQueryApplicationService connectorPageQueryHandler;
 
   @InjectMocks private ConnectorController connectorController;
 

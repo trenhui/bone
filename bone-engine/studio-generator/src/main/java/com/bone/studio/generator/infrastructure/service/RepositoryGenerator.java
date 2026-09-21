@@ -29,8 +29,10 @@ public class RepositoryGenerator implements FileGenerator {
       GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
     Map<String, Object> model = new HashMap<>();
     model.put("entityName", table.getCustomEntityName());
+    model.put("table", table);
     model.put("basePackage", basePackage);
     model.put("moduleName", moduleName);
+    model.put("utils", new GeneratorUtils());
 
     try {
       StringWriter writer = new StringWriter();

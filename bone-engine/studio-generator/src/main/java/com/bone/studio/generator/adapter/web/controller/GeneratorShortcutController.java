@@ -3,12 +3,12 @@ package com.bone.studio.generator.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
-import com.bone.studio.generator.application.command.handler.GenerateCodeHandler;
-import com.bone.studio.generator.application.command.handler.SyncTableMetadataHandler;
+import com.bone.studio.generator.application.command.handler.GenerateCodeApplicationService;
+import com.bone.studio.generator.application.command.handler.SyncTableMetadataApplicationService;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
-import com.bone.studio.generator.application.query.handler.CodeGenerationHistoryQueryHandler;
-import com.bone.studio.generator.application.query.handler.DataSourceTablesHandler;
-import com.bone.studio.generator.application.query.handler.GenerationOperationViewQueryHandler;
+import com.bone.studio.generator.application.query.handler.CodeGenerationHistoryQueryApplicationService;
+import com.bone.studio.generator.application.query.handler.DataSourceTablesApplicationService;
+import com.bone.studio.generator.application.query.handler.GenerationOperationViewQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.CodeGenerationHistoryQuery;
 import com.bone.studio.generator.application.query.qry.DataSourceTablesQuery;
 import com.bone.studio.generator.application.query.qry.GenerationOperationViewQuery;
@@ -30,11 +30,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class GeneratorShortcutController {
 
-  private final DataSourceTablesHandler dataSourceTablesHandler;
-  private final SyncTableMetadataHandler syncTableMetadataHandler;
-  private final GenerateCodeHandler generateCodeHandler;
-  private final GenerationOperationViewQueryHandler generationOperationViewQueryHandler;
-  private final CodeGenerationHistoryQueryHandler codeGenerationHistoryQueryHandler;
+  private final DataSourceTablesApplicationService dataSourceTablesHandler;
+  private final SyncTableMetadataApplicationService syncTableMetadataHandler;
+  private final GenerateCodeApplicationService generateCodeHandler;
+  private final GenerationOperationViewQueryApplicationService generationOperationViewQueryHandler;
+  private final CodeGenerationHistoryQueryApplicationService codeGenerationHistoryQueryHandler;
 
   /** GET /api/v1/generator/tables?dataSourceId=xxx */
   @GetMapping(GeneratorApiPaths.TABLES)

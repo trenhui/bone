@@ -2,7 +2,7 @@ package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.studio.generator.application.query.handler.LoadCatalogTablesHandler;
+import com.bone.studio.generator.application.query.handler.LoadCatalogTablesApplicationService;
 import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.data.DatabaseTable;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MetadataEntitySnapshotController {
 
-  private final LoadCatalogTablesHandler loadCatalogTablesHandler;
+  private final LoadCatalogTablesApplicationService loadCatalogTablesHandler;
 
   @GetMapping
   public ApiResponse<PageResult<DatabaseTable>> list(LoadCatalogTablesQuery qry) {

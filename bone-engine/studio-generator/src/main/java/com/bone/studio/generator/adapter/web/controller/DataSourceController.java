@@ -4,15 +4,15 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.command.cmd.*;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
-import com.bone.studio.generator.application.command.handler.CreateDataSourceHandler;
-import com.bone.studio.generator.application.command.handler.DeleteDataSourceHandler;
-import com.bone.studio.generator.application.command.handler.SyncTableMetadataHandler;
-import com.bone.studio.generator.application.command.handler.TestDataSourceConnectionHandler;
-import com.bone.studio.generator.application.command.handler.UpdateDataSourceHandler;
-import com.bone.studio.generator.application.query.handler.DataSourceByIdHandler;
-import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryHandler;
-import com.bone.studio.generator.application.query.handler.ListSyncedTablesHandler;
-import com.bone.studio.generator.application.query.handler.LoadTablesHandler;
+import com.bone.studio.generator.application.command.handler.CreateDataSourceApplicationService;
+import com.bone.studio.generator.application.command.handler.DeleteDataSourceApplicationService;
+import com.bone.studio.generator.application.command.handler.SyncTableMetadataApplicationService;
+import com.bone.studio.generator.application.command.handler.TestDataSourceConnectionApplicationService;
+import com.bone.studio.generator.application.command.handler.UpdateDataSourceApplicationService;
+import com.bone.studio.generator.application.query.handler.DataSourceByIdApplicationService;
+import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryApplicationService;
+import com.bone.studio.generator.application.query.handler.ListSyncedTablesApplicationService;
+import com.bone.studio.generator.application.query.handler.LoadTablesApplicationService;
 import com.bone.studio.generator.application.query.qry.DataSourceByIdQuery;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
 import com.bone.studio.generator.application.query.qry.ListSyncedTablesQuery;
@@ -29,15 +29,15 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class DataSourceController {
 
-  private final CreateDataSourceHandler createDataSourceHandler;
-  private final UpdateDataSourceHandler updateDataSourceHandler;
-  private final DeleteDataSourceHandler deleteDataSourceHandler;
-  private final TestDataSourceConnectionHandler testDataSourceConnectionHandler;
-  private final GetDataSourceListQueryHandler queryHandler;
-  private final DataSourceByIdHandler dataSourceByIdHandler;
-  private final LoadTablesHandler loadTablesHandler;
-  private final ListSyncedTablesHandler listSyncedTablesHandler;
-  private final SyncTableMetadataHandler syncHandler;
+  private final CreateDataSourceApplicationService createDataSourceHandler;
+  private final UpdateDataSourceApplicationService updateDataSourceHandler;
+  private final DeleteDataSourceApplicationService deleteDataSourceHandler;
+  private final TestDataSourceConnectionApplicationService testDataSourceConnectionHandler;
+  private final GetDataSourceListQueryApplicationService queryHandler;
+  private final DataSourceByIdApplicationService dataSourceByIdHandler;
+  private final LoadTablesApplicationService loadTablesHandler;
+  private final ListSyncedTablesApplicationService listSyncedTablesHandler;
+  private final SyncTableMetadataApplicationService syncHandler;
 
   @PostMapping
   public ApiResponse<String> createDataSource(@RequestBody CreateDataSourceCommand command) {

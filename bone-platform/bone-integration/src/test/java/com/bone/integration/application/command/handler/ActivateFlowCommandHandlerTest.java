@@ -17,16 +17,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ActivateFlowCommandHandlerTest {
+class ActivateFlowCommandApplicationServiceTest {
 
   @Mock IntegrationFlowRepository flowRepository;
   @Mock IntegrationDomainEventPublisher domainEventPublisher;
 
-  ActivateFlowCommandHandler handler;
+  ActivateFlowCommandApplicationService handler;
 
   @BeforeEach
   void setUp() {
-    handler = new ActivateFlowCommandHandler(flowRepository, domainEventPublisher);
+    handler = new ActivateFlowCommandApplicationService(flowRepository, domainEventPublisher);
   }
 
   @Test

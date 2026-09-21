@@ -3,7 +3,6 @@ package com.bone.integration.application.service;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,13 +13,11 @@ public class FlowMonitorService {
   private final IntegrationLogRepository logRepository;
 
   public List<IntegrationLog> getExecutionLogs(Long flowId) {
-    return logRepository.findByCriteria(Criteria.<IntegrationLog>create().eq("flowId", flowId));
+    return logRepository.findByFlowId(flowId);
   }
 
   public long getExecutionCount(Long flowId) {
-    Long count =
-        logRepository.countByCriteria(Criteria.<IntegrationLog>create().eq("flowId", flowId));
-    return count != null ? count : 0L;
+    return logRepository.countByFlow(flowId);
   }
 
   public long getSuccessCount(Long flowId) {
@@ -68,9 +65,6 @@ public class FlowMonitorService {
   }
 
   private long countByFlowAndStatus(Long flowId, ExecutionStatus status) {
-    Long count =
-        logRepository.countByCriteria(
-            Criteria.<IntegrationLog>create().eq("flowId", flowId).eq("status", status));
-    return count != null ? count : 0L;
+    return logRepository.countByFlowAndStatus(flowId, status);
   }
 }

@@ -9,15 +9,15 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.ActivateFlowCommand;
 import com.bone.integration.application.command.cmd.CreateFlowCommand;
-import com.bone.integration.application.command.handler.ActivateFlowCommandHandler;
-import com.bone.integration.application.command.handler.CreateFlowHandler;
-import com.bone.integration.application.command.handler.DeactivateFlowCommandHandler;
-import com.bone.integration.application.command.handler.DeleteFlowCommandHandler;
-import com.bone.integration.application.command.handler.UpdateFlowHandler;
+import com.bone.integration.application.command.handler.ActivateFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.CreateFlowApplicationService;
+import com.bone.integration.application.command.handler.DeactivateFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.DeleteFlowCommandApplicationService;
+import com.bone.integration.application.command.handler.UpdateFlowApplicationService;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.handler.FlowDetailQueryHandler;
-import com.bone.integration.application.query.handler.FlowPageQueryHandler;
+import com.bone.integration.application.query.handler.FlowDetailQueryApplicationService;
+import com.bone.integration.application.query.handler.FlowPageQueryApplicationService;
 import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.bone.integration.application.service.FlowService;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -32,19 +32,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FlowControllerTest {
 
-  @Mock private CreateFlowHandler createFlowHandler;
+  @Mock private CreateFlowApplicationService createFlowHandler;
 
-  @Mock private UpdateFlowHandler updateFlowHandler;
+  @Mock private UpdateFlowApplicationService updateFlowHandler;
 
-  @Mock private FlowPageQueryHandler flowPageQueryHandler;
+  @Mock private FlowPageQueryApplicationService flowPageQueryHandler;
 
   @Mock private IntegrationFlowRepository flowRepository;
 
   @Mock private FlowService flowService;
-  @Mock private FlowDetailQueryHandler flowDetailQueryHandler;
-  @Mock private ActivateFlowCommandHandler activateFlowCommandHandler;
-  @Mock private DeactivateFlowCommandHandler deactivateFlowCommandHandler;
-  @Mock private DeleteFlowCommandHandler deleteFlowCommandHandler;
+  @Mock private FlowDetailQueryApplicationService flowDetailQueryHandler;
+  @Mock private ActivateFlowCommandApplicationService activateFlowCommandHandler;
+  @Mock private DeactivateFlowCommandApplicationService deactivateFlowCommandHandler;
+  @Mock private DeleteFlowCommandApplicationService deleteFlowCommandHandler;
 
   @Mock private IntegrationDomainEventPublisher domainEventPublisher;
 

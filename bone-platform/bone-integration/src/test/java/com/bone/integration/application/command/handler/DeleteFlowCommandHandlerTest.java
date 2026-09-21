@@ -12,15 +12,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DeleteFlowCommandHandlerTest {
+class DeleteFlowCommandApplicationServiceTest {
 
   @Mock IntegrationFlowRepository flowRepository;
 
-  DeleteFlowCommandHandler handler;
+  DeleteFlowCommandApplicationService handler;
 
   @BeforeEach
   void setUp() {
-    handler = new DeleteFlowCommandHandler(flowRepository);
+    handler = new DeleteFlowCommandApplicationService(flowRepository);
   }
 
   @Test

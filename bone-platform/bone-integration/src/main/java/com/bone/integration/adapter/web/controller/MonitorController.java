@@ -4,13 +4,13 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
-import com.bone.integration.application.command.handler.ExecuteFlowHandler;
+import com.bone.integration.application.command.handler.ExecuteFlowApplicationService;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
-import com.bone.integration.application.query.handler.ExecutionDetailQueryHandler;
-import com.bone.integration.application.query.handler.ExecutionLogLinesQueryHandler;
-import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
-import com.bone.integration.application.query.handler.FlowStatisticsQueryHandler;
+import com.bone.integration.application.query.handler.ExecutionDetailQueryApplicationService;
+import com.bone.integration.application.query.handler.ExecutionLogLinesQueryApplicationService;
+import com.bone.integration.application.query.handler.ExecutionLogListQueryApplicationService;
+import com.bone.integration.application.query.handler.FlowStatisticsQueryApplicationService;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.INTEGRATION_V1)
 @RequiredArgsConstructor
 public class MonitorController {
-  private final ExecuteFlowHandler executeFlowHandler;
-  private final ExecutionLogListQueryHandler executionLogListQueryHandler;
-  private final ExecutionLogLinesQueryHandler executionLogLinesQueryHandler;
-  private final ExecutionDetailQueryHandler executionDetailQueryHandler;
-  private final FlowStatisticsQueryHandler flowStatisticsQueryHandler;
+  private final ExecuteFlowApplicationService executeFlowHandler;
+  private final ExecutionLogListQueryApplicationService executionLogListQueryHandler;
+  private final ExecutionLogLinesQueryApplicationService executionLogLinesQueryHandler;
+  private final ExecutionDetailQueryApplicationService executionDetailQueryHandler;
+  private final FlowStatisticsQueryApplicationService flowStatisticsQueryHandler;
 
   @PostMapping("/executions")
   public ApiResponse<Long> execute(@RequestBody ExecuteFlowCommand cmd) {

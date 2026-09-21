@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.service;
 
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
-import com.bone.studio.generator.application.command.handler.CreateCodeGenerationHandler;
+import com.bone.studio.generator.application.command.handler.CreateCodeGenerationApplicationService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,10 +15,11 @@ public class CodeGenerationAsyncService {
 
   private static final Logger log = LoggerFactory.getLogger(CodeGenerationAsyncService.class);
 
-  private final CreateCodeGenerationHandler createCodeGenerationHandler;
+  private final CreateCodeGenerationApplicationService createCodeGenerationHandler;
   private final ExecutorService executor;
 
-  public CodeGenerationAsyncService(CreateCodeGenerationHandler createCodeGenerationHandler) {
+  public CodeGenerationAsyncService(
+      CreateCodeGenerationApplicationService createCodeGenerationHandler) {
     this.createCodeGenerationHandler = createCodeGenerationHandler;
     AtomicInteger seq = new AtomicInteger();
     this.executor =

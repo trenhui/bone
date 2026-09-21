@@ -1,6 +1,8 @@
 package com.bone.integration.domain.repository;
 
+import com.bone.core.model.PageResult;
 import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.vo.FlowStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
@@ -19,5 +21,26 @@ public interface IntegrationFlowRepository extends Repository<IntegrationFlow, L
    */
   default List<IntegrationFlow> findForStatisticsAllTenants() {
     return findByCriteria(Criteria.<IntegrationFlow>create().disableTenantFilter());
+  }
+
+  /** 本聚合分页。关键字走 Criteria 全模糊；不关闭租户过滤。 */
+  default PageResult<IntegrationFlow> findPage(
+      String keyword, FlowStatus status, int pageNum, int pageSize) {
+    Criteria<IntegrationFlow> criteria =
+        Criteria.<IntegrationFlow>create()
+            .like(keyword != null && !keyword.isBlank(), IntegrationFlow::getName, keyword)
+            .eq(status != null, IntegrationFlow::getStatus, status)
+            .orderByDesc(IntegrationFlow::getId)
+            .page(pageNum, pageSize);
+    return pageByCriteria(criteria);
+  }
+
+  default IntegrationFlow findByName(String name) {
+    return findOneByCriteria(Criteria.<IntegrationFlow>create().eq(IntegrationFlow::getName, name));
+  }
+
+  /** 当前可见范围内的流程清单（统计页汇总用，不是全租户入口）。 */
+  default List<IntegrationFlow> findAll() {
+    return findByCriteria(Criteria.<IntegrationFlow>create().orderByDesc(IntegrationFlow::getId));
   }
 }

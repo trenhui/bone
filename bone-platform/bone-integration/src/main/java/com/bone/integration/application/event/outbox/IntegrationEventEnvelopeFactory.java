@@ -1,7 +1,7 @@
 package com.bone.integration.application.event.outbox;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.core.tenant.context.TenantContext;
+import com.bone.integration.domain.gateway.TenantProvider;
 import com.bone.integration.domain.model.connector.event.ConnectorCreatedEvent;
 import com.bone.integration.domain.model.connector.event.ConnectorTestedEvent;
 import com.bone.integration.domain.model.execution.event.ExecutionCompletedEvent;
@@ -25,8 +25,12 @@ public class IntegrationEventEnvelopeFactory {
 
   private final ObjectMapper objectMapper;
 
-  public IntegrationEventEnvelopeFactory(ObjectMapper objectMapper) {
+  private final TenantProvider tenantProvider;
+
+  public IntegrationEventEnvelopeFactory(
+      ObjectMapper objectMapper, TenantProvider tenantProvider) {
     this.objectMapper = objectMapper;
+    this.tenantProvider = tenantProvider;
   }
 
   public IntegrationEventEnvelope create(
@@ -55,7 +59,7 @@ public class IntegrationEventEnvelopeFactory {
   }
 
   private long tenantIdOrDefault() {
-    Long tenantId = TenantContext.getTenantIdAsLong();
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
     return tenantId != null ? tenantId : 0L;
   }
 

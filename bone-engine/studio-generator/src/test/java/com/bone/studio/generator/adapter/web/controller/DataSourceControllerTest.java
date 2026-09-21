@@ -8,11 +8,11 @@ import com.bone.studio.generator.application.command.cmd.CreateDataSourceCommand
 import com.bone.studio.generator.application.command.cmd.DeleteDataSourceCommand;
 import com.bone.studio.generator.application.command.cmd.TestDataSourceConnectionCommand;
 import com.bone.studio.generator.application.command.cmd.UpdateDataSourceCommand;
-import com.bone.studio.generator.application.command.handler.CreateDataSourceHandler;
-import com.bone.studio.generator.application.command.handler.DeleteDataSourceHandler;
-import com.bone.studio.generator.application.command.handler.TestDataSourceConnectionHandler;
-import com.bone.studio.generator.application.command.handler.UpdateDataSourceHandler;
-import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryHandler;
+import com.bone.studio.generator.application.command.handler.CreateDataSourceApplicationService;
+import com.bone.studio.generator.application.command.handler.DeleteDataSourceApplicationService;
+import com.bone.studio.generator.application.command.handler.TestDataSourceConnectionApplicationService;
+import com.bone.studio.generator.application.command.handler.UpdateDataSourceApplicationService;
+import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.support.TestTenantContextConfiguration;
@@ -33,15 +33,15 @@ class DataSourceControllerTest {
 
   @Autowired private TestRestTemplate restTemplate;
 
-  @Autowired private CreateDataSourceHandler createDataSourceHandler;
+  @Autowired private CreateDataSourceApplicationService createDataSourceHandler;
 
-  @Autowired private UpdateDataSourceHandler updateDataSourceHandler;
+  @Autowired private UpdateDataSourceApplicationService updateDataSourceHandler;
 
-  @Autowired private DeleteDataSourceHandler deleteDataSourceHandler;
+  @Autowired private DeleteDataSourceApplicationService deleteDataSourceHandler;
 
-  @Autowired private TestDataSourceConnectionHandler testDataSourceConnectionHandler;
+  @Autowired private TestDataSourceConnectionApplicationService testDataSourceConnectionHandler;
 
-  @Autowired private GetDataSourceListQueryHandler queryHandler;
+  @Autowired private GetDataSourceListQueryApplicationService queryHandler;
 
   private String baseUrl;
 

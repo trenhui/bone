@@ -2,7 +2,7 @@ package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
-import com.bone.studio.generator.application.command.handler.CreateCodeGenerationHandler;
+import com.bone.studio.generator.application.command.handler.CreateCodeGenerationApplicationService;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.application.service.CodeGenerationAsyncService;
 import com.bone.studio.generator.application.service.GenerationTaskOperationService;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CodeGenerationController {
 
-  private final CreateCodeGenerationHandler createCodeGenerationHandler;
+  private final CreateCodeGenerationApplicationService createCodeGenerationHandler;
   private final CodeGenerationAsyncService codeGenerationAsyncService;
   private final GenerationTaskOperationService operationService;
   private final GeneratorProperties generatorProperties;
