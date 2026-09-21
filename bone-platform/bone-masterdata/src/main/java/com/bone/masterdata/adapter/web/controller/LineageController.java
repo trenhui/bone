@@ -3,10 +3,9 @@ package com.bone.masterdata.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.dto.request.RecordLineageReq;
+import com.bone.masterdata.application.LineageApplicationService;
 import com.bone.masterdata.application.command.cmd.RecordLineageCommand;
-import com.bone.masterdata.application.command.handler.LineageRecordCommandHandler;
 import com.bone.masterdata.application.query.dto.LineageRecordDTO;
-import com.bone.masterdata.application.query.handler.LineageQueryHandler;
 import com.bone.masterdata.application.query.qry.LineageQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,8 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class LineageController {
 
-  private final LineageRecordCommandHandler lineageRecordCommandHandler;
-  private final LineageQueryHandler lineageQueryHandler;
+  private final LineageApplicationService lineageService;
 
   @Operation(summary = "记录数据血缘边")
   @PostMapping
@@ -35,13 +33,13 @@ public class LineageController {
     cmd.setTargetEntity(req.getTargetEntity());
     cmd.setTargetField(req.getTargetField());
     cmd.setSchemaName(req.getSchemaName());
-    lineageRecordCommandHandler.handle(cmd);
+    lineageService.record(cmd);
     return ApiResponse.success();
   }
 
   @Operation(summary = "查询血缘边（按 target 查上游 / source 查下游）")
   @GetMapping
   public ApiResponse<List<LineageRecordDTO>> list(LineageQuery qry) {
-    return ApiResponse.success(lineageQueryHandler.list(qry));
+    return ApiResponse.success(lineageService.list(qry));
   }
 }

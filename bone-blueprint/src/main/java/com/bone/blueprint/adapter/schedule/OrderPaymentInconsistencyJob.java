@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>跨上下文不 JOIN</b>：按 E-1.3，支付与订单是两个上下文，故先查支付单再按 ID 查订单状态，不在 SQL 层跨上下文联表。
  *
  * <p><b>两侧取数为何不对称</b>：支付侧扫描是全租户运维入口（{@link
- * PaymentRepository#findSettledPaymentsCreatedBeforeAllTenants}），按 ADR-0030 §2 由定时 Job
+ * PaymentRepository#findSuccessPaymentsBeforeAllTenants}），按 ADR-0030 §2 由定时 Job
  * 直接调域仓储；订单侧只是<strong>逐行按 ID 取状态</strong>、属于请求级读语义，故经 {@link
  * OrderApplicationService#findOrderStatus} 走应用层。 判据是「这次读是不是平台运维旁路」，
  * 不是「它读的是哪个聚合」——不要据此把订单侧也改成直连域仓储（那会绕开应用层的租户显式化）。
@@ -71,7 +71,7 @@ public class OrderPaymentInconsistencyJob {
   public void checkPaidButOrderNotConfirmed() {
     Instant before = Instant.now().minusSeconds(confirmGraceMinutes * 60);
     List<PaymentProjection> succeeded =
-        paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(before);
+        paymentRepository.findSuccessPaymentsBeforeAllTenants(before);
     if (succeeded.isEmpty()) {
       log.info("[全租户对账] 无待对账支付单（宽限={}min）", confirmGraceMinutes);
       return;

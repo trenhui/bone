@@ -162,11 +162,53 @@ public class RepositoryFactoryBean<T, E, ID>
       return new DefaultMethodHandler(lookupDefaultMethodHandle(method));
     }
 
+    // SQL 通道方法必须显式声明租户策略：缺注解即启动失败（见 requireTenantScope 的理由）。
+    TenantScope tenantScope = requireTenantScope(repositoryInterface, method);
+
     String templateId =
         String.format(TEMPLATE_ID_FORMAT, repositoryInterface.getName(), method.getName());
     SqlTemplate sqlTemplate = sqlTemplateLoader.loadTemplate(method, templateId);
     resolveAndCacheElementType(method);
-    return new SqlMethodHandler(sqlTemplate, method);
+    return new SqlMethodHandler(sqlTemplate, method, tenantScope);
+  }
+
+  /**
+   * 解析方法的租户策略：方法级 {@link TenantScope} 优先，其次取仓储接口上的接口级默认值。
+   *
+   * @return 未在方法或接口上声明时返回 {@code null}
+   */
+  static TenantScope resolveTenantScope(Class<?> repositoryInterface, Method method) {
+    TenantScope onMethod = method.getAnnotation(TenantScope.class);
+    if (onMethod != null) {
+      return onMethod;
+    }
+    return repositoryInterface != null
+        ? repositoryInterface.getAnnotation(TenantScope.class)
+        : null;
+  }
+
+  /**
+   * SQL 通道方法缺 {@link TenantScope} 时失败关闭（启动期，不是执行期）。
+   *
+   * <p>为什么必须拦：{@link TenantScopeMode#MANUAL} 是注解默认值，也是"未标注"的历史行为——不注入任何租户条件。
+   * 于是"忘写注解"不会报错，而是让一条本该限定租户的 SQL 静默跨租户执行。把这一条提前成启动失败， 才能让"默认安全"成立；这也是 ADR-0030 / E-4.4
+   * 里"缺标注不得静默放行"承诺的实现载体。
+   */
+  static TenantScope requireTenantScope(Class<?> repositoryInterface, Method method) {
+    TenantScope scope = resolveTenantScope(repositoryInterface, method);
+    if (scope == null) {
+      throw new IllegalStateException(
+          "SQL 通道方法未声明 @TenantScope，拒绝启动："
+              + repositoryInterface.getName()
+              + "#"
+              + method.getName()
+              + "。未标注等价于 MANUAL（不注入租户条件），会让该方法静默跨租户执行。"
+              + "请显式声明其一：@TenantScope(AUTO) 自动注入且缺上下文失败关闭／"
+              + "@TenantScope(MANUAL) 自行手写 tenant_id 与 deleted = 0／"
+              + "@TenantScope(ALL) 全租户运维扫描（仅限 adapter.schedule 调用）／@TenantScope(BYPASS)；"
+              + "整仓同构时可把注解放在仓储接口上作为默认策略。");
+    }
+    return scope;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -277,10 +319,13 @@ public class RepositoryFactoryBean<T, E, ID>
     private final SqlTemplate sqlTemplate;
     private final Method method;
 
-    SqlMethodHandler(SqlTemplate sqlTemplate, Method method) {
+    SqlMethodHandler(SqlTemplate sqlTemplate, Method method, TenantScope tenantScope) {
       this.sqlTemplate = sqlTemplate;
       this.method = method;
+      this.tenantScope = tenantScope;
     }
+
+    private final TenantScope tenantScope;
 
     @Override
     public Object invoke(Object proxy, Object[] args) {
@@ -292,8 +337,8 @@ public class RepositoryFactoryBean<T, E, ID>
       Map<String, Object> effectiveParams = new LinkedHashMap<>(processed.getEffectiveParams());
 
       // @TenantScope(AUTO)：从可信 TenantContext 注入租户条件（失败关闭），调用方不再手写 tenant_id。
-      TenantScope tenantScope = method.getAnnotation(TenantScope.class);
-      if (tenantScope != null && tenantScope.value() == TenantScopeMode.AUTO) {
+      // 策略在启动期已解析（方法级优先、接口级兜底），此处不再反射。
+      if (tenantScope.value() == TenantScopeMode.AUTO) {
         Long tenantId = TenantContext.getTenantIdAsLong();
         sql =
             TenantSqlRewriter.rewrite(

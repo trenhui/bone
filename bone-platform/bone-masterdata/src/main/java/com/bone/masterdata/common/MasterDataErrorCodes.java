@@ -17,6 +17,7 @@ public final class MasterDataErrorCodes {
   public static final String FIELD_NAME_DUPLICATE = "MD_FIELD_NAME_DUPLICATE";
   public static final String ENTITY_NAME_DUPLICATE = "MD_ENTITY_NAME_DUPLICATE";
   public static final String DATA_STANDARD_DUPLICATE = "MD_DATA_STANDARD_DUPLICATE";
+  public static final String RULE_NAME_DUPLICATE = "MD_RULE_NAME_DUPLICATE";
 
   // 数据标准（404）
   public static final String DATA_STANDARD_NOT_FOUND = "MD_DATA_STANDARD_NOT_FOUND";

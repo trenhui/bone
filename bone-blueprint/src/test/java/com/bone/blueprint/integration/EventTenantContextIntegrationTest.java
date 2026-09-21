@@ -15,6 +15,7 @@ import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +144,7 @@ class EventTenantContextIntegrationTest {
 
     // 读回订单：显式置上下文，保证读与写在同一租户语义下。
     TenantContext.setTenantId(TENANT_ID);
-    Order updated = orderRepository.findByIdInTenant(orderId, TENANT_ID).orElseThrow();
+    Order updated = Optional.ofNullable(orderRepository.findById(orderId)).orElseThrow();
     // 本断言才是「同线程租户上下文」的核心证据：CREATED→PAID 只能由 AFTER_COMMIT 处理器内的 SDK update 完成，
     // 而该 update 无 caller-EQ 兜底、缺上下文即抛异常，故能通过 ⟺ 上下文确实留存在回调线程。
     assertThat(updated.getStatus())
@@ -175,7 +176,7 @@ class EventTenantContextIntegrationTest {
           orderRepository.save(order);
         });
 
-    Order loaded = orderRepository.findByIdInTenant(orderId, TENANT_ID).orElseThrow();
+    Order loaded = Optional.ofNullable(orderRepository.findById(orderId)).orElseThrow();
     TenantContext.setTenantId((Long) null);
 
     assertThatThrownBy(

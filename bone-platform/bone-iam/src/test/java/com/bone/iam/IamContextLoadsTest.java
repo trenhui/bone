@@ -60,7 +60,7 @@ class IamContextLoadsTest {
   void accountRepositoryExposesLoginLookup() {
     AccountRepository repository = context.getBean(AccountRepository.class);
     assertDoesNotThrow(
-        () -> repository.findByUsernameForLogin("no-such-user"),
-        "findByUsernameForLogin 在无租户上下文时抛出：登录会 500（ADR-0029 失败关闭回归）");
+        () -> repository.findByUsernameForLoginAllTenants("no-such-user"),
+        "findByUsernameForLoginAllTenants 在无租户上下文时抛出：登录会 500（ADR-0029 失败关闭回归）");
   }
 }

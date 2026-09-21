@@ -66,7 +66,7 @@
 | # | 偏差 | 规范条文 | 处置 |
 |---|------|----------|------|
 | 1 | `JdbcPhysicalStructureGateway`（实现 `PhysicalStructureGateway`） | E-13.3：Domain Gateway 实现统一 `<短名>GatewayAdapter`；E-10.2：出站实现落 `infrastructure/gateway` | **已收敛**（2026-09-20）：类名改 `JdbcPhysicalStructureGatewayAdapter`，包由 `infrastructure/physical` 迁至 `infrastructure/gateway`（`CatalogInfrastructureConfiguration` 与测试同步；`bone-metadata-server` 41/41 通过）。**本条偏差可关闭** |
-| 2 | 元数据 / IAM / System 存量 `*CommandHandler` / `*QueryHandler` | E-3 明示不追溯，不得判成违规 | 保持现状；新增用例按 [E-3.7](../architecture/Bone-DDD-最终实践方案.md#e-37-入口构件决策) 走语义化 ApplicationService |
+| 2 | 元数据 / IAM / System 存量 `*CommandHandler` / `*QueryHandler` | E-3 明示不追溯，不得判成违规 | 保持现状；新增用例按 [E-3.7](../architecture/Bone-DDD-最终实践方案.md#e-37-入口构件决策) 走语义化 ApplicationService。**部分收敛（2026-09-20）**：`bone-system` 的 5 个 CommandHandler + 7 个 QueryHandler 已全部收敛为 7 个 `*ApplicationService`（ADR-0028），读侧 DSL 随之下沉 `domain/repository`；元数据 / IAM 存量不追溯 |
 | 3 | MVP 模块普遍缺容器级装配测试与配置键契约测试 | G-1：静态规则只证明结构，装配缺陷须由 `@SpringBootTest` 证明 | **部分收敛（2026-09-20）**：① bone-iam 新增 `IamContextLoadsTest`（H2 内存库 + `schema-test.sql`，`mvn test` 默认可跑，不依赖 MySQL），system / masterdata / metadata-server / gateway 已有装配测试 → **MVP 模块已无空缺**；② 新增 `scripts/ci/check-config-key-contract.py`（8 处引用 0 FAIL 1 WARN）。剩余：generator 的 `${generator.encryption.key}` 未在 yml 定义（有默认值会静默回落，且 `encKey` 当前为未使用字段），已由脚本持续暴露，待模块 Owner 裁决 |
 
 ---

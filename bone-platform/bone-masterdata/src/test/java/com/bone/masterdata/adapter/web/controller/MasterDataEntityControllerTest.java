@@ -139,11 +139,11 @@ public class MasterDataEntityControllerTest {
                 """,
         metaId);
 
-    ApiResponse<Long> first = masterDataEntityController.convertFromBusinessEntity(metaId);
+    ApiResponse<Long> first = masterDataEntityController.convert(metaId);
     assertTrue(first.isSuccess());
     assertNotNull(first.getData());
 
-    ApiResponse<Long> second = masterDataEntityController.convertFromBusinessEntity(metaId);
+    ApiResponse<Long> second = masterDataEntityController.convert(metaId);
     assertTrue(second.isSuccess());
     assertEquals(first.getData(), second.getData());
   }
@@ -159,8 +159,7 @@ public class MasterDataEntityControllerTest {
         metaId);
 
     BizException ex =
-        assertThrows(
-            BizException.class, () -> masterDataEntityController.convertFromBusinessEntity(metaId));
+        assertThrows(BizException.class, () -> masterDataEntityController.convert(metaId));
     assertEquals(422, ex.getCode());
   }
 }

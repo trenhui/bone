@@ -39,6 +39,7 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.FIELD_NAME_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.ENTITY_NAME_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.DATA_STANDARD_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.RULE_NAME_DUPLICATE, 409),
           // 数据标准（404）
           Map.entry(MasterDataErrorCodes.DATA_STANDARD_NOT_FOUND, 404),
           // 文件上传（400）

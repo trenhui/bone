@@ -1,9 +1,8 @@
 package com.bone.system.infrastructure.scheduler;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.application.port.ScheduleTaskScheduler;
+import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
+import com.bone.system.domain.repository.ScheduleTaskRepository;
 import com.bone.system.domain.schedule.ScheduleTask;
-import com.bone.system.domain.schedule.vo.TaskStatus;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,42 +16,57 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 /**
- * 动态 Cron 定时任务注册器。应用启动后加载 DB 中启用的任务，用 {@link ThreadPoolTaskScheduler} 编程式注册；启停通过 add/remove {@link
+ * 动态 Cron 定时任务注册器——{@link ScheduleTaskSchedulerPort} 的技术实现（出站适配器，E-10.2）。
+ *
+ * <p>应用启动后加载 DB 中启用的任务，用 {@link ThreadPoolTaskScheduler} 编程式注册；启停通过 add/remove {@link
  * ScheduledFuture} 实现。
+ *
+ * <p><b>为何放在 {@code infrastructure/scheduler} 而不是 {@code adapter/schedule}</b>：本类是被 application
+ * 调用的出站端口实现（方向基础设施 → 外部调度器），而 {@code adapter/schedule} 放的是由 Spring 定时触发的入站任务（如 {@code
+ * LogCleanTaskHandler}）。同一种技术按方向分开放， 不以「都叫任务」为由混进一个包（E-10）。
  */
 @Slf4j
 @Component
-public class TaskSchedulerRegistry implements ScheduleTaskScheduler {
+public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
 
   private final Map<Long, ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
-  private final ThreadPoolTaskScheduler taskScheduler;
+  private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
+  private final ScheduleTaskRepository scheduleTaskRepository;
   private final ApplicationContext applicationContext;
 
   public TaskSchedulerRegistry(
-      ThreadPoolTaskScheduler taskScheduler, ApplicationContext applicationContext) {
-    this.taskScheduler = taskScheduler;
+      ThreadPoolTaskScheduler threadPoolTaskScheduler,
+      ScheduleTaskRepository scheduleTaskRepository,
+      ApplicationContext applicationContext) {
+    this.threadPoolTaskScheduler = threadPoolTaskScheduler;
+    this.scheduleTaskRepository = scheduleTaskRepository;
     this.applicationContext = applicationContext;
   }
 
+  /**
+   * 启动后装载启用中的任务。
+   *
+   * <p>取数走 {@link ScheduleTaskRepository#findEnabled()}：与 HTTP 用例共用同一条 SQL 通道（ADR-0030 SQL
+   * 真源唯一），避免「注册中心自己写一句 SELECT」造成第二份查询逻辑。
+   */
   @EventListener(ApplicationReadyEvent.class)
   public void loadEnabledTasks() {
-    QueryBuilder.from(ScheduleTask.class).list().stream()
-        .filter(t -> t.getStatus() == TaskStatus.ENABLED)
-        .forEach(this::register);
+    scheduleTaskRepository.findEnabled().forEach(this::register);
     log.info("[ScheduleTask] 已加载 {} 个启用的定时任务", futures.size());
   }
 
-  /** 注册一个任务（内部包装：执行目标 + 记录 lastRunAt）。 */
+  /** 注册一个任务（内部包装：执行目标 + 记录 lastRunAt）。先注销再注册，保证同一任务只有一个句柄。 */
   @Override
   public void register(ScheduleTask task) {
     cancel(task.getId());
     Runnable runnable = buildRunnable(task);
-    ScheduledFuture<?> future = taskScheduler.schedule(runnable, new CronTrigger(task.getCron()));
+    ScheduledFuture<?> future =
+        threadPoolTaskScheduler.schedule(runnable, new CronTrigger(task.getCron()));
     futures.put(task.getId(), future);
     log.info("[ScheduleTask] 已注册任务 {} (cron={})", task.getName(), task.getCron());
   }
 
-  /** 注销一个任务。 */
+  /** 注销一个任务；未注册时静默返回（幂等）。 */
   @Override
   public void cancel(Long taskId) {
     ScheduledFuture<?> future = futures.remove(taskId);
@@ -79,12 +93,10 @@ public class TaskSchedulerRegistry implements ScheduleTaskScheduler {
   }
 
   private void recordRun(ScheduleTask task) {
-    com.bone.system.domain.repository.ScheduleTaskRepository repo =
-        applicationContext.getBean(com.bone.system.domain.repository.ScheduleTaskRepository.class);
-    ScheduleTask latest = repo.findById(task.getId());
+    ScheduleTask latest = scheduleTaskRepository.findById(task.getId());
     if (latest != null) {
       latest.markRun(LocalDateTime.now(), null);
-      repo.save(latest);
+      scheduleTaskRepository.save(latest);
     }
   }
 

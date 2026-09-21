@@ -410,6 +410,27 @@ CREATE TABLE sys_alert_event (
     KEY idx_sys_alert_event_time (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='告警事件';
 
+-- ------------------------------------------------------------
+-- 2.1 System 演示种子数据（MVP-09：配置管理 / 监控告警页面开箱即有内容）
+--
+-- 背景：此前 sys_config / sys_alert_rule 仅有表结构、零数据，前端「系统 / 配置管理」
+-- 与「系统 / 监控告警」打开即为空列表，详情页（/system/config/{id}、/system/alert/rules/{id}）
+-- 取不到真实 id，MVP 验收无法演示。此处补齐最小演示集，按唯一键幂等。
+-- ------------------------------------------------------------
+INSERT INTO sys_config (id, tenant_id, config_key, config_value, description, config_type, encrypted)
+VALUES
+    (1, 0, 'platform.name', 'Bone Platform', '平台显示名称', 'SYSTEM', 0),
+    (2, 0, 'feature.runtime.crud', 'true', '模式B运行时动态 CRUD 总开关', 'FEATURE', 0),
+    (3, 0, 'feature.metadata.eav', 'false', 'EAV 扩展字段实验特性（MVP 默认关闭）', 'FEATURE', 0),
+    (4, 0, 'service.metadata.timeout-ms', '3000', '元数据服务调用超时（毫秒）', 'SERVICE', 0)
+ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), description = VALUES(description);
+
+INSERT INTO sys_alert_rule (id, tenant_id, name, description, metric_name, threshold_value, alert_level, notification_channels, enabled)
+VALUES
+    (1, 0, 'CPU 使用率过高', 'CPU 使用率持续高于阈值时触发', 'cpu.usage', 85.0000, 'CRITICAL', '["CONSOLE"]', 1),
+    (2, 0, 'API 错误率过高', '网关 API 错误率高于阈值时触发', 'api.error_rate', 5.0000, 'WARNING', '["CONSOLE"]', 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), threshold_value = VALUES(threshold_value);
+
 -- ============================================================
 -- 3. Integration（对齐 bone-platform/bone-integration 领域模型）
 -- ============================================================
@@ -1519,3 +1540,22 @@ CREATE TABLE IF NOT EXISTS `bone_app_permission` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用权限表';
+
+-- ------------------------------------------------------------
+-- 9.1 应用 / 模块演示种子数据（MVP-08：元数据建模 UI 的「应用 → 模块」导航开箱即有内容）
+--
+-- 背景：bone_application / bone_module 此前零数据，前端「元数据 / 应用管理」空列表，
+-- 联调脚本 Part C 的 `GET /api/v1/apps/{id}/modules` 取不到真实 id 而只能跳过。
+-- 这三张表用 CREATE TABLE IF NOT EXISTS（不 DROP），故种子按主键幂等写入。
+-- ------------------------------------------------------------
+INSERT INTO `bone_application` (`id`, `tenant_id`, `name`, `code`, `description`, `icon`, `status`, `created_by`, `created_at`, `updated_by`, `updated_at`, `deleted`, `version`)
+VALUES (1, 0, '默认应用', 'default', 'MVP 演示应用（承载元数据采集模块）', 'appstore', 0, 1, NOW(3), NULL, NULL, 0, 0)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `description` = VALUES(`description`);
+
+INSERT INTO `bone_module` (`id`, `tenant_id`, `app_id`, `name`, `code`, `description`, `status`, `sort_order`, `created_by`, `created_at`, `updated_by`, `updated_at`, `deleted`, `version`)
+VALUES (1, 0, 1, '基础模块', 'base', 'MVP 演示模块（实体建模挂在此模块下）', 0, 1, 1, NOW(3), NULL, NULL, 0, 0)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `description` = VALUES(`description`);
+
+INSERT INTO `bone_app_permission` (`id`, `tenant_id`, `app_id`, `user_id`, `role`, `created_by`, `created_at`, `updated_by`, `updated_at`, `deleted`, `version`)
+VALUES (1, 0, 1, 1, 'ADMIN', 1, NOW(3), NULL, NULL, 0, 0)
+ON DUPLICATE KEY UPDATE `role` = VALUES(`role`);

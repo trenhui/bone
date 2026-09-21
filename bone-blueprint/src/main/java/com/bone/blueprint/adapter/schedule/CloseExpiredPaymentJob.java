@@ -19,10 +19,10 @@ import org.springframework.stereotype.Component;
  * <p>定时扫描仍处于 PENDING/PAYING 且创建时间早于超时阈值的支付单，逐笔下发 {@link CloseExpiredPaymentCommand}（经 {@link
  * PaymentApplicationService} 执行）。
  *
- * <p><b>本类为何直连域仓储</b>：扫描入口是全租户方法 {@link PaymentRepository#findExpiredOpenPaymentsAllTenants}，与
- * {@link CancelExpiredOrderJob} 完全同形——定时线程无请求上下文， 按「当前租户」扫描会退化为平台租户 0。ADR-0030 §2
+ * <p><b>本类为何直连域仓储</b>：扫描入口是全租户方法 {@link PaymentRepository#findExpiredPaymentsAllTenants}，与 {@link
+ * CancelExpiredOrderJob} 完全同形——定时线程无请求上下文， 按「当前租户」扫描会退化为平台租户 0。ADR-0030 §2
  * 把这类<strong>平台运维旁路</strong>的调用方明确写为定时 Job；本类受 {@code all_tenants_scan_only_by_schedule} 与本模块
- * {@code ArchitectureTest} 双重约束（schedule 之外的适配器一律不得依赖域仓储， schedule 内也只许调 {@code *AllTenants}
+ * {@code ArchitectureTest} 双重约束。schedule 包内调用域仓储时，只许调全租户扫描方法（门禁从 SDK 声明点自动识别）
  * 方法）。<strong>其余入站适配器（web / rpc / messaging）不得复制此形态</strong>。
  *
  * <p><b>全租户扫描（E-2）</b>：改为全租户扫描后，扫描行的 {@code tenantId} 必须<strong>显式携带</strong>进命令（异步分支不依赖线程上下文）；
@@ -49,7 +49,7 @@ public class CloseExpiredPaymentJob {
   @Scheduled(cron = "${bone.blueprint.schedule.close-expired-payments-cron:0 0/5 * * * ?}")
   public void closeExpiredPayments() {
     Instant before = Instant.now().minusSeconds(paymentTimeoutMinutes * 60);
-    List<PaymentProjection> expired = paymentRepository.findExpiredOpenPaymentsAllTenants(before);
+    List<PaymentProjection> expired = paymentRepository.findExpiredPaymentsAllTenants(before);
     int closed = 0;
     int failed = 0;
     for (PaymentProjection row : expired) {

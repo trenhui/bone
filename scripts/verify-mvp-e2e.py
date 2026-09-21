@@ -116,17 +116,33 @@ CONST_RE = re.compile(
     r"^\s*(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*['\"]([^'\"]*)['\"]", re.MULTILINE
 )
 PARAM_RE = re.compile(r"\$\{[^}]*\}")
+# 冒号动作路径：`/points/${id}:${action}`。动作名是动词（enable / deploy / ...）而不是 id，
+# 若与其它参数一样替换成占位 `1`，会造出 `/points/1:1` 这种后端根本不存在的路径，
+# 从而把「真实一致」误报成「方法不匹配」（2026-09-20：extension 两条告警均属此类假阳性）。
+COLON_PARAM_RE = re.compile(r":\$\{[^}]*\}")
+
+ACTION_MARKER = "::ACTION::"
+# 探测时逐个替换的候选动作名：命中任一（200 且方法被 Allow 接受）即视为契约一致。
+ACTION_VERBS = [
+    "enable", "disable", "publish", "unpublish", "deploy", "undeploy",
+    "rollback", "bind", "unbind", "simulate", "ingest", "install",
+    "activate", "deactivate", "approve", "reject", "retry", "cancel",
+    "sync", "execute", "preview", "validate", "archive", "restore",
+    "reset", "refresh", "start", "stop", "pause", "resume", "submit", "verify",
+]
 
 
 def resolve_path(path: str, consts: dict):
     """把模板路径解析成可探测的字面路径。
 
     - 已知常量前缀（如 ${MD}）替换为常量值；
+    - `:${action}` 形式的动作名替换为 ACTION_MARKER（由 run_contract 按 ACTION_VERBS 展开探测）；
     - 其余 ${...} 视为路径参数，替换为探针占位 `1`（OPTIONS 按 pattern 匹配，不绑定实参，
       因此占位值不影响「端点是否存在」的判定）。
     """
     for name, val in consts.items():
         path = path.replace("${" + name + "}", val)
+    path = COLON_PARAM_RE.sub(":" + ACTION_MARKER, path)
     return PARAM_RE.sub("1", path)
 
 
@@ -218,9 +234,32 @@ def run_contract(base: str, token: str, frontend_root: str, tenant: str):
 
     missing, mismatched, inconclusive = [], [], []
     for app, fbase, method, path in paths:
+        label = f"{app} {method.upper()} {fbase}{path}"
+        if ACTION_MARKER in path:
+            # 动作名未定：按候选动词展开，命中任一即视为后端实现了该动作
+            hit, not_found, other = [], 0, []
+            for verb in ACTION_VERBS:
+                status, allow = probe_options(
+                    base + fbase + path.replace(ACTION_MARKER, verb), token, tenant
+                )
+                if status == 200 and (not allow or method.upper() in allow.upper()):
+                    hit.append(verb)
+                elif status == 404:
+                    not_found += 1
+                else:
+                    other.append(f"{verb}→HTTP {status}")
+            if hit:
+                continue
+            if not_found == len(ACTION_VERBS):
+                missing.append(label + "（所有候选动作均 404）")
+            else:
+                inconclusive.append(
+                    f"{label} 动作名未定 → " + ", ".join(other[:3])
+                )
+            continue
+
         url = base + fbase + path
         status, allow = probe_options(url, token, tenant)
-        label = f"{app} {method.upper()} {fbase}{path}"
         if status == 404:
             missing.append(label)
         elif status == 0:

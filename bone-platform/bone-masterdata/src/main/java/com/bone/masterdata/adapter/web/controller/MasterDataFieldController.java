@@ -4,10 +4,9 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
+import com.bone.masterdata.application.FieldApplicationService;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
-import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
-import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
 @RequiredArgsConstructor
 public class MasterDataFieldController {
-  private final CreateMasterDataFieldHandler createHandler;
-  private final MasterDataFieldListQueryHandler listQueryHandler;
+
+  private final FieldApplicationService fieldService;
   private final MasterDataFieldWebConverter converter;
 
   @PostMapping("/{entityId}/fields")
@@ -26,7 +25,7 @@ public class MasterDataFieldController {
       @PathVariable Long entityId, @RequestBody CreateMasterDataFieldReq req) {
     req.setMasterDataEntityId(entityId);
     CreateMasterDataFieldCommand cmd = converter.toCommand(req);
-    Long id = createHandler.handle(cmd);
+    Long id = fieldService.create(cmd);
     return ApiResponse.success(id);
   }
 
@@ -34,7 +33,7 @@ public class MasterDataFieldController {
   public ApiResponse<List<MasterDataFieldDTO>> list(@PathVariable Long entityId) {
     MasterDataFieldListQuery qry = new MasterDataFieldListQuery();
     qry.setMasterDataEntityId(entityId);
-    List<MasterDataFieldDTO> dtos = listQueryHandler.handle(qry);
+    List<MasterDataFieldDTO> dtos = fieldService.list(qry);
     return ApiResponse.success(dtos);
   }
 }

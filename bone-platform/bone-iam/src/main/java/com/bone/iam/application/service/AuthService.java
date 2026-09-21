@@ -21,15 +21,16 @@ public class AuthService {
   /**
    * 按用户名定位账号；不存在或重名返回 {@link Optional#empty()}。锁定/禁用/密码校验由调用方处理。
    *
-   * <p>登录入口租户未知，查找本身跨租户（见 {@link AccountRepository#findByUsernameForLogin(String)}）；原先这里硬编码 {@code
-   * tenantId = 0}，会把登录限制在默认租户、 使多租户账号永远登录不上。
+   * <p>登录入口租户未知，查找本身跨租户（见 {@link
+   * AccountRepository#findByUsernameForLoginAllTenants(String)}）；原先这里硬编码 {@code tenantId =
+   * 0}，会把登录限制在默认租户、 使多租户账号永远登录不上。
    */
   public Optional<Account> findByUsername(String username) {
     if (username == null || username.isBlank()) {
       return Optional.empty();
     }
     try {
-      return accountRepository.findByUsernameForLogin(username);
+      return accountRepository.findByUsernameForLoginAllTenants(username);
     } catch (MultipleResultsException e) {
       // 跨租户重名：登录无法确定租户。必须留痕——静默转 empty 会让两个租户的同名账号同时登录不上且无人知晓。
       log.error(

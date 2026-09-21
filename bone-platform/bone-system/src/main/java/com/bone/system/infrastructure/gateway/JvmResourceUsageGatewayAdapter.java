@@ -1,7 +1,7 @@
 package com.bone.system.infrastructure.gateway;
 
+import com.bone.system.domain.console.ResourceUsage;
 import com.bone.system.domain.gateway.ResourceUsageGateway;
-import com.bone.system.domain.model.console.ResourceUsage;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

@@ -94,13 +94,11 @@ def build_as_is_checks() -> list[dict]:
             },
         },
         {
-            "id": "cqrs-handler",
-            "title": "CQRS Query Handler 编排（readOnly）",
+            "id": "application-entry",
+            "title": "控制台用例入口 ConsoleApplicationService（ADR-0028）",
             "status": "as_is",
             "evidence": {
-                "java": _grep_files(
-                    SYS_MAIN, r"ConsoleOverviewQueryHandler|QuickActionsQueryHandler"
-                ),
+                "java": _grep_files(SYS_MAIN, r"class ConsoleApplicationService\b"),
             },
         },
         {
@@ -185,7 +183,7 @@ def build_as_is_checks() -> list[dict]:
         },
         {
             "id": "domain-read-vos",
-            "title": "读侧值对象位于 domain.model.console（ArchUnit 友好）",
+            "title": "读侧值对象位于 domain.console（按聚合平铺形态，E-10）",
             "status": "as_is",
             "evidence": {
                 "java": _grep_files(

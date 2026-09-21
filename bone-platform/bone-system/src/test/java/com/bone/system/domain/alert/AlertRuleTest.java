@@ -7,11 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.exception.DomainException;
-import com.bone.system.domain.model.alert.event.AlertRuleCreatedEvent;
-import com.bone.system.domain.model.alert.event.AlertRuleUpdatedEvent;
-import com.bone.system.domain.model.alert.vo.AlertLevel;
-import com.bone.system.domain.model.alert.vo.MetricName;
-import com.bone.system.domain.model.alert.vo.Threshold;
+import com.bone.system.domain.alert.event.AlertRuleCreatedEvent;
+import com.bone.system.domain.alert.event.AlertRuleUpdatedEvent;
+import com.bone.system.domain.alert.vo.AlertLevel;
+import com.bone.system.domain.alert.vo.MetricName;
+import com.bone.system.domain.alert.vo.Threshold;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

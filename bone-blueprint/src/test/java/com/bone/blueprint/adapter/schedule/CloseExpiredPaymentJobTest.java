@@ -46,7 +46,7 @@ class CloseExpiredPaymentJobTest {
 
   @Test
   void closesEachExpiredPaymentCarryingItsOwnTenant() {
-    when(paymentRepository.findExpiredOpenPaymentsAllTenants(any()))
+    when(paymentRepository.findExpiredPaymentsAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(888L, 12L, 2L)));
 
     job.closeExpiredPayments();
@@ -61,7 +61,7 @@ class CloseExpiredPaymentJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(paymentRepository.findExpiredOpenPaymentsAllTenants(any()))
+    when(paymentRepository.findExpiredPaymentsAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(0L, 12L, 2L)));
     doThrow(BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, "SUCCESS"))
         .when(paymentApplicationService)

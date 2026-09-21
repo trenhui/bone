@@ -1,50 +1,50 @@
 package com.bone.system.adapter.web.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.system.adapter.web.converter.AlertWebConverter;
+import com.bone.system.adapter.web.assembler.AlertAssembler;
+import com.bone.system.adapter.web.dto.request.AlertRecordPageReq;
 import com.bone.system.adapter.web.dto.request.AlertRulePageReq;
 import com.bone.system.adapter.web.dto.request.CreateAlertRuleReq;
 import com.bone.system.adapter.web.dto.request.UpdateAlertRuleReq;
 import com.bone.system.adapter.web.dto.response.AlertRecordResp;
 import com.bone.system.adapter.web.dto.response.AlertRuleResp;
-import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
-import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
-import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
-import com.bone.system.application.command.cmd.ResolveAlertCommand;
-import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
-import com.bone.system.application.command.handler.AlertCommandHandler;
-import com.bone.system.application.query.dto.AlertRecordDTO;
-import com.bone.system.application.query.dto.AlertRuleDTO;
-import com.bone.system.application.query.handler.AlertQueryHandler;
+import com.bone.system.application.AlertApplicationService;
+import com.bone.system.application.command.CreateAlertRuleCommand;
+import com.bone.system.application.command.UpdateAlertRuleCommand;
+import com.bone.system.application.query.dto.AlertRecordDto;
+import com.bone.system.application.query.dto.AlertRuleDto;
+import com.bone.system.application.query.qry.AlertRecordPageQuery;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+/** 告警控制器切片测试：Controller 只做协议转换与响应包装，用例行为由应用层测试覆盖。 */
 public class AlertControllerTest {
 
-  @Mock private AlertCommandHandler alertCommandHandler;
-
-  @Mock private AlertQueryHandler alertQueryHandler;
+  @Mock private AlertApplicationService alertApplicationService;
 
   private AlertController alertController;
 
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
-    AlertWebConverter alertWebConverter = Mappers.getMapper(AlertWebConverter.class);
-    alertController =
-        new AlertController(alertCommandHandler, alertQueryHandler, alertWebConverter);
+    AlertAssembler alertAssembler = Mappers.getMapper(AlertAssembler.class);
+    alertController = new AlertController(alertApplicationService, alertAssembler);
   }
 
   @Test
@@ -56,13 +56,13 @@ public class AlertControllerTest {
     req.setAlertLevel("WARNING");
 
     Long ruleId = 1L;
-    when(alertCommandHandler.handle(any(CreateAlertRuleCommand.class))).thenReturn(ruleId);
+    when(alertApplicationService.createRule(any(CreateAlertRuleCommand.class))).thenReturn(ruleId);
 
     ApiResponse<Long> apiResponse = alertController.createRule(req);
 
     assertTrue(apiResponse.isSuccess());
     assertEquals(ruleId, apiResponse.getData());
-    verify(alertCommandHandler, times(1)).handle(any(CreateAlertRuleCommand.class));
+    verify(alertApplicationService, times(1)).createRule(any(CreateAlertRuleCommand.class));
   }
 
   @Test
@@ -76,35 +76,35 @@ public class AlertControllerTest {
     ApiResponse<Void> apiResponse = alertController.updateRule(req);
 
     assertTrue(apiResponse.isSuccess());
-    verify(alertCommandHandler, times(1)).handle(any(UpdateAlertRuleCommand.class));
+    verify(alertApplicationService, times(1)).updateRule(any(UpdateAlertRuleCommand.class));
   }
 
   @Test
   public void testEnableRule() {
     ApiResponse<Void> apiResponse = alertController.enableRule(1L);
     assertTrue(apiResponse.isSuccess());
-    verify(alertCommandHandler, times(1)).handle(any(EnableAlertRuleCommand.class));
+    verify(alertApplicationService, times(1)).enableRule(1L);
   }
 
   @Test
   public void testDisableRule() {
     ApiResponse<Void> apiResponse = alertController.disableRule(1L);
     assertTrue(apiResponse.isSuccess());
-    verify(alertCommandHandler, times(1)).handle(any(DisableAlertRuleCommand.class));
+    verify(alertApplicationService, times(1)).disableRule(1L);
   }
 
   @Test
   public void testDeleteRule() {
     ApiResponse<Void> apiResponse = alertController.deleteRule(1L);
     assertTrue(apiResponse.isSuccess());
-    verify(alertCommandHandler, times(1)).delete(1L);
+    verify(alertApplicationService, times(1)).deleteRule(1L);
   }
 
   @Test
   public void testGetRuleById() {
     Long ruleId = 1L;
-    AlertRuleDTO dto = AlertRuleDTO.builder().id(ruleId).name("test").build();
-    when(alertQueryHandler.getRuleById(ruleId)).thenReturn(dto);
+    AlertRuleDto dto = AlertRuleDto.builder().id(ruleId).name("test").build();
+    when(alertApplicationService.getRuleById(ruleId)).thenReturn(Optional.of(dto));
 
     ApiResponse<AlertRuleResp> apiResponse = alertController.getRuleById(ruleId);
 
@@ -118,7 +118,7 @@ public class AlertControllerTest {
     req.setPageNum(1);
     req.setPageSize(10);
 
-    when(alertQueryHandler.pageRules(any()))
+    when(alertApplicationService.pageRules(any()))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
 
     ApiResponse<PageResult<AlertRuleResp>> apiResponse = alertController.pageRules(req);
@@ -128,27 +128,40 @@ public class AlertControllerTest {
   }
 
   @Test
-  public void testCreateEvent() {
-    when(alertCommandHandler.createAlertRecord(1L, 100.0)).thenReturn(1L);
+  public void testRecordIfTriggered() {
+    when(alertApplicationService.recordIfTriggered(anyLong(), anyDouble()))
+        .thenReturn(Optional.of(1L));
 
-    ApiResponse<Long> apiResponse = alertController.createEvent(1L, 100.0);
+    ApiResponse<Long> apiResponse = alertController.recordIfTriggered(1L, 100.0);
 
     assertTrue(apiResponse.isSuccess());
     assertEquals(1L, apiResponse.getData());
+  }
+
+  /** 未达阈值返回空 data：「上报了但没告警」是正常分支，不是失败。 */
+  @Test
+  public void testRecordNotTriggeredReturnsNullBody() {
+    when(alertApplicationService.recordIfTriggered(anyLong(), anyDouble()))
+        .thenReturn(Optional.empty());
+
+    ApiResponse<Long> apiResponse = alertController.recordIfTriggered(1L, 1.0);
+
+    assertTrue(apiResponse.isSuccess());
+    assertNull(apiResponse.getData());
   }
 
   @Test
   public void testResolveEvent() {
     ApiResponse<Void> apiResponse = alertController.resolveEvent(1L);
     assertTrue(apiResponse.isSuccess());
-    verify(alertCommandHandler, times(1)).handle(any(ResolveAlertCommand.class));
+    verify(alertApplicationService, times(1)).resolveRecord(1L);
   }
 
   @Test
   public void testGetEventById() {
     Long eventId = 1L;
-    AlertRecordDTO dto = AlertRecordDTO.builder().id(eventId).alertRuleId(1L).build();
-    when(alertQueryHandler.getEventById(eventId)).thenReturn(dto);
+    AlertRecordDto dto = AlertRecordDto.builder().id(eventId).alertRuleId(1L).build();
+    when(alertApplicationService.getRecordById(eventId)).thenReturn(Optional.of(dto));
 
     ApiResponse<AlertRecordResp> apiResponse = alertController.getEventById(eventId);
 
@@ -158,11 +171,10 @@ public class AlertControllerTest {
 
   @Test
   public void testPageEvents() {
-    when(alertQueryHandler.pageEvents(1, 10))
+    when(alertApplicationService.pageRecords(any(AlertRecordPageQuery.class)))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
 
-    com.bone.system.adapter.web.dto.request.AlertRecordPageReq req =
-        new com.bone.system.adapter.web.dto.request.AlertRecordPageReq();
+    AlertRecordPageReq req = new AlertRecordPageReq();
     req.setPageNum(1);
     req.setPageSize(10);
     ApiResponse<PageResult<AlertRecordResp>> apiResponse = alertController.pageEvents(req);

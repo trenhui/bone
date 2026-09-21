@@ -7,9 +7,8 @@ import com.bone.masterdata.adapter.web.converter.DataStandardWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateDataStandardReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateDataStandardReq;
 import com.bone.masterdata.adapter.web.dto.response.DataStandardResp;
+import com.bone.masterdata.application.StandardApplicationService;
 import com.bone.masterdata.application.command.cmd.DeleteDataStandardCommand;
-import com.bone.masterdata.application.command.handler.DataStandardCommandHandler;
-import com.bone.masterdata.application.query.handler.DataStandardQueryHandler;
 import com.bone.masterdata.application.query.qry.DataStandardPageQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,29 +25,27 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class DataStandardController {
 
-  private final DataStandardCommandHandler dataStandardCommandHandler;
-  private final DataStandardQueryHandler dataStandardQueryHandler;
+  private final StandardApplicationService standardService;
   private final DataStandardWebConverter dataStandardWebConverter;
 
   @Operation(summary = "创建数据标准")
   @PostMapping
   public ApiResponse<Long> create(@Valid @RequestBody CreateDataStandardReq req) {
-    return ApiResponse.success(
-        dataStandardCommandHandler.create(dataStandardWebConverter.toCommand(req)));
+    return ApiResponse.success(standardService.create(dataStandardWebConverter.toCommand(req)));
   }
 
   @Operation(summary = "更新数据标准")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @Valid @RequestBody UpdateDataStandardReq req) {
-    dataStandardCommandHandler.update(dataStandardWebConverter.toCommand(id, req));
+    standardService.update(dataStandardWebConverter.toCommand(id, req));
     return ApiResponse.success();
   }
 
   @Operation(summary = "删除数据标准")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    dataStandardCommandHandler.delete(new DeleteDataStandardCommand(id));
+    standardService.delete(new DeleteDataStandardCommand(id));
     return ApiResponse.success();
   }
 
@@ -56,7 +53,7 @@ public class DataStandardController {
   @GetMapping("/entity/{entityCode}")
   public ApiResponse<List<DataStandardResp>> listByEntity(@PathVariable String entityCode) {
     return ApiResponse.success(
-        dataStandardQueryHandler.listByEntity(entityCode).stream()
+        standardService.listByEntity(entityCode).stream()
             .map(dataStandardWebConverter::toResp)
             .collect(Collectors.toList()));
   }
@@ -64,7 +61,6 @@ public class DataStandardController {
   @Operation(summary = "分页查询数据标准")
   @GetMapping("/page")
   public ApiResponse<PageResult<DataStandardResp>> page(DataStandardPageQuery qry) {
-    return ApiResponse.success(
-        dataStandardQueryHandler.page(qry).map(dataStandardWebConverter::toResp));
+    return ApiResponse.success(standardService.page(qry).map(dataStandardWebConverter::toResp));
   }
 }

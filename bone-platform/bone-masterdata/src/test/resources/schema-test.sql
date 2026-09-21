@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS md_field (
     required                TINYINT      DEFAULT 0,
     default_value           VARCHAR(500),
     description             VARCHAR(500),
-    sort_order              INT          DEFAULT 0
+    sort_order              INT          DEFAULT 0,
+    deleted                 BOOLEAN      DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS md_entity (

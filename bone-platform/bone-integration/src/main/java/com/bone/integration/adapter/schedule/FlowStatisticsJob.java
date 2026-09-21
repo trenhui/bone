@@ -3,7 +3,6 @@ package com.bone.integration.adapter.schedule;
 import com.bone.integration.application.service.FlowMonitorService;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +21,7 @@ public class FlowStatisticsJob {
   @Scheduled(cron = "0 0 0 * * ?")
   public void execute() {
     log.info("开始执行流程统计任务");
-    List<IntegrationFlow> flows = flowRepository.findByCriteria(Criteria.<IntegrationFlow>create());
+    List<IntegrationFlow> flows = flowRepository.findForStatisticsAllTenants();
     if (flows == null || flows.isEmpty()) {
       log.info("流程统计任务完成：无流程定义");
       return;
@@ -31,8 +30,8 @@ public class FlowStatisticsJob {
     long totalExecutions = 0;
     long totalSuccess = 0;
     for (IntegrationFlow flow : flows) {
-      long count = flowMonitorService.getExecutionCount(flow.getId());
-      long success = flowMonitorService.getSuccessCount(flow.getId());
+      long count = flowMonitorService.getExecutionCountAllTenants(flow.getId());
+      long success = flowMonitorService.getSuccessCountAllTenants(flow.getId());
       totalExecutions += count;
       totalSuccess += success;
       if (count > 0) {
@@ -41,7 +40,7 @@ public class FlowStatisticsJob {
             flow.getId(),
             flow.getName(),
             count,
-            String.format("%.2f", flowMonitorService.getSuccessRate(flow.getId())));
+            String.format("%.2f", flowMonitorService.getSuccessRateAllTenants(flow.getId())));
       }
     }
     log.info(

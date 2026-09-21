@@ -26,6 +26,7 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -92,8 +93,9 @@ public class PaymentApplicationService {
    * <p>若 Tx1 后进程崩溃，PENDING 孤儿单由 {@code CloseExpiredPaymentJob} 超时清理，不产生脏数据。
    */
   public InitiatePaymentResult initiate(InitiatePaymentCommand command) {
-    long tenantId = tenantProvider.currentTenantId();
+
     long paymentId = DistributedIdGenerator.generateLongId();
+    long tenantId = tenantProvider.currentTenantId();
 
     // Tx1：校验订单 + 创建 PENDING 支付单，先提交释放 DB 事务，再做远程调用
     Payment pending =
@@ -101,11 +103,12 @@ public class PaymentApplicationService {
             (TransactionCallback<Payment>)
                 status -> {
                   com.bone.blueprint.domain.order.Order order =
-                      orderRepository
-                          .findByIdInTenant(command.orderId(), tenantId)
+                      Optional.ofNullable(orderRepository.findById(command.orderId()))
                           .orElseThrow(
-                              BlueprintErrors.supplier(
-                                  BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
+                              () ->
+                                  BlueprintErrors.supplier(
+                                          BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
+                                      .get());
                   if (!order.isAwaitingPayment()) {
                     throw BlueprintErrors.of(
                         BlueprintErrorCodes.ORDER_STATUS_CONFLICT, order.getStatus());
@@ -140,7 +143,7 @@ public class PaymentApplicationService {
     // Tx2：回填支付链接，支付单进入 PAYING
     transactionTemplate.executeWithoutResult(
         status -> {
-          Payment payment = loadPayment(paymentId, tenantId);
+          Payment payment = loadPayment(paymentId);
           try {
             payment.submitToChannel(payUrl);
           } catch (DomainException ex) {
@@ -181,13 +184,13 @@ public class PaymentApplicationService {
       throw BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_SIGNATURE_INVALID, "支付回调签名校验失败");
     }
 
-    long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        paymentRepository
-            .findByIdInTenant(command.paymentId(), tenantId)
+        Optional.ofNullable(paymentRepository.findById(command.paymentId()))
             .orElseThrow(
-                BlueprintErrors.supplier(
-                    BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
+                () ->
+                    BlueprintErrors.supplier(
+                            BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId())
+                        .get());
 
     if (!command.success()) {
       try {
@@ -252,13 +255,13 @@ public class PaymentApplicationService {
   /** 对已成功支付单发起退款。加载支付单 → 领域方法 {@code refund()}（幂等 + 金额校验）→ 保存发布事件。 */
   @Transactional
   public void refund(RefundPaymentCommand command) {
-    long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        paymentRepository
-            .findByIdInTenant(command.paymentId(), tenantId)
+        Optional.ofNullable(paymentRepository.findById(command.paymentId()))
             .orElseThrow(
-                BlueprintErrors.supplier(
-                    BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
+                () ->
+                    BlueprintErrors.supplier(
+                            BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId())
+                        .get());
 
     boolean refunded;
     try {
@@ -292,14 +295,13 @@ public class PaymentApplicationService {
    */
   @Transactional
   public void closeExpired(CloseExpiredPaymentCommand command) {
-    long tenantId =
-        command.tenantId() != null ? command.tenantId() : tenantProvider.currentTenantId();
     Payment payment =
-        paymentRepository
-            .findByIdInTenant(command.paymentId(), tenantId)
+        Optional.ofNullable(paymentRepository.findById(command.paymentId()))
             .orElseThrow(
-                BlueprintErrors.supplier(
-                    BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
+                () ->
+                    BlueprintErrors.supplier(
+                            BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId())
+                        .get());
 
     try {
       payment.close();
@@ -311,7 +313,7 @@ public class PaymentApplicationService {
     } catch (OptimisticLockingFailureException ex) {
       throw new OptimisticLockConflictException("Payment", payment.getId(), payment.getVersion());
     }
-    log.info("已关闭超时支付单: paymentId={}, tenantId={}", command.paymentId(), tenantId);
+    log.info("已关闭超时支付单: paymentId={}", command.paymentId());
   }
 
   // ===================== 读操作 =====================
@@ -319,8 +321,8 @@ public class PaymentApplicationService {
   /** 查询支付单详情（与写路径共用 {@link #loadPayment}，租户隔离语义一致）。 */
   @Transactional(readOnly = true)
   public PaymentDto getById(long paymentId) {
-    long tenantId = tenantProvider.currentTenantId();
-    return PaymentDetailAssembler.from(loadPayment(paymentId, tenantId));
+
+    return PaymentDetailAssembler.from(loadPayment(paymentId));
   }
 
   // ===================== 私有辅助 =====================
@@ -328,7 +330,7 @@ public class PaymentApplicationService {
   private void closePaymentAfterRemoteFailure(long paymentId, long tenantId) {
     transactionTemplate.executeWithoutResult(
         status -> {
-          Payment payment = loadPayment(paymentId, tenantId);
+          Payment payment = loadPayment(paymentId);
           payment.close();
           try {
             paymentRepository.update(payment);
@@ -339,9 +341,9 @@ public class PaymentApplicationService {
         });
   }
 
-  private Payment loadPayment(long paymentId, long tenantId) {
-    return paymentRepository
-        .findByIdInTenant(paymentId, tenantId)
-        .orElseThrow(BlueprintErrors.supplier(BlueprintErrorCodes.PAYMENT_NOT_FOUND, paymentId));
+  private Payment loadPayment(long paymentId) {
+    return Optional.ofNullable(paymentRepository.findById(paymentId))
+        .orElseThrow(
+            () -> BlueprintErrors.supplier(BlueprintErrorCodes.PAYMENT_NOT_FOUND, paymentId).get());
   }
 }

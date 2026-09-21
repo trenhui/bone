@@ -29,7 +29,6 @@ import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -85,7 +84,6 @@ class OrderApplicationServiceTest {
 
   @Test
   void create_insufficientStock_throwsAndDoesNotPersist() {
-    org.mockito.Mockito.lenient().when(tenantProvider.currentTenantId()).thenReturn(1L);
     org.mockito.Mockito.lenient()
         .when(inventoryGateway.checkStock(anyLong(), anyInt()))
         .thenReturn(false);
@@ -135,8 +133,7 @@ class OrderApplicationServiceTest {
   @Test
   void ship_fromPaid_success() {
     Order order = paidOrder();
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     service.ship(new ShipOrderCommand(1L));
 
@@ -147,8 +144,7 @@ class OrderApplicationServiceTest {
   @Test
   void ship_optimisticLockConflict_mapsTo409Not500() {
     Order order = paidOrder();
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
     when(orderRepository.update(order))
         .thenThrow(new OptimisticLockingFailureException("Order", 1L, 0L));
 
@@ -163,8 +159,7 @@ class OrderApplicationServiceTest {
   void ship_fromCreated_throws() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L)));
     verify(orderRepository, never()).update(any());
@@ -172,8 +167,7 @@ class OrderApplicationServiceTest {
 
   @Test
   void ship_notFound_throws() {
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
+    when(orderRepository.findById(1L)).thenReturn(null);
 
     assertEquals(
         404,
@@ -194,8 +188,7 @@ class OrderApplicationServiceTest {
   @Test
   void deliver_fromShipped_success() {
     Order order = shippedOrder();
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     service.deliver(new DeliverOrderCommand(1L));
 
@@ -208,8 +201,7 @@ class OrderApplicationServiceTest {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
     order.confirmPaid(); // 未发货直接确认送达
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
     verify(orderRepository, never()).update(any());
@@ -217,8 +209,7 @@ class OrderApplicationServiceTest {
 
   @Test
   void deliver_notFound_throws() {
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
+    when(orderRepository.findById(1L)).thenReturn(null);
 
     assertEquals(
         404,

@@ -1,7 +1,7 @@
 package com.bone.system.infrastructure.gateway;
 
+import com.bone.system.domain.console.ServiceStatus;
 import com.bone.system.domain.gateway.ServiceHealthGateway;
-import com.bone.system.domain.model.console.ServiceStatus;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

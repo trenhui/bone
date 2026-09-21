@@ -4,6 +4,19 @@
 
 Bone System 是 Bone 平台的系统管理模块，提供系统配置、监控告警、日志管理等核心功能。
 
+## 上下文与边界
+
+限界上下文 **System**（通用域，P-2.1）：平台配置、运维日志与监控。
+
+| 维度 | 内容 |
+|---|---|
+| 通用语言 | `SystemConfig`、`SysDict`、`AlertRule`、`AlertRecord`、`SystemLog`、`ScheduleTask`、`ConsoleOverview` |
+| 负责 | 配置键的生命周期与快照导出 / 恢复；字典项维护；告警规则与告警记录；日志落库、查询与导出；定时任务注册；控制台概览聚合 |
+| **不负责** | 身份与权限（IAM）、主数据治理（MasterData）、集成流程编排（Integration）——本模块不持有、也不跨库写这些上下文的表 |
+| 上游 | 无（通用域，被所有应用上下文消费） |
+| 下游关系 | 对所有应用上下文提供 OHS / Published Language：配置、日志与监控 API（P-2.4）；下游只消费公开技术契约，不反向依赖本模块 domain |
+| 表所有权 | `sys_config`、`sys_dict`、`sys_alert_rule`、`sys_alert_record`、`sys_log`、`sys_schedule_task` 的唯一写 Owner 是本模块 |
+
 ## 技术栈
 
 - Java 17+
@@ -17,26 +30,47 @@ Bone System 是 Bone 平台的系统管理模块，提供系统配置、监控�
 
 ## 模块架构
 
-遵循 Bone Blueprint v4.0 架构规范，采用六边形架构 + DDD + CQRS 模式：
+遵循《Bone-DDD-最终实践方案》E-10 包结构 + ADR-0028（Application Service First）：四层分包，
+入口统一为语义化 `*ApplicationService`，不预生成 `command/handler` / `query/handler` 空目录。
 
 ```
 com.bone.system
-├── adapter/              # 适配器层
-│   └── web/
-│       └── controller/  # REST控制器
-├── application/         # 应用层
-│   ├── command/         # 命令模型和处理器
-│   └── query/           # 查询模型和处理器
-├── domain/              # 领域层
-│   ├── model/           # 聚合根和值对象
-│   ├── repository/      # 仓储接口
-│   └── service/         # 领域服务
-├── infrastructure/      # 基础设施层
-│   └── config/          # 配置类
-└── common/              # 通用组件
-    ├── exception/       # 异常类
-    └── result/          # 响应结果
+├── adapter/web/
+│   ├── controller/            # HTTP 入站：只做协议转换与统一响应，不含业务判断
+│   ├── assembler/             # *Req/*Resp ↔ *Command/*Dto（MapStruct）
+│   └── dto/{request,response}/
+├── application/
+│   ├── ConfigApplicationService          # 配置：读写同一入口
+│   ├── DictApplicationService
+│   ├── AlertApplicationService           # 告警规则 + 告警记录（记录由规则推导）
+│   ├── SystemLogApplicationService
+│   ├── ScheduleTaskApplicationService
+│   ├── ConsoleApplicationService         # 控制台概览：组合 3 个 domain gateway
+│   ├── ConfigSnapshotApplicationService  # 批量 upsert，事务粒度与单条 CRUD 不同
+│   ├── LogExportApplicationService       # 读结果 → CSV，供 HTTP 与定时归档复用
+│   ├── command/                          # 写用例输入（*Command，平铺不建子包）
+│   ├── port/out/                         # 出站端口（统一 *Port 后缀）
+│   └── query/{dto,qry}/                  # 应用投影（*Dto）与读用例输入（*Query）
+├── domain/
+│   ├── config/ dict/ alert/ log/ schedule/   # 按聚合平铺（值对象 → vo/，事件 → event/）
+│   ├── console/                          # 控制台读侧值对象（不可变，非聚合）
+│   ├── gateway/                          # 外部业务事实端口（服务健康/资源/关键指标）
+│   └── repository/                       # 写侧 + 本聚合读（ADR-0030）
+├── infrastructure/
+│   ├── event/                            # SpringDomainEventPublisher（写路径 publishFrom 的承载）
+│   ├── gateway/                          # domain/gateway 的实现（*GatewayAdapter）
+│   ├── scheduler/                        # ScheduleTaskSchedulerPort 的实现
+│   ├── config/ security/ observability/
+└── common/                               # SystemErrorCodes + SystemErrors（码 → HTTP 状态唯一配对）
 ```
+
+**domain 分组形态**：采用 `domain/{aggregate}` 平铺（E-10 允许的两种形态之一），聚合根、值对象、事件按聚合归组；
+不再保留 `domain/model/{aggregate|entity|valueobject|event}` 角色分组，也不允许两套形态并存。
+
+**读侧取数落点**：本聚合读（分页 / 按业务键）声明在 `domain/repository` 的 `default` 方法里，`Criteria`
+能表达的单键查询用它，跨列 OR 用 `QueryBuilder`（`Criteria.or(Consumer)` 会把 OR 组当等值条件拼接，是 SDK
+已知缺陷，修复前不使用）；application 不再拼任何读侧 DSL。跨聚合组合读出现时按 E-4.2 新建
+`application/query/port` + `infrastructure/query`。
 
 ## 核心功能
 
@@ -162,11 +196,15 @@ bone:
 
 ## 开发规范
 
-- 遵循 Bone Blueprint v4.0 架构规范
-- 领域层零框架依赖
-- 采用 CQRS 模式分离读写
-- 使用 Lombok 简化代码（仅允许 @Getter）
-- 使用 MapStruct 进行对象映射
+- 依赖方向 `adapter → application → domain ← infrastructure`；domain 零框架依赖（E-10.1）
+- **一个用例一个入口边界**（CORE-04）：新用例默认加 `*ApplicationService` 方法，不新建 Handler；
+  出现独立路由 / 异步 / 多入口时按 E-3.7 决策树判断，禁止 `Controller → Handler → 同义 Service` 套娃
+- 写路径固定四步：加载聚合 → 调用领域行为 → `repository.save(agg)` → `domainEventPublisher.publishFrom(agg)`；
+  缺 `publishFrom` 等于把事件丢掉，编译与单测都不会报错
+- 失败一律走 `SystemErrors.of(SystemErrorCodes.XXX, 上下文)`，**不在抛出点手写 HTTP 状态数字**；
+  领域异常（`DomainException`）在应用层翻译成 4xx，任其冒泡会被兜底成 500
+- 持久化只用 `bone-metadata-sdk`：禁 MyBatis / JPA / JdbcTemplate；SQL 模板真源是外置 `resources/sql/**`
+- 使用 Lombok（`@Getter` / `@Builder` / `@RequiredArgsConstructor`）与 MapStruct（adapter 装配）
 
 ## 测试
 

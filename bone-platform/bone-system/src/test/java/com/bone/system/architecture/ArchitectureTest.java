@@ -1,6 +1,9 @@
 package com.bone.system.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
 import com.bone.architecture.BoneDddArchRules;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -15,6 +18,23 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 @AnalyzeClasses(packages = "com.bone.system", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
+  /** 本模块域仓储包：全租户入口门禁（事实判据 + 命名绑定）的作用域。 */
+  private static final String DOMAIN_REPOSITORY_PACKAGE = "com.bone.system.domain.repository";
+
+  // E-2 / E-4.4 补充门禁（2026-09-20，共享规则）：全租户扫描只许 adapter.schedule 调用，schedule 也只许调全租户入口；
+  // 全租户入口必须叫 *AllTenants。判据是事实（@TenantScope(ALL) 或 Criteria.disableTenantFilter()），不是名字。
+  @ArchTest
+  static final ArchRule all_tenants_scan_only_by_schedule =
+      BoneDddArchRules.allTenantScanMethodsOnlyCalledBySchedule(DOMAIN_REPOSITORY_PACKAGE);
+
+  @ArchTest
+  static final ArchRule schedule_only_calls_all_tenants_repository_methods =
+      BoneDddArchRules.scheduleOnlyCallsAllTenantScanMethods(DOMAIN_REPOSITORY_PACKAGE);
+
+  @ArchTest
+  static final ArchRule all_tenant_entry_points_must_be_named_all_tenants =
+      BoneDddArchRules.allTenantEntryPointsMustBeNamedAllTenants(DOMAIN_REPOSITORY_PACKAGE);
+
   // CORE-02：依赖向内
   @ArchTest
   static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
@@ -23,14 +43,29 @@ public class ArchitectureTest {
   static final ArchRule application_no_infra =
       BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
-  // CORE-05：domain 禁止读侧 DSL
+  // CORE-05：domain 不可使用读侧 DSL（豁免 ..domain.repository.. ——仓储是 SDK 框架集成点。
+  // ADR-0030 后本聚合读方法就落在这里：基类 Repository<T,ID> 自带 updateByCriteria(Criteria<T>)，
+  // 且 SDK 无级联时子实体读取也需经它。与 bone-blueprint 的豁免口径保持一致。）
   @ArchTest
-  static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
+  static final ArchRule domain_no_query_builder =
+      noClasses()
+          .that()
+          .resideInAPackage("..domain..")
+          .and()
+          .resideOutsideOfPackage("..domain.repository..")
+          .should()
+          .dependOnClassesThat(annotatedWithReadSideOnly())
+          .allowEmptyShould(true)
+          .because(
+              "DDD P0-5: read-side DSL (@ReadSideOnly) must not appear in domain; "
+                  + "exception: domain.repository is an SDK framework integration point that "
+                  + "inherits updateByCriteria(Criteria<T>) and hosts this-aggregate read methods "
+                  + "after ADR-0030");
 
-  // CORE-05：写用例禁止读侧 DSL
-  @ArchTest
-  static final ArchRule command_no_query_builder =
-      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
+  // CORE-05（写侧）：本模块已无 `application/command/handler` 包——全部写用例收敛为语义化
+  // ApplicationService（ADR-0028），读侧 DSL 也随之下沉到 domain.repository。故不再需要
+  // `commandHandlersMustNotUseQueryBuilder`：规则空匹配会直接失败，留着等于把一条永远不生效的规则
+  // 挂在构建里。若将来重新引入 CommandHandler，按 E-3.7 决策树判断后同步把这条规则加回来。
 
   // CORE-02 + E-6（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
   @ArchTest
@@ -88,4 +123,14 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.system");
+
+  private static com.tngtech.archunit.base.DescribedPredicate<JavaClass>
+      annotatedWithReadSideOnly() {
+    return new com.tngtech.archunit.base.DescribedPredicate<>("annotated with @ReadSideOnly") {
+      @Override
+      public boolean test(JavaClass input) {
+        return input.isAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
+      }
+    };
+  }
 }

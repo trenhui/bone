@@ -5,6 +5,8 @@ import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.Sql;
 import com.bone.metadata.sdk.domain.annotation.SqlFragment;
+import com.bone.metadata.sdk.domain.annotation.TenantScope;
+import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import com.bone.metadata.sdk.test.domain.User;
 import com.bone.metadata.sdk.test.domain.dto.UserRoleDTO;
 import com.bone.metadata.sdk.test.domain.dto.UserWithRoleDTO;
@@ -23,6 +25,7 @@ import java.util.List;
     value =
         "u.id, u.name, u.role_id, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted, "
             + "r.role_name, r.description AS role_description")
+@TenantScope(TenantScopeMode.MANUAL)
 public interface UserMybatisSqlRepository extends Repository<User, Long> {
 
   /** 搜索用户（带分页和多重条件） */

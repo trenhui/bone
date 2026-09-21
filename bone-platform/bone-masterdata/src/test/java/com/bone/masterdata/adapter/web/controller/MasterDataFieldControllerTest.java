@@ -5,9 +5,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
+import com.bone.masterdata.application.FieldApplicationService;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
-import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
-import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,9 +24,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class MasterDataFieldControllerTest {
 
-  @Mock private CreateMasterDataFieldHandler createHandler;
-
-  @Mock private MasterDataFieldListQueryHandler listQueryHandler;
+  @Mock private FieldApplicationService fieldService;
 
   @Mock private MasterDataFieldWebConverter converter;
 
@@ -45,7 +42,7 @@ class MasterDataFieldControllerTest {
     CreateMasterDataFieldCommand command = new CreateMasterDataFieldCommand();
     command.setMasterDataEntityId(1L);
     when(converter.toCommand(any(CreateMasterDataFieldReq.class))).thenReturn(command);
-    when(createHandler.handle(any(CreateMasterDataFieldCommand.class))).thenReturn(1L);
+    when(fieldService.create(any(CreateMasterDataFieldCommand.class))).thenReturn(1L);
 
     mockMvc
         .perform(
@@ -60,7 +57,7 @@ class MasterDataFieldControllerTest {
 
   @Test
   void testList() throws Exception {
-    when(listQueryHandler.handle(any(MasterDataFieldListQuery.class)))
+    when(fieldService.list(any(MasterDataFieldListQuery.class)))
         .thenReturn(Collections.emptyList());
 
     mockMvc

@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.13",
+  "version": "5.5.15",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
@@ -32,8 +32,8 @@
         [
           "4",
           "domain 不使用 QueryBuilder/Criteria/SQL",
-          "`domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly`",
-          "Active（blueprint）；其余见模块测试"
+          "`domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly`（豁免 `..domain.repository..`，E-4.1 / ADR-0030）",
+          "Active（共享规则，8 个应用模块共用；豁免口径 2026-09-20 由三处本地重写收敛回共享规则）"
         ],
         [
           "5",
@@ -168,8 +168,8 @@
         [
           "`domainMustNotUseQueryBuilder`",
           "Hard gate",
-          "domain 不依赖已识别查询 DSL",
-          "所有动态查询都被识别"
+          "domain（**除 `domain.repository` 这个 SDK 集成点**：基类自带 `updateByCriteria(Criteria<T>)`，ADR-0030 把本聚合读落在其 default 方法上）不依赖已识别查询 DSL",
+          "所有动态查询都被识别；`domain.repository` 内的 DSL 使用是允许的，故该规则不能证明域仓储的读形态合理"
         ],
         [
           "`commandHandlersMustNotUseQueryBuilder`",
@@ -326,6 +326,18 @@
           "Hard gate（**正确性门禁，不是命名风格**：E-13 命名约定默认 Advisory，本条守护的是 bean 名唯一——撞名会让容器启动期抛 `ConflictingBeanDefinitionException`）",
           "同模块 Spring 组件的有效 bean 名唯一（含 MapStruct 生成类；显式 `value` 优先，否则类短名首字母小写）",
           "类名是否合适、是否有两个协议合法同名（同名本身不算违规，只要求 bean 名可区分）"
+        ],
+        [
+          "`allTenantEntryPointsOnlyCalledBy`（含 `allTenantScanMethodsOnlyCalledBySchedule` 包装）",
+          "Hard gate（2026-09-20 新增并已接入 8 个应用模块：blueprint / iam / integration / masterdata / system / extension-studio / metadata-server / studio-generator）",
+          "全租户入口只被**已登记调用方**调用（判据 = `@TenantScope(ALL)` 或方法体 `Criteria.disableTenantFilter()`）；`adapter.schedule` 也只许调全租户入口。首次运行抓出 bone-iam 登录跨租户定位未登记、bone-integration 定时任务做租户内读两处真问题",
+          "调用方登记是否合理、该入口是否**应该**跨租户（白名单是评审决定，门禁只保证\"没有未登记的调用方\"，且只看 schedule 的直接调用）"
+        ],
+        [
+          "`allTenantEntryPointsMustBeNamedAllTenants`",
+          "Hard gate（2026-09-20 新增，同上 8 模块）",
+          "全租户入口命名为 `*AllTenants`，且 `*AllTenants` 方法确实绕过租户隔离（双向绑定，防\"只改名不改行为\"与\"只加注解不留痕迹\"）",
+          "命名以外的语义正确性；接口级 `@TenantScope(ALL)` 会让该接口全部 SQL 方法都需带后缀（门禁按同一判据判定）"
         ]
       ]
     },

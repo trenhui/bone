@@ -21,7 +21,7 @@ const api = createApiClient('/api/v1', { headers: { 'Content-Type': 'application
 // 系统配置 API
 export const systemConfigApi = {
   getConfig: async (params?: { keyword?: string; pageNum?: number; pageSize?: number }) => {
-    const p = { page: params?.pageNum ?? 1, size: params?.pageSize ?? 100, keyword: params?.keyword ?? '' };
+    const p = { pageNum: params?.pageNum ?? 1, pageSize: params?.pageSize ?? 100, keyword: params?.keyword ?? '' };
     const response = await api.get<ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
     return response.data;
   },
@@ -80,7 +80,7 @@ export const monitorApi = {
 
   getAlertRules: async (params: { pageNum: number; pageSize: number }) => {
     const response = await api.get<ApiResponse<PageResult<AlertRule>>>('/system/alert/rules/page', {
-      params: { page: params.pageNum, size: params.pageSize },
+      params: { pageNum: params.pageNum, pageSize: params.pageSize },
     });
     return response.data;
   },
@@ -117,7 +117,7 @@ export const monitorApi = {
 
   getAlertEvents: async (params: { pageNum: number; pageSize: number }) => {
     const response = await api.get<ApiResponse<PageResult<AlertRecord>>>('/system/alert/events/page', {
-      params: { page: params.pageNum, size: params.pageSize },
+      params: { pageNum: params.pageNum, pageSize: params.pageSize },
     });
     return response.data;
   },
@@ -135,7 +135,7 @@ export const logApi = {
     endTime?: string;
   }) => {
     const response = await api.get<ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
-      params: { page: params.pageNum, size: params.pageSize, keyword: params.keyword },
+      params: { pageNum: params.pageNum, pageSize: params.pageSize, keyword: params.keyword },
     });
     return response.data;
   },
@@ -190,7 +190,7 @@ export const dictApi = {
   },
   getDictPage: async (params: { type?: string; keyword?: string; pageNum?: number; pageSize?: number }) => {
     const response = await api.get<ApiResponse<PageResult<SysDict>>>('/system/dicts/page', {
-      params: { page: params.pageNum ?? 1, size: params.pageSize ?? 20, type: params.type, keyword: params.keyword },
+      params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, type: params.type, keyword: params.keyword },
     });
     return response.data;
   },
@@ -212,7 +212,7 @@ export const dictApi = {
 export const scheduleTaskApi = {
   getScheduleTaskPage: async (params: { keyword?: string; status?: string; pageNum?: number; pageSize?: number }) => {
     const response = await api.get<ApiResponse<PageResult<ScheduleTask>>>('/system/schedule-tasks/page', {
-      params: { page: params.pageNum ?? 1, size: params.pageSize ?? 20, keyword: params.keyword, status: params.status },
+      params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, keyword: params.keyword, status: params.status },
     });
     return response.data;
   },

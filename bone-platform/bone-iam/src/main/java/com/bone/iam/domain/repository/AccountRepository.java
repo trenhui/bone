@@ -36,7 +36,7 @@ public interface AccountRepository extends Repository<Account, Long> {
    * com.bone.core.tenant.context.TenantContextRunner} 按 {@code account.getTenantId()}
    * 显式声明租户（ADR-0031 D3）。
    */
-  default Optional<Account> findByUsernameForLogin(String username) {
+  default Optional<Account> findByUsernameForLoginAllTenants(String username) {
     return Optional.ofNullable(
         findOneByCriteria(
             Criteria.<Account>create().eq("username", username).disableTenantFilter()));
@@ -46,8 +46,8 @@ public interface AccountRepository extends Repository<Account, Long> {
    * 按用户名在<b>当前租户</b>内定位账号（建账号查重等已认证路径）。
    *
    * <p>不关租户过滤：这些路径的 {@code TenantContext} 由 JWT 过滤器写入，租户是已知量； 若改用 {@link
-   * #findByUsernameForLogin(String)}，查重会从「本租户唯一」漂移到「全平台唯一」， 与 {@code uk_iam_account_username
-   * (tenant_id, username)} 的语义直接冲突（不同租户同名会被误判 409）。
+   * #findByUsernameForLoginAllTenants(String)}，查重会从「本租户唯一」漂移到「全平台唯一」， 与 {@code
+   * uk_iam_account_username (tenant_id, username)} 的语义直接冲突（不同租户同名会被误判 409）。
    */
   default Optional<Account> findByUsernameInTenant(String username) {
     return Optional.ofNullable(

@@ -10,9 +10,12 @@ import com.bone.studio.generator.application.command.handler.CreateCodeTemplateH
 import com.bone.studio.generator.application.command.handler.DeleteCodeTemplateHandler;
 import com.bone.studio.generator.application.command.handler.PublishCodeTemplateHandler;
 import com.bone.studio.generator.application.command.handler.UpdateCodeTemplateHandler;
+import com.bone.studio.generator.application.query.handler.GetCodeTemplateDetailQueryHandler;
 import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryHandler;
+import com.bone.studio.generator.application.query.qry.GetCodeTemplateDetailQuery;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
+import com.bone.studio.generator.domain.data.CodeTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +37,7 @@ public class CodeTemplateController {
   private final DeleteCodeTemplateHandler deleteCodeTemplateHandler;
   private final PublishCodeTemplateHandler publishCodeTemplateHandler;
   private final GetCodeTemplateListQueryHandler queryHandler;
+  private final GetCodeTemplateDetailQueryHandler detailQueryHandler;
 
   @PostMapping
   public ApiResponse<Long> createCodeTemplate(@RequestBody CreateCodeTemplateCommand command) {
@@ -59,6 +63,12 @@ public class CodeTemplateController {
   public ApiResponse<Boolean> deleteCodeTemplate(@PathVariable Long id) {
     DeleteCodeTemplateCommand command = DeleteCodeTemplateCommand.builder().id(id).build();
     return ApiResponse.success(deleteCodeTemplateHandler.handle(command));
+  }
+
+  @GetMapping("/{id}")
+  public ApiResponse<CodeTemplate> getCodeTemplate(@PathVariable Long id) {
+    GetCodeTemplateDetailQuery qry = GetCodeTemplateDetailQuery.builder().id(id).build();
+    return ApiResponse.success(detailQueryHandler.handle(qry));
   }
 
   @PostMapping("/{id}:publish")

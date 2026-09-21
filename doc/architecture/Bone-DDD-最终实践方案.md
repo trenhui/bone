@@ -2,7 +2,9 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.5.13（命名收敛落地 + 度量口径批次：① E-13.3 三个 Domain Gateway `<短名>Impl` 存量**已收敛**为 `<短名>GatewayAdapter`——`DatabaseMetadataGatewayAdapter` / `CatalogMetadataGatewayAdapter`（studio-generator，仍在 `infrastructure/gateway`）、`TenantDeletionGatewayAdapter`（IAM，并从 `infrastructure/persistence` 迁至 E-10.2 落点 `infrastructure/gateway`），`doc/_generated/metadata/compliance.json` 已同批重算；未收敛的相邻形态（bone-system 4 个 + metadata-server 1 个自名 `*Gateway`、studio-generator 2 个 `*ReadPortImpl`）就地登记为待裁决并写明理由；② 新增门禁：`check-ddd-doc-code-sync.py` 校验 E-13 命名样例 `` `A` → `B` `` 的右侧类必须真实存在（G-1.1 文档门禁 #13 扩项）——命名小节是最容易被重构打穿的地方，2026-09-18 的 `PaymentGateway` → `SimulatedPaymentGatewayImpl` 即此形态；③ E-0.2 迁移度量由"待定阈值"改为**触达即收敛**纪律，明确不设数字 KPI（阈值型 KPI 会诱发"为达标而合并"的仪式化改造，撞 E-3.2）；④ G-1.8 指标输出**索引 / 工作树双口径**并写明读法（重构期间索引口径会把已删除未提交的文件算进去——实测 `*ApplicationService` 索引 3 / 工作树 2），2026-09-19）
+> **版本**：5.5.15（租户隔离显式性批次：① SDK 的 SQL 通道改为**启动期 fail-fast**——`@Sql` / 外置模板方法缺 `@TenantScope` 直接拒绝注册（此前注解默认 `MANUAL`=不注入，"忘写"等于静默跨租户读写而无人报错），注解同时支持写在仓储接口上作为该接口的默认策略；② **全租户入口的事实判据统一**为「`@TenantScope(ALL)` ∨ `Criteria.disableTenantFilter()`」——纠正此前只按注解判定、漏掉 Criteria 通道（`TenantFilterInjector` 不读注解）的口径；③ 新增三条共享门禁（调用面白名单 + 命名双向绑定）并铺到 8 个应用模块，**首次运行即抓出两处真问题**：bone-iam 的登录跨租户定位未登记（已改名 `findByUsernameForLoginAllTenants` 并登记调用方）、bone-integration 的统计任务在定时线程做租户内读（已按 G-2 冻结登记，租户模型待模块 Owner 定夺）；④ E-2 / E-4.4 同步改写，删掉"缺标注一律拒绝执行"这句与实现不符的表述；2026-09-20）
+> **上一版 5.5.14**（规范语义收敛批次：① E-0.2 新增**受控批量收敛通道**、E-3.11 第 3 条改为"默认禁批量、满足判据可批量"——一次性批量重构从"一律禁止"回到"有证据即可授权"，bone-iam 2026-09-20 的全量收敛为该通道第一个先例（[ADR-0032](./adr/0032-controlled-batch-convergence.md)）；② 新增 [E-3.12 存量读侧收敛](#e-312-存量读侧收敛)，给读侧补齐与写侧对称的判据与迁移剧本——此前只有写侧有"触达即收敛"，读侧长期停在"没人说它违规、也没人推它收敛"；③ 正文里的易变计数移出规范（E-3.7 落地现状、G-1.8 双口径示例、G-1.1 后的 HC 摘要），改为口径描述或脚本现算——规范正文里的数字会在下一次重构后变成错的；④ 定义**应用层协作服务**（`application/service/`）并给出与 `support/`、`domain/service` 的落点判据（E-10.2 / E-13.2 / E-13.4，[ADR-0033](./adr/0033-application-collaboration-service.md)）——此前 IAM 该形态构件在规范里无家可归，评审只能靠猜；2026-09-20）
+> **上一版 5.5.13**（命名收敛落地 + 度量口径批次：① E-13.3 三个 Domain Gateway `<短名>Impl` 存量**已收敛**为 `<短名>GatewayAdapter`——`DatabaseMetadataGatewayAdapter` / `CatalogMetadataGatewayAdapter`（studio-generator，仍在 `infrastructure/gateway`）、`TenantDeletionGatewayAdapter`（IAM，并从 `infrastructure/persistence` 迁至 E-10.2 落点 `infrastructure/gateway`），`doc/_generated/metadata/compliance.json` 已同批重算；未收敛的相邻形态（bone-system 4 个 + metadata-server 1 个自名 `*Gateway`、studio-generator 2 个 `*ReadPortImpl`）就地登记为待裁决并写明理由；② 新增门禁：`check-ddd-doc-code-sync.py` 校验 E-13 命名样例 `` `A` → `B` `` 的右侧类必须真实存在（G-1.1 文档门禁 #13 扩项）——命名小节是最容易被重构打穿的地方，2026-09-18 的 `PaymentGateway` → `SimulatedPaymentGatewayImpl` 即此形态；③ E-0.2 迁移度量由"待定阈值"改为**触达即收敛**纪律，明确不设数字 KPI（阈值型 KPI 会诱发"为达标而合并"的仪式化改造，撞 E-3.2）；④ G-1.8 指标输出**索引 / 工作树双口径**并写明读法（重构期间索引口径会把已删除未提交的文件算进去——实测 `*ApplicationService` 索引 3 / 工作树 2），2026-09-19）
 > **同批追加（5.5.13）**：⑤ 落地 HC-008 的本地载体——新增 `scripts/check-ddl-required-columns.py`（`--check` 拦**新增表**缺 `tenant_id`/`created_at`/`updated_at`/`deleted`，并入 `scripts/ci-check.sh` `[7/7]`）；存量 26 张表的缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩）并**已逐表分类**：18 张 `by-design`（追加型日志 / 聚合子表 / 租户根表 / 全局目录）、8 张待处理（2 张 `gap-candidate` 需走 L3 DDL 审批、6 张待模块 Owner 裁决租户归属）；HC-008 由 Planned 升 **Manual（本地，无 CI workflow）**，G-1.1 12c 同步改写。
 > **同批追加（5.5.13b）**：⑥ 相邻形态第二批收敛——bone-system 4 个 + metadata-server 1 个自名 `*Gateway` 改为 `<短名>GatewayAdapter`（见 E-13.3 存量段），`doc/_generated/console/` 与 `doc/_generated/metadata/` 同批重算；⑦ blueprint 的 `OrderQueryPort` / `OrderReadRepository` 已随 ADR-0030（2026-09-19 采纳）合并进 `OrderRepository`——读投影驻留 `domain/repository` 的域仓储、投影类型置于 `domain/order/projection`，删除原 `*QueryPort` 与读侧 `*Repository`；E-4.1 / E-4.2 / E-4.4 / E-13.3 / E-10.3 与本条样例随改。
 > **同批追加（5.5.13c）**：⑧ blueprint 支付读侧按 ADR-0030 §P4 同模式折叠——删除 `application/query/port/PaymentQueryPort` 与 `infrastructure/query/PaymentQueryAdapter`，两个全租户运维扫描方法并入 `domain/repository/PaymentRepository`（Criteria 通道 + `disableTenantFilter()`，方法名后缀 `AllTenants`），行投影迁 `domain/payment/projection`，`@EnableSqlRepositories` 同步摘除 `infrastructure.query`；该模块自此**无任何 `*QueryPort`**。⑨ 出站实现包落点统一（E-13.3 补条）——**按端口来源分，不按实现性质分**：`MockPaymentSignaturePortAdapter` 实现的是 `application/port/out` 技术端口，由 `infrastructure/gateway/payment` 归位 `infrastructure/signature`；`gateway/mock` 撤销，`MockInventoryGatewayAdapter` 落 `infrastructure/gateway/inventory`。⑩ 新增门禁 `schedule_only_calls_all_tenants_repository_methods`（blueprint 模块级，`adapter.schedule` 调域仓储只许 `*AllTenants` 结尾——域仓储合并读写后自带 `save` / `update` / `delete`，仅按包豁免不足），`adapter_no_domain_repository_all_packages` 的豁免由类名名单放宽为 `..adapter.schedule..` 整包。⑪ `OrderPriceCalculator` 内嵌的 `public static class OrderPriceRequest` 抽为独立 record `domain/extension/order/OrderPriceRequest`（该内嵌类是全仓最后一处「domain 接口内嵌可变静态类」）。
@@ -107,7 +109,7 @@
 
 默认使用**语义化 ApplicationService** 作为入站边界（[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）。复杂度升级时才引入 `Command` / `Handler`：写意图需显式契约或多入口时加 `Command`，命令异步/跨事务时 `CommandHandler` 落在 Outbox 消费端/任务端，读模型与聚合分歧时 ApplicationService 内升级 QueryPort（复杂读走 QueryPort；**仅当读侧需要独立路由/生命周期时才进 `QueryHandler`**）。判据见 [E-3.7](#e-37-入口构件决策)。
 
-> **落地现状**：`*ApplicationService` 是**目标形态**。blueprint 样板已完整收敛——`OrderApplicationService` 和 `PaymentApplicationService` 统一承载全部读写用例（含两段式事务、远程渠道调用、验签幂等、乐观锁冲突处理），7 个 Handler 类全部内联消除，适配器零 Handler 依赖。bone-platform（system / iam / masterdata）存量应用层仍由 `*CommandHandler` / `*QueryHandler` 承载，按 E-0.2 的迁移节奏逐步收敛。所以这里的 ApplicationService 路径是**新代码基准**：评审不要把"存量 Handler 形态"判成违规；反过来，新增模块也不能拿"存量都这么写"当理由继续堆 Handler。状态随本文版本更新，见第三部分。
+> **落地现状**：`*ApplicationService` 是**目标形态**。blueprint 样板已完整收敛——`OrderApplicationService` 和 `PaymentApplicationService` 统一承载全部读写用例（含两段式事务、远程渠道调用、验签幂等、乐观锁冲突处理），原 Handler 全部内联消除，适配器零 Handler 依赖；bone-iam 已按 [ADR-0032](./adr/0032-controlled-batch-convergence.md) 的受控批量收敛通道完成同形态收敛；其余 bone-platform 模块的存量应用层仍有 `*CommandHandler` / `*QueryHandler` 承载，按 E-0.2 的迁移节奏逐步收敛。**本节不登记迁移计数**：正文只写判据，实时进度用 `python3 scripts/check-ddd-gate-state.py --metrics` 现算（G-1.8）——写进正文的数字在下一次重构后就会变成错的（本版本即因此删掉一处）。所以这里的 ApplicationService 路径是**新代码基准**：评审不要把"存量 Handler 形态"判成违规；反过来，新增模块也不能拿"存量都这么写"当理由继续堆 Handler。
 
 ### 裁剪档位
 
@@ -595,6 +597,7 @@ CQRS 首先是读写关注点分离：
 - 规则语义发生变化时，先修规则 fixture 和声明，再迁移代码；
 - **存量 CommandHandler 迁移**：不强制一次性迁移到 ApplicationService。存量 Handler 在功能修改时评估是否可合并到同义 ApplicationService；新用例默认从 ApplicationService 起步（AS-01：默认入口，不是唯一入口——异步消费、定时触发、长流程入口可直接以专用应用构件起步）。
 - **迁移纪律（不设数字 KPI，只设触达规则）**：新模块默认从 ApplicationService 起步（AS-01：默认入口而非唯一入口），**不因目录模板预生成** `*CommandHandler` / `*QueryHandler`（确需时按 AS-03 的结构性触发显式创建）；存量 Handler 一律**触达即收敛**——本次改动触及某用例时，若同义 ApplicationService 已存在就把 Handler 内联进去，没触及就不动。**明确不设"每季度净降 N 个"式指标**：阈值型 KPI 会诱发"为达标而合并 / 改名"的仪式化改造，正是 E-3.2 要禁的东西。[G-1.8](#g-18-实施状态指标) 的计数只用于观察趋势与暴露长期悬置，不构成任务分解或考核依据。
+- **受控批量收敛通道（E-3.11 第 3 条的例外通道）**：默认仍是"触达即收敛"，一次性批量收敛只在**同时满足五条**时允许，且授权与登记必须落在 ADR（见 [ADR-0032](./adr/0032-controlled-batch-convergence.md)），不得只在 commit message 里写一句"架构师已授权"：① 范围限于**单个模块**，可回滚为一次提交；② **对外契约全程不变**并给出证据（HTTP 契约 / DTO / 返回类型 / 能力元数据 / 事件 payload，任一项变动即不适用本通道）；③ 目标模块的测试与 ArchUnit 全绿，且 freeze 基线**只收缩不新增**；④ 有**负向探针**证明被影响的规则仍在判定（不是空跑、不是靠空匹配兜底）；⑤ 收敛后的形态就是目标态本身——把 Handler 内联进同义 ApplicationService，而不是换个名字保留同一层。批量收敛是**通道不是豁免**：产物仍受全部 P/E/G 条文约束，ADR 必须写明判定依据、等价性证据与代价（如服务类方法数上升带来的拆分压力）。
 
 #### E-0.3 破坏性变更
 
@@ -682,6 +685,8 @@ Platform Kernel 只允许实体与聚合基类、审计、租户上下文、统�
 - 查询和写入必须包含租户隔离。
 - 平台超管跨租户操作必须授权并审计。
 - 外层不得修改聚合 `tenantId`。
+- **全租户入口只有一个事实判据**：SQL 通道 `@TenantScope(ALL)`、Criteria 通道 `Criteria.disableTenantFilter()`——任一成立即为全租户入口（两条通道机制不同，只按注解或只按方法名判定都会漏，见 E-4.4）。
+- 全租户入口必须命名为 `*AllTenants`，且只允许**已登记调用方**调用：定时运维（`adapter.schedule`），或经模块登记的前置入口（如登录时租户未知的跨租户定位）。命名与事实的双向绑定、调用面白名单由共享门禁 `allTenantEntryPointsMustBeNamedAllTenants` / `allTenantEntryPointsOnlyCalledBy` 守护。
 
 <a id="application-use-case-boundary"></a>
 
@@ -965,7 +970,7 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 
 1. **最小生成**：默认只生成 `Controller → ApplicationService → Aggregate → Repository` 核心链路；**不应自动生成 DDD 全家桶**——无独立职责的 `CommandHandler` / `DomainService` / `ReadModel` 即 E-3.2 定义的 Ceremonial Architecture。确需 `Command` / `Handler` / `QueryPort` 时按 [E-3.7](#e-37-入口构件决策) 决策树显式创建。
 2. **新增抽象前先质问**：任何新增的 `Handler` / `Service` / `Port` / `Facade`，必须能回答「没有这个抽象，哪个**独立**问题无法被解决」；答不上就不建。
-3. **渐进重构（Boy Scout）**：对存量代码只做本次需求触达的**局部**顺手迁移；**禁止全仓重构、批量重命名、批量格式化**。存量 `*CommandHandler` 的收敛按 E-0.2 的节奏进行，不得以“统一架构”为名一次性改写。
+3. **渐进重构（Boy Scout）**：对存量代码**默认**只做本次需求触达的**局部**顺手迁移，不得以“统一架构”为名顺手改写范围外的代码；**批量重命名、批量格式化一律禁止**。存量 `*CommandHandler` 的收敛按 E-0.2 的节奏进行；确需一次性批量收敛时，走 [E-0.2 受控批量收敛通道](#e-02-存量不符合规范代码的处理)（五条判据 + ADR 授权 + 等价性证据 + ADR 登记），不得只在 commit message 里写一句授权——2026-09-20 的 bone-iam 收敛走的就是该通道。
 
 **AI 生成 Step1–6（等价于 E-3.7 决策树）**：
 
@@ -975,6 +980,28 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 4. 仅当需求命中 E-3.7 的硬触发（异步 / 多入口 / 显式幂等）才追加 `Command` / `CommandHandler`；读模型与聚合分歧才追加 `QueryPort`。
 5. 写前对每个新增抽象回答「没有它，哪个独立问题无法解决」；答不上就不生成。
 6. 只处理本次需求触达的代码，不改动范围外结构；交付前对照 [提交前自检](#提交前自检) 与 [G-4 交付验收清单](#g-4-交付验收清单) 自检。
+
+#### E-3.12 存量读侧收敛
+
+写侧有 AS-01～AS-06 与"触达即收敛"，读侧此前只有一句"复杂读本身不是拆分理由"——判据缺了一半，存量 `*QueryHandler` 就长期停在"没人说它违规、也没人推动它收敛"的状态里。本节补齐读侧口径，与写侧对称。
+
+**保留判据**：读用例在本次改动触达时评估一次，默认把方法体内联进同义 ApplicationService（AS-04）；只有下面任一条成立才保留独立 `*QueryHandler`：
+
+1. **独立路由 / 生命周期**：只读从库、独立缓存策略、独立限流、独立线程池或事务传播；
+2. **读写完全解耦**：报表引擎、搜索索引等读写各自演进、各自发布；
+3. **入口自带独立触发**：MQ / 定时 / 工作流触发，有自己的幂等键、重试与死信语义。
+
+"这个查询很复杂 / 组合了很多端口"**不构成**保留理由——复杂读在 ApplicationService 内调用 QueryPort 即可（E-4.2）。保留的每个 QueryHandler 在模块 README 登记命中上面哪一条。
+
+**迁移剧本**（顺序取自 blueprint 把读侧并入域仓储那次）：
+
+1. **分类落点**：读投影属于**本聚合** → 走 `domain/repository` 的自声明读方法（返回域层投影，ADR-0030）；**跨聚合 / 报表 / 搜索** → 走 `application/query/port` + `infrastructure/query`。
+2. **搬方法体**：把 Handler 方法体移入同义 ApplicationService，**返回类型与 DTO 装配保持不变**（投影到 Dto 的装配仍在 `application/query/support` 的 Assembler 完成）；这一步先不删 Handler。
+3. **切调用方**：adapter 改为依赖 ApplicationService，Handler 保留一个提交周期做对照，逐字段确认对外契约一致。
+4. **删除**：Handler 与随之空掉的目录一起删除（不留占位），同步摘掉 `@EnableSqlRepositories` 里已无实现的包。
+5. **验证**：模块 ArchUnit 与契约 / 集成测试全绿，freeze 基线**只收缩不新增**；读侧 DSL 仍不得出现在 application。
+
+> **不要顺手删端口**：读侧 `QueryPort` 是被调用的契约，`*QueryHandler` 只是可选的入口构件，两者不在同一层（E-3.1）。收敛的目标是**入口构件数量**，不是读侧端口数量——把 `QueryPort` 一起删掉，等于把可复用契约换成单点实现。
 
 <a id="cqrs-port-location"></a>
 
@@ -1032,7 +1059,7 @@ adapter → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
 ```
 
 - 新查询端口固定在 `application/query/port`，实现固定在 `infrastructure/query`；结果放 `application/query/dto` 或 `projection`。
-- **读侧 DSL 的落点（ADR-0030 后按层说清）**：`QueryBuilder` / `Criteria` / `SQL` **不得出现在 application**（`readSideDslOnlyInQueryLayer` 的主判据，最外层边界）；`domain` 内**只允许 `domain.repository`** 触碰读侧 DSL——它是 SDK 集成点，基类 `Repository<T, ID>` 自带 `updateByCriteria(Criteria<T>)`，blueprint 模块级 `domain_no_query_builder` 即按 `..domain.repository..` 豁免；其余 domain 包（聚合 / 值对象 / 事件）一律不得依赖 DSL。domain 不依赖查询 DTO / QueryPort；QueryHandler 返回投影，不返回聚合供外层修改。
+- **读侧 DSL 的落点（ADR-0030 后按层说清）**：`QueryBuilder` / `Criteria` / `SQL` **不得出现在 application**（`readSideDslOnlyInQueryLayer` 的主判据，最外层边界）；`domain` 内**只允许 `domain.repository`** 触碰读侧 DSL——它是 SDK 集成点，基类 `Repository<T, ID>` 自带 `updateByCriteria(Criteria<T>)`，该豁免已固化在共享规则 `domainMustNotUseQueryBuilder`（`..domain.repository..` 放行，其余 domain 包照旧禁止；2026-09-20 由 blueprint / IAM / system 三处本地重写收敛回共享规则）；其余 domain 包（聚合 / 值对象 / 事件）一律不得依赖 DSL。domain 不依赖查询 DTO / QueryPort；QueryHandler 返回投影，不返回聚合供外层修改。
 - 存量 `domain/gateway/*ReadPort` 随功能修改迁移（存量模块不得照抄旧的 `domain/gateway/*ReadPort` 形态）；新模块按 `application/query/port` 实现。参考实现分两处取：**本聚合读**看 `bone-blueprint`（已按 ADR-0030 并入域仓储，该模块当前**没有** `*QueryPort` 与 `infrastructure/query` 包）；**跨聚合读**看 `bone-masterdata`（`MasterDataQueryPort` / `DataQualityQueryPort` + `infrastructure/query` 适配层）。
 - **QueryAdapter 内部的通道选择**：单表条件/分页走 SDK `Criteria`（自动租户 + 自动软删 + 自动 count）；只有 JOIN 扁平投影、聚合统计、全租户扫描这类 Criteria 表达不了的读才用 SDK `@Sql` 读侧仓储，约束见 [E-4.4](#e-44-sql-读侧仓储)。**通道的宿主按 ADR-0030 分两类**：跨聚合 `QueryAdapter` 的两条通道都收在 `infrastructure/query` 内；本聚合读则直接在 `domain/repository` 的 `default` 方法上落地（`@Sql` 走外置模板，Criteria 就地构造，`disableTenantFilter()` 进全租户通道）。两类都不各自发明独立 SQL 文件缓存或裸 `JdbcTemplate`。
 - **读侧不与写侧对称**（ADR-0028）：写侧用了 `Command/CommandHandler` 不代表读侧也要 `Query/QueryHandler`。复杂列表（如 Customer+Order+Payment+Risk）走 `ApplicationService → QueryPort → SQL/View → DTO`，不硬套 `Query → QueryHandler → Aggregate`；读编排组合多个 QueryPort 时在 ApplicationService 内拆读方法，不新增 QueryService。
@@ -1095,9 +1122,9 @@ public class OrderSearchApplicationService {
 
 #### E-4.4 自定义 SQL 读侧仓储（`@Sql` 通道）
 
-`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql` 自定义仓储方法。`@Sql` 是**第三类通道，不是默认选择**——它唯一能做的事是表达前两类表达不了的东西（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离须显式声明 `@TenantScope`**：`AUTO` 由 `TenantSqlRewriter` 按锚点 `/*bone:tenant*/` 注入（fail-closed，缺锚点即拒绝执行）、`MANUAL` 须手写条件、`ALL` 显式退出租户隔离、`BYPASS` 退软删；缺标注或锚点缺失一律拒绝执行，不会"静默放行"（ADR-0030、E-2）。
+`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql` 自定义仓储方法。`@Sql` 是**第三类通道，不是默认选择**——它唯一能做的事是表达前两类表达不了的东西（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离须显式声明 `@TenantScope`**：`AUTO` 由 `TenantSqlRewriter` 按锚点 `/*bone:tenant*/` 注入（缺锚点或复杂查询一律拒绝执行）、`MANUAL` 须手写条件、`ALL` 显式退出租户隔离、`BYPASS` 退软删。**缺标注在启动期就拒绝注册**（`RepositoryFactoryBean` fail-fast，[ADR-0034](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)）：注解默认值是 `MANUAL`（不注入），"忘写"过去等于该方法静默跨租户读写，现在等于仓储起不来；注解可写在方法上，也可写在仓储接口上作为该接口的默认策略。锚点缺失则是执行期 fail-closed。两者合起来才是"不会静默放行"（ADR-0030、E-2）。
 
-blueprint 参考实现：`domain/repository/OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030，2026-09-19 启用）——`@Sql` 方法 `findOrderWithItems`（`MANUAL` 显式 `tenantId`）走 JOIN 扁平投影，Criteria 方法 `findOrderPage` 走列表分页，全租户扫描 `findExpiredUnpaidOrdersAllTenants` 走 `@TenantScope(ALL)`；`PaymentRepository` 同模式折叠（读侧 Criteria + `disableTenantFilter()`，两个 `*AllTenants` 扫描方法）。**本模块现已无任何 `*QueryPort`**：它只演示「本聚合读并入域仓储」这一条通道；跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`（其他模块实例见 E-13.3）。**按方法选通道是正常形态**：这种混合不是不一致，而是把每条 SQL 放进它该在的那层护栏里。
+blueprint 参考实现：`domain/repository/OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030，2026-09-19 启用）——外置模板方法 `findOrderWithItems`（`MANUAL` 显式 `tenantId`，模板 `OrderRepository/findOrderWithItems.sql`）走 JOIN 扁平投影，Criteria 方法 `findOrderPage` 走列表分页，全租户扫描 `findExpiredOrdersAllTenants`（`@TenantScope(ALL)` + 模板 `OrderRepository/findExpiredOrdersAllTenants.sql`）；`PaymentRepository` 同模式折叠（读侧 Criteria + `disableTenantFilter()`，两条扫描方法 `findExpiredPaymentsAllTenants` / `findSuccessPaymentsBeforeAllTenants`）。**本模块现已无任何 `*QueryPort`**：它只演示「本聚合读并入域仓储」这一条通道；跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`（其他模块实例见 E-13.3）。**按方法选通道是正常形态**：这种混合不是不一致，而是把每条 SQL 放进它该在的那层护栏里。**全租户入口的命名与调用面由三条共享门禁守护**（见 G-1.5），不是命名建议。
 
 **六条硬约束**（前两条是"起不来"，后四条是"起得来但结果错"）：
 
@@ -1105,7 +1132,7 @@ blueprint 参考实现：`domain/repository/OrderRepository`（`extends Reposito
 |---|------|----------|
 | 1 | 接口简名以 `Repository` 结尾并 `extends` SDK `Repository<T, ID>`，且落在 `@EnableSqlRepositories(basePackages)` 覆盖的包内——`infrastructure/query`（跨聚合读侧仓储）或 `domain/repository`（ADR-0030 合并后本聚合读方法所在，blueprint 即此形态） | 不被代理或 Bean 不注册 |
 | 2 | 该包必须显式登记到 `@EnableSqlRepositories(basePackages = {...})` | **注入失败**，而不是"SQL 找不到"——这是排查成本最高的一处误解 |
-| 3 | `@TenantScope(AUTO)` 由 `TenantSqlRewriter` 自动注入租户条件；`@TenantScope(MANUAL)` 须手写 `AND x.tenant_id = #{tenantId}`；全租户须 `@TenantScope(ALL)` 并主动省略、经 E-2 登记授权 | 缺标注 / 锚点缺失即 fail-closed 拒绝执行；`MANUAL` 漏写 → 静默跨租户越权 |
+| 3 | `@TenantScope(AUTO)` 由 `TenantSqlRewriter` 自动注入租户条件；`@TenantScope(MANUAL)` 须手写 `AND x.tenant_id = #{tenantId}`；全租户须 `@TenantScope(ALL)`（或 Criteria 通道的 `disableTenantFilter()`）、命名为 `*AllTenants`、只由已登记调用方使用（E-2） | **缺标注 = 启动期拒绝注册**（不再是执行期才报错，ADR-0034）；锚点缺失 = 执行期 fail-closed；`MANUAL` 漏写 → 静默跨租户越权；全租户入口漏命名或调用方未登记 → 共享门禁判红 |
 | 4 | `@TenantScope(AUTO)` 自动注入 `deleted = 0`（含 JOIN 子表）；`@TenantScope(MANUAL)` 须手写 `AND x.deleted = 0`，**且 JOIN 的每个子表都要带** | blueprint 迁到 `@Sql` 前的旧模板 `LEFT JOIN t_order_item oi ON o.id = oi.order_id` 漏了 `oi.deleted = 0`，软删明细一路被 join 出来、无任何报错 |
 | 5 | 投影需有可访问的无参构造器、字段非 `final`，列写显式别名（`o.id AS order_id`） | `SmartRowMapper` 反射填字段失败 / 字段恒为 `null` |
 | 6 | 返回类型不得写 `PageResult<T>`（代理无分页分支） | 结果被误映射；分页须 `countXxx` + `selectXxx ... limit/offset` 两个方法，调用方自行 `PageResult.of` |
@@ -1460,17 +1487,18 @@ com.bone.{module}/
 
 这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与其中列出的子包是"该有的都在这里"，模块按自身需要增加自有子包——blueprint 参考实现即另有 `infrastructure/gateway`（Domain Gateway 实现）、`extension`、`idempotency`、`context`、`event`、`config`、`security`、`observability`，这些**不要求全平台统一**。`studio-generator` 的目标默认输出是 `adapter`、`application`、`domain`、`infrastructure` 四个顶级目录下的最小骨架（尚未实现，见 E-3.7）；`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量代码不要求一次性搬包；空的 `support`、`orchestration`、`gateway` 也不要作为占位生成。
 
-##### ApplicationService 平铺 + support 子包
+##### ApplicationService 平铺、协作服务子包与 support 子包
 
-语义化 `*ApplicationService` **直接平铺在 `application/` 根目录**（blueprint 样板形态：`OrderApplicationService`、`PaymentApplicationService` 都在根目录），不建 `application/service/` 子包。`application/support/` 仅承载技术编排类——对 `application/port/out` 多端口的协调编排，不碰 `domain` 层：
+语义化 `*ApplicationService` **直接平铺在 `application/` 根目录**（blueprint 样板形态：`OrderApplicationService`、`PaymentApplicationService` 都在根目录），**`application/service/` 不是 ApplicationService 的落点**。`application/` 下除用例入口外还有两类构件：**应用层协作服务**（`application/service/`，被多个用例复用的应用级协作逻辑，IAM 现行形态）与**技术编排类**（`application/support/`，只协调出站端口、不碰 `domain`）。三者同层不同职责，按 [ADR-0033](./adr/0033-application-collaboration-service.md) 的下表判定：
 
-| 维度 | 语义化 ApplicationService（根目录平铺） | 技术编排类（support/ 子包） |
-|---|---|---|
-| **定位** | 业务用例编排入口（E-3.7 AS-01） | 对 `application/port/out` 多端口的协调编排 |
-| **依赖** | `domain` 层 + `application/port/out` + `application/query/port` | **只**依赖 `application/port/out`，不得碰 `domain` |
-| **调用方** | 仅由 adapter 层调用；返回**应用 DTO / 领域结果**，`ApiResponse<T>` / `PageResult<T>` 等协议包装由 adapter 组装 | 可被 adapter 直接注入；同样**不得返回 `ResponseEntity` 等 HTTP 类型**——HTTP 状态码与响应头由 adapter 决定 |
-| **契约** | 按 E-3.7 决策树逐步引入；多业务能力时按 E-3.8 拆分 | 必须保持少量（典型模块 ≤2 个），典型场景为幂等、限流、请求快照等横切关注点 |
-| **禁止** | — | 不得直接出现在 `studio-generator` 默认骨架中；默认骨架只生成 ApplicationService |
+| 维度 | 语义化 ApplicationService（`application/` 根目录平铺） | 应用层协作服务（`application/service/`） | 技术编排类（`application/support/`） |
+|---|---|---|---|
+| **定位** | 业务用例编排入口（E-3.7 AS-01） | **被多个用例复用的应用级协作逻辑**：跨聚合 / 跨仓储的编排片段、应用级配额与校验、多个 QueryPort 的组合读取 | 对 `application/port/out` 多端口的协调编排 |
+| **依赖** | `domain` 层 + `application/port/out` + `application/query/port` | `domain`（仓储 / 聚合 / 领域服务）+ `application/port/out` / `application/query/port`；**读侧 DSL（`QueryBuilder` / `Criteria` / SQL）一律不得出现**——`readSideDslOnlyInQueryLayer` 对 `application/service` 同样生效，取数须下沉 `domain/repository` 的 `default` 方法（ADR-0030）或 `infrastructure/query` | **只**依赖 `application/port/out`，不得碰 `domain` |
+| **调用方** | 由 adapter 层调用；返回**应用 DTO / 领域结果**，`ApiResponse<T>` / `PageResult<T>` 等协议包装由 adapter 组装 | **只由 application 层构件调用**，不得被 adapter 直接注入；返回值是领域对象或应用内部类型，不返回协议包装 | 可被 adapter 直接注入；同样**不得返回 `ResponseEntity` 等 HTTP 类型**——HTTP 状态码与响应头由 adapter 决定 |
+| **事务与不变量** | 持有写事务（E-3.5）；只编排，不承载聚合内部规则 | **不持有事务边界、不承载聚合不变量**：需要独立事务说明它其实是一个用例，应回落 ApplicationService；出现状态迁移判断即回落聚合或领域服务 | 默认无事务、无业务规则 |
+| **契约** | 按 E-3.7 决策树逐步引入；多业务能力时按 E-3.8 拆分 | 每个模块在 README 登记用途，数量保持少量；方法名用调用方的用例语言 | 必须保持少量（典型模块 ≤2 个），典型场景为幂等、限流、请求快照等横切关注点 |
+| **落点判据** | — | 无 IO 的纯业务规则（且失败语义可用 `DomainException` 表达、由应用层转换，见 E-5.3.1）→ 下沉 `domain/service`；只协调技术端口 → 归 `support/`；两者都不是、且**不是单点透传**（被多个用例 / 多个应用服务 / 模块内公共工具调用，或承载单一用例内可独立测试的协作步骤）→ 留在此处；**没有调用方的直接删除**（E-3.11） | 不得直接出现在 `studio-generator` 默认骨架中；默认骨架只生成 ApplicationService |
 
 > **典型技术编排类示例**：`com.bone.core.idempotency.IdempotencyService`（幂等 Key 哈希计算 + 快照存储编排），依赖 `com.bone.core.idempotency.IdempotencyStore`（存储契约，业务模块 infrastructure 层实现），由 Controller 在业务用例执行前后调 `replay()` / `remember()`。
 >
@@ -1687,12 +1715,13 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 入站门面 | `OrderFacade` | 符合 E-3.4 的稳定、粗粒度入站契约 |
 | SDK 入站契约 | `MetadataApi` | 新增使用 `*Api`（目标命名示例，非现存类）；存量 `MetadataService` 不追溯 |
 
-**`*Service` 后缀的三种含义**：
+**`*Service` 后缀的四种含义**（`*Service` 是唯一按包分层的后缀，同一个模块内必须按包区分语义，不得混用）：
 
 | 后缀 | 位置 | 职责 | 典型内容 |
 |------|------|------|----------|
 | `*DomainService` / `*Service`（domain 层） | `domain/service` | 纯业务规则，无 IO、无事务 | 跨聚合定价策略、复杂业务校验 |
 | `*ApplicationService` | `application/`（根目录平铺） | 用例编排，有事务、有 IO | 加载聚合、调用行为、保存、发布事件 |
+| `*Service`（application 层） | `application/service` | 应用层协作服务：被多个用例复用的应用级协作逻辑，可依赖 `domain`，**不持有事务、不承载聚合不变量**（E-10.2、[ADR-0033](./adr/0033-application-collaboration-service.md)） | IAM 现行形态：`AccountRoleBindingService`、`TenantQuotaEnforcer`、`RoleHierarchyResolver` 等 |
 | `*Port`（出站端口） | `application/port/out` | 统一出站端口后缀 | `PricingPort`、`TenantPort`、`OrderMessagePort`、`ConsumedEventPort`、`PaymentSignaturePort`、`OrderOutboxPort`、`OrderOutboxRelayPort` 等（blueprint 样板：7 个端口全 `*Port`，不再用 `*Service` / `*Provider` / `*Store` / `*Sender` / `*Writer`） |
 
 禁止将领域服务命名为 `*ApplicationService`，也禁止在 ApplicationService 中承载聚合内部状态迁移规则。二者不是“简单 vs 复杂”的替代关系，而是不同层的职责分工。
@@ -1744,7 +1773,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 后缀清单已按层拆到 E-13.2（领域与应用构件）和 E-13.3（端口、适配器与触发器），本节只处理容易撞车的几组：
 
 - `*Event` 与 `*IntegrationEvent`：前者是上下文内发生的事实，后者是跨上下文的版本化契约。取舍不清时用更具体的那个，例如 `OrderPaidIntegrationEvent` 优于 `OrderPaidMessage`。
-- `*Service` 与 `*ApplicationService` 与 `*Port`：三者分属不同层不同职责——`*Service` 只出现在 `domain/service`（纯规则、无 IO），`*ApplicationService` 平铺在 `application/` 根目录（用例编排、有事务），`*Port` 统一出站端口后缀在 `application/port/out`。三者不是“简单 vs 复杂”的替代关系，对照见 E-13.2。
+- `*Service` 与 `*ApplicationService` 与 `*Port`：三者分属不同层不同职责——`*Service` 出现在 `domain/service`（纯规则、无 IO）与 `application/service`（应用层协作服务：可依赖 domain、不持有事务、不承载聚合不变量，见 E-10.2）两处，**同一个模块内必须靠包路径区分，不得在同一层混用两种语义**；`*ApplicationService` 平铺在 `application/` 根目录（用例编排、有事务），`*Port` 统一出站端口后缀在 `application/port/out`。它们不是“简单 vs 复杂”的替代关系，对照见 E-13.2。
 - `*Orchestrator` 与 `*Job`：跨聚合业务编排用 `*Orchestrator`；技术轮询和 Outbox 中继是 `*Job`，不是编排器（E-3.3）。
 - 存量 `AlertEvent` 实为告警记录，应演进为 `AlertRecord`；后缀与职责不符时，先改职责再改名。
 
@@ -1768,7 +1797,9 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 存量（均**不追溯**，新增一律按上表，存量随功能修改收敛）：
 
-- IAM / masterdata / system 共 20 个 `*WebConverter` 位于 `adapter/web/converter/`，与 E-6.6 把 `*Converter` 指派给 infrastructure 相冲突（一个后缀承载两个构件类别，违反 E-13.4）——新增一律用 `*Assembler`。
+- IAM / masterdata 共 20 个 `*WebConverter` 位于 `adapter/web/converter/`，与 E-6.6 把 `*Converter` 指派给 infrastructure 相冲突（一个后缀承载两个构件类别，违反 E-13.4）——新增一律用 `*Assembler`。
+
+已收敛（保留追溯）：`bone-system` 的 5 个 `*WebConverter`（Alert / Config / Dict / Log / ScheduleTask）随该模块应用层收敛一并改为 `adapter/web/assembler/*Assembler`（MapStruct），`adapter/web/converter/` 包已删除；`doc/_generated/console/` 已同批重算。剩余 IAM / masterdata 存量按 E-0.2「触达即收敛」处理。
 
 已收敛（保留追溯）：`adapter/mq` → `adapter/messaging`（2026-09-18）。MQ 入站适配器类名由 `OrderPaidIntegrationMqListener` 收敛为 `OrderPaidIntegrationListener`、包名由 `adapter/mq/listener` 收敛为 `adapter/messaging/listener`，与 E-10 目标结构及 `infrastructure/messaging/` 一致；`doc/architecture/adr/0021-*.md` 内的历史路径引用已就地补注收敛说明（不重写决策时点证据）。
 
@@ -1810,9 +1841,9 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 1 | domain 不依赖 adapter、application、infrastructure | `domainMustNotDependOnOuterLayers` | Active（blueprint 等已启用模块） |
 | 2 | application 不依赖 infrastructure 实现 | `applicationMustNotDependOnInfrastructure` | Active（blueprint 等已启用模块） |
 | 3 | adapter 不直接依赖 infrastructure 实现 | 暂无共享规则；integration 出站 Job 存在存量直连 | Frozen；补端口后升级 Active |
-| 4 | domain 不使用 QueryBuilder/Criteria/SQL | `domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly` | Active（blueprint）；其余见模块测试 |
+| 4 | domain 不使用 QueryBuilder/Criteria/SQL | `domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly`（豁免 `..domain.repository..`，E-4.1 / ADR-0030） | Active（共享规则，8 个应用模块共用；豁免口径 2026-09-20 由三处本地重写收敛回共享规则） |
 | 5 | Command 用例不使用 QueryBuilder | `commandHandlersMustNotUseQueryBuilder` | Active/Frozen 混合，见 G-1.5 |
-| 6 | 入站 adapter 不直接操作 Repository 或领域服务（`..adapter.schedule..` 为 ADR-0030 受控例外） | `adaptersMustNotDependOnDomainRepository` / `adaptersMustNotDependOnDomainService` | Active（已接入模块） |
+| 6 | 入站 adapter 不直接操作 Repository 或领域服务（2026-09-19 谓词由 ..adapter..controller.. 放宽为 ..adapter..，仅 schedule 为受控例外） | `adaptersMustNotDependOnDomainRepository` / `adaptersMustNotDependOnDomainService` | Active（已接入模块） |
 | 7 | 禁止业务模块依赖已删除的 `com.bone.core.usecase.*` | `noBoneCoreUseCaseApiDependency` | Active（无存量） |
 | 8 | 禁止外层业务代码修改聚合 `id` / `tenantId` | `outerLayersMustNotMutateAggregateIdentity` | Active（blueprint + 已启用应用模块） |
 | 9 | 禁止 JPA、Hibernate、MyBatis、MyBatis-Plus | `scripts/check.sh`（pre-commit `[3/5]` 扫 ORM import、`[5/5]` 扫 pom 依赖）+ `scripts/ci-check.sh`（`[1/7]` 依赖、`[6/7]` import）本地拦截 | Manual（本地）；**CI 级**载体仍为 Planned：maven-enforcer `bannedDependencies` |
@@ -1838,7 +1869,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 15 | **本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明、状态真源版本与正文版本一致） | `scripts/check-ddd-gate-state.py`（十项；登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在） | Active（`ci.yml` `backend-quality` job 阻断） |
 <!-- gate-state:g1_1_doc:end -->
 
-HC-001～HC-008 的**实现载体与实测状态**见 [G-1.7](#hc-hard-constraints)：其中 HC-003 / HC-006 目前**无机器载体**，HC-001 / HC-004 / HC-008 只有本地脚本可跑（pre-commit 与 `ci-check.sh`，**无工作流调用**）——这五条都不得宣称已被 CI 阻断（CORE-08）。HC-008 的本地载体只拦**新增表**：存量 26 张表的缺口已逐表分类并登记在 `doc/architecture/ddl-required-columns-baseline.json`（18 张 `by-design`：追加型日志、聚合子表、租户根表、全局目录；8 张待处理：2 张 `gap-candidate`（状态可变却无 `updated_at`，补列属 L3 DDL 变更）+ 6 张待模块 Owner 裁决租户归属），因此**仍不能声称"全表已含必备列"**，`by-design` 也不等于"已合规"。HC-005 虽为 Active，但 4 个模块下调了阈值（见 G-1.7），声称"全模块 ≥10%"同样不成立。
+HC-001～HC-008 的**实现载体与实测状态**见 [G-1.7](#hc-hard-constraints)：其中 HC-003 / HC-006 目前**无机器载体**，HC-001 / HC-004 / HC-008 只有本地脚本可跑（pre-commit 与 `ci-check.sh`，**无工作流调用**）——这五条都不得宣称已被 CI 阻断（CORE-08）。HC-008 的本地载体只拦**新增表**，存量缺口逐表分类登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），因此**仍不能声称"全表已含必备列"**，`by-design` 也不等于"已合规"；HC-005 虽为 Active，但确有模块下调了阈值（见 G-1.7），声称"全模块统一门槛"同样不成立。**具体条数与模块清单只读 G-1.7 与 baseline 的现算结果**——本节此前手抄过一份计数副本（表数、逐表分类数、下调阈值的模块数），已删除：它随每次 DDL 与阈值调整而过期，而门禁查的正是"状态只有一处真源"（G-3 第 7 条）。
 
 Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 
@@ -1888,7 +1919,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 |------|------|--------|----------|
 | `domainMustNotDependOnOuterLayers` | Hard gate | domain 无外层类型依赖 | 领域规则完整 |
 | `applicationMustNotDependOnInfrastructure` | Hard gate | application 无具体基础设施依赖 | 端口语义合理 |
-| `domainMustNotUseQueryBuilder` | Hard gate | domain 不依赖已识别查询 DSL | 所有动态查询都被识别 |
+| `domainMustNotUseQueryBuilder` | Hard gate | domain（**除 `domain.repository` 这个 SDK 集成点**：基类自带 `updateByCriteria(Criteria<T>)`，ADR-0030 把本聚合读落在其 default 方法上）不依赖已识别查询 DSL | 所有动态查询都被识别；`domain.repository` 内的 DSL 使用是允许的，故该规则不能证明域仓储的读形态合理 |
 | `commandHandlersMustNotUseQueryBuilder` | Hard gate | 已识别 Handler 不直用 DSL | 写用例没有隐式复杂读 |
 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` | Advisory（判据已从方法名升级为返回类型；blueprint、iam、system、masterdata、integration 等模块已接入） | 声明方法的返回类型落在聚合 / `Optional<聚合>` / boolean / void | Repository 语义一定正确 |
 | `noUseCaseClassesInApplication` | Bone 兼容门禁 | 不新增旧命名形态 | Use Case 概念错误 |
@@ -1900,9 +1931,9 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `noBusinessExceptionSuffix` | Bone 兼容门禁 | 不新增 `*BusinessException` 后缀类（freeze） | 异常语义归属正确 |
 | `applicationServicesMustNotOwnDomainRules` | Hard gate 目标 | ApplicationService 不承载状态迁移决策 | 规则放置是否最优 |
 | `applicationSaveMustPairWithPublishOrExempt` | Hard gate（blueprint 参考样板，未全模块推广；**已补入 [G-1.1](#g-11-hard-gate) 12e**） | 聚合保存已配对发布或豁免说明 | 豁免理由是否成立、下游是否真的无需感知 |
-| `adaptersMustNotDependOnGodObjects`（旧名 `adapterControllersMustNotDependOnGodObjects` / `...OnApplicationService` 保留为过渡别名） | 上帝对象守护（ADR-0028，收窄为 `Common*/Base*/Business*/*Manager`）；谓词 2026-09-19 起为 `..adapter..` | 仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService` | 应用层编排一定正确 |
-| `adaptersMustNotDependOnDomainRepository`（旧名 `adapterControllers...` 保留为过渡别名） | Hard gate | 入站 adapter 不越层访问写仓储（`..adapter.schedule..` 例外：ADR-0030 授权的全租户运维扫描） | 入站构件无业务规则 |
-| `adaptersMustNotDependOnDomainService`（旧名 `adapterControllers...` 保留为过渡别名） | Hard gate | 入站 adapter 不直调领域服务（无 schedule 例外） | 应用编排正确 |
+| `adaptersMustNotDependOnGodObjects` | 上帝对象守护（ADR-0028，旧名 `...OnApplicationService` 保留为过渡别名）；2026-09-19 谓词由 ..adapter..controller.. 放宽为 ..adapter..，覆盖 messaging/rpc/schedule 等全部入站构件 | 仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService` | 应用层编排一定正确 |
+| `adaptersMustNotDependOnDomainRepository` | Hard gate | 入站 adapter 不越层访问写仓储（`..adapter.schedule..` 为 ADR-0030 受控例外：全租户运维扫描） | Controller 无业务规则 |
+| `adaptersMustNotDependOnDomainService` | Hard gate | 入站 adapter 不直调领域服务（无 schedule 例外） | 应用编排正确 |
 | `commandHandlersShouldBeNamedCommandHandler` | Advisory | 类后缀一致 | 类承担正确命令语义 |
 | `queryHandlersShouldBeNamedQueryHandler` | Advisory | 类后缀一致 | 查询模型合理 |
 | `commandHandlersShouldBeTransactional` | Advisory | 注解存在 | 事务代理真实生效 |
@@ -1915,6 +1946,8 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `businessLayersMustNotReadTenantContextDirectly` | Hard gate 目标 | 业务层不直接读上下文 | 异步租户传递正确 |
 | `AggregatePureUnitTestGuard` | Advisory / 卫生检查 | 测试类、行为调用、断言形式存在 | 不变量完整、反贫血成立 |
 | `springComponentBeanNamesMustBeUnique` | Hard gate（**正确性门禁，不是命名风格**：E-13 命名约定默认 Advisory，本条守护的是 bean 名唯一——撞名会让容器启动期抛 `ConflictingBeanDefinitionException`） | 同模块 Spring 组件的有效 bean 名唯一（含 MapStruct 生成类；显式 `value` 优先，否则类短名首字母小写） | 类名是否合适、是否有两个协议合法同名（同名本身不算违规，只要求 bean 名可区分） |
+| `allTenantEntryPointsOnlyCalledBy`（含 `allTenantScanMethodsOnlyCalledBySchedule` 包装） | Hard gate（2026-09-20 新增并已接入 8 个应用模块：blueprint / iam / integration / masterdata / system / extension-studio / metadata-server / studio-generator） | 全租户入口只被**已登记调用方**调用（判据 = `@TenantScope(ALL)` 或方法体 `Criteria.disableTenantFilter()`）；`adapter.schedule` 也只许调全租户入口。首次运行抓出 bone-iam 登录跨租户定位未登记、bone-integration 定时任务做租户内读两处真问题 | 调用方登记是否合理、该入口是否**应该**跨租户（白名单是评审决定，门禁只保证"没有未登记的调用方"，且只看 schedule 的直接调用） |
+| `allTenantEntryPointsMustBeNamedAllTenants` | Hard gate（2026-09-20 新增，同上 8 模块） | 全租户入口命名为 `*AllTenants`，且 `*AllTenants` 方法确实绕过租户隔离（双向绑定，防"只改名不改行为"与"只加注解不留痕迹"） | 命名以外的语义正确性；接口级 `@TenantScope(ALL)` 会让该接口全部 SQL 方法都需带后缀（门禁按同一判据判定） |
 <!-- gate-state:g1_5_rules:end -->
 
 “Hard gate 目标”表示规则方向适合硬门禁；是否在模块启用仍以模块测试为准。
@@ -2006,7 +2039,7 @@ HC-001 / HC-006 的语义在 [E-4.1](#e-41-写侧) 写侧仓储白名单、[E-4.
 
 目标形态不能只靠叙述。迁移进度看**可复算的数字**，口径由 `scripts/check-ddd-gate-state.py --metrics` 输出——**数字不入库**，一旦写进文档就又变成一份手工副本（本节的成因正是手工副本）。
 
-> **输出两个口径，读的时候别混**：`索引` = 已提交现状（`git ls-files`，重构期间会漏掉未提交新增、并保留已删除未提交的文件——2026-09-19 实测 `*ApplicationService` 索引 3 / 工作树 2，差的那 1 个是已删除的 `OrderPaidConsumptionApplicationService`）；`工作树` = 此刻磁盘现状。**判断迁移进度用工作树口径**，索引口径用于对齐"已提交基线"；两者差值就是在途改动。本指标只观察趋势（E-0.2：不设数字 KPI）。
+> **输出两个口径，读的时候别混**：`索引` = 已提交现状（`git ls-files`）——重构期间它会漏掉未提交的新增、并保留已删除但未提交的文件；`工作树` = 此刻磁盘现状。**判断迁移进度用工作树口径**，索引口径用于对齐"已提交基线"；两者差值就是在途改动。这里**不写示例数字**：口径是稳定的、数字每次都变，抄进正文就会在下一次重构后变成错的（本版本即因此删掉一处示例）。本指标只观察趋势（E-0.2：不设数字 KPI）。
 
 | 指标 | 口径 | 为什么用它 |
 |------|------|------------|

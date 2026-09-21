@@ -17,6 +17,24 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
     importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
+  /** 本模块域仓储包：全租户入口门禁（事实判据 + 命名绑定）的作用域。 */
+  private static final String DOMAIN_REPOSITORY_PACKAGE =
+      "com.bone.metadata.catalog.domain.repository";
+
+  // E-2 / E-4.4 补充门禁（2026-09-20，共享规则）：全租户扫描只许 adapter.schedule 调用，schedule 也只许调全租户入口；
+  // 全租户入口必须叫 *AllTenants。判据是事实（@TenantScope(ALL) 或 Criteria.disableTenantFilter()），不是名字。
+  @ArchTest
+  static final ArchRule all_tenants_scan_only_by_schedule =
+      BoneDddArchRules.allTenantScanMethodsOnlyCalledBySchedule(DOMAIN_REPOSITORY_PACKAGE);
+
+  @ArchTest
+  static final ArchRule schedule_only_calls_all_tenants_repository_methods =
+      BoneDddArchRules.scheduleOnlyCallsAllTenantScanMethods(DOMAIN_REPOSITORY_PACKAGE);
+
+  @ArchTest
+  static final ArchRule all_tenant_entry_points_must_be_named_all_tenants =
+      BoneDddArchRules.allTenantEntryPointsMustBeNamedAllTenants(DOMAIN_REPOSITORY_PACKAGE);
+
   // CORE-02：依赖向内
   @ArchTest
   static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();

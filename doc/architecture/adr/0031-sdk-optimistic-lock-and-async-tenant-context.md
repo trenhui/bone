@@ -5,7 +5,7 @@
 | **状态** | 提议 · 待架构组批准（**D0、D1、D2 已落地**，D3 待开工；D1、D2 均经独立代码审查修正后入库） |
 | **日期** | 2026-09-19 |
 | **决策者** | 架构师 |
-| **关联** | [ADR-0029](./0029-sdk-auto-tenant-filter.md)（租户过滤失败关闭）、[ADR-0030](./0030-domain-repository-read-merge.md)（单一仓储 / 外置 `.sql` / `@TenantScope`）、E-2（异步入口须显式声明租户）、E-5.3 / CORE-07（乐观锁）、[06-AI协作与编码准则](../agents/06-AI协作与编码准则.md) §12（**L3 须架构师审批**） |
+| **关联** | [ADR-0029](./0029-sdk-auto-tenant-filter.md)（租户过滤失败关闭）、[ADR-0030](./0030-domain-repository-read-merge.md)（单一仓储 / 外置 `.sql` / `@TenantScope`）、E-2（异步入口须显式声明租户）、E-5.3 / CORE-07（乐观锁）、[06-AI协作与编码准则](../../agents/06-AI协作与编码准则.md) §12（**L3 须架构师审批**） |
 | **下游同步** | `bone-engine/bone-metadata-sdk`（doc + 实现）、`Bone-DDD-最终实践方案.md` E-4.4 / E-5.3、`bone-blueprint/README.md`、`doc/_generated/*` 重算 |
 
 ---

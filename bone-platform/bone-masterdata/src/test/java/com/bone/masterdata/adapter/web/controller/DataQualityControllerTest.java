@@ -5,12 +5,9 @@ import static org.mockito.Mockito.when;
 
 import com.bone.masterdata.adapter.web.converter.DataQualityWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
+import com.bone.masterdata.application.QualityApplicationService;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
-import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
-import com.bone.masterdata.application.command.handler.PerformDataQualityCheckHandler;
-import com.bone.masterdata.application.query.handler.DataQualityRuleListQueryHandler;
-import com.bone.masterdata.application.query.handler.GetQualityReportQueryHandler;
 import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,13 +25,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class DataQualityControllerTest {
 
-  @Mock private CreateDataQualityRuleHandler createRuleHandler;
-
-  @Mock private DataQualityRuleListQueryHandler ruleListQueryHandler;
-
-  @Mock private PerformDataQualityCheckHandler performCheckHandler;
-
-  @Mock private GetQualityReportQueryHandler getQualityReportQueryHandler;
+  @Mock private QualityApplicationService qualityService;
 
   @Mock private DataQualityWebConverter converter;
 
@@ -52,7 +43,7 @@ class DataQualityControllerTest {
     CreateDataQualityRuleCommand command = new CreateDataQualityRuleCommand();
     command.setMasterDataEntityId(1L);
     when(converter.toCommand(any(CreateDataQualityRuleReq.class))).thenReturn(command);
-    when(createRuleHandler.handle(any(CreateDataQualityRuleCommand.class))).thenReturn(1L);
+    when(qualityService.createRule(any(CreateDataQualityRuleCommand.class))).thenReturn(1L);
 
     mockMvc
         .perform(
@@ -67,7 +58,7 @@ class DataQualityControllerTest {
 
   @Test
   void testListRules() throws Exception {
-    when(ruleListQueryHandler.handle(any(DataQualityRuleListQuery.class)))
+    when(qualityService.ruleList(any(DataQualityRuleListQuery.class)))
         .thenReturn(Collections.emptyList());
 
     mockMvc
@@ -81,7 +72,7 @@ class DataQualityControllerTest {
 
   @Test
   void testPerformCheck() throws Exception {
-    when(performCheckHandler.handle(any(PerformDataQualityCheckCommand.class))).thenReturn(1L);
+    when(qualityService.performCheck(any(PerformDataQualityCheckCommand.class))).thenReturn(1L);
 
     mockMvc
         .perform(

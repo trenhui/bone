@@ -18,7 +18,6 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -54,7 +53,7 @@ class PaymentSucceededEventHandlerTest {
   @Test
   void testConfirmPaidWhenCreated() {
     Order order = pendingOrder();
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     handler.handle(event());
 
@@ -69,7 +68,7 @@ class PaymentSucceededEventHandlerTest {
   void testIdempotentWhenAlreadyPaid() {
     Order order = pendingOrder();
     order.confirmPaid(); // 已支付
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     handler.handle(event());
 
@@ -81,7 +80,7 @@ class PaymentSucceededEventHandlerTest {
 
   @Test
   void testOrderNotFound() {
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
+    when(orderRepository.findById(1L)).thenReturn(null);
 
     assertEquals(404, assertThrows(BizException.class, () -> handler.handle(event())).getCode());
     verify(orderRepository, never()).update(any());
@@ -97,7 +96,7 @@ class PaymentSucceededEventHandlerTest {
   void testInconsistentStatePublishesCompensationEvent() {
     Order order = pendingOrder();
     order.cancel(); // CREATED → CANCELLED：回调到达时订单已取消
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     handler.handle(event());
 
@@ -123,7 +122,7 @@ class PaymentSucceededEventHandlerTest {
     Order order = pendingOrder();
     order.confirmPaid();
     order.clearDomainEvents(); // 清掉 confirmPaid 产生的事件，便于断言本次无新增
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.findById(1L)).thenReturn(order);
 
     handler.handle(event());
 

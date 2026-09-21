@@ -34,9 +34,8 @@ import org.springframework.test.util.ReflectionTestUtils;
  *
  * <p>锁住三点：① 全租户扫描（否则除平台租户外的不一致永远发现不了）；② 跨上下文按 ID 查询订单状态而不是 SQL JOIN
  * （支付与订单是两个上下文，联表会把两个上下文的数据所有权耦合在一起）；③ 两侧取数通道按<strong>读的归属</strong>选——支付侧是全租户运维 旁路，按 ADR-0030 §2
- * 直调域仓储的 {@code *AllTenants} 方法；订单侧只是逐行取状态，经<b>应用服务</b>走请求级读语义。两条都受本模块 {@code ArchitectureTest}
- * 约束：schedule 之外的适配器不得依赖域仓储，schedule 内也只许调 {@code *AllTenants}。订单侧批量取状态（按租户分组 IN
- * 查询）仍经<b>应用服务</b>走请求级读语义，不直连域仓储、不 SQL JOIN。
+ * 直调域仓储的全租户扫描方法；订单侧只是逐行取状态，经<b>应用服务</b>走请求级读语义。两条都受本模块 {@code ArchitectureTest} 约束。schedule
+ * 包内调用域仓储时，只许调全租户扫描方法（门禁从 SDK 声明点自动识别）。订单侧批量取状态（按租户分组 IN 查询）仍经<b>应用服务</b>走请求级读语义，不直连域仓储、不 SQL JOIN。
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -66,7 +65,7 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void looksUpOrderStatusByIdPerTenantWithoutJoin() {
-    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any()))
         .thenReturn(Map.of(1L, com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID));
@@ -79,7 +78,7 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void treatsMissingOrderAsInconsistent() {
-    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 2L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
 
@@ -97,7 +96,7 @@ class OrderPaymentInconsistencyJobTest {
    */
   @Test
   void appendsInconsistentEventInsideRowTenantContext() {
-    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
     AtomicReference<String> tenantDuringAppend = new AtomicReference<>();
@@ -118,7 +117,7 @@ class OrderPaymentInconsistencyJobTest {
   /** 落库失败（异常穿出扫描方法）时也必须恢复上下文，否则定时线程会带着残留租户继续下一行。 */
   @Test
   void contextIsRestoredWhenAppendFails() {
-    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
     doThrow(new IllegalStateException("db down"))
@@ -132,11 +131,11 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void handlesEmptyScanResult() {
-    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any())).thenReturn(List.of());
+    when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any())).thenReturn(List.of());
 
     job.checkPaidButOrderNotConfirmed();
 
-    verify(paymentRepository).findSettledPaymentsCreatedBeforeAllTenants(any());
+    verify(paymentRepository).findSuccessPaymentsBeforeAllTenants(any());
   }
 
   private static PaymentProjection paymentRow(Long tenantId, Long paymentId, Long orderId) {

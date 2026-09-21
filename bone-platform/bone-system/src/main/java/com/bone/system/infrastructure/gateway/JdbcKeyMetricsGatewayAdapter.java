@@ -1,7 +1,7 @@
 package com.bone.system.infrastructure.gateway;
 
+import com.bone.system.domain.console.KeyMetrics;
 import com.bone.system.domain.gateway.KeyMetricsGateway;
-import com.bone.system.domain.model.console.KeyMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

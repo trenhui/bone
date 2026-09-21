@@ -9,6 +9,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.AccessTarget;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
+import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructorCall;
 import com.tngtech.archunit.core.domain.JavaMethod;
@@ -159,12 +160,23 @@ public final class BoneDddArchRules {
   }
 
   public static ArchRule domainMustNotUseQueryBuilder() {
+    // 例外：domain.repository 是 SDK 框架集成点——基类 Repository<T, ID> 自带
+    // updateByCriteria(Criteria<T>) 与 Criteria/QueryBuilder 通道，ADR-0030 明确把"本聚合读"落在
+    // 域仓储的 default 方法上（E-4.1「domain 内只允许 domain.repository 触碰读侧 DSL」）。
+    // 该例外原先由 blueprint / iam / system 各自在模块级复制，2026-09-20 收敛回共享规则，
+    // 避免"每个模块抄一遍、抄漏就静默失去约束"。
     return noClasses()
         .that()
         .resideInAPackage("..domain..")
+        .and()
+        .resideOutsideOfPackage("..domain.repository")
         .should()
         .dependOnClassesThat(areAnnotatedWithReadSideOnly())
-        .because("DDD P0-5: read-side DSL (@ReadSideOnly) must not appear in domain");
+        .allowEmptyShould(true)
+        .because(
+            "DDD P0-5 / E-4.1: read-side DSL (@ReadSideOnly) must not appear in domain, except in "
+                + "domain.repository which is the SDK framework integration point "
+                + "(updateByCriteria / Criteria channel, ADR-0030)");
   }
 
   public static ArchRule commandHandlersMustNotUseQueryBuilder() {
@@ -173,6 +185,7 @@ public final class BoneDddArchRules {
         .resideInAPackage("..application.command.handler..")
         .should()
         .dependOnClassesThat(areAnnotatedWithReadSideOnly())
+        .allowEmptyShould(true)
         .because("DDD P0-6: CommandHandler must not use read-side DSL");
   }
 
@@ -1323,5 +1336,231 @@ public final class BoneDddArchRules {
       }
       return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
     }
+  }
+
+  // ================================================================================================
+  // 全租户（ALL）入口：事实判据、调用面收口与命名绑定（E-2 / E-4.4 / CORE-05，ADR-0030 / ADR-0034）
+  //
+  // 为什么要有这一组：全租户扫描绕过租户隔离，是唯一"调错一行就静默跨租户"的能力。它有两条实现通道，
+  // 过去只有一条被门禁看得见——SQL 通道靠 @TenantScope(ALL)（TenantSqlRewriter 真读它），Criteria 通道
+  // 靠 Criteria.disableTenantFilter()（TenantFilterInjector 不读注解）。只按注解判定会漏掉 Criteria 通道，
+  // 只按方法名判定又会被"改个名字"绕过，所以这里用「注解 ∨ disableTenantFilter」作为事实判据，
+  // 再用命名绑定规则把可读性要求（*AllTenants 后缀）钉在事实之上。
+  // ================================================================================================
+
+  /** SDK 租户策略注解：按名匹配，避免共享规则库 compile 期依赖 bone-metadata-sdk。 */
+  private static final String TENANT_SCOPE_ANNOTATION =
+      "com.bone.metadata.sdk.domain.annotation.TenantScope";
+
+  /** 全租户入口的命名后缀（E-4.4 / E-13.3）。 */
+  private static final String ALL_TENANTS_SUFFIX = "AllTenants";
+
+  /**
+   * 全租户入口的<b>事实判据</b>：{@code @TenantScope(ALL)}（SQL 通道）或方法体内调用 {@code
+   * Criteria.disableTenantFilter()}（Criteria 通道）。仓储接口级的 {@code @TenantScope(ALL)} 同样生效。
+   */
+  public static DescribedPredicate<JavaMethod> allTenantEntryPoint() {
+    return new DescribedPredicate<>(
+        "an all-tenant entry point (@TenantScope(ALL) or Criteria.disableTenantFilter())") {
+      @Override
+      public boolean test(JavaMethod method) {
+        return declaresAllTenantScope(method) || callsDisableTenantFilter(method);
+      }
+    };
+  }
+
+  /** {@link #allTenantEntryPoint()} 的补集（供"schedule 只许调全租户入口"使用）。 */
+  private static DescribedPredicate<JavaMethod> notAllTenantEntryPoint() {
+    return new DescribedPredicate<>("not an all-tenant entry point") {
+      @Override
+      public boolean test(JavaMethod method) {
+        return !(declaresAllTenantScope(method) || callsDisableTenantFilter(method));
+      }
+    };
+  }
+
+  /**
+   * 全租户入口只允许 {@code adapter.schedule} 调用（E-2：平台运维入口）。
+   *
+   * <p>web / handler / infrastructure 调用同样命中这条规则——定时任务线程没有请求上下文， 把全租户方法暴露给请求侧会直接造成跨租户数据泄漏。
+   */
+  public static ArchRule allTenantScanMethodsOnlyCalledBySchedule(String domainRepositoryPackage) {
+    return allTenantEntryPointsOnlyCalledBy(
+        domainRepositoryPackage, AllTenantCallers.ofPackages("..adapter.schedule.."));
+  }
+
+  /**
+   * 全租户入口只允许<b>已登记</b>的调用方调用（定时运维 / 登录前置等）。
+   *
+   * <p>为什么是可登记白名单而不是"只有 schedule"：现实中至少有两类合法跨租户入口—— ① 定时运维扫描（{@code adapter.schedule}，租户上下文缺失）；②
+   * 登录前置定位（租户在认证前未知，必须按用户名跨租户查账号）。 后者无法归入 ①，硬塞进 schedule 只会逼出"绕开门禁"的写法。白名单在模块的 {@code
+   * ArchitectureTest} 显式声明，评审时逐条可见。
+   *
+   * <p>注意 ArchUnit 的包匹配器<b>不匹配类名</b>（{@code ..service.AuthService} 不会排除该类）， 要精确到类必须用 {@link
+   * AllTenantCallers#andClasses(String...)}。
+   */
+  public static ArchRule allTenantEntryPointsOnlyCalledBy(
+      String domainRepositoryPackage, AllTenantCallers callers) {
+    return noClasses()
+        .that(notClass(callers.asPredicate()))
+        .should()
+        .callMethodWhere(
+            JavaCall.Predicates.target(
+                callTargetInPackage(domainRepositoryPackage, allTenantEntryPoint())))
+        .allowEmptyShould(true)
+        .because(
+            "E-2 / ADR-0030: an all-tenant entry bypasses tenant isolation, so only registered "
+                + "callers may reach it; an unregistered caller leaks cross-tenant data or "
+                + "silently processes the platform tenant only");
+  }
+
+  /** 全租户入口的已登记调用方：包模式与类全名取并集。 */
+  public static final class AllTenantCallers {
+
+    private final List<String> packagePatterns;
+    private final List<String> classNames;
+
+    private AllTenantCallers(List<String> packagePatterns, List<String> classNames) {
+      this.packagePatterns = packagePatterns;
+      this.classNames = classNames;
+    }
+
+    public static AllTenantCallers ofPackages(String... packagePatterns) {
+      return new AllTenantCallers(Arrays.asList(packagePatterns), List.of());
+    }
+
+    public AllTenantCallers andClasses(String... fullyQualifiedClassNames) {
+      return new AllTenantCallers(packagePatterns, Arrays.asList(fullyQualifiedClassNames));
+    }
+
+    private DescribedPredicate<JavaClass> asPredicate() {
+      DescribedPredicate<JavaClass> byPackage =
+          JavaClass.Predicates.resideInAnyPackage(packagePatterns.toArray(new String[0]));
+      DescribedPredicate<JavaClass> byClassName =
+          new DescribedPredicate<>("a registered all-tenant caller class") {
+            @Override
+            public boolean test(JavaClass javaClass) {
+              return classNames.contains(javaClass.getName());
+            }
+          };
+      return byPackage.or(byClassName);
+    }
+  }
+
+  private static DescribedPredicate<JavaClass> notClass(DescribedPredicate<JavaClass> predicate) {
+    return new DescribedPredicate<>("not " + predicate.getDescription()) {
+      @Override
+      public boolean test(JavaClass javaClass) {
+        return !predicate.test(javaClass);
+      }
+    };
+  }
+
+  /**
+   * {@code adapter.schedule} 调用域仓储时，只许调用全租户入口方法（ADR-0030 授权的运维扫描）。
+   *
+   * <p>方向与上一条相反：域仓储在 ADR-0030 合并读写后自带 {@code save} / {@code update} / {@code delete}，
+   * 「拿到接口就等于握有写能力」，所以调用面必须按方法逐个收紧。
+   */
+  public static ArchRule scheduleOnlyCallsAllTenantScanMethods(String domainRepositoryPackage) {
+    return noClasses()
+        .that()
+        .resideInAPackage("..adapter.schedule..")
+        .should()
+        .callMethodWhere(
+            JavaCall.Predicates.target(
+                callTargetInPackage(domainRepositoryPackage, notAllTenantEntryPoint())))
+        // 无 adapter.schedule 的模块（没有定时任务）本就无事可查：空匹配是合法状态，不是配置错误。
+        .allowEmptyShould(true)
+        .because(
+            "ADR-0030: adapter.schedule is authorized for all-tenant ops scans only "
+                + "(*AllTenants / @TenantScope(ALL)); save/update/delete and tenant-scoped reads "
+                + "are outside that authorization");
+  }
+
+  /**
+   * 全租户入口必须叫 {@code *AllTenants}，且叫 {@code *AllTenants} 的必须是全租户入口（双向绑定）。
+   *
+   * <p>为什么绑死：命名是给<b>调用点</b>看的（调用方一眼知道这会跨租户），注解是给<b>运行时</b>用的。
+   * 只写名字不改行为、或只写注解不留痕迹，都会让"危险的东西从签名里消失"。双向绑定把两者变成同一件事的两种表达。
+   */
+  public static ArchRule allTenantEntryPointsMustBeNamedAllTenants(String domainRepositoryPackage) {
+    return classes()
+        .that()
+        .resideInAPackage(domainRepositoryPackage)
+        .should(
+            new ArchCondition<JavaClass>(
+                "name all-tenant entry points with the '" + ALL_TENANTS_SUFFIX + "' suffix") {
+              @Override
+              public void check(JavaClass item, ConditionEvents events) {
+                for (JavaMethod method : item.getMethods()) {
+                  if (!method.getOwner().equals(item)) {
+                    continue;
+                  }
+                  boolean allTenant =
+                      declaresAllTenantScope(method) || callsDisableTenantFilter(method);
+                  boolean namedAllTenants = method.getName().endsWith(ALL_TENANTS_SUFFIX);
+                  if (allTenant == namedAllTenants) {
+                    continue;
+                  }
+                  events.add(
+                      SimpleConditionEvent.violated(
+                          method,
+                          String.format(
+                              "%s#%s: %s — all-tenant entries (@TenantScope(ALL) or "
+                                  + "disableTenantFilter()) must be named *%s, and *%s methods must "
+                                  + "actually bypass tenant isolation; callers must see the "
+                                  + "cross-tenant scope from the call site",
+                              item.getName(),
+                              method.getName(),
+                              allTenant
+                                  ? "bypasses tenant isolation but is not named *AllTenants"
+                                  : "is named *AllTenants but does not bypass tenant isolation",
+                              ALL_TENANTS_SUFFIX,
+                              ALL_TENANTS_SUFFIX)));
+                }
+              }
+            })
+        .because(
+            "E-4.4 / E-13.3: cross-tenant scope must be visible at the call site and consistent "
+                + "with the fact (annotation / disableTenantFilter), not a decoration");
+  }
+
+  /** 方法级 {@code @TenantScope(ALL)}，或仓储接口级 {@code @TenantScope(ALL)}。 */
+  private static boolean declaresAllTenantScope(JavaMethod method) {
+    return annotationsDeclareAllTenantScope(method.getAnnotations())
+        || annotationsDeclareAllTenantScope(method.getOwner().getAnnotations());
+  }
+
+  private static boolean annotationsDeclareAllTenantScope(
+      Collection<? extends JavaAnnotation<?>> annotations) {
+    return annotations.stream()
+        .filter(a -> TENANT_SCOPE_ANNOTATION.equals(a.getRawType().getName()))
+        // 枚举值在类路径可用时是枚举实例、不可用时是 JavaEnumConstant，两者 String 化都含常量名。
+        .anyMatch(
+            a -> a.get("value").map(String::valueOf).map(v -> v.contains("ALL")).orElse(false));
+  }
+
+  /** Criteria 通道的事实判据：方法体里出现 {@code disableTenantFilter()} 调用。 */
+  private static boolean callsDisableTenantFilter(JavaMethod method) {
+    return method.getCallsFromSelf().stream()
+        .anyMatch(call -> "disableTenantFilter".equals(call.getTarget().getName()));
+  }
+
+  /** 调用目标必须落在指定仓储包内，并满足给定的方法谓词。 */
+  private static DescribedPredicate<AccessTarget.CodeUnitCallTarget> callTargetInPackage(
+      String domainRepositoryPackage, DescribedPredicate<JavaMethod> methodPredicate) {
+    return new DescribedPredicate<>(
+        "a method in " + domainRepositoryPackage + " that is " + methodPredicate.getDescription()) {
+      @Override
+      public boolean test(AccessTarget.CodeUnitCallTarget target) {
+        if (!target.getOwner().getPackageName().equals(domainRepositoryPackage)) {
+          return false;
+        }
+        Optional<JavaMethod> resolved =
+            target.resolveMember().filter(JavaMethod.class::isInstance).map(JavaMethod.class::cast);
+        return resolved.filter(methodPredicate::test).isPresent();
+      }
+    };
   }
 }

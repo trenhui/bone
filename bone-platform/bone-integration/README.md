@@ -42,6 +42,27 @@ Topic 登记见 [Bone-消息与事件规范.md](../../doc/architecture/Bone-消�
 
 - 应用模块，适用 [Bone-DDD 最终实践方案](../../doc/architecture/Bone-DDD-最终实践方案.md)；ArchUnit：`src/test/java/com/bone/integration/architecture/ArchitectureTest.java`。
 
+### 已登记的租户隔离缺口（2026-09-20，G-2 登记；Owner：integration 模块）
+
+**现象**：本模块 5 个聚合（`Connector` / `IntegrationFlow` / `FlowNode` / `FlowConnection` / `IntegrationLog`）全部
+`extends AggregateRoot`（无 `tenantId`），而 `bone-init.sql` 里对应 `int_*` 表都是
+`tenant_id BIGINT NOT NULL DEFAULT 0`、本模块详设要求"流程列表与执行日志**严格按 `tenant_id` 隔离**"。
+
+**后果**：SDK 的租户表判定看**实体字段**（`TableMetadataResolver` → `TableMetadata.isTenantScoped()`），实体不声明
+`tenantId` ⇒ `TenantFilterInjector` 直接返回 ⇒ **Criteria / QueryBuilder 查询不加任何租户条件**。用户可达路径示例：
+`GET /api/v1/integration/executions`、`GET /executions/{id}`、`GET /statistics`（`MonitorController` →
+`FlowStatisticsQueryHandler` / `FlowMonitorService`），以及 `FlowStatisticsJob` 的定时汇总——任何已认证租户用户
+理论上可读到其它租户的流程与执行日志。门禁信号：`ArchitectureTest` 的
+`schedule_only_calls_all_tenants_repository_methods` 冻结条目（它报出的是"定时任务调用租户内读"，只是表象）。
+
+**为何未在门禁修复中一并改**：修法是把 5 个聚合改为 `TenantAggregateRoot`（创建路径已集中在 `IntegrationFlow.of` /
+`IntegrationLog.of` 两处，属可控范围），但**存量行 `tenant_id` 全是默认 0，需要确认租户归属并做数据迁移**（属 L4，
+AI 不执行）；且模块 Spring 测试需在有数据库的环境验证。
+
+**拆除条件**：① 确认 `int_*` 存量行的租户归属并完成迁移；② 5 个聚合改 `TenantAggregateRoot`，在工厂与调用方补
+`tenantId`（经 `TenantPort` 取得，不由业务代码读 `TenantContext`，E-2）；③ 定时统计任务随之改为显式全租户入口
+（`*AllTenants`）或按租户执行；④ 删除本节，并清零 `archunit_store` 中的对应冻结条目。
+
 ### 命名差异（2026-08）
 
 - **既有风格**：CommandHandler 命名为 `{Action}{Entity}Handler`（如 `CreateConnectorHandler`、`EnableConnectorHandler`、`DeleteFlowHandler`），不带 `*CommandHandler` 后缀（ArchUnit `command_handler_naming` 冻结基线内）。

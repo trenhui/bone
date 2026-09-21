@@ -3,7 +3,6 @@ package com.bone.blueprint.domain.repository;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
 import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
@@ -11,54 +10,21 @@ import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 订单仓储（ADR-0030：写侧与本聚合读模型合并为单一仓储）。继承 SDK {@link Repository}，由 {@code @EnableSqlRepositories} 代理实现。
  *
- * <p>类内只写契约与陷阱，实现取舍见 ADR-0030：
- *
- * <ul>
- *   <li>写：{@link #findByIdInTenant} 租户内加载 + SDK 原生 {@code @Version} 乐观锁（{@code update(entity)} 由
- *       {@code bone-metadata-sdk} 维护版本，应用层翻译冲突为 {@code OptimisticLockConflictException}）。
- *   <li>读：返回领域读模型，不向外透出可变聚合；单表读走继承的 Criteria，联表 / 全租户读走外置 {@code .sql}。
- *   <li>SQL 真源唯一：模板固定为 {@code resources/sql/…/OrderRepository/<方法名>.sql}，<b>禁止再写 {@code @Sql}</b>——
- *       默认 {@code classpath-first}，两源并存时注解那份永不加载且不报错（影子 SQL），见 ADR-0030 §1.4 / R3。
- *   <li>租户：{@code @TenantScope} 必须显式标注（缺省 {@link TenantScopeMode#MANUAL} 不报错，但会失去声明）； 只有 {@code
- *       AUTO} 由 SDK 注入租户，{@code MANUAL} / {@code ALL} 的租户条件与软删全靠 SQL 自己写。 Criteria 方法则显式下发
- *       tenantId。
- *   <li>查不到返回 {@code Optional.empty()}，不返回 {@code null}——与 SDK {@code findById} 的 null 语义区分开。
- *   <li>接口内禁用 {@code static} 与 {@code private} 方法——SDK 代理会为它们加载 SQL 模板导致 Bean 初始化失败；映射逻辑放读模型的静态工厂。
- * </ul>
+ * <p>写走 SDK 原生 {@code update(entity)}（{@code @Version} 乐观锁），读返回领域投影。SQL 模板固定为 {@code
+ * resources/sql/…/OrderRepository/<方法名>.sql}，禁止 {@code @Sql} 注解（影子 SQL）。全租户扫描方法显式标注
+ * {@code @TenantScope(ALL)}，由 {@code ArchitectureTest} 门禁识别并限制调用方为 {@code adapter.schedule}。
  */
 public interface OrderRepository extends Repository<Order, Long> {
 
   /**
-   * 按 id 加载租户内订单；id / tenantId 为空、跨租户、已软删时返回 {@code Optional.empty()}。
+   * 订单头 + 明细扁平投影（每明细一行，头字段逐行重复）。
    *
-   * <p><b>不能用 SDK {@code findById} 替代</b>：{@code findById} 的租户取自 {@code TenantContext} 线程变量， 事件订阅 /
-   * 定时任务 / Outbox 中继等异步入口没有上下文，会直接 {@code MissingTenantContextException}；
-   * 且它无法表达「指定租户」。本方法把租户作为显式参数（E-2）。
-   *
-   * <p><b>失败关闭</b>：{@code Criteria.eq} 会静默丢弃 {@code null} 条件，租户缺失时条件整条消失即退化为跨租户读取，故必须显式判空。
-   */
-  default Optional<Order> findByIdInTenant(Long id, Long tenantId) {
-    if (id == null || tenantId == null) {
-      return Optional.empty();
-    }
-    return Optional.ofNullable(
-        findOneByCriteria(
-            Criteria.<Order>create().eq(Order::getId, id).eq(Order::getTenantId, tenantId)));
-  }
-
-  /**
-   * 订单头 + 明细扁平投影（每明细一行，头字段逐行重复；无明细时明细列为 {@code null}）。
-   *
-   * <p>MANUAL 租户：SQL 自带 {@code tenant_id} 与子表 {@code deleted = 0}，租户由调用方显式传入。
-   *
-   * <p>SQL 见 {@code
+   * <p>MANUAL 租户：SQL 自带 {@code tenant_id} 与子表 {@code deleted = 0}。SQL 见 {@code
    * resources/sql/com/bone/blueprint/domain/repository/OrderRepository/findOrderWithItems.sql}。
    */
   @TenantScope(TenantScopeMode.MANUAL)
@@ -66,62 +32,19 @@ public interface OrderRepository extends Repository<Order, Long> {
       @Param("tenantId") long tenantId, @Param("orderId") long orderId);
 
   /**
-   * 超时未支付订单扫描：{@code status = CREATED}（尚未支付）且 {@code created_at} 早于 {@code before}（调用方传入的 「当前时间 −
-   * 超时窗口」）。
-   *
-   * <p><b>全租户</b>，定时任务专用（授权登记见 E-2）：定时线程无请求上下文，按「当前租户」扫描只会落到平台租户 0，其余租户的超时订单永不取消， 故必须显式全租户。
-   *
-   * <p>方法名后缀 {@code AllTenants} 是{@code all_tenants_scan_only_by_schedule} 的识别判据，不可改（见本包 {@code
-   * package-info}）。{@code Instant → Timestamp} 适配在此完成，调用方只面对领域友好的 {@code Instant}。
-   *
-   * <p>实际取数走 {@link #findExpiredUnpaidOrdersAllTenantsBySql}（外置 SQL 通道）。
-   */
-  default List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenants(Instant before) {
-    return findExpiredUnpaidOrdersAllTenantsBySql(Timestamp.from(before));
-  }
-
-  /**
-   * {@link #findExpiredUnpaidOrdersAllTenants} 的模板 SQL 实现（{@code @TenantScope(ALL)} 关闭租户过滤）。
-   *
-   * <p><b>为何与上面那条并存</b>：JDBC 边界要的是 {@code Timestamp}，而 {@code Instant} 才是调用方（领域 / 适配器）的自然时间类型—— 把
-   * {@code Timestamp.from(...)} 收敛在唯一一处，调用方就不必知道持久层用什么时间类型。
-   *
-   * <p><b>{@code AllTenants} 仍留在方法名里</b>：门禁按后缀识别全租户入口，去掉后缀会让「谁在调这个跨租户读」失去防护。
-   *
-   * <p>SQL 见 {@code resources/sql/…/OrderRepository/findExpiredUnpaidOrdersAllTenantsBySql.sql}。
+   * 超时未支付订单扫描（全租户，定时任务专用）：{@code status = CREATED} 且 {@code created_at < before}。 SQL 见 {@code
+   * resources/sql/…/OrderRepository/findExpiredOrdersAllTenants.sql}。
    */
   @TenantScope(TenantScopeMode.ALL)
-  List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenantsBySql(
-      @Param("before") Timestamp before);
+  List<OrderHeadProjection> findExpiredOrdersAllTenants(@Param("before") Timestamp before);
 
-  /** 订单当前状态（对账用）；订单不存在或不可见时返回 {@code Optional.empty()}。 */
-  default Optional<OrderStatus> findStatusById(long tenantId, long orderId) {
-    Order order =
-        findOneByCriteria(
-            Criteria.<Order>create().eq(Order::getId, orderId).eq(Order::getTenantId, tenantId));
-    return Optional.ofNullable(order).map(Order::getStatus);
-  }
-
-  /**
-   * 批量取订单状态（对账用，单租户 IN 查询）：全租户对账扫描按租户分组后，每组一次 IN 查询取回该租户下所有待核订单状态，避免逐行 {@link #findStatusById} 的
-   * N+1。
-   *
-   * <p>订单不存在/不可见者不进入返回列表；{@code orderIds} 为空或空列表直接返回空，不下发查询。
-   */
-  @SuppressWarnings("unchecked")
-  default List<Order> findOrdersByTenantAndIds(long tenantId, List<Long> orderIds) {
-    if (orderIds == null || orderIds.isEmpty()) {
-      return List.of();
-    }
-    return findByCriteria(
-        Criteria.<Order>create()
-            .eq(Order::getTenantId, tenantId)
-            .in(Order::getId, orderIds.toArray(new Long[0])));
-  }
-
-  /** 订单头分页；条件用 Criteria 开关表达，租户显式下发，投影映射由 {@link OrderHeadProjection#from} 承担。 */
+  /** 订单头分页；{@code customerId} / {@code status} 为可选过滤条件。 */
   default PageResult<OrderHeadProjection> findOrderPage(
-      long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {
+      long tenantId,
+      Long customerId,
+      com.bone.blueprint.domain.order.valueobject.OrderStatus status,
+      int pageNum,
+      int pageSize) {
     Criteria<Order> criteria =
         Criteria.<Order>create()
             .eq(Order::getTenantId, tenantId)

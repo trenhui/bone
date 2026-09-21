@@ -23,6 +23,7 @@ import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictExceptio
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.util.HashMap;
@@ -127,12 +128,12 @@ public class OrderApplicationService {
 
   @Transactional
   public void cancel(CancelOrderCommand command) {
-    long tenantId = resolveTenantId(command.tenantId());
     Order order =
-        orderRepository
-            .findByIdInTenant(command.orderId(), tenantId)
+        Optional.ofNullable(orderRepository.findById(command.orderId()))
             .orElseThrow(
-                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
+                () ->
+                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
+                        .get());
     order.cancel();
     try {
       orderRepository.update(order);
@@ -145,10 +146,11 @@ public class OrderApplicationService {
   @Transactional
   public void ship(ShipOrderCommand command) {
     Order order =
-        orderRepository
-            .findByIdInTenant(command.orderId(), tenantProvider.currentTenantId())
+        Optional.ofNullable(orderRepository.findById(command.orderId()))
             .orElseThrow(
-                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
+                () ->
+                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
+                        .get());
     try {
       order.ship();
     } catch (DomainException ex) {
@@ -164,10 +166,11 @@ public class OrderApplicationService {
   @Transactional
   public void deliver(DeliverOrderCommand command) {
     Order order =
-        orderRepository
-            .findByIdInTenant(command.orderId(), tenantProvider.currentTenantId())
+        Optional.ofNullable(orderRepository.findById(command.orderId()))
             .orElseThrow(
-                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
+                () ->
+                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
+                        .get());
     try {
       order.deliver();
     } catch (DomainException ex) {
@@ -182,23 +185,18 @@ public class OrderApplicationService {
 
   // ===================== 读操作 =====================
 
-  /**
-   * 查询订单当前状态（<b>按传入租户直查</b>，供全租户对账扫描逐行取状态）。
-   *
-   * <p>订单不存在时返回空——调用方须把「查不到」同样视为异常：对账场景下「支付成功却没有订单」本身就是需要 留痕的不一致，不能因取不到状态而静默跳过。
-   */
+  /** 对账场景：在指定租户下取订单状态；订单不存在返回 Optional.empty()。 */
   @Transactional(readOnly = true)
   public Optional<OrderStatus> findOrderStatus(long tenantId, long orderId) {
-    return orderRepository.findStatusById(tenantId, orderId);
+    return TenantContextRunner.callAs(
+        tenantId,
+        () -> Optional.ofNullable(orderRepository.findById(orderId)).map(Order::getStatus));
   }
 
   /**
-   * 批量取订单状态（对账用）：按租户分组后每组一次 IN 查询，避免全租户对账逐行查库（N+1）。
+   * 对账批量取状态：按租户分组后每组一次 IN 查询。
    *
-   * <p><b>为何仍走应用层</b>：订单侧读语义是「请求级读」，须保留应用层对租户的显式化（见 {@code OrderPaymentInconsistencyJob}
-   * 的设计说明）；故批量取也收敛在应用层，而非让定时任务直连域仓储。
-   *
-   * <p>订单不存在/不可见者不出现在返回 Map 中——调用方须把「查不到」同样视为异常（支付成功却无对应订单）。
+   * <p>SDK {@code findByIds} 依赖 TenantContext，故每组用 {@code runAs(tenantId)} 包裹调用。
    */
   @Transactional(readOnly = true)
   public Map<Long, OrderStatus> findOrderStatuses(Map<Long, Long> orderIdToTenantId) {
@@ -212,9 +210,13 @@ public class OrderApplicationService {
                 Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
         .forEach(
             (tenantId, orderIds) -> {
-              for (Order order : orderRepository.findOrdersByTenantAndIds(tenantId, orderIds)) {
-                result.put(order.getId(), order.getStatus());
-              }
+              TenantContextRunner.runAs(
+                  tenantId,
+                  () -> {
+                    for (Order order : orderRepository.findByIds(orderIds)) {
+                      result.put(order.getId(), order.getStatus());
+                    }
+                  });
             });
     return result;
   }
@@ -253,9 +255,5 @@ public class OrderApplicationService {
     } catch (IllegalArgumentException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_INVALID, status);
     }
-  }
-
-  private long resolveTenantId(Long explicitTenantId) {
-    return explicitTenantId != null ? explicitTenantId : tenantProvider.currentTenantId();
   }
 }

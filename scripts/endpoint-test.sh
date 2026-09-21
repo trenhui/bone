@@ -35,24 +35,8 @@ except:
 " 2>/dev/null)
 
 if [ -z "$IAM_TOKEN" ]; then
-  echo "  直接登录失败，尝试重置密码..."
-  curl -s -X POST http://localhost:8081/api/v1/iam/debug/reset-admin-password 2>/dev/null
-  sleep 1
-  LOGIN_BODY=$(curl -s -X POST http://localhost:8081/api/v1/iam/login \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"123456"}' 2>/dev/null || echo '{}')
-  IAM_TOKEN=$(echo "$LOGIN_BODY" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    data = d.get('data', {})
-    if isinstance(data, dict):
-        print(data.get('token', data.get('accessToken', '')))
-    else:
-        print('')
-except:
-    print('')
-" 2>/dev/null)
+  echo "  直接登录失败（调试重置接口已移除，请确认 BONE_IAM_DEFAULT_PASSWORD / 种子数据）"
+  IAM_TOKEN=""
 fi
 
 if [ -z "$IAM_TOKEN" ]; then

@@ -52,6 +52,7 @@ TenantContext.setBizIdentityCode(...);
 
 | 规则 | 说明 |
 |------|------|
+| **实体声明** | 租户表对应的聚合必须继承 `TenantAggregateRoot`（实体继承 `TenantAbstractEntity`），**在实体上声明 `tenantId`**。SDK 按**实体字段**判定租户表（`TableMetadataResolver` → `TableMetadata.isTenantScoped()`），DDL 有 `tenant_id` 列但实体不声明 ⇒ `TenantFilterInjector` 直接返回、查询**不注入任何租户条件**——这是静默跨租户读的成因（2026-09-20 实测：bone-integration 5 个聚合全 `AggregateRoot`，`int_*` 表却有 `tenant_id NOT NULL`，用户可达的 `/executions`、`/statistics` 均无租户过滤，见该模块 README 的登记缺口） |
 | 查询 | 所有业务查询带 `tenant_id`；`biz_identity_code` **仅当表已落库该列**时附加过滤，否则在应用层按上下文判断 |
 | 写入 | 插入时从上下文填充 `tenant_id`，禁止客户端指定他人租户；`biz_identity_code` 写入需先确认 DDL 已包含该列 |
 | 跨租户 | 仅平台超管角色；须审计 + Scope `platform:*` |
@@ -79,6 +80,7 @@ TenantContext.setBizIdentityCode(...);
 ## 7. 检查清单
 
 - [ ] 新表含 `tenant_id`（+ 审计列）  
+- [ ] 租户表的聚合**在实体上声明 `tenantId`**（继承 `TenantAggregateRoot` / `TenantAbstractEntity`）——DDL 有列 ≠ SDK 认租户表，漏了这条等于查询无租户过滤（见 §4 实体声明）  
 - [ ] API 不信任 body 租户字段  
 - [ ] MDC 有 `tenantId`  
 - [ ] 缓存/MQ 带租户维度  
@@ -91,5 +93,6 @@ TenantContext.setBizIdentityCode(...);
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-20 | §4 新增「实体声明」规则 + §7 对应检查项：SDK 按实体字段判定租户表，DDL 有 `tenant_id` 不等于查询会带租户条件 |
 | 2026-05-17 | 初版；对齐总体架构 §8.5 |
 | 2026-05-20 | 明确 `biz_identity_code` 默认仅在 JWT/上下文，不强制落库；需落库须 ADR |

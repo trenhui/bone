@@ -1,6 +1,6 @@
 package com.bone.system.domain.gateway;
 
-import com.bone.system.domain.model.console.KeyMetrics;
+import com.bone.system.domain.console.KeyMetrics;
 
 /**
  * 关键业务指标出站端口（控制台概览"keyMetrics"）。

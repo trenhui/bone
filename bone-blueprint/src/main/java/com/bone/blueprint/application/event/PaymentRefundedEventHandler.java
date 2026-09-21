@@ -9,7 +9,9 @@ import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -48,10 +50,15 @@ public class PaymentRefundedEventHandler {
         event.refundAmount());
 
     Order order =
-        orderRepository
-            .findByIdInTenant(event.orderId(), event.tenantId())
-            .orElseThrow(
-                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId()));
+        TenantContextRunner.callAs(
+            event.tenantId(),
+            () ->
+                Optional.ofNullable(orderRepository.findById(event.orderId()))
+                    .orElseThrow(
+                        () ->
+                            BlueprintErrors.supplier(
+                                    BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId())
+                                .get()));
 
     // 确认订单退款（本地聚合写，独立事务）。
     boolean refunded = false;

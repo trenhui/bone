@@ -1,0 +1,90 @@
+{
+  "_comment": "租户表 ↔ 实体声明缺口的存量登记（唯一真源）。规则见 Bone-多租户规范.md §4：SDK 按实体字段判定租户表（TableMetadata.isTenantScoped()），DDL 有 tenant_id 但实体不声明 tenantId ⇒ TenantFilterInjector 直接返回、查询不注入租户条件（静默跨租户读）。新增命中即失败；本表内表只可收缩。classification：pending（待补实体声明 + 数据归属迁移，涉及存量数据属 L4）/ by-design（确为平台全局表，须写明理由）。本表由 scripts/check-tenant-entity-declaration.py 校验。",
+  "_rule": "DDL 含 tenant_id 的表，其 @Table 实体必须声明 tenantId（继承 TenantAggregateRoot / TenantAbstractEntity，或自带 tenantId 字段）",
+  "tables": {
+    "int_connector": {
+      "entity": "Connector",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/domain/connector/Connector.java",
+      "classification": "pending",
+      "owner": "integration",
+      "note": "集成模块 5 个聚合全缺租户声明，已造成用户可达跨租户读（MonitorController 的 /executions、/executions/{id}、/statistics）。修法与拆除条件见 bone-platform/bone-integration/README.md「已登记的租户隔离缺口」：先迁移存量 tenant_id 归属（L4），再改实体基类并在工厂/调用方补 tenantId"
+    },
+    "int_execution_log": {
+      "entity": "IntegrationLog",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/domain/execution/IntegrationLog.java",
+      "classification": "pending",
+      "owner": "integration",
+      "note": "同上；执行日志列表是对外暴露最直接的路径（GET /executions）"
+    },
+    "int_flow": {
+      "entity": "IntegrationFlow",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/domain/flow/IntegrationFlow.java",
+      "classification": "pending",
+      "owner": "integration",
+      "note": "同上；模块详设 §安全明确要求「流程列表与执行日志严格按 tenant_id 隔离」，实体未声明即不满足"
+    },
+    "int_flow_connection": {
+      "entity": "FlowConnection",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/domain/flow/FlowConnection.java",
+      "classification": "pending",
+      "owner": "integration",
+      "note": "同上（流程子表，随 int_flow 一起收敛）"
+    },
+    "int_flow_node": {
+      "entity": "FlowNode",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/domain/flow/FlowNode.java",
+      "classification": "pending",
+      "owner": "integration",
+      "note": "同上（流程子表，随 int_flow 一起收敛）"
+    },
+    "meta_field": {
+      "entity": "PlatformMetaField",
+      "path": "bone-engine/bone-metadata-engine/bone-metadata-engine-starter/src/main/java/com/bone/metadata/engine/starter/platform/model/PlatformMetaField.java",
+      "classification": "pending",
+      "owner": "metadata-engine",
+      "note": "表性质已确认 **per-tenant**：ADR-0016 记录 catalog 侧 MetaEntity / MetaField 各自声明 tenantId 字段，隔离由 CatalogTenantSupport + 仓储条件保证。缺的是**引擎侧的第二份映射**——starter 的 PlatformMetaField（@Table(\"meta_field\")，只读）没带 tenantId，而 CatalogTenantSupport 只作用于 server catalog 侧。待确认：引擎运行时按租户执行元数据查询时是否另行传入 tenant（若无 → 引擎读字段定义同样跨租户）"
+    },
+    "sys_alert_event": {
+      "entity": "AlertRecord",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/alert/AlertRecord.java",
+      "classification": "needs-owner-decision",
+      "owner": "bone-system",
+      "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_alert_event | 告警事件（rule_id，current_value，status OPEN/ACK/RESOLVED）」未提租户。平台服务健康告警更像平台级运维视图；若确认 → by-design + 写明「运维视图需跨租户 + 授权审计」，否则补实体声明。该模块正在进行 ApplicationService 收敛，须衔接同一轮改动"
+    },
+    "sys_alert_rule": {
+      "entity": "AlertRule",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/alert/AlertRule.java",
+      "classification": "needs-owner-decision",
+      "owner": "bone-system",
+      "note": "**性质待裁决**（证据不足）：告警规则由谁配置决定答案——平台运维配平台指标阈值 → by-design（写明理由）；租户自配 → 补实体声明。该模块收敛进行中，须衔接同一轮改动"
+    },
+    "sys_config": {
+      "entity": "SystemConfig",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/config/SystemConfig.java",
+      "classification": "pending",
+      "owner": "bone-system",
+      "note": "表性质**已由设计文档确认为 per-tenant**：《7. 系统管理模块详细设计方案》§表清单写「sys_config | 配置（tenant_id + config_key 唯一，encrypted，标准审计）」——唯一键就含 tenant_id。待补实体租户声明（须与正在进行的 ApplicationService 收敛同批处理）"
+    },
+    "sys_dict": {
+      "entity": "SysDict",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/dict/SysDict.java",
+      "classification": "needs-owner-decision",
+      "owner": "bone-system",
+      "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_dict（该表在 DDL 与代码中存在但缺设计说明）。字典常见两种形态——平台全局 + 租户扩展、或纯 per-tenant。裁决后二选一：per-tenant → 补实体声明；平台全局 → 改 classification 为 by-design 并写明理由"
+    },
+    "sys_log": {
+      "entity": "SystemLog",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/log/SystemLog.java",
+      "classification": "needs-owner-decision",
+      "owner": "bone-system",
+      "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_log | 日志（level，service，content，trace_id，created_at）」未提租户；DDL 有 tenant_id、保留 180 天。运维排查通常需要跨租户视图 → 若确认平台级则改 by-design 并写明「运维视图需跨租户 + 授权审计」；否则补实体声明"
+    },
+    "sys_schedule_task": {
+      "entity": "ScheduleTask",
+      "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/schedule/ScheduleTask.java",
+      "classification": "needs-owner-decision",
+      "owner": "bone-system",
+      "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_schedule_task。调度任务由谁配置（平台运维 vs 租户）决定答案——per-tenant → 补实体声明；平台运维 → by-design + 写明理由"
+    }
+  }
+}

@@ -5,13 +5,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bone.system.application.query.handler.ConsoleOverviewQueryHandler;
-import com.bone.system.application.query.handler.QuickActionsQueryHandler;
-import com.bone.system.domain.model.console.ConsoleOverview;
-import com.bone.system.domain.model.console.KeyMetrics;
-import com.bone.system.domain.model.console.QuickAction;
-import com.bone.system.domain.model.console.ResourceUsage;
-import com.bone.system.domain.model.console.ServiceStatus;
+import com.bone.system.application.ConsoleApplicationService;
+import com.bone.system.domain.console.ConsoleOverview;
+import com.bone.system.domain.console.KeyMetrics;
+import com.bone.system.domain.console.QuickAction;
+import com.bone.system.domain.console.ResourceUsage;
+import com.bone.system.domain.console.ServiceStatus;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,27 +21,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-/** Web 切片测试：仅校验 Controller → QueryHandler 编排与响应包装； 业务计数由 Gateway 单测覆盖，避免重复。 */
+/**
+ * Web 切片测试：仅校验 Controller → ApplicationService 编排与响应包装。
+ *
+ * <p>Gateway 取数、计数埋点等由各自单测覆盖，这里 mock 掉——Controller 的责任是「把用例结果装进统一响应」， 重复断言底层行为只会让每次数据格式调整都要改两处。
+ */
 @ExtendWith(MockitoExtension.class)
 class ConsoleControllerTest {
 
-  @Mock private ConsoleOverviewQueryHandler consoleOverviewQueryHandler;
-
-  @Mock private QuickActionsQueryHandler quickActionsQueryHandler;
+  @Mock private ConsoleApplicationService consoleApplicationService;
 
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(
-                new ConsoleController(consoleOverviewQueryHandler, quickActionsQueryHandler))
-            .build();
+        MockMvcBuilders.standaloneSetup(new ConsoleController(consoleApplicationService)).build();
   }
 
   @Test
   void overview() throws Exception {
-    when(consoleOverviewQueryHandler.handle())
+    when(consoleApplicationService.overview())
         .thenReturn(
             ConsoleOverview.builder()
                 .services(
@@ -83,7 +82,7 @@ class ConsoleControllerTest {
 
   @Test
   void services() throws Exception {
-    when(consoleOverviewQueryHandler.handleServices())
+    when(consoleApplicationService.serviceStatuses())
         .thenReturn(
             List.of(
                 ServiceStatus.builder()
@@ -102,7 +101,7 @@ class ConsoleControllerTest {
 
   @Test
   void resources() throws Exception {
-    when(consoleOverviewQueryHandler.handleResources())
+    when(consoleApplicationService.resourceUsage())
         .thenReturn(
             ResourceUsage.builder()
                 .memoryUsedBytes(999)
@@ -118,7 +117,7 @@ class ConsoleControllerTest {
 
   @Test
   void metrics() throws Exception {
-    when(consoleOverviewQueryHandler.handleMetrics())
+    when(consoleApplicationService.keyMetrics())
         .thenReturn(
             KeyMetrics.builder().userCount(5).jvmThreadsLive(7).updatedAt(Instant.now()).build());
 
@@ -131,7 +130,7 @@ class ConsoleControllerTest {
 
   @Test
   void quickActions() throws Exception {
-    when(quickActionsQueryHandler.handle())
+    when(consoleApplicationService.quickActions())
         .thenReturn(
             List.of(
                 QuickAction.builder()

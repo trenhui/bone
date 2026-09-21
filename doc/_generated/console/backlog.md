@@ -1,6 +1,6 @@
 # bone-system 控制台 [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-18T22:39:47Z（UTC）
+> **生成时间**：2026-09-20T08:09:00Z（UTC）
 > **维护源**：[`backlog.yaml`](../../../tools/console-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |

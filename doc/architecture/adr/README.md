@@ -39,3 +39,6 @@
 | [0029](./0029-sdk-auto-tenant-filter.md) | SDK 查询/更新/删除自动注入 tenant_id（落实多租户规范 §3，**已接受 / 已实现**） |
 | [0030](./0030-domain-repository-read-merge.md) | 单一仓储 + 外置 `.sql` 优先 + `@TenantScope` 自动租户注入（**草案 · 待架构组批准**） |
 | [0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md) | 写路径租户护栏补全 + SDK 原生乐观锁（`@Version`）+ 异步入口租户声明（**提议 · D0 已落地，D1~D3 待批准**） |
+| [0032](./0032-controlled-batch-convergence.md) | 受控批量收敛通道 — 一次性批量重构的授权与登记（**已采纳**，含 bone-iam 2026-09-20 先例） |
+| [0033](./0033-application-collaboration-service.md) | 应用层协作服务（`application/service`）的定位与落点判据（**已采纳**，IAM 现有 9 个类就地合规） |
+| [0034](./0034-tenant-scope-explicitness-and-all-entry-gate.md) | 租户隔离显式性 — SQL 通道启动期 fail-fast + 全租户入口单一判据（**已采纳**，首轮抓出 IAM 登录入口与 integration 定时任务两处问题） |

@@ -23,6 +23,9 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
     importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
+  /** 本模块域仓储包：全租户入口的三条共享规则都以此包为作用域。 */
+  private static final String DOMAIN_REPOSITORY_PACKAGE = "com.bone.blueprint.domain.repository";
+
   // P0-1：依赖方向
   @ArchTest
   static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
@@ -38,33 +41,11 @@ public class ArchitectureTest {
   static final ArchRule no_outer_aggregate_identity_mutation =
       BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
 
-  // P0-5：domain 不可使用 QueryBuilder（豁免 ..domain.repository.. ——仓储是 SDK 框架集成点，
-  // 基类 Repository<T,ID> 自带 updateByCriteria(Criteria<T>) 方法签名，子类需调它做版本条件更新）
+  // P0-5：domain 不可使用 QueryBuilder（豁免 ..domain.repository.. ——仓储是 SDK 框架集成点）。
+  // 2026-09-20：本地重写的版本收敛回共享规则——blueprint / iam / system 三处各自复制同一豁免，
+  // 而 integration / masterdata 的域仓储读到同一形态时又会重新踩一遍（E-4.1 已把该豁免写成平台口径）。
   @ArchTest
-  static final ArchRule domain_no_query_builder =
-      noClasses()
-          .that()
-          .resideInAPackage("..domain..")
-          .and()
-          .resideOutsideOfPackage("..domain.repository..")
-          .should()
-          .dependOnClassesThat(annotatedWithReadSideOnly())
-          .allowEmptyShould(true)
-          .because(
-              "DDD P0-5: read-side DSL (@ReadSideOnly) must not appear in domain; "
-                  + "exception: domain.repository is an SDK framework integration point that "
-                  + "inherits updateByCriteria(Criteria<T>) and needs it for optimistic locking");
-
-  private static com.tngtech.archunit.base.DescribedPredicate<
-          com.tngtech.archunit.core.domain.JavaClass>
-      annotatedWithReadSideOnly() {
-    return new com.tngtech.archunit.base.DescribedPredicate<>("annotated with @ReadSideOnly") {
-      @Override
-      public boolean test(com.tngtech.archunit.core.domain.JavaClass input) {
-        return input.isAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
-      }
-    };
-  }
+  static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
 
   // P0-6：CommandHandler 禁用 QueryBuilder
   @ArchTest
@@ -152,36 +133,15 @@ public class ArchitectureTest {
                   + "adapter.schedule 是 ADR-0030 授权的平台运维入口，其可用面另由 "
                   + "schedule_only_calls_all_tenants_repository_methods 收紧");
 
-  // P0-1 延伸（2026-09-19 补）：schedule 拿到域仓储后，也只许用它做全租户运维扫描。
+  // P0-1 延伸（2026-09-19 补、2026-09-20 收敛为共享规则）：schedule 拿到域仓储后，也只许用它做全租户运维扫描。
   // 域仓储在 ADR-0030 合并读写后自带 save/update/delete，「拿到接口就等于同时握有写能力」，而上一条按
-  // 「依赖」设限，对已授权的 schedule 包没有约束力。故这里按「调用的方法名」再收紧一层：只许调以
-  // AllTenants 结尾的方法。后缀口径必须与 all_tenants_scan_only_by_schedule 保持一致（它按同一后缀
-  // 识别全租户入口）——改后缀会让两道门禁同时失效，见 PaymentRepository 类注释。
+  // 「依赖」设限，对已授权的 schedule 包没有约束力，所以调用面必须按方法逐个收紧。
+  // 判据是**事实**而不是名字：@TenantScope(ALL) 或方法体内 Criteria.disableTenantFilter()——Criteria 通道的
+  // TenantFilterInjector 不读注解，只按注解或只按后缀判定都会漏（双通道说明见 BoneDddArchRules）。
+  // 命名要求（*AllTenants）由 all_tenant_entry_points_must_be_named_all_tenants 双向绑定，不再各自为政。
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =
-      noClasses()
-          .that()
-          .resideInAPackage("..adapter.schedule..")
-          .should()
-          .callMethodWhere(
-              com.tngtech.archunit.core.domain.JavaCall.Predicates.target(
-                  domainRepositoryMethodNotEndingWithAllTenants()))
-          .because(
-              "adapter.schedule 只许调用 ADR-0030 授权的全租户运维方法（*AllTenants）；"
-                  + "save / update / delete / findByIdInTenant 等写与租户内读不在授权范围内");
-
-  private static com.tngtech.archunit.base.DescribedPredicate<
-          com.tngtech.archunit.core.domain.AccessTarget.CodeUnitCallTarget>
-      domainRepositoryMethodNotEndingWithAllTenants() {
-    return new com.tngtech.archunit.base.DescribedPredicate<>(
-        "a domain.repository method whose name does not end with AllTenants") {
-      @Override
-      public boolean test(com.tngtech.archunit.core.domain.AccessTarget.CodeUnitCallTarget target) {
-        return target.getOwner().getPackageName().equals("com.bone.blueprint.domain.repository")
-            && !target.getName().endsWith("AllTenants");
-      }
-    };
-  }
+      BoneDddArchRules.scheduleOnlyCallsAllTenantScanMethods(DOMAIN_REPOSITORY_PACKAGE);
 
   // E-1.3：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
@@ -273,25 +233,20 @@ public class ArchitectureTest {
   static final ArchRule save_must_pair_with_publish_or_exempt =
       BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
 
-  // P2-4（E-2 补充门禁）：全租户扫描（*AllTenants）仅限 schedule 包调用。
+  // P2-4（E-2 补充门禁，2026-09-20 收敛为共享规则）：全租户扫描仅限 schedule 包调用。
   // 定时任务无请求上下文，TenantPort 降级为平台租户 0，故全租户方法是平台运维入口——
-  // 禁止 web/handler 等其它入站调用（会导致跨租户数据泄漏或静默"扫描完成"但一笔没处理）。
-  // 判据是「方法名以 AllTenants 结尾」，与 schedule_only_calls_all_tenants_repository_methods 同口径。
-  // 曾同时豁免 ..infrastructure.query..（支付读侧适配器所在包），该包已随 ADR-0030 P4 折叠删除，豁免一并撤掉。
+  // 禁止 web/handler/infrastructure 等其它调用方（会导致跨租户数据泄漏或静默"扫描完成"但一笔没处理）。
+  // 租户上下文直取同一约束见 a4caaed6（TenantContext 只许经租户端口读）。
   @ArchTest
   static final ArchRule all_tenants_scan_only_by_schedule =
-      noClasses()
-          .that()
-          .resideOutsideOfPackage("..adapter.schedule..")
-          .should()
-          .callMethodWhere(
-              com.tngtech.archunit.core.domain.JavaCall.Predicates.target(
-                  com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameEndingWith(
-                      "AllTenants")))
-          .allowEmptyShould(true)
-          .because(
-              "E-2: *AllTenants query methods bypass tenant isolation; "
-                  + "they are admin ops only for scheduled jobs, never web/controllers/handlers");
+      BoneDddArchRules.allTenantScanMethodsOnlyCalledBySchedule(DOMAIN_REPOSITORY_PACKAGE);
+
+  // P2-5（E-4.4 补充门禁，2026-09-20 新）：全租户入口必须叫 *AllTenants，且 *AllTenants 方法必须真的绕过租户隔离。
+  // 命名是给调用点看的（一眼知道会跨租户），注解 / disableTenantFilter 是给运行时用的；双向绑定防止
+  // "只改名不改行为"或"只加注解不留痕迹"——那正是"危险的东西从签名里消失"的两种形态。
+  @ArchTest
+  static final ArchRule all_tenant_entry_points_must_be_named_all_tenants =
+      BoneDddArchRules.allTenantEntryPointsMustBeNamedAllTenants(DOMAIN_REPOSITORY_PACKAGE);
 
   // ADR-0028（P6 · CQRS 双构件迁移债）：一个用例只选一种构件，禁止 CommandHandler 与 ApplicationService 套娃。
   // CommandHandler 不得依赖 *ApplicationService——若需编排应在 ApplicationService 内完成，而非 Handler 套

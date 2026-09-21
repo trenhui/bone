@@ -183,7 +183,7 @@ public interface PasswordEncoderPort {
 
 // infrastructure 层实现
 @Component
-public class SpringPasswordEncoderAdapter implements PasswordEncoderPort {
+public class PasswordEncoderPortAdapter implements PasswordEncoderPort {
     private final PasswordEncoder delegate = new BCryptPasswordEncoder();
     // ...
 }

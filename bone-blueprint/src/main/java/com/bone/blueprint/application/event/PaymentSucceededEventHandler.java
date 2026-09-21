@@ -11,7 +11,9 @@ import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -65,10 +67,15 @@ public class PaymentSucceededEventHandler {
         event.channelTradeNo());
 
     Order order =
-        orderRepository
-            .findByIdInTenant(event.orderId(), event.tenantId())
-            .orElseThrow(
-                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId()));
+        TenantContextRunner.callAs(
+            event.tenantId(),
+            () ->
+                Optional.ofNullable(orderRepository.findById(event.orderId()))
+                    .orElseThrow(
+                        () ->
+                            BlueprintErrors.supplier(
+                                    BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId())
+                                .get()));
 
     // 状态异常：订单已不处于待支付状态却收到支付成功回调（如已取消/已发货）。属「钱-货不一致」异常路径，
     // 不能静默忽略——至少告警；真实场景应触发告警/自动退款（复用 PaymentRefundedEvent 链路）。

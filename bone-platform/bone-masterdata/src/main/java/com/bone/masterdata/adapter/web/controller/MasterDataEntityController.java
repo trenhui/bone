@@ -2,92 +2,70 @@ package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.core.web.PlatformApiPaths;
+import com.bone.masterdata.application.EntityApplicationService;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.DisableMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
-import com.bone.masterdata.application.command.handler.ConvertFromBusinessEntityHandler;
-import com.bone.masterdata.application.command.handler.CreateMasterDataEntityHandler;
-import com.bone.masterdata.application.command.handler.DeleteMasterDataEntityHandler;
-import com.bone.masterdata.application.command.handler.DisableMasterDataEntityHandler;
-import com.bone.masterdata.application.command.handler.PublishMasterDataEntityHandler;
-import com.bone.masterdata.application.command.handler.UpdateMasterDataEntityHandler;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
-import com.bone.masterdata.application.query.handler.MasterDataEntityDetailQueryHandler;
-import com.bone.masterdata.application.query.handler.MasterDataEntityPageQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
+@RequestMapping("/api/masterdata/entities")
 @RequiredArgsConstructor
 public class MasterDataEntityController {
-  private final CreateMasterDataEntityHandler createMasterDataEntityHandler;
-  private final UpdateMasterDataEntityHandler updateMasterDataEntityHandler;
-  private final PublishMasterDataEntityHandler publishMasterDataEntityHandler;
-  private final MasterDataEntityPageQueryHandler masterDataEntityPageQueryHandler;
-  private final MasterDataEntityDetailQueryHandler masterDataEntityDetailQueryHandler;
-  private final ConvertFromBusinessEntityHandler convertFromBusinessEntityHandler;
-  private final DeleteMasterDataEntityHandler deleteMasterDataEntityHandler;
-  private final DisableMasterDataEntityHandler disableMasterDataEntityHandler;
+
+  private final EntityApplicationService entityService;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCommand cmd) {
-    Long id = createMasterDataEntityHandler.handle(cmd);
-    return ApiResponse.success(id);
+    return ApiResponse.success(entityService.create(cmd));
   }
 
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @RequestBody UpdateMasterDataEntityCommand cmd) {
     cmd.setId(id);
-    updateMasterDataEntityHandler.handle(cmd);
+    entityService.update(cmd);
+    return ApiResponse.success();
+  }
+
+  @PostMapping("/{id}/publish")
+  public ApiResponse<Void> publish(@PathVariable Long id) {
+    entityService.publish(id);
+    return ApiResponse.success();
+  }
+
+  @PostMapping("/{id}/disable")
+  public ApiResponse<Void> disable(
+      @PathVariable Long id, @RequestBody DisableMasterDataEntityCommand cmd) {
+    cmd.setId(id);
+    entityService.disable(cmd);
+    return ApiResponse.success();
+  }
+
+  @DeleteMapping("/{id}")
+  public ApiResponse<Void> delete(@PathVariable Long id) {
+    entityService.delete(id);
     return ApiResponse.success();
   }
 
   @GetMapping
   public ApiResponse<PageResult<MasterDataEntityDTO>> list(MasterDataEntityPageQuery qry) {
-    PageResult<MasterDataEntityDTO> result = masterDataEntityPageQueryHandler.handle(qry);
-    return ApiResponse.success(result);
+    return ApiResponse.success(entityService.page(qry));
   }
 
   @GetMapping("/{id}")
   public ApiResponse<MasterDataEntityDTO> detail(@PathVariable Long id) {
     MasterDataEntityByIdQuery qry = new MasterDataEntityByIdQuery();
     qry.setId(id);
-    MasterDataEntityDTO dto = masterDataEntityDetailQueryHandler.handle(qry);
-    return ApiResponse.success(dto);
-  }
-
-  @PostMapping("/{id}/publish")
-  public ApiResponse<Void> publish(@PathVariable Long id) {
-    publishMasterDataEntityHandler.handle(id);
-    return ApiResponse.success();
-  }
-
-  @PostMapping("/{id}/disable")
-  public ApiResponse<Void> disable(
-      @PathVariable Long id, @RequestBody(required = false) DisableMasterDataEntityCommand cmd) {
-    if (cmd == null) {
-      cmd = new DisableMasterDataEntityCommand();
-    }
-    cmd.setId(id);
-    disableMasterDataEntityHandler.handle(cmd);
-    return ApiResponse.success();
+    return ApiResponse.success(entityService.detail(qry));
   }
 
   @PostMapping("/convert")
-  public ApiResponse<Long> convertFromBusinessEntity(
-      @RequestParam("businessEntityId") Long businessEntityId) {
-    Long mdmEntityId = convertFromBusinessEntityHandler.handle(businessEntityId);
-    return ApiResponse.success(mdmEntityId);
-  }
-
-  @DeleteMapping("/{id}")
-  public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteMasterDataEntityHandler.handle(id);
-    return ApiResponse.success();
+  public ApiResponse<Long> convert(@RequestParam Long metaEntityId) {
+    return ApiResponse.success(entityService.convertFromBusinessEntity(metaEntityId));
   }
 }

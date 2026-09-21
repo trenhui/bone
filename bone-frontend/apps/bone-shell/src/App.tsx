@@ -272,6 +272,7 @@ function AppContent(): JSX.Element {
       icon: <DatabaseOutlined />,
       enabled: true,
       children: [
+        { key: 'metadata-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
         { key: 'metadata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
         { key: 'metadata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/metadata', hash: '/fields', enabled: true },
         { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
