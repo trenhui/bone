@@ -7,12 +7,12 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.integration.application.ConnectorPageQueryApplicationService;
+import com.bone.integration.application.CreateConnectorApplicationService;
+import com.bone.integration.application.UpdateConnectorApplicationService;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.command.handler.CreateConnectorApplicationService;
-import com.bone.integration.application.command.handler.UpdateConnectorApplicationService;
 import com.bone.integration.application.query.dto.ConnectorDTO;
-import com.bone.integration.application.query.handler.ConnectorPageQueryApplicationService;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import java.util.Collections;
 import java.util.Map;

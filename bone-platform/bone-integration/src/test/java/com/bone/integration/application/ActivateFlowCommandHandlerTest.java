@@ -1,4 +1,4 @@
-package com.bone.integration.application.command.handler;
+package com.bone.integration.application;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;

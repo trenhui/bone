@@ -1,4 +1,4 @@
-package com.bone.integration.application.command.handler;
+package com.bone.integration.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;

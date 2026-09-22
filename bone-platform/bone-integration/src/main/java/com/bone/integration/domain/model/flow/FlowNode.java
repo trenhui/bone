@@ -1,7 +1,7 @@
 package com.bone.integration.domain.model.flow;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("int_flow_node")
-public class FlowNode extends AggregateRoot<Long> {
+public class FlowNode extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;

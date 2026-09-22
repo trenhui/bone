@@ -1,4 +1,4 @@
-package com.bone.integration.application.query.handler;
+package com.bone.integration.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.FlowDTO;

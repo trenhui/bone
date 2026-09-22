@@ -40,12 +40,14 @@ public class ArchitectureTest {
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =
       BoneDddArchRules.scheduleOnlyCallsAllTenantScanMethods(DOMAIN_REPOSITORY_PACKAGE);
 
-  // 模块级租户缺口（与本规则无关，另行登记）：本模块 5 个聚合全部 extends AggregateRoot（无 tenantId），
-  // 而 int_* 表都是 tenant_id NOT NULL、模块详设要求"流程列表与执行日志严格按 tenant_id 隔离"。
-  // SDK 按**实体字段**判定租户表（TableMetadata.isTenantScoped()），实体不声明 ⇒ TenantFilterInjector 直接返回
-  // ⇒ 该模块所有 Criteria / QueryBuilder 读都没有租户过滤（用户可达的 MonitorController /executions、/statistics
-  // 同样受影响）。登记与拆除条件见 bone-platform/bone-integration/README.md「已登记的租户隔离缺口」与
-  // doc/architecture/tenant-entity-baseline.json（由 scripts/check-tenant-entity-declaration.py 校验）。
+  // 模块级租户隔离修复（G-2 / P0*）：
+  // 截至 2026-09-22，5 个聚合（IntegrationFlow / Connector / FlowNode / FlowConnection / IntegrationLog）
+  // 已改 extends TenantAggregateRoot<Long>，SDK 按实体 tenantId 字段自动注入租户过滤（读隔离已修复）。
+  // 写时由 TenantFilterInjector.resolveInsertTenantValue 取 TenantContext 当前租户填值。
+  // ⚠️ 上线前置：int_* 表历史 tenant_id=0 行必须先回填真实租户（见
+  //    doc/_generated/integration/integration_tenant_backfill.sql，由 DBA/业务确认归属规则后执行），
+  //    否则 SDK 自动过滤会把 tenant_id=0 历史行过滤为不可见。回填完成前禁止上线本改动。
+  // 登记与拆除条件见 bone-platform/bone-integration/README.md「已登记的租户隔离缺口」。
   // 本规则原先报出的"schedule 调租户内读"已通过显式 *AllTenants 入口修复（见 FlowStatisticsJob 与
   // FlowMonitorService 的统计口径），故不再冻结。
 
