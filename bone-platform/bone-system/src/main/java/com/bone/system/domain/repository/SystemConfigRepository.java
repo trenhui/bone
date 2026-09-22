@@ -4,9 +4,9 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.domain.config.SystemConfig;
-import com.bone.system.domain.config.vo.ConfigKey;
-import com.bone.system.domain.config.vo.ConfigType;
+import com.bone.system.domain.model.config.SystemConfig;
+import com.bone.system.domain.model.config.vo.ConfigKey;
+import com.bone.system.domain.model.config.vo.ConfigType;
 import java.util.List;
 import java.util.Optional;
 

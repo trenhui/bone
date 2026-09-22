@@ -1,6 +1,6 @@
 package com.bone.system.application.query.dto;
 
-import com.bone.system.domain.schedule.ScheduleTask;
+import com.bone.system.domain.model.schedule.ScheduleTask;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

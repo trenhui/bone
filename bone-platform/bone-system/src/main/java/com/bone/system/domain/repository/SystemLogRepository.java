@@ -5,8 +5,8 @@ import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.domain.log.SystemLog;
-import com.bone.system.domain.log.vo.LogLevel;
+import com.bone.system.domain.model.log.SystemLog;
+import com.bone.system.domain.model.log.vo.LogLevel;
 import java.time.LocalDateTime;
 import java.util.List;
 

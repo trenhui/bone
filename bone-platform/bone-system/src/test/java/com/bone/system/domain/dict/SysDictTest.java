@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.BizException;
-import com.bone.system.domain.dict.vo.DictType;
+import com.bone.system.domain.model.dict.SysDict;
+import com.bone.system.domain.model.dict.vo.DictType;
 import org.junit.jupiter.api.Test;
 
 /** {@link SysDict} 纯单测：字典项默认排序与状态、更新覆盖语义、类型约束（无容器）。 */

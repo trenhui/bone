@@ -1,6 +1,6 @@
 package com.bone.system.application.query.dto;
 
-import com.bone.system.domain.alert.AlertRecord;
+import com.bone.system.domain.model.alert.AlertRecord;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

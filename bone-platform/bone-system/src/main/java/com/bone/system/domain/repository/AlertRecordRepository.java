@@ -4,9 +4,9 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.domain.alert.AlertRecord;
-import com.bone.system.domain.alert.vo.AlertLevel;
-import com.bone.system.domain.alert.vo.AlertStatus;
+import com.bone.system.domain.model.alert.AlertRecord;
+import com.bone.system.domain.model.alert.vo.AlertLevel;
+import com.bone.system.domain.model.alert.vo.AlertStatus;
 
 /**
  * 告警记录仓储端口：写侧 + 本聚合读（ADR-0030）。

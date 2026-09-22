@@ -1,13 +1,13 @@
 package com.bone.system.application;
 
-import com.bone.system.domain.console.ConsoleOverview;
-import com.bone.system.domain.console.KeyMetrics;
-import com.bone.system.domain.console.QuickAction;
-import com.bone.system.domain.console.ResourceUsage;
-import com.bone.system.domain.console.ServiceStatus;
 import com.bone.system.domain.gateway.KeyMetricsGateway;
 import com.bone.system.domain.gateway.ResourceUsageGateway;
 import com.bone.system.domain.gateway.ServiceHealthGateway;
+import com.bone.system.domain.model.console.ConsoleOverview;
+import com.bone.system.domain.model.console.KeyMetrics;
+import com.bone.system.domain.model.console.QuickAction;
+import com.bone.system.domain.model.console.ResourceUsage;
+import com.bone.system.domain.model.console.ServiceStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.List;

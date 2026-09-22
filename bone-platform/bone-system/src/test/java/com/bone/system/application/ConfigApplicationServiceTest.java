@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.system.application.command.CreateConfigCommand;
-import com.bone.system.domain.config.SystemConfig;
-import com.bone.system.domain.config.vo.ConfigKey;
-import com.bone.system.domain.config.vo.ConfigType;
-import com.bone.system.domain.config.vo.ConfigValue;
+import com.bone.system.domain.model.config.SystemConfig;
+import com.bone.system.domain.model.config.vo.ConfigKey;
+import com.bone.system.domain.model.config.vo.ConfigType;
+import com.bone.system.domain.model.config.vo.ConfigValue;
 import com.bone.system.domain.repository.SystemConfigRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

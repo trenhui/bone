@@ -1,6 +1,6 @@
 package com.bone.system.application.query.dto;
 
-import com.bone.system.domain.dict.SysDict;
+import com.bone.system.domain.model.dict.SysDict;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

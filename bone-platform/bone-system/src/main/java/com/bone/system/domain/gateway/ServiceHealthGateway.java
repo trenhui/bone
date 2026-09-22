@@ -1,6 +1,6 @@
 package com.bone.system.domain.gateway;
 
-import com.bone.system.domain.console.ServiceStatus;
+import com.bone.system.domain.model.console.ServiceStatus;
 import java.util.List;
 
 /**

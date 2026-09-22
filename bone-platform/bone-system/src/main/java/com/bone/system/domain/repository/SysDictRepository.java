@@ -4,8 +4,8 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.domain.dict.SysDict;
-import com.bone.system.domain.dict.vo.DictType;
+import com.bone.system.domain.model.dict.SysDict;
+import com.bone.system.domain.model.dict.vo.DictType;
 import java.util.List;
 import java.util.Optional;
 

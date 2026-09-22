@@ -1,8 +1,8 @@
 package com.bone.system.infrastructure.scheduler;
 
 import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
+import com.bone.system.domain.model.schedule.ScheduleTask;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
-import com.bone.system.domain.schedule.ScheduleTask;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

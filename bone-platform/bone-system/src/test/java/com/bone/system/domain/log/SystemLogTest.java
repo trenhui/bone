@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
-import com.bone.system.domain.log.vo.LogLevel;
+import com.bone.system.domain.model.log.SystemLog;
+import com.bone.system.domain.model.log.vo.LogLevel;
 import org.junit.jupiter.api.Test;
 
 /** {@link SystemLog} 纯单测：append-only 审计快照的记录语义与级别校验（无容器）。 */

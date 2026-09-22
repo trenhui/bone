@@ -52,7 +52,7 @@ com.bone.system
 │   ├── port/out/                         # 出站端口（统一 *Port 后缀）
 │   └── query/{dto,qry}/                  # 应用投影（*Dto）与读用例输入（*Query）
 ├── domain/
-│   ├── config/ dict/ alert/ log/ schedule/   # 按聚合平铺（值对象 → vo/，事件 → event/）
+│   ├── model/{alert,config,console,dict,log,schedule}/   # 聚合构件（ADR-0036 目标形态，2026-09-22 迁移完成）
 │   ├── console/                          # 控制台读侧值对象（不可变，非聚合）
 │   ├── gateway/                          # 外部业务事实端口（服务健康/资源/关键指标）
 │   └── repository/                       # 写侧 + 本聚合读（ADR-0030）
@@ -64,8 +64,9 @@ com.bone.system
 └── common/                               # SystemErrorCodes + SystemErrors（码 → HTTP 状态唯一配对）
 ```
 
-**domain 分组形态**：采用 `domain/{aggregate}` 平铺（E-10 允许的两种形态之一），聚合根、值对象、事件按聚合归组；
-不再保留 `domain/model/{aggregate|entity|valueobject|event}` 角色分组，也不允许两套形态并存。
+**domain 分组形态**：目标形态为 `domain/model/{aggregate}/`（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起平台唯一）——聚合根 / 实体 / 值对象在聚合包内直接平铺，`event/` `projection/` 为聚合内子包，`repository` / `gateway` 端口留在 `domain/` 根。
+本模块**已于 2026-09-22 迁移完成**（92 个测试全绿）：`domain/{聚合}` → `domain/model/{聚合}`；`{聚合}/event` → `domain/model/{聚合}/event`；`{聚合}/vo` → `domain/model/{聚合}/vo`（**保留 `vo` 命名**，未按 ADR-0036 D1 统一为 `valueobject`，登记为命名待办）。
+不设 `domain/model/{aggregate|entity|valueobject|event}` 角色桶，也不允许两套分组并存。
 
 **读侧取数落点**：本聚合读（分页 / 按业务键）声明在 `domain/repository` 的 `default` 方法里，`Criteria`
 能表达的单键查询用它，跨列 OR 用 `QueryBuilder`（`Criteria.or(Consumer)` 会把 OR 组当等值条件拼接，是 SDK

@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
-import com.bone.system.domain.alert.event.AlertResolvedEvent;
-import com.bone.system.domain.alert.vo.AlertLevel;
-import com.bone.system.domain.alert.vo.AlertStatus;
-import com.bone.system.domain.alert.vo.MetricName;
+import com.bone.system.domain.model.alert.AlertRecord;
+import com.bone.system.domain.model.alert.event.AlertResolvedEvent;
+import com.bone.system.domain.model.alert.vo.AlertLevel;
+import com.bone.system.domain.model.alert.vo.AlertStatus;
+import com.bone.system.domain.model.alert.vo.MetricName;
 import org.junit.jupiter.api.Test;
 
 /** {@link AlertRecord} 纯单测：告警事件 TRIGGERED → RESOLVED 生命周期与级别校验（无容器）。 */

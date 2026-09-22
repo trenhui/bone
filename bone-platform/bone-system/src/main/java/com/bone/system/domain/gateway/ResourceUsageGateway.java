@@ -1,6 +1,6 @@
 package com.bone.system.domain.gateway;
 
-import com.bone.system.domain.console.ResourceUsage;
+import com.bone.system.domain.model.console.ResourceUsage;
 
 /**
  * 节点资源使用出站端口（JVM/操作系统）。

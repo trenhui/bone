@@ -6,11 +6,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bone.system.application.ConsoleApplicationService;
-import com.bone.system.domain.console.ConsoleOverview;
-import com.bone.system.domain.console.KeyMetrics;
-import com.bone.system.domain.console.QuickAction;
-import com.bone.system.domain.console.ResourceUsage;
-import com.bone.system.domain.console.ServiceStatus;
+import com.bone.system.domain.model.console.ConsoleOverview;
+import com.bone.system.domain.model.console.KeyMetrics;
+import com.bone.system.domain.model.console.QuickAction;
+import com.bone.system.domain.model.console.ResourceUsage;
+import com.bone.system.domain.model.console.ServiceStatus;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

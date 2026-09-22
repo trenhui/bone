@@ -1,6 +1,6 @@
 package com.bone.system.application.port.out;
 
-import com.bone.system.domain.schedule.ScheduleTask;
+import com.bone.system.domain.model.schedule.ScheduleTask;
 
 /**
  * 定时任务调度出站端口（技术能力端口，E-10.2）。

@@ -4,8 +4,8 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.domain.schedule.ScheduleTask;
-import com.bone.system.domain.schedule.vo.TaskStatus;
+import com.bone.system.domain.model.schedule.ScheduleTask;
+import com.bone.system.domain.model.schedule.vo.TaskStatus;
 import java.util.List;
 
 /**
