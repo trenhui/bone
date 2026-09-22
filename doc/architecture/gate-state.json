@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.15",
+  "version": "5.5.17",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
@@ -92,8 +92,8 @@
         [
           "12c",
           "DDL 必备字段与文档同步",
-              "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**由 `scripts/check-ddl-required-columns.py --check`（同一 `[7/7]` 调用）本地执行——**新增表**缺列即失败，存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），**尚未逐表分类**",
-              "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Manual（本地 `--check` 拦新增表；存量 26 张已逐表分类：18 张 by-design、8 张待处理，见 `doc/architecture/ddl-required-columns-baseline.json`，不得当成「全表已合规」）"
+          "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**由 `scripts/check-ddl-required-columns.py --check`（同一 `[7/7]` 调用）本地执行——**新增表**缺列即失败，存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），**尚未逐表分类**",
+          "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Manual（本地 `--check` 拦新增表；存量 26 张已逐表分类：18 张 by-design、8 张待处理，见 `doc/architecture/ddl-required-columns-baseline.json`，不得当成「全表已合规」）"
         ],
         [
           "12d",
@@ -112,6 +112,18 @@
           "同一模块内 Spring 组件的 bean 名唯一（E-13.0 包表达协议后的正确性门禁）",
           "`springComponentBeanNamesMustBeUnique`（按 Spring `AnnotationBeanNameGenerator` 同口径推算有效 bean 名：注解显式 `value` 优先，否则类短名首字母小写）",
           "Hard gate（blueprint 已启用；其余模块 Planned，待推广）"
+        ],
+        [
+          "16",
+          "租户表 ↔ 实体声明（DDL 的 `tenant_id` 必须在实体上声明 `tenantId`）",
+          "`scripts/check-tenant-entity-declaration.py --check`（`scripts/ci-check.sh` `[8/9]`；存量 12 张登记在 `doc/architecture/tenant-entity-baseline.json`，只可收缩）",
+          "Manual（本地脚本，无 workflow 调用；SDK 按实体字段判定租户表——DDL 有列不等于查询会带租户条件）"
+        ],
+        [
+          "17",
+          "application 层构件白名单（只放 `*ApplicationService` / 契约与端口 / `support`，见 ADR-0035）",
+          "`scripts/check-application-constructs.py --check`（`scripts/ci-check.sh` `[9/9]`；存量 96 条登记在 `doc/architecture/application-constructs-baseline.json`，只可收缩）",
+          "Manual（本地脚本；三条判定 = R1 角色包 / R2 `*Service` 命名 / R3 ApplicationService 位置）"
         ]
       ]
     },

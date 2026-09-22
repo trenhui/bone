@@ -10,6 +10,12 @@
 - 领域事件：聚合写操作后由 `MasterdataDomainEventPublisher.publishFrom(agg)` 发布，`application/event/*Handler` 以 `@TransactionalEventListener`（AFTER_COMMIT）消费。
 - ArchUnit：`src/test/java/com/bone/masterdata/architecture/ArchitectureTest.java`。
 
+## domain 分组形态（E-10 登记）
+
+**目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`，聚合根 / 聚合内实体 / 值对象在聚合包内直接平铺，`event/` `projection/` 为聚合内子包；`repository` / `gateway` / `service` 端口留在 `domain/` 根。
+
+**本模块现状**：**两棵树并存，属存量**（ADR-0036 R4 明令禁止的状态）——`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 各持一部分聚合构件。按 E-0.2 待收敛；目标是把两棵树合并为 `domain/model/{entity,field,quality,record,standard,lineage}/`。迁移时须逐包核对归属：`entity` / `quality` / `record` 三个包名在两侧都存在。
+
 ## 本上下文拥有的表（E-1.2 数据所有权声明）
 
 | 表 | 归属聚合 | 说明 |

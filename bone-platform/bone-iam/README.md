@@ -12,13 +12,33 @@
 - 应用入口：语义化 `{X}ApplicationService` 平铺 `application/` 根目录（Application Service First，见 ADR-0028）；`application/app/`（应用/模块/应用权限聚合）已并入主包，不再保留平行 CQRS 树。
 - ArchUnit：仅扫描 `src/main`（`ImportOption.DoNotIncludeTests`）；`application_no_infra` / 仓储白名单 **直接门禁**。
 
+## domain 分组形态（E-10 登记）
+
+**目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`——聚合根 / 聚合内实体 / 值对象在聚合包内**直接平铺**，`event/` `projection/` 为聚合内子包；`repository` / `gateway` 端口留在 `domain/` 根。
+
+**本模块现状**：**扁平形态，属存量**（ADR-0036 R5），按 E-0.2 待收敛；迁移顺序排在**最后**（中央鉴权模块，见 ADR-0036 D4）。当前子包与迁移映射：
+
+| 现状子包 | 迁移后 |
+|---|---|
+| `domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` | `domain/model/{account,app,audit,client,dept,menu,permission,role,session,tenant}` |
+| `{聚合}/event`（`account` / `audit` / `dept` / `menu` / `permission` / `role`） | `domain/model/{聚合}/event` |
+| `{聚合}/vo`（`account` / `app` / `audit` / `permission` / `role`） | `domain/model/{聚合}/valueobject` |
+| `domain/repository`、`domain/gateway` | **不变**（端口不进 `model/`） |
+
 ## 应用层结构（无 service 子包）
 
-应用层入口构件只有语义化 `*ApplicationService`（平铺 `application/` 根目录，见 ADR-0028）。**不另设 `application/service/`「服务层」**——它曾制造与 `*ApplicationService` 同层竞争的「第二编排层」（[ADR-0033](../../doc/architecture/adr/0033-application-collaboration-service.md) 已撤销，详见 Bone-DDD 5.5.16）。跨切面复用逻辑按语义化子包归位：
+应用层入口构件只有语义化 `*ApplicationService`（平铺 `application/` 根目录，见 ADR-0028）。**不另设 `application/service/`「服务层」**——它曾制造与 `*ApplicationService` 同层竞争的「第二编排层」（[ADR-0033](../../doc/architecture/adr/0033-application-collaboration-service.md) 已撤销，由 [ADR-0035](../../doc/architecture/adr/0035-application-layer-keeps-only-application-service.md) 取代）。
 
-- `application/binding/`：账号-角色、角色-权限绑定的替换与回读（含权限缓存失效）。
-- `application/policy/`：密码强度策略、租户配额校验。
-- 其余助手（如纯算法）以独立 `*Resolver` 等形式置于 `application/` 根，命名不与用例入口混淆。
+跨切面复用逻辑**不再另设服务层**，按 ADR-0035 D3 的四个落点归位。本模块现行三个角色包/助手是**存量**（登记在 `doc/architecture/application-constructs-baseline.json`，只可收缩）：
+
+| 现存构件 | 落点（ADR-0035 D3） | 说明 |
+|---|---|---|
+| `AccountRoleBindingService`（`application/binding/`） | 绑定写入 → 聚合不变量；权限缓存失效 → `application/port/out` + `infrastructure` | AS 只保留编排 |
+| `TenantQuotaEnforcer`（`application/policy/`） | 配额规则 → `domain/service`（接收计数值、不做 IO） | 计数已下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
+| `PasswordPolicyValidator`（`application/policy/`） | 无 IO 纯规则 → `domain/service` 或值对象 | 迁移时须把失败语义改为 `DomainException` + 应用层翻译（E-5.3.1） |
+| `RoleHierarchyResolver`（`application/` 根） | 纯图算法 → 只服务登录用例则内联 `AuthApplicationService`，否则做 `domain/service` 普通类 | 取数已下沉 `RoleRepository#findByIds` |
+
+> **`@Service` 不构成"留在应用层"的理由**：`domainCoreShouldOnlyDependOnAllowedPackages` 禁止 domain 依赖 Spring stereotype，正解是让领域类**不带 stereotype**（由应用层构造，或在 `config` 类里用 `@Bean` 装配），而不是把它挪回 application 并新开一个角色包。
 
 本模块现行构件：
 

@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已撤销（Superseded，2026-09-22，随 Bone-DDD 5.5.16）**：应用层只保留 `*ApplicationService` 作为入口构件，「应用层协作服务（`application/service/`）」第三类被废止。E-10.2 / E-13.2（回退为三种含义）/ E-13.4 与「ApplicationService 平铺」小节已同步改写，原 D4 落点判据不再作为新增依据；存量 `application/service` 构件按职责归位（见 Bone-DDD 5.5.16 版本说明与 `bone-iam/README.md`）。 |
+| **状态** | **已撤销（Superseded，2026-09-22，随 Bone-DDD 5.5.16）——由 [ADR-0035](./0035-application-layer-keeps-only-application-service.md) 取代**：应用层只保留 `*ApplicationService` 作为入口构件，「应用层协作服务（`application/service/`）」第三类被废止。E-10.2 / E-13.2（回退为三种含义）/ E-13.4 与「ApplicationService 平铺」小节已同步改写，原 D4 落点判据不再作为新增依据；存量 `application/service` 构件按职责归位（见 ADR-0035 D5 与 `application-constructs-baseline.json` 的 `_migration`）。 |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-10 / E-10.1 / E-10.2、E-13.2 / E-13.4、E-3.2 / E-3.5 / E-3.7 AS-01、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |

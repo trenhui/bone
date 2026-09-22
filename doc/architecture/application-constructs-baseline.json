@@ -1,0 +1,881 @@
+{
+  "_comment": "application 层构件白名单的存量违规登记（唯一真源）。规则见 Bone-DDD-最终实践方案 E-10.2 / E-13.2 与 ADR-0035：application 只放 *ApplicationService（根目录）+ 契约与端口 + support/。新增违规即失败；本表内条目只可收缩（清掉后 --check 会提示移除）。classification：pending（待迁移，属代码侧工作）。",
+  "_rules": [
+    "R1-role-package：application 顶层子包必须在白名单内（禁用 service / binding / policy / common 等角色包；**按文件**记，防止已冻结的角色包继续长文件）",
+    "R2-extra-service：application 下不得有 *Service（唯一形态是 *ApplicationService）",
+    "R3-application-service-placement：*ApplicationService 必须平铺在 application/ 根目录"
+  ],
+  "_migration": {
+    "_note": "三类违规的清除动作不同，建议按 R3 → R2 → R1 的顺序（先机械移动、再定性、最后拆角色包），全程触达即收敛，不搞一次性大改（ADR-0032：批量须走受控通道）。",
+    "R3-application-service-placement": "纯位置调整：把 command/handler 与 query/handler 下的 *ApplicationService 平铺到 application/ 根目录并同步调用方 import（E-10.2）。零语义风险。",
+    "R2-extra-service": "逐个定性后再动：规则类 → 聚合或 domain/service（异常语义须改成 DomainException 并由应用层翻译，E-5.3.1）；读侧统计 → QueryPort 或域仓储 default 读方法（ADR-0030）；技术能力（缓存失效 / 审计落库 / 幂等）→ application/port/out + infrastructure；用例编排 → 并进同义 *ApplicationService（E-3.8）。零调用方的直接删除。",
+    "R1-role-package": "文件级动作：每个文件按 ADR-0035 D3 的四个落点归位；文件清空后删除角色包目录（不要为保目录留占位类）。integration 的 application/service 里混着端口（FlowRuntime）与实现（LinearSyncFlowRuntime / CamelFlowRuntime / FlowNodeExecutor）：端口迁 application/port/out，实现迁 infrastructure（E-10.1）。",
+    "direction-conflict": "2026-09-22 收口：bone-iam/README.md 一度把复用类定位到 application/binding/ 与 application/policy/（另有根目录 *Resolver），与 ADR-0035 白名单相反。已按用户决定（应用层只保留 *ApplicationService）统一：该 README 改为 ADR-0035 D3 的落点表，三处按存量处理；@Service 不构成留在应用层的理由——domainCoreShouldOnlyDependOnAllowedPackages 禁止 domain 依赖 Spring stereotype，正解是让领域类不带 stereotype（应用层构造或 config 里 @Bean 装配）。"
+  },
+  "violations": {
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java",
+      "name": "JarMagicValidator",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/PluginArtifactService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/PluginArtifactService.java",
+      "name": "PluginArtifactService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java",
+      "name": "StudioAuditService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
+      "name": "StudioCommandResponses",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+      "name": "StudioIdempotencyService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotentExecutor.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotentExecutor.java",
+      "name": "StudioIdempotentExecutor",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java",
+      "name": "StudioLroService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioPatchSupport.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioPatchSupport.java",
+      "name": "StudioPatchSupport",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioVersionSupport.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioVersionSupport.java",
+      "name": "StudioVersionSupport",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/common/ClassScanner.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/common/ClassScanner.java",
+      "name": "ClassScanner",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/common/ResourceUtils.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/common/ResourceUtils.java",
+      "name": "ResourceUtils",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java",
+      "name": "CodeGenerationAsyncService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java",
+      "name": "CodeGenerationTaskService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java",
+      "name": "GenerationTaskOperationService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java",
+      "name": "AccountRoleBindingService",
+      "package": "binding",
+      "classification": "pending",
+      "owner": "bone-platform/bone-iam",
+      "detail": "application 下不得有 'binding' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-iam/src/main/java/com/bone/iam/application/policy/PasswordPolicyValidator.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-iam/src/main/java/com/bone/iam/application/policy/PasswordPolicyValidator.java",
+      "name": "PasswordPolicyValidator",
+      "package": "policy",
+      "classification": "pending",
+      "owner": "bone-platform/bone-iam",
+      "detail": "application 下不得有 'policy' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-iam/src/main/java/com/bone/iam/application/policy/TenantQuotaEnforcer.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-iam/src/main/java/com/bone/iam/application/policy/TenantQuotaEnforcer.java",
+      "name": "TenantQuotaEnforcer",
+      "package": "policy",
+      "classification": "pending",
+      "owner": "bone-platform/bone-iam",
+      "detail": "application 下不得有 'policy' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/CamelFlowRuntime.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/CamelFlowRuntime.java",
+      "name": "CamelFlowRuntime",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/ConnectorService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/ConnectorService.java",
+      "name": "ConnectorService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowExecutionService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowExecutionService.java",
+      "name": "FlowExecutionService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java",
+      "name": "FlowMonitorService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowNodeExecutor.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowNodeExecutor.java",
+      "name": "FlowNodeExecutor",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowRuntime.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowRuntime.java",
+      "name": "FlowRuntime",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowService.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowService.java",
+      "name": "FlowService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R1:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/LinearSyncFlowRuntime.java": {
+      "rule": "R1-role-package",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/LinearSyncFlowRuntime.java",
+      "name": "LinearSyncFlowRuntime",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
+    },
+    "R2:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/PluginArtifactService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/PluginArtifactService.java",
+      "name": "PluginArtifactService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java",
+      "name": "StudioAuditService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+      "name": "StudioIdempotencyService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java",
+      "name": "StudioLroService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/idempotency/CatalogIdempotencyService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/idempotency/CatalogIdempotencyService.java",
+      "name": "CatalogIdempotencyService",
+      "package": "idempotency",
+      "classification": "pending",
+      "owner": "bone-engine/bone-metadata-server",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java",
+      "name": "CodeGenerationAsyncService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java",
+      "name": "CodeGenerationTaskService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java",
+      "name": "GenerationTaskOperationService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java",
+      "name": "AccountRoleBindingService",
+      "package": "binding",
+      "classification": "pending",
+      "owner": "bone-platform/bone-iam",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/ConnectorService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/ConnectorService.java",
+      "name": "ConnectorService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowExecutionService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowExecutionService.java",
+      "name": "FlowExecutionService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java",
+      "name": "FlowMonitorService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowService.java",
+      "name": "FlowService",
+      "package": "service",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R2:bone-platform/bone-notification/src/main/java/com/bone/platform/alert/application/NotificationService.java": {
+      "rule": "R2-extra-service",
+      "path": "bone-platform/bone-notification/src/main/java/com/bone/platform/alert/application/NotificationService.java",
+      "name": "NotificationService",
+      "package": "(root)",
+      "classification": "pending",
+      "owner": "bone-platform/bone-notification",
+      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandApplicationService.java",
+      "name": "ExtPointCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandApplicationService.java",
+      "name": "ExtensionCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioApplicationService.java",
+      "name": "ExtensionStudioApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallApplicationService.java",
+      "name": "MarketplaceInstallApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/PluginExecutionLogCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/PluginExecutionLogCommandApplicationService.java",
+      "name": "PluginExecutionLogCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateApplicationService.java",
+      "name": "DeploymentStateApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/ExtPointQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/ExtPointQueryApplicationService.java",
+      "name": "ExtPointQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/ExtensionQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/ExtensionQueryApplicationService.java",
+      "name": "ExtensionQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphApplicationService.java",
+      "name": "PluginDependencyGraphApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginExecutionLogQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginExecutionLogQueryApplicationService.java",
+      "name": "PluginExecutionLogQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/StudioAuditApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/StudioAuditApplicationService.java",
+      "name": "StudioAuditApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/StudioOperationApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/StudioOperationApplicationService.java",
+      "name": "StudioOperationApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/bone-extension-engine",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateCodeGenerationApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateCodeGenerationApplicationService.java",
+      "name": "CreateCodeGenerationApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateCodeTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateCodeTemplateApplicationService.java",
+      "name": "CreateCodeTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateDataSourceApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/CreateDataSourceApplicationService.java",
+      "name": "CreateDataSourceApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/DeleteCodeTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/DeleteCodeTemplateApplicationService.java",
+      "name": "DeleteCodeTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/DeleteDataSourceApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/DeleteDataSourceApplicationService.java",
+      "name": "DeleteDataSourceApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/GenerateCodeApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/GenerateCodeApplicationService.java",
+      "name": "GenerateCodeApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/PreviewTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/PreviewTemplateApplicationService.java",
+      "name": "PreviewTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/PublishCodeTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/PublishCodeTemplateApplicationService.java",
+      "name": "PublishCodeTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/SyncTableMetadataApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/SyncTableMetadataApplicationService.java",
+      "name": "SyncTableMetadataApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/TestDataSourceConnectionApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/TestDataSourceConnectionApplicationService.java",
+      "name": "TestDataSourceConnectionApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/UpdateCodeTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/UpdateCodeTemplateApplicationService.java",
+      "name": "UpdateCodeTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/UpdateDataSourceApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/UpdateDataSourceApplicationService.java",
+      "name": "UpdateDataSourceApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/ValidateTemplateApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/command/handler/ValidateTemplateApplicationService.java",
+      "name": "ValidateTemplateApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/CodeGenerationHistoryQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/CodeGenerationHistoryQueryApplicationService.java",
+      "name": "CodeGenerationHistoryQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceByIdApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceByIdApplicationService.java",
+      "name": "DataSourceByIdApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceListApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceListApplicationService.java",
+      "name": "DataSourceListApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceTablesApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/DataSourceTablesApplicationService.java",
+      "name": "DataSourceTablesApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GenerationOperationViewQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GenerationOperationViewQueryApplicationService.java",
+      "name": "GenerationOperationViewQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetCodeTemplateDetailQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetCodeTemplateDetailQueryApplicationService.java",
+      "name": "GetCodeTemplateDetailQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetCodeTemplateListQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetCodeTemplateListQueryApplicationService.java",
+      "name": "GetCodeTemplateListQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetDataSourceListQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/GetDataSourceListQueryApplicationService.java",
+      "name": "GetDataSourceListQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/ListSyncedTablesApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/ListSyncedTablesApplicationService.java",
+      "name": "ListSyncedTablesApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/LoadCatalogTablesApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/LoadCatalogTablesApplicationService.java",
+      "name": "LoadCatalogTablesApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/LoadTablesApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/query/handler/LoadTablesApplicationService.java",
+      "name": "LoadTablesApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-engine/studio-generator",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ActivateFlowCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ActivateFlowCommandApplicationService.java",
+      "name": "ActivateFlowCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/CreateConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/CreateConnectorApplicationService.java",
+      "name": "CreateConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/CreateFlowApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/CreateFlowApplicationService.java",
+      "name": "CreateFlowApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeactivateFlowCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeactivateFlowCommandApplicationService.java",
+      "name": "DeactivateFlowCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteConnectorApplicationService.java",
+      "name": "DeleteConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteFlowCommandApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteFlowCommandApplicationService.java",
+      "name": "DeleteFlowCommandApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DisableConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DisableConnectorApplicationService.java",
+      "name": "DisableConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/EnableConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/EnableConnectorApplicationService.java",
+      "name": "EnableConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ExecuteFlowApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ExecuteFlowApplicationService.java",
+      "name": "ExecuteFlowApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/TestConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/TestConnectorApplicationService.java",
+      "name": "TestConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/UpdateConnectorApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/UpdateConnectorApplicationService.java",
+      "name": "UpdateConnectorApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/UpdateFlowApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/UpdateFlowApplicationService.java",
+      "name": "UpdateFlowApplicationService",
+      "package": "command",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'command' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ConnectorDetailQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ConnectorDetailQueryApplicationService.java",
+      "name": "ConnectorDetailQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ConnectorPageQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ConnectorPageQueryApplicationService.java",
+      "name": "ConnectorPageQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionDetailQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionDetailQueryApplicationService.java",
+      "name": "ExecutionDetailQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionLogLinesQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionLogLinesQueryApplicationService.java",
+      "name": "ExecutionLogLinesQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionLogListQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/ExecutionLogListQueryApplicationService.java",
+      "name": "ExecutionLogListQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowDetailQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowDetailQueryApplicationService.java",
+      "name": "FlowDetailQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowPageQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowPageQueryApplicationService.java",
+      "name": "FlowPageQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowStatisticsQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowStatisticsQueryApplicationService.java",
+      "name": "FlowStatisticsQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    },
+    "R3:bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowVersionListQueryApplicationService.java": {
+      "rule": "R3-application-service-placement",
+      "path": "bone-platform/bone-integration/src/main/java/com/bone/integration/application/query/handler/FlowVersionListQueryApplicationService.java",
+      "name": "FlowVersionListQueryApplicationService",
+      "package": "query",
+      "classification": "pending",
+      "owner": "bone-platform/bone-integration",
+      "detail": "*ApplicationService 必须平铺在 application/ 根目录（E-10.2），当前在 'query' 子包"
+    }
+  }
+}

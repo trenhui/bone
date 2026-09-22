@@ -69,6 +69,11 @@ ANCHOR_SECTION = "稳定锚点与索引"
 KNOWN_MISSING = {
     "controllerMustReturnApiResponse": "HC-003 无机器载体，G-1.7 标注 Planned",
     "repositoryMustUseSdk": "HC-006 本地脚本 check-sdk-persistence.py 已落地（Manual）；ArchUnit 规则仍未实现，故保留登记",
+    "domainCoreShouldOnlyDependOnAllowedPackages": (
+        "bone-iam 模块级 ArchUnit 规则（不在共享规则库）；5.5.16 版本行引用它解释 "
+        "RoleHierarchyResolver 为何不进 domain/service（domain 不得依赖 Spring stereotype）。"
+        "提升到 BoneDddArchRules 前需先在 8 个应用模块试跑，故先登记为待提升"
+    ),
 }
 # ADR-0030 门禁①③④⑥ 曾在此登记为"待 P3 落地的 ArchUnit 规则名"。2026-09-19 收官后，
 # 它们的真实载体是 blueprint 的模块级治理测试 `SqlTemplateGovernanceTest`（不是 ArchUnit 规则），

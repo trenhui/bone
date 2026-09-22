@@ -27,7 +27,7 @@ echo "  （由 ci.yml 的 openapi-diff job 执行 oasdiff）"
 
 echo "🔍 [6/7] 禁用 ORM import 全量扫描..."
 
-echo "🔍 [7/8] DDL 检查（表清单同步 + HC-008 必备列）..."
+echo "🔍 [7/9] DDL 检查（表清单同步 + HC-008 必备列）..."
 python3 scripts/check-ddl-doc-sync.py || {
   echo -e "${RED}❌ 表清单与 bone-init.sql 不一致（新增/删除表未同步文档）！${RESET}"
   exit 1
@@ -37,9 +37,15 @@ python3 scripts/check-ddl-required-columns.py --check || {
   exit 1
 }
 
-echo "🔍 [8/8] 租户表 ↔ 实体声明（Bone-多租户规范 §4：DDL 有 tenant_id ≠ SDK 认租户表）..."
+echo "🔍 [8/9] 租户表 ↔ 实体声明（Bone-多租户规范 §4：DDL 有 tenant_id ≠ SDK 认租户表）..."
 python3 scripts/check-tenant-entity-declaration.py --check || {
   echo -e "${RED}❌ 新增租户表未在实体上声明 tenantId（该实体查询不会注入租户条件）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [9/9] application 层构件白名单（E-10.2 / E-13.2 / ADR-0035：只放 ApplicationService + 契约端口 + support）..."
+python3 scripts/check-application-constructs.py --check || {
+  echo -e "${RED}❌ application 层出现白名单外的构件（第二类 service / 角色包 / ApplicationService 放错包）！${RESET}"
   exit 1
 }
 if grep -rnE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence|import\s+org\.hibernate|import\s+com\.baomidou" \
