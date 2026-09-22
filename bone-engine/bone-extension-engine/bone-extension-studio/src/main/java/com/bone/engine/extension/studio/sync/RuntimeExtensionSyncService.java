@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.sync;
 
 import com.bone.engine.extension.api.model.sync.ExtensionRoutingMetadata;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.support.sync.ExtensionCodeResolver;
 import com.bone.engine.extension.support.sync.ExtensionMetadataStore;

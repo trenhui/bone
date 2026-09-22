@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.marketplace;
 
 import com.bone.engine.extension.studio.domain.gateway.MarketplaceCatalog;
-import com.bone.engine.extension.studio.domain.model.MarketplaceItem;
+import com.bone.engine.extension.studio.domain.model.marketplace.MarketplaceItem;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;

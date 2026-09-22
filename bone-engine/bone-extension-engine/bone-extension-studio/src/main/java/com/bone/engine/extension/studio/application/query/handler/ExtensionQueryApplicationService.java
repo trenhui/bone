@@ -2,8 +2,8 @@ package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.sync.RuntimeExtensionSyncService;
 import java.util.HashMap;

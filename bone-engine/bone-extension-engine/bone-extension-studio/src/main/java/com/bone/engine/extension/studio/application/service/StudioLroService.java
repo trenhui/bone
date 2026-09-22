@@ -5,8 +5,8 @@ import com.bone.engine.extension.studio.application.command.handler.ExtensionCom
 import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.StudioOperation;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.operation.StudioOperation;
 import com.bone.engine.extension.studio.observability.StudioExtensionMetrics;
 import java.time.Instant;
 import java.util.LinkedHashMap;

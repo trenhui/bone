@@ -2,7 +2,7 @@ package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.engine.extension.studio.domain.gateway.PluginExecutionLogReadPort;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.util.CursorCodec;
 import java.util.Comparator;
 import java.util.HashMap;

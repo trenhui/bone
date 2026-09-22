@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.repository;
 
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 
 /**
  * 执行日志写侧仓储；读见 {@link com.bone.engine.extension.studio.domain.gateway.PluginExecutionLogReadPort}。

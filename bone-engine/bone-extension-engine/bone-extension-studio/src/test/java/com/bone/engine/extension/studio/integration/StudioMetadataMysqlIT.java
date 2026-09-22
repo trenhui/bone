@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import org.junit.jupiter.api.Tag;

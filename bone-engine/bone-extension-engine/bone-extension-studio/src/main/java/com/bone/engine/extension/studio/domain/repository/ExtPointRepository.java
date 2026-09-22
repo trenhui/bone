@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.repository;
 
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import org.springframework.lang.Nullable;
 
 /** 扩展点写侧仓储；读方法见 {@link com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort}。 */

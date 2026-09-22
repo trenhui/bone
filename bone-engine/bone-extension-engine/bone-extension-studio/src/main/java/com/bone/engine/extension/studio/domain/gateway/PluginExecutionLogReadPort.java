@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.gateway;
 
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import java.util.List;
 
 /** 插件执行日志读侧端口（ADR-0013）。 */

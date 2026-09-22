@@ -2,7 +2,7 @@ package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.core.model.PageResult;
 import com.bone.engine.extension.studio.domain.gateway.StudioAuditReadPort;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.repository.StudioAuditRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.converter.StudioPersistenceConverter;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.converter.StudioPersistenceConverter;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioPluginVersion;

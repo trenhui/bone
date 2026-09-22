@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.engine.extension.studio.application.service.StudioLroService;
-import com.bone.engine.extension.studio.domain.model.StudioOperation;
+import com.bone.engine.extension.studio.domain.model.operation.StudioOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

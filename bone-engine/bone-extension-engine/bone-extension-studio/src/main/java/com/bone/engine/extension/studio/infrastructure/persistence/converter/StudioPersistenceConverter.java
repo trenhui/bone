@@ -2,12 +2,12 @@ package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.tenant.context.TenantContext;
-import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionImpl;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionPoint;

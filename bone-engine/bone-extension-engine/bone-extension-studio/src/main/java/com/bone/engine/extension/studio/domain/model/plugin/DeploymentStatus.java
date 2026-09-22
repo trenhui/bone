@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.domain.model;
+package com.bone.engine.extension.studio.domain.model.plugin;
 
 /**
  * 制品部署状态机（详设 v2.5 §3.3 [Target]）。

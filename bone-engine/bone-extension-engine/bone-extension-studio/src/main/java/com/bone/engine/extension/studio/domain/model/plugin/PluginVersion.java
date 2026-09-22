@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.domain.model;
+package com.bone.engine.extension.studio.domain.model.plugin;
 
 import com.bone.core.domain.entity.Entity;
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ public class PluginVersion extends Entity<Long> {
   private String checksum;
   private boolean active;
 
-  /** 制品部署状态（对齐 {@link com.bone.engine.extension.studio.domain.model.DeploymentStatus}） */
+  /** 制品部署状态（对齐 {@link com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus}） */
   private String deploymentStatus;
 
   private String changeLog;

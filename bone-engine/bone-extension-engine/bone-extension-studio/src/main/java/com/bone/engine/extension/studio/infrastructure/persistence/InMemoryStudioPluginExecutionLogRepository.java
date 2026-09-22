@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.engine.extension.studio.domain.gateway.PluginExecutionLogReadPort;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.repository.PluginExecutionLogRepository;
 import java.util.Comparator;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import java.util.Comparator;
 import java.util.List;

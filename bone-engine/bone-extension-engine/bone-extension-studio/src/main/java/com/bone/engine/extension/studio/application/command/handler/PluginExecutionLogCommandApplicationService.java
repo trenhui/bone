@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application.command.handler;
 
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.domain.repository.PluginExecutionLogRepository;
 import java.util.Optional;

@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.repository;
 
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import org.springframework.lang.Nullable;
 
 /**

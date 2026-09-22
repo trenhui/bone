@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.gateway;
 
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import java.util.List;
 
 /** 扩展实现读侧端口（§18.3 / ADR-0013）。 */

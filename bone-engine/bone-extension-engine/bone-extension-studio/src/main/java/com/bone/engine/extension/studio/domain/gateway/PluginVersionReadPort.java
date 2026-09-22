@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.gateway;
 
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import java.util.List;
 
 /** 插件版本读侧端口（ADR-0013）。 */

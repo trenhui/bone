@@ -2,8 +2,8 @@ package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import java.util.List;
 import java.util.Map;

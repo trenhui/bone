@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application.service;
 
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.repository.StudioAuditRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

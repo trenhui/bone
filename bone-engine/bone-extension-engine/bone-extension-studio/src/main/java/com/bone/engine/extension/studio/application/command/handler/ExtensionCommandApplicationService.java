@@ -5,11 +5,11 @@ import com.bone.engine.extension.studio.application.service.PluginArtifactServic
 import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
 import com.bone.engine.extension.studio.application.service.StudioVersionSupport;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
-import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;

@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.domain.model;
+package com.bone.engine.extension.studio.domain.model.execution;
 
 import com.bone.core.domain.entity.Entity;
 import java.time.LocalDateTime;

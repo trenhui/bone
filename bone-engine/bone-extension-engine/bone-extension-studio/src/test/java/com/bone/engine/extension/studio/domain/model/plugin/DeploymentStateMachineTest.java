@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.domain.model;
+package com.bone.engine.extension.studio.domain.model.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

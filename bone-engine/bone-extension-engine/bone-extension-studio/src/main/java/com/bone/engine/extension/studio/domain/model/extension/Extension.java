@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.domain.model;
+package com.bone.engine.extension.studio.domain.model.extension;
 
 import com.bone.core.domain.entity.Entity;
 import com.fasterxml.jackson.annotation.JsonSetter;

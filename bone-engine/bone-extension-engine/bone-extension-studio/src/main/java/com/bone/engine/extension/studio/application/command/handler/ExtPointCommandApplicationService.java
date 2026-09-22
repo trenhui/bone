@@ -7,7 +7,7 @@ import com.bone.engine.extension.studio.application.service.StudioIdempotencySer
 import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
 import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
 import com.bone.engine.extension.studio.application.service.StudioVersionSupport;
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.engine.extension.studio.application.query.dto.PluginDependencyGraph;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;

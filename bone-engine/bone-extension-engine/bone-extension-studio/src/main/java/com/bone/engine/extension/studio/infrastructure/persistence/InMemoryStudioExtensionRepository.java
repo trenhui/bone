@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import java.util.Comparator;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application.service;
 
-import com.bone.engine.extension.studio.domain.model.ExtPoint;
-import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import java.util.Map;
 import org.springframework.util.StringUtils;
 

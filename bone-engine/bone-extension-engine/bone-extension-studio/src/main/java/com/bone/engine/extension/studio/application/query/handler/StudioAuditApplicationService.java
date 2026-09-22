@@ -2,7 +2,7 @@ package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.engine.extension.studio.domain.gateway.StudioAuditReadPort;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

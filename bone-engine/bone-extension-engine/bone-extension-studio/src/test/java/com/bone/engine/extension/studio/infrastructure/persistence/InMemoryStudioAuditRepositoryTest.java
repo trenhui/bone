@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.bone.core.model.PageResult;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import org.junit.jupiter.api.Test;
 
 class InMemoryStudioAuditRepositoryTest {

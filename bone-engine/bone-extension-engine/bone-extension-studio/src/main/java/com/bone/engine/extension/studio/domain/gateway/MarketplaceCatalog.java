@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.domain.gateway;
 
-import com.bone.engine.extension.studio.domain.model.MarketplaceItem;
+import com.bone.engine.extension.studio.domain.model.marketplace.MarketplaceItem;
 import java.util.List;
 import java.util.Optional;
 

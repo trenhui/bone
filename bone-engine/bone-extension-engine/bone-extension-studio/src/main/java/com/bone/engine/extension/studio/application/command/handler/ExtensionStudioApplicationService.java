@@ -9,9 +9,9 @@ import com.bone.engine.extension.studio.application.service.StudioIdempotencySer
 import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
 import com.bone.engine.extension.studio.application.service.StudioLroService;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;
 import com.bone.engine.extension.studio.observability.StudioExtensionMetrics;
 import com.fasterxml.jackson.core.JsonProcessingException;

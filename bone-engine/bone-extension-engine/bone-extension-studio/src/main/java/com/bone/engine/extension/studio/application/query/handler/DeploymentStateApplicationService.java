@@ -1,10 +1,10 @@
 package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.engine.extension.studio.application.query.dto.DeploymentStateView;
-import com.bone.engine.extension.studio.domain.model.DeploymentStateMachine;
-import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
-import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStateMachine;
+import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
