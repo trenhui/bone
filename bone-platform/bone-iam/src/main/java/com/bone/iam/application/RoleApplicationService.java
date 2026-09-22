@@ -1,6 +1,7 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
+import com.bone.iam.application.command.AssignPermissionCommand;
 import com.bone.iam.application.command.CreateRoleCommand;
 import com.bone.iam.application.command.UpdateRoleCommand;
 import com.bone.iam.application.policy.TenantQuotaEnforcer;
@@ -10,6 +11,7 @@ import com.bone.iam.application.query.dto.RoleDetailDTO;
 import com.bone.iam.application.query.qry.RolePageQuery;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.repository.RolePermissionRepository;
@@ -41,6 +43,7 @@ public class RoleApplicationService {
   private final RolePermissionRepository rolePermissionRepository;
   private final TenantQuotaEnforcer tenantQuotaEnforcer;
   private final TenantProvider tenantProvider;
+  private final AccountAuthorityCache accountAuthorityCache;
 
   @Transactional
   public Long create(CreateRoleCommand cmd) {
@@ -71,6 +74,28 @@ public class RoleApplicationService {
   @Transactional
   public void delete(Long id) {
     roleRepository.deleteById(id);
+  }
+
+  @Transactional
+  public void assignPermission(AssignPermissionCommand cmd) {
+    if (cmd == null || cmd.getRoleId() == null) {
+      throw IamErrors.of(IamErrorCodes.ROLE_ID_REQUIRED, "角色 ID 不能为空");
+    }
+    Role role = roleRepository.findById(cmd.getRoleId());
+    if (role == null) {
+      throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, cmd.getRoleId());
+    }
+    assertCallerMayManageRole(role);
+    rolePermissionRepository.replaceBindingsForRole(cmd.getRoleId(), cmd.getPermissionIds());
+    accountAuthorityCache.evictAccountsForRole(cmd.getRoleId());
+  }
+
+  /** 非平台租户（tenantId &gt; 0）只能操作本租户角色，防 IDOR。 */
+  private void assertCallerMayManageRole(Role role) {
+    Long callerTenant = tenantProvider.currentTenantIdOrNull();
+    if (callerTenant != null && callerTenant != 0L && !callerTenant.equals(role.getTenantId())) {
+      throw IamErrors.of(IamErrorCodes.TENANT_ACCESS_DENIED, "无权操作其他租户的角色");
+    }
   }
 
   @Transactional(readOnly = true)

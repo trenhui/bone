@@ -14,7 +14,6 @@ import com.bone.iam.application.binding.AccountRoleBindingService;
 import com.bone.iam.application.command.CreateAccountCommand;
 import com.bone.iam.application.policy.PasswordPolicyValidator;
 import com.bone.iam.application.policy.TenantQuotaEnforcer;
-import com.bone.iam.application.service.AuthService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
@@ -47,7 +46,6 @@ class AccountApplicationServiceCreateTest {
   @Mock AccountRoleBindingService accountRoleBindingService;
   @Mock PasswordPolicyValidator passwordPolicyValidator;
   @Mock TenantQuotaEnforcer tenantQuotaEnforcer;
-  @Mock AuthService authService;
 
   @InjectMocks AccountApplicationService accountApplicationService;
 
@@ -62,7 +60,7 @@ class AccountApplicationServiceCreateTest {
     cmd.setTenantId(1L);
     cmd.setRoleIds(new Long[] {1L});
 
-    when(authService.findByUsernameInTenant("newuser")).thenReturn(Optional.empty());
+    when(accountRepository.findByUsernameInTenant("newuser")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed-pwd");
 
     // 模拟 save 后 id 被回填
@@ -94,7 +92,7 @@ class AccountApplicationServiceCreateTest {
     Account existing =
         Account.create(
             1L, Username.of("existing"), "hash", Email.of("dup@bone.com"), null, null, 1L);
-    when(authService.findByUsernameInTenant("existing")).thenReturn(Optional.of(existing));
+    when(accountRepository.findByUsernameInTenant("existing")).thenReturn(Optional.of(existing));
 
     assertThatThrownBy(() -> accountApplicationService.create(cmd))
         .isInstanceOf(BizException.class)
@@ -120,7 +118,7 @@ class AccountApplicationServiceCreateTest {
         .isInstanceOf(BizException.class)
         .hasMessageContaining("密码太弱");
 
-    verify(authService, never()).findByUsernameInTenant(any());
+    verify(accountRepository, never()).findByUsernameInTenant(any());
     verify(accountRepository, never()).save(any());
   }
 
@@ -132,7 +130,7 @@ class AccountApplicationServiceCreateTest {
     cmd.setEmail("u2@bone.com");
     cmd.setTenantId(null);
 
-    when(authService.findByUsernameInTenant("user2")).thenReturn(Optional.empty());
+    when(accountRepository.findByUsernameInTenant("user2")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed");
 
     when(accountRepository.save(any(Account.class)))

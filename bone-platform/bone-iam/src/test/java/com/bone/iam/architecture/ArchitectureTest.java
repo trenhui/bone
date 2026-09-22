@@ -25,8 +25,9 @@ public class ArchitectureTest {
           DOMAIN_REPOSITORY_PACKAGE,
           BoneDddArchRules.AllTenantCallers.ofPackages("..adapter.schedule..")
               // 登录前置定位：认证之前租户未知，必须按用户名跨租户查账号（只限登录入口，见
-              // AccountRepository#findByUsernameForLoginAllTenants 的 JavaDoc）。
-              .andClasses("com.bone.iam.application.service.AuthService"));
+              // AccountRepository#findByUsernameForLoginAllTenants 的 JavaDoc）。该调用现已内联进
+              // AuthApplicationService（application/service 子包废止，ADR-0033 撤销）。
+              .andClasses("com.bone.iam.application.AuthApplicationService"));
 
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =

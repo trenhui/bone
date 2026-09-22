@@ -7,14 +7,14 @@ import com.bone.iam.application.command.LoginCommand;
 import com.bone.iam.application.command.RefreshTokenCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.policy.PasswordPolicyValidator;
+import com.bone.iam.application.port.out.PasswordEncoderPort;
 import com.bone.iam.application.port.out.TokenBlacklistPort;
-import com.bone.iam.application.service.AuthService;
-import com.bone.iam.application.service.RoleHierarchyResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.account.vo.AccountStatus;
+import com.bone.iam.domain.client.SsoClient;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
@@ -25,6 +25,7 @@ import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.iam.domain.role.RolePermission;
+import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,13 +50,15 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>权限码解析的读侧 DSL 已下沉到各域仓储的 {@code default} 方法（E-4.2）：本类零 DSL、零 {@code
  * TenantContext}。「登录需显式声明租户上下文」的语义由 {@link TenantContextRunner} 承载（它是执行器而非 {@code TenantContext}
  * 直读，不属 E-4.4 约束对象）。
+ *
+ * <p>登录专用的账号定位 / 密码校验原本在 {@code application/service/AuthService}（已废止的「第二编排层」，ADR-0033 撤销），现按
+ * 「应用层只保留 ApplicationService」收口为本类的私有方法，避免与用例入口同层竞争的 {@code *Service} 形态。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthApplicationService {
 
-  private final AuthService authService;
   private final AccountRepository accountRepository;
   private final AccountRoleRepository accountRoleRepository;
   private final RolePermissionRepository rolePermissionRepository;
@@ -65,6 +69,8 @@ public class AuthApplicationService {
   private final IamPasswordProperties passwordProperties;
   private final AccountAuthorityCache accountAuthorityCache;
   private final RoleHierarchyResolver roleHierarchyResolver;
+  private final PasswordEncoderPort passwordEncoderPort;
+  private final SsoClient ssoClient;
   private final TokenBlacklistPort tokenBlacklistPort;
   private final JwtConfig jwtConfig;
 
@@ -111,8 +117,7 @@ public class AuthApplicationService {
   @Transactional
   public Map<String, Object> login(LoginCommand cmd) {
     Account account =
-        authService
-            .findByUsername(cmd.getUsername())
+        findByUsername(cmd.getUsername())
             .orElseThrow(() -> IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误"));
 
     // TenantContextRunner 对 null tenantId 是快速失败（NPE），而 AuthController 只捕获 BizException，
@@ -133,7 +138,7 @@ public class AuthApplicationService {
       throw IamErrors.of(IamErrorCodes.ACCOUNT_LOCKED, "账号已锁定，剩余 " + remainingSec + " 秒");
     }
 
-    if (!authService.matches(cmd.getPassword(), account)) {
+    if (!matches(cmd.getPassword(), account)) {
       // 登录请求没有 JWT，TenantContext 为空；写 iam_account 属租户表操作，
       // 必须按账号所属租户显式声明上下文（ADR-0031 D3），否则被 ADR-0029 失败关闭拦下。
       TenantContextRunner.runAs(
@@ -271,6 +276,41 @@ public class AuthApplicationService {
       // 数据库数据异常时，管理员账户使用 fallback 权限
       return adminAccount ? DefaultPermissionCodes.adminFallback() : List.of();
     }
+  }
+
+  /**
+   * 按用户名定位账号；不存在或重名返回 {@link Optional#empty()}。锁定/禁用/密码校验由 {@link #login(LoginCommand)} 处理。
+   *
+   * <p>登录入口租户未知，查找本身跨租户（见 {@link AccountRepository#findByUsernameForLoginAllTenants(String)}）；原先硬编码
+   * {@code tenantId = 0}， 会把登录限制在默认租户、使多租户账号永远登录不上。
+   */
+  private Optional<Account> findByUsername(String username) {
+    if (username == null || username.isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      return accountRepository.findByUsernameForLoginAllTenants(username);
+    } catch (MultipleResultsException e) {
+      // 跨租户重名：登录无法确定租户。必须留痕——静默转 empty 会让两个租户的同名账号同时登录不上且无人知晓。
+      log.error(
+          "[IAM_LOGIN] 按用户名定位到多个账号，无法确定租户，登录拒绝（username={}）。" + "请检查是否存在跨租户同名账号，或改为「用户名 + 租户」登录",
+          username,
+          e);
+      return Optional.empty();
+    }
+  }
+
+  /** 校验明文密码是否与账号 hash 匹配。 */
+  private boolean matches(String rawPassword, Account account) {
+    if (account == null || rawPassword == null) {
+      return false;
+    }
+    return passwordEncoderPort.matches(rawPassword, account.getPasswordHash());
+  }
+
+  /** SSO 代理认证（占位能力，目前无调用方）。 */
+  private boolean ssoAuthenticate(String username, String password) {
+    return ssoClient.authenticate(username, password);
   }
 
   private boolean isPasswordExpired(Account account) {

@@ -8,7 +8,6 @@ import com.bone.iam.adapter.web.dto.request.AssignPermissionReq;
 import com.bone.iam.adapter.web.dto.request.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.request.UpdateRoleReq;
 import com.bone.iam.adapter.web.dto.response.RoleDetailResp;
-import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.RoleApplicationService;
 import com.bone.iam.application.command.CreateRoleCommand;
 import com.bone.iam.application.query.dto.PermissionDTO;
@@ -26,7 +25,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class RoleController {
   private final RoleApplicationService roleApplicationService;
-  private final AccountApplicationService accountApplicationService;
   private final RoleWebConverter roleWebConverter;
 
   @PostMapping
@@ -73,7 +71,7 @@ public class RoleController {
   @PreAuthorize("hasAuthority('iam:roles:write')")
   public ApiResponse<Void> assignPermissions(
       @PathVariable Long id, @RequestBody AssignPermissionReq req) {
-    accountApplicationService.assignPermission(roleWebConverter.toAssignPermissionCommand(id, req));
+    roleApplicationService.assignPermission(roleWebConverter.toAssignPermissionCommand(id, req));
     return ApiResponse.success();
   }
 

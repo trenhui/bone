@@ -2,8 +2,6 @@ package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.binding.AccountRoleBindingService;
-import com.bone.iam.application.binding.RolePermissionBindingService;
-import com.bone.iam.application.command.AssignPermissionCommand;
 import com.bone.iam.application.command.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.CreateAccountCommand;
 import com.bone.iam.application.command.DisableAccountCommand;
@@ -16,7 +14,6 @@ import com.bone.iam.application.policy.TenantQuotaEnforcer;
 import com.bone.iam.application.query.dto.AccountDTO;
 import com.bone.iam.application.query.mapper.AccountDtoMapper;
 import com.bone.iam.application.query.qry.AccountPageQuery;
-import com.bone.iam.application.service.AuthService;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
@@ -25,8 +22,6 @@ import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.AccountRepository;
-import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.iam.domain.role.Role;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -53,9 +48,6 @@ public class AccountApplicationService {
   private final AccountRoleBindingService accountRoleBindingService;
   private final PasswordPolicyValidator passwordPolicyValidator;
   private final TenantQuotaEnforcer tenantQuotaEnforcer;
-  private final AuthService authService;
-  private final RoleRepository roleRepository;
-  private final RolePermissionBindingService rolePermissionBindingService;
   private final AccountDtoMapper accountDtoMapper;
   private final TenantProvider tenantProvider;
 
@@ -68,9 +60,9 @@ public class AccountApplicationService {
     Email email = Email.of(cmd.getEmail());
 
     // 检查用户名是否已存在（**本租户内**：唯一键是 uk_iam_account_username (tenant_id, username)，
-    // 跨租户允许重名。这里不能用 AuthService#findByUsername —— 那是登录专用的跨租户查找，
-    // 用它查重会把「本租户唯一」错误升级为「全平台唯一」，导致不同租户同名被误判 409。）
-    if (authService.findByUsernameInTenant(username.value()).isPresent()) {
+    // 跨租户允许重名。这里必须用本租户内查找 findByUsernameInTenant —— 登录专用的跨租户查找
+    // findByUsernameForLoginAllTenants 会把「本租户唯一」错误升级为「全平台唯一」，导致不同租户同名被误判 409。）
+    if (accountRepository.findByUsernameInTenant(username.value()).isPresent()) {
       throw IamErrors.of(IamErrorCodes.USERNAME_CONFLICT, "用户名已存在: " + cmd.getUsername());
     }
 
@@ -193,20 +185,6 @@ public class AccountApplicationService {
     accountRepository.update(account);
   }
 
-  /** 为角色分配权限（原 {@code AssignPermissionCommandHandler}）。 */
-  @Transactional
-  public void assignPermission(AssignPermissionCommand cmd) {
-    if (cmd == null || cmd.getRoleId() == null) {
-      throw IamErrors.of(IamErrorCodes.ROLE_ID_REQUIRED, "角色 ID 不能为空");
-    }
-    Role role = roleRepository.findById(cmd.getRoleId());
-    if (role == null) {
-      throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, cmd.getRoleId());
-    }
-    assertCallerMayManageRole(role);
-    rolePermissionBindingService.replaceBindings(cmd.getRoleId(), cmd.getPermissionIds());
-  }
-
   @Transactional(readOnly = true)
   public PageResult<AccountDTO> page(AccountPageQuery qry) {
     Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
@@ -238,14 +216,6 @@ public class AccountApplicationService {
   private boolean visibleToCaller(Account account) {
     Long caller = tenantProvider.currentTenantIdOrNull();
     return caller == null || caller == 0L || caller.equals(account.getTenantId());
-  }
-
-  /** 非平台租户（tenantId &gt; 0）只能操作本租户角色，防 IDOR。 */
-  private void assertCallerMayManageRole(Role role) {
-    Long callerTenant = tenantProvider.currentTenantIdOrNull();
-    if (callerTenant != null && callerTenant != 0L && !callerTenant.equals(role.getTenantId())) {
-      throw IamErrors.of(IamErrorCodes.TENANT_ACCESS_DENIED, "无权操作其他租户的角色");
-    }
   }
 
   /** 非平台租户（&gt; 0）强制按其过滤；平台租户（0）/无上下文回退到查询参数（详设 §3.4 / §4.8）。 */

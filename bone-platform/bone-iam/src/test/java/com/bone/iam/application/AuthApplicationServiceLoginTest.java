@@ -14,14 +14,14 @@ import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.command.LoginCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.policy.PasswordPolicyValidator;
+import com.bone.iam.application.port.out.PasswordEncoderPort;
 import com.bone.iam.application.port.out.TokenBlacklistPort;
-import com.bone.iam.application.service.AuthService;
-import com.bone.iam.application.service.RoleHierarchyResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
+import com.bone.iam.domain.client.SsoClient;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
@@ -44,8 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AuthApplicationServiceLoginTest {
 
-  @Mock AuthService authService;
-
   @Mock AccountRepository accountRepository;
 
   @Mock AccountRoleRepository accountRoleRepository;
@@ -64,6 +62,10 @@ class AuthApplicationServiceLoginTest {
 
   @Mock RoleHierarchyResolver roleHierarchyResolver;
 
+  @Mock PasswordEncoderPort passwordEncoderPort;
+
+  @Mock SsoClient ssoClient;
+
   @Mock TokenBlacklistPort tokenBlacklistPort;
 
   @Mock JwtConfig jwtConfig;
@@ -80,7 +82,6 @@ class AuthApplicationServiceLoginTest {
     passwordProperties.setMaxAgeDays(90);
     authApplicationService =
         new AuthApplicationService(
-            authService,
             accountRepository,
             accountRoleRepository,
             rolePermissionRepository,
@@ -91,6 +92,8 @@ class AuthApplicationServiceLoginTest {
             passwordProperties,
             accountAuthorityCache,
             roleHierarchyResolver,
+            passwordEncoderPort,
+            ssoClient,
             tokenBlacklistPort,
             jwtConfig);
   }
@@ -99,8 +102,9 @@ class AuthApplicationServiceLoginTest {
   void successfulLoginIssuesTokensAndClearsFailures() {
     Account account = mkAccount();
     setField(account, "loginFailCount", 2);
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-    when(authService.matches("good-pass", account)).thenReturn(true);
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
+    when(passwordEncoderPort.matches("good-pass", account.getPasswordHash())).thenReturn(true);
     when(accountAuthorityCache.get(anyLong()))
         .thenReturn(Optional.of(List.of("iam:accounts:read")));
     when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
@@ -124,7 +128,7 @@ class AuthApplicationServiceLoginTest {
 
   @Test
   void unknownUsernameThrowsLoginFailed() {
-    when(authService.findByUsername("ghost")).thenReturn(Optional.empty());
+    when(accountRepository.findByUsernameForLoginAllTenants("ghost")).thenReturn(Optional.empty());
     LoginCommand cmd = new LoginCommand();
     cmd.setUsername("ghost");
     cmd.setPassword("x");
@@ -138,8 +142,9 @@ class AuthApplicationServiceLoginTest {
   @Test
   void wrongPasswordIncrementsFailureAndPersists() {
     Account account = mkAccount();
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-    when(authService.matches("bad", account)).thenReturn(false);
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
+    when(passwordEncoderPort.matches("bad", account.getPasswordHash())).thenReturn(false);
 
     LoginCommand cmd = new LoginCommand();
     cmd.setUsername("alice");
@@ -156,8 +161,9 @@ class AuthApplicationServiceLoginTest {
   void exceedingThresholdLocksAccount() {
     Account account = mkAccount();
     setField(account, "loginFailCount", 2);
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-    when(authService.matches("bad", account)).thenReturn(false);
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
+    when(passwordEncoderPort.matches("bad", account.getPasswordHash())).thenReturn(false);
 
     LoginCommand cmd = new LoginCommand();
     cmd.setUsername("alice");
@@ -176,7 +182,8 @@ class AuthApplicationServiceLoginTest {
     setField(account, "loginFailCount", 5);
     setField(account, "status", AccountStatus.LOCKED);
     setField(account, "lockedAt", LocalDateTime.now().plusMinutes(10));
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
 
     LoginCommand cmd = new LoginCommand();
     cmd.setUsername("alice");
@@ -185,14 +192,15 @@ class AuthApplicationServiceLoginTest {
     assertThatThrownBy(() -> authApplicationService.login(cmd))
         .isInstanceOf(BizException.class)
         .hasMessageContaining(IamErrorCodes.ACCOUNT_LOCKED);
-    verify(authService, never()).matches(any(), any());
+    verify(passwordEncoderPort, never()).matches(any(), any());
   }
 
   @Test
   void disabledAccountRefused() {
     Account account = mkAccount();
     setField(account, "status", AccountStatus.DISABLED);
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
 
     LoginCommand cmd = new LoginCommand();
     cmd.setUsername("alice");
@@ -207,8 +215,9 @@ class AuthApplicationServiceLoginTest {
   void expiredPasswordFlagsRequireChange() {
     Account account = mkAccount();
     setField(account, "passwordUpdatedAt", LocalDateTime.now().minusDays(120));
-    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-    when(authService.matches("good-pass", account)).thenReturn(true);
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
+    when(passwordEncoderPort.matches("good-pass", account.getPasswordHash())).thenReturn(true);
     when(accountAuthorityCache.get(anyLong())).thenReturn(Optional.of(List.of()));
     when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
     when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");

@@ -8,6 +8,7 @@ import com.bone.iam.application.query.qry.AuditLogListQuery;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.audit.AuditLog;
+import com.bone.iam.domain.audit.vo.OperationType;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.AuditLogRepository;
@@ -76,6 +77,38 @@ public class AuditApplicationService {
       throw IamErrors.of(IamErrorCodes.AUDIT_SETTINGS_REQUIRED, "审计设置不能为空");
     }
     auditSettingsGateway.upsert(currentTenantId(), cmd.getSettings());
+  }
+
+  /**
+   * 记录一条审计日志（原 {@code application/service/AuditService} 的落库逻辑，ADR-0033 撤销后收口进本类）。
+   *
+   * <p>创建领域对象与持久化本就是应用服务的职责；内部入口（如 {@code AuditUtils}）直接调用本方法即可，无需再经过一层 {@code *Service}。
+   */
+  @Transactional
+  public void recordLog(
+      Long tenantId,
+      Long userId,
+      OperationType operation,
+      String resourceId,
+      String resourceType,
+      String ip,
+      String userAgent,
+      String parameters,
+      String result,
+      Integer duration) {
+    AuditLog auditLog =
+        AuditLog.create(
+            tenantId,
+            userId,
+            operation,
+            resourceId,
+            resourceType,
+            ip,
+            userAgent,
+            parameters,
+            result,
+            duration);
+    auditLogRepository.save(auditLog);
   }
 
   /** 无租户上下文（内部入口）按平台租户 0 处理，与原 {@code TenantContext.getTenantIdAsLong()} 的兜底语义一致。 */

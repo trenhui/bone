@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.iam.application.AuthApplicationService;
-import com.bone.iam.application.service.AuthService;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.infrastructure.security.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
@@ -19,8 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
  * 容器级装配测试（MVP-10 质量下沉 ①）。
  *
  * <p><b>为什么必须有</b>：纯单测不加载 Spring 容器，Bean 缺失 / 循环依赖 / 自动配置失效在 {@code mvn test}
- * 里一律不暴露，只能等真起服务才炸（本模块曾因 {@code AuthService} 依赖的仓储未被装配而在运行期才显现）。 静态架构规则同样证明不了装配，所以这条只能由
- * {@code @SpringBootTest} 兜住（G-1）。
+ * 里一律不暴露，只能等真起服务才炸（本模块曾因装配缺失而在运行期才显现）。 静态架构规则同样证明不了装配，所以这条只能由 {@code @SpringBootTest} 兜住（G-1）。
  *
  * <p><b>profile=test</b>：数据源为 H2 内存库（见 {@code src/test/resources/application-test.yml}）， 不依赖本地
  * MySQL，可在 CI 直接跑。
@@ -37,7 +35,6 @@ class IamContextLoadsTest {
   @Test
   void criticalBeansArePresent() {
     assertNotNull(context.getBean(AuthApplicationService.class), "登录应用服务未装配");
-    assertNotNull(context.getBean(AuthService.class), "AuthService 未装配");
     assertNotNull(context.getBean(AccountRepository.class), "AccountRepository 未装配（SDK 仓储未扫描到）");
     assertNotNull(context.getBean(JwtAuthenticationFilter.class), "JWT 认证过滤器未装配");
   }

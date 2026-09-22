@@ -11,12 +11,12 @@ import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.command.RefreshTokenCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.policy.PasswordPolicyValidator;
+import com.bone.iam.application.port.out.PasswordEncoderPort;
 import com.bone.iam.application.port.out.TokenBlacklistPort;
-import com.bone.iam.application.service.AuthService;
-import com.bone.iam.application.service.RoleHierarchyResolver;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
+import com.bone.iam.domain.client.SsoClient;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
@@ -37,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AuthApplicationServiceRefreshTokenTest {
 
-  @Mock AuthService authService;
   @Mock RefreshTokenIssuer refreshTokenIssuer;
   @Mock AccountRepository accountRepository;
   @Mock AccountRoleRepository accountRoleRepository;
@@ -47,6 +46,8 @@ class AuthApplicationServiceRefreshTokenTest {
   @Mock PasswordPolicyValidator passwordPolicyValidator;
   @Mock AccountAuthorityCache accountAuthorityCache;
   @Mock RoleHierarchyResolver roleHierarchyResolver;
+  @Mock PasswordEncoderPort passwordEncoderPort;
+  @Mock SsoClient ssoClient;
   @Mock TokenBlacklistPort tokenBlacklistPort;
   @Mock JwtConfig jwtConfig;
 
@@ -56,7 +57,6 @@ class AuthApplicationServiceRefreshTokenTest {
   void setUp() {
     authApplicationService =
         new AuthApplicationService(
-            authService,
             accountRepository,
             accountRoleRepository,
             rolePermissionRepository,
@@ -67,6 +67,8 @@ class AuthApplicationServiceRefreshTokenTest {
             new IamPasswordProperties(),
             accountAuthorityCache,
             roleHierarchyResolver,
+            passwordEncoderPort,
+            ssoClient,
             tokenBlacklistPort,
             jwtConfig);
   }

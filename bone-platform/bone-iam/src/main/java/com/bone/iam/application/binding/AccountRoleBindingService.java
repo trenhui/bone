@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** 维护 {@code iam_account_role} 绑定：委托域仓储物理删除后重建（表无软删列），并驱逐权限缓存。 */
 @Service
@@ -17,7 +16,6 @@ public class AccountRoleBindingService {
   private final AccountRoleRepository accountRoleRepository;
   private final AccountAuthorityCache accountAuthorityCache;
 
-  @Transactional
   public void replaceBindings(Long accountId, Long tenantId, Long[] roleIds) {
     if (accountId == null) {
       return;
@@ -26,7 +24,6 @@ public class AccountRoleBindingService {
     accountAuthorityCache.evictAccount(accountId);
   }
 
-  @Transactional(readOnly = true)
   public List<Long> listRoleIds(Long accountId) {
     if (accountId == null) {
       return List.of();
