@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.bone.iam.domain.model.audit.event.AuditLogCreatedEvent;
-import com.bone.iam.domain.model.audit.vo.OperationType;
+import com.bone.iam.domain.model.audit.valueobject.OperationType;
 import org.junit.jupiter.api.Test;
 
 /** {@link AuditLog} 纯单测：审计日志快照创建与事件发布（无容器）。 */

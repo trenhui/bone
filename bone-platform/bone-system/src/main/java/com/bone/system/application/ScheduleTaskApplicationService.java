@@ -12,7 +12,7 @@ import com.bone.system.application.query.qry.ScheduleTaskPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.model.schedule.ScheduleTask;
-import com.bone.system.domain.model.schedule.vo.TaskStatus;
+import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

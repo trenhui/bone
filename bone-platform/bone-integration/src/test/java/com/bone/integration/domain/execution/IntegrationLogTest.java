@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.execution.event.ExecutionCompletedEvent;
 import com.bone.integration.domain.model.execution.event.ExecutionStartedEvent;
-import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
+import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import org.junit.jupiter.api.Test;
 
 /** {@link IntegrationLog} 纯单测：PENDING→RUNNING→SUCCESS/FAILED/TIMEOUT 状态机与非法迁移拒绝（无容器）。 */

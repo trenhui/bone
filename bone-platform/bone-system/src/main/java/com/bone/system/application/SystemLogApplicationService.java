@@ -11,7 +11,7 @@ import com.bone.system.application.query.qry.LogPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.model.log.SystemLog;
-import com.bone.system.domain.model.log.vo.LogLevel;
+import com.bone.system.domain.model.log.valueobject.LogLevel;
 import com.bone.system.domain.repository.SystemLogRepository;
 import java.util.LinkedHashMap;
 import java.util.List;

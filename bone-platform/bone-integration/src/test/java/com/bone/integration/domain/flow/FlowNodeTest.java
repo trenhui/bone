@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 

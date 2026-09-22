@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.repository;
 
 import com.bone.masterdata.domain.model.entity.MasterDataField;
-import com.bone.masterdata.domain.model.field.vo.FieldName;
+import com.bone.masterdata.domain.model.field.valueobject.FieldName;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

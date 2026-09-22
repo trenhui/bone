@@ -13,7 +13,7 @@ import com.bone.masterdata.application.command.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.quality.DataQualityRule;
-import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;

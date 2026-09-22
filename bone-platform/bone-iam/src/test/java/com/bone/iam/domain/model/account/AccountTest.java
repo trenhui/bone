@@ -14,9 +14,9 @@ import com.bone.iam.domain.model.account.event.AccountDisabledEvent;
 import com.bone.iam.domain.model.account.event.AccountEnabledEvent;
 import com.bone.iam.domain.model.account.event.AccountLockedEvent;
 import com.bone.iam.domain.model.account.event.PasswordChangedEvent;
-import com.bone.iam.domain.model.account.vo.AccountStatus;
-import com.bone.iam.domain.model.account.vo.Email;
-import com.bone.iam.domain.model.account.vo.Username;
+import com.bone.iam.domain.model.account.valueobject.AccountStatus;
+import com.bone.iam.domain.model.account.valueobject.Email;
+import com.bone.iam.domain.model.account.valueobject.Username;
 import org.junit.jupiter.api.Test;
 
 /** {@link Account} 纯单测：启用/禁用防重、登录锁定阈值与凭据/资料更新（无容器）。 */

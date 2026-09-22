@@ -5,7 +5,7 @@ import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.iam.domain.model.permission.event.PermissionCreatedEvent;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;

@@ -1,6 +1,6 @@
 package com.bone.masterdata.application.query.dto;
 
-import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import java.time.LocalDateTime;
 import lombok.Data;
 

@@ -2,7 +2,7 @@ package com.bone.system.domain.model.config.event;
 
 import com.bone.core.domain.DomainEvent;
 import com.bone.system.domain.model.config.SystemConfig;
-import com.bone.system.domain.model.config.vo.ConfigType;
+import com.bone.system.domain.model.config.valueobject.ConfigType;
 import java.time.LocalDateTime;
 
 /** 配置创建事件 */

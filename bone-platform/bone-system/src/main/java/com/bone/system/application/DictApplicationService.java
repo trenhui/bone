@@ -11,7 +11,7 @@ import com.bone.system.application.query.qry.DictPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.model.dict.SysDict;
-import com.bone.system.domain.model.dict.vo.DictType;
+import com.bone.system.domain.model.dict.valueobject.DictType;
 import com.bone.system.domain.repository.SysDictRepository;
 import java.util.List;
 import java.util.Optional;

@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.iam.application.command.CreatePermissionCommand;
 import com.bone.iam.domain.model.permission.Permission;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.iam.domain.repository.PermissionRepository;
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;

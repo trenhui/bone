@@ -17,7 +17,7 @@ import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.account.AccountRole;
-import com.bone.iam.domain.model.account.vo.AccountStatus;
+import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.permission.DefaultPermissionCodes;
 import com.bone.iam.domain.model.permission.Permission;
 import com.bone.iam.domain.model.role.RolePermission;

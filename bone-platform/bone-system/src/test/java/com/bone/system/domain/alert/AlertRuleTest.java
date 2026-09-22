@@ -10,9 +10,9 @@ import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.alert.AlertRule;
 import com.bone.system.domain.model.alert.event.AlertRuleCreatedEvent;
 import com.bone.system.domain.model.alert.event.AlertRuleUpdatedEvent;
-import com.bone.system.domain.model.alert.vo.AlertLevel;
-import com.bone.system.domain.model.alert.vo.MetricName;
-import com.bone.system.domain.model.alert.vo.Threshold;
+import com.bone.system.domain.model.alert.valueobject.AlertLevel;
+import com.bone.system.domain.model.alert.valueobject.MetricName;
+import com.bone.system.domain.model.alert.valueobject.Threshold;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -7,7 +7,7 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.record.event.MasterDataRecordCreatedEvent;
 import com.bone.masterdata.domain.model.record.event.MasterDataRecordPublishedEvent;
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
+import com.bone.masterdata.domain.model.record.valueobject.MasterDataRecordStatus;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;

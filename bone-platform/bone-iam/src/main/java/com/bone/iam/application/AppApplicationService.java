@@ -13,7 +13,7 @@ import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.app.AppPermission;
 import com.bone.iam.domain.model.app.BoneApplication;
-import com.bone.iam.domain.model.app.vo.AppRole;
+import com.bone.iam.domain.model.app.valueobject.AppRole;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AppPermissionRepository;
 import com.bone.iam.domain.repository.BoneApplicationRepository;

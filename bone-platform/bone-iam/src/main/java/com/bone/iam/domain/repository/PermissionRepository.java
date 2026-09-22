@@ -2,7 +2,7 @@ package com.bone.iam.domain.repository;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.domain.model.permission.Permission;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

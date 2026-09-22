@@ -2,7 +2,7 @@ package com.bone.iam.domain.model.app;
 
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.iam.domain.model.app.vo.AppRole;
+import com.bone.iam.domain.model.app.valueobject.AppRole;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;

@@ -1,6 +1,6 @@
 package com.bone.iam.application.query.dto;
 
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;

@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.quality.event.DataQualityRuleCreatedEvent;
-import com.bone.masterdata.domain.model.quality.vo.RuleName;
-import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleName;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import org.junit.jupiter.api.Test;
 
 /** {@link DataQualityRule} 纯单测：默认启用、更新覆盖与规则名约束（无容器）。 */

@@ -7,7 +7,7 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.execution.event.ExecutionCompletedEvent;
 import com.bone.integration.domain.model.execution.event.ExecutionStartedEvent;
-import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
+import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.integration.domain.model.flow.event.FlowExecutedEvent;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;

@@ -5,7 +5,7 @@ import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.iam.domain.model.audit.event.AuditLogCreatedEvent;
-import com.bone.iam.domain.model.audit.vo.OperationType;
+import com.bone.iam.domain.model.audit.valueobject.OperationType;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;

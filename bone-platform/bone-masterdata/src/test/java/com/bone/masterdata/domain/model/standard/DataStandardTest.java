@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
-import com.bone.masterdata.domain.model.standard.vo.StandardFieldCode;
-import com.bone.masterdata.domain.model.standard.vo.StandardRuleType;
+import com.bone.masterdata.domain.model.standard.valueobject.StandardFieldCode;
+import com.bone.masterdata.domain.model.standard.valueobject.StandardRuleType;
 import org.junit.jupiter.api.Test;
 
 /** {@link DataStandard} 纯单测：数据标准创建/更新与字段编码约束（无容器）。 */

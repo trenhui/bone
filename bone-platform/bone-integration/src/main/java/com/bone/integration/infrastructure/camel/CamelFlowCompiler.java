@@ -7,7 +7,7 @@ import com.bone.integration.application.service.FlowNodeExecutor;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

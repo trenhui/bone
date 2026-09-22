@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.bone.iam.domain.model.permission.event.PermissionCreatedEvent;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import org.junit.jupiter.api.Test;
 
 /** {@link Permission} 纯单测：权限点创建快照、事件发布与部分覆盖更新（无容器）。 */

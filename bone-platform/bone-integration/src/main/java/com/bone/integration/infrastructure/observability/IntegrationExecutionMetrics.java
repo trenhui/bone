@@ -2,7 +2,7 @@ package com.bone.integration.infrastructure.observability;
 
 import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
+import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.time.Duration;

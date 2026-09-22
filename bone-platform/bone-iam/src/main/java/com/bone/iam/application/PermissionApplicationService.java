@@ -8,7 +8,7 @@ import com.bone.iam.application.query.qry.PermissionPageQuery;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.model.permission.Permission;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.iam.domain.repository.PermissionRepository;
 import java.util.ArrayList;
 import java.util.List;

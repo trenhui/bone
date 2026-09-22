@@ -18,7 +18,7 @@ import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import com.bone.integration.application.service.FlowMonitorService;
-import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
+import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.util.Collections;

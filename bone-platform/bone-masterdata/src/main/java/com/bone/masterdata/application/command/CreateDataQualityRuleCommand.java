@@ -1,6 +1,6 @@
 package com.bone.masterdata.application.command;
 
-import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

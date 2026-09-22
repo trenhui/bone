@@ -16,7 +16,7 @@ import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.common.MasterDataProperties;
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import com.bone.masterdata.domain.model.record.MasterDataRecord;
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
+import com.bone.masterdata.domain.model.record.valueobject.MasterDataRecordStatus;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import java.util.ArrayList;

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
-import com.bone.iam.domain.model.app.vo.AppRole;
+import com.bone.iam.domain.model.app.valueobject.AppRole;
 import org.junit.jupiter.api.Test;
 
 /** {@link AppPermission} 纯单测：应用权限绑定的创建、角色变更与不变量（无容器）。 */

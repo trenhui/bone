@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.record.event.MasterDataRecordCreatedEvent;
 import com.bone.masterdata.domain.model.record.event.MasterDataRecordPublishedEvent;
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
+import com.bone.masterdata.domain.model.record.valueobject.MasterDataRecordStatus;
 import org.junit.jupiter.api.Test;
 
 /** {@link MasterDataRecord} 纯单测：DRAFT 起步、发布防重与已发布记录只读语义（无容器）。 */

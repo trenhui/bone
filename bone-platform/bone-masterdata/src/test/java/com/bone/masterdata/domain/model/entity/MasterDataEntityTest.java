@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.entity.event.MasterDataEntityCreatedEvent;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
+import com.bone.masterdata.domain.model.entity.valueobject.MasterDataEntityName;
+import com.bone.masterdata.domain.model.entity.valueobject.MasterDataEntityStatus;
 import org.junit.jupiter.api.Test;
 
 /** {@link MasterDataEntity} 纯单测：DRAFT 起步、发布防重、已发布实体不可再改（无容器）。 */

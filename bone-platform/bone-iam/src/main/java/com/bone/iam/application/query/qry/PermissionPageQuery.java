@@ -1,7 +1,7 @@
 package com.bone.iam.application.query.qry;
 
 import com.bone.core.model.PageParam;
-import com.bone.iam.domain.model.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

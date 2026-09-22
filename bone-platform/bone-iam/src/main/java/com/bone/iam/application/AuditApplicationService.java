@@ -10,7 +10,7 @@ import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.audit.AuditLog;
-import com.bone.iam.domain.model.audit.vo.OperationType;
+import com.bone.iam.domain.model.audit.valueobject.OperationType;
 import com.bone.iam.domain.repository.AuditLogRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

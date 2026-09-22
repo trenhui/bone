@@ -5,7 +5,7 @@ import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Table;
-import com.bone.system.domain.model.dict.vo.DictType;
+import com.bone.system.domain.model.dict.valueobject.DictType;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;

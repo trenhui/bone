@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.flow.event.FlowActivatedEvent;
 import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
-import com.bone.integration.domain.model.flow.vo.FlowStatus;
+import com.bone.integration.domain.model.flow.valueobject.FlowStatus;
 import org.junit.jupiter.api.Test;
 
 /** {@link IntegrationFlow} 纯单测：DRAFT 起步、激活/停用迁移与名称约束（无容器）。 */

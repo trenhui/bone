@@ -15,7 +15,7 @@ import com.bone.masterdata.application.command.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
+import com.bone.masterdata.domain.model.entity.valueobject.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.testsupport.MetadataSdkIntegrationTestConfiguration;
 import org.junit.jupiter.api.AfterEach;

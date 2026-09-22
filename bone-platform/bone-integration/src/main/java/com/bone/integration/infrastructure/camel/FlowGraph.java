@@ -3,7 +3,7 @@ package com.bone.integration.infrastructure.camel;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

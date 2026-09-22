@@ -8,7 +8,7 @@ import com.bone.integration.application.service.FlowService;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import com.bone.integration.domain.repository.FlowConnectionRepository;
 import com.bone.integration.domain.repository.FlowNodeRepository;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;

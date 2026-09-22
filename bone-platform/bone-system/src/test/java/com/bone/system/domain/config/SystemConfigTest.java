@@ -8,9 +8,9 @@ import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.config.SystemConfig;
 import com.bone.system.domain.model.config.event.ConfigChangedEvent;
 import com.bone.system.domain.model.config.event.ConfigCreatedEvent;
-import com.bone.system.domain.model.config.vo.ConfigKey;
-import com.bone.system.domain.model.config.vo.ConfigType;
-import com.bone.system.domain.model.config.vo.ConfigValue;
+import com.bone.system.domain.model.config.valueobject.ConfigKey;
+import com.bone.system.domain.model.config.valueobject.ConfigType;
+import com.bone.system.domain.model.config.valueobject.ConfigValue;
 import org.junit.jupiter.api.Test;
 
 /** {@link SystemConfig} 纯单测：创建/改值/改描述的领域事件契约与键值约束（无容器）。 */

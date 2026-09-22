@@ -5,7 +5,7 @@ import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

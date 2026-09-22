@@ -7,7 +7,7 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.flow.event.FlowActivatedEvent;
 import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
-import com.bone.integration.domain.model.flow.vo.FlowStatus;
+import com.bone.integration.domain.model.flow.valueobject.FlowStatus;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;

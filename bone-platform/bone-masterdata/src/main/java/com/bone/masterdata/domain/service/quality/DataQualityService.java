@@ -2,8 +2,8 @@ package com.bone.masterdata.domain.service.quality;
 
 import com.bone.masterdata.domain.model.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.QualityReport;
-import com.bone.masterdata.domain.model.quality.vo.RuleName;
-import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleName;
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import lombok.RequiredArgsConstructor;
 
 /** 数据质量领域服务：承载跨用例的规则/报告构造逻辑。 */

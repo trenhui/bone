@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.core.exception.BizException;
 import com.bone.system.domain.model.schedule.ScheduleTask;
-import com.bone.system.domain.model.schedule.vo.TaskStatus;
+import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
