@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
 import com.bone.masterdata.application.FieldApplicationService;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
+import com.bone.masterdata.application.command.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;

@@ -6,8 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCommand;
-import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
+import com.bone.masterdata.application.command.CreateMasterDataRecordCommand;
+import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.common.MasterDataProperties;
 import com.bone.masterdata.domain.entity.MasterDataEntity;

@@ -2,8 +2,8 @@ package com.bone.masterdata.adapter.web.converter;
 
 import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateDataQualityRuleReq;
-import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
-import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCommand;
+import com.bone.masterdata.application.command.CreateDataQualityRuleCommand;
+import com.bone.masterdata.application.command.UpdateDataQualityRuleCommand;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import org.springframework.stereotype.Component;
 

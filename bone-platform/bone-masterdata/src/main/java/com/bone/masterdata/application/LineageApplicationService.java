@@ -1,7 +1,7 @@
 package com.bone.masterdata.application;
 
 import com.bone.core.capability.Capability;
-import com.bone.masterdata.application.command.cmd.RecordLineageCommand;
+import com.bone.masterdata.application.command.RecordLineageCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.application.query.dto.LineageRecordDTO;
 import com.bone.masterdata.application.query.qry.LineageQuery;

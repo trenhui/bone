@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.dto.request.RecordLineageReq;
 import com.bone.masterdata.application.LineageApplicationService;
-import com.bone.masterdata.application.command.cmd.RecordLineageCommand;
+import com.bone.masterdata.application.command.RecordLineageCommand;
 import com.bone.masterdata.application.query.dto.LineageRecordDTO;
 import com.bone.masterdata.application.query.qry.LineageQuery;
 import io.swagger.v3.oas.annotations.Operation;

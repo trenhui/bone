@@ -6,7 +6,7 @@ import com.bone.masterdata.adapter.web.converter.DataQualityWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateDataQualityRuleReq;
 import com.bone.masterdata.application.QualityApplicationService;
-import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
+import com.bone.masterdata.application.command.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
 import com.bone.masterdata.application.query.dto.QualityCheckDTO;
 import com.bone.masterdata.application.query.dto.QualityReportDTO;

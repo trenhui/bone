@@ -7,8 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.application.command.cmd.CreateDataStandardCommand;
-import com.bone.masterdata.application.command.cmd.UpdateDataStandardCommand;
+import com.bone.masterdata.application.command.CreateDataStandardCommand;
+import com.bone.masterdata.application.command.UpdateDataStandardCommand;
 import com.bone.masterdata.domain.repository.DataStandardRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

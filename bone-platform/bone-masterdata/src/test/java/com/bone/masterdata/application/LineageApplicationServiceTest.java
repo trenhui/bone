@@ -3,7 +3,7 @@ package com.bone.masterdata.application;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
-import com.bone.masterdata.application.command.cmd.RecordLineageCommand;
+import com.bone.masterdata.application.command.RecordLineageCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.domain.lineage.event.DataLineageEvent;
 import com.bone.masterdata.domain.repository.LineageRecordRepository;

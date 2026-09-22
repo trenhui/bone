@@ -1,4 +1,4 @@
-package com.bone.masterdata.application.command.cmd;
+package com.bone.masterdata.application.command;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateDataQualityRuleCommand {
+public class UpdateMasterDataFieldCommand {
   private Long id;
   private String name;
   private String type;
-  private String expression;
-  private String severity;
+  private Integer length;
+  private Boolean required;
+  private String defaultValue;
   private String description;
+  private Integer sortOrder;
 }

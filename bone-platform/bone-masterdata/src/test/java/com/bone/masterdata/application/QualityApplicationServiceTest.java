@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
-import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
+import com.bone.masterdata.application.command.CreateDataQualityRuleCommand;
+import com.bone.masterdata.application.command.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;

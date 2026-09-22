@@ -8,7 +8,7 @@ import com.bone.masterdata.adapter.web.dto.request.CreateDataStandardReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateDataStandardReq;
 import com.bone.masterdata.adapter.web.dto.response.DataStandardResp;
 import com.bone.masterdata.application.StandardApplicationService;
-import com.bone.masterdata.application.command.cmd.DeleteDataStandardCommand;
+import com.bone.masterdata.application.command.DeleteDataStandardCommand;
 import com.bone.masterdata.application.query.qry.DataStandardPageQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

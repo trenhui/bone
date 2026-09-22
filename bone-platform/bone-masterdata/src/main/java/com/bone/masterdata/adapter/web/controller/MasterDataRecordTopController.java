@@ -7,7 +7,7 @@ import com.bone.masterdata.adapter.web.converter.MasterDataRecordWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataRecordReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataRecordReq;
 import com.bone.masterdata.application.RecordApplicationService;
-import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
+import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;

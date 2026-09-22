@@ -1,4 +1,4 @@
-package com.bone.masterdata.application.command.cmd;
+package com.bone.masterdata.application.command;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
