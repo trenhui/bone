@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T11:12:19Z",
+  "generated_at": "2026-09-22T09:34:10Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -69,8 +69,8 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/payment/Payment.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/model/order/Order.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/model/payment/Payment.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/context/TenantPortAdapter.java"
         ]
       }
@@ -81,7 +81,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/shared/valueobject/Money.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/model/shared/valueobject/Money.java"
         ]
       }
     },
@@ -97,8 +97,8 @@
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderSummaryAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/PaymentDetailAssembler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/projection/OrderWithItemsProjection.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/model/order/Order.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/model/order/projection/OrderWithItemsProjection.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderRepository.java"
         ],
         "sql": [

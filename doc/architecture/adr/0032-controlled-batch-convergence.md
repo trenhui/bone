@@ -143,6 +143,31 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 | ④ 负向探针 | 重命名后 `command.handler`/`query.handler` 包内不再有 `*Handler` 类，`allowEmptyShould(true)` 保持判定有效；同时新增脚手架 `ApplicationServiceGenerator` + `applicationService.ftl`，令后续代码生成直接产出 `*ApplicationService`（弃用 `handler.ftl`），并同步 `controller.ftl`/`repository.ftl` 产物引用 |
 | ⑤ 目标形态即为收敛形态 | 换名不换层：Handler 就地重命名为 `*ApplicationService`，保留原包 |
 
+### D3g. 先例登记：ADR-0035 存量 application 层构件清理（2026-09-22，按模块分批）
+
+满足 ADR-0032 受控批量收敛通道五条判据，登记为第七例。**与 D3~D3f 的差别**：前六例都是「换名不换层」的单次重命名；本例是 ADR-0035 三条结构门禁（R1 角色包 / R2 `*Service` 命名 / R3 ApplicationService 位置）的**存量清退**，既有搬运也有定性，故按判据①拆成**每模块一次提交**的多个批次。
+
+| 判据 | 证据 |
+|---|---|
+| ① 单模块、可回滚为一次提交 | 每批次只动**一个模块**、一次提交可整体回滚；全量 96 条拆为 6 批（notification → metadata-server → iam → extension-studio → studio-generator → integration） |
+| ② 对外契约全程不变 | 只搬类位置 / 改类名，不改 HTTP 路径、请求响应 DTO、返回类型、能力元数据、事件 payload；控制器注入点同步改名但不改语义 |
+| ③ 测试与 ArchUnit 全绿，freeze 基线只收缩不新增 | 每批次跑本模块 `mvn test` 与 ArchUnit 全绿；`doc/architecture/application-constructs-baseline.json` 条目随收敛**删除**（只收缩），不新增 |
+| ④ 负向探针 | 每批次后复跑 `scripts/check-application-constructs.py --check`（`ci-check.sh [9/9]`），确认新增违规 0 且**存量条数下降**；剩余条目仍在判定，不因删除而变成空匹配 |
+| ⑤ 目标形态即为收敛形态 | 收敛后 `application/` 下只剩：平铺在根的 `*ApplicationService` + 契约（command/query/dto）+ 端口（`port/out`）+ `support`；不保留同义的第二层，也不换个名字保留角色包 |
+
+**批次登记表**（逐批执行后填入 commit）：
+
+| 批次 | 模块 | 存量条数（R1/R2/R3） | 动作要点 | commit |
+|---|---|---|---|---|
+| 1 | bone-notification | 0 / 1 / 0 | `NotificationService` → `NotificationApplicationService` | 待填 |
+| 2 | bone-metadata-server | 0 / 1 / 0 | `CatalogIdempotencyService` 定性归位 | 待填 |
+| 3 | bone-iam | 3 / 1 / 0 | `binding/` + `policy/` 三个类按 D3 四落点归位 | 待填 |
+| 4 | bone-extension-studio | 11 / 4 / 12 | R3 搬平 → R2 定性 → R1 删角色包 | 待填 |
+| 5 | bone-engine/studio-generator | 3 / 3 / 24 | 同上 | 待填 |
+| 6 | bone-integration | 8 / 4 / 21 | 同上 | 待填 |
+
+> 说明：R3（57 条）是纯位置搬运，风险最低，按 ADR-0035 D5 建议顺序 **R3 → R2 → R1** 在每模块内依次执行；R2 / R1 需逐类定性（纯领域计算下沉 `domain/service`、跨聚合绑定进聚合不变量、IO 走 `application/port/out`、无 IO 规则做值对象）。
+
 ### D4. E-3.11 第 3 条同步改写
 
 改为「默认只做触达范围内的局部迁移；批量重命名、批量格式化一律禁止；确需一次性批量收敛时走 E-0.2 受控批量收敛通道」。"禁止全仓重构"的原始意图（防止顺手改写范围外代码）保留为默认行为。
