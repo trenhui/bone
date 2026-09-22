@@ -16,7 +16,7 @@
 
 **本模块现状**：**已合并为单棵树**（2026-09-22 完成）。原两棵树——`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}`——已合并为 `domain/model/{entity,field,lineage,quality,record,standard}/`；`domain/{repository,gateway,service}` 按 ADR-0036 R3 留在 `domain/` 根。合并时已逐包核对双侧同名包（`entity` / `quality` / `record`）的归属。7 个领域测试类随聚合迁至 `domain/model/` 下；59 个测试全绿。
 
-> 遗留：`domain/model/{aggregate}/vo`（如 `quality.vo.RuleSeverity`）仍是 `vo` 命名，未统一为 `valueobject`（ADR-0036 D1 对 system 模块要求 `vo→valueobject`，本模块未列入）；属命名一致性待办，非结构违规。
+`{聚合}/vo` 已按 ADR-0036 D2 统一为 `domain/model/{聚合}/valueobject/`（如 `quality.valueobject.RuleSeverity`）。本模块命名一致性已无遗留。
 
 ## 本上下文拥有的表（E-1.2 数据所有权声明）
 

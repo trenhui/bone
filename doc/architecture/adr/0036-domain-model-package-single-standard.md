@@ -41,6 +41,8 @@
 
 结论：**歧义记法本身在生产漂移**——同一句规范被读成三种意思，其中 masterdata 与 integration 已经落到「一个 `domain` 包内两套分组并存」这个 E-10 末句明令禁止的状态。这正是本 ADR 必须先裁定 D1 的原因。
 
+> **本表是本 ADR 立项时（2026-09-22 上午）的现场快照**，用途是论证「为何必须先裁定 D1」，**不是当前状态**——表中所有模块现已收敛完毕，现状见下方 [迁移影响面清单](#迁移影响面清单)。
+
 ## 决策
 
 ### D1. 唯一形态：`domain/model/{聚合}/`（聚合包，包内平铺）
@@ -106,14 +108,14 @@ com.bone.{module}/
 | 模块 | 现状 | 目标 | 备注 |
 |---|---|---|---|
 | bone-notification | ~~`domain/{notification,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/notification` + `domain/repository` | **已完成**（20 测试全绿）；无 `vo` / `event` 子包；**本模块无 README.md**，E-10 登记随其 README 建立时补 |
-| bone-system | ~~`domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event`~~ **已于 2026-09-22 完成迁移** | `domain/model/{alert,config,…}/` + `vo→valueobject` | **已完成**（92 测试全绿）；README 包树与登记已同步改写；遗留 `vo` 未统一为 `valueobject` |
+| bone-system | ~~`domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event`~~ **已于 2026-09-22 完成迁移** | `domain/model/{alert,config,…}/` + `vo→valueobject` | **已完成**（92 测试全绿）；README 包树与登记已同步改写；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
 | bone-blueprint | ~~`domain/{order,payment}/{event,projection,valueobject}` + `domain/{shared,extension,gateway,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{order,payment,shared}/…`；`extension` / `gateway` / `repository` 留根 | **参考实现，已完成**（首个落地模块，212 测试全绿）；`@EnableExtensionPoints(basePackages="com.bone.blueprint.domain.extension")` 是字符串包名，因 `extension` 留根故无需改动——已逐处核对 |
-| bone-masterdata | ~~`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存~~ **已于 2026-09-22 完成合并** | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树已完成**（59 测试全绿）；`entity` / `quality` / `record` 三个包名两边都有，已逐个核对归属；遗留 `vo` 命名未统一为 `valueobject` |
+| bone-masterdata | ~~`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存~~ **已于 2026-09-22 完成合并** | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树已完成**（59 测试全绿）；`entity` / `quality` / `record` 三个包名两边都有，已逐个核对归属；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
 | bone-integration | ~~`domain/{client,connector,execution,flow}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{connector,execution,flow}/`；`client` 留根 | **已完成**（75 测试全绿）；`client` 定性为**端口接口**（`ExternalSystemClient` 由 `infrastructure/external/*ClientImpl` 实现），按 R3 留根不进 `model/` |
 | bone-extension-studio | ~~`domain/model/` 下 9 个类平铺~~ **已于 2026-09-22 按聚合分组完成** | `domain/model/{plugin,extpoint,extension,execution,marketplace,audit,operation}/` | **已完成**（59 测试全绿）；`domain/{gateway,repository}` 留根；`gateway/*ReadPort` 走 ADR-0013 单独路径 |
 | bone-metadata-server | ~~`domain/model/` 类平铺 + `model/physical` + `domain/{enums,service,gateway,repository}`~~ **已于 2026-09-22 完成** | `domain/model/{meta,iam,physical}/` | **已完成**（47 测试全绿）；`enums` 角色包解散，两个枚举定性为模型构件随 `MetaEntity` 迁入 `model/meta/`；`{gateway,repository,service}` 留根 |
 | studio-generator | ~~`domain/catalog/{model,repository}` + `domain/{code,history,data}`~~ **已于 2026-09-22 完成** | `domain/model/{catalog,code,data,history}/`；`catalog/repository` 并入 `domain/repository` | **已完成**（52 测试全绿）；D6「生成模板对齐」本次**无需同步**——模板资源未内嵌本模块包名（已全量 grep 确认）；**本模块无 README.md**，E-10 登记随其 README 建立时补 |
-| bone-iam | ~~`domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` + `{}/event`、`{}/vo`~~ **已于 2026-09-22 完成迁移** | `domain/model/{…}/` + `vo→valueobject` | **已完成**（最后一棒，132 测试全绿）；`client`（`SsoClient` / `StorageClient`）经定性为**端口接口**，按 R3 留根不进 `model/`；遗留 `vo` 未统一为 `valueobject` |
+| bone-iam | ~~`domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` + `{}/event`、`{}/vo`~~ **已于 2026-09-22 完成迁移** | `domain/model/{…}/` + `vo→valueobject` | **已完成**（最后一棒，132 测试全绿）；`client`（`SsoClient` / `StorageClient`）经定性为**端口接口**，按 R3 留根不进 `model/`；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
 
 ## 代价与风险
 

@@ -22,7 +22,7 @@
 |---|---|
 | `domain/{account,app,audit,dept,menu,permission,role,session,tenant}` | `domain/model/{聚合}/` |
 | `{聚合}/event`（`account` / `audit` / `dept` / `menu` / `permission` / `role`） | `domain/model/{聚合}/event` |
-| `{聚合}/vo`（`account` / `app` / `audit` / `permission` / `role`） | `domain/model/{聚合}/vo`（**保留 `vo` 命名**，未按 ADR-0036 D1 统一为 `valueobject`，登记为命名待办） |
+| `{聚合}/vo`（`account` / `app` / `audit` / `permission` / `role`） | `domain/model/{聚合}/valueobject`（按 ADR-0036 D2 已统一命名） |
 | `domain/repository`、`domain/gateway`、`domain/client` | **不变**（端口不进 `model/`）；`client`（`SsoClient` / `StorageClient`）是**端口接口**而非聚合模型，故留根 |
 
 ## 应用层结构（无 service 子包）
