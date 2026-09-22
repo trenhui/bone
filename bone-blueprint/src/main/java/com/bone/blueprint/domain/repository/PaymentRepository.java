@@ -1,8 +1,8 @@
 package com.bone.blueprint.domain.repository;
 
-import com.bone.blueprint.domain.payment.Payment;
-import com.bone.blueprint.domain.payment.projection.PaymentProjection;
-import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.blueprint.domain.model.payment.Payment;
+import com.bone.blueprint.domain.model.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.model.payment.valueobject.PaymentStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;

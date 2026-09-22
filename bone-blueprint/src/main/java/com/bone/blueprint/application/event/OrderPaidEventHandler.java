@@ -5,7 +5,7 @@ import com.bone.blueprint.application.event.support.OrderItemInventoryExecutor.S
 import com.bone.blueprint.application.event.support.StockActionFailureRecorder;
 import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

@@ -3,7 +3,7 @@ package com.bone.blueprint.infrastructure.extension.order;
 import com.bone.blueprint.application.port.out.PricingPort;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.extension.order.OrderPriceRequest;
-import com.bone.blueprint.domain.shared.valueobject.Money;
+import com.bone.blueprint.domain.model.shared.valueobject.Money;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
 import lombok.RequiredArgsConstructor;

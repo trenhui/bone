@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.RefundPaymentCommand;
 import com.bone.blueprint.application.port.out.TenantPort;
-import com.bone.blueprint.domain.payment.Payment;
-import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
-import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
+import com.bone.blueprint.domain.model.payment.Payment;
+import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
+import com.bone.blueprint.domain.model.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;

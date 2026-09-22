@@ -9,11 +9,11 @@ import com.bone.blueprint.application.integration.event.PaymentRefundedIntegrati
 import com.bone.blueprint.application.integration.event.PaymentSucceededIntegrationEvent;
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
 import com.bone.blueprint.application.port.out.TenantPort;
-import com.bone.blueprint.domain.order.event.OrderPaidEvent;
-import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
-import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
-import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
-import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.query.criteria.Criteria;

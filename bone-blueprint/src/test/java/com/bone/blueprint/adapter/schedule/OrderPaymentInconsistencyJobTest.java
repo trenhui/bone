@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
-import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.model.payment.projection.PaymentProjection;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.tenant.context.TenantContext;
 import java.math.BigDecimal;
@@ -68,7 +68,7 @@ class OrderPaymentInconsistencyJobTest {
     when(paymentRepository.findSuccessPaymentsBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any()))
-        .thenReturn(Map.of(1L, com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID));
+        .thenReturn(Map.of(1L, com.bone.blueprint.domain.model.order.valueobject.OrderStatus.PAID));
 
     job.checkPaidButOrderNotConfirmed();
 

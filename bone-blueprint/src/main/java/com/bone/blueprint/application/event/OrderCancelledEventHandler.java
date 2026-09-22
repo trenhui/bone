@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.order.event.OrderCancelledEvent;
+import com.bone.blueprint.domain.model.order.event.OrderCancelledEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package com.bone.blueprint.application.event.support;
 
-import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import java.util.List;
 import java.util.function.Consumer;

@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.blueprint.BoneBlueprintApplication;
 import com.bone.blueprint.adapter.schedule.OrderOutboxRelayJob;
-import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.model.order.Order;
+import com.bone.blueprint.domain.model.order.OrderItem;
+import com.bone.blueprint.domain.model.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;

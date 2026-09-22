@@ -11,7 +11,7 @@ import com.bone.blueprint.application.PaymentApplicationService;
 import com.bone.blueprint.application.command.CloseExpiredPaymentCommand;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
-import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.model.payment.projection.PaymentProjection;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.time.Instant;

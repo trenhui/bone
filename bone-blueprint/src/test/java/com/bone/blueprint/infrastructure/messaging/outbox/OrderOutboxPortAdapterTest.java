@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
 import com.bone.blueprint.application.port.out.TenantPort;
-import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaidEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import java.math.BigDecimal;
 import java.time.Instant;

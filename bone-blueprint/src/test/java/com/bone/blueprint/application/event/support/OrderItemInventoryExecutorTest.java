@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

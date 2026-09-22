@@ -2,9 +2,9 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
-import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.model.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.model.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.model.payment.projection.PaymentProjection;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;

@@ -8,11 +8,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
-import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.model.order.Order;
+import com.bone.blueprint.domain.model.order.OrderItem;
+import com.bone.blueprint.domain.model.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.model.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;

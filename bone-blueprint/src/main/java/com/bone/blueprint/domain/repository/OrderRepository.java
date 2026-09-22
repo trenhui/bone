@@ -1,8 +1,9 @@
 package com.bone.blueprint.domain.repository;
 
-import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
-import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.Order;
+import com.bone.blueprint.domain.model.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
@@ -40,11 +41,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 
   /** 订单头分页；{@code customerId} / {@code status} 为可选过滤条件。 */
   default PageResult<OrderHeadProjection> findOrderPage(
-      long tenantId,
-      Long customerId,
-      com.bone.blueprint.domain.order.valueobject.OrderStatus status,
-      int pageNum,
-      int pageSize) {
+      long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {
     Criteria<Order> criteria =
         Criteria.<Order>create()
             .eq(Order::getTenantId, tenantId)

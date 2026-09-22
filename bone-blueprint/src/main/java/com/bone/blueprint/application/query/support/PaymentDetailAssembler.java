@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.PaymentDto;
-import com.bone.blueprint.domain.payment.Payment;
+import com.bone.blueprint.domain.model.payment.Payment;
 
 /** 支付详情读模型 → PaymentDto 组装（与 OrderDetailAssembler 同层）。 */
 public final class PaymentDetailAssembler {

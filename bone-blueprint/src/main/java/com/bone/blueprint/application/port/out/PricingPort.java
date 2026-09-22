@@ -1,6 +1,6 @@
 package com.bone.blueprint.application.port.out;
 
-import com.bone.blueprint.domain.shared.valueobject.Money;
+import com.bone.blueprint.domain.model.shared.valueobject.Money;
 
 /**
  * 定价服务端口（应用层出站端口）。

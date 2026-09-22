@@ -12,7 +12,7 @@ import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.CancelOrderCommand;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
-import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.model.order.projection.OrderHeadProjection;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.sql.Timestamp;

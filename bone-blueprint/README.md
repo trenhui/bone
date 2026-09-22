@@ -85,7 +85,7 @@
 
 `Order` 聚合持有需持久化的 `List<OrderItem>`（独立表 `t_order_item`）。写侧已走 SDK `@Cascade`：`items` 同时标 `@Transient` 与 `@Cascade(foreignKey = "orderId")`，`OrderRepository.save` 在同一事务内落明细。`OrderItemRepository` 已删除，应用层不再逐条 `save(OrderItem)`。
 
-**读侧**：`findById` 不回填集合（**明确不做**级联读回填）。明细经域仓储读方法 `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`；支付侧亦已按 ADR-0030 §P4 同模式折叠。
+**读侧**：`findById` 不回填集合（**明确不做**级联读回填）。明细经域仓储读方法 `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/model/order/projection/`）并入 `OrderRepository`；支付侧亦已按 ADR-0030 §P4 同模式折叠。
 
 **与 CORE-11**：聚合根是唯一写入口，`OrderItem` 未升格为聚合根。
 
@@ -101,19 +101,25 @@
 
 ### E-10 domain 分组形态登记
 
-本模块 `domain/` 采用 **`domain/{aggregate}` 按聚合平铺**形态，**不采用** `domain/model/{aggregate|entity|valueobject|event}` 按构件角色分组的形态；同一 `domain` 包内**不得混用**两套分组标准。实际子包：
+**目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`，聚合根 / 聚合内实体 / 值对象在聚合包内**直接平铺**，`event/` `projection/` `valueobject/` 为聚合内子包；`repository` / `gateway` / `extension` 端口留在 `domain/` 根。
+
+**本模块现状**：**已迁移至目标形态**（2026-09-22 完成，是 ADR-0036 的首个落地模块）。聚合构件全部位于 `domain/model/{order,payment,shared}/`，端口包留在 `domain/` 根。当前子包：
 
 | 子包 | 内容 |
 |---|---|
-| `domain/order`、`domain/payment` | 聚合根（`Order` / `Payment`）与聚合内实体（`OrderItem`） |
-| `{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
-| `{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
-| `domain/shared/valueobject` | 跨聚合共享值对象（`Money`） |
+| `domain/model/order`、`domain/model/payment` | 聚合根（`Order` / `Payment`）与聚合内实体（`OrderItem`） |
+| `domain/model/{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
+| `domain/model/{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
+| `domain/model/{aggregate}/projection` | 读侧投影（`OrderHeadProjection` / `OrderWithItemsProjection` / `PaymentProjection`） |
+| `domain/model/shared/valueobject` | 跨聚合共享值对象（`Money`） |
+| `domain/model/shared/exception` | 跨聚合共享领域异常（`OptimisticLockConflictException` / `StateConflictException`） |
 | `domain/repository` | 聚合仓储接口（`OrderRepository` / `PaymentRepository`）——ADR-0030 起**写侧 + 本聚合读**同处一个接口；明细随根 `@Cascade` 落盘，不再单设子实体仓储；全租户运维入口以 `*AllTenants` 后缀声明 |
 | `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实；出站实现在 `infrastructure/gateway/{外部系统}` |
 | `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）与其入参模型（`OrderPriceRequest` record）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
 
-E-10 明确该平铺形态为**合法变体而非存量债务**，但要求「选择后在模块 README 登记」——本节即本模块的登记点，供后续评审与 `studio-generator` 生成目标对齐。
+**已完成的迁移（ADR-0036 D1）**：`domain/{order,payment}` → `domain/model/{order,payment}`（`event` / `valueobject` / `projection` 子包名已合规，原样下沉）；`domain/shared/{valueobject,exception}` → `domain/model/shared/…`；`domain/{repository,gateway,extension}` **不变**（端口不进 `model/`）。本次同步更新了 15 处引用侧 import 与 3 个测试类的包路径；212 个测试全绿。
+
+> 本节是「目标形态 + 本模块迁移状态」的登记点（原「平铺属合法变体」的口径已由 ADR-0036 取代）。启动类的 `@EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.extension")` 是**字符串包名**，IDE 重命名不会改它——因 `extension` 按 ADR-0036 R3 留根，本次已逐处核对确认无需改动；后续若移动 `extension/` 必须同步改该字面量。
 
 **与 E-10 参考结构的另一处偏差（登记）**：参考结构给出 `infrastructure/persistence/OrderRepositoryImpl`（= `domain/repository` 的实现），本模块**不存在 `infrastructure/persistence` 包**——仓储由 Bone 元数据 SDK 的 `@EnableSqlRepositories` **运行时生成代理实现**，没有可手写的实现类。故写侧无 `*Impl`/`*PO` 落点；与「明确不做 PO 分离」一致，不是待还技术债。
 
@@ -240,13 +246,13 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
 | **多租户** | `TenantAggregateRoot` + 写侧 `findByIdInTenant`（`QueryParam` 条件，租户缺失即失败关闭）/ 读侧 SQL 显式 `tenant_id = :tenantId` + `X-Tenant-Id` 过滤器（生产由网关按 token claim 覆盖下发） |
 | **JWT 鉴权** | `SecurityConfig` + `JwtAuthenticationFilter`（框架 `AbstractJwtAuthenticationFilter`）；共享密钥离线验签，**不回调 IAM** |
-| **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
+| **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/model/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
 | **读侧 Join** | `OrderRepository.findOrderWithItems`（`@Sql`，外置 `OrderRepository/findOrderWithItems.sql` 优先）扁平投影 → 域层投影 → `OrderDetailAssembler`（ADR-0030 合并，无独立读仓储/端口） |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
 | **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentApplicationService.getById`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | **本模块无 `*QueryPort`**：订单/支付的本聚合读（`@Sql` / Criteria 读方法 + `domain/{order,payment}/projection`）与全租户运维扫描（`*AllTenants`）全部并入各自域仓储（ADR-0030）；域仓储不承载跨聚合报表 / Join。归属规则与受控例外见下节「读侧归属规则」 |
+| **CQRS 读侧** | **本模块无 `*QueryPort`**：订单/支付的本聚合读（`@Sql` / Criteria 读方法 + `domain/model/{order,payment}/projection`）与全租户运维扫描（`*AllTenants`）全部并入各自域仓储（ADR-0030）；域仓储不承载跨聚合报表 / Join。归属规则与受控例外见下节「读侧归属规则」 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |

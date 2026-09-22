@@ -3,7 +3,7 @@ package com.bone.blueprint.application.query.support;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
-import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection;
 import java.util.ArrayList;
 import java.util.List;
 

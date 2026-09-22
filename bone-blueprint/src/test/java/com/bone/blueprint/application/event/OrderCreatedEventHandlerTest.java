@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.event.support.StockActionFailureRecorder;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
-import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.model.order.event.OrderCreatedEvent;
+import com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;

@@ -2,7 +2,7 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.PaymentApplicationService;
 import com.bone.blueprint.application.command.CloseExpiredPaymentCommand;
-import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.model.payment.projection.PaymentProjection;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;

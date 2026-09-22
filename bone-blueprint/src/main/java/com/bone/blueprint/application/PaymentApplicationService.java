@@ -14,14 +14,15 @@ import com.bone.blueprint.application.util.DomainEvents;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.gateway.PaymentGateway;
-import com.bone.blueprint.domain.payment.Payment;
-import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
-import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
-import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
+import com.bone.blueprint.domain.model.order.Order;
+import com.bone.blueprint.domain.model.payment.Payment;
+import com.bone.blueprint.domain.model.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.model.payment.valueobject.PaymentChannel;
+import com.bone.blueprint.domain.model.shared.exception.OptimisticLockConflictException;
+import com.bone.blueprint.domain.model.shared.exception.StateConflictException;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.repository.PaymentRepository;
-import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
-import com.bone.blueprint.domain.shared.exception.StateConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
@@ -102,7 +103,7 @@ public class PaymentApplicationService {
         transactionTemplate.execute(
             (TransactionCallback<Payment>)
                 status -> {
-                  com.bone.blueprint.domain.order.Order order =
+                  Order order =
                       Optional.ofNullable(orderRepository.findById(command.orderId()))
                           .orElseThrow(
                               () ->

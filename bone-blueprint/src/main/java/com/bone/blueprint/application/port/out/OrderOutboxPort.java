@@ -1,11 +1,11 @@
 package com.bone.blueprint.application.port.out;
 
 import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
-import com.bone.blueprint.domain.order.event.OrderPaidEvent;
-import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
-import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
-import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
-import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.model.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 
 /**
  * 集成事件 Outbox（发件箱）写入端口——<strong>技术出站端口（E-4.3 / E-10.2），声明于 {@code application/port/out}，实现于
