@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.quality;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.masterdata.domain.model.quality.event.QualityCheckCompletedEvent;
@@ -15,13 +15,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("mdm_qcheck_task")
-public class QualityCheck extends AggregateRoot<Long> {
+public class QualityCheck extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
-
-  @Column(name = "tenant_id")
-  private Long tenantId;
 
   @Column(name = "mdm_entity_id")
   private Long masterDataEntityId;
@@ -52,7 +49,6 @@ public class QualityCheck extends AggregateRoot<Long> {
   public static QualityCheck create(Long id, Long masterDataEntityId) {
     QualityCheck check = new QualityCheck();
     check.id = id;
-    check.tenantId = 0L;
     check.masterDataEntityId = masterDataEntityId;
     check.checkName = "quality-check";
     check.startedAt = LocalDateTime.now();

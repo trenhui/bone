@@ -1,12 +1,13 @@
 package com.bone.masterdata.application;
 
 import com.bone.core.capability.Capability;
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCommand;
-import com.bone.masterdata.application.query.dto.DataQualityReportDTO;
+import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
 import com.bone.masterdata.application.query.dto.QualityCheckDTO;
 import com.bone.masterdata.application.query.dto.QualityReportDTO;
@@ -20,7 +21,6 @@ import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
-import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
@@ -32,6 +32,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 数据质量应用服务（ADR-0028 Application Service First）。
  *
- * <p>原 {@code application/command/handler/*DataQuality*}、{@code
- * application/query/handler/*Quality*} 的全部用例， 以及原 {@code DataQualityController}/{@code
- * QualityResultController} 内的读侧 DSL 调用，已内联合并到本服务。 读侧领域模型经由各 Repository 的 default
- * 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
+ * <p>读侧领域模型由各 Repository 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
  */
 @Service
 @RequiredArgsConstructor
@@ -54,6 +53,7 @@ public class QualityApplicationService {
   private final QualityCheckRepository qualityCheckRepository;
   private final QualityReportRepository qualityReportRepository;
   private final DataQualityService dataQualityService;
+  private final MasterdataDomainEventPublisher domainEventPublisher;
 
   @Capability(
       name = "CreateDataQualityRule",
@@ -82,7 +82,9 @@ public class QualityApplicationService {
             cmd.getExpression(),
             cmd.getSeverity(),
             cmd.getDescription());
-    return dataQualityRuleRepository.save(rule);
+    Long savedId = dataQualityRuleRepository.save(rule);
+    domainEventPublisher.publishFrom(rule);
+    return savedId;
   }
 
   @Capability(
@@ -101,13 +103,17 @@ public class QualityApplicationService {
     if (rule == null) {
       throw NotFoundException.of("数据质量规则不存在");
     }
+    if (cmd.getSeverity() == null || cmd.getSeverity().isBlank()) {
+      throw new BizException(400, "规则严重级别不能为空");
+    }
     rule.update(
         RuleName.of(cmd.getName()),
-        cmd.getRuleType(),
-        cmd.getRuleConfig(),
+        cmd.getType(),
+        cmd.getExpression(),
         RuleSeverity.valueOf(cmd.getSeverity()),
         cmd.getDescription());
     dataQualityRuleRepository.update(rule);
+    domainEventPublisher.publishFrom(rule);
   }
 
   @Capability(
@@ -137,37 +143,13 @@ public class QualityApplicationService {
       cost = 5,
       retryable = true,
       timeout = 120)
-  @Transactional
+  @Transactional(readOnly = true)
   public Long performCheck(PerformDataQualityCheckCommand cmd) {
     if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
       throw NotFoundException.of("主数据实体不存在");
     }
-    Long checkId = DistributedIdGenerator.generateLongId();
-    List<DataQualityRule> rules =
-        dataQualityRuleRepository.findByMasterDataEntityId(cmd.getMasterDataEntityId());
-    List<MasterDataRecord> records =
-        recordRepository.findByMasterDataEntityId(cmd.getMasterDataEntityId());
-    QualityCheck check =
-        dataQualityService.performQualityCheck(
-            checkId, cmd.getMasterDataEntityId(), rules, records);
-    qualityCheckRepository.insert(check);
-
-    Long reportId = DistributedIdGenerator.generateLongId();
-    String reportData =
-        String.format(
-            "{\"checkId\":%d,\"masterDataEntityId\":%d,\"totalRecords\":%d,"
-                + "\"passedRecords\":%d,\"failedRecords\":%d,\"status\":\"%s\"}",
-            check.getId(),
-            check.getMasterDataEntityId(),
-            check.getTotalRecords(),
-            check.getPassedRecords(),
-            check.getFailedRecords(),
-            check.getStatus());
-    QualityReport report =
-        dataQualityService.generateQualityReport(
-            reportId, check.getId(), reportData, check.getFailedRecords());
-    qualityReportRepository.insert(report);
-    return reportId;
+    // 规则表达式求值器尚未交付：宁可显式 501，也不用随机结果冒充质量结论。
+    throw new BizException(501, "MD_QUALITY_CHECK_UNSUPPORTED: 规则表达式求值器未实现");
   }
 
   @Transactional(readOnly = true)
@@ -205,6 +187,10 @@ public class QualityApplicationService {
     if (report == null) {
       throw NotFoundException.of("质量报告不存在");
     }
+    return toReportDto(report);
+  }
+
+  private QualityReportDTO toReportDto(QualityReport report) {
     return new QualityReportDTO(
         report.getId(),
         report.getQualityCheckId(),
@@ -223,21 +209,11 @@ public class QualityApplicationService {
     return checks.stream().map(this::toCheckDto).toList();
   }
 
-  /** 按检查查询质量报告列表（原 DataQualityController.listReports 内联，读 DSL 下沉到 Repository）。 */
+  /** 按质量检查 ID 查询报告列表。 */
   @Transactional(readOnly = true)
-  public List<DataQualityReportDTO> listReports(Long qualityCheckId) {
-    List<QualityReport> reports = qualityReportRepository.findByQualityCheckId(qualityCheckId);
-    return reports.stream()
-        .map(
-            r -> {
-              DataQualityReportDTO d = new DataQualityReportDTO();
-              d.setId(r.getId());
-              d.setQualityCheckId(r.getQualityCheckId());
-              d.setReportData(r.getReportData());
-              d.setIssueCount(r.getIssueCount());
-              d.setCreatedAt(r.getCreatedAt());
-              return d;
-            })
+  public List<QualityReportDTO> listReports(Long qualityCheckId) {
+    return qualityReportRepository.findByQualityCheckId(qualityCheckId).stream()
+        .map(this::toReportDto)
         .toList();
   }
 
@@ -248,12 +224,18 @@ public class QualityApplicationService {
         masterDataEntityId != null
             ? qualityCheckRepository.findByMasterDataEntityId(masterDataEntityId)
             : qualityCheckRepository.findAllChecks();
+    Map<Long, List<QualityReport>> reportsByCheck =
+        qualityReportRepository
+            .findByQualityCheckIds(checks.stream().map(QualityCheck::getId).toList())
+            .stream()
+            .collect(Collectors.groupingBy(QualityReport::getQualityCheckId));
+
     List<QualityResultDTO> results = new ArrayList<>();
     for (QualityCheck check : checks) {
-      List<QualityReport> reports = qualityReportRepository.findByQualityCheckId(check.getId());
+      List<QualityReport> reports = reportsByCheck.getOrDefault(check.getId(), List.of());
       long failed = check.getFailedRecords() != null ? check.getFailedRecords() : 0L;
       for (QualityReport report : reports) {
-        Long ruleId = resolveRuleId(report);
+        Long ruleId = report.getQualityCheckId();
         results.add(
             QualityResultDTO.builder()
                 .id(report.getId())
@@ -309,14 +291,6 @@ public class QualityApplicationService {
 
   private Date toDate(LocalDateTime time) {
     return time != null ? Date.from(time.atZone(ZoneId.systemDefault()).toInstant()) : null;
-  }
-
-  private Long resolveRuleId(QualityReport report) {
-    try {
-      return report.getQualityCheckId();
-    } catch (Exception e) {
-      return null;
-    }
   }
 
   private String buildMessage(long failed, QualityReport report) {

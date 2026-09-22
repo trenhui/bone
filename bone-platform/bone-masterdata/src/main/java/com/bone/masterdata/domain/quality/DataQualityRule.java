@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.quality;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.masterdata.domain.model.quality.event.DataQualityRuleCreatedEvent;
@@ -17,13 +17,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("meta_data_quality_rule")
-public class DataQualityRule extends AggregateRoot<Long> {
+public class DataQualityRule extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
-
-  @Column(name = "tenant_id")
-  private Long tenantId;
 
   @Column(name = "entity_id")
   private Long masterDataEntityId;
@@ -49,7 +46,6 @@ public class DataQualityRule extends AggregateRoot<Long> {
       String description) {
     DataQualityRule rule = new DataQualityRule();
     rule.id = id;
-    rule.tenantId = 0L;
     rule.masterDataEntityId = masterDataEntityId;
     rule.name = name;
     rule.type = type;

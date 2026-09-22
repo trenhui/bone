@@ -58,7 +58,7 @@ mvn test -pl <module> -Dtest=ArchitectureTest \
   -Darchunit.freeze.store.default.allowStoreUpdate=true
 ```
 
-`allowStoreUpdate=true` 仅允许基线**收缩**（与 DDD 附录 B.3 一致）。全量覆盖快照用 `refreeze=true`（慎用，须确认无新增违规）。
+`allowStoreUpdate=true` 的真实语义是：**未登记的新违规会被写进 store 且规则继续判绿**（基线可以扩张，不是收缩）；它是 ArchUnit 的默认值，因此模块若没有 `archunit.properties` 显式关闭，冻结规则等于「只记录不拦截」。想让基线只能收缩，应在模块 `src/test/resources/archunit.properties` 写 `freeze.store.default.allowStoreUpdate=false`，再按上一条命令在人工确认后临时放开。全量覆盖快照用 `refreeze=true`（慎用，须确认无新增违规）。
 
 6. **`noBoneCoreUseCaseApiDependency`**：不纳入 freeze（包已删除，无存量命中，作防回滚保险）。
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:34Z",
+  "generated_at": "2026-09-21T11:12:19Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -99,7 +99,6 @@
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/PaymentDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/projection/OrderWithItemsProjection.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderItemRepository.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderRepository.java"
         ],
         "sql": [

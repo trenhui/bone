@@ -1,0 +1,2 @@
+# 根目录 .gitignore 忽略 *.properties，但 ArchUnit 冻结基线开关必须入库，否则门禁静默失效
+!src/test/resources/archunit.properties

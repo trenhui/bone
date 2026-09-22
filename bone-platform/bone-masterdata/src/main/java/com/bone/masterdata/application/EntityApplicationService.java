@@ -7,18 +7,22 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.DisableMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
+import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
 import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
+import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort.MetaEntityRow;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,16 +30,19 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 主数据实体应用服务（ADR-0028 Application Service First）。
  *
- * <p>原 {@code application/command/handler/*} 与 {@code application/query/handler/*} 的全部用例已内联合并到本服务，
- * 适配器只依赖本服务。读侧领域模型经由 {@link MasterDataEntityRepository} 的 default 方法承载（ADR-0030）， 应用层不直接依赖持久化 DSL。
+ * <p>读侧领域模型由 {@link MasterDataEntityRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
  */
 @Service
 @RequiredArgsConstructor
 public class EntityApplicationService {
 
+  /** 单页上限：分页参数由前端传入，必须夹紧，否则 ?pageSize=大数 会直接透传到 LIMIT。 */
+  private static final int MAX_PAGE_SIZE = 500;
+
   private final MasterDataEntityRepository entityRepository;
   private final MasterDataFieldRepository fieldRepository;
   private final MetaEntityCatalogPort metaEntityCatalogPort;
+  private final MasterdataDomainEventPublisher domainEventPublisher;
 
   @Capability(
       name = "CreateMasterDataEntity",
@@ -57,7 +64,9 @@ public class EntityApplicationService {
     MasterDataEntity entity =
         MasterDataEntity.create(
             entityId, null, entityName, cmd.getDescription(), cmd.getCategory());
-    return entityRepository.save(entity);
+    Long savedId = entityRepository.save(entity);
+    domainEventPublisher.publishFrom(entity);
+    return savedId;
   }
 
   @Capability(
@@ -78,7 +87,8 @@ public class EntityApplicationService {
     }
     MasterDataEntityName entityName = MasterDataEntityName.of(cmd.getName());
     entity.update(entityName, cmd.getDescription(), cmd.getCategory());
-    entityRepository.save(entity);
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
   }
 
   @Capability(
@@ -98,6 +108,7 @@ public class EntityApplicationService {
     }
     entity.publish();
     entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
   }
 
   @Capability(
@@ -121,6 +132,7 @@ public class EntityApplicationService {
       entity.enable();
     }
     entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
   }
 
   @Capability(
@@ -160,7 +172,9 @@ public class EntityApplicationService {
             MasterDataEntityName.of(displayName),
             "从元数据实体 " + metaEntityId + " 转换",
             "catalog");
-    return entityRepository.insert(entity);
+    Long insertedId = entityRepository.insert(entity);
+    domainEventPublisher.publishFrom(entity);
+    return insertedId;
   }
 
   @Transactional(readOnly = true)
@@ -170,11 +184,21 @@ public class EntityApplicationService {
       status = MasterDataEntityStatus.valueOf(qry.getStatus());
     }
     int page = Math.max(1, qry.getPageNum());
-    int size = Math.max(1, qry.getPageSize());
+    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataEntity> result =
         entityRepository.pageByCategoryAndStatus(qry.getCategory(), status, page, size);
+    Map<Long, Long> fieldCounts =
+        fieldRepository
+            .findByMasterDataEntityIds(
+                result.getRecords().stream().map(MasterDataEntity::getId).toList())
+            .stream()
+            .collect(
+                Collectors.groupingBy(
+                    MasterDataField::getMasterDataEntityId, Collectors.counting()));
     return PageResult.of(
-        result.getRecords().stream().map(e -> toDto(e, 0)).toList(),
+        result.getRecords().stream()
+            .map(e -> toDto(e, fieldCounts.getOrDefault(e.getId(), 0L).intValue()))
+            .toList(),
         result.getTotal(),
         result.getPage(),
         result.getSize());

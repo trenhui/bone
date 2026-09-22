@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.standard;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.masterdata.domain.standard.vo.StandardFieldCode;
@@ -17,13 +17,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("meta_data_standard")
-public class DataStandard extends AggregateRoot<Long> {
+public class DataStandard extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
-
-  @Column(name = "tenant_id")
-  private Long tenantId;
 
   @Column(name = "entity_code")
   private String entityCode;
@@ -53,7 +50,6 @@ public class DataStandard extends AggregateRoot<Long> {
       String description) {
     DataStandard standard = new DataStandard();
     standard.id = id;
-    standard.tenantId = 0L;
     standard.entityCode = entityCode;
     standard.fieldCode = fieldCode;
     standard.ruleType = ruleType;

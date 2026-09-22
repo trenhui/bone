@@ -436,8 +436,8 @@
         [
           "**HC-006**",
           "数据库访问必须通过 bone-metadata-sdk Repository",
-          "**无实现**：`repositoryMustUseSdk` 不在共享规则库中",
-          "**Planned**"
+          "`scripts/check-sdk-persistence.py --check`（`scripts/check.sh` `[6/6]`、`scripts/ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import；SDK 与 metadata-engine 除外。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩。ArchUnit `repositoryMustUseSdk` 仍不在共享规则库",
+          "**Manual**（本地新增文件阻断已落地；存量绕过在基线内，不得称全仓已只走 Repository）"
         ],
         [
           "**HC-007**",

@@ -1,10 +1,11 @@
 #
-#Sat Sep 19 23:21:49 CST 2026
+#Mon Sep 21 17:44:25 CST 2026
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=7578f1a8-e363-4ac4-aa92-c6aa502f943c
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=227ca2c1-b5a0-4be3-8513-3cbed499dee4
-no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=69c5a658-a5ba-46ab-85d1-f10c83b97ede
 no\ classes\ that\ reside\ in\ a\ package\ '..application.command.handler..'\ should\ depend\ on\ classes\ that\ annotated\ with\ @ReadSideOnly,\ because\ DDD\ P0-6\:\ CommandHandler\ must\ not\ use\ read-side\ DSL=bf07237b-d812-4edc-bac3-1a086efe9b09
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=69c5a658-a5ba-46ab-85d1-f10c83b97ede
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=96ba5d93-8443-4553-8bda-a5e8d640e407
+no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ annotated\ with\ @ReadSideOnly,\ because\ DDD\ P0-6\:\ CommandHandler\ must\ not\ use\ read-side\ DSL=661d2a7a-da44-492c-ada4-26892176510b
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..'\ and\ reside\ outside\ of\ package\ '..adapter.schedule..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.repository..',\ because\ DDD\ \u00A715\:\ adapter\ must\ not\ inject\ domain.repository;\ use\ Handler=73d413c7-cef5-450f-82de-57b4fa9fa153
 classes\ that\ are\ interfaces\ and\ have\ simple\ name\ ending\ with\ 'Repository'\ and\ reside\ in\ a\ package\ '..domain.repository..'\ should\ only\ declare\ whitelisted\ repository\ methods=e87dd59a-23b4-4d87-9941-61407995dca7
 no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=21e68af8-9fbd-43ab-8ed4-9258c0148f27

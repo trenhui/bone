@@ -1,11 +1,10 @@
 package com.bone.masterdata.infrastructure.config;
 
-import org.springframework.context.annotation.Configuration;
+/** Excel 导入数量上限。 */
+public final class ExcelConfig {
 
-@Configuration
-public class ExcelConfig {
-  // Excel 相关配置
   public static final int MAX_ROWS = 10000;
   public static final int MAX_COLUMNS = 50;
-  public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+  private ExcelConfig() {}
 }

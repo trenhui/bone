@@ -5,6 +5,7 @@ import com.bone.masterdata.domain.model.field.vo.FieldName;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -38,6 +39,17 @@ public interface MasterDataFieldRepository extends Repository<MasterDataField, L
         Criteria.<MasterDataField>create()
             .entityClass(MasterDataField.class)
             .eq("masterDataEntityId", masterDataEntityId));
+  }
+
+  /** 按实体 ID 批量查询字段（列表页回填字段数，避免逐个 count 造成 N+1）。 */
+  default List<MasterDataField> findByMasterDataEntityIds(Collection<Long> masterDataEntityIds) {
+    if (masterDataEntityIds == null || masterDataEntityIds.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<MasterDataField>create()
+            .entityClass(MasterDataField.class)
+            .in("masterDataEntityId", masterDataEntityIds));
   }
 
   /** 查询全部字段（读模型，ADR-0030）。 */

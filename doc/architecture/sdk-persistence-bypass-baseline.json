@@ -1,0 +1,18 @@
+{
+  "description": "HC-006 存量绕过 SDK 的 JDBC/MyBatis import。只可收缩，新增文件不得加入。",
+  "files": [
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/RuntimeEngineConfiguration.java",
+    "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenIssuerGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenSessionGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java",
+    "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
+    "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java",
+    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
+  ]
+}

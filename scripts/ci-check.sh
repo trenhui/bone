@@ -47,4 +47,10 @@ if grep -rnE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence
   echo -e "${RED}❌ 残留禁用 ORM import！${RESET}"; exit 1
 fi
 
+echo "🔍 HC-006 绕过 SDK 的 JDBC/MyBatis 扫描..."
+python3 scripts/check-sdk-persistence.py --check || {
+  echo -e "${RED}❌ 新增文件直接使用 JDBC / MyBatis 会话（须走 bone-metadata-sdk）！${RESET}"
+  exit 1
+}
+
 echo -e "${GREEN}✅ CI 全量门禁通过！${RESET}"

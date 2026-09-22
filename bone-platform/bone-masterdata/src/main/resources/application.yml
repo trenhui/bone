@@ -29,18 +29,19 @@ management:
     tags:
       application: ${spring.application.name}
 
+bone:
+  iam:
+    jwt:
+      # 必须与 bone-iam 的 secret-key 一致，生产由环境变量 BONE_IAM_JWT_SECRET_KEY 注入
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      token-prefix: "Bearer "
+      header-name: Authorization
+
 masterdata:
-  entity:
-    max.fields: 100
-  record:
-    max.size: 1048576
-  quality:
-    check:
-      batch.size: 1000
-  import:
-    batch.size: 500
-  export:
-    max.records: 10000
+  # 由 MasterDataProperties 绑定并在用例入口校验；kebab-case 对应其 camelCase 字段
+  entity-max-fields: 100
+  record-max-size: 1048576
+  export-max-records: 10000
 
 logging:
   level:

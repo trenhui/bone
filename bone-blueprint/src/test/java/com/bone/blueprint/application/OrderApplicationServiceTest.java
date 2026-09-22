@@ -20,7 +20,6 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -46,7 +45,6 @@ class OrderApplicationServiceTest {
 
   // ========== 写侧 mock ==========
   @Mock private OrderRepository orderRepository;
-  @Mock private OrderItemRepository orderItemRepository;
   @Mock private InventoryGateway inventoryGateway;
   @Mock private PricingPort pricingService;
   @Mock private DomainEventPublisher domainEventPublisher;
@@ -75,9 +73,8 @@ class OrderApplicationServiceTest {
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
     // 定价扩展点被调用
     verify(pricingService, times(1)).calculateFinalPrice(any(), eq(1L));
-    // 订单 + 明细持久化
+    // 订单根 save（明细由 SDK @Cascade 随根落盘，应用层不再调 OrderItemRepository）
     verify(orderRepository, times(1)).save(any(Order.class));
-    verify(orderItemRepository, times(1)).save(any(OrderItem.class));
     // 领域事件发布
     verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
@@ -96,7 +93,6 @@ class OrderApplicationServiceTest {
         () -> service.create(new CreateOrderCommand(1L, Collections.singletonList(item))));
 
     verify(orderRepository, never()).save(any());
-    verify(orderItemRepository, never()).save(any());
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
   }
 
@@ -116,8 +112,7 @@ class OrderApplicationServiceTest {
     assertEquals(true, orderId != null);
     // 2 个商品各 check 1 次
     verify(inventoryGateway, times(2)).checkStock(anyLong(), anyInt());
-    // 2 条明细各 save 1 次
-    verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+    verify(orderRepository, times(1)).save(any(Order.class));
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
   }
 

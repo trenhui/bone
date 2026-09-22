@@ -40,9 +40,12 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
 
+  // 谓词已从 ..application.command.handler.. 收口到 ..application..（ADR-0028 后 Handler 被
+  // ApplicationService 取代，
+  // 旧谓词 0 命中恒绿）。本模块 application 层零读侧 DSL，直接作硬门禁，不再冻结。
   @ArchTest
   static final ArchRule command_no_query_builder =
-      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
+      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
   // E-4.2（收敛后收缩基线）：读侧 DSL 已全部下沉到 domain/repository 的 default 方法，
   // application 层不再出现 QueryBuilder/FluentQuery/Criteria，故解冻为硬门禁。
@@ -106,4 +109,14 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.masterdata");
+
+  // E-1.3 主判据：类型依赖层面的跨上下文守护（no_cross_context_domain 只覆盖包名，本条拦 QueryBuilder.from(他上下文实体)）
+  @ArchTest
+  static final ArchRule no_cross_context_model =
+      BoneDddArchRules.noCrossContextModelDependency("com.bone.masterdata");
+
+  // E-5.4：application 层 save() 必须配 publishFrom()，否则领域事件会静默丢失（本模块曾因此 6 个 Handler 全失效）
+  @ArchTest
+  static final ArchRule application_save_pairs_with_publish =
+      BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
 }

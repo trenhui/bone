@@ -17,7 +17,6 @@ import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
 import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -63,7 +62,6 @@ public class OrderApplicationService {
 
   // ========== 写侧依赖 ==========
   private final OrderRepository orderRepository;
-  private final OrderItemRepository orderItemRepository;
   private final InventoryGateway inventoryGateway;
   private final PricingPort pricingService;
   private final DomainEventPublisher domainEventPublisher;
@@ -118,10 +116,7 @@ public class OrderApplicationService {
     orderRepository.save(order);
     Long persistedOrderId = order.getId();
 
-    // 明细无级联：须显式逐条持久化。
-    for (OrderItem item : items) {
-      orderItemRepository.save(item);
-    }
+    // 明细由 SDK @Cascade 随根落盘（能力需求二 MVP），不再显式 OrderItemRepository.save。
     domainEventPublisher.publishFrom(order);
     return persistedOrderId;
   }

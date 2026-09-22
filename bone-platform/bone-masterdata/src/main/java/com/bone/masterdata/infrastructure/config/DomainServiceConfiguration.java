@@ -1,28 +1,12 @@
 package com.bone.masterdata.infrastructure.config;
 
-import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
-import com.bone.masterdata.domain.service.entity.MasterDataEntityService;
 import com.bone.masterdata.domain.service.quality.DataQualityService;
-import com.bone.masterdata.domain.service.record.MasterDataRecordService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** 领域服务显式配置 遵循 v1.0 规范：领域服务不允许标注 Spring 注解，在这里统一注册 */
+/** 领域服务显式装配：领域服务不带 Spring 注解，统一在此注册。 */
 @Configuration
 public class DomainServiceConfiguration {
-
-  @Bean
-  public MasterDataEntityService masterDataEntityService(
-      MasterDataEntityRepository entityRepository) {
-    return new MasterDataEntityService(entityRepository);
-  }
-
-  @Bean
-  public MasterDataRecordService masterDataRecordService(
-      MasterDataRecordRepository recordRepository) {
-    return new MasterDataRecordService(recordRepository);
-  }
 
   @Bean
   public DataQualityService dataQualityService() {

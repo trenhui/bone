@@ -32,6 +32,7 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.sql.executor.TypeConverter;
 import com.bone.metadata.sdk.support.cache.FieldCache;
+import com.bone.metadata.sdk.support.cascade.AggregateCascadeWriter;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import jakarta.validation.Valid;
 import java.util.*;
@@ -193,6 +194,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       }
     }
     saveExtensionFields(entity);
+    cascadePersist(entity, false);
     return entity.getId();
   }
 
@@ -296,6 +298,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       ReflectionUtil.setFieldValue(
           entity, vc.getFieldName(), toVersionValue(vc.getType(), base + 1));
     }
+    cascadePersist(entity, true);
     return true;
   }
 
@@ -766,6 +769,14 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   }
 
   // ========== 辅助方法 ==========
+
+  private void cascadePersist(T entity, boolean removeOrphans) {
+    TableMetadata meta = TableMetadataResolver.load(entityClass);
+    if (meta.getCascades().isEmpty()) {
+      return;
+    }
+    new AggregateCascadeWriter(sqlBuilder, sqlExecutor).persistChildren(entity, removeOrphans);
+  }
 
   private void ensureIdInitialized(T entity) {
     TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);

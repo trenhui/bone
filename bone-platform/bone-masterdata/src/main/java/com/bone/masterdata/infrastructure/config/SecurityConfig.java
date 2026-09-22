@@ -1,34 +1,47 @@
 package com.bone.masterdata.infrastructure.config;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.masterdata.infrastructure.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
   private final ObjectMapper objectMapper;
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-  public SecurityConfig(ObjectMapper objectMapper) {
+  public SecurityConfig(
+      ObjectMapper objectMapper, JwtAuthenticationFilter jwtAuthenticationFilter) {
     this.objectMapper = objectMapper;
+    this.jwtAuthenticationFilter = jwtAuthenticationFilter;
   }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/**")
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
-                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
+                    .requestMatchers(
+                        "/actuator/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/api-docs/**",
+                        "/v3/api-docs/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
@@ -49,7 +62,8 @@ public class SecurityConfig {
                           response.setCharacterEncoding("UTF-8");
                           ApiResponse<?> body = ApiResponse.error(403, "无权限访问该资源");
                           response.getWriter().write(objectMapper.writeValueAsString(body));
-                        }));
+                        }))
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 }

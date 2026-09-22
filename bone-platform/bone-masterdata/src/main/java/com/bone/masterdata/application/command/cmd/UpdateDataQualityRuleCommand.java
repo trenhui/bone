@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 public class UpdateDataQualityRuleCommand {
   private Long id;
   private String name;
-  private String ruleType;
-  private String ruleConfig;
+  private String type;
+  private String expression;
   private String severity;
   private String description;
 }

@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS md_field (
     id                      BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id               BIGINT       NOT NULL DEFAULT 0,
     master_data_entity_id   BIGINT       NOT NULL,
     name                    VARCHAR(200) NOT NULL,
     code                    VARCHAR(100),
@@ -9,11 +10,16 @@ CREATE TABLE IF NOT EXISTS md_field (
     default_value           VARCHAR(500),
     description             VARCHAR(500),
     sort_order              INT          DEFAULT 0,
+    created_at              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    created_by              BIGINT,
+    updated_at              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_by              BIGINT,
     deleted                 BOOLEAN      DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS md_entity (
     id              BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id       BIGINT       NOT NULL DEFAULT 0,
     meta_entity_id  BIGINT,
     name            VARCHAR(200) NOT NULL,
     description     CLOB,

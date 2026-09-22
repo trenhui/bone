@@ -1,8 +1,7 @@
 package com.bone.platform.alert.application;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.platform.alert.domain.notification.NotificationMessage;
-import com.bone.platform.alert.domain.notification.NotificationMessageRepository;
+import com.bone.platform.alert.domain.repository.NotificationMessageRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,25 +16,13 @@ public class NotificationService {
   private final NotificationMessageRepository notificationMessageRepository;
 
   public List<NotificationMessage> listByUser(Long userId, int limit) {
-    return QueryBuilder.from(NotificationMessage.class)
-        .where(NotificationMessage::getUserId)
-        .eq(userId)
-        .list()
-        .stream()
+    return notificationMessageRepository.findByUserId(userId).stream()
         .limit(Math.max(0, limit))
         .toList();
   }
 
   public long unreadCount(Long userId) {
-    // 该用户未读站内信数。QueryBuilder 的 and().eq(false).count() 组合存在异常，
-    // 改为「按用户拉取 + 内存过滤未读」，数据量小且 list() 已验证可用。
-    return QueryBuilder.from(NotificationMessage.class)
-        .where(NotificationMessage::getUserId)
-        .eq(userId)
-        .list()
-        .stream()
-        .filter(m -> !m.isRead())
-        .count();
+    return notificationMessageRepository.countUnreadByUserId(userId);
   }
 
   @Transactional

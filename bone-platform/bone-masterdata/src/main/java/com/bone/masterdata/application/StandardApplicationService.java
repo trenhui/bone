@@ -1,5 +1,6 @@
 package com.bone.masterdata.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.PageResult;
@@ -24,10 +25,16 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>原 {@code DataStandardCommandHandler} 与 {@code DataStandardQueryHandler} 的全部用例已内联合并到本服务。
  * 读侧领域模型经由 {@link DataStandardRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
+ *
+ * <p><b>不发 DomainEvent 的豁免理由（E-5.4）</b>：数据标准是纯配置型数据，创建/更新/删除均无下游需要感知的状态迁移， 聚合自身也未注册任何 {@code
+ * DomainEvent}；若将来出现订阅方，改为接入 {@code publishFrom} 并移除本豁免。
  */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class StandardApplicationService {
+
+  private static final int MAX_PAGE_SIZE = 500;
 
   private final DataStandardRepository dataStandardRepository;
 
@@ -88,7 +95,7 @@ public class StandardApplicationService {
   @Transactional(readOnly = true)
   public PageResult<DataStandardDTO> page(DataStandardPageQuery qry) {
     int page = Math.max(1, qry.getPageNum());
-    int size = Math.max(1, qry.getPageSize());
+    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
     PageResult<DataStandard> result =
         dataStandardRepository.pageByEntityCodeAndFieldCodeLike(
             qry.getEntityCode(), qry.getKeyword(), page, size);

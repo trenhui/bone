@@ -7,10 +7,13 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCommand;
 import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataRecordCommand;
+import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
-import com.bone.masterdata.application.query.qry.MasterDataRecordPageQuery;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
+import com.bone.masterdata.common.MasterDataProperties;
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
 import com.bone.masterdata.domain.record.MasterDataRecord;
@@ -25,17 +28,19 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 主数据记录应用服务（ADR-0028 Application Service First）。
  *
- * <p>原 {@code application/command/handler/*Record*} 与 {@code application/query/handler/*Record*}
- * 的全部用例已内联合并到本服务。 读侧领域模型经由 {@link MasterDataRecordRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化
- * DSL。
+ * <p>读侧领域模型由 {@link MasterDataRecordRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
  */
 @Service
 @RequiredArgsConstructor
 public class RecordApplicationService {
 
+  private static final int MAX_PAGE_SIZE = 500;
+
   private final MasterDataRecordRepository recordRepository;
   private final MasterDataEntityRepository entityRepository;
   private final MasterDataExcelImportPort excelImportPort;
+  private final MasterdataDomainEventPublisher domainEventPublisher;
+  private final MasterDataProperties properties;
 
   @Capability(
       name = "CreateMasterDataRecord",
@@ -51,10 +56,13 @@ public class RecordApplicationService {
     if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
       throw NotFoundException.of("主数据实体不存在");
     }
+    checkDataSize(cmd.getData());
     Long recordId = DistributedIdGenerator.generateLongId();
     MasterDataRecord record =
         MasterDataRecord.create(recordId, cmd.getMasterDataEntityId(), cmd.getData());
-    return recordRepository.save(record);
+    Long savedId = recordRepository.save(record);
+    domainEventPublisher.publishFrom(record);
+    return savedId;
   }
 
   @Capability(
@@ -72,8 +80,10 @@ public class RecordApplicationService {
     if (record == null) {
       throw NotFoundException.of("主数据记录不存在");
     }
+    checkDataSize(cmd.getData());
     record.update(cmd.getData());
     recordRepository.update(record);
+    domainEventPublisher.publishFrom(record);
   }
 
   @Capability(
@@ -93,6 +103,7 @@ public class RecordApplicationService {
     }
     record.publish();
     recordRepository.update(record);
+    domainEventPublisher.publishFrom(record);
   }
 
   @Capability(
@@ -112,6 +123,7 @@ public class RecordApplicationService {
     }
     record.archive();
     recordRepository.update(record);
+    domainEventPublisher.publishFrom(record);
   }
 
   @Capability(
@@ -147,26 +159,11 @@ public class RecordApplicationService {
         excelImportPort.parseRecords(
             cmd.getDataStream(), cmd.getOriginalFilename(), cmd.getMasterDataEntityId());
     List<Long> ids = new ArrayList<>();
-    for (MasterDataRecord p : parsed) {
-      MasterDataRecord record =
-          MasterDataRecord.create(
-              DistributedIdGenerator.generateLongId(), cmd.getMasterDataEntityId(), p.getData());
+    for (MasterDataRecord record : parsed) {
       ids.add(recordRepository.save(record));
+      domainEventPublisher.publishFrom(record);
     }
     return ids;
-  }
-
-  @Transactional(readOnly = true)
-  public PageResult<MasterDataRecordDTO> page(MasterDataRecordPageQuery qry) {
-    int page = qry.getPageNum() != null && qry.getPageNum() > 0 ? qry.getPageNum() : 1;
-    int size = qry.getPageSize() != null && qry.getPageSize() > 0 ? qry.getPageSize() : 10;
-    PageResult<MasterDataRecord> result =
-        recordRepository.pageByEntityId(qry.getMasterDataEntityId(), page, size);
-    return PageResult.of(
-        result.getRecords().stream().map(this::toDto).toList(),
-        result.getTotal(),
-        result.getPage(),
-        result.getSize());
   }
 
   @Transactional(readOnly = true)
@@ -176,7 +173,7 @@ public class RecordApplicationService {
       status = MasterDataRecordStatus.valueOf(qry.getStatus());
     }
     int page = Math.max(1, qry.getPageNum());
-    int size = Math.max(1, qry.getPageSize());
+    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataRecord> result =
         recordRepository.pageByEntityIdStatusAndKeyword(
             qry.getMasterDataEntityId(), status, qry.getKeyword(), page, size);
@@ -200,6 +197,11 @@ public class RecordApplicationService {
   @Transactional(readOnly = true)
   public String export(Long masterDataEntityId) {
     List<MasterDataRecord> records = recordRepository.findByMasterDataEntityId(masterDataEntityId);
+    if (records.size() > properties.getExportMaxRecords()) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.EXPORT_LIMIT_EXCEEDED,
+          "导出记录数 " + records.size() + " 超过上限 " + properties.getExportMaxRecords());
+    }
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < records.size(); i++) {
       MasterDataRecord r = records.get(i);
@@ -209,6 +211,14 @@ public class RecordApplicationService {
       }
     }
     return sb.toString();
+  }
+
+  private void checkDataSize(String data) {
+    if (data != null && data.length() > properties.getRecordMaxSize()) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_SIZE_EXCEEDED,
+          "记录数据超过 " + properties.getRecordMaxSize() + " 字符上限");
+    }
   }
 
   private MasterDataRecordDTO toDto(MasterDataRecord record) {

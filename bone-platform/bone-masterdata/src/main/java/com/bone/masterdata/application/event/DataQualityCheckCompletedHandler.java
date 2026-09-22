@@ -3,10 +3,13 @@ package com.bone.masterdata.application.event;
 import com.bone.masterdata.domain.model.quality.event.QualityCheckCompletedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 
-@Component
 @Slf4j
+@Component
 public class DataQualityCheckCompletedHandler {
+
+  @TransactionalEventListener
   public void handle(QualityCheckCompletedEvent event) {
     log.info(
         "数据质量检查完成: 检查ID={}, 实体ID={}, 总记录数={}, 失败记录数={}",

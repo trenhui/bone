@@ -74,7 +74,7 @@
 | CORE-08 | 门禁不冒充领域证明 | 静态检查证明结构；业务语义由测试和评审证明 | 通用 DDD | G-1.2、G-1.5、G-2.1 |
 | CORE-09 | EAV 只承载扩展字段（元数据工程约束） | 核心事务、高频查询、聚合字段用物理列；EAV/JSON 仅限可选、动态、长尾扩展属性 | Bone 工程 | E-6.5 |
 | CORE-10 | Metadata 描述模型，不执行业务（元数据工程约束） | 元数据回答 What（模型定义）；业务规则（How）在应用/领域层执行 | Bone 工程 | E-9 |
-| CORE-11 | 聚合最小化与 1:1 落盘 | 聚合只承载必须强一致的不变量；聚合根是唯一持久化入口，子实体/值对象随根落盘。**「1:1」指一个聚合一个持久化入口，不是「一个聚合一张表」**——映射可跨多表 / JSON / 文档，只要读写都经聚合根、且不破坏一致性边界。**禁止把子实体提升为独立聚合**；SDK 无聚合级联时，允许「子实体级仓储 + 同一应用事务内显式逐条落盘」的受控过渡形态（条件、限制与登记要求见 [E-4.1](#e-41-写侧)） | Bone 工程 | E-4.1 |
+| CORE-11 | 聚合最小化与 1:1 落盘 | 聚合只承载必须强一致的不变量；聚合根是唯一持久化入口，子实体/值对象随根落盘。**「1:1」指一个聚合一个持久化入口，不是「一个聚合一张表」**——映射可跨多表 / JSON / 文档，只要读写都经聚合根、且不破坏一致性边界。**禁止把子实体提升为独立聚合**；集合用 `@Cascade` 随根落盘。未覆盖的集合才允许「子实体级仓储 + 同一应用事务内显式逐条落盘」的受控过渡形态（条件、限制与登记要求见 [E-4.1](#e-41-写侧)） | Bone 工程 | E-4.1 |
 | CORE-12 | 务实对象映射 | 核心域（L2/L3）`DTO/DO/PO` 分离并用 MapStruct；简单域（L1）允许 Shared / 轻量直转，不因“用了 DDD”强制拆 PO | Bone 工程 | E-6.6 |
 
 > **底线**：门禁（ArchUnit）与 E/G 规范只负责挡住明显的错误和越界，管不了“设计得好不好”——聚合划得对不对、Command 该不该有、模型是否经得起演进，只能靠测试与评审（CORE-08）。规范的作用是减负而不是增负：一旦某条规则逼着人为了合规而合规，它就成了 Ceremonial Architecture，应当删除或降级（E-3.2）。
@@ -163,7 +163,7 @@
 - [ ] 写用例默认 `ApplicationService` 起步，不预生成 command / query / handler 空目录；简单读直查，读模型分歧才上 `QueryPort`（CORE-04/05、[E-3.7](#e-37-入口构件决策)、E-4.2）。
 - [ ] 一个用例一个入口边界，同义层不互委；中间层只透传就删掉（CORE-04、E-3.2）。
 - [ ] 一事务一聚合、跨聚合事件 + 最终一致；不可丢事件走 Outbox + 消费端幂等（CORE-06/07、[E-5.2](#e-52-可靠发布)）。
-- [ ] 聚合根是唯一持久化入口，不把子实体提升为独立聚合；核心域（L2/L3）Separated + MapStruct、简单域（L1）Shared（CORE-11/12）。因 SDK 无级联而给子实体建仓储时，须同事务落盘并已登记（[E-4.1](#e-41-写侧)）。
+- [ ] 聚合根是唯一持久化入口，不把子实体提升为独立聚合；核心域（L2/L3）Separated + MapStruct、简单域（L1）Shared（CORE-11/12）。子集合用 `@Cascade` + `@Transient` 随根落盘；SDK 未覆盖的形态才允许子实体仓储，且须同事务落盘并已登记（[E-4.1](#e-41-写侧)）。
 - [ ] 新增抽象先答“没有它，哪个独立问题解决不了”，答不上就不建（E-3.11、P-1）。
 - [ ] 并发写入声明冲突策略并测试（E-5.3）。
 - [ ] 自定义 SQL 读侧仓储：包已登记 `@EnableSqlRepositories` 扫描、自带租户条件与软删条件（**含 JOIN 子表**）、模板源未双写、投影有无参构造器（[E-4.4](#e-44-sql-读侧仓储)）。
@@ -932,7 +932,7 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 
 每去掉一个 Ceremonial 层，就少一个维护点、一个测试点、一处新人要读的代码。`studio-generator` 应以 “Application Service First” 为默认输出。
 
-**`studio-generator` 的默认输出（目标态，尚未实现）**：目标是默认输出 `Controller → ApplicationService → Repository`，不生成 `command/`、`query/handler/`、`query/port/` 目录。现状是只内置了 `controller.ftl`、`entity.ftl`、`repository.ftl` 三个模板，没有 ApplicationService 模板，与本节目标不一致；实现之前不得对外宣称“生成器已默认输出 ApplicationService”。之所以先对齐再动手：模板里的每一层都会变成团队的默认写法，错误默认值会随模板扩散到所有引用它的模块。
+**`studio-generator` 的默认输出**：已内置 `controller.ftl`、`entity.ftl`、`repository.ftl`、`applicationService.ftl` 与对应 Generator（`type=applicationService`）。默认链路为 `Controller → ApplicationService → Repository`；本聚合分页在域仓储 `findPage`，不预生成 `command/handler`、`query/handler`、`query/port`。生成任务选用库中 `type`/`code` 与 `.ftl` 文件名一致的模板记录；`bone-init.sql` 已种子四条 `PUBLISHED` 记录（`entity` / `repository` / `applicationService` / `controller`）。运行时 Generator 读 classpath `.ftl`；表内 `content` 供预览与校验。复杂读按 E-3.7 手加 QueryPort，模板不预建空目录。
 
 #### E-3.8 ApplicationService 拆分标准
 
@@ -1035,7 +1035,7 @@ adapter
 - Repository 面向聚合根，按 ID 或单一业务键加载，并保存或删除聚合。
 - **`domain.repository` 自声明方法的返回类型白名单（P0-4，`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`）**：聚合 / `Optional<聚合>` / boolean / void，外加**域层标量** `long` / `Long` / `int` / `Integer`（计数），以及**域层读模型**——`List` / `Optional` / `PageResult` 的元素为包名含 `.domain.` 的投影 / 值对象（如 blueprint `OrderWithItemsProjection` / `OrderHeadProjection`，置于 `domain/<聚合>/projection`）。**应用层 DTO、跨聚合投影、报表 / 统计 / 跨聚合 Join 仍不得进入 `domain.repository`**——这些走 `QueryPort`（CORE-05、E-4.2）。该约束当前级别是 Advisory（见 [G-1.5](#g-15-规则证明能力与模块启用状态)）；仅 SDK `Repository` **继承**的简单单表 `pageByCriteria` / `queryPage` 仍可用，返回聚合行再由应用层映射 DTO。
 - **白名单管「声明」，调用面另有约束**：上一条只约束 `domain.repository` **自己声明**的方法签名；SDK `Repository` **继承**下来的读侧方法（`countByCriteria`、`aggregate` / `aggregateWithPagination`、`findByCriteria`、`pageByCriteria`、`queryPage`、`queryByCondition`、`query`）返回的是计数、统计或行集，不在返回类型白名单管辖范围内，但它们是**同一种读侧能力**。约定：**写路径不查询**——这些方法的调用只允许出现在 `infrastructure/query/*QueryAdapter`（以及 `infrastructure/persistence` 的实现内部），`domain` 与 application 的写方法不得调用。典型反例是用 `countByCriteria(criteria) > 0` 表达存在性判断：它与本条禁止的 `existsBy...` 是同一件事、只是换了入口，同样制造「先查后判」的竞态窗口（E-5.3）。反过来也要防止误读：**「写仓储不混读」指的是不由写仓储返回投影 / DTO / 统计，不等于写仓储不能有读方法**——`load` 本身就是把聚合读出来，禁止它等于无法表达任何写行为。
-- **子实体落盘（CORE-11 的受控形态）**：SDK 当前**不支持聚合级联**——`save(aggregateRoot)` 不会持久化聚合内的集合，集合字段须标 `@Transient`（否则被误映射为根表列），落库靠「子实体级仓储 + **同一应用事务内**显式逐条保存」。这是**受控过渡形态，不是自由选项**，三条限制同时成立才允许：① 该仓储只服务一个聚合根，不得被其他聚合复用；② 不得借它把子实体提升为独立聚合——子实体之间、子实体与外部的一致性仍按 CORE-06 走事件 / Orchestrator，不引入第二个事务边界；③ 子实体读取走查询侧（`*QueryPort` 联表投影或独立投影查询），不在写仓储上加返回 `List` 的查询方法。偏差须在模块 README 登记，并把阻塞项记入 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md)，待 SDK 支持级联或团队决定 PO 分离后按 [E-6.3](#e-63-po-分离信号) 迁移。注意：子实体级仓储返回的是子实体（非聚合），与本条“聚合根唯一持久化入口”及 E-4.1 写仓储返回白名单（`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`，见 [G-1.5](#g-15-规则证明能力与模块启用状态)）存在张力，属本条登记的已知例外；该仓储同样必须按租户过滤、不得被其他聚合复用，且 SDK 级联就绪后须回退为根级 `save`。
+- **子实体落盘（CORE-11）**：集合字段标 `@Transient` + `@Cascade(foreignKey = "子实体外键字段名")`。`BaseRepository.insert` / `update` / `save` 在根落盘后回填外键并逐条 insert/update；`update` 额外软删或硬删集合中已不存在的旧行。**明确不做**：`findById` 不回填集合（读明细走本聚合投影，如 `findOrderWithItems`）；`batchInsert` / `batchUpdate` 不级联。未标注 `@Cascade` 时，`save(aggregateRoot)` 仍不写集合；此时才允许「子实体级仓储 + 同一应用事务内显式逐条保存」，三条限制同时成立：① 该仓储只服务一个聚合根；② 不得把子实体提升为独立聚合；③ 子实体读取走投影，不在写仓储上加返回 `List` 的查询方法。偏差须在模块 README 登记。SDK 写侧级联覆盖该集合后，删除子实体仓储，改回根级 `save`。
 
 #### E-4.2 读侧
 
@@ -1352,7 +1352,7 @@ D1 是 Bone 为 metadata-sdk 提供的受控工程例外，**档位上限是 L1*
 
 门禁 `domainMustNotDependOnOuterLayers` 按**包路径**判定：它只拦截 `domain` 对 `..adapter..` / `..application..` / `..infrastructure..` 的依赖，规则内部**不存在也不需要**单独的注解白名单——`org.springframework.lang.*`（如 `@NonNull`）、Lombok 与 metadata-sdk 映射注解本身不在上述三个包内，天然不在拦截范围。若合法 D1 领域类被判违规，先确认它是否真的依赖了外层包：是则改依赖；放宽规则解决不了该类违规。
 
-> **已登记偏差（既不是违规，也不是范式）**：`bone-blueprint` 是 **L3** 参考实现，其 `Order` / `Payment` 当前采用 `D1 + Shared`（`@Table` 直接落在聚合上），根因是 SDK 尚不支持聚合级联落库与强类型 ID，先做 PO 分离会二次返工。该偏差已在 `bone-blueprint/README.md` 与 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md) 登记，待 SDK 能力就绪后按 [E-6.3](#e-63-po-分离信号) 迁移。**新模块不得把它当“L3 可以用 D1”的先例**——L3 的默认仍然是 `D0 + Separated`，要偏离必须在模块 README 登记理由。反过来说，评审也不得把 blueprint 的现状判成违规（它是已登记的技术债，债主是 SDK）。
+> **已登记偏差（既不是违规，也不是范式）**：`bone-blueprint` 是 **L3** 参考实现，其 `Order` / `Payment` 当前采用 `D1 + Shared`（`@Table` 直接落在聚合上）。写侧级联已由 `@Cascade` MVP 覆盖（`Order.items` 随根落盘，`OrderItemRepository` 已删除）。**明确不做**：为本模块推进强类型 ID，或为强类型 ID 做 PO 分离（见 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md) 需求三）。该偏差已在 `bone-blueprint/README.md` 登记。**新模块不得把它当“L3 可以用 D1”的先例**——L3 的默认仍然是 `D0 + Separated`，要偏离必须在模块 README 登记理由。评审也不得把 blueprint 的现状判成违规（它是已登记的技术债）。
 
 #### E-6.3 PO 分离信号
 
@@ -1364,6 +1364,8 @@ D1 是 Bone 为 metadata-sdk 提供的受控工程例外，**档位上限是 L1*
 - 更换存储会迫使修改领域行为。
 
 跨聚合 ID 和状态机本身都不是自动拆 PO 的充分条件。
+
+> **明确不做（blueprint / Shared 存量）**：不得以「E-7.1 想用强类型 ID」为由强行拆 `*PO` + Converter。SDK **不**提供值对象 ID 持久化；blueprint 保持 `D1 + Shared` + 裸 `Long`。新 L2/L3 模块默认仍按 E-6.6 走 Separated，与本条「不把 blueprint 当先例」一致。
 
 #### E-6.4 反贫血
 
@@ -1405,7 +1407,7 @@ Bone 扩展字段支持三种存储模式（预留列默认 / JSON / EAV，见�
 
 - 非 `IDENTITY` 主键尊重调用方预置非空 ID。
 - 领域不依赖具体 ID 生成器。
-- 重要跨聚合引用优先强类型 ID。
+- 重要跨聚合引用**理想上**优先强类型 ID；**当前工程结论（明确不做）**：SDK 不支持值对象 ID 落库，不得为强类型 ID 强行 PO 分离。存量与 Shared 模块继续裸 `Long`，按模块 README 登记即可（见 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md) 需求三）。
 - 遗留自增主键按模块记录。
 
 #### E-7.2 错误模型
@@ -1453,7 +1455,7 @@ com.bone.{module}/
 │   ├── rpc/                         # RPC Provider
 │   └── schedule/                    # 定时触发
 ├── application/
-│   ├── command/                     # 写用例输入（*Command / *Result，默认平铺；不建 cmd/ 子包）
+│   ├── command/                     # 写用例输入（*Command / *Result，直接平铺；禁止 cmd/ 子包，见 E-13.1）
 │   │   └── handler/                 # 可选：仅当写侧需要独立路由/异步跨事务/多入口统一执行时创建
 │   ├── query/
 │   │   ├── dto/                     # 输出 DTO（给 adapter 的最终形态，*Dto 后缀）
@@ -1485,7 +1487,7 @@ com.bone.{module}/
     └── integration/                 # 外部 HTTP/RPC/第三方适配器
 ```
 
-这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与其中列出的子包是"该有的都在这里"，模块按自身需要增加自有子包——blueprint 参考实现即另有 `infrastructure/gateway`（Domain Gateway 实现）、`extension`、`idempotency`、`context`、`event`、`config`、`security`、`observability`，这些**不要求全平台统一**。`studio-generator` 的目标默认输出是 `adapter`、`application`、`domain`、`infrastructure` 四个顶级目录下的最小骨架（尚未实现，见 E-3.7）；`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量代码不要求一次性搬包；空的 `support`、`orchestration`、`gateway` 也不要作为占位生成。
+这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与其中列出的子包是"该有的都在这里"，模块按自身需要增加自有子包——blueprint 参考实现即另有 `infrastructure/gateway`（Domain Gateway 实现）、`extension`、`idempotency`、`context`、`event`、`config`、`security`、`observability`，这些**不要求全平台统一**。`studio-generator` 已内置四层最小骨架模板（含 `applicationService.ftl`，见 E-3.7）；`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量代码不要求一次性搬包；空的 `support`、`orchestration`、`gateway` 也不要作为占位生成。
 
 ##### ApplicationService 平铺、协作服务子包与 support 子包
 
@@ -1610,7 +1612,7 @@ com.bone.order/
 
 1. 在 README 定义上下文、Owner、语言、契约和表所有权。
 2. 判断模块性质与 L0–L3 档位。
-3. 选择最小包结构和一个应用用例边界。**默认只创建 Controller + ApplicationService + Repository**；`command/`、`query/handler/`、`query/port/`、`orchestration/` 目录按 E-3.7 决策树的实际需要创建，不预生成空目录。`studio-generator` 也应以这里的默认行为为目标（当前尚未实现）。
+3. 选择最小包结构和一个应用用例边界。**默认只创建 Controller + ApplicationService + Repository**；`command/`、`query/handler/`、`query/port/`、`orchestration/` 目录按 E-3.7 决策树的实际需要创建，不预生成空目录。`studio-generator` 已按此默认输出（见 E-3.7）。
 4. 写侧用聚合+Repository，读侧默认 ApplicationService 直查；读模型分歧时 ApplicationService 内升级 QueryPort。
 5. 接入 Hard gate；语义规则通过测试和评审验证。
 
@@ -1682,7 +1684,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 | 层级 / 包 | 后缀 | 唯一语义 |
 |-----------|------|----------|
-| `application/command/` | `*Command` / `*Result` | 应用写用例输入 / 输出结果；平铺不建 `cmd/` 子包 |
+| `application/command/` | `*Command` / `*Result` | 应用写用例输入 / 输出结果，**直接平铺在该包根**；**禁止 `cmd/` 子包**——包路径 `command` 已表达"命令"，再套 `cmd/` 是路径冗余（E-13 第一原则） |
 | `application/command/handler/` | `*CommandHandler` | **可选**：单个写用例入口，仅当需要独立路由 / 异步跨事务 / 多入口统一执行时创建 |
 | `application/query/dto/` | `*Dto` | 读侧输出 DTO（给 adapter 的最终形态） |
 | `application/query/projection/` | `*Projection` | QueryPort 返回的 SQL 行级投影（中间形态，由 Assembler 转 Dto） |
@@ -1699,7 +1701,15 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 **application 用例的输入对象一律是 `*Command` / `*Query`（或领域类型）**：`*Req` / `*Qry` / `*Resp` **不得出现在 application 方法签名上**（入参与返回值都不行）——把 adapter 协议 DTO 传进用例，会让第一次协议调整就穿透到应用层（E-10.1 转换边界）。这与"要不要建 Handler"无关：`*Command` 对象是**默认存在**的输入载体，`*CommandHandler` 才是可选件（E-3.7 AS-02 / AS-03）。
 
-> **存量**：`application/query/dto/*DTO`（36 个：IAM 11 / masterdata 10 / integration 6 / system 6 / metadata 3）用大写 `DTO`，与上表 `*Dto` 不一致。均**不追溯**、随功能修改逐类收敛，新代码一律 `*Dto`（blueprint 样板）。
+> **存量 · `*DTO` 大写**：`application/query/dto/*DTO`（36 个：IAM 11 / masterdata 10 / integration 6 / system 6 / metadata 3）用大写 `DTO`，与上表 `*Dto` 不一致。均**不追溯**、随功能修改逐类收敛，新代码一律 `*Dto`（blueprint 样板）。
+
+> **存量 · `application/command/cmd/`**：`*Command` 被下沉到 `cmd/` 子包是**路径冗余**（`command` 已表达"命令"），违反上表。收敛口径：
+>
+> - **已收敛**：`bone-iam` —— 2026-09-21 将 31 个 `*Command` 全部上提至 `com.bone.iam.application.command`（`command/cmd/` 删除），130 个测试（含 26 个架构测试）全绿。IAM 的 `command/` 现为纯平铺，无 `handler/`。
+> - **未收敛（不追溯，随功能修改逐模块上提）**：`bone-masterdata` 15、`bone-integration` 12、`studio-generator` 11、`bone-metadata-server` 8，共 46 个；这四个模块的 `command/` 下同时存在 `cmd/` 与 `handler/`，上提 `*Command` 不影响 `handler/` 的放置。
+> - **新代码一律平铺**在 `application/command/`；`git mv` + 改 `package` 声明与该包的 import 即可，属 L0 搬包，不改动任何类型签名。
+>
+> 注意与 `application/query/qry/` 区分：`qry/` 是上表明列的**可选**包（读用例输入对象，参数多时才建），不属于本条禁用范围，`cmd/` 被禁不等于要一并取消 `qry/`。
 
 #### E-13.2 领域与应用构件
 
@@ -1869,7 +1879,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 15 | **本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明、状态真源版本与正文版本一致） | `scripts/check-ddd-gate-state.py`（十项；登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在） | Active（`ci.yml` `backend-quality` job 阻断） |
 <!-- gate-state:g1_1_doc:end -->
 
-HC-001～HC-008 的**实现载体与实测状态**见 [G-1.7](#hc-hard-constraints)：其中 HC-003 / HC-006 目前**无机器载体**，HC-001 / HC-004 / HC-008 只有本地脚本可跑（pre-commit 与 `ci-check.sh`，**无工作流调用**）——这五条都不得宣称已被 CI 阻断（CORE-08）。HC-008 的本地载体只拦**新增表**，存量缺口逐表分类登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），因此**仍不能声称"全表已含必备列"**，`by-design` 也不等于"已合规"；HC-005 虽为 Active，但确有模块下调了阈值（见 G-1.7），声称"全模块统一门槛"同样不成立。**具体条数与模块清单只读 G-1.7 与 baseline 的现算结果**——本节此前手抄过一份计数副本（表数、逐表分类数、下调阈值的模块数），已删除：它随每次 DDL 与阈值调整而过期，而门禁查的正是"状态只有一处真源"（G-3 第 7 条）。
+HC-001～HC-008 的**实现载体与实测状态**见 [G-1.7](#hc-hard-constraints)：其中 HC-003 目前**无机器载体**；HC-001 / HC-004 / HC-006 / HC-008 只有本地脚本可跑（pre-commit 与 `ci-check.sh`，**无工作流调用**）——不得宣称已被 CI 阻断（CORE-08）。HC-008 的本地载体只拦**新增表**，存量缺口逐表分类登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），因此**仍不能声称"全表已含必备列"**，`by-design` 也不等于"已合规"；HC-005 虽为 Active，但确有模块下调了阈值（见 G-1.7），声称"全模块统一门槛"同样不成立。**具体条数与模块清单只读 G-1.7 与 baseline 的现算结果**——本节此前手抄过一份计数副本（表数、逐表分类数、下调阈值的模块数），已删除：它随每次 DDL 与阈值调整而过期，而门禁查的正是"状态只有一处真源"（G-3 第 7 条）。
 
 Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 
@@ -1903,7 +1913,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 - application/domain 端口位置门禁；
 - 平台 Integration Event Envelope；
 - 并发策略模板；
-- 禁 ORM（banned-dependencies）的 **CI 级**门禁、统一响应契约的静态门禁 → 即 HC-003 / HC-006 完全缺失的载体，以及 HC-001 缺失的 CI 级载体（本地 pre-commit 与 `ci-check.sh` 已有 import / pom 拦截，见 [G-1.7](#hc-hard-constraints)）；HC-008 的**本地新增表拦截**已落地，仍缺的是：① 存量 26 张表的逐表分类（登记于 `doc/architecture/ddl-required-columns-baseline.json`）② CI 级载体（`ci-check.sh` 属本地脚本，不进 GitHub Actions）；
+- 禁 ORM（banned-dependencies）的 **CI 级**门禁、统一响应契约的静态门禁 → 即 HC-003 完全缺失的载体，以及 HC-001 / HC-006 缺失的 CI 级载体（本地：HC-001 有 import / pom 拦截，HC-006 有 `check-sdk-persistence.py`，见 [G-1.7](#hc-hard-constraints)）；HC-008 的**本地新增表拦截**已落地，仍缺的是：① 存量 26 张表的逐表分类（登记于 `doc/architecture/ddl-required-columns-baseline.json`）② CI 级载体（`ci-check.sh` 属本地脚本，不进 GitHub Actions）；
 - 集成事件契约的 breaking-change 检查：REST 侧已有 oasdiff（HC-007），事件侧（[E-5.2](#e-52-可靠发布) Envelope 的 `version`）目前**无任何兼容性规则**，跨上下文解耦后却最需要它。
 - **`studio-generator` 模板与本文解析出的规范不一致**：现有模板只有 `controller.ftl` / `repository.ftl` / `entity.ftl`（并无 Command / Handler 全家桶，这点不用担心），但 `controller.ftl` 生成的签名直接外吐领域实体——`ApiResponse<${Entity}>`、`ApiResponse<PageResult<${Entity}>>`——与 CORE-05（读侧出投影）和 [E-10.1 各层职责](#e-101-各层职责) 的转换边界冲突。模板需改为「经 ApplicationService 调用 + 返回 adapter 投影 / DTO」，并与 [E-6.6](#e-66-务实对象映射与-mapstruct) 的档位策略对齐后再作为新模块起点。建议将其登记为带 **Owner 与发布里程碑**的整改项，在修复前 `controller.ftl` 不得作为新模块起点；修复后需补一条门禁或快照断言，防止模板回退为外吐实体。
 - 仓库内反向引用（代码注释 → 本文）的清理：`bone-blueprint` 部分 JavaDoc 仍引用旧版章节号（原「PO 分离退出信号」与「领域端口包唯一」两处），对应内容现已落在 [E-6.3](#e-63-po-分离信号) 与 [E-4.1](#e-41-写侧)，须随模块改动同步修正。当前所有检查都只覆盖「文档 → 代码」方向，此类「代码 → 文档」漂移无机器载体。
@@ -2020,7 +2030,7 @@ grep -rn <工具名> .github/workflows/
 | **HC-003** | Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>` | **无实现**：`controllerMustReturnApiResponse` 不在共享规则库中 | **Planned** |
 | **HC-004** | 禁止硬编码密钥 / 密码 / Token | `.gitleaks.toml` + `scripts/scan-secrets.sh` / `scripts/check.sh` / `scripts/ci-check.sh`（`[3/7]` gitleaks detect）（本地可跑，**无工作流调用**） | **Manual**（同 [G-1.1](#g-11-hard-gate) 12a） |
 | **HC-005** | 核心模块测试覆盖率门槛 | `jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`，这四个模块实际不受门禁） | Active；**父 POM 实测门槛为 10% 指令覆盖率，不是 70%**；模块覆盖见左栏。整改建议：这四个模块为 SDK 基础设施层，业务聚合少、以框架 / 映射代码为主，0 覆盖不等价于无保护；建议二选一并在模块 README 登记——① 在对应 pom 显式声明覆盖率豁免并写明理由；② 为关键映射与上下文装配补最小集成测试使覆盖 >0 后再纳入门禁。不得长期以 0 覆盖蒙混，也不因门禁存在就误判这些核心模块已受测试保护 |
-| **HC-006** | 数据库访问必须通过 bone-metadata-sdk Repository | **无实现**：`repositoryMustUseSdk` 不在共享规则库中 | **Planned** |
+| **HC-006** | 数据库访问必须通过 bone-metadata-sdk Repository | `scripts/check-sdk-persistence.py --check`（`scripts/check.sh` `[6/6]`、`scripts/ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import；SDK 与 metadata-engine 除外。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩。ArchUnit `repositoryMustUseSdk` 仍不在共享规则库 | **Manual**（本地新增文件阻断已落地；存量绕过在基线内，不得称全仓已只走 Repository） |
 | **HC-007** | PR 提交的 OpenAPI spec 不得引入 breaking change | oasdiff（`ci.yml` 的 `openapi-diff` job，base vs head） | Active（PR 阻断） |
 | **HC-008** | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | `scripts/check-ddl-required-columns.py --check`（`ci-check.sh` `[7/7]` 调用，本地无 workflow）：**新增表**缺列即失败；存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`、仅可收缩（`scripts/check-ddl-doc-sync.py` 仍只比对表名清单，不读列） | **Manual**（本地新增表阻断已落地；存量 26 张缺口已逐表分类——18 张 by-design、8 张待处理：2 张 `gap-candidate` 需按 L3 走 DDL 变更审批、6 张待模块 Owner 裁决；不得称全表已合规，同 [G-1.1](#g-11-hard-gate) 12c 后半） |
 <!-- gate-state:g1_7_hc:end -->

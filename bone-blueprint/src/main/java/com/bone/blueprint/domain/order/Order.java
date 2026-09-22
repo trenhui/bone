@@ -9,6 +9,7 @@ import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
+import com.bone.metadata.sdk.domain.annotation.Cascade;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
@@ -31,8 +32,13 @@ public class Order extends TenantAggregateRoot<Long> {
 
   private Long customerId;
 
-  /** 聚合内部集合，由 OrderItemRepository 独立持久化，非 t_order 列（避免 SDK 误映射）。 */
-  @Transient private List<OrderItem> items = new ArrayList<>();
+  /**
+   * 聚合内部集合：{@code @Transient} 避免映射为 t_order 列；{@code @Cascade} 由 SDK 在根 save/insert/update
+   * 后级联落盘（能力需求二 MVP）。
+   */
+  @Transient
+  @Cascade(foreignKey = "orderId")
+  private List<OrderItem> items = new ArrayList<>();
 
   private BigDecimal totalAmount;
   private OrderStatus status;
@@ -79,11 +85,9 @@ public class Order extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 追加商品项（<b>仅内存态</b>）。
+   * 追加商品项（仅内存态）。调用方须再 {@code save} 聚合根，SDK 才会按 {@code @Cascade} 落盘；{@code findById} 不回填集合。
    *
-   * <p><b>为什么没有配对的 {@code removeItem}</b>：原 {@code removeItem(int index)} 在全仓零引用，且操作的是 {@link
-   * #items} 这个 {@code @Transient} 集合——{@code save} 不会级联、重载也不回填（见 {@link
-   * #getItems()}），删它是留一个"调用成功、实则未持久化"的 陷阱。真要删除明细，当前走的是"重建订单"或读侧之外的写路径。
+   * <p>没有配对的 {@code removeItem}：原实现全仓零引用。真要删明细，在内存集合中移除后 {@code save} 根，由级联清除孤儿行。
    */
   public void addItem(OrderItem item) {
     if (item == null) {

@@ -68,7 +68,7 @@ ANCHOR_SECTION = "稳定锚点与索引"
 # 4) 已确知"文档引用但共享规则库中不存在"的规则名，必须逐条登记原因。
 KNOWN_MISSING = {
     "controllerMustReturnApiResponse": "HC-003 无机器载体，G-1.7 标注 Planned",
-    "repositoryMustUseSdk": "HC-006 无机器载体，G-1.7 标注 Planned",
+    "repositoryMustUseSdk": "HC-006 本地脚本 check-sdk-persistence.py 已落地（Manual）；ArchUnit 规则仍未实现，故保留登记",
 }
 # ADR-0030 门禁①③④⑥ 曾在此登记为"待 P3 落地的 ArchUnit 规则名"。2026-09-19 收官后，
 # 它们的真实载体是 blueprint 的模块级治理测试 `SqlTemplateGovernanceTest`（不是 ArchUnit 规则），
@@ -93,6 +93,9 @@ LOCAL_INTERCEPT_PROBES = [
     # 新增本地拦截时在此登记——"脚本里的某个 grep 对应哪条 HC"无法通用自动对齐。
     ("HC-001", "scripts/check.sh", ORM_PROBE),
     ("HC-001", "scripts/ci-check.sh", ORM_PROBE),
+    ("HC-006", "scripts/check-sdk-persistence.py", re.compile(r"JdbcTemplate")),
+    ("HC-006", "scripts/check.sh", re.compile(r"check-sdk-persistence")),
+    ("HC-006", "scripts/ci-check.sh", re.compile(r"check-sdk-persistence")),
 ]
 # 8) 覆盖率门禁强度：父 POM 之外的模块下调阈值时必须写进 HC-005 行。
 JACOCO_PROP = re.compile(r"<jacoco\.minimum\.coverage>([\d.]+)</jacoco\.minimum\.coverage>")

@@ -15,6 +15,13 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
+bone:
+  iam:
+    jwt:
+      secret-key: dev-only-secret-key-minimum-32-bytes-long
+      token-prefix: "Bearer "
+      header-name: Authorization
+
 metadata:
   sdk:
     appcode: bone-masterdata-test

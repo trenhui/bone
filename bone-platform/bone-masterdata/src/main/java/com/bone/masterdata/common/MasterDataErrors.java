@@ -35,6 +35,10 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.ENTITY_ID_REQUIRED, 400),
           // 导出
           Map.entry(MasterDataErrorCodes.EXPORT_SERIALIZE_FAILED, 500),
+          // 容量上限（400）
+          Map.entry(MasterDataErrorCodes.ENTITY_FIELD_LIMIT_EXCEEDED, 400),
+          Map.entry(MasterDataErrorCodes.RECORD_SIZE_EXCEEDED, 400),
+          Map.entry(MasterDataErrorCodes.EXPORT_LIMIT_EXCEEDED, 400),
           // 唯一性冲突（409）
           Map.entry(MasterDataErrorCodes.FIELD_NAME_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.ENTITY_NAME_DUPLICATE, 409),

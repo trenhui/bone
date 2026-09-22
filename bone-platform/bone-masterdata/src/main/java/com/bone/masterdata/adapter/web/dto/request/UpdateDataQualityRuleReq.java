@@ -5,8 +5,8 @@ import lombok.Data;
 @Data
 public class UpdateDataQualityRuleReq {
   private String name;
-  private String ruleType;
-  private String ruleConfig;
+  private String type;
+  private String expression;
   private String severity;
   private String description;
 }

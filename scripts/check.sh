@@ -77,6 +77,12 @@ if git grep --untracked -nE "<artifactId>(mybatis|mybatis-plus|spring-boot-start
   exit_code=1
 fi
 
+echo -e "${YELLOW}[6/6] HC-006 绕过 SDK 的 JDBC/MyBatis 扫描...${RESET}"
+if ! python3 scripts/check-sdk-persistence.py --check; then
+  echo -e "${RED}❌ 新增文件直接使用 JDBC / MyBatis 会话（须走 bone-metadata-sdk，存量见 sdk-persistence-bypass-baseline.json）${RESET}"
+  exit_code=1
+fi
+
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then
   count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)

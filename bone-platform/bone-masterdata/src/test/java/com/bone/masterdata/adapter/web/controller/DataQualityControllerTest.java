@@ -76,9 +76,8 @@ class DataQualityControllerTest {
 
     mockMvc
         .perform(
-            MockMvcRequestBuilders.post("/api/v1/masterdata/quality/checks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"masterDataEntityId\":1}"))
+            MockMvcRequestBuilders.post("/api/v1/masterdata/quality/check")
+                .param("masterDataEntityId", "1"))
         .andExpect(MockMvcResultMatchers.status().isOk())
         .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
         .andExpect(MockMvcResultMatchers.jsonPath("$.data").value(1));

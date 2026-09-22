@@ -27,6 +27,13 @@
             <version>1.0.0</version>
         </dependency>
 
+        <!-- Bone 安全组件：JWT 离线验签（与 bone-system / bone-integration 同一口径） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-security</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Bone Metadata SDK -->
         <dependency>
             <groupId>com.bone</groupId>

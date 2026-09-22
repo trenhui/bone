@@ -5,12 +5,18 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
+import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** {@link MetaEntityCatalogPort} JDBC 实现。 */
+/**
+ * {@link MetaEntityCatalogPort} JDBC 实现。
+ *
+ * <p><b>受控例外（已登记）</b>：{@code meta_entity} 属 bone-metadata 上下文，按 E-1.1 应走联邦视图 / 元数据服务 API， 此处仍用 JDBC
+ * 直读，原因是 masterdata 尚无元数据服务客户端；拆除条件见模块 README「已知待办」。
+ */
 @Component
 @RequiredArgsConstructor
 public class MetaEntityCatalogPortAdapter implements MetaEntityCatalogPort {
@@ -19,8 +25,11 @@ public class MetaEntityCatalogPortAdapter implements MetaEntityCatalogPort {
 
   @Override
   public MetaEntityRow requirePublished(Long metaEntityId) {
-    Long tenantId =
-        TenantContext.getTenantIdAsLong() != null ? TenantContext.getTenantIdAsLong() : 0L;
+    Long tenantId = TenantContext.getTenantIdAsLong();
+    if (tenantId == null) {
+      // 不回落到平台租户 0：那会读到他租户的数据且无法察觉
+      throw new MissingTenantContextException("读取 meta_entity 需要租户上下文");
+    }
     Optional<MetaEntityRow> row =
         jdbcTemplate.query(
             """

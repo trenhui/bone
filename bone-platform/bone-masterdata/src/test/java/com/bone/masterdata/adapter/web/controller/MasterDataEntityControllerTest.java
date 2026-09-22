@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
@@ -17,6 +18,8 @@ import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.testsupport.MetadataSdkIntegrationTestConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,11 +34,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class MasterDataEntityControllerTest {
 
+  private static final long TEST_TENANT_ID = 1L;
+
   @Autowired private MasterDataEntityController masterDataEntityController;
 
   @Autowired private MasterDataEntityRepository masterDataEntityRepository;
 
   @Autowired private JdbcTemplate jdbcTemplate;
+
+  /** 租户表写入依赖 TenantContext（HTTP 入口由 WebTenantConfiguration 注入），单测需自行装配。 */
+  @BeforeEach
+  void bindTenant() {
+    TenantContext.setTenantId(TEST_TENANT_ID);
+  }
+
+  @AfterEach
+  void unbindTenant() {
+    TenantContext.setTenantId((Long) null);
+  }
 
   private MasterDataEntity newEntity(String name) {
     return MasterDataEntity.create(
@@ -135,7 +151,7 @@ public class MasterDataEntityControllerTest {
     jdbcTemplate.update(
         """
                 INSERT INTO meta_entity (id, tenant_id, name, code, display_name, status, deleted)
-                VALUES (?, 0, '客户', 'customer', '客户主数据', 1, 0)
+                VALUES (?, 1, '客户', 'customer', '客户主数据', 1, 0)
                 """,
         metaId);
 
@@ -154,7 +170,7 @@ public class MasterDataEntityControllerTest {
     jdbcTemplate.update(
         """
                 INSERT INTO meta_entity (id, tenant_id, name, code, display_name, status, deleted)
-                VALUES (?, 0, '草稿', 'draft', '草稿实体', 0, 0)
+                VALUES (?, 1, '草稿', 'draft', '草稿实体', 0, 0)
                 """,
         metaId);
 

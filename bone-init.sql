@@ -852,7 +852,8 @@ CREATE TABLE meta_data_quality_rule (
     updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
-    KEY idx_meta_dqr_entity (entity_id)
+    KEY idx_meta_dqr_entity (entity_id),
+    UNIQUE KEY uk_meta_dqr_tenant_name (tenant_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据质量规则表';
 
 -- ============================================================
@@ -1089,6 +1090,155 @@ CREATE TABLE gen_code_template (
     UNIQUE KEY uk_gen_ct_code_ver (tenant_id, code, template_version),
     KEY idx_gen_ct_tenant (tenant_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成模板';
+
+-- ------------------------------------------------------------
+-- studio-generator 内置模板种子（E-3.7）：type/code 与 classpath templates/{code}.ftl 对齐
+-- 生成运行时读 classpath .ftl；本表 content 供预览/校验与任务勾选。tenant_id=0 平台租户。
+-- ------------------------------------------------------------
+INSERT INTO gen_code_template (
+    id, tenant_id, name, code, description, type, language, engine, template_version,
+    content, sample_output, status, published_at, created_by, updated_by, deleted, version
+) VALUES
+(910000000000000001, 0, 'Java 实体', 'entity', '生成 domain 实体（@Table AggregateRoot）', 'entity', 'java', 'FREEMARKER', '1.0.0',
+    'package ${utils.getPackagePath(basePackage, moduleName)}.domain.entity;
+
+import com.bone.core.annotation.Id;
+import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+/**
+ * ${table.tableComment!''实体''}。
+ *
+ * <p>由代码生成器基于表 ${table.originalTableName} 生成。
+ */
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table("${table.originalTableName}")
+public class ${table.customEntityName} extends AggregateRoot<Long> {
+
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
+  private Long id;
+<#list columns as column>
+  <#if column.isPrimaryKey>
+  /** ${column.columnComment!''主键''} */
+  @Column(name = "${column.originalColumnName}")
+  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
+  <#else>
+  /** ${column.columnComment!''''} */
+  @Column(name = "${column.originalColumnName}")
+  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
+  </#if>
+</#list>
+
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
+}
+', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000002, 0, '仓储接口', 'repository', '生成 domain/repository（含 findPage，不预建 QueryPort）', 'repository', 'java', 'FREEMARKER', '1.0.0',
+    'package ${utils.getPackagePath(basePackage, moduleName)}.domain.repository;
+
+import com.bone.core.model.PageResult;
+import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+
+/**
+ * ${table.tableComment!''实体''}仓储。
+ *
+ * <p>由代码生成器基于表 ${table.originalTableName} 生成。本聚合分页留在域仓储，不另建 QueryPort。
+ */
+public interface ${table.customEntityName}Repository extends Repository<${table.customEntityName}, Long> {
+
+  default PageResult<${table.customEntityName}> findPage(int pageNum, int pageSize) {
+    return pageByCriteria(
+        Criteria.<${table.customEntityName}>create()
+            .orderByDesc(${table.customEntityName}::getId)
+            .page(pageNum, pageSize));
+  }
+}
+', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000003, 0, '应用服务', 'applicationService', '生成 ApplicationService（Controller→ApplicationService→Repository）', 'applicationService', 'java', 'FREEMARKER', '1.0.0',
+    'package ${utils.getPackagePath(basePackage, moduleName)}.application;
+
+import com.bone.core.model.PageResult;
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.repository.${table.customEntityName}Repository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * ${table.tableComment!''实体''}应用服务。
+ *
+ * <p>由代码生成器基于表 ${table.originalTableName} 生成。简单读写走本服务，不生成 CommandHandler / QueryHandler。
+ */
+@Service
+@RequiredArgsConstructor
+public class ${table.customEntityName}ApplicationService {
+
+  private final ${table.customEntityName}Repository repository;
+
+  @Transactional(readOnly = true)
+  public ${table.customEntityName} get(Long id) {
+    return repository.findById(id);
+  }
+
+  @Transactional(readOnly = true)
+  public PageResult<${table.customEntityName}> page(int page, int size) {
+    return repository.findPage(page, size);
+  }
+}
+', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000004, 0, 'Web 控制器', 'controller', '生成 adapter Controller，注入 ApplicationService', 'controller', 'java', 'FREEMARKER', '1.0.0',
+    'package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.controller;
+
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
+import com.bone.core.web.PlatformApiPaths;
+import ${utils.getPackagePath(basePackage, moduleName)}.application.${table.customEntityName}ApplicationService;
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * ${table.tableComment!''实体''}控制器。
+ *
+ * <p>由代码生成器基于表 ${table.originalTableName} 生成。
+ */
+@Tag(name = "${table.tableComment!''实体''}", description = "${table.tableComment!''实体''}管理接口")
+@RestController
+@RequestMapping(PlatformApiPaths.METADATA_V1 + "/${table.originalTableName}")
+@RequiredArgsConstructor
+public class ${table.customEntityName}Controller {
+
+  private final ${table.customEntityName}ApplicationService applicationService;
+
+  @Operation(summary = "查询 ${table.tableComment!''实体''} 详情")
+  @GetMapping("/{id}")
+  public ApiResponse<${table.customEntityName}> getById(@PathVariable Long id) {
+    return ApiResponse.success(applicationService.get(id));
+  }
+
+  @Operation(summary = "分页查询 ${table.tableComment!''实体''}")
+  @GetMapping("/page")
+  public ApiResponse<PageResult<${table.customEntityName}>> page(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    return ApiResponse.success(applicationService.page(page, size));
+  }
+}
+', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0);
+
 
 CREATE TABLE gen_type_mapping (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
@@ -1350,6 +1500,7 @@ CREATE TABLE mdm_qcheck_task (
 
 CREATE TABLE mdm_qcheck_detail (
     id                  BIGINT          NOT NULL COMMENT '明细主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     check_id            BIGINT          NOT NULL COMMENT '质量检查任务ID',
     rule_id             BIGINT          NOT NULL COMMENT '质量规则ID',
     record_id           BIGINT          NOT NULL COMMENT '主数据记录ID',
@@ -1364,6 +1515,7 @@ CREATE TABLE mdm_qcheck_detail (
 
 CREATE TABLE mdm_qcheck_report (
     id                  BIGINT          NOT NULL COMMENT '报告主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     check_id            BIGINT          NOT NULL COMMENT '质量检查任务ID',
     report_data         JSON            NOT NULL COMMENT '报告数据',
     issue_count         INT             NOT NULL DEFAULT 0 COMMENT '质量问题数',
@@ -1386,6 +1538,7 @@ DROP TABLE IF EXISTS ntf_message;
 
 CREATE TABLE md_entity (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     meta_entity_id      BIGINT          DEFAULT NULL COMMENT '来源 meta_entity.id（ADR-0002）',
     name                VARCHAR(200)    NOT NULL COMMENT '实体名称',
     description         TEXT            DEFAULT NULL COMMENT '描述',
@@ -1394,11 +1547,14 @@ CREATE TABLE md_entity (
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     PRIMARY KEY (id),
+    KEY idx_md_entity_tenant (tenant_id),
+    UNIQUE KEY uk_md_entity_tenant_name (tenant_id, name),
     UNIQUE KEY uk_md_entity_meta (meta_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体（运行时兼容）';
 
 CREATE TABLE md_record (
     id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id               BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     master_data_entity_id   BIGINT          NOT NULL COMMENT '主数据实体ID',
     data                    JSON            NOT NULL COMMENT '记录 JSON 数据',
     status                  VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
@@ -1406,11 +1562,13 @@ CREATE TABLE md_record (
     updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     publish_time            DATETIME(3)     DEFAULT NULL COMMENT '发布时间',
     PRIMARY KEY (id),
+    KEY idx_md_record_tenant (tenant_id),
     KEY idx_md_record_entity (master_data_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录（运行时兼容）';
 
 CREATE TABLE IF NOT EXISTS md_field (
     id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id               BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     master_data_entity_id   BIGINT          NOT NULL COMMENT '主数据实体ID',
     name                    VARCHAR(200)    NOT NULL COMMENT '字段名称',
     code                    VARCHAR(200)    NOT NULL COMMENT '字段编码',
@@ -1426,11 +1584,14 @@ CREATE TABLE IF NOT EXISTS md_field (
     updated_by              BIGINT          DEFAULT NULL COMMENT '修改人',
     deleted                 TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
+    KEY idx_md_field_tenant (tenant_id),
+    UNIQUE KEY uk_md_field_tenant_entity_name (tenant_id, master_data_entity_id, name),
     KEY idx_md_field_entity (master_data_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据字段';
 
 CREATE TABLE meta_data_lineage (
     id                  BIGINT          NOT NULL COMMENT '血缘记录主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     source_entity       VARCHAR(200)    DEFAULT NULL COMMENT '来源实体',
     source_field        VARCHAR(200)    DEFAULT NULL COMMENT '来源字段',
     transform_type      VARCHAR(100)    DEFAULT NULL COMMENT '转换类型',
@@ -1439,6 +1600,7 @@ CREATE TABLE meta_data_lineage (
     schema_name         VARCHAR(200)    DEFAULT NULL COMMENT 'Schema 名称',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (id),
+    KEY idx_lineage_tenant (tenant_id),
     KEY idx_lineage_source (source_entity),
     KEY idx_lineage_target (target_entity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据血缘记录';
@@ -1448,7 +1610,7 @@ CREATE TABLE meta_data_standard (
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     entity_code         VARCHAR(200)    DEFAULT NULL COMMENT '实体编码',
     field_code          VARCHAR(200)    DEFAULT NULL COMMENT '字段编码',
-    rule_type           VARCHAR(100)    DEFAULT NULL COMMENT '规则类型',
+    rule_type           TINYINT         DEFAULT NULL COMMENT '规则类型（StandardRuleType.code，与 RuleSeverity 同口径）',
     pattern             VARCHAR(500)    DEFAULT NULL COMMENT '规则表达式/模式',
     ref_code            VARCHAR(200)    DEFAULT NULL COMMENT '引用编码',
     description         VARCHAR(500)    DEFAULT NULL COMMENT '描述',
@@ -1457,7 +1619,8 @@ CREATE TABLE meta_data_standard (
     PRIMARY KEY (id),
     KEY idx_std_entity (entity_code),
     KEY idx_std_field (field_code),
-    KEY idx_std_tenant (tenant_id)
+    KEY idx_std_tenant (tenant_id),
+    UNIQUE KEY uk_std_tenant_entity_field (tenant_id, entity_code, field_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据标准';
 
 CREATE TABLE ntf_message (

@@ -13,6 +13,11 @@ public final class MasterDataErrorCodes {
   // 导出
   public static final String EXPORT_SERIALIZE_FAILED = "MD_EXPORT_SERIALIZE_FAILED";
 
+  // 容量上限（400）
+  public static final String ENTITY_FIELD_LIMIT_EXCEEDED = "MD_ENTITY_FIELD_LIMIT_EXCEEDED";
+  public static final String RECORD_SIZE_EXCEEDED = "MD_RECORD_SIZE_EXCEEDED";
+  public static final String EXPORT_LIMIT_EXCEEDED = "MD_EXPORT_LIMIT_EXCEEDED";
+
   // 唯一性冲突（409）
   public static final String FIELD_NAME_DUPLICATE = "MD_FIELD_NAME_DUPLICATE";
   public static final String ENTITY_NAME_DUPLICATE = "MD_ENTITY_NAME_DUPLICATE";

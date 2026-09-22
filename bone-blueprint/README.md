@@ -81,23 +81,23 @@
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
 | **渠道真实对接** | `MockPaymentGatewayAdapter` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（E-4.3 ACL 端口 / P-6） |
 
-### E-6.3 订单明细 PO 分离评估（技术债登记）
+### E-6.3 订单明细与模型形态登记
 
-`Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
+`Order` 聚合持有需持久化的 `List<OrderItem>`（独立表 `t_order_item`）。写侧已走 SDK `@Cascade`：`items` 同时标 `@Transient` 与 `@Cascade(foreignKey = "orderId")`，`OrderRepository.save` 在同一事务内落明细。`OrderItemRepository` 已删除，应用层不再逐条 `save(OrderItem)`。
 
-**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经**域仓储读方法** `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`；支付侧亦已按 ADR-0030 §P4 同模式折叠——`PaymentQueryPort` 与 `infrastructure/query/PaymentQueryAdapter` 已删除，两个**全租户运维扫描**方法并入 `PaymentRepository`（Criteria 通道，方法名后缀 `AllTenants`），行投影置于 `domain/payment/projection/`；应用层直注域仓储，出参 DTO 仍在 `application/query/dto`。原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
+**读侧**：`findById` 不回填集合（**明确不做**级联读回填）。明细经域仓储读方法 `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`；支付侧亦已按 ADR-0030 §P4 同模式折叠。
 
-**与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
+**与 CORE-11**：聚合根是唯一写入口，`OrderItem` 未升格为聚合根。
 
-**迁移条件（E-6.3 路径）**：当 SDK 支持聚合级联，或团队决定消除 D1 注解与「显式逐条 save」的折中时，再按 E-6.3 做 PO 分离——建 `OrderItemPO` + `OrderItemConverter`，领域 `OrderItem` 落回 D0，仓储实现改操作 PO。此处为已知点，当下合规、不影响功能。
+**明确不做**：强类型 ID 替换裸 `Long`；为强类型 ID 做 `OrderItemPO` + Converter / PO 分离；级联读回填与批量级联。依据见 [Bone-Metadata-SDK-能力需求.md](../doc/architecture/Bone-Metadata-SDK-能力需求.md) 与主规约 E-4.1 / E-6.3 / E-7.1。
 
-### E-7.1 强类型 ID 过渡态登记（存量记录）
+### E-7.1 强类型 ID（存量记录 · 明确不做迁移）
 
-`Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-7.1 **存量记录**条款（遗留自增主键按模块登记），当下合规。
+`Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-7.1 **存量记录**条款，当下合规；**本样板不再推进**强类型 ID 或 PO 分离。
 
-- **新模块指引**：**新增强聚合**的跨聚合引用必须使用强类型 ID 值对象（`record OrderId(Long value)` 等，P-3.2 口径：构造期空值校验、无 setter），禁止裸 `Long`——编译期即可拦截「订单 ID / 客户 ID 写反」类静默数据错乱。
-- **domain 持久化耦合范围（SDK 偏差边界）**：新增聚合若需持久化，仅允许在**聚合根/实体类**上使用 SDK 的 `@Table` / `@Version` / `@Transient` / `@Id` / `@GeneratedValue` 等元数据注解（已被 E-10 / E-6.3 登记为 SDK 迫使的偏差，非风格选择）。**不要**为普通值对象或领域服务引入持久化注解，**不要**在 `domain` 包内新增查询 DSL（`Criteria`/`QueryBuilder`）——查询通道只在 `infrastructure`（见 E-4.4）。越界即把技术设施混入领域，抄写者须止步于此。
-- **本样板改造触发条件**：与 E-6.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-6.3 的 PO/Converter 分离），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
+- **新模块指引**：若模块选 Shared / 无 Converter，继续用 `Long` 并在 README 登记；不要为「理想强类型」强行拆 PO。
+- **domain 持久化耦合范围（SDK 偏差边界）**：新增聚合若需持久化，仅允许在**聚合根/实体类**上使用 SDK 的 `@Table` / `@Version` / `@Transient` / `@Cascade` / `@Id` / `@GeneratedValue` 等元数据注解。**不要**为普通值对象或领域服务引入持久化注解，**不要**在 `domain` 包内（`domain.repository` 除外）新增查询 DSL。
+- **本样板改造触发条件**：无。曾写的「随 PO 分离引入 OrderId」路径已取消。
 
 ### E-10 domain 分组形态登记
 
@@ -109,13 +109,13 @@
 | `{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
 | `{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
 | `domain/shared/valueobject` | 跨聚合共享值对象（`Money`） |
-| `domain/repository` | 聚合仓储接口（`OrderRepository` / `PaymentRepository` / `OrderItemRepository`）——ADR-0030 起**写侧 + 本聚合读**同处一个接口；全租户运维入口以 `*AllTenants` 后缀声明 |
+| `domain/repository` | 聚合仓储接口（`OrderRepository` / `PaymentRepository`）——ADR-0030 起**写侧 + 本聚合读**同处一个接口；明细随根 `@Cascade` 落盘，不再单设子实体仓储；全租户运维入口以 `*AllTenants` 后缀声明 |
 | `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实；出站实现在 `infrastructure/gateway/{外部系统}` |
 | `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）与其入参模型（`OrderPriceRequest` record）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
 
 E-10 明确该平铺形态为**合法变体而非存量债务**，但要求「选择后在模块 README 登记」——本节即本模块的登记点，供后续评审与 `studio-generator` 生成目标对齐。
 
-**与 E-10 参考结构的另一处偏差（登记）**：参考结构给出 `infrastructure/persistence/OrderRepositoryImpl`（= `domain/repository` 的实现），本模块**不存在 `infrastructure/persistence` 包**——仓储由 Bone 元数据 SDK 的 `@EnableSqlRepositories` **运行时生成代理实现**，没有可手写的实现类。故写侧无 `*Impl`/`*PO` 落点，与 E-6.3 登记的 PO 分离缺口同源。
+**与 E-10 参考结构的另一处偏差（登记）**：参考结构给出 `infrastructure/persistence/OrderRepositoryImpl`（= `domain/repository` 的实现），本模块**不存在 `infrastructure/persistence` 包**——仓储由 Bone 元数据 SDK 的 `@EnableSqlRepositories` **运行时生成代理实现**，没有可手写的实现类。故写侧无 `*Impl`/`*PO` 落点；与「明确不做 PO 分离」一致，不是待还技术债。
 
 ### 多租户
 

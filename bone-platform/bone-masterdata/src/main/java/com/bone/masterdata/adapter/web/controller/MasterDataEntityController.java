@@ -2,6 +2,7 @@ package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.application.EntityApplicationService;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.DisableMasterDataEntityCommand;
@@ -13,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/masterdata/entities")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
 @RequiredArgsConstructor
 public class MasterDataEntityController {
 

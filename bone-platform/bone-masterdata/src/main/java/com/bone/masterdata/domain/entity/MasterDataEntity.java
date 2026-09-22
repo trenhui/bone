@@ -1,11 +1,12 @@
 package com.bone.masterdata.domain.entity;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.entity.event.MasterDataEntityCreatedEvent;
+import com.bone.masterdata.domain.model.entity.event.MasterDataEntityPublishedEvent;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
 import com.bone.metadata.sdk.domain.annotation.Column;
@@ -18,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("md_entity")
-public class MasterDataEntity extends AggregateRoot<Long> {
+public class MasterDataEntity extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
@@ -54,6 +55,7 @@ public class MasterDataEntity extends AggregateRoot<Long> {
     }
     this.status = MasterDataEntityStatus.PUBLISHED;
     this.updatedAt = LocalDateTime.now();
+    this.addDomainEvent(new MasterDataEntityPublishedEvent(this));
   }
 
   public void update(MasterDataEntityName name, String description, String category) {

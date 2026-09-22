@@ -6,17 +6,22 @@ import com.bone.core.annotation.Transient;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.SequenceGenerator;
+import com.bone.metadata.sdk.domain.annotation.Cascade;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import com.bone.metadata.sdk.domain.exception.MetadataException;
+import com.bone.metadata.sdk.domain.model.CascadeRelation;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.support.util.SqlUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,9 +67,102 @@ public final class TableMetadataResolver {
       tableName = entityClass.getSimpleName().toLowerCase();
     }
     List<ColumnMetadata> columns = parseColumns(entityClass);
+    List<CascadeRelation> cascades = parseCascades(entityClass);
 
     log.debug("Parsed TableMetadata for table: {} with {} columns", tableName, columns.size());
-    return new TableMetadata(tableName, columns);
+    return new TableMetadata(tableName, columns, cascades);
+  }
+
+  /** 解析 {@code @Cascade} 集合（字段须同时 {@code @Transient}）。 */
+  private static List<CascadeRelation> parseCascades(Class<?> entityClass) {
+    List<CascadeRelation> cascades = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    Class<?> current = entityClass;
+    while (current != null && current != Object.class) {
+      for (Field field : current.getDeclaredFields()) {
+        Cascade cascade = field.getAnnotation(Cascade.class);
+        if (cascade == null || seen.contains(field.getName())) {
+          continue;
+        }
+        if (!field.isAnnotationPresent(Transient.class)) {
+          throw new MetadataException(
+              "@Cascade on "
+                  + entityClass.getName()
+                  + "#"
+                  + field.getName()
+                  + " requires @Transient (collection is not a root table column)");
+        }
+        if (!Collection.class.isAssignableFrom(field.getType())) {
+          throw new MetadataException(
+              "@Cascade on "
+                  + entityClass.getName()
+                  + "#"
+                  + field.getName()
+                  + " must be a Collection");
+        }
+        Class<?> childType = resolveCollectionElementType(field);
+        if (childType.getAnnotation(Table.class) == null) {
+          throw new MetadataException(
+              "@Cascade child type " + childType.getName() + " must be annotated with @Table");
+        }
+        String fk = cascade.foreignKey().trim();
+        if (fk.isEmpty()) {
+          throw new MetadataException(
+              "@Cascade foreignKey must not be blank on "
+                  + entityClass.getName()
+                  + "#"
+                  + field.getName());
+        }
+        try {
+          childType.getDeclaredField(fk);
+        } catch (NoSuchFieldException ex) {
+          // 允许外键在父类上
+          Class<?> walk = childType.getSuperclass();
+          boolean found = false;
+          while (walk != null && walk != Object.class) {
+            try {
+              walk.getDeclaredField(fk);
+              found = true;
+              break;
+            } catch (NoSuchFieldException ignored) {
+              walk = walk.getSuperclass();
+            }
+          }
+          if (!found) {
+            throw new MetadataException(
+                "@Cascade foreignKey '"
+                    + fk
+                    + "' not found on child "
+                    + childType.getName()
+                    + " (field "
+                    + field.getName()
+                    + ")");
+          }
+        }
+        cascades.add(new CascadeRelation(field.getName(), fk, childType));
+        seen.add(field.getName());
+      }
+      current = current.getSuperclass();
+    }
+    return cascades;
+  }
+
+  private static Class<?> resolveCollectionElementType(Field field) {
+    Type generic = field.getGenericType();
+    if (!(generic instanceof ParameterizedType parameterized)) {
+      throw new MetadataException(
+          "@Cascade field "
+              + field.getDeclaringClass().getName()
+              + "#"
+              + field.getName()
+              + " must declare a concrete element type (e.g. List<OrderItem>)");
+    }
+    Type arg = parameterized.getActualTypeArguments()[0];
+    if (!(arg instanceof Class<?> childType)) {
+      throw new MetadataException(
+          "@Cascade field " + field.getName() + " element type must be a concrete class");
+    }
+    return childType;
   }
 
   /** 解析实体类的列元数据（包括继承的字段） */

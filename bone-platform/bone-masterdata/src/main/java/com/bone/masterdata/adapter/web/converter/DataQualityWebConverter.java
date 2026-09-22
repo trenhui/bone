@@ -2,10 +2,8 @@ package com.bone.masterdata.adapter.web.converter;
 
 import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateDataQualityRuleReq;
-import com.bone.masterdata.adapter.web.dto.response.DataQualityRuleDetailResp;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCommand;
-import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +14,8 @@ public class DataQualityWebConverter {
     return CreateDataQualityRuleCommand.builder()
         .masterDataEntityId(req.getMasterDataEntityId())
         .name(req.getName())
-        .type(req.getRuleType())
-        .expression(req.getRuleConfig())
+        .type(req.getType())
+        .expression(req.getExpression())
         .severity(parseSeverity(req.getSeverity()))
         .description(req.getDescription())
         .build();
@@ -27,22 +25,10 @@ public class DataQualityWebConverter {
     return UpdateDataQualityRuleCommand.builder()
         .id(id)
         .name(req.getName())
-        .ruleType(req.getRuleType())
-        .ruleConfig(req.getRuleConfig())
+        .type(req.getType())
+        .expression(req.getExpression())
         .severity(req.getSeverity())
         .description(req.getDescription())
-        .build();
-  }
-
-  public DataQualityRuleDetailResp toResp(DataQualityRuleDTO dto) {
-    return DataQualityRuleDetailResp.builder()
-        .id(dto.getId())
-        .masterDataEntityId(dto.getMasterDataEntityId())
-        .name(dto.getName())
-        .ruleType(dto.getType())
-        .ruleConfig(dto.getExpression())
-        .severity(dto.getSeverity() != null ? dto.getSeverity().name() : null)
-        .description(dto.getDescription())
         .build();
   }
 

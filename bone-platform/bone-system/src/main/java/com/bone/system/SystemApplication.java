@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 @EnableSqlRepositories(
     basePackages = {
       "com.bone.system.domain.repository",
-      "com.bone.platform.alert.domain.notification"
+      "com.bone.platform.alert.domain.repository"
     })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class SystemApplication {

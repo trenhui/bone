@@ -10,6 +10,7 @@ import lombok.Getter;
 public class TableMetadata {
   private final String name; // 表名
   private final List<ColumnMetadata> columns; // 表的列元数据
+  private final List<CascadeRelation> cascades; // @Cascade 子集合（可为空）
 
   @Getter(AccessLevel.NONE)
   private final ColumnMetadata primaryKey; // 缓存的主键列
@@ -25,8 +26,13 @@ public class TableMetadata {
   private ExtensionMode extensionMode = ExtensionMode.RESERVED_COLUMNS;
 
   public TableMetadata(String name, List<ColumnMetadata> columns) {
+    this(name, columns, List.of());
+  }
+
+  public TableMetadata(String name, List<ColumnMetadata> columns, List<CascadeRelation> cascades) {
     this.name = name;
     this.columns = columns;
+    this.cascades = cascades == null ? List.of() : List.copyOf(cascades);
     this.primaryKey =
         columns.stream()
             .filter(ColumnMetadata::isPrimaryKey)
