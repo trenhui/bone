@@ -46,7 +46,9 @@ Topic 登记见 [Bone-消息与事件规范.md](../../doc/architecture/Bone-消�
 
 **目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`，聚合根 / 实体 / 值对象在聚合包内直接平铺，`event/` `projection/` 为聚合内子包；`repository` / `gateway` 端口留在 `domain/` 根。
 
-**本模块现状**：**已合并大部分，剩 `client` 待定性**——`domain/{connector,execution,flow}` 已迁入 `domain/model/{connector,execution,flow}/`（2026-09-22 完成，75 个测试全绿）；`domain/client` 仍在 `domain/` 根，需逐个定性（模型 vs 端口）后决定是迁入 `domain/model/client/` 还是按 ADR-0036 R3 作为端口留根。定性前属 ADR-0036 R4 禁止的并存状态。
+**本模块现状**：**已迁移至目标形态**（2026-09-22 完成，75 个测试全绿）。`domain/{connector,execution,flow}` 已迁入 `domain/model/{connector,execution,flow}/`。
+
+`domain/client` 经定性**留在 `domain/` 根**：`ExternalSystemClient` 是**端口接口**（`testConnection` / `sendRequest` / `getType`，由 `infrastructure/external/` 下的 9 个 `*ClientImpl` 实现），不是聚合模型，按 ADR-0036 R3「模块自有的领域端口子包留在 `domain/` 根」合规——与 `gateway` / `repository` 同理。故本模块不存在 R4 禁止的双形态并存。
 
 ### 已登记的租户隔离缺口（2026-09-20，G-2 登记；Owner：integration 模块）
 
