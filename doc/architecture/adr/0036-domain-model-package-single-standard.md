@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **草案（Draft，2026-09-22 提出）**：D1（唯一形态记法）与 D2（值对象子包名）待架构师确认后转「已采纳」。本 ADR 只落**规范与登记**，代码迁移由架构师手工执行 |
+| **状态** | **已采纳（Accepted，2026-09-22）**：D1（唯一形态记法）与 D2（值对象子包名 `valueobject`）经架构师确认；规范与登记已落地，**代码迁移由架构师手工执行** |
 | **日期** | 2026-09-22 |
 | **决策者** | 架构师 |
 | **取代** | `Bone-DDD-最终实践方案.md` E-10「domain 内部分组有两种合法形态」双形态条款（v5.5.16 及以前） |
@@ -58,6 +58,7 @@ com.bone.{module}/
     │   └── shared/                     # 跨聚合共享的模型构件（值对象 / 领域异常），按需
     ├── repository/                     # 聚合仓储接口（端口，不随 model 下移）
     ├── gateway/                        # 外部业务能力端口
+    ├── extension/                      # 模块自有领域端口子包（如 blueprint 扩展点契约），按需
     └── service/                        # 领域服务（最后选择）
 ```
 
@@ -65,7 +66,7 @@ com.bone.{module}/
 
 - **R1** 聚合根 / 聚合内实体 / 值对象在同一聚合包内**直接平铺**，不再按角色分子目录；
 - **R2** **禁止** `domain/model/aggregate` / `entity` / `valueobject` / `event` 这类跨聚合角色桶；
-- **R3** `repository` / `gateway` / `service` 是端口与领域服务，**留在 `domain/` 根**，不进 `model/`；
+- **R3** `repository` / `gateway` / `service` 以及模块自有的领域端口子包（如 blueprint `extension/`）**留在 `domain/` 根**，不进 `model/`；
 - **R4** 同一 `domain` 包内**不得并存**两套分组（`domain/{聚合}` 与 `domain/model/{聚合}` 并存即违规）；
 - **R5** 原扁平形态 `domain/{聚合}` 不再是合法变体，**降级为存量形态**（见 D4）。
 
@@ -73,7 +74,7 @@ com.bone.{module}/
 
 现网两种写法：`bone-blueprint` 用 `valueobject`，`bone-iam` / `bone-system` 用 `vo`。本 ADR 取 `valueobject`：它是 E-10 参考记法、是参考实现 blueprint 的现行写法，也与 `projection` / `repository` / `application` 等结构包「写全词」的惯例一致。
 
-**未采纳的备选**：全平台改用 `vo`（更短）。若架构师改选此项，需同步改 E-10 记法与 blueprint 的 3 个包，D1 不受影响，本 ADR 迁移清单中「`vo → valueobject`」一行随之删除。
+**未采纳的备选**：全平台改用 `vo`（更短）。架构师 2026-09-22 确认取 `valueobject`，因此 `bone-iam` / `bone-system` 的 `vo/` 子包按迁移清单改名为 `valueobject`（D1 不受影响）。
 
 ### D3. 适用边界
 
@@ -106,8 +107,8 @@ com.bone.{module}/
 |---|---|---|---|
 | bone-notification | `domain/{notification,repository}` | `domain/model/notification` + `domain/repository` | 无 `vo` / `event` 子包，最简单；**本模块无 README.md**，E-10 登记随其 README 建立或迁移提交补 |
 | bone-system | `domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event` | `domain/model/{alert,config,…}/` + `vo→valueobject` | README 包树与登记同步改写 |
-| bone-blueprint | `domain/{order,payment}/{event,projection,valueobject}` + `domain/{shared,extension,gateway,repository}` | `domain/model/{order,payment,shared}/…`；`extension` / `gateway` / `repository` 留根 | **参考实现，与规范同批对齐**；`@EnableExtensionPoints(basePackages="com.bone.blueprint.domain.extension")` 是字符串包名，须逐处核对 |
-| bone-masterdata | `domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存 | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树**；`entity` / `quality` / `record` 三个包名两边都有，须逐个核对归属 |
+| bone-blueprint | ~~`domain/{order,payment}/{event,projection,valueobject}` + `domain/{shared,extension,gateway,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{order,payment,shared}/…`；`extension` / `gateway` / `repository` 留根 | **参考实现，已完成**（首个落地模块，212 测试全绿）；`@EnableExtensionPoints(basePackages="com.bone.blueprint.domain.extension")` 是字符串包名，因 `extension` 留根故无需改动——已逐处核对 |
+| bone-masterdata | ~~`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存~~ **已于 2026-09-22 完成合并** | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树已完成**（59 测试全绿）；`entity` / `quality` / `record` 三个包名两边都有，已逐个核对归属；遗留 `vo` 命名未统一为 `valueobject` |
 | bone-integration | `domain/{client,connector,execution,flow}` 与 `domain/model/{connector,execution,flow}` 并存 | 合并为 `domain/model/{client,connector,execution,flow}/` | 同上；`client` 需逐个定性（模型 vs 端口） |
 | bone-extension-studio | `domain/model/` 下 9 个类平铺 + `domain/{gateway,repository}` | `domain/model/{聚合}/` | `model/` 平铺桶需先按聚合 / 概念分组 |
 | bone-metadata-server | `domain/model/` 类平铺 + `model/physical` + `domain/{enums,service,gateway,repository}` | `domain/model/{概念}/` | 同上 |

@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.lineage.event;
+package com.bone.masterdata.domain.model.lineage.event;
 
 import com.bone.core.domain.DomainEvent;
 

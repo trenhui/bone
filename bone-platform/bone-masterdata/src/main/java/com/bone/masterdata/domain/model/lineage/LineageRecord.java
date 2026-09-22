@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.lineage;
+package com.bone.masterdata.domain.model.lineage;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;

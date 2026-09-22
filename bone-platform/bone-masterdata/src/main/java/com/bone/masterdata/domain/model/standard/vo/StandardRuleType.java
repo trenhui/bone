@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.standard.vo;
+package com.bone.masterdata.domain.model.standard.vo;
 
 import com.bone.core.exception.DomainException;
 

@@ -1,6 +1,6 @@
 package com.bone.masterdata.domain.repository;
 
-import com.bone.masterdata.domain.quality.QualityCheck;
+import com.bone.masterdata.domain.model.quality.QualityCheck;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.List;

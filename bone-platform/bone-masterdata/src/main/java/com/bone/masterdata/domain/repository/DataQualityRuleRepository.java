@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.repository;
 
+import com.bone.masterdata.domain.model.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.vo.RuleName;
-import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;

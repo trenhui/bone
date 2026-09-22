@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.masterdata.domain.entity.MasterDataEntity;
+import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
 import com.bone.metadata.sdk.Repository;

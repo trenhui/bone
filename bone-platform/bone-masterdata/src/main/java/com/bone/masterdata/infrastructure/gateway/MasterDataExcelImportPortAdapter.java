@@ -1,7 +1,7 @@
 package com.bone.masterdata.infrastructure.gateway;
 
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
-import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.infrastructure.util.ExcelUtils;
 import java.io.InputStream;
 import java.util.List;

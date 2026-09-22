@@ -3,7 +3,7 @@ package com.bone.masterdata.infrastructure.util;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
-import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.infrastructure.config.ExcelConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;

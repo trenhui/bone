@@ -1,6 +1,6 @@
 package com.bone.masterdata.domain.gateway;
 
-import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import java.io.InputStream;
 import java.util.List;
 

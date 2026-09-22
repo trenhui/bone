@@ -1,8 +1,8 @@
 package com.bone.masterdata.domain.repository;
 
 import com.bone.core.model.PageResult;
+import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
-import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;

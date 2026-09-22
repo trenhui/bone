@@ -13,7 +13,7 @@ import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.common.MasterDataProperties;
-import com.bone.masterdata.domain.entity.MasterDataField;
+import com.bone.masterdata.domain.model.entity.MasterDataField;
 import com.bone.masterdata.domain.model.field.event.MasterDataFieldAddedEvent;
 import com.bone.masterdata.domain.model.field.vo.FieldCode;
 import com.bone.masterdata.domain.model.field.vo.FieldName;

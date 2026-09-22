@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.model.quality.event;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.masterdata.domain.quality.QualityCheck;
+import com.bone.masterdata.domain.model.quality.QualityCheck;
 
 public record QualityCheckCompletedEvent(
     Long checkId, Long entityId, Integer totalRecords, Integer failedRecords)

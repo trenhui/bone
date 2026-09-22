@@ -1,8 +1,8 @@
 package com.bone.masterdata.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.masterdata.domain.standard.DataStandard;
-import com.bone.masterdata.domain.standard.vo.StandardFieldCode;
+import com.bone.masterdata.domain.model.standard.DataStandard;
+import com.bone.masterdata.domain.model.standard.vo.StandardFieldCode;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;

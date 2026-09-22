@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.quality;
+package com.bone.masterdata.domain.model.quality;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

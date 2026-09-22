@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.model.entity.event;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.masterdata.domain.entity.MasterDataEntity;
+import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 
 public record MasterDataEntityCreatedEvent(Long entityId, String entityName)
     implements DomainEvent {

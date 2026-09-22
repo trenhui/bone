@@ -1,11 +1,11 @@
-package com.bone.masterdata.domain.standard;
+package com.bone.masterdata.domain.model.standard;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.masterdata.domain.standard.vo.StandardFieldCode;
-import com.bone.masterdata.domain.standard.vo.StandardRuleType;
+import com.bone.masterdata.domain.model.standard.vo.StandardFieldCode;
+import com.bone.masterdata.domain.model.standard.vo.StandardRuleType;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;

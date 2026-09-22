@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.entity;
+package com.bone.masterdata.domain.model.entity;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.id.GeneratedValue;

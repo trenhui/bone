@@ -1,6 +1,6 @@
 package com.bone.masterdata.domain.repository;
 
-import com.bone.masterdata.domain.lineage.LineageRecord;
+import com.bone.masterdata.domain.model.lineage.LineageRecord;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

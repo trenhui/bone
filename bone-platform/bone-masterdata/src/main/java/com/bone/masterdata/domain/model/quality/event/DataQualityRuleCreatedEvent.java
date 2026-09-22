@@ -1,7 +1,7 @@
 package com.bone.masterdata.domain.model.quality.event;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.masterdata.domain.quality.DataQualityRule;
+import com.bone.masterdata.domain.model.quality.DataQualityRule;
 
 public record DataQualityRuleCreatedEvent(Long ruleId, Long entityId, String ruleName)
     implements DomainEvent {

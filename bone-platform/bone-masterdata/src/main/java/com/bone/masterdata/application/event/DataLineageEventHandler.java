@@ -1,8 +1,8 @@
 package com.bone.masterdata.application.event;
 
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.domain.lineage.LineageRecord;
-import com.bone.masterdata.domain.lineage.event.DataLineageEvent;
+import com.bone.masterdata.domain.model.lineage.LineageRecord;
+import com.bone.masterdata.domain.model.lineage.event.DataLineageEvent;
 import com.bone.masterdata.domain.repository.LineageRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

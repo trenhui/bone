@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.lineage;
+package com.bone.masterdata.domain.model.lineage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

@@ -1,4 +1,4 @@
-package com.bone.masterdata.domain.record;
+package com.bone.masterdata.domain.model.record;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
