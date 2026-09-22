@@ -1,6 +1,6 @@
 package com.bone.platform.alert.application;
 
-import com.bone.platform.alert.domain.notification.NotificationMessage;
+import com.bone.platform.alert.domain.model.notification.NotificationMessage;
 import com.bone.platform.alert.domain.repository.NotificationMessageRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

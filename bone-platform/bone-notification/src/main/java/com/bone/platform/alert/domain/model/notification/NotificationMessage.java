@@ -1,4 +1,4 @@
-package com.bone.platform.alert.domain.notification;
+package com.bone.platform.alert.domain.model.notification;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;

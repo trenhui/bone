@@ -3,7 +3,7 @@ package com.bone.platform.alert.adapter.web;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.platform.alert.application.NotificationService;
-import com.bone.platform.alert.domain.notification.NotificationMessage;
+import com.bone.platform.alert.domain.model.notification.NotificationMessage;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

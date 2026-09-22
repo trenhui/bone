@@ -2,7 +2,7 @@ package com.bone.platform.alert.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.platform.alert.domain.notification.NotificationMessage;
+import com.bone.platform.alert.domain.model.notification.NotificationMessage;
 import java.util.List;
 
 /** 站内信仓储（由使用方通过 @EnableSqlRepositories 自动实现）。 */

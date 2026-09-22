@@ -5,7 +5,7 @@ import com.bone.platform.alert.AlertChannel;
 import com.bone.platform.alert.AlertChannelType;
 import com.bone.platform.alert.AlertException;
 import com.bone.platform.alert.AlertMessage;
-import com.bone.platform.alert.domain.notification.NotificationMessage;
+import com.bone.platform.alert.domain.model.notification.NotificationMessage;
 import com.bone.platform.alert.domain.repository.NotificationMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

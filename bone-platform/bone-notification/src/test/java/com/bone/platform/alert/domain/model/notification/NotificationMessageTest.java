@@ -1,4 +1,4 @@
-package com.bone.platform.alert.domain.notification;
+package com.bone.platform.alert.domain.model.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
