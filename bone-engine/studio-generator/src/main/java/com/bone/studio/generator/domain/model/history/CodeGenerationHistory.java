@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.history;
+package com.bone.studio.generator.domain.model.history;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;

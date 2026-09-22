@@ -1,8 +1,8 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.code.GeneratedFile;
-import com.bone.studio.generator.domain.data.CodeTemplate;
-import com.bone.studio.generator.domain.data.GenTableMetadata;
+import com.bone.studio.generator.domain.model.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.data.CodeTemplate;
+import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import com.bone.studio.generator.domain.service.FileGenerator;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;

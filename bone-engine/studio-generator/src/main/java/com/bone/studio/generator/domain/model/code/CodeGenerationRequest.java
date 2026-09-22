@@ -1,6 +1,6 @@
-package com.bone.studio.generator.domain.code;
+package com.bone.studio.generator.domain.model.code;
 
-import com.bone.studio.generator.domain.catalog.MetadataSourceType;
+import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import java.util.List;
 import java.util.Map;
 

@@ -1,6 +1,6 @@
 package com.bone.studio.generator.domain.gateway;
 
-import com.bone.studio.generator.domain.data.GenerationTask;
+import com.bone.studio.generator.domain.model.data.GenerationTask;
 import java.util.Optional;
 
 /**

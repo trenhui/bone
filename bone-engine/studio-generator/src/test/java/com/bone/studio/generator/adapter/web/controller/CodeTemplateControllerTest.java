@@ -8,7 +8,7 @@ import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateComma
 import com.bone.studio.generator.application.command.handler.CreateCodeTemplateApplicationService;
 import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
-import com.bone.studio.generator.domain.data.CodeTemplate;
+import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.support.TestTenantContextConfiguration;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

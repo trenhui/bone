@@ -5,7 +5,7 @@ import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.handler.LoadCatalogTablesApplicationService;
 import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.domain.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

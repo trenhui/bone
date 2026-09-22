@@ -1,8 +1,8 @@
 package com.bone.studio.generator.domain.gateway;
 
-import com.bone.studio.generator.domain.data.DataSource;
-import com.bone.studio.generator.domain.data.DatabaseTable;
-import com.bone.studio.generator.domain.data.TableColumn;
+import com.bone.studio.generator.domain.model.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.TableColumn;
 import java.util.List;
 
 public interface DatabaseMetadataGateway {

@@ -1,12 +1,12 @@
 package com.bone.studio.generator.infrastructure.gateway;
 
-import com.bone.studio.generator.domain.catalog.model.CatalogMetaEntity;
-import com.bone.studio.generator.domain.catalog.model.CatalogMetaField;
-import com.bone.studio.generator.domain.catalog.repository.CatalogMetaEntityRepository;
-import com.bone.studio.generator.domain.catalog.repository.CatalogMetaFieldRepository;
-import com.bone.studio.generator.domain.data.DatabaseTable;
-import com.bone.studio.generator.domain.data.TableColumn;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
+import com.bone.studio.generator.domain.model.catalog.CatalogMetaEntity;
+import com.bone.studio.generator.domain.model.catalog.CatalogMetaField;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.TableColumn;
+import com.bone.studio.generator.domain.repository.CatalogMetaEntityRepository;
+import com.bone.studio.generator.domain.repository.CatalogMetaFieldRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

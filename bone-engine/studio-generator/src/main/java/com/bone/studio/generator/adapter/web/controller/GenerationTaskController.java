@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.application.command.handler.GenerateCodeApplicationService;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.domain.code.CodeGenerationResponse;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

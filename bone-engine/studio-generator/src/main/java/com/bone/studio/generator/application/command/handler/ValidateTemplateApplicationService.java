@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.exception.NotFoundException;
-import com.bone.studio.generator.domain.data.CodeTemplate;
+import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import lombok.RequiredArgsConstructor;

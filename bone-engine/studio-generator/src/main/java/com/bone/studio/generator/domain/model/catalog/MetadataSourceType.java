@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.catalog;
+package com.bone.studio.generator.domain.model.catalog;
 
 /** 代码生成元数据来源 */
 public enum MetadataSourceType {

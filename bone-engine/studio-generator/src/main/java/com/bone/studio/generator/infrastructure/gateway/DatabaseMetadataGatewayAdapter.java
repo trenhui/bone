@@ -2,10 +2,10 @@ package com.bone.studio.generator.infrastructure.gateway;
 
 import com.bone.core.exception.InfrastructureException;
 import com.bone.studio.generator.common.StudioIds;
-import com.bone.studio.generator.domain.data.DataSource;
-import com.bone.studio.generator.domain.data.DatabaseTable;
-import com.bone.studio.generator.domain.data.TableColumn;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
+import com.bone.studio.generator.domain.model.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.TableColumn;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;

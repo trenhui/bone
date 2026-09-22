@@ -1,11 +1,11 @@
-package com.bone.studio.generator.domain.data;
+package com.bone.studio.generator.domain.model.data;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Table;
-import com.bone.studio.generator.domain.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.code.GeneratedFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;

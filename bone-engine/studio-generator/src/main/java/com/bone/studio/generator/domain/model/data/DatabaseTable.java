@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.data;
+package com.bone.studio.generator.domain.model.data;
 
 import java.util.List;
 

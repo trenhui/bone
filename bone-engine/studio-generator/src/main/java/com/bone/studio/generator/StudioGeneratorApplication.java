@@ -24,11 +24,7 @@ import org.springframework.web.filter.CorsFilter;
       "com.bone.metadata.sdk",
       "com.bone.core.capability"
     })
-@EnableSqlRepositories(
-    basePackages = {
-      "com.bone.studio.generator.domain.repository",
-      "com.bone.studio.generator.domain.catalog.repository"
-    })
+@EnableSqlRepositories(basePackages = {"com.bone.studio.generator.domain.repository"})
 public class StudioGeneratorApplication {
 
   public static void main(String[] args) {

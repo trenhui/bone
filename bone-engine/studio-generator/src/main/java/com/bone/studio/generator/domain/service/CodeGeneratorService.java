@@ -1,9 +1,9 @@
 package com.bone.studio.generator.domain.service;
 
-import com.bone.studio.generator.domain.code.CodeGenerationRequest;
-import com.bone.studio.generator.domain.code.CodeGenerationResponse;
-import com.bone.studio.generator.domain.data.DataSource;
-import com.bone.studio.generator.domain.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
+import com.bone.studio.generator.domain.model.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import java.util.List;
 
 public interface CodeGeneratorService {

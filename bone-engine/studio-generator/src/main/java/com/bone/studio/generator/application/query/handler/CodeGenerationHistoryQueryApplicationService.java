@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
 import com.bone.studio.generator.application.query.qry.CodeGenerationHistoryQuery;
-import com.bone.studio.generator.domain.history.CodeGenerationHistory;
+import com.bone.studio.generator.domain.model.history.CodeGenerationHistory;
 import com.bone.studio.generator.domain.repository.CodeGenerationHistoryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

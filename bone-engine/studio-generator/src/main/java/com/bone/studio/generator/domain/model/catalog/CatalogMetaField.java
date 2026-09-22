@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.catalog.model;
+package com.bone.studio.generator.domain.model.catalog;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;

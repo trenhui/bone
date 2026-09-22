@@ -13,9 +13,9 @@ import com.bone.studio.generator.application.query.qry.CodeGenerationHistoryQuer
 import com.bone.studio.generator.application.query.qry.DataSourceTablesQuery;
 import com.bone.studio.generator.application.query.qry.GenerationOperationViewQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.domain.code.CodeGenerationResponse;
-import com.bone.studio.generator.domain.data.DatabaseTable;
-import com.bone.studio.generator.domain.history.CodeGenerationHistory;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.history.CodeGenerationHistory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

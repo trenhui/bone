@@ -14,7 +14,7 @@ import com.bone.studio.generator.application.command.handler.TestDataSourceConne
 import com.bone.studio.generator.application.command.handler.UpdateDataSourceApplicationService;
 import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
-import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.support.TestTenantContextConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

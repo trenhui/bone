@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.code;
+package com.bone.studio.generator.domain.model.code;
 
 import java.util.List;
 

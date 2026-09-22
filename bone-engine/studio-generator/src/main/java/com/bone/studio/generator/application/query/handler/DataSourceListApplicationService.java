@@ -2,7 +2,7 @@ package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.query.qry.DataSourceListQuery;
-import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;

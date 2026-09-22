@@ -2,7 +2,7 @@ package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
-import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

@@ -15,7 +15,7 @@ import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQu
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateDetailQuery;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.domain.data.CodeTemplate;
+import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

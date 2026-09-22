@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.data;
+package com.bone.studio.generator.domain.model.data;
 
 public class TableColumn {
   private String columnName;

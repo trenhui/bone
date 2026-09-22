@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.data;
+package com.bone.studio.generator.domain.model.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

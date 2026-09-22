@@ -2,7 +2,7 @@ package com.bone.studio.generator.application.service;
 
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
-import com.bone.studio.generator.domain.data.GenerationTask;
+import com.bone.studio.generator.domain.model.data.GenerationTask;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import java.util.LinkedHashMap;
 import java.util.Map;

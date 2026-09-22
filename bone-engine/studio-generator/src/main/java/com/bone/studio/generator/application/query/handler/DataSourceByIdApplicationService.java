@@ -3,7 +3,7 @@ package com.bone.studio.generator.application.query.handler;
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.query.qry.DataSourceByIdQuery;
 import com.bone.studio.generator.common.StudioIds;
-import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

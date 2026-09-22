@@ -1,6 +1,6 @@
 package com.bone.studio.generator.domain.gateway;
 
-import com.bone.studio.generator.domain.data.GenTableMetadata;
+import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import java.util.Optional;
 
 /**

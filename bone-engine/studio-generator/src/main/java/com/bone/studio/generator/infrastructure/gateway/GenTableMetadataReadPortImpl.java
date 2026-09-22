@@ -2,8 +2,8 @@ package com.bone.studio.generator.infrastructure.gateway;
 
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.studio.generator.domain.data.GenTableMetadata;
 import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
+import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import com.bone.studio.generator.domain.repository.GenTableMetadataRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

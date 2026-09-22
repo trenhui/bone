@@ -1,4 +1,4 @@
-package com.bone.studio.generator.domain.history;
+package com.bone.studio.generator.domain.model.history;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

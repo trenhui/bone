@@ -1,6 +1,6 @@
 package com.bone.studio.generator.domain.gateway;
 
-import com.bone.studio.generator.domain.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import java.util.List;
 
 /** 从 meta_* 目录读取已发布实体快照，转换为生成器内部表模型 */

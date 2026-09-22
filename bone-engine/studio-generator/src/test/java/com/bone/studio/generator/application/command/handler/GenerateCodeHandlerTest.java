@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
-import com.bone.studio.generator.domain.code.CodeGenerationResponse;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

@@ -2,7 +2,7 @@ package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.query.qry.LoadTablesQuery;
-import com.bone.studio.generator.domain.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import java.util.List;
 import org.springframework.stereotype.Component;

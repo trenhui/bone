@@ -1,13 +1,13 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.catalog.MetadataSourceType;
-import com.bone.studio.generator.domain.code.CodeGenerationRequest;
-import com.bone.studio.generator.domain.code.CodeGenerationResponse;
-import com.bone.studio.generator.domain.code.GeneratedFile;
-import com.bone.studio.generator.domain.data.DataSource;
-import com.bone.studio.generator.domain.data.DatabaseTable;
-import com.bone.studio.generator.domain.data.TableColumn;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
+import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
+import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
+import com.bone.studio.generator.domain.model.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.data.DataSource;
+import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.TableColumn;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import java.io.*;

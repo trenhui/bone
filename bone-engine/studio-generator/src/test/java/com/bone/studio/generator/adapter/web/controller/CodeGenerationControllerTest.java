@@ -8,7 +8,7 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.studio.generator.domain.data.GenerationTask;
+import com.bone.studio.generator.domain.model.data.GenerationTask;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import com.bone.studio.generator.support.TestTenantContextConfiguration;
 import org.junit.jupiter.api.AfterEach;
