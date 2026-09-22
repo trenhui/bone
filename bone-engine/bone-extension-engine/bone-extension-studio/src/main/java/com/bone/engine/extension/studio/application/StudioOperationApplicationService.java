@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.query.handler;
+package com.bone.engine.extension.studio.application;
 
 import com.bone.engine.extension.studio.application.service.StudioLroService;
 import com.bone.engine.extension.studio.domain.model.operation.StudioOperation;

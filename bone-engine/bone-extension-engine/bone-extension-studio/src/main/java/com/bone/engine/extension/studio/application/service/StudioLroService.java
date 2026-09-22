@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.application.service;
 
 import com.bone.core.model.ProblemDetail;
-import com.bone.engine.extension.studio.application.command.handler.ExtensionCommandApplicationService;
-import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryApplicationService;
+import com.bone.engine.extension.studio.application.ExtensionCommandApplicationService;
+import com.bone.engine.extension.studio.application.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;

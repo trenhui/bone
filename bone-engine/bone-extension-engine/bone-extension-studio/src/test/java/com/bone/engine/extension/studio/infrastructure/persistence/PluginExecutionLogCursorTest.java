@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.model.PageResult;
-import com.bone.engine.extension.studio.application.query.handler.PluginExecutionLogQueryApplicationService;
+import com.bone.engine.extension.studio.application.PluginExecutionLogQueryApplicationService;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import org.junit.jupiter.api.BeforeEach;

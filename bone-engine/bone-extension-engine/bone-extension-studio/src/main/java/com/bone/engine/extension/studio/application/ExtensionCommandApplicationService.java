@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.command.handler;
+package com.bone.engine.extension.studio.application;
 
 import com.bone.engine.extension.studio.application.service.PluginArtifactService;
 import com.bone.engine.extension.studio.application.service.PluginArtifactService.StoredArtifact;

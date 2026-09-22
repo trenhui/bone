@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.query.handler;
+package com.bone.engine.extension.studio.application;
 
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;

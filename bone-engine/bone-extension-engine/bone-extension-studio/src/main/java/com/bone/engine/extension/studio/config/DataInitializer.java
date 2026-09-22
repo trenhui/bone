@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.config;
 
-import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandApplicationService;
+import com.bone.engine.extension.studio.application.PluginExecutionLogCommandApplicationService;
 import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
