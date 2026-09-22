@@ -112,33 +112,6 @@
       "owner": "bone-engine/bone-extension-engine",
       "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
     },
-    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java": {
-      "rule": "R1-role-package",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java",
-      "name": "CodeGenerationAsyncService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
-      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
-    },
-    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java": {
-      "rule": "R1-role-package",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java",
-      "name": "CodeGenerationTaskService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
-      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
-    },
-    "R1:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java": {
-      "rule": "R1-role-package",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java",
-      "name": "GenerationTaskOperationService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
-      "detail": "application 下不得有 'service' 这类按调用关系划分的角色包，且属于历史禁用名；本文件需按 ADR-0035 D3 归位"
-    },
     "R1:bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java": {
       "rule": "R1-role-package",
       "path": "bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java",
@@ -272,33 +245,6 @@
       "package": "service",
       "classification": "pending",
       "owner": "bone-engine/bone-extension-engine",
-      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
-    },
-    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java": {
-      "rule": "R2-extra-service",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationAsyncService.java",
-      "name": "CodeGenerationAsyncService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
-      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
-    },
-    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java": {
-      "rule": "R2-extra-service",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/CodeGenerationTaskService.java",
-      "name": "CodeGenerationTaskService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
-      "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
-    },
-    "R2:bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java": {
-      "rule": "R2-extra-service",
-      "path": "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/application/service/GenerationTaskOperationService.java",
-      "name": "GenerationTaskOperationService",
-      "package": "service",
-      "classification": "pending",
-      "owner": "bone-engine/studio-generator",
       "detail": "application 下的唯一 service 形态是 *ApplicationService；*Service 只在 domain/service 合法（E-13.2）"
     },
     "R2:bone-platform/bone-iam/src/main/java/com/bone/iam/application/binding/AccountRoleBindingService.java": {

@@ -159,12 +159,16 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 
 | 批次 | 模块 | 存量条数（R1/R2/R3） | 动作要点 | commit |
 |---|---|---|---|---|
-| 1 | bone-notification | 0 / 1 / 0 | `NotificationService` → `NotificationApplicationService` | 待填 |
-| 2 | bone-metadata-server | 0 / 1 / 0 | `CatalogIdempotencyService` 定性归位 | 待填 |
-| 3 | bone-iam | 3 / 1 / 0 | `binding/` + `policy/` 三个类按 D3 四落点归位 | 待填 |
-| 4 | bone-extension-studio | 11 / 4 / 12 | R3 搬平 → R2 定性 → R1 删角色包 | 待填 |
-| 5 | bone-engine/studio-generator | 3 / 3 / 24 | 同上 | 待填 |
-| 6 | bone-integration | 8 / 4 / 21 | 同上 | 待填 |
+| 1 | bone-notification | 0 / 1 / 0 | `NotificationService` → `NotificationApplicationService` | `a33f1a65f` |
+| 2 | bone-metadata-server | 0 / 1 / 0 | `CatalogIdempotencyService` → `application/support/CatalogIdempotencySupport` | `47de33002` |
+| 3 | bone-iam | 3 / 1 / 0 | `binding/` + `policy/` 三个类按 D3 四落点归位 | **未执行**（见下） |
+| 4 | bone-extension-studio | 11 / 4 / 12 | 本轮仅完成 R3（12 条）；R1/R2 待定性 | `570995266` |
+| 5 | bone-engine/studio-generator | 3 / 3 / 24 | R3 + R2 + R1 全清（含删死代码 1 个） | `a5ab41ce3` |
+| 6 | bone-integration | 8 / 4 / 21 | 本轮仅完成 R3（21 条）；R1/R2 待定性 | `a83359084` |
+
+**执行结果**：R3（57 条位置搬运）本轮**全部清零**；存量由 96 条降至 31 条（R1 角色包 25 + R2 `*Service` 命名 6，分布在 extension-studio 15 / integration 12 / iam 4）。
+
+**批次 3（bone-iam）未执行的原因**：其 4 条全部落在 R1/R2，且都不是「搬位置」能解决的——`AccountRoleBindingService` 需内联进 `AccountApplicationService`（跨聚合绑定进聚合不变量 + 缓存失效走端口），`PasswordPolicyValidator` / `TenantQuotaEnforcer` 需下沉 `domain/service` 并把 IO 与异常语义留在应用层（E-5.3.1）。属**语义重构**，会在同一批次里同时改动契约语义与测试断言，不满足判据②「对外契约全程不变」的免检条件，故不并入本轮机械搬运批次，另立批次处理。
 
 > 说明：R3（57 条）是纯位置搬运，风险最低，按 ADR-0035 D5 建议顺序 **R3 → R2 → R1** 在每模块内依次执行；R2 / R1 需逐类定性（纯领域计算下沉 `domain/service`、跨聚合绑定进聚合不变量、IO 走 `application/port/out`、无 IO 规则做值对象）。
 
