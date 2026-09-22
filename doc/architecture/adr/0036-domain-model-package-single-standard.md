@@ -105,15 +105,15 @@ com.bone.{module}/
 
 | 模块 | 现状 | 目标 | 备注 |
 |---|---|---|---|
-| bone-notification | `domain/{notification,repository}` | `domain/model/notification` + `domain/repository` | 无 `vo` / `event` 子包，最简单；**本模块无 README.md**，E-10 登记随其 README 建立或迁移提交补 |
-| bone-system | `domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event` | `domain/model/{alert,config,…}/` + `vo→valueobject` | README 包树与登记同步改写 |
+| bone-notification | ~~`domain/{notification,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/notification` + `domain/repository` | **已完成**（20 测试全绿）；无 `vo` / `event` 子包；**本模块无 README.md**，E-10 登记随其 README 建立时补 |
+| bone-system | ~~`domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event`~~ **已于 2026-09-22 完成迁移** | `domain/model/{alert,config,…}/` + `vo→valueobject` | **已完成**（92 测试全绿）；README 包树与登记已同步改写；遗留 `vo` 未统一为 `valueobject` |
 | bone-blueprint | ~~`domain/{order,payment}/{event,projection,valueobject}` + `domain/{shared,extension,gateway,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{order,payment,shared}/…`；`extension` / `gateway` / `repository` 留根 | **参考实现，已完成**（首个落地模块，212 测试全绿）；`@EnableExtensionPoints(basePackages="com.bone.blueprint.domain.extension")` 是字符串包名，因 `extension` 留根故无需改动——已逐处核对 |
 | bone-masterdata | ~~`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存~~ **已于 2026-09-22 完成合并** | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树已完成**（59 测试全绿）；`entity` / `quality` / `record` 三个包名两边都有，已逐个核对归属；遗留 `vo` 命名未统一为 `valueobject` |
-| bone-integration | `domain/{client,connector,execution,flow}` 与 `domain/model/{connector,execution,flow}` 并存 | 合并为 `domain/model/{client,connector,execution,flow}/` | 同上；`client` 需逐个定性（模型 vs 端口） |
+| bone-integration | `connector` / `execution` / `flow` 已迁入 `model/`（2026-09-22）；**`client` 仍在 `domain/` 根未定性** | 合并为 `domain/model/{client,connector,execution,flow}/` | **部分完成**（75 测试全绿）；`client` 需先定性（模型 vs 端口）再决定迁入或按 R3 留根——定性前仍属 R4 禁止的并存态 |
 | bone-extension-studio | `domain/model/` 下 9 个类平铺 + `domain/{gateway,repository}` | `domain/model/{聚合}/` | `model/` 平铺桶需先按聚合 / 概念分组 |
 | bone-metadata-server | `domain/model/` 类平铺 + `model/physical` + `domain/{enums,service,gateway,repository}` | `domain/model/{概念}/` | 同上 |
 | studio-generator | `domain/catalog/{model,repository}` + `domain/{code,history,service,data,gateway,repository}` | `domain/model/…` | 另需对齐生成模板（D6）；**本模块无 README.md**，E-10 登记同上 |
-| bone-iam | `domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` + `{}/event`、`{}/vo` + `domain/{gateway,repository}` | `domain/model/{…}/` + `vo→valueobject` | **最后做**：中央鉴权模块；83 个引用文件全在模块内，无跨模块涟漪，但改动量最大 |
+| bone-iam | ~~`domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` + `{}/event`、`{}/vo`~~ **已于 2026-09-22 完成迁移** | `domain/model/{…}/` + `vo→valueobject` | **已完成**（最后一棒，132 测试全绿）；`client`（`SsoClient` / `StorageClient`）经定性为**端口接口**，按 R3 留根不进 `model/`；遗留 `vo` 未统一为 `valueobject` |
 
 ## 代价与风险
 

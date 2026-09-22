@@ -2,7 +2,7 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.5.17（domain 分组形态统一批次：① 按 [ADR-0036](./adr/0036-domain-model-package-single-standard.md) 把 domain 分组从「两种合法形态」收敛为**唯一形态 `domain/model/{聚合}/`**——聚合根 / 聚合内实体 / 值对象在同一聚合包内平铺，`event/` `projection/` 为聚合内子包，而 `repository` / `gateway` / `service` 端口留在 `domain/` 根；**禁止** `model/aggregate|entity|valueobject|event` 角色桶（与 E-10.3「非角色子目录」及 ADR-0030 的 `domain/<聚合>/projection` 落点冲突）；② 消除记法歧义：原记法 `domain/model/{aggregate|entity|valueobject|event}` 实测被读成三种意思（`model/` 平铺类桶、`model/{聚合}` 子构件、扁平不用 `model/`），bone-masterdata 与 bone-integration 已落到「一个 domain 两套分组并存」；③ E-10 参考图 / 双形态条款 / E-10.3 样例 / E-4.1 与 E-13.1 的投影落点、`doc/agents/03`、blueprint/iam/system 的 README 登记同批改写；④ 存量按 [E-0.2](#e-02-存量不符合规范代码的处理) 触达即收敛，全平台一次性统一由 ADR-0036 D4 走受控批量收敛通道授权——**代码迁移由架构师手工执行**，本版本只落规范与登记；2026-09-22）
+> **版本**：5.5.17（domain 分组形态统一批次：① 按 [ADR-0036](./adr/0036-domain-model-package-single-standard.md) 把 domain 分组从「两种合法形态」收敛为**唯一形态 `domain/model/{聚合}/`**——聚合根 / 聚合内实体 / 值对象在 `model/` 内的聚合包中平铺，`event/` `projection/` 为聚合内子包，而 `repository` / `gateway` / `service` 及模块自有的领域端口子包（如 `extension/`）留在 `domain/` 根；**禁止** `model/aggregate|entity|valueobject|event` 角色桶（与 E-10.3「非角色子目录」及 ADR-0030 的 `domain/model/<聚合>/projection` 落点冲突）；② 消除记法歧义：原记法 `domain/model/{aggregate|entity|valueobject|event}` 实测被读成三种意思（`model/` 平铺类桶、`model/{聚合}` 子构件、扁平不用 `model/`），bone-masterdata 与 bone-integration 已落到「一个 domain 两套分组并存」；③ E-10 参考图 / 双形态条款 / E-10.3 样例 / E-4.1 与 E-13.1 的投影落点、`doc/agents/03`，以及 blueprint / iam / system / masterdata / integration / metadata-server / extension-studio 的模块 README 登记同批补齐；④ D1 形态与 D2 值对象子包名 `valueobject` 经架构师同日确认；存量按 [E-0.2](#e-02-存量不符合规范代码的处理) 触达即收敛，全平台一次性统一由 ADR-0036 D4 走受控批量收敛通道授权——**代码迁移由架构师手工执行**，本版本只落规范与登记；2026-09-22）
 > **上一版 5.5.16**（应用层只保留 ApplicationService 批次：① **废止 `application/service/` 子包**——其 `*Service` 编排器与 `*ApplicationService` 同层竞争「用例入口」身份，制造职责归属模糊与认知负担，[ADR-0033](./adr/0033-application-collaboration-service.md) 即日起撤销（superseded）；② IAM 该包下三个类按职责归位：`AuditService` 落库逻辑并入 `AuditApplicationService`、`AuthService` 的登录定位/密码校验内联进 `AuthApplicationService`（`AccountApplicationService` 查重改直调 `AccountRepository.findByUsernameInTenant`）、`RoleHierarchyResolver` 作为独立 `*Resolver` 助手移至 `application/` 根（受 bone-iam 模块级规则 `domainCoreShouldOnlyDependOnAllowedPackages` 约束——**该规则不在共享规则库，待提升**；带 `@Service` 的领域类不被允许，故不进 `domain/service`）；③ E-10.2 / E-13.2 / E-13.4 与「ApplicationService 平铺」小节同步改写，删去「应用层协作服务」第三类构件；2026-09-22）
 > **上一版 5.5.15**（租户隔离显式性批次：① SDK 的 SQL 通道改为**启动期 fail-fast**——`@Sql` / 外置模板方法缺 `@TenantScope` 直接拒绝注册（此前注解默认 `MANUAL`=不注入，"忘写"等于静默跨租户读写而无人报错），注解同时支持写在仓储接口上作为该接口的默认策略；② **全租户入口的事实判据统一**为「`@TenantScope(ALL)` ∨ `Criteria.disableTenantFilter()`」——纠正此前只按注解判定、漏掉 Criteria 通道（`TenantFilterInjector` 不读注解）的口径；③ 新增三条共享门禁（调用面白名单 + 命名双向绑定）并铺到 8 个应用模块，**首次运行即抓出两处真问题**：bone-iam 的登录跨租户定位未登记（已改名 `findByUsernameForLoginAllTenants` 并登记调用方）、bone-integration 的统计任务在定时线程做租户内读（已按 G-2 冻结登记，租户模型待模块 Owner 定夺）；④ E-2 / E-4.4 同步改写，删掉"缺标注一律拒绝执行"这句与实现不符的表述；2026-09-20）
 > **上一版 5.5.14**（规范语义收敛批次：① E-0.2 新增**受控批量收敛通道**、E-3.11 第 3 条改为"默认禁批量、满足判据可批量"——一次性批量重构从"一律禁止"回到"有证据即可授权"，bone-iam 2026-09-20 的全量收敛为该通道第一个先例（[ADR-0032](./adr/0032-controlled-batch-convergence.md)）；② 新增 [E-3.12 存量读侧收敛](#e-312-存量读侧收敛)，给读侧补齐与写侧对称的判据与迁移剧本——此前只有写侧有"触达即收敛"，读侧长期停在"没人说它违规、也没人推它收敛"；③ 正文里的易变计数移出规范（E-3.7 落地现状、G-1.8 双口径示例、G-1.1 后的 HC 摘要），改为口径描述或脚本现算——规范正文里的数字会在下一次重构后变成错的；④ 定义**应用层协作服务**（`application/service/`）并给出与 `support/`、`domain/service` 的落点判据（E-10.2 / E-13.2 / E-13.4，[ADR-0033](./adr/0033-application-collaboration-service.md)）——此前 IAM 该形态构件在规范里无家可归，评审只能靠猜；2026-09-20）
@@ -1480,6 +1480,7 @@ com.bone.{module}/
 │   ├── repository/                  # 聚合仓储接口（端口，不随 model 下移）
 │   ├── service/                     # 领域服务（最后选择）
 │   └── gateway/                     # 外部业务能力端口，按需创建
+│                                    # （模块自有的领域端口子包如 extension/ 同在本层）
 └── infrastructure/
     ├── persistence/                 # 写模型持久化适配器
     ├── query/                       # QueryPort 实现 + @Sql 读侧仓储（须登记 @EnableSqlRepositories，见 E-4.4）
@@ -1530,7 +1531,7 @@ domain/
 三条硬规则：
 
 - **禁止角色子目录**：不设 `domain/model/aggregate|entity|valueobject|event` 这类跨聚合角色桶——它与 [E-10.3](#e-103-按聚合的垂直切分样例)「聚合根平铺、非角色子目录」直接冲突，也会把整模块聚成一个横切大桶；
-- **端口留在 `domain/` 根**：`repository` / `gateway` / `service` 不是模型构件，不进 `model/`；
+- **端口留在 `domain/` 根**：`repository` / `gateway` / `service` 以及模块自有的领域端口子包（如 blueprint 的 `extension/`）都不是模型构件，不进 `model/`；
 - **同一 `domain` 包内不得并存两套分组**：`domain/{aggregate}` 与 `domain/model/{aggregate}` 并存即违规。
 
 **存量条款**：`domain/{aggregate}` 平铺、`model/` 平铺类桶、以及 `domain/{聚合}` 与 `model/{聚合}` 双树并存，均为**存量**，按 [E-0.2](#e-02-存量不符合规范代码的处理) 触达即收敛；本轮全平台一次性统一走受控批量收敛通道，逐模块迁移清单与顺序见 [ADR-0036](./adr/0036-domain-model-package-single-standard.md)。**新代码一律按目标形态**；模块 README 的 `E-10 domain 分组形态登记` 章节登记「目标形态 + 本模块迁移状态」。
@@ -1597,7 +1598,7 @@ Req/Message
 
 #### E-10.3 按聚合的垂直切分样例
 
-本样例按 [ADR-0036](./adr/0036-domain-model-package-single-standard.md) 的**唯一形态**给出：以「一个聚合一个应用用例一组端口」为切片，聚合构件收在聚合包内，避免形成横切大桶。示例（Order 聚合，紧凑只读形态）：
+本样例按 [ADR-0036](./adr/0036-domain-model-package-single-standard.md) 的**唯一形态**给出：以「一个聚合一个应用用例一组端口」为切片，聚合构件收在 `domain/model/` 下的**聚合包内**，**聚合根在包内平铺**（非角色子目录），避免形成横切大桶。示例（Order 聚合，紧凑只读形态）：
 
 ```text
 com.bone.order/
@@ -1610,7 +1611,7 @@ com.bone.order/
 │       └── dto/OrderSummary              # 应用投影
 ├── domain/
 │   ├── model/
-│   │   └── order/                # 聚合包：聚合根 / 实体 / 值对象平铺，非角色子目录
+│   │   └── order/                # model/ 内的聚合包：聚合根平铺，非角色子目录
 │   │       ├── Order.java
 │   │       ├── OrderStatus.java
 │   │       ├── OrderItem.java

@@ -28,3 +28,9 @@ mvn -pl bone-engine/bone-metadata-server -am spring-boot:run -Dspring-boot.run.p
 ```
 
 环境变量：`BONE_DB_PASSWORD`、`METADATA_SDK_TOKEN`、`API_KEY`（见 `application-local.yaml`）。
+
+## domain 分组形态（E-10 登记）
+
+**目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`，聚合根 / 实体 / 值对象在聚合包内直接平铺，`event/` `projection/` 为聚合内子包；`repository` / `gateway` / `service` 端口留在 `domain/` 根。
+
+**本模块现状**：`domain/model/` 下 9 个领域类**平铺**（另含 `model/physical/`），与 `domain/{enums,gateway,repository,service}` 并存——属**存量**，按 E-0.2 待收敛。目标为先按聚合 / 概念把 `model/` 平铺类分组成 `domain/model/{概念}/`，`enums` / `gateway` / `repository` / `service` 是否随迁按「模型构件 vs 端口」逐个定性。
