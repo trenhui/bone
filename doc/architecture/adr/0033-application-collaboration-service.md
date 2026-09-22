@@ -2,11 +2,13 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：E-10.2 三层对照表、E-13.2「四种含义」、E-13.4 后缀裁决同批落地 |
+| **状态** | **已撤销（Superseded，2026-09-22，随 Bone-DDD 5.5.16）**：应用层只保留 `*ApplicationService` 作为入口构件，「应用层协作服务（`application/service/`）」第三类被废止。E-10.2 / E-13.2（回退为三种含义）/ E-13.4 与「ApplicationService 平铺」小节已同步改写，原 D4 落点判据不再作为新增依据；存量 `application/service` 构件按职责归位（见 Bone-DDD 5.5.16 版本说明与 `bone-iam/README.md`）。 |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-10 / E-10.1 / E-10.2、E-13.2 / E-13.4、E-3.2 / E-3.5 / E-3.7 AS-01、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
 | **下游同步** | `Bone-DDD-最终实践方案.md` E-10.2 / E-13.2 / E-13.4、`bone-platform/bone-iam/README.md` |
+
+> **撤销说明（2026-09-22，Bone-DDD 5.5.16）**：`application/service/` 作为「第二编排层」与 `*ApplicationService` 同层竞争用例入口身份，制造职责归属模糊与认知负担，与 ADR-0032 已消灭的 Handler/ApplicationService 套娃同源。现应用层入口构件统一为 `*ApplicationService`，跨切面复用逻辑按语义化子包（`binding/`、`policy/`、`support/` 等）或独立 `*Resolver` 助手归位，不再设有通用 `service` 子包。本 ADR 的 D1–D6 判据不再作为新增依据；存量构件处置见 Bone-DDD 5.5.16 与 `bone-iam/README.md`。
 
 ---
 

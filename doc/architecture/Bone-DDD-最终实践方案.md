@@ -2,7 +2,8 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.5.15（租户隔离显式性批次：① SDK 的 SQL 通道改为**启动期 fail-fast**——`@Sql` / 外置模板方法缺 `@TenantScope` 直接拒绝注册（此前注解默认 `MANUAL`=不注入，"忘写"等于静默跨租户读写而无人报错），注解同时支持写在仓储接口上作为该接口的默认策略；② **全租户入口的事实判据统一**为「`@TenantScope(ALL)` ∨ `Criteria.disableTenantFilter()`」——纠正此前只按注解判定、漏掉 Criteria 通道（`TenantFilterInjector` 不读注解）的口径；③ 新增三条共享门禁（调用面白名单 + 命名双向绑定）并铺到 8 个应用模块，**首次运行即抓出两处真问题**：bone-iam 的登录跨租户定位未登记（已改名 `findByUsernameForLoginAllTenants` 并登记调用方）、bone-integration 的统计任务在定时线程做租户内读（已按 G-2 冻结登记，租户模型待模块 Owner 定夺）；④ E-2 / E-4.4 同步改写，删掉"缺标注一律拒绝执行"这句与实现不符的表述；2026-09-20）
+> **版本**：5.5.16（应用层只保留 ApplicationService 批次：① **废止 `application/service/` 子包**——其 `*Service` 编排器与 `*ApplicationService` 同层竞争「用例入口」身份，制造职责归属模糊与认知负担，[ADR-0033](./adr/0033-application-collaboration-service.md) 即日起撤销（superseded）；② IAM 该包下三个类按职责归位：`AuditService` 落库逻辑并入 `AuditApplicationService`、`AuthService` 的登录定位/密码校验内联进 `AuthApplicationService`（`AccountApplicationService` 查重改直调 `AccountRepository.findByUsernameInTenant`）、`RoleHierarchyResolver` 作为独立 `*Resolver` 助手移至 `application/` 根（受 `domainCoreShouldOnlyDependOnAllowedPackages` 约束，带 `@Service` 的领域类不被允许，故不进 `domain/service`）；③ E-10.2 / E-13.2 / E-13.4 与「ApplicationService 平铺」小节同步改写，删去「应用层协作服务」第三类构件；2026-09-22）
+> **上一版 5.5.15**（租户隔离显式性批次：① SDK 的 SQL 通道改为**启动期 fail-fast**——`@Sql` / 外置模板方法缺 `@TenantScope` 直接拒绝注册（此前注解默认 `MANUAL`=不注入，"忘写"等于静默跨租户读写而无人报错），注解同时支持写在仓储接口上作为该接口的默认策略；② **全租户入口的事实判据统一**为「`@TenantScope(ALL)` ∨ `Criteria.disableTenantFilter()`」——纠正此前只按注解判定、漏掉 Criteria 通道（`TenantFilterInjector` 不读注解）的口径；③ 新增三条共享门禁（调用面白名单 + 命名双向绑定）并铺到 8 个应用模块，**首次运行即抓出两处真问题**：bone-iam 的登录跨租户定位未登记（已改名 `findByUsernameForLoginAllTenants` 并登记调用方）、bone-integration 的统计任务在定时线程做租户内读（已按 G-2 冻结登记，租户模型待模块 Owner 定夺）；④ E-2 / E-4.4 同步改写，删掉"缺标注一律拒绝执行"这句与实现不符的表述；2026-09-20）
 > **上一版 5.5.14**（规范语义收敛批次：① E-0.2 新增**受控批量收敛通道**、E-3.11 第 3 条改为"默认禁批量、满足判据可批量"——一次性批量重构从"一律禁止"回到"有证据即可授权"，bone-iam 2026-09-20 的全量收敛为该通道第一个先例（[ADR-0032](./adr/0032-controlled-batch-convergence.md)）；② 新增 [E-3.12 存量读侧收敛](#e-312-存量读侧收敛)，给读侧补齐与写侧对称的判据与迁移剧本——此前只有写侧有"触达即收敛"，读侧长期停在"没人说它违规、也没人推它收敛"；③ 正文里的易变计数移出规范（E-3.7 落地现状、G-1.8 双口径示例、G-1.1 后的 HC 摘要），改为口径描述或脚本现算——规范正文里的数字会在下一次重构后变成错的；④ 定义**应用层协作服务**（`application/service/`）并给出与 `support/`、`domain/service` 的落点判据（E-10.2 / E-13.2 / E-13.4，[ADR-0033](./adr/0033-application-collaboration-service.md)）——此前 IAM 该形态构件在规范里无家可归，评审只能靠猜；2026-09-20）
 > **上一版 5.5.13**（命名收敛落地 + 度量口径批次：① E-13.3 三个 Domain Gateway `<短名>Impl` 存量**已收敛**为 `<短名>GatewayAdapter`——`DatabaseMetadataGatewayAdapter` / `CatalogMetadataGatewayAdapter`（studio-generator，仍在 `infrastructure/gateway`）、`TenantDeletionGatewayAdapter`（IAM，并从 `infrastructure/persistence` 迁至 E-10.2 落点 `infrastructure/gateway`），`doc/_generated/metadata/compliance.json` 已同批重算；未收敛的相邻形态（bone-system 4 个 + metadata-server 1 个自名 `*Gateway`、studio-generator 2 个 `*ReadPortImpl`）就地登记为待裁决并写明理由；② 新增门禁：`check-ddd-doc-code-sync.py` 校验 E-13 命名样例 `` `A` → `B` `` 的右侧类必须真实存在（G-1.1 文档门禁 #13 扩项）——命名小节是最容易被重构打穿的地方，2026-09-18 的 `PaymentGateway` → `SimulatedPaymentGatewayImpl` 即此形态；③ E-0.2 迁移度量由"待定阈值"改为**触达即收敛**纪律，明确不设数字 KPI（阈值型 KPI 会诱发"为达标而合并"的仪式化改造，撞 E-3.2）；④ G-1.8 指标输出**索引 / 工作树双口径**并写明读法（重构期间索引口径会把已删除未提交的文件算进去——实测 `*ApplicationService` 索引 3 / 工作树 2），2026-09-19）
 > **同批追加（5.5.13）**：⑤ 落地 HC-008 的本地载体——新增 `scripts/check-ddl-required-columns.py`（`--check` 拦**新增表**缺 `tenant_id`/`created_at`/`updated_at`/`deleted`，并入 `scripts/ci-check.sh` `[7/7]`）；存量 26 张表的缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩）并**已逐表分类**：18 张 `by-design`（追加型日志 / 聚合子表 / 租户根表 / 全局目录）、8 张待处理（2 张 `gap-candidate` 需走 L3 DDL 审批、6 张待模块 Owner 裁决租户归属）；HC-008 由 Planned 升 **Manual（本地，无 CI workflow）**，G-1.1 12c 同步改写。
@@ -1489,18 +1490,20 @@ com.bone.{module}/
 
 这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与其中列出的子包是"该有的都在这里"，模块按自身需要增加自有子包——blueprint 参考实现即另有 `infrastructure/gateway`（Domain Gateway 实现）、`extension`、`idempotency`、`context`、`event`、`config`、`security`、`observability`，这些**不要求全平台统一**。`studio-generator` 已内置四层最小骨架模板（含 `applicationService.ftl`，见 E-3.7）；`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量代码不要求一次性搬包；空的 `support`、`orchestration`、`gateway` 也不要作为占位生成。
 
-##### ApplicationService 平铺、协作服务子包与 support 子包
+##### ApplicationService 平铺与 support 子包
 
-语义化 `*ApplicationService` **直接平铺在 `application/` 根目录**（blueprint 样板形态：`OrderApplicationService`、`PaymentApplicationService` 都在根目录），**`application/service/` 不是 ApplicationService 的落点**。`application/` 下除用例入口外还有两类构件：**应用层协作服务**（`application/service/`，被多个用例复用的应用级协作逻辑，IAM 现行形态）与**技术编排类**（`application/support/`，只协调出站端口、不碰 `domain`）。三者同层不同职责，按 [ADR-0033](./adr/0033-application-collaboration-service.md) 的下表判定：
+语义化 `*ApplicationService` **直接平铺在 `application/` 根目录**（blueprint 样板形态：`OrderApplicationService`、`PaymentApplicationService` 都在根目录），**它是应用层唯一的用例入口构件**。`application/` 下除用例入口外，还有一类技术编排构件：**技术编排类**（`application/support/`，只协调出站端口、不碰 `domain`）。跨切面的复用逻辑（绑定、策略、端口适配等）按**语义化子包**归位（`binding/`、`policy/`、`port/`、`query/`、`command/`、`event/`、`config/`），**不另立一个与 `*ApplicationService` 同层竞争的通用 `service` 子包**。
 
-| 维度 | 语义化 ApplicationService（`application/` 根目录平铺） | 应用层协作服务（`application/service/`） | 技术编排类（`application/support/`） |
-|---|---|---|---|
-| **定位** | 业务用例编排入口（E-3.7 AS-01） | **被多个用例复用的应用级协作逻辑**：跨聚合 / 跨仓储的编排片段、应用级配额与校验、多个 QueryPort 的组合读取 | 对 `application/port/out` 多端口的协调编排 |
-| **依赖** | `domain` 层 + `application/port/out` + `application/query/port` | `domain`（仓储 / 聚合 / 领域服务）+ `application/port/out` / `application/query/port`；**读侧 DSL（`QueryBuilder` / `Criteria` / SQL）一律不得出现**——`readSideDslOnlyInQueryLayer` 对 `application/service` 同样生效，取数须下沉 `domain/repository` 的 `default` 方法（ADR-0030）或 `infrastructure/query` | **只**依赖 `application/port/out`，不得碰 `domain` |
-| **调用方** | 由 adapter 层调用；返回**应用 DTO / 领域结果**，`ApiResponse<T>` / `PageResult<T>` 等协议包装由 adapter 组装 | **只由 application 层构件调用**，不得被 adapter 直接注入；返回值是领域对象或应用内部类型，不返回协议包装 | 可被 adapter 直接注入；同样**不得返回 `ResponseEntity` 等 HTTP 类型**——HTTP 状态码与响应头由 adapter 决定 |
-| **事务与不变量** | 持有写事务（E-3.5）；只编排，不承载聚合内部规则 | **不持有事务边界、不承载聚合不变量**：需要独立事务说明它其实是一个用例，应回落 ApplicationService；出现状态迁移判断即回落聚合或领域服务 | 默认无事务、无业务规则 |
-| **契约** | 按 E-3.7 决策树逐步引入；多业务能力时按 E-3.8 拆分 | 每个模块在 README 登记用途，数量保持少量；方法名用调用方的用例语言 | 必须保持少量（典型模块 ≤2 个），典型场景为幂等、限流、请求快照等横切关注点 |
-| **落点判据** | — | 无 IO 的纯业务规则（且失败语义可用 `DomainException` 表达、由应用层转换，见 E-5.3.1）→ 下沉 `domain/service`；只协调技术端口 → 归 `support/`；两者都不是、且**不是单点透传**（被多个用例 / 多个应用服务 / 模块内公共工具调用，或承载单一用例内可独立测试的协作步骤）→ 留在此处；**没有调用方的直接删除**（E-3.11） | 不得直接出现在 `studio-generator` 默认骨架中；默认骨架只生成 ApplicationService |
+> **`application/service/` 子包已废止（2026-09-22，[ADR-0033](./adr/0033-application-collaboration-service.md) 撤销）**：此前把「被多个用例复用的应用级协作逻辑」收进 `application/service/*Service`，但这类 `*Service` 与 `*ApplicationService` 同名不同层，长期造成「逻辑到底放 service 还是 appservice」的职责归属模糊，正是 ADR-0032 已消灭的「第二编排层」形态的回潮。落入该包的构件按职责归位：纯领域计算进 `domain/service`（受架构规则约束、不得带 `@Service` 等 Spring stereotype）；跨聚合绑定 / 编排进语义化子包（`binding/`、`policy/`），且命名不得与用例入口易混淆；薄透传 / 无调用方直接删除。应用层不再有「服务层」。
+
+| 维度 | 语义化 ApplicationService（`application/` 根目录平铺） | 技术编排类（`application/support/`） |
+|---|---|---|
+| **定位** | 业务用例编排入口（E-3.7 AS-01） | 对 `application/port/out` 多端口的协调编排 |
+| **依赖** | `domain` 层 + `application/port/out` + `application/query/port` | **只**依赖 `application/port/out`，不得碰 `domain` |
+| **调用方** | 由 adapter 层调用；返回**应用 DTO / 领域结果**，`ApiResponse<T>` / `PageResult<T>` 等协议包装由 adapter 组装 | 可被 adapter 直接注入；同样**不得返回 `ResponseEntity` 等 HTTP 类型**——HTTP 状态码与响应头由 adapter 决定 |
+| **事务与不变量** | 持有写事务（E-3.5）；只编排，不承载聚合内部规则 | 默认无事务、无业务规则 |
+| **契约** | 按 E-3.7 决策树逐步引入；多业务能力时按 E-3.8 拆分 | 必须保持少量（典型模块 ≤2 个），典型场景为幂等、限流、请求快照等横切关注点 |
+| **落点判据** | — | 不得直接出现在 `studio-generator` 默认骨架中；默认骨架只生成 ApplicationService |
 
 > **典型技术编排类示例**：`com.bone.core.idempotency.IdempotencyService`（幂等 Key 哈希计算 + 快照存储编排），依赖 `com.bone.core.idempotency.IdempotencyStore`（存储契约，业务模块 infrastructure 层实现），由 Controller 在业务用例执行前后调 `replay()` / `remember()`。
 >
@@ -1725,13 +1728,12 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 入站门面 | `OrderFacade` | 符合 E-3.4 的稳定、粗粒度入站契约 |
 | SDK 入站契约 | `MetadataApi` | 新增使用 `*Api`（目标命名示例，非现存类）；存量 `MetadataService` 不追溯 |
 
-**`*Service` 后缀的四种含义**（`*Service` 是唯一按包分层的后缀，同一个模块内必须按包区分语义，不得混用）：
+**`*Service` 后缀的三种含义**（`*Service` 唯一按包分层的语义是 `domain/service` 的纯领域服务；应用层没有独立的「服务层」，复用逻辑按语义化子包归位，不得另立 `application/service/` 与 `*ApplicationService` 同层竞争）：
 
 | 后缀 | 位置 | 职责 | 典型内容 |
 |------|------|------|----------|
 | `*DomainService` / `*Service`（domain 层） | `domain/service` | 纯业务规则，无 IO、无事务 | 跨聚合定价策略、复杂业务校验 |
-| `*ApplicationService` | `application/`（根目录平铺） | 用例编排，有事务、有 IO | 加载聚合、调用行为、保存、发布事件 |
-| `*Service`（application 层） | `application/service` | 应用层协作服务：被多个用例复用的应用级协作逻辑，可依赖 `domain`，**不持有事务、不承载聚合不变量**（E-10.2、[ADR-0033](./adr/0033-application-collaboration-service.md)） | IAM 现行形态：`AccountRoleBindingService`、`TenantQuotaEnforcer`、`RoleHierarchyResolver` 等 |
+| `*ApplicationService` | `application/`（根目录平铺） | 用例编排，有事务、有 IO，是应用层唯一入口构件 | 加载聚合、调用行为、保存、发布事件 |
 | `*Port`（出站端口） | `application/port/out` | 统一出站端口后缀 | `PricingPort`、`TenantPort`、`OrderMessagePort`、`ConsumedEventPort`、`PaymentSignaturePort`、`OrderOutboxPort`、`OrderOutboxRelayPort` 等（blueprint 样板：7 个端口全 `*Port`，不再用 `*Service` / `*Provider` / `*Store` / `*Sender` / `*Writer`） |
 
 禁止将领域服务命名为 `*ApplicationService`，也禁止在 ApplicationService 中承载聚合内部状态迁移规则。二者不是“简单 vs 复杂”的替代关系，而是不同层的职责分工。
@@ -1783,7 +1785,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 后缀清单已按层拆到 E-13.2（领域与应用构件）和 E-13.3（端口、适配器与触发器），本节只处理容易撞车的几组：
 
 - `*Event` 与 `*IntegrationEvent`：前者是上下文内发生的事实，后者是跨上下文的版本化契约。取舍不清时用更具体的那个，例如 `OrderPaidIntegrationEvent` 优于 `OrderPaidMessage`。
-- `*Service` 与 `*ApplicationService` 与 `*Port`：三者分属不同层不同职责——`*Service` 出现在 `domain/service`（纯规则、无 IO）与 `application/service`（应用层协作服务：可依赖 domain、不持有事务、不承载聚合不变量，见 E-10.2）两处，**同一个模块内必须靠包路径区分，不得在同一层混用两种语义**；`*ApplicationService` 平铺在 `application/` 根目录（用例编排、有事务），`*Port` 统一出站端口后缀在 `application/port/out`。它们不是“简单 vs 复杂”的替代关系，对照见 E-13.2。
+- `*Service` 与 `*ApplicationService` 与 `*Port`：分属不同层不同职责——`*Service` 只出现在 `domain/service`（纯领域规则、无 IO、无事务，受架构规则约束不得带 Spring stereotype）；`*ApplicationService` 平铺在 `application/` 根目录（用例编排、有事务、是应用层唯一入口构件）；`*Port` 统一出站端口后缀在 `application/port/out`。`application/service/` 子包已废止（[ADR-0033](./adr/0033-application-collaboration-service.md) 撤销），应用层复用逻辑按语义化子包（`binding/`、`policy/` 等）归位，不得再建与 `*ApplicationService` 同层竞争的通用「服务层」；三者不是“简单 vs 复杂”的替代关系，对照见 E-13.2。
 - `*Orchestrator` 与 `*Job`：跨聚合业务编排用 `*Orchestrator`；技术轮询和 Outbox 中继是 `*Job`，不是编排器（E-3.3）。
 - 存量 `AlertEvent` 实为告警记录，应演进为 `AlertRecord`；后缀与职责不符时，先改职责再改名。
 
