@@ -1,7 +1,7 @@
 package com.bone.iam.domain.repository;
 
-import com.bone.iam.domain.permission.Permission;
-import com.bone.iam.domain.role.RolePermission;
+import com.bone.iam.domain.model.permission.Permission;
+import com.bone.iam.domain.model.role.RolePermission;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

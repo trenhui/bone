@@ -7,7 +7,7 @@ import com.bone.iam.application.query.dto.ModuleDTO;
 import com.bone.iam.application.query.qry.ModuleListQuery;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
-import com.bone.iam.domain.app.BoneModule;
+import com.bone.iam.domain.model.app.BoneModule;
 import com.bone.iam.domain.repository.BoneModuleRepository;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,7 +1,7 @@
 package com.bone.iam.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.domain.role.Role;
+import com.bone.iam.domain.model.role.Role;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;

@@ -1,6 +1,6 @@
 package com.bone.iam.domain.gateway;
 
-import com.bone.iam.domain.session.Session;
+import com.bone.iam.domain.model.session.Session;
 import java.util.List;
 import java.util.Optional;
 

@@ -1,7 +1,7 @@
 package com.bone.iam.infrastructure.gateway;
 
 import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
-import com.bone.iam.domain.session.Session;
+import com.bone.iam.domain.model.session.Session;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;

@@ -11,7 +11,7 @@ import com.bone.iam.application.query.qry.MenuTreeQuery;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
-import com.bone.iam.domain.menu.Menu;
+import com.bone.iam.domain.model.menu.Menu;
 import com.bone.iam.domain.repository.MenuRepository;
 import java.util.ArrayList;
 import java.util.HashSet;

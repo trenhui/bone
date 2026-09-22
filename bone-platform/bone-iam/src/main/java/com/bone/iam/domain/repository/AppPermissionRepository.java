@@ -1,6 +1,6 @@
 package com.bone.iam.domain.repository;
 
-import com.bone.iam.domain.app.AppPermission;
+import com.bone.iam.domain.model.app.AppPermission;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;

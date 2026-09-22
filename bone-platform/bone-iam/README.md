@@ -16,14 +16,14 @@
 
 **目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`——聚合根 / 聚合内实体 / 值对象在聚合包内**直接平铺**，`event/` `projection/` 为聚合内子包；`repository` / `gateway` 端口留在 `domain/` 根。
 
-**本模块现状**：**扁平形态，属存量**（ADR-0036 R5），按 E-0.2 待收敛；迁移顺序排在**最后**（中央鉴权模块，见 ADR-0036 D4）。当前子包与迁移映射：
+**本模块现状**：**已迁移至目标形态**（2026-09-22 完成，ADR-0036 顺序中的最后一棒）。聚合构件全部位于 `domain/model/{account,app,audit,dept,menu,permission,role,session,tenant}/`；`domain/{client,gateway,repository}` 留在 `domain/` 根。
 
-| 现状子包 | 迁移后 |
+| 迁移前 | 迁移后 |
 |---|---|
-| `domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` | `domain/model/{account,app,audit,client,dept,menu,permission,role,session,tenant}` |
+| `domain/{account,app,audit,dept,menu,permission,role,session,tenant}` | `domain/model/{聚合}/` |
 | `{聚合}/event`（`account` / `audit` / `dept` / `menu` / `permission` / `role`） | `domain/model/{聚合}/event` |
-| `{聚合}/vo`（`account` / `app` / `audit` / `permission` / `role`） | `domain/model/{聚合}/valueobject` |
-| `domain/repository`、`domain/gateway` | **不变**（端口不进 `model/`） |
+| `{聚合}/vo`（`account` / `app` / `audit` / `permission` / `role`） | `domain/model/{聚合}/vo`（**保留 `vo` 命名**，未按 ADR-0036 D1 统一为 `valueobject`，登记为命名待办） |
+| `domain/repository`、`domain/gateway`、`domain/client` | **不变**（端口不进 `model/`）；`client`（`SsoClient` / `StorageClient`）是**端口接口**而非聚合模型，故留根 |
 
 ## 应用层结构（无 service 子包）
 

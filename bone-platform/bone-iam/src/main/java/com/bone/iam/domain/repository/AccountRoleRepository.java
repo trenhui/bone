@@ -1,6 +1,6 @@
 package com.bone.iam.domain.repository;
 
-import com.bone.iam.domain.account.AccountRole;
+import com.bone.iam.domain.model.account.AccountRole;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.Arrays;

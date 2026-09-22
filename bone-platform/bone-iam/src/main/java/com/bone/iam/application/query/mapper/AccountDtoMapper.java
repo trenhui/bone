@@ -1,7 +1,7 @@
 package com.bone.iam.application.query.mapper;
 
 import com.bone.iam.application.query.dto.AccountDTO;
-import com.bone.iam.domain.account.Account;
+import com.bone.iam.domain.model.account.Account;
 import org.springframework.stereotype.Component;
 
 /** 领域账户与查询 DTO 映射 */

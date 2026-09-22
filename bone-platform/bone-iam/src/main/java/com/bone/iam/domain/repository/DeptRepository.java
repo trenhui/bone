@@ -1,6 +1,6 @@
 package com.bone.iam.domain.repository;
 
-import com.bone.iam.domain.dept.Dept;
+import com.bone.iam.domain.model.dept.Dept;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.List;

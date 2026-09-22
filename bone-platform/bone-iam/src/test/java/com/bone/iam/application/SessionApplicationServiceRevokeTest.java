@@ -12,7 +12,7 @@ import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
-import com.bone.iam.domain.session.Session;
+import com.bone.iam.domain.model.session.Session;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.dto.request;
 
-import com.bone.iam.domain.permission.vo.PermissionType;
+import com.bone.iam.domain.model.permission.vo.PermissionType;
 import lombok.Data;
 
 @Data

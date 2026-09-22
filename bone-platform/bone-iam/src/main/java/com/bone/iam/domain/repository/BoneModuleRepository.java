@@ -1,7 +1,7 @@
 package com.bone.iam.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.domain.app.BoneModule;
+import com.bone.iam.domain.model.app.BoneModule;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

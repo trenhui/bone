@@ -1,6 +1,6 @@
 package com.bone.iam.application.event;
 
-import com.bone.iam.domain.role.event.RoleCreatedEvent;
+import com.bone.iam.domain.model.role.event.RoleCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

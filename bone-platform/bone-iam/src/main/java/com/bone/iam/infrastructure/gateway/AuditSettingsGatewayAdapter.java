@@ -1,8 +1,8 @@
 package com.bone.iam.infrastructure.gateway;
 
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.iam.domain.audit.AuditSettings;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
+import com.bone.iam.domain.model.audit.AuditSettings;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

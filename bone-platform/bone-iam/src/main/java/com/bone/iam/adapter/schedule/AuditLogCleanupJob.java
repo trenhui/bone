@@ -1,8 +1,8 @@
 package com.bone.iam.adapter.schedule;
 
 import com.bone.iam.application.port.out.AuditLogRetentionPort;
-import com.bone.iam.domain.audit.AuditSettings;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
+import com.bone.iam.domain.model.audit.AuditSettings;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

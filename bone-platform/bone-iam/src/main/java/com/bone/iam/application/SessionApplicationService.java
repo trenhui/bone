@@ -5,7 +5,7 @@ import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
-import com.bone.iam.domain.session.Session;
+import com.bone.iam.domain.model.session.Session;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

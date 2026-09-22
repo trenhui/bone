@@ -1,8 +1,8 @@
 package com.bone.iam.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.domain.audit.AuditLog;
-import com.bone.iam.domain.audit.vo.OperationType;
+import com.bone.iam.domain.model.audit.AuditLog;
+import com.bone.iam.domain.model.audit.vo.OperationType;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

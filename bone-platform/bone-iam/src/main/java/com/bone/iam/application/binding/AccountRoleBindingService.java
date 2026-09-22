@@ -1,7 +1,7 @@
 package com.bone.iam.application.binding;
 
-import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
+import com.bone.iam.domain.model.account.AccountRole;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import java.util.List;
 import java.util.Objects;

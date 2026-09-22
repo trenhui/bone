@@ -1,7 +1,7 @@
 package com.bone.iam.application;
 
+import com.bone.iam.domain.model.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.iam.domain.role.Role;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;

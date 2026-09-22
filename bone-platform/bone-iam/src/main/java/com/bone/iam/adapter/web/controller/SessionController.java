@@ -3,7 +3,7 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.application.SessionApplicationService;
-import com.bone.iam.domain.session.Session;
+import com.bone.iam.domain.model.session.Session;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

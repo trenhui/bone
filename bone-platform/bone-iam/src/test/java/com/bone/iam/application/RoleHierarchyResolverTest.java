@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
+import com.bone.iam.domain.model.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.iam.domain.role.Role;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

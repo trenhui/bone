@@ -2,10 +2,10 @@ package com.bone.iam.application.policy;
 
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
+import com.bone.iam.domain.model.tenant.Tenant;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.iam.domain.repository.TenantRepository;
-import com.bone.iam.domain.tenant.Tenant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

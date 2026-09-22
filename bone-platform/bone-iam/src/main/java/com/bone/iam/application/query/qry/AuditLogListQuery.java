@@ -1,7 +1,7 @@
 package com.bone.iam.application.query.qry;
 
 import com.bone.core.model.PageParam;
-import com.bone.iam.domain.audit.vo.OperationType;
+import com.bone.iam.domain.model.audit.vo.OperationType;
 import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
