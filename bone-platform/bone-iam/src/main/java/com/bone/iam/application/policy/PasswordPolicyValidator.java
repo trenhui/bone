@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 /**
  * 密码强度校验（NIST 800-63B 方向：长度 + 常见弱口令拒绝）。
  *
- * <p>注：已从 {@code domain.service} 迁移至 {@code application.service}，因该类作为应用层策略服务供 CommandHandler 调用。
+ * <p>应用层密码策略服务，置于 {@code application.policy} 语义化子包，供 CommandHandler / *ApplicationService 调用。 原
+ * {@code application.service} 协作子包已随 ADR-0033 撤销废止，相关协作构件归位于 *ApplicationService 或 policy/binding
+ * 等语义化子包。
  */
 @Service
 public class PasswordPolicyValidator {
