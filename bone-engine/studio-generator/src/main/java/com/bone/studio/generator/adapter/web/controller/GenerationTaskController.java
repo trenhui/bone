@@ -1,8 +1,8 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.studio.generator.application.GenerateCodeApplicationService;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
-import com.bone.studio.generator.application.command.handler.GenerateCodeApplicationService;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import lombok.RequiredArgsConstructor;

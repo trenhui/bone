@@ -1,4 +1,4 @@
-package com.bone.studio.generator.application.command.handler;
+package com.bone.studio.generator.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateCommand;

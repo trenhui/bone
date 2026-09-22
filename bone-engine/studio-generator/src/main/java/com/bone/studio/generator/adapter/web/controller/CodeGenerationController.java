@@ -1,11 +1,11 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.studio.generator.application.CodeGenerationAsyncApplicationService;
+import com.bone.studio.generator.application.CreateCodeGenerationApplicationService;
+import com.bone.studio.generator.application.GenerationTaskOperationApplicationService;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
-import com.bone.studio.generator.application.command.handler.CreateCodeGenerationApplicationService;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
-import com.bone.studio.generator.application.service.CodeGenerationAsyncService;
-import com.bone.studio.generator.application.service.GenerationTaskOperationService;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.config.GeneratorProperties;
 import java.net.URI;
@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class CodeGenerationController {
 
   private final CreateCodeGenerationApplicationService createCodeGenerationHandler;
-  private final CodeGenerationAsyncService codeGenerationAsyncService;
-  private final GenerationTaskOperationService operationService;
+  private final CodeGenerationAsyncApplicationService codeGenerationAsyncApplicationService;
+  private final GenerationTaskOperationApplicationService operationService;
   private final GeneratorProperties generatorProperties;
 
   @PostMapping
@@ -41,7 +41,7 @@ public class CodeGenerationController {
       // taskId 为字符串数据，success(String) 会命中 message 重载，须用双参形式
       return ResponseEntity.ok(ApiResponse.success("创建成功", taskId));
     }
-    String taskId = codeGenerationAsyncService.submit(command);
+    String taskId = codeGenerationAsyncApplicationService.submit(command);
     Map<String, Object> accepted = new LinkedHashMap<>();
     accepted.put("operationId", taskId);
     accepted.put("taskId", taskId);

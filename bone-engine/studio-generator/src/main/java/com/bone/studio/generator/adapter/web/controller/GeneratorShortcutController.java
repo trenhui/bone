@@ -1,14 +1,14 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.studio.generator.application.CodeGenerationHistoryQueryApplicationService;
+import com.bone.studio.generator.application.DataSourceTablesApplicationService;
+import com.bone.studio.generator.application.GenerateCodeApplicationService;
+import com.bone.studio.generator.application.GenerationOperationViewQueryApplicationService;
+import com.bone.studio.generator.application.SyncTableMetadataApplicationService;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
-import com.bone.studio.generator.application.command.handler.GenerateCodeApplicationService;
-import com.bone.studio.generator.application.command.handler.SyncTableMetadataApplicationService;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
-import com.bone.studio.generator.application.query.handler.CodeGenerationHistoryQueryApplicationService;
-import com.bone.studio.generator.application.query.handler.DataSourceTablesApplicationService;
-import com.bone.studio.generator.application.query.handler.GenerationOperationViewQueryApplicationService;
 import com.bone.studio.generator.application.query.qry.CodeGenerationHistoryQuery;
 import com.bone.studio.generator.application.query.qry.DataSourceTablesQuery;
 import com.bone.studio.generator.application.query.qry.GenerationOperationViewQuery;

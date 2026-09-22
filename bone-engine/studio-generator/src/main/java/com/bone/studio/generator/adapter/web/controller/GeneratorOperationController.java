@@ -1,8 +1,8 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.studio.generator.application.GenerationTaskOperationApplicationService;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
-import com.bone.studio.generator.application.service.GenerationTaskOperationService;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class GeneratorOperationController {
 
-  private final GenerationTaskOperationService operationService;
+  private final GenerationTaskOperationApplicationService operationService;
 
   @GetMapping("/{operationId}")
   public ApiResponse<GeneratorOperationView> getOperation(@PathVariable String operationId) {

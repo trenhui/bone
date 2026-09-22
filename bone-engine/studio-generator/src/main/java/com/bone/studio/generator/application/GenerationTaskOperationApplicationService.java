@@ -1,4 +1,4 @@
-package com.bone.studio.generator.application.service;
+package com.bone.studio.generator.application;
 
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
@@ -9,13 +9,14 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GenerationTaskOperationService {
+public class GenerationTaskOperationApplicationService {
 
   private static final String TYPE_CODE_GENERATION = "code-generation";
 
   private final GenerationTaskRepository generationTaskRepository;
 
-  public GenerationTaskOperationService(GenerationTaskRepository generationTaskRepository) {
+  public GenerationTaskOperationApplicationService(
+      GenerationTaskRepository generationTaskRepository) {
     this.generationTaskRepository = generationTaskRepository;
   }
 

@@ -1,8 +1,7 @@
-package com.bone.studio.generator.application.query.handler;
+package com.bone.studio.generator.application;
 
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.application.query.qry.GenerationOperationViewQuery;
-import com.bone.studio.generator.application.service.GenerationTaskOperationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GenerationOperationViewQueryApplicationService {
 
-  private final GenerationTaskOperationService operationService;
+  private final GenerationTaskOperationApplicationService operationService;
 
   @Transactional(readOnly = true)
   public GeneratorOperationView handle(GenerationOperationViewQuery qry) {

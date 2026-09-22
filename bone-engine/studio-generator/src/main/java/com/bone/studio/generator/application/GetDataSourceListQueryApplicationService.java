@@ -1,4 +1,4 @@
-package com.bone.studio.generator.application.query.handler;
+package com.bone.studio.generator.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;

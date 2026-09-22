@@ -1,4 +1,4 @@
-package com.bone.studio.generator.application.command.handler;
+package com.bone.studio.generator.application;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
