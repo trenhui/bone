@@ -3,10 +3,10 @@ package com.bone.metadata.catalog.application.query.mapper;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
-import com.bone.metadata.catalog.domain.enums.MetaEntityStatus;
-import com.bone.metadata.catalog.domain.model.MetaEntity;
-import com.bone.metadata.catalog.domain.model.MetaEntityRelation;
-import com.bone.metadata.catalog.domain.model.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityRelation;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
+import com.bone.metadata.catalog.domain.model.meta.MetaField;
 
 public final class CatalogDtoMapper {
 

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.metadata.catalog.domain.model.IamModuleRef;
+import com.bone.metadata.catalog.domain.model.iam.IamModuleRef;
 import com.bone.metadata.catalog.domain.repository.IamModuleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

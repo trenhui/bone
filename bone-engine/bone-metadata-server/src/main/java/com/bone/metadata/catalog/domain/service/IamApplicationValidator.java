@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.domain.service;
 
 import com.bone.core.exception.BizException;
-import com.bone.metadata.catalog.domain.model.IamApplicationRef;
+import com.bone.metadata.catalog.domain.model.iam.IamApplicationRef;
 import com.bone.metadata.catalog.domain.repository.IamApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

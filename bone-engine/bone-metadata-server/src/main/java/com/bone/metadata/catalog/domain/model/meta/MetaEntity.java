@@ -1,9 +1,7 @@
-package com.bone.metadata.catalog.domain.model;
+package com.bone.metadata.catalog.domain.model.meta;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.exception.DomainException;
-import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
-import com.bone.metadata.catalog.domain.enums.MetaEntityStatus;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.util.Date;

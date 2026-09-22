@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.metadata.catalog.domain.model.MetaEntityRelation;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityRelation;
 import com.bone.metadata.sdk.Repository;
 import org.springframework.util.StringUtils;
 

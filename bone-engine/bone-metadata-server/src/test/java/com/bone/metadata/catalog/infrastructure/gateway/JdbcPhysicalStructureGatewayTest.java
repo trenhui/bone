@@ -7,10 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.MetadataApplication;
-import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
-import com.bone.metadata.catalog.domain.model.MetaEntity;
-import com.bone.metadata.catalog.domain.model.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.MetaDeliveryMode;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;

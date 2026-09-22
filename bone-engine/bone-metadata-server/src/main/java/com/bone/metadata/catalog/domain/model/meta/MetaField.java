@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.domain.model;
+package com.bone.metadata.catalog.domain.model.meta;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;

@@ -2,8 +2,8 @@ package com.bone.metadata.catalog.infrastructure.gateway;
 
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
-import com.bone.metadata.catalog.domain.model.MetaEntity;
-import com.bone.metadata.catalog.domain.model.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;

@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.metadata.catalog.domain.model.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.sdk.Repository;
 import java.util.Optional;
 import org.springframework.util.StringUtils;

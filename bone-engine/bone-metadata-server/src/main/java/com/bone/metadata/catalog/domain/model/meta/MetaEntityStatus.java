@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.domain.enums;
+package com.bone.metadata.catalog.domain.model.meta;
 
 /** 元数据实体生命周期状态，对应 meta_entity.status */
 public enum MetaEntityStatus {

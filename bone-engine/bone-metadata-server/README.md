@@ -33,4 +33,13 @@ mvn -pl bone-engine/bone-metadata-server -am spring-boot:run -Dspring-boot.run.p
 
 **目标形态**（[ADR-0036](../../doc/architecture/adr/0036-domain-model-package-single-standard.md)，2026-09-22 起为平台唯一形态）：聚合构件置于 `domain/model/{聚合}/`，聚合根 / 实体 / 值对象在聚合包内直接平铺，`event/` `projection/` 为聚合内子包；`repository` / `gateway` / `service` 端口留在 `domain/` 根。
 
-**本模块现状**：`domain/model/` 下 9 个领域类**平铺**（另含 `model/physical/`），与 `domain/{enums,gateway,repository,service}` 并存——属**存量**，按 E-0.2 待收敛。目标为先按聚合 / 概念把 `model/` 平铺类分组成 `domain/model/{概念}/`，`enums` / `gateway` / `repository` / `service` 是否随迁按「模型构件 vs 端口」逐个定性。
+**本模块现状**：**已迁移至目标形态**（2026-09-22 完成，47 个测试全绿）。原 `domain/model/` 平铺类已按概念分组，`enums` 角色包已解散：
+
+| 包 | 构件 |
+|---|---|
+| `domain/model/meta/` | `MetaEntity` / `MetaField` / `MetaEntityRelation` + 原 `domain/enums/` 的 `MetaEntityStatus` / `MetaDeliveryMode` |
+| `domain/model/iam/` | `IamApplicationRef` / `IamModuleRef` |
+| `domain/model/physical/` | `PhysicalStructurePlan`（原 `model/physical/`，保持不变） |
+| `domain/{gateway,repository,service}` | **不变**——按 ADR-0036 R3 端口留根（`service/` 的 `IamApplicationValidator` / `IamModuleValidator` 同属端口） |
+
+`enums` 的两个枚举定性为**模型构件**（被 `MetaEntity` 直接引用）而非端口，故随聚合迁入 `model/meta/`，原 `domain/enums/` 目录已删除。

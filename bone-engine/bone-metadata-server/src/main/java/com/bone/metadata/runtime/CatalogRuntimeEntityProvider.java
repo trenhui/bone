@@ -1,10 +1,10 @@
 package com.bone.metadata.runtime;
 
-import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
-import com.bone.metadata.catalog.domain.enums.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
-import com.bone.metadata.catalog.domain.model.MetaEntity;
-import com.bone.metadata.catalog.domain.model.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.MetaDeliveryMode;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
+import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;

@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.domain.enums;
+package com.bone.metadata.catalog.domain.model.meta;
 
 /** 元数据实体交付模式，对齐 PRD META-002 / META-002B。 */
 public enum MetaDeliveryMode {
