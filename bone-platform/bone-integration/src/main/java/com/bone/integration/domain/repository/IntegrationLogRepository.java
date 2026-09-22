@@ -1,7 +1,7 @@
 package com.bone.integration.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;

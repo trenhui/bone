@@ -1,8 +1,8 @@
 package com.bone.integration.application.service;
 
 import com.bone.integration.application.port.IntegrationExecutionRecorder;
-import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.execution.IntegrationLog;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

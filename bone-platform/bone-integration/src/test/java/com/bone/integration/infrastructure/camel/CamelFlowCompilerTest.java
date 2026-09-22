@@ -7,11 +7,11 @@ import static org.mockito.Mockito.when;
 
 import com.bone.integration.application.service.ConnectorService;
 import com.bone.integration.application.service.FlowNodeExecutor;
-import com.bone.integration.domain.connector.Connector;
-import com.bone.integration.domain.flow.FlowConnection;
-import com.bone.integration.domain.flow.FlowNode;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
+import com.bone.integration.domain.model.flow.FlowConnection;
+import com.bone.integration.domain.model.flow.FlowNode;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import java.util.List;

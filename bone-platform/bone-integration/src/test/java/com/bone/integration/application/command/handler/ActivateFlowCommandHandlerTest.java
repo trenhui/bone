@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.ActivateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,7 +1,7 @@
 package com.bone.integration.adapter.schedule;
 
 import com.bone.integration.application.service.FlowMonitorService;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

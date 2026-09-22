@@ -1,4 +1,4 @@
-package com.bone.integration.domain.connector;
+package com.bone.integration.domain.model.connector;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

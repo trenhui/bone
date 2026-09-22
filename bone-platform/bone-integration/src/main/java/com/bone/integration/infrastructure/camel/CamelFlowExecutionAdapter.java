@@ -1,9 +1,9 @@
 package com.bone.integration.infrastructure.camel;
 
 import com.bone.integration.application.port.CamelFlowExecutionPort;
-import com.bone.integration.domain.flow.FlowConnection;
-import com.bone.integration.domain.flow.FlowNode;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.FlowConnection;
+import com.bone.integration.domain.model.flow.FlowNode;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.camel.ProducerTemplate;

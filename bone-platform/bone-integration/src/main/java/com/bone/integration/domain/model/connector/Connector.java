@@ -1,4 +1,4 @@
-package com.bone.integration.domain.connector;
+package com.bone.integration.domain.model.connector;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;

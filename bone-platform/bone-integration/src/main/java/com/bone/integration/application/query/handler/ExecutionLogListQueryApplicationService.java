@@ -3,7 +3,7 @@ package com.bone.integration.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.util.List;

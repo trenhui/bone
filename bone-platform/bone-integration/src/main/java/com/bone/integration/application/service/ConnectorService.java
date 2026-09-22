@@ -2,7 +2,7 @@ package com.bone.integration.application.service;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.client.ExternalSystemClient;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

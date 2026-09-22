@@ -4,7 +4,7 @@ import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import com.bone.integration.application.service.FlowMonitorService;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
 import java.util.stream.Collectors;

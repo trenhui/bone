@@ -1,6 +1,6 @@
 package com.bone.integration.domain.repository;
 
-import com.bone.integration.domain.flow.FlowConnection;
+import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;

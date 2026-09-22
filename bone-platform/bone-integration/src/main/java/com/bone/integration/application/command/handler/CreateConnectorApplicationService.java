@@ -5,7 +5,7 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.service.ConnectorService;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;

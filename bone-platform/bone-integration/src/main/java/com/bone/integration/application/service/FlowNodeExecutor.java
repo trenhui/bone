@@ -1,8 +1,8 @@
 package com.bone.integration.application.service;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.connector.Connector;
-import com.bone.integration.domain.flow.FlowNode;
+import com.bone.integration.domain.model.connector.Connector;
+import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import java.util.HashMap;
 import java.util.Map;

@@ -3,7 +3,7 @@ package com.bone.integration.application.query.handler;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

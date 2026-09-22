@@ -1,4 +1,4 @@
-package com.bone.integration.domain.flow;
+package com.bone.integration.domain.model.flow;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;

@@ -3,7 +3,7 @@ package com.bone.integration.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorStatus;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;

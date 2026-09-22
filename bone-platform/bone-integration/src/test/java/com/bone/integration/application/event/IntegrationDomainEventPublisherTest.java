@@ -6,9 +6,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.bone.integration.application.event.outbox.IntegrationOutboxWriter;
-import com.bone.integration.domain.connector.Connector;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

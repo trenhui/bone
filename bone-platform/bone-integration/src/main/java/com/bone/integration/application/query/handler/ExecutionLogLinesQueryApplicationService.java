@@ -1,7 +1,7 @@
 package com.bone.integration.application.query.handler;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

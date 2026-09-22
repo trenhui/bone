@@ -1,4 +1,4 @@
-package com.bone.integration.domain.execution;
+package com.bone.integration.domain.model.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

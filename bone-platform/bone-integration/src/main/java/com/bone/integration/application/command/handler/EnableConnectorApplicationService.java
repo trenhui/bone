@@ -2,7 +2,7 @@ package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.EnableConnectorCommand;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

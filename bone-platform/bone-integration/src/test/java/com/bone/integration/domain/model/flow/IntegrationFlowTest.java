@@ -1,4 +1,4 @@
-package com.bone.integration.domain.flow;
+package com.bone.integration.domain.model.flow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

@@ -1,7 +1,7 @@
 package com.bone.integration.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorStatus;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.metadata.sdk.Repository;

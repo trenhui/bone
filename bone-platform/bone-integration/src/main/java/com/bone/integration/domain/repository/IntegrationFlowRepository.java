@@ -1,7 +1,7 @@
 package com.bone.integration.domain.repository;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.FlowStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;

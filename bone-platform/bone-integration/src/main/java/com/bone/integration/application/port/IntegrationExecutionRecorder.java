@@ -1,6 +1,6 @@
 package com.bone.integration.application.port;
 
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 
 /** 集成执行可观测性出站端口（Micrometer 等由 infrastructure 实现）。 */
 public interface IntegrationExecutionRecorder {

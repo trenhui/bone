@@ -1,6 +1,6 @@
 package com.bone.integration.application.service;
 
-import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.util.List;

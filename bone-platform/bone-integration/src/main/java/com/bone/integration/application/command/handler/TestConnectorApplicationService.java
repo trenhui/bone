@@ -4,7 +4,7 @@ import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.TestConnectorCommand;
 import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.application.service.ConnectorService;
-import com.bone.integration.domain.connector.Connector;
+import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

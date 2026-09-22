@@ -2,7 +2,7 @@ package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

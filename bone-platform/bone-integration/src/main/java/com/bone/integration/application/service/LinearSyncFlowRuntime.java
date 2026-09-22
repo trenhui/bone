@@ -1,10 +1,10 @@
 package com.bone.integration.application.service;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.flow.FlowConnection;
-import com.bone.integration.domain.flow.FlowNode;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.execution.IntegrationLog;
+import com.bone.integration.domain.model.flow.FlowConnection;
+import com.bone.integration.domain.model.flow.FlowNode;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -3,7 +3,7 @@ package com.bone.integration.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQuery;
-import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.FlowStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.Collections;
