@@ -1,1 +1,0 @@
-Method <com.bone.integration.application.event.outbox.IntegrationEventEnvelopeFactory.tenantIdOrDefault()> calls method <com.bone.core.tenant.context.TenantContext.getTenantIdAsLong()> in (IntegrationEventEnvelopeFactory.java:58)
