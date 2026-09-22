@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.application.idempotency;
+package com.bone.metadata.catalog.application.support;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.metadata.catalog.common.exception.CatalogIdempotencyConflictException;
@@ -22,14 +22,14 @@ import org.springframework.util.StringUtils;
 
 /** 元数据 catalog / EAV 写操作幂等（对齐 Stripe Idempotency-Key，默认进程内 24h）。 */
 @Service
-public class CatalogIdempotencyService {
+public class CatalogIdempotencySupport {
 
   private static final Duration TTL = Duration.ofHours(24);
 
   private final ObjectMapper objectMapper;
   private final CatalogIdempotencyStore store;
 
-  public CatalogIdempotencyService(ObjectMapper objectMapper, CatalogIdempotencyStore store) {
+  public CatalogIdempotencySupport(ObjectMapper objectMapper, CatalogIdempotencyStore store) {
     this.objectMapper =
         objectMapper.copy().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     this.store = store;

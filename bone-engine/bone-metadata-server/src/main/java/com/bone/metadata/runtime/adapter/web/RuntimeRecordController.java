@@ -3,7 +3,7 @@ package com.bone.metadata.runtime.adapter.web;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
+import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RuntimeRecordController {
 
   private final JdbcRuntimeRecordService runtimeRecordService;
-  private final CatalogIdempotencyService catalogIdempotencyService;
+  private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
   private final TenantProvider tenantProvider;
 
@@ -82,11 +82,11 @@ public class RuntimeRecordController {
       throws JsonProcessingException {
     String path = "/api/v1/runtime/entities/" + entityCode + "/records";
     String fingerprint =
-        CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(body));
+        CatalogIdempotencySupport.fingerprint(objectMapper.writeValueAsString(body));
     var apiType =
         objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Map.class);
     Optional<ResponseEntity<ApiResponse<Map<String, Object>>>> replay =
-        catalogIdempotencyService.replay(idempotencyKey, "POST", path, fingerprint, apiType);
+        catalogIdempotencySupport.replay(idempotencyKey, "POST", path, fingerprint, apiType);
     if (replay.isPresent()) {
       return replay.get();
     }
@@ -99,7 +99,7 @@ public class RuntimeRecordController {
         ResponseEntity.created(
                 URI.create("/api/v1/runtime/entities/" + entityCode + "/records/" + pk))
             .body(ApiResponse.success(created));
-    catalogIdempotencyService.rememberApiResponse(
+    catalogIdempotencySupport.rememberApiResponse(
         idempotencyKey, "POST", path, fingerprint, response);
     return response;
   }

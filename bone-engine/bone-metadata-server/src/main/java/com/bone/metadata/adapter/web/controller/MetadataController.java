@@ -1,7 +1,7 @@
 package com.bone.metadata.adapter.web.controller;
 
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
+import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
@@ -37,7 +37,7 @@ public class MetadataController {
   private static final String ALLOCATE_PATH = PlatformApiPaths.METADATA_V1 + "/fields:allocate";
 
   private final MetadataService metadataService;
-  private final CatalogIdempotencyService catalogIdempotencyService;
+  private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
 
   /** 复合查询扩展字段 POST /api/v1/metadata/fields:search */
@@ -137,7 +137,7 @@ public class MetadataController {
               List<FieldMetadata> toCreate)
           throws JsonProcessingException {
     String fingerprint =
-        CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(toCreate));
+        CatalogIdempotencySupport.fingerprint(objectMapper.writeValueAsString(toCreate));
     var bodyType =
         objectMapper
             .getTypeFactory()
@@ -147,7 +147,7 @@ public class MetadataController {
                     .getTypeFactory()
                     .constructCollectionType(List.class, FieldMetadata.class));
     Optional<ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>>> replay =
-        catalogIdempotencyService.replayRawBody(
+        catalogIdempotencySupport.replayRawBody(
             idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, bodyType);
     if (replay.isPresent()) {
       return replay.get();
@@ -156,7 +156,7 @@ public class MetadataController {
     ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>> response =
         ResponseEntity.status(HttpStatus.CREATED)
             .body(com.bone.core.model.ApiResponse.success(created));
-    catalogIdempotencyService.rememberRawBody(
+    catalogIdempotencySupport.rememberRawBody(
         idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, response);
     return response;
   }

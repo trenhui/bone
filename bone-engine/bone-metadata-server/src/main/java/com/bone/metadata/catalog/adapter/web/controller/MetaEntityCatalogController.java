@@ -7,9 +7,9 @@ import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCo
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
-import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
+import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class MetaEntityCatalogController {
 
   private final MetaEntityApplicationService metaEntityApplicationService;
-  private final CatalogIdempotencyService catalogIdempotencyService;
+  private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
 
   @PostMapping
@@ -83,11 +83,11 @@ public class MetaEntityCatalogController {
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
     String path = "/api/v1/metadata/entities/" + id + "/publish";
-    String fingerprint = CatalogIdempotencyService.fingerprint("");
+    String fingerprint = CatalogIdempotencySupport.fingerprint("");
     var apiVoidType =
         objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Void.class);
     Optional<ResponseEntity<ApiResponse<Void>>> replay =
-        catalogIdempotencyService.replay(idempotencyKey, "POST", path, fingerprint, apiVoidType);
+        catalogIdempotencySupport.replay(idempotencyKey, "POST", path, fingerprint, apiVoidType);
     if (replay.isPresent()) {
       return replay.get();
     }
@@ -98,7 +98,7 @@ public class MetaEntityCatalogController {
         ResponseEntity.ok()
             .eTag(CatalogHttpSupport.formatEtag(version))
             .body(ApiResponse.success());
-    catalogIdempotencyService.rememberApiResponse(
+    catalogIdempotencySupport.rememberApiResponse(
         idempotencyKey, "POST", path, fingerprint, response);
     return response;
   }
