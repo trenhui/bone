@@ -307,8 +307,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
   private List<GeneratedFile> generateEntity(DatabaseTable table, CodeGenerationRequest request) {
     List<GeneratedFile> files = new ArrayList<>();
-    String packageName = buildPackageName(request, "domain.model.entity");
     String className = toCamelCase(table.getTableName(), true);
+    String packageName =
+        buildPackageName(request, "domain.model." + GeneratorUtils.aggregateSegment(className));
 
     StringBuilder content = new StringBuilder();
     content.append("package " + packageName + ";\n\n");
@@ -346,16 +347,18 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
       DatabaseTable table, CodeGenerationRequest request) {
     List<GeneratedFile> files = new ArrayList<>();
     String packageName = buildPackageName(request, "domain.repository");
-    String className = toCamelCase(table.getTableName(), true) + "Repository";
+    String entityName = toCamelCase(table.getTableName(), true);
+    String className = entityName + "Repository";
 
     StringBuilder content = new StringBuilder();
     content.append("package " + packageName + ";\n\n");
     content.append("import com.bone.metadata.sdk.domain.repository.Repository;\n");
     content.append(
         "import "
-            + buildPackageName(request, "domain.model.entity")
+            + buildPackageName(
+                request, "domain.model." + GeneratorUtils.aggregateSegment(entityName))
             + "."
-            + toCamelCase(table.getTableName(), true)
+            + entityName
             + ";\n\n");
     content.append(
         "public interface "
@@ -381,15 +384,17 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
   private List<GeneratedFile> generateService(DatabaseTable table, CodeGenerationRequest request) {
     List<GeneratedFile> files = new ArrayList<>();
     String packageName = buildPackageName(request, "domain.service");
-    String className = toCamelCase(table.getTableName(), true) + "Service";
+    String entityName = toCamelCase(table.getTableName(), true);
+    String className = entityName + "Service";
 
     StringBuilder content = new StringBuilder();
     content.append("package " + packageName + ";\n\n");
     content.append(
         "import "
-            + buildPackageName(request, "domain.model.entity")
+            + buildPackageName(
+                request, "domain.model." + GeneratorUtils.aggregateSegment(entityName))
             + "."
-            + toCamelCase(table.getTableName(), true)
+            + entityName
             + ";\n");
     content.append("import java.util.List;\n\n");
     content.append("public interface " + className + " {\n");

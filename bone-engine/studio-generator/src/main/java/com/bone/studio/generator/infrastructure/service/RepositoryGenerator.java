@@ -39,7 +39,8 @@ public class RepositoryGenerator implements FileGenerator {
       freemarkerConfig.getTemplate(template.getCode() + ".ftl").process(model, writer);
       String content = writer.toString();
       String fileName = table.getCustomEntityName() + "Repository.java";
-      String filePath = basePackage.replace('.', '/') + "/domain/repository/" + fileName;
+      String filePath =
+          GeneratorUtils.basePath(basePackage, moduleName) + "/domain/repository/" + fileName;
       return GeneratedFile.builder()
           .filePath(filePath)
           .fileName(table.getCustomEntityName() + "Repository.java")

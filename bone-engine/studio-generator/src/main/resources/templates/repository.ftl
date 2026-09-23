@@ -3,7 +3,7 @@ package ${utils.getPackagePath(basePackage, moduleName)}.domain.repository;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
 
 /**
  * ${table.tableComment!'实体'}仓储。

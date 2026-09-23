@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import ${utils.getPackagePath(basePackage, moduleName)}.application.${table.customEntityName}ApplicationService;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

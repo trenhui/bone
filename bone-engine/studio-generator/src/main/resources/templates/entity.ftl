@@ -1,4 +1,4 @@
-package ${utils.getPackagePath(basePackage, moduleName)}.domain.entity;
+package ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)};
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;

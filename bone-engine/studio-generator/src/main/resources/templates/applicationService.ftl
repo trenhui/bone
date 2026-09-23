@@ -1,7 +1,7 @@
 package ${utils.getPackagePath(basePackage, moduleName)}.application;
 
 import com.bone.core.model.PageResult;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
+import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
 import ${utils.getPackagePath(basePackage, moduleName)}.domain.repository.${table.customEntityName}Repository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

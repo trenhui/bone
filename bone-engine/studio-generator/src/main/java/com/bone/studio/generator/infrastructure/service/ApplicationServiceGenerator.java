@@ -38,7 +38,8 @@ public class ApplicationServiceGenerator implements FileGenerator {
       freemarkerConfig.getTemplate(template.getCode() + ".ftl").process(model, writer);
       String content = writer.toString();
       String fileName = table.getCustomEntityName() + "ApplicationService.java";
-      String filePath = basePackage.replace('.', '/') + "/application/" + fileName;
+      String filePath =
+          GeneratorUtils.basePath(basePackage, moduleName) + "/application/" + fileName;
       return GeneratedFile.builder()
           .filePath(filePath)
           .fileName(fileName)

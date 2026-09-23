@@ -39,7 +39,12 @@ public class EntityGenerator implements FileGenerator {
       freemarkerConfig.getTemplate(template.getCode() + ".ftl").process(model, writer);
       String content = writer.toString();
       String fileName = table.getCustomEntityName() + ".java";
-      String filePath = basePackage.replace('.', '/') + "/domain/" + moduleName + "/" + fileName;
+      String filePath =
+          GeneratorUtils.basePath(basePackage, moduleName)
+              + "/domain/model/"
+              + GeneratorUtils.aggregateSegment(table.getCustomEntityName())
+              + "/"
+              + fileName;
       return GeneratedFile.builder()
           .filePath(filePath)
           .fileName(table.getCustomEntityName() + ".java")

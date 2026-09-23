@@ -38,7 +38,8 @@ public class ControllerGenerator implements FileGenerator {
       freemarkerConfig.getTemplate(template.getCode() + ".ftl").process(model, writer);
       String content = writer.toString();
       String fileName = table.getCustomEntityName() + "Controller.java";
-      String filePath = basePackage.replace('.', '/') + "/adapter/web/controller/" + fileName;
+      String filePath =
+          GeneratorUtils.basePath(basePackage, moduleName) + "/adapter/web/controller/" + fileName;
       return GeneratedFile.builder()
           .filePath(filePath)
           .fileName(table.getCustomEntityName() + "Controller.java")

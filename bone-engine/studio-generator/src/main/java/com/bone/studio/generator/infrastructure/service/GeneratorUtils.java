@@ -1,6 +1,26 @@
 package com.bone.studio.generator.infrastructure.service;
 
+import java.util.Locale;
+
 public class GeneratorUtils {
+
+  /** 聚合包段（ADR-0036 D1 的 {@code domain/model/{聚合}/}）：实体名全小写。 */
+  public static String aggregateSegment(String entityName) {
+    return entityName == null || entityName.isEmpty()
+        ? "model"
+        : entityName.toLowerCase(Locale.ROOT);
+  }
+
+  /** 生成文件的根目录：{@code basePackage} 的路径形式 + 模块段，与 {@link #getPackagePath} 对齐。 */
+  public static String basePath(String basePackage, String moduleName) {
+    String base = basePackage == null ? "" : basePackage.replace('.', '/');
+    return moduleName == null || moduleName.isEmpty() ? base : base + "/" + moduleName;
+  }
+
+  /** 模板入口：Freemarker 以实例方法调用。 */
+  public String toPackageSegment(String entityName) {
+    return aggregateSegment(entityName);
+  }
 
   public String toCamelCase(String str) {
     if (str == null || str.isEmpty()) {
