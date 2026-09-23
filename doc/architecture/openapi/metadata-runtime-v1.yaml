@@ -7,7 +7,7 @@ info:
     对物理表执行动态 CRUD。服务宿主：**bone-metadata-server** :9001。
 
     - 规范：[Bone-API-规范.md](../Bone-API-规范.md)
-    - 详设：[元数据管理模块](../design/modules/2.%20元数据管理模块详细设计方案.md) §0.1、§2.4
+    - 详设：[元数据管理模块](../../design/modules/2.%20元数据管理模块详细设计方案.md) §0.1、§2.4
     - PRD：META-002B
 
     **前置条件**：实体 status=已发布(1)、delivery_mode=RUNTIME(1)；物理表 `table_name` 已存在且列名与 `meta_field.code` 对齐。

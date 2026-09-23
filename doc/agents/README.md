@@ -35,7 +35,7 @@
 | 文件/目录 | 内容 |
 |---|---|
 | `README.md` | 项目营销概览、快速开始 |
-| `doc/CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
+| `doc/archive/CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
 | `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁唯一权威（HC 状态真源见 `#hc-hard-constraints`） |
 | `doc/glossary.md` | 通用语言起步表 |
 | `doc/architecture/adr/0023-core-domain-smart-metadata.md` | Bone 当前核心域 = Metadata |

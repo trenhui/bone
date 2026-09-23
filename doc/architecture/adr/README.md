@@ -44,3 +44,4 @@
 | [0034](./0034-tenant-scope-explicitness-and-all-entry-gate.md) | 租户隔离显式性 — SQL 通道启动期 fail-fast + 全租户入口单一判据（**已采纳**，首轮抓出 IAM 登录入口与 integration 定时任务两处问题） |
 | [0035](./0035-application-layer-keeps-only-application-service.md) | 应用层只保留 ApplicationService — 撤销 ADR-0033 的第三类构件（**已采纳**，含三条结构门禁与 96 条存量基线） |
 | [0036](./0036-domain-model-package-single-standard.md) | domain 分组形态统一为 `domain/model/{聚合}/` — 收敛 E-10 双形态条款（**已采纳**；D1 形态 / D2 值对象子包名已确认，全平台迁移、D5 布局门禁与 D6 生成模板均已落地） |
+| [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已落地**） |

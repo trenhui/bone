@@ -515,7 +515,7 @@ flowchart TD
 
 - **规范真源**：对外统一 **`/api/v1/{domain}/**`**（见 [Bone-API-规范](./Bone-API-规范.md)）。
 - **As-Is**：各服务 Controller 以 `/api/v1/...` 为契约；网关 `bone-gateway` 按域转发。
-- **弃用**：历史无版本前缀（如 `/api/iam`、`/api/console`、`/v1/metadata`）**不再作为新集成入口**；存量调用须迁移至 v1（见 [文档治理](../文档治理-三目录审查子任务.md) T27）。
+- **弃用**：历史无版本前缀（如 `/api/iam`、`/api/console`、`/v1/metadata`）**不再作为新集成入口**；存量调用须迁移至 v1（见 [文档治理](../archive/文档治理-三目录审查子任务.md) T27）。
 - **演进**：未来 `v2` 须 ADR + 双轨窗口；网关可保留版本剥离能力。
 
 ### 8.3 核心 API 一览（契约级索引）
@@ -959,7 +959,7 @@ Spring Boot/Cloud、Bone Metadata SDK、Nacos、RocketMQ、Redis 等 —— **�
 | Layer 1 契约 | architecture_contract.yaml、code_contract.yaml | 不可违反的架构与生成规则 |
 | Layer 2 执行 | agent-plan.yaml、task-graph.json | 多 Agent 分解与校验闭环 |
 
-详见 [doc/Agenticx编程/Bone-Agentic-Engineering.md](../Agenticx编程/Bone-Agentic-Engineering.md) 与仓库 `.claude/`。
+详见 [doc/agenticx/Bone-Agentic-Engineering.md](../agenticx/Bone-Agentic-Engineering.md) 与仓库 `.claude/`。
 
 ### 17.2 闭环
 

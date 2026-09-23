@@ -43,4 +43,4 @@ Bone 当前为内部演进阶段，需降低「Flyway 增量 + init 全量 + 模
 
 详见 [数据库开发规范.md](../数据库开发规范.md)、`scripts/dev/db-init.sh`。
 
-旧文档 [ADR-数据库迁移与DDL真源.md](../ADR-数据库迁移与DDL真源.md) 已 supersede。
+旧文档 `ADR-数据库迁移与DDL真源.md` 已 supersede（其指向本文与 [数据库开发规范.md](../数据库开发规范.md)）。

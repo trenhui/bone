@@ -1,8 +1,8 @@
 # Bone SmartMeta 智能元数据引擎：动态业务建模与智能代码生成最佳实践方案（2025 企业级落地版）
 
-> ⚠️ **不建议通读本文实现功能**。实现与排期请以 **[9. SmartMeta 引擎模块技术说明](../design/modules/9.%20SmartMeta%20引擎模块技术说明.md)** + `bone-metadata-engine` 源码为准；本文保留作背景与 Vision 参考，后续可迁出仓库或大幅瘦身。
+> ⚠️ **不建议通读本文实现功能**。实现与排期请以 **[9. SmartMeta 引擎模块技术说明](../../design/modules/9.%20SmartMeta%20引擎模块技术说明.md)** + `bone-metadata-engine` 源码为准；本文保留作背景与 Vision 参考，后续可迁出仓库或大幅瘦身。
 
-> **文档分层 [Vision / 参考]**：本文为 SmartMeta **概念与终局能力**长文，**非**实现真源。与仓库对齐时**仅**以 [`9. SmartMeta 引擎模块技术说明`](../../design/modules/9.%20SmartMeta%20引擎模块技术说明.md) 与 `bone-engine/bone-metadata-engine` 源码为准；`bone-smartmeta` 等命名已退役。审查清单见 [`doc/文档治理-三目录审查子任务.md`](../../文档治理-三目录审查子任务.md)。
+> **文档分层 [Vision / 参考]**：本文为 SmartMeta **概念与终局能力**长文，**非**实现真源。与仓库对齐时**仅**以 [`9. SmartMeta 引擎模块技术说明`](../../design/modules/9.%20SmartMeta%20引擎模块技术说明.md) 与 `bone-engine/bone-metadata-engine` 源码为准；`bone-smartmeta` 等命名已退役。审查清单见 [`doc/文档治理-三目录审查子任务.md`](../../archive/文档治理-三目录审查子任务.md)。
 
 > **版本**：1.0  
 > **日期**：2025年10月8日  

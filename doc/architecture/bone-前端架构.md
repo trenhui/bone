@@ -58,7 +58,7 @@ bone-frontend/
 │       └── event-bus/           # @bone/core/event-bus，跨应用消息
 ├── package.json                 # workspaces 根配置（npm）；根目录可有 pnpm-workspace.yaml 作可选
 ├── setup.sh / restart-all-apps.sh 等脚本
-└── 各应用 README / START_GUIDE 等
+└── 各应用 README 等
 ```
 
 > **微前端主链路**：`bone-shell` + **Qiankun** + `vite-plugin-qiankun`（各 `bone-*-app`）。已移除 `main` / `sub-app-*` 演示应用及 `micro-fe-runtime` 实验运行时。
@@ -165,7 +165,7 @@ apps/<app-name>/src/
 - [`BONE-总体架构设计方案.md`](./BONE-总体架构设计方案.md) — 平台总体架构、NFR、安全与数据一致性策略。
 - [`frontend/frontend-ui-spec.md`](./frontend/frontend-ui-spec.md) — 设计令牌、**§1.1 实现策略**、Ant Design 映射、布局与无障碍。
 - 根目录 [`AGENTS.md`](../../AGENTS.md) — 薄引用入口（路径→上下文路由）；全栈模块索引与端口表在 [`doc/agents/01`](../../doc/agents/01-项目概览与模块结构.md) 与 [`doc/agents/02`](../../doc/agents/02-构建运行与部署.md)。
-- [`bone-frontend/START_GUIDE.md`](../../bone-frontend/START_GUIDE.md) — 本地启动步骤。
+- [`bone-frontend/README.md`](../../bone-frontend/README.md) — 本地启动步骤。
 - [`bone-frontend/SCRIPT_USAGE.md`](../../bone-frontend/SCRIPT_USAGE.md) — 多应用脚本说明。
 
 ## 8. 工具链扩展（与仓库一致为准）

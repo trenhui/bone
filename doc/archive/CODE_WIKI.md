@@ -1,5 +1,8 @@
 # Bone 项目 Code Wiki
 
+> **已归档（2026-09-23）**：本文是早期单文件长文档，与 `doc/wiki/` 内容重叠，且链接按仓库根书写（置于 `doc/` 下全部失效），不再维护。
+> 现行入口：[`doc/wiki/`](../wiki/README.md) 导航 · [`doc/agents/01`](../agents/01-项目概览与模块结构.md) 模块与端口 · 根 [`README.md`](../../README.md)。需要历史内容请查 Git。
+
 ## 1. 项目概述
 
 **Bone**（口号：Build Once, Natively Everywhere）是一个企业级全栈开源快速开发平台，采用**元数据驱动**架构，目标是通过配置减少重复编码，实现一次构建、多端运行。

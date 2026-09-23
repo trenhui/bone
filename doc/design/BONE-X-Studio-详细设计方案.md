@@ -35,7 +35,7 @@
 | **studio-ai / studio-guard** [Vision] | 无独立进程 | 8081 / 8083（示意） | AI 与 Guard 能力规划为独立服务，当前分散在引擎与工具链 |
 | **studio-metadata** [Vision] | SDK + server + engine + metadata-app + generator | 8084（**勿作启动端口**） | 产品能力包；真源见 [元数据能力-实现映射与竞品对照](./modules/元数据能力-实现映射与竞品对照.md) |
 
-**端口真源**：[doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。**DDL 真源**：根目录 [`bone-init.sql`](../bone-init.sql) · [数据库开发规范.md](../architecture/数据库开发规范.md)。
+**端口真源**：[doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。**DDL 真源**：根目录 [`bone-init.sql`](../../bone-init.sql) · [数据库开发规范.md](../architecture/数据库开发规范.md)。
 
 > 下文 **第一部分～第三部分** 中，产品叙事与双核心架构多为 **[Vision]**；落地排期请交叉查阅 [主 PRD](../prd/BONE产品需求文档正式版.md) 与 [模块详设](./modules/README.md)。
 

@@ -1,6 +1,6 @@
 # Agentic 工程文档
 
-本目录为 **Bone Agentic Engineering OS** 的合并文档入口（原 `doc/Agenticx编程` 与 `doc/claude` 已统一）。
+本目录为 **Bone Agentic Engineering OS** 的合并文档入口（`doc/claude` 与旧编程规范已并入本目录；目录名于 2026-09-23 由 `Agenticx编程` 改为 `agenticx`）。
 
 ## 阅读顺序
 

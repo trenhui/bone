@@ -98,4 +98,4 @@ bash scripts/ci/collect-all-compliance.sh --check      # 仅校验，CI 同款
 
 - [Bone-DDD 最终实践方案](./Bone-DDD-最终实践方案.md) §21 ArchUnit
 - [Bone-API-规范](./Bone-API-规范.md) §15 OpenAPI
-- [文档治理-三目录审查子任务](../文档治理-三目录审查子任务.md)
+- [文档治理-三目录审查子任务](../archive/文档治理-三目录审查子任务.md)

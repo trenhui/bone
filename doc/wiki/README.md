@@ -1,40 +1,29 @@
-# Bone 项目 Wiki
+# Bone Wiki（导航型知识库）
 
-面向贡献者与内部协作者的**导航型知识库**。营销与快速上手仍以仓库根目录 [README.md](../../README.md) 为准；代码级速查可配合根目录 [CODE_WIKI.md](../CODE_WIKI.md) 与 [AGENTS.md](../../AGENTS.md)。
+面向贡献者与协作者的上手入口，偏"怎么跑起来、去哪找东西"。产品介绍与快速开始以仓库根 [README.md](../../README.md) 为准；代码级约定以 [AGENTS.md](../../AGENTS.md) 与 `doc/agents/` 为准。
 
----
+## 页面导航
 
-## 本 Wiki 目录
-
-| 页面 | 说明 |
+| 页面 | 内容 |
 |------|------|
 | [01-项目概览](./01-项目概览.md) | 定位、四大引擎、技术栈摘要 |
-| [02-仓库结构与模块](./02-仓库结构与模块.md) | Maven / 前端 workspace 与当前聚合关系 |
+| [02-仓库结构与模块](./02-仓库结构与模块.md) | Maven / 前端 workspace 与聚合关系 |
 | [03-本地开发与构建](./03-本地开发与构建.md) | 编译、测试、前后端启动、端口 |
 | [04-数据与部署](./04-数据与部署.md) | 库表约定、初始化脚本、环境变量、制品形态 |
 | [05-工程规范与安全](./05-工程规范与安全.md) | DDD/CQRS、质量工具、安全注意项 |
 | [06-延伸阅读](./06-延伸阅读.md) | `doc/` 权威文档与设计索引 |
 | [07-P0-TODO看板](./07-P0-TODO看板.md) | 平台内核未完成项与工程债 |
-| [10-MVP-范围清单](./10-MVP-范围清单.md) | MVP 范围定义（三方证据交叉、纳入 / 排除 / 验收） |
 | [08-blueprint与主工程对齐](./08-blueprint与主工程对齐.md) | DDD 蓝图模块构建与 CI |
 | [09-密钥与Git历史](./09-密钥与Git历史.md) | Gitleaks 工作区 / baseline、历史清理流程 |
+| [10-MVP-范围清单](./10-MVP-范围清单.md) | MVP 范围定义（三方证据交叉：纳入 / 排除 / 验收） |
+| [PR-feature-code-optimization516](./PR-feature-code-optimization516.md) | 本次 code-optimization 分支的 PR 说明 |
 
----
+## 与其他文档的关系
 
-## 一句话
+- **[AGENTS.md](../../AGENTS.md)**：AI 助手的薄引用入口；完整说明在 [`doc/agents/`](../agents/README.md)。
+- **[CONTRIBUTING.md](../../CONTRIBUTING.md)**：提交前检查、CI、Spotless / Gitleaks / blueprint 约定。
+- **[doc/architecture/ 与 adr/](../architecture/README.md)**：架构与决策真源（HC 状态、门禁、ADR）。
+- **[doc/prd/](../prd/) / [doc/design/modules/](../design/modules/README.md)**：需求与模块详设。
+- **[doc/README.md](../README.md)**：`doc/` 总索引与本页的上层入口。
 
-**Bone（Build Once, Natively Everywhere）**：企业级全栈平台，元数据驱动 + DDD/CQRS 后端，React + Qiankun 微前端。
-
----
-
-## 与仓库其他文档的关系
-
-- **[CLAUDE.md](../../CLAUDE.md)**：面向 Claude Code 的短指南（命令、红线、提交规范）。
-- **[AGENTS.md](../../AGENTS.md)**：AI 助手的**薄引用入口**（强制约束 + 路径→上下文路由）；完整说明在 [`doc/agents/`](../agents/README.md)（六份：概览与模块结构 / 构建运行与部署 / 架构分层规范 / 测试与代码质量 / 数据库与安全 / AI 协作与编码准则）。
-- **[CODE_WIKI.md](../CODE_WIKI.md)**：技术栈、模块树、关键类、构建与数据库等**单文件长文档**（部分内容可能随版本演进，以本 Wiki 的「模块」页与根 `pom.xml` 为准）。
-- **[CONTRIBUTING.md](../../CONTRIBUTING.md)**：提交前检查、CI 说明、Spotless / Gitleaks / blueprint 约定。
-- **[doc/README.md](../README.md)**：`doc/` 权威文档与历史废止目录总索引。
-
----
-
-*Wiki 生成基准：仓库内 `pom.xml` 聚合模块与 `bone-frontend` workspace（2026）。*
+历史长文档 `CODE_WIKI.md` 已归档至 [`doc/archive/CODE_WIKI.md`](../archive/CODE_WIKI.md)，其内容与本 Wiki 重叠，不再维护。

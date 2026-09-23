@@ -1,6 +1,6 @@
 # Bone Agentic Engineering（统一指南）
 
-> **版本**：v3.1（合并版） | **维护**：`doc/Agenticx编程/`  
+> **版本**：v3.1（合并版） | **维护**：`doc/agenticx/`  
 > **仓库落地**：命令与 Agent 定义以 **`.claude/`** 为准；项目约束以根目录 **`CLAUDE.md`**、**`AGENTS.md`** 为准；DDD 分层见 **`doc/architecture/Bone-DDD-最终实践方案.md`**。
 
 本文档由以下材料合并去重：`Bone-Agentic-Engineering-编程规范`（v3.0 方法论）、`Bone-Agentic-Engineering-编程配置`（v3.1 可落地配置）、`doc/claude` 下最佳实践摘要。历史草稿 `编程配置0.1` 已废止。
