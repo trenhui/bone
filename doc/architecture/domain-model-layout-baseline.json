@@ -1,0 +1,20 @@
+{
+  "_comment": "ADR-0036 D5 布局门禁的例外登记（唯一真源，只可收缩）。规则：domain/ 根下只允许 model / repository / service / gateway；模块自有的领域端口子包须在此登记并写明理由。新增条目属架构决策，需在评审中给出依据。",
+  "exceptions": [
+    {
+      "module": "bone-platform/bone-iam",
+      "path": "domain/client",
+      "reason": "端口接口（SsoClient / StorageClient），由 infrastructure 实现；ADR-0036 R3 允许模块自有领域端口子包留在 domain/ 根"
+    },
+    {
+      "module": "bone-platform/bone-integration",
+      "path": "domain/client",
+      "reason": "端口接口（ExternalSystemClient，testConnection / sendRequest），由 infrastructure/external/*ClientImpl 实现；同上"
+    },
+    {
+      "module": "bone-blueprint",
+      "path": "domain/extension",
+      "reason": "扩展点业务端口（OrderPriceCalculator 等），启动类 @EnableExtensionPoints 以字符串包名引用；同上"
+    }
+  ]
+}

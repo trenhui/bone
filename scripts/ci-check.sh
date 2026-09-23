@@ -48,6 +48,12 @@ python3 scripts/check-application-constructs.py --check || {
   echo -e "${RED}❌ application 层出现白名单外的构件（第二类 service / 角色包 / ApplicationService 放错包）！${RESET}"
   exit 1
 }
+
+echo "🔍 [10/10] domain 分组布局（ADR-0036 D5：聚合必须包在 domain/model/{聚合}/ 下）..."
+python3 scripts/check-domain-model-layout.py || {
+  echo -e "${RED}❌ domain 分组布局违规（两套分组并存 / model 下平铺 / 空聚合包 / 根下疑似扁平聚合）！${RESET}"
+  exit 1
+}
 if grep -rnE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence|import\s+org\.hibernate|import\s+com\.baomidou" \
     --include="*.java" --exclude-dir={.git,target,node_modules} .; then
   echo -e "${RED}❌ 残留禁用 ORM import！${RESET}"; exit 1

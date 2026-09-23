@@ -2,133 +2,130 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted，2026-09-22）**：D1（唯一形态记法）与 D2（值对象子包名 `valueobject`）经架构师确认；规范与登记已落地，**代码迁移由架构师手工执行** |
-| **日期** | 2026-09-22 |
-| **决策者** | 架构师 |
-| **取代** | `Bone-DDD-最终实践方案.md` E-10「domain 内部分组有两种合法形态」双形态条款（v5.5.16 及以前） |
-| **关联** | E-0.2（存量处理 / 受控批量收敛通道）、E-0.3、E-4.1（投影返回类型白名单）、E-9（模块适用性）、E-10.1～E-10.3、E-13.1（后缀与落点表）、[ADR-0030](./0030-domain-repository-read-merge.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
-| **下游同步** | DDD 规范（E-10 参考图 / 双形态条款 / E-10.3 样例 / E-4.1 与 E-13.1 的投影落点）、[03-架构分层规范.md](../../agents/03-架构分层规范.md)、各模块 README 的 `E-10 domain 分组形态登记`、`doc/_generated/**`（迁移后重算）、`studio-generator` 生成模板（**代码，待办**）、形态校验门禁（**未实现，待增项**） |
-
----
+| 状态 | 已采纳（2026-09-22）。全部应用模块的存量迁移已于当日完成，见「落地结果」 |
+| 日期 | 2026-09-22 |
+| 决策者 | 架构师 |
+| 取代 | E-10「domain 内部分组有两种合法形态」双形态条款（v5.5.16 及以前） |
+| 关联 | E-0.2、E-4.1、E-9、E-10.3、E-13.1、[ADR-0030](./0030-domain-repository-read-merge.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
+| 下游同步 | DDD 规范（E-10 参考树、分组条款、E-10.3 样例、E-4.1 与 E-13.1 投影落点）、[03-架构分层规范.md](../../agents/03-架构分层规范.md)、七个模块 README 的「E-10 domain 分组形态登记」、`studio-generator` 生成模板与 `GeneratedLayoutTest`、`scripts/check-domain-model-layout.py` 与 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json) |
+| 未完成项 | 无；D5 / D6 均已于 2026-09-23 落地 |
 
 ## 背景
 
-### 1. 触发：把 `domain/model/` 定为平台唯一标准
+E-10 原先允许两种 domain 分组形态，并声明「不设优劣、跨模块不要求统一」。2026-09-22 架构师决定收敛为唯一形态 `domain/model/`，理由是聚合构件与 `gateway` / `repository` 端口同层平放时概念层级不清。
 
-原规范允许两种形态，且明确「两套形态不设优劣……跨模块不要求统一」（E-10 §1514–1519）。架构师决定收敛为唯一形态 `domain/model/`——理由是聚合构件与 `gateway` / `repository` 端口同层平放时概念层级不清。本 ADR 负责把「唯一形态」定义清楚，并给出存量迁移纪律。
+收敛前，规范自身对 `model/` 有三处互斥说法：
 
-### 2. 现行规范对 `model/` 的定义自相矛盾（必须先解决）
+| 出处 | 说法 |
+|---|---|
+| E-10 参考图与条文 §1516 | `model/{aggregate\|entity\|valueobject\|event}`，按构件角色分组 |
+| E-10.3 §1596 | 「聚合根平铺，非角色子目录」 |
+| E-13.1 §1694 ／ E-4.1 §1037 | 本聚合读投影落在 `domain/<聚合>/projection/` |
 
-同一份规范里，三处关于 `model/` 的说法不能同时成立：
+前两条互相否定：若在 `model/` 下按角色建桶，就没有稳定的聚合包承载第三条要求的投影。
 
-| 出处 | 原文 | 读出的形态 |
+现实里 `model/` 也被读成三种意思（2026-09-22 立项时现场）：
+
+| 模块 | `domain/` | `model/` 的用法 |
 |---|---|---|
-| E-10 参考图（§1476–1481）+ 条文 §1516 | `model/{aggregate\|entity\|valueobject\|event}`「按构件角色分组」 | **跨聚合角色桶**：全模块的聚合根都进 `model/aggregate/` |
-| E-10.3 §1596 | 「聚合根平铺，**非角色子目录**」 | 聚合包内**不得**再按角色分子目录 |
-| E-13.1 落点表 §1694 ／ E-4.1 §1037 | 本聚合读投影落点 `domain/<聚合>/projection/` | 预设**一个聚合一个包**；角色桶下这个落点无处安放 |
-
-只写「统一到 `model/`」而不裁定记法，会把这处歧义复制到全部模块。
-
-### 3. 现实里 `model/` 已经长出三种形状
-
-| 模块 | `domain/` 现状 | 对 `model/` 的解读 |
-|---|---|---|
-| bone-masterdata | `domain/{entity,lineage,quality,record,standard}` **与** `domain/model/{entity,field,quality,record}` 并存 | `model/{聚合}` = 聚合子构件，聚合根仍留在 `domain/{聚合}` —— **一个 domain 两套分组并存** |
-| bone-integration | `domain/{client,connector,execution,flow}` **与** `domain/model/{connector,execution,flow}` 并存 | 同上 |
-| bone-metadata-server | `domain/model/` 下 9 个类平铺 + `model/physical/` | `model/` = 领域类平铺桶 |
+| bone-masterdata | `domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存 | `model/{聚合}` 只装子构件，聚合根留在 `domain/{聚合}` |
+| bone-integration | `domain/{client,connector,execution,flow}` 与 `domain/model/{connector,execution,flow}` 并存 | 同上 |
+| bone-metadata-server | `domain/model/` 下 9 个类平铺，另有 `model/physical/` | `model/` 当领域类平铺桶 |
 | bone-extension-studio | `domain/model/` 下 9 个类平铺 | 同上 |
-| bone-blueprint / bone-iam / bone-system / bone-notification | `domain/{聚合}/{event,valueobject\|vo}` | 不使用 `model/`（扁平） |
+| bone-blueprint、bone-iam、bone-system、bone-notification | `domain/{聚合}/{event,valueobject\|vo}` | 不使用 `model/` |
 
-结论：**歧义记法本身在生产漂移**——同一句规范被读成三种意思，其中 masterdata 与 integration 已经落到「一个 `domain` 包内两套分组并存」这个 E-10 末句明令禁止的状态。这正是本 ADR 必须先裁定 D1 的原因。
-
-> **本表是本 ADR 立项时（2026-09-22 上午）的现场快照**，用途是论证「为何必须先裁定 D1」，**不是当前状态**——表中所有模块现已收敛完毕，现状见下方 [迁移影响面清单](#迁移影响面清单)。
+其中 masterdata 与 integration 已落到「一个 `domain` 内两套分组并存」，正是 E-10 末句禁止的状态。只写「统一到 `model/`」而不裁定 `model/` 内部结构，会把这处歧义复制到所有模块，因此 D1 必须同时定义聚合包内部的组织方式。
 
 ## 决策
 
-### D1. 唯一形态：`domain/model/{聚合}/`（聚合包，包内平铺）
+### D1 唯一形态：`domain/model/{聚合}/`
 
 ```text
-com.bone.{module}/
-└── domain/
-    ├── model/
-    │   ├── {aggregate}/                # 一聚合一包
-    │   │   ├── {AggregateRoot}.java    # 聚合根，直接平铺
-    │   │   ├── {Entity}.java           # 聚合内实体，直接平铺
-    │   │   ├── {ValueObject}.java      # 值对象，直接平铺
-    │   │   ├── event/                  # 聚合内领域事件（过去式）
-    │   │   └── projection/             # 本聚合读投影（ADR-0030，按需）
-    │   └── shared/                     # 跨聚合共享的模型构件（值对象 / 领域异常），按需
-    ├── repository/                     # 聚合仓储接口（端口，不随 model 下移）
-    ├── gateway/                        # 外部业务能力端口
-    ├── extension/                      # 模块自有领域端口子包（如 blueprint 扩展点契约），按需
-    └── service/                        # 领域服务（最后选择）
+domain/
+├── model/
+│   ├── {aggregate}/                # 一聚合一包
+│   │   ├── {AggregateRoot}.java    # 聚合根，直接平铺
+│   │   ├── {Entity}.java           # 聚合内实体
+│   │   ├── {ValueObject}.java      # 值对象
+│   │   ├── event/                  # 聚合内领域事件（过去式）
+│   │   └── projection/             # 本聚合读投影（ADR-0030，按需）
+│   └── shared/                     # 跨聚合共享的模型构件，按需
+├── repository/                     # 聚合仓储接口
+├── gateway/                        # 外部业务能力端口
+├── extension/                      # 模块自有的领域端口子包，按需
+└── service/                        # 领域服务（最后选择）
 ```
 
-硬规则：
+- R1：聚合根、聚合内实体、值对象在同一聚合包内直接平铺，不按角色再分子目录。
+- R2：不得设置 `model/aggregate`、`model/entity`、`model/valueobject`、`model/event` 这类跨聚合角色桶。
+- R3：`repository` / `gateway` / `service` 与模块自有的领域端口子包留在 `domain/` 根，不进 `model/`。
+- R4：同一 `domain` 内不得并存两套分组。
+- R5：原扁平形态 `domain/{聚合}` 不再是合法变体，降级为存量形态，按 E-0.2 收敛。
 
-- **R1** 聚合根 / 聚合内实体 / 值对象在同一聚合包内**直接平铺**，不再按角色分子目录；
-- **R2** **禁止** `domain/model/aggregate` / `entity` / `valueobject` / `event` 这类跨聚合角色桶；
-- **R3** `repository` / `gateway` / `service` 以及模块自有的领域端口子包（如 blueprint `extension/`）**留在 `domain/` 根**，不进 `model/`；
-- **R4** 同一 `domain` 包内**不得并存**两套分组（`domain/{聚合}` 与 `domain/model/{聚合}` 并存即违规）；
-- **R5** 原扁平形态 `domain/{聚合}` 不再是合法变体，**降级为存量形态**（见 D4）。
+### D2 值对象子包名统一为 `valueobject`
 
-### D2. 值对象子包名统一为 `valueobject`
+原先 blueprint 用 `valueobject`，bone-iam 与 bone-system 用 `vo`。取 `valueobject`，与 E-10 参考记法、blueprint 参考实现以及 `projection` / `repository` 等结构包写全词的惯例一致。备选方案是全平台改用 `vo`，好处是名字更短，代价是要同时改参考实现与规范记法。
 
-现网两种写法：`bone-blueprint` 用 `valueobject`，`bone-iam` / `bone-system` 用 `vo`。本 ADR 取 `valueobject`：它是 E-10 参考记法、是参考实现 blueprint 的现行写法，也与 `projection` / `repository` / `application` 等结构包「写全词」的惯例一致。
+### D3 适用边界
 
-**未采纳的备选**：全平台改用 `vo`（更短）。架构师 2026-09-22 确认取 `valueobject`，因此 `bone-iam` / `bone-system` 的 `vo/` 子包按迁移清单改名为 `valueobject`（D1 不受影响）。
+- 强制：`bone-platform/*` 与 `bone-engine/*` 中具备领域模型的应用模块，即 blueprint、iam、system、notification、masterdata、integration、metadata-server、extension-studio、studio-generator。
+- 豁免：`bone-framework/bone-core`（`domain/{entity,event,id,extension}` 是内核抽象）、`bone-metadata-sdk` 及其它 SDK / 框架库，按 E-9 的「SDK / 框架库」档位只约束依赖方向与领域纯净度。
+- `bone-engine/go-engine/*` 是 Go 模块，不适用 Java 包规范。
+- 豁免模块可以自行使用 `model/`，本 ADR 不强制其迁移。
 
-### D3. 适用边界
+### D4 迁移方式
 
-- **强制**：`bone-platform/*` 与 `bone-engine/*` 中具备领域模型的应用模块——blueprint、iam、system、notification、masterdata、integration、metadata-server、extension-studio、studio-generator。
-- **豁免**：`bone-framework/bone-core`（`domain/{entity,event,id,extension}` 是内核抽象：`AggregateRoot` / `DomainEvent` / `AbstractDTO`）、`bone-metadata-sdk` 及其它 SDK / 框架库——按 E-9 的「SDK/框架库」档位，只约束依赖方向与领域纯净度，不套应用层目录约定。
-- `bone-engine/go-engine/*` 是 Go 引擎，不适用 Java 包规范。
-- 豁免模块**可以**自行使用 `model/`，只是不强制迁移。
+全平台一次性结构统一属于 E-3.11 第 3 条禁止的批量重命名，授权载体为本 ADR，走 ADR-0032 的受控批量收敛通道。等价性证据：只改包声明与 import，不改类型、方法、字段、行为、HTTP 契约与事件 payload。
 
-### D4. 迁移纪律：存量一律是存量
+执行顺序按风险由低到高：notification → system → blueprint → masterdata → integration → extension-studio → metadata-server → iam。每个模块单独提交、可独立回滚；提交前 `mvn spotless:apply`，提交时 `./scripts/check.sh` 与该模块 `*ArchitectureTest` 全绿。进度不设数字 KPI（E-0.2），由模块 README 登记。
 
-- 存量按 [E-0.2 存量不符合规范代码的处理](../Bone-DDD-最终实践方案.md#e-02-存量不符合规范代码的处理) 触达即收敛；本轮是**全平台一次性结构统一**，属 E-3.11 第 3 条「批量重命名」禁区，**授权载体即本 ADR**（走 [ADR-0032](./0032-controlled-batch-convergence.md) 的受控批量收敛通道）。
-- 通道第 ② 条「对外契约全程不变」的等价性证据：本批**只改包声明与 import**，不改任何类型 / 方法 / 字段 / 行为 / HTTP 契约 / 事件 payload。
-- **顺序**（风险由低到高；`bone-iam` 最后——中央鉴权模块，且提出本 ADR 时其工作区仍有未提交改动）：`bone-notification` → `bone-system` → `bone-blueprint`（参考实现，须与规范同批对齐）→ `bone-masterdata` → `bone-integration` → `bone-extension-studio` → `bone-metadata-server` → `bone-iam`。
-- **每模块一次提交、可回滚**；提交前 `mvn spotless:apply`，提交时 `./scripts/check.sh`（就近 ArchUnit）与该模块 `*ArchitectureTest` 全绿。
-- **不设数字 KPI**（E-0.2）：本 ADR 只登记顺序与判据，进度由各模块 README 的迁移状态字段承载。
+### D5 门禁
 
-### D5. 门禁：本轮无 ArchUnit 连锁；形态校验尚未机器化
+- ArchUnit 无需改动：共享规则库与各模块 `ArchitectureTest` 的谓词粒度都在 `..domain..` 这一层，没有按聚合包名或包深度判定的规则；`AggregatePureUnitTestGuard` 亦与包深度无关。
+- `FreezingArchRule` 无需重冻：`bone-iam/archunit_store/` 的违规文件均为空，键位由规则文本派生，与类名无关。
+- 形态校验已落地（2026-09-23）：`scripts/check-domain-model-layout.py`，接入 `scripts/ci-check.sh` `[10/10]`，四条判定为 C1 两套分组并存、C2 `model/` 下平铺、C3 空聚合包、C4 `domain/` 根下未登记子包；模块自有的领域端口子包（iam 与 integration 的 `client`、blueprint 的 `extension`）登记在 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json)，只可收缩。状态为 **Manual（本地脚本，未接入 workflow）**，G-1.1 第 18 行由 gate-state.json 渲染。
+- 适用边界由脚本自行判定：只在同时具备 `application` 与 `adapter` 包的四层应用模块内生效；按层拆成多个 Maven 模块的引擎（`bone-metadata-engine` 的 `-domain` / `-ports` / `-runtime` / `-starter`）不套用本形态。
 
-- **实测**：共享规则库 `BoneDddArchRules` 与各模块 `ArchitectureTest` 的谓词粒度均为 `..domain..` / `..domain.repository..` / `..domain.service..` / `..domain.store..`，**无一条**按聚合包名或包深度判定；`AggregatePureUnitTestGuard` 按「`..domain..` 下的具体聚合根」判定，同样与包深度无关。搬包既不破坏也不新增覆盖。
-- **`FreezingArchRule` 基线不需要重冻**：`bone-platform/bone-iam/archunit_store/` 实测为 12 个 **0 字节**违规文件 + `stored.rules`（存「规则文本 → UUID」，UUID 由规则文本派生、与类名无关），没有活跃违规指纹可失效。
-- 「`domain` 下不得出现未包在 `model/` 的聚合包」这条机器校验**当前不存在**，列为 G-1.1 待增项；状态真源是 [gate-state.json](../gate-state.json)，在实现并接入 CI 之前**不得写成 Active**。
+### D6 生成模板对齐（2026-09-23 完成）
 
-### D6. 脚手架对齐（代码，待办）
+`studio-generator` 有两条生成通道，都已对齐 D1：
 
-`studio-generator` 当前产出 `{basePackage}.domain.entity`（`entity.ftl`）与 `.domain.repository`（`repository.ftl`），路径在 `CodeGeneratorServiceImpl` / `EntityGenerator` / `RepositoryGenerator` 中拼接——即**第三种形态**。需改为目标形态（生成 `domain/model/{聚合}/…`）。属代码改动，由架构师手工执行，本 ADR 只登记为下游同步项。
+- 模板通道（`entity.ftl` / `repository.ftl` / `controller.ftl` / `applicationService.ftl` 与对应的四个 `*Generator`）：实体包与引用改为 `{basePackage}.{module}.domain.model.{聚合}`，聚合段取实体名全小写（`Order` → `order`，生成后可按业务语义改名）。同时修正了文件路径与 package 声明的系统性错位——实体路径原为 `…/domain/{module}/`、其余三个生成器的路径缺模块段。
+- 内联通道（`CodeGeneratorServiceImpl.generateEntity` / `generateRepository` / `generateService`）：包名由 `domain.model.entity` 改为 `domain.model.{聚合}`。原写法是 R2 禁止的角色桶。
 
-## 迁移影响面清单
+`GeneratorUtils` 新增 `aggregateSegment` 与 `basePath` 供两条通道共用；`GeneratedLayoutTest` 锁定四条生成路径与包声明，防止再次漂移。
 
-| 模块 | 现状 | 目标 | 备注 |
-|---|---|---|---|
-| bone-notification | ~~`domain/{notification,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/notification` + `domain/repository` | **已完成**（20 测试全绿）；无 `vo` / `event` 子包；**本模块无 README.md**，E-10 登记随其 README 建立时补 |
-| bone-system | ~~`domain/{alert,config,console,dict,log,schedule}` + `{}/vo`、`{}/event`~~ **已于 2026-09-22 完成迁移** | `domain/model/{alert,config,…}/` + `vo→valueobject` | **已完成**（92 测试全绿）；README 包树与登记已同步改写；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
-| bone-blueprint | ~~`domain/{order,payment}/{event,projection,valueobject}` + `domain/{shared,extension,gateway,repository}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{order,payment,shared}/…`；`extension` / `gateway` / `repository` 留根 | **参考实现，已完成**（首个落地模块，212 测试全绿）；`@EnableExtensionPoints(basePackages="com.bone.blueprint.domain.extension")` 是字符串包名，因 `extension` 留根故无需改动——已逐处核对 |
-| bone-masterdata | ~~`domain/{entity,lineage,quality,record,standard}` 与 `domain/model/{entity,field,quality,record}` 并存~~ **已于 2026-09-22 完成合并** | 合并为 `domain/model/{entity,field,quality,record,standard,lineage}/` | **合并双树已完成**（59 测试全绿）；`entity` / `quality` / `record` 三个包名两边都有，已逐个核对归属；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
-| bone-integration | ~~`domain/{client,connector,execution,flow}`~~ **已于 2026-09-22 完成迁移** | `domain/model/{connector,execution,flow}/`；`client` 留根 | **已完成**（75 测试全绿）；`client` 定性为**端口接口**（`ExternalSystemClient` 由 `infrastructure/external/*ClientImpl` 实现），按 R3 留根不进 `model/` |
-| bone-extension-studio | ~~`domain/model/` 下 9 个类平铺~~ **已于 2026-09-22 按聚合分组完成** | `domain/model/{plugin,extpoint,extension,execution,marketplace,audit,operation}/` | **已完成**（59 测试全绿）；`domain/{gateway,repository}` 留根；`gateway/*ReadPort` 走 ADR-0013 单独路径 |
-| bone-metadata-server | ~~`domain/model/` 类平铺 + `model/physical` + `domain/{enums,service,gateway,repository}`~~ **已于 2026-09-22 完成** | `domain/model/{meta,iam,physical}/` | **已完成**（47 测试全绿）；`enums` 角色包解散，两个枚举定性为模型构件随 `MetaEntity` 迁入 `model/meta/`；`{gateway,repository,service}` 留根 |
-| studio-generator | ~~`domain/catalog/{model,repository}` + `domain/{code,history,data}`~~ **已于 2026-09-22 完成** | `domain/model/{catalog,code,data,history}/`；`catalog/repository` 并入 `domain/repository` | **已完成**（52 测试全绿）；D6「生成模板对齐」本次**无需同步**——模板资源未内嵌本模块包名（已全量 grep 确认）；**本模块无 README.md**，E-10 登记随其 README 建立时补 |
-| bone-iam | ~~`domain/{account,app,audit,client,dept,menu,permission,role,session,tenant}` + `{}/event`、`{}/vo`~~ **已于 2026-09-22 完成迁移** | `domain/model/{…}/` + `vo→valueobject` | **已完成**（最后一棒，132 测试全绿）；`client`（`SsoClient` / `StorageClient`）经定性为**端口接口**，按 R3 留根不进 `model/`；`{聚合}/vo` 已按 D2 统一为 `valueobject` |
+## 落地结果
 
-## 代价与风险
+2026-09-22 全部完成，各模块测试全绿：
 
-- **收益**：一次裁决消掉「同一句规范三种读法」的持续漂移；新模块与脚手架有唯一目标；评审不再需要逐模块记忆形态。
-- **代价**：8 个应用模块的**模块内**机械改名。实测无跨模块耦合——全仓引用 `com.bone.iam.domain.<聚合>` 的 83 个文件（61 main + 22 test）全部落在 `bone-iam` 内，其余模块同理。
-- **风险清单（每模块迁移时逐项核对）**：
-  1. **字符串包名**：`@ComponentScan` / `@EnableSqlRepositories` / `@EnableExtensionPoints` 的 `basePackages` 字面量、`@AnalyzePackages`、`logging.level.*`、yml 中的包名——IDE 重命名不会改这些，须手动 grep；
-  2. **外置 SQL 目录**：资源路径镜像包路径。实测本仓唯一的 `src/main/resources/sql/…` 镜像的是 `domain/repository`（`blueprint/domain/repository/OrderRepository/…`），而 `repository` **不在迁移范围**，故本项实测为零；迁移时仍须每模块 `find …/resources/sql` 核对一次；
-  3. **包私有可见性**：改包会改变 `package-private` 边界。同一聚合内的类相对关系不变（如 `order/` 与 `order/event/`），风险限于个别「原本靠同包直连、迁移后被拆开」的类，以编译通过为准；
-  4. **并行工作区**：`bone-iam` 与 `bone-masterdata` 当前有未提交改动，须待其 WIP 落地后再迁。
+| 模块 | 迁移后 | 规模 |
+|---|---|---|
+| bone-notification | `domain/model/notification` + `domain/repository` | 20 测试 |
+| bone-system | `domain/model/{alert,config,console,dict,log,schedule}`；`vo` → `valueobject` | 92 测试 |
+| bone-blueprint | `domain/model/{order,payment,shared}`；`repository` / `gateway` / `extension` 留根 | 212 测试，首个落地模块 |
+| bone-masterdata | 双树合并为 `domain/model/{entity,field,lineage,quality,record,standard}`；`vo` → `valueobject` | 59 测试 |
+| bone-integration | `domain/model/{connector,execution,flow}`；`client` 定性为端口接口，留根 | 75 测试 |
+| bone-extension-studio | `domain/model/{plugin,extpoint,extension,execution,marketplace,audit,operation}` | 59 测试 |
+| bone-metadata-server | `domain/model/{meta,iam,physical}`；原 `enums` 解散，随 `MetaEntity` 并入 `model/meta` | 47 测试 |
+| studio-generator | `domain/model/{catalog,code,data,history}`；`catalog/repository` 并入 `domain/repository` | 52 测试 |
+| bone-iam | `domain/model/{account,app,audit,dept,menu,permission,role,session,tenant}`；`vo` → `valueobject`；`client` 定性为端口接口，留根 | 132 测试，最后一例 |
+
+README 登记：blueprint、iam、system、masterdata、integration、metadata-server、extension-studio 已补「E-10 domain 分组形态登记」；notification 与 studio-generator 无 README，登记待其建立 README 时补。
+
+## 代价与遗留
+
+改名不产生跨模块影响：全仓引用 `com.bone.iam.domain.<聚合>` 的 83 个文件（61 个 main、22 个 test）全部位于 `bone-iam` 内，其余模块同理，改包是模块内操作。
+
+迁移中核对过的三类风险，供后续同类改动复用：
+
+1. 字符串包名字面量不受 IDE 重命名影响，需逐处 grep：`@ComponentScan` / `@EnableSqlRepositories` / `@EnableExtensionPoints` 的 `basePackages`、`logging.level.*`、yml 中的包名。blueprint 的 `com.bone.blueprint.domain.extension` 因 `extension` 按 R3 留根而无需改动。
+2. 资源目录镜像包路径：本仓唯一的 `src/main/resources/sql/…` 镜像 `domain/repository`，不在迁移范围内。
+3. `package-private` 可见性随包边界变化，以编译通过为准。
+
+遗留：无。D5 布局门禁与 D6 生成模板均已落地。
 
 ## 未采纳方案
 
-1. **维持双形态（不动）**：被架构师否决；且上文 §背景 2、3 已证明歧义记法在持续生产漂移。
-2. **角色桶 `model/aggregate` / `entity` / `valueobject` / `event`**：与 E-10.3「非角色子目录」直接冲突；与 ADR-0030 / E-4.1 / E-13.1 的 `domain/<聚合>/projection` 落点冲突；把多个聚合的值对象混进同一目录，损失聚合内聚性并制造新的横切大桶（E-10 §1512 明确反对）；全仓零实例。
-3. **只改规范、不做存量登记**：会让规范一落地就把 8 个模块判成违规，与 E-0.2 的存量纪律冲突。
+1. 维持双形态。歧义记法已经产生三处互斥说法与两种并存现状，收敛正是本次目的。
+2. 角色桶 `model/aggregate`、`model/entity`、`model/valueobject`、`model/event`。与 E-10.3「非角色子目录」冲突，与 E-13.1 / E-4.1 的 `domain/<聚合>/projection` 落点冲突；把多个聚合的值对象混进同一目录，损失聚合内聚性；仓内无实例。
