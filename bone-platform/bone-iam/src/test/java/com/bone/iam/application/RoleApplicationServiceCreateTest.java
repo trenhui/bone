@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.iam.application.command.CreateRoleCommand;
-import com.bone.iam.application.policy.TenantQuotaEnforcer;
+import com.bone.iam.application.support.TenantQuotaEnforcer;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;

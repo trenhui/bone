@@ -1,4 +1,4 @@
-package com.bone.iam.application.policy;
+package com.bone.iam.application.support;
 
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;

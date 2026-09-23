@@ -14,7 +14,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** MFA 接口（社区版：状态查询 As-Is；注册/验证 **[Vision]** 返回 501）。 */
+/**
+ * MFA 接口（社区版：状态查询 As-Is；注册/验证 **[Vision]** 返回 501）。
+ *
+ * <p><b>能力未上线</b>：{@code /enroll}、{@code /verify} 显式返回 501，MFA 仅在商业版 / IdP 中启用。
+ * 前端不应暴露注册/验证入口，避免误调用。
+ */
+@Deprecated(since = "vision", forRemoval = false)
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/mfa")
 public class MfaController {

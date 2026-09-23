@@ -1,4 +1,4 @@
-package com.bone.iam.application.binding;
+package com.bone.iam.application.support;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -13,17 +13,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AccountRoleBindingServiceTest {
+class AccountRoleBindingSupportTest {
 
   @Mock private AccountRoleRepository accountRoleRepository;
 
   @Mock private AccountAuthorityCache accountAuthorityCache;
 
-  @InjectMocks private AccountRoleBindingService accountRoleBindingService;
+  @InjectMocks private AccountRoleBindingSupport accountRoleBindingSupport;
 
   @Test
   void replaceBindingsDelegatesToRepositoryAndEvictsCache() {
-    accountRoleBindingService.replaceBindings(100L, 0L, new Long[] {1L, 2L});
+    accountRoleBindingSupport.replaceBindings(100L, 0L, new Long[] {1L, 2L});
 
     verify(accountRoleRepository).replaceBindingsForAccount(any(), any(), any());
     verify(accountAuthorityCache).evictAccount(100L);
@@ -31,7 +31,7 @@ class AccountRoleBindingServiceTest {
 
   @Test
   void replaceBindingsSkipsWhenAccountIdNull() {
-    accountRoleBindingService.replaceBindings(null, 0L, new Long[] {1L, 2L});
+    accountRoleBindingSupport.replaceBindings(null, 0L, new Long[] {1L, 2L});
 
     verify(accountRoleRepository, never()).replaceBindingsForAccount(any(), any(), any());
     verify(accountAuthorityCache, never()).evictAccount(any());

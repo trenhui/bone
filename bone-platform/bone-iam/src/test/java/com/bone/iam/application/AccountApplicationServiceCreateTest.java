@@ -10,10 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.binding.AccountRoleBindingService;
 import com.bone.iam.application.command.CreateAccountCommand;
-import com.bone.iam.application.policy.PasswordPolicyValidator;
-import com.bone.iam.application.policy.TenantQuotaEnforcer;
+import com.bone.iam.application.support.AccountRoleBindingSupport;
+import com.bone.iam.application.support.PasswordPolicyValidator;
+import com.bone.iam.application.support.TenantQuotaEnforcer;
 import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
@@ -43,7 +43,7 @@ class AccountApplicationServiceCreateTest {
 
   @Mock AccountRepository accountRepository;
   @Mock PasswordEncoder passwordEncoder;
-  @Mock AccountRoleBindingService accountRoleBindingService;
+  @Mock AccountRoleBindingSupport accountRoleBindingSupport;
   @Mock PasswordPolicyValidator passwordPolicyValidator;
   @Mock TenantQuotaEnforcer tenantQuotaEnforcer;
 
@@ -78,7 +78,7 @@ class AccountApplicationServiceCreateTest {
     verify(passwordPolicyValidator, times(1)).assertAcceptable("P@ssw0rd123");
     verify(tenantQuotaEnforcer, times(1)).assertCanAddAccount(1L);
     verify(accountRepository, times(1)).save(any(Account.class));
-    verify(accountRoleBindingService, times(1)).replaceBindings(42L, 1L, new Long[] {1L});
+    verify(accountRoleBindingSupport, times(1)).replaceBindings(42L, 1L, new Long[] {1L});
   }
 
   @Test
@@ -99,7 +99,7 @@ class AccountApplicationServiceCreateTest {
         .hasMessageContaining("用户名已存在");
 
     verify(accountRepository, never()).save(any());
-    verify(accountRoleBindingService, never()).replaceBindings(anyLong(), anyLong(), any());
+    verify(accountRoleBindingSupport, never()).replaceBindings(anyLong(), anyLong(), any());
   }
 
   @Test

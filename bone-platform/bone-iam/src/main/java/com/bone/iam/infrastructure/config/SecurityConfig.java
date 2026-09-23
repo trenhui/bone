@@ -54,7 +54,8 @@ public class SecurityConfig {
                         "/api/v1/iam/sso/callback",
                         "/api/v1/iam/sso/config",
                         "/api/v1/iam/debug/**",
-                        "/api/v1/apps/**")
+                        "/api/v1/apps/**",
+                        "/.well-known/jwks.json")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

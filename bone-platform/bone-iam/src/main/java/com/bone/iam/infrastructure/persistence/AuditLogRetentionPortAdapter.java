@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
  * {@code Criteria} 通道会被 ADR-0029 失败关闭拦下；清理语句按设计物理删除过期日志，不做软删过滤。
  *
  * <p>SQL 只出现在本类，{@code adapter} 层（{@code AuditLogCleanupJob}）只做保留期编排。
+ *
+ * <p><b>受控例外（HC-006 登记）</b>：定时清理属全租户运维任务，无请求级租户上下文，故不走 SDK 的 {@code Criteria} 通道；但每条清理语句均显式按 {@code
+ * tenant_id} 作用域（{@code PURGE_SQL} 的 {@code WHERE tenant_id = ?}），不存在跨租户越权。登记依据见 {@code
+ * sdk-persistence-bypass-baseline.json}。
  */
 @Component
 public class AuditLogRetentionPortAdapter implements AuditLogRetentionPort {

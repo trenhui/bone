@@ -1,4 +1,4 @@
-package com.bone.iam.application.binding;
+package com.bone.iam.application.support;
 
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.model.account.AccountRole;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 /** 维护 {@code iam_account_role} 绑定：委托域仓储物理删除后重建（表无软删列），并驱逐权限缓存。 */
 @Service
 @RequiredArgsConstructor
-public class AccountRoleBindingService {
+public class AccountRoleBindingSupport {
 
   private final AccountRoleRepository accountRoleRepository;
   private final AccountAuthorityCache accountAuthorityCache;

@@ -1,7 +1,6 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.binding.AccountRoleBindingService;
 import com.bone.iam.application.command.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.CreateAccountCommand;
 import com.bone.iam.application.command.DisableAccountCommand;
@@ -9,11 +8,12 @@ import com.bone.iam.application.command.EnableAccountCommand;
 import com.bone.iam.application.command.ResetPasswordCommand;
 import com.bone.iam.application.command.UpdateAccountCommand;
 import com.bone.iam.application.command.UpdateMyProfileCommand;
-import com.bone.iam.application.policy.PasswordPolicyValidator;
-import com.bone.iam.application.policy.TenantQuotaEnforcer;
 import com.bone.iam.application.query.dto.AccountDTO;
 import com.bone.iam.application.query.mapper.AccountDtoMapper;
 import com.bone.iam.application.query.qry.AccountPageQuery;
+import com.bone.iam.application.support.AccountRoleBindingSupport;
+import com.bone.iam.application.support.PasswordPolicyValidator;
+import com.bone.iam.application.support.TenantQuotaEnforcer;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
@@ -45,7 +45,7 @@ public class AccountApplicationService {
 
   private final AccountRepository accountRepository;
   private final PasswordEncoder passwordEncoder;
-  private final AccountRoleBindingService accountRoleBindingService;
+  private final AccountRoleBindingSupport accountRoleBindingSupport;
   private final PasswordPolicyValidator passwordPolicyValidator;
   private final TenantQuotaEnforcer tenantQuotaEnforcer;
   private final AccountDtoMapper accountDtoMapper;
@@ -73,7 +73,7 @@ public class AccountApplicationService {
         Account.create(
             null, username, passwordHash, email, cmd.getPhone(), cmd.getRealName(), tenantId);
     accountRepository.save(account);
-    accountRoleBindingService.replaceBindings(
+    accountRoleBindingSupport.replaceBindings(
         account.getId(), account.getTenantId(), cmd.getRoleIds());
     return account.getId();
   }
@@ -96,14 +96,14 @@ public class AccountApplicationService {
     }
     accountRepository.update(account);
     if (cmd.getRoleIds() != null) {
-      accountRoleBindingService.replaceBindings(
+      accountRoleBindingSupport.replaceBindings(
           account.getId(), account.getTenantId(), cmd.getRoleIds());
     }
   }
 
   @Transactional
   public void delete(Long id) {
-    accountRoleBindingService.replaceBindings(id, null, new Long[0]);
+    accountRoleBindingSupport.replaceBindings(id, null, new Long[0]);
     accountRepository.deleteById(id);
   }
 
@@ -208,7 +208,7 @@ public class AccountApplicationService {
         .map(
             account -> {
               AccountDTO dto = accountDtoMapper.toDto(account);
-              dto.setRoleIds(accountRoleBindingService.listRoleIds(id).toArray(Long[]::new));
+              dto.setRoleIds(accountRoleBindingSupport.listRoleIds(id).toArray(Long[]::new));
               return dto;
             });
   }

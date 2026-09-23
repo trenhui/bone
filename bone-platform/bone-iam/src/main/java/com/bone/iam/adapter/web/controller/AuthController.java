@@ -93,6 +93,8 @@ public class AuthController {
     return ApiResponse.success(config);
   }
 
+  // 能力未上线：SSO IdP 回调尚未实现，显式返回 501（SSO_NOT_CONFIGURED）。前端不应暴露该回调入口。
+  @Deprecated(since = "vision", forRemoval = false)
   @GetMapping("/sso/callback")
   public ResponseEntity<ApiResponse<LoginResp>> ssoCallback(
       @RequestParam String code, @RequestParam(required = false) String state) {

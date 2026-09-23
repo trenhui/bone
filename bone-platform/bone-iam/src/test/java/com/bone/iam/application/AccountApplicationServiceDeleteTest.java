@@ -4,7 +4,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.bone.iam.application.binding.AccountRoleBindingService;
+import com.bone.iam.application.support.AccountRoleBindingSupport;
 import com.bone.iam.domain.repository.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AccountApplicationServiceDeleteTest {
 
   @Mock AccountRepository accountRepository;
-  @Mock AccountRoleBindingService accountRoleBindingService;
+  @Mock AccountRoleBindingSupport accountRoleBindingSupport;
 
   @InjectMocks AccountApplicationService accountApplicationService;
 
@@ -25,7 +25,7 @@ class AccountApplicationServiceDeleteTest {
   void deleteAccountClearsRolesThenDeletes() {
     accountApplicationService.delete(42L);
 
-    verify(accountRoleBindingService, times(1)).replaceBindings(eq(42L), eq(null), eq(new Long[0]));
+    verify(accountRoleBindingSupport, times(1)).replaceBindings(eq(42L), eq(null), eq(new Long[0]));
     verify(accountRepository, times(1)).deleteById(42L);
   }
 }
