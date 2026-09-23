@@ -1,5 +1,7 @@
 # Bone 工程诊断报告
 
+> **已归档（2026-09-23）**：此为 2026-06-14 的历史诊断快照。现行架构与决策见 [`doc/architecture/README.md`](../architecture/README.md) 与各 [`adr/`](../architecture/adr/)。
+
 > 生成时间：2026-06-14 | 基于文档、代码、配置全面审查
 
 ---
