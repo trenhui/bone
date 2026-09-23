@@ -65,6 +65,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
   private ServerHttpRequest mutateWithPrincipal(ServerHttpRequest request, GatewayPrincipal p) {
     ServerHttpRequest.Builder builder = request.mutate();
+    // 先清除客户端自带的可信头，避免伪造 X-Tenant-Id/X-User-Id/X-Roles 被下游误读（租户伪造向量）
+    builder.headers(
+        h -> {
+          h.remove("X-Tenant-Id");
+          h.remove("X-User-Id");
+          h.remove("X-Roles");
+        });
     if (p.getTenantId() != null) {
       builder.header("X-Tenant-Id", p.getTenantId());
     }

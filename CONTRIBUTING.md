@@ -65,7 +65,7 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 | 总体架构 | [doc/architecture/BONE-总体架构设计方案.md](doc/architecture/BONE-总体架构设计方案.md) |
 | 数据库 | [doc/architecture/数据库开发规范.md](doc/architecture/数据库开发规范.md)、[初始脚本.sql](doc/architecture/初始脚本.sql) |
 | 模块设计 | [doc/design/modules/](doc/design/modules/) |
-| Agentic 工程 | [doc/Agenticx编程/Bone-Agentic-Engineering.md](doc/Agenticx编程/Bone-Agentic-Engineering.md) |
+| Agentic 工程 | [doc/agenticx/Bone-Agentic-Engineering.md](doc/agenticx/Bone-Agentic-Engineering.md) |
 | Metadata SDK | [bone-engine/bone-metadata-sdk/README.md](bone-engine/bone-metadata-sdk/README.md)（快速开始）→ [doc/](bone-engine/bone-metadata-sdk/doc/)（使用指南 + 最佳实践） |
 | 元数据三模块定义与协作 | [doc/design/modules/元数据能力-实现映射与竞品对照.md](doc/design/modules/元数据能力-实现映射与竞品对照.md) |
 | 扩展引擎 | [docs/使用指南.md](bone-engine/bone-extension-engine/docs/使用指南.md)（接入）→ [README](bone-engine/bone-extension-engine/README.md)（摘要） |

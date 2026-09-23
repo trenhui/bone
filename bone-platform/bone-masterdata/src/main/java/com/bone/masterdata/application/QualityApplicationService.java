@@ -149,6 +149,7 @@ public class QualityApplicationService {
       throw NotFoundException.of("主数据实体不存在");
     }
     // 规则表达式求值器尚未交付：宁可显式 501，也不用随机结果冒充质量结论。
+    // 能力未上线：前端/OpenAPI 应标注该检查不可用，避免误调用。
     throw new BizException(501, "MD_QUALITY_CHECK_UNSUPPORTED: 规则表达式求值器未实现");
   }
 

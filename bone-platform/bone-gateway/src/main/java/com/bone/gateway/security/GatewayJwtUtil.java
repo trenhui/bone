@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 import java.util.List;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -17,14 +18,19 @@ public class GatewayJwtUtil {
 
   private final GatewayJwtProperties properties;
   private final SecretKey signingKey;
+  private final PublicKey rsaPublicKey;
 
   public GatewayJwtUtil(GatewayJwtProperties properties) {
     this.properties = properties;
     this.signingKey =
         Keys.hmacShaKeyFor(properties.getSecretKey().getBytes(StandardCharsets.UTF_8));
+    this.rsaPublicKey =
+        properties.getRsaPublicKeyPem() != null && !properties.getRsaPublicKeyPem().isBlank()
+            ? RsaKeyParser.publicKeyFromPem(properties.getRsaPublicKeyPem())
+            : null;
   }
 
-  /** 从 Authorization 原始值解析并校验 token，成功返回 principal。 */
+  /** 从 Authorization 原始值解析并校验 token，成功返回 principal。双模：HS256 失败回退 RS256。 */
   public Optional<GatewayPrincipal> parse(String rawHeader) {
     if (rawHeader == null || rawHeader.isBlank()) {
       return Optional.empty();
@@ -33,20 +39,40 @@ public class GatewayJwtUtil {
     if (token.isEmpty()) {
       return Optional.empty();
     }
+    Optional<Claims> payload = tryParseHmac(token).or(() -> tryParseRsa(token));
+    if (payload.isEmpty()) {
+      return Optional.empty();
+    }
+    Claims claims = payload.get();
+    String subject = claims.getSubject();
+    if (subject == null || subject.isBlank()) {
+      return Optional.empty();
+    }
+    GatewayPrincipal principal =
+        new GatewayPrincipal(
+            claims.get("userId", String.class),
+            subject,
+            claims.get("tenantId", String.class),
+            readScopes(claims));
+    return Optional.of(principal);
+  }
+
+  private Optional<Claims> tryParseHmac(String token) {
     try {
-      Claims payload =
-          Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
-      String subject = payload.getSubject();
-      if (subject == null || subject.isBlank()) {
-        return Optional.empty();
-      }
-      GatewayPrincipal principal =
-          new GatewayPrincipal(
-              payload.get("userId", String.class),
-              subject,
-              payload.get("tenantId", String.class),
-              readScopes(payload));
-      return Optional.of(principal);
+      return Optional.of(
+          Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload());
+    } catch (Exception ignored) {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<Claims> tryParseRsa(String token) {
+    if (rsaPublicKey == null) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(
+          Jwts.parser().verifyWith(rsaPublicKey).build().parseSignedClaims(token).getPayload());
     } catch (Exception ignored) {
       return Optional.empty();
     }

@@ -17,7 +17,16 @@ public final class GatewayErrorWriter {
     ServerHttpResponse response = exchange.getResponse();
     response.setStatusCode(status);
     response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-    String body = "{\"code\":" + status.value() + ",\"message\":\"" + escape(message) + "\"}";
+    // 透传 X-Trace-Id（由 TraceIdRelayGatewayFilter 注入 response header），便于排障关联
+    String traceId = response.getHeaders().getFirst("X-Trace-Id");
+    String body =
+        "{\"code\":"
+            + status.value()
+            + ",\"message\":\""
+            + escape(message)
+            + "\""
+            + (traceId != null ? ",\"traceId\":\"" + escape(traceId) + "\"" : "")
+            + "}";
     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
     DataBuffer buffer = response.bufferFactory().wrap(bytes);
     return response.writeWith(Mono.just(buffer));

@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -17,11 +19,21 @@ public class JwtTokenService {
 
   private final JwtConfig jwtConfig;
   private final SecretKey signingKey;
+  private final PublicKey rsaPublicKey;
+  private final PrivateKey rsaPrivateKey;
 
   public JwtTokenService(JwtConfig jwtConfig) {
     this.jwtConfig = jwtConfig;
     assertJjwtCompatible();
     this.signingKey = Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes(StandardCharsets.UTF_8));
+    this.rsaPublicKey =
+        jwtConfig.getRsaPublicKeyPem() != null && !jwtConfig.getRsaPublicKeyPem().isBlank()
+            ? RsaKeyParser.publicKeyFromPem(jwtConfig.getRsaPublicKeyPem())
+            : null;
+    this.rsaPrivateKey =
+        jwtConfig.getRsaPrivateKeyPem() != null && !jwtConfig.getRsaPrivateKeyPem().isBlank()
+            ? RsaKeyParser.privateKeyFromPem(jwtConfig.getRsaPrivateKeyPem())
+            : null;
   }
 
   /**
@@ -46,7 +58,7 @@ public class JwtTokenService {
     }
   }
 
-  /** 生成 JWT token（含 scopes）。 */
+  /** 生成 JWT token（含 scopes）。HS256 对称签发，现有默认行为，保持不变。 */
   public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {
     List<String> safeScopes = scopes == null ? List.of() : scopes;
     return Jwts.builder()
@@ -59,17 +71,69 @@ public class JwtTokenService {
         .compact();
   }
 
+  /**
+   * 生成 RS256 非对称 token（ADR-0005 对齐）。仅当配置了 RSA 私钥时可用；默认不启用， 须由 IAM 在双轨窗口内显式开启 {@code
+   * rsaIssuanceEnabled} 后调用。
+   */
+  public String generateRsaToken(
+      Long accountId, String username, Long tenantId, List<String> scopes) {
+    if (rsaPrivateKey == null) {
+      throw new IllegalStateException(
+          "RS256 签发未配置（bone.iam.jwt.rsa-private-key-pem 缺失），无法签发 RS256 token");
+    }
+    List<String> safeScopes = scopes == null ? List.of() : scopes;
+    return Jwts.builder()
+        .header()
+        .add("kid", jwtConfig.getRsaKeyId())
+        .and()
+        .subject(username)
+        .claim("userId", String.valueOf(accountId))
+        .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
+        .claim("scopes", safeScopes)
+        .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpirationMs()))
+        .signWith(rsaPrivateKey)
+        .compact();
+  }
+
   /** 解析 JWT 返回 JwtPrincipal。 */
   public Optional<JwtPrincipal> parse(String rawToken) {
     return parseClaims(rawToken).map(this::toPrincipal);
   }
 
-  /** 解析 JWT 返回 Claims。 */
+  /**
+   * 解析 JWT 返回 Claims。双模验签（ADR-0005 双轨过渡）： 先 HS256（现有默认），失败再回退 RS256（若配置了公钥）。任一成功即返回，
+   * 二者皆失败或均未配置则返回空。不改变现有 HS256 行为。
+   */
   public Optional<Claims> parseClaims(String rawToken) {
+    Optional<Claims> hmac = tryParseHmac(rawToken);
+    if (hmac.isPresent()) {
+      return hmac;
+    }
+    return tryParseRsa(rawToken);
+  }
+
+  private Optional<Claims> tryParseHmac(String rawToken) {
     try {
       String token = stripPrefix(rawToken);
       Claims payload =
           Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
+      if (payload.getSubject() == null || payload.getSubject().isBlank()) {
+        return Optional.empty();
+      }
+      return Optional.of(payload);
+    } catch (Exception ignored) {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<Claims> tryParseRsa(String rawToken) {
+    if (rsaPublicKey == null) {
+      return Optional.empty();
+    }
+    try {
+      String token = stripPrefix(rawToken);
+      Claims payload =
+          Jwts.parser().verifyWith(rsaPublicKey).build().parseSignedClaims(token).getPayload();
       if (payload.getSubject() == null || payload.getSubject().isBlank()) {
         return Optional.empty();
       }

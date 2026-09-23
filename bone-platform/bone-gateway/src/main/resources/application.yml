@@ -71,7 +71,8 @@ bone:
       whitelist:
         - /api/v1/iam/auth/login
         - /api/v1/iam/login
-        - /actuator/
+        # 仅放通健康检查；metrics/prometheus 等运维端点须经 JWT 鉴权，禁止网关匿名暴露
+        - /actuator/health
         - /favicon.ico
     ratelimit:
       enabled: false

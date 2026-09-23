@@ -180,7 +180,7 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 - 后端：[`bone-platform/bone-integration`](bone-platform/bone-integration/)（Maven 构件 `bone-platform-integration`，默认 `:8085`）
 - 前端：[`bone-integration-app`](bone-frontend/apps/bone-integration-app/)（`:3006`，经 Shell `:3000` 加载）
 
-交付进度：[P0 看板 · 集成](doc/wiki/07-P0-TODO看板.md#集成引擎bone-platformbone-integration) · 运维说明：[平台集成 README](bone-platform/bone-integration/README.md) · 收敛决策：[ADR-集成单模块](doc/architecture/ADR-integration-consolidation.md)
+交付进度：[P0 看板 · 集成](doc/wiki/07-P0-TODO看板.md#集成引擎bone-platformbone-integration) · 运维说明：[平台集成 README](bone-platform/bone-integration/README.md) · 收敛决策：[ADR-集成单模块](doc/architecture/adr/0037-integration-engine-single-module.md)
 
 ---
 
@@ -333,7 +333,7 @@ A: 确认 JDK 17+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [
 A: 统一 `/api/v1/{domain}/**`，见 [Bone-API-规范](doc/architecture/Bone-API-规范.md)。
 
 **Q: 集成服务在哪个目录？**  
-A: 仅 **`bone-platform/bone-integration`**（构件 `bone-platform-integration`）；前端为 **`bone-integration-app`**。历史 `bone-engine/bone-integration` 已移除，见 [ADR-集成单模块](doc/architecture/ADR-integration-consolidation.md)。
+A: 仅 **`bone-platform/bone-integration`**（构件 `bone-platform-integration`）；前端为 **`bone-integration-app`**。历史 `bone-engine/bone-integration` 已移除，见 [ADR-集成单模块](doc/architecture/adr/0037-integration-engine-single-module.md)。
 
 **Q: 如何开发扩展插件？**  
 A: 见 [扩展引擎使用指南](bone-engine/bone-extension-engine/docs/使用指南.md) 与 `bone-extension-sdk` 示例。

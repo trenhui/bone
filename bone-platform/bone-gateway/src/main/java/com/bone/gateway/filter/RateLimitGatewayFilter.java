@@ -1,12 +1,13 @@
 package com.bone.gateway.filter;
 
 import com.bone.gateway.config.GatewayRateLimitProperties;
-import java.time.Duration;
+import java.util.Collections;
 import java.util.Optional;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -43,21 +44,22 @@ public class RateLimitGatewayFilter implements GlobalFilter, Ordered {
     ReactiveStringRedisTemplate redis = redisTemplate.get();
     String redisKey = "bone:gateway:ratelimit:" + key;
 
+    // 原子自增并仅在首条设置过期：Lua 脚本消除 INCR 与 EXPIRE 间的竞态窗口（避免进程崩溃后计数永不过期导致永久 429）
+    RedisScript<Long> incrScript =
+        RedisScript.of(
+            "local c = redis.call('incr', KEYS[1])\n"
+                + "if c == 1 then redis.call('expire', KEYS[1], ARGV[1]) end\n"
+                + "return c",
+            Long.class);
     return redis
-        .opsForValue()
-        .increment(redisKey)
+        .execute(
+            incrScript,
+            Collections.singletonList(redisKey),
+            Collections.singletonList(String.valueOf(properties.getWindowSeconds())))
+        .next()
         .flatMap(
             count -> {
-              if (count == 1L) {
-                return redis
-                    .expire(redisKey, Duration.ofSeconds(properties.getWindowSeconds()))
-                    .thenReturn(count);
-              }
-              return Mono.just(count);
-            })
-        .flatMap(
-            count -> {
-              if (count > properties.getCapacity()) {
+              if (count == null || count > properties.getCapacity()) {
                 exchange
                     .getResponse()
                     .getHeaders()
