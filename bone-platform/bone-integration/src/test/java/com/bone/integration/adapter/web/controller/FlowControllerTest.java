@@ -19,7 +19,7 @@ import com.bone.integration.application.command.cmd.CreateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQuery;
-import com.bone.integration.application.service.FlowService;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +40,7 @@ class FlowControllerTest {
 
   @Mock private IntegrationFlowRepository flowRepository;
 
-  @Mock private FlowService flowService;
+  @Mock private FlowSupport flowSupport;
   @Mock private FlowDetailQueryApplicationService flowDetailQueryHandler;
   @Mock private ActivateFlowCommandApplicationService activateFlowCommandHandler;
   @Mock private DeactivateFlowCommandApplicationService deactivateFlowCommandHandler;

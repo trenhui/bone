@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.service.ConnectorService;
+import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateConnectorApplicationService {
   private final ConnectorRepository connectorRepository;
-  private final ConnectorService connectorService;
+  private final ConnectorSupport connectorSupport;
 
   @Transactional
   public void handle(UpdateConnectorCommand cmd) {
@@ -33,7 +33,7 @@ public class UpdateConnectorApplicationService {
     if (connector == null) {
       throw new DomainException("连接器不存在");
     }
-    connectorService.validateConnectorName(cmd.name(), cmd.id());
+    connectorSupport.validateConnectorName(cmd.name(), cmd.id());
     ConnectorType type = ConnectorType.fromString(cmd.type());
     connector.update(cmd.name(), type, cmd.config());
     connectorRepository.save(connector);

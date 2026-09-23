@@ -27,14 +27,14 @@ public class ArchitectureTest {
   //
   // 已登记调用方：
   //  ① ..adapter.schedule..：平台运维统计（FlowStatisticsJob，定时线程无租户上下文）；
-  //  ② FlowMonitorService：上面那条任务依赖的统计服务——它的 *AllTenants 变体只服务平台汇总，
+  //  ② FlowMonitorSupport：上面那条任务依赖的统计服务——它的 *AllTenants 变体只服务平台汇总，
   //     租户可见路径（MonitorController 的监控页）仍走租户内口径，两组方法刻意分开命名。
   @ArchTest
   static final ArchRule all_tenants_scan_only_by_registered_callers =
       BoneDddArchRules.allTenantEntryPointsOnlyCalledBy(
           DOMAIN_REPOSITORY_PACKAGE,
           BoneDddArchRules.AllTenantCallers.ofPackages("..adapter.schedule..")
-              .andClasses("com.bone.integration.application.service.FlowMonitorService"));
+              .andClasses("com.bone.integration.application.support.FlowMonitorSupport"));
 
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =
@@ -49,7 +49,7 @@ public class ArchitectureTest {
   //    否则 SDK 自动过滤会把 tenant_id=0 历史行过滤为不可见。回填完成前禁止上线本改动。
   // 登记与拆除条件见 bone-platform/bone-integration/README.md「已登记的租户隔离缺口」。
   // 本规则原先报出的"schedule 调租户内读"已通过显式 *AllTenants 入口修复（见 FlowStatisticsJob 与
-  // FlowMonitorService 的统计口径），故不再冻结。
+  // FlowMonitorSupport 的统计口径），故不再冻结。
 
   @ArchTest
   static final ArchRule all_tenant_entry_points_must_be_named_all_tenants =

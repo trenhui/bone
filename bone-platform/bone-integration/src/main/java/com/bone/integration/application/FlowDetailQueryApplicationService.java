@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowDetailDTO;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
-import com.bone.integration.application.service.FlowService;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FlowDetailQueryApplicationService {
   private final IntegrationFlowRepository flowRepository;
-  private final FlowService flowService;
+  private final FlowSupport flowSupport;
 
   @Transactional(readOnly = true)
   public FlowDetailDTO handle(FlowDetailQuery qry) {
@@ -27,8 +27,8 @@ public class FlowDetailQueryApplicationService {
     if (flow == null) {
       throw new DomainException("流程不存在");
     }
-    List<FlowNode> nodes = flowService.getFlowNodes(flow.getId());
-    List<FlowConnection> connections = flowService.getFlowConnections(flow.getId());
+    List<FlowNode> nodes = flowSupport.getFlowNodes(flow.getId());
+    List<FlowConnection> connections = flowSupport.getFlowConnections(flow.getId());
 
     List<FlowDetailDTO.FlowNodeDTO> nodeDTOs =
         nodes.stream()

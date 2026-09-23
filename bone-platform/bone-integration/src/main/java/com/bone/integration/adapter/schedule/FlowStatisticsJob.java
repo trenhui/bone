@@ -1,6 +1,6 @@
 package com.bone.integration.adapter.schedule;
 
-import com.bone.integration.application.service.FlowMonitorService;
+import com.bone.integration.application.support.FlowMonitorSupport;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class FlowStatisticsJob {
 
   private final IntegrationFlowRepository flowRepository;
-  private final FlowMonitorService flowMonitorService;
+  private final FlowMonitorSupport flowMonitorSupport;
 
   @Scheduled(cron = "0 0 0 * * ?")
   public void execute() {
@@ -30,8 +30,8 @@ public class FlowStatisticsJob {
     long totalExecutions = 0;
     long totalSuccess = 0;
     for (IntegrationFlow flow : flows) {
-      long count = flowMonitorService.getExecutionCountAllTenants(flow.getId());
-      long success = flowMonitorService.getSuccessCountAllTenants(flow.getId());
+      long count = flowMonitorSupport.getExecutionCountAllTenants(flow.getId());
+      long success = flowMonitorSupport.getSuccessCountAllTenants(flow.getId());
       totalExecutions += count;
       totalSuccess += success;
       if (count > 0) {
@@ -40,7 +40,7 @@ public class FlowStatisticsJob {
             flow.getId(),
             flow.getName(),
             count,
-            String.format("%.2f", flowMonitorService.getSuccessRateAllTenants(flow.getId())));
+            String.format("%.2f", flowMonitorSupport.getSuccessRateAllTenants(flow.getId())));
       }
     }
     log.info(

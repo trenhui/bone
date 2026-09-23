@@ -1,6 +1,8 @@
-package com.bone.integration.application.service;
+package com.bone.integration.infrastructure.flow;
 
 import com.bone.core.exception.DomainException;
+import com.bone.integration.application.port.out.FlowRuntime;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
@@ -27,14 +29,14 @@ public class LinearSyncFlowRuntime implements FlowRuntime {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final FlowService flowService;
+  private final FlowSupport flowSupport;
   private final FlowNodeExecutor flowNodeExecutor;
 
   @Override
   public void execute(IntegrationLog log, IntegrationFlow flow) {
     log.start();
-    List<FlowNode> nodes = flowService.getFlowNodes(flow.getId());
-    List<FlowConnection> connections = flowService.getFlowConnections(flow.getId());
+    List<FlowNode> nodes = flowSupport.getFlowNodes(flow.getId());
+    List<FlowConnection> connections = flowSupport.getFlowConnections(flow.getId());
 
     try {
       Object context = parseInput(log.getInputData());

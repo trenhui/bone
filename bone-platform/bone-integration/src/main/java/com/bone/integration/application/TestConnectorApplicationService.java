@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.TestConnectorCommand;
 import com.bone.integration.application.port.IntegrationExecutionRecorder;
-import com.bone.integration.application.service.ConnectorService;
+import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TestConnectorApplicationService {
 
-  private final ConnectorService connectorService;
+  private final ConnectorSupport connectorSupport;
   private final ConnectorRepository connectorRepository;
   private final IntegrationExecutionRecorder integrationMetrics;
 
@@ -26,7 +26,7 @@ public class TestConnectorApplicationService {
       throw new DomainException("连接器不存在");
     }
 
-    boolean success = connectorService.testConnector(connector);
+    boolean success = connectorSupport.testConnector(connector);
     integrationMetrics.recordConnectorTest(connector.getType().name(), success);
     String message = success ? "连接测试成功" : "连接测试失败";
     connector.recordTestResult(success, message);

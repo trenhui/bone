@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
-import com.bone.integration.application.service.FlowMonitorService;
+import com.bone.integration.application.support.FlowMonitorSupport;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FlowStatisticsQueryApplicationService {
 
-  private final FlowMonitorService flowMonitorService;
+  private final FlowMonitorSupport flowMonitorSupport;
   private final IntegrationFlowRepository flowRepository;
 
   @Transactional(readOnly = true)
@@ -32,10 +32,10 @@ public class FlowStatisticsQueryApplicationService {
     if (flow == null) {
       throw new DomainException("流程不存在");
     }
-    long executionCount = flowMonitorService.getExecutionCount(flow.getId());
-    long successCount = flowMonitorService.getSuccessCount(flow.getId());
-    long failureCount = flowMonitorService.getFailureCount(flow.getId());
-    double successRate = flowMonitorService.getSuccessRate(flow.getId());
+    long executionCount = flowMonitorSupport.getExecutionCount(flow.getId());
+    long successCount = flowMonitorSupport.getSuccessCount(flow.getId());
+    long failureCount = flowMonitorSupport.getFailureCount(flow.getId());
+    double successRate = flowMonitorSupport.getSuccessRate(flow.getId());
     return new FlowStatisticsDTO(
         flow.getId(), flow.getName(), executionCount, successCount, failureCount, successRate);
   }

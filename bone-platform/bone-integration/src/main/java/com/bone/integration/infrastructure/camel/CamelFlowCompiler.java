@@ -3,11 +3,11 @@ package com.bone.integration.infrastructure.camel;
 import static org.apache.camel.builder.Builder.simple;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.application.service.FlowNodeExecutor;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.NodeType;
+import com.bone.integration.infrastructure.flow.FlowNodeExecutor;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

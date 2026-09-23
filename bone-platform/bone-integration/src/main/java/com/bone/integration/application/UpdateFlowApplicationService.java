@@ -4,7 +4,7 @@ import com.bone.core.capability.Capability;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.UpdateFlowCommand;
-import com.bone.integration.application.service.FlowService;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
@@ -33,7 +33,7 @@ public class UpdateFlowApplicationService {
   private final IntegrationFlowRepository flowRepository;
   private final FlowNodeRepository nodeRepository;
   private final FlowConnectionRepository connectionRepository;
-  private final FlowService flowService;
+  private final FlowSupport flowSupport;
 
   @Transactional
   public void handle(UpdateFlowCommand cmd) {
@@ -41,12 +41,12 @@ public class UpdateFlowApplicationService {
     if (flow == null) {
       throw new DomainException("流程不存在");
     }
-    flowService.validateFlowName(cmd.name(), cmd.id());
+    flowSupport.validateFlowName(cmd.name(), cmd.id());
     flow.update(cmd.name(), cmd.description());
     flowRepository.save(flow);
 
-    flowService.deleteNodesByFlowId(flow.getId());
-    flowService.deleteConnectionsByFlowId(flow.getId());
+    flowSupport.deleteNodesByFlowId(flow.getId());
+    flowSupport.deleteConnectionsByFlowId(flow.getId());
 
     List<FlowNode> nodes =
         cmd.nodes().stream()

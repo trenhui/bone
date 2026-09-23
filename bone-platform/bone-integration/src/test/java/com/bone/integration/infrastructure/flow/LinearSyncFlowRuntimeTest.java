@@ -1,4 +1,4 @@
-package com.bone.integration.application.service;
+package com.bone.integration.infrastructure.flow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.integration.application.support.ConnectorSupport;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.model.execution.IntegrationLog;
@@ -25,11 +27,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LinearSyncFlowRuntimeTest {
 
-  @Mock private FlowService flowService;
+  @Mock private FlowSupport flowSupport;
 
   @Mock private ConnectorRepository connectorRepository;
 
-  @Mock private ConnectorService connectorService;
+  @Mock private ConnectorSupport connectorSupport;
 
   private LinearSyncFlowRuntime linearSyncFlowRuntime;
 
@@ -37,7 +39,7 @@ class LinearSyncFlowRuntimeTest {
   void initRuntime() {
     linearSyncFlowRuntime =
         new LinearSyncFlowRuntime(
-            flowService, new FlowNodeExecutor(connectorRepository, connectorService));
+            flowSupport, new FlowNodeExecutor(connectorRepository, connectorSupport));
   }
 
   @Test
@@ -56,15 +58,15 @@ class LinearSyncFlowRuntimeTest {
 
     Connector connector =
         Connector.create(5L, "rest", ConnectorType.HTTP, Map.of("url", "http://localhost"));
-    when(flowService.getFlowNodes(1L)).thenReturn(List.of(start, http, end));
-    when(flowService.getFlowConnections(1L)).thenReturn(List.of(c1, c2));
+    when(flowSupport.getFlowNodes(1L)).thenReturn(List.of(start, http, end));
+    when(flowSupport.getFlowConnections(1L)).thenReturn(List.of(c1, c2));
     when(connectorRepository.findById(5L)).thenReturn(connector);
-    when(connectorService.executeConnector(eq(connector), eq("/api"), any()))
+    when(connectorSupport.executeConnector(eq(connector), eq("/api"), any()))
         .thenReturn(Map.of("statusCode", 200));
 
     linearSyncFlowRuntime.execute(log, flow);
 
     assertEquals(ExecutionStatus.SUCCESS, log.getStatus());
-    verify(connectorService).executeConnector(eq(connector), eq("/api"), any());
+    verify(connectorSupport).executeConnector(eq(connector), eq("/api"), any());
   }
 }

@@ -5,8 +5,8 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.service.FlowExecutionService;
-import com.bone.integration.application.service.FlowService;
+import com.bone.integration.application.support.FlowExecutionSupport;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -29,8 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ExecuteFlowApplicationService {
   private final IntegrationLogRepository logRepository;
   private final IntegrationFlowRepository flowRepository;
-  private final FlowService flowService;
-  private final FlowExecutionService flowExecutionService;
+  private final FlowSupport flowSupport;
+  private final FlowExecutionSupport flowExecutionSupport;
   private final IntegrationDomainEventPublisher domainEventPublisher;
 
   @Transactional
@@ -39,12 +39,12 @@ public class ExecuteFlowApplicationService {
     if (flow == null) {
       throw new DomainException("流程不存在");
     }
-    flowService.validateFlow(flow);
+    flowSupport.validateFlow(flow);
 
     Long logId = DistributedIdGenerator.generateLongId();
     IntegrationLog log = IntegrationLog.create(logId, flow.getId(), cmd.inputData());
     logRepository.save(log);
-    flowExecutionService.execute(log, flow);
+    flowExecutionSupport.execute(log, flow);
     logRepository.save(log);
     domainEventPublisher.publishFrom(log);
     return log.getId();

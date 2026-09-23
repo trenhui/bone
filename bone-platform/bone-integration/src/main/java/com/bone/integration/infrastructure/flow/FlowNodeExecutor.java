@@ -1,6 +1,7 @@
-package com.bone.integration.application.service;
+package com.bone.integration.infrastructure.flow;
 
 import com.bone.core.exception.DomainException;
+import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class FlowNodeExecutor {
 
   private final ConnectorRepository connectorRepository;
-  private final ConnectorService connectorService;
+  private final ConnectorSupport connectorSupport;
 
   public Object execute(FlowNode node, Object context) {
     return switch (node.getType()) {
@@ -52,7 +53,7 @@ public class FlowNodeExecutor {
       params.put("body", context);
     }
 
-    return connectorService.executeConnector(connector, endpoint != null ? endpoint : "", params);
+    return connectorSupport.executeConnector(connector, endpoint != null ? endpoint : "", params);
   }
 
   private static Long toLong(Object value) {

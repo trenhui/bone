@@ -4,7 +4,7 @@ import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.service.FlowService;
+import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
@@ -33,12 +33,12 @@ public class CreateFlowApplicationService {
   private final IntegrationFlowRepository flowRepository;
   private final FlowNodeRepository nodeRepository;
   private final FlowConnectionRepository connectionRepository;
-  private final FlowService flowService;
+  private final FlowSupport flowSupport;
   private final IntegrationDomainEventPublisher domainEventPublisher;
 
   @Transactional
   public Long handle(CreateFlowCommand cmd) {
-    flowService.validateFlowName(cmd.name(), null);
+    flowSupport.validateFlowName(cmd.name(), null);
     Long flowId = DistributedIdGenerator.generateLongId();
     IntegrationFlow flow = IntegrationFlow.create(flowId, cmd.name(), cmd.description());
     flowRepository.save(flow);

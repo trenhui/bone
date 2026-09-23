@@ -1,4 +1,4 @@
-package com.bone.integration.application.service;
+package com.bone.integration.application.support;
 
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
@@ -7,9 +7,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-@Service("applicationFlowMonitorService")
+@Service("applicationFlowMonitorSupport")
 @RequiredArgsConstructor
-public class FlowMonitorService {
+public class FlowMonitorSupport {
   private final IntegrationLogRepository logRepository;
 
   public List<IntegrationLog> getExecutionLogs(Long flowId) {

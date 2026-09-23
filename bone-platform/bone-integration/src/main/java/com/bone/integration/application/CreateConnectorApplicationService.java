@@ -4,7 +4,7 @@ import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.service.ConnectorService;
+import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -25,12 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CreateConnectorApplicationService {
   private final ConnectorRepository connectorRepository;
-  private final ConnectorService connectorService;
+  private final ConnectorSupport connectorSupport;
   private final IntegrationDomainEventPublisher domainEventPublisher;
 
   @Transactional
   public Long handle(CreateConnectorCommand cmd) {
-    connectorService.validateConnectorName(cmd.name(), null);
+    connectorSupport.validateConnectorName(cmd.name(), null);
     Long connectorId = DistributedIdGenerator.generateLongId();
     ConnectorType type = ConnectorType.fromString(cmd.type());
     Connector connector = Connector.create(connectorId, cmd.name(), type, cmd.config());

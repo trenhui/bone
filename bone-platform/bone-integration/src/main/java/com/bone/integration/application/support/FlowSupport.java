@@ -1,4 +1,4 @@
-package com.bone.integration.application.service;
+package com.bone.integration.application.support;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.flow.FlowConnection;
@@ -11,9 +11,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-@Service("applicationFlowService")
+@Service("applicationFlowSupport")
 @RequiredArgsConstructor
-public class FlowService {
+public class FlowSupport {
   private final IntegrationFlowRepository flowRepository;
   private final FlowNodeRepository nodeRepository;
   private final FlowConnectionRepository connectionRepository;

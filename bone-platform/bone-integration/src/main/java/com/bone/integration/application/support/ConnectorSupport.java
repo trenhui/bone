@@ -1,4 +1,4 @@
-package com.bone.integration.application.service;
+package com.bone.integration.application.support;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.client.ExternalSystemClient;
@@ -8,9 +8,9 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-@Service("applicationConnectorService")
+@Service("applicationConnectorSupport")
 @RequiredArgsConstructor
-public class ConnectorService {
+public class ConnectorSupport {
   private final ConnectorRepository connectorRepository;
   private final Map<String, ExternalSystemClient> externalSystemClients;
 

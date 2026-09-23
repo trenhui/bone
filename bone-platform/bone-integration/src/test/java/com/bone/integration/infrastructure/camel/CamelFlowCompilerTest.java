@@ -5,8 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.bone.integration.application.service.ConnectorService;
-import com.bone.integration.application.service.FlowNodeExecutor;
+import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.model.flow.FlowConnection;
@@ -14,6 +13,7 @@ import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.NodeType;
 import com.bone.integration.domain.repository.ConnectorRepository;
+import com.bone.integration.infrastructure.flow.FlowNodeExecutor;
 import java.util.List;
 import java.util.Map;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -29,7 +29,7 @@ class CamelFlowCompilerTest {
 
   @Mock private ConnectorRepository connectorRepository;
 
-  @Mock private ConnectorService connectorService;
+  @Mock private ConnectorSupport connectorSupport;
 
   private DefaultCamelContext camelContext;
   private CamelFlowCompiler compiler;
@@ -40,7 +40,7 @@ class CamelFlowCompilerTest {
     camelContext.start();
     CamelIntegrationContext integrationContext = mock(CamelIntegrationContext.class);
     when(integrationContext.getCamelContext()).thenReturn(camelContext);
-    FlowNodeExecutor executor = new FlowNodeExecutor(connectorRepository, connectorService);
+    FlowNodeExecutor executor = new FlowNodeExecutor(connectorRepository, connectorSupport);
     compiler = new CamelFlowCompiler(integrationContext, executor);
   }
 
@@ -65,7 +65,7 @@ class CamelFlowCompilerTest {
     Connector connector =
         Connector.create(5L, "rest", ConnectorType.HTTP, Map.of("url", "http://localhost"));
     when(connectorRepository.findById(5L)).thenReturn(connector);
-    when(connectorService.executeConnector(connector, "/api", Map.of("k", "v")))
+    when(connectorSupport.executeConnector(connector, "/api", Map.of("k", "v")))
         .thenReturn(Map.of("statusCode", 200));
 
     compiler.compile(flow, List.of(start, http, end), List.of(c1, c2));

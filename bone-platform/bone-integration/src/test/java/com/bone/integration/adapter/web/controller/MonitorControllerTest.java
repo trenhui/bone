@@ -17,7 +17,7 @@ import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
-import com.bone.integration.application.service.FlowMonitorService;
+import com.bone.integration.application.support.FlowMonitorSupport;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
@@ -40,7 +40,7 @@ class MonitorControllerTest {
 
   @Mock private IntegrationFlowRepository flowRepository;
 
-  @Mock private FlowMonitorService flowMonitorService;
+  @Mock private FlowMonitorSupport flowMonitorSupport;
   @Mock private ExecutionDetailQueryApplicationService executionDetailQueryHandler;
   @Mock private FlowStatisticsQueryApplicationService flowStatisticsQueryHandler;
 
