@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.core.model.ProblemDetail;
 import com.bone.engine.extension.studio.application.ExtensionCommandApplicationService;
@@ -20,13 +20,13 @@ import org.springframework.stereotype.Service;
 
 /** 插件部署等 LRO（进程内；生产可换 Redis/DB）。 */
 @Service
-public class StudioLroService {
+public class StudioLroSupport {
 
   private static final String TYPE_PLUGIN_DEPLOY = "plugin.deploy";
 
   private final ExtensionCommandApplicationService extensionCommandHandler;
   private final ExtensionQueryApplicationService extensionQueryHandler;
-  private final StudioAuditService auditService;
+  private final StudioAuditSupport auditService;
   private final StudioExtensionMetrics studioMetrics;
   private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
   private final ExecutorService executor =
@@ -37,10 +37,10 @@ public class StudioLroService {
             return t;
           });
 
-  public StudioLroService(
+  public StudioLroSupport(
       ExtensionCommandApplicationService extensionCommandHandler,
       ExtensionQueryApplicationService extensionQueryHandler,
-      StudioAuditService auditService,
+      StudioAuditSupport auditService,
       StudioExtensionMetrics studioMetrics) {
     this.extensionCommandHandler = extensionCommandHandler;
     this.extensionQueryHandler = extensionQueryHandler;

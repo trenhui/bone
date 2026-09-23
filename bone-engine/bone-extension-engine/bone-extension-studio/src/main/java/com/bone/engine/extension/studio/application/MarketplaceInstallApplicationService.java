@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.engine.extension.studio.application.service.StudioAuditService;
-import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
+import com.bone.engine.extension.studio.application.support.StudioAuditSupport;
+import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
 import com.bone.engine.extension.studio.domain.gateway.MarketplaceCatalog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
@@ -25,7 +25,7 @@ public class MarketplaceInstallApplicationService {
   private final MarketplaceCatalog marketplaceCatalog;
   private final ExtensionCommandApplicationService extensionCommandHandler;
   private final ExtPointRepository extPointRepository;
-  private final StudioAuditService auditService;
+  private final StudioAuditSupport auditService;
 
   public ResponseEntity<ApiResponse<Map<String, Object>>> install(
       String itemId, Long requestedExtPointId) {

@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.engine.extension.studio.common.exception.OptimisticLockException;
 

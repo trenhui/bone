@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.application;
 
-import com.bone.engine.extension.studio.application.service.StudioLroService;
+import com.bone.engine.extension.studio.application.support.StudioLroSupport;
 import com.bone.engine.extension.studio.domain.model.operation.StudioOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudioOperationApplicationService {
 
-  private final StudioLroService lroService;
+  private final StudioLroSupport lroService;
 
   public StudioOperation getOperation(String operationId) {
     return lroService.getOperation(operationId);

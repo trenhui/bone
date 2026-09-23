@@ -1,12 +1,12 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.engine.extension.studio.application.service.PluginArtifactService;
-import com.bone.engine.extension.studio.application.service.StudioAuditService;
-import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
-import com.bone.engine.extension.studio.application.service.StudioIdempotencyService;
-import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
-import com.bone.engine.extension.studio.application.service.StudioLroService;
+import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
+import com.bone.engine.extension.studio.application.support.StudioAuditSupport;
+import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
+import com.bone.engine.extension.studio.application.support.StudioIdempotencySupport;
+import com.bone.engine.extension.studio.application.support.StudioIdempotentExecutor;
+import com.bone.engine.extension.studio.application.support.StudioLroSupport;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
@@ -37,10 +37,10 @@ public class ExtensionStudioApplicationService {
   private final ExtensionCommandApplicationService extensionCommandHandler;
   private final ExtensionQueryApplicationService extensionQueryHandler;
   private final PluginVersionRepository pluginVersionRepository;
-  private final PluginArtifactService pluginArtifactService;
+  private final PluginArtifactSupport pluginArtifactService;
   private final StudioIdempotentExecutor idempotentExecutor;
-  private final StudioAuditService auditService;
-  private final StudioLroService lroService;
+  private final StudioAuditSupport auditService;
+  private final StudioLroSupport lroService;
   private final ExtensionStudioProperties studioProperties;
   private final ObjectMapper objectMapper;
   private final StudioExtensionMetrics studioMetrics;
@@ -50,7 +50,7 @@ public class ExtensionStudioApplicationService {
     return createPlugin(
         idempotencyKey,
         body,
-        StudioIdempotencyService.fingerprint(objectMapper.writeValueAsString(body)));
+        StudioIdempotencySupport.fingerprint(objectMapper.writeValueAsString(body)));
   }
 
   public ResponseEntity<ApiResponse<Extension>> createPlugin(
@@ -140,7 +140,7 @@ public class ExtensionStudioApplicationService {
       String description,
       Long pluginId) {
     String fingerprint =
-        StudioIdempotencyService.fingerprint(
+        StudioIdempotencySupport.fingerprint(
             name
                 + "|"
                 + version
@@ -195,7 +195,7 @@ public class ExtensionStudioApplicationService {
 
   public ResponseEntity<?> deployPlugin(Long id, Boolean syncParam, String idempotencyKey) {
     String path = "/api/v1/extension/plugins/" + id + ":deploy";
-    String fingerprint = StudioIdempotencyService.fingerprint("");
+    String fingerprint = StudioIdempotencySupport.fingerprint("");
     if (resolveDeploySync(syncParam)) {
       return idempotentExecutor.execute(
           idempotencyKey, "POST", path, fingerprint, () -> lifecycle(id, true, "部署"));
@@ -220,7 +220,7 @@ public class ExtensionStudioApplicationService {
   public ResponseEntity<ApiResponse<Extension>> rollbackPlugin(
       Long id, String idempotencyKey, Map<String, Object> body) throws JsonProcessingException {
     String fingerprint =
-        StudioIdempotencyService.fingerprint(
+        StudioIdempotencySupport.fingerprint(
             body != null ? objectMapper.writeValueAsString(body) : "");
     String version =
         body != null && body.get("version") != null ? body.get("version").toString() : null;

@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.core.model.ApiResponse;
 import java.util.Optional;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudioIdempotentExecutor {
 
-  private final StudioIdempotencyService idempotencyService;
+  private final StudioIdempotencySupport idempotencyService;
 
   public <T> ResponseEntity<ApiResponse<T>> execute(
       String idempotencyKey,

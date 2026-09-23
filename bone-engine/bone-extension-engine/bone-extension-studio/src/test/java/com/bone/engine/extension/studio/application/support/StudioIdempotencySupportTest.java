@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,14 +14,14 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-class StudioIdempotencyServiceTest {
+class StudioIdempotencySupportTest {
 
-  private StudioIdempotencyService service;
+  private StudioIdempotencySupport service;
 
   @BeforeEach
   void setUp() {
     service =
-        new StudioIdempotencyService(new ObjectMapper(), new InMemoryStudioIdempotencyStore());
+        new StudioIdempotencySupport(new ObjectMapper(), new InMemoryStudioIdempotencyStore());
     MDC.put("tenantId", "1");
     MDC.put("userId", "u1");
   }
@@ -29,7 +29,7 @@ class StudioIdempotencyServiceTest {
   @Test
   void replayReturnsSameResponseForSameFingerprint() {
     String key = "550e8400-e29b-41d4-a716-446655440000";
-    String fp = StudioIdempotencyService.fingerprint("{\"name\":\"a\"}");
+    String fp = StudioIdempotencySupport.fingerprint("{\"name\":\"a\"}");
     ResponseEntity<ApiResponse<String>> original =
         ResponseEntity.status(HttpStatus.CREATED)
             .header("Location", "/api/v1/extension/points/1")
@@ -45,7 +45,7 @@ class StudioIdempotencyServiceTest {
   @Test
   void differentBodyThrowsConflict() {
     String key = "550e8400-e29b-41d4-a716-446655440001";
-    String fp1 = StudioIdempotencyService.fingerprint("a");
+    String fp1 = StudioIdempotencySupport.fingerprint("a");
     service.remember(
         key,
         "POST",

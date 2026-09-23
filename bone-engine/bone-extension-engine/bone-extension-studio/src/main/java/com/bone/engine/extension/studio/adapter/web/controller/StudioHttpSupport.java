@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
+import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
 import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 

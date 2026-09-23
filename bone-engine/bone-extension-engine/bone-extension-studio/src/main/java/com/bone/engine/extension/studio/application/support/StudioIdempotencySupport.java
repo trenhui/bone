@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.common.exception.IdempotencyConflictException;
@@ -21,14 +21,14 @@ import org.springframework.util.StringUtils;
 
 /** 幂等服务：默认进程内存储，配置 {@code bone.extension.studio.idempotency.backend=redis} 时使用 Redis。 */
 @Service
-public class StudioIdempotencyService {
+public class StudioIdempotencySupport {
 
   private static final Duration TTL = Duration.ofHours(24);
 
   private final ObjectMapper objectMapper;
   private final StudioIdempotencyStore store;
 
-  public StudioIdempotencyService(ObjectMapper objectMapper, StudioIdempotencyStore store) {
+  public StudioIdempotencySupport(ObjectMapper objectMapper, StudioIdempotencyStore store) {
     this.objectMapper =
         objectMapper.copy().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     this.store = store;

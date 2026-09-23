@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 
 /** 扩展 Studio 审计（[Audit] 日志 + 可选持久化）。 */
 @Service
-public class StudioAuditService {
+public class StudioAuditSupport {
 
-  private static final Logger log = LoggerFactory.getLogger(StudioAuditService.class);
+  private static final Logger log = LoggerFactory.getLogger(StudioAuditSupport.class);
 
   private final StudioAuditRepository auditRepository;
 
-  public StudioAuditService(StudioAuditRepository auditRepository) {
+  public StudioAuditSupport(StudioAuditRepository auditRepository) {
     this.auditRepository = auditRepository;
   }
 

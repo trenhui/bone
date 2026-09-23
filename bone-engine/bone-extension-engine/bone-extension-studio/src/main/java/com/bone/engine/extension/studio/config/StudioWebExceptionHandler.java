@@ -2,7 +2,7 @@ package com.bone.engine.extension.studio.config;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
-import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
+import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.common.exception.IdempotencyConflictException;
 import com.bone.engine.extension.studio.common.exception.OptimisticLockException;

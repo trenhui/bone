@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.application.service;
+package com.bone.engine.extension.studio.application.support;
 
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import java.io.IOException;
@@ -15,12 +15,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-public class PluginArtifactService {
+public class PluginArtifactSupport {
 
   private final Path storageRoot;
   private final int maxVersionsPerPlugin;
 
-  public PluginArtifactService(ExtensionStudioProperties properties) throws IOException {
+  public PluginArtifactSupport(ExtensionStudioProperties properties) throws IOException {
     String configured = properties.getArtifact().getStoragePath();
     this.storageRoot =
         Path.of(StringUtils.hasText(configured) ? configured : "./data/extension-plugins")

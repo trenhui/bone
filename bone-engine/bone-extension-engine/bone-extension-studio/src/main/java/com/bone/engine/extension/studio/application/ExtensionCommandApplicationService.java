@@ -1,9 +1,9 @@
 package com.bone.engine.extension.studio.application;
 
-import com.bone.engine.extension.studio.application.service.PluginArtifactService;
-import com.bone.engine.extension.studio.application.service.PluginArtifactService.StoredArtifact;
-import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
-import com.bone.engine.extension.studio.application.service.StudioVersionSupport;
+import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
+import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
+import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
+import com.bone.engine.extension.studio.application.support.StudioVersionSupport;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
@@ -41,7 +41,7 @@ public class ExtensionCommandApplicationService {
   private final ExtPointRepository extPointRepository;
   private final PluginVersionRepository pluginVersionRepository;
   private final PluginVersionReadPort pluginVersionReadPort;
-  private final PluginArtifactService pluginArtifactService;
+  private final PluginArtifactSupport pluginArtifactService;
   private final PluginExecutionLogCommandApplicationService executionLogCommandHandler;
 
   @Autowired(required = false)
@@ -89,7 +89,7 @@ public class ExtensionCommandApplicationService {
     if (existing == null) {
       return null;
     }
-    com.bone.engine.extension.studio.application.service.StudioVersionSupport.assertExpected(
+    com.bone.engine.extension.studio.application.support.StudioVersionSupport.assertExpected(
         expectedVersion, existing.getVersion());
     if (extension.getExtPointId() != null) {
       existing.setExtPointId(extension.getExtPointId());
@@ -112,7 +112,7 @@ public class ExtensionCommandApplicationService {
     existing.setConfig(extension.getConfig());
     existing.setEnabled(extension.isEnabled());
     existing.setVersion(
-        com.bone.engine.extension.studio.application.service.StudioVersionSupport.nextVersion(
+        com.bone.engine.extension.studio.application.support.StudioVersionSupport.nextVersion(
             existing.getVersion()));
     extensionRepository.save(existing);
     return existing;

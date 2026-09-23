@@ -1,12 +1,12 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.engine.extension.studio.application.service.StudioAuditService;
-import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
-import com.bone.engine.extension.studio.application.service.StudioIdempotencyService;
-import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
-import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
-import com.bone.engine.extension.studio.application.service.StudioVersionSupport;
+import com.bone.engine.extension.studio.application.support.StudioAuditSupport;
+import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
+import com.bone.engine.extension.studio.application.support.StudioIdempotencySupport;
+import com.bone.engine.extension.studio.application.support.StudioIdempotentExecutor;
+import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
+import com.bone.engine.extension.studio.application.support.StudioVersionSupport;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,7 +30,7 @@ public class ExtPointCommandApplicationService {
 
   private final ExtPointRepository extPointRepository;
   private final StudioIdempotentExecutor idempotentExecutor;
-  private final StudioAuditService auditService;
+  private final StudioAuditSupport auditService;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -103,7 +103,7 @@ public class ExtPointCommandApplicationService {
     return createPoint(
         idempotencyKey,
         body,
-        StudioIdempotencyService.fingerprint(objectMapper.writeValueAsString(body)));
+        StudioIdempotencySupport.fingerprint(objectMapper.writeValueAsString(body)));
   }
 
   public ResponseEntity<ApiResponse<ExtPoint>> createPoint(
