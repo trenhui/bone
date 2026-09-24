@@ -26,6 +26,7 @@ module_dir() {
     metadata)    echo "${ROOT}/bone-engine/bone-metadata-server" ;;
     generator)   echo "${ROOT}/bone-engine/studio-generator" ;;
     extension)   echo "${ROOT}/bone-engine/bone-extension-studio" ;;
+    file)        echo "${ROOT}/bone-platform/bone-file" ;;
     *)           echo "" ;;
   esac
 }
@@ -34,7 +35,7 @@ module_port() {
   case "$1" in
     gateway) echo 8888 ;; iam) echo 8081 ;; system) echo 8083 ;; masterdata) echo 8084 ;;
     integration) echo 8085 ;; metadata) echo 9001 ;; generator) echo 8086 ;;
-    extension) echo 8088 ;; *) echo "" ;;
+    extension) echo 8088 ;; file) echo 8107 ;; *) echo "" ;;
   esac
 }
 
@@ -44,6 +45,11 @@ start_command() {
     gateway)
       echo "mvn -o package -DskipTests -Djacoco.skip=true -Dspotbugs.skip=true && java -jar target/bone-gateway-1.0.0.jar"
       ;;
+    file)
+      # bone-file 的 secret-key 读取 ${BONE_IAM_JWT_SECRET_KEY}（无默认），需显式注入；
+      # 回退到统一的 BONE_JWT_SECRET，确保与其他服务 JWT 验签一致。
+      echo "BONE_IAM_JWT_SECRET_KEY=\"\${BONE_IAM_JWT_SECRET_KEY:-\${BONE_JWT_SECRET:-dev-only-secret-key-minimum-32-bytes-long}}\" BONE_SERVER_PORT=8107 mvn -o spring-boot:run"
+      ;;
     *) echo "mvn -o spring-boot:run" ;;
   esac
 }
@@ -51,7 +57,7 @@ start_command() {
 if [ "$#" -gt 0 ]; then
   targets=("$@")
 else
-  targets=(iam system masterdata integration metadata generator extension)
+  targets=(iam system masterdata integration metadata generator extension file)
 fi
 
 for svc in "${targets[@]}"; do
