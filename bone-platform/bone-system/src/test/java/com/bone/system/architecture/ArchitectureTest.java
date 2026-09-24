@@ -157,6 +157,16 @@ public class ArchitectureTest {
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.system");
 
+  // ARCH-LEVEL-01：引擎模块不得依赖平台（层级方向 Platform -> Engine -> Framework -> Kernel）
+  @ArchTest
+  static final ArchRule engine_must_not_depend_on_platform =
+      BoneDddArchRules.engineModulesMustNotDependOnPlatform();
+
+  // ARCH-LEVEL-02：平台不得依赖引擎可部署应用壳，仅允许依赖 SDK 底座（metadata-sdk / extension-sdk）
+  @ArchTest
+  static final ArchRule platform_must_not_depend_on_engine_apps =
+      BoneDddArchRules.platformMustNotDependOnEngineApps();
+
   private static com.tngtech.archunit.base.DescribedPredicate<JavaClass>
       annotatedWithReadSideOnly() {
     return new com.tngtech.archunit.base.DescribedPredicate<>("annotated with @ReadSideOnly") {
