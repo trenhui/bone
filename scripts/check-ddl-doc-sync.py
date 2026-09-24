@@ -21,9 +21,18 @@ def extract_sql_tables(sql: str) -> set[str]:
     """提取 bone-init.sql 中 CREATE TABLE 的表名（支持 `tbl`、库前缀、注释行）。"""
     tables = set()
     # 形如: CREATE TABLE `iam_user` ( 或 CREATE TABLE iam_user (
-    for m in re.finditer(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(`?)([a-zA-Z0-9_]+)\1",
-                         sql, re.IGNORECASE):
-        tables.add(m.group(2).lower())
+    # 必须带 `(?=\s*\()` 前瞻并过滤保留字：否则 "CREATE TABLE IF NOT EXISTS `tbl`"
+    # 在可选组未匹配时会回退，把 `IF` 本身当成表名捕获（曾误报漏表 "if"）。
+    reserved = {"if", "not", "exists", "table", "create", "temporary"}
+    for m in re.finditer(
+        r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(`?)([a-zA-Z0-9_]+)\1(?=\s*\()",
+        sql,
+        re.IGNORECASE,
+    ):
+        name = m.group(2).lower()
+        if name in reserved:
+            continue
+        tables.add(name)
     return tables
 
 
