@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.20。本批次压缩 E-4～E-13 的长段论述（读侧 DSL 落点、`@Sql` 通道、Durable/Best-effort 约束、事件版本演进、blueprint 偏差登记、E-13 命名与协议标记等 12 处），并把实现细节与易变计数从规范正文移出。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
+> **版本**：5.5.21。本批次压缩 G 段的说明性长段（门禁表来源、模板不一致项、状态判据双向约束、AGENTS 分册关系、漂移留档、双口径读法），并修正三处过期事实（模板清单缺 `applicationService.ftl`、状态判据重复编号）。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
 
 ## 文档说明
 
@@ -1914,7 +1914,7 @@ G-1.1 与 G-1.5 里的 `Active` / `Frozen` 描述的是**模块接入状态**：
 
 #### G-1.1 Hard gate
 
-下表随本文版本更新，最近一次盘点见头部版本行；状态变动必须同步本文。`Frozen` 表示存量违规已登记、禁止新增，不代表当前代码已完全符合目标。本节门禁状态表（G-1.1 / G-1.5 / G-1.7）由 `doc/architecture/gate-state.json` 自动生成，属**频繁变动的实时状态**；规范条文（P / E）为手写稳定规范，二者渲染分离——改状态只动 JSON 并重跑 `scripts/check-ddd-gate-state.py generate`，勿手改下表。
+下表随本文版本更新，状态变动必须同步。`Frozen` 表示存量违规已登记、禁止新增，不代表代码已符合目标。G-1.1 / G-1.5 / G-1.7 的状态表由 [gate-state.json](./gate-state.json) 生成，属**实时状态**；规范条文（P / E）是手写稳定规范——改状态只动 JSON 并重跑 `python3 scripts/check-ddd-gate-state.py generate`，**勿手改下表**。
 
 <!-- gate-state:g1_1_arch:start -->
 > ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
@@ -1995,9 +1995,9 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 - application/domain 端口位置门禁；
 - 平台 Integration Event Envelope；
 - 并发策略模板；
-- 禁 ORM（banned-dependencies）的 **CI 级**门禁、统一响应契约的静态门禁 → 即 HC-003 完全缺失的载体，以及 HC-001 / HC-006 缺失的 CI 级载体（本地：HC-001 有 import / pom 拦截，HC-006 有 `check-sdk-persistence.py`，见 [G-1.7](#hc-hard-constraints)）；HC-008 的**本地新增表拦截**已落地，仍缺的是：① 存量 26 张表的逐表分类（登记于 `doc/architecture/ddl-required-columns-baseline.json`）② CI 级载体（`ci-check.sh` 属本地脚本，不进 GitHub Actions）；
+- 禁 ORM（banned-dependencies）的 **CI 级**门禁与统一响应契约的静态门禁仍缺失：HC-003 无任何载体；HC-001 / HC-006 只有本地载体（import / pom 拦截、`check-sdk-persistence.py`，见 [G-1.7](#hc-hard-constraints)）。HC-008 的本地新增表拦截已落地，缺的是 ① 存量 26 张表的逐表分类（`ddl-required-columns-baseline.json`）② CI 级载体（`ci-check.sh` 是本地脚本，未进 GitHub Actions）；
 - 集成事件契约的 breaking-change 检查：REST 侧已有 oasdiff（HC-007），事件侧（[E-5.2](#e-52-可靠发布) Envelope 的 `version`）目前**无任何兼容性规则**，跨上下文解耦后却最需要它。
-- **`studio-generator` 模板与本文解析出的规范不一致**：现有模板只有 `controller.ftl` / `repository.ftl` / `entity.ftl`（并无 Command / Handler 全家桶，这点不用担心），但 `controller.ftl` 生成的签名直接外吐领域实体——`ApiResponse<${Entity}>`、`ApiResponse<PageResult<${Entity}>>`——与 CORE-05（读侧出投影）和 [E-10.1 各层职责](#e-101-各层职责) 的转换边界冲突。模板需改为「经 ApplicationService 调用 + 返回 adapter 投影 / DTO」，并与 [E-6.6](#e-66-务实对象映射与-mapstruct) 的档位策略对齐后再作为新模块起点。建议将其登记为带 **Owner 与发布里程碑**的整改项，在修复前 `controller.ftl` 不得作为新模块起点；修复后需补一条门禁或快照断言，防止模板回退为外吐实体。
+- **`studio-generator` 模板与本文规范不一致**：模板为 `controller.ftl` / `repository.ftl` / `entity.ftl` / `applicationService.ftl`（无 Command / Handler 全家桶），但 `controller.ftl` 直接外吐领域实体（`ApiResponse<${Entity}>`、`ApiResponse<PageResult<${Entity}>>`），与 CORE-05（读侧出投影）及 [E-10.1 各层职责](#e-101-各层职责) 的转换边界冲突。修复前 `controller.ftl` 不得作为新模块起点；需改为「经 ApplicationService 调用 + 返回 adapter 投影 / DTO」并与 [E-6.6](#e-66-务实对象映射与-mapstruct) 对齐，修复后补门禁或快照断言防止回退。建议登记为带 Owner 与里程碑的整改项。
 - 仓库内反向引用（代码注释 → 本文）的清理：`bone-blueprint` 部分 JavaDoc 仍引用旧版章节号（原「PO 分离退出信号」与「领域端口包唯一」两处），对应内容现已落在 [E-6.3](#e-63-po-分离信号) 与 [E-4.1](#e-41-写侧)，须随模块改动同步修正。当前所有检查都只覆盖「文档 → 代码」方向，此类「代码 → 文档」漂移无机器载体。
 
 评审口径同 [G-1.5](#g-15-规则证明能力与模块启用状态) 开头与 [G-3](#g-3-规则准入) 第 7 条：Planned / Advisory 不得声称为全仓已证明。本节不另写一份状态。
@@ -2117,13 +2117,13 @@ grep -rn <工具名> .github/workflows/
 | **HC-008** | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | `scripts/check-ddl-required-columns.py --check`（`ci-check.sh` `[7/7]` 调用，本地无 workflow）：**新增表**缺列即失败；存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`、仅可收缩（`scripts/check-ddl-doc-sync.py` 仍只比对表名清单，不读列） | **Manual**（本地新增表阻断已落地；存量 26 张缺口已逐表分类——18 张 by-design、8 张待处理：2 张 `gap-candidate` 需按 L3 走 DDL 变更审批、6 张待模块 Owner 裁决；不得称全表已合规，同 [G-1.1](#g-11-hard-gate) 12c 后半） |
 <!-- gate-state:g1_7_hc:end -->
 
-**状态判据（双向，不只是单向升级）**：① 升到 Active 必须先在共享规则库或工作流中存在可复现载体——不得因为「团队按约定在遵守」就标 Active；② 反过来，**本地脚本已真实落地的拦截不得写成 Planned（无实现）**——那会把「已有 pre-commit 拦截」读成「完全没有」（HC-001 曾如此）；③ 被点名的载体必须真的做这件事——把「只比表名清单」的脚本当作「必备字段」载体就是反例（HC-008 曾如此）。③ 无法通用自动化，只能人工复核；② 与「只有本地脚本却称 CI 阻断」互为反向约束，两条都在才能让 `Manual` 中间态稳定。修正本表前，禁止在任何评审或工单中引用本章修正前的旧值。
+**状态判据（双向）**：① 升到 Active 必须先在共享规则库或工作流中存在**可复现载体**——不得因为「团队按约定在遵守」就标 Active；② 反之，本地脚本已真实落地的拦截不得写成 `Planned`（HC-001 曾如此，会把已有 pre-commit 拦截读成完全没有）；③ 被点名的载体必须真的做这件事（把「只比表名清单」的脚本当作「必备字段」载体就是反例，HC-008 曾如此）；④ 无法通用自动化的只能人工复核。② 与「只有本地脚本却称 CI 阻断」互为反向约束，两条都在才能让 `Manual` 中间态稳定。修正本表前，禁止在任何评审或工单中引用本章修正前的旧值。
 
 HC-001 / HC-006 的语义在 [E-4.1](#e-41-写侧) 写侧仓储白名单、[E-4.2](#e-42-读侧) 依赖向内与持久化栈章节展开；HC-003 对应 `Bone-API-规范.md` 的统一响应格式；HC-007 的 OpenAPI spec 位于 `doc/architecture/openapi/`，配置见 `.github/workflows/ci.yml`。
 
-> **与 `AGENTS.md` §12.1 的关系（2026-09-17 已收敛）**：`AGENTS.md` 已完成拆分——入口改为 ≤800 字薄引用（35 行），正文按加载时机拆为 `doc/agents/` 下六份（01 概览与模块结构 / 02 构建运行与部署 / 03 架构分层规范 / 04 测试与代码质量 / 05 数据库与安全 / 06 AI 协作与编码准则），原单文件版备份于 `doc/archive/AGENTS-单文件版-2026-09-17.md`。其 §12.1 **不再并列维护 HC 表**，只保留指向本节 `#hc-hard-constraints` 的薄引用；原 §12.7 资产表的三处错标（把 ArchUnit 称作 HC-002/003/006 的载体、把本地脚本当作 CI 载体、把 `check-ddl-doc-sync.py` 当作必备字段载体）已一并修正。
+> **与 `AGENTS.md` §12.1 的关系（2026-09-17 已收敛）**：`AGENTS.md` 已拆为入口薄引用 + `doc/agents/` 下按加载时机的六份分册（原单文件版备份于 `doc/archive/`）。其 §12.1 **不再并列维护 HC 表**，只保留指向本节 `#hc-hard-constraints` 的薄引用；原 §12.7 资产表的三处错标（把 ArchUnit 称作 HC-002/003/006 的载体、把本地脚本当 CI 载体、把 `check-ddl-doc-sync.py` 当必备字段载体）已一并修正。
 >
-> **收敛前的漂移留档**（用于说明「为什么必须单真源」）：§12.1 曾复制一份完整 HC 表，8 条里与本节不符的有 5 条——HC-001 后果写成「CI 阻断」（实为 Manual）；HC-003 / HC-006 点名了共享规则库中**不存在**的 ArchUnit 规则；HC-004 写「CI 阻断」（实为本地）；HC-005 写 70%（实为父 POM 10%，且 4 个模块下调）；HC-008 把 `scripts/ci-check.sh` 当作必备字段载体（该脚本只比对表名）。**HC 定义真源始终是本节**（G-3 第 7 条：门禁状态只有一处真源）。
+> **收敛前的漂移留档**（说明为什么必须单真源）：§12.1 曾复制一份完整 HC 表，8 条里 5 条与本节不符——HC-001 把后果写成「CI 阻断」（实为 Manual）；HC-003 / HC-006 点名了共享规则库中不存在的 ArchUnit 规则；HC-004 写「CI 阻断」（实为本地）；HC-005 写 70%（实为 10%）；HC-008 把 `ci-check.sh` 当作必备字段载体（该脚本只比对表名）。**HC 定义真源始终是本节**（G-3 第 7 条）。
 >
 > `scripts/check-ddd-gate-state.py` 的 AGENTS 反查会持续检测「入口文件是否又长出 HC 副本」，当前提示 **0 条**；一旦有人把 HC 表抄回入口或 `doc/agents/`，该提示会重新出现。
 
@@ -2131,7 +2131,7 @@ HC-001 / HC-006 的语义在 [E-4.1](#e-41-写侧) 写侧仓储白名单、[E-4.
 
 目标形态不能只靠叙述。迁移进度看**可复算的数字**，口径由 `scripts/check-ddd-gate-state.py --metrics` 输出——**数字不入库**，一旦写进文档就又变成一份手工副本（本节的成因正是手工副本）。
 
-> **输出两个口径，读的时候别混**：`索引` = 已提交现状（`git ls-files`）——重构期间它会漏掉未提交的新增、并保留已删除但未提交的文件；`工作树` = 此刻磁盘现状。**判断迁移进度用工作树口径**，索引口径用于对齐「已提交基线」；两者差值就是在途改动。这里**不写示例数字**：口径是稳定的、数字每次都变，抄进正文就会在下一次重构后变成错的（本版本即因此删掉一处示例）。本指标只观察趋势（E-0.2：不设数字 KPI）。
+> **输出两个口径，别混读**：`索引` = 已提交现状（`git ls-files`）——重构期间会漏掉未提交的新增、保留已删除但未提交的文件；`工作树` = 此刻磁盘现状。判断迁移进度用**工作树口径**，索引口径用于对齐已提交基线。本指标只观察趋势（E-0.2：不设数字 KPI），也不写示例数字——抄进正文就会在下一次重构后变错。
 
 | 指标 | 口径 | 为什么用它 |
 |------|------|------------|
