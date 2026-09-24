@@ -1,0 +1,3 @@
+ExtensionCommandApplicationService.deleteExtension() persists 2 aggregate types in one transaction [ExtensionRepository, PluginVersionRepository] — R9: one aggregate per transaction; use domain events / Outbox / Orchestrator for cross-aggregate changes
+ExtensionCommandApplicationService.rollbackExtension() persists 2 aggregate types in one transaction [ExtensionRepository, PluginVersionRepository] — R9: one aggregate per transaction; use domain events / Outbox / Orchestrator for cross-aggregate changes
+ExtensionCommandApplicationService.uploadPluginArtifact() persists 2 aggregate types in one transaction [ExtensionRepository, PluginVersionRepository] — R9: one aggregate per transaction; use domain events / Outbox / Orchestrator for cross-aggregate changes
