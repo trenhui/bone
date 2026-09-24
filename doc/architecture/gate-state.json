@@ -92,8 +92,8 @@
         [
           "12c",
           "DDL 必备字段与文档同步",
-          "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**由 `scripts/check-ddl-required-columns.py --check`（同一 `[7/7]` 调用）本地执行——**新增表**缺列即失败，存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），**尚未逐表分类**",
-          "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Manual（本地 `--check` 拦新增表；存量 26 张已逐表分类：18 张 by-design、8 张待处理，见 `doc/architecture/ddl-required-columns-baseline.json`，不得当成「全表已合规」）"
+          "**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]`）本地执行；**必备列**（`tenant_id`/`created_at`/`updated_at`/`deleted`）**校验**由 `scripts/check-ddl-required-columns.py --check`（同一 `[7/7]`）本地执行——新增表缺列即失败，存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩）",
+          "文档同步：Manual（本地，GitHub Actions 未调用）；必备字段：Manual（自检拦新增表；存量 26 张已逐表分类——18 张 by-design、8 张待处理，见 `doc/architecture/ddl-required-columns-baseline.json`）"
         ],
         [
           "12d",
@@ -145,7 +145,7 @@
         [
           "13",
           "DDD 文档示例引用的 API 符号必须真实存在；E-13 命名样例（左右各一个反引号类名 + 箭头）的右侧类必须真实存在",
-          "`scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名 / 命名样例类名，符号真源含 `bone-core`、客户端 SDK、`bone-metadata-sdk`、全仓 `*Repository` 与 `.java` 文件名集合）",
+          "`scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名 / 命名样例类名，符号真源为全仓源码集合）",
           "Active（`ci.yml` `backend-quality` job 阻断）"
         ],
         [
@@ -348,7 +348,7 @@
         [
           "`allTenantEntryPointsOnlyCalledBy`（含 `allTenantScanMethodsOnlyCalledBySchedule` 包装）",
           "Hard gate（2026-09-20 新增并已接入 8 个应用模块：blueprint / iam / integration / masterdata / system / extension-studio / metadata-server / studio-generator）",
-          "全租户入口只被**已登记调用方**调用（判据 = `@TenantScope(ALL)` 或方法体 `Criteria.disableTenantFilter()`）；`adapter.schedule` 也只许调全租户入口。首次运行抓出 bone-iam 登录跨租户定位未登记、bone-integration 定时任务做租户内读两处真问题",
+          "全租户入口只被**已登记调用方**调用（判据 = `@TenantScope(ALL)` 或方法体 `Criteria.disableTenantFilter()`）；`adapter.schedule` 也只许调全租户入口",
           "调用方登记是否合理、该入口是否**应该**跨租户（白名单是评审决定，门禁只保证\"没有未登记的调用方\"，且只看 schedule 的直接调用）"
         ],
         [
@@ -448,13 +448,13 @@
         [
           "**HC-005**",
           "核心模块测试覆盖率门槛",
-          "`jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`，这四个模块实际不受门禁）",
-          "Active；**父 POM 实测门槛为 10% 指令覆盖率，不是 70%**；模块覆盖见左栏。整改建议：这四个模块为 SDK 基础设施层，业务聚合少、以框架 / 映射代码为主，0 覆盖不等价于无保护；建议二选一并在模块 README 登记——① 在对应 pom 显式声明覆盖率豁免并写明理由；② 为关键映射与上下文装配补最小集成测试使覆盖 >0 后再纳入门禁。不得长期以 0 覆盖蒙混，也不因门禁存在就误判这些核心模块已受测试保护"
+          "`jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`）",
+          "Active；**父 POM 实测门槛为 10% 指令覆盖率**。这四个 SDK 基础设施模块以框架与映射代码为主，0 覆盖不等于无保护：建议二选一并在模块 README 登记——① pom 显式声明覆盖率豁免并写明理由；② 补关键映射与上下文装配的最小集成测试后纳入门禁。不得长期以 0 覆盖蒙混"
         ],
         [
           "**HC-006**",
           "数据库访问必须通过 bone-metadata-sdk Repository",
-          "`scripts/check-sdk-persistence.py --check`（`scripts/check.sh` `[6/6]`、`scripts/ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import；SDK 与 metadata-engine 除外。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩。ArchUnit `repositoryMustUseSdk` 仍不在共享规则库",
+          "`scripts/check-sdk-persistence.py --check`（`check.sh` `[6/6]`、`ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import（SDK 与 metadata-engine 除外）。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩；ArchUnit `repositoryMustUseSdk` 不在共享规则库",
           "**Manual**（本地新增文件阻断已落地；存量绕过在基线内，不得称全仓已只走 Repository）"
         ],
         [
@@ -466,7 +466,7 @@
         [
           "**HC-008**",
           "新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted`",
-          "`scripts/check-ddl-required-columns.py --check`（`ci-check.sh` `[7/7]` 调用，本地无 workflow）：**新增表**缺列即失败；存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`、仅可收缩（`scripts/check-ddl-doc-sync.py` 仍只比对表名清单，不读列）",
+          "`scripts/check-ddl-required-columns.py --check`（`ci-check.sh` `[7/7]`，本地无 workflow）：新增表缺列即失败；存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`，仅可收缩（`check-ddl-doc-sync.py` 只比表名清单，不读列）",
           "**Manual**（本地新增表阻断已落地；存量 26 张缺口已逐表分类——18 张 by-design、8 张待处理：2 张 `gap-candidate` 需按 L3 走 DDL 变更审批、6 张待模块 Owner 裁决；不得称全表已合规，同 [G-1.1](#g-11-hard-gate) 12c 后半）"
         ]
       ]
