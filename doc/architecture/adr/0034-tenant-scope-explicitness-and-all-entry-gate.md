@@ -122,3 +122,7 @@ blueprint 三个全租户方法改名（含外置模板文件名，模板 ID 由
 - **模块**：8 个应用模块接入三条规则；blueprint 三个方法 + 外置模板改名；IAM 登录入口改名并登记调用方；integration 冻结登记一条真实债务。
 - **规范**：E-2 增加全租户入口判据与调用面条款；E-4.4 首段与硬约束表第 3 条改写（去掉与实现不符的表述，写明启动期 fail-fast）；G-1.5 登记三条新规则及其证明边界。
 - **验证方式与已知限制**：ArchUnit 规则在 8 个模块实测通过（含负向探针）；SDK 单元测试通过。**本沙箱内无法运行 Spring 上下文测试**（Mockito inline mock maker 需要 JVM self-attach，被沙箱阻止），因此 `RepositoryFactoryBean` 的启动期行为只在单元层验证——模块侧需在开发机执行 `mvn -pl bone-engine/bone-metadata-sdk test` 与各模块 Spring 测试补齐。
+
+## 附：`@Sql` 通道的参考实现（规范 E-4.4 的展开）
+
+blueprint 的 `OrderRepository`（`extends Repository<Order, Long>`）合并了本聚合读投影（ADR-0030）：外置模板方法 `findOrderWithItems` 走 JOIN 扁平投影（`MANUAL` 显式 `tenantId`）、Criteria 方法 `findOrderPage` 走分页、`findExpiredOrdersAllTenants` 走全租户扫描（`@TenantScope(ALL)`）；`PaymentRepository` 同模式折叠。该模块已无任何 `*QueryPort`——它演示的是「本聚合读并入域仓储」这一条通道，跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`。同一仓储混用多种通道是正常形态：把每条 SQL 放进它该在的护栏层即可。

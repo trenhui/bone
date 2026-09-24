@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.22。本批次压缩四处仍含历史叙述或冗余的长段（Context Map 图注的废弃理由、E-3.10 结构性触发、E-3.11 渐进重构、E-4.1 `boolean` 语义），判据与门禁要求不变。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
+> **版本**：5.5.23。本批次把 E-4.4 的参考实现描述移入 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)（属展开说明，不是判据），规范只留通道规则与硬约束表。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
 
 ## 文档说明
 
@@ -1176,7 +1176,7 @@ public class OrderSearchApplicationService {
 
 `QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql`。`@Sql` 是**第三类通道，不是默认选择**，只用于前两类表达不了的场景（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离必须显式声明 `@TenantScope`**：`AUTO` 按锚点 `/*bone:tenant*/` 注入（缺锚点或复杂查询拒绝执行）、`MANUAL` 手写条件、`ALL` 退出租户隔离、`BYPASS` 退软删；**缺标注在启动期即拒绝注册**（`RepositoryFactoryBean` fail-fast，[ADR-0034](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)），锚点缺失则执行期 fail-closed。注解可写在方法或仓储接口上作为默认策略（[ADR-0030](./adr/0030-domain-repository-read-merge.md)、E-2）。
 
-blueprint 参考实现：`OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030）——外置模板方法 `findOrderWithItems` 走 JOIN 扁平投影（`MANUAL` 显式 `tenantId`）、Criteria 方法 `findOrderPage` 走分页、`findExpiredOrdersAllTenants` 走全租户扫描（`@TenantScope(ALL)`）；`PaymentRepository` 同模式折叠。**该模块已无任何 `*QueryPort`**：它演示的是「本聚合读并入域仓储」这一条通道，跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`。同一仓储混用多种通道是正常形态——把每条 SQL 放进它该在的护栏层即可；全租户入口的命名与调用面由共享门禁守护（G-1.5），不是命名建议。
+参考实现（blueprint 的 `OrderRepository` / `PaymentRepository` 同模式折叠）见 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md#附sql-通道的参考实现规范-e-44-的展开)。同一仓储混用多种通道是正常形态；全租户入口的命名与调用面由共享门禁守护（G-1.5），不是命名建议。
 
 **六条硬约束**（前两条是「起不来」，后四条是「起得来但结果错」）：
 

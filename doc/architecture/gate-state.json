@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.22",
+  "version": "5.5.23",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
