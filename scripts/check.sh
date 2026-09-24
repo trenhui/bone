@@ -54,7 +54,11 @@ fi
 # （沿用 [2/5] 的 -f 逐模块机制，避开 reactor 路径解析不稳与前端 node 模块）。
 if echo "$CHANGED_FILES" | grep -q 'bone-framework/bone-architecture-test/'; then
   echo -e "${YELLOW}[2/5] 共享门禁库变更 → 全量 ArchUnit 回归...${RESET}"
-  mapfile -t ARCH_MODULES < <(find . -path '*/src/test/java/*/ArchitectureTest.java' \
+  # 用 while-read 收集，避免 mapfile（bash ≥4.0 才有；macOS 默认 /bin/bash 3.2 无该内建）
+  ARCH_MODULES=()
+  while IFS= read -r line; do
+    [ -n "$line" ] && ARCH_MODULES+=("$line")
+  done < <(find . -path '*/src/test/java/*/ArchitectureTest.java' \
     -not -path '*/node_modules/*' -not -path '*/target/*' 2>/dev/null \
     | sed 's|/src/test/java/.*||' | sort -u)
   for MODULE_PATH in "${ARCH_MODULES[@]:-}"; do

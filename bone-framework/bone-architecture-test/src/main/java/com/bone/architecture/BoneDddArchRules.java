@@ -757,6 +757,11 @@ public final class BoneDddArchRules {
    * Orchestrator 后， 直接在 Handler 上扫描 save 调用将完全不可见（v4.6 的盲区）——ApplicationService 同样可能是写事务入口，须受 R9 约束
    * （E-6.4 内容禁令 #5）。门禁按「直接调用」判定：Handler → Service → save(A)+save(B) 会在 Service 层被拦截。
    *
+   * <p><b>已知盲区（P1-13，仅声明、未做跨类遍历）</b>：判定只基于 {@code entry.getMethodCallsFromSelf()}（同一入口方法体内的
+   * <strong>直接</strong>调用）。若写事务经多层编排 {@code A.method() → B.method() →
+   * repo.save(X)}，且没有任何一个被扫描类在其方法体内 <strong>直接</strong>对两个不同聚合根执行
+   * save，则本规则不拦截。短期以本条注释显式声明盲区；长期须做跨类调用遍历累加 persist 调用后再判定。
+   *
    * <p><b>为何按「聚合根类型」而非「Repository 类型」去重（v4.7 修正）</b>：R9 约束的对象是<strong>聚合</strong>，不是仓储接口。
    * 按仓储计数会把聚合内子实体的仓储（如 {@code OrderItemRepository}）误判为第二个聚合，进而诱导实现方把端口挪出 {@code domain.repository}
    * 包来"绕过门禁"——既违反 E-5.5，也让规则形同虚设。改为解析 {@code Repository<T, ID>} 的 泛型参数，只有 {@code T} 是 {@code
