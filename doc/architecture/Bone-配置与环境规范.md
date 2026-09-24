@@ -41,7 +41,7 @@
 |------|------|------|
 | `BONE_DB_*` | 数据库 | `BONE_DB_URL`, `BONE_DB_PASSWORD` |
 | `BONE_REDIS_*` | 缓存 | `BONE_REDIS_HOST` |
-| `BONE_JWT_*` / `BONE_IAM_*` | 认证 | `BONE_JWT_SECRET` |
+| `BONE_JWT_*` / `BONE_IAM_*` | 认证 | `BONE_JWT_SECRET`（As-Is HS256 对称密钥；Target 私钥外置 + 公钥 JWKS，见 [ADR-0005](./adr/0005-iam-jwt-rs256-jwks.md)） |
 | `BONE_SERVER_PORT` | 服务端口 | `8080`（示例；各模块默认见 [wiki/03](../wiki/03-本地开发与构建.md) 与对应 `application.yml`） |
 | `BONE_INTEGRATION_JWT_ENABLED` | 功能开关 | `true`/`false` |
 | `BONE_INTEGRATION_ALERT_ENABLED` | 集成领域事件告警 | `true`/`false` |
@@ -71,7 +71,7 @@
 |------|------|
 | 本地 | `cp .env.example .env` + `source scripts/dev/load-env.sh` |
 | CI | GitHub/Gitee Secrets 注入 `BONE_*` |
-| 生产 | Secret 挂载；JWT/DB 定期轮换 |
+| 生产 | Secret 挂载；JWT/DB 定期轮换（JWT 算法演进与轮换见 [ADR-0005](./adr/0005-iam-jwt-rs256-jwks.md)、[Bone-安全开发规范](./Bone-安全开发规范.md) §2） |
 
 见 [Bone-安全开发规范](./Bone-安全开发规范.md) §4。
 

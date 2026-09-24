@@ -56,7 +56,7 @@ TenantContext.setBizIdentityCode(...);
 | 查询 | 所有业务查询带 `tenant_id`；`biz_identity_code` **仅当表已落库该列**时附加过滤，否则在应用层按上下文判断 |
 | 写入 | 插入时从上下文填充 `tenant_id`，禁止客户端指定他人租户；`biz_identity_code` 写入需先确认 DDL 已包含该列 |
 | 跨租户 | 仅平台超管角色；须审计 + Scope `platform:*` |
-| 缓存 Key | `{tenantId}:{bizCode}:...`（见 [Bone-缓存规范](./Bone-缓存规范.md)） |
+| 缓存 Key | `bone:{tenantId}:{domain}:{resource}:{id}[:{facet}]`（以 [Bone-缓存规范 §2](./Bone-缓存规范.md) 为准）；`biz_identity_code` 默认不落库，**不**纳入 Key，避免基数膨胀 |
 
 ---
 

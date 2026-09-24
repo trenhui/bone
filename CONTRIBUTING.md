@@ -63,7 +63,7 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 | 架构索引 | [doc/architecture/README.md](doc/architecture/README.md) |
 | DDD / 分层 | [doc/architecture/Bone-DDD-最终实践方案.md](doc/architecture/Bone-DDD-最终实践方案.md) |
 | 总体架构 | [doc/architecture/BONE-总体架构设计方案.md](doc/architecture/BONE-总体架构设计方案.md) |
-| 数据库 | [doc/architecture/数据库开发规范.md](doc/architecture/数据库开发规范.md)、[初始脚本.sql](doc/architecture/初始脚本.sql) |
+| 数据库 | [doc/architecture/数据库开发规范.md](doc/architecture/数据库开发规范.md)；DDL **唯一真源**为根目录 `bone-init.sql`（开发全量重建，见 ADR-0001） |
 | 模块设计 | [doc/design/modules/](doc/design/modules/) |
 | Agentic 工程 | [doc/agenticx/Bone-Agentic-Engineering.md](doc/agenticx/Bone-Agentic-Engineering.md) |
 | Metadata SDK | [bone-engine/bone-metadata-sdk/README.md](bone-engine/bone-metadata-sdk/README.md)（快速开始）→ [doc/](bone-engine/bone-metadata-sdk/doc/)（使用指南 + 最佳实践） |

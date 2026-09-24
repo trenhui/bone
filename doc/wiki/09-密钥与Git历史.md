@@ -10,7 +10,7 @@
 | **Git 历史** | `gitleaks detect --baseline-path .gitleaks.baseline.json` | 已登记的历史泄露不阻断；**新增**泄露失败 |
 | **字面量** | `scripts/scan-secrets.sh` 内 `rg` | 拦截已知高危字符串 |
 
-本地一键：`bash scripts/scan-secrets.sh`（与 CI `secrets-scan` 对齐）。
+本地一键：`bash scripts/scan-secrets.sh`（**仅本地脚本；根仓 CI 未接入密钥扫描 job**，以 [ci.yml](../../.github/workflows/ci.yml) 实际 job 为准；HC-004 状态见 [Bone-DDD G-1.7](../architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints)）。
 
 ## 维护 baseline
 

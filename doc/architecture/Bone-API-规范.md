@@ -3,7 +3,7 @@
 >
 > | API 规范内容 | DDD 规范对应 | 执行载体 |
 > |-------------|-------------|---------|
-> | Controller 返回 `ApiResponse<T>` / `PageResult<T>` | HC-003 | ArchUnit `controllerMustReturnApiResponse` |
+> | Controller 返回 `ApiResponse<T>` / `PageResult<T>` | HC-003 | **无机器载体（Planned）**：`controllerMustReturnApiResponse` 不在共享规则库；本规范定义目标态。状态真源见 [Bone-DDD-最终实践方案 §G-1.7](./Bone-DDD-最终实践方案.md)，勿在此复述 |
 > | API 设计态与实现态一致性 | HC-007 | oasdiff（CI）+ OpenAPI spec（`openapi/`） |
 > | 请求 DTO 不得直传 domain 类型 | E-4.1 / E-4.2 | adapter 层 Assembler + ArchUnit 包依赖方向 |
 > | 多租户头 `X-Tenant-Id` 传递链 | E-10.2 / `TenantProvider` | Spring 过滤器 + TenantContext |
@@ -36,7 +36,7 @@
 | 项 | 说明 |
 |----|------|
 | **目标** | 统一 URL、HTTP 语义、响应/错误信封、分页与横切头；可 i18n、可 CI 校验。错误码与日志见配套文档。 |
-| **适用** | `bone-platform/*`、`bone-engine/*` 对外 HTTP API；`bone-frontend` 各微应用；网关与 SA-Token 鉴权配置。 |
+| **适用** | `bone-platform/*`、`bone-engine/*` 对外 HTTP API；`bone-frontend` 各微应用；网关与 **Spring Security + JWT** 鉴权配置（平台默认栈；SA-Token **非**默认栈，仅限可选行业包 `bone-business/*`）。 |
 | **真源优先级** | 本规范 > 模块详设 API 章 > 代码实现；偏离须 ADR 或 §13.2「迁移登记」。 |
 | **OpenAPI** | 每服务维护 OpenAPI 3.1；公共 schema 见 §11；CI 做破坏性 diff。 |
 | **实现符合度** | 本规范为**目标态**；`bone-core` 双 `ApiResponse`、`code=0` 成功码等见 §13.2，逐步迁移。 |
@@ -163,7 +163,7 @@ JSON Query Body：**禁止** `POST` 模拟 `GET` 列表（导出等超大查询�
 | 字段 | 规则 |
 |------|------|
 | `success` | 与 HTTP 2xx 一致，必须为 `true` |
-| `code` | **等于 HTTP 状态码**（成功固定 `200`；历史 `0` 见 §12 废弃） |
+| `code` | **等于 HTTP 状态码**（成功为对应 2xx：**创建 `201`**，其余 `200`；历史 `0` 见 §13.2 废弃） |
 | `message` | 简短中文/英文，可展示给用户 |
 | `data` | 业务载荷；无数据可为 `null` |
 | `timestamp` | ISO-8601 UTC |
@@ -223,7 +223,7 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 }
 ```
 
-> 不再推荐依赖 `code === 0`；兼容层设 **2026-09-01** 移除（见 §12）。
+> 不再推荐依赖 `code === 0`；兼容层设 **2026-09-01** 移除（见 **§13.2**）。
 
 ---
 
@@ -309,7 +309,7 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 | `Content-Type` | 有 body 时 | `application/json; charset=utf-8` |
 | `Accept` | 推荐 | `application/json` |
 | `X-Request-Id` | 推荐 | 客户端生成 UUID；无则网关生成 |
-| `X-Tenant-Id` | 多租户 | 网关注入；**不得**仅靠 body 覆盖 |
+| `X-Tenant-Id` | 多租户 | 网关注入（**仅透传/对齐用**）；租户身份**权威来源为已校验 JWT 的 claim**（见 §9.2），与 JWT 不符的请求须拒绝；**不得**仅靠 body 覆盖 |
 | `X-Biz-Identity-Code` | 多身份 | 业务身份 |
 | `Idempotency-Key` | 幂等写 | UUID；服务端 TTL **24h** |
 | `If-Match` | 乐观锁更新 | 实体 `version` 或 ETag |
@@ -324,6 +324,19 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 | `Retry-After` | 429 秒数 |
 | `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset` | 限流（推荐） |
 | `Link` | 分页 next/prev |
+
+**限流策略**（网关统一执行，模块不各自实现）：
+
+| 维度 | 说明 |
+|------|----------|
+| 维度键 | `tenantId` + 端点（按租户隔离配额，避免单租户耗尽全局额度） |
+| 阈值 | **由网关配置定义**（`bone-gateway` 的 resilience4j 限流器），本规范**不**硬编码具体 QPS，避免与配置漂移 |
+| 超限响应 | `429` + `Retry-After` + `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset` |
+| 错误码 | `COMMON_RATE_LIMITED`（见 [Bone-错误码登记](./Bone-错误码登记.md)） |
+| 登录端点 | 须额外按 **IP + 账号**做防爆破，配额独立于普通端点 |
+
+- 实现载体：网关 `spring-cloud-starter-circuitbreaker-reactor-resilience4j` + Redis 响应式限流；平台**未**引入 Sentinel，勿按 Sentinel 配置。
+- 客户端 `X-Tenant-Id` 不参与配额维度（租户身份以 JWT 为准，见 §5、§9.2）。
 
 ---
 
@@ -385,7 +398,7 @@ GET /api/v1/extension/operations/{operationId}
 ### 9.1 认证与租户
 
 1. 默认需认证；白名单：`/api/v1/iam/login`、健康检查、文档（生产需鉴权）。  
-2. `tenant_id` / `biz_identity_code` 从 JWT 解析写入 `TenantContext`。  
+2. `tenant_id` / `biz_identity_code` **权威来源为已校验 JWT 的 claim**，解析后写入 `TenantContext`；客户端传入的 `X-Tenant-Id` 仅作透传，服务端以 JWT 为准，与 JWT 不符的请求直接拒绝（防跨租户越权）。  
 3. 禁止在日志中输出完整 Token、密码、密钥。
 
 ### 9.2 权限 Scope（OpenAPI + IAM）
@@ -401,7 +414,7 @@ GET /api/v1/extension/operations/{operationId}
 | `extension:plugins:deploy` | 部署插件 |
 | `iam:users:write` | 管理用户 |
 
-Controller 使用 `@PreAuthorize` 或 SA-Token 注解，**权限码与 Scope 一致**。
+Controller 使用 `@PreAuthorize`（Spring Security）注解，**权限码与 Scope 一致**。SA-Token 非平台默认栈（全仓无该依赖），仅限可选行业包 `bone-business/*`，勿写入平台 API 契约。
 
 ---
 

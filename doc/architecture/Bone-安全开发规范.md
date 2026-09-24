@@ -23,7 +23,7 @@
 | 规则 | 说明 |
 |------|------|
 | 默认拒绝 | 除白名单外所有 API 需认证 |
-| JWT | 使用 `bone.iam.jwt`；生产密钥 ≥256 bit 随机，**仅环境变量** |
+| JWT | **As-Is**：`bone.iam.jwt` HS256 **对称密钥**，生产密钥 ≥256 bit 随机，仅环境变量。**Target**：RS256/EdDSA + JWKS（公钥经 `/.well-known/jwks.json` 分发；HS256 仅保留 dev profile，生产 fail-fast 禁用）——见 [ADR-0005](./adr/0005-iam-jwt-rs256-jwks.md)（状态：提议，**待裁决**） |
 | 令牌传输 | 仅 `Authorization: Bearer`；禁止 query string 带 token |
 | 过期 | Access 短 TTL；Refresh 独立端点 + 轮换（见 bone-iam） |
 | 登出 | 服务端黑名单/版本号失效 refresh（已实现方向） |

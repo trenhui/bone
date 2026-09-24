@@ -1,7 +1,7 @@
 # Bone — AI Agent 项目指南
 
 > **本文件是薄引用入口**。完整说明已按「加载时机」拆分到 [`doc/agents/`](doc/agents/README.md)——按需加载，不要整体灌入。
-> 原单文件版（581 行）备份：`doc/archive/AGENTS-单文件版-2026-09-17.md`。拆分文档**沿用原章节编号**（`§5.2`、`§11.12` 可直接定位）。
+> 原单文件版（581 行）已于 2026-09-17 拆分，备份文件已删除；**需要旧版请查 Git 历史**。拆分文档**沿用原章节编号**（`§5.2`、`§11.12` 可直接定位）。
 
 ## 一、不可违反（违反即阻断）
 
@@ -32,4 +32,4 @@
 
 ## 四、门禁状态只有一处真源
 
-HC-001～HC-008 的定义与**实测状态**见 [Bone-DDD-最终实践方案 §G-1.7](<doc/architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints>)。**本文件与 `doc/agents/` 一律不复制 HC 表或门禁状态**，引用只写编号；Planned / Manual 不得写成 Active。
+HC-001～HC-008 的定义与**实测状态**见 [Bone-DDD-最终实践方案 §G-1.7](<doc/architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints>)。**本文件、`doc/agents/`、`doc/wiki/` 与 `doc/agenticx/` 一律不复制 HC 表或门禁状态**，引用只写编号；Planned / Manual 不得写成 Active；目标态门禁须显式标注「目标态/规划中」，不得写成已由 CI 拦截。

@@ -1054,11 +1054,11 @@ bone/
 ## 核心理念
 人定义意图，AI 负责实现，契约保证质量，CI 担任裁判，Ralph Loop 保障 7×24 小时交付。
 
-## 🏗️ 技术栈（锁定版本）
-- 后端：Java 21 + Spring Boot 3.5.x + MySQL Connector 9.3.0 + bone-metadata-sdk（自研 ORM）
+## 🏗️ 技术栈（当前态 + 目标态）
+- 后端：**当前** Java 17 + Spring Boot 3.2.5（真源 `bone-parent/pom.xml`）；**目标** Java 21 + Spring Boot 3.5.x + MySQL Connector 9.3.0 + bone-metadata-sdk（自研 ORM）
 - 前端：React 18.2 + TypeScript 5.8 + Ant Design 5.x + Vite 5.x
 - 测试：JUnit 5 + Testcontainers + JaCoCo (后端)，Vitest + React Testing Library (前端)
-- 覆盖率门禁：≥80% (L2 功能 ≥85%)
+- 覆盖率门禁：≥80%（L2 功能 ≥85%）—— **目标态**；实测状态与执行载体以 [Bone-DDD G-1.7 的 HC-005](../architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints) 为唯一真源，本文**不**另立门禁状态
 
 ## 🔄 标准工作流（5 个命令，禁止绕过）
 | 命令 | 作用 | 产出 | 确认人 |
@@ -1069,9 +1069,9 @@ bone/
 | `/ship` | 审查 + 创建 PR | PR | Guardian |
 | `/ralph-loop` | 自动迭代到完成 | Draft PR | 人类设定后离开 |
 
-## ⚠️ 核心红线（CI 强制拦截）
+## ⚠️ 核心红线（**目标态**：CI 强制拦截；当前是否落地以 Bone-DDD G-1.7 为准）
 1. 禁止修改 `generated/` 目录
-2. 测试覆盖率 < 80% 禁止合并（L2 < 85%）
+2. 测试覆盖率 < 80% 禁止合并（L2 < 85%）—— **目标态**，勿据此宣称当前 CI 已拦截
 3. 禁止返回 `null`（后端 `Optional`，前端 `undefined`）
 4. 契约所有者由 `.github/CODEOWNERS` 定义，PR 作者必须匹配
 5. L3/L4 问题未解决禁止 `/ship`

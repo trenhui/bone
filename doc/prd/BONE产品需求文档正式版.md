@@ -1390,11 +1390,22 @@ Scenario: 水平自动伸缩
 
 ### 5.7 可测试性（含质量门禁）
 
-**质量门禁**（与 Agentic 契约分级及 `CLAUDE.md` 对齐；以 CI 实际绑定模块为准）：
-- **L1 功能**：单元测试行覆盖率 ≥ **80%**。
-- **L2 功能**：单元测试行覆盖率 ≥ **85%**；圈复杂度、方法/类行数等见 `CLAUDE.md` 质量门禁表。
+**质量门禁**（**目标态**；实测状态与执行载体以 [Bone-DDD G-1.7 的 HC-005](../architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints) 为**唯一真源**，此处不复述数值）：
+- **L1 功能**：单元测试行覆盖率 ≥ **80%**（目标）。
+- **L2 功能**：单元测试行覆盖率 ≥ **85%**（目标）；圈复杂度、方法/类行数等见 [doc/agents/04](../agents/04-测试与代码质量.md)。
 - **集成测试**：主要用户旅程覆盖率 ≥50%（按迭代裁剪）。
-- SonarQube 扫描无阻断问题（Bug 0，漏洞 0，坏味道 ≤5%）。
+- 静态扫描无阻断问题（SonarQube **规划中**；当前 CI 以 OWASP 依赖检查为主，未接入 SonarQube）。
+
+**工程硬约束（非功能准入）**：PRD 需求落地须满足 [AGENTS.md](../../AGENTS.md) 与 [Bone-DDD G-1.7](../architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints) 定义的 HC-001～HC-008：
+
+| 约束 | 对 PRD 落地的含义 |
+|------|------------------|
+| HC-001 | 持久化仅 `bone-metadata-sdk`，**禁** MyBatis-Plus / JPA / Hibernate 作为默认栈 |
+| HC-003 | Controller 统一返回 `ApiResponse<T>` / `PageResult<T>`，不裸返领域对象 |
+| HC-006 | 平台库访问唯一走 SDK Repository，禁绕过直连 JDBC |
+| HC-008 | 新表必含 `tenant_id` + 审计列 + `deleted`，且**实体须声明 `tenantId`** |
+
+> 各 HC 的实测状态与执行载体以 G-1.7 为唯一真源，本节不复述。
 - OWASP 依赖检查无高危漏洞（中危需评审）。
 - 性能回归测试：核心 API 的 P99 延迟相比基线恶化不超过 20%。
 
@@ -1724,6 +1735,8 @@ flowchart TD
 | ADR-011 | 采用 Kubernetes 为官方部署平台 | 企业运维标准化 | Helm Chart + HPA | 运维、部署 |
 | ADR-012 | 审计日志使用 WORM 对象存储（商业版） | 金融合规要求 | MinIO + 对象锁定 | IAM 模块 |
 
+> **本表为历史快照（2 位编号），已废止，勿用于定位 ADR 文件**：ADR 唯一真源为 [`doc/architecture/adr/`](../architecture/adr/) 目录，采用 **4 位编号**（如 `ADR-0028` 默认 ApplicationService、`ADR-0034` 租户隔离显式性）。本表编号与实际 ADR 文件**不对应**（实际 `ADR-0010` 为账号直连权限），仅用于追溯 v2.0 决策背景。
+
 ---
 
 ## 8. 发布与灰度策略
@@ -1900,8 +1913,8 @@ flowchart TD
 | doc/wiki/03-本地开发与构建.md | 随仓库 | **默认端口**与各模块 `application.yml` 对照 |
 | doc/architecture/数据库开发规范.md | 随仓库 | DDL 唯一权威；可执行脚本为根目录 `bone-init.sql` |
 | LICENSE（MIT） | 随仓库 | 开源许可真源 |
-| BONE-总体架构设计方案（doc/architecture/BONE-总体架构设计方案.md） | v2.1 | 总体架构与技术方案唯一权威 |
-| Bone-DDD 最终实践方案（doc/architecture/Bone-DDD-最终实践方案.md） | 3.3 | DDD 分层、CQRS、Metadata SDK 持久化 P0 门禁 |
+| BONE-总体架构设计方案（doc/architecture/BONE-总体架构设计方案.md） | 随仓库（头部 v2.2 / 2026-05-27） | 总体架构与技术方案唯一权威 |
+| Bone-DDD 最终实践方案（doc/architecture/Bone-DDD-最终实践方案.md） | 随仓库（头部 5.5.23） | DDD 分层、CQRS、Metadata SDK 持久化 P0 门禁 |
 | 模块详细设计索引（doc/design/modules/README.md） | 随仓库 | 控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta |
 | BONE X Studio 详细设计（doc/design/BONE-X-Studio-详细设计方案.md） | v5.0 | Studio 跨模块技术详设 |
 | bone-metadata-sdk/doc/README.md | 随仓库 | Metadata SDK 使用说明 |
