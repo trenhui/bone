@@ -82,7 +82,7 @@ const GenerationHistory: React.FC = () => {
   const handleDownloadCode = async (taskId: string) => {
     try {
       const response = await codeGenerationApi.downloadCode(taskId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response as unknown as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `generated-code-${taskId}.zip`);

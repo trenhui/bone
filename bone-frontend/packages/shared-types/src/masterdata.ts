@@ -139,6 +139,7 @@ export interface MasterDataRecordListQry {
   pageSize?: number;
   masterDataEntityId: number;
   status?: string;
+  keyword?: string;
 }
 
 export interface DataQualityRuleListQry {

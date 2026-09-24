@@ -1,10 +1,10 @@
 import { createApiClient, setQiankunToken } from '@bone/shared-services';
-import type { AxiosResponse } from 'axios';
 import type { ApiResponse, DataSource, DatabaseTable, PageResult } from './types';
 
 export { setQiankunToken };
 
-type Resp<T = unknown> = Promise<AxiosResponse<ApiResponse<T>>>;
+// 拦截器已解包 axios response（返回 ApiResponse 本体），此处类型须与运行时一致
+type Resp<T = unknown> = Promise<ApiResponse<T>>;
 
 const G = '/api/v1/generator';
 
@@ -86,7 +86,8 @@ const sleep = (ms: number): Promise<void> =>
 
 export async function getGeneratorOperation(operationId: string): Promise<GeneratorOperation> {
   const res = await api.get(`${G}/operations/${operationId}`);
-  return res.data?.data as GeneratorOperation;
+  // 拦截器已解包：res 即 ApiResponse，res.data 即 GeneratorOperationView
+  return res.data as GeneratorOperation;
 }
 
 export async function pollGeneratorOperationUntilDone(
@@ -125,7 +126,8 @@ export const codeGenerationApi = {
     opts?: CodeGenerationOptions,
   ): Resp<string | Record<string, unknown>> {
     const params = opts?.sync != null ? { sync: opts.sync } : undefined;
-    const res = await api.post<ApiResponse<{ operationId?: string; taskId?: string }>>(
+    // 拦截器已解包：res 即 ApiResponse 本体（200 同步 data=taskId；202 异步 data={operationId,taskId}）
+    const res = await api.post<never, ApiResponse<{ operationId?: string; taskId?: string }>>(
       `${G}/code-generation`,
       data,
       {
@@ -133,28 +135,19 @@ export const codeGenerationApi = {
         validateStatus: (s: number) => s === 200 || s === 202,
       },
     );
-    if (res.status === 202) {
-      const operationId =
-        res.data?.data?.operationId ??
-        res.data?.data?.taskId ??
-        (res.headers.location ? String(res.headers.location).split('/').pop() : undefined);
-      if (!operationId) {
-        throw new Error('缺少 operationId');
-      }
+    const operationId = res.data?.operationId ?? res.data?.taskId;
+    if (operationId) {
       opts?.onProgress?.(0);
       await pollGeneratorOperationUntilDone(operationId, { onProgress: opts?.onProgress });
-      return {
-        ...res,
-        data: { ...res.data, data: operationId },
-      } as AxiosResponse<ApiResponse<string>>;
     }
-    return res as AxiosResponse<ApiResponse<Record<string, unknown>>>;
+    return res;
   },
 
   getTaskStatus: (taskId: string): Resp<{ status?: string; progress?: number }> =>
     api.get(`${G}/code-generation/tasks/${taskId}/status`),
 
-  downloadCode: (taskId: string): Promise<AxiosResponse<Blob>> =>
+  // blob 响应经拦截器解包后直接返回 Blob 本体
+  downloadCode: (taskId: string): Promise<Blob> =>
     api.get(`${G}/code-generation/tasks/${taskId}/download`, { responseType: 'blob' }),
 };
 

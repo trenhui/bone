@@ -1,6 +1,7 @@
 package com.bone.studio.generator.domain.model.data;
 
 import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
@@ -30,7 +31,13 @@ public class GenTableMetadata extends AggregateRoot<Long> {
   private LocalDateTime updatedAt;
   private boolean deleted;
   private int version;
-  private List<GenColumnMetadata> columns;
+
+  /**
+   * 内存态列清单：{@code gen_table_metadata} 无 columns 物理列，列数据由 {@code gen_column_metadata} 单独加载。缺
+   * {@code @Transient} 时 SDK 会把它拼进 SELECT/INSERT 列清单，导致 Unknown column 'm.columns'（实测：GET
+   * /data-sources/{id}/synced-tables 500）。
+   */
+  @Transient private List<GenColumnMetadata> columns;
 
   private GenTableMetadata() {}
 
@@ -41,7 +48,7 @@ public class GenTableMetadata extends AggregateRoot<Long> {
     metadata.tenantId = tenantId;
     metadata.dataSourceId = dataSourceId;
     metadata.originalTableName = dbTable.getTableName();
-    metadata.customEntityName = dbTable.getTableName();
+    metadata.customEntityName = toEntityName(dbTable.getTableName());
     metadata.tableComment = dbTable.getTableComment();
     metadata.syncStatus = "SYNCED";
     metadata.lastSyncAt = LocalDateTime.now();
@@ -52,8 +59,49 @@ public class GenTableMetadata extends AggregateRoot<Long> {
     return metadata;
   }
 
-  public void syncColumns(List<TableColumn> dbColumns) {
-    // 同步列信息的逻辑
+  /**
+   * 物理表名 → 实体类名：剥离技术前缀 {@code t_} 后转大驼峰。
+   *
+   * <p>直接拿表名当类名会产出 {@code public class t_order} 这类无法编译的产物（实测 t_order 表生成结果）。
+   */
+  private static String toEntityName(String tableName) {
+    if (tableName == null || tableName.isBlank()) {
+      return tableName;
+    }
+    String name = tableName;
+    if (name.length() > 2 && (name.startsWith("t_") || name.startsWith("T_"))) {
+      name = name.substring(2);
+    }
+    StringBuilder entityName = new StringBuilder();
+    boolean upperNext = true;
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if (c == '_') {
+        upperNext = true;
+        continue;
+      }
+      entityName.append(upperNext ? Character.toUpperCase(c) : c);
+      upperNext = false;
+    }
+    return entityName.length() == 0 ? tableName : entityName.toString();
+  }
+
+  /**
+   * 挂载从 {@code gen_column_metadata} 读出的列清单（内存态，不落本表）。
+   *
+   * <p>生成期模板会遍历 {@code columns}；缺此装配时 Freemarker 拿到 null，{@code <#list>} 直接抛
+   * InvalidReferenceException，整个生成任务 FAILED。
+   */
+  public void attachColumns(List<GenColumnMetadata> columns) {
+    this.columns = columns == null ? List.of() : List.copyOf(columns);
+  }
+
+  /** 用物理库最新结构刷新可覆盖字段（保留 id 与自定义实体名）。 */
+  public void updateFrom(DatabaseTable dbTable) {
+    this.tableComment = dbTable.getTableComment();
+    this.lastSyncAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+    this.syncStatus = "SYNCED";
   }
 
   public Long getId() {

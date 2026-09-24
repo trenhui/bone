@@ -41,6 +41,28 @@
         <Bug pattern="SE_BAD_FIELD"/>
     </Match>
     
+    <!--
+      惰性重建字段，反序列化后无需恢复：
+      ExtensionPointDefinition.extensions 由 getExtensions() 判空 + 双重检查懒加载重建；
+      BizContext.cachedImmutableDimensions / cachedSummary 由对应 getter 判空惰性重算；
+      ExtensionDefinition 的 cached* 由对应 getter 判空重算，conditionPredicate 由调用方判空重新编译。
+      仅按类名精确排除，避免误屏蔽同类告警。
+    -->
+    <Match>
+        <Class name="com.bone.engine.extension.api.model.definition.ExtensionPointDefinition"/>
+        <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    </Match>
+    
+    <Match>
+        <Class name="com.bone.engine.extension.api.model.definition.ExtensionDefinition"/>
+        <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    </Match>
+    
+    <Match>
+        <Class name="com.bone.engine.extension.support.context.BizContext"/>
+        <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    </Match>
+    
     <!-- 排除一些常见但影响不大的警告 -->
     <Match>
         <Bug pattern="NP_NULL_ON_SOME_PATH"/>

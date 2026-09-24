@@ -76,6 +76,9 @@
 
         <!-- 静态代码分析 -->
         <spotless.version>2.43.0</spotless.version>
+
+        <!-- 测试开关默认值（可由 -DskipTests / -Dmaven.test.skip 覆盖） -->
+        <skipTests>false</skipTests>
     </properties>
 
     <dependencyManagement>
@@ -356,6 +359,10 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco.version}</version>
+                    <configuration>
+                        <!-- 跳过测试时没有覆盖率数据，覆盖率门禁无意义，直接跳过整个插件 -->
+                        <skip>${skipTests}</skip>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>prepare-agent</id>

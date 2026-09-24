@@ -45,7 +45,8 @@ public interface MasterDataRecordRepository extends Repository<MasterDataRecord,
       query.where(MasterDataRecord::getStatus).eq(status);
     }
     if (keyword != null && !keyword.isBlank()) {
-      query.where(MasterDataRecord::getData).like(keyword);
+      // data 是 JSON 列，按原文模糊匹配；SDK 的 like 不加通配符，contains 才是 %kw% 语义
+      query.where(MasterDataRecord::getData).contains(keyword);
     }
     return query.orderByDesc(MasterDataRecord::getCreatedAt).page(page, size);
   }

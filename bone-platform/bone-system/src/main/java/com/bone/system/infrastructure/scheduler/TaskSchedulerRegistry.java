@@ -1,6 +1,8 @@
 package com.bone.system.infrastructure.scheduler;
 
 import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
+import com.bone.system.common.SystemErrorCodes;
+import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.model.schedule.ScheduleTask;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
 import java.time.LocalDateTime;
@@ -73,6 +75,25 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
     if (future != null) {
       future.cancel(false);
     }
+  }
+
+  /**
+   * 手动立即执行一次：与 CRON 路径跑同一份 handler + 同一条 recordRun 通道，区别只在失败语义—— CRON
+   * 路径吞异常只记日志（无人在线等结果），手动路径把「handler 缺失 / 执行失败」抛回调用方。
+   */
+  @Override
+  public long triggerNow(ScheduleTask task) {
+    TaskHandler handler = resolveHandler(task.getHandler());
+    if (handler == null) {
+      throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_HANDLER_NOT_FOUND, task.getHandler());
+    }
+    long start = System.currentTimeMillis();
+    try {
+      handler.run(task.getName());
+    } finally {
+      recordRun(task);
+    }
+    return System.currentTimeMillis() - start;
   }
 
   private Runnable buildRunnable(ScheduleTask task) {

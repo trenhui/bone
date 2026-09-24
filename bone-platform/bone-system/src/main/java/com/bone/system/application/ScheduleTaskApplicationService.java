@@ -2,6 +2,7 @@ package com.bone.system.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateScheduleTaskCommand;
@@ -98,6 +99,24 @@ public class ScheduleTaskApplicationService {
     }
     scheduleTaskSchedulerPort.cancel(id);
     scheduleTaskRepository.deleteById(id);
+  }
+
+  /**
+   * 手动立即执行一次任务（不改启停状态、不占 CRON 排期）。
+   *
+   * <p>执行发生在当前事务内且同步等待——「点一下、等结果」的用例语义；处理器失败包装为 {@code SCHEDULE_TASK_RUN_FAILED} 抛回，执行耗时返回给调用方做反馈。
+   */
+  @Transactional
+  public long runNow(Long id) {
+    ScheduleTask task = requireTask(id);
+    try {
+      return scheduleTaskSchedulerPort.triggerNow(task);
+    } catch (BizException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("[ScheduleTask] 手动执行任务 {} 失败", task.getName(), e);
+      throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_RUN_FAILED, task.getName(), e);
+    }
   }
 
   public Optional<ScheduleTaskDto> getById(Long id) {

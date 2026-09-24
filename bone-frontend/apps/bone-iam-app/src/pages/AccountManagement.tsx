@@ -21,6 +21,7 @@ const AccountManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
@@ -32,7 +33,7 @@ const AccountManagement: React.FC = () => {
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.getAccounts(page, pageSize, keyword);
+      const response = await api.getAccounts(page, pageSize, debouncedKeyword);
       if (response.code === 200) {
         const { records, total: newTotal } = unwrapPage(response.data);
         setAccounts(records);
@@ -43,7 +44,16 @@ const AccountManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, keyword]);
+  }, [page, pageSize, debouncedKeyword]);
+
+  // 搜索防抖：输入停止 300ms 后才触发请求
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [keyword]);
 
   const fetchRoles = useCallback(async () => {
     try {

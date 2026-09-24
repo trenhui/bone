@@ -47,6 +47,20 @@ public class CodeTemplate extends AggregateRoot<Long> {
       String description,
       String type,
       String content) {
+    return create(id, tenantId, name, code, description, type, null, null, null, content);
+  }
+
+  public static CodeTemplate create(
+      Long id,
+      Long tenantId,
+      String name,
+      String code,
+      String description,
+      String type,
+      String language,
+      String engine,
+      String templateVersion,
+      String content) {
     CodeTemplate template = new CodeTemplate();
     template.id = id;
     template.tenantId = tenantId;
@@ -54,9 +68,9 @@ public class CodeTemplate extends AggregateRoot<Long> {
     template.code = code;
     template.description = description;
     template.type = type;
-    template.language = "java";
-    template.engine = "FREEMARKER";
-    template.templateVersion = "1.0.0";
+    template.language = isBlank(language) ? "java" : language;
+    template.engine = isBlank(engine) ? "FREEMARKER" : engine;
+    template.templateVersion = isBlank(templateVersion) ? "1.0.0" : templateVersion;
     template.content = content;
     template.status = "DRAFT";
     template.createdAt = LocalDateTime.now();
@@ -64,6 +78,10 @@ public class CodeTemplate extends AggregateRoot<Long> {
     template.deleted = false;
     template.version = 0;
     return template;
+  }
+
+  private static boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 
   public void publish() {

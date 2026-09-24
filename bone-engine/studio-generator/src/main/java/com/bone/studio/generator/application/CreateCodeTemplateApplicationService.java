@@ -36,6 +36,9 @@ public class CreateCodeTemplateApplicationService {
             command.getCode(),
             command.getDescription(),
             command.getType(),
+            command.getLanguage(),
+            command.getEngine(),
+            command.getVersion(),
             command.getContent());
     codeTemplateRepository.save(template);
     return template.getId();

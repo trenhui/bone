@@ -123,8 +123,9 @@ public class DatabaseMetadataGatewayAdapter implements DatabaseMetadataGateway {
     String dbName = dataSource.getDatabase();
     switch (dataSource.getType()) {
       case "mysql":
+        // useInformationSchema=true：否则 DatabaseMetaData 的 REMARKS 会以 latin1 取回，中文注释变乱码
         return String.format(
-            "jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true",
+            "jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true&useInformationSchema=true&remarksReporting=true",
             host, port, dbName);
       case "postgresql":
         return String.format("jdbc:postgresql://%s:%d/%s", host, port, dbName);

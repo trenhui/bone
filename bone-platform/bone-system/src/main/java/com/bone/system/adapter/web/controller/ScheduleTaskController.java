@@ -54,6 +54,12 @@ public class ScheduleTaskController {
     return ApiResponse.success();
   }
 
+  @Operation(summary = "立即执行定时任务", description = "手动同步执行一次，返回执行耗时（毫秒）")
+  @PostMapping("/{id}/run")
+  public ApiResponse<Long> runNow(@PathVariable Long id) {
+    return ApiResponse.success(scheduleTaskApplicationService.runNow(id));
+  }
+
   @Operation(summary = "查询定时任务详情")
   @GetMapping("/{id}")
   public ApiResponse<ScheduleTaskResp> getById(@PathVariable Long id) {

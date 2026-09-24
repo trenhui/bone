@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import lombok.*;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -16,11 +15,13 @@ import org.springframework.util.StringUtils;
  * ExtensionDefinition - 2025 全球最佳实践终极版（已修复路由兼容性）
  *
  * <p>修复重点： 1. 自动将 tenant/bizCode/scenario 等标准维度同步到 dimensionRules 2. 提供兼容旧路由器的 getDimensionRules()
- * 方法 3. 所有 setter 自动维护 dimensionRules 一致性 4. 保持原有高性能缓存、权重排序、正则匹配等全部能力
+ * 方法 3. 所有 setter 自动维护 dimensionRules 一致性 4. 保持原有高性能缓存、权重排序等全部能力
+ *
+ * <p>路由匹配基于维度规则与 {@link #WILDCARD} 字符串比较，不使用正则；transient 字段均为派生状态，反序列化后按 null 惰性重建。
  */
 @Getter
-@ToString(exclude = {"instance", "compiledPatterns", "cachedHashCode"})
-@EqualsAndHashCode(exclude = {"createdAt", "compiledPatterns", "cachedHashCode"})
+@ToString(exclude = {"instance", "cachedHashCode"})
+@EqualsAndHashCode(exclude = {"createdAt", "cachedHashCode"})
 public class ExtensionDefinition implements Serializable, Comparable<ExtensionDefinition> {
 
   private static final long serialVersionUID = 1L;
@@ -55,13 +56,7 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
   private String startTime;
   private String endTime;
 
-  // ==================== 性能优化字段 ====================
-  private transient Pattern tenantPattern;
-  private transient Pattern bizCodePattern;
-  private transient Pattern useCasePattern;
-  private transient Pattern scenarioPattern;
-  private transient Pattern envPattern;
-  private transient Pattern userGroupPattern;
+  // ==================== 性能优化字段（均为派生状态，反序列化后按 null 惰性重建） ====================
   private transient Predicate<Object> conditionPredicate;
   private transient Integer cachedHashCode;
   private transient String cachedKey;
@@ -152,25 +147,12 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     return dimensionRules.get(key);
   }
 
-  // ==================== 模式编译 ====================
-  public void compilePatterns() {
-    this.tenantPattern = compilePattern(tenant);
-    this.bizCodePattern = compilePattern(bizCode);
-    this.useCasePattern = compilePattern(useCase);
-    this.scenarioPattern = compilePattern(scenario);
-    this.envPattern = compilePattern(env);
-    this.userGroupPattern = compilePattern(userGroup);
-  }
-
-  private Pattern compilePattern(String pattern) {
-    if (pattern == null || WILDCARD.equals(pattern)) return null;
-    try {
-      return Pattern.compile(pattern.replace("*", ".*"));
-    } catch (Exception e) {
-      return Pattern.compile(Pattern.quote(pattern));
-    }
-  }
-
+  /**
+   * 设置条件表达式谓词。
+   *
+   * <p>该谓词由运行期注入的 {@code ExpressionEvaluator} 编译而来，无法序列化（transient），反序列化后为 null， 调用方（{@code
+   * MetadataOverlayExtensionRepository}）已按 null 判空重新编译。
+   */
   public void setConditionPredicate(Predicate<Object> predicate) {
     this.conditionPredicate = predicate;
   }
@@ -259,7 +241,6 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     copy.enabled = this.enabled;
     copy.startTime = this.startTime;
     copy.endTime = this.endTime;
-    copy.compilePatterns();
     return copy;
   }
 
@@ -292,7 +273,6 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     this.enabled = meta.isEnabled();
     setDimensionRule("traffic", String.valueOf(meta.getTraffic()));
     clearCaches();
-    compilePatterns();
   }
 
   private void clearCaches() {
@@ -415,7 +395,6 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
       if (!def.isValid()) {
         throw new IllegalArgumentException("ExtensionDefinition 参数无效: " + def);
       }
-      def.compilePatterns();
       return def;
     }
   }

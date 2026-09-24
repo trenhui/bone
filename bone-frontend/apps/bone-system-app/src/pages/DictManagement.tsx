@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Form, Input, Modal, message, Card, InputNumber, Select, Tag } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { SysDict } from '@/types';
 import { dictApi } from '@/services/api';
 
@@ -12,6 +12,7 @@ const DictManagement: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SysDict | null>(null);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -103,7 +104,15 @@ const DictManagement: React.FC = () => {
 
   return (
     <Card>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
+        <Input
+          placeholder="搜索类型 / 编码 / 标签"
+          prefix={<SearchOutlined />}
+          allowClear
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          style={{ width: 240 }}
+        />
         <Select
           allowClear
           placeholder="按类型筛选"
@@ -122,7 +131,11 @@ const DictManagement: React.FC = () => {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={data}
+        dataSource={data.filter((d) => {
+          const kw = keyword.trim().toLowerCase();
+          if (!kw) return true;
+          return [d.type, d.code, d.label].some((v) => (v ?? '').toLowerCase().includes(kw));
+        })}
         loading={loading}
         scroll={{ x: 1100 }}
       />

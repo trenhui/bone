@@ -43,6 +43,8 @@ public final class SystemErrors {
           Map.entry(SystemErrorCodes.ALERT_STATUS_INVALID, 400),
           Map.entry(SystemErrorCodes.SCHEDULE_TASK_NOT_FOUND, 404),
           Map.entry(SystemErrorCodes.SCHEDULE_TASK_STATUS_INVALID, 400),
+          Map.entry(SystemErrorCodes.SCHEDULE_TASK_HANDLER_NOT_FOUND, 404),
+          Map.entry(SystemErrorCodes.SCHEDULE_TASK_RUN_FAILED, 500),
           Map.entry(SystemErrorCodes.LOG_NOT_FOUND, 404),
           Map.entry(SystemErrorCodes.LOG_LEVEL_INVALID, 400));
 

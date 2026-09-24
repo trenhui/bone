@@ -6,6 +6,9 @@ public class CreateCodeTemplateCommand {
   private String description;
   private String type;
   private String content;
+  private String language;
+  private String engine;
+  private String version;
 
   private CreateCodeTemplateCommand() {}
 
@@ -29,6 +32,18 @@ public class CreateCodeTemplateCommand {
     return content;
   }
 
+  public String getLanguage() {
+    return language;
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -39,6 +54,9 @@ public class CreateCodeTemplateCommand {
     private String description;
     private String type;
     private String content;
+    private String language;
+    private String engine;
+    private String version;
 
     public Builder name(String name) {
       this.name = name;
@@ -65,6 +83,21 @@ public class CreateCodeTemplateCommand {
       return this;
     }
 
+    public Builder language(String language) {
+      this.language = language;
+      return this;
+    }
+
+    public Builder engine(String engine) {
+      this.engine = engine;
+      return this;
+    }
+
+    public Builder version(String version) {
+      this.version = version;
+      return this;
+    }
+
     public CreateCodeTemplateCommand build() {
       CreateCodeTemplateCommand command = new CreateCodeTemplateCommand();
       command.name = this.name;
@@ -72,6 +105,9 @@ public class CreateCodeTemplateCommand {
       command.description = this.description;
       command.type = this.type;
       command.content = this.content;
+      command.language = this.language;
+      command.engine = this.engine;
+      command.version = this.version;
       return command;
     }
   }

@@ -32,7 +32,7 @@ const DataSourceManagement: React.FC = () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
-      setDataSources(pageRecords(response.data.data));
+      setDataSources(pageRecords(response.data));
     } catch (error) {
       message.error('加载数据源失败');
       console.error('加载数据源失败:', error);
@@ -104,14 +104,14 @@ const DataSourceManagement: React.FC = () => {
       } else {
         // 创建临时数据源
         const createResponse = await dataSourceApi.create(values);
-        dataSourceId = createResponse.data.data?.id ?? '';
+        dataSourceId = String(createResponse.data ?? '');
       }
 
       const response = await dataSourceApi.testConnection(dataSourceId);
-      if (response.data.code === 200 && response.data.data?.success !== false) {
+      if (response.code === 200 && (response.data as { success?: boolean })?.success !== false) {
         message.success('连接成功');
       } else {
-        message.error('连接失败: ' + (response.data.message ?? ''));
+        message.error('连接失败: ' + (response.message ?? ''));
       }
       
       // 如果是新增的临时数据源，测试完成后删除

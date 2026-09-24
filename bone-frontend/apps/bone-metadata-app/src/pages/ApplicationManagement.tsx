@@ -46,6 +46,8 @@ const ApplicationManagement: React.FC = () => {
         setModalOpen(false);
         form.resetFields();
         loadApps();
+      } else {
+        message.error(res.message || '创建失败');
       }
     } catch {
       message.error('创建失败');
@@ -58,6 +60,8 @@ const ApplicationManagement: React.FC = () => {
       if (res.code === 200) {
         message.success('已删除');
         setApps((prev) => prev.filter((a) => a.id !== id));
+      } else {
+        message.error(res.message || '删除失败');
       }
     } catch {
       message.error('删除失败');

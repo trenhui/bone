@@ -51,10 +51,34 @@ const MonitorAlertPage: React.FC = () => {
         monitorApi.getAlertEvents({ pageNum: 1, pageSize: 10 }),
       ]);
 
-      if (metricsRes.code === 200) setMetrics(metricsRes.data);
-      if (healthRes.code === 200) setSystemInfo(healthRes.data);
-      if (rulesRes.code === 200) setAlertRules(rulesRes.data.list);
-      if (eventsRes.code === 200) setAlertEvents(eventsRes.data.list);
+      // 后端 /system/metrics 返回 Micrometer 原始键值对，归一化为页面期待的 Metrics 形状
+      if (metricsRes.code === 200) {
+        const raw = (metricsRes.data ?? {}) as unknown as Record<string, number>;
+        const memMax = raw['jvm.memory.max'] ?? -1;
+        const memUsed = raw['jvm.memory.used'] ?? 0;
+        setMetrics({
+          ...raw,
+          cpu: raw.cpu ?? 0,
+          memory: memMax > 0 ? Math.round((memUsed / memMax) * 1000) / 10 : 0,
+          disk: raw.disk ?? 0,
+          errorRate: raw.errorRate ?? 0,
+          apiResponseTime: raw.apiResponseTime ?? 0,
+          qps: raw.qps ?? 0,
+        } as Metrics);
+      }
+      // 后端 /system/health 返回 Actuator 结构（status/components），映射为 SystemInfo
+      if (healthRes.code === 200) {
+        const h = (healthRes.data ?? {}) as unknown as Record<string, unknown>;
+        setSystemInfo({
+          ...h,
+          healthStatus: (h.healthStatus ?? h.status ?? 'UNKNOWN') as string,
+          version: (h.version ?? '-') as string,
+          uptime: (h.uptime ?? '-') as string,
+          services: (h.services ?? []) as string[],
+        } as SystemInfo);
+      }
+      if (rulesRes.code === 200) setAlertRules(rulesRes.data.list ?? []);
+      if (eventsRes.code === 200) setAlertEvents(eventsRes.data.list ?? []);
     } catch (error) {
       message.error('获取数据失败');
     } finally {
@@ -280,7 +304,7 @@ const MonitorAlertPage: React.FC = () => {
               <Statistic title="运行时间" value={systemInfo.uptime} />
             </Col>
             <Col span={6}>
-              <Statistic title="服务数量" value={systemInfo.services.length} />
+              <Statistic title="服务数量" value={systemInfo.services?.length ?? 0} />
             </Col>
           </Row>
         </Card>

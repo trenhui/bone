@@ -18,6 +18,7 @@ import com.bone.metadata.sdk.support.util.SqlUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -186,9 +187,16 @@ public final class TableMetadataResolver {
     return columns;
   }
 
-  /** 判断字段是否需要处理（排除 @Transient 注解和重复字段） */
+  /**
+   * 判断字段是否需要处理（排除 static 字段、{@code @Transient} 注解和重复字段）。
+   *
+   * <p>{@code static} 常量（如 {@code private static final Money MAX_ORDER_AMOUNT}）不映射为列——其 ALL_CAPS
+   * 命名经 camel→snake 转换会生成非法列名（曾产出 {@code ma_x__orde_r__amount} 导致 {@code
+   * BadSqlGrammarException}）；静态字段也不属于聚合实例状态，任何情况下都不应参与持久化。
+   */
   private static boolean shouldProcessField(Field field, Set<String> processedFields) {
     return !field.isAnnotationPresent(Transient.class)
+        && !Modifier.isStatic(field.getModifiers())
         && !processedFields.contains(field.getName());
   }
 

@@ -62,7 +62,7 @@ const CodeGeneration: React.FC = () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
-      setDataSources(pageRecords(response.data.data));
+      setDataSources(pageRecords(response.data));
     } catch (error) {
       message.error('加载数据源失败');
       console.error('加载数据源失败:', error);
@@ -84,7 +84,7 @@ const CodeGeneration: React.FC = () => {
       try {
         setLoadingSyncedTables(true);
         const response = await dataSourceApi.listSyncedTables(dsId);
-        setSyncedTables(response.data.data ?? []);
+        setSyncedTables(response.data ?? []);
       } catch (error) {
         message.error('加载已同步表失败');
         console.error('加载已同步表失败:', error);
@@ -100,7 +100,7 @@ const CodeGeneration: React.FC = () => {
     try {
       setLoadingTemplates(true);
       const response = await templateApi.getList({ page: 1, size: 100 });
-      setTemplates(pageRecords(response.data.data));
+      setTemplates(pageRecords(response.data));
     } catch (error) {
       message.error('加载模板失败');
       console.error('加载模板失败:', error);
@@ -181,7 +181,7 @@ const CodeGeneration: React.FC = () => {
   const handleLoadDataSourceTables = async (dataSourceId: string) => {
     try {
       const response = await tableMetadataApi.getDataSourceTables(dataSourceId);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       message.error('加载表列表失败');
       console.error('加载表列表失败:', error);
@@ -197,7 +197,7 @@ const CodeGeneration: React.FC = () => {
         size: 500,
         tenantId: 0,
       });
-      const page = response.data.data;
+      const page = response.data;
       const records = pageRecords(page) as Array<{ tableName?: string; tableComment?: string }>;
       setDataSourceTables(
         records.map((t) => ({
@@ -249,9 +249,9 @@ const CodeGeneration: React.FC = () => {
           includeTests: values.includeTests,
           includeDocumentation: values.includeDocumentation,
         });
-        const body = syncRes.data?.data as { generationId?: string; status?: string; message?: string };
-        setTaskId(body?.generationId ?? '');
-        message.success(body?.message ?? '代码生成完成');
+        const taskId2 = syncRes.data?.taskId ?? '';
+        setTaskId(taskId2);
+        message.success('代码生成完成');
       } else {
         const request = {
           projectName: values.projectName,
@@ -268,7 +268,7 @@ const CodeGeneration: React.FC = () => {
         const response = await codeGenerationApi.generate(request, {
           onProgress: setGenerateProgress,
         });
-        const newTaskId = response.data.data as string;
+        const newTaskId = response.data as string;
         setTaskId(newTaskId);
         message.success('代码生成任务已提交');
       }
@@ -287,7 +287,7 @@ const CodeGeneration: React.FC = () => {
     if (taskId) {
       try {
         const response = await codeGenerationApi.downloadCode(taskId);
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const url = window.URL.createObjectURL(new Blob([response as unknown as BlobPart]));
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', `generated-code-${taskId}.zip`);

@@ -4,10 +4,6 @@ import com.bone.studio.generator.domain.model.code.GeneratedFile;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import com.bone.studio.generator.domain.service.FileGenerator;
-import freemarker.template.Configuration;
-import freemarker.template.TemplateException;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EntityGenerator implements FileGenerator {
 
-  private final Configuration freemarkerConfig;
+  private final TemplateRenderer templateRenderer;
 
   @Override
   public boolean supports(String templateType) {
@@ -34,26 +30,20 @@ public class EntityGenerator implements FileGenerator {
     model.put("moduleName", moduleName);
     model.put("utils", new GeneratorUtils());
 
-    try {
-      StringWriter writer = new StringWriter();
-      freemarkerConfig.getTemplate(template.getCode() + ".ftl").process(model, writer);
-      String content = writer.toString();
-      String fileName = table.getCustomEntityName() + ".java";
-      String filePath =
-          GeneratorUtils.basePath(basePackage, moduleName)
-              + "/domain/model/"
-              + GeneratorUtils.aggregateSegment(table.getCustomEntityName())
-              + "/"
-              + fileName;
-      return GeneratedFile.builder()
-          .filePath(filePath)
-          .fileName(table.getCustomEntityName() + ".java")
-          .content(content)
-          .fileType("java")
-          .fileSize(content.length())
-          .build();
-    } catch (IOException | TemplateException e) {
-      throw new RuntimeException("Failed to generate entity file", e);
-    }
+    String content = templateRenderer.render(template, model);
+    String fileName = table.getCustomEntityName() + ".java";
+    String filePath =
+        GeneratorUtils.basePath(basePackage, moduleName)
+            + "/domain/model/"
+            + GeneratorUtils.aggregateSegment(table.getCustomEntityName())
+            + "/"
+            + fileName;
+    return GeneratedFile.builder()
+        .filePath(filePath)
+        .fileName(fileName)
+        .content(content)
+        .fileType("java")
+        .fileSize(content.length())
+        .build();
   }
 }

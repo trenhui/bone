@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.bone.studio.generator.domain.model.code.GeneratedFile;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
+import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,13 +25,14 @@ class GeneratedLayoutTest {
   private static final String ENTITY = "Order";
   private static final String AGGREGATE = "order";
 
-  private Configuration freemarkerConfig;
+  private TemplateRenderer templateRenderer;
   private GenTableMetadata table;
 
   @BeforeEach
   void setUp() {
-    freemarkerConfig = new Configuration(Configuration.VERSION_2_3_32);
+    Configuration freemarkerConfig = new Configuration(Configuration.VERSION_2_3_32);
     freemarkerConfig.setClassLoaderForTemplateLoading(getClass().getClassLoader(), "templates");
+    templateRenderer = new TemplateRenderer(freemarkerConfig, new StringTemplateLoader());
 
     table =
         GenTableMetadata.builder()
@@ -44,7 +46,7 @@ class GeneratedLayoutTest {
   @Test
   void entityLandsUnderModelAggregatePackage() {
     GeneratedFile file =
-        new EntityGenerator(freemarkerConfig)
+        new EntityGenerator(templateRenderer)
             .generate(table, template("entity"), BASE_PACKAGE, MODULE);
 
     assertEquals("com/example/demo/domain/model/order/Order.java", file.getFilePath());
@@ -56,7 +58,7 @@ class GeneratedLayoutTest {
   @Test
   void repositoryImportsAggregateFromModelPackage() {
     GeneratedFile file =
-        new RepositoryGenerator(freemarkerConfig)
+        new RepositoryGenerator(templateRenderer)
             .generate(table, template("repository"), BASE_PACKAGE, MODULE);
 
     assertEquals("com/example/demo/domain/repository/OrderRepository.java", file.getFilePath());
@@ -71,7 +73,7 @@ class GeneratedLayoutTest {
   @Test
   void controllerCarriesModuleSegment() {
     GeneratedFile file =
-        new ControllerGenerator(freemarkerConfig)
+        new ControllerGenerator(templateRenderer)
             .generate(table, template("controller"), BASE_PACKAGE, MODULE);
 
     assertEquals(
@@ -84,7 +86,7 @@ class GeneratedLayoutTest {
   @Test
   void applicationServiceCarriesModuleSegment() {
     GeneratedFile file =
-        new ApplicationServiceGenerator(freemarkerConfig)
+        new ApplicationServiceGenerator(templateRenderer)
             .generate(table, template("applicationService"), BASE_PACKAGE, MODULE);
 
     assertEquals("com/example/demo/application/OrderApplicationService.java", file.getFilePath());

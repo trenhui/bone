@@ -22,104 +22,86 @@ const api = createApiClient('/api/v1', { headers: { 'Content-Type': 'application
 export const systemConfigApi = {
   getConfig: async (params?: { keyword?: string; pageNum?: number; pageSize?: number }) => {
     const p = { pageNum: params?.pageNum ?? 1, pageSize: params?.pageSize ?? 100, keyword: params?.keyword ?? '' };
-    const response = await api.get<ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
-    return response.data;
+    return api.get<never, ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
   },
 
   getConfigDetail: async (id: number) => {
-    const response = await api.get<ApiResponse<SystemConfig>>(`/system/config/${id}`);
-    return response.data;
+    return api.get<never, ApiResponse<SystemConfig>>(`/system/config/${id}`);
   },
 
   createConfig: async (data: { configKey: string; configValue: string; configType: string; description?: string }) => {
-    const response = await api.post<ApiResponse<number>>('/system/config', data);
-    return response.data;
+    return api.post<never, ApiResponse<number>>('/system/config', data);
   },
 
   updateConfig: async (data: { id: number; configKey: string; configValue: string; configType: string }) => {
-    const response = await api.put<ApiResponse<void>>('/system/config', data);
-    return response.data;
+    return api.put<never, ApiResponse<void>>('/system/config', data);
   },
 
   deleteConfig: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/system/config/${id}`);
-    return response.data;
+    return api.delete<never, ApiResponse<void>>(`/system/config/${id}`);
   },
 
   getConfigHistory: async (id: number) => {
-    const response = await api.get<ApiResponse<ConfigHistory[]>>(`/system/config/${id}/history`);
-    return response.data;
+    return api.get<never, ApiResponse<ConfigHistory[]>>(`/system/config/${id}/history`);
   },
 
   exportConfig: async () => {
-    const response = await api.post<ApiResponse<Blob>>('/system/config/export', null, {
+    return api.post<never, ApiResponse<Blob>>('/system/config/export', null, {
       responseType: 'blob',
     });
-    return response.data;
   },
 
   importConfig: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post<ApiResponse<void>>('/system/config/import', formData);
-    return response.data;
+    return api.post<never, ApiResponse<void>>('/system/config/import', formData);
   },
 };
 
 // 监控告警 API
 export const monitorApi = {
   getHealth: async () => {
-    const response = await api.get<ApiResponse<SystemInfo>>('/system/health');
-    return response.data;
+    return api.get<never, ApiResponse<SystemInfo>>('/system/health');
   },
 
   getMetrics: async () => {
-    const response = await api.get<ApiResponse<Metrics>>('/system/metrics');
-    return response.data;
+    return api.get<never, ApiResponse<Metrics>>('/system/metrics');
   },
 
   getAlertRules: async (params: { pageNum: number; pageSize: number }) => {
-    const response = await api.get<ApiResponse<PageResult<AlertRule>>>('/system/alert/rules/page', {
+    return api.get<never, ApiResponse<PageResult<AlertRule>>>('/system/alert/rules/page', {
       params: { pageNum: params.pageNum, pageSize: params.pageSize },
     });
-    return response.data;
   },
 
   getAlertRule: async (id: number) => {
-    const response = await api.get<ApiResponse<AlertRule>>(`/system/alert/rules/${id}`);
-    return response.data;
+    return api.get<never, ApiResponse<AlertRule>>(`/system/alert/rules/${id}`);
   },
 
   createAlertRule: async (rule: { name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
-    const response = await api.post<ApiResponse<number>>('/system/alert/rules', rule);
-    return response.data;
+    return api.post<never, ApiResponse<number>>('/system/alert/rules', rule);
   },
 
   updateAlertRule: async (rule: { id: number; name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
-    const response = await api.put<ApiResponse<void>>('/system/alert/rules', rule);
-    return response.data;
+    return api.put<never, ApiResponse<void>>('/system/alert/rules', rule);
   },
 
   deleteAlertRule: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/system/alert/rules/${id}`);
-    return response.data;
+    return api.delete<never, ApiResponse<void>>(`/system/alert/rules/${id}`);
   },
 
   enableAlertRule: async (id: number) => {
-    const response = await api.post<ApiResponse<void>>(`/system/alert/rules/${id}/enable`);
-    return response.data;
+    return api.post<never, ApiResponse<void>>(`/system/alert/rules/${id}/enable`);
   },
 
   disableAlertRule: async (id: number) => {
-    const response = await api.post<ApiResponse<void>>(`/system/alert/rules/${id}/disable`);
-    return response.data;
+    return api.post<never, ApiResponse<void>>(`/system/alert/rules/${id}/disable`);
   },
 
   getAlertEvents: async (params: { pageNum: number; pageSize: number }) => {
-    const response = await api.get<ApiResponse<PageResult<AlertRecord>>>('/system/alert/events/page', {
+    return api.get<never, ApiResponse<PageResult<AlertRecord>>>('/system/alert/events/page', {
       params: { pageNum: params.pageNum, pageSize: params.pageSize },
     });
-    return response.data;
   },
 };
 
@@ -134,127 +116,106 @@ export const logApi = {
     startTime?: string;
     endTime?: string;
   }) => {
-    const response = await api.get<ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
+    return api.get<never, ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
       params: { pageNum: params.pageNum, pageSize: params.pageSize, keyword: params.keyword },
     });
-    return response.data;
   },
 
   createLog: async (data: { logLevel: string; serviceName: string; content: string }) => {
-    const response = await api.post<ApiResponse<number>>('/system/logs', data);
-    return response.data;
+    return api.post<never, ApiResponse<number>>('/system/logs', data);
   },
 
   exportLogs: async (params: { service?: string; level?: string; startTime?: string; endTime?: string }) => {
-    const response = await api.post<ApiResponse<Blob>>('/system/logs/export', params, {
+    return api.post<never, ApiResponse<Blob>>('/system/logs/export', params, {
       responseType: 'blob',
     });
-    return response.data;
   },
 
   analyzeLogs: async (params: { service?: string; startTime?: string; endTime?: string }) => {
-    const response = await api.get<ApiResponse<unknown>>('/system/logs/analyze', { params });
-    return response.data;
+    return api.get<never, ApiResponse<unknown>>('/system/logs/analyze', { params });
   },
 };
 
 // 控制台 API（由 bone-system 提供）
 export const consoleApi = {
   getOverview: async () => {
-    const response = await api.get<ApiResponse<unknown>>('/console/overview');
-    return response.data;
+    return api.get<never, ApiResponse<unknown>>('/console/overview');
   },
   getServices: async () => {
-    const response = await api.get<ApiResponse<unknown>>('/console/services');
-    return response.data;
+    return api.get<never, ApiResponse<unknown>>('/console/services');
   },
   getResources: async () => {
-    const response = await api.get<ApiResponse<unknown>>('/console/resources');
-    return response.data;
+    return api.get<never, ApiResponse<unknown>>('/console/resources');
   },
   getMetrics: async () => {
-    const response = await api.get<ApiResponse<Metrics>>('/console/metrics');
-    return response.data;
+    return api.get<never, ApiResponse<Metrics>>('/console/metrics');
   },
   getQuickActions: async () => {
-    const response = await api.get<ApiResponse<unknown>>('/console/quick-actions');
-    return response.data;
+    return api.get<never, ApiResponse<unknown>>('/console/quick-actions');
   },
 };
 
 // 系统字典 API
 export const dictApi = {
   getDictsByType: async (type: string) => {
-    const response = await api.get<ApiResponse<SysDict[]>>(`/system/dicts/type/${type}`);
-    return response.data;
+    return api.get<never, ApiResponse<SysDict[]>>(`/system/dicts/type/${type}`);
   },
   getDictPage: async (params: { type?: string; keyword?: string; pageNum?: number; pageSize?: number }) => {
-    const response = await api.get<ApiResponse<PageResult<SysDict>>>('/system/dicts/page', {
+    return api.get<never, ApiResponse<PageResult<SysDict>>>('/system/dicts/page', {
       params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, type: params.type, keyword: params.keyword },
     });
-    return response.data;
   },
   createDict: async (data: Omit<SysDict, 'id'>) => {
-    const response = await api.post<ApiResponse<number>>('/system/dicts', data);
-    return response.data;
+    return api.post<never, ApiResponse<number>>('/system/dicts', data);
   },
   updateDict: async (id: number, data: Partial<SysDict>) => {
-    const response = await api.put<ApiResponse<void>>(`/system/dicts/${id}`, data);
-    return response.data;
+    return api.put<never, ApiResponse<void>>(`/system/dicts/${id}`, data);
   },
   deleteDict: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/system/dicts/${id}`);
-    return response.data;
+    return api.delete<never, ApiResponse<void>>(`/system/dicts/${id}`);
   },
 };
 
 // 系统定时任务 API
 export const scheduleTaskApi = {
   getScheduleTaskPage: async (params: { keyword?: string; status?: string; pageNum?: number; pageSize?: number }) => {
-    const response = await api.get<ApiResponse<PageResult<ScheduleTask>>>('/system/schedule-tasks/page', {
+    return api.get<never, ApiResponse<PageResult<ScheduleTask>>>('/system/schedule-tasks/page', {
       params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, keyword: params.keyword, status: params.status },
     });
-    return response.data;
   },
   createScheduleTask: async (data: { name: string; cron: string; handler: string; status?: string }) => {
-    const response = await api.post<ApiResponse<number>>('/system/schedule-tasks', data);
-    return response.data;
+    return api.post<never, ApiResponse<number>>('/system/schedule-tasks', data);
   },
   updateScheduleTask: async (id: number, data: { name: string; cron: string; handler: string }) => {
-    const response = await api.put<ApiResponse<void>>(`/system/schedule-tasks/${id}`, data);
-    return response.data;
+    return api.put<never, ApiResponse<void>>(`/system/schedule-tasks/${id}`, data);
   },
   deleteScheduleTask: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/system/schedule-tasks/${id}`);
-    return response.data;
+    return api.delete<never, ApiResponse<void>>(`/system/schedule-tasks/${id}`);
   },
   toggleScheduleTask: async (id: number, enabled: boolean) => {
-    const response = await api.put<ApiResponse<void>>(`/system/schedule-tasks/${id}/toggle`, null, { params: { enabled } });
-    return response.data;
+    return api.put<never, ApiResponse<void>>(`/system/schedule-tasks/${id}/toggle`, null, { params: { enabled } });
+  },
+  runScheduleTaskNow: async (id: number) => {
+    return api.post<never, ApiResponse<number>>(`/system/schedule-tasks/${id}/run`);
   },
 };
 
 // 系统部署 API
 export const systemApi = {
   getInfo: async () => {
-    const response = await api.get<ApiResponse<SystemInfo>>('/system/info');
-    return response.data;
+    return api.get<never, ApiResponse<SystemInfo>>('/system/info');
   },
   deploy: async (data: Record<string, unknown>) => {
-    const response = await api.post<ApiResponse<unknown>>('/system/deploy', data);
-    return response.data;
+    return api.post<never, ApiResponse<unknown>>('/system/deploy', data);
   },
   upgrade: async (version: string) => {
-    const response = await api.post<ApiResponse<unknown>>('/system/upgrade', { version });
-    return response.data;
+    return api.post<never, ApiResponse<unknown>>('/system/upgrade', { version });
   },
   restart: async () => {
-    const response = await api.post<ApiResponse<unknown>>('/system/restart');
-    return response.data;
+    return api.post<never, ApiResponse<unknown>>('/system/restart');
   },
   shutdown: async () => {
-    const response = await api.post<ApiResponse<unknown>>('/system/shutdown');
-    return response.data;
+    return api.post<never, ApiResponse<unknown>>('/system/shutdown');
   },
 };
 

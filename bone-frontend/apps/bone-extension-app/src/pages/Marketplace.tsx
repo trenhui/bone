@@ -143,6 +143,7 @@ const Marketplace: React.FC = () => {
                     key="install"
                     type="link"
                     icon={<CloudDownloadOutlined />}
+                    disabled={item.installed}
                     onClick={() => setInstallTarget(item)}
                   >
                     {item.installed ? '已安装' : '安装'}

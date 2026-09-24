@@ -43,6 +43,7 @@ const RecordManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>('');
   const [importLoading, setImportLoading] = useState(false);
 
   const fetchEntities = useCallback(async () => {
@@ -81,6 +82,7 @@ const RecordManagement: React.FC = () => {
       const response = await masterDataRecordApi.page({
         masterDataEntityId: selectedEntityId,
         status: selectedStatus,
+        keyword: keyword.trim() || undefined,
         pageNum: page,
         pageSize: pageSize
       });
@@ -95,7 +97,7 @@ const RecordManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEntityId, selectedStatus, page, pageSize]);
+  }, [selectedEntityId, selectedStatus, keyword, page, pageSize]);
 
   useEffect(() => {
     void fetchEntities();
@@ -407,6 +409,18 @@ const RecordManagement: React.FC = () => {
               <Option value="PUBLISHED">已发布</Option>
               <Option value="ARCHIVED">已归档</Option>
             </Select>
+          </Form.Item>
+          <Form.Item label="关键字">
+            <Input.Search
+              style={{ width: 220 }}
+              placeholder="搜索记录内容"
+              allowClear
+              value={keyword}
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                setPage(1);
+              }}
+            />
           </Form.Item>
           <Form.Item>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>

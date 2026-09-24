@@ -27,4 +27,16 @@ public interface ScheduleTaskSchedulerPort {
    * <p>幂等：任务未注册时静默返回——disable / delete / update 三条路径都会调用它，调用方不必先问「有没有」。
    */
   void cancel(Long taskId);
+
+  /**
+   * 立即同步执行一次任务（手动触发，不影响既有 CRON 注册）。
+   *
+   * <p><b>同步而非异步</b>：手动执行的语义是「点一下、等结果」——处理器失败必须把异常抛回调用方，让 HTTP 用例能给出真实反馈；异步吞掉失败只会复刻 CRON
+   * 路径「失败只进日志」的盲区。 处理器应当轻量（本端口执行的就是 CRON 线程里跑的同一份逻辑）。
+   *
+   * @return 本次执行耗时（毫秒）
+   * @throws com.bone.core.exception.BizException 处理器 bean 不存在（码
+   *     SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND）；处理器自身异常原样透传，由调用方包装。
+   */
+  long triggerNow(ScheduleTask task);
 }

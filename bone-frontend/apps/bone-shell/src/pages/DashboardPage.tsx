@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Spin, theme as antdTheme } from 'antd';
+import { Alert, Button, Spin, theme as antdTheme } from 'antd';
 import {
   UserOutlined,
   UserAddOutlined,
@@ -9,6 +9,7 @@ import {
   SettingOutlined,
   AppstoreOutlined,
   CodeOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import {
   fetchConsoleOverview,
@@ -57,6 +58,7 @@ export default function DashboardPage(): JSX.Element {
   const [overview, setOverview] = useState<ConsoleOverview | null>(null);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -136,7 +138,26 @@ export default function DashboardPage(): JSX.Element {
   return (
     <div className={`dashboard ${resolvedTheme}`}>
       <div className="dashboard-header">
-        <h1>BONE 平台控制台</h1>
+        <h1>
+          BONE 平台控制台
+          <Button
+            type="text"
+            size="small"
+            icon={<ReloadOutlined />}
+            loading={refreshing}
+            onClick={async () => {
+              setRefreshing(true);
+              try {
+                await load();
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            style={{ marginLeft: 12 }}
+          >
+            刷新
+          </Button>
+        </h1>
         <p>欢迎回来，admin！</p>
         {overview?.updatedAt && (
           <p className="dashboard-updated">数据更新于 {overview.updatedAt}</p>

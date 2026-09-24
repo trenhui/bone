@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { connectorApi } from '../services/api';
 import type { Connector, CreateConnectorReq, UpdateConnectorReq } from '../types';
 
@@ -17,6 +17,7 @@ export const ConnectorManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [keyword, setKeyword] = useState('');
 
   const connectorTypes = [
     { value: 'REST', label: 'REST API' },
@@ -149,6 +150,13 @@ export const ConnectorManagement: React.FC = () => {
     }
   };
 
+  const filteredConnectors = connectors.filter((c) => {
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return true;
+    const typeLabel = connectorTypes.find((t) => t.value === c.type)?.label ?? c.type ?? '';
+    return [c.name, c.type, typeLabel].some((v) => (v ?? '').toLowerCase().includes(kw));
+  });
+
   const columns = [
     {
       title: '名称',
@@ -247,9 +255,17 @@ export const ConnectorManagement: React.FC = () => {
           </Button>
         }
       >
+        <Input
+          placeholder="搜索连接器名称 / 类型"
+          prefix={<SearchOutlined />}
+          allowClear
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          style={{ width: 300, marginBottom: 16 }}
+        />
         <Table
           columns={columns}
-          dataSource={connectors}
+          dataSource={filteredConnectors}
           rowKey="id"
           loading={loading}
           pagination={{

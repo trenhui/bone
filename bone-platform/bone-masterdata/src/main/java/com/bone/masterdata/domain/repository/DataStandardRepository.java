@@ -42,7 +42,8 @@ public interface DataStandardRepository extends Repository<DataStandard, Long> {
       query.where(DataStandard::getEntityCode).eq(entityCode);
     }
     if (keyword != null && !keyword.isBlank()) {
-      query.where(DataStandard::getFieldCode).like(keyword);
+      // SDK 的 like 不加通配符（语义即 SQL LIKE 原样），模糊匹配用 contains（%kw%）
+      query.where(DataStandard::getFieldCode).contains(keyword);
     }
     return query.page(page, size);
   }

@@ -67,7 +67,18 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
     return metadata;
   }
 
-  private static String mapJdbcTypeToJavaType(int jdbcType) {
+  /**
+   * 供 Freemarker 模板的 {@code column.isPrimaryKey} 使用。
+   *
+   * <p>lombok 对 {@code boolean isPrimaryKey} 只生成 {@code isPrimaryKey()}，JavaBeans 语义下属性名是 {@code
+   * primaryKey}；模板里写 {@code isPrimaryKey} 会解析失败并让整个生成任务 FAILED。
+   */
+  public boolean getIsPrimaryKey() {
+    return isPrimaryKey;
+  }
+
+  /** JDBC 类型 → Java 类型映射（同步列时由应用层复用，与 {@link #create} 保持同一口径）。 */
+  public static String mapJdbcTypeToJavaType(int jdbcType) {
     switch (jdbcType) {
       case java.sql.Types.VARCHAR:
       case java.sql.Types.CHAR:
@@ -75,7 +86,10 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
         return "String";
       case java.sql.Types.INTEGER:
       case java.sql.Types.SMALLINT:
+      case java.sql.Types.TINYINT:
         return "Integer";
+      case java.sql.Types.BIT:
+        return "Boolean";
       case java.sql.Types.BIGINT:
         return "Long";
       case java.sql.Types.FLOAT:

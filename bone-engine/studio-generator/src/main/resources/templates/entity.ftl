@@ -6,6 +6,8 @@ import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,11 +27,7 @@ public class ${table.customEntityName} extends AggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 <#list columns as column>
-  <#if column.isPrimaryKey>
-  /** ${column.columnComment!'主键'} */
-  @Column(name = "${column.originalColumnName}")
-  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
-  <#else>
+  <#if column.originalColumnName != 'id' && column.originalColumnName != 'created_at' && column.originalColumnName != 'updated_at'>
   /** ${column.columnComment!''} */
   @Column(name = "${column.originalColumnName}")
   private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};

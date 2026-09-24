@@ -15,6 +15,12 @@ spring:
       mode: never
 
 bone:
+  iam:
+    jwt:
+      # 与其余 7 个模块（bone-system / bone-masterdata / bone-integration 等）同款声明：
+      # 必须与 bone-iam 的 bone.iam.jwt.secret-key 一致，本地开发未注入环境变量时各模块
+      # 落到同一未解析占位符字面量，天然一致；生产由环境变量 BONE_IAM_JWT_SECRET_KEY 注入。
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
   # 注意：此处不再有 bone.metadata.enabled / scan-packages——全仓无任何 @ConfigurationProperties 以
   # bone.metadata 为前缀（SDK 的真前缀是 metadata.sdk.* 与 bone.metadata.datasource.*），写了也不会被绑定，
   # 属"写了却不生效"的死配置。SDK 相关配置请写 metadata.sdk.*。

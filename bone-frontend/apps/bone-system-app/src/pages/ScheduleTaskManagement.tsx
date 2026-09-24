@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ScheduleTask } from '@/types';
 import { scheduleTaskApi } from '@/services/api';
 
@@ -11,6 +11,7 @@ const ScheduleTaskManagement: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ScheduleTask | null>(null);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
 
   const fetchData = async (page = 1, pageSize = 20) => {
     setLoading(true);
@@ -80,6 +81,26 @@ const ScheduleTaskManagement: React.FC = () => {
     }
   };
 
+  const [runningIds, setRunningIds] = useState<Set<number>>(new Set());
+
+  const runNow = async (record: ScheduleTask) => {
+    setRunningIds((prev) => new Set(prev).add(record.id!));
+    try {
+      const res = await scheduleTaskApi.runScheduleTaskNow(record.id!);
+      message.success(`任务「${record.name}」执行成功，耗时 ${res.data} ms`);
+      fetchData(pagination.current);
+    } catch (err) {
+      const detail = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(detail ? `执行失败：${detail}` : '执行失败');
+    } finally {
+      setRunningIds((prev) => {
+        const next = new Set(prev);
+        next.delete(record.id!);
+        return next;
+      });
+    }
+  };
+
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 80 },
     { title: '任务名称', dataIndex: 'name', width: 160 },
@@ -104,9 +125,17 @@ const ScheduleTaskManagement: React.FC = () => {
     { title: '上次执行', dataIndex: 'lastRunAt', width: 170, render: (v?: string) => v || '-' },
     {
       title: '操作',
-      width: 140,
+      width: 190,
       render: (_: unknown, record: ScheduleTask) => (
         <Space>
+          <Button
+            type="link"
+            size="small"
+            loading={runningIds.has(record.id!)}
+            onClick={() => runNow(record)}
+          >
+            立即执行
+          </Button>
           <Button type="link" size="small" onClick={() => openEdit(record)}>
             编辑
           </Button>
@@ -120,7 +149,15 @@ const ScheduleTaskManagement: React.FC = () => {
 
   return (
     <Card>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
+        <Input
+          placeholder="搜索任务名称 / 处理器"
+          prefix={<SearchOutlined />}
+          allowClear
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          style={{ width: 240 }}
+        />
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current)}>
           刷新
         </Button>
@@ -131,7 +168,11 @@ const ScheduleTaskManagement: React.FC = () => {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={data}
+        dataSource={data.filter((t) => {
+          const kw = keyword.trim().toLowerCase();
+          if (!kw) return true;
+          return [t.name, t.handler].some((v) => (v ?? '').toLowerCase().includes(kw));
+        })}
         loading={loading}
         scroll={{ x: 1200 }}
         pagination={false}

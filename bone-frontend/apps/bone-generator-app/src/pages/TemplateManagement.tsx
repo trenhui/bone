@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Card, Tag, Popconfirm } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import { pageRecords, templateApi } from '../services/api';
 
 const { Title, Text } = Typography;
@@ -28,12 +28,13 @@ const TemplateManagement: React.FC = () => {
   const [editingTemplate, setEditingTemplate] = useState<TemplateItem | null>(null);
   const [form] = Form.useForm();
   const [previewTemplate, setPreviewTemplate] = useState<TemplateItem | null>(null);
+  const [keyword, setKeyword] = useState('');
 
   const loadTemplates = useCallback(async () => {
     try {
       setLoading(true);
       const response = await templateApi.getList({ page: 1, size: 100 });
-      setTemplates(pageRecords(response.data.data) as unknown as TemplateItem[]);
+      setTemplates(pageRecords(response.data) as unknown as TemplateItem[]);
     } catch (error) {
       message.error('加载模板失败');
       console.error('加载模板失败:', error);
@@ -106,6 +107,12 @@ const TemplateManagement: React.FC = () => {
   };
 
   // 表格列定义
+  const filteredTemplates = templates.filter((t) => {
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return true;
+    return [t.name, t.code, t.type].some((v) => (v ?? '').toLowerCase().includes(kw));
+  });
+
   const columns = [
     {
       title: '模板名称',
@@ -134,17 +141,18 @@ const TemplateManagement: React.FC = () => {
     },
     {
       title: '版本',
-      dataIndex: 'version',
-      key: 'version',
+      dataIndex: 'templateVersion',
+      key: 'templateVersion',
+      render: (v: string, record: TemplateItem) => v ?? record.version ?? '-',
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Text style={{ color: status === 'ACTIVE' ? 'green' : 'gray' }}>
+        <Tag color={status === 'ACTIVE' ? 'green' : 'default'}>
           {status === 'ACTIVE' ? '启用' : '禁用'}
-        </Text>
+        </Tag>
       ),
     },
     {
@@ -166,17 +174,23 @@ const TemplateManagement: React.FC = () => {
           </Button>
           <Button
             type="primary"
+            disabled={record.status === 'ACTIVE'}
             onClick={() => handlePublishTemplate(record.id)}
           >
             发布
           </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteTemplate(record.id)}
+          <Popconfirm
+            title="确认删除该模板？"
+            description="删除后不可恢复"
+            okText="删除"
+            okButtonProps={{ danger: true }}
+            cancelText="取消"
+            onConfirm={() => handleDeleteTemplate(record.id)}
           >
-            删除
-          </Button>
+            <Button danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -187,7 +201,15 @@ const TemplateManagement: React.FC = () => {
       <Card>
         <Title level={4}>模板管理</Title>
         
-        <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Input
+            placeholder="搜索模板名称 / 编码 / 类型"
+            prefix={<SearchOutlined />}
+            allowClear
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 300 }}
+          />
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -199,7 +221,7 @@ const TemplateManagement: React.FC = () => {
         
         <Table
           columns={columns}
-          dataSource={templates}
+          dataSource={filteredTemplates}
           rowKey="id"
           loading={loading}
           pagination={{
