@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.21。本批次压缩 G 段的说明性长段（门禁表来源、模板不一致项、状态判据双向约束、AGENTS 分册关系、漂移留档、双口径读法），并修正三处过期事实（模板清单缺 `applicationService.ftl`、状态判据重复编号）。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
+> **版本**：5.5.22。本批次压缩四处仍含历史叙述或冗余的长段（Context Map 图注的废弃理由、E-3.10 结构性触发、E-3.11 渐进重构、E-4.1 `boolean` 语义），判据与门禁要求不变。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
 
 ## 文档说明
 
@@ -302,7 +302,7 @@ Bone 当前业务上下文关系（图与下表以关系表为真源，逐行对
 
 ![Bone 限界上下文映射图](assets/context-map.svg)
 
-> 图注：实线为已登记的正式业务关系；紫色虚线为 OHS / Published Language 母线（IAM、System → 所有应用上下文）；Payment 为 blueprint 样板，虚框隔离、不入产品主链路。历史 ASCII 图中的「Metadata ─C-S→ Extension」经代码裁决废弃：`bone-extension-studio` 仅依赖 `bone-metadata-sdk` 的 Table/Column 注解、Criteria 与 Repository 等技术持久化能力，对 `bone-metadata-server` 内部包 import 为 0，按 P-2.2「SDK 与技术依赖不混入 Context Map」不属于业务级 Customer–Supplier 关系，Extension 的上游唯 Integration（Published SPI）。
+> 图注：实线为已登记的正式业务关系；紫色虚线为 OHS / Published Language 母线（IAM、System → 所有应用上下文）；Payment 为 blueprint 样板，虚框隔离、不入产品主链路。历史 ASCII 图中的「Metadata ─C-S→ Extension」已废弃——`bone-extension-studio` 对 `bone-metadata-server` 内部包 import 为 0，只用 `bone-metadata-sdk` 的技术能力，按 P-2.2 不构成业务级 Customer–Supplier；Extension 的上游唯 Integration（Published SPI）。
 
 | 上游 | 下游 | 模式 | 契约 | 下游责任 |
 |------|------|------|------|----------|
@@ -983,7 +983,7 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 >
 > **分类**：E-3.10 / E-3.11 属**工程自动化（AI Coding）约束**，不是 DDD 领域建模原则——判据本体就是 E-3.7 决策树面向 Agent 的展开形式，只约束「生成什么、改多少」。AI 工具链或编程范式变化时允许**单独修订这两节**，不影响 P- 原则与 CORE-01～CORE-08。
 
-**结构性触发（不按 YES 数量打分）**：Q3 多入口、Q4 异步 / 独立执行生命周期、Q5 显式幂等 / 限流 / 重试——任一为真即需 `CommandHandler`；仅命中 Q1/Q2（业务意图 / 复杂规则组合）时最多引入 `Command`，由 ApplicationService 承载。读侧：Q6 → +`QueryPort`；Q7 → +`ReadModel`。命令异步化一律走 **Outbox + 消费端幂等**（[ADR-0021](./adr/0021-outbox-and-consumer-idempotency-platformization.md)）。
+**结构性触发（不按 YES 数量打分）**：Q3 多入口、Q4 异步 / 独立执行生命周期、Q5 显式幂等 / 限流 / 重试——任一为真即需 `CommandHandler`；仅命中 Q1 / Q2（业务意图 / 复杂规则组合）时最多引入 `Command`，仍由 ApplicationService 承载。读侧 Q6 → `QueryPort`，Q7 → `ReadModel`。命令异步化一律走 **Outbox + 消费端幂等**（[ADR-0021](./adr/0021-outbox-and-consumer-idempotency-platformization.md)）。
 
 1. 存在明确业务意图（intent）？2. 复杂状态变化 / 多领域规则组合？3. 多个入口触发同一操作（REST/MQ/定时/工作流）？4. 需异步执行（Queue/Retry/DLQ）？5. 需显式幂等 / 限流 / 重试？6. 读模型明显不同于领域模型（跨聚合/报表）？7. 需独立读写扩展（专门读库/投影/ES）？
 
@@ -993,7 +993,7 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 
 1. **最小生成**：默认只生成 `Controller → ApplicationService → Aggregate → Repository` 核心链路；**不应自动生成 DDD 全家桶**——无独立职责的 `CommandHandler` / `DomainService` / `ReadModel` 即 E-3.2 定义的 Ceremonial Architecture。确需 `Command` / `Handler` / `QueryPort` 时按 [E-3.7](#e-37-入口构件决策) 决策树显式创建。
 2. **新增抽象前先质问**：任何新增的 `Handler` / `Service` / `Port` / `Facade`，必须能回答「没有这个抽象，哪个**独立**问题无法被解决」；答不上就不建。
-3. **渐进重构（Boy Scout）**：对存量代码**默认**只做本次需求触达的**局部**顺手迁移，不得以「统一架构」为名顺手改写范围外的代码；**批量重命名、批量格式化一律禁止**。存量 `*CommandHandler` 的收敛按 E-0.2 的节奏进行；确需一次性批量收敛时，走 [E-0.2 受控批量收敛通道](#e-02-存量不符合规范代码的处理)（五条判据 + ADR 授权 + 等价性证据 + ADR 登记），不得只在 commit message 里写一句授权——2026-09-20 的 bone-iam 收敛走的就是该通道。
+3. **渐进重构（Boy Scout）**：存量代码**默认**只做本次需求触达的局部顺手迁移，不得以「统一架构」为名改写范围外代码；**批量重命名、批量格式化一律禁止**。存量 `*CommandHandler` 按 E-0.2 的节奏收敛；确需一次性批量收敛时走 [受控批量收敛通道](#e-02-存量不符合规范代码的处理)（五条判据 + ADR 授权 + 等价性证据 + 登记），不得只在 commit message 写一句授权。
 
 **AI 生成 Step1–6（等价于 E-3.7 决策树）**：
 
@@ -1054,7 +1054,7 @@ adapter
 
 - Repository 位于 `domain/repository`。
 - 返回聚合、`Optional<聚合>`、boolean 或 void。SDK 的 `findById` 返回裸值，未命中为 `null`，在应用边界立刻转成 `Optional` 或抛业务异常，不要让 `null` 继续往里传。
-- **`boolean` 只表达「这次写操作是否生效」**（存 / 删的受影响语义），不承载**存在性判断**。`existsBy...` 式方法既把读意图塞进写仓储（绕过 CORE-05），又诱导应用层写出「先查后判」的竞态——检查与动作之间存在窗口，并发下结论会失效（E-5.3）。要判断「能不能做」，用聚合内行为 + 原子条件（唯一约束 / 条件更新）表达，不走「先查再写」。
+- **`boolean` 只表达「这次写操作是否生效」（存 / 删的受影响语义），不承载存在性判断**。`existsBy...` 把读意图塞进写仓储（绕过 CORE-05），并诱导「先查后判」的竞态（检查与动作之间有窗口，并发下结论会失效，E-5.3）。判断「能不能做」用聚合行为 + 原子条件（唯一约束 / 条件更新）表达。
 - Repository 面向聚合根，按 ID 或单一业务键加载，并保存或删除聚合。
 - **`domain.repository` 自声明方法的返回类型白名单（P0-4，`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`）**：
   - 聚合 / `Optional<聚合>` / boolean / void；
