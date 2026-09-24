@@ -48,6 +48,24 @@ if [ -n "$CHANGED_FILES" ]; then
   fi
 fi
 
+# P1-16：（2026-09-24 新增）共享门禁库变更 → 全量 ArchUnit 回归
+# 改动 bone-architecture-test 的共享规则会同时影响所有模块的 ArchitectureTest，
+# 仅跑变更模块无法发现「别处模块回归」，故扫描全部含 ArchitectureTest 的模块逐個 -f 运行
+# （沿用 [2/5] 的 -f 逐模块机制，避开 reactor 路径解析不稳与前端 node 模块）。
+if echo "$CHANGED_FILES" | grep -q 'bone-framework/bone-architecture-test/'; then
+  echo -e "${YELLOW}[2/5] 共享门禁库变更 → 全量 ArchUnit 回归...${RESET}"
+  mapfile -t ARCH_MODULES < <(find . -path '*/src/test/java/*/ArchitectureTest.java' \
+    -not -path '*/node_modules/*' -not -path '*/target/*' 2>/dev/null \
+    | sed 's|/src/test/java/.*||' | sort -u)
+  for MODULE_PATH in "${ARCH_MODULES[@]:-}"; do
+    [ -z "$MODULE_PATH" ] && continue
+    POM="$MODULE_PATH/pom.xml"
+    [ -f "$POM" ] || continue
+    echo "  ArchUnit: $MODULE_PATH"
+    mvn -o -f "$POM" test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
+  done
+fi
+
 echo -e "${YELLOW}[3/5] ORM 框架拦截...${RESET}"
 # 用 `git grep` 而非 `grep -r`：只扫「已跟踪 + 未被忽略的未跟踪」文件，不整树遍历。
 # 2026-09-17 实测（本机 I/O 每文件约 26ms）：`grep -r` 走过 12,153 个文件耗 321s，

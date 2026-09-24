@@ -163,4 +163,8 @@ public class ArchitectureTest {
               .dependOnClassesThat()
               .haveSimpleName("IntegrationOutboxRelay")
               .because("CORE-02：adapter/schedule/*Job 须经端口，禁止直注 infrastructure 实现"));
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 }

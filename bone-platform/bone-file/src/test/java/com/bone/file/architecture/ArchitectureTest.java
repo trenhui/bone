@@ -31,4 +31,8 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule no_new_domain_store =
       BoneDddArchRules.noNewDomainStorePackage().allowEmptyShould(true);
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 }

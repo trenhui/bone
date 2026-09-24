@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.domain.architecture;
 
+import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -23,4 +24,12 @@ public class ArchitectureTest {
               "com.bone.metadata.engine.ports..",
               "com.bone.metadata.engine.runtime..",
               "com.bone.metadata.engine.starter..");
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
+  @ArchTest
+  static final ArchRule domain_independent =
+      BoneDddArchRules.domainMustNotDependOnOuterLayers().allowEmptyShould(true);
 }

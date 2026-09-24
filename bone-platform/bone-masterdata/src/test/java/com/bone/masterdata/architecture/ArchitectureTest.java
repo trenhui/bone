@@ -119,4 +119,8 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule application_save_pairs_with_publish =
       BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 }

@@ -64,4 +64,8 @@ public class ArchitectureTest {
           .resideInAPackage("..domain.service..")
           .allowEmptyShould(true)
           .because("P0-4: gateway must not depend on any context's domain services");
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 }

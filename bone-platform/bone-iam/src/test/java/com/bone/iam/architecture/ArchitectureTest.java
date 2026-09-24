@@ -195,4 +195,8 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule platform_no_engine_apps =
       BoneDddArchRules.platformMustNotDependOnEngineApps();
+
+  @ArchTest
+  static final ArchRule spring_component_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 }
