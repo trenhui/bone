@@ -8,7 +8,7 @@
 |------|------|------|
 | 0 | [根 README.md](../../README.md) | 产品理念、四大引擎、元数据双模式、演进路线 |
 | 1 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | 平台总体、模块、NFR |
-| 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md)（v5.5.3） | DDD 唯一完整入口：原则、决策、门禁、样板、版本历史；术语见 [glossary.md](../glossary.md) |
+| 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md)（版本见文首版本行） | DDD 唯一完整入口：原则、决策、门禁、样板、版本历史；术语见 [glossary.md](../glossary.md) |
 | 3 | [Bone-API-规范.md](./Bone-API-规范.md) | REST 契约、OpenAPI、契约测试 |
 | 4 | [数据库开发规范.md](./数据库开发规范.md) | DDL 真源 `../../bone-init.sql` |
 
@@ -18,7 +18,9 @@
 
 **可观测性与运维**：[Bone-日志规范.md](./Bone-日志规范.md) · [Bone-可观测性规范.md](./Bone-可观测性规范.md) · [Bone-配置与环境规范.md](./Bone-配置与环境规范.md) · [config/env/README.md](../../config/env/README.md)
 
-**安全、数据与集成**：[Bone-安全开发规范.md](./Bone-安全开发规范.md) · [Bone-多租户规范.md](./Bone-多租户规范.md) · [Bone-缓存规范.md](./Bone-缓存规范.md) · [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) · [0037 集成引擎单模块收敛](./adr/0037-integration-engine-single-module.md)
+**安全、数据与集成**：[Bone-安全开发规范.md](./Bone-安全开发规范.md) · [Bone-多租户规范.md](./Bone-多租户规范.md) · [Bone-缓存规范.md](./Bone-缓存规范.md) · [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) · [module-boundary-iam-system.md](./module-boundary-iam-system.md) · [0037 集成引擎单模块收敛](./adr/0037-integration-engine-single-module.md)
+
+> `module-boundary-iam-system.md` 界定 `iam_audit_log`（IAM 域审计）与 `sys_log`（系统日志）的写入职责边界。
 
 **质量与交付**：[Bone-测试策略.md](./Bone-测试策略.md) · [Bone-版本与发布规范.md](./Bone-版本与发布规范.md) · [Bone-国际化规范.md](./Bone-国际化规范.md) · [adr/](./adr/)
 

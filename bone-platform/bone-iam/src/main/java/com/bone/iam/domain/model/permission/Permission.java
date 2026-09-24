@@ -4,7 +4,6 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.iam.domain.model.permission.event.PermissionCreatedEvent;
 import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
@@ -55,7 +54,6 @@ public class Permission extends AggregateRoot<Long> {
     permission.sortOrder = sortOrder;
     permission.createdAt = LocalDateTime.now();
     permission.updatedAt = LocalDateTime.now();
-    permission.addDomainEvent(new PermissionCreatedEvent(permission));
     return permission;
   }
 

@@ -121,7 +121,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 `GlobalExceptionHandler` 组装 `ProblemDetail` 写入 `ApiResponse.data`；**禁止** `catch (Exception e) { return error(e.getMessage()) }` 吞掉业务码。
 
 > **本文旧版 §4 描述的是枚举形态**（`{Module}ErrorCode` 枚举持 `errorCode/httpStatus/defaultMessage`，包 `common.exception`），
-> **该写法在全仓零实现**（6 个模块 0 个枚举）：实际已统一收敛为「常量类 + 状态表」。继续把它写成「目标态」会让每个新模块都要在两种写法之间猜，故 2026-09-20 按实际落地形态改写。若日后要改回枚举，须先在一个模块落地，再同步本节与 §5 流程。
+> **该写法在全仓零实现**（6 个模块 0 个枚举）：实际已统一收敛为「常量类 + 状态表」。继续把它写成「目标态」会让每个新模块都要在两种写法之间猜，故 2026-09-20 按实际实现形态改写。若日后要改回枚举，须先在一个模块实现，再同步本节与 §5 流程。
 
 ---
 
@@ -202,7 +202,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `IAM_SSO_NOT_CONFIGURED` | 501 | SSO / IdP 未配置或回调未实现 |
 | `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未在当前版本 / IdP 中启用 |
 
-> **落地范围**：码常量在 `bone-iam/common/IamErrorCodes`（只承载稳定码字符串与语义）；
+> **实现范围**：码常量在 `bone-iam/common/IamErrorCodes`（只承载稳定码字符串与语义）；
 > **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应，共 35 行），
 > 抛出方走 `IamErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `IamErrors.supplier(码, 上下文)`），
 > **不在抛出点手写状态数字**。新增码若忘记登记状态，`IamErrors` 类加载即抛 `IllegalStateException`（fail fast）。
@@ -216,7 +216,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 > **回填说明**：本节曾长期停留在一份「理想码清单」（`IAM_TOKEN_EXPIRED`、`IAM_CREDENTIAL_INVALID`、
 > `IAM_USER_NOT_FOUND`、`IAM_PERMISSION_DENIED` 等），与代码里实际抛出的码**双向不一致**：清单里的码无人实现、
 > 实现的码无人登记。2026-09-19 依据 `IamErrorCodes` 实际内容整体重写，并消除抛出点的无码异常
-> （`new BizException(NOT_FOUND, "应用不存在")` 与 `NotFoundException.of(...)` 一并收口到 `IamErrors`）。
+> （`new BizException(NOT_FOUND, "应用不存在")` 与 `NotFoundException.of(...)` 一并收敛到 `IamErrors`）。
 >
 > **删除的码**：`IAM_PASSWORD_MUST_CHANGE`(403)——全仓零抛出点、零消费方。密码到期的实际机制是**登录响应标志**
 > `LoginResp.requirePasswordChange`（`AuthApplicationService` 置为 `weak || expired`，前端据此切改密页，详设 IAM-20），
@@ -321,8 +321,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |
 | `BP_PAYMENT_CHANNEL_PREPAY_FAILED` | 502 | 渠道预下单失败（上游依赖故障） |
 
-> **样板落地范围**：码常量在 `bone-blueprint/common/BlueprintErrorCodes`（只承载稳定码字符串与语义）；
-> **「码 → HTTP 状态」的唯一真源是 `bone-blueprint/common/BlueprintErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），
+> **样板实现范围**：码常量在 `com.bone.blueprint.common.BlueprintErrorCodes`（只承载稳定码字符串与语义）；
+> **「码 → HTTP 状态」的唯一真源是 `com.bone.blueprint.common.BlueprintErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），
 > 抛出方走 `BlueprintErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `BlueprintErrors.supplier(码, 上下文)`），
 > **不在抛出点手写状态数字**。新增码若忘记登记状态，`BlueprintErrors` 类加载即抛 `IllegalStateException`（fail fast）。
 >
@@ -354,6 +354,6 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | 日期 | 说明 |
 |------|------|
 | 2026-05-17 | 从 Bone-API-规范 §4 独立；台账与流程为本文真源 |
-| 2026-09-19 | 重写 §6 `IAM_` 台账（原清单为未落地的理想码，与代码双向不一致）；同步 §3.1 示例与 §7 速查中的失效码 |
-| 2026-09-20 | §4 按实际落地形态改写（原枚举形态全仓零实现 → 常量类 + 状态表 + fail-fast），§5 流程同步；§6 `IAM_` 新增 6 码、删除 `IAM_PASSWORD_MUST_CHANGE`，并记录 application 层裸异常收口 |
-| 2026-09-21 | §6 `MD_` 台账补齐 10 码（`MD_ENTITY_ID_REQUIRED`/`MD_ENTITY_NAME_DUPLICATE`/`MD_FIELD_NAME_DUPLICATE`/`MD_DATA_STANDARD_DUPLICATE`/`MD_DATA_STANDARD_NOT_FOUND`/`MD_EXPORT_SERIALIZE_FAILED`/`MD_FILE_EMPTY`/`MD_FILE_FORMAT_INVALID`/`MD_FILE_READ_FAILED`/`MD_FILE_PARSE_FAILED`）；对应 `bone-masterdata` 落地 `MasterDataErrors` 状态表 + 收口 application/adapter 层裸 `IllegalArgumentException`/`IllegalStateException`/`BizException.of(String)` 静默 500 为显式状态码 |
+| 2026-09-19 | 重写 §6 `IAM_` 台账（原清单为未实现的理想码，与代码双向不一致）；同步 §3.1 示例与 §7 速查中的失效码 |
+| 2026-09-20 | §4 按实际实现形态改写（原枚举形态全仓零实现 → 常量类 + 状态表 + fail-fast），§5 流程同步；§6 `IAM_` 新增 6 码、删除 `IAM_PASSWORD_MUST_CHANGE`，并记录 application 层裸异常收敛 |
+| 2026-09-21 | §6 `MD_` 台账补齐 10 码（`MD_ENTITY_ID_REQUIRED`/`MD_ENTITY_NAME_DUPLICATE`/`MD_FIELD_NAME_DUPLICATE`/`MD_DATA_STANDARD_DUPLICATE`/`MD_DATA_STANDARD_NOT_FOUND`/`MD_EXPORT_SERIALIZE_FAILED`/`MD_FILE_EMPTY`/`MD_FILE_FORMAT_INVALID`/`MD_FILE_READ_FAILED`/`MD_FILE_PARSE_FAILED`）；对应 `bone-masterdata` 实现 `MasterDataErrors` 状态表 + 收敛 application/adapter 层裸 `IllegalArgumentException`/`IllegalStateException`/`BizException.of(String)` 静默 500 为显式状态码 |

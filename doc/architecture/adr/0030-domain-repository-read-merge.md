@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：P1（SDK `@TenantScope` 通道）、P2（blueprint 单一仓储试点）、P3（规范 + 门禁 R1–R6 + `doc/_generated` 重算）以及 **P4 的 `PaymentQueryAdapter` 同模式折叠**均已落地；P4 余项（W5 可选语法级注入、其他模块按 E-0.2 触达收敛）待办——本 ADR 的"优化"已按批准执行（见 §10 实现记录） |
+| **状态** | **已采纳（Accepted）**：P1（SDK `@TenantScope` 通道）、P2（blueprint 单一仓储试点）、P3（规范 + 门禁 R1–R6 + `doc/_generated` 重算）以及 **P4 的 `PaymentQueryAdapter` 同模式折叠**均已实现；P4 余项（W5 可选语法级注入、其他模块按 E-0.2 触达收敛）待办——本 ADR 的"优化"已按批准执行（见 §10 实现记录） |
 | **日期** | 2026-09-19 |
 | **决策者** | 架构师（本轮方向由架构师拍板；机制来自 [design-single-repository-tenant-scope.md](../design-single-repository-tenant-scope.md)，边界判据与门禁替代来自本 ADR 初稿） |
 | **单一真源** | 本 ADR 是"单一仓储 + `@TenantScope`"的唯一真源；`design-single-repository-tenant-scope.md` 已并入本文，只作机制论证留档，不再单独维护 |
@@ -53,7 +53,7 @@
 2. **默认 `MANUAL`（向后兼容，不注入），强制点落在 `AUTO`**：`@TenantScope` 缺省为 `MANUAL`，既存 `@Sql` 方法不强制补注解即不报错（避免一次性击碎存量，是相对原草案"缺注解即启动期报错"的**实现取舍**）。真正的强制点在 `AUTO` 模式——要求作者放锚点 `/*bone:tenant*/`（联表须带别名），JOIN 无锚点一律失败关闭；`ALL`/`BYPASS` 须登记授权（E-2）。由此"静默漏注"只剩"作者主动选 `MANUAL` 且手写漏写租户条件"这一种，由 R4 lint 兜底。
 3. **AUTO 语义与 Criteria 通道同一不变量**：`@Sql` 通道由 `TenantSqlRewriter` 实现（与 Criteria 通道的 `TenantFilterInjector` 平行，共享"可信上下文优先 / 失败关闭 / `MissingTenantContextException`"不变量）；AUTO 方法**不再收 `tenantId` 参数**，SQL 内**不得再手写** `tenant_id` 条件，改放锚点 `/*bone:tenant*/`。
 4. **`ALL` / `BYPASS` 受治理**：必须登记（模块 README / E-2）+ 授权（`platform:*`）+ 审计，并在后台线程显式声明（定时线程无上下文）。
-5. **注入实现（已落地 · 锚点标记法，非原草案的 MyBatis 占位符 / jsqlparser）**：`TenantSqlRewriter` 对 `@Sql` 通道最终 SQL 做 fail-closed 注入，**未引入 jsqlparser、也未复用 MyBatis 标签 AST**——这是相对原草案 P1/P2 的**实现取舍**，理由见 §10：
+5. **注入实现（已实现 · 锚点标记法，非原草案的 MyBatis 占位符 / jsqlparser）**：`TenantSqlRewriter` 对 `@Sql` 通道最终 SQL 做 fail-closed 注入，**未引入 jsqlparser、也未复用 MyBatis 标签 AST**——这是相对原草案 P1/P2 的**实现取舍**，理由见 §10：
    - **锚点标记（联表必备）**：作者在 SQL 中放置 `/*bone:tenant*/`，SDK 替换为 `<column> = :__boneTenantId__`（联表须自带别名，如 `"o.tenant_id"`）；
    - **简单查询启发式**：无锚点且无 JOIN 的单表查询自动注入；
    - **JOIN 无锚点一律抛异常**（别名歧义无法安全注入）——失败关闭，绝不静默漏注；
@@ -147,7 +147,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 | 阶段 | 内容 | 产出 | 状态 |
 |---|---|---|---|
 | **P1** | W1 + W2 + W3 + R3 lint + 治理检查 | SDK 租户安全通道与治理就绪 | **已完成**（2026-09-19：`@TenantScope` 四模式 + `TenantSqlRewriter` 锚点注入 + `RepositoryFactoryBean` static 跳过；默认 `classpath-first` 经 SDK 既有配置） |
-| **P2** | blueprint 试点：`OrderRepository` 合并读方法、projection 迁 `domain/order/projection/`、外置 `.sql` 落地、删 `OrderReadRepository`/`OrderQueryPort`、application 改注入、domain 内 `Page<T>`；补读路径租户隔离测试 | 单一仓储试点 | **已完成**（2026-09-19：编译 + `ArchitectureTest` 27/27 通过 + `spotless:check` 通过；DB 集成测试需本地跑） |
+| **P2** | blueprint 试点：`OrderRepository` 合并读方法、projection 迁 `domain/order/projection/`、外置 `.sql` 实现、删 `OrderReadRepository`/`OrderQueryPort`、application 改注入、domain 内 `Page<T>`；补读路径租户隔离测试 | 单一仓储试点 | **已完成**（2026-09-19：编译 + `ArchitectureTest` 27/27 通过 + `spotless:check` 通过；DB 集成测试需本地跑） |
 | **P3** | 规范 + 门禁（R1–R6）+ 本 ADR 定稿 + `compliance.json`/`doc/_generated` 重算，**同批提交** | 文档与代码同批 | **已完成**（2026-09-19：`Bone-DDD-最终实践方案.md` 9 条文 + G-1.6 同步；R5 落 ArchUnit、R1/R3/R4/R6 落 `SqlTemplateGovernanceTest`；三道 DDD 门禁复绿） |
 | **P4** | 可选：W5 语法级注入；`PaymentQueryAdapter` 等同模式折叠；其他模块按 E-0.2 触达即收敛 | 全平台统一（不做批量重构） | **部分完成**（2026-09-19：blueprint 的 `PaymentQueryPort` / `PaymentQueryAdapter` 同模式折叠进 `PaymentRepository`，见 §10.4；W5 与其他模块待办） |
 
@@ -181,26 +181,30 @@ public interface OrderRepository extends Repository<Order, Long> {
 
 ## 10. 实现记录（2026-09-19）
 
-> 本 ADR 经架构组采纳后，P1（SDK）+ P2（blueprint 试点）已落地。以下记录"实际落地形态"与"原草案 §1.3.5 的差异"，避免文档再度漂移。
+> 本 ADR 经架构组采纳后，P1（SDK）+ P2（blueprint 试点）已实现。以下记录"实际实现形态"与"原草案 §1.3.5 的差异"，避免文档再度漂移。
 
-### 10.1 实际落地形态
+### 10.1 实际实现形态
 
 - **SDK（P1）**：`bone-metadata-sdk` 新增 `@TenantScope`（四模式 `AUTO/MANUAL/ALL/BYPASS`）+ `TenantSqlRewriter`（锚点标记 `/*bone:tenant*/` 注入）+ `RepositoryFactoryBean` 接入（含 `static` 方法跳过防御）。`loadPriority` 默认 `classpath-first` 复用 SDK 既有配置，翻默认零影响。
-- **blueprint（P2）**：`OrderRepository` 合并写 + 本聚合读（`findOrderWithItems` `@Sql`+`MANUAL` 显式 `tenantId`、`findExpiredUnpaidOrdersAllTenants` `@TenantScope(ALL)`、`findStatusById`/`findOrderPage` 走 Criteria）；投影迁 `domain/order/projection/`；外置 `.sql` 落地 `resources/sql/.../OrderRepository/`；删除 `OrderReadRepository` 与 `OrderQueryPort`，application 改直注域仓储。
+- **blueprint（P2）**：`OrderRepository` 合并写 + 本聚合读。
+
+  - 读方法：`findOrderWithItems`（`@Sql` + `MANUAL` 显式 `tenantId`）、`findExpiredUnpaidOrdersAllTenants`（`@TenantScope(ALL)`）、`findStatusById` / `findOrderPage` 走 Criteria；
+  - 投影迁 `domain/order/projection/`，外置 `.sql` 落在 `resources/sql/.../OrderRepository/`；
+  - 删除 `OrderReadRepository` 与 `OrderQueryPort`，application 改为直注域仓储。
 - **验证**：`bone-blueprint` 编译通过；`ArchitectureTest` 27/27 通过（P0-4 白名单已放宽容纳域读模型，见 `BoneDddArchRules#returnsAggregateRootOrScalar`）；`spotless:check` 通过；`archunit_store` 冻结基线未变。DB 集成测试（真 `@Sql` 执行）需本地有库环境运行。
 
 ### 10.2 与原草案（§1.3.5）的差异 · 实现取舍
 
-| 原草案 §1.3.5 | 实际落地 | 取舍理由 |
+| 原草案 §1.3.5 | 实际实现 | 取舍理由 |
 |---|---|---|
 | P1 = MyBatis `<tenant-filter/>` 占位符（标签 AST） | **锚点标记 `/*bone:tenant*/`**（`TenantSqlRewriter` 字符串替换） | 零新依赖、锚点位置由作者掌控、CI 可 grep 校验；不必引入 MyBatis 标签 AST |
 | P2 = jsqlparser 语法级重写 | **未建**；作为可选升级保留 | Bone `@Sql` 场景以复杂 JOIN 为主，全自动风险面最大；锚点法已满足"fail-closed + 别名限定" |
 | "缺 `@TenantScope` ⇒ 启动期报错"（强制显式） | 默认 `MANUAL`（向后兼容，不注入） | 既存 `@Sql` 方法一次性补注解会击碎存量；强制点改落 `AUTO`（锚点 + 失败关闭）+ R4 lint 兜底 |
 | AUTO"复用 `TenantFilterInjector`" | AUTO 由独立 `TenantSqlRewriter` 实现（与 Criteria 通道平行） | 两通道共享"可信上下文优先 / 失败关闭 / `MissingTenantContextException`"不变量，但实现分离，便于各自演进 |
 
-### 10.3 P3 落地记录（2026-09-19 收官）
+### 10.3 P3 实现记录（2026-09-19 收官）
 
-- **门禁 R1–R6 已全部有机器载体**（原为"仅 R2 落地、其余 Planned"）：
+- **门禁 R1–R6 已全部有机器载体**（原为"仅 R2 实现、其余 Planned"）：
   - **R2**（域仓储返回类型白名单）→ ArchUnit `domainRepositoriesShouldOnlyDeclareWhitelistedMethods`（P0-4 放宽，见 §10.1）。
   - **R5**（`oneAggregatePerTransaction` 排除读方法）→ 同一 ArchUnit 规则**按写方法语义改造**：`default`（有方法体）与 `@Sql` 标注的仓储方法不再计入持久化计数（`isReadSideRepositoryMethod`），否则"写 + 本聚合读"合并进同一接口后会把同一聚合的读形态误算成第二个聚合写入。
   - **R1 / R3 / R4 / R6** → blueprint 模块级治理测试 `SqlTemplateGovernanceTest`。**为什么不落 ArchUnit 规则**：这四条要读的东西不在字节码里——外置 `resources/sql/**.sql`、SQL 文本的 `FROM`/`JOIN` 表集合、README 的 E-1.2 数据所有权声明，以及"同一模板 ID 是否同时存在 `@Sql` 与 `.sql`"这类跨 Java 与资源的判定。它是**机器门禁**（`mvn test` 即执行），不是把门禁降级为人工评审。
@@ -214,7 +218,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 - **ADR-0029 扩面**：ADR-0029 原为 Criteria 通道；本 ADR 的 `@TenantScope`/`TenantSqlRewriter` 将其扩展到 `@Sql`/外置 `.sql` 通道，关闭原"@Sql 不经过 TenantFilterInjector"的缺口——已在 ADR-0029 实现状态补充。
 - **仍未做**：R1–R6 只在 blueprint（试点）接线，其余模块按 E-0.2 触达即收敛（P4）；DB 集成测试需在有库环境执行。
 
-### 10.4 P4 部分落地：支付读侧同模式折叠（2026-09-19）
+### 10.4 P4 部分实现：支付读侧同模式折叠（2026-09-19）
 
 - **删除**：`application/query/port/PaymentQueryPort`、`application/query/projection/PaymentProjection`、`infrastructure/query/PaymentQueryAdapter`（前两个包随之清空；`BoneBlueprintApplication` 的 `@EnableSqlRepositories` 摘除 `infrastructure.query`）——该模块自此无 `*QueryPort`、无 `infrastructure/query`。
 - **并入**：`domain/repository/PaymentRepository` 新增两个 `default` 方法（Criteria 通道 + `disableTenantFilter()`，方法名后缀 `AllTenants`）：`findExpiredOpenPaymentsAllTenants` / `findSettledPaymentsCreatedBeforeAllTenants`；行投影迁 `domain/payment/projection/PaymentProjection`（带 `from(Payment)` 工厂）；写侧加载通道 `findByIdInTenant` 不变。
@@ -237,4 +241,11 @@ public interface OrderRepository extends Repository<Order, Long> {
 ### 11.1 与 §10 实现记录的关系
 
 - C1 / C2 是 D1（单一仓储）与 D6（应用层直注域仓储）**必然带来的**两项能力损失，不影响 CORE-11 的保护目标，故不构成合规缺陷，只是取舍记账。
-- C3 澄清了一处**规则与意图的缺口**：`adapterControllersMustNotDependOnDomainRepository` 的谓词是 `..adapter..controller..`，故 `adapter.schedule` / `adapter.messaging` / `adapter.rpc` 全部逃逸。blueprint 已按 §11 C3 补**两条**本模块专用规则收口（共享规则维持原状，避免影响其他模块）：① 依赖面 `adapter_no_domain_repository_all_packages`（按包豁免）；② 调用面 `schedule_only_calls_all_tenants_repository_methods`（只许 `*AllTenants`）。调用面那条是 P4 折叠后才补的——合并读写使「拿到域仓储 = 拿到写能力」，只做依赖面授权会把 `adapter.schedule` 变成一扇没有闸门的门。
+- C3 澄清了一处**规则与意图的缺口**：`adapterControllersMustNotDependOnDomainRepository` 的谓词是 `..adapter..controller..`，故 `adapter.schedule` / `adapter.messaging` / `adapter.rpc` 全部逃逸。
+
+  blueprint 已按 §11 C3 补 **两条** 本模块专用规则覆盖（共享规则维持原状，避免影响其他模块）：
+
+  1. 依赖面 `adapter_no_domain_repository_all_packages`（按包豁免）；
+  2. 调用面 `schedule_only_calls_all_tenants_repository_methods`（只许 `*AllTenants`）。
+
+  调用面那条是 P4 折叠后才补的：合并读写使「拿到域仓储 = 拿到写能力」，只做依赖面授权会把 `adapter.schedule` 变成一扇没有闸门的门。

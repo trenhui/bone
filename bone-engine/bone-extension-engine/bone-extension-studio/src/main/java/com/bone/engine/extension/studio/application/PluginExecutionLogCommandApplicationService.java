@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
@@ -11,9 +12,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** 插件执行日志写侧。 */
+/**
+ * 插件执行日志写侧。
+ *
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务写入 PluginExecutionLog 聚合，当前不发布领域事件； 若将来接入事件发布，须改为调用
+ * publishFrom 并移除本豁免。
+ */
 @Component
 @RequiredArgsConstructor
+@NoDomainEvent
 public class PluginExecutionLogCommandApplicationService {
 
   private final PluginExecutionLogRepository logRepository;

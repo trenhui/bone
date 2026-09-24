@@ -1,12 +1,10 @@
 package com.bone.iam.domain.model.role;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.bone.iam.domain.model.role.event.RoleCreatedEvent;
 import org.junit.jupiter.api.Test;
 
-/** {@link Role} 纯单测：角色创建快照、事件发布与描述更新（无容器）。 */
+/** {@link Role} 纯单测：角色创建快照与描述更新（无容器）。 */
 class RoleTest {
 
   @Test
@@ -18,8 +16,6 @@ class RoleTest {
     assertEquals(1, role.getType());
     assertEquals(1L, role.getTenantId());
     assertEquals(0L, role.getParentRoleId());
-    assertEquals(1, role.getDomainEvents().size());
-    assertInstanceOf(RoleCreatedEvent.class, role.getDomainEvents().get(0));
   }
 
   @Test

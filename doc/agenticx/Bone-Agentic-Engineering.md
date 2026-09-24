@@ -1,9 +1,9 @@
 # Bone Agentic Engineering（统一指南）
 
 > **版本**：v3.1（合并版） | **维护**：`doc/agenticx/`  
-> **仓库落地**：命令与 Agent 定义以 **`.claude/`** 为准；项目约束以根目录 **`CLAUDE.md`**、**`AGENTS.md`** 为准；DDD 分层见 **`doc/architecture/Bone-DDD-最终实践方案.md`**。
+> **仓库内位置**：命令与 Agent 定义以 **`.claude/`** 为准；项目约束以根目录 **`CLAUDE.md`**、**`AGENTS.md`** 为准；DDD 分层见 **`doc/architecture/Bone-DDD-最终实践方案.md`**。
 
-本文档由以下材料合并去重：`Bone-Agentic-Engineering-编程规范`（v3.0 方法论）、`Bone-Agentic-Engineering-编程配置`（v3.1 可落地配置）、`doc/claude` 下最佳实践摘要。历史草稿 `编程配置0.1` 已废止。
+本文档由以下材料合并去重：`Bone-Agentic-Engineering-编程规范`（v3.0 方法论）、`Bone-Agentic-Engineering-编程配置`（v3.1 可执行配置）、`doc/claude` 下的规范摘要。历史草稿 `编程配置0.1` 已废止。
 
 ## v3.1 相对 v3.0 的关键变更
 
@@ -24,11 +24,11 @@
 4. [核心机制详解](#四核心机制详解)
 5. [标准化 Commands](#五标准化-commands)
 6. [多 Agent 并行开发](#六多-agent-并行开发)
-7. [可落地配置与契约示例](#七可落地配置与契约示例)
+7. [配置与契约示例](#七配置与契约示例)
 8. [CI/CD 流水线](#八cicd-流水线)
 9. [效能度量体系](#九效能度量体系)
-10. [12 周落地路线图](#十12周落地路线图)
-11. [24 小时极速上手](#十一24小时极速上手)
+10. [12 周实施路线图](#十12周实施路线图)
+11. [24 小时上手](#十一24小时上手)
 12. [故障排查指南](#十二故障排查指南)
 13. [VP/CTO 汇报总结](#十三vpcto-汇报总结)
 14. [术语表](#十四术语表)
@@ -39,7 +39,7 @@
 
 ### 1.1 系统定位
 
-**Bone Agentic Engineering OS** 是一套基于 Anthropic Claude Code 最佳实践、Boris Cherny Ralph Loop 方法论、以及企业级软件工程规范构建的 **AI 原生软件工程操作系统**。
+**Bone Agentic Engineering OS** 基于 Claude Code 的官方用法、Boris Cherny 的 Ralph Loop 方法论与仓库内的工程规范构建，把 AI 执行纳入可治理的 SDLC：意图先落成契约，再由 CI 与门禁裁决产出。
 
 ### 1.2 核心公式
 
@@ -973,7 +973,7 @@ echo "✅ 已启动 $AGENTS 个 Agent，使用 'tmux a -t agent-orchestrator' �
 ```
 
 
-## 七、可落地配置与契约示例
+## 七、配置与契约示例
 
 > 下列内容与仓库 **`.claude/`** 对齐，用于离线阅读与复制；若与仓库文件冲突，**以 `.claude/` 与 `CLAUDE.md` 为准**。
 
@@ -1051,7 +1051,7 @@ bone/
 ```markdown
 # Bone Agentic Engineering 团队宪法 v3.1
 
-## 🎯 核心理念
+## 核心理念
 人定义意图，AI 负责实现，契约保证质量，CI 担任裁判，Ralph Loop 保障 7×24 小时交付。
 
 ## 🏗️ 技术栈（锁定版本）
@@ -1077,7 +1077,7 @@ bone/
 5. L3/L4 问题未解决禁止 `/ship`
 6. React 中禁止 `dangerouslySetInnerHTML` 未经消毒（L4）
 
-## 🚀 5 分钟上手
+## 5 分钟上手
 ```bash
 git checkout -b feature/your-feature@yourname
 claude "/plan 你的功能描述"
@@ -1579,7 +1579,7 @@ guardrails:
 
 ---
 
-## 六、落地检查清单
+## 六、实施检查清单
 
 | 步骤 | 任务 | 验证方式 |
 |------|------|----------|
@@ -1942,7 +1942,7 @@ cat "$OUTPUT_DIR/metrics.md"
 | 个人标识 | Checkpoint（本地） | 私有 | 隐私保护 |
 
 
-## 十、12周落地路线图
+## 十、12周实施路线图
 
 ### 10.1 详细里程碑
 
@@ -1973,7 +1973,7 @@ cat "$OUTPUT_DIR/metrics.md"
   5. 技术栈演进（季度评估）
 
 
-## 十一、24小时极速上手
+## 十一、24小时上手
 
 ### 11.1 学习路径
 
@@ -1986,7 +1986,7 @@ cat "$OUTPUT_DIR/metrics.md"
 | 14:00-15:00 | 切片执行 | 1h | 观察 build 切片 |
 | 15:00-16:00 | 自愈体验 | 1h | 观察 L1 自动修复 |
 | 16:00-17:00 | Agent Teams | 1h | 多 Agent 并行 |
-| 17:00-18:00 | Hooks 配置 | 1h | 自动化闭环 |
+| 17:00-18:00 | Hooks 配置 | 1h | 自动化链路跑通 |
 | 19:00-21:00 | 完整功能实战 | 2h | Todo 全栈应用 |
 | 21:00-22:00 | 总结复习 | 1h | 能力清单自检 |
 
@@ -2057,13 +2057,13 @@ git checkout .claude/state/{feature}/checkpoint.json.backup
 - **前端**：React 18 + TypeScript 5.8 + Ant Design 5.x
 - **AI**：Claude Code + Ralph Loop + Agent Teams
 
-### 落地承诺
+### 实施承诺
 
-- **12 周**平滑落地
+- **12 周**渐进实施
 - **AET 虚拟团队**长期支持
 - **100%** 新功能 Agentic 覆盖
 
-### 最终价值
+### 预期效果
 
 > **一个人 + 5 个命令 + Ralph Loop = 一支 7×24 小时自主运行的 AI 开发团队。**
 

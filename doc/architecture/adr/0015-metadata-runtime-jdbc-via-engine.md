@@ -21,7 +21,7 @@
 
 ## 理由
 
-- MVP 优先打通「发布实体 → 物理表存在 → `/api/v1/runtime/**` CRUD」端到端。
+- MVP 优先端到端跑通「发布实体 → 物理表存在 → `/api/v1/runtime/**` CRUD」端到端。
 - 与 [ADR-0011](./0011-aggregate-root-inheritance.md) 不冲突：问题在**出站持久化通道**，非聚合根继承。
 
 ## 后果

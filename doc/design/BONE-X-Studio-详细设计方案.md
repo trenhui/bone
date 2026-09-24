@@ -4,7 +4,13 @@
 
 > **文档性质**：技术详细设计文档，可直接指导架构实现、代码开发、部署运维  
 > **适用产品**：BONE X Studio 企业级研发操作系统  
-> **设计基准**（与仓库权威一致）：[`doc/architecture/Bone-DDD-最终实践方案.md`](../architecture/Bone-DDD-最终实践方案.md)（DDD 分层与 P0 铁律）、[`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md)（产品范围与能力）、[`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md)（总体架构与 NFR；与 `doc/architecture/README.md` 索引一致）。代码生成与 ArchUnit 规则对齐 **bone-blueprint** 示例仓库形态，**版本号不以「Blueprint v×」为准**，以 DDD 统一方案版本为准。  
+> **设计基准**（与仓库权威一致）：
+>
+> - DDD 分层与核心规则 CORE-*：[`doc/architecture/Bone-DDD-最终实践方案.md`](../architecture/Bone-DDD-最终实践方案.md)
+> - 产品范围与能力：[`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md)
+> - 总体架构与 NFR：[`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md)（与 `doc/architecture/README.md` 索引一致）
+>
+> 代码生成与 ArchUnit 规则对齐 **bone-blueprint** 示例仓库形态；版本号以 DDD 统一方案版本为准，不以「Blueprint v×」为准。  
 > **版本**：v5.0 Final | **发布日期**：2026‑04‑23 | **最近修订**：2026‑05‑16 | **文档状态**：✅ 已发布（含 As-Is / 愿景分层） | **密级**：内部机密  
 
 ---
@@ -17,19 +23,19 @@
 |------|------|----------|
 | **As-Is** | 当前 monorepo 可构建、可运行的模块与端口 | 下表「仓库对照」 |
 | **Vision** | 目标态多微服务、多存储、AI Pipeline 全量能力 | §4.3.3 五服务拆分、PostgreSQL 主库、Module Federation 等 |
-| **Hybrid** | 部分落地、部分规划 | 代码生成（`studio-generator` 已有）、架构守护（规则与 ArchUnit 在演进） |
+| **Hybrid** | 部分实现、部分规划 | 代码生成（`studio-generator` 已有）、架构守护（规则与 ArchUnit 在演进） |
 
 ### 仓库对照（As-Is，2026-05）
 
 | 本文档 / 愿景名称 | Maven / 目录真源 | 默认端口（开发） | 说明 |
 |-------------------|------------------|------------------|------|
 | BONE Platform 各微应用 | `bone-frontend/apps/bone-*-app` + Qiankun Shell | 3000–3009 | 见 [wiki/03](../wiki/03-本地开发与构建.md) |
-| 代码生成（Generator） | `bone-engine/studio-generator` | **8085** | 与 `bone-platform/bone-integration` 同端口时需改 `server.port` |
-| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8088** | 默认与 `bone-masterdata`（8080）不冲突；仅当将 Studio 显式改为 8080 时需避端口占用 |
+| 代码生成（Generator） | `bone-engine/studio-generator` | **8086** | 见 [wiki/03](../wiki/03-本地开发与构建.md)；8085 为 `bone-integration` |
+| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8088** | 默认与 `bone-masterdata`（8084）不冲突；仅当将 Studio 显式改为 8080 时需避端口占用 |
 | 元数据 · 数据面 SDK | `bone-engine/bone-metadata-sdk` | （嵌入业务进程） | 平台 P0 持久化；见 [三模块定义](./modules/元数据能力-实现映射与竞品对照.md) |
 | 元数据 · 扩展字段 REST | `bone-engine/bone-metadata-server` | **9001** | `/api/v1/metadata/fields:*`；非实体建模全量 API |
 | 元数据 · 智能引擎 | `bone-engine/bone-metadata-engine` | 随宿主 | 默认未接平台；详设 [§9](./modules/9.%20SmartMeta%20引擎模块技术说明.md) |
-| IAM / 主数据 / 系统 | `bone-platform/bone-iam` / `bone-masterdata` / `bone-system` | 8081 / 8080 / 8083 | 持久化均依赖 metadata-sdk |
+| IAM / 主数据 / 系统 | `bone-platform/bone-iam` / `bone-masterdata` / `bone-system` | 8081 / 8084 / 8083 | 持久化均依赖 metadata-sdk |
 | DDD 参考实现 | `bone-blueprint/` | — | 非根聚合模块，单独 `mvn -f bone-blueprint/pom.xml test` |
 | **studio-api** [Vision] | 无独立进程 | 8080（示意） | 由网关 + 各平台服务组合，非单 Jar |
 | **studio-ai / studio-guard** [Vision] | 无独立进程 | 8081 / 8083（示意） | AI 与 Guard 能力规划为独立服务，当前分散在引擎与工具链 |
@@ -37,7 +43,7 @@
 
 **端口真源**：[doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。**DDL 真源**：根目录 [`bone-init.sql`](../../bone-init.sql) · [数据库开发规范.md](../architecture/数据库开发规范.md)。
 
-> 下文 **第一部分～第三部分** 中，产品叙事与双核心架构多为 **[Vision]**；落地排期请交叉查阅 [主 PRD](../prd/BONE产品需求文档正式版.md) 与 [模块详设](./modules/README.md)。
+> 下文 **第一部分～第三部分** 中，产品叙事与双核心架构多为 **[Vision]**；实现排期请交叉查阅 [主 PRD](../prd/BONE产品需求文档正式版.md) 与 [模块详设](./modules/README.md)。
 
 ---
 
@@ -100,25 +106,24 @@
 
 #### 1.1 产品定位
 
-BONE X Studio v5.0 是新一代企业级 AI 原生研发操作系统，定位为 **"开发者的工作空间"（Developer Workspace Platform）**。产品采用**双核心架构**：
+BONE X Studio v5.0 定位为 **「开发者的工作空间」（Developer Workspace Platform）**，由两个核心组成：
 
-- **核心A：架构治理中心（Bone Studio）**——通过"架构即代码"保障核心领域架构确定性
-- **核心B：元数据应用工厂（BONE Platform）**——用元数据驱动，业务应用可快速交付
+- **核心 A：架构治理中心（Bone Studio）**——以「架构即代码」约束核心领域的架构演进；
+- **核心 B：元数据应用工厂（BONE Platform）**——以元数据驱动业务应用交付。
 
-双核心共享统一IAM、扩展点市场与Kubernetes基础设施，实现"架构不腐化"与"业务快交付"的终极统一。
+两个核心共享统一 IAM、扩展点市场与 Kubernetes 基础设施。
 
 #### 1.2 核心愿景
 
 **一句话定位**：
-> BONE X Studio = 架构治理系统（Bone Studio）+ 元数据应用工厂（BONE Platform）
-> 一个平台解决"架构不腐化"与"业务快交付"的终极矛盾。
+> BONE X Studio = 架构治理系统（Bone Studio）+ 元数据应用工厂（BONE Platform），同时面向两个目标：架构不腐化、业务快交付。
 
 #### 1.3 核心价值主张
 
 | 用户角色 | 核心诉求 | 本方案价值 | 量化指标 |
 |----------|----------|------------|----------|
 | **CTO/技术VP** | 架构不腐化、业务快响应 | 双核心引擎，核心域严格治理，业务域敏捷交付 | 架构健康分≥90，新应用交付<3天 |
-| **架构师** | 规范可编程、架构可观测 | 将 DDD/CQRS 与《Bone-DDD》P0 铁律写入 Studio 模板与 Guard，自动下发至所有服务 | 规范落地率100% |
+| **架构师** | 规范可编程、架构可观测 | 将 DDD/CQRS 与《Bone-DDD》核心规则 CORE-*写入 Studio 模板与 Guard，自动下发至所有服务 | 规范实现率100% |
 | **核心开发** | 复杂业务逻辑聚焦 | AI生成符合规范的DDD代码，扩展点替代if-else | 样板代码减少70% |
 | **业务开发** | 快速构建CRUD应用 | 可视化实体建模，一键生成前后端代码 | 简单应用5分钟内上线 |
 | **集成工程师** | 异构系统对接高效 | 可视化流程编排，50+连接器 | 集成时间缩短80% |
@@ -133,7 +138,7 @@ BONE X Studio v5.0 是新一代企业级 AI 原生研发操作系统，定位为
 | | KR4: 金融/政务/互联网标杆客户 | ≥8家 | P0 |
 | **O2：AI架构生成能力** | KR5: AI生成代码合规率 | >95% | P1 |
 | | KR6: 自然语言→可运行DDD模块 | <5分钟 | P1 |
-| **O3：繁荣扩展生态** | KR7: Extension Marketplace插件数 | ≥20个 | P2 |
+| **O3：扩展点市场供给** | KR7: Extension Marketplace插件数 | ≥20个 | P2 |
 | **O4：企业级高可用** | KR8: 核心服务SLA | 99.99% | P0 |
 
 #### 1.5 北极星指标
@@ -156,9 +161,9 @@ BONE X Studio v5.0 是新一代企业级 AI 原生研发操作系统，定位为
 | 执行层 | 核心开发工程师 | 负责复杂业务领域 | 少写样板代码、避免架构违规、扩展点复用 | 高频 |
 | 执行层 | 业务开发工程师 | 负责业务CRUD应用 | 快速建模、一键生成代码、少写重复代码 | 高频 |
 | 执行层 | 集成工程师 | 系统集成专员 | 系统对接、流程编排、数据同步 | 中频 |
-| 执行层 | 业务分析师 | 业务需求分析师 | 业务建模、主数据治理、需求落地 | 高频 |
+| 执行层 | 业务分析师 | 业务需求分析师 | 业务建模、主数据治理、需求实现 | 高频 |
 | 运维层 | DevOps工程师 | CI/CD维护者 | 流水线集成、质量门禁、自动阻断 | 日常 |
-| 生态层 | 插件开发者 | ISV/企业内部IT | 标准化API、扩展点开发、插件发布 | 项目制 |
+| 社区层 | 插件开发者 | ISV/企业内部IT | 标准化API、扩展点开发、插件发布 | 项目制 |
 
 #### 2.2 核心用户旅程
 
@@ -190,7 +195,7 @@ BONE X Studio v5.0 是新一代企业级 AI 原生研发操作系统，定位为
 
 **旅程4：架构师——企业级架构治理**
 
-1. **规范配置**：在 Studio 中定义企业模板（强制分布式 ID、CQRS 物理分包、`CommandHandler`/`QueryHandler` 命名与事务边界；领域层禁止 Spring/JPA **`@Entity`**，持久化元数据仅允许 **bone-metadata-sdk D1 白名单注解**，与《Bone-DDD》§17 一致）
+1. **规范配置**：在 Studio 中定义企业模板（强制分布式 ID、CQRS 物理分包、`CommandHandler`/`QueryHandler` 命名与事务边界；领域层禁止 Spring/JPA **`@Entity`**，持久化元数据仅允许 **bone-metadata-sdk D1 白名单注解**，与《Bone-DDD》[E-6](../architecture/Bone-DDD-最终实践方案.md#e-6-领域模型与持久化模型) 一致）
 2. **全量接入**：要求所有新服务通过Studio生成，存量服务接入Guard
 3. **架构巡检**：每周查看架构健康看板，识别腐化模块
 4. **自动修复**：对低分模块执行`bone migrate --auto`，自动迁移
@@ -251,10 +256,10 @@ graph TD
 |------|----------|----------|
 | **架构治理中心** | 限界上下文设计器 | 拖拽式聚合根设计、关系映射、事件建模 |
 | | AI业务建模引擎 | 自然语言→限界上下文→完整DDD模块生成 |
-| | DDD 脚手架生成器 | 单服务内 **adapter / application / domain / infrastructure** 包结构 + CQRS（与 Bone-DDD v5.1.0 对齐）；与主 PRD **UI→Service→Engine 三层运行时约束**并存——前者是代码分层，后者是部署与调用的纵向约束 |
+| | DDD 脚手架生成器 | 单服务内 **adapter / application / domain / infrastructure** 包结构 + CQRS（与《Bone-DDD-最终实践方案》对齐）；与主 PRD **UI→Service→Engine 三层运行时约束**并存——前者是代码分层，后者是部署与调用的纵向约束 |
 | | 架构守护系统 | 4条铁律+命名+CQRS+扩展点检测，CI阻断 |
 | | CQRS智能分级 | 自动分析查询复杂度，建议L1/L2/L3 |
-| | 扩展点市场 | 企业级扩展能力复用平台 |
+| | 扩展点市场 | 扩展能力的发布、检索与复用 |
 | | 渐进式演进控制台 | 存量系统评估、自动迁移、进度跟踪 |
 | **元数据应用工厂** | 可视化实体建模器 | 拖拽创建实体、字段、关系、校验规则 |
 | | 代码生成引擎 | 实体→前后端代码（React/Vue + Spring Boot） |
@@ -270,7 +275,7 @@ graph TD
 | 功能 | 社区版 | 商业版 |
 |------|--------|--------|
 | 架构治理中心（DDD脚手架+Guard） | ✅ | ✅ |
-| AI业务建模引擎 | ❌（需自带LLM API Key） | ✅（含企业级Prompt优化） |
+| AI业务建模引擎 | ❌（需自带 LLM API Key） | ✅（含调优后的 Prompt） |
 | 元数据建模+代码生成 | ✅（基础模板） | ✅（全模板+自定义） |
 | 主数据管理（MDM） | ❌ | ✅ |
 | 集成引擎（连接器+流程编排） | 仅REST/SOAP | 全部连接器+高级EIP |
@@ -362,26 +367,26 @@ flowchart TD
 
 | 层级 | 技术选型 | 版本 | 选型理由 |
 |------|----------|------|----------|
-| 前端框架 | React + TypeScript | 18.x | 复杂交互界面，生态成熟 |
-| 代码编辑器 | Monaco Editor | 0.44+ | 类VSCode体验，语法高亮 |
-| UI组件库 | Ant Design | 5.12+ | 企业级组件，设计规范 |
+| 前端框架 | React + TypeScript | 18.x | 控制台与建模器交互密集，TypeScript 约束前端契约 |
+| 代码编辑器 | Monaco Editor | 0.44+ | DSL 与代码编辑，语法高亮与补全 |
+| UI组件库 | Ant Design | 5.12+ | 中后台组件覆盖，与 Ant Design Pro 布局一致 |
 | 微前端 | **Qiankun**（As-Is）/ Module Federation（Vision） | 2.x | 仓库实现为 Qiankun + `vite-plugin-qiankun`，见 [bone-前端架构](../architecture/bone-前端架构.md) |
-| API框架 | Spring Boot + WebFlux | 3.2+ | 高性能响应式，生态丰富 |
-| API网关 | Spring Cloud Gateway | 2023+ | 路由灵活，性能优秀 |
-| 代码生成 | JavaPoet + Freemarker | 1.13+ / 2.3+ | 类型安全+模板灵活 |
-| AI适配 | LangChain4j / Spring AI | 0.30+ | 多模型统一抽象 |
-| DSL解析 | ANTLR4 | 4.13+ | 工业级语法解析 |
-| 架构守护 | ArchUnit + ASM | 1.2+ | 字节码分析，规则丰富 |
-| 工作流引擎 | Apache Camel | 4.0+ | 企业集成模式丰富 |
-| 规则引擎 | LiteFlow | 2.10+ | 业务规则编排 |
-| 关系数据库 | PostgreSQL | 15+ | JSONB灵活，ACID保障 |
-| 缓存 | Redis | 7.0+ | 高性能，数据结构丰富 |
-| 消息队列 | RocketMQ | 5.1+ | 高可靠，事务消息 |
-| 对象存储 | MinIO / S3 | - | 制品存储，审计日志 |
-| 容器编排 | Kubernetes | 1.24+ | 云原生标准 |
-| 服务注册 | Nacos | 2.2+ | 服务发现+配置管理 |
-| 监控 | Prometheus + Grafana | - | 指标采集+可视化 |
-| 链路追踪 | SkyWalking | 9.0+ | 分布式追踪，性能分析 |
+| API框架 | Spring Boot + WebFlux | 3.2+ | 流式 AI 输出与 WebSocket 场景走非阻塞 I/O |
+| API网关 | Spring Cloud Gateway | 2023+ | 统一路由、鉴权与限流入口 |
+| 代码生成 | JavaPoet + Freemarker | 1.13+ / 2.3+ | JavaPoet 生成类型安全的 Java 源码，Freemarker 渲染其余模板文件 |
+| AI适配 | LangChain4j / Spring AI | 0.30+ | 屏蔽不同模型供应商的调用差异 |
+| DSL解析 | ANTLR4 | 4.13+ | Bone DSL 的词法 / 语法解析与报错定位 |
+| 架构守护 | ArchUnit + ASM | 1.2+ | ArchUnit 断言架构规则，ASM 读取字节码 |
+| 工作流引擎 | Apache Camel | 4.0+ | 复用 EIP 组件与路由编排 |
+| 规则引擎 | LiteFlow | 2.10+ | 业务规则的流程化编排 |
+| 关系数据库 | PostgreSQL | 15+ | JSONB 存元数据，事务与约束由库保证 |
+| 缓存 | Redis | 7.0+ | 缓存、会话与分布式锁 |
+| 消息队列 | RocketMQ | 5.1+ | 事务消息与领域事件跨服务分发 |
+| 对象存储 | MinIO / S3 | - | 制品与审计日志归档 |
+| 容器编排 | Kubernetes | 1.24+ | 服务编排、伸缩与滚动发布 |
+| 服务注册 | Nacos | 2.2+ | 服务发现 + 配置中心 |
+| 监控 | Prometheus + Grafana | - | 指标采集与看板 |
+| 链路追踪 | SkyWalking | 9.0+ | 跨服务调用链追踪 |
 
 #### 4.3 分层架构详解
 
@@ -505,7 +510,7 @@ Response:
 
 | 维度 | 权威文档 | 本方案约定 |
 |------|----------|------------|
-| **分层、P0 铁律、包结构、读写路径、D0/D1** | [`doc/architecture/Bone-DDD-最终实践方案.md`](../architecture/Bone-DDD-最终实践方案.md) | Studio Guard、脚手架与 AI 提示词**以此文第二部分为门禁**；文中历史用语「Bone-Blueprint」指 **bone-blueprint 示例仓库**及模板形态，**不与已过时的 Blueprint 文档版本号绑定**（参见《Bone-DDD》附录 A）。 |
+| **分层、核心规则 CORE-*、包结构、读写路径、D0/D1** | [`doc/architecture/Bone-DDD-最终实践方案.md`](../architecture/Bone-DDD-最终实践方案.md) | Studio Guard、脚手架与 AI 提示词**以此文第二部分为门禁**；文中历史用语「Bone-Blueprint」指 **bone-blueprint 示例仓库**及模板形态，**不与已过时的 Blueprint 文档版本号绑定**（参见《Bone-DDD》附录 A）。 |
 | **产品能力、模块边界、里程碑** | [`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md) | 「元数据应用工厂」与 PRD 中**应用生成 / 企业集成 / 扩展运行时**对齐；控制台、IAM、系统管理等与 PRD 第 4 章模块一致。 |
 | **总体架构、多租户、NFR、跨服务一致性** | [`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md) | 与《Bone-DDD》§5.4 交叉引用；跨聚合默认最终一致。 |
 
@@ -515,7 +520,7 @@ Response:
 
 #### 5.1 DDD实施框架
 
-系统严格遵循领域驱动设计方法论，采用战术设计和战略设计双维度推进。**《Bone-DDD-最终实践方案》** 为仓库内 **DDD + CQRS + 分层依赖** 的唯一权威；**bone-blueprint** 为全特性参考实现与生成模板来源。代码生成、ArchUnit 与 CI 门禁须可映射到该文档 **§12（铁律）** 与 **§14～§18**。
+领域设计以 **《Bone-DDD-最终实践方案》** 为仓库内 **DDD / CQRS / 分层依赖** 的唯一权威；**bone-blueprint** 是全特性参考实现与代码生成模板的来源。代码生成、ArchUnit 与 CI 门禁须能映射到该文档的对应条文。
 
 #### 5.2 限界上下文划分
 
@@ -709,7 +714,7 @@ public class ArchitectureEvaluationService {
 
 #### 6.1 CQRS架构模式
 
-系统采用完整的CQRS模式，将读模型（Query）和写模型（Command）彻底分离。
+系统采用 CQRS：读模型（Query）与写模型（Command）分离。
 
 ```mermaid
 graph LR
@@ -2761,21 +2766,17 @@ export const IntegrationDesigner: React.FC = () => {
 
 ---
 
-您说得对，我在上一个方案中确实遗漏了**系统集成模块**的完整设计。现在为您补充完整的 **第十二章：系统集成模块**，请将其插入到详细设计方案中的适当位置。
-
----
-
 ## 第十二章：系统集成模块
 
 ### 12.1 模块概述
 
-系统集成模块是 BONE X Studio 的核心连接枢纽，负责实现与外部系统、第三方服务、企业现有IT设施的无缝对接。该模块基于 **Apache Camel** 企业集成模式框架，提供可视化流程编排、丰富的连接器库、数据转换映射和全链路监控能力。
+系统集成模块负责对接外部系统、第三方服务与企业现有 IT 设施，基于 **Apache Camel**，提供可视化流程编排、连接器库、数据转换映射与执行监控。
 
 **核心定位**：
 - **连接枢纽**：连接企业内部异构系统（ERP、CRM、OA、MES等）
 - **数据管道**：构建实时/批量数据同步通道
 - **流程编排**：可视化设计复杂集成流程
-- **协议转换**：支持多种协议间的无缝转换
+- **协议转换**：支持多种协议之间的相互转换
 
 ### 12.2 集成架构总览
 
@@ -5312,6 +5313,6 @@ echo "Rollback completed successfully!"
 
 **文档状态**：✅ Final，已进入研发排期。
 
-**BONE X Studio v5.0 详细设计方案**完整定义了企业级 AI 原生研发操作系统的技术架构、领域设计、功能模块和基础设施。本方案与 **《Bone-DDD-最终实践方案》**、**《BONE 产品需求文档（正式版）》**、**《BONE-总体架构设计方案》** 对齐；融合架构治理中心与元数据应用工厂双核心，涵盖 DDD 规范、CQRS 与事件驱动、多租户、前端微前端、AI 能力、安全、性能、部署运维等章节。
+**BONE X Studio v5.0 详细设计方案**定义了产品的技术架构、领域设计、功能模块与基础设施，与 **《Bone-DDD-最终实践方案》**、**《BONE 产品需求文档（正式版）》**、**《BONE-总体架构设计方案》** 对齐，覆盖架构治理中心与元数据应用工厂两个核心。
 
-所有设计均提供可直接落地的代码示例、配置文件和架构图，可直接指导研发团队进行实现。
+各章均配有代码示例、配置文件与架构图，可直接用于实现。

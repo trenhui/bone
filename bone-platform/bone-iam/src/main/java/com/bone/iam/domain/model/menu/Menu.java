@@ -4,7 +4,6 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.iam.domain.model.menu.event.MenuCreatedEvent;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -50,7 +49,6 @@ public class Menu extends TenantAggregateRoot<Long> {
     menu.setTenantId(tenantId);
     menu.createdAt = LocalDateTime.now();
     menu.updatedAt = LocalDateTime.now();
-    menu.addDomainEvent(new MenuCreatedEvent(menu));
     return menu;
   }
 

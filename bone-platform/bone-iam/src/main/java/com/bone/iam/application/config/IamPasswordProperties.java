@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@code lockoutMinutes}：锁定持续分钟数
  * </ul>
  *
+ * /*
+ *
  * <p>放在 {@code application.config} 与 {@code OrderOutboxProperties} 一致，使 application 层 无需反向依赖
  * infrastructure。
  */

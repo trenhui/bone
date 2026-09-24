@@ -66,7 +66,7 @@ public final class OrderItemInventoryExecutor {
       String actionName,
       StockAction action,
       Consumer<StockActionFailure> onFailure) {
-    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(tenantId, orderId);
+    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(orderId);
 
     // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不同步。
     // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不

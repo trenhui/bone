@@ -11,7 +11,7 @@
 
 ## 背景
 
-《Bone-DDD》推荐多租户聚合使用 `TenantAggregateRoot` + `Tenantable`。`bone-metadata-server` catalog 子域在落地时选用 `com.bone.core.domain.entity.AbstractEntity<Long>`，并在 `MetaEntity` / `MetaField` / `MetaEntityRelation` 上声明自有 `tenantId` 字段；字段映射使用 **bone-metadata-sdk 自定义注解** `@Table` / `@Column`（非 JPA）。
+《Bone-DDD》推荐多租户聚合使用 `TenantAggregateRoot` + `Tenantable`。`bone-metadata-server` catalog 子域在实现时选用 `com.bone.core.domain.entity.AbstractEntity<Long>`，并在 `MetaEntity` / `MetaField` / `MetaEntityRelation` 上声明自有 `tenantId` 字段；字段映射使用 **bone-metadata-sdk 自定义注解** `@Table` / `@Column`（非 JPA）。
 
 ## 决策
 

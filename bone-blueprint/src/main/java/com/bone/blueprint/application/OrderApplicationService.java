@@ -123,59 +123,56 @@ public class OrderApplicationService {
 
   @Transactional
   public void cancel(CancelOrderCommand command) {
-    Order order =
-        Optional.ofNullable(orderRepository.findById(command.orderId()))
-            .orElseThrow(
-                () ->
-                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
-                        .get());
-    order.cancel();
+    mutate(command.orderId(), Order::cancel);
+  }
+
+  @Transactional
+  public void ship(ShipOrderCommand command) {
+    mutate(command.orderId(), Order::ship, BlueprintErrorCodes.ORDER_STATUS_CONFLICT);
+  }
+
+  @Transactional
+  public void deliver(DeliverOrderCommand command) {
+    mutate(command.orderId(), Order::deliver, BlueprintErrorCodes.ORDER_STATUS_CONFLICT);
+  }
+
+  /**
+   * 写操作模板：加载 → 领域变更 → 保存 → 发布事件。
+   *
+   * @param errorCode 领域变更抛 {@link DomainException} 时转成的业务码；null 表示不拦截 DomainException（如 cancel）。
+   */
+  private void mutate(long orderId, java.util.function.Consumer<Order> mutator, String errorCode) {
+    Order order = load(orderId);
+    try {
+      mutator.accept(order);
+    } catch (DomainException ex) {
+      if (errorCode == null) {
+        throw ex;
+      }
+      throw BlueprintErrors.of(errorCode, ex.getMessage(), ex);
+    }
+    saveAndPublish(order);
+  }
+
+  private void mutate(long orderId, java.util.function.Consumer<Order> mutator) {
+    mutate(orderId, mutator, null);
+  }
+
+  /** 加载订单：不存在抛 ORDER_NOT_FOUND。 */
+  private Order load(long orderId) {
+    return Optional.ofNullable(orderRepository.findById(orderId))
+        .orElseThrow(
+            () -> BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId).get());
+  }
+
+  /** 保存 + 发布领域事件；乐观锁 → OptimisticLockConflictException。 */
+  private void saveAndPublish(Order order) {
     try {
       orderRepository.update(order);
     } catch (OptimisticLockingFailureException ex) {
       throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
     }
     domainEventPublisher.publishFrom(order);
-  }
-
-  @Transactional
-  public void ship(ShipOrderCommand command) {
-    Order order =
-        Optional.ofNullable(orderRepository.findById(command.orderId()))
-            .orElseThrow(
-                () ->
-                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
-                        .get());
-    try {
-      order.ship();
-    } catch (DomainException ex) {
-      throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, ex.getMessage(), ex);
-    }
-    try {
-      orderRepository.update(order);
-    } catch (OptimisticLockingFailureException ex) {
-      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
-    }
-  }
-
-  @Transactional
-  public void deliver(DeliverOrderCommand command) {
-    Order order =
-        Optional.ofNullable(orderRepository.findById(command.orderId()))
-            .orElseThrow(
-                () ->
-                    BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId())
-                        .get());
-    try {
-      order.deliver();
-    } catch (DomainException ex) {
-      throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, ex.getMessage(), ex);
-    }
-    try {
-      orderRepository.update(order);
-    } catch (OptimisticLockingFailureException ex) {
-      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
-    }
   }
 
   // ===================== 读操作 =====================
@@ -220,7 +217,7 @@ public class OrderApplicationService {
   @Transactional(readOnly = true)
   public OrderDto getById(long orderId) {
     long tenantId = tenantProvider.currentTenantId();
-    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(tenantId, orderId);
+    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(orderId);
     return OrderDetailAssembler.fromRows(rows);
   }
 

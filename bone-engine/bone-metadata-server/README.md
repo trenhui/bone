@@ -43,3 +43,15 @@ mvn -pl bone-engine/bone-metadata-server -am spring-boot:run -Dspring-boot.run.p
 | `domain/{gateway,repository,service}` | **不变**——按 ADR-0036 R3 端口留根（`service/` 的 `IamApplicationValidator` / `IamModuleValidator` 同属端口） |
 
 `enums` 的两个枚举定性为**模型构件**（被 `MetaEntity` 直接引用）而非端口，故随聚合迁入 `model/meta/`，原 `domain/enums/` 目录已删除。
+
+## 本上下文拥有的表（E-1.2 数据所有权声明）
+
+bone-metadata-server 是下列表的唯一写方与 Schema _owner；其他模块只读须经本模块出站端口，不得直连这些表：
+
+| 表 | 语义 | 聚合 |
+|---|---|---|
+| `meta_entity` | 扩展字段实体 | MetaEntity |
+| `meta_field` | 扩展字段定义 | MetaField |
+| `meta_entity_relation` | 实体关系 | MetaEntityRelation |
+
+> 注：`bone_application` / `bone_module` 经 `IamApplicationRef` / `IamModuleRef` 只读引用，Schema _owner 为 IAM 上下文（见 bone-iam README），本模块不持有其写权。`meta_code_template` 已在 `bone-init.sql` 建表但当前无 `@Table` 实体，归属待裁定。

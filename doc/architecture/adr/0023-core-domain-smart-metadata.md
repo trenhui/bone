@@ -13,7 +13,7 @@
 
 P-10.1 曾把 **MasterData / Integration / Extension** 同时标成核心域，并加「待复核」冻结。按 Evans 战略设计，核心域是差异化竞争力所在，资源应集中投入。DDD **不限制一个组织只能有一个核心域**；问题不在数量本身，而在此前没有给出客户价值、竞品差异与战略投入依据，却把多个重要模块直接等同于核心域，并据此铺开 L3 治理成本。
 
-Bone 的产品定位是**元数据驱动的快速开发平台**。真正不可被采购替代的是动态建模与元数据运行时（`bone-metadata-sdk` / `bone-metadata-server` / `bone-metadata-engine`），而不是主数据治理、连接器编排或扩展点注册。
+Bone 的产品定位是**元数据驱动的快速开发平台**。不可被采购替代的是动态建模与元数据运行时（`bone-metadata-sdk` / `bone-metadata-server` / `bone-metadata-engine`），而不是主数据治理、连接器编排或扩展点注册。
 
 ## 决策
 

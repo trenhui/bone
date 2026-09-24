@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.iam.application.command.CreateDeptCommand;
 import com.bone.iam.application.command.DeleteDeptCommand;
 import com.bone.iam.application.command.UpdateDeptCommand;
@@ -21,14 +22,22 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 组织机构应用层统一门面（Application Service First）——机构类用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code application.command.handler.*DeptCommandHandler} 与 {@code
  * application.query.handler.DeptTreeQueryHandler} 已全量内联进本类。适配器只依赖本类，HTTP 契约保持不变。
+ *
+ * <p>/*
  *
  * <p>本类不出现读侧 DSL 与 {@code TenantContext}：取数下沉 {@link DeptRepository#listAll()}，租户取值走 {@link
  * TenantProvider} 端口（E-2 / E-4.2）。
  */
+/*
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务管理的聚合（Dept）当前不发布领域事件，其创建/更新/删除均属内部状态迁移、下游无上下文需感知；若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+ */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class DeptApplicationService {
 
   private final DeptRepository deptRepository;

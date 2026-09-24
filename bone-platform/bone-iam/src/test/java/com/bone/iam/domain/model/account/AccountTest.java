@@ -2,18 +2,12 @@ package com.bone.iam.domain.model.account;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.exception.DomainException;
-import com.bone.iam.domain.model.account.event.AccountCreatedEvent;
-import com.bone.iam.domain.model.account.event.AccountDisabledEvent;
-import com.bone.iam.domain.model.account.event.AccountEnabledEvent;
-import com.bone.iam.domain.model.account.event.AccountLockedEvent;
-import com.bone.iam.domain.model.account.event.PasswordChangedEvent;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
@@ -42,33 +36,27 @@ class AccountTest {
     assertEquals(100L, account.getTenantId());
     assertFalse(account.isAdmin());
     assertEquals(0, account.getLoginFailCount());
-    assertEquals(1, account.getDomainEvents().size());
-    assertInstanceOf(AccountCreatedEvent.class, account.getDomainEvents().get(0));
   }
 
   @Test
-  void testEnableDisableGuardsAndPublishesEvents() {
+  void testEnableDisableGuards() {
     Account account = createAccount();
-    account.clearDomainEvents();
 
     // 新建即 ENABLED，重复 enable 拒绝
     assertThrows(IllegalStateException.class, account::enable);
 
     account.disable();
     assertEquals(AccountStatus.DISABLED, account.getStatus());
-    assertInstanceOf(AccountDisabledEvent.class, account.getDomainEvents().get(0));
     // 重复 disable 拒绝
     assertThrows(IllegalStateException.class, account::disable);
 
     account.enable();
     assertEquals(AccountStatus.ENABLED, account.getStatus());
-    assertInstanceOf(AccountEnabledEvent.class, account.getDomainEvents().get(1));
   }
 
   @Test
   void testLoginFailuresLockAtThreshold() {
     Account account = createAccount();
-    account.clearDomainEvents();
 
     account.recordLoginFailure(2, 30);
     assertEquals(1, account.getLoginFailCount());
@@ -80,8 +68,6 @@ class AccountTest {
     assertEquals(AccountStatus.LOCKED, account.getStatus());
     assertTrue(account.isLocked());
     assertNotNull(account.getLockedAt());
-    assertEquals(1, account.getDomainEvents().size());
-    assertInstanceOf(AccountLockedEvent.class, account.getDomainEvents().get(0));
   }
 
   @Test
@@ -99,16 +85,13 @@ class AccountTest {
   }
 
   @Test
-  void testUpdatePasswordPublishesEvent() {
+  void testUpdatePasswordUpdatesHash() {
     Account account = createAccount();
-    account.clearDomainEvents();
 
     account.updatePassword("hash-2");
 
     assertEquals("hash-2", account.getPasswordHash());
     assertNotNull(account.getPasswordUpdatedAt());
-    assertEquals(1, account.getDomainEvents().size());
-    assertInstanceOf(PasswordChangedEvent.class, account.getDomainEvents().get(0));
   }
 
   @Test

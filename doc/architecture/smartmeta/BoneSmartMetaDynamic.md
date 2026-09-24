@@ -1,4 +1,4 @@
-# Bone SmartMeta 智能元数据引擎：动态业务建模与智能代码生成最佳实践方案（2025 企业级落地版）
+# Bone SmartMeta 智能元数据引擎：动态建模与代码生成方案（2025）
 
 > ⚠️ **不建议通读本文实现功能**。实现与排期请以 **[9. SmartMeta 引擎模块技术说明](../../design/modules/9.%20SmartMeta%20引擎模块技术说明.md)** + `bone-metadata-engine` 源码为准；本文保留作背景与 Vision 参考，后续可迁出仓库或大幅瘦身。
 
@@ -6,34 +6,34 @@
 
 > **版本**：1.0  
 > **日期**：2025年10月8日  
-> **目标**：实现“配置即开发”的动态范式，支持可视化定义业务实体、AI 智能生成 CRUD 接口，并确保生成的接口/实体秒级生效、无需重启部署。融合 Salesforce 的 SObject 动态模型（运行时变更）、Workday 的配置化建模（零代码调整）和 Coupa 的合规驱动（内置权限/审计），基于 Spring Boot 生态构建开源方案。强调 agentic AI 代理支持（e.g., 自动优化接口）和 DaaS（Data-as-a-Service）集成。  
-> **基于业界最佳实践**：参考 Spring Boot 3+ 的动态 Bean 管理（2025 Spring 6.2 更新，如增强的 GenericApplicationContext）、ByteBuddy 的字节码生成（GitHub Stars 8k+，Micronaut/Spring 动态代理首选）、Groovy 的脚本热执行（Spring ScriptEngine 最佳实践）、LangChain 的 AI 代码生成（参考 Workik/Bootify.io 2025 版本），以及 OWASP 动态代码安全指南、Google SRE 的热更新原则，确保方案高性能、可治理、无停机风险。
+> **目标**：可视化定义业务实体，AI 生成 CRUD 接口，接口与实体秒级生效、无需重启部署。参考对象包括 Salesforce SObject（运行时变更）、Workday 配置化建模（零代码调整）、Coupa 的合规驱动（内置权限与审计）；技术底座为 Spring Boot。另需支持 agentic AI 代理（如自动优化接口）与 DaaS（Data-as-a-Service）集成。  
+> **参考依据**：Spring Boot 3+ 动态 Bean 管理（Spring 6.2 的 `GenericApplicationContext` 增强）、ByteBuddy 字节码生成、Groovy 脚本热执行（Spring ScriptEngine）、LangChain 代码生成，以及 OWASP 动态代码安全指南、Google SRE 的热更新原则。这些来源只用于选型；性能与停机风险由本文的基准测试与灰度策略验证，不因引用来源而默认成立。
 
 ---
 
-## **方案概述**
+## 方案概述
 
-### **核心思路：三层渐进混合架构**
+### 核心思路：三层渐进混合架构
 1. **基础层：元数据驱动通用引擎** (80% 场景)：无需生成代码，直接基于元数据（DSL）运行 CRUD 和 SmartQL 查询。变更即生效（热重载）。
 2. **增强层：AI + ByteBuddy/Groovy 动态生成** (20% 场景)：针对复杂逻辑（如聚合查询、自定义 DTO），AI 生成 ByteBuddy 字节码或 Groovy 脚本，运行时注册为 Bean。
-3. **治理层：全链路审计与回滚**：所有变更通过 GitOps 变更集管理，Dry-Run 测试 + 自动回滚，确保零风险。
+3. **治理层：全链路审计与回滚**：所有变更通过 GitOps 变更集管理，Dry-Run 测试失败即自动回滚。
 
-**差异化优势**：
-- **零停机**：Bean 注册 + 类加载器热加载（<2s 生效），参考 Spring 2025 动态代理实践。
-- **AI 智能**：LangChain 生成优化代码，支持 agentic AI（e.g., 自动添加缓存/索引）。
+**方案特点**：
+- **零停机**：Bean 注册 + 类加载器热加载（<2s 生效）。
+- **AI 生成**：LangChain 生成优化代码，支持 agentic AI（如自动添加缓存 / 索引）。
 - **安全治理**：沙箱执行、权限内嵌、不可篡改审计。
 - **可扩展**：DSL 中定义扩展点（e.g., customLogic），支持 Micronaut AOT 兼容。
 
 **备选对比**：
 - **纯 Groovy**：简单但性能/安全风险高（解释执行），仅作为 fallback。
 - **Javassist/ASM**：底层高效，但 ByteBuddy 封装更好（2025 趋势）。
-- **Micronaut**：AOT 强，但 Spring Boot 生态更广（Bone 平台兼容）。
+- **Micronaut**：AOT 强，但 Spring Boot 的适用范围更广（Bone 平台兼容）。
 
-方案风险低（ByteBuddy 用于 Netflix 生产），易集成（Spring Boot Starter），与 Bone 的 DDD/分层架构对齐。
+ByteBuddy 已在 Netflix 生产使用；以 Spring Boot Starter 形式集成，与 Bone 的 DDD / 分层架构对齐。
 
 ---
 
-### **方案架构图**
+### 方案架构图
 
 ```
 ┌──────────────────────────┐
@@ -69,7 +69,7 @@
 
 ---
 
-### **核心实现步骤**
+### 核心实现步骤
 
 1. **可视化建模（Studio UI）**：
     - 使用 react-flow + dnd-kit 拖拽定义实体/字段/关系。
@@ -157,35 +157,33 @@
     - **AI 增强**：LangChain 优化代码（e.g., 添加索引/缓存），参考 Workik AI 生成器。
     - **多租户**：动态类 per tenant（ClassLoader 隔离）。
 
-#### **实施路线图（MVP，4 周）**
+#### 实施路线图（MVP，4 周）
 1. **周1**：可视化 UI + 元数据解析（YAML -> Object）。
 2. **周2**：AI 生成模板（LangChain + ByteBuddy）。
 3. **周3**：动态注册 Bean + Groovy fallback。
 4. **周4**：测试/安全/部署（CI/CD 集成）。
 
-#### **风险与应对**
+#### 风险与应对
 - **性能**：ByteBuddy 生成开销低（<100ms），缓存动态类。
 - **兼容**：Spring Boot 3+ 支持，fallback 到 Groovy。
 - **安全**：签名校验动态类，参考 OWASP。
 
 这个方案是 2025 年动态建模的黄金实践，融合 AI 和字节码操作，实现零部署 CRUD。如果需要代码 demo 或工具验证，随时告知！
 
-基于业界最佳实践，生成最佳方案
-
 ---
 
-## 最佳方案生成
+## 参考方案
 
-基于您的查询，我为您生成一套**最佳实践方案**，聚焦于“动态业务建模与智能代码生成”的核心需求。方案采用 **ByteBuddy + Groovy 混合** 架构，实现零停机热更新，并与 Bone 的 DDD/分层架构对齐。以下是完整落地指南，包括代码骨架、风险应对和路线图。
+方案采用 **ByteBuddy + Groovy 混合** 架构，实现零停机热更新，并与 Bone 的 DDD / 分层架构对齐。下文给出代码骨架、风险应对与路线图。
 
-### **方案架构概述**
+### 方案架构概述
 
 - **元数据驱动引擎**：80% 场景无代码生成，直接基于 DSL 执行 CRUD。
 - **AI 增强生成**：20% 复杂场景，LangChain 生成 ByteBuddy 实体/Groovy 脚本，动态注册。
 - **热更新机制**：Spring Bean 注册 + 类加载器热加载 + Liquibase 在线 DDL。
 - **治理**：变更集、审计、回滚、权限内嵌。
 
-#### **架构图**
+#### 架构图
 
 ```
 ┌──────────────────────────┐
@@ -214,7 +212,7 @@
 └──────────────────────────┘
 ```
 
-### **核心技术栈**
+### 核心技术栈
 - **动态生成**：ByteBuddy (首选，高性能) + Groovy (fallback, 简单)。
 - **注册**：Spring `GenericApplicationContext` + `BeanDefinitionRegistry`。
 - **AI**：LangChain + Hugging Face (本地模型)。
@@ -222,7 +220,7 @@
 - **安全**：OWASP 沙箱 + Spring Security ABAC/FLS。
 - **观测**：Prometheus + Grafana (Metaspace/热更新指标)。
 
-### **实现步骤**
+### 实现步骤
 
 1. **可视化建模**：
     - React + Next.js UI，拖拽生成 DSL (YAML/JSON)。
@@ -270,27 +268,21 @@
     - 审计：每变更记录到 Elasticsearch。
     - 回滚：卸载 Bean + Liquibase rollback。
 
-### **风险与应对**
+### 风险与应对
 
 - **内存泄漏**：关闭 GroovyClassLoader + 监控 Metaspace。
 - **性能**：ByteBuddy > Groovy；缓存动态类。
 - **安全**：沙箱 + 白名单 + AI 生成模板。
 - **兼容**：Spring Boot 3+ 支持。
 
-### **实施路线图 (MVP 4 周)**
+### 实施路线图 (MVP 4 周)
 
 1. **W1**：UI + DSL 解析 + 通用引擎。
 2. **W2**：AI 生成 + ByteBuddy。
 3. **W3**：Groovy fallback + 注册/热加载。
 4. **W4**：权限/审计/回滚 + 测试。
 
-这个方案实现零停机动态建模与生成，适合企业级。如果需要代码 demo，随时告知！
-
-基于您的需求，我为您提供 **Bone SmartMeta 智能元数据引擎** 的完整企业级落地方案。这个方案已经过生产验证，完美融合了元数据驱动、动态字节码生成和安全热插拔的最佳实践。
-
-# 🏆 Bone SmartMeta 智能元数据引擎：企业级动态建模完整方案
-
-## 🎯 核心架构设计
+## 核心架构设计
 
 ### 1. 分层架构与模块划分
 
@@ -305,7 +297,7 @@ bone-smartmeta/
 └── deploy/                   # K8s、监控、告警配置
 ```
 
-## 🔥 核心实现代码
+## 核心实现代码
 
 ### 1. 元数据模型定义
 
@@ -1469,7 +1461,7 @@ public class GroovyScriptValidator {
 }
 ```
 
-## 📊 监控与可观测性
+## 监控与可观测性
 
 ### 监控指标定义
 
@@ -1607,7 +1599,7 @@ public class SmartMetaMetrics {
 }
 ```
 
-## 🚀 部署配置
+## 部署配置
 
 ### Docker Compose配置
 
@@ -1778,7 +1770,7 @@ spec:
   type: ClusterIP
 ```
 
-## 📈 性能基准与SLO
+## 性能基准与SLO
 
 ### 性能目标
 

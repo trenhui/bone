@@ -4,7 +4,6 @@ import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.domain.model.iam.IamApplicationRef;
 import com.bone.metadata.catalog.domain.repository.IamApplicationRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * 应用存在性校验器（下游/Supplier 关系中的 Customer 侧守卫）。
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
  * <p>metadata 上下文不再拥有应用聚合根，模块(Module)必须挂在 IAM 上下文的 {@code bone_application} 之下。本校验器在 metadata
  * 写入模块前确认所引用的 {@code appId} 在 IAM 的 {@code bone_application} 中真实存在，维持跨上下文引用一致性。
  */
-@Component
 @RequiredArgsConstructor
 public class IamApplicationValidator {
 

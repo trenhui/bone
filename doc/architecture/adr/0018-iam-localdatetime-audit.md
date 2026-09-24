@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | 已接受（阶段 1 已落地；阶段 2 按需） |
+| **状态** | 已接受（阶段 1 已实现；阶段 2 按需） |
 | **日期** | 2026-05-22 |
 | **决策者** | 架构组 |
 | **关联** | [ADR-0011](./0011-aggregate-root-inheritance.md) |
@@ -17,7 +17,7 @@
 
 ## 决策
 
-### 阶段 1（当前，已落地）
+### 阶段 1（当前，已实现）
 
 1. 多租户聚合根使用 `TenantAggregateRoot`（`AggregateRoot` + `tenantId` + 领域事件），**不**继承 `TenantAbstractEntity`。
 2. 审计字段（`createdAt` / `updatedAt`）在 IAM 聚合内**显式声明为 `LocalDateTime`**，由工厂方法赋值。

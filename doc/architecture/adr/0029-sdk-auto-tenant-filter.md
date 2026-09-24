@@ -2,17 +2,17 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | 已接受 / 已实现（SDK 落地；待各业务模块回归） |
+| **状态** | 已接受 / 已实现（SDK 实现；待各业务模块回归） |
 | **日期** | 2026-09-18 |
 | **决策者** | 架构师 |
 | **关联** | [Bone-多租户规范.md](../Bone-多租户规范.md) §3/§4、[ADR-0016](./0016-metadata-catalog-abstract-entity-tenant.md)、[ADR-0019](./0019-id-generation-contract-respect-non-null-id.md)、[ADR-0006](./0006-iam-tenant-isolation-modes.md) |
-| **下游同步** | 接受后同步 `Bone-DDD-最终实践方案.md` E-0.3 所列文档 + `Bone-多租户规范.md` §3 落地态 |
+| **下游同步** | 接受后同步 `Bone-DDD-最终实践方案.md` E-0.3 所列文档 + `Bone-多租户规范.md` §3 实现态 |
 
 ---
 
 ## 背景
 
-1. **规范已要求、SDK 未落地**：`Bone-多租户规范.md` §3 明确"Infrastructure：SQL 自动附加 `tenant_id = ?`（拦截器 / SDK）"，§4 要求"所有业务查询带 `tenant_id`"。但 SDK 当前**只对扩展表 `ext_data_reserved` 的 JOIN/UPSERT 自动注入 `tenant_id`**（`SelectBuilder.java:64`、`CountBuilder.java:51`、`BaseRepository.java:790`）；**主表查询/更新/删除的 WHERE 从不自动注入**。
+1. **规范已要求、SDK 未实现**：`Bone-多租户规范.md` §3 明确"Infrastructure：SQL 自动附加 `tenant_id = ?`（拦截器 / SDK）"，§4 要求"所有业务查询带 `tenant_id`"。但 SDK 当前**只对扩展表 `ext_data_reserved` 的 JOIN/UPSERT 自动注入 `tenant_id`**（`SelectBuilder.java:64`、`CountBuilder.java:51`、`BaseRepository.java:790`）；**主表查询/更新/删除的 WHERE 从不自动注入**。
 2. **现状代价**：业务仓储必须手写 `eq("tenantId", tenantId)`（如 `OrderRepository#findByIdInTenant`），重复且易漏写；漏写即退化为"按 id 跨租户读取"，违反"失败关闭"。
 3. **id 全局唯一**：平台 id 生成契约（ADR-0019）保证 `id` 全局唯一，`WHERE id=?` 本身可唯一定位行。因此 `tenant_id` 进 WHERE 是**防御纵深**（防越权 + 失败关闭），而非唯一性依赖——自动注入让该纵深"零成本"获得。
 4. **`TenantContext` 已就绪**：`com.bone.core.tenant.context.TenantContext.getTenantIdAsLong()` 在 SDK 内已用于扩展表与 `AllocationContext`，请求线程由 JWT Filter 写入、结束 `clear()`。注入的来源与生命周期均已具备。
@@ -27,7 +27,13 @@
 2. **租户表识别**：`TableMetadata` 新增 `isTenantScoped`，由 `TableMetadataResolver` 在解析列时判定——实体含名为 `tenant_id` 的列（即继承 `TenantAbstractEntity` 或字段 `@Column(name="tenant_id")`）即视为租户表。非租户表（如平台级无租户实体）**不注入**。
 3. **租户来源**：构建时调用 `TenantContext.getTenantIdAsLong()`（SDK 已依赖 `bone-core`，新增 import 即可）。
 4. **参数命名防撞**：使用保留参数名 `_sdk_tenant_id`，与调用方可能手写的 `tenantId` 参数隔离。
-5. **租户只从可信 Context 注入，caller `Criteria` 的 `tenantId` 不可信**：tenant 由 `BaseRepository` 在入口从 `TenantContext.getTenantIdAsLong()` 填入各 `*Context`（`tenantId` 字段），构建器统一追加 `m.tenant_id = :_sdk_tenant_id`——与 `SelectBuilder.java:64` 扩展表 JOIN 自动带 `tenant_id` 同源。SDK **不读取 caller `Criteria` 里的 `tenantId` 条件**（违反多租户规范 §2「下游只读、禁止请求体覆盖已认证租户」）；若 caller 仍传 `eq("tenantId", X)`，SDK 忽略该条件并打 WARN。由此存量手写 `eq("tenantId",…)` 代码变为「无害冗余」（被忽略），无需改动即向后兼容。
+5. **租户只从可信 Context 注入，caller `Criteria` 的 `tenantId` 不可信**：tenant 由 `BaseRepository` 在入口从 `TenantContext.getTenantIdAsLong()` 填入各 `*Context`（`tenantId` 字段），构建器统一追加 `m.tenant_id = :_sdk_tenant_id`——与 `SelectBuilder.java:64` 扩展表 JOIN 自动带 `tenant_id` 同源。
+
+   SDK **不读取 caller `Criteria` 里的 `tenantId` 条件**（违反多租户规范 §2「下游只读、禁止请求体覆盖已认证租户」）；
+
+   若 caller 仍传 `eq("tenantId", X)`，SDK 忽略该条件并打 WARN。
+
+   由此存量手写 `eq("tenantId",…)` 代码变为「无害冗余」（被忽略），无需改动即向后兼容。
 6. **逃生舱（必含）**：提供显式关闭开关 `Criteria#disableTenantFilter()`（或在 `SelectContext`/`UpdateContext`/`DeleteContext` 置 `tenantFilterDisabled=true`），用于：
    - 跨租户平台管理查询（须 `platform:*` Scope + 审计）；
    - 后台作业 / Outbox 中继 / 定时任务等 `TenantContext` 为空的上下文——这些路径须**先 `TenantContext.setTenantId(...)` 再查**，或显式 `disableTenantFilter()`。
@@ -119,7 +125,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 
 ## 理由
 
-- **与既有规范一致**：把 §3 已声称的"SDK 自动附加"真正落地，消除规范与实现漂移。
+- **与既有规范一致**：把 §3 已声称的"SDK 自动附加"落实，消除规范与实现漂移。
 - **消除重复与漏写**：业务仓储不再手写 `eq("tenantId",…)`；租户隔离下沉到 SDK，是"失败关闭"而非"内存校验/靠人"。
 - **id 全局唯一下的纵深**：不依赖租户做唯一性，仅作安全护栏，自动注入零语义负担。
 - **向后兼容**：规则 5（调用方已带则不重复）+ 逃生舱保证 7 模块现有代码与后台链路可平滑迁移，不一次性破坏。
@@ -158,7 +164,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 
 ---
 
-## 实现方案（落地清单，供评审）
+## 实现方案（实现清单，供评审）
 
 | 文件 | 改动 |
 |------|------|
@@ -184,7 +190,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 
 ---
 
-## 建议补充（第 1、2 项已在 SDK 落地；第 3 项可选，未实现）
+## 建议补充（第 1、2 项已在 SDK 实现；第 3 项可选，未实现）
 
 > 以下两项是"读/删侧护栏"之外的**写侧完整性**增强；核心方案（SELECT/COUNT/UPDATE/DELETE 四类 WHERE 注入）已自洽，这两项可单独排期。
 
@@ -192,7 +198,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 
 - **现状缺口**：`BatchInsertBuilder` / `UpsertBuilder` 直接用实体字段（`ReflectionUtil.getFieldValue`），`TenantContext` 只用于扩展表；主表 insert **不读上下文补 tenant_id**（`Bone-多租户规范.md` §4 要求"插入时从上下文填充"）。若实体 `tenantId == null` → 插入 **NULL tenant 行**：所有租户过滤查询都读不到（数据黑洞），且 `disableTenantFilter()` 时泄漏——比读过滤缺失更严重的**写侧数据损坏**。
 - **建议**：insert 时若实体 `tenantId == null` 从 `TenantContext` 补；若非 null 但与 context 不符 → 以 context 为准（context 是唯一可信源），并打 WARN。
-- **落地**：`BatchInsertBuilder` / `UpsertBuilder` 在拼参数时，对 `tenantIdColumn` 特殊处理（优先 context 值）。
+- **实现**：`BatchInsertBuilder` / `UpsertBuilder` 在拼参数时，对 `tenantIdColumn` 特殊处理（优先 context 值）。
 
 ### 2. `save(entity)` / `update(entity)`（DynamicUpdateBuilder 按 pk）租户护栏
 
@@ -211,12 +217,25 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 - **门禁**：本 ADR 改变 SDK 运行时行为，属 L3 框架级改动，须架构师审批 + 本 ADR 接受后方可实现。
 - **回归范围**：7 个后端模块全量 `mvn test`；重点核对各模块 Outbox 中继、定时任务、`platform:*` 跨租户管理查询。
 - **迁移顺序**：先合 SDK（含逃生舱 + 单测）→ 各模块冒烟（后台链路补 `setTenantId`/`disableTenantFilter`）→ 再简化业务仓储手写 `eq("tenantId")`。
-- **文档同步**：接受后更新 `Bone-DDD-最终实践方案.md` E-0.3 下游清单、`Bone-多租户规范.md` §3 标记"已落地（SDK 自动注入）"、ADR README 索引加 0029。
+- **文档同步**：接受后更新 `Bone-DDD-最终实践方案.md` E-0.3 下游清单、`Bone-多租户规范.md` §3 标记"已实现（SDK 自动注入）"、ADR README 索引加 0029。
 
 ### 实现状态（2026-09-18）
 
-- **SDK 已实现并合入**：`TableMetadata`/`TableMetadataResolver` 租户识别（按 `fieldName==tenantId` 或列名 `tenant_id`/`tenantId`）、`Criteria#disableTenantFilter()`、`MissingTenantContextException`、`TenantFilterInjector`、`SelectBuilder`/`CountBuilder`/`ConditionalUpdateBuilder`/`DeleteBuilder`/`DynamicUpdateBuilder` 注入、`BaseRepository#deleteById`/`deleteByIds` 护栏、`BatchInsertBuilder`/`UpsertBuilder` 插入时从 `TenantContext` 补/校正 `tenant_id`。
-- **租户取值精炼（复核后采纳）**：`TenantFilterInjector` 取值优先级 = ① 可信 `TenantContext`（HTTP 路径，caller tenantId 被忽略 + WARN）→ ② 上下文为空且 caller 主表显式 `EQ` 限定单租户则以 caller 值兜底（后台 / 跨租户 admin 既有行为，仍单租户隔离）→ ③ 两者皆无才失败关闭。该精炼消除了"后台/跨租户 admin 调 `eq("tenantId")` 而上下文为空"的级联断点，同时不破 Outbox 中继（其无租户条件，仍须 `disableTenantFilter()`）。`disableTenantFilter()` 分支打 WARN 审计线索。
+- **SDK 已实现并合入**：
+
+  - 租户识别：`TableMetadata` / `TableMetadataResolver`（按 `fieldName == tenantId` 或列名 `tenant_id` / `tenantId`）；
+  - 开关与异常：`Criteria#disableTenantFilter()`、`MissingTenantContextException`、`TenantFilterInjector`；
+  - 构建器注入：`SelectBuilder` / `CountBuilder` / `ConditionalUpdateBuilder` / `DeleteBuilder` / `DynamicUpdateBuilder`；
+  - 删除护栏：`BaseRepository#deleteById` / `deleteByIds`；
+  - 写入补正：`BatchInsertBuilder` / `UpsertBuilder` 插入时从 `TenantContext` 补 / 校正 `tenant_id`。
+
+- **租户取值精炼（复核后采纳）**：`TenantFilterInjector` 取值优先级：
+
+   1. 可信 `TenantContext`（HTTP 路径，caller tenantId 被忽略 + WARN）；
+   2. 上下文为空且 caller 主表显式 `EQ` 限定单租户，则以 caller 值兜底（后台 / 跨租户 admin 既有行为，仍单租户隔离）；
+   3. 两者皆无才失败关闭。
+
+   该精炼消除了"后台/跨租户 admin 调 `eq("tenantId")` 而上下文为空"的级联断点，同时不破 Outbox 中继（其无租户条件，仍须 `disableTenantFilter()`）。`disableTenantFilter()` 分支打 WARN 审计线索。
 - **SDK 测试**：232 项全过（`TenantFilterInjectorTest` 锁定租户识别 / 失败关闭 / 逃生舱 / caller-EQ 兜底 / 上下文优先 / 插入补值契约）。
 - **业务模块已修**：`OrderOutboxRelayPortAdapter.relayPending()` 与 `IntegrationOutboxRelay.relayBatch()` 已加 `disableTenantFilter()`（跨租户全量扫描 PENDING）。
 - **待办（各业务模块）**：① 7 个模块全量 `mvn test` 回归；② 其余后台查询若既无 `TenantContext` 又未显式 `eq("tenant_id")` 且非 `disableTenantFilter` → 触发 `MissingTenantContextException`（预期失败关闭，须补 `setTenantId`/`disableTenantFilter`）；③ 业务仓储手写 `eq("tenantId",…)` 在 HTTP 路径被 SDK 忽略并 WARN、后台路径作兜底，可逐步移除。
@@ -224,5 +243,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 ### @Sql / 外置 `.sql` 通道扩展（ADR-0030，2026-09-19）
 
 - **原缺口已关闭**：本 ADR 原先只覆盖 Criteria 通道（SELECT/COUNT/UPDATE/DELETE 构建器自动注入）。`@Sql` / 外置 `.sql` 通道此前完全不经过 `TenantFilterInjector`，是租户隔离的盲区——这正是 ADR-0030「单一仓储合并」决策的**根因**。
-- **新增 `@TenantScope` + `TenantSqlRewriter`**：`bone-metadata-sdk` 在 `@Sql` 通道最终 SQL 上做 fail-closed 注入，复用本 ADR"可信上下文优先 / 失败关闭 / `MissingTenantContextException`"同一不变量。四模式 `AUTO/MANUAL/ALL/BYPASS`；`AUTO` 用锚点标记 `/*bone:tenant*/`（联表须带别名），JOIN 无锚点失败关闭；默认 `MANUAL`（向后兼容）。详见 [ADR-0030](./0030-domain-repository-read-merge.md) §1.3 与 §10.2。
+- **新增 `@TenantScope` + `TenantSqlRewriter`**：`bone-metadata-sdk` 在 `@Sql` 通道最终 SQL 上做 fail-closed 注入，复用本 ADR"可信上下文优先 / 失败关闭 / `MissingTenantContextException`"同一不变量。四模式 `AUTO` / `MANUAL` / `ALL` / `BYPASS`，默认 `MANUAL`（向后兼容）。
+
+  `AUTO` 用锚点标记 `/*bone:tenant*/`（联表须带别名），JOIN 无锚点失败关闭。详见 [ADR-0030](./0030-domain-repository-read-merge.md) §1.3 与 §10.2。
 - **影响与边界**：`@Sql` 读侧仓储（E-4.4）现在可与 Criteria 通道同享租户护栏；但既存 `@Sql` 方法默认 `MANUAL`（不注入），作者须显式选 `AUTO`（放锚点）或 `ALL`/`BYPASS`（登记授权）方获自动注入——避免一次性击碎存量。MANUAL 下"漏写租户条件"由 ADR-0030 §4 的 R4 lint 兜底。

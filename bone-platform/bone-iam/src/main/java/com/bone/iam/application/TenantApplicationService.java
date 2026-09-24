@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.application.command.CreateTenantCommand;
@@ -20,14 +21,23 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 租户应用层统一门面（Application Service First）——租户类用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code application.command.handler} / {@code application.query.handler} 下的 8 个租户 Handler
  * 已全量内联进本类 （E-3.11 一次性大爆炸收敛）。适配器只依赖本类，HTTP 契约（URL / DTO / 返回类型）保持不变。
+ *
+ * <p>/*
  *
  * <p>本类不出现读侧 DSL：编码查重与分页检索下沉 {@link TenantRepository#countByCode} / {@link
  * TenantRepository#findTenantPage}（本聚合读，ADR-0030 / E-4.2）。
  */
+/*
+/*
+* <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务管理的聚合（Tenant）当前不发布领域事件，其创建/更新/配额变更均属内部状态迁移、下游无上下文需感知；若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+*/
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class TenantApplicationService {
 
   private static final long PLATFORM_TENANT_ID = 0L;

@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.CreateAccountCommand;
@@ -32,15 +33,23 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 账号应用服务（Application Service First）——账号类用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code command.handler} 下的 9 个 Handler 与 {@code query.handler} 的 {@code
  * AccountPageQueryHandler} / {@code AccountDetailQueryHandler} 逻辑已全量内联于此（E-3.11 一次性大爆炸收敛）。
  * Controller 只依赖本类。各方法语义 / 异常 / 事务边界与原 Handler 一致（HTTP 契约不变）。
  *
+ * <p>/*
+ *
  * <p>本类不出现读侧 DSL 与 {@code TenantContext}：分页条件下沉 {@link AccountRepository#findAccountPage}（本聚合读），
  * 租户取值走 {@link TenantProvider} 端口（E-2 / E-4.2）。
  */
+/*
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务管理的聚合（Account）当前不发布领域事件，其创建/启用/禁用/锁定/改密均属内部状态迁移、下游无上下文需感知；若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+ */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class AccountApplicationService {
 
   private final AccountRepository accountRepository;
@@ -149,6 +158,8 @@ public class AccountApplicationService {
 
   /**
    * 自助改密：校验旧密码 → 应用弱口令策略 → 重哈希 → 更新 {@code password_updated_at}。
+   *
+   * <p>/*
    *
    * <p>注意：不会自动吊销 refresh token；如需"改密即下线"，前端应在改密成功后调用 {@code DELETE /accounts/{id}/sessions}（需
    * {@code iam:sessions:write} 权限）或登出。

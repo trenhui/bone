@@ -63,7 +63,7 @@ class OrderCreatedEventHandlerTest {
             2,
             new BigDecimal("100"),
             new BigDecimal("200"));
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.singletonList(row));
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(Collections.singletonList(row));
 
     handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
 
@@ -87,7 +87,7 @@ class OrderCreatedEventHandlerTest {
             2,
             new BigDecimal("100"),
             new BigDecimal("200"));
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.singletonList(row));
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(Collections.singletonList(row));
     doThrow(new RuntimeException("库存服务暂时不可用"))
         .when(inventoryGateway)
         .reserveStock(anyLong(), anyLong(), anyInt());
@@ -114,7 +114,7 @@ class OrderCreatedEventHandlerTest {
             null,
             null,
             null);
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(nullRow));
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(List.of(nullRow));
 
     handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
 

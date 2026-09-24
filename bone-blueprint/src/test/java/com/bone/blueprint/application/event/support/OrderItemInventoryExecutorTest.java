@@ -42,7 +42,7 @@ class OrderItemInventoryExecutorTest {
 
   @Test
   void invokesActionPerItemAndSkipsOnFailureWhenPresent() {
-    when(orderRepository.findOrderWithItems(1L, 1L))
+    when(orderRepository.findOrderWithItems(1L))
         .thenReturn(List.of(row(10L, 100L, 2), row(11L, 101L, 3)));
     OrderItemInventoryExecutor.StockAction action =
         mock(OrderItemInventoryExecutor.StockAction.class);
@@ -60,7 +60,7 @@ class OrderItemInventoryExecutorTest {
    */
   @Test
   void callbackFailureDoesNotAbortLoopOrEscape() {
-    when(orderRepository.findOrderWithItems(1L, 1L))
+    when(orderRepository.findOrderWithItems(1L))
         .thenReturn(List.of(row(10L, 100L, 2), row(11L, 101L, 3)));
     OrderItemInventoryExecutor.StockAction action =
         mock(OrderItemInventoryExecutor.StockAction.class);

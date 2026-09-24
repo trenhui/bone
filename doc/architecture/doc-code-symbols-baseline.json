@@ -1,0 +1,533 @@
+{
+  "version": 1,
+  "shrinkOnly": true,
+  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。",
+  "docLevel": [
+    {
+      "doc": "design/modules/1. 控制台与仪表盘模块详细设计方案.md",
+      "reason": "tobe-named",
+      "note": "§3.3.2 收敛补注与命名提示给出 To-Be 示意名到 As-Is 真名的映射，正文沿用示意名"
+    },
+    {
+      "doc": "design/modules/3. 主数据管理模块详细设计方案.md",
+      "reason": "tobe-named",
+      "note": "各节「命名提示」给出 MasterDataModel→MasterDataEntity 等 To-Be 到 As-Is 映射"
+    },
+    {
+      "doc": "design/BONE-X-Studio-详细设计方案.md",
+      "reason": "vision",
+      "note": "目标态详细设计，多数构件为 Vision，未实现"
+    },
+    {
+      "doc": "architecture/smartmeta/BoneSmartMetaDynamic.md",
+      "reason": "vision",
+      "note": "概念与终局能力长文，非实现真源"
+    },
+    {
+      "doc": "wiki/10-MVP-范围清单.md",
+      "reason": "history",
+      "note": "MVP 修复记录，保留决策时点类名"
+    },
+    {
+      "doc": "architecture/Bone-DDD-最终实践方案.md",
+      "reason": "history",
+      "note": "已合并或已删除的构件出现在历史叙述里（如 OrderQueryPort、OrderReadRepository）"
+    },
+    {
+      "doc": "architecture/design-single-repository-tenant-scope.md",
+      "reason": "design-note",
+      "note": "设计探讨文档，描述当时的仓储形态"
+    },
+    {
+      "doc": "architecture/Bone-Metadata-SDK-能力需求.md",
+      "reason": "requirement",
+      "note": "需求文档，示例类名取自 blueprint 示例仓库"
+    },
+    {
+      "doc": "architecture/adr/0002-iam-rbac-jwt-authorities.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0017-masterdata-catalog-sync.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0019-id-generation-contract-respect-non-null-id.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0021-outbox-and-consumer-idempotency-platformization.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0022-external-callback-signature-verification-port.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0027-module-layer-semantics-before-physical.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0028-application-service-first-selective-cqrs.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0029-sdk-auto-tenant-filter.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0030-domain-repository-read-merge.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0031-sdk-optimistic-lock-and-async-tenant-context.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0032-controlled-batch-convergence.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0033-application-collaboration-service.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0034-tenant-scope-explicitness-and-all-entry-gate.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0035-application-layer-keeps-only-application-service.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0036-domain-model-package-single-standard.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "architecture/adr/0037-integration-engine-single-module.md",
+      "reason": "decision-snapshot",
+      "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    }
+  ],
+  "symbols": [
+    {
+      "symbol": "AccountAuthoritiesQueryHandler",
+      "docs": [
+        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "AssignPermissionCommandHandler",
+      "docs": [
+        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md",
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "AutoExtractFieldsCommandHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CatalogController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CodeGenerationCleanupJob",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CodeRepositoryGateway",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ConvertFromBusinessEntityCommandHandler",
+      "docs": [
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateAccountCommandHandler",
+      "docs": [
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateCodeGenerationTaskHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateConnectorCommandHandler",
+      "docs": [
+        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateDataSourceCommandHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateEntityCommandHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateFlowCommandHandler",
+      "docs": [
+        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateTemplateCommandHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateTenantCommandHandler",
+      "docs": [
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "CreateXxxCommandHandler",
+      "docs": [
+        "doc/wiki/05-工程规范与安全.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DataSourceAssembler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DataSourceByIdQueryHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DataSourceCommandHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DataSourcePageQueryHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DataSourceQueryHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "EntityController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExecuteFlowCommandHandler",
+      "docs": [
+        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExecuteFlowHandler",
+      "docs": [
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExecutionLogRepository",
+      "docs": [
+        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExtPointCommandHandler",
+      "docs": [
+        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExtensionCommandHandler",
+      "docs": [
+        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExtensionPointController",
+      "docs": [
+        "doc/architecture/Bone-API-规范.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ExtensionStudioCommandHandler",
+      "docs": [
+        "doc/design/modules/5. 扩展管理模块详细设计方案.md",
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "FieldController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "FileStorageGateway",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "FlowRepository",
+      "docs": [
+        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "GenTypeMappingRepository",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "GenerateCodeCommandHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "GenerationTaskCompletedEventHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "GetAuditSettingsQueryHandler",
+      "docs": [
+        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "MasterDataRecordController",
+      "docs": [
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "MinioStorageGateway",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "MinioStorageGatewayAdapter",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "PluginDependencyGraphQueryHandler",
+      "docs": [
+        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "PublishTemplateCommandHandler",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "RelationshipController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "SyncTableMetadataCommandHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "TemplateController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "TemplateDetailQueryHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "TemplateRepository",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "TestDataSourceConnectionCommandHandler",
+      "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "UpdateAccountCommandHandler",
+      "docs": [
+        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md",
+        "doc/wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "UpdateAuditSettingsCommandHandler",
+      "docs": [
+        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "XxxByIdQueryHandler",
+      "docs": [
+        "doc/wiki/05-工程规范与安全.md"
+      ],
+      "reason": "handler-era-naming",
+      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    }
+  ]
+}

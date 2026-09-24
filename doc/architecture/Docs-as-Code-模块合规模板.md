@@ -47,7 +47,7 @@ scripts/ci/collect-{module}-compliance.sh
 ## 新增模块检查清单
 
 1. 复制 `tools/extension-compliance-collector/` 为模板，改 `MODULE`、`ROOT` 路径与扫描规则。
-2. 在 `backlog.yaml` **只写未落地项**；已落地项写成 `collect.py` 里的 `as_is` 扫描。
+2. 在 `backlog.yaml` **只写未实现项**；已实现项写成 `collect.py` 里的 `as_is` 扫描。
 3. 注册 `scripts/ci/collect-*-compliance.sh` 与 `.github/workflows/*` job（`collect` + `--check`；有详设则加 `diff` GENERATED 块）。
 4. 更新 `doc/_generated/README.md`、`doc/agents/06-AI协作与编码准则.md` §11.9、文档治理子任务表。
 5. PR 说明附：`bash scripts/ci/collect-{module}-compliance.sh --sync-doc` 已执行。
@@ -88,7 +88,7 @@ bash scripts/ci/collect-all-compliance.sh --check      # 仅校验，CI 同款
 | masterdata | `tools/masterdata-compliance-collector` | [3. 主数据管理模块详细设计方案](../design/modules/3.%20主数据管理模块详细设计方案.md)（`MDM_COMPLIANCE_*`） | `docs-compliance.yml` |
 | generator | `tools/generator-compliance-collector` | [8. Studio Generator 详细设计方案](../design/modules/8.Studio%20Generator%20详细设计方案.md)（`GEN_COMPLIANCE_*`） | `docs-compliance.yml` |
 | console | `tools/console-compliance-collector` | —（仅 `_generated/console/`） | `docs-compliance.yml` |
-| blueprint | `tools/blueprint-compliance-collector` | —（仅 `_generated/blueprint/` + [bone-blueprint/README](../../bone-blueprint/README.md)） | `blueprint.yml` · `docs-compliance.yml` |
+| blueprint | `tools/blueprint-compliance-collector` | —（仅 `_generated/blueprint/` + [bone-blueprint/README.md](../../bone-blueprint/README.md)） | `blueprint.yml` · `docs-compliance.yml` |
 
 聚合校验：[`docs-compliance.yml`](../../.github/workflows/docs-compliance.yml) + `scripts/ci/collect-all-compliance.sh`。
 

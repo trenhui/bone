@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.UpdateAuditSettingsCommand;
 import com.bone.iam.application.query.dto.AuditLogDTO;
@@ -20,16 +21,24 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 审计应用层统一门面（Application Service First）——审计日志查询与审计设置管理的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code application/query/handler/AuditLogListQueryHandler}、{@code
  * GetAuditSettingsQueryHandler} 与 {@code
  * application/command/handler/UpdateAuditSettingsCommandHandler} 已全量内联进本类（E-3.11
  * 一次性大爆炸收敛）。适配器只依赖本类。
  *
+ * <p>/*
+ *
  * <p>本类不出现读侧 DSL 与 {@code TenantContext}：日志检索下沉 {@link AuditLogRepository#findAuditLogPage}
  * （本聚合读，ADR-0030 / E-4.2），租户取值走 {@link TenantProvider} 端口（E-2）。
  */
+/*
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务管理的聚合（AuditLog / AuditSettings）当前不发布领域事件，审计写入与设置变更均属内部状态迁移、下游无上下文需感知；若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+ */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class AuditApplicationService {
 
   private final AuditSettingsGateway auditSettingsGateway;
@@ -81,6 +90,8 @@ public class AuditApplicationService {
 
   /**
    * 记录一条审计日志（原 {@code application/service/AuditService} 的落库逻辑，ADR-0033 撤销后收口进本类）。
+   *
+   * <p>/*
    *
    * <p>创建领域对象与持久化本就是应用服务的职责；内部入口（如 {@code AuditUtils}）直接调用本方法即可，无需再经过一层 {@code *Service}。
    */

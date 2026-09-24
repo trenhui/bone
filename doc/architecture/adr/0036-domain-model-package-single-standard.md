@@ -2,13 +2,13 @@
 
 | 项 | 内容 |
 |----|------|
-| 状态 | 已采纳（2026-09-22）。全部应用模块的存量迁移已于当日完成，见「落地结果」 |
+| 状态 | 已采纳（2026-09-22）。全部应用模块的存量迁移已于当日完成，见「实现结果」 |
 | 日期 | 2026-09-22 |
 | 决策者 | 架构师 |
 | 取代 | E-10「domain 内部分组有两种合法形态」双形态条款（v5.5.16 及以前） |
 | 关联 | E-0.2、E-4.1、E-9、E-10.3、E-13.1、[ADR-0030](./0030-domain-repository-read-merge.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
 | 下游同步 | DDD 规范（E-10 参考树、分组条款、E-10.3 样例、E-4.1 与 E-13.1 投影落点）、[03-架构分层规范.md](../../agents/03-架构分层规范.md)、七个模块 README 的「E-10 domain 分组形态登记」、`studio-generator` 生成模板与 `GeneratedLayoutTest`、`scripts/check-domain-model-layout.py` 与 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json) |
-| 未完成项 | 无；D5 / D6 均已于 2026-09-23 落地 |
+| 未完成项 | 无；D5 / D6 均已于 2026-09-23 实现 |
 
 ## 背景
 
@@ -83,7 +83,14 @@ domain/
 
 - ArchUnit 无需改动：共享规则库与各模块 `ArchitectureTest` 的谓词粒度都在 `..domain..` 这一层，没有按聚合包名或包深度判定的规则；`AggregatePureUnitTestGuard` 亦与包深度无关。
 - `FreezingArchRule` 无需重冻：`bone-iam/archunit_store/` 的违规文件均为空，键位由规则文本派生，与类名无关。
-- 形态校验已落地（2026-09-23）：`scripts/check-domain-model-layout.py`，接入 `scripts/ci-check.sh` `[10/10]`，四条判定为 C1 两套分组并存、C2 `model/` 下平铺、C3 空聚合包、C4 `domain/` 根下未登记子包；模块自有的领域端口子包（iam 与 integration 的 `client`、blueprint 的 `extension`）登记在 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json)，只可收缩。状态为 **Manual（本地脚本，未接入 workflow）**，G-1.1 第 18 行由 gate-state.json 渲染。
+- 形态校验已实现（2026-09-23）：`scripts/check-domain-model-layout.py`，接入 `scripts/ci-check.sh` `[10/10]`，四条判定为：
+
+  - C1 两套分组并存；
+  - C2 `model/` 下平铺；
+  - C3 空聚合包；
+  - C4 `domain/` 根下未登记子包。
+
+  模块自有的领域端口子包（iam 与 integration 的 `client`、blueprint 的 `extension`）登记在 [domain-model-layout-baseline.json](../domain-model-layout-baseline.json)，只可收缩。状态为 **Manual（本地脚本，未接入 workflow）**，G-1.1 第 18 行由 gate-state.json 渲染。
 - 适用边界由脚本自行判定：只在同时具备 `application` 与 `adapter` 包的四层应用模块内生效；按层拆成多个 Maven 模块的引擎（`bone-metadata-engine` 的 `-domain` / `-ports` / `-runtime` / `-starter`）不套用本形态。
 
 ### D6 生成模板对齐（2026-09-23 完成）
@@ -95,7 +102,7 @@ domain/
 
 `GeneratorUtils` 新增 `aggregateSegment` 与 `basePath` 供两条通道共用；`GeneratedLayoutTest` 锁定四条生成路径与包声明，防止再次漂移。
 
-## 落地结果
+## 实现结果
 
 2026-09-22 全部完成，各模块测试全绿：
 
@@ -103,7 +110,7 @@ domain/
 |---|---|---|
 | bone-notification | `domain/model/notification` + `domain/repository` | 20 测试 |
 | bone-system | `domain/model/{alert,config,console,dict,log,schedule}`；`vo` → `valueobject` | 92 测试 |
-| bone-blueprint | `domain/model/{order,payment,shared}`；`repository` / `gateway` / `extension` 留根 | 212 测试，首个落地模块 |
+| bone-blueprint | `domain/model/{order,payment,shared}`；`repository` / `gateway` / `extension` 留根 | 212 测试，首个实现模块 |
 | bone-masterdata | 双树合并为 `domain/model/{entity,field,lineage,quality,record,standard}`；`vo` → `valueobject` | 59 测试 |
 | bone-integration | `domain/model/{connector,execution,flow}`；`client` 定性为端口接口，留根 | 75 测试 |
 | bone-extension-studio | `domain/model/{plugin,extpoint,extension,execution,marketplace,audit,operation}` | 59 测试 |
@@ -123,7 +130,7 @@ README 登记：blueprint、iam、system、masterdata、integration、metadata-s
 2. 资源目录镜像包路径：本仓唯一的 `src/main/resources/sql/…` 镜像 `domain/repository`，不在迁移范围内。
 3. `package-private` 可见性随包边界变化，以编译通过为准。
 
-遗留：无。D5 布局门禁与 D6 生成模板均已落地。
+遗留：无。D5 布局门禁与 D6 生成模板均已实现。
 
 ## 未采纳方案
 

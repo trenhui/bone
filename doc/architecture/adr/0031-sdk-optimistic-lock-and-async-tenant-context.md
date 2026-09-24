@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | 提议 · 待架构组批准（**D0、D1、D2 已落地**，D3 待开工；D1、D2 均经独立代码审查修正后入库） |
+| **状态** | 提议 · 待架构组批准（**D0、D1、D2 已实现**，D3 待开工；D1、D2 均经独立代码审查修正后入库） |
 | **日期** | 2026-09-19 |
 | **决策者** | 架构师 |
 | **关联** | [ADR-0029](./0029-sdk-auto-tenant-filter.md)（租户过滤失败关闭）、[ADR-0030](./0030-domain-repository-read-merge.md)（单一仓储 / 外置 `.sql` / `@TenantScope`）、E-2（异步入口须显式声明租户）、E-5.3 / CORE-07（乐观锁）、[06-AI协作与编码准则](../../agents/06-AI协作与编码准则.md) §12（**L3 须架构师审批**） |
@@ -55,7 +55,7 @@ blueprint 因此在两个域仓储里各写一份 `saveWithVersionCheck`（`upda
 
 分四批，**顺序不可调换**（先 SDK 能力、再业务切换、最后入口纪律）：
 
-### D0（已落地 · L2）：补全读/写护栏不对称，消除缺陷 1 / 2
+### D0（已实现 · L2）：补全读/写护栏不对称，消除缺陷 1 / 2
 
 1. `bone-core` 新增 `TenantContextRunner`：`runAs(Long, Runnable)` / `callAs(Long, Supplier<T>)`，进入前记录、退出 `finally` 恢复（异步线程原值通常为 `null` ⇒ 等价清空，不残留、不串租户；嵌套与请求线程内调用同样安全）；`tenantId == null` **快速失败**（`NullPointerException`）——"没传租户"与"以某租户执行"不是一回事，不应静默退化成无上下文。
 2. `OrderOutboxRelayPortAdapter`：扫描保持 `disableTenantFilter()`（跨租户），**逐条** `TenantContextRunner.callAs(record.getTenantId(), () -> relayOne(record))`。
@@ -63,7 +63,7 @@ blueprint 因此在两个域仓储里各写一份 `saveWithVersionCheck`（`upda
 4. 契约测试（锁住不变量，防止回退）：`TenantContextRunnerTest`（作用域内可见 / 退出恢复前值 / 异常路径恢复 / 拒绝 `null`）、`DynamicUpdateBuilderTest`（**写路径无兜底**：缺上下文必抛；非数值租户编码同样必抛；**上下文与实体字段不同值时以上下文为准**）、`OrderOutboxRelayTest`（逐条上下文可见 + 退出无残留 + **一批多租户各自声明** + 写失败仍恢复）、`OrderPaymentInconsistencyJobTest`（同理）。
 5. 说明：写路径"无 caller-EQ 兜底、不认 `disableTenantFilter()`"是**签名层的结构事实**（`DynamicUpdateContext` 只有 `table` + `entity`，`SqlBuilder.buildDynamicUpdate` 无 `Criteria` 形参），无法用行为断言直接表达；测试改为断言"**实体字段不是授权来源**"这一等价且可判别的性质。
 
-### D1（P1 · L3 · **已落地**）：SDK 原生支持 `@Version`
+### D1（P1 · L3 · **已实现**）：SDK 原生支持 `@Version`
 
 1. `TableMetadata` 暴露 `getVersion()` / `isVersioned()`（去掉 `@Getter(AccessLevel.NONE)`）；未标 `@Version` 的表**不启用**加锁（零向后兼容风险）。`@Version` 字段**必须是 `Number` 子类型**，否则解析期即抛 `MetadataException`。
 2. `DynamicUpdateBuilder`：
@@ -81,7 +81,7 @@ blueprint 因此在两个域仓储里各写一份 `saveWithVersionCheck`（`upda
 
 `Order` / `Payment` 补 `@Version`；删除 `incrementVersion()`（Order 6 处 / Payment 5 处调用）；`saveWithVersionCheck` 退役为 SDK `update(entity)`；SDK 异常在应用层翻译回现有 `OptimisticLockConflictException` 语义。
 
-> **D2 落地（2026-09-19）**：已按上述实施并通过独立代码审查。要点：
+> **D2 实现（2026-09-19）**：已按上述实施并通过独立代码审查。要点：
 > - `PaymentApplicationService#processCallback` 成功路径并发拦截改为 `catch (OptimisticLockingFailureException | DuplicateKeyException)` 统一按幂等跳过，保持 ADR 要求的"保持有效"语义（避免 re-throw 逃逸成 500）。
 > - 其余 10 处调用点将 SDK `OptimisticLockingFailureException` 翻译为领域 `OptimisticLockConflictException` 后按硬错误上抛。
 > - 写路径改走 SDK `update(entity)` 后租户由 `TenantContext` 提供，两个 `@Scheduled` 任务（`CancelExpiredOrderJob` / `CloseExpiredPaymentJob`）已在调用处用 `TenantContextRunner.runAs(row.getTenantId(), …)` 显式声明租户，否则会因 ADR-0029 失败关闭被任务 `catch(Exception)` 静默吞掉。
@@ -123,7 +123,7 @@ R3 / R4 之外补 **R7「异步入口必须显式声明租户」**：`@Scheduled
 - **单测的固有局限（已实测确认）**：仓储被 mock 时不会抛 `MissingTenantContextException`，新测试锁的是"逐条声明了上下文"，**不能复现失败关闭本身**；后者只能靠集成测试 + SDK 侧 `DynamicUpdateBuilderTest` 共同覆盖。
 - **中继的"毒丸"锐边（评审查出，未在本轮修改）**：`relayPending` 整批一个事务，`relayOne` 的 catch 分支再抛会使整批回滚（本改动把"必炸"变成"正常"，但单条脏数据仍可演变为永久毒丸，例如 `record.getTenantId()` 为 `null`）。`TenantContextRunner` 现对 `null` 快速失败，故该情形会**响亮失败**而非静默；彻底隔离需逐条 `REQUIRES_NEW`，与 MQ 至少一次语义的交互需单独评估，留 D3。
 - **线程继承语义**：`TenantContext` 底层是 `InheritableThreadLocal`，`runAs` 作用域内**新建**的线程会继承该租户，而退出时的恢复只作用于当前线程——需向工作线程传递上下文时应显式包装线程池（已在 `TenantContextRunner` javadoc 写明）。
-- **D1 的破坏性（实际为零）**：`update()` 0 行语义仅对 **version 表**改为抛异常；非 version 表保留 `false`。D2 已于 2026-09-19 落地（`Order` / `Payment` 标注 `@Version`），该变更随之生效；新模块都不再需要手写 `saveWithVersionCheck`。
+- **D1 的破坏性（实际为零）**：`update()` 0 行语义仅对 **version 表**改为抛异常；非 version 表保留 `false`。D2 已于 2026-09-19 实现（`Order` / `Payment` 标注 `@Version`），该变更随之生效；新模块都不再需要手写 `saveWithVersionCheck`。
 - **`affected=0` 歧义不可消除**（见 D1.7），调用方需按"冲突或不存在"统一处理。
 - D1/D2 属 **L3**（改 SDK 行为 + 删除既有代码），须架构师审批并走 PR 双人 Review。
 
@@ -143,14 +143,14 @@ R3 / R4 之外补 **R7「异步入口必须显式声明租户」**：`@Scheduled
 
 ## 合规与迁移
 
-1. **批次与可上线性**：D0（可独立上线，已落地）；D1（可独立上线，仅 SDK + SDK 测试）；D2（依赖 D1）；D3（依赖 D2，且顺带修复缺陷 1/2 的根因）。
+1. **批次与可上线性**：D0（可独立上线，已实现）；D1（可独立上线，仅 SDK + SDK 测试）；D2（依赖 D1）；D3（依赖 D2，且顺带修复缺陷 1/2 的根因）。
 2. **验证矩阵（D1/D2/D3 各自的验收）**：
    - D1：未标 `@Version` 不启用 / 冲突抛异常 / 成功回写实体 / `null` 初始化 0 / 批量声明不支持。
    - D2：`Order`/`Payment` 状态迁移后实体 `version` 与库内一致；并发两次写第二次冲突；`OptimisticLockConflictException` 语义不变。
    - D3：`runAs` 后写成功且退出无残留；漏 `runAs` 的路径必须失败关闭（集成测试）；E-2 声明与上下文不一致时拒绝执行。
 3. **回归面**：D0 已跑 `bone-metadata-sdk` **250**、`bone-blueprint` **205**（含既有门禁测试 `SqlTemplateGovernanceTest` 9）、`TenantContextRunnerTest` **4**，全绿。
 4. **回滚**：D0 可整体回滚（`TenantContextRunner` 无其他调用方）；D1 以"是否标注 `@Version`"为开关，回滚即去掉注解。
-5. **遗留待办（本轮发现，不属本 ADR 决策范围，均需单独收口；也是当前工作区 `mvn -am` 全 reactor 跑不通的原因）**：
+5. **遗留待办（本轮发现，不属本 ADR 决策范围，均需单独收敛；也是当前工作区 `mvn -am` 全 reactor 跑不通的原因）**：
    - `bone-framework/bone-architecture-test/.../BoneDddArchRules.java`（未提交 WIP）**spotless 违规**，导致 `mvn install` 在该模块即失败（`bone-core` 之后的模块拿不到最新 jar，本轮改为单独 install `bone-core` 规避）。
    - `bone-blueprint/src/test/java/com/bone/blueprint/SqlTemplateGovernanceTest.java`（**未跟踪**新文件，ADR-0030 门禁①③④⑥ 的载体，9 个用例全绿）同样 spotless 违规 → `mvn -pl bone-blueprint test` 会在 `spotless:check` 阶段失败。该文件归属待确认后统一 `spotless:apply`。
    - `bone-core` 的 `DomainRepositoryReturnTypeRuleTest#projectionAndPersistenceVocabularyAreRejected` **失败**：未提交的 `BoneDddArchRules` ADR-0030 R2 放宽（允许 `List` / `PageResult` 承载领域读模型）与旧 fixture 期望不一致，需同步更新期望或 fixture。

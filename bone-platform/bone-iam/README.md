@@ -66,7 +66,7 @@ bone-iam 是下列表的唯一写方与 Schema _owner；其他模块只读须经
 | `iam_dept` | 部门 | Dept |
 | `iam_audit_log` | 审计日志 | AuditLog |
 | `iam_tenant` | 租户 | Tenant |
-| `iam_session` | 会话（refresh token 关联） | Session |
+| `iam_session` | 会话（网关/Redis 持久化，非关系表，经 `RefreshTokenSessionGatewayAdapter`） | Session |
 | `bone_application` | 应用 | Application |
 | `bone_module` | 模块 | Module |
 | `bone_app_permission` | 应用-权限授权 | Application/Permission |

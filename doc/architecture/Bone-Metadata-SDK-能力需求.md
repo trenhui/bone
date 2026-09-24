@@ -1,14 +1,14 @@
-# Bone Metadata SDK 能力需求（源自 bone-blueprint 落地阻塞）
+# Bone Metadata SDK 能力需求（源自 bone-blueprint 实现阻塞）
 
-> **来源**：`bone-blueprint` 按 [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) 落地时的三条**不可在模块内自行解决**的阻塞项。
+> **来源**：`bone-blueprint` 按 [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) 实现时的三条**不可在模块内自行解决**的阻塞项。
 > **性质**：能力需求（非 ADR）。提交给 `bone-metadata-sdk` 团队评估排期。
-> **状态**：需求一（`@Version`）已落地（ADR-0031）；需求二写侧 MVP 已落地（`@Cascade`）。**明确不做**：强类型 ID / PO 分离（原需求三）、级联读回填与批量级联。blueprint 侧登记见 `bone-blueprint/README.md` 与 [E-4.1](./Bone-DDD-最终实践方案.md#e-41-写侧) / [E-6.3](./Bone-DDD-最终实践方案.md#e-63-po-分离信号)。
+> **状态**：需求一（`@Version`）已实现（ADR-0031）；需求二写侧 MVP 已实现（`@Cascade`）。**明确不做**：强类型 ID / PO 分离（原需求三）、级联读回填与批量级联。blueprint 侧登记见 `bone-blueprint/README.md` 与 [E-4.1](./Bone-DDD-最终实践方案.md#e-41-写侧) / [E-6.3](./Bone-DDD-最终实践方案.md#e-63-po-分离信号)。
 
 ---
 
 ## 背景
 
-`bone-blueprint` 是 Bone 的 DDD 参考实现（订单 / 支付限界上下文，L3 档位：Outbox + 幂等 + 补偿）。在落地 E-5.3（并发策略）、CORE-11（聚合 1:1 落盘）、E-7.1（强类型 ID）时，持久化边界曾被 SDK 能力阻断。需求一、二写路径已收敛；其余项按下表**明确不做**，AI / 评审不得当作待办推进。
+`bone-blueprint` 是 Bone 的 DDD 参考实现（订单 / 支付限界上下文，L3 档位：Outbox + 幂等 + 补偿）。在实现 E-5.3（并发策略）、CORE-11（聚合 1:1 落盘）、E-7.1（强类型 ID）时，持久化边界曾被 SDK 能力阻断。需求一、二写路径已收敛；其余项按下表**明确不做**，AI / 评审不得当作待办推进。
 
 ---
 
@@ -16,7 +16,7 @@
 
 **阻塞项**：#4（订单 / 支付单的 DB 级并发护栏，E-5.3 / CORE-07）
 
-**状态**：已落地（ADR-0031）。`DynamicUpdateBuilder` 追加 `WHERE version = :old` 与 `SET version = version + 1`；`BaseRepository.update` 在 0 行时抛 `OptimisticLockingFailureException`，成功后回写实体 version。blueprint `Order` / `Payment` 已标 `@Version`。
+**状态**：已实现（ADR-0031）。`DynamicUpdateBuilder` 追加 `WHERE version = :old` 与 `SET version = version + 1`；`BaseRepository.update` 在 0 行时抛 `OptimisticLockingFailureException`，成功后回写实体 version。blueprint `Order` / `Payment` 已标 `@Version`。
 
 **验收标准**：两个并发事务更新同一条聚合，后提交者抛出冲突异常，且 `version` 递增——写路径已满足。
 
@@ -26,7 +26,7 @@
 
 **阻塞项**：#3 / CORE-11 偏差（聚合根是唯一持久化入口）
 
-**状态**：写侧 MVP 已落地（`@Cascade` + `AggregateCascadeWriter`）。`BaseRepository.insert` / `update` / `save` 在根落盘后回填外键、逐条 insert/update，并在 `update` 时清除孤儿行（软删优先）。blueprint `Order.items` 已标注 `@Cascade(foreignKey = "orderId")`，应用层不再调用子实体仓储；`OrderItemRepository` 已删除。
+**状态**：写侧 MVP 已实现（`@Cascade` + `AggregateCascadeWriter`）。`BaseRepository.insert` / `update` / `save` 在根落盘后回填外键、逐条 insert/update，并在 `update` 时清除孤儿行（软删优先）。blueprint `Order.items` 已标注 `@Cascade(foreignKey = "orderId")`，应用层不再调用子实体仓储；`OrderItemRepository` 已删除。
 
 **明确不做（非目标，勿排期、勿 PR）**：
 
@@ -65,8 +65,8 @@
 
 | 需求 | 结论 |
 |------|------|
-| 一、原生 `@Version` 乐观锁 | **已落地**（ADR-0031） |
-| 二、聚合级联落库（写侧） | **已落地**（`@Cascade` MVP） |
+| 一、原生 `@Version` 乐观锁 | **已实现**（ADR-0031） |
+| 二、聚合级联落库（写侧） | **已实现**（`@Cascade` MVP） |
 | 二补充：读回填 / 批量级联 | **明确不做** |
 | 三、强类型 ID + 连带 PO 分离 | **明确不做** |
 
@@ -74,7 +74,7 @@
 
 ## 附：blueprint 并发护栏（现状）
 
-需求一落地后，写路径以 SDK `@Version` 为 DB 级护栏；以下仍作为补充：
+需求一实现后，写路径以 SDK `@Version` 为 DB 级护栏；以下仍作为补充：
 
 1. **支付回调并发**：`channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；
 2. **钱货不一致**：`OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单），补偿"支付成功但订单确认丢失"窗口；

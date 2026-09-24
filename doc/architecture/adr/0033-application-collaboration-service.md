@@ -8,7 +8,9 @@
 | **关联** | E-10 / E-10.1 / E-10.2、E-13.2 / E-13.4、E-3.2 / E-3.5 / E-3.7 AS-01、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
 | **下游同步** | `Bone-DDD-最终实践方案.md` E-10.2 / E-13.2 / E-13.4、`bone-platform/bone-iam/README.md` |
 
-> **撤销说明（2026-09-22，Bone-DDD 5.5.16）**：`application/service/` 作为「第二编排层」与 `*ApplicationService` 同层竞争用例入口身份，制造职责归属模糊与认知负担，与 ADR-0032 已消灭的 Handler/ApplicationService 套娃同源。现应用层入口构件统一为 `*ApplicationService`，跨切面复用逻辑按语义化子包（`binding/`、`policy/`、`support/` 等）或独立 `*Resolver` 助手归位，不再设有通用 `service` 子包。本 ADR 的 D1–D6 判据不再作为新增依据；存量构件处置见 Bone-DDD 5.5.16 与 `bone-iam/README.md`。
+> **撤销说明（2026-09-22，Bone-DDD 5.5.16）**：`application/service/` 作为「第二编排层」与 `*ApplicationService` 同层竞争用例入口身份，制造职责归属模糊与认知负担，与 ADR-0032 已消灭的 Handler / ApplicationService 套娃同源。
+>
+> 现应用层入口构件统一为 `*ApplicationService`，跨切面复用逻辑按语义化子包（`binding/`、`policy/`、`support/` 等）或独立 `*Resolver` 助手归位，不再设有通用 `service` 子包。本 ADR 的 D1–D6 判据不再作为新增依据；存量构件处置见 Bone-DDD 5.5.16 与 `bone-iam/README.md`。
 
 ---
 
@@ -72,7 +74,7 @@ E-13（命名）与 E-10（包结构）的相关部分都是 Advisory，没有 A
 
 ### D6. 复核记录：bone-iam 逐类落点（2026-09-20）
 
-落地时按 D4 逐类核对了 `bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/`（调用方按 `src/main` 现算）：
+实现时按 D4 逐类核对了 `bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/`（调用方按 `src/main` 现算）：
 
 | 类 | 调用方（main） | 落点判定 |
 |---|---|---|
@@ -118,7 +120,7 @@ E-13（命名）与 E-10（包结构）的相关部分都是 Advisory，没有 A
 | A. 全部迁到 `domain/service` | `TenantQuotaEnforcer` 注入仓储并跨聚合读，属应用层协作而非纯领域规则；搬过去会把 IO 与仓储依赖拖进 domain，直接撞依赖方向（CORE-02、HC-002） |
 | B. 全部迁到 `application/support/` | `support/` 的定义是"只依赖 `application/port/out`、不碰 domain"；这些类要碰 domain 仓储，迁过去只能靠放宽 `support/` 边界，代价是摧毁一条有效的护栏 |
 | C. 保持现状（不承认、不迁移），把 E-13 相关条目升级为 Hard gate 逼其迁移 | 门禁无法判别"是否被多个用例复用"，一升级就是误报制造机；且把 9 个已经在用的类判成违规，等于要求无收益的搬迁（违 P-1 的务实取向） |
-| D. 承认但强制改名（如 `*CollaborationService`） | `*Service` 在两层按包区分是可读的；新增后缀会与 `*DomainService` / `*ApplicationService` 组成第二套命名体系，落地成本高于收益（E-13 本就是 Advisory 的一致性约定） |
+| D. 承认但强制改名（如 `*CollaborationService`） | `*Service` 在两层按包区分是可读的；新增后缀会与 `*DomainService` / `*ApplicationService` 组成第二套命名体系，实现成本高于收益（E-13 本就是 Advisory 的一致性约定） |
 
 ## 合规与迁移
 

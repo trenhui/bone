@@ -1,13 +1,11 @@
 package com.bone.iam.domain.model.permission;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.bone.iam.domain.model.permission.event.PermissionCreatedEvent;
 import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import org.junit.jupiter.api.Test;
 
-/** {@link Permission} 纯单测：权限点创建快照、事件发布与部分覆盖更新（无容器）。 */
+/** {@link Permission} 纯单测：权限点创建快照与部分覆盖更新（无容器）。 */
 class PermissionTest {
 
   private Permission createPermission() {
@@ -32,8 +30,6 @@ class PermissionTest {
     assertEquals("CREATE", permission.getAction());
     assertEquals(PermissionType.API, permission.getType());
     assertEquals(1, permission.getSortOrder());
-    assertEquals(1, permission.getDomainEvents().size());
-    assertInstanceOf(PermissionCreatedEvent.class, permission.getDomainEvents().get(0));
   }
 
   @Test

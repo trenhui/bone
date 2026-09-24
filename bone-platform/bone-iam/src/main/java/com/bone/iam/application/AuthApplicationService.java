@@ -43,13 +43,19 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 认证应用服务（Application Service First 收敛点）——登录 / 刷新令牌用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code LoginCommandHandler}、{@code RefreshTokenCommandHandler} 与 {@code
  * AccountAuthoritiesQueryHandler}（权限码解析）逻辑已全量内联于此（E-3.11 一次性大爆炸收敛）。 Controller 只依赖本类。各方法语义 / 异常 /
  * 事务边界与原 Handler 完全一致（HTTP 契约不变）。
  *
+ * <p>/*
+ *
  * <p>权限码解析的读侧 DSL 已下沉到各域仓储的 {@code default} 方法（E-4.2）：本类零 DSL、零 {@code
  * TenantContext}。「登录需显式声明租户上下文」的语义由 {@link TenantContextRunner} 承载（它是执行器而非 {@code TenantContext}
  * 直读，不属 E-4.4 约束对象）。
+ *
+ * <p>/*
  *
  * <p>登录专用的账号定位 / 密码校验原本在 {@code application/service/AuthService}（已废止的「第二编排层」，ADR-0033 撤销），现按
  * 「应用层只保留 ApplicationService」收口为本类的私有方法，避免与用例入口同层竞争的 {@code *Service} 形态。
@@ -77,6 +83,8 @@ public class AuthApplicationService {
   /**
    * 登出用例：把请求携带的访问令牌拉黑至其自然过期。
    *
+   * <p>/*
+   *
    * <p>原实现散落在 {@code AuthController}（需注入 {@code infrastructure} 的令牌解析器与黑名单服务，违反 E-10.1）；
    * 现收口到应用层，入站适配器只传递请求头。令牌非法 / 缺失时静默成功（登出幂等，不泄露令牌有效性）。
    *
@@ -99,8 +107,12 @@ public class AuthApplicationService {
   /**
    * 登录编排：解析账号 → 检查锁定/禁用 → 校验密码 → 失败计数 / 成功清零 → 颁发 access + refresh token。
    *
+   * <p>/*
+   *
    * <p>账号锁定与计数依赖 {@link Account#recordLoginFailure()}，阈值由 {@link IamPasswordProperties}（默认 5 次/30
    * 分钟）声明，对齐详设 §7.1 / IAM-19。
+   *
+   * <p>/*
    *
    * <p>能力声明标在方法上而非类上（{@code @Capability} 已支持 METHOD 目标）：一次类只承载一个能力的旧 Handler
    * 形态被废除后，元数据随用例方法走，无需再为声明能力而套同义 Handler（AS-01）。
@@ -280,6 +292,8 @@ public class AuthApplicationService {
 
   /**
    * 按用户名定位账号；不存在或重名返回 {@link Optional#empty()}。锁定/禁用/密码校验由 {@link #login(LoginCommand)} 处理。
+   *
+   * <p>/*
    *
    * <p>登录入口租户未知，查找本身跨租户（见 {@link AccountRepository#findByUsernameForLoginAllTenants(String)}）；原先硬编码
    * {@code tenantId = 0}， 会把登录限制在默认租户、使多租户账号永远登录不上。

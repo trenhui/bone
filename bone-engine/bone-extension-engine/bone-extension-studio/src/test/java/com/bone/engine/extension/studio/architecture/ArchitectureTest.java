@@ -68,6 +68,22 @@ class ArchitectureTest {
   static final ArchRule repository_methods_whitelist =
       BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
 
+  // P0-1（R9）：一事务一聚合——存量跨聚合写事务（Extension + PluginVersion 同事务）冻结为已知债，禁止新增
+  @ArchTest
+  static final ArchRule one_aggregate_per_transaction =
+      FreezingArchRule.freeze(BoneDddArchRules.oneAggregatePerTransaction());
+
+  // P0-2（E-6.4 / R2 反贫血）：application 层不直接改领域对象状态——存量贫血写法冻结为已知债，禁止新增
+  @ArchTest
+  static final ArchRule application_services_no_domain_rules =
+      FreezingArchRule.freeze(BoneDddArchRules.applicationServicesMustNotOwnDomainRules());
+
+  // P0-3（E-5.4）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent
+  // （本模块 4 个含 save 的应用服务已声明 @NoDomainEvent，见各自类级豁免）
+  @ArchTest
+  static final ArchRule application_save_must_pair_with_publish_or_exempt =
+      BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
   @ArchTest
   static final ArchRule no_custom_business_exception =
       FreezingArchRule.freeze(BoneDddArchRules.noCustomBusinessException());

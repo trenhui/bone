@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已落地——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛）、第三例 bone-metadata-server catalog 子域（2026-09-21 受控批量收敛，见 §D3c）、第四例 bone-extension-studio（2026-09-21 强制收敛，覆盖 ADR-0028 选择性，见 §D3d）、第五例 bone-integration（2026-09-21 换名不换层，见 §D3e）、第六例 studio-generator（2026-09-21 换名不换层，见 §D3f） |
+| **状态** | **已采纳（Accepted）**：规则通道（E-0.2 五条判据 + E-3.11 第 3 条改写）与先例登记均已实现——首例 bone-iam（2026-09-20 全量收敛）、第二例 bone-masterdata（2026-09-21 受控批量收敛）、第三例 bone-metadata-server catalog 子域（2026-09-21 受控批量收敛，见 §D3c）、第四例 bone-extension-studio（2026-09-21 强制收敛，覆盖 ADR-0028 选择性，见 §D3d）、第五例 bone-integration（2026-09-21 换名不换层，见 §D3e）、第六例 studio-generator（2026-09-21 换名不换层，见 §D3f） |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-0.2 / E-0.3 / E-0.4 / E-3.11、[ADR-0028](./0028-application-service-first-selective-cqrs.md)、[06-AI协作与编码准则](../../agents/06-AI协作与编码准则.md) §12（规范语义变更与批量重构属 L3，须架构师审批） |
@@ -70,7 +70,9 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 
 **共享规则修复（本先例的必要使能项）**：masterdata 收敛触发 `bone-framework/bone-architecture-test` 的 `BoneDddArchRules` 两处修复——
 
-- `domainMustNotUseQueryBuilder`：新增 `.and().resideOutsideOfPackage("..domain.repository")` 与 `allowEmptyShould(true)`——把原先 blueprint / iam / system **各自在模块级复制**的「domain.repository 例外」收敛回共享规则（E-4.1：domain 内只允许 `domain.repository` 触碰读侧 DSL；ADR-0030 把「本聚合读」落在域仓储 default 方法上）。这是**包级排除**：凡 `@ReadSideOnly` 标注的读侧 DSL（Criteria / QueryBuilder / FluentQuery 通道）在 `domain.repository` 内一律放行，避免「每个模块抄一遍、抄漏就静默失去约束」。从而使"仓储承载本聚合读写（ADR-0030）"真正成立。
+- `domainMustNotUseQueryBuilder`：新增 `.and().resideOutsideOfPackage("..domain.repository")` 与 `allowEmptyShould(true)`——把原先 blueprint / iam / system **各自在模块级复制**的「domain.repository 例外」收敛回共享规则（E-4.1：domain 内只允许 `domain.repository` 触碰读侧 DSL；ADR-0030 把「本聚合读」落在域仓储 default 方法上）。
+
+  这是**包级排除**：凡 `@ReadSideOnly` 标注的读侧 DSL（Criteria / QueryBuilder / FluentQuery 通道）在 `domain.repository` 内一律放行，避免「每个模块抄一遍、抄漏就静默失去约束」。从而使"仓储承载本聚合读写（ADR-0030）"真正成立。
 - `commandHandlersMustNotUseQueryBuilder`：新增 `allowEmptyShould(true)`（diff hunk `@@ -173,6 +185,7 @@` 可核对）——存量 Handler 形态模块（iam / metadata）仍保留各自 handler 包且无违规，规则语义不变；仅消除"无 should 即空匹配所有类"的脆弱性。
 
 修复后跨 5 模块 ArchitectureTest 无回归（iam 26 / system 18 / integration 22 / metadata 21 / blueprint 30，全 0 失败），且 blueprint 原 1 项失败消除。
@@ -91,7 +93,9 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 | ④ 负向探针 | 本次新增的 3 条 `ArchitectureTest` 守卫即为探针：临时在 `..application.command.handler..` 注入读侧 DSL 或让控制器直连 `domain.repository`，对应规则即报红（规则含 `allowEmptyShould(true)`，handler 包清空期间不靠空匹配兜底）；`command_handlers_must_not_depend_on_application_service` 在 handler 包清空后由 `allowEmptyShould` 保持判定有效性 |
 | ⑤ 目标形态即为收敛形态 | Handler 内联进同义 ApplicationService，不是换名保留同层；读侧 FluentQuery DSL 下沉 `domain/repository` 默认方法（`pageEntities`/`pageFields`/`pageRelations`/`findByXxx`，返回 `PageResult<聚合>`/`Optional<聚合>`，契合 ADR-0030 本聚合读白名单） |
 
-**读侧下沉（本先例的受控形态）**：catalog 收敛把原先 handler 内的 FluentQuery 读侧 DSL 迁到 `catalog.domain.repository` 默认方法（ADR-0030 本聚合读）；`application` 层收敛后仅经仓储读模型方法取数，消除 `commandHandlersMustNotUseQueryBuilder` 的残留违规面。`adapter_no_domain_repository_all_packages` 对 `..adapter..` 全包设限（与 blueprint §11 C3 同形，但 catalog 控制器不含 `adapter.schedule` 全租户入口，故无需包级豁免）。
+**读侧下沉（本先例的受控形态）**：catalog 收敛把原先 handler 内的 FluentQuery 读侧 DSL 迁到 `catalog.domain.repository` 默认方法（ADR-0030 本聚合读）；`application` 层收敛后仅经仓储读模型方法取数，消除 `commandHandlersMustNotUseQueryBuilder` 的残留违规面。
+
+`adapter_no_domain_repository_all_packages` 对 `..adapter..` 全包设限（与 blueprint §11 C3 同形，但 catalog 控制器不含 `adapter.schedule` 全租户入口，故无需包级豁免）。
 
 **代价**：单类方法数上升（`MetaEntityApplicationService` 承载实体/字段/发布/批量/物理结构全用例），按 E-3.8 观察拆分压力；新增 3 条非冻结守卫需随结构演化维护。
 
@@ -109,7 +113,9 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 | ④ 负向探针 | 本模块 `ArchitectureTest` 沿用共享规则；重命名使 `..application.command.handler..`/`..application.query.handler..` 包内不再有 `*Handler` 类，`commandHandlersMustNotUseQueryBuilder` 等判据目标集清空后由 `allowEmptyShould(true)` 保持判定有效（一旦未来重新引入 `*Handler` 即用读侧 DSL，规则即报红） |
 | ⑤ 目标形态即为收敛形态 | 用户授权的「换名不换层」：Handler 类就地重命名为 `*ApplicationService`，逻辑未内联到更语义化的聚合服务（与 catalog 合并式不同）。这是 ADR-0028 选择性的**显式例外**，非默认形态；后续若对该模块做聚合语义重构，可参照 catalog 模式进一步合并 |
 
-**例外说明（覆盖 ADR-0028 选择性）**：extension-studio 的 Handler 多为 L2/L3 合法编排（deploy/rollback/upload/pruneOldVersions/publishRuntime、marketplace-install、runtime-sync 协调、版本状态机）。按 ADR-0028 本应保留 Handler。本次决策者要求强制收编为 ApplicationService，方法论为「换名不换层」，属受控批量收敛通道下的特批先例，不代表 ADR-0028 选择性被普遍推翻。后续新增扩展能力仍默认遵循 ADR-0028（简单用例 ApplicationService、复杂编排可 Handler）。
+**例外说明（覆盖 ADR-0028 选择性）**：extension-studio 的 Handler 多为 L2/L3 合法编排（deploy/rollback/upload/pruneOldVersions/publishRuntime、marketplace-install、runtime-sync 协调、版本状态机）。按 ADR-0028 本应保留 Handler。
+
+本次决策者要求强制收编为 ApplicationService，方法论为「换名不换层」，属受控批量收敛通道下的特批先例，不代表 ADR-0028 选择性被普遍推翻。后续新增扩展能力仍默认遵循 ADR-0028（简单用例 ApplicationService、复杂编排可 Handler）。
 
 **代价**：`*ApplicationService` 仍居于原 `application.command.handler`/`application.query.handler` 包（仅类名变更，未迁移包），包结构提示性弱于 catalog 的 `application` 顶层落位；`ExtensionStudioApplicationService` 等方法数偏高（含幂等/审计/LRO 编排），按 E-3.8 观察拆分压力；未做聚合语义合并（保留 12 个独立服务）。
 
@@ -127,9 +133,15 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 | ④ 负向探针 | `..application.command.handler..`/`..application.query.handler..` 包内重命名后不再有 `*Handler` 类，`commandHandlersMustNotUseQueryBuilder` 目标集清空后由 `allowEmptyShould(true)` 保持判定有效（未来重新引入 `*Handler` 即报红）；`businessLayersMustNotReadTenantContextDirectly` 对新端口负向判定（直读即红） |
 | ⑤ 目标形态即为收敛形态 | 换名不换层：Handler 就地重命名为 `*ApplicationService`，保留原 `command.handler`/`query.handler` 包，未做聚合语义合并 |
 
-**读侧 DSL 下沉（本例的受控形态）**：integration 收敛把原 `application.command.handler`/`application.query.handler` 内的读侧 DSL（Criteria / QueryBuilder / FluentQuery 经 `ConnectorRepository`）迁到 `domain/repository` 的 default 方法（ADR-0030 本聚合读），`ConnectorController`/`FlowController`/`MonitorController` 等仅经 `ConnectorRepository.findById(...)` 取数。这是判据③「`446b2abc` 违规文件清空」的真实成因——规则目标集清空来自下沉而非删除，判定有效性由 `allowEmptyShould(true)` 维持（一旦未来重新在 application 层引入读侧 DSL，规则即报红）。
+**读侧 DSL 下沉（本例的受控形态）**：integration 收敛把原 `application.command.handler` / `application.query.handler` 内的读侧 DSL（Criteria / QueryBuilder / FluentQuery 经 `ConnectorRepository`）迁到 `domain/repository` 的 default 方法（ADR-0030 本聚合读）。
 
-**顺带修复分支既有 E-2 违规（非本次收敛引入，随本批提交）**：`IntegrationEventEnvelopeFactory`（`application/event/outbox`）直调 `TenantContext.getTenantIdAsLong()`，违反 E-2。该违规此前被 pre-commit 增量编译（`scripts/check.sh` 不执行 `clean`）下的陈旧 `target/classes` 长期掩盖，`clean` 重建即暴露。修复方式与 sibling 同形：新增 `domain/gateway/TenantProvider` 端口 + `infrastructure/gateway/TenantProviderAdapter` 适配器，工厂经端口读租户；`business_layers_no_direct_tenant_context` 冻结违规因此**收缩为 0**（合规方向），故判据 ③ 「只收缩不新增」成立。
+`ConnectorController` / `FlowController` / `MonitorController` 等仅经 `ConnectorRepository.findById(...)` 取数。
+
+这是判据③「`446b2abc` 违规文件清空」的真实成因：规则目标集清空来自下沉而非删除，判定有效性由 `allowEmptyShould(true)` 维持——一旦未来重新在 application 层引入读侧 DSL，规则即报红。
+
+**顺带修复分支既有 E-2 违规（非本次收敛引入，随本批提交）**：`IntegrationEventEnvelopeFactory`（`application/event/outbox`）直调 `TenantContext.getTenantIdAsLong()`，违反 E-2。该违规此前被 pre-commit 增量编译（`scripts/check.sh` 不执行 `clean`）下的陈旧 `target/classes` 长期掩盖，`clean` 重建即暴露。
+
+修复方式与 sibling 同形：新增 `domain/gateway/TenantProvider` 端口 + `infrastructure/gateway/TenantProviderAdapter` 适配器，工厂经端口读租户。`business_layers_no_direct_tenant_context` 冻结违规因此**收缩为 0**（合规方向），故判据③「只收缩不新增」成立。
 
 ### D3f. 先例登记：studio-generator（受控批量收敛，2026-09-21）
 
@@ -207,7 +219,7 @@ E-0.2 新增**受控批量收敛通道**：默认仍执行"触达即收敛"，�
 
 ## 合规与迁移
 
-- **规范**：E-0.2 新增通道条款、E-3.11 第 3 条改写、E-3.7「落地现状」不再登记迁移计数——三处同批修改（v5.5.14）。
+- **规范**：E-0.2 新增通道条款、E-3.11 第 3 条改写、E-3.7「实现现状」不再登记迁移计数——三处同批修改（v5.5.14）。
 - **代码**：本 ADR **不要求**任何代码改动。存量 Handler 仍按触达即收敛处理；`bone-iam` 现状即合规形态。
 - **门禁**：不新增机器规则。五条判据中只有第 2、3、4 条可被工具部分见证（测试与基线、探针输出），第 1、5 条是评审判据——按 CORE-08，不得声称本通道已被机器证明。
 - **本 ADR 内的数字**（39/20/11、117、23/23、116→14 等）是**当日证据快照**，属于冻结记录；规范正文不得复制这些计数（这是 v5.5.14 第 ③ 条整改的同一取向）。bone-masterdata 先例（§D3b）的数字（35 Handler→6 ApplicationService、54/54 测试、跨 5 模块 ArchitectureTest 全绿）为 **2026-09-21 证据快照**，同属冻结记录，规范正文不得复制。

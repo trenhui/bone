@@ -1,14 +1,12 @@
 package com.bone.iam.domain.model.audit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.bone.iam.domain.model.audit.event.AuditLogCreatedEvent;
 import com.bone.iam.domain.model.audit.valueobject.OperationType;
 import org.junit.jupiter.api.Test;
 
-/** {@link AuditLog} 纯单测：审计日志快照创建与事件发布（无容器）。 */
+/** {@link AuditLog} 纯单测：审计日志快照创建（无容器）。 */
 class AuditLogTest {
 
   @Test
@@ -33,7 +31,5 @@ class AuditLogTest {
     assertEquals("ACCOUNT", auditLog.getResourceType());
     assertEquals(12, auditLog.getDuration());
     assertNotNull(auditLog.getCreatedAt());
-    assertEquals(1, auditLog.getDomainEvents().size());
-    assertInstanceOf(AuditLogCreatedEvent.class, auditLog.getDomainEvents().get(0));
   }
 }

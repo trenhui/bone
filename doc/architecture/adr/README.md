@@ -13,7 +13,7 @@
 | [0004](./0004-iam-authz-service-evolution.md) | PolicyEvaluator 进程内 → 独立 authz-service |
 | [0005](./0005-iam-jwt-rs256-jwks.md) | JWT HS256 → RS256/EdDSA + JWKS 轮换 |
 | [0006](./0006-iam-tenant-isolation-modes.md) | 多租户隔离三模式切换策略 |
-| [0007](./0007-iam-platform-audit-bus.md) | 平台审计总线（AOP + WORM）落地路径 |
+| [0007](./0007-iam-platform-audit-bus.md) | 平台审计总线（AOP + WORM）实现路径 |
 | [0008](./0008-iam-argon2id-password-hash.md) | 密码哈希 BCrypt → Argon2id 迁移 |
 | [0009](./0009-iam-audit-log-schema-split.md) | `iam_audit_log` 扩列 vs 平台审计总线职责 |
 | [0010](./0010-iam-account-direct-permission.md) | 账号直连权限是否纳入 MVP |
@@ -26,7 +26,7 @@
 | [0016](./0016-metadata-catalog-abstract-entity-tenant.md) | 元数据 catalog AbstractEntity + tenantId |
 | [0017](./0017-masterdata-catalog-sync.md) | 业务元数据实体（`meta_*`）→ 主数据实体（`mdm_*`）同步范式 |
 | [0018](./0018-iam-localdatetime-audit.md) | bone-iam LocalDateTime 审计策略 |
-| [0019](./0019-id-generation-contract-respect-non-null-id.md) | ID 生成契约 — SDK `insert` 尊重非空 id（**已接受 / 已落地**） |
+| [0019](./0019-id-generation-contract-respect-non-null-id.md) | ID 生成契约 — SDK `insert` 尊重非空 id（**已接受 / 已实现**） |
 | [0020](./0020-anti-anemia-weak-form-strong-behavior.md) | 反贫血机制 — 弱约束代码形式、强约束行为（**提议**） |
 | [0021](./0021-outbox-and-consumer-idempotency-platformization.md) | Outbox 与消费端 `eventId` 幂等平台化（**提议**） |
 | [0022](./0022-external-callback-signature-verification-port.md) | 外部回调验签端口化 — 由支付样板推广为全局硬规则（**提议**） |
@@ -38,10 +38,10 @@
 | [0028](./0028-application-service-first-selective-cqrs.md) | Application Service First + Selective CQRS（**已接受**） |
 | [0029](./0029-sdk-auto-tenant-filter.md) | SDK 查询/更新/删除自动注入 tenant_id（落实多租户规范 §3，**已接受 / 已实现**） |
 | [0030](./0030-domain-repository-read-merge.md) | 单一仓储 + 外置 `.sql` 优先 + `@TenantScope` 自动租户注入（**草案 · 待架构组批准**） |
-| [0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md) | 写路径租户护栏补全 + SDK 原生乐观锁（`@Version`）+ 异步入口租户声明（**提议 · D0 已落地，D1~D3 待批准**） |
+| [0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md) | 写路径租户护栏补全 + SDK 原生乐观锁（`@Version`）+ 异步入口租户声明（**提议 · D0 已实现，D1~D3 待批准**） |
 | [0032](./0032-controlled-batch-convergence.md) | 受控批量收敛通道 — 一次性批量重构的授权与登记（**已采纳**，含 bone-iam 2026-09-20 先例） |
 | [0033](./0033-application-collaboration-service.md) | 应用层协作服务（`application/service`）的定位与落点判据（**已撤销**，由 [0035](./0035-application-layer-keeps-only-application-service.md) 取代） |
 | [0034](./0034-tenant-scope-explicitness-and-all-entry-gate.md) | 租户隔离显式性 — SQL 通道启动期 fail-fast + 全租户入口单一判据（**已采纳**，首轮抓出 IAM 登录入口与 integration 定时任务两处问题） |
-| [0035](./0035-application-layer-keeps-only-application-service.md) | 应用层只保留 ApplicationService — 撤销 ADR-0033 的第三类构件（**已采纳**，含三条结构门禁与 96 条存量基线） |
-| [0036](./0036-domain-model-package-single-standard.md) | domain 分组形态统一为 `domain/model/{聚合}/` — 收敛 E-10 双形态条款（**已采纳**；D1 形态 / D2 值对象子包名已确认，全平台迁移、D5 布局门禁与 D6 生成模板均已落地） |
-| [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已落地**） |
+| [0035](./0035-application-layer-keeps-only-application-service.md) | 应用层只保留 ApplicationService — 撤销 ADR-0033 的第三类构件（**已采纳**，含三条结构门禁；存量基线经 ADR-0032 收敛，截至 2026-09-23 已清零 `violations: {}`） |
+| [0036](./0036-domain-model-package-single-standard.md) | domain 分组形态统一为 `domain/model/{聚合}/` — 收敛 E-10 双形态条款（**已采纳**；D1 形态 / D2 值对象子包名已确认，全平台迁移、D5 布局门禁与 D6 生成模板均已实现） |
+| [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已实现**） |

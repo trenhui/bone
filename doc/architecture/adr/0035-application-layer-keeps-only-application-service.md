@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted，2026-09-22）**：规范三处已回退（E-10.2 废止说明 / E-13.2 回三种含义 / E-13.4 恢复"`*Service` 只出现在 `domain/service`"），门禁与基线已落地 |
+| **状态** | **已采纳（Accepted，2026-09-22）**：规范三处已回退（E-10.2 废止说明 / E-13.2 回三种含义 / E-13.4 恢复"`*Service` 只出现在 `domain/service`"），门禁与基线已实现 |
 | **日期** | 2026-09-22 |
 | **决策者** | 架构师 |
 | **取代** | [ADR-0033](./0033-application-collaboration-service.md)（应用层协作服务 = `application/service/*Service`） |
@@ -61,7 +61,7 @@ ADR-0033 承认「应用层协作服务」为第三类构件（落点 `applicati
 - **R2 唯一 service 形态**：`application` 下不得有以 `Service` 结尾但不是 `ApplicationService` 的类；
 - **R3 位置**：`*ApplicationService` 必须平铺在 `application/` 根目录。
 
-存量违规进 `doc/architecture/application-constructs-baseline.json`（首轮 96 条：R1 25 个文件——`service` 22 / `binding` 1 / `policy` 2，跨 studio、generator、iam、integration 四个模块；R2 14 个类；R3 57 个错位文件），只可收缩；脚本并入 `scripts/ci-check.sh` `[9/9]`。
+存量违规进 `doc/architecture/application-constructs-baseline.json`（首轮 96 条：R1 25 个文件——`service` 22 / `binding` 1 / `policy` 2，跨 studio、generator、iam、integration 四个模块；R2 14 个类；R3 57 个错位文件），历经 ADR-0032 受控批量收敛，**截至 2026-09-23 已清零**（`violations: {}` 0 条），门禁持续只增不减；脚本并入 `scripts/ci-check.sh` `[9/9]`。
 
 ### D5. 存量迁移
 
@@ -71,7 +71,7 @@ ADR-0033 承认「应用层协作服务」为第三类构件（落点 `applicati
 
 1. **判据必须稳定且可机械校验**：职责不随调用者数量变化；白名单把"放哪"从语义判断变成确定性答案（规则→领域、用例→AS、技术→端口/基础设施），并可被门禁守住。
 2. **它已经在诱导错误落点**（有现成案例，非假设）：`PasswordPolicyValidator`（无 IO 纯规则留在应用层，ADR-0033 的 D4-1 自己就写了该下沉 `domain/service`）、`RoleHierarchyResolver`（读侧 DSL 落在 application，E-4.2 违规）、`AccountRoleBindingService`（绑定写入本属聚合不变量，被搬出聚合）。
-3. **门禁能补上认知成本**：ADR-0033 的判据是语义的，无法机械执行；本 ADR 的三条判定全是包名与类名，落地后新增违规立即失败。
+3. **门禁能补上认知成本**：ADR-0033 的判据是语义的，无法机械执行；本 ADR 的三条判定全是包名与类名，实现后新增违规立即失败。
 4. **平台原本就是这么定的**：E-10.2 的原文禁令与 blueprint/IAM/system 各自复制过的 `..domain.repository..` 豁免同属一个取向——**应用层收窄，例外显式**。
 
 ## 后果
@@ -85,7 +85,7 @@ ADR-0033 承认「应用层协作服务」为第三类构件（落点 `applicati
 ### 负面 / 风险
 
 - **白名单可能过严**：出现第 4 类合法构件时必须先改规范 + ADR，而不是就地新增包——这是刻意摩擦；
-- **基线存量面大**（14 + 57），短期内 `--check` 的价值主要是"防新增"，收口依赖代码侧按模块推进；
+- **基线存量面大**（14 + 57），短期内 `--check` 的价值主要是"防新增"，收敛依赖代码侧按模块推进；
 - **`support/` 的边界仍靠评审**：门禁只能验包名，验不了"是否偷偷碰了 domain"（CORE-08 的证明边界照旧适用）。
 
 ## 备选方案

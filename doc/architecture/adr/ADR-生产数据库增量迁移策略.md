@@ -23,7 +23,7 @@ ADR-数据库迁移与DDL真源 确立了 bone-init.sql 单轨真源，开发环
 - 大表变更使用 pt-online-schema-change 或 gh-ost
 
 ## 理由
-- expand/contract 是零停机迁移的业界标准
+- expand/contract 是零停机迁移的通用做法
 - 相比 Flyway/Liquibase，手动脚本更灵活，适合复杂迁移
 - 开发环境保持 bone-init.sql 全量重建，生产环境使用增量迁移
 

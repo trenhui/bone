@@ -2,8 +2,8 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | 已接受（2026-09-05 落地：`BaseRepository.insert()` 非 IDENTITY 分支已改为「空才生成」；单测 `testInsert_ShouldRespectPresetNonNullId` / `testInsert_ShouldGenerateIdWhenNull` 随 SDK 合入，18/18 通过） |
-| **日期** | 2026-08-30（提议）；2026-09-05（落地） |
+| **状态** | 已接受（2026-09-05 实现：`BaseRepository.insert()` 非 IDENTITY 分支已改为「空才生成」；单测 `testInsert_ShouldRespectPresetNonNullId` / `testInsert_ShouldGenerateIdWhenNull` 随 SDK 合入，18/18 通过） |
+| **日期** | 2026-08-30（提议）；2026-09-05（实现） |
 | **决策者** | 平台架构组 |
 | **关联** | [Bone-DDD-最终实践方案 §18.1](../Bone-DDD-最终实践方案.md)；change `ddd-spec-v4-5-convergence`（D11） |
 
@@ -45,7 +45,7 @@ if (strategy != GenerationStrategy.IDENTITY) {
 
 `IDENTITY` 分支保持不变（自增主键本应由数据库赋值）。
 
-**明确本 ADR 是「身份在构造期确定」的先决条件**，而非可选项：只有落地本 ADR 后，应用层才可安全地预生成 id 并作为聚合构造参数传入。
+**明确本 ADR 是「身份在构造期确定」的先决条件**，而非可选项：只有实现本 ADR 后，应用层才可安全地预生成 id 并作为聚合构造参数传入。
 
 ## 理由
 
@@ -68,13 +68,13 @@ if (strategy != GenerationStrategy.IDENTITY) {
 - **对现有 null-id 调用方零行为变化**：所有存量调用方均为「id 为空、依赖 SDK 生成」，修复后逻辑完全不变（实测 20 处调用点、0 反模式）。
 - **新风险：调用方传入重复 id 将直接落库并可能主键冲突**。这是「尊重非空 id」的应有语义，但须在 SDK Javadoc 明确：调用方对预置 id 的唯一性负责。
 - **`IDENTITY` 分支不受影响**：自增主键仍由数据库赋值；若调用方对 `IDENTITY` 实体预置 id 仍会被覆盖（符合预期）。
-- **落地前不得放宽规范**：在 `insert()` 修复实际合入前，主规范 §18.1「应用层不预分配 id」必须保持，§18.1 例外②不得删除。
+- **实现前不得放宽规范**：在 `insert()` 修复实际合入前，主规范 §18.1「应用层不预分配 id」必须保持，§18.1 例外②不得删除。
 
 ## 备选方案
 
 | 方案 | 未采纳原因 |
 |------|------------|
-| A. 新增应用层 `domain/gateway/*IdGenerator` 端口 | 现有 `DistributedIdGenerator`（`bone-core/util` 静态工具）已满足需求，再包一层属单一实现的纯仪式；且不解决 `insert` 覆盖 id 的根因 |
+| A. 新增应用层 `domain/gateway/*IdGenerator` 端口 | 现有 `DistributedIdGenerator`（`bone-framework/bone-core` 的 util 包静态工具）已满足需求，再包一层属单一实现的纯仪式；且不解决 `insert` 覆盖 id 的根因 |
 | B. 保持现状，仅靠 §18.1 例外 + README 登记 | 不解决根因；「身份在构造期确定」永远无法实现，静默替换的陷阱持续存在 |
 | C. 新增 `insertWithId(entity)` 独立方法 | API 增殖，调用方需感知两种插入语义；同一语义不应有两个入口 |
 | D. 仅在 `save()` 路径修复，`insert()` 保持 | 加剧路径间不一致，`insert()` 直接调用方（20 处）行为仍不可预期 |
@@ -97,8 +97,8 @@ if (strategy != GenerationStrategy.IDENTITY) {
 1. ✅ 在 `bone-metadata-sdk` 修改 `insert()` 非 `IDENTITY` 分支（单点），补充单元测试：① id 为空 → 生成；② id 非空 → 保持不变。（2026-09-05 完成）
 2. ⏳ 在 `bone-blueprint` 先行验证：全量测试（136 个）通过。
 3. ⏳ 全平台 `mvn clean install` 回归。
-4. 落地后，方可放宽主规范 §18.1「应用层不预分配 id」，并移除例外②。
-5. 落地后，方可执行 change `ddd-spec-v4-5-convergence` 任务 3.6（在 blueprint 固化「构造期 id == 持久化后 id」并加断言测试）。
+4. 实现后，方可放宽主规范 §18.1「应用层不预分配 id」，并移除例外②。
+5. 实现后，方可执行 change `ddd-spec-v4-5-convergence` 任务 3.6（在 blueprint 固化「构造期 id == 持久化后 id」并加断言测试）。
 
 **回滚**：还原 `insert()` 的该分支即可（无数据结构变更、无调用方改造、无 API 变更）。
 

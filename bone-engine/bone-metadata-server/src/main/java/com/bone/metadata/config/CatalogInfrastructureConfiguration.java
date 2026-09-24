@@ -3,8 +3,12 @@ package com.bone.metadata.config;
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
+import com.bone.metadata.catalog.domain.repository.IamApplicationRepository;
+import com.bone.metadata.catalog.domain.repository.IamModuleRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
+import com.bone.metadata.catalog.domain.service.IamApplicationValidator;
+import com.bone.metadata.catalog.domain.service.IamModuleValidator;
 import com.bone.metadata.catalog.infrastructure.gateway.JdbcPhysicalStructureGatewayAdapter;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
@@ -106,5 +110,22 @@ public class CatalogInfrastructureConfiguration {
   public RuntimeEntityCacheEvictor redisRuntimeEntityCacheEvictor(
       RedisCachedRuntimeEntityCatalog catalog) {
     return catalog;
+  }
+
+  /**
+   * 跨上下文引用一致性守卫：domain 服务不挂 Spring stereotype，由本工厂装配。
+   *
+   * <p>metadata 上下文不再拥有应用/模块聚合根。写入前需确认所引用的 appId / moduleId 在 IAM 上下文真实存在。这些校验器属领域逻辑，故不放
+   * {@code @Component}，改为在此显式构造以保全 domain 零框架依赖。
+   */
+  @Bean
+  public IamApplicationValidator iamApplicationValidator(
+      IamApplicationRepository iamApplicationRepository) {
+    return new IamApplicationValidator(iamApplicationRepository);
+  }
+
+  @Bean
+  public IamModuleValidator iamModuleValidator(IamModuleRepository iamModuleRepository) {
+    return new IamModuleValidator(iamModuleRepository);
   }
 }

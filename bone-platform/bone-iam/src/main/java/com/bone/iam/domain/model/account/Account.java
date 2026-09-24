@@ -4,11 +4,6 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.iam.domain.model.account.event.AccountCreatedEvent;
-import com.bone.iam.domain.model.account.event.AccountDisabledEvent;
-import com.bone.iam.domain.model.account.event.AccountEnabledEvent;
-import com.bone.iam.domain.model.account.event.AccountLockedEvent;
-import com.bone.iam.domain.model.account.event.PasswordChangedEvent;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
@@ -75,7 +70,6 @@ public class Account extends TenantAggregateRoot<Long> {
     account.createdAt = LocalDateTime.now();
     account.updatedAt = LocalDateTime.now();
     account.passwordUpdatedAt = LocalDateTime.now();
-    account.addDomainEvent(new AccountCreatedEvent(account));
     return account;
   }
 
@@ -87,7 +81,6 @@ public class Account extends TenantAggregateRoot<Long> {
     this.loginFailCount = 0;
     this.lockedAt = null;
     this.updatedAt = LocalDateTime.now();
-    addDomainEvent(new AccountEnabledEvent(getId()));
   }
 
   public void disable() {
@@ -96,7 +89,6 @@ public class Account extends TenantAggregateRoot<Long> {
     }
     this.status = AccountStatus.DISABLED;
     this.updatedAt = LocalDateTime.now();
-    addDomainEvent(new AccountDisabledEvent(getId()));
   }
 
   public void recordLoginSuccess(String ip) {
@@ -122,7 +114,6 @@ public class Account extends TenantAggregateRoot<Long> {
     if (threshold > 0 && this.loginFailCount >= threshold) {
       this.status = AccountStatus.LOCKED;
       this.lockedAt = LocalDateTime.now().plusMinutes(Math.max(1, lockMinutes));
-      addDomainEvent(new AccountLockedEvent(getId(), this.lockedAt));
     }
     this.updatedAt = LocalDateTime.now();
   }
@@ -131,7 +122,6 @@ public class Account extends TenantAggregateRoot<Long> {
     this.passwordHash = newPasswordHash;
     this.passwordUpdatedAt = LocalDateTime.now();
     this.updatedAt = LocalDateTime.now();
-    addDomainEvent(new PasswordChangedEvent(getId()));
   }
 
   public void updateProfile(String realName, String phone, String avatarUrl) {

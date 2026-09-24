@@ -1,12 +1,10 @@
 package com.bone.iam.domain.model.dept;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.bone.iam.domain.model.dept.event.DeptCreatedEvent;
 import org.junit.jupiter.api.Test;
 
-/** {@link Dept} 纯单测：部门创建默认值、事件发布与更新（无容器）。 */
+/** {@link Dept} 纯单测：部门创建默认值与更新（无容器）。 */
 class DeptTest {
 
   @Test
@@ -18,8 +16,6 @@ class DeptTest {
     assertEquals(0, dept.getOrderNo());
     assertEquals(1, dept.getStatus());
     assertEquals(1L, dept.getTenantId());
-    assertEquals(1, dept.getDomainEvents().size());
-    assertInstanceOf(DeptCreatedEvent.class, dept.getDomainEvents().get(0));
   }
 
   @Test

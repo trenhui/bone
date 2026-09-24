@@ -15,8 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 会话应用服务（Application Service First 收敛点）——会话吊销 / 列表用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code RevokeSessionCommandHandler} 与 {@code SessionListQueryHandler} 逻辑已全量内联于此（E-3.11
  * 一次性大爆炸收敛）。 Controller 只依赖本类。各方法语义 / 异常 / 事务边界与原 Handler 完全一致（HTTP 契约不变）。
+ *
+ * <p>/*
  *
  * <p>调用方租户经 {@link TenantProvider} 端口读取，本类不直取 {@code TenantContext}（E-4.4）。
  */

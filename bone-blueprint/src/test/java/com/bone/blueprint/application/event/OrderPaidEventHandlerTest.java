@@ -54,7 +54,7 @@ class OrderPaidEventHandlerTest {
 
   @Test
   void testConfirmsStockForEachItem() {
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(row(1L, 1L, 2)));
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(List.of(row(1L, 1L, 2)));
 
     handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
 
@@ -65,7 +65,7 @@ class OrderPaidEventHandlerTest {
 
   @Test
   void testStockConfirmFailureRecordedToOutbox() {
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(row(1L, 1L, 2)));
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(List.of(row(1L, 1L, 2)));
     doThrow(new RuntimeException("库存服务暂时不可用"))
         .when(inventoryGateway)
         .confirmStock(anyLong(), anyLong(), anyInt());
@@ -79,7 +79,7 @@ class OrderPaidEventHandlerTest {
   @Test
   void testEmptyItemsDoesNotSilentlyConfirm() {
     // 模拟「明细未随订单落库」的异常状态：读侧无明细行
-    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.emptyList());
+    when(orderRepository.findOrderWithItems(1L)).thenReturn(Collections.emptyList());
 
     handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
 

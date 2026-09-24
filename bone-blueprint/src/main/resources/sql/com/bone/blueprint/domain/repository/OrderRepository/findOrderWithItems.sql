@@ -13,6 +13,6 @@ SELECT
 FROM t_order o
 LEFT JOIN t_order_item oi ON o.id = oi.order_id AND oi.deleted = 0
 WHERE o.id = #{orderId}
-  AND o.tenant_id = #{tenantId}
+  AND /*bone:tenant*/
   AND o.deleted = 0
 ORDER BY oi.id

@@ -94,6 +94,12 @@ public class ArchitectureTest {
   static final ArchRule business_layers_no_direct_tenant_context =
       FreezingArchRule.freeze(BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly());
 
+  // E-5.4（P0-3）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent。
+  // iam 当前所有含 save 的应用服务已声明 @NoDomainEvent（事件系统半成品已清理，见 Task #7）。
+  @ArchTest
+  static final ArchRule application_save_must_pair_with_publish_or_exempt =
+      BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
   // CORE-02 + E-6（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
   @ArchTest
   static final ArchRule aggregate_identity_immutable =

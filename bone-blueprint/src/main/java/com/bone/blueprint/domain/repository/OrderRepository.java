@@ -25,12 +25,11 @@ public interface OrderRepository extends Repository<Order, Long> {
   /**
    * 订单头 + 明细扁平投影（每明细一行，头字段逐行重复）。
    *
-   * <p>MANUAL 租户：SQL 自带 {@code tenant_id} 与子表 {@code deleted = 0}。SQL 见 {@code
-   * resources/sql/com/bone/blueprint/domain/repository/OrderRepository/findOrderWithItems.sql}。
+   * <p>AUTO 租户：SQL 模板放 {@code /*bone:tenant*}{@code /} 锚点，SDK 自动注入 {@code o.tenant_id =
+   * :__boneTenantId__}。调用方不再需要传 tenantId。
    */
-  @TenantScope(TenantScopeMode.MANUAL)
-  List<OrderWithItemsProjection> findOrderWithItems(
-      @Param("tenantId") long tenantId, @Param("orderId") long orderId);
+  @TenantScope(value = TenantScopeMode.AUTO, column = "o.tenant_id")
+  List<OrderWithItemsProjection> findOrderWithItems(@Param("orderId") long orderId);
 
   /**
    * 超时未支付订单扫描（全租户，定时任务专用）：{@code status = CREATED} 且 {@code created_at < before}。 SQL 见 {@code

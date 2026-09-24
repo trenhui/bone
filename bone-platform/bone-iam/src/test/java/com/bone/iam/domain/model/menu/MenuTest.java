@@ -1,12 +1,10 @@
 package com.bone.iam.domain.model.menu;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import com.bone.iam.domain.model.menu.event.MenuCreatedEvent;
 import org.junit.jupiter.api.Test;
 
-/** {@link Menu} 纯单测：菜单创建默认值（目录类型/排序）、事件发布与更新（无容器）。 */
+/** {@link Menu} 纯单测：菜单创建默认值（目录类型/排序）与更新（无容器）。 */
 class MenuTest {
 
   @Test
@@ -20,8 +18,6 @@ class MenuTest {
     assertEquals(0, menu.getOrderNo());
     assertEquals(1, menu.getType());
     assertEquals(1L, menu.getTenantId());
-    assertEquals(1, menu.getDomainEvents().size());
-    assertInstanceOf(MenuCreatedEvent.class, menu.getDomainEvents().get(0));
   }
 
   @Test

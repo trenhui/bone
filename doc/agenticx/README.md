@@ -6,7 +6,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [Bone-Agentic-Engineering.md](./Bone-Agentic-Engineering.md) | **唯一长文**：理念、架构、机制、命令、可落地配置、CI、落地路线与术语表 |
+| [Bone-Agentic-Engineering.md](./Bone-Agentic-Engineering.md) | **唯一长文**：理念、架构、机制、命令、可实现配置、CI、实现路线与术语表 |
 | 仓库根 [CLAUDE.md](../../CLAUDE.md) | Claude Code 工作时的项目宪法与红线 |
 | 仓库根 [AGENTS.md](../../AGENTS.md) | AI 助手薄引用入口；完整说明见 [doc/agents/](../agents/README.md) |
 | [.claude/](../../.claude/) | **运行时配置**：`commands/`、`agents/`、`skills/`、`contracts/`、`hooks/` |

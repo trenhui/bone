@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.application.support.StudioAuditSupport;
 import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
@@ -19,9 +20,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 扩展点写侧。 */
+/**
+ * 扩展点写侧。
+ *
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务写入 ExtPoint 聚合，当前不发布领域事件； 若将来接入事件发布，须改为调用 publishFrom
+ * 并移除本豁免。
+ */
 @Component
 @RequiredArgsConstructor
+@NoDomainEvent
 public class ExtPointCommandApplicationService {
 
   private static final Logger log =

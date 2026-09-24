@@ -4,7 +4,6 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.iam.domain.model.dept.event.DeptCreatedEvent;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -37,7 +36,6 @@ public class Dept extends TenantAggregateRoot<Long> {
     dept.setTenantId(tenantId);
     dept.createdAt = LocalDateTime.now();
     dept.updatedAt = LocalDateTime.now();
-    dept.addDomainEvent(new DeptCreatedEvent(dept));
     return dept;
   }
 

@@ -217,6 +217,19 @@ bone:
 ./mvnw test -Dtest=ArchitectureTests
 ```
 
+## 本上下文拥有的表（E-1.2 数据所有权声明）
+
+Bone System 是下列表的唯一写方与 Schema _owner；其他模块只读须经本模块出站端口，不得直连这些表：
+
+| 表 | 语义 | 聚合 |
+|---|---|---|
+| `sys_config` | 系统配置 | SystemConfig |
+| `sys_dict` | 数据字典 | SysDict |
+| `sys_alert_rule` | 告警规则 | AlertRule |
+| `sys_alert_event` | 告警记录（DDL 名 `sys_alert_event`；本模块 README 正文曾写作 `sys_alert_record`，以 DDL 为准） | AlertRecord |
+| `sys_schedule_task` | 定时任务 | ScheduleTask |
+| `sys_log` | 系统日志 | SystemLog |
+
 ## 许可证
 
 Bone System 是 Bone 平台的一部分，遵循相应的开源许可协议。

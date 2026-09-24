@@ -70,6 +70,21 @@ public class ArchitectureTest {
   static final ArchRule repository_methods_whitelist =
       BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
 
+  // P0-1（R9 / CORE）：一事务一聚合，跨聚合变更须经领域事件 / Outbox / 编排器
+  @ArchTest
+  static final ArchRule one_aggregate_per_transaction =
+      BoneDddArchRules.oneAggregatePerTransaction();
+
+  // P0-2（E-6.4 / R2 反贫血）：application 层不得直接实例化或改领域对象状态
+  @ArchTest
+  static final ArchRule application_services_no_domain_rules =
+      BoneDddArchRules.applicationServicesMustNotOwnDomainRules();
+
+  // P0-3（E-5.4）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent
+  @ArchTest
+  static final ArchRule application_save_must_pair_with_publish_or_exempt =
+      BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
   // CORE-04 + §14.3
   @ArchTest
   static final ArchRule no_new_use_cases =

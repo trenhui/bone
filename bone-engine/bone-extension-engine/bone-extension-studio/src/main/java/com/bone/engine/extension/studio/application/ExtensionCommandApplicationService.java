@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
 import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
@@ -30,8 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 扩展写侧（含 Extension / PluginVersion 的创建、删除、回滚、上传）。
+ *
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务写入 Extension / PluginVersion 聚合，当前不发布领域事件； 若将来接入事件发布，须改为调用
+ * publishFrom 并移除本豁免。
+ */
 @Component
 @RequiredArgsConstructor
+@NoDomainEvent
 public class ExtensionCommandApplicationService {
 
   private static final Logger log =

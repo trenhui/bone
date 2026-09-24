@@ -1,6 +1,6 @@
 # ADR-0037：集成引擎单模块收敛
 
-> **状态**：已落地（2026-05）
+> **状态**：已实现（2026-05）
 > **决策**：仅保留 `bone-platform/bone-integration`（构件 `bone-platform-integration`）；`bone-engine/bone-integration` 已从仓库删除。
 > **说明**：本 ADR 于 2026-09-23 从 Git 历史（`f28cb5965^`）恢复。原 `doc/architecture/ADR-integration-consolidation.md` 曾被删除但仍被多处引用，统一以本编号 ADR 为权威入口。
 
@@ -19,7 +19,7 @@
 
 1. **废止并删除** `bone-engine/bone-integration`（自 `bone-engine/pom.xml` 移除模块）。
 2. **唯一集成服务**：`bone-platform/bone-integration`（`:8085`，`/api/v1/integration/**`）。
-3. **Camel 资产**：将无 TPA 依赖的 HTTP 组件与 `CamelIntegrationContext` 迁入平台 `infrastructure/camel/`；完整图编排（Choice/并行等）登记 **INT-11**，按 `int_flow_node` 逐步落地。
+3. **Camel 资产**：将无 TPA 依赖的 HTTP 组件与 `CamelIntegrationContext` 迁入平台 `infrastructure/camel/`；完整图编排（Choice/并行等）登记 **INT-11**，按 `int_flow_node` 逐步实现。
 4. **执行路径**：默认 **INT-09** 线性同步（`LinearSyncFlowRuntime`）；**INT-11** Camel 编译执行由 `integration.camel.execution-enabled=true` 启用（`CamelFlowCompiler` + `CamelFlowRuntime`）。
 
 ## 后果

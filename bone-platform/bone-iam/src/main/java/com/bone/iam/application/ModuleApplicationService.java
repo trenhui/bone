@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.CreateModuleCommand;
 import com.bone.iam.application.command.UpdateModuleCommand;
@@ -18,15 +19,23 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 模块应用层统一门面（Application Service First）——模块类用例的唯一入口。
  *
+ * <p>/*
+ *
  * <p>原 {@code application.app.command.handler.*Module*Handler} 与 {@code
  * application.app.query.handler.ModuleListQueryHandler} 已全量内联进本类（Q5：撤销平行 CQRS 树）。适配器只依赖本类，HTTP
  * 契约保持不变。
  *
+ * <p>/*
+ *
  * <p>本类不出现读侧 DSL：模块分页与按 id 取数下沉 {@link BoneModuleRepository#findModulePage} / {@link
  * BoneModuleRepository#findModuleById}（本聚合读，ADR-0030 / E-4.2）。
  */
+/*
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务管理的聚合（BoneModule）当前不发布领域事件，其创建/更新均属内部状态迁移、下游无上下文需感知；若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+ */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class ModuleApplicationService {
 
   private final BoneModuleRepository boneModuleRepository;

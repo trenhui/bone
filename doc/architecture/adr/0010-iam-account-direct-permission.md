@@ -18,7 +18,7 @@ PRD 原验收「将权限分配给角色**或用户**」。As-Is 仅有 `iam_rol
 | 选项 | 内容 |
 |------|------|
 | **A — [Target] 纳入** | 新增 `iam_account_permission` + API；JWT 合并角色权限 ∪ 直连权限 |
-| **B — 收敛 PRD（已部分落地）** | MVP **仅 RBAC**；直连权限推迟至阶段 1；PRD BDD 已拆分 As-Is / [Target] |
+| **B — 收敛 PRD（已部分实现）** | MVP **仅 RBAC**；直连权限推迟至阶段 1；PRD BDD 已拆分 As-Is / [Target] |
 
 **提议**：采用 **B**，除非已有客户合同明确要求用户级授权。
 

@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）**：SDK fail-fast、接口级默认策略、三条共享门禁、8 个应用模块接入与首次运行发现的问题处置均已落地 |
+| **状态** | **已采纳（Accepted）**：SDK fail-fast、接口级默认策略、三条共享门禁、8 个应用模块接入与首次运行发现的问题处置均已实现 |
 | **日期** | 2026-09-20 |
 | **决策者** | 架构师 |
 | **关联** | E-2（多租户）、E-4.4（`@Sql` 通道六条硬约束）、CORE-05、[ADR-0029](./0029-sdk-auto-tenant-filter.md)、[ADR-0030](./0030-domain-repository-read-merge.md)、[ADR-0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md)、[ADR-0032](./0032-controlled-batch-convergence.md) |
@@ -74,8 +74,12 @@ blueprint 三个全租户方法改名（含外置模板文件名，模板 ID 由
 
 ### D7. 两处收敛（同一轮内踩到同一面墙）
 
-1. **统计路径显式化**：integration 的 `FlowStatisticsJob` 改走显式 `*AllTenants` 入口（`IntegrationFlowRepository.findForStatisticsAllTenants` + `IntegrationLogRepository.countByFlow*AllTenants` + `FlowMonitorService.getExecutionCountAllTenants` 等），并在该模块 `ArchitectureTest` 把 `FlowMonitorService` 登记为允许调用方（平台汇总口径）。租户可见路径（`MonitorController` 监控页）**保持租户内口径不变**——两组方法刻意分开命名，避免"顺手复用"把跨租户数据带进租户页面。该模块原先的冻结条目随之**清零**（规则本身已满足），模块级租户缺口改由 D6 的门禁基线跟踪。
-2. **`domain.repository` 豁免回归单源**：`domainMustNotUseQueryBuilder` 的豁免此前由 blueprint / iam / system **各自本地重写**（IAM 注释还写明"不改共享规则以免一次性放宽所有模块"）。本轮复核证伪了该顾虑——用严格规则的模块在 domain 里本就没有 DSL 依赖，相关冻结基线全为 0 字节——而 integration（本轮）与 masterdata（同期在途改动）又先后撞上同一面墙。故把豁免固化进共享规则（`..domain.repository..` 放行，其余 domain 包照旧禁止），blueprint / iam 的本地副本同步收敛（system 待其收敛完成后再收）。
+1. **统计路径显式化**：integration 的 `FlowStatisticsJob` 改走显式 `*AllTenants` 入口（`IntegrationFlowRepository.findForStatisticsAllTenants` + `IntegrationLogRepository.countByFlow*AllTenants` + `FlowMonitorService.getExecutionCountAllTenants` 等），并在该模块 `ArchitectureTest` 把 `FlowMonitorService` 登记为允许调用方（平台汇总口径）。
+
+   租户可见路径（`MonitorController` 监控页）**保持租户内口径不变**——两组方法刻意分开命名，避免"顺手复用"把跨租户数据带进租户页面。该模块原先的冻结条目随之**清零**（规则本身已满足），模块级租户缺口改由 D6 的门禁基线跟踪。
+2. **`domain.repository` 豁免回归单源**：`domainMustNotUseQueryBuilder` 的豁免此前由 blueprint / iam / system **各自本地重写**（IAM 注释还写明"不改共享规则以免一次性放宽所有模块"）。本轮复核证伪了该顾虑——用严格规则的模块在 domain 里本就没有 DSL 依赖，相关冻结基线全为 0 字节——而 integration（本轮）与 masterdata（同期在途改动）又先后撞上同一面墙。
+
+   故把豁免固化进共享规则（`..domain.repository..` 放行，其余 domain 包照旧禁止），blueprint / iam 的本地副本同步收敛（system 待其收敛完成后再收）。
 
 ## 首次运行即发现的两处真问题（本 ADR 的价值证据）
 
@@ -108,7 +112,7 @@ blueprint 三个全租户方法改名（含外置模板文件名，模板 ID 由
 |---|---|
 | A. 只把跨租户方法改名成 `*All`（并把门禁改回按后缀判定） | 后缀是可随意起名的装饰，注解 / `disableTenantFilter` 才是运行时事实；按后缀判定等于把门禁降级为命名规范，且 `*All` 与 `publishAll` / `deleteAll` / `findAll` 等通用命名冲突 |
 | B. 只做默认值 fail-fast，不动 ALL 判据 | Criteria 通道的绕过口仍在（本轮实测存在），等于修了半个问题 |
-| C. 全局按后缀禁止非 schedule 调用 `*All` | 全局后缀扫描会误伤无关命名；且真正该收口的是"事实 + 调用面"，不是字符串 |
+| C. 全局按后缀禁止非 schedule 调用 `*All` | 全局后缀扫描会误伤无关命名；该约束的是「事实 + 调用面」，不是字符串 |
 | D. 把 integration 的违规直接加进白名单让门禁转绿 | 那会把一个真实缺陷伪装成已批准例外；按 G-2 冻结才能既保住构建又留住债务可见性 |
 
 ## 合规与迁移

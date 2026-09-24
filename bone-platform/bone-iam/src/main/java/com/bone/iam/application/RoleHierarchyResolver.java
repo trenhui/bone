@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
  * 解析角色继承闭包（{@code iam_role.parent_role_id}），用于将"直接绑定的角色集合"扩展为 "直接角色 ∪ 全部祖先角色"，再供 {@code
  * AuthApplicationService} 求权限并集。
  *
+ * <p>/*
+ *
  * <p>性能与安全约束（详设 §3.2 / IAM-22）：
  *
  * <ul>
@@ -25,8 +27,12 @@ import org.springframework.stereotype.Service;
  *   <li>按层批量查询父角色，避免 N+1
  * </ul>
  *
+ * /*
+ *
  * <p>本类只保留纯图算法（BFS + 环检测 + 深度截断）；父角色批量查询委托 {@code RoleRepository#findByIds}（DSL 落在其 {@code default}
  * 方法，E-4.2 唯一合法落点）。
+ *
+ * <p>/*
  *
  * <p>落点说明：原在 {@code application/service/}，作为与 {@code *ApplicationService} 同层竞争的「第二编排层」被废止 （ADR-0033
  * 撤销，见 Bone-DDD 5.5.16）。其本身是<b>纯领域计算</b>，理论归宿是 {@code domain/service}，但架构规则 {@code
@@ -44,6 +50,8 @@ public class RoleHierarchyResolver {
 
   /**
    * 返回 {@code seedRoleIds} 的祖先闭包（包含 seed 本身）。
+   *
+   * <p>/*
    *
    * <p>遇到 {@code null}/空入参直接返回空集合；自动忽略不存在或已软删的角色。
    */

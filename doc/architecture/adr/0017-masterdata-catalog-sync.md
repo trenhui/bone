@@ -5,7 +5,7 @@
 | **状态** | 已接受（阶段一：复制 + 来源追溯） |
 | **日期** | 2026-05-20 |
 | **决策者** | 平台架构 |
-| **关联** | [主数据详设 §0](../../design/modules/3.%20主数据管理模块详细设计方案.md#0-数据血缘与-catalog-协同业界最佳实践) · [元数据能力 §8](../../design/modules/元数据能力-实现映射与竞品对照.md#8-与-bone-masterdata-的边界) |
+| **关联** | [主数据详设 §0](../../design/modules/3.%20主数据管理模块详细设计方案.md#0-数据血缘与-catalog-协同参考来源) · [元数据能力 §8](../../design/modules/元数据能力-实现映射与竞品对照.md#8-与-bone-masterdata-的边界) |
 
 ---
 
@@ -13,7 +13,7 @@
 
 - PRD 要求「业务实体 → 主数据实体」能力；As-Is 已实现 `POST /api/v1/masterdata/entities/convert?businessEntityId=`（`ConvertFromBusinessEntityCommandHandler`）。
 - `meta_*`（应用生成 / catalog）与 `mdm_*`（SSOT 治理）**不得**无规范双写，否则血缘不可追溯、质量规则与集成出口分裂。
-- 业界常见三种范式：一次性复制、领域事件同步、只读联邦视图。
+- 常见三种范式：一次性复制、领域事件同步、只读联邦视图。
 
 ## 决策
 

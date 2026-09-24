@@ -1,5 +1,6 @@
 package com.bone.studio.generator.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.common.StudioIds;
@@ -15,7 +16,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 生成代码。
+ *
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务写入聚合，当前不发布领域事件； 若将来接入事件发布，须改为调用 publishFrom 并移除本豁免。
+ */
 @Component
+@NoDomainEvent
 @Capability(name = "generateCode", description = "生成代码", inputSchema = "{}", outputSchema = "{}")
 public class GenerateCodeApplicationService {
 

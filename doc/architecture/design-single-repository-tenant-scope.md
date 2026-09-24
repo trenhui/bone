@@ -2,7 +2,7 @@
 
 > 状态：**已并入 [ADR-0030](./adr/0030-domain-repository-read-merge.md)（唯一真源）**。本文只作机制论证留档，不再单独维护；后续改动一律落在 ADR-0030。
 > 原文状态说明：设计稿（待审核），不动代码，仅给出方案、改动点与待拍板清单。
-> 审核通过后，再按「实施分阶段」落地。
+> 审核通过后，再按「实施分阶段」实现。
 
 ---
 
@@ -65,7 +65,7 @@ public @interface TenantScope {
 ### 1.3 自动注入实现：两种方案
 
 #### 方案 A（推荐，对标 MP）：`TenantSqlRewriter` 语法级注入
-- 引入 **`net.sf.jsqlparser`（Apache-2.0，轻量、业界标准）** 到 SDK（已确认 Bone 当前 SDK 未引，需新增；`bone-metadata-engine` 未直接依赖，独立引入无冲突）。
+- 引入 **`net.sf.jsqlparser`（Apache-2.0，轻量、通用做法）** 到 SDK（已确认 Bone 当前 SDK 未引，需新增；`bone-metadata-engine` 未直接依赖，独立引入无冲突）。
 - `TenantSqlRewriter.rewrite(sql, tableMeta, tenantId)`：解析 AST → 在**最外层 SELECT 的 WHERE** 注入 `tenant_id = ?`（JOIN 场景下注入到主表条件 / WHERE，不污染子查询），绑定 `_sdk_tenant_id` 参数。
 - 软删处理：`@TenantScope(autoDelete=true, table="t_order")` 显式给出表名时，额外注入 `deleted = 0`。**不自猜表名**（投影方法返回的是 DTO 而非实体，无实体元数据）——软删为**显式 opt-in**，避免误注入。
 - 注入点：`SqlMethodHandler.invoke()` 在 `processor.process()` 之后、`createCompiledQuery()` 之前，若方法 `@TenantScope(AUTO)` 则对 `processed.getSql()` 重写并往 `params` 塞 `_sdk_tenant_id`。
@@ -99,7 +99,7 @@ application/query/port/OrderQueryPort.java    // 见 2.5 取舍
 ```
 
 ### 2.2 删除清单
-> 落地状态（2026-09-19）：Order 侧三条与 `PaymentQueryAdapter` 均**已删除**——OrderReadRepository / OrderQueryPort 见 ADR-0030 P2，`PaymentQueryAdapter` + `PaymentQueryPort` 见 ADR-0030 §10.4（P4）。本节保留原文，仅作设计意图留档。
+> 实现状态（2026-09-19）：Order 侧三条与 `PaymentQueryAdapter` 均**已删除**——OrderReadRepository / OrderQueryPort 见 ADR-0030 P2，`PaymentQueryAdapter` + `PaymentQueryPort` 见 ADR-0030 §10.4（P4）。本节保留原文，仅作设计意图留档。
 - `infrastructure/query/OrderReadRepository.java`
 - `infrastructure/query/PaymentQueryAdapter.java`（同模式，一并折）
 - 原 `OrderQueryAdapter.java`（阶段二已删，确认无残留）
@@ -172,7 +172,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 | 阶段 | 内容 | 产出 |
 |---|---|---|
 | **P1** | SDK：`@TenantScope` 注解 + 方案 B 占位符注入 + `RepositoryFactoryBean` static 修复 + 治理检查 | SDK 租户安全通道就绪 |
-| **P2** | blueprint：删除 `OrderReadRepository`/`PaymentQueryAdapter`，合并入 `OrderRepository`，投影迁 domain，外置 `.sql` 落地 | 单一仓储试点 |
+| **P2** | blueprint：删除 `OrderReadRepository`/`PaymentQueryAdapter`，合并入 `OrderRepository`，投影迁 domain，外置 `.sql` 实现 | 单一仓储试点 |
 | **P3** | 规范落档：E-4.1/E-4.2/CORE-05/ADR-0029 改写 + 新 ADR-0030 + compliance.json 重算 | 文档与代码同批 |
 | **P4** | （可选）方案 A `jsqlparser` 全自动注入；其他模块推广 | 全平台统一 |
 
@@ -187,4 +187,4 @@ public interface OrderRepository extends Repository<Order, Long> {
 5. **推广范围**：仅 blueprint 试点（P1–P3）？还是同步规划其他模块（P4）？
 6. **软删自动注入**：`@Sql` 通道的软删走 **显式 opt-in（`autoDelete=true, table=`）**？还是暂不自动（作者手写 `deleted=0`）？
 
-> 以上 6 点确认后，我再出具体改动（SDK 代码 + blueprint 重构 + 规范修订），按 P1→P4 顺序落地并跑齐验证。
+> 以上 6 点确认后，我再出具体改动（SDK 代码 + blueprint 重构 + 规范修订），按 P1→P4 顺序实现并跑齐验证。

@@ -6,6 +6,8 @@ import java.util.Optional;
 /**
  * 当前登录主体端口（从认证上下文中解析）。
  *
+ * <p>/*
+ *
  * <p>按 E-10.2 放置为技术能力端口：安全上下文解析是框架能力，不是本上下文的领域概念，故不属 {@code domain/gateway}；由 {@code
  * infrastructure/security} 实现，使 {@code adapter} 层（如 {@code MeController}） 不必反向依赖 {@code
  * infrastructure}（E-10.1）。

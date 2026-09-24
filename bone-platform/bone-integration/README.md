@@ -78,6 +78,21 @@ AI 不执行）；且模块 Spring 测试需在有数据库的环境验证。
 - **迁移计划**：是否全量改为 `*CommandHandler` 由模块 Maintainer 决定。随功能重构逐类更名时同步 Controller 注入与冻结基线收缩；当前不做一次性批量改名。
 - **拆除条件**：全部 Handler 更名完成且冻结基线收缩后，本段删除。
 
+## 本上下文拥有的表（E-1.2 数据所有权声明）
+
+bone-platform-integration 是下列表的唯一写方与 Schema _owner；其他模块只读须经本模块出站端口，不得直连这些表：
+
+| 表 | 语义 | 聚合 |
+|---|---|---|
+| `int_flow` | 集成流程定义 | IntegrationFlow |
+| `int_flow_node` | 流程节点 | FlowNode |
+| `int_flow_connection` | 流程连线 | FlowConnection |
+| `int_execution_log` | 流程执行日志 | IntegrationLog |
+| `int_connector` | 连接器 | Connector |
+| `int_outbox` | 领域事件 Outbox（INT-10） | — |
+
+> 注：`int_dead_letter`、`int_template` 已在 `bone-init.sql` 建表但当前无 `@Table` 实体，归属待架构师裁定（见审计报告的孤儿表清单）。
+
 ## 历史说明
 
 原 `bone-engine/bone-integration`（30888、`t_flow_*`）已删除，决策记录：[ADR-integration-consolidation.md](../../doc/architecture/ADR-integration-consolidation.md)。

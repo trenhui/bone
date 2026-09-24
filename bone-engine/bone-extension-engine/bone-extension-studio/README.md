@@ -26,3 +26,15 @@
 | `domain/model/operation/` | `StudioOperation`（LRO 状态） |
 
 `domain/{gateway,repository}` 按 ADR-0036 R3 留根；`domain/gateway/*ReadPort` 的存量读端口按 [ADR-0013](../../../doc/architecture/adr/0013-extension-studio-repository-read-side.md) 的迁移路径处理，不随本批搬包。
+
+## 本上下文拥有的表（E-1.2 数据所有权声明）
+
+bone-extension-studio 是下列表的唯一写方与 Schema _owner；其他模块只读须经本模块出站端口，不得直连这些表：
+
+| 表 | 语义 | 聚合 |
+|---|---|---|
+| `exts_extension_point` | 扩展点 | ExtPoint |
+| `exts_extension_impl` | 扩展实现 | Extension |
+| `exts_plugin_version` | 插件版本 | PluginVersion |
+| `exts_plugin_execution_log` | 插件执行日志 | PluginExecutionLog |
+| `exts_audit_log` | 扩展审计 | StudioAuditEntry |

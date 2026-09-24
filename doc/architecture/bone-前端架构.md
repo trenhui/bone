@@ -23,7 +23,7 @@
 | HTTP | Axios | 统一拦截器、错误处理 |
 | Monorepo | npm workspaces | 根目录 `package.json` workspaces |
 
-> **说明**：仓库实现为 Qiankun，请勿再按「无界 / wujie」方案改造主链路；旧文档中相关表述已废弃。
+> **说明**：仓库当前使用 Qiankun，请勿再按「无界 / wujie」方案改造主链路；旧文档中相关表述已废弃。
 
 ## 3. 微前端结构
 
@@ -103,7 +103,7 @@ apps/<app-name>/src/
    - Shell 已启用 Qiankun `strictStyleIsolation` / `experimentalStyleIsolation`；子应用自定义样式须使用 CSS Modules 或 scoped 方案，避免污染全局。  
    - 跨应用一致的 `--primary` 等变量由 Shell `applyTheme` 写在 `document.documentElement`，子应用优先消费 CSS 变量而非硬编码色值。
 
-4. **落地状态**  
+4. **实现状态**  
    - 映射表与流程以 UI 规范为准；代码逐步对齐，新增/改版页面须符合本节，旧页可在迭代中迁移。
 
 ## 5. 开发与端口（常见约定）
@@ -144,7 +144,7 @@ apps/<app-name>/src/
 > | `bone-generator-app` | ⚠️ 三套并存 | React Query + Redux + Zustand，待收敛为 React Query + Zustand |
 > | `bone-shell` / `bone-metadata-app` / `bone-extension-app` | 🕐 待迁移 | 仍 Redux |
 >
-> 迁移完成前，§6.2 为**目标态**；新代码优先按 §6.2 落地（React Query + Zustand），存量 Redux 代码随页面迭代迁移。
+> 迁移完成前，§6.2 为**目标态**；新代码优先按 §6.2 实现（React Query + Zustand），存量 Redux 代码随页面迭代迁移。
 
 ### 6.3 微前端通信规范
 

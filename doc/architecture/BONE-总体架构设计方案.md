@@ -1,11 +1,11 @@
-# BONE 总体架构设计方案（最佳实践完整版）
+# BONE 总体架构设计方案
 
 ## —— 企业级全栈开源快速开发平台
 
-> **文档性质**：`doc/architecture/` 目录下**平台总体**架构与技术方案权威文档；本版在 v2.0 整合稿基础上，按 **C4、SRE（SLO/SLI）、Well-Architected、API 工程化、韧性模式、零信任与 SDL、数据一致性模式** 等业界最佳实践做了系统化补强。  
+> **文档性质**：`doc/architecture/` 目录下**平台总体**架构与技术方案权威文档；本版在 v2.0 整合稿基础上，按 **C4、SRE（SLO/SLI）、Well-Architected、API 工程化、韧性模式、零信任与 SDL、数据一致性模式** 等公开方法论补齐了相应章节。  
 > **文档沿革**：2026-05-15 起，原并行 `doc/arch` 方案已废止并合并至本文；2026-05-15 起本文迁入 `doc/architecture/`，与前端架构、UI 规范同目录索引；后续架构变更仅维护本文。  
 > **与实现关系**：愿景、分层、能力边界与非功能基线以本文为准；**具体 API 路径、表名 DDL** 与仓库不一致时以 **OpenAPI、`bone-init.sql`、各模块代码** 为准；**§7** 给出 Maven 模块映射。  
-> **版本**：v2.2 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-27 | **状态**：发布
+> **版本**：v2.2 | **日期**：2026-05-15 | **最近修订**：2026-05-27 | **状态**：发布
 
 ---
 
@@ -94,7 +94,7 @@
 | MVP | 元数据建模 + 基础 IAM + 最小主数据/系统 |
 | 安全基线 | 审计、租户抽检、密钥外置、弱口令治理 |
 | 集成增强 | 连接器库、流程模板、执行大盘 |
-| 扩展与生态 | 插件规范、隔离强化、开放 API 策略 |
+| 扩展与插件 | 插件规范、隔离强化、开放 API 策略 |
 
 ### 1.6 硬约束（规划级）
 
@@ -134,7 +134,7 @@
 
 ### 2.2 云架构五大支柱（对齐 Well-Architected 思想）
 
-| 支柱 | BONE 落地要点 |
+| 支柱 | BONE 对应做法 |
 |------|----------------|
 | **卓越运维** | IaC、可观测三板斧、Runbook、混沌与演练 |
 | **安全** | 零信任、最小权限、密钥外置、供应链安全（SBOM/扫描） |
@@ -182,7 +182,7 @@
 
 ### 3.2.1 扩展管理模块实现符合度（As-Is 快照，2026-05-27）
 
-> **详设真源**：[扩展管理详设 v2.5](../design/modules/5.%20扩展管理模块详细设计方案.md) §2；**机器证据**：[`doc/_generated/extension/`](../_generated/extension/)（`collect.py --check`）；**未落地**：[`backlog.yaml`](../../tools/extension-compliance-collector/backlog.yaml)。
+> **详设真源**：[扩展管理详设 v2.5](../design/modules/5.%20扩展管理模块详细设计方案.md) §2；**机器证据**：[`doc/_generated/extension/`](../_generated/extension/)（`collect.py --check`）；**未实现**：[`backlog.yaml`](../../tools/extension-compliance-collector/backlog.yaml)。
 
 | 层次 | 仓库 | As-Is（可验收） | 未完成（[Target]/[Vision]） |
 |------|------|-----------------|---------------------------|
@@ -236,9 +236,9 @@ flowchart TB
 | V4 | 插件扩展 | ExtensionPointDefined → PluginUploaded → PluginDeployed → PluginExecuted |
 | V5 | 主数据治理 | MasterEntityDefined → QualityRuleConfigured → DataImported → QualityChecked → Published |
 | V6 | 平台运维 | Deployed → ConfigChanged → MetricAlerted → BackupExecuted |
-| V7 | 开放生态 | APIRegistered → ThirdPartyIntegrated → CustomLogicApplied |
+| V7 | 开放能力 | APIRegistered → ThirdPartyIntegrated → CustomLogicApplied |
 
-### 3.4 架构红牌（须快速闭环评审）
+### 3.4 架构红牌（限期评审）
 
 | 编号 | 风险 | 缓解方向 |
 |------|------|----------|
@@ -422,7 +422,7 @@ flowchart TD
 
 ### 5.6 跨上下文编排（Saga 思想）
 
-跨域删除、发布等长事务采用 **可补偿步骤 + 幂等探测 + DLQ**；Saga 状态机与步骤定义以各限界上下文 **ADR + 模块设计** 为准，落地时与各服务事务边界对齐。
+跨域删除、发布等长事务采用 **可补偿步骤 + 幂等探测 + DLQ**；Saga 状态机与步骤定义以各限界上下文 **ADR + 模块设计** 为准，实现时与各服务事务边界对齐。
 
 ---
 
@@ -447,20 +447,20 @@ flowchart TD
 
 | 技术 | 版本（规划） | 状态 | 用途 |
 |------|----------------|------|------|
-| Java | 17+ | ✅ 已落地 | 语言 |
-| Spring Boot | 3.2+ | ✅ 已落地 | 应用框架 |
-| Spring Cloud / Alibaba | 2023.x | ✅ 已落地（BOM） | 微服务 |
-| Bone Metadata SDK | 1.x | ✅ 已落地 | 元数据持久化与仓储扩展（唯一 ORM，禁止 MyBatis / JPA） |
+| Java | 17+ | ✅ 已实现 | 语言 |
+| Spring Boot | 3.2+ | ✅ 已实现 | 应用框架 |
+| Spring Cloud / Alibaba | 2023.x | ✅ 已实现（BOM） | 微服务 |
+| Bone Metadata SDK | 1.x | ✅ 已实现 | 元数据持久化与仓储扩展（唯一 ORM，禁止 MyBatis / JPA） |
 | RocketMQ | 5.2 | 🟡 可选（integration outbox `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 开启） | 消息 |
-| Seata | — | ⛔ **未落地**（由 outbox + 最终一致替代；规划中，需 ADR 定案） | 分布式事务 |
-| Redis | 7.x | ✅ 已落地 | 缓存 |
+| Seata | — | ⛔ **未实现**（由 outbox + 最终一致替代；规划中，需 ADR 定案） | 分布式事务 |
+| Redis | 7.x | ✅ 已实现 | 缓存 |
 | Redisson | 3.27 | 🟡 部分（缓存/锁按需；未全模块启用） | 分布式协调 |
-| Sentinel | — | ⛔ 未落地（gateway 限流/熔断用 Spring Cloud CircuitBreaker + resilience4j） | 限流熔断 |
+| Sentinel | — | ⛔ 未实现（gateway 限流/熔断用 Spring Cloud CircuitBreaker + resilience4j） | 限流熔断 |
 | Apache Camel | — | 🟡 部分（integration `CamelFlowRuntime` 已启用） | 集成编排 |
-| LiteFlow | — | ⛔ 未落地 | 规则编排 |
-| Aviator | 5.4 | ✅ 已落地（extension 表达式） | 规则与表达式 |
+| LiteFlow | — | ⛔ 未实现 | 规则编排 |
+| Aviator | 5.4 | ✅ 已实现（extension 表达式） | 规则与表达式 |
 
-> **状态说明（2026-08 补充）**：状态列区分「已落地 / 部分 / 可选 / 未落地」；⛔ 项为规划中或已被替代方案，落地前不视为平台能力承诺。
+> **状态说明（2026-08 补充）**：状态列区分「已实现 / 部分 / 可选 / 未实现」；⛔ 项为规划中或已被替代方案，实现前不视为平台能力承诺。
 
 ### 6.3 中间件与数据存储
 
@@ -710,7 +710,7 @@ event_mapping:
 - `tenant_id` **必须从可信身份**（JWT/网关会话）解析，**禁止**仅信任请求体中的租户字段覆盖。  
 - 网关向下游注入 `X-Tenant-Id` 或等价 metadata；业务层 `TenantContext` 与数据访问拦截器一致化。
 
-### 8.6 API 工程化约定（REST 最佳实践）
+### 8.6 REST API 工程化约定
 
 > **完整契约**（URL、响应、错误码、日志、分页、迁移）：见 **[Bone-API-规范.md](./Bone-API-规范.md)**。下列为摘要。
 
@@ -846,7 +846,7 @@ erDiagram
 
 > **As-Is**：仓库**无** `bone-chart/` Helm 目录；部署以 Spring Boot 可执行 JAR + 环境变量为主（见 [wiki/03 §部署](../wiki/03-本地开发与构建.md)）。
 
-**[Vision]** 推荐 **Kubernetes + Helm**；Chart 包含 Deployment、Service、Ingress、ConfigMap、Secret、HPA、ServiceAccount。示例：`helm install bone ./bone-chart --set database.host=...`（Chart 待 `doc/deployment/` 落地）。
+**[Vision]** 推荐 **Kubernetes + Helm**；Chart 包含 Deployment、Service、Ingress、ConfigMap、Secret、HPA、ServiceAccount。示例：`helm install bone ./bone-chart --set database.host=...`（Chart 待放入 `doc/deployment/`）。
 
 ### 12.2 环境
 
@@ -861,7 +861,7 @@ erDiagram
 
 基础设施与应用黄金指标；Prometheus 告警规则对接邮件/IM；**分布式追踪**可选用 SkyWalking、OpenTelemetry + Tempo/Jaeger 等，与 README 中「全链路可观测」表述一致；日志集中检索（ELK 等），**保留期**（如 180 天）可配置。
 
-### 12.4 健康检查与就绪（Kubernetes 最佳实践）
+### 12.4 健康检查与就绪（Kubernetes）
 
 | 探针 | 用途 | 建议 |
 |------|------|------|
@@ -915,9 +915,9 @@ erDiagram
 | 阶段 | 核心任务 |
 |------|----------|
 | 阶段 0 | 控制台、元数据、IAM |
-| 阶段 1 | 主数据、扩展管理（**As-Is**：扩展 Studio/SDK + `bone-extension-app` 主流程已落地，见 §3.2.1；[Target] 见扩展 Backlog） |
+| 阶段 1 | 主数据、扩展管理（**As-Is**：扩展 Studio/SDK + `bone-extension-app` 主流程已实现，见 §3.2.1；[Target] 见扩展 Backlog） |
 | 阶段 2 | 集成、系统管理 |
-| 阶段 3 | 插件生态与开放 API（Wasm 市场、字节码热载等 [Vision]，见扩展详设 §12） |
+| 阶段 3 | 插件与开放 API（Wasm 市场、字节码热载等 [Vision]，见扩展详设 §12） |
 
 ### 15.2 测试矩阵
 

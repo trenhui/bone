@@ -20,9 +20,13 @@
 
 ### 现状缺口（复核实证）
 
-1. **消费端无消息级幂等**：跨进程消费的唯一入口 `OrderPaidIntegrationMqListener`（`bone-blueprint/.../adapter/mq/listener/OrderPaidIntegrationMqListener.java:23-42`）仅反序列化 + `log.info`，**无 eventId/messageId 去重、无幂等表**。中继注释自身承认「at-least-once 投递，消费方须幂等」（`OrderOutboxRelay.java:15-16`），但该幂等**没有落地**。现有幂等仅在业务聚合内（状态机级，如 `Order.confirmPaid()` 重复回调返回 false），非消息级。
+1. **消费端无消息级幂等**：跨进程消费的唯一入口 `OrderPaidIntegrationMqListener`（`bone-blueprint/.../adapter/mq/listener/OrderPaidIntegrationMqListener.java:23-42`）仅反序列化 + `log.info`，**无 eventId / messageId 去重、无幂等表**。
 
-> **2026-09-18 收敛注记**：本节是决策时点的事实快照，其中类名与路径已随后续收敛变化——`OrderPaidIntegrationMqListener` → `adapter/messaging/listener/OrderPaidIntegrationListener`（包名 `adapter/mq` → `adapter/messaging`，E-13.5 已记为已收敛）、`OrderOutboxRelay` → `OrderOutboxRelayPortAdapter`。上文"缺口 1"已闭环：消费端消息级幂等落地为 `ConsumedEventPort` + `bp_processed_event` 原子抢占（见 E-13.3 与 blueprint README）。
+   中继注释自身承认「at-least-once 投递，消费方须幂等」（`OrderOutboxRelay.java:15-16`），但该幂等**没有实现**。现有幂等仅在业务聚合内（状态机级，如 `Order.confirmPaid()` 重复回调返回 false），非消息级。
+
+> **2026-09-18 收敛注记**：本节是决策时点的事实快照，其中类名与路径已随后续收敛变化——`OrderPaidIntegrationMqListener` → `adapter/messaging/listener/OrderPaidIntegrationListener`（包名 `adapter/mq` → `adapter/messaging`，E-13.5 已记为已收敛）、`OrderOutboxRelay` → `OrderOutboxRelayPortAdapter`。
+>
+> 上文"缺口 1"已闭环：消费端消息级幂等实现为 `ConsumedEventPort` + `bp_processed_event` 原子抢占（见 E-13.3 与 blueprint README）。
 2. **事件 id 仅在信封层生成**：`DomainEvent` 为空标记接口（`DomainEvent.java:4`），领域事件对象（如 `OrderCreatedEvent`）无全局 id；eventId 是落 Outbox 时由 `OrderOutboxEnvelopeFactory.newEventId()` 生成 UUID（`OrderOutboxEnvelopeFactory.java:19-21`）。
 3. **死信机制不完整**：`int_dead_letter` 表 + 积压指标（`DeadLetterMetricsRefresher.java:19-36`）存在，但**未发现写入/消费 int_dead_letter 的完整逻辑**；blueprint 侧无死信概念，仅 FAILED 状态标记。
 4. **模块间语义不一致**：bone-iam / bone-masterdata 目前无跨进程投递；blueprint 走「Spring Event + AFTER_COMMIT 订阅器」，integration 走「独立 `IntegrationDomainEventPublisher`（publish 即写 outbox + 同步 dispatch）」，机制不同。
@@ -67,8 +71,8 @@
 ## 理由
 
 - **两套复制已出现且代码自述应上抽**（`OrderOutboxRecord.java:20`）：继续复制将带来维护成本与行为漂移（重试上限、死信、幂等语义各自为政）。
-- **消费端幂等缺失是真实缺陷**：at-least-once 重复投递在无幂等守卫时会对同一事件执行多次副作用；这是 D6「消费端按 eventId 幂等」的落地缺口。
-- **D6 已定义语义，落地为平台原语**可将「禁止每个 Handler 各自实现」从文档约定变为可用组件。
+- **消费端幂等缺失是真实缺陷**：at-least-once 重复投递在无幂等守卫时会对同一事件执行多次副作用；这是 D6「消费端按 eventId 幂等」的实现缺口。
+- **D6 已定义语义，实现为平台原语**可将「禁止每个 Handler 各自实现」从文档约定变为可用组件。
 - **迁移成本可控**：表名可配 + 保留存量数据，模块接入是「换实现、不换表」的适配改造。
 
 ## 后果

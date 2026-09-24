@@ -48,7 +48,7 @@
 
 ## 功能模块 × 规范合规落点（对齐 v5.5.12）
 
-> 本节回答一个问题：**每个 MVP 模块按最新规范该怎么落地、现在差在哪**。缺陷分两类处理——**本次就改**（影响正确性且改动小）与**登记偏差**（存量命名 / 形态，随下次功能修改收敛，不追溯）。
+> 本节回答一个问题：**每个 MVP 模块按最新规范该怎么实现、现在差在哪**。缺陷分两类处理——**本次就改**（影响正确性且改动小）与**登记偏差**（存量命名 / 形态，随下次功能修改收敛，不追溯）。
 
 | ID | 关键路径 | 规范落点 | 本次校准 |
 |----|----------|----------|----------|
@@ -150,7 +150,14 @@
 
 **已修复缺陷**
 
-1. **MVP-11 编译错误（阻断 `bone-metadata-server` 构建）**：`JdbcPhysicalStructureGateway.java` 实现未写完（第 79 行语法截断，引用未定义辅助方法且漏 `Pattern` import）。已补全：information_schema 只读 diff、`CREATE TABLE`/`ALTER TABLE ADD COLUMN` 幂等非破坏 DDL（加列不 `NOT NULL` 防存量数据约束失败）、标识符正则校验防 SQL 注入、`PhysicalStructurePlan` 状态机（READY/DRIFT_DETECTED/CREATED/ALIGNED）。
+1. **MVP-11 编译错误（阻断 `bone-metadata-server` 构建）**：`JdbcPhysicalStructureGateway.java` 实现未写完（第 79 行语法截断，引用未定义辅助方法且漏 `Pattern` import）。
+
+   已补全：
+
+   - information_schema 只读 diff；
+   - `CREATE TABLE` / `ALTER TABLE ADD COLUMN` 幂等非破坏 DDL（加列不 `NOT NULL`，避免存量数据触发约束失败）；
+   - 标识符正则校验，防 SQL 注入；
+   - `PhysicalStructurePlan` 状态机（READY / DRIFT_DETECTED / CREATED / ALIGNED）。
 2. **DDD P0-6 架构违规（command/domain 层用读侧 DSL）**：`CreateMetaEntityHandler` / `CreateMetaFieldHandler` 原在 handler 内用 `Criteria` 读侧 DSL 做唯一性计数，触发 `command_no_query_builder`；初移 `domain.service` 仍触发 `domain_no_query_builder`。最终落在 `application.query.MetaEntityUniquenessQuery`（读侧层，合规），handler 改为调用之。ArchUnit 两条规则转绿（`metadata-server` 全量 ArchitectureTest 16/16 通过）。
 3. **实体模型与 DDL 漂移（createEntity/createField/publishEntity 集成测试 500 根因）**：`MetaEntity`/`MetaField` 均映射 `module_id` 列，但 `bone-init.sql` 的 `meta_entity`/`meta_field` DDL 缺该列 → INSERT 抛 `BadSqlGrammarException`。已在 `bone-init.sql` 两表各补 `module_id BIGINT DEFAULT NULL`，重新全量初始化测试库后集成测试转绿。
 
@@ -161,9 +168,19 @@
 
 **已修复（2026-09-14，已提交 `release/mvp-v1.0`）**
 
-- 预存在配置债 `engineMetaEntityRepository` / `engineMetaFieldRepository` 重复 bean 注册：**已修复**。`MetadataEngineAutoConfiguration` 的 `@ComponentScan("com.bone.metadata.engine.runtime")` 增加 `excludeFilters = @Filter(ASSIGNABLE_TYPE, EngineSdkRepositoryConfig.class)`，使带 `@EnableSqlRepositories` 的 `EngineSdkRepositoryConfig` 仅由宿主 `@SpringBootApplication(scanBasePackages="com.bone")` 注册一次，`RepositoryRegistrar` 不再报重复注册 ERROR。`bone-metadata-engine-starter` 编译 + spotless 通过。
+- 预存在配置债 `engineMetaEntityRepository` / `engineMetaFieldRepository` 重复 bean 注册：**已修复**。
+
+  `MetadataEngineAutoConfiguration` 的 `@ComponentScan("com.bone.metadata.engine.runtime")` 增加 `excludeFilters = @Filter(ASSIGNABLE_TYPE, EngineSdkRepositoryConfig.class)`，使带 `@EnableSqlRepositories` 的 `EngineSdkRepositoryConfig` 仅由宿主 `@SpringBootApplication(scanBasePackages="com.bone")` 注册一次，`RepositoryRegistrar` 不再报重复注册 ERROR。`bone-metadata-engine-starter` 编译 + spotless 通过。
 - 预存在 `bone-core` 全新 `clean` 编译失败：**已修复**。`bone-core/pom.xml` 显式引入 `spring-tx`（test 作用域）补足 `@Transactional` 夹具依赖；补齐 `BoneDddArchRulesVerificationTest` 及其夹具的引用/类型错误（半成品测试已补全为可编译可运行的 DDD 架构规则校验）。`bone-core clean test` 200 用例全绿。
-- **MVP-11 物理对齐未接发布主链路（实机验收发现的真实缺口，2026-09-14）**：`JdbcPhysicalStructureGateway` 实现完整却从未被注入/调用，致 `PublishMetaEntityHandler` 发布时只翻状态、不建物理表，运行时 CRUD 直接 500；且 `MetaEntity.publish()` 对已发布实体抛 409 阻断「加字段再发布加列」。**已修复**：① `CatalogInfrastructureConfiguration` 注册 `PhysicalStructureGateway` Bean；② `PublishMetaEntityHandler` 发布 RUNTIME 实体后置调用 `align(tenantId, code)`；③ `MetaEntity.publish()` 改为幂等（已发布不再抛异常，支持重新部署重新对齐）。实机验收：发布即建表（`meta_customer_e2e_*`）、运行时 CRUD 正常、加字段再发布列数 7→8（ADD COLUMN）且已有数据不丢。已提交 `02d1ffad`。
+- **MVP-11 物理对齐未接发布主链路（实机验收发现的真实缺口，2026-09-14）**：`JdbcPhysicalStructureGateway` 实现完整却从未被注入 / 调用，致 `PublishMetaEntityHandler` 发布时只翻状态、不建物理表，运行时 CRUD 直接 500；且 `MetaEntity.publish()` 对已发布实体抛 409，阻断「加字段再发布加列」。
+
+  **已修复**：
+
+  1. `CatalogInfrastructureConfiguration` 注册 `PhysicalStructureGateway` Bean；
+  2. `PublishMetaEntityHandler` 发布 RUNTIME 实体后置调用 `align(tenantId, code)`；
+  3. `MetaEntity.publish()` 改为幂等（已发布不再抛异常，支持重新部署重新对齐）。
+
+  实机验收：发布即建表（`meta_customer_e2e_*`）、运行时 CRUD 正常、加字段再发布列数 7 → 8（ADD COLUMN）且已有数据不丢。已提交 `02d1ffad`。
 
 > 上述三项修复后，MVP 验收主链路（建模→发布建表→运行时 CRUD→加字段再发布加列不丢数据）已端到端实证通过（38/38 单测 + 实机验收均成立）。
 
@@ -182,7 +199,7 @@
 |---|------|------|------|
 | 1 | IAM/System 多个核心接口 500（账号/角色/菜单/审计/配置/告警） | 服务进程持有 9/19 之前的 `bone-metadata-sdk` jar，新类 `QueryContext$Order` 未加载 → `NoClassDefFoundError` | 重启服务（旧 jar 无法热替换）；新增 `restart-mvp-services.sh` 固化该操作 |
 | 2 | `bone-system` 启动失败 | E-13.3 命名收敛后 `target/classes` 残留旧 `HttpProbeServiceHealthGateway`，与 Adapter 双 bean 冲突 | `mvn -pl bone-platform/bone-system clean` 后重启 |
-| 3 | **登录 500**（阻断全链路） | ADR-0029 落地后 `iam_account` 读路径失败关闭，而登录请求无 JWT、`TenantContext` 为空 | 登录入口改为跨租户查账号（`AccountRepository.findByUsernameForLogin` + `disableTenantFilter()`），查到后经 `TenantContextRunner` 按账号租户声明上下文 |
+| 3 | **登录 500**（阻断全链路） | ADR-0029 实现后 `iam_account` 读路径失败关闭，而登录请求无 JWT、`TenantContext` 为空 | 登录入口改为跨租户查账号（`AccountRepository.findByUsernameForLogin` + `disableTenantFilter()`），查到后经 `TenantContextRunner` 按账号租户声明上下文 |
 | 4 | `/api/v1/iam/refresh` **恒 500** | `RefreshTokenService.rotate` 用 `Map.of` 装载 `replaced_by`（新令牌为 NULL）→ NPE | 改用 `HashMap`；同时 `rotate` 回传 `tenantId`，消费侧显式声明租户 |
 | 5 | 建账号查重被误改为全局 | 复用登录的跨租户查找，与唯一键 `uk_iam_account_username (tenant_id, username)` 冲突 | 新增 `findByUsernameInTenant`（本租户），建账号改用它 |
 | 6 | 网关缺 `/api/v1/apps/**` 路由 | `AppController` 归属 IAM 但前缀非 `/api/v1/iam/**` | 网关 bone-iam 路由增加该前缀 |

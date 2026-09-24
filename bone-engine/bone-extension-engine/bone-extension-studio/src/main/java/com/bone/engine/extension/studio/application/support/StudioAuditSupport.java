@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.application.support;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.repository.StudioAuditRepository;
@@ -8,8 +9,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
-/** 扩展 Studio 审计（[Audit] 日志 + 可选持久化）。 */
+/**
+ * 扩展 Studio 审计（[Audit] 日志 + 可选持久化）。
+ *
+ * <p><b>不发 DomainEvent 豁免（E-5.4）</b>：本服务写入 StudioAuditEntry 聚合，当前不发布领域事件； 若将来接入事件发布，须改为调用
+ * publishFrom 并移除本豁免。
+ */
 @Service
+@NoDomainEvent
 public class StudioAuditSupport {
 
   private static final Logger log = LoggerFactory.getLogger(StudioAuditSupport.class);

@@ -8,7 +8,7 @@
 
 ## 1. 概念
 
-| 字段 | 说明 | 落地形态（As-Is） |
+| 字段 | 说明 | 实现形态（As-Is） |
 |------|------|-------------------|
 | `tenant_id` | 租户隔离主键；表列 + JWT claim | **必落库**：所有业务表强制；见 [数据库开发规范 §1](./数据库开发规范.md) |
 | `biz_identity_code` | 租户下业务身份/条线；细粒度隔离 | **As-Is：仅上下文/JWT**（`BizIdentityContext`、`ExtensibleObject.bizIdentityCode`），**默认不进 DDL**；如需表级落库须模块详设说明并补 DDL（**[Target]**） |
