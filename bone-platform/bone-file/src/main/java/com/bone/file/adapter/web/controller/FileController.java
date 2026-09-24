@@ -2,7 +2,7 @@ package com.bone.file.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.file.infrastructure.storage.FileStorageService;
+import com.bone.file.application.port.out.FileStoragePort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class FileController {
 
-  private final FileStorageService fileStorageService;
+  private final FileStoragePort fileStorageService;
 
   @Operation(summary = "上传文件")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

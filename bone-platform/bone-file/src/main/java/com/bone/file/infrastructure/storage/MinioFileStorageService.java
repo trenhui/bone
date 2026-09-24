@@ -1,5 +1,6 @@
 package com.bone.file.infrastructure.storage;
 
+import com.bone.file.application.port.out.FileStoragePort;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 /** MinIO 文件存储实现（兼容 S3）。 */
 @Slf4j
 @Service
-public class MinioFileStorageService implements FileStorageService {
+public class MinioFileStorageService implements FileStoragePort {
 
   private final MinioClient minioClient;
   private final String defaultBucket;

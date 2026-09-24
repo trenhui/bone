@@ -1,10 +1,10 @@
-package com.bone.file.infrastructure.storage;
+package com.bone.file.application.port.out;
 
 import java.io.InputStream;
 import java.util.Map;
 
-/** 文件存储抽象：上传 / 下载 / 删除。 */
-public interface FileStorageService {
+/** 文件存储出站端口：上传 / 下载 / 删除 / 探测 / 连接测试。由 infrastructure 适配 MinIO / S3 / OSS 实现。 */
+public interface FileStoragePort {
 
   /** 上传文件，返回对象元数据。 */
   StoredObject upload(

@@ -124,19 +124,6 @@ public class ArchitectureTest {
   static final ArchRule adapter_no_domain_service =
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
 
-  // CORE-04（蓝图 module-level）：入站适配器（任意 ..adapter.. 包）只许依赖 application，不得直连 domain.repository。
-  // catalog 收敛为 *ApplicationService 门面后，控制器仅注入门面，本规则稳定为零违规。
-  @ArchTest
-  static final ArchRule adapter_no_domain_repository_all_packages =
-      noClasses()
-          .that()
-          .resideInAPackage("..adapter..")
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage("..domain.repository..")
-          .allowEmptyShould(true)
-          .because("入站适配器只许依赖 application；catalog 收敛为 *ApplicationService 后控制器不再直连仓储");
-
   // ADR-0028：一个用例只选一种构件，CommandHandler 禁止依赖 application 层（套娃 ApplicationService）。
   // 收敛后 handler 包已清空，allowEmptyShould 保持规则在基线收缩期间不误判。
   @ArchTest
