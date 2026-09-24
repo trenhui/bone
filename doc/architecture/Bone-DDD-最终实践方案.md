@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.19。本批次统一引号并压缩 E-0～E-3：删掉重复陈述（新用例起步方式、Command 与 Handler 的区别各说过两遍），把表格单元里的长段论述收成可判定短句，导航块拆为列表。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
+> **版本**：5.5.20。本批次压缩 E-4～E-13 的长段论述（读侧 DSL 落点、`@Sql` 通道、Durable/Best-effort 约束、事件版本演进、blueprint 偏差登记、E-13 命名与协议标记等 12 处），并把实现细节与易变计数从规范正文移出。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
 
 ## 文档说明
 
@@ -1111,7 +1111,7 @@ adapter → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
 ```
 
 - 新查询端口固定在 `application/query/port`，实现固定在 `infrastructure/query`；结果放 `application/query/dto` 或 `projection`。
-- **读侧 DSL 的落点（ADR-0030 后按层说清）**：`QueryBuilder` / `Criteria` / `SQL` **不得出现在 application**（`readSideDslOnlyInQueryLayer` 的主判据，最外层边界）；`domain` 内**只允许 `domain.repository`** 触碰读侧 DSL——它是 SDK 集成点，基类 `Repository<T, ID>` 自带 `updateByCriteria(Criteria<T>)`，该豁免已固化在共享规则 `domainMustNotUseQueryBuilder`（`..domain.repository..` 放行，其余 domain 包照旧禁止；2026-09-20 由 blueprint / IAM / system 三处本地重写收敛回共享规则）；其余 domain 包（聚合 / 值对象 / 事件）一律不得依赖 DSL。domain 不依赖查询 DTO / QueryPort；QueryHandler 返回投影，不返回聚合供外层修改。
+- **读侧 DSL 的落点**：`QueryBuilder` / `Criteria` / `SQL` 不得出现在 application（`readSideDslOnlyInQueryLayer` 主判据）；`domain` 内只允许 `domain.repository` 触碰读侧 DSL——它是 SDK 集成点，基类 `Repository<T, ID>` 自带 `updateByCriteria(Criteria<T>)`，该豁免已固化在共享规则 `domainMustNotUseQueryBuilder`（`..domain.repository..` 放行，其余 domain 包禁止）；domain 不依赖查询 DTO / QueryPort，QueryHandler 返回投影而非聚合。
 - 存量 `domain/gateway/*ReadPort` 随功能修改迁移（存量模块不得照抄旧的 `domain/gateway/*ReadPort` 形态）；新模块按 `application/query/port` 实现。参考实现分两处取：**本聚合读**看 `bone-blueprint`（已按 ADR-0030 并入域仓储，该模块当前**没有** `*QueryPort` 与 `infrastructure/query` 包）；**跨聚合读**按本节在 `application/query/port` + `infrastructure/query` 新建（**平台当前 0 个 `*QueryPort` 实例**：`bone-masterdata` 的两对端口已随 ADR-0030 折叠进域仓储）。
 - **QueryAdapter 内部的通道选择**：单表条件/分页走 SDK `Criteria`（自动租户 + 自动软删 + 自动 count）；只有 JOIN 扁平投影、聚合统计、全租户扫描这类 Criteria 表达不了的读才用 SDK `@Sql` 读侧仓储，约束见 [E-4.4](#e-44-sql-读侧仓储)。**通道的宿主按 ADR-0030 分两类**：跨聚合 `QueryAdapter` 的两条通道都收在 `infrastructure/query` 内；本聚合读则直接在 `domain/repository` 的 `default` 方法上落地（`@Sql` 走外置模板，Criteria 就地构造，`disableTenantFilter()` 进全租户通道）。两类都不各自发明独立 SQL 文件缓存或裸 `JdbcTemplate`。
 - **读侧不与写侧对称**（ADR-0028）：写侧用了 `Command/CommandHandler` 不代表读侧也要 `Query/QueryHandler`。复杂列表（如 Customer+Order+Payment+Risk）走 `ApplicationService → QueryPort → SQL/View → DTO`，不硬套 `Query → QueryHandler → Aggregate`；读编排组合多个 QueryPort 时在 ApplicationService 内拆读方法，不新增 QueryService。
@@ -1174,9 +1174,9 @@ public class OrderSearchApplicationService {
 
 #### E-4.4 自定义 SQL 读侧仓储（`@Sql` 通道）
 
-`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql` 自定义仓储方法。`@Sql` 是**第三类通道，不是默认选择**——它唯一能做的事是表达前两类表达不了的东西（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离须显式声明 `@TenantScope`**：`AUTO` 由 `TenantSqlRewriter` 按锚点 `/*bone:tenant*/` 注入（缺锚点或复杂查询一律拒绝执行）、`MANUAL` 须手写条件、`ALL` 显式退出租户隔离、`BYPASS` 退软删。**缺标注在启动期就拒绝注册**（`RepositoryFactoryBean` fail-fast，[ADR-0034](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)）：注解默认值是 `MANUAL`（不注入），「忘写」过去等于该方法静默跨租户读写，现在等于仓储起不来；注解可写在方法上，也可写在仓储接口上作为该接口的默认策略。锚点缺失则是执行期 fail-closed。两者合起来才是「不会静默放行」（ADR-0030、E-2）。
+`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql`。`@Sql` 是**第三类通道，不是默认选择**，只用于前两类表达不了的场景（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离必须显式声明 `@TenantScope`**：`AUTO` 按锚点 `/*bone:tenant*/` 注入（缺锚点或复杂查询拒绝执行）、`MANUAL` 手写条件、`ALL` 退出租户隔离、`BYPASS` 退软删；**缺标注在启动期即拒绝注册**（`RepositoryFactoryBean` fail-fast，[ADR-0034](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)），锚点缺失则执行期 fail-closed。注解可写在方法或仓储接口上作为默认策略（[ADR-0030](./adr/0030-domain-repository-read-merge.md)、E-2）。
 
-blueprint 参考实现：`domain/repository/OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030，2026-09-19 启用）——外置模板方法 `findOrderWithItems`（`MANUAL` 显式 `tenantId`，模板 `OrderRepository/findOrderWithItems.sql`）走 JOIN 扁平投影，Criteria 方法 `findOrderPage` 走列表分页，全租户扫描 `findExpiredOrdersAllTenants`（`@TenantScope(ALL)` + 模板 `OrderRepository/findExpiredOrdersAllTenants.sql`）；`PaymentRepository` 同模式折叠（读侧 Criteria + `disableTenantFilter()`，两条扫描方法 `findExpiredPaymentsAllTenants` / `findSuccessPaymentsBeforeAllTenants`）。**本模块现已无任何 `*QueryPort`**：它只演示「本聚合读并入域仓储」这一条通道；跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`（其他模块实例见 E-13.3）。**按方法选通道是正常形态**：这种混合不是不一致，而是把每条 SQL 放进它该在的那层护栏里。**全租户入口的命名与调用面由三条共享门禁守护**（见 G-1.5），不是命名建议。
+blueprint 参考实现：`OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030）——外置模板方法 `findOrderWithItems` 走 JOIN 扁平投影（`MANUAL` 显式 `tenantId`）、Criteria 方法 `findOrderPage` 走分页、`findExpiredOrdersAllTenants` 走全租户扫描（`@TenantScope(ALL)`）；`PaymentRepository` 同模式折叠。**该模块已无任何 `*QueryPort`**：它演示的是「本聚合读并入域仓储」这一条通道，跨聚合读出现时按 E-4.2 新建 `application/query/port` + `infrastructure/query`。同一仓储混用多种通道是正常形态——把每条 SQL 放进它该在的护栏层即可；全租户入口的命名与调用面由共享门禁守护（G-1.5），不是命名建议。
 
 **六条硬约束**（前两条是「起不来」，后四条是「起得来但结果错」）：
 
@@ -1233,7 +1233,7 @@ blueprint 参考实现：`domain/repository/OrderRepository`（`extends Reposito
 | 分区内有序 | Durable 基础上增加稳定分区键、序号或版本检查 | Outbox + 有序分区 |
 | 同步确认 | 明确超时、重试、熔断、幂等和失败契约 | 同步 API |
 
-Durable 发布只有在发布记录成功交接后才能清除聚合事件；写发布记录失败必须向上传播，禁止吞错后清事件。Best-effort 可以在提交后发送，但丢失风险必须是业务接受的显式决定，并同时受三条约束：① **只允许承载观测 / 通知类事实**（日志、指标、缓存失效、提醒），跨上下文的**业务事实不得**走 Best-effort；② 必须在调用点显式标识（专用类型 / 配置项 / 方法级标记，`@NoDomainEvent` 不承担此职责），并在模块文档列明用途；③ L2/L3 模块新增 Best-effort 发布须在评审中说明为什么不能 Durable。「先写数据库，再无事务地发送 MQ」承载不可丢业务事实一律禁止（见本段末）。
+Durable 发布只有在发布记录成功交接后才能清除聚合事件；写发布记录失败必须向上传播，禁止吞错后清事件。Best-effort 可在提交后发送，但丢失风险必须是业务接受的显式决定，并同时满足三条：① **只允许承载观测 / 通知类事实**（日志、指标、缓存失效、提醒），跨上下文的**业务事实不得**走 Best-effort；② 调用点须显式标识（专用类型 / 配置项 / 方法级标记，`@NoDomainEvent` 不承担此职责）并在模块文档列明用途；③ L2/L3 模块新增 Best-effort 须在评审中说明为什么不能 Durable。「先写数据库、再无事务地发送 MQ」承载不可丢业务事实一律禁止。
 
 禁止仅凭 `publishFrom()` 方法名推断可靠性。其实现必须明确声明 Durable 或 Best-effort 契约；若 Durable 实现需要先提取事件再写 Outbox，则应在同一事务内完成，并在 Outbox 记录成功后清事件。禁止「先写数据库，再无事务地发送 MQ」承载不可丢业务事实。
 
@@ -1252,7 +1252,7 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 | `causationId` | 导致本事件的命令或前序事件标识 |
 | `payload` | 版本化业务载荷 |
 
-`version` 字段的演进规则（当前无机器检查，见 [G-1.4](#g-14-planned) 事件侧 breaking-change 检查缺失）：① **minor**（`1.x → 1.y`，`y` 递增）仅允许向后兼容的增补——新增可选字段、字段约束放宽、新增事件类型；消费端须能忽略未知字段；② **major**（`x → x+1`）表示 breaking change——删除 / 重命名字段、改字段语义或类型、收紧必填——须先发新 major、保留双版本并行期、消费端全部迁移后再弃旧；③ 任何 major 变更须同步更新事件契约登记（topic registry）并在 PR 描述标注 breaking。跨上下文解耦后这是最高频的协作中断源，在补齐 oasdiff 式事件校验前，先以本规则作为人工评审清单固化。
+`version` 字段的演进规则（当前无机器检查，见 [G-1.4](#g-14-planned)）：① **minor**（`1.x → 1.y`）仅允许向后兼容的增补——新增可选字段、放宽字段约束、新增事件类型，消费端须能忽略未知字段；② **major**（`x → x+1`）表示 breaking change——删除 / 重命名字段、改字段语义或类型、收紧必填——须先发新 major、保留双版本并行期、消费端全部迁移后再弃旧；③ 任何 major 变更须同步更新事件契约登记（topic registry）并在 PR 描述标注 breaking。事件侧 oasdiff 式校验补齐前，本规则作为人工评审清单。
 
 #### E-5.3 并发
 
@@ -1404,7 +1404,7 @@ D1 是 Bone 为 metadata-sdk 提供的受控工程例外，**档位上限是 L1*
 
 门禁 `domainMustNotDependOnOuterLayers` 按**包路径**判定：它只拦截 `domain` 对 `..adapter..` / `..application..` / `..infrastructure..` 的依赖，规则内部**不存在也不需要**单独的注解白名单——`org.springframework.lang.*`（如 `@NonNull`）、Lombok 与 metadata-sdk 映射注解本身不在上述三个包内，天然不在拦截范围。若合法 D1 领域类被判违规，先确认它是否真的依赖了外层包：是则改依赖；放宽规则解决不了该类违规。
 
-> **已登记偏差（既不是违规，也不是范式）**：`bone-blueprint` 是 **L3** 参考实现，其 `Order` / `Payment` 当前采用 `D1 + Shared`（`@Table` 直接落在聚合上）。写侧级联已由 `@Cascade` MVP 覆盖（`Order.items` 随根落盘，`OrderItemRepository` 已删除）。**明确不做**：为本模块推进强类型 ID，或为强类型 ID 做 PO 分离（见 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md) 需求三）。该偏差已在 `bone-blueprint/README.md` 登记。**新模块不得把它当「L3 可以用 D1」的先例**——L3 的默认仍然是 `D0 + Separated`，要偏离必须在模块 README 登记理由。评审也不得把 blueprint 的现状判成违规（它是已登记的技术债）。
+> **已登记偏差（既不是违规，也不是范式）**：`bone-blueprint` 是 **L3** 参考实现，其 `Order` / `Payment` 当前采用 `D1 + Shared`（`@Table` 直接落在聚合上），写侧级联已由 `@Cascade` 覆盖（`OrderItemRepository` 已删除）。**明确不做**：为本模块推进强类型 ID 或 PO 分离（见 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md) 需求三）；该偏差已在 `bone-blueprint/README.md` 登记。**新模块不得把它当「L3 可以用 D1」的先例**——L3 默认仍是 `D0 + Separated`，偏离须在模块 README 登记理由；评审也不得把 blueprint 现状判成违规（它是已登记的技术债）。
 
 #### E-6.3 PO 分离信号
 
@@ -1542,13 +1542,13 @@ com.bone.{module}/
     └── integration/                 # 外部 HTTP/RPC/第三方适配器
 ```
 
-这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与其中列出的子包是「该有的都在这里」，模块按自身需要增加自有子包——blueprint 参考实现即另有 `infrastructure/gateway`（Domain Gateway 实现）、`extension`、`idempotency`、`context`、`event`、`config`、`security`、`observability`，这些**不要求全平台统一**。`studio-generator` 已内置四层最小骨架模板（含 `applicationService.ftl`，见 E-3.7）；`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。除 domain 分组形态（已于 2026-09-22 全平台统一，见下）外，其余子包不要求存量一次性搬齐；空的 `support`、`orchestration`、`gateway` 也不要作为占位生成。
+这是**最小期望骨架**（不是穷举，也不是照抄模板）：四层顶级目录与列出的子包是「该有的都在这里」，模块按需增加自有子包（blueprint 参考实现另有 `infrastructure/gateway`、`extension`、`idempotency` 等，不要求全平台统一；脚手架模板见 E-3.7）。`application/command/handler/`、`application/query/handler/`、`application/query/qry/`、`application/orchestration/` 等目录按 [E-3.7](#e-37-入口构件决策) 决策树的实际需要创建——**空的 `support`、`orchestration`、`gateway` 不要作为占位生成**。除 domain 分组形态（已于 2026-09-22 全平台统一，见下）外，其余子包不要求存量一次性搬齐。
 
 ##### ApplicationService 平铺与 support 子包
 
 语义化 `*ApplicationService` **直接平铺在 `application/` 根目录**（blueprint 样板形态：`OrderApplicationService`、`PaymentApplicationService` 都在根目录），**它是应用层唯一的用例入口构件**。`application/` 下除用例入口外，还有一类技术编排构件：**技术编排类**（`application/support/`，只协调出站端口、不碰 `domain`）。跨切面的复用逻辑（绑定、策略、端口适配等）按**语义化子包**归位（`binding/`、`policy/`、`port/`、`query/`、`command/`、`event/`、`config/`），**不另立一个与 `*ApplicationService` 同层竞争的通用 `service` 子包**。
 
-> **`application/service/` 子包已废止（2026-09-22，[ADR-0033](./adr/0033-application-collaboration-service.md) 撤销，由 [ADR-0035](./adr/0035-application-layer-keeps-only-application-service.md) 取代）**：此前把「被多个用例复用的应用级协作逻辑」收进 `application/service/*Service`，但这类 `*Service` 与 `*ApplicationService` 同名不同层，长期造成「逻辑到底放 service 还是 appservice」的职责归属模糊，正是 ADR-0032 已消灭的「第二编排层」形态的回潮。落入该包的构件按职责归位：纯领域计算进 `domain/service`（受架构规则约束、不得带 `@Service` 等 Spring stereotype）；跨聚合绑定 / 编排进语义化子包（`binding/`、`policy/`），且命名不得与用例入口易混淆；薄透传 / 无调用方直接删除。应用层不再有「服务层」。
+> **`application/service/` 子包已废止（2026-09-22，[ADR-0033](./adr/0033-application-collaboration-service.md) 撤销，由 [ADR-0035](./adr/0035-application-layer-keeps-only-application-service.md) 取代）**：该包下的 `*Service` 与 `*ApplicationService` 同名不同层，长期造成「逻辑放 service 还是 appservice」的归属模糊。构件按职责归位：纯领域计算进 `domain/service`（不得带 `@Service` 等 Spring stereotype）；跨聚合绑定 / 编排进语义化子包（`binding/`、`policy/`），命名不得与用例入口混淆；薄透传 / 无调用方直接删除。应用层不再有「服务层」。
 
 | 维度 | 语义化 ApplicationService（`application/` 根目录平铺） | 技术编排类（`application/support/`） |
 |---|---|---|
@@ -1561,7 +1561,7 @@ com.bone.{module}/
 
 > **典型技术编排类示例**：`com.bone.core.idempotency.IdempotencyService`（幂等 Key 哈希计算 + 快照存储编排），依赖 `com.bone.core.idempotency.IdempotencyStore`（存储契约，业务模块 infrastructure 层实现），由 Controller 在业务用例执行前后调 `replay()` / `remember()`。
 >
-> **框架能力的注册入口**：这类跨切面能力由 bone-web 的 `@AutoConfiguration`（如 `IdempotencyAutoConfiguration`，配 `@ConditionalOnBean(IdempotencyStore.class)`）按需注册，模块**不要**为了拿到 `com.bone.core.*` 的 Bean 去扩自己的 `@ComponentScan.basePackages`——那是白名单制，漏一个包的表现不是编译错，而是「静默死代码 + 上线才炸的启动失败」（本仓已发生过两起：`GlobalExceptionHandler` 全仓无人注册、`IdempotencyService` 注入失败）。同理，凡是写了 `@Component` 却拿不出「它已被装配」证据的类，都应补一个容器级 `@SpringBootTest` 装配测试——单元测试不加载容器，这类缺陷在 `mvn test` 里不会暴露。
+> **框架能力的注册入口**：跨切面能力由 bone-web 的 `@AutoConfiguration`（配 `@ConditionalOnBean`）按需注册；模块**不要**为拿 `com.bone.core.*` 的 Bean 去扩自己的 `@ComponentScan.basePackages`——那是白名单制，漏一个包不是编译错，而是「静默死代码 + 上线才炸的启动失败」（本仓发生过两起：`GlobalExceptionHandler` 无人注册、`IdempotencyService` 注入失败）。同理，写了 `@Component` 却拿不出「已被装配」证据的类，应补容器级 `@SpringBootTest` 装配测试——单元测试不加载容器，`mvn test` 不暴露这类缺陷。
 
 顶级目录按依赖方向保持稳定；模块较大时，在 `command`、`query`、`persistence` 等目录内部再按业务能力或聚合细分，避免全模块只有一个巨大的 `entity`/`service` 横切桶。
 
@@ -1659,7 +1659,7 @@ com.bone.order/
     └── persistence/OrderRepositoryImpl   # = domain/repository/OrderRepository 的实现
 ```
 
-要点：`application` 与 `infrastructure` 均对比 `domain` 找自己的端口实现（`OrderRepositoryImpl` ↔ `OrderRepository`）——本聚合读投影已合并进 `OrderRepository`（ADR-0030），投影类型置于 `domain/model/order/projection`，blueprint 的支付读侧亦已同模式折叠（`PaymentQueryPort` / `PaymentQueryAdapter` 删除，全租户扫描并入 `PaymentRepository`）；跨聚合读仍走 `QueryPort`（落点固定 `application/query/port` + `infrastructure/query`；**平台当前 0 个实例**，待跨聚合读出现时按此新建）。聚合内部按自身结构组织：事件放 `model/{aggregate}/event`，本聚合读投影放 `model/{aggregate}/projection`（ADR-0030 / ADR-0036）。只读且极简的用例（无行为、无复杂读）无需出现 `Command` / `Handler` / `QueryPort`，目录也随之省略。
+要点：`application` 与 `infrastructure` 均对照 `domain` 找自己的端口实现（`OrderRepositoryImpl` ↔ `OrderRepository`）。本聚合读投影已合并进域仓储（ADR-0030），投影放 `model/{aggregate}/projection`、事件放 `model/{aggregate}/event`（ADR-0036）；跨聚合读仍走 `QueryPort`（落点 `application/query/port` + `infrastructure/query`，平台当前 0 个实例）。只读且极简的用例无需出现 `Command` / `Handler` / `QueryPort`，目录随之省略。
 
 ### E-11 Flow / AI
 
@@ -1805,7 +1805,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 | 后缀 | 独占语义 | 禁止 |
 |------|----------|------|
-| `*Repository` | **位置即作用域，但两类身份不等价**：`domain/repository` = **DDD 聚合写侧仓储端口**，受 CORE-05 / E-4.1 约束（按 ID 或单一业务键加载聚合、返回类型白名单）；ADR-0030 合并后，**本聚合读投影**（返回域层投影类型、`long` 计数）也由它声明，但**不得承载跨聚合报表 / Join / 投影**（CORE-05）。`infrastructure/**` = **SDK 技术表访问接口**，供适配器内部使用（Outbox / 幂等 / 消费去重等非聚合表，或 Criteria 表达不了的 JOIN 投影），它**不是** DDD 仓储端口、不得被 `domain` / `application` 依赖，也不构成读侧对外端口（blueprint 历史形态 `OrderReadRepository` 已随 ADR-0030 合并进 `OrderRepository`） | `*Store` / `*Dao` / `*Mapper` 替代命名 |
+| `*Repository` | `domain/repository` = **聚合写侧仓储端口**，受 CORE-05 / E-4.1 约束（按 ID 或单一业务键加载聚合、返回类型白名单）；ADR-0030 合并后本聚合读投影（域层投影类型、`long` 计数）也由它声明，但不得承载跨聚合报表 / Join / 投影。`infrastructure/**` = **SDK 技术表访问接口**，供适配器内部使用（Outbox / 幂等 / 消费去重等非聚合表），不是 DDD 仓储端口，不得被 `domain` / `application` 依赖 | `*Store` / `*Dao` / `*Mapper` 替代命名 |
 | `*QueryPort` | application 模块内列表、搜索、统计等读侧端口 | 跨边界 ACL |
 | `*Gateway` | 以本上下文语言声明的出站 ACL / Domain Gateway | 模块内查询、技术 Client |
 | `*Adapter` | infrastructure 对某个 application/domain 出站端口的技术实现 | 业务用例入口或领域对象 |
@@ -1860,7 +1860,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 三条约束：
 
-- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adaptersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁的谓词是 `..adapter..`（2026-09-19 由 `..adapter..controller..` **放宽**：旧谓词下 `adapter.schedule` / `messaging` / `rpc` 以及平铺在 `adapter/{协议}/` 根下的控制器会**整条逃逸**、永远绿）。放宽后逃逸面被覆盖——实测全仓 54 个 `@RestController`（非 `@RestControllerAdvice`）中 51 个受约束、3 个逃逸者里 `metadata.runtime.adapter.web.RuntimeRecordController` 与 `platform.alert.adapter.web.NotificationController` 已被纳入覆盖，仅 `com.bone.web.controller.CapabilityController`（连 `adapter` 段都没有）仍逃逸，属待收敛存量。仍要求落在 `controller/` 子包：包结构表达协议边界，且 `..adapter.schedule..` 的受控例外按包判定，命名平铺会让例外边界不可读。
+- **Controller 必须在 `controller/` 子包内**。`adaptersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁的谓词是 `..adapter..`；谓词收窄到 `..adapter..controller..` 时，`adapter.schedule` / `messaging` / `rpc` 以及平铺在协议包根下的控制器会整条逃逸、永远绿（2026-09-19 已放宽）。仍要求落在 `controller/` 子包：包结构表达协议边界，且 `..adapter.schedule..` 的受控例外按包判定——命名平铺会让例外边界不可读。
 - **类名不带协议标记，协议标识下沉到 DI 标识**（E-13.0）。同一模块内两个协议可以合法复用同一个业务类名（`adapter/web/controller/OrderController` 与 `adapter/rpc/controller/OrderController`），冲突不在类名层消解，而在 bean 名层：手写组件用注解显式 `value`（`@RestController("rpcOrderController「)`），MapStruct 装配件用 `implementationName`（`implementationName = 」RpcOrderAssemblerImpl"`）。两个协议都默认同名却都没写显式标识时，由 `springComponentBeanNamesMustBeUnique` 在构建期拦下——**不要**退回给类名加 `Rpc` / `Web`。
 - **各协议自持自己的协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO。两个平级入站适配器互相依赖，会让「面向人」与「面向服务」的契约演化互相牵制。
 
