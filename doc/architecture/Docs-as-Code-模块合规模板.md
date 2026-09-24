@@ -98,4 +98,4 @@ bash scripts/ci/collect-all-compliance.sh --check      # 仅校验，CI 同款
 
 - [Bone-DDD 最终实践方案](./Bone-DDD-最终实践方案.md) §21 ArchUnit
 - [Bone-API-规范](./Bone-API-规范.md) §15 OpenAPI
-- [文档治理-三目录审查子任务](../archive/文档治理-三目录审查子任务.md)
+- 历史治理台账（T1–T37 已完成，旧文件已删除；需追溯查 Git 历史）

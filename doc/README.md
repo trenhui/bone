@@ -25,6 +25,8 @@
 | 前端 | [architecture/bone-前端架构.md](./architecture/bone-前端架构.md) · [UI 规范](./architecture/frontend/frontend-ui-spec.md) |
 | 通用语言 | [glossary.md](./glossary.md) |
 | 架构决策 | [architecture/adr/](./architecture/adr/) |
+| 架构分层总览图 | [architecture/architecture-layers.svg](./architecture/architecture-layers.svg) |
+| MVP 范围清单（纳入 / 排除 / 验收） | [wiki/10-MVP-范围清单.md](./wiki/10-MVP-范围清单.md) |
 
 ## 入口顺序
 

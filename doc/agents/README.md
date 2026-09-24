@@ -1,7 +1,7 @@
 # Bone — AI Agent 手册（拆分索引）
 
 > 本目录是 [`AGENTS.md`](../../AGENTS.md) 的拆分正文。原单文件版（581 行）已于 2026-09-17 拆分，
-> 备份见 [`doc/archive/AGENTS-单文件版-2026-09-17.md`](../archive/AGENTS-单文件版-2026-09-17.md)。
+> 备份文件已删除，**需要旧版请查 Git 历史**。
 
 ## 为什么拆
 
@@ -35,7 +35,7 @@
 | 文件/目录 | 内容 |
 |---|---|
 | `README.md` | 项目营销概览、快速开始 |
-| `doc/archive/CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
+| [`doc/wiki/`](../wiki/README.md) | 上手型知识库：模块结构、构建运行、数据与部署、工程规范 |
 | `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁唯一权威（HC 状态真源见 `#hc-hard-constraints`） |
 | `doc/glossary.md` | 通用语言起步表 |
 | `doc/architecture/adr/0023-core-domain-smart-metadata.md` | Bone 当前核心域 = Metadata |

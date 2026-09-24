@@ -18,7 +18,7 @@
 - **无增量迁移**：改表即改 init，开发库 `DROP DATABASE` 后重建。
 - **Hybrid**：部分能力仍在实现中（如 Generator 持久化），以各文 §0 与 P0 看板为准。
 - **Docs-as-Code**：As-Is / Backlog 由 `tools/*-compliance-collector` 派生至 [`doc/_generated/`](../../_generated/README.md)；PR 前 `bash scripts/ci/collect-all-compliance.sh --sync-doc`。
-- **审查清单**：历史台账已归档至 [`doc/archive/文档治理-三目录审查子任务.md`](../../archive/文档治理-三目录审查子任务.md)。
+- **审查清单**：历史台账（T1–T37）**已完成**并删除，需追溯请查 Git 历史。
 
 ## 模块文档
 

@@ -2,7 +2,7 @@
 
 ## 现状
 
-Spring Cloud Alibaba BOM 已在 `bone-parent/pom.xml` 声明，但没有任何模块实际引入 Nacos 配置中心依赖。当前所有配置通过 `application.yml` + 环境变量管理。
+Spring Cloud Alibaba BOM 已在 `bone-parent/pom.xml` 声明；**已有多模块实际接入**：`bone-iam`、`bone-system`、`bone-integration`、`bone-masterdata` 均含 `bootstrap.yml` 并引入 `spring-cloud-starter-alibaba-nacos-config`。其余模块仍通过 `application.yml` + 环境变量管理，可按需参照本文接入。
 
 ## 接入步骤
 

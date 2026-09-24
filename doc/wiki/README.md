@@ -16,7 +16,7 @@
 | [08-blueprint与主工程对齐](./08-blueprint与主工程对齐.md) | DDD 蓝图模块构建与 CI |
 | [09-密钥与Git历史](./09-密钥与Git历史.md) | Gitleaks 工作区 / baseline、历史清理流程 |
 | [10-MVP-范围清单](./10-MVP-范围清单.md) | MVP 范围定义（三方证据交叉：纳入 / 排除 / 验收） |
-| [PR-feature-code-optimization516](./PR-feature-code-optimization516.md) | 本次 code-optimization 分支的 PR 说明 |
+
 
 ## 与其他文档的关系
 
@@ -26,4 +26,4 @@
 - **[doc/prd/](../prd/) / [doc/design/modules/](../design/modules/README.md)**：需求与模块详设。
 - **[doc/README.md](../README.md)**：`doc/` 总索引与本页的上层入口。
 
-历史长文档 `CODE_WIKI.md` 已归档至 [`doc/archive/CODE_WIKI.md`](../archive/CODE_WIKI.md)，其内容与本 Wiki 重叠，不再维护。
+历史长文档 `CODE_WIKI.md` 的内容已并入本 Wiki（01/03/04/05/06）与 `doc/agents/`，**旧文件已删除**；需要旧版本请查 Git 历史。
