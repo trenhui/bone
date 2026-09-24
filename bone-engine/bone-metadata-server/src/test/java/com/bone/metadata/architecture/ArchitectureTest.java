@@ -1,7 +1,5 @@
 package com.bone.metadata.architecture;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-
 import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -123,19 +121,6 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule adapter_no_domain_service =
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
-
-  // ADR-0028：一个用例只选一种构件，CommandHandler 禁止依赖 application 层（套娃 ApplicationService）。
-  // 收敛后 handler 包已清空，allowEmptyShould 保持规则在基线收缩期间不误判。
-  @ArchTest
-  static final ArchRule command_handlers_must_not_depend_on_application_service =
-      noClasses()
-          .that()
-          .resideInAPackage("..application.command.handler..")
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage("..application..")
-          .allowEmptyShould(true)
-          .because("ADR-0028: one use case, one artifact — CommandHandler 禁止依赖 application 层");
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。

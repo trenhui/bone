@@ -249,20 +249,13 @@ public class ArchitectureTest {
       BoneDddArchRules.allTenantEntryPointsMustBeNamedAllTenants(DOMAIN_REPOSITORY_PACKAGE);
 
   // ADR-0028（P6 · CQRS 双构件迁移债）：一个用例只选一种构件，禁止 CommandHandler 与 ApplicationService 套娃。
-  // CommandHandler 不得依赖 *ApplicationService——若需编排应在 ApplicationService 内完成，而非 Handler 套
-  // ApplicationService（双构件）。
-  // 参考样板不 freeze，须 0 违规（当前 blueprint 无此类依赖）。
+  // ADR-0028 后 Handler 已内联进 ApplicationService，旧谓词 ..application.command.handler.. 包消失 ⇒ 0
+  // 命中恒绿（死规则）。
+  // 改用共享规则 commandHandlersMustNotUseQueryBuilder()（subject=..application..，禁 application 层依赖
+  // @ReadSideOnly 读侧 DSL），与 masterdata 对齐。
   @ArchTest
-  static final ArchRule command_handlers_must_not_depend_on_application_service =
-      noClasses()
-          .that()
-          .resideInAPackage("..application.command.handler..")
-          .should()
-          .dependOnClassesThat(commandHandlerDualArtifactPredicate())
-          .allowEmptyShould(true)
-          .because(
-              "ADR-0028: one use case, one artifact — CommandHandler must not wrap an "
-                  + "ApplicationService (no 套娃 / dual-artifact)");
+  static final ArchRule command_handlers_must_not_use_query_builder =
+      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
   private static com.tngtech.archunit.base.DescribedPredicate<
           com.tngtech.archunit.core.domain.JavaClass>
