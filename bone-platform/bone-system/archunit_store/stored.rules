@@ -1,6 +1,7 @@
 #
-#Sat Sep 19 23:21:38 CST 2026
+#Thu Sep 24 11:39:45 CST 2026
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=53f3028a-f692-48a0-ad62-54ac54a16722
+no\ classes\ that\ reside\ in\ any\ package\ ['..application..',\ '..domain..',\ '..adapter..']\ should\ call\ method\ where\ call\ com.bone.core.tenant.context.TenantContext,\ because\ DDD\ E-2\:\ tenant\ context\ reads\ must\ go\ through\ the\ module's\ single\ TenantProvider\ port\ (domain/gateway)\ implemented\ in\ infrastructure;\ direct\ TenantContext\ calls\ in\ application/domain/adapter\ bypass\ audit,\ propagation\ and\ null-guards=f50467df-21a7-44c5-a8db-79bc4f1006e9
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=967219d9-ad5a-43e9-a637-900293de10e3
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=b2ae0aaa-d2ae-4640-9e42-a45575311d0b
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..'\ and\ reside\ outside\ of\ package\ '..adapter.schedule..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.repository..',\ because\ DDD\ \u00A715\:\ adapter\ must\ not\ inject\ domain.repository;\ use\ Handler=c56f9d0a-1e8c-46ef-ba6c-1e4aee257c9c

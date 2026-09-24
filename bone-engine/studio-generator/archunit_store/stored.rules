@@ -1,7 +1,8 @@
 #
-#Mon Sep 21 17:45:55 CST 2026
+#Thu Sep 24 11:39:35 CST 2026
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.studio.generator.application.usecase..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.studio.generator.application.usecase..',\ because\ studio-generator\ must\ not\ export\ custom\ UseCase\ SPI\ to\ other\ modules=9dda16bb-b7f2-4b45-8c19-65f63b9afb82
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=eeb409c3-ae54-407f-95cb-8d38259746f8
+no\ classes\ that\ reside\ in\ any\ package\ ['..application..',\ '..domain..',\ '..adapter..']\ should\ call\ method\ where\ call\ com.bone.core.tenant.context.TenantContext,\ because\ DDD\ E-2\:\ tenant\ context\ reads\ must\ go\ through\ the\ module's\ single\ TenantProvider\ port\ (domain/gateway)\ implemented\ in\ infrastructure;\ direct\ TenantContext\ calls\ in\ application/domain/adapter\ bypass\ audit,\ propagation\ and\ null-guards=fb02b3b4-79b4-4b39-9065-f80f28830206
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=21c0d607-b5fa-4109-815b-ce8e26058dda
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=9dc3e4fd-7dc2-4d0c-8017-f45eda9187b4
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ annotated\ with\ @ReadSideOnly,\ because\ DDD\ P0-6\:\ CommandHandler\ must\ not\ use\ read-side\ DSL=3ac0374f-6291-4053-8955-5f731982e9eb

@@ -1,7 +1,8 @@
 #
-#Thu Sep 24 10:25:20 CST 2026
+#Thu Sep 24 11:40:35 CST 2026
 no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=7ab2f311-f9b6-4219-97d9-f6f19f22aab1
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=f404956a-fb01-420e-8e61-41e7a1b8eb15
+no\ classes\ that\ reside\ in\ any\ package\ ['..application..',\ '..domain..',\ '..adapter..']\ should\ call\ method\ where\ call\ com.bone.core.tenant.context.TenantContext,\ because\ DDD\ E-2\:\ tenant\ context\ reads\ must\ go\ through\ the\ module's\ single\ TenantProvider\ port\ (domain/gateway)\ implemented\ in\ infrastructure;\ direct\ TenantContext\ calls\ in\ application/domain/adapter\ bypass\ audit,\ propagation\ and\ null-guards=82ab8301-5a47-448e-92ee-62d885883b3b
 classes\ that\ reside\ in\ a\ package\ '..application..'\ and\ are\ not\ interfaces\ and\ do\ not\ have\ modifier\ ABSTRACT\ should\ not\ instantiate\ or\ mutate\ domain\ objects\ directly=81c04fc3-55da-49df-a376-ddfc65004679
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=56bf40aa-dfcb-40c9-949d-30b4a1be61a3
 classes\ that\ reside\ in\ a\ package\ '..application..'\ and\ are\ not\ interfaces\ and\ do\ not\ have\ modifier\ ABSTRACT\ should\ persist\ at\ most\ one\ aggregate\ type\ per\ write\ transaction=8a441f1f-99ed-4b58-b714-663c2bd17b3d

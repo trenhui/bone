@@ -134,6 +134,24 @@ public class ArchitectureTest {
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。
 
+  // E-2（v4.7 补门禁）：租户取值收敛到 TenantProvider 端口，业务层（application/domain/adapter）禁止直调 TenantContext。
+  // 存量直调先冻结为已知债，禁止新增（与 iam/masterdata 同口径）。
+  @ArchTest
+  static final ArchRule tenant_context_via_provider =
+      FreezingArchRule.freeze(BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly());
+
+  // E-4.2（v4.6 主判据）：读侧 DSL（Criteria / @ReadSideOnly）不得出现在 application 层；DSL 须落在
+  // infrastructure/query 或 domain.repository（SDK 框架集成点）。参考样板不 freeze，须 0 违规。
+  @ArchTest
+  static final ArchRule read_side_dsl_only_in_query_layer =
+      BoneDddArchRules.readSideDslOnlyInQueryLayer();
+
+  // E-13.0（v5.6 补门禁）：同模块内 Spring 组件 bean 名必须唯一，提前到构建期捕获启动期
+  // ConflictingBeanDefinitionException（G-1.5 已确认全仓零冲突）。
+  @ArchTest
+  static final ArchRule spring_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
   // P-2.3 + P-2.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
   static final ArchRule no_cross_context_domain =
