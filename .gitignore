@@ -11,6 +11,10 @@
 # Extension Studio 本地运行时产物（H2 / 插件目录）
 bone-engine/bone-extension-engine/bone-extension-studio/data/
 
+# ArchUnit 测试运行时生成的规则缓存目录（每次运行生成新 uuid 子目录，不入库；
+# 顶层 stored.rules 是规则基线，保留跟踪）
+bone-engine/bone-extension-engine/bone-extension-studio/archunit_store/*/
+
 # =========================
 # 构建输出目录
 # =========================
