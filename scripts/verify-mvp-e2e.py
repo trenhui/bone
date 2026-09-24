@@ -718,6 +718,70 @@ def step_ui_read_paths(base: str, token: str, tenant: str, ent: dict):
         check(f"{name}（{page}）", ok, f"HTTP {st}" + ("" if ok else f" {raw[:140]}"))
 
 
+def _upload_file_multipart(base: str, token: str, tenant: str) -> "tuple[int, str]":
+    import uuid as _uuid
+    import urllib.error as _ue
+    name = "mvp-verify-tmp.txt"
+    content = b"bone mvp e2e verify tmp file"
+    boundary = "----boneverify" + _uuid.uuid4().hex
+    body = b"".join([
+        ("--" + boundary + "\r\n").encode(),
+        f'Content-Disposition: form-data; name="file"; filename="{name}"\r\n'.encode(),
+        b"Content-Type: text/plain\r\n\r\n",
+        content + b"\r\n",
+        ("--" + boundary + "--\r\n").encode(),
+    ])
+    url = base + "/api/v1/file/files"
+    req = urllib.request.Request(url, data=body, method="POST")
+    req.add_header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    req.add_header("Authorization", "Bearer " + token)
+    req.add_header("X-Tenant-Id", str(tenant))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status, r.read().decode()
+    except _ue.HTTPError as e:
+        return e.code, e.read().decode()
+
+
+def step_file(base: str, token: str, tenant: str, allow_write: bool = False) -> None:
+    """Part D：文件服务（bone-file）联调 —— 经网关 /api/v1/file/**。
+
+    始终探测 GET /files/test（验证网关路由 + JWT 验签 + 服务在线）；
+    仅当 MinIO 连接测试通过且 --allow-db-write 时，再跑 multipart 上传 + DELETE 删除闭环。
+    """
+    print("\n== Part D 文件服务联调（bone-file，经网关）==")
+    st, raw = http("GET", base + "/api/v1/file/files/test", token=token,
+                   headers={"X-Tenant-Id": str(tenant)}, timeout=15)
+    ok = st == 200
+    data = None
+    if ok:
+        try:
+            data = data_of(json_of(raw))
+        except Exception:
+            data = None
+    check("文件服务可达（GET /api/v1/file/files/test，经网关）", ok,
+          f"HTTP {st}" + (f", MinIO testConnection={data}" if ok else ""))
+    if not allow_write:
+        print("  （--allow-db-write 未开启，跳过文件上传/删除写链路）")
+        return
+    if data is not True:
+        print("  （MinIO 连接测试未通过，跳过上传/删除写链路）")
+        return
+    st, raw = _upload_file_multipart(base, token, tenant)
+    obj = None
+    if st == 200:
+        p = json_of(raw)
+        # 上传成功时 objectName 落在 message 字段（data 为 null）
+        obj = p.get("data") or p.get("message")
+    check("文件上传（POST /api/v1/file/files multipart）", st == 200 and bool(obj),
+          f"HTTP {st} {raw[:120]}")
+    if not obj:
+        return
+    st, raw = http("DELETE", base + f"/api/v1/file/files/{obj}", token=token,
+                   headers={"X-Tenant-Id": str(tenant)}, timeout=15)
+    check("文件删除（DELETE /api/v1/file/files/{objectName}）", st == 200, f"HTTP {st}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="MVP 全栈自动联调验收")
     ap.add_argument("--gateway", default=DEFAULT_GATEWAY)
@@ -762,6 +826,7 @@ def main() -> int:
         step_add_field_republish(args.gateway, token, ent, rec, db)
         step_tenant_isolation(args.gateway, token, ent, rec, db)
     step_module_smoke(args.gateway, token, args.tenant)
+    step_file(args.gateway, token, args.tenant, args.allow_db_write)
     if ent:
         step_ui_read_paths(args.gateway, token, args.tenant, ent)
 
