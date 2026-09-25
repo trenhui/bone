@@ -7,6 +7,9 @@ import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCom
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
 import com.bone.studio.generator.domain.gateway.GenerationTaskReadPort;
+import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
+import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
+import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.model.code.GeneratedFile;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.DataSource;
@@ -17,6 +20,7 @@ import com.bone.studio.generator.domain.repository.CodeGenerationHistoryReposito
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
+import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import com.bone.studio.generator.domain.service.FileGenerator;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +51,7 @@ public class CreateCodeGenerationApplicationService {
   private final CodeTemplateRepository codeTemplateRepository;
   private final CodeGenerationHistoryRepository historyRepository;
   private final List<FileGenerator> fileGenerators;
+  private final CodeGeneratorService codeGeneratorService;
 
   /** 同步执行（原行为）。 */
   @Transactional
@@ -77,8 +82,8 @@ public class CreateCodeGenerationApplicationService {
 
   private void runGenerationWork(
       String taskId, CreateCodeGenerationCommand command, boolean propagateErrors) {
-    ResolvedInputs inputs = validateAndResolve(command);
-    GenerationTask task = loadOrCreateTask(taskId, command, inputs);
+    MetadataSourceType source = resolveSource(command.getMetadataSource());
+    GenerationTask task = loadOrCreateTask(taskId, command);
     task.markProcessing();
     generationTaskRepository.save(task);
 
@@ -86,8 +91,8 @@ public class CreateCodeGenerationApplicationService {
     CodeGenerationHistory history =
         CodeGenerationHistory.create(
             taskId,
-            inputs.templateIdsText(),
-            inputs.templateNamesText(),
+            templateIdsText(command),
+            templateNamesText(command),
             command.getProjectName(),
             String.valueOf(command.getDataSourceId()),
             command.getTableNames(),
@@ -98,14 +103,20 @@ public class CreateCodeGenerationApplicationService {
     long startedAt = System.currentTimeMillis();
     List<GeneratedFile> generatedFiles = new ArrayList<>();
     try {
-      for (GenTableMetadata table : inputs.tableMetadatas()) {
-        for (CodeTemplate template : inputs.templates()) {
-          for (FileGenerator generator : fileGenerators) {
-            if (generator.supports(template.getType())) {
-              generatedFiles.add(
-                  generator.generate(
-                      table, template, command.getBasePackage(), command.getModuleName()));
-              break;
+      if (source == MetadataSourceType.CATALOG_SNAPSHOT) {
+        // catalog 模式：复用已验证的 CodeGeneratorService 引擎（按 entityCodes 读取 meta_* 快照）
+        generatedFiles.addAll(runCatalogGeneration(command));
+      } else {
+        ResolvedInputs inputs = validateAndResolve(command);
+        for (GenTableMetadata table : inputs.tableMetadatas()) {
+          for (CodeTemplate template : inputs.templates()) {
+            for (FileGenerator generator : fileGenerators) {
+              if (generator.supports(template.getType())) {
+                generatedFiles.add(
+                    generator.generate(
+                        table, template, command.getBasePackage(), command.getModuleName()));
+                break;
+              }
             }
           }
         }
@@ -129,14 +140,53 @@ public class CreateCodeGenerationApplicationService {
     }
   }
 
-  private GenerationTask loadOrCreateTask(
-      String taskId, CreateCodeGenerationCommand command, ResolvedInputs inputs) {
+  private GenerationTask loadOrCreateTask(String taskId, CreateCodeGenerationCommand command) {
     GenerationTask existing = generationTaskReadPort.findByTaskId(taskId).orElse(null);
     if (existing != null) {
       existing.markProcessing();
       return existing;
     }
     return buildPendingTask(taskId, command);
+  }
+
+  /** catalog 模式逐模板调用 CodeGeneratorService（其原生支持 CATALOG_SNAPSHOT）。 */
+  private List<GeneratedFile> runCatalogGeneration(CreateCodeGenerationCommand command) {
+    List<Long> templateIds = command.getTemplateIds();
+    if (templateIds == null || templateIds.isEmpty()) {
+      throw new IllegalArgumentException("templateIds 不能为空");
+    }
+    List<GeneratedFile> files = new ArrayList<>();
+    for (Long templateId : templateIds) {
+      CodeGenerationRequest request =
+          CodeGenerationRequest.builder()
+              .templateId(String.valueOf(templateId))
+              .name(command.getProjectName())
+              .basePackage(command.getBasePackage())
+              .moduleName(command.getModuleName())
+              .dataSourceId(
+                  command.getDataSourceId() == null
+                      ? null
+                      : String.valueOf(command.getDataSourceId()))
+              .tableNames(command.getTableNames())
+              .metadataSource(MetadataSourceType.CATALOG_SNAPSHOT)
+              .tenantId(command.getTenantId())
+              .entityCodes(command.getEntityCodes())
+              .includeTests(true)
+              .includeDocumentation(true)
+              .build();
+      CodeGenerationResponse response = codeGeneratorService.generateCode(request);
+      if (response.getGeneratedFiles() != null) {
+        files.addAll(response.getGeneratedFiles());
+      }
+    }
+    return files;
+  }
+
+  private static MetadataSourceType resolveSource(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return MetadataSourceType.PHYSICAL_DB;
+    }
+    return MetadataSourceType.valueOf(raw.trim().toUpperCase());
   }
 
   private GenerationTask buildPendingTask(String taskId, CreateCodeGenerationCommand command) {
@@ -203,6 +253,40 @@ public class CreateCodeGenerationApplicationService {
     withResponse.add(
         CodeTemplate.builder().code("response").name("response").type("response").build());
     return withResponse;
+  }
+
+  private String templateIdsText(CreateCodeGenerationCommand command) {
+    List<Long> ids = command.getTemplateIds();
+    if (ids == null || ids.isEmpty()) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < ids.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append(ids.get(i));
+    }
+    return sb.toString();
+  }
+
+  private String templateNamesText(CreateCodeGenerationCommand command) {
+    List<Long> ids = command.getTemplateIds();
+    if (ids == null || ids.isEmpty()) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < ids.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      CodeTemplate template = codeTemplateRepository.findById(ids.get(i));
+      sb.append(
+          template == null
+              ? String.valueOf(ids.get(i))
+              : (template.getName() == null ? template.getCode() : template.getName()));
+    }
+    return sb.toString();
   }
 
   private GenTableMetadata findTableMetadata(Long dataSourceId, String tableName) {

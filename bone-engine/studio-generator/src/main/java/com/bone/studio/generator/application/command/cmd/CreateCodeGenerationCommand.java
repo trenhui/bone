@@ -11,6 +11,14 @@ public class CreateCodeGenerationCommand {
   private List<Long> templateIds;
   private String genConfig;
 
+  /** PHYSICAL_DB（默认）或 CATALOG_SNAPSHOT；统一入口复用 CodeGeneratorService 的 catalog 引擎 */
+  private String metadataSource;
+
+  /** catalog 模式：按实体编码过滤；空=全部已发布 */
+  private List<String> entityCodes;
+
+  private Long tenantId;
+
   private CreateCodeGenerationCommand() {}
 
   public String getProjectName() {
@@ -41,6 +49,18 @@ public class CreateCodeGenerationCommand {
     return genConfig;
   }
 
+  public String getMetadataSource() {
+    return metadataSource;
+  }
+
+  public List<String> getEntityCodes() {
+    return entityCodes;
+  }
+
+  public Long getTenantId() {
+    return tenantId;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -53,6 +73,9 @@ public class CreateCodeGenerationCommand {
     private List<String> tableNames;
     private List<Long> templateIds;
     private String genConfig;
+    private String metadataSource;
+    private List<String> entityCodes;
+    private Long tenantId;
 
     public Builder projectName(String projectName) {
       this.projectName = projectName;
@@ -89,6 +112,21 @@ public class CreateCodeGenerationCommand {
       return this;
     }
 
+    public Builder metadataSource(String metadataSource) {
+      this.metadataSource = metadataSource;
+      return this;
+    }
+
+    public Builder entityCodes(List<String> entityCodes) {
+      this.entityCodes = entityCodes;
+      return this;
+    }
+
+    public Builder tenantId(Long tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
     public CreateCodeGenerationCommand build() {
       CreateCodeGenerationCommand command = new CreateCodeGenerationCommand();
       command.projectName = this.projectName;
@@ -98,6 +136,9 @@ public class CreateCodeGenerationCommand {
       command.tableNames = this.tableNames;
       command.templateIds = this.templateIds;
       command.genConfig = this.genConfig;
+      command.metadataSource = this.metadataSource;
+      command.entityCodes = this.entityCodes;
+      command.tenantId = this.tenantId;
       return command;
     }
   }

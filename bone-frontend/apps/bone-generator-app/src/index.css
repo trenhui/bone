@@ -23,9 +23,16 @@ code {
 }
 
 .ant-layout-content {
-  background: #fff;
-  padding: 24px;
+  background: transparent;
+  padding: 0;
   margin: 0;
+}
+
+.page-container {
+  margin: 24px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
   min-height: 280px;
 }
 

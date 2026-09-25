@@ -86,9 +86,6 @@ export const templateApi = {
   publish: (id: number): Resp<void> => api.post(`${G}/templates/${id}:publish`),
 };
 
-/** @deprecated 使用 templateApi */
-export const codeTemplateApi = templateApi;
-
 export type GeneratorOperation = {
   operationId?: string;
   type?: string;
@@ -179,19 +176,6 @@ export const tableMetadataApi = {
 
   getDataSourceTables: (dataSourceId: string): Resp<DatabaseTable[]> =>
     dataSourceApi.listTables(dataSourceId),
-};
-
-export const codeGeneratorApi = {
-  loadPhysicalTables: (dataSourceId: string): Resp<DatabaseTable[]> =>
-    dataSourceApi.listTables(dataSourceId),
-
-  loadCatalogEntities: (
-    params?: { tenantId?: number; entityCodes?: string },
-  ): Resp<PageResult<Record<string, unknown>>> =>
-    metadataEntitySnapshotApi.list({ page: 1, size: 500, ...params }),
-
-  generate: (data: Record<string, unknown>): Resp<{ taskId?: string }> =>
-    generationTaskApi.create(data),
 };
 
 export default api;

@@ -11,7 +11,7 @@ interface ImportMeta {
 declare module 'vite-plugin-qiankun/helper' {
   export interface QiankunProps {
     container: HTMLElement;
-    [key: string]: any;
+    [key: string]: unknown;
   }
   export interface QiankunLifeCycle {
     bootstrap(): Promise<void>;

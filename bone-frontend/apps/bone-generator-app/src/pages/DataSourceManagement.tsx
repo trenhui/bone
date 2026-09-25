@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Space, Card, Typography, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import { dataSourceApi, pageRecords } from '../services/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { dataSourceApi } from '../services/api';
 import { DataSource } from '../services/types';
-import { useGeneratorStore } from '../store';
+import { useDataSources } from '../hooks/useDataSources';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -16,30 +17,14 @@ const DataSourceManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
   
-  const {
-    dataSources,
-    setDataSources,
-    setLoadingDataSources,
-  } = useGeneratorStore();
+  const queryClient = useQueryClient();
+  const { data: dataSources = [], isFetching } = useDataSources();
 
   // 数据库类型选项
   const databaseTypes = [
     { value: 'mysql', label: 'MySQL' },
     { value: 'postgresql', label: 'PostgreSQL' },
   ];
-
-  const loadDataSources = useCallback(async () => {
-    try {
-      setLoadingDataSources(true);
-      const response = await dataSourceApi.getList({ page: 1, size: 100 });
-      setDataSources(pageRecords(response.data));
-    } catch (error) {
-      message.error('加载数据源失败');
-      console.error('加载数据源失败:', error);
-    } finally {
-      setLoadingDataSources(false);
-    }
-  }, [setDataSources, setLoadingDataSources]);
 
   // 监听数据库类型变化，自动设置默认端口
   const typeValue = Form.useWatch('type', form);
@@ -59,10 +44,6 @@ const DataSourceManagement: React.FC = () => {
       form.setFieldsValue({ port: defaultPort });
     }
   }, [typeValue, form]);
-
-  useEffect(() => {
-    void loadDataSources();
-  }, [loadDataSources]);
 
   // 打开新增模态框
   const showAddModal = () => {
@@ -148,7 +129,7 @@ const DataSourceManagement: React.FC = () => {
       }
       
       setIsModalVisible(false);
-      loadDataSources();
+      queryClient.invalidateQueries({ queryKey: ['dataSources'] });
     } catch (error) {
       message.error('保存失败');
       console.error('保存数据源失败:', error);
@@ -167,7 +148,7 @@ const DataSourceManagement: React.FC = () => {
           setLoading(true);
           await dataSourceApi.delete(id);
           message.success('删除成功');
-          loadDataSources();
+          queryClient.invalidateQueries({ queryKey: ['dataSources'] });
         } catch (error) {
           message.error('删除失败');
           console.error('删除数据源失败:', error);
@@ -254,7 +235,8 @@ const DataSourceManagement: React.FC = () => {
             <Button
               type="primary"
               icon={<ReloadOutlined />}
-              onClick={loadDataSources}
+              loading={isFetching}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['dataSources'] })}
             >
               刷新
             </Button>
@@ -273,6 +255,7 @@ const DataSourceManagement: React.FC = () => {
           dataSource={dataSources}
           rowKey="id"
           pagination={false}
+          loading={isFetching}
         />
       </Card>
 
