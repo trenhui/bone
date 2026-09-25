@@ -3,6 +3,7 @@ import { Card, Form, InputNumber, Switch, Select, Button, Divider, Typography, S
 import { App as AntdApp } from 'antd';
 import { SaveOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import ModulePage from '../components/ModulePage';
 
 const { Title } = Typography;
 
@@ -52,8 +53,7 @@ const AuditSettingsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <Title level={4}>审计设置</Title>
+    <ModulePage title="审计设置" description="配置审计日志的采集范围与保留策略。" card={false}>
 
       <Alert
         type="info"
@@ -165,7 +165,7 @@ const AuditSettingsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Card>
-    </div>
+    </ModulePage>
   );
 };
 

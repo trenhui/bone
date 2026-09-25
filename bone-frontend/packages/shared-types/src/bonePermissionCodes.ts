@@ -30,6 +30,10 @@ export const BonePermissionCodes = {
   IAM_TENANTS_WRITE: 'iam:tenants:write',
   IAM_SESSIONS_READ: 'iam:sessions:read',
   IAM_SESSIONS_WRITE: 'iam:sessions:write',
+  IAM_DEPTS_READ: 'iam:depts:read',
+  IAM_DEPTS_WRITE: 'iam:depts:write',
+  IAM_MENUS_READ: 'iam:menus:read',
+  IAM_MENUS_WRITE: 'iam:menus:write',
 
   // System / Console（bone-system 控制台聚合 API）
   SYS_CONSOLE_READ: 'sys:console:read',
@@ -72,6 +76,10 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.IAM_TENANTS_WRITE, name: 'IAM-租户维护', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_SESSIONS_READ, name: 'IAM-会话查看', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_SESSIONS_WRITE, name: 'IAM-会话吊销', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_DEPTS_READ, name: 'IAM-组织查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_DEPTS_WRITE, name: 'IAM-组织维护', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_MENUS_READ, name: 'IAM-菜单查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_MENUS_WRITE, name: 'IAM-菜单维护', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.SYS_CONSOLE_READ, name: 'SYS-控制台查看', domain: 'system', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_READ, name: '元数据-读', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_WRITE, name: '元数据-写', domain: 'metadata', maturity: 'As-Is' },

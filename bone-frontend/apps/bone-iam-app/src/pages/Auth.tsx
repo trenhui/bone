@@ -21,6 +21,11 @@ const Auth: React.FC = () => {
           localStorage.setItem('refreshToken', response.data.refreshToken);
         }
         localStorage.setItem('username', response.data.account.username);
+        // 身份分流（详设 §2.9）：tenantId=0（或旧后端缺省）为平台管理员视角；>0 为租户管理员视角。
+        const tenantId = (response.data.account as unknown as { tenantId?: string | number }).tenantId;
+        const tenantName = (response.data.account as unknown as { tenantName?: string }).tenantName;
+        localStorage.setItem('tenantId', tenantId != null ? String(tenantId) : '0');
+        localStorage.setItem('tenantName', tenantName || '平台');
         message.success('登录成功');
         navigate('/accounts');
       } else {
@@ -37,9 +42,9 @@ const Auth: React.FC = () => {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5' }}>
       <Card title="IAM 系统登录" style={{ width: 400 }}>
         <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
-          <Text strong>默认账号密码：</Text>
-          <div>用户名：admin</div>
-          <div>密码：123456</div>
+          <Text strong>演示账号（单登录入口，登录后按身份自动分流）：</Text>
+          <div>平台管理员：admin / 123456（租户管理、权限目录、全模块）</div>
+          <div>租户管理员：tenant_admin / 123456（仅本租户功能）</div>
         </div>
         <Form
           name="login"

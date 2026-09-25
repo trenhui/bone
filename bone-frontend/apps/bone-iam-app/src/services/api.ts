@@ -300,9 +300,10 @@ export default api;
 // ==================== 组织机构管理 ====================
 
 export interface DeptNode {
-  id: number;
+  /** 雪花 ID 由后端序列化为字符串，前端以字符串承载避免精度丢失 */
+  id: string;
   name: string;
-  parentId: number | null;
+  parentId: string | null;
   orderNo?: number;
   status?: number;
   children?: DeptNode[];
@@ -310,7 +311,7 @@ export interface DeptNode {
 
 export interface DeptReq {
   name: string;
-  parentId?: number | null;
+  parentId?: string | null;
   orderNo?: number;
   status?: number;
 }
@@ -321,22 +322,23 @@ export const getDeptTree = (keyword?: string) =>
 
 /** 创建组织机构节点 */
 export const createDept = (data: DeptReq) =>
-  api.post<never, ApiResponse<number>>('/depts', data);
+  api.post<never, ApiResponse<string>>('/depts', data);
 
 /** 更新组织机构节点 */
-export const updateDept = (id: number, data: DeptReq) =>
+export const updateDept = (id: string, data: DeptReq) =>
   api.put<never, ApiResponse<void>>(`/depts/${id}`, data);
 
 /** 删除组织机构节点 */
-export const deleteDept = (id: number) =>
+export const deleteDept = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/depts/${id}`);
 
 // ==================== 菜单管理 ====================
 
 export interface MenuNodeItem {
-  id: number;
+  /** 雪花 ID 由后端序列化为字符串，前端以字符串承载避免精度丢失 */
+  id: string;
   name: string;
-  parentId: number | null;
+  parentId: string | null;
   path?: string;
   icon?: string;
   orderNo?: number;
@@ -347,7 +349,7 @@ export interface MenuNodeItem {
 
 export interface MenuReq {
   name: string;
-  parentId?: number | null;
+  parentId?: string | null;
   path?: string;
   icon?: string;
   orderNo?: number;
@@ -361,12 +363,12 @@ export const getMenuTree = (keyword?: string) =>
 
 /** 创建菜单节点 */
 export const createMenu = (data: MenuReq) =>
-  api.post<never, ApiResponse<number>>('/menus', data);
+  api.post<never, ApiResponse<string>>('/menus', data);
 
 /** 更新菜单节点 */
-export const updateMenu = (id: number, data: MenuReq) =>
+export const updateMenu = (id: string, data: MenuReq) =>
   api.put<never, ApiResponse<void>>(`/menus/${id}`, data);
 
 /** 删除菜单节点 */
-export const deleteMenu = (id: number) =>
+export const deleteMenu = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/menus/${id}`);

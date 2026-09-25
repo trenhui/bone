@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Table, Input, DatePicker, Select, Button, Tag, Drawer, Descriptions,
-  Space, Tooltip, Typography, Card, Statistic, Row, Col,
+  Space, Tooltip, Typography,
 } from 'antd';
 import { App as AntdApp } from 'antd';
 import {
@@ -11,6 +11,8 @@ import {
   ReloadOutlined, FileSearchOutlined,
 } from '@ant-design/icons';
 import * as api from '../services/api';
+import ModulePage from '../components/ModulePage';
+import { StatisticCard } from '@ant-design/pro-components';
 import { unwrapPage } from '../utils/pageResult';
 import type { AuditLog } from '../types';
 import dayjs from 'dayjs';
@@ -234,30 +236,26 @@ const AuditLogPage: React.FC = () => {
   ];
 
   return (
-    <div>
+    <ModulePage title="审计日志" description="记录平台关键操作，支持按用户、操作类型、时间范围检索与导出。" card={false}>
       {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card size="small">
-            <Statistic title="总记录数" value={total} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Statistic title="当前页成功" value={successCount} valueStyle={{ color: '#52c41a' }} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Statistic title="当前页失败" value={failCount} valueStyle={{ color: '#ff4d4f' }} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card size="small">
-            <Statistic title="当前页成功率" value={auditLogs.length ? Math.round(successCount / auditLogs.length * 100) : 0} suffix="%" />
-          </Card>
-        </Col>
-      </Row>
+      <StatisticCard.Group direction="row" style={{ marginBottom: 16 }}>
+        <StatisticCard
+          statistic={{ title: '总记录数', value: total }}
+        />
+        <StatisticCard
+          statistic={{ title: '当前页成功', value: successCount, valueStyle: { color: '#52c41a' } }}
+        />
+        <StatisticCard
+          statistic={{ title: '当前页失败', value: failCount, valueStyle: { color: '#ff4d4f' } }}
+        />
+        <StatisticCard
+          statistic={{
+            title: '当前页成功率',
+            value: auditLogs.length ? Math.round(successCount / auditLogs.length * 100) : 0,
+            suffix: '%',
+          }}
+        />
+      </StatisticCard.Group>
 
       {/* 筛选栏 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
@@ -311,6 +309,11 @@ const AuditLogPage: React.FC = () => {
             value={dateRange}
             onChange={(dates) => setDateRange(dates)}
             style={{ width: 360 }}
+            presets={[
+              { label: '今天', value: [dayjs().startOf('day'), dayjs()] },
+              { label: '近 7 天', value: [dayjs().subtract(7, 'day').startOf('day'), dayjs()] },
+              { label: '近 30 天', value: [dayjs().subtract(30, 'day').startOf('day'), dayjs()] },
+            ]}
           />
           <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
         </Space>
@@ -391,7 +394,7 @@ const AuditLogPage: React.FC = () => {
           </Descriptions>
         )}
       </Drawer>
-    </div>
+    </ModulePage>
   );
 };
 

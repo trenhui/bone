@@ -20,6 +20,20 @@ const App: React.FC = () => {
     return <>{children}</>;
   };
 
+  // 平台级路由守卫（详设 §2.9）：租户管理 / 权限目录仅平台管理员（tenantId=0）可访问；
+  // 租户管理员访问时自动回到本租户功能首页，后端 @PreAuthorize 权限码同时兜底。
+  const PlatformRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return <Navigate to="/login" replace />;
+    }
+    const tenantId = localStorage.getItem('tenantId') || '0';
+    if (tenantId !== '0') {
+      return <Navigate to="/accounts" replace />;
+    }
+    return <>{children}</>;
+  };
+
   return (
     <AntdApp>
       <Router>
@@ -27,8 +41,8 @@ const App: React.FC = () => {
           <Route path="/login" element={<Auth />} />
           <Route path="/accounts" element={<ProtectedRoute><AccountManagement /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
-          <Route path="/tenants" element={<ProtectedRoute><TenantManagement /></ProtectedRoute>} />
-          <Route path="/permissions" element={<ProtectedRoute><PermissionManagement /></ProtectedRoute>} />
+          <Route path="/tenants" element={<PlatformRoute><TenantManagement /></PlatformRoute>} />
+          <Route path="/permissions" element={<PlatformRoute><PermissionManagement /></PlatformRoute>} />
           <Route path="/organizations" element={<ProtectedRoute><OrganizationManagement /></ProtectedRoute>} />
           <Route path="/menus" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
           <Route path="/audit-logs" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
