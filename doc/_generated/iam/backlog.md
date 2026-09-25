@@ -1,6 +1,6 @@
 # IAM 模块 [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-21T06:49:12Z（UTC）  
+> **生成时间**：2026-09-25T07:38:42Z（UTC）  
 > **维护源**：[`backlog.yaml`](../../../tools/iam-compliance-collector/backlog.yaml)（仅写未落地项）。
 
 | Tier | ID | 项 | 引用 | 跟踪 |

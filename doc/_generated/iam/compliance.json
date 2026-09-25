@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:12Z",
+  "generated_at": "2026-09-25T07:38:42Z",
   "module": "iam",
   "as_is": [
     {
@@ -177,7 +177,7 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AccountApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AuthApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/PasswordPolicyValidator.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/support/PasswordPolicyValidator.java"
         ]
       }
     },
@@ -199,7 +199,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AccountApplicationService.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/RoleApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/SessionApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrorCodes.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrors.java"
@@ -235,7 +235,7 @@
         "java": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AccountApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/RoleApplicationService.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/TenantQuotaEnforcer.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/support/TenantQuotaEnforcer.java"
         ],
         "ddl": true
       }
@@ -262,7 +262,7 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamSsoProperties.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrorCodes.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrors.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/account/Account.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/model/account/Account.java"
         ]
       }
     },
@@ -273,7 +273,7 @@
       "evidence": {
         "java": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AuthApplicationService.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/RoleHierarchyResolver.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/RoleHierarchyResolver.java"
         ]
       }
     },
@@ -286,7 +286,8 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AccountApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/SessionApplicationService.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/permission/DefaultPermissionCodes.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/support/TenantAdminBootstrapSupport.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/model/permission/DefaultPermissionCodes.java"
         ]
       }
     },
@@ -313,7 +314,7 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AuthApplicationService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/dto/AccountDTO.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/account/Account.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/model/account/Account.java"
         ]
       }
     },
@@ -367,7 +368,7 @@
       "evidence": {
         "java_default": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/AuthApplicationService.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/permission/DefaultPermissionCodes.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/model/permission/DefaultPermissionCodes.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AccessTokenIssuerGatewayAdapter.java"
         ],
         "frontend": [
