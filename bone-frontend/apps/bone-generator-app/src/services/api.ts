@@ -165,11 +165,6 @@ export const codeGenerationApi = {
     api.get(`${G}/code-generation/tasks/${taskId}/download`, { responseType: 'blob' }),
 };
 
-export const generationTaskApi = {
-  create: (data: Record<string, unknown>): Resp<{ taskId?: string }> =>
-    api.post(`${G}/generation-tasks`, data),
-};
-
 export const tableMetadataApi = {
   sync: (data: { dataSourceId: string; tableNames?: string[] }): Resp<{ syncedCount?: number }> =>
     dataSourceApi.syncTables(data.dataSourceId, { tableNames: data.tableNames }),

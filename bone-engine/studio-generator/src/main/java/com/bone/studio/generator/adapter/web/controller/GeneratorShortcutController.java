@@ -3,28 +3,26 @@ package com.bone.studio.generator.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.CodeGenerationHistoryQueryApplicationService;
 import com.bone.studio.generator.application.DataSourceTablesApplicationService;
-import com.bone.studio.generator.application.GenerateCodeApplicationService;
-import com.bone.studio.generator.application.GenerationOperationViewQueryApplicationService;
 import com.bone.studio.generator.application.SyncTableMetadataApplicationService;
-import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
-import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.application.query.qry.CodeGenerationHistoryQuery;
 import com.bone.studio.generator.application.query.qry.DataSourceTablesQuery;
-import com.bone.studio.generator.application.query.qry.GenerationOperationViewQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import com.bone.studio.generator.domain.model.history.CodeGenerationHistory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 简写路径控制器：提供 /tables、/generations、/generate、/history 等端点。
+ * 简写路径控制器：提供 /tables、/tables/metadata、/history 等端点。
  *
- * <p>这些路径是对 data-sources / code-generation / generation-tasks 的简写别名。
+ * <p>这些路径是对 data-sources / metadata-entity-snapshots 的简写别名。代码生成入口已统一收敛到 {@code /code-generation}（见
+ * {@link CodeGenerationController}），本控制器不再暴露 /generate、 /generations 等重复入口。
  */
 @RestController
 @RequiredArgsConstructor
@@ -32,8 +30,6 @@ public class GeneratorShortcutController {
 
   private final DataSourceTablesApplicationService dataSourceTablesHandler;
   private final SyncTableMetadataApplicationService syncTableMetadataHandler;
-  private final GenerateCodeApplicationService generateCodeHandler;
-  private final GenerationOperationViewQueryApplicationService generationOperationViewQueryHandler;
   private final CodeGenerationHistoryQueryApplicationService codeGenerationHistoryQueryHandler;
 
   /** GET /api/v1/generator/tables?dataSourceId=xxx */
@@ -50,30 +46,6 @@ public class GeneratorShortcutController {
   public ApiResponse<Void> syncTableMetadata(@RequestBody SyncTableMetadataCommand command) {
     syncTableMetadataHandler.handle(command);
     return ApiResponse.success();
-  }
-
-  /** POST /api/v1/generator/generations — 创建代码生成任务（异步 LRO） */
-  @PostMapping(GeneratorApiPaths.GENERATIONS)
-  public ResponseEntity<ApiResponse<?>> createGeneration(@RequestBody GenerateCodeCommand command) {
-    CodeGenerationResponse response = generateCodeHandler.handle(command);
-    return ResponseEntity.ok(ApiResponse.success(response));
-  }
-
-  /** POST /api/v1/generator/generate — 同步代码生成 */
-  @PostMapping(GeneratorApiPaths.GENERATE)
-  public ApiResponse<CodeGenerationResponse> generate(@RequestBody GenerateCodeCommand command) {
-    return ApiResponse.success(generateCodeHandler.handle(command));
-  }
-
-  /** GET /api/v1/generator/generations/{id} — 查询生成状态 */
-  @GetMapping(GeneratorApiPaths.GENERATIONS + "/{id}")
-  public ApiResponse<GeneratorOperationView> getGeneration(@PathVariable String id) {
-    GeneratorOperationView view =
-        generationOperationViewQueryHandler.handle(new GenerationOperationViewQuery(id));
-    if (view == null) {
-      return ApiResponse.success(null);
-    }
-    return ApiResponse.success(view);
   }
 
   /** GET /api/v1/generator/history — 查询生成历史 */

@@ -12,9 +12,6 @@ public final class GeneratorApiPaths {
   /** Freemarker 异步生成（As-Is） */
   public static final String CODE_GENERATION = V1_PREFIX + "/code-generation";
 
-  /** 同步字符串模板生成 */
-  public static final String GENERATION_TASKS = V1_PREFIX + "/generation-tasks";
-
   /** 已发布 meta_* 快照（只读，供 CATALOG_SNAPSHOT 生成） */
   public static final String METADATA_ENTITY_SNAPSHOTS = V1_PREFIX + "/metadata-entity-snapshots";
 
@@ -28,12 +25,6 @@ public final class GeneratorApiPaths {
 
   /** 表元数据同步（简写路径） */
   public static final String TABLES_METADATA = V1_PREFIX + "/tables/metadata";
-
-  /** 代码生成（简写路径） */
-  public static final String GENERATIONS = V1_PREFIX + "/generations";
-
-  /** 同步代码生成（简写路径） */
-  public static final String GENERATE = V1_PREFIX + "/generate";
 
   /** 生成历史（简写路径） */
   public static final String HISTORY = V1_PREFIX + "/history";
