@@ -8,11 +8,20 @@ import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCom
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.config.GeneratorProperties;
+import com.bone.studio.generator.domain.model.data.GenerationTask;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,8 +61,43 @@ public class CodeGenerationController {
   }
 
   @GetMapping("/tasks/{taskId}/download")
-  public void downloadCode(@PathVariable String taskId) {
-    // [Target] MinIO 产物下载
+  public ResponseEntity<ByteArrayResource> downloadCode(@PathVariable String taskId) {
+    GenerationTask task = operationService.findByTaskId(taskId);
+    List<?> files = task == null ? null : task.getGeneratedFiles();
+    if (task == null || files == null || files.isEmpty()) {
+      return ResponseEntity.noContent().build();
+    }
+
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
+      // generated_files 是 JSON 列：SDK 把值对象 GeneratedFile 反序列化成 LinkedHashMap，
+      // 无法直接转型，这里按 Map 取字段后打包。
+      for (Object raw : files) {
+        Map<?, ?> file = (Map<?, ?>) raw;
+        String filePath = asString(file.get("filePath"));
+        String fileName = asString(file.get("fileName"));
+        String content = asString(file.get("content"));
+        String entryName = filePath != null ? filePath : (fileName != null ? fileName : "file");
+        zip.putNextEntry(new ZipEntry(entryName));
+        zip.write(content.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+      }
+    } catch (java.io.IOException e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+
+    String fileName =
+        (task.getProjectName() == null ? "generated" : task.getProjectName()) + ".zip";
+    ByteArrayResource resource = new ByteArrayResource(buffer.toByteArray());
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .contentLength(resource.contentLength())
+        .body(resource);
+  }
+
+  private static String asString(Object value) {
+    return value == null ? null : value.toString();
   }
 
   @GetMapping("/tasks/{taskId}/status")

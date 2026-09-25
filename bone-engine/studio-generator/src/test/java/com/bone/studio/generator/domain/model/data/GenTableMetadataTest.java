@@ -19,11 +19,22 @@ class GenTableMetadataTest {
 
     assertEquals("ds-order", metadata.getDataSourceId());
     assertEquals("ic_order", metadata.getOriginalTableName());
-    assertEquals("ic_order", metadata.getCustomEntityName());
+    assertEquals("IcOrder", metadata.getCustomEntityName());
     assertEquals("订单主表", metadata.getTableComment());
     assertEquals("SYNCED", metadata.getSyncStatus());
     assertNotNull(metadata.getLastSyncAt());
     assertFalse(metadata.isDeleted());
     assertEquals(0, metadata.getVersion());
+  }
+
+  /** 实体名必须是合法 Java 类名：剥掉 {@code t_} 技术前缀并转大驼峰（实测 t_order 曾生成 class t_order）。 */
+  @Test
+  void entityNameStripsTechnicalPrefixAndCamelCases() {
+    GenTableMetadata metadata =
+        GenTableMetadata.create(
+            1L, 1L, "ds-order", DatabaseTable.builder().tableName("t_order").build());
+
+    assertEquals("t_order", metadata.getOriginalTableName());
+    assertEquals("Order", metadata.getCustomEntityName());
   }
 }

@@ -1,4 +1,4 @@
-import { createApiClient, setQiankunToken } from '@bone/shared-services';
+import { createApiClient, getGlobalContext, setQiankunToken } from '@bone/shared-services';
 import type { ApiResponse, DataSource, DatabaseTable, PageResult } from './types';
 
 export { setQiankunToken };
@@ -9,6 +9,23 @@ type Resp<T = unknown> = Promise<ApiResponse<T>>;
 const G = '/api/v1/generator';
 
 const api = createApiClient('', { timeout: 30000 });
+
+/**
+ * 租户头：bone-metadata-sdk 的 SQL 执行器强校验租户上下文，缺 X-Tenant-Id 时所有读接口直接
+ * 500 MissingTenantContextException。走网关时由 JwtAuthGlobalFilter 注入，直连后端时必须前端带上。
+ */
+api.interceptors.request.use((req) => {
+  if (!req.headers['X-Tenant-Id']) {
+    const ctx = getGlobalContext() as { tenantId?: string | number } | undefined;
+    const tenantId =
+      ctx?.tenantId ??
+      localStorage.getItem('tenantId') ??
+      new URLSearchParams(window.location.search).get('tenantId') ??
+      '0';
+    req.headers['X-Tenant-Id'] = String(tenantId);
+  }
+  return req;
+});
 
 /** 解析分页体（规范 records；兼容过渡 list） */
 export function pageRecords<T>(page?: PageResult<T> | { list?: T[]; records?: T[] } | null): T[] {

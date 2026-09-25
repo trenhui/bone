@@ -12,6 +12,8 @@ import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import com.bone.studio.generator.domain.model.data.GenerationTask;
+import com.bone.studio.generator.domain.model.history.CodeGenerationHistory;
+import com.bone.studio.generator.domain.repository.CodeGenerationHistoryRepository;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
@@ -43,6 +45,7 @@ public class CreateCodeGenerationApplicationService {
   private final DataSourceRepository dataSourceRepository;
   private final GenTableMetadataReadPort genTableMetadataReadPort;
   private final CodeTemplateRepository codeTemplateRepository;
+  private final CodeGenerationHistoryRepository historyRepository;
   private final List<FileGenerator> fileGenerators;
 
   /** 同步执行（原行为）。 */
@@ -79,6 +82,20 @@ public class CreateCodeGenerationApplicationService {
     task.markProcessing();
     generationTaskRepository.save(task);
 
+    // 模板驱动路径此前不落 gen_code_generation_history，历史页在这条主链路上永远是空的
+    CodeGenerationHistory history =
+        CodeGenerationHistory.create(
+            taskId,
+            inputs.templateIdsText(),
+            inputs.templateNamesText(),
+            command.getProjectName(),
+            String.valueOf(command.getDataSourceId()),
+            command.getTableNames(),
+            command.getBasePackage(),
+            command.getModuleName());
+    historyRepository.save(history);
+
+    long startedAt = System.currentTimeMillis();
     List<GeneratedFile> generatedFiles = new ArrayList<>();
     try {
       for (GenTableMetadata table : inputs.tableMetadatas()) {
@@ -95,13 +112,20 @@ public class CreateCodeGenerationApplicationService {
       }
       String zipUrl = "/api/v1/generator/code-generation/tasks/" + taskId + "/download";
       task.markCompleted(generatedFiles, zipUrl);
+      history.complete(generatedFiles.size(), System.currentTimeMillis() - startedAt, zipUrl);
     } catch (Exception e) {
       task.markFailed(e.getMessage());
+      history.fail(e.getMessage());
       if (propagateErrors) {
         throw e;
       }
     } finally {
       generationTaskRepository.save(task);
+      try {
+        historyRepository.save(history);
+      } catch (RuntimeException ignored) {
+        // 历史是旁路记录，写不进去不应影响生成结果
+      }
     }
   }
 
@@ -162,7 +186,23 @@ public class CreateCodeGenerationApplicationService {
       }
       templates.add(template);
     }
-    return new ResolvedInputs(tableMetadatas, templates);
+    return new ResolvedInputs(tableMetadatas, ensureResponseTemplate(templates));
+  }
+
+  /**
+   * 控制器模板依赖响应对象（HC-003：Controller 不裸返领域对象），用户只选 controller 时自动补上内置 response 模板，否则生成的控制器会引用一个不存在的类。
+   */
+  private List<CodeTemplate> ensureResponseTemplate(List<CodeTemplate> templates) {
+    boolean needsResponse =
+        templates.stream().anyMatch(t -> "controller".equals(t.getType()))
+            && templates.stream().noneMatch(t -> "response".equals(t.getType()));
+    if (!needsResponse) {
+      return templates;
+    }
+    List<CodeTemplate> withResponse = new ArrayList<>(templates);
+    withResponse.add(
+        CodeTemplate.builder().code("response").name("response").type("response").build());
+    return withResponse;
   }
 
   private GenTableMetadata findTableMetadata(Long dataSourceId, String tableName) {
@@ -172,5 +212,28 @@ public class CreateCodeGenerationApplicationService {
   }
 
   private record ResolvedInputs(
-      List<GenTableMetadata> tableMetadatas, List<CodeTemplate> templates) {}
+      List<GenTableMetadata> tableMetadatas, List<CodeTemplate> templates) {
+
+    String templateIdsText() {
+      StringBuilder sb = new StringBuilder();
+      for (CodeTemplate template : templates) {
+        if (sb.length() > 0) {
+          sb.append(',');
+        }
+        sb.append(template.getId());
+      }
+      return sb.toString();
+    }
+
+    String templateNamesText() {
+      StringBuilder sb = new StringBuilder();
+      for (CodeTemplate template : templates) {
+        if (sb.length() > 0) {
+          sb.append(',');
+        }
+        sb.append(template.getName() == null ? template.getCode() : template.getName());
+      }
+      return sb.toString();
+    }
+  }
 }

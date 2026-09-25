@@ -11,6 +11,14 @@ public class GeneratorUtils {
         : entityName.toLowerCase(Locale.ROOT);
   }
 
+  /** 控制器 REST 前缀：{@code /api/v1/{模块}}（模块名里的下划线转短横线）。 */
+  public static String apiPrefix(String moduleName) {
+    if (moduleName == null || moduleName.isEmpty()) {
+      return "/api/v1";
+    }
+    return "/api/v1/" + moduleName.replace('_', '-').toLowerCase(Locale.ROOT);
+  }
+
   /** 生成文件的根目录：{@code basePackage} 的路径形式 + 模块段，与 {@link #getPackagePath} 对齐。 */
   public static String basePath(String basePackage, String moduleName) {
     String base = basePackage == null ? "" : basePackage.replace('.', '/');

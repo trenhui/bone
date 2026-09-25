@@ -5,11 +5,15 @@ import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.model.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import com.bone.studio.generator.domain.model.data.GenColumnMetadata;
+import com.bone.studio.generator.domain.model.data.GenTableMetadata;
 import com.bone.studio.generator.domain.model.data.TableColumn;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
+import com.bone.studio.generator.domain.service.FileGenerator;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,13 +27,21 @@ import org.springframework.stereotype.Service;
 @Service
 public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
+  /** 内置模板类型顺序即生成顺序：响应对象先于控制器，控制器依赖它（HC-003）。 */
+  private static final List<String> BUILT_IN_TEMPLATE_TYPES =
+      List.of("entity", "repository", "applicationService", "response", "controller");
+
   private final DataSourceRepository dataSourceRepository;
   private final CatalogMetadataGateway catalogMetadataGateway;
+  private final List<FileGenerator> fileGenerators;
 
   public CodeGeneratorServiceImpl(
-      DataSourceRepository dataSourceRepository, CatalogMetadataGateway catalogMetadataGateway) {
+      DataSourceRepository dataSourceRepository,
+      CatalogMetadataGateway catalogMetadataGateway,
+      List<FileGenerator> fileGenerators) {
     this.dataSourceRepository = dataSourceRepository;
     this.catalogMetadataGateway = catalogMetadataGateway;
+    this.fileGenerators = fileGenerators;
   }
 
   @Override
@@ -41,18 +53,26 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
       // 1. 加载表结构：目录快照 或 物理库反向
       List<DatabaseTable> tables = resolveTables(request);
 
-      // 2. 生成代码（跳过 RUNTIME 交付模式实体，由 bone-metadata-engine 动态 API 承担）
+      // 2. 生成代码：与主链路同一套模板，避免本链路产出 extends Entity + domain/service 的不合规骨架
       int skippedRuntime = 0;
       for (DatabaseTable table : tables) {
         if (table.isRuntimeDelivery()) {
           skippedRuntime++;
           continue;
         }
-        generatedFiles.addAll(generateEntity(table, request));
-        generatedFiles.addAll(generateRepository(table, request));
-        generatedFiles.addAll(generateService(table, request));
-        generatedFiles.addAll(generateController(table, request));
-        generatedFiles.addAll(generateDTOs(table, request));
+        GenTableMetadata metadata = toMetadata(table);
+        for (String templateType : BUILT_IN_TEMPLATE_TYPES) {
+          CodeTemplate template =
+              CodeTemplate.builder().code(templateType).name(templateType).build();
+          for (FileGenerator generator : fileGenerators) {
+            if (generator.supports(templateType)) {
+              generatedFiles.add(
+                  generator.generate(
+                      metadata, template, request.getBasePackage(), request.getModuleName()));
+              break;
+            }
+          }
+        }
       }
       String successMsg =
           skippedRuntime > 0
@@ -99,7 +119,19 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
     }
   }
 
-  @Override
+  /** 物理库表 → 生成器领域模型：让本链路与主链路共用同一份模板上下文。 */
+  private static GenTableMetadata toMetadata(DatabaseTable dbTable) {
+    GenTableMetadata metadata = GenTableMetadata.create(0L, 0L, "physical", dbTable);
+    List<GenColumnMetadata> columns = new ArrayList<>();
+    if (dbTable.getColumns() != null) {
+      for (TableColumn dbColumn : dbTable.getColumns()) {
+        columns.add(GenColumnMetadata.create(0L, 0L, 0L, dbColumn));
+      }
+    }
+    metadata.attachColumns(columns);
+    return metadata;
+  }
+
   public boolean testConnection(DataSource dataSource) {
     Connection connection = null;
     try {
@@ -213,7 +245,7 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
             + dataSource.getPort()
             + "/"
             + dataSource.getDatabase()
-            + "?useSSL=false&serverTimezone=UTC";
+            + "?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&useInformationSchema=true&remarksReporting=true";
       case "postgresql":
         return "jdbc:postgresql://"
             + dataSource.getHost()
@@ -238,13 +270,17 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
       String columnComment = columnsResultSet.getString("REMARKS");
       boolean nullable = columnsResultSet.getInt("NULLABLE") == 1;
       String defaultValue = columnsResultSet.getString("COLUMN_DEF");
+      int jdbcType = columnsResultSet.getInt("DATA_TYPE");
       int length = columnsResultSet.getInt("COLUMN_SIZE");
       int precision = columnsResultSet.getInt("DECIMAL_DIGITS");
 
       TableColumn column =
           TableColumn.builder()
               .columnName(columnName)
+              .jdbcType(jdbcType)
               .columnType(columnType)
+              .columnSize(length)
+              .decimalDigits(precision)
               .columnComment(columnComment)
               .nullable(nullable)
               .primaryKey(false) // 后续会更新
@@ -257,15 +293,20 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
       columns.add(column);
     }
 
-    // 更新主键信息
+    // 更新主键信息（原先只改循环变量引用，没写回列表，主键标记永远是 false）
     String primaryKey = loadPrimaryKey(connection, tableName);
     if (primaryKey != null) {
-      for (TableColumn column : columns) {
+      for (int i = 0; i < columns.size(); i++) {
+        TableColumn column = columns.get(i);
         if (column.getColumnName().equals(primaryKey)) {
-          column =
+          columns.set(
+              i,
               TableColumn.builder()
                   .columnName(column.getColumnName())
+                  .jdbcType(column.getJdbcType())
                   .columnType(column.getColumnType())
+                  .columnSize(column.getColumnSize())
+                  .decimalDigits(column.getDecimalDigits())
                   .columnComment(column.getColumnComment())
                   .nullable(false)
                   .primaryKey(true)
@@ -273,7 +314,7 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
                   .length(column.getLength())
                   .precision(column.getPrecision())
                   .scale(column.getScale())
-                  .build();
+                  .build());
         }
       }
     }
@@ -303,365 +344,5 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
     }
 
     return indexes;
-  }
-
-  private List<GeneratedFile> generateEntity(DatabaseTable table, CodeGenerationRequest request) {
-    List<GeneratedFile> files = new ArrayList<>();
-    String className = toCamelCase(table.getTableName(), true);
-    String packageName =
-        buildPackageName(request, "domain.model." + GeneratorUtils.aggregateSegment(className));
-
-    StringBuilder content = new StringBuilder();
-    content.append("package " + packageName + ";\n\n");
-    content.append("import lombok.Getter;\n");
-    content.append("import lombok.NoArgsConstructor;\n");
-    content.append("import com.bone.core.domain.Entity;\n\n");
-    content.append("@Getter\n");
-    content.append("@NoArgsConstructor\n");
-    content.append("public class " + className + " extends Entity<Long> {\n\n");
-
-    for (TableColumn column : table.getColumns()) {
-      String fieldName = toCamelCase(column.getColumnName(), false);
-      String fieldType = mapColumnTypeToJavaType(column.getColumnType());
-      content.append("    private " + fieldType + " " + fieldName + ";\n");
-    }
-
-    content.append("\n");
-    content.append("    // 构造方法和业务方法\n");
-    content.append("}\n");
-
-    String filePath = packageName.replace('.', '/') + "/" + className + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(className + ".java")
-            .filePath(filePath)
-            .content(content.toString())
-            .fileType("java")
-            .fileSize(content.length())
-            .build());
-
-    return files;
-  }
-
-  private List<GeneratedFile> generateRepository(
-      DatabaseTable table, CodeGenerationRequest request) {
-    List<GeneratedFile> files = new ArrayList<>();
-    String packageName = buildPackageName(request, "domain.repository");
-    String entityName = toCamelCase(table.getTableName(), true);
-    String className = entityName + "Repository";
-
-    StringBuilder content = new StringBuilder();
-    content.append("package " + packageName + ";\n\n");
-    content.append("import com.bone.metadata.sdk.domain.repository.Repository;\n");
-    content.append(
-        "import "
-            + buildPackageName(
-                request, "domain.model." + GeneratorUtils.aggregateSegment(entityName))
-            + "."
-            + entityName
-            + ";\n\n");
-    content.append(
-        "public interface "
-            + className
-            + " extends Repository<"
-            + toCamelCase(table.getTableName(), true)
-            + ", Long> {\n");
-    content.append("}\n");
-
-    String filePath = packageName.replace('.', '/') + "/" + className + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(className + ".java")
-            .filePath(filePath)
-            .content(content.toString())
-            .fileType("java")
-            .fileSize(content.length())
-            .build());
-
-    return files;
-  }
-
-  private List<GeneratedFile> generateService(DatabaseTable table, CodeGenerationRequest request) {
-    List<GeneratedFile> files = new ArrayList<>();
-    String packageName = buildPackageName(request, "domain.service");
-    String entityName = toCamelCase(table.getTableName(), true);
-    String className = entityName + "Service";
-
-    StringBuilder content = new StringBuilder();
-    content.append("package " + packageName + ";\n\n");
-    content.append(
-        "import "
-            + buildPackageName(
-                request, "domain.model." + GeneratorUtils.aggregateSegment(entityName))
-            + "."
-            + entityName
-            + ";\n");
-    content.append("import java.util.List;\n\n");
-    content.append("public interface " + className + " {\n");
-    content.append(
-        "    "
-            + toCamelCase(table.getTableName(), true)
-            + " create("
-            + toCamelCase(table.getTableName(), true)
-            + " entity);\n");
-    content.append(
-        "    "
-            + toCamelCase(table.getTableName(), true)
-            + " update("
-            + toCamelCase(table.getTableName(), true)
-            + " entity);\n");
-    content.append("    void delete(Long id);\n");
-    content.append("    " + toCamelCase(table.getTableName(), true) + " findById(Long id);\n");
-    content.append("    List<" + toCamelCase(table.getTableName(), true) + "> findAll();\n");
-    content.append("}\n");
-
-    String filePath = packageName.replace('.', '/') + "/" + className + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(className + ".java")
-            .filePath(filePath)
-            .content(content.toString())
-            .fileType("java")
-            .fileSize(content.length())
-            .build());
-
-    return files;
-  }
-
-  private List<GeneratedFile> generateController(
-      DatabaseTable table, CodeGenerationRequest request) {
-    List<GeneratedFile> files = new ArrayList<>();
-    String packageName = buildPackageName(request, "adapter.web.controller");
-    String className = toCamelCase(table.getTableName(), true) + "Controller";
-
-    StringBuilder content = new StringBuilder();
-    content.append("package " + packageName + ";\n\n");
-    content.append("import org.springframework.web.bind.annotation.*;\n");
-    content.append(
-        "import "
-            + buildPackageName(request, "domain.service")
-            + "."
-            + toCamelCase(table.getTableName(), true)
-            + "Service;\n");
-    content.append(
-        "import "
-            + buildPackageName(request, "domain.model.entity")
-            + "."
-            + toCamelCase(table.getTableName(), true)
-            + ";\n");
-    content.append("import java.util.List;\n\n");
-    content.append("@RestController\n");
-    content.append("@RequestMapping(\"/api/" + table.getTableName().toLowerCase() + ")\n");
-    content.append("public class " + className + " {\n\n");
-    content.append(
-        "    private final " + toCamelCase(table.getTableName(), true) + "Service service;\n\n");
-    content.append(
-        "    public "
-            + className
-            + "("
-            + toCamelCase(table.getTableName(), true)
-            + "Service service) {\n");
-    content.append("        this.service = service;\n");
-    content.append("    }\n\n");
-    content.append("    @PostMapping\n");
-    content.append(
-        "    public "
-            + toCamelCase(table.getTableName(), true)
-            + " create(@RequestBody "
-            + toCamelCase(table.getTableName(), true)
-            + " entity) {\n");
-    content.append("        return service.create(entity);\n");
-    content.append("    }\n\n");
-    content.append("    @PutMapping(\"/{id}\")\n");
-    content.append(
-        "    public "
-            + toCamelCase(table.getTableName(), true)
-            + " update(@PathVariable Long id, @RequestBody "
-            + toCamelCase(table.getTableName(), true)
-            + " entity) {\n");
-    content.append("        return service.update(entity);\n");
-    content.append("    }\n\n");
-    content.append("    @DeleteMapping(\"/{id}\")\n");
-    content.append("    public void delete(@PathVariable Long id) {\n");
-    content.append("        service.delete(id);\n");
-    content.append("    }\n\n");
-    content.append("    @GetMapping(\"/{id}\")\n");
-    content.append(
-        "    public "
-            + toCamelCase(table.getTableName(), true)
-            + " findById(@PathVariable Long id) {\n");
-    content.append("        return service.findById(id);\n");
-    content.append("    }\n\n");
-    content.append("    @GetMapping\n");
-    content.append(
-        "    public List<" + toCamelCase(table.getTableName(), true) + "> findAll() {\n");
-    content.append("        return service.findAll();\n");
-    content.append("    }\n");
-    content.append("}\n");
-
-    String filePath = packageName.replace('.', '/') + "/" + className + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(className + ".java")
-            .filePath(filePath)
-            .content(content.toString())
-            .fileType("java")
-            .fileSize(content.length())
-            .build());
-
-    return files;
-  }
-
-  private List<GeneratedFile> generateDTOs(DatabaseTable table, CodeGenerationRequest request) {
-    List<GeneratedFile> files = new ArrayList<>();
-    String packageName = buildPackageName(request, "adapter.web.dto");
-
-    // Create Request DTO
-    String createRequestClassName = toCamelCase(table.getTableName(), true) + "CreateRequest";
-    StringBuilder createRequestContent = new StringBuilder();
-    createRequestContent.append("package " + packageName + ".request;\n\n");
-    createRequestContent.append("import lombok.Data;\n\n");
-    createRequestContent.append("@Data\n");
-    createRequestContent.append("public class " + createRequestClassName + " {\n");
-
-    for (TableColumn column : table.getColumns()) {
-      if (!column.isPrimaryKey()) {
-        String fieldName = toCamelCase(column.getColumnName(), false);
-        String fieldType = mapColumnTypeToJavaType(column.getColumnType());
-        createRequestContent.append("    private " + fieldType + " " + fieldName + ";\n");
-      }
-    }
-    createRequestContent.append("}\n");
-
-    String createRequestFilePath =
-        packageName.replace('.', '/') + "/request/" + createRequestClassName + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(createRequestClassName + ".java")
-            .filePath(createRequestFilePath)
-            .content(createRequestContent.toString())
-            .fileType("java")
-            .fileSize(createRequestContent.length())
-            .build());
-
-    // Update Request DTO
-    String updateRequestClassName = toCamelCase(table.getTableName(), true) + "UpdateRequest";
-    StringBuilder updateRequestContent = new StringBuilder();
-    updateRequestContent.append("package " + packageName + ".request;\n\n");
-    updateRequestContent.append("import lombok.Data;\n\n");
-    updateRequestContent.append("@Data\n");
-    updateRequestContent.append("public class " + updateRequestClassName + " {\n");
-
-    for (TableColumn column : table.getColumns()) {
-      String fieldName = toCamelCase(column.getColumnName(), false);
-      String fieldType = mapColumnTypeToJavaType(column.getColumnType());
-      updateRequestContent.append("    private " + fieldType + " " + fieldName + ";\n");
-    }
-    updateRequestContent.append("}\n");
-
-    String updateRequestFilePath =
-        packageName.replace('.', '/') + "/request/" + updateRequestClassName + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(updateRequestClassName + ".java")
-            .filePath(updateRequestFilePath)
-            .content(updateRequestContent.toString())
-            .fileType("java")
-            .fileSize(updateRequestContent.length())
-            .build());
-
-    // Response DTO
-    String responseClassName = toCamelCase(table.getTableName(), true) + "Response";
-    StringBuilder responseContent = new StringBuilder();
-    responseContent.append("package " + packageName + ".response;\n\n");
-    responseContent.append("import lombok.Data;\n\n");
-    responseContent.append("@Data\n");
-    responseContent.append("public class " + responseClassName + " {\n");
-
-    for (TableColumn column : table.getColumns()) {
-      String fieldName = toCamelCase(column.getColumnName(), false);
-      String fieldType = mapColumnTypeToJavaType(column.getColumnType());
-      responseContent.append("    private " + fieldType + " " + fieldName + ";\n");
-    }
-    responseContent.append("}\n");
-
-    String responseFilePath =
-        packageName.replace('.', '/') + "/response/" + responseClassName + ".java";
-    files.add(
-        GeneratedFile.builder()
-            .fileName(responseClassName + ".java")
-            .filePath(responseFilePath)
-            .content(responseContent.toString())
-            .fileType("java")
-            .fileSize(responseContent.length())
-            .build());
-
-    return files;
-  }
-
-  private String buildPackageName(CodeGenerationRequest request, String suffix) {
-    String basePackage =
-        request.getBasePackage() != null && !request.getBasePackage().isEmpty()
-            ? request.getBasePackage()
-            : "com.example";
-
-    if (request.getModuleName() != null && !request.getModuleName().isEmpty()) {
-      return basePackage + "." + request.getModuleName() + "." + suffix;
-    }
-
-    return basePackage + "." + suffix;
-  }
-
-  private String toCamelCase(String str, boolean capitalizeFirst) {
-    String[] parts = str.split("_|");
-    StringBuilder result = new StringBuilder();
-
-    for (int i = 0; i < parts.length; i++) {
-      String part = parts[i];
-      if (i == 0 && !capitalizeFirst) {
-        result.append(part.toLowerCase());
-      } else {
-        result.append(Character.toUpperCase(part.charAt(0)));
-        result.append(part.substring(1).toLowerCase());
-      }
-    }
-
-    return result.toString();
-  }
-
-  private String mapColumnTypeToJavaType(String columnType) {
-    columnType = columnType.toLowerCase();
-
-    switch (columnType) {
-      case "int":
-      case "integer":
-        return "Integer";
-      case "bigint":
-        return "Long";
-      case "varchar":
-      case "char":
-      case "text":
-        return "String";
-      case "date":
-        return "LocalDate";
-      case "datetime":
-      case "timestamp":
-        return "LocalDateTime";
-      case "decimal":
-      case "numeric":
-        return "BigDecimal";
-      case "boolean":
-        return "Boolean";
-      case "double":
-        return "Double";
-      case "float":
-        return "Float";
-      case "string":
-        return "String";
-      case "long":
-        return "Long";
-      default:
-        return "String";
-    }
   }
 }

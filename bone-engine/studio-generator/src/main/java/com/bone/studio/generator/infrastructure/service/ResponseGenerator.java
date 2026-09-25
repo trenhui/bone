@@ -9,15 +9,16 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/** 响应 DTO 生成器：HC-003 要求 Controller 不裸返领域对象，控制器模板依赖本产物。 */
 @Component
 @RequiredArgsConstructor
-public class ControllerGenerator implements FileGenerator {
+public class ResponseGenerator implements FileGenerator {
 
   private final TemplateRenderer templateRenderer;
 
   @Override
   public boolean supports(String templateType) {
-    return "controller".equals(templateType);
+    return "response".equals(templateType);
   }
 
   @Override
@@ -25,16 +26,15 @@ public class ControllerGenerator implements FileGenerator {
       GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
     Map<String, Object> model = new HashMap<>();
     model.put("table", table);
+    model.put("columns", table.getColumns());
     model.put("basePackage", basePackage);
     model.put("moduleName", moduleName);
     model.put("utils", new GeneratorUtils());
-    // 此前写死 PlatformApiPaths.METADATA_V1，非元数据模块生成出的路径是错的
-    model.put("apiPrefix", GeneratorUtils.apiPrefix(moduleName));
 
     String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + "Controller.java";
+    String fileName = table.getCustomEntityName() + "Response.java";
     String filePath =
-        GeneratorUtils.basePath(basePackage, moduleName) + "/adapter/web/controller/" + fileName;
+        GeneratorUtils.basePath(basePackage, moduleName) + "/adapter/web/dto/response/" + fileName;
     return GeneratedFile.builder()
         .filePath(filePath)
         .fileName(fileName)

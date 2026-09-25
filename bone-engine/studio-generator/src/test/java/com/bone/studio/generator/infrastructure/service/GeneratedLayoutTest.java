@@ -78,8 +78,28 @@ class GeneratedLayoutTest {
 
     assertEquals(
         "com/example/demo/adapter/web/controller/OrderController.java", file.getFilePath());
+    // HC-003：控制器只依赖响应对象，不直接暴露领域对象（此前 import 的是 domain.model.order.Order）
+    assertTrue(
+        file.getContent()
+            .contains("import com.example.demo.adapter.web.dto.response.OrderResponse;"),
+        file.getContent());
+    // 路径前缀取自模块名，此前写死 PlatformApiPaths.METADATA_V1
+    assertTrue(file.getContent().contains("\"/api/v1/demo/order\""), file.getContent());
+  }
+
+  @Test
+  void responseLivesUnderWebDtoPackage() {
+    GeneratedFile file =
+        new ResponseGenerator(templateRenderer)
+            .generate(table, template("response"), BASE_PACKAGE, MODULE);
+
+    assertEquals(
+        "com/example/demo/adapter/web/dto/response/OrderResponse.java", file.getFilePath());
     assertTrue(
         file.getContent().contains("import com.example.demo.domain.model.order.Order;"),
+        file.getContent());
+    assertTrue(
+        file.getContent().contains("public static OrderResponse from(Order entity)"),
         file.getContent());
   }
 

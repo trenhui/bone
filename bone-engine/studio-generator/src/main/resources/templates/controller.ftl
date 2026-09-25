@@ -2,9 +2,8 @@ package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.core.web.PlatformApiPaths;
+import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.response.${table.customEntityName}Response;
 import ${utils.getPackagePath(basePackage, moduleName)}.application.${table.customEntityName}ApplicationService;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "${table.tableComment!'实体'}", description = "${table.tableComment!'实体'}管理接口")
 @RestController
-@RequestMapping(PlatformApiPaths.METADATA_V1 + "/${table.originalTableName}")
+@RequestMapping("${apiPrefix}/${utils.toPackageSegment(table.customEntityName)}")
 @RequiredArgsConstructor
 public class ${table.customEntityName}Controller {
 
@@ -25,13 +24,13 @@ public class ${table.customEntityName}Controller {
 
   @Operation(summary = "查询 ${table.tableComment!'实体'} 详情")
   @GetMapping("/{id}")
-  public ApiResponse<${table.customEntityName}> getById(@PathVariable Long id) {
+  public ApiResponse<${table.customEntityName}Response> getById(@PathVariable Long id) {
     return ApiResponse.success(applicationService.get(id));
   }
 
   @Operation(summary = "分页查询 ${table.tableComment!'实体'}")
   @GetMapping("/page")
-  public ApiResponse<PageResult<${table.customEntityName}>> page(
+  public ApiResponse<PageResult<${table.customEntityName}Response>> page(
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "10") int size) {
     return ApiResponse.success(applicationService.page(page, size));

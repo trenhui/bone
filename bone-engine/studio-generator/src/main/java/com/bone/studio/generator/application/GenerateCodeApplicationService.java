@@ -117,10 +117,9 @@ public class GenerateCodeApplicationService {
 
       // 6. 更新历史记录
       history.complete(
-          0, // 简化实现，不统计文件数量
+          response.getGeneratedFiles() == null ? 0 : response.getGeneratedFiles().size(),
           executionTime,
-          "" // 简化实现，不记录输出路径
-          );
+          response.getOutputPath() == null ? "" : response.getOutputPath());
       historyRepository.save(history);
 
       return response;

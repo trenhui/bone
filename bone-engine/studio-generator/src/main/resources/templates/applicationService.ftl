@@ -1,6 +1,7 @@
 package ${utils.getPackagePath(basePackage, moduleName)}.application;
 
 import com.bone.core.model.PageResult;
+import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.response.${table.customEntityName}Response;
 import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
 import ${utils.getPackagePath(basePackage, moduleName)}.domain.repository.${table.customEntityName}Repository;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,12 @@ public class ${table.customEntityName}ApplicationService {
   private final ${table.customEntityName}Repository repository;
 
   @Transactional(readOnly = true)
-  public ${table.customEntityName} get(Long id) {
-    return repository.findById(id);
+  public ${table.customEntityName}Response get(Long id) {
+    return ${table.customEntityName}Response.from(repository.findById(id));
   }
 
   @Transactional(readOnly = true)
-  public PageResult<${table.customEntityName}> page(int page, int size) {
-    return repository.findPage(page, size);
+  public PageResult<${table.customEntityName}Response> page(int page, int size) {
+    return repository.findPage(page, size).map(${table.customEntityName}Response::from);
   }
 }

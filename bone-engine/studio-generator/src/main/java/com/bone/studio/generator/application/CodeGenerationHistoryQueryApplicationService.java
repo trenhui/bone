@@ -17,6 +17,6 @@ public class CodeGenerationHistoryQueryApplicationService {
 
   @Transactional(readOnly = true)
   public List<CodeGenerationHistory> handle(CodeGenerationHistoryQuery qry) {
-    return historyRepository.findAll();
+    return historyRepository.findRecent();
   }
 }
