@@ -63,7 +63,15 @@ public class AccountApplicationService {
   @Transactional
   public Long create(CreateAccountCommand cmd) {
     passwordPolicyValidator.assertAcceptable(cmd.getPassword());
-    long tenantId = cmd.getTenantId() != null ? cmd.getTenantId() : 0L;
+    // 写侧租户归属：租户上下文 > 0 时强制本租户（命令传其他 tenantId 视为越权企图，直接忽略，详设 §2.9）；
+    // 平台租户（0）/无上下文（平台管理员代操作）才接受命令传入值，均缺省落平台租户 0。
+    long tenantId;
+    Long fromContext = tenantProvider.currentTenantIdOrNull();
+    if (fromContext != null && fromContext != 0L) {
+      tenantId = fromContext;
+    } else {
+      tenantId = cmd.getTenantId() != null ? cmd.getTenantId() : 0L;
+    }
     tenantQuotaEnforcer.assertCanAddAccount(tenantId);
     Username username = Username.of(cmd.getUsername());
     Email email = Email.of(cmd.getEmail());

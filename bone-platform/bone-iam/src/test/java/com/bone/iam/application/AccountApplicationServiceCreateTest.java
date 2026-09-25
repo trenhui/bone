@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -14,12 +15,14 @@ import com.bone.iam.application.command.CreateAccountCommand;
 import com.bone.iam.application.support.AccountRoleBindingSupport;
 import com.bone.iam.application.support.PasswordPolicyValidator;
 import com.bone.iam.application.support.TenantQuotaEnforcer;
+import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
 import com.bone.iam.domain.repository.AccountRepository;
 import java.lang.reflect.Field;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -46,8 +49,15 @@ class AccountApplicationServiceCreateTest {
   @Mock AccountRoleBindingSupport accountRoleBindingSupport;
   @Mock PasswordPolicyValidator passwordPolicyValidator;
   @Mock TenantQuotaEnforcer tenantQuotaEnforcer;
+  @Mock TenantProvider tenantProvider;
 
   @InjectMocks AccountApplicationService accountApplicationService;
+
+  @BeforeEach
+  void setUp() {
+    // 缺省平台/无租户上下文（null）→ create 走命令传值的既有路径；个别用例再覆盖为具体租户。
+    lenient().when(tenantProvider.currentTenantIdOrNull()).thenReturn(null);
+  }
 
   @Test
   void createAccountSuccessfully() {

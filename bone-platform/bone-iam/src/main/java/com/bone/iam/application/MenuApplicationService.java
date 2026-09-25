@@ -14,7 +14,9 @@ import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.menu.Menu;
 import com.bone.iam.domain.repository.MenuRepository;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +103,9 @@ public class MenuApplicationService {
             .filter(m -> effectiveTenant == null || effectiveTenant.equals(m.getTenantId()))
             .toList();
 
-    List<MenuTreeDTO> dtoList = scoped.stream().map(MenuApplicationService::toTreeDto).toList();
+    List<MenuTreeDTO> dtoList =
+        new ArrayList<>(scoped.stream().map(MenuApplicationService::toTreeDto).toList());
+    retainMenuKeywordMatches(dtoList, qry.getKeyword());
 
     Map<Long, List<MenuTreeDTO>> childrenMap =
         dtoList.stream()
@@ -118,6 +122,58 @@ public class MenuApplicationService {
                     a.getOrderNo() == null ? 0 : a.getOrderNo(),
                     b.getOrderNo() == null ? 0 : b.getOrderNo()))
         .toList();
+  }
+
+  /** keyword 过滤（名称 / 路由路径 / 权限码包含命中）：保留命中节点、其祖先链与其子树，保持树结构完整；keyword 为空时原样保留全部节点，无命中时返回空树。 */
+  private static void retainMenuKeywordMatches(List<MenuTreeDTO> dtoList, String keyword) {
+    if (keyword == null || keyword.isBlank()) {
+      return;
+    }
+    String kw = keyword.trim();
+    Set<Long> matched =
+        dtoList.stream()
+            .filter(
+                m ->
+                    contains(m.getName(), kw)
+                        || contains(m.getPath(), kw)
+                        || contains(m.getPermission(), kw))
+            .map(MenuTreeDTO::getId)
+            .collect(Collectors.toSet());
+    if (matched.isEmpty()) {
+      dtoList.clear();
+      return;
+    }
+    Map<Long, Long> parentOf =
+        dtoList.stream()
+            .filter(d -> d.getParentId() != null)
+            .collect(Collectors.toMap(MenuTreeDTO::getId, MenuTreeDTO::getParentId));
+    Map<Long, List<Long>> childrenOf =
+        dtoList.stream()
+            .filter(d -> d.getParentId() != null)
+            .collect(
+                Collectors.groupingBy(
+                    MenuTreeDTO::getParentId,
+                    Collectors.mapping(MenuTreeDTO::getId, Collectors.toList())));
+    Set<Long> keep = new HashSet<>();
+    for (Long id : matched) {
+      keep.add(id);
+      Long parent = parentOf.get(id);
+      while (parent != null && keep.add(parent)) {
+        parent = parentOf.get(parent);
+      }
+      Deque<Long> stack = new ArrayDeque<>(childrenOf.getOrDefault(id, List.of()));
+      while (!stack.isEmpty()) {
+        Long child = stack.pop();
+        if (keep.add(child)) {
+          stack.addAll(childrenOf.getOrDefault(child, List.of()));
+        }
+      }
+    }
+    dtoList.removeIf(d -> !keep.contains(d.getId()));
+  }
+
+  private static boolean contains(String value, String keyword) {
+    return value != null && value.contains(keyword);
   }
 
   @Transactional(readOnly = true)
@@ -158,11 +214,18 @@ public class MenuApplicationService {
         .toList();
   }
 
+  /**
+   * 写侧租户归属解析：租户上下文 &gt; 0 时<b>强制</b>用上下文租户（租户管理员在命令里传其他 tenantId 视为越权企图，直接忽略，详设
+   * §2.7/§2.9）；平台租户（0）/无上下文（平台管理员代操作）才接受命令传入值， 均缺省落平台租户 0。
+   */
   private Long resolveTenantId(Long fromQuery) {
+    Long fromContext = tenantProvider.currentTenantIdOrNull();
+    if (fromContext != null && fromContext != 0L) {
+      return fromContext;
+    }
     if (fromQuery != null) {
       return fromQuery;
     }
-    Long fromContext = tenantProvider.currentTenantIdOrNull();
     return fromContext != null ? fromContext : 0L;
   }
 
