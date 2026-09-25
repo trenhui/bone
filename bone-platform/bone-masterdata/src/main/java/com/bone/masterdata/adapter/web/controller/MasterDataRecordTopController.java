@@ -13,6 +13,7 @@ import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,14 +48,14 @@ public class MasterDataRecordTopController {
 
   @PostMapping("/entity/{masterDataEntityId}")
   public ApiResponse<Long> create(
-      @PathVariable Long masterDataEntityId, @RequestBody CreateMasterDataRecordReq req) {
+      @PathVariable Long masterDataEntityId, @Valid @RequestBody CreateMasterDataRecordReq req) {
     req.setMasterDataEntityId(masterDataEntityId);
     return ApiResponse.success(recordService.create(converter.toCommand(req)));
   }
 
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
-      @PathVariable Long id, @RequestBody UpdateMasterDataRecordReq req) {
+      @PathVariable Long id, @Valid @RequestBody UpdateMasterDataRecordReq req) {
     recordService.update(converter.toCommand(id, req));
     return ApiResponse.success();
   }

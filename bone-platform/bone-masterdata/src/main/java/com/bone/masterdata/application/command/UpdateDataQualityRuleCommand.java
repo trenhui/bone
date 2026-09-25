@@ -1,5 +1,6 @@
 package com.bone.masterdata.application.command;
 
+import com.bone.masterdata.domain.model.quality.valueobject.RuleSeverity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,6 @@ public class UpdateDataQualityRuleCommand {
   private String name;
   private String type;
   private String expression;
-  private String severity;
+  private RuleSeverity severity;
   private String description;
 }

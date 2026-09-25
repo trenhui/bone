@@ -39,6 +39,6 @@
 
 ## 已知待办
 
-- 数据质量「规则表达式求值器」未交付，`PerformDataQualityCheck` 显式返回 501，不产出近似/随机结论。
+- 数据质量求值器已交付：`RuleExpressionEvaluator` 支持 `NOT_NULL` / `UNIQUE` / `FORMAT` / `RANGE` / `REFERENCE`（表达式语法 `k=v;k=v`，如 `field=code;pattern=^\d{6}$`）；其余类型（如 `CUSTOM` 脚本）**不做猜测式求值**，在检查报告的 `unsupportedRules` 中显式声明未求值，绝不冒充为「通过」。空值除 `NOT_NULL` 外一律跳过。
 - `MetaEntityCatalogPortAdapter` 仍用 JDBC 直读他上下文的 `meta_entity`（违背 E-1.1），**拆除条件**：接入元数据服务客户端或联邦视图后改为走 API。
 - 鉴权已与 bone-system 对齐：引入 `bone-security` + `JwtAuthenticationFilter`，业务端点 `authenticated`（无状态），仅 OPTIONS / actuator / swagger 放行。

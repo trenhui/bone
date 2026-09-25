@@ -54,6 +54,11 @@ public class QualityCheck extends TenantAggregateRoot<Long> {
     check.startedAt = LocalDateTime.now();
     check.status = "RUNNING";
     check.createdAt = LocalDateTime.now();
+    // mdm_qcheck_task 的计数列为 NOT NULL，且 SDK 走显式全列 INSERT（NULL 会覆盖 DEFAULT 0），
+    // 因此"先落 RUNNING 再回填结果"的写法必须在创建时就把计数初始化为 0，否则插入即失败。
+    check.totalRecords = 0;
+    check.passedRecords = 0;
+    check.failedRecords = 0;
     return check;
   }
 

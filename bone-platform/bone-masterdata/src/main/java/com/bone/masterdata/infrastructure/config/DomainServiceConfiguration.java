@@ -1,6 +1,7 @@
 package com.bone.masterdata.infrastructure.config;
 
 import com.bone.masterdata.domain.service.quality.DataQualityService;
+import com.bone.masterdata.domain.service.quality.RuleExpressionEvaluator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,5 +12,10 @@ public class DomainServiceConfiguration {
   @Bean
   public DataQualityService dataQualityService() {
     return new DataQualityService();
+  }
+
+  @Bean
+  public RuleExpressionEvaluator ruleExpressionEvaluator() {
+    return new RuleExpressionEvaluator();
   }
 }

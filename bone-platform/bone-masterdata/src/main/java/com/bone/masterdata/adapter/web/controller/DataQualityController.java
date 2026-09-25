@@ -68,6 +68,11 @@ public class DataQualityController {
     return ApiResponse.success(qualityService.listChecks(masterDataEntityId));
   }
 
+  @GetMapping("/checks/{id}")
+  public ApiResponse<QualityCheckDTO> getCheck(@PathVariable Long id) {
+    return ApiResponse.success(qualityService.checkDetail(id));
+  }
+
   @GetMapping("/reports")
   public ApiResponse<List<QualityReportDTO>> listReports(
       @RequestParam(value = "qualityCheckId", required = false) Long qualityCheckId) {

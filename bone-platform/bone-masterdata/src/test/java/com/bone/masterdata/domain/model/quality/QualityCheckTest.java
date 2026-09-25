@@ -19,6 +19,17 @@ class QualityCheckTest {
     assertNotNull(check.getStartedAt());
   }
 
+  // 计数列在 DB 上是 NOT NULL，而 SDK 走显式全列 INSERT（NULL 会盖掉 DEFAULT 0）。
+  // 创建时未初始化 → "先落 RUNNING 再回填"的写法插入即 500，故此处钉死初始值为 0。
+  @Test
+  void testCreateInitializesCountersForNotNullInsert() {
+    QualityCheck check = QualityCheck.create(1L, 100L);
+
+    assertEquals(0, check.getTotalRecords());
+    assertEquals(0, check.getPassedRecords());
+    assertEquals(0, check.getFailedRecords());
+  }
+
   @Test
   void testCompleteAggregatesCountsAndPublishesEvent() {
     QualityCheck check = QualityCheck.create(1L, 100L);

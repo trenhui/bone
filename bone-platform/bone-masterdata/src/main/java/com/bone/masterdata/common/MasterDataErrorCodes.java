@@ -24,6 +24,13 @@ public final class MasterDataErrorCodes {
   public static final String DATA_STANDARD_DUPLICATE = "MD_DATA_STANDARD_DUPLICATE";
   public static final String RULE_NAME_DUPLICATE = "MD_RULE_NAME_DUPLICATE";
 
+  // 数据质量规则（400）
+  public static final String RULE_SEVERITY_INVALID = "MD_RULE_SEVERITY_INVALID";
+  public static final String RULE_EXPRESSION_INVALID = "MD_RULE_EXPRESSION_INVALID";
+
+  // 记录数据解析（500）
+  public static final String RECORD_DATA_PARSE_FAILED = "MD_RECORD_DATA_PARSE_FAILED";
+
   // 数据标准（404）
   public static final String DATA_STANDARD_NOT_FOUND = "MD_DATA_STANDARD_NOT_FOUND";
 
