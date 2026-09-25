@@ -43,7 +43,10 @@ public class Dept extends TenantAggregateRoot<Long> {
     this.name = name;
     this.parentId = parentId;
     this.orderNo = orderNo;
-    this.status = status;
+    // HTTP 契约（UpdateDeptReq）不含 status：未提供时保留现有值，避免全列 UPDATE 把非空列写成 NULL
+    if (status != null) {
+      this.status = status;
+    }
     this.updatedAt = LocalDateTime.now();
   }
 }

@@ -127,6 +127,7 @@ public class RoleApplicationService {
               RoleDetailDTO dto = new RoleDetailDTO();
               dto.setId(role.getId());
               dto.setName(role.getName());
+              dto.setCode(role.getCode());
               dto.setDescription(role.getDescription());
               dto.setTenantId(role.getTenantId());
               dto.setCreatedAt(role.getCreatedAt());
@@ -184,6 +185,7 @@ public class RoleApplicationService {
     RoleDTO dto = new RoleDTO();
     dto.setId(role.getId());
     dto.setName(role.getName());
+    dto.setCode(role.getCode());
     dto.setDescription(role.getDescription());
     dto.setTenantId(role.getTenantId());
     dto.setCreatedAt(role.getCreatedAt());

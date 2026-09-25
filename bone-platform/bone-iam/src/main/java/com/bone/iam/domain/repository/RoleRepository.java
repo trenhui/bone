@@ -30,7 +30,14 @@ public interface RoleRepository extends Repository<Role, Long> {
   default PageResult<Role> findRolePage(String keyword, Long tenantId, int pageNo, int pageSize) {
     FluentQuery<Role> query = QueryBuilder.from(Role.class);
     if (keyword != null && !keyword.isEmpty()) {
-      query.where(Role::getName).like(keyword).or(Role::getDescription).like(keyword);
+      // contains = %kw%：like() 不加通配符（等值语义），裸用会导致搜索恒空
+      query
+          .where(Role::getName)
+          .contains(keyword)
+          .or(Role::getCode)
+          .contains(keyword)
+          .or(Role::getDescription)
+          .contains(keyword);
     }
     if (tenantId != null) {
       query.where(Role::getTenantId).eq(tenantId);
