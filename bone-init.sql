@@ -265,12 +265,12 @@ VALUES (2, 1001, 'tenant_admin', '$2a$10$nZLjv4A8i.Q64tYZxrXVTuPQJ.g337OkdOx8rAK
 INSERT INTO iam_account_role (id, tenant_id, account_id, role_id)
 VALUES (1, 0, 1, 1), (2, 1001, 2, 3);
 
--- 租户管理员角色绑定租户域权限（账号/角色/组织/菜单/审计；不含平台域：permissions/tenants/sessions）
+-- 租户管理员角色绑定租户域权限（应用/账号/角色/组织/菜单/审计；不含平台域：permissions/tenants/sessions）
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
     (26, 3, 1), (27, 3, 2), (28, 3, 3), (29, 3, 4),
     (30, 3, 22), (31, 3, 23), (32, 3, 24), (33, 3, 25),
-    (34, 3, 12), (35, 3, 13);
+    (34, 3, 12), (35, 3, 13), (38, 3, 26), (39, 3, 27);
 
 INSERT INTO iam_permission (id, code, name, resource_type, resource_path, action, type, sort_order, description)
 VALUES
@@ -298,7 +298,9 @@ VALUES
     (22, 'iam:depts:read', 'IAM-组织查看', 'iam', 'depts', 'read', 'OPERATION', 210, '组织机构树查看（DeptController @PreAuthorize）'),
     (23, 'iam:depts:write', 'IAM-组织维护', 'iam', 'depts', 'write', 'OPERATION', 220, '组织机构新建/编辑/删除'),
     (24, 'iam:menus:read', 'IAM-菜单查看', 'iam', 'menus', 'read', 'OPERATION', 230, '菜单树/当前用户菜单查看'),
-    (25, 'iam:menus:write', 'IAM-菜单维护', 'iam', 'menus', 'write', 'OPERATION', 240, '菜单新建/编辑/删除');
+    (25, 'iam:menus:write', 'IAM-菜单维护', 'iam', 'menus', 'write', 'OPERATION', 240, '菜单新建/编辑/删除'),
+    (26, 'iam:apps:read', 'IAM-应用查看', 'iam', 'apps', 'read', 'OPERATION', 250, '应用列表/详情/成员查看（AppController @PreAuthorize）'),
+    (27, 'iam:apps:write', 'IAM-应用维护', 'iam', 'apps', 'write', 'OPERATION', 260, '应用新建/编辑/删除/成员授权');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -307,7 +309,7 @@ VALUES
     (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15),
     (16, 1, 16), (17, 1, 17), (18, 1, 18), (19, 1, 19),
     (20, 1, 20), (21, 1, 21), (22, 1, 22), (23, 1, 23),
-    (24, 1, 24), (25, 1, 25);
+    (24, 1, 24), (25, 1, 25), (36, 1, 26), (37, 1, 27);
 
 -- ============================================================
 -- 2. System

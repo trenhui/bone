@@ -145,7 +145,7 @@ export const deleteRole = (id: number) =>
  * 为角色分配权限
  */
 export const assignPermissions = (roleId: number, permissionIds: number[]) =>
-  api.post<never, ApiResponse<void>>(`/roles/${roleId}/permissions`, permissionIds);
+  api.post<never, ApiResponse<void>>(`/roles/${roleId}/permissions`, { permissionIds });
 
 /**
  * 获取角色的权限列表

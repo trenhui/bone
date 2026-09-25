@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Alert, Button, Card, Col, Form, Input, Modal, Popconfirm, Row,
+  Alert, Button, Card, Col, Row,
   Space, Tag, Typography, message,
 } from 'antd';
-import {
-  PlusOutlined, DeleteOutlined,
-} from '@ant-design/icons';
 import { appApi, type BoneApplication } from '../services/appModuleApi';
 
 const { Title, Text, Paragraph } = Typography;
@@ -14,12 +11,18 @@ const { Title, Text, Paragraph } = Typography;
 const PERM_COLORS: Record<string, string> = { admin: 'red', developer: 'blue', viewer: 'green' };
 const PERM_LABELS: Record<string, string> = { admin: '管理员', developer: '开发者', viewer: '只读' };
 
-const ApplicationManagement: React.FC = () => {
+/**
+ * 建模工作台（消费侧入口）。
+ *
+ * 领域边界：应用(App)聚合的管理（新建/编辑/删除/成员授权）归 IAM —— 见
+ * bone-iam-app `ApplicationManagement` 页面（shell 菜单「IAM 管理 → 应用管理」）。
+ * 本页面是元数据建模的消费侧入口：只读列出当前用户可建模的应用，点击进入
+ * 「模块 → 实体 → 字段」建模链路。
+ */
+const ModelingWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const [apps, setApps] = useState<BoneApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
 
   const loadApps = async () => {
     setLoading(true);
@@ -37,53 +40,17 @@ const ApplicationManagement: React.FC = () => {
 
   useEffect(() => { loadApps(); }, []);
 
-  const handleCreate = async () => {
-    const values = await form.validateFields();
-    try {
-      const res = await appApi.create(values);
-      if (res.code === 200) {
-        message.success('应用创建成功');
-        setModalOpen(false);
-        form.resetFields();
-        loadApps();
-      } else {
-        message.error(res.message || '创建失败');
-      }
-    } catch {
-      message.error('创建失败');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await appApi.delete(id);
-      if (res.code === 200) {
-        message.success('已删除');
-        setApps((prev) => prev.filter((a) => a.id !== id));
-      } else {
-        message.error(res.message || '删除失败');
-      }
-    } catch {
-      message.error('删除失败');
-    }
-  };
-
   return (
     <div className="page">
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
-          <Title level={4} style={{ margin: 0 }}>应用管理</Title>
-          <Text type="secondary">选择有权限的应用进入领域建模</Text>
-        </Col>
-        <Col>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-            新建应用
-          </Button>
+          <Title level={4} style={{ margin: 0 }}>建模工作台</Title>
+          <Text type="secondary">选择要建模的应用进入「模块 → 实体 → 字段」；应用的创建与维护请前往 IAM 管理 → 应用管理</Text>
         </Col>
       </Row>
 
       {apps.length === 0 && !loading ? (
-        <Alert type="info" message="暂无应用，请先创建" />
+        <Alert type="info" message="暂无可建模应用，请先在「IAM 管理 → 应用管理」创建" />
       ) : (
         <Row gutter={[16, 16]}>
           {apps.map((app) => (
@@ -97,11 +64,6 @@ const ApplicationManagement: React.FC = () => {
                   }}>
                     进入建模
                   </Button>,
-                  ...(app.myRole === 'admin'
-                    ? [<Popconfirm title="确认删除？" onConfirm={() => handleDelete(app.id)}>
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-                      </Popconfirm>]
-                    : []),
                 ]}
               >
                 <Card.Meta
@@ -133,22 +95,8 @@ const ApplicationManagement: React.FC = () => {
           ))}
         </Row>
       )}
-
-      <Modal title="新建应用" open={modalOpen} onOk={handleCreate} onCancel={() => { setModalOpen(false); form.resetFields(); }} destroyOnHidden>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="应用名称" rules={[{ required: true }]}>
-            <Input placeholder="如：订单管理系统" />
-          </Form.Item>
-          <Form.Item name="code" label="应用编码" rules={[{ required: true }]} tooltip="全局唯一标识">
-            <Input placeholder="如：OMS" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 };
 
-export default ApplicationManagement;
+export default ModelingWorkspace;

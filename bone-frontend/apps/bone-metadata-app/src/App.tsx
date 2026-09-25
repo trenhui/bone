@@ -1,6 +1,6 @@
 import { App as AntdApp } from 'antd';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import ApplicationManagement from './pages/ApplicationManagement';
+import ModelingWorkspace from './pages/ModelingWorkspace';
 import ModuleManagement from './pages/ModuleManagement';
 import EntityManagement from './pages/EntityManagement';
 import EntityDetail from './pages/EntityDetail';
@@ -14,8 +14,8 @@ function App(): JSX.Element {
     <AntdApp>
       <Router>
         <Routes>
-          {/* 应用 → 模块 → 领域建模（企业级架构） */}
-          <Route path="/apps" element={<ApplicationManagement />} />
+          {/* 应用 → 模块 → 领域建模（企业级架构）；应用 CRUD 管理在 bone-iam-app，此处仅消费侧入口 */}
+          <Route path="/apps" element={<ModelingWorkspace />} />
           <Route path="/apps/:appId/modules" element={<ModuleManagement />} />
           <Route path="/apps/:appId/modules/:moduleId/entities" element={<EntityManagement />} />
           <Route path="/apps/:appId/modules/:moduleId/entities/:id" element={<EntityDetail />} />

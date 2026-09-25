@@ -16,6 +16,8 @@ public final class DefaultPermissionCodes {
         "metadata:write",
         "iam:accounts:read",
         "iam:accounts:write",
+        "iam:apps:read",
+        "iam:apps:write",
         "iam:roles:read",
         "iam:roles:write",
         "iam:permissions:read",

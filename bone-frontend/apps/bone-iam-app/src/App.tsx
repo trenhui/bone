@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { App as AntdApp } from 'antd';
 import AccountManagement from './pages/AccountManagement';
+import ApplicationManagement from './pages/ApplicationManagement';
 import RoleManagement from './pages/RoleManagement';
 import PermissionManagement from './pages/PermissionManagement';
 import OrganizationManagement from './pages/OrganizationManagement';
@@ -40,6 +41,8 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Auth />} />
           <Route path="/accounts" element={<ProtectedRoute><AccountManagement /></ProtectedRoute>} />
+          {/* 应用管理：应用属租户域资源（平台/租户管理员均可管理本租户应用），仅登录守卫 */}
+          <Route path="/apps" element={<ProtectedRoute><ApplicationManagement /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
           <Route path="/tenants" element={<PlatformRoute><TenantManagement /></PlatformRoute>} />
           <Route path="/permissions" element={<PlatformRoute><PermissionManagement /></PlatformRoute>} />

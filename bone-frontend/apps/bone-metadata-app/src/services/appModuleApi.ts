@@ -3,12 +3,14 @@ import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse, PageResult } from '../types';
 
 /**
- * 应用与模块管理 API。
+ * 应用与模块管理 API（元数据建模消费侧）。
  *
  * 领域边界：应用(App)与模块(Module)聚合根归属 IAM 上下文，后端由 IAM 独占提供
  * （`/api/v1/apps`、`/api/v1/apps/{id}/modules`，经网关路由到 bone-iam）。
- * metadata 模块只负责实体(Entity)/字段(Field)/关系(Relation)建模，消费 IAM 的
- * App/Module 作为归属维度。本文件调用的均为 IAM 真后端，不存在"未实现/演示数据兜底"。
+ * 应用的管理界面（新建/编辑/删除）在 bone-iam-app「应用管理」页（IAM 真源
+ * `AppController`，写操作需 `iam:apps:write`）；本文件仅供元数据建模链路
+ * （建模工作台 → 模块 → 实体）消费 App/Module 作为归属维度，不存在
+ * "未实现/演示数据兜底"。
  */
 
 export interface BoneApplication {

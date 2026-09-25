@@ -29,6 +29,12 @@ import {
   type Theme,
 } from '@bone/ui';
 import { globalEventBus } from '@bone/core-event-bus';
+import {
+  currentLocale,
+  i18n,
+  LOCALE_STORAGE_KEY,
+  type SupportedLanguage,
+} from '@bone/shared-utils';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
@@ -196,10 +202,14 @@ function NotificationPanel({
 }
 
 function App(): JSX.Element {
+  // locale 是**单源**：唯一 state 在 Shell，经 core-event-bus 广播给各微应用；
+  // 微应用只读并被动继承，禁止自决语言（i18n 方案 §4.3）。
+  const [locale, setLocale] = useState<SupportedLanguage>(() => currentLocale());
+
   return (
-    <BoneAppProvider themeMode="system">
+    <BoneAppProvider themeMode="system" locale={locale}>
       <AntdApp>
-        <AppContent />
+        <AppContent locale={locale} onLocaleChange={setLocale} />
       </AntdApp>
     </BoneAppProvider>
   );
@@ -231,7 +241,13 @@ function buildMenuFromNodes(nodes: MenuNode[]): ShellMenuItem[] {
   }));
 }
 
-function AppContent(): JSX.Element {
+function AppContent({
+  locale,
+  onLocaleChange,
+}: {
+  locale: SupportedLanguage;
+  onLocaleChange: (next: SupportedLanguage) => void;
+}): JSX.Element {
   const { message: messageApi } = AntdApp.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(() => {
@@ -264,6 +280,7 @@ function AppContent(): JSX.Element {
         { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
         { key: 'iam-organizations', label: '组织机构', icon: <ApartmentOutlined />, path: '/iam', hash: '/organizations', enabled: true },
         { key: 'iam-menus', label: '菜单管理', icon: <MenuOutlined />, path: '/iam', hash: '/menus', enabled: true },
+        { key: 'iam-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/iam', hash: '/apps', enabled: true },
       ],
     },
     {
@@ -272,7 +289,7 @@ function AppContent(): JSX.Element {
       icon: <DatabaseOutlined />,
       enabled: true,
       children: [
-        { key: 'metadata-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
+        { key: 'metadata-apps', label: '建模工作台', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
         { key: 'metadata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
         { key: 'metadata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/metadata', hash: '/fields', enabled: true },
         { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
@@ -394,12 +411,33 @@ function AppContent(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  /**
+   * 语言切换：**不刷新页面**的热更新。
+   *
+   * 顺序固定：① 改 Shell 自身 state（AntD locale + 壳层文案重渲染）
+   * → ② 写 localStorage（**唯一写入方**；i18next 的 LanguageDetector 是 `caches: []` 只读）
+   * → ③ 切本应用 i18next 实例 → ④ 经事件总线广播，各微应用自行 changeLanguage。
+   */
+  const handleLocaleChange = (next: SupportedLanguage) => {
+    onLocaleChange(next);
+    localStorage.setItem(LOCALE_STORAGE_KEY, next);
+    void i18n.changeLanguage(next);
+    globalEventBus.emit('bone:theme:change', { theme, locale: next });
+    // 同步 window 上的全局上下文，供未订阅事件、直接读 window 的代码保持一致
+    const ctx = (window as unknown as { __BONE_GLOBAL_CONTEXT__?: Record<string, unknown> })
+      .__BONE_GLOBAL_CONTEXT__;
+    (window as unknown as Record<string, unknown>).__BONE_GLOBAL_CONTEXT__ = {
+      ...(ctx ?? {}),
+      locale: next,
+    };
+  };
+
   useEffect(() => {
     // 将全局事件总线挂到 window，供各微应用共享同一实例后订阅
     (window as unknown as Record<string, unknown>).__BONE_EVENT_BUS__ = globalEventBus;
-    // 通过 core/event-bus 跨应用广播主题/语言变更（接入示例）
-    globalEventBus.emit('bone:theme:change', { theme, locale: 'zh-CN' });
-  }, [theme, user]);
+    // 通过 core/event-bus 跨应用广播主题/语言变更
+    globalEventBus.emit('bone:theme:change', { theme, locale });
+  }, [theme, user, locale]);
 
   // 初始化 qiankun 微应用（登录后执行，仅注册一次）
   useEffect(() => {
@@ -421,7 +459,7 @@ function AppContent(): JSX.Element {
       } : null,
       permissions: readScopes() ? { codes: readScopes(), roles: [] } : null,
       theme: resolveThemeMode(theme) === 'dark' ? 'dark' : 'light',
-      locale: 'zh-CN' as const,
+      locale,
     };
 
     // 同时写入 window，供未通过 props 接收的微应用读取
@@ -664,6 +702,8 @@ function AppContent(): JSX.Element {
                     toggleTheme={toggleTheme}
                     toggleLayoutMode={toggleLayoutMode}
                     currentPageTitle={currentPageTitle}
+                    locale={locale}
+                    onLocaleChange={handleLocaleChange}
                   />
                 )}
               </Router>
@@ -689,6 +729,8 @@ interface MainLayoutProps {
   toggleTheme: () => void;
   toggleLayoutMode: () => void;
   currentPageTitle: string;
+  locale: SupportedLanguage;
+  onLocaleChange: (next: SupportedLanguage) => void;
 }
 
 function MainLayout(props: MainLayoutProps): JSX.Element {
@@ -696,7 +738,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     collapsed, setCollapsed, resolvedTheme, layoutMode,
     menuConfig, filterEnabled, handleMenuClick,
     handleLogout, user, theme, toggleTheme,
-    currentPageTitle,
+    currentPageTitle, locale, onLocaleChange,
   } = props;
   const navigate = useNavigate();
   const location = useLocation();
@@ -888,6 +930,16 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 className="header-button"
               />
             </Tooltip>
+            {/* 语言切换：中/英一键切换，热更新不刷新页面（i18n 方案 §5.5.3） */}
+            <Tooltip title={locale === 'en-US' ? 'Switch to Chinese' : '切换为英文'}>
+              <Button
+                type="text"
+                className="header-button"
+                onClick={() => onLocaleChange(locale === 'en-US' ? 'zh-CN' : 'en-US')}
+              >
+                {locale === 'en-US' ? 'EN' : '中'}
+              </Button>
+            </Tooltip>
             <MenuConfig />
             <Dropdown menu={{ items: userMenu(handleLogout, () => navigate('/profile')) }} placement="bottomRight">
               <Button type="text" className="user-button">
@@ -922,34 +974,37 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 </Authorized>
               }
             />
-            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器（前端登录态守卫，后端 @PreAuthorize 兜底） */}
+            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器。
+                ⚠ 不做 SYS_CONSOLE_READ 门禁——租户管理员只有 iam:* 作用域，包一层控制台权限码
+                会把整个微前端挡成 403（容器不渲染 → qiankun 报 container not existed）。
+                登录态由 App 级 user 判空保证；真实授权 = 后端 @PreAuthorize + 子应用内路由守卫。 */}
             <Route
               path="/iam/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/metadata/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/masterdata/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/integration/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/system/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/extension/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/generator/*"
-              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
