@@ -1,5 +1,4 @@
 import { createApiClient, setQiankunToken } from '@bone/shared-services';
-import type { AxiosResponse } from 'axios';
 
 export { setQiankunToken };
 
@@ -112,8 +111,14 @@ client.interceptors.response.use(
   },
 );
 
-function assertSuccess<T>(response: AxiosResponse<StudioApiResponse<T>>): T {
-  const body = response.data;
+/**
+ * 断言业务成功并返回 payload。
+ *
+ * <p>注意：{@code createApiClient} 的响应拦截器是 {@code (response) => response.data}，
+ * 因此这里收到的 res 已经是 ApiResponse 本体（{success,code,message,data}），
+ * 不能再取一次 .data——否则等于双重解包，永远拿到 undefined（列表页表现为空表格）。
+ */
+function assertSuccess<T>(body: StudioApiResponse<T> | undefined): T {
   if (body && body.success === false) {
     throw toStudioError(body.message || '请求失败', body as StudioApiResponse<unknown>);
   }
@@ -368,15 +373,15 @@ export type StudioOperation = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * 从部署响应中提取 LRO 的 operationId。
+ *
+ * <p>拦截器已丢弃 HTTP 响应头，Location 分支不可达；统一从 payload 中取 operationId。
+ */
 function operationIdFromDeployResponse(
-  response: AxiosResponse<StudioApiResponse<{ operationId?: string } | ExtensionRow>>,
+  body: StudioApiResponse<{ operationId?: string } | ExtensionRow> | undefined,
 ): string | undefined {
-  const location = response.headers?.location as string | undefined;
-  if (location) {
-    const trimmed = location.replace(/\/$/, '');
-    return trimmed.substring(trimmed.lastIndexOf('/') + 1);
-  }
-  const data = response.data?.data;
+  const data = body?.data;
   if (data && typeof data === 'object' && 'operationId' in data) {
     return (data as { operationId?: string }).operationId;
   }
@@ -445,11 +450,9 @@ export async function deployPlugin(
     {},
     { params, validateStatus: (status) => status === 200 || status === 202 },
   );
-  if (res.status === 202 && deploy) {
-    const operationId = operationIdFromDeployResponse(res);
-    if (!operationId) {
-      throw new StudioApiError('部署已接受但缺少 operationId');
-    }
+  // 拦截器丢弃了 HTTP status，不能用 res.status === 202 判定异步；改以是否返回 operationId 为准。
+  const operationId = deploy ? operationIdFromDeployResponse(res) : undefined;
+  if (deploy && operationId) {
     opts?.onProgress?.(0, { operationId, done: false, progress: 0 });
     await pollOperationUntilDone(operationId, {
       intervalMs: opts?.pollIntervalMs,

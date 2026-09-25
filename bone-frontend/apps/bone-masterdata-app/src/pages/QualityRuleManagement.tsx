@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Card,
   Button,
   Modal,
@@ -21,9 +22,15 @@ import type {
   MasterDataEntity,
   CreateDataQualityRuleReq,
   QualityCheck,
-  QualityReport
+  QualityReport,
+  QualityReportData
 } from '../types';
-import { dataQualityRuleApi, masterDataEntityApi, qualityCheckApi } from '../services/api';
+import {
+  dataQualityRuleApi,
+  masterDataEntityApi,
+  qualityCheckApi,
+  qualityReportApi
+} from '../services/api';
 import { useMessage } from '../App';
 
 const { Option } = Select;
@@ -82,11 +89,11 @@ const QualityRuleManagement: React.FC = () => {
 
   const fetchQualityChecks = useCallback(async () => {
     try {
-      const response = await qualityCheckApi.page({
+      const response = await qualityCheckApi.list({
         masterDataEntityId: selectedEntityId ?? undefined,
       });
       if (response.code === 200) {
-        setQualityChecks(response.data.list);
+        setQualityChecks(response.data ?? []);
       } else {
         message.error(response.message);
       }
@@ -154,41 +161,34 @@ const QualityRuleManagement: React.FC = () => {
     }
   };
 
-  // 执行质量检查
+  // 执行质量检查（后端同步执行并落报告，无需轮询）
   const handleExecuteCheck = async () => {
     if (!selectedEntityId) {
       message.warning('请先选择一个实体');
       return;
     }
     setCheckLoading(true);
-    setIsCheckModalOpen(true);
     try {
       const response = await dataQualityRuleApi.executeCheck(selectedEntityId);
-      if (response.code === 200) {
-        setCurrentCheck(response.data);
-        // 轮询检查结果
-        const checkInterval = setInterval(async () => {
-          const checkResponse = await qualityCheckApi.detail(response.data.id);
-          if (checkResponse.code === 200) {
-            setCurrentCheck(checkResponse.data);
-            if (checkResponse.data.status === 'COMPLETED' || checkResponse.data.status === 'FAILED') {
-              clearInterval(checkInterval);
-              if (checkResponse.data.status === 'COMPLETED') {
-                const reportResponse = await dataQualityRuleApi.getCheckResult(checkResponse.data.id);
-                if (reportResponse.code === 200) {
-                  setCurrentReport(reportResponse.data);
-                }
-              }
-            }
-          }
-        }, 2000);
-      } else {
+      if (response.code !== 200) {
         message.error(response.message);
-        setIsCheckModalOpen(false);
+        return;
       }
-    } catch (error) {
+      const checkId = response.data;
+      const checkResponse = await qualityCheckApi.detail(checkId);
+      if (checkResponse.code === 200) {
+        setCurrentCheck(checkResponse.data);
+        const reportResponse = await qualityReportApi.listByCheckId(checkId);
+        if (reportResponse.code === 200) {
+          setCurrentReport(reportResponse.data?.[0] ?? null);
+        }
+        setIsCheckModalOpen(true);
+        void fetchQualityChecks();
+      } else {
+        message.error(checkResponse.message);
+      }
+    } catch {
       message.error('执行质量检查失败');
-      setIsCheckModalOpen(false);
     } finally {
       setCheckLoading(false);
     }
@@ -216,35 +216,63 @@ const QualityRuleManagement: React.FC = () => {
     }
   };
 
-  // 规则类型选项
+  /**
+   * 规则类型与表达式示例。
+   *
+   * 取值与后端 RuleExpressionEvaluator 一致：前 5 类会真实求值，CUSTOM 允许录入但在报告中标注「未求值」。
+   */
   const ruleTypes = [
-    { value: 'UNIQUE', label: '唯一性' },
-    { value: 'FORMAT', label: '格式' },
-    { value: 'RANGE', label: '范围' },
-    { value: 'REFERENCE', label: '引用' },
-    { value: 'CUSTOM', label: '自定义' }
+    { value: 'NOT_NULL', label: '非空', hint: 'field=code' },
+    { value: 'UNIQUE', label: '唯一性', hint: 'field=code' },
+    { value: 'FORMAT', label: '格式', hint: 'field=zip;pattern=^\\d{6}$' },
+    { value: 'RANGE', label: '范围', hint: 'field=amount;min=0;max=1000000' },
+    { value: 'REFERENCE', label: '引用', hint: 'field=dept;entity=200;targetField=code' },
+    { value: 'CUSTOM', label: '自定义（暂不求值）', hint: '暂不支持求值，检查时会在报告中标注' }
   ];
 
-  // 严重程度选项
+  // 严重程度选项：对齐后端 RuleSeverity 枚举（LOW/MEDIUM/HIGH/CRITICAL）
   const severityOptions = [
-    { value: 'ERROR', label: '错误', color: 'red' },
-    { value: 'WARNING', label: '警告', color: 'orange' },
-    { value: 'INFO', label: '信息', color: 'blue' }
+    { value: 'LOW', label: '低' },
+    { value: 'MEDIUM', label: '中' },
+    { value: 'HIGH', label: '高' },
+    { value: 'CRITICAL', label: '严重' }
   ];
 
-  // 状态标签
-  const getStatusTag = (status: string) => {
-    switch (status) {
-    case 'ERROR':
-      return <Tag color="red">错误</Tag>;
-    case 'WARNING':
-      return <Tag color="orange">警告</Tag>;
-    case 'INFO':
-      return <Tag color="blue">信息</Tag>;
-    default:
-      return <Tag>{status}</Tag>;
-    }
+  // 严重程度标签
+  const getStatusTag = (severity: string) => {
+    const severityMap: Record<string, { color: string; text: string }> = {
+      LOW: { color: 'default', text: '低' },
+      MEDIUM: { color: 'blue', text: '中' },
+      HIGH: { color: 'orange', text: '高' },
+      CRITICAL: { color: 'red', text: '严重' }
+    };
+    const item = severityMap[severity];
+    return item ? <Tag color={item.color}>{item.text}</Tag> : <Tag>{severity}</Tag>;
   };
+
+  // 表达式示例随所选规则类型变化，避免用户写出后端无法求值的表达式
+  const selectedRuleType = Form.useWatch('type', form);
+  const expressionHint =
+    ruleTypes.find(t => t.value === selectedRuleType)?.hint ?? '形如 field=字段编码;参数=值';
+
+  // 后端 JSON 列可能回传字符串，统一归一化后再渲染
+  const reportSummary = useMemo<QualityReportData | null>(() => {
+    const raw = currentReport?.reportData;
+    if (!raw) return null;
+    try {
+      const data = (
+        typeof raw === 'string' ? JSON.parse(raw) : raw
+      ) as Partial<QualityReportData>;
+      return {
+        entityId: data.entityId ?? 0,
+        totalRecords: data.totalRecords ?? 0,
+        rules: data.rules ?? [],
+        unsupportedRules: data.unsupportedRules ?? []
+      };
+    } catch {
+      return null;
+    }
+  }, [currentReport]);
 
   // 表格列定义
   const columns = [
@@ -260,16 +288,7 @@ const QualityRuleManagement: React.FC = () => {
       title: '规则类型',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => {
-        const typeMap = {
-          UNIQUE: '唯一性',
-          FORMAT: '格式',
-          RANGE: '范围',
-          REFERENCE: '引用',
-          CUSTOM: '自定义'
-        };
-        return typeMap[type as keyof typeof typeMap] || type;
-      }
+      render: (type: string) => ruleTypes.find(t => t.value === type)?.label || type
     },
     {
       title: '表达式',
@@ -368,14 +387,20 @@ const QualityRuleManagement: React.FC = () => {
               },
               {
                 title: '开始时间',
-                dataIndex: 'startTime',
-                key: 'startTime'
+                dataIndex: 'startedAt',
+                key: 'startedAt'
               },
               {
                 title: '结束时间',
-                dataIndex: 'endTime',
-                key: 'endTime',
-                render: (_, record) => record.endTime || '-'
+                dataIndex: 'endedAt',
+                key: 'endedAt',
+                render: (_: unknown, record: QualityCheck) => record.endedAt || '-'
+              },
+              {
+                title: '总记录数',
+                dataIndex: 'totalRecords',
+                key: 'totalRecords',
+                render: (_: unknown, record: QualityCheck) => record.totalRecords ?? 0
               },
               {
                 title: '状态',
@@ -392,9 +417,14 @@ const QualityRuleManagement: React.FC = () => {
                 }
               },
               {
-                title: '问题数量',
-                dataIndex: 'issueCount',
-                key: 'issueCount'
+                title: '未通过记录',
+                dataIndex: 'failedRecords',
+                key: 'failedRecords',
+                render: (_: unknown, record: QualityCheck) => (
+                  <Tag color={(record.failedRecords ?? 0) > 0 ? 'red' : 'green'}>
+                    {record.failedRecords ?? 0}
+                  </Tag>
+                )
               }
             ]}
             dataSource={qualityChecks}
@@ -449,9 +479,10 @@ const QualityRuleManagement: React.FC = () => {
           <Form.Item
             name="expression"
             label="规则表达式"
+            extra={`示例：${expressionHint}`}
             rules={[{ required: true, message: '请输入规则表达式' }]}
           >
-            <Input placeholder="请输入规则表达式" />
+            <Input placeholder={expressionHint} />
           </Form.Item>
           <Form.Item
             name="severity"
@@ -519,30 +550,69 @@ const QualityRuleManagement: React.FC = () => {
                 {currentCheck.status === 'COMPLETED' && <Tag color="green">已完成</Tag>}
                 {currentCheck.status === 'FAILED' && <Tag color="red">失败</Tag>}
               </Descriptions.Item>
-              <Descriptions.Item label="开始时间">{currentCheck.startTime}</Descriptions.Item>
-              <Descriptions.Item label="结束时间">{currentCheck.endTime || '-'}</Descriptions.Item>
-              <Descriptions.Item label="问题数量" span={2}>{currentCheck.issueCount}</Descriptions.Item>
+              <Descriptions.Item label="开始时间">{currentCheck.startedAt}</Descriptions.Item>
+              <Descriptions.Item label="结束时间">{currentCheck.endedAt || '-'}</Descriptions.Item>
+              <Descriptions.Item label="总记录数">{currentCheck.totalRecords ?? 0}</Descriptions.Item>
+              <Descriptions.Item label="未通过记录">{currentCheck.failedRecords ?? 0}</Descriptions.Item>
             </Descriptions>
-            
+
             {currentCheck.status === 'RUNNING' && (
               <div style={{ marginTop: 20 }}>
                 <Progress percent={50} status="active" />
                 <p style={{ textAlign: 'center', marginTop: 10 }}>正在执行质量检查...</p>
               </div>
             )}
-            
+
             {currentCheck.status === 'COMPLETED' && currentReport && (
               <div style={{ marginTop: 20 }}>
                 <Result
-                  status="success"
+                  status={currentReport.issueCount > 0 ? 'warning' : 'success'}
                   title="质量检查完成"
-                  subTitle={`共发现 ${currentReport.issueCount} 个问题`}
-                  extra={[
-                    <Button key="detail" type="primary">
-                      查看详细报告
-                    </Button>
-                  ]}
+                  subTitle={`共发现 ${currentReport.issueCount} 个问题（总记录 ${
+                    currentCheck.totalRecords ?? 0
+                  } 条，未通过 ${currentCheck.failedRecords ?? 0} 条）`}
                 />
+                {reportSummary && (
+                  <ProTable
+                    size="small"
+                    search={false}
+                    options={false}
+                    pagination={false}
+                    headerTitle="规则命中情况"
+                    rowKey="ruleId"
+                    dataSource={reportSummary.rules}
+                    columns={
+                      [
+                        { title: '规则', dataIndex: 'ruleName' },
+                        { title: '类型', dataIndex: 'type' },
+                        {
+                          title: '命中问题数',
+                          dataIndex: 'violations',
+                          render: (v: number) => (
+                            <Tag color={v > 0 ? 'red' : 'green'}>{v}</Tag>
+                          )
+                        },
+                        {
+                          title: '示例问题',
+                          dataIndex: 'samples',
+                          render: (samples: QualityReportData['rules'][number]['samples']) =>
+                            samples.length > 0 ? samples[0].message : '-'
+                        }
+                      ] as ProColumns<QualityReportData['rules'][number]>[]
+                    }
+                  />
+                )}
+                {reportSummary && reportSummary.unsupportedRules.length > 0 && (
+                  <Alert
+                    style={{ marginTop: 16 }}
+                    type="info"
+                    showIcon
+                    message="以下规则类型暂不支持求值，未计入结论"
+                    description={reportSummary.unsupportedRules
+                      .map(r => `${r.ruleName}（${r.type}）：${r.reason}`)
+                      .join('；')}
+                  />
+                )}
               </div>
             )}
             

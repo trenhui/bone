@@ -91,11 +91,9 @@ export const dataQualityRuleApi = {
   delete: (id: number): Promise<ApiResponse<void>> => {
     return apiClient.delete(`${MD}/quality/rules/${id}`);
   },
-  executeCheck: (masterDataEntityId: number): Promise<ApiResponse<QualityCheck>> => {
+  /** 检查为同步执行，返回的是检查任务 ID（不是任务对象）。 */
+  executeCheck: (masterDataEntityId: number): Promise<ApiResponse<number>> => {
     return apiClient.post(`${MD}/quality/check`, null, { params: { masterDataEntityId } });
-  },
-  getCheckResult: (qualityCheckId: number): Promise<ApiResponse<QualityReport>> => {
-    return apiClient.get(`${MD}/quality/reports/${qualityCheckId}`);
   },
 };
 
@@ -140,13 +138,20 @@ export const masterDataRecordApi = {
 };
 
 // 质量检查相关API
-/** [Vision] 质量检查分页/结果 API 尚未在 masterdata 服务落地 */
 export const qualityCheckApi = {
-  page: (params: { pageNum?: number; pageSize?: number; masterDataEntityId?: number }): Promise<ApiResponse<PageResult<QualityCheck>>> => {
-    return apiClient.get(`${MD}/quality/reports`, { params });
+  /** 后端 GET /quality/checks 返回 List（非分页），故用数组接收后自行分页展示。 */
+  list: (params: { masterDataEntityId?: number }): Promise<ApiResponse<QualityCheck[]>> => {
+    return apiClient.get(`${MD}/quality/checks`, { params });
   },
   detail: (id: number): Promise<ApiResponse<QualityCheck>> => {
-    return apiClient.get(`${MD}/quality/reports/${id}`);
+    return apiClient.get(`${MD}/quality/checks/${id}`);
+  },
+};
+
+// 质量报告API：报告按 checkId 唯一（uk_mdm_qrpt_check），报告 ID ≠ 检查 ID
+export const qualityReportApi = {
+  listByCheckId: (qualityCheckId: number): Promise<ApiResponse<QualityReport[]>> => {
+    return apiClient.get(`${MD}/quality/reports`, { params: { qualityCheckId } });
   },
 };
 

@@ -16,6 +16,8 @@ export interface MasterDataField {
   id: number;
   masterDataEntityId: number;
   name: string;
+  /** 字段编码：记录 data 的 JSON 以 code 为键；存量数据可能缺失，取值时需回退到 name。 */
+  code?: string;
   type: 'STRING' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'TEXT';
   length?: number;
   required: boolean;
@@ -25,26 +27,35 @@ export interface MasterDataField {
   updatedAt: string;
 }
 
+/**
+ * 数据质量规则。
+ *
+ * type / severity 的取值以后端为准（后端枚举是契约真源）：
+ * - type：求值器支持 NOT_NULL / UNIQUE / FORMAT / RANGE / REFERENCE；CUSTOM 允许录入但检查时不求值。
+ * - severity：RuleSeverity 枚举 LOW / MEDIUM / HIGH / CRITICAL（历史上前端误用 ERROR/WARNING/INFO，导致创建必 400）。
+ */
 export interface DataQualityRule {
   id: number;
   masterDataEntityId: number;
   name: string;
-  type: 'UNIQUE' | 'FORMAT' | 'RANGE' | 'REFERENCE' | 'CUSTOM';
+  type: 'NOT_NULL' | 'UNIQUE' | 'FORMAT' | 'RANGE' | 'REFERENCE' | 'CUSTOM';
   expression: string;
-  severity: 'ERROR' | 'WARNING' | 'INFO';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   description?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+/** 质量检查任务（对齐后端 QualityCheckDTO）。 */
 export interface QualityCheck {
   id: number;
   masterDataEntityId: number;
-  startTime: string;
-  endTime?: string;
+  startedAt: string;
+  endedAt?: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  issueCount: number;
-  createdAt: string;
+  totalRecords?: number;
+  passedRecords?: number;
+  failedRecords?: number;
 }
 
 export interface QualityReport {
@@ -53,6 +64,20 @@ export interface QualityReport {
   reportData: Record<string, unknown>;
   issueCount: number;
   createdAt: string;
+}
+
+/** 报告 reportData 的结构（后端 buildReportData 产出）。 */
+export interface QualityReportData {
+  entityId: number;
+  totalRecords: number;
+  rules: Array<{
+    ruleId: number;
+    ruleName: string;
+    type: string;
+    violations: number;
+    samples: Array<{ recordId: number; field: string; message: string }>;
+  }>;
+  unsupportedRules: Array<{ ruleId: number; ruleName: string; type: string; reason: string }>;
 }
 
 export interface DataQualityResult {

@@ -53,7 +53,16 @@ const SystemDeploymentPage: React.FC = () => {
     try {
       const response = await systemApi.getInfo();
       if (response.code === 200) {
-        setSystemInfo(response.data);
+        // 后端 /system/info 仅返回 name/description/version，缺失 uptime/healthStatus/services
+        // 时需兜底，否则渲染期取 .length 会整页崩溃（同 MonitorAlert 的归一化约定）。
+        const raw = (response.data ?? {}) as unknown as Record<string, unknown>;
+        setSystemInfo({
+          ...raw,
+          version: (raw.version ?? '-') as string,
+          uptime: (raw.uptime ?? '-') as string,
+          healthStatus: (raw.healthStatus ?? raw.status ?? 'UNKNOWN') as string,
+          services: (raw.services ?? []) as string[],
+        } as SystemInfo);
       }
     } catch (error) {
       message.error('获取系统信息失败');
@@ -208,7 +217,7 @@ const SystemDeploymentPage: React.FC = () => {
             <Descriptions.Item label="健康状态">
               {getStatusTag(systemInfo.healthStatus)}
             </Descriptions.Item>
-            <Descriptions.Item label="服务数量">{systemInfo.services.length}</Descriptions.Item>
+            <Descriptions.Item label="服务数量">{systemInfo.services?.length ?? 0}</Descriptions.Item>
           </Descriptions>
           <div style={{ marginTop: 16 }}>
             <Space>

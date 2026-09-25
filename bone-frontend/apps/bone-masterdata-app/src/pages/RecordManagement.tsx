@@ -27,6 +27,25 @@ import { useMessage } from '../App';
 const { Option } = Select;
 const { TextArea } = Input;
 
+/**
+ * 后端返回的 record.data 是 JSON 字符串（MasterDataRecordDTO.data 为 String），
+ * 而共享类型声明为对象；这里统一归一化为对象，避免动态列取不到值显示为 '-'。
+ */
+const parseRecordData = (data: unknown): Record<string, unknown> => {
+  if (!data) {
+    return {};
+  }
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof data === 'object' ? (data as Record<string, unknown>) : {};
+};
+
 const RecordManagement: React.FC = () => {
   const message = useMessage();
   const [form] = Form.useForm();
@@ -314,11 +333,21 @@ const RecordManagement: React.FC = () => {
     ];
 
     fields.forEach(field => {
+      const fieldKey = field.code ?? field.name;
       columns.push({
         title: field.name,
-        dataIndex: `data.${field.name}`,
-        key: field.name,
-        ellipsis: true
+        dataIndex: `data.${fieldKey}`,
+        key: fieldKey,
+        ellipsis: true,
+        // 后端 MasterDataRecordDTO.data 是 JSON 字符串，且键以字段 code 为准；
+        // 直接用 dataIndex 取不到值，这里显式解析并兼容 code/name 两种键。
+        render: (_: unknown, record: MasterDataRecord) => {
+          const map = parseRecordData(record.data);
+          const value = map[fieldKey] ?? map[field.name];
+          return value === undefined || value === null || value === ''
+            ? '-'
+            : String(value);
+        }
       });
     });
 
@@ -451,6 +480,9 @@ const RecordManagement: React.FC = () => {
           columns={generateTableColumns() as ProColumns<MasterDataRecord>[]}
           dataSource={records}
           loading={loading}
+          // 记录列随实体字段动态增长，列宽合计可能超过容器；
+          // 不设 scroll 会让整页横向滚动，这里改为表格内部横向滚动。
+          scroll={{ x: 'max-content' }}
           pagination={{
             total,
             pageSize,

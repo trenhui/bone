@@ -1,22 +1,52 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPost: vi.fn(),
-  mockPut: vi.fn(),
-  mockDelete: vi.fn(),
-}));
+/**
+ * 关键：createApiClient 的响应拦截器是 `(response) => response.data`。
+ * 之前这里把拦截器 mock 成 no-op，测试传的是「原始 axios 响应」，
+ * 与运行时实际传给业务代码的形状不一致 —— 掩盖了 assertSuccess 双重解包的缺陷。
+ * 因此这里让 mock 真正执行注册进来的响应拦截器，使单测覆盖运行时契约。
+ */
+const {
+  mockGet,
+  mockPost,
+  mockPut,
+  mockDelete,
+  applyResponseInterceptors,
+  pushResponseHandler,
+  throughInterceptors,
+} = vi.hoisted(() => {
+    const handlers: Array<(r: unknown) => unknown> = [];
+    const apply = (r: unknown) => handlers.reduce((acc, h) => h(acc), r);
+    return {
+      mockGet: vi.fn(),
+      mockPost: vi.fn(),
+      mockPut: vi.fn(),
+      mockDelete: vi.fn(),
+      applyResponseInterceptors: apply,
+      pushResponseHandler: (h: (r: unknown) => unknown) => {
+        handlers.push(h);
+      },
+      throughInterceptors:
+        (fn: (...args: unknown[]) => unknown) =>
+        (...args: unknown[]) =>
+          Promise.resolve(fn(...args)).then(apply),
+    };
+  });
 
 vi.mock('axios', () => ({
   default: {
     create: () => ({
-      get: mockGet,
-      post: mockPost,
-      put: mockPut,
-      delete: mockDelete,
+      get: throughInterceptors(mockGet),
+      post: throughInterceptors(mockPost),
+      put: throughInterceptors(mockPut),
+      delete: throughInterceptors(mockDelete),
       interceptors: {
         request: { use: vi.fn() },
-        response: { use: vi.fn() },
+        response: {
+          use: (onFulfilled: (r: unknown) => unknown) => {
+            pushResponseHandler(onFulfilled);
+          },
+        },
       },
     }),
   },

@@ -260,6 +260,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_FILE_FORMAT_INVALID` | 400 | 仅支持 .xlsx / .xls 格式 |
 | `MD_FILE_READ_FAILED` | 400 | 读取上传文件失败 |
 | `MD_FILE_PARSE_FAILED` | 400 | 解析Excel文件失败 |
+| `MD_RULE_SEVERITY_INVALID` | 400 | 质量规则严重级别非法（可选 LOW/MEDIUM/HIGH/CRITICAL） |
+| `MD_RULE_EXPRESSION_INVALID` | 400 | 质量规则表达式无法求值（缺 field/pattern、min-max 非数值等） |
+| `MD_RECORD_DATA_PARSE_FAILED` | 500 | 主数据记录 data 不是合法 JSON |
 
 ### EXT_
 
