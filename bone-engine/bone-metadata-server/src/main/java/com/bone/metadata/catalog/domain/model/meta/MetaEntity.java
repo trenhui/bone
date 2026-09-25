@@ -163,4 +163,34 @@ public class MetaEntity extends AbstractEntity<Long> {
   public MetaEntityStatus statusEnum() {
     return MetaEntityStatus.fromCode(status);
   }
+
+  /**
+   * 删除前释放 {@code code} / {@code table_name} 的唯一键占位（仅对草稿实体生效）。
+   *
+   * <p><b>问题</b>：{@code uk_meta_e_code(tenant_id, code)} 与 {@code uk_meta_e_table(tenant_id,
+   * table_name)} 覆盖逻辑删除行，于是「建错了 → 删除 → 用同一编码重建」这一最常见操作会永久失败于「编码已存在」。
+   *
+   * <p><b>取舍</b>：草稿实体尚未对齐物理结构、也未生成代码产物，改写其 code / table_name 为回收后缀即可安全释放占位；
+   * 已发布（或归档）实体可能已产生物理表与生成产物，复用编码会与之冲突，故保持占用， 由 {@code createEntity} 给出「已被已删除实体占用」的明确提示，而不是让用户猜。
+   *
+   * @return 是否释放；{@code false} 表示实体已发布/归档，编码保持占用
+   */
+  public boolean releaseUniqueKeysForDelete() {
+    if (statusEnum() != MetaEntityStatus.DRAFT) {
+      return false;
+    }
+    this.code = recycleKey(this.code);
+    this.tableName = recycleKey(this.tableName);
+    this.setUpdatedAt(new Date());
+    return true;
+  }
+
+  /** 追加 {@code _del_<id>} 后缀；id 保证全局唯一，故并发删除同一编码也不会互相冲突。 */
+  private String recycleKey(String value) {
+    if (value == null) {
+      return null;
+    }
+    String suffix = "_del_" + getId();
+    return value.endsWith(suffix) ? value : value + suffix;
+  }
 }

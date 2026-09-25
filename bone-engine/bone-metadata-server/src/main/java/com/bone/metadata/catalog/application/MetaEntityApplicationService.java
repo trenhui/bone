@@ -62,6 +62,7 @@ public class MetaEntityApplicationService {
       iamModuleValidator.requireExists(cmd.getModuleId());
     }
     assertEntityCodeUnique(tenantId, cmd.getCode());
+    assertEntityTableUnique(tenantId, cmd.getTableName());
     int type = cmd.getType() != null ? cmd.getType() : 0;
     int deliveryMode =
         cmd.getDeliveryMode() != null
@@ -108,6 +109,11 @@ public class MetaEntityApplicationService {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
       throw BizException.of("实体不存在: " + id);
+    }
+    // 草稿实体先释放 code / table_name 的唯一键占位，再逻辑删除，
+    // 否则「建错了重建」会一直卡在「编码已存在」（唯一键覆盖逻辑删除行）。
+    if (entity.releaseUniqueKeysForDelete()) {
+      metaEntityRepository.update(entity);
     }
     metaEntityRepository.deleteById(id);
   }
@@ -294,9 +300,42 @@ public class MetaEntityApplicationService {
   // ===================== 内部辅助 =====================
 
   private void assertEntityCodeUnique(long tenantId, String code) {
-    if (metaEntityRepository.findByTenantAndCode(tenantId, code).isPresent()) {
-      throw BizException.of("实体编码已存在: " + code);
+    if (code == null || code.isBlank()) {
+      return;
     }
+    Optional<MetaEntity> existing = metaEntityRepository.findByTenantAndCode(tenantId, code);
+    if (existing.isEmpty()) {
+      return;
+    }
+    throw BizException.of(describeOccupied("实体编码", code, existing.get()));
+  }
+
+  /**
+   * 表名唯一性预检：{@code uk_meta_e_table} 撞键会抛出 DataIntegrityViolationException 并被兜成 500，
+   * 用户看到的是「服务器异常」而不是「换个表名」。
+   */
+  private void assertEntityTableUnique(long tenantId, String tableName) {
+    if (tableName == null || tableName.isBlank()) {
+      return;
+    }
+    Optional<MetaEntity> existing =
+        metaEntityRepository.findByTenantAndTableName(tenantId, tableName);
+    if (existing.isEmpty()) {
+      return;
+    }
+    throw BizException.of(describeOccupied("实体表名", tableName, existing.get()));
+  }
+
+  /**
+   * 唯一键冲突文案：区分「被在用实体占用」与「被已删除实体占用」。
+   *
+   * <p>后者只有已发布/归档过的实体才会出现（草稿实体删除时已释放占位），复用其编码会与残留的物理表 / 生成产物冲突，因此明确告知「不可复用」，而不是让用户反复试错。
+   */
+  private static String describeOccupied(String what, String value, MetaEntity existing) {
+    if (Boolean.TRUE.equals(existing.getDeleted())) {
+      return what + "已被已删除实体占用: " + value + "（该实体曾发布/归档，编码不可复用以避免与已生成产物冲突，请更换）";
+    }
+    return what + "已存在: " + value;
   }
 
   private void assertFieldCodeUnique(long entityId, String code) {

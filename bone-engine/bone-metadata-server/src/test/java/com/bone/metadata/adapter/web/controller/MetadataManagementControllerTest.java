@@ -73,7 +73,8 @@ class MetadataManagementControllerTest {
                     .content(body))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data").isNumber())
+            // SDK 全局将 Long 序列化为字符串（避免 JS 端 2^53 精度截断），故新建 ID 回传字符串
+            .andExpect(jsonPath("$.data").isString())
             .andReturn()
             .getResponse()
             .getContentAsString();
