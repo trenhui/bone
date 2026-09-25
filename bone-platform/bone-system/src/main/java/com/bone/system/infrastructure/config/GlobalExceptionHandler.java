@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -71,6 +72,19 @@ public class GlobalExceptionHandler {
   public ApiResponse<Void> handleNoResourceFoundException(NoResourceFoundException e) {
     log.warn("No resource found: {}", e.getResourcePath());
     return ApiResponse.error(404, "请求地址不存在: " + e.getResourcePath());
+  }
+
+  /**
+   * 请求方法不被支持 → 405（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p>与 404 同理：路径存在但方法不匹配（如对只支持 POST 的集合路径发 GET）时，若不显式处理会报 500， 让调用方误判为服务端故障。
+   */
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+  public ApiResponse<Void> handleMethodNotSupportedException(
+      HttpRequestMethodNotSupportedException e) {
+    log.warn("Method not allowed: {} ({})", e.getMethod(), e.getMessage());
+    return ApiResponse.error(405, "请求方法不被支持: " + e.getMethod());
   }
 
   /** 认证失败 → 401（Spring Security 通常在 filter 层就处理，留兜底）。 */

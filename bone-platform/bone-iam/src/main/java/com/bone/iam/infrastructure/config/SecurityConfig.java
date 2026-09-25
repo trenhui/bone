@@ -55,7 +55,11 @@ public class SecurityConfig {
                         "/api/v1/iam/sso/config",
                         "/api/v1/iam/debug/**",
                         "/api/v1/apps/**",
-                        "/.well-known/jwks.json")
+                        "/.well-known/jwks.json",
+                        // 健康检查供网关/容器探针免鉴权调用；其余 actuator 端点仍在鉴权之后
+                        "/actuator/health",
+                        "/actuator/health/**",
+                        "/actuator/info")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
