@@ -134,7 +134,7 @@ public class CreateCodeGenerationApplicationService {
       generationTaskRepository.save(task);
       try {
         historyRepository.save(history);
-      } catch (RuntimeException ignored) {
+      } catch (Exception ignored) {
         // 历史是旁路记录，写不进去不应影响生成结果
       }
     }

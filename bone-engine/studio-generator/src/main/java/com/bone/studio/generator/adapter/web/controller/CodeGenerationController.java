@@ -12,12 +12,15 @@ import com.bone.studio.generator.domain.model.data.GenerationTask;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(GeneratorApiPaths.CODE_GENERATION)
 @RequiredArgsConstructor
+@Slf4j
 public class CodeGenerationController {
 
   private final CreateCodeGenerationApplicationService createCodeGenerationHandler;
@@ -69,20 +73,29 @@ public class CodeGenerationController {
     }
 
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    Set<String> seen = new HashSet<>();
     try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
       // generated_files 是 JSON 列：SDK 把值对象 GeneratedFile 反序列化成 LinkedHashMap，
       // 无法直接转型，这里按 Map 取字段后打包。
+      int index = 0;
       for (Object raw : files) {
         Map<?, ?> file = (Map<?, ?>) raw;
         String filePath = asString(file.get("filePath"));
         String fileName = asString(file.get("fileName"));
         String content = asString(file.get("content"));
         String entryName = filePath != null ? filePath : (fileName != null ? fileName : "file");
-        zip.putNextEntry(new ZipEntry(entryName));
-        zip.write(content.getBytes(StandardCharsets.UTF_8));
+        // ZipEntry 不允许重名，出现冲突时追加序号兜底
+        String uniqueName = entryName;
+        if (!seen.add(uniqueName)) {
+          uniqueName = entryName + "." + index;
+        }
+        zip.putNextEntry(new ZipEntry(uniqueName));
+        zip.write(content == null ? new byte[0] : content.getBytes(StandardCharsets.UTF_8));
         zip.closeEntry();
+        index++;
       }
-    } catch (java.io.IOException e) {
+    } catch (Exception e) {
+      log.error("[downloadCode] 打包生成产物失败 taskId={}", taskId, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 

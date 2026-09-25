@@ -245,17 +245,32 @@ CREATE TABLE iam_menu (
     KEY idx_iam_menu_parent (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM菜单';
 
--- BONE_IAM_DEMO_PASSWORD_ACK: 演示账号 admin 默认口令为 123456（仅开发/CI 允许；生产须改密）
+-- BONE_IAM_DEMO_PASSWORD_ACK: 演示账号 admin / tenant_admin 默认口令为 123456（仅开发/CI 允许；生产须改密，登录时 requirePasswordChange 会强制提示）
 INSERT INTO iam_account (id, tenant_id, username, password_hash, email, real_name, status, is_admin)
 VALUES (1, 0, 'admin', '$2a$10$nZLjv4A8i.Q64tYZxrXVTuPQJ.g337OkdOx8rAKnKJL3a2dqdKR8q', 'admin@bone.com', '系统管理员', 1, 1);
 
+-- 演示租户 + 租户管理员（详设 §2.9）：平台管理员(tenant 0) 与租户管理员(tenant 1001) 双视角
+INSERT INTO iam_tenant (id, name, code, level, status, admin_email)
+VALUES (1001, '演示租户', 'DEMO', 0, 1, 'tenant_admin@bone.demo');
+
 INSERT INTO iam_role (id, tenant_id, name, code, type, description)
 VALUES
-    (1, 0, '超级管理员', 'SUPER_ADMIN', 0, '系统超级管理员'),
-    (2, 0, '普通用户', 'USER', 1, '普通用户');
+    (1, 0, '超级管理员', 'SUPER_ADMIN', 0, '平台超级管理员'),
+    (2, 0, '普通用户', 'USER', 1, '普通用户'),
+    (3, 1001, '租户管理员', 'TENANT_ADMIN_demo', 1, '演示租户内置管理员角色（创建租户时自动初始化）');
+
+INSERT INTO iam_account (id, tenant_id, username, password_hash, email, real_name, status, is_admin)
+VALUES (2, 1001, 'tenant_admin', '$2a$10$nZLjv4A8i.Q64tYZxrXVTuPQJ.g337OkdOx8rAKnKJL3a2dqdKR8q', 'tenant_admin@bone.demo', '租户管理员', 1, 0);
 
 INSERT INTO iam_account_role (id, tenant_id, account_id, role_id)
-VALUES (1, 0, 1, 1);
+VALUES (1, 0, 1, 1), (2, 1001, 2, 3);
+
+-- 租户管理员角色绑定租户域权限（账号/角色/组织/菜单/审计；不含平台域：permissions/tenants/sessions）
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES
+    (26, 3, 1), (27, 3, 2), (28, 3, 3), (29, 3, 4),
+    (30, 3, 22), (31, 3, 23), (32, 3, 24), (33, 3, 25),
+    (34, 3, 12), (35, 3, 13);
 
 INSERT INTO iam_permission (id, code, name, resource_type, resource_path, action, type, sort_order, description)
 VALUES
@@ -279,7 +294,11 @@ VALUES
     (17, 'iam:sessions:write', 'IAM-会话吊销', 'iam', 'sessions', 'write', 'OPERATION', 170, '强制下线/吊销 refresh token'),
     (18, 'sys:console:read', 'SYS-控制台查看', 'system', 'console', 'read', 'OPERATION', 180, '查看平台概览/服务状态/关键指标/快捷操作'),
     (20, 'order:orders:read', '订单-查看', 'order', 'orders', 'read', 'OPERATION', 190, 'bone-blueprint 订单查询（样板 scope 示范）'),
-    (21, 'order:orders:write', '订单-维护', 'order', 'orders', 'write', 'OPERATION', 200, 'bone-blueprint 下单/取消/发货/送达');
+    (21, 'order:orders:write', '订单-维护', 'order', 'orders', 'write', 'OPERATION', 200, 'bone-blueprint 下单/取消/发货/送达'),
+    (22, 'iam:depts:read', 'IAM-组织查看', 'iam', 'depts', 'read', 'OPERATION', 210, '组织机构树查看（DeptController @PreAuthorize）'),
+    (23, 'iam:depts:write', 'IAM-组织维护', 'iam', 'depts', 'write', 'OPERATION', 220, '组织机构新建/编辑/删除'),
+    (24, 'iam:menus:read', 'IAM-菜单查看', 'iam', 'menus', 'read', 'OPERATION', 230, '菜单树/当前用户菜单查看'),
+    (25, 'iam:menus:write', 'IAM-菜单维护', 'iam', 'menus', 'write', 'OPERATION', 240, '菜单新建/编辑/删除');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -287,7 +306,8 @@ VALUES
     (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11),
     (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15),
     (16, 1, 16), (17, 1, 17), (18, 1, 18), (19, 1, 19),
-    (20, 1, 20), (21, 1, 21);
+    (20, 1, 20), (21, 1, 21), (22, 1, 22), (23, 1, 23),
+    (24, 1, 24), (25, 1, 25);
 
 -- ============================================================
 -- 2. System
@@ -1287,7 +1307,7 @@ CREATE TABLE gen_code_generation_history (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     task_id             VARCHAR(64)     NOT NULL COMMENT '关联任务ID',
-    template_id         VARCHAR(64)     DEFAULT NULL COMMENT '模板ID',
+    template_id         VARCHAR(512)    DEFAULT NULL COMMENT '模板ID（多模板以逗号分隔）',
     template_name       VARCHAR(200)    DEFAULT NULL COMMENT '模板名称',
     generation_name     VARCHAR(200)    DEFAULT NULL COMMENT '生成批次名称',
     data_source_id      VARCHAR(64)     DEFAULT NULL COMMENT '数据源ID',
