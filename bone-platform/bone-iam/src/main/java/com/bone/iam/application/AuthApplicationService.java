@@ -25,6 +25,7 @@ import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
+import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -79,6 +80,7 @@ public class AuthApplicationService {
   private final SsoClient ssoClient;
   private final TokenBlacklistPort tokenBlacklistPort;
   private final JwtConfig jwtConfig;
+  private final TenantRepository tenantRepository;
 
   /**
    * 登出用例：把请求携带的访问令牌拉黑至其自然过期。
@@ -183,6 +185,15 @@ public class AuthApplicationService {
           result.put("refreshToken", refreshToken);
           result.put("account", account);
           result.put("requirePasswordChange", weak || expired);
+          // 身份分流依据（详设 §2.9）：tenantId=0 平台管理员视角；>0 租户管理员视角。
+          result.put("tenantId", account.getTenantId());
+          result.put(
+              "tenantName",
+              account.getTenantId() == null || account.getTenantId() == 0L
+                  ? "平台"
+                  : java.util.Optional.ofNullable(tenantRepository.findById(account.getTenantId()))
+                      .map(t -> t.getName())
+                      .orElse("租户" + account.getTenantId()));
           return result;
         });
   }

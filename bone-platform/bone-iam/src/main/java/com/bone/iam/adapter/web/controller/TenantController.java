@@ -7,6 +7,7 @@ import com.bone.iam.adapter.web.converter.TenantWebConverter;
 import com.bone.iam.adapter.web.dto.request.CreateTenantReq;
 import com.bone.iam.adapter.web.dto.request.UpdateTenantQuotaReq;
 import com.bone.iam.adapter.web.dto.request.UpdateTenantReq;
+import com.bone.iam.adapter.web.dto.response.CreateTenantResp;
 import com.bone.iam.application.TenantApplicationService;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.qry.TenantPageQuery;
@@ -37,9 +38,15 @@ public class TenantController {
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:tenants:write')")
-  public ApiResponse<Long> create(@RequestBody CreateTenantReq req) {
-    return ApiResponse.success(
-        tenantApplicationService.create(tenantWebConverter.toCreateTenantCommand(req)));
+  public ApiResponse<CreateTenantResp> create(@RequestBody CreateTenantReq req) {
+    TenantApplicationService.CreateTenantResult result =
+        tenantApplicationService.create(tenantWebConverter.toCreateTenantCommand(req));
+    CreateTenantResp resp = new CreateTenantResp();
+    resp.setTenantId(result.tenantId());
+    resp.setAdminAccountId(result.adminAccountId());
+    resp.setAdminUsername(result.adminUsername());
+    resp.setInitialPassword(result.initialPassword());
+    return ApiResponse.success(resp);
   }
 
   @GetMapping("/{id}")

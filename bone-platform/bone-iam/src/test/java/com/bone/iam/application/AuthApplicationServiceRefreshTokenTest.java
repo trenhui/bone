@@ -70,7 +70,8 @@ class AuthApplicationServiceRefreshTokenTest {
             passwordEncoderPort,
             ssoClient,
             tokenBlacklistPort,
-            jwtConfig);
+            jwtConfig,
+            org.mockito.Mockito.mock(com.bone.iam.domain.repository.TenantRepository.class));
   }
 
   @Test

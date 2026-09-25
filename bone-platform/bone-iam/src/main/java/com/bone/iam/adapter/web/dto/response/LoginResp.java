@@ -25,5 +25,11 @@ public class LoginResp {
     private Boolean isAdmin;
     private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
+
+    /** 账号所属租户 id（0 = 平台租户），前端据此做身份分流（平台管理员 / 租户管理员，详设 §2.9）。 */
+    private Long tenantId;
+
+    /** 账号所属租户名称；平台租户固定为「平台」。 */
+    private String tenantName;
   }
 }

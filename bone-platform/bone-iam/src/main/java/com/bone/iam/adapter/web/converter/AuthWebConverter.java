@@ -36,6 +36,11 @@ public class AuthWebConverter {
     accountInfo.setIsAdmin(account.isAdmin());
     accountInfo.setLastLoginAt(account.getLastLoginAt());
     accountInfo.setCreatedAt(account.getCreatedAt());
+    // 身份分流字段（详设 §2.9）：由 AuthApplicationService 随登录结果一并返回
+    Object tenantId = result.get("tenantId");
+    accountInfo.setTenantId(tenantId instanceof Long l ? l : account.getTenantId());
+    Object tenantName = result.get("tenantName");
+    accountInfo.setTenantName(tenantName instanceof String s ? s : null);
     resp.setAccount(accountInfo);
 
     return resp;

@@ -70,6 +70,8 @@ class AuthApplicationServiceLoginTest {
 
   @Mock JwtConfig jwtConfig;
 
+  @Mock com.bone.iam.domain.repository.TenantRepository tenantRepository;
+
   IamPasswordProperties passwordProperties;
 
   AuthApplicationService authApplicationService;
@@ -95,7 +97,8 @@ class AuthApplicationServiceLoginTest {
             passwordEncoderPort,
             ssoClient,
             tokenBlacklistPort,
-            jwtConfig);
+            jwtConfig,
+            tenantRepository);
   }
 
   @Test

@@ -8,6 +8,7 @@ import com.bone.iam.application.command.UpdateTenantCommand;
 import com.bone.iam.application.command.UpdateTenantQuotaCommand;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.qry.TenantPageQuery;
+import com.bone.iam.application.support.TenantAdminBootstrapSupport;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
@@ -44,9 +45,14 @@ public class TenantApplicationService {
 
   private final TenantRepository tenantRepository;
   private final TenantDeletionGateway tenantDeletionGateway;
+  private final TenantAdminBootstrapSupport tenantAdminBootstrapSupport;
+
+  /** 创建租户结果：租户 id + 自动初始化的租户管理员信息（initialPassword 仅此一次返回，明文不落库）。 */
+  public record CreateTenantResult(
+      Long tenantId, Long adminAccountId, String adminUsername, String initialPassword) {}
 
   @Transactional
-  public Long create(CreateTenantCommand cmd) {
+  public CreateTenantResult create(CreateTenantCommand cmd) {
     Long existing = tenantRepository.countByCode(cmd.getCode());
     if (existing != null && existing > 0) {
       throw IamErrors.of(IamErrorCodes.TENANT_CODE_CONFLICT, "租户编码已存在");
@@ -58,7 +64,13 @@ public class TenantApplicationService {
             cmd.getCode(),
             cmd.getLevel() != null ? cmd.getLevel() : 0,
             cmd.getAdminEmail() != null ? cmd.getAdminEmail() : "");
-    return tenantRepository.save(tenant);
+    Long tenantId = tenantRepository.save(tenant);
+
+    // 同事务初始化租户管理员（角色 + 账号 + 绑定，详设 §2.9）；任一步失败整体回滚，避免"有租户无管理员"悬空。
+    TenantAdminBootstrapSupport.TenantAdminAccount admin =
+        tenantAdminBootstrapSupport.bootstrap(tenantId, cmd.getCode(), cmd.getAdminEmail());
+    return new CreateTenantResult(
+        tenantId, admin.accountId(), admin.username(), admin.initialPassword());
   }
 
   @Transactional
