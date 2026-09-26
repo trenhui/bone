@@ -147,21 +147,20 @@ class DictApplicationServiceTest {
   void depthBeyondMaxDepthIsRejected() {
     SysDictType type = cascadeType(2, null);
     stubType(type);
-    // 移动一个尚未挂入层级树的项 NEW 到 NS（已第 3 层）之下：会变成第 4 层，超过 maxDepth=2
-    // （若移动的是树中已有项，多半会先命中环检测——那不是本用例要验的）
+    // GD(1) → GZ(2) 已填满 maxDepth=2；NEW 在根层级，移动到 GZ 下会变成 level=3 超限
+    // （已有层级不得先超限——真实业务中 attachHierarchy 在建项时已卡住）
     when(dictItemRepository.findById(7L)).thenReturn(item("NEW"));
     stubHierarchy(
         List.of(
             hierarchyNode("GD", null, 1, "/GD/"),
             hierarchyNode("GZ", "GD", 2, "/GD/GZ/"),
-            hierarchyNode("NS", "GZ", 3, "/GD/GZ/NS/"),
             hierarchyNode("NEW", null, 1, "/NEW/")));
-    when(dictHierarchyRepository.findByCodeAllTenants("biz_region", "DEFAULT", "NS", 0L))
-        .thenReturn(Optional.of(hierarchyNode("NS", "GZ", 3, "/GD/GZ/NS/")));
+    when(dictHierarchyRepository.findByCodeAllTenants("biz_region", "DEFAULT", "GZ", 0L))
+        .thenReturn(Optional.of(hierarchyNode("GZ", "GD", 2, "/GD/GZ/")));
     when(dictHierarchyRepository.findByCodeAllTenants("biz_region", "DEFAULT", "NEW", 0L))
         .thenReturn(Optional.of(hierarchyNode("NEW", null, 1, "/NEW/")));
 
-    assertThatThrownBy(() -> service.moveItem(moveCmd(7L, "NS")))
+    assertThatThrownBy(() -> service.moveItem(moveCmd(7L, "GZ")))
         .isInstanceOf(BizException.class)
         .hasMessageContaining("SYS_DICT_CASCADE_DEPTH_EXCEEDED");
   }
