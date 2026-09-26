@@ -10,6 +10,7 @@ import MenuManagement from './pages/MenuManagement';
 import TenantManagement from './pages/TenantManagement';
 import AuditLog from './pages/AuditLog';
 import AuditSettings from './pages/AuditSettings';
+import Profile from './pages/Profile';
 import Auth from './pages/Auth';
 
 const App: React.FC = () => {
@@ -50,6 +51,8 @@ const App: React.FC = () => {
           <Route path="/menus" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
           <Route path="/audit-logs" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
           <Route path="/audit-settings" element={<ProtectedRoute><AuditSettings /></ProtectedRoute>} />
+          {/* 个人信息 / 改密：后端 /me 系列接口早已就绪，此前缺前端入口（详设 §2.11 S-7） */}
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/accounts" replace />} />
           <Route path="*" element={<Navigate to="/accounts" />} />
         </Routes>

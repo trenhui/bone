@@ -126,7 +126,7 @@ const TenantManagement: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await api.deleteTenant(id);
       if (response.code === 200) {

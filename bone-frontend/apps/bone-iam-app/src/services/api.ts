@@ -45,6 +45,35 @@ export const refreshToken = (data: RefreshTokenRequest) =>
 export const getSsoConfig = () =>
   api.get<never, ApiResponse<{ enabled: boolean; providers: string[] }>>('/sso/config');
 
+// ==================== 我的（个人信息 / 改密） ====================
+
+/** 当前登录账号的安全脱敏视图（后端 `MeResp`）。 */
+export interface MyProfile {
+  id: string;
+  username: string;
+  email: string;
+  phone?: string;
+  realName?: string;
+  avatarUrl?: string;
+  status: number;
+  isAdmin: boolean;
+  tenantId: string;
+  scopes: string[];
+  lastLoginAt?: string;
+  passwordUpdatedAt?: string;
+}
+
+export const getMyProfile = () => api.get<never, ApiResponse<MyProfile>>('/me');
+
+export const updateMyProfile = (data: {
+  realName?: string;
+  phone?: string;
+  avatarUrl?: string;
+}) => api.put<never, ApiResponse<void>>('/me', data);
+
+export const changeMyPassword = (data: { oldPassword: string; newPassword: string }) =>
+  api.post<never, ApiResponse<void>>('/me/change-password', data);
+
 // ==================== 账号管理 ====================
 
 /**
@@ -56,7 +85,7 @@ export const getAccounts = (
   pageSize = 10,
   keyword?: string,
   status?: number,
-  deptId?: number | null,
+  deptId?: string | null,
 ) =>
   api.get<never, ApiResponse<PageResult<Account>>>('/accounts', {
     params: { page, size: pageSize, keyword, status, ...(deptId != null ? { deptId } : {}) },
@@ -65,50 +94,50 @@ export const getAccounts = (
 /**
  * 获取账号详情
  */
-export const getAccount = (id: number) =>
+export const getAccount = (id: string) =>
   api.get<never, ApiResponse<Account>>(`/accounts/${id}`);
 
 /**
  * 创建账号
  */
 export const createAccount = (data: CreateAccountRequest) =>
-  api.post<never, ApiResponse<number>>('/accounts', data);
+  api.post<never, ApiResponse<string>>('/accounts', data);
 
 /**
  * 更新账号
  */
-export const updateAccount = (id: number, data: UpdateAccountRequest) =>
+export const updateAccount = (id: string, data: UpdateAccountRequest) =>
   api.put<never, ApiResponse<void>>(`/accounts/${id}`, data);
 
 /**
  * 删除账号
  */
-export const deleteAccount = (id: number) =>
+export const deleteAccount = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/accounts/${id}`);
 
 /**
  * 启用账号
  */
-export const enableAccount = (id: number) =>
+export const enableAccount = (id: string) =>
   api.post<never, ApiResponse<void>>(`/accounts/${id}/enable`);
 
 /**
  * 禁用账号
  */
-export const disableAccount = (id: number) =>
+export const disableAccount = (id: string) =>
   api.post<never, ApiResponse<void>>(`/accounts/${id}/disable`);
 
 /**
  * 重置密码
  */
-export const resetAccountPassword = (id: number, data: ResetPasswordRequest) =>
+export const resetAccountPassword = (id: string, data: ResetPasswordRequest) =>
   api.post<never, ApiResponse<void>>(`/accounts/${id}/reset-password`, data);
 
 /**
  * 批量导入用户
  */
 export const importAccounts = (data: CreateAccountRequest[]) =>
-  api.post<never, ApiResponse<number>>('/accounts/import', data);
+  api.post<never, ApiResponse<string>>('/accounts/import', data);
 
 /**
  * 导出用户
@@ -127,37 +156,37 @@ export const getRoles = (page = 1, pageSize = 10, keyword?: string) =>
 /**
  * 获取角色详情
  */
-export const getRole = (id: number) =>
+export const getRole = (id: string) =>
   api.get<never, ApiResponse<Role>>(`/roles/${id}`);
 
 /**
  * 创建角色
  */
 export const createRole = (data: CreateRoleRequest) =>
-  api.post<never, ApiResponse<number>>('/roles', { ...data, tenantId: data.tenantId ?? 0 });
+  api.post<never, ApiResponse<string>>('/roles', { ...data, tenantId: data.tenantId ?? 0 });
 
 /**
  * 更新角色
  */
-export const updateRole = (id: number, data: UpdateRoleRequest) =>
+export const updateRole = (id: string, data: UpdateRoleRequest) =>
   api.put<never, ApiResponse<void>>(`/roles/${id}`, { ...data, tenantId: data.tenantId ?? 0 });
 
 /**
  * 删除角色
  */
-export const deleteRole = (id: number) =>
+export const deleteRole = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/roles/${id}`);
 
 /**
  * 为角色分配权限
  */
-export const assignPermissions = (roleId: number, permissionIds: number[]) =>
+export const assignPermissions = (roleId: string, permissionIds: string[]) =>
   api.post<never, ApiResponse<void>>(`/roles/${roleId}/permissions`, { permissionIds });
 
 /**
  * 获取角色的权限列表
  */
-export const getRolePermissions = (roleId: number) =>
+export const getRolePermissions = (roleId: string) =>
   api.get<never, ApiResponse<Permission[]>>(`/roles/${roleId}/permissions`);
 
 // ==================== 权限管理 ====================
@@ -177,25 +206,25 @@ export const getPermissionTree = () =>
 /**
  * 获取权限详情
  */
-export const getPermission = (id: number) =>
+export const getPermission = (id: string) =>
   api.get<never, ApiResponse<Permission>>(`/permissions/${id}`);
 
 /**
  * 创建权限
  */
 export const createPermission = (data: CreatePermissionRequest) =>
-  api.post<never, ApiResponse<number>>('/permissions', data);
+  api.post<never, ApiResponse<string>>('/permissions', data);
 
 /**
  * 更新权限
  */
-export const updatePermission = (id: number, data: UpdatePermissionRequest) =>
+export const updatePermission = (id: string, data: UpdatePermissionRequest) =>
   api.put<never, ApiResponse<void>>(`/permissions/${id}`, data);
 
 /**
  * 删除权限
  */
-export const deletePermission = (id: number) =>
+export const deletePermission = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/permissions/${id}`);
 
 // ==================== 审计日志 ====================
@@ -206,7 +235,7 @@ export const deletePermission = (id: number) =>
 export const getAuditLogs = (params: {
   page?: number;
   pageSize?: number;
-  userId?: number;
+  userId?: string;
   operation?: string;
   resourceType?: string;
   result?: string;
@@ -226,17 +255,29 @@ export const getAuditLogs = (params: {
 };
 
 /**
- * 导出审计日志
+ * 导出审计日志（**字节流契约**，详设 §5.8）
+ *
+ * 后端 `@GetMapping("/logs/export")` 返回 `ResponseEntity<byte[]>` + `Content-Disposition: attachment`，
+ * **不包 `ApiResponse` 信封**。因此这里必须以 `responseType: 'blob'` 请求，并自行从响应头取文件名；
+ * 用 `api.get<never, ApiResponse<AuditLog[]>>` 解包会把二进制流当 JSON 解析，导出直接失败。
+ *
+ * 参数名与后端 `AuditLogListQuery` 对齐（`startedAt / endedAt / operation`），
+ * 与列表查询共用同一套键名，避免「列表能查出来、导出查不出来」的口径分裂。
+ *
+ * @returns 原始 `Blob` 响应（含 `Content-Disposition` / `X-Export-Truncated` 头）
  */
 export const exportAuditLogs = (params?: {
-  userId?: number;
-  action?: string;
+  userId?: string;
+  operation?: string;
   resourceType?: string;
   result?: string;
-  startTime?: string;
-  endTime?: string;
+  startedAt?: string;
+  endedAt?: string;
 }) =>
-  api.get<never, ApiResponse<AuditLog[]>>('/audit/logs/export', { params });
+  api.get<never, Blob>('/audit/logs/export', {
+    params,
+    responseType: 'blob',
+  });
 
 /**
  * 获取审计设置
@@ -263,43 +304,43 @@ export const getTenants = (page = 1, pageSize = 10, keyword?: string) =>
 /**
  * 获取租户详情
  */
-export const getTenant = (id: number) =>
+export const getTenant = (id: string) =>
   api.get<never, ApiResponse<Tenant>>(`/tenants/${id}`);
 
 /**
  * 创建租户
  */
 export const createTenant = (data: CreateTenantRequest) =>
-  api.post<never, ApiResponse<number>>('/tenants', data);
+  api.post<never, ApiResponse<string>>('/tenants', data);
 
 /**
  * 更新租户
  */
-export const updateTenant = (id: number, data: UpdateTenantRequest) =>
+export const updateTenant = (id: string, data: UpdateTenantRequest) =>
   api.put<never, ApiResponse<void>>(`/tenants/${id}`, data);
 
 /**
  * 删除租户
  */
-export const deleteTenant = (id: number) =>
+export const deleteTenant = (id: string) =>
   api.delete<never, ApiResponse<void>>(`/tenants/${id}`);
 
 /**
  * 启用租户
  */
-export const enableTenant = (id: number) =>
+export const enableTenant = (id: string) =>
   api.post<never, ApiResponse<void>>(`/tenants/${id}/enable`);
 
 /**
  * 禁用租户
  */
-export const disableTenant = (id: number) =>
+export const disableTenant = (id: string) =>
   api.post<never, ApiResponse<void>>(`/tenants/${id}/disable`);
 
 /**
  * 更新租户配额
  */
-export const updateTenantQuota = (id: number, data: UpdateTenantQuotaRequest) =>
+export const updateTenantQuota = (id: string, data: UpdateTenantQuotaRequest) =>
   api.put<never, ApiResponse<void>>(`/tenants/${id}/quota`, data);
 
 export default api;

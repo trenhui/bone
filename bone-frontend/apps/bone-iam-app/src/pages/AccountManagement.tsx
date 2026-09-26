@@ -43,11 +43,16 @@ import type {
 } from '../types';
 import type { DeptNode } from '../services/api';
 
-/** 部门树节点 → antd DataNode；value 用数字（DeptNode.id 虽序列化为字符串，但后端 deptId 为 Long，TreeSelect 表单字段亦为 number） */
+/**
+ * 部门树节点 → antd DataNode。
+ *
+ * key / value 一律用**字符串** ID（详设 §2.10）：后端雪花 ID 超过 `Number.MAX_SAFE_INTEGER`，
+ * `Number(id)` 会静默丢精度，选中后提交的是另一个部门的 ID（且无任何报错）。
+ */
 const toTreeData = (nodes: DeptNode[]): DataNode[] =>
   nodes.map((n) => ({
-    key: Number(n.id),
-    value: Number(n.id),
+    key: String(n.id),
+    value: String(n.id),
     title: n.name,
     children: n.children && n.children.length > 0 ? toTreeData(n.children) : undefined,
   }));
@@ -66,7 +71,7 @@ const AccountManagement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [deptTreeData, setDeptTreeData] = useState<DataNode[]>([]);
-  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -205,7 +210,7 @@ const AccountManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await api.deleteAccount(id);
       if (response.code === 200) {
@@ -442,7 +447,7 @@ const AccountManagement: React.FC = () => {
 
   const handleDeptSelect = (key: React.Key[] | React.Key | null) => {
     const id = Array.isArray(key) ? (key[0] ?? null) : key;
-    setSelectedDeptId(id == null ? null : Number(id));
+    setSelectedDeptId(id == null ? null : String(id));
     setPage(1);
   };
 

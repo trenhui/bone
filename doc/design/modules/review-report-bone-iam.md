@@ -176,23 +176,70 @@
 
 ---
 
-## 六、代码复核结果（B' 段填写）
+## 六、代码复核结果（B' 段）
 
 | # | 复核项 | 方法 | 结果 | 处置 |
 |---|--------|------|------|------|
-| — | — | — | **未执行（本报告止于 A/A' 段）** | B' 段按 §6.2 七项逐条填 |
+| 6.1 | 禁碰文件 | `git status --porcelain \| grep -E "_global-contracts\|Bone-DDD\|gate-state\|bone-init.sql\|.github\|.comet"` | **0 命中** | 无需处置 |
+| 6.2 | 范围 creep | 逐条比对改动文件 vs 第五章清单 | 清单外 **0** 项；清单内 2 项按 L3 规则未执行（乐观锁 DDL、`Capability.java` 删码） | 已入待审批清单 |
+| 6.3 | 硬约束未新增违反 | `mvn -o -pl bone-platform/bone-iam test` | **159 tests / 0 failure / 0 error**，`ArchitectureTest` 28 项全绿 | 通过 |
+| 6.4 | 契约一致性 | 前后端 ID / 时间 / 导出契约逐条对齐 | 见 C 段实测；**新发现 B-11（时间格式）已当场修复** | 已修 |
+| 6.5 | 门禁 | `mvn -o -pl bone-platform/bone-iam spotless:check` | **BUILD SUCCESS** | 通过（`check.sh` 全反应堆版因他人在途文件不可用，已改用模块级等价集） |
+| 6.6 | 未卷入他人 WIP | `git status --porcelain` 比对 | 他人 `studio-generator/*`、`bone-metadata-server/AuthController.java`、`bone-gateway/GatewayJwtProperties.java`、`AccountApplicationService.java:326` **均未纳入本次提交** | 提交按路径显式 add |
+| 6.7 | L3/L4 未混入 | 逐文件分级 | 无 DDL、无删码、无依赖新增、无密钥改动；`bone-init.sql` 未落任何变更 | 通过 |
 
-## 七、联调验证结果（C 段填写）
+### 6.8 本轮实现与 v2 的偏差（必须显式声明）
+
+| 项 | v2 写法 | 实际落地 | 原因 |
+|---|---|---|---|
+| B-3 配额串行 | `SELECT ... FOR UPDATE` | **改为单 JVM 分段锁 + 事务完成后释放**（`TenantQuotaEnforcer`） | SDK 无 `FOR UPDATE`（`bone-engine/bone-metadata-sdk` 0 命中），真做要新建 JDBC 出站端口 → 撞 `sdk-persistence-bypass-baseline.json`「只可收缩、新增文件不得加入」⇒ **L3**。现落地是**已声明的降级**，不是等价修复 |
+| B-5 健康检查拆分 | 新建 `DatabaseHealthIndicator` / `RedisHealthIndicator` / `MinioStorageHealthIndicator` 三个类 | **单类聚合** Spring Boot 自动装配的 `db` / `redis` | 同样受 bypass 基线约束；且拆分只是物理分文件，聚合已拿到真值。**未新增文件** |
+| B-5 Micrometer 埋点 | 补齐 `iam_login_*` 三个指标 | **未做** | 需在 `AuthApplicationService` 注入 `MeterRegistry`，属 L2 但超出本轮已验证范围；登记为建议项 S-12 |
+| B-7 `Account.java:140` | 裸 `DomainException` → `IamErrors.of(DEPT_REQUIRED)` | **未做** | `ArchitectureTest.domainCoreShouldOnlyDependOnAllowedPackages` 限定 domain 只能依赖 `domain/java/com.bone.core/sdk/lombok`，`com.bone.iam.common` 不在白名单内；**并发会话曾改过、随即回退**（与 ArchTest 冲突）。正解需把校验上移到 application，另立条目 |
+| S-5 列表四态 | 6 个列表页全覆盖 | 仅 `Profile.tsx`（新建）按四态规范实现 | 范围控制，其余页面列 [Target] |
+
+### 6.9 本轮新增发现（A 段未识别）
+
+| # | 问题 | 证据 | 级别 | 处置 |
+|---|---|---|---|---|
+| **B-11** | **时间格式契约**：后端 `AuditLogListQuery.startedAt/endedAt` 是 `LocalDateTime`，只接受 ISO-8601（`2026-01-01T00:00:00`）；前端发 `YYYY-MM-DD HH:mm:ss` → **列表与导出双双 400**。A 段只发现参数名错位（B-1），本层在 C 段才暴露 | `curl ".../audit/logs?startedAt=2026-01-01%2000:00:00..."` → `HTTP 400 COMMON_VALIDATION_FAILED`，rejectedValue `2026-01-01 00:00:00`；改 ISO 后 `HTTP 200` | 阻断 | **已修**：`AuditLog.tsx` 新增 `isoLocal()`，列表与导出共用 |
+| **B-12** | **B-7 回归**：`MfaController.notAvailable()` 现为 `ApiResponse.error(501, "MFA 未在商业版/IdP 中启用")` —— **业务码完全消失**，前端/监控无法按码聚合 | 实测 `POST /mfa/enroll` → `HTTP 501`，message 无 `IAM_MFA_NOT_AVAILABLE` 前缀（对比 `IAM_LOGIN_FAILED: 用户名或密码错误` 前缀正常） | 阻断 | 该文件正被并发会话编辑，**未抢改**；登记待下一轮或由并发会话收口 |
+| **B-13** | 共享 api client 的响应拦截器是 `(response) => response.data`，**响应头不透传**，导致 `Content-Disposition` / `X-Export-Truncated` 前端取不到，导出只能用兜底文件名 | `packages/shared-services/src/apiClient.ts:66` | 建议 | 已登记；需给 `createApiClient` 增加「原始响应」出口（L2，下轮） |
+
+## 七、联调验证结果（C 段）
+
+> 环境：网关 8888（监管实例）+ bone-iam **独立实例 8091**（`SPRING_PROFILES_ACTIVE=dev`，从 `target/classes` 启动，确保加载本轮改动）+ shell 3000 + iam-app 3003。
+> 注：监管实例跑的是 `target/bone-iam-1.0.0.jar`（20:10 产物，早于本轮改动），故另起 8091 取证；业务 API 经 8091 直连已可正常鉴权（实测 401/200 语义正确）。
 
 | # | 场景/API | 验证方法 | 实际 HTTP 码 + 响应摘要 | 备注 |
 |---|----------|----------|--------------------------|------|
-| — | — | — | **未执行（本报告止于 A/A' 段）** | C 段按锚定 `exposed_apis` 逐条填 |
+| C-1 | `POST /login`（错口令） | curl 经 8888 | **401** `{"code":401,"message":"IAM_LOGIN_FAILED: 用户名或密码错误"}` | 错误码前缀正常（对比 B-12） |
+| C-2 | `POST /login`（正确） | curl 经 8888 | **200**，`data.token` 长度 1992 | 后续请求凭据来源 |
+| C-3 | `GET /me` | curl + JWT | **200**；`data.id="1"`、`tenantId="0"` —— **ID 以字符串下发** | 印证 §2.10 契约 |
+| C-4 | `GET /audit/logs` | curl | **200**；`records[0].id="759182949592596480"`（18 位 > `Number.MAX_SAFE_INTEGER`） | **B-2 危害实证**：数值化必丢精度 |
+| C-5 | `GET /audit/logs/export?startedAt=…T00:00:00&operation=LOGIN` | curl -D 头 | **200**；`Content-Type: text/csv;charset=utf-8`、`Content-Disposition: attachment; filename="iam-audit-logs.csv"`；正文首行 `\uFEFFid,tenant_id,...`，245 行 | B-1 字节流契约打通 |
+| C-6 | 同上但用空格时间格式 | curl | **400** `COMMON_VALIDATION_FAILED` | ⇒ B-11 发现 |
+| C-7 | `GET /accounts/1/sessions` | curl | **200**；`data[0] = {id,accountId,tenantId,revoked,expiresAt}` | `SessionResp` 已生效（S-2），领域实体不再出网 |
+| C-8 | `GET /mfa/status` | curl | **200** `{enabled:false,enrolled:false,methods:[]}` | 正常 |
+| C-9 | `POST /mfa/enroll` | curl | **501** `MFA 未在商业版/IdP 中启用`（**无业务码**） | ⇒ B-12 |
+| C-10 | `POST /refresh`（伪造 token） | curl | **401** `未登录或 Token 已过期` | 正常 |
+| C-11 | `GET /accounts`（无 token） | curl | **401** | 鉴权兜底正常 |
+| C-12 | `GET /actuator/health`（带 JWT） | curl 8091 | **200**；`iamModule = {status:UP, details:{module:"bone-iam", db:"UP", redis:"UP", minio:"notApplicable"}}` | **B-5 已生效**：由恒 UP 的 STUB 变为真检（整改前实测为 `status:"STUB"`） |
 
-## 八、验收测试结果（D 段填写）
+## 八、验收测试结果（D 段）
+
+> 方式：Playwright + 本机 Chrome，history 路由 `/iam` + 子应用 hash 路由；断言读 `body.innerText`，只认 console / pageerror / 5xx。
 
 | # | 场景 | 构造数据 | 模拟操作步骤 | 断言 | 实测 | 数据已清 |
 |---|------|----------|--------------|------|------|----------|
-| — | — | — | — | — | **未执行** | — |
+| D-1 | 登录 | 无（用种子账号 admin） | 打开 `/login` → 填 admin/123456 → 提交 | 跳转到控制台 | 跳转 `http://localhost:3000/` | — |
+| D-2 | **个人信息页（本轮新增 S-7）** | 无 | 访问 `/iam#/profile` | 渲染「基本信息 + 编辑资料 + 修改密码」三块 | **通过**：用户名 admin / 姓名 系统管理员 / 邮箱 admin@bone.com / 最近登录 `2026-09-27 14:49:25`（走 `shared-utils/i18n/format`，非裸 dayjs）；三块齐全 | — |
+| D-3 | 审计时间窗查询 | 无 | 打开 RangePicker → 点「近 30 天」→ 查询 | 无 400，记录数回显 | **通过**：新增 400 = `[]`，总记录数 371 | — |
+| D-4 | **审计 CSV 导出** | 无 | 点「导出CSV」，监听 download 事件 | 落盘且内容正确 | **通过**：文件名 `audit-logs-20260927065014.csv`；首行 BOM + 表头；数据行 User-Agent 含逗号已被 `""` 正确转义 | 下载到 /tmp，非业务数据 |
+| D-5 | 角色新增 | `NIGHTLY-158934` | 角色页 → 新增角色 → 填名称+描述 → 保存 | 列表出现该角色 | **通过**：`POST /roles {"name":"NIGHTLY-158934","description":"…","tenantId":0}`，页面含该角色 | — |
+| D-6 | 角色删除（自清理） | 同上 | 行内「删除」→ popconfirm「删 除」 | DELETE 发出且列表消失 | **通过**：`DELETE /roles/759185690134052864`，刷新后不含 | ✅ |
+| D-7 | 残留自证 | — | `GET /roles?size=50` 复核 | 无 NIGHTLY 残留 | **通过**：角色总数回到 8，`NIGHTLY 残留 = []`；审计留痕 0 条（只读，非业务残留） | ✅ |
+| D-8 | 卫生断言 | — | 全程监听 | console 0 / pageerror 0 / 5xx 0 | **通过**：`console.error=0, pageerror=0, 5xx=0, 400=0` | — |
 
 ## 九、AI 自审结论（见 §4 / §6.2）
 
@@ -204,13 +251,22 @@
 | **2. 分级正确？** | 复核是否降级取巧：B-3（并发/配额）曾被考虑降为建议级——但 doc6 §1.4 明确把「租户配额 enforcement」标为 **As-Is**，并发下可超卖属能力声明失真 → **维持阻断**；B-6 曾被考虑降为建议级——但 i18n 方案把 iam-app 定为 8 个应用的接线样板，样板错误会被复制 → **维持阻断**；B-9（reorder 空挂）证据确凿但影响面小 → 维持阻断（契约单源原则，doc6 §5 明文） | **无误判降级**；10 条阻断全部对应「先改设计才能写代码」 |
 | **3. v2 稿安全？** | 逐条检查 v2 是否引入新硬约束违反：V2-2 的 `version` 列 → 已标 L3 待审批（不执行）；V2-6 的补偿事件 → 列 [Target]，不引入 Outbox 半成品；契约变更只对齐锚定 `cross_module_contracts` 中 bone-iam 的 3 条（gateway / metadata-server / extension-studio），**未新增**跨模块 DTO 或事件；实现清单已覆盖全部 10 条阻断（B-1→前端 api.ts + AuditLog.tsx；B-2→iam.ts + AccountManagement；B-3→TenantQuotaEnforcer(L2 兜底)+version(L3)；B-4/B-8→文档；B-5→HealthIndicator+prod yml+埋点；B-6→main.tsx+qiankun-entry.js；B-7→3 个文件；B-9→doc10 标注；B-10→AuditLog.tsx） | **v2 无新硬约束违反，契约对齐，清单无遗漏** |
 
-### 判定
+### 判定（A' 段，2026-09-26）
 
 **✅ PASS** —— 阻断级 10 条全部有对应方案；v2 稿未引入新的 HC 违反；契约与锚定 `cross_module_contracts` 对齐；证据逐条可复现。
 
-- 状态迁移：`pending` → `design_ready`
-- **下一步**：等待人工卡点 `doc/design/approvals/bone-iam.yaml`（或 `doc/design/modules/bone-iam/_review-approved.yaml`）后进入阶段 B
-- 需人工确认的三个关键点：
-  1. **B-3 并发方案选哪条**：L2 兜底（`FOR UPDATE`）先行，还是直接批 L3 的 `version` 乐观锁 DDL？
-  2. **B-1 导出契约以谁为基准**：保留后端字节流（前端改 blob，推荐）还是改后端包 `ApiResponse<base64>`？
-  3. **S-7 前端缺口范围**：本轮只补「个人信息/改密」，还是连会话管理 / MFA 一起补？
+### 判定（B'/C/D 段，2026-09-27）
+
+**✅ PASS（带 3 条已声明偏差 + 2 条新增阻断）**
+
+- 状态迁移：`design_ready` → **`implemented`**（六段流水线走完 A → A' → B → B' → C → D）
+- 门禁：模块级 `spotless:check` 绿、`bone-iam` 159 tests 全绿（含 `ArchitectureTest` 28 项）
+- 联调：12 条真实请求，全部记录实际 HTTP 码与响应摘要（见 §七）
+- 验收：8 条场景（含新增页面、导出落盘、时间窗、角色增删自清理），卫生断言 0 错，测试数据已清并自证
+- **本轮新发现 3 条**：B-11（时间格式 400，已修）、B-12（MFA 业务码丢失，未抢改）、B-13（响应头不透传，建议）
+
+- **待人工裁定（L3/L4）**：
+  1. **B-3 配额**：本轮只做到单 JVM 分段锁；跨实例需批 `version` 乐观锁 DDL 或新增 JDBC 出站端口（`FOR UPDATE`）——二者都受 `sdk-persistence-bypass-baseline.json` / DDL 审批约束
+  2. **B-12 MFA 业务码**：需与并发会话收口，避免双方反复覆盖 `MfaController`
+  3. **B-5 Micrometer 埋点**（S-12）、**B-6 会话管理 / MFA 前端页**、**S-5 其余列表页四态**：列下一轮
+  4. 建议回写 `国际化设计方案.md` §6.4 勘误（bone-iam 已配 `spring.jackson.time-zone: UTC`）

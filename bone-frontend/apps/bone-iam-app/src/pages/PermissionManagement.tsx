@@ -138,7 +138,7 @@ const PermissionManagement: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await api.deletePermission(id);
       if (response.code === 200) {

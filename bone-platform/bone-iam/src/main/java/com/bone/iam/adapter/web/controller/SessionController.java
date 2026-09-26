@@ -2,8 +2,8 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
+import com.bone.iam.adapter.web.dto.response.SessionResp;
 import com.bone.iam.application.SessionApplicationService;
-import com.bone.iam.domain.model.session.Session;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,8 +32,9 @@ public class SessionController {
 
   @GetMapping("/accounts/{accountId}/sessions")
   @PreAuthorize("hasAuthority('iam:sessions:read') and @platformAccessGuard.isPlatformAdmin()")
-  public ApiResponse<List<Session>> list(@PathVariable Long accountId) {
-    return ApiResponse.success(sessionApplicationService.list(accountId));
+  public ApiResponse<List<SessionResp>> list(@PathVariable Long accountId) {
+    return ApiResponse.success(
+        sessionApplicationService.list(accountId).stream().map(SessionResp::from).toList());
   }
 
   @DeleteMapping("/sessions/{id}")

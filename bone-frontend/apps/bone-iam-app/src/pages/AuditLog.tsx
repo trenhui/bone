@@ -14,8 +14,20 @@ import * as api from '../services/api';
 import ModulePage from '../components/ModulePage';
 import { StatisticCard } from '@ant-design/pro-components';
 import { unwrapPage } from '../utils/pageResult';
+import { downloadBlob } from '../utils/download';
+import { formatDate } from '@bone/shared-utils';
 import type { AuditLog } from '../types';
 import dayjs from 'dayjs';
+/**
+ * 时间窗 → 后端 `LocalDateTime` 可解析的 ISO-8601 本地格式。
+ *
+ * 后端 `AuditLogListQuery.startedAt/endedAt` 是 `LocalDateTime`，Spring 按 ISO_LOCAL_DATE_TIME 解析；
+ * 发 `YYYY-MM-DD HH:mm:ss`（空格分隔）会 400 —— 列表与导出共用同一 query 对象，两者都会挂。
+ * 注意**不能**用 `toISOString()`：那会带 `Z`，LocalDateTime 同样解析失败。
+ */
+const isoLocal = (d: dayjs.Dayjs | null | undefined): string | undefined =>
+  d ? d.format('YYYY-MM-DDTHH:mm:ss') : undefined;
+
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -52,7 +64,7 @@ const AuditLogPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   // 筛选条件
-  const [userId, setUserId] = useState<number | undefined>();
+  const [userId, setUserId] = useState<string | undefined>();
   const [operation, setOperation] = useState<string | undefined>();
   const [resourceType, setResourceType] = useState<string | undefined>();
   const [result, setResult] = useState<string | undefined>();
@@ -76,8 +88,8 @@ const AuditLogPage: React.FC = () => {
         operation: operation as any,
         resourceType,
         result,
-        startTime: dateRange?.[0]?.format('YYYY-MM-DD HH:mm:ss') || undefined,
-        endTime: dateRange?.[1]?.format('YYYY-MM-DD HH:mm:ss') || undefined,
+        startTime: isoLocal(dateRange?.[0]),
+        endTime: isoLocal(dateRange?.[1]),
       };
       const response = await api.getAuditLogs(params);
       if (response.code === 200) {
@@ -100,37 +112,21 @@ const AuditLogPage: React.FC = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const params: Parameters<typeof api.getAuditLogs>[0] = {
-        page: 1,
-        pageSize: 10000,
+      // 字节流契约（§5.8）：后端直接返回 CSV 二进制，不包 ApiResponse，故无 code/data 可判。
+      // 参数名对齐后端 AuditLogListQuery：导出用 startedAt / endedAt / operation。
+      const blob = await api.exportAuditLogs({
         userId,
-        operation: operation as any,
+        operation: operation as string | undefined,
         resourceType,
         result,
-        startTime: dateRange?.[0]?.format('YYYY-MM-DD HH:mm:ss') || undefined,
-        endTime: dateRange?.[1]?.format('YYYY-MM-DD HH:mm:ss') || undefined,
-      };
-      const response = await api.exportAuditLogs(params);
-      if (response.code === 200 && response.data) {
-        // 前端生成 CSV 下载
-        const logs = response.data;
-        const header = 'ID,租户ID,用户ID,操作,资源类型,资源ID,IP,User-Agent,结果,耗时(ms),操作时间\n';
-        const rows = logs.map((log: AuditLog) =>
-          [log.id, log.tenantId, log.userId, log.operation, log.resourceType,
-           log.resourceId || '', log.ip || '', `"${(log.userAgent || '').replace(/"/g, '""')}"`,
-           log.result, log.duration || '', log.createdAt
-          ].join(',')
-        ).join('\n');
-        const csv = '\uFEFF' + header + rows;
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `audit-logs-${dayjs().format('YYYYMMDDHHmmss')}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        messageApi.success('导出成功');
-      }
+        startedAt: isoLocal(dateRange?.[0]),
+        endedAt: isoLocal(dateRange?.[1]),
+      });
+      downloadBlob(
+        blob,
+        `audit-logs-${formatDate(new Date()).replace(/[-: ]/g, '')}.csv`,
+      );
+      messageApi.success('导出成功');
     } catch {
       messageApi.error('导出失败');
     } finally {
@@ -165,7 +161,8 @@ const AuditLogPage: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (val: string) => val ? dayjs(val).format('YYYY-MM-DD HH:mm:ss') : '-',
+      // 走 shared-utils/i18n/format：后端按 UTC 下发，裸 dayjs 会按浏览器本地时区解释
+      render: (val: string) => formatDate(val),
     },
     {
       title: '操作类型',
@@ -265,8 +262,8 @@ const AuditLogPage: React.FC = () => {
             value={searchKeyword}
             onChange={(e) => {
               setSearchKeyword(e.target.value);
-              const num = parseInt(e.target.value, 10);
-              setUserId(isNaN(num) ? undefined : num);
+              const raw = e.target.value.trim();
+              setUserId(raw === '' ? undefined : raw);
             }}
             style={{ width: 120 }}
             prefix={<SearchOutlined />}
@@ -389,7 +386,7 @@ const AuditLogPage: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="耗时">{currentLog.duration != null ? `${currentLog.duration}ms` : '-'}</Descriptions.Item>
             <Descriptions.Item label="操作时间">
-              {currentLog.createdAt ? dayjs(currentLog.createdAt).format('YYYY-MM-DD HH:mm:ss') : '-'}
+              {formatDate(currentLog.createdAt)}
             </Descriptions.Item>
           </Descriptions>
         )}

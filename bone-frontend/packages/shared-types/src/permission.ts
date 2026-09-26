@@ -1,19 +1,21 @@
 /**
  * 权限领域类型（对齐 iam-app 真实模型）
+ *
+ * ID 一律 `string`：后端雪花 ID 以字符串下发（详设 §2.10），数值化会丢精度。
  */
 
 export interface Permission {
-  id: number;
+  id: string;
   name: string;
   code: string;
   description?: string;
   resourceType: string;
   resourcePath: string;
   action: string;
-  parentId?: number;
+  parentId?: string;
   sortOrder?: number;
-  createdBy?: number;
-  updatedBy?: number;
+  createdBy?: string;
+  updatedBy?: string;
   createdAt: string;
   updatedAt: string;
   deleted: boolean;
@@ -27,7 +29,7 @@ export interface CreatePermissionRequest {
   resourceType: string;
   resourcePath?: string;
   action: string;
-  parentId?: number;
+  parentId?: string;
   type?: string;
   sortOrder?: number;
 }
@@ -38,7 +40,7 @@ export interface UpdatePermissionRequest {
   resourceType?: string;
   resourcePath?: string;
   action?: string;
-  parentId?: number;
+  parentId?: string;
   type?: string;
   sortOrder?: number;
 }

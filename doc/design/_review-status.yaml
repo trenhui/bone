@@ -2,11 +2,11 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-26T23:58:00+08:00"
+updated_at: "2026-09-27T07:05:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
 current_module: "bone-iam"
 next_run: "bone-metadata-server"
-phase_model: "A=设计（review + v2 稿 + 自审，等人工卡点，不写代码）；B=实现（需 doc/design/approvals/<module>.yaml 或 doc/design/modules/<module>/_review-approved.yaml）"
+phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
 modules:
@@ -14,15 +14,22 @@ modules:
     design_doc: "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/6. IAM账号权限管理模块详细设计方案.md", "doc/design/modules/6a. IAM账号权限管理模块核心场景及用例设计方案.md", "doc/design/modules/10. 应用与模块管理详细设计方案.md"]
     port: 8081
-    status: "design_ready"
+    status: "implemented"
     last_reviewed_at: "2026-09-26T23:58:00+08:00"
-    implemented_at: null
+    implemented_at: "2026-09-27T07:05:00+08:00"
     report_path: "doc/design/modules/review-report-bone-iam.md"
     has_active_comet_change: false
-    note: "轮换首个模块；10. 应用与模块管理（/api/v1/apps）已并入本模块设计稿清单"
+    note: "轮换首个模块；10. 应用与模块管理（/api/v1/apps）已并入本模块设计稿清单；2026-09-27 进入 B 实现（L0–L2），HC-004 安全修复已独立提交（非本模块范围）"
     review_note: "2026-09-26 A+A' 段完成：阻断级 10 条（B-1 导出契约三重错位 / B-2 ID 精度分裂 / B-3 配额非原子+无乐观锁 / B-4 角色继承文档自相矛盾 / B-5 HealthIndicator STUB+prod 无 metrics / B-6 locale 管道断裂+lifecycle 双份 / B-7 26 处裸 message 绕过错误码 / B-8 §3.3 目录结构与 ADR-0028 不符 / B-9 reorder 契约空挂 / B-10 时间链路半通）；方案自审 PASS。v2 稿已追加至 doc6 末尾。按 02 提示词 v3 §5「默认放行」，下一晚从 B 实现段继续（B → B' → C 联调 → D 验收），无需等待人工批准文件；仅当 doc/design/approvals/bone-iam.yaml 写 decision: hold/block 时才停。"
-    next_stage: "B"
-    pending_approvals: ["L3 乐观锁 version 列 DDL", "L3 删 Capability.java / Layout.tsx", "L3 iam-app dayjs 依赖收敛", "L3 ddl-baseline iam_permission → by-design"]
+    next_stage: null
+    stages_done: ["A", "A'", "B", "B'", "C", "D"]
+    pending_approvals:
+      - "L3 乐观锁 version 列 DDL（B-3 跨实例配额串行）"
+      - "L3 新增 JDBC 出站端口做 SELECT ... FOR UPDATE（受 sdk-persistence-bypass-baseline.json 约束）"
+      - "L3 删 Capability.java / Layout.tsx"
+      - "L3 iam-app dayjs 依赖收敛"
+      - "L3 ddl-baseline iam_permission → by-design"
+    new_findings: ["B-11 时间格式契约（已修）", "B-12 MfaController 业务码丢失（并发会话占用，未抢改）", "B-13 共享 apiClient 不透传响应头"]
 
   - name: "bone-metadata-server"
     design_doc: "doc/design/modules/2. 元数据管理模块详细设计方案.md"

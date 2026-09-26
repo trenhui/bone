@@ -133,14 +133,14 @@ const RoleManagement: React.FC = () => {
       form.setFieldsValue({
         name: role.name,
         description: role.description,
-        permissionIds: detailIds as number[],
+        permissionIds: detailIds.map(String),
       });
     } catch {
       form.setFieldsValue({ name: role.name, description: role.description, permissionIds: [] });
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await api.deleteRole(id);
       if (response.code === 200) {
@@ -156,7 +156,7 @@ const RoleManagement: React.FC = () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
-      let roleId: number;
+      let roleId: string;
       if (isEditMode && currentRole) {
         const updateData: UpdateRoleRequest = {
           name: values.name,
@@ -182,7 +182,7 @@ const RoleManagement: React.FC = () => {
         roleId = response.data;
       }
       // 权限绑定走独立的 replace 语义接口；编辑时即使清空也要提交以解除全部绑定
-      const permissionIds = (values.permissionIds ?? []) as number[];
+      const permissionIds = ((values.permissionIds ?? []) as Array<number | string>).map(String);
       if (permissionIds.length > 0 || isEditMode) {
         try {
           await api.assignPermissions(roleId, permissionIds);
