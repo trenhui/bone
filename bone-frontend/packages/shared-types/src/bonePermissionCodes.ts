@@ -53,6 +53,14 @@ export const BonePermissionCodes = {
   EXTENSION_POINTS_READ: 'extension:points:read',
   EXTENSION_POINTS_WRITE: 'extension:points:write',
   EXTENSION_PLUGINS_DEPLOY: 'extension:plugins:deploy',
+  // 5a G3 权限分层：插件读/写/绑定、生效切换、观测、市场
+  EXTENSION_PLUGINS_READ: 'extension:plugins:read',
+  EXTENSION_PLUGINS_WRITE: 'extension:plugins:write',
+  EXTENSION_PLUGINS_BIND: 'extension:plugins:bind',
+  EXTENSION_RUNTIME_PUBLISH: 'extension:runtime:publish',
+  EXTENSION_OBSERVE_READ: 'extension:observe:read',
+  EXTENSION_MARKETPLACE_INSTALL: 'extension:marketplace:install',
+  EXTENSION_MARKETPLACE_MANAGE: 'extension:marketplace:manage',
 
   // 主数据（G6 落地：种子 iam_permission + DefaultPermissionCodes + @PreAuthorize 三处同步）
   MASTERDATA_ENTITIES_READ: 'masterdata:entities:read',

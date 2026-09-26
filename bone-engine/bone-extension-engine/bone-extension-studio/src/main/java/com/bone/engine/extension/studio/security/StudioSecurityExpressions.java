@@ -37,4 +37,23 @@ public class StudioSecurityExpressions {
     }
     return false;
   }
+
+  /**
+   * 多 Scope 兼容判定（5a G3 过渡期回退）：scopes[0] 为新 Scope，其余为过渡期兼容的旧 Scope。 {@code
+   * security.legacy-scope-fallback=false}（切流）后仅认新 Scope。
+   */
+  public boolean hasAnyScope(String... scopes) {
+    if (scopes == null || scopes.length == 0) {
+      return false;
+    }
+    if (!studioProperties.getSecurity().isLegacyScopeFallback()) {
+      return hasScope(scopes[0]);
+    }
+    for (String scope : scopes) {
+      if (hasScope(scope)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

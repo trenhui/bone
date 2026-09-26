@@ -128,19 +128,19 @@ const SystemConfigPage: React.FC = () => {
   const columns = [
     {
       title: '配置键',
-      dataIndex: 'key',
-      key: 'key',
+      dataIndex: 'configKey',
+      key: 'configKey',
     },
     {
       title: '配置值',
-      dataIndex: 'value',
-      key: 'value',
+      dataIndex: 'configValue',
+      key: 'configValue',
       ellipsis: true,
     },
     {
       title: '类型',
-      dataIndex: 'type',
-      key: 'type',
+      dataIndex: 'configType',
+      key: 'configType',
       render: getTypeTag,
     },
     {

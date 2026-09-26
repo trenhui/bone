@@ -558,8 +558,7 @@ flowchart TD
 | `/api/v1/metadata/relationships/{id}` | GET/PUT/DELETE | 关系维护 | A+B |
 | `/api/v1/generator/data-sources` | GET/POST | 生成器数据源 CRUD（**studio-generator**，模式 A） | A |
 | `/api/v1/generator/templates` | GET/POST | 代码模板（细节见 [API §13.1.1](./Bone-API-规范.md#1311-代码生成generator规范路径)） | A |
-| `/api/v1/generator/code-generation` | POST | Freemarker 异步生成（As-Is） | A |
-| `/api/v1/generator/generation-tasks` | POST | 同步字符串模板生成 | A |
+| `/api/v1/generator/code-generation` | POST | 代码生成**唯一入口**（`?sync=true` 同步 / 默认 LRO 202 + `GET /operations/{id}`；原 `/generation-tasks` 复用入口已移除） | A |
 | `/api/v1/runtime/entities/{code}/records` | GET/POST | 动态列表/创建 **[Target]** | B |
 | `/api/v1/runtime/entities/{code}/records/{id}` | GET/PUT/DELETE | 动态详情/更新/删除 **[Target]** | B |
 | `/api/v1/metadata/templates` | GET/POST | 元数据侧模板（阶段 0；与 generator 模板分离） | Vision |

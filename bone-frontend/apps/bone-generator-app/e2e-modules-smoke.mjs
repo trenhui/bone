@@ -67,7 +67,7 @@ async function main() {
 
   // ---- SYSTEM ----
   checkRead('SYS 配置分页', await jget(P('/api/v1/system/config/page'), A));
-  checkRead('SYS 字典分页', await jget(P('/api/v1/system/dicts/page'), A));
+  checkRead('SYS 字典类型分页', await jget(P('/api/v1/system/dict/types/page'), A));
   checkRead('SYS 调度任务', await jget(P('/api/v1/system/schedule-tasks/page'), A));
   checkRead('SYS 操作日志', await jget(P('/api/v1/system/logs/page'), A));
   checkRead('SYS 告警规则', await jget(P('/api/v1/system/alert/rules/page'), A));

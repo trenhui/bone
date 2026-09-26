@@ -76,6 +76,7 @@ public class RateLimitGatewayFilter implements GlobalFilter, Ordered {
     StringBuilder sb = new StringBuilder(path);
     boolean byIp = properties.isByIp();
     boolean byUser = properties.isByUser();
+    boolean byTenant = properties.isByTenant();
     if (byIp) {
       sb.append(":ip=").append(resolveIp(request));
     }
@@ -83,6 +84,14 @@ public class RateLimitGatewayFilter implements GlobalFilter, Ordered {
       String userId = request.getHeaders().getFirst("X-User-Id");
       if (StringUtils.hasText(userId)) {
         sb.append(":user=").append(userId);
+      }
+    }
+    if (byTenant) {
+      // X-Tenant-Id 由 JwtAuthGlobalFilter 在鉴权后注入（客户端自带的同名头已被先行清除），
+      // 因此不可伪造；未认证请求（如 /login）无该头，自然回落到 IP/用户维度。
+      String tenantId = request.getHeaders().getFirst("X-Tenant-Id");
+      if (StringUtils.hasText(tenantId)) {
+        sb.append(":tenant=").append(tenantId);
       }
     }
     return sb.toString();

@@ -8,7 +8,12 @@ import type {
   SystemLog,
   Metrics,
   SystemInfo,
-  SysDict,
+  DictType,
+  DictItem,
+  DictOption,
+  DictEnumDiff,
+  DictExport,
+  DictItemText,
   ScheduleTask,
   ApiResponse,
   PageResult,
@@ -155,24 +160,100 @@ export const consoleApi = {
   },
 };
 
-// 系统字典 API
+// 系统字典 API（两级模型：/system/dict/types + /system/dict/items）
 export const dictApi = {
-  getDictsByType: async (type: string) => {
-    return api.get<never, ApiResponse<SysDict[]>>(`/system/dicts/type/${type}`);
-  },
-  getDictPage: async (params: { type?: string; keyword?: string; pageNum?: number; pageSize?: number }) => {
-    return api.get<never, ApiResponse<PageResult<SysDict>>>('/system/dicts/page', {
-      params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, type: params.type, keyword: params.keyword },
+  // ---- 字典类型（定义层） ----
+  getTypePage: async (params: { keyword?: string; category?: string; moduleCode?: string; status?: number; pageNum?: number; pageSize?: number }) => {
+    return api.get<never, ApiResponse<PageResult<DictType>>>('/system/dict/types/page', {
+      params: {
+        pageNum: params.pageNum ?? 1,
+        pageSize: params.pageSize ?? 20,
+        keyword: params.keyword,
+        category: params.category,
+        moduleCode: params.moduleCode,
+        status: params.status,
+      },
     });
   },
-  createDict: async (data: Omit<SysDict, 'id'>) => {
-    return api.post<never, ApiResponse<number>>('/system/dicts', data);
+  getTypeByCode: async (code: string) => {
+    return api.get<never, ApiResponse<DictType>>(`/system/dict/types/${code}`);
   },
-  updateDict: async (id: number, data: Partial<SysDict>) => {
-    return api.put<never, ApiResponse<void>>(`/system/dicts/${id}`, data);
+  createType: async (data: Partial<DictType>) => {
+    return api.post<never, ApiResponse<number>>('/system/dict/types', data);
   },
-  deleteDict: async (id: number) => {
-    return api.delete<never, ApiResponse<void>>(`/system/dicts/${id}`);
+  updateType: async (id: number, data: Partial<DictType>) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/types/${id}`, data);
+  },
+  deleteType: async (id: number) => {
+    return api.delete<never, ApiResponse<void>>(`/system/dict/types/${id}`);
+  },
+  getEnumDiff: async (code: string) => {
+    return api.get<never, ApiResponse<DictEnumDiff>>(`/system/dict/types/${code}/enum-diff`);
+  },
+  syncEnum: async (code: string) => {
+    return api.post<never, ApiResponse<number>>(`/system/dict/types/${code}/enum-sync`);
+  },
+  getHierarchies: async (code: string) => {
+    return api.get<never, ApiResponse<string[]>>(`/system/dict/types/${code}/hierarchies`);
+  },
+  exportType: async (code: string) => {
+    return api.get<never, ApiResponse<DictExport>>(`/system/dict/types/${code}/export`);
+  },
+  importType: async (code: string, payload: DictExport) => {
+    return api.post<never, ApiResponse<number>>(`/system/dict/types/${code}/import`, payload);
+  },
+
+  // ---- 字典项（值层） ----
+  getItemPage: async (params: { typeCode?: string; parentCode?: string; hierarchyCode?: string; keyword?: string; status?: number; pageNum?: number; pageSize?: number }) => {
+    return api.get<never, ApiResponse<PageResult<DictItem>>>('/system/dict/items/page', {
+      params: {
+        pageNum: params.pageNum ?? 1,
+        pageSize: params.pageSize ?? 20,
+        typeCode: params.typeCode,
+        parentCode: params.parentCode,
+        hierarchyCode: params.hierarchyCode,
+        keyword: params.keyword,
+        status: params.status,
+      },
+    });
+  },
+  getItemTree: async (typeCode: string, hierarchyCode?: string) => {
+    return api.get<never, ApiResponse<DictItem[]>>('/system/dict/items/tree', {
+      params: { typeCode, hierarchyCode },
+    });
+  },
+  getTexts: async (typeCode: string, code: string) => {
+    return api.get<never, ApiResponse<DictItemText[]>>(`/system/dict/items/${typeCode}/${code}/texts`);
+  },
+  saveTexts: async (typeCode: string, code: string, payload: DictItemText[]) => {
+    return api.put<never, ApiResponse<number>>(`/system/dict/items/${typeCode}/${code}/texts`, payload);
+  },
+  getItem: async (typeCode: string, code: string) => {
+    return api.get<never, ApiResponse<DictItem>>(`/system/dict/items/${typeCode}/${code}`);
+  },
+  createItem: async (data: Partial<DictItem>) => {
+    return api.post<never, ApiResponse<number>>('/system/dict/items', data);
+  },
+  updateItem: async (id: number, data: Partial<DictItem>) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}`, data);
+  },
+  deleteItem: async (id: number) => {
+    return api.delete<never, ApiResponse<void>>(`/system/dict/items/${id}`);
+  },
+  moveItem: async (id: number, data: { parentCode?: string | null; hierarchyCode?: string; sort?: number }) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/move`, data);
+  },
+  markDefault: async (id: number) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/default`);
+  },
+  /**
+   * 下拉数据源：全平台消费字典的唯一入口。
+   * 合并平台与租户覆盖 → 过滤停用与未生效 → 按 lang 本地化标签。
+   */
+  getOptions: async (type: string, parent?: string, lang?: string) => {
+    return api.get<never, ApiResponse<DictOption[]>>('/system/dict/items/options', {
+      params: { type, parent, lang },
+    });
   },
 };
 

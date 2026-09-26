@@ -1,9 +1,9 @@
 package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.response;
 
 import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+<#assign needBigDecimal = false><#assign needLocalDate = false><#list columns as c><#if c.javaType == 'BigDecimal'><#assign needBigDecimal = true></#if><#if c.javaType == 'LocalDate'><#assign needLocalDate = true></#if></#list><#if needBigDecimal>import java.math.BigDecimal;
+</#if><#if needLocalDate>import java.time.LocalDate;
+</#if>import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

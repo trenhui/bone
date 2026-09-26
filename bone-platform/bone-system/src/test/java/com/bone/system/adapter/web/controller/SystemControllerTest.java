@@ -20,6 +20,8 @@ class SystemControllerTest {
 
   @Mock private MeterRegistry meterRegistry;
 
+  @Mock private com.bone.system.application.port.out.MetricValuePort metricValuePort;
+
   @InjectMocks private SystemController systemController;
 
   private MockMvc mockMvc;

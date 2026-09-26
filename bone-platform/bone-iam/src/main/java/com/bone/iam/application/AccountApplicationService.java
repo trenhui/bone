@@ -122,7 +122,7 @@ public class AccountApplicationService {
     }
     account.updateProfile(cmd.getRealName(), cmd.getPhone(), null);
     if (cmd.getDeptId() != null) {
-      // 语义：null=不变更（兼容未传该字段的存量调用方）；0=显式撤销归属（已禁止）；其他=本租户内已存在的部门
+      // 语义：null=不变更（兼容未传该字段的存量调用方）；0=清空（已禁止，归属部门必填）；其他=本租户内已存在的部门
       if (cmd.getDeptId() == 0L) {
         throw IamErrors.of(IamErrorCodes.DEPT_REQUIRED, "归属部门为必填项，不能清空");
       }

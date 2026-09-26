@@ -46,9 +46,15 @@ public class CurrentUserPortAdapter implements CurrentUserPort {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null
         && authentication.getPrincipal() instanceof JwtPrincipal principal
-        && principal.tenantId() != null) {
+        && principal.tenantId() != null
+        && !principal.tenantId().isBlank()) {
       try {
-        return Long.valueOf(principal.tenantId());
+        Long claim = Long.valueOf(principal.tenantId());
+        // claim=0（平台租户）不是可用的业务租户：以 TenantContext 为准——它由 X-Tenant-Id 头建立，
+        // 已包含平台管理员 X-Acting-Tenant-Id 租户切换后的生效租户；未切换时同为 0，语义不变。
+        if (claim != 0) {
+          return claim;
+        }
       } catch (NumberFormatException ignored) {
         return null;
       }

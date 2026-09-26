@@ -6,13 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.bone.system.adapter.web.dto.response.AlertRecordResp;
 import com.bone.system.adapter.web.dto.response.AlertRuleResp;
 import com.bone.system.adapter.web.dto.response.ConfigResp;
-import com.bone.system.adapter.web.dto.response.DictResp;
+import com.bone.system.adapter.web.dto.response.DictTypeResp;
 import com.bone.system.adapter.web.dto.response.LogResp;
 import com.bone.system.adapter.web.dto.response.ScheduleTaskResp;
 import com.bone.system.application.query.dto.AlertRecordDto;
 import com.bone.system.application.query.dto.AlertRuleDto;
 import com.bone.system.application.query.dto.ConfigDto;
-import com.bone.system.application.query.dto.DictDto;
+import com.bone.system.application.query.dto.DictTypeDto;
 import com.bone.system.application.query.dto.LogDto;
 import com.bone.system.application.query.dto.ScheduleTaskDto;
 import java.time.Instant;
@@ -60,9 +60,9 @@ class UtcTimeContractTest {
 
   @Test
   void dictRespTimeIsUtcInstant() {
-    DictResp resp =
+    DictTypeResp resp =
         new DictAssemblerImpl()
-            .toResp(DictDto.builder().createdAt(SAMPLE).updatedAt(SAMPLE).build());
+            .toResp(DictTypeDto.builder().createdAt(SAMPLE).updatedAt(SAMPLE).build());
     assertEquals(EXPECTED, resp.getCreatedAt());
     assertEquals(EXPECTED, resp.getUpdatedAt());
   }

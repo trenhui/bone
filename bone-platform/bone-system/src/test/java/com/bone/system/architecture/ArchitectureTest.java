@@ -23,9 +23,20 @@ public class ArchitectureTest {
 
   // E-2 / E-4.4 补充门禁（2026-09-20，共享规则）：全租户扫描只许 adapter.schedule 调用，schedule 也只许调全租户入口；
   // 全租户入口必须叫 *AllTenants。判据是事实（@TenantScope(ALL) 或 Criteria.disableTenantFilter()），不是名字。
+  // 登记豁免：AlertApplicationService#evaluateAllRules 是定时评估用例（由 adapter/schedule 的
+  // AlertEvaluationJob 驱动），评估需「跨租户读规则 + 写告警事件 + 发领域事件」在应用层成对完成，
+  // 不满足 adapter.schedule 只读授权；按规则文档的登记通道显式加入白名单（评审逐条可见）。
+  // DictApplicationService：字典是「平台共享（tenant_id=0）+ 租户覆盖」模型，读取必须同时命中
+  // 平台行与租户行，单值租户谓词表达不了这一语义——故其查询走 *AllTenants 入口，并在入口内用
+  // in(tenant_id, 0, 当前租户) 显式收窄作用域（不是放开全租户扫描，见仓储方法注释）。
   @ArchTest
   static final ArchRule all_tenants_scan_only_by_schedule =
-      BoneDddArchRules.allTenantScanMethodsOnlyCalledBySchedule(DOMAIN_REPOSITORY_PACKAGE);
+      BoneDddArchRules.allTenantEntryPointsOnlyCalledBy(
+          DOMAIN_REPOSITORY_PACKAGE,
+          BoneDddArchRules.AllTenantCallers.ofPackages("..adapter.schedule..")
+              .andClasses(
+                  "com.bone.system.application.AlertApplicationService",
+                  "com.bone.system.application.DictApplicationService"));
 
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =

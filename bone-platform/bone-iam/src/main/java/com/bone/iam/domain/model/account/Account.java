@@ -4,6 +4,7 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.core.exception.DomainException;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
@@ -133,8 +134,11 @@ public class Account extends TenantAggregateRoot<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
-  /** 调整归属部门（null 表示撤销归属）。幂等：值未变则不改更新时间，避免无意义的乐观锁版本号推进。 */
+  /** 调整归属部门。归属部门为必填项（所有账号必须归属一个主部门），故不接受 null； 幂等：值未变则不改更新时间，避免无意义的乐观锁版本号推进。 */
   public void changeDept(Long newDeptId) {
+    if (newDeptId == null) {
+      throw new DomainException("归属部门为必填项，不能清空");
+    }
     if (java.util.Objects.equals(this.deptId, newDeptId)) {
       return;
     }

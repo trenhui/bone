@@ -12,6 +12,14 @@ public final class DefaultPermissionCodes {
         "extension:points:read",
         "extension:points:write",
         "extension:plugins:deploy",
+        // 5a G3 权限分层：插件读/写/绑定、生效切换、观测、市场
+        "extension:plugins:read",
+        "extension:plugins:write",
+        "extension:plugins:bind",
+        "extension:runtime:publish",
+        "extension:observe:read",
+        "extension:marketplace:install",
+        "extension:marketplace:manage",
         "metadata:read",
         "metadata:write",
         // G5 元数据权限码拆分（2a §4.3）：建模 / 运行时 / 平台模板；旧三码保留为 deprecated 别名
@@ -46,6 +54,7 @@ public final class DefaultPermissionCodes {
         "sys:config:write",
         "sys:dict:write",
         "sys:schedule:write",
+        "sys:log:write",
         // 主数据（G6 落地：3a 设计 §4.4 权限码全集）
         "masterdata:entities:read",
         "masterdata:entities:write",

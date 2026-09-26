@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
 import { subscribeLocaleChange } from '@bone/shared-utils';
+// 必须早于 App：Monaco 自托管配置要在渲染任何 Editor 之前生效
+import './setupMonaco';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -40,7 +42,7 @@ function render(props?: QiankunProps) {
 renderWithQiankun({
   bootstrap() {},
   mount(props: QiankunProps) {
-  subscribeLocaleChange();
+    subscribeLocaleChange();
     const token = (props as { token?: string })?.token;
     if (token) {
       localStorage.setItem('token', token);

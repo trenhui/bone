@@ -1,0 +1,867 @@
+# Bone 工程全局设计拓扑锚定（01-global-anchor v2）
+# 用途：02-nightly-design-review 的唯一模块清单与契约基线真源
+# 规则：HC 定义与门禁状态真源在 doc/architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints
+#       与 doc/architecture/gate-state.json；本文件只写编号 + 本模块判据 + 代码证据，不复写状态
+# hc_coverage 口径：implemented | violated | partial | unknown（本模块代码判据，与 gate-state.json 无关）
+generated_at: "2026-09-26T23:40:00+08:00"
+generator: "01-global-anchor v2"
+git:
+  branch: "release/mvp-v1.0"
+  head: "b6406ba64"
+  dirty: true
+  dirty_files: 164
+hard_constraints_ref: "doc/architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints"
+gate_state_ref: "doc/architecture/gate-state.json"
+
+# HC 判据全文只解释一次；夜间任务不得自行解释编号
+hc_semantics:
+  HC-001: "禁止引入 MyBatis-Plus / JPA / Hibernate / MyBatis"
+  HC-002: "domain 层不依赖 adapter / application / infrastructure"
+  HC-003: "Controller 必须返回 ApiResponse<T> / PageResult<T>"
+  HC-004: "禁止硬编码密钥 / 密码 / Token"
+  HC-005: "核心模块测试覆盖率门槛（父 POM 默认 + 模块覆盖）"
+  HC-006: "数据库访问必须通过 bone-metadata-sdk Repository"
+  HC-007: "PR 的 OpenAPI spec 不得引入 breaking change"
+  HC-008: "新增表必须含 tenant_id + created_at + updated_at + deleted"
+
+# HC-004 的取证口径（gitleaks 未安装，用可复现的本地正则扫描替代，结论不等价于 gitleaks 全规则）
+hc_scan_notes:
+  tool_status: "gitleaks 未安装；scripts/scan-secrets.sh 未执行（依赖缺失）"
+  java_scan: "grep -rn --include='*.java' -iE '(password|passwd|secret|token|apikey|accesskey|privatekey)[\"' ]*[:=][ \"']*[A-Za-z0-9_!@#$%^&*+/=-]{8,}' bone-platform bone-engine bone-framework | grep src/main"
+  yml_scan: "grep -rn --include='*.yml' -iE '(password|secret|token|key): *[\"'][A-Za-z0-9_!@#$%^&*+/=-]{8,}[\"']' bone-platform bone-engine bone-framework | grep src/main/resources → 0 命中"
+  frontend_scan: "grep -rn --include='*.{ts,tsx,mjs}' -iE '(apiKey|api_key|secret|token|password)[\"' ]*[:=][ \"']*[A-Za-z0-9_!@#$%^&*+/=-]{12,}' bone-frontend/apps | grep -v node_modules → 0 命中"
+  caveat: "上述扫描只覆盖明文字面量赋值，不覆盖 base64/密钥文件/测试夹具/历史提交；HC-004=implemented 仅表示本次扫描无命中，不得等同于 gitleaks 通过"
+
+# ---------------------------------------------------------------------------
+# 设计稿索引（含行数实测 wc -l；cross-cutting / process 不进模块轮换）
+# ---------------------------------------------------------------------------
+design_doc_index:
+  - {path: "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md", kind: "module-design", lines: 805, module: "bone-system"}
+  - {path: "doc/design/modules/2. 元数据管理模块详细设计方案.md", kind: "module-design", lines: 1058, module: "bone-metadata-server"}
+  - {path: "doc/design/modules/2a. 元数据管理模块核心场景及用例设计方案.md", kind: "module-design", lines: 565, module: "bone-metadata-server"}
+  - {path: "doc/design/modules/2b. 建模工作台功能与用例设计方案.md", kind: "module-design", lines: 351, module: "bone-metadata-server"}
+  - {path: "doc/design/modules/2. 元数据管理模块-生产就绪优化计划(P0·P1).md", kind: "plan", lines: 181, module: "bone-metadata-server"}
+  - {path: "doc/design/modules/元数据能力-实现映射与竞品对照.md", kind: "module-design", lines: 301, module: "bone-metadata-server"}
+  - {path: "doc/design/modules/3. 主数据管理模块详细设计方案.md", kind: "module-design", lines: 787, module: "bone-masterdata"}
+  - {path: "doc/design/modules/3a. 主数据管理模块核心场景及用例设计方案.md", kind: "module-design", lines: 636, module: "bone-masterdata"}
+  - {path: "doc/design/modules/4. 集成管理模块详细设计方案.md", kind: "module-design", lines: 497, module: "bone-integration"}
+  - {path: "doc/design/modules/5. 扩展管理模块详细设计方案.md", kind: "module-design", lines: 842, module: "bone-extension-studio"}
+  - {path: "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", kind: "module-design", lines: 393, module: "bone-extension-studio"}
+  - {path: "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md", kind: "module-design", lines: 1264, module: "bone-iam"}
+  - {path: "doc/design/modules/6a. IAM账号权限管理模块核心场景及用例设计方案.md", kind: "module-design", lines: 312, module: "bone-iam"}
+  - {path: "doc/design/modules/7. 系统管理模块详细设计方案.md", kind: "module-design", lines: 472, module: "bone-system"}
+  - {path: "doc/design/modules/7a. 数据字典模块详细设计方案.md", kind: "module-design", lines: 315, module: "bone-system"}
+  - {path: "doc/design/modules/8.Studio Generator 详细设计方案.md", kind: "module-design", lines: 1533, module: "studio-generator"}
+  - {path: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md", kind: "module-design", lines: 103, module: "bone-metadata-engine"}
+  - {path: "doc/design/modules/10. 应用与模块管理详细设计方案.md", kind: "module-design", lines: 300, module: "bone-iam"}
+  - {path: "doc/design/modules/README.md", kind: "index", lines: 43, module: null}
+  - {path: "doc/design/BONE-X-Studio-详细设计方案.md", kind: "cross-cutting", lines: 5317, module: null}
+  - {path: "doc/design/国际化设计方案.md", kind: "cross-cutting", lines: 1565, module: null}
+  - {path: "doc/design/AI-夜间设计复核工作流方案.md", kind: "process", lines: 447, module: null}
+  - {path: "doc/design/README.md", kind: "index", lines: 9, module: null}
+
+# ---------------------------------------------------------------------------
+# 模块清单（顺序 = 依赖拓扑：被依赖方在前，前端 shell 最后）
+# ---------------------------------------------------------------------------
+modules:
+  - name: "bone-iam"
+    role: "product"
+    code_roots: ["bone-platform/bone-iam"]
+    design_doc: "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      - "doc/design/modules/6a. IAM账号权限管理模块核心场景及用例设计方案.md"
+      - "doc/design/modules/10. 应用与模块管理详细设计方案.md"
+    doc_kind: "module-design"
+    lines: 1264
+    port: 8081
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates:
+      - "Account / Role / Dept / Menu / AuditLog（TenantAggregateRoot<Long>）"
+      - "BoneApplication / BoneModule / AppPermission（TenantAggregateRoot<Long>）"
+      - "Tenant / Permission（AggregateRoot<Long>，非租户表）"
+      - "AccountRole / RolePermission（Entity<Long>，非聚合）"
+    repositories:
+      - "com.bone.iam.domain.repository.AccountRepository — findByUsernameAcrossTenants(String) / findAccountPage(...) / resetPassword(...)"
+      - "com.bone.iam.domain.repository.TenantRepository — countByCode / findTenantPage / findById"
+      - "com.bone.iam.domain.repository.RoleRepository — findRolePage(keyword,tenantId,pageNo,pageSize) / findByCode"
+      - "com.bone.iam.domain.repository.PermissionRepository / MenuRepository / DeptRepository — listAll / findByCode"
+      - "com.bone.iam.domain.repository.AccountRoleRepository — findByAccount / replaceBindingsForAccount"
+      - "com.bone.iam.domain.repository.RolePermissionRepository — findByRole / replaceBindingsForRole"
+      - "com.bone.iam.domain.repository.BoneApplicationRepository / BoneModuleRepository / AppPermissionRepository"
+      - "com.bone.iam.domain.repository.AuditLogRepository — findAuditLogPage(...)"
+    exposed_apis:
+      - "/api/v1/iam — POST /login、POST /logout、POST /refresh、GET /sso/config、GET /sso/callback(501)"
+      - "/api/v1/iam/accounts — POST/GET、/{id}、/{id}/enable|disable|reset-password、/import、/export"
+      - "/api/v1/iam/roles（含 /{id}/permissions）、/permissions（含 /tree）、/tenants（含 /{id}/quota）"
+      - "/api/v1/iam/depts（含 /tree）、/menus（含 /tree、/current）、/audit（含 /logs/export、/settings）"
+      - "/api/v1/iam/me、/api/v1/iam/accounts/{id}/sessions、/api/v1/iam/mfa/*（501）"
+      - "/api/v1/apps、/api/v1/apps/{appId}/modules（10 号设计稿对应域）"
+      - "/.well-known/jwks.json (code-only)"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PageResult", "PlatformApiPaths", "JwtPrincipal", "JwtConfig", "@NoDomainEvent"]
+    error_codes_used: ["com.bone.iam.common.IamErrorCodes（IAM_*，37 个：IAM_LOGIN_FAILED / IAM_ACCOUNT_LOCKED / IAM_TENANT_QUOTA_EXCEEDED / IAM_SSO_NOT_CONFIGURED / IAM_MFA_NOT_AVAILABLE）"]
+    tables: ["iam_account", "iam_account_role", "iam_audit_log", "iam_audit_settings", "iam_dept", "iam_menu", "iam_permission", "iam_policy", "iam_refresh_token", "iam_role", "iam_role_permission", "iam_tenant", "bone_application", "bone_module", "bone_app_permission"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
+    hc_evidence:
+      HC-001: "grep -rln -E 'org.apache.ibatis|jakarta.persistence|org.hibernate|org.mybatis' bone-platform/bone-iam/src/main → 0 命中"
+      HC-002: "grep -rn 'import com.bone.*.(adapter|application|infrastructure).' bone-platform/bone-iam/src/main | grep /domain/ → 0 命中"
+      HC-003: "ls bone-platform/bone-iam/src/main/**/*Controller.java = 15；grep -rl ResponseEntity = 6（Auth/Audit/Mfa/Jwks/Module/App）"
+      HC-004: "本机 gitleaks 未安装、scan-secrets.sh 未执行；定向 grep 'encode(\"...\")|setPassword(\"...\")' 在 src/main 无命中 → 无法完整取证，标 unknown"
+      HC-005: "bone-iam/pom.xml 无 jacoco.minimum.coverage 覆盖 → 继承父 POM 0.10"
+      HC-006: "baseline 内 6 个（DatabaseDebugTool、AuditSettings/RefreshTokenIssuer/RefreshTokenSession/TenantDeletion GatewayAdapter、AuditLogRetentionPortAdapter）+ 未登记新增 1 个：adapter/schedule/AuditLogCleanupJob.java"
+      HC-007: "doc/architecture/openapi/iam-v1.yaml 存在"
+      HC-008: "ddl-required-columns-baseline.json：iam_permission、iam_role_permission 为 needs-owner-decision"
+    design_vs_code_gaps:
+      - "doc6 目录树声明 application/event/ 领域事件 Handler，代码零事件类；7 个 ApplicationService 全部标注 @NoDomainEvent"
+      - "网关白名单 /api/v1/iam/auth/login 永不命中——AuthController 直挂 /api/v1/iam，无 /auth/** 前缀（bone-gateway/src/main/resources/application.yml:72）"
+      - "doc10 §3 的 PUT /api/v1/apps/{appId}/modules/reorder 未实现（ModuleController 无该映射）"
+      - "doc6 §7 的 SSO 权限码 iam:sso:read 无 @PreAuthorize 落地"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-metadata-server"
+    role: "product"
+    code_roots: ["bone-engine/bone-metadata-server"]
+    design_doc: "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      - "doc/design/modules/2a. 元数据管理模块核心场景及用例设计方案.md"
+      - "doc/design/modules/2b. 建模工作台功能与用例设计方案.md"
+      - "doc/design/modules/元数据能力-实现映射与竞品对照.md"
+      - "doc/design/modules/2. 元数据管理模块-生产就绪优化计划(P0·P1).md"
+    doc_kind: "module-design"
+    lines: 1058
+    port: 9001
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates:
+      - "MetaEntity (@Table meta_entity) / MetaField (meta_field) / MetaEntityRelation (meta_entity_relation)"
+      - "MetaModelTemplate (meta_model_template) / MetaModelTemplateField"
+      - "IamModuleRef / IamApplicationRef / IamAppRoleRef（IAM 引用投影，非 IAM 模块实体）"
+    repositories:
+      - "com.bone.metadata.catalog.domain.repository.MetaEntityRepository — PageResult<MetaEntity> pageEntities(tenantId,keyword,status,moduleId,pageNum,pageSize) / Optional<MetaEntity> findByTenantAndTableName(...)"
+      - "com.bone.metadata.catalog.domain.repository.MetaFieldRepository — PageResult<MetaField> pageFields(entityId,keyword,pageNum,pageSize)"
+      - "com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository — pageRelations(...)"
+      - "com.bone.metadata.catalog.domain.repository.IamAppRoleRepository — findByAppAndUser(appId,userId)"
+      - "com.bone.metadata.catalog.domain.repository.IamModuleRepository / IamApplicationRepository（空接口，纯继承）"
+    exposed_apis:
+      - "/api/v1/metadata/fields:search | :searchByNames | :allocate | /health"
+      - "/api/v1/metadata/entities — POST/PUT {id}/GET/GET {id}/POST {id}/publish/POST {id}/copy/DELETE {id}/POST batch-publish"
+      - "/api/v1/metadata/entities/{entityId}/fields"
+      - "/api/v1/metadata/relationships"
+      - "/api/v1/metadata/templates (code-only，doc2 只列五个控制器)"
+      - "/api/v1/metadata/entities/{entityId}/structure/drop-column | /drop-drifted (code-only)"
+      - "/api/v1/runtime/entities/{entityCode}/records"
+      - "/v1/auth/login (code-only，三份设计稿均未记载)"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PageResult", "ProblemDetail", "MetaEntityDTO", "MetaFieldDTO", "MetaRelationDTO", "PublishPreviewDTO", "EntityValidationIssue", "BatchOperateResult"]
+    error_codes_used:
+      - "com.bone.core.common.CommonErrorCodes（COMMON_VALIDATION_FAILED / COMMON_MALFORMED_REQUEST）"
+      - "META_RUNTIME_*（裸字符串，散落 GlobalExceptionHandler；无 MetadataErrorCodes 常量类）"
+    tables: ["meta_entity", "meta_field", "meta_entity_relation", "meta_model_template", "meta_model_template_field", "meta_code_template"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "violated", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
+    hc_evidence:
+      HC-001: "grep -rln ORM import bone-engine/bone-metadata-server/src/main → 0 命中"
+      HC-002: "domain 目录无 com.bone.*.{adapter,application,infrastructure} import → 0 命中"
+      HC-003: "8 个 Controller 中 7 个返回 ResponseEntity（MetaEntity/MetaField/MetaRelation/MetaTemplate/Metadata/RuntimeRecord/Auth）"
+      HC-004: "bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java:34 —— passwordEncoder.encode(\"password\") 硬编码（注释『仅演示』）"
+      HC-005: "pom 无覆盖 → 继承父 POM 0.10"
+      HC-006: "baseline 内 3 个（JdbcPhysicalStructureGatewayAdapter / CatalogInfrastructureConfiguration / RuntimeEngineConfiguration）+ 未登记新增 1 个：catalog/infrastructure/query/TemplateReadAdapter.java"
+      HC-007: "doc/architecture/openapi/metadata-runtime-v1.yaml 存在（覆盖 runtime；catalog 侧未单独成 spec）"
+      HC-008: "baseline：md_lineage 为 needs-owner-decision（缺 tenant_id/updated_at/deleted）；md_standard 为 by-design"
+    design_vs_code_gaps:
+      - "doc2 §5.1 的 GET /api/v1/metadata/entities/{id}/versions（标 P1 Target）代码未实现"
+      - "doc2a §337/§474 规划的『发布 → 集成事件 → Outbox』链路：src/main 零 IntegrationEvent"
+      - "doc2 §353 声称的 META_ 前缀错误码：无常量类，仅裸字符串"
+      - "MetaTemplateController / PhysicalStructureController / AuthController 为代码新增，doc2 §656 只列『五个真实控制器』"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-metadata-engine"
+    role: "product"
+    code_roots: ["bone-engine/bone-metadata-engine"]
+    design_doc: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md"
+    design_docs:
+      - "doc/design/modules/9. SmartMeta 引擎模块技术说明.md"
+      - "doc/design/modules/元数据能力-实现映射与竞品对照.md"
+    doc_kind: "module-design"
+    lines: 103
+    port: null
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates: []
+    repositories:
+      - "com.bone.metadata.engine.ports.spi.MetadataRepositoryPort — findEntityById / findEntityByApiName / findAllEntities / searchEntities / existsEntity / findAllDomains / findAllOperations / findWorkflowByApiName"
+      - "com.bone.metadata.engine.ports.spi.MetadataPlatformBridge — loadPublishedEntityJson(tenantId,entityCode) / publishEvent(...)"
+      - "com.bone.metadata.engine.runtime.adapter.po.EngineMetaEntityRepository / EngineMetaFieldRepository（extends SDK Repository）"
+    exposed_apis: []
+    published_events:
+      - "MetadataChangeEvent / MetadataChangedEvent（extends Spring ApplicationEvent，未实现 IntegrationEnvelope）"
+    subscribed_events: []
+    shared_dtos: ["EntityMetadata", "SmartFieldMetadata", "OperationMetadata", "WorkflowMetadata", "AgentMetadata", "ImpactAnalysis", "PlatformMetaEntity", "PlatformMetaField"]
+    error_codes_used:
+      - "com.bone.metadata.engine.domain.common.ErrorCodes（domain 模块自有常量类）"
+      - "META_RUNTIME_*（裸字符串，散落 JdbcRuntimeRecordService / RuntimeQuerySupport）"
+    tables: []
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "violated", HC-006: "violated", HC-007: "violated", HC-008: "implemented"}
+    hc_evidence:
+      HC-003: "库形态，src/main 无 @RestController"
+      HC-004: "gitleaks 未安装，未完整取证 → unknown"
+      HC-005: "4 个子模块覆盖 jacoco.minimum.coverage：domain/ports/starter = 0，runtime = 0.04（父级 0.10 被下调）"
+      HC-006: "JdbcRuntimeRecordService 在引擎内自建 JDBC，与对照文档 §2.3『禁止引擎内再实现一套 JDBC』冲突；check-sdk-persistence.py 按模块排除未拦截"
+      HC-007: "doc/architecture/openapi/ 下无 engine 独立 spec（metadata-runtime-v1.yaml 只覆盖 server 侧 runtime）"
+      HC-008: "引擎无自有表，随宿主 meta_*（baseline 中 md_entity/md_field/md_record 已 resolved）"
+    design_vs_code_gaps:
+      - "doc9 §2 提到的 SdkMetadataRepository / MetaEntityConverter 未在 src/main 出现（IamMetadataBridge 存在）"
+      - "doc9 §6 称复用 META_ 前缀，实际无常量类定义"
+    has_active_comet_change: true
+    comet_change_id: "refactor/metadata-engine-boundary-ddd"
+
+  - name: "bone-masterdata"
+    role: "product"
+    code_roots: ["bone-platform/bone-masterdata"]
+    design_doc: "doc/design/modules/3. 主数据管理模块详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/3. 主数据管理模块详细设计方案.md"
+      - "doc/design/modules/3a. 主数据管理模块核心场景及用例设计方案.md"
+    doc_kind: "module-design"
+    lines: 787
+    port: 8084
+    dependencies: ["bone-core", "bone-metadata-sdk", "bone-security（JWT 离线验签）"]
+    aggregates:
+      - "MasterDataEntity / MasterDataField（TenantAggregateRoot / TenantAbstractEntity）"
+      - "MasterDataRecord / MasterDataRecordVersion"
+      - "MasterDataCategory / RecordCategoryLink"
+      - "DataStandard；DataQualityRule / QualityCheck / QualityReport / QualityIssue"
+      - "DomainTemplate / TemplateVersion（AggregateRoot，平台级无租户）"
+      - "ReferenceSet / ReferenceValue / TenantReferenceValue"
+      - "LineageRecord / EntitySubscription / ModelDrift / DataFeedback / StewardAssignment"
+    repositories:
+      - "com.bone.masterdata.domain.repository.MasterDataEntityRepository — countByEntityName / findByEntityId"
+      - "com.bone.masterdata.domain.repository.MasterDataRecordRepository — findByMasterDataEntityId / pageByEntityId / pageByEntityIdStatusAndKeyword"
+      - "com.bone.masterdata.domain.repository.DataStandardRepository — countByEntityCodeAndFieldCode / findByEntityCode / pageByEntityCodeAndFieldCodeLike"
+      - "com.bone.masterdata.domain.repository.MasterDataFieldRepository — countBy(entityId,fieldName)"
+      - "com.bone.masterdata.domain.repository.ReferenceValueRepository / TenantReferenceValueRepository — findBySetId"
+    exposed_apis:
+      - "/api/v1/masterdata/entities（含 /{id}/publish、/convert?metaEntityId=、/{id}/governance-tier、/{id}/owning-app）"
+      - "/api/v1/masterdata/fields 与 /api/v1/masterdata/entities/.../fields（双入口并存）"
+      - "/api/v1/masterdata/records（含 /{id}/publish|submit|approve|reject|archive、/{id}/versions、/export）"
+      - "/api/v1/masterdata/categories、/quality、/quality-results、/quality-issues、/data-standards"
+      - "/api/v1/masterdata/templates、/reference-sets、/lineage、/feedbacks、/subscriptions、/governance-roles、/model-drifts"
+    published_events:
+      - "MasterDataEntityCreatedEvent / MasterDataEntityPublishedEvent / MasterDataFieldAddedEvent"
+      - "MasterDataRecordCreatedEvent / MasterDataRecordPublishedEvent"
+      - "DataQualityRuleCreatedEvent / QualityCheckCompletedEvent / DataLineageEvent"
+      - "（全部为 Spring 进程内 DomainEvent，发布器 MasterdataDomainEventPublisher，无 Outbox / MQ）"
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PageResult", "MasterDataEntityDTO", "DomainTemplateDTO", "QualityCheckDTO", "MetaEntityRow（元数据目录读模型，跨上下文）"]
+    error_codes_used: ["com.bone.masterdata.common.MasterDataErrorCodes（MD_*，约 40 个）", "MD_META_ENTITY_NOT_FOUND / MD_META_ENTITY_NOT_PUBLISHED（跨域命名，元数据语义落在主数据模块）"]
+    tables: ["mdm_entity", "mdm_field", "mdm_record", "mdm_record_version", "mdm_record_category", "mdm_category", "mdm_domain_template", "mdm_template_version", "mdm_reference_set", "mdm_reference_value", "mdm_reference_value_tenant", "mdm_qcheck_task", "mdm_qcheck_detail", "mdm_qcheck_report", "mdm_quality_issue", "mdm_steward", "mdm_steward_scope", "mdm_entity_subscription", "mdm_feedback", "mdm_model_drift", "md_entity", "md_field", "md_record", "md_standard", "md_quality_rule", "md_lineage"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
+    hc_evidence:
+      HC-003: "16 个 Controller 中 ResponseEntity 命中 0"
+      HC-006: "infrastructure/gateway/MetaEntityCatalogPortAdapter.java 已在 sdk-persistence-bypass-baseline.json 登记（存量，只可收缩）"
+      HC-007: "doc/architecture/openapi/masterdata-v1.yaml 存在"
+      HC-008: "baseline：mdm_qcheck_task 为 gap-candidate（缺 updated_at/deleted）；mdm_qcheck_detail/report、mdm_record_category、mdm_record_version 为 by-design"
+    design_vs_code_gaps:
+      - "doc3 规划 /entities/convert?businessEntityId=，代码为 ?metaEntityId=（MasterDataEntityController.java:69-71）"
+      - "doc3 §630 规划的跨模块集成事件 + RocketMQ：代码零 IntegrationEvent，resources 无 rocketmq 配置"
+      - "doc3 §287 的 Idempotency-Key 与 LRO 202 + /operations/{taskId}：代码零实现"
+      - "字段接口双入口（/fields 与 /entities 下子资源）"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-integration"
+    role: "product"
+    code_roots: ["bone-platform/bone-integration"]
+    design_doc: "doc/design/modules/4. 集成管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/4. 集成管理模块详细设计方案.md"]
+    doc_kind: "module-design"
+    lines: 497
+    port: 8085
+    dependencies: ["bone-core", "bone-metadata-sdk", "bone-notification（pom 声明，src/main 无 import）"]
+    aggregates:
+      - "IntegrationFlow / FlowNode / FlowConnection（TenantAggregateRoot）"
+      - "Connector / IntegrationLog（TenantAggregateRoot）"
+      - "IntegrationOutboxRecord（技术聚合，infrastructure/messaging/outbox）"
+    repositories:
+      - "com.bone.integration.domain.repository.IntegrationFlowRepository — findForStatisticsAllTenants / findPage(keyword,status,page,size) / findByName"
+      - "com.bone.integration.domain.repository.IntegrationLogRepository — countByFlowAllTenants / countByFlowAndStatusAllTenants / findPage / findByFlowId"
+      - "com.bone.integration.domain.repository.ConnectorRepository — findPage(keyword,status,...)"
+      - "com.bone.integration.domain.repository.FlowNodeRepository / FlowConnectionRepository — findByFlowId"
+      - "com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRepository — findByCriteria(Criteria) / save / update"
+    exposed_apis:
+      - "/api/v1/integration/connectors（含 /{id}/test|enable|disable）"
+      - "/api/v1/integration/flows（含 /{id}/activate|deactivate|test、/{id}/versions）"
+      - "/api/v1/integration/executions（含 /{id}/logs、/{id}/retry）、/statistics"
+    published_events:
+      - "ConnectorCreatedEvent / ConnectorTestedEvent / FlowCreatedEvent / FlowActivatedEvent / FlowExecutedEvent"
+      - "ExecutionStartedEvent / ExecutionCompletedEvent"
+      - "（Outbox 链路完整：IntegrationOutboxWriter → IntegrationOutboxRelay → IntegrationOutboxRelayJob；信封为模块私有 record IntegrationEventEnvelope(schemaVersion=1.0)，未实现 IntegrationEnvelope 接口）"
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PageResult", "IntegrationEventEnvelope（跨模块投递载荷）"]
+    error_codes_used: ["com.bone.core.common.CommonErrorCodes（NOT_IMPLEMENTED / NOT_FOUND / INTERNAL_ERROR / VALIDATION_FAILED）", "无 INT_ 常量类（仅 IntegrationExceptionAdvice 注释残留 INT_CONNECTOR_NOT_IMPLEMENTED）"]
+    tables: ["int_connector", "int_flow", "int_flow_node", "int_flow_connection", "int_execution_log", "int_dead_letter", "int_outbox", "int_template"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "partial"}
+    hc_evidence:
+      HC-003: "3 个 Controller 中 ResponseEntity 命中 0"
+      HC-006: "infrastructure/observability/DeadLetterMetricsRefresher.java 已在 baseline 登记"
+      HC-007: "doc/architecture/openapi/integration-v1.yaml 存在"
+      HC-008: "baseline：int_execution_log 为 by-design（只追加，缺 updated_at/deleted）；无 gap-candidate / needs-owner-decision"
+    design_vs_code_gaps:
+      - "doc4 把 Outbox 标为 [Target]，代码已落地（Writer/Relay/RelayJob/RocketMqIntegrationMessageSender）——文档滞后"
+      - "doc4 把 /flows/{id}/test 与 /{id}/versions 标为 [Vision]，代码已实现"
+      - "doc4 §370 的 Idempotency-Key（Redis 幂等 24h）代码零实现"
+      - "doc4 INT-CON-01 禁止新增 FTP/JDBC/MQ/Kafka/SOAP 连接器，但 infrastructure/external 已有 9 种 ClientImpl（多为 501 占位）"
+      - "无共享 IntegrationEnvelope 契约：跨模块复制 bone-blueprint 约定，事件侧无 breaking-change 检查"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-system"
+    role: "product"
+    code_roots: ["bone-platform/bone-system"]
+    design_doc: "doc/design/modules/7. 系统管理模块详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/7. 系统管理模块详细设计方案.md"
+      - "doc/design/modules/7a. 数据字典模块详细设计方案.md"
+      - "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"
+    doc_kind: "module-design"
+    lines: 472
+    port: 8083
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates:
+      - "SysDictType / SysDictItem（TenantAggregateRoot<Long>）"
+      - "SystemConfig / SystemLog / AlertRule / ScheduleTask（AggregateRoot<Long>）"
+      - "AlertRecord（AggregateRoot<Long>，映射表 sys_alert_event，聚合名与表名口径不一致）"
+    repositories:
+      - "com.bone.system.domain.repository.SysDictTypeRepository — pageByCondition / findByCode"
+      - "com.bone.system.domain.repository.SysDictItemRepository — pageByCondition / findByTypeAndCode / findChildren"
+      - "com.bone.system.domain.repository.SystemConfigRepository — page / findByConfigKey"
+      - "com.bone.system.domain.repository.SystemLogRepository — page / analyze"
+      - "com.bone.system.domain.repository.AlertRuleRepository — page / findEnabled"
+      - "com.bone.system.domain.repository.AlertRecordRepository — pageByCondition(ruleId,level,status,...)"
+      - "com.bone.system.domain.repository.ScheduleTaskRepository — findEnabled / findPage"
+    exposed_apis:
+      - "/api/v1/console/overview | /services | /resources | /metrics | /quick-actions"
+      - "/api/v1/system/dict/types（含 /{code}/enum-diff、/{code}/enum-sync、/{code}/export、/{code}/import）"
+      - "/api/v1/system/dict/items（含 /tree、/options —— 全平台字典唯一入口）"
+      - "/api/v1/system/config（含 /{id}/history、/export、/import）"
+      - "/api/v1/system/alert（rules + events）"
+      - "/api/v1/system/logs（含 /analyze、/export）"
+      - "/api/v1/system/schedule-tasks（含 /{id}/toggle、/{id}/run）"
+      - "/api/v1/system/health | /info | /metrics；/deploy|/upgrade|/restart|/shutdown 均 501"
+    published_events:
+      - "AlertRuleCreatedEvent / AlertRuleUpdatedEvent / AlertTriggeredEvent / AlertResolvedEvent（record implements DomainEvent，未实现 IntegrationEnvelope）"
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PageResult", "PlatformApiPaths", "DictTypeDto", "DictItemDto", "DictOptionDto", "ConfigDto", "LogDto", "AlertRuleDto", "ScheduleTaskDto"]
+    error_codes_used: ["com.bone.system.common.SystemErrorCodes（SYS_*，34 个：SYS_CONFIG_* / SYS_DICT_* / SYS_ALERT_* / SYS_SCHEDULE_TASK_* / SYS_LOG_*）"]
+    tables: ["sys_config", "sys_log", "sys_dict", "sys_dict_type", "sys_dict_item", "sys_dict_item_text", "sys_dict_hierarchy", "sys_alert_rule", "sys_alert_event", "sys_schedule_task", "cnsl_dashboard_widget", "cnsl_notification", "cnsl_recent_access"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
+    hc_evidence:
+      HC-003: "8 个 Controller 中 3 个返回 ResponseEntity（ConfigController / SystemController / LogController）"
+      HC-006: "infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java 已在 baseline 登记"
+      HC-007: "doc/architecture/openapi/console-v1.yaml 存在（覆盖 console；system 侧无独立 spec）"
+      HC-008: "baseline：sys_alert_event 为 gap-candidate（缺 updated_at/deleted）"
+    design_vs_code_gaps:
+      - "doc1 §6 的 /api/v1/console/dashboards/**、/widgets/**、/preferences（12+ 端点）全部未实现；表 cnsl_dashboard_widget 已在 DDL 但无聚合与控制器"
+      - "doc1 §5 声明的 DashboardCreatedEvent / PreferenceUpdatedEvent 领域事件不存在"
+      - "doc7 §4 标 [Vision] 的 /config/{id}/history 已实现但返回空 List（契约先于设计）"
+      - "AlertRecord 聚合名与表名 sys_alert_event 命名口径不一致"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-extension-studio"
+    role: "product"
+    code_roots: ["bone-engine/bone-extension-engine"]
+    design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+      - "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md"
+      - "doc/design/BONE-X-Studio-详细设计方案.md"
+    doc_kind: "module-design"
+    lines: 842
+    port: 8088
+    dependencies: ["bone-metadata-sdk", "bone-extension-sdk"]
+    aggregates:
+      - "ExtStudioExtensionImpl / ExtStudioExtensionPoint"
+      - "ExtStudioPluginVersion / ExtStudioPluginExecutionLog"
+      - "ExtIamTenantDirectory（IAM 租户目录本地副本）"
+    repositories:
+      - "com.bone.engine.extension.studio.domain.repository.ExtensionRepository — findById / findByClassName / save / remove"
+      - "com.bone.engine.extension.studio.domain.repository.ExtPointRepository — findById / findByInterfaceName / save / remove"
+      - "com.bone.engine.extension.studio.domain.repository.PluginVersionRepository / PluginExecutionLogRepository / StudioAuditRepository"
+      - "com.bone.engine.extension.api.spi.ExtensionRepository（SDK SPI — registerExtension / getEnabledExtensions / batchRegisterExtensions）"
+    exposed_apis:
+      - "/api/v1/extension/points、/plugins、/plugins:upload、/plugins/{id}:deploy"
+      - "/api/v1/extension/execution-logs、/execution-logs:ingest（不存在裸 /logs 路由）"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["ExtensionDefinition", "ExtensionPointDefinition", "ExtensionRoutingMetadata", "ExtensionDocMetadata", "ExtensionPointDocMetadata"]
+    error_codes_used: ["com.bone.engine.extension.studio.common.StudioErrorCodes（仅 EXT_RESOURCE_NOT_FOUND / EXT_STATE_INVALID）", "COMMON_VALIDATION_FAILED / COMMON_FORBIDDEN / COMMON_INTERNAL_ERROR / COMMON_IDEMPOTENCY_CONFLICT / COMMON_PRECONDITION_FAILED"]
+    tables: ["exts_extension_impl", "exts_extension_point", "exts_plugin_version", "exts_plugin_execution_log", "exts_audit_log"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "partial"}
+    hc_evidence:
+      HC-003: "ExtensionManagementController 使用 ResponseEntity"
+      HC-007: "doc/architecture/openapi/extension-v1.yaml 存在"
+      HC-008: "baseline：exts_audit_log 为 by-design（只追加，缺 updated_at/deleted）"
+    design_vs_code_gaps:
+      - "doc5 #L287/#L754 把 ExtensionDeployedIntegrationEvent 等列为 Target，代码零事件类且多个写服务声明 @NoDomainEvent"
+      - "doc5 #L459 要求失败响应使用 EXT_*，实际仅 2 个 EXT_ 领域码，其余回落 COMMON_*"
+      - "工作树有 4 个未提交改动（ExtensionManagementController / ExtensionCommandApplicationService / ExtensionStudioProperties / ExtensionScopes / StudioSecurityExpressions）——锚定时点代码为未提交态"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "studio-generator"
+    role: "product"
+    code_roots: ["bone-engine/studio-generator"]
+    design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
+    design_docs:
+      - "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      - "doc/design/BONE-X-Studio-详细设计方案.md"
+    doc_kind: "module-design"
+    lines: 1533
+    port: 8086
+    dependencies: ["bone-metadata-sdk"]
+    aggregates:
+      - "CatalogMetaEntity / CatalogMetaField"
+      - "GenTableMetadata / GenColumnMetadata / DataSource / CodeTemplate / GenerationTask / CodeGenerationHistory（继承 AggregateRoot<Long>）"
+    repositories:
+      - "com.bone.studio.generator.domain.repository.CatalogMetaEntityRepository / CatalogMetaFieldRepository — findById / save / deleteById"
+      - "com.bone.studio.generator.domain.repository.GenTableMetadataRepository — findByDataSourceId / findById / save"
+      - "com.bone.studio.generator.domain.repository.GenColumnMetadataRepository — findByTableMetadataId / removeByTableMetadataId / save"
+      - "com.bone.studio.generator.domain.repository.DataSourceRepository / CodeTemplateRepository — findPage / findById / save"
+      - "com.bone.studio.generator.domain.repository.GenerationTaskRepository — findByTaskId / findById / save"
+      - "com.bone.studio.generator.domain.repository.CodeGenerationHistoryRepository — findRecent / findById / save"
+    exposed_apis:
+      - "/api/v1/generator/code-generation（POST /、GET /tasks/{taskId}/download|/status）——入口已收敛，无 /generation-tasks"
+      - "/api/v1/generator/operations/{operationId}"
+      - "/api/v1/generator/metadata-entity-snapshots、/capabilities"
+      - "/api/v1/generator/data-sources（含 /{id}/tables、/{id}/tables:sync、/{id}:test-connection）"
+      - "/api/v1/generator/templates（含 /{id}:publish）"
+      - "/api/v1/generator/tables、/tables/metadata、/history (code-only，GeneratorShortcutController 无类级前缀)"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["CodeGenerationRequest", "CodeGenerationResponse", "com.bone.studio.generator.common.result.ApiResponse"]
+    error_codes_used: ["GEN_GENERATION_FAILED / GEN_TEMPLATE_NOT_FOUND（裸字符串，无常量类）", "com.bone.core.common.CommonErrorCodes"]
+    tables: ["gen_data_source", "gen_table_metadata", "gen_column_metadata", "gen_code_template", "gen_generation_task", "gen_code_generation_history", "gen_type_mapping", "meta_code_template"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "partial"}
+    hc_evidence:
+      HC-003: "7 个 Controller 中 1 个返回 ResponseEntity（CodeGenerationController）"
+      HC-006: "infrastructure/gateway/DatabaseMetadataGatewayAdapter.java 已在 baseline 登记"
+      HC-007: "doc/architecture/openapi/generator-v1.yaml 存在"
+      HC-008: "baseline：gen_code_generation_history 为 by-design（缺 updated_at）"
+    design_vs_code_gaps:
+      - "doc8 #L692/#L760/#L774 设计的 DataSourceCreatedEvent / GenerationTaskCreatedEvent / GenerationTaskCompletedEvent 均不存在"
+      - "doc8 #L791 声明的 GenTypeMappingRepository 不存在（表 gen_type_mapping 在 DDL 中已建）"
+      - "doc8 #L68 承诺 7 类模板，实际 src/main/resources/templates 仅 applicationService / controller / entity / repository / response 5 个 .ftl"
+      - "BONE-X-Studio #L436 仍写 8082/8085 与 /api/v1/generate/**，代码为 8086 与 /api/v1/generator"
+      - "工作树有 3 个未提交改动（CreateCodeGenerationApplicationService、entity.ftl、response.ftl）"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-file"
+    role: "product"
+    code_roots: ["bone-platform/bone-file"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 8107
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates: []
+    repositories: []
+    exposed_apis:
+      - "/api/v1/file/files — POST（multipart 上传）、GET /{objectName}（下载）、GET /test (code-only)"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PlatformApiPaths.FILE_V1"]
+    error_codes_used: ["无自有 ErrorCode 常量类（fallback com.bone.core.common.CommonErrorCodes）"]
+    tables: []
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "violated", HC-008: "implemented"}
+    hc_evidence:
+      HC-007: "doc/architecture/openapi/ 下无 file spec"
+      HC-008: "bone-init.sql 无 file_ 前缀表（对象存储形态，无新增表缺口）"
+    design_vs_code_gaps:
+      - "无模块设计文档；重建任务落在 Comet batch item enhance-modules（JSON 中 status=pending，openspec 已归档）"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-notification"
+    role: "product"
+    code_roots: ["bone-platform/bone-notification"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 8083
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates: []
+    repositories: []
+    exposed_apis:
+      - "/api/v1/notification/messages — GET 列表、GET /unread-count、GET /summary、POST /{id}/read"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["ApiResponse", "PlatformApiPaths.NOTIFICATION_V1"]
+    error_codes_used: ["无自有 ErrorCode 常量类（fallback com.bone.core.common.CommonErrorCodes）"]
+    tables: ["ntf_message"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "violated", HC-008: "violated"}
+    hc_evidence:
+      HC-007: "doc/architecture/openapi/ 下无 notification spec"
+      HC-008: "baseline：ntf_message 为 needs-owner-decision（缺 tenant_id/updated_at/deleted）"
+      port: "application.yml 未显式声明 server.port；网关把 /api/v1/notification/** 路由到 8083（与 bone-system 同上游）"
+    design_vs_code_gaps:
+      - "无模块设计文档"
+      - "被 bone-integration 在 pom 中声明，但 integration 的 src/main 无 com.bone.notification import（声明未使用）"
+      - "Controller 包名为 com.bone.platform.alert，与模块名 notification 不一致"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-gateway"
+    role: "product"
+    code_roots: ["bone-platform/bone-gateway"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 8888
+    dependencies: ["bone-core"]
+    aggregates: []
+    repositories: []
+    exposed_apis:
+      - "路由（application.yml:20-64）：/api/v1/extension/**→8088、/api/v1/iam/** + /api/v1/apps/**→8081、/api/v1/masterdata/**→8084、/api/v1/system/** + /api/v1/console/**→8083、/api/v1/integration/**→8085、/api/v1/file/**→8107、/api/v1/notification/**→8083、/api/v1/generator/**→8086、/api/v1/metadata/** + /api/v1/runtime/**→9001"
+      - "白名单（application.yml:71-76）：/api/v1/iam/auth/login（失效路径）、/api/v1/iam/login、/actuator/health、/favicon.ico"
+    published_events: []
+    subscribed_events: []
+    shared_dtos: ["com.bone.gateway.dto.ErrorBody", "JwtPrincipal", "JwtConfig"]
+    error_codes_used: ["无自有 ErrorCode 常量类"]
+    tables: []
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "partial", HC-004: "violated", HC-005: "implemented", HC-006: "implemented", HC-007: "violated", HC-008: "implemented"}
+    hc_evidence:
+      HC-003: "src/main 无 @RestController（仅 GlobalFilter）；返回体为自有 ErrorBody，未纳入 ApiResponse 契约"
+      HC-004: "bone-platform/bone-gateway/src/main/java/com/bone/gateway/config/GatewayJwtProperties.java:21-22 —— DEFAULT_SECRET='change-me-change-me-change-me-change-me-32bytes'、DEV_FALLBACK_SECRET='dev-only-secret-key-minimum-32-bytes-long' 两个硬编码兜底密钥；运行时 secret 虽可经环境变量注入，但兜底值写死在代码中"
+      HC-007: "doc/architecture/openapi/ 下无 gateway spec"
+    design_vs_code_gaps:
+      - "无模块设计文档；鉴权/限流/熔断能力落在 Comet batch item gateway-auth-ratelimit（JSON status=pending，openspec 已归档）"
+      - "不回源 IAM 校验 token，靠共享 secret 本地 HMAC/RSA 验签（GatewayJwtUtil）"
+    has_active_comet_change: false
+    comet_change_id: null
+
+  # ---- 参考样板：不进轮换 ----
+  - name: "bone-blueprint"
+    role: "reference-sample"
+    code_roots: ["bone-blueprint"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: null
+    dependencies: ["bone-core", "bone-metadata-sdk"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: ["PaymentSucceededIntegrationEvent / PaymentFailedIntegrationEvent / PaymentRefundedIntegrationEvent / OrderPaidIntegrationEvent / OrderStockActionFailedIntegrationEvent / OrderPaymentInconsistentIntegrationEvent（均实现 IntegrationEnvelope）"]
+    subscribed_events: []
+    shared_dtos: ["IntegrationEnvelope"]
+    error_codes_used: []
+    tables: ["bp_payment", "bp_outbox", "bp_processed_event", "bp_idempotency_record", "t_order", "t_order_item"]
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "implemented", HC-008: "partial"}
+    hc_evidence:
+      role_note: "ArchUnit / DDD 参考样板，全仓唯一实现 IntegrationEnvelope 与 Outbox 端口适配（OrderOutboxPortAdapter）的模块；跨模块事件契约若要统一应以此为基线，但业务模块不得直接依赖它"
+      HC-007: "doc/architecture/openapi/blueprint-orders-v1.yaml 存在"
+      HC-008: "baseline：t_order_item 为 by-design（子实体，租户随 t_order）"
+    design_vs_code_gaps: []
+    has_active_comet_change: false
+    comet_change_id: null
+
+  # ---- 前端微应用：无独立设计稿，HC-001~HC-008 为后端 Java 约束，仅 HC-004 适用 ----
+  - name: "bone-frontend/bone-iam-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-iam-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3003
+    dependencies: ["bone-shell（qiankun 子应用）", "/api/v1/iam/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束，不适用；HC-004 已用本地正则扫描取证（apps/*/src 无明文凭据命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: []
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-metadata-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-metadata-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3004
+    dependencies: ["bone-shell", "/api/v1/metadata/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 不适用；HC-004 本地扫描无命中；端口 3004 读自 vite.config.ts"}
+    design_vs_code_gaps: ["工作树有 4 个未提交改动（EntityDetail / EntityManagement / TemplateWizard / types）"]
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-masterdata-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-masterdata-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3005
+    dependencies: ["bone-shell", "/api/v1/masterdata/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束不适用；HC-004 已用本地正则扫描取证（无命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: []
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-integration-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-integration-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3006
+    dependencies: ["bone-shell", "/api/v1/integration/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束不适用；HC-004 已用本地正则扫描取证（无命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: []
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-system-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-system-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3007
+    dependencies: ["bone-shell", "/api/v1/system/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束不适用；HC-004 已用本地正则扫描取证（无命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: ["工作树有 3 个未提交改动（DictManagement / SystemConfig / services/api.ts）"]
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-extension-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-extension-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3008
+    dependencies: ["bone-shell", "/api/v1/extension/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束不适用；HC-004 已用本地正则扫描取证（无命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: []
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-generator-app"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-generator-app"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3009
+    dependencies: ["bone-shell", "/api/v1/generator/**"]
+    aggregates: []
+    repositories: []
+    exposed_apis: []
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "前端微应用：HC-001~HC-003/005~008 为后端 Java 约束不适用；HC-004 已用本地正则扫描取证（无命中，口径见 hc_scan_notes）"}
+    design_vs_code_gaps: ["工作树有 1 个未提交改动（e2e-modules-smoke.mjs）"]
+    has_active_comet_change: false
+    comet_change_id: null
+
+  - name: "bone-frontend/bone-shell"
+    role: "product"
+    code_roots: ["bone-frontend/apps/bone-shell"]
+    design_doc: null
+    design_docs: []
+    doc_kind: null
+    lines: 0
+    port: 3000
+    dependencies: ["全部后端模块（/api 代理到 http://localhost:8888）"]
+    aggregates: []
+    repositories: []
+    exposed_apis: ["前端路由：直连 /api/v1/console/overview、/api/v1/console/quick-actions"]
+    published_events: []
+    subscribed_events: []
+    shared_dtos: []
+    error_codes_used: []
+    tables: []
+    hc_coverage: {HC-001: "unknown", HC-002: "unknown", HC-003: "unknown", HC-004: "implemented", HC-005: "unknown", HC-006: "unknown", HC-007: "unknown", HC-008: "unknown"}
+    hc_evidence: {_all: "qiankun 主应用：HC-001~HC-003/005~008 不适用；HC-004 本地扫描无命中；端口 3000 与 /api 代理目标读自 vite.config.ts"}
+    design_vs_code_gaps: ["doc1 规划的 dashboards / widgets / preferences 前端能力未实现（后端同缺）"]
+    has_active_comet_change: false
+    comet_change_id: null
+
+# ---------------------------------------------------------------------------
+# 共享平台模块（bone-framework/* 与 SDK）：共享内核，改动影响全平台，本轮不进轮换
+# ---------------------------------------------------------------------------
+shared_platform_modules:
+  - {name: "bone-core", code_root: "bone-framework/bone-core", note: "共享内核：ApiResponse / PageResult / PlatformApiPaths / CommonErrorCodes / 聚合基类 / TenantContext；被全部业务模块依赖"}
+  - {name: "bone-web", code_root: "bone-framework/bone-web", note: "Web 基础设施：TenantInterceptor 等；工作树有未提交改动"}
+  - {name: "bone-security", code_root: "bone-framework/bone-security", note: "JWT 过滤器与鉴权基础设施；工作树有未提交改动（含测试）"}
+  - {name: "bone-datasource", code_root: "bone-framework/bone-datasource", note: "数据源配置"}
+  - {name: "bone-utils", code_root: "bone-framework/bone-utils", note: "通用工具"}
+  - {name: "bone-architecture-test", code_root: "bone-framework/bone-architecture-test", note: "ArchUnit 规则库 BoneDddArchRules（唯一命中 jakarta.persistence 字样处，为规则断言代码）"}
+  - {name: "bone-metadata-sdk", code_root: "bone-engine/bone-metadata-sdk", note: "自研持久化 SDK（HC-001 / HC-006 的判定基准；check-sdk-persistence.py 将其排除在扫描外）"}
+  - {name: "bone-extension-sdk", code_root: "bone-engine/bone-extension-engine/bone-extension-sdk", note: "扩展 SPI 与契约模型"}
+  - {name: "go-engine", code_root: "bone-engine/go-engine", note: "非 Java 引擎，本次未扫描，登记备查"}
+
+# ---------------------------------------------------------------------------
+# 跨模块边界契约（改本模块 API / 事件前必须先对照本节）
+# ---------------------------------------------------------------------------
+cross_module_contracts:
+  - between: ["bone-gateway", "bone-iam"]
+    api_contract: "网关不回源 IAM；用共享 JWT secret（环境变量 BONE_IAM_JWT_SECRET_KEY）本地 HMAC/RSA 验签后转发租户/角色 Header"
+    shared_dtos: ["JwtPrincipal", "JwtConfig"]
+    constraint_risk: "契约只靠共享密钥，无 REST 契约与版本协商；密钥轮换需网关与 IAM 同步发布。设计稿假设的 /api/iam/auth/verify 不存在，网关白名单中的 /api/v1/iam/auth/login 永不命中。"
+  - between: ["bone-gateway", "全部后端模块"]
+    api_contract: "路由前缀 /api/v1/{module}/** 由 bone-gateway/src/main/resources/application.yml 静态声明（无服务发现）"
+    shared_dtos: []
+    constraint_risk: "新增模块端点必须同步改网关路由，否则前端 404；路由表是隐式契约且无测试守护。"
+  - between: ["bone-masterdata", "bone-metadata-server"]
+    api_contract: "MetaEntityCatalogPortAdapter 用 JDBC 直读元数据目录表（跨上下文读）"
+    shared_dtos: ["MetaEntityRow"]
+    constraint_risk: "违反 P-6（跨上下文优先公开 API / Published Language，禁止共享表集成）；元数据目录表结构变更会静默打断主数据。已登记在 sdk-persistence-bypass-baseline.json（只可收缩）。"
+  - between: ["bone-metadata-server", "bone-iam"]
+    api_contract: "仅以 module_id / appId / userId 逻辑外键关联（IamModuleValidator / IamApplicationValidator），编译期零 import"
+    shared_dtos: ["IamModuleRef", "IamApplicationRef", "IamAppRoleRef"]
+    constraint_risk: "无外键、无事件补偿；IAM 侧删除应用/模块后元数据侧引用悬挂。"
+  - between: ["bone-integration", "其他全部模块"]
+    api_contract: "Outbox 事件信封 IntegrationEventEnvelope（模块私有 record，schemaVersion=1.0），topic 前缀 domain.integration.*"
+    shared_dtos: ["IntegrationEventEnvelope"]
+    constraint_risk: "全仓无订阅方（subscribed_events 全为空），Outbox 只投递不消费；未实现 IntegrationEnvelope 接口 → 无编译期契约，且事件侧无 breaking-change 检查。"
+  - between: ["bone-extension-studio", "bone-iam"]
+    api_contract: "ExtIamTenantDirectory 在扩展模块落一份 IAM 租户目录副本"
+    shared_dtos: ["ExtIamTenantDirectory"]
+    constraint_risk: "跨上下文数据复制，无同步机制与数据所有权声明（CORE-01）。"
+  - between: ["bone-masterdata", "bone-metadata-*"]
+    api_contract: "错误码跨域命名：MasterDataErrorCodes 定义 MD_META_ENTITY_NOT_FOUND / MD_META_ENTITY_NOT_PUBLISHED"
+    shared_dtos: []
+    constraint_risk: "元数据域错误码定义在主数据模块，前缀域归属混乱；元数据侧无 MetadataErrorCodes，只有裸字符串。"
+  - between: ["bone-system", "bone-frontend/bone-shell"]
+    api_contract: "Shell 直连 /api/v1/console/overview 与 /api/v1/console/quick-actions"
+    shared_dtos: []
+    constraint_risk: "doc1 规划的 dashboards / widgets / preferences 前后端均未实现，能力面与文档不一致（表 cnsl_dashboard_widget 已建但无聚合）。"
+  - between: ["studio-generator", "bone-metadata-server"]
+    api_contract: "generator 通过 /api/v1/generator/metadata-entity-snapshots 与 data-sources 读元数据与库结构"
+    shared_dtos: ["CatalogMetaEntity", "CatalogMetaField", "GenTableMetadata", "GenColumnMetadata"]
+    constraint_risk: "DatabaseMetadataGatewayAdapter 走原生 JDBC 读库结构（已在 baseline 登记）。"
+  - between: ["bone-metadata-engine", "bone-metadata-server"]
+    api_contract: "engine 以库形态内嵌，HTTP 入口在 server 的 /api/v1/runtime/**；事件为 Spring 进程内 ApplicationEvent"
+    shared_dtos: ["EntityMetadata", "PlatformMetaEntity", "PlatformMetaField", "MetadataChangeEvent"]
+    constraint_risk: "server 侧无订阅方 → MetadataChangeEvent 发布即丢弃；engine 的 JdbcRuntimeRecordService 绕过 SDK 执行层。"
+
+# ---------------------------------------------------------------------------
+# Comet / OpenSpec 现状
+# ---------------------------------------------------------------------------
+comet_active_changes:
+  - workflow: "classic"
+    change_id: "refactor/metadata-engine-boundary-ddd"
+    module: "bone-metadata-engine"
+    phase: "design"
+    branch: "refactor/metadata-engine-boundary-ddd"
+    target_branch: "feature/code-optimization614"
+    isolation: "branch"
+    batch: "bone-improvement-roadmap"
+    skip_design_review: true
+  - workflow: "classic"
+    change_id: "frontend-shared-layer"
+    module: "bone-frontend"
+    status: "superseded-orphan（openspec 产物缺失，分支 feat/c6-frontend-shared-layer 保留）"
+    branch: "feat/c6-frontend-shared-layer"
+    skip_design_review: false
+
+openspec:
+  active_changes: []
+  archived_count: 17
+  note: "openspec/changes/ 下已全部归档（含 2026-08-25-refactor-metadata-engine-boundary-ddd、2026-09-14-metadata-engine-deep-refactor 等），无 native 活跃 change"
+
+# ---------------------------------------------------------------------------
+# 告警（事实 + 位置 + 建议动作）
+# ---------------------------------------------------------------------------
+warnings:
+  - "【HC 编号漂移·已修】doc/design/AI-夜间设计复核工作流方案.md 曾把 HC-004 当入站边界、HC-005 当租户审计、HC-007 当微前端契约、HC-008 当错误码 i18n，并出现过不存在的 HC-009 → 2026-09-26 已修正（§3.1 / §4.2 / §4.3 示例 / §4.4 / 维度表 / 报告模板 / 内嵌提示词共 8 处），现统一引用 §G-1.7。**AGENTS.md 的 HC 引用经复核是正确的**（HC-001·006 持久化、HC-003 统一响应、HC-008 租户审计），无需修改。"
+  - "【Comet 文件缺失·已修】doc/design/AI-夜间设计复核工作流方案.md §3.1 / §4.2 曾引用不存在的 .comet/current-change.json → 2026-09-26 已改为 .comet/state.json，并注明「缺失即记 warning，不得当作无活跃 change」。"
+  - "【三方不一致】.comet/batches/bone-improvement-roadmap.json 中 8 个 item 全部 status=pending，而 openspec/changes/archive 已归档同名 change（2026-08-23-* 十项）→ 建议人工核对 batch 台账是否已废弃。"
+  - "【分支不一致】.comet/state.json 的 targetBranch=feature/code-optimization614，当前 git 分支为 release/mvp-v1.0 → 夜间开工前请人工确认目标分支。"
+  - "【工作树不干净】git status --porcelain 共 164 个改动（含 extension-studio 5 处、studio-generator 3 处、bone-core/bone-security/bone-web 4 处、前端 8 处）→ 建议夜间任务开工前确认这些改动是否为他人进行中工作，避免覆盖。"
+  - "【轮换表映射错误·已重建】doc/design/_review-status.yaml 把 bone-gateway 映射到『1. 控制台与仪表盘…』、bone-file 映射到『5. 扩展管理…』、bone-blueprint 映射到『8.Studio Generator…』、bone-engine 映射到『9. SmartMeta…』，与实际代码目录不符 → 已按锚定重建，旧映射移入 removed_modules；建议人工确认。"
+  - "【设计稿未进轮换】doc/design/modules/10. 应用与模块管理详细设计方案.md 对应 bone-iam 的 /api/v1/apps 域，旧轮换表未覆盖 → 已并入 bone-iam 的 design_docs。"
+  - "【HC-006 新增未登记绕过】bone-iam/.../adapter/schedule/AuditLogCleanupJob.java、bone-metadata-server/.../catalog/infrastructure/query/TemplateReadAdapter.java 命中 JDBC import 但不在 doc/architecture/sdk-persistence-bypass-baseline.json → 属 L3 审批事项：要么改走 SDK，要么补登记进 baseline（只可收缩原则下新增登记需架构师同意）。"
+  - "【HC-004 实质违反】bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java:34 硬编码 passwordEncoder.encode(\"password\")（注释『仅演示』），且 /v1/auth/login 未在任何设计稿登记 → 建议删除该演示端点或改为配置注入。"
+  - "【HC-004 取证口径降级】本机未安装 gitleaks，scripts/scan-secrets.sh 未执行；已用可复现的本地正则扫描替代（口径见 hc_scan_notes），其余模块 HC-004 标 implemented 仅代表本次扫描无明文命中，不等同于 gitleaks 通过 → 建议人工在装好 gitleaks 后重跑一次复核。"
+  - "【共享平台模块未进轮换】bone-framework/*（bone-core / bone-web / bone-security / bone-datasource / bone-utils / bone-architecture-test）与 bone-metadata-sdk、bone-extension-sdk、go-engine 属共享内核与平台基础设施，无独立业务设计稿，本轮登记在 shared_platform_modules 而不进轮换 → 如需纳入轮换请架构师确认，且改动需 L3 审批。"
+  - "【无设计稿模块】bone-gateway、bone-file、bone-notification 在 doc/design/modules/ 下无设计稿，design_doc=null → 夜间 review 需先补设计稿或按规则标 skip（不得用别的模块设计稿顶替）。"
+  - "【前端端口已补齐】8 个微应用端口全部读自各自 vite.config.ts：bone-shell=3000、bone-iam-app=3003、bone-metadata-app=3004、bone-masterdata-app=3005、bone-integration-app=3006、bone-system-app=3007、bone-extension-app=3008、bone-generator-app=3009。"
+  - "【前端微应用轮换口径】7 个微应用（apps/*）**默认随归属模块一起 review**（owner：iam→bone-iam、metadata→bone-metadata-server、masterdata→bone-masterdata、integration→bone-integration、system→bone-system、extension→bone-extension-studio、generator→studio-generator），不单独占夜；`_review-status.yaml` 中相应条目 status=skip 即代表此口径，如需独立成夜改回 pending 即可。bone-shell 为宿主应用，单独一轮（含 qiankun/token/locale/路由守卫契约与页面清单）。"
+  - "【DDL 双前缀并存】bone-init.sql 同时存在 md_* 与 mdm_*（主数据聚合持久化目标已切到 mdm_*，见 scripts/migration/0001_masterdata_mdm_convergence.sql），md_entity/md_field/md_record 在 baseline 中标 resolved → 表归属以 bone-init.sql + 迁移脚本为准。"
+  - "【Comet 占用】bone-metadata-engine 有活跃 change refactor/metadata-engine-boundary-ddd（classic / design 阶段）→ 夜间任务必须跳过，直到 change 归档或分支合并。"
+  - "【HC-004 硬编码兜底密钥】bone-platform/bone-gateway/.../config/GatewayJwtProperties.java:21-22 定义 DEFAULT_SECRET 与 DEV_FALLBACK_SECRET 两个硬编码兜底值 → 建议移除兜底、改为启动期校验环境变量必填（属代码改动，需 L3 审批后实施）。"
+  - "【SDK 默认 token】bone-engine/bone-metadata-sdk/.../config/MetadataSdkProperties.java:48 默认 token=\"test-token\" → 虽在 shared_platform_modules（不在轮换内），仍建议改为无默认值或显式 noop，避免被业务模块继承到生产。"

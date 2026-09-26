@@ -71,4 +71,16 @@ public class AlertRecord extends com.bone.core.domain.AggregateRoot<Long> {
     this.resolveTime = LocalDateTime.now();
     addDomainEvent(new AlertResolvedEvent(getId(), this.alertRuleId, this.ruleName));
   }
+
+  /**
+   * 告警持续期间更新最新实测值（定时评估器去重路径）。
+   *
+   * <p>同一告警事件（episode）内实测值会随每次评估变化；原地更新 {@code current_value} 而不是 每周期插一条新事件，保持告警列表「一条规则一个进行中事件」的语义。
+   */
+  public void observe(double actualValue, String message) {
+    this.actualValue = actualValue;
+    if (message != null && !message.isBlank()) {
+      this.message = message;
+    }
+  }
 }

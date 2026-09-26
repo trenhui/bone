@@ -109,11 +109,7 @@ paths:
         '200':
           description: done、progress、result、error（ApiResponse 信封）
         '404': { description: 操作不存在 }
-  /generation-tasks:
-    post:
-      summary: 同步字符串模板生成
-      responses:
-        '200': { description: CodeGenerationResponse }
+  # /generation-tasks（旧备用生成入口）已于 2026-09-25 移除，统一收敛至 /code-generation
   /capabilities:
     get:
       summary: @Capability 能力列表

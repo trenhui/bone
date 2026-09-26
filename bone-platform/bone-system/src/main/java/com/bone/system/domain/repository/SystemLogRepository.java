@@ -71,10 +71,24 @@ public interface SystemLogRepository extends Repository<SystemLog, Long> {
         Criteria.<SystemLog>create().entityClass(SystemLog.class).eq(SystemLog::getLevel, level));
   }
 
+  /**
+   * 物理删除早于 {@code cutoff} 的日志（保留期清理，{@code sys_log} 无 {@code deleted} 列故为物理删）。
+   *
+   * <p><b>为什么放仓储 default 而不是 Jdbc 端口</b>：单表范围删除是本聚合写侧能力，SDK {@code deleteByCriteria} SQL 下推已足够；显式
+   * {@code disableTenantFilter()}——保留期是平台级策略， 跨租户生效。返回删除行数供清理 Job 记录审计日志。
+   */
+  default int purgeOlderThanAllTenants(LocalDateTime cutoff) {
+    return deleteByCriteria(
+        Criteria.<SystemLog>create()
+            .entityClass(SystemLog.class)
+            .lt(SystemLog::getCreatedAt, cutoff)
+            .disableTenantFilter());
+  }
+
   private static void appendFilters(
       FluentQuery<SystemLog> query, String keyword, LogLevel level, String service) {
     if (keyword != null && !keyword.isBlank()) {
-      query.where(SystemLog::getContent).like(keyword);
+      query.where(SystemLog::getContent).contains(keyword);
     }
     if (level != null) {
       query.and(SystemLog::getLevel).eq(level);

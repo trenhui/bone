@@ -1,6 +1,6 @@
 # generator [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-25T21:21:13Z（UTC）  
+> **生成时间**：2026-09-26T14:07:40Z（UTC）  
 > **维护源**：[`backlog.yaml`](../../../tools/generator-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |

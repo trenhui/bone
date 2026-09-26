@@ -62,8 +62,11 @@ export interface CreateMetaEntityReq {
   type?: number;
   deliveryMode?: number;
   icon?: string;
-  /** 归属的 IAM 模块（模块上下文中创建时由前端自动携带） */
-  moduleId?: number;
+  /**
+   * 归属的 IAM 模块（模块上下文中创建时由前端自动携带）。
+   * ⚠ 雪花 ID 禁止 Number() 转换（19 位超出 2^53 静默截断）；JSON 中以字符串透传，Jackson 自动转 Long。
+   */
+  moduleId?: number | string;
 }
 
 export interface UpdateMetaEntityReq {

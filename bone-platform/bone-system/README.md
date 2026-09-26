@@ -10,8 +10,8 @@ Bone System 是 Bone 平台的系统管理模块，提供系统配置、监控�
 
 | 维度 | 内容 |
 |---|---|
-| 通用语言 | `SystemConfig`、`SysDict`、`AlertRule`、`AlertRecord`、`SystemLog`、`ScheduleTask`、`ConsoleOverview` |
-| 负责 | 配置键的生命周期与快照导出 / 恢复；字典项维护；告警规则与告警记录；日志落库、查询与导出；定时任务注册；控制台概览聚合 |
+| 通用语言 | `SystemConfig`、`SysDictType`、`SysDictItem`、`AlertRule`、`AlertRecord`、`SystemLog`、`ScheduleTask`、`ConsoleOverview` |
+| 负责 | 配置键的生命周期与快照导出 / 恢复；字典类型与字典项维护（ENUM 绑定 / 级联树 / 租户覆盖）；告警规则与告警记录；日志落库、查询与导出；定时任务注册；控制台概览聚合 |
 | **不负责** | 身份与权限（IAM）、主数据治理（MasterData）、集成流程编排（Integration）——本模块不持有、也不跨库写这些上下文的表 |
 | 上游 | 无（通用域，被所有应用上下文消费） |
 | 下游关系 | 对所有应用上下文提供 OHS / Published Language：配置、日志与监控 API（P-2.4）；下游只消费公开技术契约，不反向依赖本模块 domain |
@@ -224,7 +224,7 @@ Bone System 是下列表的唯一写方与 Schema _owner；其他模块只读须
 | 表 | 语义 | 聚合 |
 |---|---|---|
 | `sys_config` | 系统配置 | SystemConfig |
-| `sys_dict` | 数据字典 | SysDict |
+| `sys_dict_type` / `sys_dict_item` | 数据字典（两级模型） | SysDictType / SysDictItem |
 | `sys_alert_rule` | 告警规则 | AlertRule |
 | `sys_alert_event` | 告警记录（DDL 名 `sys_alert_event`；本模块 README 正文曾写作 `sys_alert_record`，以 DDL 为准） | AlertRecord |
 | `sys_schedule_task` | 定时任务 | ScheduleTask |

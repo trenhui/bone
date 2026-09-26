@@ -149,37 +149,37 @@ public class CreateCodeGenerationApplicationService {
     return buildPendingTask(taskId, command);
   }
 
-  /** catalog 模式逐模板调用 CodeGeneratorService（其原生支持 CATALOG_SNAPSHOT）。 */
+  /**
+   * catalog 模式调用 CodeGeneratorService（其原生支持 CATALOG_SNAPSHOT）。
+   *
+   * <p>注意：catalog 引擎按 {@code BUILT_IN_TEMPLATE_TYPES} 一次性生成全部内置类型，{@code templateId} 仅作记录用途，
+   * 不会限制产出类型。若对每个 templateId 各调用一次，会产出 N 倍重复文件，故这里只调用一次。 模板精细选择（按用户勾选子集生成）属 P1 增强，当前 catalog
+   * 链路以"全量内置模板"为准。
+   */
   private List<GeneratedFile> runCatalogGeneration(CreateCodeGenerationCommand command) {
     List<Long> templateIds = command.getTemplateIds();
     if (templateIds == null || templateIds.isEmpty()) {
       throw new IllegalArgumentException("templateIds 不能为空");
     }
-    List<GeneratedFile> files = new ArrayList<>();
-    for (Long templateId : templateIds) {
-      CodeGenerationRequest request =
-          CodeGenerationRequest.builder()
-              .templateId(String.valueOf(templateId))
-              .name(command.getProjectName())
-              .basePackage(command.getBasePackage())
-              .moduleName(command.getModuleName())
-              .dataSourceId(
-                  command.getDataSourceId() == null
-                      ? null
-                      : String.valueOf(command.getDataSourceId()))
-              .tableNames(command.getTableNames())
-              .metadataSource(MetadataSourceType.CATALOG_SNAPSHOT)
-              .tenantId(command.getTenantId())
-              .entityCodes(command.getEntityCodes())
-              .includeTests(true)
-              .includeDocumentation(true)
-              .build();
-      CodeGenerationResponse response = codeGeneratorService.generateCode(request);
-      if (response.getGeneratedFiles() != null) {
-        files.addAll(response.getGeneratedFiles());
-      }
-    }
-    return files;
+    CodeGenerationRequest request =
+        CodeGenerationRequest.builder()
+            .templateId(String.valueOf(templateIds.get(0)))
+            .name(command.getProjectName())
+            .basePackage(command.getBasePackage())
+            .moduleName(command.getModuleName())
+            .dataSourceId(
+                command.getDataSourceId() == null
+                    ? null
+                    : String.valueOf(command.getDataSourceId()))
+            .tableNames(command.getTableNames())
+            .metadataSource(MetadataSourceType.CATALOG_SNAPSHOT)
+            .tenantId(command.getTenantId())
+            .entityCodes(command.getEntityCodes())
+            .includeTests(true)
+            .includeDocumentation(true)
+            .build();
+    CodeGenerationResponse response = codeGeneratorService.generateCode(request);
+    return response.getGeneratedFiles() == null ? List.of() : response.getGeneratedFiles();
   }
 
   private static MetadataSourceType resolveSource(String raw) {

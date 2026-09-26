@@ -107,6 +107,7 @@ TenantContext.setBizIdentityCode(...);
 5. **（已裁决，落地为第 7 条）**。
 7. **参考数据混存表按 overlay 拆分（2026-09-26 裁决，ADR-0029 不变量保持不变）**：原「平台值 + 租户扩展值」混存不引入 SDK「共享行」语义（`tenant_id IN (0, :current)` 会成为第二个逃生舱、弱化 fail-closed 不变量），改为**拆表**——`ReferenceSet` / `ReferenceValue` 去租户作用域（同第 4 条先例，值域为平台全局目录、仅平台管理员可写），新增租户作用域聚合 `TenantReferenceValue`（`mdm_reference_value_tenant`）。写路径按当前租户分发（`CurrentUserPort.requireTenantId()`：tenant=0 写平台表、其余写租户表），越权写抛 `MD_REF_PLATFORM_SET_IMMUTABLE` / `MD_REF_PLATFORM_VALUE_IMMUTABLE`（403）；读路径按值域合并两层为 `ReferenceValueView`（带 `scope` 来源标识）。迁移：`scripts/migration/0003_masterdata_reference_data_overlay.sql`。守护测试：`ReferenceDataOverlayTest`（可见性/隔离/跨表查重/越权守卫/平台视角五组）。
 6. **FluentQuery（DSL）通道已纳入租户注入（2026-09-26 修复，ADR-0029 补口）**：`SqlBuilder` 在 WHERE 构建期经 `TenantFilterInjector.resolveDslTenantValue` 注入租户谓词，与 Criteria 通道同不变量——可信 `TenantContext` 优先（caller 传入的 tenantId 条件被忽略并 WARN）&gt; caller 显式 EQ 兜底（后台任务链路）&gt; 失败关闭（`MissingTenantContextException`）。caller 条件整体加括号后再 AND 租户条件，防 OR 分组击穿；非租户表（未映射 `tenant_id`，如平台模板目录）永不注入。DSL 通道**无逃生舱**——跨租户基础设施扫描必须走 Criteria 通道（受架构门禁约束）。契约测试：`FluentQueryTenantScopeTest`。
+8. **平台管理员租户切换（2026-09-26 新增，ADR-0029 fail-closed 下的平台全局视图正式入口）**：平台管理员（JWT claim `tenantId=0` 且持有 `iam:tenants:read`）可通过请求头 `X-Acting-Tenant-Id` 指定生效租户，由 `AbstractJwtAuthenticationFilter` 在**源头**把 `X-Tenant-Id` 视图改写为切换值——`TenantInterceptor`、SDK 数据源路由等全部下游消费者无感知、顺序无关。安全不变量：**租户 token（claim≠0）携带切换头一律无效**，仍强制归一化为自身 claim；无切换权限码的平台账号同样被忽略；非法值（非数字/≤0）忽略回退平台租户；每次切换留审计日志。该机制**不新增 SDK 逃生舱**（`disableTenantFilter` 门禁不变），模块侧 `CurrentUserPort.currentTenantId()` 在 claim=0 时以 `TenantContext`（即生效租户）为准。契约测试：`JwtAuthenticationFilterTenantHeaderTest`（归一化 + 切换 9 用例）。
 
 ---
 
@@ -114,7 +115,7 @@ TenantContext.setBizIdentityCode(...);
 
 | 日期 | 说明 |
 |------|------|
-| 2026-09-26 | 新增 §8 主数据租户模型（平台模板层 + 租户实例层，G1 收敛后的正式结论）；§8 补记「平台模板目录非租户作用域」实测裁决；同日修复 FluentQuery 通道缺口（新增 §8 约束 6，ADR-0029 补口）；同日裁决参考数据混存表为 overlay 拆分（§8 约束 7，ADR-0029 不变量保持不变，`TenantReferenceValue` + 迁移 0003） |
+| 2026-09-26 | 新增 §8 主数据租户模型（平台模板层 + 租户实例层，G1 收敛后的正式结论）；§8 补记「平台模板目录非租户作用域」实测裁决；同日修复 FluentQuery 通道缺口（新增 §8 约束 6，ADR-0029 补口）；同日裁决参考数据混存表为 overlay 拆分（§8 约束 7，ADR-0029 不变量保持不变，`TenantReferenceValue` + 迁移 0003）；同日新增 §8 约束 8 平台管理员租户切换（`X-Acting-Tenant-Id`，平台全局视图正式入口） |
 | 2026-09-20 | §4 新增「实体声明」规则 + §7 对应检查项：SDK 按实体字段判定租户表，DDL 有 `tenant_id` 不等于查询会带租户条件 |
 | 2026-05-17 | 初版；对齐总体架构 §8.5 |
 | 2026-05-20 | 明确 `biz_identity_code` 默认仅在 JWT/上下文，不强制落库；需落库须 ADR |

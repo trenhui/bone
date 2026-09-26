@@ -44,16 +44,61 @@ public final class SystemErrorCodes {
   /** 读取上传的快照文件失败。 */
   public static final String CONFIG_SNAPSHOT_READ_FAILED = "SYS_CONFIG_SNAPSHOT_READ_FAILED";
 
-  // ===== 字典（SYS_DICT_*）=====
+  // ===== 字典（SYS_DICT_*，两级模型见 doc/design/modules/7a）=====
+
+  /** 字典类型不存在（含跨租户不可见）。 */
+  public static final String DICT_TYPE_NOT_FOUND = "SYS_DICT_TYPE_NOT_FOUND";
+
+  /** 同一租户作用域内该类型编码已存在。 */
+  public static final String DICT_TYPE_CODE_CONFLICT = "SYS_DICT_TYPE_CODE_CONFLICT";
+
+  /** 内置字典类型不可删除/不可改编码，或该类型的项对租户只读。 */
+  public static final String DICT_TYPE_READONLY = "SYS_DICT_TYPE_READONLY";
+
+  /** 字典类型下仍有项，不允许删除。 */
+  public static final String DICT_TYPE_IN_USE = "SYS_DICT_TYPE_IN_USE";
 
   /** 字典项不存在（含跨租户不可见）。 */
-  public static final String DICT_NOT_FOUND = "SYS_DICT_NOT_FOUND";
+  public static final String DICT_ITEM_NOT_FOUND = "SYS_DICT_ITEM_NOT_FOUND";
 
-  /** 同一字典类型下该 code 已存在。 */
-  public static final String DICT_CODE_CONFLICT = "SYS_DICT_CODE_CONFLICT";
+  /** 同一类型下该 code 已存在（唯一键 uk_dict_item）。 */
+  public static final String DICT_ITEM_CODE_CONFLICT = "SYS_DICT_ITEM_CODE_CONFLICT";
 
-  /** 字典类型非法（空值或超出 {@code DictType} 允许的长度）。 */
-  public static final String DICT_TYPE_INVALID = "SYS_DICT_TYPE_INVALID";
+  /** 字典项仍有子项，不允许删除（级联树需先删叶子）。 */
+  public static final String DICT_ITEM_HAS_CHILDREN = "SYS_DICT_ITEM_HAS_CHILDREN";
+
+  /** 父项编码在同类型下不存在。 */
+  public static final String DICT_PARENT_NOT_FOUND = "SYS_DICT_PARENT_NOT_FOUND";
+
+  /** 层级关系不存在（该项尚未挂到指定层级视图）。 */
+  public static final String DICT_HIERARCHY_NOT_FOUND = "SYS_DICT_HIERARCHY_NOT_FOUND";
+
+  /** 非 CASCADE 类值域不允许设置父项。 */
+  public static final String DICT_PARENT_NOT_ALLOWED = "SYS_DICT_PARENT_NOT_ALLOWED";
+
+  /** 移动后会出现父子环。 */
+  public static final String DICT_CYCLE_DETECTED = "SYS_DICT_CYCLE_DETECTED";
+
+  /** 层级深度超过该值域的 maxDepth。 */
+  public static final String DICT_CASCADE_DEPTH_EXCEEDED = "SYS_DICT_CASCADE_DEPTH_EXCEEDED";
+
+  /** 字典编码非法（空值、超长或含空白）。 */
+  public static final String DICT_CODE_INVALID = "SYS_DICT_CODE_INVALID";
+
+  /** 值域分类非法（不是 ENUM/LIST/CASCADE）。 */
+  public static final String DICT_CATEGORY_INVALID = "SYS_DICT_CATEGORY_INVALID";
+
+  /** 绑定的枚举类不可用（未绑定、类不存在、不是枚举或不在允许包内）。 */
+  public static final String DICT_ENUM_CLASS_INVALID = "SYS_DICT_ENUM_CLASS_INVALID";
+
+  /** 导入条目数超过单批上限。 */
+  public static final String DICT_IMPORT_TOO_LARGE = "SYS_DICT_IMPORT_TOO_LARGE";
+
+  /** 值不符合值域定义（数据类型或格式正则不匹配）。 */
+  public static final String DICT_VALUE_INVALID = "SYS_DICT_VALUE_INVALID";
+
+  /** 生效区间非法（开始时间晚于结束时间）。 */
+  public static final String DICT_EFFECTIVE_RANGE_INVALID = "SYS_DICT_EFFECTIVE_RANGE_INVALID";
 
   // ===== 告警（SYS_ALERT_*）=====
 

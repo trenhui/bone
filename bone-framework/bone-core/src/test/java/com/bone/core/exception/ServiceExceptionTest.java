@@ -40,10 +40,18 @@ class ServiceExceptionTest {
     assertThat(ex.getMessage()).isNull();
   }
 
-  /** setter 返回 this，支持链式赋值（反序列化后补全字段）。 */
+  /**
+   * setter 由 Lombok {@code @Data} 生成，返回 {@code void}，不支持链式。
+   *
+   * <p>本项目未启用 {@code @Accessors(chain = true)}，也没有 {@code lombok.config} 的 {@code
+   * lombok.accessors.chain} 配置，全仓无链式 setter 用法；反序列化后补全字段须逐字段赋值。 若将来确需链式，应统一通过 {@code lombok.config}
+   * 开启，而非在单个类上加 {@code @Accessors} 造成风格不一致。
+   */
   @Test
-  void settersAreChainable() {
-    ServiceException ex = new ServiceException().setCode(404).setMessage("未找到");
+  void settersAssignFields() {
+    ServiceException ex = new ServiceException();
+    ex.setCode(404);
+    ex.setMessage("未找到");
 
     assertThat(ex.getCode()).isEqualTo(404);
     assertThat(ex.getMessage()).isEqualTo("未找到");

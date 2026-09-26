@@ -43,6 +43,12 @@ python3 scripts/check-tenant-entity-declaration.py --check || {
   exit 1
 }
 
+echo "🔍 租户离场清除覆盖（R8①：含 tenant_id 且非平台/全局/样板表必须登记离场清退清单）..."
+python3 scripts/check-tenant-deletion-coverage.py --check || {
+  echo -e "${RED}❌ 存在含 tenant_id 但未登记租户离场清退的表（租户离场会残留数据）！${RESET}"
+  exit 1
+}
+
 echo "🔍 [9/9] application 层构件白名单（E-10.2 / E-13.2 / ADR-0035：只放 ApplicationService + 契约端口 + support）..."
 python3 scripts/check-application-constructs.py --check || {
   echo -e "${RED}❌ application 层出现白名单外的构件（第二类 service / 角色包 / ApplicationService 放错包）！${RESET}"

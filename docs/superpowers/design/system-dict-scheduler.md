@@ -13,12 +13,22 @@ status: final
 ## 2. 关键决策
 
 ### Decision 1：字典聚合 SysDict（对齐 SystemConfig 范式）
+
+> ⚠️ **本节已过时（v1 扁平模型）**。字典已重构为「类型 + 项」两级模型，支持 ENUM / LIST / CASCADE
+> 三类值域、枚举绑定与同步、级联树、内置保护、租户覆盖、进程内缓存与导入导出。
+> **真源见 [`doc/design/modules/7a. 数据字典模块详细设计方案.md`](../../../doc/design/modules/7a.%20数据字典模块详细设计方案.md)**；
+> 本节的 `SysDict` 单表与 `/api/v1/system/dicts` 已下线（迁移脚本 `scripts/migration/0006_dict_two_level.sql`）。
+
+<details><summary>v1 原始决策（仅作历史留档）</summary>
+
 - `SysDict extends AggregateRoot<Long>`，`@Table("sys_dict")`，`@Id @GeneratedValue(DISTRIBUTED_ID)`，`@NoArgsConstructor(access=PROTECTED)`。
 - 字段：`type`(字典类型)、`typeName`、`code`、`label`、`value`、`sort`、`status`、`createdAt`、`updatedAt`。
 - 值对象：`DictType(String value)`（构造校验非空）。
 - `SysDictRepository` 空接口（`extends Repository<SysDict, Long>`，`@EnableSqlRepositories` 自动实现）。
 - Handler：`DictCommandHandler`（create/update/delete）+ `DictQueryHandler`（byType 分组、byTypeAndCode、page）。
 - Controller：`DictController`（`SYSTEM_V1 + "/dicts"`，POST/PUT/DELETE/GET byType/GET byTypeAndCode/GET page），用 `ApiResponse` + `PageResult`。
+
+</details>
 
 ### Decision 2：定时任务聚合 ScheduleTask + 动态调度
 - `ScheduleTask extends AggregateRoot<Long>`，`@Table("sys_schedule_task")`。

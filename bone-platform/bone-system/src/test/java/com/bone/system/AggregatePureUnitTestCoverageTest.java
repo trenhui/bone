@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test;
 /**
  * R8 聚合纯单测门禁（真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} E-3.1 R8 / E-8）。
  *
- * <p>存量 6 个聚合（{@code AlertRecord}/{@code AlertRule}/{@code ScheduleTask}/{@code SysDict}/ {@code
- * SystemConfig}/{@code SystemLog}）纯单测已补齐（2026-09-05），门禁由 {@code verifyAllowingPending}
- * 升级为<strong>严格模式</strong>：任何聚合根缺无容器纯单测都会立即失败。
+ * <p>存量 9 个聚合（{@code AlertRecord}/{@code AlertRule}/{@code ScheduleTask}/{@code SysDictType}/
+ * {@code SysDictItem}/{@code SysDictHierarchy}/{@code SysDictItemText}/{@code SystemConfig}/ {@code
+ * SystemLog}）纯单测已补齐（2026-09-05；字典于 2026-09-26 由单表 {@code SysDict} 演进为 「类型 + 项 + 层级关系 + 译文」四聚合），门禁由
+ * {@code verifyAllowingPending} 升级为<strong>严格模式</strong>：任何聚合根缺无容器纯单测都会立即失败。
  */
 class AggregatePureUnitTestCoverageTest {
 

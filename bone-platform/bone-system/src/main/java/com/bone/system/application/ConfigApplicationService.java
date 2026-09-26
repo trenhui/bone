@@ -6,6 +6,7 @@ import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateConfigCommand;
 import com.bone.system.application.command.UpdateConfigCommand;
+import com.bone.system.application.port.out.ConfigCipherPort;
 import com.bone.system.application.query.dto.ConfigDto;
 import com.bone.system.application.query.qry.ConfigPageQuery;
 import com.bone.system.common.SystemErrorCodes;
@@ -40,6 +41,7 @@ public class ConfigApplicationService {
 
   private final SystemConfigRepository systemConfigRepository;
   private final DomainEventPublisher domainEventPublisher;
+  private final ConfigCipherPort configCipherPort;
 
   /** 尚未接入操作人上下文前的审计占位符。 */
   private static final String OPERATOR = "admin";
@@ -65,7 +67,7 @@ public class ConfigApplicationService {
         SystemConfig.create(
             DistributedIdGenerator.generateLongId(),
             configKey,
-            ConfigValue.of(command.getConfigValue()),
+            ConfigValue.of(storeValue(command.getConfigValue(), command.isEncrypted())),
             command.getDescription(),
             parseConfigType(command.getConfigType()),
             command.isEncrypted());
@@ -79,13 +81,22 @@ public class ConfigApplicationService {
   public void update(UpdateConfigCommand command) {
     SystemConfig config = requireConfig(command.getId());
     if (command.getConfigValue() != null) {
-      config.updateValue(ConfigValue.of(command.getConfigValue()), OPERATOR);
+      config.updateValue(
+          ConfigValue.of(storeValue(command.getConfigValue(), config.isEncrypted())), OPERATOR);
     }
     if (command.getDescription() != null) {
       config.updateDescription(command.getDescription());
     }
     systemConfigRepository.save(config);
     domainEventPublisher.publishFrom(config);
+  }
+
+  /**
+   * 敏感配置在落库前加密（详设 §7.2）：此前 {@code encrypted} 只是读取侧脱敏开关， {@code config_value}
+   * 列存的是明文——任何有库表读权限的人都能拿到「密码」。 未配置密钥时端口实现降级原样返回（明文存储 + 启动告警），行为与历史一致。
+   */
+  private String storeValue(String rawValue, boolean encrypted) {
+    return encrypted ? configCipherPort.encrypt(rawValue) : rawValue;
   }
 
   /**

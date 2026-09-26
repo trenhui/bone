@@ -294,6 +294,13 @@ VALUES
     (9, 'extension:points:read', '扩展点-读', 'extension', 'points', 'read', 'OPERATION', 90, NULL),
     (10, 'extension:points:write', '扩展点-写', 'extension', 'points', 'write', 'OPERATION', 100, NULL),
     (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL),
+    (64, 'extension:plugins:read', '插件-查看', 'extension', 'plugins', 'read', 'OPERATION', 111, '5a G3 权限分层'),
+    (65, 'extension:plugins:write', '插件-维护', 'extension', 'plugins', 'write', 'OPERATION', 112, '插件元数据 CRUD；与部署分权（5a G3）'),
+    (66, 'extension:plugins:bind', '插件-绑定', 'extension', 'plugins', 'bind', 'OPERATION', 113, '绑定/解绑扩展点（5a G3）'),
+    (67, 'extension:runtime:publish', '运行时-生效', 'extension', 'runtime', 'publish', 'OPERATION', 114, 'publish-runtime 生效切换；与部署分权 SoD（5a G3）'),
+    (68, 'extension:observe:read', '观测-查看', 'extension', 'observe', 'read', 'OPERATION', 115, '执行日志/审计/概览/依赖图查看（5a G3）'),
+    (69, 'extension:marketplace:install', '市场-安装', 'extension', 'marketplace', 'install', 'OPERATION', 116, '市场插件安装（5a G5）'),
+    (70, 'extension:marketplace:manage', '市场-管理', 'extension', 'marketplace', 'manage', 'OPERATION', 117, '市场目录运营（5a G3；目录管理 API 落地后启用）'),
     (12, 'iam:audit:read', 'IAM-审计查看', 'iam', 'audit', 'read', 'OPERATION', 120, NULL),
     (13, 'iam:audit:write', 'IAM-审计设置', 'iam', 'audit', 'write', 'OPERATION', 130, NULL),
     (14, 'iam:tenants:read', 'IAM-租户查看', 'iam', 'tenants', 'read', 'OPERATION', 140, NULL),
@@ -326,7 +333,8 @@ VALUES
     (54, 'masterdata:governance:write', '主数据-治理操作', 'masterdata', 'governance', 'write', 'OPERATION', 440, '治理角色指派/订阅批准/漂移处置/反馈处理'),
     (61, 'sys:config:write', 'SYS-配置维护', 'system', 'config', 'write', 'OPERATION', 450, '全局系统配置写（平台域；ConfigController @PreAuthorize）'),
     (62, 'sys:dict:write', 'SYS-字典维护', 'system', 'dicts', 'write', 'OPERATION', 460, '全局字典写（平台域；DictController @PreAuthorize）'),
-    (63, 'sys:schedule:write', 'SYS-调度维护', 'system', 'schedule-tasks', 'write', 'OPERATION', 470, '定时任务维护/启停/立即执行（平台域；ScheduleTaskController @PreAuthorize）');
+    (63, 'sys:schedule:write', 'SYS-调度维护', 'system', 'schedule-tasks', 'write', 'OPERATION', 470, '定时任务维护/启停/立即执行（平台域；ScheduleTaskController @PreAuthorize）'),
+    (64, 'sys:log:write', 'SYS-日志维护', 'system', 'logs', 'write', 'OPERATION', 480, '日志创建/导出（平台域；LogController @PreAuthorize）');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -347,7 +355,7 @@ VALUES
     (81, 3, 55), (82, 3, 56), (83, 3, 57), (84, 3, 58), (85, 3, 59);
 -- SYS 平台域写码绑定超管（61/62/63；租户管理员不绑——全局表写属平台域）
 INSERT INTO iam_role_permission (id, role_id, permission_id)
-VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63);
+VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63), (89, 1, 64);
 
 -- ============================================================
 -- 2. System
@@ -411,7 +419,101 @@ CREATE TABLE sys_dict (
     KEY idx_sys_dict_type (type),
     KEY idx_sys_dict_code (code),
     KEY idx_sys_dict_tenant (tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统字典';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统字典（v1 扁平模型，已下线，保留仅供迁移；新代码请用 sys_dict_type + sys_dict_item）';
+
+-- 字典类型（定义层）：设计见 doc/design/modules/7a. 数据字典模块详细设计方案.md
+CREATE TABLE sys_dict_type (
+    id                  BIGINT          NOT NULL COMMENT '类型主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（0=平台级，全租户可见）',
+    code                VARCHAR(64)     NOT NULL COMMENT '值域编码，如 sys_status',
+    name                VARCHAR(100)    NOT NULL COMMENT '值域名称',
+    category            VARCHAR(20)     NOT NULL DEFAULT 'LIST' COMMENT '值域分类（ENUM/LIST/CASCADE）',
+    module_code         VARCHAR(64)     DEFAULT NULL COMMENT '归属模块（system/masterdata/metadata...）',
+    enum_class          VARCHAR(255)    DEFAULT NULL COMMENT '绑定的 Java 枚举全限定名（category=ENUM 必填）',
+    max_depth           INT             NOT NULL DEFAULT 0 COMMENT 'CASCADE 层级上限（0=不限）',
+    value_type          VARCHAR(20)     NOT NULL DEFAULT 'STRING' COMMENT '值的技术类型（STRING/INT/DECIMAL/BOOLEAN，SAP Domain 口径）',
+    value_regex         VARCHAR(255)    DEFAULT NULL COMMENT '值格式正则（为空不校验）',
+    code_segments       VARCHAR(64)     DEFAULT NULL COMMENT '层级编码分段，如 2,2,2（GB/T 2260 风格：由编码前缀推导父级）',
+    description         VARCHAR(255)    DEFAULT NULL COMMENT '用途说明',
+    builtin             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '平台内置（禁删、code 禁改）',
+    editable            TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '租户是否可改其项',
+    sort                INT             NOT NULL DEFAULT 0 COMMENT '排序',
+    status              INT             NOT NULL DEFAULT 1 COMMENT '状态（1=启用 0=禁用）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_dict_type (tenant_id, code),
+    KEY idx_dict_type_module (tenant_id, module_code, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型';
+
+-- 字典项（值层 · 扁平）：父子关系不落在本表，见 sys_dict_hierarchy
+-- 租户级行按 code 覆盖同名平台行
+CREATE TABLE sys_dict_item (
+    id                  BIGINT          NOT NULL COMMENT '字典项主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（0=平台项；>0=租户覆盖项/自有项）',
+    type_code           VARCHAR(64)     NOT NULL COMMENT '所属字典类型编码',
+    code                VARCHAR(100)    NOT NULL COMMENT '项编码（ENUM 类即枚举常量名）',
+    label               VARCHAR(100)    NOT NULL COMMENT '显示名（默认语言）',
+    value               VARCHAR(255)    DEFAULT NULL COMMENT '业务值（可与 code 不同）',
+    enum_name           VARCHAR(100)    DEFAULT NULL COMMENT '绑定枚举常量名（ENUM 类冗余，便于反查）',
+    tag_type            VARCHAR(20)     NOT NULL DEFAULT 'default' COMMENT '展示语义（default/info/success/warning/error）',
+    i18n_key            VARCHAR(128)    DEFAULT NULL COMMENT '前端静态语言包键（服务端译文见 sys_dict_item_text）',
+    external_code       VARCHAR(100)    DEFAULT NULL COMMENT '外部标准码（GB/T 2260 / ISO 4217，仅用于对接）',
+    effective_from      DATETIME(3)     DEFAULT NULL COMMENT '生效开始时间（为空=不限；Oracle 时间有效性）',
+    effective_to        DATETIME(3)     DEFAULT NULL COMMENT '生效结束时间（为空=不限）',
+    is_default          TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否该类型默认项',
+    sort                INT             NOT NULL DEFAULT 0 COMMENT '排序',
+    status              INT             NOT NULL DEFAULT 1 COMMENT '状态（1=启用 0=禁用）',
+    description         VARCHAR(255)    DEFAULT NULL COMMENT '备注',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_dict_item (tenant_id, type_code, code),
+    KEY idx_dict_item_type (tenant_id, type_code, sort)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项';
+
+-- 层级关系（可插拔：同一值域可有多套层级视图，SAP hierarchy / SKOS broader 风格）
+CREATE TABLE sys_dict_hierarchy (
+    id                  BIGINT          NOT NULL COMMENT '主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    type_code           VARCHAR(64)     NOT NULL COMMENT '所属字典类型编码',
+    hierarchy_code      VARCHAR(64)     NOT NULL DEFAULT 'DEFAULT' COMMENT '层级视图编码（DEFAULT 为默认视图）',
+    code                VARCHAR(100)    NOT NULL COMMENT '子节点编码（引用 sys_dict_item.code）',
+    parent_code         VARCHAR(100)    DEFAULT NULL COMMENT '父节点编码（NULL=根）',
+    path                VARCHAR(512)    NOT NULL COMMENT '物化路径，如 /GD/GZ/（子树按前缀匹配，避免递归）',
+    level               INT             NOT NULL DEFAULT 1 COMMENT '深度（根=1），供 max_depth 校验与前端缩进',
+    sort                INT             NOT NULL DEFAULT 0 COMMENT '同级排序',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_dict_hierarchy (tenant_id, type_code, hierarchy_code, code),
+    KEY idx_dict_hierarchy_parent (tenant_id, type_code, hierarchy_code, parent_code),
+    KEY idx_dict_hierarchy_path (tenant_id, type_code, hierarchy_code, path)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典层级关系';
+
+-- 字典项译文（SAP T005T / Oracle _TL 风格：值语言无关，译文按 (code, language) 存）
+CREATE TABLE sys_dict_item_text (
+    id                  BIGINT          NOT NULL COMMENT '主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    type_code           VARCHAR(64)     NOT NULL COMMENT '所属字典类型编码',
+    code                VARCHAR(100)    NOT NULL COMMENT '字典项编码',
+    language            VARCHAR(16)     NOT NULL COMMENT '语言标签（zh-CN / en-US …）',
+    label               VARCHAR(100)    NOT NULL COMMENT '该语言下的显示名',
+    description         VARCHAR(255)    DEFAULT NULL COMMENT '该语言下的说明',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_dict_item_text (tenant_id, type_code, code, language),
+    KEY idx_dict_item_text_lang (tenant_id, type_code, language)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项多语言译文';
 
 CREATE TABLE sys_schedule_task (
     id                  BIGINT          NOT NULL COMMENT '任务主键（分布式ID）',
@@ -2033,6 +2135,7 @@ CREATE TABLE md_standard (
 
 CREATE TABLE ntf_message (
     id                  BIGINT          NOT NULL COMMENT '站内信主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（R9 隔离维度）',
     user_id             BIGINT          NOT NULL COMMENT '接收用户ID',
     title               VARCHAR(200)    DEFAULT NULL COMMENT '标题',
     content             TEXT            DEFAULT NULL COMMENT '内容',
@@ -2040,7 +2143,7 @@ CREATE TABLE ntf_message (
     is_read             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已读（0=未读 1=已读）',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (id),
-    KEY idx_ntf_user (user_id),
+    KEY idx_ntf_tenant_user (tenant_id, user_id),
     KEY idx_ntf_user_read (user_id, is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站内信';
 

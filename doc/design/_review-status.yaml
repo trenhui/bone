@@ -1,0 +1,254 @@
+# 设计复核进度 —— 由 doc/design/_global-contracts.yaml 派生（锚定文件是唯一真源）
+# 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
+# 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
+
+updated_at: "2026-09-26T23:15:00+08:00"
+anchor_generated_at: "2026-09-26T23:40:00+08:00"
+current_module: null
+next_run: "bone-iam"
+phase_model: "A=设计（review + v2 稿 + 自审，等人工卡点，不写代码）；B=实现（需 doc/design/approvals/<module>.yaml 或 doc/design/modules/<module>/_review-approved.yaml）"
+status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
+
+modules:
+  - name: "bone-iam"
+    design_doc: "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/6. IAM账号权限管理模块详细设计方案.md", "doc/design/modules/6a. IAM账号权限管理模块核心场景及用例设计方案.md", "doc/design/modules/10. 应用与模块管理详细设计方案.md"]
+    port: 8081
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "轮换首个模块；10. 应用与模块管理（/api/v1/apps）已并入本模块设计稿清单"
+
+  - name: "bone-metadata-server"
+    design_doc: "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/2. 元数据管理模块详细设计方案.md", "doc/design/modules/2a. 元数据管理模块核心场景及用例设计方案.md", "doc/design/modules/2b. 建模工作台功能与用例设计方案.md", "doc/design/modules/元数据能力-实现映射与竞品对照.md", "doc/design/modules/2. 元数据管理模块-生产就绪优化计划(P0·P1).md"]
+    port: 9001
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "锚定实测 HC-003/004/006 违反（ResponseEntity + AuthController 硬编码 password + TemplateReadAdapter 未登记绕过）"
+
+  - name: "bone-metadata-engine"
+    design_doc: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md"
+    design_docs: ["doc/design/modules/9. SmartMeta 引擎模块技术说明.md", "doc/design/modules/元数据能力-实现映射与竞品对照.md"]
+    port: null
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: true
+    comet_change_id: "refactor/metadata-engine-boundary-ddd"
+    note: "Comet classic change（phase=design）占用 → 每晚重新评估，change 归档后转 pending"
+
+  - name: "bone-masterdata"
+    design_doc: "doc/design/modules/3. 主数据管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/3. 主数据管理模块详细设计方案.md", "doc/design/modules/3a. 主数据管理模块核心场景及用例设计方案.md"]
+    port: 8084
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "含 md_* 遗留表、平台模板层 by-design 裁决与 md_lineage 缺 tenant_id"
+
+  - name: "bone-integration"
+    design_doc: "doc/design/modules/4. 集成管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/4. 集成管理模块详细设计方案.md"]
+    port: 8085
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "事件信封契约（IntegrationEnvelope 仅 blueprint 实现）需在本模块先定基线"
+
+  - name: "bone-system"
+    design_doc: "doc/design/modules/7. 系统管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/7. 系统管理模块详细设计方案.md", "doc/design/modules/7a. 数据字典模块详细设计方案.md", "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"]
+    port: 8083
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "doc1 控制台 12+ 端点全部未实现；两级字典为在途新增（平台行/租户行同表混存需按 T1 评估）"
+
+  - name: "bone-extension-studio"
+    design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+    design_docs: ["doc/design/modules/5. 扩展管理模块详细设计方案.md", "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
+    port: 8088
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "含 BONE-X-Studio 横切方案稿；stampTenant 仅覆盖 2 类实体"
+
+  - name: "studio-generator"
+    design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
+    design_docs: ["doc/design/modules/8.Studio Generator 详细设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
+    port: 8086
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "gen_code_template 平台种子可见性问题；gen_type_mapping 零引用属 DDL 下线候选"
+
+  - name: "bone-file"
+    design_doc: null
+    design_docs: []
+    port: 8107
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "无设计稿 → 本轮只产出 v1 设计稿（MinIO 存储 / 权限 / 配额），不进实现"
+
+  - name: "bone-notification"
+    design_doc: null
+    design_docs: []
+    port: 8083
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "无独立端口（与 bone-system 同上游 8083）；无设计稿 → 先定与 bone-system alert_* 的通道边界再出 v1"
+
+  - name: "bone-gateway"
+    design_doc: null
+    design_docs: []
+    port: 8888
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "无设计稿 → 本轮只产出 v1 设计稿（路由 / 鉴权 / 限流契约），不进实现"
+
+  - name: "bone-blueprint"
+    design_doc: null
+    design_docs: []
+    port: null
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "参考样板（reference-sample），不进产品轮换；事件信封/租户负向测试以其为基准"
+
+  - name: "bone-frontend/bone-iam-app"
+    design_doc: null
+    design_docs: []
+    port: 3003
+    owner_module: "bone-iam"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "前端微应用默认随归属模块 review（不单独占夜）；如需独立成夜改回 pending"
+
+  - name: "bone-frontend/bone-metadata-app"
+    design_doc: null
+    design_docs: []
+    port: 3004
+    owner_module: "bone-metadata-server"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review；工作树有 4 个未提交改动（EntityDetail / EntityManagement / TemplateWizard / types）"
+
+  - name: "bone-frontend/bone-masterdata-app"
+    design_doc: null
+    design_docs: []
+    port: 3005
+    owner_module: "bone-masterdata"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review"
+
+  - name: "bone-frontend/bone-integration-app"
+    design_doc: null
+    design_docs: []
+    port: 3006
+    owner_module: "bone-integration"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review"
+
+  - name: "bone-frontend/bone-system-app"
+    design_doc: null
+    design_docs: []
+    port: 3007
+    owner_module: "bone-system"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review；工作树有 DictManagement / SystemConfig 等待提交改动"
+
+  - name: "bone-frontend/bone-extension-app"
+    design_doc: null
+    design_docs: []
+    port: 3008
+    owner_module: "bone-extension-studio"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review"
+
+  - name: "bone-frontend/bone-generator-app"
+    design_doc: null
+    design_docs: []
+    port: 3009
+    owner_module: "studio-generator"
+    status: "skip"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "随归属模块 review"
+
+  - name: "bone-frontend/bone-shell"
+    design_doc: "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"
+    design_docs: ["doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md", "doc/design/bone-pages-spec.html", "doc/design/国际化设计方案.md"]
+    port: 3000
+    status: "pending"
+    last_reviewed_at: null
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    note: "宿主应用单独一轮；doc1 的 dashboards/widgets/preferences 前端能力未实现（后端侧归属 bone-system），须与 bone-system 轮次交叉引用"
+
+removed_modules:
+  - name: "旧轮换表的 bone-gateway ↔「1. 控制台与仪表盘模块详细设计方案.md」映射"
+    reason: "设计稿错配：doc1 的 API 与 cnsl_* 表归属 bone-system；bone-gateway 无设计稿"
+  - name: "旧轮换表的 bone-file ↔「5. 扩展管理模块详细设计方案.md」映射"
+    reason: "设计稿错配：doc5 属 bone-extension-studio；bone-file 无设计稿"
+  - name: "旧轮换表的 bone-blueprint ↔「8.Studio Generator 详细设计方案.md」映射"
+    reason: "设计稿错配：doc8 属 studio-generator；bone-blueprint 为参考样板，不进轮换"
+
+warnings:
+  - "本文件按锚定文件（2026-09-26T23:40 生成，20 个模块）重建；旧文件自带的模块↔设计稿对照表与仓库错配，差异见 removed_modules。"
+  - "skip 的两种含义：bone-metadata-engine = Comet 占用（条件消失后转 pending）；bone-blueprint 与 7 个前端微应用 = 按轮换口径不单独占夜（改回 pending 即独立成夜）。"
+  - "人工卡点：doc/design/approvals/<module>.yaml（推荐）或 doc/design/modules/<module>/_review-approved.yaml；A 阶段通过前不得进入 B。"
+  - "锚定文件 git.dirty=164~169（其他 AI 在途改动）→ 夜间任务必须在洁净工作树运行（02 §0 前提 1），否则退出并告警。"
+  - "轮换实际夜数：12 个产品轮换项 × 2 阶段（A 设计 / B 实现）≈ 24 个有效夜晚（bone-metadata-engine 另计）。"

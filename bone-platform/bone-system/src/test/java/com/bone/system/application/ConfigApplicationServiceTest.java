@@ -32,12 +32,15 @@ class ConfigApplicationServiceTest {
 
   @Mock SystemConfigRepository systemConfigRepository;
   @Mock com.bone.core.domain.event.DomainEventPublisher domainEventPublisher;
+  @Mock com.bone.system.application.port.out.ConfigCipherPort configCipherPort;
 
   ConfigApplicationService service;
 
   @BeforeEach
   void setUp() {
-    service = new ConfigApplicationService(systemConfigRepository, domainEventPublisher);
+    service =
+        new ConfigApplicationService(
+            systemConfigRepository, domainEventPublisher, configCipherPort);
   }
 
   @Test
@@ -98,6 +101,37 @@ class ConfigApplicationServiceTest {
 
     verify(systemConfigRepository, times(1)).deleteById(1L);
     verify(systemConfigRepository, never()).findById(any());
+  }
+
+  /** 敏感配置必须在落库前经加密端口：{@code encrypted=true} 只是读取侧脱敏开关， 存储列若仍是明文，「AES-256 加密存储」就是一句空话（详设 §7.2）。 */
+  @Test
+  void encryptedConfigStoredThroughCipherPort() {
+    when(systemConfigRepository.findByConfigKey(any(ConfigKey.class))).thenReturn(Optional.empty());
+    when(configCipherPort.encrypt("s3cret")).thenReturn("enc:v1:iv:ct");
+
+    CreateConfigCommand command = createCommand("db.password", "SYSTEM");
+    command.setConfigValue("s3cret");
+    command.setEncrypted(true);
+    service.create(command);
+
+    verify(systemConfigRepository)
+        .save(
+            org.mockito.ArgumentMatchers.argThat(
+                saved -> "enc:v1:iv:ct".equals(saved.getConfigValue().value())));
+  }
+
+  /** 非敏感配置不经过加密端口：避免一切配置值都被无差别改写。 */
+  @Test
+  void plainConfigBypassesCipherPort() {
+    when(systemConfigRepository.findByConfigKey(any(ConfigKey.class))).thenReturn(Optional.empty());
+
+    service.create(createCommand("site.title", "SYSTEM"));
+
+    verify(configCipherPort, never()).encrypt(any());
+    verify(systemConfigRepository)
+        .save(
+            org.mockito.ArgumentMatchers.argThat(
+                saved -> "Bone Platform".equals(saved.getConfigValue().value())));
   }
 
   private static CreateConfigCommand createCommand(String key, String configType) {

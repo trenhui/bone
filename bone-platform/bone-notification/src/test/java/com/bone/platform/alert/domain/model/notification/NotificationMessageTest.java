@@ -9,7 +9,7 @@ class NotificationMessageTest {
 
   @Test
   void create_setsFieldsAndDefaults() {
-    NotificationMessage message = NotificationMessage.create(1L, "标题", "内容", "INFO", 42L);
+    NotificationMessage message = NotificationMessage.create(1L, 100L, "标题", "内容", "INFO", 42L);
 
     assertThat(message.getId()).isEqualTo(1L);
     assertThat(message.getTitle()).isEqualTo("标题");
@@ -23,7 +23,7 @@ class NotificationMessageTest {
 
   @Test
   void markRead_flipsReadFlag() {
-    NotificationMessage message = NotificationMessage.create(1L, "t", "c", "WARN", 7L);
+    NotificationMessage message = NotificationMessage.create(1L, 100L, "t", "c", "WARN", 7L);
     assertThat(message.isRead()).isFalse();
 
     message.markRead();
@@ -33,7 +33,7 @@ class NotificationMessageTest {
 
   @Test
   void markRead_isIdempotent() {
-    NotificationMessage message = NotificationMessage.create(1L, "t", "c", "ERROR", 7L);
+    NotificationMessage message = NotificationMessage.create(1L, 100L, "t", "c", "ERROR", 7L);
     message.markRead();
     message.markRead();
     assertThat(message.isRead()).isTrue();

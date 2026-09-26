@@ -6,12 +6,14 @@ import {
 } from 'antd';
 import {
   PlusOutlined, AppstoreOutlined, CopyOutlined, DatabaseOutlined, FolderOutlined, SearchOutlined,
-  ThunderboltOutlined,
+  ThunderboltOutlined, DownloadOutlined, ImportOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
 import { errorMessage, metadataEntityApi, metadataTemplateApi } from '../services/metadataApi';
 import PublishPreviewModal from '../components/PublishPreviewModal';
+import ImportModelModal from '../components/ImportModelModal';
+import { exportEntityModel } from '../utils/modelTransfer';
 import { appApi, moduleApi, type BoneModule } from '../services/appModuleApi';
 import type {
   CopyEntityReq, CreateMetaEntityReq, MetaEntity, MetaTemplate, MetaTemplateField, UpdateMetaEntityReq,
@@ -85,6 +87,17 @@ const EntityManagement: React.FC = () => {
   const [copyOpen, setCopyOpen] = useState(false);
   const [copySource, setCopySource] = useState<MetaEntity | null>(null);
   const [copyForm] = Form.useForm();
+
+  // ----- 模型导入导出（F13） -----
+  const [importOpen, setImportOpen] = useState(false);
+  const handleExport = async (record: MetaEntity) => {
+    try {
+      await exportEntityModel(record);
+      message.success(`已导出「${record.displayName}」模型文件`);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '导出失败');
+    }
+  };
   const openCopy = (record: MetaEntity) => {
     setCopySource(record);
     copyForm.resetFields();
@@ -106,7 +119,8 @@ const EntityManagement: React.FC = () => {
         name: values.name,
         displayName: values.displayName,
         description: values.description,
-        targetModuleId: values.targetModuleId != null ? Number(values.targetModuleId) : undefined,
+        // ⚠ 雪花 ID 禁止 Number()（2^53 截断）；后端 Jackson 接受字符串转 Long
+        targetModuleId: values.targetModuleId ?? undefined,
       };
       const res = await metadataEntityApi.copy(copySource.id, body);
       if (res.code === 200 || res.code === 201) {
@@ -281,10 +295,11 @@ const EntityManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    const resolvedModuleId: number | undefined = isScoped
-      ? Number(moduleId)
+    // ⚠ 雪花 ID 禁止 Number()（2^53 截断）；后端 Jackson 接受字符串转 Long
+    const resolvedModuleId: string | number | undefined = isScoped
+      ? moduleId
       : values.moduleId != null
-        ? Number(values.moduleId)
+        ? values.moduleId
         : undefined;
     try {
       // 从模板实例化（UC-W2 主流程 A）
@@ -363,7 +378,7 @@ const EntityManagement: React.FC = () => {
   // ----- 表格列定义 -----
   // ⚠ 本表含 ellipsis 列 → antd 自动启用 tableLayout:fixed。容器不足时无 width 的列会被压成 0 宽，
   // 其 nowrap 内容会溢出叠加到相邻列（实测「名称」叠到「编码」）。故名称列必须给 width+ellipsis，
-  // 且表格必须配 scroll.x（列宽合计 1120，不足时横向滚动而非塌缩）。
+  // 且表格必须配 scroll.x（列宽合计 1160，不足时横向滚动而非塌缩）。
   const columns: ColumnsType<MetaEntity> = [
     {
       title: '名称',
@@ -427,10 +442,10 @@ const EntityManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 300,
+      width: 340,
       render: (_, record) =>
         canWrite ? (
-          <Space>
+          <Space size={2} wrap>
             <Button type="link" size="small" onClick={() => openEdit(record)} disabled={record.status === 1}>
               编辑
             </Button>
@@ -456,14 +471,34 @@ const EntityManagement: React.FC = () => {
                 发布
               </Button>
             )}
+            <Button
+              type="link"
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => handleExport(record)}
+              title="导出模型 JSON（定义+字段+关系）"
+            >
+              导出
+            </Button>
             <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
               <Button type="link" size="small" danger disabled={record.status === 1}>删除</Button>
             </Popconfirm>
           </Space>
         ) : (
-          <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
-            查看
-          </Button>
+          <Space size={2} wrap>
+            <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
+              查看
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => handleExport(record)}
+              title="导出模型 JSON（定义+字段+关系）"
+            >
+              导出
+            </Button>
+          </Space>
         ),
     },
   ];
@@ -500,7 +535,7 @@ const EntityManagement: React.FC = () => {
       )}
 
       {/* 右侧列表 */}
-      {/* minWidth:0 是关键：flex 子项默认 min-width:auto，会被 Table 的 scroll.x=1120 撑破导致页面横向溢出 */}
+      {/* minWidth:0 是关键：flex 子项默认 min-width:auto，会被 Table 的 scroll.x=1160 撑破导致页面横向溢出 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {isScoped && <div style={{ height: 36 }} /> /* 面包屑占位 */}
         {/* 过滤与操作栏 */}
@@ -558,6 +593,9 @@ const EntityManagement: React.FC = () => {
           <Col flex="auto" style={{ textAlign: 'right' }}>
             <Space>
               <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
+              {canWrite && (
+                <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</Button>
+              )}
               {canWrite && (
                 <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</Button>
               )}
@@ -653,7 +691,7 @@ const EntityManagement: React.FC = () => {
                 dataSource={group.entities}
                 pagination={false}
                 size="small"
-                scroll={{ x: 1120 }}
+                scroll={{ x: 1160 }}
                 rowSelection={{
                   selectedRowKeys,
                   onChange: setSelectedRowKeys,
@@ -667,7 +705,7 @@ const EntityManagement: React.FC = () => {
             loading={loading}
             columns={columns}
             dataSource={moduleScopedData}
-            scroll={{ x: 1120 }}
+            scroll={{ x: 1160 }}
             rowSelection={{
               selectedRowKeys,
               onChange: setSelectedRowKeys,
@@ -867,6 +905,19 @@ const EntityManagement: React.FC = () => {
         entityName={previewEntity?.displayName}
         onClose={() => setPreviewOpen(false)}
         onPublished={load}
+      />
+
+      {/* 模型导入 Modal（F13） */}
+      <ImportModelModal
+        open={importOpen}
+        moduleId={isScoped ? moduleId : undefined}
+        moduleOptions={realModuleOptions}
+        onClose={() => setImportOpen(false)}
+        onImported={(entityId) => {
+          setImportOpen(false);
+          load();
+          navigate(`/entities/${entityId}`);
+        }}
       />
     </div>
   );

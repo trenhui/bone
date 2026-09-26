@@ -36,3 +36,6 @@ springdoc:
 bone:
   system:
     log-retention-days: 180
+    config:
+      # 生产 fail-fast：必须显式注入独立加密密钥（BONE_CONFIG_ENCRYPT_KEY），禁用 dev 默认值
+      encrypt-key: ${BONE_CONFIG_ENCRYPT_KEY}

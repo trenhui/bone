@@ -48,9 +48,9 @@ public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
     if (hasKeyword) {
       query
           .where(SystemConfig::getConfigKey)
-          .like(keyword)
+          .contains(keyword)
           .or(SystemConfig::getDescription)
-          .like(keyword);
+          .contains(keyword);
     }
     if (configType != null) {
       query.and(SystemConfig::getConfigType).eq(configType);

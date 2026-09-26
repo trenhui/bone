@@ -18,6 +18,8 @@ public class ExtensionStudioProperties {
   @NestedConfigurationProperty
   private final IdempotencyConfig idempotency = new IdempotencyConfig();
 
+  @NestedConfigurationProperty private final LifecycleConfig lifecycle = new LifecycleConfig();
+
   public RuntimeSyncConfig getRuntimeSync() {
     return runtimeSync;
   }
@@ -38,9 +40,16 @@ public class ExtensionStudioProperties {
     return idempotency;
   }
 
+  public LifecycleConfig getLifecycle() {
+    return lifecycle;
+  }
+
   public static class SecurityConfig {
     /** 本地联调：允许无 JWT 访问 Studio API（生产必须 false） */
     private boolean permitUnauthenticated = false;
+
+    /** 5a G3 过渡期回退：true（默认）时新 Scope 端点同时接受旧 Scope；false（切流）后仅认新 Scope。 */
+    private boolean legacyScopeFallback = true;
 
     public boolean isPermitUnauthenticated() {
       return permitUnauthenticated;
@@ -48,6 +57,31 @@ public class ExtensionStudioProperties {
 
     public void setPermitUnauthenticated(boolean permitUnauthenticated) {
       this.permitUnauthenticated = permitUnauthenticated;
+    }
+
+    public boolean isLegacyScopeFallback() {
+      return legacyScopeFallback;
+    }
+
+    public void setLegacyScopeFallback(boolean legacyScopeFallback) {
+      this.legacyScopeFallback = legacyScopeFallback;
+    }
+  }
+
+  /** 5a G3 生命周期分权：部署与生效（publish-runtime）分离，SoD 最低要求。 */
+  public static class LifecycleConfig {
+    /**
+     * true（As-Is 默认）：:deploy 即置 ACTIVE 并推送运行时（部署即生效）； false（[Target]）：:deploy 停在 STAGED，生效由
+     * :publish-runtime 完成（切 ACTIVE + 推送路由）。
+     */
+    private boolean deployPublishes = true;
+
+    public boolean isDeployPublishes() {
+      return deployPublishes;
+    }
+
+    public void setDeployPublishes(boolean deployPublishes) {
+      this.deployPublishes = deployPublishes;
     }
   }
 

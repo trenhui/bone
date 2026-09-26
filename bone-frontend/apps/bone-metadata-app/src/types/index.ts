@@ -73,7 +73,8 @@ export interface CopyEntityReq {
   name?: string;
   displayName?: string;
   description?: string;
-  targetModuleId?: number;
+  /** ⚠ 雪花 ID 以字符串透传，禁止 Number()（2^53 截断） */
+  targetModuleId?: number | string;
 }
 
 export interface InstantiateTemplateReq {
@@ -82,7 +83,8 @@ export interface InstantiateTemplateReq {
   displayName: string;
   description?: string;
   tableName: string;
-  moduleId?: number;
+  /** ⚠ 雪花 ID 以字符串透传，禁止 Number()（2^53 截断） */
+  moduleId?: number | string;
   icon?: string;
   deliveryMode?: number;
 }

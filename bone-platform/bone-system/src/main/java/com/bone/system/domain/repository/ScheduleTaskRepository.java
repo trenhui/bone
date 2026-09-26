@@ -32,7 +32,7 @@ public interface ScheduleTaskRepository extends Repository<ScheduleTask, Long> {
       String keyword, TaskStatus status, int pageNum, int pageSize) {
     var query = QueryBuilder.from(ScheduleTask.class);
     if (keyword != null && !keyword.isBlank()) {
-      query.where(ScheduleTask::getName).like(keyword);
+      query.where(ScheduleTask::getName).contains(keyword);
     }
     if (status != null) {
       query.and(ScheduleTask::getStatus).eq(status);

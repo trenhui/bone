@@ -30,8 +30,8 @@ const TemplateWizard: React.FC = () => {
   const [apps, setApps] = useState<BoneApplication[]>([]);
   const [modules, setModules] = useState<BoneModule[]>([]);
   const [appId, setAppId] = useState<string | undefined>(searchParams.get('appId') ?? undefined);
-  const [moduleId, setModuleId] = useState<number | undefined>(
-    searchParams.get('moduleId') ? Number(searchParams.get('moduleId')) : undefined,
+  const [moduleId, setModuleId] = useState<string | undefined>(
+    searchParams.get('moduleId') ?? undefined,
   );
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<MetaTemplate | null>(null);
@@ -216,7 +216,7 @@ const TemplateWizard: React.FC = () => {
                 placeholder="选择模块"
                 value={moduleId}
                 disabled={!appId}
-                options={modules.map((m) => ({ value: Number(m.id), label: `${m.name}（${m.code}）` }))}
+                options={modules.map((m) => ({ value: String(m.id), label: `${m.name}（${m.code}）` }))}
                 onChange={(v) => setModuleId(v)}
               />
             </Form.Item>

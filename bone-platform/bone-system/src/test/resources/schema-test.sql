@@ -87,6 +87,82 @@ CREATE TABLE IF NOT EXISTS sys_dict (
     version    INT           NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS sys_dict_type (
+    id            BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id     BIGINT        NOT NULL DEFAULT 0,
+    code          VARCHAR(64)   NOT NULL,
+    name          VARCHAR(100)  NOT NULL,
+    category      VARCHAR(20)   NOT NULL DEFAULT 'LIST',
+    module_code   VARCHAR(64),
+    enum_class    VARCHAR(255),
+    max_depth     INT           NOT NULL DEFAULT 0,
+    value_type    VARCHAR(20)   NOT NULL DEFAULT 'STRING',
+    value_regex   VARCHAR(255),
+    code_segments VARCHAR(64),
+    description   VARCHAR(255),
+    builtin       TINYINT       NOT NULL DEFAULT 0,
+    editable      TINYINT       NOT NULL DEFAULT 1,
+    sort          INT           NOT NULL DEFAULT 0,
+    status        INT           NOT NULL DEFAULT 1,
+    created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted       TINYINT       NOT NULL DEFAULT 0,
+    version       INT           NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_dict_item (
+    id             BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id      BIGINT        NOT NULL DEFAULT 0,
+    type_code      VARCHAR(64)   NOT NULL,
+    code           VARCHAR(100)  NOT NULL,
+    label          VARCHAR(100)  NOT NULL,
+    `value`        VARCHAR(255),
+    enum_name      VARCHAR(100),
+    tag_type       VARCHAR(20)   NOT NULL DEFAULT 'default',
+    i18n_key       VARCHAR(128),
+    external_code  VARCHAR(100),
+    effective_from TIMESTAMP,
+    effective_to   TIMESTAMP,
+    is_default     TINYINT       NOT NULL DEFAULT 0,
+    sort           INT           NOT NULL DEFAULT 0,
+    status         INT           NOT NULL DEFAULT 1,
+    description    VARCHAR(255),
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted        TINYINT       NOT NULL DEFAULT 0,
+    version        INT           NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_dict_hierarchy (
+    id             BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id      BIGINT        NOT NULL DEFAULT 0,
+    type_code      VARCHAR(64)   NOT NULL,
+    hierarchy_code VARCHAR(64)   NOT NULL DEFAULT 'DEFAULT',
+    code           VARCHAR(100)  NOT NULL,
+    parent_code    VARCHAR(100),
+    path           VARCHAR(512)  NOT NULL,
+    level          INT           NOT NULL DEFAULT 1,
+    sort           INT           NOT NULL DEFAULT 0,
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted        TINYINT       NOT NULL DEFAULT 0,
+    version        INT           NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_dict_item_text (
+    id          BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id   BIGINT        NOT NULL DEFAULT 0,
+    type_code   VARCHAR(64)   NOT NULL,
+    code        VARCHAR(100)  NOT NULL,
+    language    VARCHAR(16)   NOT NULL,
+    label       VARCHAR(100)  NOT NULL,
+    description VARCHAR(255),
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted     TINYINT       NOT NULL DEFAULT 0,
+    version     INT           NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS sys_schedule_task (
     id          BIGINT       NOT NULL PRIMARY KEY,
     tenant_id   BIGINT       NOT NULL DEFAULT 0,

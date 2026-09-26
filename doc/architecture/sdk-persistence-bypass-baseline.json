@@ -4,6 +4,7 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/RuntimeEngineConfiguration.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",

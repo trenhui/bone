@@ -24,9 +24,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * 通用 JWT 认证过滤器。解析 Authorization Bearer JWT，写入 Spring Security Context。 各模块可继承后扩展特定行为（如租户绑定、黑名单校验）。
  *
  * <p><b>租户头归一化（安全强约束）</b>：token 校验通过后，请求头 {@code X-Tenant-Id} 的视图会被改写为 token 内
- * <strong>已签名</strong>的 {@code tenantId} claim。因为该头在下游被当作身份使用——{@code bone-web} 的 {@code
- * TenantInterceptor} 用它建立租户上下文，{@code bone-metadata-sdk} 用它做租户数据源路由——若不与 claim 交叉校验， 持有 A 租户 token
- * 的调用方只要改一个请求头就能读写 B 租户数据。
+ * <strong>已签名</strong>的 {@code tenantId} claim（唯一例外：平台管理员的 {@link #ACTING_TENANT_HEADER} 租户切换， 见
+ * {@link #normalizeTenantHeader}）。因为该头在下游被当作身份使用——{@code bone-web} 的 {@code TenantInterceptor}
+ * 用它建立租户上下文，{@code bone-metadata-sdk} 用它做租户数据源路由——若不与 claim 交叉校验， 持有 A 租户 token 的调用方只要改一个请求头就能读写 B
+ * 租户数据。
  *
  * <p><b>为何在「头」上做归一化，而不是在下游某个 filter 里 {@code TenantContext.setTenantId} 覆盖</b>：
  * 设置租户上下文的点有三个——模块自有的租户 filter（若有；order 常被排在安全链之前，因而读到的是<strong>未归一化</strong>的头）、 {@code bone-web}
@@ -44,6 +45,12 @@ public abstract class AbstractJwtAuthenticationFilter extends OncePerRequestFilt
    * TenantInterceptor} 同名。
    */
   private static final String TENANT_ID_HEADER = "X-Tenant-Id";
+
+  /** 平台管理员租户切换头：仅平台租户（claim=0）且持有 {@link #PLATFORM_TENANT_SWITCH_SCOPE} 的调用方可用。 */
+  static final String ACTING_TENANT_HEADER = "X-Acting-Tenant-Id";
+
+  /** 允许租户切换的权限码：租户管理查看权（平台管理员角色绑定，租户管理员白名单不含）。 */
+  static final String PLATFORM_TENANT_SWITCH_SCOPE = "iam:tenants:read";
 
   protected final JwtTokenService jwtTokenService;
   protected final JwtConfig jwtConfig;
@@ -104,7 +111,13 @@ public abstract class AbstractJwtAuthenticationFilter extends OncePerRequestFilt
   protected void onFinally() {}
 
   /**
-   * 把 {@code X-Tenant-Id} 的视图归一化为 token 内已签名的 {@code tenantId}。
+   * 解析生效租户并归一化 {@code X-Tenant-Id} 视图。
+   *
+   * <p>归一化（安全约束，见类注释）对<strong>所有</strong>带 token 请求生效：生效租户默认等于已签名 claim。
+   * 在此之上提供<strong>平台管理员租户切换</strong>：claim 为平台租户 {@code 0} 且持有 {@link
+   * #PLATFORM_TENANT_SWITCH_SCOPE} 的调用方，可通过 {@link #ACTING_TENANT_HEADER} 指定生效租户 （ADR-0029
+   * fail-closed 下的平台全局视图入口，语义为「以该租户身份操作」，读写皆生效并留 WARN 审计）。 租户 token（claim≠0）一律强制归一化为自身
+   * claim——携带切换头也不会被采信。
    *
    * <p>刻意声明为 {@code private}：安全约束不应沿继承链被削弱——若开放覆写，某个子类一次误改即可让全模块的租户防伪失效。
    */
@@ -115,19 +128,58 @@ public abstract class AbstractJwtAuthenticationFilter extends OncePerRequestFilt
       // token 未携带租户 claim：不臆测、保持原样（下游 TenantInterceptor 会回落到平台租户）
       return request;
     }
+    String effectiveTenant = resolveEffectiveTenant(request, claimTenant, principal.scopes());
     String headerTenant = request.getHeader(TENANT_ID_HEADER);
-    if (claimTenant.equals(headerTenant)) {
-      return request; // 网关路径：头本就被同一 claim 覆盖，无需包装
+    if (claimTenant.equals(headerTenant) && effectiveTenant.equals(claimTenant)) {
+      return request; // 网关路径：头本就被同一 claim 覆盖且未切换，无需包装
     }
-    if (headerTenant != null && !headerTenant.isBlank()) {
+    if (headerTenant != null && !headerTenant.isBlank() && !headerTenant.equals(effectiveTenant)) {
       log.warn(
-          "[JWT] 请求头 {} = ({}) 与 token 租户 claim = ({}) 不一致，已按 claim 覆盖: uri={}",
+          "[JWT] 请求头 {} = ({}) 与生效租户 = ({}) 不一致，已按生效租户覆盖: uri={}",
           TENANT_ID_HEADER,
           headerTenant,
-          claimTenant,
+          effectiveTenant,
           request.getRequestURI());
     }
-    return new TenantHeaderOverridingRequest(request, claimTenant);
+    return new TenantHeaderOverridingRequest(request, effectiveTenant);
+  }
+
+  /**
+   * 计算生效租户：默认 claim；平台租户（claim=0）且持有切换权限码时，可被 {@link #ACTING_TENANT_HEADER}
+   * 覆盖为指定的合法非零租户（非法值一律忽略、回退平台租户，不抛错以免阻断请求）。
+   */
+  private String resolveEffectiveTenant(
+      HttpServletRequest request, String claimTenant, List<String> scopes) {
+    boolean canSwitch =
+        "0".equals(claimTenant) && scopes != null && scopes.contains(PLATFORM_TENANT_SWITCH_SCOPE);
+    if (!canSwitch) {
+      return claimTenant;
+    }
+    String acting = request.getHeader(ACTING_TENANT_HEADER);
+    if (acting == null || acting.isBlank()) {
+      return claimTenant;
+    }
+    String trimmed = acting.trim();
+    try {
+      long actingId = Long.parseLong(trimmed);
+      if (actingId <= 0) {
+        log.warn("[JWT] 租户切换被忽略：{} 必须为正整数, uri={}", ACTING_TENANT_HEADER, request.getRequestURI());
+        return claimTenant;
+      }
+      log.info(
+          "[JWT] 平台管理员租户切换: actingTenant={}, operator={}, uri={}",
+          actingId,
+          request.getHeader("X-User-Id"),
+          request.getRequestURI());
+      return trimmed;
+    } catch (NumberFormatException e) {
+      log.warn(
+          "[JWT] 租户切换被忽略：{} 非法值 ({}), uri={}",
+          ACTING_TENANT_HEADER,
+          trimmed,
+          request.getRequestURI());
+      return claimTenant;
+    }
   }
 
   /** 只改写 {@code X-Tenant-Id} 视图、其余全部委托给原请求的包装器。 */

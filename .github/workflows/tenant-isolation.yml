@@ -1,0 +1,76 @@
+name: Tenant Isolation Verification
+
+# 多租户隔离 + 归属部门必填 回归门禁。
+#
+# 触发说明：默认仅【手动】触发（workflow_dispatch），避免未经打磨的容器编排拖慢/卡住 PR。
+# 建议：先在 Actions 里手动跑通一次（确认镜像构建与服务启动耗时在预期内），
+# 再由流水线 owner 决定是否把下面的 pull_request / push 触发器打开。
+#
+# 依赖：仓库根目录 docker-compose.yml 已提供完整栈（mysql + redis + bone-iam:8081 + bone-system:8083），
+# mysql 容器会把 ./bone-init.sql 作为 /docker-entrypoint-initdb.d 初始化脚本自动灌入 schema 与种子数据
+#（含脚本登录用的平台管理员 admin/123456）。
+#
+# 校验内容：scripts/verify_tenant_isolation_e2e.py —— 26 项断言，覆盖
+#  (1) 平台管理员造全局共享数据；(2) 2 个租户管理员各自造 IAM/System 数据；
+#  (3) 租户间隔离（列表不可见、越权直查被拒、部门树不串）；(4) 归属部门必填。
+# 脚本失败会 exit 1；且跑完自清理测试租户与全局配置，可重复运行。
+#
+# ⚠ 注意：BONE_DB_PASSWORD 必须与脚本内直连 MySQL 的口令一致（scripts 中为 mysql123），
+# 否则 services 正常但清理连不上（清理失败仅告警，不影响门禁结论）。
+
+on:
+  workflow_dispatch:
+  # 稳定后可按需解注下述触发器：
+  # pull_request:
+  #   paths:
+  #     - 'bone-platform/bone-iam/**'
+  #     - 'bone-platform/bone-system/**'
+  #     - 'scripts/verify_tenant_isolation_e2e.py'
+  #     - '.github/workflows/tenant-isolation.yml'
+
+env:
+  BONE_DB_PASSWORD: mysql123
+
+jobs:
+  tenant-isolation:
+    name: Verify tenant isolation (IAM + System)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start full stack (mysql, redis, iam, system)
+        run: docker compose up -d --build mysql redis bone-iam bone-system
+
+      - name: Wait for services healthy
+        run: |
+          for i in $(seq 1 60); do
+            iam=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/actuator/health || true)
+            sys=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8083/actuator/health || true)
+            echo "attempt $i: iam=$iam system=$sys"
+            if [ "$iam" = "200" ] && [ "$sys" = "200" ]; then
+              echo "all services are up"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::IAM/System 未在预期时间内就绪，服务日志如下："
+          docker compose logs --tail=300
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pymysql
+
+      - name: Run tenant isolation verification
+        run: python3 scripts/verify_tenant_isolation_e2e.py
+
+      # 无论成功失败都回收容器与数据卷（-v 连 mysql_data 一并移除），保证下次运行是干净栈
+      - name: Collect logs & tear down
+        if: always()
+        run: |
+          docker compose logs --tail=300 || true
+          docker compose down -v || true

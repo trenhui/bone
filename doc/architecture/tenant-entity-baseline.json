@@ -33,44 +33,44 @@
     "sys_alert_event": {
       "entity": "AlertRecord",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/alert/AlertRecord.java",
-      "classification": "needs-owner-decision",
-      "owner": "bone-system",
-      "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_alert_event | 告警事件（rule_id，current_value，status OPEN/ACK/RESOLVED）」未提租户。平台服务健康告警更像平台级运维视图；若确认 → by-design + 写明「运维视图需跨租户 + 授权审计」，否则补实体声明。该模块正在进行 ApplicationService 收敛，须衔接同一轮改动"
+    "classification": "needs-owner-decision",
+    "owner": "bone-system",
+    "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_alert_event | 告警事件（rule_id，current_value，status OPEN/ACK/RESOLVED）」未提租户。平台服务健康告警更像平台级运维视图；若确认 → by-design + 写明「运维视图需跨租户 + 授权审计」，否则补实体声明。该模块正在进行 ApplicationService 收敛，须衔接同一轮改动。【推荐】by-design（平台运维运行时视图，需跨租户 + 授权审计）；归平台租户 0，读侧走 disableTenantFilter 通道，实体不声明 tenantId"
     },
     "sys_alert_rule": {
       "entity": "AlertRule",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/alert/AlertRule.java",
-      "classification": "needs-owner-decision",
-      "owner": "bone-system",
-      "note": "**性质待裁决**（证据不足）：告警规则由谁配置决定答案——平台运维配平台指标阈值 → by-design（写明理由）；租户自配 → 补实体声明。该模块收敛进行中，须衔接同一轮改动"
+    "classification": "needs-owner-decision",
+    "owner": "bone-system",
+    "note": "**性质待裁决**（证据不足）：告警规则由谁配置决定答案——平台运维配平台指标阈值 → by-design（写明理由）；租户自配 → 补实体声明。该模块收敛进行中，须衔接同一轮改动。【推荐】per-tenant：告警规则由租户自配（监控自身指标），AlertRule 补 tenantId；若有平台级规则，按 mdm_reference_value/tenant overlay 模式拆平台种子表"
     },
     "sys_config": {
       "entity": "SystemConfig",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/config/SystemConfig.java",
-      "classification": "pending",
-      "owner": "bone-system",
-      "note": "表性质**已由设计文档确认为 per-tenant**：《7. 系统管理模块详细设计方案》§表清单写「sys_config | 配置（tenant_id + config_key 唯一，encrypted，标准审计）」——唯一键就含 tenant_id。待补实体租户声明（须与正在进行的 ApplicationService 收敛同批处理）"
+    "classification": "pending",
+    "owner": "bone-system",
+    "note": "表性质**已由设计文档确认为 per-tenant**：《7. 系统管理模块详细设计方案》§表清单写「sys_config | 配置（tenant_id + config_key 唯一，encrypted，标准审计）」——唯一键就含 tenant_id。待补实体租户声明（须与正在进行的 ApplicationService 收敛同批处理）。【推荐】per-tenant：SystemConfig 改继承 TenantAggregateRoot 并补 tenantId 字段，唯一键 (tenant_id, config_key) 已就位；与系统模块 ApplicationService 收敛同批落地"
     },
     "sys_dict": {
       "entity": "SysDict",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/dict/SysDict.java",
-      "classification": "needs-owner-decision",
-      "owner": "bone-system",
-      "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_dict（该表在 DDL 与代码中存在但缺设计说明）。字典常见两种形态——平台全局 + 租户扩展、或纯 per-tenant。裁决后二选一：per-tenant → 补实体声明；平台全局 → 改 classification 为 by-design 并写明理由"
+    "classification": "needs-owner-decision",
+    "owner": "bone-system",
+    "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_dict（该表在 DDL 与代码中存在但缺设计说明）。字典常见两种形态——平台全局 + 租户扩展、或纯 per-tenant。裁决后二选一：per-tenant → 补实体声明；平台全局 → 改 classification 为 by-design 并写明理由。【推荐】per-tenant（租户自管字典，平台可选 seed）；若需平台种子，按 mdm_reference_value/tenant overlay 拆表，避免同表混存（通则 T1）"
     },
     "sys_log": {
       "entity": "SystemLog",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/log/SystemLog.java",
-      "classification": "needs-owner-decision",
-      "owner": "bone-system",
-      "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_log | 日志（level，service，content，trace_id，created_at）」未提租户；DDL 有 tenant_id、保留 180 天。运维排查通常需要跨租户视图 → 若确认平台级则改 by-design 并写明「运维视图需跨租户 + 授权审计」；否则补实体声明"
+    "classification": "needs-owner-decision",
+    "owner": "bone-system",
+    "note": "**性质待裁决**（证据不足）：设计文档表清单记「sys_log | 日志（level，service，content，trace_id，created_at）」未提租户；DDL 有 tenant_id、保留 180 天。运维排查通常需要跨租户视图 → 若确认平台级则改 by-design 并写明「运维视图需跨租户 + 授权审计」；否则补实体声明。【推荐】by-design（运维跨租户排查视图，授权审计），归平台租户 0，读侧走 disableTenantFilter，实体不声明 tenantId"
     },
     "sys_schedule_task": {
       "entity": "ScheduleTask",
       "path": "bone-platform/bone-system/src/main/java/com/bone/system/domain/schedule/ScheduleTask.java",
-      "classification": "needs-owner-decision",
-      "owner": "bone-system",
-      "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_schedule_task。调度任务由谁配置（平台运维 vs 租户）决定答案——per-tenant → 补实体声明；平台运维 → by-design + 写明理由"
+    "classification": "needs-owner-decision",
+    "owner": "bone-system",
+    "note": "**性质待裁决**（证据不足）：设计文档表清单未列 sys_schedule_task。调度任务由谁配置（平台运维 vs 租户）决定答案——per-tenant → 补实体声明；平台运维 → by-design + 写明理由。【推荐】per-tenant：调度任务由租户自配（跑自身业务定时任务），ScheduleTask 补 tenantId；平台级调度走独立 scheduler 表，不混存"
     }
   }
 }

@@ -97,6 +97,61 @@ class JwtAuthenticationFilterTenantHeaderTest {
     assertThat(runFilter(request).getHeader(TENANT_HEADER)).isEqualTo("9999");
   }
 
+  // ==== 平台管理员租户切换（X-Acting-Tenant-Id，ADR-0029 平台全局视图入口）====
+
+  @Test
+  void platformAdminActingHeaderSwitchesEffectiveTenant() {
+    HttpServletRequest seen =
+        runFilter(
+            platformTokenRequest(
+                List.of("iam:tenants:read"), String.valueOf(CLAIM_TENANT), "1002"));
+
+    assertThat(seen.getHeader(TENANT_HEADER)).isEqualTo("1002");
+    assertThat(seen.getHeader(AbstractJwtAuthenticationFilter.ACTING_TENANT_HEADER))
+        .isEqualTo("1002");
+  }
+
+  @Test
+  void platformTokenWithoutSwitchScopeCannotAct() {
+    // 平台 token 但无 iam:tenants:read（平台普通账号）：切换头被忽略，回落平台租户 0
+    HttpServletRequest seen = runFilter(platformTokenRequest(List.of(), "0", "1002"));
+
+    assertThat(seen.getHeader(TENANT_HEADER)).isEqualTo("0");
+  }
+
+  @Test
+  void tenantTokenWithActingHeaderIsRejected() {
+    // 租户 token 即便伪造切换头（甚至带切换权限码），也强制归一化为自身 claim——防伪不变量不被削弱
+    String token =
+        jwtTokenService.generateToken(1L, "alice", CLAIM_TENANT, List.of("iam:tenants:read"));
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/orders");
+    request.addHeader("Authorization", "Bearer " + token);
+    request.addHeader(TENANT_HEADER, String.valueOf(CLAIM_TENANT));
+    request.addHeader(AbstractJwtAuthenticationFilter.ACTING_TENANT_HEADER, "1002");
+
+    assertThat(runFilter(request).getHeader(TENANT_HEADER)).isEqualTo(String.valueOf(CLAIM_TENANT));
+  }
+
+  @Test
+  void invalidActingValuesAreIgnored() {
+    for (String bad : new String[] {"abc", "0", "-5"}) {
+      HttpServletRequest seen =
+          runFilter(platformTokenRequest(List.of("iam:tenants:read"), "0", bad));
+      assertThat(seen.getHeader(TENANT_HEADER)).as("acting=%s", bad).isEqualTo("0");
+    }
+  }
+
+  /** 带 scopes 的平台/租户 token 请求：tenantIdClaim 为生效身份租户，actingHeader 为切换头取值。 */
+  private MockHttpServletRequest platformTokenRequest(
+      List<String> scopes, String forgedTenantHeader, String actingHeader) {
+    String token = jwtTokenService.generateToken(1L, "alice", 0L, scopes);
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/orders");
+    request.addHeader("Authorization", "Bearer " + token);
+    request.addHeader(TENANT_HEADER, forgedTenantHeader);
+    request.addHeader(AbstractJwtAuthenticationFilter.ACTING_TENANT_HEADER, actingHeader);
+    return request;
+  }
+
   private MockHttpServletRequest tokenRequest(long claimTenant, String forgedHeader) {
     String token = jwtTokenService.generateToken(1L, "alice", claimTenant, List.of());
     MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/orders");

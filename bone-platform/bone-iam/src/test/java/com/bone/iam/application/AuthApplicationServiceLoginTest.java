@@ -29,6 +29,7 @@ import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
+import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -140,6 +141,33 @@ class AuthApplicationServiceLoginTest {
         .isInstanceOf(BizException.class)
         .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
     verify(accountRepository, never()).update(any());
+  }
+
+  /**
+   * 跨租户重名必须<b>显式拒绝并留痕</b>，绝不能静默当成「用户不存在」。
+   *
+   * <p>回归背景：登录是唯一租户未知的路径，账号定位走全租户查找 {@link
+   * com.bone.iam.domain.repository.AccountRepository#findByUsernameForLoginAllTenants(String)}；
+   * 唯一键是 {@code uk_iam_account_username (tenant_id, username)}（<b>仅租户内唯一、跨租户允许重名</b>），
+   * 所以一旦两个租户出现同名账号，该查找就会抛 {@link MultipleResultsException}。若在 {@code
+   * AuthApplicationService#findByUsername} 里把它吞成 empty， 两边的账号会<b>同时永久登录不上、
+   * 且日志里没有任何痕迹</b>。本用例锁定契约：落到 LOGIN_FAILED，且<b>不得触碰任何账号状态</b>（未定位到唯一账号就不许写库）。
+   */
+  @Test
+  void crossTenantDuplicateUsernameRejectsLoginWithoutMutation() {
+    when(accountRepository.findByUsernameForLoginAllTenants("dupe"))
+        .thenThrow(new MultipleResultsException("expected one but found 2"));
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("dupe");
+    cmd.setPassword("whatever");
+
+    assertThatThrownBy(() -> authApplicationService.login(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
+    // 未定位到唯一账号：不得更新失败计数/锁定状态，也不得进入密码校验
+    verify(accountRepository, never()).update(any());
+    verify(passwordEncoderPort, never()).matches(any(), any());
   }
 
   @Test

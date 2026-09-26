@@ -1,5 +1,6 @@
 package com.bone.platform.alert.channel;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.platform.alert.AlertChannel;
 import com.bone.platform.alert.AlertChannelType;
@@ -37,9 +38,16 @@ public class InAppNotificationChannel implements AlertChannel {
               ? Long.valueOf(String.valueOf(message.getContext().get("userId")))
               : null;
       Long id = DistributedIdGenerator.generateLongId();
+      // 站内信按租户隔离（R9）：租户取自当前请求上下文；异步告警需保证 TenantContext 已传播。
+      Long tenantId = TenantContext.getTenantIdAsLong();
       NotificationMessage notification =
           NotificationMessage.create(
-              id, message.getTitle(), message.getContent(), message.getLevel().name(), userId);
+              id,
+              tenantId,
+              message.getTitle(),
+              message.getContent(),
+              message.getLevel().name(),
+              userId);
       notificationMessageRepository.save(notification);
       log.info("站内信已发送: title={}, userId={}", message.getTitle(), userId);
     } catch (Exception e) {

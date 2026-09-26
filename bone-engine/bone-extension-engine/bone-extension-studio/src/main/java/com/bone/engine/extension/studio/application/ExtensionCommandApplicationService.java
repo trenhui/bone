@@ -6,6 +6,7 @@ import com.bone.engine.extension.studio.application.support.PluginArtifactSuppor
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
 import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
 import com.bone.engine.extension.studio.application.support.StudioVersionSupport;
+import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.TenantDirectoryPort;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
@@ -53,6 +54,7 @@ public class ExtensionCommandApplicationService {
   private final PluginVersionReadPort pluginVersionReadPort;
   private final PluginArtifactSupport pluginArtifactService;
   private final PluginExecutionLogCommandApplicationService executionLogCommandHandler;
+  private final ExtensionStudioProperties studioProperties;
 
   @Autowired(required = false)
   private RuntimeExtensionSyncService runtimeSyncService;
@@ -194,6 +196,13 @@ public class ExtensionCommandApplicationService {
     try {
       extension.enable();
       extensionRepository.save(extension);
+      // 5a G3 生命周期分权：deployPublishes=false 时部署停在 STAGED，生效由 :publish-runtime 完成
+      if (!studioProperties.getLifecycle().isDeployPublishes()) {
+        markActiveVersionDeployment(id, DeploymentStatus.STAGED);
+        logSuccess(
+            extension, "DEPLOY", System.currentTimeMillis() - start, "{\"deployed\":\"staged\"}");
+        return true;
+      }
       markActiveVersionDeployment(id, DeploymentStatus.ACTIVE);
       boolean published = publishRuntime(id);
       logSuccess(
@@ -238,6 +247,7 @@ public class ExtensionCommandApplicationService {
       }
       if (runtimeSyncService == null) {
         log.warn("RuntimeExtensionSyncService 未配置，跳过运行时发布");
+        markActiveVersionDeployment(id, DeploymentStatus.ACTIVE);
         logSuccess(
             extension, "PUBLISH_RUNTIME", System.currentTimeMillis() - start, "{\"skipped\":true}");
         return true;
@@ -247,6 +257,7 @@ public class ExtensionCommandApplicationService {
         throw new IllegalArgumentException(String.join("; ", errors));
       }
       boolean ok = runtimeSyncService.publish(extension);
+      markActiveVersionDeployment(id, DeploymentStatus.ACTIVE);
       logSuccess(
           extension,
           "PUBLISH_RUNTIME",

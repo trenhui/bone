@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 日志管理控制器。 */
@@ -37,6 +38,7 @@ public class LogController {
 
   @Operation(summary = "创建日志")
   @PostMapping
+  @PreAuthorize("hasAuthority('sys:log:write')")
   public ApiResponse<Long> create(@Valid @RequestBody CreateLogReq req) {
     return ApiResponse.success(systemLogApplicationService.create(logAssembler.toCommand(req)));
   }
@@ -61,8 +63,9 @@ public class LogController {
         systemLogApplicationService.page(logAssembler.toQuery(req)).map(logAssembler::toResp));
   }
 
-  @Operation(summary = "导出日志（CSV）")
+  @Operation(summary = "导出日志（CSV）", description = "导出全量日志数据，需 sys:log:write 权限（平台域）")
   @PostMapping("/export")
+  @PreAuthorize("hasAuthority('sys:log:write')")
   public ResponseEntity<byte[]> export(@RequestBody(required = false) LogExportReq req) {
     byte[] bytes = logExportApplicationService.exportCsv(logAssembler.toExportQuery(req));
     String ts = LocalDateTime.now().format(EXPORT_TS);

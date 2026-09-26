@@ -39,7 +39,7 @@ def build_as_is_checks() -> list[dict]:
                 "java": cl.grep_files(
                     MAIN,
                     r"CodeGenerationController|CodeTemplateController|"
-                    r"DataSourceController|GenerationTaskController|GeneratorOperationController",
+                    r"DataSourceController|GeneratorOperationController",
                     ROOT,
                 ),
             },

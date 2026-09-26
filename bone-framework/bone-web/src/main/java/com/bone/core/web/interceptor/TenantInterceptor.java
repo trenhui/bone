@@ -18,13 +18,20 @@ public class TenantInterceptor implements HandlerInterceptor {
 
   private static final String TENANT_ID_HEADER = "X-Tenant-Id";
   private static final String BIZ_CODE_HEADER = "X-Biz-Code";
-  private static final String DEFAULT_TENANT = "DEFAULT";
   private static final String DEFAULT_BIZ_CODE = "DEFAULT";
 
   private static final boolean BIZ_CONTEXT_AVAILABLE = isBizContextAvailable();
 
   /**
-   * 请求预处理，提取租户信息并设置到上下文
+   * 请求预处理，提取租户信息并设置到上下文。
+   *
+   * <p><b>fail-closed</b>：请求头缺失 {@code X-Tenant-Id} 时<b>不</b>回落到平台租户 {@code 0}——那会让写路径 静默落到租户 0
+   * 且无法察觉，或让读路径静默退化为全租户读。上下文保持为空， 由 SDK 的 {@code
+   * MissingTenantContextException}（ADR-0029）失败关闭。该分支只对应越权/畸形入站，生产环境由网关在每个请求上盖章 {@code
+   * X-Tenant-Id}，不会触发。
+   *
+   * <p>与各业务模块的 {@code WebTenantConfiguration}（masterdata / integration / generator /
+   * metadata-server）保持同一约定。
    *
    * @param request HTTP请求
    * @param response HTTP响应
@@ -34,37 +41,28 @@ public class TenantInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
-    try {
-      // 从请求头获取租户ID
-      String tenantId = request.getHeader(TENANT_ID_HEADER);
-      if (tenantId == null || tenantId.isBlank()) {
-        log.debug("未提供租户ID，使用默认租户: {}", DEFAULT_TENANT);
-        tenantId = "0";
-      }
+    // 从请求头获取租户ID（缺失即留空 → SDK 失败关闭，不兜底 0）
+    String tenantId = request.getHeader(TENANT_ID_HEADER);
+    if (tenantId != null && !tenantId.isBlank()) {
+      tenantId = tenantId.trim();
+      // 设置到租户上下文（支持线程池传递）
+      TenantContext.setTenantId(tenantId);
 
-      // 从请求头获取业务码
+      // 从请求头获取业务码（仅在有租户上下文时同步）
       String bizCode = request.getHeader(BIZ_CODE_HEADER);
       if (bizCode == null || bizCode.isBlank()) {
         bizCode = DEFAULT_BIZ_CODE;
       }
-
-      // 设置到租户上下文（支持线程池传递）
-      TenantContext.setTenantId(tenantId);
-
       // 同步到业务上下文（如果可用）
       if (BIZ_CONTEXT_AVAILABLE) {
         setBizContext(tenantId, bizCode);
       }
-
       log.debug(
           "租户上下文已设置: tenantId={}, bizCode={}, uri={}", tenantId, bizCode, request.getRequestURI());
-
-      return true;
-    } catch (Exception e) {
-      log.error("设置租户上下文失败", e);
-      // 即使失败也继续执行，避免影响正常请求
-      return true;
+    } else {
+      log.debug("未提供租户ID，上下文保持空（fail-closed）: uri={}", request.getRequestURI());
     }
+    return true;
   }
 
   /**

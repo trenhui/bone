@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-25T21:21:13Z",
+  "generated_at": "2026-09-26T14:07:40Z",
   "module": "generator",
   "as_is": [
     {
@@ -9,7 +9,7 @@
       "evidence": {
         "openapi": {
           "openapi_file": "/Users/renhui.trh/wps/bone/doc/architecture/openapi/generator-v1.yaml",
-          "path_count": 10,
+          "path_count": 9,
           "paths_sample": [
             "/data-sources",
             "/data-sources/{id}",

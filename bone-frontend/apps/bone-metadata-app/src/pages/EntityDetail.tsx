@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, createContext, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert, Button, Card, Descriptions, Empty, Form, Input, InputNumber, List, Modal,
-  Popconfirm, Row, Col, Select, Space, Table, Tabs, Tag, Typography, message, Badge, Tooltip,
+  Popconfirm, Row, Col, Select, Space, Table, Tabs, Tag, Typography, message, Badge, Tooltip, Switch,
 } from 'antd';
 import {
   PlusOutlined, ArrowLeftOutlined, EditOutlined, DeleteOutlined, FieldStringOutlined,
@@ -10,6 +10,7 @@ import {
   ApartmentOutlined, CheckCircleOutlined, WarningOutlined, InfoCircleOutlined, AimOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { FormInstance } from 'antd';
 import { errorMessage, metadataEntityApi, metadataFieldApi, metadataRelationApi } from '../services/metadataApi';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import FieldWizardModal from '../components/FieldWizardModal';
@@ -21,6 +22,100 @@ import type {
 import { DELIVERY_MODE, ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES } from '../types';
 
 const { Text } = Typography;
+
+// ===== F10b 字段网格行内编辑（Airtable 式）：单元格点击进入编辑，失焦/回车保存 =====
+// 采用 antd 官方可编辑单元格模式：行级 <Form component={false}> + EditableContext 下发，
+// Form.Item 必须挂在 Form 上下文内（否则 React 警告 Can not find FormContext / useForm 未连接）。
+const EditableContext = createContext<FormInstance | null>(null);
+
+interface EditableRowProps {
+  record?: MetaField;
+  onSave?: (field: MetaField, patch: Partial<MetaField>) => Promise<boolean>;
+  [key: string]: unknown;
+}
+
+/** 行组件：由 Table 的 components.body.row + onRow(record) 注入 record/onSave */
+const EditableRow: React.FC<EditableRowProps> = ({ record, onSave, ...restProps }) => {
+  const [form] = Form.useForm();
+  return (
+    <Form form={form} component={false}>
+      <EditableContext.Provider value={form}>
+        <tr {...(restProps as React.HTMLAttributes<HTMLTableRowElement>)} />
+      </EditableContext.Provider>
+    </Form>
+  );
+};
+
+interface EditableCellProps {
+  editable?: boolean;
+  cellType?: 'text' | 'number' | 'boolean';
+  dataIndex?: string;
+  record?: MetaField;
+  onSave?: (field: MetaField, patch: Partial<MetaField>) => Promise<boolean>;
+  className?: string;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+  [key: string]: unknown;
+}
+
+const EditableCell: React.FC<EditableCellProps> = (props) => {
+  const { editable, cellType = 'text', dataIndex, record, onSave, children, className, style, ...restProps } = props;
+  const form = useContext(EditableContext);
+  const [editing, setEditing] = useState(false);
+
+  const save = async () => {
+    if (!record || !dataIndex || !onSave || !form) return;
+    try {
+      const values = await form.validateFields();
+      const ok = await onSave(record, { [dataIndex]: values[dataIndex] } as Partial<MetaField>);
+      if (ok) setEditing(false);
+    } catch {
+      // 校验失败或被取消：保持编辑态，不丢改动
+    }
+  };
+
+  if (editing && record && dataIndex && form) {
+    const current = (record as unknown as Record<string, unknown>)[dataIndex];
+    let input: React.ReactNode;
+    if (cellType === 'boolean') {
+      input = (
+        <Form.Item name={dataIndex} valuePropName="checked" initialValue={!!current} style={{ margin: 0 }}>
+          <Switch
+            autoFocus
+            checkedChildren="是"
+            unCheckedChildren="否"
+            onChange={(checked) => { form.setFieldsValue({ [dataIndex]: checked }); save(); }}
+          />
+        </Form.Item>
+      );
+    } else if (cellType === 'number') {
+      input = (
+        <Form.Item name={dataIndex} initialValue={(current as number | undefined) ?? undefined} style={{ margin: 0 }}>
+          <InputNumber autoFocus style={{ width: '100%' }} min={0} onPressEnter={save} onBlur={save} />
+        </Form.Item>
+      );
+    } else {
+      input = (
+        <Form.Item name={dataIndex} initialValue={(current as string | undefined) ?? ''} style={{ margin: 0 }}>
+          <Input autoFocus onPressEnter={save} onBlur={save} />
+        </Form.Item>
+      );
+    }
+    return <td className={className} style={style}>{input}</td>;
+  }
+
+  const childNode = editable ? (
+    <div
+      onClick={() => setEditing(true)}
+      title="点击行内编辑"
+      style={{ cursor: 'pointer', minHeight: 24, padding: '2px 0' }}
+    >
+      {children}
+    </div>
+  ) : children;
+
+  return <td className={className} style={style} {...(restProps as React.TdHTMLAttributes<HTMLTableCellElement>)}>{childNode}</td>;
+};
 
 const EntityDetail: React.FC = () => {
   const { id, appId, moduleId } = useParams<{ id: string; appId?: string; moduleId?: string }>();
@@ -131,6 +226,27 @@ const EntityDetail: React.FC = () => {
     }
   }, [id]);
 
+  // F10b 字段网格行内编辑：非破坏属性直接落库（保持 type/displayName 必填字段，避免被全列 UPDATE 清空）
+  const saveFieldInline = useCallback(async (field: MetaField, patch: Partial<MetaField>) => {
+    if (!id) return false;
+    const body: UpdateMetaFieldReq = {
+      displayName: patch.displayName ?? field.displayName,
+      type: field.type,
+      length: patch.length !== undefined ? patch.length : field.length,
+      required: patch.required !== undefined ? patch.required : field.required,
+      sortOrder: patch.sortOrder !== undefined ? patch.sortOrder : field.sortOrder,
+      comment: field.comment,
+    };
+    const res = await metadataFieldApi.update(id, field.id, body);
+    if (res.code === 200) {
+      setFields((prev) => prev.map((f) => (f.id === field.id ? { ...f, ...patch } : f)));
+      message.success('已保存');
+      return true;
+    }
+    message.error(errorMessage(res));
+    return false;
+  }, [id]);
+
   // 字段级问题跳转（F7）：切回字段 Tab 并打开该字段的编辑 Modal
   const jumpToField = (issue: EntityValidationIssue) => {
     if (issue.fieldId == null) return;
@@ -196,6 +312,38 @@ const EntityDetail: React.FC = () => {
       loadFields();
     } else {
       message.error(errorMessage(res));
+    }
+  };
+
+  // F5 脏状态守卫：编辑字段 Modal 关闭前若已改动则二次确认，避免误丢
+  const handleFieldModalCancel = () => {
+    if (form.isFieldsTouched()) {
+      Modal.confirm({
+        title: '有未保存的修改',
+        content: '关闭将丢失尚未保存的字段修改，确认放弃？',
+        okText: '放弃修改',
+        okButtonProps: { danger: true },
+        cancelText: '继续编辑',
+        onOk: () => setModalOpen(false),
+      });
+    } else {
+      setModalOpen(false);
+    }
+  };
+
+  // F5 脏状态守卫：编辑关系 Modal 关闭前若已改动则二次确认
+  const handleRelationModalCancel = () => {
+    if (relationForm.isFieldsTouched()) {
+      Modal.confirm({
+        title: '有未保存的修改',
+        content: '关闭将丢失尚未保存的关系修改，确认放弃？',
+        okText: '放弃修改',
+        okButtonProps: { danger: true },
+        cancelText: '继续编辑',
+        onOk: () => setRelationModalOpen(false),
+      });
+    } else {
+      setRelationModalOpen(false);
     }
   };
 
@@ -299,6 +447,7 @@ const EntityDetail: React.FC = () => {
       dataIndex: 'sortOrder',
       key: 'sortOrder',
       width: 60,
+      onCell: (record) => ({ record, dataIndex: 'sortOrder', cellType: 'number', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>),
       render: (v: number) => <Text type="secondary">{v ?? '—'}</Text>,
     },
     {
@@ -307,14 +456,11 @@ const EntityDetail: React.FC = () => {
       key: 'displayName',
       width: 160,
       ellipsis: true,
+      onCell: (record) => ({ record, dataIndex: 'displayName', cellType: 'text', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>),
       render: (name: string, record) => (
         <Space>
           {fieldTypeIcon(record.type)}
-          <Typography.Text
-            ellipsis={{ tooltip: name }}
-            style={{ color: '#1668dc', cursor: 'pointer', maxWidth: 120, marginBottom: 0 }}
-            onClick={() => openDetail(record)}
-          >
+          <Typography.Text ellipsis={{ tooltip: name }} style={{ maxWidth: 120, marginBottom: 0 }}>
             {name}
           </Typography.Text>
         </Space>
@@ -340,6 +486,7 @@ const EntityDetail: React.FC = () => {
       dataIndex: 'length',
       key: 'length',
       width: 60,
+      onCell: (record) => ({ record, dataIndex: 'length', cellType: 'number', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>),
       render: (v: number | null) => v ?? '—',
     },
     {
@@ -347,14 +494,18 @@ const EntityDetail: React.FC = () => {
       dataIndex: 'required',
       key: 'required',
       width: 50,
+      onCell: (record) => ({ record, dataIndex: 'required', cellType: 'boolean', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>),
       render: (v: boolean) => v ? <Tag color="red">是</Tag> : <Tag>否</Tag>,
     },
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 170,
       render: (_, record) => (
         <Space>
+          <Tooltip title="查看字段详情">
+            <Button type="link" size="small" onClick={() => openDetail(record)}>查看</Button>
+          </Tooltip>
           <Tooltip title="编辑字段属性">
             <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
           </Tooltip>
@@ -489,6 +640,13 @@ const EntityDetail: React.FC = () => {
                   pagination={false}
                   size="small"
                   scroll={{ x: 'max-content' }}
+                  components={{
+                    body: {
+                      row: EditableRow as unknown as React.ComponentType<React.HTMLAttributes<HTMLTableRowElement>>,
+                      cell: EditableCell as unknown as React.ComponentType<React.TdHTMLAttributes<HTMLTableCellElement>>,
+                    },
+                  }}
+                  onRow={(record) => ({ record, onSave: saveFieldInline } as unknown as React.HTMLAttributes<HTMLTableRowElement>)}
                 />
               ),
             },
@@ -621,7 +779,7 @@ const EntityDetail: React.FC = () => {
         title="编辑字段"
         open={modalOpen}
         onOk={handleSubmit}
-        onCancel={() => setModalOpen(false)}
+        onCancel={handleFieldModalCancel}
         destroyOnHidden
         forceRender
         width={520}
@@ -685,7 +843,7 @@ const EntityDetail: React.FC = () => {
         title={editingRelation ? '编辑关系' : '新建关系'}
         open={relationModalOpen}
         onOk={handleRelationSubmit}
-        onCancel={() => setRelationModalOpen(false)}
+        onCancel={handleRelationModalCancel}
         destroyOnHidden
         forceRender
         width={520}

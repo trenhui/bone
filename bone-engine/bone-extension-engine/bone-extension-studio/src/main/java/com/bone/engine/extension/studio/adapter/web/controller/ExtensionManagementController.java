@@ -161,7 +161,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/plugins")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<?>> listPlugins(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Long extPointId,
@@ -188,7 +193,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/plugins/{id}")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> getPlugin(@PathVariable Long id) {
     Extension extension = extensionQueryHandler.findExtensionById(id);
     if (extension == null) {
@@ -198,7 +208,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/plugins/{id}/doc")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> getPluginDoc(@PathVariable Long id) {
     Extension extension = extensionQueryHandler.findExtensionById(id);
     if (extension == null) {
@@ -220,7 +235,12 @@ public class ExtensionManagementController {
   }
 
   @PostMapping("/plugins")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_WRITE
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> createPlugin(
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       @RequestBody Extension body)
@@ -229,7 +249,12 @@ public class ExtensionManagementController {
   }
 
   @PutMapping("/plugins/{id}")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_WRITE
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> updatePlugin(
       @PathVariable Long id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -239,7 +264,12 @@ public class ExtensionManagementController {
   }
 
   @PatchMapping("/plugins/{id}")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_WRITE
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> patchPlugin(
       @PathVariable Long id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -256,13 +286,23 @@ public class ExtensionManagementController {
   }
 
   @DeleteMapping("/plugins/{id}")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_WRITE
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<Void> deletePlugin(@PathVariable Long id) {
     return extensionStudioCommandHandler.deletePlugin(id);
   }
 
   @GetMapping("/plugins/{id}/versions")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<List<PluginVersion>>> listPluginVersions(
       @PathVariable Long id) {
     try {
@@ -325,13 +365,23 @@ public class ExtensionManagementController {
   }
 
   @PostMapping("/plugins/{id}:publish-runtime")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.RUNTIME_PUBLISH
+          + "','"
+          + ExtensionScopes.PLUGINS_DEPLOY
+          + "')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> publishRuntime(@PathVariable Long id) {
     return extensionStudioCommandHandler.publishRuntime(id);
   }
 
   @PostMapping("/plugins/{id}:bind")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_BIND
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> bindPlugin(
       @PathVariable Long id, @RequestBody Map<String, Object> body) {
     Object extPointId = body != null ? body.get("extensionPointId") : null;
@@ -345,13 +395,23 @@ public class ExtensionManagementController {
   }
 
   @PostMapping("/plugins/{id}:unbind")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_BIND
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Extension>> unbindPlugin(@PathVariable Long id) {
     return extensionStudioCommandHandler.unbindPlugin(id);
   }
 
   @GetMapping("/overview")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> overview() {
     Map<String, Object> data =
         pluginExecutionLogQueryHandler.overview(
@@ -384,7 +444,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/execution-logs")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<PageResult<PluginExecutionLog>>> executionLogs(
       @RequestParam(required = false) Long pluginId,
       @RequestParam(required = false) String status,
@@ -429,7 +494,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/audit-logs")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<PageResult<StudioAuditEntry>>> auditLogs(
       @RequestParam(required = false) String action,
       @RequestParam(required = false) String resourceType,
@@ -457,7 +527,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/plugins/{id}/deployment-state")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.PLUGINS_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<DeploymentStateView>> deploymentState(@PathVariable Long id) {
     try {
       return ResponseEntity.ok(
@@ -468,7 +543,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/dependency-graph")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<PluginDependencyGraph>> dependencyGraph(
       @RequestParam(required = false) Long extPointId) {
     return ResponseEntity.ok(
@@ -476,7 +556,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/marketplace")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<List<MarketplaceItem>>> marketplaceList(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String category) {
@@ -485,7 +570,12 @@ public class ExtensionManagementController {
   }
 
   @PostMapping("/marketplace/{itemId}:install")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.MARKETPLACE_INSTALL
+          + "','"
+          + ExtensionScopes.POINTS_WRITE
+          + "')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> marketplaceInstall(
       @PathVariable String itemId, @RequestBody(required = false) Map<String, Object> body) {
     Long extPointId =
@@ -500,7 +590,12 @@ public class ExtensionManagementController {
   }
 
   @GetMapping("/sandbox/config")
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+  @PreAuthorize(
+      "@studioSecurity.hasAnyScope('"
+          + ExtensionScopes.OBSERVE_READ
+          + "','"
+          + ExtensionScopes.POINTS_READ
+          + "')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> sandboxConfig() {
     Map<String, Object> config = new LinkedHashMap<>();
     config.put("runtime", "JVM / bone-extension-sdk (As-Is)");

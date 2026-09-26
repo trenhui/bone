@@ -278,6 +278,24 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 |-----------|------|------|
 | `SYS_CONFIG_NOT_FOUND` | 404 | 配置项不存在 |
 | `SYS_ALERT_RULE_NOT_FOUND` | 404 | 告警规则不存在 |
+| `SYS_DICT_TYPE_NOT_FOUND` | 404 | 字典类型不存在（含跨租户不可见） |
+| `SYS_DICT_TYPE_CODE_CONFLICT` | 409 | 同一租户作用域内该类型编码已存在 |
+| `SYS_DICT_TYPE_READONLY` | 403 | 内置字典类型不可删/不可改编码，或该类型项对租户只读 |
+| `SYS_DICT_TYPE_IN_USE` | 409 | 字典类型下仍有项，不允许删除 |
+| `SYS_DICT_ITEM_NOT_FOUND` | 404 | 字典项不存在（含跨租户不可见） |
+| `SYS_DICT_ITEM_CODE_CONFLICT` | 409 | 同一类型下该 code 已存在（uk_dict_item） |
+| `SYS_DICT_ITEM_HAS_CHILDREN` | 409 | 字典项仍有子项，不允许删除 |
+| `SYS_DICT_PARENT_NOT_FOUND` | 400 | 父项编码在同类型下不存在 |
+| `SYS_DICT_HIERARCHY_NOT_FOUND` | 404 | 层级关系不存在（该项尚未挂到指定层级视图） |
+| `SYS_DICT_PARENT_NOT_ALLOWED` | 400 | 非 CASCADE 类值域不允许设置父项 |
+| `SYS_DICT_CYCLE_DETECTED` | 409 | 移动后会出现父子环 |
+| `SYS_DICT_CASCADE_DEPTH_EXCEEDED` | 400 | 层级深度超过该值域 maxDepth |
+| `SYS_DICT_CODE_INVALID` | 400 | 字典编码非法（空值/超长/含空白） |
+| `SYS_DICT_CATEGORY_INVALID` | 400 | 值域分类非法（非 ENUM/LIST/CASCADE） |
+| `SYS_DICT_ENUM_CLASS_INVALID` | 400 | 绑定枚举类不可用（未绑定/不存在/非枚举/非白名单包） |
+| `SYS_DICT_IMPORT_TOO_LARGE` | 400 | 导入条目数超过单批上限 |
+| `SYS_DICT_VALUE_INVALID` | 400 | 值不符合值域定义（数据类型或格式正则不匹配） |
+| `SYS_DICT_EFFECTIVE_RANGE_INVALID` | 400 | 生效区间非法（开始时间晚于结束时间） |
 
 ### GEN_
 

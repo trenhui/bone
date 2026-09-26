@@ -108,7 +108,7 @@ class AccountTest {
   }
 
   @Test
-  void testChangeDeptSetsClearsAndIsIdempotent() {
+  void testChangeDeptSetsAndIsIdempotent() {
     Account account = createAccount();
     assertNull(account.getDeptId());
 
@@ -120,9 +120,8 @@ class AccountTest {
     account.changeDept(88L);
     assertEquals(afterSet, account.getUpdatedAt());
 
-    // 撤销归属
-    account.changeDept(null);
-    assertNull(account.getDeptId());
+    // 归属部门必填：不允许清空
+    assertThrows(DomainException.class, () -> account.changeDept(null));
   }
 
   @Test

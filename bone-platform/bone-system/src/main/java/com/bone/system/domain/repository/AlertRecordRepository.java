@@ -7,6 +7,8 @@ import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.domain.model.alert.AlertRecord;
 import com.bone.system.domain.model.alert.valueobject.AlertLevel;
 import com.bone.system.domain.model.alert.valueobject.AlertStatus;
+import java.util.Comparator;
+import java.util.Optional;
 
 /**
  * 告警记录仓储端口：写侧 + 本聚合读（ADR-0030）。
@@ -40,8 +42,34 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
   default PageResult<AlertRecord> pageByKeyword(String keyword, int pageNum, int pageSize) {
     var query = QueryBuilder.from(AlertRecord.class);
     if (keyword != null && !keyword.isBlank()) {
-      query.where(AlertRecord::getRuleName).like(keyword).or(AlertRecord::getMessage).like(keyword);
+      query
+          .where(AlertRecord::getRuleName)
+          .contains(keyword)
+          .or(AlertRecord::getMessage)
+          .contains(keyword);
     }
     return query.orderByDesc(AlertRecord::getCreatedAt).page(pageNum, pageSize);
+  }
+
+  /**
+   * 查找某规则当前处于 TRIGGERED（未恢复）的告警记录，供定时评估器去重与自动恢复：
+   *
+   * <ul>
+   *   <li>评估时已在告警中 → 更新实测值，不重复插行（无去重的每周期一事件会让告警列表被刷屏）；
+   *   <li>评估时已恢复 → 对存量 TRIGGERED 记录执行 {@code resolve()}（告警生命周期闭环）。
+   * </ul>
+   *
+   * <p>评估 Job 口径面向全平台，显式 {@code disableTenantFilter()}；历史数据可能存在同规则多条 TRIGGERED（人工上报等），取 {@code
+   * createdAt} 最新一条。
+   */
+  default Optional<AlertRecord> findLatestTriggeredAllTenants(Long ruleId) {
+    return findByCriteria(
+            Criteria.<AlertRecord>create()
+                .entityClass(AlertRecord.class)
+                .eq(AlertRecord::getAlertRuleId, ruleId)
+                .eq(AlertRecord::getStatus, AlertStatus.TRIGGERED)
+                .disableTenantFilter())
+        .stream()
+        .max(Comparator.comparing(AlertRecord::getCreatedAt));
   }
 }

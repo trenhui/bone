@@ -6,6 +6,7 @@ import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateAlertRuleCommand;
 import com.bone.system.application.command.UpdateAlertRuleCommand;
+import com.bone.system.application.port.out.MetricValuePort;
 import com.bone.system.application.query.dto.AlertRecordDto;
 import com.bone.system.application.query.dto.AlertRuleDto;
 import com.bone.system.application.query.qry.AlertRecordPageQuery;
@@ -20,7 +21,9 @@ import com.bone.system.domain.model.alert.valueobject.MetricName;
 import com.bone.system.domain.model.alert.valueobject.Threshold;
 import com.bone.system.domain.repository.AlertRecordRepository;
 import com.bone.system.domain.repository.AlertRuleRepository;
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +43,80 @@ public class AlertApplicationService {
   private final AlertRuleRepository alertRuleRepository;
   private final AlertRecordRepository alertRecordRepository;
   private final DomainEventPublisher domainEventPublisher;
+  private final MetricValuePort metricValuePort;
+
+  /** 一次评估的统计摘要（评估了多少、触发/更新/恢复/跳过各多少），供定时 Job 记录日志。 */
+  public record EvaluationSummary(
+      int evaluated, int triggered, int updated, int resolved, int skipped) {}
+
+  /**
+   * 周期评估：把全部启用规则与实测指标比对，维护告警事件生命周期。
+   *
+   * <p><b>三态处置</b>（无此评估器时规则永远不会被自动计算，告警只能靠外部手动上报）：
+   *
+   * <ul>
+   *   <li>超阈值且无进行中事件 → 新建 TRIGGERED 事件；
+   *   <li>超阈值且已有进行中事件 → 原地更新实测值（去重，不刷屏）；
+   *   <li>已回落且仍有 TRIGGERED 事件 → 自动 resolve（告警闭环，无需人工确认恢复）。
+   * </ul>
+   *
+   * <p>指标不可解析的规则跳过（{@code OptionalDouble.empty()} 是正常分支）：外置指标源（Prometheus
+   * 抓取的网关错误率等）未接入时，对应规则静默等待而不是报错刷日志。
+   */
+  @Transactional
+  public EvaluationSummary evaluateAllRules() {
+    List<AlertRule> rules = alertRuleRepository.findAllEnabledAllTenants();
+    int triggered = 0;
+    int updated = 0;
+    int resolved = 0;
+    int skipped = 0;
+    for (AlertRule rule : rules) {
+      OptionalDouble observed = metricValuePort.resolve(rule.getMetricName().value());
+      if (observed.isEmpty()) {
+        skipped++;
+        continue;
+      }
+      double value = observed.getAsDouble();
+      Optional<AlertRecord> open =
+          alertRecordRepository.findLatestTriggeredAllTenants(rule.getId());
+      if (rule.shouldTrigger(value)) {
+        if (open.isPresent()) {
+          open.get().observe(value, triggerMessage(rule, value));
+          alertRecordRepository.save(open.get());
+          updated++;
+        } else {
+          AlertRecord record = createTriggeredRecord(rule, value);
+          alertRecordRepository.save(record);
+          domainEventPublisher.publishFrom(record);
+          triggered++;
+        }
+      } else if (open.isPresent()) {
+        open.get().resolve();
+        alertRecordRepository.save(open.get());
+        domainEventPublisher.publishFrom(open.get());
+        resolved++;
+      }
+    }
+    return new EvaluationSummary(rules.size(), triggered, updated, resolved, skipped);
+  }
+
+  private static AlertRecord createTriggeredRecord(AlertRule rule, double value) {
+    return AlertRecord.create(
+        DistributedIdGenerator.generateLongId(),
+        rule.getId(),
+        rule.getName(),
+        rule.getMetricName().value(),
+        value,
+        rule.getThreshold().value(),
+        rule.getAlertLevel(),
+        triggerMessage(rule, value));
+  }
+
+  private static String triggerMessage(AlertRule rule, double value) {
+    return String.format(
+        "指标 %s 当前值 %.2f 超过阈值 %.2f",
+        rule.getMetricName().value(), value, rule.getThreshold().value());
+  }
 
   @Capability(
       name = "CreateAlertRule",
