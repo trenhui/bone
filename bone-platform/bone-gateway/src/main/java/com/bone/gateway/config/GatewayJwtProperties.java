@@ -18,9 +18,6 @@ import org.springframework.core.env.Profiles;
 @ConfigurationProperties(prefix = "bone.gateway.jwt")
 public class GatewayJwtProperties {
 
-  private static final String DEFAULT_SECRET = "change-me-change-me-change-me-change-me-32bytes";
-  private static final String DEV_FALLBACK_SECRET = "dev-only-secret-key-minimum-32-bytes-long";
-
   @Autowired private ConfigurableEnvironment environment;
 
   /** HS256 对称密钥，须与 bone-iam 等签发模块一致（生产环境必须外部化，禁止默认密钥）。 */
@@ -38,10 +35,7 @@ public class GatewayJwtProperties {
           "bone.gateway.jwt.secret-key 长度必须 >= 32 字节，当前长度: " + secretKey.length());
     }
     boolean isProd = environment != null && environment.acceptsProfiles(Profiles.of("prod"));
-    boolean isDefault =
-        DEFAULT_SECRET.equals(secretKey)
-            || DEV_FALLBACK_SECRET.equals(secretKey)
-            || secretKey.startsWith("change-me");
+    boolean isDefault = secretKey.startsWith("change-me") || secretKey.contains("dev-only");
     if (isProd && isDefault) {
       throw new IllegalStateException(
           "生产环境禁止使用默认 JWT 密钥，请设置 BONE_IAM_JWT_SECRET_KEY / BONE_JWT_SECRET 环境变量");

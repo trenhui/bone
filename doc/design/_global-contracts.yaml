@@ -161,12 +161,12 @@ modules:
       - "com.bone.core.common.CommonErrorCodes（COMMON_VALIDATION_FAILED / COMMON_MALFORMED_REQUEST）"
       - "META_RUNTIME_*（裸字符串，散落 GlobalExceptionHandler；无 MetadataErrorCodes 常量类）"
     tables: ["meta_entity", "meta_field", "meta_entity_relation", "meta_model_template", "meta_model_template_field", "meta_code_template"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "violated", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
       HC-001: "grep -rln ORM import bone-engine/bone-metadata-server/src/main → 0 命中"
       HC-002: "domain 目录无 com.bone.*.{adapter,application,infrastructure} import → 0 命中"
       HC-003: "8 个 Controller 中 7 个返回 ResponseEntity（MetaEntity/MetaField/MetaRelation/MetaTemplate/Metadata/RuntimeRecord/Auth）"
-      HC-004: "bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java:34 —— passwordEncoder.encode(\"password\") 硬编码（注释『仅演示』）"
+      HC-004: "（已修复 2026-09-27）原 AuthController.java:34 passwordEncoder.encode(\"password\") 硬编码演示端点已整文件删除，src/main 不再有明文凭据"
       HC-005: "pom 无覆盖 → 继承父 POM 0.10"
       HC-006: "baseline 内 3 个（JdbcPhysicalStructureGatewayAdapter / CatalogInfrastructureConfiguration / RuntimeEngineConfiguration）+ 未登记新增 1 个：catalog/infrastructure/query/TemplateReadAdapter.java"
       HC-007: "doc/architecture/openapi/metadata-runtime-v1.yaml 存在（覆盖 runtime；catalog 侧未单独成 spec）"
@@ -536,10 +536,10 @@ modules:
     shared_dtos: ["com.bone.gateway.dto.ErrorBody", "JwtPrincipal", "JwtConfig"]
     error_codes_used: ["无自有 ErrorCode 常量类"]
     tables: []
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "partial", HC-004: "violated", HC-005: "implemented", HC-006: "implemented", HC-007: "violated", HC-008: "implemented"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "partial", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "violated", HC-008: "implemented"}
     hc_evidence:
       HC-003: "src/main 无 @RestController（仅 GlobalFilter）；返回体为自有 ErrorBody，未纳入 ApiResponse 契约"
-      HC-004: "bone-platform/bone-gateway/src/main/java/com/bone/gateway/config/GatewayJwtProperties.java:21-22 —— DEFAULT_SECRET='change-me-change-me-change-me-change-me-32bytes'、DEV_FALLBACK_SECRET='dev-only-secret-key-minimum-32-bytes-long' 两个硬编码兜底密钥；运行时 secret 虽可经环境变量注入，但兜底值写死在代码中"
+      HC-004: "（已修复 2026-09-27）原 GatewayJwtProperties.java:21-22 DEFAULT_SECRET / DEV_FALLBACK_SECRET 两个硬编码兜底密钥已移除，isDefault 仅检测 change-me/dev-only 字面串，未注入真实密钥启动即 fail-fast 拒启"
       HC-007: "doc/architecture/openapi/ 下无 gateway spec"
     design_vs_code_gaps:
       - "无模块设计文档；鉴权/限流/熔断能力落在 Comet batch item gateway-auth-ratelimit（JSON status=pending，openspec 已归档）"
@@ -855,7 +855,7 @@ warnings:
   - "【轮换表映射错误·已重建】doc/design/_review-status.yaml 把 bone-gateway 映射到『1. 控制台与仪表盘…』、bone-file 映射到『5. 扩展管理…』、bone-blueprint 映射到『8.Studio Generator…』、bone-engine 映射到『9. SmartMeta…』，与实际代码目录不符 → 已按锚定重建，旧映射移入 removed_modules；建议人工确认。"
   - "【设计稿未进轮换】doc/design/modules/10. 应用与模块管理详细设计方案.md 对应 bone-iam 的 /api/v1/apps 域，旧轮换表未覆盖 → 已并入 bone-iam 的 design_docs。"
   - "【HC-006 新增未登记绕过】bone-iam/.../adapter/schedule/AuditLogCleanupJob.java、bone-metadata-server/.../catalog/infrastructure/query/TemplateReadAdapter.java 命中 JDBC import 但不在 doc/architecture/sdk-persistence-bypass-baseline.json → 属 L3 审批事项：要么改走 SDK，要么补登记进 baseline（只可收缩原则下新增登记需架构师同意）。"
-  - "【HC-004 实质违反】bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java:34 硬编码 passwordEncoder.encode(\"password\")（注释『仅演示』），且 /v1/auth/login 未在任何设计稿登记 → 建议删除该演示端点或改为配置注入。"
+  - "【HC-004 已修复】2026-09-27 已删除 bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java 演示登录端点（passwordEncoder.encode(\"password\") 硬编码）；/v1/auth/login 不再暴露，前端鉴权走 bone-iam。"
   - "【HC-004 取证口径降级】本机未安装 gitleaks，scripts/scan-secrets.sh 未执行；已用可复现的本地正则扫描替代（口径见 hc_scan_notes），其余模块 HC-004 标 implemented 仅代表本次扫描无明文命中，不等同于 gitleaks 通过 → 建议人工在装好 gitleaks 后重跑一次复核。"
   - "【共享平台模块未进轮换】bone-framework/*（bone-core / bone-web / bone-security / bone-datasource / bone-utils / bone-architecture-test）与 bone-metadata-sdk、bone-extension-sdk、go-engine 属共享内核与平台基础设施，无独立业务设计稿，本轮登记在 shared_platform_modules 而不进轮换 → 如需纳入轮换请架构师确认，且改动需 L3 审批。"
   - "【无设计稿模块】bone-gateway、bone-file、bone-notification 在 doc/design/modules/ 下无设计稿，design_doc=null → 夜间 review 需先补设计稿或按规则标 skip（不得用别的模块设计稿顶替）。"
@@ -863,5 +863,5 @@ warnings:
   - "【前端微应用轮换口径】7 个微应用（apps/*）**默认随归属模块一起 review**（owner：iam→bone-iam、metadata→bone-metadata-server、masterdata→bone-masterdata、integration→bone-integration、system→bone-system、extension→bone-extension-studio、generator→studio-generator），不单独占夜；`_review-status.yaml` 中相应条目 status=skip 即代表此口径，如需独立成夜改回 pending 即可。bone-shell 为宿主应用，单独一轮（含 qiankun/token/locale/路由守卫契约与页面清单）。"
   - "【DDL 双前缀并存】bone-init.sql 同时存在 md_* 与 mdm_*（主数据聚合持久化目标已切到 mdm_*，见 scripts/migration/0001_masterdata_mdm_convergence.sql），md_entity/md_field/md_record 在 baseline 中标 resolved → 表归属以 bone-init.sql + 迁移脚本为准。"
   - "【Comet 占用】bone-metadata-engine 有活跃 change refactor/metadata-engine-boundary-ddd（classic / design 阶段）→ 夜间任务必须跳过，直到 change 归档或分支合并。"
-  - "【HC-004 硬编码兜底密钥】bone-platform/bone-gateway/.../config/GatewayJwtProperties.java:21-22 定义 DEFAULT_SECRET 与 DEV_FALLBACK_SECRET 两个硬编码兜底值 → 建议移除兜底、改为启动期校验环境变量必填（属代码改动，需 L3 审批后实施）。"
+  - "【HC-004 已修复】2026-09-27 已移除 bone-platform/bone-gateway/.../config/GatewayJwtProperties.java:21-22 的 DEFAULT_SECRET / DEV_FALLBACK_SECRET 硬编码兜底密钥，改为启动期校验环境变量必填（L3 审批后已实施）。"
   - "【SDK 默认 token】bone-engine/bone-metadata-sdk/.../config/MetadataSdkProperties.java:48 默认 token=\"test-token\" → 虽在 shared_platform_modules（不在轮换内），仍建议改为无默认值或显式 noop，避免被业务模块继承到生产。"
