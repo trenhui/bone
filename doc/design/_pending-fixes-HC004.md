@@ -1,7 +1,8 @@
-# HC-004 待审批修复草案（diff draft）
+# HC-004 修复记录（已应用）
 
-> 状态：**DRAFT，未落盘**。源码未改动。审批后执行 `git apply doc/design/_pending-fixes-HC004.patch`。
-> 校验：`git apply --check` 已通过（待人工/L3 最终审批）。
+> 状态：**APPLIED（2026-09-27）**。源码已改动并通过 `mvn -o -pl bone-platform/bone-gateway,bone-engine/bone-metadata-server -am compile`（MVN_EXIT=0）。
+> `doc/design/_pending-fixes-HC004.patch` 为本次变更的历史快照（已落盘，**不可再 `git apply`**）。
+> 锚定同步：`_global-contracts.yaml` 中 bone-metadata-server、bone-gateway 的 `HC-004` 已由 `violated` → `implemented`，对应 evidence 与 warning 已标注「已修复」。
 
 ## 背景（来自 `_global-contracts.yaml`）
 - `bone-engine/bone-metadata-server/.../AuthController.java:34` 硬编码 `passwordEncoder.encode("password")` 演示凭据 → `hc_coverage.HC-004 = violated`。

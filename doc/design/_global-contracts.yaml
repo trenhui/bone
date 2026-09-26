@@ -31,6 +31,7 @@ hc_scan_notes:
   yml_scan: "grep -rn --include='*.yml' -iE '(password|secret|token|key): *[\"'][A-Za-z0-9_!@#$%^&*+/=-]{8,}[\"']' bone-platform bone-engine bone-framework | grep src/main/resources → 0 命中"
   frontend_scan: "grep -rn --include='*.{ts,tsx,mjs}' -iE '(apiKey|api_key|secret|token|password)[\"' ]*[:=][ \"']*[A-Za-z0-9_!@#$%^&*+/=-]{12,}' bone-frontend/apps | grep -v node_modules → 0 命中"
   caveat: "上述扫描只覆盖明文字面量赋值，不覆盖 base64/密钥文件/测试夹具/历史提交；HC-004=implemented 仅表示本次扫描无命中，不得等同于 gitleaks 通过"
+  hc006_scan: "grep -rln --include='*.java' -E 'import org\\.springframework\\.jdbc\\.core\\.(namedparam\\.)?(JdbcTemplate|NamedParameterJdbcTemplate)|import org\\.mybatis\\.spring|SqlSession' <module>/src/main → 命中文件须逐一核对是否已在 doc/architecture/sdk-persistence-bypass-baseline.json。注意：① 必须包含 namedparam 子包（如 bone-iam 的 RefreshToken*GatewayAdapter 用它）；② 须排除仅『注释』提及 JdbcTemplate 而无真实 import 的文件（如 bone-iam/adapter/schedule/AuditLogCleanupJob.java）；③ bone-metadata-sdk 自身 SqlExecutor 在 baseline 外属正常（SDK 引擎内部）。"
 
 # ---------------------------------------------------------------------------
 # 设计稿索引（含行数实测 wc -l；cross-cutting / process 不进模块轮换）
@@ -103,14 +104,14 @@ modules:
     shared_dtos: ["ApiResponse", "PageResult", "PlatformApiPaths", "JwtPrincipal", "JwtConfig", "@NoDomainEvent"]
     error_codes_used: ["com.bone.iam.common.IamErrorCodes（IAM_*，37 个：IAM_LOGIN_FAILED / IAM_ACCOUNT_LOCKED / IAM_TENANT_QUOTA_EXCEEDED / IAM_SSO_NOT_CONFIGURED / IAM_MFA_NOT_AVAILABLE）"]
     tables: ["iam_account", "iam_account_role", "iam_audit_log", "iam_audit_settings", "iam_dept", "iam_menu", "iam_permission", "iam_policy", "iam_refresh_token", "iam_role", "iam_role_permission", "iam_tenant", "bone_application", "bone_module", "bone_app_permission"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
       HC-001: "grep -rln -E 'org.apache.ibatis|jakarta.persistence|org.hibernate|org.mybatis' bone-platform/bone-iam/src/main → 0 命中"
       HC-002: "grep -rn 'import com.bone.*.(adapter|application|infrastructure).' bone-platform/bone-iam/src/main | grep /domain/ → 0 命中"
       HC-003: "ls bone-platform/bone-iam/src/main/**/*Controller.java = 15；grep -rl ResponseEntity = 6（Auth/Audit/Mfa/Jwks/Module/App）"
       HC-004: "本机 gitleaks 未安装、scan-secrets.sh 未执行；定向 grep 'encode(\"...\")|setPassword(\"...\")' 在 src/main 无命中 → 无法完整取证，标 unknown"
       HC-005: "bone-iam/pom.xml 无 jacoco.minimum.coverage 覆盖 → 继承父 POM 0.10"
-      HC-006: "baseline 内 6 个（DatabaseDebugTool、AuditSettings/RefreshTokenIssuer/RefreshTokenSession/TenantDeletion GatewayAdapter、AuditLogRetentionPortAdapter）+ 未登记新增 1 个：adapter/schedule/AuditLogCleanupJob.java"
+      HC-006: "baseline 内 6 个（DatabaseDebugTool、AuditSettingsGatewayAdapter、RefreshTokenIssuer/RefreshTokenSession/TenantDeletion GatewayAdapter、AuditLogRetentionPortAdapter），全部 JDBC 使用均在 doc/architecture/sdk-persistence-bypass-baseline.json 登记；adapter/schedule/AuditLogCleanupJob.java 仅注释提及 JdbcTemplate、无真实 import，非绕过（2026-09-27 复核排除）"
       HC-007: "doc/architecture/openapi/iam-v1.yaml 存在"
       HC-008: "ddl-required-columns-baseline.json：iam_permission、iam_role_permission 为 needs-owner-decision"
     design_vs_code_gaps:
@@ -161,14 +162,14 @@ modules:
       - "com.bone.core.common.CommonErrorCodes（COMMON_VALIDATION_FAILED / COMMON_MALFORMED_REQUEST）"
       - "META_RUNTIME_*（裸字符串，散落 GlobalExceptionHandler；无 MetadataErrorCodes 常量类）"
     tables: ["meta_entity", "meta_field", "meta_entity_relation", "meta_model_template", "meta_model_template_field", "meta_code_template"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "violated", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
       HC-001: "grep -rln ORM import bone-engine/bone-metadata-server/src/main → 0 命中"
       HC-002: "domain 目录无 com.bone.*.{adapter,application,infrastructure} import → 0 命中"
       HC-003: "8 个 Controller 中 7 个返回 ResponseEntity（MetaEntity/MetaField/MetaRelation/MetaTemplate/Metadata/RuntimeRecord/Auth）"
       HC-004: "（已修复 2026-09-27）原 AuthController.java:34 passwordEncoder.encode(\"password\") 硬编码演示端点已整文件删除，src/main 不再有明文凭据"
       HC-005: "pom 无覆盖 → 继承父 POM 0.10"
-      HC-006: "baseline 内 3 个（JdbcPhysicalStructureGatewayAdapter / CatalogInfrastructureConfiguration / RuntimeEngineConfiguration）+ 未登记新增 1 个：catalog/infrastructure/query/TemplateReadAdapter.java"
+      HC-006: "baseline 内 4 个（JdbcPhysicalStructureGatewayAdapter / CatalogInfrastructureConfiguration / RuntimeEngineConfiguration / catalog/infrastructure/query/TemplateReadAdapter.java），全部元数据目录 JDBC 使用均在 baseline 登记（TemplateReadAdapter 为 ADR-0031 授权的平台模板跨租户只读、固定 tenant_id=0，只读无写），无未登记绕过（2026-09-27 复核纠正此前误报）"
       HC-007: "doc/architecture/openapi/metadata-runtime-v1.yaml 存在（覆盖 runtime；catalog 侧未单独成 spec）"
       HC-008: "baseline：md_lineage 为 needs-owner-decision（缺 tenant_id/updated_at/deleted）；md_standard 为 by-design"
     design_vs_code_gaps:
@@ -854,7 +855,7 @@ warnings:
   - "【工作树不干净】git status --porcelain 共 164 个改动（含 extension-studio 5 处、studio-generator 3 处、bone-core/bone-security/bone-web 4 处、前端 8 处）→ 建议夜间任务开工前确认这些改动是否为他人进行中工作，避免覆盖。"
   - "【轮换表映射错误·已重建】doc/design/_review-status.yaml 把 bone-gateway 映射到『1. 控制台与仪表盘…』、bone-file 映射到『5. 扩展管理…』、bone-blueprint 映射到『8.Studio Generator…』、bone-engine 映射到『9. SmartMeta…』，与实际代码目录不符 → 已按锚定重建，旧映射移入 removed_modules；建议人工确认。"
   - "【设计稿未进轮换】doc/design/modules/10. 应用与模块管理详细设计方案.md 对应 bone-iam 的 /api/v1/apps 域，旧轮换表未覆盖 → 已并入 bone-iam 的 design_docs。"
-  - "【HC-006 新增未登记绕过】bone-iam/.../adapter/schedule/AuditLogCleanupJob.java、bone-metadata-server/.../catalog/infrastructure/query/TemplateReadAdapter.java 命中 JDBC import 但不在 doc/architecture/sdk-persistence-bypass-baseline.json → 属 L3 审批事项：要么改走 SDK，要么补登记进 baseline（只可收缩原则下新增登记需架构师同意）。"
+  - "【HC-006 复核纠正 2026-09-27】重新精确扫描（含 org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate 子包、排除仅注释提及 JdbcTemplate 的文件）：业务模块全部 9 个真实 JDBC 使用文件均在 doc/architecture/sdk-persistence-bypass-baseline.json 登记。此前误报的 AuditLogCleanupJob.java（仅注释提及、无 import）与 TemplateReadAdapter.java（本就在 baseline）均非未登记绕过 → 业务模块侧 HC-006 零未登记绕过。唯一在 baseline 外的是 bone-metadata-sdk/.../sql/executor/SqlExecutor.java（SDK 引擎自身，非绕过）。"
   - "【HC-004 已修复】2026-09-27 已删除 bone-engine/bone-metadata-server/.../adapter/web/controller/AuthController.java 演示登录端点（passwordEncoder.encode(\"password\") 硬编码）；/v1/auth/login 不再暴露，前端鉴权走 bone-iam。"
   - "【HC-004 取证口径降级】本机未安装 gitleaks，scripts/scan-secrets.sh 未执行；已用可复现的本地正则扫描替代（口径见 hc_scan_notes），其余模块 HC-004 标 implemented 仅代表本次扫描无明文命中，不等同于 gitleaks 通过 → 建议人工在装好 gitleaks 后重跑一次复核。"
   - "【共享平台模块未进轮换】bone-framework/*（bone-core / bone-web / bone-security / bone-datasource / bone-utils / bone-architecture-test）与 bone-metadata-sdk、bone-extension-sdk、go-engine 属共享内核与平台基础设施，无独立业务设计稿，本轮登记在 shared_platform_modules 而不进轮换 → 如需纳入轮换请架构师确认，且改动需 L3 审批。"
