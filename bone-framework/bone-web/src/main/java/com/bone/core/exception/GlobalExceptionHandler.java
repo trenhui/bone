@@ -2,7 +2,10 @@ package com.bone.core.exception;
 
 import static com.bone.core.enums.GlobalErrorCodeConstants.*;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.ProblemDetail;
+import com.bone.core.model.ProblemDetails;
 import com.bone.core.util.ExceptionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -10,17 +13,22 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -39,6 +47,70 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @AllArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
+
+  // ===== 统一 ProblemDetail 出口（i18n 方案 §6.2.1）=====
+  //
+  // 此前所有分支都是 ApiResponse.error(code, "中文")，失败响应 data 恒为 null，
+  // 前端 showError() 的 errorCode 分支永远不命中 —— 英文用户只能看到中文 toast。
+  // 下面每个分支都改为产出 ProblemDetail（含 errorCode），message 仍保持中文（fallback 契约）。
+
+  /** 构造带 errorCode 的错误响应体（HTTP 状态与信封 code 一致）。 */
+  private ResponseEntity<ApiResponse<?>> problemResponse(
+      int status, String errorCode, String message) {
+    return ResponseEntity.status(status)
+        .body(ApiResponse.error(status, message, problem(status, errorCode, message)));
+  }
+
+  /** 构造带结构化字段错误的错误响应体（校验类）。 */
+  private ResponseEntity<ApiResponse<?>> problemResponse(
+      int status, String errorCode, String message, List<ProblemDetail.FieldError> fieldErrors) {
+    ProblemDetail problem = problem(status, errorCode, message);
+    if (fieldErrors != null && !fieldErrors.isEmpty()) {
+      problem.setErrors(fieldErrors);
+    }
+    return ResponseEntity.status(status).body(ApiResponse.error(status, message, problem));
+  }
+
+  private ProblemDetail problem(int status, String errorCode, String detail) {
+    return ProblemDetails.of(errorCode, status, detail, currentUri());
+  }
+
+  private static String currentUri() {
+    if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
+      return attrs.getRequest() == null ? null : attrs.getRequest().getRequestURI();
+    }
+    return null;
+  }
+
+  /** BindingResult → 结构化字段错误（供前端 i18n 逐字段展示）。 */
+  private static List<ProblemDetail.FieldError> toFieldErrors(BindingResult bindingResult) {
+    if (bindingResult == null) {
+      return List.of();
+    }
+    List<ProblemDetail.FieldError> errors = new ArrayList<>();
+    for (FieldError fe : bindingResult.getFieldErrors()) {
+      ProblemDetail.FieldError e = new ProblemDetail.FieldError();
+      e.setField(fe.getField());
+      e.setMessage(fe.getDefaultMessage());
+      e.setRejectedValue(fe.getRejectedValue());
+      errors.add(e);
+    }
+    return errors;
+  }
+
+  /** ConstraintViolation 集合 → 结构化字段错误。 */
+  private static List<ProblemDetail.FieldError> toFieldErrors(
+      Iterable<ConstraintViolation<?>> violations) {
+    List<ProblemDetail.FieldError> errors = new ArrayList<>();
+    for (ConstraintViolation<?> v : violations) {
+      ProblemDetail.FieldError e = new ProblemDetail.FieldError();
+      e.setField(String.valueOf(v.getPropertyPath()));
+      e.setMessage(v.getMessage());
+      e.setRejectedValue(v.getInvalidValue());
+      errors.add(e);
+    }
+    return errors;
+  }
 
   /**
    * 处理所有异常，主要是提供给 Filter 使用 因为 Filter 不走 SpringMVC 的流程，但是我们又需要兜底处理异常，所以这里提供一个全量的异常处理过程，保持逻辑统一。
@@ -105,10 +177,10 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> missingServletRequestParameterExceptionHandler(
       MissingServletRequestParameterException ex) {
     log.warn("[missingServletRequestParameterExceptionHandler]", ex);
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(
-            ApiResponse.error(
-                BAD_REQUEST.getCode(), String.format("请求参数缺失:%s", ex.getParameterName())));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求参数缺失:%s", ex.getParameterName()));
   }
 
   /**
@@ -120,10 +192,10 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> methodArgumentTypeMismatchExceptionHandler(
       MethodArgumentTypeMismatchException ex) {
     log.warn("[methodArgumentTypeMismatchExceptionHandler]", ex);
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(
-            ApiResponse.error(
-                BAD_REQUEST.getCode(), String.format("请求参数类型错误:%s", ex.getMessage())));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求参数类型错误:%s", ex.getMessage()));
   }
 
   /** 处理 SpringMVC 参数校验不正确 */
@@ -133,11 +205,11 @@ public class GlobalExceptionHandler {
     log.warn("[methodArgumentNotValidExceptionExceptionHandler]", ex);
     FieldError fieldError = ex.getBindingResult().getFieldError();
     assert fieldError != null; // 断言，避免告警
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(
-            ApiResponse.error(
-                BAD_REQUEST.getCode(),
-                String.format("请求参数不正确:%s", fieldError.getDefaultMessage())));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求参数不正确:%s", fieldError.getDefaultMessage()),
+        toFieldErrors(ex.getBindingResult()));
   }
 
   /** 处理 SpringMVC 参数绑定不正确，本质上也是通过 Validator 校验 */
@@ -146,11 +218,11 @@ public class GlobalExceptionHandler {
     log.warn("[handleBindException]", ex);
     FieldError fieldError = ex.getFieldError();
     assert fieldError != null; // 断言，避免告警
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(
-            ApiResponse.error(
-                BAD_REQUEST.getCode(),
-                String.format("请求参数不正确:%s", fieldError.getDefaultMessage())));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求参数不正确:%s", fieldError.getDefaultMessage()),
+        toFieldErrors(ex.getBindingResult()));
   }
 
   /** 处理 Validator 校验不通过产生的异常 */
@@ -159,11 +231,11 @@ public class GlobalExceptionHandler {
       ConstraintViolationException ex) {
     log.warn("[constraintViolationExceptionHandler]", ex);
     ConstraintViolation<?> constraintViolation = ex.getConstraintViolations().iterator().next();
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(
-            ApiResponse.error(
-                BAD_REQUEST.getCode(),
-                String.format("请求参数不正确:%s", constraintViolation.getMessage())));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求参数不正确:%s", constraintViolation.getMessage()),
+        toFieldErrors(ex.getConstraintViolations()));
   }
 
   /** 处理 Dubbo Consumer 本地参数校验时，抛出的 ValidationException 异常 */
@@ -171,8 +243,10 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> validationException(ValidationException ex) {
     log.warn("[constraintViolationExceptionHandler]", ex);
     // 无法拼接明细的错误信息，因为 Dubbo Consumer 抛出 ValidationException 异常时，是直接的字符串信息，且人类不可读
-    return ResponseEntity.status(BAD_REQUEST.getCode())
-        .body(ApiResponse.error(BAD_REQUEST.getCode(), "constraintViolationExceptionHandler"));
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        "constraintViolationExceptionHandler");
   }
 
   /**
@@ -184,10 +258,10 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(NoHandlerFoundException.class)
   public ResponseEntity<ApiResponse<?>> noHandlerFoundExceptionHandler(NoHandlerFoundException ex) {
     log.warn("[noHandlerFoundExceptionHandler]", ex);
-    return ResponseEntity.status(NOT_FOUND.getCode())
-        .body(
-            ApiResponse.error(
-                NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getRequestURL())));
+    return problemResponse(
+        NOT_FOUND.getCode(),
+        CommonErrorCodes.NOT_FOUND,
+        String.format("请求地址不存在:%s", ex.getRequestURL()));
   }
 
   /**
@@ -201,10 +275,10 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> noResourceFoundExceptionHandler(
       NoResourceFoundException ex) {
     log.warn("[noResourceFoundExceptionHandler] {}", ex.getResourcePath());
-    return ResponseEntity.status(NOT_FOUND.getCode())
-        .body(
-            ApiResponse.error(
-                NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getResourcePath())));
+    return problemResponse(
+        NOT_FOUND.getCode(),
+        CommonErrorCodes.NOT_FOUND,
+        String.format("请求地址不存在:%s", ex.getResourcePath()));
   }
 
   /**
@@ -216,48 +290,50 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> httpRequestMethodNotSupportedExceptionHandler(
       HttpRequestMethodNotSupportedException ex) {
     log.warn("[httpRequestMethodNotSupportedExceptionHandler]", ex);
-    return ResponseEntity.status(METHOD_NOT_ALLOWED.getCode())
-        .body(
-            ApiResponse.error(
-                METHOD_NOT_ALLOWED.getCode(), String.format("请求方法不正确:%s", ex.getMessage())));
+    return problemResponse(
+        METHOD_NOT_ALLOWED.getCode(),
+        CommonErrorCodes.METHOD_NOT_ALLOWED,
+        String.format("请求方法不正确:%s", ex.getMessage()));
   }
 
   /** 处理 Resilience4j 限流抛出的异常 */
   public ResponseEntity<ApiResponse<?>> requestNotPermittedExceptionHandler(
       HttpServletRequest req, Throwable ex) {
     log.warn("[requestNotPermittedExceptionHandler][url({}) 访问过于频繁]", req.getRequestURL(), ex);
-    return ResponseEntity.status(TOO_MANY_REQUESTS.getCode())
-        .body(
-            ApiResponse.error(
-                TOO_MANY_REQUESTS.getCode(),
-                String.format(
-                    "[requestNotPermittedExceptionHandler][url(%s) 访问过于频繁]", req.getRequestURL())));
+    return problemResponse(
+        TOO_MANY_REQUESTS.getCode(),
+        CommonErrorCodes.RATE_LIMITED,
+        String.format(
+            "[requestNotPermittedExceptionHandler][url(%s) 访问过于频繁]", req.getRequestURL()));
   }
 
   /**
-   * 处理服务异常 ServiceException
+   * 处理服务异常 ServiceException。
    *
-   * <p>
+   * <p>i18n 改造（方案 §6.2 / §12.3）：ServiceException 已增量新增 {@code String errorCode} 字段——handler 先透传
+   * {@code ex.getErrorCode()}，旧构造路径（{@code new ServiceException(code, msg)}）errorCode 为 null 时，
+   * fallback 到 {@link CommonErrorCodes#INTERNAL_ERROR}， 与此前口径一致、保持兼容。
    */
   @ExceptionHandler(value = ServiceException.class)
   public ResponseEntity<ApiResponse<?>> serviceExceptionHandler(ServiceException ex) {
     log.info("[serviceExceptionHandler]", ex);
-    return ResponseEntity.status(toHttpStatus(ex.getCode()))
-        .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    String errorCode =
+        ex.getErrorCode() != null ? ex.getErrorCode() : CommonErrorCodes.INTERNAL_ERROR;
+    return problemResponse(toHttpStatus(ex.getCode()), errorCode, ex.getMessage());
   }
 
   @ExceptionHandler(value = SystemException.class)
   public ResponseEntity<ApiResponse<?>> systemExceptionHandler(SystemException ex) {
     log.error("[systemExceptionHandler]", ex);
-    return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode())
-        .body(ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage()));
+    return problemResponse(
+        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
   }
 
   @ExceptionHandler(value = InfrastructureException.class)
   public ResponseEntity<ApiResponse<?>> infrastructureExceptionHandler(InfrastructureException ex) {
     log.error("[infrastructureExceptionHandler]", ex);
-    return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode())
-        .body(ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage()));
+    return problemResponse(
+        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
   }
 
   /**
@@ -271,7 +347,10 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<?>> bizExceptionHandler(BizException ex) {
     log.info("[bizExceptionHandler]", ex);
     int httpStatus = toHttpStatus(ex.getCode());
-    return ResponseEntity.status(httpStatus).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    // ★ errorCode 由异常自带（各模块 *Errors.of(errorCode, detail) 构造时写入），
+    //   handler 不解析 message、也不手填常量 —— 避免"码与状态两处各写一遍"的漂移。
+    //   旧构造路径（new BizException(code, msg)）errorCode 为 null，前端按回退链降级到中文 message。
+    return problemResponse(httpStatus, ex.getErrorCode(), ex.getMessage());
   }
 
   /** 将业务错误码映射为 HTTP 状态码。 若 code 本身是合法 HTTP 状态码（400–599）则直接使用，否则默认 400。 */
@@ -298,8 +377,8 @@ public class GlobalExceptionHandler {
     Throwable cause = ex.getCause();
     if (cause instanceof InvocationTargetException) {
       log.error("[handleInvocationTargetException - cause]", cause);
-      return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode())
-          .body(ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), cause.getMessage()));
+      return problemResponse(
+          INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, cause.getMessage());
     }
 
     // 情况三：处理异常
@@ -307,8 +386,10 @@ public class GlobalExceptionHandler {
     // 插入异常日志
     this.createExceptionLog(req, ex);
     // 返回 ERROR ApiResponse
-    return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode())
-        .body(ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), INTERNAL_SERVER_ERROR.getMsg()));
+    return problemResponse(
+        INTERNAL_SERVER_ERROR.getCode(),
+        CommonErrorCodes.INTERNAL_ERROR,
+        INTERNAL_SERVER_ERROR.getMsg());
   }
 
   private void createExceptionLog(HttpServletRequest req, Throwable e) {
@@ -342,7 +423,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(SQLException.class)
   public ResponseEntity<ApiResponse<?>> handleSQLException(SQLException ex) {
     log.error("[SQLException]", ex);
-    return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode())
-        .body(ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage()));
+    return problemResponse(
+        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
   }
 }

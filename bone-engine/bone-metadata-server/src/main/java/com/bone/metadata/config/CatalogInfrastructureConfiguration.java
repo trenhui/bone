@@ -1,8 +1,10 @@
 package com.bone.metadata.config;
 
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
+import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
+import com.bone.metadata.catalog.domain.repository.IamAppRoleRepository;
 import com.bone.metadata.catalog.domain.repository.IamApplicationRepository;
 import com.bone.metadata.catalog.domain.repository.IamModuleRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
@@ -10,6 +12,7 @@ import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.catalog.domain.service.IamApplicationValidator;
 import com.bone.metadata.catalog.domain.service.IamModuleValidator;
 import com.bone.metadata.catalog.infrastructure.gateway.JdbcPhysicalStructureGatewayAdapter;
+import com.bone.metadata.catalog.infrastructure.gateway.SecurityContextCurrentUserAdapter;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.tenant.TenantProviderAdapter;
@@ -125,7 +128,16 @@ public class CatalogInfrastructureConfiguration {
   }
 
   @Bean
-  public IamModuleValidator iamModuleValidator(IamModuleRepository iamModuleRepository) {
-    return new IamModuleValidator(iamModuleRepository);
+  public IamModuleValidator iamModuleValidator(
+      IamModuleRepository iamModuleRepository,
+      IamAppRoleRepository iamAppRoleRepository,
+      TenantProvider tenantProvider) {
+    return new IamModuleValidator(iamModuleRepository, iamAppRoleRepository, tenantProvider);
+  }
+
+  /** 当前用户端口（G1②）：从 SecurityContext 的 JWT userId claim 解析；无主体返回 null。 */
+  @Bean
+  public CurrentUserProvider currentUserProvider() {
+    return new SecurityContextCurrentUserAdapter();
   }
 }

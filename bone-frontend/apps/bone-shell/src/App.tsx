@@ -215,9 +215,145 @@ function App(): JSX.Element {
   );
 }
 
+/** 静态菜单基线：路由真相源（path+hash）。动态菜单按 label 对齐继承路由信息，仅提供过滤/排序。 */
+const STATIC_MENU: ShellMenuItem[] = [
+  { key: 'dashboard', label: '首页仪表盘', icon: <DashboardOutlined />, path: '/', enabled: true },
+  {
+    key: 'iam-org',
+    label: '组织与成员',
+    icon: <ApartmentOutlined />,
+    enabled: true,
+    children: [
+      { key: 'iam-organizations', label: '组织机构', icon: <ApartmentOutlined />, path: '/iam', hash: '/organizations', enabled: true },
+      { key: 'iam-accounts', label: '用户管理', icon: <UserOutlined />, path: '/iam', hash: '/accounts', enabled: true },
+    ],
+  },
+  {
+    key: 'iam-perm',
+    label: '权限与角色',
+    icon: <SafetyCertificateOutlined />,
+    enabled: true,
+    children: [
+      { key: 'iam-roles', label: '角色管理', icon: <TeamOutlined />, path: '/iam', hash: '/roles', enabled: true },
+      { key: 'iam-permissions', label: '权限管理', icon: <SafetyCertificateOutlined />, path: '/iam', hash: '/permissions', enabled: true },
+      { key: 'iam-menus', label: '菜单管理', icon: <MenuOutlined />, path: '/iam', hash: '/menus', enabled: true },
+      { key: 'iam-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/iam', hash: '/apps', enabled: true },
+    ],
+  },
+  {
+    key: 'iam-audit-group',
+    label: '安全与审计',
+    icon: <AuditOutlined />,
+    enabled: true,
+    children: [
+      { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
+      { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
+      { key: 'iam-audit-settings', label: '审计设置', icon: <SettingOutlined />, path: '/iam', hash: '/audit-settings', enabled: true },
+    ],
+  },
+  {
+    key: 'metadata',
+    label: '业务建模',
+    icon: <DatabaseOutlined />,
+    enabled: true,
+    children: [
+      { key: 'metadata-apps', label: '建模工作台', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
+      { key: 'metadata-entities', label: '模型管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
+      { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
+      { key: 'metadata-runtime', label: '运行时数据', icon: <ThunderboltOutlined />, path: '/metadata', hash: '/runtime', enabled: true },
+    ],
+  },
+  {
+    key: 'masterdata',
+    label: '主数据管理',
+    icon: <ClusterOutlined />,
+    enabled: true,
+    children: [
+      { key: 'masterdata-workbench', label: '域工作台', icon: <ClusterOutlined />, path: '/masterdata', hash: '/workbench', enabled: true },
+      { key: 'masterdata-entities', label: '主数据模型', icon: <ApiOutlined />, path: '/masterdata', hash: '/entities', enabled: true },
+      { key: 'masterdata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/masterdata', hash: '/fields', enabled: true },
+      { key: 'masterdata-categories', label: '分类管理', icon: <ApartmentOutlined />, path: '/masterdata', hash: '/categories', enabled: true },
+      { key: 'masterdata-templates', label: '模板管理', icon: <ProfileOutlined />, path: '/masterdata', hash: '/templates', enabled: true },
+      { key: 'masterdata-records', label: '记录管理', icon: <FileTextOutlined />, path: '/masterdata', hash: '/records', enabled: true },
+      { key: 'masterdata-reference', label: '参考数据', icon: <UnorderedListOutlined />, path: '/masterdata', hash: '/reference-sets', enabled: true },
+      { key: 'masterdata-rules', label: '质量规则', icon: <ReconciliationOutlined />, path: '/masterdata', hash: '/rules', enabled: true },
+      { key: 'masterdata-quality-results', label: '质量结果', icon: <AlertOutlined />, path: '/masterdata', hash: '/quality-results', enabled: true },
+      { key: 'masterdata-quality-issues', label: '质量问题', icon: <AuditOutlined />, path: '/masterdata', hash: '/quality-issues', enabled: true },
+      { key: 'masterdata-governance', label: '治理看板', icon: <DashboardOutlined />, path: '/masterdata', hash: '/governance', enabled: true },
+    ],
+  },
+  {
+    key: 'integration',
+    label: '集成管理',
+    icon: <LinkOutlined />,
+    enabled: true,
+    children: [
+      { key: 'integration-connectors', label: '连接器管理', icon: <NodeIndexOutlined />, path: '/integration', hash: '/connectors', enabled: true },
+      { key: 'integration-flows', label: '流程编排', icon: <ControlOutlined />, path: '/integration', hash: '/flows', enabled: true },
+      { key: 'integration-monitor', label: '运行监控', icon: <LineChartOutlined />, path: '/integration', hash: '/monitor', enabled: true },
+    ],
+  },
+  {
+    key: 'extension',
+    label: '扩展管理',
+    icon: <AppstoreOutlined />,
+    enabled: true,
+    children: [
+      { key: 'extension-points', label: '扩展点目录', icon: <NodeCollapseOutlined />, path: '/extension', hash: '/points', enabled: true },
+      { key: 'extension-plugins', label: '插件仓库', icon: <UnorderedListOutlined />, path: '/extension', hash: '/plugins', enabled: true },
+      { key: 'extension-deploy', label: '部署管理', icon: <CloudServerOutlined />, path: '/extension', hash: '/deploy', enabled: true },
+      { key: 'extension-graph', label: '依赖图谱', icon: <BranchesOutlined />, path: '/extension', hash: '/graph', enabled: true },
+      { key: 'extension-market', label: '低代码市场', icon: <CoffeeOutlined />, path: '/extension', hash: '/market', enabled: true },
+      { key: 'extension-logs', label: '运行日志', icon: <ProfileOutlined />, path: '/extension', hash: '/logs', enabled: true },
+    ],
+  },
+  {
+    key: 'generator',
+    label: '代码生成',
+    icon: <CodeOutlined />,
+    enabled: true,
+    children: [
+      { key: 'generator-datasources', label: '数据源管理', icon: <DatabaseOutlined />, path: '/generator', hash: '/datasources', enabled: true },
+      { key: 'generator-generate', label: '代码生成', icon: <CodeOutlined />, path: '/generator', hash: '/generate', enabled: true },
+      { key: 'generator-templates', label: '模板管理', icon: <FileTextOutlined />, path: '/generator', hash: '/templates', enabled: true },
+      { key: 'generator-history', label: '生成历史', icon: <HistoryOutlined />, path: '/generator', hash: '/history', enabled: true },
+    ],
+  },
+  {
+    key: 'system',
+    label: '系统管理',
+    icon: <SettingOutlined />,
+    enabled: true,
+    children: [
+      { key: 'system-config', label: '系统配置', icon: <ControlOutlined />, path: '/system', hash: '/config', enabled: true },
+      { key: 'system-alerts', label: '监控告警', icon: <AlertOutlined />, path: '/system', hash: '/alerts', enabled: true },
+      { key: 'system-logs', label: '日志管理', icon: <CloudOutlined />, path: '/system', hash: '/logs', enabled: true },
+      { key: 'system-k8s', label: 'K8s 部署', icon: <CloudServerOutlined />, path: '/system', hash: '/k8s', enabled: true },
+      { key: 'system-dict', label: '字典管理', icon: <OrderedListOutlined />, path: '/system', hash: '/dict', enabled: true },
+      { key: 'system-schedule', label: '定时任务', icon: <ClockCircleOutlined />, path: '/system', hash: '/schedule', enabled: true },
+    ],
+  },
+];
+
+/** 在静态菜单基线中按 label 深度查找（动态菜单节点对齐路由信息用） */
+const findStaticByLabel = (
+  items: ShellMenuItem[],
+  label: string,
+): ShellMenuItem | undefined => {
+  for (const item of items) {
+    if (item.label === label) return item;
+    if (item.children) {
+      const found = findStaticByLabel(item.children, label);
+      if (found) return found;
+    }
+  }
+  return undefined;
+};
+
 /**
  * 将后端 MenuNode[] 转换为 Shell 前端菜单结构。
- * 后端已按当前用户角色过滤；此处仅做渲染映射 + 兜底。
+ * 后端已按当前用户角色过滤；路由信息（path+hash）以静态基线为准——
+ * 后端 MenuNode 无 hash 字段，仅靠 path 无法区分同组叶子。
  */
 function buildMenuFromNodes(nodes: MenuNode[]): ShellMenuItem[] {
   const iconMap: Record<string, JSX.Element> = {
@@ -229,16 +365,20 @@ function buildMenuFromNodes(nodes: MenuNode[]): ShellMenuItem[] {
     CodeOutlined: <CodeOutlined />,
     SettingOutlined: <SettingOutlined />,
   };
-  return nodes.map((node) => ({
-    key: node.id,
-    label: node.name,
-    icon: node.icon ? (iconMap[node.icon] ?? <AppstoreOutlined />) : undefined,
-    path: node.path,
-    enabled: true,
-    children: node.children && node.children.length > 0
-      ? buildMenuFromNodes(node.children)
-      : undefined,
-  }));
+  return nodes.map((node) => {
+    const staticMatch = findStaticByLabel(STATIC_MENU, node.name);
+    return {
+      key: node.id,
+      label: node.name,
+      icon: node.icon ? (iconMap[node.icon] ?? <AppstoreOutlined />) : undefined,
+      path: staticMatch?.path ?? node.path,
+      hash: staticMatch?.hash,
+      enabled: true,
+      children: node.children && node.children.length > 0
+        ? buildMenuFromNodes(node.children)
+        : undefined,
+    };
+  });
 }
 
 function AppContent({
@@ -262,130 +402,8 @@ function AppContent({
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
   const resolvedTheme = resolveThemeMode(theme);
   const [layoutMode, setLayoutMode] = useState<'side' | 'top' | 'mix'>('side');
-  const [currentPageTitle, setCurrentPageTitle] = useState<string>('');
 
-  const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([
-    { key: 'dashboard', label: '首页仪表盘', icon: <DashboardOutlined />, path: '/', enabled: true },
-    {
-      key: 'iam',
-      label: 'IAM 管理',
-      icon: <UserAddOutlined />,
-      enabled: true,
-      children: [
-        { key: 'iam-accounts', label: '用户管理', icon: <UserOutlined />, path: '/iam', hash: '/accounts', enabled: true },
-        { key: 'iam-roles', label: '角色管理', icon: <TeamOutlined />, path: '/iam', hash: '/roles', enabled: true },
-        { key: 'iam-permissions', label: '权限管理', icon: <SafetyCertificateOutlined />, path: '/iam', hash: '/permissions', enabled: true },
-        { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
-        { key: 'iam-audit-settings', label: '审计设置', icon: <SettingOutlined />, path: '/iam', hash: '/audit-settings', enabled: true },
-        { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
-        { key: 'iam-organizations', label: '组织机构', icon: <ApartmentOutlined />, path: '/iam', hash: '/organizations', enabled: true },
-        { key: 'iam-menus', label: '菜单管理', icon: <MenuOutlined />, path: '/iam', hash: '/menus', enabled: true },
-        { key: 'iam-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/iam', hash: '/apps', enabled: true },
-      ],
-    },
-    {
-      key: 'metadata',
-      label: '元数据管理',
-      icon: <DatabaseOutlined />,
-      enabled: true,
-      children: [
-        { key: 'metadata-apps', label: '建模工作台', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
-        { key: 'metadata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
-        { key: 'metadata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/metadata', hash: '/fields', enabled: true },
-        { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
-        { key: 'metadata-runtime', label: '运行时数据', icon: <ThunderboltOutlined />, path: '/metadata', hash: '/runtime', enabled: true },
-      ],
-    },
-    {
-      key: 'masterdata',
-      label: '主数据管理',
-      icon: <ClusterOutlined />,
-      enabled: true,
-      children: [
-        { key: 'masterdata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/masterdata', hash: '/entities', enabled: true },
-        { key: 'masterdata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/masterdata', hash: '/fields', enabled: true },
-        { key: 'masterdata-rules', label: '质量规则', icon: <ReconciliationOutlined />, path: '/masterdata', hash: '/rules', enabled: true },
-        { key: 'masterdata-records', label: '记录管理', icon: <FileTextOutlined />, path: '/masterdata', hash: '/records', enabled: true },
-        { key: 'masterdata-quality-results', label: '质量结果', icon: <AlertOutlined />, path: '/masterdata', hash: '/quality-results', enabled: true },
-      ],
-    },
-    {
-      key: 'integration',
-      label: '集成管理',
-      icon: <LinkOutlined />,
-      enabled: true,
-      children: [
-        { key: 'integration-connectors', label: '连接器管理', icon: <NodeIndexOutlined />, path: '/integration', hash: '/connectors', enabled: true },
-        { key: 'integration-flows', label: '流程编排', icon: <ControlOutlined />, path: '/integration', hash: '/flows', enabled: true },
-        { key: 'integration-monitor', label: '运行监控', icon: <LineChartOutlined />, path: '/integration', hash: '/monitor', enabled: true },
-      ],
-    },
-    {
-      key: 'extension',
-      label: '扩展管理',
-      icon: <AppstoreOutlined />,
-      enabled: true,
-      children: [
-        { key: 'extension-points', label: '扩展点目录', icon: <NodeCollapseOutlined />, path: '/extension', hash: '/points', enabled: true },
-        { key: 'extension-plugins', label: '插件仓库', icon: <UnorderedListOutlined />, path: '/extension', hash: '/plugins', enabled: true },
-        { key: 'extension-deploy', label: '部署管理', icon: <CloudServerOutlined />, path: '/extension', hash: '/deploy', enabled: true },
-        { key: 'extension-graph', label: '依赖图谱', icon: <BranchesOutlined />, path: '/extension', hash: '/graph', enabled: true },
-        { key: 'extension-market', label: '低代码市场', icon: <CoffeeOutlined />, path: '/extension', hash: '/market', enabled: true },
-        { key: 'extension-logs', label: '运行日志', icon: <ProfileOutlined />, path: '/extension', hash: '/logs', enabled: true },
-      ],
-    },
-    {
-      key: 'generator',
-      label: '代码生成',
-      icon: <CodeOutlined />,
-      enabled: true,
-      children: [
-        { key: 'generator-datasources', label: '数据源管理', icon: <DatabaseOutlined />, path: '/generator', hash: '/datasources', enabled: true },
-        { key: 'generator-generate', label: '代码生成', icon: <CodeOutlined />, path: '/generator', hash: '/generate', enabled: true },
-        { key: 'generator-templates', label: '模板管理', icon: <FileTextOutlined />, path: '/generator', hash: '/templates', enabled: true },
-        { key: 'generator-history', label: '生成历史', icon: <HistoryOutlined />, path: '/generator', hash: '/history', enabled: true },
-      ],
-    },
-    {
-      key: 'system',
-      label: '系统管理',
-      icon: <SettingOutlined />,
-      enabled: true,
-      children: [
-        { key: 'system-config', label: '系统配置', icon: <ControlOutlined />, path: '/system', hash: '/config', enabled: true },
-        { key: 'system-alerts', label: '监控告警', icon: <AlertOutlined />, path: '/system', hash: '/alerts', enabled: true },
-        { key: 'system-logs', label: '日志管理', icon: <CloudOutlined />, path: '/system', hash: '/logs', enabled: true },
-        { key: 'system-k8s', label: 'K8s 部署', icon: <CloudServerOutlined />, path: '/system', hash: '/k8s', enabled: true },
-        { key: 'system-dict', label: '字典管理', icon: <OrderedListOutlined />, path: '/system', hash: '/dict', enabled: true },
-        { key: 'system-schedule', label: '定时任务', icon: <ClockCircleOutlined />, path: '/system', hash: '/schedule', enabled: true },
-      ],
-    },
-  ]);
-
-  useEffect(() => {
-    const path = window.location.pathname;
-    const hash = window.location.hash;
-    
-    const findTitle = (items: ShellMenuItem[]): string => {
-      for (const item of items) {
-        if (item.path === path) {
-          if (hash && item.children) {
-            const child = item.children.find(c => c.hash === hash);
-            if (child) return `${item.label} - ${child.label}`;
-          }
-          return item.label;
-        }
-        if (item.children) {
-          const found = findTitle(item.children);
-          if (found) return found;
-        }
-      }
-      return '';
-    };
-    
-    const title = findTitle(menuConfig);
-    setCurrentPageTitle(title);
-  }, [menuConfig]);
+  const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>(STATIC_MENU);
 
   useEffect(() => {
     applyTheme(theme);
@@ -701,7 +719,6 @@ function AppContent({
                     theme={theme}
                     toggleTheme={toggleTheme}
                     toggleLayoutMode={toggleLayoutMode}
-                    currentPageTitle={currentPageTitle}
                     locale={locale}
                     onLocaleChange={handleLocaleChange}
                   />
@@ -728,7 +745,6 @@ interface MainLayoutProps {
   theme: Theme;
   toggleTheme: () => void;
   toggleLayoutMode: () => void;
-  currentPageTitle: string;
   locale: SupportedLanguage;
   onLocaleChange: (next: SupportedLanguage) => void;
 }
@@ -738,7 +754,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     collapsed, setCollapsed, resolvedTheme, layoutMode,
     menuConfig, filterEnabled, handleMenuClick,
     handleLogout, user, theme, toggleTheme,
-    currentPageTitle, locale, onLocaleChange,
+    locale, onLocaleChange,
   } = props;
   const navigate = useNavigate();
   const location = useLocation();
@@ -777,6 +793,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const { selectedKey, parentKey } = useMemo(() => {
     const { pathname, hash } = location;
     const currentPath = pathname;
+    // '#/audit-logs'.replace('#','') = '/audit-logs'（'#' 后本就带 '/'），直接与 child.hash 比较
     const currentHash = hash.replace('#', '');
     let sKey = 'dashboard';
     let pKey = '';
@@ -787,7 +804,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
       for (const group of menuConfig) {
         if (!group.children) continue;
         for (const child of group.children) {
-          if (child.path === currentPath && child.hash === `/${currentHash}`) {
+          if (child.path === currentPath && child.hash === currentHash) {
             sKey = child.key;
             pKey = group.key;
             return { selectedKey: sKey, parentKey: pKey };
@@ -802,6 +819,31 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
       }
     }
     return { selectedKey: sKey, parentKey: pKey };
+  }, [location, menuConfig]);
+
+  // 顶栏页面标题：随路由实时计算（叶子 = path+hash 双匹配；同 path 无 hash 的动态叶子回退第一个）
+  const pageTitle = useMemo(() => {
+    const { pathname, hash } = location;
+    if (pathname === '/profile') return '个人中心';
+    const currentHash = hash.replace('#', '');
+    const walk = (items: ShellMenuItem[]): string => {
+      let fallback = '';
+      for (const item of items) {
+        if (item.children && item.children.length > 0) {
+          const found = walk(item.children);
+          if (found) return found;
+          continue;
+        }
+        if (item.path !== pathname) continue;
+        if (item.hash) {
+          if (item.hash === currentHash) return item.label;
+        } else if (!fallback) {
+          fallback = item.label;
+        }
+      }
+      return fallback;
+    };
+    return walk(menuConfig);
   }, [location, menuConfig]);
 
   // 初始化展开父分组
@@ -896,7 +938,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
               />
             ) : (
               <div className="page-title">
-                {currentPageTitle || 'BONE 平台控制台'}
+                {pageTitle || 'BONE 平台控制台'}
               </div>
             )}
           </div>

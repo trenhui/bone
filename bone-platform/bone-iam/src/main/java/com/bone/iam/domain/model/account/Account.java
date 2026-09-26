@@ -38,6 +38,15 @@ public class Account extends TenantAggregateRoot<Long> {
   private String phone;
   private String realName;
   private String avatarUrl;
+
+  /**
+   * 归属部门（主部门）。跨聚合只存 ID，不做对象引用与级联——部门停用/删除不摆布账号聚合。
+   *
+   * <p>为何放账号上而不是反向由部门持有成员列表：部门树的读写频率与账号差一个量级，且账号还有「批量导入/跨部门筛选」等独立入口， 反向持有会让每次成员查询都必须先加载部门树（ADR-0030
+   * 读侧边界）。「一人多部门」见 [Vision]，届时可保留本列作主部门。
+   */
+  private Long deptId;
+
   private AccountStatus status;
   private boolean isAdmin;
   private LocalDateTime lastLoginAt;
@@ -121,6 +130,15 @@ public class Account extends TenantAggregateRoot<Long> {
   public void updatePassword(String newPasswordHash) {
     this.passwordHash = newPasswordHash;
     this.passwordUpdatedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** 调整归属部门（null 表示撤销归属）。幂等：值未变则不改更新时间，避免无意义的乐观锁版本号推进。 */
+  public void changeDept(Long newDeptId) {
+    if (java.util.Objects.equals(this.deptId, newDeptId)) {
+      return;
+    }
+    this.deptId = newDeptId;
     this.updatedAt = LocalDateTime.now();
   }
 

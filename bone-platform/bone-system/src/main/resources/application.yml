@@ -4,6 +4,14 @@ server:
 spring:
   application:
     name: bone-system
+  # === 时间字段的 UTC 契约（i18n 方案 §6.4，照 blueprint 样板）===
+  jackson:
+    # 输出带偏移的 ISO-8601（...Z），而不是时间戳数组。
+    # 注意 spring.jackson.time-zone 对 LocalDateTime 无效（其本身无时区）；
+    # 对外契约的时间字段一律用 Instant（见 adapter/web/dto/response/*Resp），此处仅固定默认行为。
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     # 默认连共享库 `bone`；keyMetrics 跨表 COUNT 依赖此库存在 iam_*/meta_*/int_*/exts_* 表（详设 §3.3.3）。
     url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useSSL=false&autoReconnect=true&characterEncoding=utf8

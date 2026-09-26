@@ -52,11 +52,13 @@ public final class IamErrors {
           Map.entry(IamErrorCodes.ROLE_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.ROLE_ID_REQUIRED, 400),
           Map.entry(IamErrorCodes.PERMISSION_NOT_FOUND, 404),
+          Map.entry(IamErrorCodes.PERMISSION_PLATFORM_ONLY, 403),
           // 会话
           Map.entry(IamErrorCodes.SESSION_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.SESSION_ID_REQUIRED, 400),
           // 组织
           Map.entry(IamErrorCodes.DEPT_NOT_FOUND, 404),
+          Map.entry(IamErrorCodes.DEPT_REQUIRED, 400),
           Map.entry(IamErrorCodes.MENU_NOT_FOUND, 404),
           // 审计
           Map.entry(IamErrorCodes.AUDIT_SETTINGS_REQUIRED, 400),

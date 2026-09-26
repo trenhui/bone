@@ -11,16 +11,13 @@ public interface MetaFieldRepository extends Repository<MetaField, Long> {
 
   default PageResult<MetaField> pageFields(
       Long entityId, String keyword, int pageNum, int pageSize) {
-    var query = query();
+    // SDK 读侧不自动过滤软删；列表/校验必须显式排除 deleted 行（否则已删字段仍展示并参与重复检测）
+    var query = query().where(MetaField::getDeleted).eq(false);
     if (entityId != null) {
-      query = query.where(MetaField::getEntityId).eq(entityId);
+      query = query.and(MetaField::getEntityId).eq(entityId);
     }
     if (StringUtils.hasText(keyword)) {
-      if (entityId != null) {
-        query = query.and(MetaField::getName).like("%" + keyword.trim() + "%");
-      } else {
-        query = query.where(MetaField::getName).like("%" + keyword.trim() + "%");
-      }
+      query = query.and(MetaField::getName).like("%" + keyword.trim() + "%");
     }
     return query.orderByAsc(MetaField::getSortOrder).page(pageNum, pageSize);
   }

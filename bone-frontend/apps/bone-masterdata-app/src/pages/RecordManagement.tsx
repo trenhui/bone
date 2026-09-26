@@ -77,7 +77,7 @@ const RecordManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch {
-      message.error('获取实体列表失败');
+      message.error('获取模型列表失败');
     }
   }, [selectedEntityId]);
 
@@ -132,7 +132,7 @@ const RecordManagement: React.FC = () => {
   // 打开创建模态框
   const handleAdd = () => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return;
     }
     setIsEditMode(false);
@@ -202,7 +202,7 @@ const RecordManagement: React.FC = () => {
         response = await masterDataRecordApi.update(currentRecord.id, { data: values });
       } else {
         if (!selectedEntityId) {
-          message.error('请选择实体');
+          message.error('请选择模型');
           return;
         }
         response = await masterDataRecordApi.create(selectedEntityId, values);
@@ -222,7 +222,7 @@ const RecordManagement: React.FC = () => {
   // 导入记录
   const handleImport = async (file: File) => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return false;
     }
     setImportLoading(true);
@@ -248,7 +248,7 @@ const RecordManagement: React.FC = () => {
   // 导出记录
   const handleExport = async () => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return;
     }
     try {
@@ -410,12 +410,12 @@ const RecordManagement: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Card title="主数据记录管理">
-        {/* 实体选择和操作按钮 */}
+        {/* 模型选择和操作按钮 */}
         <Form layout="inline" style={{ marginBottom: 16 }}>
-          <Form.Item label="选择实体">
+          <Form.Item label="选择模型">
             <Select
               style={{ width: 300 }}
-              placeholder="请选择主数据实体"
+              placeholder="请选择主数据模型"
               value={selectedEntityId}
               onChange={setSelectedEntityId}
             >
@@ -480,7 +480,7 @@ const RecordManagement: React.FC = () => {
           columns={generateTableColumns() as ProColumns<MasterDataRecord>[]}
           dataSource={records}
           loading={loading}
-          // 记录列随实体字段动态增长，列宽合计可能超过容器；
+          // 记录列随模型字段动态增长，列宽合计可能超过容器；
           // 不设 scroll 会让整页横向滚动，这里改为表格内部横向滚动。
           scroll={{ x: 'max-content' }}
           pagination={{
@@ -492,7 +492,7 @@ const RecordManagement: React.FC = () => {
               setPageSize(size);
             }
           }}
-          locale={{ emptyText: '请先选择一个实体' }}
+          locale={{ emptyText: '请先选择一个模型' }}
         />
       </Card>
 

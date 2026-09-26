@@ -49,10 +49,17 @@ export const getSsoConfig = () =>
 
 /**
  * 分页查询账号列表
+ * @param deptId 按归属部门过滤（含子部门，后端递归子树）；不传查全部
  */
-export const getAccounts = (page = 1, pageSize = 10, keyword?: string, status?: number) =>
+export const getAccounts = (
+  page = 1,
+  pageSize = 10,
+  keyword?: string,
+  status?: number,
+  deptId?: number | null,
+) =>
   api.get<never, ApiResponse<PageResult<Account>>>('/accounts', {
-    params: { page, size: pageSize, keyword, status },
+    params: { page, size: pageSize, keyword, status, ...(deptId != null ? { deptId } : {}) },
   });
 
 /**

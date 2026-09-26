@@ -27,6 +27,10 @@ public class ExtStudioExtensionImpl extends AbstractEntity<Long> {
   @Column(name = "extension_point_id")
   private Long extensionPointId;
 
+  /** 归属应用（bone_application.id，可空=平台通用插件，5a G1） */
+  @Column(name = "app_id")
+  private Long appId;
+
   @Column(name = "impl_name")
   private String implName;
 

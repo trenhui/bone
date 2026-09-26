@@ -1,6 +1,6 @@
 package com.bone.system.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +18,6 @@ public class ConfigResp {
   private String description;
   private String configType;
   private boolean encrypted;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

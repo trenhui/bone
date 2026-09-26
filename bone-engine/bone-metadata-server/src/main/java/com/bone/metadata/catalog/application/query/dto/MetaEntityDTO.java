@@ -18,6 +18,9 @@ public class MetaEntityDTO {
   private Integer sortOrder;
   private String icon;
 
+  /** 所属 IAM 模块（应用→模块→模型分层导航用；未归属为 null） */
+  private Long moduleId;
+
   /** 乐观锁版本（PUT 使用 If-Match: "v{version}"） */
   private Integer version;
 }

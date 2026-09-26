@@ -6,6 +6,9 @@ import com.bone.masterdata.adapter.web.dto.response.MasterDataEntityDetailResp;
 import com.bone.masterdata.application.command.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,9 +54,13 @@ public class MasterDataEntityWebConverter {
         .description(dto.getDescription())
         .category(dto.getCategory())
         .status(dto.getStatus())
-        .createdAt(dto.getCreatedAt())
-        .updatedAt(dto.getUpdatedAt())
+        .createdAt(toInstant(dto.getCreatedAt()))
+        .updatedAt(toInstant(dto.getUpdatedAt()))
         .fieldCount(dto.getFieldCount())
         .build();
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

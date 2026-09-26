@@ -12,6 +12,7 @@ import {
   Tag,
   message,
 } from 'antd';
+import { formatDate } from '@bone/shared-utils';
 import {
   formatStudioError,
   getSandboxConfig,
@@ -154,7 +155,7 @@ const SandboxManagement: React.FC = () => {
                 title: '时间',
                 dataIndex: 'createdAt',
                 width: 170,
-                render: (v: string) => (v ? new Date(v).toLocaleString() : '-'),
+                render: (v: string) => formatDate(v),
               },
             ]}
           />

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:31Z",
+  "generated_at": "2026-09-25T21:20:36Z",
   "module": "integration",
   "as_is": [
     {
@@ -32,7 +32,7 @@
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/service/FlowMonitorService.java"
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/support/FlowMonitorSupport.java"
         ]
       }
     },
@@ -63,10 +63,7 @@
       "evidence": {
         "java": [
           "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ActivateFlowCommandHandler.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeactivateFlowCommandHandler.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteFlowCommandHandler.java",
-          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/TestConnectorHandler.java"
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/TestConnectorApplicationService.java"
         ]
       }
     }

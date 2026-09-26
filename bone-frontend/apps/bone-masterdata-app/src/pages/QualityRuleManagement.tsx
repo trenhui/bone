@@ -65,7 +65,7 @@ const QualityRuleManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch {
-      message.error('获取实体列表失败');
+      message.error('获取模型列表失败');
     }
   }, [selectedEntityId]);
 
@@ -116,7 +116,7 @@ const QualityRuleManagement: React.FC = () => {
   // 打开创建模态框
   const handleAdd = () => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return;
     }
     setIsEditMode(false);
@@ -164,7 +164,7 @@ const QualityRuleManagement: React.FC = () => {
   // 执行质量检查（后端同步执行并落报告，无需轮询）
   const handleExecuteCheck = async () => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return;
     }
     setCheckLoading(true);
@@ -178,9 +178,9 @@ const QualityRuleManagement: React.FC = () => {
       const checkResponse = await qualityCheckApi.detail(checkId);
       if (checkResponse.code === 200) {
         setCurrentCheck(checkResponse.data);
-        const reportResponse = await qualityReportApi.listByCheckId(checkId);
+        const reportResponse = await qualityReportApi.detailByCheckId(checkId);
         if (reportResponse.code === 200) {
-          setCurrentReport(reportResponse.data?.[0] ?? null);
+          setCurrentReport(reportResponse.data ?? null);
         }
         setIsCheckModalOpen(true);
         void fetchQualityChecks();
@@ -336,12 +336,12 @@ const QualityRuleManagement: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Card title="数据质量规则管理">
-        {/* 实体选择和执行检查 */}
+        {/* 模型选择和执行检查 */}
         <Form layout="inline" style={{ marginBottom: 16 }}>
-          <Form.Item label="选择实体">
+          <Form.Item label="选择模型">
             <Select
               style={{ width: 300 }}
-              placeholder="请选择主数据实体"
+              placeholder="请选择主数据模型"
               value={selectedEntityId}
               onChange={setSelectedEntityId}
             >
@@ -371,7 +371,7 @@ const QualityRuleManagement: React.FC = () => {
           loading={loading}
           pagination={{ pageSize: 10 }}
           options={{ reload: false, density: false, setting: false }}
-          locale={{ emptyText: '请先选择一个实体' }}
+          locale={{ emptyText: '请先选择一个模型' }}
         />
 
         {/* 质量检查历史 */}
@@ -445,8 +445,8 @@ const QualityRuleManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="masterDataEntityId"
-            label="所属实体"
-            rules={[{ required: true, message: '请选择所属实体' }]}
+            label="所属模型"
+            rules={[{ required: true, message: '请选择所属模型' }]}
           >
             <Select disabled>
               {entities.map(entity => (
@@ -520,7 +520,7 @@ const QualityRuleManagement: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="规则表达式" span={2}>{currentRule.expression}</Descriptions.Item>
             <Descriptions.Item label="严重程度">{getStatusTag(currentRule.severity)}</Descriptions.Item>
-            <Descriptions.Item label="所属实体">
+            <Descriptions.Item label="所属模型">
               {entities.find(e => e.id === currentRule.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentRule.description || '-'}</Descriptions.Item>

@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Data;
 
 @Data
@@ -23,8 +23,8 @@ public class LoginResp {
     private String avatarUrl;
     private Integer status;
     private Boolean isAdmin;
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime createdAt;
+    private Instant lastLoginAt;
+    private Instant createdAt;
 
     /** 账号所属租户 id（0 = 平台租户），前端据此做身份分流（平台管理员 / 租户管理员，详设 §2.9）。 */
     private Long tenantId;

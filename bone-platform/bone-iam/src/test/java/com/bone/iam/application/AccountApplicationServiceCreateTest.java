@@ -50,6 +50,7 @@ class AccountApplicationServiceCreateTest {
   @Mock PasswordPolicyValidator passwordPolicyValidator;
   @Mock TenantQuotaEnforcer tenantQuotaEnforcer;
   @Mock TenantProvider tenantProvider;
+  @Mock com.bone.iam.domain.repository.DeptRepository deptRepository;
 
   @InjectMocks AccountApplicationService accountApplicationService;
 
@@ -68,10 +69,13 @@ class AccountApplicationServiceCreateTest {
     cmd.setPhone("13800000000");
     cmd.setRealName("New User");
     cmd.setTenantId(1L);
+    cmd.setDeptId(9L);
     cmd.setRoleIds(new Long[] {1L});
 
     when(accountRepository.findByUsernameInTenant("newuser")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed-pwd");
+    when(deptRepository.findById(9L))
+        .thenReturn(com.bone.iam.domain.model.dept.Dept.create("研发部", null, 1, 1, 1L));
 
     // 模拟 save 后 id 被回填
     when(accountRepository.save(any(Account.class)))
@@ -89,6 +93,39 @@ class AccountApplicationServiceCreateTest {
     verify(tenantQuotaEnforcer, times(1)).assertCanAddAccount(1L);
     verify(accountRepository, times(1)).save(any(Account.class));
     verify(accountRoleBindingSupport, times(1)).replaceBindings(42L, 1L, new Long[] {1L});
+  }
+
+  /** 部门归属：本租户内部门可挂，跨租户部门一律拒绝（防把成员挂到别的租户的组织树上）。 */
+  @Test
+  void createAssignsDeptInSameTenantAndRejectsForeignDept() {
+    CreateAccountCommand cmd = new CreateAccountCommand();
+    cmd.setUsername("deptuser");
+    cmd.setPassword("P@ssw0rd123");
+    cmd.setEmail("dept@bone.com");
+    cmd.setTenantId(100L);
+    cmd.setDeptId(9L);
+    when(tenantProvider.currentTenantIdOrNull()).thenReturn(100L);
+    when(accountRepository.findByUsernameInTenant("deptuser")).thenReturn(Optional.empty());
+    when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed-pwd");
+    when(deptRepository.findById(9L))
+        .thenReturn(com.bone.iam.domain.model.dept.Dept.create("研发部", null, 1, 1, 100L));
+    when(accountRepository.save(any(Account.class)))
+        .thenAnswer(
+            invocation -> {
+              Account acct = invocation.getArgument(0);
+              setField(acct, "id", 43L);
+              return acct.getId();
+            });
+
+    assertThat(accountApplicationService.create(cmd)).isEqualTo(43L);
+
+    // 同一租户的另一部门 id：换成本租户外的部门 → 404（不泄露该 id 属于谁）
+    when(deptRepository.findById(9L))
+        .thenReturn(com.bone.iam.domain.model.dept.Dept.create("他租户部门", null, 1, 1, 200L));
+    assertThatThrownBy(() -> accountApplicationService.create(cmd))
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 404)
+        .hasMessageContaining(com.bone.iam.common.IamErrorCodes.DEPT_NOT_FOUND);
   }
 
   @Test
@@ -142,6 +179,9 @@ class AccountApplicationServiceCreateTest {
 
     when(accountRepository.findByUsernameInTenant("user2")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed");
+    cmd.setDeptId(8L);
+    when(deptRepository.findById(8L))
+        .thenReturn(com.bone.iam.domain.model.dept.Dept.create("平台部", null, 1, 1, 0L));
 
     when(accountRepository.save(any(Account.class)))
         .thenAnswer(

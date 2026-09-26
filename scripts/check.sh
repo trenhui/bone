@@ -99,7 +99,15 @@ if git grep --untracked -nE "<artifactId>(mybatis|mybatis-plus|spring-boot-start
   exit_code=1
 fi
 
-echo -e "${YELLOW}[6/6] HC-006 绕过 SDK 的 JDBC/MyBatis 扫描...${RESET}"
+echo -e "${YELLOW}[6/7] i18n 同步校验（errorCode ↔ 台账 ↔ 语言包）...${RESET}"
+# 与既有 python3 门禁同形态；存量漂移走显式白名单 config/i18n/errorcode-baseline.json，
+# 新增码一律不豁免。详见 doc/design/国际化设计方案.md §8.2。
+if ! python3 scripts/check-i18n-sync.py; then
+  echo -e "${RED}❌ i18n 校验失败（缺译 / 新码未登记 / 两份语言包不对称）${RESET}"
+  exit_code=1
+fi
+
+echo -e "${YELLOW}[7/7] HC-006 绕过 SDK 的 JDBC/MyBatis 扫描...${RESET}"
 if ! python3 scripts/check-sdk-persistence.py --check; then
   echo -e "${RED}❌ 新增文件直接使用 JDBC / MyBatis 会话（须走 bone-metadata-sdk，存量见 sdk-persistence-bypass-baseline.json）${RESET}"
   exit_code=1

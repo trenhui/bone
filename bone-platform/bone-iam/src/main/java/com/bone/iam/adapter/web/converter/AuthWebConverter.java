@@ -4,6 +4,9 @@ import com.bone.iam.adapter.web.dto.request.LoginReq;
 import com.bone.iam.adapter.web.dto.response.LoginResp;
 import com.bone.iam.application.command.LoginCommand;
 import com.bone.iam.domain.model.account.Account;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -34,8 +37,8 @@ public class AuthWebConverter {
     accountInfo.setAvatarUrl(account.getAvatarUrl());
     accountInfo.setStatus(account.getStatus().getCode());
     accountInfo.setIsAdmin(account.isAdmin());
-    accountInfo.setLastLoginAt(account.getLastLoginAt());
-    accountInfo.setCreatedAt(account.getCreatedAt());
+    accountInfo.setLastLoginAt(toInstant(account.getLastLoginAt()));
+    accountInfo.setCreatedAt(toInstant(account.getCreatedAt()));
     // 身份分流字段（详设 §2.9）：由 AuthApplicationService 随登录结果一并返回
     Object tenantId = result.get("tenantId");
     accountInfo.setTenantId(tenantId instanceof Long l ? l : account.getTenantId());
@@ -44,5 +47,9 @@ public class AuthWebConverter {
     resp.setAccount(accountInfo);
 
     return resp;
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

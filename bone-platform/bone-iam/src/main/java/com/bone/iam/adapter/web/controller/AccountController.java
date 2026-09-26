@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,14 +44,15 @@ public class AccountController {
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:accounts:write')")
-  public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
+  public ApiResponse<Long> create(@Validated @RequestBody CreateAccountReq req) {
     Long id = accountApplicationService.create(accountWebConverter.toCreateAccountCommand(req));
     return ApiResponse.success(id);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:accounts:write')")
-  public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateAccountReq req) {
+  public ApiResponse<Void> update(
+      @PathVariable Long id, @Validated @RequestBody UpdateAccountReq req) {
     accountApplicationService.update(accountWebConverter.toUpdateAccountCommand(id, req));
     return ApiResponse.success();
   }
@@ -108,7 +110,7 @@ public class AccountController {
   /** 批量导入账号；失败项跳过并写日志，返回成功数量。 */
   @PostMapping("/import")
   @PreAuthorize("hasAuthority('iam:accounts:write')")
-  public ApiResponse<Integer> importAccounts(@RequestBody List<CreateAccountReq> list) {
+  public ApiResponse<Integer> importAccounts(@Validated @RequestBody List<CreateAccountReq> list) {
     if (list == null || list.isEmpty()) {
       return ApiResponse.success(0);
     }

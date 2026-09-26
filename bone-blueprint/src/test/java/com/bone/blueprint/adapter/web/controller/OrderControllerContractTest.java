@@ -150,7 +150,9 @@ class OrderControllerContractTest {
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.code").value(404))
         // 稳定错误码必须出现在响应里，前端/监控才能按码聚合（错误码登记 §2）
-        .andExpect(
-            jsonPath("$.message").value(containsString(BlueprintErrorCodes.ORDER_NOT_FOUND)));
+        .andExpect(jsonPath("$.message").value(containsString(BlueprintErrorCodes.ORDER_NOT_FOUND)))
+        // i18n：码必须在 ProblemDetail.errorCode 里，前端才能 i18n.t('errors.BP_ORDER_NOT_FOUND')。
+        // 只断言 message 不够——message 是中文 fallback，英文用户看不到翻译。
+        .andExpect(jsonPath("$.data.errorCode").value(BlueprintErrorCodes.ORDER_NOT_FOUND));
   }
 }

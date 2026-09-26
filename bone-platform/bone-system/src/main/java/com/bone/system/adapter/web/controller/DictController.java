@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 系统字典控制器。 */
@@ -28,12 +29,14 @@ public class DictController {
 
   @Operation(summary = "创建字典项")
   @PostMapping
+  @PreAuthorize("hasAuthority('sys:dict:write')")
   public ApiResponse<Long> create(@Valid @RequestBody CreateDictReq req) {
     return ApiResponse.success(dictApplicationService.create(dictAssembler.toCommand(req)));
   }
 
   @Operation(summary = "更新字典项")
   @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('sys:dict:write')")
   public ApiResponse<Void> update(@PathVariable Long id, @Valid @RequestBody UpdateDictReq req) {
     dictApplicationService.update(dictAssembler.toCommand(id, req));
     return ApiResponse.success();
@@ -41,6 +44,7 @@ public class DictController {
 
   @Operation(summary = "删除字典项")
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('sys:dict:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     dictApplicationService.delete(id);
     return ApiResponse.success();

@@ -5,9 +5,12 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.MetaEntityApplicationService;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.cmd.CopyMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
+import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
+import com.bone.metadata.catalog.application.query.dto.PublishPreviewDTO;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.catalog.common.BatchOperateResult;
@@ -15,6 +18,7 @@ import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -38,7 +42,7 @@ public class MetaEntityCatalogController {
   private final ObjectMapper objectMapper;
 
   @PostMapping
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Long>> create(@Valid @RequestBody CreateMetaEntityCommand cmd) {
     Long id = metaEntityApplicationService.createEntity(cmd);
     return ResponseEntity.created(URI.create("/api/v1/metadata/entities/" + id))
@@ -46,7 +50,7 @@ public class MetaEntityCatalogController {
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Void>> update(
       @PathVariable Long id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -60,15 +64,19 @@ public class MetaEntityCatalogController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ApiResponse<PageResult<MetaEntityDTO>> page(MetaEntityPageQuery qry) {
     return ApiResponse.success(
         metaEntityApplicationService.pageEntities(
-            qry.getKeyword(), qry.getStatus(), qry.getPageNum(), qry.getPageSize()));
+            qry.getKeyword(),
+            qry.getStatus(),
+            qry.getModuleId(),
+            qry.getPageNum(),
+            qry.getPageSize()));
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ResponseEntity<ApiResponse<MetaEntityDTO>> detail(@PathVariable Long id) {
     MetaEntityDTO dto = metaEntityApplicationService.getEntity(id);
     return ResponseEntity.ok()
@@ -77,7 +85,7 @@ public class MetaEntityCatalogController {
   }
 
   @PostMapping("/{id}/publish")
-  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Void>> publish(
       @PathVariable Long id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -103,22 +111,46 @@ public class MetaEntityCatalogController {
     return response;
   }
 
+  /** 建模期静态校验（UC-W5）：问题分级列表，ERROR 阻断发布。 */
+  @GetMapping("/{id}/validate")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
+  public ApiResponse<List<EntityValidationIssue>> validate(@PathVariable Long id) {
+    return ApiResponse.success(metaEntityApplicationService.validateEntity(id));
+  }
+
+  /** 发布摘要预览（UC-W7 摘要级）：变更清单 + 校验问题 + RUNTIME 物理 inspect 计划（只读不执行）。 */
+  @GetMapping("/{id}/publish-preview")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
+  public ApiResponse<PublishPreviewDTO> publishPreview(@PathVariable Long id) {
+    return ApiResponse.success(metaEntityApplicationService.getPublishPreview(id));
+  }
+
+  /** 实体复制（UC-W2 流程 B）：复制定义与字段为新草稿实体；目标模块建模角色（G1②）统一校验。 */
+  @PostMapping("/{id}/copy")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
+  public ResponseEntity<ApiResponse<Long>> copy(
+      @PathVariable Long id, @Valid @RequestBody CopyMetaEntityCommand cmd) {
+    Long newId = metaEntityApplicationService.copyEntity(id, cmd);
+    return ResponseEntity.created(URI.create("/api/v1/metadata/entities/" + newId))
+        .body(ApiResponse.success(newId));
+  }
+
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     metaEntityApplicationService.deleteEntity(id);
     return ApiResponse.success();
   }
 
   @PostMapping("/batch-publish")
-  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:model:write', 'metadata:write')")
   public ApiResponse<BatchOperateResult> batchPublish(
       @Valid @RequestBody BatchPublishMetaEntityCommand cmd) {
     return ApiResponse.success(metaEntityApplicationService.batchPublishEntities(cmd));
   }
 
   @PostMapping("/batch-delete")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<BatchOperateResult> batchDelete(
       @Valid @RequestBody BatchDeleteMetaEntityCommand cmd) {
     return ApiResponse.success(metaEntityApplicationService.batchDeleteEntities(cmd));

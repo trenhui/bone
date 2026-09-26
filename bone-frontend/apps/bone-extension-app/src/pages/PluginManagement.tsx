@@ -93,14 +93,16 @@ const PluginManagement: React.FC = () => {
     pluginId?: number;
   }>();
   const [uploadTarget, setUploadTarget] = useState<ExtensionRow | null>(null);
+  const [appFilter, setAppFilter] = useState<number | undefined>();
 
-  const load = useCallback(async (p: number, ps: number) => {
-    setLoading(true);
-    try {
-      const [pluginResult, pointResult] = await Promise.all([
-        listPlugins({ page: p, size: ps }),
-        listExtPoints(),
-      ]);
+  const load = useCallback(
+    async (p: number, ps: number) => {
+      setLoading(true);
+      try {
+        const [pluginResult, pointResult] = await Promise.all([
+          listPlugins({ page: p, size: ps, appId: appFilter }),
+          listExtPoints(),
+        ]);
       const pluginList = Array.isArray(pluginResult)
         ? pluginResult
         : (pluginResult as StudioPageResult<ExtensionRow>).records;
@@ -110,12 +112,14 @@ const PluginManagement: React.FC = () => {
       setPlugins(pluginList);
       setPluginTotal(pluginCount);
       setExtPoints(Array.isArray(pointResult) ? pointResult : pointResult.records);
-    } catch (e) {
-      message.error(formatStudioError(e, '加载插件失败'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      } catch (e) {
+        message.error(formatStudioError(e, '加载插件失败'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [appFilter],
+  );
 
   useEffect(() => {
     load(page, pageSize);
@@ -143,6 +147,7 @@ const PluginManagement: React.FC = () => {
     if (editing) {
       form.setFieldsValue({
         extPointId: editing.extPointId,
+        appId: editing.appId ?? undefined,
         name: editing.name,
         description: editing.description,
         className: editing.className,
@@ -156,7 +161,7 @@ const PluginManagement: React.FC = () => {
       form.setFieldsValue({
         enabled: true,
         priority: 100,
-        tenantCode: 'DEFAULT',
+        tenantCode: '*',
         bizCode: '*',
       });
     }
@@ -420,6 +425,13 @@ const PluginManagement: React.FC = () => {
         ),
     },
     { title: '实现类', dataIndex: 'className', ellipsis: true },
+    {
+      title: '归属应用',
+      dataIndex: 'appId',
+      width: 96,
+      render: (appId?: number | null) =>
+        appId ? `#${appId}` : <Tag color="default">平台通用</Tag>,
+    },
     { title: '优先级', dataIndex: 'priority', width: 80 },
     {
       title: '状态',
@@ -568,6 +580,16 @@ const PluginManagement: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
+        <InputNumber
+          min={1}
+          placeholder="按归属应用 ID 过滤"
+          style={{ width: 180 }}
+          value={appFilter}
+          onChange={(v) => {
+            setPage(1);
+            setAppFilter(v ?? undefined);
+          }}
+        />
       </Space>
       <Table
         rowKey="id"
@@ -604,6 +626,13 @@ const PluginManagement: React.FC = () => {
           </Form.Item>
           <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
             <Input />
+          </Form.Item>
+          <Form.Item
+            name="appId"
+            label="归属应用 ID"
+            tooltip="bone_application 的应用 ID；留空表示平台通用插件（5a G1）"
+          >
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="留空 = 平台通用" />
           </Form.Item>
           <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
             <Input placeholder="com.bone.example.MyExtension" />

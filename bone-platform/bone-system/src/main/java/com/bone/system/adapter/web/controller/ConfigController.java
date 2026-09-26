@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -50,12 +51,14 @@ public class ConfigController {
 
   @Operation(summary = "创建配置")
   @PostMapping
+  @PreAuthorize("hasAuthority('sys:config:write')")
   public ApiResponse<Long> create(@Valid @RequestBody CreateConfigReq req) {
     return ApiResponse.success(configApplicationService.create(configAssembler.toCommand(req)));
   }
 
   @Operation(summary = "更新配置")
   @PutMapping
+  @PreAuthorize("hasAuthority('sys:config:write')")
   public ApiResponse<Void> update(@Valid @RequestBody UpdateConfigReq req) {
     configApplicationService.update(configAssembler.toCommand(req));
     return ApiResponse.success();
@@ -63,6 +66,7 @@ public class ConfigController {
 
   @Operation(summary = "删除配置")
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('sys:config:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     configApplicationService.delete(id);
     return ApiResponse.success();

@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Data;
 
 @Data
@@ -9,7 +9,7 @@ public class RoleDetailResp {
   private String name;
   private String description;
   private Long tenantId;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
   private Long[] permissionIds;
 }

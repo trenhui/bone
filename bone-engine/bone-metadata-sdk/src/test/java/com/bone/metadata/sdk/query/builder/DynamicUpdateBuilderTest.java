@@ -79,17 +79,23 @@ class DynamicUpdateBuilderTest {
 
   @Test
   void usesTrustedContext_notEntityField_whenTheyDisagree() {
-    // 上下文 99 ≠ 实体字段 42：写路径的租户只能来自可信上下文——实体字段不是授权来源。
+    // 上下文 99 ≠ 实体字段 42：写路径的租户只能来自可信上下文——实体字段不是授权来源，
+    // 且 tenant 是"写入一次"的归属列，UPDATE 的 SET 根本不含它（防跨租户破坏，见 DynamicUpdateBuilder）。
     // （若两者同值，断言无法区分"取上下文"与"取实体字段"，会形成假绿。）
     TenantContext.setTenantId(99L);
 
     CompiledQuery query =
         builder.build(new DynamicUpdateContext(tenantTable(), new Row(7L, 42L, "PAID")));
 
+    // WHERE 租户护栏仍来自可信上下文（99）——与实体字段 42 互不污染
     assertTrue(query.getSql().contains("WHERE id = :id AND tenant_id = :_sdk_tenant_id"));
     assertEquals(99L, query.getParameters().get(TenantFilterInjector.PARAM));
-    // SET 子句照常写实体状态（42），WHERE 用上下文（99）——两者互不污染
-    assertEquals(42L, query.getParameters().get("tenant_id"));
+    // tenant 归属列仅写入一次（INSERT 取可信上下文），UPDATE 的 SET 不含它：实体字段 42 被忽略，
+    // 既不会把行归属改写成错误租户，也不会因字段为 null 而 SET tenant_id = NULL 撞 NOT NULL
+    assertFalse(query.getSql().contains("tenant_id = :tenant_id"));
+    assertFalse(query.getParameters().containsKey("tenant_id"));
+    // 真实业务列照常更新
+    assertTrue(query.getSql().contains("status = :status"));
   }
 
   @Test

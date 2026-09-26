@@ -49,10 +49,23 @@ class MasterDataFieldControllerTest {
             MockMvcRequestBuilders.post("/api/v1/masterdata/entities/1/fields")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    "{\"name\":\"测试字段\",\"type\":\"STRING\",\"masterDataEntityId\":1,\"length\":64,\"required\":true}"))
+                    "{\"name\":\"测试字段\",\"code\":\"test_field\",\"type\":\"STRING\","
+                        + "\"masterDataEntityId\":1,\"length\":64,\"required\":true}"))
         .andExpect(MockMvcResultMatchers.status().isOk())
         .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
         .andExpect(MockMvcResultMatchers.jsonPath("$.data").value(1));
+  }
+
+  // md_field 的 name/code/type 均为 NOT NULL：缺任一字段必须 400，
+  // 而不是放过校验后撞到数据库约束、被 catch-all 兜成 500。
+  @Test
+  void testCreateRejectsMissingNotNullColumns() throws Exception {
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/api/v1/masterdata/entities/1/fields")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"测试字段\",\"code\":\"test_field\"}"))
+        .andExpect(MockMvcResultMatchers.status().isBadRequest());
   }
 
   @Test

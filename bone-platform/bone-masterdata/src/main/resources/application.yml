@@ -1,6 +1,11 @@
 spring:
   application:
     name: bone-masterdata
+  # === 时间字段的 UTC 契约（i18n 方案 §6.4，照 blueprint/system 样板）===
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
     username: root

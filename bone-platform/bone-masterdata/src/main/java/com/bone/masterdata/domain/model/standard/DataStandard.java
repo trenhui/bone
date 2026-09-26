@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 /** 数据标准聚合：编码规则 / 参考数据。 */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("meta_data_standard")
+@Table("md_standard")
 public class DataStandard extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)

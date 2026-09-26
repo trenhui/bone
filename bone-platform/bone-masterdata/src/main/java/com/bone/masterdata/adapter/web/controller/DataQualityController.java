@@ -73,6 +73,16 @@ public class DataQualityController {
     return ApiResponse.success(qualityService.checkDetail(id));
   }
 
+  /**
+   * 按检查任务 ID 取报告：客户端持有的是 checkId，报告主键对其无意义。
+   *
+   * <p>{@code /reports/{id}} 的 {id} 是报告主键，两者不可混用。
+   */
+  @GetMapping("/checks/{id}/report")
+  public ApiResponse<QualityReportDTO> getReportByCheckId(@PathVariable Long id) {
+    return ApiResponse.success(qualityService.reportByCheckId(id));
+  }
+
   @GetMapping("/reports")
   public ApiResponse<List<QualityReportDTO>> listReports(
       @RequestParam(value = "qualityCheckId", required = false) Long qualityCheckId) {

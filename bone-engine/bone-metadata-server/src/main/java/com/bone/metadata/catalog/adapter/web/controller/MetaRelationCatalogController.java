@@ -28,7 +28,7 @@ public class MetaRelationCatalogController {
 
   @PostMapping
   @Operation(summary = "创建关系", description = "创建实体间关系")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Long>> create(
       @Valid @RequestBody CreateMetaRelationCommand cmd) {
     Long newId = metaRelationApplicationService.createRelation(cmd);
@@ -39,14 +39,14 @@ public class MetaRelationCatalogController {
 
   @GetMapping("/{id}")
   @Operation(summary = "获取关系详情", description = "根据关系 ID 查询详情")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ApiResponse<MetaRelationDTO> detail(@PathVariable("id") Long id) {
     return ApiResponse.success(metaRelationApplicationService.getRelation(id));
   }
 
   @PutMapping("/{id}")
   @Operation(summary = "更新关系", description = "更新关系元数据（含乐观锁）")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Void>> update(
       @PathVariable("id") Long id,
       @RequestHeader(value = "If-Match", required = false) String ifMatch,
@@ -60,7 +60,7 @@ public class MetaRelationCatalogController {
 
   @DeleteMapping("/{id}")
   @Operation(summary = "删除关系", description = "删除关系（草稿态）")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<Void> delete(@PathVariable("id") Long id) {
     metaRelationApplicationService.deleteRelation(id);
     return ApiResponse.success();
@@ -68,7 +68,7 @@ public class MetaRelationCatalogController {
 
   @GetMapping
   @Operation(summary = "分页查询关系", description = "按源/目标实体或关键字分页查询关系")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ApiResponse<PageResult<MetaRelationDTO>> page(MetaRelationPageQuery qry) {
     return ApiResponse.success(
         metaRelationApplicationService.pageRelations(

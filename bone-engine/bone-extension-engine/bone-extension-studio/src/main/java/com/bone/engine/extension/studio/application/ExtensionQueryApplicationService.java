@@ -47,6 +47,10 @@ public class ExtensionQueryApplicationService {
     return extensionReadPort.findByTenantCode(tenantCode);
   }
 
+  public List<Extension> findExtensionsByAppId(Long appId) {
+    return extensionReadPort.findByAppId(appId);
+  }
+
   public List<Extension> searchExtensions(String keyword) {
     return extensionReadPort.search(keyword);
   }

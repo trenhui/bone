@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:38Z",
+  "generated_at": "2026-09-25T21:22:15Z",
   "module": "console",
   "as_is": [
     {
@@ -85,7 +85,7 @@
       "evidence": {
         "ddl_id_18": true,
         "frontend_const": true,
-        "admin_fallback": true,
+        "admin_fallback": false,
         "controller_doc": [
           "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
           "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/config/SecurityConfig.java"
@@ -98,11 +98,11 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-platform/bone-system/src/main/java/com/bone/system/domain/console/ConsoleOverview.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/domain/console/KeyMetrics.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/domain/console/QuickAction.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/domain/console/ResourceUsage.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/domain/console/ServiceStatus.java"
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ConsoleOverview.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/KeyMetrics.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/QuickAction.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ResourceUsage.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ServiceStatus.java"
         ]
       }
     },

@@ -42,8 +42,8 @@ export interface UpdateAppReq {
 const api = createApiClient('/api/v1');
 
 export const appApi = {
-  /** 获取当前用户有权限的应用列表 */
-  listMine: (params?: { pageNum?: number; pageSize?: number }) =>
+  /** 获取当前用户有权限的应用列表（后端 ApplicationPageQuery：page/size/keyword/status） */
+  listMine: (params?: { page?: number; size?: number; keyword?: string }) =>
     api.get<never, ApiResponse<PageResult<BoneApplication>>>('/apps/mine', { params }),
 
   /** 应用详情 */

@@ -1,6 +1,6 @@
 package com.bone.system.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
 
@@ -15,6 +15,6 @@ public class DictResp {
   private String value;
   private Integer sort;
   private Integer status;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

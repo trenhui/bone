@@ -21,7 +21,9 @@ public interface MasterDataEntityRepository extends Repository<MasterDataEntity,
   /** 按实体名称统计数量（创建实体时唯一性校验）。 */
   default long countByEntityName(MasterDataEntityName name) {
     return countByCriteria(
-        Criteria.<MasterDataEntity>create().entityClass(MasterDataEntity.class).eq("name", name));
+        Criteria.<MasterDataEntity>create()
+            .entityClass(MasterDataEntity.class)
+            .eq("entityName", name));
   }
 
   /** 按来源元数据实体 ID 查询已转换主数据实体的 ID（尚未转换则返回 null）。 */
@@ -32,6 +34,14 @@ public interface MasterDataEntityRepository extends Repository<MasterDataEntity,
                 .entityClass(MasterDataEntity.class)
                 .eq("metaEntityId", metaEntityId));
     return list.isEmpty() ? null : list.get(0).getId();
+  }
+
+  /** 按实体编码统计数量（模板实例化时 entityCode 唯一性校验）。 */
+  default long countByEntityCode(String entityCode) {
+    return countByCriteria(
+        Criteria.<MasterDataEntity>create()
+            .entityClass(MasterDataEntity.class)
+            .eq("entityCode", entityCode));
   }
 
   /** 按分类 + 状态分页查询实体（读模型，ADR-0030）。 */

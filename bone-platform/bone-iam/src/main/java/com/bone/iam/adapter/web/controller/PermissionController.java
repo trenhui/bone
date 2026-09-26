@@ -30,7 +30,7 @@ public class PermissionController {
   private final PermissionWebConverter permissionWebConverter;
 
   @PostMapping
-  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  @PreAuthorize("hasAuthority('iam:permissions:write') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
     CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
     Long permissionId = permissionApplicationService.create(cmd);
@@ -38,20 +38,20 @@ public class PermissionController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  @PreAuthorize("hasAuthority('iam:permissions:read') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
     PageResult<PermissionDTO> result = permissionApplicationService.page(qry);
     return ApiResponse.success(result);
   }
 
   @GetMapping("/tree")
-  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  @PreAuthorize("hasAuthority('iam:permissions:read') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<List<PermissionDTO>> tree() {
     return ApiResponse.success(permissionApplicationService.tree());
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  @PreAuthorize("hasAuthority('iam:permissions:write') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreatePermissionReq req) {
     UpdatePermissionCommand cmd = new UpdatePermissionCommand();
     cmd.setId(id);
@@ -68,14 +68,14 @@ public class PermissionController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  @PreAuthorize("hasAuthority('iam:permissions:write') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     permissionApplicationService.delete(id);
     return ApiResponse.success();
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  @PreAuthorize("hasAuthority('iam:permissions:read') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
     return ApiResponse.success(permissionApplicationService.detail(id));
   }

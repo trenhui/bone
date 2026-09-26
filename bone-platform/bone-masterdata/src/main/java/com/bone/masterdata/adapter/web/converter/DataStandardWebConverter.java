@@ -6,6 +6,9 @@ import com.bone.masterdata.adapter.web.dto.response.DataStandardResp;
 import com.bone.masterdata.application.command.CreateDataStandardCommand;
 import com.bone.masterdata.application.command.UpdateDataStandardCommand;
 import com.bone.masterdata.application.query.dto.DataStandardDTO;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,8 +44,12 @@ public class DataStandardWebConverter {
         .pattern(dto.getPattern())
         .refCode(dto.getRefCode())
         .description(dto.getDescription())
-        .createdAt(dto.getCreatedAt())
-        .updatedAt(dto.getUpdatedAt())
+        .createdAt(toInstant(dto.getCreatedAt()))
+        .updatedAt(toInstant(dto.getUpdatedAt()))
         .build();
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

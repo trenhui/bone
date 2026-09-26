@@ -11,10 +11,11 @@ import lombok.NoArgsConstructor;
 public class Extension extends Entity<Long> {
 
   private Long extPointId;
+  private Long appId;
   private String name;
   private String description;
   private String className;
-  private String tenantCode = "DEFAULT";
+  private String tenantCode = "*";
   private String bizCode = "*";
   private String useCase = "*";
   private String scenario = "*";
@@ -46,6 +47,19 @@ public class Extension extends Entity<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
+  /** 归属应用（5a G1）：管理面归属，null = 平台通用插件 */
+  public void assignApp(Long appId) {
+    this.appId = appId;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** 空白租户码归一为通配 *（5a G2） */
+  public void normalizeTenantCode() {
+    if (tenantCode == null || tenantCode.isBlank()) {
+      tenantCode = "*";
+    }
+  }
+
   public void enable() {
     this.enabled = true;
     this.updatedAt = LocalDateTime.now();
@@ -63,6 +77,11 @@ public class Extension extends Entity<Long> {
 
   public void setConfig(String config) {
     this.config = config;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  public void setAppId(Long appId) {
+    this.appId = appId;
     this.updatedAt = LocalDateTime.now();
   }
 
@@ -127,6 +146,10 @@ public class Extension extends Entity<Long> {
   // Getter方法
   public Long getExtPointId() {
     return extPointId;
+  }
+
+  public Long getAppId() {
+    return appId;
   }
 
   public String getName() {

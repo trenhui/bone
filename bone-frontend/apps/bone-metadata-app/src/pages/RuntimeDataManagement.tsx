@@ -19,6 +19,7 @@ import {
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  errorMessage,
   metadataEntityApi,
   metadataFieldApi,
   normalizePage,
@@ -73,7 +74,7 @@ const RuntimeDataManagement: React.FC = () => {
   useEffect(() => {
     metadataEntityApi.page({ pageNum: 1, pageSize: 50, deliveryMode: 1, status: 1 }).then((res) => {
       if (res.code !== 200) {
-        message.error(res.message);
+        message.error(errorMessage(res));
         return;
       }
       const pageData = normalizePage(res.data);
@@ -119,7 +120,7 @@ const RuntimeDataManagement: React.FC = () => {
         setData(pageData.list);
         setTotal(pageData.total);
       } else {
-        message.error(res.message);
+        message.error(errorMessage(res));
       }
     } catch {
       message.error('加载运行时数据失败，请确认实体已发布且物理表存在');
@@ -161,7 +162,7 @@ const RuntimeDataManagement: React.FC = () => {
         message.success('已删除');
         load();
       } else {
-        message.error(res.message);
+        message.error(errorMessage(res));
       }
     } catch {
       message.error('删除失败');
@@ -181,7 +182,7 @@ const RuntimeDataManagement: React.FC = () => {
           setModalOpen(false);
           load();
         } else {
-          message.error(res.message);
+          message.error(errorMessage(res));
         }
       } else {
         const res = await runtimeRecordApi.create(entityCode, body);
@@ -190,7 +191,7 @@ const RuntimeDataManagement: React.FC = () => {
           setModalOpen(false);
           load();
         } else {
-          message.error(res.message);
+          message.error(errorMessage(res));
         }
       }
     } catch {
@@ -320,7 +321,7 @@ const RuntimeDataManagement: React.FC = () => {
             value: e.code,
             label: `${e.displayName} (${e.code}) → ${e.tableName}`,
           }))}
-          notFoundContent="暂无符合条件的实体，请先在实体管理中创建并发布 RUNTIME 实体"
+          notFoundContent="暂无符合条件的模型，请先在模型管理中创建并发布 RUNTIME 模型"
         />
         <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
           刷新
@@ -368,7 +369,7 @@ const RuntimeDataManagement: React.FC = () => {
           {writableFields.length === 0 ? (
             <Alert
               type="warning"
-              message="该实体尚未配置建模字段，请先在字段管理中维护 meta_field"
+              message="该模型尚未配置建模字段，请先在模型详情的「字段」页签中维护"
             />
           ) : (
             writableFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)

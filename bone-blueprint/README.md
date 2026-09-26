@@ -256,7 +256,8 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
-| **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障。**翻译成 HTTP 状态 + 错误信封由 bone-web 的 `BoneWebExceptionAutoConfiguration` 提供**（该处理器此前没有任何注册入口，是死代码 → 业务异常直落 servlet 容器变 500；已在框架侧补 auto-configuration，模块无需扫描/导入） |
+| **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `BlueprintErrors.of(码, 说明)`——**码随异常走**，写入 `BizException.errorCode`，由 bone-web 的 `GlobalExceptionHandler` 透传进 `ProblemDetail.errorCode`。⚠️ 不要手写 `new BizException(HTTP 状态, 码 + ": " + 说明)`：`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障，且 handler 无法可靠拿到码 |
+| **国际化（i18n）样板** | 本模块是 i18n 端到端改造样板（方案 `doc/design/国际化设计方案.md` §12）：① 错误响应统一产出 `ProblemDetail`（含 `errorCode` + 结构化字段错误）；② 时间字段对外输出 `Instant`（带 `Z`），读模型 `LocalDateTime` 按 `ZoneOffset.UTC` 归一；③ 前端文案在 `bone-frontend/packages/shared-utils/src/i18n/locales/`；④ 契约测试 `ProblemDetailContractTest` 守住"非 2xx 必带 errorCode" |
 | **日志与链路** | `BoneRequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`）。**类名带 `Bone` 前缀是必需的**：Spring Boot 自动配置已注册名为 `requestContextFilter` 的 Bean，同名会启动即失败 |
 | **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |

@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS iam_account (
     phone               VARCHAR(20)     DEFAULT NULL,
     real_name           VARCHAR(100)    DEFAULT NULL,
     avatar_url          VARCHAR(500)    DEFAULT NULL,
+    dept_id             BIGINT          DEFAULT NULL,
     status              TINYINT         NOT NULL DEFAULT 1,
     is_admin            TINYINT      NOT NULL DEFAULT 0,
     last_login_at       TIMESTAMP     DEFAULT NULL,

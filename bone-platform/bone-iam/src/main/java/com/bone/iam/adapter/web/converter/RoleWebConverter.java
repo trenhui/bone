@@ -8,6 +8,9 @@ import com.bone.iam.application.command.AssignPermissionCommand;
 import com.bone.iam.application.command.CreateRoleCommand;
 import com.bone.iam.application.command.UpdateRoleCommand;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,9 +45,13 @@ public class RoleWebConverter {
     resp.setName(dto.getName());
     resp.setDescription(dto.getDescription());
     resp.setTenantId(dto.getTenantId());
-    resp.setCreatedAt(dto.getCreatedAt());
-    resp.setUpdatedAt(dto.getUpdatedAt());
+    resp.setCreatedAt(toInstant(dto.getCreatedAt()));
+    resp.setUpdatedAt(toInstant(dto.getUpdatedAt()));
     resp.setPermissionIds(dto.getPermissionIds());
     return resp;
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

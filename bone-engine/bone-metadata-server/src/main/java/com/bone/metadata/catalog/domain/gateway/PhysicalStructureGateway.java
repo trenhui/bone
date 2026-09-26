@@ -19,6 +19,14 @@ public interface PhysicalStructureGateway {
   PhysicalStructurePlan align(long tenantId, String entityCode);
 
   /**
+   * 发布前结构校验：检测「模型字段类型」与「物理列类型」不兼容的漂移（如模型改为数值但物理列为 VARCHAR）。
+   *
+   * <p>非破坏性的 {@code align} 只能「缺表建 / 缺列加」，无法修正类型漂移，故在 {@code align} 之前拦截， 把运行期才暴露的 SQL
+   * 错误前移为可诊断的发布期拒绝。无漂移时为 no-op；缺表 / 缺列不在此拦截（由 align 补齐）。
+   */
+  void validateForPublish(long tenantId, String entityCode);
+
+  /**
    * 删除单个物理列（破坏性，须管理员显式调用）。
    *
    * <p>护栏：保留列（id/tenant_id/version/deleted）与「仍在模型中引用的活动字段列」禁止删除，实现须返回 {@code REFUSED} 而非执行 DDL。

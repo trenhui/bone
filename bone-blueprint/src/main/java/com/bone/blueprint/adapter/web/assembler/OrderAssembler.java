@@ -8,10 +8,23 @@ import com.bone.blueprint.application.command.CreateOrderCommand;
 import com.bone.blueprint.application.command.DeliverOrderCommand;
 import com.bone.blueprint.application.command.ShipOrderCommand;
 import com.bone.blueprint.application.query.dto.OrderDto;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface OrderAssembler {
+
+  /**
+   * 读模型（{@code LocalDateTime}，按 UTC 归一）→ 对外契约（{@code Instant}，序列化带 {@code Z}）。
+   *
+   * <p>MapStruct 不会凭空猜时区，必须显式给一条转换方法；这里固定 {@link ZoneOffset#UTC}—— 与 {@code
+   * OrderHeadProjection.from()} 的归一口径一致，避免"读模型按 UTC 存、出口按系统时区转"的错位。
+   */
+  default Instant toInstant(LocalDateTime value) {
+    return value == null ? null : value.toInstant(ZoneOffset.UTC);
+  }
 
   CreateOrderCommand toCreateOrderCommand(CreateOrderReq request);
 

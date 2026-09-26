@@ -76,9 +76,11 @@ export interface AppPermission {
 const api = createApiClient('/api/v1');
 
 export const appApi = {
-  /** 获取当前用户有权限的应用列表 */
-  listMine: (params?: { pageNum?: number; pageSize?: number }) =>
-    api.get<never, ApiResponse<PageResult<BoneApplication>>>('/apps/mine', { params }),
+  /** 获取当前用户有权限的应用列表（IAM /apps/mine 按当前登录用户过滤；admin 回退全部） */
+  listMine: (params?: { page?: number; size?: number }) =>
+    api.get<never, ApiResponse<PageResult<BoneApplication>>>('/apps/mine', {
+      params: { page: params?.page ?? 1, size: params?.size ?? 100 },
+    }),
 
   /** 分页查询应用（管理员用） */
   list: (params: { pageNum?: number; pageSize?: number; keyword?: string }) =>

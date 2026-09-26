@@ -1,5 +1,6 @@
 package com.bone.iam.adapter.web.audit;
 
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.iam.application.AuditApplicationService;
 import com.bone.iam.application.port.out.CurrentPrincipalPort;
 import com.bone.iam.domain.model.audit.valueobject.OperationType;
@@ -55,17 +56,24 @@ public class IamAuditLogInterceptor implements HandlerInterceptor {
       Long userId =
           currentPrincipalPort.currentPrincipal().map(p -> parseLong(p.userId())).orElse(null);
       String uri = request.getRequestURI();
-      auditApplicationService.recordLog(
+      // 审计写入落 tenant-scoped 表（iam_audit_log），必须在 TenantContext 内执行：
+      // 未认证请求（/login、登录失败）TenantContext 为空，直接写会被 SDK 拒绝并抛
+      // "TenantContext.tenantId is required but was null" —— 导致最该留痕的登录事件反而全丢。
+      // 故对无主体请求以平台租户 0 兜底，并显式包在 TenantContextRunner 中。
+      TenantContextRunner.runAs(
           tenantId,
-          userId,
-          operation,
-          extractResourceId(uri),
-          extractResourceType(uri),
-          request.getRemoteAddr(),
-          truncate(request.getHeader("User-Agent")),
-          request.getMethod() + " " + uri + queryString(request),
-          ex == null ? "SUCCESS" : "FAILED: " + ex.getClass().getSimpleName(),
-          duration);
+          () ->
+              auditApplicationService.recordLog(
+                  tenantId,
+                  userId,
+                  operation,
+                  extractResourceId(uri),
+                  extractResourceType(uri),
+                  request.getRemoteAddr(),
+                  truncate(request.getHeader("User-Agent")),
+                  request.getMethod() + " " + uri + queryString(request),
+                  ex == null ? "SUCCESS" : "FAILED: " + ex.getClass().getSimpleName(),
+                  duration));
     } catch (Exception auditError) {
       log.warn("[IamAuditLogInterceptor] 审计记录失败（不影响业务）: {}", auditError.getMessage());
     }

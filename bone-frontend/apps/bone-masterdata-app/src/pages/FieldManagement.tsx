@@ -50,7 +50,7 @@ const FieldManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch {
-      message.error('获取实体列表失败');
+      message.error('获取模型列表失败');
     }
   }, [selectedEntityId]);
 
@@ -83,7 +83,7 @@ const FieldManagement: React.FC = () => {
   // 打开创建模态框
   const handleAdd = () => {
     if (!selectedEntityId) {
-      message.warning('请先选择一个实体');
+      message.warning('请先选择一个模型');
       return;
     }
     setIsEditMode(false);
@@ -243,12 +243,12 @@ const FieldManagement: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Card title="主数据字段管理">
-        {/* 实体选择 */}
+        {/* 模型选择 */}
         <Form layout="inline" style={{ marginBottom: 16 }}>
-          <Form.Item label="选择实体">
+          <Form.Item label="选择模型">
             <Select
               style={{ width: 300 }}
-              placeholder="请选择主数据实体"
+              placeholder="请选择主数据模型"
               value={selectedEntityId}
               onChange={setSelectedEntityId}
             >
@@ -273,7 +273,7 @@ const FieldManagement: React.FC = () => {
           dataSource={fields}
           loading={loading}
           pagination={{ pageSize: 10 }}
-          locale={{ emptyText: '请先选择一个实体' }}
+          locale={{ emptyText: '请先选择一个模型' }}
         />
       </Card>
 
@@ -288,8 +288,8 @@ const FieldManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="masterDataEntityId"
-            label="所属实体"
-            rules={[{ required: true, message: '请选择所属实体' }]}
+            label="所属模型"
+            rules={[{ required: true, message: '请选择所属模型' }]}
           >
             <Select disabled>
               {entities.map(entity => (
@@ -355,7 +355,7 @@ const FieldManagement: React.FC = () => {
             <Descriptions.Item label="长度">{currentField.length || '-'}</Descriptions.Item>
             <Descriptions.Item label="是否必填">{currentField.required ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="默认值">{currentField.defaultValue || '-'}</Descriptions.Item>
-            <Descriptions.Item label="所属实体">
+            <Descriptions.Item label="所属模型">
               {entities.find(e => e.id === currentField.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentField.description || '-'}</Descriptions.Item>

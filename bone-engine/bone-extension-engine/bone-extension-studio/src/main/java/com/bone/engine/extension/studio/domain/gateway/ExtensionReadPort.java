@@ -12,6 +12,9 @@ public interface ExtensionReadPort {
 
   List<Extension> findByTenantCode(String tenantCode);
 
+  /** 按归属应用过滤（5a G4 应用扩展视图） */
+  List<Extension> findByAppId(Long appId);
+
   List<Extension> search(String keyword);
 
   long count();

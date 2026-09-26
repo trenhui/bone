@@ -8,6 +8,9 @@ import com.bone.masterdata.application.command.UpdateMasterDataRecordCommand;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,10 +38,14 @@ public class MasterDataRecordWebConverter {
         .masterDataEntityId(dto.getMasterDataEntityId())
         .data(dto.getData())
         .status(dto.getStatus())
-        .createdAt(dto.getCreatedAt())
-        .updatedAt(dto.getUpdatedAt())
-        .publishTime(dto.getPublishTime())
+        .createdAt(toInstant(dto.getCreatedAt()))
+        .updatedAt(toInstant(dto.getUpdatedAt()))
+        .publishTime(toInstant(dto.getPublishTime()))
         .build();
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 
   private String serializeData(Object data) {

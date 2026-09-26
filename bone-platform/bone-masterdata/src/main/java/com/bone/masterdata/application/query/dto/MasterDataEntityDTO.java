@@ -15,4 +15,15 @@ public class MasterDataEntityDTO {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private int fieldCount;
+
+  // G1 收敛 + 三层归属与治理配置（3a 设计 §3.2 / §4.3）
+  private String entityCode;
+  private Long metaEntityId;
+  private String domainCode;
+  private Long templateId;
+  private String templateVersion;
+  private Long owningAppId;
+  private String governanceTier;
+  private Boolean isVersioning;
+  private Boolean workflowEnabled;
 }

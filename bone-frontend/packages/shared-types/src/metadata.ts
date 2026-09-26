@@ -17,6 +17,8 @@ export interface MetaEntity {
   statusLabel?: string;
   sortOrder?: number;
   icon?: string;
+  /** 所属 IAM 模块（应用→模块→模型分层归属；未归属为空） */
+  moduleId?: number;
 }
 
 export interface MetaField {
@@ -60,6 +62,8 @@ export interface CreateMetaEntityReq {
   type?: number;
   deliveryMode?: number;
   icon?: string;
+  /** 归属的 IAM 模块（模块上下文中创建时由前端自动携带） */
+  moduleId?: number;
 }
 
 export interface UpdateMetaEntityReq {

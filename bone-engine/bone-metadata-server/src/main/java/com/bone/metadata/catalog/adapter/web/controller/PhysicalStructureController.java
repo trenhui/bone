@@ -26,7 +26,7 @@ public class PhysicalStructureController {
 
   /** 删除单个孤儿物理列（破坏性）。在用列 / 保留列会被拒绝并返回 REFUSED。 */
   @PostMapping("/drop-column")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<PhysicalStructurePlan> dropColumn(
       @PathVariable Long entityId, @RequestBody DropColumnRequest req) {
     return ApiResponse.success(metaEntityApplicationService.dropColumn(entityId, req.fieldCode()));
@@ -34,7 +34,7 @@ public class PhysicalStructureController {
 
   /** 清理物理表中所有不再被模型引用的孤儿列（破坏性）。 */
   @PostMapping("/drop-drifted")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<PhysicalStructurePlan> dropDrifted(@PathVariable Long entityId) {
     return ApiResponse.success(metaEntityApplicationService.dropDriftedColumns(entityId));
   }

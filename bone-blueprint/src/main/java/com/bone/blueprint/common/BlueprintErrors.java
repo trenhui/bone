@@ -57,9 +57,16 @@ public final class BlueprintErrors {
     return of(errorCode, detail, null);
   }
 
-  /** 抛业务异常，附上下文说明与根因。 */
+  /**
+   * 抛业务异常，附上下文说明与根因。
+   *
+   * <p><b>i18n 关键：码随异常走</b>——{@code errorCode} 直接写进 {@link BizException#getErrorCode()}， 由 bone-web
+   * 的 {@code GlobalExceptionHandler} 透传进 {@code ProblemDetail.errorCode}。 因此 handler
+   * <strong>不需要</strong>从 message 里解析码（旧写法是 {@code 码: 说明} 拼进 message， 前端只能靠字符串切割拿到码，文案一改就断）。
+   */
   public static BizException of(String errorCode, Object detail, Throwable cause) {
-    return new BizException(httpStatusOf(errorCode), composeMessage(errorCode, detail), cause);
+    return new BizException(
+        httpStatusOf(errorCode), composeMessage(errorCode, detail), errorCode, cause);
   }
 
   /**

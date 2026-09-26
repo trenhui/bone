@@ -1,6 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
+import { subscribeLocaleChange } from '@bone/shared-utils';
 import { setQiankunToken } from './services/api';
 import './index.css';
 
@@ -30,6 +31,7 @@ function render(props?: QiankunProps) {
 renderWithQiankun({
   bootstrap() {},
   mount(props: QiankunProps) {
+  subscribeLocaleChange();
     // qiankun 挂载时将 token 写入内存 + localStorage
     const token = (props as { token?: string })?.token;
     if (token) {
@@ -48,6 +50,7 @@ renderWithQiankun({
 });
 
 if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
+  subscribeLocaleChange();
   render();
 }
 

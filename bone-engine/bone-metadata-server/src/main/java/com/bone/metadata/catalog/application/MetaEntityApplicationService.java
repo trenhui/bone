@@ -4,29 +4,39 @@ import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.cmd.CopyMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
+import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
+import com.bone.metadata.catalog.application.query.dto.PublishPreviewDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
+import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.meta.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityRelation;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
+import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.catalog.domain.service.IamModuleValidator;
 import com.bone.metadata.runtime.RuntimeEntityCacheEvictor;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -45,11 +55,19 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 public class MetaEntityApplicationService {
 
+  /** 标识符白名单（2a UC-MT2）：模式 B 建表/路由依赖合法标识符，编码与表名同规。 */
+  static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$");
+
+  /** 单次校验/复制读取的字段上限（实体字段数远小于此；防御性分页上限而非业务约束）。 */
+  private static final int MAX_FIELDS = 500;
+
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
+  private final MetaEntityRelationRepository metaEntityRelationRepository;
   private final IamModuleValidator iamModuleValidator;
   private final TenantProvider tenantProvider;
   private final PhysicalStructureGateway physicalStructureGateway;
+  private final CurrentUserProvider currentUserProvider;
   private final Optional<RuntimeEntityCacheEvictor> runtimeEntityCacheEvictor;
   private final PlatformTransactionManager transactionManager;
 
@@ -59,7 +77,9 @@ public class MetaEntityApplicationService {
   public Long createEntity(CreateMetaEntityCommand cmd) {
     long tenantId = tenantProvider.currentTenantId();
     if (cmd.getModuleId() != null) {
-      iamModuleValidator.requireExists(cmd.getModuleId());
+      // G1②：建模准入 = 模块存在 + 租户一致 + 应用角色（无主体场景在校验器内豁免并记 WARN）
+      iamModuleValidator.requireModelingAllowed(
+          cmd.getModuleId(), currentUserProvider.currentUserIdOrNull());
     }
     assertEntityCodeUnique(tenantId, cmd.getCode());
     assertEntityTableUnique(tenantId, cmd.getTableName());
@@ -130,6 +150,8 @@ public class MetaEntityApplicationService {
     runtimeEntityCacheEvictor.ifPresent(
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      // 发布前先校验物理表类型漂移（非破坏性 align 无法修正），把运行期 SQL 错误前移为发布期拒绝
+      physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
       physicalStructureGateway.align(entity.getTenantId(), entity.getCode());
     }
     return entity.getVersion();
@@ -260,6 +282,103 @@ public class MetaEntityApplicationService {
     return physicalStructureGateway.dropDriftedColumns(entity.getTenantId(), entity.getCode());
   }
 
+  // ===================== 建模期校验 / 发布预览 / 实体复制（建模工作台闭环） =====================
+
+  /**
+   * 静态校验（UC-W5）：命名规范、必填、字段编码重复、关系引用完整性、RUNTIME 物理漂移。
+   *
+   * <p>只读不落库、不执行 DDL；物理漂移复用 {@link PhysicalStructureGateway#inspect}（纯只读 diff）。 结果分级 ERROR（阻断发布）/
+   * WARNING / INFO，供前端发布按钮禁用与问题面板展示；发布期兜底校验不受影响。
+   */
+  @Transactional(readOnly = true)
+  public List<EntityValidationIssue> validateEntity(Long id) {
+    return collectIssues(requireEntity(id));
+  }
+
+  /**
+   * 发布摘要预览（UC-W7 摘要级）：实体 + 字段清单 + 关系数 + 校验问题 + RUNTIME 物理 inspect 计划。
+   *
+   * <p>摘要级先行于 ADR-0039 R1 的完整发布包：此处不产生审批/快照语义，仅回答「发布将发生什么」。
+   */
+  @Transactional(readOnly = true)
+  public PublishPreviewDTO getPublishPreview(Long id) {
+    MetaEntity entity = requireEntity(id);
+    List<EntityValidationIssue> issues = collectIssues(entity);
+    boolean hasBlocking =
+        issues.stream().anyMatch(i -> EntityValidationIssue.LEVEL_ERROR.equals(i.getLevel()));
+    List<MetaFieldDTO> fields =
+        CatalogPageMapper.toApiPage(
+                metaFieldRepository.pageFields(id, null, 1, MAX_FIELDS), CatalogDtoMapper::toDto)
+            .getRecords();
+    long tenantId = tenantProvider.currentTenantId();
+    long relationCount =
+        metaEntityRelationRepository.pageRelations(tenantId, id, null, null, 1, 1).getTotal()
+            + metaEntityRelationRepository.pageRelations(tenantId, null, id, null, 1, 1).getTotal();
+    return PublishPreviewDTO.builder()
+        .entityId(entity.getId())
+        .entityCode(entity.getCode())
+        .status(entity.getStatus())
+        .deliveryMode(entity.getDeliveryMode())
+        .fields(fields)
+        .relationCount(relationCount)
+        .validationIssues(issues)
+        .hasBlockingErrors(hasBlocking)
+        .runnable(!hasBlocking)
+        .physical(runtimePlan(entity))
+        .build();
+  }
+
+  /**
+   * 实体复制（UC-W2 流程 B）：复制实体定义 + 全部字段为新草稿实体（关系不复制——跨实体引用需人工重定向）。
+   *
+   * <p>复用 {@link #createEntity}：目标模块唯一性校验与 G1② 应用建模角色校验统一在其中强制。
+   */
+  @Transactional
+  public Long copyEntity(Long sourceId, CopyMetaEntityCommand cmd) {
+    if (cmd.getCode() == null || cmd.getCode().isBlank()) {
+      throw BizException.of(400, "复制实体必须提供新编码");
+    }
+    if (cmd.getTableName() == null || cmd.getTableName().isBlank()) {
+      throw BizException.of(400, "复制实体必须提供新表名");
+    }
+    MetaEntity source = requireEntity(sourceId);
+    long tenantId = tenantProvider.currentTenantId();
+    Long targetModuleId =
+        cmd.getTargetModuleId() != null ? cmd.getTargetModuleId() : source.getModuleId();
+    CreateMetaEntityCommand createCmd = new CreateMetaEntityCommand();
+    createCmd.setName(orDefault(cmd.getName(), source.getName() + "_copy"));
+    createCmd.setCode(cmd.getCode().trim());
+    createCmd.setDisplayName(orDefault(cmd.getDisplayName(), source.getDisplayName() + " 副本"));
+    createCmd.setDescription(
+        orDefault(cmd.getDescription(), "复制自实体 " + source.getCode() + "（#" + source.getId() + "）"));
+    createCmd.setTableName(cmd.getTableName().trim());
+    createCmd.setType(source.getType());
+    createCmd.setDeliveryMode(source.getDeliveryMode());
+    createCmd.setIcon(source.getIcon());
+    createCmd.setModuleId(targetModuleId);
+    Long newId = createEntity(createCmd);
+    List<MetaField> fields = loadAllFields(sourceId);
+    for (MetaField f : fields) {
+      metaFieldRepository.insert(
+          MetaField.create(
+              null,
+              tenantId,
+              newId,
+              f.getName(),
+              f.getCode(),
+              f.getDisplayName(),
+              f.getType(),
+              f.getLength(),
+              f.getRequired(),
+              f.getUnique(),
+              f.getDefaultValue(),
+              f.getComment(),
+              f.getSortOrder(),
+              targetModuleId));
+    }
+    return newId;
+  }
+
   // ===================== 读操作（ADR-0030：经 domain.repository 读模型） =====================
 
   @Transactional(readOnly = true)
@@ -273,10 +392,10 @@ public class MetaEntityApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<MetaEntityDTO> pageEntities(
-      String keyword, Integer status, int pageNum, int pageSize) {
+      String keyword, Integer status, Long moduleId, int pageNum, int pageSize) {
     long tenantId = tenantProvider.currentTenantId();
     PageResult<MetaEntity> sdkPage =
-        metaEntityRepository.pageEntities(tenantId, keyword, status, pageNum, pageSize);
+        metaEntityRepository.pageEntities(tenantId, keyword, status, moduleId, pageNum, pageSize);
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 
@@ -353,5 +472,143 @@ public class MetaEntityApplicationService {
       throw BizException.of("仅 RUNTIME 实体支持物理结构维护: " + entity.getCode());
     }
     return entity;
+  }
+
+  // ===================== 校验/预览/复制 内部辅助 =====================
+
+  private MetaEntity requireEntity(Long id) {
+    MetaEntity entity = metaEntityRepository.findById(id);
+    if (entity == null) {
+      throw BizException.of(404, "实体不存在: " + id);
+    }
+    return entity;
+  }
+
+  private List<MetaField> loadAllFields(Long entityId) {
+    return metaFieldRepository.pageFields(entityId, null, 1, MAX_FIELDS).getRecords();
+  }
+
+  /** 汇总静态校验问题：基础规范 → 字段 → 关系 → RUNTIME 物理漂移 → 已发布说明。 */
+  private List<EntityValidationIssue> collectIssues(MetaEntity entity) {
+    List<EntityValidationIssue> issues = new ArrayList<>();
+    validateBasics(entity, issues);
+    List<MetaField> fields = loadAllFields(entity.getId());
+    validateFields(fields, issues);
+    validateRelations(entity, issues);
+    // 物理漂移阻断判定与发布期同源：复用 validateForPublish（缺表/缺列放行——由 align 补齐；
+    // 仅「模型类型 vs 物理列类型不兼容」才拒绝，与 publish 的 409 行为一致，避免预览过拦）。
+    if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      try {
+        physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
+      } catch (BizException e) {
+        issues.add(
+            EntityValidationIssue.error(
+                "PHYSICAL_DRIFT", "物理结构与模型存在类型漂移，发布将被拒绝：" + e.getMessage()));
+      }
+    }
+    if (MetaEntityStatus.PUBLISHED == entity.statusEnum()) {
+      issues.add(
+          EntityValidationIssue.info("PUBLISHED_READONLY", "已发布实体仅允许加字段或修改非破坏属性；结构性变更须先归档或回退草稿"));
+    }
+    return issues;
+  }
+
+  private void validateBasics(MetaEntity entity, List<EntityValidationIssue> issues) {
+    if (isBlankOrInvalidIdentifier(entity.getCode())) {
+      issues.add(
+          EntityValidationIssue.error(
+              "ENTITY_CODE_INVALID", "实体编码不符合规范 ^[a-zA-Z][a-zA-Z0-9_]*$: " + entity.getCode()));
+    }
+    if (isBlankOrInvalidIdentifier(entity.getTableName())) {
+      issues.add(
+          EntityValidationIssue.error(
+              "ENTITY_TABLE_INVALID", "表名不符合规范 ^[a-zA-Z][a-zA-Z0-9_]*$: " + entity.getTableName()));
+    }
+    if (entity.getName() == null
+        || entity.getName().isBlank()
+        || entity.getDisplayName() == null
+        || entity.getDisplayName().isBlank()) {
+      issues.add(EntityValidationIssue.error("ENTITY_NAME_REQUIRED", "实体名称与显示名均不能为空"));
+    }
+    if (entity.getModuleId() == null) {
+      issues.add(
+          EntityValidationIssue.warning("MODULE_UNASSIGNED", "实体未归属任何模块，建议归属以收敛权限与查询（应用是建模权限边界）"));
+    }
+  }
+
+  private void validateFields(List<MetaField> fields, List<EntityValidationIssue> issues) {
+    Set<String> seen = new HashSet<>();
+    for (MetaField f : fields) {
+      if (isBlankOrInvalidIdentifier(f.getCode())) {
+        issues.add(
+            EntityValidationIssue.fieldError(
+                "FIELD_CODE_INVALID", "字段编码不符合规范: " + f.getCode(), f.getId(), f.getDisplayName()));
+      } else if (!seen.add(f.getCode())) {
+        issues.add(
+            EntityValidationIssue.fieldError(
+                "FIELD_CODE_DUPLICATE",
+                "字段编码在实体内重复: " + f.getCode(),
+                f.getId(),
+                f.getDisplayName()));
+      }
+      if (Boolean.TRUE.equals(f.getRequired()) && Boolean.TRUE.equals(f.getUnique())) {
+        issues.add(
+            EntityValidationIssue.fieldWarning(
+                "FIELD_REQUIRED_UNIQUE",
+                "字段「" + f.getDisplayName() + "」同时必填且唯一，可能阻断存量数据导入与运行时写入",
+                f.getId(),
+                f.getDisplayName()));
+      }
+      if (("STRING".equalsIgnoreCase(f.getType()) || "TEXT".equalsIgnoreCase(f.getType()))
+          && (f.getLength() == null || f.getLength() <= 0)) {
+        issues.add(
+            EntityValidationIssue.fieldWarning(
+                "FIELD_LENGTH_MISSING",
+                "字符串字段「" + f.getDisplayName() + "」未设置长度，建列将使用实现默认长度，请确认符合预期",
+                f.getId(),
+                f.getDisplayName()));
+      }
+    }
+  }
+
+  /** 关系引用完整性：两端实体必须真实存在（软删后不再命中 findById）。 */
+  private void validateRelations(MetaEntity entity, List<EntityValidationIssue> issues) {
+    long tenantId = tenantProvider.currentTenantId();
+    List<MetaEntityRelation> related = new ArrayList<>();
+    related.addAll(
+        metaEntityRelationRepository
+            .pageRelations(tenantId, entity.getId(), null, null, 1, MAX_FIELDS)
+            .getRecords());
+    related.addAll(
+        metaEntityRelationRepository
+            .pageRelations(tenantId, null, entity.getId(), null, 1, MAX_FIELDS)
+            .getRecords());
+    for (var rel : related) {
+      Long otherId =
+          entity.getId().equals(rel.getSourceEntityId())
+              ? rel.getTargetEntityId()
+              : rel.getSourceEntityId();
+      if (otherId == null || metaEntityRepository.findById(otherId) == null) {
+        issues.add(
+            EntityValidationIssue.error(
+                "RELATION_BROKEN", "关系「" + rel.getName() + "」引用的实体不存在（可能已删除）: id=" + otherId));
+      }
+    }
+  }
+
+  /** RUNTIME 实体的物理结构 inspect（纯只读）；GENERATIVE 返回 null（无物理对齐动作）。 */
+  private PhysicalStructurePlan runtimePlan(MetaEntity entity) {
+    if (!MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      return null;
+    }
+    return physicalStructureGateway.inspect(entity.getTenantId(), entity.getCode());
+  }
+
+  private boolean isBlankOrInvalidIdentifier(String value) {
+    return value == null || value.isBlank() || !IDENTIFIER_PATTERN.matcher(value).matches();
+  }
+
+  private static String orDefault(String value, String fallback) {
+    return value == null || value.isBlank() ? fallback : value.trim();
   }
 }

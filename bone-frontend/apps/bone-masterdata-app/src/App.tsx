@@ -6,6 +6,12 @@ import FieldManagement from './pages/FieldManagement';
 import QualityRuleManagement from './pages/QualityRuleManagement';
 import RecordManagement from './pages/RecordManagement';
 import QualityResult from './pages/QualityResult';
+import TemplateManagement from './pages/TemplateManagement';
+import CategoryManagement from './pages/CategoryManagement';
+import GovernanceBoard from './pages/GovernanceBoard';
+import QualityIssueBoard from './pages/QualityIssueBoard';
+import ReferenceDataManagement from './pages/ReferenceDataManagement';
+import DomainWorkbench from './pages/DomainWorkbench';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -28,12 +34,21 @@ const AppContent: React.FC = () => {
     <MessageContext.Provider value={messageApi}>
       <Router>
         <Routes>
+          {/* 主数据域视图 */}
+          <Route path="/workbench" element={<DomainWorkbench />} />
           <Route path="/entities" element={<EntityManagement />} />
           <Route path="/fields" element={<FieldManagement />} />
-          <Route path="/rules" element={<QualityRuleManagement />} />
           <Route path="/records" element={<RecordManagement />} />
+          {/* 治理 */}
+          <Route path="/rules" element={<QualityRuleManagement />} />
           <Route path="/quality-results" element={<QualityResult />} />
-          <Route path="/" element={<Navigate to="/entities" replace />} />
+          <Route path="/quality-issues" element={<QualityIssueBoard />} />
+          <Route path="/categories" element={<CategoryManagement />} />
+          <Route path="/governance" element={<GovernanceBoard />} />
+          {/* 平台能力 */}
+          <Route path="/templates" element={<TemplateManagement />} />
+          <Route path="/reference-sets" element={<ReferenceDataManagement />} />
+          <Route path="/" element={<Navigate to="/workbench" replace />} />
         </Routes>
       </Router>
     </MessageContext.Provider>

@@ -1,13 +1,13 @@
 # IAM 模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-09-25T07:38:42Z（UTC）  
+> **生成时间**：2026-09-25T21:18:06Z（UTC）  
 > **勿手改**：由 `tools/iam-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |
 |----|------|----------|
 | `iam-ddl-tables` | IAM 10 张表全部入 bone-init.sql（含 iam_audit_settings） | DDL：10/10 表 |
 | `iam-openapi-single-source` | iam-v1.yaml 作为 HTTP 契约单源 + bearer JWT 安全声明 | OpenAPI：33 paths；Bearer JWT |
-| `iam-method-security` | @EnableMethodSecurity + @PreAuthorize 方法级鉴权 | @PreAuthorize：8 文件 / 16 权限码；`@EnableMethodSecurity` |
+| `iam-method-security` | @EnableMethodSecurity + @PreAuthorize 方法级鉴权 | @PreAuthorize：6 文件 / 12 权限码；`@EnableMethodSecurity` |
 | `iam-tenant-context-from-jwt` | JwtAuthenticationFilter 写入 TenantContext + finally 清理 | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java` |
 | `iam-tenant-query-filter` | Query Handler 强制按 TenantContext 过滤（非平台租户） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/AccountApplicationService.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/AuditApplicationService.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/DeptApplicationService.java`；… +3 |
 | `iam-jwt-scopes-claim` | JWT claim `scopes`（权限码）+ refresh token + 黑名单 | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AccessTokenIssuerGatewayAdapter.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java` |
@@ -119,31 +119,25 @@
   "preauthorize": {
     "files": [
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
-      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
-      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
-      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
-      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java"
+      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java"
     ],
     "scopes": [
       "iam:accounts:read",
       "iam:accounts:write",
+      "iam:apps:read",
+      "iam:apps:write",
       "iam:audit:read",
       "iam:audit:write",
       "iam:depts:read",
       "iam:depts:write",
       "iam:menus:read",
       "iam:menus:write",
-      "iam:permissions:read",
-      "iam:permissions:write",
       "iam:roles:read",
-      "iam:roles:write",
-      "iam:sessions:read",
-      "iam:sessions:write",
-      "iam:tenants:read",
-      "iam:tenants:write"
+      "iam:roles:write"
     ]
   }
 }

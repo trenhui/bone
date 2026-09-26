@@ -3,6 +3,11 @@ spring:
     lazy-initialization: false
   application:
     name: bone-iam
+  # === 时间字段的 UTC 契约（i18n 方案 §6.4，照 blueprint/system 样板）===
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
   sql:
     init:
       mode: never

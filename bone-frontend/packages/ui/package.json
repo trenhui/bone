@@ -12,7 +12,9 @@
     "./tokens": "./design-system/src/tokens/index.ts"
   },
   "dependencies": {
-    "antd": "^5.12.8"
+    "antd": "^5.12.8",
+    "@bone/core-event-bus": "1.0.0",
+    "@bone/shared-utils": "1.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

@@ -42,8 +42,15 @@ public final class MasterDataErrors {
           // 唯一性冲突（409）
           Map.entry(MasterDataErrorCodes.FIELD_NAME_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.ENTITY_NAME_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.ENTITY_CODE_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.DATA_STANDARD_DUPLICATE, 409),
           Map.entry(MasterDataErrorCodes.RULE_NAME_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.TEMPLATE_DOMAIN_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.TEMPLATE_VERSION_DUPLICATE, 409),
+          // 域模板（404 / 400 / 422）
+          Map.entry(MasterDataErrorCodes.TEMPLATE_NOT_FOUND, 404),
+          Map.entry(MasterDataErrorCodes.TEMPLATE_NOT_PUBLISHED, 422),
+          Map.entry(MasterDataErrorCodes.TEMPLATE_FIELD_SCHEMA_INVALID, 400),
           // 数据质量规则（400）
           Map.entry(MasterDataErrorCodes.RULE_SEVERITY_INVALID, 400),
           Map.entry(MasterDataErrorCodes.RULE_EXPRESSION_INVALID, 400),
@@ -55,7 +62,34 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.FILE_EMPTY, 400),
           Map.entry(MasterDataErrorCodes.FILE_FORMAT_INVALID, 400),
           Map.entry(MasterDataErrorCodes.FILE_READ_FAILED, 400),
-          Map.entry(MasterDataErrorCodes.FILE_PARSE_FAILED, 400));
+          Map.entry(MasterDataErrorCodes.FILE_PARSE_FAILED, 400),
+          // 审批与 SoD（G5）
+          Map.entry(MasterDataErrorCodes.USER_CONTEXT_REQUIRED, 401),
+          Map.entry(MasterDataErrorCodes.SOD_VIOLATION, 403),
+          Map.entry(MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED, 422),
+          // 分类体系（G4）
+          Map.entry(MasterDataErrorCodes.CATEGORY_NOT_FOUND, 404),
+          Map.entry(MasterDataErrorCodes.CATEGORY_CODE_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.CATEGORY_STATE_INVALID, 422),
+          // 消费订阅（G10）
+          Map.entry(MasterDataErrorCodes.SUBSCRIPTION_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.SUBSCRIPTION_STATE_INVALID, 422),
+          // 质量整改工单（G11）
+          Map.entry(MasterDataErrorCodes.QUALITY_ISSUE_NOT_FOUND, 404),
+          // 参考数据（G15；overlay 拆分后新增两条越权守卫）
+          Map.entry(MasterDataErrorCodes.REF_SET_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.REF_SET_NOT_FOUND, 404),
+          Map.entry(MasterDataErrorCodes.REF_VALUE_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.REF_PLATFORM_SET_IMMUTABLE, 403),
+          Map.entry(MasterDataErrorCodes.REF_PLATFORM_VALUE_IMMUTABLE, 403),
+          // 模型漂移（G16）
+          Map.entry(MasterDataErrorCodes.MODEL_DRIFT_NOT_FOUND, 404),
+          Map.entry(MasterDataErrorCodes.MODEL_DRIFT_NO_SOURCE, 422),
+          // 下游反馈（G17）
+          Map.entry(MasterDataErrorCodes.FEEDBACK_NOT_FOUND, 404),
+          // 治理角色（G3）
+          Map.entry(MasterDataErrorCodes.STEWARD_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.STEWARD_ROLE_INVALID, 400));
 
   static {
     checkEveryCodeRegistered();

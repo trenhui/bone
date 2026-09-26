@@ -25,4 +25,9 @@ public interface AppPermissionRepository extends Repository<AppPermission, Long>
   default List<AppPermission> findByApp(Long appId) {
     return findByCriteria(Criteria.<AppPermission>create().eq("appId", appId));
   }
+
+  /** 查询某用户在所有应用中的权限绑定（支撑「我的应用」列表，G15）。 */
+  default List<AppPermission> findByUser(Long userId) {
+    return findByCriteria(Criteria.<AppPermission>create().eq("userId", userId));
+  }
 }

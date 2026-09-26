@@ -28,7 +28,7 @@ public class MetaFieldCatalogController {
 
   @PostMapping
   @Operation(summary = "创建字段", description = "为指定实体新增字段")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Long>> create(
       @PathVariable("entityId") Long entityId, @Valid @RequestBody CreateMetaFieldCommand cmd) {
     cmd.setEntityId(entityId);
@@ -40,7 +40,7 @@ public class MetaFieldCatalogController {
 
   @GetMapping("/{fieldId}")
   @Operation(summary = "获取字段详情", description = "根据字段 ID 查询详情")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ApiResponse<MetaFieldDTO> detail(
       @PathVariable("entityId") Long entityId, @PathVariable("fieldId") Long fieldId) {
     return ApiResponse.success(metaEntityApplicationService.getField(entityId, fieldId));
@@ -48,7 +48,7 @@ public class MetaFieldCatalogController {
 
   @PutMapping("/{fieldId}")
   @Operation(summary = "更新字段", description = "更新字段元数据（含乐观锁）")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Void>> update(
       @PathVariable("entityId") Long entityId,
       @PathVariable("fieldId") Long fieldId,
@@ -63,7 +63,7 @@ public class MetaFieldCatalogController {
 
   @DeleteMapping("/{fieldId}")
   @Operation(summary = "删除字段", description = "删除字段（草稿态）")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ApiResponse<Void> delete(
       @PathVariable("entityId") Long entityId, @PathVariable("fieldId") Long fieldId) {
     metaEntityApplicationService.deleteField(fieldId);
@@ -72,7 +72,7 @@ public class MetaFieldCatalogController {
 
   @GetMapping
   @Operation(summary = "分页查询字段", description = "按实体/关键字分页查询字段")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
   public ApiResponse<PageResult<MetaFieldDTO>> page(
       @PathVariable("entityId") Long entityId, MetaFieldPageQuery qry) {
     return ApiResponse.success(

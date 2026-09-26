@@ -11,17 +11,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bone/ui": "1.0.0",
     "@ant-design/icons": "^6.1.1",
+    "@bone/shared-services": "1.0.0",
+    "@bone/shared-types": "1.0.0",
+    "@bone/shared-utils": "^1.0.0",
+    "@bone/ui": "1.0.0",
     "antd": "^5.12.0",
     "axios": "^1.7.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "@bone/shared-services": "1.0.0",
-    "@bone/shared-types": "1.0.0"
+    "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
+    "@bone/shared-config": "1.0.0",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -32,7 +34,6 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
-    "vite-plugin-qiankun": "^1.0.15",
-    "@bone/shared-config": "1.0.0"
+    "vite-plugin-qiankun": "^1.0.15"
   }
 }

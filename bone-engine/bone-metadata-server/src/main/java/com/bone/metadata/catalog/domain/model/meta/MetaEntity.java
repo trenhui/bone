@@ -2,6 +2,7 @@ package com.bone.metadata.catalog.domain.model.meta;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.exception.DomainException;
+import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.util.Date;
@@ -49,6 +50,14 @@ public class MetaEntity extends AbstractEntity<Long> {
 
   @Column(name = "icon")
   private String icon;
+
+  /** 归属层（G3/ADR-0031）：PLATFORM=平台模型（tenant_id=0），TENANT=租户私有（默认）。 */
+  @Column(name = "scope", nullable = false)
+  private String scope;
+
+  /** 实例化来源模板 ID（G3）：由平台模板复制而来时记录追溯，手工建模为 null。 */
+  @Column(name = "template_id")
+  private Long templateId;
 
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
@@ -109,6 +118,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     e.version = 0;
     e.icon = icon;
     e.moduleId = moduleId;
+    e.scope = MetaModelTemplate.SCOPE_TENANT;
     Date now = new Date();
     e.setCreatedAt(now);
     e.setUpdatedAt(now);
@@ -158,6 +168,12 @@ public class MetaEntity extends AbstractEntity<Long> {
 
   public MetaDeliveryMode deliveryModeEnum() {
     return MetaDeliveryMode.fromCode(deliveryMode);
+  }
+
+  /** 标记本实体由平台模板实例化而来（G3/ADR-0031），记录追溯关系。 */
+  public void markInstantiatedFrom(Long templateId) {
+    this.templateId = templateId;
+    this.setUpdatedAt(new Date());
   }
 
   public MetaEntityStatus statusEnum() {

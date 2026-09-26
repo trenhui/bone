@@ -1,6 +1,6 @@
 package com.bone.system.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +21,6 @@ public class AlertRecordResp {
   private String alertLevel;
   private String message;
   private String status;
-  private LocalDateTime createdAt;
-  private LocalDateTime resolveTime;
+  private Instant createdAt;
+  private Instant resolveTime;
 }

@@ -1,11 +1,13 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.annotation.NoDomainEvent;
+import com.bone.engine.extension.studio.application.support.ExtensionValidationSupport;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
 import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
 import com.bone.engine.extension.studio.application.support.StudioVersionSupport;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
+import com.bone.engine.extension.studio.domain.gateway.TenantDirectoryPort;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
@@ -55,6 +57,10 @@ public class ExtensionCommandApplicationService {
   @Autowired(required = false)
   private RuntimeExtensionSyncService runtimeSyncService;
 
+  /** metadata 模式下注入（只读 iam_tenant）；in-memory 联调无目录，校验降级为格式检查 */
+  @Autowired(required = false)
+  private TenantDirectoryPort tenantDirectoryPort;
+
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Transactional
@@ -63,6 +69,12 @@ public class ExtensionCommandApplicationService {
         && extPointRepository.findById(extension.getExtPointId()) == null) {
       throw new IllegalArgumentException("关联扩展点不存在: " + extension.getExtPointId());
     }
+    if (!StringUtils.hasText(extension.getTenantCode())) {
+      extension.normalizeTenantCode();
+    }
+    ExtensionValidationSupport.assertTenantCodeValid(
+        extension.getTenantCode(), tenantDirectoryPort);
+    ExtensionValidationSupport.assertAppIdValid(extension.getAppId());
     if (extension.getVersion() == null) {
       extension.setVersion(1);
     }
@@ -86,6 +98,8 @@ public class ExtensionCommandApplicationService {
         && extPointRepository.findById(existing.getExtPointId()) == null) {
       throw new IllegalArgumentException("关联扩展点不存在: " + existing.getExtPointId());
     }
+    ExtensionValidationSupport.assertTenantCodeValid(existing.getTenantCode(), tenantDirectoryPort);
+    ExtensionValidationSupport.assertAppIdValid(existing.getAppId());
     existing.setVersion(StudioVersionSupport.nextVersion(existing.getVersion()));
     extensionRepository.save(existing);
     return existing;
@@ -102,6 +116,12 @@ public class ExtensionCommandApplicationService {
     if (extension.getExtPointId() != null) {
       existing.setExtPointId(extension.getExtPointId());
     }
+    if (extension.getAppId() != null) {
+      existing.assignApp(extension.getAppId());
+    }
+    ExtensionValidationSupport.assertTenantCodeValid(
+        extension.getTenantCode(), tenantDirectoryPort);
+    ExtensionValidationSupport.assertAppIdValid(existing.getAppId());
     existing.setName(extension.getName());
     existing.setDescription(extension.getDescription());
     existing.setClassName(extension.getClassName());

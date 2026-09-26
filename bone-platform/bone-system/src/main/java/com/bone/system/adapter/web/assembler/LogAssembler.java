@@ -8,7 +8,9 @@ import com.bone.system.application.command.CreateLogCommand;
 import com.bone.system.application.query.dto.LogDto;
 import com.bone.system.application.query.qry.LogExportQuery;
 import com.bone.system.application.query.qry.LogPageQuery;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.mapstruct.Mapper;
@@ -39,6 +41,10 @@ public interface LogAssembler {
     qry.setStartTime(parse(req.getStartTime()));
     qry.setEndTime(parse(req.getEndTime()));
     return qry;
+  }
+
+  default Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 
   static LocalDateTime parse(String text) {

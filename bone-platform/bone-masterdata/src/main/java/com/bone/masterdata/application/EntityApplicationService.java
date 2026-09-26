@@ -73,7 +73,8 @@ public class EntityApplicationService {
       name = "UpdateMasterDataEntity",
       description = "更新主数据实体定义",
       inputSchema =
-          "{\"id\": \"long\", \"name\": \"string\", \"description\": \"string\", \"category\": \"string\"}",
+          "{\"id\": \"long\", \"name\": \"string\", \"description\": \"string\", \"category\":"
+              + " \"string\"}",
       outputSchema = "{\"success\": \"boolean\"}",
       idempotent = true,
       cost = 1,
@@ -153,6 +154,48 @@ public class EntityApplicationService {
     entityRepository.deleteById(id);
   }
 
+  /** 调整治理等级（§4.3，G3）：L1 轻量 / L2 标准 / L3 严格，等级推导版本与审批开关。 */
+  @Capability(
+      name = "ChangeGovernanceTier",
+      description = "调整主数据实体治理等级",
+      inputSchema = "{\"id\": \"long\", \"tier\": \"string\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = true,
+      timeout = 15)
+  @Transactional
+  public void changeGovernanceTier(Long id, String tier) {
+    MasterDataEntity entity = entityRepository.findById(id);
+    if (entity == null) {
+      throw NotFoundException.of("主数据实体不存在");
+    }
+    entity.changeGovernanceTier(tier);
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
+  }
+
+  /** 绑定责任归口应用（§3.2，G3）：owningAppId 为空表示平台共享域。 */
+  @Capability(
+      name = "BindOwningApp",
+      description = "绑定主数据实体责任归口应用",
+      inputSchema = "{\"id\": \"long\", \"owningAppId\": \"long|null\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = true,
+      timeout = 15)
+  @Transactional
+  public void bindOwningApp(Long id, Long owningAppId) {
+    MasterDataEntity entity = entityRepository.findById(id);
+    if (entity == null) {
+      throw NotFoundException.of("主数据实体不存在");
+    }
+    entity.bindOwningApp(owningAppId);
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
+  }
+
   /** 从已发布 meta_entity 创建主数据实体（MD-04 · ADR-0002）。原 ConvertFromBusinessEntityHandler，无能力元数据。 */
   @Transactional
   public Long convertFromBusinessEntity(Long metaEntityId) {
@@ -224,6 +267,15 @@ public class EntityApplicationService {
         .createdAt(entity.getCreatedAt())
         .updatedAt(entity.getUpdatedAt())
         .fieldCount(fieldCount)
+        .entityCode(entity.getEntityCode())
+        .metaEntityId(entity.getMetaEntityId())
+        .domainCode(entity.getDomainCode())
+        .templateId(entity.getTemplateId())
+        .templateVersion(entity.getTemplateVersion())
+        .owningAppId(entity.getOwningAppId())
+        .governanceTier(entity.getGovernanceTier())
+        .isVersioning(entity.getIsVersioning())
+        .workflowEnabled(entity.getWorkflowEnabled())
         .build();
   }
 }

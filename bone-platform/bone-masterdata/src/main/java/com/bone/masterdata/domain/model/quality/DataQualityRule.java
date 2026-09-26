@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("meta_data_quality_rule")
+@Table("md_quality_rule")
 public class DataQualityRule extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
@@ -67,7 +67,7 @@ public class DataQualityRule extends TenantAggregateRoot<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
-  /** meta_data_quality_rule 无 description 列，API 兼容返回空。 */
+  /** md_quality_rule 无 description 列，API 兼容返回空。 */
   public String getDescription() {
     return null;
   }

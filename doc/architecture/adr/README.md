@@ -45,3 +45,5 @@
 | [0035](./0035-application-layer-keeps-only-application-service.md) | 应用层只保留 ApplicationService — 撤销 ADR-0033 的第三类构件（**已采纳**，含三条结构门禁；存量基线经 ADR-0032 收敛，截至 2026-09-23 已清零 `violations: {}`） |
 | [0036](./0036-domain-model-package-single-standard.md) | domain 分组形态统一为 `domain/model/{聚合}/` — 收敛 E-10 双形态条款（**已采纳**；D1 形态 / D2 值对象子包名已确认，全平台迁移、D5 布局门禁与 D6 生成模板均已实现） |
 | [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已实现**） |
+| [0038](./0038-platform-model-template-and-scope.md) | 平台模型层 — 模板 + 三层归属 + 租户实例化（**已接受 / 已实现最小切片**，2a §G3） |
+| [0039](./0039-release-package-with-approval-and-rollback.md) | 发布包 — 以模块为单元的变更集、审批与回滚（**已接受 · 分批落地**，2a §G4） |

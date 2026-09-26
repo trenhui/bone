@@ -1,12 +1,15 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.core.model.PageResult;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -25,8 +28,12 @@ public class JdbcRuntimeRecordService {
           "deleted",
           "version");
 
+  private static final String META_RUNTIME_VALIDATION_FAILED = "META_RUNTIME_VALIDATION_FAILED";
+  private static final String META_RUNTIME_DUPLICATE = "META_RUNTIME_DUPLICATE";
+
   private final NamedParameterJdbcTemplate jdbc;
   private final RuntimeEntityCatalog catalog;
+  private final Map<String, Set<String>> physicalColumnsCache = new ConcurrentHashMap<>();
 
   public JdbcRuntimeRecordService(NamedParameterJdbcTemplate jdbc, RuntimeEntityCatalog catalog) {
     this.jdbc = Objects.requireNonNull(jdbc);
@@ -95,8 +102,14 @@ public class JdbcRuntimeRecordService {
 
   public Map<String, Object> create(
       String entityCode, long tenantId, Map<String, Object> body, long newId) {
+    return create(entityCode, tenantId, body, newId, null);
+  }
+
+  public Map<String, Object> create(
+      String entityCode, long tenantId, Map<String, Object> body, long newId, String operatorId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     Map<String, Object> payload = filterWritable(entity, body);
+    validateForCreate(entity, tenantId, payload);
     String pk = entity.primaryKeyColumn();
     if (!payload.containsKey(pk)) {
       payload.put(pk, newId);
@@ -107,6 +120,7 @@ public class JdbcRuntimeRecordService {
     if (entityHasColumn(entity, "deleted")) {
       payload.putIfAbsent("deleted", 0);
     }
+    stampAuditColumns(entity, payload, operatorId, true);
 
     List<String> cols = new ArrayList<>(payload.keySet());
     String colList =
@@ -137,9 +151,20 @@ public class JdbcRuntimeRecordService {
       String recordId,
       Map<String, Object> body,
       Integer expectedVersion) {
+    return update(entityCode, tenantId, recordId, body, expectedVersion, null);
+  }
+
+  public Map<String, Object> update(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      Map<String, Object> body,
+      Integer expectedVersion,
+      String operatorId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     Map<String, Object> payload = filterWritable(entity, body);
     payload.remove(entity.primaryKeyColumn());
+    validateForUpdate(entity, tenantId, payload, recordId);
 
     boolean versioned = entityHasColumn(entity, "version");
     if (expectedVersion != null && !versioned) {
@@ -149,6 +174,7 @@ public class JdbcRuntimeRecordService {
     if (payload.isEmpty() && !(versioned && expectedVersion != null)) {
       return getById(entityCode, tenantId, recordId);
     }
+    stampAuditColumns(entity, payload, operatorId, false);
 
     List<String> setParts = new ArrayList<>();
     for (String c : payload.keySet()) {
@@ -221,6 +247,153 @@ public class JdbcRuntimeRecordService {
     if (deleted == 0) {
       throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
     }
+  }
+
+  // ===================== 写入校验（P0-5） =====================
+
+  private void validateForCreate(
+      PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload) {
+    for (RuntimeFieldColumn col : entity.columns()) {
+      if (col.primaryKey()) {
+        continue;
+      }
+      boolean present = payload.containsKey(col.code()) && payload.get(col.code()) != null;
+      if (col.required() && !present) {
+        throw new RuntimeRecordException(
+            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填");
+      }
+      if (present) {
+        validateType(col, payload.get(col.code()));
+        if (col.unique()) {
+          assertUnique(entity, tenantId, col.code(), payload.get(col.code()), null);
+        }
+      }
+    }
+  }
+
+  private void validateForUpdate(
+      PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload, String recordId) {
+    for (RuntimeFieldColumn col : entity.columns()) {
+      if (!payload.containsKey(col.code())) {
+        continue;
+      }
+      Object value = payload.get(col.code());
+      if (col.required() && value == null) {
+        throw new RuntimeRecordException(
+            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填，不可置空");
+      }
+      if (value != null) {
+        validateType(col, value);
+        if (col.unique()) {
+          assertUnique(entity, tenantId, col.code(), value, recordId);
+        }
+      }
+    }
+  }
+
+  private void validateType(RuntimeFieldColumn col, Object value) {
+    String type = col.type() == null ? "" : col.type().toUpperCase();
+    if (type.matches("LONG|BIGINT|INT|INTEGER|DECIMAL|DOUBLE|FLOAT|NUMBER")) {
+      if (!(value instanceof Number)) {
+        throw new RuntimeRecordException(
+            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为数值类型");
+      }
+    } else if (type.matches("BOOLEAN|BOOL")) {
+      if (!(value instanceof Boolean)) {
+        throw new RuntimeRecordException(
+            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为布尔类型");
+      }
+    }
+  }
+
+  private void assertUnique(
+      PublishedRuntimeEntity entity,
+      long tenantId,
+      String code,
+      Object value,
+      String excludeRecordId) {
+    String table = quoteTable(entity.physicalTableName());
+    String col = sanitizeIdentifier(code);
+    StringBuilder sql =
+        new StringBuilder("SELECT COUNT(*) FROM ")
+            .append(table)
+            .append(" WHERE `")
+            .append(col)
+            .append("` = :val");
+    MapSqlParameterSource params = new MapSqlParameterSource();
+    params.addValue("val", value);
+    if (entityHasColumn(entity, "tenant_id")) {
+      sql.append(" AND `tenant_id` = :tenantId");
+      params.addValue("tenantId", tenantId);
+    }
+    if (entityHasColumn(entity, "deleted")) {
+      sql.append(" AND `deleted` = 0");
+    }
+    if (excludeRecordId != null) {
+      sql.append(" AND `").append(sanitizeIdentifier(entity.primaryKeyColumn())).append("` <> :pk");
+      params.addValue("pk", parsePkValue(excludeRecordId));
+    }
+    Long count = jdbc.queryForObject(sql.toString(), params, Long.class);
+    if (count != null && count > 0) {
+      throw new RuntimeRecordException(
+          META_RUNTIME_DUPLICATE, "字段「" + code + "」值「" + value + "」已存在（唯一约束）");
+    }
+  }
+
+  // ===================== 操作者审计（P0-2） =====================
+
+  /**
+   * 写入审计列。仅当物理表确实存在对应列时才注入（兼容发布前旧表无审计列的情况，避免 Unknown column 报错）。 物理列存在性通过 {@link
+   * #hasPhysicalColumn} 探测并按表名缓存。
+   */
+  private void stampAuditColumns(
+      PublishedRuntimeEntity entity,
+      Map<String, Object> payload,
+      String operatorId,
+      boolean isCreate) {
+    if (operatorId == null) {
+      return;
+    }
+    String table = entity.physicalTableName();
+    if (hasPhysicalColumn(table, "created_by")) {
+      payload.put("created_by", operatorId);
+    }
+    if (hasPhysicalColumn(table, "updated_by")) {
+      payload.put("updated_by", operatorId);
+    }
+    if (hasPhysicalColumn(table, "updated_at")) {
+      payload.put("updated_at", new Timestamp(System.currentTimeMillis()));
+    }
+    if (isCreate && hasPhysicalColumn(table, "created_at")) {
+      payload.put("created_at", new Timestamp(System.currentTimeMillis()));
+    }
+  }
+
+  private boolean hasPhysicalColumn(String table, String column) {
+    Set<String> cols =
+        physicalColumnsCache.computeIfAbsent(
+            table,
+            t -> {
+              try {
+                List<Map<String, Object>> rows =
+                    jdbc.getJdbcTemplate()
+                        .queryForList(
+                            "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_name = ?",
+                            t);
+                Set<String> set = new LinkedHashSet<>();
+                for (Map<String, Object> row : rows) {
+                  Object name = row.get("COLUMN_NAME");
+                  if (name != null) {
+                    set.add(name.toString().toLowerCase());
+                  }
+                }
+                return set;
+              } catch (Exception ignored) {
+                // 探测失败（如 information_schema 不可达）则视为无审计列，审计降级而非报错
+                return Set.of();
+              }
+            });
+    return cols.contains(column.toLowerCase());
   }
 
   private PublishedRuntimeEntity requireRuntimeEntity(String entityCode, long tenantId) {

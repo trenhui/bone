@@ -24,6 +24,10 @@ export interface Account {
   updatedAt: string;
   deleted: boolean;
   version?: number;
+  /** 归属部门 ID（主部门；跨聚合仅存 ID，不级联部门聚合） */
+  deptId?: number | null;
+  /** 归属部门名称（列表/详情接口回填，仅展示用） */
+  deptName?: string | null;
   roles?: Role[];
   /** 详情 API 返回的绑定角色 ID */
   roleIds?: number[];
@@ -36,6 +40,8 @@ export interface CreateAccountRequest {
   phone?: string;
   realName?: string;
   tenantId?: number;
+  /** 归属部门 ID（必填，账号必须归属一个主部门） */
+  deptId?: number | null;
   roleIds?: number[];
 }
 
@@ -44,6 +50,8 @@ export interface UpdateAccountRequest {
   phone?: string;
   realName?: string;
   status: 0 | 1 | 2;
+  /** 归属部门 ID；null=不变更（沿用原值），必填项不可清空（0 撤销已禁用） */
+  deptId?: number | null;
   roleIds?: number[];
 }
 

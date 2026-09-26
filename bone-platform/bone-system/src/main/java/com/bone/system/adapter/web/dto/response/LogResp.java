@@ -1,6 +1,6 @@
 package com.bone.system.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +17,5 @@ public class LogResp {
   private String serviceName;
   private String content;
   private String traceId;
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 }

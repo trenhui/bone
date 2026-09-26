@@ -1,24 +1,30 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   App as AntApp,
-  Alert,
   Button,
-  Card,
-  Col,
   Form,
   Input,
   Modal,
   Popconfirm,
-  Row,
   Space,
+  Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { appApi, type BoneApplication, type CreateAppReq, type UpdateAppReq } from '../services/appApi';
+import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const PERM_COLORS: Record<string, string> = { admin: 'red', developer: 'blue', viewer: 'green' };
 const PERM_LABELS: Record<string, string> = { admin: '管理员', developer: '开发者', viewer: '只读' };
@@ -26,13 +32,19 @@ const PERM_LABELS: Record<string, string> = { admin: '管理员', developer: '�
 /**
  * 应用管理（IAM 限界上下文）。
  *
- * 应用(App)聚合的管理入口：新建/编辑/删除。应用同时是元数据建模的归属维度，
- * 建模链路（应用 → 模块 → 实体 → 字段）见 bone-metadata-app「建模工作台」；
- * 应用与模块的后端真源在 bone-iam `AppController`（写操作需 `iam:apps:write`）。
+ * 应用(App)聚合的管理入口：服务端分页列表 + 关键词搜索 + 新建/编辑/删除。
+ * 应用同时是元数据建模的归属维度，建模链路（应用 → 模块 → 实体 → 字段）
+ * 见 bone-metadata-app「建模工作台」；应用与模块的后端真源在 bone-iam
+ * `AppController`（写操作需 `iam:apps:write`）。
  */
 const ApplicationManagement: React.FC = () => {
   const { message } = AntApp.useApp();
   const [apps, setApps] = useState<BoneApplication[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editApp, setEditApp] = useState<BoneApplication | null>(null);
@@ -42,20 +54,36 @@ const ApplicationManagement: React.FC = () => {
   const fetchApps = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await appApi.listMine({ pageNum: 1, pageSize: 50 });
+      const res = await appApi.listMine({ page, size: pageSize, keyword: debouncedKeyword || undefined });
       if (res.code === 200) {
-        setApps(res.data.list ?? []);
+        const { records, total: newTotal } = unwrapPage(res.data);
+        // 删除后当前页可能越界：回退到最后一页
+        if (records.length === 0 && newTotal > 0 && page > 1) {
+          setPage(Math.max(1, Math.ceil(newTotal / pageSize)));
+          return;
+        }
+        setApps(records);
+        setTotal(newTotal);
       }
     } catch {
       message.error('获取应用列表失败');
     } finally {
       setLoading(false);
     }
-  }, [message]);
+  }, [page, pageSize, debouncedKeyword, message]);
 
   useEffect(() => {
     fetchApps();
   }, [fetchApps]);
+
+  // 搜索防抖：输入停止 300ms 后才触发请求
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [keyword]);
 
   const openCreate = () => {
     setEditApp(null);
@@ -98,12 +126,80 @@ const ApplicationManagement: React.FC = () => {
       const res = await appApi.delete(id);
       if (res.code === 200) {
         message.success('已删除');
-        setApps((prev) => prev.filter((a) => a.id !== id));
+        fetchApps();
       }
     } catch {
       message.error('删除失败');
     }
   };
+
+  const columns: ColumnsType<BoneApplication> = [
+    {
+      title: '应用',
+      key: 'app',
+      width: 240,
+      render: (_, app) => (
+        <Space>
+          <span style={{ fontSize: 24, lineHeight: 1 }}>{app.icon || '📱'}</span>
+          <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
+            <Text strong ellipsis style={{ maxWidth: 160 }}>
+              {app.name}
+            </Text>
+            <Text code style={{ fontSize: 12 }}>
+              {app.code}
+            </Text>
+          </Space>
+        </Space>
+      ),
+    },
+    {
+      title: '描述',
+      key: 'description',
+      ellipsis: true,
+      render: (_, app) => app.description || <Text type="secondary">暂无描述</Text>,
+    },
+    {
+      title: '我的角色',
+      key: 'myRole',
+      width: 100,
+      render: (_, app) =>
+        app.myRole ? <Tag color={PERM_COLORS[app.myRole]}>{PERM_LABELS[app.myRole] ?? app.myRole}</Tag> : '-',
+    },
+    {
+      title: '模块 / 实体',
+      key: 'counts',
+      width: 130,
+      render: (_, app) => (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {app.moduleCount} 模块 · {app.entityCount} 实体
+        </Text>
+      ),
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 170,
+      render: (v: string) => v || '-',
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 100,
+      render: (_, app) => (
+        <Space size={2}>
+          <Tooltip title="编辑">
+            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(app)} />
+          </Tooltip>
+          <Popconfirm title="确认删除该应用？" onConfirm={() => handleDelete(app.id)}>
+            <Tooltip title="删除">
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <ModulePage
@@ -111,9 +207,15 @@ const ApplicationManagement: React.FC = () => {
       description="应用的创建与维护；应用作为元数据建模与授权的归属维度，建模入口见「元数据管理 → 建模工作台」"
       extra={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchApps} loading={loading}>
-            刷新
-          </Button>
+          <Input
+            allowClear
+            placeholder="搜索应用名称或编码"
+            prefix={<SearchOutlined />}
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 240 }}
+          />
+          <Button icon={<ReloadOutlined />} onClick={fetchApps} title="刷新" />
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             新建应用
           </Button>
@@ -121,55 +223,23 @@ const ApplicationManagement: React.FC = () => {
       }
       card={false}
     >
-      {apps.length === 0 && !loading ? (
-        <Alert type="info" showIcon message="暂无应用，点击右上角「新建应用」创建" />
-      ) : (
-        <Row gutter={[16, 16]}>
-          {apps.map((app) => (
-            <Col xs={24} sm={12} lg={8} xl={6} key={app.id}>
-              <Card
-                hoverable
-                loading={loading && apps.length === 0}
-                actions={[
-                  <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(app)}>
-                    编辑
-                  </Button>,
-                  <Popconfirm key="del" title="确认删除该应用？" onConfirm={() => handleDelete(app.id)}>
-                    <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                      删除
-                    </Button>
-                  </Popconfirm>,
-                ]}
-              >
-                <Card.Meta
-                  avatar={<span style={{ fontSize: 36 }}>{app.icon || '📱'}</span>}
-                  title={
-                    <Space>
-                      {app.name}
-                      <Text code style={{ fontSize: 12 }}>
-                        {app.code}
-                      </Text>
-                    </Space>
-                  }
-                  description={
-                    <>
-                      <Paragraph type="secondary" ellipsis style={{ marginBottom: 8 }}>
-                        {app.description || '暂无描述'}
-                      </Paragraph>
-                      {app.myRole && <Tag color={PERM_COLORS[app.myRole]}>{PERM_LABELS[app.myRole]}</Tag>}
-                      <div style={{ marginTop: 8 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {app.moduleCount} 模块 · {app.entityCount} 实体
-                        </Text>
-                      </div>
-                    </>
-                  }
-                />
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
+      <Table
+        columns={columns}
+        dataSource={apps}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          showTotal: (t) => `共 ${t} 个应用`,
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps) setPageSize(ps);
+          },
+        }}
+      />
 
       <Modal
         title={editApp ? '编辑应用' : '新建应用'}

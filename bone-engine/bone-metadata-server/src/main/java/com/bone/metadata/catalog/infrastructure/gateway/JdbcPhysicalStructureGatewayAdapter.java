@@ -8,6 +8,7 @@ import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +30,23 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
 
   private static final Pattern IDENT = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$");
 
-  /** 物理表保留列：清列操作一律不得触碰。 */
+  /**
+   * 物理表保留列：清列操作一律不得触碰。
+   *
+   * <p>除主键与多租户系统列外，还包含 {@code buildCreateTable} 自带的审计列（created_at / updated_at / created_by /
+   * updated_by）。这些列由平台托管、从不出现在 {@code meta_field} 中，若不计入保留列，「清理漂移列」会把它们当成孤儿列 DROP 掉——
+   * 表现为一次清理后运行期写审计字段直接报错（且历史审计数据不可恢复）。保留列同时禁止显式删除。
+   */
   private static final Set<String> RESERVED_COLUMNS =
-      Set.of("id", "tenant_id", "version", "deleted");
+      Set.of(
+          "id",
+          "tenant_id",
+          "version",
+          "deleted",
+          "created_at",
+          "updated_at",
+          "created_by",
+          "updated_by");
 
   private final JdbcTemplate jdbcTemplate;
   private final MetaEntityRepository metaEntityRepository;
@@ -82,6 +97,78 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
       }
     }
     return toPlan(entity.getCode(), table, statements, executed, !exists, execute);
+  }
+
+  @Override
+  public void validateForPublish(long tenantId, String entityCode) {
+    MetaEntity entity = requireEntity(tenantId, entityCode);
+    String table = requireIdentifier(entity.getTableName(), "tableName");
+    if (!tableExists(table)) {
+      return; // 缺表由 align 创建，无需拦截
+    }
+    Set<String> existing = readExistingColumns(table);
+    Map<String, String> existingTypes = readExistingColumnTypes(table);
+    List<String> issues = new ArrayList<>();
+    for (MetaField field :
+        metaFieldRepository.where(MetaField::getEntityId).eq(entity.getId()).list()) {
+      if (Boolean.TRUE.equals(field.getDeleted())) {
+        continue;
+      }
+      String col = requireIdentifier(field.getCode(), "field.code");
+      if (!existing.contains(col)) {
+        continue; // 缺列由 align 补齐，不拦截
+      }
+      String dbType = existingTypes.get(col.toLowerCase());
+      if (dbType != null && !isTypeCompatible(field.getType(), dbType)) {
+        issues.add("字段 " + col + " 模型类型 " + field.getType() + " 与物理列类型 " + dbType + " 不兼容");
+      }
+    }
+    if (!issues.isEmpty()) {
+      throw new DomainException("物理表结构存在类型漂移，禁止发布（请先通过结构治理修正）：\n" + String.join("；\n", issues));
+    }
+  }
+
+  private Map<String, String> readExistingColumnTypes(String table) {
+    List<Map<String, Object>> rows =
+        jdbcTemplate.queryForList(
+            "SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns "
+                + "WHERE table_schema = DATABASE() AND table_name = ?",
+            table);
+    Map<String, String> map = new LinkedHashMap<>();
+    for (Map<String, Object> row : rows) {
+      Object name = row.get("COLUMN_NAME");
+      Object type = row.get("DATA_TYPE");
+      if (name != null && type != null) {
+        map.put(name.toString().toLowerCase(), type.toString().toUpperCase());
+      }
+    }
+    return map;
+  }
+
+  /** 类型兼容判定：同大类（数值/字符串/时间/布尔）视为兼容；未知类型不拦截。 */
+  private static boolean isTypeCompatible(String modelType, String dbType) {
+    int mc = typeCategory(modelType);
+    int dc = typeCategory(dbType);
+    if (mc == 0 || dc == 0) {
+      return true;
+    }
+    if (mc == dc) {
+      return true;
+    }
+    // 数值 / 布尔 / TINYINT 互相兼容（如模型 BOOLEAN ↔ 物理 TINYINT）
+    boolean mNum = mc == 1 || mc == 4;
+    boolean dNum = dc == 1 || dc == 4;
+    return mNum && dNum;
+  }
+
+  private static int typeCategory(String type) {
+    return switch (type == null ? "" : type.toUpperCase()) {
+      case "BIGINT", "INT", "INTEGER", "DECIMAL", "DOUBLE", "FLOAT", "NUMBER", "LONG" -> 1;
+      case "VARCHAR", "CHAR", "TEXT", "JSON", "STRING" -> 2;
+      case "DATE", "DATETIME", "TIMESTAMP", "TIME" -> 3;
+      case "TINYINT", "BOOLEAN", "BOOL" -> 4;
+      default -> 0;
+    };
   }
 
   @Override
@@ -215,6 +302,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     }
     sb.append(", `version` INT NOT NULL DEFAULT 0");
     sb.append(", `deleted` SMALLINT NOT NULL DEFAULT 0");
+    sb.append(", `created_at` DATETIME");
+    sb.append(", `updated_at` DATETIME");
+    sb.append(", `created_by` VARCHAR(64)");
+    sb.append(", `updated_by` VARCHAR(64)");
     if (!hasIdField) {
       sb.append(", PRIMARY KEY (`id`)");
     }

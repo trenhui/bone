@@ -153,10 +153,13 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `COMMON_VALIDATION_FAILED` | 400 | 参数校验失败 |
+| `COMMON_VALIDATION_FAILED` | 400 | 参数校验失败（含字段级明细，见 `ProblemDetail.errors`） |
+| `COMMON_MALFORMED_REQUEST` | 400 | 请求体无法解析（JSON 格式错误 / 类型不匹配） |
 | `COMMON_UNAUTHORIZED` | 401 | 未认证 |
 | `COMMON_FORBIDDEN` | 403 | 无权限 |
 | `COMMON_NOT_FOUND` | 404 | 资源不存在 |
+| `COMMON_METHOD_NOT_ALLOWED` | 405 | HTTP 方法不被支持 |
+| `COMMON_NOT_IMPLEMENTED` | 501 | 能力未实现（连接器/适配器未实现），须与 500 区分 |
 | `COMMON_CONFLICT` | 409 | 版本/状态冲突 |
 | `COMMON_IDEMPOTENCY_CONFLICT` | 409 | 幂等键冲突且 body 不一致 |
 | `COMMON_RATE_LIMITED` | 429 | 限流 |
@@ -181,9 +184,11 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在（含跨租户不可见） |
 | `IAM_ROLE_ID_REQUIRED` | 400 | 授予角色权限时未提供角色 id |
 | `IAM_PERMISSION_NOT_FOUND` | 404 | 权限不存在（含跨租户不可见） |
+| `IAM_PERMISSION_PLATFORM_ONLY` | 403 | 平台域权限码（resource_path 为 tenants/permissions/sessions）不可授予租户角色——防租户自授平台能力 |
 | `IAM_SESSION_NOT_FOUND` | 404 | 会话不存在（含跨租户不可见，与「参数缺失」分属不同语义） |
 | `IAM_SESSION_ID_REQUIRED` | 400 | 会话 id 未提供 |
 | `IAM_DEPT_NOT_FOUND` | 404 | 部门不存在（含跨租户不可见） |
+| `IAM_DEPT_REQUIRED` | 400 | 归属部门为必填项（创建账号必须指定主部门；编辑时不允许清空归属部门） |
 | `IAM_MENU_NOT_FOUND` | 404 | 菜单不存在（含跨租户不可见） |
 | `IAM_AUDIT_SETTINGS_REQUIRED` | 400 | 审计设置未提供或为空 |
 | `IAM_PROFILE_OWNERSHIP_DENIED` | 401 | 请求主体与目标账号不一致（越权访问他人 profile） |
@@ -227,28 +232,14 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `META_ENTITY_NOT_FOUND` | 404 | 实体不存在 |
-| `META_ENTITY_PUBLISHED` | 409 | 实体已发布不可删 |
-| `META_FIELD_NOT_FOUND` | 404 | 字段不存在 |
-| `META_FIELD_NAME_DUPLICATE` | 409 | 字段名重复 |
-| `META_GENERATE_TASK_FAILED` | 500 | 代码生成任务失败（**过渡**；新接口优先 `GEN_TASK_FAILED`） |
-| `META_TEMPLATE_INVALID` | 400 | 模板语法错误（**过渡**；新接口优先 `GEN_TEMPLATE_INVALID`） |
-| `META_RUNTIME_ENTITY_NOT_FOUND` | 400 | 未找到已发布的 RUNTIME 实体 |
-| `META_RUNTIME_RECORD_NOT_FOUND` | 404 | 运行时记录不存在 |
-| `META_RUNTIME_INVALID_IDENTIFIER` | 400 | 非法表名/列名 |
 
 ### MD_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `MD_ENTITY_NOT_FOUND` | 404 | 主数据实体不存在 |
-| `MD_RECORD_NOT_FOUND` | 404 | 记录不存在 |
-| `MD_RECORD_DUPLICATE` | 409 | 业务键重复 |
-| `MD_QUALITY_CHECK_FAILED` | 422 | 质量规则不通过 |
-| `MD_RECORD_NOT_PUBLISHED` | 409 | 记录未发布 |
-| `MD_QUALITY_REPORT_NOT_IMPLEMENTED` | 501 | 质量报告查询未实现 |
-| `MD_RECORD_EXPORT_NOT_IMPLEMENTED` | 501 | 主数据记录导出未实现 |
 | `MD_META_ENTITY_NOT_FOUND` | 404 | 元数据实体不存在 |
+| `MD_REF_PLATFORM_SET_IMMUTABLE` | 403 | 租户尝试写平台值域（建/改/归档）——值域为平台域 artifact，租户只读 |
+| `MD_REF_PLATFORM_VALUE_IMMUTABLE` | 403 | 租户尝试修改/停用平台值——租户只能操作自己的私有扩展值 |
 | `MD_META_ENTITY_NOT_PUBLISHED` | 422 | 仅已发布元数据实体可转换为主数据 |
 | `MD_ENTITY_ID_REQUIRED` | 400 | 主数据实体ID必填（创建质量规则等） |
 | `MD_ENTITY_NAME_DUPLICATE` | 409 | 主数据实体名称已存在 |
@@ -263,53 +254,35 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_RULE_SEVERITY_INVALID` | 400 | 质量规则严重级别非法（可选 LOW/MEDIUM/HIGH/CRITICAL） |
 | `MD_RULE_EXPRESSION_INVALID` | 400 | 质量规则表达式无法求值（缺 field/pattern、min-max 非数值等） |
 | `MD_RECORD_DATA_PARSE_FAILED` | 500 | 主数据记录 data 不是合法 JSON |
+| `MD_TEMPLATE_DOMAIN_DUPLICATE` | 409 | 领域模板编码已存在 |
+| `MD_TEMPLATE_FIELD_SCHEMA_INVALID` | 400 | 模板字段结构非法 |
+| `MD_TEMPLATE_NOT_FOUND` | 404 | 领域模板不存在 |
+| `MD_TEMPLATE_NOT_PUBLISHED` | 409 | 领域模板未发布 |
+| `MD_TEMPLATE_VERSION_DUPLICATE` | 409 | 模板版本已存在 |
 
 ### EXT_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `EXT_RESOURCE_NOT_FOUND` | 404 | Studio 资源不存在（扩展点/插件等通用） |
-| `EXT_POINT_NOT_FOUND` | 404 | 扩展点不存在 |
 | `EXT_STATE_INVALID` | 409 | 扩展/插件状态非法 |
-| `EXT_POINT_DISABLED` | 409 | 扩展点已禁用 |
-| `EXT_PLUGIN_NOT_FOUND` | 404 | 插件不存在 |
-| `EXT_PLUGIN_NOT_DEPLOYED` | 409 | 插件未部署 |
-| `EXT_PLUGIN_ALREADY_DEPLOYED` | 409 | 插件已部署 |
-| `EXT_PLUGIN_DEPLOY_FAILED` | 500 | 部署失败 |
-| `EXT_PLUGIN_VERSION_NOT_FOUND` | 404 | 版本不存在 |
-| `EXT_ARTIFACT_TOO_LARGE` | 400 | 制品超过大小限制 |
-| `EXT_ARTIFACT_CHECKSUM_MISMATCH` | 400 | 校验和不匹配 |
-| `EXT_SANDBOX_TIMEOUT` | 504 | 沙箱执行超时 |
 
 ### INT_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `INT_CONNECTOR_NOT_FOUND` | 404 | 连接器不存在 |
-| `INT_CONNECTOR_NOT_IMPLEMENTED` | 501 | 连接器类型尚未实现（如 REST） |
-| `INT_CONNECTOR_TEST_FAILED` | 502 | 连接测试失败 |
-| `INT_FLOW_NOT_FOUND` | 404 | 流程不存在 |
-| `INT_FLOW_INVALID_STATE` | 409 | 流程状态不允许该操作 |
-| `INT_EXECUTION_NOT_FOUND` | 404 | 执行记录不存在 |
 
 ### SYS_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `SYS_CONFIG_NOT_FOUND` | 404 | 配置项不存在 |
-| `SYS_CONFIG_LOCKED` | 409 | 配置项锁定 |
 | `SYS_ALERT_RULE_NOT_FOUND` | 404 | 告警规则不存在 |
 
 ### GEN_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `GEN_DATASOURCE_NOT_FOUND` | 404 | 数据源不存在 |
-| `GEN_DATASOURCE_CONNECTION_FAILED` | 502 | 数据源连接失败 |
-| `GEN_TEMPLATE_NOT_FOUND` | 404 | 模板不存在 |
-| `GEN_TEMPLATE_INVALID` | 400 | 模板校验失败 |
-| `GEN_TASK_NOT_FOUND` | 404 | 生成任务不存在 |
-| `GEN_TASK_FAILED` | 500 | 生成任务失败 |
 
 ### BP_
 

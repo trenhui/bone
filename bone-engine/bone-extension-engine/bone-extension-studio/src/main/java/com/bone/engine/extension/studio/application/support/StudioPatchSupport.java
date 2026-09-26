@@ -41,6 +41,10 @@ public final class StudioPatchSupport {
     if (patch.containsKey("extPointId")) {
       target.setExtPointId(asLong(patch.get("extPointId"), "extPointId"));
     }
+    if (patch.containsKey("appId")) {
+      Object appId = patch.get("appId");
+      target.assignApp(appId == null ? null : asLong(appId, "appId"));
+    }
     if (patch.containsKey("name")) {
       target.setName(requiredString(patch.get("name"), "name"));
     }

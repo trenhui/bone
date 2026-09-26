@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import lombok.Data;
 
@@ -17,6 +17,6 @@ public class MeResp {
   private Boolean isAdmin;
   private Long tenantId;
   private List<String> scopes;
-  private LocalDateTime lastLoginAt;
-  private LocalDateTime passwordUpdatedAt;
+  private Instant lastLoginAt;
+  private Instant passwordUpdatedAt;
 }

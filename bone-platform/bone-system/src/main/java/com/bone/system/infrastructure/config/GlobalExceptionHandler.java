@@ -1,8 +1,11 @@
 package com.bone.system.infrastructure.config;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.ProblemDetail;
+import com.bone.core.model.ProblemDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * 动态取状态，口径与 bone-web {@code bizExceptionHandler} 一致：400–599 直用，否则兜底 400。
  *
  * <p>其余分支映射的是「异常类型 → 唯一固定状态」（403/404/401/400/500），不存在对齐问题， 保留 {@code @ResponseStatus}。
+ *
+ * <p><b>i18n 改造（方案 §6.2 / §12.3）</b>：此前本类除 {@code BizException} 外都返回 {@code ApiResponse<Void>}
+ * （{@code data} 为 {@code null}），且部分 message 是英文硬编码（{@code "Forbidden"} / {@code "Internal server
+ * error"}） ——既拿不到 errorCode，也违反「后端 message 始终为中文 fallback」契约。现统一产出 {@link ProblemDetail}： 基础设施语义复用
+ * {@link CommonErrorCodes}，message 改为中文。
  */
 @Slf4j
 @RestControllerAdvice
@@ -32,16 +40,17 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(DomainException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public ApiResponse<Void> handleDomainException(DomainException e) {
+  public ApiResponse<ProblemDetail> handleDomainException(DomainException e) {
     log.warn("Domain exception: {}", e.getMessage());
-    return ApiResponse.error(400, e.getMessage());
+    return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, e.getMessage());
   }
 
   @ExceptionHandler(BizException.class)
-  public ResponseEntity<ApiResponse<Void>> handleBizException(BizException e) {
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleBizException(BizException e) {
     int code = e.getCode() > 0 ? e.getCode() : 400;
     log.warn("Biz exception [{}]: {}", code, e.getMessage());
-    return ResponseEntity.status(toHttpStatus(code)).body(ApiResponse.error(code, e.getMessage()));
+    int status = toHttpStatus(code);
+    return ResponseEntity.status(status).body(errorBody(status, e.getErrorCode(), e.getMessage()));
   }
 
   /** 与 bone-web 同一口径：{@code code} 本身是合法 HTTP 状态（400–599）则直用，否则兜底 400。 */
@@ -55,9 +64,9 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(AccessDeniedException.class)
   @ResponseStatus(HttpStatus.FORBIDDEN)
-  public ApiResponse<Void> handleAccessDeniedException(AccessDeniedException e) {
+  public ApiResponse<ProblemDetail> handleAccessDeniedException(AccessDeniedException e) {
     log.warn("Access denied: {}", e.getMessage());
-    return ApiResponse.error(403, "Forbidden");
+    return errorBody(403, CommonErrorCodes.FORBIDDEN, "无权限访问该资源");
   }
 
   /**
@@ -69,9 +78,9 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(NoResourceFoundException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  public ApiResponse<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+  public ApiResponse<ProblemDetail> handleNoResourceFoundException(NoResourceFoundException e) {
     log.warn("No resource found: {}", e.getResourcePath());
-    return ApiResponse.error(404, "请求地址不存在: " + e.getResourcePath());
+    return errorBody(404, CommonErrorCodes.NOT_FOUND, "请求地址不存在: " + e.getResourcePath());
   }
 
   /**
@@ -81,35 +90,40 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
   @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-  public ApiResponse<Void> handleMethodNotSupportedException(
+  public ApiResponse<ProblemDetail> handleMethodNotSupportedException(
       HttpRequestMethodNotSupportedException e) {
     log.warn("Method not allowed: {} ({})", e.getMethod(), e.getMessage());
-    return ApiResponse.error(405, "请求方法不被支持: " + e.getMethod());
+    return errorBody(405, CommonErrorCodes.METHOD_NOT_ALLOWED, "请求方法不被支持: " + e.getMethod());
   }
 
   /** 认证失败 → 401（Spring Security 通常在 filter 层就处理，留兜底）。 */
   @ExceptionHandler(AuthenticationException.class)
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
-  public ApiResponse<Void> handleAuthenticationException(AuthenticationException e) {
+  public ApiResponse<ProblemDetail> handleAuthenticationException(AuthenticationException e) {
     log.warn("Authentication failed: {}", e.getMessage());
-    return ApiResponse.error(401, "Unauthorized");
+    return errorBody(401, CommonErrorCodes.UNAUTHORIZED, "未认证或登录已过期");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public ApiResponse<Void> handleValidationException(MethodArgumentNotValidException e) {
+  public ApiResponse<ProblemDetail> handleValidationException(MethodArgumentNotValidException e) {
     String message =
         e.getBindingResult().getFieldErrors().stream()
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .findFirst()
-            .orElse("Validation failed");
-    return ApiResponse.error(400, message);
+            .orElse("参数校验失败");
+    return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, message);
   }
 
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  public ApiResponse<Void> handleException(Exception e) {
+  public ApiResponse<ProblemDetail> handleException(Exception e) {
     log.error("Unexpected exception", e);
-    return ApiResponse.error(500, "Internal server error");
+    return errorBody(500, CommonErrorCodes.INTERNAL_ERROR, "系统内部错误");
+  }
+
+  private static ApiResponse<ProblemDetail> errorBody(
+      int status, String errorCode, String message) {
+    return ApiResponse.error(status, message, ProblemDetails.of(errorCode, status, message));
   }
 }

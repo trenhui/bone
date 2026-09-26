@@ -38,10 +38,18 @@ TENANT_BASES = ("TenantAggregateRoot", "TenantAbstractEntity")
 # 实体自己声明 tenantId 字段的形态（SDK 按字段名判定，与访问修饰符无关）。
 TENANT_FIELD = re.compile(r"\btenantId\s*[;=]")
 TABLE_ANNOTATION = re.compile(r'@Table\(\s*"([^"]+)"')
+# 任何处于"注解位置"的 @Table（行首，google-java-format 保证注解独立成行）——用于检测
+# 无法解析的注解形态，防正则静默漏判（方案 §11.3 假设 1）。行首限定可排除 javadoc 正文
+# 与字符串字面量里出现的 "@Table"（如 TableMetadataResolver 的异常文案）。
+ANY_TABLE_ANNOTATION = re.compile(r"^[ \t]*@Table\b", re.M)
 CREATE_TABLE = re.compile(
     r"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?`?(\w+)`?\s*\((.*?)\n\)\s*[^;]*;", re.S | re.I
 )
 TENANT_COLUMN = re.compile(r"^\s*`?tenant_id`?\s", re.M)
+# 剥离块注释（含 javadoc）与行注释后再做 @Table 判定：SDK 源码的 javadoc 里会提到 @Table
+# （如 Repository/SqlBuilder 的用法说明），不剥离会把"注释里提到"误判成"无法解析的注解"。
+COMMENT_BLOCK = re.compile(r"/\*.*?\*/", re.S)
+COMMENT_LINE = re.compile(r"//[^\n]*")
 SCAN_ROOTS = ("bone-platform", "bone-engine", "bone-framework", "bone-blueprint", "bone-sdk")
 SKIP_DIRS = {"target", "node_modules", ".git", "build", "dist"}
 
@@ -55,9 +63,15 @@ def parse_tenant_tables() -> set[str]:
     }
 
 
-def parse_entities() -> dict[str, dict]:
-    """返回 {表名: {entity, path, declaresTenant}}。"""
-    entities: dict[str, dict] = {}
+def parse_entities() -> tuple[dict[str, list[dict]], list[str]]:
+    """返回 ({表名: [该表全部 @Table 实体映射]}, 无法解析的 @Table 文件清单)。
+
+    2026-09-26 修复 R7 假阴性：同一张表有多份 @Table 映射时**全部保留**参与判定
+    （旧实现覆盖式收集只留最后扫到的一份，`meta_field` 4 份映射中仅 PlatformMetaField
+    未声明，缺口曾因扫描顺序碰巧暴露/消失）。
+    """
+    entities: dict[str, list[dict]] = {}
+    unparsed: list[str] = []
     for root in SCAN_ROOTS:
         base = REPO / root
         if not base.is_dir():
@@ -66,25 +80,42 @@ def parse_entities() -> dict[str, dict]:
             if SKIP_DIRS & set(java.parts) or "/src/main/java/" not in java.as_posix():
                 continue
             text = java.read_text(encoding="utf-8", errors="ignore")
-            table = TABLE_ANNOTATION.search(text)
+            code = COMMENT_LINE.sub("", COMMENT_BLOCK.sub("", text))
+            if not ANY_TABLE_ANNOTATION.search(code):
+                continue
+            table = TABLE_ANNOTATION.search(code)
             if not table:
+                # 有 @Table 但取不出表名（如 @Table(value=...)、裸 @Table）——报错而非跳过。
+                unparsed.append(java.relative_to(REPO).as_posix())
                 continue
             declares = any(b in text for b in TENANT_BASES) or bool(TENANT_FIELD.search(text))
-            entities[table.group(1)] = {
-                "entity": java.stem,
-                "path": java.relative_to(REPO).as_posix(),
-                "declaresTenant": declares,
-            }
-    return entities
+            entities.setdefault(table.group(1), []).append(
+                {
+                    "entity": java.stem,
+                    "path": java.relative_to(REPO).as_posix(),
+                    "declaresTenant": declares,
+                }
+            )
+    return entities, unparsed
 
 
 def find_gaps() -> dict[str, dict]:
-    entities = parse_entities()
-    return {
-        table: meta
-        for table, meta in sorted(entities.items())
-        if table in parse_tenant_tables() and not meta["declaresTenant"]
-    }
+    """表级缺口：任一映射未声明租户即命中（输出全部映射清单便于定位）。"""
+    entities, _ = parse_entities()
+    gaps: dict[str, dict] = {}
+    for table, mappings in sorted(entities.items()):
+        if table not in parse_tenant_tables():
+            continue
+        undeclared = [m for m in mappings if not m["declaresTenant"]]
+        if undeclared:
+            gaps[table] = {
+                "undeclared": undeclared,
+                "mappings": mappings,
+                # 兼容旧字段：单一未声明映射时取其 entity/path，多份时取第一份
+                "entity": undeclared[0]["entity"],
+                "path": undeclared[0]["path"],
+            }
+    return gaps
 
 
 def load_baseline() -> dict:
@@ -126,6 +157,14 @@ def main() -> int:
         return 1
 
     gaps = find_gaps()
+    _, unparsed = parse_entities()
+
+    if unparsed:
+        print("租户表 ↔ 实体声明检查失败：发现无法解析的 @Table 形态（判据按 @Table(\"<name>\") 取表名，")
+        print("出现新形态会静默漏判，必须先扩展判据或修正写法——见多租户方案设计 §11.3 假设 1）：")
+        for p in unparsed:
+            print("  - {}".format(p))
+        return 1
 
     if args.baseline:
         write_baseline(gaps)
@@ -141,19 +180,26 @@ def main() -> int:
         print("  缺口 {} 张：".format(len(gaps)))
         for table, meta in gaps.items():
             cls = baseline.get(table, {}).get("classification", "NEEDS-CLASSIFICATION")
-            print("    {:<24} {:<22} [{}]".format(table, meta["entity"], cls))
+            print("    {:<24} [{}]".format(table, cls))
+            for m in meta["mappings"]:
+                flag = "已声明" if m["declaresTenant"] else "✗ 未声明"
+                print("      {:<8} {:<24} {}".format(flag, m["entity"], m["path"]))
         print("  说明：缺口意味着该实体的查询不做租户过滤；分类结论写入 {}".format(BASELINE.relative_to(REPO)))
         return 0
 
     baseline = load_baseline()
-    errors = [
-        "租户表 `{}`（实体 {}，{}）未声明租户且不在基线中——DDL 有 tenant_id 而实体不声明，"
-        "该实体的查询不会注入租户条件（Bone-多租户规范 §4）".format(
-            table, meta["entity"], meta["path"]
+    errors = []
+    for table, meta in gaps.items():
+        if table in baseline:
+            continue
+        undeclared = "、".join(m["entity"] for m in meta["undeclared"])
+        errors.append(
+            "租户表 `{}`（未声明租户的映射：{}；{}）未声明租户且不在基线中——DDL 有 tenant_id 而实体不声明，"
+            "该实体的查询不会注入租户条件（Bone-多租户规范 §4）。该表共 {} 份 @Table 映射，任一未声明即命中"
+            "（一表多映射全部判定，2026-09-26 修 R7 假阴性）".format(
+                table, undeclared, meta["path"], len(meta["mappings"])
+            )
         )
-        for table, meta in gaps.items()
-        if table not in baseline
-    ]
     for table in sorted(set(baseline) - set(gaps)):
         print("提示：`{}` 已不在缺口列表中，可从基线移除".format(table))
 

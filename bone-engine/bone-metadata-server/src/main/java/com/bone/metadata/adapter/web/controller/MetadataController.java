@@ -57,7 +57,7 @@ public class MetadataController {
         @ApiResponse(responseCode = "429", description = "请求过于频繁"),
         @ApiResponse(responseCode = "500", description = "服务器内部错误")
       })
-  @PreAuthorize("hasAnyAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:runtime:read', 'metadata:read')")
   public com.bone.core.model.ApiResponse<List<FieldMetadata>> searchFields(
       @Parameter(
               description = "查询条件实体",
@@ -86,7 +86,7 @@ public class MetadataController {
         @ApiResponse(responseCode = "400", description = "请求参数无效"),
         @ApiResponse(responseCode = "404", description = "未找到匹配字段")
       })
-  @PreAuthorize("hasAnyAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:runtime:read', 'metadata:read')")
   public com.bone.core.model.ApiResponse<List<FieldMetadata>> searchFieldsByNames(
       @Parameter(
               description = "查询条件实体",
@@ -121,7 +121,7 @@ public class MetadataController {
         @ApiResponse(responseCode = "422", description = "字段验证失败"),
         @ApiResponse(responseCode = "500", description = "服务器内部错误")
       })
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
   public ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>>
       allocateAndPersistFields(
           @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,

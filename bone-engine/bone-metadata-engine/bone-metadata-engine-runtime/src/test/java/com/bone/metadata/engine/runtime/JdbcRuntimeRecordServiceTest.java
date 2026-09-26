@@ -39,9 +39,9 @@ class JdbcRuntimeRecordServiceTest {
                   "id",
                   tenantId,
                   List.of(
-                      new RuntimeFieldColumn("id", true, true),
-                      new RuntimeFieldColumn("order_no", true, false),
-                      new RuntimeFieldColumn("amount", false, false))));
+                      new RuntimeFieldColumn("id", "LONG", true, false, true),
+                      new RuntimeFieldColumn("order_no", "STRING", true, true, false),
+                      new RuntimeFieldColumn("amount", "DOUBLE", false, false, false))));
         };
     service = new JdbcRuntimeRecordService(jdbc, catalog);
   }
@@ -54,6 +54,21 @@ class JdbcRuntimeRecordServiceTest {
 
     Map<String, Object> loaded = service.getById("demo_order", 1L, "1001");
     assertEquals("O-1", loaded.get("order_no"));
+  }
+
+  @Test
+  void shouldRejectMissingRequiredField() {
+    assertThrows(
+        RuntimeRecordException.class,
+        () -> service.create("demo_order", 1L, Map.of("amount", 5), 2001L));
+  }
+
+  @Test
+  void shouldRejectDuplicateUniqueField() {
+    service.create("demo_order", 1L, Map.of("order_no", "DUP-1", "amount", 1), 2002L);
+    assertThrows(
+        RuntimeRecordException.class,
+        () -> service.create("demo_order", 1L, Map.of("order_no", "DUP-1", "amount", 2), 2003L));
   }
 
   @Test

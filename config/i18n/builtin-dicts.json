@@ -1,0 +1,20 @@
+[
+  {
+    "type": "ORDER_STATUS",
+    "codes": ["CREATED", "PAID", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"],
+    "source": "bone-blueprint com.bone.blueprint.domain.model.order.valueobject.OrderStatus",
+    "note": "代码枚举：值域编译期可知，前端语言包是文案真源"
+  },
+  {
+    "type": "PAYMENT_STATUS",
+    "codes": ["PENDING", "PAYING", "SUCCESS", "FAILED", "CLOSED"],
+    "source": "bone-blueprint com.bone.blueprint.domain.model.payment.valueobject.PaymentStatus",
+    "note": "代码枚举：值域编译期可知"
+  },
+  {
+    "type": "PAYMENT_CHANNEL",
+    "codes": ["SIMULATED", "WECHAT", "ALIPAY"],
+    "source": "bone-blueprint com.bone.blueprint.domain.model.payment.valueobject.PaymentChannel",
+    "note": "代码枚举：值域编译期可知"
+  }
+]

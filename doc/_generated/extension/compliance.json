@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:07Z",
+  "generated_at": "2026-09-25T21:17:13Z",
   "module": "extension",
   "as_is": [
     {
@@ -16,8 +16,8 @@
           ]
         },
         "java_noContent": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtPointCommandApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java"
         ]
       }
     },
@@ -27,7 +27,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/StudioErrorCodes.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/IdempotencyConflictException.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
@@ -59,9 +59,7 @@
       "title": "LRO 部署 operationId",
       "status": "as_is",
       "evidence": {
-        "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java"
-        ]
+        "java": []
       }
     },
     {
@@ -69,9 +67,7 @@
       "title": "Idempotency-Key（进程内）",
       "status": "as_is",
       "evidence": {
-        "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java"
-        ]
+        "java": []
       }
     },
     {
@@ -82,8 +78,8 @@
         "java": [
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/StudioHttpSupport.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioVersionSupport.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioVersionSupport.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/OptimisticLockException.java"
         ]
       }
@@ -94,9 +90,9 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtPointCommandApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java"
         ]
       }
     },
@@ -106,9 +102,9 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioAuditSupport.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioLroSupport.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioRequestContextFilter.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
         ]
@@ -130,12 +126,12 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/DeploymentStateApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionCommandApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/PluginDependencyGraphApplicationService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStateMachine.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStatus.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/PluginVersion.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/entity/ExtStudioPluginVersion.java"
         ],
@@ -150,7 +146,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/JarMagicValidator.java"
         ]
       }
     },
@@ -161,7 +157,7 @@
       "evidence": {
         "java": [
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java"
         ]
       }
     },
@@ -195,7 +191,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java"
         ]
@@ -220,8 +216,7 @@
       "evidence": {
         "java": [
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStateMachine.java"
         ]
       }
     },
@@ -231,8 +226,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java"
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java"
         ]
       }
     },
@@ -242,7 +236,6 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java"
         ]

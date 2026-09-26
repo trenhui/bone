@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-25T07:38:42Z",
+  "generated_at": "2026-09-25T21:18:06Z",
   "module": "iam",
   "as_is": [
     {
@@ -90,31 +90,25 @@
         "preauthorize": {
           "files": [
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
+            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AppController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
-            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
-            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
-            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
-            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/TenantController.java"
+            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java"
           ],
           "scopes": [
             "iam:accounts:read",
             "iam:accounts:write",
+            "iam:apps:read",
+            "iam:apps:write",
             "iam:audit:read",
             "iam:audit:write",
             "iam:depts:read",
             "iam:depts:write",
             "iam:menus:read",
             "iam:menus:write",
-            "iam:permissions:read",
-            "iam:permissions:write",
             "iam:roles:read",
-            "iam:roles:write",
-            "iam:sessions:read",
-            "iam:sessions:write",
-            "iam:tenants:read",
-            "iam:tenants:write"
+            "iam:roles:write"
           ]
         }
       }

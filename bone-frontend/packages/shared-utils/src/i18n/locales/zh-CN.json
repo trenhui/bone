@@ -1,0 +1,61 @@
+{
+  "common": {
+    "confirm": "确定",
+    "cancel": "取消",
+    "loading": "加载中…",
+    "empty": "暂无数据"
+  },
+  "errors": {
+    "BP_ORDER_NOT_FOUND": "订单不存在",
+    "BP_ORDER_STATUS_CONFLICT": "当前订单状态不允许该操作",
+    "BP_ORDER_STATUS_INVALID": "订单状态非法",
+    "BP_ORDER_STOCK_INSUFFICIENT": "库存不足",
+    "BP_PAYMENT_NOT_FOUND": "支付单不存在",
+    "BP_PAYMENT_STATUS_CONFLICT": "当前支付单状态不允许该操作",
+    "BP_PAYMENT_SIGNATURE_INVALID": "回调签名校验失败",
+    "BP_PAYMENT_CHANNEL_PREPAY_FAILED": "支付渠道预下单失败",
+    "BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED": "回调来源不在白名单",
+    "COMMON_VALIDATION_FAILED": "参数校验失败：{{errors}}",
+    "COMMON_UNAUTHORIZED": "未登录或登录已过期",
+    "COMMON_FORBIDDEN": "无权限访问该资源",
+    "COMMON_NOT_FOUND": "请求的资源不存在",
+    "COMMON_CONFLICT": "资源冲突",
+    "COMMON_IDEMPOTENCY_CONFLICT": "幂等键重复用于不同的请求体",
+    "COMMON_RATE_LIMITED": "请求过于频繁，请稍后重试",
+    "COMMON_INTERNAL_ERROR": "系统内部错误",
+    "COMMON_METHOD_NOT_ALLOWED": "请求方法不被支持",
+    "COMMON_MALFORMED_REQUEST": "请求体格式错误",
+    "COMMON_NOT_IMPLEMENTED": "能力未实现",
+    "IAM_PERMISSION_PLATFORM_ONLY": "该权限为平台专用，不能在租户内分配",
+    "IAM_DEPT_REQUIRED": "归属部门为必填项（创建账号必须指定主部门；编辑时不允许清空归属部门）",
+    "MD_TEMPLATE_DOMAIN_DUPLICATE": "领域模板编码已存在",
+    "MD_TEMPLATE_FIELD_SCHEMA_INVALID": "模板字段结构非法",
+    "MD_TEMPLATE_NOT_FOUND": "领域模板不存在",
+    "MD_TEMPLATE_NOT_PUBLISHED": "领域模板未发布",
+    "MD_TEMPLATE_VERSION_DUPLICATE": "模板版本已存在",
+    "MD_REF_PLATFORM_SET_IMMUTABLE": "平台值域不可变（租户只读）",
+    "MD_REF_PLATFORM_VALUE_IMMUTABLE": "平台参考值不可变（租户只读）"
+  },
+  "enums": {
+    "ORDER_STATUS": {
+      "CREATED": "已创建",
+      "PAID": "已支付",
+      "SHIPPED": "已发货",
+      "DELIVERED": "已送达",
+      "CANCELLED": "已取消",
+      "REFUNDED": "已退款"
+    },
+    "PAYMENT_STATUS": {
+      "PENDING": "待支付",
+      "PAYING": "支付中",
+      "SUCCESS": "支付成功",
+      "FAILED": "支付失败",
+      "CLOSED": "已关闭"
+    },
+    "PAYMENT_CHANNEL": {
+      "SIMULATED": "模拟渠道",
+      "WECHAT": "微信支付",
+      "ALIPAY": "支付宝"
+    }
+  }
+}

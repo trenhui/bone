@@ -6,6 +6,7 @@ import {
   Col,
   Empty,
   Input,
+  InputNumber,
   message,
   Modal,
   Row,
@@ -34,6 +35,7 @@ const Marketplace: React.FC = () => {
   const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: number }[]>([]);
   const [installTarget, setInstallTarget] = useState<MarketplaceItem | null>(null);
   const [selectedExtPointId, setSelectedExtPointId] = useState<number | undefined>(undefined);
+  const [installAppId, setInstallAppId] = useState<number | undefined>(undefined);
   const [installing, setInstalling] = useState(false);
 
   const categories = Array.from(
@@ -70,10 +72,13 @@ const Marketplace: React.FC = () => {
     if (!installTarget) return;
     setInstalling(true);
     try {
-      const result = await installMarketplaceItem(installTarget.id, selectedExtPointId);
-      message.success(`已安装为插件 #${result.pluginId}`);
+      const result = await installMarketplaceItem(installTarget.id, selectedExtPointId, installAppId);
+      message.success(
+        `已安装为插件 #${result.pluginId}${installAppId ? `（归属应用 #${installAppId}）` : '（平台通用）'}`,
+      );
       setInstallTarget(null);
       setSelectedExtPointId(undefined);
+      setInstallAppId(undefined);
     } catch (e) {
       message.error(formatStudioError(e, '安装失败'));
     } finally {
@@ -189,6 +194,13 @@ const Marketplace: React.FC = () => {
             options={extPointOptions}
             value={selectedExtPointId}
             onChange={setSelectedExtPointId}
+            style={{ width: '100%' }}
+          />
+          <InputNumber
+            min={1}
+            placeholder="归属应用 ID（留空 = 平台通用，5a G5）"
+            value={installAppId}
+            onChange={(v) => setInstallAppId(v ?? undefined)}
             style={{ width: '100%' }}
           />
         </Space>

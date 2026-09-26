@@ -11,6 +11,7 @@ import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
 import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -68,5 +69,23 @@ public class MasterDataEntityController {
   @PostMapping("/convert")
   public ApiResponse<Long> convert(@RequestParam Long metaEntityId) {
     return ApiResponse.success(entityService.convertFromBusinessEntity(metaEntityId));
+  }
+
+  /** 调整治理等级（§4.3）：body 为 {"tier": "L1|L2|L3"}。 */
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
+  @PostMapping("/{id}/governance-tier")
+  public ApiResponse<Void> changeGovernanceTier(
+      @PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+    entityService.changeGovernanceTier(id, body.get("tier"));
+    return ApiResponse.success();
+  }
+
+  /** 绑定责任归口应用（§3.2）：body 为 {"owningAppId": 123} 或 {"owningAppId": null}。 */
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
+  @PostMapping("/{id}/owning-app")
+  public ApiResponse<Void> bindOwningApp(
+      @PathVariable Long id, @RequestBody java.util.Map<String, Long> body) {
+    entityService.bindOwningApp(id, body.get("owningAppId"));
+    return ApiResponse.success();
   }
 }

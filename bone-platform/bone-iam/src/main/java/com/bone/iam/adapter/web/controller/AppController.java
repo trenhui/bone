@@ -2,12 +2,14 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.iam.adapter.web.converter.AppWebConverter;
 import com.bone.iam.adapter.web.dto.request.CreateAppReq;
 import com.bone.iam.adapter.web.dto.request.GrantAppPermissionReq;
 import com.bone.iam.adapter.web.dto.request.UpdateAppReq;
 import com.bone.iam.application.AppApplicationService;
 import com.bone.iam.application.command.GrantAppPermissionCommand;
+import com.bone.iam.application.port.out.CurrentPrincipalPort;
 import com.bone.iam.application.query.dto.AppPermissionDTO;
 import com.bone.iam.application.query.dto.ApplicationDTO;
 import com.bone.iam.application.query.qry.ApplicationPageQuery;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AppController {
   private final AppApplicationService appApplicationService;
   private final AppWebConverter appWebConverter;
+  private final CurrentPrincipalPort currentPrincipalPort;
 
   @GetMapping
   @PreAuthorize("hasAuthority('iam:apps:read')")
@@ -42,7 +45,20 @@ public class AppController {
   @GetMapping("/mine")
   @PreAuthorize("hasAuthority('iam:apps:read')")
   public ApiResponse<PageResult<ApplicationDTO>> mine(ApplicationPageQuery qry) {
-    return ApiResponse.success(appApplicationService.pageApplications(qry));
+    Long userId =
+        currentPrincipalPort
+            .currentPrincipal()
+            .map(JwtPrincipal::userId)
+            .map(
+                s -> {
+                  try {
+                    return Long.valueOf(s);
+                  } catch (NumberFormatException e) {
+                    return null;
+                  }
+                })
+            .orElse(null);
+    return ApiResponse.success(appApplicationService.myApps(userId, qry));
   }
 
   @GetMapping("/{id}")

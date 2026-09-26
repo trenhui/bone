@@ -46,6 +46,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         var authorities =
             roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
         var auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
+        // G1②：把 userId claim 传入 details，供 CurrentUserProvider 解析（应用角色校验需要账号 ID）。
+        // currentOperator() 取 getName()=subject（用户名），不受影响。
+        auth.setDetails(claims.get("userId"));
         SecurityContextHolder.getContext().setAuthentication(auth);
       } catch (JwtException ex) {
         // JWT 解析失败时不清除已有的认证信息（可能由 APIKeyFilter 设置）

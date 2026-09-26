@@ -2,6 +2,7 @@ package com.bone.iam.adapter.web.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -26,5 +27,10 @@ public class CreateAccountReq {
   private String realName;
 
   private Long tenantId;
+
+  /** 归属部门（主部门）；必填，须为本租户内已存在的部门，由应用服务校验。 */
+  @NotNull(message = "归属部门不能为空")
+  private Long deptId;
+
   private Long[] roleIds;
 }

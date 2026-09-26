@@ -8,6 +8,9 @@ import com.bone.system.application.command.CreateScheduleTaskCommand;
 import com.bone.system.application.command.UpdateScheduleTaskCommand;
 import com.bone.system.application.query.dto.ScheduleTaskDto;
 import com.bone.system.application.query.qry.ScheduleTaskPageQuery;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -23,4 +26,9 @@ public interface ScheduleTaskAssembler {
   ScheduleTaskPageQuery toQuery(ScheduleTaskPageReq req);
 
   ScheduleTaskResp toResp(ScheduleTaskDto dto);
+
+  /** LocalDateTime → Instant（UTC 归一），对外契约统一带偏移的 ISO-8601（...Z）（i18n 方案 §6.4）。 */
+  default Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
+  }
 }

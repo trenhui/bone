@@ -1,30 +1,30 @@
 # 扩展模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-09-21T06:49:07Z（UTC）  
+> **生成时间**：2026-09-25T21:17:13Z（UTC）  
 > **勿手改**：由 `tools/extension-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |
 |----|------|----------|
 | `delete-204` | DELETE 返回 204 无 body | OpenAPI DELETE 204：2 处；`noContent()`：2 文件 |
-| `idempotency-409` | 幂等键冲突 409 COMMON_IDEMPOTENCY_CONFLICT | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/StudioErrorCodes.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/IdempotencyConflictException.java`；… |
+| `idempotency-409` | 幂等键冲突 409 COMMON_IDEMPOTENCY_CONFLICT | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/StudioErrorCodes.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/IdempotencyConflictException.java`；… |
 | `archunit-studio` | Studio ArchUnit 分层守护 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/test/java/com/bone/engine/extension/studio/architecture/ArchitectureTest.java` |
 | `execution-guard` | SDK 执行舱壁与超时 | 源码：`bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java` |
-| `lro-deploy` | LRO 部署 operationId | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java` |
-| `idempotency-key` | Idempotency-Key（进程内） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java` |
-| `if-match-412` | PUT If-Match / 412 Precondition Failed | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/StudioHttpSupport.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java`；… |
-| `post-201-location` | POST 201 + Location | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java` |
-| `x-request-id` | X-Request-Id 回显 + traceId | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java`；… |
+| `lro-deploy` | LRO 部署 operationId | — |
+| `idempotency-key` | Idempotency-Key（进程内） | — |
+| `if-match-412` | PUT If-Match / 412 Precondition Failed | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/StudioHttpSupport.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java`；… |
+| `post-201-location` | POST 201 + Location | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtPointCommandApplicationService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java` |
+| `x-request-id` | X-Request-Id 回显 + traceId | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioAuditSupport.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioLroSupport.java`；… |
 | `patch-partial-update` | PATCH 部分更新（points/plugins） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java` |
-| `deployment-status-ddl` | deployment_status DDL + 状态机落库 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java`；… |
-| `mime-magic-number` | JAR magic-number 校验 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java` |
-| `artifact-download-auth-url` | 制品鉴权下载 GET :download | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java` |
+| `deployment-status-ddl` | deployment_status DDL + 状态机落库 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/DeploymentStateApplicationService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionCommandApplicationService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/PluginDependencyGraphApplicationService.java`；… |
+| `mime-magic-number` | JAR magic-number 校验 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/JarMagicValidator.java` |
+| `artifact-download-auth-url` | 制品鉴权下载 GET :download | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java` |
 | `rollout-percent-traffic-merge` | rollout_percent ↔ config_json.traffic 收敛（ADR-0014） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java` |
 | `red-metrics-micrometer` | RED 指标 extension_invoke_* / deploy / LRO | 源码：`bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/observability/StudioExtensionMetrics.java` |
-| `idempotency-redis-cluster` | Idempotency Redis（可配置 backend=redis） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java` |
+| `idempotency-redis-cluster` | Idempotency Redis（可配置 backend=redis） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java` |
 | `per-plugin-bulkhead` | 按插件舱壁 + extension_bulkhead_rejected_total | 源码：`bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java`, `bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java`, `bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/support/config/ExtensionExecutionProperties.java` |
-| `deployment-state-machine-api` | 部署状态机视图 GET /plugins/{id}/deployment-state | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java` |
-| `plugin-dependency-graph-api` | 插件依赖图 GET /dependency-graph | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java` |
-| `plugin-marketplace-v1` | 插件市场 v1（静态 JSON 目录 + :install） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java` |
+| `deployment-state-machine-api` | 部署状态机视图 GET /plugins/{id}/deployment-state | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStateMachine.java` |
+| `plugin-dependency-graph-api` | 插件依赖图 GET /dependency-graph | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java` |
+| `plugin-marketplace-v1` | 插件市场 v1（静态 JSON 目录 + :install） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java` |
 
 ## 明细
 
@@ -41,8 +41,8 @@
     ]
   },
   "java_noContent": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtPointCommandApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java"
   ]
 }
 ```
@@ -52,7 +52,7 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/StudioErrorCodes.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/IdempotencyConflictException.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
@@ -84,9 +84,7 @@
 
 ```json
 {
-  "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java"
-  ]
+  "java": []
 }
 ```
 
@@ -94,9 +92,7 @@
 
 ```json
 {
-  "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java"
-  ]
+  "java": []
 }
 ```
 
@@ -107,8 +103,8 @@
   "java": [
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/StudioHttpSupport.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioVersionSupport.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioVersionSupport.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/OptimisticLockException.java"
   ]
 }
@@ -119,9 +115,9 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtPointCommandApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java"
   ]
 }
 ```
@@ -131,9 +127,9 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioAuditSupport.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioCommandResponses.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioLroSupport.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioRequestContextFilter.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
   ]
@@ -155,12 +151,12 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/DeploymentStateApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionCommandApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/PluginDependencyGraphApplicationService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStateMachine.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStatus.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/PluginVersion.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/entity/ExtStudioPluginVersion.java"
   ],
@@ -175,7 +171,7 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/JarMagicValidator.java"
   ]
 }
 ```
@@ -186,7 +182,7 @@
 {
   "java": [
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/ExtensionStudioApplicationService.java"
   ]
 }
 ```
@@ -220,7 +216,7 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/support/StudioIdempotencySupport.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java"
   ]
@@ -245,8 +241,7 @@
 {
   "java": [
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/plugin/DeploymentStateMachine.java"
   ]
 }
 ```
@@ -256,8 +251,7 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java"
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java"
   ]
 }
 ```
@@ -267,7 +261,6 @@
 ```json
 {
   "java": [
-    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java"
   ]

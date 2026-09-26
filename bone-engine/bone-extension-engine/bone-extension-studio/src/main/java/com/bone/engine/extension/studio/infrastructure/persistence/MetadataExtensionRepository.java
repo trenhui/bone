@@ -88,6 +88,20 @@ public class MetadataExtensionRepository implements ExtensionRepository, Extensi
   }
 
   @Override
+  public List<Extension> findByAppId(Long appId) {
+    if (appId == null) {
+      return List.of();
+    }
+    Criteria<ExtStudioExtensionImpl> criteria =
+        Criteria.<ExtStudioExtensionImpl>create()
+            .eq(ExtStudioExtensionImpl::getAppId, appId)
+            .orderByAsc(ExtStudioExtensionImpl::getPriority);
+    return repository.findByCriteria(criteria).stream()
+        .map(StudioPersistenceConverter::toDomain)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public List<Extension> search(String keyword) {
     if (!StringUtils.hasText(keyword)) {
       return findAll();

@@ -3,7 +3,7 @@ package com.bone.blueprint.domain.model.order.projection;
 import com.bone.blueprint.domain.model.order.Order;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,8 +44,11 @@ public class OrderHeadProjection {
         order.getCustomerId(),
         order.getTotalAmount(),
         order.getStatus() == null ? null : order.getStatus().name(),
+        // ★ i18n/时区样板：聚合里是 Instant（绝对时刻），投影用 LocalDateTime 承载时**必须显式按 UTC 归一**。
+        //   旧写法 ZoneId.systemDefault() 会让同一时刻在不同时区的实例上产出不同值 —— 服务端时区一变，
+        //   列表时间与详情时间就对不上，且前端无法还原成正确的本地时间（§6.4）。
         order.getCreatedAt() == null
             ? null
-            : LocalDateTime.ofInstant(order.getCreatedAt(), ZoneId.systemDefault()));
+            : LocalDateTime.ofInstant(order.getCreatedAt(), ZoneOffset.UTC));
   }
 }

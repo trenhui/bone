@@ -1,0 +1,61 @@
+{
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "empty": "No data"
+  },
+  "errors": {
+    "BP_ORDER_NOT_FOUND": "Order not found",
+    "BP_ORDER_STATUS_CONFLICT": "Operation not allowed in the current order status",
+    "BP_ORDER_STATUS_INVALID": "Invalid order status",
+    "BP_ORDER_STOCK_INSUFFICIENT": "Insufficient stock",
+    "BP_PAYMENT_NOT_FOUND": "Payment not found",
+    "BP_PAYMENT_STATUS_CONFLICT": "Operation not allowed in the current payment status",
+    "BP_PAYMENT_SIGNATURE_INVALID": "Invalid callback signature",
+    "BP_PAYMENT_CHANNEL_PREPAY_FAILED": "Payment channel pre-pay failed",
+    "BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED": "Callback source is not allowed",
+    "COMMON_VALIDATION_FAILED": "Validation failed: {{errors}}",
+    "COMMON_UNAUTHORIZED": "Sign in required or session expired",
+    "COMMON_FORBIDDEN": "No permission to access this resource",
+    "COMMON_NOT_FOUND": "Requested resource not found",
+    "COMMON_CONFLICT": "Resource conflict",
+    "COMMON_IDEMPOTENCY_CONFLICT": "Idempotency key reused with a different request body",
+    "COMMON_RATE_LIMITED": "Too many requests, please retry later",
+    "COMMON_INTERNAL_ERROR": "Internal server error",
+    "COMMON_METHOD_NOT_ALLOWED": "HTTP method not allowed",
+    "COMMON_MALFORMED_REQUEST": "Malformed request body",
+    "COMMON_NOT_IMPLEMENTED": "Capability not implemented",
+    "IAM_PERMISSION_PLATFORM_ONLY": "This permission is reserved for the platform and cannot be assigned within a tenant",
+    "IAM_DEPT_REQUIRED": "Home department is required",
+    "MD_TEMPLATE_DOMAIN_DUPLICATE": "Domain template code already exists",
+    "MD_TEMPLATE_FIELD_SCHEMA_INVALID": "Template field schema is invalid",
+    "MD_TEMPLATE_NOT_FOUND": "Domain template not found",
+    "MD_TEMPLATE_NOT_PUBLISHED": "Domain template is not published",
+    "MD_TEMPLATE_VERSION_DUPLICATE": "Template version already exists",
+    "MD_REF_PLATFORM_SET_IMMUTABLE": "Platform reference set is immutable (tenant read-only)",
+    "MD_REF_PLATFORM_VALUE_IMMUTABLE": "Platform reference value is immutable (tenant read-only)"
+  },
+  "enums": {
+    "ORDER_STATUS": {
+      "CREATED": "Created",
+      "PAID": "Paid",
+      "SHIPPED": "Shipped",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    },
+    "PAYMENT_STATUS": {
+      "PENDING": "Pending",
+      "PAYING": "Paying",
+      "SUCCESS": "Succeeded",
+      "FAILED": "Failed",
+      "CLOSED": "Closed"
+    },
+    "PAYMENT_CHANNEL": {
+      "SIMULATED": "Simulated",
+      "WECHAT": "WeChat Pay",
+      "ALIPAY": "Alipay"
+    }
+  }
+}

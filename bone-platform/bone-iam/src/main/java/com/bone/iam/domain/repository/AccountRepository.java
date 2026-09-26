@@ -7,6 +7,7 @@ import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -64,6 +65,21 @@ public interface AccountRepository extends Repository<Account, Long> {
    */
   default PageResult<Account> findAccountPage(
       String keyword, AccountStatus status, Long tenantId, int pageNo, int pageSize) {
+    return findAccountPage(keyword, status, tenantId, null, pageNo, pageSize);
+  }
+
+  /**
+   * 账号分页（本聚合读），支持按部门集合过滤。
+   *
+   * @param deptIds 部门 ID 集合（调用方展开的子树，含所选节点自身）；{@code null}/空表示不过滤
+   */
+  default PageResult<Account> findAccountPage(
+      String keyword,
+      AccountStatus status,
+      Long tenantId,
+      Collection<Long> deptIds,
+      int pageNo,
+      int pageSize) {
     FluentQuery<Account> query = QueryBuilder.from(Account.class);
     if (keyword != null && !keyword.isEmpty()) {
       query
@@ -79,6 +95,11 @@ public interface AccountRepository extends Repository<Account, Long> {
     }
     if (tenantId != null) {
       query.where(Account::getTenantId).eq(tenantId);
+    }
+    if (deptIds != null && !deptIds.isEmpty()) {
+      // ⚠ SDK SqlBuilder 的 IN 只展开 java.util.List（instanceof List 判定）：传 Set/Collection 会静默拼出
+      // `IN ()` 坏 SQL（BadSqlGrammarException）。入口统一规整为 ArrayList 兜底。
+      query.where(Account::getDeptId).in(new java.util.ArrayList<>(deptIds));
     }
     return query.orderByDesc(Account::getCreatedAt).page(pageNo, pageSize);
   }

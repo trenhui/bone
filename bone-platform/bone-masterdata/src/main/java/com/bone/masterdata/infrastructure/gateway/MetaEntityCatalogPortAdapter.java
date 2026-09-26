@@ -60,4 +60,27 @@ public class MetaEntityCatalogPortAdapter implements MetaEntityCatalogPort {
     }
     return entity;
   }
+
+  @Override
+  public java.util.List<MetaFieldRow> requireFields(Long metaEntityId) {
+    Long tenantId = TenantContext.getTenantIdAsLong();
+    if (tenantId == null) {
+      throw new MissingTenantContextException("读取 meta_field 需要租户上下文");
+    }
+    return jdbcTemplate.query(
+        """
+                    SELECT code, display_name, type, is_required
+                    FROM meta_field
+                    WHERE entity_id = ? AND tenant_id = ? AND deleted = 0
+                    ORDER BY id
+                    """,
+        (rs, rowNum) ->
+            new MetaFieldRow(
+                rs.getString("code"),
+                rs.getString("display_name"),
+                rs.getString("type"),
+                rs.getBoolean("is_required")),
+        metaEntityId,
+        tenantId);
+  }
 }

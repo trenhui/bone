@@ -64,6 +64,7 @@ public final class StudioPersistenceConverter {
     ExtStudioExtensionImpl row = new ExtStudioExtensionImpl();
     row.setId(domain.getId());
     row.setExtensionPointId(domain.getExtPointId());
+    row.setAppId(domain.getAppId());
     row.setImplName(domain.getName());
     row.setImplCode(RuntimeExtensionSyncService.resolveExtensionCode(domain));
     row.setDescription(domain.getDescription());
@@ -92,6 +93,7 @@ public final class StudioPersistenceConverter {
         Extension.create(
             row.getExtensionPointId(), row.getImplName(), row.getDescription(), row.getClassName());
     domain.setId(row.getId());
+    domain.setAppId(row.getAppId());
     domain.setTenantCode(row.getTenantCode());
     domain.setBizCode(row.getBizCode());
     domain.setUseCase(row.getUseCase());

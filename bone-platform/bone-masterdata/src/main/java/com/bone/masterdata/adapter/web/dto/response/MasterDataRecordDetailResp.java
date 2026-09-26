@@ -1,6 +1,6 @@
 package com.bone.masterdata.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,7 +12,7 @@ public class MasterDataRecordDetailResp {
   private String data;
   private String status;
   private Integer version;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
-  private LocalDateTime publishTime;
+  private Instant createdAt;
+  private Instant updatedAt;
+  private Instant publishTime;
 }

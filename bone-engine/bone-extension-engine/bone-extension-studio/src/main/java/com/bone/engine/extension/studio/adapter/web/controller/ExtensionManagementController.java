@@ -166,6 +166,7 @@ public class ExtensionManagementController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Long extPointId,
       @RequestParam(required = false) String tenantCode,
+      @RequestParam(required = false) Long appId,
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size) {
     List<Extension> plugins;
@@ -175,6 +176,8 @@ public class ExtensionManagementController {
       plugins = extensionQueryHandler.findExtensionsByExtPointId(extPointId);
     } else if (hasText(tenantCode)) {
       plugins = extensionQueryHandler.findExtensionsByTenantCode(tenantCode);
+    } else if (appId != null) {
+      plugins = extensionQueryHandler.findExtensionsByAppId(appId);
     } else {
       plugins = extensionQueryHandler.findAllExtensions();
     }
@@ -204,6 +207,7 @@ public class ExtensionManagementController {
     Map<String, Object> doc = new LinkedHashMap<>();
     doc.put("id", extension.getId());
     doc.put("name", extension.getName());
+    doc.put("appId", extension.getAppId());
     doc.put("className", extension.getClassName());
     doc.put("tenantCode", extension.getTenantCode());
     doc.put("bizCode", extension.getBizCode());
@@ -488,7 +492,11 @@ public class ExtensionManagementController {
         body != null && body.get("extPointId") != null
             ? Long.valueOf(body.get("extPointId").toString())
             : null;
-    return marketplaceInstallCommandHandler.install(itemId, extPointId);
+    Long appId =
+        body != null && body.get("appId") != null
+            ? Long.valueOf(body.get("appId").toString())
+            : null;
+    return marketplaceInstallCommandHandler.install(itemId, extPointId, appId);
   }
 
   @GetMapping("/sandbox/config")

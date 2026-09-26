@@ -108,6 +108,24 @@ class AccountTest {
   }
 
   @Test
+  void testChangeDeptSetsClearsAndIsIdempotent() {
+    Account account = createAccount();
+    assertNull(account.getDeptId());
+
+    account.changeDept(88L);
+    assertEquals(88L, account.getDeptId());
+    java.time.LocalDateTime afterSet = account.getUpdatedAt();
+
+    // 幂等：同值再设不推进更新时间（避免无意义的乐观锁版本号增长）
+    account.changeDept(88L);
+    assertEquals(afterSet, account.getUpdatedAt());
+
+    // 撤销归属
+    account.changeDept(null);
+    assertNull(account.getDeptId());
+  }
+
+  @Test
   void testValueObjectsRejectInvalidInput() {
     assertThrows(DomainException.class, () -> Username.of(" "));
     assertThrows(DomainException.class, () -> Username.of("ab"));

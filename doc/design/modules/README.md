@@ -25,11 +25,11 @@
 | 编号 | 文档 | 仓库模块（As-Is） | Docs-as-Code | 默认端口（开发） | PRD |
 |------|------|-------------------|--------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md)（**v2.0**） | `bone-system` `/api/v1/console/*` | [`_generated/console`](../../_generated/console/) | **8083** | §4.3 |
-| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**对照**](./元数据能力-实现映射与竞品对照.md) | sdk + server + engine | [`_generated/metadata`](../../_generated/metadata/) + 详设 `META_COMPLIANCE_*` | **9001** | §4.4 |
-| 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-masterdata` | [`_generated/masterdata`](../../_generated/masterdata/) + 详设 `MDM_COMPLIANCE_*` | **8084** | §4.5 |
+| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**核心场景及用例**](./2a.%20元数据管理模块核心场景及用例设计方案.md) · [**建模工作台**](./2b.%20建模工作台功能与用例设计方案.md) · [**对照**](./元数据能力-实现映射与竞品对照.md) | sdk + server + engine | [`_generated/metadata`](../../_generated/metadata/) + 详设 `META_COMPLIANCE_*` | **9001** | §4.4 |
+| 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) · [**核心场景及用例**](./3a.%20主数据管理模块核心场景及用例设计方案.md) | `bone-masterdata` | [`_generated/masterdata`](../../_generated/masterdata/) + 详设 `MDM_COMPLIANCE_*` | **8084** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-integration` | [`_generated/integration`](../../_generated/integration/) + 详设 `INT_COMPLIANCE_*` | **8085** | §4.7 |
-| 5 | [扩展](./5.%20扩展管理模块详细设计方案.md)（**v2.5**） | extension-engine + studio | [`_generated/extension`](../../_generated/extension/) + 详设附录 A/C | Studio **8088** | §4.6 |
-| 6 | [IAM](./6.%20IAM账号权限管理模块详细设计方案.md) | `bone-iam` | [`_generated/iam`](../../_generated/iam/) + 详设附录 A/C | **8081** | §4.8 |
+| 5 | [扩展](./5.%20扩展管理模块详细设计方案.md)（**v2.5**） · [**核心场景及用例**](./5a.%20扩展管理模块核心场景及用例设计方案.md) | extension-engine + studio | [`_generated/extension`](../../_generated/extension/) + 详设附录 A/C | Studio **8088** | §4.6 |
+| 6 | [IAM](./6.%20IAM账号权限管理模块详细设计方案.md) · [**核心场景及用例**](./6a.%20IAM账号权限管理模块核心场景及用例设计方案.md) | `bone-iam` | [`_generated/iam`](../../_generated/iam/) + 详设附录 A/C | **8081** | §4.8 |
 | 7 | [系统管理](./7.%20系统管理模块详细设计方案.md) | `bone-system` | —（与控制台同进程，见 console 收集器） | **8083** | §4.9 |
 | 8 | [Studio Generator](./8.Studio%20Generator%20详细设计方案.md) | `studio-generator` | [`_generated/generator`](../../_generated/generator/) + 详设 `GEN_COMPLIANCE_*` | **8086** | §4 + Studio |
 | 9 | [SmartMeta](./9.%20SmartMeta%20引擎模块技术说明.md) | `bone-metadata-engine` | — | 随宿主 | 引擎能力 |

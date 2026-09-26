@@ -8,6 +8,9 @@ import com.bone.iam.application.command.CreateAccountCommand;
 import com.bone.iam.application.command.ResetPasswordCommand;
 import com.bone.iam.application.command.UpdateAccountCommand;
 import com.bone.iam.application.query.dto.AccountDTO;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,6 +24,7 @@ public class AccountWebConverter {
     cmd.setPhone(req.getPhone());
     cmd.setRealName(req.getRealName());
     cmd.setTenantId(req.getTenantId());
+    cmd.setDeptId(req.getDeptId());
     cmd.setRoleIds(req.getRoleIds());
     return cmd;
   }
@@ -32,6 +36,7 @@ public class AccountWebConverter {
     cmd.setPhone(req.getPhone());
     cmd.setRealName(req.getRealName());
     cmd.setStatus(req.getStatus());
+    cmd.setDeptId(req.getDeptId());
     cmd.setRoleIds(req.getRoleIds());
     return cmd;
   }
@@ -53,11 +58,17 @@ public class AccountWebConverter {
     resp.setAvatarUrl(dto.getAvatarUrl());
     resp.setStatus(dto.getStatus());
     resp.setIsAdmin(dto.getIsAdmin());
+    resp.setDeptId(dto.getDeptId());
+    resp.setDeptName(dto.getDeptName());
     resp.setRoleIds(dto.getRoleIds());
-    resp.setLastLoginAt(dto.getLastLoginAt());
+    resp.setLastLoginAt(toInstant(dto.getLastLoginAt()));
     resp.setLastLoginIp(dto.getLastLoginIp());
-    resp.setCreatedAt(dto.getCreatedAt());
-    resp.setUpdatedAt(dto.getUpdatedAt());
+    resp.setCreatedAt(toInstant(dto.getCreatedAt()));
+    resp.setUpdatedAt(toInstant(dto.getUpdatedAt()));
     return resp;
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

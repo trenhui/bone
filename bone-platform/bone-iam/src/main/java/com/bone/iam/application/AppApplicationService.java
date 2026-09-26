@@ -20,6 +20,8 @@ import com.bone.iam.domain.repository.AppPermissionRepository;
 import com.bone.iam.domain.repository.BoneApplicationRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -84,6 +86,69 @@ public class AppApplicationService {
     List<ApplicationDTO> list =
         result.getRecords().stream().map(AppApplicationService::toDto).collect(Collectors.toList());
     return PageResult.of(list, result.getTotal(), result.getPage(), result.getSize());
+  }
+
+  /**
+   * 「我的应用」：返回当前用户（按 {@code userId}）在 {@code bone_app_permission} 中有绑定的应用。
+   *
+   * <p><b>可见性策略（G15）</b>：① {@code userId == null}（无主体上下文，如安全关闭的 E2E）回退为「全部应用」，保持旧行为； ② 平台管理员（{@code
+   * is_admin}）可见全部应用（其角色体现为治理视角，不依赖逐应用授权）；③ 其余用户仅见自己被授权的应用， 且回填 {@code myRole} 供前端做只读/可建模判断。
+   */
+  @Transactional(readOnly = true)
+  public PageResult<ApplicationDTO> myApps(Long userId, ApplicationPageQuery qry) {
+    if (userId == null) {
+      return pageApplications(qry);
+    }
+    Account account = accountRepository.findById(userId);
+    if (account != null && Boolean.TRUE.equals(account.isAdmin())) {
+      return pageApplications(qry);
+    }
+    List<AppPermission> permissions = appPermissionRepository.findByUser(userId);
+    if (permissions.isEmpty()) {
+      return PageResult.of(List.of(), 0L, safePage(qry), safeSize(qry));
+    }
+    Set<Long> appIds =
+        permissions.stream().map(AppPermission::getAppId).collect(Collectors.toSet());
+    Map<Long, String> roleByApp =
+        permissions.stream()
+            .collect(
+                Collectors.toMap(
+                    AppPermission::getAppId, p -> p.getRole().externalName(), (a, b) -> a));
+    List<ApplicationDTO> matched =
+        appIds.stream()
+            .map(boneApplicationRepository::findById)
+            .filter(Objects::nonNull)
+            .filter(app -> matchesKeyword(app, qry.getKeyword()))
+            .filter(app -> qry.getStatus() == null || qry.getStatus().equals(app.getStatus()))
+            .map(
+                app -> {
+                  ApplicationDTO dto = toDto(app);
+                  dto.setMyRole(roleByApp.get(app.getId()));
+                  return dto;
+                })
+            .collect(Collectors.toList());
+    int page = safePage(qry);
+    int size = safeSize(qry);
+    int from = Math.min((page - 1) * size, matched.size());
+    int to = Math.min(from + size, matched.size());
+    return PageResult.of(matched.subList(from, to), (long) matched.size(), page, size);
+  }
+
+  private static boolean matchesKeyword(BoneApplication app, String keyword) {
+    if (keyword == null || keyword.isBlank()) {
+      return true;
+    }
+    String k = keyword.toLowerCase();
+    return (app.getName() != null && app.getName().toLowerCase().contains(k))
+        || (app.getCode() != null && app.getCode().toLowerCase().contains(k));
+  }
+
+  private static int safePage(ApplicationPageQuery qry) {
+    return qry.getPage() != null && qry.getPage() > 0 ? qry.getPage() : 1;
+  }
+
+  private static int safeSize(ApplicationPageQuery qry) {
+    return qry.getSize() != null && qry.getSize() > 0 ? qry.getSize() : 10;
   }
 
   @Transactional(readOnly = true)

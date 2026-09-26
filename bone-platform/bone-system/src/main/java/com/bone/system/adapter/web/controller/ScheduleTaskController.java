@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 系统定时任务控制器。 */
@@ -27,6 +28,7 @@ public class ScheduleTaskController {
 
   @Operation(summary = "创建定时任务")
   @PostMapping
+  @PreAuthorize("hasAuthority('sys:schedule:write')")
   public ApiResponse<Long> create(@Valid @RequestBody CreateScheduleTaskReq req) {
     return ApiResponse.success(
         scheduleTaskApplicationService.create(scheduleTaskAssembler.toCommand(req)));
@@ -34,6 +36,7 @@ public class ScheduleTaskController {
 
   @Operation(summary = "更新定时任务")
   @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('sys:schedule:write')")
   public ApiResponse<Void> update(
       @PathVariable Long id, @Valid @RequestBody UpdateScheduleTaskReq req) {
     scheduleTaskApplicationService.update(scheduleTaskAssembler.toCommand(id, req));
@@ -42,6 +45,7 @@ public class ScheduleTaskController {
 
   @Operation(summary = "删除定时任务")
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('sys:schedule:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     scheduleTaskApplicationService.delete(id);
     return ApiResponse.success();
@@ -49,6 +53,7 @@ public class ScheduleTaskController {
 
   @Operation(summary = "启用/停用定时任务")
   @PutMapping("/{id}/toggle")
+  @PreAuthorize("hasAuthority('sys:schedule:write')")
   public ApiResponse<Void> toggle(@PathVariable Long id, @RequestParam boolean enabled) {
     scheduleTaskApplicationService.toggle(id, enabled);
     return ApiResponse.success();
@@ -56,6 +61,7 @@ public class ScheduleTaskController {
 
   @Operation(summary = "立即执行定时任务", description = "手动同步执行一次，返回执行耗时（毫秒）")
   @PostMapping("/{id}/run")
+  @PreAuthorize("hasAuthority('sys:schedule:write')")
   public ApiResponse<Long> runNow(@PathVariable Long id) {
     return ApiResponse.success(scheduleTaskApplicationService.runNow(id));
   }

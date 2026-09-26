@@ -14,11 +14,15 @@ import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.common.MasterDataProperties;
+import com.bone.masterdata.domain.gateway.CurrentUserPort;
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
+import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.model.record.MasterDataRecordVersion;
 import com.bone.masterdata.domain.model.record.valueobject.MasterDataRecordStatus;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
+import com.bone.masterdata.domain.repository.MasterDataRecordVersionRepository;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 主数据记录应用服务（ADR-0028 Application Service First）。
  *
- * <p>读侧领域模型由 {@link MasterDataRecordRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
+ * <p>读侧领域模型由 {@link MasterDataRecordRepository} 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。 审批发布（G5 /
+ * UC-T7）：六态状态机 + SoD（审批人≠提交人）+ 工作流门禁（L2/L3 实体未审批不得发布）+ 版本快照。
  */
 @Service
 @RequiredArgsConstructor
@@ -38,7 +43,9 @@ public class RecordApplicationService {
 
   private final MasterDataRecordRepository recordRepository;
   private final MasterDataEntityRepository entityRepository;
+  private final MasterDataRecordVersionRepository versionRepository;
   private final MasterDataExcelImportPort excelImportPort;
+  private final CurrentUserPort currentUserPort;
   private final MasterdataDomainEventPublisher domainEventPublisher;
   private final MasterDataProperties properties;
 
@@ -97,13 +104,118 @@ public class RecordApplicationService {
       timeout = 30)
   @Transactional
   public void publish(Long id) {
+    MasterDataRecord record = requireRecord(id);
+    // 工作流门禁（UC-T7）：启用了审批流的实体（L2/L3 治理等级），记录必须先经审批通过
+    MasterDataEntity entity = entityRepository.findById(record.getMasterDataEntityId());
+    boolean workflowEnabled = entity != null && Boolean.TRUE.equals(entity.getWorkflowEnabled());
+    if (workflowEnabled && record.getStatus() != MasterDataRecordStatus.APPROVED) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED,
+          "该实体启用了审批流，记录须先审批通过（当前: " + record.getStatus() + "）");
+    }
+    record.publish();
+    recordRepository.update(record);
+    snapshotVersion(record, null, null);
+    domainEventPublisher.publishFrom(record);
+  }
+
+  /** 提交审批（UC-T7）：记录提交人，供 SoD 校验。 */
+  @Capability(
+      name = "SubmitRecordForApproval",
+      description = "提交主数据记录审批",
+      inputSchema = "{\"id\": \"long\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = true,
+      timeout = 15)
+  @Transactional
+  public void submitForApproval(Long id) {
+    MasterDataRecord record = requireRecord(id);
+    record.submitForApproval();
+    record.markSubmittedBy(currentUserPort.requireUserId());
+    recordRepository.update(record);
+    domainEventPublisher.publishFrom(record);
+  }
+
+  /** 审批通过（UC-T7）：SoD 硬校验——审批人不得为提交人；通过后写版本快照。 */
+  @Capability(
+      name = "ApproveRecord",
+      description = "审批通过主数据记录",
+      inputSchema = "{\"id\": \"long\", \"comment\": \"string\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 2,
+      retryable = false,
+      timeout = 15)
+  @Transactional
+  public void approve(Long id, String comment) {
+    MasterDataRecord record = requireRecord(id);
+    Long approverId = currentUserPort.requireUserId();
+    if (record.getSubmittedBy() != null && record.getSubmittedBy().equals(approverId)) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.SOD_VIOLATION, "审批人不得为提交人（SoD）");
+    }
+    record.approve();
+    recordRepository.update(record);
+    snapshotVersion(record, comment, approverId);
+    domainEventPublisher.publishFrom(record);
+  }
+
+  /** 审批驳回（UC-T7）：退回草稿待修改。 */
+  @Capability(
+      name = "RejectRecord",
+      description = "驳回主数据记录审批",
+      inputSchema = "{\"id\": \"long\", \"comment\": \"string\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = true,
+      timeout = 15)
+  @Transactional
+  public void reject(Long id, String comment) {
+    MasterDataRecord record = requireRecord(id);
+    Long approverId = currentUserPort.requireUserId();
+    if (record.getSubmittedBy() != null && record.getSubmittedBy().equals(approverId)) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.SOD_VIOLATION, "审批人不得为提交人（SoD）");
+    }
+    record.reject();
+    recordRepository.update(record);
+    domainEventPublisher.publishFrom(record);
+  }
+
+  /** 记录版本历史（UC-T7 追溯）。 */
+  @Transactional(readOnly = true)
+  public List<MasterDataRecordVersion> versions(Long recordId) {
+    requireRecord(recordId);
+    return versionRepository.findByRecordId(recordId).stream()
+        .sorted((a, b) -> Integer.compare(b.getVersionNumber(), a.getVersionNumber()))
+        .toList();
+  }
+
+  /** 发布 / 审批通过时冻结版本快照（幂等：同版本号不重复写）。 */
+  private void snapshotVersion(MasterDataRecord record, String comment, Long approverId) {
+    if (versionRepository.countByRecordIdAndVersion(record.getId(), record.getVersionNumber())
+        > 0) {
+      return;
+    }
+    versionRepository.insert(
+        MasterDataRecordVersion.snapshot(
+            DistributedIdGenerator.generateLongId(),
+            record.getId(),
+            record.getVersionNumber(),
+            record.getData(),
+            record.getStatus().name(),
+            comment,
+            approverId,
+            currentUserPort.currentUserId()));
+  }
+
+  private MasterDataRecord requireRecord(Long id) {
     MasterDataRecord record = recordRepository.findById(id);
     if (record == null) {
       throw NotFoundException.of("主数据记录不存在");
     }
-    record.publish();
-    recordRepository.update(record);
-    domainEventPublisher.publishFrom(record);
+    return record;
   }
 
   @Capability(

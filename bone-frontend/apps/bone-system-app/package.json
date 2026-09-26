@@ -12,20 +12,22 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@bone/ui": "1.0.0",
     "@ant-design/icons": "^6.1.1",
     "@ant-design/pro-components": "^2.8.10",
+    "@bone/shared-services": "1.0.0",
+    "@bone/shared-types": "1.0.0",
+    "@bone/shared-utils": "^1.0.0",
+    "@bone/ui": "1.0.0",
     "antd": "^5.27.6",
     "axios": "^1.7.9",
     "dayjs": "^1.11.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.1",
-    "xlsx": "^0.18.5",
-    "@bone/shared-services": "1.0.0",
-    "@bone/shared-types": "1.0.0"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@bone/shared-config": "1.0.0",
     "@types/node": "^24.9.1",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
@@ -37,7 +39,6 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
-    "vite-plugin-qiankun": "^1.0.15",
-    "@bone/shared-config": "1.0.0"
+    "vite-plugin-qiankun": "^1.0.15"
   }
 }

@@ -1,6 +1,6 @@
 {
   "module": "metadata",
-  "generated_at": "2026-09-21T06:49:23Z",
+  "generated_at": "2026-09-25T21:19:45Z",
   "as_is": [
     {
       "id": "meta-ddl-five-tables",
@@ -16,12 +16,13 @@
         ],
         "present": [
           "meta_code_template",
-          "meta_data_quality_rule",
           "meta_entity",
           "meta_entity_relation",
           "meta_field"
         ],
-        "missing": [],
+        "missing": [
+          "meta_data_quality_rule"
+        ],
         "delivery_mode_column": true
       }
     },
@@ -123,8 +124,8 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/MetaEntity.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/MetaField.java"
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/meta/MetaEntity.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/meta/MetaField.java"
         ],
         "adr": [
           "doc/architecture/adr/0016-metadata-catalog-abstract-entity-tenant.md"
@@ -181,7 +182,9 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java"
         ]
       }
     },
@@ -192,12 +195,8 @@
       "evidence": {
         "java": [
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/PublishMetaEntityHandler.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaEntityHandler.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaFieldHandler.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaRelationHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/MetaEntityApplicationService.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/MetaRelationApplicationService.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/CatalogVersionSupport.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/exception/CatalogOptimisticLockException.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/GlobalExceptionHandler.java",
@@ -213,7 +212,7 @@
         "java": [
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/idempotency/CatalogIdempotencyService.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/support/CatalogIdempotencySupport.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/exception/CatalogIdempotencyConflictException.java",
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
         ]

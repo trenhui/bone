@@ -60,7 +60,11 @@ public class CatalogRuntimeEntityProvider {
       }
       columns.add(
           new RuntimeFieldColumn(
-              f.getCode(), Boolean.TRUE.equals(f.getRequired()), Boolean.TRUE.equals(f.getPk())));
+              f.getCode(),
+              f.getType(),
+              Boolean.TRUE.equals(f.getRequired()),
+              Boolean.TRUE.equals(f.getUnique()),
+              Boolean.TRUE.equals(f.getPk())));
     }
 
     return Optional.of(

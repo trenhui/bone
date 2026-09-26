@@ -36,7 +36,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TenantAdminBootstrapSupport {
 
-  /** 租户管理员角色可被授予的权限码白名单（全部为租户域，平台域码即便登记也不会授出）。 */
+  /**
+   * 租户管理员角色可被授予的权限码白名单（全部为租户域，平台域码即便登记也不会授出）。
+   *
+   * <p>masterdata 租户码（G6 / 3a §4.4）与 bone-init.sql 演示租户管理员（角色 3）绑定保持一致。
+   *
+   * <p>平台域操作 {@code masterdata:templates:write}（域模板维护/发版）不对租户授出，租户仅保留 read / instantiate。
+   */
   private static final Set<String> TENANT_ADMIN_PERMISSION_CODES =
       Set.of(
           "iam:accounts:read",
@@ -48,7 +54,21 @@ public class TenantAdminBootstrapSupport {
           "iam:menus:read",
           "iam:menus:write",
           "iam:audit:read",
-          "iam:audit:write");
+          "iam:audit:write",
+          "masterdata:entities:read",
+          "masterdata:entities:write",
+          "masterdata:records:read",
+          "masterdata:records:write",
+          "masterdata:records:approve",
+          "masterdata:categories:read",
+          "masterdata:categories:write",
+          "masterdata:templates:read",
+          "masterdata:templates:instantiate",
+          "masterdata:subscriptions:write",
+          "masterdata:quality:write",
+          "masterdata:reference:read",
+          "masterdata:reference:write",
+          "masterdata:governance:write");
 
   private static final String INITIAL_PASSWORD_PREFIX = "Bone-";
   private static final SecureRandom RANDOM = new SecureRandom();

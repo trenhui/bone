@@ -8,6 +8,7 @@ import com.bone.masterdata.application.FieldApplicationService;
 import com.bone.masterdata.application.command.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class MasterDataFieldController {
 
   @PostMapping("/{entityId}/fields")
   public ApiResponse<Long> create(
-      @PathVariable Long entityId, @RequestBody CreateMasterDataFieldReq req) {
+      @PathVariable Long entityId, @Valid @RequestBody CreateMasterDataFieldReq req) {
     req.setMasterDataEntityId(entityId);
     CreateMasterDataFieldCommand cmd = converter.toCommand(req);
     Long id = fieldService.create(cmd);

@@ -1,6 +1,6 @@
 package com.bone.masterdata.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +14,6 @@ public class DataStandardResp {
   private String pattern;
   private String refCode;
   private String description;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

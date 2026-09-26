@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -70,6 +71,39 @@ public class MasterDataRecordTopController {
   public ApiResponse<Void> publish(@PathVariable Long id) {
     recordService.publish(id);
     return ApiResponse.success();
+  }
+
+  /** 提交审批（UC-T7）。 */
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
+  @PostMapping("/{id}/submit")
+  public ApiResponse<Void> submitForApproval(@PathVariable Long id) {
+    recordService.submitForApproval(id);
+    return ApiResponse.success();
+  }
+
+  /** 审批通过（UC-T7，SoD：审批人≠提交人）。body 可为 {"comment": "..."}。 */
+  @PreAuthorize("hasAuthority('masterdata:records:approve')")
+  @PostMapping("/{id}/approve")
+  public ApiResponse<Void> approve(
+      @PathVariable Long id, @RequestBody(required = false) java.util.Map<String, String> body) {
+    recordService.approve(id, body == null ? null : body.get("comment"));
+    return ApiResponse.success();
+  }
+
+  /** 审批驳回（UC-T7，退回草稿）。body 可为 {"comment": "..."}。 */
+  @PreAuthorize("hasAuthority('masterdata:records:approve')")
+  @PostMapping("/{id}/reject")
+  public ApiResponse<Void> reject(
+      @PathVariable Long id, @RequestBody(required = false) java.util.Map<String, String> body) {
+    recordService.reject(id, body == null ? null : body.get("comment"));
+    return ApiResponse.success();
+  }
+
+  /** 版本历史（UC-T7 追溯）。 */
+  @GetMapping("/{id}/versions")
+  public ApiResponse<List<com.bone.masterdata.domain.model.record.MasterDataRecordVersion>>
+      versions(@PathVariable Long id) {
+    return ApiResponse.success(recordService.versions(id));
   }
 
   @PostMapping("/{id}/archive")

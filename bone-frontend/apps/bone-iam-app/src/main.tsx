@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
+import { subscribeLocaleChange } from '@bone/shared-utils';
 import { setQiankunToken } from '@bone/shared-services';
 import { globalEventBus } from '@bone/core-event-bus';
 import './index.css';
@@ -69,6 +70,7 @@ renderWithQiankun({
     // 首次加载时调用，仅一次
   },
   mount(props: QiankunProps) {
+  subscribeLocaleChange();
     initGlobalContext(props);
     subscribeGlobalContextChanges();
     render(props);

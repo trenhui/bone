@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Select, Table, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { formatDate } from '@bone/shared-utils';
 import {
   formatStudioError,
   listExecutionLogs,
@@ -63,7 +64,7 @@ const ExecutionLogPage: React.FC = () => {
       title: '时间',
       dataIndex: 'createdAt',
       width: 180,
-      render: (v: string) => (v ? new Date(v).toLocaleString() : '-'),
+      render: (v: string) => formatDate(v),
     },
   ];
 

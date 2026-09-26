@@ -13,6 +13,16 @@ spring:
   sql:
     init:
       mode: never
+  # === 时间字段的 UTC 契约（i18n 方案 §6.4，bone-blueprint 作为改造样板）===
+  jackson:
+    # 输出带偏移的 ISO-8601（...Z），而不是时间戳数组。
+    # ⚠️ 注意 spring.jackson.time-zone **对 LocalDateTime 无效**（LocalDateTime 本身不带时区）——
+    #    它只影响 java.util.Date / Calendar / ZonedDateTime 等带时区的类型。
+    #    因此对外契约的时间字段一律用 Instant（见 adapter/web/dto/response/*Resp），
+    #    本配置只是把"默认行为"显式固定下来，避免依赖 Spring Boot 版本默认值。
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
 
 bone:
   iam:

@@ -34,7 +34,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
     String valsSql = cols.stream().map(c -> ":" + c.getName()).collect(Collectors.joining(", "));
     String updSql =
         cols.stream()
-            .filter(c -> !c.isPrimaryKey())
+            .filter(c -> !c.isPrimaryKey() && !(tenantCol != null && c == tenantCol))
             .map(c -> c.getName() + "=VALUES(" + c.getName() + ")")
             .collect(Collectors.joining(", "));
 
@@ -77,7 +77,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
     String valsSql = cols.stream().map(c -> ":" + c.getName()).collect(Collectors.joining(", "));
     String conflictSql =
         cols.stream()
-            .filter(c -> !c.isPrimaryKey())
+            .filter(c -> !c.isPrimaryKey() && !(tenantCol != null && c == tenantCol))
             .map(c -> c.getName() + "=EXCLUDED." + c.getName())
             .collect(Collectors.joining(", "));
 

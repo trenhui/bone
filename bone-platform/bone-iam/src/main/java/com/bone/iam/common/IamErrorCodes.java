@@ -70,6 +70,13 @@ public final class IamErrorCodes {
   /** 权限不存在（含跨租户不可见）。 */
   public static final String PERMISSION_NOT_FOUND = "IAM_PERMISSION_NOT_FOUND";
 
+  /**
+   * 平台域权限码（resource_path 为 tenants / permissions / sessions）不可授予租户角色。
+   *
+   * <p>租户管理员可读取共享权限目录，但把平台域码绑进本租户角色即等于自授平台能力（平台域接口仅 {@code hasAuthority} 校验），须在绑定侧拒绝。
+   */
+  public static final String PERMISSION_PLATFORM_ONLY = "IAM_PERMISSION_PLATFORM_ONLY";
+
   // ===== 会话（IAM_SESSION_*）=====
 
   /** 会话不存在（含跨租户不可见，与"参数缺失"分属不同语义）。 */
@@ -82,6 +89,9 @@ public final class IamErrorCodes {
 
   /** 部门不存在（含跨租户不可见）。 */
   public static final String DEPT_NOT_FOUND = "IAM_DEPT_NOT_FOUND";
+
+  /** 归属部门为必填项（创建账号必须指定主部门；编辑时不允许清空归属部门）。 */
+  public static final String DEPT_REQUIRED = "IAM_DEPT_REQUIRED";
 
   /** 菜单不存在（含跨租户不可见）。 */
   public static final String MENU_NOT_FOUND = "IAM_MENU_NOT_FOUND";

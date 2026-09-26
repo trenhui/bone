@@ -2,48 +2,61 @@ import React from 'react';
 import { Layout, Menu, Button, theme } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  HomeOutlined,
   AppstoreOutlined,
-  FieldTimeOutlined,
+  TableOutlined,
   SafetyCertificateOutlined,
-  TableOutlined
+  ClusterOutlined,
+  ApartmentOutlined,
+  CrownOutlined,
+  FileDoneOutlined,
+  DatabaseOutlined,
+  FieldTimeOutlined
 } from '@ant-design/icons';
-import type { MenuItem as MenuItemType } from '../types';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems: MenuItemType[] = [
+interface MenuItemType {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  path: string;
+}
+
+interface MenuGroup {
+  groupLabel: string;
+  items: MenuItemType[];
+}
+
+// 六段式能力链导航（3a 设计 §5）：建模 → 采集 → 治理 → 发布 → 分发 → 监控
+const menuGroups: MenuGroup[] = [
   {
-    key: 'home',
-    label: '首页',
-    icon: <HomeOutlined />,
-    path: '/'
+    groupLabel: '主数据域',
+    items: [
+      { key: 'entity', label: '主数据域', icon: <AppstoreOutlined />, path: '/entities' },
+      { key: 'field', label: '字段管理', icon: <FieldTimeOutlined />, path: '/fields' },
+      { key: 'record', label: '记录管理', icon: <TableOutlined />, path: '/records' }
+    ]
   },
   {
-    key: 'entity',
-    label: '实体管理',
-    icon: <AppstoreOutlined />,
-    path: '/entity'
+    groupLabel: '治理与质量',
+    items: [
+      { key: 'rule', label: '质量规则', icon: <SafetyCertificateOutlined />, path: '/rules' },
+      { key: 'quality-results', label: '质检结果', icon: <FileDoneOutlined />, path: '/quality-results' },
+      { key: 'quality-issues', label: '整改工单', icon: <FileDoneOutlined />, path: '/quality-issues' },
+      { key: 'category', label: '分类体系', icon: <ApartmentOutlined />, path: '/categories' },
+      { key: 'governance', label: '治理看板', icon: <CrownOutlined />, path: '/governance' }
+    ]
   },
   {
-    key: 'field',
-    label: '字段管理',
-    icon: <FieldTimeOutlined />,
-    path: '/field'
-  },
-  {
-    key: 'quality',
-    label: '质量规则管理',
-    icon: <SafetyCertificateOutlined />,
-    path: '/quality'
-  },
-  {
-    key: 'record',
-    label: '记录管理',
-    icon: <TableOutlined />,
-    path: '/record'
+    groupLabel: '平台能力',
+    items: [
+      { key: 'template', label: '域模板', icon: <ClusterOutlined />, path: '/templates' },
+      { key: 'reference', label: '参考数据', icon: <DatabaseOutlined />, path: '/reference-sets' }
+    ]
   }
 ];
+
+const allItems = menuGroups.flatMap((g) => g.items);
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -52,8 +65,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 获取当前选中的菜单项
   const getSelectedKey = () => {
     const path = location.pathname;
-    const item = menuItems.find(item => item.path === path);
-    return item ? item.key : 'home';
+    const item = allItems.find((i) => i.path === path);
+    return item ? item.key : 'entity';
   };
 
   return (
@@ -73,10 +86,15 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             mode="inline"
             selectedKeys={[getSelectedKey()]}
             style={{ height: '100%', borderRight: 0 }}
-            items={menuItems.map(item => ({
-              key: item.key,
-              icon: item.icon,
-              label: <Link to={item.path}>{item.label}</Link>
+            items={menuGroups.map((group) => ({
+              key: `group-${group.groupLabel}`,
+              type: 'group',
+              label: group.groupLabel,
+              children: group.items.map((item) => ({
+                key: item.key,
+                icon: item.icon,
+                label: <Link to={item.path}>{item.label}</Link>
+              }))
             }))}
           />
         </Sider>

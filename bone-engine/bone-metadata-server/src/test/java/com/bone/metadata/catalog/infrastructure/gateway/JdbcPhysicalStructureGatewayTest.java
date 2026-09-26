@@ -4,7 +4,9 @@ import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructureP
 import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan.STATUS_RECONCILED;
 import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan.STATUS_REFUSED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.core.exception.DomainException;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.MetadataApplication;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
@@ -119,6 +121,40 @@ class JdbcPhysicalStructureGatewayTest {
     assertThat(reconcile.executed()).isEqualTo(1);
     assertThat(columnExists("f1code")).isFalse();
     assertThat(columnExists("f2code")).isTrue();
+  }
+
+  @Test
+  void validateForPublish_rejectsTypeDrift() {
+    String code = "e2e_drift_" + System.nanoTime();
+    tableName = "meta_e2e_drift_" + System.nanoTime();
+
+    MetaEntity entity =
+        MetaEntity.create(
+            null,
+            TENANT,
+            "E2E漂移实体",
+            code,
+            "E2E漂移实体",
+            "desc",
+            tableName,
+            0,
+            MetaDeliveryMode.RUNTIME.getCode(),
+            "icon");
+    entityRepository.insert(entity);
+
+    MetaField f = MetaField.create(null, TENANT, entity.getId(), "金额", "amount", "金额", "INTEGER");
+    fieldRepository.insert(f);
+
+    // align 建物理表（amount 为 INT）
+    gateway.align(TENANT, code);
+    assertThat(columnExists("amount")).isTrue();
+
+    // 模拟运行期物理列被手动改为 VARCHAR（类型漂移，非破坏性 align 无法修正）
+    jdbcTemplate.execute("ALTER TABLE `" + tableName + "` MODIFY COLUMN `amount` VARCHAR(64)");
+
+    assertThatThrownBy(() -> gateway.validateForPublish(TENANT, code))
+        .isInstanceOf(DomainException.class)
+        .hasMessageContaining("类型漂移");
   }
 
   private boolean columnExists(String col) {

@@ -1,6 +1,10 @@
 package com.bone.metadata.sdk.query.dsl.builder;
 
+import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.domain.spec.TableMetadataResolver;
+import com.bone.metadata.sdk.query.builder.TenantFilterInjector;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Condition;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Join;
@@ -13,14 +17,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /** SQL构建器 - 根据查询上下文构建参数化SQL语句 */
+@Slf4j
 public class SqlBuilder<T> {
 
   private final QueryContext<T> queryContext;
   private final StringBuilder sql = new StringBuilder();
   private final List<Object> parameters = new ArrayList<>();
   private int paramIndex = 1;
+
+  /** 租户作用域解析结果缓存（每个 SqlBuilder 实例只解析一次；@Table 缺失等解析异常按非租户表降级）。 */
+  private boolean tenantResolved;
+
+  private boolean tenantScoped;
+  private String tenantColumn;
+  private Object tenantValue;
 
   public SqlBuilder(QueryContext<T> queryContext) {
     this.queryContext = queryContext;
@@ -50,16 +63,23 @@ public class SqlBuilder<T> {
     String tableName = getTableName(queryContext.getEntityClass());
     sql.append("SELECT COUNT(*) FROM " + tableName);
 
-    // 处理WHERE条件
+    resolveTenantScope();
     List<Condition> conditions = queryContext.getConditions();
-    if (!conditions.isEmpty()) {
-      sql.append(" WHERE ");
+    boolean hasConditions = !conditions.isEmpty();
+    // 处理WHERE条件（整体加括号后再 AND 租户条件，防止 caller OR 分组击穿租户隔离）
+    if (hasConditions) {
+      sql.append(" WHERE (");
       for (int i = 0; i < conditions.size(); i++) {
         if (i > 0) {
           sql.append(conditions.get(i).isOr() ? " OR " : " AND ");
         }
         buildCountCondition(conditions.get(i));
       }
+      sql.append(")");
+    }
+    if (tenantScoped) {
+      sql.append(hasConditions ? " AND " : " WHERE ");
+      appendTenantPredicate(null);
     }
 
     return sql.toString();
@@ -288,21 +308,97 @@ public class SqlBuilder<T> {
 
   /** 构建WHERE子句 */
   private void buildWhereClause() {
+    resolveTenantScope();
     List<Condition> conditions = queryContext.getConditions();
-    if (conditions.isEmpty()) {
+    boolean hasConditions = !conditions.isEmpty();
+    if (!hasConditions && !tenantScoped) {
       return;
     }
 
     sql.append(" WHERE ");
-    for (int i = 0; i < conditions.size(); i++) {
-      Condition condition = conditions.get(i);
+    // caller 条件整体加括号后再 AND 租户条件：若直接追加，
+    // "a OR tenantId=xx OR t.tenant_id = :ctx" 的 OR 链会击穿租户隔离
+    if (hasConditions) {
+      sql.append("(");
+      for (int i = 0; i < conditions.size(); i++) {
+        Condition condition = conditions.get(i);
 
-      if (i > 0) {
-        sql.append(condition.isOr() ? " OR " : " AND ");
+        if (i > 0) {
+          sql.append(condition.isOr() ? " OR " : " AND ");
+        }
+
+        buildCondition(condition);
       }
-
-      buildCondition(condition);
+      sql.append(")");
     }
+    if (tenantScoped) {
+      if (hasConditions) {
+        sql.append(" AND ");
+      }
+      appendTenantPredicate(queryContext.getEntityAlias());
+    }
+  }
+
+  /** 追加租户谓词 {@code [alias.]tenant_id = :pN} 并绑定参数（ADR-0029，值已在 resolveTenantScope 解析）。 */
+  private void appendTenantPredicate(String alias) {
+    if (alias != null && !alias.isEmpty()) {
+      sql.append(alias).append(".");
+    }
+    String paramName = "p" + paramIndex;
+    sql.append(tenantColumn).append(" = :").append(paramName);
+    addParameter(tenantValue);
+    paramIndex++;
+  }
+
+  /**
+   * 解析主表的租户作用域（每个实例一次）：
+   *
+   * <ul>
+   *   <li>非租户表（实体未映射 {@code tenant_id}）→ 不注入（如全局目录表 DomainTemplate）；
+   *   <li>租户表 → 经 {@link TenantFilterInjector#resolveDslTenantValue} 按可信上下文 &gt; caller EQ 兜底 &gt;
+   *       失败关闭取值；
+   *   <li>实体缺 {@code @Table}（TableMetadataResolver 拒绝）→ 降级为非租户表，不破坏既有查询（与表名解析的宽容策略一致）。
+   * </ul>
+   */
+  private void resolveTenantScope() {
+    if (tenantResolved) {
+      return;
+    }
+    tenantResolved = true;
+    try {
+      TableMetadata tbl = TableMetadataResolver.load(queryContext.getEntityClass());
+      Object callerTenantEq = findCallerTenantEqValue();
+      Object resolved = TenantFilterInjector.resolveDslTenantValue(tbl, callerTenantEq);
+      if (resolved == null) {
+        return;
+      }
+      tenantScoped = true;
+      tenantColumn = tbl.getTenantIdColumn().getName();
+      tenantValue = resolved;
+    } catch (MissingTenantContextException e) {
+      throw e;
+    } catch (Exception e) {
+      // 元数据解析失败（如实体缺 @Table）按非租户表降级，不破坏既有查询
+      log.debug(
+          "Tenant scope resolution skipped for {}: {}",
+          queryContext.getEntityClass(),
+          e.getMessage());
+    }
+  }
+
+  /** 找 caller 在主表显式 EQ 限定的租户条件值（字段名 tenantId 或列名 tenant_id）。 */
+  private Object findCallerTenantEqValue() {
+    for (Condition c : queryContext.getConditions()) {
+      if (c.isHaving()) {
+        continue;
+      }
+      if ("=".equals(c.getOperator())
+          && ("tenantId".equals(c.getFieldName()) || "tenant_id".equals(c.getFieldName()))
+          && c.getValue1() != null) {
+        return c.getValue1();
+      }
+    }
+    return null;
   }
 
   /** 构建条件表达式 */

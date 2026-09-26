@@ -16,5 +16,9 @@ public class UpdateAccountReq {
   private String realName;
 
   private Integer status;
+
+  /** 归属部门（主部门）；传 null 且不显式清除时保持原值，语义见应用服务。 */
+  private Long deptId;
+
   private Long[] roleIds;
 }

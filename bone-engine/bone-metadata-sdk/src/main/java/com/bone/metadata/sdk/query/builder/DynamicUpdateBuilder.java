@@ -32,6 +32,10 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
       if (c.isPrimaryKey()) continue;
       // 版本列不在 SET 里逐字段赋值：它由 SDK 统一自增（version = version + 1），见下方 isVersioned 分支
       if (c.isVersion()) continue;
+      // 租户归属列（tenant_id）仅写入一次：INSERT 时从可信 TenantContext 取值（见 BatchInsertBuilder），
+      // 之后不可更新——既契合 ADR-0029 单租户不变量，也关闭"实体字段被填错值→UPDATE 改写行归属→跨租户破坏"的向量。
+      // WHERE 租户护栏仍由可信上下文注入，与 SET 排除互不冲突。
+      if (table.isTenantScoped() && c == table.getTenantIdColumn()) continue;
       Object v = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName()));
       clauses.add(c.getName() + " = :" + c.getName());
       params.put(c.getName(), v);

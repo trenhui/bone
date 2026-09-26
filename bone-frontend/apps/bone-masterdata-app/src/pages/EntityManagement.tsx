@@ -2,12 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
   Button,
+  Col,
   Modal,
   Form,
   Input,
   Select,
   Popconfirm,
+  Row,
   Space,
+  Statistic,
   Tag,
   Descriptions,
 } from 'antd';
@@ -38,6 +41,21 @@ const EntityManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchParams, setSearchParams] = useState<MasterDataEntityPageQry>({});
+  const [stats, setStats] = useState({ total: 0, published: 0, draft: 0 });
+
+  useEffect(() => {
+    // 统计卡片：独立拉取（不受列表筛选/分页影响）
+    void masterDataEntityApi.page({ pageNum: 1, pageSize: 200 }).then((res) => {
+      if (res.code === 200) {
+        const list = res.data.list;
+        setStats({
+          total: res.data.total,
+          published: list.filter((e) => e.status === 'PUBLISHED').length,
+          draft: list.filter((e) => e.status === 'DRAFT').length
+        });
+      }
+    });
+  }, [data]);
 
   const fetchEntities = useCallback(async () => {
     setLoading(true);
@@ -54,7 +72,7 @@ const EntityManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch {
-      message.error('获取实体列表失败');
+      message.error('获取模型列表失败');
     } finally {
       setLoading(false);
     }
@@ -90,7 +108,7 @@ const EntityManagement: React.FC = () => {
     setIsViewModalOpen(true);
   };
 
-  // 删除实体
+  // 删除模型
   const handleDelete = async (id: number) => {
     try {
       const response = await masterDataEntityApi.delete(id);
@@ -105,7 +123,7 @@ const EntityManagement: React.FC = () => {
     }
   };
 
-  // 发布实体
+  // 发布模型
   const handlePublish = async (id: number) => {
     try {
       const response = await masterDataEntityApi.publish(id);
@@ -120,7 +138,7 @@ const EntityManagement: React.FC = () => {
     }
   };
 
-  // 停用实体
+  // 停用模型
   const handleDisable = async (id: number) => {
     try {
       const response = await masterDataEntityApi.disable(id);
@@ -172,7 +190,7 @@ const EntityManagement: React.FC = () => {
   // 表格列定义
   const columns = [
     {
-      title: '实体名称',
+      title: '模型名称',
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: MasterDataEntity) => (
@@ -243,8 +261,40 @@ const EntityManagement: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Card title="主数据实体管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>创建实体</Button>}>
+    <div style={{ padding: 24 }}>
+      {/* 页头 */}
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 500, color: 'rgba(0,0,0,0.88)' }}>主数据模型管理</div>
+          <div style={{ marginTop: 4, color: 'rgba(0,0,0,0.55)' }}>
+            定义主数据域的结构与发布状态；全流程治理（质检/订阅/漂移/反馈）请进入「域工作台」
+          </div>
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          创建模型
+        </Button>
+      </div>
+
+      {/* 统计卡片 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={8} sm={8} lg={4}>
+          <Card styles={{ body: { padding: '16px 20px' } }}>
+            <Statistic title="模型总数" value={stats.total} valueStyle={{ fontSize: 24, color: '#185FA5' }} />
+          </Card>
+        </Col>
+        <Col xs={8} sm={8} lg={4}>
+          <Card styles={{ body: { padding: '16px 20px' } }}>
+            <Statistic title="已发布" value={stats.published} valueStyle={{ fontSize: 24, color: '#0F6E56' }} />
+          </Card>
+        </Col>
+        <Col xs={8} sm={8} lg={4}>
+          <Card styles={{ body: { padding: '16px 20px' } }}>
+            <Statistic title="草稿" value={stats.draft} valueStyle={{ fontSize: 24, color: '#854F0B' }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card>
         {/* 搜索表单 */}
         <Form
           layout="inline"
@@ -254,8 +304,8 @@ const EntityManagement: React.FC = () => {
             setPage(1);
           }}
         >
-          <Form.Item name="name" label="实体名称">
-            <Input placeholder="请输入实体名称" />
+          <Form.Item name="name" label="模型名称">
+            <Input placeholder="请输入模型名称" />
           </Form.Item>
           <Form.Item name="category" label="分类">
             <Input placeholder="请输入分类" />
@@ -274,12 +324,13 @@ const EntityManagement: React.FC = () => {
           </Form.Item>
         </Form>
 
-        {/* 实体列表 */}
+        {/* 模型列表 */}
         <ProTable
           options={false}
           columns={columns as ProColumns<MasterDataEntity>[]}
           dataSource={data}
           loading={loading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             total,
             pageSize,
@@ -294,7 +345,7 @@ const EntityManagement: React.FC = () => {
 
       {/* 创建/编辑模态框 */}
       <Modal
-        title={isEditMode ? '编辑实体' : '创建实体'}
+        title={isEditMode ? '编辑模型' : '创建模型'}
         open={isModalOpen}
         onOk={handleSubmit}
         onCancel={() => setIsModalOpen(false)}
@@ -302,13 +353,13 @@ const EntityManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="实体名称"
-            rules={[{ required: true, message: '请输入实体名称' }]}
+            label="模型名称"
+            rules={[{ required: true, message: '请输入模型名称' }]}
           >
-            <Input placeholder="请输入实体名称" />
+            <Input placeholder="请输入模型名称" />
           </Form.Item>
           <Form.Item name="description" label="描述">
-            <TextArea rows={4} placeholder="请输入实体描述" />
+            <TextArea rows={4} placeholder="请输入模型描述" />
           </Form.Item>
           <Form.Item name="category" label="分类">
             <Input placeholder="请输入分类" />
@@ -318,7 +369,7 @@ const EntityManagement: React.FC = () => {
 
       {/* 查看详情模态框 */}
       <Modal
-        title="实体详情"
+        title="模型详情"
         open={isViewModalOpen}
         onCancel={() => setIsViewModalOpen(false)}
         footer={[
@@ -327,7 +378,7 @@ const EntityManagement: React.FC = () => {
       >
         {currentEntity && (
           <Descriptions column={2}>
-            <Descriptions.Item label="实体名称">{currentEntity.name}</Descriptions.Item>
+            <Descriptions.Item label="模型名称">{currentEntity.name}</Descriptions.Item>
             <Descriptions.Item label="分类">{currentEntity.category || '-'}</Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentEntity.description || '-'}</Descriptions.Item>
             <Descriptions.Item label="状态">{getStatusTag(currentEntity.status)}</Descriptions.Item>

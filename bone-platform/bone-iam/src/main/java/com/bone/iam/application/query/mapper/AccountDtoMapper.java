@@ -19,6 +19,7 @@ public class AccountDtoMapper {
     dto.setStatus(account.getStatus() != null ? account.getStatus().getCode() : null);
     dto.setIsAdmin(account.isAdmin());
     dto.setTenantId(account.getTenantId());
+    dto.setDeptId(account.getDeptId());
     dto.setLastLoginAt(account.getLastLoginAt());
     dto.setLastLoginIp(account.getLastLoginIp());
     dto.setPasswordUpdatedAt(account.getPasswordUpdatedAt());

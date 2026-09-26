@@ -314,6 +314,31 @@ describe('extensionApi', () => {
     expect(result.pluginId).toBe(10);
   });
 
+  it('installMarketplaceItem passes appId for app-scoped install (5a G5)', async () => {
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { pluginId: 11, itemId: 'sample.foo', extPointId: 3, appId: 77001 },
+      },
+    });
+    const result = await installMarketplaceItem('sample.foo', 3, 77001);
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', {
+      extPointId: 3,
+      appId: 77001,
+    });
+    expect(result.appId).toBe(77001);
+  });
+
+  it('listPlugins forwards appId filter (5a G4)', async () => {
+    mockGet.mockResolvedValue({
+      data: { success: true, data: [{ id: 1, name: 'p1', enabled: true, appId: 9001 }] },
+    });
+    await listPlugins({ appId: 9001 });
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/plugins', {
+      params: { extPointId: undefined, appId: 9001, page: undefined, size: undefined },
+    });
+  });
+
   it('listPlugins surfaces ProblemDetail traceId', async () => {
     mockGet.mockResolvedValue({
       data: {

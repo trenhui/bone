@@ -12,6 +12,9 @@ import com.bone.iam.application.command.UpdateMyProfileCommand;
 import com.bone.iam.application.port.out.CurrentPrincipalPort;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,8 +63,8 @@ public class MeController {
                   resp.setIsAdmin(account.getIsAdmin());
                   resp.setTenantId(account.getTenantId());
                   resp.setScopes(principal.scopes());
-                  resp.setLastLoginAt(account.getLastLoginAt());
-                  resp.setPasswordUpdatedAt(account.getPasswordUpdatedAt());
+                  resp.setLastLoginAt(toInstant(account.getLastLoginAt()));
+                  resp.setPasswordUpdatedAt(toInstant(account.getPasswordUpdatedAt()));
                   return resp;
                 })
             .orElseThrow(() -> IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND)));
@@ -102,5 +105,9 @@ public class MeController {
     } catch (NumberFormatException e) {
       throw IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, "无效的会话");
     }
+  }
+
+  private static Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
   }
 }

@@ -31,20 +31,20 @@ public class SessionController {
   private final SessionApplicationService sessionApplicationService;
 
   @GetMapping("/accounts/{accountId}/sessions")
-  @PreAuthorize("hasAuthority('iam:sessions:read')")
+  @PreAuthorize("hasAuthority('iam:sessions:read') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<List<Session>> list(@PathVariable Long accountId) {
     return ApiResponse.success(sessionApplicationService.list(accountId));
   }
 
   @DeleteMapping("/sessions/{id}")
-  @PreAuthorize("hasAuthority('iam:sessions:write')")
+  @PreAuthorize("hasAuthority('iam:sessions:write') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<Void> revokeOne(@PathVariable Long id) {
     sessionApplicationService.revokeOne(id);
     return ApiResponse.success();
   }
 
   @DeleteMapping("/accounts/{accountId}/sessions")
-  @PreAuthorize("hasAuthority('iam:sessions:write')")
+  @PreAuthorize("hasAuthority('iam:sessions:write') and @platformAccessGuard.isPlatformAdmin()")
   public ApiResponse<Integer> revokeAll(@PathVariable Long accountId) {
     return ApiResponse.success(sessionApplicationService.revokeAllForAccount(accountId));
   }

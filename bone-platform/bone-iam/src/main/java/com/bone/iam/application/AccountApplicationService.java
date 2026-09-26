@@ -22,9 +22,19 @@ import com.bone.iam.domain.model.account.Account;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
+import com.bone.iam.domain.model.dept.Dept;
 import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.domain.repository.DeptRepository;
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -60,6 +70,9 @@ public class AccountApplicationService {
   private final AccountDtoMapper accountDtoMapper;
   private final TenantProvider tenantProvider;
 
+  /** 跨聚合读：仅用于部门归属校验、子树展开与部门名装配（{@link Dept} 属另一聚合，只取 ID 与名称）。 */
+  private final DeptRepository deptRepository;
+
   @Transactional
   public Long create(CreateAccountCommand cmd) {
     passwordPolicyValidator.assertAcceptable(cmd.getPassword());
@@ -85,10 +98,16 @@ public class AccountApplicationService {
 
     String passwordHash = passwordEncoder.encode(cmd.getPassword());
 
+    // 归属部门为必填项：所有账号必须归属一个（主）部门
+    if (cmd.getDeptId() == null) {
+      throw IamErrors.of(IamErrorCodes.DEPT_REQUIRED, "归属部门为必填项");
+    }
+
     // id 由数据库 AUTO_INCREMENT 生成，metadata-sdk insert 后会回填
     Account account =
         Account.create(
             null, username, passwordHash, email, cmd.getPhone(), cmd.getRealName(), tenantId);
+    account.changeDept(assertDeptBelongsToTenant(cmd.getDeptId(), tenantId));
     accountRepository.save(account);
     accountRoleBindingSupport.replaceBindings(
         account.getId(), account.getTenantId(), cmd.getRoleIds());
@@ -102,6 +121,13 @@ public class AccountApplicationService {
       throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
     account.updateProfile(cmd.getRealName(), cmd.getPhone(), null);
+    if (cmd.getDeptId() != null) {
+      // 语义：null=不变更（兼容未传该字段的存量调用方）；0=显式撤销归属（已禁止）；其他=本租户内已存在的部门
+      if (cmd.getDeptId() == 0L) {
+        throw IamErrors.of(IamErrorCodes.DEPT_REQUIRED, "归属部门为必填项，不能清空");
+      }
+      account.changeDept(assertDeptBelongsToTenant(cmd.getDeptId(), account.getTenantId()));
+    }
     if (cmd.getStatus() != null) {
       AccountStatus status = AccountStatus.of(cmd.getStatus());
       if (status == AccountStatus.ENABLED && account.getStatus() != AccountStatus.ENABLED) {
@@ -207,15 +233,25 @@ public class AccountApplicationService {
   @Transactional(readOnly = true)
   public PageResult<AccountDTO> page(AccountPageQuery qry) {
     Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
+    List<Dept> deptTree = qry.getDeptId() != null ? deptRepository.listAll() : List.of();
     PageResult<Account> result =
         accountRepository.findAccountPage(
             qry.getKeyword(),
             qry.getStatus() != null ? AccountStatus.of(qry.getStatus()) : null,
             effectiveTenant,
+            resolveDeptSubtree(qry.getDeptId(), deptTree),
             qry.getPage(),
             qry.getSize());
+    Map<Long, String> deptNames = deptNameIndex(deptTree);
     List<AccountDTO> dtoList =
-        result.getRecords().stream().map(AccountApplicationService::toPageDto).toList();
+        result.getRecords().stream()
+            .map(
+                account -> {
+                  AccountDTO dto = toPageDto(account);
+                  dto.setDeptName(deptNames.get(account.getDeptId()));
+                  return dto;
+                })
+            .toList();
     return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
   }
 
@@ -228,6 +264,13 @@ public class AccountApplicationService {
             account -> {
               AccountDTO dto = accountDtoMapper.toDto(account);
               dto.setRoleIds(accountRoleBindingSupport.listRoleIds(id).toArray(Long[]::new));
+              if (account.getDeptId() != null) {
+                // deptName 是展示态派生值，不落库；租户内回查。平台管理员（tenant 0）视角下租户部门不可见时自然降级为 null。
+                Dept dept = deptRepository.findById(account.getDeptId());
+                if (dept != null) {
+                  dto.setDeptName(dept.getName());
+                }
+              }
               return dto;
             });
   }
@@ -246,6 +289,46 @@ public class AccountApplicationService {
     return fromQuery;
   }
 
+  /**
+   * 展开部门子树（含节点自身）。点父部门要能看到子部门成员——与组织树的点击预期一致；{@code visited} 兼作环保护
+   * （部门树理论上无环，但脏数据/并发移动父节点时不能把查询打进死循环）。
+   */
+  private static Collection<Long> resolveDeptSubtree(Long deptId, List<Dept> deptTree) {
+    if (deptId == null || deptTree.isEmpty()) {
+      return null;
+    }
+    Map<Long, List<Dept>> childrenByParent =
+        deptTree.stream()
+            .filter(d -> d.getParentId() != null)
+            .collect(Collectors.groupingBy(Dept::getParentId));
+    Set<Long> visited = new HashSet<>();
+    Deque<Long> queue = new ArrayDeque<>();
+    queue.add(deptId);
+    while (!queue.isEmpty()) {
+      Long current = queue.poll();
+      if (!visited.add(current)) {
+        continue;
+      }
+      childrenByParent.getOrDefault(current, List.of()).forEach(child -> queue.add(child.getId()));
+    }
+    return visited;
+  }
+
+  private static Map<Long, String> deptNameIndex(List<Dept> deptTree) {
+    Map<Long, String> index = new HashMap<>();
+    deptTree.forEach(dept -> index.put(dept.getId(), dept.getName()));
+    return index;
+  }
+
+  /** 部门必须存在且属于目标租户——防止把成员挂到别的租户的部门上（跨租户 IDOR）。 */
+  private Long assertDeptBelongsToTenant(Long deptId, Long tenantId) {
+    Dept dept = deptRepository.findById(deptId);
+    if (dept == null || !java.util.Objects.equals(dept.getTenantId(), tenantId)) {
+      throw IamErrors.of(IamErrorCodes.DEPT_NOT_FOUND, "部门不存在或不属于当前租户: " + deptId);
+    }
+    return dept.getId();
+  }
+
   private static AccountDTO toPageDto(Account account) {
     AccountDTO dto = new AccountDTO();
     dto.setId(account.getId());
@@ -257,6 +340,7 @@ public class AccountApplicationService {
     dto.setStatus(account.getStatus() != null ? account.getStatus().getCode() : null);
     dto.setIsAdmin(account.isAdmin());
     dto.setTenantId(account.getTenantId());
+    dto.setDeptId(account.getDeptId());
     dto.setLastLoginAt(account.getLastLoginAt());
     dto.setLastLoginIp(account.getLastLoginIp());
     dto.setCreatedAt(account.getCreatedAt());

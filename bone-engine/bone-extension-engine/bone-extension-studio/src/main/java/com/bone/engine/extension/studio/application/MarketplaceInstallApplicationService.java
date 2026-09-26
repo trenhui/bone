@@ -28,7 +28,7 @@ public class MarketplaceInstallApplicationService {
   private final StudioAuditSupport auditService;
 
   public ResponseEntity<ApiResponse<Map<String, Object>>> install(
-      String itemId, Long requestedExtPointId) {
+      String itemId, Long requestedExtPointId, Long appId) {
     MarketplaceItem item = marketplaceCatalog.findById(itemId).orElse(null);
     if (item == null) {
       return StudioCommandResponses.notFound("市场条目不存在: " + itemId);
@@ -38,8 +38,10 @@ public class MarketplaceInstallApplicationService {
       return StudioCommandResponses.badRequest(
           "未找到匹配的扩展点（请指定 extPointId 或先注册接口 " + item.extPointInterface() + "）");
     }
+    // 免上传实例化：平台制品直接落地为租户实现元数据，租户不经手 JAR（5a G5）
     Extension plugin =
         Extension.create(extPointId, item.name(), item.description(), item.className());
+    plugin.assignApp(appId);
     plugin.setConfig(buildConfig(item));
     Extension saved = extensionCommandHandler.saveExtension(plugin);
     auditService.success("marketplace.install", "plugin", String.valueOf(saved.getId()));
@@ -47,6 +49,7 @@ public class MarketplaceInstallApplicationService {
     data.put("pluginId", saved.getId());
     data.put("itemId", item.id());
     data.put("extPointId", extPointId);
+    data.put("appId", saved.getAppId());
     return ResponseEntity.ok(ApiResponse.success("已从市场安装", data));
   }
 

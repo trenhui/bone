@@ -18,6 +18,12 @@ public class AccountDTO {
   private Boolean isAdmin;
   private Long tenantId;
 
+  /** 归属部门（主部门）；未分配时为 null。 */
+  private Long deptId;
+
+  /** 归属部门名称（由部门树装配，避免前端二次查树）。 */
+  private String deptName;
+
   /** 绑定的角色 ID 列表（来自 iam_account_role） */
   private Long[] roleIds;
 

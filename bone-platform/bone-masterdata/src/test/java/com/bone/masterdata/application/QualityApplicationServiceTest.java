@@ -115,11 +115,15 @@ class QualityApplicationServiceTest {
             List.of(
                 MasterDataRecord.create(101L, 1L, "{\"code\":\"A\"}"),
                 MasterDataRecord.create(102L, 1L, "{\"code\":\"\"}")));
+    when(qualityCheckRepository.save(any(QualityCheck.class))).thenReturn(1L);
 
     PerformDataQualityCheckCommand cmd = new PerformDataQualityCheckCommand();
     cmd.setMasterDataEntityId(1L);
     service.performCheck(cmd);
 
+    // 生命周期 RUNNING → COMPLETED：先 save 落 RUNNING，求值后 update 写结果。
+    // SDK 已根治租户缺口（tenant_id 不再进 UPDATE SET），两步写不再 500。
+    verify(qualityCheckRepository).save(any(QualityCheck.class));
     ArgumentCaptor<QualityCheck> checkCaptor = ArgumentCaptor.forClass(QualityCheck.class);
     verify(qualityCheckRepository).update(checkCaptor.capture());
     QualityCheck check = checkCaptor.getValue();

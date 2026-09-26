@@ -47,7 +47,16 @@ public class SecurityConfig {
                       .principal("anonymous")
                       .authorities(
                           AuthorityUtils.createAuthorityList(
-                              "metadata:read", "metadata:write", "metadata:publish")));
+                              // G5：model/runtime 二维拆分 + 旧三码 deprecated 别名（2a §4.3）
+                              "metadata:read",
+                              "metadata:write",
+                              "metadata:publish",
+                              "metadata:model:read",
+                              "metadata:model:write",
+                              "metadata:runtime:read",
+                              "metadata:runtime:write",
+                              "metadata:template:read",
+                              "metadata:template:write")));
     } else {
       http.authorizeHttpRequests(
               auth ->
@@ -69,9 +78,16 @@ public class SecurityConfig {
   }
 
   private List<GrantedAuthority> getApiKeyAuthorities() {
+    // G5：与匿名主体同口径——服务级凭证持有 model/runtime/template 全量 + 旧码别名
     return List.of(
         new SimpleGrantedAuthority("metadata:read"),
         new SimpleGrantedAuthority("metadata:write"),
-        new SimpleGrantedAuthority("metadata:publish"));
+        new SimpleGrantedAuthority("metadata:publish"),
+        new SimpleGrantedAuthority("metadata:model:read"),
+        new SimpleGrantedAuthority("metadata:model:write"),
+        new SimpleGrantedAuthority("metadata:runtime:read"),
+        new SimpleGrantedAuthority("metadata:runtime:write"),
+        new SimpleGrantedAuthority("metadata:template:read"),
+        new SimpleGrantedAuthority("metadata:template:write"));
   }
 }

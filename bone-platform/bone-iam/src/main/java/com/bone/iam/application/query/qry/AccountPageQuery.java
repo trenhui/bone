@@ -9,4 +9,7 @@ public class AccountPageQuery {
   private String keyword;
   private Integer status;
   private Long tenantId;
+
+  /** 按部门过滤：命中该部门及其所有后代部门的成员（子树语义，与组织树点击行为一致）。 */
+  private Long deptId;
 }

@@ -102,27 +102,19 @@
       "note": "流程执行记录：只追加（started_at/ended_at 即生命周期）"
     },
     "md_entity": {
-      "missing": [
-        "tenant_id",
-        "deleted"
-      ],
-      "classification": "needs-owner-decision",
-      "note": "主数据实体定义：疑似全局模板（同 md_field），需 masterdata Owner 裁决"
+      "missing": [],
+      "classification": "resolved",
+      "note": "G1 已收敛（2026-09-26）：聚合持久化目标切换为 mdm_entity（见 scripts/migration/0001_masterdata_mdm_convergence.sql），md_* 运行时兼容表已从 bone-init.sql §8 移除；本条目仅保留指向已下线历史表"
     },
     "md_field": {
-      "missing": [
-        "tenant_id"
-      ],
-      "classification": "by-design",
-      "note": "字段定义：随 md_entity（全局模板级）"
+      "missing": [],
+      "classification": "resolved",
+      "note": "G1 已收敛：md_field 切换为 mdm_field"
     },
     "md_record": {
-      "missing": [
-        "tenant_id",
-        "deleted"
-      ],
-      "classification": "needs-owner-decision",
-      "note": "主数据记录（JSON data 列）：疑似应按租户隔离，需 masterdata Owner 裁决"
+      "missing": [],
+      "classification": "resolved",
+      "note": "G1 已收敛：md_record 切换为 mdm_record（含 tenant_id/deleted/submitted_by）；两表租户隔离裁决为行级 tenant_id + 平台模板层另建（3a 设计 §1.1/§2）"
     },
     "mdm_qcheck_detail": {
       "missing": [
@@ -169,7 +161,7 @@
       "classification": "by-design",
       "note": "记录版本历史：租户随 record，且只追加"
     },
-    "meta_data_lineage": {
+    "md_lineage": {
       "missing": [
         "tenant_id",
         "updated_at",
@@ -178,7 +170,7 @@
       "classification": "needs-owner-decision",
       "note": "血缘记录：只追加，但租户归属未在 DDL 表达，需元数据 Owner 裁决"
     },
-    "meta_data_standard": {
+    "md_standard": {
       "missing": [
         "deleted"
       ],

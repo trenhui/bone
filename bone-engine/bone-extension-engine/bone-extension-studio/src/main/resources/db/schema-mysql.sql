@@ -26,11 +26,12 @@ CREATE TABLE IF NOT EXISTS exts_extension_impl (
     id                  BIGINT          NOT NULL COMMENT '主键',
     tenant_id           BIGINT          NOT NULL DEFAULT 0,
     extension_point_id  BIGINT          NOT NULL,
+    app_id              BIGINT          DEFAULT NULL,
     impl_name           VARCHAR(255)    NOT NULL,
     impl_code           VARCHAR(200)    NOT NULL,
     description         VARCHAR(500)    DEFAULT NULL,
     class_name          VARCHAR(500)    NOT NULL,
-    tenant_code         VARCHAR(64)     DEFAULT 'DEFAULT',
+    tenant_code         VARCHAR(64)     DEFAULT '*',
     biz_code            VARCHAR(64)     DEFAULT '*',
     use_case            VARCHAR(64)     DEFAULT '*',
     scenario            VARCHAR(64)     DEFAULT '*',
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS exts_extension_impl (
     PRIMARY KEY (id),
     UNIQUE KEY uk_exts_ei_code (extension_point_id, impl_code),
     KEY idx_exts_ei_tenant (tenant_id, extension_point_id),
-    KEY idx_exts_ei_point (extension_point_id)
+    KEY idx_exts_ei_point (extension_point_id),
+    KEY idx_exts_ei_app (app_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展实现';
 
 CREATE TABLE IF NOT EXISTS exts_plugin_version (

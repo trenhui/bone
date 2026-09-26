@@ -27,6 +27,7 @@ public final class CatalogDtoMapper {
     dto.setStatusLabel(MetaEntityStatus.fromCode(e.getStatus()).name());
     dto.setSortOrder(e.getSortOrder());
     dto.setIcon(e.getIcon());
+    dto.setModuleId(e.getModuleId());
     dto.setVersion(e.getVersion());
     return dto;
   }

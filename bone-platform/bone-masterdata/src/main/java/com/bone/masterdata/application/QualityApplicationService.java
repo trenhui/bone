@@ -177,9 +177,6 @@ public class QualityApplicationService {
             .map(this::toRecordFields)
             .toList();
 
-    QualityCheck check = QualityCheck.create(DistributedIdGenerator.generateLongId(), entityId);
-    qualityCheckRepository.save(check);
-
     Map<String, Set<String>> references = loadReferenceValues(rules);
     List<RuleEvaluation> evaluations =
         rules.stream()
@@ -193,6 +190,12 @@ public class QualityApplicationService {
             .distinct()
             .count();
     int issueCount = evaluations.stream().mapToInt(RuleEvaluation::violationCount).sum();
+
+    // 生命周期 RUNNING → COMPLETED：先入库落 RUNNING（计数列已在 create 中初始化为 0），
+    // 求值后 update 写结果终态。SDK 租户缺口已根治（tenant_id 不再进入 UPDATE SET 子句，
+    // 仅从可信 TenantContext 写入一次），两步写不再触发 NULL/500，失败时事务回滚无僵尸行。
+    QualityCheck check = QualityCheck.create(DistributedIdGenerator.generateLongId(), entityId);
+    qualityCheckRepository.save(check);
     check.complete(records.size(), (int) (records.size() - failedRecords), (int) failedRecords);
     qualityCheckRepository.update(check);
 
@@ -352,6 +355,17 @@ public class QualityApplicationService {
       throw NotFoundException.of("质量报告不存在");
     }
     return toReportDto(report);
+  }
+
+  // 按检查任务 ID 取报告：调用方持有的是 checkId，而 /reports/{id} 的 id 是报告主键，
+  // 两者混用会稳定 404。报告主键属内部标识，对客户端没有意义。
+  @Transactional(readOnly = true)
+  public QualityReportDTO reportByCheckId(Long checkId) {
+    List<QualityReport> reports = qualityReportRepository.findByQualityCheckId(checkId);
+    if (reports.isEmpty()) {
+      throw NotFoundException.of("质量报告不存在");
+    }
+    return toReportDto(reports.get(0));
   }
 
   private QualityReportDTO toReportDto(QualityReport report) {

@@ -58,6 +58,7 @@ CREATE TABLE iam_account (
     phone               VARCHAR(20)     DEFAULT NULL COMMENT '手机号',
     real_name           VARCHAR(100)    DEFAULT NULL COMMENT '真实姓名',
     avatar_url          VARCHAR(500)    DEFAULT NULL COMMENT '头像URL',
+    dept_id             BIGINT          DEFAULT NULL COMMENT '归属部门ID（主部门，跨聚合只存ID不级联）',
     status              TINYINT         NOT NULL DEFAULT 1 COMMENT '0-禁用 1-启用 2-锁定',
     is_admin            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否管理员',
     last_login_at       DATETIME(3)     DEFAULT NULL COMMENT '最后登录时间',
@@ -73,7 +74,8 @@ CREATE TABLE iam_account (
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_account_username (tenant_id, username),
-    KEY idx_iam_account_tenant (tenant_id)
+    KEY idx_iam_account_tenant (tenant_id),
+    KEY idx_iam_account_dept (dept_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM账户';
 
 CREATE TABLE iam_role (
@@ -280,9 +282,15 @@ VALUES
     (4, 'iam:roles:write', 'IAM-角色维护', 'iam', 'roles', 'write', 'OPERATION', 40, NULL),
     (5, 'iam:permissions:read', 'IAM-权限查看', 'iam', 'permissions', 'read', 'OPERATION', 50, NULL),
     (6, 'iam:permissions:write', 'IAM-权限维护', 'iam', 'permissions', 'write', 'OPERATION', 60, NULL),
-    (7, 'metadata:read', '元数据-读', 'metadata', '*', 'read', 'OPERATION', 70, NULL),
-    (8, 'metadata:write', '元数据-写', 'metadata', '*', 'write', 'OPERATION', 80, NULL),
-    (19, 'metadata:publish', '元数据-发布', 'metadata', '*', 'publish', 'OPERATION', 85, 'catalog 实体 publish'),
+    (7, 'metadata:read', '元数据-读', 'metadata', '*', 'read', 'OPERATION', 70, 'deprecated 别名：映射 metadata:model:read / metadata:runtime:read（2a §4.3）'),
+    (8, 'metadata:write', '元数据-写', 'metadata', '*', 'write', 'OPERATION', 80, 'deprecated 别名：映射 metadata:model:write / metadata:runtime:write'),
+    (19, 'metadata:publish', '元数据-发布', 'metadata', '*', 'publish', 'OPERATION', 85, 'catalog 实体 publish；G4 发布包落地后由 metadata:release:create/approve 取代'),
+    (55, 'metadata:model:read', '元数据-建模查看', 'metadata', 'model', 'read', 'OPERATION', 71, '实体/字段/关系/物理结构查看（G5 拆分）'),
+    (56, 'metadata:model:write', '元数据-建模维护', 'metadata', 'model', 'write', 'OPERATION', 81, '建模写：实体/字段/关系 CRUD 与发布（G5 拆分；受应用角色约束 G1②）'),
+    (57, 'metadata:runtime:read', '元数据-运行时查看', 'metadata', 'runtime', 'read', 'OPERATION', 72, '模式 B 业务记录查看（运营台）'),
+    (58, 'metadata:runtime:write', '元数据-运行时维护', 'metadata', 'runtime', 'write', 'OPERATION', 82, '模式 B 业务记录 CRUD（运营台；建模权限已剥离）'),
+    (59, 'metadata:template:read', '元数据-模板查看', 'metadata', 'template', 'read', 'OPERATION', 73, '平台模型模板与版本查看（G3）'),
+    (60, 'metadata:template:write', '元数据-模板维护', 'metadata', 'template', 'write', 'OPERATION', 83, '平台模型模板维护与实例化（G3）'),
     (9, 'extension:points:read', '扩展点-读', 'extension', 'points', 'read', 'OPERATION', 90, NULL),
     (10, 'extension:points:write', '扩展点-写', 'extension', 'points', 'write', 'OPERATION', 100, NULL),
     (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL),
@@ -300,7 +308,25 @@ VALUES
     (24, 'iam:menus:read', 'IAM-菜单查看', 'iam', 'menus', 'read', 'OPERATION', 230, '菜单树/当前用户菜单查看'),
     (25, 'iam:menus:write', 'IAM-菜单维护', 'iam', 'menus', 'write', 'OPERATION', 240, '菜单新建/编辑/删除'),
     (26, 'iam:apps:read', 'IAM-应用查看', 'iam', 'apps', 'read', 'OPERATION', 250, '应用列表/详情/成员查看（AppController @PreAuthorize）'),
-    (27, 'iam:apps:write', 'IAM-应用维护', 'iam', 'apps', 'write', 'OPERATION', 260, '应用新建/编辑/删除/成员授权');
+    (27, 'iam:apps:write', 'IAM-应用维护', 'iam', 'apps', 'write', 'OPERATION', 260, '应用新建/编辑/删除/成员授权'),
+    (40, 'masterdata:entities:read', '主数据-实体查看', 'masterdata', 'entities', 'read', 'OPERATION', 300, '主数据实体/域视图查看'),
+    (41, 'masterdata:entities:write', '主数据-实体维护', 'masterdata', 'entities', 'write', 'OPERATION', 310, '实体创建/治理等级/责任归口'),
+    (42, 'masterdata:records:read', '主数据-记录查看', 'masterdata', 'records', 'read', 'OPERATION', 320, '记录列表/详情/版本历史'),
+    (43, 'masterdata:records:write', '主数据-记录维护', 'masterdata', 'records', 'write', 'OPERATION', 330, '记录创建/修改/提交/发布/导入'),
+    (44, 'masterdata:records:approve', '主数据-记录审批', 'masterdata', 'records', 'approve', 'OPERATION', 340, '审批通过/驳回（SoD：不得自审）'),
+    (45, 'masterdata:categories:read', '主数据-分类查看', 'masterdata', 'categories', 'read', 'OPERATION', 350, '分类树/记录归类查看'),
+    (46, 'masterdata:categories:write', '主数据-分类维护', 'masterdata', 'categories', 'write', 'OPERATION', 360, '分类树维护/记录归类'),
+    (47, 'masterdata:templates:read', '主数据-模板查看', 'masterdata', 'templates', 'read', 'OPERATION', 370, '域模板与版本查看'),
+    (48, 'masterdata:templates:write', '主数据-模板维护', 'masterdata', 'templates', 'write', 'OPERATION', 380, '域模板维护/发版（平台域）'),
+    (49, 'masterdata:templates:instantiate', '主数据-模板实例化', 'masterdata', 'templates', 'instantiate', 'OPERATION', 390, '从模板实例化主数据实体（租户）'),
+    (50, 'masterdata:subscriptions:write', '主数据-订阅维护', 'masterdata', 'subscriptions', 'write', 'OPERATION', 400, '订阅申请/批准/撤销'),
+    (51, 'masterdata:quality:write', '主数据-质量治理', 'masterdata', 'quality', 'write', 'OPERATION', 410, '质检任务/规则/整改工单维护'),
+    (52, 'masterdata:reference:read', '主数据-参考数据查看', 'masterdata', 'reference', 'read', 'OPERATION', 420, '参考数据值域/值查看'),
+    (53, 'masterdata:reference:write', '主数据-参考数据维护', 'masterdata', 'reference', 'write', 'OPERATION', 430, '参考数据值域/值维护'),
+    (54, 'masterdata:governance:write', '主数据-治理操作', 'masterdata', 'governance', 'write', 'OPERATION', 440, '治理角色指派/订阅批准/漂移处置/反馈处理'),
+    (61, 'sys:config:write', 'SYS-配置维护', 'system', 'config', 'write', 'OPERATION', 450, '全局系统配置写（平台域；ConfigController @PreAuthorize）'),
+    (62, 'sys:dict:write', 'SYS-字典维护', 'system', 'dicts', 'write', 'OPERATION', 460, '全局字典写（平台域；DictController @PreAuthorize）'),
+    (63, 'sys:schedule:write', 'SYS-调度维护', 'system', 'schedule-tasks', 'write', 'OPERATION', 470, '定时任务维护/启停/立即执行（平台域；ScheduleTaskController @PreAuthorize）');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -309,7 +335,19 @@ VALUES
     (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15),
     (16, 1, 16), (17, 1, 17), (18, 1, 18), (19, 1, 19),
     (20, 1, 20), (21, 1, 21), (22, 1, 22), (23, 1, 23),
-    (24, 1, 24), (25, 1, 25), (36, 1, 26), (37, 1, 27);
+    (24, 1, 24), (25, 1, 25), (36, 1, 26), (37, 1, 27),
+    (75, 1, 55), (76, 1, 56), (77, 1, 57), (78, 1, 58), (79, 1, 59), (80, 1, 60),
+    (40, 1, 40), (41, 1, 41), (42, 1, 42), (43, 1, 43), (44, 1, 44),
+    (45, 1, 45), (46, 1, 46), (47, 1, 47), (48, 1, 48), (49, 1, 49),
+    (50, 1, 50), (51, 1, 51), (52, 1, 52), (53, 1, 53), (54, 1, 54),
+    (60, 3, 40), (61, 3, 41), (62, 3, 42), (63, 3, 43), (64, 3, 44),
+    (65, 3, 45), (66, 3, 46), (67, 3, 47), (68, 3, 49),
+    (70, 3, 50), (71, 3, 51), (72, 3, 52), (73, 3, 53), (74, 3, 54),
+    -- G5 元数据建模/运行时/模板查看拆分：租户管理员绑定（template:write 属平台域不绑）
+    (81, 3, 55), (82, 3, 56), (83, 3, 57), (84, 3, 58), (85, 3, 59);
+-- SYS 平台域写码绑定超管（61/62/63；租户管理员不绑——全局表写属平台域）
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63);
 
 -- ============================================================
 -- 2. System
@@ -748,11 +786,13 @@ CREATE TABLE int_template (
 -- 4. Metadata
 -- ============================================================
 
-DROP TABLE IF EXISTS meta_data_quality_rule;
+DROP TABLE IF EXISTS md_quality_rule;
 DROP TABLE IF EXISTS meta_code_template;
 DROP TABLE IF EXISTS meta_entity_relation;
 DROP TABLE IF EXISTS meta_field;
 DROP TABLE IF EXISTS meta_entity;
+DROP TABLE IF EXISTS meta_model_template_field;
+DROP TABLE IF EXISTS meta_model_template;
 
 CREATE TABLE meta_entity (
     id                  BIGINT          NOT NULL COMMENT '实体主键（Snowflake）',
@@ -766,6 +806,8 @@ CREATE TABLE meta_entity (
     delivery_mode       TINYINT         NOT NULL DEFAULT 0 COMMENT '0-GENERATIVE生成式 1-RUNTIME运行时',
     status              TINYINT         NOT NULL DEFAULT 0 COMMENT '0-草稿 1-已发布 2-已归档',
     module_id           BIGINT          DEFAULT NULL COMMENT '所属模块ID（bone_module.id）',
+    scope               VARCHAR(20)     NOT NULL DEFAULT 'TENANT' COMMENT '归属层（G3/ADR-0031）：PLATFORM平台 TENANT租户',
+    template_id         BIGINT          DEFAULT NULL COMMENT '实例化来源模板ID（G3，meta_model_template.id）',
     is_builtin          TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否内置',
     icon                VARCHAR(100)    DEFAULT NULL COMMENT '图标',
     sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
@@ -810,6 +852,65 @@ CREATE TABLE meta_field (
     UNIQUE KEY uk_meta_f_entity_code (entity_id, code),
     KEY idx_meta_f_entity (entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据字段表';
+
+-- 平台模型层（G3/ADR-0031）：平台沉淀可复用模型蓝图，租户实例化复制为 meta_entity(scope=TENANT, template_id)
+CREATE TABLE meta_model_template (
+    id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（平台层固定 0，全租户共享）',
+    code                VARCHAR(200)    NOT NULL COMMENT '模板编码',
+    name                VARCHAR(200)    NOT NULL COMMENT '模板名称',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    category            VARCHAR(100)    DEFAULT NULL COMMENT '业务域分类（客户/订单/支付/物料/组织…）',
+    current_version     VARCHAR(50)     NOT NULL DEFAULT 'v1.0.0' COMMENT '当前版本',
+    status              TINYINT         NOT NULL DEFAULT 0 COMMENT '0-草稿 1-已发布（发布后方可实例化）',
+    created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_meta_tpl_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='平台模型模板（G3）';
+
+CREATE TABLE meta_model_template_field (
+    id                  BIGINT          NOT NULL COMMENT '模板字段主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（平台层固定 0）',
+    template_id         BIGINT          NOT NULL COMMENT '所属模板ID',
+    code                VARCHAR(100)    NOT NULL COMMENT '字段编码',
+    name                VARCHAR(100)    NOT NULL COMMENT '字段名称',
+    display_name        VARCHAR(200)    NOT NULL COMMENT '显示名称',
+    field_type          VARCHAR(50)     NOT NULL COMMENT '字段类型（string/integer/decimal/boolean/date/datetime/text）',
+    length              INT             DEFAULT NULL COMMENT '字段长度',
+    is_required         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否必填',
+    is_unique           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否唯一',
+    default_value       VARCHAR(500)    DEFAULT NULL COMMENT '默认值',
+    comment             VARCHAR(500)    DEFAULT NULL COMMENT '字段注释',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_meta_tpl_f_code (template_id, code),
+    KEY idx_meta_tpl_f_tpl (template_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='平台模型模板字段集（G3）';
+
+-- 平台模板种子（UC-MP1 示例：客户主数据蓝图，字段集对齐 3a 主数据场景），按 code 幂等
+INSERT INTO meta_model_template (id, tenant_id, code, name, description, category, current_version, status, created_by, created_at, updated_at, deleted, version)
+VALUES (9101, 0, 'tpl_customer_base', '客户主数据基础模板', '客户主数据最小可用蓝图：编码/名称/手机号/邮箱/地址，供租户一键实例化后按需扩展', '客户', 'v1.0.0', 1, 1, NOW(3), NOW(3), 0, 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name), current_version = VALUES(current_version), status = VALUES(status);
+
+INSERT INTO meta_model_template_field (id, tenant_id, template_id, code, name, display_name, field_type, length, is_required, is_unique, default_value, comment, sort_order, created_by, created_at, updated_at, deleted, version)
+VALUES
+    (9111, 0, 9101, 'cust_no', 'customerNo', '客户编码', 'string', 64, 1, 1, NULL, '业务唯一编码', 1, 1, NOW(3), NOW(3), 0, 0),
+    (9112, 0, 9101, 'cust_name', 'customerName', '客户名称', 'string', 200, 1, 0, NULL, '客户全称', 2, 1, NOW(3), NOW(3), 0, 0),
+    (9113, 0, 9101, 'mobile', 'mobile', '手机号', 'string', 20, 0, 0, NULL, '联系手机号', 3, 1, NOW(3), NOW(3), 0, 0),
+    (9114, 0, 9101, 'email', 'email', '邮箱', 'string', 200, 0, 0, NULL, NULL, 4, 1, NOW(3), NOW(3), 0, 0),
+    (9115, 0, 9101, 'address', 'address', '地址', 'string', 500, 0, 0, NULL, NULL, 5, 1, NOW(3), NOW(3), 0, 0)
+ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), sort_order = VALUES(sort_order);
 
 CREATE TABLE meta_entity_relation (
     id                  BIGINT          NOT NULL COMMENT '关系主键（Snowflake）',
@@ -857,7 +958,7 @@ CREATE TABLE meta_code_template (
     UNIQUE KEY uk_meta_ct_code_version (tenant_id, code, version)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据代码生成模板表';
 
-CREATE TABLE meta_data_quality_rule (
+CREATE TABLE md_quality_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL COMMENT '租户ID',
     entity_id           BIGINT          NOT NULL COMMENT '所属实体ID',
@@ -914,11 +1015,12 @@ CREATE TABLE exts_extension_impl (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     extension_point_id  BIGINT          NOT NULL COMMENT '扩展点ID',
+    app_id              BIGINT          DEFAULT NULL COMMENT '归属应用ID（bone_application.id，可空=平台通用插件）',
     impl_name           VARCHAR(255)    NOT NULL COMMENT '实现名称',
     impl_code           VARCHAR(200)    NOT NULL COMMENT '实现编码',
     description         VARCHAR(500)    DEFAULT NULL COMMENT '描述',
     class_name          VARCHAR(500)    NOT NULL COMMENT '实现类 FQCN',
-    tenant_code         VARCHAR(64)     DEFAULT 'DEFAULT' COMMENT '租户码',
+    tenant_code         VARCHAR(64)     DEFAULT '*' COMMENT '租户码（* 通配或 iam_tenant.code）',
     biz_code            VARCHAR(64)     DEFAULT '*' COMMENT '业务码',
     use_case            VARCHAR(64)     DEFAULT '*' COMMENT '用例',
     scenario            VARCHAR(64)     DEFAULT '*' COMMENT '场景',
@@ -937,7 +1039,8 @@ CREATE TABLE exts_extension_impl (
     PRIMARY KEY (id),
     UNIQUE KEY uk_exts_ei_code (extension_point_id, impl_code),
     KEY idx_exts_ei_tenant (tenant_id, extension_point_id),
-    KEY idx_exts_ei_point (extension_point_id)
+    KEY idx_exts_ei_point (extension_point_id),
+    KEY idx_exts_ei_app (app_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展实现';
 
 CREATE TABLE exts_plugin_version (
@@ -1395,11 +1498,22 @@ CREATE TABLE cnsl_recent_access (
 -- 8. 主数据管理（mdm_*，bone-platform/bone-masterdata）
 -- ============================================================
 
+DROP TABLE IF EXISTS mdm_feedback;
+DROP TABLE IF EXISTS mdm_model_drift;
+DROP TABLE IF EXISTS mdm_quality_issue;
+DROP TABLE IF EXISTS mdm_reference_value;
+DROP TABLE IF EXISTS mdm_reference_set;
+DROP TABLE IF EXISTS mdm_steward_scope;
+DROP TABLE IF EXISTS mdm_steward;
+DROP TABLE IF EXISTS mdm_entity_subscription;
+DROP TABLE IF EXISTS mdm_template_version;
+DROP TABLE IF EXISTS mdm_domain_template;
 DROP TABLE IF EXISTS mdm_qcheck_report;
 DROP TABLE IF EXISTS mdm_qcheck_detail;
 DROP TABLE IF EXISTS mdm_qcheck_task;
 DROP TABLE IF EXISTS mdm_record_category;
 DROP TABLE IF EXISTS mdm_category;
+DROP TABLE IF EXISTS mdm_field;
 DROP TABLE IF EXISTS mdm_record_version;
 DROP TABLE IF EXISTS mdm_record;
 DROP TABLE IF EXISTS mdm_entity;
@@ -1407,13 +1521,19 @@ DROP TABLE IF EXISTS mdm_entity;
 CREATE TABLE mdm_entity (
     id                  BIGINT          NOT NULL COMMENT '主数据实体主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
-    meta_entity_id      BIGINT          NOT NULL COMMENT '关联 meta_entity.id',
-    entity_code         VARCHAR(200)    NOT NULL COMMENT '主数据实体编码',
+    meta_entity_id      BIGINT          DEFAULT NULL COMMENT '来源 meta_entity.id（ADR-0017 血缘追溯，可空=租户自建）',
+    entity_code         VARCHAR(200)    DEFAULT NULL COMMENT '主数据实体编码（租户内唯一，存量迁移数据可空）',
     entity_name         VARCHAR(200)    NOT NULL COMMENT '显示名称',
     description         TEXT            DEFAULT NULL COMMENT '描述',
-    is_versioning       TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用版本控制',
-    workflow_enabled    TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用审批流',
-    status              TINYINT         NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    category            VARCHAR(100)    DEFAULT NULL COMMENT '分类标签（存量兼容列）',
+    domain_code         VARCHAR(64)     DEFAULT NULL COMMENT '业务域编码：CUSTOMER/SUPPLIER/MATERIAL/ORG/FIN_ACCOUNT/EMPLOYEE/PROJECT',
+    template_id         BIGINT          DEFAULT NULL COMMENT '来源域模板ID（mdm_domain_template.id，可空=租户自建）',
+    template_version    VARCHAR(32)     DEFAULT NULL COMMENT '实例化时的模板版本号',
+    owning_app_id       BIGINT          DEFAULT NULL COMMENT '责任归口应用ID（bone_application.id，可空=平台共享域）',
+    governance_tier     VARCHAR(16)     NOT NULL DEFAULT 'L1' COMMENT '治理等级：L1-轻量 L2-标准 L3-严格（推导 is_versioning/workflow_enabled）',
+    is_versioning       TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用版本控制（由 governance_tier 推导）',
+    workflow_enabled    TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用审批流（由 governance_tier 推导）',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT-草稿 PUBLISHED-已发布 DISABLED-已停用（G2 统一为字符串语义）',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -1423,22 +1543,27 @@ CREATE TABLE mdm_entity (
     PRIMARY KEY (id),
     UNIQUE KEY uk_mdm_entity_code (tenant_id, entity_code),
     UNIQUE KEY uk_mdm_entity_meta (tenant_id, meta_entity_id),
-    KEY idx_mdm_entity_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体扩展配置';
+    KEY idx_mdm_entity_status (status),
+    KEY idx_mdm_entity_domain (domain_code),
+    KEY idx_mdm_entity_template (template_id),
+    KEY idx_mdm_entity_owner (owning_app_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体（G1 收敛后真源，替代 md_entity）';
 
 CREATE TABLE mdm_record (
     id                  BIGINT          NOT NULL COMMENT '记录主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
-    record_code         VARCHAR(200)    NOT NULL COMMENT '业务唯一编码',
-    display_name        VARCHAR(500)    NOT NULL COMMENT '显示名称',
+    record_code         VARCHAR(200)    DEFAULT NULL COMMENT '业务唯一编码（租户+实体内唯一；存量迁移数据可空）',
+    display_name        VARCHAR(500)    DEFAULT NULL COMMENT '显示名称（存量迁移数据可空）',
     current_data        JSON            NOT NULL COMMENT '当前生效属性数据',
-    status              VARCHAR(20)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT/PENDING_APPROVAL/APPROVED/PUBLISHED/SUPERSEDED/ARCHIVED',
     version_number      INT             NOT NULL DEFAULT 1 COMMENT '当前版本号',
     effective_from      DATETIME(3)     DEFAULT NULL COMMENT '生效开始时间',
     effective_to        DATETIME(3)     DEFAULT NULL COMMENT '生效结束时间',
     is_current          TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否当前有效版本',
-    parent_record_id    BIGINT          DEFAULT NULL COMMENT '父记录ID',
+    parent_record_id    BIGINT          DEFAULT NULL COMMENT '父记录ID（黄金记录合并后的来源）',
+    submitted_by        BIGINT          DEFAULT NULL COMMENT '审批提交人ID（SoD 校验用）',
+    publish_time        DATETIME(3)     DEFAULT NULL COMMENT '发布时间',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -1548,14 +1673,275 @@ CREATE TABLE mdm_qcheck_report (
     UNIQUE KEY uk_mdm_qrpt_check (check_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查报告';
 
+-- ------------------------------------------------------------
+-- 8.0 主数据字段（G1 收敛：新建以承接 md_field，ADR-0017 提及的 mdm_field）
+-- ------------------------------------------------------------
+
+CREATE TABLE mdm_field (
+    id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id               BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    master_data_entity_id   BIGINT          NOT NULL COMMENT '主数据实体ID（mdm_entity.id）',
+    name                    VARCHAR(200)    NOT NULL COMMENT '字段名称',
+    code                    VARCHAR(200)    NOT NULL COMMENT '字段编码',
+    type                    VARCHAR(50)     NOT NULL COMMENT '字段类型',
+    length                  INT             DEFAULT NULL COMMENT '字段长度',
+    required                TINYINT(1)      DEFAULT 0 COMMENT '是否必填',
+    default_value           VARCHAR(500)    DEFAULT NULL COMMENT '默认值',
+    description             TEXT            DEFAULT NULL COMMENT '描述',
+    sort_order              INT             DEFAULT 0 COMMENT '排序',
+    source_type             VARCHAR(16)     NOT NULL DEFAULT 'TENANT' COMMENT '来源：TEMPLATE-模板字段（不可删）TENANT-租户扩展',
+    enabled                 TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用（删除字段走软禁用，ADR-0017）',
+    reference_set_code      VARCHAR(64)     DEFAULT NULL COMMENT '引用的参考数据集编码（值域校验，见 §2.3）',
+    created_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    created_by              BIGINT          DEFAULT NULL COMMENT '创建人',
+    updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    updated_by              BIGINT          DEFAULT NULL COMMENT '修改人',
+    deleted                 TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version                 INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_mdm_field_tenant (tenant_id),
+    UNIQUE KEY uk_mdm_field_entity_code (tenant_id, master_data_entity_id, code),
+    KEY idx_mdm_field_entity (master_data_entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据字段（G1 收敛后真源，替代 md_field）';
+
+-- ------------------------------------------------------------
+-- 8.0.1 域模板（平台层 tenant_id=0，租户实例化；UC-P1/P2 + UC-T1）
+-- ------------------------------------------------------------
+
+CREATE TABLE mdm_domain_template (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（平台模板恒为 0）',
+    domain_code         VARCHAR(64)     NOT NULL COMMENT '域编码：CUSTOMER/SUPPLIER/MATERIAL/ORG_UNIT/FIN_ACCOUNT/EMPLOYEE/PROJECT',
+    domain_name         VARCHAR(200)    NOT NULL COMMENT '域名称',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    current_version     VARCHAR(32)     NOT NULL DEFAULT '1.0.0' COMMENT '当前版本号',
+    default_governance_tier VARCHAR(16) NOT NULL DEFAULT 'L1' COMMENT '默认治理等级：L1/L2/L3',
+    field_schema        JSON            DEFAULT NULL COMMENT '默认字段集（JSON 数组）',
+    rule_schema         JSON            DEFAULT NULL COMMENT '默认质量规则包（JSON 数组）',
+    category_schema     JSON            DEFAULT NULL COMMENT '默认分类骨架（JSON 树）',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT-草稿 PUBLISHED-已发布 ARCHIVED-已归档',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_tpl_domain (tenant_id, domain_code),
+    KEY idx_mdm_tpl_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据域模板（平台层，租户只读实例化）';
+
+CREATE TABLE mdm_template_version (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（恒为 0）',
+    template_id         BIGINT          NOT NULL COMMENT '域模板ID',
+    version_number      VARCHAR(32)     NOT NULL COMMENT '版本号（semver）',
+    change_log          TEXT            DEFAULT NULL COMMENT '变更说明',
+    field_schema        JSON            DEFAULT NULL COMMENT '该版本字段集快照',
+    rule_schema         JSON            DEFAULT NULL COMMENT '该版本规则包快照',
+    category_schema     JSON            DEFAULT NULL COMMENT '该版本分类骨架快照',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_tplv (template_id, version_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='域模板版本（租户自主选择是否跟随升级）';
+
+-- ------------------------------------------------------------
+-- 8.0.2 消费订阅与治理授权（UC-T8 / §4.3 Steward Scope）
+-- ------------------------------------------------------------
+
+CREATE TABLE mdm_entity_subscription (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    app_id              BIGINT          NOT NULL COMMENT '消费应用ID（bone_application.id）',
+    subscribe_mode      VARCHAR(32)     NOT NULL DEFAULT 'READ' COMMENT '订阅模式：READ-只读取数 EVENT-变更事件',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING-待批准 ACTIVE-已生效 REVOKED-已撤销',
+    requested_by        BIGINT          DEFAULT NULL COMMENT '申请人ID',
+    approved_by         BIGINT          DEFAULT NULL COMMENT '批准人ID',
+    approved_at         DATETIME(3)     DEFAULT NULL COMMENT '批准时间',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_sub_entity_app (mdm_entity_id, app_id, subscribe_mode),
+    KEY idx_mdm_sub_app (app_id),
+    KEY idx_mdm_sub_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据消费订阅（应用×主数据域，N:M）';
+
+CREATE TABLE mdm_steward (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    account_id          BIGINT          NOT NULL COMMENT 'IAM 账号ID',
+    role_type           VARCHAR(32)     NOT NULL COMMENT '治理角色：OWNER-数据责任人 STEWARD-数据管家 APPROVER-审批人',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_steward (mdm_entity_id, account_id, role_type),
+    KEY idx_mdm_steward_account (account_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据治理角色指派（Data Owner / Steward / Approver）';
+
+CREATE TABLE mdm_steward_scope (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    steward_id          BIGINT          NOT NULL COMMENT 'mdm_steward.id',
+    scope_type          VARCHAR(32)     NOT NULL DEFAULT 'ALL' COMMENT '范围类型：ALL-全域 CATEGORY-分类子树 ORG-组织范围',
+    scope_value         VARCHAR(200)    DEFAULT NULL COMMENT '范围值（分类ID 或 组织ID；ALL 时为空）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_mdm_scope_steward (steward_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据管家授权范围（记录级数据权限）';
+
+-- ------------------------------------------------------------
+-- 8.0.3 参考数据（§2.3，与主数据分离治理）
+-- ------------------------------------------------------------
+
+CREATE TABLE mdm_reference_set (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（2026-09-26 裁决 §8 约束6：值域为平台全局目录恒为 0，列仅为 DDL 基线保留）',
+    set_code            VARCHAR(64)     NOT NULL COMMENT '值域编码：CURRENCY/COUNTRY/INDUSTRY/UOM/...',
+    set_name            VARCHAR(200)    NOT NULL COMMENT '值域名称',
+    external_standard   VARCHAR(64)     DEFAULT NULL COMMENT '外部标准：ISO4217/GB2260 等',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'PUBLISHED' COMMENT '状态：DRAFT/PUBLISHED/ARCHIVED',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_refset_code (set_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据值域（平台全局目录，非租户作用域；租户只读可扩私有值）';
+
+CREATE TABLE mdm_reference_value (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（2026-09-26 overlay 拆分：平台值恒为 0，列仅为 DDL 基线保留；租户私有值在 mdm_reference_value_tenant）',
+    set_id              BIGINT          NOT NULL COMMENT '值域ID',
+    value_code          VARCHAR(100)    NOT NULL COMMENT '值编码',
+    value_name          VARCHAR(200)    NOT NULL COMMENT '值名称',
+    external_code       VARCHAR(100)    DEFAULT NULL COMMENT '外部标准码（ISO/GB）',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    enabled             TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_refval (set_id, value_code),
+    KEY idx_mdm_refval_set (set_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据值（平台标准值，非租户作用域；租户私有扩展值见 mdm_reference_value_tenant）';
+
+CREATE TABLE mdm_reference_value_tenant (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL COMMENT '租户ID（租户私有扩展值，SDK 严格过滤/回填）',
+    set_id              BIGINT          NOT NULL COMMENT '值域ID（引用平台值域 mdm_reference_set.id）',
+    value_code          VARCHAR(100)    NOT NULL COMMENT '值编码（不得与同值域平台值/其他租户已用编码重码，应用服务跨表校验）',
+    value_name          VARCHAR(200)    NOT NULL COMMENT '值名称',
+    external_code       VARCHAR(100)    DEFAULT NULL COMMENT '外部标准码（ISO/GB），租户私有值可空',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    enabled             TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_refval_tenant (tenant_id, set_id, value_code),
+    KEY idx_mdm_refval_tenant_set (set_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据租户私有扩展值（2026-09-26 overlay 拆分，§8 约束6）';
+
+-- ------------------------------------------------------------
+-- 8.0.4 质量整改工单 / 模型漂移 / 下游反馈（UC-T9 / UC-T10 / UC-C4）
+-- ------------------------------------------------------------
+
+CREATE TABLE mdm_quality_issue (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    record_id           BIGINT          DEFAULT NULL COMMENT '关联记录ID',
+    check_id            BIGINT          DEFAULT NULL COMMENT '来源质检任务ID',
+    rule_id             BIGINT          DEFAULT NULL COMMENT '命中规则ID',
+    issue_desc          VARCHAR(500)    NOT NULL COMMENT '问题描述',
+    severity            VARCHAR(16)     NOT NULL DEFAULT 'MEDIUM' COMMENT '严重度：HIGH/MEDIUM/LOW',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'OPEN' COMMENT '状态：OPEN-待整改 FIXED-已整改 CLOSED-已关闭 IGNORED-已忽略',
+    assignee_id         BIGINT          DEFAULT NULL COMMENT '指派处理人ID',
+    due_at              DATETIME(3)     DEFAULT NULL COMMENT '整改期限',
+    resolved_by         BIGINT          DEFAULT NULL COMMENT '处理人ID',
+    resolved_at         DATETIME(3)     DEFAULT NULL COMMENT '处理时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_mdm_issue_entity (mdm_entity_id),
+    KEY idx_mdm_issue_status (status),
+    KEY idx_mdm_issue_assignee (assignee_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量整改工单';
+
+CREATE TABLE mdm_model_drift (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    meta_entity_id      BIGINT          NOT NULL COMMENT '来源 meta_entity.id',
+    drift_type          VARCHAR(32)     NOT NULL COMMENT '漂移类型：FIELD_ADDED/FIELD_REMOVED/TYPE_CHANGED/NAME_CHANGED',
+    field_code          VARCHAR(200)    DEFAULT NULL COMMENT '相关字段编码',
+    old_value           VARCHAR(500)    DEFAULT NULL COMMENT '原值',
+    new_value           VARCHAR(500)    DEFAULT NULL COMMENT '新值',
+    destructive         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否破坏性变更（破坏性须阻断并告警）',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'PENDING' COMMENT '处置：PENDING/SYNCED/IGNORED/BLOCKED',
+    handled_by          BIGINT          DEFAULT NULL COMMENT '处置人ID',
+    handled_at          DATETIME(3)     DEFAULT NULL COMMENT '处置时间',
+    detected_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '发现时间',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_mdm_drift_entity (mdm_entity_id),
+    KEY idx_mdm_drift_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型漂移（元数据↔主数据结构对账，禁止自动同步）';
+
+CREATE TABLE mdm_feedback (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    record_id           BIGINT          DEFAULT NULL COMMENT '关联记录ID（可空=新增申请）',
+    app_id              BIGINT          DEFAULT NULL COMMENT '反馈来源应用ID',
+    feedback_type       VARCHAR(32)     NOT NULL DEFAULT 'CORRECTION' COMMENT '类型：CORRECTION-修正 ADDITION-新增 DUPLICATE-重复',
+    content             TEXT            NOT NULL COMMENT '反馈内容',
+    suggested_data      JSON            DEFAULT NULL COMMENT '建议数据（JSON）',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING/ACCEPTED/REJECTED/DONE',
+    assignee_id         BIGINT          DEFAULT NULL COMMENT '受理人ID（默认该域 Steward）',
+    handled_by          BIGINT          DEFAULT NULL COMMENT '处理人ID',
+    handled_result      TEXT            DEFAULT NULL COMMENT '处理结果',
+    handled_at          DATETIME(3)     DEFAULT NULL COMMENT '处理时间',
+    submitted_by        BIGINT          DEFAULT NULL COMMENT '提交人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_mdm_fb_entity (mdm_entity_id),
+    KEY idx_mdm_fb_status (status),
+    KEY idx_mdm_fb_assignee (assignee_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='下游数据问题反馈（反向闭环 UC-C4）';
+
 -- ============================================================
 -- 8.1 主数据运行时兼容表（bone-masterdata @Table md_*，收敛至 mdm_* 见详设）
 -- ============================================================
 
 DROP TABLE IF EXISTS md_record;
 DROP TABLE IF EXISTS md_entity;
-DROP TABLE IF EXISTS meta_data_lineage;
-DROP TABLE IF EXISTS meta_data_standard;
+DROP TABLE IF EXISTS md_lineage;
+DROP TABLE IF EXISTS md_standard;
 DROP TABLE IF EXISTS ntf_message;
 
 CREATE TABLE md_entity (
@@ -1611,7 +1997,7 @@ CREATE TABLE IF NOT EXISTS md_field (
     KEY idx_md_field_entity (master_data_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据字段';
 
-CREATE TABLE meta_data_lineage (
+CREATE TABLE md_lineage (
     id                  BIGINT          NOT NULL COMMENT '血缘记录主键（分布式ID）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID（SDK 自动过滤/回填）',
     source_entity       VARCHAR(200)    DEFAULT NULL COMMENT '来源实体',
@@ -1627,7 +2013,7 @@ CREATE TABLE meta_data_lineage (
     KEY idx_lineage_target (target_entity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据血缘记录';
 
-CREATE TABLE meta_data_standard (
+CREATE TABLE md_standard (
     id                  BIGINT          NOT NULL COMMENT '数据标准主键（分布式ID）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     entity_code         VARCHAR(200)    DEFAULT NULL COMMENT '实体编码',

@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Data;
 
 @Data
@@ -13,9 +13,15 @@ public class AccountDetailResp {
   private String avatarUrl;
   private Integer status;
   private Boolean isAdmin;
+
+  /** 归属部门（主部门）。 */
+  private Long deptId;
+
+  private String deptName;
+
   private Long[] roleIds;
-  private LocalDateTime lastLoginAt;
+  private Instant lastLoginAt;
   private String lastLoginIp;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

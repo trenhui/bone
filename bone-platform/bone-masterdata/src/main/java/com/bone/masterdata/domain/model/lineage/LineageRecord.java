@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 /** 数据血缘记录聚合。 */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("meta_data_lineage")
+@Table("md_lineage")
 public class LineageRecord extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)

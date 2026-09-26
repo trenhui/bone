@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,7 +47,7 @@ public class RuntimeRecordController {
   private final TenantProvider tenantProvider;
 
   @GetMapping
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
   public ApiResponse<PageResult<Map<String, Object>>> page(
       @PathVariable String entityCode,
       @RequestParam(defaultValue = "1") int page,
@@ -60,7 +62,7 @@ public class RuntimeRecordController {
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:read')")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> get(
       @PathVariable String entityCode, @PathVariable String id) {
     long tenantId = tenantProvider.currentTenantId();
@@ -74,7 +76,7 @@ public class RuntimeRecordController {
   }
 
   @PostMapping
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> create(
       @PathVariable String entityCode,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -93,7 +95,8 @@ public class RuntimeRecordController {
 
     long tenantId = tenantProvider.currentTenantId();
     long newId = DistributedIdGenerator.generateLongId();
-    Map<String, Object> created = runtimeRecordService.create(entityCode, tenantId, body, newId);
+    Map<String, Object> created =
+        runtimeRecordService.create(entityCode, tenantId, body, newId, currentOperator());
     Object pk = created != null ? created.getOrDefault("id", newId) : newId;
     ResponseEntity<ApiResponse<Map<String, Object>>> response =
         ResponseEntity.created(
@@ -105,7 +108,7 @@ public class RuntimeRecordController {
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> update(
       @PathVariable String entityCode,
       @PathVariable String id,
@@ -118,7 +121,8 @@ public class RuntimeRecordController {
             tenantId,
             id,
             body,
-            CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+            CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null),
+            currentOperator());
     ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
     Object version = updated.get("version");
     if (version instanceof Number number) {
@@ -128,10 +132,19 @@ public class RuntimeRecordController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasAuthority('metadata:write')")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
   public ApiResponse<Void> delete(@PathVariable String entityCode, @PathVariable String id) {
     long tenantId = tenantProvider.currentTenantId();
     runtimeRecordService.delete(entityCode, tenantId, id);
     return ApiResponse.success();
+  }
+
+  /** 从 Spring Security 上下文取当前操作者标识（JWT subject），用于审计列写入；未认证时返回 null。 */
+  private static String currentOperator() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+      return null;
+    }
+    return auth.getName();
   }
 }

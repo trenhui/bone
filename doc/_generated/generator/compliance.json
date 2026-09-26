@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T06:49:34Z",
+  "generated_at": "2026-09-25T21:21:13Z",
   "module": "generator",
   "as_is": [
     {
@@ -32,8 +32,8 @@
           "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeGenerationController.java",
           "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
           "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
-          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GenerationTaskController.java",
-          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorOperationController.java"
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorOperationController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorShortcutController.java"
         ]
       }
     },

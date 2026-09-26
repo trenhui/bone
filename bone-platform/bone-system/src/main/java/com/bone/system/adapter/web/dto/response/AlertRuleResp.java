@@ -1,6 +1,6 @@
 package com.bone.system.adapter.web.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +21,6 @@ public class AlertRuleResp {
   private String alertLevel;
   private List<String> notificationChannels;
   private boolean enabled;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 }

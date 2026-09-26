@@ -140,6 +140,8 @@ export type ExtPointRow = {
 export type ExtensionRow = {
   id: number;
   extPointId: number;
+  /** 归属应用 ID（可空 = 平台通用插件，5a G1） */
+  appId?: number | null;
   name: string;
   description?: string;
   className?: string;
@@ -204,6 +206,8 @@ export type ExtPointPayload = {
 
 export type ExtensionPayload = {
   extPointId: number;
+  /** 归属应用 ID（可空 = 平台通用插件，5a G1） */
+  appId?: number | null;
   name: string;
   description?: string;
   className: string;
@@ -301,6 +305,8 @@ export async function postExtPointEnable(id: number, enable: boolean): Promise<v
 
 export type ListPluginsParams = {
   extPointId?: number;
+  /** 按归属应用过滤（5a G4 应用扩展视图） */
+  appId?: number;
   page?: number;
   size?: number;
 };
@@ -790,12 +796,16 @@ export async function listMarketplaceItems(params?: {
 export async function installMarketplaceItem(
   itemId: string,
   extPointId?: number,
-): Promise<{ pluginId: number; itemId: string; extPointId?: number }> {
+  appId?: number,
+): Promise<{ pluginId: number; itemId: string; extPointId?: number; appId?: number | null }> {
   const res = await client.post<
-    StudioApiResponse<{ pluginId: number; itemId: string; extPointId?: number }>
+    StudioApiResponse<{ pluginId: number; itemId: string; extPointId?: number; appId?: number | null }>
   >(
     `${EXTENSION_BASE}/marketplace/${encodeURIComponent(itemId)}:install`,
-    extPointId != null ? { extPointId } : {},
+    {
+      ...(extPointId != null ? { extPointId } : {}),
+      ...(appId != null ? { appId } : {}),
+    },
   );
   return assertSuccess(res);
 }

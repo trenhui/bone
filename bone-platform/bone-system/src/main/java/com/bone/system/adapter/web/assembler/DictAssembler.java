@@ -8,6 +8,9 @@ import com.bone.system.application.command.CreateDictCommand;
 import com.bone.system.application.command.UpdateDictCommand;
 import com.bone.system.application.query.dto.DictDto;
 import com.bone.system.application.query.qry.DictPageQuery;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -28,4 +31,9 @@ public interface DictAssembler {
   DictPageQuery toQuery(DictPageReq req);
 
   DictResp toResp(DictDto dto);
+
+  /** LocalDateTime → Instant（UTC 归一），对外契约统一带偏移的 ISO-8601（...Z）（i18n 方案 §6.4）。 */
+  default Instant toInstant(LocalDateTime ldt) {
+    return ldt == null ? null : ldt.toInstant(ZoneOffset.UTC);
+  }
 }

@@ -25,11 +25,12 @@ CREATE TABLE IF NOT EXISTS exts_extension_impl (
     id                  BIGINT          NOT NULL PRIMARY KEY,
     tenant_id           BIGINT          NOT NULL DEFAULT 0,
     extension_point_id  BIGINT          NOT NULL,
+    app_id              BIGINT          DEFAULT NULL,
     impl_name           VARCHAR(255)    NOT NULL,
     impl_code           VARCHAR(200)    NOT NULL,
     description         VARCHAR(500),
     class_name          VARCHAR(500)    NOT NULL,
-    tenant_code         VARCHAR(64)     DEFAULT 'DEFAULT',
+    tenant_code         VARCHAR(64)     DEFAULT '*',
     biz_code            VARCHAR(64)     DEFAULT '*',
     use_case            VARCHAR(64)     DEFAULT '*',
     scenario            VARCHAR(64)     DEFAULT '*',
@@ -50,6 +51,20 @@ CREATE TABLE IF NOT EXISTS exts_extension_impl (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_exts_ei_code ON exts_extension_impl (extension_point_id, impl_code);
 CREATE INDEX IF NOT EXISTS idx_exts_ei_tenant ON exts_extension_impl (tenant_id, extension_point_id);
 CREATE INDEX IF NOT EXISTS idx_exts_ei_point ON exts_extension_impl (extension_point_id);
+CREATE INDEX IF NOT EXISTS idx_exts_ei_app ON exts_extension_impl (app_id);
+
+-- 租户目录只读镜像（G2：TenantDirectoryPort 存在性校验；真源 iam_tenant 归 IAM，共享库 EMBEDDED 模式下同库）
+CREATE TABLE IF NOT EXISTS iam_tenant (
+    id          BIGINT          NOT NULL PRIMARY KEY,
+    code        VARCHAR(50)     NOT NULL,
+    name        VARCHAR(200)    NOT NULL,
+    created_by  BIGINT,
+    updated_by  BIGINT,
+    created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP       DEFAULT NULL,
+    deleted     TINYINT(1)      NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_iam_tenant_code ON iam_tenant (code);
 
 CREATE TABLE IF NOT EXISTS exts_plugin_version (
     id                  BIGINT          NOT NULL PRIMARY KEY,

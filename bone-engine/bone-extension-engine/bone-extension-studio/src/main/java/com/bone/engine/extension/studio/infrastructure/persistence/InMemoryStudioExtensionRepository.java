@@ -70,6 +70,16 @@ public class InMemoryStudioExtensionRepository implements ExtensionRepository, E
   }
 
   @Override
+  public List<Extension> findByAppId(Long appId) {
+    if (appId == null) {
+      return List.of();
+    }
+    return storage.values().stream()
+        .filter(e -> appId.equals(e.getAppId()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public List<Extension> search(String keyword) {
     if (keyword == null || keyword.isBlank()) {
       return findAll();

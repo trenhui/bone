@@ -16,10 +16,13 @@ import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.model.permission.Permission;
 import com.bone.iam.domain.model.role.Role;
+import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.iam.domain.repository.RoleRepository;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,6 +53,7 @@ public class RoleApplicationService {
 
   private final RoleRepository roleRepository;
   private final RolePermissionRepository rolePermissionRepository;
+  private final PermissionRepository permissionRepository;
   private final TenantQuotaEnforcer tenantQuotaEnforcer;
   private final TenantProvider tenantProvider;
   private final AccountAuthorityCache accountAuthorityCache;
@@ -95,8 +99,35 @@ public class RoleApplicationService {
       throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, cmd.getRoleId());
     }
     assertCallerMayManageRole(role);
+    assertPlatformScopedBindingAllowed(role, cmd.getPermissionIds());
     rolePermissionRepository.replaceBindingsForRole(cmd.getRoleId(), cmd.getPermissionIds());
     accountAuthorityCache.evictAccountsForRole(cmd.getRoleId());
+  }
+
+  /**
+   * 平台域权限码只能授予**平台租户角色**（tenantId=0），不得进入任何租户角色。
+   *
+   * <p>判定看**目标角色归属**而非调用方身份：v1.1 的前置版本按「调用方是租户则拒绝」判定，漏掉了一条路径——平台管理员（tenantId=0）可以给租户角色绑平台
+   * 域码，其成员照样拿到平台能力，而这与 §2.2 红线 1「平台管理员不代租户做配置」相悖。改为按角色归属判定后，两类调用方一并覆盖。
+   *
+   * <p>本拦截是**授权时**的第一道防线；访问侧另由 {@code PlatformAccessGuard} 兜底（存量脏绑定 / 后台改库 / 平台域接口被直接
+   * 调用时生效），两道合起来才等价于业界「每次调用求值 policy」的语义。
+   */
+  private void assertPlatformScopedBindingAllowed(Role role, Long[] permissionIds) {
+    if (permissionIds == null) {
+      return;
+    }
+    List<Long> ids = Arrays.stream(permissionIds).filter(Objects::nonNull).toList();
+    if (ids.isEmpty()) {
+      return;
+    }
+    boolean hasPlatformScoped =
+        permissionRepository.findByIds(ids).stream().anyMatch(Permission::isPlatformScoped);
+    Long roleTenant = role.getTenantId();
+    boolean platformRole = roleTenant != null && roleTenant == 0L;
+    if (hasPlatformScoped && !platformRole) {
+      throw IamErrors.of(IamErrorCodes.PERMISSION_PLATFORM_ONLY, "平台域权限码（租户/权限目录/会话）仅可授予平台租户角色");
+    }
   }
 
   /** 非平台租户（tenantId &gt; 0）只能操作本租户角色，防 IDOR。 */

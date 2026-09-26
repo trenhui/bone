@@ -56,7 +56,8 @@ public final class TenantFilterInjector {
     }
     if (criteria != null && criteria.isTenantFilterDisabled()) {
       log.warn(
-          "Tenant filter DISABLED for table {} (cross-tenant scan); ensure platform:* authorization + audit at application layer",
+          "Tenant filter DISABLED for table {} (cross-tenant scan); ensure platform:* authorization"
+              + " + audit at application layer",
           tbl.getName());
       return;
     }
@@ -84,6 +85,37 @@ public final class TenantFilterInjector {
     }
 
     // 3) 既无上下文、caller 又未限定租户 → 失败关闭
+    throw new MissingTenantContextException(tbl.getName());
+  }
+
+  /**
+   * FluentQuery（DSL）通道的租户取值（ADR-0029 补口）：与 {@link #inject} 保持同一不变量——<b>租户表查询必须被限定到单一租户</b>。
+   *
+   * <p>优先级与 {@link #inject} 一致：可信 {@link TenantContext} &gt; caller 显式 EQ 兜底 &gt; 失败关闭。DSL 通道没有
+   * {@link Criteria#isTenantFilterDisabled()} 逃生舱——跨租户基础设施扫描必须走 Criteria 通道（受架构门禁约束）。
+   *
+   * @param tbl 表元数据
+   * @param callerTenantEq caller 在主表显式 EQ 限定的租户值（{@code tenantId} / {@code tenant_id}）；无则传 null
+   * @return 注入用租户值；表非租户作用域时返回 null（调用方不注入）
+   * @throws MissingTenantContextException 上下文与 caller 兜底皆无（租户表 + 非单租户范围 = 真越权 / 静默空漏洞）
+   */
+  public static Object resolveDslTenantValue(TableMetadata tbl, Object callerTenantEq) {
+    if (!tbl.isTenantScoped()) {
+      return null;
+    }
+    Long ctxTenant = TenantContext.getTenantIdAsLong();
+    if (ctxTenant != null) {
+      if (callerTenantEq != null) {
+        log.warn(
+            "Caller-supplied tenantId condition ignored; tenant resolved from TenantContext"
+                + " (FluentQuery) for table {}",
+            tbl.getName());
+      }
+      return ctxTenant;
+    }
+    if (callerTenantEq != null) {
+      return normalizeTenantValue(callerTenantEq);
+    }
     throw new MissingTenantContextException(tbl.getName());
   }
 

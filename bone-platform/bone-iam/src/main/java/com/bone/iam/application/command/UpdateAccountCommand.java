@@ -9,5 +9,9 @@ public class UpdateAccountCommand {
   private String phone;
   private String realName;
   private Integer status;
+
+  /** 归属部门（主部门）；PUT 为全量覆盖语义，null 表示撤销归属。 */
+  private Long deptId;
+
   private Long[] roleIds;
 }

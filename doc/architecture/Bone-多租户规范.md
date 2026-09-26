@@ -89,10 +89,32 @@ TenantContext.setBizIdentityCode(...);
 
 ---
 
-## 8. 修订记录
+## 8. 主数据模块的租户模型（2026-09-26 补）
+
+主数据（bone-masterdata）采用「**平台模板层 + 租户实例层**」两层租户模型（裁决见 [3a. 主数据管理模块核心场景及用例设计方案](../design/modules/3a.%20主数据管理模块核心场景及用例设计方案.md) §1.1/§2）：
+
+| 层 | 表 | tenant_id | 语义 |
+|----|----|-----------|------|
+| 平台模板层 | `mdm_domain_template` / `mdm_template_version` / `mdm_reference_set` / `mdm_reference_value` | `0` | 平台维护，租户**只读实例化 / 只读引用**，不走租户审批流 |
+| 租户实例层 | `mdm_entity` / `mdm_field` / `mdm_record` / `mdm_category` / `mdm_steward` / `mdm_entity_subscription` / `mdm_quality_issue` / `mdm_model_drift` / `mdm_feedback` | 租户 ID | 行级隔离，SDK 自动过滤/回填 |
+
+约束：
+
+1. 模板实例化（UC-T1）落到租户时，`tenant_id` 由 SDK 回填租户上下文，实体携带 `template_id` / `template_version` 溯源，**不复制**平台行。
+2. 参考数据值采用 **overlay 两层模型（2026-09-26 裁决，第 7 条）**：平台标准值在 `mdm_reference_value`（非租户作用域，对全体租户可见），租户私有扩展值在 `mdm_reference_value_tenant`（租户作用域，SDK 严格过滤/回填）。值编码在值域内**跨两层全局唯一**（服务层跨表查重）——租户私有值不得覆盖平台值编码，读取按值域合并即纯并集，无 shadowing 歧义。
+3. 审批（SoD）、订阅批准等治理动作全部发生在**租户内**，不跨租户；跨租户只允许平台治理巡检只读视图。
+4. **平台模板目录为非租户作用域（2026-09-26 实测裁决）**：`DomainTemplate` / `TemplateVersion` 聚合**不继承 `TenantAggregateRoot`、不映射 `tenant_id`**（DDL 列保留，DEFAULT 0）。理由：该表是「平台只写（`masterdata:templates:write` 为平台域权限）、多方只读」的全局目录，行内容恒为平台资产。若做成租户作用域，SDK Criteria 通道注入严格 `tenant_id = :current` 过滤，租户读 `tenant_id=0` 平台行 404、实例化不可用（实测复现）；而 FluentQuery 通道又不过滤，两通道行为分裂。守护测试：`DomainTemplateTenantVisibilityTest`（含「租户作用域聚合隔离未被破坏」的对照组）。
+5. **（已裁决，落地为第 7 条）**。
+7. **参考数据混存表按 overlay 拆分（2026-09-26 裁决，ADR-0029 不变量保持不变）**：原「平台值 + 租户扩展值」混存不引入 SDK「共享行」语义（`tenant_id IN (0, :current)` 会成为第二个逃生舱、弱化 fail-closed 不变量），改为**拆表**——`ReferenceSet` / `ReferenceValue` 去租户作用域（同第 4 条先例，值域为平台全局目录、仅平台管理员可写），新增租户作用域聚合 `TenantReferenceValue`（`mdm_reference_value_tenant`）。写路径按当前租户分发（`CurrentUserPort.requireTenantId()`：tenant=0 写平台表、其余写租户表），越权写抛 `MD_REF_PLATFORM_SET_IMMUTABLE` / `MD_REF_PLATFORM_VALUE_IMMUTABLE`（403）；读路径按值域合并两层为 `ReferenceValueView`（带 `scope` 来源标识）。迁移：`scripts/migration/0003_masterdata_reference_data_overlay.sql`。守护测试：`ReferenceDataOverlayTest`（可见性/隔离/跨表查重/越权守卫/平台视角五组）。
+6. **FluentQuery（DSL）通道已纳入租户注入（2026-09-26 修复，ADR-0029 补口）**：`SqlBuilder` 在 WHERE 构建期经 `TenantFilterInjector.resolveDslTenantValue` 注入租户谓词，与 Criteria 通道同不变量——可信 `TenantContext` 优先（caller 传入的 tenantId 条件被忽略并 WARN）&gt; caller 显式 EQ 兜底（后台任务链路）&gt; 失败关闭（`MissingTenantContextException`）。caller 条件整体加括号后再 AND 租户条件，防 OR 分组击穿；非租户表（未映射 `tenant_id`，如平台模板目录）永不注入。DSL 通道**无逃生舱**——跨租户基础设施扫描必须走 Criteria 通道（受架构门禁约束）。契约测试：`FluentQueryTenantScopeTest`。
+
+---
+
+## 9. 修订记录
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-26 | 新增 §8 主数据租户模型（平台模板层 + 租户实例层，G1 收敛后的正式结论）；§8 补记「平台模板目录非租户作用域」实测裁决；同日修复 FluentQuery 通道缺口（新增 §8 约束 6，ADR-0029 补口）；同日裁决参考数据混存表为 overlay 拆分（§8 约束 7，ADR-0029 不变量保持不变，`TenantReferenceValue` + 迁移 0003） |
 | 2026-09-20 | §4 新增「实体声明」规则 + §7 对应检查项：SDK 按实体字段判定租户表，DDL 有 `tenant_id` 不等于查询会带租户条件 |
 | 2026-05-17 | 初版；对齐总体架构 §8.5 |
 | 2026-05-20 | 明确 `biz_identity_code` 默认仅在 JWT/上下文，不强制落库；需落库须 ADR |
