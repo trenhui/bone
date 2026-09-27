@@ -154,7 +154,8 @@ const GovernanceBoard: React.FC = () => {
             style={{ width: 260 }}
             onSearch={(v) => {
               const n = Number(v);
-              if (Number.isFinite(n) && n > 0) setEntityId(n);
+              // Long 型 ID 超过 2^53 会静默失真，此处拒绝非安全整数而非截断
+              if (Number.isSafeInteger(n) && n > 0) setEntityId(n);
               else message.warning('请输入有效模型ID');
             }}
           />

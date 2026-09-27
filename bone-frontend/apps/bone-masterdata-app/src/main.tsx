@@ -31,7 +31,7 @@ function render(props?: QiankunProps) {
 renderWithQiankun({
   bootstrap() {},
   mount(props: QiankunProps) {
-  subscribeLocaleChange();
+    subscribeLocaleChange();
     // qiankun 挂载时将 token 写入内存 + localStorage
     const token = (props as { token?: string })?.token;
     if (token) {

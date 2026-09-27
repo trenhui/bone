@@ -617,7 +617,7 @@ const DomainWorkbench: React.FC = () => {
               ]}
             />
           </Card>
-      </>
+        </>
       )}
 
       {/* 指派治理角色 */}

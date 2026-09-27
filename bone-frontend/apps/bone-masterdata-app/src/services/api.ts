@@ -95,9 +95,11 @@ export const masterDataFieldApi = {
 };
 
 // 数据质量规则相关API
+// 契约注意：后端 `GET /quality/rules` 返回 `ApiResponse<List<DataQualityRuleDTO>>`，**不是** PageResult
+// （DataQualityController#listRules）。此前经 normalizePage 消费，因 Array 无 records 字段而恒得空列表。
 export const dataQualityRuleApi = {
-  page: async (params: DataQualityRuleListQry): Promise<ApiResponse<PageResult<DataQualityRule>>> => {
-    return normalizePage(await apiClient.get(`${MD}/quality/rules`, { params }));
+  list: async (params?: DataQualityRuleListQry): Promise<ApiResponse<DataQualityRule[]>> => {
+    return apiClient.get(`${MD}/quality/rules`, { params });
   },
   detail: (id: number): Promise<ApiResponse<DataQualityRule>> => {
     return apiClient.get(`${MD}/quality/rules/${id}`);
@@ -149,11 +151,16 @@ export const masterDataRecordApi = {
       params: { masterDataEntityId },
     });
   },
-  export: (masterDataEntityId: number): Promise<Blob> => {
-    return apiClient.get(`${MD}/records/export`, {
+  /**
+   * 后端 `GET /records/export` 返回 `ApiResponse<String>`（纯文本 `id=.., data=..`），**不是文件流**
+   * （MasterDataRecordTopController#export）。此前按 `responseType: 'blob'` 接收，实为把整个 JSON 信封
+   * 写成文件、扩展名却是 .xlsx，用户拿到打不开的伪 Excel。这里取信封 data 文本，由调用方包装 Blob 并定扩展名。
+   */
+  export: async (masterDataEntityId?: number): Promise<string> => {
+    const resp: ApiResponse<string> = await apiClient.get(`${MD}/records/export`, {
       params: { masterDataEntityId },
-      responseType: 'blob',
     });
+    return resp?.data ?? '';
   },
 };
 

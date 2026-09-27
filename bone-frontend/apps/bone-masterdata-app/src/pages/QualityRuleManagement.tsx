@@ -72,11 +72,11 @@ const QualityRuleManagement: React.FC = () => {
   const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await dataQualityRuleApi.page({
+      const response = await dataQualityRuleApi.list({
         masterDataEntityId: selectedEntityId ?? undefined,
       });
       if (response.code === 200) {
-        setRules(response.data.list);
+        setRules(response.data ?? []);
       } else {
         message.error(response.message);
       }

@@ -252,11 +252,13 @@ const RecordManagement: React.FC = () => {
       return;
     }
     try {
-      const blob = await masterDataRecordApi.export(selectedEntityId);
+      const text = await masterDataRecordApi.export(selectedEntityId);
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `master-data-${selectedEntityId}-${new Date().getTime()}.xlsx`;
+      // 后端返回纯文本（逐行 `id=.., data=..`），非 Excel；扩展名须与真实内容一致
+      a.download = `master-data-${selectedEntityId}-${new Date().getTime()}.txt`;
       a.click();
       window.URL.revokeObjectURL(url);
       message.success('导出成功');
