@@ -1265,8 +1265,10 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 | 乐观版本锁 | 低到中冲突、交互式写入 | 版本冲突不覆盖新数据，并映射稳定错误（blueprint 样板已实现：SDK 原生 `@Version` + `update(entity)` + 应用层翻译 `OptimisticLockConflictException`） |
 | 条件更新 | 简单状态机、幂等迁移 | 条件不满足时可区分重复与冲突 |
 | 唯一约束 | 唯一业务键、回调流水 | 并发重复写只有一个成功 |
-| 悲观锁 | 短事务、高冲突且可控 | 锁等待、超时和死锁重试 |
+| 悲观锁（业务层禁止） | 仅 SDK 内部 `ColumnAllocator` 的 `FOR UPDATE SKIP LOCKED`（元数据列分配防重） | 业务层不得手写 `SELECT ... FOR UPDATE`：易死锁、跨实例失效；改用 `@Version` 乐观锁 / 条件更新 / 单写者队列 |
 | 单写者/串行队列 | 高频热点聚合 | 分区顺序和消费者恢复 |
+
+> **硬规则（2026-09-27 增补）**：业务/应用层**禁止 `SELECT ... FOR UPDATE` 形式的悲观锁**——它是死锁与锁等待雪崩的高发源，且行锁仅在单 MySQL 实例有效，多副本部署下完全失效。聚合并发默认用 SDK 原生 `@Version` 乐观锁（已落地，见上「现状提示」）；高冲突用唯一约束 / 条件更新 / 单写者串行队列。SDK 内部 `ColumnAllocator` 的 `FOR UPDATE SKIP LOCKED` 是框架自有能力（仅元数据列分配防重），不在禁止范围，但业务代码不得新增 JDBC 出站端口引入 `FOR UPDATE`（受 `sdk-persistence-bypass-baseline.json` 约束，属 L3）。
 
 幂等键优先使用外部业务键、`eventId` 或客户端 `Idempotency-Key`；存储层以唯一约束或等价原子机制兜底。保留期覆盖最长重试窗口，重复请求返回语义稳定，且租户必须参与幂等隔离。
 

@@ -11,6 +11,7 @@
 4. **统一响应**：Controller 返回 `ApiResponse<T>` / `PageResult<T>`，不裸返领域对象（HC-003）。
 5. **租户与审计**：新实体继承 `TenantAbstractEntity` 或 `AbstractEntity`，不漏 `tenantId` 与审计字段（HC-008）。
 6. **格式**：改 Java 后执行 `mvn spotless:apply`。
+7. **并发控制**：业务/应用层**禁止 `SELECT ... FOR UPDATE`**（悲观锁——易死锁、且行锁仅在单 MySQL 实例有效，多副本部署下完全失效）。聚合并发默认用 `bone-metadata-sdk` 原生 `@Version` 乐观锁（ADR-0031 / `数据库开发规范 §1`）；高冲突场景用唯一约束 / 条件更新 / 单写者串行队列，不得手写 `FOR UPDATE`。SDK 内部 `ColumnAllocator`（仅元数据列分配用 `FOR UPDATE SKIP LOCKED`）为框架自有能力，不在禁止范围。
 
 ## 二、按修改路径加载上下文
 
