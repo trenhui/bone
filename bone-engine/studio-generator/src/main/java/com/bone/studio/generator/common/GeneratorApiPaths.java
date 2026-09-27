@@ -29,5 +29,8 @@ public final class GeneratorApiPaths {
   /** 生成历史（简写路径） */
   public static final String HISTORY = V1_PREFIX + "/history";
 
+  /** 运维一次性修复等管理操作 */
+  public static final String ADMIN = V1_PREFIX + "/admin";
+
   private GeneratorApiPaths() {}
 }

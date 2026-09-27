@@ -11,4 +11,10 @@ public interface GenTableMetadataRepository extends Repository<GenTableMetadata,
     return findByCriteria(
         Criteria.<GenTableMetadata>create().eq(GenTableMetadata::getDataSourceId, dataSourceId));
   }
+
+  /** 所有未删除的表元数据（供运维一次性修复等批量读）。读侧 DSL 落在 repository 层，合规。 */
+  default List<GenTableMetadata> findAllActive() {
+    return findByCriteria(
+        Criteria.<GenTableMetadata>create().eq(GenTableMetadata::isDeleted, false));
+  }
 }

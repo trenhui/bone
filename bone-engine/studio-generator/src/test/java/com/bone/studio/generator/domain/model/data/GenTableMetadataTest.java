@@ -3,6 +3,8 @@ package com.bone.studio.generator.domain.model.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -36,5 +38,35 @@ class GenTableMetadataTest {
 
     assertEquals("t_order", metadata.getOriginalTableName());
     assertEquals("Order", metadata.getCustomEntityName());
+  }
+
+  @Test
+  void toEntityNamePublicCamelCases() {
+    assertEquals("BoneApplication", GenTableMetadata.toEntityName("bone_application"));
+    assertEquals("MdQualityRule", GenTableMetadata.toEntityName("md_quality_rule"));
+    assertEquals("Order", GenTableMetadata.toEntityName("t_order"));
+    assertEquals("ORDER", GenTableMetadata.toEntityName("T_ORDER"));
+    assertEquals("Simple", GenTableMetadata.toEntityName("simple"));
+    assertNull(GenTableMetadata.toEntityName(null));
+  }
+
+  @Test
+  void needsAndRepairLegacyEntityName() {
+    GenTableMetadata legacy =
+        GenTableMetadata.builder()
+            .originalTableName("bone_application")
+            .customEntityName("bone_application")
+            .build();
+    assertTrue(legacy.needsLegacyEntityNameRepair());
+    legacy.repairEntityName();
+    assertEquals("BoneApplication", legacy.getCustomEntityName());
+
+    GenTableMetadata customized =
+        GenTableMetadata.builder().originalTableName("t_order").customEntityName("MyOrder").build();
+    assertFalse(customized.needsLegacyEntityNameRepair());
+
+    GenTableMetadata alreadyRepaired =
+        GenTableMetadata.builder().originalTableName("simple").customEntityName("Simple").build();
+    assertFalse(alreadyRepaired.needsLegacyEntityNameRepair());
   }
 }

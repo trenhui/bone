@@ -64,7 +64,7 @@ public class GenTableMetadata extends AggregateRoot<Long> {
    *
    * <p>直接拿表名当类名会产出 {@code public class t_order} 这类无法编译的产物（实测 t_order 表生成结果）。
    */
-  private static String toEntityName(String tableName) {
+  public static String toEntityName(String tableName) {
     if (tableName == null || tableName.isBlank()) {
       return tableName;
     }
@@ -126,6 +126,27 @@ public class GenTableMetadata extends AggregateRoot<Long> {
 
   public String getCustomEntityName() {
     return customEntityName;
+  }
+
+  public void setCustomEntityName(String customEntityName) {
+    this.customEntityName = customEntityName;
+  }
+
+  /**
+   * 该存量行是否需要实体名修复：{@code customEntityName} 仍等于原始表名（从未被用户自定义，且 {@link #toEntityName(String)}
+   * 实现前同步的存量数据）。
+   */
+  public boolean needsLegacyEntityNameRepair() {
+    return customEntityName != null
+        && customEntityName.equals(originalTableName)
+        && !toEntityName(originalTableName).equals(customEntityName);
+  }
+
+  /** 将 {@code customEntityName} 收敛为 PascalCase；仅当 {@link #needsLegacyEntityNameRepair()} 为真时改动。 */
+  public void repairEntityName() {
+    if (needsLegacyEntityNameRepair()) {
+      this.customEntityName = toEntityName(originalTableName);
+    }
   }
 
   public String getModuleName() {
