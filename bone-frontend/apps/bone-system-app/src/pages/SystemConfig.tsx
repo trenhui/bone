@@ -18,6 +18,7 @@ import {
   DownloadOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import type { SystemConfig, ConfigHistory } from '@/types';
 import { systemConfigApi } from '@/services/api';
 
@@ -41,7 +42,7 @@ const SystemConfigPage: React.FC = () => {
         setConfigs(response.data.list);
       }
     } catch (error) {
-      message.error('获取配置失败');
+      message.error(resolveErrorMessage(error, '获取配置失败'));
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ const SystemConfigPage: React.FC = () => {
         fetchConfigs();
       }
     } catch (error) {
-      message.error('更新配置失败');
+      message.error(resolveErrorMessage(error, '更新配置失败'));
     }
   };
 
@@ -84,7 +85,7 @@ const SystemConfigPage: React.FC = () => {
         setHistoryModalVisible(true);
       }
     } catch (error) {
-      message.error('获取配置历史失败');
+      message.error(resolveErrorMessage(error, '获取配置历史失败'));
     }
   };
 
@@ -99,7 +100,7 @@ const SystemConfigPage: React.FC = () => {
       link.click();
       message.success('导出配置成功');
     } catch (error) {
-      message.error('导出配置失败');
+      message.error(resolveErrorMessage(error, '导出配置失败'));
     }
   };
 
@@ -111,7 +112,7 @@ const SystemConfigPage: React.FC = () => {
         fetchConfigs();
       }
     } catch (error) {
-      message.error('导入配置失败');
+      message.error(resolveErrorMessage(error, '导入配置失败'));
     }
     return false;
   };

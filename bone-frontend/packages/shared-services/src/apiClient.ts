@@ -69,6 +69,13 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
         // 微应用不直接跳转，通知主应用处理
         window.dispatchEvent(new CustomEvent('bone:auth:expired', { detail: { status: 401 } }));
       }
+      // 错误响应体是 ApiResponse<ProblemDetail>：data 里挂着稳定业务码 errorCode，
+      // 前端按 errors.<errorCode> 取 locale 文案（见 shared-utils 的 resolveErrorMessage）。
+      // 这里只做透传，不翻译——本包不依赖 i18n，翻译留给消费端，避免给共享包加语言包依赖边。
+      const errorCode = error.response?.data?.data?.errorCode;
+      if (errorCode) {
+        error.errorCode = errorCode;
+      }
       // 优先使用后端返回的 ApiResponse 中的错误信息
       const backendMessage = error.response?.data?.message;
       if (backendMessage) {

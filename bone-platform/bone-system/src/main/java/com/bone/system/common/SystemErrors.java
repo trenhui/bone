@@ -10,8 +10,9 @@ import java.util.function.Supplier;
  * 业务错误码 → HTTP 状态 的<strong>唯一配对真源</strong>，以及抛出 {@link BizException} 的统一工厂。
  *
  * <p><b>为何需要它</b>：{@code BizException} 的第一个参数是 <em>HTTP 状态</em>（{@code GlobalExceptionHandler}
- * 用它设置响应状态），而<em>业务码</em>只能以字符串拼进 message——于是「码」与「状态」天然是两份数据。若在每个抛出点手写 {@code new BizException(404,
- * CONFIG_NOT_FOUND + ": " + id)}，配对就散落在全模块几十处，任一处不一致都没有机制发现 （错误码登记 §17 明文「禁止把 HTTP 码与业务码混为同一个整数」）。
+ * 用它设置响应状态），业务码走独立的 {@code errorCode} 字段——两者语义不同、天然是两份数据。若在每个抛出点手写 {@code new BizException(404,
+ * CONFIG_NOT_FOUND + ": " + id, CONFIG_NOT_FOUND)}，配对就散落在全模块几十处， 任一处不一致都没有机制发现（错误码登记 §17 明文「禁止把
+ * HTTP 码与业务码混为同一个整数」）。
  *
  * <p><b>为什么不用「每种失败一个自定义异常 + 一个 {@code @ExceptionHandler}」</b>：那样每加一种失败就要多一组 「异常类 + handler 映射」，且日志
  * / 告警只能按中文 message 分类。本类把配对收回一张表，抛出点只表达 <strong>业务语义</strong>（哪个码 + 什么上下文），状态由 {@link
@@ -79,9 +80,19 @@ public final class SystemErrors {
     return of(errorCode, detail, null);
   }
 
-  /** 抛业务异常，附上下文说明与根因。 */
+  /**
+   * 抛业务异常，附上下文说明与根因。
+   *
+   * <p><b>必须用四参构造</b>：{@code new BizException(status, message, cause)} 会把 {@code errorCode} 置
+   * {@code null}，导致 {@code ProblemDetail} 拿不到码、前端 {@code i18n.t('errors.' + errorCode)} 的分支永不命中
+   * （英文用户只能看到中文 message）。这里把 {@code errorCode} 作为独立字段写入异常，与 {@link #DEFAULT_HTTP_STATUS}
+   * 的状态配对一并成为真源。
+   *
+   * <p>{@code message} 仍保留 {@code 码: 说明} 形态：它是 {@code errorCode} 缺失时的展示 fallback， 也是日志/告警按码聚合的兜底。
+   */
   public static BizException of(String errorCode, Object detail, Throwable cause) {
-    return new BizException(httpStatusOf(errorCode), composeMessage(errorCode, detail), cause);
+    return new BizException(
+        httpStatusOf(errorCode), composeMessage(errorCode, detail), errorCode, cause);
   }
 
   /**

@@ -13,6 +13,16 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * 告警事件聚合（落库表 {@code sys_alert_event}）。
+ *
+ * <p><b>为什么类名叫 AlertRecord、表叫 sys_alert_event</b>：这是历史遗留的命名口径不一致——聚合名沿用
+ * 「告警记录」的业务叫法，表名按「事件」语义落库（一条规则触发产生一条事件）。二者指同一事物， 与同包 {@code AlertRule}（表 {@code
+ * sys_alert_rule}）的「聚合名 ↔ 表名」对应方式不同。
+ *
+ * <p><b>新增代码请以表名语义为准</b>：局部变量、DTO、方法名用 {@code alertEvent}，不要再扩散 {@code record} 口径；本类改名属
+ * L3（聚合重命名），需架构师审批后统一执行。
+ */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("sys_alert_event")

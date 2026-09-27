@@ -82,13 +82,13 @@ modules:
     design_doc: "doc/design/modules/7. 系统管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/7. 系统管理模块详细设计方案.md", "doc/design/modules/7a. 数据字典模块详细设计方案.md", "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"]
     port: 8083
-    status: "design_ready"
-    last_reviewed_at: "2026-09-27T20:30:00+08:00"
+    status: "implementing"
+    last_reviewed_at: "2026-09-27T22:55:00+08:00"
     implemented_at: null
     report_path: "doc/design/modules/review-report-bone-system.md"
     has_active_comet_change: false
-    stages_done: ["A", "A'"]
-    note: "A+A' 设计复核完成（2026-09-27）：HC-003 锚定 violated 经复核为误报（ResponseEntity 仅 byte[] 下载与 501 占位，已刷新锚定）；HC-008 确认 violated（sys_alert_event/sys_log 缺 updated_at/deleted，L3 待审批）；SystemErrorCodes(37) 常量类合规；数据字典 v3 对齐良好（亮点）。前端阻断级：F4.2 告警创建必 400（metric/level vs metricName/alertLevel）、F4.1 配置编辑不生效（key/value/type vs configValue/configType）；另 F1 token 注入/F2 dayjs/i18n/F3 错误边界/F4.5 ID 精度/F4.6 错误码映射 等建议项。设计可放行；B 阶段默认落地前端 S-1/S-2（阻断）+ S-4~S-8 建议、后端 S-9~S-11 建议，S-3/S-12/S-13 待 L3 裁决。"
+    stages_done: ["A", "A'", "B", "B'"]
+    note: "A+A' 设计复核完成（2026-09-27）：HC-003 锚定 violated 经复核为误报（ResponseEntity 仅 byte[] 下载与 501 占位，已刷新锚定）；HC-008 确认 violated（sys_alert_event/sys_log 缺 updated_at/deleted，L3 待审批）；SystemErrorCodes(37) 常量类合规；数据字典 v3 对齐良好（亮点）。前端阻断级：F4.2 告警创建必 400（metric/level vs metricName/alertLevel）、F4.1 配置编辑不生效（key/value/type vs configValue/configType）；另 F1 token 注入/F2 dayjs/i18n/F3 错误边界/F4.5 ID 精度/F4.6 错误码映射 等建议项。设计可放行；B 阶段默认落地前端 S-1/S-2（阻断）+ S-4~S-8 建议、后端 S-9~S-11 建议，S-3/S-12/S-13 待 L3 裁决。**B 第 1 夜（2026-09-27）已落 S-1/S-2**（前端字段对齐，4 文件，tsc 通过）。**B 第 2 夜（同日）已落 P0 + S-8 + S-11**：P0=SystemErrors.of 三参致 errorCode=null（与 bone-integration 同款，四参修复 + SystemErrorsMappingTest 9 条；本地/全局 handler 实测无缺陷故未动）；S-8=apiClient 挂 errorCode + shared-utils 新增 resolveErrorMessage + 语言包补齐 19 个 SYS_* 译文（37 码全覆盖）+ SystemConfig 5 处样板；S-11=AlertRecord javadoc 命名口径说明（重命名属 L3 待审批）。**S-9 复核纠正**：HealthIndicator「占位标注」实测已满足（javadoc + STUB/limitation detail），真正未做的是 MDC(tenantId/traceId)。验证：mvn -o -pl bone-platform/bone-system test 175 全绿（ArchitectureTest 26）+ tsc --noEmit 双包 0 + check-i18n-sync 通过。状态 implementing（stages_done A/A'/B/B'）；剩余：S-8 其余页面铺开、S-9 MDC、S-4/S-5/S-6、S-7（id:string，跨 shared-services 高风险）、S-10（聚合 version）、C 联调/D 验收。"
 
   - name: "bone-extension-studio"
     design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"

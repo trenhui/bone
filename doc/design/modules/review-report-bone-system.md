@@ -63,20 +63,20 @@
 
 ### 后端文件清单
 - [ ] L3 | `bone-init.sql` | `sys_alert_event`/`sys_log` 补 `updated_at`/`deleted`（HC-008，待审批）
-- [ ] L2 | `AlertRecord.java` + 文档 | 命名口径说明/对齐（S-11）
-- [ ] L2 | `SystemModuleHealthIndicator.java` | 真实校验或占位标注（S-9）
-- [ ] L2 | 关键路径日志 | MDC(tenantId/traceId)（S-9）
+- [x] L2 | `AlertRecord.java` | 命名口径说明（S-11）：类 javadoc 写明「类名 Record ↔ 表 sys_alert_event」的历史成因与「新增代码按表名语义命名」约束；**重命名属 L3，待审批**
+- [x] L2 | `SystemModuleHealthIndicator.java` | 占位标注（S-9 前半）：**复核纠正——原项已满足**，类 javadoc 已标「占位实现」且 detail 带 `STUB` / `limitation`，无需改动
+- [ ] L2 | 关键路径日志 | MDC(tenantId/traceId)（S-9 后半，**仍未做**）
 - [ ] L2 | `domain/model` | 聚合补 `version`（S-10）
 
 ### 前端文件清单
-- [ ] L2 | `MonitorAlert.tsx` + `services/api.ts` | 字段对齐 `metricName`/`thresholdValue`/`alertLevel`，修复创建 400（S-1）
-- [ ] L2 | `SystemConfig.tsx` + `services/api.ts` | 编辑字段对齐 `configValue`/`configType`（S-2）
+- [x] L2 | `MonitorAlert.tsx` + `services/api.ts` | 字段对齐 `metricName`/`thresholdValue`/`alertLevel`，修复创建 400（S-1，**已落**）
+- [x] L2 | `SystemConfig.tsx` + `services/api.ts` | 编辑字段对齐 `configValue`/`configType`（S-2，**已落**）
 - [ ] L2 | `qiankun-entry.ts` / `createBoneMicroAppRenderer.tsx` | token 注入（S-4）
 - [ ] L2 | `App.tsx` | 路由守卫/权限码（S-4）
 - [ ] L2 | dayjs 配置 + 页面 | 国际化（S-5）
 - [ ] L2 | 全局 | 错误边界 + 403 态（S-6）
 - [ ] L2 | `shared-types` | `id: string`（S-7）
-- [ ] L2 | `apiClient.ts` | 错误码→locale 映射（S-8）
+- [x] L2 | `apiClient.ts` + `shared-utils/errorMessage.ts` + `SystemConfig.tsx` | 错误码→locale 映射（S-8）：**基础设施 + SystemConfig 5 处样板已落**（含补齐 19 个 `SYS_*` 译文）；其余页面（MonitorAlert/DictManagement/SystemDeployment/ScheduleTask/LogManagement）按同模式铺开，待下一轮
 
 ### 待审批清单（L3/L4）
 - [ ] L3 | DDL 补列（HC-008） | 影响全租户门禁，需架构师审批
@@ -105,6 +105,40 @@
 ### 6.3 自评
 - 无越权文件、无范围 creep、无裸字符串引入；纯字段名对齐，等价重构。
 - **S-1 / S-2 阻断级问题已修复**，功能可用性恢复（创建/编辑告警、编辑配置不再 400 / 不再丢值）。
+
+### 6.4 B 第 2 夜：P0 错误码闭环 + S-8 / S-11（本轮）
+
+**P0（跨模块同款缺陷，bone-integration 修复后外溢核查发现）**：`SystemErrors.of(...)` 走**三参**
+`new BizException(status, message, cause)` —— 该构造器把 `errorCode` 硬置 `null`（`BizException.java:40-44`）。
+后果与 integration 同款：响应状态/中文 message 全对，**只有 `ProblemDetail.errorCode` 是 null**，
+前端 `i18n.t('errors.' + code)` 的分支永不命中，英文用户只能看到中文 fallback。**极难发现**：
+按「状态 + message」断言的测试全部照绿。
+
+| 项 | 改动 | 证据 |
+|---|---|---|
+| `common/SystemErrors.java` | `of(...)` 改**四参** `BizException(status, message, errorCode, cause)`；javadoc 同步（message 保留 `码: 说明` 作为 fallback） | 全模块直接构造点仅此 1 处（grep `new BizException(`） |
+| `common/SystemErrorsMappingTest`（新增） | 9 条：码非 null / of(detail) 带码 / supplier 带码 / 404·409·403·400·500 映射 / advice 端到端透传 / 未登记码 fail-fast | 纯单测，无 Spring 上下文 |
+| — | **本地 advice 与 bone-web 全局 handler 均无缺陷**：`GlobalExceptionHandler:53` 已是 `errorBody(status, e.getErrorCode(), ...)`，状态口径 400–599 直用；故本轮**不动 handler** | 实测确认，避免误改 |
+
+**S-8（错误码 → UI 文案）闭环三件套**：
+1. `shared-services/apiClient.ts`：响应拦截器把 `ApiResponse.data.errorCode` 挂到 `error.errorCode`
+   （**只透传不翻译**——本包不依赖 i18n，翻译留给消费端，避免给共享包加语言包依赖边）；
+2. `shared-utils/i18n/errorMessage.ts`（新增）：`resolveErrorMessage(error, fallback)` 按
+   `errors.<code>` 取译文，取不到回退页面中文 fallback；用 i18n 单例而非传 `t`（toast 不参与重渲染）；
+3. 语言包：**实测 36 个 `SystemErrorCodes` 里有 19 个在 zh-CN/en-US 无译文**（CONFIG/ALERT/SCHEDULE/LOG 段），
+   即"后端产了码前端也翻译不出来"——已补齐至 **37 码全覆盖**（`SCHEDULE_TASK_HANDLER_NOT_FOUND` 因跨行声明曾被正则漏掉，已修正）。
+4. `SystemConfig.tsx` 5 处 catch 由硬编码中文改为 `resolveErrorMessage(error, '获取配置失败')`（样板）。
+
+**S-11**：`AlertRecord` 类 javadoc 写明「类名 Record ↔ 表 `sys_alert_event`」的历史成因与「新增代码按表名语义命名」约束；重命名属 L3 待审批。
+
+**S-9 复核纠正**：报告原列「HealthIndicator 真实校验或占位标注」，实测**该选项已满足**
+（javadoc 标"占位实现" + detail 带 `STUB` / `limitation`），无需改动；S-9 真正未做的是**后半**：关键路径日志 MDC(tenantId/traceId)。
+
+**验证**：`mvn -o -pl bone-platform/bone-system test` **175 全绿**（新增 9 条，ArchitectureTest 26）；
+`tsc --noEmit` shared-utils 与 bone-system-app 均退出码 0；`check-i18n-sync.py` 通过。
+
+**未在本次范围**（避免 scope creep，下轮候选）：S-8 其余页面铺开、S-9 MDC、S-4（token 注入/路由守卫）、
+S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，跨 shared-services 契约风险高）、S-10（聚合 `version` 建模）。
 
 ## 七、联调验证结果（C 段填写）
 > 本 B 轮为纯前端字段对齐（后端契约未变），已由 `tsc` 通过 + 后端 DTO 真源比对佐证。
