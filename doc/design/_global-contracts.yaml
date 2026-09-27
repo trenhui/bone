@@ -259,12 +259,12 @@ modules:
     shared_dtos: ["ApiResponse", "PageResult", "MasterDataEntityDTO", "DomainTemplateDTO", "QualityCheckDTO", "MetaEntityRow（元数据目录读模型，跨上下文）"]
     error_codes_used: ["com.bone.masterdata.common.MasterDataErrorCodes（MD_*，约 40 个）", "MD_META_ENTITY_NOT_FOUND / MD_META_ENTITY_NOT_PUBLISHED（跨域命名，元数据语义落在主数据模块）"]
     tables: ["mdm_entity", "mdm_field", "mdm_record", "mdm_record_version", "mdm_record_category", "mdm_category", "mdm_domain_template", "mdm_template_version", "mdm_reference_set", "mdm_reference_value", "mdm_reference_value_tenant", "mdm_qcheck_task", "mdm_qcheck_detail", "mdm_qcheck_report", "mdm_quality_issue", "mdm_steward", "mdm_steward_scope", "mdm_entity_subscription", "mdm_feedback", "mdm_model_drift", "md_entity", "md_field", "md_record", "md_standard", "md_quality_rule", "md_lineage"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "pending_review"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
       HC-003: "16 个 Controller 中 ResponseEntity 命中 0"
       HC-006: "infrastructure/gateway/MetaEntityCatalogPortAdapter.java 已在 sdk-persistence-bypass-baseline.json 登记（存量，只可收缩）"
       HC-007: "doc/architecture/openapi/masterdata-v1.yaml 存在"
-      HC-008: "pending_review（2026-09-27 起 A 阶段复核中）：mdm_qcheck_task 为 gap-candidate（缺 updated_at/deleted）待核实；md_lineage 已由元数据模块划归本模块（mdm_* 命名），HC-008 真缺口现落于此处。原 violated 标注重评"
+      HC-008: "violated（2026-09-27 A 复核确认）：baseline `mdm_qcheck_task` 仅 created_at，缺 updated_at/deleted（bone-init.sql:1730-1748）；同批 `mdm_qcheck_detail`/`mdm_qcheck_report` 缺 updated_at/deleted，`mdm_record_category`/`mdm_record_version` 缺 tenant_id（:1719-1728/:1682-1696）。属 L3 DDL 缺口，登记待架构师审批，AI 不执行。"
     design_vs_code_gaps:
       - "doc3 规划 /entities/convert?businessEntityId=，代码为 ?metaEntityId=（MasterDataEntityController.java:69-71）"
       - "doc3 §630 规划的跨模块集成事件 + RocketMQ：代码零 IntegrationEvent，resources 无 rocketmq 配置"

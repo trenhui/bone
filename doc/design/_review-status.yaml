@@ -2,10 +2,10 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-27T08:40:00+08:00"
+updated_at: "2026-09-27T10:30:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
-current_module: "bone-metadata-server"
-next_run: "bone-masterdata"
+current_module: "bone-masterdata"
+next_run: "bone-integration"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -58,12 +58,12 @@ modules:
     design_doc: "doc/design/modules/3. 主数据管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/3. 主数据管理模块详细设计方案.md", "doc/design/modules/3a. 主数据管理模块核心场景及用例设计方案.md"]
     port: 8084
-    status: "pending"
-    last_reviewed_at: null
+    status: "design_ready"
+    last_reviewed_at: "2026-09-27T10:30:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-masterdata.md"
     has_active_comet_change: false
-    note: "含 md_* 遗留表、平台模板层 by-design 裁决与 md_lineage 缺 tenant_id"
+    note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（16 控制器全 ApiResponse 信封，0 裸 ResponseEntity）；HC-008 确认 violated（真实 L3 DDL 缺口：mdm_qcheck_task 缺 updated_at/deleted，mdm_qcheck_detail/report 缺同列，mdm_record_category/version 缺 tenant_id，见 bone-init.sql:1719-1776）；无假阳性（与 metadata-server 轮不同）。F1 转换端点参名漂移（metaEntityId vs doc3 businessEntityId）/F2 跨模块 RocketMQ 集成事件未落地/F3 Idempotency+LRO 未实现/F4 DTO 纪律/F5 事件无 Outbox——多为路线图/文档 GAP，无硬阻塞。跨模块仅 MetaEntityCatalogPortAdapter 直读 meta_entity/meta_field（E-1.1 例外）。设计可放行；HC-008 的 L3 DDL 登记待架构师审批。"
 
   - name: "bone-integration"
     design_doc: "doc/design/modules/4. 集成管理模块详细设计方案.md"
