@@ -30,7 +30,7 @@
 - **F2（中）· 发布→事件链路缺口**：`doc2a §337` 步骤⑤「发布领域事件」、G8「无变更事件、无采用率」均标 `[Target]`，是路线图非缺陷；但**引擎侧 `MetadataChangeEvent` 以进程内 `ApplicationEvent` 发出、server 侧无订阅方**（锚定 cross_module 已记录），等于发布即丢弃。建议：在 catalog 发布流程补发领域事件，或明确该事件归并到 `bone-metadata-engine` 的 Comet change（`refactor/metadata-engine-boundary-ddd`）后再接。
 - **F3（低）· Controller 返回形态不统一**：`ResponseEntity<ApiResponse<T>>` 与 `ApiResponse<T>` 混用。因与 IAM 同款、且需头部的方法必须用 `ResponseEntity`，建议保持现状或统一为 `ResponseEntity<ApiResponse<T>>`。
 - **F4（低/文档）· 版本端点未实现**：`doc2 §5.1` `GET /entities/{id}/versions`（P1）未实现，文档已标 Vision P1，非缺陷。
-- **F5（低/文档）· 设计稿控制器清单滞后**：`doc2 §656` 仅列「五个真实控制器」，实际多出 `MetaTemplateController` / `PhysicalStructureController`（及已随 HC-004 删除的 `AuthController`）。需在设计稿补记代码新增的 controller，避免文档-代码漂移。
+- **F5（低/文档）· 设计稿控制器清单滞后**：**已闭合（2026-09-27 复核纠正）**。`doc2 §656` 当前已列「七个真实控制器」（`MetadataController` / `MetaEntityCatalogController` / `MetaFieldCatalogController` / `MetaRelationCatalogController` / `MetaTemplateController` / `PhysicalStructureController` / `RuntimeRecordController`），并明确 `AuthController` 随 HC-004 删除、CodeGen/Template 控制器在 `studio-generator`。原「仅列五个」为陈旧标注，无需再改设计稿。
 
 ## 4. 跨模块契约
 

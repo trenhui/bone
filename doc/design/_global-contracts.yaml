@@ -162,21 +162,21 @@ modules:
       - "com.bone.core.common.CommonErrorCodes（COMMON_VALIDATION_FAILED / COMMON_MALFORMED_REQUEST）"
       - "META_RUNTIME_*（裸字符串，散落 GlobalExceptionHandler；无 MetadataErrorCodes 常量类）"
     tables: ["meta_entity", "meta_field", "meta_entity_relation", "meta_model_template", "meta_model_template_field", "meta_code_template"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "implemented"}
     hc_evidence:
       HC-001: "grep -rln ORM import bone-engine/bone-metadata-server/src/main → 0 命中"
       HC-002: "domain 目录无 com.bone.*.{adapter,application,infrastructure} import → 0 命中"
-      HC-003: "8 个 Controller 中 7 个返回 ResponseEntity（MetaEntity/MetaField/MetaRelation/MetaTemplate/Metadata/RuntimeRecord/Auth）"
+      HC-003: "误报修正（2026-09-27 A 复核）：7 个业务 Controller 方法体均为 ApiResponse 信封；写操作用 ResponseEntity<ApiResponse<T>> 承载 201+Location/ETag（与 bone-iam 同款，doc2 §269 明确 create 即该 AIP-133 Target 形态）。锚定原只 grep ResponseEntity 未看 body 误判为 violated → implemented"
       HC-004: "（已修复 2026-09-27）原 AuthController.java:34 passwordEncoder.encode(\"password\") 硬编码演示端点已整文件删除，src/main 不再有明文凭据"
       HC-005: "pom 无覆盖 → 继承父 POM 0.10"
       HC-006: "baseline 内 4 个（JdbcPhysicalStructureGatewayAdapter / CatalogInfrastructureConfiguration / RuntimeEngineConfiguration / catalog/infrastructure/query/TemplateReadAdapter.java），全部元数据目录 JDBC 使用均在 baseline 登记（TemplateReadAdapter 为 ADR-0031 授权的平台模板跨租户只读、固定 tenant_id=0，只读无写），无未登记绕过（2026-09-27 复核纠正此前误报）"
       HC-007: "doc/architecture/openapi/metadata-runtime-v1.yaml 存在（覆盖 runtime；catalog 侧未单独成 spec）"
-      HC-008: "baseline：md_lineage 为 needs-owner-decision（缺 tenant_id/updated_at/deleted）；md_standard 为 by-design"
+      HC-008: "误报修正（2026-09-27 A 复核）：实体继承 AbstractEntity<Long>+自有 tenantId 为 ADR-0016 有意决策（非违规）；md_lineage 等已按 doc2a G6(2026-09-26 P0) 整批划归 bone-masterdata 改名 mdm_*，原表已不在本模块 → implemented（本模块范围合规）"
     design_vs_code_gaps:
       - "doc2 §5.1 的 GET /api/v1/metadata/entities/{id}/versions（标 P1 Target）代码未实现"
       - "doc2a §337/§474 规划的『发布 → 集成事件 → Outbox』链路：src/main 零 IntegrationEvent"
       - "doc2 §353 声称的 META_ 前缀错误码：无常量类，仅裸字符串"
-      - "MetaTemplateController / PhysicalStructureController / AuthController 为代码新增，doc2 §656 只列『五个真实控制器』"
+      - "（已纠正 2026-09-27）doc2 §656 已列七个真实控制器（含 MetaTemplate/PhysicalStructure）并注明 AuthController 随 HC-004 删除；原『只列五个』为陈旧标注，控制器清单 GAP 已闭合"
     has_active_comet_change: false
     comet_change_id: null
 
@@ -259,12 +259,12 @@ modules:
     shared_dtos: ["ApiResponse", "PageResult", "MasterDataEntityDTO", "DomainTemplateDTO", "QualityCheckDTO", "MetaEntityRow（元数据目录读模型，跨上下文）"]
     error_codes_used: ["com.bone.masterdata.common.MasterDataErrorCodes（MD_*，约 40 个）", "MD_META_ENTITY_NOT_FOUND / MD_META_ENTITY_NOT_PUBLISHED（跨域命名，元数据语义落在主数据模块）"]
     tables: ["mdm_entity", "mdm_field", "mdm_record", "mdm_record_version", "mdm_record_category", "mdm_category", "mdm_domain_template", "mdm_template_version", "mdm_reference_set", "mdm_reference_value", "mdm_reference_value_tenant", "mdm_qcheck_task", "mdm_qcheck_detail", "mdm_qcheck_report", "mdm_quality_issue", "mdm_steward", "mdm_steward_scope", "mdm_entity_subscription", "mdm_feedback", "mdm_model_drift", "md_entity", "md_field", "md_record", "md_standard", "md_quality_rule", "md_lineage"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "pending_review"}
     hc_evidence:
       HC-003: "16 个 Controller 中 ResponseEntity 命中 0"
       HC-006: "infrastructure/gateway/MetaEntityCatalogPortAdapter.java 已在 sdk-persistence-bypass-baseline.json 登记（存量，只可收缩）"
       HC-007: "doc/architecture/openapi/masterdata-v1.yaml 存在"
-      HC-008: "baseline：mdm_qcheck_task 为 gap-candidate（缺 updated_at/deleted）；mdm_qcheck_detail/report、mdm_record_category、mdm_record_version 为 by-design"
+      HC-008: "pending_review（2026-09-27 起 A 阶段复核中）：mdm_qcheck_task 为 gap-candidate（缺 updated_at/deleted）待核实；md_lineage 已由元数据模块划归本模块（mdm_* 命名），HC-008 真缺口现落于此处。原 violated 标注重评"
     design_vs_code_gaps:
       - "doc3 规划 /entities/convert?businessEntityId=，代码为 ?metaEntityId=（MasterDataEntityController.java:69-71）"
       - "doc3 §630 规划的跨模块集成事件 + RocketMQ：代码零 IntegrationEvent，resources 无 rocketmq 配置"
