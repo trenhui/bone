@@ -38,10 +38,10 @@ modules:
     status: "implementing"
     last_reviewed_at: "2026-09-27T10:15:00+08:00"
     implemented_at: null
-    stages_done: ["A", "A'", "B", "B'"]
+    stages_done: ["A", "A'", "B", "B'", "C", "D"]
     report_path: "doc/design/modules/review-report-bone-metadata-server.md"
     has_active_comet_change: false
-    note: "A+A' 设计复核完成（2026-09-27）：锚定 HC-003/HC-008 误报（写操作为 ApiResponse 信封 / ADR-0016 有意决策）。B(F1) 已落地：`MetadataErrorCodes` 常量类聚合 META_RUNTIME_* 裸字符串 + `GlobalExceptionHandler` 码→状态映射 + 错误码登记 §6 + i18n 同步（en-US/zh-CN 各 6 键）。B' 代码复核 PASS：两模块 test-compile BUILD SUCCESS、无越权/禁改文件、无清单外改动、码字符串零变更（等价重构）。C 联调环境受限：dev 默认 `sa-token.disable` + Redisson 直连 `localhost:6379`(无密码)，启动即 `ERR AUTH` 被拒，服务无法裸启；以 8 个映射单测真实执行 F1 链 + `check-i18n-sync` 通过替代全链路 HTTP 联调。D 验收环境受限未执行（同 Redis 问题；前端微应用 skip 范围）。状态 `implementing`（B/B' 完成，C/D 待 dev Redis 配密码后补）。F2-F5 仍为建议项（F2 发布事件归 engine Comet change / F3-F4 低优 / F5 已闭合）。"
+    note: "A+A' 设计复核完成（2026-09-27）：锚定 HC-003/HC-008 误报（写操作为 ApiResponse 信封 / ADR-0016 有意决策）。B(F1) 已落地：`MetadataErrorCodes` 常量类聚合 META_RUNTIME_* 裸字符串 + `GlobalExceptionHandler` 码→状态映射 + 错误码登记 §6 + i18n 同步（en-US/zh-CN 各 6 键）。B' 代码复核 PASS：两模块 test-compile BUILD SUCCESS、无越权/禁改文件、无清单外改动、码字符串零变更（等价重构）。C 已验证（更正此前误判）：本机裸启因漏传 `BONE_REDIS_PASSWORD` 触发 Redisson AUTH 失败，但 IDE 监管实例 9001（跑含 F1 的当前代码）健康；直接打 runtime 端点拿到真实 HTTP——不存在实体→404 `META_RUNTIME_ENTITY_NOT_FOUND`、非法 q→400 `META_RUNTIME_INVALID_QUERY`；辅以 8 个映射单测 + `check-i18n-sync` 通过，三重覆盖。D 后端验收完成（错误路径即 F1 验收面，全绿、无 5xx）；成功路径 200 未演示（避免改共享 E2E fixture）；前端微应用 skip。状态 `implementing`，**本模块夜间闭环结束**。F2-F5 仍为建议项（F2 发布事件归 engine Comet change / F3-F4 低优 / F5 已闭合）。"
 
   - name: "bone-metadata-engine"
     design_doc: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md"

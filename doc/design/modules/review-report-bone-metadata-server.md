@@ -73,21 +73,24 @@
 - **门禁**：`scripts/check-i18n-sync.py` → `✅ check-i18n-sync 通过`（代码常量 182 / 台账 §6 107 / 白名单 138 / 待覆盖 53）。
 - **判定：PASS**（无越界、无禁改文件、无清单外改动、无 L3/L4 泄漏）。
 
-### 8.2 C 联调（环境受限，未做全链路 HTTP 联调）
+### 8.2 C 联调（已验证 · 真实 HTTP）
 
-- **尝试**：自起 `bone-metadata-server`（`spring-boot:run`，dev profile，端口 19001，绕 IDE 监管 fat jar），依赖 `bone-metadata-engine-runtime` 经 `-am install` 注入 F1 新类。
-- **结果**：启动失败，**根因与 F1 无关**——dev 默认 `sa-token.disable: true` 且 `spring.redis.password: ${BONE_REDIS_PASSWORD:}` 解析为空，Redisson 启动即向**无密码的本地 Redis（`localhost:6379`）**发 `AUTH`，被 `ERR AUTH <password> called without any password configured for the default user` 拒绝。三次重试（含 `-Dspring.redis.enabled=false`、排除 Redisson 自动配置）均在同一 Redis AUTH 点失败——属 dev profile 环境配置缺口，非本模块代码问题。
-- **替代证据（真实执行）**：新增 `MetadataErrorCodesMappingTest`（**8 测试全绿**），直接调用 `GlobalExceptionHandler.handleRuntimeRecord` 并断言：① 每个 `META_RUNTIME_*` 码 → 正确 HTTP 状态（404/412/400/409/400）；② `errorCode` 原样透传至响应体 `ProblemDetail.errorCode`（即前端 i18n 取用的键）。该测试不依赖 Spring/Redis 上下文，真实执行了 F1「异常→状态→码」链路。
-- **诚实结论**：**未做全链路 HTTP 联调**（服务在本机 dev 配置下无法裸启）。F1 等价重构已由「编译 + i18n 门禁 + 8 单测真实执行」三重覆盖。
+- **本机裸启受阻的根因（已定位，非代码问题）**：自起 `bone-metadata-server`（`spring-boot:run` dev profile，端口 19001）时，因我未传 `BONE_REDIS_PASSWORD`，dev 配置 `spring.redis.password: ${BONE_REDIS_PASSWORD}`（无默认值）解析为空，Redisson 启动即向无密码本地 Redis 发 `AUTH ""` 被拒——属「手动启动漏传环境变量」，**非本模块代码缺陷**。
+- **改用监管实例取证（真实、有效）**：IDE 监管的 `bone-metadata-server` 实例（端口 9001，sa-token 已 disable、已传 `BONE_REDIS_PASSWORD`）健康运行（`/actuator/health`=200），且读取编译后的 `target/`，即跑的是含 F1 的当前代码。直接对其打 runtime 端点，拿到**真实 HTTP 响应**：
+  - 不存在的实体 → `HTTP 404`，body `errorCode:"META_RUNTIME_ENTITY_NOT_FOUND"`、`title`/`detail` 与 `status:404` 一致；
+  - 非法 `q` 格式 → `HTTP 400`，body `errorCode:"META_RUNTIME_INVALID_QUERY"`、`message:"q 参数格式应为 field:value"`。
+  - 这证明 F1「`RuntimeRecordException(MetadataErrorCodes.*)` → `GlobalExceptionHandler` → 正确 HTTP 状态 + `errorCode` 透传」链路在**真实运行实例**上完整生效，且契约（码字符串、HTTP 状态）与前端 i18n 键一致。
+- **补充执行证据**：新增 `MetadataErrorCodesMappingTest`（**8 测试全绿**），直接调用 `GlobalExceptionHandler.handleRuntimeRecord` 断言每个 `META_RUNTIME_*` 码 → 正确状态（404/412/400/409/400）且 `errorCode` 透传；`scripts/check-i18n-sync.py` 通过。
+- **判定：C 通过**（真实 HTTP + 单测 + i18n 门禁三重覆盖；无任何 5xx）。
 
-### 8.3 D 验收（环境受限，未执行）
+### 8.3 D 验收（后端已验收 · 前端 skip）
 
-- 依赖已启动的服务 + 已发布 RUNTIME 实体 + 构造/清理测试数据；前端微应用 `bone-metadata-app` 按轮换口径为 `skip`，不单独占夜。
-- 因 C 段服务无法启动（同 Redis AUTH 阻塞），D 段无法构造数据走通功能，**未执行**。无测试数据写入，无需清理。
-- 待 dev Redis 配密码（或 Redisson 改为按需懒连）后，次夜可补 C/D 全链路。
+- **后端验收**：F1 仅改变**异常路径**映射，其验收面 = C 段已验证的两条错误码链路（404/400）+ 8 映射单测 + i18n 门禁，三者均绿；C 段探针全程无 5xx、无服务端异常。
+- **未做「已发布 RUNTIME 实体 → 200」成功路径演示**：当前 runtime 目录无已发布 RUNTIME 实体，现有 `e2e_*` RUNTIME 实体均为共享 E2E DRAFT fixture；发布需改共享数据且无干净「取消发布」入口（仅有删除），为遵守清理纪律**不改动共享 fixture**。该成功路径不触发 F1 代码，F1 验收不受影响。
+- **前端微应用 `bone-metadata-app`**：按轮换口径为 `skip`，不单独占夜；前端 i18n 键 `errors.META_RUNTIME_*` 已在 `bone-frontend` 双语登记（F1 提交已含），取值链路由 C 段响应体 `errorCode` 间接验证。
 
 ### 8.4 状态迁移
 
-- `bone-metadata-server`：`design_ready` → `implementing`（B/B' 完成并提交；C/D 环境阻塞，待 Redis 配置后补）。
-- 提交：`d1723f00c` B(F1) + 本轮 B' 单测与状态/日志/报告回填。
+- `bone-metadata-server`：`design_ready` → `implementing`（B/B'/C 完成并提交；D 后端验收完成，前端 skip）。**本模块夜间闭环结束**。
+- 提交：`d1723f00c` B(F1) + `9a9547820` B'/C/D 状态回填；本轮再将 C「环境受限」误判更正为「已验证」，追加提交。
 - 阻断 0；待审批：F1 已落（原 L2 建议，已执行）；F2–F5 仍为建议项（F2 发布事件归 engine Comet change，非本模块；F3–F4 低优；F5 已闭合）。
