@@ -28,7 +28,7 @@
 
 ## 3. 建议级 finding
 
-- **F1（低/文档）· 设计-代码参数漂移**：`MasterDataEntityController.convert` 代码用 `@RequestParam Long metaEntityId`（:69-72），设计稿 doc3 规划 `?businessEntityId=`。功能正常但文档与代码参名不一致，建议统一（代码改参名或文档改叙述）。
+- **F1（低/文档）· 设计-代码参数漂移**：`MasterDataEntityController.convert` 代码用 `@RequestParam Long metaEntityId`（:69-72），设计稿 doc3 规划 `?businessEntityId=`。功能正常但文档与代码参名不一致。**【B 阶段已落地 2026-09-27】** 以「零 API 风险」为原则，将设计稿对齐代码：doc3 §0/§API 表、doc3a UC-MD-T1 三处 `businessEntityId` → `metaEntityId`（与代码及锚定 `_global-contracts.yaml` 的 `/convert?metaEntityId=` 一致）；不动代码参数名以免前端 convert 调用方断裂。
 - **F2（中/路线图）· 跨模块集成事件未落地**：doc3 §630 规划「跨模块集成事件 + RocketMQ」，代码 0 命中 `IntegrationEvent`/`Outbox`/`RocketMQ`（全模块 grep）。当前为 Spring 进程内 `DomainEvent`，跨服务（如通知/集成）无法感知。属路线图非缺陷，建议归并到后续「事件总线/Outbox」专项。
 - **F3（中/路线图）· 幂等键 + LRO 未实现**：doc3 §287 的 `Idempotency-Key`、HTTP `202 Accepted` + `/operations/{taskId}`（长时运行操作）代码全缺失（grep `Idempotency|ACCEPTED|/operations/`=0）。属路线图非缺陷。
 - **F4（低）· DTO 纪律轻微偏离**：`MasterDataRecordTopController.java:104` 返回 `ApiResponse<List<MasterDataRecordVersion>>`，信封正确但 payload 为**领域实体**而非 DTO。非 HC-003 违规，但建议收口为 DTO 以隔离领域模型。
@@ -58,3 +58,26 @@
 ## 7. 结论
 
 `bone-masterdata` 设计稿与代码总体一致，响应契约（HC-003）合规。锚定标 `violated` 的 **HC-008 经复核为真实 L3 DDL 缺口**（`mdm_*` 表缺审计/租户列），已登记待审批；与 metadata-server 轮的 HC-003/HC-008 误报不同，本轮无假阳性。无阻断级缺陷，设计可放行。建议后续：① 处理 HC-008 的 L3 DDL（人工/架构师）；② 处理建议项 F1–F5（多为路线图/文档 GAP，无硬阻塞）；③ 按夜间流程默认放行，`design_ready` 后下一晚可进 B 实现或继续其余模块轮换。
+
+## 8. B 阶段实现闭环（F1 落地）
+
+> B 阶段以「低风险、可验证」为筛选原则，仅落地 F1；F2/F3/F5 属路线图/基础设施、F4 需新建 DTO 隔离层，均不在单夜 B 阶段范围。
+
+### 8.1 B（F1 文档对齐）
+
+- **改动**：`doc/design/modules/3. 主数据管理模块详细设计方案.md`（§0 血缘表、`/convert` API 表共 2 处）、`doc/design/modules/3a. 主数据管理模块核心场景及用例设计方案.md`（UC-MD-T1 主流程 B 共 1 处）中 `businessEntityId` → `metaEntityId`。
+- **对齐基线**：代码 `MasterDataEntityController.convert(@RequestParam Long metaEntityId)`（:69-72）+ 锚定 `_global-contracts.yaml` exposed_apis 已写 `/convert?metaEntityId=`。
+- **风险**：纯文档对齐，不改 API 契约；前端 convert 调用方（按 `metaEntityId` 传参）不受影响。
+- **门禁**：`scripts/check.sh` 文档类检查通过（无其他源码改动，编译/ORM/i18n/HC-006 不受影响）。
+
+### 8.2 未在本夜 B 阶段处理（明确归属）
+
+- **F4（低·DTO 纪律）**：`MasterDataRecordTopController.java:104` `versions()` 返回 `MasterDataRecordVersion`（域模型）而非 DTO。需新建 `MasterDataRecordVersionDTO` + 映射层，属「领域模型隔离」收口，建议独立占一夜，避免 scope creep。
+- **F2（中·跨模块 MQ 事件）/ F3（中·幂等键+LRO）/ F5（中·事件 Outbox）**：均属事件基础设施/路线图，非单夜 B 阶段可 closure，归并到后续「事件总线/Outbox」专项，与 `bone-integration` 协同。
+- **HC-008（L3 DDL）**：`mdm_qcheck_task` 等补 `updated_at`/`deleted`/`tenant_id` 待架构师审批后由人工执行；AI 不在本阶段改 DDL。
+
+### 8.3 状态迁移
+
+- `bone-masterdata`：`design_ready` → `implementing`（stages_done A/A'/B）；F1 已落地。
+- 阻断 0；待架构师审批：HC-008（L3 DDL）、F5 Outbox / F2 MQ（可选架构）。
+- 下一晚可继续 B 阶段（F4 DTO 收口）或轮换 `bone-integration`。
