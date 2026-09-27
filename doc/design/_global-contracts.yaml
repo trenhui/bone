@@ -358,9 +358,9 @@ modules:
     shared_dtos: ["ApiResponse", "PageResult", "PlatformApiPaths", "DictTypeDto", "DictItemDto", "DictOptionDto", "ConfigDto", "LogDto", "AlertRuleDto", "ScheduleTaskDto"]
     error_codes_used: ["com.bone.system.common.SystemErrorCodes（SYS_*，34 个：SYS_CONFIG_* / SYS_DICT_* / SYS_ALERT_* / SYS_SCHEDULE_TASK_* / SYS_LOG_*）"]
     tables: ["sys_config", "sys_log", "sys_dict", "sys_dict_type", "sys_dict_item", "sys_dict_item_text", "sys_dict_hierarchy", "sys_alert_rule", "sys_alert_event", "sys_schedule_task", "cnsl_dashboard_widget", "cnsl_notification", "cnsl_recent_access"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
-      HC-003: "8 个 Controller 中 3 个返回 ResponseEntity（ConfigController / SystemController / LogController）"
+      HC-003: "误报纠正（2026-09-27 A 复核）：8 个 Controller 中 3 处 ResponseEntity 均为合法例外——ConfigController:105 / LogController:69 为 byte[] 文件下载、SystemController:127/133/139/145 为 Void 501 占位；所有 JSON 业务方法均 ApiResponse/PageResult → implemented（与 bone-metadata-server 同源误判）"
       HC-006: "infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java 已在 baseline 登记"
       HC-007: "doc/architecture/openapi/console-v1.yaml 存在（覆盖 console；system 侧无独立 spec）"
       HC-008: "baseline：sys_alert_event 为 gap-candidate（缺 updated_at/deleted）"

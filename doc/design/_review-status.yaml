@@ -4,8 +4,8 @@
 
 updated_at: "2026-09-27T10:30:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
-current_module: "bone-integration"
-next_run: "bone-system"
+current_module: "bone-system"
+next_run: "bone-extension-studio"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -81,12 +81,13 @@ modules:
     design_doc: "doc/design/modules/7. 系统管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/7. 系统管理模块详细设计方案.md", "doc/design/modules/7a. 数据字典模块详细设计方案.md", "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"]
     port: 8083
-    status: "pending"
-    last_reviewed_at: null
+    status: "design_ready"
+    last_reviewed_at: "2026-09-27T20:30:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-system.md"
     has_active_comet_change: false
-    note: "doc1 控制台 12+ 端点全部未实现；两级字典为在途新增（平台行/租户行同表混存需按 T1 评估）"
+    stages_done: ["A", "A'"]
+    note: "A+A' 设计复核完成（2026-09-27）：HC-003 锚定 violated 经复核为误报（ResponseEntity 仅 byte[] 下载与 501 占位，已刷新锚定）；HC-008 确认 violated（sys_alert_event/sys_log 缺 updated_at/deleted，L3 待审批）；SystemErrorCodes(37) 常量类合规；数据字典 v3 对齐良好（亮点）。前端阻断级：F4.2 告警创建必 400（metric/level vs metricName/alertLevel）、F4.1 配置编辑不生效（key/value/type vs configValue/configType）；另 F1 token 注入/F2 dayjs/i18n/F3 错误边界/F4.5 ID 精度/F4.6 错误码映射 等建议项。设计可放行；B 阶段默认落地前端 S-1/S-2（阻断）+ S-4~S-8 建议、后端 S-9~S-11 建议，S-3/S-12/S-13 待 L3 裁决。"
 
   - name: "bone-extension-studio"
     design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
