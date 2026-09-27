@@ -232,6 +232,13 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
+| `META_RUNTIME_RECORD_NOT_FOUND` | 404 | 运行时记录不存在（含跨租户不可见 / 软删除过滤） |
+| `META_RUNTIME_ENTITY_NOT_FOUND` | 404 | 未找到已发布的 RUNTIME 实体（catalog 查不到） |
+| `META_RUNTIME_INVALID_QUERY` | 400 | 查询约束非法（fields/sort/q 含未建模列、格式错） |
+| `META_RUNTIME_VALIDATION_FAILED` | 400 | 字段校验失败（必填缺失 / 类型不匹配） |
+| `META_RUNTIME_DUPLICATE` | 409 | 唯一约束冲突（字段值已存在） |
+| `META_RUNTIME_INVALID_IDENTIFIER` | 400 | 标识符非法（表名 / 列名不符合 `[a-zA-Z][a-zA-Z0-9_]*`） |
+| `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
 
 ### MD_
 

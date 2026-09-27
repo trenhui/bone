@@ -28,9 +28,6 @@ public class JdbcRuntimeRecordService {
           "deleted",
           "version");
 
-  private static final String META_RUNTIME_VALIDATION_FAILED = "META_RUNTIME_VALIDATION_FAILED";
-  private static final String META_RUNTIME_DUPLICATE = "META_RUNTIME_DUPLICATE";
-
   private final NamedParameterJdbcTemplate jdbc;
   private final RuntimeEntityCatalog catalog;
   private final Map<String, Set<String>> physicalColumnsCache = new ConcurrentHashMap<>();
@@ -95,7 +92,8 @@ public class JdbcRuntimeRecordService {
     params.addValue("pk", parsePkValue(recordId));
     List<Map<String, Object>> rows = jdbc.queryForList(sql, params);
     if (rows.isEmpty()) {
-      throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
     return rows.get(0);
   }
@@ -168,7 +166,8 @@ public class JdbcRuntimeRecordService {
 
     boolean versioned = entityHasColumn(entity, "version");
     if (expectedVersion != null && !versioned) {
-      throw new RuntimeRecordException("META_RUNTIME_INVALID_QUERY", "物理表无 version 列，不支持 If-Match");
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_INVALID_QUERY, "物理表无 version 列，不支持 If-Match");
     }
 
     if (payload.isEmpty() && !(versioned && expectedVersion != null)) {
@@ -207,9 +206,11 @@ public class JdbcRuntimeRecordService {
     if (updated == 0) {
       if (versioned && expectedVersion != null) {
         throw new RuntimeRecordException(
-            "META_PRECONDITION_FAILED", "版本冲突：If-Match v" + expectedVersion + " 与当前记录不一致");
+            MetadataErrorCodes.PRECONDITION_FAILED,
+            "版本冲突：If-Match v" + expectedVersion + " 与当前记录不一致");
       }
-      throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
     return getById(entityCode, tenantId, recordId);
   }
@@ -230,7 +231,8 @@ public class JdbcRuntimeRecordService {
       params.addValue("pk", parsePkValue(recordId));
       int updated = jdbc.update(sql, params);
       if (updated == 0) {
-        throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
+        throw new RuntimeRecordException(
+            MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
       }
       return;
     }
@@ -245,7 +247,8 @@ public class JdbcRuntimeRecordService {
     params.addValue("pk", parsePkValue(recordId));
     int deleted = jdbc.update(sql, params);
     if (deleted == 0) {
-      throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
   }
 
@@ -260,7 +263,7 @@ public class JdbcRuntimeRecordService {
       boolean present = payload.containsKey(col.code()) && payload.get(col.code()) != null;
       if (col.required() && !present) {
         throw new RuntimeRecordException(
-            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填");
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填");
       }
       if (present) {
         validateType(col, payload.get(col.code()));
@@ -280,7 +283,7 @@ public class JdbcRuntimeRecordService {
       Object value = payload.get(col.code());
       if (col.required() && value == null) {
         throw new RuntimeRecordException(
-            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填，不可置空");
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填，不可置空");
       }
       if (value != null) {
         validateType(col, value);
@@ -296,12 +299,12 @@ public class JdbcRuntimeRecordService {
     if (type.matches("LONG|BIGINT|INT|INTEGER|DECIMAL|DOUBLE|FLOAT|NUMBER")) {
       if (!(value instanceof Number)) {
         throw new RuntimeRecordException(
-            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为数值类型");
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为数值类型");
       }
     } else if (type.matches("BOOLEAN|BOOL")) {
       if (!(value instanceof Boolean)) {
         throw new RuntimeRecordException(
-            META_RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为布尔类型");
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为布尔类型");
       }
     }
   }
@@ -336,7 +339,7 @@ public class JdbcRuntimeRecordService {
     Long count = jdbc.queryForObject(sql.toString(), params, Long.class);
     if (count != null && count > 0) {
       throw new RuntimeRecordException(
-          META_RUNTIME_DUPLICATE, "字段「" + code + "」值「" + value + "」已存在（唯一约束）");
+          MetadataErrorCodes.RUNTIME_DUPLICATE, "字段「" + code + "」值「" + value + "」已存在（唯一约束）");
     }
   }
 
@@ -402,7 +405,8 @@ public class JdbcRuntimeRecordService {
         .orElseThrow(
             () ->
                 new RuntimeRecordException(
-                    "META_RUNTIME_ENTITY_NOT_FOUND", "未找到已发布的 RUNTIME 实体: " + entityCode));
+                    MetadataErrorCodes.RUNTIME_ENTITY_NOT_FOUND,
+                    "未找到已发布的 RUNTIME 实体: " + entityCode));
   }
 
   private static Map<String, Object> filterWritable(
@@ -456,7 +460,8 @@ public class JdbcRuntimeRecordService {
 
   private static String sanitizeIdentifier(String name) {
     if (name == null || !name.matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-      throw new RuntimeRecordException("META_RUNTIME_INVALID_IDENTIFIER", "非法标识符: " + name);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER, "非法标识符: " + name);
     }
     return name;
   }

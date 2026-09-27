@@ -52,7 +52,13 @@
     "SYS_DICT_TYPE_IN_USE": "Dictionary type still has items; remove them first",
     "SYS_DICT_TYPE_NOT_FOUND": "Dictionary type not found",
     "SYS_DICT_TYPE_READONLY": "Built-in dictionary type is read-only",
-    "SYS_DICT_VALUE_INVALID": "Value does not match the dictionary value type or format"
+    "SYS_DICT_VALUE_INVALID": "Value does not match the dictionary value type or format",
+    "META_RUNTIME_DUPLICATE": "Resource already exists (unique constraint violated)",
+    "META_RUNTIME_ENTITY_NOT_FOUND": "Published runtime entity not found",
+    "META_RUNTIME_INVALID_IDENTIFIER": "Invalid identifier (table/column name)",
+    "META_RUNTIME_INVALID_QUERY": "Invalid query constraint (unmodeled column or malformed q)",
+    "META_RUNTIME_RECORD_NOT_FOUND": "Runtime record not found",
+    "META_RUNTIME_VALIDATION_FAILED": "Field validation failed"
   },
   "enums": {
     "ORDER_STATUS": {

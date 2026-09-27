@@ -22,7 +22,8 @@ final class RuntimeQuerySupport {
     for (String field : query.selectFields()) {
       String code = sanitize(field);
       if (!allowed.contains(code) && !code.equals(pk)) {
-        throw new RuntimeRecordException("META_RUNTIME_INVALID_QUERY", "fields 含未建模列: " + field);
+        throw new RuntimeRecordException(
+            MetadataErrorCodes.RUNTIME_INVALID_QUERY, "fields 含未建模列: " + field);
       }
       cols.add(code);
     }
@@ -44,7 +45,7 @@ final class RuntimeQuerySupport {
       String field = sanitize(spec.field());
       if (!allowed.contains(field) && !field.equals(pk)) {
         throw new RuntimeRecordException(
-            "META_RUNTIME_INVALID_QUERY", "sort 含未建模列: " + spec.field());
+            MetadataErrorCodes.RUNTIME_INVALID_QUERY, "sort 含未建模列: " + spec.field());
       }
       parts.add("`" + field + "` " + (spec.descending() ? "DESC" : "ASC"));
     }
@@ -61,7 +62,7 @@ final class RuntimeQuerySupport {
     Set<String> allowed = allowedDataColumns(entity);
     if (!allowed.contains(field)) {
       throw new RuntimeRecordException(
-          "META_RUNTIME_INVALID_QUERY", "q 过滤字段未建模: " + filter.field());
+          MetadataErrorCodes.RUNTIME_INVALID_QUERY, "q 过滤字段未建模: " + filter.field());
     }
     params.addValue("qFilterValue", filter.value());
     return " AND `" + field + "` = :qFilterValue";
@@ -73,7 +74,8 @@ final class RuntimeQuerySupport {
 
   private static String sanitize(String name) {
     if (name == null || !name.matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
-      throw new RuntimeRecordException("META_RUNTIME_INVALID_IDENTIFIER", "非法标识符: " + name);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER, "非法标识符: " + name);
     }
     return name;
   }

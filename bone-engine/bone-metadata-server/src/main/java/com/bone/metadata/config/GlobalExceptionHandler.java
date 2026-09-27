@@ -8,6 +8,7 @@ import com.bone.core.model.ProblemDetail;
 import com.bone.core.model.ProblemDetails;
 import com.bone.metadata.catalog.common.exception.CatalogIdempotencyConflictException;
 import com.bone.metadata.catalog.common.exception.CatalogOptimisticLockException;
+import com.bone.metadata.engine.runtime.MetadataErrorCodes;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import com.bone.metadata.exception.FieldConflictException;
 import com.bone.metadata.exception.TooManyRequestsException;
@@ -75,13 +76,13 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<ProblemDetail>> handleRuntimeRecord(RuntimeRecordException ex) {
     HttpStatus status =
         switch (ex.getErrorCode()) {
-          case "META_RUNTIME_RECORD_NOT_FOUND", "META_RUNTIME_ENTITY_NOT_FOUND" -> HttpStatus
-              .NOT_FOUND;
-          case "META_PRECONDITION_FAILED" -> HttpStatus.PRECONDITION_FAILED;
-          case "META_RUNTIME_VALIDATION_FAILED" -> HttpStatus.BAD_REQUEST;
-          case "META_RUNTIME_DUPLICATE" -> HttpStatus.CONFLICT;
-          case "META_RUNTIME_INVALID_QUERY", "META_RUNTIME_INVALID_IDENTIFIER" -> HttpStatus
-              .BAD_REQUEST;
+          case MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND,
+              MetadataErrorCodes.RUNTIME_ENTITY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+          case MetadataErrorCodes.PRECONDITION_FAILED -> HttpStatus.PRECONDITION_FAILED;
+          case MetadataErrorCodes.RUNTIME_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+          case MetadataErrorCodes.RUNTIME_DUPLICATE -> HttpStatus.CONFLICT;
+          case MetadataErrorCodes.RUNTIME_INVALID_QUERY,
+              MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER -> HttpStatus.BAD_REQUEST;
           default -> HttpStatus.BAD_REQUEST;
         };
     return problem(status, ex.getErrorCode(), ex.getMessage());

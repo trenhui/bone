@@ -64,7 +64,7 @@ public record RuntimePageQuery(
     int sep = token.indexOf(':');
     if (sep <= 0 || sep >= token.length() - 1) {
       throw new RuntimeRecordException(
-          "META_RUNTIME_INVALID_QUERY", "q 参数格式应为 field:value，例如 order_no:O-1");
+          MetadataErrorCodes.RUNTIME_INVALID_QUERY, "q 参数格式应为 field:value，例如 order_no:O-1");
     }
     return new FilterSpec(token.substring(0, sep).trim(), token.substring(sep + 1).trim());
   }
