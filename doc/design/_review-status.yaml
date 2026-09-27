@@ -35,12 +35,13 @@ modules:
     design_doc: "doc/design/modules/2. 元数据管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/2. 元数据管理模块详细设计方案.md", "doc/design/modules/2a. 元数据管理模块核心场景及用例设计方案.md", "doc/design/modules/2b. 建模工作台功能与用例设计方案.md", "doc/design/modules/元数据能力-实现映射与竞品对照.md", "doc/design/modules/2. 元数据管理模块-生产就绪优化计划(P0·P1).md"]
     port: 9001
-    status: "design_ready"
-    last_reviewed_at: "2026-09-27T09:10:00+08:00"
+    status: "implementing"
+    last_reviewed_at: "2026-09-27T10:15:00+08:00"
     implemented_at: null
+    stages_done: ["A", "A'", "B", "B'"]
     report_path: "doc/design/modules/review-report-bone-metadata-server.md"
     has_active_comet_change: false
-    note: "A+A' 设计复核完成（2026-09-27）：锚定标 violated 的 HC-003/HC-008 经复核均为误报——HC-003 所有 Controller body 均 ApiResponse 信封、写操作 ResponseEntity<ApiResponse> 承载头部（doc2 §269 Target 一致，且与 IAM 同款）；HC-008 实体基类 AbstractEntity+自有 tenantId 是 ADR-0016 有意决策，md_lineage 等已按 doc2a G6(2026-09-26 P0) 划归 bone-masterdata 改名 mdm_*。无阻断级缺陷；建议项 F1-F5（错误码常量类/发布事件/返回形态/版本端点/控制器清单）。建议刷新锚定 HC-003/HC-008 标注。"
+    note: "A+A' 设计复核完成（2026-09-27）：锚定 HC-003/HC-008 误报（写操作为 ApiResponse 信封 / ADR-0016 有意决策）。B(F1) 已落地：`MetadataErrorCodes` 常量类聚合 META_RUNTIME_* 裸字符串 + `GlobalExceptionHandler` 码→状态映射 + 错误码登记 §6 + i18n 同步（en-US/zh-CN 各 6 键）。B' 代码复核 PASS：两模块 test-compile BUILD SUCCESS、无越权/禁改文件、无清单外改动、码字符串零变更（等价重构）。C 联调环境受限：dev 默认 `sa-token.disable` + Redisson 直连 `localhost:6379`(无密码)，启动即 `ERR AUTH` 被拒，服务无法裸启；以 8 个映射单测真实执行 F1 链 + `check-i18n-sync` 通过替代全链路 HTTP 联调。D 验收环境受限未执行（同 Redis 问题；前端微应用 skip 范围）。状态 `implementing`（B/B' 完成，C/D 待 dev Redis 配密码后补）。F2-F5 仍为建议项（F2 发布事件归 engine Comet change / F3-F4 低优 / F5 已闭合）。"
 
   - name: "bone-metadata-engine"
     design_doc: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md"
