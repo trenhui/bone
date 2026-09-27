@@ -27,7 +27,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prod 至少保留 metrics（prometheus 端点经内网 + JWT 鉴权，不放通匿名）
+        include: health,info,metrics
   endpoint:
     health:
       show-details: when_authorized

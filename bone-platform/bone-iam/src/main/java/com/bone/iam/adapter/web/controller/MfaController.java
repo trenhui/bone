@@ -3,7 +3,6 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.dto.response.MfaStatusResp;
-import com.bone.iam.common.IamErrorCodes;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -45,7 +44,8 @@ public class MfaController {
   }
 
   private static ResponseEntity<ApiResponse<Void>> notAvailable() {
+    // 不使用 IamErrorCodes 常量拼接字符串（B-7：避免码表被架空）；业务码由全局异常处理器统一渲染
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-        .body(ApiResponse.error(501, IamErrorCodes.MFA_NOT_AVAILABLE + ": MFA 未在商业版/IdP 中启用"));
+        .body(ApiResponse.error(501, "MFA 未在商业版/IdP 中启用"));
   }
 }

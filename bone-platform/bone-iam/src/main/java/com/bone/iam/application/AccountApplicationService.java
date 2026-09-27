@@ -326,7 +326,9 @@ public class AccountApplicationService {
     if (dept == null || !java.util.Objects.equals(dept.getTenantId(), tenantId)) {
       throw IamErrors.of(IamErrorCodes.DEPT_NOT_FOUND, "部门不存在或不属于当前租户: " + deptId);
     }
-    return dept.getId();
+    // 返回入参 deptId 而非 dept.getId()：部门聚合的 id 由存储层生成，内存构造的 Dept 其 id 为
+    // null，但入参 deptId 已校验存在且同租户，等价且避免空指针传到 changeDept(null)。
+    return deptId;
   }
 
   private static AccountDTO toPageDto(Account account) {

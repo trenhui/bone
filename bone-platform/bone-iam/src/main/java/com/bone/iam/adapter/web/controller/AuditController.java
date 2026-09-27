@@ -47,8 +47,12 @@ public class AuditController {
   /**
    * 导出审计日志为 CSV（UTF-8 + BOM）。
    *
+   * <p><b>契约显式化</b>：导出类端点<b>不走 {@code ApiResponse} 信封</b>，直接返回 {@code ResponseEntity<byte[]>}
+   * 二进制流（RFC 6266 {@code Content-Disposition: attachment}），前端须以 {@code responseType:'blob'} 下载。
+   *
    * <p>响应头：{@code Content-Type=text/csv;charset=utf-8} + {@code Content-Disposition=attachment;
-   * filename=iam-audit-logs.csv}； 超过 {@value #EXPORT_MAX_SIZE} 条会截断（日志含警告），与账号导出一致。
+   * filename=iam-audit-logs.csv}；超过 {@value #EXPORT_MAX_SIZE} 条会截断，并在响应头 {@code X-Export-Truncated:
+   * true} 显式暴露截断（与账号导出一致）。
    */
   @GetMapping("/logs/export")
   @PreAuthorize("hasAuthority('iam:audit:read')")
@@ -90,6 +94,10 @@ public class AuditController {
         org.springframework.http.ContentDisposition.attachment()
             .filename("iam-audit-logs.csv")
             .build());
+    // 命中上限即视为截断，前端据此提示「请按时间窗口分批导出」
+    if (result.getRecords().size() >= EXPORT_MAX_SIZE) {
+      headers.add("X-Export-Truncated", "true");
+    }
     return ResponseEntity.ok().headers(headers).body(body);
   }
 

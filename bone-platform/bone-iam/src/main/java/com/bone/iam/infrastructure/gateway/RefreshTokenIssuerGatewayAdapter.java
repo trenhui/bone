@@ -77,7 +77,7 @@ public class RefreshTokenIssuerGatewayAdapter implements RefreshTokenIssuer {
               return data;
             });
     if (row == null) {
-      throw new IllegalArgumentException("无效的刷新令牌");
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "无效的刷新令牌");
     }
     int revoked = ((Number) row.get("revoked")).intValue();
     String replacedBy = (String) row.get("replacedBy");
@@ -87,11 +87,11 @@ public class RefreshTokenIssuerGatewayAdapter implements RefreshTokenIssuer {
         revokeAllActiveForAccount(accountId);
         throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_REUSE, "检测到刷新令牌复用，已吊销该账号全部会话");
       }
-      throw new IllegalArgumentException("刷新令牌已撤销");
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "刷新令牌已撤销");
     }
     Timestamp expiresAt = (Timestamp) row.get("expiresAt");
     if (expiresAt.toInstant().isBefore(Instant.now())) {
-      throw new IllegalArgumentException("刷新令牌已过期");
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "刷新令牌已过期");
     }
     Long accountId = ((Number) row.get("accountId")).longValue();
     Long tenantId = ((Number) row.get("tenantId")).longValue();

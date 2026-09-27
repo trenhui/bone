@@ -2,7 +2,7 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-27T07:05:00+08:00"
+updated_at: "2026-09-27T08:40:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
 current_module: "bone-iam"
 next_run: "bone-metadata-server"
@@ -19,7 +19,7 @@ modules:
     implemented_at: "2026-09-27T07:05:00+08:00"
     report_path: "doc/design/modules/review-report-bone-iam.md"
     has_active_comet_change: false
-    note: "轮换首个模块；10. 应用与模块管理（/api/v1/apps）已并入本模块设计稿清单；2026-09-27 进入 B 实现（L0–L2），HC-004 安全修复已独立提交（非本模块范围）"
+    note: "轮换首个模块；10. 应用与模块管理（/api/v1/apps）已并入本模块设计稿清单；2026-09-27 进入 B 实现（L0–L2），HC-004 安全修复已独立提交（非本模块范围）。B 阶段补强已落地（2026-09-27T08:40）：B-1 导出截断头 X-Export-Truncated + Javadoc 契约显式化（不走 ApiResponse 信封）；B-5 prod 暴露面补 metrics（内网 JWT 鉴权，不放通匿名）；B-7 RefreshTokenIssuerGatewayAdapter 三处裸 IllegalArgumentException→IamErrors 错误码；应用层 assertDeptBelongsToTenant 返回入参 deptId（修桩部门 id=null 的存量测试红）；B' 门禁 159 测试全绿（无 L3/L4 泄漏）。"
     review_note: "2026-09-26 A+A' 段完成：阻断级 10 条（B-1 导出契约三重错位 / B-2 ID 精度分裂 / B-3 配额非原子+无乐观锁 / B-4 角色继承文档自相矛盾 / B-5 HealthIndicator STUB+prod 无 metrics / B-6 locale 管道断裂+lifecycle 双份 / B-7 26 处裸 message 绕过错误码 / B-8 §3.3 目录结构与 ADR-0028 不符 / B-9 reorder 契约空挂 / B-10 时间链路半通）；方案自审 PASS。v2 稿已追加至 doc6 末尾。按 02 提示词 v3 §5「默认放行」，下一晚从 B 实现段继续（B → B' → C 联调 → D 验收），无需等待人工批准文件；仅当 doc/design/approvals/bone-iam.yaml 写 decision: hold/block 时才停。"
     next_stage: null
     stages_done: ["A", "A'", "B", "B'", "C", "D"]
