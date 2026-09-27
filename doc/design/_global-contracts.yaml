@@ -401,15 +401,15 @@ modules:
     shared_dtos: ["ExtensionDefinition", "ExtensionPointDefinition", "ExtensionRoutingMetadata", "ExtensionDocMetadata", "ExtensionPointDocMetadata"]
     error_codes_used: ["com.bone.engine.extension.studio.common.StudioErrorCodes（仅 EXT_RESOURCE_NOT_FOUND / EXT_STATE_INVALID）", "COMMON_VALIDATION_FAILED / COMMON_FORBIDDEN / COMMON_INTERNAL_ERROR / COMMON_IDEMPOTENCY_CONFLICT / COMMON_PRECONDITION_FAILED"]
     tables: ["exts_extension_impl", "exts_extension_point", "exts_plugin_version", "exts_plugin_execution_log", "exts_audit_log"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "partial"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
-      HC-003: "ExtensionManagementController 使用 ResponseEntity"
+      HC-003: "误报纠正（2026-09-27 A 复核）：ExtensionManagementController 38+ 方法签名全为 ResponseEntity<ApiResponse<T>>，由 StudioHttpSupport.ok / StudioApiResponses.badRequest|notFound 统一封装（body 均为 ApiResponse 信封）；合法例外仅 3 处——ResponseEntity<Void>×2（DELETE 204）、ResponseEntity<Resource>×1（插件包下载）、ResponseEntity<?>×1（deployPlugin LRO）。锚定原只 grep ResponseEntity 未看 body → implemented（与 bone-metadata-server / bone-system 同源第三例误判）"
       HC-007: "doc/architecture/openapi/extension-v1.yaml 存在"
-      HC-008: "baseline：exts_audit_log 为 by-design（只追加，缺 updated_at/deleted）"
+      HC-008: "violated（2026-09-27 A 复核升级；原 partial 属漏检）：声明面合规——5 实体均显式 @Column('tenant_id')，4 张业务表 DDL 含 tenant_id + created_at/updated_at/deleted + version；但运行时租户注入覆盖不全：StudioPersistenceConverter#stampTenant 仅处理 ExtStudioExtensionImpl / ExtStudioExtensionPoint 两类，toPluginVersionEntity 未注入 ⇒ exts_plugin_version 所有行 tenant_id 恒为 0L，叠加实体已声明 tenantId 触发 SDK 严格过滤 tenant_id=:current ⇒ 真实租户零命中（多租户数据隔离方案 §5 R4② / 通则 T1）。注：exts_audit_log 缺 updated_at/deleted 为只追加 by-design（ddl-required-columns-baseline.json 已登记），该表本身不违规"
     design_vs_code_gaps:
-      - "doc5 #L287/#L754 把 ExtensionDeployedIntegrationEvent 等列为 Target，代码零事件类且多个写服务声明 @NoDomainEvent"
-      - "doc5 #L459 要求失败响应使用 EXT_*，实际仅 2 个 EXT_ 领域码，其余回落 COMMON_*"
-      - "工作树有 4 个未提交改动（ExtensionManagementController / ExtensionCommandApplicationService / ExtensionStudioProperties / ExtensionScopes / StudioSecurityExpressions）——锚定时点代码为未提交态"
+      - "doc5 #L287/#L754 把 ExtensionDeployedIntegrationEvent 等列为 Target，代码零事件类且多个写服务声明 @NoDomainEvent（2026-09-27 复核：doc5 明标 [Target]，属路线图非缺陷）"
+      - "doc5 #L459 要求失败响应使用 EXT_*，实际仅 2 个 EXT_ 领域码，其余回落 COMMON_*（2026-09-27 复核：StudioErrorCodes.java:6-12 实测 7 常量 / 仅 2 个领域码，仍成立）"
+      - "（已消解 2026-09-27）锚定时点的 4 个未提交改动（ExtensionManagementController / ExtensionCommandApplicationService / ExtensionStudioProperties / ExtensionScopes / StudioSecurityExpressions）已随 7fa2535cb 提交，当前工作树洁净"
     has_active_comet_change: false
     comet_change_id: null
 

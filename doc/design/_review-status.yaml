@@ -2,10 +2,10 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-27T10:30:00+08:00"
+updated_at: "2026-09-27T11:20:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
-current_module: "bone-system"
-next_run: "bone-extension-studio"
+current_module: "bone-extension-studio"
+next_run: "studio-generator"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -93,12 +93,16 @@ modules:
     design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/5. 扩展管理模块详细设计方案.md", "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
     port: 8088
-    status: "pending"
-    last_reviewed_at: null
+    status: "design_ready"
+    last_reviewed_at: "2026-09-27T11:20:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-extension-studio.md"
     has_active_comet_change: false
-    note: "含 BONE-X-Studio 横切方案稿；stampTenant 仅覆盖 2 类实体"
+    stages_done: ["A", "A'"]
+    pending_approvals:
+      - "L3 exts_plugin_version 表归属裁决（平台种子层 0 ↔ 租户实例层二选一；若判平台种子层 → 按通则 T1 拆表或整表去租户作用域）"
+      - "L3 ExtIamTenantDirectory（IAM 租户目录本地副本）去留裁定（CORE-01）"
+    note: "A+A' 设计复核完成（2026-09-27，轮换 #6）：HC-003 锚定 violated 复核为误报（38+ 方法签名全 ResponseEntity<ApiResponse<T>>，仅 3 处合法例外），已纠正为 implemented；HC-008 由 partial 升级为 violated——声明面合规（5 实体显式 tenant_id、4 表 DDL 含完整审计列 + version），但运行时 stampTenant 仅覆盖 2/5 类实体，toPluginVersionEntity 未注入 ⇒ exts_plugin_version 恒写 tenant_id=0，叠加 SDK 严格过滤 ⇒ 真实租户零命中（X-1 阻断级：L2 修写入侧 + L3 裁归属）。另 X-2 错误码仅 2 个 EXT_* 领域码、X-3 deployPlugin 返回 ResponseEntity<?>、X-4 ExtIamTenantDirectory 跨模块副本（CORE-01）、X-5 集成事件未落地（doc5 明标 [Target]，属路线图非缺陷）。亮点：响应信封高度统一、方法级 @PreAuthorize scope 鉴权到位。锚定「4 个未提交改动」GAP 已消解（随 7fa2535cb 提交）。"
 
   - name: "studio-generator"
     design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
