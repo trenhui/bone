@@ -3,12 +3,16 @@ package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
+import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
+import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionImpl;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionPoint;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class StudioPersistenceConverterTest {
@@ -63,5 +67,52 @@ class StudioPersistenceConverterTest {
     StudioAuditEntry back = StudioPersistenceConverter.toAuditDomain(row);
     assertEquals("trace-1", back.getTraceId());
     assertEquals("SUCCESS", back.getResult());
+  }
+
+  @Test
+  @DisplayName("X-1：插件版本行必须带当前租户（曾恒写 tenant_id=0，被 SDK 租户过滤挡掉）")
+  void pluginVersionRowCarriesCurrentTenant() {
+    TenantContext.setTenantId(1001L);
+    try {
+      PluginVersion domain = new PluginVersion();
+      domain.setId(9L);
+      domain.setPluginId(1L);
+      domain.setVersion("1.0.0");
+
+      assertEquals(1001L, StudioPersistenceConverter.toPluginVersionEntity(domain).getTenantId());
+    } finally {
+      TenantContext.clear();
+    }
+  }
+
+  @Test
+  @DisplayName("X-1：执行日志 / 审计日志同样落当前租户")
+  void executionLogAndAuditLogCarryCurrentTenant() {
+    TenantContext.setTenantId(1002L);
+    try {
+      PluginExecutionLog log = new PluginExecutionLog();
+      log.setId(1L);
+      log.setPluginId(2L);
+      assertEquals(1002L, StudioPersistenceConverter.toExecutionLogEntity(log).getTenantId());
+
+      StudioAuditEntry entry = new StudioAuditEntry();
+      entry.setAction("plugin.deploy");
+      assertEquals(1002L, StudioPersistenceConverter.toAuditLogEntity(entry).getTenantId());
+    } finally {
+      TenantContext.clear();
+    }
+  }
+
+  @Test
+  @DisplayName("X-1：显式携带的租户不被上下文覆盖（平台侧代租户写 / 日志自带来源租户）")
+  void explicitTenantIsPreserved() {
+    TenantContext.setTenantId(1001L);
+    try {
+      PluginExecutionLog log = new PluginExecutionLog();
+      log.setTenantId(2002L);
+      assertEquals(2002L, StudioPersistenceConverter.toExecutionLogEntity(log).getTenantId());
+    } finally {
+      TenantContext.clear();
+    }
   }
 }

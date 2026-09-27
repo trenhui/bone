@@ -57,3 +57,85 @@
 | **Q3 证据是否可复现？** | 是。全部结论带 `文件:行`；X-1 另有反证闭环（`bone-init.sql` 无种子 INSERT ⇒ 排除"种子行隐身"解释，确认为写入侧丢租户）。 |
 
 **自审结论：PASS（可放行至 B 阶段，但 X-1 建议优先于其他 B 项修复）。**
+
+---
+
+## 六、B 阶段实现结果（2026-09-27 夜间，轮换 #6）
+
+> 分支 `codex/nightly-bone-extension-studio-20260927`（基于 `26e43321b`）。改动 18 个文件，全部落在 bone-extension-studio 模块与共享 i18n / 错误码登记三处，无跨模块代码改动。
+
+### 6.1 X-1 租户注入闭环（阻断级，L2）
+
+| 文件 | 改动 |
+|------|------|
+| `infrastructure/persistence/converter/StudioPersistenceConverter.java` | `stampTenant` 由「两个 instanceof 分支」改为 `Tenantable<Long>` 单入口（**只在租户未设置时填充**：`null` 或 `0L`；显式租户不被上下文覆盖）；`toPluginVersionEntity` / `toExecutionLogEntity` / `toAuditLogEntity` 三处补调用；审计日志原来的 `entry.getTenantId() != null ? … : 0L` 改为「先赋值再 stamp」，0 值不再被当成"已注入" |
+| `infrastructure/persistence/entity/ExtStudioPluginVersion.java` 等 5 个实体 | 统一 `implements Tenantable<Long>`（字段与 Lombok getter/setter 本就存在，仅补接口声明） |
+| `StudioPersistenceConverterTest` | 新增 3 条：插件版本行带当前租户 / 执行日志+审计日志带当前租户 / 显式租户不被覆盖 |
+
+**为什么收成接口而不是继续加 instanceof**：原实现漏掉 3/5 类实体正是因为它按具体类型分支——新增实体类型时"忘了加分支"既不报错也不告警。改为接口后漏一个就编译不过，同类缺陷不可能复现。
+
+> **仍未闭环的部分（L3，需架构师裁决）**：`exts_plugin_version` 到底是「平台种子层(0)」还是「租户实例层」。本轮只修写入侧，使新写入的行落真实租户；历史 `tenant_id=0` 的行与表归属裁定不在本轮范围（见 §4.3）。
+
+### 6.2 X-2 领域错误码（建议级，L2）
+
+| 文件 | 改动 |
+|------|------|
+| `common/StudioErrorCodes.java` | 新增 6 个领域码：`EXT_PLUGIN_NOT_FOUND`(404) / `EXT_EXT_POINT_NOT_FOUND`(404) / `EXT_PLUGIN_VERSION_NOT_FOUND`(404) / `EXT_PLUGIN_VERSION_CONFLICT`(409) / `EXT_DEPLOY_STATE_INVALID`(409) / `EXT_PLUGIN_PACKAGE_INVALID`(400) |
+| `common/StudioErrors.java`（新） | 「码 → HTTP 状态」唯一配对真源 + **四参** `BizException` 工厂 + 反射 fail-fast（任一码常量未登记状态即类加载失败）。与 `SystemErrors` / `BlueprintErrors` 同构 |
+| `config/StudioWebExceptionHandler.java` | 新增 `@ExceptionHandler(BizException.class)`：400–599 直用、越界按 500；`errorCode` 透传（`null` 时按状态回落 `VALIDATION_FAILED`/`INTERNAL_ERROR`）。**必须显式声明**——本类末尾的 `Exception` 兜底会抢在全局映射前命中，不声明则 404/409 会被兜底成 500 且丢码 |
+| 5 个业务类（11 处抛出点） | 插件不存在 / 关联扩展点不存在 / 版本不存在 / 版本已存在 / 未启用即发布 / 未部署即模拟调用 / 非 JAR 包 等，由裸 `IllegalArgumentException` 改为 `StudioErrors.of(码, 上下文)` |
+| `Bone-错误码登记.md` §EXT_ | 6 行新码登记 |
+| `shared-utils/src/i18n/locales/{zh-CN,en-US}.json` | 8 个 `EXT_*` 键（含此前完全缺失的 `EXT_RESOURCE_NOT_FOUND` / `EXT_STATE_INVALID`） |
+
+**行为变化（有意为之）**：「插件不存在 / 扩展点不存在 / 版本不存在」此前走 `IllegalArgumentException` → **400 且无领域码**，现在是 **404 + `EXT_*_NOT_FOUND`**；「版本已存在」由 400 变 **409**。「仅支持 JAR 插件包」仍是 400，但带回领域码。`JarMagicValidatorTest` 的期望异常类型随契约变更同步更新。
+
+### 6.3 X-3 `deployPlugin` 返回类型收敛（建议级，L2）
+
+- `StudioCommandResponses#asObject(...)`：把 `ResponseEntity<ApiResponse<T>>` 抬升为 `ResponseEntity<ApiResponse<Object>>`（状态码、响应头、报文体原样保留）。
+- `ExtensionStudioApplicationService#deployPlugin` 与 `ExtensionManagementController#deployPlugin` 签名由 `ResponseEntity<?>` 改为 `ResponseEntity<ApiResponse<Object>>`：同步返回插件实体、异步返回 `{operationId}`，两种形态不再靠通配符表达，OpenAPI 不再退化为空 schema。
+- **线上报文零变化**（泛型仅编译期）：`ExtensionApiLroTest` 的 202 + `$.data.operationId` 断言原样通过。
+
+### 6.4 B' 代码复核（7 项）
+
+| # | 复核项 | 方法 | 结果 |
+|---|--------|------|------|
+| 1 | 禁碰文件未被改 | `git status --porcelain` 对照 §0 禁碰清单；`.comet/**`、`gate-state.json`、`Bone-DDD-最终实践方案.md`、`bone-init.sql`、`.github/workflows/**` 均未出现 | ✅ |
+| 2 | 无 scope creep | 改动文件全部在 §4.2 清单内；额外文件仅为「错误码登记 + i18n」——是 X-2 明确要求的同步项 | ✅ |
+| 3 | 硬约束未新增违反 | 重跑 B1–B8 取证：`domain` 零外层 import；无新增 ORM；Controller 仍全 `ApiResponse` 信封；`@PreAuthorize` 未松动 | ✅ |
+| 4 | L3/L4 未被执行 | 无 DDL、无删码、无依赖/CI 改动；`exts_plugin_version` 归属仍挂 §4.3 待审批 | ✅ |
+| 5 | 契约一致 | 状态码与 `$.data.errorCode` 由新增 `ExtensionApiErrorCodeTest` 实测锁定；锚定 `exposed_apis` 路径未变 | ✅ |
+| 6 | 门禁绿 | `mvn -o -pl bone-extension-studio test` **93 全绿**（ArchitectureTest 25；2 条 IT 需外部 MySQL/Redis，skip）；`check-i18n-sync.py` 通过（常量 188） | ✅ |
+| 7 | 他人 WIP 未被卷入 | 工作树另有并发会话的 8 个 `bone-masterdata-app` 前端改动，本次提交按路径显式 `git add`，未包含 | ✅ |
+
+## 七、C 联调验证结果
+
+本机 dev 起全链路（含 Redis / MySQL）在夜间无监管实例可用（此前 `bone-metadata-server` 轮已记录：裸启会因 `BONE_REDIS_PASSWORD` 缺省被 Redisson AUTH 拒绝）。本轮按 §7.4 降级为**契约级联调**：用 `@SpringBootTest` + MockMvc 走真实 Spring MVC 全链路（Filter → Controller → 幂等执行器 → advice → JSON），断言**真实 HTTP 码 + 响应摘要**。
+
+| # | 场景 / API | 验证方法 | 实际 HTTP 码 + 响应摘要 | 备注 |
+|---|-----------|----------|------------------------|------|
+| C-1 | `GET /api/v1/extension/plugins/999999/deployment-state` | `ExtensionApiErrorCodeTest#unknownPlugin_...` | **404**，`{"success":false,"data":{"errorCode":"EXT_PLUGIN_NOT_FOUND",…}}` | 改造前为 400 且无码 |
+| C-2 | `POST /api/v1/extension/plugins:upload`（重复版本号） | `ExtensionApiErrorCodeTest#duplicateVersionUpload_...` | **201 → 409**，`errorCode=EXT_PLUGIN_VERSION_CONFLICT` | 幂等执行器之后透传 |
+| C-3 | `POST /api/v1/extension/plugins/1:deploy`（异步） | `ExtensionApiLroTest#deploy_async_pollUntilDone`（既有） | **202 + Location**，`$.data.operationId` 为字符串；轮询至 `done=true` | X-3 改造后报文不变 |
+| C-4 | `GET /api/v1/extension/points/999999` | `ExtensionApiContractTest#notFound_returnsProblemDetail`（既有） | **404**，`errorCode=EXT_RESOURCE_NOT_FOUND` | 回归未破坏 |
+| C-5 | 错误码 → 状态映射 | `StudioErrorsMappingTest`（5 条） | 13 个码全部落在 4xx/5xx；未登记码 `IllegalStateException` fail-fast | 表驱动 |
+
+## 八、D 验收测试（构造数据 → 模拟操作 → 清理自证）
+
+| # | 场景 | 构造数据 | 模拟操作 | 断言 | 实测 | 数据已清 |
+|---|------|----------|----------|------|------|----------|
+| D-1 | 插件不存在时的用户可见反馈 | in-memory 种子（扩展点 1 / 插件 1）+ 不存在的 id 999999 | 查询该插件部署状态 | 404 + 前端可 `i18n.t('errors.EXT_PLUGIN_NOT_FOUND')` | 通过；语言包 zh/en 均已补该键 | ✅ in-memory 数据集随 Spring 上下文销毁，无外部库写入 |
+| D-2 | 重复上传同一版本号被拒 | 上传 `7.7.7` 至插件 1（201），再上传同版本 | 走 `/plugins:upload` 两次 | 第二次 409 + `EXT_PLUGIN_VERSION_CONFLICT` | 通过 | ✅ 同上 |
+| D-3 | 租户注入（X-1 验收面） | `TenantContext.setTenantId(1001/1002)` | 领域模型 → 持久化行 | 插件版本 / 执行日志 / 审计日志三行 `tenantId` = 当前租户；显式租户 2002 不被覆盖 | 通过（3 条单测） | ✅ 纯内存对象，无落库 |
+| D-4 | 卫生断言 | — | — | 测试期间 0 5xx、0 未捕获异常 | 通过（93 测试全绿） | — |
+
+> D 段未做浏览器端 Playwright 走查：`bone-extension-app` 前端无「部署/上传」页面的冒烟脚本，且本轮改动全在后端契约层（前端消费的是 `errorCode` 键，已由 i18n 门禁保证存在）。列入下一轮。
+
+## 九、AI 自审结论
+
+| 问 | 结论 |
+|----|------|
+| **Q1 证据可复现？** | 是。X-1 有 3 条单测 + 转换器 `文件:行`；X-2 有 5 条映射测试 + 2 条 MockMvc 契约测试（真实状态码）；X-3 有既有 LRO 测试作回归。全部可一键重跑。 |
+| **Q2 分级正确？** | 是。X-1 按阻断级处理并优先于其他项；X-2/X-3 维持建议级。未出现"为好看降级"或"误判阻断"。 |
+| **Q3 v2 稿安全？** | 是。§4.2 三项 B 清单全部落地，无新增硬约束违反；两处 L3（表归属、`ExtIamTenantDirectory`）仍在待审批清单，未被执行。 |
+
+**自审结论：PASS（B/B'/C/D 完成，状态 `design_ready` → `implementing`）。**

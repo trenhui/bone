@@ -273,6 +273,12 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 |-----------|------|------|
 | `EXT_RESOURCE_NOT_FOUND` | 404 | Studio 资源不存在（扩展点/插件等通用） |
 | `EXT_STATE_INVALID` | 409 | 扩展/插件状态非法 |
+| `EXT_PLUGIN_NOT_FOUND` | 404 | 插件不存在（含跨租户不可见） |
+| `EXT_EXT_POINT_NOT_FOUND` | 404 | 关联扩展点不存在（含跨租户不可见） |
+| `EXT_PLUGIN_VERSION_NOT_FOUND` | 404 | 插件版本不存在，或插件尚无可用版本（回滚时） |
+| `EXT_PLUGIN_VERSION_CONFLICT` | 409 | 同一插件下该版本号已存在 |
+| `EXT_DEPLOY_STATE_INVALID` | 409 | 当前部署状态不允许该操作（未启用即发布、未部署即模拟调用） |
+| `EXT_PLUGIN_PACKAGE_INVALID` | 400 | 插件包非法（非 JAR/ZIP 格式） |
 
 ### INT_
 

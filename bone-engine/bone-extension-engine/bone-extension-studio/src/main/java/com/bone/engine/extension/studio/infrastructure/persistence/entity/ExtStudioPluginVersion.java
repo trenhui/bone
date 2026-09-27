@@ -2,6 +2,7 @@ package com.bone.engine.extension.studio.infrastructure.persistence.entity;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.entity.AbstractEntity;
+import com.bone.core.domain.entity.Tenantable;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Table("exts_plugin_version")
-public class ExtStudioPluginVersion extends AbstractEntity<Long> {
+public class ExtStudioPluginVersion extends AbstractEntity<Long> implements Tenantable<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)

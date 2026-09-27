@@ -1,5 +1,7 @@
 package com.bone.engine.extension.studio.application.support;
 
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.common.StudioErrors;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,7 +45,7 @@ public class PluginArtifactSupport {
     }
     String original = file.getOriginalFilename();
     if (original != null && !original.toLowerCase().endsWith(".jar")) {
-      throw new IllegalArgumentException("仅支持 JAR 插件包");
+      throw StudioErrors.of(StudioErrorCodes.PLUGIN_PACKAGE_INVALID, "仅支持 JAR 插件包");
     }
 
     try (InputStream in = file.getInputStream()) {

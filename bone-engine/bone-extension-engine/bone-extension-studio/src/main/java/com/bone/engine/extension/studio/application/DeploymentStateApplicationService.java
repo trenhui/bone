@@ -1,6 +1,8 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.engine.extension.studio.application.query.dto.DeploymentStateView;
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.common.StudioErrors;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStateMachine;
 import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus;
@@ -21,7 +23,7 @@ public class DeploymentStateApplicationService {
   public DeploymentStateView load(Long pluginId) {
     Extension plugin = extensionQueryHandler.findExtensionById(pluginId);
     if (plugin == null) {
-      throw new IllegalArgumentException("插件不存在: " + pluginId);
+      throw StudioErrors.of(StudioErrorCodes.PLUGIN_NOT_FOUND, pluginId);
     }
     List<PluginVersion> versions = extensionQueryHandler.listPluginVersions(pluginId);
     PluginVersion active =

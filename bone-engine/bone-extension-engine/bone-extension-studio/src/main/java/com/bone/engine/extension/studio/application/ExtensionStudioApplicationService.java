@@ -193,28 +193,37 @@ public class ExtensionStudioApplicationService {
     }
   }
 
-  public ResponseEntity<?> deployPlugin(Long id, Boolean syncParam, String idempotencyKey) {
+  /**
+   * 部署插件：同步返回插件实体，异步返回 LRO 受理凭据（{@code {operationId}}）。
+   *
+   * <p>两种数据形态靠 {@link StudioCommandResponses#asObject} 抬升为 {@code ApiResponse<Object>}，
+   * 端点签名保持具体类型（原为 {@code ResponseEntity<?>}，OpenAPI 退化为空 schema）。
+   */
+  public ResponseEntity<ApiResponse<Object>> deployPlugin(
+      Long id, Boolean syncParam, String idempotencyKey) {
     String path = "/api/v1/extension/plugins/" + id + ":deploy";
     String fingerprint = StudioIdempotencySupport.fingerprint("");
     if (resolveDeploySync(syncParam)) {
-      return idempotentExecutor.execute(
-          idempotencyKey, "POST", path, fingerprint, () -> lifecycle(id, true, "部署"));
+      return StudioCommandResponses.asObject(
+          idempotentExecutor.execute(
+              idempotencyKey, "POST", path, fingerprint, () -> lifecycle(id, true, "部署")));
     }
-    return idempotentExecutor.execute(
-        idempotencyKey,
-        "POST",
-        path,
-        fingerprint,
-        () -> {
-          if (extensionQueryHandler.findExtensionById(id) == null) {
-            return StudioCommandResponses.<Map<String, Object>>notFound("插件不存在");
-          }
-          String operationId = lroService.startPluginDeploy(id);
-          Map<String, Object> accepted = new LinkedHashMap<>();
-          accepted.put("operationId", operationId);
-          return StudioCommandResponses.accepted(
-              StudioCommandResponses.operationLocation(operationId), "部署任务已接受", accepted);
-        });
+    return StudioCommandResponses.asObject(
+        idempotentExecutor.execute(
+            idempotencyKey,
+            "POST",
+            path,
+            fingerprint,
+            () -> {
+              if (extensionQueryHandler.findExtensionById(id) == null) {
+                return StudioCommandResponses.<Map<String, Object>>notFound("插件不存在");
+              }
+              String operationId = lroService.startPluginDeploy(id);
+              Map<String, Object> accepted = new LinkedHashMap<>();
+              accepted.put("operationId", operationId);
+              return StudioCommandResponses.accepted(
+                  StudioCommandResponses.operationLocation(operationId), "部署任务已接受", accepted);
+            }));
   }
 
   public ResponseEntity<ApiResponse<Extension>> rollbackPlugin(
