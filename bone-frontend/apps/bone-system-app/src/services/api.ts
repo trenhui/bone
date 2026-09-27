@@ -38,7 +38,7 @@ export const systemConfigApi = {
     return api.post<never, ApiResponse<number>>('/system/config', data);
   },
 
-  updateConfig: async (data: { id: number; configKey: string; configValue: string; configType: string }) => {
+  updateConfig: async (data: { id: number; configKey: string; configValue: string; configType: string; description?: string }) => {
     return api.put<never, ApiResponse<void>>('/system/config', data);
   },
 
@@ -83,11 +83,11 @@ export const monitorApi = {
     return api.get<never, ApiResponse<AlertRule>>(`/system/alert/rules/${id}`);
   },
 
-  createAlertRule: async (rule: { name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
+  createAlertRule: async (rule: { name: string; metricName: string; threshold: number; alertLevel: string }) => {
     return api.post<never, ApiResponse<number>>('/system/alert/rules', rule);
   },
 
-  updateAlertRule: async (rule: { id: number; name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
+  updateAlertRule: async (rule: { id: number; name: string; metricName: string; threshold: number; alertLevel: string }) => {
     return api.put<never, ApiResponse<void>>('/system/alert/rules', rule);
   },
 

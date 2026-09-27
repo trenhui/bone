@@ -202,8 +202,8 @@ const MonitorAlertPage: React.FC = () => {
     },
     {
       title: '监控指标',
-      dataIndex: 'metric',
-      key: 'metric',
+      dataIndex: 'metricName',
+      key: 'metricName',
     },
     {
       title: '阈值',
@@ -212,8 +212,8 @@ const MonitorAlertPage: React.FC = () => {
     },
     {
       title: '级别',
-      dataIndex: 'level',
-      key: 'level',
+      dataIndex: 'alertLevel',
+      key: 'alertLevel',
       render: getLevelTag,
     },
     {
@@ -399,7 +399,7 @@ const MonitorAlertPage: React.FC = () => {
           <Form.Item label="规则名称" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="监控指标" name="metric" rules={[{ required: true }]}>
+          <Form.Item label="监控指标" name="metricName" rules={[{ required: true }]}>
             <Select>
               <Option value="cpu">CPU 使用率</Option>
               <Option value="memory">内存使用率</Option>
@@ -411,7 +411,7 @@ const MonitorAlertPage: React.FC = () => {
           <Form.Item label="阈值" name="threshold" rules={[{ required: true }]}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="告警级别" name="level" rules={[{ required: true }]}>
+          <Form.Item label="告警级别" name="alertLevel" rules={[{ required: true }]}>
             <Select>
               <Option value="CRITICAL">严重</Option>
               <Option value="WARNING">警告</Option>

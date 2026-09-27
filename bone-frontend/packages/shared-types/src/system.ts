@@ -24,9 +24,11 @@ export interface ConfigHistory {
 export interface AlertRule {
   id?: number;
   name: string;
-  metric: string;
+  /** 对齐后端 CreateAlertRuleReq.metricName */
+  metricName: string;
   threshold: number;
-  level: 'CRITICAL' | 'WARNING' | 'INFO';
+  /** 对齐后端 CreateAlertRuleReq.alertLevel */
+  alertLevel: 'CRITICAL' | 'WARNING' | 'INFO';
   notificationChannels: string[];
   enabled: boolean;
   createdAt?: string;

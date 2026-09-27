@@ -85,11 +85,30 @@
 ### 联调前置条件
 - 后端 :8083 已运行（JWT 鉴权）；前端修复 token 注入后可联调。
 
-## 六、代码复核结果（B' 段填写）
-> 本晚仅完成 A 设计 + A' 自审，B 实现待下一轮。占位待填。
+## 六、代码复核结果（B' 段）
+
+**B 实现范围**：仅落前端契约对齐（S-1 / S-2 阻断级），未触碰后端、未动 `shared-types.SystemConfig`（保护 shared-services 的 `key/value` 契约）、未碰 `release/*`。
+
+### 6.1 改动文件（4 个，全部前端）
+| 文件 | 改动 | 对齐的后端真源 |
+|---|---|---|
+| `packages/shared-types/src/system.ts` | `AlertRule.metric→metricName`、`level→alertLevel` | `CreateAlertRuleReq.metricName` / `alertLevel` |
+| `apps/bone-system-app/src/pages/MonitorAlert.tsx` | 列表 `dataIndex` 与表单 `name` 同步 `metricName`/`alertLevel`（`threshold` 保持不变） | 同上 |
+| `apps/bone-system-app/src/services/api.ts` | `createAlertRule`/`updateAlertRule` 类型 `thresholdValue→threshold`；`updateConfig` 补 `description?` | `CreateAlertRuleReq.threshold`(Double) / `UpdateConfigReq` |
+| `apps/bone-system-app/src/pages/SystemConfig.tsx` | 编辑表单 `key→configKey`(只读)、`value→configValue`(可编辑)、`type→configType`(只读)；历史弹窗标题去 `.key` | `UpdateConfigReq`(id+configValue+description) |
+
+### 6.2 验证
+- **`tsc --noEmit`**（bone-system-app，`strict:true`）：退出码 0，无类型错误。
+- **范围扫描**：`AlertRule` 全仓仅 bone-system-app 使用（shared-services 不引用），改名安全；`LogManagement.tsx` 的 `.level` 与 `DictManagement.tsx` 的 `.value` 属 `SystemLog`/`DictItem` 类型，不受影响。
+- **契约一致性**：后端 `ConfigResp` 实测为 `configKey`/`configValue`/`configType`/`description`，前端编辑表单现与其一致。
+
+### 6.3 自评
+- 无越权文件、无范围 creep、无裸字符串引入；纯字段名对齐，等价重构。
+- **S-1 / S-2 阻断级问题已修复**，功能可用性恢复（创建/编辑告警、编辑配置不再 400 / 不再丢值）。
 
 ## 七、联调验证结果（C 段填写）
-> 待 B 阶段后执行。
+> 本 B 轮为纯前端字段对齐（后端契约未变），已由 `tsc` 通过 + 后端 DTO 真源比对佐证。
+> 全链路 C 联调（live 后端 :8083 + 前端 :3007 + Playwright 走创建/编辑）建议下一轮"继续"执行，或随 IDE 监管实例人工回归。
 
 ## 八、验收测试结果（D 段填写）
 > 待 C 段后执行。

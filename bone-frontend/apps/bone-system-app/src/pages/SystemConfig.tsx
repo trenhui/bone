@@ -225,14 +225,14 @@ const SystemConfigPage: React.FC = () => {
         onCancel={() => setEditModalVisible(false)}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="配置键" name="key">
+          <Form.Item label="配置键" name="configKey">
             <Input disabled />
           </Form.Item>
-          <Form.Item label="配置值" name="value" rules={[{ required: true }]}>
+          <Form.Item label="配置值" name="configValue" rules={[{ required: true }]}>
             <TextArea rows={4} />
           </Form.Item>
-          <Form.Item label="类型" name="type" rules={[{ required: true }]}>
-            <Select>
+          <Form.Item label="类型" name="configType">
+            <Select disabled>
               <Option value="SYSTEM">系统级</Option>
               <Option value="SERVICE">服务级</Option>
               <Option value="FEATURE">功能级</Option>
@@ -245,7 +245,7 @@ const SystemConfigPage: React.FC = () => {
       </Modal>
 
       <Modal
-        title={`配置历史 - ${selectedConfig?.key}`}
+        title="配置历史"
         open={historyModalVisible}
         onCancel={() => setHistoryModalVisible(false)}
         footer={null}
