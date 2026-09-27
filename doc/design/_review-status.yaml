@@ -63,8 +63,8 @@ modules:
     implemented_at: null
     report_path: "doc/design/modules/review-report-bone-masterdata.md"
     has_active_comet_change: false
-    stages_done: ["A", "A'", "B"]
-    note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（16 控制器全 ApiResponse 信封，0 裸 ResponseEntity）；HC-008 确认 violated（真实 L3 DDL 缺口：mdm_qcheck_task 缺 updated_at/deleted，mdm_qcheck_detail/report 缺同列，mdm_record_category/version 缺 tenant_id，见 bone-init.sql:1719-1776）。**B 阶段（2026-09-27）F1 已落地**：设计稿 doc3/3a 三处 `businessEntityId`→`metaEntityId` 对齐代码 `MasterDataEntityController.convert(@RequestParam Long metaEntityId)` 与锚定文件（零 API 风险，见报告 §8）。F2 跨模块 RocketMQ 事件/F3 Idempotency+LRO/F5 事件 Outbox 属路线图（归「事件总线/Outbox」专项）；F4 DTO 纪律需新建 DTO 隔离层，留待独立占夜。HC-008 的 L3 DDL 登记待架构师审批。状态 `implementing`（stages_done A/A'/B）。"
+    stages_done: ["A", "A'", "B", "B'"]
+    note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（16 控制器全 ApiResponse 信封，0 裸 ResponseEntity）；HC-008 确认 violated（真实 L3 DDL 缺口：mdm_qcheck_task 缺 updated_at/deleted，mdm_qcheck_detail/report 缺同列，mdm_record_category/version 缺 tenant_id，见 bone-init.sql:1719-1776）。**B 阶段 F1 已落地**：设计稿 doc3/3a 三处 `businessEntityId`→`metaEntityId` 对齐代码 `MasterDataEntityController.convert(@RequestParam Long metaEntityId)` 与锚定文件（零 API 风险，见报告 §8.1）。**B 阶段 F4 已落地（第 2 夜，2026-09-27）**：新增 `MasterDataRecordVersionResp` + `MasterDataRecordWebConverter.toVersionResp(List)`，`MasterDataRecordTopController:104` versions() 由域模型改为 DTO（HC-003 仍 implemented）；前端 `api.ts:305` 声明 `any[]` 且无页面消费 ⇒ 零契约影响；`spotless:apply` + 模块测试 118 全绿（ArchitectureTest 26）；B' 复核 PASS（见报告 §8.3）。F2 跨模块 RocketMQ 事件/F3 Idempotency+LRO/F5 事件 Outbox 属路线图（归「事件总线/Outbox」专项，与 bone-integration 协同）。HC-008 的 L3 DDL 登记待架构师审批。状态 `implementing`（stages_done A/A'/B/B'）。"
 
   - name: "bone-integration"
     design_doc: "doc/design/modules/4. 集成管理模块详细设计方案.md"

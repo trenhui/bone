@@ -61,7 +61,7 @@
 
 ## 8. B 阶段实现闭环（F1 落地）
 
-> B 阶段以「低风险、可验证」为筛选原则，仅落地 F1；F2/F3/F5 属路线图/基础设施、F4 需新建 DTO 隔离层，均不在单夜 B 阶段范围。
+> B 阶段以「低风险、可验证」为筛选原则：第 1 夜落地 F1，第 2 夜落地 F4（DTO 收口）；F2/F3/F5 属路线图/基础设施，不在 B 阶段范围。
 
 ### 8.1 B（F1 文档对齐）
 
@@ -72,12 +72,23 @@
 
 ### 8.2 未在本夜 B 阶段处理（明确归属）
 
-- **F4（低·DTO 纪律）**：`MasterDataRecordTopController.java:104` `versions()` 返回 `MasterDataRecordVersion`（域模型）而非 DTO。需新建 `MasterDataRecordVersionDTO` + 映射层，属「领域模型隔离」收口，建议独立占一夜，避免 scope creep。
+- **F4（低·DTO 纪律）**：已于第 2 夜独立占一夜落地，见 §8.3（不再挂起）。
 - **F2（中·跨模块 MQ 事件）/ F3（中·幂等键+LRO）/ F5（中·事件 Outbox）**：均属事件基础设施/路线图，非单夜 B 阶段可 closure，归并到后续「事件总线/Outbox」专项，与 `bone-integration` 协同。
 - **HC-008（L3 DDL）**：`mdm_qcheck_task` 等补 `updated_at`/`deleted`/`tenant_id` 待架构师审批后由人工执行；AI 不在本阶段改 DDL。
 
-### 8.3 状态迁移
+### 8.3 B（F4 DTO 收口，第 2 夜）
 
-- `bone-masterdata`：`design_ready` → `implementing`（stages_done A/A'/B）；F1 已落地。
+- **问题**：`MasterDataRecordTopController.versions()` 原返回 `ApiResponse<List<MasterDataRecordVersion>>`——信封合规（HC-003 未违反），但 payload 是带 `@Table`/`@Column` SDK 注解的**领域实体**，领域模型直接暴露在 API 响应面。
+- **改动（3 个文件，全 L2 但零契约破坏）**：
+  - 新增 `adapter/web/dto/response/MasterDataRecordVersionResp.java`（10 字段：id / recordId / versionNumber / data / status / changeDescription / approvedBy / approvedAt / createdBy / createdAt；时间统一 `Instant`，与既有 `MasterDataRecordDetailResp` 的 UTC 契约一致）。
+  - `MasterDataRecordWebConverter` 增 `toVersionResp(...)` / `toVersionRespList(...)`（领域实体 → DTO 映射落在 adapter 层，符合 `adapter → domain` 依赖方向）。
+  - `MasterDataRecordTopController:104` 改为 `ApiResponse<List<MasterDataRecordVersionResp>>`，并去掉对 `domain.model.record` 的完全限定名引用。
+- **兼容性核对（改前必查，避免反向打破契约）**：`RecordApplicationService.versions(Long)` 返回值未动（仍为领域实体），映射只发生在 web 出口；前端 `bone-masterdata-app/src/services/api.ts:305` 声明为 `ApiResponse<any[]>` 且**无页面消费**该端点 ⇒ 字段从「实体全字段」收敛到「DTO 10 字段」对前端零影响。
+- **验证**：`mvn -o -pl bone-platform/bone-masterdata test-compile` + `spotless:apply`（仅触达本模块 3 文件，无扩散）+ `mvn -o -pl bone-platform/bone-masterdata test` → **Tests run: 118, Failures: 0**（含 `ArchitectureTest` 26 条全绿）。
+- **B' 代码复核**：改动文件全部在 A 段清单内（无 scope creep）；无 DDL / 依赖 / CI（无 L3/L4 泄漏）；无文件删除；HC-003 仍 implemented（新增返回类型仍包在 `ApiResponse` 内）。
+
+### 8.4 状态迁移
+
+- `bone-masterdata`：`design_ready` → `implementing`（stages_done A/A'/B/B'）；F1 + F4 已落地。
 - 阻断 0；待架构师审批：HC-008（L3 DDL）、F5 Outbox / F2 MQ（可选架构）。
-- 下一晚可继续 B 阶段（F4 DTO 收口）或轮换 `bone-integration`。
+- 本模块 B 段剩余项仅 F2/F3/F5（路线图，归「事件总线/Outbox」专项）。下一晚轮换 `bone-integration` B 段。

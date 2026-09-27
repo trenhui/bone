@@ -3,14 +3,17 @@ package com.bone.masterdata.adapter.web.converter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataRecordReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataRecordReq;
 import com.bone.masterdata.adapter.web.dto.response.MasterDataRecordDetailResp;
+import com.bone.masterdata.adapter.web.dto.response.MasterDataRecordVersionResp;
 import com.bone.masterdata.application.command.CreateMasterDataRecordCommand;
 import com.bone.masterdata.application.command.UpdateMasterDataRecordCommand;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
+import com.bone.masterdata.domain.model.record.MasterDataRecordVersion;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,6 +45,27 @@ public class MasterDataRecordWebConverter {
         .updatedAt(toInstant(dto.getUpdatedAt()))
         .publishTime(toInstant(dto.getPublishTime()))
         .build();
+  }
+
+  /** 领域版本实体 → 版本历史响应，避免领域模型直接出现在 API 响应体（DTO 纪律收口）。 */
+  public MasterDataRecordVersionResp toVersionResp(MasterDataRecordVersion version) {
+    return MasterDataRecordVersionResp.builder()
+        .id(version.getId())
+        .recordId(version.getRecordId())
+        .versionNumber(version.getVersionNumber())
+        .data(version.getData())
+        .status(version.getStatus())
+        .changeDescription(version.getChangeDescription())
+        .approvedBy(version.getApprovedBy())
+        .approvedAt(toInstant(version.getApprovedAt()))
+        .createdBy(version.getCreatedBy())
+        .createdAt(toInstant(version.getCreatedAt()))
+        .build();
+  }
+
+  public List<MasterDataRecordVersionResp> toVersionRespList(
+      List<MasterDataRecordVersion> versions) {
+    return versions.stream().map(this::toVersionResp).toList();
   }
 
   private static Instant toInstant(LocalDateTime ldt) {

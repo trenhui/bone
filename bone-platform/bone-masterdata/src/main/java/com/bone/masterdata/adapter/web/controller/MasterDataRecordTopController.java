@@ -6,6 +6,7 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.converter.MasterDataRecordWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataRecordReq;
 import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataRecordReq;
+import com.bone.masterdata.adapter.web.dto.response.MasterDataRecordVersionResp;
 import com.bone.masterdata.application.RecordApplicationService;
 import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
@@ -99,11 +100,10 @@ public class MasterDataRecordTopController {
     return ApiResponse.success();
   }
 
-  /** 版本历史（UC-T7 追溯）。 */
+  /** 版本历史（UC-T7 追溯）。返回 DTO 而非领域实体，避免领域模型泄漏到 API 响应体。 */
   @GetMapping("/{id}/versions")
-  public ApiResponse<List<com.bone.masterdata.domain.model.record.MasterDataRecordVersion>>
-      versions(@PathVariable Long id) {
-    return ApiResponse.success(recordService.versions(id));
+  public ApiResponse<List<MasterDataRecordVersionResp>> versions(@PathVariable Long id) {
+    return ApiResponse.success(converter.toVersionRespList(recordService.versions(id)));
   }
 
   @PostMapping("/{id}/archive")
