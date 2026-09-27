@@ -446,18 +446,18 @@ modules:
     shared_dtos: ["CodeGenerationRequest", "CodeGenerationResponse", "com.bone.studio.generator.common.result.ApiResponse"]
     error_codes_used: ["GEN_GENERATION_FAILED / GEN_TEMPLATE_NOT_FOUND（裸字符串，无常量类）", "com.bone.core.common.CommonErrorCodes"]
     tables: ["gen_data_source", "gen_table_metadata", "gen_column_metadata", "gen_code_template", "gen_generation_task", "gen_code_generation_history", "gen_type_mapping", "meta_code_template"]
-    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "violated", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "partial"}
+    hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "violated"}
     hc_evidence:
-      HC-003: "7 个 Controller 中 1 个返回 ResponseEntity（CodeGenerationController）"
+      HC-003: "误报纠正（2026-09-27 A 复核）：8 个 Controller 中 7 个直接返回 com.bone.core.model.ApiResponse、零 ResponseEntity；唯一使用 ResponseEntity 的 CodeGenerationController 两处均合规——createCodeGeneration 为 ResponseEntity<ApiResponse<?>>（同步 200 / 异步 202 Accepted + Location，AIP-151 LRO）、downloadCode 为 ResponseEntity<ByteArrayResource>（生成产物 ZIP 下载）。锚定原只数 ResponseEntity 未看 body → implemented（同源第四例误判）。附注：CapabilityController 用模块自有 common.result.ApiResponse、其余用 core 版，属信封碎片化（G-2），不影响 HC-003 判定"
       HC-006: "infrastructure/gateway/DatabaseMetadataGatewayAdapter.java 已在 baseline 登记"
       HC-007: "doc/architecture/openapi/generator-v1.yaml 存在"
-      HC-008: "baseline：gen_code_generation_history 为 by-design（缺 updated_at）"
+      HC-008: "violated（2026-09-27 A 复核升级；原 partial 属漏检）：声明面与 DDL 合规——5 个实体（DataSource / CodeTemplate / GenerationTask / GenTableMetadata / GenColumnMetadata）均显式声明 tenantId，gen_* 表仅 gen_code_generation_history 缺 updated_at 且已按 by-design 登记（只追加，started_at/completed_at 替代，已有 deleted）；但运行时租户来源不闭环——全模块零处读取 TenantContext（仅 WebTenantConfiguration 设置），写入/查询侧租户来自请求参数并回落硬编码默认值 DataSource→0L、CatalogMetadataGatewayAdapter→1L，违反多租户方案通则 T1（禁止隐式 0，须经 TenantProvider.currentTenantIdOrNull() 明确意图），构成 G-1 阻断级"
     design_vs_code_gaps:
-      - "doc8 #L692/#L760/#L774 设计的 DataSourceCreatedEvent / GenerationTaskCreatedEvent / GenerationTaskCompletedEvent 均不存在"
-      - "doc8 #L791 声明的 GenTypeMappingRepository 不存在（表 gen_type_mapping 在 DDL 中已建）"
-      - "doc8 #L68 承诺 7 类模板，实际 src/main/resources/templates 仅 applicationService / controller / entity / repository / response 5 个 .ftl"
-      - "BONE-X-Studio #L436 仍写 8082/8085 与 /api/v1/generate/**，代码为 8086 与 /api/v1/generator"
-      - "工作树有 3 个未提交改动（CreateCodeGenerationApplicationService、entity.ftl、response.ftl）"
+      - "doc8 #L692/#L760/#L774 设计的 DataSourceCreatedEvent / GenerationTaskCreatedEvent / GenerationTaskCompletedEvent 均不存在（2026-09-27 复核：代码 addDomainEvent / *Event 类 0 命中，确认成立；需裁定路线图 vs 应落地）"
+      - "doc8 #L791 声明的 GenTypeMappingRepository 不存在（表 gen_type_mapping 在 DDL 中已建）（2026-09-27 复核：gen_type_mapping 全模块零引用，确认成立，L3 下线候选）"
+      - "doc8 #L68 承诺 7 类模板，实际 src/main/resources/templates 仅 applicationService / controller / entity / repository / response 5 个 .ftl（2026-09-27 复核：实测 5 个，确认成立）"
+      - "BONE-X-Studio #L436 仍写 8082/8085 与 /api/v1/generate/**，代码为 8086 与 /api/v1/generator（2026-09-27 复核：确认成立，属横切文档滞后，代码入口已收敛）"
+      - "（已消解 2026-09-27）锚定时点的 3 个未提交改动（CreateCodeGenerationApplicationService、entity.ftl、response.ftl）已提交，当前工作树洁净"
     has_active_comet_change: false
     comet_change_id: null
 
