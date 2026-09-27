@@ -1,8 +1,9 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class ExecutionDetailQueryApplicationService {
   public ExecutionLogDTO handle(ExecutionDetailQuery query) {
     IntegrationLog log = logRepository.findById(query.id());
     if (log == null) {
-      throw new DomainException("执行记录不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.EXECUTION_NOT_FOUND, query.id());
     }
     return new ExecutionLogDTO(
         log.getId(),

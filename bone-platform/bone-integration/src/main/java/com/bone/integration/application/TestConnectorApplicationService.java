@@ -1,9 +1,10 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.TestConnectorCommand;
 import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.application.support.ConnectorSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class TestConnectorApplicationService {
   public Boolean handle(TestConnectorCommand cmd) {
     Connector connector = connectorRepository.findById(cmd.id());
     if (connector == null) {
-      throw new DomainException("连接器不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.CONNECTOR_NOT_FOUND, cmd.id());
     }
 
     boolean success = connectorSupport.testConnector(connector);

@@ -1,6 +1,7 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.time.LocalDateTime;
@@ -27,7 +28,7 @@ public class ExecutionLogLinesQueryApplicationService {
   public List<Map<String, Object>> handle(Long executionId) {
     IntegrationLog log = logRepository.findById(executionId);
     if (log == null) {
-      throw new DomainException("执行记录不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.EXECUTION_NOT_FOUND, executionId);
     }
 
     List<Map<String, Object>> lines = new ArrayList<>();

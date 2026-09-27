@@ -5,9 +5,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.core.exception.DomainException;
+import com.bone.core.exception.BizException;
 import com.bone.integration.application.command.cmd.ActivateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
+import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,9 @@ class ActivateFlowCommandApplicationServiceTest {
     ActivateFlowCommand cmd = new ActivateFlowCommand(999L);
 
     assertThatThrownBy(() -> handler.handle(cmd))
-        .isInstanceOf(DomainException.class)
-        .hasMessageContaining("流程不存在");
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IntegrationErrorCodes.FLOW_NOT_FOUND)
+        .extracting(ex -> ((BizException) ex).getErrorCode())
+        .isEqualTo(IntegrationErrorCodes.FLOW_NOT_FOUND);
   }
 }
