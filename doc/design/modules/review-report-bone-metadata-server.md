@@ -95,6 +95,7 @@
 - 提交：`d1723f00c` B(F1) + `9a9547820` B'/C/D 状态回填；本轮再将 C「环境受限」误判更正为「已验证」，追加提交。
 - 阻断 0；待审批：F1 已落（原 L2 建议，已执行）；F2–F5 仍为建议项（F2 发布事件归 engine Comet change，非本模块；F3–F4 低优；F5 已闭合）。
 
+
 ## 9. F2 补充执行：发布领域事件落地（2026-09-28，A→B 直通）
 
 > 用户复核指令授权，按夜间 v3「默认放行」口径执行（approvals 目录无 hold/block）。**不触碰 engine**（Comet change 占用），采用报告建议①「在 catalog 发布流程补发领域事件」。
@@ -119,3 +120,4 @@
   - **修复**：五处改 `BizException.of(400, msg)`，与 E2E「400 + 所属模块不存在」契约对齐。
 - **验证**：模块全量 `Tests run: 95, Failures: 0, Errors: 0 — BUILD SUCCESS`（含此前失败的 2 个 E2E、ArchitectureTest 26/26、F2 的 6 个事件用例）。
 - **判定：PASS**。§9 遗留清零；`biz-code` 语义教训入库：i18n 改造类重构必须以「存量断言码+状态」的 E2E 为回归基线，而非仅 test-compile。
+ codex/nightly-bone-metadata-server-20260927
