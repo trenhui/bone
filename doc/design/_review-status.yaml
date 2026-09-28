@@ -70,13 +70,13 @@ modules:
     design_doc: "doc/design/modules/4. 集成管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/4. 集成管理模块详细设计方案.md"]
     port: 8085
-    status: "design_ready"
+    status: "implementing"
     last_reviewed_at: "2026-09-27T19:58:00+08:00"
-    implemented_at: null
+    implemented_at: "2026-09-27T22:35:00+08:00"
     report_path: "doc/design/modules/review-report-bone-integration.md"
     has_active_comet_change: false
-    stages_done: ["A", "A'"]
-    note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（3 控制器全 ApiResponse、0 ResponseEntity）；HC-008 为 by-design（int_execution_log 仅追加无 updated_at/deleted，非缺口）；**本轮无假阳性**。5 处 GAP 核验：G1/G2 为文档滞后（Outbox/flows.test/flows.versions 代码已落地，doc4 仍标 Target/Vision）→ F4 校正；G3 Idempotency-Key 零实现→F3 路线图(INT-10)；G4 INT-CON-01 红线 vs 9 种 ClientImpl(含FTP/JDBC/MQ/SOAP) 多为 501 占位，需架构师裁定( F5)；G5 无共享 IntegrationEnvelope 契约→F2 本模块先定基线。错误码散落（无 INT_ 常量类 + advice 注释自陈前端拿不到 errorCode）→ **F1 高价值修复**（常量类 + 透传前端 + 登记 §6 + i18n）。设计可放行；B 阶段默认落地 F1(+F4)，F2/F3/F5 待专项/裁决。"
+    stages_done: ["A", "A'", "B", "B'"]
+    note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（3 控制器全 ApiResponse、0 ResponseEntity）；HC-008 为 by-design（int_execution_log 仅追加无 updated_at/deleted，非缺口）；**本轮无假阳性**。5 处 GAP 核验→F1-F5。**B 阶段已落地 F1+F4（2026-09-27，报告 §8）**：新增 `IntegrationErrorCodes`（11 个 INT_* 码）+ `IntegrationErrors`（码→HTTP 状态表 + 反射 fail-fast 自检 + 四参 BizException 携带 errorCode）；替换 16 个文件 20 处 `DomainException(裸中文)` 抛出点（domain 层 ConnectorType 不动，避免 HC-002）；`ConnectorClientSupport` 去掉 `INT_CONNECTOR_NOT_IMPLEMENTED:` 拼串；`IntegrationExceptionAdvice.bizException` 由「非 501 一律 400」改为「400–599 直用、否则兜底 400」，使 404/409 语义不再被吞；台账 §6 INT_ 段补 11 行 + en-US/zh-CN errors 各 11 键；新增 `IntegrationErrorCodesMappingTest` 5 条。验证：模块测试 86 全绿（ArchitectureTest 28）+ i18n 门禁通过（常量 182→193）。**落地前复核发现 A 段两处细节偏差**（裸串实为裸中文 message；advice 已透传 ProblemDetail 但状态被压平）——已按实测修正实现路径。F4：doc4 §5.2/§6.2/API 表由 Target/Vision 改为已落地，附录 B backlog 经核查无需删项（仅补 flow-versioning 跟踪说明）。残留风险：错误路径 HTTP 状态由 400 变为 404/409/501，属响应语义变更，PR 中声明。F2/F3/F5 仍待专项/裁决。"
 
   - name: "bone-system"
     design_doc: "doc/design/modules/7. 系统管理模块详细设计方案.md"

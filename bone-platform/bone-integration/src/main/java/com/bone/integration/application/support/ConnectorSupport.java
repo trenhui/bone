@@ -1,6 +1,7 @@
 package com.bone.integration.application.support;
 
-import com.bone.core.exception.DomainException;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.client.ExternalSystemClient;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -29,7 +30,8 @@ public class ConnectorSupport {
       client = externalSystemClients.get("REST");
     }
     if (client == null) {
-      throw new DomainException("不支持的连接器类型: " + connector.getType());
+      throw IntegrationErrors.of(
+          IntegrationErrorCodes.CONNECTOR_TYPE_UNSUPPORTED, connector.getType());
     }
     return client;
   }
@@ -41,7 +43,7 @@ public class ConnectorSupport {
   public void validateConnectorName(String name, Long excludeId) {
     Connector existing = connectorRepository.findByName(name);
     if (existing != null && (excludeId == null || !excludeId.equals(existing.getId()))) {
-      throw new DomainException("连接器名称已存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.CONNECTOR_NAME_CONFLICT, name);
     }
   }
 }

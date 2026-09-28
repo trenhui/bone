@@ -285,6 +285,17 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
+| `INT_CONNECTOR_NOT_FOUND` | 404 | 连接器不存在（含跨租户不可见） |
+| `INT_CONNECTOR_NAME_CONFLICT` | 409 | 同一租户作用域内该连接器名称已存在 |
+| `INT_CONNECTOR_TYPE_UNSUPPORTED` | 400 | 连接器类型不受支持（无对应 ExternalSystemClient 实现） |
+| `INT_CONNECTOR_NOT_IMPLEMENTED` | 501 | 连接器能力未实现：协议客户端为 501 占位（INT-01 禁止假成功） |
+| `INT_FLOW_NOT_FOUND` | 404 | 集成流程不存在（含跨租户不可见） |
+| `INT_FLOW_NAME_CONFLICT` | 409 | 同一租户作用域内该流程名称已存在 |
+| `INT_FLOW_NOT_ACTIVE` | 409 | 流程未激活：执行等动作要求流程处于 ACTIVE |
+| `INT_FLOW_NODES_EMPTY` | 400 | 流程节点为空 |
+| `INT_FLOW_START_NODE_MISSING` | 400 | 流程缺少开始节点 |
+| `INT_FLOW_END_NODE_MISSING` | 400 | 流程缺少结束节点 |
+| `INT_EXECUTION_NOT_FOUND` | 404 | 执行记录 / 执行日志不存在（含跨租户不可见） |
 
 ### SYS_
 

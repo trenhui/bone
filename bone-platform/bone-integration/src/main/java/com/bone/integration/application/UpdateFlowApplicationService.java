@@ -2,10 +2,11 @@ package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.UpdateFlowCommand;
 import com.bone.integration.application.support.FlowSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
@@ -47,7 +48,7 @@ public class UpdateFlowApplicationService {
   public void handle(UpdateFlowCommand cmd) {
     IntegrationFlow flow = flowRepository.findById(cmd.id());
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, cmd.id());
     }
     flowSupport.validateFlowName(cmd.name(), cmd.id());
     flow.update(cmd.name(), cmd.description());

@@ -1,8 +1,9 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.ActivateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class ActivateFlowCommandApplicationService {
   public void handle(ActivateFlowCommand cmd) {
     IntegrationFlow flow = flowRepository.findById(cmd.id());
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, cmd.id());
     }
     flow.activate();
     flowRepository.save(flow);

@@ -2,9 +2,10 @@ package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
 import com.bone.integration.application.support.ConnectorSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -39,7 +40,7 @@ public class UpdateConnectorApplicationService {
   public void handle(UpdateConnectorCommand cmd) {
     Connector connector = connectorRepository.findById(cmd.id());
     if (connector == null) {
-      throw new DomainException("连接器不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.CONNECTOR_NOT_FOUND, cmd.id());
     }
     connectorSupport.validateConnectorName(cmd.name(), cmd.id());
     ConnectorType type = ConnectorType.fromString(cmd.type());

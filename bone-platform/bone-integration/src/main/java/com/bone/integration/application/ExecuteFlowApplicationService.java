@@ -1,12 +1,13 @@
 package com.bone.integration.application;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.support.FlowExecutionSupport;
 import com.bone.integration.application.support.FlowSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -37,7 +38,7 @@ public class ExecuteFlowApplicationService {
   public Long handle(ExecuteFlowCommand cmd) {
     IntegrationFlow flow = flowRepository.findById(cmd.flowId());
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, cmd.flowId());
     }
     flowSupport.validateFlow(flow);
 

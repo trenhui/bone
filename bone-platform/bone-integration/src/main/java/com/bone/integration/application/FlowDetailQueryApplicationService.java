@@ -1,9 +1,10 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowDetailDTO;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
 import com.bone.integration.application.support.FlowSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
@@ -25,7 +26,7 @@ public class FlowDetailQueryApplicationService {
   public FlowDetailDTO handle(FlowDetailQuery qry) {
     IntegrationFlow flow = flowRepository.findById(qry.id());
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, qry.id());
     }
     List<FlowNode> nodes = flowSupport.getFlowNodes(flow.getId());
     List<FlowConnection> connections = flowSupport.getFlowConnections(flow.getId());

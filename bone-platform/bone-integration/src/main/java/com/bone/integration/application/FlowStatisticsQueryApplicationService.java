@@ -1,9 +1,10 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import com.bone.integration.application.support.FlowMonitorSupport;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
@@ -30,7 +31,7 @@ public class FlowStatisticsQueryApplicationService {
 
   private FlowStatisticsDTO statisticsOf(IntegrationFlow flow) {
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND);
     }
     long executionCount = flowMonitorSupport.getExecutionCount(flow.getId());
     long successCount = flowMonitorSupport.getSuccessCount(flow.getId());

@@ -1,8 +1,9 @@
 package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class DeactivateFlowCommandApplicationService {
   public void handle(DeactivateFlowCommand cmd) {
     IntegrationFlow flow = flowRepository.findById(cmd.id());
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, cmd.id());
     }
     flow.deactivate();
     flowRepository.save(flow);

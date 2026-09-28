@@ -1,7 +1,8 @@
 package com.bone.integration.application;
 
-import com.bone.core.exception.DomainException;
 import com.bone.integration.application.query.dto.FlowVersionDTO;
+import com.bone.integration.common.IntegrationErrorCodes;
+import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import java.util.List;
@@ -19,7 +20,7 @@ public class FlowVersionListQueryApplicationService {
   public List<FlowVersionDTO> handle(Long flowId) {
     IntegrationFlow flow = flowRepository.findById(flowId);
     if (flow == null) {
-      throw new DomainException("流程不存在");
+      throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, flowId);
     }
     // MVP+：流程当前仅维护最新一版，返回当前版本作为唯一版本记录
     FlowVersionDTO version =

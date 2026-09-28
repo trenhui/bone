@@ -57,18 +57,26 @@ public class IntegrationExceptionAdvice {
         .body(problem(400, CommonErrorCodes.VALIDATION_FAILED, ex.getMessage()));
   }
 
+  /**
+   * 业务异常 → HTTP 状态 + {@code errorCode}。
+   *
+   * <p><b>为何不再「非 501 一律压成 400」</b>：{@link IntegrationErrors} 的「码 → 状态」表已给出 404 / 409 / 501
+   * 等语义（错误码登记 §6 {@code INT_} 段），若此处仍只保留 501 一个分支，{@code INT_FLOW_NOT_FOUND} 会以 HTTP 400
+   * 返回——前端按状态分流会把「不存在」误判成「参数非法」，与 bone-web / bone-system 的「HTTP 状态码与 {@code ApiResponse.code}
+   * 对齐」契约相悖。故改为 400–599 直用、否则兜底 400。
+   */
   @ExceptionHandler(BizException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> bizException(BizException ex) {
-    HttpStatus status =
-        ex.getCode() == NOT_IMPLEMENTED_CODE ? HttpStatus.NOT_IMPLEMENTED : HttpStatus.BAD_REQUEST;
-    int httpStatus = status.value();
+    int httpStatus = toHttpStatus(ex.getCode());
+    log.warn("Biz exception [{}] {}: {}", httpStatus, ex.getErrorCode(), ex.getMessage());
     String errorCode =
-        ex.getErrorCode() != null
-            ? ex.getErrorCode()
-            : (httpStatus == NOT_IMPLEMENTED_CODE
-                ? CommonErrorCodes.NOT_IMPLEMENTED
-                : CommonErrorCodes.VALIDATION_FAILED);
-    return ResponseEntity.status(status).body(problem(httpStatus, errorCode, ex.getMessage()));
+        ex.getErrorCode() != null ? ex.getErrorCode() : CommonErrorCodes.VALIDATION_FAILED;
+    return ResponseEntity.status(httpStatus).body(problem(httpStatus, errorCode, ex.getMessage()));
+  }
+
+  /** 与 bone-web / bone-system 同一口径：{@code code} 是合法 HTTP 状态（400–599）则直用，否则兜底 400。 */
+  private static int toHttpStatus(int code) {
+    return (code >= 400 && code <= 599) ? code : HttpStatus.BAD_REQUEST.value();
   }
 
   private static ApiResponse<ProblemDetail> problem(int status, String errorCode, String message) {
