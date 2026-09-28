@@ -2,6 +2,7 @@ package com.bone.metadata.catalog.application;
 
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
@@ -16,6 +17,7 @@ import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.dto.PublishPreviewDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.common.BatchOperateResult;
+import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
@@ -160,11 +162,24 @@ public class MetaEntityApplicationService {
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
       // 发布前先校验物理表类型漂移（非破坏性 align 无法修正），把运行期 SQL 错误前移为发布期拒绝
-      physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
+      validatePhysicalStructureForPublish(entity);
       physicalStructureGateway.align(entity.getTenantId(), entity.getCode());
     }
     domainEventPublisher.publish(new MetaEntityPublishedEvent(entity));
     return entity.getVersion();
+  }
+
+  /**
+   * 发布期物理结构校验（doc2a §328）：网关抛出的 {@link DomainException} 在应用层翻译为 {@code 409 + META_DOMAIN_ERROR} 的
+   * {@link BizException}——handler 的 DomainException 兜底分支是 400 通用码，直接漏过去会把「漂移拒绝」降级成参数错误，且预览侧 {@code
+   * catch (BizException)} 也接不住。
+   */
+  private void validatePhysicalStructureForPublish(MetaEntity entity) {
+    try {
+      physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
+    } catch (DomainException e) {
+      throw new BizException(409, e.getMessage(), CatalogErrorCodes.META_DOMAIN_ERROR, e);
+    }
   }
 
   // ===================== 实体批量写操作（部分成功语义） =====================
@@ -509,7 +524,7 @@ public class MetaEntityApplicationService {
     // 仅「模型类型 vs 物理列类型不兼容」才拒绝，与 publish 的 409 行为一致，避免预览过拦）。
     if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
       try {
-        physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
+        validatePhysicalStructureForPublish(entity);
       } catch (BizException e) {
         issues.add(
             EntityValidationIssue.error(

@@ -108,3 +108,14 @@
 - **边界**：不改 `MetaEntity` 聚合层级（ADR-0016：AbstractEntity + 自有 tenantId 为有意决策，不迁 AggregateRoot）；不新增 DDL；不动 engine 的 `MetadataChangeEvent`（engine 内部热加载事件，仍归 Comet change）。
 - **测试**：`MetaEntityPublishEventTest` 5/5 绿、`MetaEntityWorkbenchServiceTest` 全绿；模块全量 `Tests run: 94, Failures: 2`，2 个失败（`OrderPaymentMetadataE2ETest.publish_detectsTypeDrift_returns409` 409→400、`MetadataModuleReferenceE2ETest.createEntity_withNonExistentModuleId` 400→500）**经基线实验实证为存量问题**——临时还原 service 至 HEAD 后两用例同样失败，与本次改动无关（疑与错误码三参构造丢 errorCode 的已知坑同族，待另行排查）。
 - **判定：B/B' 通过**；F2 由「建议项」转为「已落地（进程内领域事件）」，跨模块集成事件侧维持 P1 [Target] 待 G8。
+
+## 10. 存量 E2E 失败排查与修复（2026-09-28，§9 遗留项闭环）
+
+> §9 全量测试遗留 2 个失败（已实证与 F2 无关）。经定位为 **b6406ba64 i18n 改造重写 handler 时引入的回归**，与 F2 一并修复。
+
+- **失败① `publish_detectsTypeDrift_returns409`（409→400）**：`validateForPublish` 抛裸 `DomainException`，i18n 改造后的 `handleDomain` 兜底为 400 `COMMON_VALIDATION_FAILED`；而 409+`META_DOMAIN_ERROR` 是 doc2a §328 明确契约（P0-6 曾真机实测通过）——**契约回退**。连带发现预览侧隐藏 bug：`collectIssues` 只 `catch (BizException)`，`DomainException` 冒穿导致漂移实体的预览接口直接 400。
+  - **修复**：`MetaEntityApplicationService` 新增 `validatePhysicalStructureForPublish` 统一翻译 `DomainException → 409 + META_DOMAIN_ERROR`（四参构造铁律，含 cause）；发布与预览两个调用点共用，预览侧 `PHYSICAL_DRIFT` ERROR 上浮恢复正常。新增 `CatalogErrorCodes`（server 侧 `catalog/common`）承载该码——**不入 engine-runtime 的 `MetadataErrorCodes`（Comet change 占用）**；码已在 `config/i18n/errorcode-baseline.json` 白名单，无语言包阻断。补翻译层单测（409+码+不发事件断言）。
+- **失败② `createEntity_withNonExistentModuleId`（400→500）**：`IamModuleValidator.requireModule` 三处 + `IamApplicationValidator.requireExists` 两处用**单参** `BizException.of(msg)`（默认 `code=500`）——入参校验拒绝被兜成 500。
+  - **修复**：五处改 `BizException.of(400, msg)`，与 E2E「400 + 所属模块不存在」契约对齐。
+- **验证**：模块全量 `Tests run: 95, Failures: 0, Errors: 0 — BUILD SUCCESS`（含此前失败的 2 个 E2E、ArchitectureTest 26/26、F2 的 6 个事件用例）。
+- **判定：PASS**。§9 遗留清零；`biz-code` 语义教训入库：i18n 改造类重构必须以「存量断言码+状态」的 E2E 为回归基线，而非仅 test-compile。

@@ -113,7 +113,31 @@ class MetaEntityPublishEventTest {
   }
 
   @Test
-  @DisplayName("实体不存在 → 404 且不发事件")
+  @DisplayName("RUNTIME 物理漂移（DomainException）→ 应用层翻译为 409+META_DOMAIN_ERROR，不发事件")
+  void publish_shouldTranslateDomainExceptionTo409() {
+    entity(4L, "pub_drift2", "t_pub_drift2", 1);
+    doThrow(
+            new com.bone.core.exception.DomainException(
+                "字段 amount 模型类型 DECIMAL 与物理列类型 VARCHAR 不兼容"))
+        .when(physicalStructureGateway)
+        .validateForPublish(1L, "pub_drift2");
+
+    assertThatThrownBy(() -> service.publishEntity(4L, null))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e -> {
+              BizException biz = (BizException) e;
+              org.junit.jupiter.api.Assertions.assertEquals(409, biz.getCode());
+              org.junit.jupiter.api.Assertions.assertEquals(
+                  com.bone.metadata.catalog.common.CatalogErrorCodes.META_DOMAIN_ERROR,
+                  biz.getErrorCode());
+            });
+
+    verify(domainEventPublisher, never()).publish(any());
+  }
+
+  @Test
+  @DisplayName("实体不存在 → 抛 BizException 且不发事件")
   void publish_shouldNotEmitEvent_whenEntityMissing() {
     when(metaEntityRepository.findById(404L)).thenReturn(null);
 
