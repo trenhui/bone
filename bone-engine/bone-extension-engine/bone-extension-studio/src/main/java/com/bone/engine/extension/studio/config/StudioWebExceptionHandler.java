@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.config;
 
+import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
@@ -22,6 +23,26 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 public class StudioWebExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(StudioWebExceptionHandler.class);
+
+  /**
+   * 携带业务码的异常必须显式声明：本类末尾的 {@link Exception} 兜底会抢在 bone-web 的全局映射之前命中， 若不声明，{@code
+   * StudioErrors.of(...)} 抛出的 404/409 会被兜底成 500 并丢掉 errorCode。
+   *
+   * <p>状态口径：{@link BizException#getCode()} 已是 HTTP 状态语义，400–599 直用；越界值按 500 处理 （与 bone-web 全局
+   * handler 同口径）。
+   */
+  @ExceptionHandler(BizException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> bizException(BizException ex) {
+    int rawStatus = ex.getCode();
+    int status = rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+    String errorCode =
+        ex.getErrorCode() != null
+            ? ex.getErrorCode()
+            : (status >= 500
+                ? StudioErrorCodes.INTERNAL_ERROR
+                : StudioErrorCodes.VALIDATION_FAILED);
+    return problem(HttpStatus.valueOf(status), errorCode, ex.getMessage());
+  }
 
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> forbidden(AccessDeniedException ex) {

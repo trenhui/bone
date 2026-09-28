@@ -43,6 +43,20 @@ public final class StudioCommandResponses {
         .body(body);
   }
 
+  /**
+   * 把 {@code ApiResponse<T>} 响应抬升为 {@code ApiResponse<Object>}：状态码、响应头与报文体原样保留。
+   *
+   * <p><b>为什么需要它</b>：{@code deployPlugin} 同步返回插件实体、异步返回 LRO 受理凭据，两种数据形态只能靠通配符 {@code
+   * ResponseEntity<?>} 表达，OpenAPI 会退化成空 schema（X-3）。抬升后端点签名是具体类型，而线上 JSON 不变 （泛型只在编译期存在）。
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> ResponseEntity<ApiResponse<Object>> asObject(
+      ResponseEntity<ApiResponse<T>> source) {
+    return ResponseEntity.status(source.getStatusCode())
+        .headers(source.getHeaders())
+        .body((ApiResponse<Object>) (ApiResponse<?>) source.getBody());
+  }
+
   public static <T> ResponseEntity<ApiResponse<T>> ok(String message, T data) {
     ApiResponse<T> body = ApiResponse.success(message, data);
     return ResponseEntity.ok().eTag(etag(data)).body(body);

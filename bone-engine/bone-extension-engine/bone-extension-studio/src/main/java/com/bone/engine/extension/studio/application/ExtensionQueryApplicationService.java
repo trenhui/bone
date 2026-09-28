@@ -1,5 +1,7 @@
 package com.bone.engine.extension.studio.application;
 
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.common.StudioErrors;
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
@@ -99,7 +101,7 @@ public class ExtensionQueryApplicationService {
 
   public List<PluginVersion> listPluginVersions(Long pluginId) {
     if (extensionRepository.findById(pluginId) == null) {
-      throw new IllegalArgumentException("插件不存在: " + pluginId);
+      throw StudioErrors.of(StudioErrorCodes.PLUGIN_NOT_FOUND, pluginId);
     }
     return pluginVersionReadPort.findByPluginId(pluginId);
   }

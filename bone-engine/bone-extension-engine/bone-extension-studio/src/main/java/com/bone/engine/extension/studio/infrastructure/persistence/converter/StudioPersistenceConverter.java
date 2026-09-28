@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 
 import com.bone.core.domain.entity.AbstractEntity;
+import com.bone.core.domain.entity.Tenantable;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
@@ -151,6 +152,7 @@ public final class StudioPersistenceConverter {
             : DeploymentStatus.STAGED.name());
     row.setChangeLog(domain.getChangeLog());
     applyAuditDefaults(row);
+    stampTenant(row);
     if (domain.getCreatedAt() != null) {
       row.setCreatedAt(toDate(domain.getCreatedAt()));
     }
@@ -188,6 +190,7 @@ public final class StudioPersistenceConverter {
     row.setErrorMessage(domain.getErrorMessage());
     row.setDurationMs(domain.getDurationMs());
     applyAuditDefaults(row);
+    stampTenant(row);
     if (domain.getCreatedAt() != null) {
       row.setCreatedAt(toDate(domain.getCreatedAt()));
     }
@@ -230,7 +233,8 @@ public final class StudioPersistenceConverter {
   @NonNull
   public static ExtStudioAuditLog toAuditLogEntity(@NonNull StudioAuditEntry entry) {
     ExtStudioAuditLog row = new ExtStudioAuditLog();
-    row.setTenantId(entry.getTenantId() != null ? entry.getTenantId() : 0L);
+    row.setTenantId(entry.getTenantId());
+    stampTenant(row);
     row.setTraceId(entry.getTraceId());
     row.setUserId(entry.getUserId());
     row.setAction(entry.getAction());
@@ -242,16 +246,24 @@ public final class StudioPersistenceConverter {
     return row;
   }
 
-  /** 持久化行必须带当前租户（来自 TenantContext）；否则 INSERT/UPDATE 会把 tenant_id 写成默认值 0，与 SDK 注入的租户过滤不匹配。 */
-  private static void stampTenant(AbstractEntity<?> row) {
-    Long tid = TenantContext.getTenantIdAsLong();
-    if (tid == null) {
+  /**
+   * 持久化行必须带当前租户（来自 {@link TenantContext}）；否则 INSERT/UPDATE 会把 {@code tenant_id} 写成实体字段 默认值 {@code
+   * 0}，与 SDK 注入的租户过滤（{@code tenant_id = :current}）不匹配 —— 真实租户查不到自己刚写入的数据。
+   *
+   * <p><b>为什么只对「未设置」的行填充</b>：{@code tenantId} 的默认值 {@code 0L} 代表「尚未注入」，而显式携带的租户
+   * （平台侧代租户写、执行日志自带的来源租户）是真实业务语义，不能被上下文静默覆盖。
+   *
+   * <p><b>为什么收成 {@link Tenantable} 一个入口</b>：此处曾只覆盖 {@code ExtensionImpl} / {@code ExtensionPoint}
+   * 两类，插件版本 / 执行日志 / 审计日志三类漏掉，导致 {@code exts_plugin_version} 全表恒为 0。按接口收口后新增 实体类型不可能再漏——漏了就编译不过。
+   */
+  private static void stampTenant(Tenantable<Long> row) {
+    Long current = row.getTenantId();
+    if (current != null && current != 0L) {
       return;
     }
-    if (row instanceof ExtStudioExtensionImpl impl) {
-      impl.setTenantId(tid);
-    } else if (row instanceof ExtStudioExtensionPoint point) {
-      point.setTenantId(tid);
+    Long tid = TenantContext.getTenantIdAsLong();
+    if (tid != null) {
+      row.setTenantId(tid);
     }
   }
 

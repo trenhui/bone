@@ -1,5 +1,7 @@
 package com.bone.engine.extension.studio.application.support;
 
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.common.StudioErrors;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -15,7 +17,8 @@ public final class JarMagicValidator {
   public static void validate(InputStream in) throws IOException {
     byte[] header = in.readNBytes(4);
     if (!isJarMagic(header)) {
-      throw new IllegalArgumentException("文件内容不是有效的 JAR/ZIP 格式（magic-number 校验失败）");
+      throw StudioErrors.of(
+          StudioErrorCodes.PLUGIN_PACKAGE_INVALID, "文件内容不是有效的 JAR/ZIP 格式（magic-number 校验失败）");
     }
   }
 

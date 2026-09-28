@@ -2,6 +2,7 @@ package com.bone.engine.extension.studio.infrastructure.persistence.entity;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.entity.Entity;
+import com.bone.core.domain.entity.Tenantable;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
@@ -18,7 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Table("exts_audit_log")
-public class ExtStudioAuditLog extends Entity<Long> {
+public class ExtStudioAuditLog extends Entity<Long> implements Tenantable<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)

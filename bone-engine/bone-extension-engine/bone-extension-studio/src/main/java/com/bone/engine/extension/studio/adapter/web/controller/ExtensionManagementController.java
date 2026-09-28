@@ -330,7 +330,7 @@ public class ExtensionManagementController {
 
   @PostMapping("/plugins/{id}:deploy")
   @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
-  public ResponseEntity<?> deployPlugin(
+  public ResponseEntity<ApiResponse<Object>> deployPlugin(
       @PathVariable Long id,
       @RequestParam(required = false) Boolean sync,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {

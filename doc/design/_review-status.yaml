@@ -2,10 +2,10 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-27T12:00:00+08:00"
+updated_at: "2026-09-27T23:45:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
-current_module: "studio-generator"
-next_run: "bone-file"
+current_module: "bone-extension-studio"
+next_run: "studio-generator"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -94,16 +94,16 @@ modules:
     design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
     design_docs: ["doc/design/modules/5. 扩展管理模块详细设计方案.md", "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
     port: 8088
-    status: "design_ready"
-    last_reviewed_at: "2026-09-27T11:20:00+08:00"
-    implemented_at: null
+    status: "implementing"
+    last_reviewed_at: "2026-09-27T23:45:00+08:00"
+    implemented_at: "2026-09-27T23:45:00+08:00"
     report_path: "doc/design/modules/review-report-bone-extension-studio.md"
     has_active_comet_change: false
-    stages_done: ["A", "A'"]
+    stages_done: ["A", "A'", "B", "B'", "C", "D"]
     pending_approvals:
       - "L3 exts_plugin_version 表归属裁决（平台种子层 0 ↔ 租户实例层二选一；若判平台种子层 → 按通则 T1 拆表或整表去租户作用域）"
       - "L3 ExtIamTenantDirectory（IAM 租户目录本地副本）去留裁定（CORE-01）"
-    note: "A+A' 设计复核完成（2026-09-27，轮换 #6）：HC-003 锚定 violated 复核为误报（38+ 方法签名全 ResponseEntity<ApiResponse<T>>，仅 3 处合法例外），已纠正为 implemented；HC-008 由 partial 升级为 violated——声明面合规（5 实体显式 tenant_id、4 表 DDL 含完整审计列 + version），但运行时 stampTenant 仅覆盖 2/5 类实体，toPluginVersionEntity 未注入 ⇒ exts_plugin_version 恒写 tenant_id=0，叠加 SDK 严格过滤 ⇒ 真实租户零命中（X-1 阻断级：L2 修写入侧 + L3 裁归属）。另 X-2 错误码仅 2 个 EXT_* 领域码、X-3 deployPlugin 返回 ResponseEntity<?>、X-4 ExtIamTenantDirectory 跨模块副本（CORE-01）、X-5 集成事件未落地（doc5 明标 [Target]，属路线图非缺陷）。亮点：响应信封高度统一、方法级 @PreAuthorize scope 鉴权到位。锚定「4 个未提交改动」GAP 已消解（随 7fa2535cb 提交）。"
+    note: "A+A' 设计复核完成（2026-09-27，轮换 #6）：HC-003 锚定 violated 复核为误报（38+ 方法签名全 ResponseEntity<ApiResponse<T>>，仅 3 处合法例外），已纠正为 implemented；HC-008 由 partial 升级为 violated——声明面合规（5 实体显式 tenant_id、4 表 DDL 含完整审计列 + version），但运行时 stampTenant 仅覆盖 2/5 类实体，toPluginVersionEntity 未注入 ⇒ exts_plugin_version 恒写 tenant_id=0，叠加 SDK 严格过滤 ⇒ 真实租户零命中（X-1 阻断级：L2 修写入侧 + L3 裁归属）。另 X-2 错误码仅 2 个 EXT_* 领域码、X-3 deployPlugin 返回 ResponseEntity<?>、X-4 ExtIamTenantDirectory 跨模块副本（CORE-01）、X-5 集成事件未落地（doc5 明标 [Target]，属路线图非缺陷）。亮点：响应信封高度统一、方法级 @PreAuthorize scope 鉴权到位。锚定「4 个未提交改动」GAP 已消解（随 7fa2535cb 提交）。**B/B'/C/D 已落地（2026-09-27 夜间，18 文件）**：X-1 阻断级修完——`stampTenant` 由「两个 instanceof 分支」收成 `Tenantable<Long>` 单入口（5 个持久化实体统一 implements Tenantable，只在租户未设置 null/0 时填充，显式租户不被覆盖），`toPluginVersionEntity`/`toExecutionLogEntity`/`toAuditLogEntity` 三处补调用，+3 条单测；X-2 新增 6 个 EXT_* 领域码 + `StudioErrors`（码→状态唯一真源，四参 BizException 工厂 + 反射 fail-fast）+ advice 显式 `@ExceptionHandler(BizException.class)`（400–599 直用、errorCode 透传；不声明会被本类 Exception 兜底成 500 且丢码）+ 11 处抛出点改造（插件/版本不存在由 400→404、版本已存在 400→409）+ 错误码登记 6 行 + i18n 8 键；X-3 `deployPlugin` 由 `ResponseEntity<?>` 收敛为 `ResponseEntity<ApiResponse<Object>>`（`StudioCommandResponses#asObject`，报文零变化）。验证：模块测试 93 全绿（ArchitectureTest 25，2 条外部依赖 IT skip）、check-i18n-sync 通过（常量 188）、C 段以 MockMvc 契约级联调（404/409/202 真实状态码）、D 段 in-memory 数据集零残留。X-1 的**表归属裁决**（平台种子层 0 ↔ 租户实例层）与 X-4 仍挂 L3 待审批。"
 
   - name: "studio-generator"
     design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"

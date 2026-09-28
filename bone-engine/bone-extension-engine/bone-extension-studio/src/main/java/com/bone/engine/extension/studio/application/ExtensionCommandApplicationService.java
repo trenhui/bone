@@ -6,6 +6,8 @@ import com.bone.engine.extension.studio.application.support.PluginArtifactSuppor
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
 import com.bone.engine.extension.studio.application.support.StudioPatchSupport;
 import com.bone.engine.extension.studio.application.support.StudioVersionSupport;
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.common.StudioErrors;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.TenantDirectoryPort;
@@ -69,7 +71,7 @@ public class ExtensionCommandApplicationService {
   public Extension saveExtension(Extension extension) {
     if (extension.getExtPointId() != null
         && extPointRepository.findById(extension.getExtPointId()) == null) {
-      throw new IllegalArgumentException("关联扩展点不存在: " + extension.getExtPointId());
+      throw StudioErrors.of(StudioErrorCodes.EXT_POINT_NOT_FOUND, extension.getExtPointId());
     }
     if (!StringUtils.hasText(extension.getTenantCode())) {
       extension.normalizeTenantCode();
@@ -98,7 +100,7 @@ public class ExtensionCommandApplicationService {
     StudioPatchSupport.applyToExtension(existing, patch);
     if (existing.getExtPointId() != null
         && extPointRepository.findById(existing.getExtPointId()) == null) {
-      throw new IllegalArgumentException("关联扩展点不存在: " + existing.getExtPointId());
+      throw StudioErrors.of(StudioErrorCodes.EXT_POINT_NOT_FOUND, existing.getExtPointId());
     }
     ExtensionValidationSupport.assertTenantCodeValid(existing.getTenantCode(), tenantDirectoryPort);
     ExtensionValidationSupport.assertAppIdValid(existing.getAppId());
@@ -243,7 +245,7 @@ public class ExtensionCommandApplicationService {
     Extension extension = requireExtension(id);
     try {
       if (!extension.isEnabled()) {
-        throw new IllegalStateException("插件未启用，无法发布到运行时");
+        throw StudioErrors.of(StudioErrorCodes.DEPLOY_STATE_INVALID, "插件未启用，无法发布到运行时");
       }
       if (runtimeSyncService == null) {
         log.warn("RuntimeExtensionSyncService 未配置，跳过运行时发布");
@@ -280,14 +282,14 @@ public class ExtensionCommandApplicationService {
     Extension extension = requireExtension(id);
     List<PluginVersion> versions = pluginVersionReadPort.findByPluginId(id);
     if (versions.isEmpty()) {
-      throw new IllegalArgumentException("插件无可用版本");
+      throw StudioErrors.of(StudioErrorCodes.PLUGIN_VERSION_NOT_FOUND, "插件 " + id + " 无可用版本");
     }
 
     PluginVersion target;
     if (StringUtils.hasText(version)) {
       target = pluginVersionRepository.findByPluginVersion(id, version.trim());
       if (target == null) {
-        throw new IllegalArgumentException("版本不存在: " + version);
+        throw StudioErrors.of(StudioErrorCodes.PLUGIN_VERSION_NOT_FOUND, version);
       }
     } else {
       PluginVersion active = pluginVersionReadPort.findActiveByPluginId(id);
@@ -329,7 +331,7 @@ public class ExtensionCommandApplicationService {
   public PluginExecutionLog simulatePluginExecution(Long pluginId) {
     Extension extension = requireExtension(pluginId);
     if (!extension.isEnabled()) {
-      throw new IllegalStateException("请先部署插件后再模拟调用");
+      throw StudioErrors.of(StudioErrorCodes.DEPLOY_STATE_INVALID, "请先部署插件后再模拟调用");
     }
     long start = System.currentTimeMillis();
     try {
@@ -374,7 +376,7 @@ public class ExtensionCommandApplicationService {
           throw new IllegalArgumentException("新建插件需 extPointId、name、className");
         }
         if (extPointRepository.findById(extPointId) == null) {
-          throw new IllegalArgumentException("关联扩展点不存在: " + extPointId);
+          throw StudioErrors.of(StudioErrorCodes.EXT_POINT_NOT_FOUND, extPointId);
         }
         extension = Extension.create(extPointId, name, description, className);
         extension = extensionRepository.save(extension);
@@ -382,7 +384,7 @@ public class ExtensionCommandApplicationService {
 
       String ver = StringUtils.hasText(version) ? version.trim() : "1.0.0";
       if (pluginVersionRepository.findByPluginVersion(extension.getId(), ver) != null) {
-        throw new IllegalArgumentException("版本已存在: " + ver);
+        throw StudioErrors.of(StudioErrorCodes.PLUGIN_VERSION_CONFLICT, ver);
       }
 
       StoredArtifact artifact = pluginArtifactService.store(extension.getId(), ver, file);
@@ -480,7 +482,7 @@ public class ExtensionCommandApplicationService {
   private Extension requireExtension(Long id) {
     Extension extension = extensionRepository.findById(id);
     if (extension == null) {
-      throw new IllegalArgumentException("插件不存在: " + id);
+      throw StudioErrors.of(StudioErrorCodes.PLUGIN_NOT_FOUND, id);
     }
     return extension;
   }
