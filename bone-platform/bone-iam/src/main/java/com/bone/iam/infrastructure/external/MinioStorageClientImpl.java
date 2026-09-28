@@ -96,6 +96,7 @@ public class MinioStorageClientImpl implements StorageClient {
           minioClient.statObject(StatObjectArgs.builder().bucket(bucketName).object(key).build());
       return stat != null;
     } catch (Exception e) {
+      log.warn("检查 MinIO 对象是否存在失败, key={}: {}", key, e.getMessage());
       return false;
     }
   }

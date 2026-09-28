@@ -41,19 +41,6 @@ public interface SysDictItemRepository extends Repository<SysDictItem, Long> {
         .findFirst();
   }
 
-  /** 子项计数（删除保护：有子项的节点不可删）。 */
-  default long countChildrenAllTenants(String typeCode, String parentCode, Long tenantId) {
-    Long count =
-        countByCriteria(
-            Criteria.<SysDictItem>create()
-                .entityClass(SysDictItem.class)
-                .disableTenantFilter()
-                .eq(SysDictItem::getTypeCode, typeCode)
-                .eq(SysDictItem::getParentCode, parentCode)
-                .in(SysDictItem::getTenantId, tenantScopeValues(tenantId)));
-    return count == null ? 0L : count;
-  }
-
   /** 该类型已有项计数（删除类型前置校验）。 */
   default long countByTypeAllTenants(String typeCode, Long tenantId) {
     Long count =

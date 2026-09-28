@@ -5,6 +5,7 @@ import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,8 +41,25 @@ public class Tenant extends AggregateRoot<Long> {
   /** 角色配额，{@code null} 表示不限制。 */
   private Integer maxRoles;
 
+  /**
+   * 已分配账号数。与 {@link #maxAccounts} 配合做配额核算：count 后写的序列在跨实例部署下会超卖， 故改为在租户聚合上维护占用计数，写操作由
+   * {@code @Version} 乐观锁保证跨实例串行。
+   */
+  private Integer allocatedAccounts;
+
+  /** 已分配角色数，语义同 {@link #allocatedAccounts}。 */
+  private Integer allocatedRoles;
+
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+
+  /**
+   * SDK 原生 {@code @Version} 乐观锁（ADR-0031 D2）：写路径由 {@code bone-metadata-sdk} 统一维护—— 更新时 {@code SET
+   * version = version + 1}、{@code WHERE version = :old}，并发写 0 行由 SDK 抛 {@code
+   * OptimisticLockingFailureException}。{@code iam_tenant.version} 列已存在（DEFAULT 0），无需 DDL。 与 {@link
+   * TenantQuotaEnforcer} 的 JVM 分段锁互补：单实例走锁快路径，跨实例靠本乐观锁兜底。
+   */
+  @Version private Long version;
 
   public static Tenant create(Long id, String name, String code, int level, String adminEmail) {
     Tenant tenant = new Tenant();
@@ -53,6 +71,9 @@ public class Tenant extends AggregateRoot<Long> {
     tenant.adminEmail = adminEmail;
     tenant.createdAt = LocalDateTime.now();
     tenant.updatedAt = LocalDateTime.now();
+    tenant.version = 0L;
+    tenant.allocatedAccounts = 0;
+    tenant.allocatedRoles = 0;
     return tenant;
   }
 
@@ -80,6 +101,52 @@ public class Tenant extends AggregateRoot<Long> {
   public void updateQuota(Integer maxAccounts, Integer maxRoles) {
     this.maxAccounts = maxAccounts;
     this.maxRoles = maxRoles;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * 尝试占用一个账号配额。
+   *
+   * @return {@code true} 占用成功；{@code false} 表示已达上限，由应用层翻译成 {@code TENANT_QUOTA_EXCEEDED}
+   */
+  public boolean tryAllocateAccount() {
+    if (maxAccounts == null) {
+      return true; // 不限制
+    }
+    int used = allocatedAccounts == null ? 0 : allocatedAccounts;
+    if (used >= maxAccounts) {
+      return false;
+    }
+    this.allocatedAccounts = used + 1;
+    this.updatedAt = LocalDateTime.now();
+    return true;
+  }
+
+  /** 释放一个账号配额（账号删除时调用）；下限 clamp 到 0，避免历史脏数据导致负值。 */
+  public void releaseAccount() {
+    int used = allocatedAccounts == null ? 0 : allocatedAccounts;
+    this.allocatedAccounts = Math.max(0, used - 1);
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** 尝试占用一个角色配额，语义同 {@link #tryAllocateAccount()}。 */
+  public boolean tryAllocateRole() {
+    if (maxRoles == null) {
+      return true;
+    }
+    int used = allocatedRoles == null ? 0 : allocatedRoles;
+    if (used >= maxRoles) {
+      return false;
+    }
+    this.allocatedRoles = used + 1;
+    this.updatedAt = LocalDateTime.now();
+    return true;
+  }
+
+  /** 释放一个角色配额，语义同 {@link #releaseAccount()}。 */
+  public void releaseRole() {
+    int used = allocatedRoles == null ? 0 : allocatedRoles;
+    this.allocatedRoles = Math.max(0, used - 1);
     this.updatedAt = LocalDateTime.now();
   }
 }
