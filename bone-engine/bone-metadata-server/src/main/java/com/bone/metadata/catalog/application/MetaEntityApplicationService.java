@@ -1,5 +1,6 @@
 package com.bone.metadata.catalog.application;
 
+import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
@@ -25,6 +26,7 @@ import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntityRelation;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityPublishedEvent;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
@@ -69,6 +71,7 @@ public class MetaEntityApplicationService {
   private final PhysicalStructureGateway physicalStructureGateway;
   private final CurrentUserProvider currentUserProvider;
   private final Optional<RuntimeEntityCacheEvictor> runtimeEntityCacheEvictor;
+  private final DomainEventPublisher domainEventPublisher;
   private final PlatformTransactionManager transactionManager;
 
   // ===================== 实体写操作 =====================
@@ -138,6 +141,12 @@ public class MetaEntityApplicationService {
     metaEntityRepository.deleteById(id);
   }
 
+  /**
+   * 发布实体（doc2a §337 主流程步骤④⑤）：状态落库 → 失效 runtime 缓存 → RUNTIME 物理结构对齐 → 发布领域事件。
+   *
+   * <p>事件 {@link MetaEntityPublishedEvent} 在全部发布动作成功后发出（align 失败即发布失败、无事件）； 单条与批量发布共用本方法，下游经
+   * {@code @TransactionalEventListener(AFTER_COMMIT)} 订阅。
+   */
   @Transactional
   public Integer publishEntity(Long id, Integer expectedVersion) {
     MetaEntity entity = metaEntityRepository.findById(id);
@@ -154,6 +163,7 @@ public class MetaEntityApplicationService {
       physicalStructureGateway.validateForPublish(entity.getTenantId(), entity.getCode());
       physicalStructureGateway.align(entity.getTenantId(), entity.getCode());
     }
+    domainEventPublisher.publish(new MetaEntityPublishedEvent(entity));
     return entity.getVersion();
   }
 

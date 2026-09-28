@@ -94,3 +94,17 @@
 - `bone-metadata-server`：`design_ready` → `implementing`（B/B'/C 完成并提交；D 后端验收完成，前端 skip）。**本模块夜间闭环结束**。
 - 提交：`d1723f00c` B(F1) + `9a9547820` B'/C/D 状态回填；本轮再将 C「环境受限」误判更正为「已验证」，追加提交。
 - 阻断 0；待审批：F1 已落（原 L2 建议，已执行）；F2–F5 仍为建议项（F2 发布事件归 engine Comet change，非本模块；F3–F4 低优；F5 已闭合）。
+
+## 9. F2 补充执行：发布领域事件落地（2026-09-28，A→B 直通）
+
+> 用户复核指令授权，按夜间 v3「默认放行」口径执行（approvals 目录无 hold/block）。**不触碰 engine**（Comet change 占用），采用报告建议①「在 catalog 发布流程补发领域事件」。
+
+- **设计对齐**：doc2a §337 步骤⑤ = 「失效缓存（已有 ✅）+ 发布领域事件（本次补齐）」；G8 消费登记 / 集成事件 / `meta_model_consumer` 为 P1 [Target]（需 DDL），本次不做。
+- **改动**（4 文件，均在 `bone-metadata-server`）：
+  - 新增 `catalog/domain/model/meta/event/MetaEntityPublishedEvent.java`：record 实现 `DomainEvent`（entityId/tenantId/entityCode/tableName/deliveryMode/version/eventTime）。
+  - 新增 `catalog/infrastructure/event/SpringDomainEventPublisher.java`：与 bone-system 同款，委托 Spring 事件总线（模块此前缺该 bean）。
+  - `MetaEntityApplicationService.publishEntity`：注入 `DomainEventPublisher`，在「状态落库 + 缓存失效 + RUNTIME align」全部成功后发事件；align 失败即发布失败、无事件。单条与批量（`batchPublishEntities`）共用，自动覆盖。
+  - `MetaEntityWorkbenchServiceTest` 构造参数 +1；新增 `MetaEntityPublishEventTest`（5 用例：GENERATIVE/RUNTIME 成功发事件且载荷正确、漂移拒绝与 404 不发事件、批量部分成功逐实体发事件）。
+- **边界**：不改 `MetaEntity` 聚合层级（ADR-0016：AbstractEntity + 自有 tenantId 为有意决策，不迁 AggregateRoot）；不新增 DDL；不动 engine 的 `MetadataChangeEvent`（engine 内部热加载事件，仍归 Comet change）。
+- **测试**：`MetaEntityPublishEventTest` 5/5 绿、`MetaEntityWorkbenchServiceTest` 全绿；模块全量 `Tests run: 94, Failures: 2`，2 个失败（`OrderPaymentMetadataE2ETest.publish_detectsTypeDrift_returns409` 409→400、`MetadataModuleReferenceE2ETest.createEntity_withNonExistentModuleId` 400→500）**经基线实验实证为存量问题**——临时还原 service 至 HEAD 后两用例同样失败，与本次改动无关（疑与错误码三参构造丢 errorCode 的已知坑同族，待另行排查）。
+- **判定：B/B' 通过**；F2 由「建议项」转为「已落地（进程内领域事件）」，跨模块集成事件侧维持 P1 [Target] 待 G8。

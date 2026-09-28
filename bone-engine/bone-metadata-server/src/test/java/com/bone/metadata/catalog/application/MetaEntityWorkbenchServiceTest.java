@@ -53,6 +53,7 @@ class MetaEntityWorkbenchServiceTest {
   @Mock private IamModuleValidator iamModuleValidator;
   @Mock private TenantProvider tenantProvider;
   @Mock private PhysicalStructureGateway physicalStructureGateway;
+  @Mock private com.bone.core.domain.event.DomainEventPublisher domainEventPublisher;
 
   private MetaEntityApplicationService service;
 
@@ -68,6 +69,7 @@ class MetaEntityWorkbenchServiceTest {
             physicalStructureGateway,
             () -> null,
             Optional.empty(),
+            domainEventPublisher,
             mock(PlatformTransactionManager.class));
   }
 
