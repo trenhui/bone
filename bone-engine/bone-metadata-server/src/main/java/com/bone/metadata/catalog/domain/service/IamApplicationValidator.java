@@ -19,11 +19,12 @@ public class IamApplicationValidator {
   /** 若指定 appId 在 IAM 应用中不存在，抛出异常。 */
   public void requireExists(Long appId) {
     if (appId == null) {
-      throw BizException.of("应用ID不能为空");
+      throw BizException.of(400, "应用ID不能为空");
     }
     IamApplicationRef ref = iamApplicationRepository.findById(appId);
     if (ref == null) {
-      throw BizException.of("所属应用不存在: " + appId);
+      // 400 而非单参默认 500：入参校验失败是客户端错误（与 IamModuleValidator 同口径）
+      throw BizException.of(400, "所属应用不存在: " + appId);
     }
   }
 }

@@ -151,16 +151,17 @@ modules:
       - "/api/v1/metadata/entities — POST/PUT {id}/GET/GET {id}/POST {id}/publish/POST {id}/copy/DELETE {id}/POST batch-publish"
       - "/api/v1/metadata/entities/{entityId}/fields"
       - "/api/v1/metadata/relationships"
-      - "/api/v1/metadata/templates (code-only，doc2 只列五个控制器)"
+      - "/api/v1/metadata/templates (code-only；doc2 §656 已列七个真实控制器，含 MetaTemplate/PhysicalStructure，原『只列五个』为陈旧标注)"
       - "/api/v1/metadata/entities/{entityId}/structure/drop-column | /drop-drifted (code-only)"
       - "/api/v1/runtime/entities/{entityCode}/records"
-      - "/v1/auth/login (code-only，三份设计稿均未记载)"
-    published_events: []
+      - "/v1/auth/login (已下线：AuthController 随 HC-004 于 2026-09-27 整文件删除，server 不再持有认证端点，鉴权走 bone-iam/网关)"
+    published_events:
+      - "MetaEntityPublishedEvent（catalog 进程内 DomainEvent，2026-09-28 F2 落地：publishEntity/batchPublish 全部成功后经 SpringDomainEventPublisher 发出；消费登记/集成事件侧为 doc2a G8 P1 [Target]，当前无订阅方属预期）"
     subscribed_events: []
     shared_dtos: ["ApiResponse", "PageResult", "ProblemDetail", "MetaEntityDTO", "MetaFieldDTO", "MetaRelationDTO", "PublishPreviewDTO", "EntityValidationIssue", "BatchOperateResult"]
     error_codes_used:
+      - "com.bone.metadata.engine.runtime.MetadataErrorCodes（F1 已落地 2026-09-27：META_RUNTIME_RECORD_NOT_FOUND / META_RUNTIME_ENTITY_NOT_FOUND / META_RUNTIME_INVALID_QUERY / META_RUNTIME_VALIDATION_FAILED / META_RUNTIME_DUPLICATE / META_RUNTIME_INVALID_IDENTIFIER / META_PRECONDITION_FAILED，码字符串值与原裸字符串逐字一致）"
       - "com.bone.core.common.CommonErrorCodes（COMMON_VALIDATION_FAILED / COMMON_MALFORMED_REQUEST）"
-      - "META_RUNTIME_*（裸字符串，散落 GlobalExceptionHandler；无 MetadataErrorCodes 常量类）"
     tables: ["meta_entity", "meta_field", "meta_entity_relation", "meta_model_template", "meta_model_template_field", "meta_code_template"]
     hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "implemented", HC-006: "implemented", HC-007: "implemented", HC-008: "implemented"}
     hc_evidence:
@@ -174,8 +175,8 @@ modules:
       HC-008: "误报修正（2026-09-27 A 复核）：实体继承 AbstractEntity<Long>+自有 tenantId 为 ADR-0016 有意决策（非违规）；md_lineage 等已按 doc2a G6(2026-09-26 P0) 整批划归 bone-masterdata 改名 mdm_*，原表已不在本模块 → implemented（本模块范围合规）"
     design_vs_code_gaps:
       - "doc2 §5.1 的 GET /api/v1/metadata/entities/{id}/versions（标 P1 Target）代码未实现"
-      - "doc2a §337/§474 规划的『发布 → 集成事件 → Outbox』链路：src/main 零 IntegrationEvent"
-      - "doc2 §353 声称的 META_ 前缀错误码：无常量类，仅裸字符串"
+      - "doc2a §337/§474 规划的『发布 → 集成事件 → Outbox』链路：步骤⑤发布领域事件已落地（2026-09-28 F2：MetaEntityPublishedEvent 进程内 DomainEvent）；集成事件/Outbox 侧仍为零（G8 P1 [Target]，需消费登记 DDL，属路线图非缺陷）"
+      - "doc2 §353 声称的 META_ 前缀错误码常量类：已闭合（2026-09-27 F1 落地 MetadataErrorCodes，7 常量登记 Bone-错误码登记.md §6，i18n 双语键齐备，码字符串值逐字不变零行为变更）"
       - "（已纠正 2026-09-27）doc2 §656 已列七个真实控制器（含 MetaTemplate/PhysicalStructure）并注明 AuthController 随 HC-004 删除；原『只列五个』为陈旧标注，控制器清单 GAP 已闭合"
     has_active_comet_change: false
     comet_change_id: null
@@ -203,7 +204,7 @@ modules:
     shared_dtos: ["EntityMetadata", "SmartFieldMetadata", "OperationMetadata", "WorkflowMetadata", "AgentMetadata", "ImpactAnalysis", "PlatformMetaEntity", "PlatformMetaField"]
     error_codes_used:
       - "com.bone.metadata.engine.domain.common.ErrorCodes（domain 模块自有常量类）"
-      - "META_RUNTIME_*（裸字符串，散落 JdbcRuntimeRecordService / RuntimeQuerySupport）"
+      - "com.bone.metadata.engine.runtime.MetadataErrorCodes（F1 已落地 2026-09-27：原散落 JdbcRuntimeRecordService / RuntimeQuerySupport / RuntimePageQuery 的 META_RUNTIME_* 裸字符串已收敛为常量，码字符串值逐字不变）"
     tables: []
     hc_coverage: {HC-001: "implemented", HC-002: "implemented", HC-003: "implemented", HC-004: "implemented", HC-005: "violated", HC-006: "violated", HC-007: "violated", HC-008: "implemented"}
     hc_evidence:
@@ -215,7 +216,7 @@ modules:
       HC-008: "引擎无自有表，随宿主 meta_*（baseline 中 md_entity/md_field/md_record 已 resolved）"
     design_vs_code_gaps:
       - "doc9 §2 提到的 SdkMetadataRepository / MetaEntityConverter 未在 src/main 出现（IamMetadataBridge 存在）"
-      - "doc9 §6 称复用 META_ 前缀，实际无常量类定义"
+      - "doc9 §6 称复用 META_ 前缀：已闭合（2026-09-27 F1 落地 MetadataErrorCodes 常量类）"
     has_active_comet_change: true
     comet_change_id: "refactor/metadata-engine-boundary-ddd"
 
@@ -805,7 +806,7 @@ cross_module_contracts:
   - between: ["bone-masterdata", "bone-metadata-*"]
     api_contract: "错误码跨域命名：MasterDataErrorCodes 定义 MD_META_ENTITY_NOT_FOUND / MD_META_ENTITY_NOT_PUBLISHED"
     shared_dtos: []
-    constraint_risk: "元数据域错误码定义在主数据模块，前缀域归属混乱；元数据侧无 MetadataErrorCodes，只有裸字符串。"
+    constraint_risk: "元数据域错误码定义在主数据模块，前缀域归属混乱（2026-09-28 复核：bone-metadata-engine-runtime 已建 MetadataErrorCodes 聚合 META_RUNTIME_*/META_PRECONDITION_FAILED，本条剩余风险收敛为『主数据侧 MD_META_* 仍在 masterdata 模块』）。"
   - between: ["bone-system", "bone-frontend/bone-shell"]
     api_contract: "Shell 直连 /api/v1/console/overview 与 /api/v1/console/quick-actions"
     shared_dtos: []

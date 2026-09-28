@@ -68,11 +68,12 @@ public class IamModuleValidator {
 
   private IamModuleRef requireModule(Long moduleId) {
     if (moduleId == null) {
-      throw BizException.of("模块ID不能为空");
+      throw BizException.of(400, "模块ID不能为空");
     }
     IamModuleRef ref = iamModuleRepository.findById(moduleId);
     if (ref == null) {
-      throw BizException.of("所属模块不存在: " + moduleId);
+      // 400 而非单参默认 500：入参校验失败是客户端错误（E2E createEntity_withNonExistentModuleId 契约）
+      throw BizException.of(400, "所属模块不存在: " + moduleId);
     }
     assertSameTenant(moduleId, ref);
     return ref;
@@ -83,6 +84,7 @@ public class IamModuleValidator {
     // DDL 保证 bone_module.tenant_id NOT NULL，故 null 只可能来自「读到的不是真实行」（如单测桩）→ 一并拒绝。
     if (ref.getTenantId() == null || ref.getTenantId().longValue() != currentTenantId) {
       throw BizException.of(
+          400,
           "所属模块不属于当前租户: moduleId="
               + moduleId
               + "（模块租户="
