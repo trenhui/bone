@@ -2,7 +2,7 @@ package com.bone.metadata.sdk.support.cascade;
 
 import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.core.tenant.TenantContext;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.ReflectionUtil;
 import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import com.bone.metadata.sdk.domain.model.CascadeRelation;
