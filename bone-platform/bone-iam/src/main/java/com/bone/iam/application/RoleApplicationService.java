@@ -10,6 +10,7 @@ import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
 import com.bone.iam.application.query.qry.RolePageQuery;
 import com.bone.iam.application.support.TenantQuotaEnforcer;
+import com.bone.iam.application.support.TenantScopeResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
@@ -140,7 +141,7 @@ public class RoleApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<RoleDTO> page(RolePageQuery qry) {
-    Long tenantFilter = resolveTenantFilter(qry.getTenantId());
+    Long tenantFilter = TenantScopeResolver.resolve(tenantProvider, qry.getTenantId());
     PageResult<Role> result =
         roleRepository.findRolePage(qry.getKeyword(), tenantFilter, qry.getPage(), qry.getSize());
     List<RoleDTO> dtoList =
@@ -204,14 +205,6 @@ public class RoleApplicationService {
    *   <li>平台租户（0）或无租户上下文 → 回退到查询参数，未传则不加过滤。
    * </ul>
    */
-  private Long resolveTenantFilter(Long fromQuery) {
-    Long fromContext = tenantProvider.currentTenantIdOrNull();
-    if (fromContext != null && fromContext != 0L) {
-      return fromContext;
-    }
-    return fromQuery;
-  }
-
   private static RoleDTO toDto(Role role) {
     RoleDTO dto = new RoleDTO();
     dto.setId(role.getId());

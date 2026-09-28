@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import {
   Table,
   Button,
@@ -71,8 +72,8 @@ const LogManagementPage: React.FC = () => {
           total: response.data.total,
         });
       }
-    } catch {
-      message.error('获取日志失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '获取日志失败'));
     } finally {
       setLoading(false);
     }
@@ -123,8 +124,8 @@ const LogManagementPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       message.success('导出日志成功');
-    } catch {
-      message.error('导出日志失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '导出日志失败'));
     }
   };
 
@@ -136,8 +137,8 @@ const LogManagementPage: React.FC = () => {
         setAnalyzeResult(response.data as LogAnalyzeResult);
         setAnalyzeModalVisible(true);
       }
-    } catch {
-      message.error('分析日志失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '分析日志失败'));
     }
   };
 

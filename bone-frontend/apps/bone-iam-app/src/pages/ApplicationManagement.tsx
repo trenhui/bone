@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListEmptyState, ListErrorState, ListForbiddenState } from '../components/ListStates';
 import {
   App as AntApp,
   Button,
@@ -46,6 +48,8 @@ const ApplicationManagement: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editApp, setEditApp] = useState<BoneApplication | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +57,8 @@ const ApplicationManagement: React.FC = () => {
 
   const fetchApps = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    setForbidden(false);
     try {
       const res = await appApi.listMine({ page, size: pageSize, keyword: debouncedKeyword || undefined });
       if (res.code === 200) {
@@ -65,12 +71,13 @@ const ApplicationManagement: React.FC = () => {
         setApps(records);
         setTotal(newTotal);
       }
-    } catch {
-      message.error('获取应用列表失败');
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadError(resolveIamErrorMessage(err) ?? '获取应用列表失败');
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, debouncedKeyword, message]);
+  }, [page, pageSize, debouncedKeyword]);
 
   useEffect(() => {
     fetchApps();
@@ -114,8 +121,8 @@ const ApplicationManagement: React.FC = () => {
       }
       setModalOpen(false);
       fetchApps();
-    } catch {
-      message.error(editApp ? '更新失败' : '创建失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? (editApp ? '更新失败' : '创建失败'));
     } finally {
       setSubmitting(false);
     }
@@ -128,8 +135,8 @@ const ApplicationManagement: React.FC = () => {
         message.success('已删除');
         fetchApps();
       }
-    } catch {
-      message.error('删除失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '删除失败');
     }
   };
 
@@ -223,23 +230,40 @@ const ApplicationManagement: React.FC = () => {
       }
       card={false}
     >
-      <Table
-        columns={columns}
-        dataSource={apps}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 个应用`,
-          onChange: (p, ps) => {
-            setPage(p);
-            if (ps) setPageSize(ps);
-          },
-        }}
-      />
+      {loadError ? (
+        forbidden ? (
+          <ListForbiddenState onRetry={fetchApps} />
+        ) : (
+          <ListErrorState error={loadError} onRetry={fetchApps} />
+        )
+      ) : apps.length === 0 && !loading ? (
+        <ListEmptyState
+          text="暂无应用"
+          action={
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              新建应用
+            </Button>
+          }
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={apps}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 个应用`,
+            onChange: (p, ps) => {
+              setPage(p);
+              if (ps) setPageSize(ps);
+            },
+          }}
+        />
+      )}
 
       <Modal
         title={editApp ? '编辑应用' : '新建应用'}

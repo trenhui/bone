@@ -69,7 +69,6 @@ bone:
     jwt:
       secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       whitelist:
-        - /api/v1/iam/auth/login
         - /api/v1/iam/login
         # 仅放通健康检查；metrics/prometheus 等运维端点须经 JWT 鉴权，禁止网关匿名暴露
         - /actuator/health

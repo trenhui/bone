@@ -5,6 +5,7 @@
 import App from './App';
 import './App.css';
 import './index.css';
+import './dayjs-setup';
 import { createBoneMicroAppRenderer } from '@bone/ui';
 
 const lifecycle = createBoneMicroAppRenderer(App, 'bone-system-app');

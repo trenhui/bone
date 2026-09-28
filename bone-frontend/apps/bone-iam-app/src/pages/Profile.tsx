@@ -6,11 +6,12 @@ import {
   Descriptions,
   Form,
   Input,
-  Result,
   Skeleton,
 } from 'antd';
 import { LockOutlined, SaveOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListErrorState, ListForbiddenState } from '../components/ListStates';
 import ModulePage from '../components/ModulePage';
 import { formatDate } from '@bone/shared-utils';
 
@@ -30,12 +31,14 @@ const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<api.MyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     setLoadFailed(null);
+    setForbidden(false);
     try {
       const response = await api.getMyProfile();
       if (response.code === 200 && response.data) {
@@ -48,8 +51,9 @@ const ProfilePage: React.FC = () => {
       } else {
         setLoadFailed(response.message || '获取个人信息失败');
       }
-    } catch {
-      setLoadFailed('获取个人信息失败');
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadFailed(resolveIamErrorMessage(err) ?? '获取个人信息失败');
     } finally {
       setLoading(false);
     }
@@ -68,12 +72,10 @@ const ProfilePage: React.FC = () => {
         messageApi.success('个人信息已保存');
         await fetchProfile();
       } else {
-        messageApi.error(response.message || '保存失败');
+        messageApi.error(resolveIamErrorMessage(response) ?? '保存失败');
       }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        messageApi.error(err.message);
-      }
+      messageApi.error(resolveIamErrorMessage(err) ?? '保存失败');
     } finally {
       setSavingProfile(false);
     }
@@ -95,12 +97,10 @@ const ProfilePage: React.FC = () => {
         messageApi.success('密码已修改，请牢记新密码');
         passwordForm.resetFields();
       } else {
-        messageApi.error(response.message || '修改密码失败');
+        messageApi.error(resolveIamErrorMessage(response) ?? '修改密码失败');
       }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        messageApi.error(err.message);
-      }
+      messageApi.error(resolveIamErrorMessage(err) ?? '修改密码失败');
     } finally {
       setSavingPassword(false);
     }
@@ -117,16 +117,11 @@ const ProfilePage: React.FC = () => {
   if (loadFailed || !profile) {
     return (
       <ModulePage title="个人信息" card>
-        <Result
-          status="warning"
-          title="无法加载个人信息"
-          subTitle={loadFailed ?? '接口未返回数据'}
-          extra={
-            <Button type="primary" onClick={() => void fetchProfile()}>
-              重试
-            </Button>
-          }
-        />
+        {forbidden ? (
+          <ListForbiddenState onRetry={fetchProfile} />
+        ) : (
+          <ListErrorState error={loadFailed ?? '接口未返回数据'} onRetry={fetchProfile} />
+        )}
       </ModulePage>
     );
   }

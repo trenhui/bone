@@ -3,6 +3,7 @@ import { Card, Form, Input, Button, message, Typography } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/api';
+import { resolveIamErrorMessage } from '../utils/iamErrorMessages';
 import type { LoginRequest } from '../types';
 
 const { Text } = Typography;
@@ -29,10 +30,10 @@ const Auth: React.FC = () => {
         message.success('登录成功');
         navigate('/accounts');
       } else {
-        message.error(response.message || '登录失败');
+        message.error(resolveIamErrorMessage(response) ?? '登录失败');
       }
-    } catch {
-      message.error('登录失败，请检查用户名和密码');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);
     }

@@ -53,6 +53,7 @@ public final class IamErrors {
           Map.entry(IamErrorCodes.ROLE_ID_REQUIRED, 400),
           Map.entry(IamErrorCodes.PERMISSION_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.PERMISSION_PLATFORM_ONLY, 403),
+          Map.entry(IamErrorCodes.AUTHORITY_RESOLVE_FAILED, 500),
           // 会话
           Map.entry(IamErrorCodes.SESSION_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.SESSION_ID_REQUIRED, 400),
@@ -100,7 +101,10 @@ public final class IamErrors {
 
   /** 抛业务异常，附上下文说明与根因。 */
   public static BizException of(String errorCode, Object detail, Throwable cause) {
-    return new BizException(httpStatusOf(errorCode), composeMessage(errorCode, detail), cause);
+    // 关键不变量：必须把 errorCode 写入 BizException，否则响应层 ProblemDetail.errorCode 恒为 null，
+    // 前端 i18n 键与监控按码聚合全部失效（C-1 修复：改用带 errorCode 的 4 参构造器）。
+    return new BizException(
+        httpStatusOf(errorCode), composeMessage(errorCode, detail), errorCode, cause);
   }
 
   /**

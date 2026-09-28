@@ -109,6 +109,13 @@ public class AuditController {
     if (value == null || value.isEmpty()) {
       return "";
     }
+    // OWASP CSV 公式注入：以 = + - @ 开头的单元格在 Excel 中会被当作公式执行，前缀 ' 中和。
+    if (value.startsWith("=")
+        || value.startsWith("+")
+        || value.startsWith("-")
+        || value.startsWith("@")) {
+      return "'" + value;
+    }
     boolean needQuote =
         value.indexOf(',') >= 0
             || value.indexOf('"') >= 0

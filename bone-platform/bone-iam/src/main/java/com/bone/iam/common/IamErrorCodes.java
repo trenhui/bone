@@ -77,6 +77,9 @@ public final class IamErrorCodes {
    */
   public static final String PERMISSION_PLATFORM_ONLY = "IAM_PERMISSION_PLATFORM_ONLY";
 
+  /** 登录 / 请求鉴权时权限解析失败（数据源异常）。fail-closed 拒绝，绝不回退超宽权限。 */
+  public static final String AUTHORITY_RESOLVE_FAILED = "IAM_AUTHORITY_RESOLVE_FAILED";
+
   // ===== 会话（IAM_SESSION_*）=====
 
   /** 会话不存在（含跨租户不可见，与"参数缺失"分属不同语义）。 */

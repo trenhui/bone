@@ -24,6 +24,8 @@ import {
 } from '@ant-design/icons';
 import { StatisticCard } from '@ant-design/pro-components';
 import * as api from '../services/api';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListEmptyState, ListErrorState, ListForbiddenState } from '../components/ListStates';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
 import type { Permission, CreatePermissionRequest, UpdatePermissionRequest } from '../types';
@@ -33,6 +35,8 @@ const PermissionManagement: React.FC = () => {
   const { message } = AntApp.useApp();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -47,6 +51,8 @@ const PermissionManagement: React.FC = () => {
 
   const fetchPermissions = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    setForbidden(false);
     try {
       const response = await api.getPermissions(page, pageSize, debouncedKeyword || undefined);
       if (response.code === 200) {
@@ -59,12 +65,13 @@ const PermissionManagement: React.FC = () => {
         setPermissions(records);
         setTotal(newTotal);
       }
-    } catch {
-      message.error('获取权限列表失败');
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadError(resolveIamErrorMessage(err) ?? '获取权限列表失败');
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, debouncedKeyword, message]);
+  }, [page, pageSize, debouncedKeyword]);
 
   // 统计数据：全量拉取一次，派生覆盖域数（code 首段）
   const fetchStats = useCallback(async () => {
@@ -145,8 +152,8 @@ const PermissionManagement: React.FC = () => {
         message.success('删除权限成功');
         reload();
       }
-    } catch {
-      message.error('删除权限失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '删除权限失败');
     }
   };
 
@@ -182,8 +189,8 @@ const PermissionManagement: React.FC = () => {
           reload();
         }
       }
-    } catch {
-      message.error('操作失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -294,23 +301,40 @@ const PermissionManagement: React.FC = () => {
       extra={toolbar}
       statistics={statistics}
     >
-      <Table
-        columns={columns}
-        dataSource={permissions}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize: pageSize,
-          total: total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 个权限点`,
-          onChange: (p, ps) => {
-            setPage(p);
-            if (ps) setPageSize(ps);
+      {loadError ? (
+        forbidden ? (
+          <ListForbiddenState onRetry={reload} />
+        ) : (
+          <ListErrorState error={loadError} onRetry={reload} />
+        )
+      ) : permissions.length === 0 && !loading ? (
+        <ListEmptyState
+          text="暂无权限点"
+          action={
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增权限
+            </Button>
           }
-        }}
-      />
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={permissions}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 个权限点`,
+            onChange: (p, ps) => {
+              setPage(p);
+              if (ps) setPageSize(ps);
+            }
+          }}
+        />
+      )}
       <Drawer
         title={isEditMode ? `编辑权限 · ${currentPermission?.name ?? ''}` : '新增权限'}
         open={isModalVisible}

@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.AuthApplicationService;
 import com.bone.iam.application.config.IamSsoProperties;
+import com.bone.iam.infrastructure.config.IamExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +35,10 @@ class AuthSsoMfaControllerTest {
     IamSsoProperties ssoProperties = new IamSsoProperties();
     AuthController authController =
         new AuthController(authApplicationService, authWebConverter, jwtConfig, ssoProperties);
-    mockMvc = MockMvcBuilders.standaloneSetup(authController, new MfaController()).build();
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(authController, new MfaController())
+            .setControllerAdvice(new IamExceptionHandler())
+            .build();
   }
 
   @Test
@@ -69,6 +73,7 @@ class AuthSsoMfaControllerTest {
         .perform(
             post("/api/v1/iam/mfa/enroll").contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isNotImplemented())
-        .andExpect(jsonPath("$.code").value(501));
+        .andExpect(jsonPath("$.code").value(501))
+        .andExpect(jsonPath("$.message", containsString("IAM_MFA_NOT_AVAILABLE")));
   }
 }

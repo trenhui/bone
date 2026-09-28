@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import {
   Card,
   Row,
@@ -80,7 +81,7 @@ const MonitorAlertPage: React.FC = () => {
       if (rulesRes.code === 200) setAlertRules(rulesRes.data.list ?? []);
       if (eventsRes.code === 200) setAlertEvents(eventsRes.data.list ?? []);
     } catch (error) {
-      message.error('获取数据失败');
+      message.error(resolveErrorMessage(error, '获取数据失败'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +129,7 @@ const MonitorAlertPage: React.FC = () => {
         fetchData();
       }
     } catch (error) {
-      message.error('保存告警规则失败');
+      message.error(resolveErrorMessage(error, '保存告警规则失败'));
     }
   };
 
@@ -140,7 +141,7 @@ const MonitorAlertPage: React.FC = () => {
         fetchData();
       }
     } catch (error) {
-      message.error('删除告警规则失败');
+      message.error(resolveErrorMessage(error, '删除告警规则失败'));
     }
   };
 
@@ -154,7 +155,7 @@ const MonitorAlertPage: React.FC = () => {
         fetchData();
       }
     } catch (error) {
-      message.error('操作失败');
+      message.error(resolveErrorMessage(error, '操作失败'));
     }
   };
 

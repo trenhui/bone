@@ -156,7 +156,8 @@
 - [ ] L2 | `bone-frontend/apps/bone-iam-app/src/pages/AccountManagement.tsx`（:49-50, :445） | 去除 `Number()`，改 `String(id)`（B-2）
 - [ ] L2 | `bone-frontend/apps/bone-iam-app/src/main.tsx`（:44, :68-105） | locale 不再硬编码；lifecycle 收敛为单一真源（B-6）
 - [ ] L2 | `bone-frontend/apps/bone-iam-app/public/qiankun-entry.js`（:12, :19-21） | 去硬编码 URL + 真 unmount（B-6）
-- [ ] L2 | `bone-frontend/apps/bone-iam-app/src/pages/{Account,Role,Permission,Tenant,AuditLog,Application}Management.tsx` | 补四态（空/加载/错误/无权限）（S-5）
+- [x] L2 | `bone-frontend/apps/bone-iam-app/src/pages/{Role,Permission,Tenant,Application}Management.tsx` | 补四态（空/加载/错误/无权限）（S-5，2026-09-28 完成）
+- [x] L2 | `bone-frontend/apps/bone-iam-app/src/pages/{Account,AuditLog}Management.tsx` | 补四态（空/加载/错误/无权限）（S-5 剩余，2026-09-28 完成）
 - [ ] L2 | `bone-frontend/apps/bone-iam-app/src/pages/Profile.tsx`（新增）+ `App.tsx` 路由 | 个人信息/改密页（S-7，范围最小的一项）
 
 ### 待审批清单（L3/L4，本任务不执行）
@@ -196,7 +197,7 @@
 | B-5 健康检查拆分 | 新建 `DatabaseHealthIndicator` / `RedisHealthIndicator` / `MinioStorageHealthIndicator` 三个类 | **单类聚合** Spring Boot 自动装配的 `db` / `redis` | 同样受 bypass 基线约束；且拆分只是物理分文件，聚合已拿到真值。**未新增文件** |
 | B-5 Micrometer 埋点 | 补齐 `iam_login_*` 三个指标 | **未做** | 需在 `AuthApplicationService` 注入 `MeterRegistry`，属 L2 但超出本轮已验证范围；登记为建议项 S-12 |
 | B-7 `Account.java:140` | 裸 `DomainException` → `IamErrors.of(DEPT_REQUIRED)` | **未做** | `ArchitectureTest.domainCoreShouldOnlyDependOnAllowedPackages` 限定 domain 只能依赖 `domain/java/com.bone.core/sdk/lombok`，`com.bone.iam.common` 不在白名单内；**并发会话曾改过、随即回退**（与 ArchTest 冲突）。正解需把校验上移到 application，另立条目 |
-| S-5 列表四态 | 6 个列表页全覆盖 | 仅 `Profile.tsx`（新建）按四态规范实现 | 范围控制，其余页面列 [Target] |
+| S-5 列表四态 | 6 个列表页全覆盖 | `Profile`（失败态统一为 `error+403`）+ `Application`/`Tenant`/`Role`/`Permission`/`Account`/`AuditLog` 共 6 页全部按四态实现 | 已全部覆盖 |
 
 ### 6.9 本轮新增发现（A 段未识别）
 
@@ -270,3 +271,126 @@
   2. **B-12 MFA 业务码**：需与并发会话收口，避免双方反复覆盖 `MfaController`
   3. **B-5 Micrometer 埋点**（S-12）、**B-6 会话管理 / MFA 前端页**、**S-5 其余列表页四态**：列下一轮
   4. 建议回写 `国际化设计方案.md` §6.4 勘误（bone-iam 已配 `spring.jackson.time-zone: UTC`）
+
+---
+
+## 十、复审补遗（2026-09-28 · grill-and-review 独立三视角审查 + 优化）
+
+> 本段为原报告（2026-09-26/27 出具）之后，基于 `grill-and-review` 流程派 **3 只独立只读子 Agent**（安全正确性 / 性能可维护性 / 领域一致性）并行审查，并对照实时代码逐条核验后的补遗。**裁判基准：项目 ADR/HC 为硬红线，业界实践作补充。**
+
+### 10.1 超出原报告、且已修复的缺陷（原报告未识别 / 误判）
+
+| # | 问题 | 原报告状态 | 实时代码结论 | 修复 |
+|---|---|---|---|---|
+| **C-1** | `IamErrors.of()` 调 3 参 `BizException(int,String,Throwable)`，**`errorCode` 字段恒 `null`**；`IamExceptionHandler` 取 `ex.getErrorCode()` 写入响应 → **全部 71 处业务码在 wire 层为 null**，前端 i18n 键与监控按码聚合全部失效 | §六.4 称「错误码主体干净、71 处已正确走 `IamErrors.of`」、§九判 **PASS** —— **过早** | 确属系统性缺陷（已读 `BizException.java:40` 与 `:75` 4 参构造器佐证） | `IamErrors.java:103` 改用 4 参构造器 `new BizException(..., errorCode, cause)`；新增回归测试 `IamErrorsErrorCodeTest` |
+| **C-2** | `AuthApplicationService.resolveFromDatabase` `catch(Exception)` 对管理员回退 `DefaultPermissionCodes.adminFallback()`（全模块超宽权限）且被缓存 → **授权 fail-open** | 未识别 | 确属 fail-open（`:294-301`） | 新增 `AUTHORITY_RESOLVE_FAILED` 码并注册 500；异常改 fail-closed 重抛，移除 adminFallback 回退与缓存 |
+| **S-A** | `AccessTokenIssuerGatewayAdapter.generateToken(accountId,username)` 给任意账号签发 `tenantId=0 + adminFallback`，非接口方法、0 调用方 → 潜在提权 API | 未识别 | 确属危险死代码 | 删除该 2 参重载 |
+| **S-B** | `application-prod.yml` 数据库密码 `${BONE_DB_PASSWORD:}` 空默认 → 部署未设则以空密码连库（fail-open） | 未识别 | 确属 | 改为 `${BONE_DB_PASSWORD}`（缺失即启动失败） |
+| **S-C** | `AuditController.escape()` 未中和 CSV 公式注入字符 `= + - @`，审计字段含用户可控数据 | 未识别 | 确属 OWASP CSV 注入 | `escape()` 以这些字符开头时前缀 `'` |
+| **S-D** | `SecurityConfig` `/api/v1/iam/debug/**` 列入 `permitAll` 但无 Controller 映射 → 孤儿/误导配置 | 未识别 | 确属 | 从 permitAll 列表删除 |
+| **S-E** | `AuthController.ssoCallback` 裸拼 `ApiResponse.error(501, SSO_NOT_CONFIGURED+":…")`，不经 handler → 响应无 `errorCode`（B-7 残留） | 未识别 | 确属 | 改 `throw IamErrors.of(SSO_NOT_CONFIGURED, …)`，响应带结构化业务码 |
+
+### 10.2 原报告论断失真 / 滞后（代码已修，报告需更正）
+
+| 原报告论断 | 复核结论 |
+|---|---|
+| §6.9 **B-12**「`MfaController` 业务码完全消失、**未抢改**」 | **不准确**：`MfaController` 现 `throw IamErrors.of(IAM_MFA_NOT_AVAILABLE, …)`（代码已挂码）。其「响应层业务码」此前因 **C-1** 恒为 null，随 C-1 修复已真正闭环；原 report 的 C-9「无业务码」现象已消除 |
+| §6.8 **B-7** `Account.java:140`「裸 `DomainException` → 未做」 | **滞后**：应用层 `AccountApplicationService.java:103-105` 与 `:127-129` 已在调用 `changeDept` 前抛 `IamErrors.of(DEPT_REQUIRED, …)`，`Account.java:140` 的 `DomainException` 已是达不到的防御兜底，无需改动 |
+| §2 **B-2 / B-1 / S-2**「未修」 | 代码实测均已修复（ID 串化、`export` 走 blob、`SessionResp` 出网）—— 原 report 描述滞后于代码 |
+
+### 10.3 已落地的治理项
+
+- **M-4（L3 删码，已授权）**：删除 `infrastructure/handler/annotation/Capability.java`（0 引用死代码）；同步修正 **D-1** README「应用层结构」漂移——`AccountRoleBindingService`→`AccountRoleBindingSupport`、`TenantQuotaEnforcer`/`PasswordPolicyValidator` 落点由误写的 `application/policy/` 改为实际 `application/support/`（原描述违背 `application-constructs-baseline.json` 的 `direction-conflict` 决议）
+- **测试补齐**：新增 `TenantScopeResolverTest`（租户隔离口径单一真源，原零覆盖）、`RequestLoggingMdcFilterTest`（防 MDC 串号）、`IamErrorsErrorCodeTest`（锁 C-1）
+
+### 10.4 验证
+
+- `mvn -o -pl bone-platform/bone-iam spotless:apply` → BUILD SUCCESS
+- `mvn -o -pl bone-platform/bone-iam test` → 全绿（含新增 3 项、`AuthSsoMfaControllerTest` 仍 501 + 含 `IAM_SSO_NOT_CONFIGURED` 的 message、`ArchitectureTest` 28 项全绿）
+
+### 10.5 仍未闭环（交后续轮次 / 需裁决，非本次范围）
+
+| 项 | 状态 | 备注 |
+|---|---|---|
+| **M-5** 前端 `dayjs` 直引（L3 依赖收敛） | **不执行（不可行）** | antd v5 以 dayjs 为硬依赖（`shared-utils/i18n/format.ts` 亦 `import dayjs`），移除本地 `dayjs` 会破坏 `DatePicker` 类型与构建；iam-app 仅保留 dayjs 服务于 antd 控件，display 已统一走 `shared-utils` 的 `formatDate`，无额外独立日期格式化逻辑 |
+| **M-6** 前端 `errorCode→text` 映射（原 24 处硬编码中文） | **已执行（2026-09-28）** | 见 §10.6 |
+| **M-7** 列表页四态（空/加载/错误/无权限） | **已执行（2026-09-28）** | `Profile` 失败态统一为 `error+403` 双态，并以 `ListStates` 组件统一；6 个列表/详情页（含 `Account`/`AuditLog`）全部覆盖四态（见 §10.7 / §10.8） |
+| **M-8** `iam_permission` 基线 `needs-owner-decision`（L3 基线变更） | **已执行（2026-09-28）** | `ddl-required-columns-baseline.json` 中 `iam_permission` 与 `iam_role_permission` 的 classification 均由 `needs-owner-decision` 改为 `by-design`，判据一致（缺列 = 租户经 `iam_role` 间接隔离，非遗漏）；「是否冗余 tenant_id 直查」为独立非阻塞优化，不入缺列缺口。**均不改表结构**。独立审查发现二者原状态自相矛盾，已同步修正 |
+| **B-3** 配额跨实例超卖 | **已收敛单 JVM（2026-09-28）+ Redis 锁方案待确认** | 现状 `TenantQuotaEnforcer` 单 JVM 分段锁已落地；多实例根治方案见 §10.9（Redis 分布式锁，L2，待确认后实现） |
+| **S-12** Micrometer 登录/refresh 埋点 | **已执行（2026-09-28）** | `AuthApplicationService` 注入 `MeterRegistry`，login/refresh 加 `iam_login_requests_total` / `iam_login_failures_total{reason}` / `iam_login_seconds` + 对称 `iam_refresh_*`；prod yml 经核查已是 `health,info,metrics`（B-5 旧记录过时）。单测 11 例全绿 |
+
+### 10.9 B-3 Redis 分布式锁设计方案（待确认，L2）
+
+**目标**：消除 `TenantQuotaEnforcer` 在多实例部署下的超卖窗口；不触 DDL、不引入被禁的 `FOR UPDATE`（AGENTS.md 明确多副本下悲观锁失效）。
+
+**现状**：`TenantQuotaEnforcer`（`application/support`）已用 64 段 `ReentrantLock` 把「count→判断→insert」在单 JVM 内串行化，锁释放对齐事务提交（`afterCompletion`）。多实例下该锁失效，类注释已声明为「已知且已声明的降级」。
+
+**方案**：在现有 JVM 分段锁之外叠加一层 Redis 分布式锁（按 `tenantId`），构成「JVM 锁（防本实例并发）+ Redis 锁（防跨实例并发）」双保险。
+
+- **落点**：`TenantQuotaEnforcer` 内部新增 `@Autowired(required = false) StringRedisTemplate redisTemplate`——沿用项目既有优雅降级约定（见 `AccountAuthorityCacheGatewayAdapter` / `TokenBlacklistPortAdapter`：无 Redis 时退化为仅 JVM 锁，行为与现完全一致，风险零回归）。
+- **加锁**：`redisTemplate.opsForValue().setIfAbsent(key, lockValue, Duration.ofSeconds(TTL))`；`key = iam:quota:lock:{tenantId}`，TTL 取事务最大预期耗时（建议 5s，远大于正常创建耗时）。
+- **释放**：与现有 `afterCompletion` 对齐——在 `TransactionSynchronization#afterCompletion` 里 `redisTemplate.delete(key)`（best-effort；TTL 作兜底防 JVM 崩溃遗留锁）。
+- **顺序**：先取 JVM 锁、再取 Redis 锁；释放逆序（先删 Redis、再解 JVM），避免死锁。
+- **失败语义**：Redis 不可用 / `setIfAbsent` 返回 false（锁被其他实例持有）→ 建议复用现有 `TENANT_QUOTA_EXCEEDED`，避免前端把「并发冲突」误判为「真超配额」；若需区分重试，可在 `IamErrorCodes` 新增 `QUOTA_CONCURRENT_CONFLICT(409)`。
+
+**待 Owner 确认**：① 是否启用（仅当 IAM 规划多副本）；② `setIfAbsent` 失败抛超配额还是新增冲突码；③ TTL 取值。确认后实现，纯 L2、不进 L3。
+
+**为何不选 B/C（L3）**：`version` 乐观锁需改 13 聚合基类 + 迁移（L3 重）；`FOR UPDATE` 经 JDBC 出站端口撞 `sdk-persistence-bypass-baseline.json`「只可收缩、新增文件不得加入」且多副本下失效——均不优先。
+
+### 10.10 S-12 独立审查修正记录（2026-09-28）
+
+S-12 落地后经 3 只独立子 Agent 并行审查（安全/正确性、性能/可维护性、领域一致性），共识修正如下（均已改完、单测 11 例全绿、spotless 通过）：
+
+1. **reason 维度语义错误（必须修，High）**：原 `reason` 用 `e.getCode()`（int HTTP 状态码），会折叠不同业务失败且口径随状态码漂移；改为稳定业务码 `e.getErrorCode()`（如 `IAM_LOGIN_FAILED`），标签名由 `reason` 改为 `error_code`（`BizException` 双码语义见 `BizException.java:11-19`）。
+2. **fail-safe（红线）**：新增 `safeCount` / `safeStop` 辅助方法，埋点/计时异常一律吞掉，确保绝不替换或抑制鉴权 `BizException`（守住 fail-closed）。
+3. **infra 失败不可见（Medium）**：新增 `catch (Exception)` 分支按 `error_code=infra` 计入 `failures_total` 后原样重抛，使 `requests/failures/success` 可对账、基础设施故障不再隐身。
+4. **口径漂移**：doc6 §9.2 补登记 `iam_refresh_failures_total{reason=…}` 与 `iam_refresh_seconds`（Rate 行本已含 `iam_refresh_requests_total`）。
+5. **测试锁定（Medium）**：两测试改为持有 `SimpleMeterRegistry` 引用并断言请求计数，S-12 行为不再裸奔。
+
+未采纳项：① `login`/`refresh` 埋点对称代码抽公共方法（判为小重复、显式更清晰，避免过度工程）；② `refreshToken` 的 `NumberFormatException` 注释/实现不符为**既有**问题、非本次引入，未顺手改（范围外）。
+
+**复审结论**：三视角修后均 **Approve**（门禁合规、契约零变化、HTTP 错误码/事务回滚/fail-closed 主链路未被触动）。
+
+### 10.6 前端 M-6 执行记录（2026-09-28）
+
+**新增** `apps/bone-iam-app/src/utils/iamErrorMessages.ts`：
+- `IAM_ERROR_MESSAGES`：与后端 `IamErrorCodes.java`（38 个 `IAM_` 码）一一对应的中文文案表，新增 / 修改业务码时须同步；
+- `resolveIamErrorMessage(err: unknown)`：优先按 `errorCode` 命中映射（便于后续 i18n 切换），其次回退后端 `displayMessage` / `message`。
+
+### 10.7 前端 M-7 执行记录（2026-09-28）
+
+**四态组件** `apps/bone-iam-app/src/components/ListStates.tsx`：
+- `ListErrorState({ error, onRetry })`：加载失败态（`Result status="error"` + 重试）；
+- `ListForbiddenState({ onRetry })`：无权限态（`Result status="403"`，与「加载失败」区分，引导联系管理员）；
+- `ListEmptyState({ text, action })`：空态（`Empty` + 可选「新建」行动按钮）。
+
+**无权限判定** `utils/iamErrorMessages.ts` 新增 `isForbiddenError(err)`：按 `err.response.status === 403` 识别（IAM 列表接口鉴权拒绝统一以 403 返回，无独立权限业务码）。
+
+**接入 4 个列表页**（`Application` / `Tenant` / `Role` / `Permission` Management）：
+- 新增 `loadError: string | null` 与 `forbidden: boolean` 状态；fetch 成功清、失败置（并移除初始加载失败的重复 toast，改由 `Result` 承载文案）；
+- 渲染区按「错误 → 403 → 空 → 正常表格」分流；Table 的 `loading` 继续承担「加载态」；
+- 重试复用各页既有 `fetchApps` / `reload`，空态「新建」复用 `openCreate` / `handleAdd`。
+
+**验证**：`tsc --noEmit` 通过；本次改动的 5 个文件 `eslint` 0 error / 0 warning（其余 114 个 lint 错误为 iam-app 存量、非本轮引入）。
+
+### 10.8 前端 M-7 收尾（2026-09-28）
+
+**统一「示范页」基准**：`Profile.tsx` 原失败态为单 `Result status="warning"`（无 403 区分），与列表页的 `error+403` 双态不一致。本轮改为复用 `ListErrorState` / `ListForbiddenState`，`fetchProfile` 在 catch 中按 `isForbiddenError` 判定 403，并移除不再使用的 `Result` 导入——四态基准在 6 个页面间完全统一。
+
+**补齐剩余 2 页**（`Account` / `AuditLog` Management）：
+- 同样新增 `loadError` / `forbidden` 状态，fetch 成功清、失败置，并移除初始加载失败的 toast / `console.error`（`Account` 原仅 `console.error`，用户无任何反馈）；
+- 渲染区按「错误 → 403 → 空 → 正常表格」分流；`AuditLog` 为只读页，空态无「新建」CTA；
+- `Account` 空态「新增账号」复用 `handleAdd`、重试复用 `reload`；`AuditLog` 重试复用 `fetchAuditLogs`。
+
+**S-5 收口**：6 个列表/详情页（`Profile` + 5 个 Management）四态全覆盖；待做清单中 `Account`/`AuditLog` 项勾选完成。
+
+**验证**：`tsc --noEmit` 通过；本次改动的 `Profile` / `AccountManagement` / `AuditLog` 共 3 个文件 `eslint` 0 error / 0 warning（`AuditLog` 原 2 处存量 `any` 已收敛：`operation: operation as any` 因 `operation?: string` 本就兼容直接去除；`Text.copyable` 的 `tooltips` 在 antd v5 原生支持，移除冗余 `as any`）。
+
+**接入**：9 个页面（`AuditLog` / `ApplicationManagement` / `Profile` / `AuditSettings` / `TenantManagement` / `RoleManagement` / `PermissionManagement` / `AccountManagement` / `Auth`）的后端错误展示统一改经 `resolveIamErrorMessage`——
+- `catch {` 改为 `catch (err: unknown) {` 并 `message.error(resolveIamErrorMessage(err) ?? '本地兜底')`；
+- `response.message || 'X'` 改为 `resolveIamErrorMessage(response) ?? 'X'`；
+- 原 `err.message`（axios 泛型「Request failed with status code…」）改为 `resolveIamErrorMessage(err)`，消除无信息文案。
+
+**验证**：`npm run typecheck --workspace=bone-iam-app` → 0 error；`eslint` 仅 3 个预存在的 `any` / `exhaustive-deps` 警告（非本次引入），改动文件 0 新增错误 / 警告。
+
+**M-5 不执行说明**：原建议「移除本地 dayjs 依赖」在 antd v5 下不可行——antd 的 `DatePicker` 等控件以 dayjs 为日期库硬依赖，且 `shared-utils/i18n/format.ts` 也 `import dayjs`；强删会使类型与构建破裂。iam-app 仅保留 dayjs 服务于 antd 控件，日期展示已统一收敛到 `shared-utils` 的 `formatDate`，无散落的独立格式化逻辑，符合收敛意图。

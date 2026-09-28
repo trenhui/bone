@@ -33,6 +33,8 @@ import {
 } from '@ant-design/icons';
 import { StatisticCard } from '@ant-design/pro-components';
 import * as api from '../services/api';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListEmptyState, ListErrorState, ListForbiddenState } from '../components/ListStates';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
 import type {
@@ -73,6 +75,8 @@ const AccountManagement: React.FC = () => {
   const [deptTreeData, setDeptTreeData] = useState<DataNode[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -90,6 +94,8 @@ const AccountManagement: React.FC = () => {
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    setForbidden(false);
     try {
       const response = await api.getAccounts(page, pageSize, debouncedKeyword, undefined, selectedDeptId);
       if (response.code === 200) {
@@ -102,8 +108,9 @@ const AccountManagement: React.FC = () => {
         setAccounts(records);
         setTotal(newTotal);
       }
-    } catch (err) {
-      console.error('获取账号列表失败', err);
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadError(resolveIamErrorMessage(err) ?? '获取账号列表失败');
     } finally {
       setLoading(false);
     }
@@ -217,8 +224,8 @@ const AccountManagement: React.FC = () => {
         antMessage.success('删除账号成功');
         reload();
       }
-    } catch {
-      antMessage.error('删除账号失败');
+    } catch (err: unknown) {
+      antMessage.error(resolveIamErrorMessage(err) ?? '删除账号失败');
     }
   };
 
@@ -232,8 +239,8 @@ const AccountManagement: React.FC = () => {
         antMessage.success('账号已启用');
       }
       reload();
-    } catch {
-      antMessage.error('操作失败');
+    } catch (err: unknown) {
+      antMessage.error(resolveIamErrorMessage(err) ?? '操作失败');
     }
   };
 
@@ -251,8 +258,8 @@ const AccountManagement: React.FC = () => {
         antMessage.success('密码重置成功');
         setIsResetPwdModalVisible(false);
       }
-    } catch {
-      antMessage.error('密码重置失败');
+    } catch (err: unknown) {
+      antMessage.error(resolveIamErrorMessage(err) ?? '密码重置失败');
     }
   };
 
@@ -275,7 +282,7 @@ const AccountManagement: React.FC = () => {
           setIsModalVisible(false);
           reload();
         } else {
-          antMessage.error(response.message || '更新账号失败');
+          antMessage.error(resolveIamErrorMessage(response) ?? '更新账号失败');
         }
       } else {
         const createData: CreateAccountRequest = {
@@ -294,14 +301,11 @@ const AccountManagement: React.FC = () => {
           setIsModalVisible(false);
           reload();
         } else {
-          antMessage.error(response.message || '创建账号失败');
+          antMessage.error(resolveIamErrorMessage(response) ?? '创建账号失败');
         }
       }
     } catch (err: unknown) {
-      const msg = (err as { displayMessage?: string })?.displayMessage
-        || (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || '操作失败';
-      antMessage.error(msg);
+      antMessage.error(resolveIamErrorMessage(err) ?? '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -487,24 +491,41 @@ const AccountManagement: React.FC = () => {
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
         {deptFilterPanel}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Table
-            columns={columns}
-            dataSource={accounts}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 640 }}
-            pagination={{
-              current: page,
-              pageSize: pageSize,
-              total: total,
-              showSizeChanger: true,
-              showTotal: (t) => `共 ${t} 个账号`,
-              onChange: (p, ps) => {
-                setPage(p);
-                if (ps) setPageSize(ps);
-              },
-            }}
-          />
+          {loadError ? (
+            forbidden ? (
+              <ListForbiddenState onRetry={reload} />
+            ) : (
+              <ListErrorState error={loadError} onRetry={reload} />
+            )
+          ) : accounts.length === 0 && !loading ? (
+            <ListEmptyState
+              text="暂无账号"
+              action={
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                  新增账号
+                </Button>
+              }
+            />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={accounts}
+              rowKey="id"
+              loading={loading}
+              scroll={{ x: 640 }}
+              pagination={{
+                current: page,
+                pageSize: pageSize,
+                total: total,
+                showSizeChanger: true,
+                showTotal: (t) => `共 ${t} 个账号`,
+                onChange: (p, ps) => {
+                  setPage(p);
+                  if (ps) setPageSize(ps);
+                },
+              }}
+            />
+          )}
         </div>
       </div>
       <Drawer

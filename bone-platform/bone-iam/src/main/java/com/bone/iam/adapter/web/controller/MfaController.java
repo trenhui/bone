@@ -3,9 +3,10 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.dto.response.MfaStatusResp;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import java.util.List;
 import java.util.Map;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,17 +36,13 @@ public class MfaController {
 
   @PostMapping("/enroll")
   public ResponseEntity<ApiResponse<Void>> enroll(@RequestBody Map<String, Object> body) {
-    return notAvailable();
+    // B-12：能力未上线统一走业务码，由 IamExceptionHandler 渲染 HTTP 501 + errorCode=IAM_MFA_NOT_AVAILABLE，
+    // 前端 / 监控可据此聚合（不再是无码裸消息）。
+    throw IamErrors.of(IamErrorCodes.MFA_NOT_AVAILABLE, "MFA 未在商业版/IdP 中启用");
   }
 
   @PostMapping("/verify")
   public ResponseEntity<ApiResponse<Void>> verify(@RequestBody Map<String, Object> body) {
-    return notAvailable();
-  }
-
-  private static ResponseEntity<ApiResponse<Void>> notAvailable() {
-    // 不使用 IamErrorCodes 常量拼接字符串（B-7：避免码表被架空）；业务码由全局异常处理器统一渲染
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-        .body(ApiResponse.error(501, "MFA 未在商业版/IdP 中启用"));
+    throw IamErrors.of(IamErrorCodes.MFA_NOT_AVAILABLE, "MFA 未在商业版/IdP 中启用");
   }
 }

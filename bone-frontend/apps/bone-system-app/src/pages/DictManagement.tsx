@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import {
   Row,
   Col,
@@ -138,8 +139,8 @@ const DictManagement: React.FC = () => {
       const list = res.data?.list ?? [];
       setTypes(list);
       setSelectedType((cur) => (cur ? list.find((t) => t.code === cur.code) ?? cur : list[0] ?? null));
-    } catch {
-      message.error('获取字典类型失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '获取字典类型失败'));
     } finally {
       setTypeLoading(false);
     }
@@ -184,8 +185,8 @@ const DictManagement: React.FC = () => {
         raw = res.data?.list ?? [];
       }
       setItems(filterTree(raw));
-    } catch {
-      message.error('获取字典项失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '获取字典项失败'));
     } finally {
       setItemLoading(false);
     }
@@ -237,8 +238,8 @@ const DictManagement: React.FC = () => {
       setTypeModalOpen(false);
       invalidateDictCache(values.code);
       fetchTypes();
-    } catch {
-      message.error('保存失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '保存失败'));
     }
   };
 
@@ -249,8 +250,8 @@ const DictManagement: React.FC = () => {
       if (selectedType?.code === record.code) setSelectedType(null);
       invalidateDictCache(record.code);
       fetchTypes();
-    } catch {
-      message.error('删除失败（内置类型或仍有字典项时不可删除）');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '删除失败（内置类型或仍有字典项时不可删除）'));
     }
   };
 
@@ -319,8 +320,8 @@ const DictManagement: React.FC = () => {
       setItemModalOpen(false);
       invalidateDictCache(selectedType?.code);
       fetchItems();
-    } catch {
-      message.error('保存失败（编码可能重复、值不符合值域格式或父项非法）');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '保存失败（编码可能重复、值不符合值域格式或父项非法）'));
     }
   };
 
@@ -330,8 +331,8 @@ const DictManagement: React.FC = () => {
       message.success('字典项已删除');
       invalidateDictCache(selectedType?.code);
       fetchItems();
-    } catch {
-      message.error('删除失败（任一层级视图中仍有子节点时不可删除）');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '删除失败（任一层级视图中仍有子节点时不可删除）'));
     }
   };
 
@@ -355,8 +356,8 @@ const DictManagement: React.FC = () => {
       const res = await dictApi.getEnumDiff(selectedType.code);
       setEnumDiff(res.data ?? null);
       setEnumDrawerOpen(true);
-    } catch {
-      message.error('读取枚举漂移失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '读取枚举漂移失败'));
     }
   };
 
@@ -392,8 +393,8 @@ const DictManagement: React.FC = () => {
       invalidateDictCache(selectedType.code);
       fetchItems();
       fetchHierarchies(selectedType.code);
-    } catch {
-      message.error('导入失败（文件格式应为导出的值域快照）');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '导入失败（文件格式应为导出的值域快照）'));
     }
     return false;
   };

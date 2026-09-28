@@ -11,6 +11,8 @@ import {
   ReloadOutlined, FileSearchOutlined,
 } from '@ant-design/icons';
 import * as api from '../services/api';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListEmptyState, ListErrorState, ListForbiddenState } from '../components/ListStates';
 import ModulePage from '../components/ModulePage';
 import { StatisticCard } from '@ant-design/pro-components';
 import { unwrapPage } from '../utils/pageResult';
@@ -59,6 +61,8 @@ const AuditLogPage: React.FC = () => {
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -80,12 +84,14 @@ const AuditLogPage: React.FC = () => {
 
   const fetchAuditLogs = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    setForbidden(false);
     try {
       const params: Parameters<typeof api.getAuditLogs>[0] = {
         page,
         pageSize,
         userId,
-        operation: operation as any,
+        operation,
         resourceType,
         result,
         startTime: isoLocal(dateRange?.[0]),
@@ -97,12 +103,13 @@ const AuditLogPage: React.FC = () => {
         setAuditLogs(records);
         setTotal(newTotal);
       }
-    } catch {
-      messageApi.error('获取审计日志失败');
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadError(resolveIamErrorMessage(err) ?? '获取审计日志失败');
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, userId, operation, resourceType, result, dateRange, messageApi]);
+  }, [page, pageSize, userId, operation, resourceType, result, dateRange]);
 
   useEffect(() => {
     void fetchAuditLogs();
@@ -127,8 +134,8 @@ const AuditLogPage: React.FC = () => {
         `audit-logs-${formatDate(new Date()).replace(/[-: ]/g, '')}.csv`,
       );
       messageApi.success('导出成功');
-    } catch {
-      messageApi.error('导出失败');
+    } catch (err: unknown) {
+      messageApi.error(resolveIamErrorMessage(err) ?? '导出失败');
     } finally {
       setExporting(false);
     }
@@ -325,25 +332,35 @@ const AuditLogPage: React.FC = () => {
       </div>
 
       {/* 数据表格 */}
-      <Table
-        columns={columns}
-        dataSource={auditLogs}
-        rowKey="id"
-        loading={loading}
-        size="small"
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (t) => `共 ${t} 条`,
-          onChange: (p, ps) => {
-            setPage(p);
-            if (ps) setPageSize(ps);
-          },
-        }}
-      />
+      {loadError ? (
+        forbidden ? (
+          <ListForbiddenState onRetry={fetchAuditLogs} />
+        ) : (
+          <ListErrorState error={loadError} onRetry={fetchAuditLogs} />
+        )
+      ) : auditLogs.length === 0 && !loading ? (
+        <ListEmptyState text="暂无审计日志" />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={auditLogs}
+          rowKey="id"
+          loading={loading}
+          size="small"
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (p, ps) => {
+              setPage(p);
+              if (ps) setPageSize(ps);
+            },
+          }}
+        />
+      )}
 
       {/* 详情抽屉 */}
       <Drawer
@@ -368,7 +385,7 @@ const AuditLogPage: React.FC = () => {
               {RESOURCE_TYPE_MAP[currentLog.resourceType] || currentLog.resourceType || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="资源ID">
-              <Text copyable={{ text: currentLog.resourceId || '', tooltips: ['复制', '已复制'] } as any}>
+              <Text copyable={{ text: currentLog.resourceId || '', tooltips: ['复制', '已复制'] }}>
                 {currentLog.resourceId || '-'}
               </Text>
             </Descriptions.Item>

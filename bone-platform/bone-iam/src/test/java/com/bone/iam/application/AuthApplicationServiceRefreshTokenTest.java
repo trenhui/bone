@@ -24,6 +24,7 @@ import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,7 @@ class AuthApplicationServiceRefreshTokenTest {
   @Mock JwtConfig jwtConfig;
 
   AuthApplicationService authApplicationService;
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void setUp() {
@@ -71,7 +73,8 @@ class AuthApplicationServiceRefreshTokenTest {
             ssoClient,
             tokenBlacklistPort,
             jwtConfig,
-            org.mockito.Mockito.mock(com.bone.iam.domain.repository.TenantRepository.class));
+            org.mockito.Mockito.mock(com.bone.iam.domain.repository.TenantRepository.class),
+            meterRegistry);
   }
 
   @Test
@@ -90,6 +93,8 @@ class AuthApplicationServiceRefreshTokenTest {
     cmd.setRefreshToken("old-refresh");
 
     Map<String, String> result = authApplicationService.refreshToken(cmd);
+
+    assertThat(meterRegistry.counter("iam_refresh_requests_total").count()).isEqualTo(1.0);
 
     assertThat(result.get("accessToken")).isEqualTo("new-access");
     assertThat(result.get("refreshToken")).isEqualTo("new-refresh");

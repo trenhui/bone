@@ -13,6 +13,7 @@ import com.bone.iam.application.command.LoginCommand;
 import com.bone.iam.application.command.RefreshTokenCommand;
 import com.bone.iam.application.config.IamSsoProperties;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,13 +100,8 @@ public class AuthController {
   public ResponseEntity<ApiResponse<LoginResp>> ssoCallback(
       @RequestParam String code, @RequestParam(required = false) String state) {
     if (!iamSsoProperties.isEnabled()) {
-      return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-          .body(
-              ApiResponse.error(
-                  501,
-                  IamErrorCodes.SSO_NOT_CONFIGURED + ": SSO 未配置，请设置 bone.iam.sso.enabled=true"));
+      throw IamErrors.of(IamErrorCodes.SSO_NOT_CONFIGURED, "SSO 未配置，请设置 bone.iam.sso.enabled=true");
     }
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-        .body(ApiResponse.error(501, IamErrorCodes.SSO_NOT_CONFIGURED + ": IdP 回调处理尚未实现"));
+    throw IamErrors.of(IamErrorCodes.SSO_NOT_CONFIGURED, "IdP 回调处理尚未实现");
   }
 }

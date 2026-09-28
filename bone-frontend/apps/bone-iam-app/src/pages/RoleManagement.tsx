@@ -23,6 +23,8 @@ import {
 } from '@ant-design/icons';
 import { StatisticCard } from '@ant-design/pro-components';
 import * as api from '../services/api';
+import { isForbiddenError, resolveIamErrorMessage } from '../utils/iamErrorMessages';
+import { ListEmptyState, ListErrorState, ListForbiddenState } from '../components/ListStates';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
 import type { Permission, Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
@@ -32,6 +34,8 @@ const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -46,6 +50,8 @@ const RoleManagement: React.FC = () => {
 
   const fetchRoles = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    setForbidden(false);
     try {
       const response = await api.getRoles(page, pageSize, debouncedKeyword || undefined);
       if (response.code === 200) {
@@ -58,12 +64,13 @@ const RoleManagement: React.FC = () => {
         setRoles(records);
         setTotal(newTotal);
       }
-    } catch {
-      message.error('获取角色列表失败');
+    } catch (err: unknown) {
+      setForbidden(isForbiddenError(err));
+      setLoadError(resolveIamErrorMessage(err) ?? '获取角色列表失败');
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, debouncedKeyword, message]);
+  }, [page, pageSize, debouncedKeyword]);
 
   // 统计数据：权限点覆盖业务域（code 首段）；注意列表接口不返回角色已绑权限，
   // 权限分配情况仅在编辑抽屉内通过 detail + assign 接口闭环（见 handleEdit / handleSubmit）
@@ -85,8 +92,8 @@ const RoleManagement: React.FC = () => {
       if (response.code === 200) {
         setPermissions(unwrapPage(response.data).records);
       }
-    } catch {
-      message.error('获取权限列表失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '获取权限列表失败');
     }
   }, [message]);
 
@@ -164,7 +171,7 @@ const RoleManagement: React.FC = () => {
         };
         const response = await api.updateRole(currentRole.id, updateData);
         if (response.code !== 200) {
-          message.error(response.message || '更新角色失败');
+          message.error(resolveIamErrorMessage(response) ?? '更新角色失败');
           return;
         }
         roleId = currentRole.id;
@@ -175,7 +182,7 @@ const RoleManagement: React.FC = () => {
         };
         const response = await api.createRole(createData);
         if (response.code !== 200) {
-          message.error(response.message || '创建角色失败');
+          message.error(resolveIamErrorMessage(response) ?? '创建角色失败');
           return;
         }
         // 后端返回新建角色 ID（雪花 ID 以字符串承载，直接透传）
@@ -193,8 +200,8 @@ const RoleManagement: React.FC = () => {
       message.success(isEditMode ? '更新角色成功' : '创建角色成功');
       setIsModalVisible(false);
       reload();
-    } catch {
-      message.error('操作失败');
+    } catch (err: unknown) {
+      message.error(resolveIamErrorMessage(err) ?? '操作失败');
     } finally {
       setSubmitting(false);
     }
@@ -287,23 +294,40 @@ const RoleManagement: React.FC = () => {
       extra={toolbar}
       statistics={statistics}
     >
-      <Table
-        columns={columns}
-        dataSource={roles}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize: pageSize,
-          total: total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 个角色`,
-          onChange: (p, ps) => {
-            setPage(p);
-            if (ps) setPageSize(ps);
+      {loadError ? (
+        forbidden ? (
+          <ListForbiddenState onRetry={reload} />
+        ) : (
+          <ListErrorState error={loadError} onRetry={reload} />
+        )
+      ) : roles.length === 0 && !loading ? (
+        <ListEmptyState
+          text="暂无角色"
+          action={
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增角色
+            </Button>
           }
-        }}
-      />
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={roles}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            current: page,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 个角色`,
+            onChange: (p, ps) => {
+              setPage(p);
+              if (ps) setPageSize(ps);
+            }
+          }}
+        />
+      )}
       <Drawer
         title={isEditMode ? `编辑角色 · ${currentRole?.name ?? ''}` : '新增角色'}
         open={isModalVisible}

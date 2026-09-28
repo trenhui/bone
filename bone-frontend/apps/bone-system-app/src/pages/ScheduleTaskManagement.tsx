@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ScheduleTask } from '@/types';
@@ -19,8 +20,8 @@ const ScheduleTaskManagement: React.FC = () => {
       const res = await scheduleTaskApi.getScheduleTaskPage({ pageNum: page, pageSize });
       setData(res.data.list);
       setPagination({ current: page, pageSize, total: res.data.total });
-    } catch {
-      message.error('获取定时任务失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '获取定时任务失败'));
     } finally {
       setLoading(false);
     }
@@ -55,8 +56,8 @@ const ScheduleTaskManagement: React.FC = () => {
       }
       setModalOpen(false);
       fetchData(pagination.current);
-    } catch {
-      message.error('保存失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '保存失败'));
     }
   };
 
@@ -76,8 +77,8 @@ const ScheduleTaskManagement: React.FC = () => {
       await scheduleTaskApi.toggleScheduleTask(record.id!, enabled);
       message.success(enabled ? '任务已启用' : '任务已停用');
       fetchData(pagination.current);
-    } catch {
-      message.error('操作失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '操作失败'));
     }
   };
 
@@ -89,9 +90,8 @@ const ScheduleTaskManagement: React.FC = () => {
       const res = await scheduleTaskApi.runScheduleTaskNow(record.id!);
       message.success(`任务「${record.name}」执行成功，耗时 ${res.data} ms`);
       fetchData(pagination.current);
-    } catch (err) {
-      const detail = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      message.error(detail ? `执行失败：${detail}` : '执行失败');
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '执行失败'));
     } finally {
       setRunningIds((prev) => {
         const next = new Set(prev);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import {
   Card,
   Button,
@@ -65,7 +66,7 @@ const SystemDeploymentPage: React.FC = () => {
         } as SystemInfo);
       }
     } catch (error) {
-      message.error('获取系统信息失败');
+      message.error(resolveErrorMessage(error, '获取系统信息失败'));
     }
   };
 
@@ -110,7 +111,7 @@ const SystemDeploymentPage: React.FC = () => {
         fetchDeploymentRecords();
       }
     } catch (error) {
-      message.error('部署失败');
+      message.error(resolveErrorMessage(error, '部署失败'));
     } finally {
       setDeployLoading(false);
     }
@@ -128,7 +129,7 @@ const SystemDeploymentPage: React.FC = () => {
         fetchDeploymentRecords();
       }
     } catch (error) {
-      message.error('升级失败');
+      message.error(resolveErrorMessage(error, '升级失败'));
     } finally {
       setUpgradeLoading(false);
     }
@@ -141,7 +142,7 @@ const SystemDeploymentPage: React.FC = () => {
         message.success('重启命令已发送');
       }
     } catch (error) {
-      message.error('重启失败');
+      message.error(resolveErrorMessage(error, '重启失败'));
     }
   };
 
@@ -152,7 +153,7 @@ const SystemDeploymentPage: React.FC = () => {
         message.success('关闭命令已发送');
       }
     } catch (error) {
-      message.error('关闭失败');
+      message.error(resolveErrorMessage(error, '关闭失败'));
     }
   };
 
