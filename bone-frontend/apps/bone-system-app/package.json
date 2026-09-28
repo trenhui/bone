@@ -19,6 +19,7 @@
     "@bone/shared-utils": "^1.0.0",
     "@bone/ui": "1.0.0",
     "antd": "^5.27.6",
+    "react-i18next": "^15.7.4",
     "axios": "^1.7.9",
     "dayjs": "^1.11.10",
     "react": "^18.2.0",

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Button,
@@ -40,6 +41,7 @@ interface DeploymentRecord {
 }
 
 const SystemDeploymentPage: React.FC = () => {
+  const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [deployModalVisible, setDeployModalVisible] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
@@ -65,7 +67,7 @@ const SystemDeploymentPage: React.FC = () => {
         } as SystemInfo);
       }
     } catch (error) {
-      message.error('获取系统信息失败');
+      message.error(t('system.systemDeployment.fetchSystemInfoFailed'));
     }
   };
 
@@ -104,13 +106,13 @@ const SystemDeploymentPage: React.FC = () => {
       setDeployLoading(true);
       const response = await systemApi.deploy(values);
       if (response.code === 200) {
-        message.success('部署成功');
+        message.success(t('system.systemDeployment.deployedSuccess'));
         setDeployModalVisible(false);
         fetchSystemInfo();
         fetchDeploymentRecords();
       }
     } catch (error) {
-      message.error('部署失败');
+      message.error(t('system.systemDeployment.deployFailed'));
     } finally {
       setDeployLoading(false);
     }
@@ -122,13 +124,13 @@ const SystemDeploymentPage: React.FC = () => {
       setUpgradeLoading(true);
       const response = await systemApi.upgrade(values.version);
       if (response.code === 200) {
-        message.success('升级成功');
+        message.success(t('system.systemDeployment.upgradeSuccess'));
         setUpgradeModalVisible(false);
         fetchSystemInfo();
         fetchDeploymentRecords();
       }
     } catch (error) {
-      message.error('升级失败');
+      message.error(t('system.systemDeployment.upgradeFailed'));
     } finally {
       setUpgradeLoading(false);
     }
@@ -138,10 +140,10 @@ const SystemDeploymentPage: React.FC = () => {
     try {
       const response = await systemApi.restart();
       if (response.code === 200) {
-        message.success('重启命令已发送');
+        message.success(t('system.systemDeployment.restartCommandSent'));
       }
     } catch (error) {
-      message.error('重启失败');
+      message.error(t('system.systemDeployment.restartFailed'));
     }
   };
 
@@ -149,10 +151,10 @@ const SystemDeploymentPage: React.FC = () => {
     try {
       const response = await systemApi.shutdown();
       if (response.code === 200) {
-        message.success('关闭命令已发送');
+        message.success(t('system.systemDeployment.shutdownCommandSent'));
       }
     } catch (error) {
-      message.error('关闭失败');
+      message.error(t('system.systemDeployment.shutdownFailed'));
     }
   };
 
@@ -164,43 +166,43 @@ const SystemDeploymentPage: React.FC = () => {
       running: 'blue',
     };
     const labelMap: Record<string, string> = {
-      success: '成功',
-      failed: '失败',
-      pending: '待处理',
-      running: '进行中',
+      success: t('system.systemDeployment.statusSuccess'),
+      failed: t('system.systemDeployment.statusFailed'),
+      pending: t('system.systemDeployment.statusPending'),
+      running: t('system.systemDeployment.statusRunning'),
     };
     return <Tag color={colorMap[status]}>{labelMap[status] || status}</Tag>;
   };
 
   const recordColumns = [
     {
-      title: '版本',
+      title: t('system.systemDeployment.version'),
       dataIndex: 'version',
       key: 'version',
     },
     {
-      title: '状态',
+      title: t('system.systemDeployment.status'),
       dataIndex: 'status',
       key: 'status',
       render: getStatusTag,
     },
     {
-      title: '开始时间',
+      title: t('system.systemDeployment.startTime'),
       dataIndex: 'startTime',
       key: 'startTime',
     },
     {
-      title: '结束时间',
+      title: t('system.systemDeployment.endTime'),
       dataIndex: 'endTime',
       key: 'endTime',
     },
     {
-      title: '操作人',
+      title: t('system.systemDeployment.operator'),
       dataIndex: 'operator',
       key: 'operator',
     },
     {
-      title: '描述',
+      title: t('system.systemDeployment.description'),
       dataIndex: 'description',
       key: 'description',
     },
@@ -210,34 +212,34 @@ const SystemDeploymentPage: React.FC = () => {
     <div>
       {/* 系统概览 */}
       {systemInfo && (
-        <Card title="系统概览" style={{ marginBottom: 16 }}>
+        <Card title={t('system.systemDeployment.overview')} style={{ marginBottom: 16 }}>
           <Descriptions column={2}>
-            <Descriptions.Item label="当前版本">{systemInfo.version}</Descriptions.Item>
-            <Descriptions.Item label="运行时间">{systemInfo.uptime}</Descriptions.Item>
-            <Descriptions.Item label="健康状态">
+            <Descriptions.Item label={t('system.systemDeployment.currentVersion')}>{systemInfo.version}</Descriptions.Item>
+            <Descriptions.Item label={t('system.systemDeployment.uptime')}>{systemInfo.uptime}</Descriptions.Item>
+            <Descriptions.Item label={t('system.systemDeployment.healthStatus')}>
               {getStatusTag(systemInfo.healthStatus)}
             </Descriptions.Item>
-            <Descriptions.Item label="服务数量">{systemInfo.services?.length ?? 0}</Descriptions.Item>
+            <Descriptions.Item label={t('system.systemDeployment.serviceCount')}>{systemInfo.services?.length ?? 0}</Descriptions.Item>
           </Descriptions>
           <div style={{ marginTop: 16 }}>
             <Space>
               <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setDeployModalVisible(true)}>
-                部署系统
+                {t('system.systemDeployment.deploySystem')}
               </Button>
               <Button icon={<CloudUploadOutlined />} onClick={() => setUpgradeModalVisible(true)}>
-                升级版本
+                {t('system.systemDeployment.upgradeVersion')}
               </Button>
               <Button icon={<PlayCircleOutlined />} onClick={handleRestart}>
-                重启系统
+                {t('system.systemDeployment.restartSystem')}
               </Button>
               <Button danger icon={<StopOutlined />} onClick={handleShutdown}>
-                关闭系统
+                {t('system.systemDeployment.shutdownSystem')}
               </Button>
               <Button icon={<HistoryOutlined />} onClick={() => setHistoryModalVisible(true)}>
-                部署历史
+                {t('system.systemDeployment.deployHistory')}
               </Button>
               <Button icon={<ReloadOutlined />} onClick={fetchSystemInfo}>
-                刷新
+                {t('system.systemDeployment.refresh')}
               </Button>
             </Space>
           </div>
@@ -245,91 +247,95 @@ const SystemDeploymentPage: React.FC = () => {
       )}
 
       {/* Kubernetes 配置 */}
-      <Card title="Kubernetes 配置" style={{ marginBottom: 16 }}>
+      <Card title={t('system.systemDeployment.kubernetesConfig')} style={{ marginBottom: 16 }}>
         <Row gutter={16}>
           <Col span={8}>
             <Card>
-              <Statistic title="Pod 副本数" value={3} />
+              <Statistic title={t('system.systemDeployment.podReplicas')} value={3} />
             </Card>
           </Col>
           <Col span={8}>
             <Card>
-              <Statistic title="自动伸缩" value="已启用" />
+              <Statistic title={t('system.systemDeployment.autoScaling')} value={t('system.systemDeployment.autoScalingEnabled')} />
             </Card>
           </Col>
           <Col span={8}>
             <Card>
-              <Statistic title="滚动更新" value="已配置" />
+              <Statistic title={t('system.systemDeployment.rollingUpdate')} value={t('system.systemDeployment.rollingUpdateConfigured')} />
             </Card>
           </Col>
         </Row>
       </Card>
 
       {/* Helm Chart 信息 */}
-      <Card title="Helm Chart 信息">
+      <Card title={t('system.systemDeployment.helmChartInfo')}>
         <Descriptions column={2}>
-          <Descriptions.Item label="Chart 名称">bone-platform</Descriptions.Item>
-          <Descriptions.Item label="Chart 版本">v1.2.3</Descriptions.Item>
-          <Descriptions.Item label="App 版本">{systemInfo?.version || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Release 名称">bone-production</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.chartName')}>bone-platform</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.chartVersion')}>v1.2.3</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.appVersion')}>{systemInfo?.version || '-'}</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.releaseName')}>bone-production</Descriptions.Item>
         </Descriptions>
       </Card>
 
       {/* 部署弹窗 */}
       <Modal
-        title="部署系统"
+        title={t('system.systemDeployment.deploySystem')}
         open={deployModalVisible}
         onOk={handleDeploy}
         onCancel={() => setDeployModalVisible(false)}
         confirmLoading={deployLoading}
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
         width={600}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="环境" name="environment" rules={[{ required: true }]} initialValue="production">
+          <Form.Item label={t('system.systemDeployment.environment')} name="environment" rules={[{ required: true }]} initialValue="production">
             <Select>
-              <Option value="development">开发环境</Option>
-              <Option value="testing">测试环境</Option>
-              <Option value="staging">预发布环境</Option>
-              <Option value="production">生产环境</Option>
+              <Option value="development">{t('system.systemDeployment.envDevelopment')}</Option>
+              <Option value="testing">{t('system.systemDeployment.envTesting')}</Option>
+              <Option value="staging">{t('system.systemDeployment.envStaging')}</Option>
+              <Option value="production">{t('system.systemDeployment.envProduction')}</Option>
             </Select>
           </Form.Item>
-          <Form.Item label="版本" name="version" rules={[{ required: true }]}>
-            <Input placeholder="例如: v1.2.3" />
+          <Form.Item label={t('system.systemDeployment.version')} name="version" rules={[{ required: true }]}>
+            <Input placeholder={t('system.systemDeployment.versionPlaceholder')} />
           </Form.Item>
-          <Form.Item label="副本数" name="replicas" rules={[{ required: true }]} initialValue={3}>
+          <Form.Item label={t('system.systemDeployment.replicas')} name="replicas" rules={[{ required: true }]} initialValue={3}>
             <InputNumber min={1} max={10} style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="启用自动伸缩" name="autoScaling" valuePropName="checked" initialValue={true}>
+          <Form.Item label={t('system.systemDeployment.enableAutoScaling')} name="autoScaling" valuePropName="checked" initialValue={true}>
             <Switch />
           </Form.Item>
-          <Form.Item label="描述" name="description">
-            <Input.TextArea rows={3} placeholder="部署说明" />
+          <Form.Item label={t('system.systemDeployment.description')} name="description">
+            <Input.TextArea rows={3} placeholder={t('system.systemDeployment.deployDescriptionPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* 升级弹窗 */}
       <Modal
-        title="升级系统"
+        title={t('system.systemDeployment.upgradeSystem')}
         open={upgradeModalVisible}
         onOk={handleUpgrade}
         onCancel={() => setUpgradeModalVisible(false)}
         confirmLoading={upgradeLoading}
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
         width={500}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="目标版本" name="version" rules={[{ required: true }]}>
-            <Input placeholder="例如: v1.2.4" />
+          <Form.Item label={t('system.systemDeployment.targetVersion')} name="version" rules={[{ required: true }]}>
+            <Input placeholder={t('system.systemDeployment.targetVersionPlaceholder')} />
           </Form.Item>
-          <Form.Item label="描述" name="description">
-            <Input.TextArea rows={3} placeholder="升级说明" />
+          <Form.Item label={t('system.systemDeployment.description')} name="description">
+            <Input.TextArea rows={3} placeholder={t('system.systemDeployment.upgradeDescriptionPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* 部署历史弹窗 */}
       <Modal
-        title="部署历史"
+        title={t('system.systemDeployment.deployHistory')}
         open={historyModalVisible}
         onCancel={() => setHistoryModalVisible(false)}
         footer={null}
@@ -339,10 +345,11 @@ const SystemDeploymentPage: React.FC = () => {
           columns={recordColumns}
           dataSource={deploymentRecords}
           rowKey="id"
+          locale={{ emptyText: t('common.empty') }}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t('system.systemDeployment.totalRecords', { total }),
           }}
         />
       </Modal>

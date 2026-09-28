@@ -19,6 +19,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { resolveErrorMessage } from '@bone/shared-utils';
+import { useTranslation } from 'react-i18next';
 import type { SystemConfig, ConfigHistory } from '@/types';
 import { systemConfigApi } from '@/services/api';
 
@@ -33,6 +34,7 @@ const SystemConfigPage: React.FC = () => {
   const [selectedConfig, setSelectedConfig] = useState<SystemConfig | null>(null);
   const [historyList, setHistoryList] = useState<ConfigHistory[]>([]);
   const [form] = Form.useForm();
+  const { t } = useTranslation();
 
   const fetchConfigs = async () => {
     setLoading(true);
@@ -66,7 +68,7 @@ const SystemConfigPage: React.FC = () => {
         ...values,
       });
       if (response.code === 200) {
-        message.success('更新配置成功');
+        message.success(t('system.systemConfig.updateSuccess'));
         setEditModalVisible(false);
         fetchConfigs();
       }
@@ -98,7 +100,7 @@ const SystemConfigPage: React.FC = () => {
       link.setAttribute('download', 'system-config.json');
       document.body.appendChild(link);
       link.click();
-      message.success('导出配置成功');
+      message.success(t('system.systemConfig.exportSuccess'));
     } catch (error) {
       message.error(resolveErrorMessage(error, '导出配置失败'));
     }
@@ -108,7 +110,7 @@ const SystemConfigPage: React.FC = () => {
     try {
       const response = await systemConfigApi.importConfig(file);
       if (response.code === 200) {
-        message.success('导入配置成功');
+        message.success(t('system.systemConfig.importSuccess'));
         fetchConfigs();
       }
     } catch (error) {
@@ -128,43 +130,43 @@ const SystemConfigPage: React.FC = () => {
 
   const columns = [
     {
-      title: '配置键',
+      title: t('system.systemConfig.configKeyLabel'),
       dataIndex: 'configKey',
       key: 'configKey',
     },
     {
-      title: '配置值',
+      title: t('system.systemConfig.configValueLabel'),
       dataIndex: 'configValue',
       key: 'configValue',
       ellipsis: true,
     },
     {
-      title: '类型',
+      title: t('system.systemConfig.configTypeLabel'),
       dataIndex: 'configType',
       key: 'configType',
       render: getTypeTag,
     },
     {
-      title: '描述',
+      title: t('system.systemConfig.descriptionLabel'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
     },
     {
-      title: '更新时间',
+      title: t('system.systemConfig.updatedAtLabel'),
       dataIndex: 'updatedAt',
       key: 'updatedAt',
     },
     {
-      title: '操作',
+      title: t('system.systemConfig.actionLabel'),
       key: 'action',
       render: (_: unknown, record: SystemConfig) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            编辑
+            {t('system.systemConfig.editButton')}
           </Button>
           <Button type="link" icon={<HistoryOutlined />} onClick={() => handleViewHistory(record)}>
-            历史
+            {t('system.systemConfig.historyButton')}
           </Button>
         </Space>
       ),
@@ -173,24 +175,24 @@ const SystemConfigPage: React.FC = () => {
 
   const historyColumns = [
     {
-      title: '旧值',
+      title: t('system.systemConfig.oldValueLabel'),
       dataIndex: 'oldValue',
       key: 'oldValue',
       ellipsis: true,
     },
     {
-      title: '新值',
+      title: t('system.systemConfig.newValueLabel'),
       dataIndex: 'newValue',
       key: 'newValue',
       ellipsis: true,
     },
     {
-      title: '操作人',
+      title: t('system.systemConfig.operatorLabel'),
       dataIndex: 'operator',
       key: 'operator',
     },
     {
-      title: '操作时间',
+      title: t('system.systemConfig.operationTimeLabel'),
       dataIndex: 'createdAt',
       key: 'createdAt',
     },
@@ -201,13 +203,13 @@ const SystemConfigPage: React.FC = () => {
       <div style={{ marginBottom: 16 }}>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchConfigs}>
-            刷新
+            {t('system.systemConfig.refreshButton')}
           </Button>
           <Upload beforeUpload={handleImport} showUploadList={false} accept=".json">
-            <Button icon={<UploadOutlined />}>导入配置</Button>
+            <Button icon={<UploadOutlined />}>{t('system.systemConfig.importButton')}</Button>
           </Upload>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
-            导出配置
+            {t('system.systemConfig.exportButton')}
           </Button>
         </Space>
       </div>
@@ -220,33 +222,33 @@ const SystemConfigPage: React.FC = () => {
       />
 
       <Modal
-        title="编辑配置"
+        title={t('system.systemConfig.editModalTitle')}
         open={editModalVisible}
         onOk={handleEditSubmit}
         onCancel={() => setEditModalVisible(false)}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="配置键" name="configKey">
+          <Form.Item label={t('system.systemConfig.configKeyLabel')} name="configKey">
             <Input disabled />
           </Form.Item>
-          <Form.Item label="配置值" name="configValue" rules={[{ required: true }]}>
+          <Form.Item label={t('system.systemConfig.configValueLabel')} name="configValue" rules={[{ required: true }]}>
             <TextArea rows={4} />
           </Form.Item>
-          <Form.Item label="类型" name="configType">
+          <Form.Item label={t('system.systemConfig.configTypeLabel')} name="configType">
             <Select disabled>
-              <Option value="SYSTEM">系统级</Option>
-              <Option value="SERVICE">服务级</Option>
-              <Option value="FEATURE">功能级</Option>
+              <Option value="SYSTEM">{t('system.systemConfig.typeSystem')}</Option>
+              <Option value="SERVICE">{t('system.systemConfig.typeService')}</Option>
+              <Option value="FEATURE">{t('system.systemConfig.typeFeature')}</Option>
             </Select>
           </Form.Item>
-          <Form.Item label="描述" name="description">
+          <Form.Item label={t('system.systemConfig.descriptionLabel')} name="description">
             <TextArea rows={2} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title="配置历史"
+        title={t('system.systemConfig.historyModalTitle')}
         open={historyModalVisible}
         onCancel={() => setHistoryModalVisible(false)}
         footer={null}

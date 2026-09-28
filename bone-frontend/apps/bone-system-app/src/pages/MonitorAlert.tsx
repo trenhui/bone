@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Row,
@@ -32,6 +33,7 @@ import { monitorApi } from '@/services/api';
 const { Option } = Select;
 
 const MonitorAlertPage: React.FC = () => {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
@@ -80,7 +82,7 @@ const MonitorAlertPage: React.FC = () => {
       if (rulesRes.code === 200) setAlertRules(rulesRes.data.list ?? []);
       if (eventsRes.code === 200) setAlertEvents(eventsRes.data.list ?? []);
     } catch (error) {
-      message.error('获取数据失败');
+      message.error(t('system.monitorAlert.fetchDataFailed'));
     } finally {
       setLoading(false);
     }
@@ -123,12 +125,12 @@ const MonitorAlertPage: React.FC = () => {
       }
 
       if (response.code === 200) {
-        message.success('保存告警规则成功');
+        message.success(t('system.monitorAlert.saveRuleSuccess'));
         setRuleModalVisible(false);
         fetchData();
       }
     } catch (error) {
-      message.error('保存告警规则失败');
+      message.error(t('system.monitorAlert.saveRuleFailed'));
     }
   };
 
@@ -136,11 +138,11 @@ const MonitorAlertPage: React.FC = () => {
     try {
       const response = await monitorApi.deleteAlertRule(id);
       if (response.code === 200) {
-        message.success('删除告警规则成功');
+        message.success(t('system.monitorAlert.deleteRuleSuccess'));
         fetchData();
       }
     } catch (error) {
-      message.error('删除告警规则失败');
+      message.error(t('system.monitorAlert.deleteRuleFailed'));
     }
   };
 
@@ -150,11 +152,15 @@ const MonitorAlertPage: React.FC = () => {
         ? await monitorApi.enableAlertRule(id)
         : await monitorApi.disableAlertRule(id);
       if (response.code === 200) {
-        message.success(enabled ? '启用告警规则成功' : '禁用告警规则成功');
+        message.success(
+          enabled
+            ? t('system.monitorAlert.enableRuleSuccess')
+            : t('system.monitorAlert.disableRuleSuccess'),
+        );
         fetchData();
       }
     } catch (error) {
-      message.error('操作失败');
+      message.error(t('system.monitorAlert.operationFailed'));
     }
   };
 
@@ -167,20 +173,20 @@ const MonitorAlertPage: React.FC = () => {
       RESOLVED: 'green',
     };
     const labelMap: Record<string, string> = {
-      CRITICAL: '严重',
-      WARNING: '警告',
-      INFO: '信息',
-      TRIGGERED: '已触发',
-      RESOLVED: '已解决',
+      CRITICAL: t('system.monitorAlert.levelCritical'),
+      WARNING: t('system.monitorAlert.levelWarning'),
+      INFO: t('system.monitorAlert.levelInfo'),
+      TRIGGERED: t('system.monitorAlert.statusTriggered'),
+      RESOLVED: t('system.monitorAlert.statusResolved'),
     };
     return <Tag color={colorMap[level]}>{labelMap[level] || level}</Tag>;
   };
 
   const getHealthStatusLabel = (status: string) => {
     const labelMap: Record<string, string> = {
-      HEALTHY: '健康',
-      UNHEALTHY: '异常',
-      DEGRADED: '降级',
+      HEALTHY: t('system.monitorAlert.healthHealthy'),
+      UNHEALTHY: t('system.monitorAlert.healthUnhealthy'),
+      DEGRADED: t('system.monitorAlert.healthDegraded'),
     };
     return labelMap[status] || status;
   };
@@ -196,28 +202,28 @@ const MonitorAlertPage: React.FC = () => {
 
   const ruleColumns = [
     {
-      title: '规则名称',
+      title: t('system.monitorAlert.ruleName'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: '监控指标',
+      title: t('system.monitorAlert.metricName'),
       dataIndex: 'metricName',
       key: 'metricName',
     },
     {
-      title: '阈值',
+      title: t('system.monitorAlert.threshold'),
       dataIndex: 'threshold',
       key: 'threshold',
     },
     {
-      title: '级别',
+      title: t('system.monitorAlert.level'),
       dataIndex: 'alertLevel',
       key: 'alertLevel',
       render: getLevelTag,
     },
     {
-      title: '状态',
+      title: t('system.monitorAlert.status'),
       dataIndex: 'enabled',
       key: 'enabled',
       render: (enabled: boolean, record: AlertRule) => (
@@ -228,19 +234,19 @@ const MonitorAlertPage: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: t('system.monitorAlert.action'),
       key: 'action',
       render: (_: unknown, record: AlertRule) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEditRule(record)}>
-            编辑
+            {t('system.monitorAlert.edit')}
           </Button>
           <Popconfirm
-            title="确定要删除此规则吗？"
+            title={t('system.monitorAlert.confirmDeleteRule')}
             onConfirm={() => handleDeleteRule(record.id!)}
           >
             <Button type="link" danger icon={<DeleteOutlined />}>
-              删除
+              {t('system.monitorAlert.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -250,28 +256,28 @@ const MonitorAlertPage: React.FC = () => {
 
   const eventColumns = [
     {
-      title: '告警消息',
+      title: t('system.monitorAlert.alertMessage'),
       dataIndex: 'message',
       key: 'message',
     },
     {
-      title: '实际值',
+      title: t('system.monitorAlert.actualValue'),
       dataIndex: 'value',
       key: 'value',
     },
     {
-      title: '状态',
+      title: t('system.monitorAlert.status'),
       dataIndex: 'status',
       key: 'status',
       render: getLevelTag,
     },
     {
-      title: '创建时间',
+      title: t('system.monitorAlert.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
     },
     {
-      title: '解决时间',
+      title: t('system.monitorAlert.resolvedAt'),
       dataIndex: 'resolveTime',
       key: 'resolveTime',
     },
@@ -281,30 +287,33 @@ const MonitorAlertPage: React.FC = () => {
     <div>
       <div style={{ marginBottom: 16 }}>
         <Button icon={<ReloadOutlined />} onClick={fetchData}>
-          刷新数据
+          {t('system.monitorAlert.refreshData')}
         </Button>
       </div>
 
       {/* 系统健康状态 */}
       {systemInfo && (
-        <Card title="系统状态" style={{ marginBottom: 16 }}>
+        <Card title={t('system.monitorAlert.systemStatus')} style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={6}>
               <Statistic
-                title="系统状态"
+                title={t('system.monitorAlert.systemStatus')}
                 value={getHealthStatusLabel(systemInfo.healthStatus)}
                 valueStyle={{ color: getHealthStatusColor(systemInfo.healthStatus) }}
                 prefix={systemInfo.healthStatus === 'HEALTHY' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
               />
             </Col>
             <Col span={6}>
-              <Statistic title="版本" value={systemInfo.version} />
+              <Statistic title={t('system.monitorAlert.version')} value={systemInfo.version} />
             </Col>
             <Col span={6}>
-              <Statistic title="运行时间" value={systemInfo.uptime} />
+              <Statistic title={t('system.monitorAlert.uptime')} value={systemInfo.uptime} />
             </Col>
             <Col span={6}>
-              <Statistic title="服务数量" value={systemInfo.services?.length ?? 0} />
+              <Statistic
+                title={t('system.monitorAlert.serviceCount')}
+                value={systemInfo.services?.length ?? 0}
+              />
             </Col>
           </Row>
         </Card>
@@ -312,29 +321,29 @@ const MonitorAlertPage: React.FC = () => {
 
       {/* 监控指标 */}
       {metrics && (
-        <Card title="监控指标" style={{ marginBottom: 16 }}>
+        <Card title={t('system.monitorAlert.metricName')} style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={6}>
               <Card>
-                <Statistic title="CPU 使用率" value={metrics.cpu} suffix="%" />
+                <Statistic title={t('system.monitorAlert.cpuUsage')} value={metrics.cpu} suffix="%" />
                 <Progress percent={metrics.cpu} status={metrics.cpu > 80 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title="内存使用率" value={metrics.memory} suffix="%" />
+                <Statistic title={t('system.monitorAlert.memoryUsage')} value={metrics.memory} suffix="%" />
                 <Progress percent={metrics.memory} status={metrics.memory > 85 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title="磁盘使用率" value={metrics.disk} suffix="%" />
+                <Statistic title={t('system.monitorAlert.diskUsage')} value={metrics.disk} suffix="%" />
                 <Progress percent={metrics.disk} status={metrics.disk > 90 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title="API 错误率" value={metrics.errorRate} suffix="%" />
+                <Statistic title={t('system.monitorAlert.apiErrorRate')} value={metrics.errorRate} suffix="%" />
                 <Progress percent={metrics.errorRate} status={metrics.errorRate > 5 ? 'exception' : 'normal'} />
               </Card>
             </Col>
@@ -342,17 +351,17 @@ const MonitorAlertPage: React.FC = () => {
           <Row gutter={16} style={{ marginTop: 16 }}>
             <Col span={8}>
               <Card>
-                <Statistic title="API 响应时间" value={metrics.apiResponseTime} suffix="ms" />
+                <Statistic title={t('system.monitorAlert.apiResponseTime')} value={metrics.apiResponseTime} suffix="ms" />
               </Card>
             </Col>
             <Col span={8}>
               <Card>
-                <Statistic title="QPS" value={metrics.qps} />
+                <Statistic title={t('system.monitorAlert.qps')} value={metrics.qps} />
               </Card>
             </Col>
             <Col span={8}>
               <Card>
-                <Statistic title="数据库连接数" value={metrics.dbConnections} />
+                <Statistic title={t('system.monitorAlert.dbConnections')} value={metrics.dbConnections} />
               </Card>
             </Col>
           </Row>
@@ -361,10 +370,10 @@ const MonitorAlertPage: React.FC = () => {
 
       {/* 告警规则 */}
       <Card
-        title="告警规则"
+        title={t('system.monitorAlert.alertRules')}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateRule}>
-            创建规则
+            {t('system.monitorAlert.createRule')}
           </Button>
         }
         style={{ marginBottom: 16 }}
@@ -374,58 +383,62 @@ const MonitorAlertPage: React.FC = () => {
           dataSource={alertRules}
           rowKey="id"
           loading={loading}
+          locale={{ emptyText: t('common.empty') }}
         />
       </Card>
 
       {/* 最近告警事件 */}
-      <Card title="最近告警事件">
+      <Card title={t('system.monitorAlert.recentEvents')}>
         <Table
           columns={eventColumns}
           dataSource={alertEvents}
           rowKey="id"
           loading={loading}
           pagination={false}
+          locale={{ emptyText: t('common.empty') }}
         />
       </Card>
 
       <Modal
-        title={editingRule ? '编辑告警规则' : '创建告警规则'}
+        title={editingRule ? t('system.monitorAlert.editAlertRule') : t('system.monitorAlert.createAlertRule')}
         open={ruleModalVisible}
         onOk={handleSaveRule}
         onCancel={() => setRuleModalVisible(false)}
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
         width={600}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="规则名称" name="name" rules={[{ required: true }]}>
+          <Form.Item label={t('system.monitorAlert.ruleName')} name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="监控指标" name="metricName" rules={[{ required: true }]}>
+          <Form.Item label={t('system.monitorAlert.metricName')} name="metricName" rules={[{ required: true }]}>
             <Select>
-              <Option value="cpu">CPU 使用率</Option>
-              <Option value="memory">内存使用率</Option>
-              <Option value="disk">磁盘使用率</Option>
-              <Option value="errorRate">API 错误率</Option>
-              <Option value="apiResponseTime">API 响应时间</Option>
+              <Option value="cpu">{t('system.monitorAlert.cpuUsage')}</Option>
+              <Option value="memory">{t('system.monitorAlert.memoryUsage')}</Option>
+              <Option value="disk">{t('system.monitorAlert.diskUsage')}</Option>
+              <Option value="errorRate">{t('system.monitorAlert.apiErrorRate')}</Option>
+              <Option value="apiResponseTime">{t('system.monitorAlert.apiResponseTime')}</Option>
             </Select>
           </Form.Item>
-          <Form.Item label="阈值" name="threshold" rules={[{ required: true }]}>
+          <Form.Item label={t('system.monitorAlert.threshold')} name="threshold" rules={[{ required: true }]}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="告警级别" name="alertLevel" rules={[{ required: true }]}>
+          <Form.Item label={t('system.monitorAlert.alertLevel')} name="alertLevel" rules={[{ required: true }]}>
             <Select>
-              <Option value="CRITICAL">严重</Option>
-              <Option value="WARNING">警告</Option>
-              <Option value="INFO">信息</Option>
+              <Option value="CRITICAL">{t('system.monitorAlert.levelCritical')}</Option>
+              <Option value="WARNING">{t('system.monitorAlert.levelWarning')}</Option>
+              <Option value="INFO">{t('system.monitorAlert.levelInfo')}</Option>
             </Select>
           </Form.Item>
           <Form.Item
-            label="通知渠道（多个用逗号分隔）"
+            label={t('system.monitorAlert.notificationChannels')}
             name="notificationChannels"
             rules={[{ required: true }]}
           >
             <Input placeholder="email, sms, wechat, dingtalk" />
           </Form.Item>
-          <Form.Item label="启用" name="enabled" valuePropName="checked" initialValue={true}>
+          <Form.Item label={t('system.monitorAlert.enabledLabel')} name="enabled" valuePropName="checked" initialValue={true}>
             <Switch />
           </Form.Item>
         </Form>

@@ -269,3 +269,45 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 
 **待用户裁定**：是否立项执行 ①（shared-types 类型对齐，约 28+39 处）+ ②（清剿 Number(id) 转换）；或直接仅更新本报告、维持现状。
 
+### 10.7 S-5 整页 i18n 落地（2026-09-28，本轮）
+
+> grill 阶段先确认：按 `doc/design/国际化设计方案.md` §1.2/§1.3/§89，微应用**全量页面** i18n 被划为 **P3 / Vision**，不在首期验收；首期范围是错误文案 + 壳层 common/nav + 业务枚举 + 日期/数字。但用户最终裁定**在本模块先行落地整页 i18n 以验证模式**。
+
+**改动范围（仅 bone-system-app + 共享语言包，未动后端与其他 app）**
+- 6 个页面全部 `useTranslation()` 化：`SystemConfig` / `MonitorAlert` / `LogManagement` / `SystemDeployment` / `DictManagement` / `ScheduleTaskManagement`。
+- 共享语言包新增 `system` 命名空间：`packages/shared-utils/src/i18n/locales/zh-CN.json` + `en-US.json`，共 **347** 个 `system.*` key（systemConfig 23 / monitorAlert 49 / logManagement 37 / systemDeployment 55 / dictManagement 145 / scheduleTaskManagement 38），并复用既有 `common.*`（确定/取消/加载中/暂无数据）。
+- `bone-system-app/package.json` 显式加入 `react-i18next`（运行时单例已由 `@bone/shared-utils` 的 `i18n/index` 初始化；`main.tsx` 已 `subscribeLocaleChange()` 订阅 `bone:theme:change`，运行时切换依赖 Shell 广播）。
+- `DictManagement.tsx` 修正 `TFunction` 导入（v15 该类型来自 `i18next` 而非 `react-i18next`）。
+
+**验证**
+- `tsc --noEmit`（bone-system-app，strict）：**0 错误**。
+- 脚本交叉校验：350 个 `t()` 字面量 key 在 zh-CN / en-US 均存在，且两语言 key 集合完全一致（含修复 `system.dictManagement.effectiveRangeTooltip` 遗漏）。
+- 页面残留中文仅余：① `resolveErrorMessage(error,'中文兜底')` 兜底串（走 errorCode→文案链路，按设计保留）；② 代码注释；③ 模拟后端数据值（如 `'例行升级'`）。均非用户可见 UI chrome。
+
+**已知限制（非阻塞）**
+- 运行时 locale 切换依赖 Shell 广播 `bone:theme:change`；当前 Shell 尚未广播（设计文档 §115/§116），故英文切换暂不生效，但 zh-CN 渲染与 en-US 资源均已就绪。
+- 与 4 个兄弟 app（iam/masterdata/metadata/integration）尚未对齐——整页 i18n 仍是设计文档定义的 P3 专项，本模块为先行试点。
+
+### 10.8 Stage-3 独立复审结论（2026-09-28）
+
+对 `5ca1e70f1..16e49d298`（S-3/S-4/S-10/S-12 + S-7①）派 3 只只读子 Agent（安全+正确 / 性能+可维护 / 领域一致性）复审。
+
+**共识级结论（三 Agent 均确认）**
+DDD 分层干净；S-12 事件投影链路（`AFTER_COMMIT`+`REQUIRES_NEW`）正确规避 R9；S-10 `@Version` 边界与 SDK `Repository<T extends Entity>` 一致；S-3 双库 DDL 同步；SDK `TypeConverter` 修复无回归；S-4 守卫位置正确（UX 级、后端 `@PreAuthorize` 兜底）。
+
+**待跟进缺陷（建议下轮，非本模块首期阻塞）**
+| # | 项 | 严重 | 说明 |
+|---|----|----|------|
+| R1 | S-12 `ConfigHistoryProjector` 审计操作人硬编码 `OPERATOR="admin"` | High | 真实操作人未进事件/投影，审计流水恒为 admin，语义失效 |
+| R2 | S-12 `tenant_id` 依赖隐式 `TenantContext`（实体/事件无 `tenantId` 字段） | High(中置信) | 脱离上下文链路（异步/Outbox 重放）会落 0 或读不到；建议事件带 `tenantId` 或实体继承 `TenantAggregateRoot` |
+| R3 | S-7① `system.ts` 的 `configId`/`alertRuleId`/`tenantId` 仍为 `number` | Medium | 与已改 `id?:string` 不一致，运行期 string/number 错位 |
+| R4 | S-3 补的 `deleted` 列未接线（实体无 `@SoftDelete`/字段） | Medium | 软删语义未真正落地，查询会回带逻辑删除行 |
+| R5 | H2 `updated_at` 缺生产 `ON UPDATE` 语义 | High | 测试库 `updated_at` 不随 UPDATE 自增，与生产不一致 |
+| R6 | S-4 `permission.ts` 守卫 fail-closed 可用性 | Medium | 若 Shell 不写 `permissions.codes`/`localStorage` JWT，全体用户将被 403 |
+| R7 | S-12 投影无幂等键、`sys_config_history` 无唯一约束 | Medium | 事件重放会插入重复历史行 |
+| R8 | S-12 投影异常未兜底 | Low | 投影失败可能导致当次 HTTP 500，建议 best-effort |
+
+**文档漂移（需刷新本报告）**
+- §10.6 称 S-7「不盲目执行 / 待用户裁定」，但 S-7①（system.ts + bone-system-app）已按用户「以上所有」裁定在 `16e49d298` 提交；建议 §10.6 补一句「S-7① 本模块已落地，全量跨模块 S-7 仍按专项单独立项」。
+- §10.5 称「仅 `sys_config` 有 `version` 列」，实测 `sys_dict_*` 等 6 张表在本次提交前已含 `version`（本提交仅补 `sys_alert_rule`），描述需校正。
+

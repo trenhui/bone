@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   Button,
@@ -53,6 +54,7 @@ const LogManagementPage: React.FC = () => {
   const [analyzeModalVisible, setAnalyzeModalVisible] = useState(false);
   const [analyzeResult, setAnalyzeResult] = useState<LogAnalyzeResult | null>(null);
   const [form] = Form.useForm();
+  const { t } = useTranslation();
 
   const fetchLogs = async (page = 1, pageSize = 20, filters: Record<string, unknown> = {}): Promise<void> => {
     setLoading(true);
@@ -72,7 +74,7 @@ const LogManagementPage: React.FC = () => {
         });
       }
     } catch {
-      message.error('获取日志失败');
+      message.error(t('system.logManagement.fetchLogsFailed'));
     } finally {
       setLoading(false);
     }
@@ -122,9 +124,9 @@ const LogManagementPage: React.FC = () => {
       link.setAttribute('download', `system-logs-${dayjs().format('YYYYMMDDHHmmss')}.csv`);
       document.body.appendChild(link);
       link.click();
-      message.success('导出日志成功');
+      message.success(t('system.logManagement.exportLogSuccess'));
     } catch {
-      message.error('导出日志失败');
+      message.error(t('system.logManagement.exportLogFailed'));
     }
   };
 
@@ -137,7 +139,7 @@ const LogManagementPage: React.FC = () => {
         setAnalyzeModalVisible(true);
       }
     } catch {
-      message.error('分析日志失败');
+      message.error(t('system.logManagement.analyzeLogFailed'));
     }
   };
 
@@ -154,43 +156,43 @@ const LogManagementPage: React.FC = () => {
 
   const columns = [
     {
-      title: '时间',
+      title: t('system.logManagement.colTime'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
     },
     {
-      title: '级别',
+      title: t('system.logManagement.colLevel'),
       dataIndex: 'level',
       key: 'level',
       width: 100,
       render: getLevelTag,
     },
     {
-      title: '服务',
+      title: t('system.logManagement.colService'),
       dataIndex: 'service',
       key: 'service',
       width: 150,
     },
     {
-      title: '内容',
+      title: t('system.logManagement.colContent'),
       dataIndex: 'content',
       key: 'content',
       ellipsis: true,
     },
     {
-      title: '追踪ID',
+      title: t('system.logManagement.colTraceId'),
       dataIndex: 'traceId',
       key: 'traceId',
       width: 200,
     },
     {
-      title: '操作',
+      title: t('system.logManagement.colAction'),
       key: 'action',
       width: 100,
       render: (_: unknown, record: SystemLog) => (
         <Button type="link" onClick={() => handleViewDetail(record)}>
-          详情
+          {t('system.logManagement.detail')}
         </Button>
       ),
     },
@@ -201,11 +203,11 @@ const LogManagementPage: React.FC = () => {
       {/* 搜索表单 */}
       <Card style={{ marginBottom: 16 }}>
         <Form form={form} layout="inline">
-          <Form.Item name="dateRange" label="时间范围">
+          <Form.Item name="dateRange" label={t('system.logManagement.labelTimeRange')}>
             <RangePicker showTime style={{ width: 400 }} />
           </Form.Item>
-          <Form.Item name="level" label="日志级别">
-            <Select placeholder="全部" style={{ width: 120 }} allowClear>
+          <Form.Item name="level" label={t('system.logManagement.labelLogLevel')}>
+            <Select placeholder={t('system.logManagement.placeholderAll')} style={{ width: 120 }} allowClear>
               <Option value="ERROR">ERROR</Option>
               <Option value="WARN">WARN</Option>
               <Option value="INFO">INFO</Option>
@@ -213,19 +215,19 @@ const LogManagementPage: React.FC = () => {
               <Option value="TRACE">TRACE</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="service" label="服务">
-            <Input placeholder="服务名称" style={{ width: 150 }} />
+          <Form.Item name="service" label={t('system.logManagement.colService')}>
+            <Input placeholder={t('system.logManagement.placeholderServiceName')} style={{ width: 150 }} />
           </Form.Item>
-          <Form.Item name="keyword" label="关键词">
-            <Input placeholder="搜索关键词" style={{ width: 200 }} />
+          <Form.Item name="keyword" label={t('system.logManagement.labelKeyword')}>
+            <Input placeholder={t('system.logManagement.placeholderSearchKeyword')} style={{ width: 200 }} />
           </Form.Item>
           <Form.Item>
             <Space>
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                搜索
+                {t('system.logManagement.search')}
               </Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                重置
+                {t('system.logManagement.reset')}
               </Button>
             </Space>
           </Form.Item>
@@ -233,10 +235,10 @@ const LogManagementPage: React.FC = () => {
         <div style={{ marginTop: 16 }}>
           <Space>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
-              导出日志
+              {t('system.logManagement.exportLog')}
             </Button>
             <Button icon={<BarChartOutlined />} onClick={handleAnalyze}>
-              分析日志
+              {t('system.logManagement.analyzeLog')}
             </Button>
           </Space>
         </div>
@@ -253,7 +255,7 @@ const LogManagementPage: React.FC = () => {
             ...pagination,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t('system.logManagement.totalItems', { total }),
             onChange: (page, pageSize) => {
               const values = form.getFieldsValue();
               fetchLogs(page, pageSize, buildFilters(values));
@@ -265,7 +267,7 @@ const LogManagementPage: React.FC = () => {
 
       {/* 日志详情弹窗 */}
       <Modal
-        title="日志详情"
+        title={t('system.logManagement.logDetail')}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={null}
@@ -273,11 +275,11 @@ const LogManagementPage: React.FC = () => {
       >
         {selectedLog && (
           <div>
-            <p><strong>时间：</strong>{selectedLog.createdAt}</p>
-            <p><strong>级别：</strong>{getLevelTag(selectedLog.level)}</p>
-            <p><strong>服务：</strong>{selectedLog.service}</p>
-            <p><strong>追踪ID：</strong>{selectedLog.traceId || '-'}</p>
-            <p><strong>内容：</strong></p>
+            <p><strong>{t('system.logManagement.fieldTime')}</strong>{selectedLog.createdAt}</p>
+            <p><strong>{t('system.logManagement.fieldLevel')}</strong>{getLevelTag(selectedLog.level)}</p>
+            <p><strong>{t('system.logManagement.fieldService')}</strong>{selectedLog.service}</p>
+            <p><strong>{t('system.logManagement.fieldTraceId')}</strong>{selectedLog.traceId || '-'}</p>
+            <p><strong>{t('system.logManagement.fieldContent')}</strong></p>
             <pre style={{
               background: '#f5f5f5',
               padding: 16,
@@ -293,7 +295,7 @@ const LogManagementPage: React.FC = () => {
 
       {/* 分析结果弹窗 */}
       <Modal
-        title="日志分析结果"
+        title={t('system.logManagement.analyzeResult')}
         open={analyzeModalVisible}
         onCancel={() => setAnalyzeModalVisible(false)}
         footer={null}
@@ -304,39 +306,39 @@ const LogManagementPage: React.FC = () => {
             <Row gutter={16} style={{ marginBottom: 24 }}>
               <Col span={6}>
                 <Card>
-                  <Statistic title="总日志数" value={analyzeResult.totalCount || 0} />
+                  <Statistic title={t('system.logManagement.statTotalLogs')} value={analyzeResult.totalCount || 0} />
                 </Card>
               </Col>
               <Col span={6}>
                 <Card>
-                  <Statistic title="错误数" value={analyzeResult.errorCount || 0} valueStyle={{ color: '#cf1322' }} />
+                  <Statistic title={t('system.logManagement.statErrorCount')} value={analyzeResult.errorCount || 0} valueStyle={{ color: '#cf1322' }} />
                 </Card>
               </Col>
               <Col span={6}>
                 <Card>
-                  <Statistic title="警告数" value={analyzeResult.warnCount || 0} valueStyle={{ color: '#fa8c16' }} />
+                  <Statistic title={t('system.logManagement.statWarnCount')} value={analyzeResult.warnCount || 0} valueStyle={{ color: '#fa8c16' }} />
                 </Card>
               </Col>
               <Col span={6}>
                 <Card>
-                  <Statistic title="错误率" value={`${analyzeResult.errorRate || 0}%`} />
+                  <Statistic title={t('system.logManagement.statErrorRate')} value={`${analyzeResult.errorRate || 0}%`} />
                 </Card>
               </Col>
             </Row>
             {analyzeResult.hotServices && (
-              <Card title="热门服务" style={{ marginBottom: 16 }}>
+              <Card title={t('system.logManagement.hotServices')} style={{ marginBottom: 16 }}>
                 <ul>
                   {analyzeResult.hotServices.map((item, index) => (
-                    <li key={index}>{item.service}: {item.count} 条</li>
+                    <li key={index}>{t('system.logManagement.hotServiceItem', { service: item.service, count: item.count })}</li>
                   ))}
                 </ul>
               </Card>
             )}
             {analyzeResult.errorDistribution && (
-              <Card title="错误分布">
+              <Card title={t('system.logManagement.errorDistribution')}>
                 <ul>
                   {analyzeResult.errorDistribution.map((item, index) => (
-                    <li key={index}>{item.type}: {item.count} 次</li>
+                    <li key={index}>{t('system.logManagement.errorDistributionItem', { type: item.type, count: item.count })}</li>
                   ))}
                 </ul>
               </Card>

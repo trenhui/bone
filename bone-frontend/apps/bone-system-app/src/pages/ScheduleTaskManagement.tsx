@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { ScheduleTask } from '@/types';
 import { scheduleTaskApi } from '@/services/api';
 
 const ScheduleTaskManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState<ScheduleTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
@@ -20,7 +22,7 @@ const ScheduleTaskManagement: React.FC = () => {
       setData(res.data.list);
       setPagination({ current: page, pageSize, total: res.data.total });
     } catch {
-      message.error('获取定时任务失败');
+      message.error(t('system.scheduleTaskManagement.fetchTaskFailed'));
     } finally {
       setLoading(false);
     }
@@ -48,24 +50,26 @@ const ScheduleTaskManagement: React.FC = () => {
     try {
       if (editing) {
         await scheduleTaskApi.updateScheduleTask(editing.id!, { name: values.name, cron: values.cron, handler: values.handler });
-        message.success('任务已更新');
+        message.success(t('system.scheduleTaskManagement.taskUpdated'));
       } else {
         await scheduleTaskApi.createScheduleTask({ name: values.name, cron: values.cron, handler: values.handler, status: values.status });
-        message.success('任务已创建');
+        message.success(t('system.scheduleTaskManagement.taskCreated'));
       }
       setModalOpen(false);
       fetchData(pagination.current);
     } catch {
-      message.error('保存失败');
+      message.error(t('system.scheduleTaskManagement.saveFailed'));
     }
   };
 
   const remove = (record: ScheduleTask) => {
     Modal.confirm({
-      title: `确认删除任务「${record.name}」？`,
+      title: t('system.scheduleTaskManagement.confirmDeleteTask', { name: record.name }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: async () => {
         await scheduleTaskApi.deleteScheduleTask(record.id!);
-        message.success('任务已删除');
+        message.success(t('system.scheduleTaskManagement.taskDeleted'));
         fetchData(pagination.current);
       },
     });
@@ -74,10 +78,10 @@ const ScheduleTaskManagement: React.FC = () => {
   const toggle = async (record: ScheduleTask, enabled: boolean) => {
     try {
       await scheduleTaskApi.toggleScheduleTask(record.id!, enabled);
-      message.success(enabled ? '任务已启用' : '任务已停用');
+      message.success(enabled ? t('system.scheduleTaskManagement.taskEnabled') : t('system.scheduleTaskManagement.taskDisabled'));
       fetchData(pagination.current);
     } catch {
-      message.error('操作失败');
+      message.error(t('system.scheduleTaskManagement.operationFailed'));
     }
   };
 
@@ -87,11 +91,11 @@ const ScheduleTaskManagement: React.FC = () => {
     setRunningIds((prev) => new Set(prev).add(record.id!));
     try {
       const res = await scheduleTaskApi.runScheduleTaskNow(record.id!);
-      message.success(`任务「${record.name}」执行成功，耗时 ${res.data} ms`);
+      message.success(t('system.scheduleTaskManagement.runSuccess', { name: record.name, cost: res.data }));
       fetchData(pagination.current);
     } catch (err) {
       const detail = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      message.error(detail ? `执行失败：${detail}` : '执行失败');
+      message.error(detail ? t('system.scheduleTaskManagement.runFailedWithDetail', { detail }) : t('system.scheduleTaskManagement.runFailed'));
     } finally {
       setRunningIds((prev) => {
         const next = new Set(prev);
@@ -103,17 +107,17 @@ const ScheduleTaskManagement: React.FC = () => {
 
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 80 },
-    { title: '任务名称', dataIndex: 'name', width: 160 },
+    { title: t('system.scheduleTaskManagement.taskName'), dataIndex: 'name', width: 160 },
     { title: 'CRON', dataIndex: 'cron', width: 140 },
-    { title: '处理器', dataIndex: 'handler', width: 180 },
+    { title: t('system.scheduleTaskManagement.columnHandler'), dataIndex: 'handler', width: 180 },
     {
-      title: '状态',
+      title: t('system.scheduleTaskManagement.columnStatus'),
       dataIndex: 'status',
       width: 100,
-      render: (v: string) => (v === 'ENABLED' ? <Tag color="green">启用</Tag> : <Tag>停用</Tag>),
+      render: (v: string) => (v === 'ENABLED' ? <Tag color="green">{t('system.scheduleTaskManagement.statusEnabled')}</Tag> : <Tag>{t('system.scheduleTaskManagement.statusDisabled')}</Tag>),
     },
     {
-      title: '启停',
+      title: t('system.scheduleTaskManagement.columnToggle'),
       width: 90,
       render: (_: unknown, record: ScheduleTask) => (
         <Switch
@@ -122,9 +126,9 @@ const ScheduleTaskManagement: React.FC = () => {
         />
       ),
     },
-    { title: '上次执行', dataIndex: 'lastRunAt', width: 170, render: (v?: string) => v || '-' },
+    { title: t('system.scheduleTaskManagement.columnLastRun'), dataIndex: 'lastRunAt', width: 170, render: (v?: string) => v || '-' },
     {
-      title: '操作',
+      title: t('system.scheduleTaskManagement.columnAction'),
       width: 190,
       render: (_: unknown, record: ScheduleTask) => (
         <Space>
@@ -134,13 +138,13 @@ const ScheduleTaskManagement: React.FC = () => {
             loading={runningIds.has(record.id!)}
             onClick={() => runNow(record)}
           >
-            立即执行
+            {t('system.scheduleTaskManagement.runNow')}
           </Button>
           <Button type="link" size="small" onClick={() => openEdit(record)}>
-            编辑
+            {t('system.scheduleTaskManagement.edit')}
           </Button>
           <Button type="link" size="small" danger onClick={() => remove(record)}>
-            删除
+            {t('system.scheduleTaskManagement.delete')}
           </Button>
         </Space>
       ),
@@ -151,7 +155,7 @@ const ScheduleTaskManagement: React.FC = () => {
     <Card>
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
-          placeholder="搜索任务名称 / 处理器"
+          placeholder={t('system.scheduleTaskManagement.searchPlaceholder')}
           prefix={<SearchOutlined />}
           allowClear
           value={keyword}
@@ -159,19 +163,19 @@ const ScheduleTaskManagement: React.FC = () => {
           style={{ width: 240 }}
         />
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current)}>
-          刷新
+          {t('system.scheduleTaskManagement.refresh')}
         </Button>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新建任务
+          {t('system.scheduleTaskManagement.createTask')}
         </Button>
       </Space>
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={data.filter((t) => {
+        dataSource={data.filter((item) => {
           const kw = keyword.trim().toLowerCase();
           if (!kw) return true;
-          return [t.name, t.handler].some((v) => (v ?? '').toLowerCase().includes(kw));
+          return [item.name, item.handler].some((v) => (v ?? '').toLowerCase().includes(kw));
         })}
         loading={loading}
         scroll={{ x: 1200 }}
@@ -183,28 +187,30 @@ const ScheduleTaskManagement: React.FC = () => {
         pageSize={pagination.pageSize}
         total={pagination.total}
         showSizeChanger
-        showTotal={(total) => `共 ${total} 条`}
+        showTotal={(total) => t('system.scheduleTaskManagement.totalItems', { total })}
         onChange={(page, pageSize) => fetchData(page, pageSize)}
       />
       <Modal
-        title={editing ? '编辑定时任务' : '新建定时任务'}
+        title={editing ? t('system.scheduleTaskManagement.editModalTitle') : t('system.scheduleTaskManagement.createModalTitle')}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={submit}
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
         width={520}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="任务名称" rules={[{ required: true, message: '请输入任务名称' }]}>
-            <Input placeholder="如：日志清理" />
+          <Form.Item name="name" label={t('system.scheduleTaskManagement.taskName')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleNameRequired') }]}>
+            <Input placeholder={t('system.scheduleTaskManagement.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="cron" label="CRON 表达式" rules={[{ required: true, message: '请输入 CRON' }]}>
-            <Input placeholder="如：0 0 2 * * ?" />
+          <Form.Item name="cron" label={t('system.scheduleTaskManagement.cronLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleCronRequired') }]}>
+            <Input placeholder={t('system.scheduleTaskManagement.cronPlaceholder')} />
           </Form.Item>
-          <Form.Item name="handler" label="处理器 Bean" rules={[{ required: true, message: '请输入处理器' }]}>
-            <Input placeholder="如：logCleanTaskHandler" />
+          <Form.Item name="handler" label={t('system.scheduleTaskManagement.handlerLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleHandlerRequired') }]}>
+            <Input placeholder={t('system.scheduleTaskManagement.handlerPlaceholder')} />
           </Form.Item>
           {!editing && (
-            <Form.Item name="status" label="初始状态">
+            <Form.Item name="status" label={t('system.scheduleTaskManagement.initialStatusLabel')}>
               <Input placeholder="ENABLED / DISABLED" />
             </Form.Item>
           )}
