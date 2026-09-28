@@ -353,7 +353,20 @@ public final class TypeConverter {
       } else if (targetType == Integer.class && value instanceof Short) {
         return targetType.cast(((Short) value).intValue());
       } else {
-        return targetType.cast(((Number) value).doubleValue());
+        // 任意 Number 子类型 → 目标数值类型：按目标类型取对应基本值。
+        // 旧实现 targetType.cast(doubleValue()) 在目标为 Long/Integer 等时会抛 ClassCastException
+        // （例如 @Version Long 字段读取 INT 列得到的 Integer）。
+        if (targetType == Long.class || targetType == long.class) {
+          return targetType.cast(((Number) value).longValue());
+        } else if (targetType == Integer.class || targetType == int.class) {
+          return targetType.cast(((Number) value).intValue());
+        } else if (targetType == Short.class || targetType == short.class) {
+          return targetType.cast(((Number) value).shortValue());
+        } else if (targetType == Float.class || targetType == float.class) {
+          return targetType.cast(((Number) value).floatValue());
+        } else {
+          return targetType.cast(((Number) value).doubleValue());
+        }
       }
     }
     if (value instanceof String) {
