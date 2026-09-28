@@ -185,6 +185,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `IAM_ROLE_ID_REQUIRED` | 400 | 授予角色权限时未提供角色 id |
 | `IAM_PERMISSION_NOT_FOUND` | 404 | 权限不存在（含跨租户不可见） |
 | `IAM_PERMISSION_PLATFORM_ONLY` | 403 | 平台域权限码（resource_path 为 tenants/permissions/sessions）不可授予租户角色——防租户自授平台能力 |
+| `IAM_AUTHORITY_RESOLVE_FAILED` | 500 | 请求鉴权时权限解析失败（数据源异常），fail-closed 拒绝，绝不回退超宽权限 |
 | `IAM_SESSION_NOT_FOUND` | 404 | 会话不存在（含跨租户不可见，与「参数缺失」分属不同语义） |
 | `IAM_SESSION_ID_REQUIRED` | 400 | 会话 id 未提供 |
 | `IAM_DEPT_NOT_FOUND` | 404 | 部门不存在（含跨租户不可见） |

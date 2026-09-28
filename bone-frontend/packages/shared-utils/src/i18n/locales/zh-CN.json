@@ -28,6 +28,7 @@
     "COMMON_VALIDATION_FAILED": "参数校验失败：{{errors}}",
     "IAM_DEPT_REQUIRED": "归属部门为必填项（创建账号必须指定主部门；编辑时不允许清空归属部门）",
     "IAM_PERMISSION_PLATFORM_ONLY": "该权限为平台专用，不能在租户内分配",
+    "IAM_AUTHORITY_RESOLVE_FAILED": "请求鉴权时权限解析失败（数据源异常），请稍后重试",
     "MD_REF_PLATFORM_SET_IMMUTABLE": "平台值域不可变（租户只读）",
     "MD_REF_PLATFORM_VALUE_IMMUTABLE": "平台参考值不可变（租户只读）",
     "MD_TEMPLATE_DOMAIN_DUPLICATE": "领域模板编码已存在",
