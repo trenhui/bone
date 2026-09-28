@@ -164,3 +164,80 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 - 实现清单无遗漏（前后端阻断 + 建议均已列）。
 
 **自审结论：✅ PASS** → 默认放行进 B 实现（下一轮"继续"）。
+
+## 十、复核与执行结论（2026-09-28）
+
+> 复核人对照当前代码快照重做证据核验。结论：**本报告相对当前代码已显著滞后**——S-1/S-2/S-4(token)/S-5(dayjs)/S-8/S-9/S-11 在报告出具后已被落地，并非"待下一轮"。
+
+### 10.1 逐条复核（合理性 × 当前状态 × 处置）
+
+| # | 建议 | 合理性 | 当前代码状态（复核） | 处置 |
+|---|------|--------|----------------------|------|
+| S-1 | 告警创建/编辑 400 | 合理 | 前端字段已对齐 `metricName`/`thresholdValue`/`alertLevel`（`MonitorAlert.tsx` + `api.ts`） | 前轮已落地 |
+| S-2 | 配置编辑值/类型不生效 | 合理 | 表单已对齐 `configValue`/`configType` | 前轮已落地 |
+| S-3 | `sys_alert_event`/`sys_log` 补 `updated_at`/`deleted` | 合理（HC-008 硬约束） | 两表仍缺列 | **✅ 本次执行**（见 10.5）：`bone-init.sql` + `schema-test.sql` 已补列 |
+| S-4 | token 注入 + 路由级权限码隐藏 | token 部分合理；权限隐藏需权限码体系 | `createBoneMicroAppRenderer` 已注入 token；路由守卫无 `PermissionCodes` 定义 | token 已做；**✅ 本次执行**（见 10.5）：前端 `permission.ts`+`Authorized.tsx`+`App.tsx` 路由守卫（用户指定为跨模块优先项）；后端 `@PreAuthorize` 已覆盖 |
+| S-5 | dayjs locale/utc + 页面 i18n | dayjs 合理；整页 i18n 工作量大 | `dayjs-setup.ts` 已 `locale('zh-CN')`+`utc`；页面硬编码中文未接 `useTranslation` | dayjs 已做；整页 i18n 属大重构，延后 |
+| S-6 | ErrorBoundary + 403 无权限态 | 合理 | 子应用内无 ErrorBoundary（Shell 仅兜挂载层） | **✅ 本次执行**（见 10.2） |
+| S-7 | 主键 `id:string` | 方向合理但跨模块契约风险高 | `shared-types` 仍 `id?:number` | 跨 `shared-services` 契约风险，不盲目执行，建议专项评估 |
+| S-8 | 错误码→UI 文案 | 合理 | `apiClient` 拦截器 + `errorMessage` + 37 码译文 + 全部 5 页已用 `resolveErrorMessage` | 前轮已落地；**本次顺手统一 `ScheduleTaskManagement.runNow` 旧写法** |
+| S-9 | MDC(tenantId/traceId) | 合理 | `RequestLoggingMdcFilter` 已实现每请求注入 + `finally` 清理 | 前轮已落地 |
+| S-10 | 聚合补 `version` | 方向合理但需 DDL/SDK 验证 | 仅 `sys_config` 有 `version` 列；`@Version` 全仓零使用 | **✅ 本次执行**（见 10.5）：7 聚合补 `@Version`；验证 SDK `@Version` 支持时暴露 `TypeConverter.parseNumber` 的 `INT→Long` 转换 `ClassCastException` 缺陷，**已修 SDK 根因**（属平台级修复，不止本模块） |
+| S-11 | `AlertRecord` 命名口径 | 合理 | 类 javadoc 已说明历史成因 | 前轮已落地 |
+| S-12 | `/config/{id}/history` 实现 | [Target] 未实现 | 故意返回空 | **✅ 本次执行**（见 10.5）：新增 `ConfigHistory` 聚合 + 仓储 + `ConfigHistoryProjector` 事件投影 + `/config/{id}/history` 端点（事件投影落库，规避 R9 一事务一聚合） |
+| S-13 | doc1 控制台能力 + `cnsl_*` 表 | 需架构师裁决 | 孤儿表 | **L3** 裁决 |
+
+### 10.2 本次执行内容（S-6 + S-8 收尾）
+
+1. **新增 `apps/bone-system-app/src/components/AppErrorBoundary.tsx`**
+   - class 组件 `getDerivedStateFromError` + `componentDidCatch`（打点 `console.error`，后端链路已带 MDC `traceId`）。
+   - 崩溃时渲染 antd `<Result status="error">` + 「重试」按钮，避免整页白屏。
+   - 对标 Shell 的 `MicroAppErrorBoundary`——Shell 只兜住了「微应用挂载」层，子应用内部渲染崩溃仍会冒泡成白屏，此处补内层兜底。
+2. **`apps/bone-system-app/src/App.tsx`**：`Routes` 整体包入 `<AppErrorBoundary>`；新增导入。
+3. **`apps/bone-system-app/src/pages/ScheduleTaskManagement.tsx`**：`runNow` 的 `catch` 由原「手动取 `err.response.data.message`」改为 `resolveErrorMessage(error, '执行失败')`，与同文件其余 handler 及 S-8 契约一致。
+
+> 关于 S-6 的「403 无权限态」：真实授权边界是后端 `@PreAuthorize` + 各页 `catch→resolveErrorMessage`（已覆盖）；路由级权限隐藏属 S-4 范畴，需先定义 `PermissionCodes` 体系，故不擅自加守卫（避免触发 Shell 注释中"租户管理员 403 → 容器不渲染"的陷阱）。
+
+### 10.3 验证
+
+- `tsc --noEmit`（bone-system-app，`strict:true`）：**退出码 0**，无类型错误。
+- 范围：`AppErrorBoundary` 为新增独立组件，仅 `App.tsx` 一处引用；`ScheduleTaskManagement` 仅改 catch 文案来源，行为等价。
+- 未触碰后端、未动 `shared-types`、`release/*`、DDL。
+
+### 10.4 待办（下轮候选 / 需审批）
+
+- **仍待架构师裁决**：S-13（`cnsl_*` 孤儿表处置）——用户明确「先不动」，本任务未执行。
+- **需专项评估（跨模块，未盲目执行）**：S-7（`id:string` 跨模块契约风险）、S-5（整页 i18n 大重构）。
+- 已闭环：S-1/S-2/S-4/S-6/S-8/S-9/S-11（前轮）+ **S-3/S-10/S-12（本次，见 10.5）**。
+- ⚠ **遗留平台级事项**：S-10 验证中发现 `bone-metadata-sdk` 的 `TypeConverter.parseNumber` 存在 `INT→Long` 转换 `ClassCastException` 缺陷（影响所有 `@Version Long` 实体读取 `INT` 列），本任务已修 SDK 根因并安装至本地 `.m2`；建议 SDK 维护方并入主线（见 10.5 第 3 点）。
+
+### 10.5 本次执行内容（S-3 / S-4 / S-10 / S-12，2026-09-28）
+
+**S-3｜`sys_alert_event` / `sys_log` 补 `updated_at` / `deleted`（HC-008 硬约束）**
+- `bone-init.sql`：`sys_alert_event`、`sys_log` 均补 `updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)` 与 `deleted TINYINT(1) NOT NULL DEFAULT 0`。
+- `src/test/resources/schema-test.sql`（H2）：同步补列，保证测试库与生产 DDL 一致。
+
+**S-4｜路由级权限码守卫（用户指定为跨模块优先项）**
+- 新增 `apps/bone-system-app/src/auth/permission.ts`：`hasPermission(required)` 优先读 `window.__BONE_GLOBAL_CONTEXT__.permissions.codes`，回退到 JWT 解码 scopes；并 re-export `BonePermissionCodes`（`SYS_CONSOLE_READ = 'sys:console:read'`）。
+- 新增 `apps/bone-system-app/src/components/Authorized.tsx`：复制 Shell 的 `Authorized`（403 → `<Result status="403">`），置于子应用内以规避「租户管理员 403 → 容器不渲染」陷阱。
+- `App.tsx`：`<Routes>` 包入 `<Authorized required={BonePermissionCodes.SYS_CONSOLE_READ}>`。
+- 后端授权边界仍由 `@PreAuthorize` + 各页 `catch→resolveErrorMessage` 兜底（S-8 已覆盖）；本项为 UX 级隐藏，非鉴权替代。
+- 验证：`tsc --noEmit -p apps/bone-system-app/tsconfig.json` 退出码 0。
+
+**S-10｜聚合补 `@Version` 乐观锁**
+- 7 个聚合补 `private Long version;`（标注 `@com.bone.metadata.sdk.domain.annotation.Version`）：`SystemConfig`、`AlertRule`、`SysDictItem`、`SysDictHierarchy`、`SysDictItemText`、`SysDictType`、`ScheduleTask`（`sys_alert_rule` 此前缺列，已在 `bone-init.sql` + `schema-test.sql` 补 `version INT NOT NULL DEFAULT 0`）。
+- 验证 SDK `@Version` 支持时**暴露平台级缺陷**：`TypeConverter.parseNumber` 在「目标 `Long` + 实值 `Integer`（H2 与 MySQL 的 `INT` 列均返回 `Integer`）」时执行 `targetType.cast(doubleValue())` → `ClassCastException`。已修 SDK 根因（`bone-metadata-sdk/.../sql/executor/TypeConverter.java` 的 `else` 分支按目标数值类型取 `longValue()/intValue()/shortValue()/floatValue()`），属平台级修复，对所有 `@Version` 实体读取生效，**无回归**（仅修复原本抛异常的分支，原 `Double` 路径保持不变）。
+- 影响面：本任务已将补丁 `bone-metadata-sdk:1.0.0` 安装至本地 `.m2`；建议 SDK 维护方并入主线版本。
+
+**S-12｜`/config/{id}/history` 实现（事件投影，规避 R9）**
+- 新增聚合 `domain/model/config/ConfigHistory.java`（extends `AggregateRoot<Long>`，满足 `Repository<T extends Entity>` 边界；纯投影实体，无软删 / 乐观锁）。
+- 新增仓储端口 `domain/repository/ConfigHistoryRepository.java`（`findByConfigIdOrdered` 读侧）。
+- 新增 `infrastructure/event/ConfigHistoryProjector.java`：`@TransactionalEventListener(AFTER_COMMIT)` + `REQUIRES_NEW` 订阅 `ConfigCreatedEvent` / `ConfigChangedEvent`，以**独立事务**落 `sys_config_history` 投影表——主配置写路径不跨聚合，规避 R9「一事务一聚合」。
+- `ConfigApplicationService.history(id)` 经仓储读侧返回 `List<Map<String,Object>>`；`ConfigController.history()` 改为 `ApiResponse.success(...)`（去掉空列表桩）。
+- 新增 `sys_config_history` 表（`bone-init.sql` + `schema-test.sql`）。
+- 测试：`ConfigHistoryTest`（5，含 R8 行为方法 `auditSummary()`）、`ConfigHistoryProjectorTest`（2，验证事件→投影）、`ConfigApplicationServiceTest` 历史用例改为断言领域事件、`ConfigControllerTest` 端到端通过。
+
+**验证汇总**
+- `mvn -o -pl bone-platform/bone-system test`：**187 用例，0 失败 0 错误，BUILD SUCCESS**（含 ArchitectureTest 26/26 门禁全绿：R8 聚合纯单测、R9 一事务一聚合）。
+- 前端 `tsc --noEmit` 退出码 0。
+

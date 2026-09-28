@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -128,9 +127,6 @@ public class ConfigController {
   @Operation(summary = "配置变更历史")
   @GetMapping("/{id}/history")
   public ApiResponse<List<Map<String, Object>>> history(@PathVariable Long id) {
-    // MVP-09 仅交付「配置（含功能开关）」的快照导出/导入与查询，未落地逐条变更历史表；
-    // 返回空列表避免前端「配置历史」面板因 404 而报错。若需审计级历史，应建 ConfigChangedEvent
-    // 的领域事件订阅器落投影表（ADR-0030 C2：聚合内事件侧不可达，走投影），而非在此临时拼装。
-    return ApiResponse.success(Collections.emptyList());
+    return ApiResponse.success(configApplicationService.history(id));
   }
 }

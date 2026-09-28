@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS sys_log (
     service     VARCHAR(100) NOT NULL,
     content     CLOB         NOT NULL,
     trace_id    VARCHAR(100),
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted     TINYINT      NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sys_dict (
@@ -192,7 +194,8 @@ CREATE TABLE IF NOT EXISTS sys_alert_rule (
     updated_by            BIGINT,
     created_at            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted               TINYINT       NOT NULL DEFAULT 0
+    deleted               TINYINT       NOT NULL DEFAULT 0,
+    version               INT           NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sys_alert_event (
@@ -207,5 +210,20 @@ CREATE TABLE IF NOT EXISTS sys_alert_event (
     message         VARCHAR(500)  NOT NULL,
     status          VARCHAR(20)   NOT NULL DEFAULT 'TRIGGERED',
     resolved_at     TIMESTAMP,
-    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted         TINYINT       NOT NULL DEFAULT 0
+);
+
+-- S-12：配置变更历史投影表（与 bone-init.sql 对齐，H2 兼容语法）
+CREATE TABLE IF NOT EXISTS sys_config_history (
+    id          BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id   BIGINT       NOT NULL DEFAULT 0,
+    config_id   BIGINT       NOT NULL,
+    config_key  VARCHAR(100) NOT NULL,
+    old_value   CLOB         DEFAULT NULL,
+    new_value   CLOB         DEFAULT NULL,
+    change_type VARCHAR(20)  NOT NULL,
+    operator    VARCHAR(100) DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

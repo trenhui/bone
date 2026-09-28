@@ -1,5 +1,6 @@
 package com.bone.system.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -10,6 +11,8 @@ import static org.mockito.Mockito.when;
 import com.bone.core.exception.BizException;
 import com.bone.system.application.command.CreateConfigCommand;
 import com.bone.system.domain.model.config.SystemConfig;
+import com.bone.system.domain.model.config.event.ConfigChangedEvent;
+import com.bone.system.domain.model.config.event.ConfigCreatedEvent;
 import com.bone.system.domain.model.config.valueobject.ConfigKey;
 import com.bone.system.domain.model.config.valueobject.ConfigType;
 import com.bone.system.domain.model.config.valueobject.ConfigValue;
@@ -18,6 +21,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConfigApplicationServiceTest {
 
   @Mock SystemConfigRepository systemConfigRepository;
+  @Mock com.bone.system.domain.repository.ConfigHistoryRepository configHistoryRepository;
   @Mock com.bone.core.domain.event.DomainEventPublisher domainEventPublisher;
   @Mock com.bone.system.application.port.out.ConfigCipherPort configCipherPort;
 
@@ -40,7 +45,10 @@ class ConfigApplicationServiceTest {
   void setUp() {
     service =
         new ConfigApplicationService(
-            systemConfigRepository, domainEventPublisher, configCipherPort);
+            systemConfigRepository,
+            configHistoryRepository,
+            domainEventPublisher,
+            configCipherPort);
   }
 
   @Test
@@ -132,6 +140,48 @@ class ConfigApplicationServiceTest {
         .save(
             org.mockito.ArgumentMatchers.argThat(
                 saved -> "Bone Platform".equals(saved.getConfigValue().value())));
+  }
+
+  /**
+   * 创建配置必须发布 {@link ConfigCreatedEvent}（变更历史由 {@code ConfigHistoryProjector} 在事务提交后投影落库， 不占用主写事务，满足
+   * R9）。此处只验证「事件被正确抛出」。
+   */
+  @Test
+  void createPublishesCreatedEvent() {
+    when(systemConfigRepository.findByConfigKey(any(ConfigKey.class))).thenReturn(Optional.empty());
+
+    service.create(createCommand("site.title", "SYSTEM"));
+
+    ArgumentCaptor<SystemConfig> captor = ArgumentCaptor.forClass(SystemConfig.class);
+    verify(domainEventPublisher, times(1)).publishFrom(captor.capture());
+    assertThat(captor.getValue().getDomainEvents())
+        .anyMatch(
+            e ->
+                e instanceof ConfigCreatedEvent ce
+                    && "site.title".equals(ce.configKey())
+                    && "Bone Platform".equals(ce.configValue()));
+  }
+
+  /** 更新配置值必须发布 {@link ConfigChangedEvent}，且记录变更前的值（oldValue）—— 这是历史审计的关键字段。 */
+  @Test
+  void updatePublishesChangedEventWithOldValue() {
+    SystemConfig config = existingConfig();
+    when(systemConfigRepository.findById(1L)).thenReturn(config);
+
+    com.bone.system.application.command.UpdateConfigCommand command =
+        new com.bone.system.application.command.UpdateConfigCommand();
+    command.setId(1L);
+    command.setConfigValue("new-value");
+    service.update(command);
+
+    ArgumentCaptor<SystemConfig> captor = ArgumentCaptor.forClass(SystemConfig.class);
+    verify(domainEventPublisher, times(1)).publishFrom(captor.capture());
+    assertThat(captor.getValue().getDomainEvents())
+        .anyMatch(
+            e ->
+                e instanceof ConfigChangedEvent ce
+                    && "Bone".equals(ce.oldValue())
+                    && "new-value".equals(ce.newValue()));
   }
 
   private static CreateConfigCommand createCommand(String key, String configType) {

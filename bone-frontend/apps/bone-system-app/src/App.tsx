@@ -7,21 +7,28 @@ import LogManagement from './pages/LogManagement';
 import SystemDeployment from './pages/SystemDeployment';
 import DictManagement from './pages/DictManagement';
 import ScheduleTaskManagement from './pages/ScheduleTaskManagement';
+import AppErrorBoundary from './components/AppErrorBoundary';
+import Authorized from './components/Authorized';
+import { BonePermissionCodes } from './auth/permission';
 import './App.css';
 
 const App: React.FC = () => {
   return (
     <AntdApp>
       <Router>
-        <Routes>
-          <Route path="/config" element={<SystemConfig />} />
-          <Route path="/alerts" element={<MonitorAlert />} />
-          <Route path="/logs" element={<LogManagement />} />
-          <Route path="/k8s" element={<SystemDeployment />} />
-          <Route path="/dict" element={<DictManagement />} />
-          <Route path="/schedule" element={<ScheduleTaskManagement />} />
-          <Route path="/" element={<Navigate to="/config" replace />} />
-        </Routes>
+        <AppErrorBoundary>
+          <Authorized required={BonePermissionCodes.SYS_CONSOLE_READ}>
+            <Routes>
+              <Route path="/config" element={<SystemConfig />} />
+              <Route path="/alerts" element={<MonitorAlert />} />
+              <Route path="/logs" element={<LogManagement />} />
+              <Route path="/k8s" element={<SystemDeployment />} />
+              <Route path="/dict" element={<DictManagement />} />
+              <Route path="/schedule" element={<ScheduleTaskManagement />} />
+              <Route path="/" element={<Navigate to="/config" replace />} />
+            </Routes>
+          </Authorized>
+        </AppErrorBoundary>
       </Router>
     </AntdApp>
   );

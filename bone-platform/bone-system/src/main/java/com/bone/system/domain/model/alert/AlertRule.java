@@ -24,6 +24,8 @@ public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 
+  @com.bone.metadata.sdk.domain.annotation.Version private Long version;
+
   private String name;
   private String description;
   private MetricName metricName;

@@ -11,12 +11,16 @@ import com.bone.system.application.query.dto.ConfigDto;
 import com.bone.system.application.query.qry.ConfigPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
+import com.bone.system.domain.model.config.ConfigHistory;
 import com.bone.system.domain.model.config.SystemConfig;
 import com.bone.system.domain.model.config.valueobject.ConfigKey;
 import com.bone.system.domain.model.config.valueobject.ConfigType;
 import com.bone.system.domain.model.config.valueobject.ConfigValue;
+import com.bone.system.domain.repository.ConfigHistoryRepository;
 import com.bone.system.domain.repository.SystemConfigRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConfigApplicationService {
 
   private final SystemConfigRepository systemConfigRepository;
+  private final ConfigHistoryRepository configHistoryRepository;
   private final DomainEventPublisher domainEventPublisher;
   private final ConfigCipherPort configCipherPort;
 
@@ -80,6 +85,7 @@ public class ConfigApplicationService {
   @Transactional
   public void update(UpdateConfigCommand command) {
     SystemConfig config = requireConfig(command.getId());
+    String oldValue = config.getConfigValue().value();
     if (command.getConfigValue() != null) {
       config.updateValue(
           ConfigValue.of(storeValue(command.getConfigValue(), config.isEncrypted())), OPERATOR);
@@ -139,6 +145,24 @@ public class ConfigApplicationService {
    */
   public List<ConfigDto> listAll() {
     return systemConfigRepository.findAllOrderedByKey().stream().map(ConfigDto::from).toList();
+  }
+
+  /** 配置变更历史（按配置 ID），供 {@code /config/{id}/history} 返回。 */
+  public List<Map<String, Object>> history(Long id) {
+    return configHistoryRepository.findByConfigIdOrdered(id).stream()
+        .map(ConfigApplicationService::toHistoryMap)
+        .toList();
+  }
+
+  private static Map<String, Object> toHistoryMap(ConfigHistory history) {
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("id", history.getId());
+    map.put("configId", history.getConfigId());
+    map.put("oldValue", history.getOldValue());
+    map.put("newValue", history.getNewValue());
+    map.put("operator", history.getOperator());
+    map.put("createdAt", history.getCreatedAt() == null ? null : history.getCreatedAt().toString());
+    return map;
   }
 
   private SystemConfig requireConfig(Long id) {

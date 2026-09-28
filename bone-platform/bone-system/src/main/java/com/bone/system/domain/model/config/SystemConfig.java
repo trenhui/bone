@@ -23,6 +23,8 @@ public class SystemConfig extends AggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 
+  @com.bone.metadata.sdk.domain.annotation.Version private Long version;
+
   private ConfigKey configKey;
   private ConfigValue configValue;
   private String description;

@@ -32,6 +32,8 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 
+  @com.bone.metadata.sdk.domain.annotation.Version private Long version;
+
   private String typeCode;
   private String code;
   private String label;

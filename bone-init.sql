@@ -386,6 +386,21 @@ CREATE TABLE sys_config (
     UNIQUE KEY uk_sys_config_key (tenant_id, config_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置';
 
+CREATE TABLE sys_config_history (
+    id          BIGINT          NOT NULL COMMENT '历史记录主键（Snowflake）',
+    tenant_id   BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    config_id   BIGINT          NOT NULL COMMENT '配置ID',
+    config_key  VARCHAR(100)    NOT NULL COMMENT '配置键',
+    old_value   TEXT            DEFAULT NULL COMMENT '变更前配置值',
+    new_value   TEXT            DEFAULT NULL COMMENT '变更后配置值',
+    change_type VARCHAR(20)     NOT NULL COMMENT 'CREATE/UPDATE',
+    operator    VARCHAR(100)    DEFAULT NULL COMMENT '操作人（审计占位）',
+    created_at  DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '变更时间',
+    PRIMARY KEY (id),
+    KEY idx_sys_config_history_config (config_id),
+    KEY idx_sys_config_history_time (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置变更历史';
+
 CREATE TABLE sys_log (
     id                  BIGINT          NOT NULL COMMENT '日志主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
@@ -394,6 +409,8 @@ CREATE TABLE sys_log (
     content             TEXT            NOT NULL COMMENT '日志内容',
     trace_id            VARCHAR(100)    DEFAULT NULL COMMENT '追踪ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
     KEY idx_sys_log_level (level),
     KEY idx_sys_log_service (service),
@@ -548,6 +565,7 @@ CREATE TABLE sys_alert_rule (
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
     KEY idx_sys_alert_rule_metric (metric_name),
     KEY idx_sys_alert_rule_level (alert_level)
@@ -566,6 +584,8 @@ CREATE TABLE sys_alert_event (
     status              VARCHAR(20)     NOT NULL DEFAULT 'TRIGGERED' COMMENT 'TRIGGERED/RESOLVED',
     resolved_at         DATETIME(3)     DEFAULT NULL COMMENT '恢复时间',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
     KEY idx_sys_alert_event_rule (rule_id),
     KEY idx_sys_alert_event_status (status),
