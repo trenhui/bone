@@ -28,7 +28,7 @@
 | S-10 | 聚合无 `version` 字段建模（domain model 0 命中 version） | 乐观锁最佳实践 | 新增/变更聚合补 `version`（与 `sys_config` 表 `version` 列对齐） | `grep version in domain/model` 0 命中 |
 | S-11 | `AlertRecord` 聚合名→表 `sys_alert_event`，打破 `AlertRule`→`sys_alert_rule` 口径 | 命名一致性 | 文档说明或重命名聚合为 `AlertEvent` | `AlertRecord.java:18` `@Table("sys_alert_event")` |
 | S-12 | `/config/{id}/history` 故意返回空 List（[Target] 未实现审计表） | 设计标注 [Target] | 落 `sys_config_history` 后实现（L3） | `ConfigController.java:129-135` |
-| S-13 | doc1 控制台 dashboards/widgets/preferences 未实现，`cnsl_*` 孤儿表无聚合/控制器 | 设计-代码 GAP | 架构师裁定：实现或下线 `cnsl_*` 表 | `ConsoleController` 仅 5 端点；`cnsl_dashboard_widget:1546` 等孤儿表 |
+| S-13 | doc1 控制台 dashboards/widgets/preferences 未实现，`cnsl_*` 孤儿表无聚合/控制器 | 设计-代码 GAP（已收敛） | 已按最推荐落地 `cnsl_recent_access`：新增 `RecentAccess` 聚合 + `RecentAccessRepository` + `RecentAccessRecorder` 拦截器（成功访问 `/api/v1/console/**` 后追加写入）；`cnsl_dashboard_widget` / `cnsl_notification` 维持 [Vision] 延后 | `ConsoleController` 仅 5 端点；`cnsl_recent_access:1606` 由 `RecentAccessRecorder` 填充 |
 
 ## 三、参考级对标（亮点）
 
