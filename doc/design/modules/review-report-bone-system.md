@@ -179,7 +179,7 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 | S-4 | token 注入 + 路由级权限码隐藏 | token 部分合理；权限隐藏需权限码体系 | `createBoneMicroAppRenderer` 已注入 token；路由守卫无 `PermissionCodes` 定义 | token 已做；**✅ 本次执行**（见 10.5）：前端 `permission.ts`+`Authorized.tsx`+`App.tsx` 路由守卫（用户指定为跨模块优先项）；后端 `@PreAuthorize` 已覆盖 |
 | S-5 | dayjs locale/utc + 页面 i18n | dayjs 合理；整页 i18n 工作量大 | `dayjs-setup.ts` 已 `locale('zh-CN')`+`utc`；页面硬编码中文未接 `useTranslation` | dayjs 已做；整页 i18n 属大重构，延后 |
 | S-6 | ErrorBoundary + 403 无权限态 | 合理 | 子应用内无 ErrorBoundary（Shell 仅兜挂载层） | **✅ 本次执行**（见 10.2） |
-| S-7 | 主键 `id:string` | 方向合理但跨模块契约风险高 | `shared-types` 仍 `id?:number` | 跨 `shared-services` 契约风险，不盲目执行，建议专项评估 |
+| S-7 | 主键 `id:string` | 方向合理；**但报告「number 直传精度风险」前提已过时**——`MetadataAutoConfiguration.boneLongToStringCustomizer` 已将 `Long` 全局序列化为 JSON 字符串，线上不再以 number 直传 | `shared-types` 仍 `id?:number`（类型错位）；`masterdata-app` 存在 `Number(id)` 二次转换真脚枪 | 跨 `shared-services` 契约风险，不盲目执行；**详见 §10.6 调研**：后端无需改，前端类型对齐 + 清剿 `Number(id)` 应单独立项 |
 | S-8 | 错误码→UI 文案 | 合理 | `apiClient` 拦截器 + `errorMessage` + 37 码译文 + 全部 5 页已用 `resolveErrorMessage` | 前轮已落地；**本次顺手统一 `ScheduleTaskManagement.runNow` 旧写法** |
 | S-9 | MDC(tenantId/traceId) | 合理 | `RequestLoggingMdcFilter` 已实现每请求注入 + `finally` 清理 | 前轮已落地 |
 | S-10 | 聚合补 `version` | 方向合理但需 DDL/SDK 验证 | 仅 `sys_config` 有 `version` 列；`@Version` 全仓零使用 | **✅ 本次执行**（见 10.5）：7 聚合补 `@Version`；验证 SDK `@Version` 支持时暴露 `TypeConverter.parseNumber` 的 `INT→Long` 转换 `ClassCastException` 缺陷，**已修 SDK 根因**（属平台级修复，不止本模块） |
@@ -207,7 +207,7 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 ### 10.4 待办（下轮候选 / 需审批）
 
 - **仍待架构师裁决**：S-13（`cnsl_*` 孤儿表处置）——用户明确「先不动」，本任务未执行。
-- **需专项评估（跨模块，未盲目执行）**：S-7（`id:string` 跨模块契约风险）、S-5（整页 i18n 大重构）。
+- **需专项评估（跨模块，未盲目执行）**：S-7（`id:string`，见 §10.6 调研结论——报告原前提已部分过时）、S-5（整页 i18n 大重构）。
 - 已闭环：S-1/S-2/S-4/S-6/S-8/S-9/S-11（前轮）+ **S-3/S-10/S-12（本次，见 10.5）**。
 - ⚠ **遗留平台级事项**：S-10 验证中发现 `bone-metadata-sdk` 的 `TypeConverter.parseNumber` 存在 `INT→Long` 转换 `ClassCastException` 缺陷（影响所有 `@Version Long` 实体读取 `INT` 列），本任务已修 SDK 根因并安装至本地 `.m2`；建议 SDK 维护方并入主线（见 10.5 第 3 点）。
 
@@ -240,4 +240,32 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 **验证汇总**
 - `mvn -o -pl bone-platform/bone-system test`：**187 用例，0 失败 0 错误，BUILD SUCCESS**（含 ArchitectureTest 26/26 门禁全绿：R8 聚合纯单测、R9 一事务一聚合）。
 - 前端 `tsc --noEmit` 退出码 0。
+
+### 10.6 S-7 复核调研（2026-09-28）：报告原前提已部分过时
+
+**调研触发**：用户指定 S-7「先调研再定方案」。结论与报告 §10.1/§10.4 的「主键 `id` 以 `number` 直传，Long>2^53 精度风险」判断**不一致**——序列化层已全局兜底，线上不再以 number 直传。
+
+**1. 后端线上序列化（精度丢失根因）——已安全**
+- `bone-metadata-sdk` 的 `MetadataAutoConfiguration` 已在 `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 登记为 Spring Boot 自动配置；bone-system 的 `pom.xml:38` 依赖该 SDK → 运行时必然激活。
+- 其 `boneLongToStringCustomizer()` 注册**全局** `Jackson2ObjectMapperBuilderCustomizer`，对 `Long.class` / `long` 一律用 `ToStringSerializer.instance` 序列化为 JSON 字符串（注释明言「全平台统一兜底的唯一落点」）。
+- 因此 `ConfigResp`/`AlertRuleResp` 等 12 个裸 `@Data` 类中的 `private Long id`（无 `@JsonSerialize`）**线上即为 JSON 字符串**，不会触发 JS 双精度截断。
+- 该兜底与 `Entity.id` 的 `EntityIdSerializer`（`Long`→`writeString`）、`AbstractDTO.id` 的 `ToStringSerializer` 形成三重保险；聚合根响应早已 string。
+
+**2. 前端 `id?: number` 声明——类型错位，非活跃数据 bug**
+- 线上值为 string，`shared-types` 却仍声明 `number`：分布为 `system.ts`(8)、`integration.ts`(9+2?)、`masterdata.ts`(8)、`metadata.ts`(3) 等共约 28 处在 `shared-types`，另有约 39 个 app 文件。
+- `iam.ts`/`metadata.ts` 注释已写明「所有 ID 一律 string、禁止 Number()」，但 `metadata.ts` 字段仍写 `id: number`——**约定与声明自相矛盾**。
+- bone-system-app 内 `record.id!` 均直接作为 path/body 参数透传（无 `Number()`），运行时无碍；仅为 TS 类型摩擦。
+
+**3. 真正的残留脚枪：`Number(id)` / `parseInt(id)` 二次转换**
+- 跨模块扫描发现 `bone-masterdata-app` 多处对 ID 字段做 `Number(v.accountId)` / `Number(v.parentCategoryId)` / `Number(v.assigneeId)`。一旦 ID > 2^53，此类转换会静默截断（与 10.5 所述 S-10 实证同源坑），是**比类型声明更实的精度风险**。bone-system-app 未发现此类转换。
+
+**4. 网关——安全**
+- `bone-gateway` 仅在 `RateLimitGatewayFilter` 用到 `Long.class`（限流 key），不对响应 ID 做数字解析，无网关级精度风险。
+
+**结论与建议**
+- 报告原 S-7 方案「`shared-types` 主键 `id: string`、请求体透传」方向仍对，但**「number 直传精度风险」前提已不成立**——后端无需再改（加 `@JsonSerialize` 属冗余）。
+- 可执行且低风险的工作：① 将 `shared-types` 的 `id?: number`→`id?: string` 对齐到线上实际格式与 iam/metadata 约定（属前端类型对齐，跨模块，影响全量 type-check）；② **优先清剿各 app 的 `Number(id)`/`parseInt(id)` 转换**（真正脚枪，集中在 masterdata-app）。
+- S-7 实质是**跨模块前端类型对齐 + 转换清理大项**，应按专项评估结论单独立项，不应塞进 bone-system 特性提交。
+
+**待用户裁定**：是否立项执行 ①（shared-types 类型对齐，约 28+39 处）+ ②（清剿 Number(id) 转换）；或直接仅更新本报告、维持现状。
 
