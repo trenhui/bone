@@ -14,10 +14,11 @@ export interface SystemConfig {
 
 export interface ConfigHistory {
   id?: string;
-  configId: number;
+  configId: string;
   oldValue?: string;
   newValue: string;
   operator?: string;
+  tenantId?: string;
   createdAt?: string;
 }
 
@@ -37,7 +38,7 @@ export interface AlertRule {
 
 export interface AlertRecord {
   id?: string;
-  alertRuleId: number;
+  alertRuleId: string;
   value: number;
   message: string;
   status: 'TRIGGERED' | 'RESOLVED';
@@ -88,7 +89,7 @@ export type DictHierarchyCode = string;
 /** 字典类型（定义层，对齐 DictTypeResp） */
 export interface DictType {
   id?: string;
-  tenantId?: number;
+  tenantId?: string;
   code: string;
   name: string;
   category?: DictCategory;
@@ -117,7 +118,7 @@ export interface DictType {
 /** 字典项（值层，对齐 DictItemResp） */
 export interface DictItem {
   id?: string;
-  tenantId?: number;
+  tenantId?: string;
   typeCode: string;
   code: string;
   label: string;

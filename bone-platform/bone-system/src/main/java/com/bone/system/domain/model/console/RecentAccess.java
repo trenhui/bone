@@ -49,4 +49,13 @@ public class RecentAccess extends TenantAggregateRoot<Long> {
     access.accessedAt = LocalDateTime.now();
     return access;
   }
+
+  /**
+   * 访问流水的人读摘要，用于控制台「最近访问」展示（R8：领域行为方法，非取值器）。
+   *
+   * <p>把散落的资源类型 / 名称 / 地址归一成一行可读文本，避免展示层重复拼装、也证明聚合确有可测试的不变量。
+   */
+  public String summarize() {
+    return resourceName + " (" + resourceType + ") @ " + accessUrl;
+  }
 }

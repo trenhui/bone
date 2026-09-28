@@ -326,6 +326,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
+| `GEN_TEMPLATE_NOT_FOUND` | 404 | 代码模板不存在（含跨租户不可见） |
+| `GEN_GENERATION_FAILED` | 500 | 代码生成执行失败（模板渲染/写盘等运行时异常） |
+| `GEN_TENANT_CONTEXT_MISSING` | 400 | 租户上下文缺失：请求未携带有效租户且当前上下文取不到租户，失败关闭 |
 
 ### BP_
 

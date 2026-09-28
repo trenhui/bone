@@ -39,7 +39,9 @@ public class SystemConfig extends AggregateRoot<Long> {
       ConfigValue configValue,
       String description,
       ConfigType configType,
-      boolean encrypted) {
+      boolean encrypted,
+      String operator,
+      Long tenantId) {
     SystemConfig config = new SystemConfig();
     config.id = id;
     config.configKey = configKey;
@@ -49,17 +51,17 @@ public class SystemConfig extends AggregateRoot<Long> {
     config.encrypted = encrypted;
     config.createdAt = LocalDateTime.now();
     config.updatedAt = LocalDateTime.now();
-    config.addDomainEvent(new ConfigCreatedEvent(config));
+    config.addDomainEvent(new ConfigCreatedEvent(config, operator, tenantId));
     return config;
   }
 
-  public void updateValue(ConfigValue newValue, String operator) {
+  public void updateValue(ConfigValue newValue, String operator, Long tenantId) {
     ConfigValue oldValue = this.configValue;
     this.configValue = newValue;
     this.updatedAt = LocalDateTime.now();
     addDomainEvent(
         new ConfigChangedEvent(
-            this.id, configKey.value(), oldValue.value(), newValue.value(), operator));
+            this.id, configKey.value(), oldValue.value(), newValue.value(), operator, tenantId));
   }
 
   public void updateDescription(String description) {

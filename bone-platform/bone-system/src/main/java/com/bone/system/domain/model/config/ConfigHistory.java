@@ -30,6 +30,13 @@ public class ConfigHistory extends AggregateRoot<Long> {
   private String newValue;
   private String changeType;
   private String operator;
+
+  /** 操作人所属租户（修复 R2：不再隐式依赖 TenantContext，事件显式携带，脱离主链路也不丢租户）。 */
+  private Long tenantId;
+
+  /** 幂等事件 ID（修复 R7：事件重放时按此去重，避免重复历史行）。 */
+  private String eventId;
+
   private LocalDateTime createdAt;
 
   public static ConfigHistory of(
@@ -38,7 +45,9 @@ public class ConfigHistory extends AggregateRoot<Long> {
       String oldValue,
       String newValue,
       String changeType,
-      String operator) {
+      String operator,
+      Long tenantId,
+      String eventId) {
     ConfigHistory history = new ConfigHistory();
     history.configId = configId;
     history.configKey = configKey;
@@ -46,6 +55,8 @@ public class ConfigHistory extends AggregateRoot<Long> {
     history.newValue = newValue;
     history.changeType = changeType;
     history.operator = operator;
+    history.tenantId = tenantId;
+    history.eventId = eventId;
     history.createdAt = LocalDateTime.now();
     return history;
   }

@@ -34,7 +34,9 @@ class ConfigHistoryProjectorTest {
             ConfigValue.of("Bone Platform"),
             "desc",
             ConfigType.SYSTEM,
-            false);
+            false,
+            "admin",
+            0L);
     ConfigCreatedEvent event = (ConfigCreatedEvent) config.getDomainEvents().get(0);
 
     projector.onCreated(event);
@@ -51,7 +53,7 @@ class ConfigHistoryProjectorTest {
   @Test
   void onChangedWritesUpdateHistory() {
     ConfigChangedEvent event =
-        new ConfigChangedEvent(1L, "site.title", "Bone", "new-value", "admin");
+        new ConfigChangedEvent(1L, "site.title", "Bone", "new-value", "admin", 0L);
 
     projector.onChanged(event);
 

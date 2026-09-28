@@ -38,6 +38,7 @@ class ConfigApplicationServiceTest {
   @Mock com.bone.system.domain.repository.ConfigHistoryRepository configHistoryRepository;
   @Mock com.bone.core.domain.event.DomainEventPublisher domainEventPublisher;
   @Mock com.bone.system.application.port.out.ConfigCipherPort configCipherPort;
+  @Mock com.bone.system.domain.gateway.TenantProvider tenantProvider;
 
   ConfigApplicationService service;
 
@@ -48,7 +49,8 @@ class ConfigApplicationServiceTest {
             systemConfigRepository,
             configHistoryRepository,
             domainEventPublisher,
-            configCipherPort);
+            configCipherPort,
+            tenantProvider);
   }
 
   @Test
@@ -196,6 +198,13 @@ class ConfigApplicationServiceTest {
 
   private static SystemConfig existingConfig() {
     return SystemConfig.create(
-        1L, ConfigKey.of("site.title"), ConfigValue.of("Bone"), "desc", ConfigType.SYSTEM, false);
+        1L,
+        ConfigKey.of("site.title"),
+        ConfigValue.of("Bone"),
+        "desc",
+        ConfigType.SYSTEM,
+        false,
+        "admin",
+        0L);
   }
 }

@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS sys_log (
     content     CLOB         NOT NULL,
     trace_id    VARCHAR(100),
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted     TINYINT      NOT NULL DEFAULT 0
 );
 
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS sys_alert_event (
     status          VARCHAR(20)   NOT NULL DEFAULT 'TRIGGERED',
     resolved_at     TIMESTAMP,
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted         TINYINT       NOT NULL DEFAULT 0
 );
 
@@ -225,5 +225,7 @@ CREATE TABLE IF NOT EXISTS sys_config_history (
     new_value   CLOB         DEFAULT NULL,
     change_type VARCHAR(20)  NOT NULL,
     operator    VARCHAR(100) DEFAULT NULL,
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    event_id    VARCHAR(36)  DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (event_id)
 );

@@ -1,6 +1,7 @@
 package com.bone.system.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.domain.model.config.ConfigHistory;
 import java.util.List;
@@ -18,5 +19,13 @@ public interface ConfigHistoryRepository extends Repository<ConfigHistory, Long>
         .eq(configId)
         .orderByDesc(ConfigHistory::getCreatedAt)
         .list();
+  }
+
+  /** 按事件 ID 计数（R7：幂等判重用，事件重放前确认是否已落库）。 */
+  default Long countByEventId(String eventId) {
+    return countByCriteria(
+        Criteria.<ConfigHistory>create()
+            .entityClass(ConfigHistory.class)
+            .eq(ConfigHistory::getEventId, eventId));
   }
 }

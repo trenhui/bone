@@ -395,10 +395,12 @@ CREATE TABLE sys_config_history (
     new_value   TEXT            DEFAULT NULL COMMENT '变更后配置值',
     change_type VARCHAR(20)     NOT NULL COMMENT 'CREATE/UPDATE',
     operator    VARCHAR(100)    DEFAULT NULL COMMENT '操作人（审计占位）',
+    event_id    VARCHAR(36)     DEFAULT NULL COMMENT '幂等事件ID（事件重放去重，R7）',
     created_at  DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '变更时间',
     PRIMARY KEY (id),
     KEY idx_sys_config_history_config (config_id),
-    KEY idx_sys_config_history_time (created_at)
+    KEY idx_sys_config_history_time (created_at),
+    UNIQUE KEY uk_sys_config_history_event (event_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置变更历史';
 
 CREATE TABLE sys_log (

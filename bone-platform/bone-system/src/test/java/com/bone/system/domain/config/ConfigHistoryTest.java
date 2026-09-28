@@ -13,7 +13,7 @@ class ConfigHistoryTest {
   @Test
   void ofCreatesCreateRecordWithoutOldValue() {
     ConfigHistory history =
-        ConfigHistory.of(1L, "site.title", null, "Bone Platform", "CREATE", "admin");
+        ConfigHistory.of(1L, "site.title", null, "Bone Platform", "CREATE", "admin", 0L, "evt-1");
 
     assertEquals(1L, history.getConfigId());
     assertEquals("site.title", history.getConfigKey());
@@ -26,7 +26,7 @@ class ConfigHistoryTest {
   @Test
   void ofCreatesUpdateRecordWithOldAndNewValue() {
     ConfigHistory history =
-        ConfigHistory.of(1L, "site.title", "Bone", "new-value", "UPDATE", "admin");
+        ConfigHistory.of(1L, "site.title", "Bone", "new-value", "UPDATE", "admin", 0L, "evt-2");
 
     assertEquals("UPDATE", history.getChangeType());
     assertEquals("Bone", history.getOldValue());
@@ -35,7 +35,8 @@ class ConfigHistoryTest {
 
   @Test
   void ofStampsCreatedAt() {
-    ConfigHistory history = ConfigHistory.of(1L, "site.title", null, "v", "CREATE", "admin");
+    ConfigHistory history =
+        ConfigHistory.of(1L, "site.title", null, "v", "CREATE", "admin", 0L, "evt-3");
 
     // createdAt 由工厂即时生成，不应为 null
     assertEquals(true, history.getCreatedAt() instanceof LocalDateTime);
@@ -44,7 +45,7 @@ class ConfigHistoryTest {
   @Test
   void auditSummaryRendersChangeForUpdate() {
     ConfigHistory history =
-        ConfigHistory.of(1L, "site.title", "Bone", "new-value", "UPDATE", "admin");
+        ConfigHistory.of(1L, "site.title", "Bone", "new-value", "UPDATE", "admin", 0L, "evt-4");
 
     String summary = history.auditSummary();
     assertEquals(true, summary.contains("UPDATE"));
@@ -55,7 +56,8 @@ class ConfigHistoryTest {
 
   @Test
   void auditSummaryMarksCreateWithInitOldValue() {
-    ConfigHistory history = ConfigHistory.of(1L, "site.title", null, "Bone", "CREATE", "admin");
+    ConfigHistory history =
+        ConfigHistory.of(1L, "site.title", null, "Bone", "CREATE", "admin", 0L, "evt-5");
 
     assertEquals(true, history.auditSummary().contains("(init)"));
   }

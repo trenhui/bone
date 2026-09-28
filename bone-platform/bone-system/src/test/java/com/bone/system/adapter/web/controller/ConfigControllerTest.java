@@ -44,7 +44,9 @@ public class ConfigControllerTest {
         ConfigValue.of(value),
         "测试配置",
         ConfigType.SYSTEM,
-        false);
+        false,
+        "admin",
+        0L);
   }
 
   @Test

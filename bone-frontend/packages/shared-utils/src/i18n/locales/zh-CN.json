@@ -6,6 +6,9 @@
     "empty": "暂无数据"
   },
   "errors": {
+    "GEN_GENERATION_FAILED": "代码生成执行失败",
+    "GEN_TEMPLATE_NOT_FOUND": "代码模板不存在",
+    "GEN_TENANT_CONTEXT_MISSING": "租户上下文缺失",
     "BP_ORDER_NOT_FOUND": "订单不存在",
     "BP_ORDER_STATUS_CONFLICT": "当前订单状态不允许该操作",
     "BP_ORDER_STATUS_INVALID": "订单状态非法",

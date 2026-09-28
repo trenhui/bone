@@ -3,6 +3,8 @@ package com.bone.system.application;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.model.PageResult;
+import com.bone.core.security.auth.CurrentAccountResolver;
+import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateConfigCommand;
 import com.bone.system.application.command.UpdateConfigCommand;
@@ -11,6 +13,7 @@ import com.bone.system.application.query.dto.ConfigDto;
 import com.bone.system.application.query.qry.ConfigPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
+import com.bone.system.domain.gateway.TenantProvider;
 import com.bone.system.domain.model.config.ConfigHistory;
 import com.bone.system.domain.model.config.SystemConfig;
 import com.bone.system.domain.model.config.valueobject.ConfigKey;
@@ -34,8 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
  * SystemConfigRepository}，Handler 之间没有独立的事务边界、路由或生命周期——典型的两件套夫套（E-3.2 Ceremonial Architecture）。配置的写
  * donors 前后都需要读同一聚合，合成一个类反而让依赖与事务语义看得见。
  *
- * <p><b>operator 为什么是常量</b>：{@code updateValue} 的第二个参数是审计用的「谁改的」，当前编排成员的 JWT 未贯穿到应用层（仅用于网关鉴权），故保留
- * {@link #OPERATOR} 占位。接入 {@code TenantPort} / 当前账号后改这里， 不要把责任推给调用方再传一次 id。
+ * <p><b>operator / tenantId 怎么来</b>：审计需要的「谁改的 / 哪个租户」由应用层从 {@link CurrentAccountResolver} （JWT 主体）与
+ * {@link TenantContext} 解析，构造事件时显式带入（R1 / R2）——不推给调用方重复传，也不在投影器里隐式读上下文 （脱离主链路 / Outbox
+ * 重放会丢）。解析不到时回退 {@code "system"} / 平台租户 {@code 0L}，保证审计列非空。
  */
 @Slf4j
 @Service
@@ -47,9 +51,7 @@ public class ConfigApplicationService {
   private final ConfigHistoryRepository configHistoryRepository;
   private final DomainEventPublisher domainEventPublisher;
   private final ConfigCipherPort configCipherPort;
-
-  /** 尚未接入操作人上下文前的审计占位符。 */
-  private static final String OPERATOR = "admin";
+  private final TenantProvider tenantProvider;
 
   @Capability(
       name = "CreateSystemConfig",
@@ -68,6 +70,8 @@ public class ConfigApplicationService {
     if (systemConfigRepository.findByConfigKey(configKey).isPresent()) {
       throw SystemErrors.of(SystemErrorCodes.CONFIG_KEY_CONFLICT, command.getConfigKey());
     }
+    String operator = currentOperator();
+    Long tenantId = currentTenantId();
     SystemConfig config =
         SystemConfig.create(
             DistributedIdGenerator.generateLongId(),
@@ -75,7 +79,9 @@ public class ConfigApplicationService {
             ConfigValue.of(storeValue(command.getConfigValue(), command.isEncrypted())),
             command.getDescription(),
             parseConfigType(command.getConfigType()),
-            command.isEncrypted());
+            command.isEncrypted(),
+            operator,
+            tenantId);
     systemConfigRepository.save(config);
     domainEventPublisher.publishFrom(config);
     return config.getId();
@@ -86,9 +92,13 @@ public class ConfigApplicationService {
   public void update(UpdateConfigCommand command) {
     SystemConfig config = requireConfig(command.getId());
     String oldValue = config.getConfigValue().value();
+    String operator = currentOperator();
+    Long tenantId = currentTenantId();
     if (command.getConfigValue() != null) {
       config.updateValue(
-          ConfigValue.of(storeValue(command.getConfigValue(), config.isEncrypted())), OPERATOR);
+          ConfigValue.of(storeValue(command.getConfigValue(), config.isEncrypted())),
+          operator,
+          tenantId);
     }
     if (command.getDescription() != null) {
       config.updateDescription(command.getDescription());
@@ -158,11 +168,26 @@ public class ConfigApplicationService {
     Map<String, Object> map = new LinkedHashMap<>();
     map.put("id", history.getId());
     map.put("configId", history.getConfigId());
+    map.put("tenantId", history.getTenantId());
     map.put("oldValue", history.getOldValue());
     map.put("newValue", history.getNewValue());
     map.put("operator", history.getOperator());
     map.put("createdAt", history.getCreatedAt() == null ? null : history.getCreatedAt().toString());
     return map;
+  }
+
+  /** 审计操作人：优先取 JWT 主体 userId；解析不到回退 "system"（保证审计列非空）。 */
+  private String currentOperator() {
+    return CurrentAccountResolver.currentPrincipal()
+        .map(JwtPrincipal::userId)
+        .filter(id -> id != null && !id.isBlank())
+        .orElse("system");
+  }
+
+  /** 审计租户：经 {@link TenantProvider} 端口取当前租户（E-2）；未确定回退平台租户 0L。 */
+  private Long currentTenantId() {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    return tenantId == null ? 0L : tenantId;
   }
 
   private SystemConfig requireConfig(Long id) {

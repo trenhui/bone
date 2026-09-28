@@ -18,7 +18,14 @@ class SystemConfigTest {
 
   private SystemConfig createConfig() {
     return SystemConfig.create(
-        1L, ConfigKey.of("sso.enabled"), ConfigValue.of("true"), "单点登录开关", ConfigType.SYSTEM, true);
+        1L,
+        ConfigKey.of("sso.enabled"),
+        ConfigValue.of("true"),
+        "单点登录开关",
+        ConfigType.SYSTEM,
+        true,
+        "admin",
+        0L);
   }
 
   @Test
@@ -37,7 +44,7 @@ class SystemConfigTest {
     SystemConfig config = createConfig();
     config.clearDomainEvents();
 
-    config.updateValue(ConfigValue.of("false"), "admin");
+    config.updateValue(ConfigValue.of("false"), "admin", 0L);
 
     assertEquals("false", config.getConfigValue().value());
     assertEquals(1, config.getDomainEvents().size());

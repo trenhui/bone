@@ -49,4 +49,15 @@ class RecentAccessTest {
 
     assertNull(access.getId());
   }
+
+  @Test
+  void summarizeRendersResourceAndUrl() {
+    RecentAccess access =
+        RecentAccess.of(1L, 9L, "console", "/api/v1/console/overview", "系统概览", "http://x/overview");
+
+    String summary = access.summarize();
+    assertTrue(summary.contains("系统概览"));
+    assertTrue(summary.contains("console"));
+    assertTrue(summary.contains("http://x/overview"));
+  }
 }

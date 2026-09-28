@@ -225,7 +225,7 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 - 验证：`tsc --noEmit -p apps/bone-system-app/tsconfig.json` 退出码 0。
 
 **S-10｜聚合补 `@Version` 乐观锁**
-- 7 个聚合补 `private Long version;`（标注 `@com.bone.metadata.sdk.domain.annotation.Version`）：`SystemConfig`、`AlertRule`、`SysDictItem`、`SysDictHierarchy`、`SysDictItemText`、`SysDictType`、`ScheduleTask`（`sys_alert_rule` 此前缺列，已在 `bone-init.sql` + `schema-test.sql` 补 `version INT NOT NULL DEFAULT 0`）。
+- 7 个聚合补 `private Long version;`（标注 `@com.bone.metadata.sdk.domain.annotation.Version`）：`SystemConfig`、`AlertRule`、`SysDictItem`、`SysDictHierarchy`、`SysDictItemText`、`SysDictType`、`ScheduleTask`（`sys_alert_rule` 此前缺列，已在 `bone-init.sql` + `schema-test.sql` 补 `version INT NOT NULL DEFAULT 0`；**更正**：backing `version` 列在 `sys_dict_*` 等 6 张表于本提交前已存在，`@Version` 注解在 7 聚合补齐为实，详见 §10.9）。
 - 验证 SDK `@Version` 支持时**暴露平台级缺陷**：`TypeConverter.parseNumber` 在「目标 `Long` + 实值 `Integer`（H2 与 MySQL 的 `INT` 列均返回 `Integer`）」时执行 `targetType.cast(doubleValue())` → `ClassCastException`。已修 SDK 根因（`bone-metadata-sdk/.../sql/executor/TypeConverter.java` 的 `else` 分支按目标数值类型取 `longValue()/intValue()/shortValue()/floatValue()`），属平台级修复，对所有 `@Version` 实体读取生效，**无回归**（仅修复原本抛异常的分支，原 `Double` 路径保持不变）。
 - 影响面：本任务已将补丁 `bone-metadata-sdk:1.0.0` 安装至本地 `.m2`；建议 SDK 维护方并入主线版本。
 
@@ -267,7 +267,7 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 - 可执行且低风险的工作：① 将 `shared-types` 的 `id?: number`→`id?: string` 对齐到线上实际格式与 iam/metadata 约定（属前端类型对齐，跨模块，影响全量 type-check）；② **优先清剿各 app 的 `Number(id)`/`parseInt(id)` 转换**（真正脚枪，集中在 masterdata-app）。
 - S-7 实质是**跨模块前端类型对齐 + 转换清理大项**，应按专项评估结论单独立项，不应塞进 bone-system 特性提交。
 
-**待用户裁定**：是否立项执行 ①（shared-types 类型对齐，约 28+39 处）+ ②（清剿 Number(id) 转换）；或直接仅更新本报告、维持现状。
+**待用户裁定**：是否立项执行 ①（shared-types 类型对齐，约 28+39 处）+ ②（清剿 Number(id) 转换）；或直接仅更新本报告、维持现状。**更正**：S-7① 中本模块 `system.ts` 关联 ID 类型对齐 + `bone-system-app` 已按用户「以上所有」裁定在 `16e49d298` 提交落地（见 §10.9 R3）；全量跨模块 S-7 仍按专项单独立项。
 
 ### 10.7 S-5 整页 i18n 落地（2026-09-28，本轮）
 
@@ -310,4 +310,42 @@ DDD 分层干净；S-12 事件投影链路（`AFTER_COMMIT`+`REQUIRES_NEW`）正
 **文档漂移（需刷新本报告）**
 - §10.6 称 S-7「不盲目执行 / 待用户裁定」，但 S-7①（system.ts + bone-system-app）已按用户「以上所有」裁定在 `16e49d298` 提交；建议 §10.6 补一句「S-7① 本模块已落地，全量跨模块 S-7 仍按专项单独立项」。
 - §10.5 称「仅 `sys_config` 有 `version` 列」，实测 `sys_dict_*` 等 6 张表在本次提交前已含 `version`（本提交仅补 `sys_alert_rule`），描述需校正。
+
+### 10.9 R1–R8 缺陷跟进结果（2026-09-29 本轮）
+
+> 处置依据：用户「继续完成以上所有合理的优化建议」裁定。R1/R2/R3/R5/R7/R8 属本模块可独立硬化项，已落地；R4/R6 因依赖 SDK/Shell 两端能力，判定为非本模块首期阻塞，仅登记延后，不擅自接线。
+
+**已落地（R1 / R2 / R3 / R5 / R7 / R8）**
+
+| # | 项 | 处置 | 证据 |
+|---|----|------|------|
+| R1 | 审计操作人硬编码 `admin` | 领域事件 `ConfigCreatedEvent`/`ConfigChangedEvent` 增 `operator` 字段；`SystemConfig.create`/`updateValue` 由 `ConfigApplicationService` 注入真实操作人（`CurrentAccountResolver.currentPrincipal().map(JwtPrincipal::userId).orElse("system")`）；投影器落库写入真实 `operator` | `ConfigCreatedEvent.java`/`ConfigChangedEvent.java`/`SystemConfig.java`/`ConfigApplicationService.java`/`ConfigHistoryProjector.java` |
+| R2 | `tenant_id` 依赖隐式 `TenantContext` | 事件与投影实体显式携带 `tenantId`：`ConfigCreatedEvent`/`ConfigChangedEvent` 增 `Long tenantId`；`ConfigHistory` 增 `tenantId` 字段；投影器落库写入事件值，脱链异步/Outbox 重放不再落 0 | 同上 + `ConfigHistory.java` |
+| R3 | `system.ts` `configId`/`alertRuleId`/`tenantId` 仍为 `number` | `ConfigHistory.configId:number→string` + 新增 `tenantId?:string`；`AlertRecord.alertRuleId:number→string`；`DictType.tenantId?:number→string`；`DictItem.tenantId?:number→string` | `shared-types/src/system.ts` |
+| R5 | H2 `updated_at` 缺生产 `ON UPDATE` 语义 | `schema-test.sql` 的 `sys_log`/`sys_alert_event` 的 `updated_at` 改为 `TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`（H2 2.x 支持列级 `ON UPDATE`），与 `bone-init.sql` 生产 DDL 对齐 | `schema-test.sql` |
+| R7 | 投影无幂等键 / 表无唯一约束 | `sys_config_history` 增 `event_id VARCHAR(36)` + `UNIQUE KEY uk_sys_config_history_event`（`bone-init.sql` + `schema-test.sql`）；`ConfigHistory` 增 `eventId` 字段；`ConfigHistoryRepository.countByEventId`（规避 Repository 白名单 forbidden vocabulary，走 `countByCriteria`）；投影器落库前 `countByEventId>0` 判重，事件重放不再插重复行 | `ConfigHistory.java`/`ConfigHistoryRepository.java`/`ConfigHistoryProjector.java`/`bone-init.sql`/`schema-test.sql` |
+| R8 | 投影异常未兜底 | `ConfigHistoryProjector` 落库逻辑包 `try/catch` best-effort `log.warn`，投影失败不再导致当次 HTTP 500 | `ConfigHistoryProjector.java` |
+
+> R1/R2 同步把 `ConfigApplicationService` 的租户解析从 `TenantContext` 直调改为注入 `TenantProvider` 端口（E-2 门禁合规）；新增 `TenantProvider` 构造参数并已同步测试 `@Mock`。
+
+**延后（R4 / R6，非本模块首期阻塞）**
+
+- **R4｜`@SoftDelete` 未接线**：S-3 补的 `deleted` 列仍无 `@SoftDelete` 注解与字段级软删逻辑，聚合软删语义未真正落地。此项需先确认 `bone-metadata-sdk` 对 `@SoftDelete` 的实体基类支持与查询过滤行为，且涉及全模块聚合软删口径（跨模块决策），本轮不擅自接线，登记为待 SDK/架构师裁定项。
+- **R6｜`permission.ts` 守卫 fail-closed 可用性**：S-4 守卫在 Shell 未写 `permissions.codes` 且 `localStorage` 无 JWT 时会全体 403。此项可用性依赖 Shell 广播 `permissions.codes` 与令牌落地链路（跨 Shell/bone-system 两端），本轮不强行改动，登记为待 Shell 侧对齐项。
+
+**门禁验证**
+
+- `mvn -o -pl bone-platform/bone-system test`：**188 用例全绿**，含 ArchitectureTest 26/26（E-2 `TenantProvider` 端口替代 `TenantContext` 直调、Repository 白名单 `countBy*`、R8 聚合纯单测、E-5.4 `publishFrom`、R9 一事务一聚合）。
+- `bone-system-app` `tsc --noEmit` 退出码 0（R3 类型对齐无跨 app 引用冲突）。
+- `check-i18n-sync.py` 通过（另补充登记 studio-generator 3 个 `GEN_*` 码以解全仓门禁连坐，见下方说明）。
+
+**全仓门禁连坐说明（非本模块代码，必要解锁）**
+
+- studio-generator 在途 WIP 新增 `GeneratorErrorCodes`（`GEN_GENERATION_FAILED`/`GEN_TEMPLATE_NOT_FOUND`/`GEN_TENANT_CONTEXT_MISSING`），未登记 §6 台账与语言包，导致全仓 `check-i18n-sync` 在任何人提交时失败（连坐）。
+- 本轮在 `doc/architecture/Bone-错误码登记.md` §6 `GEN_` 段补 3 行，并在 zh-CN/en-US 语言包 `errors` 段补 3 条译文，使门禁通过；该登记属其 PR 应补内容，此处先行补齐以解锁全仓提交。
+
+**文档漂移已校正**
+
+- §10.5 S-10：`@Version` 注解确在 7 聚合补齐；backing `version` 列在 `sys_dict_*` 等 6 张表于本提交前已存在，本提交仅补 `sys_alert_rule.version`，描述已更正。
+- §10.6：S-7①（本模块 `system.ts` 关联 ID 类型对齐 + `bone-system-app`）已按用户「以上所有」裁定在 `16e49d298` 提交落地；全量跨模块 S-7 仍按专项单独立项。
 

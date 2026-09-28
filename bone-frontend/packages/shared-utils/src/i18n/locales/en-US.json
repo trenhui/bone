@@ -6,6 +6,9 @@
     "empty": "No data"
   },
   "errors": {
+    "GEN_GENERATION_FAILED": "Code generation failed",
+    "GEN_TEMPLATE_NOT_FOUND": "Code template not found",
+    "GEN_TENANT_CONTEXT_MISSING": "Tenant context missing",
     "BP_ORDER_NOT_FOUND": "Order not found",
     "BP_ORDER_STATUS_CONFLICT": "Operation not allowed in the current order status",
     "BP_ORDER_STATUS_INVALID": "Invalid order status",
