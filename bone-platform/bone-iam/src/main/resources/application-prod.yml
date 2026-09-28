@@ -27,7 +27,7 @@ management:
   endpoints:
     web:
       exposure:
-        # prod 至少保留 metrics（prometheus 端点经内网 + JWT 鉴权，不放通匿名）
+        # prod 仅暴露 health/info/metrics：metrics 经 JWT 鉴权、不放通匿名；prometheus 抓取端点不在 prod 暴露
         include: health,info,metrics
   endpoint:
     health:

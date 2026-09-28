@@ -45,7 +45,7 @@ const ApplicationManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editApp, setEditApp] = useState<BoneApplication | null>(null);
   const [submitting, setSubmitting] = useState(false);

@@ -348,67 +348,67 @@ const MenuManagement: React.FC = () => {
     <ModulePage title="菜单管理" description="维护平台导航菜单与按钮级权限，支持搜索、层级浏览与影响范围确认删除。" extra={toolbar} statistics={statistics}>
       <Spin spinning={loading}>
         <Flex gap={16} align="flex-start" style={{ padding: 16 }}>
-        <ProCard
-          title="菜单结构"
-          style={{ flex: '0 0 460px', minWidth: 380 }}
-          bordered
-          bodyStyle={{ padding: 0, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}
-        >
-          <Tree<DataNode>
-            treeData={renderTree}
-            expandedKeys={expandedKeys}
-            onExpand={(keys) => setExpandedKeys(keys)}
-            selectedKeys={selectedId == null ? [] : [selectedId]}
-            onSelect={(keys) => setSelectedId(keys.length ? String(keys[0]) : null)}
-            blockNode
-            style={{ padding: 12 }}
-          />
-        </ProCard>
+          <ProCard
+            title="菜单结构"
+            style={{ flex: '0 0 460px', minWidth: 380 }}
+            bordered
+            bodyStyle={{ padding: 0, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}
+          >
+            <Tree<DataNode>
+              treeData={renderTree}
+              expandedKeys={expandedKeys}
+              onExpand={(keys) => setExpandedKeys(keys)}
+              selectedKeys={selectedId == null ? [] : [selectedId]}
+              onSelect={(keys) => setSelectedId(keys.length ? String(keys[0]) : null)}
+              blockNode
+              style={{ padding: 12 }}
+            />
+          </ProCard>
 
-        <ProCard
-          title={selectedNode ? selectedNode.name : '菜单详情'}
-          style={{ flex: 1, minWidth: 0 }}
-          bordered
-          headerBordered
-          bodyStyle={{ padding: 16 }}
-          extra={
-            selectedNode && (
-              <Space>
-                <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
+          <ProCard
+            title={selectedNode ? selectedNode.name : '菜单详情'}
+            style={{ flex: 1, minWidth: 0 }}
+            bordered
+            headerBordered
+            bodyStyle={{ padding: 16 }}
+            extra={
+              selectedNode && (
+                <Space>
+                  <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
                   子菜单
-                </Button>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
+                  </Button>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
                   编辑
-                </Button>
-                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
+                  </Button>
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
                   删除
-                </Button>
-              </Space>
-            )
-          }
-        >
-          {selectedNode ? (
-            <>
-              <Breadcrumb
-                items={selectedPath.map((n) => ({ title: n.name }))}
-                style={{ marginBlockEnd: 16 }}
-              />
-              <Descriptions column={2} size="small" bordered>
-                <Descriptions.Item label="菜单 ID">{selectedNode.id}</Descriptions.Item>
-                <Descriptions.Item label="类型">{typeTag(selectedNode.type)}</Descriptions.Item>
-                <Descriptions.Item label="路由路径">{selectedNode.path || '-'}</Descriptions.Item>
-                <Descriptions.Item label="图标">{selectedNode.icon || '-'}</Descriptions.Item>
-                <Descriptions.Item label="权限码">{selectedNode.permission || '-'}</Descriptions.Item>
-                <Descriptions.Item label="排序号">{selectedNode.orderNo ?? '-'}</Descriptions.Item>
-                <Descriptions.Item label="子项数">{selectedNode.children?.length ?? 0}</Descriptions.Item>
-                <Descriptions.Item label="层级">第 {(selectedPath.findIndex((n) => n.id === selectedNode.id) + 1)} 级</Descriptions.Item>
-              </Descriptions>
-            </>
-          ) : (
-            <Empty description="从左侧选择一个菜单查看详情，或点击「新建顶级菜单」" style={{ padding: '48px 0' }} />
-          )}
-        </ProCard>
-      </Flex>
+                  </Button>
+                </Space>
+              )
+            }
+          >
+            {selectedNode ? (
+              <>
+                <Breadcrumb
+                  items={selectedPath.map((n) => ({ title: n.name }))}
+                  style={{ marginBlockEnd: 16 }}
+                />
+                <Descriptions column={2} size="small" bordered>
+                  <Descriptions.Item label="菜单 ID">{selectedNode.id}</Descriptions.Item>
+                  <Descriptions.Item label="类型">{typeTag(selectedNode.type)}</Descriptions.Item>
+                  <Descriptions.Item label="路由路径">{selectedNode.path || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="图标">{selectedNode.icon || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="权限码">{selectedNode.permission || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="排序号">{selectedNode.orderNo ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="子项数">{selectedNode.children?.length ?? 0}</Descriptions.Item>
+                  <Descriptions.Item label="层级">第 {(selectedPath.findIndex((n) => n.id === selectedNode.id) + 1)} 级</Descriptions.Item>
+                </Descriptions>
+              </>
+            ) : (
+              <Empty description="从左侧选择一个菜单查看详情，或点击「新建顶级菜单」" style={{ padding: '48px 0' }} />
+            )}
+          </ProCard>
+        </Flex>
       </Spin>
 
       <Drawer
@@ -416,7 +416,7 @@ const MenuManagement: React.FC = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={460}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <Flex justify="end" gap={8}>
             <Button onClick={() => setDrawerOpen(false)}>取消</Button>

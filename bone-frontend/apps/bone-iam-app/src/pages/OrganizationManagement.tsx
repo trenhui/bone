@@ -340,67 +340,67 @@ const OrganizationManagement: React.FC = () => {
     <ModulePage title="组织机构管理" description="以树形结构维护企业部门层级，支持搜索、层级浏览与影响范围确认删除。" extra={toolbar} statistics={statistics}>
       <Spin spinning={loading}>
         <Flex gap={16} align="flex-start" style={{ padding: 16 }}>
-        <ProCard
-          title="部门结构"
-          style={{ flex: '0 0 420px', minWidth: 360 }}
-          bordered
-          bodyStyle={{ padding: 0, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}
-        >
-          <Tree<DataNode>
-            treeData={renderTree}
-            expandedKeys={expandedKeys}
-            onExpand={(keys) => setExpandedKeys(keys)}
-            selectedKeys={selectedId == null ? [] : [selectedId]}
-            onSelect={(keys) => setSelectedId(keys.length ? String(keys[0]) : null)}
-            blockNode
-            style={{ padding: 12 }}
-          />
-        </ProCard>
+          <ProCard
+            title="部门结构"
+            style={{ flex: '0 0 420px', minWidth: 360 }}
+            bordered
+            bodyStyle={{ padding: 0, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}
+          >
+            <Tree<DataNode>
+              treeData={renderTree}
+              expandedKeys={expandedKeys}
+              onExpand={(keys) => setExpandedKeys(keys)}
+              selectedKeys={selectedId == null ? [] : [selectedId]}
+              onSelect={(keys) => setSelectedId(keys.length ? String(keys[0]) : null)}
+              blockNode
+              style={{ padding: 12 }}
+            />
+          </ProCard>
 
-        <ProCard
-          title={selectedNode ? selectedNode.name : '部门详情'}
-          style={{ flex: 1, minWidth: 0 }}
-          bordered
-          headerBordered
-          bodyStyle={{ padding: 16 }}
-          extra={
-            selectedNode && (
-              <Space>
-                <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
+          <ProCard
+            title={selectedNode ? selectedNode.name : '部门详情'}
+            style={{ flex: 1, minWidth: 0 }}
+            bordered
+            headerBordered
+            bodyStyle={{ padding: 16 }}
+            extra={
+              selectedNode && (
+                <Space>
+                  <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
                   子部门
-                </Button>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
+                  </Button>
+                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
                   编辑
-                </Button>
-                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
+                  </Button>
+                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
                   删除
-                </Button>
-              </Space>
-            )
-          }
-        >
-          {selectedNode ? (
-            <>
-              <Breadcrumb
-                items={selectedPath.map((n) => ({ title: n.name }))}
-                style={{ marginBlockEnd: 16 }}
-              />
-              <Descriptions column={2} size="small" bordered>
-                <Descriptions.Item label="部门 ID">{selectedNode.id}</Descriptions.Item>
-                <Descriptions.Item label="状态">{statusTag(selectedNode.status)}</Descriptions.Item>
-                <Descriptions.Item label="上级部门">
-                  {selectedNode.parentId ? findPath(treeData, selectedNode.parentId)?.pop()?.name ?? selectedNode.parentId : '根部门'}
-                </Descriptions.Item>
-                <Descriptions.Item label="排序号">{selectedNode.orderNo ?? '-'}</Descriptions.Item>
-                <Descriptions.Item label="子部门数">{selectedNode.children?.length ?? 0}</Descriptions.Item>
-                <Descriptions.Item label="层级">第 {(selectedPath.findIndex((n) => n.id === selectedNode.id) + 1)} 级</Descriptions.Item>
-              </Descriptions>
-            </>
-          ) : (
-            <Empty description="从左侧选择一个部门查看详情，或点击「新建根部门」" style={{ padding: '48px 0' }} />
-          )}
-        </ProCard>
-      </Flex>
+                  </Button>
+                </Space>
+              )
+            }
+          >
+            {selectedNode ? (
+              <>
+                <Breadcrumb
+                  items={selectedPath.map((n) => ({ title: n.name }))}
+                  style={{ marginBlockEnd: 16 }}
+                />
+                <Descriptions column={2} size="small" bordered>
+                  <Descriptions.Item label="部门 ID">{selectedNode.id}</Descriptions.Item>
+                  <Descriptions.Item label="状态">{statusTag(selectedNode.status)}</Descriptions.Item>
+                  <Descriptions.Item label="上级部门">
+                    {selectedNode.parentId ? findPath(treeData, selectedNode.parentId)?.pop()?.name ?? selectedNode.parentId : '根部门'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="排序号">{selectedNode.orderNo ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="子部门数">{selectedNode.children?.length ?? 0}</Descriptions.Item>
+                  <Descriptions.Item label="层级">第 {(selectedPath.findIndex((n) => n.id === selectedNode.id) + 1)} 级</Descriptions.Item>
+                </Descriptions>
+              </>
+            ) : (
+              <Empty description="从左侧选择一个部门查看详情，或点击「新建根部门」" style={{ padding: '48px 0' }} />
+            )}
+          </ProCard>
+        </Flex>
       </Spin>
 
       <Drawer
@@ -408,7 +408,7 @@ const OrganizationManagement: React.FC = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={440}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <Flex justify="end" gap={8}>
             <Button onClick={() => setDrawerOpen(false)}>取消</Button>

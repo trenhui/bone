@@ -33,7 +33,7 @@ import type { Tenant, CreateTenantRequest, UpdateTenantRequest, UpdateTenantQuot
 const TenantManagement: React.FC = () => {
   const { message } = AntApp.useApp();
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -382,7 +382,7 @@ const TenantManagement: React.FC = () => {
         open={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         width={480}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={() => setIsModalVisible(false)}>取消</Button>

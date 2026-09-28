@@ -32,7 +32,7 @@ import { BONE_PERMISSION_CODE_CATALOG } from '../constants/bonePermissionCodes';
 const PermissionManagement: React.FC = () => {
   const { message } = AntApp.useApp();
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -316,7 +316,7 @@ const PermissionManagement: React.FC = () => {
         open={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         width={480}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={() => setIsModalVisible(false)}>取消</Button>

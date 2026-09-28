@@ -3,7 +3,7 @@
  */
 
 export interface SystemConfig {
-  id?: number;
+  id?: string;
   key: string;
   value: string;
   description?: string;
@@ -13,7 +13,7 @@ export interface SystemConfig {
 }
 
 export interface ConfigHistory {
-  id?: number;
+  id?: string;
   configId: number;
   oldValue?: string;
   newValue: string;
@@ -22,7 +22,7 @@ export interface ConfigHistory {
 }
 
 export interface AlertRule {
-  id?: number;
+  id?: string;
   name: string;
   /** 对齐后端 CreateAlertRuleReq.metricName */
   metricName: string;
@@ -36,7 +36,7 @@ export interface AlertRule {
 }
 
 export interface AlertRecord {
-  id?: number;
+  id?: string;
   alertRuleId: number;
   value: number;
   message: string;
@@ -46,7 +46,7 @@ export interface AlertRecord {
 }
 
 export interface SystemLog {
-  id?: number;
+  id?: string;
   level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'TRACE';
   service: string;
   content: string;
@@ -87,7 +87,7 @@ export type DictHierarchyCode = string;
 
 /** 字典类型（定义层，对齐 DictTypeResp） */
 export interface DictType {
-  id?: number;
+  id?: string;
   tenantId?: number;
   code: string;
   name: string;
@@ -116,7 +116,7 @@ export interface DictType {
 
 /** 字典项（值层，对齐 DictItemResp） */
 export interface DictItem {
-  id?: number;
+  id?: string;
   tenantId?: number;
   typeCode: string;
   code: string;
@@ -197,7 +197,7 @@ export interface DictExport {
 
 /** 系统定时任务（对齐 ScheduleTaskResp） */
 export interface ScheduleTask {
-  id?: number;
+  id?: string;
   name: string;
   cron: string;
   handler: string;

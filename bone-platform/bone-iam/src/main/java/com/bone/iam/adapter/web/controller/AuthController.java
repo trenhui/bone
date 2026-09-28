@@ -51,7 +51,8 @@ public class AuthController {
       Map<String, Object> result = authApplicationService.login(cmd);
       return ResponseEntity.ok(ApiResponse.success(authWebConverter.toLoginResp(result)));
     } catch (BizException ex) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+      // 状态严格跟随业务码（与全局 IamExceptionHandler 同口径），避免「401 + body.code=423/403」的契约不一致
+      return ResponseEntity.status(ex.getCode())
           .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
   }

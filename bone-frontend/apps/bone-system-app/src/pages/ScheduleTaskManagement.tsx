@@ -81,7 +81,7 @@ const ScheduleTaskManagement: React.FC = () => {
     }
   };
 
-  const [runningIds, setRunningIds] = useState<Set<number>>(new Set());
+  const [runningIds, setRunningIds] = useState<Set<string>>(new Set());
 
   const runNow = async (record: ScheduleTask) => {
     setRunningIds((prev) => new Set(prev).add(record.id!));

@@ -270,3 +270,28 @@
   2. **B-12 MFA 业务码**：需与并发会话收口，避免双方反复覆盖 `MfaController`
   3. **B-5 Micrometer 埋点**（S-12）、**B-6 会话管理 / MFA 前端页**、**S-5 其余列表页四态**：列下一轮
   4. 建议回写 `国际化设计方案.md` §6.4 勘误（bone-iam 已配 `spring.jackson.time-zone: UTC`）
+
+### 10.11 独立审计复核（2026-09-28，grill-and-review）
+
+对当前工作区 40 个未提交改动（多轮会话累积）做了独立 Agent 并行审查（前端 iam-app、后端 web/infra、S-12 后端核心），结论与本轮修正如下。
+
+**独立审查结论**
+- 后端 S-12 埋点（`AuthApplicationService`）：3 Agent 审查 + 修后复核 **Approve**——`error_code` 用稳定业务码、`safeCount/safeStop` fail-safe、infra 失败可见、HTTP 契约零变化、fail-closed 主链路未触动。
+- 前端 iam-app 四态 + any 收敛：**Approve**——`isForbiddenError` 与共享 `apiClient` 拦截器对齐（403 可触发）、四态「错误→403→空→表格」优先级正确、as any 已清除。
+- 后端 web/infra：**Request Changes**（均 Medium/Low，无 High 级缺陷）——`AuthController.login` 硬编码 401 与信封 `code` 不一致；prod yml 注释与暴露列表不符；CORS/actuator 角色限定等加固建议。
+
+**本轮修正（明确安全、收益明确）**
+1. `AuthController.login`：`status(UNAUTHORIZED)` → `status(ex.getCode())`，使 HTTP 状态与信封 `code` 一致（**存量契约 bug**，非本轮引入；无 login 控制器测试，零回归风险）。
+2. `application-prod.yml` 注释：prometheus 实际未暴露，修正为「仅 health/info/metrics，metrics 经 JWT 鉴权」（**存量注释不符**）。
+3. `AuditLog.tsx`：移除冗余 `operation as string | undefined`（`operation` 已为 `string | undefined`，邻接此前 any 收敛）。
+4. `Auth.tsx`：静态 `message` → `App.useApp()`，消除 antd5 静态调用告警（**存量最佳实践**）。
+
+**验证**：`mvn spotless:apply compile` 通过；前端 `eslint` 0 error（`AuditLog` 仍有 2 处存量 `any` warning，非 `as any`）、`tsc --noEmit` 通过。
+
+**遗留建议（存量，待 Owner 决策 / 后续小优化）**
+- 前端列表页 `loading` 初始 `false` 导致首屏空态闪烁（建议初始 `true`，High）。
+- `AccountManagement` 组合 effect 每次翻页重拉 roles/deptTree（建议拆分，High）。
+- 多个 Drawer 仍用废弃 `destroyOnClose`（建议统一 `destroyOnHidden`，需确认 antd 版本支持，Medium）。
+- `AccessTokenIssuerGatewayAdapter.generateToken(...)` 死代码（无调用方，建议删或并入端口接口，Medium）—— **L3 删码需架构师审批，未擅自删除**。
+
+> **2026-09-28 优化执行**：S1/S2/S4 已落地（6 个列表页 `loading` 初值改 `true`、AccountManagement 组合 effect 拆分为「列表分页刷新 / 角色·部门树挂载拉取一次」、6 个 Drawer 废弃 `destroyOnClose` 统一为 `destroyOnHidden`）；AuditLog 2 处 `as any` 已移除。前端 `eslint` **0 error**（`--fix` 同步清理 MenuManagement/OrganizationManagement 的预存缩进）、`tsc --noEmit` 通过。残留 5 个 `react-hooks/exhaustive-deps` warning（Menu/Organization，预存、非本次建议项，未改以免动行为）。

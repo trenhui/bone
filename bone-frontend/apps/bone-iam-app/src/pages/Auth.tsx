@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, message, Typography } from 'antd';
+import { App, Card, Form, Input, Button, Typography } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/api';
@@ -10,6 +10,7 @@ const { Text } = Typography;
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { message } = App.useApp();
 
   const handleLogin = async (values: LoginRequest) => {
     setLoading(true);

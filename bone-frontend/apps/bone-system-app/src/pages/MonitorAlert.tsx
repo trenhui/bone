@@ -132,7 +132,7 @@ const MonitorAlertPage: React.FC = () => {
     }
   };
 
-  const handleDeleteRule = async (id: number) => {
+  const handleDeleteRule = async (id: number | string) => {
     try {
       const response = await monitorApi.deleteAlertRule(id);
       if (response.code === 200) {
@@ -144,7 +144,7 @@ const MonitorAlertPage: React.FC = () => {
     }
   };
 
-  const handleToggleRule = async (id: number, enabled: boolean) => {
+  const handleToggleRule = async (id: number | string, enabled: boolean) => {
     try {
       const response = enabled
         ? await monitorApi.enableAlertRule(id)

@@ -72,7 +72,7 @@ const AccountManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [deptTreeData, setDeptTreeData] = useState<DataNode[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -162,11 +162,15 @@ const AccountManagement: React.FC = () => {
     void fetchStats();
   }, [fetchAccounts, fetchStats]);
 
+  // 列表随分页/搜索/部门筛选变化刷新；角色与部门树是稳定下拉数据，仅挂载时拉取一次，避免翻页时重复请求
   useEffect(() => {
     void fetchAccounts();
+  }, [fetchAccounts]);
+
+  useEffect(() => {
     void fetchRoles();
     void fetchDeptTree();
-  }, [fetchAccounts, fetchRoles, fetchDeptTree]);
+  }, []);
 
   useEffect(() => {
     void fetchStats();
@@ -512,7 +516,7 @@ const AccountManagement: React.FC = () => {
         open={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         width={480}
-        destroyOnClose
+        destroyOnHidden
         footer={
           <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={() => setIsModalVisible(false)}>取消</Button>

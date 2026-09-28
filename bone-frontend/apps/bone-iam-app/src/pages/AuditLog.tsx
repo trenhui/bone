@@ -58,7 +58,7 @@ const AuditLogPage: React.FC = () => {
   const { message: messageApi } = AntdApp.useApp();
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -85,7 +85,7 @@ const AuditLogPage: React.FC = () => {
         page,
         pageSize,
         userId,
-        operation: operation as any,
+        operation,
         resourceType,
         result,
         startTime: isoLocal(dateRange?.[0]),
@@ -116,7 +116,7 @@ const AuditLogPage: React.FC = () => {
       // 参数名对齐后端 AuditLogListQuery：导出用 startedAt / endedAt / operation。
       const blob = await api.exportAuditLogs({
         userId,
-        operation: operation as string | undefined,
+        operation,
         resourceType,
         result,
         startedAt: isoLocal(dateRange?.[0]),
@@ -368,7 +368,7 @@ const AuditLogPage: React.FC = () => {
               {RESOURCE_TYPE_MAP[currentLog.resourceType] || currentLog.resourceType || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="资源ID">
-              <Text copyable={{ text: currentLog.resourceId || '', tooltips: ['复制', '已复制'] } as any}>
+              <Text copyable={{ text: currentLog.resourceId || '', tooltips: ['复制', '已复制'] }}>
                 {currentLog.resourceId || '-'}
               </Text>
             </Descriptions.Item>

@@ -30,7 +30,7 @@ export const systemConfigApi = {
     return api.get<never, ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
   },
 
-  getConfigDetail: async (id: number) => {
+  getConfigDetail: async (id: number | string) => {
     return api.get<never, ApiResponse<SystemConfig>>(`/system/config/${id}`);
   },
 
@@ -38,15 +38,15 @@ export const systemConfigApi = {
     return api.post<never, ApiResponse<number>>('/system/config', data);
   },
 
-  updateConfig: async (data: { id: number; configKey: string; configValue: string; configType: string; description?: string }) => {
+  updateConfig: async (data: { id: number | string; configKey: string; configValue: string; configType: string; description?: string }) => {
     return api.put<never, ApiResponse<void>>('/system/config', data);
   },
 
-  deleteConfig: async (id: number) => {
+  deleteConfig: async (id: number | string) => {
     return api.delete<never, ApiResponse<void>>(`/system/config/${id}`);
   },
 
-  getConfigHistory: async (id: number) => {
+  getConfigHistory: async (id: number | string) => {
     return api.get<never, ApiResponse<ConfigHistory[]>>(`/system/config/${id}/history`);
   },
 
@@ -79,7 +79,7 @@ export const monitorApi = {
     });
   },
 
-  getAlertRule: async (id: number) => {
+  getAlertRule: async (id: number | string) => {
     return api.get<never, ApiResponse<AlertRule>>(`/system/alert/rules/${id}`);
   },
 
@@ -87,19 +87,19 @@ export const monitorApi = {
     return api.post<never, ApiResponse<number>>('/system/alert/rules', rule);
   },
 
-  updateAlertRule: async (rule: { id: number; name: string; metricName: string; threshold: number; alertLevel: string }) => {
+  updateAlertRule: async (rule: { id: number | string; name: string; metricName: string; threshold: number; alertLevel: string }) => {
     return api.put<never, ApiResponse<void>>('/system/alert/rules', rule);
   },
 
-  deleteAlertRule: async (id: number) => {
+  deleteAlertRule: async (id: number | string) => {
     return api.delete<never, ApiResponse<void>>(`/system/alert/rules/${id}`);
   },
 
-  enableAlertRule: async (id: number) => {
+  enableAlertRule: async (id: number | string) => {
     return api.post<never, ApiResponse<void>>(`/system/alert/rules/${id}/enable`);
   },
 
-  disableAlertRule: async (id: number) => {
+  disableAlertRule: async (id: number | string) => {
     return api.post<never, ApiResponse<void>>(`/system/alert/rules/${id}/disable`);
   },
 
@@ -181,10 +181,10 @@ export const dictApi = {
   createType: async (data: Partial<DictType>) => {
     return api.post<never, ApiResponse<number>>('/system/dict/types', data);
   },
-  updateType: async (id: number, data: Partial<DictType>) => {
+  updateType: async (id: number | string, data: Partial<DictType>) => {
     return api.put<never, ApiResponse<void>>(`/system/dict/types/${id}`, data);
   },
-  deleteType: async (id: number) => {
+  deleteType: async (id: number | string) => {
     return api.delete<never, ApiResponse<void>>(`/system/dict/types/${id}`);
   },
   getEnumDiff: async (code: string) => {
@@ -234,16 +234,16 @@ export const dictApi = {
   createItem: async (data: Partial<DictItem>) => {
     return api.post<never, ApiResponse<number>>('/system/dict/items', data);
   },
-  updateItem: async (id: number, data: Partial<DictItem>) => {
+  updateItem: async (id: number | string, data: Partial<DictItem>) => {
     return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}`, data);
   },
-  deleteItem: async (id: number) => {
+  deleteItem: async (id: number | string) => {
     return api.delete<never, ApiResponse<void>>(`/system/dict/items/${id}`);
   },
-  moveItem: async (id: number, data: { parentCode?: string | null; hierarchyCode?: string; sort?: number }) => {
+  moveItem: async (id: number | string, data: { parentCode?: string | null; hierarchyCode?: string; sort?: number }) => {
     return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/move`, data);
   },
-  markDefault: async (id: number) => {
+  markDefault: async (id: number | string) => {
     return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/default`);
   },
   /**
@@ -267,16 +267,16 @@ export const scheduleTaskApi = {
   createScheduleTask: async (data: { name: string; cron: string; handler: string; status?: string }) => {
     return api.post<never, ApiResponse<number>>('/system/schedule-tasks', data);
   },
-  updateScheduleTask: async (id: number, data: { name: string; cron: string; handler: string }) => {
+  updateScheduleTask: async (id: number | string, data: { name: string; cron: string; handler: string }) => {
     return api.put<never, ApiResponse<void>>(`/system/schedule-tasks/${id}`, data);
   },
-  deleteScheduleTask: async (id: number) => {
+  deleteScheduleTask: async (id: number | string) => {
     return api.delete<never, ApiResponse<void>>(`/system/schedule-tasks/${id}`);
   },
-  toggleScheduleTask: async (id: number, enabled: boolean) => {
+  toggleScheduleTask: async (id: number | string, enabled: boolean) => {
     return api.put<never, ApiResponse<void>>(`/system/schedule-tasks/${id}/toggle`, null, { params: { enabled } });
   },
-  runScheduleTaskNow: async (id: number) => {
+  runScheduleTaskNow: async (id: number | string) => {
     return api.post<never, ApiResponse<number>>(`/system/schedule-tasks/${id}/run`);
   },
 };
