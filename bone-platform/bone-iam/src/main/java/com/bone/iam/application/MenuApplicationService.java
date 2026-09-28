@@ -9,6 +9,7 @@ import com.bone.iam.application.query.dto.MenuNode;
 import com.bone.iam.application.query.dto.MenuTreeDTO;
 import com.bone.iam.application.query.qry.MenuCurrentQuery;
 import com.bone.iam.application.query.qry.MenuTreeQuery;
+import com.bone.iam.application.support.TenantScopeResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
@@ -97,7 +98,7 @@ public class MenuApplicationService {
 
   @Transactional(readOnly = true)
   public List<MenuTreeDTO> tree(MenuTreeQuery qry) {
-    Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
+    Long effectiveTenant = TenantScopeResolver.resolve(tenantProvider, qry.getTenantId());
     List<Menu> scoped =
         menuRepository.listAll().stream()
             .filter(m -> effectiveTenant == null || effectiveTenant.equals(m.getTenantId()))
@@ -230,14 +231,6 @@ public class MenuApplicationService {
   }
 
   /** 非平台租户（&gt; 0）强制按其过滤；平台租户（0）/无上下文回退到查询参数（详设 §3.4 / §4.8）。 */
-  private Long resolveTenantFilter(Long fromQuery) {
-    Long fromContext = tenantProvider.currentTenantIdOrNull();
-    if (fromContext != null && fromContext != 0L) {
-      return fromContext;
-    }
-    return fromQuery;
-  }
-
   private static MenuTreeDTO toTreeDto(Menu m) {
     MenuTreeDTO dto = new MenuTreeDTO();
     dto.setId(m.getId());

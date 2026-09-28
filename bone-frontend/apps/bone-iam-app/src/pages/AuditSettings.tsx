@@ -3,6 +3,7 @@ import { Card, Form, InputNumber, Switch, Select, Button, Divider, Typography, S
 import { App as AntdApp } from 'antd';
 import { SaveOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { resolveIamErrorMessage } from '../utils/iamErrorMessages';
 import ModulePage from '../components/ModulePage';
 
 const { Title } = Typography;
@@ -21,8 +22,8 @@ const AuditSettingsPage: React.FC = () => {
       if (response.code === 200 && response.data) {
         form.setFieldsValue(response.data);
       }
-    } catch {
-      messageApi.error('获取审计设置失败');
+    } catch (err: unknown) {
+      messageApi.error(resolveIamErrorMessage(err) ?? '获取审计设置失败');
     } finally {
       setLoading(false);
     }
@@ -41,12 +42,10 @@ const AuditSettingsPage: React.FC = () => {
       if (response.code === 200) {
         messageApi.success('审计设置已保存');
       } else {
-        messageApi.error(response.message || '保存失败');
+        messageApi.error(resolveIamErrorMessage(response) ?? '保存失败');
       }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        messageApi.error(err.message);
-      }
+      messageApi.error(resolveIamErrorMessage(err) ?? '保存失败');
     } finally {
       setSaving(false);
     }

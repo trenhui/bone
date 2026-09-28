@@ -6,6 +6,7 @@ import com.bone.iam.application.command.UpdateAuditSettingsCommand;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.dto.AuditSettingsDTO;
 import com.bone.iam.application.query.qry.AuditLogListQuery;
+import com.bone.iam.application.support.TenantScopeResolver;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
@@ -48,7 +49,7 @@ public class AuditApplicationService {
   /** 分页查询审计日志（只读事务）。 */
   @Transactional(readOnly = true)
   public PageResult<AuditLogDTO> listLogs(AuditLogListQuery qry) {
-    Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
+    Long effectiveTenant = TenantScopeResolver.resolve(tenantProvider, qry.getTenantId());
     PageResult<AuditLog> result =
         auditLogRepository.findAuditLogPage(
             qry.getUserId(),
@@ -126,15 +127,6 @@ public class AuditApplicationService {
   private Long currentTenantId() {
     Long tenantId = tenantProvider.currentTenantIdOrNull();
     return tenantId != null ? tenantId : 0L;
-  }
-
-  /** 非平台租户（&gt; 0）强制按其过滤；平台租户（0）/无上下文回退到查询参数（详设 §3.4 / §4.8）。 */
-  private Long resolveTenantFilter(Long fromQuery) {
-    Long fromContext = tenantProvider.currentTenantIdOrNull();
-    if (fromContext != null && fromContext != 0L) {
-      return fromContext;
-    }
-    return fromQuery;
   }
 
   private static AuditLogDTO toDto(AuditLog auditLog) {

@@ -66,8 +66,8 @@
       "missing": [
         "tenant_id"
       ],
-      "classification": "needs-owner-decision",
-      "note": "权限目录：疑似平台级全局目录（角色侧已带租户），需 IAM Owner 裁决"
+      "classification": "by-design",
+      "note": "权限目录：平台级共享全局目录（doc6 §2.9 隔离矩阵已明写「无 tenant_id」）；租户隔离经 iam_role（含 tenant_id）→ iam_role_permission 间接实现，权限码本身全局唯一，无需冗余 tenant_id 列。IAM Owner 裁决 by-design（2026-09-28）"
     },
     "iam_refresh_token": {
       "missing": [
@@ -83,8 +83,8 @@
         "updated_at",
         "deleted"
       ],
-      "classification": "needs-owner-decision",
-      "note": "角色-权限关联：租户随 iam_role（其有 tenant_id），需 IAM Owner 确认是否要冗余租户列以便直查"
+      "classification": "by-design",
+      "note": "角色-权限关联表：租户随 iam_role（其含 tenant_id）间接隔离，无需在关联表冗余 tenant_id（与 iam_permission 同判据，doc6 §2.9）；updated_at/deleted 缺失因关联行无更新/软删语义（解绑即删行）。「是否冗余 tenant_id 以便跨表直查」属独立的非阻塞优化选择，不影响缺列判定为 by-design。IAM Owner 裁决（2026-09-28）"
     },
     "iam_tenant": {
       "missing": [

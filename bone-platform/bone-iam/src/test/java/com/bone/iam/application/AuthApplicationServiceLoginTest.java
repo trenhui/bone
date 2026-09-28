@@ -30,6 +30,7 @@ import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,6 +77,7 @@ class AuthApplicationServiceLoginTest {
   IamPasswordProperties passwordProperties;
 
   AuthApplicationService authApplicationService;
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void setUp() {
@@ -99,7 +101,8 @@ class AuthApplicationServiceLoginTest {
             ssoClient,
             tokenBlacklistPort,
             jwtConfig,
-            tenantRepository);
+            tenantRepository,
+            meterRegistry);
   }
 
   @Test
@@ -122,6 +125,7 @@ class AuthApplicationServiceLoginTest {
 
     Map<String, Object> result = authApplicationService.login(cmd);
 
+    assertThat(meterRegistry.counter("iam_login_requests_total").count()).isEqualTo(1.0);
     assertThat(result.get("token")).isEqualTo("ACCESS");
     assertThat(result.get("refreshToken")).isEqualTo("REFRESH");
     assertThat(result.get("requirePasswordChange")).isEqualTo(false);

@@ -33,9 +33,9 @@
 
 | 现存构件 | 落点（ADR-0035 D3） | 说明 |
 |---|---|---|
-| `AccountRoleBindingService`（`application/binding/`） | 绑定写入 → 聚合不变量；权限缓存失效 → `application/port/out` + `infrastructure` | AS 只保留编排 |
-| `TenantQuotaEnforcer`（`application/policy/`） | 配额规则 → `domain/service`（接收计数值、不做 IO） | 计数已下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
-| `PasswordPolicyValidator`（`application/policy/`） | 无 IO 纯规则 → `domain/service` 或值对象 | 迁移时须把失败语义改为 `DomainException` + 应用层翻译（E-5.3.1） |
+| `AccountRoleBindingSupport`（`application/support/`） | 绑定写入 → 聚合不变量；权限缓存失效 → `application/port/out` + `infrastructure` | AS 只保留编排 |
+| `TenantQuotaEnforcer`（`application/support/`） | 配额规则 → `domain/service`（接收计数值、不做 IO） | 计数已下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
+| `PasswordPolicyValidator`（`application/support/`） | 无 IO 纯规则 → `domain/service` 或值对象 | 迁移时须把失败语义改为 `DomainException` + 应用层翻译（E-5.3.1） |
 | `RoleHierarchyResolver`（`application/` 根） | 纯图算法 → 只服务登录用例则内联 `AuthApplicationService`，否则做 `domain/service` 普通类 | 取数已下沉 `RoleRepository#findByIds` |
 
 > **`@Service` 不构成"留在应用层"的理由**：`domainCoreShouldOnlyDependOnAllowedPackages` 禁止 domain 依赖 Spring stereotype，正解是让领域类**不带 stereotype**（由应用层构造，或在 `config` 类里用 `@Bean` 装配），而不是把它挪回 application 并新开一个角色包。
@@ -44,9 +44,9 @@
 
 | 类 | 包 | 用途 | 命中判据 | 备注 |
 |---|---|---|---|---|
-| `AccountRoleBindingService` | `binding` | 账号-角色绑定替换与回读（含权限缓存失效） | — | 条件构造下沉 `AccountRoleRepository#replaceBindingsForAccount`（E-4.2 已收敛，ADR-0030） |
-| `TenantQuotaEnforcer` | `policy` | 租户配额校验（账号 / 角色上限，跨 2 个仓储） | — | 计数下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
-| `PasswordPolicyValidator` | `policy` | 密码强度策略（长度 + 弱口令拒绝） | — | 纯规则，失败语义为 `IamErrors` 业务码→HTTP 状态配对（`BizException`）；迁 `domain/service` 须先改 `DomainException` + 应用层转换（E-5.3.1），按触达即收敛 |
+| `AccountRoleBindingSupport` | `support` | 账号-角色绑定替换与回读（含权限缓存失效） | — | 条件构造下沉 `AccountRoleRepository#replaceBindingsForAccount`（E-4.2 已收敛，ADR-0030） |
+| `TenantQuotaEnforcer` | `support` | 租户配额校验（账号 / 角色上限，跨 2 个仓储） | — | 计数下沉 `AccountRepository#countByTenant` / `RoleRepository#countByTenant`（E-4.2 已收敛） |
+| `PasswordPolicyValidator` | `support` | 密码强度策略（长度 + 弱口令拒绝） | — | 纯规则，失败语义为 `IamErrors` 业务码→HTTP 状态配对（`BizException`）；迁 `domain/service` 须先改 `DomainException` + 应用层转换（E-5.3.1），按触达即收敛 |
 | `RoleHierarchyResolver` | `application`（根，独立 `*Resolver` 助手） | 角色祖先闭包解析（按层批量查询、最多 5 层、含环检测） | — | 取数已下沉 `RoleRepository#findByIds`（E-4.2 已收敛），仅保留纯图算法（BFS + 环检测 + 深度截断） |
 
 > 原 `application/service/` 下的 `AuthService`（登录定位 / 密码校验）已内联进 `AuthApplicationService`、`AuditService`（审计落库）已并入 `AuditApplicationService`、`AuditUtils`（静态审计工具）已随审计落库归口删除；三者不再作为独立类存在。角色-权限绑定赋值用例（`assignPermission`）已归位 `RoleApplicationService`（含跨租户守卫），不再经独立的 `RolePermissionBindingService`。

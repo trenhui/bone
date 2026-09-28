@@ -1,6 +1,7 @@
 package com.bone.iam.application;
 
 import com.bone.core.capability.Capability;
+import com.bone.core.exception.BizException;
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.iam.application.command.LoginCommand;
@@ -27,6 +28,8 @@ import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -81,6 +84,32 @@ public class AuthApplicationService {
   private final TokenBlacklistPort tokenBlacklistPort;
   private final JwtConfig jwtConfig;
   private final TenantRepository tenantRepository;
+  private final MeterRegistry meterRegistry;
+
+  private static final String IAM_LOGIN_REQUESTS = "iam_login_requests_total";
+  private static final String IAM_LOGIN_FAILURES = "iam_login_failures_total";
+  private static final String IAM_LOGIN_SECONDS = "iam_login_seconds";
+  private static final String IAM_REFRESH_REQUESTS = "iam_refresh_requests_total";
+  private static final String IAM_REFRESH_FAILURES = "iam_refresh_failures_total";
+  private static final String IAM_REFRESH_SECONDS = "iam_refresh_seconds";
+
+  /** 埋点失败绝不能影响主链路（鉴权 fail-closed 红线）：吞掉任何指标子系统的异常，确保其既不会替换也不会抑制原始业务异常。 */
+  private void safeCount(String name, String... tags) {
+    try {
+      meterRegistry.counter(name, tags).increment();
+    } catch (Exception ignored) {
+      // 指标异常不得替换/抑制原始业务异常
+    }
+  }
+
+  /** 计时停止同样须 fail-safe，避免 {@code sample.stop} 异常抑制 {@code finally} 中的业务异常。 */
+  private void safeStop(Timer timer, Timer.Sample sample) {
+    try {
+      sample.stop(timer);
+    } catch (Exception ignored) {
+      // 同上
+    }
+  }
 
   /**
    * 登出用例：把请求携带的访问令牌拉黑至其自然过期。
@@ -130,115 +159,146 @@ public class AuthApplicationService {
       timeout = 5)
   @Transactional
   public Map<String, Object> login(LoginCommand cmd) {
-    Account account =
-        findByUsername(cmd.getUsername())
-            .orElseThrow(() -> IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误"));
+    safeCount(IAM_LOGIN_REQUESTS);
+    Timer.Sample sample = Timer.start(meterRegistry);
+    try {
+      Account account =
+          findByUsername(cmd.getUsername())
+              .orElseThrow(() -> IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误"));
 
-    // TenantContextRunner 对 null tenantId 是快速失败（NPE），而 AuthController 只捕获 BizException，
-    // NPE 会逃逸成 500 —— 这里先判空，按登录失败处理。
-    if (account.getTenantId() == null) {
-      throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
-    }
+      // TenantContextRunner 对 null tenantId 是快速失败（NPE），而 AuthController 只捕获 BizException，
+      // NPE 会逃逸成 500 —— 这里先判空，按登录失败处理。
+      if (account.getTenantId() == null) {
+        throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
+      }
 
-    if (account.getStatus() == AccountStatus.DISABLED) {
-      throw IamErrors.of(IamErrorCodes.ACCOUNT_DISABLED, "账号已禁用，请联系管理员");
-    }
-    if (account.isLocked()) {
-      long remainingSec =
-          account.getLockedAt() == null
-              ? 0
-              : Math.max(
-                  0, Duration.between(LocalDateTime.now(), account.getLockedAt()).getSeconds());
-      throw IamErrors.of(IamErrorCodes.ACCOUNT_LOCKED, "账号已锁定，剩余 " + remainingSec + " 秒");
-    }
+      if (account.getStatus() == AccountStatus.DISABLED) {
+        throw IamErrors.of(IamErrorCodes.ACCOUNT_DISABLED, "账号已禁用，请联系管理员");
+      }
+      if (account.isLocked()) {
+        long remainingSec =
+            account.getLockedAt() == null
+                ? 0
+                : Math.max(
+                    0, Duration.between(LocalDateTime.now(), account.getLockedAt()).getSeconds());
+        throw IamErrors.of(IamErrorCodes.ACCOUNT_LOCKED, "账号已锁定，剩余 " + remainingSec + " 秒");
+      }
 
-    if (!matches(cmd.getPassword(), account)) {
-      // 登录请求没有 JWT，TenantContext 为空；写 iam_account 属租户表操作，
-      // 必须按账号所属租户显式声明上下文（ADR-0031 D3），否则被 ADR-0029 失败关闭拦下。
-      TenantContextRunner.runAs(
+      if (!matches(cmd.getPassword(), account)) {
+        // 登录请求没有 JWT，TenantContext 为空；写 iam_account 属租户表操作，
+        // 必须按账号所属租户显式声明上下文（ADR-0031 D3），否则被 ADR-0029 失败关闭拦下。
+        TenantContextRunner.runAs(
+            account.getTenantId(),
+            () -> {
+              account.recordLoginFailure(
+                  passwordProperties.getLockoutThreshold(), passwordProperties.getLockoutMinutes());
+              accountRepository.update(account);
+            });
+        throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
+      }
+
+      return TenantContextRunner.callAs(
           account.getTenantId(),
           () -> {
-            account.recordLoginFailure(
-                passwordProperties.getLockoutThreshold(), passwordProperties.getLockoutMinutes());
+            account.recordLoginSuccess(cmd.getClientIp());
             accountRepository.update(account);
+
+            List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
+            String token =
+                accessTokenIssuer.issueAccessToken(
+                    account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
+            String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
+
+            boolean weak = passwordPolicyValidator.requiresPasswordChange(cmd.getPassword());
+            boolean expired = isPasswordExpired(account);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("token", token);
+            result.put("refreshToken", refreshToken);
+            result.put("account", account);
+            result.put("requirePasswordChange", weak || expired);
+            // 身份分流依据（详设 §2.9）：tenantId=0 平台管理员视角；>0 租户管理员视角。
+            result.put("tenantId", account.getTenantId());
+            result.put(
+                "tenantName",
+                account.getTenantId() == null || account.getTenantId() == 0L
+                    ? "平台"
+                    : java.util.Optional.ofNullable(
+                            tenantRepository.findById(account.getTenantId()))
+                        .map(t -> t.getName())
+                        .orElse("租户" + account.getTenantId()));
+            return result;
           });
-      throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
+    } catch (BizException e) {
+      safeCount(
+          IAM_LOGIN_FAILURES,
+          "error_code",
+          e.getErrorCode() == null ? "unknown" : e.getErrorCode());
+      throw e;
+    } catch (Exception e) {
+      safeCount(IAM_LOGIN_FAILURES, "error_code", "infra");
+      throw e;
+    } finally {
+      safeStop(meterRegistry.timer(IAM_LOGIN_SECONDS), sample);
     }
-
-    return TenantContextRunner.callAs(
-        account.getTenantId(),
-        () -> {
-          account.recordLoginSuccess(cmd.getClientIp());
-          accountRepository.update(account);
-
-          List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
-          String token =
-              accessTokenIssuer.issueAccessToken(
-                  account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
-          String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
-
-          boolean weak = passwordPolicyValidator.requiresPasswordChange(cmd.getPassword());
-          boolean expired = isPasswordExpired(account);
-
-          Map<String, Object> result = new HashMap<>();
-          result.put("token", token);
-          result.put("refreshToken", refreshToken);
-          result.put("account", account);
-          result.put("requirePasswordChange", weak || expired);
-          // 身份分流依据（详设 §2.9）：tenantId=0 平台管理员视角；>0 租户管理员视角。
-          result.put("tenantId", account.getTenantId());
-          result.put(
-              "tenantName",
-              account.getTenantId() == null || account.getTenantId() == 0L
-                  ? "平台"
-                  : java.util.Optional.ofNullable(tenantRepository.findById(account.getTenantId()))
-                      .map(t -> t.getName())
-                      .orElse("租户" + account.getTenantId()));
-          return result;
-        });
   }
 
   @Transactional
   public Map<String, String> refreshToken(RefreshTokenCommand cmd) {
-    if (cmd == null || cmd.getRefreshToken() == null || cmd.getRefreshToken().isBlank()) {
-      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_REQUIRED, "刷新令牌不能为空");
-    }
-    Map<String, String> rotated;
+    safeCount(IAM_REFRESH_REQUESTS);
+    Timer.Sample sample = Timer.start(meterRegistry);
     try {
-      rotated = refreshTokenIssuer.rotate(cmd.getRefreshToken());
-    } catch (IllegalArgumentException ex) {
-      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, ex.getMessage());
+      if (cmd == null || cmd.getRefreshToken() == null || cmd.getRefreshToken().isBlank()) {
+        throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_REQUIRED, "刷新令牌不能为空");
+      }
+      Map<String, String> rotated;
+      try {
+        rotated = refreshTokenIssuer.rotate(cmd.getRefreshToken());
+      } catch (IllegalArgumentException ex) {
+        throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, ex.getMessage());
+      }
+      // /refresh 与 /login 一样没有 JWT，TenantContext 为空；而 findById 读 iam_account（租户表）
+      // 会被 ADR-0029 失败关闭拦下 → 500。租户由 refresh token 自身携带，显式声明后再访问租户表。
+      // 两个 key 一并校验：任何一个缺失都按无效令牌 401 处理，不让 NumberFormatException 逃逸成 500。
+      String rawAccountId = rotated.get("accountId");
+      String rawTenantId = rotated.get("tenantId");
+      if (rawAccountId == null || rawTenantId == null) {
+        throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "缺少账号或租户信息");
+      }
+      long accountId = Long.parseLong(rawAccountId);
+      Long tenantId = Long.valueOf(rawTenantId);
+      return TenantContextRunner.callAs(
+          tenantId,
+          () -> {
+            Account account = accountRepository.findById(accountId);
+            if (account == null) {
+              throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在或已禁用");
+            }
+            List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
+            String accessToken =
+                accessTokenIssuer.issueAccessToken(
+                    account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
+            String newRefreshToken = rotated.get("refreshToken");
+            if (newRefreshToken == null) {
+              throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_ROTATE_FAILED, "未返回新的刷新令牌");
+            }
+            Map<String, String> result = new HashMap<>();
+            result.put("accessToken", accessToken);
+            result.put("refreshToken", newRefreshToken);
+            return result;
+          });
+    } catch (BizException e) {
+      safeCount(
+          IAM_REFRESH_FAILURES,
+          "error_code",
+          e.getErrorCode() == null ? "unknown" : e.getErrorCode());
+      throw e;
+    } catch (Exception e) {
+      safeCount(IAM_REFRESH_FAILURES, "error_code", "infra");
+      throw e;
+    } finally {
+      safeStop(meterRegistry.timer(IAM_REFRESH_SECONDS), sample);
     }
-    // /refresh 与 /login 一样没有 JWT，TenantContext 为空；而 findById 读 iam_account（租户表）
-    // 会被 ADR-0029 失败关闭拦下 → 500。租户由 refresh token 自身携带，显式声明后再访问租户表。
-    // 两个 key 一并校验：任何一个缺失都按无效令牌 401 处理，不让 NumberFormatException 逃逸成 500。
-    String rawAccountId = rotated.get("accountId");
-    String rawTenantId = rotated.get("tenantId");
-    if (rawAccountId == null || rawTenantId == null) {
-      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "缺少账号或租户信息");
-    }
-    long accountId = Long.parseLong(rawAccountId);
-    Long tenantId = Long.valueOf(rawTenantId);
-    return TenantContextRunner.callAs(
-        tenantId,
-        () -> {
-          Account account = accountRepository.findById(accountId);
-          if (account == null) {
-            throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在或已禁用");
-          }
-          List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
-          String accessToken =
-              accessTokenIssuer.issueAccessToken(
-                  account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
-          String newRefreshToken = rotated.get("refreshToken");
-          if (newRefreshToken == null) {
-            throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_ROTATE_FAILED, "未返回新的刷新令牌");
-          }
-          Map<String, String> result = new HashMap<>();
-          result.put("accessToken", accessToken);
-          result.put("refreshToken", newRefreshToken);
-          return result;
-        });
   }
 
   /**
@@ -292,12 +352,9 @@ public class AuthApplicationService {
       }
       return new ArrayList<>(codes);
     } catch (Exception e) {
-      log.error(
-          "Failed to query account roles for account {}, using admin fallback: {}",
-          accountId,
-          e.getMessage());
-      // 数据库数据异常时，管理员账户使用 fallback 权限
-      return adminAccount ? DefaultPermissionCodes.adminFallback() : List.of();
+      // 权限解析失败：fail-closed 拒绝（重抛），绝不回退到超宽 adminFallback——
+      // 否则后端瞬时故障即让管理员 JWT 拿到全模块最大权限（C-2 修复）。
+      throw IamErrors.of(IamErrorCodes.AUTHORITY_RESOLVE_FAILED, "账号 " + accountId + " 权限解析失败", e);
     }
   }
 

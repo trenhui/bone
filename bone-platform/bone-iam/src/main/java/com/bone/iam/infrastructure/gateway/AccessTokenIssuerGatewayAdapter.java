@@ -4,7 +4,6 @@ import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.core.security.jwt.JwtTokenService;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
-import com.bone.iam.domain.model.permission.DefaultPermissionCodes;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -24,10 +23,6 @@ public class AccessTokenIssuerGatewayAdapter implements AccessTokenIssuer {
       return delegate.generateRsaToken(accountId, username, tenantId, scopes);
     }
     return delegate.generateToken(accountId, username, tenantId, scopes);
-  }
-
-  public String generateToken(Long accountId, String username) {
-    return issue(accountId, username, 0L, DefaultPermissionCodes.adminFallback());
   }
 
   @Override

@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
 import { subscribeLocaleChange } from '@bone/shared-utils';
+import './dayjs-setup';
 import './index.css';
 
 let root: Root | null = null;
