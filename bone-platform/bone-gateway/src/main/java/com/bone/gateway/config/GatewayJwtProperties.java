@@ -61,7 +61,12 @@ public class GatewayJwtProperties {
   /** JWKS kid，默认 bone-rsa-1；未来轮换时并行支持多 kid 重叠窗口。 */
   private String rsaKeyId = "bone-rsa-1";
 
-  /** 免校验白名单路径前缀。 */
+  /**
+   * 免校验白名单路径前缀。
+   *
+   * <p>默认值须与 IAM 真实登录端点一致（{@code AuthController#login} 是 {@code POST /api/v1/iam/login}， 无 {@code
+   * /auth} 段）——历史默认值 {@code /api/v1/iam/auth/login} 是错误端点，若外部不配置 yml 白名单，登录请求会被网关 401（G-4）。
+   */
   private List<String> whitelist =
-      new ArrayList<>(List.of("/api/v1/iam/auth/login", "/actuator/health", "/favicon.ico"));
+      new ArrayList<>(List.of("/api/v1/iam/login", "/actuator/health", "/favicon.ico"));
 }

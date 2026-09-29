@@ -11,10 +11,18 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
+            # 与前端 8 个微应用实际端口对齐（bone-shell 3000 / iam 3003 / metadata 3004 /
+            # masterdata 3005 / integration 3006 / extension 3008 / generator 3009，见设计稿 §5.4）。
+            # 原配置漏 3003-3006、3009——子应用独立 dev 直连网关会被 CORS 拒绝（G-10）。
             allowedOrigins:
               - "http://localhost:3000"
+              - "http://localhost:3003"
+              - "http://localhost:3004"
+              - "http://localhost:3005"
+              - "http://localhost:3006"
               - "http://localhost:3008"
-            allowedMethods: "*"
+              - "http://localhost:3009"
+            allowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
             allowedHeaders: "*"
             allowCredentials: true
       routes:
@@ -100,32 +108,6 @@ management:
     tags:
       application: ${spring.application.name}
 
-# Resilience4j（Reactive 栈）：网关全局路由的熔断配置
-# 已知限制：CircuitBreakerGatewayFilter 目前使用 ReactiveCircuitBreaker 默认工厂；
-# 如需严格对齐下述实例，需在 filter 中显式指定 id="gatewayRoutes" 或改为 Resilience4JCircuitBreakerFactory 直接创建。
-resilience4j:
-  circuitbreaker:
-    instances:
-      gatewayRoutes:
-        register-health-indicator: true
-        sliding-window-type: COUNT_BASED
-        sliding-window-size: 50
-        minimum-number-of-calls: 10
-        failure-rate-threshold: 50
-        slow-call-rate-threshold: 60
-        slow-call-duration-threshold: 5s
-        wait-duration-in-open-state: 30s
-        permitted-number-of-calls-in-half-open-state: 5
-  timelimiter:
-    instances:
-      gatewayRoutes:
-        timeout-duration: 30s
-        cancel-running-future: true
-  retry:
-    instances:
-      gatewayRoutes:
-        max-attempts: 2
-        wait-duration: 100ms
-        retry-exceptions:
-          - java.net.ConnectException
-          - java.util.concurrent.TimeoutException
+# 熔断参数单一真源（G-1，设计稿 §5.2 裁决）：ResilienceConfig#gatewayCircuitBreakerCustomizer。
+# 原 resilience4j.instances.gatewayRoutes 整段已删除——breakerId 是 routeId（bone-iam 等），
+# 与实例名 gatewayRoutes 不匹配，configureDefault 生效后此处调参从未实际生效。运维调参改 Java 侧。

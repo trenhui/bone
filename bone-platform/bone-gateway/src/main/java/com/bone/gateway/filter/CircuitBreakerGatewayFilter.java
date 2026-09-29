@@ -51,7 +51,11 @@ public class CircuitBreakerGatewayFilter implements GlobalFilter, Ordered {
     return breaker.run(
         chain.filter(exchange),
         throwable ->
-            GatewayErrorWriter.write(exchange, HttpStatus.SERVICE_UNAVAILABLE, "下游服务暂不可用（熔断）"));
+            GatewayErrorWriter.write(
+                exchange,
+                HttpStatus.SERVICE_UNAVAILABLE,
+                com.bone.gateway.config.GatewayErrorCodes.UPSTREAM_UNAVAILABLE,
+                "下游服务暂不可用（熔断）"));
   }
 
   @Override

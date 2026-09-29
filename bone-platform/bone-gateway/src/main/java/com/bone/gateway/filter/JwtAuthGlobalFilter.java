@@ -46,7 +46,11 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     String authorization = request.getHeaders().getFirst(properties.getHeaderName());
     Optional<GatewayPrincipal> principal = jwtUtil.parse(authorization);
     if (principal.isEmpty()) {
-      return GatewayErrorWriter.write(exchange, HttpStatus.UNAUTHORIZED, "未授权：无效或缺失 token");
+      return GatewayErrorWriter.write(
+          exchange,
+          HttpStatus.UNAUTHORIZED,
+          com.bone.gateway.config.GatewayErrorCodes.UNAUTHORIZED,
+          "未授权：无效或缺失 token");
     }
 
     GatewayPrincipal p = principal.get();

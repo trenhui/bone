@@ -65,7 +65,10 @@ public class RateLimitGatewayFilter implements GlobalFilter, Ordered {
                     .getHeaders()
                     .set("Retry-After", String.valueOf(properties.getWindowSeconds()));
                 return GatewayErrorWriter.write(
-                    exchange, HttpStatus.TOO_MANY_REQUESTS, "请求过于频繁，请稍后重试");
+                    exchange,
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    com.bone.gateway.config.GatewayErrorCodes.RATE_LIMITED,
+                    "请求过于频繁，请稍后重试");
               }
               return chain.filter(exchange);
             });
