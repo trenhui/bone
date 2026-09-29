@@ -53,3 +53,12 @@ SET t.allocated_accounts = (
 --    OR (t.max_roles    IS NOT NULL AND t.allocated_roles    > t.max_roles);
 -- 若非空：说明存量已超配额（回填前无强校验所致）。由业务侧决定
 --   ① 上调 maxAccounts/maxRoles，或 ② 清理账号/角色至配额内——否则这些租户将无法新建账号。
+
+-- ---------- 阶段 5：回滚（异常时使用） ----------
+-- 仅还原两个占用计数列，不动其它字段（备份表 bak_iam_tenant_0010 由阶段 0 生成）：
+-- UPDATE iam_tenant t
+-- JOIN bak_iam_tenant_0010 b ON b.id = t.id
+-- SET t.allocated_accounts = b.allocated_accounts,
+--     t.allocated_roles    = b.allocated_roles;
+-- 应急兜底（仅当阶段 0 未执行 / 备份表缺失时）：计数全置 0，再由业务重新触发核对——不推荐，会丢失真实在用量快照。
+-- UPDATE iam_tenant SET allocated_accounts = 0, allocated_roles = 0;

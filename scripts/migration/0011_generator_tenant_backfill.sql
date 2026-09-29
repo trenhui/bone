@@ -93,3 +93,13 @@ WHERE h.tenant_id = 0
 --   * 其余表剩余行 = created_by 为空 / 父记录缺失的孤儿数据，需业务侧确认归属
 --     （归到平台租户 0，或清理删除）。
 --   * gen_code_template 中 tenant_id = 0 且 created_by IS NULL 的行是内置模板种子，属预期保留。
+
+-- ---------- 阶段 9：回滚（异常时使用） ----------
+-- 逐表用阶段 0 备份还原 tenant_id（执行前确认 bak_gen_*_0011 已生成）：
+-- UPDATE gen_data_source d             JOIN bak_gen_data_source_0011 b             ON b.id=d.id             SET d.tenant_id=b.tenant_id;
+-- UPDATE gen_table_metadata m          JOIN bak_gen_table_metadata_0011 b          ON b.id=m.id             SET m.tenant_id=b.tenant_id;
+-- UPDATE gen_column_metadata c         JOIN bak_gen_column_metadata_0011 b         ON b.id=c.id             SET c.tenant_id=b.tenant_id;
+-- UPDATE gen_code_template t           JOIN bak_gen_code_template_0011 b           ON b.id=t.id             SET t.tenant_id=b.tenant_id;
+-- UPDATE gen_generation_task g         JOIN bak_gen_generation_task_0011 b         ON b.id=g.id             SET g.tenant_id=b.tenant_id;
+-- UPDATE gen_code_generation_history h JOIN bak_gen_code_generation_history_0011 b ON b.id=h.id            SET h.tenant_id=b.tenant_id;
+-- 注意：回滚会把 tenant_id 还原为回填前的值（含用户自建数据回到 0），回滚后须重启 studio-generator 新版本实例。
