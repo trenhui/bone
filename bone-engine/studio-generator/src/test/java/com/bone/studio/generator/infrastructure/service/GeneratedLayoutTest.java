@@ -47,53 +47,7 @@ class GeneratedLayoutTest {
             .customEntityName(ENTITY)
             .originalTableName("t_order")
             .tableComment("订单")
-            .columns(
-                List.of(
-                    GenColumnMetadata.builder()
-                        .originalColumnName("id")
-                        .javaType("Long")
-                        .isPrimaryKey(true)
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("tenant_id")
-                        .javaType("Long")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("created_at")
-                        .javaType("LocalDateTime")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("updated_at")
-                        .javaType("LocalDateTime")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("version")
-                        .javaType("Long")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("is_deleted")
-                        .javaType("Boolean")
-                        .isNullable(true)
-                        .columnComment("是否删除")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("customer_id")
-                        .javaType("Long")
-                        .isNullable(false)
-                        .columnComment("客户ID")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("total_amount")
-                        .javaType("BigDecimal")
-                        .isNullable(true)
-                        .columnComment("订单金额")
-                        .build(),
-                    GenColumnMetadata.builder()
-                        .originalColumnName("remark")
-                        .javaType("String")
-                        .isNullable(true)
-                        .columnComment("备注")
-                        .build()))
+            .columns(defaultColumns())
             .build();
   }
 
@@ -213,10 +167,17 @@ class GeneratedLayoutTest {
         SOURCE_ROOT + "adapter/web/assembler/OrderAssembler.java", assembler.getFilePath());
     assertTrue(response.getContent().contains("public class OrderResp"), response.getContent());
     String assemblerContent = assembler.getContent();
-    assertTrue(assemblerContent.contains("@Mapper(componentModel = \"spring\")"), assemblerContent);
+    // 手写 @Component 而非 MapStruct：生成物零额外依赖即可编译运行（缺 mapstruct 时 MapStruct 不生成实现类，注入即
+    // NoSuchBeanDefinition）
+    assertTrue(assemblerContent.contains("@Component"), assemblerContent);
+    assertTrue(assemblerContent.contains("class OrderAssembler"), assemblerContent);
     assertTrue(assemblerContent.contains("OrderResp toOrderResp(OrderDto dto)"), assemblerContent);
     // 路径 id 不在请求体里：装配器显式补齐命令首参，避免多源参数映射出 id=null
-    assertTrue(assemblerContent.contains("new UpdateOrderCommand(id,"), assemblerContent);
+    assertTrue(assemblerContent.contains("toUpdateOrderCommand("), assemblerContent);
+    assertTrue(assemblerContent.contains("Long id,"), assemblerContent);
+    assertTrue(assemblerContent.contains("new UpdateOrderCommand("), assemblerContent);
+    assertTrue(assemblerContent.contains("request.getCustomerId()"), assemblerContent);
+    assertTrue(assemblerContent.contains("dto.getIsDeleted()"), assemblerContent);
   }
 
   @Test
@@ -267,7 +228,90 @@ class GeneratedLayoutTest {
     return generator.generate(table, template(code), BASE_PACKAGE, MODULE);
   }
 
+  private GeneratedFile generate(
+      AbstractFileGenerator generator, String code, GenTableMetadata tbl) {
+    return generator.generate(tbl, template(code), BASE_PACKAGE, MODULE);
+  }
+
   private CodeTemplate template(String code) {
     return CodeTemplate.builder().code(code).build();
+  }
+
+  /**
+   * 非 Order 表回归：捕获装配方法名被硬编码成 Order、导致非 Order 表生成物编译失败的缺陷。
+   *
+   * <p>此前 {@code assembler.ftl} 把方法名写死成 {@code toCreateOrderCommand / toUpdateOrderCommand}，而控制器按
+   * {@code toCreate${table.customEntityName}Command} 动态调用——夹具只用了 Order，把这个不一致完全掩盖。
+   */
+  @Test
+  void assemblerAndControllerUseTableSpecificMethodNames_notHardcodedToOrder() {
+    GenTableMetadata product = productTable();
+    GeneratedFile assembler =
+        generate(new AssemblerGenerator(templateRenderer), "assembler", product);
+    GeneratedFile controller =
+        generate(new ControllerGenerator(templateRenderer), "controller", product);
+
+    String a = assembler.getContent();
+    // 方法名必须随表名变化，不可硬编码成 Order（否则非 Order 表生成物编译失败）
+    assertTrue(a.contains("toCreateProductCommand("), a);
+    assertTrue(a.contains("toUpdateProductCommand("), a);
+    assertFalse(a.contains("toCreateOrderCommand("), a);
+    assertFalse(a.contains("toUpdateOrderCommand("), a);
+
+    String c = controller.getContent();
+    assertTrue(c.contains("assembler.toCreateProductCommand("), c);
+    assertTrue(c.contains("assembler.toUpdateProductCommand("), c);
+  }
+
+  private GenTableMetadata productTable() {
+    return GenTableMetadata.builder()
+        .customEntityName("Product")
+        .originalTableName("t_product")
+        .tableComment("商品")
+        .columns(defaultColumns())
+        .build();
+  }
+
+  private List<GenColumnMetadata> defaultColumns() {
+    return List.of(
+        GenColumnMetadata.builder()
+            .originalColumnName("id")
+            .javaType("Long")
+            .isPrimaryKey(true)
+            .build(),
+        GenColumnMetadata.builder().originalColumnName("tenant_id").javaType("Long").build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("created_at")
+            .javaType("LocalDateTime")
+            .build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("updated_at")
+            .javaType("LocalDateTime")
+            .build(),
+        GenColumnMetadata.builder().originalColumnName("version").javaType("Long").build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("is_deleted")
+            .javaType("Boolean")
+            .isNullable(true)
+            .columnComment("是否删除")
+            .build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("customer_id")
+            .javaType("Long")
+            .isNullable(false)
+            .columnComment("客户ID")
+            .build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("total_amount")
+            .javaType("BigDecimal")
+            .isNullable(true)
+            .columnComment("订单金额")
+            .build(),
+        GenColumnMetadata.builder()
+            .originalColumnName("remark")
+            .javaType("String")
+            .isNullable(true)
+            .columnComment("备注")
+            .build());
   }
 }

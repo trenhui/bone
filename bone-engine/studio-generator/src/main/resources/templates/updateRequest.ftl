@@ -16,7 +16,7 @@ import lombok.Data;
  * 更新${table.tableComment!'实体'}请求体。
  *
  * <p>由代码生成器基于表 ${table.originalTableName} 生成。不含 id：聚合 id 来自路径参数 {@code /{id}}，
- * 不做赋能让这也是为什么 id 不会出现在更新命令里。
+ * 请求体只承载业务字段，故 id 不在此处出现。
  */
 @Data
 public class Update${table.customEntityName}Req {
