@@ -8,6 +8,7 @@ import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.model.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.code.OptionalArtifactType;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
@@ -24,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -59,20 +59,13 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
    * <p>为何不做成可选模板行：模板管理里能勾选的行会进入物理库生成链路，而那条链路的入参里没有这两个开关， 勾选了也不会产出——与其让人勾了没反应，不如让它只由开关控制（前端两个
    * checkbox 此前就是勾了无效的）。
    */
-  public static final Map<String, Predicate<CodeGenerationRequest>> OPTIONAL_TEMPLATE_TYPES =
-      Map.of(
-          "aggregateTest", CodeGenerationRequest::isIncludeTests,
-          "apiDoc", CodeGenerationRequest::isIncludeDocumentation);
+  public static final List<String> OPTIONAL_TEMPLATE_TYPES = OptionalArtifactType.all();
 
   /** 内置骨架 + 开关命中的附加产物（单测 / 文档），顺序即生成顺序。 */
   private static List<String> resolveTemplateTypes(CodeGenerationRequest request) {
     List<String> types = new ArrayList<>(BUILT_IN_TEMPLATE_TYPES);
-    OPTIONAL_TEMPLATE_TYPES.forEach(
-        (type, enabled) -> {
-          if (enabled.test(request)) {
-            types.add(type);
-          }
-        });
+    types.addAll(
+        OptionalArtifactType.typesFor(request.isIncludeTests(), request.isIncludeDocumentation()));
     return types;
   }
 

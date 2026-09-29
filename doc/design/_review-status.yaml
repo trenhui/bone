@@ -5,7 +5,7 @@
 updated_at: "2026-09-29T06:30:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
 current_module: "bone-file"
-next_run: "studio-generator（B 段，前提：其在途改动已落库）／否则 bone-notification"
+next_run: "bone-masterdata / bone-integration / bone-system（补齐 C 联调 + D 验收）→ bone-notification（A 段，无设计稿需从零产出）→ bone-frontend/bone-shell（宿主应用单独一轮）"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -110,17 +110,17 @@ modules:
     design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
     design_docs: ["doc/design/modules/8.Studio Generator 详细设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
     port: 8086
-    status: "design_ready"
-    last_reviewed_at: "2026-09-27T12:00:00+08:00"
-    implemented_at: null
+    status: "done"
+    last_reviewed_at: "2026-09-29T09:50:00+08:00"
+    implemented_at: "2026-09-29T09:50:00+08:00"
     report_path: "doc/design/modules/review-report-studio-generator.md"
     has_active_comet_change: false
-    stages_done: ["A", "A'"]
+    stages_done: ["A", "A'", "B", "B'", "C", "D"]
     pending_approvals:
       - "L3 gen_type_mapping 下线（DDL 移除）或补实现的裁决"
       - "L3 doc8 领域事件定位裁定（路线图标 [Target] vs 应落地）"
       - "L3 doc8 #L68 模板承诺 7 类的口径订正或补齐"
-    note: "A+A' 设计复核完成（2026-09-27，轮换 #7）：HC-003 锚定 violated 复核为误报（8 个 Controller 中 7 个直接返回 core ApiResponse；CodeGenerationController 的 ResponseEntity 为 LRO 202+Location 信封与 ZIP 下载两处合法例外），已纠正为 implemented（同源第四例）；HC-008 由 partial 升级为 violated——声明面与 DDL 合规（5 实体显式 tenantId、仅 gen_code_generation_history 为 by-design 只追加），但运行时租户来源不闭环：全模块零读取 TenantContext，写入/查询回落硬编码默认 DataSource→0L、CatalogMetadataGatewayAdapter→1L（G-1 阻断级）。另 G-2 信封碎片化（CapabilityController 用本地 ApiResponse）、G-3 GEN_* 裸字符串且错误码拼进 message、G-4 模板 5/7、G-5 领域事件零实现、G-6 gen_type_mapping 零引用（L3）、G-7 BONE-X-Studio #L436 文档滞后。亮点：响应契约为本轮最优、生成入口已收敛 /code-generation。锚定「3 个未提交改动」GAP 已消解。"
+    note: "六段闭环完成（2026-09-29，轮换 #7，已随 38af74db0 入库）。B 段：G-1 租户闭环（新建 domain/gateway/TenantProvider + infrastructure/gateway/TenantProviderGatewayAdapter；DataSource.create 去 0L 回落、CreateDataSourceApplicationService 去硬编码 0L、CatalogMetadataGatewayAdapter 去 1L、CodeGeneratorServiceImpl 增 resolveTenant() 兜底两处调用，一律失败关闭抛 GEN_TENANT_CONTEXT_MISSING）；G-2 CapabilityController 改用 core 信封（8 个 Controller 全量一致，本地 ApiResponse 保留未删——删码 L3）；G-3 建 GeneratorErrorCodes（7 码）+ GeneratorErrors（码→状态表 + 反射 fail-fast，漏登记立即炸不兜底），替换 2 处裸串/三参构造，errorCode 由恒 null 变为独立字段。B'：七项复核通过（分层/持久化/并发/契约/范围/删码/门禁）；范围 creep 与 L3/L4 改动全部登记未擅自回滚。C 段：MySQL/Nacos 未运行、8086 无监听，改以内嵌 RANDOM_PORT + TestRestTemplate 做真实 HTTP——capabilities 200（body 含 success+timestamp，证 core 信封）、templates/9999999 404 且 body 透出 GEN_TEMPLATE_NOT_FOUND、只读端点 POST 405（非 500）、模板列表 200 records 非空；新增 GeneratorHttpContractTest 作为回归防线。D 段：H2 构造数据→模拟人工四步→内存销毁自证；门禁 85→105 测试 0 失败 0 错误（含 ArchitectureTest 26 项 + spotless）。本轮最重要发现：SDK Criteria.or(Consumer) 把 OR 组塞成 fieldName==null 的原生条件，toSql() 假绿、BaseRepository#validateCriteriaFields 无条件炸 UndefinedFieldException；已改走 QueryBuilder 并把口径收紧为 tenant_id=:t OR (tenant_id=0 AND created_by IS NULL)（平台行限无创建人，防租户 0 孤儿数据外泄），另补两条回归防护钉死该缺陷。须留档：本轮全程与另一会话共用工作树，4 次互相覆盖，最终产物由该会话提交 38af74db0（dev，已推 origin/dev）。"
 
   - name: "bone-file"
     design_doc: "doc/design/modules/bone-file-设计方案.md"
@@ -151,15 +151,16 @@ modules:
     note: "无独立端口（与 bone-system 同上游 8083）；无设计稿 → 先定与 bone-system alert_* 的通道边界再出 v1"
 
   - name: "bone-gateway"
-    design_doc: null
-    design_docs: []
+    design_doc: "doc/design/modules/bone-gateway-设计方案.md"
+    design_docs: ["doc/design/modules/bone-gateway-设计方案.md"]
     port: 8888
-    status: "pending"
-    last_reviewed_at: null
+    status: "design_ready"
+    last_reviewed_at: "2026-09-29T03:00:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-gateway.md"
     has_active_comet_change: false
-    note: "无设计稿 → 本轮只产出 v1 设计稿（路由 / 鉴权 / 限流契约），不进实现"
+    stages_done: ["A", "A'"]
+    note: "A/A' 完成（2026-09-29，由并行会话产出，已随 38af74db0 入库）：v1 设计稿 356 行（路由 / 鉴权 / 限流契约）+ 复核报告 122 行（阻断级 / 建议级 / 亮点 / v1 稿 / 实现计划逐项标 L 级 / A' 三问）。状态停在 design_ready，不进实现。"
 
   - name: "bone-blueprint"
     design_doc: null

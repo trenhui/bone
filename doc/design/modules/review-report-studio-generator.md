@@ -62,3 +62,147 @@
 | **Q3 证据是否可复现？** | 是。全部结论带 `文件:行`；G-1 另以「全模块 0 命中」的反向扫描佐证（非单点猜测）。G-1 影响面（泄漏 vs 空结果）已在报告中标注为待实测，未过度断言。 |
 
 **自审结论：PASS（可放行至 B 阶段；G-1 租户闭环应优先于其余 B 项）。**
+
+---
+
+## 六、B 段实现（2026-09-29，轮换 #7 续跑）
+
+### 6.1 G-1 租户闭环（阻断级，优先落地）
+
+| # | 落地内容 | 文件 | 修复前 |
+|---|---|---|---|
+| 1 | 新增租户端口（domain 层，零框架依赖） | `domain/gateway/TenantProvider.java` | 无 |
+| 2 | 适配 `TenantContext` 的实现 | `infrastructure/gateway/TenantProviderGatewayAdapter.java` | 无 |
+| 3 | 领域侧去 `0L` 回落 → **失败关闭** | `domain/model/data/DataSource.java`（`create`） | `tenantId == null ? 0L : tenantId` |
+| 4 | 应用侧去硬编码 `0L` → 取上下文，缺头抛稳定码 | `application/CreateDataSourceApplicationService.java` | `DataSource.create(null, 0L, ...)` |
+| 5 | 网关侧去 `1L` 回落 → 先回落上下文、仍 null 才失败关闭 | `infrastructure/gateway/CatalogMetadataGatewayAdapter.java` | `tenantId != null ? tenantId : 1L` |
+| 6 | 生成链路两处调用统一走 `resolveTenant()` | `infrastructure/service/CodeGeneratorServiceImpl.java` | 直传可能为 null 的入参 |
+| 7 | 接口 javadoc 同步（不再声称「null 时默认 1」） | `domain/gateway/CatalogMetadataGateway.java` | 文档与实现不符 |
+
+**原则**：写入侧与查询侧一律「取不到租户就拒绝」，不再用魔法默认值把数据静默落到平台租户 / 恒按租户 1 过滤。
+
+### 6.2 G-2 响应信封收敛
+
+- `adapter/web/controller/CapabilityController.java` 改用 core `com.bone.core.model.ApiResponse`（全模块 8 个 Controller 至此**完全一致**）。
+- core 信封是本地类的**超集**（多 `code` / `timestamp`），属向后兼容加法，不破坏前端契约。
+- 模块本地 `common/result/ApiResponse.java` **未删除** —— 删码属 L3，见 §10 待审批 #5。
+
+### 6.3 G-3 错误码收敛
+
+| 构件 | 说明 |
+|---|---|
+| `common/GeneratorErrorCodes.java` | 7 个稳定码常量（`GEN_TENANT_CONTEXT_MISSING` / `GEN_TEMPLATE_NOT_FOUND` / `GEN_GENERATION_FAILED` 等） |
+| `common/GeneratorErrors.java` | 「码 → HTTP 状态」唯一表 + 反射 fail-fast（漏登记的码在 `httpStatusOf` 处立即抛 `IllegalStateException`，**不兜底成 400/500**） |
+
+替换的裸串 / 三参构造：
+
+- `GetCodeTemplateDetailQueryApplicationService`：`new BizException(404, "GEN_TEMPLATE_NOT_FOUND: " + id)` → `GeneratorErrors.of(TEMPLATE_NOT_FOUND, id)`。**修复前 `errorCode` 恒为 `null`**，前端 `i18n.t('errors.' + errorCode)` 的分支永不命中。
+- `GenerationTaskOperationApplicationService`：裸串 `"GEN_GENERATION_FAILED"` → 常量引用。
+- 登记与 i18n：`doc/architecture/Bone-错误码登记.md` 的 `GEN_` 段与前端 `GEN_*` 译文**复核时均已在位**，本轮仅需对齐常量值，无需新增。
+
+### 6.4 同期并入的其它改动（非本轮发起，已随 `38af74db0` 入库）
+
+| 项 | 内容 | 级别 |
+|---|---|---|
+| G-4 内置模板收敛 | 12 类骨架模板 + `OptionalArtifactType`（单测 / 文档开关产物）+ `BuiltInTemplateGateway` classpath 回落 | L2，但**超出报告 §4.3「本任务不执行」的口径** → 见 §10 待审批 #8 |
+| 种子 / 迁移 | `bone-init.sql` 种子 `content=NULL`（正文真源改为 classpath `.ftl`）+ `scripts/migration/0009_...sql` | **L4 / L3** |
+| 租户可见口径 | `CodeTemplateRepository.findPageByTenant` | L2 |
+| 历史实体 | `CodeGenerationHistory.create` 新增 `tenantId` 首参 | L2 |
+| CI 加固 | `.github/workflows/ci.yml` 接入 Gitleaks、覆盖率门槛 10%→15%；`bone-parent/pom.xml` 依赖变更 | L3 |
+
+### 6.5 本轮修复的编译 / 门禁破损
+
+| # | 症状 | 根因 | 处置 |
+|---|---|---|---|
+| 1 | `CodeGeneratorServiceImpl:61` 编译失败 | 缺 `java.util.function.Predicate` import | 补 import |
+| 2 | `CodeTemplateControllerTest` 2 errors：`UndefinedFieldException` / NPE | **SDK `Criteria.or(Consumer)` 缺陷**：OR 组被塞成 `fieldName == null` 的原生条件（`Criteria#addNativeCondition`），`BaseRepository#validateCriteriaFields` 无条件校验即炸 | 改走 `QueryBuilder`（详见 §6.6） |
+| 3 | `TemplateTypeConsistencyTest` 2 errors：`NoSuchField OPTIONAL_TEMPLATE_TYPES` | 常量已从 `Map` 改为 `List<String>`，测试仍按 `.keySet()` 调用 | 测试同步为 `List` |
+| 4 | `CodeTemplateRepository.java:[29,9] 对or的引用不明确` | lambda 同时匹配 `or(SFunction)` 与 `or(Consumer<FluentQuery<T>>)` | 显式转型 `(Consumer<FluentQuery<CodeTemplate>>)` |
+
+### 6.6 SDK `Criteria.or()` 缺陷（本轮最重要发现）
+
+```
+Criteria#or(Consumer) → addNativeCondition("(a OR b)")
+                      → mainConditions.add(new Condition(null, sql, null, Operator.EQ))
+                                                          ↑ fieldName == null
+BaseRepository#validateCriteriaFields → FieldCache.getFieldByName(entityClass, null)
+                                      → UndefinedFieldException
+```
+
+**危险点**：`toSql()` 层看起来完全正常，所以**基于它写的单测会假绿**，一到真实查询就炸。本轮已有两份测试踩中：
+
+- `CodeTemplateRepositoryCriteriaTest` 原本断言 `Criteria.toSql()` 含 ` OR ` —— 绿，但运行期 NPE；
+- 实际生效的 `CodeTemplateControllerTest`（真实 HTTP + H2）才暴露问题。
+
+**处置**：运行期一律走 `QueryBuilder`；口径同时**收紧**为
+
+```
+tenant_id = :t OR (tenant_id = 0 AND created_by IS NULL)
+```
+
+比原口径多一层保护：平台租户（0）下的内置模板种子可见，但**平台租户下若有用户自建的孤儿数据（`created_by` 非空），不得公开给所有租户**。并在 `CodeTemplateRepositoryCriteriaTest` 增补两条回归防护（`platformRowsMustBeLimitedToSeedRowsOnly` / `sdkCriteriaOrIsBroken_mustNotBeUsedAtRuntime`），把该缺陷钉死，防止后人改回。
+
+---
+
+## 七、B' 代码复核（7 项）
+
+| # | 复核项 | 结论 | 证据 |
+|---|---|---|---|
+| 1 | **分层依赖**（`adapter → application → domain ← infrastructure`） | ✅ 通过 | `TenantProvider` 端口在 `domain/gateway`，实现在 `infrastructure/gateway`；application 层只注入端口，不直连 infrastructure |
+| 2 | **持久化唯一**（`bone-metadata-sdk`） | ✅ 通过 | 无 MyBatis / JPA 引入 |
+| 3 | **并发控制**（禁 `FOR UPDATE`） | ✅ 通过 | 本轮改动无悲观锁；沿用 `@Version` 乐观锁 |
+| 4 | **契约**（统一 `ApiResponse`） | ✅ 通过 | 8 个 Controller 全量 core 信封；`GeneratorHttpContractTest` 以真实 HTTP 断言 `success` + `timestamp` |
+| 5 | **范围 creep** | ⚠️ 有 | G-4 模板补齐属报告 §4.3 明写「本任务不执行」的 L3 项，同期会话已实施并扩到 12 类；`bone-init.sql` / `ci.yml` / `pom.xml` / `scripts/migration/0009` 均被改动 → 全部登记 §10 待审批，**未自行回滚** |
+| 6 | **删码** | ✅ 合规 | 本地 `ApiResponse` 保留未删（L3 事项，未擅自执行） |
+| 7 | **门禁** | ✅ 通过 | `mvn -o -pl bone-engine/studio-generator test`：**105 tests, 0 failures, 0 errors**，含 `ArchitectureTest` 26 项；spotless 格式门禁随构建通过 |
+
+**并发说明（须留档）**：本轮全程与另一会话共用同一工作树，出现 4 次「改完即被覆盖 / 编译被打破」的竞争。收敛方式为「只改必要行 + 每次改完立刻编译验证 + 不擅自回滚对方改动」。最终产物已由该会话提交为 `38af74db0`（`dev`，已推 `origin/dev`）。
+
+---
+
+## 八、C 段联调（真实 HTTP）
+
+**前置说明**：本机 MySQL / Nacos 未运行，8086 无进程监听，故**无法对外部进程做真实端口联调**。C 段改用 `@SpringBootTest(webEnvironment = RANDOM_PORT)` + `TestRestTemplate` —— 内嵌 Tomcat 起真实端口、走完整 Servlet 栈与全局异常翻译（非 MockMvc 短路），HTTP 状态码为真实值。
+
+| # | 端点 | 方法 | 真实 HTTP 码 | 响应摘要 / 断言 |
+|---|---|---|---|---|
+| 1 | `/api/v1/generator/capabilities` | GET | **200** | body 含 `"success"` 与 `"timestamp"` → 证明已是 **core 信封**（G-2） |
+| 2 | `/api/v1/generator/templates/9999999` | GET | **404** | body 透出 `GEN_TEMPLATE_NOT_FOUND` → 证明 **errorCode 独立字段**已落到响应体（G-3）；修复前 `errorCode` 恒 null |
+| 3 | `/api/v1/generator/templates/9999999` | GET | **404**（非 500） | `GlobalExceptionHandlerTranslationTest`：业务异常按自带 code 翻译，未被兜底成 500 |
+| 4 | `/api/v1/generator/templates/1` | POST | **405**（非 500） | 方法不被支持，未被 catch-all 吞掉 |
+| 5 | `/api/v1/generator/templates` | GET | **200** | `CodeTemplateControllerTest`（3 用例）：`records` 非空 → 租户可见口径在 H2 上跑通，未退化成空列表也未跨租户 |
+| 6 | 租户缺失（用例层） | — | **400**（`GEN_TENANT_CONTEXT_MISSING`） | `GeneratorTenantClosureTest`（6 用例）：HTTP 链路无法复现（测试态过滤器会补平台租户），故在用例层把 `TenantProvider` 换成返回 null 的桩 |
+
+**新增 C 段门禁**：`GeneratorHttpContractTest`（真实 HTTP，2 用例）——信封与错误码这两条最易静默回退的契约从此有回归防线。
+
+---
+
+## 九、D 段验收
+
+| 步骤 | 内容 | 结果 |
+|---|---|---|
+| 1 构造数据 | H2 内存库 + `bone-init.sql` / schema；种子模板行 `content=NULL`、正文真源为 classpath `.ftl`（12 类 + 2 开关类） | ✅ |
+| 2 模拟人工操作 | ① 打开模板列表 → 看到「自己的模板 + 平台内置种子」② 点开不存在的模板 → 404 + `GEN_TEMPLATE_NOT_FOUND` ③ 打开能力列表 → core 信封 ④ 创建数据源（无租户上下文）→ 400 `GEN_TENANT_CONTEXT_MISSING` 且**未落库**（`verify(repository, never()).insert(...)`） | ✅ |
+| 3 清理自证 | 数据落在内存 H2，随 JVM 销毁，无残留；并发会话的临时 dump 测试 `TempDumpAllTest.java` 已删除，不入库 | ✅ |
+| 4 门禁自证 | `mvn -o -pl bone-engine/studio-generator test` → **105 tests, 0 failures, 0 errors, 0 skipped**，BUILD SUCCESS（含 spotless 与 `ArchitectureTest` 26 项） | ✅ |
+| 5 一致性门禁 | `TemplateTypeConsistencyTest` 5 用例：classpath 模板 / 生成器清单 / 初始化种子 / 迁移脚本 0009 **四处一致**，且种子不复制模板正文 | ✅ |
+
+---
+
+## 十、结论与 L3/L4 待审批清单
+
+**本轮结论**：G-1（租户闭环，阻断级）、G-2（信封收敛）、G-3（错误码收敛）**全部落地并通过 B' 复核 + C 联调 + D 验收**；模块门禁由 85 → **105 测试全绿**。studio-generator 六段闭环完成，状态可置 `done`（pending_approvals 保留）。
+
+**待审批（本任务不执行，需架构师 / 你裁定）：**
+
+| # | 事项 | 级别 | 说明 |
+|---|---|---|---|
+| 1 | `bone-init.sql` 种子 `content=NULL` | **L4** | 禁碰文件。语义正确（正文真源改 classpath `.ftl`，避免库里复制一份随模板改造漂移），但属 DDL 变更，须人工确认 |
+| 2 | `scripts/migration/0009_generator_builtin_template_convergence.sql` | L3 | 新增存量迁移脚本（已带 `NOT EXISTS` 幂等兜底，12 条补齐语句） |
+| 3 | `.github/workflows/ci.yml` | L3 | Gitleaks 接入 + 覆盖率门槛 10%→15% + failsafe 补齐 |
+| 4 | `bone-parent/pom.xml` | L3 | 依赖变更 |
+| 5 | 删除模块本地 `common/result/ApiResponse.java` | L3 | `CapabilityController` 已不再引用，属死代码；删码需审批 |
+| 6 | `gen_type_mapping` 下线（DDL 移除）或补实现 | L3 | G-6：表已建但全模块零引用 |
+| 7 | doc8 领域事件定位裁定 | L3 | G-5：`DataSourceCreatedEvent` 等 0 命中 —— 标 `[Target]` 还是排期实现 |
+| 8 | doc8 #L68 模板承诺 7 类的口径订正 | L3 | G-4：现实现为 12 类骨架 + 2 类开关产物，与承诺的 7 类不一致，二者必居其一 |
+

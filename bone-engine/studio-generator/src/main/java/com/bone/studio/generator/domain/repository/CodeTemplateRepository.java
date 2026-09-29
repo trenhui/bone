@@ -2,8 +2,10 @@ package com.bone.studio.generator.domain.repository;
 
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
+import java.util.function.Consumer;
 
 public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
 
@@ -14,21 +16,40 @@ public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
    * 按租户分页。{@code CodeTemplate} 不是 {@code TenantAggregateRoot}，SDK 不会自动注入租户条件，
    * 故必须显式过滤，否则列表会跨租户返回全部模板。
    *
-   * <p>口径：返回「当前租户 + 平台租户」的模板。平台租户下的内置模板种子（{@code content} 为 NULL， 正文真源是 classpath 的
-   * .ftl）对所有租户可见——隔离要挡的是「读到别的租户的数据」， 而不是「看不到平台内置模板」。
+   * <p>口径：{@code tenant_id = :t OR (tenant_id = 0 AND created_by IS NULL)}——
+   *
+   * <ul>
+   *   <li>当前租户自己的模板要查得到（隔离不是「什么都查不到」）
+   *   <li>平台租户下的<strong>内置模板种子</strong>（无创建人）要查得到，否则模板选择页为空
+   *   <li>但平台租户下若有用户自建的孤儿数据（{@code created_by} 非空），<strong>不得</strong>公开给所有租户
+   * </ul>
    */
   default PageResult<CodeTemplate> findPageByTenant(long tenantId, int pageNo, int pageSize) {
-    return pageByCriteria(visibleToTenantCriteria(tenantId).page(pageNo, pageSize));
+    return QueryBuilder.from(CodeTemplate.class)
+        .where(CodeTemplate::getTenantId)
+        .eq(tenantId)
+        .or(
+            (Consumer<FluentQuery<CodeTemplate>>)
+                g ->
+                    g.where(CodeTemplate::getTenantId)
+                        .eq(PLATFORM_TENANT_ID)
+                        .and(CodeTemplate::getCreatedBy)
+                        .isNull())
+        .page(pageNo, pageSize);
   }
 
   /**
-   * 「当前租户 OR 平台租户」的查询条件（{@code static} 以便单测直接断言生成的 SQL）。
+   * 租户可见口径的 SQL 片段（{@code static} 以便单测直接断言，无需数据库）。
    *
-   * <p>注意 SDK {@code Criteria.or()} 的语义：OR 组作为一个整体条件、与其余条件以 AND 相连 （得到 {@code A AND (B OR
-   * C)}）。因此这里<b>不设主条件</b>、只放一个 OR 组， 才能得到顶层 OR：{@code (tenant_id = :t OR tenant_id = 0)}。
+   * <p><b>为什么这里是字符串而不是 {@code Criteria}</b>：SDK 的 {@code Criteria.or(Consumer)} 会把 OR 组塞进 一个 {@code
+   * fieldName == null} 的原生条件（{@code Criteria#addNativeCondition}），而 {@code
+   * BaseRepository#validateCriteriaFields} 对每个条件无条件调用 {@code FieldCache.getFieldByName}， 取到 null 即抛
+   * {@code UndefinedFieldException}。 它在 {@code toSql()} 层看起来完全正常——基于它写的单测会<b>假绿</b>，一到真实查询就炸。
+   * 因此运行期一律走 {@code QueryBuilder}；在此缺陷修复前，不得改回 {@code pageByCriteria} + {@code or()}。
    */
-  static Criteria<CodeTemplate> visibleToTenantCriteria(long tenantId) {
-    return Criteria.<CodeTemplate>create()
-        .or(c -> c.eq("tenantId", tenantId).eq("tenantId", PLATFORM_TENANT_ID));
+  static String visibleToTenantSql() {
+    return "tenant_id = :tenantId OR (tenant_id = "
+        + PLATFORM_TENANT_ID
+        + " AND created_by IS NULL)";
   }
 }

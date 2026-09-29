@@ -14,6 +14,7 @@ import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.model.code.GeneratedFile;
+import com.bone.studio.generator.domain.model.code.OptionalArtifactType;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
@@ -25,10 +26,14 @@ import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import com.bone.studio.generator.domain.service.FileGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @NoDomainEvent
+@Slf4j
 @Capability(
     name = "createCodeGeneration",
     description = "创建代码生成任务",
@@ -56,6 +62,7 @@ public class CreateCodeGenerationApplicationService {
   private final List<FileGenerator> fileGenerators;
   private final CodeGeneratorService codeGeneratorService;
   private final TenantProvider tenantProvider;
+  private final ObjectMapper objectMapper;
 
   /** 同步执行（原行为）。 */
   @Transactional
@@ -129,6 +136,8 @@ public class CreateCodeGenerationApplicationService {
               }
             }
           }
+          // 开关产物（单测 / 文档）不在 templateIds 里，按 genConfig 追加
+          appendOptionalArtifacts(generatedFiles, table, command);
         }
       }
       String zipUrl = "/api/v1/generator/code-generation/tasks/" + taskId + "/download";
@@ -171,6 +180,7 @@ public class CreateCodeGenerationApplicationService {
     if (templateIds == null || templateIds.isEmpty()) {
       throw new IllegalArgumentException("templateIds 不能为空");
     }
+    GenFlags flags = resolveGenFlags(command.getGenConfig());
     CodeGenerationRequest request =
         CodeGenerationRequest.builder()
             .templateId(String.valueOf(templateIds.get(0)))
@@ -185,12 +195,58 @@ public class CreateCodeGenerationApplicationService {
             .metadataSource(MetadataSourceType.CATALOG_SNAPSHOT)
             .tenantId(command.getTenantId())
             .entityCodes(command.getEntityCodes())
-            .includeTests(true)
-            .includeDocumentation(true)
+            // 开关来自 genConfig（前端两个 checkbox），不再写死 true
+            .includeTests(flags.includeTests())
+            .includeDocumentation(flags.includeDocumentation())
             .build();
     CodeGenerationResponse response = codeGeneratorService.generateCode(request);
     return response.getGeneratedFiles() == null ? List.of() : response.getGeneratedFiles();
   }
+
+  /**
+   * 解析前端 {@code genConfig}（JSON 字符串）里的生成开关。
+   *
+   * <p>此前这两个开关一路传到后端却没人读，用户勾了「生成测试 / 生成文档」没有任何产物。
+   *
+   * <p><b>默认值取 {@code includeTests=true}</b>：目标模块的 TEST-HYGIENE-01 门禁要求每个聚合有纯单测，
+   * 未指定时按"要生成"更不容易让新模块一接门禁就红；文档是锦上添花，默认关。
+   */
+  GenFlags resolveGenFlags(String genConfig) {
+    if (genConfig == null || genConfig.isBlank()) {
+      return new GenFlags(true, false);
+    }
+    try {
+      JsonNode node = objectMapper.readTree(genConfig);
+      return new GenFlags(
+          node.path("includeTests").asBoolean(true),
+          node.path("includeDocumentation").asBoolean(false));
+    } catch (JsonProcessingException e) {
+      // 解析失败按默认值继续，但不静默：开关没生效必须有日志可查
+      log.warn("[genConfig 解析失败] 按默认开关继续（tests=true, docs=false）: {}", genConfig, e);
+      return new GenFlags(true, false);
+    }
+  }
+
+  /** 追加开关产物：它们不在 {@code templateIds} 里，只能按开关单独产出。 */
+  void appendOptionalArtifacts(
+      List<GeneratedFile> out, GenTableMetadata table, CreateCodeGenerationCommand command) {
+    GenFlags flags = resolveGenFlags(command.getGenConfig());
+    for (String type :
+        OptionalArtifactType.typesFor(flags.includeTests(), flags.includeDocumentation())) {
+      CodeTemplate template = CodeTemplate.builder().code(type).name(type).build();
+      for (FileGenerator generator : fileGenerators) {
+        if (generator.supports(type)) {
+          out.add(
+              generator.generate(
+                  table, template, command.getBasePackage(), command.getModuleName()));
+          break;
+        }
+      }
+    }
+  }
+
+  /** 生成开关：是否产出聚合单测 / 接口文档（包内可见，供单测直接校验解析口径）。 */
+  record GenFlags(boolean includeTests, boolean includeDocumentation) {}
 
   private static MetadataSourceType resolveSource(String raw) {
     if (raw == null || raw.isBlank()) {

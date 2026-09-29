@@ -37,7 +37,7 @@ class TemplateTypeConsistencyTest {
   void builtInTypesMatchClasspathTemplates() {
     // classpath 模板 = 固定骨架 12 类 + 开关产物 2 类（单测 / 文档）
     Set<String> all = new TreeSet<>(CodeGeneratorServiceImpl.BUILT_IN_TEMPLATE_TYPES);
-    all.addAll(CodeGeneratorServiceImpl.OPTIONAL_TEMPLATE_TYPES.keySet());
+    all.addAll(CodeGeneratorServiceImpl.OPTIONAL_TEMPLATE_TYPES);
     assertEquals(all, new TreeSet<>(classpathTemplateCodes()), "生成器清单与 classpath 模板文件不一致");
   }
 
@@ -48,7 +48,7 @@ class TemplateTypeConsistencyTest {
     assertTrue(
         seeded.containsAll(CodeGeneratorServiceImpl.BUILT_IN_TEMPLATE_TYPES),
         "12 个骨架模板必须有种子行，否则物理库链路不产出对应文件");
-    for (String optional : CodeGeneratorServiceImpl.OPTIONAL_TEMPLATE_TYPES.keySet()) {
+    for (String optional : CodeGeneratorServiceImpl.OPTIONAL_TEMPLATE_TYPES) {
       assertFalse(seeded.contains(optional), "开关产物不应成为模板行: " + optional);
     }
   }
