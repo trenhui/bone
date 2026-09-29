@@ -281,6 +281,19 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `EXT_DEPLOY_STATE_INVALID` | 409 | 当前部署状态不允许该操作（未启用即发布、未部署即模拟调用） |
 | `EXT_PLUGIN_PACKAGE_INVALID` | 400 | 插件包非法（非 JAR/ZIP 格式） |
 
+### FILE_
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `FILE_UPLOAD_FAILED` | 500 | 文件上传失败（存储不可用 / 写入中断） |
+| `FILE_DOWNLOAD_FAILED` | 500 | 文件下载失败（对象不可读 / 存储异常） |
+| `FILE_DELETE_FAILED` | 500 | 文件删除失败 |
+| `FILE_NOT_FOUND` | 404 | 文件对象不存在 |
+| `FILE_NAME_INVALID` | 400 | 文件名非法：含路径遍历片段、绝对路径或控制字符 |
+| `FILE_TYPE_NOT_ALLOWED` | 400 | 文件扩展名不在白名单内 |
+| `FILE_TENANT_CONTEXT_MISSING` | 400 | 缺少租户上下文，无法判定对象归属（失败关闭） |
+| `FILE_ACCESS_DENIED` | 403 | 跨租户访问被拒绝：对象不属于当前调用方租户 |
+
 ### INT_
 
 | errorCode | HTTP | 说明 |

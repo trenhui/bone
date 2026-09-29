@@ -100,7 +100,15 @@
     "META_RUNTIME_INVALID_IDENTIFIER": "Invalid identifier (table/column name)",
     "META_RUNTIME_INVALID_QUERY": "Invalid query constraint (unmodeled column or malformed q)",
     "META_RUNTIME_RECORD_NOT_FOUND": "Runtime record not found",
-    "META_RUNTIME_VALIDATION_FAILED": "Field validation failed"
+    "META_RUNTIME_VALIDATION_FAILED": "Field validation failed",
+    "FILE_UPLOAD_FAILED": "File upload failed",
+    "FILE_DOWNLOAD_FAILED": "File download failed",
+    "FILE_DELETE_FAILED": "File deletion failed",
+    "FILE_NOT_FOUND": "File not found",
+    "FILE_NAME_INVALID": "Invalid file name (path traversal, absolute path or control characters not allowed)",
+    "FILE_TYPE_NOT_ALLOWED": "File type not allowed",
+    "FILE_TENANT_CONTEXT_MISSING": "Tenant context missing",
+    "FILE_ACCESS_DENIED": "Cross-tenant access denied"
   },
   "enums": {
     "ORDER_STATUS": {
