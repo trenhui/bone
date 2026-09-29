@@ -2,6 +2,7 @@ package com.bone.platform.alert;
 
 import com.bone.platform.alert.autoconfigure.AlertProperties;
 import com.bone.platform.alert.autoconfigure.AlertProperties.ChannelPolicy;
+import com.bone.platform.alert.domain.gateway.TenantProvider;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -16,12 +17,17 @@ public class CompositeAlertService implements AlertService {
   private final List<AlertChannel> channels;
   private final ExecutorService executor;
   private final RetryTemplate retryTemplate;
+  private final TenantProvider tenantProvider;
 
   public CompositeAlertService(
-      AlertProperties properties, List<AlertChannel> channels, RetryTemplate retryTemplate) {
+      AlertProperties properties,
+      List<AlertChannel> channels,
+      RetryTemplate retryTemplate,
+      TenantProvider tenantProvider) {
     this.properties = properties;
     this.channels = channels;
     this.retryTemplate = retryTemplate;
+    this.tenantProvider = tenantProvider;
     this.executor = createThreadPool();
   }
 
@@ -49,6 +55,10 @@ public class CompositeAlertService implements AlertService {
   @Override
   public void sendAlert(AlertMessage message) {
     AlertLevel level = Optional.ofNullable(message.getLevel()).orElse(AlertLevel.INFO);
+
+    // 在调用线程（已建立租户上下文）捕获租户一次，随消息下发给各通道；
+    // 通道可能在异步线程执行，ThreadLocal 不传播，故必须显式携带（N-1 修复核心）。
+    message.setTenantId(tenantProvider.currentTenantIdOrNull());
 
     List<AlertChannelType> channelTypes =
         Optional.ofNullable(properties.getPolicies().get(level))

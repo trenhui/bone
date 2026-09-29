@@ -7,6 +7,7 @@ import com.bone.platform.alert.SmsService;
 import com.bone.platform.alert.channel.DingTalkAlertChannel;
 import com.bone.platform.alert.channel.MailAlertChannel;
 import com.bone.platform.alert.channel.SmsAlertChannel;
+import com.bone.platform.alert.domain.gateway.TenantProvider;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -34,11 +35,13 @@ public class AlertAutoConfiguration {
   public AlertService alertService(
       AlertProperties properties,
       ObjectProvider<AlertChannel> channels,
-      ObjectProvider<RetryTemplate> retryTemplate) {
+      ObjectProvider<RetryTemplate> retryTemplate,
+      TenantProvider tenantProvider) {
     return new CompositeAlertService(
         properties,
         channels.orderedStream().collect(Collectors.toList()),
-        retryTemplate.getIfAvailable(RetryTemplate::new));
+        retryTemplate.getIfAvailable(RetryTemplate::new),
+        tenantProvider);
   }
 
   @Bean

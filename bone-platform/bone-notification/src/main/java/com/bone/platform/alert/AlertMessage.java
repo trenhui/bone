@@ -14,19 +14,17 @@ public class AlertMessage {
   private String title;
   private String content;
   private String businessId;
+
+  /**
+   * 租户 id：由 {@code CompositeAlertService} 在调用线程（已建立租户上下文）捕获一次后随消息下发； 通道可能在异步线程执行，ThreadLocal
+   * 不传播，故必须显式携带（N-1 修复核心）。
+   */
+  private Long tenantId;
+
   @Builder.Default private Instant timestamp = Instant.now();
   private Map<String, Object> context;
 
-  /**
-   * 静态方法，用于快速实例化 AlertMessage
-   *
-   * @param level AlertMessage 的级别
-   * @param title 标题
-   * @param content 内容
-   * @param businessId 业务ID
-   * @param context 附加的上下文信息
-   * @return AlertMessage 实例
-   */
+  /** 静态方法，用于快速实例化 AlertMessage */
   public static AlertMessage createAlertMessage(
       AlertLevel level,
       String title,
