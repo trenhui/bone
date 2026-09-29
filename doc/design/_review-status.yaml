@@ -140,15 +140,16 @@ modules:
     note: "A+A' 完成（2026-09-29，轮换 #8，从零出 v1）：无既有设计稿，改为「代码现状复核 + 产出 v1」。阻断级 5 条——FL-1 越权下载/删除（objectName 由 @PathVariable 提供且零 @PreAuthorize、零归属校验）；FL-2 零租户维度（grep TenantContext|TenantProvider src/main → 0 命中，对象键无租户前缀）；FL-3 路径遍历 + Content-Disposition 注入（FileController:47/52-53）；FL-4 零元数据表（bone-init.sql 无 file_ 表，命中全为其它表字段 :692/:693/:915）；FL-5 5 处 IllegalStateException 裸中文、无 FILE_ 码、无 i18n。建议级 8 条（FL-6 端口包路径 / FL-7 返回体 / FL-8 空包扫描 / FL-9 HC-007 锚定误报 / FL-10 /test 收敛 HealthIndicator / FL-11 CORS 硬编码 / FL-12 类型大小白名单 / FL-13 IAM 第二份 MinioClient）。**锚定误报 1 例**：HC-007 记 violated 理由「openapi 下无 file spec」，但 HC-007 语义为「PR 的 spec 不得引入 breaking change」→ 应记 not_applicable，已降级为 FL-9。亮点：HC-003 implemented（3/4 端点 ApiResponse，download 裸流为合法例外）、无 ORM 违规、FileStoragePort 出站抽象到位、JWT 复用框架抽象类。按 §1.7 本晚不进实现，状态 design_ready。B+B' 完成（2026-09-29，接续会话）：FL-2 租户端口（domain/gateway/TenantProvider + infrastructure/gateway/TenantProviderGatewayAdapter，无默认值兜底）+ WebTenantConfiguration（X-Tenant-Id 绑定 TenantContext，缺失不回落 0，失败关闭）+ SecurityConfig CORS 放行 X-Tenant-Id；FL-3+FL-1 服务端键生成 FileObjectKeyGenerator（扁平键 {租户}-{yyyyMMdd}-{uuid}.{ext}，目录式键因 @PathVariable 单段路由约束推迟至 FL-4 一并引入；扩展名白名单；assertSafeName 拒绝路径遍历/绝对路径/控制字符；assertTenantScope 前缀归属断言→403 FILE_ACCESS_DENIED；Content-Disposition 走 ASCII 兜底 + RFC 5987 filename*，杜绝响应头注入；FL-1 采用归属断言而非 @PreAuthorize——file: 权限码无 seed，注解化会全站 403）；FL-5 FileErrorCodes(8 码) + FileErrors（Map+反射 fail-fast 真源，四参 BizException）替换 5 处 IllegalStateException，台账 §6 FILE_ 段 + 双语语言包 8 条；上传响应改 FileObjectResp 资源表示（FL-7 顺带）。测试 26 绿（新增 FileObjectKeyGeneratorTest 6 / FileErrorsTest 3 / FileObjectTest 3 / FileControllerTest 5，含 ArchitectureTest）。C/D 待下一轮（需 MinIO 实例）。"
 
   - name: "bone-notification"
-    design_doc: null
-    design_docs: []
+    design_doc: "doc/design/modules/bone-notification-设计方案.md"
+    design_docs: ["doc/design/modules/bone-notification-设计方案.md"]
     port: 8083
-    status: "pending"
-    last_reviewed_at: null
+    status: "implementing"
+    last_reviewed_at: "2026-09-29T14:00:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-notification.md"
     has_active_comet_change: false
-    note: "无独立端口（与 bone-system 同上游 8083）；无设计稿 → 先定与 bone-system alert_* 的通道边界再出 v1"
+    stages_done: ["A", "A'", "B", "B'"]
+    note: "A 从零出 v1 设计稿 + 报告（阻断级 N-1 租户闭环 / N-2 IDOR / N-3 错误码 / N-4 入参校验）。B 落地分两段：N-2/N-3/N-4 + TenantProvider 端口/适配器/WebTenantConfiguration 已随并行会话 039f7e6ff 入库；N-1（AlertMessage.tenantId 调用线程捕获→通道读 message，消除异步丢租户 + TenantContext 直读冻结债）在本会话分支 codex/nightly-bone-notification-20260929 提交。37 tests 绿（ArchitectureTest 24）。剩余：C 联调 + D 验收（需后端起服 + Playwright），N-5~N-10 建议级未动"
 
   - name: "bone-gateway"
     design_doc: "doc/design/modules/bone-gateway-设计方案.md"
