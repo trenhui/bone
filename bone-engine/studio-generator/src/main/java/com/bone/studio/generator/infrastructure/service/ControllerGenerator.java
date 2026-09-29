@@ -1,46 +1,32 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.model.code.GeneratedFile;
-import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
-import com.bone.studio.generator.domain.service.FileGenerator;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * 控制器生成器。
+ *
+ * <p>REST 路径前缀取自模块名（此前写死 {@code PlatformApiPaths.METADATA_V1}，非元数据模块生成出的路径是错的）。
+ */
 @Component
-@RequiredArgsConstructor
-public class ControllerGenerator implements FileGenerator {
+public class ControllerGenerator extends AbstractFileGenerator {
 
-  private final TemplateRenderer templateRenderer;
-
-  @Override
-  public boolean supports(String templateType) {
-    return "controller".equals(templateType);
+  public ControllerGenerator(TemplateRenderer templateRenderer) {
+    super(templateRenderer);
   }
 
   @Override
-  public GeneratedFile generate(
-      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
-    Map<String, Object> model = new HashMap<>();
-    model.put("table", table);
-    model.put("basePackage", basePackage);
-    model.put("moduleName", moduleName);
-    model.put("utils", new GeneratorUtils());
-    // 此前写死 PlatformApiPaths.METADATA_V1，非元数据模块生成出的路径是错的
-    model.put("apiPrefix", GeneratorUtils.apiPrefix(moduleName));
+  protected String templateType() {
+    return "controller";
+  }
 
-    String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + "Controller.java";
-    String filePath =
-        GeneratorUtils.basePath(basePackage, moduleName) + "/adapter/web/controller/" + fileName;
-    return GeneratedFile.builder()
-        .filePath(filePath)
-        .fileName(fileName)
-        .content(content)
-        .fileType("java")
-        .fileSize(content.length())
-        .build();
+  @Override
+  protected String directory(GenTableMetadata table) {
+    return "/adapter/web/controller/";
+  }
+
+  @Override
+  protected String fileName(GenTableMetadata table) {
+    return table.getCustomEntityName() + "Controller.java";
   }
 }

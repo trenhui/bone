@@ -53,9 +53,13 @@ public class DataSource extends AggregateRoot<Long> {
       String username,
       String passwordEncrypted) {
     validate(name, dbType, host, port, dbName, username);
+    if (tenantId == null) {
+      // 此前回落 0L 会把数据源写进平台租户，导致创建者自己读不到——宁可显式失败。
+      throw new DomainException("租户上下文缺失：数据源禁止回落到平台租户");
+    }
     DataSource ds = new DataSource();
     ds.id = id;
-    ds.tenantId = tenantId == null ? 0L : tenantId;
+    ds.tenantId = tenantId;
     ds.name = name;
     ds.dbType = dbType.toLowerCase();
     ds.host = host;

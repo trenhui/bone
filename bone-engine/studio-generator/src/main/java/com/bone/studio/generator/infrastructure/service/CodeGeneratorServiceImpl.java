@@ -1,6 +1,9 @@
 package com.bone.studio.generator.infrastructure.service;
 
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
@@ -21,27 +24,72 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
-  /** 内置模板类型顺序即生成顺序：响应对象先于控制器，控制器依赖它（HC-003）。 */
-  private static final List<String> BUILT_IN_TEMPLATE_TYPES =
-      List.of("entity", "repository", "applicationService", "response", "controller");
+  /**
+   * 内置模板类型，顺序即生成顺序。
+   *
+   * <p>覆盖一个聚合的完整骨架 {@code domain → application → adapter}，缺一不可：控制器依赖 Assembler 与 {@code
+   * *Req/*Resp}， Assembler 依赖应用层 {@code Command / Dto}（依赖方向 {@code adapter → application →
+   * domain}）。 只出「entity + service + controller」会生成编译不过的半截代码。
+   */
+  public static final List<String> BUILT_IN_TEMPLATE_TYPES =
+      List.of(
+          "entity",
+          "repository",
+          "createCommand",
+          "updateCommand",
+          "queryDto",
+          "applicationService",
+          "createRequest",
+          "updateRequest",
+          "pageQuery",
+          "response",
+          "assembler",
+          "controller");
+
+  /**
+   * 开关控制的附加产物：不进模板管理、不可编辑，只由 {@code includeTests} / {@code includeDocumentation} 决定是否产出。
+   *
+   * <p>为何不做成可选模板行：模板管理里能勾选的行会进入物理库生成链路，而那条链路的入参里没有这两个开关， 勾选了也不会产出——与其让人勾了没反应，不如让它只由开关控制（前端两个
+   * checkbox 此前就是勾了无效的）。
+   */
+  public static final Map<String, Predicate<CodeGenerationRequest>> OPTIONAL_TEMPLATE_TYPES =
+      Map.of(
+          "aggregateTest", CodeGenerationRequest::isIncludeTests,
+          "apiDoc", CodeGenerationRequest::isIncludeDocumentation);
+
+  /** 内置骨架 + 开关命中的附加产物（单测 / 文档），顺序即生成顺序。 */
+  private static List<String> resolveTemplateTypes(CodeGenerationRequest request) {
+    List<String> types = new ArrayList<>(BUILT_IN_TEMPLATE_TYPES);
+    OPTIONAL_TEMPLATE_TYPES.forEach(
+        (type, enabled) -> {
+          if (enabled.test(request)) {
+            types.add(type);
+          }
+        });
+    return types;
+  }
 
   private final DataSourceRepository dataSourceRepository;
   private final CatalogMetadataGateway catalogMetadataGateway;
   private final List<FileGenerator> fileGenerators;
+  private final TenantProvider tenantProvider;
 
   public CodeGeneratorServiceImpl(
       DataSourceRepository dataSourceRepository,
       CatalogMetadataGateway catalogMetadataGateway,
-      List<FileGenerator> fileGenerators) {
+      List<FileGenerator> fileGenerators,
+      TenantProvider tenantProvider) {
     this.dataSourceRepository = dataSourceRepository;
     this.catalogMetadataGateway = catalogMetadataGateway;
     this.fileGenerators = fileGenerators;
+    this.tenantProvider = tenantProvider;
   }
 
   @Override
@@ -55,13 +103,14 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
       // 2. 生成代码：与主链路同一套模板，避免本链路产出 extends Entity + domain/service 的不合规骨架
       int skippedRuntime = 0;
+      Long tenantId = resolveTenant(request.getTenantId());
       for (DatabaseTable table : tables) {
         if (table.isRuntimeDelivery()) {
           skippedRuntime++;
           continue;
         }
-        GenTableMetadata metadata = toMetadata(table);
-        for (String templateType : BUILT_IN_TEMPLATE_TYPES) {
+        GenTableMetadata metadata = toMetadata(table, tenantId);
+        for (String templateType : resolveTemplateTypes(request)) {
           CodeTemplate template =
               CodeTemplate.builder().code(templateType).name(templateType).build();
           for (FileGenerator generator : fileGenerators) {
@@ -120,12 +169,12 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
   }
 
   /** 物理库表 → 生成器领域模型：让本链路与主链路共用同一份模板上下文。 */
-  private static GenTableMetadata toMetadata(DatabaseTable dbTable) {
-    GenTableMetadata metadata = GenTableMetadata.create(0L, 0L, "physical", dbTable);
+  private static GenTableMetadata toMetadata(DatabaseTable dbTable, Long tenantId) {
+    GenTableMetadata metadata = GenTableMetadata.create(0L, tenantId, "physical", dbTable);
     List<GenColumnMetadata> columns = new ArrayList<>();
     if (dbTable.getColumns() != null) {
       for (TableColumn dbColumn : dbTable.getColumns()) {
-        columns.add(GenColumnMetadata.create(0L, 0L, 0L, dbColumn));
+        columns.add(GenColumnMetadata.create(0L, tenantId, 0L, dbColumn));
       }
     }
     metadata.attachColumns(columns);
@@ -154,14 +203,27 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
   @Override
   public List<DatabaseTable> loadCatalogTables(Long tenantId, List<String> entityCodes) {
-    return catalogMetadataGateway.loadPublishedSnapshots(tenantId, entityCodes);
+    return catalogMetadataGateway.loadPublishedSnapshots(resolveTenant(tenantId), entityCodes);
+  }
+
+  /**
+   * 租户兜底：入参未带租户时取可信上下文，仍取不到即失败关闭。
+   *
+   * <p>此前本模块在该位置回落硬编码 {@code 1L}，使得任何未显式传租户的调用都按租户 1 过滤——要么恒空，要么越权。
+   */
+  private Long resolveTenant(Long tenantId) {
+    Long resolved = tenantId != null ? tenantId : tenantProvider.currentTenantIdOrNull();
+    if (resolved == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, null);
+    }
+    return resolved;
   }
 
   private List<DatabaseTable> resolveTables(CodeGenerationRequest request) {
     if (request.getMetadataSource() == MetadataSourceType.CATALOG_SNAPSHOT) {
       List<DatabaseTable> tables =
           catalogMetadataGateway.loadPublishedSnapshots(
-              request.getTenantId(), request.getEntityCodes());
+              resolveTenant(request.getTenantId()), request.getEntityCodes());
       if (request.getEntityCodes() != null && !request.getEntityCodes().isEmpty()) {
         return tables;
       }

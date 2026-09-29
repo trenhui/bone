@@ -3,9 +3,12 @@ package com.bone.studio.generator.application;
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
 import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import com.bone.studio.generator.domain.model.data.GenColumnMetadata;
@@ -38,9 +41,14 @@ public class SyncTableMetadataApplicationService {
   private final GenTableMetadataRepository tableMetadataRepo;
   private final GenColumnMetadataRepository columnMetadataRepo;
   private final GenTableMetadataReadPort tableMetadataReadPort;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public void handle(SyncTableMetadataCommand cmd) {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, cmd.getDataSourceId());
+    }
     Long dataSourcePk = StudioIds.parseRequired(cmd.getDataSourceId());
     DataSource dataSource = dataSourceRepository.findById(dataSourcePk);
     if (dataSource == null) {
@@ -62,13 +70,13 @@ public class SyncTableMetadataApplicationService {
       if (metadata == null) {
         metadata =
             GenTableMetadata.create(
-                DistributedIdGenerator.generateLongId(), 0L, dataSourceKey, dbTable);
+                DistributedIdGenerator.generateLongId(), tenantId, dataSourceKey, dbTable);
         tableMetadataRepo.insert(metadata);
       } else {
         metadata.updateFrom(dbTable);
         tableMetadataRepo.update(metadata);
       }
-      replaceColumns(metadata.getId(), dbTable);
+      replaceColumns(metadata.getId(), dbTable, tenantId);
     }
   }
 
@@ -77,7 +85,7 @@ public class SyncTableMetadataApplicationService {
    *
    * <p>此前只写 {@code gen_table_metadata} 不写列，生成期拿到的列清单为空，实体只落 id 字段。
    */
-  private void replaceColumns(Long tableMetadataId, DatabaseTable dbTable) {
+  private void replaceColumns(Long tableMetadataId, DatabaseTable dbTable, Long tenantId) {
     columnMetadataRepo.removeByTableMetadataId(tableMetadataId);
 
     List<TableColumn> dbColumns = dbTable.getColumns();
@@ -90,7 +98,7 @@ public class SyncTableMetadataApplicationService {
       columns.add(
           GenColumnMetadata.builder()
               .id(DistributedIdGenerator.generateLongId())
-              .tenantId(0L)
+              .tenantId(tenantId)
               .tableMetadataId(tableMetadataId)
               .originalColumnName(dbColumn.getColumnName())
               .customFieldName(dbColumn.getColumnName())

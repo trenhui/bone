@@ -12,6 +12,7 @@ class CodeGenerationHistoryTest {
 
   private CodeGenerationHistory createHistory() {
     return CodeGenerationHistory.create(
+        1001L,
         "T-1001",
         "TPL-1",
         "实体模板",

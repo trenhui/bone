@@ -147,8 +147,13 @@ public class AccountApplicationService {
 
   @Transactional
   public void delete(Long id) {
+    Account account = accountRepository.findById(id);
     accountRoleBindingSupport.replaceBindings(id, null, new Long[0]);
     accountRepository.deleteById(id);
+    // 与创建时的 tryAllocateAccount 成对，避免占用计数只增不减导致配额被永久吃掉
+    if (account != null && account.getTenantId() != null) {
+      tenantQuotaEnforcer.releaseAccountQuota(account.getTenantId());
+    }
   }
 
   @Transactional

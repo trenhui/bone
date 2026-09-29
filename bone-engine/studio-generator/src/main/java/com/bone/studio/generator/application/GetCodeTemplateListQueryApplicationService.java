@@ -2,6 +2,9 @@ package com.bone.studio.generator.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +15,17 @@ import org.springframework.stereotype.Component;
 public class GetCodeTemplateListQueryApplicationService {
 
   private final CodeTemplateRepository codeTemplateRepository;
+  private final TenantProvider tenantProvider;
 
   public PageResult<CodeTemplate> handle(GetCodeTemplateListQuery qry) {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, null);
+    }
     int pageNo = qry.getPage() != null ? qry.getPage() : 1;
     int pageSize = qry.getSize() != null ? qry.getSize() : 10;
-    PageResult<CodeTemplate> sdkPage = codeTemplateRepository.findPage(pageNo, pageSize);
+    PageResult<CodeTemplate> sdkPage =
+        codeTemplateRepository.findPageByTenant(tenantId, pageNo, pageSize);
     long total = sdkPage.getTotal() != null ? sdkPage.getTotal() : 0L;
     return PageResult.of(sdkPage.getRecords(), total, pageNo, pageSize);
   }

@@ -41,6 +41,7 @@ public class CodeGenerationHistory extends AggregateRoot<Long> {
   }
 
   public static CodeGenerationHistory create(
+      Long tenantId,
       String taskId,
       String templateId,
       String templateName,
@@ -50,6 +51,7 @@ public class CodeGenerationHistory extends AggregateRoot<Long> {
       String basePackage,
       String moduleName) {
     CodeGenerationHistory history = new CodeGenerationHistory();
+    history.tenantId = tenantId;
     history.taskId = taskId;
     history.templateId = templateId;
     history.templateName = templateName;
@@ -58,7 +60,6 @@ public class CodeGenerationHistory extends AggregateRoot<Long> {
     history.tableNames = tableNames;
     history.basePackage = basePackage;
     history.moduleName = moduleName;
-    history.tenantId = 0L;
     history.status = "PENDING";
     history.startedAt = LocalDateTime.now();
     history.createdAt = LocalDateTime.now();

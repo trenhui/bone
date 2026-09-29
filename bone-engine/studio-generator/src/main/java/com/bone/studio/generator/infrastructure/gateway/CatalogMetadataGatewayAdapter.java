@@ -1,6 +1,9 @@
 package com.bone.studio.generator.infrastructure.gateway;
 
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.catalog.CatalogMetaEntity;
 import com.bone.studio.generator.domain.model.catalog.CatalogMetaField;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
@@ -27,10 +30,17 @@ public class CatalogMetadataGatewayAdapter implements CatalogMetadataGateway {
 
   private final CatalogMetaEntityRepository catalogMetaEntityRepository;
   private final CatalogMetaFieldRepository catalogMetaFieldRepository;
+  private final TenantProvider tenantProvider;
 
   @Override
   public List<DatabaseTable> loadPublishedSnapshots(Long tenantId, List<String> entityCodes) {
-    long tid = tenantId != null ? tenantId : 1L;
+    // 此前 null 回落 1L：查询恒按租户 1 过滤，表现为空结果或跨租户读取。
+    // 现在先回落到可信上下文（与 CodeGeneratorServiceImpl.resolveTenant 同口径），仍取不到才失败关闭。
+    Long resolved = tenantId != null ? tenantId : tenantProvider.currentTenantIdOrNull();
+    if (resolved == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, entityCodes);
+    }
+    long tid = resolved;
     var query =
         catalogMetaEntityRepository
             .query()

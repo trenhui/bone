@@ -263,11 +263,19 @@ const TemplateManagement: React.FC = () => {
             rules={[{ required: true, message: '请选择模板类型' }]}
           >
             <Select placeholder="请选择模板类型">
-              <Option value="entity">实体</Option>
-              <Option value="repository">仓储</Option>
-              <Option value="controller">控制器</Option>
-              <Option value="service">服务</Option>
-              <Option value="dto">数据传输对象</Option>
+              {/* type 必须与后端 FileGenerator#supports 的模板码一致，否则存进去不会被任何生成器认领 */}
+              <Option value="entity">聚合根实体</Option>
+              <Option value="repository">域仓储接口</Option>
+              <Option value="createCommand">创建命令</Option>
+              <Option value="updateCommand">更新命令</Option>
+              <Option value="queryDto">应用层读模型</Option>
+              <Option value="applicationService">应用服务</Option>
+              <Option value="createRequest">创建请求体</Option>
+              <Option value="updateRequest">更新请求体</Option>
+              <Option value="pageQuery">分页查询入参</Option>
+              <Option value="response">响应契约</Option>
+              <Option value="assembler">Web 装配器</Option>
+              <Option value="controller">Web 控制器</Option>
             </Select>
           </Form.Item>
           

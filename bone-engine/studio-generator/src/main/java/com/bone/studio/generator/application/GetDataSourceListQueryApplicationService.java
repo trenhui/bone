@@ -2,6 +2,9 @@ package com.bone.studio.generator.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +15,17 @@ import org.springframework.stereotype.Component;
 public class GetDataSourceListQueryApplicationService {
 
   private final DataSourceRepository dataSourceRepository;
+  private final TenantProvider tenantProvider;
 
   public PageResult<DataSource> handle(GetDataSourceListQuery qry) {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, null);
+    }
     int pageNo = qry.getPage() != null ? qry.getPage() : 1;
     int pageSize = qry.getSize() != null ? qry.getSize() : 10;
-    PageResult<DataSource> sdkPage = dataSourceRepository.findPage(pageNo, pageSize);
+    PageResult<DataSource> sdkPage =
+        dataSourceRepository.findPageByTenant(tenantId, pageNo, pageSize);
     long total = sdkPage.getTotal() != null ? sdkPage.getTotal() : 0L;
     return PageResult.of(sdkPage.getRecords(), total, pageNo, pageSize);
   }

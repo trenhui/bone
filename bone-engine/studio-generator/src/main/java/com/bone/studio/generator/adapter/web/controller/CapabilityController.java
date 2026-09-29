@@ -1,8 +1,8 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.capability.HandlerRegistry;
+import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.common.GeneratorApiPaths;
-import com.bone.studio.generator.common.result.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

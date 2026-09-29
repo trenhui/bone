@@ -4,9 +4,12 @@ import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
 import com.bone.studio.generator.domain.gateway.GenerationTaskReadPort;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.model.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.model.code.CodeGenerationResponse;
@@ -52,6 +55,7 @@ public class CreateCodeGenerationApplicationService {
   private final CodeGenerationHistoryRepository historyRepository;
   private final List<FileGenerator> fileGenerators;
   private final CodeGeneratorService codeGeneratorService;
+  private final TenantProvider tenantProvider;
 
   /** 同步执行（原行为）。 */
   @Transactional
@@ -88,8 +92,14 @@ public class CreateCodeGenerationApplicationService {
     generationTaskRepository.save(task);
 
     // 模板驱动路径此前不落 gen_code_generation_history，历史页在这条主链路上永远是空的
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(
+          GeneratorErrorCodes.TENANT_CONTEXT_MISSING, command.getProjectName());
+    }
     CodeGenerationHistory history =
         CodeGenerationHistory.create(
+            tenantId,
             taskId,
             templateIdsText(command),
             templateNamesText(command),
@@ -190,9 +200,14 @@ public class CreateCodeGenerationApplicationService {
   }
 
   private GenerationTask buildPendingTask(String taskId, CreateCodeGenerationCommand command) {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(
+          GeneratorErrorCodes.TENANT_CONTEXT_MISSING, command.getProjectName());
+    }
     return GenerationTask.create(
         DistributedIdGenerator.generateLongId(),
-        0L,
+        tenantId,
         taskId,
         command.getProjectName(),
         command.getBasePackage(),

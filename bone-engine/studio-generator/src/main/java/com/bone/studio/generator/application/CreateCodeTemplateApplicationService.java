@@ -3,6 +3,9 @@ package com.bone.studio.generator.application;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateCommand;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
+import com.bone.studio.generator.common.GeneratorErrors;
+import com.bone.studio.generator.domain.gateway.TenantProvider;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +28,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateCodeTemplateApplicationService {
 
   private final CodeTemplateRepository codeTemplateRepository;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public Long handle(CreateCodeTemplateCommand command) {
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, command.getName());
+    }
     CodeTemplate template =
         CodeTemplate.create(
             System.currentTimeMillis(),
-            0L, // 租户ID，暂时硬编码
+            tenantId,
             command.getName(),
             command.getCode(),
             command.getDescription(),

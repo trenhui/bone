@@ -60,13 +60,16 @@
         <!-- 测试 -->
         <mockito.version>5.11.0</mockito.version>
         <jacoco.version>0.8.11</jacoco.version>
-        <!-- 覆盖率起步目标 10%（行覆盖），随测试补充逐步提升 -->
-        <jacoco.minimum.coverage>0.10</jacoco.minimum.coverage>
+        <!-- 覆盖率门槛（分阶段收紧）：起步 10% → 当前 15%，随测试补充逐步提升 -->
+        <jacoco.minimum.coverage>0.15</jacoco.minimum.coverage>
+        <jacoco.minimum.line>0.10</jacoco.minimum.line>
+        <jacoco.minimum.branch>0.05</jacoco.minimum.branch>
         <testcontainers.version>1.19.7</testcontainers.version>
 
         <!-- 构建插件 -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         
@@ -353,6 +356,29 @@
                         </excludes>
                     </configuration>
                 </plugin>
+
+                <!-- 集成测试：*IT.java / *IntegrationTest.java 此前全仓无 failsafe 配置，
+                     verify 阶段实际不会执行，集成测试名存实亡；此处补齐。skipITs=true 时自动跳过。 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
+                    <configuration>
+                        <includes>
+                            <include>**/*IT.java</include>
+                            <include>**/*IntegrationTest.java</include>
+                        </includes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>integration-test</id>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 
                 <!-- JaCoCo 覆盖率 -->
                 <plugin>
@@ -398,6 +424,16 @@
                                                 <counter>INSTRUCTION</counter>
                                                 <value>COVEREDRATIO</value>
                                                 <minimum>${jacoco.minimum.coverage}</minimum>
+                                            </limit>
+                                            <limit>
+                                                <counter>LINE</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${jacoco.minimum.line}</minimum>
+                                            </limit>
+                                            <limit>
+                                                <counter>BRANCH</counter>
+                                                <value>COVEREDRATIO</value>
+                                                <minimum>${jacoco.minimum.branch}</minimum>
                                             </limit>
                                         </limits>
                                     </rule>
@@ -480,6 +516,11 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <!-- 集成测试全局激活：*IT.java / *IntegrationTest.java 由 failsafe 在 verify 阶段执行 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

@@ -29,3 +29,4 @@
  codex/nightly-bone-masterdata-20260927
 
  codex/nightly-bone-metadata-server-20260927
+| 2026-09-29 | bone-file（轮换 #8，跳过 #7） | **A（从零出 v1 设计稿）+ A'（自审 PASS）** | `pending`→`design_ready`（stages_done A/A'） | 新建 `doc/design/modules/bone-file-设计方案.md`（v1，10 章 + 附录 A 13 条证据）；报告 `doc/design/modules/review-report-bone-file.md` | 下一轮：`studio-generator` B 段（前提：其在途改动已落库）；否则 `bone-notification` A（出 v1） | **跳号原因**：#7 `studio-generator` 正被并发会话占用（15 改 + 20 新文件，BUILT_IN_TEMPLATE_TYPES 5→12 类，即 G-4 在途实现，最后改动 03:41）→ 按「保护他人 WIP」顺延到 #8。**锚定误报 1 例**：HC-007 记 violated 理由「openapi 下无 file spec」，但 HC-007 语义为「PR 的 spec 不得引入 breaking change」→ 应为 not_applicable，降级为建议级 FL-9。阻断级 5 条：FL-1 越权下载/删除（objectName 来自 @PathVariable + 零 @PreAuthorize + 零归属校验）、FL-2 零租户维度（TenantContext/TenantProvider 0 命中）、FL-3 路径遍历 + Content-Disposition 注入（FileController:47/52-53）、FL-4 零元数据表（bone-init.sql 无 file_ 表）、FL-5 5 处 IllegalStateException 裸中文无码无 i18n。按 §1.7 本晚不进实现 |

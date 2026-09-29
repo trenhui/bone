@@ -92,7 +92,13 @@ async function main() {
   step('GET /templates', tplRes.status === 200 && tplRes.json.success === true, `status=${tplRes.status}`);
   const byType = {};
   for (const t of tplRes.json.data.records) byType[t.type] = t.id;
-  const needed = ['entity', 'repository', 'response', 'applicationService', 'controller'];
+  // 12 个内置模板覆盖一个聚合的完整骨架（domain → application → adapter）：
+  // 少了任何一个都只会产出一堆互相 import 不上的半截代码，故这里要做全量校验。
+  const needed = [
+    'entity', 'repository',
+    'createCommand', 'updateCommand', 'queryDto', 'applicationService',
+    'createRequest', 'updateRequest', 'pageQuery', 'response', 'assembler', 'controller',
+  ];
   const missing = needed.filter((t) => !byType[t]);
   step('模板齐全', missing.length === 0, missing.length ? `缺: ${missing}` : `entity=${byType.entity}`);
   const templateIds = needed.map((t) => Number(byType[t]));

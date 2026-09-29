@@ -76,6 +76,20 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Secret Scan (Gitleaks)
+        # HC-012a 此前仅本地脚本执行、未接入 CI；此处补齐，使密钥扫描真正成为阻断门禁。
+        # 存在基线时只拦截新增泄露，避免历史存量阻断构建。
+        run: |
+          GITLEAKS_VERSION="8.18.4"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          chmod +x /tmp/gitleaks
+          if [ -f .gitleaks.baseline.json ]; then
+            /tmp/gitleaks detect --source . --config .gitleaks.toml --baseline-path .gitleaks.baseline.json --verbose
+          else
+            /tmp/gitleaks detect --source . --config .gitleaks.toml --verbose
+          fi
+
       - name: OWASP Dependency Check
         run: |
           mvn org.owasp:dependency-check-maven:check \

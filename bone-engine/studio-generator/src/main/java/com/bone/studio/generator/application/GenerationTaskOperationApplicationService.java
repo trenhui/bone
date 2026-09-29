@@ -2,6 +2,7 @@ package com.bone.studio.generator.application;
 
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
+import com.bone.studio.generator.common.GeneratorErrorCodes;
 import com.bone.studio.generator.domain.model.data.GenerationTask;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import java.util.LinkedHashMap;
@@ -53,7 +54,7 @@ public class GenerationTaskOperationApplicationService {
       view.setResult(result);
     } else if ("FAILED".equals(status)) {
       Map<String, Object> error = new LinkedHashMap<>();
-      error.put("errorCode", "GEN_GENERATION_FAILED");
+      error.put("errorCode", GeneratorErrorCodes.GENERATION_FAILED);
       error.put("detail", task.getErrorMessage() != null ? task.getErrorMessage() : "代码生成失败");
       view.setError(error);
     }

@@ -97,6 +97,20 @@ public class CodeTemplate extends AggregateRoot<Long> {
     this.updatedAt = LocalDateTime.now();
   }
 
+  /**
+   * 读侧回填内置模板正文：仅当本行没有自定义正文时填入，供「模板预览 / 详情」展示。
+   *
+   * <p><b>为何不复用 {@link #updateContent}</b>：那会把状态打成 DRAFT 并视作用户改动， 而这里只是把 classpath
+   * 里的真源内容投影出来给前端看——内置模板行在库里就该保持「正文为空、PUBLISHED」， 否则又会回到「库里复制一份正文、随模板改造漂移」的老问题（0009
+   * 迁移脚本已把这些行的正文清空）。
+   */
+  public void fillBuiltInContent(String builtInContent) {
+    boolean hasCustom = this.content != null && !this.content.isBlank();
+    if (!hasCustom && builtInContent != null && !builtInContent.isBlank()) {
+      this.content = builtInContent;
+    }
+  }
+
   public Long getId() {
     return id;
   }

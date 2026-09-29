@@ -87,7 +87,12 @@ public class RoleApplicationService {
 
   @Transactional
   public void delete(Long id) {
+    Role role = roleRepository.findById(id);
     roleRepository.deleteById(id);
+    // 与创建时的 tryAllocateRole 成对，避免占用计数只增不减导致配额被永久吃掉
+    if (role != null && role.getTenantId() != null) {
+      tenantQuotaEnforcer.releaseRoleQuota(role.getTenantId());
+    }
   }
 
   @Transactional

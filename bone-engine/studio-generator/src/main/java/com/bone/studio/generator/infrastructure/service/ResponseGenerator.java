@@ -1,46 +1,32 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.model.code.GeneratedFile;
-import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
-import com.bone.studio.generator.domain.service.FileGenerator;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 响应 DTO 生成器：HC-003 要求 Controller 不裸返领域对象，控制器模板依赖本产物。 */
+/**
+ * 响应契约生成器：{@code adapter/web/dto/response/{Agg}Resp}。
+ *
+ * <p>命名对齐《Bone-DDD》E-13.1 的 {@code *Resp} 后缀（blueprint {@code OrderSummaryResp} 注释锚点）。
+ */
 @Component
-@RequiredArgsConstructor
-public class ResponseGenerator implements FileGenerator {
+public class ResponseGenerator extends AbstractFileGenerator {
 
-  private final TemplateRenderer templateRenderer;
-
-  @Override
-  public boolean supports(String templateType) {
-    return "response".equals(templateType);
+  public ResponseGenerator(TemplateRenderer templateRenderer) {
+    super(templateRenderer);
   }
 
   @Override
-  public GeneratedFile generate(
-      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
-    Map<String, Object> model = new HashMap<>();
-    model.put("table", table);
-    model.put("columns", table.getColumns());
-    model.put("basePackage", basePackage);
-    model.put("moduleName", moduleName);
-    model.put("utils", new GeneratorUtils());
+  protected String templateType() {
+    return "response";
+  }
 
-    String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + "Response.java";
-    String filePath =
-        GeneratorUtils.basePath(basePackage, moduleName) + "/adapter/web/dto/response/" + fileName;
-    return GeneratedFile.builder()
-        .filePath(filePath)
-        .fileName(fileName)
-        .content(content)
-        .fileType("java")
-        .fileSize(content.length())
-        .build();
+  @Override
+  protected String directory(GenTableMetadata table) {
+    return "/adapter/web/dto/response/";
+  }
+
+  @Override
+  protected String fileName(GenTableMetadata table) {
+    return table.getCustomEntityName() + "Resp.java";
   }
 }

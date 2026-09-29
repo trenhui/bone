@@ -1,49 +1,28 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.model.code.GeneratedFile;
-import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
-import com.bone.studio.generator.domain.service.FileGenerator;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/** 聚合根生成器：落在 {@code domain/model/{聚合}/} 下（ADR-0036 D1）。 */
 @Component
-@RequiredArgsConstructor
-public class EntityGenerator implements FileGenerator {
+public class EntityGenerator extends AbstractFileGenerator {
 
-  private final TemplateRenderer templateRenderer;
-
-  @Override
-  public boolean supports(String templateType) {
-    return "entity".equals(templateType);
+  public EntityGenerator(TemplateRenderer templateRenderer) {
+    super(templateRenderer);
   }
 
   @Override
-  public GeneratedFile generate(
-      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
-    Map<String, Object> model = new HashMap<>();
-    model.put("table", table);
-    model.put("columns", table.getColumns());
-    model.put("basePackage", basePackage);
-    model.put("moduleName", moduleName);
-    model.put("utils", new GeneratorUtils());
+  protected String templateType() {
+    return "entity";
+  }
 
-    String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + ".java";
-    String filePath =
-        GeneratorUtils.basePath(basePackage, moduleName)
-            + "/domain/model/"
-            + GeneratorUtils.aggregateSegment(table.getCustomEntityName())
-            + "/"
-            + fileName;
-    return GeneratedFile.builder()
-        .filePath(filePath)
-        .fileName(fileName)
-        .content(content)
-        .fileType("java")
-        .fileSize(content.length())
-        .build();
+  @Override
+  protected String directory(GenTableMetadata table) {
+    return "/domain/model/" + GeneratorUtils.aggregateSegment(table.getCustomEntityName()) + "/";
+  }
+
+  @Override
+  protected String fileName(GenTableMetadata table) {
+    return table.getCustomEntityName() + ".java";
   }
 }

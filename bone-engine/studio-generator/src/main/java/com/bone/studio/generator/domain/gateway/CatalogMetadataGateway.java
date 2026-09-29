@@ -7,7 +7,7 @@ import java.util.List;
 public interface CatalogMetadataGateway {
 
   /**
-   * @param tenantId 租户，null 时默认 1
+   * @param tenantId 租户，<b>必须显式传入</b>；null 时由实现失败关闭，不再回落任何默认值
    * @param entityCodes 实体编码过滤，空则全部已发布实体
    */
   List<DatabaseTable> loadPublishedSnapshots(Long tenantId, List<String> entityCodes);

@@ -1,43 +1,33 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.model.code.GeneratedFile;
-import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
-import com.bone.studio.generator.domain.service.FileGenerator;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * 应用服务生成器：语义化 {@code *ApplicationService}，命令直接内联处理（ADR-0028）。
+ *
+ * <p>不生成 {@code *CommandHandler} / {@code *QueryHandler}：一个用例只选一种构件，禁止 ApplicationService 与 Handler
+ * 套娃。
+ */
 @Component
-@RequiredArgsConstructor
-public class ApplicationServiceGenerator implements FileGenerator {
+public class ApplicationServiceGenerator extends AbstractFileGenerator {
 
-  private final TemplateRenderer templateRenderer;
-
-  @Override
-  public boolean supports(String templateType) {
-    return "applicationService".equals(templateType);
+  public ApplicationServiceGenerator(TemplateRenderer templateRenderer) {
+    super(templateRenderer);
   }
 
   @Override
-  public GeneratedFile generate(
-      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
-    Map<String, Object> model = new HashMap<>();
-    model.put("table", table);
-    model.put("basePackage", basePackage);
-    model.put("moduleName", moduleName);
-    model.put("utils", new GeneratorUtils());
+  protected String templateType() {
+    return "applicationService";
+  }
 
-    String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + "ApplicationService.java";
-    String filePath = GeneratorUtils.basePath(basePackage, moduleName) + "/application/" + fileName;
-    return GeneratedFile.builder()
-        .filePath(filePath)
-        .fileName(fileName)
-        .content(content)
-        .fileType("java")
-        .fileSize(content.length())
-        .build();
+  @Override
+  protected String directory(GenTableMetadata table) {
+    return "/application/";
+  }
+
+  @Override
+  protected String fileName(GenTableMetadata table) {
+    return table.getCustomEntityName() + "ApplicationService.java";
   }
 }

@@ -39,6 +39,8 @@ CREATE TABLE iam_tenant (
     admin_email         VARCHAR(200)    NOT NULL COMMENT '管理员邮箱',
     max_accounts        INT             DEFAULT NULL COMMENT '账号配额上限，NULL=不限制',
     max_roles           INT             DEFAULT NULL COMMENT '角色配额上限，NULL=不限制',
+    allocated_accounts  INT             NOT NULL DEFAULT 0 COMMENT '已分配账号数（配额核算，避免 count 全表）',
+    allocated_roles     INT             NOT NULL DEFAULT 0 COMMENT '已分配角色数（配额核算，避免 count 全表）',
     created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -1342,151 +1344,42 @@ CREATE TABLE gen_code_template (
 
 -- ------------------------------------------------------------
 -- studio-generator 内置模板种子（E-3.7）：type/code 与 classpath templates/{code}.ftl 对齐
--- 生成运行时读 classpath .ftl；本表 content 供预览/校验与任务勾选。tenant_id=0 平台租户。
+--
+-- content 一律 NULL：内置模板的唯一真源是 classpath 下的 .ftl，生成期自动回落读取。
+-- 早前在库里复制了一份正文，随模板改造已漂移成引用 domain.entity 包与 column.isPrimaryKey
+-- 等不存在的属性——content 非空时生成任务会直接抛 InvalidReferenceException 失败。
+-- content 非空表示用户自定义模板（覆盖内置模板），预览与校验同口径。
+-- 12 个类型覆盖一个聚合的完整骨架（domain → application → adapter），缺一不可。
+-- tenant_id=0 平台租户。
 -- ------------------------------------------------------------
 INSERT INTO gen_code_template (
     id, tenant_id, name, code, description, type, language, engine, template_version,
     content, sample_output, status, published_at, created_by, updated_by, deleted, version
 ) VALUES
-(910000000000000001, 0, 'Java 实体', 'entity', '生成 domain 实体（@Table AggregateRoot）', 'entity', 'java', 'FREEMARKER', '1.0.0',
-    'package ${utils.getPackagePath(basePackage, moduleName)}.domain.entity;
-
-import com.bone.core.annotation.Id;
-import com.bone.core.domain.AggregateRoot;
-import com.bone.core.domain.id.GeneratedValue;
-import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.metadata.sdk.domain.annotation.Column;
-import com.bone.metadata.sdk.domain.annotation.Table;
-import java.time.LocalDateTime;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-/**
- * ${table.tableComment!''实体''}。
- *
- * <p>由代码生成器基于表 ${table.originalTableName} 生成。
- */
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table("${table.originalTableName}")
-public class ${table.customEntityName} extends AggregateRoot<Long> {
-
-  @Id
-  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
-  private Long id;
-<#list columns as column>
-  <#if column.isPrimaryKey>
-  /** ${column.columnComment!''主键''} */
-  @Column(name = "${column.originalColumnName}")
-  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
-  <#else>
-  /** ${column.columnComment!''''} */
-  @Column(name = "${column.originalColumnName}")
-  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
-  </#if>
-</#list>
-
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
-}
-', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
-(910000000000000002, 0, '仓储接口', 'repository', '生成 domain/repository（含 findPage，不预建 QueryPort）', 'repository', 'java', 'FREEMARKER', '1.0.0',
-    'package ${utils.getPackagePath(basePackage, moduleName)}.domain.repository;
-
-import com.bone.core.model.PageResult;
-import com.bone.metadata.sdk.Repository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
-
-/**
- * ${table.tableComment!''实体''}仓储。
- *
- * <p>由代码生成器基于表 ${table.originalTableName} 生成。本聚合分页留在域仓储，不另建 QueryPort。
- */
-public interface ${table.customEntityName}Repository extends Repository<${table.customEntityName}, Long> {
-
-  default PageResult<${table.customEntityName}> findPage(int pageNum, int pageSize) {
-    return pageByCriteria(
-        Criteria.<${table.customEntityName}>create()
-            .orderByDesc(${table.customEntityName}::getId)
-            .page(pageNum, pageSize));
-  }
-}
-', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
-(910000000000000003, 0, '应用服务', 'applicationService', '生成 ApplicationService（Controller→ApplicationService→Repository）', 'applicationService', 'java', 'FREEMARKER', '1.0.0',
-    'package ${utils.getPackagePath(basePackage, moduleName)}.application;
-
-import com.bone.core.model.PageResult;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.repository.${table.customEntityName}Repository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-/**
- * ${table.tableComment!''实体''}应用服务。
- *
- * <p>由代码生成器基于表 ${table.originalTableName} 生成。简单读写走本服务，不生成 CommandHandler / QueryHandler。
- */
-@Service
-@RequiredArgsConstructor
-public class ${table.customEntityName}ApplicationService {
-
-  private final ${table.customEntityName}Repository repository;
-
-  @Transactional(readOnly = true)
-  public ${table.customEntityName} get(Long id) {
-    return repository.findById(id);
-  }
-
-  @Transactional(readOnly = true)
-  public PageResult<${table.customEntityName}> page(int page, int size) {
-    return repository.findPage(page, size);
-  }
-}
-', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
-(910000000000000004, 0, 'Web 控制器', 'controller', '生成 adapter Controller，注入 ApplicationService', 'controller', 'java', 'FREEMARKER', '1.0.0',
-    'package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.controller;
-
-import com.bone.core.model.ApiResponse;
-import com.bone.core.model.PageResult;
-import com.bone.core.web.PlatformApiPaths;
-import ${utils.getPackagePath(basePackage, moduleName)}.application.${table.customEntityName}ApplicationService;
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.entity.${table.customEntityName};
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-/**
- * ${table.tableComment!''实体''}控制器。
- *
- * <p>由代码生成器基于表 ${table.originalTableName} 生成。
- */
-@Tag(name = "${table.tableComment!''实体''}", description = "${table.tableComment!''实体''}管理接口")
-@RestController
-@RequestMapping(PlatformApiPaths.METADATA_V1 + "/${table.originalTableName}")
-@RequiredArgsConstructor
-public class ${table.customEntityName}Controller {
-
-  private final ${table.customEntityName}ApplicationService applicationService;
-
-  @Operation(summary = "查询 ${table.tableComment!''实体''} 详情")
-  @GetMapping("/{id}")
-  public ApiResponse<${table.customEntityName}> getById(@PathVariable Long id) {
-    return ApiResponse.success(applicationService.get(id));
-  }
-
-  @Operation(summary = "分页查询 ${table.tableComment!''实体''}")
-  @GetMapping("/page")
-  public ApiResponse<PageResult<${table.customEntityName}>> page(
-      @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "10") int size) {
-    return ApiResponse.success(applicationService.page(page, size));
-  }
-}
-', NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0);
+(910000000000000001, 0, 'Java 聚合根', 'entity', '生成 domain/model/{聚合} 下的聚合根（TenantAggregateRoot + @Version）', 'entity', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000002, 0, '域仓储接口', 'repository', '生成 domain/repository 下的仓储接口（实现由 @EnableSqlRepositories 代理）', 'repository', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000003, 0, '创建命令', 'createCommand', '生成 application/command 下的 Create*Command（record 不可变入参）', 'createCommand', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000004, 0, '更新命令', 'updateCommand', '生成 application/command 下的 Update*Command（record，首参为聚合 id）', 'updateCommand', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000005, 0, '应用层读模型', 'queryDto', '生成 application/query/dto 下的 *Dto（应用层出站契约）', 'queryDto', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000006, 0, '应用服务', 'applicationService', '生成 application 下的 *ApplicationService（CRUD + 乐观锁翻译）', 'applicationService', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000007, 0, '创建请求体', 'createRequest', '生成 adapter/web/dto/request 下的 Create*Req（jakarta.validation 约束）', 'createRequest', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000008, 0, '更新请求体', 'updateRequest', '生成 adapter/web/dto/request 下的 Update*Req（不含 id）', 'updateRequest', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000009, 0, '分页查询入参', 'pageQuery', '生成 adapter/web/dto/request 下的 *PageQry（@Min/@Max 兜边界）', 'pageQuery', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000010, 0, '响应契约', 'response', '生成 adapter/web/dto/response 下的 *Resp（E-13.1 命名）', 'response', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000011, 0, 'Web 装配器', 'assembler', '生成 adapter/web/assembler 下的 MapStruct 装配器', 'assembler', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0),
+(910000000000000012, 0, 'Web 控制器', 'controller', '生成 adapter/web/controller 下的控制器（ApiResponse 信封 + 校验）', 'controller', 'java', 'FREEMARKER', '1.0.0',
+    NULL, NULL, 'PUBLISHED', NOW(3), 1, 1, 0, 0);
 
 
 CREATE TABLE gen_type_mapping (

@@ -2,10 +2,10 @@
 # 生成：scripts/prompts/01-global-anchor.md v2 ｜ 消费：scripts/prompts/02-nightly-design-review.md
 # 顺序 = 锚定 modules 数组顺序；禁止在夜间任务里另建模块↔设计稿对照表
 
-updated_at: "2026-09-27T23:45:00+08:00"
+updated_at: "2026-09-29T06:30:00+08:00"
 anchor_generated_at: "2026-09-26T23:40:00+08:00"
-current_module: "bone-extension-studio"
-next_run: "studio-generator"
+current_module: "bone-file"
+next_run: "studio-generator（B 段，前提：其在途改动已落库）／否则 bone-notification"
 phase_model: "A=设计（review + v2 稿 + A' 自审）；B=实现；B'=代码复核；C=前后端联调；D=验收测试（构造数据→模拟人工→清理自证）。详见 scripts/prompts/02-nightly-design-review.md v3"
 status_enum: ["pending", "reviewing", "design_ready", "approved", "implementing", "done", "interrupted", "skip", "blocked"]
 
@@ -123,15 +123,21 @@ modules:
     note: "A+A' 设计复核完成（2026-09-27，轮换 #7）：HC-003 锚定 violated 复核为误报（8 个 Controller 中 7 个直接返回 core ApiResponse；CodeGenerationController 的 ResponseEntity 为 LRO 202+Location 信封与 ZIP 下载两处合法例外），已纠正为 implemented（同源第四例）；HC-008 由 partial 升级为 violated——声明面与 DDL 合规（5 实体显式 tenantId、仅 gen_code_generation_history 为 by-design 只追加），但运行时租户来源不闭环：全模块零读取 TenantContext，写入/查询回落硬编码默认 DataSource→0L、CatalogMetadataGatewayAdapter→1L（G-1 阻断级）。另 G-2 信封碎片化（CapabilityController 用本地 ApiResponse）、G-3 GEN_* 裸字符串且错误码拼进 message、G-4 模板 5/7、G-5 领域事件零实现、G-6 gen_type_mapping 零引用（L3）、G-7 BONE-X-Studio #L436 文档滞后。亮点：响应契约为本轮最优、生成入口已收敛 /code-generation。锚定「3 个未提交改动」GAP 已消解。"
 
   - name: "bone-file"
-    design_doc: null
-    design_docs: []
+    design_doc: "doc/design/modules/bone-file-设计方案.md"
+    design_docs: ["doc/design/modules/bone-file-设计方案.md"]
     port: 8107
-    status: "pending"
-    last_reviewed_at: null
+    status: "design_ready"
+    last_reviewed_at: "2026-09-29T06:30:00+08:00"
     implemented_at: null
-    report_path: null
+    report_path: "doc/design/modules/review-report-bone-file.md"
     has_active_comet_change: false
-    note: "无设计稿 → 本轮只产出 v1 设计稿（MinIO 存储 / 权限 / 配额），不进实现"
+    stages_done: ["A", "A'"]
+    pending_approvals:
+      - "L3 bone-init.sql 新增 file_object 表（含 tenant_id + 审计列 + version）"
+      - "L3 删除旧包路径 application/port/out/FileStoragePort（迁移至 domain/gateway）"
+      - "L3 bone-file/pom.xml 未使用的 bone-metadata-sdk 去留"
+      - "L3 回收站 / 软删保留期裁定"
+    note: "A+A' 完成（2026-09-29，轮换 #8，从零出 v1）：无既有设计稿，改为「代码现状复核 + 产出 v1」。阻断级 5 条——FL-1 越权下载/删除（objectName 由 @PathVariable 提供且零 @PreAuthorize、零归属校验）；FL-2 零租户维度（grep TenantContext|TenantProvider src/main → 0 命中，对象键无租户前缀）；FL-3 路径遍历 + Content-Disposition 注入（FileController:47/52-53）；FL-4 零元数据表（bone-init.sql 无 file_ 表，命中全为其它表字段 :692/:693/:915）；FL-5 5 处 IllegalStateException 裸中文、无 FILE_ 码、无 i18n。建议级 8 条（FL-6 端口包路径 / FL-7 返回体 / FL-8 空包扫描 / FL-9 HC-007 锚定误报 / FL-10 /test 收敛 HealthIndicator / FL-11 CORS 硬编码 / FL-12 类型大小白名单 / FL-13 IAM 第二份 MinioClient）。**锚定误报 1 例**：HC-007 记 violated 理由「openapi 下无 file spec」，但 HC-007 语义为「PR 的 spec 不得引入 breaking change」→ 应记 not_applicable，已降级为 FL-9。亮点：HC-003 implemented（3/4 端点 ApiResponse，download 裸流为合法例外）、无 ORM 违规、FileStoragePort 出站抽象到位、JWT 复用框架抽象类。按 §1.7 本晚不进实现，状态 design_ready。"
 
   - name: "bone-notification"
     design_doc: null
@@ -275,3 +281,5 @@ warnings:
   - "人工卡点：doc/design/approvals/<module>.yaml（推荐）或 doc/design/modules/<module>/_review-approved.yaml；A 阶段通过前不得进入 B。"
   - "锚定文件 git.dirty=164~169（其他 AI 在途改动）→ 夜间任务必须在洁净工作树运行（02 §0 前提 1），否则退出并告警。"
   - "轮换实际夜数：12 个产品轮换项 × 2 阶段（A 设计 / B 实现）≈ 24 个有效夜晚（bone-metadata-engine 另计）。"
+  - "【2026-09-29】轮换 #7 studio-generator 的 B 段被并发会话占用而跳过：git status 显示 bone-engine/studio-generator 有 15 改 + 20 新文件（新增 7 个模板生成器与 7 个 .ftl，BUILT_IN_TEMPLATE_TYPES 5→12 类，即本模块 A 段 G-4 的在途实现），最后改动 2026-09-29 03:41。故本晚取 #8 bone-file。在途改动落库后须回补 studio-generator B 段（G-1 租户闭环）。"
+  - "【2026-09-29】工作树长期不洁净（48 项在途）→ 夜间任务按「保护他人 WIP」口径运行：只新增文档、显式路径 git add、绝不 -A、绝不把在途改动卷入提交。若某模块正被并发会话改动，按上一条口径顺延到下一未被占用模块。"

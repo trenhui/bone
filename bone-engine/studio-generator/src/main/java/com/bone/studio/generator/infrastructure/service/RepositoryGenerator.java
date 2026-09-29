@@ -1,45 +1,33 @@
 package com.bone.studio.generator.infrastructure.service;
 
-import com.bone.studio.generator.domain.model.code.GeneratedFile;
-import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import com.bone.studio.generator.domain.model.data.GenTableMetadata;
-import com.bone.studio.generator.domain.service.FileGenerator;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * 域仓储生成器：只产接口，不产实现类。
+ *
+ * <p>实现由 {@code @EnableSqlRepositories} 代理（blueprint {@code domain/repository/package-info.java}
+ * 同口径）， 手写 {@code XxxRepositoryImpl} 违反持久化唯一约束 HC-001 / HC-006。
+ */
 @Component
-@RequiredArgsConstructor
-public class RepositoryGenerator implements FileGenerator {
+public class RepositoryGenerator extends AbstractFileGenerator {
 
-  private final TemplateRenderer templateRenderer;
-
-  @Override
-  public boolean supports(String templateType) {
-    return "repository".equals(templateType);
+  public RepositoryGenerator(TemplateRenderer templateRenderer) {
+    super(templateRenderer);
   }
 
   @Override
-  public GeneratedFile generate(
-      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName) {
-    Map<String, Object> model = new HashMap<>();
-    model.put("entityName", table.getCustomEntityName());
-    model.put("table", table);
-    model.put("basePackage", basePackage);
-    model.put("moduleName", moduleName);
-    model.put("utils", new GeneratorUtils());
+  protected String templateType() {
+    return "repository";
+  }
 
-    String content = templateRenderer.render(template, model);
-    String fileName = table.getCustomEntityName() + "Repository.java";
-    String filePath =
-        GeneratorUtils.basePath(basePackage, moduleName) + "/domain/repository/" + fileName;
-    return GeneratedFile.builder()
-        .filePath(filePath)
-        .fileName(fileName)
-        .content(content)
-        .fileType("java")
-        .fileSize(content.length())
-        .build();
+  @Override
+  protected String directory(GenTableMetadata table) {
+    return "/domain/repository/";
+  }
+
+  @Override
+  protected String fileName(GenTableMetadata table) {
+    return table.getCustomEntityName() + "Repository.java";
   }
 }

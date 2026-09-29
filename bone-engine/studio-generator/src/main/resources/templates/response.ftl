@@ -1,44 +1,29 @@
 package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.response;
 
-import ${utils.getPackagePath(basePackage, moduleName)}.domain.model.${utils.toPackageSegment(table.customEntityName)}.${table.customEntityName};
-<#assign needBigDecimal = false><#assign needLocalDate = false><#list columns as c><#if c.javaType == 'BigDecimal'><#assign needBigDecimal = true></#if><#if c.javaType == 'LocalDate'><#assign needLocalDate = true></#if></#list><#if needBigDecimal>import java.math.BigDecimal;
-</#if><#if needLocalDate>import java.time.LocalDate;
-</#if>import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
+<#list businessTypeImports as javaTypeImport>
+import ${javaTypeImport};
+</#list>
+import java.time.Instant;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Data;
 
 /**
- * ${table.tableComment!'实体'}响应对象。
+ * ${table.tableComment!'实体'}响应契约。
  *
- * <p>由代码生成器基于表 ${table.originalTableName} 生成。HC-003：Controller 不裸返领域对象。
+ * <p>由代码生成器基于表 ${table.originalTableName} 生成。命名对齐《Bone-DDD》E-13.1 的 {@code *Resp} 后缀
+ * （blueprint {@code OrderSummaryResp} 里的注释锚点）；由 Assembler 从应用层 {@code ${table.customEntityName}Dto}
+ * 翻译而来，聚合对象不外泄到 HTTP 出口（HC-003）。
  */
-@Getter
+@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ${table.customEntityName}Response {
+public class ${table.customEntityName}Resp {
 
   private Long id;
-<#list columns as column>
-  <#if column.originalColumnName != 'id' && column.originalColumnName != 'created_at' && column.originalColumnName != 'updated_at'>
-  private ${column.javaType} ${utils.toFieldName(column.originalColumnName)};
-  </#if>
-</#list>
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+<#list businessColumns as column>
+  /** ${column.comment} */
+  private ${column.javaType} ${column.fieldName};
 
-  public static ${table.customEntityName}Response from(${table.customEntityName} entity) {
-    return ${table.customEntityName}Response.builder()
-        .id(entity.getId())
-<#list columns as column>
-  <#if column.originalColumnName != 'id' && column.originalColumnName != 'created_at' && column.originalColumnName != 'updated_at'>
-        .${utils.toFieldName(column.originalColumnName)}(entity.get${utils.toCamelCase(column.originalColumnName)}())
-  </#if>
 </#list>
-        .createdAt(entity.getCreatedAt())
-        .updatedAt(entity.getUpdatedAt())
-        .build();
-  }
+  private Instant createdAt;
+  private Instant updatedAt;
 }
