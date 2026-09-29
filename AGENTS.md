@@ -28,6 +28,7 @@
 ## 三、自主权与交付流程
 
 - **L0** 格式化/注释无需审查 ｜ **L1** 单测/DTO 须过 `./scripts/check.sh` ｜ **L2** 业务逻辑需双人 Review ｜ **L3** DDL、删码、依赖、CI 脚本需架构师审批 ｜ **L4** 生产库迁移、密钥证书、发布打 tag、**修改 §12 内容** —— 完全禁止 AI 执行。
+- **分支纪律**：AI **禁止自行创建、切换、重命名、删除分支**（`git branch`/`checkout -b`/`switch`/`push --delete` 等一切改动 refs/heads 的写操作）。默认在仓库当前 checkout 的分支上工作；仅在用户**明确指示**分支名时才允许切分支或建分支，且不得用「切分支」绕开构建/门禁问题。任何 git 写操作前必须先 `git branch --show-current` 确认落点；commit 后用 `git branch --contains <sha>` 验证提交落在预期分支。
 - 流程：P1 需求 → P2 加载上下文 → P3 契约 → P4 实现 → P5 本地自检（`./scripts/check.sh`）→ P6 PR 门禁 → P7 Review → P8 合并。详见 [06 §12.5](doc/agents/06-AI协作与编码准则.md)。
 - 提交前逐项过 [06 §11.13 自检清单](doc/agents/06-AI协作与编码准则.md)。
 
