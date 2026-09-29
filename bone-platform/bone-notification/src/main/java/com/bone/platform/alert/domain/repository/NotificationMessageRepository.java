@@ -16,6 +16,22 @@ public interface NotificationMessageRepository extends Repository<NotificationMe
         .list();
   }
 
+  /**
+   * 租户圈定的按 ID 查询：ID + tenantId 双条件，保证跨租户 ID 即便被猜中也取不到记录（IDOR 第一道闸）。
+   *
+   * <p>命中多条不可能（ID 唯一），取首条仅为满足返回类型。
+   */
+  default NotificationMessage findByIdAndTenant(Long id, Long tenantId) {
+    List<NotificationMessage> list =
+        QueryBuilder.from(NotificationMessage.class)
+            .where(NotificationMessage::getId)
+            .eq(id)
+            .where(NotificationMessage::getTenantId)
+            .eq(tenantId)
+            .list();
+    return list.isEmpty() ? null : list.get(0);
+  }
+
   /** 该用户未读站内信数。SDK 的 count 多条件组合存在异常，改为在仓储层拉取后过滤（数据量小）。 */
   default long countUnreadByUserId(Long userId) {
     return findByUserId(userId).stream().filter(m -> !m.isRead()).count();

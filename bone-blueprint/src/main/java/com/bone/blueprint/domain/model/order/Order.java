@@ -98,6 +98,29 @@ public class Order extends TenantAggregateRoot<Long> {
     assertValidTotal();
   }
 
+  /**
+   * 聚合内部明细数量变更的<strong>唯一</strong>入口（包级可见）。
+   *
+   * <p>直接调 {@link OrderItem#updateQuantity} 会绕过本聚合根导致 {@code totalAmount} 不重算—— {@code
+   * updateQuantity} 已改为包级可见（{@code OrderItem.updateQuantity}），外部必须经本方法修改明细。
+   */
+  void updateItemQuantity(long itemId, int newQuantity) {
+    OrderItem target = null;
+    for (OrderItem item : items) {
+      if (item.getId() != null && item.getId() == itemId) {
+        target = item;
+        break;
+      }
+    }
+    if (target == null) {
+      throw new DomainException("订单明细不存在: itemId=" + itemId);
+    }
+    target.updateQuantity(newQuantity);
+    recalculateTotal();
+    assertValidTotal();
+    this.updatedAt = Instant.now();
+  }
+
   private void recalculateTotal() {
     Money sum = Money.zero();
     for (OrderItem item : items) {

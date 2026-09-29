@@ -8,7 +8,6 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
-import java.util.Date;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,9 +50,8 @@ public class OrderItem extends AbstractEntity<Long> {
     this.quantity = quantity;
     this.unitPrice = unitPrice.toBigDecimal();
     this.subtotal = unitPrice.multiply(quantity).toBigDecimal();
-    Date now = new Date();
-    this.setCreatedAt(now);
-    this.setUpdatedAt(now);
+    // created_at / updated_at 由 AbstractEntity 基类在 SDK save 时自动填充，
+    // 这里无需手动设置（父类字段是 java.util.Date 类型，SDK 会用当前时间填充）。
   }
 
   public static OrderItem create(
@@ -76,7 +74,14 @@ public class OrderItem extends AbstractEntity<Long> {
     return new OrderItem(id, orderId, productId, productName, quantity, price);
   }
 
-  public void updateQuantity(Integer newQuantity) {
+  /**
+   * 更新明细数量（<b>包级可见</b>）。
+   *
+   * <p>聚合根 Order 通过 {@link Order#updateItemQuantity(long, int)} 作为唯一写入口调本方法， 确保修改后会 {@link
+   * Order#recalculateTotal()} 重算总金额。对外（application / adapter 层）不可直接调， 避免绕过聚合根造成 Order.totalAmount
+   * 与明细 subtotal 之和不一致。
+   */
+  void updateQuantity(Integer newQuantity) {
     if (newQuantity == null || newQuantity <= 0) {
       throw new DomainException("商品数量必须大于0");
     }

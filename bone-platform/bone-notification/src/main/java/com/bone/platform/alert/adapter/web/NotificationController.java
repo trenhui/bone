@@ -43,8 +43,8 @@ public class NotificationController {
   }
 
   @PostMapping("/{id}/read")
-  public ApiResponse<Void> markRead(@PathVariable Long id) {
-    notificationApplicationService.markRead(id);
+  public ApiResponse<Void> markRead(@PathVariable Long id, @RequestParam Long userId) {
+    notificationApplicationService.markRead(id, userId);
     return ApiResponse.success();
   }
 }

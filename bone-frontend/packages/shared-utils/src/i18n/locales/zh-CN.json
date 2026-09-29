@@ -100,7 +100,23 @@
     "META_RUNTIME_INVALID_IDENTIFIER": "非法标识符（表名/列名）",
     "META_RUNTIME_INVALID_QUERY": "查询约束非法（含未建模列或 q 格式错误）",
     "META_RUNTIME_RECORD_NOT_FOUND": "运行时记录不存在",
-    "META_RUNTIME_VALIDATION_FAILED": "字段校验失败"
+    "META_RUNTIME_VALIDATION_FAILED": "字段校验失败",
+    "FILE_UPLOAD_FAILED": "文件上传失败",
+    "FILE_DOWNLOAD_FAILED": "文件下载失败",
+    "FILE_DELETE_FAILED": "文件删除失败",
+    "FILE_NOT_FOUND": "文件不存在",
+    "FILE_NAME_INVALID": "文件名非法（不允许含路径遍历、绝对路径或控制字符）",
+    "FILE_TYPE_NOT_ALLOWED": "文件类型不允许",
+    "FILE_TENANT_CONTEXT_MISSING": "缺少租户上下文",
+    "FILE_ACCESS_DENIED": "跨租户访问被拒绝",
+    "GW_UNAUTHORIZED": "登录状态无效，请重新登录",
+    "GW_RATE_LIMITED": "请求过于频繁，请稍后重试",
+    "GW_UPSTREAM_UNAVAILABLE": "服务暂时不可用，请稍后重试",
+    "GW_ROUTE_NOT_FOUND": "请求的服务不存在",
+    "NOTIFICATION_NOT_FOUND": "站内信不存在",
+    "NOTIFICATION_ACCESS_DENIED": "站内信访问被拒绝（非本人/非本租户）",
+    "NOTIFICATION_INVALID_PARAM": "入参非法（userId 必填或 limit 超出上限）",
+    "NOTIFICATION_TENANT_MISMATCH": "站内信写入缺少租户上下文"
   },
   "enums": {
     "ORDER_STATUS": {

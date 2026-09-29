@@ -16,10 +16,10 @@ import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,6 +153,10 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
     // 为何需要：本事件是「补偿触发器」而非事件流——它表达「这个订单行的这次库存动作没做成」这一状态，
     // 重放/重试下重复投递会让下游重复补偿（重复释放预留、重复告警）。故用业务身份派生确定性 eventId：
     // 同一事实无论重试几次都得到同一个 eventId，写侧先查后插即可天然去重，消费端按 eventId 去重也同时生效。
+    //
+    // 为何是 IntegrationEvent（而非 DomainEvent）：StockActionFailed 不是订单聚合的领域事实——订单不管理库存。
+    // 它是库存远程调用失败后由 {@code StockActionFailureRecorder} 补偿触发的技术事件，直接以 IntegrationEvent 形态构造，
+    // 绕过 DomainEvent → IntegrationEvent 的 ACL 转换层。其他 5 个 append 全部收 DomainEvent。
     append(
         EVENT_TYPE_STOCK_ACTION_FAILED,
         properties.getStockActionFailedTopic(),
@@ -183,8 +187,8 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
    *
    * <p><b>为何与业务写同事务</b>：Outbox 模式的全部价值就在「业务状态变更」与「事件待发」的原子性—— 二者同事务提交，才不会出现「业务成功而事件丢失」或「事件已发而业务回滚」。
    *
-   * <p><b>{@code dedupEventId}</b>：非空时用它作为 eventId（确定性幂等键），并在插入前先查一次——已存在则跳过。
-   * 仅对「补偿触发器」形态的事件（如库存动作失败）启用；事实流类事件仍用随机 eventId。
+   * <p><b>{@code dedupEventId}</b>：非空时用它作为 eventId（确定性幂等键），由 DB 唯一约束 {@code uk_bp_outbox_event_id}
+   * 做最终兜底。唯一键冲突时跳过——已存在即表示同一事实已落库（补偿触发器重放/重试）。 仅对「补偿触发器」形态的事件（如库存动作失败）启用；事实流类事件仍用随机 eventId。
    */
   private void append(
       String eventType, String topic, Object event, Long bizId, String dedupEventId) {
@@ -201,14 +205,6 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
       return;
     }
     String eventId = dedupEventId != null ? dedupEventId : envelopeFactory.newEventId();
-    if (dedupEventId != null && alreadyAppended(eventId)) {
-      log.debug(
-          "Outbox 幂等跳过：同一事实已落库，不重复补偿: eventId={}, eventType={}, bizId={}",
-          eventId,
-          eventType,
-          bizId);
-      return;
-    }
     long tenantId = resolveTenantId(event);
     OrderOutboxRecord record =
         OrderOutboxRecord.pending(
@@ -220,22 +216,19 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
             String.valueOf(tenantId),
             envelopeFactory.toJson(
                 eventId, eventType, topic, tenantId, resolveOccurredAt(event), event));
-    outboxRepository.save(record);
-    log.debug("Outbox 已写入: eventId={}, eventType={}, bizId={}", eventId, eventType, bizId);
-  }
-
-  /**
-   * 幂等前置检查：该 eventId 是否已落库。
-   *
-   * <p><b>为何不依赖数据库唯一约束</b>：Outbox 表无 {@code event_id} 唯一索引（历史表结构，加索引需 DDL 迁移），
-   * 故在事务内「先查后插」。并发窗口下仍有极小概率产生重复行，但本路径是<strong>单写者</strong>（AFTER_COMMIT 处理器按订单行串行执行），且下游按 eventId
-   * 去重才是最终兜底——这里消掉的是绝大多数「重放/重试」重复。
-   */
-  private boolean alreadyAppended(String eventId) {
-    Long count =
-        outboxRepository.countByCriteria(
-            Criteria.<OrderOutboxRecord>create().eq(OrderOutboxRecord::getEventId, eventId));
-    return count != null && count > 0;
+    try {
+      outboxRepository.save(record);
+      log.debug("Outbox 已写入: eventId={}, eventType={}, bizId={}", eventId, eventType, bizId);
+    } catch (DataIntegrityViolationException ex) {
+      // uk_bp_outbox_event_id 唯一键冲突——该 eventId 已落库。
+      // 对补偿触发器（dedupEventId 非空）而言是预期幂等行为；对事实流（随机 eventId）
+      // 理论上不应发生，但防御性留痕即可。
+      log.debug(
+          "Outbox 幂等跳过：同一 eventId 已落库（DB 唯一键兜底）: eventId={}, eventType={}, bizId={}",
+          eventId,
+          eventType,
+          bizId);
+    }
   }
 
   /**

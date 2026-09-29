@@ -9,6 +9,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -66,18 +67,24 @@ public class IdempotencyPortAdapter implements IdempotencyStore {
                 .page(1, 1));
     if (existing == null || existing.isEmpty()) {
       long tenantId = resolveTenantId(scopeKey);
-      repository.insert(
-          IdempotencyRecord.of(
-              tenantId,
-              scopeKey,
-              snapshot.requestFingerprint(),
-              snapshot.snapshotJson(),
-              expiresAt));
+      try {
+        repository.save(
+            IdempotencyRecord.of(
+                tenantId,
+                scopeKey,
+                snapshot.requestFingerprint(),
+                snapshot.snapshotJson(),
+                expiresAt));
+      } catch (DataIntegrityViolationException ex) {
+        // 并发窗口：两请求同时命中同一 scopeKey，都查不到、都 insert，第二条触发
+        // uk_idempotency_tenant_scope 唯一键冲突。已存在的那条就是正确的快照，直接返回。
+        log.debug("幂等快照插入遇到唯一键冲突（并发重放），已存在记录即视为命中: scopeKey={}", scopeKey);
+      }
       return;
     }
     IdempotencyRecord record = existing.get(0);
     record.refresh(snapshot.requestFingerprint(), snapshot.snapshotJson(), expiresAt);
-    repository.update(record);
+    repository.save(record);
   }
 
   /**

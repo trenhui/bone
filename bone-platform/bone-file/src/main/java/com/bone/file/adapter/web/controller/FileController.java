@@ -3,39 +3,74 @@ package com.bone.file.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.file.application.port.out.FileStoragePort;
+import com.bone.file.common.FileErrorCodes;
+import com.bone.file.common.FileErrors;
+import com.bone.file.common.FileObjectKeyGenerator;
+import com.bone.file.domain.gateway.TenantProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/** 文件服务控制器 */
+/**
+ * 文件服务控制器（FL-1/FL-2/FL-3/FL-5 加固）。
+ *
+ * <p><b>租户归属（FL-1）</b>：上传键由服务端经 {@link FileObjectKeyGenerator#generate(Long, String)} 生成，带租户前缀；
+ * 下载/删除经 {@link FileObjectKeyGenerator#assertTenantScope(String, Long)} 校验键名前缀是否归属当前租户， 不符即 403，在无
+ * {@code file_object} 表（FL-4，L3 待审批）的情况下也堵住跨租户越权。
+ *
+ * <p><b>失败关闭（FL-2）</b>：无租户上下文即拒绝写入/读取，对象不落到无主空间。
+ *
+ * <p><b>响应头注入防护（FL-3）</b>：下载的 {@code Content-Disposition} 走 {@link
+ * FileObjectKeyGenerator#contentDisposition(String)}（RFC 5987 filename*），剥离引号与控制字符，杜绝换行注入新头。
+ */
 @Tag(name = "文件服务", description = "文件上传/下载/删除接口")
 @RestController
 @RequestMapping(PlatformApiPaths.FILE_V1 + "/files")
 @RequiredArgsConstructor
 public class FileController {
 
-  private final FileStoragePort fileStorageService;
+  private final FileStoragePort fileStoragePort;
+  private final TenantProvider tenantProvider;
 
   @Operation(summary = "上传文件")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ApiResponse<String> upload(
+  public ApiResponse<FileObjectResp> upload(
       @RequestParam("file") MultipartFile file,
       @RequestParam(value = "bucket", required = false) String bucket) {
-    String objectName = UUID.randomUUID() + "-" + file.getOriginalFilename();
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    if (tenantId == null) {
+      throw FileErrors.of(FileErrorCodes.TENANT_CONTEXT_MISSING);
+    }
+    String originalName = file.getOriginalFilename();
+    // 服务端生成带租户前缀的键；扩展名白名单在校验器内（不在白名单即 TYPE_NOT_ALLOWED）。
+    String objectName = FileObjectKeyGenerator.generate(tenantId, originalName);
     try (InputStream in = file.getInputStream()) {
       var stored =
-          fileStorageService.upload(bucket, objectName, in, file.getSize(), file.getContentType());
-      return ApiResponse.success(stored.objectName());
-    } catch (Exception e) {
-      throw new IllegalStateException("文件上传失败: " + e.getMessage(), e);
+          fileStoragePort.upload(bucket, objectName, in, file.getSize(), file.getContentType());
+      return ApiResponse.success(
+          new FileObjectResp(
+              stored.objectName(),
+              originalName,
+              stored.bucket(),
+              file.getContentType(),
+              stored.size(),
+              tenantId));
+    } catch (IOException e) {
+      throw FileErrors.of(FileErrorCodes.UPLOAD_FAILED, originalName, e);
     }
   }
 
@@ -45,14 +80,17 @@ public class FileController {
       @PathVariable String objectName,
       @RequestParam(value = "bucket", required = false) String bucket,
       HttpServletResponse response) {
-    try (InputStream in = fileStorageService.download(bucket, objectName);
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    // 无租户上下文 / 跨租户对象名 → 失败关闭（TENANT_CONTEXT_MISSING / ACCESS_DENIED）。
+    FileObjectKeyGenerator.assertTenantScope(objectName, tenantId);
+    try (InputStream in = fileStoragePort.download(bucket, objectName);
         OutputStream out = response.getOutputStream()) {
       response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
       response.setHeader(
-          HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + objectName + "\"");
+          HttpHeaders.CONTENT_DISPOSITION, FileObjectKeyGenerator.contentDisposition(objectName));
       in.transferTo(out);
-    } catch (Exception e) {
-      throw new IllegalStateException("文件下载失败: " + e.getMessage(), e);
+    } catch (IOException e) {
+      throw FileErrors.of(FileErrorCodes.DOWNLOAD_FAILED, objectName, e);
     }
   }
 
@@ -61,13 +99,15 @@ public class FileController {
   public ApiResponse<Void> delete(
       @PathVariable String objectName,
       @RequestParam(value = "bucket", required = false) String bucket) {
-    fileStorageService.delete(bucket, objectName);
+    Long tenantId = tenantProvider.currentTenantIdOrNull();
+    FileObjectKeyGenerator.assertTenantScope(objectName, tenantId);
+    fileStoragePort.delete(bucket, objectName);
     return ApiResponse.success();
   }
 
   @Operation(summary = "存储连接测试")
   @GetMapping("/test")
   public ApiResponse<Boolean> test() {
-    return ApiResponse.success(fileStorageService.testConnection());
+    return ApiResponse.success(fileStoragePort.testConnection());
   }
 }

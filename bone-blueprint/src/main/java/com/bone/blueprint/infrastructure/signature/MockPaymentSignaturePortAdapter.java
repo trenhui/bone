@@ -47,7 +47,12 @@ public class MockPaymentSignaturePortAdapter
     this.environment = environment;
   }
 
-  /** 启动期自检：Mock 验签被装配即告警，prod profile 下升级为 ERROR。 */
+  /**
+   * 启动期自检：Mock 验签被装配即告警，prod profile 下直接阻断启动。
+   *
+   * <p><b>为何 prod fail-fast</b>：硬编码密钥在 prod 运行时等于任何人拿到源码即可伪造回调、 改变支付单终态（资损级安全漏洞）。ERROR
+   * 日志继续运行是掩耳盗铃——安全事故从不因"日志打了"就不存在。 启动时直接 {@link IllegalStateException} 阻断，迫使运维正视配置事故。
+   */
   @Override
   public void afterPropertiesSet() {
     // 单测直接 new 本类时 environment 为 null（不经过 Spring 生命周期），静默跳过即可。
@@ -55,7 +60,7 @@ public class MockPaymentSignaturePortAdapter
     String message =
         "支付回调验签当前装配的是 Mock 实现（共享密钥硬编码在源码中，仅用于演示/本地联调）；" + "生产环境必须外部化密钥并接入渠道真实验签，否则任何持有源码者都可伪造回调";
     if (prod) {
-      log.error("[配置事故] {}", message);
+      throw new IllegalStateException("[配置事故] " + message + " — 已阻断 prod 启动");
     } else {
       log.warn("{}", message);
     }

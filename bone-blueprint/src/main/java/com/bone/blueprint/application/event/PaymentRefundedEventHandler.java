@@ -70,19 +70,22 @@ public class PaymentRefundedEventHandler {
         throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
       }
       refunded = true;
+
+      // Outbox 优先写入——本地 DB 操作可靠。如果后续 publishFrom 触发的订阅器
+      // 抛异常回滚事务，Outbox 里的退款事件已在，下游至少有机会收到。
+      orderOutboxWriter.appendPaymentRefunded(event);
+
       domainEventPublisher.publishFrom(order);
+
+      // 释放库存（远程调用，最终一致）。仅当订单退款成功时才释放——
+      // Payment 已退回但 Order 不可退款时，库存不能放（货还没退）。
+      try {
+        inventoryGateway.releaseStock(event.orderId());
+      } catch (Exception ex) {
+        log.error("退款后库存释放失败，需补偿对账: orderId={}", event.orderId(), ex);
+      }
     } else {
       log.warn("订单当前状态不可退款，跳过订单确认: orderId={}, status={}", order.getId(), order.getStatus());
-    }
-
-    // Outbox 与订单确认同事务原子提交——资金/状态事实不能丢。
-    orderOutboxWriter.appendPaymentRefunded(event);
-
-    // 释放库存（远程调用，最终一致）。
-    try {
-      inventoryGateway.releaseStock(event.orderId());
-    } catch (Exception ex) {
-      log.error("退款后库存释放失败，需补偿对账: orderId={}", event.orderId(), ex);
     }
 
     if (!refunded) {

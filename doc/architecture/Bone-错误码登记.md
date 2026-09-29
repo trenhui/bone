@@ -281,6 +281,28 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `EXT_DEPLOY_STATE_INVALID` | 409 | 当前部署状态不允许该操作（未启用即发布、未部署即模拟调用） |
 | `EXT_PLUGIN_PACKAGE_INVALID` | 400 | 插件包非法（非 JAR/ZIP 格式） |
 
+### FILE_
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `FILE_UPLOAD_FAILED` | 500 | 文件上传失败（存储不可用 / 写入中断） |
+| `FILE_DOWNLOAD_FAILED` | 500 | 文件下载失败（对象不可读 / 存储异常） |
+| `FILE_DELETE_FAILED` | 500 | 文件删除失败 |
+| `FILE_NOT_FOUND` | 404 | 文件对象不存在 |
+| `FILE_NAME_INVALID` | 400 | 文件名非法：含路径遍历片段、绝对路径或控制字符 |
+| `FILE_TYPE_NOT_ALLOWED` | 400 | 文件扩展名不在白名单内 |
+| `FILE_TENANT_CONTEXT_MISSING` | 400 | 缺少租户上下文，无法判定对象归属（失败关闭） |
+| `FILE_ACCESS_DENIED` | 403 | 跨租户访问被拒绝：对象不属于当前调用方租户 |
+
+### NOTIFICATION_
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `NOTIFICATION_NOT_FOUND` | 404 | 站内信不存在（含跨租户不可见） |
+| `NOTIFICATION_ACCESS_DENIED` | 403 | 站内信不属于当前调用方租户/用户，越权访问被拒 |
+| `NOTIFICATION_INVALID_PARAM` | 400 | 入参非法：userId 为空或 limit 超出上限 |
+| `NOTIFICATION_TENANT_MISMATCH` | 400 | 站内信写入缺少有效租户上下文，失败关闭（异步告警租户未传播） |
+
 ### INT_
 
 | errorCode | HTTP | 说明 |
@@ -329,6 +351,17 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `GEN_TEMPLATE_NOT_FOUND` | 404 | 代码模板不存在（含跨租户不可见） |
 | `GEN_GENERATION_FAILED` | 500 | 代码生成执行失败（模板渲染/写盘等运行时异常） |
 | `GEN_TENANT_CONTEXT_MISSING` | 400 | 租户上下文缺失：请求未携带有效租户且当前上下文取不到租户，失败关闭 |
+
+### GW_
+
+> 网关传输层错误码（设计稿 §4.2）。网关不产生业务错误码，仅传输层错误；信封与平台 `ApiResponse` 同形。
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `GW_UNAUTHORIZED` | 401 | 无效或缺失 token |
+| `GW_RATE_LIMITED` | 429 | 触发限流（响应头含 Retry-After） |
+| `GW_UPSTREAM_UNAVAILABLE` | 503 | 下游不可用 / 熔断打开 |
+| `GW_ROUTE_NOT_FOUND` | 404 | 无匹配路由（预留：当前 404 由 Spring Cloud Gateway 默认产生，尚未走统一信封） |
 
 ### BP_
 

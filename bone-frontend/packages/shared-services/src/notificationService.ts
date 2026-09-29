@@ -47,9 +47,11 @@ export const notificationService = {
     }
   },
 
-  /** 标记单条站内信为已读 */
-  async markRead(id: number): Promise<void> {
+  /** 标记单条站内信为已读（后端做租户闭环 + IDOR 归属校验，userId 必传） */
+  async markRead(id: number, userId: number): Promise<void> {
     const api = createApiClient(NOTIFY_BASE);
-    await api.post<never, ApiResponse<void>>(`/messages/${id}/read`);
+    await api.post<never, ApiResponse<void>>(`/messages/${id}/read`, null, {
+      params: { userId },
+    });
   },
 };

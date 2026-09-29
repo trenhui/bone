@@ -837,7 +837,7 @@ CREATE TABLE bp_outbox (
     partition_key       VARCHAR(100)    NOT NULL COMMENT '分区键（默认 tenant_id）',
     envelope_json       JSON            NOT NULL COMMENT '消息信封 JSON',
     schema_version      VARCHAR(16)     NOT NULL DEFAULT '1.0' COMMENT '信封 schema 版本',
-    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '投递状态：PENDING（待抢占）/PROCESSING（已抢占投递中）/SENT（投递成功）/FAILED（终态失败）',
     retry_count         INT             NOT NULL DEFAULT 0 COMMENT '中继重试次数',
     sent_at             DATETIME(3)     DEFAULT NULL COMMENT '发送成功时间',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',

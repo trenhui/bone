@@ -57,7 +57,7 @@ class IdempotencyPortAdapterTest {
 
     // 过期后同一 Idempotency-Key 可重新使用（TTL 24h）
     assertTrue(adapter.find(SCOPE_KEY).isEmpty());
-    verify(repository, never()).update(any());
+    verify(repository, never()).save(any());
   }
 
   @Test
@@ -68,7 +68,7 @@ class IdempotencyPortAdapterTest {
         SCOPE_KEY, new IdempotencyStore.Snapshot("fp-2", "{\"status\":201}"), Duration.ofHours(24));
 
     ArgumentCaptor<IdempotencyRecord> captor = ArgumentCaptor.forClass(IdempotencyRecord.class);
-    verify(repository).insert(captor.capture());
+    verify(repository).save(captor.capture());
     IdempotencyRecord saved = captor.getValue();
     assertEquals(7L, saved.getTenantId());
     assertEquals("fp-2", saved.getRequestFingerprint());
@@ -85,8 +85,7 @@ class IdempotencyPortAdapterTest {
 
     assertEquals("fp-3", existing.getRequestFingerprint());
     assertTrue(existing.getExpiresAt().isAfter(Instant.now().plus(Duration.ofHours(23))));
-    verify(repository).update(existing);
-    verify(repository, never()).insert(any());
+    verify(repository).save(existing);
   }
 
   private static IdempotencyRecord record(Instant expiresAt) {

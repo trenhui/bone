@@ -94,7 +94,7 @@ function NotificationPanel({
 
   const markOne = async (id: number) => {
     try {
-      await notificationService.markRead(id);
+      await notificationService.markRead(id, userId);
       setList((prev) => prev.map((m) => (m.id === id ? { ...m, read: true } : m)));
       onUnreadChange();
     } catch {
@@ -106,7 +106,7 @@ function NotificationPanel({
     const unread = list.filter((m) => !m.read);
     if (unread.length === 0) return;
     try {
-      await Promise.all(unread.map((m) => notificationService.markRead(m.id)));
+      await Promise.all(unread.map((m) => notificationService.markRead(m.id, userId)));
       setList((prev) => prev.map((m) => ({ ...m, read: true })));
       onUnreadChange();
     } catch {

@@ -64,6 +64,16 @@ public class OrderOutboxRecord extends AggregateRoot<Long> {
     this.status = OutboxStatus.FAILED;
   }
 
+  /** 抢占：PENDING → PROCESSING（CAS 由调用方经 SDK updateByCriteria 的 WHERE status='PENDING' 保证）。 */
+  public void markClaimed() {
+    this.status = OutboxStatus.PROCESSING;
+  }
+
+  /** 可重试失败：PROCESSING → PENDING，交还下一轮 relay 抢占。 */
+  public void markRetry() {
+    this.status = OutboxStatus.PENDING;
+  }
+
   public void incrementRetry() {
     this.retryCount = (retryCount == null ? 0 : retryCount) + 1;
   }
