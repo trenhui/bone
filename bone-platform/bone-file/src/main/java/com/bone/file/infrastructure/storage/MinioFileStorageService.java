@@ -1,6 +1,8 @@
 package com.bone.file.infrastructure.storage;
 
 import com.bone.file.application.port.out.FileStoragePort;
+import com.bone.file.common.FileErrorCodes;
+import com.bone.file.common.FileErrors;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
@@ -61,7 +63,7 @@ public class MinioFileStorageService implements FileStoragePort {
                   .build());
       return new StoredObject(targetBucket, objectName, response.etag(), size, Map.of());
     } catch (Exception e) {
-      throw new IllegalStateException("文件上传失败: " + e.getMessage(), e);
+      throw FileErrors.of(FileErrorCodes.UPLOAD_FAILED, objectName, e);
     }
   }
 
@@ -72,7 +74,7 @@ public class MinioFileStorageService implements FileStoragePort {
       return minioClient.getObject(
           GetObjectArgs.builder().bucket(targetBucket).object(objectName).build());
     } catch (Exception e) {
-      throw new IllegalStateException("文件下载失败: " + e.getMessage(), e);
+      throw FileErrors.of(FileErrorCodes.DOWNLOAD_FAILED, objectName, e);
     }
   }
 
@@ -83,7 +85,7 @@ public class MinioFileStorageService implements FileStoragePort {
       minioClient.removeObject(
           RemoveObjectArgs.builder().bucket(targetBucket).object(objectName).build());
     } catch (Exception e) {
-      throw new IllegalStateException("文件删除失败: " + e.getMessage(), e);
+      throw FileErrors.of(FileErrorCodes.DELETE_FAILED, objectName, e);
     }
   }
 
