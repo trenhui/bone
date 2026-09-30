@@ -8,6 +8,7 @@ import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
+import java.util.Date;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,8 +51,13 @@ public class OrderItem extends AbstractEntity<Long> {
     this.quantity = quantity;
     this.unitPrice = unitPrice.toBigDecimal();
     this.subtotal = unitPrice.multiply(quantity).toBigDecimal();
-    // created_at / updated_at 由 AbstractEntity 基类在 SDK save 时自动填充，
-    // 这里无需手动设置（父类字段是 java.util.Date 类型，SDK 会用当前时间填充）。
+    // ⚠ 必须显式设置审计时间：SDK 的级联（@Cascade）插入**不会**自动填充 created_at/updated_at
+    // （基类 @Column 只有 nullable 声明，无自动填充钩子），而 MySQL 侧 created_at 是 NOT NULL ——
+    // 不设置会直接抛 "Column 'created_at' cannot be null"，且异常发生在根 save 之后，表现为下单 500。
+    // 与 Order 聚合根保持同口径：创建即写入审计时间，不依赖持久化框架的隐式行为。
+    Date now = new Date();
+    this.setCreatedAt(now);
+    this.setUpdatedAt(now);
   }
 
   public static OrderItem create(

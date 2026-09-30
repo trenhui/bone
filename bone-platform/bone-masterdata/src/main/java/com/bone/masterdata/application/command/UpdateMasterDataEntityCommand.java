@@ -14,4 +14,7 @@ public class UpdateMasterDataEntityCommand {
   private String name;
   private String description;
   private String category;
+
+  /** 实体编码（可空=不改）。 */
+  private String entityCode;
 }

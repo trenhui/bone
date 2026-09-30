@@ -26,21 +26,22 @@ spring:
       # 连接测试query
       connection-test-query: SELECT 1
 
-  # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
+  # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优。
+  # 注意：本地开发 Redis 无密码——不要配置 password 键（空字符串也会触发 AUTH 报错）。
   data:
     redis:
       host: ${BONE_REDIS_HOST:localhost}
       port: ${BONE_REDIS_PORT:6379}
       database: 0
-      password: ${BONE_REDIS_PASSWORD}
   redis:
     host: ${BONE_REDIS_HOST:localhost}
     port: ${BONE_REDIS_PORT:6379}
     database: 0
-    password: ${BONE_REDIS_PASSWORD}
 
 server:
-  port: 8885
+  # 与 bone-gateway 路由（BONE_METADATA_SERVER_URI 默认 9001）及 §9.3 端口真源保持一致；
+  # 原先的 8885 会让网关转发全部熔断（GW_UPSTREAM_UNAVAILABLE）。
+  port: 9001
 
 --- #################### 服务保障相关配置 ####################
 

@@ -12,6 +12,8 @@ import type {
   EntityValidationIssue,
   PublishPreview,
   CopyEntityReq,
+  ImportFromTableReq,
+  ImportMetaEntityResult,
   InstantiateTemplateReq,
   CreateMetaEntityReq,
   UpdateMetaEntityReq,
@@ -101,6 +103,16 @@ export const metadataEntityApi = {
   /** 实体复制（UC-W2 流程 B）：定义+字段随迁为新草稿 */
   copy: (id: SnowflakeId, data: CopyEntityReq) =>
     api.post<never, ApiResponse<number>>(`${META}/entities/${id}/copy`, data),
+
+  /**
+   * 逆向建模（UC-IMP）：从存量物理表采集为实体草稿。
+   * 先以 dryRun=true 预览（列数 / 跳过的保留列），确认后再正式导入。
+   */
+  importFromTable: (data: ImportFromTableReq) =>
+    api.post<never, ApiResponse<ImportMetaEntityResult>>(
+      `${META}/entities/import-from-table`,
+      data,
+    ),
 };
 
 /** 平台模型模板（G3）：目录/字段为平台层只读资产；实例化=建模写 */

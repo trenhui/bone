@@ -327,6 +327,7 @@ const EntityManagement: React.FC = () => {
         {/* 模型列表 */}
         <ProTable
           options={false}
+          rowKey="id"
           columns={columns as ProColumns<MasterDataEntity>[]}
           dataSource={data}
           loading={loading}

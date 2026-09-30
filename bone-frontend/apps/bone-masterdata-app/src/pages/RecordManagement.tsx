@@ -12,7 +12,11 @@ import {
   Descriptions,
   Upload,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined, CheckCircleOutlined, InboxOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined,
+  CheckCircleOutlined, InboxOutlined, SendOutlined, AuditOutlined, CloseCircleOutlined,
+  HistoryOutlined,
+} from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
@@ -21,7 +25,7 @@ import type {
   MasterDataEntity,
   MasterDataField,
 } from '../types';
-import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi } from '../services/api';
+import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi, approvalApi } from '../services/api';
 import { useMessage } from '../App';
 
 const { Option } = Select;
@@ -64,6 +68,12 @@ const RecordManagement: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
   const [importLoading, setImportLoading] = useState(false);
+  // 审批流（UC-T7）：驳回弹窗与版本历史
+  const [rejectTarget, setRejectTarget] = useState<MasterDataRecord | null>(null);
+  const [rejectComment, setRejectComment] = useState('');
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [versions, setVersions] = useState<Record<string, unknown>[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
 
   const fetchEntities = useCallback(async () => {
     try {
@@ -145,7 +155,8 @@ const RecordManagement: React.FC = () => {
   const handleEdit = (record: MasterDataRecord) => {
     setIsEditMode(true);
     setCurrentRecord(record);
-    form.setFieldsValue(record.data);
+    // record.data 是 JSON 字符串，且键以字段 code 为准（与表单 name 对齐）
+    form.setFieldsValue(parseRecordData(record.data));
     setIsModalOpen(true);
   };
 
@@ -175,6 +186,72 @@ const RecordManagement: React.FC = () => {
       }
     } catch (error) {
       message.error('发布失败');
+    }
+  };
+
+  // 提交审批（UC-T7）
+  const handleSubmitApproval = async (id: number) => {
+    try {
+      const response = await approvalApi.submit(id);
+      if (response.code === 200) {
+        message.success('已提交审批');
+        fetchRecords();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('提交审批失败');
+    }
+  };
+
+  // 审批通过（SoD：审批人≠提交人，后端校验）
+  const handleApprove = async (id: number) => {
+    try {
+      const response = await approvalApi.approve(id);
+      if (response.code === 200) {
+        message.success('审批通过');
+        fetchRecords();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('审批操作失败');
+    }
+  };
+
+  // 审批驳回（退回草稿）
+  const handleReject = async () => {
+    if (!rejectTarget) return;
+    try {
+      const response = await approvalApi.reject(rejectTarget.id, rejectComment || undefined);
+      if (response.code === 200) {
+        message.success('已驳回，退回草稿');
+        setRejectTarget(null);
+        setRejectComment('');
+        fetchRecords();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('驳回失败');
+    }
+  };
+
+  // 版本历史（UC-T7 追溯）
+  const handleShowVersions = async (id: number) => {
+    setVersionsOpen(true);
+    setVersionsLoading(true);
+    try {
+      const response = await approvalApi.versions(id);
+      if (response.code === 200) {
+        setVersions(Array.isArray(response.data) ? response.data : []);
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('获取版本历史失败');
+    } finally {
+      setVersionsLoading(false);
     }
   };
 
@@ -267,13 +344,19 @@ const RecordManagement: React.FC = () => {
     }
   };
 
-  // 状态标签
+  // 状态标签（六态状态机：DRAFT→PENDING_APPROVAL→APPROVED→PUBLISHED→ARCHIVED，驳回退回 DRAFT）
   const getStatusTag = (status: string) => {
     switch (status) {
     case 'DRAFT':
       return <Tag color="blue">草稿</Tag>;
+    case 'PENDING_APPROVAL':
+      return <Tag color="orange">待审批</Tag>;
+    case 'APPROVED':
+      return <Tag color="cyan">审批通过</Tag>;
     case 'PUBLISHED':
       return <Tag color="green">已发布</Tag>;
+    case 'SUPERSEDED':
+      return <Tag color="purple">已被新版本取代</Tag>;
     case 'ARCHIVED':
       return <Tag color="gray">已归档</Tag>;
     default:
@@ -314,7 +397,9 @@ const RecordManagement: React.FC = () => {
       return (
         <Form.Item
           key={field.id}
-          name={field.name}
+          // 后端按字段 code 校验与存储（RecordDataValidator 以 code 取值），
+          // 表单键必须与 code 对齐，否则写入数据会被判为缺字段。
+          name={field.code ?? field.name}
           label={field.name}
           rules={field.required ? [{ required: true, message: `请输入${field.name}` }] : []}
         >
@@ -369,23 +454,53 @@ const RecordManagement: React.FC = () => {
         title: '操作',
         key: 'action',
         render: (_: unknown, record: MasterDataRecord) => (
-          <Space size="middle">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              编辑
-            </Button>
-            <Popconfirm
-              title="确定要删除吗？"
-              onConfirm={() => handleDelete(record.id)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <Button danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
+          <Space size="middle" wrap>
             {record.status === 'DRAFT' && (
+              <>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(record)}
+                >
+                  编辑
+                </Button>
+                <Popconfirm
+                  title="确定要删除吗？"
+                  onConfirm={() => handleDelete(record.id)}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button danger icon={<DeleteOutlined />}>删除</Button>
+                </Popconfirm>
+                <Button
+                  icon={<SendOutlined />}
+                  onClick={() => handleSubmitApproval(record.id)}
+                >
+                  提交审批
+                </Button>
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => handlePublish(record.id)}
+                >
+                  直接发布
+                </Button>
+              </>
+            )}
+            {record.status === 'PENDING_APPROVAL' && (
+              <>
+                <Popconfirm
+                  title="确认审批通过？"
+                  onConfirm={() => handleApprove(record.id)}
+                  okText="通过"
+                  cancelText="取消"
+                >
+                  <Button type="primary" icon={<AuditOutlined />}>审批通过</Button>
+                </Popconfirm>
+                <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectTarget(record)}>
+                  驳回
+                </Button>
+              </>
+            )}
+            {record.status === 'APPROVED' && (
               <Button
                 icon={<CheckCircleOutlined />}
                 onClick={() => handlePublish(record.id)}
@@ -401,6 +516,12 @@ const RecordManagement: React.FC = () => {
                 归档
               </Button>
             )}
+            <Button
+              icon={<HistoryOutlined />}
+              onClick={() => handleShowVersions(record.id)}
+            >
+              版本
+            </Button>
           </Space>
         )
       }
@@ -437,7 +558,10 @@ const RecordManagement: React.FC = () => {
             >
               <Option value="">全部</Option>
               <Option value="DRAFT">草稿</Option>
+              <Option value="PENDING_APPROVAL">待审批</Option>
+              <Option value="APPROVED">审批通过</Option>
               <Option value="PUBLISHED">已发布</Option>
+              <Option value="SUPERSEDED">已被新版本取代</Option>
               <Option value="ARCHIVED">已归档</Option>
             </Select>
           </Form.Item>
@@ -524,11 +648,16 @@ const RecordManagement: React.FC = () => {
         {currentRecord && (
           <div>
             <Descriptions column={2}>
-              {fields.map(field => (
-                <Descriptions.Item key={field.id} label={field.name}>
-                  {String(currentRecord.data[field.name] ?? '-')}
-                </Descriptions.Item>
-              ))}
+              {fields.map(field => {
+                const map = parseRecordData(currentRecord.data);
+                const key = field.code ?? field.name;
+                const value = map[key] ?? map[field.name];
+                return (
+                  <Descriptions.Item key={field.id} label={field.name}>
+                    {value === undefined || value === null ? '-' : String(value)}
+                  </Descriptions.Item>
+                );
+              })}
               <Descriptions.Item label="状态">{getStatusTag(currentRecord.status)}</Descriptions.Item>
               <Descriptions.Item label="创建时间">{currentRecord.createdAt}</Descriptions.Item>
               <Descriptions.Item label="更新时间">{currentRecord.updatedAt}</Descriptions.Item>
@@ -538,6 +667,48 @@ const RecordManagement: React.FC = () => {
             </Descriptions>
           </div>
         )}
+      </Modal>
+
+      {/* 驳回弹窗 */}
+      <Modal
+        title="驳回审批"
+        open={!!rejectTarget}
+        onOk={handleReject}
+        onCancel={() => { setRejectTarget(null); setRejectComment(''); }}
+        okText="确认驳回"
+        cancelText="取消"
+      >
+        <Input.TextArea
+          rows={3}
+          placeholder="填写驳回原因（可空）"
+          value={rejectComment}
+          onChange={(e) => setRejectComment(e.target.value)}
+        />
+      </Modal>
+
+      {/* 版本历史弹窗 */}
+      <Modal
+        title="版本历史"
+        open={versionsOpen}
+        footer={[<Button key="close" onClick={() => setVersionsOpen(false)}>关闭</Button>]}
+        onCancel={() => setVersionsOpen(false)}
+        width={720}
+      >
+        <ProTable
+          options={false}
+          search={false}
+          rowKey={(r: Record<string, unknown>) => String(r.id ?? r.versionNumber)}
+          loading={versionsLoading}
+          columns={[
+            { title: '版本号', dataIndex: 'versionNumber', key: 'versionNumber' },
+            { title: '数据快照', dataIndex: 'data', key: 'data', ellipsis: true },
+            { title: '操作人', dataIndex: 'createdBy', key: 'createdBy' },
+            { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
+          ]}
+          dataSource={versions as never[]}
+          pagination={false}
+          locale={{ emptyText: '暂无版本记录' }}
+        />
       </Modal>
     </div>
   );

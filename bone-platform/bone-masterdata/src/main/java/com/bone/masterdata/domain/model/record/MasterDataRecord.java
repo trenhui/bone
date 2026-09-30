@@ -122,6 +122,11 @@ public class MasterDataRecord extends TenantAggregateRoot<Long> {
     if (this.status == MasterDataRecordStatus.PUBLISHED) {
       throw new DomainException("主数据记录已发布");
     }
+    // 真实治理门禁：进入审批流的记录必须审批通过才能发布，否则审批流可被发布动作整体绕过
+    // （实测 PENDING_APPROVAL 直接 publish 成功，SoD 只拦了 approve 没拦 publish）。
+    if (this.status == MasterDataRecordStatus.PENDING_APPROVAL) {
+      throw new DomainException("待审批记录不能直接发布，需先审批通过");
+    }
     this.status = MasterDataRecordStatus.PUBLISHED;
     this.isCurrent = true;
     this.publishTime = LocalDateTime.now();

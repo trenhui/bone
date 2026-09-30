@@ -12,6 +12,7 @@ import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
+import com.bone.blueprint.domain.gateway.MasterDataGateway;
 import com.bone.blueprint.domain.model.order.Order;
 import com.bone.blueprint.domain.model.order.OrderItem;
 import com.bone.blueprint.domain.model.order.projection.OrderHeadProjection;
@@ -64,6 +65,7 @@ public class OrderApplicationService {
   private final OrderRepository orderRepository;
   private final InventoryGateway inventoryGateway;
   private final PricingPort pricingService;
+  private final MasterDataGateway masterDataGateway;
   private final DomainEventPublisher domainEventPublisher;
   private final TenantPort tenantProvider;
 
@@ -82,36 +84,50 @@ public class OrderApplicationService {
    */
   @Transactional
   public Long create(CreateOrderCommand command) {
-    for (CreateOrderCommand.OrderItemDto dto : command.items()) {
-      if (!inventoryGateway.checkStock(dto.productId(), dto.quantity())) {
-        // 用业务码而非 BizException.of(message)：后者的默认码是 500，会把「业务校验不通过」报成服务端故障，
-        // 污染 5xx 告警与 SLO 口径（错误码登记 §6 已点名这个坑）。
-        throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STOCK_INSUFFICIENT, dto.productId());
-      }
-    }
-
     // 身份在构造期确定（ADR-0019 目标态）：SDK 尊重调用方预分配的非空 id，落库后 id 不变，
     // 因此明细外键与事件载荷可直接使用该 id，无需在落库后回填。
     long provisionalOrderId = DistributedIdGenerator.generateLongId();
     long tenantId = tenantProvider.currentTenantId();
 
-    List<OrderItem> items =
-        command.items().stream()
-            .map(
-                dto ->
-                    OrderItem.create(
-                        DistributedIdGenerator.generateLongId(),
-                        provisionalOrderId,
-                        dto.productId(),
-                        dto.productName(),
-                        dto.quantity(),
-                        dto.unitPrice()))
-            .collect(Collectors.toList());
+    // 主数据治理前置（真实场景）：商品必须是 masterdata 已发布的商品主数据记录，
+    // 且名称/单价以主数据为准——调用方自报的价格不可信，这是 MDM 的核心价值：
+    // 商品生命周期（草稿/停用/归档）与价格治理在主数据侧收口，交易侧只消费。
+    List<OrderItem> items = new java.util.ArrayList<>();
+    for (CreateOrderCommand.OrderItemDto dto : command.items()) {
+      var product = masterDataGateway.findPublishedProduct(String.valueOf(dto.productId()));
+      if (product.isEmpty()) {
+        throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_PRODUCT_NOT_PUBLISHED, dto.productId());
+      }
+      if (!inventoryGateway.checkStock(dto.productId(), dto.quantity())) {
+        // 用业务码而非 BizException.of(message)：后者的默认码是 500，会把「业务校验不通过」报成服务端故障，
+        // 污染 5xx 告警与 SLO 口径（错误码登记 §6 已点名这个坑）。
+        throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STOCK_INSUFFICIENT, dto.productId());
+      }
+      items.add(
+          OrderItem.create(
+              DistributedIdGenerator.generateLongId(),
+              provisionalOrderId,
+              dto.productId(),
+              product.get().name(),
+              dto.quantity(),
+              product.get().unitPrice()));
+    }
 
-    Order order = Order.create(provisionalOrderId, tenantId, command.customerId(), items);
+    Order order =
+        Order.create(
+            provisionalOrderId,
+            tenantId,
+            command.customerId(),
+            items,
+            command.channelSource(),
+            command.freightAmount(),
+            command.discountAmount());
 
     // 扩展点定价由应用层编排：算出最终金额后交给聚合，聚合不感知扩展点接口（领域层只认 Money）。
-    order.applyPricing(pricingService.calculateFinalPrice(order.getTotalMoney(), tenantId));
+    // 客户编码传给计价端口 → 主数据解析等级 → 路由对应计价场景（VIP/会员/企业/标准）。
+    order.applyPricing(
+        pricingService.calculateFinalPrice(
+            order.getTotalMoney(), tenantId, String.valueOf(command.customerId())));
 
     orderRepository.save(order);
     Long persistedOrderId = order.getId();

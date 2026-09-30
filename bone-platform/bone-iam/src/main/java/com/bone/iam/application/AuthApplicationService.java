@@ -12,7 +12,6 @@ import com.bone.iam.application.port.out.TokenBlacklistPort;
 import com.bone.iam.application.support.PasswordPolicyValidator;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
-import com.bone.iam.domain.client.SsoClient;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
@@ -80,7 +79,6 @@ public class AuthApplicationService {
   private final AccountAuthorityCache accountAuthorityCache;
   private final RoleHierarchyResolver roleHierarchyResolver;
   private final PasswordEncoderPort passwordEncoderPort;
-  private final SsoClient ssoClient;
   private final TokenBlacklistPort tokenBlacklistPort;
   private final JwtConfig jwtConfig;
   private final TenantRepository tenantRepository;
@@ -388,11 +386,6 @@ public class AuthApplicationService {
       return false;
     }
     return passwordEncoderPort.matches(rawPassword, account.getPasswordHash());
-  }
-
-  /** SSO 代理认证（占位能力，目前无调用方）。 */
-  private boolean ssoAuthenticate(String username, String password) {
-    return ssoClient.authenticate(username, password);
   }
 
   private boolean isPasswordExpired(Account account) {

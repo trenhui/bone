@@ -29,6 +29,8 @@ PORT="${BONE_DB_PORT:-3306}"
 USER="${BONE_DB_USERNAME:-root}"
 export MYSQL_PWD="${BONE_DB_PASSWORD:-}"
 
-"${MYSQL_BIN}" -h"${HOST}" -P"${PORT}" -u"${USER}" < "${INIT_SQL}"
+# --default-character-set=utf8mb4: 必须显式指定，否则 mysql CLI 以 latin1 会话导入，
+# 中文种子/注释会被 cp1252 误读入库（历史事故：bp_payment 注释、bone_application 种子全部乱码）
+"${MYSQL_BIN}" --default-character-set=utf8mb4 -h"${HOST}" -P"${PORT}" -u"${USER}" < "${INIT_SQL}"
 unset MYSQL_PWD
 echo "[db-init] 完成，请运行 ./scripts/dev/db-verify.sh"

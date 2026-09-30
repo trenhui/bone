@@ -64,7 +64,8 @@ public class CatalogRuntimeEntityProvider {
               f.getType(),
               Boolean.TRUE.equals(f.getRequired()),
               Boolean.TRUE.equals(f.getUnique()),
-              Boolean.TRUE.equals(f.getPk())));
+              Boolean.TRUE.equals(f.getPk()),
+              f.getPhysicalColumn()));
     }
 
     return Optional.of(

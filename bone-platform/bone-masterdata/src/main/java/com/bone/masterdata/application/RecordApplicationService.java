@@ -17,14 +17,31 @@ import com.bone.masterdata.common.MasterDataProperties;
 import com.bone.masterdata.domain.gateway.CurrentUserPort;
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
+import com.bone.masterdata.domain.model.entity.MasterDataField;
 import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.domain.model.record.MasterDataRecordVersion;
 import com.bone.masterdata.domain.model.record.valueobject.MasterDataRecordStatus;
+import com.bone.masterdata.domain.model.reference.ReferenceSet;
+import com.bone.masterdata.domain.model.reference.ReferenceValue;
+import com.bone.masterdata.domain.model.reference.TenantReferenceValue;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
+import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordVersionRepository;
+import com.bone.masterdata.domain.repository.ReferenceSetRepository;
+import com.bone.masterdata.domain.repository.ReferenceValueRepository;
+import com.bone.masterdata.domain.repository.TenantReferenceValueRepository;
+import com.bone.masterdata.domain.service.record.RecordDataValidator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +60,17 @@ public class RecordApplicationService {
 
   private final MasterDataRecordRepository recordRepository;
   private final MasterDataEntityRepository entityRepository;
+  private final MasterDataFieldRepository fieldRepository;
   private final MasterDataRecordVersionRepository versionRepository;
   private final MasterDataExcelImportPort excelImportPort;
   private final CurrentUserPort currentUserPort;
   private final MasterdataDomainEventPublisher domainEventPublisher;
   private final MasterDataProperties properties;
+  private final ReferenceSetRepository referenceSetRepository;
+  private final ReferenceValueRepository referenceValueRepository;
+  private final TenantReferenceValueRepository tenantReferenceValueRepository;
+  private final RecordDataValidator recordDataValidator = new RecordDataValidator();
+  private final ObjectMapper objectMapper;
 
   @Capability(
       name = "CreateMasterDataRecord",
@@ -64,6 +87,7 @@ public class RecordApplicationService {
       throw NotFoundException.of("主数据实体不存在");
     }
     checkDataSize(cmd.getData());
+    validateAgainstFieldDefinitions(cmd.getMasterDataEntityId(), cmd.getData());
     Long recordId = DistributedIdGenerator.generateLongId();
     MasterDataRecord record =
         MasterDataRecord.create(recordId, cmd.getMasterDataEntityId(), cmd.getData());
@@ -88,6 +112,7 @@ public class RecordApplicationService {
       throw NotFoundException.of("主数据记录不存在");
     }
     checkDataSize(cmd.getData());
+    validateAgainstFieldDefinitions(record.getMasterDataEntityId(), cmd.getData());
     record.update(cmd.getData());
     recordRepository.update(record);
     domainEventPublisher.publishFrom(record);
@@ -272,6 +297,8 @@ public class RecordApplicationService {
             cmd.getDataStream(), cmd.getOriginalFilename(), cmd.getMasterDataEntityId());
     List<Long> ids = new ArrayList<>();
     for (MasterDataRecord record : parsed) {
+      checkDataSize(record.getData());
+      validateAgainstFieldDefinitions(cmd.getMasterDataEntityId(), record.getData());
       ids.add(recordRepository.save(record));
       domainEventPublisher.publishFrom(record);
     }
@@ -331,6 +358,82 @@ public class RecordApplicationService {
           MasterDataErrorCodes.RECORD_SIZE_EXCEEDED,
           "记录数据超过 " + properties.getRecordMaxSize() + " 字符上限");
     }
+  }
+
+  /**
+   * 写入时按字段定义校验记录数据（真实场景第一道防线）。
+   *
+   * <p>实体尚未建模字段时直接放行（采集阶段允许先录后治），一旦建模即刻生效， 避免"字段定义只用于展示"的割裂。
+   */
+  private void validateAgainstFieldDefinitions(Long entityId, String data) {
+    List<MasterDataField> fields = fieldRepository.findByMasterDataEntityId(entityId);
+    if (fields.isEmpty()) {
+      return;
+    }
+    Map<String, Object> parsed = parseData(data);
+    Map<String, Set<String>> allowedValues = resolveAllowedValues(fields);
+    List<String> violations = recordDataValidator.validate(fields, parsed, allowedValues);
+    if (!violations.isEmpty()) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_FIELD_VALIDATION_FAILED, String.join("；", violations));
+    }
+  }
+
+  private Map<String, Object> parseData(String data) {
+    if (data == null || data.isBlank()) {
+      return Map.of();
+    }
+    try {
+      return objectMapper.readValue(data, new TypeReference<Map<String, Object>>() {});
+    } catch (JsonProcessingException e) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_DATA_PARSE_FAILED, "记录 data 不是合法 JSON 对象");
+    }
+  }
+
+  /**
+   * 按 field code 关联参考数据值域，得到「字段 → 允许值集合」。
+   *
+   * <p>约定：值域 {@code set_code} 与字段 {@code code} 同名即建立绑定（如字段 currency → 值域 CURRENCY），租户私有扩展值以 overlay
+   * 方式并入。
+   */
+  private Map<String, Set<String>> resolveAllowedValues(List<MasterDataField> fields) {
+    Map<String, String> fieldCodeByNormalized = new HashMap<>();
+    for (MasterDataField field : fields) {
+      if (field.getCode() == null) {
+        continue;
+      }
+      String code = field.getCode().value();
+      fieldCodeByNormalized.put(code.toUpperCase(Locale.ROOT), code);
+    }
+    if (fieldCodeByNormalized.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, Set<String>> allowed = new HashMap<>();
+    for (ReferenceSet set : referenceSetRepository.findByStatus("PUBLISHED")) {
+      if (set.getSetCode() == null) {
+        continue;
+      }
+      String fieldCode = fieldCodeByNormalized.get(set.getSetCode().toUpperCase(Locale.ROOT));
+      if (fieldCode == null) {
+        continue;
+      }
+      Set<String> values = new HashSet<>();
+      for (ReferenceValue v : referenceValueRepository.findBySetId(set.getId())) {
+        if (Boolean.TRUE.equals(v.getEnabled()) && v.getValueCode() != null) {
+          values.add(v.getValueCode());
+        }
+      }
+      for (TenantReferenceValue v : tenantReferenceValueRepository.findBySetId(set.getId())) {
+        if (Boolean.TRUE.equals(v.getEnabled()) && v.getValueCode() != null) {
+          values.add(v.getValueCode());
+        }
+      }
+      if (!values.isEmpty()) {
+        allowed.put(fieldCode, values);
+      }
+    }
+    return allowed;
   }
 
   private MasterDataRecordDTO toDto(MasterDataRecord record) {

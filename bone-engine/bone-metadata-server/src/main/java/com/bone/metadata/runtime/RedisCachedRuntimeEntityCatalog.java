@@ -72,19 +72,41 @@ public class RedisCachedRuntimeEntityCatalog
           entity.physicalTableName(),
           entity.primaryKeyColumn(),
           entity.columns().stream()
-              .map(c -> new ColumnPayload(c.code(), c.required(), c.primaryKey()))
+              .map(
+                  c ->
+                      new ColumnPayload(
+                          c.code(),
+                          c.type(),
+                          c.required(),
+                          c.unique(),
+                          c.primaryKey(),
+                          c.physicalColumn()))
               .toList());
     }
 
     PublishedRuntimeEntity toEntity(String entityCode, long tenantId) {
       List<RuntimeFieldColumn> cols =
           columns.stream()
-              .map(c -> new RuntimeFieldColumn(c.code(), c.required(), c.primaryKey()))
+              .map(
+                  c ->
+                      new RuntimeFieldColumn(
+                          c.code(),
+                          c.type(),
+                          c.required(),
+                          c.unique(),
+                          c.primaryKey(),
+                          c.physicalColumn()))
               .toList();
       return new PublishedRuntimeEntity(
           entityCode, physicalTableName, primaryKeyColumn, tenantId, cols);
     }
 
-    record ColumnPayload(String code, boolean required, boolean primaryKey) {}
+    record ColumnPayload(
+        String code,
+        String type,
+        boolean required,
+        boolean unique,
+        boolean primaryKey,
+        String physicalColumn) {}
   }
 }

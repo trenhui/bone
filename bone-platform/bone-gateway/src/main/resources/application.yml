@@ -40,6 +40,11 @@ spring:
           uri: ${BONE_MASTERDATA_URI:http://localhost:8084}
           predicates:
             - Path=/api/v1/masterdata/**
+        # blueprint 交易域：下单/订单查询经网关转发到 blueprint(8082)，与 masterdata 主数据消费链路打通。
+        - id: bone-blueprint
+          uri: ${BONE_BLUEPRINT_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/orders/**
         - id: bone-system
           uri: ${BONE_SYSTEM_URI:http://localhost:8083}
           predicates:

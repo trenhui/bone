@@ -31,10 +31,6 @@ public class AccessTokenIssuerGatewayAdapter implements AccessTokenIssuer {
     return issue(accountId, username, tenantId, scopes);
   }
 
-  public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {
-    return issue(accountId, username, tenantId, scopes);
-  }
-
   public java.util.Optional<JwtPrincipal> parse(String rawToken) {
     return delegate.parse(rawToken);
   }

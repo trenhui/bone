@@ -77,6 +77,33 @@ export interface CopyEntityReq {
   targetModuleId?: number | string;
 }
 
+/**
+ * 逆向建模请求（UC-IMP）：把存量物理表采集为目录实体草稿。
+ * dryRun=true 时后端只回统计、不落库，用于导入向导的预览步骤。
+ */
+export interface ImportFromTableReq {
+  tableName: string;
+  code?: string;
+  name?: string;
+  displayName?: string;
+  description?: string;
+  /** 0=GENERATIVE / 1=RUNTIME；缺省 1（存量表已物理存在，纳管后走运行时元数据面） */
+  deliveryMode?: number;
+  /** 是否把平台保留列（id/tenant_id/version/deleted/审计列）也建模为业务字段，默认 false */
+  includeReserved?: boolean;
+  dryRun?: boolean;
+}
+
+export interface ImportMetaEntityResult {
+  entityId: number | string | null;
+  entityCode: string;
+  tableName: string;
+  importedFields: number;
+  /** 被跳过的平台保留列 */
+  skippedColumns: string[];
+  dryRun: boolean;
+}
+
 export interface InstantiateTemplateReq {
   name: string;
   code: string;

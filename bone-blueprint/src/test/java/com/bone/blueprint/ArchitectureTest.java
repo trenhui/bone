@@ -225,6 +225,10 @@ public class ArchitectureTest {
           .orShould()
           .haveSimpleName("InventoryGateway")
           .orShould()
+          .haveSimpleName("MasterDataGateway")
+          .orShould()
+          .haveSimpleName("ProductView") // MasterDataGateway 内嵌的商品视图 record
+          .orShould()
           .haveSimpleName("package-info");
 
   // E-5.4（v5.5 补门禁）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent。

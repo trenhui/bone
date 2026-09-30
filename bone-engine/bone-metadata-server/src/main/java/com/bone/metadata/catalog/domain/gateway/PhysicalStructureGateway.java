@@ -1,6 +1,7 @@
 package com.bone.metadata.catalog.domain.gateway;
 
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableSnapshot;
 
 /**
  * 物理结构网关：检查/对齐/清理已发布 RUNTIME 实体的物理表结构与 catalog 模型一致性（MVP-11）。
@@ -41,4 +42,17 @@ public interface PhysicalStructureGateway {
    * <p>仅丢弃物理列名不在当前活动字段集合、且非保留列（id/tenant_id/version/deleted）的列；不触碰在用列，不缩长度、不改类型。
    */
   PhysicalStructurePlan dropDriftedColumns(long tenantId, String entityCode);
+
+  /**
+   * 逆向建模：采集存量物理表的结构快照（纯只读）。
+   *
+   * <p>与 {@link #inspect(long, String)} 方向相反——inspect 是「模型 diff 物理」，本方法是「物理 → 快照」，
+   * 供导入用例把存量业务表登记为目录实体，避免人工重录字段。
+   *
+   * <p>安全边界：只读 information_schema，不执行任何 DDL；表名须经实现层标识符校验。
+   *
+   * @param tableName 物理表名（当前 schema 内）
+   * @return 快照；表不存在时 {@code exists=false} 且 columns 为空
+   */
+  PhysicalTableSnapshot readTableSnapshot(String tableName);
 }

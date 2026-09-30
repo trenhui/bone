@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.observability;
 import com.bone.blueprint.infrastructure.messaging.outbox.OrderOutboxRecord;
 import com.bone.blueprint.infrastructure.messaging.outbox.OrderOutboxRepository;
 import com.bone.blueprint.infrastructure.messaging.outbox.OutboxStatus;
+import com.bone.core.tenant.context.TenantContextRunner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
@@ -35,12 +36,17 @@ public class BlueprintModuleHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     try {
+      // bp_outbox 为跨租户表；健康检查在请求上下文之外执行，必须显式声明租户（默认平台租户 0），
+      // 否则 SDK 注入租户过滤器时会抛 MissingTenantContextException，导致本模块健康恒为 DOWN（BP-H1）。
       long pendingCount =
-          orderOutboxRepository
-              .query()
-              .where(OrderOutboxRecord::getStatus)
-              .eq(OutboxStatus.PENDING)
-              .count();
+          TenantContextRunner.callAs(
+              0L,
+              () ->
+                  orderOutboxRepository
+                      .query()
+                      .where(OrderOutboxRecord::getStatus)
+                      .eq(OutboxStatus.PENDING)
+                      .count());
 
       Health.Builder builder = Health.up().withDetail("module", "bone-blueprint");
 

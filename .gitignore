@@ -224,3 +224,13 @@ test_output.txt
 test_doc.txt
 **/*优化方案*.md
 **/*升级方案*.md
+
+# =========================
+# 运行时/构建缓存（非源码，勿入库）
+# =========================
+# 根目录运行时 H2 数据库文件（Extension Studio 等模块本地运行产物）
+/data/*.mv.db
+# Vite 构建缓存（各 app 生成带时间戳的临时 mjs）
+**/vite.config.ts.timestamp-*.mjs
+# 代码评审工具本地缓存
+.opencodereview/

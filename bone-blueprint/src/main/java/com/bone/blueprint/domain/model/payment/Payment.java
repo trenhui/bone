@@ -32,11 +32,22 @@ import lombok.NoArgsConstructor;
 @Table("bp_payment")
 public class Payment extends TenantAggregateRoot<Long> {
 
+  /** 币种白名单：ISO 4217 三位大写字母。 */
+  private static final java.util.regex.Pattern ISO_CURRENCY =
+      java.util.regex.Pattern.compile("^[A-Z]{3}$");
+
   private Long orderId;
   private Long customerId;
   private BigDecimal amount;
+
+  /** 币种（ISO 4217）。跨境与对账前置；缺省 CNY——不引入「无币种金额」这种 ambiguous 状态。 */
+  private String currency;
+
   private PaymentChannel channel;
   private PaymentStatus status;
+
+  /** 支付有效期截止时刻（驱动超时关单；业界 15min~24h）。 */
+  private Instant payExpireAt;
 
   /** 外部支付渠道流水号（渠道回填，幂等去重键）。 */
   private String channelTradeNo;
@@ -84,16 +95,20 @@ public class Payment extends TenantAggregateRoot<Long> {
       Long orderId,
       Long customerId,
       BigDecimal amount,
+      String currency,
       PaymentChannel channel,
-      String payUrl) {
+      String payUrl,
+      Instant payExpireAt) {
     this.setId(id);
     this.setTenantId(tenantId);
     this.orderId = orderId;
     this.customerId = customerId;
     this.amount = amount;
+    this.currency = currency;
     this.channel = channel;
     this.status = PaymentStatus.PENDING;
     this.payUrl = payUrl;
+    this.payExpireAt = payExpireAt;
     this.version = 0L;
     Instant now = Instant.now();
     this.createdAt = now;
@@ -105,6 +120,9 @@ public class Payment extends TenantAggregateRoot<Long> {
    *
    * <p>金额由订单总额决定；入参 {@code amount} 须与订单一致，调用方（Handler）负责从订单读取。
    */
+  /**
+   * @see #create(Long, Long, Long, Long, BigDecimal, String, PaymentChannel, String, Instant)
+   */
   public static Payment create(
       Long id,
       Long tenantId,
@@ -113,13 +131,47 @@ public class Payment extends TenantAggregateRoot<Long> {
       BigDecimal amount,
       PaymentChannel channel,
       String payUrl) {
+    return create(id, tenantId, orderId, customerId, amount, null, channel, payUrl, null);
+  }
+
+  /**
+   * 由订单发起支付：创建一笔处于 PENDING 的支付单。
+   *
+   * @param currency 币种；空值回落 CNY（人民币为本样板默认结算币种）
+   * @param payExpireAt 支付有效期截止时刻；空值表示不设过期（由订单取消流程关闭）
+   */
+  public static Payment create(
+      Long id,
+      Long tenantId,
+      Long orderId,
+      Long customerId,
+      BigDecimal amount,
+      String currency,
+      PaymentChannel channel,
+      String payUrl,
+      Instant payExpireAt) {
     if (id == null || orderId == null || customerId == null) {
       throw new DomainException("支付单必填字段缺失");
     }
     if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
       throw new DomainException("支付金额必须大于0");
     }
-    return new Payment(id, tenantId, orderId, customerId, amount, channel, payUrl);
+    // 归一：大小写与空白由聚合吞掉（渠道回调常给小写币种码），非法格式才拒绝——
+    // 「宽松输入、严格存储」避免每个调用方各写一遍 trim/toUpperCase。
+    String resolvedCurrency =
+        (currency == null || currency.isBlank())
+            ? "CNY"
+            : currency.trim().toUpperCase(java.util.Locale.ROOT);
+    if (!ISO_CURRENCY.matcher(resolvedCurrency).matches()) {
+      throw new DomainException("币种非法（须为 3 位大写字母）: " + resolvedCurrency);
+    }
+    return new Payment(
+        id, tenantId, orderId, customerId, amount, resolvedCurrency, channel, payUrl, payExpireAt);
+  }
+
+  /** 支付单是否已过支付有效期（未设有效期时恒为 false，由订单取消流程关闭）。 */
+  public boolean isExpired() {
+    return payExpireAt != null && Instant.now().isAfter(payExpireAt);
   }
 
   /**

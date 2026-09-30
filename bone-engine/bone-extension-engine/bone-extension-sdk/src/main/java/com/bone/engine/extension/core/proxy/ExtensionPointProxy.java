@@ -4,6 +4,7 @@ import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.core.invoker.ExtPointInvocationHandler; // 导入增强型调用处理器
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
+import com.bone.engine.extension.support.studio.StudioExecutionLogReporter;
 import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
@@ -12,6 +13,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
+import org.springframework.lang.Nullable;
 
 /**
  * 扩展点动态代理（终极优化版）
@@ -29,6 +31,10 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
   // 1. 核心：使用 ObjectProvider 延迟获取 Router，transient 避免序列化
   private final transient ObjectProvider<ExtensionPointRouter> routerProvider;
 
+  // 1b. 执行日志上报器（可选依赖：bone.extension.studio.report.enabled=true 时存在）。
+  //     同步代理链路此前未接上报——只有异步 executor 链路上报，控制台「运行日志」看不到同步调用（已修复）。
+  private final transient ObjectProvider<StudioExecutionLogReporter> reporterProvider;
+
   // 2. 缓存：缓存已获取的 Router 实例，实现无锁 O(1) 访问
   private transient ExtensionPointRouter cachedRouter;
 
@@ -36,6 +42,7 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
     this.extensionPoint = Objects.requireNonNull(extensionPoint, "扩展点接口不能为空");
     // 在构造时只获取 Provider，不会触发 Bean 初始化，避免循环依赖
     this.routerProvider = applicationContext.getBeanProvider(ExtensionPointRouter.class);
+    this.reporterProvider = applicationContext.getBeanProvider(StudioExecutionLogReporter.class);
   }
 
   @Override
@@ -81,7 +88,35 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
 
     // 5. 执行目标方法
     // 使用 ExtPointInvocationHandler.invoke 替代原生反射，以获得统一的性能监控和异常处理能力。
-    return ExtPointInvocationHandler.invoke(extension, method, args, extensionPoint.getName());
+    long startNanos = System.nanoTime();
+    try {
+      Object result =
+          ExtPointInvocationHandler.invoke(extension, method, args, extensionPoint.getName());
+      reportToStudio(extension.getClass().getName(), method.getName(), startNanos, null);
+      return result;
+    } catch (Throwable ex) {
+      reportToStudio(extension.getClass().getName(), method.getName(), startNanos, ex);
+      throw ex;
+    }
+  }
+
+  /** 异步上报执行结果到 studio 控制台（reporter 未装配时静默跳过）。 */
+  private void reportToStudio(
+      String className, String methodName, long startNanos, @Nullable Throwable error) {
+    try {
+      StudioExecutionLogReporter reporter = reporterProvider.getIfAvailable();
+      if (reporter == null) {
+        return;
+      }
+      long durationMs = (System.nanoTime() - startNanos) / 1_000_000L;
+      if (error == null) {
+        reporter.reportSuccess(className, methodName, durationMs);
+      } else {
+        reporter.reportFailure(className, methodName, durationMs, error.getMessage());
+      }
+    } catch (Exception reportEx) {
+      log.debug("上报执行日志失败（忽略）: {}", reportEx.getMessage());
+    }
   }
 
   /** 获取 Router 实例（无锁缓存逻辑） 仅在第一次调用时通过 ObjectProvider 触发 Spring 容器查找。 */

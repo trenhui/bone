@@ -9,6 +9,7 @@ import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityC
 import com.bone.metadata.catalog.application.command.cmd.CopyMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
+import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTableCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
@@ -16,10 +17,12 @@ import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.dto.PublishPreviewDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
+import com.bone.metadata.catalog.application.support.PhysicalTypeMapper;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
+import com.bone.metadata.catalog.common.ImportMetaEntityResult;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
@@ -30,6 +33,8 @@ import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityPublishedEvent;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableColumn;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableSnapshot;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
@@ -180,6 +185,102 @@ public class MetaEntityApplicationService {
     } catch (DomainException e) {
       throw new BizException(409, e.getMessage(), CatalogErrorCodes.META_DOMAIN_ERROR, e);
     }
+  }
+
+  // ===================== 逆向建模（UC-IMP：存量物理表 → 目录实体） =====================
+
+  /**
+   * 从存量物理表导入建模（业界元数据平台的 schema crawl / 逆向采集）。
+   *
+   * <p>真实场景价值：企业存量业务表（如本仓库 bone-blueprint 的 {@code t_order}）要先被元数据平台看见， 才能在其上做「元数据驱动的字段扩展」——
+   * 否则存量表只能靠人工逐字段重录，且极易与物理表漂移。
+   *
+   * <p>安全与一致性口径：
+   *
+   * <ul>
+   *   <li>表不存在直接拒绝（不建与物理库脱节的空模型）；
+   *   <li>平台保留列（id / tenant_id / version / deleted / 审计列）默认跳过，由平台托管，建模它们会让运行期读写冲突；
+   *   <li>字段类型与物理列同大类（经 {@link PhysicalTypeMapper}），保证导入后可被发布校验接受（零漂移）；
+   *   <li>产物为 DRAFT 实体——导入不等于发布，人工复核后再发布，避免误纳管。
+   * </ul>
+   *
+   * @return 导入结果（dryRun 时 entityId 为 null，仅回采集统计）
+   */
+  @Transactional
+  public ImportMetaEntityResult importEntityFromTable(ImportMetaEntityFromTableCommand cmd) {
+    long tenantId = tenantProvider.currentTenantId();
+    PhysicalTableSnapshot snapshot = physicalStructureGateway.readTableSnapshot(cmd.getTableName());
+    if (!snapshot.exists()) {
+      throw BizException.of("物理表不存在，无法导入: " + cmd.getTableName());
+    }
+    List<PhysicalTableColumn> columns = selectColumns(snapshot, cmd.getIncludeReserved());
+    List<String> skipped =
+        snapshot.columns().stream()
+            .filter(c -> !columns.contains(c))
+            .map(PhysicalTableColumn::columnName)
+            .toList();
+    String code = defaultIfBlank(cmd.getCode(), snapshot.tableName());
+    boolean dryRun = Boolean.TRUE.equals(cmd.getDryRun());
+    if (dryRun) {
+      return new ImportMetaEntityResult(
+          null, code, snapshot.tableName(), columns.size(), skipped, true);
+    }
+    assertEntityCodeUnique(tenantId, code);
+    assertEntityTableUnique(tenantId, snapshot.tableName());
+    // 存量表已物理存在且需被运行时数据面读写 → 默认 RUNTIME（模式 B）
+    int deliveryMode =
+        cmd.getDeliveryMode() != null
+            ? MetaDeliveryMode.fromCode(cmd.getDeliveryMode()).getCode()
+            : MetaDeliveryMode.RUNTIME.getCode();
+    MetaEntity entity =
+        MetaEntity.create(
+            null,
+            tenantId,
+            defaultIfBlank(cmd.getName(), code),
+            code,
+            defaultIfBlank(cmd.getDisplayName(), snapshot.tableName()),
+            cmd.getDescription(),
+            snapshot.tableName(),
+            0,
+            deliveryMode,
+            null,
+            null);
+    metaEntityRepository.insert(entity);
+    int sortOrder = 0;
+    for (PhysicalTableColumn column : columns) {
+      MetaField field =
+          MetaField.createFromPhysical(
+              null,
+              tenantId,
+              entity.getId(),
+              column.columnName(),
+              displayNameOf(column),
+              PhysicalTypeMapper.toMetaType(column),
+              PhysicalTypeMapper.toLength(column),
+              column.isDecimal() ? column.numericPrecision() : null,
+              !column.nullable(),
+              column.comment(),
+              sortOrder);
+      metaFieldRepository.insert(field);
+      sortOrder += 10;
+    }
+    return new ImportMetaEntityResult(
+        entity.getId(), code, snapshot.tableName(), columns.size(), skipped, false);
+  }
+
+  private static List<PhysicalTableColumn> selectColumns(
+      PhysicalTableSnapshot snapshot, Boolean includeReserved) {
+    return Boolean.TRUE.equals(includeReserved) ? snapshot.columns() : snapshot.modelableColumns();
+  }
+
+  /** 显示名：优先物理列注释（存量库注释即业务语义），无注释时回落列名。 */
+  private static String displayNameOf(PhysicalTableColumn column) {
+    String comment = column.comment();
+    return comment == null || comment.isBlank() ? column.columnName() : comment;
+  }
+
+  private static String defaultIfBlank(String value, String fallback) {
+    return value == null || value.isBlank() ? fallback : value;
   }
 
   // ===================== 实体批量写操作（部分成功语义） =====================

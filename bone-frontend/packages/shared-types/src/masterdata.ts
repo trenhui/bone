@@ -93,7 +93,8 @@ export interface MasterDataRecord {
   id: number;
   masterDataEntityId: number;
   data: Record<string, unknown>;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  /** 六态状态机（UC-T7）：DRAFT→PENDING_APPROVAL→APPROVED→PUBLISHED→ARCHIVED；驳回退回 DRAFT */
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED' | 'ARCHIVED';
   createdAt: string;
   updatedAt: string;
   publishTime?: string;

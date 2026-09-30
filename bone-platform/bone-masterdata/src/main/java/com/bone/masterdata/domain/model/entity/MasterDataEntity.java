@@ -72,9 +72,21 @@ public class MasterDataEntity extends TenantAggregateRoot<Long> {
 
   public static MasterDataEntity create(
       Long id, Long metaEntityId, MasterDataEntityName name, String description, String category) {
+    return create(id, metaEntityId, null, name, description, category);
+  }
+
+  /** 带实体编码的创建（编码是下游消费主数据的业务键，租户内唯一）。 */
+  public static MasterDataEntity create(
+      Long id,
+      Long metaEntityId,
+      String entityCode,
+      MasterDataEntityName name,
+      String description,
+      String category) {
     MasterDataEntity entity = new MasterDataEntity();
     entity.id = id;
     entity.metaEntityId = metaEntityId;
+    entity.entityCode = entityCode;
     entity.entityName = name;
     entity.description = description;
     entity.category = category;
@@ -151,6 +163,21 @@ public class MasterDataEntity extends TenantAggregateRoot<Long> {
     this.entityName = name;
     this.description = description;
     this.category = category;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * 首次登记实体编码（下游消费主数据的业务键，如 blueprint 按编码定位商品实体）。
+   *
+   * <p>允许对已发布实体补登记（编码是标识而非业务内容）；但已登记的编码不允许改—— 改码等于斩断所有按码寻址的下游消费方。
+   */
+  public void assignEntityCode(String entityCode) {
+    if (this.entityCode != null
+        && !this.entityCode.isBlank()
+        && !this.entityCode.equals(entityCode)) {
+      throw new DomainException("实体编码已登记，不允许修改: " + this.entityCode);
+    }
+    this.entityCode = entityCode;
     this.updatedAt = LocalDateTime.now();
   }
 

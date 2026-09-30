@@ -712,8 +712,32 @@ export async function listExecutionLogs(params?: {
   return { ...page, rows: records };
 }
 
-export async function simulatePlugin(pluginId: number): Promise<ExecutionLogRow> {
-  const res = await client.post<StudioApiResponse<ExecutionLogRow>>(
+/**
+ * 插件路由探测结果（simulate 的真实语义）：控制面不持有业务实现类，
+ * 探测返回的是元数据校验结论 + 运行时存储中当前生效的路由决策。
+ */
+export type SimulateResult = {
+  pluginId: number;
+  pluginName?: string;
+  className?: string;
+  valid: boolean;
+  validationErrors?: string[];
+  publishedToRuntime: boolean;
+  extensionPoint?: string;
+  code?: string;
+  tenant?: string;
+  bizCode?: string;
+  useCase?: string;
+  scenario?: string;
+  priority?: number;
+  weight?: number;
+  traffic?: number;
+  enabled: boolean;
+  message?: string;
+};
+
+export async function simulatePlugin(pluginId: number): Promise<SimulateResult> {
+  const res = await client.post<StudioApiResponse<SimulateResult>>(
     `${EXTENSION_BASE}/plugins/${pluginId}:simulate`,
   );
   return assertSuccess(res);
@@ -746,12 +770,16 @@ export type DependencyNode = {
   extPointId?: number;
   enabled: boolean;
   deploymentStatus?: string | null;
+  /** PLUGIN=插件实现；EXT_POINT=扩展点契约节点（id 取负值） */
+  type?: 'PLUGIN' | 'EXT_POINT';
 };
 
 export type DependencyEdge = {
   fromId: number;
   toName: string;
   resolved: boolean;
+  /** BINDING=插件→扩展点真实绑定；DEPENDENCY=声明依赖（config_json.dependencies） */
+  type?: 'BINDING' | 'DEPENDENCY';
 };
 
 export type DependencyGraphView = {

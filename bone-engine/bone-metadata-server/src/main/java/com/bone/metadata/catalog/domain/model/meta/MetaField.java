@@ -65,6 +65,10 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "version", nullable = false)
   private Integer version;
 
+  /** 预留列物理列名：机制 B 逻辑字段映射到的 ext_* 物理列；核心列(A)/领域列留空（null 时运行期回退 code） */
+  @Column(name = "physical_column")
+  private String physicalColumn;
+
   public static MetaField create(
       Long id,
       Long tenantId,
@@ -128,6 +132,50 @@ public class MetaField extends AbstractEntity<Long> {
     f.setUpdatedAt(now);
     f.setDeleted(false);
     return f;
+  }
+
+  /**
+   * 逆向建模工厂：由物理列快照直接构造（UC-IMP）。
+   *
+   * <p>与 {@link #create} 的差异：① 必填取自物理列的 {@code NOT NULL}（存量表约束即事实，不靠人工判断）； ② 保留物理精度 {@code
+   * precision}；③ 不做唯一性建模——存量表的唯一约束无法从 information_schema 完整推导（可能是联合唯一）， 误标 unique 会让运行期插入被拒，故一律
+   * false，交由人工复核后显式开启。
+   */
+  public static MetaField createFromPhysical(
+      Long id,
+      Long tenantId,
+      Long entityId,
+      String code,
+      String displayName,
+      String fieldType,
+      Integer length,
+      Integer precision,
+      boolean required,
+      String comment,
+      int sortOrder) {
+    MetaField f =
+        create(
+            id,
+            tenantId,
+            entityId,
+            code,
+            code,
+            displayName,
+            fieldType,
+            length,
+            required,
+            false,
+            null,
+            comment,
+            sortOrder,
+            null);
+    f.precision = precision;
+    return f;
+  }
+
+  /** 发布机制 B 字段时由 SDK 分配后回写预留列物理列名（ext_*）。 */
+  public void setPhysicalColumn(String physicalColumn) {
+    this.physicalColumn = physicalColumn;
   }
 
   public void update(

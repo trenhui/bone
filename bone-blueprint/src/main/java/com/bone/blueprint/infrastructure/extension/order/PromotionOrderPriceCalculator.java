@@ -16,4 +16,10 @@ public class PromotionOrderPriceCalculator extends AbstractRateOrderPriceCalcula
   protected BigDecimal discountRate() {
     return new BigDecimal("0.8");
   }
+
+  /** 定价规则中心场景编码（与 @Extension scenario 一致）。 */
+  @Override
+  protected String extensionScenario() {
+    return "promotion";
+  }
 }

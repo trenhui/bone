@@ -14,6 +14,8 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +33,25 @@ public class Order extends TenantAggregateRoot<Long> {
   private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
 
   private Long customerId;
+
+  /**
+   * 业务订单号（对外展示 / 客服检索键，与物理 {@code id} 分离——业界订单系统的通行做法： 内部用雪花 ID 做关联键，对外用可读单号，避免单号暴露数据量与分片信息）。
+   *
+   * <p>由聚合在构造期按 {@code SO + yyyyMMdd + id} 生成：id 已全局唯一，故单号天然唯一且不依赖外部序列器， 便于单测与对账（同一订单任何时刻推导出的单号一致）。
+   */
+  private String orderNo;
+
+  /** 订单来源渠道（APP / H5 / 小程序 / POS）——运营分析第一维度。 */
+  private String channelSource;
+
+  /** 运费（金额三口径：总额 = 明细小计之和 + 运费 − 优惠）。 */
+  private BigDecimal freightAmount;
+
+  /** 优惠总额（营销核算；不含运费抵扣）。 */
+  private BigDecimal discountAmount;
+
+  /** 支付完成时刻（订单生命周期时间轴刻度，与 CREATED/PAID 状态迁移同点写入）。 */
+  private Instant paidTime;
 
   /**
    * 聚合内部集合：{@code @Transient} 避免映射为 t_order 列；{@code @Cascade} 由 SDK 在根 save/insert/update
@@ -62,14 +83,43 @@ public class Order extends TenantAggregateRoot<Long> {
     return totalAmount == null ? Money.zero() : Money.of(totalAmount);
   }
 
+  /**
+   * 创建订单（缺省渠道与金额附加项）。
+   *
+   * @see #create(long, Long, Long, List, String, BigDecimal, BigDecimal)
+   */
   public static Order create(long id, Long tenantId, Long customerId, List<OrderItem> items) {
+    return create(id, tenantId, customerId, items, null, null, null);
+  }
+
+  /**
+   * 创建订单（完整真实场景入参）。
+   *
+   * @param channelSource 来源渠道，可空（未知渠道）
+   * @param freightAmount 运费，可空视为 0
+   * @param discountAmount 优惠总额，可空视为 0
+   */
+  public static Order create(
+      long id,
+      Long tenantId,
+      Long customerId,
+      List<OrderItem> items,
+      String channelSource,
+      BigDecimal freightAmount,
+      BigDecimal discountAmount) {
     if (items == null || items.isEmpty()) {
       throw new DomainException("订单至少需要一个商品项");
     }
+    Money freight = freightAmount == null ? Money.zero() : Money.of(freightAmount);
+    Money discount = discountAmount == null ? Money.zero() : Money.of(discountAmount);
     Order order = new Order();
     order.setId(id);
     order.setTenantId(tenantId);
     order.customerId = customerId;
+    order.orderNo = generateOrderNo(id);
+    order.channelSource = channelSource;
+    order.freightAmount = freight.toBigDecimal();
+    order.discountAmount = discount.toBigDecimal();
     order.items = new ArrayList<>(items);
     order.recalculateTotal();
     order.assertValidTotal();
@@ -121,12 +171,31 @@ public class Order extends TenantAggregateRoot<Long> {
     this.updatedAt = Instant.now();
   }
 
+  /**
+   * 重算总额（金额三口径）：{@code 明细小计之和 + 运费 − 优惠}，下限为 0。
+   *
+   * <p>下限保护的原因：优惠可能来自营销券，金额由外部系统决定，若券额大于商品额仍应得到 0 元订单（真实业务的 「0 元单」），而不是负金额——{@link Money}
+   * 构造器会拒绝负数，直接相减会在这种场景抛「金额不能为负」的领域异常，掩盖真实原因。
+   */
   private void recalculateTotal() {
     Money sum = Money.zero();
     for (OrderItem item : items) {
       sum = sum.add(item.getSubtotalMoney());
     }
-    this.totalAmount = sum.toBigDecimal();
+    Money freight = freightAmount == null ? Money.zero() : Money.of(freightAmount);
+    Money discount = discountAmount == null ? Money.zero() : Money.of(discountAmount);
+    Money payable = sum.add(freight);
+    // 优惠大于应付时得到 0 元订单（真实业务的「0 元单」）——Money 构造拒绝负数，直接相减会抛
+    // 「金额不能为负」，把业务场景包装成领域异常，掩盖真实原因。
+    this.totalAmount =
+        discount.greaterThan(payable)
+            ? Money.zero().toBigDecimal()
+            : payable.subtract(discount).toBigDecimal();
+  }
+
+  /** 业务单号生成策略：{@code SO + yyyyMMdd + 雪花 ID}。由 id 派生，全局唯一且可重复推导（对账友好）。 */
+  private static String generateOrderNo(long id) {
+    return "SO" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + id;
   }
 
   /** 订单金额上限不变量：任何导致金额变更的路径都必须经过本校验，避免被绕过。 */
@@ -193,6 +262,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("只有新建状态的订单可以确认支付");
     }
     this.status = OrderStatus.PAID;
+    // 支付完成时刻与状态迁移同点写入：时间轴刻度由状态机唯一维护，避免下游各写一份造成对账分歧
+    this.paidTime = Instant.now();
     this.updatedAt = Instant.now();
     addDomainEvent(
         new OrderPaidEvent(getId(), getTenantId(), customerId, totalAmount, Instant.now()));

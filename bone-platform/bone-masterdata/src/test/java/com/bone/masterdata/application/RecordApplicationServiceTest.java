@@ -14,7 +14,13 @@ import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
+import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
+import com.bone.masterdata.domain.repository.MasterDataRecordVersionRepository;
+import com.bone.masterdata.domain.repository.ReferenceSetRepository;
+import com.bone.masterdata.domain.repository.ReferenceValueRepository;
+import com.bone.masterdata.domain.repository.TenantReferenceValueRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,9 +34,15 @@ class RecordApplicationServiceTest {
 
   @Mock private MasterDataRecordRepository recordRepository;
   @Mock private MasterDataEntityRepository entityRepository;
+  @Mock private MasterDataFieldRepository fieldRepository;
+  @Mock private MasterDataRecordVersionRepository versionRepository;
   @Mock private MasterDataExcelImportPort excelImportPort;
   @Mock private MasterdataDomainEventPublisher domainEventPublisher;
   @Mock private MasterDataProperties properties;
+  @Mock private ReferenceSetRepository referenceSetRepository;
+  @Mock private ReferenceValueRepository referenceValueRepository;
+  @Mock private TenantReferenceValueRepository tenantReferenceValueRepository;
+  @Mock private ObjectMapper objectMapper;
 
   @InjectMocks private RecordApplicationService service;
 
@@ -51,6 +63,7 @@ class RecordApplicationServiceTest {
   /** 导入直接用端口解析出的聚合落库，不再二次构造（曾重复生成 ID 并丢掉解析结果）。 */
   @Test
   void importRecordsPersistsParsedRecords() {
+    when(properties.getRecordMaxSize()).thenReturn(1024);
     MasterDataRecord parsed = MasterDataRecord.create(33L, 1L, "{\"name\":\"x\"}");
     when(excelImportPort.parseRecords(any(), any(), any())).thenReturn(List.of(parsed));
     when(recordRepository.save(parsed)).thenReturn(33L);

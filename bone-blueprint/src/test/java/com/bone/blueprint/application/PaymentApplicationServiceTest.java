@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.RefundPaymentCommand;
+import com.bone.blueprint.application.port.out.OrderOutboxPort;
 import com.bone.blueprint.application.port.out.TenantPort;
 import com.bone.blueprint.domain.model.payment.Payment;
 import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
@@ -33,6 +34,7 @@ class PaymentApplicationServiceTest {
   @Mock private PaymentRepository paymentRepository;
   @Mock private TenantPort tenantProvider;
   @Mock private DomainEventPublisher domainEventPublisher;
+  @Mock private OrderOutboxPort orderOutboxWriter;
 
   @InjectMocks private PaymentApplicationService service;
 

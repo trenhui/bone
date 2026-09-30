@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.23。本批次把 E-4.4 的参考实现描述移入 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)（属展开说明，不是判据），规范只留通道规则与硬约束表。变更明细见 [CHANGELOG.md](../../CHANGELOG.md) 与 Git 历史。
+> **版本**：5.5.23。本批次把 E-4.4 的参考实现描述移入 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)（属展开说明，不是判据），规范只留通道规则与硬约束表。变更明细见历史归档 [CHANGELOG-legacy.md](../archive/CHANGELOG-legacy.md) 与 Git 历史。
 
 ## 文档说明
 
@@ -45,7 +45,7 @@
 | `#e-37-入口构件决策` | E-3.7 入口构件决策 | 本文内部 13 处 |
 | `#hc-hard-constraints` | G-1.7 HC 硬约束与实测状态 | `AGENTS.md` §12.1（2026-09-17 已收敛为薄引用）、`doc/agents/06-AI协作与编码准则.md` §12.1、本文 G-1.1 / G-1.4 |
 
-**索引**：[通用语言 glossary.md](../glossary.md) ｜ [ADR 目录](./adr/) ｜ [变更记录 CHANGELOG.md](../../CHANGELOG.md) ｜ [API 规范 Bone-API-规范.md](./Bone-API-规范.md)
+**索引**：[通用语言 glossary.md](../glossary.md) ｜ [ADR 目录](./adr/) ｜ [变更记录 CHANGELOG-legacy.md](../archive/CHANGELOG-legacy.md) ｜ [API 规范 Bone-API-规范.md](./Bone-API-规范.md)
 
 ---
 
@@ -2240,7 +2240,7 @@ Freeze 用于阻止存量违规继续增加，不把违规永久合法化：
 - 规范语义变更必须有 ADR。
 - 边界变化先更新 Context Map 与 glossary。
 - 机器规则变化先补 fixture，再更新实现状态。
-- 版本变化记录见 Git 历史与 [CHANGELOG.md](../../CHANGELOG.md)。
+- 版本变化记录见 Git 历史与历史归档 [CHANGELOG-legacy.md](../archive/CHANGELOG-legacy.md)。
 
 ---
 

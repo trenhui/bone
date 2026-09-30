@@ -34,6 +34,27 @@ bone:
   # 注意：此处不再有 bone.metadata.enabled / scan-packages——全仓无任何 @ConfigurationProperties 以
   # bone.metadata 为前缀（SDK 的真前缀是 metadata.sdk.* 与 bone.metadata.datasource.*），写了也不会被绑定，
   # 属"写了却不生效"的死配置。SDK 相关配置请写 metadata.sdk.*。
+  # Redis：与 extension-studio / iam 共用本地实例，承载控制面路由元数据同步
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  # === 扩展引擎数据面：控制面同步 + 执行日志上报（真实联调链路）===
+  extension:
+    sync:
+      # 订阅 bone:ext:metadata:refresh 刷新通道，叠加 studio 发布的路由元数据
+      enabled: true
+    studio:
+      report:
+        # 每次扩展点调用后异步上报执行日志到 studio（前端「运行日志」可见真实执行）
+        enabled: true
+        base-url: ${BONE_EXTENSION_STUDIO_BASE_URL:http://localhost:8088}
+  # === 定价规则中心（bone-metadata-server 模式 B 动态记录）===
+  pricing-rule:
+    enabled: true
+    base-url: ${BONE_GATEWAY_BASE_URL:http://localhost:8888}
+    entity-code: PRICING_RULE
+    cache-ttl-seconds: 30
   blueprint:
     payment:
       callback:

@@ -1,7 +1,7 @@
 # PR：为 0010 / 0011 回填脚本补充回滚阶段（异常一键还原）
 
 > **一键开 PR（base=`dev`，已预填）**：https://github.com/trenhui/bone/compare/dev...pr/0010-0011-rollback?expand=1
-> **或 CLI**：`gh auth login && gh pr create --base dev --head pr/0010-0011-rollback --title "docs(migration): 为 0010/0011 回填脚本补充回滚阶段（异常一键还原）" --body-file PR_0010_0011_rollback.md`
+> **或 CLI**：`gh auth login && gh pr create --base dev --head pr/0010-0011-rollback --title "docs(migration): 为 0010/0011 回填脚本补充回滚阶段（异常一键还原）" --body-file doc/deployment/PR_0010_0011_rollback.md`
 
 > 分支：`pr/0010-0011-rollback`（已推 origin，基于 `dev`，相对 `dev` 仅 2 个 SQL 文件 +19 行）
 > 提交：`cd554bca7`
@@ -79,7 +79,7 @@
 gh auth login   # 仅需一次，浏览器授权
 gh pr create --base dev --head pr/0010-0011-rollback \
   --title "docs(migration): 为 0010/0011 回填脚本补充回滚阶段（异常一键还原）" \
-  --body-file PR_0010_0011_rollback.md
+  --body-file doc/deployment/PR_0010_0011_rollback.md
 ```
 
 ### 方式 B：GitHub 网页端

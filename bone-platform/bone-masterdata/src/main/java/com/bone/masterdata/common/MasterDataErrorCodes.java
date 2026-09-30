@@ -39,6 +39,9 @@ public final class MasterDataErrorCodes {
   // 记录数据解析（500）
   public static final String RECORD_DATA_PARSE_FAILED = "MD_RECORD_DATA_PARSE_FAILED";
 
+  /** 记录写入时未通过字段定义校验（必填/类型/长度/值域），400。 */
+  public static final String RECORD_FIELD_VALIDATION_FAILED = "MD_RECORD_FIELD_VALIDATION_FAILED";
+
   // 数据标准（404）
   public static final String DATA_STANDARD_NOT_FOUND = "MD_DATA_STANDARD_NOT_FOUND";
 

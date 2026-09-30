@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
+  Descriptions,
   Drawer,
   Dropdown,
   Form,
@@ -55,6 +56,7 @@ import {
   type ExtPointRow,
   downloadPluginVersion,
   type PluginVersionRow,
+  type SimulateResult,
 } from '@/services/extensionApi';
 import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
 
@@ -81,6 +83,7 @@ const PluginManagement: React.FC = () => {
   );
   const [undeployingId, setUndeployingId] = useState<number | null>(null);
   const [bindTarget, setBindTarget] = useState<ExtensionRow | null>(null);
+  const [probeResult, setSelectedProbe] = useState<SimulateResult | null>(null);
   const [bindForm] = Form.useForm<{ extPointId: number }>();
   const [bindSubmitting, setBindSubmitting] = useState(false);
   const [form] = Form.useForm<ExtensionPayload>();
@@ -300,10 +303,10 @@ const PluginManagement: React.FC = () => {
 
   const handleSimulate = async (id: number) => {
     try {
-      const log = await simulatePlugin(id);
-      message.success(`模拟调用成功，耗时 ${log.durationMs ?? '-'} ms`);
+      const result = await simulatePlugin(id);
+      setSelectedProbe(result);
     } catch (e) {
-      message.error(formatStudioError(e, '模拟调用失败'));
+      message.error(formatStudioError(e, '路由探测失败'));
     }
   };
 
@@ -403,7 +406,7 @@ const PluginManagement: React.FC = () => {
       items.push({
         key: 'simulate',
         icon: <ReloadOutlined />,
-        label: '模拟调用',
+        label: '路由探测',
         onClick: () => handleSimulate(record.id),
       });
     }
@@ -802,6 +805,60 @@ const PluginManagement: React.FC = () => {
               提示：绑定后插件仍处于「未部署」状态，需在表格中执行「部署」才能进入路由。
             </p>
           </Form>
+        ) : null}
+      </Modal>
+
+      <Modal
+        title={probeResult ? `路由探测 — ${probeResult.pluginName}` : '路由探测'}
+        open={!!probeResult}
+        footer={null}
+        onCancel={() => setSelectedProbe(null)}
+        width={640}
+      >
+        {probeResult ? (
+          <div>
+            <p style={{ marginBottom: 12 }}>
+              {probeResult.valid ? (
+                <Tag color="success">元数据校验通过</Tag>
+              ) : (
+                <Tag color="error">校验失败</Tag>
+              )}
+              {probeResult.publishedToRuntime ? (
+                <Tag color="processing">路由已发布</Tag>
+              ) : (
+                <Tag color="warning">路由未发布</Tag>
+              )}
+            </p>
+            {probeResult.validationErrors?.length ? (
+              <ul style={{ color: '#cf1322', fontSize: 12, marginBottom: 12 }}>
+                {probeResult.validationErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            ) : null}
+            <Descriptions size="small" column={2} bordered>
+              <Descriptions.Item label="扩展点" span={2}>
+                <code style={{ fontSize: 12 }}>{probeResult.extensionPoint ?? '-'}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="实现类" span={2}>
+                <code style={{ fontSize: 12 }}>{probeResult.className ?? '-'}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="路由编码">{probeResult.code ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label="启停">
+                {probeResult.enabled ? '已启用' : '已停用'}
+              </Descriptions.Item>
+              <Descriptions.Item label="租户维度">{probeResult.tenant || '全租户'}</Descriptions.Item>
+              <Descriptions.Item label="场景维度">{probeResult.scenario || '-'}</Descriptions.Item>
+              <Descriptions.Item label="优先级">{probeResult.priority ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label="灰度流量">
+                {probeResult.traffic != null ? `${probeResult.traffic}%` : '-'}
+              </Descriptions.Item>
+            </Descriptions>
+            <p style={{ color: 'rgba(0,0,0,0.55)', fontSize: 12, marginTop: 12 }}>
+              {probeResult.message}
+              。探测动作已留痕到运行日志（PROBE），与业务进程上报的真实执行（INVOKE）区分。
+            </p>
+          </div>
         ) : null}
       </Modal>
     </>

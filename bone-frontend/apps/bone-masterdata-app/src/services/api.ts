@@ -69,8 +69,10 @@ export const masterDataEntityApi = {
   publish: (id: number): Promise<ApiResponse<void>> => {
     return apiClient.post(`${MD}/entities/${id}/publish`);
   },
+  /** 停用实体：后端 DisableMasterDataEntityCommand 默认 disabled=true，须带 JSON body（空对象即可），
+   *  否则 Spring @RequestBody(required=false) 缺 Content-Type 会 400。 */
   disable: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`${MD}/entities/${id}/disable`);
+    return apiClient.post(`${MD}/entities/${id}/disable`, {});
   },
 };
 

@@ -81,9 +81,21 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
   // ==================== 仓库自动装配 ====================
 
-  @Bean
-  @ConditionalOnMissingBean(ExtensionRepository.class)
-  public ExtensionRepository extensionRepository(ExtensionRepositoryFactory factory) {
+  /**
+   * 本地扩展仓储（Bean 名固定为 {@code localExtensionRepository}）。
+   *
+   * <p><b>为何名字必须是 localExtensionRepository</b>：开启 {@code bone.extension.sync.enabled=true} 后，
+   * {@link ExtensionSyncConfiguration#syncingExtensionRepository} 以
+   * {@code @Qualifier("localExtensionRepository")} 取本地仓储并包装为 MetadataOverlay（primary）——此前本方法 Bean
+   * 名为 {@code extensionRepository} 且条件是
+   * {@code @ConditionalOnMissingBean(ExtensionRepository.class)}，与 Sync 先注册的 syncing bean 冲突， 导致
+   * sync 开启即「No qualifying bean of type ExtensionRepository」启动失败（SDK 缺陷，本次修复）。
+   *
+   * <p>条件按 Bean 名判断：宿主自定义 {@code localExtensionRepository} 时本方法让路；syncing 包装 bean 名字不同，不再误触发缺省判定。
+   */
+  @Bean(name = "localExtensionRepository")
+  @ConditionalOnMissingBean(name = "localExtensionRepository")
+  public ExtensionRepository localExtensionRepository(ExtensionRepositoryFactory factory) {
     try {
       Class<?> repoClass = attrs.getClass("extensionRepository");
       if (repoClass != null) {

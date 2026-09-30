@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.engine.extension.studio.application.query.dto.SimulateResult;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
 import com.bone.engine.extension.studio.application.support.StudioAuditSupport;
 import com.bone.engine.extension.studio.application.support.StudioCommandResponses;
@@ -8,7 +9,6 @@ import com.bone.engine.extension.studio.application.support.StudioIdempotencySup
 import com.bone.engine.extension.studio.application.support.StudioIdempotentExecutor;
 import com.bone.engine.extension.studio.application.support.StudioLroSupport;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
-import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.plugin.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;
@@ -295,10 +295,10 @@ public class ExtensionStudioApplicationService {
     return ResponseEntity.ok(ApiResponse.success("解除绑定成功", extension));
   }
 
-  public ResponseEntity<ApiResponse<PluginExecutionLog>> simulatePlugin(Long id) {
+  public ResponseEntity<ApiResponse<SimulateResult>> simulatePlugin(Long id) {
     try {
       return ResponseEntity.ok(
-          ApiResponse.success("模拟调用成功", extensionCommandHandler.simulatePluginExecution(id)));
+          ApiResponse.success("路由探测完成", extensionCommandHandler.probePluginRouting(id)));
     } catch (IllegalArgumentException | IllegalStateException ex) {
       return StudioCommandResponses.badRequest(ex.getMessage());
     }

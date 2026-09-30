@@ -30,6 +30,9 @@ public final class BlueprintErrorCodes {
   /** 下单商品库存不足（同步预校验失败）。 */
   public static final String ORDER_STOCK_INSUFFICIENT = "BP_ORDER_STOCK_INSUFFICIENT";
 
+  /** 下单商品不是已发布的商品主数据记录（主数据治理前置校验失败）。 */
+  public static final String ORDER_PRODUCT_NOT_PUBLISHED = "BP_ORDER_PRODUCT_NOT_PUBLISHED";
+
   // ===== 支付（BP_PAYMENT_*）=====
 
   /** 支付单不存在（含跨租户不可见）。 */

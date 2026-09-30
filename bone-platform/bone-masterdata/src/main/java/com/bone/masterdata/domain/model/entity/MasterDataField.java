@@ -7,6 +7,11 @@ import com.bone.core.tenant.TenantAbstractEntity;
 import com.bone.masterdata.domain.model.field.valueobject.FieldCode;
 import com.bone.masterdata.domain.model.field.valueobject.FieldName;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +59,68 @@ public class MasterDataField extends TenantAbstractEntity<Long> {
     field.setCreatedAt(new java.util.Date());
     field.setUpdatedAt(new java.util.Date());
     return field;
+  }
+
+  /**
+   * 校验单个字段值是否满足本字段定义。
+   *
+   * <p>真实场景：字段定义（必填 / 类型 / 长度）必须在记录写入时生效，否则建模只是展示用的 "死定义"，主数据治理无从谈起。校验规则内聚在字段自身，保证领域行为归属正确。
+   *
+   * @param value 字段值（取自记录 data JSON，已按 field code 取值）
+   * @return 违规描述；{@code null} 表示通过
+   */
+  public String validateValue(Object value) {
+    String label = code != null ? code.value() : (name != null ? name.value() : "?");
+    String text = value == null ? null : String.valueOf(value);
+    boolean blank = text == null || text.isBlank();
+    if (Boolean.TRUE.equals(required) && blank) {
+      return "字段[" + label + "]为必填项";
+    }
+    if (blank) {
+      return null;
+    }
+    String trimmed = text.trim();
+    String typeName = type == null ? "STRING" : type.trim().toUpperCase(Locale.ROOT);
+    switch (typeName) {
+      case "NUMBER" -> {
+        try {
+          new BigDecimal(trimmed);
+        } catch (NumberFormatException e) {
+          return "字段[" + label + "]不是合法数值：" + trimmed;
+        }
+      }
+      case "BOOLEAN" -> {
+        if (!"true".equalsIgnoreCase(trimmed) && !"false".equalsIgnoreCase(trimmed)) {
+          return "字段[" + label + "]不是合法布尔值（true/false）：" + trimmed;
+        }
+      }
+      case "DATE" -> {
+        if (!isParseableDateTime(trimmed)) {
+          return "字段[" + label + "]不是合法日期：" + trimmed;
+        }
+      }
+      default -> {
+        // STRING / TEXT 及未知类型：不做类型强校验，仅受长度约束
+      }
+    }
+    if (length != null && length > 0 && text.length() > length) {
+      return "字段[" + label + "]长度 " + text.length() + " 超过上限 " + length;
+    }
+    return null;
+  }
+
+  private static boolean isParseableDateTime(String text) {
+    try {
+      LocalDate.parse(text);
+      return true;
+    } catch (DateTimeParseException e) {
+      try {
+        LocalDateTime.parse(text);
+        return true;
+      } catch (DateTimeParseException inner) {
+        return false;
+      }
+    }
   }
 
   public void update(

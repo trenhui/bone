@@ -203,8 +203,8 @@ const DependencyGraph: React.FC = () => {
         style={{ marginBottom: 12 }}
         message={
           <span>
-            依赖来源：插件 <code>config_json.dependencies</code> 字段（按 <code>name</code> 匹配）。
-            未解析的依赖以虚线表示，可能是同步顺序问题或外部依赖。
+            青色实线 = 插件与扩展点的<strong>真实绑定关系</strong>；蓝色实线 ={' '}
+            <code>config_json.dependencies</code> 声明依赖（已解析）；橙色虚线 = 未解析依赖（外部名称或同步顺序问题）。
           </span>
         }
       />
@@ -240,20 +240,35 @@ const DependencyGraph: React.FC = () => {
               >
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#faad14" />
               </marker>
+              <marker
+                id="arrow-binding"
+                viewBox="0 0 10 10"
+                refX="10"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#13c2c2" />
+              </marker>
             </defs>
-            {layout?.edges.map((e, idx) => (
-              <line
-                key={idx}
-                x1={e.fromX}
-                y1={e.fromY}
-                x2={e.toX - 6}
-                y2={e.toY}
-                stroke={e.resolved ? '#1677ff' : '#faad14'}
-                strokeWidth={1.5}
-                strokeDasharray={e.resolved ? undefined : '4 4'}
-                markerEnd={e.resolved ? 'url(#arrow-resolved)' : 'url(#arrow-orphan)'}
-              />
-            ))}
+            {layout?.edges.map((e, idx) => {
+              const isBinding = e.type === 'BINDING';
+              const stroke = isBinding ? '#13c2c2' : e.resolved ? '#1677ff' : '#faad14';
+              return (
+                <line
+                  key={idx}
+                  x1={e.fromX}
+                  y1={e.fromY}
+                  x2={e.toX - 6}
+                  y2={e.toY}
+                  stroke={stroke}
+                  strokeWidth={isBinding ? 2 : 1.5}
+                  strokeDasharray={!isBinding && !e.resolved ? '4 4' : undefined}
+                  markerEnd={isBinding ? 'url(#arrow-binding)' : e.resolved ? 'url(#arrow-resolved)' : 'url(#arrow-orphan)'}
+                />
+              );
+            })}
             {layout?.nodes.map((n) => (
               <g key={n.id} transform={`translate(${n.x},${n.y})`}>
                 <rect
@@ -261,8 +276,14 @@ const DependencyGraph: React.FC = () => {
                   height={NODE_HEIGHT}
                   rx={6}
                   ry={6}
-                  fill="#fff"
-                  stroke={n.enabled ? '#1677ff' : '#d9d9d9'}
+                  fill={n.type === 'EXT_POINT' ? '#f9f0ff' : '#fff'}
+                  stroke={
+                    n.type === 'EXT_POINT'
+                      ? '#722ed1'
+                      : n.enabled
+                        ? '#1677ff'
+                        : '#d9d9d9'
+                  }
                   strokeWidth={1.5}
                 />
                 <circle
@@ -272,7 +293,7 @@ const DependencyGraph: React.FC = () => {
                   fill={(n.deploymentStatus && STATUS_COLOR[n.deploymentStatus]) ?? '#bfbfbf'}
                 />
                 <text x={12} y={22} fontSize={13} fontWeight={600} fill="#1f1f1f">
-                  {n.name?.slice(0, 18) ?? `#${n.id}`}
+                  {n.type === 'EXT_POINT' ? `[扩展点] ${n.name?.slice(0, 11) ?? `#${n.id}`}` : n.name?.slice(0, 18) ?? `#${n.id}`}
                 </text>
                 <text x={12} y={42} fontSize={11} fill="#666">
                   {(n.className ?? '').split('.').slice(-1)[0]?.slice(0, 22) ?? ''}

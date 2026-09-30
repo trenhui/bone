@@ -17,6 +17,7 @@ import com.bone.blueprint.domain.gateway.PaymentGateway;
 import com.bone.blueprint.domain.model.order.Order;
 import com.bone.blueprint.domain.model.payment.Payment;
 import com.bone.blueprint.domain.model.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.model.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.model.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.model.shared.exception.OptimisticLockConflictException;
@@ -27,11 +28,15 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import jakarta.annotation.PostConstruct;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -66,6 +71,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 public class PaymentApplicationService {
 
+  /** 支付单有效期（业界通行 30 分钟）；超时由关单任务经 {@code Payment.close()} 关闭。 */
+  private static final Duration PAYMENT_TTL = Duration.ofMinutes(30);
+
   // ========== 写侧依赖 ==========
   private final PaymentRepository paymentRepository;
   private final DomainEventPublisher domainEventPublisher;
@@ -75,6 +83,17 @@ public class PaymentApplicationService {
   private final OrderRepository orderRepository;
   private final PaymentGateway paymentGateway;
   private final TransactionTemplate transactionTemplate;
+
+  /**
+   * 强制 REQUIRES_NEW：initiate 的两段式事务一旦被未来的 @Transactional 静默吞没，Tx1/Tx2 会偷偷加入外层事务、远程调用被包进 DB
+   * 事务里（HC-0031 远程禁止进事务）。
+   *
+   * <p>与 {@code OrderOutboxRelayPortAdapter} 同模式——编程式事务在启动期锁死行为。
+   */
+  @PostConstruct
+  void enforceRequiresNew() {
+    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+  }
 
   // processCallback 专用
   private final PaymentSignaturePort paymentSignaturePort;
@@ -121,8 +140,11 @@ public class PaymentApplicationService {
                           order.getId(),
                           order.getCustomerId(),
                           order.getTotalMoney().toBigDecimal(),
+                          command.currency(),
                           PaymentChannel.SIMULATED,
-                          null);
+                          null,
+                          // 支付有效期：业界通行 30 分钟（超时由关单任务经 close 关闭支付单）
+                          Instant.now().plus(PAYMENT_TTL));
                   paymentRepository.save(payment);
                   domainEventPublisher.publishFrom(payment);
                   return payment;
@@ -240,6 +262,11 @@ public class PaymentApplicationService {
       // SDK 原生乐观锁冲突（ADR-0031 D2）/ 唯一索引冲突：并发重复回调按幂等处理（资金不可重复入账）。
       // 原 saveWithVersionCheck 抛出的 OptimisticLockConflictException 现由 SDK 的
       // OptimisticLockingFailureException 替代，二者语义一致——均在此按幂等跳过，保持 catch 行为有效。
+      //
+      // payment.confirmSuccess() 已 addDomainEvent(PaymentSucceededEvent) 挂在聚合上；
+      // 这里 clearDomainEvents() 显式丢弃——因为另一个并发请求已经 publishFrom 过，
+      // 当前路径故意不发布，避免读代码者疑惑"为什么 DomainEvent 挂了却不走 publishFrom"。
+      payment.clearDomainEvents();
       log.warn(
           "支付回调并发已拦截，按幂等跳过: paymentId={}, channelTradeNo={}, reason={}",
           command.paymentId(),
@@ -253,7 +280,11 @@ public class PaymentApplicationService {
     domainEventPublisher.publishFrom(payment);
   }
 
-  /** 对已成功支付单发起退款。加载支付单 → 领域方法 {@code refund()}（幂等 + 金额校验）→ 保存发布事件。 */
+  /**
+   * 对已成功支付单发起退款。
+   *
+   * <p>与 {@link #processCallback} 同形态：{@code update → Outbox 同事务 → publishFrom}， 乐观锁冲突按幂等跳过。
+   */
   @Transactional
   public void refund(RefundPaymentCommand command) {
     Payment payment =
@@ -271,12 +302,26 @@ public class PaymentApplicationService {
       throw BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, ex.getMessage(), ex);
     }
 
+    // 事件须在 publishFrom 清空前取出（Outbox 落库与业务写同事务）
+    PaymentRefundedEvent refundedEvent =
+        DomainEvents.extract(payment.getDomainEvents(), PaymentRefundedEvent.class);
+
     try {
       paymentRepository.update(payment);
     } catch (OptimisticLockingFailureException ex) {
-      throw new OptimisticLockConflictException("Payment", payment.getId(), payment.getVersion());
+      // 并发退款：聚合已被另一请求处理（payment.refund() 自身幂等），按幂等跳过。
+      payment.clearDomainEvents();
+      log.warn(
+          "支付退款并发已拦截，按幂等跳过: paymentId={}, amount={}", command.paymentId(), command.refundAmount());
+      return;
+    }
+
+    // 与业务写同事务：退款事实先落库，Outbox 同事务保证投递可靠性（与 processCallback 对齐）
+    if (refunded && refundedEvent != null) {
+      orderOutboxWriter.appendPaymentRefunded(refundedEvent);
     }
     domainEventPublisher.publishFrom(payment);
+
     if (refunded) {
       log.info("支付退款完成: paymentId={}, amount={}", command.paymentId(), command.refundAmount());
     } else {

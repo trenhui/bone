@@ -7,6 +7,7 @@ import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCo
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CopyMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTableCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
@@ -15,6 +16,7 @@ import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
+import com.bone.metadata.catalog.common.ImportMetaEntityResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -140,6 +142,25 @@ public class MetaEntityCatalogController {
   public ApiResponse<Void> delete(@PathVariable Long id) {
     metaEntityApplicationService.deleteEntity(id);
     return ApiResponse.success();
+  }
+
+  /**
+   * 逆向建模（UC-IMP）：从存量物理表导入为 DRAFT 实体与字段。
+   *
+   * <p>业界真实场景：存量业务库先纳管、后扩展——没有这一步，「元数据驱动扩展字段」只能作用于平台自建的新表， 存量表仍要人工重录。
+   *
+   * <p>201 + Location 与 {@code create} 保持一致；{@code dryRun=true} 时 200 且 entityId 为 null（供导入向导预览）。
+   */
+  @PostMapping("/import-from-table")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
+  public ResponseEntity<ApiResponse<ImportMetaEntityResult>> importFromTable(
+      @Valid @RequestBody ImportMetaEntityFromTableCommand cmd) {
+    ImportMetaEntityResult result = metaEntityApplicationService.importEntityFromTable(cmd);
+    if (result.dryRun()) {
+      return ResponseEntity.ok(ApiResponse.success(result));
+    }
+    return ResponseEntity.created(URI.create("/api/v1/metadata/entities/" + result.entityId()))
+        .body(ApiResponse.success(result));
   }
 
   @PostMapping("/batch-publish")

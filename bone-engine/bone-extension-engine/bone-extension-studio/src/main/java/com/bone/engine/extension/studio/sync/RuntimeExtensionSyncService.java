@@ -90,6 +90,35 @@ public class RuntimeExtensionSyncService {
     return errors;
   }
 
+  /**
+   * 控制台路由探测：读取该插件当前已发布到运行时存储的路由元数据。
+   *
+   * <p>供 simulate 用——控制面不持有业务实现类，无法「模拟执行」；能做且有意义的是校验元数据并读取
+   * <strong>当前实际生效的路由决策</strong>（数据面下一次扩展点调用将按此路由）。未发布或扩展点缺失返回 {@code null}。
+   */
+  @Nullable
+  public ExtensionRoutingMetadata probe(@NonNull Extension extension) {
+    ExtPoint extPoint = resolveExtPoint(extension);
+    if (extPoint == null || !StringUtils.hasText(extPoint.getInterfaceName())) {
+      return null;
+    }
+    return metadataStore.get(extPoint.getInterfaceName(), resolveExtensionCode(extension));
+  }
+
+  /**
+   * 扩展点是否已被控制面接管（运行时存储中存在该扩展点的任意路由元数据）。
+   *
+   * <p>接管后该扩展点下所有插件的元数据变更（启用开关/灰度/条件）都应同步到运行时—— 这是配置中心「增量发布」语义：接管以扩展点为粒度，而非以单个插件为准
+   * （种子型插件没有版本记录，无法用部署状态判断）。
+   */
+  public boolean isExtensionPointManaged(@NonNull Extension extension) {
+    ExtPoint extPoint = resolveExtPoint(extension);
+    if (extPoint == null || !StringUtils.hasText(extPoint.getInterfaceName())) {
+      return false;
+    }
+    return !metadataStore.getByExtensionPoint(extPoint.getInterfaceName()).isEmpty();
+  }
+
   @NonNull
   public static String resolveExtensionCode(@NonNull Extension extension) {
     ExtensionRuntimeConfig runtimeConfig =

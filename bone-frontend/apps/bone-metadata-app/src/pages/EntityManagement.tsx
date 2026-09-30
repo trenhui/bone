@@ -13,6 +13,7 @@ import type { DataNode } from 'antd/es/tree';
 import { errorMessage, metadataEntityApi, metadataTemplateApi } from '../services/metadataApi';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import ImportModelModal from '../components/ImportModelModal';
+import ImportTableModal from '../components/ImportTableModal';
 import { exportEntityModel } from '../utils/modelTransfer';
 import { appApi, moduleApi, type BoneModule } from '../services/appModuleApi';
 import type {
@@ -90,6 +91,7 @@ const EntityManagement: React.FC = () => {
 
   // ----- 模型导入导出（F13） -----
   const [importOpen, setImportOpen] = useState(false);
+  const [tableImportOpen, setTableImportOpen] = useState(false);
   const handleExport = async (record: MetaEntity) => {
     try {
       await exportEntityModel(record);
@@ -594,6 +596,9 @@ const EntityManagement: React.FC = () => {
             <Space>
               <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
               {canWrite && (
+                <Button icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</Button>
+              )}
+              {canWrite && (
                 <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</Button>
               )}
               {canWrite && (
@@ -905,6 +910,17 @@ const EntityManagement: React.FC = () => {
         entityName={previewEntity?.displayName}
         onClose={() => setPreviewOpen(false)}
         onPublished={load}
+      />
+
+      {/* 逆向建模 Modal（UC-IMP：存量物理表 → 目录实体草稿） */}
+      <ImportTableModal
+        open={tableImportOpen}
+        onClose={() => setTableImportOpen(false)}
+        onImported={(entityId) => {
+          setTableImportOpen(false);
+          load();
+          navigate(`/entities/${entityId}`);
+        }}
       />
 
       {/* 模型导入 Modal（F13） */}

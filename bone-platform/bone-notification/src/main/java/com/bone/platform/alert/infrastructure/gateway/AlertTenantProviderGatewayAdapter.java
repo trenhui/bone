@@ -11,9 +11,12 @@ import org.springframework.stereotype.Component;
  * 一律经端口访问，这样租户读取可被单测 mock，也把「空值防护」收敛到唯一实现里。
  *
  * <p><b>不做默认值兜底</b>：缺失就是 {@code null}，由调用方决定放行还是拒绝——凭空造一个租户会让 「未认证访问」被静默翻译成「以某租户身份访问」。
+ *
+ * <p><b>类名带 {@code Alert} 前缀</b>：本模块是内嵌库，会与宿主服务（bone-system 等）的同名适配器 一起被组件扫描，默认 Bean
+ * 名会冲突（ConflictingBeanDefinitionException），故用前缀区分。
  */
-@Component
-public class TenantProviderGatewayAdapter implements TenantProvider {
+@Component("alertTenantProviderGatewayAdapter")
+public class AlertTenantProviderGatewayAdapter implements TenantProvider {
 
   @Override
   public Long currentTenantIdOrNull() {

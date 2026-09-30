@@ -1,5 +1,6 @@
 package com.bone.engine.extension.support.studio;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.support.config.ExtensionProperties;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,9 @@ public class StudioExecutionLogReporter {
     if (!StringUtils.hasText(className)) {
       return;
     }
+    // 执行日志按租户内聚存储，上报必须携带当前请求租户（ingest 端点据此落库）；
+    // 无租户上下文（如调度线程）时 studio 侧拒绝，避免日志误归租户。
+    String tenantId = TenantContext.getTenantId();
     CompletableFuture.runAsync(
         () -> {
           try {
@@ -70,6 +74,9 @@ public class StudioExecutionLogReporter {
             }
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            if (StringUtils.hasText(tenantId)) {
+              headers.set("X-Tenant-Id", tenantId);
+            }
             restTemplate.postForEntity(ingestUrl, new HttpEntity<>(body, headers), String.class);
           } catch (Exception ex) {
             log.debug("Failed to report execution log to studio: {}", ex.getMessage());

@@ -60,10 +60,21 @@ public class EntityApplicationService {
     if (existing > 0) {
       throw MasterDataErrors.of(MasterDataErrorCodes.ENTITY_NAME_DUPLICATE, "主数据实体名称已存在");
     }
+    String entityCode = cmd.getEntityCode();
+    if (entityCode != null
+        && !entityCode.isBlank()
+        && entityRepository.countByEntityCode(entityCode.trim()) > 0) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.ENTITY_CODE_DUPLICATE, "主数据实体编码已存在");
+    }
     Long entityId = DistributedIdGenerator.generateLongId();
     MasterDataEntity entity =
         MasterDataEntity.create(
-            entityId, null, entityName, cmd.getDescription(), cmd.getCategory());
+            entityId,
+            null,
+            entityCode == null || entityCode.isBlank() ? null : entityCode.trim(),
+            entityName,
+            cmd.getDescription(),
+            cmd.getCategory());
     Long savedId = entityRepository.save(entity);
     domainEventPublisher.publishFrom(entity);
     return savedId;
@@ -86,8 +97,14 @@ public class EntityApplicationService {
     if (entity == null) {
       throw NotFoundException.of("主数据实体不存在");
     }
-    MasterDataEntityName entityName = MasterDataEntityName.of(cmd.getName());
-    entity.update(entityName, cmd.getDescription(), cmd.getCategory());
+    // 编码登记允许对已发布实体执行（首次登记业务键）；其余内容修改仍受发布态门禁约束
+    if (cmd.getEntityCode() != null && !cmd.getEntityCode().isBlank()) {
+      entity.assignEntityCode(cmd.getEntityCode().trim());
+    }
+    if (entity.getStatus() != MasterDataEntityStatus.PUBLISHED) {
+      MasterDataEntityName entityName = MasterDataEntityName.of(cmd.getName());
+      entity.update(entityName, cmd.getDescription(), cmd.getCategory());
+    }
     entityRepository.update(entity);
     domainEventPublisher.publishFrom(entity);
   }
@@ -229,7 +246,8 @@ public class EntityApplicationService {
     int page = Math.max(1, qry.getPageNum());
     int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataEntity> result =
-        entityRepository.pageByCategoryAndStatus(qry.getCategory(), status, page, size);
+        entityRepository.pageByCategoryStatusAndKeyword(
+            qry.getCategory(), status, qry.getKeyword(), page, size);
     Map<Long, Long> fieldCounts =
         fieldRepository
             .findByMasterDataEntityIds(

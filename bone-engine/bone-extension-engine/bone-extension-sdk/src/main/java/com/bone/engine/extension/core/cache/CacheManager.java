@@ -120,6 +120,18 @@ public class CacheManager {
   }
 
   /**
+   * 按键前缀清除缓存（用于扩展点元数据刷新后的路由缓存失效）。
+   *
+   * <p>本地缓存按前缀精确失效；分布式缓存暂不支持前缀扫描，整体清空——该操作仅在控制面 元数据变更（低频）时触发，缓存可自动重建，对正确性无损。
+   */
+  public void clearByPrefix(String prefix) {
+    localCache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
+    if (distributedEnabled && distributedCache != null) {
+      distributedCache.clear();
+    }
+  }
+
+  /**
    * 获取本地缓存
    *
    * @return 本地缓存

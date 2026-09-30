@@ -52,6 +52,10 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
   private boolean defaultImpl = false;
   private int weight = 100;
   private int priority = 100;
+
+  /** 流量灰度百分比（0-100）：路由命中后按此比例放行，未命中回退后续级别/默认实现。不是匹配维度。 */
+  @Getter private int traffic = 100;
+
   @Setter private boolean enabled = true;
   private String startTime;
   private String endTime;
@@ -238,6 +242,7 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     copy.defaultImpl = this.defaultImpl;
     copy.weight = this.weight;
     copy.priority = this.priority;
+    copy.traffic = this.traffic;
     copy.enabled = this.enabled;
     copy.startTime = this.startTime;
     copy.endTime = this.endTime;
@@ -269,9 +274,9 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     }
     this.priority = meta.getPriority();
     this.weight = meta.getWeight();
+    this.traffic = Math.min(100, Math.max(0, meta.getTraffic()));
     this.defaultImpl = meta.isDefaultImpl();
     this.enabled = meta.isEnabled();
-    setDimensionRule("traffic", String.valueOf(meta.getTraffic()));
     clearCaches();
   }
 

@@ -215,6 +215,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
   private ExtensionDefinition findExactMatch(
       List<ExtensionDefinition> extensions, Map<String, String> dimensions) {
     for (ExtensionDefinition ext : extensions) {
+      if (!isTrafficHit(ext)) continue;
       Map<String, String> rules = ext.getDimensionRules();
       if (rules == null || rules.isEmpty()) continue;
 
@@ -229,6 +230,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
   private ExtensionDefinition findExpressionMatch(
       List<ExtensionDefinition> extensions, BizContext context) {
     for (ExtensionDefinition ext : extensions) {
+      if (!isTrafficHit(ext)) continue;
       String condition = ext.getCondition();
       if (!StringUtils.hasText(condition)) continue;
 
@@ -243,6 +245,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
   private ExtensionDefinition findFuzzyMatch(
       List<ExtensionDefinition> extensions, Map<String, String> dimensions) {
     for (ExtensionDefinition ext : extensions) {
+      if (!isTrafficHit(ext)) continue;
       Map<String, String> rules = ext.getDimensionRules();
       if (rules == null || rules.isEmpty()) continue;
 
@@ -256,11 +259,22 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
   /** 默认匹配：标记为defaultImpl=true */
   private ExtensionDefinition findDefaultMatch(List<ExtensionDefinition> extensions) {
     for (ExtensionDefinition ext : extensions) {
-      if (ext.isDefaultImpl()) {
+      if (ext.isDefaultImpl() && isTrafficHit(ext)) {
         return ext;
       }
     }
     return null;
+  }
+
+  /**
+   * 流量灰度判定：traffic 为控制面发布的灰度百分比（0-100），非匹配维度。
+   *
+   * <p>100（默认）全量放行；0 全量回退；中间值按调用随机命中。未命中的候选视为不可用， 路由继续尝试后续匹配级别/默认实现——语义与业界灰度发布一致（未命中灰度 → 回退默认）。
+   */
+  private boolean isTrafficHit(ExtensionDefinition ext) {
+    int traffic = ext.getTraffic();
+    return traffic >= 100
+        || traffic > 0 && java.util.concurrent.ThreadLocalRandom.current().nextInt(100) < traffic;
   }
 
   // ==================== 匹配算法实现 ====================
@@ -481,11 +495,10 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
     // 清理定义缓存
     extDefinitionCache.invalidate(extPointClass);
 
-    // 清理路由缓存（前缀匹配）
-    // 注意：使用cacheManager时，这里简化处理
+    // 清理路由结果缓存（L2）：缓存键以扩展点全限定名开头，按前缀失效。
+    // 否则控制面元数据变更（enabled/traffic/condition）后旧路由结果残留，变更不生效。
     if (cacheManager != null) {
-      // 实际项目中可以实现更精细的缓存清理
-      // cacheManager.clear();
+      cacheManager.clearByPrefix(extPointClass.getName() + CACHE_KEY_SEPARATOR);
     }
 
     log.info("扩展点缓存清理完成 | 扩展点: {}", extPointClass.getName());

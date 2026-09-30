@@ -11,7 +11,7 @@ import com.bone.engine.extension.support.sync.MetadataOverlayExtensionRepository
 import com.bone.engine.extension.support.sync.RedisExtensionMetadataStore;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +31,7 @@ import org.springframework.util.StringUtils;
 public class ExtensionSyncConfiguration {
 
   @Bean
-  @ConditionalOnBean(name = ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
+  @ConditionalOnClass(RedisTemplate.class)
   @ConditionalOnMissingBean(ExtensionMetadataStore.class)
   public ExtensionMetadataStore redisExtensionMetadataStore(
       @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
@@ -66,7 +66,7 @@ public class ExtensionSyncConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean(RedisConnectionFactory.class)
+  @ConditionalOnClass(RedisTemplate.class)
   public RedisMessageListenerContainer extensionMetadataListenerContainer(
       RedisConnectionFactory connectionFactory,
       ExtensionPointRouter extensionPointRouter,

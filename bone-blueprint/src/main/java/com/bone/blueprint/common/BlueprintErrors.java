@@ -33,6 +33,7 @@ public final class BlueprintErrors {
           Map.entry(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, 409),
           Map.entry(BlueprintErrorCodes.ORDER_STATUS_INVALID, 400),
           Map.entry(BlueprintErrorCodes.ORDER_STOCK_INSUFFICIENT, 409),
+          Map.entry(BlueprintErrorCodes.ORDER_PRODUCT_NOT_PUBLISHED, 409),
           Map.entry(BlueprintErrorCodes.PAYMENT_NOT_FOUND, 404),
           Map.entry(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, 409),
           Map.entry(BlueprintErrorCodes.PAYMENT_SIGNATURE_INVALID, 401),

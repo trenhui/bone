@@ -18,4 +18,7 @@ public class CreateMasterDataEntityCommand {
 
   private String description;
   private String category;
+
+  /** 实体编码（下游按编码定位主数据实体；可空=未登记编码）。 */
+  private String entityCode;
 }

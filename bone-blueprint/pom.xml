@@ -105,6 +105,14 @@
             <artifactId>bone-extension-sdk</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <!-- Redis：bone-extension-sdk 的控制面同步（ExtensionSyncConfiguration
+             需要 RedisConnectionFactory 订阅 bone:ext:metadata:refresh 刷新通道，
+             并从 RedisExtensionMetadataStore 叠加 studio 发布的路由元数据） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         
         <!-- JJWT：本模块不直接声明依赖，统一取 ${jjwt.version}（须与 bone-security 编译版本一致）。
              踩坑经过与症状见 README「JJWT 版本不能降级」。 -->

@@ -1,6 +1,10 @@
 package com.bone.blueprint.infrastructure.gateway.inventory;
 
 import com.bone.blueprint.domain.gateway.InventoryGateway;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,9 +19,33 @@ import org.springframework.stereotype.Component;
  * 恒放行（不校验真实库存），{@code reserve/confirm/release} 为无操作。 接入真实库存服务前必须：① 实现远程客户端（Feign / HTTP）并做协议转换；②
  * 外部错误语义/空值在此边界转为领域异常（E-10），禁止把外部 {@code null}/异常穿透到 domain；③ 补充<b>契约测试</b>（打桩外部响应，验证翻译与错误语义隔离，E-10
  * 强制项）。
+ *
+ * <p><b>启动告警</b>：prod profile 下直接阻断启动（与 {@code MockPaymentGatewayAdapter} / {@code
+ * MockPaymentSignaturePortAdapter} 同模式）。
  */
+@Slf4j
 @Component
-public class MockInventoryGatewayAdapter implements InventoryGateway {
+public class MockInventoryGatewayAdapter
+    implements InventoryGateway, EnvironmentAware, InitializingBean {
+
+  private Environment environment;
+
+  @Override
+  public void setEnvironment(Environment environment) {
+    this.environment = environment;
+  }
+
+  @Override
+  public void afterPropertiesSet() {
+    boolean prod = environment != null && environment.acceptsProfiles("prod");
+    String message =
+        "库存服务当前装配的是 Mock 实现（checkStock 恒放行、reserve/confirm/release 为无操作）；生产环境必须替换为真实库存网关";
+    if (prod) {
+      throw new IllegalStateException("[配置事故] " + message + " — 已阻断 prod 启动");
+    } else {
+      log.warn("{}", message);
+    }
+  }
 
   @Override
   public boolean checkStock(Long productId, Integer quantity) {

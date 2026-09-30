@@ -15,6 +15,7 @@ import com.bone.engine.extension.studio.application.StudioAuditApplicationServic
 import com.bone.engine.extension.studio.application.StudioOperationApplicationService;
 import com.bone.engine.extension.studio.application.query.dto.DeploymentStateView;
 import com.bone.engine.extension.studio.application.query.dto.PluginDependencyGraph;
+import com.bone.engine.extension.studio.application.query.dto.SimulateResult;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.gateway.MarketplaceCatalog;
 import com.bone.engine.extension.studio.domain.model.audit.StudioAuditEntry;
@@ -422,7 +423,8 @@ public class ExtensionManagementController {
   }
 
   @PostMapping({"/execution-logs/ingest", "/execution-logs:ingest"})
-  @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
+  // 数据面执行日志上报端点：业务进程 SDK 以进程身份异步上报，不携带终端用户 JWT，
+  // 故不做 @PreAuthorize scope 校验（与 SecurityConfig 的 URL 放行配套）；安全边界由网络层保障。
   public ResponseEntity<ApiResponse<PluginExecutionLog>> ingestExecutionLog(
       @RequestBody Map<String, Object> body) {
     if (body == null || body.get("className") == null) {
@@ -489,7 +491,7 @@ public class ExtensionManagementController {
 
   @PostMapping("/plugins/{id}:simulate")
   @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
-  public ResponseEntity<ApiResponse<PluginExecutionLog>> simulatePlugin(@PathVariable Long id) {
+  public ResponseEntity<ApiResponse<SimulateResult>> simulatePlugin(@PathVariable Long id) {
     return extensionStudioCommandHandler.simulatePlugin(id);
   }
 

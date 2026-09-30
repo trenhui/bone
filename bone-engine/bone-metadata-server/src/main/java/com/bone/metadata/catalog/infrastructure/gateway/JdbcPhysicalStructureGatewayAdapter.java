@@ -5,6 +5,8 @@ import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableColumn;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableSnapshot;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import java.util.ArrayList;
@@ -236,6 +238,55 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
         .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
         .map(MetaField::getCode)
         .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  // ===================== 逆向建模：存量物理表采集 =====================
+
+  @Override
+  public PhysicalTableSnapshot readTableSnapshot(String tableName) {
+    String table = requireIdentifier(tableName, "tableName");
+    List<Map<String, Object>> rows =
+        jdbcTemplate.queryForList(
+            "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, "
+                + "NUMERIC_SCALE, IS_NULLABLE, COLUMN_COMMENT FROM information_schema.columns "
+                + "WHERE table_schema = DATABASE() AND table_name = ? ORDER BY ORDINAL_POSITION",
+            table);
+    if (rows.isEmpty()) {
+      return PhysicalTableSnapshot.missing(table);
+    }
+    List<PhysicalTableColumn> columns = new ArrayList<>();
+    for (Map<String, Object> row : rows) {
+      String col = String.valueOf(row.get("COLUMN_NAME"));
+      columns.add(
+          new PhysicalTableColumn(
+              col,
+              str(row.get("DATA_TYPE")).toUpperCase(),
+              intOrNull(row.get("CHARACTER_MAXIMUM_LENGTH")),
+              intOrNull(row.get("NUMERIC_PRECISION")),
+              intOrNull(row.get("NUMERIC_SCALE")),
+              "YES".equalsIgnoreCase(str(row.get("IS_NULLABLE"))),
+              str(row.get("COLUMN_COMMENT")),
+              RESERVED_COLUMNS.contains(col.toLowerCase())));
+    }
+    return new PhysicalTableSnapshot(table, true, columns);
+  }
+
+  private static String str(Object value) {
+    return value == null ? "" : value.toString();
+  }
+
+  private static Integer intOrNull(Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Number n) {
+      return n.intValue();
+    }
+    try {
+      return Integer.valueOf(value.toString());
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 
   private String buildDropColumn(String table, String col) {

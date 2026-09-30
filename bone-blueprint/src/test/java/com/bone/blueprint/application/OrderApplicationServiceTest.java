@@ -47,6 +47,7 @@ class OrderApplicationServiceTest {
   @Mock private OrderRepository orderRepository;
   @Mock private InventoryGateway inventoryGateway;
   @Mock private PricingPort pricingService;
+  @Mock private com.bone.blueprint.domain.gateway.MasterDataGateway masterDataGateway;
   @Mock private DomainEventPublisher domainEventPublisher;
   @Mock private TenantPort tenantProvider;
 
@@ -57,8 +58,13 @@ class OrderApplicationServiceTest {
   @Test
   void create_success_checksStockPricingAndPersists() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "7", "样例商品", new BigDecimal("50.00"))));
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(pricingService.calculateFinalPrice(any(), eq(1L)))
+    when(pricingService.calculateFinalPrice(any(), eq(1L), any()))
         .thenReturn(Money.of(new BigDecimal("99.00")));
 
     CreateOrderCommand.OrderItemDto item =
@@ -71,16 +77,41 @@ class OrderApplicationServiceTest {
     verify(inventoryGateway, times(1)).checkStock(7L, 2);
     // 回归防护：库存预留是远程写，已从下单事务移除
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
-    // 定价扩展点被调用
-    verify(pricingService, times(1)).calculateFinalPrice(any(), eq(1L));
+    // 定价扩展点被调用（客户编码随单传入，供主数据解析等级路由场景）
+    verify(pricingService, times(1)).calculateFinalPrice(any(), eq(1L), eq("1"));
     // 订单根 save（明细由 SDK @Cascade 随根落盘，应用层不再调 OrderItemRepository）
     verify(orderRepository, times(1)).save(any(Order.class));
     // 领域事件发布
     verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
 
+  /** 主数据治理前置：商品不是已发布主数据记录时，下单被拦截且不落库（masterdata 消费链路）。 */
+  @Test
+  void create_productNotInMasterData_throwsAndDoesNotPersist() {
+    when(masterDataGateway.findPublishedProduct(any())).thenReturn(java.util.Optional.empty());
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(404L, "未发布商品", 1, new BigDecimal("10.00"));
+
+    BizException ex =
+        assertThrows(
+            BizException.class,
+            () -> service.create(new CreateOrderCommand(1L, Collections.singletonList(item))));
+    assertEquals(
+        com.bone.blueprint.common.BlueprintErrorCodes.ORDER_PRODUCT_NOT_PUBLISHED,
+        ex.getErrorCode());
+    verify(orderRepository, never()).save(any());
+    verify(inventoryGateway, never()).checkStock(anyLong(), anyInt());
+  }
+
   @Test
   void create_insufficientStock_throwsAndDoesNotPersist() {
+    org.mockito.Mockito.lenient()
+        .when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "7", "缺货商品", new BigDecimal("50.00"))));
     org.mockito.Mockito.lenient()
         .when(inventoryGateway.checkStock(anyLong(), anyInt()))
         .thenReturn(false);
@@ -99,8 +130,13 @@ class OrderApplicationServiceTest {
   @Test
   void create_multipleItems_checksStockForEach() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "1", "商品A", new BigDecimal("50.00"))));
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(pricingService.calculateFinalPrice(any(), eq(1L)))
+    when(pricingService.calculateFinalPrice(any(), eq(1L), any()))
         .thenReturn(Money.of(new BigDecimal("200.00")));
 
     CreateOrderCommand.OrderItemDto i1 =

@@ -21,4 +21,16 @@ public interface PricingPort {
    * @return 最终金额（已含扩展点计价结果）
    */
   Money calculateFinalPrice(Money baseAmount, long tenantId);
+
+  /**
+   * 基于基准金额计算订单最终应付金额（客户等级感知）。
+   *
+   * <p>真实场景：客户的等级（VIP/会员/企业）来自主数据，决定命中哪个计价场景； 查不到等级则按标准价场景处理。
+   *
+   * @param baseAmount 订单原始金额
+   * @param tenantId 租户（用于扩展点维度匹配）
+   * @param customerCode 客户编码（用于到主数据解析等级、路由计价场景）
+   * @return 最终金额（已含扩展点计价结果）
+   */
+  Money calculateFinalPrice(Money baseAmount, long tenantId, String customerCode);
 }

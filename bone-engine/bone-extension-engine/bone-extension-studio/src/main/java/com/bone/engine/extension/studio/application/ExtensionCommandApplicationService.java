@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.annotation.NoDomainEvent;
+import com.bone.engine.extension.studio.application.query.dto.SimulateResult;
 import com.bone.engine.extension.studio.application.support.ExtensionValidationSupport;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport;
 import com.bone.engine.extension.studio.application.support.PluginArtifactSupport.StoredArtifact;
@@ -11,7 +12,6 @@ import com.bone.engine.extension.studio.common.StudioErrors;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.gateway.TenantDirectoryPort;
-import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.plugin.DeploymentStatus;
@@ -106,6 +106,7 @@ public class ExtensionCommandApplicationService {
     ExtensionValidationSupport.assertAppIdValid(existing.getAppId());
     existing.setVersion(StudioVersionSupport.nextVersion(existing.getVersion()));
     extensionRepository.save(existing);
+    syncRuntimeMetadata(existing);
     return existing;
   }
 
@@ -147,6 +148,7 @@ public class ExtensionCommandApplicationService {
         com.bone.engine.extension.studio.application.support.StudioVersionSupport.nextVersion(
             existing.getVersion()));
     extensionRepository.save(existing);
+    syncRuntimeMetadata(existing);
     return existing;
   }
 
@@ -172,7 +174,32 @@ public class ExtensionCommandApplicationService {
     }
     extension.setEnabled(enabled);
     extensionRepository.save(extension);
+    syncRuntimeMetadata(extension);
     return extension;
+  }
+
+  /**
+   * 插件元数据变更后的运行时同步：仅对已发布到运行时存储的插件生效（probe 命中）。
+   *
+   * <p>业界控制面语义（对标配置中心/灰度发布平台）：运营在控制台修改启用开关、灰度流量、路由条件后 数据面必须即时感知；否则禁用形同虚设（Redis 里 enabled=true
+   * 元数据残留）。启用 → 重新发布， 禁用 → 下架路由（数据面回退本地定义）。未发布过的插件不受影响。
+   */
+  private void syncRuntimeMetadata(Extension extension) {
+    if (runtimeSyncService == null) {
+      return;
+    }
+    // 同步前提（满足其一）：① 本插件有 ACTIVE 部署记录；② 本插件所属扩展点已被控制面接管
+    // （种子型插件没有版本记录，只能以扩展点粒度判断接管状态）。
+    boolean deployed =
+        pluginVersionReadPort.findByPluginId(extension.getId()).stream()
+            .anyMatch(v -> "ACTIVE".equals(String.valueOf(v.getDeploymentStatus())));
+    boolean managed = deployed || runtimeSyncService.isExtensionPointManaged(extension);
+    if (!managed) {
+      return;
+    }
+    // 禁用不等于下架：禁用保留 enabled=false 的路由元数据，权威覆盖本地出厂定义
+    // （否则数据面回退本地定义，禁用形同虚设）；真正移除路由（回退出厂行为）是 undeploy 的职责。
+    runtimeSyncService.publish(extension);
   }
 
   @Transactional
@@ -327,27 +354,89 @@ public class ExtensionCommandApplicationService {
     return true;
   }
 
+  /**
+   * 路由探测（simulate 的真实语义）。
+   *
+   * <p>控制面不持有业务实现类，任何「模拟执行」都只能是伪造结果；因此本方法做的是控制台真实能做的事—— ① 校验插件元数据可发布到运行时；② 读取运行时存储中当前生效的路由决策；③
+   * 把探测本身留痕为执行日志（status=PROBE_SUCCESS / PROBE_FAILED）， 与业务进程 SDK 上报的真实执行（INVOKE/SUCCESS/FAILED）区分。
+   */
   @Transactional
-  public PluginExecutionLog simulatePluginExecution(Long pluginId) {
+  public SimulateResult probePluginRouting(Long pluginId) {
     Extension extension = requireExtension(pluginId);
+    List<String> validationErrors = List.of();
+    boolean valid = true;
     if (!extension.isEnabled()) {
-      throw StudioErrors.of(StudioErrorCodes.DEPLOY_STATE_INVALID, "请先部署插件后再模拟调用");
+      valid = false;
+      validationErrors = List.of("插件未启用（未部署），数据面不会路由到该实现");
+    } else if (runtimeSyncService != null) {
+      validationErrors = runtimeSyncService.validateForRuntime(extension);
+      valid = validationErrors.isEmpty();
     }
-    long start = System.currentTimeMillis();
+
+    var routing = runtimeSyncService == null ? null : runtimeSyncService.probe(extension);
+    boolean published = routing != null;
+    ExtPoint extPoint =
+        extension.getExtPointId() == null
+            ? null
+            : extPointRepository.findById(extension.getExtPointId());
+    String pointInterface = extPoint == null ? null : extPoint.getInterfaceName();
+
+    String message;
+    if (!valid) {
+      message = "探测失败：" + String.join("；", validationErrors);
+    } else if (published) {
+      message = "路由元数据已发布，数据面下次调用将按当前决策路由（traffic=" + routing.getTraffic() + "%）";
+    } else {
+      message = "元数据校验通过，但路由尚未发布到运行时（请执行部署或发布运行时）";
+    }
+
+    logProbe(extension, valid, published, pointInterface, message);
+
+    int priority = extension.getPriority() != null ? extension.getPriority() : 100;
+    Integer traffic = routing == null ? null : routing.getTraffic();
+    Integer weight = routing == null ? null : routing.getWeight();
+    return new SimulateResult(
+        extension.getId(),
+        extension.getName(),
+        extension.getClassName(),
+        valid,
+        validationErrors,
+        published,
+        pointInterface,
+        routing == null
+            ? RuntimeExtensionSyncService.resolveExtensionCode(extension)
+            : routing.getCode(),
+        routing == null ? extension.getTenantCode() : routing.getTenant(),
+        routing == null ? extension.getBizCode() : routing.getBizCode(),
+        routing == null ? extension.getUseCase() : routing.getUseCase(),
+        routing == null ? extension.getScenario() : routing.getScenario(),
+        priority,
+        weight,
+        traffic,
+        extension.isEnabled(),
+        message);
+  }
+
+  /** 探测留痕：与真实业务执行共用执行日志表，action=PROBE 区分来源。 */
+  private void logProbe(
+      Extension extension,
+      boolean valid,
+      boolean published,
+      String pointInterface,
+      String message) {
+    String input;
+    String error = valid ? null : message;
     try {
-      Thread.sleep(20 + (long) (Math.random() * 80));
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      ObjectNode node = objectMapper.createObjectNode();
+      node.put("probe", true);
+      node.put("publishedToRuntime", published);
+      node.put("extensionPoint", String.valueOf(pointInterface));
+      input = objectMapper.writeValueAsString(node);
+    } catch (Exception ex) {
+      input = "{\"probe\":true}";
     }
-    long duration = System.currentTimeMillis() - start;
-    return executionLogCommandHandler.record(
-        extension,
-        "INVOKE",
-        "SUCCESS",
-        "{\"bizCode\":\"" + extension.getBizCode() + "\"}",
-        "{\"result\":\"ok\"}",
-        null,
-        duration);
+    executionLogCommandHandler.record(
+        extension, "PROBE", valid ? "PROBE_SUCCESS" : "PROBE_FAILED", input, null, error, 0L);
   }
 
   private void logSuccess(Extension extension, String action, long durationMs, String output) {

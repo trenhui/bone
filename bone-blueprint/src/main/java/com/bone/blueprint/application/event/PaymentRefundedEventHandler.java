@@ -1,6 +1,5 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.application.port.out.OrderOutboxPort;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
@@ -8,7 +7,6 @@ import com.bone.blueprint.domain.model.order.Order;
 import com.bone.blueprint.domain.model.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.model.shared.exception.OptimisticLockConflictException;
 import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.util.Optional;
@@ -25,9 +23,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * <ol>
  *   <li>确认订单已置 REFUNDED（独立事务，两段式跨聚合解耦——同 {@link PaymentSucceededEventHandler} 形态）；
- *   <li>同事务落 Outbox，发布 PaymentRefundedIntegrationEvent（下游对账/通知需感知）；
  *   <li>释放库存（远程调用，最终一致，失败不回滚订单退款）。
  * </ol>
+ *
+ * <p><b>为何本类不再落 Outbox</b>：退款 Outbox 已在 {@code PaymentApplicationService.refund()} 主事务内 与 Payment
+ * 状态更新同事务写入（{@code update → appendPaymentRefunded → publishFrom}）， 本订阅器只负责跨聚合的 Order
+ * 状态迁移与远程库存释放（这两件事不能放进 Payment 主事务）。
  */
 @Slf4j
 @Component
@@ -36,8 +37,6 @@ public class PaymentRefundedEventHandler {
 
   private final OrderRepository orderRepository;
   private final InventoryGateway inventoryGateway;
-  private final OrderOutboxPort orderOutboxWriter;
-  private final DomainEventPublisher domainEventPublisher;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -70,12 +69,6 @@ public class PaymentRefundedEventHandler {
         throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
       }
       refunded = true;
-
-      // Outbox 优先写入——本地 DB 操作可靠。如果后续 publishFrom 触发的订阅器
-      // 抛异常回滚事务，Outbox 里的退款事件已在，下游至少有机会收到。
-      orderOutboxWriter.appendPaymentRefunded(event);
-
-      domainEventPublisher.publishFrom(order);
 
       // 释放库存（远程调用，最终一致）。仅当订单退款成功时才释放——
       // Payment 已退回但 Order 不可退款时，库存不能放（货还没退）。

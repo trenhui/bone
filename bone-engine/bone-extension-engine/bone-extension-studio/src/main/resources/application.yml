@@ -27,6 +27,12 @@ spring:
       settings:
         web-allow-others: false
 
+  # Redis（控制面路由元数据发布通道；无 Redis 时回退 InMemoryExtensionMetadataStore）
+  data:
+    redis:
+      host: ${BONE_REDIS_HOST:${REDIS_HOST:localhost}}
+      port: ${BONE_REDIS_PORT:${REDIS_PORT:6379}}
+
 # 与 bone-iam 对齐的 JWT（生产环境请外部化 secretKey）
 bone:
   iam:
@@ -42,10 +48,6 @@ bone:
       artifact:
         storage-path: ${BONE_EXTENSION_ARTIFACT_PATH:./data/extension-plugins}
         max-versions-per-plugin: 3
-      # 扩展点扫描配置
-      scan:
-        enabled: true
-        base-packages: com.bone.engine.extension.example
       # 本地联调放行（开发期关闭 JWT 校验；生产环境请保持 false）
       security:
         permit-unauthenticated: true

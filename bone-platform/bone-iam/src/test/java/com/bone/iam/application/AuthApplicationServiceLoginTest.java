@@ -17,7 +17,6 @@ import com.bone.iam.application.port.out.PasswordEncoderPort;
 import com.bone.iam.application.port.out.TokenBlacklistPort;
 import com.bone.iam.application.support.PasswordPolicyValidator;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.iam.domain.client.SsoClient;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
@@ -66,8 +65,6 @@ class AuthApplicationServiceLoginTest {
 
   @Mock PasswordEncoderPort passwordEncoderPort;
 
-  @Mock SsoClient ssoClient;
-
   @Mock TokenBlacklistPort tokenBlacklistPort;
 
   @Mock JwtConfig jwtConfig;
@@ -98,7 +95,6 @@ class AuthApplicationServiceLoginTest {
             accountAuthorityCache,
             roleHierarchyResolver,
             passwordEncoderPort,
-            ssoClient,
             tokenBlacklistPort,
             jwtConfig,
             tenantRepository,

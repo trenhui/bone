@@ -77,8 +77,20 @@ public class IdempotencyPortAdapter implements IdempotencyStore {
                 expiresAt));
       } catch (DataIntegrityViolationException ex) {
         // 并发窗口：两请求同时命中同一 scopeKey，都查不到、都 insert，第二条触发
-        // uk_idempotency_tenant_scope 唯一键冲突。已存在的那条就是正确的快照，直接返回。
-        log.debug("幂等快照插入遇到唯一键冲突（并发重放），已存在记录即视为命中: scopeKey={}", scopeKey);
+        // uk_idempotency_tenant_scope 唯一键冲突。已存在的那条就是正确的快照，
+        // 重新查询后 refresh TTL + save，保证并发请求的过期时间也能刷新到最新值。
+        List<IdempotencyRecord> concurrentHit =
+            repository.findByCriteria(
+                Criteria.<IdempotencyRecord>create()
+                    .eq(IdempotencyRecord::getScopeKey, scopeKey)
+                    .page(1, 1));
+        if (concurrentHit != null && !concurrentHit.isEmpty()) {
+          IdempotencyRecord record = concurrentHit.get(0);
+          record.refresh(snapshot.requestFingerprint(), snapshot.snapshotJson(), expiresAt);
+          repository.save(record);
+        } else {
+          log.debug("幂等快照插入遇到唯一键冲突（并发重放），已存在记录即视为命中: scopeKey={}", scopeKey);
+        }
       }
       return;
     }
