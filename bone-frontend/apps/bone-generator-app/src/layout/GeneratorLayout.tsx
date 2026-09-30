@@ -24,6 +24,18 @@ const BREADCRUMB_MAP: Record<string, string> = {
   '/history': '生成历史',
 };
 
+/**
+ * 集成态（qiankun 微前端）下，左侧主导航由父容器 Shell 的「代码生成」分组统一提供，
+ * 子菜单为 数据源管理 / 代码生成 / 模板管理 / 生成历史 —— 与本地 Sider 完全重复。
+ * 为避免重复导航，集成态不渲染本地 Sider；仅在独立运行（非微前端）时保留本地导航，
+ * 以便本地开发联调 generator 应用本身。
+ */
+const IN_QIANKUN =
+  typeof window !== 'undefined' &&
+  Boolean(
+    (window as unknown as { __POWERED_BY_QIANKUN__?: boolean }).__POWERED_BY_QIANKUN__,
+  );
+
 const GeneratorLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,33 +49,35 @@ const GeneratorLayout: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        width={240}
-        theme="light"
-      >
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 600,
-            color: token.colorPrimary,
-            fontSize: collapsed ? 14 : 16,
-          }}
+      {!IN_QIANKUN && (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          width={240}
+          theme="light"
         >
-          {collapsed ? 'SG' : 'Studio Generator'}
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={MENU_ITEMS}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Sider>
+          <div
+            style={{
+              height: 64,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 600,
+              color: token.colorPrimary,
+              fontSize: collapsed ? 14 : 16,
+            }}
+          >
+            {collapsed ? 'SG' : 'Studio Generator'}
+          </div>
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={MENU_ITEMS}
+            onClick={({ key }) => navigate(key)}
+          />
+        </Sider>
+      )}
       <Layout>
         <Header
           style={{
