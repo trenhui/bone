@@ -22,7 +22,8 @@ public class PreviewTemplateApplicationService {
    * null，用户看不到内置模板的内容。
    */
   public String handle(String templateId, Map<String, Object> parameters) {
-    CodeTemplate template = codeTemplateRepository.findById(Long.parseLong(templateId));
+    // 用户可从「对自己可见」的列表里选平台(0)种子模板做预览，故按 id 读取需跨租户（受控、仅命中该 id 行）。
+    CodeTemplate template = codeTemplateRepository.findByIdAllTenants(Long.parseLong(templateId));
     if (template == null) {
       throw new NotFoundException("模板不存在");
     }

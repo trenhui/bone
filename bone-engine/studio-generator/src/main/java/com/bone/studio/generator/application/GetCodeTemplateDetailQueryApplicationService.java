@@ -24,7 +24,8 @@ public class GetCodeTemplateDetailQueryApplicationService {
    */
   @Transactional(readOnly = true)
   public CodeTemplate handle(GetCodeTemplateDetailQuery qry) {
-    CodeTemplate template = codeTemplateRepository.findById(qry.getId());
+    // 用户可从「对自己可见」的列表里选平台(0)种子模板看详情，故按 id 读取需跨租户（受控、仅命中该 id 行）。
+    CodeTemplate template = codeTemplateRepository.findByIdAllTenants(qry.getId());
     if (template == null) {
       throw GeneratorErrors.of(GeneratorErrorCodes.TEMPLATE_NOT_FOUND, qry.getId());
     }

@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.NotFoundException;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateDetailQuery;
@@ -58,8 +58,9 @@ class BuiltInTemplateFallbackTest {
 
   @Test
   void templateWithoutContentIsStillValidWhenBuiltInExists() {
-    when(repository.findById(1L))
-        .thenReturn(CodeTemplate.builder().code("entity").content(null).build());
+    doReturn(CodeTemplate.builder().code("entity").content(null).build())
+        .when(repository)
+        .findByIdAllTenants(1L);
 
     assertTrue(validate.handle("1"), "内置模板不应因 content 为空被判无效");
     assertNotNull(preview.handle("1", Map.of()));
@@ -67,8 +68,9 @@ class BuiltInTemplateFallbackTest {
 
   @Test
   void customContentOverridesBuiltIn() {
-    when(repository.findById(2L))
-        .thenReturn(CodeTemplate.builder().code("entity").content("自定义正文").build());
+    doReturn(CodeTemplate.builder().code("entity").content("自定义正文").build())
+        .when(repository)
+        .findByIdAllTenants(2L);
 
     assertTrue(validate.handle("2"));
     assertEquals("自定义正文", preview.handle("2", Map.of()));
@@ -76,7 +78,7 @@ class BuiltInTemplateFallbackTest {
 
   @Test
   void unknownTemplateIdFailsFast() {
-    when(repository.findById(3L)).thenReturn(null);
+    doReturn((CodeTemplate) null).when(repository).findByIdAllTenants(3L);
 
     assertThrows(NotFoundException.class, () -> validate.handle("3"));
     assertThrows(NotFoundException.class, () -> preview.handle("3", Map.of()));
@@ -90,26 +92,27 @@ class BuiltInTemplateFallbackTest {
     GetCodeTemplateDetailQueryApplicationService detail =
         new GetCodeTemplateDetailQueryApplicationService(templateRepository, gateway);
 
-    when(templateRepository.findById(11L))
-        .thenReturn(
-            CodeTemplate.builder().code("entity").content(null).status("PUBLISHED").build());
+    doReturn(CodeTemplate.builder().code("entity").content(null).status("PUBLISHED").build())
+        .when(templateRepository)
+        .findByIdAllTenants(11L);
     CodeTemplate builtIn = detail.handle(GetCodeTemplateDetailQuery.builder().id(11L).build());
     assertNotNull(builtIn.getContent());
     assertTrue(builtIn.getContent().contains("TenantAggregateRoot"));
     // 回填只是读侧投影，不得把已发布状态改成 DRAFT
     assertEquals("PUBLISHED", builtIn.getStatus());
 
-    when(templateRepository.findById(12L))
-        .thenReturn(
-            CodeTemplate.builder().code("entity").content("自定义").status("PUBLISHED").build());
+    doReturn(CodeTemplate.builder().code("entity").content("自定义").status("PUBLISHED").build())
+        .when(templateRepository)
+        .findByIdAllTenants(12L);
     assertEquals(
         "自定义", detail.handle(GetCodeTemplateDetailQuery.builder().id(12L).build()).getContent());
   }
 
   @Test
   void unknownTemplateCodeHasNoContent() {
-    when(repository.findById(4L))
-        .thenReturn(CodeTemplate.builder().code("unknownType").content(null).build());
+    doReturn(CodeTemplate.builder().code("unknownType").content(null).build())
+        .when(repository)
+        .findByIdAllTenants(4L);
 
     assertEquals(false, validate.handle("4"));
     assertNull(preview.handle("4", Map.of()));

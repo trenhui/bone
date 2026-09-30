@@ -1,6 +1,12 @@
 package com.bone.studio.generator.architecture;
 
 import com.bone.architecture.BoneDddArchRules;
+import com.bone.architecture.BoneDddArchRules.AllTenantCallers;
+import com.bone.studio.generator.application.CreateCodeGenerationApplicationService;
+import com.bone.studio.generator.application.GetCodeTemplateDetailQueryApplicationService;
+import com.bone.studio.generator.application.GetCodeTemplateListQueryApplicationService;
+import com.bone.studio.generator.application.PreviewTemplateApplicationService;
+import com.bone.studio.generator.application.ValidateTemplateApplicationService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -21,11 +27,23 @@ public class ArchitectureTest {
   private static final String DOMAIN_REPOSITORY_PACKAGE =
       "com.bone.studio.generator.domain.repository";
 
-  // E-2 / E-4.4 补充门禁（2026-09-20，共享规则）：全租户扫描只许 adapter.schedule 调用，schedule 也只许调全租户入口；
+  // E-2 / E-4.4 补充门禁（2026-09-20，共享规则）：全租户扫描只许 adapter.schedule 或「已登记调用方」调用，schedule 也只许调全租户入口；
   // 全租户入口必须叫 *AllTenants。判据是事实（@TenantScope(ALL) 或 Criteria.disableTenantFilter()），不是名字。
+  // 本模块登记的合法跨租户调用方：GetCodeTemplateListQueryApplicationService（模板列表只读合并平台内置种子）、
+  // ValidateTemplateApplicationService（代码生成前校验用户所选平台种子模板是否真实存在）、
+  // PreviewTemplateApplicationService（预览平台种子模板正文）、GetCodeTemplateDetailQueryApplicationService（查看平台种子模板详情）、
+  // CreateCodeGenerationApplicationService（创建生成任务时按 id 解析平台种子模板）。五者均仅作受控只读、严格限定平台(0)种子。
   @ArchTest
-  static final ArchRule all_tenants_scan_only_by_schedule =
-      BoneDddArchRules.allTenantScanMethodsOnlyCalledBySchedule(DOMAIN_REPOSITORY_PACKAGE);
+  static final ArchRule all_tenants_scan_only_by_registered =
+      BoneDddArchRules.allTenantEntryPointsOnlyCalledBy(
+          DOMAIN_REPOSITORY_PACKAGE,
+          AllTenantCallers.ofPackages("..adapter.schedule..")
+              .andClasses(
+                  GetCodeTemplateListQueryApplicationService.class.getName(),
+                  ValidateTemplateApplicationService.class.getName(),
+                  PreviewTemplateApplicationService.class.getName(),
+                  GetCodeTemplateDetailQueryApplicationService.class.getName(),
+                  CreateCodeGenerationApplicationService.class.getName()));
 
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =
