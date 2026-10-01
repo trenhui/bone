@@ -1,5 +1,6 @@
 package com.bone.integration.infrastructure.messaging.outbox;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.integration.application.config.IntegrationOutboxProperties;
 import com.bone.integration.application.event.port.IntegrationMessageSender;
 import com.bone.metadata.sdk.query.criteria.Criteria;
@@ -48,11 +49,22 @@ public class IntegrationOutboxRelay {
   }
 
   private boolean relayOne(IntegrationOutboxRecord record) {
+    // 调度线程无租户会话；更新 int_outbox（租户作用域表）须以记录自身租户执行，否则 fail-closed 抛
+    // MissingTenantContextException，且异常发生在 catch 内会导致整批中继中断、SENT 状态永不落库。
+    TenantContext.setTenantId(record.getTenantId());
+    try {
+      doRelayOne(record);
+    } finally {
+      TenantContext.clear();
+    }
+    return record.getStatus() == OutboxStatus.SENT;
+  }
+
+  private void doRelayOne(IntegrationOutboxRecord record) {
     try {
       messageSender.send(record.getTopic(), record.getPartitionKey(), record.getEnvelopeJson());
       record.markSent();
       outboxRepository.update(record);
-      return true;
     } catch (Exception ex) {
       record.incrementRetry();
       if (record.getRetryCount() >= properties.getMaxRetries()) {
@@ -70,7 +82,6 @@ public class IntegrationOutboxRelay {
             ex);
       }
       outboxRepository.update(record);
-      return false;
     }
   }
 }
