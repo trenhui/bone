@@ -234,3 +234,6 @@ test_doc.txt
 **/vite.config.ts.timestamp-*.mjs
 # 代码评审工具本地缓存
 .opencodereview/
+
+# Python 脚本字节码缓存（scripts/ 下 .py 运行产物，非源码）
+scripts/__pycache__/

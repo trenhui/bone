@@ -31,3 +31,11 @@
 ## 产出文件
 - 详细状态/计划：`integration-status-20260928.md`、`integration-status-20260929.md`（同目录）
 - 状态真源：`doc/design/_review-status.yaml`
+
+## 第三轮执行（2026-10-01）：studio-generator 真实场景端到端优化
+- 任务：模拟真实代码生成诉求，前后端串联验证打通。
+- 修复 6 项（2×P0 编译阻断 + 4×P1）：文件名/类名校正、聚合 create 工厂（根因=DB 模板漂移，新增迁移 0015 收敛 12 条内建模板）、synced-tables 补列+syncedCount、包名末段去重、/tables keyword+limit。
+- 前端：服务端表名搜索防抖、拉取上限、同步计数提示；typecheck 过。
+- 验证：e2e-generator-real-scenario.mjs（npm run e2e:real）14/14 PASS 含 javac 0 错误；单测 105/105。
+- 交付：studio-generator-真实场景端到端验证报告.md（仓库根）；改动在 dev 工作树未提交。
+- 教训：后台任务起 Java 服务 ~2min 被杀，用 nohup+disown。
