@@ -62,6 +62,7 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
     // 2. 准备执行上下文信息
     String extensionClassName = implementation.getClass().getCanonicalName();
     String methodName = method.getName();
+    String extPointName = resolveExtPointName(implementation);
 
     log.debug("Starting extension point execution: {}.{}", extensionClassName, methodName);
 
@@ -80,7 +81,6 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
       }
 
       String bulkheadKey = implementation.getClass().getSimpleName();
-      String extPoint = resolveExtPointName(implementation);
 
       // 4. 执行扩展点方法（可选舱壁 + 超时）
       T result =
@@ -91,36 +91,32 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
 
       // 5. 记录执行完成信息
       long executionTime = System.currentTimeMillis() - startTime;
-      recordMetrics(extPoint, bulkheadKey, "success", executionTime);
+      recordMetrics(extPointName, bulkheadKey, "success", executionTime);
       log.info(
           "Extension point execution successful: {}.{} completed in {}ms",
           extensionClassName,
           methodName,
           executionTime);
-      reportToStudio(extensionClassName, methodName, executionTime, true, null);
+      reportToStudio(extensionClassName, methodName, extPointName, executionTime, true, null);
 
       return result;
     } catch (SecurityException ex) {
       // 5. 处理权限异常
       long executionTime = System.currentTimeMillis() - startTime;
       recordMetrics(
-          resolveExtPointName(implementation),
-          implementation.getClass().getSimpleName(),
-          "error",
-          executionTime);
+          extPointName, implementation.getClass().getSimpleName(), "error", executionTime);
       handleSecurityException(ex, extensionClassName, methodName, startTime);
-      reportToStudio(extensionClassName, methodName, executionTime, false, ex.getMessage());
+      reportToStudio(
+          extensionClassName, methodName, extPointName, executionTime, false, ex.getMessage());
       throw ex;
     } catch (Exception e) {
       // 6. 处理其他异常
       long executionTime = System.currentTimeMillis() - startTime;
       recordMetrics(
-          resolveExtPointName(implementation),
-          implementation.getClass().getSimpleName(),
-          "error",
-          executionTime);
+          extPointName, implementation.getClass().getSimpleName(), "error", executionTime);
       handleExecutionException(e, extensionClassName, methodName, startTime);
-      reportToStudio(extensionClassName, methodName, executionTime, false, e.getMessage());
+      reportToStudio(
+          extensionClassName, methodName, extPointName, executionTime, false, e.getMessage());
       throw e;
     }
   }
@@ -236,14 +232,19 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
   }
 
   private void reportToStudio(
-      String className, String methodName, long durationMs, boolean success, String errorMessage) {
+      String className,
+      String methodName,
+      String extPointName,
+      long durationMs,
+      boolean success,
+      String errorMessage) {
     if (studioReporter == null) {
       return;
     }
     if (success) {
-      studioReporter.reportSuccess(className, methodName, durationMs);
+      studioReporter.reportSuccess(className, methodName, extPointName, durationMs);
     } else {
-      studioReporter.reportFailure(className, methodName, durationMs, errorMessage);
+      studioReporter.reportFailure(className, methodName, extPointName, durationMs, errorMessage);
     }
   }
 }

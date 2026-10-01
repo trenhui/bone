@@ -12,6 +12,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -44,17 +45,27 @@ public class StudioExecutionLogReporter {
     log.info("Studio execution log reporter enabled, ingest={}", ingestUrl);
   }
 
-  public void reportSuccess(String className, String methodName, long durationMs) {
-    report(className, methodName, "SUCCESS", durationMs, null);
+  public void reportSuccess(
+      String className, String methodName, @Nullable String extPointName, long durationMs) {
+    report(className, methodName, extPointName, "SUCCESS", durationMs, null);
   }
 
   public void reportFailure(
-      String className, String methodName, long durationMs, String errorMessage) {
-    report(className, methodName, "FAILED", durationMs, errorMessage);
+      String className,
+      String methodName,
+      @Nullable String extPointName,
+      long durationMs,
+      String errorMessage) {
+    report(className, methodName, extPointName, "FAILED", durationMs, errorMessage);
   }
 
   private void report(
-      String className, String methodName, String status, long durationMs, String errorMessage) {
+      String className,
+      String methodName,
+      @Nullable String extPointName,
+      String status,
+      long durationMs,
+      String errorMessage) {
     if (!StringUtils.hasText(className)) {
       return;
     }
@@ -67,6 +78,9 @@ public class StudioExecutionLogReporter {
             Map<String, Object> body = new HashMap<>();
             body.put("className", className);
             body.put("methodName", methodName);
+            if (StringUtils.hasText(extPointName)) {
+              body.put("extPointName", extPointName);
+            }
             body.put("status", status);
             body.put("durationMs", durationMs);
             if (StringUtils.hasText(errorMessage)) {

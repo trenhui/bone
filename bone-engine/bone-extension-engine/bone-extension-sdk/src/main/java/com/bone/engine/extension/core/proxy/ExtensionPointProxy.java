@@ -92,17 +92,31 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
     try {
       Object result =
           ExtPointInvocationHandler.invoke(extension, method, args, extensionPoint.getName());
-      reportToStudio(extension.getClass().getName(), method.getName(), startNanos, null);
+      reportToStudio(
+          extension.getClass().getName(),
+          method.getName(),
+          extensionPoint.getName(),
+          startNanos,
+          null);
       return result;
     } catch (Throwable ex) {
-      reportToStudio(extension.getClass().getName(), method.getName(), startNanos, ex);
+      reportToStudio(
+          extension.getClass().getName(),
+          method.getName(),
+          extensionPoint.getName(),
+          startNanos,
+          ex);
       throw ex;
     }
   }
 
   /** 异步上报执行结果到 studio 控制台（reporter 未装配时静默跳过）。 */
   private void reportToStudio(
-      String className, String methodName, long startNanos, @Nullable Throwable error) {
+      String className,
+      String methodName,
+      String extPointName,
+      long startNanos,
+      @Nullable Throwable error) {
     try {
       StudioExecutionLogReporter reporter = reporterProvider.getIfAvailable();
       if (reporter == null) {
@@ -110,9 +124,9 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
       }
       long durationMs = (System.nanoTime() - startNanos) / 1_000_000L;
       if (error == null) {
-        reporter.reportSuccess(className, methodName, durationMs);
+        reporter.reportSuccess(className, methodName, extPointName, durationMs);
       } else {
-        reporter.reportFailure(className, methodName, durationMs, error.getMessage());
+        reporter.reportFailure(className, methodName, extPointName, durationMs, error.getMessage());
       }
     } catch (Exception reportEx) {
       log.debug("上报执行日志失败（忽略）: {}", reportEx.getMessage());

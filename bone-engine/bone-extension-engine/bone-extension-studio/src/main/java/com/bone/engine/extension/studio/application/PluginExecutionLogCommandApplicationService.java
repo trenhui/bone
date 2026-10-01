@@ -1,13 +1,19 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.annotation.NoDomainEvent;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
+import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
+import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.domain.repository.PluginExecutionLogRepository;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,25 +29,70 @@ import org.springframework.util.StringUtils;
 @NoDomainEvent
 public class PluginExecutionLogCommandApplicationService {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PluginExecutionLogCommandApplicationService.class);
+
+  /** 平台租户：进程级上报无用户会话时的默认归属（tenant_id=0，tenant_code='*' 通配）。 */
+  private static final long PLATFORM_TENANT_ID = 0L;
+
   private final PluginExecutionLogRepository logRepository;
   private final ExtensionRepository extensionRepository;
+  private final ExtPointRepository extPointRepository;
 
+  /**
+   * 数据面运行时上报执行日志。
+   *
+   * <p>数据面（如 blueprint）以本地 {@code @Extension} 定义的扩展并不在 studio 注册表内， 此时按上报的扩展点接口 FQCN 与实现类 FQCN
+   * 幂等登记后再落日志，避免可观测数据被丢弃。
+   *
+   * <p>上报不携带终端用户 JWT：无租户上下文时按平台租户 0 落库， 否则 Metadata SDK 对租户表直接抛 {@code
+   * MissingTenantContextException}（fail-closed），整条日志 500 丢弃。
+   */
   @Transactional
   public Optional<PluginExecutionLog> ingestFromRuntime(
-      String className, String methodName, String status, Long durationMs, String errorMessage) {
+      String className,
+      String methodName,
+      @Nullable String extPointName,
+      String status,
+      Long durationMs,
+      String errorMessage) {
     if (!StringUtils.hasText(className)) {
       return Optional.empty();
     }
-    Extension extension = extensionRepository.findByClassName(className.trim());
+    if (TenantContext.getTenantId() != null) {
+      return doIngest(className, methodName, extPointName, status, durationMs, errorMessage);
+    }
+    TenantContext.setTenantId(PLATFORM_TENANT_ID);
+    try {
+      return doIngest(className, methodName, extPointName, status, durationMs, errorMessage);
+    } finally {
+      TenantContext.clear();
+    }
+  }
+
+  private Optional<PluginExecutionLog> doIngest(
+      String className,
+      String methodName,
+      @Nullable String extPointName,
+      String status,
+      Long durationMs,
+      String errorMessage) {
+    String fqcn = className.trim();
+    Extension extension = extensionRepository.findByClassName(fqcn);
+    if (extension == null) {
+      extension = discoverRuntimeExtension(fqcn, extPointName);
+    }
     if (extension == null) {
       return Optional.empty();
     }
     String normalizedStatus = StringUtils.hasText(status) ? status.trim().toUpperCase() : "SUCCESS";
     String input =
         "{\"source\":\"runtime-sdk\",\"className\":\""
-            + className
+            + fqcn
             + "\",\"method\":\""
             + (methodName != null ? methodName : "")
+            + "\",\"extPoint\":\""
+            + (extPointName != null ? extPointName : "")
             + "\"}";
     return Optional.of(
         record(
@@ -52,6 +103,48 @@ public class PluginExecutionLogCommandApplicationService {
             null,
             errorMessage,
             durationMs != null ? durationMs : 0L));
+  }
+
+  /** 运行时扩展自动登记；返回 null 表示缺少扩展点信息、无法归属。 */
+  @Nullable
+  private Extension discoverRuntimeExtension(String className, @Nullable String extPointName) {
+    if (!StringUtils.hasText(extPointName)) {
+      return null;
+    }
+    String iface = extPointName.trim();
+    ExtPoint point = extPointRepository.findByInterfaceName(iface);
+    if (point == null) {
+      ExtPoint created = new ExtPoint();
+      created.setName(simpleName(iface));
+      created.setInterfaceName(iface);
+      created.setDescription("运行时自动登记的扩展点（数据面执行上报发现）");
+      created.setEnabled(true);
+      point = extPointRepository.save(created);
+    }
+    if (point == null || point.getId() == null) {
+      return null;
+    }
+    Extension created =
+        Extension.create(
+            point.getId(), simpleName(className), "运行时自动登记的扩展实现（数据面执行上报发现）", className);
+    try {
+      return extensionRepository.save(created);
+    } catch (RuntimeException ex) {
+      // 并发首次上报可能重复登记，回退按 className 重新查找（仍无则本次 404，下次自然命中）
+      LOGGER.warn("运行时扩展登记失败，回退按 className 查找: {}", ex.getMessage());
+      return extensionRepository.findByClassName(className);
+    }
+  }
+
+  private static String simpleName(@Nullable String fqcn) {
+    if (fqcn == null) {
+      return "";
+    }
+    if (!StringUtils.hasText(fqcn)) {
+      return fqcn;
+    }
+    int idx = fqcn.lastIndexOf('.');
+    return idx >= 0 && idx < fqcn.length() - 1 ? fqcn.substring(idx + 1) : fqcn;
   }
 
   @Transactional

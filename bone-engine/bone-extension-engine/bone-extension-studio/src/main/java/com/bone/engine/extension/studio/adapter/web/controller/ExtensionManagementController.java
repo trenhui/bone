@@ -439,10 +439,13 @@ public class ExtensionManagementController {
     }
     String errorMessage =
         body.get("errorMessage") != null ? body.get("errorMessage").toString() : null;
+    String extPointName =
+        body.get("extPointName") != null ? body.get("extPointName").toString() : null;
     return pluginExecutionLogCommandHandler
-        .ingestFromRuntime(className, methodName, status, durationMs, errorMessage)
+        .ingestFromRuntime(className, methodName, extPointName, status, durationMs, errorMessage)
         .map(log -> ResponseEntity.ok(ApiResponse.success("执行日志已记录", log)))
-        .orElseGet(() -> notFound("未找到 className 对应的插件: " + className));
+        .orElseGet(
+            () -> notFound("执行日志无法归属：className 未登记且上报缺少 extPointName，className=" + className));
   }
 
   @GetMapping("/execution-logs")
