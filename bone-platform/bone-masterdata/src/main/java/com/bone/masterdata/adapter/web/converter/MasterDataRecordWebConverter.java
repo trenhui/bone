@@ -25,6 +25,10 @@ public class MasterDataRecordWebConverter {
     return CreateMasterDataRecordCommand.builder()
         .masterDataEntityId(req.getMasterDataEntityId())
         .data(serializeData(req.getData()))
+        .recordCode(req.getRecordCode())
+        .displayName(req.getDisplayName())
+        .effectiveFrom(req.getEffectiveFrom())
+        .effectiveTo(req.getEffectiveTo())
         .build();
   }
 
@@ -32,6 +36,10 @@ public class MasterDataRecordWebConverter {
     return UpdateMasterDataRecordCommand.builder()
         .id(id)
         .data(serializeData(req.getData()))
+        .recordCode(req.getRecordCode())
+        .displayName(req.getDisplayName())
+        .effectiveFrom(req.getEffectiveFrom())
+        .effectiveTo(req.getEffectiveTo())
         .build();
   }
 

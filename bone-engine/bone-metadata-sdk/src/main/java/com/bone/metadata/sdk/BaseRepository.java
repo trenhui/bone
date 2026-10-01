@@ -531,6 +531,10 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   // ========== 条件查询 / 统计 ==========
   protected void validateCriteriaFields(Criteria<T> criteria) {
     for (Condition condition : criteria.getMainConditions()) {
+      // 原生 SQL 片段（如 or() 条件组）没有 fieldName，其列名合法性由生成方保证
+      if (condition.getFieldName() == null) {
+        continue;
+      }
       if (FieldCache.getFieldByName(entityClass, condition.getFieldName()) == null) {
         throw new UndefinedFieldException(
             String.format(

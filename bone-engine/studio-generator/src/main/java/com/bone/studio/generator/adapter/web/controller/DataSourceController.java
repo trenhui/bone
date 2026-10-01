@@ -20,7 +20,9 @@ import com.bone.studio.generator.application.query.qry.LoadTablesQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.model.data.DataSource;
 import com.bone.studio.generator.domain.model.data.DatabaseTable;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,10 +71,20 @@ public class DataSourceController {
     return ApiResponse.success(true);
   }
 
-  /** 物理库表发现（JDBC 元数据），详设 §5.2 */
+  /** 物理库表发现（JDBC 元数据），详设 §5.2；支持关键字过滤与条数上限。 */
   @GetMapping("/{id}/tables")
-  public ApiResponse<List<DatabaseTable>> listTables(@PathVariable String id) {
-    LoadTablesQuery query = LoadTablesQuery.builder().dataSourceId(id).build();
+  public ApiResponse<List<DatabaseTable>> listTables(
+      @PathVariable String id,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) Integer limit,
+      @RequestParam(required = false) Boolean includeColumns) {
+    LoadTablesQuery query =
+        LoadTablesQuery.builder()
+            .dataSourceId(id)
+            .keyword(keyword)
+            .limit(limit)
+            .includeColumns(includeColumns)
+            .build();
     return ApiResponse.success(loadTablesHandler.handle(query));
   }
 
@@ -84,15 +96,17 @@ public class DataSourceController {
   }
 
   @PostMapping("/{id}/tables:sync")
-  public ApiResponse<Void> syncTables(
+  public ApiResponse<Map<String, Object>> syncTables(
       @PathVariable String id, @RequestBody(required = false) SyncTableMetadataCommand body) {
     SyncTableMetadataCommand cmd =
         SyncTableMetadataCommand.builder()
             .dataSourceId(id)
             .tableNames(body != null ? body.getTableNames() : null)
             .build();
-    syncHandler.handle(cmd);
-    return ApiResponse.success();
+    // 返回同步表数：前端据此提示「已同步 N 张表」，选中的表没命中时能立刻发现
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("syncedCount", syncHandler.handle(cmd));
+    return ApiResponse.success(data);
   }
 
   @PostMapping("/{id}:test-connection")

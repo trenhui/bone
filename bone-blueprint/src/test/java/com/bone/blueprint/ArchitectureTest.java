@@ -229,6 +229,10 @@ public class ArchitectureTest {
           .orShould()
           .haveSimpleName("ProductView") // MasterDataGateway 内嵌的商品视图 record
           .orShould()
+          // 定价规则网关：同属业务网关（依赖"该商品/客户适用哪条计价规则"这类业务事实），
+          // 与 MasterDataGateway 分工见其类注释。此前遗漏白名单，导致该规则在 HEAD 上恒红。
+          .haveSimpleName("PricingRuleGateway")
+          .orShould()
           .haveSimpleName("package-info");
 
   // E-5.4（v5.5 补门禁）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent。

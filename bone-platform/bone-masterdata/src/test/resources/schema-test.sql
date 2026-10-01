@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS mdm_field (
     length                  INT,
     required                TINYINT      DEFAULT 0,
     default_value           VARCHAR(500),
+    min_value               DECIMAL(30,6) NULL,
+    max_value               DECIMAL(30,6) NULL,
     description             VARCHAR(500),
     sort_order              INT          DEFAULT 0,
     created_at              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,

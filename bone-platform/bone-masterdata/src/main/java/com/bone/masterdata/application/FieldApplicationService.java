@@ -82,7 +82,10 @@ public class FieldApplicationService {
             cmd.getRequired(),
             cmd.getDefaultValue(),
             cmd.getDescription(),
-            0);
+            cmd.getSortOrder() == null ? 0 : cmd.getSortOrder(),
+            cmd.getMinValue(),
+            cmd.getMaxValue());
+    assertRangeValid(field);
     Long savedId = fieldRepository.save(field);
     domainEventPublisher.publish(new MasterDataFieldAddedEvent(field));
     return savedId;
@@ -111,7 +114,10 @@ public class FieldApplicationService {
         cmd.getRequired(),
         cmd.getDefaultValue(),
         cmd.getDescription(),
-        cmd.getSortOrder());
+        cmd.getSortOrder(),
+        cmd.getMinValue(),
+        cmd.getMaxValue());
+    assertRangeValid(field);
     fieldRepository.update(field);
   }
 
@@ -131,6 +137,19 @@ public class FieldApplicationService {
       throw NotFoundException.of("主数据字段不存在");
     }
     fieldRepository.deleteById(id);
+  }
+
+  /**
+   * 值域自检：下限不得大于上限。
+   *
+   * <p>真实场景：建模时把单价下限填成 100、上限填成 10，若不拦，所有记录写入都必然失败且报错指向"数据不合法"， 排查方向会被带到记录侧。建模期就 fail
+   * fast，把错误定位在真正出错的地方。
+   */
+  private void assertRangeValid(MasterDataField field) {
+    String violation = field.validateRangeDefinition();
+    if (violation != null) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.FIELD_RANGE_INVALID, violation);
+    }
   }
 
   @Transactional(readOnly = true)
@@ -163,6 +182,8 @@ public class FieldApplicationService {
         .defaultValue(field.getDefaultValue())
         .description(field.getDescription())
         .sortOrder(field.getSortOrder())
+        .minValue(field.getMinValue())
+        .maxValue(field.getMaxValue())
         .build();
   }
 }

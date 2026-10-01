@@ -49,12 +49,13 @@ public class GeneratorUtils {
    * generated-code/com/example/demo/...}，拷进工程无法编译。
    */
   public static String basePath(String sourceRoot, String basePackage, String moduleName) {
-    String packagePath = basePackage == null ? "" : basePackage.replace('.', '/');
+    // 目录必须与包名同源：都用 effectivePackage 推导，否则「包名去重了、目录没去重」会让产物落到包结构之外的目录，
+    // javac 直接报「类 X 位于错误的包/目录」。
+    String packagePath = effectivePackage(basePackage, moduleName).replace('.', '/');
     String pkg = packagePath.isEmpty() ? "" : "/" + packagePath;
-    String module = moduleName == null || moduleName.isEmpty() ? "" : "/" + moduleName;
     String root = sourceRoot == null || sourceRoot.isEmpty() ? "" : sourceRoot + "/";
-    String path = pkg + module;
-    // path 以分隔符开头（包名/模块段各自带前导 /），与 root 直接拼接会出现 src/main/java//com/...
+    String path = pkg;
+    // path 以分隔符开头，与 root 直接拼接会出现 src/main/java//com/...
     while (path.startsWith("/")) {
       path = path.substring(1);
     }
@@ -137,8 +138,32 @@ public class GeneratorUtils {
     }
   }
 
+  /**
+   * 包路径：{@code basePackage} + 模块段，并对「末段重复」去重。
+   *
+   * <p><b>为何要去重</b>：真实填写习惯里，用户常把 {@code basePackage} 写成已含模块名（{@code com.bone.order}） 再填 {@code
+   * moduleName=order}，直接拼接会得到 {@code com.bone.order.order}——产物包名与目录双双多一层， 拷进工程后整包 import
+   * 全部失效。这里只在模块段与基础包末段完全相同时折叠，不影响 {@code com.bone + order} 这类正常组合。
+   */
   public String getPackagePath(String basePackage, String moduleName) {
-    return basePackage + (moduleName != null && !moduleName.isEmpty() ? "." + moduleName : "");
+    return effectivePackage(basePackage, moduleName);
+  }
+
+  /** {@link #getPackagePath(String, String)} 的静态入口，供 {@link #basePath} 保持目录与包名同源。 */
+  public static String effectivePackage(String basePackage, String moduleName) {
+    if (basePackage == null || basePackage.isEmpty()) {
+      return moduleName == null ? "" : moduleName;
+    }
+    if (moduleName == null || moduleName.isEmpty()) {
+      return basePackage;
+    }
+    String normalizedModule = moduleName.replace('-', '_').toLowerCase(Locale.ROOT);
+    int lastDot = basePackage.lastIndexOf('.');
+    String lastSegment = lastDot < 0 ? basePackage : basePackage.substring(lastDot + 1);
+    if (lastSegment.replace('-', '_').toLowerCase(Locale.ROOT).equals(normalizedModule)) {
+      return basePackage;
+    }
+    return basePackage + "." + moduleName;
   }
 
   /**

@@ -2,6 +2,7 @@ package com.bone.masterdata.adapter.web.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import lombok.Data;
 
 /** 主数据字段创建请求。name/code/type 在 md_field 上为 NOT NULL，缺校验会撞库并被兜成 500。 */
@@ -24,4 +25,10 @@ public class CreateMasterDataFieldReq {
   private String defaultValue;
   private String description;
   private Integer sortOrder;
+
+  /** 数值字段取值下限（NUMBER 类型生效），例如单价下限 0.01。 */
+  private BigDecimal minValue;
+
+  /** 数值字段取值上限（NUMBER 类型生效），例如折扣率上限 1。 */
+  private BigDecimal maxValue;
 }

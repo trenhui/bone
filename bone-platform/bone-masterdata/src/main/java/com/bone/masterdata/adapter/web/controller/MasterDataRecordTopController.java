@@ -9,6 +9,7 @@ import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataRecordReq;
 import com.bone.masterdata.adapter.web.dto.response.MasterDataRecordVersionResp;
 import com.bone.masterdata.application.RecordApplicationService;
 import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
+import com.bone.masterdata.application.query.dto.ImportResultDTO;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
@@ -46,6 +47,19 @@ public class MasterDataRecordTopController {
   public ApiResponse<MasterDataRecordDTO> detail(@PathVariable Long id) {
     return ApiResponse.success(
         recordService.detail(MasterDataRecordByIdQuery.builder().id(id).build()));
+  }
+
+  /**
+   * 按业务编码点查当前生效记录（下游按业务键消费的主路径）。
+   *
+   * <p>只返回「已发布 + 当前版本 + 生效窗口含此刻」的记录；未命中（不存在/未发布/已过期） data 为 null，调用方无需区分失败原因。避免消费方为查一条记录整实体全量拉取。
+   */
+  @GetMapping("/by-code")
+  public ApiResponse<MasterDataRecordDTO> byCode(
+      @RequestParam("masterDataEntityId") Long masterDataEntityId,
+      @RequestParam("code") String code) {
+    return ApiResponse.success(
+        recordService.findByBusinessKey(masterDataEntityId, code).orElse(null));
   }
 
   @PostMapping("/entity/{masterDataEntityId}")
@@ -113,12 +127,14 @@ public class MasterDataRecordTopController {
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ApiResponse<List<Long>> importRecords(
+  public ApiResponse<ImportResultDTO> importRecords(
       @RequestParam(value = "masterDataEntityId", required = false) Long masterDataEntityId,
+      @RequestParam(value = "duplicateStrategy", required = false) String duplicateStrategy,
       @RequestParam MultipartFile file) {
     try {
       ImportMasterDataRecordsCommand cmd = new ImportMasterDataRecordsCommand();
       cmd.setMasterDataEntityId(masterDataEntityId);
+      cmd.setDuplicateStrategy(duplicateStrategy);
       cmd.setOriginalFilename(file.getOriginalFilename());
       cmd.setDataStream(file.getInputStream());
       return ApiResponse.success(recordService.importRecords(cmd));

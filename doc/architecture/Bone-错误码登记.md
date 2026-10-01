@@ -262,6 +262,11 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_RULE_SEVERITY_INVALID` | 400 | 质量规则严重级别非法（可选 LOW/MEDIUM/HIGH/CRITICAL） |
 | `MD_RULE_EXPRESSION_INVALID` | 400 | 质量规则表达式无法求值（缺 field/pattern、min-max 非数值等） |
 | `MD_RECORD_DATA_PARSE_FAILED` | 500 | 主数据记录 data 不是合法 JSON |
+| `MD_RECORD_FIELD_VALIDATION_FAILED` | 400 | 主数据记录未通过字段定义校验（必填/类型/长度/值域） |
+| `MD_RECORD_CODE_DUPLICATE` | 409 | 同一租户+实体下 record_code 重复 |
+| `MD_RECORD_EFFECTIVE_WINDOW_INVALID` | 400 | 记录生效期窗口非法（开始晚于结束） |
+| `MD_RECORD_IMMUTABLE_DATA` | 400 | 已发布记录的 data 变更须走变更审批（导入 UPDATE 策略命中时拦截） |
+| `MD_FIELD_RANGE_INVALID` | 400 | 字段数值值域定义非法（下限大于上限） |
 | `MD_TEMPLATE_DOMAIN_DUPLICATE` | 409 | 领域模板编码已存在 |
 | `MD_TEMPLATE_FIELD_SCHEMA_INVALID` | 400 | 模板字段结构非法 |
 | `MD_TEMPLATE_NOT_FOUND` | 404 | 领域模板不存在 |
@@ -371,6 +376,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_ORDER_STATUS_CONFLICT` | 409 | 订单当前状态不允许该操作 |
 | `BP_ORDER_STATUS_INVALID` | 400 | 订单状态查询入参非法 |
 | `BP_ORDER_STOCK_INSUFFICIENT` | 409 | 下单商品库存不足（同步预校验失败） |
+| `BP_ORDER_PRODUCT_NOT_PUBLISHED` | 409 | 下单商品未发布（不可下单） |
 | `BP_PAYMENT_NOT_FOUND` | 404 | 支付单不存在（含跨租户不可见） |
 | `BP_PAYMENT_STATUS_CONFLICT` | 409 | 支付单当前状态不允许该操作 |
 | `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |

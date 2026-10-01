@@ -42,6 +42,19 @@ public final class MasterDataErrorCodes {
   /** 记录写入时未通过字段定义校验（必填/类型/长度/值域），400。 */
   public static final String RECORD_FIELD_VALIDATION_FAILED = "MD_RECORD_FIELD_VALIDATION_FAILED";
 
+  // 记录业务主键与生效期（2026-10-01 真实场景补齐）
+  /** 同一租户+实体下 record_code 重复，409。 */
+  public static final String RECORD_CODE_DUPLICATE = "MD_RECORD_CODE_DUPLICATE";
+
+  /** 生效期窗口非法（开始晚于结束），400。 */
+  public static final String RECORD_EFFECTIVE_WINDOW_INVALID = "MD_RECORD_EFFECTIVE_WINDOW_INVALID";
+
+  /** 已发布记录的 data 变更须走变更审批（导入 UPDATE 策略命中时拦截），400。 */
+  public static final String RECORD_IMMUTABLE_DATA = "MD_RECORD_IMMUTABLE_DATA";
+
+  /** 字段数值值域定义非法（下限大于上限），400。 */
+  public static final String FIELD_RANGE_INVALID = "MD_FIELD_RANGE_INVALID";
+
   // 数据标准（404）
   public static final String DATA_STANDARD_NOT_FOUND = "MD_DATA_STANDARD_NOT_FOUND";
 

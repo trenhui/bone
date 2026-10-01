@@ -25,9 +25,9 @@ final class RuntimeQuerySupport {
         throw new RuntimeRecordException(
             MetadataErrorCodes.RUNTIME_INVALID_QUERY, "fields 含未建模列: " + field);
       }
-      cols.add(code);
+      cols.add(physicalColumnOf(entity, code));
     }
-    cols.add(pk);
+    cols.add(physicalColumnOf(entity, pk));
     if (entity.hasColumn("tenant_id")) {
       cols.add("tenant_id");
     }
@@ -47,7 +47,8 @@ final class RuntimeQuerySupport {
         throw new RuntimeRecordException(
             MetadataErrorCodes.RUNTIME_INVALID_QUERY, "sort 含未建模列: " + spec.field());
       }
-      parts.add("`" + field + "` " + (spec.descending() ? "DESC" : "ASC"));
+      parts.add(
+          "`" + physicalColumnOf(entity, field) + "` " + (spec.descending() ? "DESC" : "ASC"));
     }
     return " ORDER BY " + String.join(", ", parts);
   }
@@ -65,11 +66,20 @@ final class RuntimeQuerySupport {
           MetadataErrorCodes.RUNTIME_INVALID_QUERY, "q 过滤字段未建模: " + filter.field());
     }
     params.addValue("qFilterValue", filter.value());
-    return " AND `" + field + "` = :qFilterValue";
+    return " AND `" + physicalColumnOf(entity, field) + "` = :qFilterValue";
   }
 
   private static Set<String> allowedDataColumns(PublishedRuntimeEntity entity) {
     return entity.columns().stream().map(RuntimeFieldColumn::code).collect(Collectors.toSet());
+  }
+
+  /** 物理列名解析：机制 B 返回 ext_* 预留列，机制 A 返回 code 本身（用于 SELECT/ORDER/FILTER 渲染）。 */
+  private static String physicalColumnOf(PublishedRuntimeEntity entity, String code) {
+    return entity.columns().stream()
+        .filter(c -> c.code().equals(code))
+        .findFirst()
+        .map(c -> c.physicalColumn() != null ? c.physicalColumn() : code)
+        .orElse(code);
   }
 
   private static String sanitize(String name) {

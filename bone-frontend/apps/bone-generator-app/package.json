@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "e2e:api": "node e2e-generator-api.mjs",
-    "e2e:ui": "node e2e-generator-ui.mjs"
+    "e2e:ui": "node e2e-generator-ui.mjs",
+    "e2e:real": "node e2e-generator-real-scenario.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.1",

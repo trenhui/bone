@@ -173,8 +173,12 @@ public class MetaField extends AbstractEntity<Long> {
     return f;
   }
 
-  /** 发布机制 B 字段时由 SDK 分配后回写预留列物理列名（ext_*）。 */
-  public void setPhysicalColumn(String physicalColumn) {
+  /**
+   * 发布机制 B 字段时由 SDK 分配后回写预留列物理列名（ext_*）。
+   *
+   * <p>领域行为方法（非贫血 setter）：应用层只经此入口变更物理列归属，不得直接触碰 {@code physicalColumn} 字段。
+   */
+  public void assignPhysicalColumn(String physicalColumn) {
     this.physicalColumn = physicalColumn;
   }
 

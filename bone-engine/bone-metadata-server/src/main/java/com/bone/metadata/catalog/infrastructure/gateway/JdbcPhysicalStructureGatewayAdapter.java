@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -85,9 +84,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     } else {
       Set<String> existing = readExistingColumns(table);
       for (MetaField field : fields) {
-        String col = requireIdentifier(field.getCode(), "field.code");
+        String physCol = physicalColumnOf(field);
+        String col = requireIdentifier(physCol, "field.physicalColumn");
         if (!existing.contains(col)) {
-          statements.add(buildAddColumn(table, field));
+          statements.add(buildAddColumn(table, field, col));
         }
       }
     }
@@ -116,7 +116,8 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
       if (Boolean.TRUE.equals(field.getDeleted())) {
         continue;
       }
-      String col = requireIdentifier(field.getCode(), "field.code");
+      String physCol = physicalColumnOf(field);
+      String col = requireIdentifier(physCol, "field.physicalColumn");
       if (!existing.contains(col)) {
         continue; // 缺列由 align 补齐，不拦截
       }
@@ -216,7 +217,9 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     Set<String> activeCodes = activeFieldCodes(entity);
     List<String> statements = new ArrayList<>();
     for (String col : readExistingColumns(table)) {
-      if (RESERVED_COLUMNS.contains(col) || activeCodes.contains(col)) {
+      if (RESERVED_COLUMNS.contains(col)
+          || activeCodes.contains(col)
+          || isReservedPoolColumn(col)) {
         continue;
       }
       statements.add(buildDropColumn(table, col));
@@ -232,12 +235,27 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     return PhysicalStructurePlan.of(entity.getCode(), table, statements, executed, status, message);
   }
 
-  /** 当前实体下所有活动（未软删）字段的物理列名集合。 */
+  /** 当前实体下所有活动（未软删）字段的物理列名集合（含机制 B 的 ext_* 预留列）。 */
   private Set<String> activeFieldCodes(MetaEntity entity) {
-    return metaFieldRepository.where(MetaField::getEntityId).eq(entity.getId()).list().stream()
-        .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
-        .map(MetaField::getCode)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> codes = new LinkedHashSet<>();
+    for (MetaField f :
+        metaFieldRepository.where(MetaField::getEntityId).eq(entity.getId()).list()) {
+      if (Boolean.TRUE.equals(f.getDeleted())) {
+        continue;
+      }
+      if (f.getCode() != null) {
+        codes.add(f.getCode());
+      }
+      if (f.getPhysicalColumn() != null) {
+        codes.add(f.getPhysicalColumn());
+      }
+    }
+    return codes;
+  }
+
+  /** 预留列池（ext_*）由平台托管，禁止被「清理漂移列」误删。 */
+  private static boolean isReservedPoolColumn(String col) {
+    return col != null && col.startsWith("ext_");
   }
 
   // ===================== 逆向建模：存量物理表采集 =====================
@@ -341,7 +359,8 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     sb.append(", `tenant_id` BIGINT NOT NULL");
     boolean hasIdField = false;
     for (MetaField field : fields) {
-      String col = requireIdentifier(field.getCode(), "field.code");
+      String physCol = physicalColumnOf(field);
+      String col = requireIdentifier(physCol, "field.physicalColumn");
       if ("id".equals(col)) {
         hasIdField = true;
         continue;
@@ -364,10 +383,14 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     return sb.toString();
   }
 
-  private String buildAddColumn(String table, MetaField field) {
-    String col = requireIdentifier(field.getCode(), "field.code");
+  private String buildAddColumn(String table, MetaField field, String col) {
     // 加列不破坏既有数据：不允许 NOT NULL（避免存量行约束失败）
     return "ALTER TABLE `" + table + "` ADD COLUMN `" + col + "` " + toSqlType(field);
+  }
+
+  /** 机制 B：逻辑字段的物理列名 = physicalColumn（已分配预留列时）否则回退 code（真实物理列）。 */
+  private static String physicalColumnOf(MetaField field) {
+    return field.getPhysicalColumn() != null ? field.getPhysicalColumn() : field.getCode();
   }
 
   private String toSqlType(MetaField field) {

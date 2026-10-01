@@ -1,5 +1,6 @@
 package com.bone.masterdata.adapter.web.dto.response;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,8 @@ public class MasterDataFieldDetailResp {
   private String defaultValue;
   private String description;
   private Integer sortOrder;
+  private BigDecimal minValue;
+  private BigDecimal maxValue;
   private Instant createdAt;
   private Instant updatedAt;
 }

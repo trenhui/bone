@@ -3,7 +3,9 @@ package com.bone.metadata.catalog.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -18,6 +20,7 @@ import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityPublishedEvent;
+import com.bone.metadata.catalog.domain.model.physical.PhysicalTableSnapshot;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
@@ -52,6 +55,11 @@ class MetaEntityPublishEventTest {
 
   @BeforeEach
   void setUp() {
+    // 发布路径（RUNTIME）会经 readTableSnapshot 取物理表快照以分配机制 B 预留列；
+    // 事件/异常翻译类测试不验证 B 分配，统一返回「表不存在」快照让 allocateReservedColumns 早退。
+    lenient()
+        .when(physicalStructureGateway.readTableSnapshot(anyString()))
+        .thenReturn(new PhysicalTableSnapshot("placeholder", false, List.of()));
     service =
         new MetaEntityApplicationService(
             metaEntityRepository,
@@ -60,6 +68,7 @@ class MetaEntityPublishEventTest {
             iamModuleValidator,
             tenantProvider,
             physicalStructureGateway,
+            mock(com.bone.metadata.sdk.metadata.api.MetadataService.class),
             () -> null,
             Optional.empty(),
             domainEventPublisher,

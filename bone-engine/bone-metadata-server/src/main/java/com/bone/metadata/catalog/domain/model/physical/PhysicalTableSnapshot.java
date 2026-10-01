@@ -19,9 +19,16 @@ public record PhysicalTableSnapshot(
     return new PhysicalTableSnapshot(tableName, false, List.of());
   }
 
-  /** 可建模列：排除保留列（平台托管，不作为业务字段）。 */
+  /** 可建模列：排除保留列（平台托管，不作为业务字段）与机制 B 预留列池（ext_*，平台托管）。 */
   public List<PhysicalTableColumn> modelableColumns() {
-    return columns.stream().filter(c -> !c.reserved()).toList();
+    return columns.stream()
+        .filter(c -> !c.reserved() && !isReservedPoolColumn(c.columnName()))
+        .toList();
+  }
+
+  /** 预留列池前缀（ext_）：由平台托管，逆向建模与漂移清理均不得触碰。 */
+  private static boolean isReservedPoolColumn(String columnName) {
+    return columnName != null && columnName.startsWith("ext_");
   }
 
   public int reservedCount() {

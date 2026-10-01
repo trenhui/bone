@@ -13,6 +13,7 @@ export default function SyncTablesModal(props: UseCodeGeneration): JSX.Element {
     syncForm,
     handleMetadataSourceChange,
     handleDataSourceChange,
+    handleTableSearch,
   } = props;
 
   const isPhysical = metadataSource === 'PHYSICAL_DB';
@@ -65,10 +66,11 @@ export default function SyncTablesModal(props: UseCodeGeneration): JSX.Element {
         >
           <Select
             mode="multiple"
-            placeholder="请选择要同步的表"
+            placeholder="请选择要同步的表（输入表名可服务端搜索）"
             showSearch
             optionFilterProp="children"
             loading={loading}
+            onSearch={isPhysical ? (v: string) => handleTableSearch(v) : undefined}
             options={dataSourceTables.map((table) => {
               const tableName = table.tableName || '';
               const tableComment = table.tableComment || '';

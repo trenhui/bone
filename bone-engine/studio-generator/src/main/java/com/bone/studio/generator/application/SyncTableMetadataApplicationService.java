@@ -43,8 +43,14 @@ public class SyncTableMetadataApplicationService {
   private final GenTableMetadataReadPort tableMetadataReadPort;
   private final TenantProvider tenantProvider;
 
+  /**
+   * 同步表元数据，返回实际同步的表数。
+   *
+   * <p><b>为何要返回数量</b>：此前返回 void、接口 {@code data} 恒为 null——前端拿不到「同步了几张表」， 只能无差别弹「表结构同步成功」。选了 20
+   * 张、实际只命中 3 张（表名写错 / 无权限）时用户完全无感。
+   */
   @Transactional
-  public void handle(SyncTableMetadataCommand cmd) {
+  public int handle(SyncTableMetadataCommand cmd) {
     Long tenantId = tenantProvider.currentTenantIdOrNull();
     if (tenantId == null) {
       throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, cmd.getDataSourceId());
@@ -78,6 +84,7 @@ public class SyncTableMetadataApplicationService {
       }
       replaceColumns(metadata.getId(), dbTable, tenantId);
     }
+    return dbTables.size();
   }
 
   /**

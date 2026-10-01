@@ -454,59 +454,43 @@ public class Criteria<T> {
     return sb.toString();
   }
 
-  /** 添加OR条件组 */
+  /**
+   * 添加OR条件组：子条件以括号包裹为一个原生片段，与外层 AND 条件安全组合（{@code a AND (b OR c)}）。
+   *
+   * <p>子条件复用 {@link Condition#toSql()} 的 SQL 生成（含 LIKE 方言模板与 IS NULL 等操作符）， 避免手拼出现无别名列或不带通配符的 LIKE。
+   */
   public Criteria<T> or(Consumer<Criteria<T>> orConditions) {
-    if (orConditions != null) {
-      Criteria<T> orCriteria = Criteria.create();
-      orConditions.accept(orCriteria);
-
-      // 将OR条件组合并到当前条件中
-      if (!orCriteria.getMainConditions().isEmpty() || !orCriteria.getExtConditions().isEmpty()) {
-        // 创建OR条件组
-        StringBuilder orConditionBuilder = new StringBuilder("(");
-        List<String> orConditionParts = new ArrayList<>();
-
-        // 处理主表条件
-        for (Condition cond : orCriteria.getMainConditions()) {
-          // 复用现有条件的SQL生成逻辑
-          orConditionParts.add(
-              cond.getColumn()
-                  + " "
-                  + cond.getOperator().getSymbol()
-                  + (cond.getOperator() == Operator.IS_NULL
-                          || cond.getOperator() == Operator.IS_NOT_NULL
-                      ? ""
-                      : " :" + cond.getParamName()));
-        }
-
-        // 处理扩展表条件
-        for (Condition cond : orCriteria.getExtConditions()) {
-          orConditionParts.add(
-              cond.getColumn()
-                  + " "
-                  + cond.getOperator().getSymbol()
-                  + (cond.getOperator() == Operator.IS_NULL
-                          || cond.getOperator() == Operator.IS_NOT_NULL
-                      ? ""
-                      : " :" + cond.getParamName()));
-        }
-
-        // 复制所有参数
-        parameters.putAll(orCriteria.getParameters());
-
-        orConditionBuilder.append(String.join(" OR ", orConditionParts)).append(")");
-
-        // 添加原生SQL条件片段
-        addNativeCondition(orConditionBuilder.toString());
-      }
+    if (orConditions == null) {
+      return this;
     }
+    Criteria<T> orCriteria = Criteria.create();
+    orConditions.accept(orCriteria);
+
+    List<String> orConditionParts = new ArrayList<>();
+    // 处理主表条件
+    for (Condition cond : orCriteria.getMainConditions()) {
+      orConditionParts.add(cond.toSql());
+    }
+    // 处理扩展表条件
+    for (Condition cond : orCriteria.getExtConditions()) {
+      orConditionParts.add(cond.toSql());
+    }
+    if (orConditionParts.isEmpty()) {
+      return this;
+    }
+    // 复制所有参数（OR 子条件的命名参数与主条件共用同一张参数表）
+    parameters.putAll(orCriteria.getParameters());
+
+    // 添加原生SQL条件片段
+    addNativeCondition("(" + String.join(" OR ", orConditionParts) + ")");
     return this;
   }
 
-  /** 添加原生SQL条件片段 */
+  /** 添加原生SQL条件片段（toSql 原样输出，字段名校验须跳过）。 */
   private void addNativeCondition(String condition) {
-    // 直接添加SQL片段作为条件，使用最基本的构造函数参数
-    mainConditions.add(new Condition(null, condition, null, Operator.EQ));
+    Condition cond = new Condition(null, condition, null, Operator.EQ);
+    cond.setNativeFragment(true);
+    mainConditions.add(cond);
   }
 
   /** 智能处理NULL值的相等条件 */

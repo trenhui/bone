@@ -48,7 +48,8 @@ export const dataSourceApi = {
   testConnection: (id: string): Resp<{ success?: boolean; message?: string }> =>
     api.post(`${G}/data-sources/${id}:test-connection`),
 
-  listTables: (id: string): Resp<DatabaseTable[]> => api.get(`${G}/data-sources/${id}/tables`),
+  listTables: (id: string, params?: { keyword?: string; limit?: number }): Resp<DatabaseTable[]> =>
+    api.get(`${G}/data-sources/${id}/tables`, { params }),
 
   syncTables: (id: string, data?: { tableNames?: string[] }): Resp<{ syncedCount?: number }> =>
     api.post(`${G}/data-sources/${id}/tables:sync`, {
@@ -169,8 +170,8 @@ export const tableMetadataApi = {
   sync: (data: { dataSourceId: string; tableNames?: string[] }): Resp<{ syncedCount?: number }> =>
     dataSourceApi.syncTables(data.dataSourceId, { tableNames: data.tableNames }),
 
-  getDataSourceTables: (dataSourceId: string): Resp<DatabaseTable[]> =>
-    dataSourceApi.listTables(dataSourceId),
+  getDataSourceTables: (dataSourceId: string, params?: { keyword?: string; limit?: number }): Resp<DatabaseTable[]> =>
+    dataSourceApi.listTables(dataSourceId, params),
 };
 
 export default api;

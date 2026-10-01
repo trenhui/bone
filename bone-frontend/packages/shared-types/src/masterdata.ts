@@ -23,6 +23,12 @@ export interface MasterDataField {
   required: boolean;
   defaultValue?: string;
   description?: string;
+  /** 显示顺序（建模期可排，列表按此升序渲染）。 */
+  sortOrder?: number;
+  /** 数值字段取值下限（NUMBER 类型生效），例如单价下限 0.01。 */
+  minValue?: number;
+  /** 数值字段取值上限（NUMBER 类型生效），例如折扣率上限 1。 */
+  maxValue?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,6 +101,16 @@ export interface MasterDataRecord {
   data: Record<string, unknown>;
   /** 六态状态机（UC-T7）：DRAFT→PENDING_APPROVAL→APPROVED→PUBLISHED→ARCHIVED；驳回退回 DRAFT */
   status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED' | 'ARCHIVED';
+  /** 业务唯一编码（租户+实体内唯一），下游按此定位记录。 */
+  recordCode?: string;
+  /** 显示名称：列表页/下拉框直接可读，不必再解 data JSON。 */
+  displayName?: string;
+  /** 生效开始时间，未开始则记录处于"待生效"。 */
+  effectiveFrom?: string;
+  /** 生效结束时间，已过期则记录处于"已失效"。 */
+  effectiveTo?: string;
+  /** 是否当前有效版本。 */
+  current?: boolean;
   createdAt: string;
   updatedAt: string;
   publishTime?: string;
@@ -120,6 +136,9 @@ export interface CreateMasterDataFieldReq {
   required: boolean;
   defaultValue?: string;
   description?: string;
+  sortOrder?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface UpdateMasterDataFieldReq {
@@ -129,6 +148,9 @@ export interface UpdateMasterDataFieldReq {
   required?: boolean;
   defaultValue?: string;
   description?: string;
+  sortOrder?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface CreateDataQualityRuleReq {
@@ -148,8 +170,24 @@ export interface UpdateDataQualityRuleReq {
   description?: string;
 }
 
+export interface CreateMasterDataRecordReq {
+  data: Record<string, unknown>;
+  /** 业务唯一编码（租户+实体内唯一）。 */
+  recordCode?: string;
+  /** 显示名称。 */
+  displayName?: string;
+  /** 生效开始时间，格式 yyyy-MM-dd HH:mm:ss。 */
+  effectiveFrom?: string;
+  /** 生效结束时间，格式 yyyy-MM-dd HH:mm:ss。 */
+  effectiveTo?: string;
+}
+
 export interface UpdateMasterDataRecordReq {
   data: Record<string, unknown>;
+  recordCode?: string;
+  displayName?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
 export interface MasterDataEntityPageQry {
@@ -176,8 +214,24 @@ export interface DataQualityRuleListQry {
   severity?: string;
 }
 
+/** 导入失败明细：逐行隔离，成功行照常入库。 */
+export interface ImportFailure {
+  /** 1-based 行号（与 Excel 行号对齐，去掉表头后从 1 起算）。 */
+  rowNumber: number;
+  recordCode?: string;
+  reason: string;
+}
+
+/**
+ * 导入结果：部分成功语义。
+ *
+ * 真实场景：ERP 批量同步 1000 条里混进 2 条脏数据，若整批回滚业务方无从下手；
+ * 返回"成功 N 条 + 失败行号与原因"，才能形成可执行的修正清单。
+ */
 export interface ImportResult {
+  total: number;
   successCount: number;
-  failCount: number;
-  errors: string[];
+  failureCount: number;
+  recordIds: number[];
+  failures: ImportFailure[];
 }

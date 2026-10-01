@@ -1,5 +1,6 @@
 package com.bone.masterdata.application.query.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,8 @@ public class MasterDataFieldDTO {
   private String defaultValue;
   private String description;
   private Integer sortOrder;
+  private BigDecimal minValue;
+  private BigDecimal maxValue;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 }

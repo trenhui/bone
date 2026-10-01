@@ -67,6 +67,7 @@ class MetaEntityWorkbenchServiceTest {
             iamModuleValidator,
             tenantProvider,
             physicalStructureGateway,
+            mock(com.bone.metadata.sdk.metadata.api.MetadataService.class),
             () -> null,
             Optional.empty(),
             domainEventPublisher,

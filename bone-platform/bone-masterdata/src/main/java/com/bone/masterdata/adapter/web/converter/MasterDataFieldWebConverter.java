@@ -24,6 +24,9 @@ public class MasterDataFieldWebConverter {
         .required(req.getRequired())
         .defaultValue(req.getDefaultValue())
         .description(req.getDescription())
+        .sortOrder(req.getSortOrder())
+        .minValue(req.getMinValue())
+        .maxValue(req.getMaxValue())
         .build();
   }
 
@@ -37,6 +40,8 @@ public class MasterDataFieldWebConverter {
         .defaultValue(req.getDefaultValue())
         .description(req.getDescription())
         .sortOrder(req.getSortOrder())
+        .minValue(req.getMinValue())
+        .maxValue(req.getMaxValue())
         .build();
   }
 
@@ -54,6 +59,8 @@ public class MasterDataFieldWebConverter {
         .createdAt(toInstant(dto.getCreatedAt()))
         .updatedAt(toInstant(dto.getUpdatedAt()))
         .sortOrder(dto.getSortOrder())
+        .minValue(dto.getMinValue())
+        .maxValue(dto.getMaxValue())
         .build();
   }
 

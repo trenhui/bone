@@ -80,9 +80,42 @@ public class MasterDataRecord extends TenantAggregateRoot<Long> {
   public static MasterDataRecord create(
       Long id, Long masterDataEntityId, String recordCode, String displayName, String data) {
     MasterDataRecord record = create(id, masterDataEntityId, data);
-    record.recordCode = recordCode;
-    record.displayName = displayName;
+    record.recordCode = normalize(recordCode);
+    record.displayName = normalize(displayName);
     return record;
+  }
+
+  /**
+   * 设置生效期窗口（真实场景：季节性商品 / 限时价格 / 停售下架）。
+   *
+   * <p>此前 effective_from / effective_to 两列在库里存在但没有任何写入口，API 也不回显， 于是"定时生效/到期失效"是个只有表结构的空壳能力。
+   *
+   * @throws DomainException 开始时间晚于结束时间
+   */
+  public void assignEffectiveWindow(LocalDateTime from, LocalDateTime to) {
+    if (from != null && to != null && from.isAfter(to)) {
+      throw new DomainException("生效开始时间不得晚于结束时间");
+    }
+    this.effectiveFrom = from;
+    this.effectiveTo = to;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** 当前时刻是否落在生效期内（未配置视为长期有效）。 */
+  public boolean isEffectiveAt(LocalDateTime moment) {
+    LocalDateTime now = moment == null ? LocalDateTime.now() : moment;
+    if (effectiveFrom != null && now.isBefore(effectiveFrom)) {
+      return false;
+    }
+    return effectiveTo == null || !now.isAfter(effectiveTo);
+  }
+
+  private static String normalize(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   // 提交审批（UC-T7）。L2/L3 治理等级下，未经审批不得直接发布。
@@ -154,9 +187,25 @@ public class MasterDataRecord extends TenantAggregateRoot<Long> {
   }
 
   public void updateData(String recordCode, String displayName, String data) {
-    this.recordCode = recordCode;
-    this.displayName = displayName;
+    this.recordCode = normalize(recordCode);
+    this.displayName = normalize(displayName);
     update(data);
+  }
+
+  /**
+   * 发布态补登业务主键 / 显示名（不改 data），存量治理专用。
+   *
+   * <p>真实场景：历史记录当年创建时没填业务编码（record_code 全 NULL），上线后要按编码对外提供服务，
+   * 不能因为"已发布不可改"就把整批记录作废重建。补登只动元数据、不动业务数据，风险可控。
+   */
+  public void completeBusinessKey(String recordCode, String displayName) {
+    if (recordCode != null && !recordCode.isBlank()) {
+      this.recordCode = normalize(recordCode);
+    }
+    if (displayName != null && !displayName.isBlank()) {
+      this.displayName = normalize(displayName);
+    }
+    this.updatedAt = LocalDateTime.now();
   }
 
   public void archive() {

@@ -8,6 +8,8 @@ import com.bone.masterdata.application.command.CreateMasterDataRecordCommand;
 import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.command.UpdateMasterDataRecordCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
+import com.bone.masterdata.application.query.dto.ImportFailureDTO;
+import com.bone.masterdata.application.query.dto.ImportResultDTO;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
@@ -35,12 +37,14 @@ import com.bone.masterdata.domain.service.record.RecordDataValidator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -88,12 +92,56 @@ public class RecordApplicationService {
     }
     checkDataSize(cmd.getData());
     validateAgainstFieldDefinitions(cmd.getMasterDataEntityId(), cmd.getData());
+    assertRecordCodeUnique(cmd.getMasterDataEntityId(), cmd.getRecordCode(), null);
     Long recordId = DistributedIdGenerator.generateLongId();
     MasterDataRecord record =
-        MasterDataRecord.create(recordId, cmd.getMasterDataEntityId(), cmd.getData());
+        MasterDataRecord.create(
+            recordId,
+            cmd.getMasterDataEntityId(),
+            cmd.getRecordCode(),
+            cmd.getDisplayName(),
+            cmd.getData());
+    assignEffectiveWindow(record, cmd.getEffectiveFrom(), cmd.getEffectiveTo());
     Long savedId = recordRepository.save(record);
     domainEventPublisher.publishFrom(record);
     return savedId;
+  }
+
+  /**
+   * 业务编码唯一性守卫（租户+实体内）。
+   *
+   * <p>不能只依赖 DB 唯一索引：撞约束会抛 DataIntegrityViolationException 被兜成 500， 前端只能看到"服务器错误"。应用层先查一次，才能返回 409
+   * + 明确业务码。
+   *
+   * @param excludeRecordId 更新场景排除自身（不改编码时不应被自己判为重码）
+   */
+  private void assertRecordCodeUnique(Long entityId, String recordCode, Long excludeRecordId) {
+    if (entityId == null || recordCode == null || recordCode.isBlank()) {
+      return;
+    }
+    List<MasterDataRecord> existing =
+        recordRepository.findByEntityIdAndRecordCode(entityId, recordCode.trim());
+    boolean clash =
+        existing.stream()
+            .anyMatch(r -> excludeRecordId == null || !r.getId().equals(excludeRecordId));
+    if (clash) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_CODE_DUPLICATE, "记录编码[" + recordCode + "]在该实体下已存在");
+    }
+  }
+
+  /** 生效期窗口赋值，非法窗口在写入前拦截（避免落库后才发现数据自相矛盾）。 */
+  private void assignEffectiveWindow(
+      MasterDataRecord record, LocalDateTime from, LocalDateTime to) {
+    if (from == null && to == null) {
+      return;
+    }
+    if (from != null && to != null && from.isAfter(to)) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_EFFECTIVE_WINDOW_INVALID,
+          "生效开始时间 " + from + " 不得晚于结束时间 " + to);
+    }
+    record.assignEffectiveWindow(from, to);
   }
 
   @Capability(
@@ -113,7 +161,17 @@ public class RecordApplicationService {
     }
     checkDataSize(cmd.getData());
     validateAgainstFieldDefinitions(record.getMasterDataEntityId(), cmd.getData());
-    record.update(cmd.getData());
+    assertRecordCodeUnique(record.getMasterDataEntityId(), cmd.getRecordCode(), record.getId());
+    // 发布态「补登业务主键」是被允许的治理动作：只改编码/名称/生效期、不动 data。
+    // 但凡 data 变动，仍走 updateData → 领域层拒绝（已发布记录须先走变更审批）。
+    boolean dataChanged =
+        cmd.getData() != null && !java.util.Objects.equals(record.getData(), cmd.getData());
+    if (!dataChanged && record.getStatus() == MasterDataRecordStatus.PUBLISHED) {
+      record.completeBusinessKey(cmd.getRecordCode(), cmd.getDisplayName());
+    } else {
+      record.updateData(cmd.getRecordCode(), cmd.getDisplayName(), cmd.getData());
+    }
+    assignEffectiveWindow(record, cmd.getEffectiveFrom(), cmd.getEffectiveTo());
     recordRepository.update(record);
     domainEventPublisher.publishFrom(record);
   }
@@ -285,24 +343,86 @@ public class RecordApplicationService {
       name = "ImportMasterDataRecords",
       description = "批量导入主数据记录",
       inputSchema = "{\"masterDataEntityId\": \"long\", \"fileContent\": \"string\"}",
-      outputSchema = "{\"recordIds\": \"array<long>\"}",
+      outputSchema =
+          "{\"total\": \"int\", \"successCount\": \"int\", \"failureCount\": \"int\","
+              + " \"recordIds\": \"array<long>\","
+              + " \"failures\": \"array<{rowNumber:int,recordCode:string,reason:string}>\"}",
       idempotent = false,
       cost = 5,
       retryable = false,
       timeout = 60)
-  @Transactional
-  public List<Long> importRecords(ImportMasterDataRecordsCommand cmd) {
+  public ImportResultDTO importRecords(ImportMasterDataRecordsCommand cmd) {
     List<MasterDataRecord> parsed =
         excelImportPort.parseRecords(
             cmd.getDataStream(), cmd.getOriginalFilename(), cmd.getMasterDataEntityId());
+    // 真实场景：ERP/上游系统周期性全量同步，同一批编码反复导入。默认 FAIL 保持既有语义；
+    // duplicateStrategy=UPDATE 时按业务编码做幂等 upsert，重复行更新而非报错。
+    boolean upsert = "UPDATE".equalsIgnoreCase(cmd.getDuplicateStrategy());
     List<Long> ids = new ArrayList<>();
-    for (MasterDataRecord record : parsed) {
-      checkDataSize(record.getData());
-      validateAgainstFieldDefinitions(cmd.getMasterDataEntityId(), record.getData());
-      ids.add(recordRepository.save(record));
-      domainEventPublisher.publishFrom(record);
+    List<ImportFailureDTO> failures = new ArrayList<>();
+    int updated = 0;
+    for (int i = 0; i < parsed.size(); i++) {
+      MasterDataRecord record = parsed.get(i);
+      int rowNumber = i + 1;
+      try {
+        checkDataSize(record.getData());
+        validateAgainstFieldDefinitions(cmd.getMasterDataEntityId(), record.getData());
+        if (upsert && record.getRecordCode() != null) {
+          List<MasterDataRecord> existing =
+              recordRepository.findByEntityIdAndRecordCode(
+                  cmd.getMasterDataEntityId(), record.getRecordCode());
+          if (!existing.isEmpty()) {
+            upsertExisting(existing.get(0), record);
+            updated++;
+            continue;
+          }
+        }
+        assertRecordCodeUnique(cmd.getMasterDataEntityId(), record.getRecordCode(), null);
+        ids.add(recordRepository.save(record));
+        domainEventPublisher.publishFrom(record);
+      } catch (RuntimeException ex) {
+        // 真实场景：ERP 批量同步 1000 条里混进 2 条脏数据，绝不能整批回滚。
+        // 逐行隔离失败原因，成功行照常入库，让业务方拿到"哪些行失败、为什么"的可执行清单。
+        failures.add(
+            ImportFailureDTO.builder()
+                .rowNumber(rowNumber)
+                .recordCode(record.getRecordCode())
+                .reason(ex.getMessage())
+                .build());
+      }
     }
-    return ids;
+    return ImportResultDTO.builder()
+        .total(parsed.size())
+        .successCount(ids.size())
+        .updatedCount(updated)
+        .failureCount(failures.size())
+        .recordIds(ids)
+        .failures(failures)
+        .build();
+  }
+
+  /**
+   * UPDATE 策略下的编码命中更新（应用层 upsert，不依赖 DB 的 INSERT..ON DUPLICATE）。
+   *
+   * <p>已发布记录的数据变更仍走领域门禁：data 有变化直接判失败（须变更审批）， 仅补登编码/名称/生效期等元数据时放行。
+   */
+  private void upsertExisting(MasterDataRecord target, MasterDataRecord incoming) {
+    boolean dataChanged = !java.util.Objects.equals(target.getData(), incoming.getData());
+    if (target.getStatus() == MasterDataRecordStatus.PUBLISHED && dataChanged) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.RECORD_IMMUTABLE_DATA,
+          "记录[" + target.getRecordCode() + "]已发布，数据变更须走变更审批，导入行跳过");
+    }
+    if (dataChanged) {
+      target.updateData(incoming.getRecordCode(), incoming.getDisplayName(), incoming.getData());
+    } else {
+      target.completeBusinessKey(incoming.getRecordCode(), incoming.getDisplayName());
+    }
+    if (incoming.getEffectiveFrom() != null || incoming.getEffectiveTo() != null) {
+      target.assignEffectiveWindow(incoming.getEffectiveFrom(), incoming.getEffectiveTo());
+    }
+    recordRepository.update(target);
+    domainEventPublisher.publishFrom(target);
   }
 
   @Transactional(readOnly = true)
@@ -315,7 +435,12 @@ public class RecordApplicationService {
     int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataRecord> result =
         recordRepository.pageByEntityIdStatusAndKeyword(
-            qry.getMasterDataEntityId(), status, qry.getKeyword(), page, size);
+            qry.getMasterDataEntityId(),
+            status,
+            qry.getKeyword(),
+            qry.getOnlyCurrent(),
+            page,
+            size);
     return PageResult.of(
         result.getRecords().stream().map(this::toDto).toList(),
         result.getTotal(),
@@ -330,6 +455,25 @@ public class RecordApplicationService {
       throw new NotFoundException("主数据记录不存在");
     }
     return toDto(record);
+  }
+
+  /**
+   * 按业务编码点查当前生效记录（下游按业务键消费的主路径）。
+   *
+   * <p>真实场景：blueprint / 外部系统下单时按商品编码取价，此前只能整实体全量拉取 + 内存匹配。 点查契约把「已发布 + 当前版本 + 生效窗口含此刻」三道门禁收敛到主数据侧，
+   * 过期价格在这里就被拦下，消费方拿到的一定是现在能用的那一条。未命中返回 empty（不区分"不存在"与"未生效"）。
+   */
+  @Transactional(readOnly = true)
+  public Optional<MasterDataRecordDTO> findByBusinessKey(Long masterDataEntityId, String code) {
+    if (masterDataEntityId == null || code == null || code.isBlank()) {
+      return Optional.empty();
+    }
+    return recordRepository.findByEntityIdAndRecordCode(masterDataEntityId, code.trim()).stream()
+        .filter(r -> r.getStatus() == MasterDataRecordStatus.PUBLISHED)
+        .filter(r -> Boolean.TRUE.equals(r.getIsCurrent()))
+        .filter(r -> r.isEffectiveAt(LocalDateTime.now()))
+        .findFirst()
+        .map(this::toDto);
   }
 
   /** 导出主数据记录为文本（原 ExportMasterDataRecordsQueryHandler，无能力元数据）。 */
@@ -442,6 +586,14 @@ public class RecordApplicationService {
         .masterDataEntityId(record.getMasterDataEntityId())
         .data(record.getData())
         .status(record.getStatus() != null ? record.getStatus().name() : null)
+        .recordCode(record.getRecordCode())
+        .displayName(record.getDisplayName())
+        .effectiveFrom(record.getEffectiveFrom())
+        .effectiveTo(record.getEffectiveTo())
+        // current 语义 = 当前版本 且 此刻在生效期内：过期记录不再对外宣称"当前生效"，
+        // 否则消费方按 current=true 取到一条已过期价格（isCurrent 落库后不会随时间自动翻转）。
+        .current(
+            Boolean.TRUE.equals(record.getIsCurrent()) && record.isEffectiveAt(LocalDateTime.now()))
         .createdAt(record.getCreatedAt())
         .updatedAt(record.getUpdatedAt())
         .publishTime(record.getPublishTime())

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.bone.masterdata.application.command.CreateMasterDataRecordCommand;
 import com.bone.masterdata.application.command.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
+import com.bone.masterdata.application.query.dto.ImportResultDTO;
 import com.bone.masterdata.common.MasterDataProperties;
 import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
@@ -73,6 +74,11 @@ class RecordApplicationServiceTest {
     cmd.setOriginalFilename("records.xlsx");
     cmd.setDataStream(new ByteArrayInputStream(new byte[0]));
 
-    assertEquals(List.of(33L), service.importRecords(cmd));
+    // 导入接口已改为「部分成功」语义：返回 ImportResultDTO（total/successCount/recordIds/failures），
+    // 不再直接返回 ID 列表（任一行失败不再整批回滚）。
+    ImportResultDTO result = service.importRecords(cmd);
+    assertEquals(1, result.getTotal());
+    assertEquals(1, result.getSuccessCount());
+    assertEquals(List.of(33L), result.getRecordIds());
   }
 }

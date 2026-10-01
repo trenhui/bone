@@ -3,6 +3,7 @@ package com.bone.metadata.engine.runtime;
 import com.bone.core.model.PageResult;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,7 +76,10 @@ public class JdbcRuntimeRecordService {
     params.addValue("offset", offset);
     List<Map<String, Object>> rows = jdbc.queryForList(listSql, params);
 
-    return PageResult.of(rows, total != null ? total : 0L, safePage, safeSize);
+    // 机制 B：物理 ext_* 列 → 逻辑 code 回填，保证返回字段名稳定
+    List<Map<String, Object>> translated =
+        rows.stream().map(r -> toLogical(entity, r)).collect(Collectors.toList());
+    return PageResult.of(translated, total != null ? total : 0L, safePage, safeSize);
   }
 
   public Map<String, Object> getById(String entityCode, long tenantId, String recordId) {
@@ -95,7 +99,8 @@ public class JdbcRuntimeRecordService {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
-    return rows.get(0);
+    // 机制 B：物理 ext_* 列 → 逻辑 code 回填，保证返回字段名稳定
+    return toLogical(entity, rows.get(0));
   }
 
   public Map<String, Object> create(
@@ -120,7 +125,9 @@ public class JdbcRuntimeRecordService {
     }
     stampAuditColumns(entity, payload, operatorId, true);
 
-    List<String> cols = new ArrayList<>(payload.keySet());
+    // 机制 B：逻辑 code → 物理 ext_* 列；机制 A：physicalColumn 为 null，物理列即 code
+    Map<String, Object> sqlPayload = toPhysical(entity, payload);
+    List<String> cols = new ArrayList<>(sqlPayload.keySet());
     String colList =
         cols.stream().map(c -> "`" + sanitizeIdentifier(c) + "`").collect(Collectors.joining(", "));
     String valList = cols.stream().map(c -> ":" + c).collect(Collectors.joining(", "));
@@ -133,7 +140,7 @@ public class JdbcRuntimeRecordService {
             + valList
             + ")";
 
-    MapSqlParameterSource params = new MapSqlParameterSource(payload);
+    MapSqlParameterSource params = new MapSqlParameterSource(sqlPayload);
     jdbc.update(sql, params);
     return getById(entityCode, tenantId, String.valueOf(payload.get(pk)));
   }
@@ -175,8 +182,10 @@ public class JdbcRuntimeRecordService {
     }
     stampAuditColumns(entity, payload, operatorId, false);
 
+    // 机制 B：逻辑 code → 物理 ext_* 列；机制 A：physicalColumn 为 null，物理列即 code
+    Map<String, Object> sqlPayload = toPhysical(entity, payload);
     List<String> setParts = new ArrayList<>();
-    for (String c : payload.keySet()) {
+    for (String c : sqlPayload.keySet()) {
       setParts.add("`" + sanitizeIdentifier(c) + "` = :" + c);
     }
     if (versioned) {
@@ -196,7 +205,7 @@ public class JdbcRuntimeRecordService {
 
     String sql = "UPDATE " + quoteTable(entity.physicalTableName()) + " SET " + setClause + where;
 
-    MapSqlParameterSource params = new MapSqlParameterSource(payload);
+    MapSqlParameterSource params = new MapSqlParameterSource(sqlPayload);
     params.addValue("pk", parsePkValue(recordId));
     addTenantParam(entity, tenantId, params);
     if (versioned && expectedVersion != null) {
@@ -268,7 +277,7 @@ public class JdbcRuntimeRecordService {
       if (present) {
         validateType(col, payload.get(col.code()));
         if (col.unique()) {
-          assertUnique(entity, tenantId, col.code(), payload.get(col.code()), null);
+          assertUnique(entity, tenantId, col, payload.get(col.code()), null);
         }
       }
     }
@@ -288,7 +297,7 @@ public class JdbcRuntimeRecordService {
       if (value != null) {
         validateType(col, value);
         if (col.unique()) {
-          assertUnique(entity, tenantId, col.code(), value, recordId);
+          assertUnique(entity, tenantId, col, value, recordId);
         }
       }
     }
@@ -312,16 +321,17 @@ public class JdbcRuntimeRecordService {
   private void assertUnique(
       PublishedRuntimeEntity entity,
       long tenantId,
-      String code,
+      RuntimeFieldColumn col,
       Object value,
       String excludeRecordId) {
     String table = quoteTable(entity.physicalTableName());
-    String col = sanitizeIdentifier(code);
+    // 机制 B：唯一校验必须在物理 ext_* 列上执行
+    String colName = sanitizeIdentifier(physName(col));
     StringBuilder sql =
         new StringBuilder("SELECT COUNT(*) FROM ")
             .append(table)
             .append(" WHERE `")
-            .append(col)
+            .append(colName)
             .append("` = :val");
     MapSqlParameterSource params = new MapSqlParameterSource();
     params.addValue("val", value);
@@ -339,8 +349,54 @@ public class JdbcRuntimeRecordService {
     Long count = jdbc.queryForObject(sql.toString(), params, Long.class);
     if (count != null && count > 0) {
       throw new RuntimeRecordException(
-          MetadataErrorCodes.RUNTIME_DUPLICATE, "字段「" + code + "」值「" + value + "」已存在（唯一约束）");
+          MetadataErrorCodes.RUNTIME_DUPLICATE, "字段「" + col.code() + "」值「" + value + "」已存在（唯一约束）");
     }
+  }
+
+  /** 物理列名：机制 B 返回 ext_* 预留列，机制 A 返回 code 本身。 */
+  private static String physName(RuntimeFieldColumn col) {
+    return col.physicalColumn() != null ? col.physicalColumn() : col.code();
+  }
+
+  /**
+   * 将「逻辑 code 键」的写入负载翻译为「物理列名键」。 机制 A（核心）字段 physicalColumn 为 null → 物理列即 code；机制 B（扩展）字段
+   * physicalColumn 指向 ext_* 预留列。 系统列（id/tenant_id/deleted/审计列）本就是物理名，原样透传。
+   */
+  private static Map<String, Object> toPhysical(
+      PublishedRuntimeEntity entity, Map<String, Object> logical) {
+    Map<String, Object> physical = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> e : logical.entrySet()) {
+      String key = e.getKey();
+      if (SYSTEM_COLUMNS.contains(key)) {
+        physical.put(key, e.getValue());
+        continue;
+      }
+      String phys =
+          entity.columns().stream()
+              .filter(c -> c.code().equals(key))
+              .findFirst()
+              .map(JdbcRuntimeRecordService::physName)
+              .orElse(key);
+      physical.put(phys, e.getValue());
+    }
+    return physical;
+  }
+
+  /** 将物理列结果翻译回逻辑 code 键（机制 B 字段 ext_* → code），保证返回给前端的字段名稳定。 */
+  private static Map<String, Object> toLogical(
+      PublishedRuntimeEntity entity, Map<String, Object> row) {
+    Map<String, String> physToLogical = new HashMap<>();
+    for (RuntimeFieldColumn c : entity.columns()) {
+      if (c.physicalColumn() != null) {
+        physToLogical.put(c.physicalColumn(), c.code());
+      }
+    }
+    Map<String, Object> out = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> e : row.entrySet()) {
+      String logical = physToLogical.getOrDefault(e.getKey(), e.getKey());
+      out.put(logical, e.getValue());
+    }
+    return out;
   }
 
   // ===================== 操作者审计（P0-2） =====================
@@ -348,27 +404,52 @@ public class JdbcRuntimeRecordService {
   /**
    * 写入审计列。仅当物理表确实存在对应列时才注入（兼容发布前旧表无审计列的情况，避免 Unknown column 报错）。 物理列存在性通过 {@link
    * #hasPhysicalColumn} 探测并按表名缓存。
+   *
+   * <p><b>时间戳（created_at / updated_at）必须始终注入</b>：这两列通常 NOT NULL 且无默认值，遗漏会导致 INSERT/UPDATE 直接 500；
+   * 其取值与时间戳无关，与操作者是否可解析无关，故置于操作者判断之外。
+   *
+   * <p><b>操作者列（created_by / updated_by）为 BIGINT 用户 ID</b>：仅当 {@code operatorId} 可解析为数值时才注入； 未认证（dev
+   * 关闭安全）或主体名为非数值（如 anonymousUser）时跳过，避免把字符串写入 BIGINT 报 "Incorrect integer value"（P0 数据面健壮性）。操作者列本身
+   * nullable，跳过不影响落库。
    */
   private void stampAuditColumns(
       PublishedRuntimeEntity entity,
       Map<String, Object> payload,
       String operatorId,
       boolean isCreate) {
-    if (operatorId == null) {
-      return;
-    }
     String table = entity.physicalTableName();
-    if (hasPhysicalColumn(table, "created_by")) {
-      payload.put("created_by", operatorId);
-    }
-    if (hasPhysicalColumn(table, "updated_by")) {
-      payload.put("updated_by", operatorId);
-    }
+    // 时间戳：始终注入（NOT NULL 列，遗漏即 500）
     if (hasPhysicalColumn(table, "updated_at")) {
       payload.put("updated_at", new Timestamp(System.currentTimeMillis()));
     }
     if (isCreate && hasPhysicalColumn(table, "created_at")) {
       payload.put("created_at", new Timestamp(System.currentTimeMillis()));
+    }
+    // 操作者：仅当可解析为数值用户 ID 时注入 BIGINT 列
+    Long numericOp = toNumericOperatorId(operatorId);
+    if (numericOp != null) {
+      if (hasPhysicalColumn(table, "created_by")) {
+        payload.put("created_by", numericOp);
+      }
+      if (hasPhysicalColumn(table, "updated_by")) {
+        payload.put("updated_by", numericOp);
+      }
+    }
+  }
+
+  /** 将操作者标识解析为数值用户 ID（BIGINT 审计列）。无法解析时返回 null（跳过 by 列注入）。 */
+  private static Long toNumericOperatorId(String operatorId) {
+    if (operatorId == null) {
+      return null;
+    }
+    String s = operatorId.trim();
+    if (s.isEmpty()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(s);
+    } catch (NumberFormatException ignored) {
+      return null;
     }
   }
 

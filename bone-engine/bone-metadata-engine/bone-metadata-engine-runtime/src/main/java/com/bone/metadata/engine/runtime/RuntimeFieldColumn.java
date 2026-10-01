@@ -5,7 +5,8 @@ package com.bone.metadata.engine.runtime;
  *
  * <p>机制 A（领域固定列）：{@code physicalColumn == null}，运行期物理列名回退到 {@code code}。
  *
- * <p>机制 B（预留列扩展）：{@code physicalColumn} 指向宿主表上的 {@code ext_*} 物理列（由 SDK ColumnAllocator 分配）， 逻辑字段编码（code）与物理列名解耦。
+ * <p>机制 B（预留列扩展）：{@code physicalColumn} 指向宿主表上的 {@code ext_*} 物理列（由 SDK ColumnAllocator 分配），
+ * 逻辑字段编码（code）与物理列名解耦。
  */
 public record RuntimeFieldColumn(
     /** 字段编码（逻辑名；机制 A 时同时是物理列名） */

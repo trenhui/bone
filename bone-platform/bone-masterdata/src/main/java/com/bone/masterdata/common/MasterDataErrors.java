@@ -51,6 +51,8 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.TEMPLATE_NOT_FOUND, 404),
           Map.entry(MasterDataErrorCodes.TEMPLATE_NOT_PUBLISHED, 422),
           Map.entry(MasterDataErrorCodes.TEMPLATE_FIELD_SCHEMA_INVALID, 400),
+          // 字段值域定义非法（400）
+          Map.entry(MasterDataErrorCodes.FIELD_RANGE_INVALID, 400),
           // 数据质量规则（400）
           Map.entry(MasterDataErrorCodes.RULE_SEVERITY_INVALID, 400),
           Map.entry(MasterDataErrorCodes.RULE_EXPRESSION_INVALID, 400),
@@ -58,6 +60,10 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.RECORD_DATA_PARSE_FAILED, 500),
           // 记录写入时字段定义校验（400）
           Map.entry(MasterDataErrorCodes.RECORD_FIELD_VALIDATION_FAILED, 400),
+          // 记录业务主键与生效期
+          Map.entry(MasterDataErrorCodes.RECORD_CODE_DUPLICATE, 409),
+          Map.entry(MasterDataErrorCodes.RECORD_EFFECTIVE_WINDOW_INVALID, 400),
+          Map.entry(MasterDataErrorCodes.RECORD_IMMUTABLE_DATA, 400),
           // 数据标准（404）
           Map.entry(MasterDataErrorCodes.DATA_STANDARD_NOT_FOUND, 404),
           // 文件上传（400）

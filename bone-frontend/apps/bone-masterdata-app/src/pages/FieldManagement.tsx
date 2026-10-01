@@ -103,7 +103,10 @@ const FieldManagement: React.FC = () => {
       length: record.length,
       required: record.required,
       defaultValue: record.defaultValue,
-      description: record.description
+      description: record.description,
+      sortOrder: record.sortOrder,
+      minValue: record.minValue,
+      maxValue: record.maxValue
     });
     setIsModalOpen(true);
   };
@@ -208,6 +211,21 @@ const FieldManagement: React.FC = () => {
       dataIndex: 'defaultValue',
       key: 'defaultValue',
       render: (defaultValue: string) => defaultValue || '-'
+    },
+    {
+      title: '值域',
+      key: 'range',
+      render: (_: unknown, record: MasterDataField) => {
+        if (record.type !== 'NUMBER') {
+          return <span style={{ color: '#bfbfbf' }}>不适用</span>;
+        }
+        if (record.minValue == null && record.maxValue == null) {
+          return <span style={{ color: '#bfbfbf' }}>未限制</span>;
+        }
+        const lo = record.minValue == null ? '-∞' : record.minValue;
+        const hi = record.maxValue == null ? '+∞' : record.maxValue;
+        return <Tag color="blue">{`[${lo}, ${hi}]`}</Tag>;
+      }
     },
     {
       title: '描述',
@@ -328,8 +346,65 @@ const FieldManagement: React.FC = () => {
               <Option value={false}>否</Option>
             </Select>
           </Form.Item>
+          <Form.Item
+            name="sortOrder"
+            label="显示顺序"
+            extra="数字越小越靠前，留空默认按创建顺序"
+          >
+            <InputNumber placeholder="0" style={{ width: '100%' }} />
+          </Form.Item>
           <Form.Item name="defaultValue" label="默认值">
             <Input placeholder="请输入默认值" />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, next) => prev.type !== next.type}>
+            {({ getFieldValue }) =>
+              getFieldValue('type') === 'NUMBER' ? (
+                <Space size={12} style={{ display: 'flex' }}>
+                  <Form.Item
+                    name="minValue"
+                    label="取值下限"
+                    style={{ flex: 1 }}
+                    rules={[
+                      {
+                        validator: (_rule, value) =>
+                          value == null ||
+                          getFieldValue('maxValue') == null ||
+                          value <= getFieldValue('maxValue')
+                            ? Promise.resolve()
+                            : Promise.reject(new Error('下限不得大于上限'))
+                      }
+                    ]}
+                  >
+                    <InputNumber
+                      placeholder="不限则留空"
+                      style={{ width: '100%' }}
+                      stringMode={false}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    name="maxValue"
+                    label="取值上限"
+                    style={{ flex: 1 }}
+                    rules={[
+                      {
+                        validator: (_rule, value) =>
+                          value == null ||
+                          getFieldValue('minValue') == null ||
+                          value >= getFieldValue('minValue')
+                            ? Promise.resolve()
+                            : Promise.reject(new Error('上限不得小于下限'))
+                      }
+                    ]}
+                  >
+                    <InputNumber
+                      placeholder="不限则留空"
+                      style={{ width: '100%' }}
+                      stringMode={false}
+                    />
+                  </Form.Item>
+                </Space>
+              ) : null
+            }
           </Form.Item>
           <Form.Item name="description" label="描述">
             <TextArea rows={4} placeholder="请输入字段描述" />
@@ -355,6 +430,15 @@ const FieldManagement: React.FC = () => {
             <Descriptions.Item label="长度">{currentField.length || '-'}</Descriptions.Item>
             <Descriptions.Item label="是否必填">{currentField.required ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="默认值">{currentField.defaultValue || '-'}</Descriptions.Item>
+            <Descriptions.Item label="值域">
+              {currentField.type === 'NUMBER'
+                ? currentField.minValue == null && currentField.maxValue == null
+                  ? '未限制'
+                  : `[${currentField.minValue == null ? '-∞' : currentField.minValue}, ${
+                      currentField.maxValue == null ? '+∞' : currentField.maxValue
+                    }]`
+                : '不适用'}
+            </Descriptions.Item>
             <Descriptions.Item label="所属模型">
               {entities.find(e => e.id === currentField.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>

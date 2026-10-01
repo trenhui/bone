@@ -40,12 +40,19 @@ import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.catalog.domain.service.IamModuleValidator;
 import com.bone.metadata.runtime.RuntimeEntityCacheEvictor;
+import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.metadata.api.MetadataService;
+import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -76,6 +83,7 @@ public class MetaEntityApplicationService {
   private final IamModuleValidator iamModuleValidator;
   private final TenantProvider tenantProvider;
   private final PhysicalStructureGateway physicalStructureGateway;
+  private final MetadataService metadataService;
   private final CurrentUserProvider currentUserProvider;
   private final Optional<RuntimeEntityCacheEvictor> runtimeEntityCacheEvictor;
   private final DomainEventPublisher domainEventPublisher;
@@ -166,6 +174,8 @@ public class MetaEntityApplicationService {
     runtimeEntityCacheEvictor.ifPresent(
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      // 机制 B：对尚无物理列的新字段，经 SDK 预留列池动态分配 ext_*（不 ALTER 真实列），写回物理列名
+      allocateReservedColumns(entity);
       // 发布前先校验物理表类型漂移（非破坏性 align 无法修正），把运行期 SQL 错误前移为发布期拒绝
       validatePhysicalStructureForPublish(entity);
       physicalStructureGateway.align(entity.getTenantId(), entity.getCode());
@@ -612,6 +622,83 @@ public class MetaEntityApplicationService {
 
   private List<MetaField> loadAllFields(Long entityId) {
     return metaFieldRepository.pageFields(entityId, null, 1, MAX_FIELDS).getRecords();
+  }
+
+  /**
+   * 机制 B 预留列分配（方案 A）：RUNTIME 实体发布前，对「模型字段在物理表无对应列」的字段， 经 {@code
+   * MetadataService.allocateAndPersistFields} 复用 SDK ColumnAllocator 从 {@code column_allocation}
+   * 池动态分配一个 {@code ext_*} 预留列，并把物理列名写回 {@code meta_field.physical_column}。
+   *
+   * <p>已分配过（physicalColumn 非空）的字段跳过——重复发布不会重复分配，SDK 依据 column_allocation 池状态推进。 真实物理列（机制 A /
+   * 逆向建模列，code 已存在于物理表）同样跳过。
+   */
+  private void allocateReservedColumns(MetaEntity entity) {
+    PhysicalTableSnapshot snapshot =
+        physicalStructureGateway.readTableSnapshot(entity.getTableName());
+    if (!snapshot.exists()) {
+      return; // 缺表由 align 创建（GENERATIVE 语义，无 B 字段分配需求）
+    }
+    Set<String> existing =
+        snapshot.columns().stream()
+            .map(PhysicalTableColumn::columnName)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    List<MetaField> fields = loadAllFields(entity.getId());
+    Map<String, MetaField> bFields = new LinkedHashMap<>();
+    for (MetaField f : fields) {
+      if (f.getPhysicalColumn() != null) {
+        continue; // 已分配预留列（机制 B 已完成）
+      }
+      if (existing.contains(f.getCode())) {
+        continue; // 已是真实物理列（机制 A / 逆向建模列）
+      }
+      bFields.put(f.getCode(), f);
+    }
+    if (bFields.isEmpty()) {
+      return;
+    }
+    String appCode = MetadataSdkContext.getAppCode();
+    List<FieldMetadata> toAllocate = new ArrayList<>();
+    for (MetaField f : bFields.values()) {
+      toAllocate.add(
+          FieldMetadata.builder()
+              .tenantId(entity.getTenantId())
+              .appCode(appCode)
+              .bizIdentityCode(entity.getCode())
+              .entityType(entity.getCode())
+              .name(f.getCode())
+              .dataType(toSdkDataType(f.getType()))
+              .build());
+    }
+    List<FieldMetadata> allocated = metadataService.allocateAndPersistFields(toAllocate);
+    Map<String, String> columnByName =
+        allocated.stream()
+            .filter(fm -> fm.getColumnName() != null)
+            .collect(
+                Collectors.toMap(
+                    FieldMetadata::getName, FieldMetadata::getColumnName, (a, b) -> a));
+    for (MetaField f : bFields.values()) {
+      String extCol = columnByName.get(f.getCode());
+      if (extCol != null) {
+        f.assignPhysicalColumn(extCol);
+        metaFieldRepository.update(f);
+      }
+    }
+  }
+
+  /** 元数据模型类型 → SDK DataType 枚举名（决定分配哪个 ext_* 池，必须对齐 column_allocation.data_type）。 */
+  private static String toSdkDataType(String metaType) {
+    if (metaType == null) {
+      return "STRING";
+    }
+    return switch (metaType.toUpperCase()) {
+      case "TEXT" -> "TEXT";
+      case "JSON" -> "JSON";
+      case "NUMBER", "DECIMAL", "DOUBLE", "FLOAT" -> "NUMBER";
+      case "INT", "INTEGER" -> "INTEGER";
+      case "DATE", "DATETIME", "TIMESTAMP", "TIME" -> "DATE";
+      case "BOOLEAN", "BOOL" -> "BOOLEAN";
+      default -> "STRING"; // STRING / VARCHAR / EMAIL / URL / LONG / BIGINT 等统一进 str 池
+    };
   }
 
   /** 汇总静态校验问题：基础规范 → 字段 → 关系 → RUNTIME 物理漂移 → 已发布说明。 */

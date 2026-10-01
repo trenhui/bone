@@ -53,12 +53,28 @@ public abstract class AbstractRateOrderPriceCalculator implements ExtensionOrder
   }
 
   /**
-   * 折扣率解析（三级回退）：① 元数据「定价规则中心」（bone-metadata-server PRICING_RULE，运营改规则即时生效） → ②
-   * masterdata「客户等级折扣率」（治理型主数据）→ ③ 本地常量。
+   * 折扣率解析（三级回退）：① masterdata「客户等级折扣率」（治理型主数据，本期主数据驱动定价的真源）→ ② 元数据「定价规则中心」 （bone-metadata-server
+   * PRICING_RULE，运营按 scenario 的额外叠加规则）→ ③ 本地常量。
+   *
+   * <p><b>优先级调整说明（BP-PRICING-1）</b>：原序为「规则中心 > 主数据」，但运行期规则中心（tenant 1001 的 PRICING_RULE）实际持有与主数据
+   * {@code CUSTOMER_LEVEL} 不一致的取值（如 vip=0.8 而非 0.88），导致主数据折扣率被架空、 客户档位定价错乱。本期目标为「bone-masterdata
+   * 驱动定价」，故将主数据置为最高优先级——运营在主数据侧改折扣率即下单即时生效； 规则中心保留为「主数据未建模该档位时的补充层」。
    *
    * <p>0.85 表示 85 折；{@link BigDecimal#ONE} 表示不打折。各来源保持「乘法折扣」同一口径。
    */
   protected BigDecimal resolveDiscountRate() {
+    String levelCode = masterDataLevelCode();
+    if (levelCode != null && masterDataGateway != null) {
+      try {
+        Optional<BigDecimal> rate = masterDataGateway.findLevelDiscountRate(levelCode);
+        if (rate.isPresent()) {
+          return rate.get();
+        }
+        log.info("主数据未配置等级折扣率，降级定价规则中心: levelCode={}", levelCode);
+      } catch (Exception e) {
+        log.warn("查询主数据等级折扣率异常，降级定价规则中心: levelCode={}", levelCode, e);
+      }
+    }
     String scenario = extensionScenario();
     if (scenario != null && pricingRuleGateway != null) {
       try {
@@ -67,19 +83,7 @@ public abstract class AbstractRateOrderPriceCalculator implements ExtensionOrder
           return ruleRate.get();
         }
       } catch (Exception e) {
-        log.warn("查询定价规则中心异常，降级下一级: scenario={}", scenario, e);
-      }
-    }
-    String levelCode = masterDataLevelCode();
-    if (levelCode != null && masterDataGateway != null) {
-      try {
-        Optional<BigDecimal> rate = masterDataGateway.findLevelDiscountRate(levelCode);
-        if (rate.isPresent()) {
-          return rate.get();
-        }
-        log.info("主数据未配置等级折扣率，回退本地常量: levelCode={}", levelCode);
-      } catch (Exception e) {
-        log.warn("查询主数据等级折扣率异常，回退本地常量: levelCode={}", levelCode, e);
+        log.warn("查询定价规则中心异常，降级本地常量: scenario={}", scenario, e);
       }
     }
     return discountRate();

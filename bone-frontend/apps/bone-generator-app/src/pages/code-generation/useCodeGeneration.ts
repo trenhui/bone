@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type Key } from 'react';
+import { useCallback, useEffect, useRef, useState, type Key } from 'react';
 import { Form, message, type TableColumnsType } from 'antd';
 import {
   codeGenerationApi,
@@ -104,9 +104,16 @@ export function useCodeGeneration() {
     setSyncModalVisible(true);
   };
 
-  const handleLoadDataSourceTables = async (dataSourceId: string): Promise<DatabaseTable[]> => {
+  const handleLoadDataSourceTables = async (
+    dataSourceId: string,
+    keyword?: string,
+  ): Promise<DatabaseTable[]> => {
     try {
-      const response = await tableMetadataApi.getDataSourceTables(dataSourceId);
+      // 真实库常有上千张表：默认给服务端搜索与上限，避免一次性全量拉取
+      const response = await tableMetadataApi.getDataSourceTables(dataSourceId, {
+        keyword: keyword || undefined,
+        limit: keyword ? 200 : 500,
+      });
       return response.data;
     } catch (error) {
       message.error('加载表列表失败');
@@ -174,6 +181,31 @@ export function useCodeGeneration() {
     }
   };
 
+  /** 表名服务端搜索（300ms 防抖）：物理库表数量大时避免全量拉取与高频请求 */
+  const latestMetaRef = useRef(metadataSource);
+  useEffect(() => {
+    latestMetaRef.current = metadataSource;
+  }, [metadataSource]);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleTableSearch = useCallback((keyword: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      if (latestMetaRef.current !== 'PHYSICAL_DB') return;
+      const dataSourceId = syncForm.getFieldValue('dataSourceId');
+      if (!dataSourceId) return;
+      void (async () => {
+        const tables = (await handleLoadDataSourceTables(dataSourceId, keyword)) ?? [];
+        setDataSourceTables(
+          tables.map((table) => ({
+            tableName: table.tableName,
+            tableComment: table.tableComment,
+          })),
+        );
+      })();
+    }, 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const syncTables = async () => {
     try {
       const values = await syncForm.validateFields();
@@ -202,8 +234,13 @@ export function useCodeGeneration() {
         setMetadataSource('CATALOG_SNAPSHOT');
         message.success('已选用元数据目录实体');
       } else {
-        await tableMetadataApi.sync(syncData);
-        message.success('表结构同步成功');
+        const resp = await tableMetadataApi.sync(syncData);
+        const syncedCount = resp.data?.syncedCount;
+        message.success(
+          typeof syncedCount === 'number'
+            ? `表结构同步成功，共同步 ${syncedCount} 张表`
+            : '表结构同步成功',
+        );
         setActiveDataSourceId(syncData.dataSourceId);
         await loadSyncedTables(syncData.dataSourceId);
       }
@@ -342,6 +379,7 @@ export function useCodeGeneration() {
     syncTables,
     handleMetadataSourceChange,
     handleDataSourceChange,
+    handleTableSearch,
     openConfigModal,
     generateCode,
     downloadCode,

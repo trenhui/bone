@@ -31,6 +31,13 @@ public class Condition {
   /** 是否扩展表字段 */
   private final boolean extension;
 
+  /**
+   * 是否为原生 SQL 片段（{@link Criteria#or} 条件组的产物）。
+   *
+   * <p>片段本体已经是完整条件（含括号与参数占位），{@link #toSql()} 必须原样输出， 不能再按 {@code 别名.列 操作符 :参数} 二次拼装。
+   */
+  private boolean nativeFragment = false;
+
   // LIKE 模板：数据库类型 -> SQL 生成函数
   private static final Map<DatabaseType, Function<LikeContext, String>> LIKE_TEMPLATES =
       new HashMap<>();
@@ -127,6 +134,10 @@ public class Condition {
 
   /** 生成 SQL 片段，自动选择 m. 或 ext. 前缀 */
   public String toSql() {
+    // 原生片段（OR 条件组）本体已是完整条件，直接输出，不能按「别名.列 操作符 :参数」二次拼装
+    if (nativeFragment) {
+      return column;
+    }
     String alias = extension ? "ext" : "m";
     String col = alias + "." + column;
     return switch (operator) {

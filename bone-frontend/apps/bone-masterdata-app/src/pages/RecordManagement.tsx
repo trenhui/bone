@@ -11,7 +11,10 @@ import {
   Tag,
   Descriptions,
   Upload,
+  DatePicker,
+  InputNumber,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined,
   CheckCircleOutlined, InboxOutlined, SendOutlined, AuditOutlined, CloseCircleOutlined,
@@ -24,6 +27,8 @@ import type {
   MasterDataRecord,
   MasterDataEntity,
   MasterDataField,
+  CreateMasterDataRecordReq,
+  UpdateMasterDataRecordReq,
 } from '../types';
 import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi, approvalApi } from '../services/api';
 import { useMessage } from '../App';
@@ -48,6 +53,19 @@ const parseRecordData = (data: unknown): Record<string, unknown> => {
     }
   }
   return typeof data === 'object' ? (data as Record<string, unknown>) : {};
+};
+
+/** 业务主键/生效期固定表单键：与动态字段 data 的键隔离，提交时单独拆出。 */
+const BK = {
+  recordCode: '__recordCode',
+  displayName: '__displayName',
+  effectiveFrom: '__effectiveFrom',
+  effectiveTo: '__effectiveTo'
+} as const;
+
+const toPayloadDateTime = (v: unknown): string | undefined => {
+  if (!v) return undefined;
+  return dayjs(v as never).format('YYYY-MM-DD HH:mm:ss');
 };
 
 const RecordManagement: React.FC = () => {
@@ -156,7 +174,13 @@ const RecordManagement: React.FC = () => {
     setIsEditMode(true);
     setCurrentRecord(record);
     // record.data 是 JSON 字符串，且键以字段 code 为准（与表单 name 对齐）
-    form.setFieldsValue(parseRecordData(record.data));
+    form.setFieldsValue({
+      ...parseRecordData(record.data),
+      [BK.recordCode]: record.recordCode,
+      [BK.displayName]: record.displayName,
+      [BK.effectiveFrom]: record.effectiveFrom ? dayjs(record.effectiveFrom) : undefined,
+      [BK.effectiveTo]: record.effectiveTo ? dayjs(record.effectiveTo) : undefined
+    });
     setIsModalOpen(true);
   };
 
@@ -273,16 +297,27 @@ const RecordManagement: React.FC = () => {
   // 提交表单
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      const values = await form.validateFields() as Record<string, unknown>;
+      // 业务主键与生效期不属于 data，单独传给后端写 record_code / display_name / effective_* 列
+      const { [BK.recordCode]: recordCode, [BK.displayName]: displayName,
+        [BK.effectiveFrom]: effFrom, [BK.effectiveTo]: effTo, ...data } = values;
+      const businessKey = {
+        recordCode: recordCode as string | undefined,
+        displayName: displayName as string | undefined,
+        effectiveFrom: toPayloadDateTime(effFrom),
+        effectiveTo: toPayloadDateTime(effTo)
+      };
       let response;
       if (isEditMode && currentRecord) {
-        response = await masterDataRecordApi.update(currentRecord.id, { data: values });
+        const payload: UpdateMasterDataRecordReq = { data, ...businessKey };
+        response = await masterDataRecordApi.update(currentRecord.id, payload);
       } else {
         if (!selectedEntityId) {
           message.error('请选择模型');
           return;
         }
-        response = await masterDataRecordApi.create(selectedEntityId, values);
+        const payload: CreateMasterDataRecordReq = { data, ...businessKey };
+        response = await masterDataRecordApi.create(selectedEntityId, payload);
       }
       if (response.code === 200) {
         message.success(isEditMode ? '更新成功' : '创建成功');
@@ -306,9 +341,14 @@ const RecordManagement: React.FC = () => {
     try {
       const response = await masterDataRecordApi.import(selectedEntityId, file);
       if (response.code === 200) {
-        message.success(`导入成功：成功 ${response.data.successCount} 条，失败 ${response.data.failCount} 条`);
-        if (response.data.failCount > 0) {
-          message.warning(`失败原因：${response.data.errors.join(', ')}`);
+        const { total, successCount, failureCount, failures } = response.data;
+        if (failureCount === 0) {
+          message.success(`导入成功：共 ${total} 条，全部入库`);
+        } else {
+          message.warning(`部分成功：共 ${total} 条，成功 ${successCount} 条，失败 ${failureCount} 条`);
+          (failures ?? []).slice(0, 5).forEach(f => {
+            message.error(`第 ${f.rowNumber} 行${f.recordCode ? `（${f.recordCode}）` : ''}：${f.reason}`);
+          });
         }
         fetchRecords();
       } else {
@@ -364,6 +404,23 @@ const RecordManagement: React.FC = () => {
     }
   };
 
+  // 生效期标签：未生效 / 生效中 / 已失效（与后端 MasterDataRecord#isEffectiveNow 同语义）
+  const getEffectiveTag = (record: MasterDataRecord) => {
+    const now = dayjs();
+    const from = record.effectiveFrom ? dayjs(record.effectiveFrom) : null;
+    const to = record.effectiveTo ? dayjs(record.effectiveTo) : null;
+    if (from && now.isBefore(from)) {
+      return <Tag color="gold">{`${from.format('YYYY-MM-DD')} 起生效`}</Tag>;
+    }
+    if (to && now.isAfter(to)) {
+      return <Tag color="red">已失效</Tag>;
+    }
+    if (!from && !to) {
+      return <Tag>长期有效</Tag>;
+    }
+    return <Tag color="green">生效中</Tag>;
+  };
+
   // 动态生成表单字段
   const generateFormFields = () => {
     return fields.map(field => {
@@ -378,7 +435,16 @@ const RecordManagement: React.FC = () => {
         );
         break;
       case 'NUMBER':
-        formItem = <Input type="number" placeholder={`请输入${field.name}`} />;
+        // 建模期声明的 [minValue, maxValue] 在这里落到输入控件，
+        // 让"单价必须 > 0""在录入时就拦住，而不是等提交后吃一个 400。
+        formItem = (
+          <InputNumber
+            style={{ width: '100%' }}
+            placeholder={`请输入${field.name}`}
+            min={field.minValue}
+            max={field.maxValue}
+          />
+        );
         break;
       case 'DATE':
         formItem = <Input type="date" placeholder={`请选择${field.name}`} />;
@@ -413,6 +479,21 @@ const RecordManagement: React.FC = () => {
   const generateTableColumns = (): ColumnsType<MasterDataRecord> => {
     const columns: ColumnsType<MasterDataRecord> = [
       {
+        title: '业务编码',
+        dataIndex: 'recordCode',
+        key: 'recordCode',
+        width: 150,
+        render: (code: string) => code || <span style={{ color: '#bfbfbf' }}>未补登</span>
+      },
+      {
+        title: '名称',
+        dataIndex: 'displayName',
+        key: 'displayName',
+        width: 160,
+        ellipsis: true,
+        render: (name: string) => name || '-'
+      },
+      {
         title: '记录ID',
         dataIndex: 'id',
         key: 'id'
@@ -439,6 +520,12 @@ const RecordManagement: React.FC = () => {
     });
 
     columns.push(
+      {
+        title: '生效期',
+        key: 'effective',
+        width: 130,
+        render: (_: unknown, record: MasterDataRecord) => getEffectiveTag(record)
+      },
       {
         title: '状态',
         dataIndex: 'status',
@@ -631,6 +718,39 @@ const RecordManagement: React.FC = () => {
         width={800}
       >
         <Form form={form} layout="vertical">
+          <Space size={12} style={{ display: 'flex' }}>
+            <Form.Item
+              name={BK.recordCode}
+              label="业务编码"
+              style={{ flex: 1 }}
+              extra="租户+模型内唯一，下游按此定位记录"
+            >
+              <Input placeholder="如 PRD-1001，留空则后续补登" />
+            </Form.Item>
+            <Form.Item
+              name={BK.displayName}
+              label="名称"
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="列表页直接展示的名称" />
+            </Form.Item>
+          </Space>
+          <Space size={12} style={{ display: 'flex' }}>
+            <Form.Item
+              name={BK.effectiveFrom}
+              label="生效开始"
+              style={{ flex: 1 }}
+            >
+              <DatePicker showTime style={{ width: '100%' }} placeholder="留空表示立即生效" />
+            </Form.Item>
+            <Form.Item
+              name={BK.effectiveTo}
+              label="生效结束"
+              style={{ flex: 1 }}
+            >
+              <DatePicker showTime style={{ width: '100%' }} placeholder="留空表示长期有效" />
+            </Form.Item>
+          </Space>
           {generateFormFields()}
         </Form>
       </Modal>

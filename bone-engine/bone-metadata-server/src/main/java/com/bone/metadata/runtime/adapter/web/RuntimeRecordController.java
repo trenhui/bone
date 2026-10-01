@@ -139,12 +139,34 @@ public class RuntimeRecordController {
     return ApiResponse.success();
   }
 
-  /** 从 Spring Security 上下文取当前操作者标识（JWT subject），用于审计列写入；未认证时返回 null。 */
+  /**
+   * 从 Spring Security 上下文取当前操作者标识，用于审计列写入。
+   *
+   * <p>优先级：① 认证详情中的数值 userId（JWT 的 userId claim，审计所需的 BIGINT 用户 ID，见 {@code
+   * JwtAuthenticationFilter} 写入 details）；② 主体名（仅当其本身为数值时）。 未认证、匿名主体（dev 关闭安全时为
+   * anonymousUser）或主体名非数值时返回 null —— 由 {@code JdbcRuntimeRecordService#stampAuditColumns} 负责跳过
+   * BIGINT 审计列、仅注入时间戳，避免把字符串写入 BIGINT 报 "Incorrect integer value"。
+   */
   private static String currentOperator() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+    if (auth == null
+        || !auth.isAuthenticated()
+        || auth
+            instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
       return null;
     }
-    return auth.getName();
+    Object details = auth.getDetails();
+    if (details instanceof Number) {
+      return details.toString();
+    }
+    if (details instanceof String s && s.matches("\\d+")) {
+      return s;
+    }
+    String name = auth.getName();
+    if (name != null && name.matches("\\d+")) {
+      return name;
+    }
+    // 主体名为非数值（如 username）时仍返回，交由下层按数值校验跳过 BIGINT 列
+    return name;
   }
 }

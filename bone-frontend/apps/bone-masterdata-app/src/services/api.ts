@@ -15,6 +15,7 @@ import type {
   UpdateMasterDataFieldReq,
   CreateDataQualityRuleReq,
   UpdateDataQualityRuleReq,
+  CreateMasterDataRecordReq,
   UpdateMasterDataRecordReq,
   MasterDataEntityPageQry,
   MasterDataRecordListQry,
@@ -129,8 +130,14 @@ export const masterDataRecordApi = {
   detail: (id: number): Promise<ApiResponse<MasterDataRecord>> => {
     return apiClient.get(`${MD}/records/${id}`);
   },
-  create: (masterDataEntityId: number, data: Record<string, unknown>): Promise<ApiResponse<MasterDataRecord>> => {
-    return apiClient.post(`${MD}/records/entity/${masterDataEntityId}`, data);
+  /**
+   * 创建记录：body 是 `{ data, recordCode, displayName, effectiveFrom, effectiveTo }`。
+   *
+   * 此前只发 data，导致 record_code 恒为 NULL；下游只能靠 data JSON 里的业务字段定位记录。
+   * 后端 `MasterDataRecordTopController#create` 现在按此契约接收业务主键与生效期。
+   */
+  create: (masterDataEntityId: number, payload: CreateMasterDataRecordReq): Promise<ApiResponse<number>> => {
+    return apiClient.post(`${MD}/records/entity/${masterDataEntityId}`, payload);
   },
   update: (id: number, data: UpdateMasterDataRecordReq): Promise<ApiResponse<MasterDataRecord>> => {
     return apiClient.put(`${MD}/records/${id}`, data);
@@ -144,6 +151,7 @@ export const masterDataRecordApi = {
   archive: (id: number): Promise<ApiResponse<void>> => {
     return apiClient.post(`${MD}/records/${id}/archive`);
   },
+  /** 导入：返回部分成功语义的 {@link ImportResult}（总数/成功数/失败行明细）。 */
   import: (masterDataEntityId: number, file: File): Promise<ApiResponse<ImportResult>> => {
     const formData = new FormData();
     formData.append('file', file);
