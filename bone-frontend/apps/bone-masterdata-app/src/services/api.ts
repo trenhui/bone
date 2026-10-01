@@ -20,6 +20,7 @@ import type {
   MasterDataEntityPageQry,
   MasterDataRecordListQry,
   DataQualityRuleListQry,
+  ImportDuplicateStrategy,
   ImportResult
 } from '../types';
 
@@ -151,14 +152,25 @@ export const masterDataRecordApi = {
   archive: (id: number): Promise<ApiResponse<void>> => {
     return apiClient.post(`${MD}/records/${id}/archive`);
   },
-  /** 导入：返回部分成功语义的 {@link ImportResult}（总数/成功数/失败行明细）。 */
-  import: (masterDataEntityId: number, file: File): Promise<ApiResponse<ImportResult>> => {
+  /**
+   * 导入：返回部分成功语义的 {@link ImportResult}（总数/成功数/更新数/失败行明细）。
+   *
+   * @param duplicateStrategy FAIL（默认）重码行计入失败清单；UPDATE 按业务编码幂等更新（ERP 周期全量同步场景）。
+   */
+  import: (
+    masterDataEntityId: number,
+    file: File,
+    duplicateStrategy?: ImportDuplicateStrategy,
+  ): Promise<ApiResponse<ImportResult>> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('masterDataEntityId', String(masterDataEntityId));
     return apiClient.post(`${MD}/records`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      params: { masterDataEntityId },
+      params: {
+        masterDataEntityId,
+        ...(duplicateStrategy ? { duplicateStrategy } : {}),
+      },
     });
   },
   /**

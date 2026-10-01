@@ -204,7 +204,12 @@ export interface MasterDataRecordListQry {
   masterDataEntityId: number;
   status?: string;
   keyword?: string;
+  /** 仅返回当前生效记录（当前版本 + 生效窗口含此刻）。 */
+  onlyCurrent?: boolean;
 }
+
+/** 导入重复策略：FAIL 重码行计入失败清单（默认）；UPDATE 按编码幂等更新。 */
+export type ImportDuplicateStrategy = 'FAIL' | 'UPDATE';
 
 export interface DataQualityRuleListQry {
   pageNum?: number;
@@ -231,6 +236,8 @@ export interface ImportFailure {
 export interface ImportResult {
   total: number;
   successCount: number;
+  /** duplicateStrategy=UPDATE 时按编码命中并更新的行数。 */
+  updatedCount: number;
   failureCount: number;
   recordIds: number[];
   failures: ImportFailure[];

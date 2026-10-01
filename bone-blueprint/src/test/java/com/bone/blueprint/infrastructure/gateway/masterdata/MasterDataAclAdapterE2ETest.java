@@ -48,6 +48,9 @@ class MasterDataAclAdapterE2ETest {
             body = "{\"code\":0,\"message\":\"ok\",\"data\":{\"token\":\"stub-token\"}}";
           } else if ("/api/v1/masterdata/entities".equals(path)) {
             body = entityPayload(q.get("keyword"));
+          } else if ("/api/v1/masterdata/records/by-code".equals(path)) {
+            // 主路径契约：masterdata 按业务键点查，只返回「已发布+当前版本+生效窗口含此刻」的记录
+            body = byCodePayload(q.get("masterDataEntityId"), q.get("code"));
           } else if ("/api/v1/masterdata/records".equals(path)) {
             body = recordPayload(q.get("masterDataEntityId"));
           } else {
@@ -134,6 +137,31 @@ class MasterDataAclAdapterE2ETest {
         + "{\"id\":3,\"entityCode\":\"CUSTOMER_LEVEL\",\"status\":\"PUBLISHED\",\"name\":\"客户等级折扣率\"},"
         + "{\"id\":9,\"entityCode\":\"MD_PRODUCT\",\"status\":\"DRAFT\",\"name\":\"草稿噪音\"}"
         + "]}}";
+  }
+
+  /**
+   * 点查契约 stub：与 masterdata {@code GET /records/by-code} 真实响应形态一致—— 命中返回记录
+   * DTO（recordCode/displayName/data）， 未命中 data 为 null（不区分不存在/未发布/已过期）。 客户/等级记录尚未补登 record_code，因此只有
+   * data JSON（验证存量回退路径被触发前点查也放行空 recordCode 形态）。
+   */
+  private String byCodePayload(String entityId, String code) {
+    if ("1".equals(entityId) && "P001".equals(code)) {
+      return "{\"code\":0,\"data\":{\"id\":10,\"status\":\"PUBLISHED\",\"recordCode\":\"P001\","
+          + "\"displayName\":\"测试商品\",\"data\":\"{\\\"code\\\":\\\"P001\\\",\\\"name\\\":\\\"测试商品\\\",\\\"price\\\":99.0}\"}}";
+    }
+    if ("1".equals(entityId) && "P002".equals(code)) {
+      return "{\"code\":0,\"data\":{\"id\":11,\"status\":\"PUBLISHED\",\"recordCode\":\"P002\","
+          + "\"displayName\":\"高端商品\",\"data\":\"{\\\"code\\\":\\\"P002\\\",\\\"name\\\":\\\"高端商品\\\",\\\"price\\\":199.0}\"}}";
+    }
+    if ("2".equals(entityId) && "C001".equals(code)) {
+      return "{\"code\":0,\"data\":{\"id\":20,\"status\":\"PUBLISHED\","
+          + "\"data\":\"{\\\"customer_code\\\":\\\"C001\\\",\\\"level_code\\\":\\\"VIP\\\"}\"}}";
+    }
+    if ("3".equals(entityId) && "VIP".equals(code)) {
+      return "{\"code\":0,\"data\":{\"id\":30,\"status\":\"PUBLISHED\","
+          + "\"data\":\"{\\\"level_code\\\":\\\"VIP\\\",\\\"discount_rate\\\":0.88}\"}}";
+    }
+    return "{\"code\":0,\"data\":null}";
   }
 
   private String recordPayload(String entityId) {

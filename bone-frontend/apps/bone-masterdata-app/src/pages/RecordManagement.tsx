@@ -13,6 +13,7 @@ import {
   Upload,
   DatePicker,
   InputNumber,
+  Switch,
 } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -29,6 +30,7 @@ import type {
   MasterDataField,
   CreateMasterDataRecordReq,
   UpdateMasterDataRecordReq,
+  ImportDuplicateStrategy,
 } from '../types';
 import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi, approvalApi } from '../services/api';
 import { useMessage } from '../App';
@@ -85,7 +87,11 @@ const RecordManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
+  // 仅看当前生效（当前版本 + 生效窗口含此刻）：价格/客户类主数据消费的真实视角
+  const [onlyCurrent, setOnlyCurrent] = useState<boolean>(false);
   const [importLoading, setImportLoading] = useState(false);
+  // 导入重复策略：FAIL 重码行报失败（默认）；UPDATE 按编码幂等更新（ERP 周期同步场景）
+  const [importDuplicateStrategy, setImportDuplicateStrategy] = useState<ImportDuplicateStrategy>('FAIL');
   // 审批流（UC-T7）：驳回弹窗与版本历史
   const [rejectTarget, setRejectTarget] = useState<MasterDataRecord | null>(null);
   const [rejectComment, setRejectComment] = useState('');
@@ -130,6 +136,7 @@ const RecordManagement: React.FC = () => {
         masterDataEntityId: selectedEntityId,
         status: selectedStatus,
         keyword: keyword.trim() || undefined,
+        onlyCurrent: onlyCurrent || undefined,
         pageNum: page,
         pageSize: pageSize
       });
@@ -144,7 +151,7 @@ const RecordManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEntityId, selectedStatus, keyword, page, pageSize]);
+  }, [selectedEntityId, selectedStatus, keyword, onlyCurrent, page, pageSize]);
 
   useEffect(() => {
     void fetchEntities();
@@ -339,13 +346,16 @@ const RecordManagement: React.FC = () => {
     }
     setImportLoading(true);
     try {
-      const response = await masterDataRecordApi.import(selectedEntityId, file);
+      const response = await masterDataRecordApi.import(selectedEntityId, file, importDuplicateStrategy);
       if (response.code === 200) {
-        const { total, successCount, failureCount, failures } = response.data;
+        const { total, successCount, updatedCount, failureCount, failures } = response.data;
         if (failureCount === 0) {
-          message.success(`导入成功：共 ${total} 条，全部入库`);
+          const updatedPart = updatedCount ? `，更新 ${updatedCount} 条` : '';
+          message.success(`导入完成：共 ${total} 条，新增 ${successCount} 条${updatedPart}`);
         } else {
-          message.warning(`部分成功：共 ${total} 条，成功 ${successCount} 条，失败 ${failureCount} 条`);
+          message.warning(
+            `部分成功：共 ${total} 条，新增 ${successCount} 条${updatedCount ? `，更新 ${updatedCount} 条` : ''}，失败 ${failureCount} 条`,
+          );
           (failures ?? []).slice(0, 5).forEach(f => {
             message.error(`第 ${f.rowNumber} 行${f.recordCode ? `（${f.recordCode}）` : ''}：${f.reason}`);
           });
@@ -654,8 +664,8 @@ const RecordManagement: React.FC = () => {
           </Form.Item>
           <Form.Item label="关键字">
             <Input.Search
-              style={{ width: 220 }}
-              placeholder="搜索记录内容"
+              style={{ width: 260 }}
+              placeholder="搜业务编码 / 名称 / 记录内容"
               allowClear
               value={keyword}
               onChange={(e) => {
@@ -663,6 +673,25 @@ const RecordManagement: React.FC = () => {
                 setPage(1);
               }}
             />
+          </Form.Item>
+          <Form.Item label="仅当前生效" style={{ marginBottom: 0 }}>
+            <Switch
+              checked={onlyCurrent}
+              onChange={(v) => {
+                setOnlyCurrent(v);
+                setPage(1);
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="导入重复策略">
+            <Select
+              style={{ width: 170 }}
+              value={importDuplicateStrategy}
+              onChange={setImportDuplicateStrategy}
+            >
+              <Option value="FAIL">重复时报错（默认）</Option>
+              <Option value="UPDATE">重复时更新</Option>
+            </Select>
           </Form.Item>
           <Form.Item>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
