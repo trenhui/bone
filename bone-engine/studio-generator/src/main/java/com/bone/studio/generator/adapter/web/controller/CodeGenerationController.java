@@ -4,7 +4,9 @@ import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.CodeGenerationAsyncApplicationService;
 import com.bone.studio.generator.application.CreateCodeGenerationApplicationService;
 import com.bone.studio.generator.application.GenerationTaskOperationApplicationService;
+import com.bone.studio.generator.application.ListGeneratedFilesApplicationService;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
+import com.bone.studio.generator.application.dto.GeneratedFileView;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.config.GeneratorProperties;
@@ -43,6 +45,7 @@ public class CodeGenerationController {
   private final CreateCodeGenerationApplicationService createCodeGenerationHandler;
   private final CodeGenerationAsyncApplicationService codeGenerationAsyncApplicationService;
   private final GenerationTaskOperationApplicationService operationService;
+  private final ListGeneratedFilesApplicationService listGeneratedFilesService;
   private final GeneratorProperties generatorProperties;
 
   @PostMapping
@@ -111,6 +114,18 @@ public class CodeGenerationController {
 
   private static String asString(Object value) {
     return value == null ? null : value.toString();
+  }
+
+  /**
+   * 产物在线查看：先清单后正文（{@code content=true} 才带正文）。
+   *
+   * <p>真实场景用户在下载 zip 前要先确认生成了什么、抽查关键文件；任务未完成/不存在返回空清单。
+   */
+  @GetMapping("/tasks/{taskId}/files")
+  public ApiResponse<List<GeneratedFileView>> listGeneratedFiles(
+      @PathVariable String taskId,
+      @RequestParam(name = "content", required = false, defaultValue = "false") boolean content) {
+    return ApiResponse.success(listGeneratedFilesService.handle(taskId, content));
   }
 
   @GetMapping("/tasks/{taskId}/status")

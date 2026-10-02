@@ -71,6 +71,36 @@ export interface CodeGenerationResponse {
   outputPath: string;
 }
 
+// 生成产物文件视图（GET /api/v1/generator/code-generation/tasks/{taskId}/files）
+export interface GeneratedFileItem {
+  filePath: string;
+  fileName: string;
+  size: number;
+  /** 仅 content=true 时返回 */
+  content?: string | null;
+}
+
+// 生成历史记录（对齐后端 CodeGenerationHistory 域模型，GET /api/v1/generator/history）
+export interface GenerationHistoryItem {
+  id: number;
+  taskId: string;
+  templateId: string;
+  templateName: string;
+  generationName: string;
+  dataSourceId: string;
+  tableNames: string[];
+  basePackage: string;
+  moduleName: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+  fileCount: number | null;
+  executionTime: number | null;
+  outputPath: string | null;
+  errorMessage: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
+}
+
 // 分页结果类型（对齐 Bone-API §3.3）
 export interface PageResult<T> {
   records: T[];

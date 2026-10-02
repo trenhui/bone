@@ -77,6 +77,13 @@ public class MetaEntityApplicationService {
   /** 单次校验/复制读取的字段上限（实体字段数远小于此；防御性分页上限而非业务约束）。 */
   private static final int MAX_FIELDS = 500;
 
+  /** 数据分级合法取值（业界通用：公开/内部/秘密/机密/绝密）。 */
+  private static final Set<String> ALLOWED_DATA_CLASSIFICATIONS =
+      Set.of("PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET", "TOP_SECRET");
+
+  /** 敏感级别合法取值（业界通用：L1 一般/L2 较敏感/L3 敏感/L4 极敏感）。 */
+  private static final Set<String> ALLOWED_SENSITIVITY_LEVELS = Set.of("L1", "L2", "L3", "L4");
+
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
   private final MetaEntityRelationRepository metaEntityRelationRepository;
@@ -370,7 +377,15 @@ public class MetaEntityApplicationService {
             cmd.getDefaultValue(),
             cmd.getComment(),
             cmd.getSortOrder(),
-            null);
+            null,
+            cmd.getDataClassification(),
+            cmd.getPii(),
+            cmd.getSensitivityLevel(),
+            cmd.getDataSteward(),
+            cmd.getBusinessTerm(),
+            cmd.getSourceSystem(),
+            cmd.getEnumValues(),
+            cmd.getValidationRules());
     metaFieldRepository.insert(field);
     return field.getId();
   }
@@ -390,7 +405,15 @@ public class MetaEntityApplicationService {
         cmd.getUnique(),
         cmd.getDefaultValue(),
         cmd.getComment(),
-        cmd.getSortOrder());
+        cmd.getSortOrder(),
+        cmd.getDataClassification(),
+        cmd.getPii(),
+        cmd.getSensitivityLevel(),
+        cmd.getDataSteward(),
+        cmd.getBusinessTerm(),
+        cmd.getSourceSystem(),
+        cmd.getEnumValues(),
+        cmd.getValidationRules());
     metaFieldRepository.update(field);
     return field.getVersion();
   }
@@ -510,7 +533,15 @@ public class MetaEntityApplicationService {
               f.getDefaultValue(),
               f.getComment(),
               f.getSortOrder(),
-              targetModuleId));
+              targetModuleId,
+              f.getDataClassification(),
+              f.getPii(),
+              f.getSensitivityLevel(),
+              f.getDataSteward(),
+              f.getBusinessTerm(),
+              f.getSourceSystem(),
+              f.getEnumValues(),
+              f.getValidationRules()));
     }
     return newId;
   }
@@ -781,6 +812,59 @@ public class MetaEntityApplicationService {
                 f.getId(),
                 f.getDisplayName()));
       }
+      // ===== 业界元数据 / 数据治理校验 =====
+      validateFieldGovernance(f, issues);
+    }
+  }
+
+  /**
+   * 数据治理校验：PII 或高敏感分级字段必须有数据管家；分级取值须合法。
+   *
+   * <p>设计取舍：治理属性不阻断建模（warn 而非 error），避免与 core 列校验耦合； 仅在「PII 或 机密/绝密」这种强合规场景下要求责任人，否则列为「建议补全」提示。
+   */
+  private void validateFieldGovernance(MetaField f, List<EntityValidationIssue> issues) {
+    String dc = f.getDataClassification();
+    if (dc != null && !ALLOWED_DATA_CLASSIFICATIONS.contains(dc)) {
+      issues.add(
+          EntityValidationIssue.fieldError(
+              "FIELD_DC_INVALID",
+              "字段「"
+                  + f.getDisplayName()
+                  + "」数据分级非法(应为 "
+                  + String.join("/", ALLOWED_DATA_CLASSIFICATIONS)
+                  + "): "
+                  + dc,
+              f.getId(),
+              f.getDisplayName()));
+      return;
+    }
+    if (f.getSensitivityLevel() != null
+        && !ALLOWED_SENSITIVITY_LEVELS.contains(f.getSensitivityLevel())) {
+      issues.add(
+          EntityValidationIssue.fieldError(
+              "FIELD_SENS_INVALID",
+              "字段「"
+                  + f.getDisplayName()
+                  + "」敏感级别非法(应为 "
+                  + String.join("/", ALLOWED_SENSITIVITY_LEVELS)
+                  + "): "
+                  + f.getSensitivityLevel(),
+              f.getId(),
+              f.getDisplayName()));
+      return;
+    }
+    boolean highRisk =
+        Boolean.TRUE.equals(f.getPii())
+            || "CONFIDENTIAL".equals(dc)
+            || "SECRET".equals(dc)
+            || "TOP_SECRET".equals(dc);
+    if (highRisk && isBlank(f.getDataSteward())) {
+      issues.add(
+          EntityValidationIssue.fieldWarning(
+              "FIELD_STEWARD_MISSING",
+              "字段「" + f.getDisplayName() + "」为个人敏感或高密级数据，但未指定数据管家/责任人，发布前建议补全",
+              f.getId(),
+              f.getDisplayName()));
     }
   }
 
@@ -819,6 +903,10 @@ public class MetaEntityApplicationService {
 
   private boolean isBlankOrInvalidIdentifier(String value) {
     return value == null || value.isBlank() || !IDENTIFIER_PATTERN.matcher(value).matches();
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 
   private static String orDefault(String value, String fallback) {

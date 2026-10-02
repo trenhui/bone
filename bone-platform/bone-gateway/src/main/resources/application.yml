@@ -41,10 +41,16 @@ spring:
           predicates:
             - Path=/api/v1/masterdata/**
         # blueprint 交易域：下单/订单查询经网关转发到 blueprint(8082)，与 masterdata 主数据消费链路打通。
+        # payments 同属 blueprint 上下文（PaymentController），路径前缀是 /api/v1/payments；
+        # 原配置只登记了 orders，导致「下单后支付」这条链路经网关 404 —— 前端只经网关，整条
+        # 订单→支付→发货 主链路在 UI 上断在第二跳。此处与 orders 并列登记。
+        #
+        # 注：blueprint 另有内部 RPC 面 /api/rpc/orders（服务间调用，非用户 API），**故意不登记**——
+        # 网关是南北向用户流量入口，内部 RPC 不应从外部可达。此处留注以防后人误补。
         - id: bone-blueprint
           uri: ${BONE_BLUEPRINT_URI:http://localhost:8082}
           predicates:
-            - Path=/api/v1/orders/**
+            - Path=/api/v1/orders/**, /api/v1/payments/**
         - id: bone-system
           uri: ${BONE_SYSTEM_URI:http://localhost:8083}
           predicates:

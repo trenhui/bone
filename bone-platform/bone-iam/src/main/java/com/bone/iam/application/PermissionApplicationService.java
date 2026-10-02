@@ -44,6 +44,11 @@ public class PermissionApplicationService {
 
   @Transactional
   public Long create(CreatePermissionCommand cmd) {
+    if (cmd.getCode() != null
+        && !cmd.getCode().isBlank()
+        && permissionRepository.countByCode(cmd.getCode()) > 0) {
+      throw IamErrors.of(IamErrorCodes.PERMISSION_CODE_CONFLICT, cmd.getCode());
+    }
     String resourceType = cmd.getResourceType();
     if (resourceType == null || resourceType.isBlank()) {
       resourceType = "API";

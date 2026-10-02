@@ -2,7 +2,11 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
-import { subscribeLocaleChange } from '@bone/shared-utils';
+import { subscribeLocaleChange, i18n } from '@bone/shared-utils';
+
+// i18n 单例每应用须各自初始化（见 shared-utils/i18n/index.ts 头注）；
+// 此处 import 即触发语言包加载，void 仅表达「副作用导入」以过 noUnusedLocals。
+void i18n;
 import './dayjs-setup';
 import './index.css';
 

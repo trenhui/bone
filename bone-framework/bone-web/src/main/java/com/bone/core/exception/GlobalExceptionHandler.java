@@ -165,6 +165,12 @@ public class GlobalExceptionHandler {
     if (ex instanceof BizException) {
       return bizExceptionHandler((BizException) ex).getBody();
     }
+    // 与 MVC 侧同语义：@PreAuthorize 失败必须落到 403，否则鉴权失败仍会被兜底成 500。
+    // 两条路径（Filter 的 allExceptionHandler / MVC 的 catch-all）判定必须一致，
+    // 避免同一异常在不同入口返回不同状态码。
+    if (isAccessDenied(ex)) {
+      return accessDeniedExceptionHandler(ex).getBody();
+    }
     return defaultExceptionHandler(request, ex).getBody();
   }
 
@@ -282,6 +288,49 @@ public class GlobalExceptionHandler {
   }
 
   /**
+   * 判断异常是否为 Spring Security 的「已认证但权限不足」（HTTP 403 语义）。
+   *
+   * <p><b>为何按类名判定而不是 {@code instanceof}</b>：本模块（{@code bone-web}）不依赖 Spring Security， 各业务模块按需引入，此处若
+   * {@code import} 具体异常类型就会把 security 反向拉成本模块的强依赖。 鉴权失败的类型名稳定到可以作为契约，故按全限定名识别——这样同一个 {@code
+   * bone-web} 既能给带 security 的模块（blueprint / iam / masterdata）用，也不污染不带 security 的模块。
+   *
+   * <p><b>覆盖两类名字</b>：经典 {@code AuthorizationManager} 之前的 {@code AccessDeniedException} 与 Spring
+   * Security 6 新授权栈的 {@code AuthorizationDeniedException}， 两者都表示「通过认证但无权访问」，语义均为 403（区别于未认证的 401）。
+   *
+   * <p><b>为何遍历 cause 链</b>：真实链路里鉴权异常常被链路中的其他异常包一层，只看顶层会漏判， 继而再次掉进 500 兜底——这正是要修的现象本身。
+   */
+  private static boolean isAccessDenied(Throwable ex) {
+    for (Throwable t = ex; t != null; t = t.getCause()) {
+      String name = t.getClass().getName();
+      if ("org.springframework.security.access.AccessDeniedException".equals(name)
+          || "org.springframework.security.authorization.AuthorizationDeniedException"
+              .equals(name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 处理 Spring Security 鉴权失败（HTTP 403）。
+   *
+   * <p><b>为何必须显式接管</b>：{@code @PreAuthorize} 校验失败抛的异常既不是 {@link BizException} 也不是 {@link
+   * ServiceException}，此前会一路冒泡到 {@code @ExceptionHandler(Exception.class)} 兜底分支， 被翻译成 <b>HTTP 500
+   * COMMON_INTERNAL_ERROR</b>。后果有两层：一是语义错误——「无权访问」被报成 「服务器内部出错」，运维会把权限问题当故障排查；二是可观测性受损——SLI
+   * 按状态码统计时， 鉴权失败会污染 5xx 错误预算，掩盖真实的服务端异常。
+   *
+   * <p><b>日志级别取 WARN 而非 ERROR</b>：鉴权拦截是系统按预期工作的表现，不是故障；打成 ERROR 会让它与
+   * 真实故障混在一起。但重复出现可能意味着越权试探，故保留告警级别的留痕。
+   */
+  public ResponseEntity<ApiResponse<?>> accessDeniedExceptionHandler(Throwable ex) {
+    log.warn("[accessDeniedExceptionHandler] 权限不足: {}", ex.getMessage());
+    return problemResponse(
+        FORBIDDEN.getCode(),
+        CommonErrorCodes.FORBIDDEN,
+        String.format("没有该操作权限:%s", ex.getMessage()));
+  }
+
+  /**
    * 处理 SpringMVC 请求方法不正确
    *
    * <p>例如说，A 接口的方法为 GET 方式，结果请求方法为 POST 方式，导致不匹配
@@ -362,6 +411,13 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(value = Exception.class)
   public ResponseEntity<ApiResponse<?>> defaultExceptionHandler(
       HttpServletRequest req, Throwable ex) {
+    // 情况零：Spring Security 鉴权失败（@PreAuthorize 未通过）。
+    // 必须排在兜底逻辑最前面——否则权限不足会被翻译成 500「系统异常」，
+    // 既误导排障方向，又把鉴权失败混进 5xx 错误预算。语义是 HTTP 403。
+    if (isAccessDenied(ex)) {
+      return accessDeniedExceptionHandler(ex);
+    }
+
     // 情况一：处理表不存在的异常
     ApiResponse<?> tableNotExistsResult = handleTableNotExists(ex);
     if (tableNotExistsResult != null) {

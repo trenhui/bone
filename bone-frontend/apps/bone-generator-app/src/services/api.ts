@@ -1,5 +1,5 @@
 import { createApiClient, getGlobalContext, setQiankunToken } from '@bone/shared-services';
-import type { ApiResponse, DataSource, DatabaseTable, PageResult } from './types';
+import type { ApiResponse, DataSource, DatabaseTable, GeneratedFileItem, GenerationHistoryItem, PageResult } from './types';
 
 export { setQiankunToken };
 
@@ -158,12 +158,25 @@ export const codeGenerationApi = {
     return res;
   },
 
-  getTaskStatus: (taskId: string): Resp<{ status?: string; progress?: number }> =>
+  /** 后端 data 即状态字符串（SUCCESS/FAILED/PROCESSING/PENDING/UNKNOWN），非对象 */
+  getTaskStatus: (taskId: string): Resp<string> =>
     api.get(`${G}/code-generation/tasks/${taskId}/status`),
 
   // blob 响应经拦截器解包后直接返回 Blob 本体
   downloadCode: (taskId: string): Promise<Blob> =>
     api.get(`${G}/code-generation/tasks/${taskId}/download`, { responseType: 'blob' }),
+
+  /** 产物在线查看：content=false 仅清单（路径/大小），true 带正文 */
+  listGeneratedFiles: (taskId: string, content = false): Resp<GeneratedFileItem[]> =>
+    api.get(`${G}/code-generation/tasks/${taskId}/files`, { params: { content } }),
+};
+
+export const historyApi = {
+  /**
+   * GET /api/v1/generator/history — 生成历史（后端返回 findRecent 全量列表，非分页；
+   * 项目名 / 状态 / 时间过滤由前端在本列表上完成）。
+   */
+  getList: (): Resp<GenerationHistoryItem[]> => api.get(`${G}/history`),
 };
 
 export const tableMetadataApi = {

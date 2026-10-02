@@ -69,6 +69,39 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "physical_column")
   private String physicalColumn;
 
+  // ===== 业界元数据 / 数据治理属性 =====
+  /** 数据分级：PUBLIC/INTERNAL/CONFIDENTIAL/SECRET/TOP_SECRET（公开/内部/秘密/机密/绝密） */
+  @Column(name = "data_classification")
+  private String dataClassification;
+
+  /** 是否个人敏感信息(PII) */
+  @Column(name = "is_pii", nullable = false)
+  private Boolean pii;
+
+  /** 敏感级别：L1/L2/L3/L4（一般/较敏感/敏感/极敏感） */
+  @Column(name = "sensitivity_level")
+  private String sensitivityLevel;
+
+  /** 数据管家/责任人 */
+  @Column(name = "data_steward")
+  private String dataSteward;
+
+  /** 业务术语/数据标准 */
+  @Column(name = "business_term")
+  private String businessTerm;
+
+  /** 来源系统（血缘） */
+  @Column(name = "source_system")
+  private String sourceSystem;
+
+  /** 枚举值/标准码表（JSON 文本，复用 meta_field.enum_values） */
+  @Column(name = "enum_values")
+  private String enumValues;
+
+  /** 校验规则/质量规则（JSON 文本，复用 meta_field.validation_rules） */
+  @Column(name = "validation_rules")
+  private String validationRules;
+
   public static MetaField create(
       Long id,
       Long tenantId,
@@ -91,7 +124,15 @@ public class MetaField extends AbstractEntity<Long> {
         null,
         null,
         0,
-        null);
+        null,
+        null, // dataClassification
+        null, // pii
+        null, // sensitivityLevel
+        null, // dataSteward
+        null, // businessTerm
+        null, // sourceSystem
+        null, // enumValues
+        null); // validationRules
   }
 
   public static MetaField create(
@@ -108,7 +149,15 @@ public class MetaField extends AbstractEntity<Long> {
       String defaultValue,
       String comment,
       Integer sortOrder,
-      Long moduleId) {
+      Long moduleId,
+      String dataClassification,
+      Boolean pii,
+      String sensitivityLevel,
+      String dataSteward,
+      String businessTerm,
+      String sourceSystem,
+      String enumValues,
+      String validationRules) {
     MetaField f = new MetaField();
     f.setId(id);
     f.tenantId = tenantId;
@@ -126,6 +175,14 @@ public class MetaField extends AbstractEntity<Long> {
     f.defaultValue = defaultValue;
     f.comment = comment;
     f.sortOrder = sortOrder != null ? sortOrder : 0;
+    f.dataClassification = dataClassification;
+    f.pii = pii != null ? pii : false;
+    f.sensitivityLevel = sensitivityLevel;
+    f.dataSteward = dataSteward;
+    f.businessTerm = businessTerm;
+    f.sourceSystem = sourceSystem;
+    f.enumValues = enumValues;
+    f.validationRules = validationRules;
     f.version = 0;
     Date now = new Date();
     f.setCreatedAt(now);
@@ -168,7 +225,15 @@ public class MetaField extends AbstractEntity<Long> {
             null,
             comment,
             sortOrder,
-            null);
+            null,
+            null, // dataClassification
+            null, // pii
+            null, // sensitivityLevel
+            null, // dataSteward
+            null, // businessTerm
+            null, // sourceSystem
+            null, // enumValues
+            null); // validationRules
     f.precision = precision;
     return f;
   }
@@ -190,7 +255,15 @@ public class MetaField extends AbstractEntity<Long> {
       Boolean unique,
       String defaultValue,
       String comment,
-      Integer sortOrder) {
+      Integer sortOrder,
+      String dataClassification,
+      Boolean pii,
+      String sensitivityLevel,
+      String dataSteward,
+      String businessTerm,
+      String sourceSystem,
+      String enumValues,
+      String validationRules) {
     this.displayName = displayName;
     this.type = fieldType;
     this.length = length;
@@ -201,6 +274,14 @@ public class MetaField extends AbstractEntity<Long> {
     if (sortOrder != null) {
       this.sortOrder = sortOrder;
     }
+    this.dataClassification = dataClassification;
+    this.pii = pii != null ? pii : false;
+    this.sensitivityLevel = sensitivityLevel;
+    this.dataSteward = dataSteward;
+    this.businessTerm = businessTerm;
+    this.sourceSystem = sourceSystem;
+    this.enumValues = enumValues;
+    this.validationRules = validationRules;
     bumpVersion();
     this.setUpdatedAt(new Date());
   }

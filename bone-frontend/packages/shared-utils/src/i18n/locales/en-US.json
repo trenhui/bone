@@ -46,6 +46,8 @@
     "IAM_DEPT_REQUIRED": "Home department is required",
     "IAM_PERMISSION_PLATFORM_ONLY": "This permission is reserved for the platform and cannot be assigned within a tenant",
     "IAM_AUTHORITY_RESOLVE_FAILED": "Authority resolution failed during authentication (data source error), please try again later",
+    "IAM_PERMISSION_CODE_CONFLICT": "Permission code already exists (permission codes are globally unique)",
+    "IAM_ROLE_CODE_CONFLICT": "Role code already exists in this tenant (conflict on create or rename)",
     "INT_CONNECTOR_NAME_CONFLICT": "Connector name already exists",
     "INT_CONNECTOR_NOT_FOUND": "Connector not found",
     "INT_CONNECTOR_NOT_IMPLEMENTED": "Connector capability not implemented",

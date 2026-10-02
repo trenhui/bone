@@ -1,8 +1,57 @@
 # studio-generator 真实场景端到端验证报告
 
-> 日期：2026-10-01 ｜ 分支：dev（工作树未提交改动） ｜ 后端：`bone-engine/studio-generator` (8086)，前端：`bone-generator-app`
+> 日期：2026-10-01（首轮）/ 2026-10-02（第二轮） ｜ 分支：dev（工作树未提交改动） ｜ 后端：`bone-engine/studio-generator` (8086)，前端：`bone-generator-app`
 
-## 一、模拟的真实诉求
+---
+
+## 〇、第二轮（2026-10-02）：菜单去重 + 产物在线查看 + 默认模板语义
+
+### 0.1 菜单去重（用户裁定落地确认）
+
+- 现象：父容器 Shell 已有「代码生成」菜单组，微应用内又渲染一层本地 Sider（Studio Generator + 数据源管理/代码生成/模板管理/生成历史），双层重复。
+- 修复：`GeneratorLayout.tsx` 整体删除本地 Sider（历史遗留注释保留说明），导航职责全部归 Shell，与其他微应用一致。
+- **真实链路验证**（无头浏览器 + 真实登录 admin）：Shell(3000) → 网关(8888) → studio-generator(8086) 全链打通，左侧仅有 Shell 单层「代码生成」分组（数据源管理/代码生成/模板管理/生成历史），微应用内无任何重复菜单；数据源管理页真实加载出 `local-bone` 数据源。截图：`/tmp/gen-shell-datasources.png`、`/tmp/gen-shell-codegen.png`。
+
+### 0.2 本轮新增优化（基于上轮遗留项）
+
+| # | 级别 | 优化 | 实现 |
+|---|------|------|------|
+| 1 | P1 | 生成产物只能下载 zip，无法在线确认生成了什么 | 新端点 `GET /code-generation/tasks/{taskId}/files`（清单模式回路径/大小，`?content=true` 带正文）；`ListGeneratedFilesApplicationService` + `GeneratedFileView`，与 download 同口径处理 JSON 列反序列化为 Map 的存量行为 |
+| 2 | P1 | ResultModal 硬编码「正在处理中」死文案——前端实际已轮询到终态才弹窗，文案纯属误导，且失败时无错误详情 | ResultModal 重写：打开即查任务状态；SUCCESS 展示文件列表 + Monaco 在线预览（下载前先看代码）；FAILED 展示 operation 错误详情；下载按钮仅在成功态可用 |
+| 3 | P2 | `templateIds` 为空直接 400 拒绝，不满足「我就要一份完整 DDD 代码」诉求 | 空模板 = 全部内建（平台 PUBLISHED）模板一键生成；历史记录记 `builtin`/「全部内建模板（默认）」 |
+| 4 | P2 | api.ts `getTaskStatus` 类型声明错误（声明为对象，后端实际返回状态字符串） | 修正类型与解析口径 |
+
+**关键踩坑**：默认模板解析最初用 `findPlatformTemplatesAllTenants`（种子口径 `created_by IS NULL`），E2E 实测只产出 6/12 个文件——迁移 0015 收敛的内建模板有一半带创建人，被种子口径漏掉。新增 `findPlatformPublishedAllTenants`（`tenant_id=0 AND status='PUBLISHED'`，口径差异已在仓储 javadoc 文档化），修复后默认生成产出 13 个文件。
+
+### 0.3 第二轮串联验证结果（17/17 PASS）
+
+`npm run e2e:real`（新增 7b/7c/11 三步），真实 HTTP 调用 8086：
+
+```
+PASS backend health                 PASS GET /tasks/:id/files manifest — 14
+PASS GET /templates — 12            PASS GET /tasks/:id/files?content=true — 14/14
+PASS GET /data-sources — 1          PASS download zip — 18587 bytes
+PASS GET /tables?keyword&limit — 5  PASS generated java files — 13
+PASS tables keyword filters         PASS no duplicated package segment
+PASS POST /tables:sync — syncedCount=1  PASS file name matches class — 13
+PASS GET /synced-tables — columns=18    PASS javac compiles generated code — 13 sources
+PASS POST /code-generation — SUCCESS    PASS generation without templateIds — SUCCESS files=13
+PASS generation status SUCCESS
+```
+
+- 后端单测：**105/105 通过**（含 26 条 ArchUnit），spotless 通过。
+- 前端：`npm run typecheck` 通过。
+- UI 链路：登录 → 代码生成菜单 → 数据源管理/代码生成页真实渲染，全程走 Shell→网关→8086。
+
+### 0.4 第二轮遗留与建议（待拍板）
+
+1. **git 提交**：本轮改动（后端 4 文件 + 前端 4 文件 + E2E 脚本 3 步）均在工作树未提交，建议确认后走 `/commit`。
+2. 主子聚合（一对多，如 `biz_sales_order` + `biz_sales_order_item`）生成能力仍为下一轮增强方向。
+3. `synced-tables` 存量列数为 0 的历史数据仍需一次性回填（或提示用户重新同步）。
+
+---
+
+## 一、首轮（2026-10-01）模拟的真实诉求
 
 电商「订单中心」开发者在低代码平台里的典型链路：
 
@@ -49,7 +98,7 @@ PASS file name matches class — 13   PASS javac compiles generated code — 13 
 - **javac 0 错误**（classpath = bone-core/bone-metadata-sdk/lombok/swagger-annotations）。
 - 后端单测：`mvn -pl bone-engine/studio-generator test` → **105/105 通过**（含 26 条 ArchUnit 架构守卫）。
 
-## 五、遗留与建议（待拍板）
+## 五、首轮遗留与建议（已于第二轮部分落实，状态见 §0.4）
 
 1. **git 提交**：改动均在工作树未提交（遵循分支纪律，当前分支 dev），建议确认后走 `/commit`。
 2. `synced-tables` 历史同步记录（此前旧版本同步的表）列数仍为 0，属存量数据；如需可补一次性回填脚本。

@@ -38,6 +38,24 @@ export interface MetaField {
   version?: number;
   /** 创建时间（展示用） */
   createdAt?: string;
+
+  // ===== 业界元数据 / 数据治理属性 =====
+  /** 数据分级：PUBLIC/INTERNAL/CONFIDENTIAL/SECRET/TOP_SECRET */
+  dataClassification?: string;
+  /** 是否个人敏感信息(PII) */
+  pii?: boolean;
+  /** 敏感级别：L1/L2/L3/L4 */
+  sensitivityLevel?: string;
+  /** 数据管家/责任人 */
+  dataSteward?: string;
+  /** 业务术语/数据标准 */
+  businessTerm?: string;
+  /** 来源系统（血缘） */
+  sourceSystem?: string;
+  /** 枚举值/标准码表（JSON 文本） */
+  enumValues?: string;
+  /** 校验规则/质量规则（JSON 文本） */
+  validationRules?: string;
 }
 
 export interface MetaRelation {
@@ -90,6 +108,16 @@ export interface CreateMetaFieldReq {
   sortOrder?: number;
   /** 字段注释（后端 comment 语义） */
   comment?: string;
+
+  // ===== 业界元数据 / 数据治理属性 =====
+  dataClassification?: string;
+  pii?: boolean;
+  sensitivityLevel?: string;
+  dataSteward?: string;
+  businessTerm?: string;
+  sourceSystem?: string;
+  enumValues?: string;
+  validationRules?: string;
 }
 
 export interface UpdateMetaFieldReq {
@@ -101,6 +129,16 @@ export interface UpdateMetaFieldReq {
   sortOrder?: number;
   /** 字段注释（后端 comment 语义） */
   comment?: string;
+
+  // ===== 业界元数据 / 数据治理属性 =====
+  dataClassification?: string;
+  pii?: boolean;
+  sensitivityLevel?: string;
+  dataSteward?: string;
+  businessTerm?: string;
+  sourceSystem?: string;
+  enumValues?: string;
+  validationRules?: string;
 }
 
 export interface CreateMetaRelationReq {
@@ -168,3 +206,38 @@ export const RUNTIME_READONLY_FIELDS = new Set([
 
 export const META_ENTITY_PUBLISHED = 1;
 export const META_DELIVERY_RUNTIME = 1;
+
+// ===== 业界元数据 / 数据治理枚举（对齐后端 MetaField 治理属性） =====
+
+/** 数据分级（业界通用：公开/内部/秘密/机密/绝密） */
+export const DATA_CLASSIFICATIONS = [
+  { value: 'PUBLIC', label: '公开', color: 'green' },
+  { value: 'INTERNAL', label: '内部', color: 'blue' },
+  { value: 'CONFIDENTIAL', label: '秘密', color: 'orange' },
+  { value: 'SECRET', label: '机密', color: 'volcano' },
+  { value: 'TOP_SECRET', label: '绝密', color: 'red' },
+] as const;
+
+/** 敏感级别（业界通用：L1 一般/L2 较敏感/L3 敏感/L4 极敏感） */
+export const SENSITIVITY_LEVELS = [
+  { value: 'L1', label: 'L1 一般', color: 'green' },
+  { value: 'L2', label: 'L2 较敏感', color: 'blue' },
+  { value: 'L3', label: 'L3 敏感', color: 'orange' },
+  { value: 'L4', label: 'L4 极敏感', color: 'red' },
+] as const;
+
+/** 数据分级 → 展示元数据（用于列表/详情 Tag） */
+export const DATA_CLASSIFICATION_MAP: Record<
+  string,
+  { label: string; color: string }
+> = Object.fromEntries(
+  DATA_CLASSIFICATIONS.map((c) => [c.value, { label: c.label, color: c.color }]),
+);
+
+/** 敏感级别 → 展示元数据（用于列表/详情 Tag） */
+export const SENSITIVITY_LEVEL_MAP: Record<
+  string,
+  { label: string; color: string }
+> = Object.fromEntries(
+  SENSITIVITY_LEVELS.map((s) => [s.value, { label: s.label, color: s.color }]),
+);

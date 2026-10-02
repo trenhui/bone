@@ -50,6 +50,16 @@ public interface RoleRepository extends Repository<Role, Long> {
     return countByCriteria(Criteria.<Role>create().eq("tenantId", tenantId));
   }
 
+  /**
+   * 同租户下指定编码的角色数（创建/改码防重，本聚合读）。
+   *
+   * <p>与 DB 唯一约束（tenant_id, code）等价的预检：先查再抛 {@code IAM_ROLE_CODE_CONFLICT}（409）， 而不是让 {@code
+   * DuplicateKeyException} 冒泡成 500。
+   */
+  default long countByCode(Long tenantId, String code) {
+    return countByCriteria(Criteria.<Role>create().eq("tenantId", tenantId).eq("code", code));
+  }
+
   /** 按 id 批量取角色（角色继承闭包解析用，本聚合读）。 */
   default List<Role> findByIds(Collection<Long> ids) {
     if (ids == null || ids.isEmpty()) {

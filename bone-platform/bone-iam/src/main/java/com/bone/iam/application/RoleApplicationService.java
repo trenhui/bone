@@ -68,6 +68,9 @@ public class RoleApplicationService {
       code =
           cmd.getName() == null ? "" : cmd.getName().trim().replaceAll("\\s+", "_").toUpperCase();
     }
+    if (code != null && !code.isBlank() && roleRepository.countByCode(tenantId, code) > 0) {
+      throw IamErrors.of(IamErrorCodes.ROLE_CODE_CONFLICT, code);
+    }
     Role role = Role.create(cmd.getName(), code, cmd.getDescription(), 1, tenantId, null);
     roleRepository.save(role);
     return role.getId();

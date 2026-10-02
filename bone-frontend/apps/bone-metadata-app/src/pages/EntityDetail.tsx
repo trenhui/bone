@@ -19,9 +19,9 @@ import type {
   EntityValidationIssue, MetaEntity, MetaField, MetaRelation,
   CreateMetaFieldReq, CreateMetaRelationReq, UpdateMetaFieldReq, UpdateMetaRelationReq,
 } from '../types';
-import { DELIVERY_MODE, ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES } from '../types';
+import { DELIVERY_MODE, ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES, DATA_CLASSIFICATION_MAP, SENSITIVITY_LEVEL_MAP } from '../types';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 // ===== F10b 字段网格行内编辑（Airtable 式）：单元格点击进入编辑，失焦/回车保存 =====
 // 采用 antd 官方可编辑单元格模式：行级 <Form component={false}> + EditableContext 下发，
@@ -236,6 +236,15 @@ const EntityDetail: React.FC = () => {
       required: patch.required !== undefined ? patch.required : field.required,
       sortOrder: patch.sortOrder !== undefined ? patch.sortOrder : field.sortOrder,
       comment: field.comment,
+      // 行内编辑仅改非破坏属性，治理属性需原样回传，避免被后端 update 清空
+      dataClassification: field.dataClassification,
+      pii: field.pii ?? false,
+      sensitivityLevel: field.sensitivityLevel,
+      dataSteward: field.dataSteward,
+      businessTerm: field.businessTerm,
+      sourceSystem: field.sourceSystem,
+      enumValues: field.enumValues,
+      validationRules: field.validationRules,
     };
     const res = await metadataFieldApi.update(id, field.id, body);
     if (res.code === 200) {
@@ -350,13 +359,21 @@ const EntityDetail: React.FC = () => {
   // 打开编辑字段
   const openEdit = (field: MetaField) => {
     setEditingField(field);
-    // 编辑时只允许修改显示名、长度、必填、排序
+    // 编辑时允许修改显示名、长度、必填、排序 + 数据治理属性
     form.setFieldsValue({
       displayName: field.displayName,
       description: field.comment,
       length: field.length,
       required: field.required,
       sortOrder: field.sortOrder ?? 9999,
+      dataClassification: field.dataClassification,
+      pii: field.pii ?? false,
+      sensitivityLevel: field.sensitivityLevel,
+      dataSteward: field.dataSteward,
+      businessTerm: field.businessTerm,
+      sourceSystem: field.sourceSystem,
+      enumValues: field.enumValues,
+      validationRules: field.validationRules,
     });
     setModalOpen(true);
   };
@@ -380,6 +397,15 @@ const EntityDetail: React.FC = () => {
           length: values.length,
           required: values.required,
           sortOrder: values.sortOrder,
+          // ===== 业界元数据 / 数据治理属性 =====
+          dataClassification: values.dataClassification ?? editingField.dataClassification ?? null,
+          pii: values.pii ?? editingField.pii ?? false,
+          sensitivityLevel: values.sensitivityLevel ?? editingField.sensitivityLevel ?? null,
+          dataSteward: values.dataSteward ?? editingField.dataSteward ?? null,
+          businessTerm: values.businessTerm ?? editingField.businessTerm ?? null,
+          sourceSystem: values.sourceSystem ?? editingField.sourceSystem ?? null,
+          enumValues: values.enumValues ?? editingField.enumValues ?? null,
+          validationRules: values.validationRules ?? editingField.validationRules ?? null,
         };
         const res = await metadataFieldApi.update(id!, editingField.id, body);
         if (res.code === 200) {
@@ -399,6 +425,14 @@ const EntityDetail: React.FC = () => {
           required: values.required,
           comment: values.description,
           sortOrder: values.sortOrder ?? 9999,
+          dataClassification: values.dataClassification ?? null,
+          pii: values.pii ?? false,
+          sensitivityLevel: values.sensitivityLevel ?? null,
+          dataSteward: values.dataSteward ?? null,
+          businessTerm: values.businessTerm ?? null,
+          sourceSystem: values.sourceSystem ?? null,
+          enumValues: values.enumValues ?? null,
+          validationRules: values.validationRules ?? null,
         };
         const res = await metadataFieldApi.create(id!, body);
         if (res.code === 200) {
@@ -496,6 +530,27 @@ const EntityDetail: React.FC = () => {
       width: 50,
       onCell: (record) => ({ record, dataIndex: 'required', cellType: 'boolean', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>),
       render: (v: boolean) => v ? <Tag color="red">是</Tag> : <Tag>否</Tag>,
+    },
+    {
+      title: '数据治理',
+      key: 'governance',
+      width: 200,
+      render: (_: unknown, record: MetaField) => (
+        <Space size={4} wrap>
+          {record.pii && <Tag color="red">PII</Tag>}
+          {record.dataClassification && (
+            <Tag color={DATA_CLASSIFICATION_MAP[record.dataClassification]?.color ?? 'default'}>
+              {DATA_CLASSIFICATION_MAP[record.dataClassification]?.label ?? record.dataClassification}
+            </Tag>
+          )}
+          {record.sensitivityLevel && (
+            <Tag color={SENSITIVITY_LEVEL_MAP[record.sensitivityLevel]?.color ?? 'default'}>
+              {record.sensitivityLevel}
+            </Tag>
+          )}
+          {record.dataSteward && <Tag color="blue">管家:{record.dataSteward}</Tag>}
+        </Space>
+      ),
     },
     {
       title: '操作',
@@ -803,6 +858,32 @@ const EntityDetail: React.FC = () => {
               { value: false, label: '否' },
             ]} />
           </Form.Item>
+
+          <Title level={5} style={{ marginTop: 8 }}>数据治理属性</Title>
+          <Form.Item name="dataClassification" label="数据分级">
+            <Select allowClear placeholder="请选择数据分级" options={Object.entries(DATA_CLASSIFICATION_MAP).map(([k, v]) => ({ value: k, label: `${v.label}（${k}）` }))} />
+          </Form.Item>
+          <Form.Item name="pii" label="个人敏感信息(PII)">
+            <Select options={[{ value: true, label: '是' }, { value: false, label: '否' }]} />
+          </Form.Item>
+          <Form.Item name="sensitivityLevel" label="敏感级别">
+            <Select allowClear placeholder="请选择敏感级别" options={Object.entries(SENSITIVITY_LEVEL_MAP).map(([k, v]) => ({ value: k, label: v.label }))} />
+          </Form.Item>
+          <Form.Item name="dataSteward" label="数据管家/责任人">
+            <Input placeholder="如：数据治理组-张三" />
+          </Form.Item>
+          <Form.Item name="businessTerm" label="业务术语/数据标准">
+            <Input placeholder="如：客户唯一标识" />
+          </Form.Item>
+          <Form.Item name="sourceSystem" label="来源系统（血缘）">
+            <Input placeholder="如：交易系统" />
+          </Form.Item>
+          <Form.Item name="enumValues" label="枚举值/标准码表（JSON）">
+            <Input.TextArea rows={2} placeholder='可选，如 [{"code":"M","label":"男"}]' />
+          </Form.Item>
+          <Form.Item name="validationRules" label="校验规则/质量规则（JSON）">
+            <Input.TextArea rows={2} placeholder='可选，如 {"min":0,"max":120}' />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -824,8 +905,24 @@ const EntityDetail: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="长度">{editingField.length ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="必填">{editingField.required ? '是' : '否'}</Descriptions.Item>
+            <Descriptions.Item label="数据分级">
+              {editingField.dataClassification
+                ? <Tag color={DATA_CLASSIFICATION_MAP[editingField.dataClassification]?.color ?? 'default'}>{DATA_CLASSIFICATION_MAP[editingField.dataClassification]?.label ?? editingField.dataClassification}</Tag>
+                : '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label="PII">{editingField.pii ? <Tag color="red">是</Tag> : '否'}</Descriptions.Item>
+            <Descriptions.Item label="敏感级别">
+              {editingField.sensitivityLevel
+                ? <Tag color={SENSITIVITY_LEVEL_MAP[editingField.sensitivityLevel]?.color ?? 'default'}>{editingField.sensitivityLevel}</Tag>
+                : '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label="数据管家">{editingField.dataSteward || '—'}</Descriptions.Item>
+            <Descriptions.Item label="业务术语">{editingField.businessTerm || '—'}</Descriptions.Item>
+            <Descriptions.Item label="来源系统">{editingField.sourceSystem || '—'}</Descriptions.Item>
             <Descriptions.Item label="排序号">{editingField.sortOrder ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">{editingField.createdAt ?? '—'}</Descriptions.Item>
+            <Descriptions.Item label="枚举值/码表" span={2}>{editingField.enumValues || '—'}</Descriptions.Item>
+            <Descriptions.Item label="校验/质量规则" span={2}>{editingField.validationRules || '—'}</Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{editingField.comment || '—'}</Descriptions.Item>
           </Descriptions>
         )}

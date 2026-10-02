@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Button, Form, Input, InputNumber, Modal, Select, Space, Steps, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import type { CreateMetaFieldReq } from '../types';
-import { FIELD_TYPE_MAP } from '../types';
+import {
+  FIELD_TYPE_MAP,
+  DATA_CLASSIFICATIONS,
+  SENSITIVITY_LEVELS,
+} from '../types';
 
 const { Text, Title } = Typography;
 
@@ -60,6 +64,15 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
         required: values.required ?? false,
         comment: values.description,
         sortOrder: values.sortOrder ?? 9999,
+        // ===== 业界元数据 / 数据治理属性 =====
+        dataClassification: values.dataClassification || undefined,
+        pii: values.pii ?? false,
+        sensitivityLevel: values.sensitivityLevel || undefined,
+        dataSteward: values.dataSteward || undefined,
+        businessTerm: values.businessTerm || undefined,
+        sourceSystem: values.sourceSystem || undefined,
+        enumValues: values.enumValues || undefined,
+        validationRules: values.validationRules || undefined,
       });
     } finally {
       setSubmitting(false);
@@ -164,6 +177,42 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} placeholder="字段的业务含义" />
+          </Form.Item>
+
+          <Title level={5} style={{ marginTop: 8 }}>
+            数据治理属性
+          </Title>
+          <Form.Item name="dataClassification" label="数据分级">
+            <Select
+              allowClear
+              placeholder="请选择数据分级"
+              options={DATA_CLASSIFICATIONS.map((c) => ({ value: c.value, label: `${c.label}（${c.value}）` }))}
+            />
+          </Form.Item>
+          <Form.Item name="pii" label="个人敏感信息(PII)" initialValue={false}>
+            <Select options={[{ value: true, label: '是' }, { value: false, label: '否' }]} />
+          </Form.Item>
+          <Form.Item name="sensitivityLevel" label="敏感级别">
+            <Select
+              allowClear
+              placeholder="请选择敏感级别"
+              options={SENSITIVITY_LEVELS.map((s) => ({ value: s.value, label: s.label }))}
+            />
+          </Form.Item>
+          <Form.Item name="dataSteward" label="数据管家/责任人" tooltip="PII 或高密级字段建议补全责任人">
+            <Input placeholder="如：数据治理组-张三" />
+          </Form.Item>
+          <Form.Item name="businessTerm" label="业务术语/数据标准">
+            <Input placeholder="如：客户唯一标识" />
+          </Form.Item>
+          <Form.Item name="sourceSystem" label="来源系统（血缘）">
+            <Input placeholder="如：交易系统" />
+          </Form.Item>
+          <Form.Item name="enumValues" label="枚举值/标准码表（JSON）" tooltip="标准码表，如 [{\&quot;code\&quot;:\&quot;M\&quot;,\&quot;label\&quot;:\&quot;男\&quot;}]">
+            <Input.TextArea rows={2} placeholder='可选，如 [{"code":"M","label":"男"}]' />
+          </Form.Item>
+          <Form.Item name="validationRules" label="校验规则/质量规则（JSON）" tooltip="字段级质量规则，如 {&quot;min&quot;:0,&quot;max&quot;:120}">
+            <Input.TextArea rows={2} placeholder='可选，如 {"min":0,"max":120}' />
           </Form.Item>
         </Form>
       )}

@@ -108,8 +108,8 @@ public class CreateCodeGenerationApplicationService {
         CodeGenerationHistory.create(
             tenantId,
             taskId,
-            templateIdsText(command),
-            templateNamesText(command),
+            templateIdsOrBuiltinText(command),
+            templateNamesOrBuiltinText(command),
             command.getProjectName(),
             String.valueOf(command.getDataSourceId()),
             command.getTableNames(),
@@ -177,13 +177,15 @@ public class CreateCodeGenerationApplicationService {
    */
   private List<GeneratedFile> runCatalogGeneration(CreateCodeGenerationCommand command) {
     List<Long> templateIds = command.getTemplateIds();
-    if (templateIds == null || templateIds.isEmpty()) {
-      throw new IllegalArgumentException("templateIds 不能为空");
-    }
+    // catalog 引擎不消费 templateId（见类注释）；为空时按默认语义「全部内建模板」记录。
+    String recordTemplateId =
+        templateIds == null || templateIds.isEmpty()
+            ? "builtin"
+            : String.valueOf(templateIds.get(0));
     GenFlags flags = resolveGenFlags(command.getGenConfig());
     CodeGenerationRequest request =
         CodeGenerationRequest.builder()
-            .templateId(String.valueOf(templateIds.get(0)))
+            .templateId(recordTemplateId)
             .name(command.getProjectName())
             .basePackage(command.getBasePackage())
             .moduleName(command.getModuleName())
@@ -296,7 +298,15 @@ public class CreateCodeGenerationApplicationService {
 
     List<Long> templateIds = command.getTemplateIds();
     if (templateIds == null || templateIds.isEmpty()) {
-      throw new IllegalArgumentException("templateIds 不能为空");
+      // 默认语义（真实场景）：不选模板 = 全部内建（平台已发布）模板一键生成。
+      // 注意用 findPlatformPublishedAllTenants 而非种子口径——迁移 0015 收敛的内建模板部分带创建人，
+      // 种子口径（created_by IS NULL）会漏掉 create/update 命令、DTO 等一半内建模板，产出残缺代码包。
+      List<CodeTemplate> builtIn =
+          codeTemplateRepository.findPlatformPublishedAllTenants(1, 500).getRecords();
+      if (builtIn.isEmpty()) {
+        throw new IllegalArgumentException("templateIds 不能为空，且平台内建模板不可用");
+      }
+      return new ResolvedInputs(tableMetadatas, ensureResponseTemplate(new ArrayList<>(builtIn)));
     }
 
     List<CodeTemplate> templates = new ArrayList<>();
@@ -325,6 +335,18 @@ public class CreateCodeGenerationApplicationService {
     withResponse.add(
         CodeTemplate.builder().code("response").name("response").type("response").build());
     return withResponse;
+  }
+
+  /** 历史记录用：模板 ID 文本；未选模板（默认全部内建）时记 {@code builtin}。 */
+  private String templateIdsOrBuiltinText(CreateCodeGenerationCommand command) {
+    String text = templateIdsText(command);
+    return text.isEmpty() ? "builtin" : text;
+  }
+
+  /** 历史记录用：模板名文本；未选模板（默认全部内建）时记可读标记。 */
+  private String templateNamesOrBuiltinText(CreateCodeGenerationCommand command) {
+    String text = templateNamesText(command);
+    return text.isEmpty() ? "全部内建模板（默认）" : text;
   }
 
   private String templateIdsText(CreateCodeGenerationCommand command) {

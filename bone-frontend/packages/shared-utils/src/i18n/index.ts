@@ -11,7 +11,6 @@
  * 详见：doc/design/国际化设计方案.md §5.2
  */
 import i18n from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 
 import enUS from './locales/en-US.json';
@@ -25,35 +24,49 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export const LOCALE_STORAGE_KEY = 'bone.locale';
 
 if (!i18n.isInitialized) {
+  // ★ 显式解析初始语言，绕开 LanguageDetector 的异步链：
+  //   detector + initImmediate(默认 true) 组合下，languages 回退链可能停留空数组，
+  //   t() 全量 miss 返回裸 key（实测 E2E 联调复现）。语言由 Shell 单源下发并持久化，
+  //   这里按同一 key 读取即可与 detector 的 localStorage 通道保持等价语义。
+  let initialLng: string = 'zh-CN';
+  try {
+    const persisted = typeof localStorage !== 'undefined' ? localStorage.getItem(LOCALE_STORAGE_KEY) : null;
+    if (persisted && (SUPPORTED_LANGUAGES as readonly string[]).includes(persisted)) {
+      initialLng = persisted;
+    }
+  } catch {
+    // localStorage 不可用（隐私模式等）→ 用默认 zh-CN
+  }
   i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
+      lng: initialLng,
       fallbackLng: 'zh-CN',
       supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
 
-      // 浏览器普遍上报 'en' / 'zh' 而非 'en-US' / 'zh-CN'；不开此项会直接落到 fallbackLng
-      // → 英文浏览器用户默认看到中文。开启后 'en' 归一化到 'en-US'。
-      nonExplicitSupportedLngs: true,
+      // ★ 同步完成 init（语言包是静态 import，无需异步；同步后首个渲染帧即可翻译）
+      initImmediate: false,
+
+      // ⚠️ 禁开 nonExplicitSupportedLngs：与显式 supportedLngs（'zh-CN'/'en-US'）组合时，
+      //    isSupportedCode 会把候选码剥成语言主码（'zh-CN'→'zh'）再比对，全部被拒 →
+      //    i18n.languages 变空数组 → 所有 t() 原样返回裸 key（2026-10-01 系统管理页面
+      //    国际化全量失效根因，Node 受控实验复现：开关该选项即复现/修复）。
+      //    若需归一化裸语言码（'en'/'zh'），应加回 LanguageDetector 并用
+      //    detection.convertDetectedLanguage 在检测层转换，而非此选项。
 
       resources: {
         'zh-CN': { translation: zhCN },
         'en-US': { translation: enUS },
       },
 
-      detection: {
-        order: ['querystring', 'cookie', 'localStorage', 'navigator'],
-        lookupQuerystring: 'lang',
-        lookupCookie: 'bone_i18n',
-        lookupLocalStorage: LOCALE_STORAGE_KEY,
-        // ★ 单一写入方：持久化只由 Shell 的语言切换组件写 localStorage。
-        //   这里若也 caches，LanguageDetector 会在 init 时回写同一 key，形成两个写入方。
-        caches: [],
-      },
-
       interpolation: { escapeValue: false },
       saveMissing: false,
     });
+
+  // ★ init 后显式重建语言链（实测：dev 下 init 自身组装的 languages 可能停留空数组，
+  //   t() 全量 miss 返回裸 key；changeLanguage 幂等且能正确组装语言链，
+  //   languageChanged 事件会触发 react-i18next 重渲染，最坏闪一帧裸 key）。
+  void i18n.changeLanguage(initialLng);
 }
 
 /** 归一化到受支持的语言（AntD locale / dayjs locale 判定都以此为准） */

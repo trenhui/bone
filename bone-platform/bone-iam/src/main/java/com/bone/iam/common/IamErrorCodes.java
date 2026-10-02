@@ -67,6 +67,12 @@ public final class IamErrorCodes {
   /** 授予角色权限时未提供角色 id。 */
   public static final String ROLE_ID_REQUIRED = "IAM_ROLE_ID_REQUIRED";
 
+  /** 同一租户下角色编码已存在（创建/改码冲突）。 */
+  public static final String ROLE_CODE_CONFLICT = "IAM_ROLE_CODE_CONFLICT";
+
+  /** 权限编码已存在（权限码目录全局唯一）。 */
+  public static final String PERMISSION_CODE_CONFLICT = "IAM_PERMISSION_CODE_CONFLICT";
+
   /** 权限不存在（含跨租户不可见）。 */
   public static final String PERMISSION_NOT_FOUND = "IAM_PERMISSION_NOT_FOUND";
 

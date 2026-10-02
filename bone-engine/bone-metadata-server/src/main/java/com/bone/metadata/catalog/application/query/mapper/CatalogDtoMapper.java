@@ -45,6 +45,14 @@ public final class CatalogDtoMapper {
     dto.setUnique(f.getUnique());
     dto.setSortOrder(f.getSortOrder());
     dto.setComment(f.getComment());
+    dto.setDataClassification(f.getDataClassification());
+    dto.setPii(f.getPii());
+    dto.setSensitivityLevel(f.getSensitivityLevel());
+    dto.setDataSteward(f.getDataSteward());
+    dto.setBusinessTerm(f.getBusinessTerm());
+    dto.setSourceSystem(f.getSourceSystem());
+    dto.setEnumValues(f.getEnumValues());
+    dto.setValidationRules(f.getValidationRules());
     dto.setCreatedAt(f.getCreatedAt());
     dto.setVersion(f.getVersion());
     return dto;

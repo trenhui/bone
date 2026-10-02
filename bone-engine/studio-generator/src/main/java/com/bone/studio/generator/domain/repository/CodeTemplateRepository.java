@@ -57,6 +57,24 @@ public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
   }
 
   /**
+   * 全租户入口（命名后缀 {@code AllTenants}）：平台(0)租户下<strong>全部已发布</strong>模板，不限创建人。
+   *
+   * <p><b>为何与 {@link #findPlatformTemplatesAllTenants} 口径不同</b>：种子口径（{@code created_by IS NULL}）
+   * 用于「对外可见性」；但迁移 0015 收敛的内建模板一部分带创建人（非种子），若按种子口径做 「不选模板 = 全部内建」的默认解析，会漏掉一半内建模板（create/update
+   * 命令、DTO、装配器等）， 生成的代码包残缺。默认生成读取的是模板内容（与用户显式勾选 {@link #findByIdAllTenants} 同级暴露）， 按 {@code
+   * tenant_id = 0 AND status = PUBLISHED} 取全部内建是正确口径。
+   */
+  default PageResult<CodeTemplate> findPlatformPublishedAllTenants(int pageNo, int pageSize) {
+    Criteria<CodeTemplate> criteria =
+        Criteria.<CodeTemplate>builder()
+            .entityClass(CodeTemplate.class)
+            .disableTenantFilter()
+            .eq(CodeTemplate::getTenantId, PLATFORM_TENANT_ID)
+            .eq(CodeTemplate::getStatus, "PUBLISHED");
+    return this.pageByCriteria(criteria);
+  }
+
+  /**
    * 全租户入口（命名后缀 {@code AllTenants}）：按 id 读取模板，绕过租户隔离。
    *
    * <p>用途：代码生成时校验用户所选模板是否真实存在——用户从「对自己可见」的列表里选了平台(0)种子模板， 但若按当前租户查库会查不到，故需受控跨租户读取单个模板（仍只命中那一行的

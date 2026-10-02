@@ -183,7 +183,9 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `IAM_ACCOUNT_STATUS_CONFLICT` | 409 | 账号状态迁移不合法（如对已禁用账号重复禁用） |
 | `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在（含跨租户不可见） |
 | `IAM_ROLE_ID_REQUIRED` | 400 | 授予角色权限时未提供角色 id |
+| `IAM_ROLE_CODE_CONFLICT` | 409 | 同一租户下角色编码已存在（创建/改码冲突） |
 | `IAM_PERMISSION_NOT_FOUND` | 404 | 权限不存在（含跨租户不可见） |
+| `IAM_PERMISSION_CODE_CONFLICT` | 409 | 权限编码已存在（权限码目录全局唯一） |
 | `IAM_PERMISSION_PLATFORM_ONLY` | 403 | 平台域权限码（resource_path 为 tenants/permissions/sessions）不可授予租户角色——防租户自授平台能力 |
 | `IAM_AUTHORITY_RESOLVE_FAILED` | 500 | 请求鉴权时权限解析失败（数据源异常），fail-closed 拒绝，绝不回退超宽权限 |
 | `IAM_SESSION_NOT_FOUND` | 404 | 会话不存在（含跨租户不可见，与「参数缺失」分属不同语义） |
@@ -209,7 +211,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未在当前版本 / IdP 中启用 |
 
 > **实现范围**：码常量在 `bone-iam/common/IamErrorCodes`（只承载稳定码字符串与语义）；
-> **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应，共 35 行），
+> **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应，共 40 行），
 > 抛出方走 `IamErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `IamErrors.supplier(码, 上下文)`），
 > **不在抛出点手写状态数字**。新增码若忘记登记状态，`IamErrors` 类加载即抛 `IllegalStateException`（fail fast）。
 >

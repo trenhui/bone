@@ -4,6 +4,7 @@ import com.bone.core.model.PageResult;
 import com.bone.iam.domain.model.permission.Permission;
 import com.bone.iam.domain.model.permission.valueobject.PermissionType;
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.List;
@@ -19,6 +20,16 @@ public interface PermissionRepository extends Repository<Permission, Long> {
   /** 全量权限（权限树与详情映射的公共取数，仍受租户过滤）。 */
   default List<Permission> listAll() {
     return QueryBuilder.from(Permission.class).list();
+  }
+
+  /**
+   * 指定编码的权限数（创建防重，本聚合读）。
+   *
+   * <p>权限码目录全局共享（{@code Permission} 无租户字段），code 全局唯一；与 DB 唯一约束等价的预检， 先查再抛 {@code
+   * IAM_PERMISSION_CODE_CONFLICT}（409），而不是让唯一键冲突冒泡成 500。
+   */
+  default long countByCode(String code) {
+    return countByCriteria(Criteria.<Permission>create().eq("code", code));
   }
 
   /** 按 id 取权限；不存在返回 {@code Optional.empty()}（不抛 {@code MultipleResultsException}）。 */

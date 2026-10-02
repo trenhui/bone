@@ -157,6 +157,26 @@ async function main() {
   }
   step('generation status SUCCESS', status === 'SUCCESS', `status=${status}`);
 
+  // 7b. 产物在线查看：清单模式（无正文）
+  const { body: manifestBody } = await api(`/code-generation/tasks/${taskId}/files`);
+  const manifest = manifestBody.data ?? [];
+  step(
+    'GET /tasks/:id/files manifest',
+    manifestBody.success === true && manifest.length >= 5 && manifest.every((f) => f.content == null && f.size > 0),
+    `files=${manifest.length}`,
+  );
+
+  // 7c. 产物在线查看：带正文，且内容与 zip 打包同源
+  const { body: contentBody } = await api(`/code-generation/tasks/${taskId}/files?content=true`);
+  const withContent = contentBody.data ?? [];
+  const nonEmpty = withContent.filter((f) => typeof f.content === 'string' && f.content.length > 0);
+  const hasJava = nonEmpty.some((f) => f.filePath?.endsWith('.java') && /class\s|interface\s|record\s/.test(f.content));
+  step(
+    'GET /tasks/:id/files?content=true',
+    contentBody.success === true && nonEmpty.length === manifest.length && hasJava,
+    `content=${nonEmpty.length}/${manifest.length}`,
+  );
+
   // 8. 下载产物
   const dlRes = await fetch(`${API_BASE}/code-generation/tasks/${taskId}/download`, { headers: H });
   const zipBuf = Buffer.from(await dlRes.arrayBuffer());
@@ -223,6 +243,40 @@ async function main() {
   } else {
     step('javac compiles generated code', true, 'skipped (BONE_REPO_ROOT not set)');
   }
+
+  // 11. 默认模板语义：不传 templateIds = 全部内建模板一键生成
+  const { body: defBody } = await api('/code-generation?sync=true', {
+    method: 'POST',
+    body: JSON.stringify({
+      projectName: 'e2e-default-templates',
+      basePackage: BASE_PACKAGE,
+      moduleName: MODULE_NAME,
+      dataSourceId: dsId,
+      tableNames: [TABLE],
+      genConfig: '{"includeTests":true,"includeDocumentation":false}',
+      metadataSource: 'PHYSICAL_DB',
+      tenantId: Number(TENANT),
+    }),
+  });
+  const defTaskId = typeof defBody.data === 'string' ? defBody.data : defBody.data?.taskId;
+  let defStatus = '';
+  if (defTaskId) {
+    for (let i = 0; i < 60; i++) {
+      const { body: stBody } = await api(`/code-generation/tasks/${defTaskId}/status`);
+      defStatus = stBody.data ?? '';
+      if (defStatus === 'SUCCESS' || defStatus === 'FAILED') break;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+  const { body: defFilesBody } = await api(
+    `/code-generation/tasks/${defTaskId ?? 'none'}/files`,
+  );
+  const defFiles = defFilesBody.data ?? [];
+  step(
+    'generation without templateIds uses all built-in',
+    defStatus === 'SUCCESS' && defFiles.length >= 5,
+    `status=${defStatus} files=${defFiles.length}`,
+  );
 
   rmSync(workDir, { recursive: true, force: true });
   result.ok = true;

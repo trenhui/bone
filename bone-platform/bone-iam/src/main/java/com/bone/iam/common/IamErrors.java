@@ -51,7 +51,9 @@ public final class IamErrors {
           // 角色 / 权限
           Map.entry(IamErrorCodes.ROLE_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.ROLE_ID_REQUIRED, 400),
+          Map.entry(IamErrorCodes.ROLE_CODE_CONFLICT, 409),
           Map.entry(IamErrorCodes.PERMISSION_NOT_FOUND, 404),
+          Map.entry(IamErrorCodes.PERMISSION_CODE_CONFLICT, 409),
           Map.entry(IamErrorCodes.PERMISSION_PLATFORM_ONLY, 403),
           Map.entry(IamErrorCodes.AUTHORITY_RESOLVE_FAILED, 500),
           // 会话

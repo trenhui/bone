@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -327,6 +328,168 @@ class OrderPaymentMetadataE2ETest {
         .perform(post("/api/v1/metadata/entities/" + entityId + "/publish"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true));
+  }
+
+  @Test
+  @DisplayName("端到端：数据治理属性闭环——建模(PII/分级/管家)→回读→更新→复制随迁→校验规则")
+  void governanceAttributes_roundTripAndValidation() throws Exception {
+    String suffix = String.valueOf(System.nanoTime());
+    String entityCode = "bp_gov_sim_" + suffix;
+    String tableName = "bp_gov_sim_" + suffix;
+    String entityId = createEntity(entityCode, tableName, 1);
+
+    // 1) 建模带治理属性的字段（买家手机号：PII + 机密 + L3 + 管家 + 业务术语 + 来源系统）
+    Map<String, Object> govBody =
+        Map.ofEntries(
+            Map.entry("name", "buyer_phone"),
+            Map.entry("code", "buyer_phone"),
+            Map.entry("displayName", "买家手机号"),
+            Map.entry("type", "STRING"),
+            Map.entry("length", 20),
+            Map.entry("required", true),
+            Map.entry("dataClassification", "CONFIDENTIAL"),
+            Map.entry("pii", true),
+            Map.entry("sensitivityLevel", "L3"),
+            Map.entry("dataSteward", "张三"),
+            Map.entry("businessTerm", "买家联系电话"),
+            Map.entry("sourceSystem", "CRM"));
+    String createFieldResp =
+        mockMvc
+            .perform(
+                post("/api/v1/metadata/entities/" + entityId + "/fields")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(govBody)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.success").value(true))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    String fieldId = objectMapper.readTree(createFieldResp).get("data").asText();
+
+    // 2) 详情回读：治理属性全量往返（HTTP 响应即前端 EntityDetail 实际收到的载荷）
+    mockMvc
+        .perform(get("/api/v1/metadata/entities/" + entityId + "/fields/" + fieldId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.dataClassification").value("CONFIDENTIAL"))
+        .andExpect(jsonPath("$.data.pii").value(true))
+        .andExpect(jsonPath("$.data.sensitivityLevel").value("L3"))
+        .andExpect(jsonPath("$.data.dataSteward").value("张三"))
+        .andExpect(jsonPath("$.data.businessTerm").value("买家联系电话"))
+        .andExpect(jsonPath("$.data.sourceSystem").value("CRM"));
+
+    // 3) 更新治理属性：升密级 SECRET/L4 + 管家移交
+    Map<String, Object> updBody =
+        Map.of(
+            "displayName", "买家手机号",
+            "type", "STRING",
+            "length", 20,
+            "dataClassification", "SECRET",
+            "pii", true,
+            "sensitivityLevel", "L4",
+            "dataSteward", "李四");
+    mockMvc
+        .perform(
+            put("/api/v1/metadata/entities/" + entityId + "/fields/" + fieldId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updBody)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+    mockMvc
+        .perform(get("/api/v1/metadata/entities/" + entityId + "/fields/" + fieldId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.dataClassification").value("SECRET"))
+        .andExpect(jsonPath("$.data.sensitivityLevel").value("L4"))
+        .andExpect(jsonPath("$.data.dataSteward").value("李四"));
+
+    // 4) 复制实体：治理属性随迁（copyEntity 字段级透传）
+    Map<String, Object> copyCmd =
+        Map.of("code", entityCode + "_cp", "tableName", tableName + "_cp");
+    String copyResp =
+        mockMvc
+            .perform(
+                post("/api/v1/metadata/entities/" + entityId + "/copy")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(copyCmd)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    String copyId = objectMapper.readTree(copyResp).get("data").asText();
+    createdEntityIds.add(copyId);
+    createdTableNames.add(tableName + "_cp");
+    String copyFields =
+        mockMvc
+            .perform(
+                get("/api/v1/metadata/entities/" + copyId + "/fields")
+                    .param("pageNum", "1")
+                    .param("pageSize", "50"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            // 显式 UTF-8：MockHttpServletResponse 默认按 ISO-8859-1 解码，中文治理属性会乱码
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    var listNode = objectMapper.readTree(copyFields).get("data").get("list");
+    boolean stewardMigrated = false;
+    for (var f : listNode) {
+      if ("buyer_phone".equals(f.path("code").asText())) {
+        stewardMigrated =
+            "SECRET".equals(f.path("dataClassification").asText())
+                && f.path("pii").asBoolean()
+                && "李四".equals(f.path("dataSteward").asText());
+      }
+    }
+    assertThat(stewardMigrated)
+        .as("复制实体的 buyer_phone 应携带治理属性(SECRET/PII/李四)，实际响应: " + copyFields)
+        .isTrue();
+
+    // 5) 校验规则：PII 无管家 → FIELD_STEWARD_MISSING(warning)；非法分级 → FIELD_DC_INVALID(error)
+    createField(entityId, "remark_pii", "STRING", false, false);
+    Map<String, Object> piiNoSteward =
+        Map.of(
+            "name",
+            "id_card",
+            "code",
+            "id_card",
+            "displayName",
+            "身份证号",
+            "type",
+            "STRING",
+            "pii",
+            true);
+    mockMvc
+        .perform(
+            post("/api/v1/metadata/entities/" + entityId + "/fields")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(piiNoSteward)))
+        .andExpect(status().isCreated());
+    Map<String, Object> badDc =
+        Map.of(
+            "name",
+            "bad_dc",
+            "code",
+            "bad_dc",
+            "displayName",
+            "非法分级字段",
+            "type",
+            "STRING",
+            "dataClassification",
+            "TOPSECRET");
+    mockMvc
+        .perform(
+            post("/api/v1/metadata/entities/" + entityId + "/fields")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(badDc)))
+        .andExpect(status().isCreated());
+    String validateResp =
+        mockMvc
+            .perform(get("/api/v1/metadata/entities/" + entityId + "/validate"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    String codes =
+        objectMapper.readTree(validateResp).get("data").findValuesAsText("code").toString();
+    assertThat(codes).contains("FIELD_STEWARD_MISSING").contains("FIELD_DC_INVALID");
   }
 
   // ===================== 辅助 =====================
