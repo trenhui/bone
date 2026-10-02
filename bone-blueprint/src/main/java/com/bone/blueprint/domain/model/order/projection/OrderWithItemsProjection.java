@@ -20,6 +20,7 @@ public class OrderWithItemsProjection {
   private BigDecimal totalAmount;
   private String status;
   private LocalDateTime createdAt;
+  private String channelSource;
   private Long itemId;
   private Long productId;
   private String productName;
@@ -33,6 +34,7 @@ public class OrderWithItemsProjection {
       BigDecimal totalAmount,
       String status,
       LocalDateTime createdAt,
+      String channelSource,
       Long itemId,
       Long productId,
       String productName,
@@ -44,6 +46,7 @@ public class OrderWithItemsProjection {
     this.totalAmount = totalAmount;
     this.status = status;
     this.createdAt = createdAt;
+    this.channelSource = channelSource;
     this.itemId = itemId;
     this.productId = productId;
     this.productName = productName;

@@ -55,6 +55,13 @@ bone:
     base-url: ${BONE_GATEWAY_BASE_URL:http://localhost:8888}
     entity-code: PRICING_RULE
     cache-ttl-seconds: 30
+  # === 字典消费（bone-system 字典「下拉数据源」ACL，跨服务消费字典唯一入口）===
+  dict:
+    system-base-url: ${BONE_SYSTEM_BASE_URL:http://localhost:8083}
+    iam-base-url: ${BONE_IAM_BASE_URL:http://localhost:8081}
+    service-username: ${BONE_DICT_SERVICE_USERNAME:admin}
+    service-password: ${BONE_DICT_SERVICE_PASSWORD:123456}
+    cache-ttl-seconds: 300
   blueprint:
     payment:
       callback:

@@ -16,6 +16,7 @@ public final class OrderSummaryAssembler {
         .totalAmount(row.getTotalAmount())
         .status(row.getStatus())
         .createdAt(row.getCreatedAt())
+        .channelSource(row.getChannelSource())
         .build();
   }
 }

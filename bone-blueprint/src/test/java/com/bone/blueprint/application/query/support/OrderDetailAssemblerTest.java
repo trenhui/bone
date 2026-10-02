@@ -22,6 +22,7 @@ class OrderDetailAssemblerTest {
             new BigDecimal("200"),
             "CREATED",
             LocalDateTime.now(),
+            null,
             10L,
             100L,
             "A",

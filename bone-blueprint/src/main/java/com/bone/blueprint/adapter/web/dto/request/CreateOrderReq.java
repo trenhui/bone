@@ -17,6 +17,9 @@ public class CreateOrderReq {
   @Valid
   private List<OrderItemReq> items;
 
+  /** 订单来源渠道码（来自字典 source_channel：WEB / APP / MINI）。 可空：未知渠道允许下单；非空时由应用层校验是否命中字典已启用选项。 */
+  private String channelSource;
+
   @Data
   public static class OrderItemReq {
     @NotNull(message = "商品ID不能为空")

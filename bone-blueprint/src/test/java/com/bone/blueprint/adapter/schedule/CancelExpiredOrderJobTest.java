@@ -118,6 +118,6 @@ class CancelExpiredOrderJobTest {
 
   private static OrderHeadProjection headRow(Long tenantId, Long orderId) {
     return new OrderHeadProjection(
-        tenantId, orderId, 3L, new BigDecimal("10.00"), "CREATED", LocalDateTime.now());
+        tenantId, orderId, 3L, new BigDecimal("10.00"), "CREATED", LocalDateTime.now(), null);
   }
 }

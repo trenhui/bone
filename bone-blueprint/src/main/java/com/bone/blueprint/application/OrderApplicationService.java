@@ -11,6 +11,7 @@ import com.bone.blueprint.application.query.support.OrderDetailAssembler;
 import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
+import com.bone.blueprint.domain.gateway.DictGateway;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.MasterDataGateway;
 import com.bone.blueprint.domain.model.order.Order;
@@ -66,8 +67,12 @@ public class OrderApplicationService {
   private final InventoryGateway inventoryGateway;
   private final PricingPort pricingService;
   private final MasterDataGateway masterDataGateway;
+  private final DictGateway dictGateway;
   private final DomainEventPublisher domainEventPublisher;
   private final TenantPort tenantProvider;
+
+  /** 订单来源渠道字典码（对应 bone-system 种子字典 source_channel）。 */
+  private static final String SOURCE_CHANNEL_TYPE = "source_channel";
 
   // ===================== 写操作 =====================
 
@@ -111,6 +116,20 @@ public class OrderApplicationService {
               product.get().name(),
               dto.quantity(),
               product.get().unitPrice()));
+    }
+
+    // 字典强校验（写路径）：来源渠道码必须命中 source_channel 已启用选项。
+    // 字典服务不可达（listOptions 返回 empty）或该值域尚未配置（返回空列表）时降级放行，不阻断下单；
+    // 仅当值域已配置且传入码不在其中时才拒绝——这是「强校验存在且启用」的精确语义。
+    String channelSource = command.channelSource();
+    if (channelSource != null && !channelSource.isBlank()) {
+      Optional<List<DictGateway.DictOptionView>> options =
+          dictGateway.listOptions(SOURCE_CHANNEL_TYPE);
+      if (options.isPresent()
+          && !options.get().isEmpty()
+          && options.get().stream().noneMatch(o -> o.code().equals(channelSource))) {
+        throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_CHANNEL_SOURCE_INVALID, channelSource);
+      }
     }
 
     Order order =
@@ -234,7 +253,9 @@ public class OrderApplicationService {
   public OrderDto getById(long orderId) {
     long tenantId = tenantProvider.currentTenantId();
     List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(orderId);
-    return OrderDetailAssembler.fromRows(rows);
+    OrderDto dto = OrderDetailAssembler.fromRows(rows);
+    enrichChannelSource(dto);
+    return dto;
   }
 
   /** 分页查询订单（走 OrderRepository 读侧领域模型）。 */
@@ -251,7 +272,21 @@ public class OrderApplicationService {
 
     List<OrderDto> records =
         result.getRecords().stream().map(OrderSummaryAssembler::fromRow).toList();
+    records.forEach(this::enrichChannelSource);
     return PageResult.of(records, result.getTotal(), page, size);
+  }
+
+  /**
+   * 读路径字典标签解析：把订单来源渠道码解析成中文名随响应返回。
+   *
+   * <p>字典服务不可达或码无对应标签时标签置空（降级），不影响主链路；码本身已落库，仍可读。
+   */
+  private void enrichChannelSource(OrderDto dto) {
+    if (dto.getChannelSource() == null) {
+      return;
+    }
+    dto.setChannelSourceName(
+        dictGateway.resolveLabel(SOURCE_CHANNEL_TYPE, dto.getChannelSource()).orElse(null));
   }
 
   private static OrderStatus parseStatus(String status) {

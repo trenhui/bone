@@ -40,6 +40,12 @@ SEED = [
         ("WARNING", "警告", "warning", 2, None),
         ("CRITICAL", "严重", "critical", 3, None),
     ]),
+    # 订单来源渠道（bone-blueprint 真实消费示例）：下单时校验码合法、详情回显中文名
+    ("source_channel", "订单来源渠道", "LIST", 0, None, [
+        ("WEB", "Web 官网", "WEB", 1, None),
+        ("APP", "App 移动端", "APP", 2, None),
+        ("MINI", "小程序", "MINI", 3, None),
+    ]),
     # 级联样例：省 → 市（GB/T 2260 六位编码，2,2,2 分段可自动推导父级）
     ("biz_region", "行政区域", "CASCADE", 3, "2,2,2", [
         ("GD", "广东省", "440000", 1, None),

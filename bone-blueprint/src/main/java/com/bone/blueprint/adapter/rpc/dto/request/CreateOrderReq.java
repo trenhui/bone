@@ -14,6 +14,9 @@ public class CreateOrderReq {
   private Long customerId;
   private List<OrderItemReq> items;
 
+  /** 订单来源渠道码（来自字典 source_channel：WEB / APP / MINI），可空。 */
+  private String channelSource;
+
   @Data
   public static class OrderItemReq {
     private Long productId;

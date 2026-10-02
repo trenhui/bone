@@ -16,6 +16,8 @@ import com.bone.blueprint.application.command.DeliverOrderCommand;
 import com.bone.blueprint.application.command.ShipOrderCommand;
 import com.bone.blueprint.application.port.out.PricingPort;
 import com.bone.blueprint.application.port.out.TenantPort;
+import com.bone.blueprint.common.BlueprintErrorCodes;
+import com.bone.blueprint.domain.gateway.DictGateway;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.model.order.Order;
 import com.bone.blueprint.domain.model.order.OrderItem;
@@ -28,6 +30,7 @@ import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -48,6 +51,7 @@ class OrderApplicationServiceTest {
   @Mock private InventoryGateway inventoryGateway;
   @Mock private PricingPort pricingService;
   @Mock private com.bone.blueprint.domain.gateway.MasterDataGateway masterDataGateway;
+  @Mock private DictGateway dictGateway;
   @Mock private DomainEventPublisher domainEventPublisher;
   @Mock private TenantPort tenantProvider;
 
@@ -150,6 +154,115 @@ class OrderApplicationServiceTest {
     verify(inventoryGateway, times(2)).checkStock(anyLong(), anyInt());
     verify(orderRepository, times(1)).save(any(Order.class));
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+  }
+
+  // ===================== 来源渠道字典消费 =====================
+
+  /** 合法渠道码命中字典已启用选项：下单通过（写路径强校验放行）。 */
+  @Test
+  void create_validChannelSource_passesDictValidation() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "7", "样例商品", new BigDecimal("50.00"))));
+    when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
+    when(pricingService.calculateFinalPrice(any(), eq(1L), any()))
+        .thenReturn(Money.of(new BigDecimal("99.00")));
+    when(dictGateway.listOptions("source_channel"))
+        .thenReturn(
+            Optional.of(
+                List.of(
+                    new DictGateway.DictOptionView("WEB", "Web 官网"),
+                    new DictGateway.DictOptionView("APP", "App 移动端"),
+                    new DictGateway.DictOptionView("MINI", "小程序"))));
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(7L, "样例商品", 2, new BigDecimal("50.00"));
+    Long orderId = service.create(new CreateOrderCommand(1L, List.of(item), "APP", null, null));
+
+    assertEquals(true, orderId != null);
+    verify(orderRepository, times(1)).save(any(Order.class));
+  }
+
+  /** 非法渠道码不在字典已启用选项内：下单被拦截且不落库。 */
+  @Test
+  void create_invalidChannelSource_throwsAndDoesNotPersist() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "7", "样例商品", new BigDecimal("50.00"))));
+    when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
+    when(dictGateway.listOptions("source_channel"))
+        .thenReturn(
+            Optional.of(
+                List.of(
+                    new DictGateway.DictOptionView("WEB", "Web 官网"),
+                    new DictGateway.DictOptionView("APP", "App 移动端"),
+                    new DictGateway.DictOptionView("MINI", "小程序"))));
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(7L, "样例商品", 1, new BigDecimal("50.00"));
+
+    BizException ex =
+        assertThrows(
+            BizException.class,
+            () -> service.create(new CreateOrderCommand(1L, List.of(item), "XYZ", null, null)));
+    assertEquals(BlueprintErrorCodes.ORDER_CHANNEL_SOURCE_INVALID, ex.getErrorCode());
+    verify(orderRepository, never()).save(any());
+  }
+
+  /** 字典服务不可达（listOptions 返回 empty）：降级放行，不阻断下单（写路径可用性优先）。 */
+  @Test
+  void create_dictUnreachable_channelSourceStillAllowed() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(masterDataGateway.findPublishedProduct(any()))
+        .thenReturn(
+            java.util.Optional.of(
+                new com.bone.blueprint.domain.gateway.MasterDataGateway.ProductView(
+                    "7", "样例商品", new BigDecimal("50.00"))));
+    when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
+    when(pricingService.calculateFinalPrice(any(), eq(1L), any()))
+        .thenReturn(Money.of(new BigDecimal("99.00")));
+    when(dictGateway.listOptions("source_channel")).thenReturn(Optional.empty());
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(7L, "样例商品", 2, new BigDecimal("50.00"));
+    Long orderId = service.create(new CreateOrderCommand(1L, List.of(item), "APP", null, null));
+
+    assertEquals(true, orderId != null);
+    verify(orderRepository, times(1)).save(any(Order.class));
+  }
+
+  /** 读路径：订单详情把来源渠道码解析成中文名随响应返回。 */
+  @Test
+  void getById_resolvesChannelSourceName() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(orderRepository.findOrderWithItems(1L))
+        .thenReturn(
+            List.of(
+                new com.bone.blueprint.domain.model.order.projection.OrderWithItemsProjection(
+                    1L,
+                    1L,
+                    new BigDecimal("99.00"),
+                    "CREATED",
+                    null,
+                    "APP",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null)));
+    when(dictGateway.resolveLabel("source_channel", "APP")).thenReturn(Optional.of("App 移动端"));
+
+    com.bone.blueprint.application.query.dto.OrderDto dto = service.getById(1L);
+
+    assertEquals("APP", dto.getChannelSource());
+    assertEquals("App 移动端", dto.getChannelSourceName());
   }
 
   // ===================== ship() =====================

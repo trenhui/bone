@@ -21,6 +21,13 @@ public class OrderDetailResp {
   private BigDecimal totalAmount;
   private String status;
   private LocalDateTime createdAt;
+
+  /** 订单来源渠道码（落库值，来自字典 source_channel）。 */
+  private String channelSource;
+
+  /** 订单来源渠道中文名（读路径由字典解析；字典不可达时为空）。 */
+  private String channelSourceName;
+
   private List<OrderItemResp> items;
 
   @Data

@@ -4,6 +4,7 @@ SELECT
     o.total_amount,
     o.status,
     o.created_at,
+    o.channel_source,
     oi.id AS item_id,
     oi.product_id,
     oi.product_name,

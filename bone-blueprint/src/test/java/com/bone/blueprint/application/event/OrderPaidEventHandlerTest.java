@@ -49,7 +49,7 @@ class OrderPaidEventHandlerTest {
 
   private static OrderWithItemsProjection row(Long itemId, Long productId, Integer quantity) {
     return new OrderWithItemsProjection(
-        null, null, null, null, null, itemId, productId, null, quantity, null, null);
+        null, null, null, null, null, null, itemId, productId, null, quantity, null, null);
   }
 
   @Test

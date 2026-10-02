@@ -32,6 +32,7 @@ class OrderItemInventoryExecutorTest {
         new BigDecimal("10.00"),
         "CREATED",
         LocalDateTime.now(),
+        null,
         itemId,
         productId,
         "p",

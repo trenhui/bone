@@ -33,6 +33,9 @@ public final class BlueprintErrorCodes {
   /** 下单商品不是已发布的商品主数据记录（主数据治理前置校验失败）。 */
   public static final String ORDER_PRODUCT_NOT_PUBLISHED = "BP_ORDER_PRODUCT_NOT_PUBLISHED";
 
+  /** 订单来源渠道码非法：不在字典 source_channel 已启用的选项内（字典强校验失败）。 */
+  public static final String ORDER_CHANNEL_SOURCE_INVALID = "BP_ORDER_CHANNEL_SOURCE_INVALID";
+
   // ===== 支付（BP_PAYMENT_*）=====
 
   /** 支付单不存在（含跨租户不可见）。 */

@@ -261,6 +261,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **日志与链路** | `BoneRequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`）。**类名带 `Bone` 前缀是必需的**：Spring Boot 自动配置已注册名为 `requestContextFilter` 的 Bean，同名会启动即失败 |
 | **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |
+| **跨模块字典消费（ACL）** | `DictGateway` 领域端口 + `DictAclAdapter` 防腐层，经 `GET /api/v1/system/dict/items/options` 消费 bone-system 字典：**下单强校验**订单来源渠道码（`source_channel`，字典服务不可达降级放行）、**读路径解析**中文标签随响应返回。字典由此从「只配置」变为「被真实消费」 |
 
 ## 若要「尽量简单」地抄一版
 

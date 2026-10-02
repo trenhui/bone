@@ -20,6 +20,7 @@ public class OrderHeadProjection {
   private BigDecimal totalAmount;
   private String status;
   private LocalDateTime createdAt;
+  private String channelSource;
 
   public OrderHeadProjection(
       Long tenantId,
@@ -27,13 +28,15 @@ public class OrderHeadProjection {
       Long customerId,
       BigDecimal totalAmount,
       String status,
-      LocalDateTime createdAt) {
+      LocalDateTime createdAt,
+      String channelSource) {
     this.tenantId = tenantId;
     this.orderId = orderId;
     this.customerId = customerId;
     this.totalAmount = totalAmount;
     this.status = status;
     this.createdAt = createdAt;
+    this.channelSource = channelSource;
   }
 
   /** 聚合 → 投影（Criteria 通道用；{@code @Sql} 通道由 {@code SmartRowMapper} 反射填充）。 */
@@ -49,6 +52,7 @@ public class OrderHeadProjection {
         //   列表时间与详情时间就对不上，且前端无法还原成正确的本地时间（§6.4）。
         order.getCreatedAt() == null
             ? null
-            : LocalDateTime.ofInstant(order.getCreatedAt(), ZoneOffset.UTC));
+            : LocalDateTime.ofInstant(order.getCreatedAt(), ZoneOffset.UTC),
+        order.getChannelSource());
   }
 }

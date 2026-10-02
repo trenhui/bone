@@ -36,6 +36,7 @@ public final class OrderDetailAssembler {
         .totalAmount(head.getTotalAmount())
         .status(head.getStatus())
         .createdAt(head.getCreatedAt())
+        .channelSource(head.getChannelSource())
         .items(items)
         .build();
   }

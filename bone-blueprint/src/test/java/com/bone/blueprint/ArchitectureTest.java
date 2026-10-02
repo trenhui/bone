@@ -233,6 +233,12 @@ public class ArchitectureTest {
           // 与 MasterDataGateway 分工见其类注释。此前遗漏白名单，导致该规则在 HEAD 上恒红。
           .haveSimpleName("PricingRuleGateway")
           .orShould()
+          // 字典消费网关（领域出站端口）：消费 bone-system 字典「下拉数据源」，属业务事实依赖，非技术端口。
+          .haveSimpleName("DictGateway")
+          .orShould()
+          // DictGateway 内嵌的字典选项视图 record。
+          .haveSimpleName("DictOptionView")
+          .orShould()
           .haveSimpleName("package-info");
 
   // E-5.4（v5.5 补门禁）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent。
