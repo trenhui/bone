@@ -54,7 +54,8 @@ public final class OrderItemInventoryExecutor {
    * 读取订单明细并逐行执行库存动作。
    *
    * @param orderRepository 读侧领域仓储（明细由 {@code t_order_item} 投影而来）
-   * @param tenantId 事件所属租户
+   * @param tenantId 事件所属租户（{@code Long} 而非原始 {@code long}）；null 表示事件未携带租户，
+   *     属脏数据。刻意保留包装类型以便在下游显式判空——若用原始类型，null 事件在调用处拆箱就会抛 NPE， 异常点远离真正成因，排查成本高。
    * @param orderId 订单 ID
    * @param actionName 动作名，仅用于日志措辞（如「预留」「确认扣减」）
    * @param action 远程库存动作（{@code reserveStock} / {@code confirmStock}）
@@ -62,7 +63,7 @@ public final class OrderItemInventoryExecutor {
    */
   public static void forEachItem(
       OrderRepository orderRepository,
-      long tenantId,
+      Long tenantId,
       long orderId,
       String actionName,
       StockAction action,
@@ -70,9 +71,14 @@ public final class OrderItemInventoryExecutor {
     // AFTER_COMMIT 线程无 HTTP 请求上下文，TenantContext 为 null。
     // 必须用 TenantContextRunner 显式切换租户，否则 SDK Repository 会因 TenantContext
     // 缺失抛出 MissingTenantContextException，导致库存预留/扣减静默不执行。
-    if (tenantId <= 0) {
+    //
+    // ★ 判定必须是 tenantId < 0（外加 null），不能是 <= 0：
+    //   tenantId=0 是**合法的平台租户**（超管 / 平台账号所属），把它当脏数据会让平台租户的
+    //   每一笔订单都不做库存预留与扣减——线上表现为「平台下单从不占库存」，可导致超卖。
+    //   这里曾长期写作 <= 0，实际是把合法租户误判成了脏数据。
+    if (tenantId == null || tenantId < 0) {
       // AFTER_COMMIT 线程内，抛异常会炸掉 Spring 的 AFTER_COMMIT 执行链，
-      // 让同一事务后注册的其他 AFTER_COMMIT 动作一并丢失。tenantId <= 0 是脏数据，
+      // 让同一事务后注册的其他 AFTER_COMMIT 动作一并丢失。非法租户是脏数据，
       // 静默跳过 + 明确留痕比放大故障面更安全。
       log.error(
           "AFTER_COMMIT 线程缺少有效的 tenantId，库存{}跳过执行（疑似事件数据脏）: orderId={}, tenantId={}",
@@ -81,8 +87,10 @@ public final class OrderItemInventoryExecutor {
           tenantId);
       return;
     }
+    long resolvedTenantId = tenantId.longValue();
     List<OrderWithItemsProjection> rows =
-        TenantContextRunner.callAs(tenantId, () -> orderRepository.findOrderWithItems(orderId));
+        TenantContextRunner.callAs(
+            resolvedTenantId, () -> orderRepository.findOrderWithItems(orderId));
 
     // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不同步。
     // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不
@@ -116,7 +124,7 @@ public final class OrderItemInventoryExecutor {
             onFailure.accept(
                 new StockActionFailure(
                     orderId,
-                    tenantId,
+                    resolvedTenantId,
                     row.getProductId(),
                     row.getQuantity(),
                     actionName,
