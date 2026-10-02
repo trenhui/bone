@@ -72,6 +72,40 @@ class CreateCodeGenerationGenConfigTest {
     assertTrue(out.isEmpty(), "开关关闭时不应产出附加文件");
   }
 
+  @Test
+  void childRelationAbsentWhenGenConfigHasNoChildTable() {
+    assertTrue(service.resolveChildRelation(command(null)) == null, "无 genConfig 应视为未配置主子聚合");
+    assertTrue(
+        service.resolveChildRelation(command("{\"includeTests\":true}")) == null,
+        "没有 childTable 键应视为未配置主子聚合");
+  }
+
+  @Test
+  void childRelationParsedFromGenConfig() {
+    CreateCodeGenerationApplicationService.ChildRelation relation =
+        service.resolveChildRelation(
+            command(
+                "{\"includeTests\":true,\"childTable\":\"t_order_item\",\"childFkColumn\":\"order_id\"}"));
+    assertEquals("t_order_item", relation.childTable());
+    assertEquals("order_id", relation.childFkColumn());
+  }
+
+  @Test
+  void childRelationRequiresFkColumnWhenChildTableConfigured() {
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> service.resolveChildRelation(command("{\"childTable\":\"t_order_item\"}")),
+        "只配子表不配外键列应在提交时立刻报错，而不是生成出缺关联的产物");
+  }
+
+  @Test
+  void childRelationRejectsBrokenGenConfig() {
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalArgumentException.class,
+        () -> service.resolveChildRelation(command("{不是JSON")),
+        "genConfig 非法且涉及主子聚合时应显式报错，不能静默按单表继续");
+  }
+
   private CreateCodeGenerationCommand command(String genConfig) {
     return CreateCodeGenerationCommand.builder()
         .basePackage("com.example")
@@ -105,6 +139,6 @@ class CreateCodeGenerationGenConfigTest {
         List.of(new AggregateTestGenerator(renderer), new ApiDocGenerator(renderer));
     // 其余依赖在本用例不涉及（只测开关解析与附加产物），传 null 保持用例聚焦
     return new CreateCodeGenerationApplicationService(
-        null, null, null, null, null, null, generators, null, null, new ObjectMapper());
+        null, null, null, null, null, null, generators, List.of(), null, null, new ObjectMapper());
   }
 }

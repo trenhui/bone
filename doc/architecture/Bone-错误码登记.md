@@ -379,6 +379,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_ORDER_STATUS_INVALID` | 400 | 订单状态查询入参非法 |
 | `BP_ORDER_STOCK_INSUFFICIENT` | 409 | 下单商品库存不足（同步预校验失败） |
 | `BP_ORDER_PRODUCT_NOT_PUBLISHED` | 409 | 下单商品未发布（不可下单） |
+| `BP_ORDER_CHANNEL_SOURCE_INVALID` | 400 | 订单来源渠道码非法（不在字典 source_channel 已启用选项内） |
 | `BP_PAYMENT_NOT_FOUND` | 404 | 支付单不存在（含跨租户不可见） |
 | `BP_PAYMENT_STATUS_CONFLICT` | 409 | 支付单当前状态不允许该操作 |
 | `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |

@@ -1,6 +1,46 @@
 # studio-generator 真实场景端到端验证报告
 
-> 日期：2026-10-01（首轮）/ 2026-10-02（第二轮） ｜ 分支：dev（工作树未提交改动） ｜ 后端：`bone-engine/studio-generator` (8086)，前端：`bone-generator-app`
+> 日期：2026-10-01（首轮）/ 2026-10-02（第二、三轮） ｜ 分支：dev ｜ 后端：`bone-engine/studio-generator` (8086)，前端：`bone-generator-app`
+
+---
+
+## 〇-A、第三轮（2026-10-02 下午）：主子聚合 + 存量列回填（建议项落地）
+
+### A.1 主子聚合（一对多）代码生成
+
+真实诉求：订单（主） + 订单明细（子）是业务系统最常见的聚合形态，单表生成器产出的是两套互不关联的 CRUD。
+
+- **触发方式**：生成配置的 `genConfig` 增加 `childTable` + `childFkColumn`（仅支持单张主表；子表必须已同步、外键列必须真实存在，违反即提交时报错）。
+- **产物**：子表全套单表产物 + 关系级产物 `{主表}AggregateApplicationService`——`createWithChildren(主命令, 子命令列表)` 一次事务创建聚合根与全部子实体；子实体经 `create` 工厂构造（必填校验生效），外键参数替换为预分配的主表 id（子命令不携带外键，聚合一致性由生成器保证）；明细为空抛 `DomainException`。不用 `FOR UPDATE`（AGENTS §一.7），主表 id 预分配即可无锁关联。
+- **实现**：新领域 SPI `AggregateRelationFileGenerator`（独立于单表 `FileGenerator`——签名需要主+子两份元数据）+ `AggregateRelationServiceGenerator` + classpath `aggregateService.ftl`；模板类型清单新增第三类 `RELATION_TEMPLATE_TYPES`（非骨架、非开关产物，不进模板管理）。
+- **前端**：生成配置弹窗新增「子表（主子聚合，可选）」+「子表外键列」两级联动选择（从已同步表/列取选项），多选主表时禁用并提示。
+
+### A.2 存量列元数据回填
+
+真实诉求：早期版本同步只写表不写列，存量表列数恒 0、生成实体只有 id 字段；列数据只能从物理库现取，SQL 无法回填。
+
+- **端点**：`POST /data-sources/{id}/tables:repair-columns`——找出缺列表，复用幂等的同步服务（`updateFrom + 整表替换列`）逐表重新同步，返回 `{repairedCount, tables}`。
+- **前端**：已同步表列表检测到缺列时显示警示条 +「回填列元数据」一键修复。
+
+### A.3 第三轮串联验证（E2E 22/22 PASS）
+
+`npm run e2e:real` 新增 5 步（12/12b/13 等）：
+
+```
+PASS aggregate generation produces AggregateApplicationService — files=25
+PASS aggregate service composes parent + child transactionally
+PASS aggregate manifest complete — 25/25
+PASS javac compiles aggregate code — 25 sources（聚合服务与主/子实体命令同包编译 0 错误）
+PASS POST /tables:repair-columns idempotent — repairedCount=0
+```
+
+- 后端单测 **111/111**（新增关系解析 4 测 + 聚合生成器 2 测；模板一致性门禁扩展第三类清单），spotless 通过。
+- 前端 typecheck 通过。
+- 本轮改动已提交（见 A.4）。
+
+### A.4 提交记录
+
+- 首轮 + 第二轮成果已由并发会话随 `aa2e77d0d`（feat metadata/iam/generator）入库；第三轮改动按显式路径单独提交（不携带其他会话在途文件）。
 
 ---
 

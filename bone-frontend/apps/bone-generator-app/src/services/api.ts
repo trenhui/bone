@@ -58,6 +58,10 @@ export const dataSourceApi = {
     }),
 
   listSyncedTables: (id: string): Resp<DatabaseTable[]> => api.get(`${G}/data-sources/${id}/synced-tables`),
+
+  /** 存量列回填：对缺列的历史同步表按物理库重新同步（幂等） */
+  repairColumns: (id: string): Resp<{ repairedCount?: number; tables?: string[] }> =>
+    api.post(`${G}/data-sources/${id}/tables:repair-columns`),
 };
 
 export const metadataEntitySnapshotApi = {

@@ -1,5 +1,5 @@
-import { Card, Typography, Select, Button, Table, Space } from 'antd';
-import { ReloadOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Typography, Select, Table, Space } from 'antd';
+import { ReloadOutlined, PlusOutlined, DownloadOutlined, ToolOutlined } from '@ant-design/icons';
 import type { UseCodeGeneration } from './useCodeGeneration';
 
 const { Title, Text } = Typography;
@@ -18,6 +18,9 @@ export default function MainPanel(props: UseCodeGeneration): JSX.Element {
     openSyncModal,
     openConfigModal,
     tableColumns,
+    zeroColumnCount,
+    repairing,
+    repairColumns,
   } = props;
 
   const isPhysical = metadataSource === 'PHYSICAL_DB';
@@ -59,6 +62,26 @@ export default function MainPanel(props: UseCodeGeneration): JSX.Element {
           刷新列表
         </Button>
       </div>
+
+      {isPhysical && zeroColumnCount > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`检测到 ${zeroColumnCount} 张已同步表缺少列元数据`}
+          description="这些表是历史版本同步的存量数据，基于它们生成的实体只有 id 字段。建议一键按物理库回填列信息（幂等，不影响已正确同步的表）。"
+          action={
+            <Button
+              size="small"
+              icon={<ToolOutlined />}
+              onClick={repairColumns}
+              loading={repairing}
+            >
+              回填列元数据
+            </Button>
+          }
+        />
+      )}
 
       {syncedTables.length > 0 ? (
         <Table

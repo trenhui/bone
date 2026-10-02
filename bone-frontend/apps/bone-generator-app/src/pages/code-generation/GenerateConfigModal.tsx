@@ -17,6 +17,8 @@ export default function GenerateConfigModal(props: UseCodeGeneration): JSX.Eleme
     activeDataSourceId,
     dataSources,
     generateForm,
+    syncedTables,
+    selectedTables,
   } = props;
 
   const isPhysical = metadataSource === 'PHYSICAL_DB';
@@ -137,6 +139,59 @@ export default function GenerateConfigModal(props: UseCodeGeneration): JSX.Eleme
             }))}
           />
         </Form.Item>
+
+        {isPhysical && (
+          <>
+            <Form.Item
+              name="childTable"
+              label="子表（主子聚合，可选）"
+              extra={
+                selectedTables.length === 1
+                  ? '选择子表后额外生成「一次事务创建主表 + 明细」的聚合应用服务'
+                  : '主子聚合仅支持单张主表：请只勾选一张表后再配置'
+              }
+            >
+              <Select
+                placeholder="不选 = 只生成单表代码"
+                allowClear
+                disabled={selectedTables.length !== 1}
+                options={syncedTables
+                  .filter((t) => !selectedTables.includes(t.tableName))
+                  .map((t) => ({
+                    value: t.tableName,
+                    label: `${t.tableName}${t.tableComment ? ` (${t.tableComment})` : ''}`,
+                  }))}
+              />
+            </Form.Item>
+            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.childTable !== cur.childTable}>
+              {({ getFieldValue }) => {
+                const childTable = getFieldValue('childTable') as string | undefined;
+                const childColumns =
+                  syncedTables.find((t) => t.tableName === childTable)?.columns ?? [];
+                if (!childTable) {
+                  return null;
+                }
+                return (
+                  <Form.Item
+                    name="childFkColumn"
+                    label="子表外键列"
+                    rules={[{ required: true, message: '主子聚合必须指定子表外键列' }]}
+                    extra={`子表 ${childTable} 中指向主表 id 的列，聚合服务会用主表 id 填充它`}
+                  >
+                    <Select
+                      placeholder="选择外键列，如 order_id"
+                      allowClear
+                      options={childColumns.map((c) => ({
+                        value: c.columnName,
+                        label: `${c.columnName}${c.columnComment ? ` (${c.columnComment})` : ''}`,
+                      }))}
+                    />
+                  </Form.Item>
+                );
+              }}
+            </Form.Item>
+          </>
+        )}
 
         <Form.Item name="includeTests" valuePropName="checked">
           <Checkbox>包含测试代码</Checkbox>

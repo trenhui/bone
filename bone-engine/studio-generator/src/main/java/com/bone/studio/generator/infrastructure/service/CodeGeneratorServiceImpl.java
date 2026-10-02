@@ -61,6 +61,15 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
    */
   public static final List<String> OPTIONAL_TEMPLATE_TYPES = OptionalArtifactType.all();
 
+  /**
+   * 关系级模板：主子聚合应用服务（{@code aggregateService}）。
+   *
+   * <p><b>为何独立于前两份清单</b>：它既不是「每表必出」的骨架，也不是开关产物——只有命令配置了 {@code childTable}/{@code
+   * childFkColumn}（主子聚合，一对多）才由 {@code AggregateRelationServiceGenerator} 产出一次，且消费主表 +
+   * 子表两份元数据，{@code FileGenerator} 的单表签名装不下。 不进模板管理（用户勾不出关系粒度），只随 classpath 发布。
+   */
+  public static final List<String> RELATION_TEMPLATE_TYPES = List.of("aggregateService");
+
   /** 内置骨架 + 开关命中的附加产物（单测 / 文档），顺序即生成顺序。 */
   private static List<String> resolveTemplateTypes(CodeGenerationRequest request) {
     List<String> types = new ArrayList<>(BUILT_IN_TEMPLATE_TYPES);

@@ -270,6 +270,9 @@ export function useCodeGeneration() {
 
       // 统一入口：PHYSICAL_DB 与 CATALOG_SNAPSHOT 都走 /code-generation，
       // 后端按 metadataSource 分流（catalog 复用 CodeGeneratorService 引擎）。
+      // 主子聚合（一对多）：配置了子表 + 外键列时，后端额外产出 AggregateApplicationService。
+      const childTable = values.childTable as string | undefined;
+      const childFkColumn = values.childFkColumn as string | undefined;
       const request = {
         projectName: values.projectName,
         basePackage: values.basePackage,
@@ -280,6 +283,7 @@ export function useCodeGeneration() {
         genConfig: JSON.stringify({
           includeTests: values.includeTests,
           includeDocumentation: values.includeDocumentation,
+          ...(childTable && childFkColumn ? { childTable, childFkColumn } : {}),
         }),
         metadataSource,
         entityCodes: selectedTables,
@@ -335,6 +339,34 @@ export function useCodeGeneration() {
     setSelectedTables([]);
   };
 
+  /** 缺列的存量同步表数（历史版本同步只写表不写列，列数恒 0） */
+  const zeroColumnCount = syncedTables.filter(
+    (t) => !t.columns || t.columns.length === 0,
+  ).length;
+
+  const [repairing, setRepairing] = useState(false);
+
+  /** 一键回填缺列表的列元数据（后端幂等，按物理库重新同步） */
+  const repairColumns = async () => {
+    if (!activeDataSourceId) {
+      return;
+    }
+    try {
+      setRepairing(true);
+      const resp = await dataSourceApi.repairColumns(activeDataSourceId);
+      const count = resp.data?.repairedCount ?? 0;
+      message.success(
+        count > 0 ? `已回填 ${count} 张表的列元数据` : '没有需要回填的表',
+      );
+      await loadSyncedTables(activeDataSourceId);
+    } catch (error) {
+      message.error('回填列元数据失败');
+      console.error('回填列元数据失败:', error);
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   const refreshTables = () => {
     void loadSyncedTables();
   };
@@ -371,9 +403,12 @@ export function useCodeGeneration() {
     syncForm,
     generateForm,
     tableColumns,
+    zeroColumnCount,
+    repairing,
     // 行为
     refreshTables,
     selectDataSource,
+    repairColumns,
     handleTableSelect,
     openSyncModal,
     syncTables,

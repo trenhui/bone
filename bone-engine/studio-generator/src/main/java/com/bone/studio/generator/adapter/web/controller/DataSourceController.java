@@ -8,6 +8,7 @@ import com.bone.studio.generator.application.DeleteDataSourceApplicationService;
 import com.bone.studio.generator.application.GetDataSourceListQueryApplicationService;
 import com.bone.studio.generator.application.ListSyncedTablesApplicationService;
 import com.bone.studio.generator.application.LoadTablesApplicationService;
+import com.bone.studio.generator.application.RepairSyncedTableColumnsApplicationService;
 import com.bone.studio.generator.application.SyncTableMetadataApplicationService;
 import com.bone.studio.generator.application.TestDataSourceConnectionApplicationService;
 import com.bone.studio.generator.application.UpdateDataSourceApplicationService;
@@ -40,6 +41,7 @@ public class DataSourceController {
   private final LoadTablesApplicationService loadTablesHandler;
   private final ListSyncedTablesApplicationService listSyncedTablesHandler;
   private final SyncTableMetadataApplicationService syncHandler;
+  private final RepairSyncedTableColumnsApplicationService repairSyncedTableColumnsHandler;
 
   @PostMapping
   public ApiResponse<String> createDataSource(@RequestBody CreateDataSourceCommand command) {
@@ -107,6 +109,12 @@ public class DataSourceController {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("syncedCount", syncHandler.handle(cmd));
     return ApiResponse.success(data);
+  }
+
+  /** 存量列回填：早期同步只写表不写列（列数恒 0），对缺列表按当前物理库重新同步。幂等，无缺列时返回 0。 */
+  @PostMapping("/{id}/tables:repair-columns")
+  public ApiResponse<Map<String, Object>> repairSyncedTableColumns(@PathVariable String id) {
+    return ApiResponse.success(repairSyncedTableColumnsHandler.handle(id));
   }
 
   @PostMapping("/{id}:test-connection")

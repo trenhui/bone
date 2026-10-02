@@ -24,6 +24,7 @@ import com.bone.studio.generator.domain.repository.CodeGenerationHistoryReposito
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
+import com.bone.studio.generator.domain.service.AggregateRelationFileGenerator;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import com.bone.studio.generator.domain.service.FileGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -60,6 +61,7 @@ public class CreateCodeGenerationApplicationService {
   private final CodeTemplateRepository codeTemplateRepository;
   private final CodeGenerationHistoryRepository historyRepository;
   private final List<FileGenerator> fileGenerators;
+  private final List<AggregateRelationFileGenerator> aggregateRelationFileGenerators;
   private final CodeGeneratorService codeGeneratorService;
   private final TenantProvider tenantProvider;
   private final ObjectMapper objectMapper;
@@ -125,7 +127,22 @@ public class CreateCodeGenerationApplicationService {
         generatedFiles.addAll(runCatalogGeneration(command));
       } else {
         ResolvedInputs inputs = validateAndResolve(command);
-        for (GenTableMetadata table : inputs.tableMetadatas()) {
+        ChildRelation relation = resolveChildRelation(command);
+        List<GenTableMetadata> tableMetadatas = new ArrayList<>(inputs.tableMetadatas());
+        GenTableMetadata childMetadata = null;
+        if (relation != null) {
+          validateRelationApplicable(command, relation);
+          childMetadata = findTableMetadata(command.getDataSourceId(), relation.childTable());
+          if (childMetadata == null) {
+            throw new IllegalArgumentException("子表元数据不存在，请先同步: " + relation.childTable());
+          }
+          // 子表自身产物（实体/仓储/命令等）一并生成，缺了聚合服务引用的类必然编译失败
+          GenTableMetadata childFinal = childMetadata;
+          if (tableMetadatas.stream().noneMatch(t -> t == childFinal)) {
+            tableMetadatas.add(childMetadata);
+          }
+        }
+        for (GenTableMetadata table : tableMetadatas) {
           for (CodeTemplate template : inputs.templates()) {
             for (FileGenerator generator : fileGenerators) {
               if (generator.supports(template.getType())) {
@@ -138,6 +155,23 @@ public class CreateCodeGenerationApplicationService {
           }
           // 开关产物（单测 / 文档）不在 templateIds 里，按 genConfig 追加
           appendOptionalArtifacts(generatedFiles, table, command);
+        }
+        if (relation != null && childMetadata != null) {
+          // 关系级产物：主子聚合应用服务（主表 + 子表一次事务创建）
+          GenTableMetadata parentMetadata = inputs.tableMetadatas().get(0);
+          if (aggregateRelationFileGenerators.isEmpty()) {
+            log.warn("[主子聚合] 无 AggregateRelationFileGenerator 实现，跳过聚合服务产物");
+          } else {
+            generatedFiles.add(
+                aggregateRelationFileGenerators
+                    .get(0)
+                    .generate(
+                        parentMetadata,
+                        childMetadata,
+                        relation.childFkColumn(),
+                        command.getBasePackage(),
+                        command.getModuleName()));
+          }
         }
       }
       String zipUrl = "/api/v1/generator/code-generation/tasks/" + taskId + "/download";
@@ -249,6 +283,70 @@ public class CreateCodeGenerationApplicationService {
 
   /** 生成开关：是否产出聚合单测 / 接口文档（包内可见，供单测直接校验解析口径）。 */
   record GenFlags(boolean includeTests, boolean includeDocumentation) {}
+
+  /**
+   * 主子聚合关系（一对多）：子表名 + 子表外键列。
+   *
+   * <p>承载在 {@code genConfig} JSON（{@code childTable}/{@code childFkColumn}）里而非命令独立字段： genConfig
+   * 本就随任务持久化（{@code gen_task.gen_config}），历史/重放都能还原这次生成的关系配置。
+   */
+  record ChildRelation(String childTable, String childFkColumn) {}
+
+  /**
+   * 从 {@code genConfig} 解析主子聚合配置；未配置返回 {@code null}（单表生成主链路不受影响）。
+   *
+   * <p>解析失败不静默：配置写错（非 JSON / 类型不符）直接抛参数异常，让用户在提交时看到错误而不是 生成出一半缺子表的产物。
+   */
+  ChildRelation resolveChildRelation(CreateCodeGenerationCommand command) {
+    String genConfig = command.getGenConfig();
+    if (genConfig == null || genConfig.isBlank()) {
+      return null;
+    }
+    JsonNode node;
+    try {
+      node = objectMapper.readTree(genConfig);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("genConfig 不是合法 JSON: " + e.getMessage());
+    }
+    String childTable = node.path("childTable").asText(null);
+    if (childTable == null || childTable.isBlank()) {
+      return null;
+    }
+    String fkColumn = node.path("childFkColumn").asText(null);
+    if (fkColumn == null || fkColumn.isBlank()) {
+      throw new IllegalArgumentException("配置了子表 childTable 时必须同时配置外键列 childFkColumn");
+    }
+    return new ChildRelation(childTable.trim(), fkColumn.trim());
+  }
+
+  /** 主子聚合前置校验：只支持单主表场景，且外键列必须真实存在于子表业务列中。 */
+  private void validateRelationApplicable(
+      CreateCodeGenerationCommand command, ChildRelation relation) {
+    if (command.getTableNames() == null || command.getTableNames().size() != 1) {
+      throw new IllegalArgumentException(
+          "主子聚合生成要求仅选择一张主表，当前选择了 " + command.getTableNames().size() + " 张");
+    }
+    if (relation.childTable().equals(command.getTableNames().get(0))) {
+      throw new IllegalArgumentException("子表不能与主表相同: " + relation.childTable());
+    }
+    GenTableMetadata child = findTableMetadata(command.getDataSourceId(), relation.childTable());
+    if (child == null) {
+      // 元数据存在性在主流程还会再查一次并给「请先同步」提示，这里提前给出更精确的信息
+      return;
+    }
+    boolean fkExists =
+        child.getColumns() == null
+            ? false
+            : child.getColumns().stream()
+                .anyMatch(
+                    c ->
+                        relation.childFkColumn().equalsIgnoreCase(c.getOriginalColumnName())
+                            && !c.isDeleted());
+    if (!fkExists) {
+      throw new IllegalArgumentException(
+          "子表 " + relation.childTable() + " 不存在外键列 " + relation.childFkColumn());
+    }
+  }
 
   private static MetadataSourceType resolveSource(String raw) {
     if (raw == null || raw.isBlank()) {

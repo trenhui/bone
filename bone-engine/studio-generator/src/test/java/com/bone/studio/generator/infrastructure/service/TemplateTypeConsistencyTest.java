@@ -35,9 +35,10 @@ class TemplateTypeConsistencyTest {
 
   @Test
   void builtInTypesMatchClasspathTemplates() {
-    // classpath 模板 = 固定骨架 12 类 + 开关产物 2 类（单测 / 文档）
+    // classpath 模板 = 固定骨架 12 类 + 开关产物 2 类（单测 / 文档）+ 关系级产物 1 类（主子聚合）
     Set<String> all = new TreeSet<>(CodeGeneratorServiceImpl.BUILT_IN_TEMPLATE_TYPES);
     all.addAll(CodeGeneratorServiceImpl.OPTIONAL_TEMPLATE_TYPES);
+    all.addAll(CodeGeneratorServiceImpl.RELATION_TEMPLATE_TYPES);
     assertEquals(all, new TreeSet<>(classpathTemplateCodes()), "生成器清单与 classpath 模板文件不一致");
   }
 
