@@ -23,6 +23,30 @@
             <version>${bone-core.version}</version>
         </dependency>
 
+        <!-- bone-web（框架统一异常处理器 GlobalExceptionHandler 的注册入口） -->
+        <!--
+          为什么必须补这条依赖：统一响应契约（HC-003）要求任何失败都返回 ApiResponse 信封。
+          框架处理器 GlobalExceptionHandler 由 BoneWebExceptionAutoConfiguration 注册，而该自动配置
+          住在 bone-web 里——本模块此前只依赖 bone-core，bone-web 不在 classpath 上，自动配置从未生效。
+          后果：模块自有 advice（IntegrationExceptionAdvice）只覆盖业务异常，框架级绑定异常
+          （参数缺失 / 类型不匹配 / 405 等）全部漏到 Spring 默认 BasicErrorController，
+          客户端拿到的是 {"timestamp","status","error","path"} 裸错误，前端 showError() 取不到 errorCode。
+          实测：GET /api/v1/integration/flows/abc 与 GET /api/v1/integration/executions（缺分页参数）
+          均返回裸 400，是当时全仓唯一违反 HC-003 的模块。
+
+          为何不是「在自有 advice 里再抄一份框架分支」：那会让「异常→HTTP 状态」的映射出现两份真源，
+          后续改一处忘另一处，正是本仓反复治理的漂移问题。框架处理器的设计意图已在其 javadoc 写明：
+          「没有自带的模块（iam / integration / file / blueprint 等）则由框架补上」。
+
+          共存顺序：本模块 advice 经 @Order(HIGHEST_PRECEDENCE) 优先，模块特有映射（如连接器未实现 501）
+          继续生效，其余异常由框架处理器兜底——不存在「同一异常两个 advice 争抢」的不确定行为。
+        -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-web</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- bone-security（JWT 框架抽象，复用 JwtTokenService / AbstractJwtAuthenticationFilter） -->
         <dependency>
             <groupId>com.bone</groupId>

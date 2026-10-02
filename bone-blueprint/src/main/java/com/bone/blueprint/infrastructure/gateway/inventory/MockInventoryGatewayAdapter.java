@@ -47,6 +47,23 @@ public class MockInventoryGatewayAdapter
     }
   }
 
+  /**
+   * 占位实现为何必须打日志：{@code reserve/confirm/release} 都是<strong>空方法</strong>，若再不打日志， 本地演示「下单 → 预留 → 支付 →
+   * 扣减」时就<strong>既无数据变化、也无任何输出</strong>——外部完全无法区分「链路正常执行」与「链路根本没被触发」。 这正是 {@code
+   * OrderItemInventoryExecutor} 里明令禁止的失败形态：看起来正常运行，其实什么都没做。
+   *
+   * <p>故三个占位方法统一以 INFO 留痕「动作 + 关键参数 + 本次不做真实库存变更」，让演示链路可观测、
+   * 也让替换真实实现时有一致的对照基线。接真实库存服务后，这些日志应替换/下沉为客户端调用日志。
+   */
+  private void traceNoop(String action, Long orderId, Long productId, Integer quantity) {
+    log.info(
+        "[MockInventory] {}（占位，不产生真实库存变更）: orderId={}, productId={}, quantity={}",
+        action,
+        orderId,
+        productId,
+        quantity);
+  }
+
   @Override
   public boolean checkStock(Long productId, Integer quantity) {
     // 占位：真实实现对库存服务发起校验，此处仅做参数非空放行，便于本地演示。
@@ -55,16 +72,16 @@ public class MockInventoryGatewayAdapter
 
   @Override
   public void reserveStock(Long orderId, Long productId, Integer quantity) {
-    // 真实实现：远程调用库存服务预留接口（待接入）
+    traceNoop("reserveStock 预留库存", orderId, productId, quantity);
   }
 
   @Override
   public void confirmStock(Long orderId, Long productId, Integer quantity) {
-    // 真实实现：远程调用库存服务确认扣减接口（待接入）
+    traceNoop("confirmStock 确认扣减", orderId, productId, quantity);
   }
 
   @Override
   public void releaseStock(Long orderId) {
-    // 真实实现：远程调用库存服务释放预留接口（待接入）
+    traceNoop("releaseStock 释放预留", orderId, null, null);
   }
 }

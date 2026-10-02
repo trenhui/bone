@@ -9,6 +9,8 @@ import com.bone.core.model.ProblemDetails;
 import com.bone.integration.common.exception.NotFoundException;
 import com.bone.integration.common.exception.SystemException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,7 +23,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 前端拿不到 {@code errorCode}；「未实现」这类语义还是靠 {@code "INT_CONNECTOR_NOT_IMPLEMENTED: "} 前缀拼在 message
  * 里（文案一改，聚合口径就断）。现统一产出 {@link ProblemDetail}：语义落到 {@code errorCode}， message 只作中文 fallback。
  */
+/**
+ * 与框架 {@code GlobalExceptionHandler}（经 bone-web 自动配置注册）共存，本 advice <strong>优先</strong>。
+ *
+ * <p><b>为何必须显式声明顺序</b>：两个 {@code @RestControllerAdvice} 都处理 {@code BizException}，若都不带
+ * {@code @Order}，Spring 的排序在二者之间是不确定的——同一个 {@code INT_FLOW_NOT_FOUND} 可能这次走模块分支（404）、 下次走框架分支（取决于
+ * Bean 注册顺序）。本模块有框架没有的特有映射（连接器未实现 → 501），必须稳定胜出； 框架处理器则兜底本 advice 未覆盖的框架级异常（参数绑定 / 类型不匹配 / 405 等）。
+ */
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class IntegrationExceptionAdvice {
 
