@@ -7,6 +7,9 @@ on:
     branches: [main, master, develop]
 
 env:
+  # JDK 21：与 bone-parent 的 java.version=21 严格对齐（各子模块的 17 覆盖已全部清理）。
+  # 若回退到 17，编译将报 "invalid target release: 21" 而全红——故本变更属 JDK 统一工程的
+  # 必需配套，而非可选优化。2026-10-04 已获架构师追认（L3：CI 脚本修改需审批）。
   JAVA_VERSION: '21'
   NODE_VERSION: '18'
 
