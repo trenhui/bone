@@ -33,11 +33,6 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
-        
-        <!-- Apache Commons Lang -->
-        <dependency><groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-                    </dependency>
 
         <!-- 核心模块依赖 -->
         <dependency><groupId>com.bone</groupId>
