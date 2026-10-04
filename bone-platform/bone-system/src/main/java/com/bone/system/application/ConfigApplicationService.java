@@ -143,8 +143,8 @@ public class ConfigApplicationService {
         systemConfigRepository.pageByKeyword(
             query.getKeyword(),
             parseConfigTypeOrNull(query.getConfigType()),
-            query.getPageNum(),
-            query.getPageSize());
+            query.getPage(),
+            query.getSize());
     return mapPage(page);
   }
 

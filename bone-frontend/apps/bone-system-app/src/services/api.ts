@@ -25,8 +25,8 @@ const api = createApiClient('/api/v1', { headers: { 'Content-Type': 'application
 
 // 系统配置 API
 export const systemConfigApi = {
-  getConfig: async (params?: { keyword?: string; pageNum?: number; pageSize?: number }) => {
-    const p = { pageNum: params?.pageNum ?? 1, pageSize: params?.pageSize ?? 100, keyword: params?.keyword ?? '' };
+  getConfig: async (params?: { keyword?: string; page?: number; size?: number }) => {
+    const p = { page: params?.page ?? 1, size: params?.size ?? 100, keyword: params?.keyword ?? '' };
     return api.get<never, ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
   },
 
@@ -73,9 +73,9 @@ export const monitorApi = {
     return api.get<never, ApiResponse<Metrics>>('/system/metrics');
   },
 
-  getAlertRules: async (params: { pageNum: number; pageSize: number }) => {
+  getAlertRules: async (params: { page: number; size: number }) => {
     return api.get<never, ApiResponse<PageResult<AlertRule>>>('/system/alert/rules/page', {
-      params: { pageNum: params.pageNum, pageSize: params.pageSize },
+      params: { page: params.page, size: params.size },
     });
   },
 
@@ -103,9 +103,9 @@ export const monitorApi = {
     return api.post<never, ApiResponse<void>>(`/system/alert/rules/${id}/disable`);
   },
 
-  getAlertEvents: async (params: { pageNum: number; pageSize: number }) => {
+  getAlertEvents: async (params: { page: number; size: number }) => {
     return api.get<never, ApiResponse<PageResult<AlertRecord>>>('/system/alert/events/page', {
-      params: { pageNum: params.pageNum, pageSize: params.pageSize },
+      params: { page: params.page, size: params.size },
     });
   },
 };
@@ -113,8 +113,8 @@ export const monitorApi = {
 // 日志管理 API
 export const logApi = {
   getLogs: async (params: {
-    pageNum: number;
-    pageSize: number;
+    page: number;
+    size: number;
     level?: string;
     service?: string;
     keyword?: string;
@@ -122,7 +122,7 @@ export const logApi = {
     endTime?: string;
   }) => {
     return api.get<never, ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
-      params: { pageNum: params.pageNum, pageSize: params.pageSize, keyword: params.keyword },
+      params: { page: params.page, size: params.size, keyword: params.keyword },
     });
   },
 
@@ -163,11 +163,11 @@ export const consoleApi = {
 // 系统字典 API（两级模型：/system/dict/types + /system/dict/items）
 export const dictApi = {
   // ---- 字典类型（定义层） ----
-  getTypePage: async (params: { keyword?: string; category?: string; moduleCode?: string; status?: number; pageNum?: number; pageSize?: number }) => {
+  getTypePage: async (params: { keyword?: string; category?: string; moduleCode?: string; status?: number; page?: number; size?: number }) => {
     return api.get<never, ApiResponse<PageResult<DictType>>>('/system/dict/types/page', {
       params: {
-        pageNum: params.pageNum ?? 1,
-        pageSize: params.pageSize ?? 20,
+        page: params.page ?? 1,
+        size: params.size ?? 20,
         keyword: params.keyword,
         category: params.category,
         moduleCode: params.moduleCode,
@@ -204,11 +204,11 @@ export const dictApi = {
   },
 
   // ---- 字典项（值层） ----
-  getItemPage: async (params: { typeCode?: string; parentCode?: string; hierarchyCode?: string; keyword?: string; status?: number; pageNum?: number; pageSize?: number }) => {
+  getItemPage: async (params: { typeCode?: string; parentCode?: string; hierarchyCode?: string; keyword?: string; status?: number; page?: number; size?: number }) => {
     return api.get<never, ApiResponse<PageResult<DictItem>>>('/system/dict/items/page', {
       params: {
-        pageNum: params.pageNum ?? 1,
-        pageSize: params.pageSize ?? 20,
+        page: params.page ?? 1,
+        size: params.size ?? 20,
         typeCode: params.typeCode,
         parentCode: params.parentCode,
         hierarchyCode: params.hierarchyCode,
@@ -259,9 +259,9 @@ export const dictApi = {
 
 // 系统定时任务 API
 export const scheduleTaskApi = {
-  getScheduleTaskPage: async (params: { keyword?: string; status?: string; pageNum?: number; pageSize?: number }) => {
+  getScheduleTaskPage: async (params: { keyword?: string; status?: string; page?: number; size?: number }) => {
     return api.get<never, ApiResponse<PageResult<ScheduleTask>>>('/system/schedule-tasks/page', {
-      params: { pageNum: params.pageNum ?? 1, pageSize: params.pageSize ?? 20, keyword: params.keyword, status: params.status },
+      params: { page: params.page ?? 1, size: params.size ?? 20, keyword: params.keyword, status: params.status },
     });
   },
   createScheduleTask: async (data: { name: string; cron: string; handler: string; status?: string }) => {

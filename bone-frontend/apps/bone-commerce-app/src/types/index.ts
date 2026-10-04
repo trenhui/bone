@@ -9,8 +9,8 @@ import type { ApiResponse, PageResult } from '@bone/shared-types';
  * - 金额（`totalAmount` 等）是 JSON number（BigDecimal，非 Long）。
  * - 时间字段是 ISO-8601 带 `Z` 偏移的字符串（服务端 `Instant`）。
  * - 分页出参权威字段是 `records`；`total` 是**字符串**（Long→String），
- *   `page`/`size`/`pages` 是 number。注意出参没有 `pageNum`/`pageSize` 键，
- *   入参才用 `pageNum`/`pageSize`（blueprint 与 system/metadata 同属第二族）。
+ *   `page`/`size`/`pages` 是 number。出参与入参现已统一为 `records`/`page`/`size`
+ *   （`page` 为 1-based，首页 = 1），不再有 `pageNum`/`pageSize` 第二族。
  */
 export type { ApiResponse, PageResult };
 
@@ -102,6 +102,6 @@ export interface RefundPaymentReq {
 export interface OrderPageQuery {
   customerId?: string;
   status?: OrderStatus | '';
-  pageNum: number;
-  pageSize: number;
+  page: number;
+  size: number;
 }

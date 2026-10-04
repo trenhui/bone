@@ -152,8 +152,8 @@ public class ConfigControllerTest {
     }
 
     ConfigPageReq req = new ConfigPageReq();
-    req.setPageNum(1);
-    req.setPageSize(10);
+    req.setPage(1);
+    req.setSize(10);
 
     ApiResponse<PageResult<ConfigResp>> apiResponse = configController.page(req);
 

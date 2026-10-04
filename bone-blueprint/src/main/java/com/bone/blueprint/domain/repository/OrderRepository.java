@@ -40,14 +40,14 @@ public interface OrderRepository extends Repository<Order, Long> {
 
   /** 订单头分页；{@code customerId} / {@code status} 为可选过滤条件。 */
   default PageResult<OrderHeadProjection> findOrderPage(
-      long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {
+      long tenantId, Long customerId, OrderStatus status, int page, int size) {
     Criteria<Order> criteria =
         Criteria.<Order>create()
             .eq(Order::getTenantId, tenantId)
             .eq(customerId != null, Order::getCustomerId, customerId)
             .eq(status != null, Order::getStatus, status)
             .orderByDesc(Order::getCreatedAt)
-            .page(pageNum, pageSize);
+            .page(page, size);
     return pageByCriteria(criteria).map(OrderHeadProjection::from);
   }
 }

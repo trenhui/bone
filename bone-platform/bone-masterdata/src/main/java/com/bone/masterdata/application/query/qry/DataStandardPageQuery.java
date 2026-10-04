@@ -6,6 +6,6 @@ import lombok.Data;
 public class DataStandardPageQuery {
   private String entityCode;
   private String keyword;
-  private int pageNum = 1;
-  private int pageSize = 10;
+  private int page = 1;
+  private int size = 10;
 }

@@ -73,7 +73,7 @@ public class OrderController {
   public ApiResponse<PageResult<OrderSummaryResp>> page(@Valid @ModelAttribute OrderPageQry qry) {
     return ApiResponse.success(
         orderApplicationService
-            .page(qry.getCustomerId(), qry.getStatus(), qry.getPageNum(), qry.getPageSize())
+            .page(qry.getCustomerId(), qry.getStatus(), qry.getPage(), qry.getSize())
             .map(orderAssembler::toOrderSummaryResp));
   }
 

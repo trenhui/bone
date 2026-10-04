@@ -70,6 +70,13 @@ public class MeController {
             .orElseThrow(() -> IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND)));
   }
 
+  // 2026-10-04 复核（P1-8 的**不**执行项）：这里**不**加 @PreAuthorize("isAuthenticated()")。
+  // 复核推翻了初版的冲动：SecurityConfig 是 anyRequest().authenticated()，方法级
+  // isAuthenticated() 与之行为完全等价 ⇒ 加了是零收益；而基线
+  // controller-authorization-baseline.json 里这条端点已登记豁免（"主体取自 JWT，
+  // 挂码会把改自己资料变成需额外授权"），强行加注解就得同时削掉那条豁免，
+  // 白白消耗一份「只可收缩」的基线资产。
+  // 真正的防御点在别处（URL 层单点认证 + CurrentPrincipalPort 取主体），不在这里重复声明。
   @PutMapping
   public ApiResponse<Void> updateProfile(@RequestBody UpdateMyProfileReq req) {
     Long accountId = parseAccountId(requirePrincipal());

@@ -6,6 +6,6 @@ import lombok.Data;
 public class ScheduleTaskPageQuery {
   private String keyword;
   private String status;
-  private int pageNum = 1;
-  private int pageSize = 10;
+  private int page = 1;
+  private int size = 10;
 }

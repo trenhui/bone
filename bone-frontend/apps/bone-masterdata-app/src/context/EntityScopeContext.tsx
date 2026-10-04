@@ -35,7 +35,7 @@ export const EntityScopeProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const load = useCallback(async () => {
     setEntitiesLoading(true);
     try {
-      const res = await masterDataEntityApi.page({ pageNum: 1, pageSize: 100 });
+      const res = await masterDataEntityApi.page({ page: 1, size: 100 });
       if (res.code !== 200) {
         message.error(res.message || '获取主数据模型列表失败');
         return;

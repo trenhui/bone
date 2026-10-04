@@ -18,7 +18,7 @@ export const FlowMonitor: React.FC = () => {
   const fetchExecutions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await monitorApi.getExecutions({ pageNum: page, pageSize });
+      const response = await monitorApi.getExecutions({ page: page, size: pageSize });
       setExecutions(response.data.records);
       setTotal(normalizeTotal(response.data.total));
     } catch {

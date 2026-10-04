@@ -29,16 +29,15 @@ export interface ApiResponse<T = unknown> {
 /**
  * 统一分页结果类型
  *
- * ## 权威字段是 `records`/`page`/`size`，不是这里的 `list`/`pageNum`/`pageSize`
+ * ## 权威字段是 `records`/`page`/`size`（本接口已对齐，勿再加回 `list`/`pageNum`/`pageSize`）
  *
  * 依据 `Bone-API-规范.md` §3.3：分页响应权威形态为
  * `records` / `total` / `page` / `size` / `pages` / `hasNext` / `hasPrevious` / `nextCursor`，
  * 且明文规定「`records` —— 当前页（禁止 `list`/`items`）」。
  *
- * 骨核 `PageResult` 另有 3 个 `@Deprecated` 兼容 getter（`getList`/`getPageNum`/`getPageSize`），
- * Jackson 默认不因 `@Deprecated` 忽略它们，故**响应中两组键会同时存在**。
- * 本类型 2026-10-03 起把 `records` 设为唯一必填字段，前端全部读取点已同步迁移
- * （`list` 收敛后消失，见 `Bone-API-规范.md` §5.3）。
+ * 骨核 `PageResult` 仍保留 3 个 `@Deprecated` 兼容 getter（`getList`/`getPageNum`/`getPageSize`），
+ * 但已加 `@JsonIgnore`，**序列化出口已切断**，响应只输出 `records`/`page`/`size`（见 `Bone-API-规范.md` §5.3）。
+ * 本类型把 `records`/`page`/`size` 设为权威字段，读取点只应读这三个键。
  * 过渡期若需读旧键，用 `PageResultIamCompat` 而非给本类型加回 `list` ——
  * 否则废弃字段会重新变成「看起来是权威」的存在。
  *
@@ -65,13 +64,13 @@ export interface PageResult<T = unknown> {
   /**
    * 权威当前页字段（Bone-API-规范 §3.3/§5.3）。
    *
-   * 后端 `PageResult` 的字段名就是 `records`（`@JsonAlias("list")` 只影响反序列化，
-   * 序列化仍输出字段名本身），故这是**唯一应当读取**的键。
+   * 后端 `PageResult` 的字段名就是 `records`，且本类不可被反序列化（纯出站模型，历史上的 `@JsonAlias`
+   * 已于 2026-10-04 移除），故 `records` 是**唯一应当读取**的键。
    */
   records: T[];
   total: string | number;
-  pageNum: number;
-  pageSize: number;
+  page: number;
+  size: number;
 }
 
 /**
@@ -86,8 +85,8 @@ export interface NormalizedPageResult<T = unknown> {
   /** 与 `PageResult.records` 同名，保持「归一只改total、不改当前页字段名」的最小面。 */
   records: T[];
   total: number;
-  pageNum: number;
-  pageSize: number;
+  page: number;
+  size: number;
 }
 
 /**
@@ -96,8 +95,8 @@ export interface NormalizedPageResult<T = unknown> {
  */
 export interface PageResultIamCompat<T = unknown> {
   total: number;
-  pageNum?: number;
-  pageSize?: number;
+  page?: number;
+  size?: number;
   /** 权威字段：与 `PageResult.records` 一致 */
   records?: T[];
   /** @deprecated 旧前端字段（后端 `data` 键），兼容读取 */
@@ -110,17 +109,13 @@ export interface PageResultIamCompat<T = unknown> {
 }
 
 /**
- * 通用分页查询参数（**入参**用 `pageNum`/`pageSize`）
+ * 通用分页查询参数（**入参**统一用 `page`/`size`）
  *
- * 注意分页的**入参与出参是两套命名**（`Bone-API-规范.md` §5）：
- * - 入参：后端共存三族 —— `page`/`size`（iam、generator）、`pageNum`/`pageSize`
- *   （system、metadata、integration、masterdata、blueprint）、`cursor`/`limit`。
- *   本接口对应**第二族**，调用前须确认目标端点属哪一族，传错名会被 Spring 静默忽略。
- * - 出参：见上方 `PageResult`，权威字段是 `records`/`page`/`size`。
- *
- * 用前先核对该端点的分页参数名；`page`/`size` 族可直接用 `PageParam`（同文件未导出时内联 `{page,size}`）。
+ * 分页入参与出参已统一为同一套命名（`Bone-API-规范.md` §5）：所有 Offset 族端点入参均为
+ * `page`/`size`（1-based，`page=1` 为首页），出参 `PageResult` 亦为 `records`/`page`/`size`。
+ * 2026-10-04 起移除旧 `pageNum`/`pageSize` 第二族，传旧名会被 Spring 静默忽略并回落默认值。
  */
 export interface PageQuery {
-  pageNum: number;
-  pageSize: number;
+  page: number;
+  size: number;
 }

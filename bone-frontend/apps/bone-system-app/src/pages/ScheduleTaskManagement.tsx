@@ -19,7 +19,7 @@ const ScheduleTaskManagement: React.FC = () => {
   const fetchData = async (page = 1, pageSize = 20) => {
     setLoading(true);
     try {
-      const res = await scheduleTaskApi.getScheduleTaskPage({ pageNum: page, pageSize });
+      const res = await scheduleTaskApi.getScheduleTaskPage({ page: page, size: pageSize });
       // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，
       // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
       setData(res.data.records);

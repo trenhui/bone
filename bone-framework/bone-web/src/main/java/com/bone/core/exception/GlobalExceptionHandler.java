@@ -360,15 +360,26 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(value = SystemException.class)
   public ResponseEntity<ApiResponse<?>> systemExceptionHandler(SystemException ex) {
     log.error("[systemExceptionHandler]", ex);
+    // 2026-10-04 脱敏（P1-4）：message 只进日志，响应体用常量。
+    // 原实现把 ex.getMessage() 原样回吐。这些"系统/基础"异常大多由框架层抛出，
+    // message 常常是容器或驱动的原文（`Table 'x' doesn't exist` / `Column 'y' cannot be null`
+    // / 约束名 / 连接池地址），等于把数据字典与拓扑交给调用方。
+    // 本文件 :431 的兜底分支一直用 INTERNAL_SERVER_ERROR.getMsg() —— 脱敏能力本就存在，
+    // 只是这几个分支没接上，属不一致而非缺能力。排障按 X-Trace-Id 回查日志。
     return problemResponse(
-        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
+        INTERNAL_SERVER_ERROR.getCode(),
+        CommonErrorCodes.INTERNAL_ERROR,
+        INTERNAL_SERVER_ERROR.getMsg());
   }
 
   @ExceptionHandler(value = InfrastructureException.class)
   public ResponseEntity<ApiResponse<?>> infrastructureExceptionHandler(InfrastructureException ex) {
     log.error("[infrastructureExceptionHandler]", ex);
+    // 同 systemExceptionHandler：这是最容易包到底层异常 message 的一类（P1-4），故一并脱敏。
     return problemResponse(
-        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
+        INTERNAL_SERVER_ERROR.getCode(),
+        CommonErrorCodes.INTERNAL_ERROR,
+        INTERNAL_SERVER_ERROR.getMsg());
   }
 
   /**
@@ -407,7 +418,11 @@ public class GlobalExceptionHandler {
     // 情况一：处理表不存在的异常
     ApiResponse<?> tableNotExistsResult = handleTableNotExists(ex);
     if (tableNotExistsResult != null) {
-      return ResponseEntity.status(INTERNAL_SERVER_ERROR.getCode()).body(tableNotExistsResult);
+      // 状态码取响应体自带的 code（404），而不是这里再写死 INTERNAL_SERVER_ERROR：
+      // 此前那个 500 是配合 handleTableNotExists「命中也返回 null」的旧实现写的——
+      // 它让该方法成为不可达分支，于是"表不存在"被当成"数据库连不上"一起兜底成 500，
+      // 排障方向被误导到连通性上。2026-10-04（P1-3）连同方法体一起修正。
+      return ResponseEntity.status(tableNotExistsResult.getCode()).body(tableNotExistsResult);
     }
 
     // 情况二：部分特殊的库的处理
@@ -419,8 +434,12 @@ public class GlobalExceptionHandler {
     Throwable cause = ex.getCause();
     if (cause instanceof InvocationTargetException) {
       log.error("[handleInvocationTargetException - cause]", cause);
+      // cause 多为反射调用目标的原始异常（含 SQL / 驱动 / 第三方 SDK 的 message），
+      // 直出等于转述别人的异常原文（P1-4）。原始信息已完整落到日志里。
       return problemResponse(
-          INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, cause.getMessage());
+          INTERNAL_SERVER_ERROR.getCode(),
+          CommonErrorCodes.INTERNAL_ERROR,
+          INTERNAL_SERVER_ERROR.getMsg());
     }
 
     // 情况三：处理异常
@@ -459,13 +478,28 @@ public class GlobalExceptionHandler {
     if (!message.contains("doesn't exist")) {
       return null;
     }
-    return null;
+    // 2026-10-04 修正（P1-3）：此前**命中分支也 return null** ⇒ 调用方的判空永远为真两种情况都走
+    // 500 兜底，这一段是彻底的死代码。表不存在应回 404。
+    // 文案只用常量：原始 message 形如 `Table 'bone_db.bone_record' doesn't exist`，
+    // 直出等于把库名/表名/后续约束名交给调用方（同一问题见 P1-4）。原始信息全部留在日志里，
+    // 排障走 X-Trace-Id 回查。
+    log.warn("[handleTableNotExists] 目标表不存在，回 404（原始异常信息仅入日志）", ex);
+    return ApiResponse.error(
+        NOT_FOUND.getCode(),
+        NOT_FOUND.getMsg(),
+        problem(NOT_FOUND.getCode(), CommonErrorCodes.NOT_FOUND, NOT_FOUND.getMsg()));
   }
 
   @ExceptionHandler(SQLException.class)
   public ResponseEntity<ApiResponse<?>> handleSQLException(SQLException ex) {
+    // 这是最典型的信息泄露点：SQLException.getMessage() 的原文形如
+    // `Table 'bone_db.bone_record' doesn't exist`、`Duplicate entry 'x' for key 'idx_y'`
+    // —— 库名、表名、索引名、约束名一并回给调用方，等于免费送一份数据字典（P1-4）。
+    // 只入日志；对外一律给常量文案，排障按 X-Trace-Id 回查。
     log.error("[SQLException]", ex);
     return problemResponse(
-        INTERNAL_SERVER_ERROR.getCode(), CommonErrorCodes.INTERNAL_ERROR, ex.getMessage());
+        INTERNAL_SERVER_ERROR.getCode(),
+        CommonErrorCodes.INTERNAL_ERROR,
+        INTERNAL_SERVER_ERROR.getMsg());
   }
 }

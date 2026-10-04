@@ -61,8 +61,8 @@ const LogManagementPage: React.FC = () => {
     setLoading(true);
     try {
       const params = {
-        pageNum: page,
-        pageSize,
+        page: page,
+        size: pageSize,
         ...filters,
       };
       const response = await logApi.getLogs(params);

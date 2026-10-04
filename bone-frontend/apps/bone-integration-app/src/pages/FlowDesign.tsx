@@ -54,7 +54,7 @@ export const FlowDesign: React.FC = () => {
   // 加载连接器列表（供节点配置面板绑定）
   useEffect(() => {
     connectorApi
-      .getConnectors({ pageNum: 1, pageSize: 100 })
+      .getConnectors({ page: 1, size: 100 })
       .then((res) => setConnectors(res.data.records ?? []))
       .catch(() => setConnectors([]));
   }, []);
@@ -78,7 +78,7 @@ export const FlowDesign: React.FC = () => {
   const fetchFlows = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await flowApi.getFlows({ pageNum: page, pageSize });
+      const response = await flowApi.getFlows({ page: page, size: pageSize });
       setFlows(response.data.records);
       setTotal(normalizeTotal(response.data.total));
     } catch {

@@ -243,8 +243,8 @@ public class EntityApplicationService {
     if (qry.getStatus() != null && !qry.getStatus().isBlank()) {
       status = MasterDataEntityStatus.valueOf(qry.getStatus());
     }
-    int page = Math.max(1, qry.getPageNum());
-    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
+    int page = Math.max(1, qry.getPage());
+    int size = Math.min(Math.max(1, qry.getSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataEntity> result =
         entityRepository.pageByCategoryStatusAndKeyword(
             qry.getCategory(), status, qry.getKeyword(), page, size);

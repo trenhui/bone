@@ -191,7 +191,7 @@ public class DictApplicationService {
                     .thenComparing(SysDictType::getCode))
             .map(DictTypeDto::from)
             .toList();
-    return paginate(filtered, query.getPageNum(), query.getPageSize());
+    return paginate(filtered, query.getPage(), query.getSize());
   }
 
   // ==================== 字典项 ====================
@@ -352,7 +352,7 @@ public class DictApplicationService {
   /** 项分页（扁平视图）：合并平台与租户项后按关键字 / 状态过滤，可选按父级收窄。 */
   public PageResult<DictItemDto> pageItems(DictItemPageQuery query) {
     if (query.getTypeCode() == null || query.getTypeCode().isBlank()) {
-      return PageResult.of(List.of(), 0L, query.getPageNum(), query.getPageSize());
+      return PageResult.of(List.of(), 0L, query.getPage(), query.getSize());
     }
     long tenantId = currentTenant();
     List<SysDictItem> merged = mergedItems(query.getTypeCode(), tenantId);
@@ -377,7 +377,7 @@ public class DictApplicationService {
             .sorted(ITEM_ORDER)
             .map(DictItemDto::from)
             .toList();
-    return paginate(filtered, query.getPageNum(), query.getPageSize());
+    return paginate(filtered, query.getPage(), query.getSize());
   }
 
   /** 指定层级视图的树。关系指向已删项、或项尚未挂任何层级时，一律落到根—— 宁可让节点挂在根上被看见，也不要因为一条脏关系让整棵树渲染不出来。 */

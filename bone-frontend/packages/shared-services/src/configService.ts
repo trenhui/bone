@@ -24,7 +24,7 @@ export const configService = {
   },
 
   /** 分页读取配置列表 */
-  async list(params?: { pageNum?: number; pageSize?: number; keyword?: string }): Promise<SystemConfig[]> {
+  async list(params?: { page?: number; size?: number; keyword?: string }): Promise<SystemConfig[]> {
     const api = createApiClient(CONFIG_BASE);
     const response = await api.get<never, ApiResponse<{ list: SystemConfig[] }>>('', { params });
     return response?.data?.list ?? [];

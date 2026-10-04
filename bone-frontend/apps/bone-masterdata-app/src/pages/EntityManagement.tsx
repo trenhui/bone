@@ -46,7 +46,7 @@ const EntityManagement: React.FC = () => {
 
   useEffect(() => {
     // 统计卡片：独立拉取（不受列表筛选/分页影响）
-    void masterDataEntityApi.page({ pageNum: 1, pageSize: 200 }).then((res) => {
+    void masterDataEntityApi.page({ page: 1, size: 200 }).then((res) => {
       if (res.code === 200) {
         const list = res.data.records;
         setStats({
@@ -65,8 +65,8 @@ const EntityManagement: React.FC = () => {
     try {
       const response = await masterDataEntityApi.page({
         ...searchParams,
-        pageNum: page,
-        pageSize: pageSize
+        page: page,
+        size: pageSize
       });
       if (response.code === 200) {
         setData(response.data.records);

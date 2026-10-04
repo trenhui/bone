@@ -70,6 +70,9 @@ public class AuthController {
     return request.getRemoteAddr();
   }
 
+  // 2026-10-04 复核：与 MeController 同判（P1-8 不执行项）——URL 层 anyRequest().authenticated()
+  // 已等价覆盖，方法级 isAuthenticated() 零收益，不加。/login 与 /sso/callback 必须保持
+  // 裸奔（否则无法登录），它们已在 SecurityConfig 的 permitAll 白名单里。
   @PostMapping("/logout")
   public ApiResponse<Void> logout(HttpServletRequest request) {
     authApplicationService.logout(request.getHeader(jwtConfig.getHeaderName()));

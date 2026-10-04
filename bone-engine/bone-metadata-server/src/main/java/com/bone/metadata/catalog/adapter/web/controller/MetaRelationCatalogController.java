@@ -75,7 +75,7 @@ public class MetaRelationCatalogController {
             qry.getSourceEntityId(),
             qry.getTargetEntityId(),
             qry.getKeyword(),
-            qry.getPageNum(),
-            qry.getPageSize()));
+            qry.getPage(),
+            qry.getSize()));
   }
 }

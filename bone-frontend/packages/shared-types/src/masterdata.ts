@@ -205,16 +205,16 @@ export interface UpdateMasterDataRecordReq {
 }
 
 export interface MasterDataEntityPageQry {
-  pageNum?: number;
-  pageSize?: number;
+  page?: number;
+  size?: number;
   name?: string;
   category?: string;
   status?: string;
 }
 
 export interface MasterDataRecordListQry {
-  pageNum?: number;
-  pageSize?: number;
+  page?: number;
+  size?: number;
   masterDataEntityId: string;
   status?: string;
   keyword?: string;
@@ -226,8 +226,8 @@ export interface MasterDataRecordListQry {
 export type ImportDuplicateStrategy = 'FAIL' | 'UPDATE';
 
 export interface DataQualityRuleListQry {
-  pageNum?: number;
-  pageSize?: number;
+  page?: number;
+  size?: number;
   masterDataEntityId?: string;
   type?: string;
   severity?: string;

@@ -66,7 +66,7 @@ const ModelingWorkspace: React.FC = () => {
 
   const loadDraftTotal = async () => {
     try {
-      const res = await metadataEntityApi.page({ pageNum: 1, pageSize: 1, status: 0 });
+      const res = await metadataEntityApi.page({ page: 1, size: 1, status: 0 });
       if (res.code === 200) setDraftTotal(normalizeTotal(res.data.total));
     } catch {
       // 统计条为增强信息，失败静默

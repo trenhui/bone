@@ -3,7 +3,6 @@ package com.bone.core.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import java.util.Collections;
@@ -135,35 +134,28 @@ class PageResultTest {
   }
 
   /**
-   * {@code @JsonAlias} 现状登记：本类<b>根本不可反序列化</b>，故别名从未真正生效。
+   * {@code PageResult} 是纯出站响应模型，<b>不可被反序列化</b>。
    *
    * <p><b>实测结论</b>（2026-10-03 独立 javac + jackson-databind 2.20.0 验证）：对 {@code PageResult} 调用 {@code
    * mapper.readValue(...)} 会抛 {@link
    * com.fasterxml.jackson.databind.exc.InvalidDefinitionException}，报 {@code no Creators, like
-   * default constructor, exist} —— 因为本类只有私有全参构造，无无参构造也无 {@code @JsonCreator}。
+   * default constructor, exist} —— 因为本类只有私有全参构造，无无参构造也无 {@code @JsonCreator}。全仓亦无任何 {@code
+   * PageResult} 反序列化入口（无 {@code @RequestBody PageResult}，无 {@code readValue(...,
+   * PageResult.class)}）。
    *
-   * <p><b>为何要登记</b>：字段上的 {@code @JsonAlias("list")}常被误读成「{@code list} 键能作为入参 传入」，从而在删除废弃 getter
-   * 时被当成安全网。实际上它<b>不提供任何保护</b>——全仓亦无任何 {@code PageResult} 反序列化入口（无 {@code @RequestBody
-   * PageResult}，无 {@code readValue(..., PageResult.class)}），本类是纯出站响应模型。
-   *
-   * <p><b>本测试锁住现状</b>而非认可它：若将来给本类加了无参构造器或 {@code @JsonCreator}， 本测试会失败，提示「{@code list}
-   * 别名开始真正生效，需重新评估是否要对入参侧做白名单」。
+   * <p><b>本测试锁住现状</b>：若将来给本类加了无参构造器或 {@code @JsonCreator}，本测试会失败，提示「本类开始可被反序列化，需重新评估入参侧契约」。历史上字段上的
+   * {@code @JsonAlias} 从未生效过（已于 2026-10-04 移除），故不可把它当成删除废弃 getter 的安全网。
    *
    * @see #serializationOmitsDeprecatedAccessorKeys() 序列化侧的收敛契约
    */
   @Test
-  void classIsNotDeserializableSoJsonAliasIsInert() throws Exception {
+  void pageResultIsNotDeserializable() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     String legacyJson = "{\"list\":[\"a\"],\"total\":1,\"pageNum\":2,\"pageSize\":5}";
 
     assertThatThrownBy(() -> mapper.readValue(legacyJson, PageResult.class))
         .isInstanceOf(InvalidDefinitionException.class)
         .hasMessageContaining("no Creators");
-
-    // @JsonAlias 注解本身确实挂在字段上——它只是没有机会被触发
-    JsonAlias alias = PageResult.class.getDeclaredField("records").getAnnotation(JsonAlias.class);
-    assertThat(alias).isNotNull();
-    assertThat(alias.value()).containsExactly("list");
   }
 
   /** map 只转换记录类型，分页元信息（total/page/size）必须原样保留。 */

@@ -94,8 +94,8 @@ public class StandardApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<DataStandardDTO> page(DataStandardPageQuery qry) {
-    int page = Math.max(1, qry.getPageNum());
-    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
+    int page = Math.max(1, qry.getPage());
+    int size = Math.min(Math.max(1, qry.getSize()), MAX_PAGE_SIZE);
     PageResult<DataStandard> result =
         dataStandardRepository.pageByEntityCodeAndFieldCodeLike(
             qry.getEntityCode(), qry.getKeyword(), page, size);

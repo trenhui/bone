@@ -20,7 +20,7 @@ const TemplateManagement: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await domainTemplateApi.page({ pageNum: 1, pageSize: 100 });
+      const res = await domainTemplateApi.page({ page: 1, size: 100 });
       setRows(res.data?.records ?? []);
     } finally {
       setLoading(false);

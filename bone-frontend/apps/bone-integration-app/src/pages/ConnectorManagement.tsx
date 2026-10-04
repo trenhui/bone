@@ -46,7 +46,7 @@ export const ConnectorManagement: React.FC = () => {
   const fetchConnectors = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await connectorApi.getConnectors({ pageNum: page, pageSize });
+      const response = await connectorApi.getConnectors({ page: page, size: pageSize });
       setConnectors(response.data.records);
       setTotal(normalizeTotal(response.data.total));
     } catch {

@@ -141,7 +141,7 @@ const EntityManagement: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, unknown> = { pageNum: page, pageSize };
+      const params: Record<string, unknown> = { page: page, size: pageSize };
       if (keyword) params.keyword = keyword;
       if (typeFilter !== null) params.type = typeFilter;
       if (deliveryFilter !== null) params.deliveryMode = deliveryFilter;

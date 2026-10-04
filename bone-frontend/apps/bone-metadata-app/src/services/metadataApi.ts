@@ -61,8 +61,8 @@ export function normalizePage<T>(
     // `Math.ceil(total / pageSize)` 会抛 TypeError。此处 Number() 安全：
     // total 是行数计数而非雪花 ID。
     total: normalizeTotal(raw.total),
-    pageNum: raw.pageNum ?? legacy.page ?? 1,
-    pageSize: raw.pageSize ?? legacy.size ?? 10,
+    page: raw.page ?? legacy.page ?? 1,
+    size: raw.size ?? legacy.size ?? 10,
   };
 }
 
@@ -76,8 +76,8 @@ type SnowflakeId = number | string;
 
 export const metadataEntityApi = {
   page: (params: {
-    pageNum?: number;
-    pageSize?: number;
+    page?: number;
+    size?: number;
     keyword?: string;
     status?: number;
     type?: number;
@@ -145,7 +145,7 @@ export const metadataTemplateApi = {
 };
 
 export const metadataFieldApi = {
-  page: (entityId: SnowflakeId, params: { pageNum?: number; pageSize?: number; keyword?: string }) =>
+  page: (entityId: SnowflakeId, params: { page?: number; size?: number; keyword?: string }) =>
     api.get<never, ApiResponse<PageResult<MetaField>>>(`${META}/entities/${entityId}/fields`, {
       params,
     }),
@@ -162,8 +162,8 @@ export const metadataFieldApi = {
 
 export const metadataRelationApi = {
   page: (params: {
-    pageNum?: number;
-    pageSize?: number;
+    page?: number;
+    size?: number;
     keyword?: string;
     sourceEntityId?: SnowflakeId;
     targetEntityId?: SnowflakeId;

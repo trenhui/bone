@@ -115,8 +115,8 @@ public class AlertControllerTest {
   @Test
   public void testPageRules() {
     AlertRulePageReq req = new AlertRulePageReq();
-    req.setPageNum(1);
-    req.setPageSize(10);
+    req.setPage(1);
+    req.setSize(10);
 
     when(alertApplicationService.pageRules(any()))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
@@ -175,8 +175,8 @@ public class AlertControllerTest {
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
 
     AlertRecordPageReq req = new AlertRecordPageReq();
-    req.setPageNum(1);
-    req.setPageSize(10);
+    req.setPage(1);
+    req.setSize(10);
     ApiResponse<PageResult<AlertRecordResp>> apiResponse = alertController.pageEvents(req);
 
     assertTrue(apiResponse.isSuccess());

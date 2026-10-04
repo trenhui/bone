@@ -72,7 +72,7 @@ const RuntimeDataManagement: React.FC = () => {
   );
 
   useEffect(() => {
-    metadataEntityApi.page({ pageNum: 1, pageSize: 50, deliveryMode: 1, status: 1 }).then((res) => {
+    metadataEntityApi.page({ page: 1, size: 50, deliveryMode: 1, status: 1 }).then((res) => {
       if (res.code !== 200) {
         message.error(errorMessage(res));
         return;
@@ -100,7 +100,7 @@ const RuntimeDataManagement: React.FC = () => {
       return;
     }
     metadataFieldApi
-      .page(selectedEntity.id, { pageNum: 1, pageSize: 500 })
+      .page(selectedEntity.id, { page: 1, size: 500 })
       .then((res) => {
         if (res.code === 200) {
           setFields(normalizePage(res.data).records);

@@ -117,8 +117,8 @@ public class MasterDataEntityControllerTest {
     }
 
     MasterDataEntityPageQuery qry = new MasterDataEntityPageQuery();
-    qry.setPageNum(1);
-    qry.setPageSize(10);
+    qry.setPage(1);
+    qry.setSize(10);
 
     ApiResponse<PageResult<MasterDataEntityDTO>> apiResponse = masterDataEntityController.list(qry);
 

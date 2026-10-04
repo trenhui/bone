@@ -271,8 +271,8 @@ public class MasterDataAclAdapter implements MasterDataGateway {
                 uriBuilder ->
                     uriBuilder
                         .path("/api/v1/masterdata/entities")
-                        .queryParam("pageNum", 1)
-                        .queryParam("pageSize", 50)
+                        .queryParam("page", 1)
+                        .queryParam("size", 50)
                         .queryParam("keyword", entityCode)
                         .build())
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token())
@@ -301,8 +301,8 @@ public class MasterDataAclAdapter implements MasterDataGateway {
                 uriBuilder ->
                     uriBuilder
                         .path("/api/v1/masterdata/records")
-                        .queryParam("pageNum", 1)
-                        .queryParam("pageSize", props.getFetchPageSize())
+                        .queryParam("page", 1)
+                        .queryParam("size", props.getFetchPageSize())
                         .queryParam("masterDataEntityId", entityId)
                         .queryParam("status", "PUBLISHED")
                         .build())

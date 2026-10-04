@@ -1,6 +1,5 @@
 package com.bone.core.model;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,15 +13,12 @@ public class PageResult<T> implements Serializable {
 
   @Serial private static final long serialVersionUID = 1L;
 
-  @JsonAlias("list")
   private List<T> records;
 
   private Long total;
 
-  @JsonAlias("pageNum")
   private Integer page;
 
-  @JsonAlias("pageSize")
   private Integer size;
 
   private Integer pages;
@@ -101,14 +97,10 @@ public class PageResult<T> implements Serializable {
    * <p><b>保留方法本身、不删</b>：它们是 {@code PageResult} 的公共 API， 删掉会破坏二进制兼容性（{@code map()} 等内部方法也在用）， 且
    * SDK/第三方可能仍在调用。{@code @JsonIgnore} 只切断序列化出口。
    *
-   * <p>注意 {@code @JsonAlias} 与本注解的分工：{@code @JsonAlias("list")} 在 {@code records}
-   * 字段上，只影响<b>反序列化</b>，不影响序列化输出 —— 所以响应里的 {@code list} 键一直来自 {@code getList()} 而非字段。
-   *
-   * <p><b>但注意：{@code @JsonAlias} 在本类上其实从未生效过</b>。本类只有私有全参构造， 无无参构造也无 {@code @JsonCreator}，Jackson
-   * <b>无法反序列化本类</b> （实测抛 {@code InvalidDefinitionException: no Creators}），故别名没有机会被触发； 全仓亦无任何 {@code
-   * PageResult} 反序列化入口（无 {@code @RequestBody PageResult}， 无 {@code readValue(...,
-   * PageResult.class)}）—— 本类是纯出站响应模型。 <b>故不要把 {@code @JsonAlias} 当成删除废弃 getter 的安全网</b>，它不提供任何保护。
-   * 现状由测试 {@code classIsNotDeserializableSoJsonAliasIsInert} 锁住。
+   * <p><b>本类是纯出站响应模型</b>：只有私有全参构造，无无参构造也无 {@code @JsonCreator}，Jackson <b>无法反序列化本类</b>（实测抛 {@code
+   * InvalidDefinitionException: no Creators}）；全仓亦无任何 {@code PageResult} 反序列化入口（无
+   * {@code @RequestBody PageResult}，无 {@code readValue(..., PageResult.class)}）。<b>故不可把任何入参别名当成删除废弃
+   * getter 的安全网</b>——历史上挂在字段上的 {@code @JsonAlias} 从未生效过，已于 2026-10-04 移除。本类只输出、不接收。
    */
 
   /**

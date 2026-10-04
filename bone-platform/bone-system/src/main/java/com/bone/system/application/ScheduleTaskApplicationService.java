@@ -131,8 +131,8 @@ public class ScheduleTaskApplicationService {
         scheduleTaskRepository.pageByKeywordAndStatus(
             query.getKeyword(),
             parseTaskStatusOrNull(query.getStatus()),
-            query.getPageNum(),
-            query.getPageSize());
+            query.getPage(),
+            query.getSize());
     return PageResult.of(
         page.getRecords().stream().map(ScheduleTaskDto::from).toList(),
         page.getTotal(),

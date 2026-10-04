@@ -100,8 +100,8 @@ const DomainWorkbench: React.FC = () => {
     setLoading(true);
     try {
       const [rec, pub, fld, chk, iss, cnt, sub, role, drf, fb] = await Promise.all([
-        masterDataRecordApi.page({ masterDataEntityId: eid, pageNum: 1, pageSize: 1 }),
-        masterDataRecordApi.page({ masterDataEntityId: eid, pageNum: 1, pageSize: 1, status: 'PUBLISHED' }),
+        masterDataRecordApi.page({ masterDataEntityId: eid, page: 1, size: 1 }),
+        masterDataRecordApi.page({ masterDataEntityId: eid, page: 1, size: 1, status: 'PUBLISHED' }),
         masterDataFieldApi.listByEntityId(eid),
         qualityCheckApi.list({ masterDataEntityId: eid }),
         qualityIssueApi.byEntity(eid),

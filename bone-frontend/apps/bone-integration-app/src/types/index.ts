@@ -7,8 +7,8 @@ export type { ApiResponse, PageResult } from '@bone/shared-types';
 
 // 分页查询参数（集成模块扩展：含 keyword / status 过滤）
 export interface PageQuery {
-  pageNum: number;
-  pageSize: number;
+  page: number;
+  size: number;
   keyword?: string;
   status?: string;
 }

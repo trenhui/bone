@@ -59,8 +59,8 @@ function normalizePage<T>(resp: ApiResponse<PageResult<T>>): ApiResponse<Normali
       data: {
         records: raw.records ?? [],
         total: normalizeTotal(raw.total),
-        pageNum: raw.page ?? 1,
-        pageSize: raw.size ?? 10,
+        page: raw.page ?? 1,
+        size: raw.size ?? 10,
       },
     };
   }
@@ -251,7 +251,7 @@ export const qualityResultApi = {
 
 // 域模板（G9 / UC-P1 P2 T1）
 export const domainTemplateApi = {
-  page: (params?: { pageNum?: number; pageSize?: number; status?: string }): Promise<ApiResponse<any>> =>
+  page: (params?: { page?: number; size?: number; status?: string }): Promise<ApiResponse<any>> =>
     apiClient.get(`${MD}/templates`, { params }),
   detail: (id: string): Promise<ApiResponse<any>> => apiClient.get(`${MD}/templates/${id}`),
   create: (data: Record<string, unknown>): Promise<ApiResponse<number>> => apiClient.post(`${MD}/templates`, data),

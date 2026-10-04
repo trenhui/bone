@@ -431,8 +431,8 @@ public class RecordApplicationService {
     if (qry.getStatus() != null && !qry.getStatus().isBlank()) {
       status = MasterDataRecordStatus.valueOf(qry.getStatus());
     }
-    int page = Math.max(1, qry.getPageNum());
-    int size = Math.min(Math.max(1, qry.getPageSize()), MAX_PAGE_SIZE);
+    int page = Math.max(1, qry.getPage());
+    int size = Math.min(Math.max(1, qry.getSize()), MAX_PAGE_SIZE);
     PageResult<MasterDataRecord> result =
         recordRepository.pageByEntityIdStatusAndKeyword(
             qry.getMasterDataEntityId(),

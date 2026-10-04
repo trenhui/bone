@@ -138,7 +138,7 @@ const DictManagement: React.FC = () => {
       const res = await dictApi.getTypePage({
         keyword: typeKeyword,
         category: typeCategory,
-        pageSize: 500,
+        size: 500,
       });
       const list = res.data?.records ?? [];
       setTypes(list);
@@ -184,7 +184,7 @@ const DictManagement: React.FC = () => {
           typeCode: code,
           keyword: itemKeyword,
           status: onlyEnabled ? 1 : undefined,
-          pageSize: 500,
+          size: 500,
         });
         raw = res.data?.records ?? [];
       }

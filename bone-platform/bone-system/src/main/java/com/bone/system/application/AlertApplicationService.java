@@ -232,8 +232,8 @@ public class AlertApplicationService {
             query.getKeyword(),
             query.getEnabled(),
             parseAlertLevelOrNull(query.getAlertLevel()),
-            query.getPageNum(),
-            query.getPageSize());
+            query.getPage(),
+            query.getSize());
     return PageResult.of(
         page.getRecords().stream().map(AlertRuleDto::from).toList(),
         page.getTotal(),
@@ -251,8 +251,8 @@ public class AlertApplicationService {
             query.getAlertRuleId(),
             parseAlertLevelOrNull(query.getAlertLevel()),
             parseAlertStatusOrNull(query.getStatus()),
-            query.getPageNum(),
-            query.getPageSize());
+            query.getPage(),
+            query.getSize());
     return PageResult.of(
         page.getRecords().stream().map(AlertRecordDto::from).toList(),
         page.getTotal(),

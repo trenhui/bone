@@ -82,8 +82,8 @@ public class LogControllerTest {
   @Test
   public void testPage() {
     LogPageReq req = new LogPageReq();
-    req.setPageNum(1);
-    req.setPageSize(10);
+    req.setPage(1);
+    req.setSize(10);
 
     when(systemLogApplicationService.page(any()))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));

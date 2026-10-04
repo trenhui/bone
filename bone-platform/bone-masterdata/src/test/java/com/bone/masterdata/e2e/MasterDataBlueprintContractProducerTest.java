@@ -182,7 +182,7 @@ class MasterDataBlueprintContractProducerTest {
             HttpMethod.GET,
             "/api/v1/masterdata/records?masterDataEntityId="
                 + entityId
-                + "&status=PUBLISHED&pageNum=1&pageSize=500",
+                + "&status=PUBLISHED&page=1&size=500",
             null);
     return resp.path("data").path("records");
   }

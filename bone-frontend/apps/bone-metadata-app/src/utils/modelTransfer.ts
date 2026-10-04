@@ -46,8 +46,8 @@ export const MODEL_CODE_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 export async function exportEntityModel(entity: MetaEntity): Promise<void> {
   const [entityRes, fieldsRes, relationsRes] = await Promise.all([
     metadataEntityApi.detail(entity.id),
-    metadataFieldApi.page(entity.id, { pageNum: 1, pageSize: 500 }),
-    metadataRelationApi.page({ pageNum: 1, pageSize: 100, sourceEntityId: entity.id }),
+    metadataFieldApi.page(entity.id, { page: 1, size: 500 }),
+    metadataRelationApi.page({ page: 1, size: 100, sourceEntityId: entity.id }),
   ]);
   if (entityRes.code !== 200) throw new Error(errorMessage(entityRes));
 

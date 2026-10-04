@@ -77,6 +77,6 @@ public class MetaFieldCatalogController {
       @PathVariable("entityId") Long entityId, MetaFieldPageQuery qry) {
     return ApiResponse.success(
         metaEntityApplicationService.pageFields(
-            entityId, qry.getKeyword(), qry.getPageNum(), qry.getPageSize()));
+            entityId, qry.getKeyword(), qry.getPage(), qry.getSize()));
   }
 }

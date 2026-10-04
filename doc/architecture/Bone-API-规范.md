@@ -302,6 +302,8 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 **规定**：所有Offset 分页的新增端点，入参**必须**用 `page`/`size`。
 `pageNum`/`pageSize` **不再是可选项**，存量收敛完成即禁止。
 
+**`page` 的基数（必须显式声明，避免 0-based / 1-based 歧义）**：`page` 为 **1-based**（首页 = 1）。注意与 Spring Data `Pageable#getPageNumber()`（**0-based**）区分，从 `Pageable` 装配 `PageResult` 时须做 **`+1`** 转换；`PageResult.empty()` 与 `cursorOf()` 均以 1 为基。若把 0-based 直接塞入，会产出 `page=0`，前端将显示「第 0 页」。
+
 **为什么写死这一条**（2026-10-02 E2E 实测）：Spring 对多余的 query 参数**静默忽略**并回落默认值，
 不报错、不告警。前端传 `pageSize=1` 而后端字段是 `size` 时，请求照样 200，只是 `size` 回显后端默认值 100。
 于是「只拉 1 条」实际拉回 100 条、`pageNum>1` 翻页静默回到第 1 页——
@@ -454,8 +456,8 @@ python3 scripts/check-paging-param-names.py --report-only   # 存量清零前只
 
 **⚠️ 不要把 `@JsonAlias` 当成删除废弃 getter 的安全网（2026-10-03 实测）**：
 
-`PageResult` 的 `records`/`page`/`size` 字段上挂着 `@JsonAlias("list")`/`("pageNum")`/`("pageSize")`，
-容易让人以为「废弃 getter 删掉后，入参仍能用旧键」。**实测该别名从未生效过**：
+`PageResult` 的 `records`/`page`/`size` 字段上**曾**挂有 `@JsonAlias("list")`/`("pageNum")`/`("pageSize")`，
+容易让人以为「废弃 getter 删掉后，入参仍能用旧键」。**实测该别名从未生效过**（已于 2026-10-04 移除）：
 
 - `PageResult` 只有私有全参构造，无无参构造也无 `@JsonCreator` ⇒ Jackson **无法反序列化本类**，
   实跑抛 `InvalidDefinitionException: no Creators, like default constructor, exist`
@@ -465,8 +467,8 @@ python3 scripts/check-paging-param-names.py --report-only   # 存量清零前只
 - 因此「响应里有 `list` 键」的原因与 `@JsonAlias` **无关**，纯粹是 `@Deprecated` 的 `getList()`
   被 Jackson 照常序列化（Jackson **默认不因 `@Deprecated` 忽略 getter**）。
 
-现状由 `PageResultTest.classIsNotDeserializableSoJsonAliasIsInert` 锁住：若将来给本类加无参构造器或
-`@JsonCreator`，该测试会失败并提示「别名开始真正生效，需重新评估是否要对入参侧做白名单」。
+现状由 `PageResultTest.pageResultIsNotDeserializable` 锁住：若将来给本类加无参构造器或
+`@JsonCreator`，该测试会失败并提示「本类开始可被反序列化，需重新评估入参侧契约」。
 
 **仍未收敛**：`getOffset()` / `getRecordCount()` 两个派生计算属性仍会被Jackson 序列化
 （`offset`/`recordCount` 键）。二者全仓零消费点，但它们不是 `@Deprecated`，

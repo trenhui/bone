@@ -49,8 +49,8 @@ const MonitorAlertPage: React.FC = () => {
       const [metricsRes, healthRes, rulesRes, eventsRes] = await Promise.all([
         monitorApi.getMetrics(),
         monitorApi.getHealth(),
-        monitorApi.getAlertRules({ pageNum: 1, pageSize: 100 }),
-        monitorApi.getAlertEvents({ pageNum: 1, pageSize: 10 }),
+        monitorApi.getAlertRules({ page: 1, size: 100 }),
+        monitorApi.getAlertEvents({ page: 1, size: 10 }),
       ]);
 
       // 后端 /system/metrics 返回 Micrometer 原始键值对，归一化为页面期待的 Metrics 形状

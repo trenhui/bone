@@ -168,7 +168,7 @@ const EntityDetail: React.FC = () => {
     if (!id) return;
     setFieldLoading(true);
     try {
-      const res = await metadataFieldApi.page(id!, { pageNum: 1, pageSize: 200 });
+      const res = await metadataFieldApi.page(id!, { page: 1, size: 200 });
       if (res.code === 200) {
         // 按 sortOrder 排序
         const sorted = (res.data.records || []).sort(
@@ -186,7 +186,7 @@ const EntityDetail: React.FC = () => {
   useEffect(() => { loadFields(); }, [loadFields]);
 
   useEffect(() => {
-    metadataEntityApi.page({ pageNum: 1, pageSize: 200 }).then((res) => {
+    metadataEntityApi.page({ page: 1, size: 200 }).then((res) => {
       if (res.code === 200) setAllEntities(res.data.records);
     });
   }, []);
@@ -197,8 +197,8 @@ const EntityDetail: React.FC = () => {
     setRelationLoading(true);
     try {
       const [asSource, asTarget] = await Promise.all([
-        metadataRelationApi.page({ pageNum: 1, pageSize: 200, sourceEntityId: id! }),
-        metadataRelationApi.page({ pageNum: 1, pageSize: 200, targetEntityId: id! }),
+        metadataRelationApi.page({ page: 1, size: 200, sourceEntityId: id! }),
+        metadataRelationApi.page({ page: 1, size: 200, targetEntityId: id! }),
       ]);
       const merged = new Map<number, MetaRelation>();
       [...(asSource.code === 200 ? asSource.data.records : []),

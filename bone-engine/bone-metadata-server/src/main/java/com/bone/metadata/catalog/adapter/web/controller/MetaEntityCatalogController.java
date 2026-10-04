@@ -70,11 +70,7 @@ public class MetaEntityCatalogController {
   public ApiResponse<PageResult<MetaEntityDTO>> page(MetaEntityPageQuery qry) {
     return ApiResponse.success(
         metaEntityApplicationService.pageEntities(
-            qry.getKeyword(),
-            qry.getStatus(),
-            qry.getModuleId(),
-            qry.getPageNum(),
-            qry.getPageSize()));
+            qry.getKeyword(), qry.getStatus(), qry.getModuleId(), qry.getPage(), qry.getSize()));
   }
 
   @GetMapping("/{id}")

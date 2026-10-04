@@ -34,11 +34,11 @@ public class MasterDataRecordTopController {
 
   @GetMapping
   public ApiResponse<PageResult<MasterDataRecordDTO>> list(MasterDataRecordListQuery qry) {
-    if (qry.getPageNum() <= 0) {
-      qry.setPageNum(1);
+    if (qry.getPage() <= 0) {
+      qry.setPage(1);
     }
-    if (qry.getPageSize() <= 0) {
-      qry.setPageSize(10);
+    if (qry.getSize() <= 0) {
+      qry.setSize(10);
     }
     return ApiResponse.success(recordService.list(qry));
   }

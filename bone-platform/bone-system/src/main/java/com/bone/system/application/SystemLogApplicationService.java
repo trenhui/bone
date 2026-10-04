@@ -73,8 +73,8 @@ public class SystemLogApplicationService {
             query.getKeyword(),
             parseLogLevelOrNull(query.getLogLevel()),
             query.getServiceName(),
-            query.getPageNum(),
-            query.getPageSize());
+            query.getPage(),
+            query.getSize());
     return PageResult.of(
         page.getRecords().stream().map(LogDto::from).toList(),
         page.getTotal(),

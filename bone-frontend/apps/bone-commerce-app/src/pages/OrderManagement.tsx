@@ -84,8 +84,8 @@ export const OrderManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await orderApi.page({
-        pageNum: page,
-        pageSize,
+        page: page,
+        size: pageSize,
         customerId: filterCustomerId || undefined,
         status: filterStatus || undefined,
       });

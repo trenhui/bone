@@ -260,15 +260,14 @@ public class OrderApplicationService {
 
   /** 分页查询订单（走 OrderRepository 读侧领域模型）。 */
   @Transactional(readOnly = true)
-  public PageResult<OrderDto> page(
-      Long customerId, String status, Integer pageNum, Integer pageSize) {
+  public PageResult<OrderDto> page(Long customerId, String status, Integer page, Integer size) {
     long tenantId = tenantProvider.currentTenantId();
     OrderStatus parsedStatus = parseStatus(status);
-    int page = pageNum != null ? pageNum : 1;
-    int size = pageSize != null ? pageSize : 10;
+    int p = page != null ? page : 1;
+    int s = size != null ? size : 10;
 
     PageResult<OrderHeadProjection> result =
-        orderRepository.findOrderPage(tenantId, customerId, parsedStatus, page, size);
+        orderRepository.findOrderPage(tenantId, customerId, parsedStatus, p, s);
 
     List<OrderDto> records =
         result.getRecords().stream().map(OrderSummaryAssembler::fromRow).toList();

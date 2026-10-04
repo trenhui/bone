@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,11 +30,18 @@ public class ExtensionE2eController {
             point(2L, "用户注册校验", "user", "validation", true)));
   }
 
+  // 2026-10-04 补挂（P1-8）：本类 4 个写端点此前零 @PreAuthorize。本控制器受
+  // `bone.iam.extension.stub-enabled=true` 控制（默认关闭），所以今天没有爆炸面；
+  // 但一旦开启 stub 就是「任何人可启停扩展点 / 部署卸载插件」——预挂已有权限码
+  // （extension:points:write / extension:plugins:write，DefaultPermissionCodes 里已有）
+  // 让开启 stub 的那一刻不会顺带开一个裸写口。E2E 脚本与前端只调两个 GET 端点，无回归。
+  @PreAuthorize("hasAuthority('extension:points:write')")
   @PostMapping("/points/{id}:enable")
   public ApiResponse<Map<String, Object>> enablePoint(@PathVariable Long id) {
     return ApiResponse.success("启用扩展点成功", point(id, "扩展点-" + id, "demo", "default", true));
   }
 
+  @PreAuthorize("hasAuthority('extension:points:write')")
   @PostMapping("/points/{id}:disable")
   public ApiResponse<Map<String, Object>> disablePoint(@PathVariable Long id) {
     return ApiResponse.success("禁用扩展点成功", point(id, "扩展点-" + id, "demo", "default", false));
@@ -45,11 +53,13 @@ public class ExtensionE2eController {
         "获取插件列表成功", List.of(plugin(101L, 1L, "默认价格扩展", true), plugin(102L, 1L, "VIP 价格扩展", false)));
   }
 
+  @PreAuthorize("hasAuthority('extension:plugins:write')")
   @PostMapping("/plugins/{id}:deploy")
   public ApiResponse<Map<String, Object>> deploy(@PathVariable Long id) {
     return ApiResponse.success("部署插件成功", plugin(id, 1L, "插件-" + id, true));
   }
 
+  @PreAuthorize("hasAuthority('extension:plugins:write')")
   @PostMapping("/plugins/{id}:undeploy")
   public ApiResponse<Map<String, Object>> undeploy(@PathVariable Long id) {
     return ApiResponse.success("卸载插件成功", plugin(id, 1L, "插件-" + id, false));

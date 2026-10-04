@@ -38,6 +38,18 @@ public class DeleteBuilder implements SqlQueryBuilder<DeleteContext> {
     String where = rawWhere.replaceAll("(?i)\\bm\\.", "").replaceAll("(?i)\\bext\\.", "");
     where = rawWhere.toUpperCase().startsWith("WHERE") ? where : "WHERE " + where;
 
+    // 3.0 空条件护栏（2026-10-04 补齐，对齐同 SDK 的 ConditionalUpdateBuilder:64-66）：
+    // 条件为空时 `where` 恒为 "WHERE"，旧实现会走进 :49 的
+    // `where.strip().equalsIgnoreCase("WHERE")` 分支拼出 `WHERE tenant_id = :tid`，
+    // 语义变成「删除当前租户的全部数据」—— 比全表删除只差一个租户维度，实质等价。
+    // 同 SDK 内 ConditionalUpdateBuilder 早有对称护栏（「缺少更新条件，避免全表更新」），
+    // 两条写/删路径护栏不对称，会让后来者按更新侧的经验推断删除侧也安全而踩坑。
+    // 判据取 main conditions 而非 whereSql 字符串：前者是结构化、确定性的，
+    // 后者要等拼完串才能判，且被 whereSql 的别名剥离逻辑二次加工过。
+    if (criteria.getMainConditions().isEmpty()) {
+      throw new IllegalArgumentException("缺少删除条件，避免全表删除或清空当前租户数据");
+    }
+
     // 3.1 租户过滤（可信源 TenantContext；ADR-0029）
     if (table.isTenantScoped() && !criteria.isTenantFilterDisabled()) {
       Long tid = TenantContext.getTenantIdAsLong();
@@ -46,11 +58,9 @@ public class DeleteBuilder implements SqlQueryBuilder<DeleteContext> {
       }
       String tenantClause =
           table.getTenantIdColumn().getName() + " = :" + TenantFilterInjector.PARAM;
-      if (where.strip().equalsIgnoreCase("WHERE")) {
-        where = "WHERE " + tenantClause;
-      } else {
-        where = where + " AND " + tenantClause;
-      }
+      // 空条件已在 3.0 被拒，这里不可能出现 "WHERE" 裸串，直接 AND 拼接即可
+      // （保留不可达分支只会让人误判"空条件是被这里兜住的"）。
+      where = where + " AND " + tenantClause;
       mainParams.put(TenantFilterInjector.PARAM, tid);
     }
 

@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class MetaEntityPageQuery {
-  private int pageNum = 1;
-  private int pageSize = 10;
+  private int page = 1;
+  private int size = 10;
   private String keyword;
   private Integer status;
 
