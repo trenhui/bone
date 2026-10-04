@@ -103,7 +103,6 @@
         <!-- Camel 4.18.x 为仍支持 Spring Boot 3.x 的最后线（4.19 起弃 Boot 3 / 绑定 Spring Framework 7）。
              4.18.0 → 4.18.2：4.18 线最新 LTS 补丁（2026-09-23），Boot 3.5 兼容；切勿跨 4.19 -->
         <camel.version>4.18.2</camel.version>
-        <mongodb.version>4.11.1</mongodb.version>
         <aliyun.dysms.version>2.2.1</aliyun.dysms.version>
         <aliyun.core.version>4.6.3</aliyun.core.version>
         <poi.version>5.3.0</poi.version>
@@ -310,6 +309,47 @@
                 <artifactId>archunit</artifactId>
                 <version>${archunit.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- ===== 第三方中间件（无上游 BOM 兜底，集中管理避免子模块漏写 ${...} 直接构建失败） ===== -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-spring-boot-starter</artifactId>
+                <version>${rocketmq.version}</version>
+            </dependency>
+            <!-- Camel 4.x 族由 camel-bom 统一托管（覆盖 camel-spring-boot-starter / camel-http / camel-jdbc /
+                 camel-ftp-starter 等），与子模块显式 ${camel.version} 同号；导入后子模块可省略 version -->
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-bom</artifactId>
+                <version>${camel.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.aviator</groupId>
+                <artifactId>aviator</artifactId>
+                <version>${aviator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup</groupId>
+                <artifactId>javapoet</artifactId>
+                <version>${javapoet.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>aliyun-java-sdk-dysmsapi</artifactId>
+                <version>${aliyun.dysms.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>aliyun-java-sdk-core</artifactId>
+                <version>${aliyun.core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

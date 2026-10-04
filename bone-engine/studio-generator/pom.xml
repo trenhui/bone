@@ -47,11 +47,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Code Generation -->
-        <dependency><groupId>com.squareup</groupId>
-            <artifactId>javapoet</artifactId>
-            <version>${javapoet.version}</version>
-        </dependency>
+        <!-- Code Generation（FreeMarker 模板生成；javapoet 经核查 main/test 均无 import，为死依赖已移除） -->
         <dependency><groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
                     </dependency>
@@ -68,14 +64,7 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- Utils -->
-        <dependency><groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency><groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
+        <!-- Utils（commons-lang3 / guava 经核查 main/test 均无 import，为死依赖已移除） -->
         <dependency><groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

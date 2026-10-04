@@ -13,7 +13,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-export JAVA_HOME="${JAVA_HOME:-$HOME/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home}"
+export JAVA_HOME="${JAVA_HOME:-$HOME/Library/Java/JavaVirtualMachines/temurin-21/Contents/Home}"
 export PATH="/Users/renhui.trh/java/apache-maven-3.8.6/bin:$JAVA_HOME/bin:$PATH"
 
 module_dir() {
