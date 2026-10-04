@@ -129,6 +129,59 @@ apps/<app-name>/src/
 - 401 → 跳转 Shell 登录页；403 → 提示无权限；429 → 限流提示；500 → 通用错误提示。
 - 网络错误自动重试 1 次（仅 GET 请求）。
 
+### 6.1.1 响应解包契约（`createApiClient` 使用方必读）
+
+> 本节是 `scripts/check-frontend-response-contract.py`（`check.sh` [8/8] 门禁）的规范依据。
+
+`packages/shared-services/src/apiClient.ts` 的**响应拦截器**是：
+
+```ts
+instance.interceptors.response.use((response) => response.data, (error) => { /* ... */ });
+```
+
+因此业务代码 `await` 到的**已经是 `ApiResponse` 本体**，而不是 `AxiosResponse`：
+
+```ts
+const res = await api.get<unknown, ApiResponse<Foo>>('/foo');
+// res 的类型 = ApiResponse<Foo> = { code?, success, message?, data: Foo, meta? }
+res.success;   // ✅ 信封字段
+res.data;      // ✅ payload 就在这里
+```
+
+**三条硬约束**：
+
+| # | 规则 | 说明 |
+|---|------|------|
+| 1 | **不得读响应的 `.status`** | HTTP status 在拦截器那层就被丢掉了，`res.status` 恒 `undefined`。判 HTTP 状态请在拦截器 **error 分支**读 `error.response.status`（那是 `AxiosError`，未被解包）。 |
+| 2 | **不得在 `.data` 之上再取信封字段** | `res.data.success` / `res.data.message` / `res.data.code` 是多重解包，恒 `undefined`。`res.data`（取 payload）本身是**正确**的。 |
+| 3 | **必须用双泛型标注** | axios 的 `get<T>()` 声明返回 `AxiosResponse<T>`，与实际解包结果不符。单泛型 `get<ApiResponse<T>>()` 会让 typecheck 报 TS2345 或掩盖类型谎言；应写 `get<unknown, ApiResponse<T>>()`（`<never, T>` 等价）。 |
+
+**真实缺陷示例**（2026-10-03 实测并修复，`apps/bone-extension-app`）：
+
+```ts
+// ❌ 错误：删除失败被静默吞成成功（res.status 恒 undefined，res.data?.success 也恒 undefined）
+const res = await client.delete<StudioApiResponse<void>>(`/points/${id}`);
+if (res.status === 204) return;
+if (res.data?.success === false) throw toStudioError(res.data.message || '删除失败', res.data);
+
+// ✅ 正确：交给 assertSuccess 统一判定信封
+const res = await client.delete<unknown, StudioApiResponse<void>>(`/points/${id}`);
+assertSuccess(res);
+
+// ❌ 错误：Blob 双重解包 → URL.createObjectURL(undefined) 抛 TypeError，下载功能不可用
+const res = await client.get<Blob>(`/plugins/${id}/versions/${v}:download`, { responseType: 'blob' });
+const blob = res.data;
+
+// ✅ 正确
+const blob = await client.get<unknown, Blob>(`/plugins/${id}/versions/${v}:download`, { responseType: 'blob' });
+```
+
+**豁免场景**：直接使用裸 `axios`（未经 `createApiClient`）的调用没有解包拦截器，
+`{ data }` 解构与 `.status` 均合法——`apps/bone-shell/src/services/consoleApi.ts` 即属此类。
+
+**为什么 typecheck 抓不住**：规则 1、2 都是**语义**问题，类型系统无法判断
+「这个 `.status` 指的是 HTTP 状态还是业务状态」。故必须由门禁按上文三条规则机械校验。
+
 ### 6.2 状态管理规范
 
 - 服务端状态：推荐使用 TanStack Query（React Query），替代手写 loading/error state。

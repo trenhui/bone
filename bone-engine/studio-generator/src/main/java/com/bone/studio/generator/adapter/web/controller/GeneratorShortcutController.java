@@ -12,6 +12,7 @@ import com.bone.studio.generator.domain.model.data.DatabaseTable;
 import com.bone.studio.generator.domain.model.history.CodeGenerationHistory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,6 +43,7 @@ public class GeneratorShortcutController {
   }
 
   /** POST /api/v1/generator/tables/metadata — 同步表元数据 */
+  @PreAuthorize("hasAuthority('generator:datasources:sync')")
   @PostMapping(GeneratorApiPaths.TABLES_METADATA)
   public ApiResponse<Void> syncTableMetadata(@RequestBody SyncTableMetadataCommand command) {
     syncTableMetadataHandler.handle(command);

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,6 +49,9 @@ public class OrderController {
   private final OrderAssembler orderAssembler;
 
   @Operation(summary = "创建订单", description = "创建新的订单")
+  // order:orders:write 已登记在 DefaultPermissionCodes，且本模块 SecurityConfig 的类javadoc
+  // 早已声明「订单端点声明 order:orders:read / order:orders:write」——此前是文档承诺了但注解缺失。
+  @PreAuthorize("hasAuthority('order:orders:write')")
   @PostMapping
   public ApiResponse<CreateOrderResp> create(
       @Parameter(description = "订单创建请求") @RequestBody CreateOrderReq request) {

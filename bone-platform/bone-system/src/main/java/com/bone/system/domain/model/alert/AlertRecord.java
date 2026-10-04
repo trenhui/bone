@@ -1,6 +1,7 @@
 package com.bone.system.domain.model.alert;
 
 import com.bone.core.annotation.Id;
+import com.bone.core.annotation.PhysicalDelete;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
@@ -25,6 +26,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@PhysicalDelete(reason = "告警事件流水：append-only，按保留期归档清理（规则配置在 sys_alert_rule，不在本表）")
 @Table("sys_alert_event")
 public class AlertRecord extends com.bone.core.domain.AggregateRoot<Long> {
   @Id

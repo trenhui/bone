@@ -5,7 +5,7 @@
  * EntityDetail 打开实体时 touch；工作台首页渲染 Top5，点击直达详情。
  */
 export interface RecentEntityItem {
-  id: number;
+  id: string;
   code: string;
   displayName: string;
   appId?: string;

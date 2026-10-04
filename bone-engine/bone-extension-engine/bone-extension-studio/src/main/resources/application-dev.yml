@@ -21,6 +21,11 @@ bone:
         refresh-channel: bone:ext:metadata:refresh
       idempotency:
         backend: redis
+      security:
+        # 本地开发 profile 显式打开放行。此前本 profile 靠继承基配置的 true 拿到放行，
+        # 基配置收敛为 false（失败关闭）后必须在此显式声明，否则本地启动会全线 401。
+        # 仍可用 BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED=false 单个环境变量关掉。
+        permit-unauthenticated: ${BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED:true}
   iam:
     jwt:
       # 开发环境默认密钥，生产环境必须通过环境变量注入

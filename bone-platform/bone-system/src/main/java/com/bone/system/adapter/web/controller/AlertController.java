@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 告警管理控制器。 */
@@ -29,12 +30,14 @@ public class AlertController {
 
   @Operation(summary = "创建告警规则")
   @PostMapping("/rules")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Long> createRule(@Valid @RequestBody CreateAlertRuleReq req) {
     return ApiResponse.success(alertApplicationService.createRule(alertAssembler.toCommand(req)));
   }
 
   @Operation(summary = "更新告警规则")
   @PutMapping("/rules")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Void> updateRule(@Valid @RequestBody UpdateAlertRuleReq req) {
     alertApplicationService.updateRule(alertAssembler.toCommand(req));
     return ApiResponse.success();
@@ -42,6 +45,7 @@ public class AlertController {
 
   @Operation(summary = "启用告警规则")
   @PostMapping("/rules/{id}/enable")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Void> enableRule(@PathVariable Long id) {
     alertApplicationService.enableRule(id);
     return ApiResponse.success();
@@ -49,6 +53,7 @@ public class AlertController {
 
   @Operation(summary = "禁用告警规则")
   @PostMapping("/rules/{id}/disable")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Void> disableRule(@PathVariable Long id) {
     alertApplicationService.disableRule(id);
     return ApiResponse.success();
@@ -56,6 +61,7 @@ public class AlertController {
 
   @Operation(summary = "删除告警规则")
   @DeleteMapping("/rules/{id}")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Void> deleteRule(@PathVariable Long id) {
     alertApplicationService.deleteRule(id);
     return ApiResponse.success();
@@ -63,6 +69,7 @@ public class AlertController {
 
   @Operation(summary = "根据ID获取告警规则")
   @GetMapping("/rules/{id}")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<AlertRuleResp> getRuleById(@PathVariable Long id) {
     return ApiResponse.success(
         alertApplicationService.getRuleById(id).map(alertAssembler::toResp).orElse(null));
@@ -70,12 +77,14 @@ public class AlertController {
 
   @Operation(summary = "查询告警规则列表")
   @GetMapping("/rules")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<PageResult<AlertRuleResp>> listRules(AlertRulePageReq req) {
     return pageRules(req);
   }
 
   @Operation(summary = "分页查询告警规则列表")
   @GetMapping("/rules/page")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<PageResult<AlertRuleResp>> pageRules(AlertRulePageReq req) {
     return ApiResponse.success(
         alertApplicationService.pageRules(alertAssembler.toQuery(req)).map(alertAssembler::toResp));
@@ -88,6 +97,7 @@ public class AlertController {
    */
   @Operation(summary = "上报指标触发告警（达阈值才生成记录）")
   @PostMapping("/events")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Long> recordIfTriggered(
       @RequestParam Long ruleId, @RequestParam Double actualValue) {
     return ApiResponse.success(
@@ -96,6 +106,7 @@ public class AlertController {
 
   @Operation(summary = "解决告警事件")
   @PostMapping("/events/{id}/resolve")
+  @PreAuthorize("hasAuthority('sys:alert:write')")
   public ApiResponse<Void> resolveEvent(@PathVariable Long id) {
     alertApplicationService.resolveRecord(id);
     return ApiResponse.success();
@@ -103,6 +114,7 @@ public class AlertController {
 
   @Operation(summary = "根据ID获取告警事件")
   @GetMapping("/events/{id}")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<AlertRecordResp> getEventById(@PathVariable Long id) {
     return ApiResponse.success(
         alertApplicationService.getRecordById(id).map(alertAssembler::toResp).orElse(null));
@@ -110,12 +122,14 @@ public class AlertController {
 
   @Operation(summary = "查询告警事件列表")
   @GetMapping("/events")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<PageResult<AlertRecordResp>> listEvents(AlertRecordPageReq req) {
     return pageEvents(req);
   }
 
   @Operation(summary = "分页查询告警事件列表")
   @GetMapping("/events/page")
+  @PreAuthorize("hasAuthority('sys:alert:read')")
   public ApiResponse<PageResult<AlertRecordResp>> pageEvents(AlertRecordPageReq req) {
     return ApiResponse.success(
         alertApplicationService

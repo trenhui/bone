@@ -59,7 +59,7 @@
 | 10 | bone-gateway | `design_doc: null` | 网关，需从零产出 v1 |
 | 11 | bone-frontend/bone-shell | `1. 控制台…` + `bone-pages-spec.html` | 宿主应用单独一轮 |
 
-**支撑/框架模块不参与本轮**：`bone-framework`、`bone-core`、`bone-sdk`、`bone-utils`、`bone-web`、`bone-security`、`bone-metadata-sdk`、`bone-openapi-sdk`、`bone-client-sdk`、`bone-metadata-engine`（有 active Comet change）、`bone-architecture-test`。它们的设计归属在各业务模块的集成章节或框架规范中。
+**支撑/框架模块不参与本轮**：`bone-framework`、`bone-core`、`bone-utils`、`bone-web`、`bone-security`、`bone-metadata-sdk`、`bone-extension-sdk`、`bone-metadata-engine`（有 active Comet change）、`bone-architecture-test`。它们的设计归属在各业务模块的集成章节或框架规范中。
 
 3. **选择优先级**：
    1. `needs_revision` / `interrupted` → 同模块续做（从断掉的那一**段**继续：A / A' / B / B' / C / D）

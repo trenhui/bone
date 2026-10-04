@@ -97,7 +97,8 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.FEEDBACK_NOT_FOUND, 404),
           // 治理角色（G3）
           Map.entry(MasterDataErrorCodes.STEWARD_DUPLICATE, 409),
-          Map.entry(MasterDataErrorCodes.STEWARD_ROLE_INVALID, 400));
+          Map.entry(MasterDataErrorCodes.STEWARD_ROLE_INVALID, 400),
+          Map.entry(MasterDataErrorCodes.STEWARD_ASSIGNMENT_NOT_FOUND, 404));
 
   static {
     checkEveryCodeRegistered();
@@ -117,7 +118,13 @@ public final class MasterDataErrors {
 
   /** 抛业务异常，附上下文说明与根因。 */
   public static BizException of(String errorCode, Object detail, Throwable cause) {
-    return new BizException(httpStatusOf(errorCode), composeMessage(errorCode, detail), cause);
+    // 必须用带 errorCode 的 4 参构造器：GlobalExceptionHandler.handleBusinessException
+    // 传的是 e.getErrorCode()。若走 3 参构造器（errorCode 恒为 null），
+    // ProblemDetail.errorCode 会是 null，前端 i18n 映射与监控聚合都拿不到稳定业务码
+    // —— 实测 2026-10-02，MD_RECORD_FIELD_VALIDATION_FAILED / MD_SOD_VIOLATION /
+    // BP_ORDER_STATUS_CONFLICT 的 errorCode 全为 null，码只出现在 message 前缀里。
+    return new BizException(
+        httpStatusOf(errorCode), composeMessage(errorCode, detail), errorCode, cause);
   }
 
   /**

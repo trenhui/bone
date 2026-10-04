@@ -25,5 +25,13 @@ public final class NotificationErrorCodes {
   /** 缺少租户上下文，无法判定站内信归属（失败关闭）。 */
   public static final String TENANT_MISMATCH = "NOTIFICATION_TENANT_MISMATCH";
 
+  /**
+   * 缺少已认证的登录主体，无法判定站内信归属（失败关闭）。
+   *
+   * <p>2026-10-03 新增：站内信的 {@code userId} 改为只从 JWT 主体解析后，无有效主体即拒绝。 与 {@link #ACCESS_DENIED}
+   * 分开是因为语义不同 —— 后者是"身份有效但不属这条消息"，本码是"根本没有身份"。
+   */
+  public static final String ACCOUNT_REQUIRED = "NOTIFICATION_ACCOUNT_REQUIRED";
+
   private NotificationErrorCodes() {}
 }

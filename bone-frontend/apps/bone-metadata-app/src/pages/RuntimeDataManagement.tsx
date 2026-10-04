@@ -78,7 +78,7 @@ const RuntimeDataManagement: React.FC = () => {
         return;
       }
       const pageData = normalizePage(res.data);
-      const runtimePublished = pageData.list.filter(
+      const runtimePublished = pageData.records.filter(
         (e) =>
           e.deliveryMode === META_DELIVERY_RUNTIME && e.status === META_ENTITY_PUBLISHED,
       );
@@ -103,7 +103,7 @@ const RuntimeDataManagement: React.FC = () => {
       .page(selectedEntity.id, { pageNum: 1, pageSize: 500 })
       .then((res) => {
         if (res.code === 200) {
-          setFields(normalizePage(res.data).list);
+          setFields(normalizePage(res.data).records);
         }
       });
     // 仅当 selectedEntity.id 变化时重新加载字段
@@ -117,7 +117,7 @@ const RuntimeDataManagement: React.FC = () => {
       const res = await runtimeRecordApi.page(entityCode, { page, size: pageSize });
       if (res.code === 200) {
         const pageData = normalizePage(res.data);
-        setData(pageData.list);
+        setData(pageData.records);
         setTotal(pageData.total);
       } else {
         message.error(errorMessage(res));

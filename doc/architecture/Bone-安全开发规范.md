@@ -40,6 +40,8 @@
 | 租户 | `tenant_id` / `biz_identity_code` **仅从 JWT/网关注入**，禁止仅靠 body 覆盖（见 [Bone-多租户规范](./Bone-多租户规范.md)） |
 | BOLA | 资源 ID 访问必须校验租户归属 |
 | 默认角色 | 生产禁用 `admin/123456`；首次部署强制改密 |
+| 写端点授权 | 写端点必须有 `@PreAuthorize`（门禁 `check-controller-authorization.py`）。存量豁免清单见 [写端点授权缺口决策清单](./写端点授权缺口决策清单.md) |
+| 自助端点 | 授权对象是 JWT 主体本身的端点（`/me`、`/messages`）**不挂权限码** —— 挂码反而允许跨用户读取。归属校验须在服务层从认证上下文强制 |
 
 ---
 

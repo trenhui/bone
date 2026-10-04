@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.23",
+  "version": "5.5.24",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
@@ -80,8 +80,8 @@
         [
           "12a",
           "通用密钥/Token 扫描",
-          "`scripts/scan-secrets.sh`、`scripts/check.sh`、`scripts/ci-check.sh`（`[3/7]` gitleaks detect）等本地脚本；当前 GitHub Actions 未调用",
-          "Manual / Planned：不得宣称 CI 已阻断"
+          "`.github/workflows/ci.yml` 的 `backend-security` job 内联执行 gitleaks 8.18.4 `detect`（`--config .gitleaks.toml`，存在 `.gitleaks.baseline.json` 时按 baseline 只拦新增泄露）；本地另有 scan-secrets.sh / check.sh / ci-check.sh 三处自扫入口（非 CI 载体）",
+          "Active（CI 阻断，载体 = `ci.yml` `backend-security` job）；本地 pre-commit 侧受「未装 gitleaks 即跳过」限制（`check.sh` 提示文案已同步为 CI 已阻断）"
         ],
         [
           "12b",
@@ -159,6 +159,48 @@
           "**本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明、状态真源版本与正文版本一致）",
           "`scripts/check-ddd-gate-state.py`（十项；登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在）",
           "Active（`ci.yml` `backend-quality` job 阻断）"
+        ],
+        [
+          "16",
+          "对外发布模块（SDK）不得以空壳冒充；一旦有业务类必须有契约测试",
+          "`scripts/check-sdk-contract-surface.py`（两条：① `src/main/java` 除去 IDE 模板类后无业务类 ⇒ 须登记进 `doc/architecture/sdk-contract-baseline.json` 的 `placeholder_modules`（只可收缩）；② 已有业务类但 `src/test/java` 为空 ⇒ 失败。扫描范围为真实对外 SDK：`bone-metadata-sdk`、`bone-extension-sdk`）",
+          "Active（`ci.yml` `backend-quality` job 阻断执行；本地另有 `ci-check.sh` `[12/12]`）。2026-10-03 从 Manual 升级：此前仅本地脚本执行，`.github/workflows` 未调用，形同虚设。背景见 [ADR-0040](./adr/0040-external-client-sdk-generated-from-openapi.md)（空壳 `bone-sdk` 同期已从构建移除）"
+        ],
+        [
+          "17",
+          "前端 ID 字段不得声明为 `number`（后端全平台 Long→JSON string 契约）",
+          "`scripts/frontend/check-frontend-id-types.py` 加 `--check`（扫描 `bone-frontend/{apps,packages}/**/*.{ts,tsx}`，排除 `node_modules`/`dist`/测试文件；字段名语义为标识符即 `Id`/`ID`/`Ids`/`IDs`/`_id`/`_ids` 结尾或全等 `id`/`ids`，且排除 `width`/`height`/`size`/`index`/`page` 等 UI 布局类名；类型标注为 `number` 即失败。例外登记在 `doc/architecture/frontend-id-type-baseline.json`，只可收缩）",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行；本地 `check.sh` `[10/20]`）。2026-10-03 建立：实测 HEAD 存量 330 处 ID 型 `number` 声明（11 个包 / 44 个文件）已全部改为 `string`，同期另修`bone-generator-app` 的 `Number(previewTemplateId)` 静默截断雪花 ID 的真实缺陷。依据见 Bone-API-规范 §5.3 与 ADR-0040"
+        ],
+        [
+          "18",
+          "OpenAPI 契约必须可被机器解析、声明认证、`$ref` 全部可解析",
+          "`scripts/check-openapi-contract.py`（标准库 + PyYAML，离线可跑）。判据：① `doc/architecture/openapi/*-v1.yaml`（8 份独立 API 文档）全部可 `yaml.safe_load`；② 每份含 `components.securitySchemes.bearerAuth`（`type: http` + `scheme: bearer`）；③ 每份有顶层 `security: [- bearerAuth: []]`；④ 全部本地 `$ref`（`#/...` 与相对路径）可解析。`components/*.yaml`（4 份共享 schema 片段）只校验可解析性与 `$ref`，**不**要求自带认证—— 按 OpenAPI 规范它们无 security 职责",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行，`Install PyYAML for OpenAPI lint` 步骤显式装依赖；本地 `check.sh` `[15/20]`）。2026-10-03 建立：实测 HEAD 存在两类既存缺陷 —— ① `extension`/`generator`/`integration` 三份规范的 flow mapping 值未加引号（含 `[` `{`）导致 **YAML 根本无法解析**，`npx @redocly/cli lint` EXIT=1 `Failed to parse API description`，任何 SDK 生成器都拿不到契约；另 `generator`有一处 `summary: @Capability`（`@` 为 YAML 保留指示符）；② `extension`/`generator`/`integration`/`masterdata`/`metadata-runtime` 五份完全没有 `securitySchemes`，而 `redocly.yaml` 的 `security-defined` 被显式设为 `off` ⇒ 这 5 个模块对外不声明任何认证方式。已按 Bone-API-规范 §9.1「默认需认证」（这 5 份的端点均不在白名单）补齐，并把 `security-defined` 改为 `error`。同期修正 `blueprint-orders` 与 `components/` 三处 OpenAPI 3.0 遗留语法（`nullable: true` → `type: [string, 'null']`、`exclusiveMinimum: true` → 数值）"
+        ],
+        [
+          "19",
+          "OpenAPI 的 `integer/int64` 声明须与后端实际下发的 JSON 类型一致（`Long` → string）",
+          "`scripts/check-openapi-int64-contract.py`（标准库 + PyYAML，离线可跑）。判据：凡 `type: integer, format: int64` 的字段，若其字段名**不在**脚本内`PRIMITIVE_LONG_FIELDS` 白名单即失败。白名单是唯一豁免依据 —— 全局 `ToStringSerializer` 只对**包装类型 `Long`** 生效（原生 `long`/`double` 仍是 JSON number），故白名单每条都标注对应 Java 字段与其原生类型。扫描范围含 `components/schemas/*/properties/*` **与** `paths/*/parameters[]`（路径/查询参数是 `int64` 主体，只扫 properties 会漏掉六成以上）",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行，步骤 `OpenAPI int64 Contract Lint (blocking)`；本地 `check.sh` `[19/21]`）。2026-10-03 建立（ADR-0040 A2 落地）：实测 71 处 `int64` **不是同质的**，逐字段核对 Java 侧后判为两类 ——① **60 处为包装 `Long`**（`blueprint-orders` 12/ `extension` 17/ `integration` 19/ `masterdata` 10/ `generator` 1 / `metadata-runtime.total` 1），运行时是JSON 字符串，与实现相反，已全部改为 `type: string`；② **11 处为原生 `long`/`double`**（`console-v1` 的 `KeyMetrics#userCount`/`entityCount`/`integrationFlowCount`/`extensionPluginCount`/`orderCount`/`transactionAmount`/`jvmThreadsLive`/`jvmThreadsDaemon`、`ResourceUsage#memoryUsedBytes`/`memoryMaxBytes`、`ServiceStatus#latencyMs`），序列化器不生效、运行时确为 number，**保持 `int64` 正确**（此处若一刀切改成string 反而制造新的 lie）。另 `components/PageResult.yaml` 的 `total` 同为包装 `Long` 已修正，而同文件的 `page`/`size`/`pages` 是 `Integer` 保持 number。**双向验证**：注入「`total` 改回 `integer/int64`」探针 EXIT=1 精确点名；把白名单内 `userCount` 改成 `string` 探针 EXIT=0（确认豁免真实生效而非形同虚设）"
+        ],
+        [
+          "20",
+          "控制器写端点（`@Post`/`@Put`/`@Patch`/`@Delete`）必须声明 `@PreAuthorize`",
+          "`scripts/check-controller-authorization.py`（标准库，离线可跑）+ 基线 `doc/architecture/controller-authorization-baseline.json`。判据：逐方法块解析（累积注解直到方法签名行结算，并跳过方法体），写端点若其**方法级或所属类级**均无 `@PreAuthorize` 即失败。扫描根 `bone-platform` / `bone-engine` / `bone-blueprint`（排除 `bone-framework/bone-web`，它只有全局 advice 无业务端点）。**只管写端点**：读端点存在大量已裁定的合理例外（`DictItemController` 的字典项是每个表单都要读的基础数据，权限目录只登记了 `sys:dict:write`，挂未登记的读码会让所有消费方 403），纳入会产生无法修复的噪声并最终导致门禁被整体关掉",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行，步骤 `Controller Write Endpoint Authorization Lint (blocking)`；本地 `check.sh` `[20/21]`）。2026-10-03 建立：起因是审计告警/日志跨租户入口时发现 `AlertController` 13 个端点**零授权声明**（含写操作），而各模块 `SecurityConfig` 统一是 `anyRequest().authenticated()` —— **认证强制、授权不强制**，任何登录用户都能调。已修`AlertController` 13/13 + 补登权限码 `sys:alert:read` / `sys:alert:write` 到 `DefaultPermissionCodes`（此前 `sys:alert:*` 完全缺失）。**判据经5轮修正才可信，每轮都是被自己的反例证伪的**：① 位置窗口法把相邻方法的注解算错（让13/13 全覆盖的 AlertController 误报 4 处）；② 剥离字符串字面量后再匹配注解 ⇒ 自己把 `@PreAuthorize(\"...\")` 的参数删了，URL 全部提取为空；③ 窄正则漏掉类级 `@PreAuthorize`（`ConsoleController` 类级 `sys:console:read` 覆盖 5 个端点）；④ 宽正则误匹配 `import ...access.prepost.PreAuthorize;` 这一行 —— 曾据此错判 `DictItemController` 为「类级已授权」；⑤ 签名跨多行时（`public X upload(` 后接参数行才出现 `{`）流程错位，导致其后所有端点漏扫 —— 修正后缺口从 46 升到 **68**。最终覆盖 386 个端点 / 222 个写端点，**已授权 66.2%**；68 条存量记入基线（masterdata 23 / integration 14 / studio-generator 13 / iam 7 / system 6 / file 2 / blueprint 1 / extension-engine 1 / notification 1），门禁只拦新增与基线外存量，基线**只可收缩**。**2026-10-03 二次收敛（基线 68 → 43）**：分两批。① **IDOR 修复**——`NotificationController` 原把 `userId` 作为 `@RequestParam` 暴露，而服务层归属校验正是拿这个入参比对，调用方传自己的 ID 即可读过他人站内信（归属校验形同虚设）。改为经 `CurrentAccountResolver` 从 JWT 主体解析，前后端同步去掉该参数；该控制器写端点的授权依据就是 JWT 主体本身，故**登记为豁免而非补码**（挂 `notification:message:read` 反而允许跨用户读取）。同批在授权审计中发现 `ExtensionManagementController` 的 `POST /execution-logs/ingest` 是**匿名可写**（`SecurityConfig` 对该路径 `permitAll`）且真落库，可任意伪造执行日志污染运维视图 —— 已单列为风险项。② **可唯一推导的 25 条自动收敛**：判据是「同一控制器内已有明确 `@PreAuthorize` 先例且资源归属唯一」，补注解不引入任何新码 —— `ConfigController`(2)、`MasterDataEntityController`(5)、`MasterDataRecordTopController`(5)、`DataQualityController`(4)、`MasterDataFieldController`+`MasterDataFieldTopController`(3)、`ModuleController`(3)、`LineageController`(1)、`OrderController`(1)。其中 `OrderController` 属**文档承诺了但注解缺失**（本模块 `SecurityConfig` javadoc 早已声明订单端点应挂 `order:orders:write`）。**留待人工裁定的 43 条**（含 integration 14 / studio-generator 13 / system 4 / data-standard 3 / file 2 / me 2 / mfa 2 / monitor 2 / publish 类 2 / extension-engine 1 / admin 1 / 模板 4 / 数据源 6 / 代码生成 1 / 快捷 1）已出[决策清单](./写端点授权缺口决策清单.md)，含前后端码表漂移证据（前端 `bonePermissionCodes.ts` 已定义 `integration:flows:write` 等 3 码并标 `Target`，后端 `DefaultPermissionCodes` 的 60 码里无 `integration:` 前缀）、高危端点排序与落地四步同步清单。**AI 不自行决定角色归属** —— 挂码但不同步权限目录/种子/前端会导致所有用户 403。**双向验证**：删方法级注解 EXIT=1 精确点名；把注解移到 `@XxxMapping` **之前**（另一种合法形态）EXIT=0；删类级注解后该Controller 全部写端点进未登记；基线移除已修条目 EXIT=1 报「请从基线移除」"
+        ],
+        [
+          "21",
+          "OpenAPI 规范须满足 SDK 生成器的前置条件（每个 operation 有 `operationId` 与 `tags`；path 模板变量均声明为 path 参数）",
+          "`scripts/check-openapi-generation-readiness.py`（标准库 + PyYAML，离线可跑）。判据分两部分：①遍历 8 份规范的每个 operation，缺 `operationId`（生成器退化为 path 拼接的方法名）、缺 `tags`（所有操作塞进单个 `DefaultApi`）、或 path 模板 `{var}` 未在path 级或operation 级声明为 `in: path` 参数即失败 —— **判据必须先解 `$ref`**：`metadata-runtime` 有 5 处参数是 `$ref` 到 `components/parameters`，不解会误报为缺陷；② 解析 `scripts/generate-sdk.sh` 的 `SPECS=(...)`，核对每份磁盘规范都已登记、且包名片段等于「规范名去 `-v1` 再去掉 `-`」的推导值（两边不一致会让烟测以 `ClassNotFoundException` 失败）",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行，步骤 `OpenAPI Generation Readiness Lint (blocking)`；本地 `check.sh` `[21/21]`）。2026-10-03 建立（ADR-0040 第 11 项落地）：前序门禁 `check-openapi-contract.py` 与 `redocly lint` 只管 YAML 可解析 /认证声明 / `$ref` 可解析，下面两类缺陷在它们下面**全绿**却让生成器直接失败 —— ① `generator-v1.yaml` 的 `PUT/DELETE /data-sources/{id}` 未声明 path 参数 `id`，openapi-generator 抛 `SpecValidationException` **整份规范生成失败**；② `iam`/`extension`/`generator` 共 **90 个 operation 全部缺 `operationId` 与 `tags`**，生成结果退化为单个 `DefaultApi`（iam 47 个方法名变成 `accountsIdGetPost` 这类 path 机械拼接），SDK 不可用。两项均已修复：补齐 142 个 operation 的 `operationId`+`tags`（去重后无冲突），`redocly lint` 8/8 仍 EXIT=0；修复后 8 个 artifact 全部生成成功（28 个 Api 类 / 37 个 model 类）。**三路负向验证**：删 `PUT /data-sources/{id}` 的 path 参数声明 → EXIT=1 精确点名；抽掉一个 `operationId`+`tags` → EXIT=1 两条；把`generate-sdk.sh` 的包名片段改错一个字母 → EXIT=1 提示与推导值不一致"
+        ],
+        [
+          "22",
+          "控制面匿名放行开关（`permit-unauthenticated`）的默认值必须是拒绝",
+          "`scripts/check-security-fail-open-default.py`（标准库，离线可跑）+ 负向探针 `scripts/ci/probe-security-fail-open-default.py`。三条判据：**R1** 放行不得是裸字面量（裸 `true` 连环境变量都覆盖不了——占位符才能被 Spring 解析，部署方只能改代码重新打包，且无法审计是谁放行的；裸 `false` 不违规，拒绝即终态）；**R2** 基配置 `application.yml` 的占位符默认值须为 `false`（R2 只判基配置，因为它决定\"未声明该键的 profile\"继承到什么）；**R3** 生产 profile（`prod` / `metadata-mysql`）恒为字面量 `false`，不接受占位符——生产不该存在\"注入环境变量即可打开放行\"这条路径。只扫 `src/main/resources/application*.yml`；`src/test/resources` 整体豁免（单测需无 JWT 构造请求，那是测试替身而非部署配置，纳入只会让门禁要么失效要么误报）。不用可收缩基线：存量6 处已全部收敛，且本规则的安全含义是\"裸 true 一律不允许\"，可收缩基线表达不了零容忍。",
+          "Active（`.github/workflows/ci.yml` 的 `backend-quality` job 阻断执行，步骤 `Security Fail-Open Default Lint (blocking)`；负向探针以 `Security Fail-Open Default Negative Probe` 同 job 执行；本地 `check.sh` `[22/22]`）。2026-10-04 建立：收敛唯一遗留的 fail-open 配置——`application.yml` 硬编码 `permit-unauthenticated: true`，**连环境变量都覆盖不了**，而 `dev` / `in-memory` / `metadata` 三个联调 profile 均未显式声明该键、靠继承拿到放行 ⇒ \"忘记配置\"就是一次静默降级为**全站匿名**（插件上传 / 部署 / 版本切换全部免凭证），与权限码缺失同级危害。原注释\"生产环境请保持 false\"在这种写法下是**空承诺**——没有任何机制保证它。已改：基配置 → `${BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED:false}`；联调 profile 显式声明 `...:true`（放行成为一次有痕迹的显式动作，且单个环境变量即可关掉，无需改代码）；`prod` 由\"靠 `spring.config.import` 间接继承 `metadata-mysql` 的false\"改为显式字面量 `false`（import 是 `optional:`，键路径漂移或文件改名即静默失效）。**六条负向探针全部通过**：注入 R1/R2/R3 违规各自精确失败并点名判据；用 `git show HEAD:` 取**改动前的真实历史配置**（含裸 `true`）验证门禁能抓到存量而非只认当前磁盘状态；合法形态（基配置 false + 联调 profile 占位符 true）不被误报；探针执行后仓库仍绿（无污染）。"
         ]
       ]
     },
@@ -356,6 +398,12 @@
           "Hard gate（2026-09-20 新增，同上 8 模块）",
           "全租户入口命名为 `*AllTenants`，且 `*AllTenants` 方法确实绕过租户隔离（双向绑定，防\"只改名不改行为\"与\"只加注解不留痕迹\"）",
           "命名以外的语义正确性；接口级 `@TenantScope(ALL)` 会让该接口全部 SQL 方法都需带后缀（门禁按同一判据判定）"
+        ],
+        [
+          "`optimisticLockByVersionColumn`（SDK `@Version` 标记 → `DynamicUpdateBuilder` 生成 `SET version = version + 1` + `WHERE version = :old`）",
+          "**Manual / 现状：仅 3 个业务聚合启用**（`Order`、`Payment`、`Tenant` + SDK 自身 `ColumnAllocation`）",
+          "打注解的聚合在 update 时会带 version 条件，0 行受影响时抛 `OptimisticLockingFailureException`（不静默假成功）",
+          "**未打注解的聚合完全没有并发保护**（后写覆盖）。实测未覆盖且有真实写路径的：`MetaEntityPo` / `MetaFieldPo`（`bone-metadata-engine-runtime`，继承通用 `Repository` 含 update/save，当前调用点只读但写能力存在）。**metadata-server 的 `MetaEntity`/`MetaField`/`MetaEntityRelation` 不在此列**——它们走手工 `CatalogVersionSupport.assertExpected`（AIP-154 可选 If-Match，见 ADR-0031 §2bis），**不得叠加 `@Version`**：其 `update()`/`publish()` 内部先 `bumpVersion()` 再 `repository.update()`，叠加后 `WHERE version` 会取到已递增的值而 DB 仍是旧值 ⇒ 首次更新即假冲突"
         ]
       ]
     },
@@ -442,19 +490,19 @@
         [
           "**HC-004**",
           "禁止硬编码密钥 / 密码 / Token",
-          "`.gitleaks.toml` + `scripts/scan-secrets.sh` / `scripts/check.sh` / `scripts/ci-check.sh`（`[3/7]` gitleaks detect）（本地可跑，**无工作流调用**）",
-          "**Manual**（同 [G-1.1](#g-11-hard-gate) 12a）"
+          "`.gitleaks.toml` + `.github/workflows/ci.yml` 的 `backend-security` job 内联 gitleaks 8.18.4 `detect`（阻断）；本地另有 scan-secrets.sh / check.sh / ci-check.sh 自扫入口（非 CI 载体）",
+          "**Active**（CI 侧 `ci.yml` `backend-security` job；同 [G-1.1](#g-11-hard-gate) 12a。注意本地 `check.sh` 在未安装 gitleaks 时会跳过，故本地提交前不构成强制拦截）"
         ],
         [
           "**HC-005**",
           "核心模块测试覆盖率门槛",
           "`jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`）",
-          "Active；**父 POM 实测门槛为 10% 指令覆盖率**。这四个 SDK 基础设施模块以框架与映射代码为主，0 覆盖不等于无保护：建议二选一并在模块 README 登记——① pom 显式声明覆盖率豁免并写明理由；② 补关键映射与上下文装配的最小集成测试后纳入门禁。不得长期以 0 覆盖蒙混"
+          "Active；**父 POM 实测门槛为 15% 指令覆盖率**（`bone-parent/pom.xml` 的 `jacoco.minimum.coverage=0.15`；另有 `jacoco.minimum.line=0.10`、`jacoco.minimum.branch=0.05` 两道 limit）。这四个 SDK 基础设施模块以框架与映射代码为主，0 覆盖不等于无保护：建议二选一并在模块 README 登记——① pom 显式声明覆盖率豁免并写明理由；② 补关键映射与上下文装配的最小集成测试后纳入门禁。不得长期以 0 覆盖蒙混。另注意两道自逃逸口径：`<skip>${skipTests}</skip>`（`-DskipTests` 时 check 静默跳过）与统计排除 `**/config/**`、`**/Bone*Application*`"
         ],
         [
           "**HC-006**",
           "数据库访问必须通过 bone-metadata-sdk Repository",
-          "`scripts/check-sdk-persistence.py --check`（`check.sh` `[6/6]`、`ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import（SDK 与 metadata-engine 除外）。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩；ArchUnit `repositoryMustUseSdk` 不在共享规则库",
+          "`scripts/check-sdk-persistence.py --check`（`check.sh` `[7/7]`、`ci-check.sh` 调用）：扫描业务 `src/main/java` 的 `JdbcTemplate` / `NamedParameterJdbcTemplate` / `java.sql.Connection` / `PreparedStatement` / `SqlSession` import（SDK 与 metadata-engine 除外）。存量登记在 `doc/architecture/sdk-persistence-bypass-baseline.json`，只可收缩；ArchUnit `repositoryMustUseSdk` 不在共享规则库",
           "**Manual**（本地新增文件阻断已落地；存量绕过在基线内，不得称全仓已只走 Repository）"
         ],
         [

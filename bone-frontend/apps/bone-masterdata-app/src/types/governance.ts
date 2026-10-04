@@ -1,7 +1,7 @@
 /** 治理域类型（G4/G5/G10/G11/G15/G16/G17 · 3a 设计方案落地） */
 
 export interface DomainTemplate {
-  id: number;
+  id: string;
   domainCode: string;
   domainName: string;
   description?: string;
@@ -16,29 +16,36 @@ export interface DomainTemplate {
 }
 
 export interface TemplateVersion {
-  id: number;
-  templateId: number;
+  id: string;
+  templateId: string;
   versionNumber: string;
   changeLog?: string;
   fieldSchema?: string;
   createdAt?: string;
 }
 
+/**
+ * 主数据分类（mdm_category）。
+ *
+ * id / masterDataEntityId / parentCategoryId 一律声明为 string：这些都是雪花 ID（如
+ * 910000000000000121），超出 2^53，Jackson 为保精度序列化成字符串。声明成 number 会
+ * 与实际运行时不符，导致 Tree 的 key 比较、Map key 命中行为不可预期。
+ */
 export interface MasterDataCategory {
-  id: number;
-  masterDataEntityId: number;
+  id: string;
+  masterDataEntityId: string;
   code: string;
   name: string;
   description?: string;
-  parentCategoryId?: number;
+  parentCategoryId?: string | null;
   level: number;
   sortOrder: number;
 }
 
 export interface EntitySubscription {
-  id: number;
-  masterDataEntityId: number;
-  appId: number;
+  id: string;
+  masterDataEntityId: string;
+  appId: string;
   subscribeMode: string;
   status: string;
   requestedBy?: number;
@@ -47,29 +54,29 @@ export interface EntitySubscription {
 }
 
 export interface StewardAssignment {
-  id: number;
-  masterDataEntityId: number;
-  accountId: number;
+  id: string;
+  masterDataEntityId: string;
+  accountId: string;
   roleType: string;
   createdAt?: string;
 }
 
 export interface QualityIssue {
-  id: number;
-  masterDataEntityId: number;
-  recordId?: number;
-  checkId?: number;
-  ruleId?: number;
+  id: string;
+  masterDataEntityId: string;
+  recordId?: string;
+  checkId?: string;
+  ruleId?: string;
   issueDesc: string;
   severity: string;
   status: string;
-  assigneeId?: number;
+  assigneeId?: string;
   dueAt?: string;
   resolvedAt?: string;
 }
 
 export interface ReferenceSet {
-  id: number;
+  id: string;
   setCode: string;
   setName: string;
   externalStandard?: string;
@@ -78,8 +85,8 @@ export interface ReferenceSet {
 }
 
 export interface ReferenceValue {
-  id: number;
-  setId: number;
+  id: string;
+  setId: string;
   valueCode: string;
   valueName: string;
   externalCode?: string;
@@ -90,9 +97,9 @@ export interface ReferenceValue {
 }
 
 export interface ModelDrift {
-  id: number;
-  masterDataEntityId: number;
-  metaEntityId: number;
+  id: string;
+  masterDataEntityId: string;
+  metaEntityId: string;
   driftType: string;
   fieldCode?: string;
   oldValue?: string;
@@ -103,10 +110,10 @@ export interface ModelDrift {
 }
 
 export interface DataFeedback {
-  id: number;
-  masterDataEntityId: number;
-  recordId?: number;
-  appId?: number;
+  id: string;
+  masterDataEntityId: string;
+  recordId?: string;
+  appId?: string;
   feedbackType: string;
   content: string;
   status: string;
@@ -115,8 +122,8 @@ export interface DataFeedback {
 }
 
 export interface RecordVersion {
-  id: number;
-  recordId: number;
+  id: string;
+  recordId: string;
   versionNumber: number;
   data: string;
   status: string;

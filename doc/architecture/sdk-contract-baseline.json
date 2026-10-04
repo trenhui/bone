@@ -1,0 +1,4 @@
+{
+  "_comment": "对外发布模块的空壳登记（只可收缩）。placeholder_modules 中的模块已知只有 IDE 模板类，不参与阻断；一旦移除本登记而模块仍是空壳，check-sdk-contract-surface.py 即失败。2026-10-03：bone-sdk（bone-client-sdk / bone-openapi-sdk）曾在此登记为空壳占位，同日已从根 pom <modules> 移除，登记清空，扫描范围改为真实对外 SDK（bone-metadata-sdk、bone-extension-sdk）。若将来要对外发布客户端 SDK，优先从 doc/architecture/openapi/ 的规范生成，而不是手写一个空壳占位。",
+  "placeholder_modules": []
+}

@@ -11,7 +11,6 @@ const {
   mockPost,
   mockPut,
   mockDelete,
-  applyResponseInterceptors,
   pushResponseHandler,
   throughInterceptors,
 } = vi.hoisted(() => {
@@ -56,7 +55,10 @@ import {
   StudioApiError,
   bindPlugin,
   createExtPoint,
+  deleteExtPoint,
+  deletePlugin,
   deployPlugin,
+  downloadPluginVersion,
   getDeploymentState,
   getDependencyGraph,
   ifMatchHeader,
@@ -355,5 +357,85 @@ describe('extensionApi', () => {
       traceId: 'trace-abc',
       errorCode: 'COMMON_VALIDATION_FAILED',
     });
+  });
+
+  // ---- 以下 4 例锁定「响应拦截器已解包」这一运行时契约（2026-10-03 新增）----
+  //
+  // createApiClient 的响应拦截器是 `(response) => response.data`，故业务代码拿到的
+  // 直接是 ApiResponse 本体而非 AxiosResponse。deleteXxx / downloadPluginVersion
+  // 曾按原始 AxiosResponse 形状读 `res.status` / `res.data`：
+  //   - `res.status` 恒为 undefined（status 在拦截器那层就被丢掉了）
+  //   - `res.data` 恒为 undefined（body 本身就是 ApiResponse，再取 .data 是双重解包）
+  // 于是「删除失败」的错误分支永远不触发（失败被静默吞成成功），
+  // 且下载时 URL.createObjectURL(undefined) 直接抛 TypeError。
+
+  it('deleteExtPoint throws StudioApiError when API returns success=false', async () => {
+    mockDelete.mockResolvedValue({
+      data: {
+        success: false,
+        message: '扩展点已被引用，无法删除',
+        code: 409,
+        data: { errorCode: 'EXT_POINT_IN_USE', detail: '扩展点已被引用，无法删除' },
+      },
+    });
+    const err = await deleteExtPoint(7).catch((e) => e);
+    expect(err).toBeInstanceOf(StudioApiError);
+    expect(err).toMatchObject({ errorCode: 'EXT_POINT_IN_USE', httpStatus: 409 });
+  });
+
+  it('deleteExtPoint resolves silently when API returns success=true', async () => {
+    mockDelete.mockResolvedValue({ data: { success: true, data: null } });
+    await expect(deleteExtPoint(7)).resolves.toBeUndefined();
+  });
+
+  it('deletePlugin throws StudioApiError when API returns success=false', async () => {
+    mockDelete.mockResolvedValue({
+      data: {
+        success: false,
+        message: '插件运行中，禁止删除',
+        code: 409,
+        data: { errorCode: 'PLUGIN_RUNNING', detail: '插件运行中，禁止删除' },
+      },
+    });
+    const err = await deletePlugin(9).catch((e) => e);
+    expect(err).toBeInstanceOf(StudioApiError);
+    expect(err).toMatchObject({ errorCode: 'PLUGIN_RUNNING', httpStatus: 409 });
+  });
+
+  it('downloadPluginVersion passes the Blob straight through (no double unwrap)', async () => {
+    const blob = new Blob(['jar-bytes'], { type: 'application/java-archive' });
+    // 与其余用例一致：mock 的是**原始 axios 响应**，`{ data: blob }` 经拦截器 `(r) => r.data`
+    // 解包后业务代码拿到的就是 blob 本身，而不是 { data: blob }。
+    mockGet.mockResolvedValue({ data: blob });
+
+    const created: Blob[] = [];
+    const revoked: string[] = [];
+    const realCreate = URL.createObjectURL;
+    const realRevoke = URL.revokeObjectURL;
+    // jsdom 未实现 createObjectURL/revokeObjectURL
+    (URL as unknown as Record<string, unknown>).createObjectURL = (b: Blob) => {
+      created.push(b);
+      return 'blob:mock-url';
+    };
+    (URL as unknown as Record<string, unknown>).revokeObjectURL = (u: string) => {
+      revoked.push(u);
+    };
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    try {
+      await downloadPluginVersion(3, '1.0.0');
+      expect(mockGet).toHaveBeenCalledWith(
+        '/v1/extension/plugins/3/versions/1.0.0:download',
+        { responseType: 'blob' },
+      );
+      expect(created).toHaveLength(1);
+      expect(created[0]).toBe(blob);
+      expect(revoked).toEqual(['blob:mock-url']);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      clickSpy.mockRestore();
+      (URL as unknown as Record<string, unknown>).createObjectURL = realCreate;
+      (URL as unknown as Record<string, unknown>).revokeObjectURL = realRevoke;
+    }
   });
 });

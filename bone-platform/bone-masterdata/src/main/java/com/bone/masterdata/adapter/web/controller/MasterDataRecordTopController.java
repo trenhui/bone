@@ -62,6 +62,7 @@ public class MasterDataRecordTopController {
         recordService.findByBusinessKey(masterDataEntityId, code).orElse(null));
   }
 
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @PostMapping("/entity/{masterDataEntityId}")
   public ApiResponse<Long> create(
       @PathVariable Long masterDataEntityId, @Valid @RequestBody CreateMasterDataRecordReq req) {
@@ -69,6 +70,7 @@ public class MasterDataRecordTopController {
     return ApiResponse.success(recordService.create(converter.toCommand(req)));
   }
 
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @Valid @RequestBody UpdateMasterDataRecordReq req) {
@@ -76,12 +78,21 @@ public class MasterDataRecordTopController {
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     recordService.delete(id);
     return ApiResponse.success();
   }
 
+  /**
+   * 发布记录（DRAFT → PUBLISHED，生效当前版本）。
+   *
+   * <p>复用 {@code masterdata:records:write}（权限目录已把「发布」登记在该码的职责内）： 审批与发布的职责分离已由 {@code
+   * masterdata:records:approve} + 领域/应用层门禁保证 —— 启用了审批流的实体，{@code RecordApplicationService#publish}
+   * 会拒绝非 APPROVED 记录。 再拆一个 publish 码不产生额外隔离：能审批的人同时持有 write 时本就自审自发布。
+   */
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @PostMapping("/{id}/publish")
   public ApiResponse<Void> publish(@PathVariable Long id) {
     recordService.publish(id);
@@ -120,12 +131,15 @@ public class MasterDataRecordTopController {
     return ApiResponse.success(converter.toVersionRespList(recordService.versions(id)));
   }
 
+  // archive 是记录自身的状态流转（非审批动作），与 approve/reject 分属不同语义，故取 records:write。
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @PostMapping("/{id}/archive")
   public ApiResponse<Void> archive(@PathVariable Long id) {
     recordService.archive(id);
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:records:write')")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiResponse<ImportResultDTO> importRecords(
       @RequestParam(value = "masterDataEntityId", required = false) Long masterDataEntityId,

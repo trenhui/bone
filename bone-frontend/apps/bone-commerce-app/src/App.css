@@ -1,0 +1,4 @@
+/* 交易域微应用容器：由 qiankun 挂载进 shell 的内容区，自身不再提供背景/布局 */
+.app-container {
+  padding: 16px;
+}

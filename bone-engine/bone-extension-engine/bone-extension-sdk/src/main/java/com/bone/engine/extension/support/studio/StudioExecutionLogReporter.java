@@ -27,8 +27,20 @@ public class StudioExecutionLogReporter {
 
   private static final Logger log = LoggerFactory.getLogger(StudioExecutionLogReporter.class);
 
+  /** 与 studio 侧 ReporterTokenFilter 对应的请求头名（数据面机器身份，非用户 JWT）。 */
+  private static final String REPORTER_TOKEN_HEADER = "X-Reporter-Token";
+
   private final RestTemplate restTemplate;
   private final String ingestUrl;
+  private final String reporterToken;
+
+  /**
+   * 上报通道是否可用（令牌已配置）。
+   *
+   * <p>studio 侧对上报端点默认<b>失败关闭</b>：未配置 {@code reporter-token} 时一律拒绝（503）。此时若仍照常发请求， 只会每次都白跑一次网络往返并刷
+   * WARN 噪声， 反而把真正的根因（"没配 token"）淹没在重复日志里。 故此处短路。
+   */
+  private final boolean channelUsable;
 
   public StudioExecutionLogReporter(
       ExtensionProperties properties, RestTemplateBuilder restTemplateBuilder) {
@@ -41,8 +53,19 @@ public class StudioExecutionLogReporter {
       base = base.substring(0, base.length() - 1);
     }
     this.ingestUrl = base + "/api/v1/extension/execution-logs:ingest";
+    this.reporterToken = StringUtils.hasText(report.getToken()) ? report.getToken().trim() : null;
+    this.channelUsable = reporterToken != null;
     this.restTemplate = restTemplateBuilder.build();
-    log.info("Studio execution log reporter enabled, ingest={}", ingestUrl);
+    if (!channelUsable) {
+      log.warn(
+          "bone.extension.studio.report.token 未配置 —— 执行日志上报通道按失败前置处理，"
+              + "本次及后续上报均不会发出（studio 侧默认失败关闭，会拒绝无令牌上报）。"
+              + "请注入与 studio 侧 reporter-token 一致的密钥");
+    }
+    log.info(
+        "Studio execution log reporter enabled, ingest={}, tokenConfigured={}",
+        ingestUrl,
+        channelUsable);
   }
 
   public void reportSuccess(
@@ -69,6 +92,11 @@ public class StudioExecutionLogReporter {
     if (!StringUtils.hasText(className)) {
       return;
     }
+    // 失败前置：令牌未配置 ⇒ 通道不可用（根因已在构造时告警一次），此处不再重复打日志，
+    // 避免每次调用都刷一行把真正原因淹没。
+    if (!channelUsable) {
+      return;
+    }
     // 执行日志按租户内聚存储，上报必须携带当前请求租户（ingest 端点据此落库）；
     // 无租户上下文（如调度线程）时 studio 侧拒绝，避免日志误归租户。
     String tenantId = TenantContext.getTenantId();
@@ -88,6 +116,9 @@ public class StudioExecutionLogReporter {
             }
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            if (reporterToken != null) {
+              headers.set(REPORTER_TOKEN_HEADER, reporterToken);
+            }
             if (StringUtils.hasText(tenantId)) {
               headers.set("X-Tenant-Id", tenantId);
             }

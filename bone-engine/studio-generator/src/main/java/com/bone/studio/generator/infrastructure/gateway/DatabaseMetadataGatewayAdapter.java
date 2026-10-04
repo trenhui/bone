@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -27,8 +26,14 @@ public class DatabaseMetadataGatewayAdapter implements DatabaseMetadataGateway {
 
   private final ConcurrentHashMap<String, HikariDataSource> poolCache = new ConcurrentHashMap<>();
 
-  @Value("${generator.encryption.key:default-key}")
-  private String encKey;
+  // 2026-10-03 删除 `encKey`：该字段自设计文档写下 AES 加解密方案后就从未有过读取点
+  // —— 全模块检索encKey 与 AESUtils 均无命中，说明加密逻辑从未落地，
+  // DataSource.passwordEncrypted 是明文透传。
+  // 留着它有两个害处：(1) 让人误以为本类已做密码加密，放宽安全评审；
+  // (2) 它的配置键在任何 yml 都无定义，靠字面量默认值静默回落，是
+  //     scripts/ci/check-config-key-contract.py 唯一一条 WARN。
+  // 真要落地加密（DDL 列注释仍写着「加密存储」），须连同密钥托管一并设计，
+  // 不能靠一个读不到的字段假装已实现。
 
   @Override
   public boolean testConnection(DataSource dataSource) {

@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,12 +44,14 @@ public class DataSourceController {
   private final SyncTableMetadataApplicationService syncHandler;
   private final RepairSyncedTableColumnsApplicationService repairSyncedTableColumnsHandler;
 
+  @PreAuthorize("hasAuthority('generator:datasources:write')")
   @PostMapping
   public ApiResponse<String> createDataSource(@RequestBody CreateDataSourceCommand command) {
     // 注意：success(String) 命中 message 重载，字符串数据须用双参形式
     return ApiResponse.success("创建成功", createDataSourceHandler.handle(command));
   }
 
+  @PreAuthorize("hasAuthority('generator:datasources:write')")
   @PutMapping("/{id}")
   public ApiResponse<String> updateDataSource(
       @PathVariable String id, @RequestBody UpdateDataSourceCommand command) {
@@ -66,6 +69,7 @@ public class DataSourceController {
     return ApiResponse.success("更新成功", updateDataSourceHandler.handle(command));
   }
 
+  @PreAuthorize("hasAuthority('generator:datasources:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> deleteDataSource(@PathVariable String id) {
     DeleteDataSourceCommand command = DeleteDataSourceCommand.builder().id(id).build();
@@ -97,6 +101,7 @@ public class DataSourceController {
     return ApiResponse.success(listSyncedTablesHandler.handle(qry));
   }
 
+  @PreAuthorize("hasAuthority('generator:datasources:sync')")
   @PostMapping("/{id}/tables:sync")
   public ApiResponse<Map<String, Object>> syncTables(
       @PathVariable String id, @RequestBody(required = false) SyncTableMetadataCommand body) {
@@ -112,11 +117,13 @@ public class DataSourceController {
   }
 
   /** 存量列回填：早期同步只写表不写列（列数恒 0），对缺列表按当前物理库重新同步。幂等，无缺列时返回 0。 */
+  @PreAuthorize("hasAuthority('generator:datasources:sync')")
   @PostMapping("/{id}/tables:repair-columns")
   public ApiResponse<Map<String, Object>> repairSyncedTableColumns(@PathVariable String id) {
     return ApiResponse.success(repairSyncedTableColumnsHandler.handle(id));
   }
 
+  @PreAuthorize("hasAuthority('generator:datasources:write')")
   @PostMapping("/{id}:test-connection")
   public ApiResponse<Boolean> testDataSourceConnection(@PathVariable String id) {
     TestDataSourceConnectionCommand command =

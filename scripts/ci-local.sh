@@ -9,7 +9,7 @@ bash scripts/scan-secrets.sh
 
 echo "==> spotless"
 mvn com.diffplug.spotless:spotless-maven-plugin:2.43.0:check --batch-mode \
-  -pl bone-framework,bone-platform,bone-sdk,\
+  -pl bone-framework,bone-platform,\
 bone-engine/bone-metadata-sdk,bone-engine/bone-metadata-server,\
 bone-engine/bone-metadata-engine/bone-metadata-engine-domain,bone-engine/bone-metadata-engine/bone-metadata-engine-ports,\
 bone-engine/bone-metadata-engine/bone-metadata-engine-runtime,bone-engine/bone-metadata-engine/bone-metadata-engine-starter,\

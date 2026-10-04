@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { createApiClient, setQiankunToken } from '@bone/shared-services';
+import { normalizeTotal } from '@bone/shared-utils';
 import type {
   ApiResponse,
   PageResult,
+  NormalizedPageResult,
   PageResultIamCompat,
   MetaEntity,
   MetaField,
@@ -39,13 +41,26 @@ export function errorMessage(res: ApiResponse<unknown>): string {
 const META = '/api/v1/metadata';
 const RUNTIME = '/api/v1/runtime';
 
-/** 兼容 catalog（list）与 engine 原始分页（records） */
-export function normalizePage<T>(raw: PageResult<T> | PageResultIamCompat<T>): PageResult<T> {
+/**
+ * 兼容 catalog（list）与engine 原始分页（records）。
+ *
+ * 返回 `NormalizedPageResult` 而非 `PageResult`：`total` 在本函数内已归一为
+ * `number`，故对外承诺 number 类型，调用方可直接喂给 `useState<number>` / `Math.ceil`。
+ */
+export function normalizePage<T>(
+  raw: PageResult<T> | PageResultIamCompat<T>,
+): NormalizedPageResult<T> {
   const compat = raw as PageResultIamCompat<T>;
   const legacy = raw as unknown as { page?: number; size?: number };
   return {
-    list: raw.list ?? compat.records ?? [],
-    total: raw.total,
+    // 权威当前页字段是 records；list 为后端 @Deprecated 兼容 getter 的产物（规范 §5.3）。
+    // 兼容读取 list 是为过渡期双键并存，@JsonIgnore 落地后可去掉。
+    records: raw.records ?? compat.records ?? [],
+    // 后端 total 是 java.lang.Long，运行期被全局 Long→String 序列化器输出为字符串
+    // （见 doc/architecture/Bone-API-规范.md §5.3）。必须归一，否则调用方
+    // `Math.ceil(total / pageSize)` 会抛 TypeError。此处 Number() 安全：
+    // total 是行数计数而非雪花 ID。
+    total: normalizeTotal(raw.total),
     pageNum: raw.pageNum ?? legacy.page ?? 1,
     pageSize: raw.pageSize ?? legacy.size ?? 10,
   };
@@ -83,10 +98,10 @@ export const metadataEntityApi = {
     api.post<never, ApiResponse<void>>(`${META}/entities/${id}/publish`),
 
   // 批量发布：后端 MetaEntityCatalogController.batchPublish 已实现（部分成功语义）
-  batchPublish: (ids: number[]) =>
+  batchPublish: (ids: string[]) =>
     api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-publish`, { ids }),
 
-  batchDelete: (ids: number[]) =>
+  batchDelete: (ids: string[]) =>
     api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-delete`, { ids }),
 
   delete: (id: SnowflakeId) =>

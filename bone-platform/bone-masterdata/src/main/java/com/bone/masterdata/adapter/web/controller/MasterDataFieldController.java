@@ -11,6 +11,7 @@ import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,6 +22,9 @@ public class MasterDataFieldController {
   private final FieldApplicationService fieldService;
   private final MasterDataFieldWebConverter converter;
 
+  // 字段是实体的子资源，无独立权限码（权限目录也未登记 masterdata:fields:*），
+  // 随其宿主实体一同授权。
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping("/{entityId}/fields")
   public ApiResponse<Long> create(
       @PathVariable Long entityId, @Valid @RequestBody CreateMasterDataFieldReq req) {

@@ -5,29 +5,37 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; RESET='\033[0m'
 
 echo "🚀 [CI GATE] 全量门禁审查..."
 
-echo "🔍 [1/7] ORM 依赖阻断..."
-if grep -rnE "<artifactId>(mybatis|mybatis-plus|spring-boot-starter-data-jpa|hibernate-core)" \
-    --include="pom.xml" --exclude-dir={.git,target} .; then
+# 全仓文本扫描统一用 `git grep --untracked`，不用 `grep -r`。
+# 原因（2026-09-17 实测，本机 I/O 每文件约 26ms）：`grep -r` 会走进
+# bone-frontend/node_modules（单目录 643MB / 十万级文件），整树遍历实测 321s，
+# 而 CPU 仅 2.6s —— 几乎全部耗在 I/O 等待上。`git grep` 扫同样内容只要 0.37s。
+# 它只扫「已跟踪 + 未被忽略的未跟踪」文件，不会误入 node_modules/target/dist。
+# 详见 scripts/check.sh [3/15] 与 [5/15] 的同源注释。
+
+echo "🔍 [1/16] ORM 依赖阻断..."
+if git grep --untracked -nE "<artifactId>(mybatis|mybatis-plus|spring-boot-starter-data-jpa|hibernate-core)" \
+    -- '*pom.xml'; then
   echo -e "${RED}❌ 非法 ORM 依赖！${RESET}"; exit 1
 fi
 
-echo "🔍 [2/7] ArchUnit 全量架构检查..."
+echo "🔍 [2/16] ArchUnit 全量架构检查..."
 mvn test -Dtest='*ArchitectureTest' --batch-mode -q
 
-echo "🔍 [3/7] Gitleaks 密钥扫描..."
+echo "🔍 [3/16] Gitleaks 密钥扫描..."
 gitleaks detect --source . --config .gitleaks.toml --verbose
 
-echo "🔍 [4/7] JaCoCo 覆盖率检查（仅对配置 jacoco 插件的模块生效）..."
+echo "🔍 [4/16] JaCoCo 覆盖率检查（仅对配置 jacoco 插件的模块生效）..."
 # 现状：jacoco 门禁仅 bone-metadata-sdk（80% 行覆盖）配置；其余应用模块未接入，见 Bone-测试策略.md
 # 目标口径：Bone-DDD G-1.7 的 HC-005（当前父 POM 门槛 10% 指令覆盖）；全模块铺开后收紧本步
 mvn jacoco:check --batch-mode -q
 
-echo "🔍 [5/7] OpenAPI 契约一致性..."
-echo "  （由 ci.yml 的 openapi-diff job 执行 oasdiff）"
+# 原[5/12]「OpenAPI 契约一致性」与 [6/12]「禁用 ORM import」曾是**装饰性步骤**：
+# 只有 echo、没有任何命令，看着像在跑检查，实际什么都不做。这类步骤比没有步骤更糟——
+# 它让人以为该维度已被覆盖。原 [6/12] 想做的事实际由原 [10/12] 末尾的 import 扫描兜着，
+# 已合并到新的 [7/16]。OpenAPI 契约已由 scripts/check-openapi-contract.py 真正接管，
+# 列为 [13/16]。
 
-echo "🔍 [6/7] 禁用 ORM import 全量扫描..."
-
-echo "🔍 [7/9] DDL 检查（表清单同步 + HC-008 必备列）..."
+echo "🔍 [5/16] DDL 检查（表清单同步 + HC-008 必备列）..."
 python3 scripts/check-ddl-doc-sync.py || {
   echo -e "${RED}❌ 表清单与 bone-init.sql 不一致（新增/删除表未同步文档）！${RESET}"
   exit 1
@@ -37,11 +45,17 @@ python3 scripts/check-ddl-required-columns.py --check || {
   exit 1
 }
 
-echo "🔍 [8/9] 租户表 ↔ 实体声明（Bone-多租户规范 §4：DDL 有 tenant_id ≠ SDK 认租户表）..."
+echo "🔍 [6/16] 租户表 ↔ 实体声明（Bone-多租户规范 §4：DDL 有 tenant_id ≠ SDK 认租户表）..."
 python3 scripts/check-tenant-entity-declaration.py --check || {
   echo -e "${RED}❌ 新增租户表未在实体上声明 tenantId（该实体查询不会注入租户条件）！${RESET}"
   exit 1
 }
+
+echo "🔍 [7/16] 禁用 ORM import 全量扫描（原 [6/12] 空壳 + 原 [10/12] 末尾合并至此）..."
+if git grep --untracked -nE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence|import\s+org\.hibernate|import\s+com\.baomidou" \
+    -- '*.java'; then
+  echo -e "${RED}❌ 残留禁用 ORM import！${RESET}"; exit 1
+fi
 
 echo "🔍 租户离场清除覆盖（R8①：含 tenant_id 且非平台/全局/样板表必须登记离场清退清单）..."
 python3 scripts/check-tenant-deletion-coverage.py --check || {
@@ -49,26 +63,86 @@ python3 scripts/check-tenant-deletion-coverage.py --check || {
   exit 1
 }
 
-echo "🔍 [9/9] application 层构件白名单（E-10.2 / E-13.2 / ADR-0035：只放 ApplicationService + 契约端口 + support）..."
+echo "🔍 [8/16] application 层构件白名单（E-10.2 / E-13.2 / ADR-0035：只放 ApplicationService + 契约端口 + support）..."
 python3 scripts/check-application-constructs.py --check || {
   echo -e "${RED}❌ application 层出现白名单外的构件（第二类 service / 角色包 / ApplicationService 放错包）！${RESET}"
   exit 1
 }
 
-echo "🔍 [10/10] domain 分组布局（ADR-0036 D5：聚合必须包在 domain/model/{聚合}/ 下）..."
+echo "🔍 [9/16] domain 分组布局（ADR-0036 D5：聚合必须包在 domain/model/{聚合}/ 下）..."
 python3 scripts/check-domain-model-layout.py || {
   echo -e "${RED}❌ domain 分组布局违规（两套分组并存 / model 下平铺 / 空聚合包 / 根下疑似扁平聚合）！${RESET}"
   exit 1
 }
-if grep -rnE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence|import\s+org\.hibernate|import\s+com\.baomidou" \
-    --include="*.java" --exclude-dir={.git,target,node_modules} .; then
-  echo -e "${RED}❌ 残留禁用 ORM import！${RESET}"; exit 1
-fi
 
 echo "🔍 HC-006 绕过 SDK 的 JDBC/MyBatis 扫描..."
 python3 scripts/check-sdk-persistence.py --check || {
   echo -e "${RED}❌ 新增文件直接使用 JDBC / MyBatis 会话（须走 bone-metadata-sdk）！${RESET}"
   exit 1
 }
+
+echo "🔍 [10/16] 分页入参命名族（Bone-API-规范 §5.1：新增端点只允许 page/size）..."
+# 与 pre-commit 的 scripts/check.sh 是同一个门禁，但必须在 CI 也跑：
+# §5.2 路线 ② 的核心是「存量不扩散」，若只挂在 pre-commit，
+# 绕过本地提交路径（CI 直推 / 协作者未跑 check.sh）就等于没设防。
+# 只阻断第三套命名（pageIndex/perPage）与族内混搭；22 个 pageNum 存量类不在此门禁射程内。
+python3 scripts/check-paging-param-names.py || {
+  echo -e "${RED}❌ 分页入参出现白名单外的第三套命名或族内混搭（Bone-API-规范 §5.1）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [11/16] 对外发布模块契约面（空壳 SDK 冒充 + 有业务类却零测试）..."
+python3 scripts/check-sdk-contract-surface.py --check || {
+  echo -e "${RED}❌ 对外发布模块契约面违规（详见上方处置建议）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [12/16] 软删声明（@Deleted / @PhysicalDelete 显式化）..."
+# 骨核判定聚合可否软删的依据是**实体内有无带 @Deleted 的字段**，与 DDL 有无 deleted 列无关。
+# 缺声明时`deleteById` 执行 `DELETE FROM`，行永久消失而调用方拿到 HTTP 200。
+python3 scripts/check-soft-delete-declaration.py || {
+  echo -e "${RED}❌ 删除语义未显式声明（新增缺口将导致 deleteById 物理删行且调用方无感）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [13/16] OpenAPI 契约结构（可解析 / 认证声明 / \$ref）..."
+# 原 [5/12] 只是 echo 一行「由 ci.yml 的 openapi-diff job 执行」——装饰性步骤。
+# 离线结构门禁能真正抓到「YAML 解析不了」「缺 securitySchemes」这类会让 SDK 生成器拿不到契约的缺陷。
+python3 scripts/check-openapi-contract.py || {
+  echo -e "${RED}❌ OpenAPI 契约违规（无法解析 / 缺 securitySchemes / 缺顶层 security / \$ref 断裂）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [14/16] 配置键契约（@Value 键名须在 yml 有定义）..."
+# --strict 把 WARN 也计为失败：WARN = 键不在任何 yml 定义但给了默认值，实践中几乎都是笔误。
+python3 scripts/ci/check-config-key-contract.py --strict || {
+  echo -e "${RED}❌ 配置键名漂移（@Value 的键未在任何 yml 定义，Spring 会静默回落默认值）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [15/16] 文档类名漂移（doc/ 引用的类须真实存在）..."
+python3 scripts/check-doc-code-symbols.py || {
+  echo -e "${RED}❌ 文档引用了不存在的 Java 类（应修文档或登记基线并说明理由）！${RESET}"
+  exit 1
+}
+
+echo "🔍 [16/16] 前端响应解包 + 分页 total 归一 + ID 类型契约..."
+# 这三项只在前端代码存在时有意义；纯后端仓库/裁剪检出下跳过。
+if [ -d bone-frontend/apps ]; then
+  python3 scripts/check-frontend-response-contract.py || {
+    echo -e "${RED}❌ 前端响应解包契约违规（res.status 当 HTTP 状态用 / 对已解包 body 再取 .data）！${RESET}"
+    exit 1
+  }
+  python3 scripts/check-paging-total-normalize.py || {
+    echo -e "${RED}❌ 分页 total 未归一（运行期是字符串，算术前须 normalizeTotal）！${RESET}"
+    exit 1
+  }
+  python3 scripts/frontend/check-frontend-id-types.py --check || {
+    echo -e "${RED}❌ 前端 ID 字段声明为 number（后端下发字符串，雪花 ID 会被静默截断）！${RESET}"
+    exit 1
+  }
+else
+  echo "  跳过（未找到 bone-frontend/apps）"
+fi
 
 echo -e "${GREEN}✅ CI 全量门禁通过！${RESET}"

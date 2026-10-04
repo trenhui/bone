@@ -26,33 +26,54 @@ import org.apache.hc.core5.util.Timeout;
 @Slf4j
 public class ExtendHttpComponent extends HttpComponent {
 
+  /**
+   * 默认超时（毫秒）。
+   *
+   * <p>沿用上游 Camel HttpComponent 的 3 分钟默认：仅当路由显式覆盖了超时参数、且值与该默认不同时，才写入
+   * httpClientOptions，避免把默认值噪声传给底层连接管理器。
+   */
+  private static final long DEFAULT_TIMEOUT_MS = 180_000L;
+
   @Override
   protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters)
       throws Exception {
     Map<String, Object> httpClientParameters = new HashMap<>(parameters);
     Map<String, Object> httpClientOptions = new HashMap<>();
+    // Camel 4.18：四个超时字段是 protected long(毫秒)，但参数解析需按 Timeout 对象参与泛型推断，
+    // 故默认值要先 Timeout.ofMilliseconds(字段) 转换；endpoint setter 接收 long，最后再
+    // toMilliseconds() 转回（实现对齐 Camel 4.18 HttpComponent.createEndpoint）。
+    // 不可把这里的 Timeout 改成 Long：httpClientOptions 会被 PropertyBindingSupport bind 到
+    // RequestConfig.Builder，其单参 setter 只接受 Timeout（setConnectTimeout(Timeout) 等），
+    // 若 put Long 则匹配不到 setter，超时配置会被静默丢弃。
     Timeout valConnectionRequestTimeout =
         getAndRemoveParameter(
-            parameters, "connectionRequestTimeout", Timeout.class, connectionRequestTimeout);
-    if (!Timeout.ofMinutes(3L).equals(valConnectionRequestTimeout)) {
+            parameters,
+            "connectionRequestTimeout",
+            Timeout.class,
+            Timeout.ofMilliseconds(connectionRequestTimeout));
+    if (!Timeout.ofMilliseconds(DEFAULT_TIMEOUT_MS).equals(valConnectionRequestTimeout)) {
       httpClientOptions.put("connectionRequestTimeout", valConnectionRequestTimeout);
     }
 
     Timeout valResponseTimeout =
-        getAndRemoveParameter(parameters, "responseTimeout", Timeout.class, responseTimeout);
+        getAndRemoveParameter(
+            parameters, "responseTimeout", Timeout.class, Timeout.ofMilliseconds(responseTimeout));
     if (!Timeout.ofMilliseconds(0L).equals(valResponseTimeout)) {
       httpClientOptions.put("responseTimeout", valResponseTimeout);
     }
 
     Timeout valConnectTimeout =
-        getAndRemoveParameter(parameters, "connectTimeout", Timeout.class, connectTimeout);
-    if (!Timeout.ofMinutes(3L).equals(valConnectTimeout)) {
+        getAndRemoveParameter(
+            parameters, "connectTimeout", Timeout.class, Timeout.ofMilliseconds(connectTimeout));
+    if (!Timeout.ofMilliseconds(DEFAULT_TIMEOUT_MS).equals(valConnectTimeout)) {
       httpClientOptions.put("connectTimeout", valConnectTimeout);
     }
 
     Map<String, Object> httpConnectionOptions = new HashMap<>();
-    Timeout valSoTimeout = getAndRemoveParameter(parameters, "soTimeout", Timeout.class, soTimeout);
-    if (!Timeout.ofMinutes(3L).equals(valSoTimeout)) {
+    Timeout valSoTimeout =
+        getAndRemoveParameter(
+            parameters, "soTimeout", Timeout.class, Timeout.ofMilliseconds(soTimeout));
+    if (!Timeout.ofMilliseconds(DEFAULT_TIMEOUT_MS).equals(valSoTimeout)) {
       httpConnectionOptions.put("soTimeout", valSoTimeout);
     }
 
@@ -110,10 +131,10 @@ public class ExtendHttpComponent extends HttpComponent {
     HttpEndpoint endpoint =
         new ExtendHttpEndpoint(
             endpointUriString, this, clientBuilder, localConnectionManager, configurer);
-    endpoint.setResponseTimeout(valResponseTimeout);
-    endpoint.setSoTimeout(valSoTimeout);
-    endpoint.setConnectTimeout(valConnectTimeout);
-    endpoint.setConnectionRequestTimeout(valConnectionRequestTimeout);
+    endpoint.setResponseTimeout(valResponseTimeout.toMilliseconds());
+    endpoint.setSoTimeout(valSoTimeout.toMilliseconds());
+    endpoint.setConnectTimeout(valConnectTimeout.toMilliseconds());
+    endpoint.setConnectionRequestTimeout(valConnectionRequestTimeout.toMilliseconds());
     endpoint.setCopyHeaders(copyHeaders);
     endpoint.setSkipRequestHeaders(skipRequestHeaders);
     endpoint.setSkipResponseHeaders(skipResponseHeaders);

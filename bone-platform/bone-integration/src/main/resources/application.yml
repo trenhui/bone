@@ -4,6 +4,19 @@ server:
 spring:
   application:
     name: bone-integration
+  cloud:
+    nacos:
+      config:
+        # 本地 Nacos 3.0.3（MySQL+鉴权）：通过 spring.config.import 在启动期拉取共享配置
+        server-addr: ${BONE_NACOS_ADDR:127.0.0.1:8848}
+        username: ${BONE_NACOS_USERNAME:nacos}
+        password: ${BONE_NACOS_PASSWORD:nacos}
+        namespace: ${BONE_NACOS_NAMESPACE:}
+        group: BONE
+        file-extension: yaml
+  config:
+    import:
+      - nacos:bone-common.yaml?group=BONE&refreshEnabled=true
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root

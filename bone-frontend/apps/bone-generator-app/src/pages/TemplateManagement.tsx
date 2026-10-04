@@ -8,7 +8,7 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 interface TemplateItem {
-  id: number;
+  id: string;
   name: string;
   code: string;
   type: string;
@@ -59,7 +59,7 @@ const TemplateManagement: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDeleteTemplate = async (id: number): Promise<void> => {
+  const handleDeleteTemplate = async (id: string): Promise<void> => {
     try {
       await templateApi.delete(id);
       message.success('模板删除成功');
@@ -95,7 +95,7 @@ const TemplateManagement: React.FC = () => {
     }
   };
 
-  const handlePublishTemplate = async (id: number): Promise<void> => {
+  const handlePublishTemplate = async (id: string): Promise<void> => {
     try {
       await templateApi.publish(id);
       message.success('模板发布成功');
@@ -296,8 +296,11 @@ const TemplateManagement: React.FC = () => {
             rules={[{ required: true, message: '请选择模板引擎' }]}
           >
             <Select placeholder="请选择模板引擎">
-              <Option value="freemarker">Freemarker</Option>
-              <Option value="velocity">Velocity</Option>
+              {/* 值必须全大写：与 gen_code_template 种子数据及 DDL 默认值一致。
+                  小写会导致模板按引擎名匹配时查不到（engine 当前尚无调度消费点，
+                  但这是数据卫生，见 bone-init.sql:1347）。 */}
+              <Option value="FREEMARKER">Freemarker</Option>
+              <Option value="VELOCITY">Velocity</Option>
             </Select>
           </Form.Item>
           

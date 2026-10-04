@@ -19,7 +19,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: bone-redis
     ports:
       - "6379:6379"
@@ -36,7 +36,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        MODULE: bone-iam
+        MODULE_PATH: bone-platform/bone-iam
+        ARTIFACT_ID: bone-iam
     container_name: bone-iam
     ports:
       - "8081:8081"
@@ -65,7 +66,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        MODULE: bone-system
+        MODULE_PATH: bone-platform/bone-system
+        ARTIFACT_ID: bone-system
     container_name: bone-system
     ports:
       - "8083:8083"
@@ -89,7 +91,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        MODULE: bone-masterdata
+        MODULE_PATH: bone-platform/bone-masterdata
+        ARTIFACT_ID: bone-masterdata
     container_name: bone-masterdata
     ports:
       - "8084:8080"

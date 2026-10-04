@@ -39,7 +39,7 @@
 | **适用** | `bone-platform/*`、`bone-engine/*` 对外 HTTP API；`bone-frontend` 各微应用；网关与 **Spring Security + JWT** 鉴权配置（平台默认栈；SA-Token **非**默认栈，仅限可选行业包 `bone-business/*`）。 |
 | **真源优先级** | 本规范 > 模块详设 API 章 > 代码实现；偏离须 ADR 或 §13.2「迁移登记」。 |
 | **OpenAPI** | 每服务维护 OpenAPI 3.1；公共 schema 见 §11；CI 做破坏性 diff。 |
-| **实现符合度** | 本规范为**目标态**；`bone-core` 双 `ApiResponse`、`code=0` 成功码等见 §13.2，逐步迁移。 |
+| **实现符合度** | 本规范为**目标态**；`bone-core` 双 `ApiResponse`、`code=0` 成功码、分页入参 `pageNum`/`pageSize` 族等见 §13.2，逐步迁移。 |
 
 ### 1.1 参考标准
 
@@ -296,6 +296,181 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 | **Cursor** | 日志、审计、执行记录、大数据导出 | `cursor`, `limit` | 稳定、抗翻页漂移 |
 
 **强制 cursor 的 resource**：`execution-logs`、`audit/logs`、`integration/executions`、`system/logs`。
+
+### 5.1 入参命名：新增端点只允许 `page`/`size`（Offset 族）
+
+**规定**：所有Offset 分页的新增端点，入参**必须**用 `page`/`size`。
+`pageNum`/`pageSize` **不再是可选项**，存量收敛完成即禁止。
+
+**为什么写死这一条**（2026-10-02 E2E 实测）：Spring 对多余的 query 参数**静默忽略**并回落默认值，
+不报错、不告警。前端传 `pageSize=1` 而后端字段是 `size` 时，请求照样 200，只是 `size` 回显后端默认值 100。
+于是「只拉 1 条」实际拉回 100 条、`pageNum>1` 翻页静默回到第 1 页——
+**弱断言（只看 200）永远测不出这类缺陷**，本轮实测正是如此。
+
+#### 存量现状（2026-10-02 实测，禁止误读为「规范已落地」）
+
+| 命名族 | 对外入参类数 | 状态 |
+|---|---:|---|
+| `page`/`size` | 8 | ✅ 符合本规范 |
+| `pageNum`/`pageSize` | 22 |🟡 存量待收敛（L3，见下） |
+| `cursor`/`limit` | 2 | ✅ 语义不同，不算违规 |
+
+> **统计口径（2026-10-03 复核）**：数字与`scripts/check-paging-param-names.py` 的实测一致，
+> 口径是「**按字段声明归族**」（`private int page` / `private Integer page` /继承 `PageParam`
+> 均计入），**不是**按 `Integer` 单词匹配。
+> 手工核对时若只grep `private Integer page;`，会漏掉用 `int` 声明的类（本轮实测漏了 6 个：
+> `LoadCatalogTablesQuery` / `ModuleListQuery` / `DataSourceListQuery` / `AccountPageQuery` /
+> `TenantPageQuery` / `ApplicationPageQuery`），从而把 8 误算成 2 —— 曾在 AI 侧造成过一次
+> 「规范数字漂移」的误判。以门禁输出为准。
+
+其中 **7 组是「web 层 `PageReq` + application 层 `PageQuery`双层字段重复**，
+靠 MapStruct Assembler 逐字段拷贝转换：
+
+```
+AlertRecord / AlertRule / Config / DictItem / DictType / Log / ScheduleTask
+```
+
+**改字段名的实际成本**：每个端点要同时动**两层类 + Assembler**，
+而非按「query 类个数」线性估算。
+
+#### 机器门禁
+
+```bash
+python3 scripts/check-paging-param-names.py          # 门禁本体（已阻断第三套命名）
+python3 scripts/check-paging-param-names.py --report-only   # 存量清零前只看存量清单
+```
+
+- 🔴 **阻断**：出现白名单外的分页字段名（`pageIndex`/`perPage` 等**第三套命名**）、同一类里跨族字段混搭；
+- 🟡 **警告**：22 个 `pageNum`/`pageSize` 存量类（不阻断，按§5.2 节奏清零）。
+
+**接入状态（2026-10-03 补齐）**：本门禁此前**完全游离于所有门禁之外**（`check.sh` / `ci-check.sh` / `.github/workflows` 均未调用），
+是§5.1「新增端点只允许 `page`/`size`」长期未被机械执行的**根因**。现已接入 `scripts/check.sh` `[7/10]`（pre-commit 阻断，
+覆盖本地提交与 AI 代提交两条路径）与 `scripts/ci-check.sh` `[11/12]`（CI 侧，覆盖绕过本地提交的变更）。
+负向验证已确认：注入 `pageIndex`/`perPage` 的探针类会被判 `FAIL`、退出码 1（两条路径均验过）。
+
+**豁免范围**：`bone-metadata-sdk` 内部的 `FluentQuery.page(int pageNum, int pageSize)`、
+`Criteria.page()` 是 **SDK 公共 API 命名**，不属于对外入参，不受本节约束。
+改SDK 命名会波及全部持久化调用方，是独立议题。
+
+### 5.2 存量收敛路线（路线 ② 已于 2026-10-03 落地并接入 CI；① 保留为独立议题）
+
+两条路线互斥：
+
+| 路线 | 动作 | 成本 | 风险 |
+|---|---|---|---|
+| **① 改后端** | 22 个入参类改名 + Assembler 同步 + 回归全部前端调用方 | 高（双层×22 + 回归） | 漏改任一调用方即静默失效 |
+| **② 改规范 + 门禁** ✅已落地 | 承认两族并存，本节只约束新增端点；用 §5.1 门禁防住第三套 | 低 | 存量继续存在，但**不再扩散** |
+
+**裁定（2026-10-03，用户确认「按最推荐方案执行」→ 采用路线 ②）**：走 ② 止血，① 作为后续独立议题。
+
+**② 的落地要求是「门禁在所有提交路径上生效」，仅此而已是不够的**——
+若门禁只挂在 pre-commit，绕过本地提交路径的变更（CI 直推、协作者未跑 `check.sh`）
+仍能引入第三套命名，等于没设防。故路线 ② 补齐了 CI 侧：
+
+| 执行路径 | 是否调用 `check-paging-param-names.py` | 登记日期 |
+|---|---|---|
+| `scripts/check.sh` `[7/10]`（pre-commit，本地与 AI 代提交） | ✅ | 2026-10-03 |
+| `scripts/ci-check.sh` `[11/12]`（CI 全量门禁） | ✅ **本轮补齐** | 2026-10-03 |
+| `.github/workflows/ci.yml` | 经 `ci-check.sh` 间接覆盖 | — |
+
+负向验证已确认：注入 `pageIndex` 的探针类在两条路径上均被判 `FAIL`、退出码 1；
+清理后回到 `PASS`。
+
+若后续选①，务必以本节门禁 + `scripts/e2e/chains.py` 的分页断言做回归护栏。
+
+### 5.3 响应字段：`records` 是唯一权威当前页字段
+
+§3.3 已规定 `records` 为权威字段、`list` 为待淘汰过渡字段。**实测补充（2026-10-02）**：
+
+`bone-core`的 `PageResult` 有 3 个 `@Deprecated` 废弃 getter（`getList()` / `getPageNum()` / `getPageSize()`）。
+**Jackson 默认不因 `@Deprecated` 忽略它们**，故序列化时两套都吐。实测
+`GET /api/v1/iam/audit/logs` 响应键为：
+
+```
+['empty','hasNext','hasPrevious','list','nextCursor','offset','page',
+ 'pageNum','pageSize','pages','recordCount','records','size','total']
+```
+
+14 个键里 `list`/`records`、`page`/`pageNum`、`size`/`pageSize` 三组语义重复。
+
+**`total` 为字符串的根因（2026-10-03 定位，非配置漂移）**：
+
+`PageResult.total` 声明为 `private Long total;`（`com.bone.core.model.PageResult:19`），而
+`bone-metadata-sdk` 的 `MetadataAutoConfiguration.boneLongToStringCustomizer()` 注册了
+**全平台兜底**的 `serializerByType(Long.class, ToStringSerializer.instance)`
+（另含 `Long.TYPE`）。该定制器是**为保护雪花 ID 精度**而设（18~19 位 long 超出JS Number 安全上限
+2^53，以 JSON number 返回会静默截断末位），所有应用都 `@Import` 本配置，因此成为唯一落点。
+
+⇒ **`Long` 字段一律序列化为字符串**，`Integer` 字段不受影响。实测对照：
+
+| 字段 | Java 类型 | 运行时 JSON 类型 |
+|---|---|---|
+| `total` | `Long` | **string**（`'1055'`） |
+| `page` / `size` / `pageNum` / `pageSize` / `pages` | `Integer` | number |
+| `hasNext` / `hasPrevious` / `empty` | `Boolean` | boolean |
+
+**架构裁定（2026-10-03）：`total` 后端保持 `java.lang.Long`，不动全局序列化器。**
+改它会连带削弱雪花 ID 的精度保护（`Long` 一旦放开，18~19 位 ID 立刻出现静默截断），
+且属跨全平台的行为变更，收益（让一个计数变成 JSON number）远小于风险。
+
+**前端约定**：
+
+1. `shared-types` 的 `PageResult.total` 声明为 `string | number`，如实反映运行期。
+2. 消费点须在**收敛点**用 `normalizeTotal()`（`@bone/shared-utils` 的 `paging.ts`）归一为
+   `number`，不得把字符串 `total` 送入 `useState<number>` / 算术 / 比较。
+3. 归一后的类型用 `NormalizedPageResult`（`total: number`）表达，让「已归一」在类型上可见。
+4. **`Number()` 对分页 `total` 安全，对雪花 `id` 绝对禁止** —— 两者不可混同处理：
+   `total` 是行数计数（远小于 2^53），`id` 是标识符（18~19 位超上限）。
+5. 门禁：`scripts/check-paging-total-normalize.py`（`check.sh` [9/9]）扫描 R3-1~R3-4 四类
+   漏点（setState / number 字段赋值 / antd `value` / 参与算术）。TypeScript 抓不到
+   `<Statistic value={total}>` 与中间变量两类，需依赖该门禁。
+
+`records`/`page`/`size` 为权威字段；消费 `list`/`pageNum`/`pageSize` 的代码属技术债，
+在 `@JsonIgnore` 收敛（全量影响 8 个子应用与后端契约）落地前不得新增使用点。
+
+#### `list` / `pageNum` / `pageSize` 已收敛为 `@JsonIgnore`（2026-10-03）
+
+**处置**：给 `PageResult` 的 3 个废弃 getter 加 `@JsonIgnore`，响应不再输出 `list`/`pageNum`/`pageSize`，
+只保留权威的 `records`/`page`/`size`/`total`/`pages`/`hasNext`/`hasPrevious`/`nextCursor`。
+
+**顺序不可颠倒**（这是本节最容易被后人踩空的地方）：
+
+| 步骤 | 内容 | 若跳过的后果 |
+|---|---|---|
+| ① 先改前端 | 全部消费点从 `data.list` 改为 `data.records` | 直接做② ⇒读 `list` 的页面**白屏**，且 TypeScript 不报错（`shared-types` 早已不声明 `list`，但存量编译产物仍在） |
+| ② 再动后端 | 加 `@JsonIgnore` | — |
+| ③ 最后接门禁 | `scripts/check-paging-current-field.py`（`check.sh` `[14/17]`） | 前端回退读 `list` 无人拦截，等于白做 |
+
+**保留方法本身、不删**：`getList()`/`getPageNum()`/`getPageSize()` 是 `PageResult` 公共 API，
+删掉破坏二进制兼容（`map()` 等内部方法依赖），SDK/第三方亦可能调用。`@JsonIgnore` 只切断序列化出口。
+
+**类型侧同步**：`shared-types` 的 `PageResult` 已把 `records` 设为唯一必填字段
+（`list` 从类型上消失）；`NormalizedPageResult` 同步改名；`PageResultIamCompat.list`
+保留为 `@deprecated` 过渡读取。
+
+**豁免**：`packages/shared-services/src/configService.ts` 自声明了
+`ApiResponse<{ list: SystemConfig[] }>` —— 该端点的响应契约由前端自己定义，不经 `bone-core PageResult`，
+故 `list` 是其唯一契约，门禁按`ApiResponse<{ list:` 判据整文件豁免。
+
+**⚠️ 不要把 `@JsonAlias` 当成删除废弃 getter 的安全网（2026-10-03 实测）**：
+
+`PageResult` 的 `records`/`page`/`size` 字段上挂着 `@JsonAlias("list")`/`("pageNum")`/`("pageSize")`，
+容易让人以为「废弃 getter 删掉后，入参仍能用旧键」。**实测该别名从未生效过**：
+
+- `PageResult` 只有私有全参构造，无无参构造也无 `@JsonCreator` ⇒ Jackson **无法反序列化本类**，
+  实跑抛 `InvalidDefinitionException: no Creators, like default constructor, exist`
+  （独立 `javac` + jackson-databind 2.20.0 验证，非Maven 环境问题；对照实验已排除 classpath 因素）。
+- 全仓无任何反序列化入口：无 `@RequestBody PageResult`、无 `readValue(..., PageResult.class)`。
+  `PageResult` 是**纯出站响应模型**。
+- 因此「响应里有 `list` 键」的原因与 `@JsonAlias` **无关**，纯粹是 `@Deprecated` 的 `getList()`
+  被 Jackson 照常序列化（Jackson **默认不因 `@Deprecated` 忽略 getter**）。
+
+现状由 `PageResultTest.classIsNotDeserializableSoJsonAliasIsInert` 锁住：若将来给本类加无参构造器或
+`@JsonCreator`，该测试会失败并提示「别名开始真正生效，需重新评估是否要对入参侧做白名单」。
+
+**仍未收敛**：`getOffset()` / `getRecordCount()` 两个派生计算属性仍会被Jackson 序列化
+（`offset`/`recordCount` 键）。二者全仓零消费点，但它们不是 `@Deprecated`，
+属便捷方法而非兼容层，删/留属独立议题，本轮不动。
 
 ---
 
@@ -573,6 +748,8 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 过渡 | 成功 `code=0` | `code=200` | 2026-09-01 |
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
+| 过渡 | 分页入参 `pageNum`/`pageSize`（**22 个入参类**） | `page`/`size`（见 §5.1，含 7 组 web/application 双层字段重复） | **待架构师裁定** |
+| 过渡 | `PageResult` 额外吐 `list`/`pageNum`/`pageSize`（`@Deprecated` getter 未被 Jackson 忽略） | 仅 `records`/`page`/`size`（见 §5.3，全量影响 8 个子应用契约） | **待架构师裁定** |
 
 > **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**模式 B** 动态数据 `/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布）。**禁止** catalog 与扩展字段 `fields:*` 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
 

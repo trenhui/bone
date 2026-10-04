@@ -3,7 +3,7 @@
 
 检查三类最廉价的漂移——这正是 v5.0.2 复核发现 P0-1/P0-2 的病根：
 
-1. 文档规范正文中引用bone-core / SDK 不存在的 API 符号
+1. 文档规范正文中引用bone-core / metadata-sdk 不存在的 API 符号
    （如历史案例 publish(aggregate.releaseDomainEvents())）；
 2. 文档残留 v4.x 历史编号被当作现行条文引用
    （如 E-5.3.1 出现在非兼容区段落作为当前规范）。
@@ -13,7 +13,7 @@
 
 设计取向：
 - 只对单一规范正文 doc/architecture/Bone-DDD-最终实践方案.md 生效；
-- API 符号真源从 bone-core 与 bone-sdk 源码自动提取 public 成员，
+- API 符号真源从 bone-core 与 bone-metadata-sdk 源码自动提取 public 成员，
   文档里出现「不存在符号 + 调用形态」才告警，注释/术语命中不告警；
 - 默认 warning 模式：有 --strict 才退出非零，便于先挂 CI 观察。
 """
@@ -33,11 +33,11 @@ DOC_FILES = [
     REPO / "doc/architecture/Bone-DDD-最终实践方案.md",
 ]
 
-# 符号真源根目录：bone-core + 客户端 SDK + metadata-sdk（Repository / 分页等持久化 API 的真源，
+# 符号真源根目录：bone-core + metadata-sdk（Repository / 分页等持久化 API 的真源，
 # 文档大量示例调用 repository.xxx(...)，不纳入此真源则无法校验）
+# 2026-10-03：bone-sdk 已从构建中移除（曾为空壳占位），不再是符号真源。
 CODE_BASES = (
     "bone-framework/bone-core",
-    "bone-sdk",
     "bone-engine/bone-metadata-sdk",
 )
 

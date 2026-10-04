@@ -29,20 +29,22 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import type { MasterDataEntity, QualityCheck } from '../types';
+import type { QualityCheck } from '../types';
 import {
   dataQualityRuleApi,
   driftApi,
   feedbackApi,
   governanceRoleApi,
-  masterDataEntityApi,
   masterDataFieldApi,
   masterDataRecordApi,
   qualityCheckApi,
   qualityIssueApi,
   subscriptionApi,
 } from '../services/api';
+import { useEntityScope } from '../context/EntityScopeContext';
+import EntityScopeSelect from '../components/EntityScopeSelect';
 import { useMessage } from '../App';
+import { normalizeTotal } from '@bone/shared-utils';
 
 const driftTypeLabel: Record<string, string> = {
   FIELD_ADDED: '字段新增',
@@ -77,8 +79,8 @@ const FLOW_STEPS = [
 const DomainWorkbench: React.FC = () => {
   const message = useMessage();
   const navigate = useNavigate();
-  const [entities, setEntities] = useState<MasterDataEntity[]>([]);
-  const [entityId, setEntityId] = useState<number | undefined>();
+  // 模型（域）选择已提升为全局作用域（EntityScopeContext），跨页面共享
+  const { entityId, currentEntity } = useEntityScope();
   const [loading, setLoading] = useState(false);
 
   const [recordTotal, setRecordTotal] = useState(0);
@@ -94,13 +96,7 @@ const DomainWorkbench: React.FC = () => {
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleForm] = Form.useForm();
 
-  useEffect(() => {
-    void masterDataEntityApi.page({ pageNum: 1, pageSize: 100 }).then((res) => {
-      if (res.code === 200) setEntities(res.data.list);
-    });
-  }, []);
-
-  const loadDomain = useCallback(async (eid: number) => {
+  const loadDomain = useCallback(async (eid: string) => {
     setLoading(true);
     try {
       const [rec, pub, fld, chk, iss, cnt, sub, role, drf, fb] = await Promise.all([
@@ -115,8 +111,8 @@ const DomainWorkbench: React.FC = () => {
         driftApi.byEntity(eid),
         feedbackApi.byEntity(eid)
       ]);
-      setRecordTotal(rec.data?.total ?? 0);
-      setPublishedTotal(pub.data?.total ?? 0);
+      setRecordTotal(normalizeTotal(rec.data?.total));
+      setPublishedTotal(normalizeTotal(pub.data?.total));
       setFields(fld.data ?? []);
       setChecks(chk.data ?? []);
       setIssues(iss.data ?? []);
@@ -133,11 +129,6 @@ const DomainWorkbench: React.FC = () => {
   useEffect(() => {
     if (entityId) void loadDomain(entityId);
   }, [entityId, loadDomain]);
-
-  const currentEntity = useMemo(
-    () => entities.find((e) => e.id === entityId),
-    [entities, entityId]
-  );
 
   const latestCheck = useMemo(() => {
     const done = checks.filter((c) => c.status === 'COMPLETED' && (c.totalRecords ?? 0) > 0);
@@ -464,18 +455,7 @@ const DomainWorkbench: React.FC = () => {
       {/* 域选择 + 全局动作 */}
       <Card style={{ marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
         <Space size="middle" wrap>
-          <Select
-            showSearch
-            optionFilterProp="label"
-            placeholder="选择主数据域（模型）"
-            style={{ width: 320 }}
-            value={entityId}
-            onChange={(v) => setEntityId(v)}
-            options={entities.map((e) => ({
-              value: e.id,
-              label: `#${e.id} ${e.name}${e.status === 'PUBLISHED' ? '（已发布）' : '（草稿）'}`
-            }))}
-          />
+          <EntityScopeSelect width={320} />
           {currentEntity && <Tag color={currentEntity.status === 'PUBLISHED' ? 'green' : 'blue'}>{currentEntity.status}</Tag>}
           <Button icon={<RocketOutlined />} disabled={!entityId} onClick={() => void handleRunCheck()}>
             执行质检

@@ -102,6 +102,7 @@ public final class MasterDataErrorCodes {
   // 治理角色（G3）
   public static final String STEWARD_DUPLICATE = "MD_STEWARD_DUPLICATE";
   public static final String STEWARD_ROLE_INVALID = "MD_STEWARD_ROLE_INVALID";
+  public static final String STEWARD_ASSIGNMENT_NOT_FOUND = "MD_STEWARD_ASSIGNMENT_NOT_FOUND";
 
   private MasterDataErrorCodes() {}
 }

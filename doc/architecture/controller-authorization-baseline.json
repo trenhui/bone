@@ -1,0 +1,18 @@
+{
+  "_说明": "控制器写端点缺 @PreAuthorize 的存量基线。门禁只拦新增与基线外存量；修复后应从本文件移除对应条目（只可收缩，不允许改为 resolved）。键为短键 `文件名#METHOD:路径`（不含仓库相对目录，便于跨目录搬迁）。豁免分两类，唯一真源在 check-controller-authorization.py 的 EXEMPT（类级）/ EXEMPT_METHODS（方法级），逐条带理由。",
+  "exempt": {
+    "JwksController.java": "JWKS 是 OIDC/OAuth2 公开元数据端点，任何方都需无认证读取（RFC 8414）",
+    "AuthController.java": "认证端点本身（login/refresh/logout）—— 授权发生在这一步，再要求 @PreAuthorize 会形成循环依赖",
+    "E2eEntity1202624423478541Controller.java": "e2e 专用 fixture 端点，不在生产路由注册表内",
+    "ExtensionE2eController.java": "e2e 专用端点，同上",
+    "NotificationController.java": "站内信写端点的授权依据是 JWT 主体归属（服务层强制），非权限码；挂码反而允许跨用户读取"
+  },
+  "exempt_methods": {
+    "ExtensionManagementController.java#POST:": "数据面执行日志上报：进程身份 + SecurityConfig 显式permitAll（非终端用户 JWT 可表达的授权），边界在内网/网关层",
+    "MfaController.java#POST:/enroll": "能力未上线，恒返回 501，无状态变更，不存在可授权资源",
+    "MfaController.java#POST:/verify": "能力未上线，恒返回 501，无状态变更，不存在可授权资源",
+    "MeController.java#PUT:": "自助端点：主体取自 JWT（CurrentPrincipalPort），accountId 不可由入参指定；挂码会把「改自己的资料」变成需额外授权",
+    "MeController.java#POST:/change-password": "同上：主体取自 JWT 的账号自助改密（旧密码校验在服务层）"
+  },
+  "entries": {}
+}

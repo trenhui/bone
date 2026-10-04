@@ -3,7 +3,7 @@
  * 本地领域类型已上提至 packages/shared-types/src/metadata.ts
  */
 export * from '@bone/shared-types';
-export type { ApiResponse, PageResult } from '@bone/shared-types';
+export type { ApiResponse, PageResult, NormalizedPageResult } from '@bone/shared-types';
 export type EntityStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 import type { MetaField } from '@bone/shared-types';
@@ -12,7 +12,7 @@ import type { MetaField } from '@bone/shared-types';
 
 /** 平台模型模板（G3/ADR-0038，tenant_id=0 平台资产，租户只读） */
 export interface MetaTemplate {
-  id: number;
+  id: string;
   code: string;
   name: string;
   domain?: string;
@@ -41,13 +41,13 @@ export interface EntityValidationIssue {
   level: 'ERROR' | 'WARNING' | 'INFO';
   code: string;
   message: string;
-  fieldId?: number | null;
+  fieldId?: string | null;
   fieldName?: string | null;
 }
 
 /** 发布摘要预览（摘要级 dry-run，先行于 ADR-0039 R1 发布包） */
 export interface PublishPreview {
-  entityId: number;
+  entityId: string;
   entityCode: string;
   status: number;
   deliveryMode: number;
@@ -74,7 +74,7 @@ export interface CopyEntityReq {
   displayName?: string;
   description?: string;
   /** ⚠ 雪花 ID 以字符串透传，禁止 Number()（2^53 截断） */
-  targetModuleId?: number | string;
+  targetModuleId?: string | string;
 }
 
 /**
@@ -95,7 +95,7 @@ export interface ImportFromTableReq {
 }
 
 export interface ImportMetaEntityResult {
-  entityId: number | string | null;
+  entityId: string | string | null;
   entityCode: string;
   tableName: string;
   importedFields: number;
@@ -111,7 +111,7 @@ export interface InstantiateTemplateReq {
   description?: string;
   tableName: string;
   /** ⚠ 雪花 ID 以字符串透传，禁止 Number()（2^53 截断） */
-  moduleId?: number | string;
+  moduleId?: string | string;
   icon?: string;
   deliveryMode?: number;
 }

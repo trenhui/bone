@@ -140,7 +140,7 @@ const DictManagement: React.FC = () => {
         category: typeCategory,
         pageSize: 500,
       });
-      const list = res.data?.list ?? [];
+      const list = res.data?.records ?? [];
       setTypes(list);
       setSelectedType((cur) => (cur ? list.find((tt) => tt.code === cur.code) ?? cur : list[0] ?? null));
     } catch {
@@ -186,7 +186,7 @@ const DictManagement: React.FC = () => {
           status: onlyEnabled ? 1 : undefined,
           pageSize: 500,
         });
-        raw = res.data?.list ?? [];
+        raw = res.data?.records ?? [];
       }
       setItems(filterTree(raw));
     } catch {

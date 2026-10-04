@@ -41,7 +41,7 @@ const TemplateWizard: React.FC = () => {
 
   useEffect(() => {
     appApi.listMine({ page: 1, size: 50 }).then((res) => {
-      if (res.code === 200) setApps(res.data.list);
+      if (res.code === 200) setApps(res.data.records);
     });
     metadataTemplateApi.list().then((res) => {
       if (res.code === 200) setTemplates(res.data.filter((t) => t.status === 1));
@@ -50,8 +50,8 @@ const TemplateWizard: React.FC = () => {
 
   useEffect(() => {
     if (!appId) { setModules([]); return; }
-    moduleApi.listByApp(appId, { pageNum: 1, pageSize: 100 }).then((res) => {
-      if (res.code === 200) setModules(res.data.list);
+    moduleApi.listByApp(appId, { page: 1, size: 100 }).then((res) => {
+      if (res.code === 200) setModules(res.data.records);
     });
   }, [appId]);
 

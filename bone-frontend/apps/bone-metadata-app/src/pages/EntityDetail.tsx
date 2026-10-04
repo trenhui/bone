@@ -171,7 +171,7 @@ const EntityDetail: React.FC = () => {
       const res = await metadataFieldApi.page(id!, { pageNum: 1, pageSize: 200 });
       if (res.code === 200) {
         // 按 sortOrder 排序
-        const sorted = (res.data.list || []).sort(
+        const sorted = (res.data.records || []).sort(
           (a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999),
         );
         setFields(sorted);
@@ -187,7 +187,7 @@ const EntityDetail: React.FC = () => {
 
   useEffect(() => {
     metadataEntityApi.page({ pageNum: 1, pageSize: 200 }).then((res) => {
-      if (res.code === 200) setAllEntities(res.data.list);
+      if (res.code === 200) setAllEntities(res.data.records);
     });
   }, []);
 
@@ -201,8 +201,8 @@ const EntityDetail: React.FC = () => {
         metadataRelationApi.page({ pageNum: 1, pageSize: 200, targetEntityId: id! }),
       ]);
       const merged = new Map<number, MetaRelation>();
-      [...(asSource.code === 200 ? asSource.data.list : []),
-       ...(asTarget.code === 200 ? asTarget.data.list : [])].forEach((r) => merged.set(r.id, r));
+      [...(asSource.code === 200 ? asSource.data.records : []),
+       ...(asTarget.code === 200 ? asTarget.data.records : [])].forEach((r) => merged.set(r.id, r));
       setRelations([...merged.values()]);
     } catch {
       message.error('加载关系失败');
@@ -305,7 +305,7 @@ const EntityDetail: React.FC = () => {
     }
   };
 
-  const handleRelationDelete = async (relId: number) => {
+  const handleRelationDelete = async (relId: string) => {
     const res = await metadataRelationApi.delete(relId);
     if (res.code === 200) { message.success('已删除'); loadRelations(); }
     else message.error(res.message);
@@ -449,7 +449,7 @@ const EntityDetail: React.FC = () => {
   };
 
   // 删除字段
-  const handleDeleteField = async (fieldId: number) => {
+  const handleDeleteField = async (fieldId: string) => {
     if (!id) return;
     const res = await metadataFieldApi.delete(id!, fieldId);
     if (res.code === 200) {

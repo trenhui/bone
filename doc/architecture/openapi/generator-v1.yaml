@@ -10,10 +10,14 @@ info:
     `?sync=true` 同步 200。`operationId` 与 `taskId` 相同。
 servers:
   - url: /api/v1/generator
+security:
+  - bearerAuth: []
 paths:
   /data-sources:
     get:
       summary: 分页查询数据源
+      operationId: listDataSources
+      tags: [DataSource]
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: size, in: query, schema: { type: integer, default: 10 } }
@@ -23,26 +27,40 @@ paths:
           description: OK（ApiResponse + PageResult.records）
     post:
       summary: 创建数据源
+      operationId: createDataSource
+      tags: [DataSource]
       responses:
         '200': { description: OK }
   /data-sources/{id}:
     get:
       summary: 数据源详情
+      operationId: getDataSource
+      tags: [DataSource]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     put:
       summary: 更新数据源
+      operationId: updateDataSource
+      tags: [DataSource]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     delete:
       summary: 删除数据源
+      operationId: deleteDataSource
+      tags: [DataSource]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /data-sources/{id}:test-connection:
     post:
       summary: 测试连接（冒号动作）
+      operationId: testDataSourceConnection
+      tags: [DataSource]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -50,6 +68,8 @@ paths:
   /data-sources/{id}/tables:
     get:
       summary: JDBC 物理表发现
+      operationId: listDataSourceTables
+      tags: [DataSource]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -57,6 +77,8 @@ paths:
   /data-sources/{id}/tables:sync:
     post:
       summary: 同步表元数据
+      operationId: syncDataSourceTables
+      tags: [DataSource]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -64,27 +86,37 @@ paths:
   /templates:
     get:
       summary: 模板列表
+      operationId: listCodeTemplates
+      tags: [CodeTemplate]
       responses:
         '200': { description: OK }
     post:
       summary: 创建模板
+      operationId: createCodeTemplate
+      tags: [CodeTemplate]
       responses:
         '200': { description: OK }
   /templates/{id}:publish:
     post:
       summary: 发布模板
+      operationId: publishCodeTemplate
+      tags: [CodeTemplate]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /metadata-entity-snapshots:
     get:
       summary: 已发布 meta_* 实体快照（CATALOG_SNAPSHOT）
+      operationId: listMetadataEntitySnapshots
+      tags: [Snapshot]
       responses:
         '200': { description: OK }
   /code-generation:
     post:
       summary: Freemarker 异步代码生成任务
+      operationId: createCodeGenerationTask
+      tags: [CodeGeneration]
       parameters:
         - name: sync
           in: query
@@ -92,10 +124,12 @@ paths:
           description: true 同步 200；false 强制 202 LRO
       responses:
         '200': { description: 同步完成，data 为 taskId }
-        '202': { description: Accepted，Location → /operations/{taskId} }
+        '202': { description: 'Accepted，Location → /operations/{taskId}' }
   /code-generation/tasks/{taskId}/status:
     get:
       summary: 任务状态（兼容；推荐 GET /operations/{id}）
+      operationId: getCodeGenerationTaskStatus
+      tags: [CodeGeneration]
       parameters:
         - { name: taskId, in: path, required: true, schema: { type: string } }
       responses:
@@ -103,6 +137,8 @@ paths:
   /operations/{operationId}:
     get:
       summary: LRO 轮询
+      operationId: getGeneratorOperation
+      tags: [Operation]
       parameters:
         - { name: operationId, in: path, required: true, schema: { type: string } }
       responses:
@@ -112,6 +148,15 @@ paths:
   # /generation-tasks（旧备用生成入口）已于 2026-09-25 移除，统一收敛至 /code-generation
   /capabilities:
     get:
-      summary: @Capability 能力列表
+      summary: '@Capability 能力列表'
+      operationId: listCapabilities
+      tags: [Capability]
       responses:
         '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

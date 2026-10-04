@@ -7,7 +7,7 @@ on:
     branches: [main, master, develop]
 
 env:
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   NODE_VERSION: '18'
 
 jobs:
@@ -61,6 +61,100 @@ jobs:
 
       - name: DDD Gate State Tables in sync with gate-state.json (blocking)
         run: /usr/bin/env python3 scripts/check-ddd-gate-state.py generate --check
+
+      # ADR-0040：对外发布模块（SDK）不得以空壳冒充，且有业务类必须有契约测试。
+      # 门禁 16 此前只在本地 ci-check.sh [11/11] 运行，.github/workflows 未调用，
+      # 即"看起来有门禁、实则 CI 形同虚设"。此处补齐使它真正成为阻断门禁。
+      - name: SDK Contract Surface Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-sdk-contract-surface.py --check
+
+      # 前端 ID 字段类型契约：后端全平台把 Long 序列化为 JSON 字符串（雪花 ID 超JS Number
+      # 上限 2^53，以 number 返回会被静默截断且无任何 JS 报错）。前端若把 ID 声明为 number
+      # 即type lie（===/Map key/Tree node.key 不可预期）。存量 330 处已于 2026-10-03 全部
+      # 改为 string，本门禁防其重新引入。基线 doc/architecture/frontend-id-type-baseline.json
+      # 只可收缩。
+      - name: Frontend ID Type Lint (blocking)
+        run: /usr/bin/env python3 scripts/frontend/check-frontend-id-types.py --check
+
+      # OpenAPI 契约结构：doc/architecture/openapi 下的规范是对外 SDK 的唯一契约真源
+      # （ADR-0040）。2026-10-03 实测两类既存缺陷 ——
+      #   ① extension/generator/integration 三份规范的 flow mapping 值未加引号，
+      #      YAML 根本无法解析（实测 redocly lint EXIT=1），SDK 生成器拿不到契约；
+      #  ② extension/generator/integration/masterdata/metadata-runtime 五份完全没有
+      #      securitySchemes，而 redocly 的 security-defined 此前被显式关掉。
+      # 本门禁离线可跑（PyYAML + 标准库），npx redocly 需联网故只作各模块独立 job。
+      # PyYAML 显式安装：不依赖 runner 预装，缺失时门禁会 exit 2 而非静默放过。
+      - name: Install PyYAML for OpenAPI lint
+        run: /usr/bin/env python3 -m pip install --quiet pyyaml
+
+      - name: OpenAPI Contract Structure Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-openapi-contract.py
+
+      # ADR-0040 A2：OpenAPI 声明 integer/int64 但后端下发的是 JSON 字符串。
+      # 判据不是"见 int64 就改" —— 全局 ToStringSerializer 只对**包装类型 Long** 生效，
+      # 原生 long/double 仍是 number。核对 Java 侧后：60 处 ID/外键/PageResult.total
+      # 已改为 type: string；console 的 11 处指标（原生 long）保持 int64。
+      - name: OpenAPI int64 Contract Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-openapi-int64-contract.py
+
+      # OpenAPI 生成器前置条件：下面两类缺陷在上两条门禁 + redocly 下**全绿**，
+      # 却会让 openapi-generator 直接拒绝或产出不可用的 SDK（2026-10-03 实测）：
+      #   ① path 模板变量未声明为 path 参数 ⇒ 抛 SpecValidationException，
+      #      generator-v1 的 PUT/DELETE /data-sources/{id} 曾让整份规范生成失败；
+      #   ② 缺 operationId / tags ⇒ iam/extension/generator 共 90 个操作全部塞进
+      #      单个 DefaultApi，方法名退化为 accountsIdGetPost 这类 path 拼接。
+      # 判据必须先解 $ref：metadata-runtime 有 5 处"缺参"其实是 $ref 到
+      # components/parameters 的正常写法，第一版判据没解 $ref 会误报。
+      # 同时核对 scripts/generate-sdk.sh 的 SPECS 清单与磁盘规范一一对应。
+      - name: OpenAPI Generation Readiness Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-openapi-generation-readiness.py
+
+      # 认证强制、授权不强制：各模块 SecurityConfig 统一 anyRequest().authenticated()，
+      # 缺方法级 @PreAuthorize 意味着任何登录用户都能调写端点。
+      - name: Controller Write Endpoint Authorization Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-controller-authorization.py
+
+      # 软删声明：骨核判定聚合可否软删，依据是**实体内有无带 @Deleted 的字段**，
+      # 与 DDL 有无 deleted 列无关 —— 表有列、实体没声明时 `deleteById` 照常
+      # 执行 `DELETE FROM`，行永久消失而调用方拿到 HTTP 200。
+      # extends AggregateRoot / TenantAggregateRoot 的实体一律中招（基类不提供该字段）。
+      # 本门禁 2026-10-03 建立后**长期未接入任何流水线**，等于没有门禁：
+      # 存量 22 张表的缺口若被新表复制扩大，无人阻断。
+      # 基线 doc/architecture/soft-delete-declaration-baseline.json 只可收缩。
+      - name: Soft Delete Declaration Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-soft-delete-declaration.py
+
+      # 配置键契约：`@Value("${some.key:default}")` 的键名写错时 Spring **静默回落**
+      # 到默认值 —— 不报错不打日志，症状出现在离故障点很远的地方
+      # （曾表现为全链路 401 而日志只有「验签失败」）。单测与 ArchUnit 都抓不到。
+      # --strict 把 WARN 也计为失败：WARN 的定义是「键不在任何 yml 定义但给了默认值」，
+      # 实践中几乎都是笔误。存量若确有合法例外，应在 yml 显式定义该键。
+      - name: Config Key Contract Lint (blocking)
+        run: /usr/bin/env python3 scripts/ci/check-config-key-contract.py --strict
+
+      # 文档类名漂移：doc/ 里写的 Java 类名若在仓库中不存在，读者按图索骥必然落空。
+      # 判据是「后缀白名单 + 反引号包裹」，只抓 Controller / Repository / Handler /
+      # ApplicationService / Gateway / Adapter 这类构件名，不会误伤普通英文词。
+      # 基线 doc/architecture/doc-code-symbols-baseline.json 只可收缩；登记时必须写明
+      # reason（历史快照 / 目标态设计 / 流程示意 / Spring 通用词误报），不能无脑豁免。
+      - name: Doc Code Symbols Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-doc-code-symbols.py
+
+      # 控制面匿名放行开关必须默认拒绝。`permit-unauthenticated` 打开等于整个
+      # Studio 控制面匿名可写（插件上传 / 部署 / 版本切换全部免凭证），与权限码缺失同级。
+      # 原基配置硬编码 `true` —— 连环境变量都覆盖不了（占位符才能被 Spring 解析），
+      # 且 dev/in-memory 靠继承拿到放行 ⇒ "忘记配置"＝一次静默的全站匿名降级。
+      # 三条判据：R1 放行不得裸字面量、R2 基配置占位符默认值须 false、
+      # R3 生产 profile 恒为字面量 false（不该存在"注入环境变量即可放行"的路径）。
+      # src/test/resources 豁免：单测需无 JWT 构造请求，那是测试替身而非部署配置。
+      - name: Security Fail-Open Default Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-security-fail-open-default.py --strict
+
+      # 门禁自身的有效性自证：注入 R1/R2/R3 违规 + 用 HEAD 真实历史样本，
+      # 断言脚本精确失败且不误伤合法形态。改了判据却没跑它，就无法区分
+      # "门禁有效"与"门禁只会打印 ✅"。
+      - name: Security Fail-Open Default Negative Probe
+        run: /usr/bin/env python3 scripts/ci/probe-security-fail-open-default.py
 
   backend-security:
     name: Backend Security Scan

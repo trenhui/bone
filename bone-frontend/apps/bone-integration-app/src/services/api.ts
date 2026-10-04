@@ -31,32 +31,32 @@ export const connectorApi = {
   },
   
   // 获取连接器详情
-  getConnectorById: (id: number): Promise<ApiResponse<Connector>> => {
+  getConnectorById: (id: string): Promise<ApiResponse<Connector>> => {
     return apiClient.get(`/connectors/${id}`);
   },
   
   // 更新连接器
-  updateConnector: (id: number, data: UpdateConnectorReq): Promise<ApiResponse<void>> => {
+  updateConnector: (id: string, data: UpdateConnectorReq): Promise<ApiResponse<void>> => {
     return apiClient.put(`/connectors/${id}`, data);
   },
   
   // 删除连接器
-  deleteConnector: (id: number): Promise<ApiResponse<void>> => {
+  deleteConnector: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.delete(`/connectors/${id}`);
   },
   
   // 测试连接器
-  testConnector: (id: number): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+  testConnector: (id: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {
     return apiClient.post(`/connectors/${id}/test`);
   },
   
   // 启用连接器
-  enableConnector: (id: number): Promise<ApiResponse<void>> => {
+  enableConnector: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.post(`/connectors/${id}/enable`);
   },
   
   // 禁用连接器
-  disableConnector: (id: number): Promise<ApiResponse<void>> => {
+  disableConnector: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.post(`/connectors/${id}/disable`);
   }
 };
@@ -74,37 +74,37 @@ export const flowApi = {
   },
   
   // 获取流程详情
-  getFlowById: (id: number): Promise<ApiResponse<IntegrationFlow>> => {
+  getFlowById: (id: string): Promise<ApiResponse<IntegrationFlow>> => {
     return apiClient.get(`/flows/${id}`);
   },
   
   // 更新流程
-  updateFlow: (id: number, data: UpdateFlowReq): Promise<ApiResponse<void>> => {
+  updateFlow: (id: string, data: UpdateFlowReq): Promise<ApiResponse<void>> => {
     return apiClient.put(`/flows/${id}`, data);
   },
   
   // 删除流程
-  deleteFlow: (id: number): Promise<ApiResponse<void>> => {
+  deleteFlow: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.delete(`/flows/${id}`);
   },
   
   // 测试流程
-  testFlow: (id: number, inputData: unknown): Promise<ApiResponse<{ success: boolean; output: unknown; error?: string }>> => {
+  testFlow: (id: string, inputData: unknown): Promise<ApiResponse<{ success: boolean; output: unknown; error?: string }>> => {
     return apiClient.post(`/flows/${id}/test`, { inputData });
   },
   
   // 激活流程
-  activateFlow: (id: number): Promise<ApiResponse<void>> => {
+  activateFlow: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.post(`/flows/${id}/activate`);
   },
   
   // 停用流程
-  deactivateFlow: (id: number): Promise<ApiResponse<void>> => {
+  deactivateFlow: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.post(`/flows/${id}/deactivate`);
   },
   
   // 获取流程版本历史
-  getFlowVersions: (id: number): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
+  getFlowVersions: (id: string): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
     return apiClient.get(`/flows/${id}/versions`);
   }
 };
@@ -117,17 +117,17 @@ export const monitorApi = {
   },
   
   // 获取执行记录详情
-  getExecutionById: (id: number): Promise<ApiResponse<IntegrationLog>> => {
+  getExecutionById: (id: string): Promise<ApiResponse<IntegrationLog>> => {
     return apiClient.get(`/executions/${id}`);
   },
   
   // 获取执行日志
-  getExecutionLogs: (id: number): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
+  getExecutionLogs: (id: string): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
     return apiClient.get(`/executions/${id}/logs`);
   },
   
   // 重试执行
-  retryExecution: (id: number): Promise<ApiResponse<number>> => {
+  retryExecution: (id: string): Promise<ApiResponse<number>> => {
     return apiClient.post(`/executions/${id}/retry`);
   },
   

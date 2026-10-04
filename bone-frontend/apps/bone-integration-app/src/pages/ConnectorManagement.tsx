@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { connectorApi } from '../services/api';
+import { normalizeTotal } from '@bone/shared-utils';
 import type { Connector, CreateConnectorReq, UpdateConnectorReq } from '../types';
 
 const { Option } = Select;
@@ -46,8 +47,8 @@ export const ConnectorManagement: React.FC = () => {
     setLoading(true);
     try {
       const response = await connectorApi.getConnectors({ pageNum: page, pageSize });
-      setConnectors(response.data.list);
-      setTotal(response.data.total);
+      setConnectors(response.data.records);
+      setTotal(normalizeTotal(response.data.total));
     } catch {
       message.error('获取连接器列表失败');
     } finally {
@@ -77,7 +78,7 @@ export const ConnectorManagement: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await connectorApi.deleteConnector(id);
       message.success('删除成功');
@@ -87,7 +88,7 @@ export const ConnectorManagement: React.FC = () => {
     }
   };
 
-  const handleTest = async (id: number) => {
+  const handleTest = async (id: string) => {
     try {
       const response = await connectorApi.testConnector(id);
       if (response.data.success) {
@@ -100,7 +101,7 @@ export const ConnectorManagement: React.FC = () => {
     }
   };
 
-  const handleEnable = async (id: number) => {
+  const handleEnable = async (id: string) => {
     try {
       await connectorApi.enableConnector(id);
       message.success('启用成功');
@@ -110,7 +111,7 @@ export const ConnectorManagement: React.FC = () => {
     }
   };
 
-  const handleDisable = async (id: number) => {
+  const handleDisable = async (id: string) => {
     try {
       await connectorApi.disableConnector(id);
       message.success('禁用成功');

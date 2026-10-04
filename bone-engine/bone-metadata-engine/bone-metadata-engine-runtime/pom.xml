@@ -19,82 +19,68 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <!-- 本模块自身是 1.0.0-SNAPSHOT：engine 家族兄弟模块用 ${project.version}（同为 SNAPSHOT），
+             但 bone-metadata-sdk / bone-core / bone-architecture-test 是 release（1.0.0），
+             必须用固定版本属性，否则会被解析成不存在的 1.0.0-SNAPSHOT（2026-10-03 实测）。 -->
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-engine-domain</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-engine-ports</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
-            <version>1.0.0</version>
+            <version>${bone-metadata-sdk.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
-            <version>1.0.0</version>
+            <version>${bone-core.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+        <dependency><groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
+        <dependency><groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
+        <dependency><groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
+        <dependency><groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
+        <dependency><groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>1.0.0</version>
+            <version>${bone-architecture-test.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

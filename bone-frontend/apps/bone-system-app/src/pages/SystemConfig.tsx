@@ -41,7 +41,9 @@ const SystemConfigPage: React.FC = () => {
     try {
       const response = await systemConfigApi.getConfig();
       if (response.code === 200) {
-        setConfigs(response.data.list);
+        // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，
+        // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
+        setConfigs(response.data.records);
       }
     } catch (error) {
       message.error(resolveErrorMessage(error, '获取配置失败'));

@@ -16,60 +16,54 @@
     <description>文件服务：对象存储抽象（MinIO/S3/OSS）与上传下载</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-security</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-            <version>8.5.7</version>
+        <!-- Nacos 配置中心（与 iam/system/masterdata/integration 一致） -->
+        <dependency><groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springdoc</groupId>
+        <dependency><groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
+        <dependency><groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>${minio.version}</version>
+        </dependency>
+        <dependency><groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -78,8 +72,7 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
+            <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.bone.file.FileApplication</mainClass>

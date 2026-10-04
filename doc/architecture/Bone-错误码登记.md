@@ -154,6 +154,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `COMMON_VALIDATION_FAILED` | 400 | 参数校验失败（含字段级明细，见 `ProblemDetail.errors`） |
+| `COMMON_PRECONDITION_FAILED` | 412 | common precondition failed |
 | `COMMON_MALFORMED_REQUEST` | 400 | 请求体无法解析（JSON 格式错误 / 类型不匹配） |
 | `COMMON_UNAUTHORIZED` | 401 | 未认证 |
 | `COMMON_FORBIDDEN` | 403 | 无权限 |
@@ -242,12 +243,36 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_DUPLICATE` | 409 | 唯一约束冲突（字段值已存在） |
 | `META_RUNTIME_INVALID_IDENTIFIER` | 400 | 标识符非法（表名 / 列名不符合 `[a-zA-Z][a-zA-Z0-9_]*`） |
 | `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
+| `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移：模型类型与物理列类型不兼容（doc2a §328） |
 
 ### MD_
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `MD_META_ENTITY_NOT_FOUND` | 404 | 元数据实体不存在 |
+| `MD_CATEGORY_CODE_DUPLICATE` | 409 | 分类编码重复 |
+| `MD_CATEGORY_NOT_FOUND` | 404 | 分类不存在 |
+| `MD_CATEGORY_STATE_INVALID` | 422 | 分类状态非法 |
+| `MD_ENTITY_CODE_DUPLICATE` | 409 | 主数据实体编码重复 |
+| `MD_ENTITY_FIELD_LIMIT_EXCEEDED` | 400 | 实体字段数超限 |
+| `MD_EXPORT_LIMIT_EXCEEDED` | 400 | 导出条数超限 |
+| `MD_FEEDBACK_NOT_FOUND` | 404 | 反馈记录不存在 |
+| `MD_MODEL_DRIFT_NOT_FOUND` | 404 | 模型漂移记录不存在 |
+| `MD_MODEL_DRIFT_NO_SOURCE` | 422 | 模型漂移缺少来源 |
+| `MD_QUALITY_ISSUE_NOT_FOUND` | 404 | 质量问题不存在 |
+| `MD_RECORD_SIZE_EXCEEDED` | 400 | 记录体积超限 |
+| `MD_REF_SET_DUPLICATE` | 409 | 参考集重复 |
+| `MD_REF_SET_NOT_FOUND` | 404 | 参考集不存在 |
+| `MD_REF_VALUE_DUPLICATE` | 409 | 参考值重复 |
+| `MD_RULE_NAME_DUPLICATE` | 409 | 质量规则名称重复 |
+| `MD_SOD_VIOLATION` | 403 | md sod violation |
+| `MD_STEWARD_ASSIGNMENT_NOT_FOUND` | 404 | 治理角色分配不存在 |
+| `MD_STEWARD_DUPLICATE` | 409 | 治理角色重复 |
+| `MD_STEWARD_ROLE_INVALID` | 400 | 治理角色非法 |
+| `MD_SUBSCRIPTION_DUPLICATE` | 409 | 订阅重复 |
+| `MD_SUBSCRIPTION_STATE_INVALID` | 422 | 订阅状态非法 |
+| `MD_USER_CONTEXT_REQUIRED` | 401 | 缺少用户上下文 |
+| `MD_WORKFLOW_APPROVAL_REQUIRED` | 422 | 需要工作流审批 |
 | `MD_REF_PLATFORM_SET_IMMUTABLE` | 403 | 租户尝试写平台值域（建/改/归档）——值域为平台域 artifact，租户只读 |
 | `MD_REF_PLATFORM_VALUE_IMMUTABLE` | 403 | 租户尝试修改/停用平台值——租户只能操作自己的私有扩展值 |
 | `MD_META_ENTITY_NOT_PUBLISHED` | 422 | 仅已发布元数据实体可转换为主数据 |
@@ -272,7 +297,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_TEMPLATE_DOMAIN_DUPLICATE` | 409 | 领域模板编码已存在 |
 | `MD_TEMPLATE_FIELD_SCHEMA_INVALID` | 400 | 模板字段结构非法 |
 | `MD_TEMPLATE_NOT_FOUND` | 404 | 领域模板不存在 |
-| `MD_TEMPLATE_NOT_PUBLISHED` | 409 | 领域模板未发布 |
+| `MD_TEMPLATE_NOT_PUBLISHED` | 422 | 领域模板未发布 |
 | `MD_TEMPLATE_VERSION_DUPLICATE` | 409 | 模板版本已存在 |
 
 ### EXT_
@@ -309,6 +334,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `NOTIFICATION_ACCESS_DENIED` | 403 | 站内信不属于当前调用方租户/用户，越权访问被拒 |
 | `NOTIFICATION_INVALID_PARAM` | 400 | 入参非法：userId 为空或 limit 超出上限 |
 | `NOTIFICATION_TENANT_MISMATCH` | 400 | 站内信写入缺少有效租户上下文，失败关闭（异步告警租户未传播） |
+| `NOTIFICATION_ACCOUNT_REQUIRED` | 401 | 无有效已认证主体（JWT 主体缺失或不可解析为 Long），归属基准不可信，拒绝访问（IDOR 防护，2026-10-03） |
 
 ### INT_
 
@@ -331,6 +357,23 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `SYS_CONFIG_NOT_FOUND` | 404 | 配置项不存在 |
+| `SYS_ALERT_LEVEL_INVALID` | 400 | sys alert level invalid |
+| `SYS_ALERT_RECORD_NOT_FOUND` | 404 | sys alert record not found |
+| `SYS_ALERT_RULE_INVALID` | 400 | sys alert rule invalid |
+| `SYS_ALERT_STATUS_INVALID` | 400 | sys alert status invalid |
+| `SYS_CONFIG_KEY_CONFLICT` | 409 | sys config key conflict |
+| `SYS_CONFIG_KEY_INVALID` | 400 | sys config key invalid |
+| `SYS_CONFIG_SNAPSHOT_EMPTY` | 400 | sys config snapshot empty |
+| `SYS_CONFIG_SNAPSHOT_INVALID` | 400 | sys config snapshot invalid |
+| `SYS_CONFIG_SNAPSHOT_READ_FAILED` | 400 | sys config snapshot read failed |
+| `SYS_CONFIG_SNAPSHOT_TOO_LARGE` | 400 | sys config snapshot too large |
+| `SYS_CONFIG_TYPE_INVALID` | 400 | sys config type invalid |
+| `SYS_LOG_LEVEL_INVALID` | 400 | sys log level invalid |
+| `SYS_LOG_NOT_FOUND` | 404 | sys log not found |
+| `SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND` | 404 | sys schedule task handler not found |
+| `SYS_SCHEDULE_TASK_NOT_FOUND` | 404 | sys schedule task not found |
+| `SYS_SCHEDULE_TASK_RUN_FAILED` | 500 | sys schedule task run failed |
+| `SYS_SCHEDULE_TASK_STATUS_INVALID` | 400 | sys schedule task status invalid |
 | `SYS_ALERT_RULE_NOT_FOUND` | 404 | 告警规则不存在 |
 | `SYS_DICT_TYPE_NOT_FOUND` | 404 | 字典类型不存在（含跨租户不可见） |
 | `SYS_DICT_TYPE_CODE_CONFLICT` | 409 | 同一租户作用域内该类型编码已存在 |
@@ -375,6 +418,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
 | `BP_ORDER_NOT_FOUND` | 404 | 订单不存在（含跨租户不可见） |
+| `BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED` | 403 | bp payment callback source not allowed |
 | `BP_ORDER_STATUS_CONFLICT` | 409 | 订单当前状态不允许该操作 |
 | `BP_ORDER_STATUS_INVALID` | 400 | 订单状态查询入参非法 |
 | `BP_ORDER_STOCK_INSUFFICIENT` | 409 | 下单商品库存不足（同步预校验失败） |

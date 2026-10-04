@@ -8,7 +8,7 @@
  *
  * // 定义事件映射
  * interface MyEvents {
- *   'user:login': { userId: number; timestamp: number };
+ *   'user:login': { userId: string; timestamp: number };
  *   'user:logout': void;
  *   'theme:change': 'light' | 'dark';
  * }

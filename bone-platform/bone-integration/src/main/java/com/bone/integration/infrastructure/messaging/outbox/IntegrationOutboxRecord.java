@@ -1,6 +1,7 @@
 package com.bone.integration.infrastructure.messaging.outbox;
 
 import com.bone.core.annotation.Id;
+import com.bone.core.annotation.PhysicalDelete;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
@@ -21,6 +22,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@PhysicalDelete(reason = "Outbox 消息表：仅在消息完成投递后按保留期清理，属append-only 投递日志")
 @Table("int_outbox")
 public class IntegrationOutboxRecord extends AggregateRoot<Long> {
 

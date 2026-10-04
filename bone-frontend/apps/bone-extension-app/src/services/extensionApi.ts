@@ -126,7 +126,7 @@ function assertSuccess<T>(body: StudioApiResponse<T> | undefined): T {
 }
 
 export type ExtPointRow = {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   interfaceName?: string;
@@ -138,10 +138,10 @@ export type ExtPointRow = {
 };
 
 export type ExtensionRow = {
-  id: number;
-  extPointId: number;
+  id: string;
+  extPointId: string;
   /** 归属应用 ID（可空 = 平台通用插件，5a G1） */
-  appId?: number | null;
+  appId?: string | null;
   name: string;
   description?: string;
   className?: string;
@@ -205,9 +205,9 @@ export type ExtPointPayload = {
 };
 
 export type ExtensionPayload = {
-  extPointId: number;
+  extPointId: string;
   /** 归属应用 ID（可空 = 平台通用插件，5a G1） */
-  appId?: number | null;
+  appId?: string | null;
   name: string;
   description?: string;
   className: string;
@@ -242,7 +242,7 @@ function unwrapListPage<T>(data: T[] | StudioPageResult<T> | null | undefined): 
 export async function listExtPoints(
   params?: ListExtPointsParams,
 ): Promise<ExtPointRow[] | StudioPageResult<ExtPointRow>> {
-  const res = await client.get<StudioApiResponse<ExtPointRow[] | StudioPageResult<ExtPointRow>>>(
+  const res = await client.get<unknown, StudioApiResponse<ExtPointRow[] | StudioPageResult<ExtPointRow>>>(
     `${EXTENSION_BASE}/points`,
     { params },
   );
@@ -268,45 +268,40 @@ export async function createExtPoint(
   payload: ExtPointPayload,
   opts?: StudioWriteOptions,
 ): Promise<ExtPointRow> {
-  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points`, payload, {
+  const res = await client.post<unknown, StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points`, payload, {
     headers: writeHeaders(opts),
   });
   return assertSuccess(res);
 }
 
 export async function updateExtPoint(
-  id: number,
+  id: string,
   payload: ExtPointPayload,
   opts?: StudioWriteOptions,
 ): Promise<ExtPointRow> {
-  const res = await client.put<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}`, payload, {
+  const res = await client.put<unknown, StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}`, payload, {
     headers: writeHeaders(opts),
   });
   return assertSuccess(res);
 }
 
-export async function deleteExtPoint(id: number): Promise<void> {
-  const res = await client.delete<StudioApiResponse<void>>(`${EXTENSION_BASE}/points/${id}`);
-  if (res.status === 204) {
-    return;
-  }
-  if (res.data?.success === false) {
-    throw toStudioError(res.data.message || '删除失败', res.data as StudioApiResponse<unknown>);
-  }
+export async function deleteExtPoint(id: string): Promise<void> {
+  const res = await client.delete<unknown, StudioApiResponse<void>>(`${EXTENSION_BASE}/points/${id}`);
+  assertSuccess(res);
 }
 
-export async function postExtPointEnable(id: number, enable: boolean): Promise<void> {
+export async function postExtPointEnable(id: string, enable: boolean): Promise<void> {
   const action = enable ? 'enable' : 'disable';
-  const res = await client.post<StudioApiResponse<ExtPointRow>>(
+  const res = await client.post<unknown, StudioApiResponse<ExtPointRow>>(
     `${EXTENSION_BASE}/points/${id}:${action}`,
   );
   assertSuccess(res);
 }
 
 export type ListPluginsParams = {
-  extPointId?: number;
+  extPointId?: string;
   /** 按归属应用过滤（5a G4 应用扩展视图） */
-  appId?: number;
+  appId?: string;
   page?: number;
   size?: number;
 };
@@ -314,7 +309,7 @@ export type ListPluginsParams = {
 export async function listPlugins(
   params?: ListPluginsParams,
 ): Promise<ExtensionRow[] | StudioPageResult<ExtensionRow>> {
-  const res = await client.get<StudioApiResponse<ExtensionRow[] | StudioPageResult<ExtensionRow>>>(
+  const res = await client.get<unknown, StudioApiResponse<ExtensionRow[] | StudioPageResult<ExtensionRow>>>(
     `${EXTENSION_BASE}/plugins`,
     { params },
   );
@@ -340,37 +335,32 @@ export async function createPlugin(
   payload: ExtensionPayload,
   opts?: StudioWriteOptions,
 ): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins`, payload, {
+  const res = await client.post<unknown, StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins`, payload, {
     headers: writeHeaders(opts),
   });
   return assertSuccess(res);
 }
 
 export async function updatePlugin(
-  id: number,
+  id: string,
   payload: ExtensionPayload,
   opts?: StudioWriteOptions,
 ): Promise<ExtensionRow> {
-  const res = await client.put<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}`, payload, {
+  const res = await client.put<unknown, StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}`, payload, {
     headers: writeHeaders(opts),
   });
   return assertSuccess(res);
 }
 
-export async function deletePlugin(id: number): Promise<void> {
-  const res = await client.delete<StudioApiResponse<void>>(`${EXTENSION_BASE}/plugins/${id}`);
-  if (res.status === 204) {
-    return;
-  }
-  if (res.data?.success === false) {
-    throw toStudioError(res.data.message || '删除失败', res.data as StudioApiResponse<unknown>);
-  }
+export async function deletePlugin(id: string): Promise<void> {
+  const res = await client.delete<unknown, StudioApiResponse<void>>(`${EXTENSION_BASE}/plugins/${id}`);
+  assertSuccess(res);
 }
 
 export type StudioOperation = {
   operationId?: string;
   type?: string;
-  resourceId?: number;
+  resourceId?: string;
   done: boolean;
   progress?: number;
   result?: Record<string, unknown>;
@@ -395,7 +385,7 @@ function operationIdFromDeployResponse(
 }
 
 export async function getOperation(operationId: string): Promise<StudioOperation> {
-  const res = await client.get<StudioApiResponse<StudioOperation>>(
+  const res = await client.get<unknown, StudioApiResponse<StudioOperation>>(
     `${EXTENSION_BASE}/operations/${operationId}`,
   );
   return assertSuccess(res);
@@ -445,13 +435,13 @@ export type DeployPluginOptions = {
 };
 
 export async function deployPlugin(
-  id: number,
+  id: string,
   deploy: boolean,
   opts?: DeployPluginOptions,
 ): Promise<void> {
   const action = deploy ? 'deploy' : 'undeploy';
   const params = opts?.sync != null ? { sync: opts.sync } : undefined;
-  const res = await client.post<StudioApiResponse<{ operationId?: string } | ExtensionRow>>(
+  const res = await client.post<unknown, StudioApiResponse<{ operationId?: string } | ExtensionRow>>(
     `${EXTENSION_BASE}/plugins/${id}:${action}`,
     {},
     { params, validateStatus: (status) => status === 200 || status === 202 },
@@ -470,16 +460,16 @@ export async function deployPlugin(
   assertSuccess(res);
 }
 
-export async function publishPluginRuntime(id: number): Promise<void> {
-  const res = await client.post<StudioApiResponse<{ id: number; published: boolean }>>(
+export async function publishPluginRuntime(id: string): Promise<void> {
+  const res = await client.post<unknown, StudioApiResponse<{ id: string; published: boolean }>>(
     `${EXTENSION_BASE}/plugins/${id}:publish-runtime`,
   );
   assertSuccess(res);
 }
 
 export type PluginVersionRow = {
-  id: number;
-  pluginId: number;
+  id: string;
+  pluginId: string;
   version: string;
   filePath: string;
   fileSize: number;
@@ -491,13 +481,12 @@ export type PluginVersionRow = {
 };
 
 /** 下载指定版本的 JAR 制品（带 Bearer Token）。 */
-export async function downloadPluginVersion(pluginId: number, version: string): Promise<void> {
+export async function downloadPluginVersion(pluginId: string, version: string): Promise<void> {
   const safeVer = encodeURIComponent(version);
-  const res = await client.get<Blob>(
+  const blob = await client.get<unknown, Blob>(
     `${EXTENSION_BASE}/plugins/${pluginId}/versions/${safeVer}:download`,
     { responseType: 'blob' },
   );
-  const blob = res.data;
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
@@ -506,8 +495,8 @@ export async function downloadPluginVersion(pluginId: number, version: string): 
   URL.revokeObjectURL(url);
 }
 
-export async function listPluginVersions(pluginId: number): Promise<PluginVersionRow[]> {
-  const res = await client.get<StudioApiResponse<PluginVersionRow[]>>(
+export async function listPluginVersions(pluginId: string): Promise<PluginVersionRow[]> {
+  const res = await client.get<unknown, StudioApiResponse<PluginVersionRow[]>>(
     `${EXTENSION_BASE}/plugins/${pluginId}/versions`,
   );
   return assertSuccess(res) ?? [];
@@ -517,8 +506,8 @@ export type UploadPluginParams = {
   file: File;
   name: string;
   className: string;
-  extPointId?: number;
-  pluginId?: number;
+  extPointId?: string;
+  pluginId?: string;
   version?: string;
   description?: string;
 };
@@ -540,14 +529,14 @@ export async function uploadPlugin(params: UploadPluginParams): Promise<Extensio
   if (params.description) {
     form.append('description', params.description);
   }
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins:upload`, form, {
+  const res = await client.post<unknown, StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins:upload`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return assertSuccess(res);
 }
 
-export async function rollbackPlugin(pluginId: number, version?: string): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+export async function rollbackPlugin(pluginId: string, version?: string): Promise<ExtensionRow> {
+  const res = await client.post<unknown, StudioApiResponse<ExtensionRow>>(
     `${EXTENSION_BASE}/plugins/${pluginId}:rollback`,
     version ? { version } : {},
   );
@@ -558,8 +547,8 @@ export async function rollbackPlugin(pluginId: number, version?: string): Promis
  * 绑定插件到指定扩展点（POST :bind）。
  * 后端契约：body `{ extensionPointId }`（兼容 `extPointId`）。
  */
-export async function bindPlugin(pluginId: number, extPointId: number): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+export async function bindPlugin(pluginId: string, extPointId: string): Promise<ExtensionRow> {
+  const res = await client.post<unknown, StudioApiResponse<ExtensionRow>>(
     `${EXTENSION_BASE}/plugins/${pluginId}:bind`,
     { extensionPointId: extPointId },
   );
@@ -567,8 +556,8 @@ export async function bindPlugin(pluginId: number, extPointId: number): Promise<
 }
 
 /** 解绑插件（POST :unbind），保留实现元数据但清空 extPoint 归属。 */
-export async function unbindPlugin(pluginId: number): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+export async function unbindPlugin(pluginId: string): Promise<ExtensionRow> {
+  const res = await client.post<unknown, StudioApiResponse<ExtensionRow>>(
     `${EXTENSION_BASE}/plugins/${pluginId}:unbind`,
   );
   return assertSuccess(res);
@@ -591,9 +580,9 @@ export type SandboxConfig = {
 };
 
 export type ExecutionLogRow = {
-  id: number;
-  pluginId: number;
-  extensionPointId: number;
+  id: string;
+  pluginId: string;
+  extensionPointId: string;
   executionId: string;
   status: string;
   inputData?: string;
@@ -626,17 +615,17 @@ function unwrapPage<T>(data: T | { records?: T[]; list?: T[] }): T[] {
 }
 
 export async function getSandboxConfig(): Promise<SandboxConfig> {
-  const res = await client.get<StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/sandbox/config`);
+  const res = await client.get<unknown, StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/sandbox/config`);
   return assertSuccess(res);
 }
 
 export async function getExtensionOverview(): Promise<SandboxConfig> {
-  const res = await client.get<StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/overview`);
+  const res = await client.get<unknown, StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/overview`);
   return assertSuccess(res);
 }
 
 export type AuditLogRow = {
-  id: number;
+  id: string;
   traceId?: string;
   userId?: string;
   action: string;
@@ -659,7 +648,7 @@ export async function listAuditLogs(params?: {
   cursor?: string;
   limit?: number;
 }): Promise<AuditLogPage & { rows: AuditLogRow[] }> {
-  const res = await client.get<StudioApiResponse<AuditLogPage>>(`${EXTENSION_BASE}/audit-logs`, {
+  const res = await client.get<unknown, StudioApiResponse<AuditLogPage>>(`${EXTENSION_BASE}/audit-logs`, {
     params: {
       action: params?.action,
       resourceType: params?.resourceType,
@@ -678,7 +667,7 @@ export async function listAuditLogs(params?: {
 }
 
 export async function listExecutionLogs(params?: {
-  pluginId?: number;
+  pluginId?: string;
   status?: string;
   cursor?: string;
   limit?: number;
@@ -694,7 +683,7 @@ export async function listExecutionLogs(params?: {
         cursor: params?.cursor,
         limit: params?.limit ?? 20,
       };
-  const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
+  const res = await client.get<unknown, StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
     params: query,
   });
   const raw = assertSuccess(res);
@@ -717,7 +706,7 @@ export async function listExecutionLogs(params?: {
  * 探测返回的是元数据校验结论 + 运行时存储中当前生效的路由决策。
  */
 export type SimulateResult = {
-  pluginId: number;
+  pluginId: string;
   pluginName?: string;
   className?: string;
   valid: boolean;
@@ -736,8 +725,8 @@ export type SimulateResult = {
   message?: string;
 };
 
-export async function simulatePlugin(pluginId: number): Promise<SimulateResult> {
-  const res = await client.post<StudioApiResponse<SimulateResult>>(
+export async function simulatePlugin(pluginId: string): Promise<SimulateResult> {
+  const res = await client.post<unknown, StudioApiResponse<SimulateResult>>(
     `${EXTENSION_BASE}/plugins/${pluginId}:simulate`,
   );
   return assertSuccess(res);
@@ -747,7 +736,7 @@ export async function simulatePlugin(pluginId: number): Promise<SimulateResult> 
  * 部署状态机视图（详设 v2.5 §3.3）。
  */
 export type DeploymentStateView = {
-  pluginId: number;
+  pluginId: string;
   activeVersion?: string | null;
   currentStatus?: string;
   allStates: string[];
@@ -755,8 +744,8 @@ export type DeploymentStateView = {
   versionStates: { version: string; status?: string; active: boolean }[];
 };
 
-export async function getDeploymentState(pluginId: number): Promise<DeploymentStateView> {
-  const res = await client.get<StudioApiResponse<DeploymentStateView>>(
+export async function getDeploymentState(pluginId: string): Promise<DeploymentStateView> {
+  const res = await client.get<unknown, StudioApiResponse<DeploymentStateView>>(
     `${EXTENSION_BASE}/plugins/${pluginId}/deployment-state`,
   );
   return assertSuccess(res);
@@ -764,10 +753,10 @@ export async function getDeploymentState(pluginId: number): Promise<DeploymentSt
 
 /** 依赖图（详设 §12.3）。 */
 export type DependencyNode = {
-  id: number;
+  id: string;
   name: string;
   className?: string;
-  extPointId?: number;
+  extPointId?: string;
   enabled: boolean;
   deploymentStatus?: string | null;
   /** PLUGIN=插件实现；EXT_POINT=扩展点契约节点（id 取负值） */
@@ -775,7 +764,7 @@ export type DependencyNode = {
 };
 
 export type DependencyEdge = {
-  fromId: number;
+  fromId: string;
   toName: string;
   resolved: boolean;
   /** BINDING=插件→扩展点真实绑定；DEPENDENCY=声明依赖（config_json.dependencies） */
@@ -787,8 +776,8 @@ export type DependencyGraphView = {
   edges: DependencyEdge[];
 };
 
-export async function getDependencyGraph(extPointId?: number): Promise<DependencyGraphView> {
-  const res = await client.get<StudioApiResponse<DependencyGraphView>>(
+export async function getDependencyGraph(extPointId?: string): Promise<DependencyGraphView> {
+  const res = await client.get<unknown, StudioApiResponse<DependencyGraphView>>(
     `${EXTENSION_BASE}/dependency-graph`,
     { params: extPointId != null ? { extPointId } : undefined },
   );
@@ -814,7 +803,7 @@ export async function listMarketplaceItems(params?: {
   keyword?: string;
   category?: string;
 }): Promise<MarketplaceItem[]> {
-  const res = await client.get<StudioApiResponse<MarketplaceItem[]>>(
+  const res = await client.get<unknown, StudioApiResponse<MarketplaceItem[]>>(
     `${EXTENSION_BASE}/marketplace`,
     { params },
   );
@@ -823,11 +812,12 @@ export async function listMarketplaceItems(params?: {
 
 export async function installMarketplaceItem(
   itemId: string,
-  extPointId?: number,
-  appId?: number,
-): Promise<{ pluginId: number; itemId: string; extPointId?: number; appId?: number | null }> {
+  extPointId?: string,
+  appId?: string,
+): Promise<{ pluginId: string; itemId: string; extPointId?: string; appId?: string | null }> {
   const res = await client.post<
-    StudioApiResponse<{ pluginId: number; itemId: string; extPointId?: number; appId?: number | null }>
+    unknown,
+    StudioApiResponse<{ pluginId: string; itemId: string; extPointId?: string; appId?: string | null }>
   >(
     `${EXTENSION_BASE}/marketplace/${encodeURIComponent(itemId)}:install`,
     {

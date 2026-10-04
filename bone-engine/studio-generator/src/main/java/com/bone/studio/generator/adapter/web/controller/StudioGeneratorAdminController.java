@@ -7,6 +7,7 @@ import com.bone.studio.generator.application.dto.RepairEntityNameResult;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,7 @@ public class StudioGeneratorAdminController {
    * <p>默认 execute=false 仅预览；带 {@code {"execute":true}} 才真正写入。幂等，可重复执行。 仅修正 customEntityName ==
    * originalTableName 的行，用户已自定义的行不受影响。
    */
+  @PreAuthorize("hasAuthority('generator:admin:write')")
   @PostMapping("/repair-entity-names")
   public ApiResponse<RepairEntityNameResult> repairEntityNames(
       @RequestBody(required = false) RepairLegacyEntityNameCommand command) {

@@ -27,7 +27,7 @@ components:
       type: object
       required: [customerId, items]
       properties:
-        customerId: { type: integer, format: int64 }
+        customerId: { type: string }
         items:
           type: array
           minItems: 1
@@ -37,23 +37,23 @@ components:
       type: object
       required: [productId, productName, quantity, unitPrice]
       properties:
-        productId: { type: integer, format: int64 }
+        productId: { type: string }
         productName: { type: string }
         quantity: { type: integer, minimum: 1 }
-        unitPrice: { type: number, minimum: 0, exclusiveMinimum: true }
+        unitPrice: { type: number, exclusiveMinimum: 0 }
     OrderSummaryResp:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        customerId: { type: integer, format: int64 }
+        id: { type: string }
+        customerId: { type: string }
         totalAmount: { type: number }
         status: { type: string, description: 'CREATED | PAID | CANCELLED' }
         createdAt: { type: string, format: date-time }
     OrderDetailResp:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        customerId: { type: integer, format: int64 }
+        id: { type: string }
+        customerId: { type: string }
         totalAmount: { type: number }
         status: { type: string }
         createdAt: { type: string, format: date-time }
@@ -64,8 +64,8 @@ components:
     OrderItemResp:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        productId: { type: integer, format: int64 }
+        id: { type: string }
+        productId: { type: string }
         productName: { type: string }
         quantity: { type: integer }
         unitPrice: { type: number }
@@ -73,7 +73,7 @@ components:
     CreateOrderData:
       type: object
       properties:
-        id: { type: integer, format: int64 }
+        id: { type: string }
 
 security:
   - bearerAuth: []
@@ -85,7 +85,7 @@ paths:
       operationId: pageOrders
       tags: [Order]
       parameters:
-        - { name: customerId, in: query, schema: { type: integer, format: int64 } }
+        - { name: customerId, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { type: string } }
         - { name: pageNum, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 10 } }
@@ -136,7 +136,7 @@ paths:
       operationId: getById
       tags: [Order]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200':
           description: OK
@@ -154,7 +154,7 @@ paths:
       operationId: cancelOrder
       tags: [Order]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200':
           description: OK

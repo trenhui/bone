@@ -12,6 +12,7 @@ import com.bone.system.application.query.dto.ScheduleTaskDto;
 import com.bone.system.application.query.qry.ScheduleTaskPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
+import com.bone.system.domain.gateway.TenantProvider;
 import com.bone.system.domain.model.schedule.ScheduleTask;
 import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
@@ -38,6 +39,7 @@ public class ScheduleTaskApplicationService {
 
   private final ScheduleTaskRepository scheduleTaskRepository;
   private final ScheduleTaskSchedulerPort scheduleTaskSchedulerPort;
+  private final TenantProvider tenantProvider;
   private final DomainEventPublisher domainEventPublisher;
 
   @Capability(
@@ -57,6 +59,7 @@ public class ScheduleTaskApplicationService {
     ScheduleTask task =
         ScheduleTask.create(
             DistributedIdGenerator.generateLongId(),
+            currentTenant(),
             command.getName(),
             command.getCron(),
             command.getHandler(),
@@ -168,5 +171,10 @@ public class ScheduleTaskApplicationService {
 
   private static TaskStatus parseTaskStatusOrNull(String value) {
     return value == null || value.isBlank() ? null : parseTaskStatus(value);
+  }
+
+  /** 当前租户；无上下文（调度器线程 / 启动装载）回落平台租户 0。 */
+  private Long currentTenant() {
+    return tenantProvider.currentTenantIdOrNull();
   }
 }

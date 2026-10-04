@@ -1,0 +1,207 @@
+{
+  "_comment": [
+    "soft-delete-declaration-baseline —— 软删声明缺失基线（只可收缩）。",
+    "",
+    "背景（2026-10-03 实测发现，非静态推断）：bone-metadata-sdk 判定聚合是否可软删的依据是",
+    "**实体内是否存在带 @Deleted 注解的字段**（TableMetadataResolver#buildColumnMetadata 第 12 个",
+    "构造参数 = field.isAnnotationPresent(Deleted.class) → ColumnMetadata.isSoftDeleted →",
+    "TableMetadata#isSoftDeletable()）。BaseRepository#deleteById 据此二选一：",
+    "  - 命中 → 'UPDATE t SET deleted = true WHERE id = :p0'（软删）",
+    "  - 未命中 → 'DELETE FROM t WHERE id = :p0'（**物理删除，行永久消失**）",
+    "**与 DDL 是否有 deleted 列无关** —— 表有列但实体没声明，照样物理删。",
+    "",
+    "@Deleted 只声明在 bone-core 的 AbstractEntity（继承链 AbstractEntity → TenantAbstractEntity）。",
+    "而聚合根基类 AggregateRoot / TenantAggregateRoot **不提供** deleted 字段（其 javadoc 明示",
+    "'审计由子类自行声明'，且为避免与域内 LocalDateTime 冲突不继承 AbstractEntity）。",
+    "⇒ 凡是 extends AggregateRoot / TenantAggregateRoot 且表带 deleted 列的实体，",
+    "  deleteById 一律走物理删除，且调用方拿到 200 毫不知情。",
+    "",
+    "本基线登记这批'DDL 有 deleted 列但实体未声明 @Deleted ⇒ 物理删除'的表。",
+    "语义是**只可收缩**：为实体补 @Deleted 声明后（软删恢复），方可把条目移出。",
+    "详见 doc/architecture/多租户数据隔离方案设计.md 与本文件 _evidence 字段。",
+    "",
+    "分类口径：",
+    "  - physical-delete：实测/代码路径确认走 DELETE FROM，删除即永久丢数据。",
+    "  - needs-decision：需Owner 确认该表是否本就该物理删（如日志/流水类只追加表）。",
+    "",
+    "2026-10-03 治理升级（业界最佳实践：把隐式行为变显式）：",
+    "  1) 新增 bone-core 注解 @PhysicalDelete(reason)——「本表本就该物理删」写进代码，",
+    "     取代一次性台账：日志/Outbox/告警事件/生成历史等append-only 表已就地声明，",
+    "     并从本基线移出（门禁 scripts/check-soft-delete-declaration.py 识别该注解为合规豁免）。",
+    "  2) 本基线因此只保留**真正待裁决**的缺口：业务实体（账号/角色/主数据/配置等），",
+    "     它们应恢复软删，但恢复前必须先解决唯一索引（见 _uk_conflict）。",
+    "",
+    "2026-10-03 第二批（12 张无唯一索引表）已补齐 @Deleted：",
+    "  gen_column_metadata / iam_dept / iam_menu / int_connector / int_flow / int_flow_connection /",
+    "  int_flow_node / mdm_feedback / mdm_model_drift / mdm_quality_issue / sys_alert_rule / sys_schedule_task。",
+    "  判据：这些表无唯一索引，补软删不存在「同值无法重建」冲突；DDL 侧 deleted 列早已就位（实测 bone 库12/12 齐备）。",
+    "  剩余 22 张**有唯一索引**的表仍待DHL 决策（唯一索引改 (cols..., deleted)）——见 _uk_conflict。"
+  ],
+  "_evidence": {
+    "sdk_source": [
+      "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/domain/spec/TableMetadataResolver.java",
+      "  parseColumns 遍历整条继承链取 getDeclaredFields，buildColumnMetadata 用 field.isAnnotationPresent(Deleted.class)",
+      "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/domain/model/TableMetadata.java",
+      "  isSoftDeletable() = columns.stream().filter(ColumnMetadata::isSoftDeleted).findFirst().isPresent()",
+      "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/BaseRepository.java",
+      "  deleteById：isSoftDeletable() ? UPDATE SET deleted=true : DELETE FROM",
+      "bone-framework/bone-core/src/main/java/com/bone/core/domain/entity/AbstractEntity.java",
+      "  唯一声明 @Deleted private Boolean deleted = false 的地方（继承链 AbstractEntity → TenantAbstractEntity）"
+    ],
+    "runtime_probes": [
+      "mdm_steward：调 DELETE /api/v1/masterdata/governance-roles/{id} 后行数 1 → 0（物理删，已从 bak_20261003_steward 复原）",
+      "sys_config：造探针 config_key=probe_softdelete_20261003 → DELETE /api/v1/system/config/{id} → total 1 → 0（物理删，探针已随之消失）",
+      "反证 mdm_field（MasterDataField extends TenantAbstractEntity，基类自带 @Deleted）：同走 deleteById 后 total=1/deleted=1 → **软删正常**，证明判据是实体声明而非 DDL 列"
+    ],
+    "detection_note": "检测脚本须区分基类：extends AbstractEntity / TenantAbstractEntity → 软删正常；extends AggregateRoot / TenantAggregateRoot → 无 @Deleted。只看'实体文件里有没有字符串 @Deleted'会把继承来的漏判成风险（曾误报 48 个，实际 38 个）。"
+  },
+  "tables": {
+    "gen_code_template": {
+      "entity": "CodeTemplate",
+      "module": "studio-generator",
+      "classification": "physical-delete"
+    },
+    "gen_data_source": {
+      "entity": "DataSource",
+      "module": "studio-generator",
+      "classification": "physical-delete"
+    },
+    "gen_generation_task": {
+      "entity": "GenerationTask",
+      "module": "studio-generator",
+      "classification": "physical-delete"
+    },
+    "gen_table_metadata": {
+      "entity": "GenTableMetadata",
+      "module": "studio-generator",
+      "classification": "physical-delete"
+    },
+    "iam_account": {
+      "entity": "Account",
+      "module": "bone-iam",
+      "classification": "physical-delete",
+      "note": "★ 风险最高：账号被删除即不可恢复，审计与登录痕迹同时消失。租户注销链路亦涉此表。"
+    },
+    "iam_permission": {
+      "entity": "Permission",
+      "module": "bone-iam",
+      "classification": "physical-delete",
+      "note": "★ 权限删除即彻底回收授权，无法复原误授。"
+    },
+    "iam_role": {
+      "entity": "Role",
+      "module": "bone-iam",
+      "classification": "physical-delete",
+      "note": "★ 与 iam_role_permission 的授权关联会一并失去引用。"
+    },
+    "iam_tenant": {
+      "entity": "Tenant",
+      "module": "bone-iam",
+      "classification": "physical-delete",
+      "note": "★ 租户实体被删除即不可恢复，且 iam 侧多表以其为外键归属。2026-10-03 补登记：首版基线因正则误匹配到同名类 ExtIamTenantDirectory 而漏掉本表。"
+    },
+    "md_quality_rule": {
+      "entity": "DataQualityRule",
+      "module": "bone-masterdata",
+      "classification": "physical-delete",
+      "note": "质量规则删除后历史质检明细失去规则引用。"
+    },
+    "mdm_category": {
+      "entity": "MasterDataCategory",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "mdm_domain_template": {
+      "entity": "DomainTemplate",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "mdm_entity": {
+      "entity": "MasterDataEntity",
+      "module": "bone-masterdata",
+      "classification": "physical-delete",
+      "note": "★ 实体删除连带mdm_field / mdm_record 的引用完整性，且平台模板层实体被删后租户实例层无处对齐。"
+    },
+    "mdm_entity_subscription": {
+      "entity": "EntitySubscription",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "mdm_record": {
+      "entity": "MasterDataRecord",
+      "module": "bone-masterdata",
+      "classification": "physical-delete",
+      "note": "★★ 风险最高：主数据记录是业务数据本体，物理删除不可恢复且绕过 mdm_record_version 版本链。"
+    },
+    "mdm_reference_set": {
+      "entity": "ReferenceSet",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "mdm_reference_value": {
+      "entity": "ReferenceValue",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "mdm_reference_value_tenant": {
+      "entity": "TenantReferenceValue",
+      "module": "bone-masterdata",
+      "classification": "physical-delete"
+    },
+    "sys_config": {
+      "entity": "SystemConfig",
+      "module": "bone-system",
+      "classification": "physical-delete",
+      "note": "实测确认（2026-10-03 探针）：删除后 total 1 → 0。配置值历史不可追溯。"
+    },
+    "sys_dict_hierarchy": {
+      "entity": "SysDictHierarchy",
+      "module": "bone-system",
+      "classification": "physical-delete"
+    },
+    "sys_dict_item": {
+      "entity": "SysDictItem",
+      "module": "bone-system",
+      "classification": "physical-delete"
+    },
+    "sys_dict_item_text": {
+      "entity": "SysDictItemText",
+      "module": "bone-system",
+      "classification": "physical-delete"
+    },
+    "sys_dict_type": {
+      "entity": "SysDictType",
+      "module": "bone-system",
+      "classification": "physical-delete"
+    }
+  },
+  "_uk_conflict": {
+    "_note": "为何不能直接批量补 @Deleted：MySQL 软删 + 唯一索引需索引含 deleted 列，否则软删后同值无法重建。业界标准解法二选一：(A) 唯一索引改为 (cols..., deleted)——允许同值存在 1 条已删记录（MySQL 无 partial index）；(B) 保持物理删 + 独立归档表。本仓38 张表全部有 deleted 列，但唯一索引无一含 deleted，故 23 张有唯一索引的表恢复软删前必须先做 DDL 决策（L3 级，需架构师审批）。",
+    "tables_with_unique_index_not_covering_deleted": [
+      "gen_code_template",
+      "gen_data_source",
+      "gen_generation_task",
+      "gen_table_metadata",
+      "iam_account",
+      "iam_permission",
+      "iam_role",
+      "iam_tenant",
+      "md_quality_rule",
+      "mdm_category",
+      "mdm_domain_template",
+      "mdm_entity",
+      "mdm_entity_subscription",
+      "mdm_record",
+      "mdm_reference_set",
+      "mdm_reference_value",
+      "mdm_reference_value_tenant",
+      "sys_config",
+      "sys_dict_hierarchy",
+      "sys_dict_item",
+      "sys_dict_item_text",
+      "sys_dict_type"
+    ],
+    "tables_without_unique_index": [],
+    "_note_for_without_uk": "这 12 张表已于 2026-10-03 全部补齐 @Deleted（低风险先行批次），故本列表已清空——它们不再是待裁决缺口。后续若有新表无唯一索引且需恢复软删，直接补 @Deleted 即可，无 UK 冲突需评估。"
+  }
+}

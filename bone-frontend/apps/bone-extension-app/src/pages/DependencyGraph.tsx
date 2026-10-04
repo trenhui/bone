@@ -30,7 +30,7 @@ const ROW_GAP = 40;
 
 type Layout = {
   nodes: (DependencyNode & { x: number; y: number; col: number })[];
-  edges: (DependencyEdge & { fromX: number; fromY: number; toX: number; toY: number; toId?: number })[];
+  edges: (DependencyEdge & { fromX: number; fromY: number; toX: number; toY: number; toId?: string })[];
   width: number;
   height: number;
 };
@@ -143,7 +143,7 @@ const DependencyGraph: React.FC = () => {
   const [extPointId, setExtPointId] = useState<number | undefined>(undefined);
   const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: number }[]>([]);
 
-  const load = async (filterPointId?: number) => {
+  const load = async (filterPointId?: string) => {
     setLoading(true);
     try {
       const result = await getDependencyGraph(filterPointId);

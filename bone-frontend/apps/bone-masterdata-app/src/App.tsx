@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { App as AntdApp } from 'antd';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { EntityScopeProvider } from './context/EntityScopeContext';
 import EntityManagement from './pages/EntityManagement';
 import FieldManagement from './pages/FieldManagement';
 import QualityRuleManagement from './pages/QualityRuleManagement';
@@ -32,8 +33,13 @@ const AppContent: React.FC = () => {
 
   return (
     <MessageContext.Provider value={messageApi}>
-      <Router>
-        <Routes>
+      {/* 全局「当前主数据模型」作用域：一次选择，全站共享（分类 / 治理 / 工单 / 字段 / 记录 / 工作台） */}
+      <EntityScopeProvider>
+        {/* v7_startTransition / v7_relativeSplatPath：提前 opt-in React Router v7 行为，
+            消除每次挂载必打的 2 条 future flag 警告（2026-10-02 UI 巡检实测）。
+            两者均为 v7 的向后兼容默认值，语义不变。 */}
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Routes>
           {/* 主数据域视图 */}
           <Route path="/workbench" element={<DomainWorkbench />} />
           <Route path="/entities" element={<EntityManagement />} />
@@ -49,8 +55,9 @@ const AppContent: React.FC = () => {
           <Route path="/templates" element={<TemplateManagement />} />
           <Route path="/reference-sets" element={<ReferenceDataManagement />} />
           <Route path="/" element={<Navigate to="/workbench" replace />} />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </EntityScopeProvider>
     </MessageContext.Provider>
   );
 };

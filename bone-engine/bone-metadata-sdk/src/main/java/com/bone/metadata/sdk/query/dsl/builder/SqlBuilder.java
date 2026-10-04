@@ -35,6 +35,21 @@ public class SqlBuilder<T> {
   private String tenantColumn;
   private Object tenantValue;
 
+  /**
+   * 主表是否启用软删过滤（每个实例解析一次）。
+   *
+   * <p>判据与 Criteria 通道（{@code SelectBuilder} / {@code CountBuilder}）一致：实体元数据含带 {@code @Deleted}
+   * 的字段（{@code TableMetadata#isSoftDeletable()}）。
+   *
+   * <p><b>为何必须在此处补齐</b>：DSL（FluentQuery）是与 Criteria 并列的读通道，此前只注入租户谓词、<b>不注入 {@code deleted =
+   * false}</b>，导致同一张表经Criteria 查不到已删行、经 DSL 却能查出——同一实体两条读路径 结论相反。典型后果：软删清理掉的孤儿字段（{@code
+   * mdm_field}）仍会被 {@code findAllFields()} 之类的 DSL 查询捞回。
+   */
+  private boolean softDeletable;
+
+  /** 软删作用域解析结果缓存（每个 SqlBuilder 实例只解析一次）。 */
+  private boolean softDeleteResolved;
+
   public SqlBuilder(QueryContext<T> queryContext) {
     this.queryContext = queryContext;
   }
@@ -64,9 +79,10 @@ public class SqlBuilder<T> {
     sql.append("SELECT COUNT(*) FROM " + tableName);
 
     resolveTenantScope();
+    resolveSoftDeleteScope();
     List<Condition> conditions = queryContext.getConditions();
     boolean hasConditions = !conditions.isEmpty();
-    // 处理WHERE条件（整体加括号后再 AND 租户条件，防止 caller OR 分组击穿租户隔离）
+    // 处理WHERE条件（整体加括号后再 AND 租户/软删条件，防止 caller OR 分组击穿租户隔离或捞回已删行）
     if (hasConditions) {
       sql.append(" WHERE (");
       for (int i = 0; i < conditions.size(); i++) {
@@ -77,10 +93,8 @@ public class SqlBuilder<T> {
       }
       sql.append(")");
     }
-    if (tenantScoped) {
-      sql.append(hasConditions ? " AND " : " WHERE ");
-      appendTenantPredicate(null);
-    }
+    // COUNT 走独立构造路径、无表别名，故 alias 传 null；WHERE 仅在有 caller 条件时已写出
+    appendScopePredicates(hasConditions, hasConditions, null);
 
     return sql.toString();
   }
@@ -311,12 +325,13 @@ public class SqlBuilder<T> {
     resolveTenantScope();
     List<Condition> conditions = queryContext.getConditions();
     boolean hasConditions = !conditions.isEmpty();
-    if (!hasConditions && !tenantScoped) {
+    resolveSoftDeleteScope();
+    if (!hasConditions && !tenantScoped && !softDeletable) {
       return;
     }
 
     sql.append(" WHERE ");
-    // caller 条件整体加括号后再 AND 租户条件：若直接追加，
+    // caller 条件整体加括号后再 AND 租户/软删条件：若直接追加，
     // "a OR tenantId=xx OR t.tenant_id = :ctx" 的 OR 链会击穿租户隔离
     if (hasConditions) {
       sql.append("(");
@@ -331,11 +346,68 @@ public class SqlBuilder<T> {
       }
       sql.append(")");
     }
+    appendScopePredicates(true, hasConditions, queryContext.getEntityAlias());
+  }
+
+  /**
+   * 在 WHERE 之后追加租户谓词与软删谓词；{@code whereEmitted=false} 时由本方法补出 {@code WHERE} 关键字。
+   *
+   * @param whereEmitted 调用方是否已写出 {@code WHERE}（COUNT 路径仅在有caller 条件时写出）
+   * @param hasConditions caller 是否已有条件（决定连接符用 {@code AND}）
+   * @param alias 主表别名（非空时限定列名，避免 JOIN 后列名歧义；COUNT 无别名传 null）
+   */
+  private void appendScopePredicates(boolean whereEmitted, boolean hasConditions, String alias) {
+    // WHERE 已写出且caller 无条件时直接追加（" WHERE " 自带尾随空格）；否则需自行补连接符/关键字
+    String prefix = whereEmitted ? (hasConditions ? " AND " : "") : " WHERE ";
     if (tenantScoped) {
-      if (hasConditions) {
+      sql.append(prefix);
+      appendTenantPredicate(alias);
+      if (softDeletable) {
         sql.append(" AND ");
+        appendSoftDeletePredicate(alias);
       }
-      appendTenantPredicate(queryContext.getEntityAlias());
+      return;
+    }
+    if (softDeletable) {
+      sql.append(prefix);
+      appendSoftDeletePredicate(alias);
+    }
+  }
+
+  /**
+   * 追加软删谓词 {@code [alias.]deleted = false}。
+   *
+   * <p>用字面量 {@code false} 而非绑定参数：与 Criteria 通道（{@code SelectBuilder} / {@code CountBuilder} 写
+   * {@code m.deleted = false}）保持一致，布尔列无需参数化。
+   */
+  private void appendSoftDeletePredicate(String alias) {
+    if (alias != null && !alias.isEmpty()) {
+      sql.append(alias).append(".");
+    }
+    sql.append("deleted = false");
+  }
+
+  /**
+   * 解析主表软删作用域（每个实例解析一次）。
+   *
+   * <p>判据与 Criteria 通道一致：{@link TableMetadata#isSoftDeletable()}（实体元数据含带 {@code @Deleted}
+   * 的字段）。解析失败（如实体缺 {@code @Table}）按非软删表降级，与 {@link #resolveTenantScope()} 的宽容策略一致，不破坏既有查询。
+   */
+  private void resolveSoftDeleteScope() {
+    if (softDeleteResolved) {
+      return;
+    }
+    softDeleteResolved = true;
+    try {
+      TableMetadata tbl = TableMetadataResolver.load(queryContext.getEntityClass());
+      softDeletable = tbl.isSoftDeletable();
+    } catch (MissingTenantContextException e) {
+      throw e;
+    } catch (Exception e) {
+      log.debug(
+          "Soft-delete scope resolution skipped for {}: {}",
+          queryContext.getEntityClass(),
+          e.getMessage());
     }
   }
 

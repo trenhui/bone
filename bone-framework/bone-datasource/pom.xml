@@ -12,20 +12,15 @@
     <artifactId>bone-datasource</artifactId>
     <packaging>jar</packaging>
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

@@ -9,13 +9,16 @@ import com.bone.core.model.ProblemDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -113,6 +116,27 @@ public class GlobalExceptionHandler {
             .findFirst()
             .orElse("参数校验失败");
     return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, message);
+  }
+
+  /**
+   * 其余三类 Spring MVC 输入绑定/解析异常统一归 400。
+   *
+   * <p><b>为什么必须显式映射</b>：这四类都是<b>客户端输入错误</b>，若不在此拦截就会冒泡到 {@link #handleException} 的 {@code
+   * Exception}兜底，被记成 500 {@code COMMON_INTERNAL_ERROR}——把调用方的 笔误算进服务端故障预算，污染 5xx 告警与错误率指标（HC-003
+   * 契约层要求：状态码须表达真实语义）。
+   *
+   * <p>本模块 pom 只依赖 bone-core、不依赖 bone-web，故框架级 {@code GlobalExceptionHandler} 不在 classpath
+   * 上，无法替本模块补位——必须在此自带。
+   */
+  @ExceptionHandler({
+    MethodArgumentTypeMismatchException.class,
+    MissingServletRequestParameterException.class,
+    HttpMessageNotReadableException.class
+  })
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiResponse<ProblemDetail> handleBadRequest(Exception e) {
+    log.warn("请求参数不合法: {}", e.getMessage());
+    return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, "请求参数不合法");
   }
 
   @ExceptionHandler(Exception.class)

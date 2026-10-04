@@ -45,6 +45,18 @@ generated-sources/
 *.rar
 
 # =========================
+# Python 门禁脚本的字节码缓存
+# =========================
+# scripts/ 下有 20+ 个 python3 门禁（check-*.py / ci/ / frontend/），
+# 本机跑一次就会生成 __pycache__；无规则时它们会混进 `git status` 未跟踪列表，
+# 存在被 `git add -A` 误提交的风险（提交的是编译产物，且会让 diff 噪声化）。
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# =========================
 # IDE配置文件
 # =========================
 # IntelliJ IDEA
@@ -236,4 +248,8 @@ test_doc.txt
 .opencodereview/
 
 # Python 脚本字节码缓存（scripts/ 下 .py 运行产物，非源码）
-scripts/__pycache__/
+__pycache__/
+# 临时 PR 描述文件（非源码，由本地生成）
+PR_DESCRIPTION.md
+# 对外 Java SDK 生成物（ADR-0040）：构建产物，不进版本库
+target/sdk/

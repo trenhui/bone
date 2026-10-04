@@ -24,7 +24,7 @@
 
     <properties>
         <!-- 基础配置 -->
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -32,39 +32,48 @@
         
         <!-- 依赖版本锁定 - 遵循语义化版本控制 -->
         <!-- Spring生态 -->
-        <spring-boot.version>3.2.5</spring-boot.version>
-        <spring-cloud.version>2023.0.3</spring-cloud.version>
-        <spring-cloud-alibaba.version>2023.0.1.2</spring-cloud-alibaba.version>
+        <spring-boot.version>3.5.16</spring-boot.version>
+        <!-- Spring Boot 3.5.x 终版（2026-07 发布，收安全/缺陷修复），对齐 Spring Cloud 2025.0.x 与 SCA 2025.0.0.0；3.5.5→3.5.16 -->
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
+        <!-- Spring Cloud 2025.0.x (Northfields) 与 Boot 3.5.16 配对；注意：2025.0.x 已于 2026 年底被官方标记 EOL（无新补丁），
+             且 SCA 2025.0.x 线仅有 2025.0.0.0 一版。后续须借 Boot 4 迁移切到 2025.1.x (Oakwood)，此为中期里程碑 -->
+        <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
+        <!-- SCA 2025.0.x 线唯一版本即 2025.0.0.0（官方仅列此一），适配 Boot 3.5.x / SC 2025.0.x，托管 Nacos 3.0.3 / RocketMQ 5.3.1。
+             切 Boot 4 时需改 2025.1.x 线（适配 Boot 4.0/4.1 + SC 2025.1.x） -->
 
         <!-- 数据库相关 -->
-        <mysql-connector.version>8.0.33</mysql-connector.version>
+        <mysql-connector.version>8.4.0</mysql-connector.version>
         <hikaricp.version>5.1.0</hikaricp.version>
 
         <!-- 缓存 -->
-        <redisson.version>3.27.2</redisson.version>
+        <redisson.version>3.52.0</redisson.version>
 
         <!-- 工具类 -->
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
 
         <!-- API文档 -->
-        <springdoc.version>2.3.0</springdoc.version>
+        <!-- springdoc 2.9.x 兼容 Spring Boot 3.5；2.9.1 为 2.9 线最新补丁（Boot 3.x 维护线），升 2.9.1 收缺陷修复 -->
+        <springdoc.version>2.9.1</springdoc.version>
         <swagger-annotations.version>2.2.19</swagger-annotations.version>
         
         <!-- JWT -->
         <jjwt.version>0.12.6</jjwt.version>
 
         <!-- 监控观测 -->
+        <!-- SkyWalking apm-toolkit 与部署侧 agent/OAP 1:1 耦合：本版本须与线上 agent 版本严格一致。
+             未经运维确认升级 agent 前，切勿单独 bump 此值，否则链路追踪将断裂（trace 不上报）。 -->
         <skywalking.version>9.7.0</skywalking.version>
 
         <!-- 测试 -->
-        <mockito.version>5.11.0</mockito.version>
-        <jacoco.version>0.8.11</jacoco.version>
+        <mockito.version>5.12.0</mockito.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <!-- 覆盖率门槛（分阶段收紧）：起步 10% → 当前 15%，随测试补充逐步提升 -->
         <jacoco.minimum.coverage>0.15</jacoco.minimum.coverage>
         <jacoco.minimum.line>0.10</jacoco.minimum.line>
         <jacoco.minimum.branch>0.05</jacoco.minimum.branch>
-        <testcontainers.version>1.19.7</testcontainers.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
+        <archunit.version>1.2.1</archunit.version>
 
         <!-- 构建插件 -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
@@ -74,14 +83,41 @@
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         
         <!-- Bone 内部模块版本 -->
+        <!--固定值属性：以下三个模块是 release 版（1.0.0），必须用固定版本，
+             不能用 ${project.version}—— bone-metadata-engine 家族与 bone-metadata-server
+             自身是 1.0.0-SNAPSHOT，${project.version} 会让这些 release 依赖被解析成
+             1.0.0-SNAPSHOT 而失败（Could not find artifact）。见下方 dependencyManagement。 -->
         <bone-core.version>1.0.0</bone-core.version>
         <bone-metadata-sdk.version>1.0.0</bone-metadata-sdk.version>
+        <bone-architecture-test.version>1.0.0</bone-architecture-test.version>
 
         <!-- 静态代码分析 -->
         <spotless.version>2.43.0</spotless.version>
 
+        <!-- 第三方中间件版本集中管理（消除子模块硬编码漂移；Boot BOM 已管的无需在此声明） -->
+        <minio.version>8.5.7</minio.version>
+        <!-- apache rocketmq-spring-boot-starter（SCA BOM 不直接托管）；SCA 2025.0.0.0 适配 RocketMQ 5.3.1。
+             2.3.0 → 2.3.6：官方验证的 gRPC v2 SDK（2026-06），向后兼容 5.x broker，收缺陷/CVE 修复 -->
+        <rocketmq.version>2.3.6</rocketmq.version>
+        <!-- Camel 4.18.x 为仍支持 Spring Boot 3.x 的最后线（4.19 起弃 Boot 3 / 绑定 Spring Framework 7）。
+             4.18.0 → 4.18.2：4.18 线最新 LTS 补丁（2026-09-23），Boot 3.5 兼容；切勿跨 4.19 -->
+        <camel.version>4.18.2</camel.version>
+        <mongodb.version>4.11.1</mongodb.version>
+        <aliyun.dysms.version>2.2.1</aliyun.dysms.version>
+        <aliyun.core.version>4.6.3</aliyun.core.version>
+        <poi.version>5.3.0</poi.version>
+        <guava.version>33.4.0-jre</guava.version>
+        <!-- 第三方（非 Boot/SCA 托管，需显式版本，集中管理避免散落） -->
+        <aviator.version>5.4.1</aviator.version>
+        <!-- 对齐 SCA 2025.0.0.0 托管的 Nacos 3.0.3（2→3 大版本跨越）；Nacos 服务端须为 3.x，若为 2.x 需评估升级（类 L4 运维项） -->
+        <nacos-client.version>3.0.3</nacos-client.version>
+        <javapoet.version>1.13.0</javapoet.version>
+
         <!-- 测试开关默认值（可由 -DskipTests / -Dmaven.test.skip 覆盖） -->
         <skipTests>false</skipTests>
+        <!-- JDK 21 工具链开关：默认跳过（不影响 CI，CI 由 setup-java 提供 JDK 21）；
+             本地若保留 JAVA_HOME=17 而要用 JDK 21 编译，传 -Dmaven.toolchains.skip=false 并配合 -t toolchains.xml -->
+        <maven.toolchains.skip>true</maven.toolchains.skip>
     </properties>
 
     <dependencyManagement>
@@ -115,15 +151,18 @@
             </dependency>
 
             <!-- ===== Bone平台组件 ===== -->
+            <!--注意：bone-core / bone-architecture-test / bone-metadata-sdk 是 release 版（1.0.0），
+                 必须用固定版本属性；其余 SNAPSHOT 模块才用 ${project.version}。
+                 混用会让 release 依赖在 SNAPSHOT 模块里被解析成不存在的 1.0.0-SNAPSHOT。 -->
             <dependency>
                 <groupId>com.bone</groupId>
                 <artifactId>bone-core</artifactId>
-                <version>${project.version}</version>
+                <version>${bone-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.bone</groupId>
                 <artifactId>bone-architecture-test</artifactId>
-                <version>${project.version}</version>
+                <version>${bone-architecture-test.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.bone</groupId>
@@ -138,7 +177,7 @@
             <dependency>
                 <groupId>com.bone</groupId>
                 <artifactId>bone-metadata-sdk</artifactId>
-                <version>${project.version}</version>
+                <version>${bone-metadata-sdk.version}</version>
             </dependency>
 
             <!-- ===== 数据库相关 ===== -->
@@ -254,6 +293,22 @@
                 <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- ===== 架构测试（ArchUnit）集中管理 =====
+                 此前各模块各自硬编码 1.2.1，已统一数值但未集中；
+                 集中后版本仅在此一处维护，子模块去掉显式 <version>。 -->
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit</artifactId>
+                <version>${archunit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -512,7 +567,7 @@
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
-            <!-- JaCoCo 全局激活：prepare-agent + report + check（≥10% 指令覆盖，起步目标，见 jacoco.minimum.coverage） -->
+            <!-- JaCoCo 全局激活：prepare-agent + report + check（≥15% 指令覆盖，见 jacoco.minimum.coverage；另有 line 10% / branch 5% 两道 limit） -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -521,6 +576,30 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <!-- 可选 JDK 21 工具链：默认跳过（maven.toolchains.skip=true，不影响 CI）。
+                 本地若想保留 JAVA_HOME=17 而用 JDK 21 编译，执行：
+                 mvn -t toolchains.xml -Dmaven.toolchains.skip=false <goals> -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>${maven.toolchains.skip}</skip>
+                    <toolchains>
+                        <jdk>
+                            <version>21</version>
+                            <vendor>any</vendor>
+                        </jdk>
+                    </toolchains>
+                </configuration>
             </plugin>
         </plugins>
     </build>

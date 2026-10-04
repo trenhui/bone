@@ -92,7 +92,18 @@ public class MetaTemplateApplicationService {
               tf.getDefaultValue(),
               tf.getComment(),
               tf.getSortOrder(),
-              cmd.getModuleId());
+              cmd.getModuleId(),
+              // 以下 7 项为数据治理列（MetaField 于 aa2e77d0 扩展为 23 参工厂）。模板字段
+              // MetaModelTemplateField 本身不含这些列，实例化时无值可透传，故显式置 null
+              // （与 8 参工厂 create(...) 内部填 null 的口径一致）。
+              null, // dataClassification
+              null, // pii
+              null, // sensitivityLevel
+              null, // dataSteward
+              null, // businessTerm
+              null, // sourceSystem
+              null, // enumValues
+              null); // validationRules
       metaFieldRepository.insert(field);
     }
     log.info(

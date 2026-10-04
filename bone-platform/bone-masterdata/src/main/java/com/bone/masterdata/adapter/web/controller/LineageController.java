@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 数据血缘控制器 */
@@ -24,6 +25,9 @@ public class LineageController {
   private final LineageApplicationService lineageService;
 
   @Operation(summary = "记录数据血缘边")
+  // 血缘边是治理面数据（与 StewardController / ModelDriftController / EntitySubscriptionController
+  // / DataFeedbackController 同属masterdata:governance:write 这一组），故复用该码而非新造。
+  @PreAuthorize("hasAuthority('masterdata:governance:write')")
   @PostMapping
   public ApiResponse<Void> record(@Valid @RequestBody RecordLineageReq req) {
     RecordLineageCommand cmd = new RecordLineageCommand();

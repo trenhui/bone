@@ -12,5 +12,11 @@ logging:
 bone:
   extension:
     studio:
+      security:
+        # 生产恒为 false（失败关闭），且**显式声明**而非依赖
+        # spring.config.import 间接继承 application-metadata-mysql.yml 的同名键：
+        # import 是 optional（optional:classpath:...），键路径一旦漂移或
+        # metadata-mysql 文件改名，继承静默失效 ⇒ 生产退化为全站匿名且无人察觉。
+        permit-unauthenticated: false
       seed:
         enabled: false

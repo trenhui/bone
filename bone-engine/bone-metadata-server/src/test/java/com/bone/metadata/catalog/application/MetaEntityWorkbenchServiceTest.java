@@ -99,10 +99,11 @@ class MetaEntityWorkbenchServiceTest {
         entity.getId(),
         List.of(
             MetaField.create(
-                null, 1L, 501L, "amt", "amt", "金额", "STRING", null, true, true, null, null, 1, 1L),
+                null, 1L, 501L, "amt", "amt", "金额", "STRING", null, true, true, null, null, 1, 1L,
+                null, null, null, null, null, null, null, null),
             MetaField.create(
                 null, 1L, 501L, "amt2", "amt", "金额2", "DECIMAL", 18, false, false, null, null, 2,
-                1L)));
+                1L, null, null, null, null, null, null, null, null)));
     stubRelationsEmpty();
 
     List<EntityValidationIssue> issues = service.validateEntity(entity.getId());
@@ -321,7 +322,8 @@ class MetaEntityWorkbenchServiceTest {
 
   private MetaField field(long entityId, String code, String type, Integer length) {
     return MetaField.create(
-        null, 1L, entityId, code, code, code, type, length, false, false, null, null, 1, 1L);
+        null, 1L, entityId, code, code, code, type, length, false, false, null, null, 1, 1L, null,
+        null, null, null, null, null, null, null);
   }
 
   private void stubFields(long entityId, List<MetaField> fields) {

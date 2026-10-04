@@ -29,4 +29,5 @@ bone:
       persistence:
         mode: metadata
       security:
-        permit-unauthenticated: true
+        # H2 文件库联调 profile：与 in-memory 同理显式打开放行，基配置已改为 false。
+        permit-unauthenticated: ${BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED:true}

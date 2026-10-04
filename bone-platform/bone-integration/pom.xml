@@ -17,8 +17,7 @@
 
     <dependencies>
         <!-- bone-core -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
             <version>${bone-core.version}</version>
         </dependency>
@@ -41,173 +40,119 @@
           共存顺序：本模块 advice 经 @Order(HIGHEST_PRECEDENCE) 优先，模块特有映射（如连接器未实现 501）
           继续生效，其余异常由框架处理器兜底——不存在「同一异常两个 advice 争抢」的不确定行为。
         -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-web</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- bone-security（JWT 框架抽象，复用 JwtTokenService / AbstractJwtAuthenticationFilter） -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-security</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- bone-metadata-sdk -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
             <version>${bone-metadata-sdk.version}</version>
         </dependency>
 
         <!-- 集成事件告警（可选通道，见 integration.alert / alert.* 配置） -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-notification</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Spring Boot -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- Nacos 配置中心 -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
+        <dependency><groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
+        <dependency><groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
+        <dependency><groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         <!-- Resilience4j（Servlet 栈）：连接器/流程的熔断、重试与限流 -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
+        <dependency><groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
+        <dependency><groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-micrometer</artifactId>
         </dependency>
 
         <!-- Apache Camel 4.8（INT-11 路由编译） -->
-        <dependency>
-            <groupId>org.apache.camel.springboot</groupId>
+        <dependency><groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-boot-starter</artifactId>
-            <version>4.8.0</version>
+            <version>${camel.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
+        <dependency><groupId>org.apache.camel</groupId>
             <artifactId>camel-http</artifactId>
-            <version>4.8.0</version>
+            <version>${camel.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
+        <dependency><groupId>org.apache.camel</groupId>
             <artifactId>camel-jdbc</artifactId>
-            <version>4.8.0</version>
+            <version>${camel.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel.springboot</groupId>
+        <dependency><groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-ftp-starter</artifactId>
-            <version>4.8.0</version>
+            <version>${camel.version}</version>
         </dependency>
 
         <!-- RocketMQ -->
-        <dependency>
-            <groupId>org.apache.rocketmq</groupId>
+        <dependency><groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-spring-boot-starter</artifactId>
-            <version>2.2.0</version>
+            <version>${rocketmq.version}</version>
         </dependency>
 
         <!-- Redis -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <!-- Mongo 连接器 -->
-        <dependency>
-            <groupId>org.mongodb</groupId>
+        <dependency><groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.11.1</version>
+            <version>${mongodb.version}</version>
         </dependency>
         <!-- MinIO / S3 兼容连接器 -->
-        <dependency>
-            <groupId>io.minio</groupId>
+        <dependency><groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.5.7</version>
+            <version>${minio.version}</version>
         </dependency>
 
         <!-- Swagger -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
+        <dependency><groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.0.2</version>
         </dependency>
 
         <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <!-- Test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -216,12 +161,10 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
+            <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>

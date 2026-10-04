@@ -33,6 +33,14 @@ class TemplateTypeConsistencyTest {
       Pattern.compile("0, '[^']*', '([A-Za-z]+)', '[^']*', '([A-Za-z]+)',");
   private static final Pattern MIGRATION_ROW = Pattern.compile("code = '([A-Za-z]+)'\\);");
 
+  /**
+   * 种子行的第 8 个字段（engine）：形如 {@code 'entity', 'java', 'FREEMARKER', '1.0.0',}。 前面紧跟 {@code 0,} 是
+   * tenant_id（平台租户 0），故从 {@code 0,} 起数第7 个字符串字段即 engine。
+   */
+  private static final Pattern SEED_ENGINE =
+      Pattern.compile(
+          "0,\\s*'[^']*',\\s*'[A-Za-z]+',\\s*'[^']*',\\s*'[A-Za-z]+',\\s*'[A-Za-z]+',\\s*'([A-Za-z]+)',");
+
   @Test
   void builtInTypesMatchClasspathTemplates() {
     // classpath 模板 = 固定骨架 12 类 + 开关产物 2 类（单测 / 文档）+ 关系级产物 1 类（主子聚合）
@@ -82,6 +90,63 @@ class TemplateTypeConsistencyTest {
   void seedRowsMustNotCarryTemplateContent() throws IOException {
     // 真源是 classpath .ftl：种子里复制正文曾漂移成引用不存在的属性，导致生成任务直接失败
     assertFalse(seedBlock().contains("${table.customEntityName}"), "种子数据不应复制模板正文");
+  }
+
+  /**
+   * 模板引擎取值全仓唯一（2026-10-03）。
+   *
+   * <p><b>为何要这道门禁</b>：{@code gen_code_template.engine} 目前<b>没有任何调度消费点</b> （全仓 {@code getEngine()}
+   * 零命中，模块 pom 也没有 freemarker/velocity 依赖），所以取值不一致 today不会炸。但它是个随时会被接上的开关——一旦有人按engine
+   * 名做模板分发，大小写不匹配 会让模板「静默查不到引擎」，且因无运行时报错极难排查。属于典型低概率高排查成本的数据缺陷， 故在此钉死：DDL 默认值、种子数据、前端下拉三处必须同为全大写。
+   *
+   * <p>注意 {@code meta_code_template} 也曾用 {@code 'Freemarker'}（首字母大写），已一并统一， 两张表的 engine
+   * 语义本就相同，不应出现第二种写法。
+   */
+  @Test
+  void engineValueIsUppercaseEverywhere() throws IOException {
+    String init = Files.readString(REPO_ROOT.resolve("bone-init.sql"));
+
+    // 1) 两张表的 DDL 默认值都必须全大写
+    List<String> engineDdlLines = new ArrayList<>();
+    for (String line : init.lines().toList()) {
+      if (line.trim().startsWith("engine ")) {
+        engineDdlLines.add(line.trim());
+      }
+    }
+    assertEquals(2, engineDdlLines.size(), "预期恰好 2 张表声明 engine 列，实际: " + engineDdlLines);
+    for (String ddl : engineDdlLines) {
+      assertTrue(
+          ddl.contains("DEFAULT 'FREEMARKER'"),
+          "engine 的 DDL 默认值必须为全大写 FREEMARKER（与种子数据一致）: " + ddl);
+    }
+
+    // 2) gen_code_template 种子行里的 engine 值必须全是大写（种子里是第 8 个字段）
+    String seed = seedBlock();
+    List<String> seedEngines = new ArrayList<>();
+    Matcher m = SEED_ENGINE.matcher(seed);
+    while (m.find()) {
+      seedEngines.add(m.group(1));
+    }
+    assertFalse(seedEngines.isEmpty(), "未从种子数据解析到engine 取值");
+    // 覆盖率闸门：若将来新增种子行时列顺序变了，正则会一条都匹配不上，
+    // 此时上面那个循环会「零违规通过」—— 变成假门禁。故钉住「能数出的种子行数 == 解析条数」。
+    // 种子行形态为每行以 "(<id>, 0, ..." 开头（tenant_id 恒为 0）。
+    long seedRowCount = seed.lines().filter(l -> l.trim().startsWith("(")).count();
+    assertTrue(seedRowCount > 0, "未能按 '(<id>' 数出种子行，seedBlock 提取范围可能已漂移");
+    assertEquals(
+        (int) seedRowCount,
+        seedEngines.size(),
+        "engine 正则只解析到 "
+            + seedEngines.size()
+            + " 条，种子行共 "
+            + seedRowCount
+            + " 行；说明列顺序或行格式已变，需同步更新 SEED_ENGINE（否则本断言形同虚设）");
+    for (String engine : seedEngines) {
+      assertEquals(
+          "FREEMARKER",
+          engine,
+          "种子数据的 engine 必须是全大写 FREEMARKER，实际: " + engine + "（小写会导致将来按引擎名分发时静默失配）");
+    }
   }
 
   /** 只取 gen_code_template 的种子语句块：文件里还有其他形近的 INSERT，整表扫会误命中。 */

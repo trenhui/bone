@@ -82,7 +82,7 @@ export interface GeneratedFileItem {
 
 // 生成历史记录（对齐后端 CodeGenerationHistory 域模型，GET /api/v1/generator/history）
 export interface GenerationHistoryItem {
-  id: number;
+  id: string;
   taskId: string;
   templateId: string;
   templateName: string;

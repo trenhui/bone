@@ -39,3 +39,19 @@
 - 验证：e2e-generator-real-scenario.mjs（npm run e2e:real）14/14 PASS 含 javac 0 错误；单测 105/105。
 - 交付：studio-generator-真实场景端到端验证报告.md（仓库根）；改动在 dev 工作树未提交。
 - 教训：后台任务起 Java 服务 ~2min 被杀，用 nohup+disown。
+
+## 第四轮执行（2026-10-02）：菜单去重确认 + 产物在线查看 + 默认模板
+- 菜单去重：GeneratorLayout 本地 Sider 已删（上轮裁定），本轮经无头浏览器真实链路（登录 admin→Shell 3000→网关 8888→8086）截图确认无重复菜单。
+- 新增：GET /tasks/{taskId}/files 产物在线查看（清单/正文两模式）；ResultModal 重写（状态驱动+Monaco 预览+失败详情）；templateIds 空 = 全部平台 PUBLISHED 内建模板；修 api.ts getTaskStatus 类型错误。
+- 踩坑：默认模板解析用种子口径（created_by IS NULL）只回 6/12 条（迁移 0015 的模板带创建人）→ 新增 findPlatformPublishedAllTenants 修复。
+- 验证：E2E 17/17 PASS（新增 files manifest/content、默认模板三步）；单测 105/105；typecheck 过；UI 截图 /tmp/gen-shell-*.png。
+- 报告：studio-generator-真实场景端到端验证报告.md §〇（第二轮）。
+- 运维：MySQL(/usr/local/mysql bin)、8086/8888/8081/3000/3009 均用 run_in_background 拉起；sudo 起 MySQL 不行但本机 mysqld 本来就在跑（探测要用绝对路径 /usr/local/mysql/bin/mysql）。
+
+## 第五轮执行（2026-10-02 下午）：建议项落地（主子聚合 + 列回填 + 提交）
+- **主子聚合（一对多）**：genConfig 携带 childTable/childFkColumn → 新领域 SPI AggregateRelationFileGenerator（主+子双元数据签名，独立于单表 FileGenerator）+ aggregateService.ftl → 产出 {主表}AggregateApplicationService#createWithChildren（一次事务，外键参数=预分配主表 id，明细空抛 DomainException）。模板门禁新增第三类 RELATION_TEMPLATE_TYPES。仅支持单主表（多选报错）。
+- **存量列回填**：POST /data-sources/{id}/tables:repair-columns 复用幂等同步服务；前端缺列警示条+一键修复。
+- **验证**：E2E 22/22 PASS（聚合 25 文件 javac 0 错）；单测 111/111；typecheck 过。
+- **提交**：c196889fd→amend 为 20010b643（feat(generator)，dev 未推送）。首/二轮成果已由并发会话 aa2e77d0d 入库。
+- **门禁踩坑**：pre-commit 卡 BP_ORDER_CHANNEL_SOURCE_INVALID 未登记（并发会话 blueprint 在途码）→ 补台账(doc/architecture/Bone-错误码登记.md)+zh/en 语言包后才过；check.sh 步骤 1/2 需 mvn 在 PATH（wrapper maven）；钩子熔断计数 rm .git/hooks/.check-fail-count；git commit 前必须 export PATH（钩子继承当前 shell）。
+- **教训**：amend 前 git show --stat 核对——暂存区残留会把 generator 文件卷进 i18n message 提交（已 amend 修正）。

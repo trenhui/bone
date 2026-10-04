@@ -40,8 +40,26 @@ public class StewardApplicationService {
             role));
   }
 
+  /**
+   * 撤销指派（软删）。
+   *
+   * <p>之所以是「先 update 再 deleteById」两步：SDK 的 {@code deleteById} 只发 {@code SET deleted=1}，不会写 {@code
+   * updated_at}（已核 BaseRepository#deleteById 与 SqlExecutor）。
+   * 若直接软删，撤销时间将永远缺失，治理审计无法回答"该角色何时被撤"。故先由领域行为 {@link StewardAssignment#revoke()} 落下撤销时刻并
+   * update，再软删。
+   *
+   * @param id 指派 ID
+   * @throws com.bone.core.exception.BizException 指派不存在（含已被软删）时抛出，错误码 {@code
+   *     MD_STEWARD_ASSIGNMENT_NOT_FOUND}（HTTP 404）
+   */
   @Transactional
   public void unassign(Long id) {
+    StewardAssignment assignment = stewardRepository.findById(id);
+    if (assignment == null) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.STEWARD_ASSIGNMENT_NOT_FOUND, "指派不存在: " + id);
+    }
+    assignment.revoke();
+    stewardRepository.update(assignment);
     stewardRepository.deleteById(id);
   }
 

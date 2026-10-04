@@ -68,7 +68,7 @@ export const metadataEntitySnapshotApi = {
   list: (params?: {
     page?: number;
     size?: number;
-    tenantId?: number;
+    tenantId?: string;
     entityCodes?: string;
     keyword?: string;
   }): Resp<PageResult<Record<string, unknown>>> =>
@@ -79,16 +79,16 @@ export const templateApi = {
   getList: (params: { page: number; size: number; type?: string; status?: string }): Resp<PageResult<Record<string, unknown>>> =>
     api.get(`${G}/templates`, { params }),
 
-  getById: (id: number): Resp<Record<string, unknown>> => api.get(`${G}/templates/${id}`),
+  getById: (id: string): Resp<Record<string, unknown>> => api.get(`${G}/templates/${id}`),
 
   create: (data: Record<string, unknown>): Resp<Record<string, unknown>> => api.post(`${G}/templates`, data),
 
-  update: (id: number, data: Record<string, unknown>): Resp<Record<string, unknown>> =>
+  update: (id: string, data: Record<string, unknown>): Resp<Record<string, unknown>> =>
     api.put(`${G}/templates/${id}`, data),
 
-  delete: (id: number): Resp<void> => api.delete(`${G}/templates/${id}`),
+  delete: (id: string): Resp<void> => api.delete(`${G}/templates/${id}`),
 
-  publish: (id: number): Resp<void> => api.post(`${G}/templates/${id}:publish`),
+  publish: (id: string): Resp<void> => api.post(`${G}/templates/${id}:publish`),
 };
 
 export type GeneratorOperation = {

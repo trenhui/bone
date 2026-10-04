@@ -15,7 +15,7 @@ import DeploymentStateDiagram from './DeploymentStateDiagram';
  * 提供插件选择器，加载真实部署状态与依赖图并渲染，消除原 /deploy 路由的静态空占位。
  */
 const DeploymentManagementPage: React.FC = () => {
-  const [plugins, setPlugins] = useState<{ id: number; name: string }[]>([]);
+  const [plugins, setPlugins] = useState<{ id: string; name: string }[]>([]);
   const [pluginId, setPluginId] = useState<number | undefined>();
   const [state, setState] = useState<DeploymentStateView | null>(null);
   const [graph, setGraph] = useState<DependencyGraphView | null>(null);
@@ -30,7 +30,7 @@ const DeploymentManagementPage: React.FC = () => {
       .catch((e) => message.error(formatStudioError(e, '加载插件列表失败')));
   }, []);
 
-  const loadState = useCallback(async (id: number) => {
+  const loadState = useCallback(async (id: string) => {
     setLoading(true);
     try {
       const [s, g] = await Promise.all([getDeploymentState(id), getDependencyGraph()]);

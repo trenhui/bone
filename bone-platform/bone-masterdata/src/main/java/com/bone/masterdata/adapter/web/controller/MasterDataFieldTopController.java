@@ -8,6 +8,7 @@ import com.bone.masterdata.application.FieldApplicationService;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import com.bone.masterdata.application.query.qry.MasterDataFieldDetailQuery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +24,8 @@ public class MasterDataFieldTopController {
     return ApiResponse.success(fieldService.detail(new MasterDataFieldDetailQuery(id)));
   }
 
+  // 字段是实体的子资源，授权随宿主实体（与 MasterDataFieldController#create 同口径）。
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @RequestBody UpdateMasterDataFieldReq req) {
@@ -30,6 +33,7 @@ public class MasterDataFieldTopController {
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     fieldService.delete(id);

@@ -62,7 +62,7 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
    核心流程稳定；行业差异、客户定制通过扩展点与插件注入，避免 fork 主干。
 
 3. **单一可信数据源（Master Data）**  
-   客户、组织、物料等核心对象形成权威主数据和统一视图，通过 API/SDK 分发并治理副本一致性。
+   客户、组织、物料等核心对象形成权威主数据和统一视图，通过标准 REST API 分发并治理副本一致性。
 
 4. **契约化集成（Integration）**  
    异构系统通过连接器与可编排流程对接；协议适配、幂等、重试、可观测性为一等公民。
@@ -142,7 +142,7 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 | 状态 | 能力 |
 |------|------|
 | **当前实现** | 主数据实体与记录管理、业务实体转换、JSON 导出、质量报告查询 |
-| **演进目标** | 多品类治理、血缘追踪、清洗与质量评分、数据资产目录、标准 API/SDK 分发 |
+| **演进目标** | 多品类治理、血缘追踪、清洗与质量评分、数据资产目录、标准 REST API 分发 |
 
 **相关代码**：[`bone-platform/bone-masterdata`](bone-platform/bone-masterdata/) · [`bone-masterdata-app`](bone-frontend/apps/bone-masterdata-app/)
 

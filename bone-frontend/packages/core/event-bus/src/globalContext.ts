@@ -5,11 +5,11 @@
 
 /** 用户信息（从 JWT 解析后由 Shell 维护） */
 export interface GlobalUser {
-  id: number;
+  id: string;
   username: string;
   realName?: string;
   avatarUrl?: string;
-  tenantId: number;
+  tenantId: string;
   tenantName?: string;
   isAdmin: boolean;
 }

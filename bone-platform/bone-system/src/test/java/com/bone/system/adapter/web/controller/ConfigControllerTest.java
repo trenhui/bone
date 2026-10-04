@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.adapter.web.dto.request.ConfigPageReq;
 import com.bone.system.adapter.web.dto.request.CreateConfigReq;
@@ -18,6 +19,8 @@ import com.bone.system.domain.model.config.valueobject.ConfigType;
 import com.bone.system.domain.model.config.valueobject.ConfigValue;
 import com.bone.system.domain.repository.SystemConfigRepository;
 import com.bone.system.testsupport.MetadataSdkIntegrationTestConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +35,23 @@ import org.springframework.transaction.annotation.Transactional;
 @WithMockUser(authorities = {"sys:config:write"})
 @Transactional
 public class ConfigControllerTest {
+
+  /**
+   * sys_config 是租户作用域表，SDK 对其访问失败关闭（ADR-0029）：无 {@code TenantContext} 时 {@code findById} / {@code
+   * page} / 写路径一律抛 {@code MissingTenantContextException}。 生产环境该上下文由 JWT Filter 写入，本测试直调 Controller
+   * 故须自行模拟。
+   *
+   * <p>取值与 {@link #newConfig} 建数据的 {@code tenantId = 0L} 保持一致（平台租户）。
+   */
+  @BeforeEach
+  void setUpTenantContext() {
+    TenantContext.setTenantId(0L);
+  }
+
+  @AfterEach
+  void tearDownTenantContext() {
+    TenantContext.clear();
+  }
 
   @Autowired private ConfigController configController;
 

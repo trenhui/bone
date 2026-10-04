@@ -101,6 +101,10 @@ public class ConfigController {
 
   @Operation(summary = "导出配置快照（JSON，加密项脱敏）")
   @PostMapping("/export")
+  // 权限码取 sys:config:write 而非某个"读"码：权限目录当前只登记了 sys:config:write，
+  // 没有 sys:config:read。导出的是**全量**配置快照，虽对加密项脱敏，仍是配置面的完整视图，
+  // 属敏感面。在无独立读码可选时按更严一侧处理（能导= 能改），避免为它新造一个码。
+  @PreAuthorize("hasAuthority('sys:config:write')")
   public ResponseEntity<byte[]> exportConfig() {
     byte[] bytes = configSnapshotApplicationService.exportSnapshot();
     String ts = LocalDateTime.now().format(EXPORT_TS);
@@ -114,6 +118,8 @@ public class ConfigController {
 
   @Operation(summary = "导入配置快照（按 configKey upsert）")
   @PostMapping("/import")
+  // 导入即写（按 configKey upsert），与同控制器的 create/update/delete 同码。
+  @PreAuthorize("hasAuthority('sys:config:write')")
   public ApiResponse<ConfigSnapshotImportResult> importConfig(
       @RequestParam("file") MultipartFile file) {
     try {

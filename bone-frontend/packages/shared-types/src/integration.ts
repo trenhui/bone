@@ -3,7 +3,7 @@
  */
 
 export interface Connector {
-  id: number;
+  id: string;
   name: string;
   type: string;
   config: Record<string, unknown>;
@@ -25,8 +25,8 @@ export interface UpdateConnectorReq {
 }
 
 export interface FlowNode {
-  id: number;
-  flowId: number;
+  id: string;
+  flowId: string;
   name: string;
   type: string;
   config: Record<string, unknown>;
@@ -37,17 +37,17 @@ export interface FlowNode {
 }
 
 export interface FlowConnection {
-  id: number;
-  flowId: number;
-  sourceNodeId: number;
-  targetNodeId: number;
+  id: string;
+  flowId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
   condition: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface IntegrationFlow {
-  id: number;
+  id: string;
   name: string;
   description: string;
   status: string;
@@ -68,8 +68,8 @@ export interface CreateFlowReq {
     positionY: number;
   }[];
   connections: {
-    sourceNodeId: number;
-    targetNodeId: number;
+    sourceNodeId: string;
+    targetNodeId: string;
     condition: string;
   }[];
 }
@@ -78,7 +78,7 @@ export interface UpdateFlowReq {
   name: string;
   description: string;
   nodes: {
-    id?: number;
+    id?: string;
     name: string;
     type: string;
     config: Record<string, unknown>;
@@ -86,16 +86,16 @@ export interface UpdateFlowReq {
     positionY: number;
   }[];
   connections: {
-    id?: number;
-    sourceNodeId: number;
-    targetNodeId: number;
+    id?: string;
+    sourceNodeId: string;
+    targetNodeId: string;
     condition: string;
   }[];
 }
 
 export interface IntegrationLog {
-  id: number;
-  flowId: number;
+  id: string;
+  flowId: string;
   flowName: string;
   status: string;
   startTime: string;
@@ -107,7 +107,7 @@ export interface IntegrationLog {
 }
 
 export interface FlowStatistics {
-  flowId: number;
+  flowId: string;
   flowName: string;
   executionCount: number;
   successCount: number;

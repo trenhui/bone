@@ -1,6 +1,7 @@
 package com.bone.studio.generator.domain.model.history;
 
 import com.bone.core.annotation.Id;
+import com.bone.core.annotation.PhysicalDelete;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
@@ -8,6 +9,7 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@PhysicalDelete(reason = "代码生成历史：append-only 追溯记录，按保留期归档")
 @Table("gen_code_generation_history")
 public class CodeGenerationHistory extends AggregateRoot<Long> {
 

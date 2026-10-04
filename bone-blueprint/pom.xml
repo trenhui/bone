@@ -16,28 +16,21 @@
     <description>Bone框架样板工程</description>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
 
     <dependencies>
         <!-- Spring Boot -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
@@ -46,71 +39,61 @@
              不用 Testcontainers：它依赖 Docker 守护进程与镜像拉取，离线/CI 无网环境直接不可用；
              而装配级测试要验的是「Spring 能否把全量上下文装配起来」（bean 名冲突 / 缺失依赖 / 循环引用），
              与真实数据库方言无关。持久化语义仍由 -Pintegration 的本地 MySQL 集成测试覆盖。 -->
-        <dependency>
-            <groupId>com.h2database</groupId>
+        <dependency><groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
 
         <!-- Spring Security -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- Validation（Spring Boot 3 使用 jakarta.validation） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
         <!-- Bone Core -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Bone Security（JwtTokenService 离线验签 / JwtConfig 共享密钥 / AbstractJwtAuthenticationFilter） -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-security</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Bone Web -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-web</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
         
         <!-- Bone Metadata SDK -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- RocketMQ（outbox MQ 发送，OrderPaidIntegrationMqListener / RocketMqOrderMessageSender） -->
-        <dependency>
-            <groupId>org.apache.rocketmq</groupId>
+        <dependency><groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-spring-boot-starter</artifactId>
-            <version>2.2.0</version>
+            <version>${rocketmq.version}</version>
         </dependency>
         
         <!-- Bone Extension SDK -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-extension-sdk</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Redis：bone-extension-sdk 的控制面同步（ExtensionSyncConfiguration
              需要 RedisConnectionFactory 订阅 bone:ext:metadata:refresh 刷新通道，
              并从 RedisExtensionMetadataStore 叠加 studio 发布的路由元数据） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         
@@ -118,53 +101,43 @@
              踩坑经过与症状见 README「JJWT 版本不能降级」。 -->
 
         <!-- MySQL Driver -->
-        <dependency>
-            <groupId>com.mysql</groupId>
+        <dependency><groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
             <scope>runtime</scope>
         </dependency>
 
         <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
         <!-- MapStruct -->
-        <dependency>
-            <groupId>org.mapstruct</groupId>
+        <dependency><groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
         </dependency>
 
         <!-- Swagger -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
+        <dependency><groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.2.0</version>
         </dependency>
         
         <!-- ArchUnit -->
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
 
         <!-- Bone 共享 ArchUnit 规则（《Bone-DDD》§21） -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         
         <!-- Spring Cloud Alibaba -->
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
+        <dependency><groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
 
@@ -172,24 +145,19 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
+            <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
                 <configuration>
                     <!-- 集成测试（@Tag("integration")）需外部 MySQL，默认 mvn test 不执行，
                          保持离线门禁可跑；显式运行：mvn -pl bone-blueprint test -Pintegration -->
                     <excludedGroups>integration</excludedGroups>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -236,10 +204,8 @@
             <id>integration</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
+                    <plugin><groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.2.5</version>
                         <configuration>
                             <!-- 仅供显式运行：只跑 integration 组；覆盖默认的 excludedGroups，
                                  否则被测组会被基础配置再次排除。 -->

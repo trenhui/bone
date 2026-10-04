@@ -18,6 +18,10 @@ class NotificationErrorsMappingTest {
         .isEqualTo(400);
     assertThat(NotificationErrors.httpStatusOf(NotificationErrorCodes.TENANT_MISMATCH))
         .isEqualTo(400);
+    // ACCOUNT_REQUIRED=「根本没有身份」→ 401；ACCESS_DENIED=「身份有效但不属这条消息」→ 403。
+    // 两者语义不同，若误配成 403，客户端会当成已登录无权限而错误地引导重新登录。
+    assertThat(NotificationErrors.httpStatusOf(NotificationErrorCodes.ACCOUNT_REQUIRED))
+        .isEqualTo(401);
   }
 
   @Test

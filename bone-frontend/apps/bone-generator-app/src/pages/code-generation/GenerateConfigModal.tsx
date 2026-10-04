@@ -34,7 +34,7 @@ export default function GenerateConfigModal(props: UseCodeGeneration): JSX.Eleme
     let cancelled = false;
     setLoadingPreview(true);
     templateApi
-      .getById(Number(previewTemplateId))
+      .getById(previewTemplateId)
       .then((res) => {
         if (cancelled) return;
         const data = (res.data ?? {}) as Record<string, unknown>;

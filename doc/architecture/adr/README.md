@@ -47,3 +47,4 @@
 | [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已实现**） |
 | [0038](./0038-platform-model-template-and-scope.md) | 平台模型层 — 模板 + 三层归属 + 租户实例化（**已接受 / 已实现最小切片**，2a §G3） |
 | [0039](./0039-release-package-with-approval-and-rollback.md) | 发布包 — 以模块为单元的变更集、审批与回滚（**已接受 · 分批落地**，2a §G4） |
+| [0040](./0040-external-client-sdk-generated-from-openapi.md) | 对外客户端 SDK — 以 OpenAPI 规范为唯一真源生成，不手写占位模块（**提议 · 待批准**；决策已落地其半：空壳 `bone-sdk` 已于 2026-10-03 整棵移除，基线登记清空，门禁改盯两个真 SDK） |

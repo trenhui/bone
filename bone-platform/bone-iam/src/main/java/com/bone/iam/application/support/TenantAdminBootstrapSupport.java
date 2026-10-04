@@ -42,6 +42,20 @@ public class TenantAdminBootstrapSupport {
    * <p>masterdata 租户码（G6 / 3a §4.4）与 bone-init.sql 演示租户管理员（角色 3）绑定保持一致。
    *
    * <p>平台域操作 {@code masterdata:templates:write}（域模板维护/发版）不对租户授出，租户仅保留 read / instantiate。
+   *
+   * <p><b>2026-10-03 新增授权码的授予取舍</b>（业界惯例：租户管理员 = 租户日常运营全权， 但**跨域高危能力**与**平台基础设施**不授出）：
+   *
+   * <ul>
+   *   <li>授予 —— {@code integration:flows:*} / {@code integration:connectors:write}：集成流与连接器是租户
+   *       自有资产（连的是租户自己的库），是租户日常运营的一部分。
+   *   <li>授予 —— {@code integration:executions:write}：触发/重试集成执行是运营动作（补数据、重跑对账）。
+   *   <li>授予 —— {@code file:objects:write}：**必须授予** —— 头像、附件、导入模板等大量功能依赖上传端点， 缺失会让所有带附件的功能 403。
+   *   <li>不授予 —— {@code generator:datasources:sync} / {@code generator:admin:write}：
+   *       前者会**改真实数据库表结构**，后者批量改实体名，属破坏性且影响面超出单租户； 交给平台侧运维角色。
+   *   <li>不授予 —— {@code masterdata:standards:write}：数据标准是跨租户对齐的契约，改动会影响下游消费方， 属平台治理面（与 {@code
+   *       masterdata:templates:write} 同理）。
+   *   <li>不授予 —— {@code sys:ops:execute}：部署/升级/重启/关停作用于**平台实例**本身， 一次误调用会影响所有租户，爆炸半径超出任何租户域权限。
+   * </ul>
    */
   private static final Set<String> TENANT_ADMIN_PERMISSION_CODES =
       Set.of(
@@ -68,7 +82,13 @@ public class TenantAdminBootstrapSupport {
           "masterdata:quality:write",
           "masterdata:reference:read",
           "masterdata:reference:write",
-          "masterdata:governance:write");
+          "masterdata:governance:write",
+          "integration:flows:read",
+          "integration:flows:write",
+          "integration:connectors:read",
+          "integration:connectors:write",
+          "integration:executions:write",
+          "file:objects:write");
 
   private static final String INITIAL_PASSWORD_PREFIX = "Bone-";
   private static final SecureRandom RANDOM = new SecureRandom();

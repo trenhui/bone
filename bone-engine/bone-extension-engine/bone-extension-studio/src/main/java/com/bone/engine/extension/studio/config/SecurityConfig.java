@@ -24,12 +24,15 @@ public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final boolean permitUnauthenticated;
+  private final ReporterTokenFilter reporterTokenFilter;
 
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthenticationFilter,
+      ReporterTokenFilter reporterTokenFilter,
       @Value("${bone.extension.studio.security.permit-unauthenticated:false}")
           boolean permitUnauthenticated) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.reporterTokenFilter = reporterTokenFilter;
     this.permitUnauthenticated = permitUnauthenticated;
   }
 
@@ -61,7 +64,9 @@ public class SecurityConfig {
               }
               // 数据面执行日志上报端点：业务进程（bone-extension-sdk StudioExecutionLogReporter）
               // 以进程身份异步上报，不携带终端用户 JWT——业界控制面对数据面上报通道单独放行，
-              // 安全边界由网络层（内网/网关白名单）保障。放行位置独立于联调开关，鉴权模式同样生效。
+              // 但**必须由 ReporterTokenFilter 校验机器身份**（X-Reporter-Token 共享密钥）：
+              // 裸permitAll 等于任何能访问该端口的人都能伪造执行日志（className/status/errorMessage
+              // 全部取自请求体），污染运维视图与告警依据。放行位置独立于联调开关，鉴权模式同样生效。
               authorize
                   .requestMatchers(
                       HttpMethod.POST,
@@ -71,6 +76,7 @@ public class SecurityConfig {
               authorize.requestMatchers("/api/**").authenticated().anyRequest().permitAll();
             })
         .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+        .addFilterBefore(reporterTokenFilter, JwtAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }

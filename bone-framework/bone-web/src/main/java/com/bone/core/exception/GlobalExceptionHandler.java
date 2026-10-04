@@ -290,25 +290,11 @@ public class GlobalExceptionHandler {
   /**
    * 判断异常是否为 Spring Security 的「已认证但权限不足」（HTTP 403 语义）。
    *
-   * <p><b>为何按类名判定而不是 {@code instanceof}</b>：本模块（{@code bone-web}）不依赖 Spring Security， 各业务模块按需引入，此处若
-   * {@code import} 具体异常类型就会把 security 反向拉成本模块的强依赖。 鉴权失败的类型名稳定到可以作为契约，故按全限定名识别——这样同一个 {@code
-   * bone-web} 既能给带 security 的模块（blueprint / iam / masterdata）用，也不污染不带 security 的模块。
-   *
-   * <p><b>覆盖两类名字</b>：经典 {@code AuthorizationManager} 之前的 {@code AccessDeniedException} 与 Spring
-   * Security 6 新授权栈的 {@code AuthorizationDeniedException}， 两者都表示「通过认证但无权访问」，语义均为 403（区别于未认证的 401）。
-   *
-   * <p><b>为何遍历 cause 链</b>：真实链路里鉴权异常常被链路中的其他异常包一层，只看顶层会漏判， 继而再次掉进 500 兜底——这正是要修的现象本身。
+   * <p>委托给 {@link AccessDeniedDetector}：判定逻辑需要被<b>有 security 的模块</b>用真实子类断言，而本类所在模块 不依赖
+   * security，故把「按类型解析 + 子类覆盖 + 解析失败告警」集中到独立工具类，见其 javadoc。
    */
   private static boolean isAccessDenied(Throwable ex) {
-    for (Throwable t = ex; t != null; t = t.getCause()) {
-      String name = t.getClass().getName();
-      if ("org.springframework.security.access.AccessDeniedException".equals(name)
-          || "org.springframework.security.authorization.AuthorizationDeniedException"
-              .equals(name)) {
-        return true;
-      }
-    }
-    return false;
+    return AccessDeniedDetector.isAccessDenied(ex);
   }
 
   /**

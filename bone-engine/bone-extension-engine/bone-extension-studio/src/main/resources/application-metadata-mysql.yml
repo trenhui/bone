@@ -28,4 +28,7 @@ bone:
       persistence:
         mode: metadata
       security:
+        # 对接平台 MySQL：恒为 false（失败关闭），且是裸字面量而非占位符 ——
+        # 生产不应存在"注入环境变量即可打开放行"这条路径。
+        # （由 check-security-fail-open-default.py 的 R3 强制：生产 profile 用占位符即 FAIL。）
         permit-unauthenticated: false

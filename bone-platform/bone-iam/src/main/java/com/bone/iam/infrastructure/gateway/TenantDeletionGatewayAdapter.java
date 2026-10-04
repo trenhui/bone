@@ -42,8 +42,17 @@ public class TenantDeletionGatewayAdapter implements TenantDeletionGateway {
           "iam_refresh_token",
           // bone-system
           "sys_config",
+          // 2026-10-03 补登：以下 5 张是 sys_config / sys_dict 的子表，含 tenant_id 且有活跃实体
+          // （@Table 分别映射到 ConfigHistory / SysDictHierarchy / SysDictItem /
+          // SysDictItemText / SysDictType），此前只登了父表 sys_config、sys_dict，
+          // 租户离场会残留这些子表数据。门禁 scripts/check-tenant-deletion-coverage.py 报出。
+          "sys_config_history",
           "sys_log",
           "sys_dict",
+          "sys_dict_type",
+          "sys_dict_hierarchy",
+          "sys_dict_item",
+          "sys_dict_item_text",
           "sys_schedule_task",
           "sys_alert_rule",
           "sys_alert_event",

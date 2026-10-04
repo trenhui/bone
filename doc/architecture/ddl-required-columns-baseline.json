@@ -102,29 +102,42 @@
       "note": "流程执行记录：只追加（started_at/ended_at 即生命周期）"
     },
     "md_entity": {
-      "missing": [],
-      "classification": "resolved",
-      "note": "G1 已收敛（2026-09-26）：聚合持久化目标切换为 mdm_entity（见 scripts/migration/0001_masterdata_mdm_convergence.sql），md_* 运行时兼容表已从 bone-init.sql §8 移除；本条目仅保留指向已下线历史表"
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "G1 收敛后遗留的运行时兼容表：bone-masterdata 已无任何 @Table(\"md_entity\") 映射，实库最后写入 2026-09-26（G1 切换 mdm_entity 同日），当前为只读僵尸表。DDL 仍在 §8.1 保留建表语句（原 note 称『已从 init.sql 移除』与事实不符，2026-10-02 更正）。缺 deleted 因该表不再承担软删语义；彻底下线属 L3 DDL 变更，未获架构师批准前不删表。"
     },
-    "md_field": {
-      "missing": [],
-      "classification": "resolved",
-      "note": "G1 已收敛：md_field 切换为 mdm_field"
+    "md_lineage": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "血缘记录为只追加事件流（2026-10-03 二次核实，原 needs-owner-decision 分类有误）：全仓唯一写路径是 DataLineageEventHandler#handle 的 repository.save()，LineageRecord 只有 create() 静态工厂、无任何状态变更行为方法、无 update/delete 调用。追加写 + 不可变 → 不需要 updated_at/deleted。原 note 称『缺 tenant_id』亦与事实不符：bone-init.sql 与实库均已有 tenant_id BIGINT NOT NULL DEFAULT 0 且建有 idx_lineage_tenant，TenantAggregateRoot 提供租户护栏。2026-10-03 更正。"
     },
     "md_record": {
-      "missing": [],
-      "classification": "resolved",
-      "note": "G1 已收敛：md_record 切换为 mdm_record（含 tenant_id/deleted/submitted_by）；两表租户隔离裁决为行级 tenant_id + 平台模板层另建（3a 设计 §1.1/§2）"
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "G1 收敛后遗留的运行时兼容表：已无 @Table(\"md_record\") 映射（实体的 @Table 为 mdm_record），实库最后写入 2026-09-26。缺 deleted 同 md_entity；37 行历史数据仅存于开发库。下线属 L3，不自行删表。"
+    },
+    "md_standard": {
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "数据标准定义：更新走 UPDATE，无软删语义"
     },
     "mdm_qcheck_detail": {
       "missing": [
-        "tenant_id",
         "created_at",
         "updated_at",
         "deleted"
       ],
       "classification": "by-design",
-      "note": "质检明细：租户随 check_id；只追加（时间列名 checked_at）"
+      "note": "质检明细：只追加子表，无软删/审计列（时间列名 checked_at）。2026-10-02 起已有领域聚合 QualityCheckDetail + 仓储 + performCheck 写入链路（此前只有 DDL，导致 recordId 无法真正参与筛选）"
     },
     "mdm_qcheck_report": {
       "missing": [
@@ -137,11 +150,10 @@
     },
     "mdm_qcheck_task": {
       "missing": [
-        "updated_at",
         "deleted"
       ],
-      "classification": "gap-candidate",
-      "note": "质检任务有 status/started_at/completed_at，状态可变却无 updated_at"
+      "classification": "by-design",
+      "note": "2026-10-03 迁移已执行并验收：scripts/migration/0019_qcheck_task_updated_at.sql 在 bone 开发库执行成功（列就位、9 行回填 updated_at=created_at、幂等复跑不覆盖、updated_at_null=0），执行前已备份 bak_20261003_qtask。QualityCheck 实体已带 updatedAt（create() 落初始值、complete() 刷新）。故 updated_at 缺口闭合，条目保留仅因 deleted 仍缺——**deleted 属 by-design**：质检任务无删除语义（领域无 revoke 行为、无 delete 调用，completed_at 已是终态标识），不补列。本条可视为终态：不再有需要 L3 批准的迁移。"
     },
     "mdm_record_category": {
       "missing": [
@@ -161,46 +173,36 @@
       "classification": "by-design",
       "note": "记录版本历史：租户随 record，且只追加"
     },
-    "md_lineage": {
+    "mdm_steward_scope": {
       "missing": [
-        "tenant_id",
+        "updated_at"
+      ],
+      "classification": "by-design",
+      "note": "2026-10-03 裁决（原 needs-owner-decision）。设计文档 doc/design/modules/3a 主数据模块设计方案 §3.3 明确把本表列为 **P1『新建』的未来表**：『mdm_steward_scope —— Steward 授权范围（全域 / 分类子树 / 组织范围）——记录级数据权限』，与 mdm_steward（本表的主表，已有实体与活跃读写）配套。故『代码未接』是设计预期内的未实现功能，不是缺陷，缺 updated_at 目前无实际影响（无代码写它，实库 0 行）。裁决口径：**功能落地时必须与 mdm_steward 同批补updated_at**（不能只补本表——授权范围的可追溯性与指派同一治理审计链）；若届时仍不需要改授权范围，则应随该功能取消一并删表而非补列。已核实全仓引用面：仅 bone-init.sql、租户删除清单（TenantDeletionGatewayAdapter）、scripts/verify_tenant_isolation_e2e.py 与文档，**零 Java 实体映射**（R7 已登记盲区，见多租户数据隔离方案设计 §3.3 租户实例层表格『读写通道未经核验』）。"
+    },
+    "mdm_template_version": {
+      "missing": [
         "updated_at",
         "deleted"
       ],
-      "classification": "needs-owner-decision",
-      "note": "血缘记录：只追加，但租户归属未在 DDL 表达，需元数据 Owner 裁决"
-    },
-    "md_standard": {
-      "missing": [
-        "deleted"
-      ],
       "classification": "by-design",
-      "note": "数据标准定义：更新走 UPDATE，无软删语义"
+      "note": "域模板版本快照：TemplateVersion 语义为『发布时冻结当时的 schema』，一经发布不可变（无 update 路径，AggregateRoot 无仓储更新调用）。追加写 + 不可变，故不需要 updated_at/deleted。列名仍为 created_at。"
     },
     "ntf_message": {
       "missing": [
-        "tenant_id",
         "updated_at",
         "deleted"
       ],
-      "classification": "needs-owner-decision",
-      "note": "站内信：按 user_id 隔离但用户属租户，缺 tenant_id 使跨租户直查无隔离，需通知 Owner 裁决"
+      "classification": "by-design",
+      "note": "站内信（2026-10-03 二次核实，原 needs-owner-decision 分类有误）：原 note 称『缺 tenant_id 使跨租户直查无隔离』，但 bone-init.sql 与实库均已有 tenant_id BIGINT NOT NULL DEFAULT 0，索引 idx_ntf_tenant_user(tenant_id,user_id) 已在，且 NotificationApplicationService#markRead 走 findByIdAndTenant(id, tenantId) 做归属校验（记忆里 2026-09-30 的『ntf_message.tenant_id 缺失致站内信 500』已通过 ALTER + 同步 init.sql 修复，基线未随之更新）。deleted 无删除路径——站内信不可撤回，NotificationMessage 聚合无 delete/revoke 行为。updated_at 属可选增强（is_read 变更时刻已由客户端/事件流水可追），当前无审计诉求，by-design。"
     },
-    "sys_alert_event": {
-      "missing": [
-        "updated_at",
-        "deleted"
-      ],
-      "classification": "gap-candidate",
-      "note": "告警事件有 status/resolved_at，状态可变却无 updated_at（排查/闭环时间无处落）"
-    },
-    "sys_log": {
+    "sys_config_history": {
       "missing": [
         "updated_at",
         "deleted"
       ],
       "classification": "by-design",
-      "note": "运行日志：只追加"
+      "note": "配置变更流水（ADR-0030 C2 投影表）：ConfigHistory 实体 javadoc 已写明『历史为只追加流水，不承接业务命令，故无需软删 / 乐观锁』，每次配置变更追加一行、只读不改。时间列名仍为 created_at。"
     },
     "t_order_item": {
       "missing": [

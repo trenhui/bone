@@ -5,7 +5,7 @@
 #     --build-arg ARTIFACT_ID=bone-iam \
 #     -t bone/bone-iam:latest .
 
-ARG JAVA_VERSION=17
+ARG JAVA_VERSION=21
 ARG MAVEN_VERSION=3.9.6
 
 # 阶段1: Maven 构建
@@ -20,7 +20,6 @@ COPY bone-framework/pom.xml bone-framework/
 COPY bone-engine/pom.xml bone-engine/
 COPY bone-engine/bone-extension-engine/pom.xml bone-engine/bone-extension-engine/
 COPY bone-platform/pom.xml bone-platform/
-COPY bone-sdk/pom.xml bone-sdk/
 
 # 下载依赖（利用缓存层）
 RUN mvn dependency:go-offline -B -q || true

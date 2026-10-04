@@ -17,10 +17,11 @@ import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type {
   MasterDataField,
-  MasterDataEntity,
   CreateMasterDataFieldReq,
 } from '../types';
-import { masterDataFieldApi, masterDataEntityApi } from '../services/api';
+import { masterDataFieldApi } from '../services/api';
+import { useEntityScope } from '../context/EntityScopeContext';
+import EntityScopeSelect from '../components/EntityScopeSelect';
 import { useMessage } from '../App';
 
 const { Option } = Select;
@@ -35,26 +36,10 @@ const FieldManagement: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState<MasterDataField[]>([]);
-  const [entities, setEntities] = useState<MasterDataEntity[]>([]);
-  const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
+  // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
+  const { entities: entityOptions, entityId: selectedEntityId } = useEntityScope();
 
-  const fetchEntities = useCallback(async () => {
-    try {
-      const response = await masterDataEntityApi.page({ pageSize: 100 });
-      if (response.code === 200) {
-        setEntities(response.data.list);
-        if (response.data.list.length > 0 && !selectedEntityId) {
-          setSelectedEntityId(response.data.list[0].id);
-        }
-      } else {
-        message.error(response.message);
-      }
-    } catch {
-      message.error('获取模型列表失败');
-    }
-  }, [selectedEntityId]);
-
-  const fetchFields = useCallback(async (entityId: number) => {
+  const fetchFields = useCallback(async (entityId: string) => {
     setLoading(true);
     try {
       const response = await masterDataFieldApi.listByEntityId(entityId);
@@ -69,10 +54,6 @@ const FieldManagement: React.FC = () => {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    void fetchEntities();
-  }, [fetchEntities]);
 
   useEffect(() => {
     if (selectedEntityId) {
@@ -118,7 +99,7 @@ const FieldManagement: React.FC = () => {
   };
 
   // 删除字段
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await masterDataFieldApi.delete(id);
       if (response.code === 200) {
@@ -264,18 +245,7 @@ const FieldManagement: React.FC = () => {
         {/* 模型选择 */}
         <Form layout="inline" style={{ marginBottom: 16 }}>
           <Form.Item label="选择模型">
-            <Select
-              style={{ width: 300 }}
-              placeholder="请选择主数据模型"
-              value={selectedEntityId}
-              onChange={setSelectedEntityId}
-            >
-              {entities.map(entity => (
-                <Option key={entity.id} value={entity.id}>
-                  {entity.name}
-                </Option>
-              ))}
-            </Select>
+            <EntityScopeSelect showStatus={false} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
@@ -310,7 +280,7 @@ const FieldManagement: React.FC = () => {
             rules={[{ required: true, message: '请选择所属模型' }]}
           >
             <Select disabled>
-              {entities.map(entity => (
+              {entityOptions.map(entity => (
                 <Option key={entity.id} value={entity.id}>
                   {entity.name}
                 </Option>
@@ -440,7 +410,7 @@ const FieldManagement: React.FC = () => {
                 : '不适用'}
             </Descriptions.Item>
             <Descriptions.Item label="所属模型">
-              {entities.find(e => e.id === currentField.masterDataEntityId)?.name || '-'}
+              {entityOptions.find(e => e.id === currentField.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentField.description || '-'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">{currentField.createdAt}</Descriptions.Item>

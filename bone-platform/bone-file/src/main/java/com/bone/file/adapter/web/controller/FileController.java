@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,9 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p><b>失败关闭（FL-2）</b>：无租户上下文即拒绝写入/读取，对象不落到无主空间。
  *
+ * <p><b>授权</b>：上传/删除挂 {@code file:objects:write}。该码已默认授予所有活跃角色 ——
+ * 头像、附件、导入模板等功能普遍依赖上传端点，若缺失会导致这些功能对所有人 403。 下载不挂码：读端点仅需认证，且键的租户前缀已强制校验。
+ *
  * <p><b>响应头注入防护（FL-3）</b>：下载的 {@code Content-Disposition} 走 {@link
  * FileObjectKeyGenerator#contentDisposition(String)}（RFC 5987 filename*），剥离引号与控制字符，杜绝换行注入新头。
  */
@@ -46,6 +50,7 @@ public class FileController {
   private final FileStoragePort fileStoragePort;
   private final TenantProvider tenantProvider;
 
+  @PreAuthorize("hasAuthority('file:objects:write')")
   @Operation(summary = "上传文件")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiResponse<FileObjectResp> upload(
@@ -94,6 +99,7 @@ public class FileController {
     }
   }
 
+  @PreAuthorize("hasAuthority('file:objects:write')")
   @Operation(summary = "删除文件")
   @DeleteMapping("/{objectName}")
   public ApiResponse<Void> delete(

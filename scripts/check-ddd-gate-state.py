@@ -112,7 +112,6 @@ COVERAGE_ROOTS = (
     "bone-engine",
     "bone-platform",
     "bone-blueprint",
-    "bone-sdk",
     "bone-tool",
 )
 

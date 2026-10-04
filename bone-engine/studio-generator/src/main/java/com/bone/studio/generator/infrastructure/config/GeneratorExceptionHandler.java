@@ -10,9 +10,13 @@ import com.bone.core.model.ProblemDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -98,6 +102,24 @@ public class GeneratorExceptionHandler {
     log.warn("[handleMethodNotSupported] {}", ex.getMethod());
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
         .body(problem(405, CommonErrorCodes.METHOD_NOT_ALLOWED, "请求方法不被支持: " + ex.getMethod()));
+  }
+
+  /**
+   * Spring MVC 输入绑定/解析异常统一归 400（客户端输入错误，不该计入 5xx 故障预算）。
+   *
+   * <p>本模块 pom 只依赖 bone-core，框架级 bone-web {@code GlobalExceptionHandler} 不在 classpath，
+   * 需自带映射。响应体用固定文案， 避免 {@code ex.getMessage()} 原样回显用户输入。
+   */
+  @ExceptionHandler({
+    MethodArgumentNotValidException.class,
+    MethodArgumentTypeMismatchException.class,
+    MissingServletRequestParameterException.class,
+    HttpMessageNotReadableException.class
+  })
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleBadRequest(Exception ex) {
+    log.warn("[handleBadRequest] 请求参数不合法: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(problem(400, CommonErrorCodes.VALIDATION_FAILED, "请求参数不合法"));
   }
 
   @ExceptionHandler(Exception.class)

@@ -48,7 +48,7 @@ CREATE TABLE iam_tenant (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_iam_tenant_code (code)
+    UNIQUE KEY uk_iam_tenant_code (code, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='租户表';
 
 CREATE TABLE iam_account (
@@ -75,7 +75,7 @@ CREATE TABLE iam_account (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_iam_account_username (tenant_id, username),
+    UNIQUE KEY uk_iam_account_username (tenant_id, username, deleted),
     KEY idx_iam_account_tenant (tenant_id),
     KEY idx_iam_account_dept (dept_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM账户';
@@ -95,7 +95,7 @@ CREATE TABLE iam_role (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_iam_role_code (tenant_id, code),
+    UNIQUE KEY uk_iam_role_code (tenant_id, code, deleted),
     KEY idx_iam_role_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM角色';
 
@@ -116,7 +116,7 @@ CREATE TABLE iam_permission (
     updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_iam_permission_code (code),
+    UNIQUE KEY uk_iam_permission_code (code, deleted),
     KEY idx_iam_permission_resource (resource_type, resource_path(100))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM权限';
 
@@ -338,7 +338,34 @@ VALUES
     (61, 'sys:config:write', 'SYS-配置维护', 'system', 'config', 'write', 'OPERATION', 450, '全局系统配置写（平台域；ConfigController @PreAuthorize）'),
     (62, 'sys:dict:write', 'SYS-字典维护', 'system', 'dicts', 'write', 'OPERATION', 460, '全局字典写（平台域；DictController @PreAuthorize）'),
     (63, 'sys:schedule:write', 'SYS-调度维护', 'system', 'schedule-tasks', 'write', 'OPERATION', 470, '定时任务维护/启停/立即执行（平台域；ScheduleTaskController @PreAuthorize）'),
-    (64, 'sys:log:write', 'SYS-日志维护', 'system', 'logs', 'write', 'OPERATION', 480, '日志创建/导出（平台域；LogController @PreAuthorize）');
+    (85, 'sys:log:write', 'SYS-日志维护', 'system', 'logs', 'write', 'OPERATION', 480, '日志创建/导出（平台域；LogController @PreAuthorize）'),
+    -- ===== 2026-10-03 授权缺口收敛：新增 12 个权限码 =====
+    (71, 'masterdata:standards:write', '主数据-数据标准维护', 'masterdata', 'standards', 'write', 'OPERATION', 445,
+     '数据标准创建/修改/删除（平台治理面，不授予租户管理员；与 masterdata:reference:* 是父子资源非同义）'),
+    (72, 'integration:flows:read', '集成-流程读', 'integration', 'flows', 'read', 'OPERATION', 500, '集成流程列表/详情/版本查看'),
+    (73, 'integration:flows:write', '集成-流程写', 'integration', 'flows', 'write', 'OPERATION', 510,
+     '集成流程增删改/测试/启停（FlowController @PreAuthorize）'),
+    (74, 'integration:connectors:read', '集成-连接器读', 'integration', 'connectors', 'read', 'OPERATION', 520, '连接器列表/详情查看'),
+    (75, 'integration:connectors:write', '集成-连接器写', 'integration', 'connectors', 'write', 'OPERATION', 530,
+     '连接器增删改/测试/启停（ConnectorController @PreAuthorize）'),
+    (76, 'integration:executions:write', '集成-执行触发', 'integration', 'executions', 'write', 'OPERATION', 540,
+     '触发执行/重试（两者共用 ExecuteFlowApplicationService，权限边界一致故不拆码）'),
+    (77, 'generator:templates:write', '代码生成-模板维护', 'generator', 'templates', 'write', 'OPERATION', 600, '代码模板增删改/发布'),
+    (78, 'generator:datasources:write', '代码生成-数据源维护', 'generator', 'datasources', 'write', 'OPERATION', 610,
+     '数据源增删改/连接测试（不涉及改表结构）'),
+    (79, 'generator:datasources:sync', '代码生成-数据源同步', 'generator', 'datasources', 'sync', 'OPERATION', 620,
+     '表元数据同步/存量列回填：**只读源库不执行 DDL**（loadTables 而非 execute），但会**整表覆盖**'
+     'gen_column_metadata（removeByTableMetadataId + batchInsert），手工加的列映射会丢失，属破坏性写入；不授予租户管理员'),
+    (80, 'generator:codegen:write', '代码生成-任务提交', 'generator', 'codegen', 'write', 'OPERATION', 630, '提交代码生成任务/快捷生成'),
+    (81, 'generator:admin:write', '代码生成-管理操作', 'generator', 'admin', 'write', 'OPERATION', 640,
+     '批量改实体名等管理动作；跨实体批量影响，不授予租户管理员'),
+    (82, 'file:objects:write', '文件-对象写入', 'file', 'objects', 'write', 'OPERATION', 700,
+     '文件上传/删除（租户前缀已由 FileObjectKeyGenerator 强制；**必须授予所有活跃角色**，否则附件类功能全 403'),
+    (83, 'sys:alert:read', 'SYS-告警查看', 'system', 'alert', 'read', 'OPERATION', 490, '告警规则/事件查看（平台级表但非任何人可读）'),
+    (88, 'sys:ops:execute', 'SYS-运维高危动作', 'system', 'ops', 'execute', 'OPERATION', 495,
+     '部署/升级/重启/关停平台实例（SystemController 运维端点；当前恒501 未实现，**预挂门禁**以防实现时漏授权；'
+     '误调用直接终止运行中的服务，爆炸半径最大，只授超管不授租户管理员'),
+    (84, 'sys:alert:write', 'SYS-告警维护', 'system', 'alert', 'write', 'OPERATION', 491, '告警规则维护/事件上报/标记解决');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -361,6 +388,22 @@ VALUES
 -- SYS 平台域写码绑定超管（61/62/63；租户管理员不绑——全局表写属平台域）
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63), (89, 1, 64);
+
+-- ===== 2026-10-03 新增 12 个权限码的角色绑定 =====
+-- 超管（role 1）全绑71-82：写端点挂了这些码，超管必须持码否则 403。
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES (92, 1, 71), (93, 1, 72), (94, 1, 73), (95, 1, 74), (96, 1, 75), (97, 1, 76),
+       (98, 1, 77), (99, 1, 78), (100, 1, 79), (101, 1, 80), (102, 1, 81), (103, 1, 82),
+       (110, 1, 83), (111, 1, 84),
+       -- 88 = sys:ops:execute（部署/升级/重启/关停）：爆炸半径最大，只授超管。
+       -- **不绑租户管理员**（与 71/77-81 同理，理由见 TenantAdminBootstrapSupport javadoc）。
+       (112, 1, 88);
+
+-- 租户管理员（role 3）：与 TenantAdminBootstrapSupport.TENANT_ADMIN_PERMISSION_CODES 严格一致。
+--授予 72-76（集成：租户自有资产，运营必需）+ 82（文件上传：附件/头像功能依赖）。
+-- 不授予 71（数据标准=跨租户契约，平台治理面）、77-81（generator=改真实库结构/批量改名，爆炸半径超出单租户）。
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES (104, 3, 72), (105, 3, 73), (106, 3, 74), (107, 3, 75), (108, 3, 76), (109, 3, 82);
 
 -- ============================================================
 -- 2. System
@@ -388,7 +431,7 @@ CREATE TABLE sys_config (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_sys_config_key (tenant_id, config_key)
+    UNIQUE KEY uk_sys_config_key (tenant_id, config_key, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置';
 
 CREATE TABLE sys_config_history (
@@ -468,7 +511,7 @@ CREATE TABLE sys_dict_type (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_dict_type (tenant_id, code),
+    UNIQUE KEY uk_dict_type (tenant_id, code, deleted),
     KEY idx_dict_type_module (tenant_id, module_code, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型';
 
@@ -496,7 +539,7 @@ CREATE TABLE sys_dict_item (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_dict_item (tenant_id, type_code, code),
+    UNIQUE KEY uk_dict_item (tenant_id, type_code, code, deleted),
     KEY idx_dict_item_type (tenant_id, type_code, sort)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项';
 
@@ -516,7 +559,7 @@ CREATE TABLE sys_dict_hierarchy (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_dict_hierarchy (tenant_id, type_code, hierarchy_code, code),
+    UNIQUE KEY uk_dict_hierarchy (tenant_id, type_code, hierarchy_code, code, deleted),
     KEY idx_dict_hierarchy_parent (tenant_id, type_code, hierarchy_code, parent_code),
     KEY idx_dict_hierarchy_path (tenant_id, type_code, hierarchy_code, path)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典层级关系';
@@ -535,7 +578,7 @@ CREATE TABLE sys_dict_item_text (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_dict_item_text (tenant_id, type_code, code, language),
+    UNIQUE KEY uk_dict_item_text (tenant_id, type_code, code, language, deleted),
     KEY idx_dict_item_text_lang (tenant_id, type_code, language)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项多语言译文';
 
@@ -1090,7 +1133,7 @@ CREATE TABLE meta_code_template (
     description         TEXT            DEFAULT NULL COMMENT '描述',
     version             VARCHAR(50)     NOT NULL COMMENT '版本号',
     content             MEDIUMTEXT      NOT NULL COMMENT '模板内容',
-    engine              VARCHAR(20)     NOT NULL DEFAULT 'Freemarker' COMMENT '模板引擎',
+    engine              VARCHAR(20)     NOT NULL DEFAULT 'FREEMARKER' COMMENT '模板引擎（全大写，与 gen_code_template 一致）',
     sample_output       MEDIUMTEXT      DEFAULT NULL COMMENT '示例输出',
     status              TINYINT         NOT NULL DEFAULT 0 COMMENT '0-草稿 1-已发布 2-废弃',
     published_at        DATETIME(3)     DEFAULT NULL COMMENT '发布时间',
@@ -1121,7 +1164,7 @@ CREATE TABLE md_quality_rule (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
     KEY idx_meta_dqr_entity (entity_id),
-    UNIQUE KEY uk_meta_dqr_tenant_name (tenant_id, name)
+    UNIQUE KEY uk_meta_dqr_tenant_name (tenant_id, name, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据质量规则表';
 
 -- ============================================================
@@ -1283,7 +1326,7 @@ CREATE TABLE gen_data_source (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_gen_ds_tenant_name (tenant_id, name),
+    UNIQUE KEY uk_gen_ds_tenant_name (tenant_id, name, deleted),
     KEY idx_gen_ds_tenant (tenant_id, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成数据源';
 
@@ -1305,7 +1348,7 @@ CREATE TABLE gen_table_metadata (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_gen_tm_ds_table (tenant_id, data_source_id, original_table_name),
+    UNIQUE KEY uk_gen_tm_ds_table (tenant_id, data_source_id, original_table_name, deleted),
     KEY idx_gen_tm_ds (data_source_id, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成表元数据';
 
@@ -1357,7 +1400,7 @@ CREATE TABLE gen_code_template (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_gen_ct_code_ver (tenant_id, code, template_version),
+    UNIQUE KEY uk_gen_ct_code_ver (tenant_id, code, template_version, deleted),
     KEY idx_gen_ct_tenant (tenant_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成模板';
 
@@ -1440,7 +1483,7 @@ CREATE TABLE gen_generation_task (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_gen_gt_task (task_id),
+    UNIQUE KEY uk_gen_gt_task (task_id, deleted),
     KEY idx_gen_gt_tenant (tenant_id, status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成任务';
 
@@ -1577,8 +1620,8 @@ CREATE TABLE mdm_entity (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_entity_code (tenant_id, entity_code),
-    UNIQUE KEY uk_mdm_entity_meta (tenant_id, meta_entity_id),
+    UNIQUE KEY uk_mdm_entity_code (tenant_id, entity_code, deleted),
+    UNIQUE KEY uk_mdm_entity_meta (tenant_id, meta_entity_id, deleted),
     KEY idx_mdm_entity_status (status),
     KEY idx_mdm_entity_domain (domain_code),
     KEY idx_mdm_entity_template (template_id),
@@ -1607,7 +1650,7 @@ CREATE TABLE mdm_record (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_record_code (tenant_id, mdm_entity_id, record_code),
+    UNIQUE KEY uk_mdm_record_code (tenant_id, mdm_entity_id, record_code, deleted),
     KEY idx_mdm_record_entity (mdm_entity_id),
     KEY idx_mdm_record_status (status),
     KEY idx_mdm_record_parent (parent_record_id)
@@ -1646,7 +1689,7 @@ CREATE TABLE mdm_category (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_cat_code (tenant_id, mdm_entity_id, code),
+    UNIQUE KEY uk_mdm_cat_code (tenant_id, mdm_entity_id, code, deleted),
     KEY idx_mdm_cat_parent (parent_category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据分类';
 
@@ -1676,6 +1719,7 @@ CREATE TABLE mdm_qcheck_task (
     error_message       TEXT            DEFAULT NULL COMMENT '失败原因',
     created_by          BIGINT          DEFAULT NULL COMMENT '触发人ID',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     DEFAULT NULL COMMENT '更新时间（由领域行为赋值，SDK 不自动填）',
     PRIMARY KEY (id),
     KEY idx_mdm_qctask_entity (mdm_entity_id),
     KEY idx_mdm_qctask_status (status)
@@ -1728,6 +1772,8 @@ CREATE TABLE mdm_field (
     source_type             VARCHAR(16)     NOT NULL DEFAULT 'TENANT' COMMENT '来源：TEMPLATE-模板字段（不可删）TENANT-租户扩展',
     enabled                 TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用（删除字段走软禁用，ADR-0017）',
     reference_set_code      VARCHAR(64)     DEFAULT NULL COMMENT '引用的参考数据集编码（值域校验，见 §2.3）',
+    min_value               DECIMAL(30,6)  DEFAULT NULL COMMENT '数值字段取值下限（type=NUMBER 生效，空=不限）',
+    max_value               DECIMAL(30,6)  DEFAULT NULL COMMENT '数值字段取值上限（type=NUMBER 生效，空=不限）',
     created_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     created_by              BIGINT          DEFAULT NULL COMMENT '创建人',
     updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
@@ -1763,7 +1809,7 @@ CREATE TABLE mdm_domain_template (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_tpl_domain (tenant_id, domain_code),
+    UNIQUE KEY uk_mdm_tpl_domain (tenant_id, domain_code, deleted),
     KEY idx_mdm_tpl_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据域模板（平台层，租户只读实例化）';
 
@@ -1801,7 +1847,7 @@ CREATE TABLE mdm_entity_subscription (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_sub_entity_app (mdm_entity_id, app_id, subscribe_mode),
+    UNIQUE KEY uk_mdm_sub_entity_app (mdm_entity_id, app_id, subscribe_mode, deleted),
     KEY idx_mdm_sub_app (app_id),
     KEY idx_mdm_sub_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据消费订阅（应用×主数据域，N:M）';
@@ -1814,6 +1860,7 @@ CREATE TABLE mdm_steward (
     role_type           VARCHAR(32)     NOT NULL COMMENT '治理角色：OWNER-数据责任人 STEWARD-数据管家 APPROVER-审批人',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     DEFAULT NULL COMMENT '更新时间（HC-008 必备列，0018 补齐；由领域行为赋值，SDK 不自动填）',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
@@ -1852,7 +1899,7 @@ CREATE TABLE mdm_reference_set (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_refset_code (set_code)
+    UNIQUE KEY uk_mdm_refset_code (set_code, deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据值域（平台全局目录，非租户作用域；租户只读可扩私有值）';
 
 CREATE TABLE mdm_reference_value (
@@ -1870,7 +1917,7 @@ CREATE TABLE mdm_reference_value (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_refval (set_id, value_code),
+    UNIQUE KEY uk_mdm_refval (set_id, value_code, deleted),
     KEY idx_mdm_refval_set (set_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据值（平台标准值，非租户作用域；租户私有扩展值见 mdm_reference_value_tenant）';
 
@@ -1889,7 +1936,7 @@ CREATE TABLE mdm_reference_value_tenant (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_mdm_refval_tenant (tenant_id, set_id, value_code),
+    UNIQUE KEY uk_mdm_refval_tenant (tenant_id, set_id, value_code, deleted),
     KEY idx_mdm_refval_tenant_set (set_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参考数据租户私有扩展值（2026-09-26 overlay 拆分，§8 约束6）';
 

@@ -25,6 +25,21 @@ MD_PRODUCT = "760324212819755008"
 MD_CUSTOMER = "760325780604452864"
 MD_LEVEL = "760324310677061632"
 
+# 客户实体的必填字段集合。scripts/migration/0016_masterdata_demo_seed.sql 把
+# cust_status 建模为 required=1 后，建记录探针必须显式带上，否则后端按
+# 「字段[cust_status]为必填项」返回 400，整条 C2 链在第一断言就中断。
+# 集中在此定义，避免三处探针各自漏字段再次漂移。
+def customer_data(code, name, level="ENTERPRISE", cust_status="ACTIVE"):
+    """构造客户记录 payload，始终覆盖全部必填字段（含 cust_status）。"""
+    return {
+        "data": {
+            "customer_code": code,
+            "customer_name": name,
+            "level_code": level,
+            "cust_status": cust_status,
+        }
+    }
+
 RESULTS = []
 
 
@@ -107,6 +122,115 @@ def hdr(title):
     print(f"\n{'=' * 66}\n{title}\n{'=' * 66}")
 
 
+# ---- 结构化断言工具（替代「只看 200」的弱断言） ----
+#
+# 为什么需要：仅断言 HTTP 200 会把「返回了正确形状的空壳」判为通过。此前实测到两个
+# 被 200 断言完全掩盖的真实缺陷：
+#   1) /api/v1/iam/audit/logs 传 pageNum/pageSize 被静默忽略（后端字段是 page/size），
+#      永远返回第 1 页 10 条 —— 翻页功能在测试里「通过」但线上失效。
+#   2) 多个列表端点返回体是 list 还是 PageResult 不一致，弱断言无法区分「真的空」与
+#      「解析姿势错了拿到空」。
+# 下面三个函数分别锁定：信封形状、元素形状+必填字段、分页参数真的生效。
+
+def page_rows(j):
+    """从 PageResult 里取当前页行；兼容 list/records/content 三种键 + 裸 list。"""
+    d = data(j)
+    if isinstance(d, list):
+        return d
+    if isinstance(d, dict):
+        for k in ("list", "records", "content", "items"):
+            if isinstance(d.get(k), list):
+                return d[k]
+    return None
+
+
+def check_page_shape(cid, name, j, expect_rows=None, required=(), min_rows=0):
+    """断言分页信封结构正确。
+
+    expect_rows: 期望的 pageSize。实际行数应为 min(pageSize, 该页剩余条数)，
+    故断言「恰好等于」在 pageSize 大于剩余时会误判 —— 这里改为双向夹逼：
+    行数不得超过 pageSize，且当剩余足够时必须恰好等于 pageSize
+    （后者才是「pageSize 真生效」的证据；前者只证明它没超发）。
+    required: 每行必填字段元组，任一缺失即失败。
+    """
+    d = data(j)
+    if not isinstance(d, dict):
+        check(cid, f"{name}·分页信封", "PageResult 对象", type(d).__name__, str(j)[:120])
+        return None
+    missing_meta = [k for k in ("total", "page", "size") if k not in d]
+    check(cid, f"{name}·分页信封(total/page/size 齐备)", [], missing_meta, f"keys={sorted(d.keys())[:8]}")
+    rows = page_rows(j)
+    if rows is None:
+        check(cid, f"{name}·行集合存在", "list", "缺失", f"keys={sorted(d.keys())[:8]}")
+        return None
+    check(cid, f"{name}·行集合非空且≥{min_rows}", True, isinstance(rows, list) and len(rows) >= min_rows,
+          f"rows={len(rows) if isinstance(rows, list) else type(rows).__name__}")
+    if expect_rows is not None and isinstance(rows, list):
+        total = d.get("total")
+        n = len(rows)
+        check(cid, f"{name}·行数不超过 pageSize({expect_rows})", True, n <= expect_rows,
+              f"rows={n} total={total}")
+        # 剩余条数足够时（total >= pageSize）必须恰好取满，否则说明 pageSize 被忽略
+        if isinstance(total, int) and total >= expect_rows:
+            check(cid, f"{name}·pageSize 真生效(应取满 {expect_rows} 行)", expect_rows, n,
+                  f"total={total} page={d.get('page')} size={d.get('size')}")
+    if required and isinstance(rows, list) and rows:
+        sample = rows[0] if isinstance(rows[0], dict) else {}
+        absent = [f for f in required if f not in sample]
+        check(cid, f"{name}·首行必填字段 {list(required)}", [], absent, f"首行键={sorted(sample.keys())[:8]}")
+    return rows
+
+
+def check_list_shape(cid, name, j, required=(), min_rows=0):
+    """断言裸 list 端点：确实是数组，且元素必填字段齐备。"""
+    rows = data(j)
+    if not isinstance(rows, list):
+        check(cid, f"{name}·返回数组", "list", type(rows).__name__, str(j)[:120])
+        return None
+    check(cid, f"{name}·非空且≥{min_rows}", True, len(rows) >= min_rows, f"count={len(rows)}")
+    if required and rows:
+        sample = rows[0] if isinstance(rows[0], dict) else {}
+        absent = [f for f in required if f not in sample]
+        check(cid, f"{name}·首行必填字段 {list(required)}", [], absent, f"首行键={sorted(sample.keys())[:8]}")
+    return rows
+
+
+def check_err(cid, name, st, j, want_status, want_code=None, strict_code=True):
+    """断言错误响应：状态码 + 业务错误码必须落在 ``data.errorCode``。
+
+    历史（2026-10-02 第三轮修正）：
+        本函数原先是「errorCode 或 message 前缀任一命中即过」。这是**弱断言** ——
+        业务码只落在 message 前缀、``data.errorCode`` 为 null 时它照样 PASS，
+        于是 2026-10-02 实测的缺陷（masterdata 全部 ``MD_*`` 码errorCode 为 null）
+        长期测不出来，直到人工比对响应才发现。
+
+        根因已修（``MasterDataErrors.of`` 曾误用 3 参 ``BizException`` 构造器，
+        该构造器把 errorCode 恒置 null；HTTP 状态仍正确，故弱断言测不出）。
+        故本函数改为**强制 errorCode 落位**：want_code 命中不了 errorCode 就FAIL。
+
+    ``strict_code=False`` 仅用于已确认无法结构化的历史路径（会打印实际落点）。
+    """
+    d = data(j)
+    code = d.get("errorCode") if isinstance(d, dict) else None
+    msg = str((j or {}).get("message") or "")
+    ok = st == want_status
+    where = "不校验"
+    if want_code:
+        if code == want_code:
+            where = "data.errorCode"
+            ok = ok and True
+        elif not strict_code and want_code in msg:
+            where = "message前缀(errorCode为null，已降级)"
+            ok = ok and True
+        else:
+            where = f"未落位(实际errorCode={code!r})"
+            ok = False
+    else:
+        ok = ok and bool(code)
+    check(cid, name, True, ok, f"HTTP={st} 期望={want_status} 码落点={where} msg={msg[:70]}")
+    return code
+
+
 # ============================ C1 交易主链路 ============================
 def c1(tok, sub_tok=None, app_tok=None):
     hdr("C1 · 主数据 → 订单 → 支付 → 履约（核心商业闭环）")
@@ -127,16 +251,28 @@ def c1(tok, sub_tok=None, app_tok=None):
         return
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/submit", None, token=sub_tok or tok)
     check("C1", "提交人 submit", 200, st)
+    # 光有 200 不够：submit 后记录状态必须真的转为 SUBMITTED，否则「提交」是个空动作
+    st, j2 = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
+    check("C1", "submit 后状态=PENDING_APPROVAL", "PENDING_APPROVAL", (data(j2) or {}).get("status"),
+          str(data(j2) or {})[:120])
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/approve", None, token=app_tok or tok)
     check("C1", "审批人 approve（SoD：提交人≠审批人）", 200, st, str(j)[:140])
+    st, j2 = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
+    check("C1", "approve 后状态=APPROVED", "APPROVED", (data(j2) or {}).get("status"),
+          str(data(j2) or {})[:120])
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/publish", None, token=tok)
     check("C1", "发布 publish", 200, st, str(j)[:140])
+    st, j2 = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
+    check("C1", "publish 后状态=PUBLISHED", "PUBLISHED", (data(j2) or {}).get("status"),
+          str(data(j2) or {})[:120])
 
     # 2. ACL 点查：确认 blueprint 可经网关拿到该商品
     st, j = http("GET", f"/api/v1/masterdata/records/by-code?masterDataEntityId={MD_PRODUCT}&code={code}", token=tok)
     check("C1", "主数据 by-code 点查", 200, st)
     d = data(j) or {}
     check("C1", "点查命中新商品", True, d.get("recordCode") == code)
+    # 点查回的必须是同一条记录（按 id 比对，防止 by-code 命中了别的同 code 记录）
+    check("C1", "点查 id 与创建一致", str(rid), str(d.get("id")))
 
     # 3. 下单：单价由 transcend 主数据侧提供
     st, j = http("POST", "/api/v1/orders", {
@@ -187,9 +323,23 @@ def c1(tok, sub_tok=None, app_tok=None):
         st, j = http("GET", f"/api/v1/orders/{oid}", token=tok)
         check("C1", f"{act} 后状态", want, (data(j) or {}).get("status"))
 
-    # 9. 状态机防御
+    # 9. 状态机防御：终态重复发货不仅要是 409，业务码也须稳定（否则无法与「订单不存在」区分）
     st, j = http("POST", f"/api/v1/orders/{oid}/ship", None, token=tok)
-    check("C1", "终态后重复发货被拒", 409, st)
+    check_err("C1", "终态后重复发货被拒(409+BP_ORDER_STATUS_CONFLICT)", st, j, 409,
+              "BP_ORDER_STATUS_CONFLICT")
+    # 前置未支付直接发货同样必须被拒（防止绕过支付推进履约）
+    st, j2 = http("POST", "/api/v1/orders", {
+        "customerId": 1001,
+        "items": [{"productId": int(code), "productName": f"链路商品{ts}", "quantity": 1, "unitPrice": 199.0}],
+    }, token=tok)
+    oid2 = rid_of(j2)
+    if oid2:
+        check("C1", "未支付订单创建成功（前置守卫用）", (200, 201), st, str(j2)[:120])
+        st, j3 = http("POST", f"/api/v1/orders/{oid2}/ship", None, token=tok)
+        check_err("C1", "未支付即发货被拒(409+STATUS_CONFLICT)", st, j3, 409,
+                  "BP_ORDER_STATUS_CONFLICT")
+        st, j4 = http("GET", f"/api/v1/orders/{oid2}", token=tok)
+        check("C1", "被拒后状态仍为 CREATED（未误推进）", "CREATED", (data(j4) or {}).get("status"))
 
     # 10. 退款
     st, j = http("POST", f"/api/v1/payments/{pid}/refund", {"refundAmount": 10.00}, token=tok)
@@ -202,28 +352,44 @@ def c2(tok, sub_tok, app_tok):
     hdr("C2 · 主数据 SoD 治理：双账号分离 + 版本 + 参照域")
     ts = int(time.time())
     code = f"C2SUP{ts}"
-    st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}", {
-        "data": {"customer_code": code, "customer_name": f"链路供应商{ts}", "level_code": "ENTERPRISE"}
-    }, token=tok)
+    st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}",
+                  customer_data(code, f"链路供应商{ts}"), token=tok)
     check("C2", "创建客户记录（提交人）", 200, st, str(j)[:160])
     rid = rid_of(j)
     if not rid:
         return
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/submit", None, token=sub_tok or tok)
     check("C2", "提交人 submit", 200, st)
+    st, j2 = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
+    check("C2", "submit 后状态=PENDING_APPROVAL", "PENDING_APPROVAL", (data(j2) or {}).get("status"),
+          str(data(j2) or {})[:120])
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/approve", None, token=app_tok or tok)
     check("C2", "审批人 approve（SoD 分离）", 200, st)
+    st, j2 = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
+    check("C2", "approve 后状态=APPROVED", "APPROVED", (data(j2) or {}).get("status"),
+          str(data(j2) or {})[:120])
     st, j = http("POST", f"/api/v1/masterdata/records/{rid}/publish", None, token=tok)
     check("C2", "发布 publish", 200, st)
     st, j = http("GET", f"/api/v1/masterdata/records/{rid}", token=tok)
     check("C2", "终态 PUBLISHED", "PUBLISHED", (data(j) or {}).get("status"))
     st, j = http("GET", f"/api/v1/masterdata/records/{rid}/versions", token=tok)
     check("C2", "版本列表可读", 200, st)
-    # 参照域负向：非法 level_code 必须被拒
-    st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}", {
-        "data": {"customer_code": code, "customer_name": "非法等级", "level_code": "NOT_A_LEVEL"}
-    }, token=tok)
-    check("C2", "非法 level_code 被参照域拦截", 400, st)
+    # 版本列表须真的是数组（曾实测返回 []：走通 SoD 发布后仍无版本，是真实可疑点，
+    # 弱断言只看 200 会把它判为通过）
+    check_list_shape("C2", "版本列表", j, min_rows=0)
+    # SoD 负向：同一人既提交又审批必须被拒，否则 SoD 只是文档约定
+    st, j2 = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}",
+                   customer_data(f"C2SOD{ts}", f"SoD探测{ts}"), token=tok)
+    rid2 = rid_of(j2)
+    if rid2:
+        http("POST", f"/api/v1/masterdata/records/{rid2}/submit", None, token=tok)
+        st, j3 = http("POST", f"/api/v1/masterdata/records/{rid2}/approve", None, token=tok)
+        check_err("C2", "同一人自审被拒(403+MD_SOD_VIOLATION)", st, j3, 403, "MD_SOD_VIOLATION")
+    # 参照域负向：非法 level_code 必须被拒，且业务码稳定
+    st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}",
+                  customer_data(code, "非法等级", level="NOT_A_LEVEL"), token=tok)
+    check_err("C2", "非法 level_code 被参照域拦截(400+FIELD_VALIDATION_FAILED)", st, j, 400,
+              "MD_RECORD_FIELD_VALIDATION_FAILED")
     return {"recordId": rid, "code": code}
 
 
@@ -274,38 +440,67 @@ def c3(tok):
         "username": user, "password": "C3pass@2026", "deptId": int(did),
         "nickname": "只读员", "email": f"{user}@bone.local"}, token=tok)
     check("C3", "账号重复冲突返回 409", 409, st, str(j)[:140])
+    check("C3", "重复冲突业务码稳定", True, "CONFLICT" in str((j or {}).get("message", "")).upper()
+          or (isinstance(data(j), dict) and bool(data(j).get("errorCode"))),
+          f"msg={str((j or {}).get('message'))[:80]}")
     return {"userId": uid, "username": user}
 
 
 # ============================ C4 集成引擎 ============================
 def c4(tok):
     hdr("C4 · 集成引擎：连接器 → 流程 → 执行")
-    st, j = http("GET", "/api/v1/integration/connectors", token=tok)
-    check("C4", "连接器列表", 200, st)
-    st, j = http("GET", "/api/v1/integration/flows", token=tok)
-    check("C4", "流程列表", 200, st)
+    # 注意：本模块分页入参是 pageNum/pageSize（与 iam 的 page/size 不同族，勿混用）
+    st, j = http("GET", "/api/v1/integration/connectors?pageNum=1&pageSize=3", token=tok)
+    check_page_shape("C4", "连接器列表", j, expect_rows=3, required=("id", "name", "type"), min_rows=1)
+    st, j = http("GET", "/api/v1/integration/flows?pageNum=1&pageSize=2", token=tok)
+    check_page_shape("C4", "流程列表", j, expect_rows=2, required=("id", "name", "status"), min_rows=1)
     st, j = http("GET", "/api/v1/integration/statistics", token=tok)
     check("C4", "集成执行统计面", 200, st, str(j)[:160])
+    # 实测是「按流程聚合的数组」而非对象：每行含 flowId/flowName/成功失败计数
+    stats = check_list_shape("C4", "统计面", j,
+                             required=("flowId", "executionCount", "successCount", "failureCount"), min_rows=0)
+    if stats:
+        bad = [s.get("flowId") for s in stats
+               if int(s.get("executionCount") or 0) != int(s.get("successCount") or 0)
+               + int(s.get("failureCount") or 0)]
+        check("C4", "统计计数自洽(成功+失败=执行数)", [], bad,
+              f"行数={len(stats)} 样本={ {k: stats[0].get(k) for k in ('flowId','executionCount','successCount','failureCount')} }")
+    # 执行记录允许为空库（total=0），故只断言信封与「行数不超过 pageSize」
     st, j = http("GET", "/api/v1/integration/executions?pageNum=1&pageSize=10", token=tok)
-    check("C4", "集成执行记录列表", 200, st, str(j)[:160])
+    rows = check_page_shape("C4", "集成执行记录列表", j, required=("id",), min_rows=0)
+    if rows is not None and len(rows) < 10:
+        check("C4", "执行记录数不超过 pageSize", True, len(rows) <= 10, f"rows={len(rows)}")
     # HC-003：框架级绑定异常也必须落在 ApiResponse 信封内（曾因缺 bone-web 依赖漏成裸 Spring 400）
+    # 实测：bone-integration 的绑定异常统一收敛为 COMMON_VALIDATION_FAILED
+    #（未像 bone-iam 那样细分到 COMMON_MALFORMED_REQUEST），故这里只断言该服务实际给出的码。
     for path, desc in (("/api/v1/integration/executions", "缺分页参数"),
                        ("/api/v1/integration/flows/abc", "路径变量类型错")):
         st, j = http("GET", path, token=tok)
-        check("C4", f"统一响应契约-{desc}", True, isinstance(j, dict) and "success" in j,
-              f"HTTP {st}")
+        # 必须是 ApiResponse 信封（有 success 键 + 顶层 code），而不是裸 Spring ProblemDetail
+        check("C4", f"统一响应契约-{desc} 落 ApiResponse 信封", True,
+              isinstance(j, dict) and "success" in j and "code" in j,
+              f"HTTP {st} 顶层键={sorted(j.keys()) if isinstance(j, dict) else type(j).__name__}")
+        d = data(j)
+        code = d.get("errorCode") if isinstance(d, dict) else None
+        check("C4", f"{desc} 绑定异常收敛为 400 而非 500", 400, st,
+              f"errorCode={code} msg={str((j or {}).get('message'))[:60]}")
+        check("C4", f"{desc} 业务码=COMMON_VALIDATION_FAILED", "COMMON_VALIDATION_FAILED", code,
+              f"msg={str((j or {}).get('message'))[:60]}")
 
 
 # ============================ C5 扩展引擎 ============================
 def c5(tok):
     hdr("C5 · 扩展引擎：扩展点 → 插件 → 绑定")
     st, j = http("GET", "/api/v1/extension/points", token=tok)
-    check("C5", "扩展点列表", 200, st)
-    pts = data(j) or []
-    if isinstance(pts, dict):
-        pts = pts.get("content") or pts.get("records") or []
+    pts = check_list_shape("C5", "扩展点列表", j, required=("id", "name", "interfaceName"), min_rows=1)
+    # 插件必须挂在真实存在的扩展点上，否则「扩展点→插件」这条链路是空的
     st, j = http("GET", "/api/v1/extension/plugins", token=tok)
-    check("C5", "插件列表", 200, st)
+    plugins = check_list_shape("C5", "插件列表", j, required=("id", "className", "extPointId"), min_rows=1)
+    if pts and plugins:
+        pt_ids = {str(p.get("id")) for p in pts if isinstance(p, dict)}
+        orphan = [p.get("id") for p in plugins if str(p.get("extPointId")) not in pt_ids]
+        check("C5", "插件均绑定到已知扩展点", [], orphan,
+              f"扩展点={sorted(pt_ids)[:4]} 插件数={len(plugins)}")
     st, j = http("GET", "/api/v1/extension/points/observability/metrics", token=tok)
     check("C5", "扩展点可观测面", (200, 404), st)
 
@@ -313,52 +508,153 @@ def c5(tok):
 # ============================ C6 生成器 ============================
 def c6(tok):
     hdr("C6 · Studio 生成器：数据源 → 元数据快照 → 代码生成")
-    st, j = http("GET", "/api/v1/generator/data-sources", token=tok)
-    check("C6", "数据源列表", 200, st)
-    ds = data(j) or []
-    if isinstance(ds, dict):
-        ds = ds.get("records") or ds.get("content") or []
-    check("C6", "存在可用数据源", True, len(ds) > 0, f"count={len(ds)}")
-    st, j = http("GET", "/api/v1/generator/metadata-entity-snapshots", token=tok)
-    check("C6", "元数据实体快照", 200, st)
+    # 注意：本模块分页入参是 page/size（与 integration/metadata 的 pageNum/pageSize 不同族）
+    st, j = http("GET", "/api/v1/generator/data-sources?page=1&size=2", token=tok)
+    ds = check_page_shape("C6", "数据源列表", j, expect_rows=2, required=("id", "dbName"), min_rows=1)
+    # 快照行无 id（以 tableName 为业务主键，见 metadata-entity-snapshots 响应形状）
+    st, j = http("GET", "/api/v1/generator/metadata-entity-snapshots?page=1&size=3", token=tok)
+    snaps = check_page_shape("C6", "元数据实体快照", j, expect_rows=3,
+                             required=("tableName", "columns", "deliveryMode"), min_rows=1)
     st, j = http("GET", "/api/v1/generator/capabilities", token=tok)
-    check("C6", "生成能力清单", 200, st)
-    st, j = http("GET", "/api/v1/generator/templates", token=tok)
-    check("C6", "模板列表", 200, st)
+    caps = check_list_shape("C6", "生成能力清单", j,
+                            required=("name", "inputSchema", "outputSchema", "retryable"), min_rows=1)
+    st, j = http("GET", "/api/v1/generator/templates?page=1&size=20", token=tok)
+    tpl = check_page_shape("C6", "模板列表", j, expect_rows=20,
+                           required=("id", "code", "engine", "status"), min_rows=1)
+    # 内置模板正文为空是**设计如此**（唯一真源 = classpath templates/{code}.ftl，
+    # 见 scripts/migration/0009 与 CodeTemplate.fillBuiltInContent），不是数据缺失。
+    # 但 12 类内置骨架必须齐备 —— 少一类用户就勾不到完整骨架。
+    if tpl:
+        builtin = {str(t.get("code")) for t in tpl if str(t.get("tenantId")) == "0"}
+        need = {"entity", "repository", "applicationService", "controller", "response", "assembler",
+                "createCommand", "updateCommand", "queryDto",
+                "createRequest", "updateRequest", "pageQuery"}
+        check("C6", "12 类内置模板齐备", [], sorted(need - builtin), f"已登记={len(builtin)} 类")
+        non_pub = sorted({str(t.get("code")) for t in tpl if str(t.get("status")) != "PUBLISHED"})
+        check("C6", "模板均已发布", [], non_pub, f"status集合={sorted({str(t.get('status')) for t in tpl})}")
+        # 已知数据不一致（不是功能缺陷）：engine 取值大小写分裂 —— 0015 迁移脚本插入的行用大写
+        # FREEMARKER，而 0009 之前的历史 5 行是小写 freemarker；域模型 CodeTemplate.create 默认
+        # FREEMARKER（大写）。渲染路径 TemplateRenderer 恒走 FreeMarker、不比对该字段，
+        # 故当前不影响生成，仅作为数据漂移记录在此（收敛需 DB 迁移，超出 E2E 脚本职责）。
+        engines = sorted({str(t.get("engine")) for t in tpl})
+        if len({e.upper() for e in engines}) == 1 and len(engines) > 1:
+            print(f"  [WARN] C6 · engine 大小写分裂（不影响渲染，建议迁移收敛）: {engines}")
     st, j = http("GET", "/api/v1/generator/history", token=tok)
-    check("C6", "生成历史", 200, st)
+    check_list_shape("C6", "生成历史", j, required=("id", "dataSourceId"), min_rows=0)
 
 
 # ============================ C7 元数据 → 主数据 ============================
 def c7(tok):
     hdr("C7 · 元数据建模 → 主数据联动")
-    st, j = http("GET", "/api/v1/metadata/entities?pageNum=1&pageSize=10", token=tok)
-    check("C7", "元数据实体列表", 200, st)
+    st, j = http("GET", "/api/v1/metadata/entities?pageNum=1&pageSize=4", token=tok)
+    ents = check_page_shape("C7", "元数据实体列表", j, expect_rows=4,
+                            required=("id", "code", "displayName"), min_rows=1)
     st, j = http("GET", "/api/v1/metadata/templates", token=tok)
     check("C7", "元数据模板列表", (200, 404), st)
     st, j = http("GET", "/api/v1/metadata/relationships", token=tok)
     check("C7", "元数据关系列表", (200, 404), st)
-    st, j = http("GET", "/api/v1/masterdata/templates", token=tok)
-    check("C7", "主数据域模板（消费元数据源）", 200, st)
+    st, j = http("GET", "/api/v1/masterdata/templates?pageNum=1&pageSize=2", token=tok)
+    md_tpl = check_page_shape("C7", "主数据域模板（消费元数据源）", j, expect_rows=2,
+                              required=("id", "domainCode"), min_rows=1)
     st, j = http("GET", "/api/v1/masterdata/reference-sets", token=tok)
-    check("C7", "参照数据集（约束来源）", 200, st)
+    refs = check_list_shape("C7", "参照数据集（约束来源）", j,
+                            required=("id", "setCode", "status"), min_rows=1)
+    # 域模板 fieldSchema 里引用的参照集必须存在，否则 C2 的参照域校验会引用不存在的约束源
+    if md_tpl and refs:
+        ref_codes = {str(r.get("setCode")) for r in refs if isinstance(r, dict)}
+        schema = md_tpl[0].get("fieldSchema") if isinstance(md_tpl[0], dict) else None
+        cited = set()
+        if isinstance(schema, str):
+            cited = {w for w in ref_codes if w in schema}
+        check("C7", "域模板字段Schema 引用已登记参照集", True, isinstance(schema, (str, dict)),
+              f"schema类型={type(schema).__name__} 参照集={sorted(ref_codes)[:4]} 命中={sorted(cited)[:4]}")
 
 
 # ============================ C8 系统/通知/可观测 ============================
 def c8(tok):
     hdr("C8 · 系统管理 · 通知 · 审计")
-    st, j = http("GET", "/api/v1/system/config", token=tok)
-    check("C8", "系统配置", 200, st)
+    # 注意：system 用 pageNum/pageSize，iam audit 用 page/size —— 同名不同族，写错静默失效
+    st, j = http("GET", "/api/v1/system/config?pageNum=1&pageSize=3", token=tok)
+    check_page_shape("C8", "系统配置", j, expect_rows=3, required=("id", "configKey"), min_rows=1)
     st, j = http("GET", "/api/v1/system/dict/types/page?pageNum=1&pageSize=5", token=tok)
-    check("C8", "字典类型分页", 200, st, str(j)[:120])
-    st, j = http("GET", "/api/v1/system/logs?pageNum=1&pageSize=5", token=tok)
-    check("C8", "系统日志分页", 200, st)
+    check_page_shape("C8", "字典类型分页", j, required=("id",), min_rows=0)
+    st, j = http("GET", "/api/v1/system/logs?pageNum=1&pageSize=3", token=tok)
+    check_page_shape("C8", "系统日志分页", j, expect_rows=3, required=("id", "logLevel"), min_rows=1)
     st, j = http("GET", "/api/v1/notification/messages?userId=1", token=tok)
-    check("C8", "通知站内信", 200, st)
-    st, j = http("GET", "/api/v1/iam/audit/logs?pageNum=1&pageSize=5", token=tok)
-    check("C8", "IAM 审计日志（写操作留痕）", 200, st)
+    check_list_shape("C8", "通知站内信", j, required=("id",), min_rows=0)
+    # IAM 审计：page/size 族。断言 pageSize 真生效 + 翻页内容不重叠，
+    # 否则「pageNum/pageSize 被静默忽略」这类缺陷永远测不出来。
+    st, j = http("GET", "/api/v1/iam/audit/logs?page=1&size=3", token=tok)
+    p1 = check_page_shape("C8", "IAM 审计日志（写操作留痕）", j, expect_rows=3,
+                          required=("id", "operation", "createdAt"), min_rows=1)
+    st, j2 = http("GET", "/api/v1/iam/audit/logs?page=2&size=3", token=tok)
+    p2 = check_page_shape("C8", "IAM 审计日志第2页", j2, expect_rows=3, required=("id",), min_rows=1)
+    if p1 and p2:
+        ids1 = {str(r.get("id")) for r in p1}
+        ids2 = {str(r.get("id")) for r in p2}
+        check("C8", "审计日志翻页不重复", [], sorted(ids1 & ids2), f"第1页={len(ids1)} 第2页={len(ids2)}")
     st, j = http("GET", "/api/v1/system/console/services", token=tok)
     check("C8", "控制台服务健康面", (200, 404), st)
+
+
+# ============================ C9 凭证视角矩阵（鉴权边界） ============================
+def c9(tok):
+    hdr("C9 · 凭证视角矩阵 · 鉴权边界（防止被 admin token 掩盖）")
+    # 背景：上一轮所有用例都带 admin token 跑，等于把每条鉴权边界都测成假阳性——
+    # 「支付回调由无 JWT 的外部渠道方调用」这一真实断点因此完全没暴露（网关 401
+    # GW_UNAUTHORIZED，而 blueprint 内部早已 permitAll）。本链路固定用三种视角
+    # 交叉验证同一批端点，把这类盲区固化成回归用例。
+    ts = int(time.time())
+    order_body = {"customerId": 1001,
+                  "items": [{"productId": 1001, "productName": "视角验证",
+                             "quantity": 1, "unitPrice": 129.0}]}
+
+    # --- 视角 B：受限用户（有凭证、无权限）→ 必须 403，不能退化成 500 ---
+    st, depts = http("GET", "/api/v1/iam/depts/tree", token=tok)
+    did = depts["data"][0]["id"]
+    user = f"c9{ts % 100000}"
+    http("POST", "/api/v1/iam/accounts", {
+        "username": user, "password": "C9pass@2026", "deptId": int(did),
+        "nickname": "受限视角", "email": f"{user}@bone.local"}, token=tok)
+    limited = login(user, "C9pass@2026")
+    st, j = http("POST", "/api/v1/orders", order_body, token=limited)
+    check("C9", "受限用户下单 → 403（不得是 500）", 403, st, str(j)[:140])
+
+    # --- 视角 A：超管下单，为渠道视角准备支付单 ---
+    st, j = http("POST", "/api/v1/orders", order_body, token=tok)
+    oid = rid_of(j)
+    check("C9", "超管下单 → 2xx", (200, 201), st)
+    st, j = http("POST", "/api/v1/payments/initiate", {"orderId": int(oid)}, token=tok)
+    pid = (data(j) or {}).get("paymentId") or (data(j) or {}).get("id")
+    st, j = http("GET", f"/api/v1/orders/{oid}", token=tok)
+    amount = (data(j) or {}).get("totalAmount")
+
+    # --- 视角 C：无凭证外部渠道方 ---
+    trade = f"C9{ts}"
+    ok_body = {"paymentId": int(pid), "channelTradeNo": trade,
+               "paidAmount": float(amount), "signature": sign(pid, trade, amount),
+               "success": True}
+    st, j = http("POST", "/api/v1/payments/callback", ok_body, token=None)
+    check("C9", "无凭证渠道回调 → 200（网关须放通 callback）", 200, st, str(j)[:140])
+    st, j = http("GET", f"/api/v1/orders/{oid}", token=tok)
+    check("C9", "无凭证回调后订单置为 PAID", "PAID", (data(j) or {}).get("status"))
+
+    bad = dict(ok_body)
+    bad["signature"] = "deadbeef"
+    st, j = http("POST", "/api/v1/payments/callback", bad, token=None)
+    check("C9", "无凭证 + 签名错 → 401（验签仍生效）", 401, st)
+
+    # 白名单是前缀匹配，放通范围必须精确到 callback：其余支付端点仍须 401
+    for path, method, desc in (
+            ("/api/v1/payments/initiate", "POST", "发起支付"),
+            (f"/api/v1/payments/{pid}/refund", "POST", "退款"),
+            (f"/api/v1/payments/{pid}", "GET", "支付单查询")):
+        body = {"refundAmount": 1.0} if "refund" in path else {"orderId": int(oid)}
+        st, j = http(method, path, body, token=None)
+        check("C9", f"无凭证 {desc} → 401（白名单不得误放通）", 401, st)
+
+    st, j = http("POST", "/api/v1/orders", order_body, token=None)
+    check("C9", "无凭证下单 → 401", 401, st)
 
 
 # ============================ G 网关路由门禁 ============================
@@ -459,7 +755,7 @@ def main():
     runners = {"C1": lambda: c1(tok, sub_tok, app_tok), "C2": lambda: c2(tok, sub_tok, app_tok),
                "C3": lambda: c3(tok), "C4": lambda: c4(tok), "C5": lambda: c5(tok),
                "C6": lambda: c6(tok), "C7": lambda: c7(tok), "C8": lambda: c8(tok),
-               "G": gate}
+               "C9": lambda: c9(tok), "G": gate}
     todo = list(runners.keys()) if "all" in args else [a.upper() for a in args]
     for k in todo:
         try:

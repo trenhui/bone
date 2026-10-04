@@ -125,7 +125,8 @@
     "NOTIFICATION_NOT_FOUND": "站内信不存在",
     "NOTIFICATION_ACCESS_DENIED": "站内信访问被拒绝（非本人/非本租户）",
     "NOTIFICATION_INVALID_PARAM": "入参非法（userId 必填或 limit 超出上限）",
-    "NOTIFICATION_TENANT_MISMATCH": "站内信写入缺少租户上下文"
+    "NOTIFICATION_TENANT_MISMATCH": "站内信写入缺少租户上下文",
+    "NOTIFICATION_ACCOUNT_REQUIRED": "登录状态无效或已过期，请重新登录"
   },
   "enums": {
     "ORDER_STATUS": {

@@ -16,10 +16,10 @@ const { Text } = Typography;
 interface ImportModelModalProps {
   open: boolean;
   /** scoped 模式下由路由注入（禁改）；非 scoped 由用户在下拉选择。⚠ 雪花 ID 字符串透传 */
-  moduleId?: number | string;
+  moduleId?: string | string;
   moduleOptions: Array<{ value: string; label: string }>;
   onClose: () => void;
-  onImported: (entityId: number) => void;
+  onImported: (entityId: string) => void;
 }
 
 interface FieldRow {

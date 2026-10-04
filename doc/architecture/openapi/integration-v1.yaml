@@ -11,6 +11,9 @@ info:
 servers:
   - url: /api/v1/integration
 
+security:
+  - bearerAuth: []
+
 paths:
   # ───────────────── Connector（ConnectorController）─────────────────
   /connectors:
@@ -22,7 +25,7 @@ paths:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: size, in: query, schema: { type: integer, default: 20 } }
       responses:
-        '200': { description: OK（PageResult.records[ConnectorDTO]） }
+        '200': { description: 'OK（PageResult.records[ConnectorDTO]）' }
     post:
       summary: 创建连接器
       operationId: createConnector
@@ -40,7 +43,7 @@ paths:
       operationId: getConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（ConnectorDTO） }
         '404': { description: 连接器不存在（INT_CONNECTOR_NOT_FOUND） }
@@ -49,7 +52,7 @@ paths:
       operationId: updateConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
@@ -62,7 +65,7 @@ paths:
       operationId: deleteConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /connectors/{id}/test:
@@ -71,7 +74,7 @@ paths:
       operationId: testConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（Boolean） }
         '501': { description: 连接器类型未实现（INT_CONNECTOR_NOT_IMPLEMENTED） }
@@ -81,7 +84,7 @@ paths:
       operationId: enableConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /connectors/{id}/disable:
@@ -90,7 +93,7 @@ paths:
       operationId: disableConnector
       tags: [Connector]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
 
@@ -104,7 +107,7 @@ paths:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: size, in: query, schema: { type: integer, default: 20 } }
       responses:
-        '200': { description: OK（PageResult.records[FlowDTO]） }
+        '200': { description: 'OK（PageResult.records[FlowDTO]）' }
     post:
       summary: 创建流程
       operationId: createIntegrationFlow
@@ -122,7 +125,7 @@ paths:
       operationId: getIntegrationFlow
       tags: [Flow]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（FlowDetailDTO） }
         '404': { description: 流程不存在（INT_FLOW_NOT_FOUND） }
@@ -131,7 +134,7 @@ paths:
       operationId: updateIntegrationFlow
       tags: [Flow]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
@@ -144,7 +147,7 @@ paths:
       operationId: deleteIntegrationFlow
       tags: [Flow]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /flows/{id}/activate:
@@ -153,7 +156,7 @@ paths:
       operationId: activateIntegrationFlow
       tags: [Flow]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /flows/{id}/deactivate:
@@ -162,7 +165,7 @@ paths:
       operationId: deactivateIntegrationFlow
       tags: [Flow]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /flows/{id}/test:
@@ -172,7 +175,7 @@ paths:
       tags: [Flow]
       x-implementation-status: vision
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（试运行结果） }
         '501': { description: 未实现（INT_FLOW_TEST_NOT_IMPLEMENTED） }
@@ -183,7 +186,7 @@ paths:
       tags: [Flow]
       x-implementation-status: vision
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（版本列表） }
         '501': { description: 未实现（INT_FLOW_VERSION_NOT_IMPLEMENTED） }
@@ -209,14 +212,14 @@ paths:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: size, in: query, schema: { type: integer, default: 20 } }
       responses:
-        '200': { description: OK（PageResult.records[ExecutionLogDTO]） }
+        '200': { description: 'OK（PageResult.records[ExecutionLogDTO]）' }
   /executions/{id}:
     get:
       summary: 执行详情
       operationId: getExecution
       tags: [Monitor]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（ExecutionLogDTO，含 input/output/error） }
         '404': { description: 执行记录不存在（INT_EXECUTION_NOT_FOUND） }
@@ -226,7 +229,7 @@ paths:
       operationId: retryExecution
       tags: [Monitor]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（new execution id） }
   /statistics:
@@ -235,11 +238,16 @@ paths:
       operationId: getIntegrationStatistics
       tags: [Monitor]
       parameters:
-        - { name: flowId, in: query, required: true, schema: { type: integer, format: int64 } }
+        - { name: flowId, in: query, required: true, schema: { type: string } }
       responses:
         '200': { description: OK（FlowStatisticsDTO） }
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     CreateConnectorCommand:
       type: object
@@ -278,7 +286,7 @@ components:
     ExecuteFlowCommand:
       type: object
       properties:
-        flowId: { type: integer, format: int64 }
+        flowId: { type: string }
         inputData: { type: object, additionalProperties: true }
     FlowNodeCmd:
       type: object
@@ -291,6 +299,6 @@ components:
     FlowConnectionCmd:
       type: object
       properties:
-        sourceNodeId: { type: integer, format: int64 }
-        targetNodeId: { type: integer, format: int64 }
+        sourceNodeId: { type: string }
+        targetNodeId: { type: string }
         condition: { type: string }

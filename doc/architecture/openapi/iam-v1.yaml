@@ -25,22 +25,30 @@ paths:
   /login:
     post:
       summary: 用户登录（公开）
+      operationId: login
+      tags: [Auth]
       security: []
       responses:
         '200': { description: OK（ApiResponse + token） }
   /logout:
     post:
       summary: 登出
+      operationId: logout
+      tags: [Auth]
       responses:
         '200': { description: OK }
   /refresh:
     post:
       summary: 刷新令牌
+      operationId: refreshToken
+      tags: [Auth]
       responses:
         '200': { description: OK }
   /accounts:
     get:
       summary: 分页查询账号
+      operationId: listAccounts
+      tags: [Account]
       description: 权限码 `iam:accounts:read`；非平台租户自动按 JWT tenantId 过滤。
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
@@ -51,6 +59,8 @@ paths:
         '403': { description: 缺少 iam:accounts:read }
     post:
       summary: 创建账号
+      operationId: createAccount
+      tags: [Account]
       description: 权限码 `iam:accounts:write`。
       responses:
         '200': { description: OK }
@@ -58,18 +68,24 @@ paths:
   /accounts/{id}:
     get:
       summary: 账号详情
+      operationId: getAccount
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     put:
       summary: 更新账号
+      operationId: updateAccount
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     delete:
       summary: 删除账号
+      operationId: deleteAccount
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -77,6 +93,8 @@ paths:
   /accounts/{id}/enable:
     post:
       summary: 启用账号
+      operationId: enableAccount
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -84,6 +102,8 @@ paths:
   /accounts/{id}/disable:
     post:
       summary: 禁用账号
+      operationId: disableAccount
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -91,6 +111,8 @@ paths:
   /accounts/{id}/reset-password:
     post:
       summary: 重置密码
+      operationId: resetAccountPassword
+      tags: [Account]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -98,12 +120,16 @@ paths:
   /me:
     get:
       summary: 当前账号资料 + scopes
+      operationId: getMyProfile
+      tags: [Account]
       description: 仅需"已认证"，无独立权限码。
       responses:
         '200': { description: OK }
         '401': { description: 未登录 / 会话失效 }
     put:
       summary: 自助更新昵称 / 手机 / 头像
+      operationId: updateMyProfile
+      tags: [Account]
       description: 仅可更新当前登录账号；密码改动走 `/me/change-password`。
       responses:
         '200': { description: OK }
@@ -111,6 +137,8 @@ paths:
   /me/change-password:
     post:
       summary: 自助改密（校验旧密码 + 弱口令策略）
+      operationId: changeMyPassword
+      tags: [Account]
       description: 不会自动吊销 refresh token；如需"改密即下线"前端需另调 `/accounts/{id}/sessions`。
       responses:
         '200': { description: OK }
@@ -119,6 +147,8 @@ paths:
   /accounts/{accountId}/sessions:
     get:
       summary: 账号活跃 + 历史 refresh token 会话
+      operationId: listAccountSessions
+      tags: [Session]
       description: 权限码 `iam:sessions:read`；脱敏，不返回 token_hash。
       parameters:
         - { name: accountId, in: path, required: true, schema: { type: string } }
@@ -126,6 +156,8 @@ paths:
         '200': { description: OK }
     delete:
       summary: 撤销账号下全部活跃 refresh token（"踢人下线"）
+      operationId: revokeAccountSessions
+      tags: [Session]
       description: 权限码 `iam:sessions:write`。
       parameters:
         - { name: accountId, in: path, required: true, schema: { type: string } }
@@ -134,6 +166,8 @@ paths:
   /sessions/{id}:
     delete:
       summary: 撤销单条 refresh token
+      operationId: revokeSession
+      tags: [Session]
       description: 权限码 `iam:sessions:write`；跨租户被拒绝。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -144,65 +178,89 @@ paths:
   /accounts/import:
     post:
       summary: 批量导入账号
+      operationId: importAccounts
+      tags: [Account]
       responses:
         '200': { description: OK }
   /accounts/export:
     get:
       summary: 导出账号
+      operationId: exportAccounts
+      tags: [Account]
       responses:
         '200': { description: OK }
   /sso/config:
     get:
       summary: 获取 SSO 配置（社区版默认 enabled=false）
+      operationId: getSsoConfig
+      tags: [Auth]
       responses:
         '200': { description: OK }
   /sso/callback:
     get:
       summary: SSO 回调（未配置 IdP 时 501，公开）
+      operationId: ssoCallback
+      tags: [Auth]
       security: []
       responses:
         '501': { description: IAM_SSO_NOT_CONFIGURED }
   /mfa/status:
     get:
       summary: MFA 状态（社区版 enabled=false）
+      operationId: getMfaStatus
+      tags: [Auth]
       responses:
         '200': { description: OK }
   /mfa/enroll:
     post:
       summary: MFA 注册（Vision · 501）
+      operationId: enrollMfa
+      tags: [Auth]
       responses:
         '501': { description: IAM_MFA_NOT_AVAILABLE }
   /mfa/verify:
     post:
       summary: MFA 验证（Vision · 501）
+      operationId: verifyMfa
+      tags: [Auth]
       responses:
         '501': { description: IAM_MFA_NOT_AVAILABLE }
   /roles:
     get:
       summary: 角色列表
+      operationId: listRoles
+      tags: [Role]
       description: 权限码 `iam:roles:read`。
       responses:
         '200': { description: OK }
     post:
       summary: 创建角色
+      operationId: createRole
+      tags: [Role]
       description: 权限码 `iam:roles:write`。
       responses:
         '200': { description: OK }
   /roles/{id}:
     get:
       summary: 角色详情（含权限摘要）
+      operationId: getRole
+      tags: [Role]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     put:
       summary: 更新角色
+      operationId: updateRole
+      tags: [Role]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     delete:
       summary: 删除角色
+      operationId: deleteRole
+      tags: [Role]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -210,12 +268,16 @@ paths:
   /roles/{id}/permissions:
     get:
       summary: 查询角色权限
+      operationId: listRolePermissions
+      tags: [Role]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     post:
       summary: 分配角色权限
+      operationId: assignRolePermissions
+      tags: [Role]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -223,22 +285,30 @@ paths:
   /permissions:
     get:
       summary: 权限列表
+      operationId: listPermissions
+      tags: [Permission]
       description: 权限码 `iam:permissions:read`。
       responses:
         '200': { description: OK }
     post:
       summary: 创建权限
+      operationId: createPermission
+      tags: [Permission]
       description: 权限码 `iam:permissions:write`。
       responses:
         '200': { description: OK }
   /permissions/tree:
     get:
       summary: 权限树
+      operationId: getPermissionTree
+      tags: [Permission]
       responses:
         '200': { description: OK }
   /permissions/{id}:
     get:
       summary: 权限详情
+      operationId: getPermission
+      tags: [Permission]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
@@ -246,6 +316,8 @@ paths:
   /audit/logs:
     get:
       summary: 审计日志分页
+      operationId: listAuditLogs
+      tags: [Audit]
       description: 权限码 `iam:audit:read`；非平台租户自动按 JWT tenantId 过滤。
       responses:
         '200': { description: OK }
@@ -253,6 +325,8 @@ paths:
   /audit/logs/export:
     get:
       summary: 导出审计日志 CSV
+      operationId: exportAuditLogs
+      tags: [Audit]
       description: |
         权限码 `iam:audit:read`；返回 `text/csv;charset=utf-8` + UTF-8 BOM，
         `Content-Disposition=attachment; filename=iam-audit-logs.csv`，单次最多 10000 行。
@@ -267,17 +341,23 @@ paths:
   /audit/settings:
     get:
       summary: 获取审计设置
+      operationId: getAuditSettings
+      tags: [Audit]
       description: 权限码 `iam:audit:read`。
       responses:
         '200': { description: OK }
     put:
       summary: 更新审计设置
+      operationId: updateAuditSettings
+      tags: [Audit]
       description: 权限码 `iam:audit:write`。
       responses:
         '200': { description: OK }
   /tenants:
     get:
       summary: 租户列表（平台超管）
+      operationId: listTenants
+      tags: [Tenant]
       description: 权限码 `iam:tenants:read`（仅平台超管角色拥有）。
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
@@ -287,12 +367,16 @@ paths:
         '403': { description: 缺少 iam:tenants:read }
     post:
       summary: 创建租户
+      operationId: createTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`。
       responses:
         '200': { description: OK }
   /tenants/{id}:
     get:
       summary: 租户详情
+      operationId: getTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:read`。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -300,6 +384,8 @@ paths:
         '200': { description: OK }
     put:
       summary: 更新租户
+      operationId: updateTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -307,6 +393,8 @@ paths:
         '200': { description: OK }
     delete:
       summary: 删除租户（级联清理 IAM 子表 + 软删租户）
+      operationId: deleteTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`；禁止删除平台租户 id=0。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -316,6 +404,8 @@ paths:
   /tenants/{id}/enable:
     post:
       summary: 启用租户
+      operationId: enableTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -324,6 +414,8 @@ paths:
   /tenants/{id}/disable:
     post:
       summary: 禁用租户
+      operationId: disableTenant
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
@@ -332,6 +424,8 @@ paths:
   /tenants/{id}/quota:
     put:
       summary: 更新租户配额（maxAccounts / maxRoles）
+      operationId: updateTenantQuota
+      tags: [Tenant]
       description: 权限码 `iam:tenants:write`；`null` 表示不限制。
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }

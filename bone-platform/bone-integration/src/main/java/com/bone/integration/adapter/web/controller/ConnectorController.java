@@ -21,6 +21,7 @@ import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorDetailQuery;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,12 +37,14 @@ public class ConnectorController {
   private final EnableConnectorApplicationService enableConnectorHandler;
   private final DisableConnectorApplicationService disableConnectorHandler;
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateConnectorCommand cmd) {
     Long id = createConnectorHandler.handle(cmd);
     return ApiResponse.success(id);
   }
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateConnectorCommand cmd) {
     updateConnectorHandler.handle(
@@ -61,24 +64,28 @@ public class ConnectorController {
     return ApiResponse.success(dto);
   }
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     deleteConnectorHandler.handle(new DeleteConnectorCommand(id));
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @PostMapping("/{id}/test")
   public ApiResponse<Boolean> test(@PathVariable Long id) {
     Boolean success = testConnectorHandler.handle(new TestConnectorCommand(id));
     return ApiResponse.success(success);
   }
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @PostMapping("/{id}/enable")
   public ApiResponse<Void> enable(@PathVariable Long id) {
     enableConnectorHandler.handle(new EnableConnectorCommand(id));
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('integration:connectors:write')")
   @PostMapping("/{id}/disable")
   public ApiResponse<Void> disable(@PathVariable Long id) {
     disableConnectorHandler.handle(new DisableConnectorCommand(id));

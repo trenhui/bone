@@ -23,7 +23,7 @@ const LEVEL_TAG: Record<string, { color: string; label: string }> = {
  */
 interface Props {
   open: boolean;
-  entityId: number | null;
+  entityId: string | null;
   entityName?: string;
   onClose: () => void;
   onPublished: () => void;

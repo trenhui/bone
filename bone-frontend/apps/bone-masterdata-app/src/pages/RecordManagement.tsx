@@ -26,13 +26,15 @@ import type { ProColumns } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import type {
   MasterDataRecord,
-  MasterDataEntity,
   MasterDataField,
   CreateMasterDataRecordReq,
   UpdateMasterDataRecordReq,
   ImportDuplicateStrategy,
 } from '../types';
-import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi, approvalApi } from '../services/api';
+import { masterDataRecordApi, masterDataFieldApi, approvalApi } from '../services/api';
+import { normalizeTotal } from '@bone/shared-utils';
+import { useEntityScope } from '../context/EntityScopeContext';
+import EntityScopeSelect from '../components/EntityScopeSelect';
 import { useMessage } from '../App';
 
 const { Option } = Select;
@@ -79,9 +81,9 @@ const RecordManagement: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<MasterDataRecord[]>([]);
-  const [entities, setEntities] = useState<MasterDataEntity[]>([]);
   const [fields, setFields] = useState<MasterDataField[]>([]);
-  const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
+  // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
+  const { entityId: selectedEntityId } = useEntityScope();
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -99,23 +101,7 @@ const RecordManagement: React.FC = () => {
   const [versions, setVersions] = useState<Record<string, unknown>[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
 
-  const fetchEntities = useCallback(async () => {
-    try {
-      const response = await masterDataEntityApi.page({ pageSize: 100 });
-      if (response.code === 200) {
-        setEntities(response.data.list);
-        if (response.data.list.length > 0 && !selectedEntityId) {
-          setSelectedEntityId(response.data.list[0].id);
-        }
-      } else {
-        message.error(response.message);
-      }
-    } catch {
-      message.error('获取模型列表失败');
-    }
-  }, [selectedEntityId]);
-
-  const fetchFields = useCallback(async (entityId: number) => {
+  const fetchFields = useCallback(async (entityId: string) => {
     try {
       const response = await masterDataFieldApi.listByEntityId(entityId);
       if (response.code === 200) {
@@ -141,8 +127,10 @@ const RecordManagement: React.FC = () => {
         pageSize: pageSize
       });
       if (response.code === 200) {
-        setRecords(response.data.list);
-        setTotal(response.data.total);
+        // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，
+        // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
+        setRecords(response.data.records);
+        setTotal(normalizeTotal(response.data.total));
       } else {
         message.error(response.message);
       }
@@ -152,10 +140,6 @@ const RecordManagement: React.FC = () => {
       setLoading(false);
     }
   }, [selectedEntityId, selectedStatus, keyword, onlyCurrent, page, pageSize]);
-
-  useEffect(() => {
-    void fetchEntities();
-  }, [fetchEntities]);
 
   useEffect(() => {
     if (selectedEntityId) {
@@ -191,7 +175,7 @@ const RecordManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number): Promise<void> => {
+  const handleDelete = async (id: string): Promise<void> => {
     try {
       const response = await masterDataRecordApi.delete(id);
       if (response.code === 200) {
@@ -206,7 +190,7 @@ const RecordManagement: React.FC = () => {
   };
 
   // 发布记录
-  const handlePublish = async (id: number) => {
+  const handlePublish = async (id: string) => {
     try {
       const response = await masterDataRecordApi.publish(id);
       if (response.code === 200) {
@@ -221,7 +205,7 @@ const RecordManagement: React.FC = () => {
   };
 
   // 提交审批（UC-T7）
-  const handleSubmitApproval = async (id: number) => {
+  const handleSubmitApproval = async (id: string) => {
     try {
       const response = await approvalApi.submit(id);
       if (response.code === 200) {
@@ -236,7 +220,7 @@ const RecordManagement: React.FC = () => {
   };
 
   // 审批通过（SoD：审批人≠提交人，后端校验）
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     try {
       const response = await approvalApi.approve(id);
       if (response.code === 200) {
@@ -269,7 +253,7 @@ const RecordManagement: React.FC = () => {
   };
 
   // 版本历史（UC-T7 追溯）
-  const handleShowVersions = async (id: number) => {
+  const handleShowVersions = async (id: string) => {
     setVersionsOpen(true);
     setVersionsLoading(true);
     try {
@@ -287,7 +271,7 @@ const RecordManagement: React.FC = () => {
   };
 
   // 归档记录
-  const handleArchive = async (id: number) => {
+  const handleArchive = async (id: string) => {
     try {
       const response = await masterDataRecordApi.archive(id);
       if (response.code === 200) {
@@ -633,18 +617,7 @@ const RecordManagement: React.FC = () => {
         {/* 模型选择和操作按钮 */}
         <Form layout="inline" style={{ marginBottom: 16 }}>
           <Form.Item label="选择模型">
-            <Select
-              style={{ width: 300 }}
-              placeholder="请选择主数据模型"
-              value={selectedEntityId}
-              onChange={setSelectedEntityId}
-            >
-              {entities.map(entity => (
-                <Option key={entity.id} value={entity.id}>
-                  {entity.name}
-                </Option>
-              ))}
-            </Select>
+            <EntityScopeSelect showStatus={false} />
           </Form.Item>
           <Form.Item label="状态">
             <Select

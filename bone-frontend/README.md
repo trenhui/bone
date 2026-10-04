@@ -19,6 +19,7 @@
 - **bone-system-app**: 系统管理系统（端口 3007）
 - **bone-extension-app**: 扩展引擎管理控制台（端口 3008）
 - **bone-generator-app**: Studio 代码生成（端口 3009）
+- **bone-commerce-app**: 交易域（订单管理 / 支付管理，端口 3012）
 
 共享设计系统：`packages/ui`（`@bone/ui`，含主题与 `BoneAppProvider`）。
 

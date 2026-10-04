@@ -1,6 +1,19 @@
 spring:
   application:
     name: bone-masterdata
+  cloud:
+    nacos:
+      config:
+        # 本地 Nacos 3.0.3（MySQL+鉴权）：通过 spring.config.import 在启动期拉取共享配置
+        server-addr: ${BONE_NACOS_ADDR:127.0.0.1:8848}
+        username: ${BONE_NACOS_USERNAME:nacos}
+        password: ${BONE_NACOS_PASSWORD:nacos}
+        namespace: ${BONE_NACOS_NAMESPACE:}
+        group: BONE
+        file-extension: yaml
+  config:
+    import:
+      - nacos:bone-common.yaml?group=BONE&refreshEnabled=true
   # === 时间字段的 UTC 契约（i18n 方案 §6.4，照 blueprint/system 样板）===
   jackson:
     time-zone: UTC

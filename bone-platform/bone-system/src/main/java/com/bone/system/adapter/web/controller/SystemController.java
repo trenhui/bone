@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "系统管理", description = "系统状态和健康检查接口")
@@ -121,26 +122,34 @@ public class SystemController {
   // ---- 运维类接口（MVP 范围外，返回 501 而非 404，避免前端契约误报）----
   // 平台自身的部署/升级/重启/关停属于运维动作，MVP 不交付；实现它们会直接操作运行中的实例，
   // 在联调/生产环境都有误关停风险，因此显式声明「未实现」而非静默缺失。
+  //
+  // 授权：四个端点统一挂 `sys:ops:execute`（独立高危码，只授超管、不授租户管理员）。
+  // **即使当前恒 501 也先挂门禁** —— 误调用会直接终止运行中的服务，爆炸半径大于其他任何写操作；
+  // 等实现时再补授权，必然出现「实现 PR 加了端点却漏了 @PreAuthorize」这个真实漏法。
 
   @Operation(summary = "部署新版本（运维动作，MVP 未实现）")
+  @PreAuthorize("hasAuthority('sys:ops:execute')")
   @PostMapping("/deploy")
   public ResponseEntity<Void> deploy() {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
   @Operation(summary = "升级版本（运维动作，MVP 未实现）")
+  @PreAuthorize("hasAuthority('sys:ops:execute')")
   @PostMapping("/upgrade")
   public ResponseEntity<Void> upgrade() {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
   @Operation(summary = "重启服务（运维动作，MVP 未实现）")
+  @PreAuthorize("hasAuthority('sys:ops:execute')")
   @PostMapping("/restart")
   public ResponseEntity<Void> restart() {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
   @Operation(summary = "关停服务（运维动作，MVP 未实现）")
+  @PreAuthorize("hasAuthority('sys:ops:execute')")
   @PostMapping("/shutdown")
   public ResponseEntity<Void> shutdown() {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();

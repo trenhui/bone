@@ -3,7 +3,7 @@
  */
 
 export interface MetaEntity {
-  id: number;
+  id: string;
   name: string;
   code: string;
   displayName: string;
@@ -18,12 +18,12 @@ export interface MetaEntity {
   sortOrder?: number;
   icon?: string;
   /** 所属 IAM 模块（应用→模块→模型分层归属；未归属为空） */
-  moduleId?: number;
+  moduleId?: string;
 }
 
 export interface MetaField {
-  id: number;
-  entityId: number;
+  id: string;
+  entityId: string;
   name: string;
   code: string;
   displayName: string;
@@ -59,13 +59,13 @@ export interface MetaField {
 }
 
 export interface MetaRelation {
-  id: number;
+  id: string;
   name: string;
-  sourceEntityId: number;
-  targetEntityId: number;
+  sourceEntityId: string;
+  targetEntityId: string;
   type: string;
-  sourceFieldId?: number;
-  targetFieldId?: number;
+  sourceFieldId?: string;
+  targetFieldId?: string;
   foreignKeyField?: string;
   required?: boolean;
   cascadeType?: string;
@@ -84,7 +84,7 @@ export interface CreateMetaEntityReq {
    * 归属的 IAM 模块（模块上下文中创建时由前端自动携带）。
    * ⚠ 雪花 ID 禁止 Number() 转换（19 位超出 2^53 静默截断）；JSON 中以字符串透传，Jackson 自动转 Long。
    */
-  moduleId?: number | string;
+  moduleId?: string | string;
 }
 
 export interface UpdateMetaEntityReq {
@@ -143,8 +143,8 @@ export interface UpdateMetaFieldReq {
 
 export interface CreateMetaRelationReq {
   name: string;
-  sourceEntityId: number;
-  targetEntityId: number;
+  sourceEntityId: string;
+  targetEntityId: string;
   type: string;
   foreignKeyField?: string;
   required?: boolean;

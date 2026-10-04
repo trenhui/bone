@@ -3,7 +3,7 @@
  */
 
 export interface MasterDataEntity {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   category?: string;
@@ -13,8 +13,8 @@ export interface MasterDataEntity {
 }
 
 export interface MasterDataField {
-  id: number;
-  masterDataEntityId: number;
+  id: string;
+  masterDataEntityId: string;
   name: string;
   /** 字段编码：记录 data 的 JSON 以 code 为键；存量数据可能缺失，取值时需回退到 name。 */
   code?: string;
@@ -41,8 +41,8 @@ export interface MasterDataField {
  * - severity：RuleSeverity 枚举 LOW / MEDIUM / HIGH / CRITICAL（历史上前端误用 ERROR/WARNING/INFO，导致创建必 400）。
  */
 export interface DataQualityRule {
-  id: number;
-  masterDataEntityId: number;
+  id: string;
+  masterDataEntityId: string;
   name: string;
   type: 'NOT_NULL' | 'UNIQUE' | 'FORMAT' | 'RANGE' | 'REFERENCE' | 'CUSTOM';
   expression: string;
@@ -54,8 +54,8 @@ export interface DataQualityRule {
 
 /** 质量检查任务（对齐后端 QualityCheckDTO）。 */
 export interface QualityCheck {
-  id: number;
-  masterDataEntityId: number;
+  id: string;
+  masterDataEntityId: string;
   startedAt: string;
   endedAt?: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
@@ -65,8 +65,8 @@ export interface QualityCheck {
 }
 
 export interface QualityReport {
-  id: number;
-  qualityCheckId: number;
+  id: string;
+  qualityCheckId: string;
   reportData: Record<string, unknown>;
   issueCount: number;
   createdAt: string;
@@ -74,30 +74,44 @@ export interface QualityReport {
 
 /** 报告 reportData 的结构（后端 buildReportData 产出）。 */
 export interface QualityReportData {
-  entityId: number;
+  entityId: string;
   totalRecords: number;
   rules: Array<{
-    ruleId: number;
+    ruleId: string;
     ruleName: string;
     type: string;
     violations: number;
-    samples: Array<{ recordId: number; field: string; message: string }>;
+    samples: Array<{ recordId: string; field: string; message: string }>;
   }>;
-  unsupportedRules: Array<{ ruleId: number; ruleName: string; type: string; reason: string }>;
+  unsupportedRules: Array<{ ruleId: string; ruleName: string; type: string; reason: string }>;
 }
 
+/**
+ * 质量检查结果。
+ *
+ * 后端按入参返回两种粒度（见 QualityResultDTO#level），前端必须据此渲染，
+ * 不能一律当"某条记录的结果"显示——汇总行里 recordId / ruleId 都是 null。
+ */
 export interface DataQualityResult {
-  id: number;
-  masterDataRecordId: number;
-  dataQualityRuleId: number;
+  id: string;
+  /** 所属质量检查任务 ID：两种粒度都有值。 */
+  qualityCheckId: string;
+  /** 汇总行必有值；明细行在限定实体查询时才有值。 */
+  masterDataEntityId?: string;
+  /** 明细行 = 记录 ID；汇总行 = null。 */
+  masterDataRecordId: string | null;
+  /** 明细行 = 规则 ID；汇总行 = null。 */
+  dataQualityRuleId: string | null;
+  /** 结果粒度：DETAIL（逐规则×记录）/ SUMMARY（任务汇总）。 */
+  level: 'DETAIL' | 'SUMMARY';
   passed: boolean;
   message: string;
   timestamp: string;
 }
 
 export interface MasterDataRecord {
-  id: number;
-  masterDataEntityId: number;
+  id: string;
+  masterDataEntityId: string;
   data: Record<string, unknown>;
   /** 六态状态机（UC-T7）：DRAFT→PENDING_APPROVAL→APPROVED→PUBLISHED→ARCHIVED；驳回退回 DRAFT */
   status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'PUBLISHED' | 'SUPERSEDED' | 'ARCHIVED';
@@ -129,7 +143,7 @@ export interface UpdateMasterDataEntityReq {
 }
 
 export interface CreateMasterDataFieldReq {
-  masterDataEntityId: number;
+  masterDataEntityId: string;
   name: string;
   type: string;
   length?: number;
@@ -154,7 +168,7 @@ export interface UpdateMasterDataFieldReq {
 }
 
 export interface CreateDataQualityRuleReq {
-  masterDataEntityId: number;
+  masterDataEntityId: string;
   name: string;
   type: string;
   expression: string;
@@ -201,7 +215,7 @@ export interface MasterDataEntityPageQry {
 export interface MasterDataRecordListQry {
   pageNum?: number;
   pageSize?: number;
-  masterDataEntityId: number;
+  masterDataEntityId: string;
   status?: string;
   keyword?: string;
   /** 仅返回当前生效记录（当前版本 + 生效窗口含此刻）。 */
@@ -214,7 +228,7 @@ export type ImportDuplicateStrategy = 'FAIL' | 'UPDATE';
 export interface DataQualityRuleListQry {
   pageNum?: number;
   pageSize?: number;
-  masterDataEntityId?: number;
+  masterDataEntityId?: string;
   type?: string;
   severity?: string;
 }
@@ -239,6 +253,6 @@ export interface ImportResult {
   /** duplicateStrategy=UPDATE 时按编码命中并更新的行数。 */
   updatedCount: number;
   failureCount: number;
-  recordIds: number[];
+  recordIds: string[];
   failures: ImportFailure[];
 }

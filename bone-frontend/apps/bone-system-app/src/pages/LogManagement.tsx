@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import type { SystemLog } from '@/types';
 import { logApi } from '@/services/api';
+import { normalizeTotal } from '@bone/shared-utils';
 import dayjs, { Dayjs } from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -66,11 +67,13 @@ const LogManagementPage: React.FC = () => {
       };
       const response = await logApi.getLogs(params);
       if (response.code === 200) {
-        setLogs(response.data.list);
+        // 权威字段是 records；list 是后端PageResult 的 @Deprecated 兼容getter，
+        // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
+        setLogs(response.data.records);
         setPagination({
           current: page,
           pageSize,
-          total: response.data.total,
+          total: normalizeTotal(response.data.total),
         });
       }
     } catch {

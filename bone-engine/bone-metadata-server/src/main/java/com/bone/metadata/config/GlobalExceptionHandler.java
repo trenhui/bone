@@ -22,6 +22,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -167,6 +168,28 @@ public class GlobalExceptionHandler {
     log.warn("No resource found: {}", ex.getResourcePath());
     return problem(
         HttpStatus.NOT_FOUND, CommonErrorCodes.NOT_FOUND, "请求地址不存在: " + ex.getResourcePath());
+  }
+
+  /**
+   * 请求参数类型不匹配（路径变量/查询参数无法转成目标类型）→ 400。
+   *
+   * <p><b>为何必须显式接管</b>：{@code @PathVariable Long id} 收到 {@code "abc"} 时抛 {@link
+   * MethodArgumentTypeMismatchException}，它既非 {@link BizException} 也非校验异常， 此前冒泡到
+   * {@code @ExceptionHandler(Exception.class)} 被翻译成 <b>500 COMMON_INTERNAL_ERROR</b>。 后果：客户端传错参数被告知
+   * 「服务器内部出错」，排障方向被带偏；且这类纯由外部输入触发的错误会计入 5xx 错误预算， 掩盖真实的服务端故障。
+   */
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleTypeMismatch(
+      MethodArgumentTypeMismatchException ex) {
+    log.warn(
+        "参数类型不匹配: name={}, value={}, requiredType={}",
+        ex.getName(),
+        ex.getValue(),
+        ex.getRequiredType());
+    return problem(
+        HttpStatus.BAD_REQUEST,
+        CommonErrorCodes.MALFORMED_REQUEST,
+        String.format("参数 %s 格式不正确", ex.getName()));
   }
 
   /** 兜底 —— 500。 */

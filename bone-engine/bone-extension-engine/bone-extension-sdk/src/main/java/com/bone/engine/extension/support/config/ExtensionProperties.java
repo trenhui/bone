@@ -141,6 +141,13 @@ public class ExtensionProperties {
     private boolean enabled = false;
     private String baseUrl = "http://localhost:8088";
 
+    /**
+     * 上报共享密钥，对应 studio 侧 {@code bone.extension.studio.security.reporter-token}。
+     *
+     * <p>上报方是业务进程而非终端用户，不持有用户 JWT，故该通道以机器身份（共享密钥）认证。 留空则不发送该头——仅当 studio 侧同样未配置令牌时可用（本地联调）。
+     */
+    private String token = "";
+
     public boolean isEnabled() {
       return enabled;
     }
@@ -155,6 +162,14 @@ public class ExtensionProperties {
 
     public void setBaseUrl(String baseUrl) {
       this.baseUrl = baseUrl;
+    }
+
+    public String getToken() {
+      return token;
+    }
+
+    public void setToken(String token) {
+      this.token = token;
     }
   }
 

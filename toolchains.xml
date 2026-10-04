@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BONE 构建工具链定义。
+  编译要求 JDK 21，与 bone-parent/pom.xml 的 java.version=21 严格对齐。
+  本机此前仅安装 JDK 17（ms-17.0.16），无法编译 target=21，会报
+  "invalid target release: 21"；本文件 + maven-toolchains-plugin 强制锁定 JDK 21，
+  缺失/路径不对时会给出清晰报错。
+
+  使用方式（二选一）：
+   1) 仓库根执行： mvn -t toolchains.xml -Dmaven.toolchains.skip=false <goals>
+      （maven.toolchains.skip 默认 true，须显式置 false 才会启用本工具链；CI 不受影响）
+   2) 或将本文件内容合并进 ~/.m2/toolchains.xml，并传 -Dmaven.toolchains.skip=false，此后无需 -t
+
+  更简单的方式：直接把 JAVA_HOME 指向 JDK 21（如 export JAVA_HOME=$(/usr/libexec/java_home -v 21)），
+  则无需 toolchains，POM 的 source/target=21 即可正常编译。
+
+  jdkHome 指向本机 JDK 21 实际安装目录（下方为 Homebrew 在 Apple Silicon 的默认路径）。
+  若通过其他方式安装（如 Microsoft Build of OpenJDK 21 / Temurin 21），请改为对应路径。
+-->
+<toolchains>
+    <toolchain>
+        <type>jdk</type>
+        <provides>
+            <version>21</version>
+            <vendor>any</vendor>
+        </provides>
+        <configuration>
+            <jdkHome>/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home</jdkHome>
+        </configuration>
+    </toolchain>
+</toolchains>

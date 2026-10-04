@@ -17,12 +17,14 @@ import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.model.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.QualityCheck;
+import com.bone.masterdata.domain.model.quality.QualityCheckDetail;
 import com.bone.masterdata.domain.model.quality.QualityReport;
 import com.bone.masterdata.domain.model.quality.valueobject.RuleName;
 import com.bone.masterdata.domain.model.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
+import com.bone.masterdata.domain.repository.QualityCheckDetailRepository;
 import com.bone.masterdata.domain.repository.QualityCheckRepository;
 import com.bone.masterdata.domain.repository.QualityReportRepository;
 import com.bone.masterdata.domain.service.quality.DataQualityService;
@@ -37,6 +39,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -47,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,15 +59,30 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>读侧领域模型由各 Repository 的 default 方法承载（ADR-0030），应用层不直接依赖持久化 DSL。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QualityApplicationService {
+
+  /**
+   * 单次检查落明细的行数上限。
+   *
+   * <p>明细是「规则数 × 记录数」的笛卡尔积，不设限会在大实体上一次检查写出百万行。超限时优先保留违规明细（见 {@link #saveCheckDetails}）。
+   */
+  private static final int MAX_DETAIL_ROWS = 2000;
+
+  /** 质量结果粒度标记：逐规则×记录的明细行。 */
+  public static final String QUALITY_RESULT_LEVEL_DETAIL = "DETAIL";
+
+  /** 质量结果粒度标记：单个检查任务的汇总行。 */
+  public static final String QUALITY_RESULT_LEVEL_SUMMARY = "SUMMARY";
 
   private final DataQualityRuleRepository dataQualityRuleRepository;
   private final MasterDataRecordRepository recordRepository;
   private final MasterDataEntityRepository entityRepository;
   private final QualityCheckRepository qualityCheckRepository;
   private final QualityReportRepository qualityReportRepository;
+  private final QualityCheckDetailRepository qualityCheckDetailRepository;
   private final DataQualityService dataQualityService;
   private final MasterdataDomainEventPublisher domainEventPublisher;
   private final RuleExpressionEvaluator ruleExpressionEvaluator;
@@ -206,8 +225,86 @@ public class QualityApplicationService {
             buildReportData(entityId, records.size(), evaluations),
             issueCount);
     qualityReportRepository.save(report);
+    saveCheckDetails(check.getId(), evaluations, records);
     domainEventPublisher.publishFrom(check);
     return check.getId();
+  }
+
+  /**
+   * 落「规则 × 记录」判定明细（{@code mdm_qcheck_detail}）。
+   *
+   * <p>明细表此前只有 DDL 没有写入链路，导致「按记录查质量结果」无从实现——recordId 只能被原样回填到
+   * DTO。现在每次检查都把逐规则逐记录的通过/未通过写库，按记录过滤才有真实数据来源。
+   *
+   * <p><b>写入量控制</b>：明细是笛卡尔积（规则数 × 记录数），大实体会瞬间放大成百万行。因此设 {@link #MAX_DETAIL_ROWS}
+   * 上限，且<b>违规明细优先保留</b>（超过上限时丢弃通过明细，违规一条不丢）——质量治理的排查入口永远是"哪里不通过"，不是"哪里通过"。被截断的事实写入报告 JSON 的 {@code
+   * detailTruncated}，不静默。
+   */
+  private void saveCheckDetails(
+      Long checkId, List<RuleEvaluation> evaluations, List<RecordFields> records) {
+    if (records.isEmpty() || evaluations.isEmpty()) {
+      return;
+    }
+    Map<Long, String> recordCodes =
+        records.stream()
+            .collect(Collectors.toMap(RecordFields::recordId, RecordFields::label, (a, b) -> a));
+
+    List<QualityCheckDetail> details = new ArrayList<>();
+    int truncatedPassCount = 0;
+    for (RuleEvaluation evaluation : evaluations) {
+      if (evaluation.isUnsupported()) {
+        // 未求值 ≠ 通过，不落明细行：凭空造 passed=true 会把"没算过"粉饰成"没问题"。
+        continue;
+      }
+      Set<Long> violated =
+          evaluation.violations().stream()
+              .map(RuleEvaluation.Violation::recordId)
+              .collect(Collectors.toSet());
+      for (RecordFields record : records) {
+        Long recordId = record.recordId();
+        String label = recordCodes.getOrDefault(recordId, String.valueOf(recordId));
+        String ruleLabel = evaluation.ruleName() + "(" + evaluation.type() + ")";
+        if (violated.contains(recordId)) {
+          String message =
+              evaluation.violations().stream()
+                  .filter(v -> recordId.equals(v.recordId()))
+                  .map(RuleEvaluation.Violation::message)
+                  .findFirst()
+                  .orElse("规则未通过");
+          details.add(
+              QualityCheckDetail.fail(
+                  DistributedIdGenerator.generateLongId(),
+                  checkId,
+                  evaluation.ruleId(),
+                  recordId,
+                  ruleLabel + " → " + label + "：" + message));
+          continue;
+        }
+        if (details.size() >= MAX_DETAIL_ROWS) {
+          truncatedPassCount++;
+          continue;
+        }
+        details.add(
+            QualityCheckDetail.pass(
+                DistributedIdGenerator.generateLongId(),
+                checkId,
+                evaluation.ruleId(),
+                recordId,
+                ruleLabel + " → " + label + "：通过"));
+      }
+    }
+    if (details.isEmpty()) {
+      return;
+    }
+    qualityCheckDetailRepository.batchInsert(details);
+    if (truncatedPassCount > 0) {
+      log.warn(
+          "质量检查明细超过单次上限，已优先保留违规明细：checkId={}, 保留={}, 丢弃通过明细={}, 上限={}",
+          checkId,
+          details.size(),
+          truncatedPassCount,
+          MAX_DETAIL_ROWS);
+    }
   }
 
   /** 单个质量检查详情（ADR-0030：读 DSL 下沉到 Repository，此处只做 DTO 装配）。 */
@@ -250,7 +347,7 @@ public class QualityApplicationService {
                   values.put(
                       entry.getKey(), entry.getValue().isNull() ? "" : entry.getValue().asText()));
     }
-    return RecordFields.of(record.getId(), values);
+    return RecordFields.of(record.getId(), record.getRecordCode(), values);
   }
 
   /** 预加载 REFERENCE 规则的目标实体取值集合（key = {@code entityId#field}），避免逐记录查询。 */
@@ -395,49 +492,89 @@ public class QualityApplicationService {
         .toList();
   }
 
-  /** 查询质量结果（原 QualityResultController 内联，读 DSL 下沉到 Repository）。 */
+  /**
+   * 查询质量结果（读 DSL 下沉到 Repository，此处只做口径选择与 DTO 装配）。
+   *
+   * <p>返回<b>两种粒度</b>，由入参决定，绝不混在一份结果里让调用方猜：
+   *
+   * <ul>
+   *   <li><b>传 recordId</b> → 逐条明细（{@code level=DETAIL}）：来自 {@code mdm_qcheck_detail}，每行是「某规则 ×
+   *       某记录」的判定。此时 recordId 真正参与筛选（此前它只是被原样回填到 DTO，返回结果与该记录无关）。
+   *   <li><b>不传 recordId</b> → 检查任务汇总（{@code level=SUMMARY}）：每行是一次质检任务整体的通过情况，明细不展开（否则笛卡尔积会把列表撑爆）。
+   * </ul>
+   *
+   * <p>两个入参都为空时取全量任务，与既有行为一致。
+   */
   @Transactional(readOnly = true)
   public List<QualityResultDTO> listQualityResults(Long recordId, Long masterDataEntityId) {
     List<QualityCheck> checks =
         masterDataEntityId != null
             ? qualityCheckRepository.findByMasterDataEntityId(masterDataEntityId)
             : qualityCheckRepository.findAllChecks();
+    List<Long> checkIds = checks.stream().map(QualityCheck::getId).toList();
+
+    if (recordId != null) {
+      List<QualityCheckDetail> details =
+          masterDataEntityId != null
+              ? qualityCheckDetailRepository.findByQualityCheckIdsAndRecordId(checkIds, recordId)
+              : qualityCheckDetailRepository.findByRecordId(recordId);
+      return details.stream()
+          .sorted(
+              Comparator.comparing(QualityCheckDetail::getCheckedAt)
+                  .thenComparing(QualityCheckDetail::getId))
+          .map(this::toDetailResultDto)
+          .toList();
+    }
+
     Map<Long, List<QualityReport>> reportsByCheck =
-        qualityReportRepository
-            .findByQualityCheckIds(checks.stream().map(QualityCheck::getId).toList())
-            .stream()
+        qualityReportRepository.findByQualityCheckIds(checkIds).stream()
             .collect(Collectors.groupingBy(QualityReport::getQualityCheckId));
 
     List<QualityResultDTO> results = new ArrayList<>();
     for (QualityCheck check : checks) {
       List<QualityReport> reports = reportsByCheck.getOrDefault(check.getId(), List.of());
+      int issues =
+          reports.stream()
+              .map(QualityReport::getIssueCount)
+              .filter(Objects::nonNull)
+              .mapToInt(Integer::intValue)
+              .sum();
       long failed = check.getFailedRecords() != null ? check.getFailedRecords() : 0L;
-      for (QualityReport report : reports) {
-        Long ruleId = report.getQualityCheckId();
-        results.add(
-            QualityResultDTO.builder()
-                .id(report.getId())
-                .masterDataRecordId(recordId)
-                .dataQualityRuleId(ruleId)
-                .passed(failed == 0L)
-                .message(buildMessage(failed, report))
-                .timestamp(
-                    report.getCreatedAt() != null ? report.getCreatedAt() : LocalDateTime.now())
-                .build());
-      }
-      if (reports.isEmpty()) {
-        results.add(
-            QualityResultDTO.builder()
-                .id(check.getId())
-                .masterDataRecordId(recordId)
-                .dataQualityRuleId(check.getMasterDataEntityId())
-                .passed(failed == 0L)
-                .message(failed == 0L ? "质量检查通过" : "质量检查存在 " + failed + " 条未通过记录")
-                .timestamp(check.getEndedAt() != null ? check.getEndedAt() : LocalDateTime.now())
-                .build());
-      }
+      LocalDateTime timestamp =
+          reports.stream()
+              .map(QualityReport::getCreatedAt)
+              .filter(Objects::nonNull)
+              .max(LocalDateTime::compareTo)
+              .orElse(check.getEndedAt() != null ? check.getEndedAt() : LocalDateTime.now());
+      results.add(
+          QualityResultDTO.builder()
+              .id(check.getId())
+              .qualityCheckId(check.getId())
+              .masterDataEntityId(check.getMasterDataEntityId())
+              .level(QUALITY_RESULT_LEVEL_SUMMARY)
+              // 汇总行不对应单条规则，dataQualityRuleId 必须留空：此前把 checkId（甚至 entityId）
+              // 塞进这个字段，前端"规则 ID"列显示的其实既不是规则也不是记录。
+              .dataQualityRuleId(null)
+              .passed(failed == 0L)
+              .message(buildSummaryMessage(failed, issues, reports.isEmpty()))
+              .timestamp(timestamp)
+              .build());
     }
     return results;
+  }
+
+  /** 明细行 → DTO：每行自带规则与记录两个维度，可直接定位问题。 */
+  private QualityResultDTO toDetailResultDto(QualityCheckDetail detail) {
+    return QualityResultDTO.builder()
+        .id(detail.getId())
+        .qualityCheckId(detail.getQualityCheckId())
+        .masterDataRecordId(detail.getRecordId())
+        .dataQualityRuleId(detail.getRuleId())
+        .level(QUALITY_RESULT_LEVEL_DETAIL)
+        .passed(Boolean.TRUE.equals(detail.getPassed()))
+        .message(detail.getMessage())
+        .timestamp(detail.getCheckedAt())
+        .build();
   }
 
   private DataQualityRuleDTO toRuleDto(DataQualityRule rule) {
@@ -471,11 +608,10 @@ public class QualityApplicationService {
     return time != null ? Date.from(time.atZone(ZoneId.systemDefault()).toInstant()) : null;
   }
 
-  private String buildMessage(long failed, QualityReport report) {
-    Integer issues = report.getIssueCount();
-    if (issues != null && issues > 0) {
-      return "发现 " + issues + " 个质量问题";
+  private String buildSummaryMessage(long failed, int issues, boolean reportMissing) {
+    if (reportMissing) {
+      return failed == 0L ? "质量检查通过" : "质量检查存在 " + failed + " 条未通过记录（报告缺失，明细不可查）";
     }
-    return failed > 0 ? "部分记录未通过校验" : "通过";
+    return issues > 0 ? "发现 " + issues + " 个质量问题" : (failed > 0 ? "部分记录未通过校验" : "通过");
   }
 }

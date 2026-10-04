@@ -11,6 +11,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
 import { errorMessage, metadataEntityApi, metadataTemplateApi } from '../services/metadataApi';
+import { normalizeTotal } from '@bone/shared-utils';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import ImportModelModal from '../components/ImportModelModal';
 import ImportTableModal from '../components/ImportTableModal';
@@ -69,7 +70,7 @@ const EntityManagement: React.FC = () => {
     let cancelled = false;
     appApi.listMine({ page: 1, size: 100 }).then((res) => {
       if (!cancelled && res.code === 200) {
-        const app = (res.data.list ?? []).find((a) => String(a.id) === String(appId));
+        const app = (res.data.records ?? []).find((a) => String(a.id) === String(appId));
         setMyRole(app?.myRole);
       }
     }).catch(() => { /* 角色获取失败时不收敛 UI，交由后端 403 兜底 */ });
@@ -153,8 +154,8 @@ const EntityManagement: React.FC = () => {
 
       const res = await metadataEntityApi.page(params);
       if (res.code === 200) {
-        setData(res.data.list);
-        setTotal(res.data.total);
+        setData(res.data.records);
+        setTotal(normalizeTotal(res.data.total));
       } else {
         message.error(res.message || '加载失败');
       }
@@ -175,12 +176,12 @@ const EntityManagement: React.FC = () => {
     (async () => {
       try {
         const res = await appApi.listMine({ page: 1, size: 100 });
-        const apps = res.code === 200 ? res.data.list ?? [] : [];
+        const apps = res.code === 200 ? res.data.records ?? [] : [];
         const pairs = await Promise.all(
           apps.map(async (a) => {
             try {
-              const mr = await moduleApi.listByApp(a.id, { pageNum: 1, pageSize: 100 });
-              return { appId: a.id, appName: a.name, modules: mr.code === 200 ? mr.data.list ?? [] : [] };
+              const mr = await moduleApi.listByApp(a.id, { page: 1, size: 100 });
+              return { appId: a.id, appName: a.name, modules: mr.code === 200 ? mr.data.records ?? [] : [] };
             } catch {
               return { appId: a.id, appName: a.name, modules: [] as BoneModule[] };
             }
@@ -280,7 +281,7 @@ const EntityManagement: React.FC = () => {
     }).catch(() => { /* 模板目录不可用时保留全新入口 */ });
   };
 
-  const chooseTemplate = (id: number | null) => {
+  const chooseTemplate = (id: string | null) => {
     setSelectedTemplateId(id);
     setTplFields([]);
     if (!id) return;
@@ -367,7 +368,7 @@ const EntityManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const res = await metadataEntityApi.delete(id);
     if (res.code === 200) {
       message.success('已删除');

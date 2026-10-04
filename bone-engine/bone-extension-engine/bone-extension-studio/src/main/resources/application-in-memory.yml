@@ -11,7 +11,10 @@ bone:
       persistence:
         mode: in-memory
       security:
-        permit-unauthenticated: true
+        # 联调 profile 显式打开放行（基配置已改为 false）。仍可用
+        # BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED=false 单个环境变量关掉，
+        # 无需改代码或重新打包——CI 若以该 profile 跑真链路，可直接注入。
+        permit-unauthenticated: ${BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED:true}
       lro:
         deploy-enabled: true
         deploy-sync-by-default: true

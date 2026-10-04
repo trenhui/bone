@@ -106,7 +106,7 @@ const ExtensionPointManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await deleteExtPoint(id);
       message.success('已删除');

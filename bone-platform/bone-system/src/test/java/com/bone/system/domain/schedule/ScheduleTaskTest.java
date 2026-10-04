@@ -13,9 +13,21 @@ import org.junit.jupiter.api.Test;
 /** {@link ScheduleTask} 纯单测：默认停用、启停切换、任务编辑与运行时间记录（无容器）。 */
 class ScheduleTaskTest {
 
+  /**
+   * 租户必须真正落到字段上：SDK 的 {@code TableMetadata.isTenantScoped()} 只看实体是否声明 tenantId， 不看 DDL 是否有该列。字段缺失时
+   * {@code TenantFilterInjector} 直接 return， {@code ScheduleTaskRepository.findEnabled()} 会扫描全表——而它的
+   * javadoc 声明的是「本租户」。
+   */
+  @Test
+  void testCreatePersistsTenantId() {
+    ScheduleTask task = ScheduleTask.create(99L, 1001L, "租户任务", "0 0 2 * * ?", "t", null);
+
+    assertEquals(1001L, task.getTenantId());
+  }
+
   @Test
   void testCreateDefaultsToDisabled() {
-    ScheduleTask task = ScheduleTask.create(1L, "报表生成", "0 0 2 * * ?", "reportJob", null);
+    ScheduleTask task = ScheduleTask.create(1L, 1001L, "报表生成", "0 0 2 * * ?", "reportJob", null);
 
     assertEquals(TaskStatus.DISABLED, task.getStatus());
     assertNotNull(task.getName());
@@ -26,7 +38,7 @@ class ScheduleTaskTest {
   @Test
   void testEnableDisableToggle() {
     ScheduleTask task =
-        ScheduleTask.create(2L, "缓存刷新", "0 0/30 * * * ?", "cacheJob", TaskStatus.DISABLED);
+        ScheduleTask.create(2L, 1001L, "缓存刷新", "0 0/30 * * * ?", "cacheJob", TaskStatus.DISABLED);
 
     task.enable();
     assertEquals(TaskStatus.ENABLED, task.getStatus());
@@ -37,7 +49,8 @@ class ScheduleTaskTest {
 
   @Test
   void testUpdateOverridesTaskProfile() {
-    ScheduleTask task = ScheduleTask.create(3L, "旧任务", "0 0 1 * * ?", "oldJob", TaskStatus.ENABLED);
+    ScheduleTask task =
+        ScheduleTask.create(3L, 1001L, "旧任务", "0 0 1 * * ?", "oldJob", TaskStatus.ENABLED);
 
     task.update("新任务", "0 0 3 * * ?", "newJob");
 
@@ -49,7 +62,7 @@ class ScheduleTaskTest {
   @Test
   void testMarkRunRecordsExecutionTimestamps() {
     ScheduleTask task =
-        ScheduleTask.create(4L, "数据归档", "0 0 2 * * ?", "archiveJob", TaskStatus.ENABLED);
+        ScheduleTask.create(4L, 1001L, "数据归档", "0 0 2 * * ?", "archiveJob", TaskStatus.ENABLED);
     LocalDateTime runAt = LocalDateTime.of(2026, 9, 5, 2, 0);
 
     task.markRun(runAt, runAt.plusDays(1));

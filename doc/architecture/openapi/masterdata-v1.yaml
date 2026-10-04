@@ -12,6 +12,9 @@ info:
 servers:
   - url: /api/v1/masterdata
 
+security:
+  - bearerAuth: []
+
 paths:
   /entities:
     get:
@@ -38,7 +41,7 @@ paths:
         - name: businessEntityId
           in: query
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string }
       responses:
         '200': { description: OK（mdm entity id） }
         '422': { description: meta 未发布（MD_META_ENTITY_NOT_PUBLISHED） }
@@ -48,7 +51,7 @@ paths:
       operationId: getMasterDataEntity
       tags: [Entity]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     put:
@@ -56,7 +59,7 @@ paths:
       operationId: updateMasterDataEntity
       tags: [Entity]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /entities/{id}/publish:
@@ -65,7 +68,7 @@ paths:
       operationId: publishMasterDataEntity
       tags: [Entity]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /fields:
@@ -77,7 +80,7 @@ paths:
         - name: masterDataEntityId
           in: query
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string }
       responses:
         '200': { description: OK }
     post:
@@ -101,7 +104,7 @@ paths:
         - name: masterDataEntityId
           in: query
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string }
       responses:
         '200': { description: OK（id 列表） }
   /records/export:
@@ -113,7 +116,7 @@ paths:
         - name: masterDataEntityId
           in: query
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string }
       responses:
         '200': { description: OK（导出内容或 URL） }
   /records/{id}/publish:
@@ -122,7 +125,7 @@ paths:
       operationId: publishMasterDataRecord
       tags: [Record]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
   /quality/rules:
@@ -147,7 +150,7 @@ paths:
         - name: masterDataEntityId
           in: query
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string }
       responses:
         '200': { description: OK（report id） }
   /quality/reports/{id}:
@@ -156,6 +159,13 @@ paths:
       operationId: getQualityReport
       tags: [Quality]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

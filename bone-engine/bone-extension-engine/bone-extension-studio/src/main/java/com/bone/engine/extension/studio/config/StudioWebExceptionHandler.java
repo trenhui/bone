@@ -12,10 +12,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /** Studio API 统一异常 → {@link ApiResponse} + {@link ProblemDetail}。 */
@@ -88,6 +92,26 @@ public class StudioWebExceptionHandler {
         HttpStatus.METHOD_NOT_ALLOWED,
         StudioErrorCodes.VALIDATION_FAILED,
         "请求方法不被支持: " + ex.getMethod());
+  }
+
+  /**
+   * Spring MVC 输入绑定/解析异常统一归 400。
+   *
+   * <p><b>为什么必须显式映射</b>：这四类是<b>客户端输入错误</b>，不在此拦截就会落到 {@link #internal}的 {@code Exception}兜底，被记成 500
+   * —— 把调用方笔误算进服务端故障预算。本模块 pom 只依赖 bone-core， 框架级 bone-web 的 {@code GlobalExceptionHandler} 不在
+   * classpath，无法替本模块补位。
+   *
+   * <p>响应体用固定文案而非 {@code ex.getMessage()}：后者会原样回显用户输入（类型转换异常里含原始 字符串），属反射型输入回显。
+   */
+  @ExceptionHandler({
+    MethodArgumentNotValidException.class,
+    MethodArgumentTypeMismatchException.class,
+    MissingServletRequestParameterException.class,
+    HttpMessageNotReadableException.class
+  })
+  public ResponseEntity<ApiResponse<ProblemDetail>> badRequest(Exception ex) {
+    log.warn("[API] 非法请求入参 traceId={}", MDC.get(StudioRequestContextFilter.TRACE_ID));
+    return problem(HttpStatus.BAD_REQUEST, StudioErrorCodes.VALIDATION_FAILED, "请求参数不合法");
   }
 
   @ExceptionHandler(Exception.class)

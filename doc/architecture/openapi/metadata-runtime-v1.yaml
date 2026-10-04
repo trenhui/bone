@@ -15,6 +15,9 @@ info:
 servers:
   - url: /api/v1/runtime
 
+security:
+  - bearerAuth: []
+
 paths:
   /entities/{entityCode}/records:
     get:
@@ -141,6 +144,11 @@ paths:
           $ref: '#/components/responses/RuntimeError'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     EntityCode:
       name: entityCode
@@ -184,8 +192,8 @@ components:
           items:
             $ref: '#/components/schemas/RuntimeRecord'
         total:
-          type: integer
-          format: int64
+          type: string
+          description: 记录总数；后端为包装类型 Long，被全局 Long→String 序列化器输出为字符串
         pageNum:
           type: integer
         pageSize:

@@ -23,7 +23,7 @@ const TABLE_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 interface ImportTableModalProps {
   open: boolean;
   onClose: () => void;
-  onImported: (entityId: number | string) => void;
+  onImported: (entityId: string | string) => void;
 }
 
 const ImportTableModal: React.FC<ImportTableModalProps> = ({ open, onClose, onImported }) => {

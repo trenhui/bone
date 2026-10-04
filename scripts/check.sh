@@ -21,10 +21,10 @@ fi
 
 exit_code=0
 
-echo -e "${YELLOW}[1/5] 代码风格校验 (Spotless)...${RESET}"
+echo -e "${YELLOW}[1/22] 代码风格校验 (Spotless)...${RESET}"
 mvn spotless:check --batch-mode -q || exit_code=$?
 
-echo -e "${YELLOW}[2/5] 检测变更模块...${RESET}"
+echo -e "${YELLOW}[2/22] 检测变更模块...${RESET}"
 CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep '\.java$' || true)
 if [ -n "$CHANGED_FILES" ]; then
   # 注意：`|| true` 必须放在整条管道末尾。管道优先级高于 `||`，若写成 `grep ... || true | sed ...`
@@ -35,7 +35,7 @@ if [ -n "$CHANGED_FILES" ]; then
   if [ -n "$MODULE_PATHS" ]; then
     echo "  变更模块:"
     echo "$MODULE_PATHS" | sed 's/^/    - /'
-    echo -e "${YELLOW}[2/5] 就近 ArchUnit 架构检查...${RESET}"
+    echo -e "${YELLOW}[3/22] 就近 ArchUnit 架构检查...${RESET}"
     # 逐模块用 -f 指定 pom 运行（避免 -pl 在多模块/嵌套模块下 reactor 路径解析不稳）
     while IFS= read -r MODULE_PATH; do
       [ -z "$MODULE_PATH" ] && continue
@@ -51,9 +51,9 @@ fi
 # P1-16：（2026-09-24 新增）共享门禁库变更 → 全量 ArchUnit 回归
 # 改动 bone-architecture-test 的共享规则会同时影响所有模块的 ArchitectureTest，
 # 仅跑变更模块无法发现「别处模块回归」，故扫描全部含 ArchitectureTest 的模块逐個 -f 运行
-# （沿用 [2/5] 的 -f 逐模块机制，避开 reactor 路径解析不稳与前端 node 模块）。
+# （沿用 [2/22] 的 -f 逐模块机制，避开 reactor 路径解析不稳与前端 node 模块）。
 if echo "$CHANGED_FILES" | grep -q 'bone-framework/bone-architecture-test/'; then
-  echo -e "${YELLOW}[2/5] 共享门禁库变更 → 全量 ArchUnit 回归...${RESET}"
+  echo -e "${YELLOW}[4/22] 共享门禁库变更 → 全量 ArchUnit 回归...${RESET}"
   # 用 while-read 收集，避免 mapfile（bash ≥4.0 才有；macOS 默认 /bin/bash 3.2 无该内建）
   ARCH_MODULES=()
   while IFS= read -r line; do
@@ -70,7 +70,7 @@ if echo "$CHANGED_FILES" | grep -q 'bone-framework/bone-architecture-test/'; the
   done
 fi
 
-echo -e "${YELLOW}[3/5] ORM 框架拦截...${RESET}"
+echo -e "${YELLOW}[5/22] ORM 框架拦截...${RESET}"
 # 用 `git grep` 而非 `grep -r`：只扫「已跟踪 + 未被忽略的未跟踪」文件，不整树遍历。
 # 2026-09-17 实测（本机 I/O 每文件约 26ms）：`grep -r` 走过 12,153 个文件耗 321s，
 # 而其中 CPU 仅 2s（user 0.43s + sys 1.61s）——几乎全部是 I/O 等待；
@@ -82,16 +82,18 @@ if git grep --untracked -nE "import\s+org\.apache\.ibatis|import\s+(javax|jakart
   exit_code=1
 fi
 
-echo -e "${YELLOW}[4/5] 密钥泄露扫描 (Gitleaks)...${RESET}"
+echo -e "${YELLOW}[6/22] 密钥泄露扫描 (Gitleaks)...${RESET}"
 if command -v gitleaks &>/dev/null; then
   gitleaks protect --staged --config .gitleaks.toml --verbose || exit_code=$?
 else
-  echo "  gitleaks 未安装，跳过。注意：GitHub Actions 也【不】执行 gitleaks——密钥扫描目前只在"
-  echo "  本机装了 gitleaks 时才生效（HC-004 实测状态为 Manual，见 Bone-DDD-最终实践方案 G-1.7）。"
+  echo "  gitleaks 未安装，本地跳过。注意：CI 侧（.github/workflows/ci.yml 的 backend-security"
+  echo "  job）已接入 gitleaks 并阻断，本地跳过**不代表**提交可绕过密钥扫描——"
+  echo "  真正生效的是 CI 那一道（HC-004 实测状态为 Active，见 Bone-DDD-最终实践方案 G-1.7）。"
+  echo "  本机可执行 brew install gitleaks 以在提交前自查。"
 fi
 
-echo -e "${YELLOW}[5/5] pom.xml 依赖检查...${RESET}"
-# 同 [3/5] 改用 `git grep`。原实现**未**排除 node_modules（bone-frontend/node_modules
+echo -e "${YELLOW}[7/22] pom.xml 依赖检查...${RESET}"
+# 同 [3/22] 改用 `git grep`。原实现**未**排除 node_modules（bone-frontend/node_modules
 # 单目录 643MB / 十万级文件），实测 14 分钟以上跑不完，是 pre-commit 最大耗时项。
 if git grep --untracked -nE "<artifactId>(mybatis|mybatis-plus|spring-boot-starter-data-jpa|hibernate-core)" \
     -- '*pom.xml'; then
@@ -99,7 +101,7 @@ if git grep --untracked -nE "<artifactId>(mybatis|mybatis-plus|spring-boot-start
   exit_code=1
 fi
 
-echo -e "${YELLOW}[6/7] i18n 同步校验（errorCode ↔ 台账 ↔ 语言包）...${RESET}"
+echo -e "${YELLOW}[8/22] i18n 同步校验（errorCode ↔ 台账 ↔ 语言包）...${RESET}"
 # 与既有 python3 门禁同形态；存量漂移走显式白名单 config/i18n/errorcode-baseline.json，
 # 新增码一律不豁免。详见 doc/design/国际化设计方案.md §8.2。
 if ! python3 scripts/check-i18n-sync.py; then
@@ -107,9 +109,158 @@ if ! python3 scripts/check-i18n-sync.py; then
   exit_code=1
 fi
 
-echo -e "${YELLOW}[7/7] HC-006 绕过 SDK 的 JDBC/MyBatis 扫描...${RESET}"
+echo -e "${YELLOW}[9/22] 分页入参命名族（Bone-API-规范 §5.1：新增端点只允许 page/size）...${RESET}"
+# 该门禁此前完全游离于所有门禁之外 ⇒ 规范 §5.1「存量收敛完成即禁止 pageNum/pageSize」
+# 从未真正生效，这正是 pageNum 族长期存活的根因（脚本自身诊断即如此措辞）。
+# 只做**第三套命名**（pageIndex/perPage 等）与族内混搭的阻断，不动 22 个 pageNum 存量类
+# ——存量收敛属 L3，规范 §5.2 明确「待架构师裁定，AI 不得自行执行」。
+if ! python3 scripts/check-paging-param-names.py; then
+  echo -e "${RED}❌ 分页入参出现白名单外的第三套命名或族内混搭（Bone-API-规范 §5.1）${RESET}"
+  exit_code=1
+fi
+
+echo -e "${YELLOW}[10/22] 前端 ID 字段类型（Long→String 契约）...${RESET}"
+# 后端 MetadataAutoConfiguration.boneLongToStringCustomizer() 全局把 Long 序列化为
+# JSON 字符串（雪花 ID 超 JS Number 上限 2^53，以 number 返回会被静默截断且无 JS 报错）。
+# 前端把 ID 字段声明为 number 即type lie：===、Map key、Tree node.key 全不可预期。
+# 2026-10-03 已把存量 330 处全部改为 string，本门禁防其重新引入。
+if ! python3 scripts/frontend/check-frontend-id-types.py --check; then
+  echo -e "${RED}❌ 前端 ID 字段声明为 number（后端下发的是字符串，雪花 ID 会被静默截断）${RESET}"
+  exit_code=1
+fi
+
+echo -e "${YELLOW}[11/22] HC-006 绕过 SDK 的 JDBC/MyBatis 扫描...${RESET}"
 if ! python3 scripts/check-sdk-persistence.py --check; then
   echo -e "${RED}❌ 新增文件直接使用 JDBC / MyBatis 会话（须走 bone-metadata-sdk，存量见 sdk-persistence-bypass-baseline.json）${RESET}"
+  exit_code=1
+fi
+
+# 前端响应解包契约：createApiClient 的响应拦截器是 `(response) => response.data`，
+# 业务代码拿到的已经是 ApiResponse 本体。照 AxiosResponse 的形状写（读 res.status、
+# 对 .data 再取信封字段）会静默出错：删除失败被吞成成功、Blob 下载抛 TypeError。
+# 详见 doc/architecture/bone-前端架构.md §6.1.1 响应解包契约。
+if [ -d bone-frontend/apps ]; then
+  echo -e "${YELLOW}[12/22] 前端响应解包契约校验...${RESET}"
+  if ! python3 scripts/check-frontend-response-contract.py; then
+    echo -e "${RED}❌ 前端响应解包契约违规（res.status 当 HTTP 状态用 / 对已解包 body 再取 .data）${RESET}"
+    exit_code=1
+  fi
+
+  # 分页 total 归一：后端 PageResult.total 是 java.lang.Long，被骨核全局 Long→String
+  # 序列化器输出为字符串（保护雪花 ID 精度）。直接参与算术会抛 TypeError
+  # （'1055' / 10），表现为「删除末页最后一条后翻页回退」整页崩溃。
+  # 详见 doc/architecture/Bone-API-规范.md §5.3。
+  echo -e "${YELLOW}[13/22] 分页 total 归一校验...${RESET}"
+  if ! python3 scripts/check-paging-total-normalize.py; then
+    echo -e "${RED}❌ 分页 total未归一（运行期是字符串，算术前须 normalizeTotal）${RESET}"
+    exit_code=1
+  fi
+  # 分页当前页字段：后端 PageResult.records 是权威键，list 是 getList() 这个
+  # @Deprecated 兼容 getter 的产物。收敛分两步且顺序不可颠倒 ——
+  # 先前端全改读 records（2026-10-03 已完成），才能给后端 getter 加 @JsonIgnore。
+  # 本门禁是「前端不回退」的护栏：跳过前端迁移直接收敛后端，那批页面直接白屏。
+  # 详见 doc/architecture/Bone-API-规范.md §3.3 / §5.3。
+  echo -e "${YELLOW}[14/22] 分页当前页字段（禁读 list）...${RESET}"
+  if ! python3 scripts/check-paging-current-field.py; then
+    echo -e "${RED}❌ 前端读取了分页废弃字段 list（权威字段是 records）${RESET}"
+    exit_code=1
+  fi
+else
+  echo -e "${YELLOW}[13/22]+[14/22]+[15/22] 前端契约校验...${RESET} ${DIM}跳过（未找到 bone-frontend/apps）${RESET}"
+fi
+
+# OpenAPI 契约结构：8 份规范是对外 SDK 的唯一契约真源（ADR-0040）。
+# 2026-10-03 实测两类既存缺陷 —— 3 份规范的 flow mapping 值未加引号导致
+# **YAML 根本无法解析**（实测 redocly lint EXIT=1，SDK 生成器拿不到契约）；
+# 5 份规范完全没有 securitySchemes，且 redocly 的 security-defined 被显式关掉。
+# 本门禁离线可跑（标准库 + PyYAML）；npx redocly 需联网，仅作 CI 独立 job。
+echo -e "${YELLOW}[15/22] OpenAPI 契约结构（可解析 / 认证声明 / \$ref）...${RESET}"
+if ! python3 scripts/check-openapi-contract.py; then
+  echo -e "${RED}❌ OpenAPI 契约违规（无法解析 / 缺 securitySchemes / 缺顶层 security / \$ref 断裂）${RESET}"
+  exit_code=1
+fi
+
+# 软删声明：骨核判定聚合可否软删的依据是**实体内有无带 @Deleted 的字段**，
+# 与 DDL 有无 deleted 列无关 —— 表有列、实体没声明，`deleteById` 照常执行
+# `DELETE FROM`，行永久消失而调用方拿到 HTTP200。extends AggregateRoot /
+# TenantAggregateRoot 的实体一律中招（基类不提供该字段）。
+# 本门禁 2026-10-03 建立时**从未接入任何流水线**，等于没有门禁：
+# 存量缺口一旦被新增表复制扩大，无人阻断。故此处补齐 pre-commit 侧。
+# 基线语义只可收缩（doc/architecture/soft-delete-declaration-baseline.json）。
+echo -e "${YELLOW}[16/22] 软删声明（@Deleted / @PhysicalDelete 显式化）...${RESET}"
+if ! python3 scripts/check-soft-delete-declaration.py; then
+  echo -e "${RED}❌ 删除语义未显式声明（新增缺口将导致 deleteById 物理删行且调用方无感）${RESET}"
+  exit_code=1
+fi
+
+# 配置键契约：`@Value("${some.key:default}")` 的键名写错时 Spring **静默回落**到默认值
+# —— 不报错不打日志，症状出现在离故障点很远的地方（曾表现为全链路 401 而日志只有
+# 「验签失败」）。单测与 ArchUnit 都抓不到。
+# 用 --strict 把 WARN 也计为失败：WARN 的定义是「键不在任何 yml 里定义、但给了默认值」，
+# 这在实践中几乎都是笔误（如 ${generator.encryption.key}）。存量若确有合法例外，
+# 应在yml 中显式定义该键，而不是靠默认值蒙混。
+echo -e "${YELLOW}[17/22] 配置键契约（@Value 键名须在 yml 有定义）...${RESET}"
+if ! python3 scripts/ci/check-config-key-contract.py --strict; then
+  echo -e "${RED}❌ 配置键名漂移（@Value 的键未在任何 yml 定义，Spring 会静默回落默认值）${RESET}"
+  exit_code=1
+fi
+
+# 文档引用的类名漂移：doc/ 里写的 Java 类名若在仓库中不存在，读者按图索骥必然落空。
+# 判据是「后缀白名单 + 反引号包裹」，故只抓 Controller / Repository / Handler /
+# ApplicationService / Gateway / Adapter 这类构件名，不会误伤普通英文词。
+# 基线 doc/architecture/doc-code-symbols-baseline.json 只可收缩；登记时必须写明
+# reason（历史快照 / 目标态设计 / 流程示意 / Spring 通用词误报），不能无脑豁免。
+echo -e "${YELLOW}[18/22] 文档类名漂移（doc/ 引用的类须真实存在）...${RESET}"
+if ! python3 scripts/check-doc-code-symbols.py; then
+  echo -e "${RED}❌ 文档引用了不存在的 Java 类（读者按图索骥必然落空，应修文档或登记基线并说明理由）${RESET}"
+  exit_code=1
+fi
+
+# OpenAPI int64 ↔ 后端 Long→String 契约（ADR-0040 A2，本次落地）。
+# 判据不是"见 int64 就改"：全局 ToStringSerializer 只对**包装类型 Long** 生效，
+# 原生 long/double 仍是 JSON number。核对 Java 侧后确认：
+#   · 60 处 ID / 外键 / PageResult.total（包装 Long）⇒ 已改为 type: string；
+#   · console 的 11 处指标（KeyMetrics/ResourceUsage/ServiceStatus 全是原生 long）⇒ 保持 int64。
+# 白名单在脚本的 PRIMITIVE_LONG_FIELDS，每条附Java 类型依据，只可收缩。
+echo -e "${YELLOW}[19/22] OpenAPI int64 ↔ Long→String 契约...${RESET}"
+if ! python3 scripts/check-openapi-int64-contract.py; then
+  echo -e "${RED}❌ OpenAPI 声明 integer/int64 但后端下发字符串（包装 Long 被全局序列化器转换）${RESET}"
+  exit_code=1
+fi
+
+# 控制器写端点必须声明 @PreAuthorize。各模块 SecurityConfig 统一是
+# anyRequest().authenticated() —— 认证强制、授权不强制，缺方法级授权
+# 意味着「任何登录用户」都能写。存量 68 条记入
+# doc/architecture/controller-authorization-baseline.json，门禁只拦新增
+# 与基线外存量；基线只可收缩（修复即移除条目）。
+echo -e "${YELLOW}[20/22] 控制器写端点细粒度授权...${RESET}"
+if ! python3 scripts/check-controller-authorization.py; then
+  echo -e "${RED}❌ 控制器写端点缺 @PreAuthorize（任何登录用户均可写，存量见 controller-authorization-baseline.json）${RESET}"
+  exit_code=1
+fi
+
+# OpenAPI 规范的「生成器前置条件」（ADR-0040 第 11 项的配套门禁）。
+# redocly lint 与 check-openapi-contract.py 只管 YAML 可解析 / 认证声明 / $ref 可解析，
+# 下面两类缺陷在它们下面全绿，却会让 openapi-generator 直接拒绝或产出不可用的 SDK：
+#   ① path 模板变量未声明为 path 参数 ⇒ 抛 SpecValidationException，整份规范生成失败；
+#   ② 缺 operationId / tags ⇒ 所有操作塞进单个 DefaultApi，方法名退化为 path 拼接。
+# 另核对 generate-sdk.sh 的 SPECS 清单与磁盘规范一一对应、包名片段等于推导值。
+echo -e "${YELLOW}[21/22] OpenAPI 生成器前置条件...${RESET}"
+if ! python3 scripts/check-openapi-generation-readiness.py; then
+  echo -e "${RED}❌ 规范不满足 SDK 生成前置条件（缺 operationId/tags/path 参数声明，或 generate-sdk.sh 清单与规范不一致）${RESET}"
+  exit_code=1
+fi
+
+# 控制面匿名放行开关必须默认拒绝。`permit-unauthenticated` 打开等于整个
+# Studio 控制面匿名可写（插件上传 / 部署 / 版本切换全部免凭证），与权限码缺失同级。
+# 原基配置硬编码 `true`（连环境变量都覆盖不了），且 dev/in-memory 靠继承拿到放行
+# ⇒ "忘记配置"＝一次静默的全站匿名降级。三条判据：R1 放行不得裸字面量、
+# R2 基配置占位符默认值须 false、R3 生产 profile 恒为字面量 false。
+# 负向探针 scripts/ci/probe-security-fail-open-default.py 用 HEAD 真实历史样本
+# 逐条证伪 R1/R2/R3，并验证合法形态不被误报（6 条探针，改门禁后必须跑）。
+echo -e "${YELLOW}[22/22] 控制面匿名放行默认拒绝...${RESET}"
+if ! python3 scripts/check-security-fail-open-default.py --strict; then
+  echo -e "${RED}❌ 控制面匿名放行开关非失败关闭（放行须由可审计的环境变量通道显式达成，不得靠默认值）${RESET}"
   exit_code=1
 fi
 

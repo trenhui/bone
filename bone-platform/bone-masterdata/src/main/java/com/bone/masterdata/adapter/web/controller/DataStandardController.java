@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /** 主数据标准控制器 */
@@ -29,12 +30,14 @@ public class DataStandardController {
   private final DataStandardWebConverter dataStandardWebConverter;
 
   @Operation(summary = "创建数据标准")
+  @PreAuthorize("hasAuthority('masterdata:standards:write')")
   @PostMapping
   public ApiResponse<Long> create(@Valid @RequestBody CreateDataStandardReq req) {
     return ApiResponse.success(standardService.create(dataStandardWebConverter.toCommand(req)));
   }
 
   @Operation(summary = "更新数据标准")
+  @PreAuthorize("hasAuthority('masterdata:standards:write')")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @Valid @RequestBody UpdateDataStandardReq req) {
@@ -43,6 +46,7 @@ public class DataStandardController {
   }
 
   @Operation(summary = "删除数据标准")
+  @PreAuthorize("hasAuthority('masterdata:standards:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     standardService.delete(new DeleteDataStandardCommand(id));

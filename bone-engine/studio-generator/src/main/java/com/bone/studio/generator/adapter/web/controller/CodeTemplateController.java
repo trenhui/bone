@@ -17,6 +17,7 @@ import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.model.data.CodeTemplate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,11 +40,13 @@ public class CodeTemplateController {
   private final GetCodeTemplateListQueryApplicationService queryHandler;
   private final GetCodeTemplateDetailQueryApplicationService detailQueryHandler;
 
+  @PreAuthorize("hasAuthority('generator:templates:write')")
   @PostMapping
   public ApiResponse<Long> createCodeTemplate(@RequestBody CreateCodeTemplateCommand command) {
     return ApiResponse.success(createCodeTemplateHandler.handle(command));
   }
 
+  @PreAuthorize("hasAuthority('generator:templates:write')")
   @PutMapping("/{id}")
   public ApiResponse<Long> updateCodeTemplate(
       @PathVariable Long id, @RequestBody UpdateCodeTemplateCommand command) {
@@ -59,6 +62,7 @@ public class CodeTemplateController {
     return ApiResponse.success(updateCodeTemplateHandler.handle(command));
   }
 
+  @PreAuthorize("hasAuthority('generator:templates:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> deleteCodeTemplate(@PathVariable Long id) {
     DeleteCodeTemplateCommand command = DeleteCodeTemplateCommand.builder().id(id).build();
@@ -71,6 +75,7 @@ public class CodeTemplateController {
     return ApiResponse.success(detailQueryHandler.handle(qry));
   }
 
+  @PreAuthorize("hasAuthority('generator:templates:write')")
   @PostMapping("/{id}:publish")
   public ApiResponse<Long> publishCodeTemplate(@PathVariable Long id) {
     PublishCodeTemplateCommand command = PublishCodeTemplateCommand.builder().id(id).build();

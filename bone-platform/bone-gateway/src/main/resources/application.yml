@@ -11,9 +11,11 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            # 与前端 8 个微应用实际端口对齐（bone-shell 3000 / iam 3003 / metadata 3004 /
-            # masterdata 3005 / integration 3006 / extension 3008 / generator 3009，见设计稿 §5.4）。
-            # 原配置漏 3003-3006、3009——子应用独立 dev 直连网关会被 CORS 拒绝（G-10）。
+            # 与前端各微应用实际端口对齐（bone-shell 3000 / iam 3003 / metadata 3004 /
+            # masterdata 3005 / integration 3006 / extension 3008 / generator 3009 /
+            # commerce 3010，见设计稿 §5.4）。
+            # 原配置漏 3003-3006、3009——子应用独立 dev 直连网关会被 CORS 拒绝（G-10）；
+            # 3010 随交易域微应用（bone-commerce-app）新增，漏配会让订单/支付页直连网关被拒。
             allowedOrigins:
               - "http://localhost:3000"
               - "http://localhost:3003"
@@ -22,6 +24,7 @@ spring:
               - "http://localhost:3006"
               - "http://localhost:3008"
               - "http://localhost:3009"
+              - "http://localhost:3012"
             allowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
             allowedHeaders: "*"
             allowCredentials: true
@@ -89,6 +92,21 @@ bone:
       secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       whitelist:
         - /api/v1/iam/login
+        # 支付渠道回调：渠道方是外部系统，不会持有本平台签发的 JWT。
+        # blueprint 的 SecurityConfig 虽已把该路径设为 permitAll，但网关在转发之前就会校验
+        # JWT——不放通的话真实渠道回调会被网关拦在 401 GW_UNAUTHORIZED，支付链路最后一跳是断的
+        # （曾因此误判「支付链路已打通」：联调全程带 admin token，掩盖了无凭证场景）。
+        #
+        # 【必须精确到 /callback，不能写 /api/v1/payments】本白名单是「前缀匹配」，
+        # 写短了会把 /initiate 与 /{id}/refund 一并匿名放通——那是资金操作端点，绝不可匿名可达。
+        #
+        # 【放通后的信任边界】匿名可达后，该端点的全部防护落在服务端两层纵深：
+        #   1. 应用服务内 HMAC-SHA256 验签（PaymentSignaturePort）；
+        #   2. PaymentController 的来源 IP 白名单 bone.blueprint.payment.callback.allowed-source-ips。
+        # 第 2 层默认为空即不限制——联调可接受，**生产上线前必须配置**，否则任何人只要
+        # 掌握签名密钥即可从任意来源改写支付状态。另注意 MockPaymentSignaturePortAdapter 的
+        # 密钥是硬编码常量，真实接入须外部化到配置。
+        - /api/v1/payments/callback
         # 仅放通健康检查；metrics/prometheus 等运维端点须经 JWT 鉴权，禁止网关匿名暴露
         - /actuator/health
         - /favicon.ico

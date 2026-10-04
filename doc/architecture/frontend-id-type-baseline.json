@@ -1,0 +1,4 @@
+{
+  "_comment": "前端 ID 字段类型的例外登记（只可收缩）。exemptions 中每条须写明「为什么该字段确实是数值序号而非标识符」，不能按目录整体豁免。从本表移除一个条目后，若该字段又声明为 number，门禁即失败。规则依据：后端全平台 Long → JSON string（MetadataAutoConfiguration.boneLongToStringCustomizer），雪花 ID 超 JS Number 上限 2^53，以 number 返回会被静默截断且无任何 JS 报错。2026-10-03 建立时为空：HEAD 里的 330 处已全部修正为 string（11 个包 / 44 个文件），残留 0。",
+  "exemptions": []
+}

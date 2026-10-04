@@ -1,5 +1,17 @@
 # Automation 执行记录：模块联调测试 + 修复 + 提交推送
 
+## 2026-10-03 16:5x（本次，定时"对所有代码提交和 PUSH"）
+**结果：未提交、未推送 —— 门禁拦截，代码处于不可推送状态。**
+214 文件已 `git add -A` 暂存，但 `git commit` 被 pre-commit 门禁（scripts/check.sh）拦截，GIT_EXIT=1，HEAD 仍停在 083d3a8a1（dev）。改动含一次大型依赖升级（Spring Boot 3.2.5→3.5.5、Spring Cloud 2023.0.3→2024.0.3、jjwt 0.11.5→0.12.6 等）。
+
+门禁拦截到的真实缺陷（非环境问题）：
+1. **编译错误** `bone-metadata-server/.../JwtUtil.java:45`：`Jwts.parserBuilder()` 在 jjwt 0.12.6 已被移除（0.12.x 改 `Jwts.parser()` + `parseSignedClaims` + `getPayload`）。parent pom 把 `jjwt.version` 升到 0.12.6，但 `bone-metadata-engine/pom.xml` 仍硬编码 0.11.5 —— 升级内部版本漂移。signWith/compact 调用兼容两版，仅 parserBuilder 这一处旧 API 爆红。
+2. **ArchUnit 违规**（dev 上已存在、非本次改动）`PluginExecutionLogCommandApplicationService`：直接 `new ExtPoint()` + setter 改领域对象（抗贫血 E-6.4），且直接调 `TenantContext` 而非 TenantProvider 端口（E-2）。该文件不在本次暂存改动内，说明 dev 当前即不过此门禁（ArchUnit freeze 基线未随之更新）。
+3. **spotless 格式** `PageResult.java`/`PageResultTest.java`：javadoc 超 100 列。
+
+处置：未用 `--no-verify` 绕过门禁，未推送坏代码。仅就地修正一处明确构建阻断（`spring-cloud.version` 原 2024.0.4 在 Central/aliyun 均不存在，改回 2024.0.3，已暂存）。临时把 ~/.m2/settings.xml 指向 Central 以完成门禁验证，事后已用备份还原。
+待人工：完成 jjwt 0.12 迁移 / 收敛 jjwt 版本 / 修复或 freeze ArchUnit 违规 / spotless:apply，再提交推送。
+
 ## 2026-10-01 11:40（本次，联调+修复+提交推送）
 **结果：成功**。机制B（物理 ext_*↔逻辑 code 映射）+ 主数据字段值域/业务键 + 定价优先级收敛功能，联调测试全绿后提交并双远程推送。
 

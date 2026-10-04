@@ -50,7 +50,7 @@ TENANT_COLUMN = re.compile(r"^\s*`?tenant_id`?\s", re.M)
 # （如 Repository/SqlBuilder 的用法说明），不剥离会把"注释里提到"误判成"无法解析的注解"。
 COMMENT_BLOCK = re.compile(r"/\*.*?\*/", re.S)
 COMMENT_LINE = re.compile(r"//[^\n]*")
-SCAN_ROOTS = ("bone-platform", "bone-engine", "bone-framework", "bone-blueprint", "bone-sdk")
+SCAN_ROOTS = ("bone-platform", "bone-engine", "bone-framework", "bone-blueprint")
 SKIP_DIRS = {"target", "node_modules", ".git", "build", "dist"}
 
 

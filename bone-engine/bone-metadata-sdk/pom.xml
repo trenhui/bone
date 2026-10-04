@@ -20,100 +20,89 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>17</java.version>
     </properties>
 
     <dependencies>
         <!-- ===== Bone 平台内部模块 ===== -->
-            <dependency>
-                <groupId>com.bone</groupId>
+            <dependency><groupId>com.bone</groupId>
                 <artifactId>bone-core</artifactId>
             </dependency>
 
         <!-- ===== Spring Boot 核心依赖 ===== -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
         
         <!-- Web 和 MVC支持 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         
         <!-- AOP 支持 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
         
         <!-- 数据验证 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- 健康检查：DataSourceHealthChecker / MetadataHealthIndicator 依赖 actuator 的 HealthIndicator/Health/ConditionalOnEnabledHealthIndicator -->
+        <dependency><groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- ===== 数据访问 ===== -->
-        <dependency>
-            <groupId>org.springframework</groupId>
+        <dependency><groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
         </dependency>
 
         <!-- ===== 缓存支持 ===== -->
         <!-- Redis 支持 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         
         <!-- Redisson 分布式锁和高级缓存 -->
-        <dependency>
-            <groupId>org.redisson</groupId>
+        <dependency><groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
         
         <!-- 本地缓存 -->
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
+        <dependency><groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
 
         <!-- ===== 远程调用 ===== -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
+        <dependency><groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
         <!-- ===== 开发工具 ===== -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
         
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <!-- ===== 数据库驱动 ===== -->
         <!-- HikariCP 连接池 -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
+        <dependency><groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
+        <dependency><groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
         <!-- ===== 测试依赖 ===== -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
             <exclusions>
@@ -127,27 +116,22 @@
         <!-- OpenAPI/Swagger 支持 - 仅用于测试 -->
         <!-- OpenAPI/Swagger 依赖已移除，通过跳过测试类编译解决依赖问题 -->
         
-        <dependency>
-            <groupId>com.h2database</groupId>
+        <dependency><groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
         
 
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
+        <dependency><groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -182,8 +166,7 @@
         
         <plugins>
             <!-- 编译插件 - 继承父项目配置并增强 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                 <source>${java.version}</source>
@@ -200,10 +183,8 @@
             </configuration>
             </plugin>
             <!-- 代码风格检查和格式化插件 (仅在显式调用时执行) -->
-            <plugin>
-                <groupId>com.diffplug.spotless</groupId>
+            <plugin><groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.42.0</version>
                 <configuration>
                     <java>
                         <googleJavaFormat>
@@ -215,8 +196,7 @@
                 </configuration>
             </plugin>
             <!-- 代码质量检查插件 (仅在显式调用时执行) -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
@@ -229,10 +209,8 @@
                 </configuration>
             </plugin>
             <!-- 测试覆盖率检查 -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
+            <plugin><groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -264,8 +242,7 @@
                 </configuration>
             </plugin>
             <!-- 静态代码分析 -->
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
+            <plugin><groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>4.7.3.0</version>
                 <configuration>
@@ -276,8 +253,7 @@
                 </configuration>
             </plugin>
             <!-- 依赖漏洞检查 (仅在显式调用时执行) -->
-            <plugin>
-                <groupId>org.owasp</groupId>
+            <plugin><groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>8.4.0</version>
                 <configuration>
@@ -290,10 +266,8 @@
             <!-- 该模块作为SDK，不需要Spring Boot打包插件 -->
             
             <!-- Surefire插件配置，用于运行所有测试 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M7</version>
                 <configuration>
                     <!-- 设置testFailureIgnore为false以便查看详细错误信息 -->
                     <testFailureIgnore>false</testFailureIgnore>
@@ -304,8 +278,7 @@
             </plugin>
             
             <!-- JAR插件配置 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>

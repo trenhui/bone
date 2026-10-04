@@ -48,9 +48,24 @@ bone:
       artifact:
         storage-path: ${BONE_EXTENSION_ARTIFACT_PATH:./data/extension-plugins}
         max-versions-per-plugin: 3
-      # 本地联调放行（开发期关闭 JWT 校验；生产环境请保持 false）
+      # 控制面鉴权开关。**基配置必须是 false（失败关闭）**：
+      # 未显式声明该键的profile（含误配 profile、漏加 profile 的部署）一律要求 JWT。
+      # 原实现在此硬编码 true —— 环境变量无法覆盖，且 dev/in-memory 靠继承拿到放行，
+      # 意味着"忘记配置"就是一次静默降级为全站匿名。安全配置的默认必须是"拒绝"。
+      # 需要联调放行时由对应 profile（in-memory/dev）显式打开，或临时注入
+      # BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED=true；生产 profile 恒为 false。
       security:
-        permit-unauthenticated: true
+        permit-unauthenticated: ${BONE_EXTENSION_STUDIO_PERMIT_UNAUTHENTICATED:false}
+        # 数据面上报通道（/api/v1/extension/execution-logs:ingest）的机器身份共享密钥。
+        # 该端点因上报方是业务进程（无用户 JWT）只能 permitAll，若不留空则任何能访问该端口的人
+        # 都能伪造执行日志。**生产必须通过环境变量注入**，与 SDK 侧
+        # bone.extension.studio.report.token 保持一致。
+        reporter-token: ${BONE_EXTENSION_REPORTER_TOKEN:}
+        # 令牌未配置时是否拒绝一切上报。默认 true = 失败关闭：
+        # 漏配密钥时上报端点返回 503（业务方立刻发现日志没上报），而不是退化为匿名可写。
+        # 安全配置的默认必须是"拒绝" —— 默认放行意味着"忘记配置"是一次静默降级，
+        # 且只有一条 WARN 日志，足够被忽略。仅本地联调可经环境变量置 false 临时放行。
+        reporter-auth-required: ${BONE_EXTENSION_REPORTER_AUTH_REQUIRED:true}
       
       # 缓存配置
       cache:

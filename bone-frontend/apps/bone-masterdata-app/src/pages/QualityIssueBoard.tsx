@@ -3,6 +3,8 @@ import { Button, Card, Form, Input, Modal, Select, Space, Table, Tag, message } 
 import { CheckOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { qualityIssueApi } from '../services/api';
 import type { QualityIssue } from '../types/governance';
+import { useEntityScope } from '../context/EntityScopeContext';
+import EntityScopeSelect from '../components/EntityScopeSelect';
 
 const sevColor = (s: string) => (s === 'HIGH' ? 'red' : s === 'MEDIUM' ? 'orange' : 'blue');
 const statusColor = (s: string) =>
@@ -10,14 +12,15 @@ const statusColor = (s: string) =>
 
 /** 质量整改工单看板（G11 / UC-T9）：OPEN → FIXED → CLOSED。 */
 const QualityIssueBoard: React.FC = () => {
-  const [entityId, setEntityId] = useState<number | undefined>();
+  // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
+  const { entityId } = useEntityScope();
   const [status, setStatus] = useState<string | undefined>();
   const [rows, setRows] = useState<QualityIssue[]>([]);
   const [openCount, setOpenCount] = useState<number>(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [form] = Form.useForm();
 
-  const load = useCallback(async (eid?: number, st?: string) => {
+  const load = useCallback(async (eid?: string, st?: string) => {
     if (!eid) return;
     const [list, count] = await Promise.all([
       qualityIssueApi.byEntity(eid, st),
@@ -67,17 +70,8 @@ const QualityIssueBoard: React.FC = () => {
       title={`质量整改工单（未关闭 ${openCount} 单 · 发布软门禁）`}
       extra={
         <Space>
-          <Input.Search
-            placeholder="输入主数据模型ID"
-            enterButton="加载"
-            style={{ width: 240 }}
-            onSearch={(v) => {
-              const n = Number(v);
-              // Long 型 ID 超过 2^53 会静默失真，此处拒绝非安全整数而非截断
-              if (Number.isSafeInteger(n) && n > 0) setEntityId(n);
-              else message.warning('请输入有效模型ID');
-            }}
-          />
+          {/* 模型来自全局作用域（EntityScopeContext）：与分类 / 治理 / 字段页面共享 */}
+          <EntityScopeSelect width={240} />
           <Select
             allowClear
             placeholder="状态"

@@ -21,7 +21,10 @@ const App: React.FC = () => {
     //   Provider 注入是 react-i18next 的官方解法，让组件树与本应用 init 的单例对齐。
     <I18nextProvider i18n={i18n}>
       <AntdApp>
-        <Router>
+        {/* v7_startTransition / v7_relativeSplatPath：提前 opt-in React Router v7 行为，
+            消除每次挂载必打的 2 条 future flag 警告（2026-10-02 UI 巡检实测）。
+            两者均为 v7 的向后兼容默认值，语义不变。 */}
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AppErrorBoundary>
             <Authorized required={BonePermissionCodes.SYS_CONSOLE_READ}>
               <Routes>

@@ -79,8 +79,8 @@ const MonitorAlertPage: React.FC = () => {
           services: (h.services ?? []) as string[],
         } as SystemInfo);
       }
-      if (rulesRes.code === 200) setAlertRules(rulesRes.data.list ?? []);
-      if (eventsRes.code === 200) setAlertEvents(eventsRes.data.list ?? []);
+      if (rulesRes.code === 200) setAlertRules(rulesRes.data.records ?? []);
+      if (eventsRes.code === 200) setAlertEvents(eventsRes.data.records ?? []);
     } catch (error) {
       message.error(t('system.monitorAlert.fetchDataFailed'));
     } finally {
@@ -134,7 +134,7 @@ const MonitorAlertPage: React.FC = () => {
     }
   };
 
-  const handleDeleteRule = async (id: number | string) => {
+  const handleDeleteRule = async (id: string | string) => {
     try {
       const response = await monitorApi.deleteAlertRule(id);
       if (response.code === 200) {
@@ -146,7 +146,7 @@ const MonitorAlertPage: React.FC = () => {
     }
   };
 
-  const handleToggleRule = async (id: number | string, enabled: boolean) => {
+  const handleToggleRule = async (id: string | string, enabled: boolean) => {
     try {
       const response = enabled
         ? await monitorApi.enableAlertRule(id)

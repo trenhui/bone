@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { appApi, type BoneApplication } from '../services/appModuleApi';
 import { metadataEntityApi } from '../services/metadataApi';
+import { normalizeTotal } from '@bone/shared-utils';
 import { listRecent, recentPath, type RecentEntityItem } from '../utils/recent';
 
 const { Title, Text, Paragraph } = Typography;
@@ -54,7 +55,7 @@ const ModelingWorkspace: React.FC = () => {
     try {
       const res = await appApi.listMine({ page: 1, size: 50 });
       if (res.code === 200) {
-        setApps(res.data.list);
+        setApps(res.data.records);
       }
     } catch {
       message.error('加载应用列表失败');
@@ -66,7 +67,7 @@ const ModelingWorkspace: React.FC = () => {
   const loadDraftTotal = async () => {
     try {
       const res = await metadataEntityApi.page({ pageNum: 1, pageSize: 1, status: 0 });
-      if (res.code === 200) setDraftTotal(res.data.total);
+      if (res.code === 200) setDraftTotal(normalizeTotal(res.data.total));
     } catch {
       // 统计条为增强信息，失败静默
     }

@@ -3,4 +3,4 @@
  * 本地领域类型已上提至 packages/shared-types/src/masterdata.ts
  */
 export * from '@bone/shared-types';
-export type { ApiResponse, PageResult } from '@bone/shared-types';
+export type { ApiResponse, PageResult, NormalizedPageResult } from '@bone/shared-types';

@@ -15,6 +15,7 @@ import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +26,7 @@ public class DataQualityController {
   private final QualityApplicationService qualityService;
   private final DataQualityWebConverter converter;
 
+  @PreAuthorize("hasAuthority('masterdata:quality:write')")
   @PostMapping("/rules")
   public ApiResponse<Long> createRule(@RequestBody CreateDataQualityRuleReq req) {
     Long id = qualityService.createRule(converter.toCommand(req));
@@ -41,6 +43,7 @@ public class DataQualityController {
     return ApiResponse.success(qualityService.ruleDetail(new DataQualityRuleDetailQuery(id)));
   }
 
+  @PreAuthorize("hasAuthority('masterdata:quality:write')")
   @PutMapping("/rules/{id}")
   public ApiResponse<Void> updateRule(
       @PathVariable Long id, @Valid @RequestBody UpdateDataQualityRuleReq req) {
@@ -48,12 +51,16 @@ public class DataQualityController {
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:quality:write')")
   @DeleteMapping("/rules/{id}")
   public ApiResponse<Void> deleteRule(@PathVariable Long id) {
     qualityService.deleteRule(id);
     return ApiResponse.success();
   }
 
+  // check 会落库一条检查任务记录（qualityService.performCheck 返回 checkId），是写而非纯读，
+  // 故与规则维护同取 quality:write。
+  @PreAuthorize("hasAuthority('masterdata:quality:write')")
   @PostMapping("/check")
   public ApiResponse<Long> check(
       @RequestParam(value = "masterDataEntityId", required = false) Long masterDataEntityId) {

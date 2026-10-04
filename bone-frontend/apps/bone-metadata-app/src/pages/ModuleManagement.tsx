@@ -34,11 +34,11 @@ const ModuleManagement: React.FC = () => {
     try {
       const [appRes, modRes] = await Promise.all([
         appApi.detail(appId),
-        moduleApi.listByApp(appId, { pageNum: 1, pageSize: 50 }),
+        moduleApi.listByApp(appId, { page: 1, size: 50 }),
       ]);
       if (appRes.code === 200) setAppInfo(appRes.data);
       if (modRes.code === 200) {
-        setModules(modRes.data.list);
+        setModules(modRes.data.records);
       }
     } catch {
       message.error('加载失败');

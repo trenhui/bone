@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, message, Tabs, Descriptions, Tag, Badge } from 'antd';
 import { ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { monitorApi } from '../services/api';
+import { normalizeTotal } from '@bone/shared-utils';
 import type { IntegrationLog, FlowStatistics } from '../types';
 
 export const FlowMonitor: React.FC = () => {
@@ -18,8 +19,8 @@ export const FlowMonitor: React.FC = () => {
     setLoading(true);
     try {
       const response = await monitorApi.getExecutions({ pageNum: page, pageSize });
-      setExecutions(response.data.list);
-      setTotal(response.data.total);
+      setExecutions(response.data.records);
+      setTotal(normalizeTotal(response.data.total));
     } catch {
       message.error('获取执行记录失败');
     } finally {
@@ -41,7 +42,7 @@ export const FlowMonitor: React.FC = () => {
     void fetchStatistics();
   }, [fetchExecutions, fetchStatistics]);
 
-  const handleRetry = async (id: number): Promise<void> => {
+  const handleRetry = async (id: string): Promise<void> => {
     try {
       await monitorApi.retryExecution(id);
       message.success('重试成功');

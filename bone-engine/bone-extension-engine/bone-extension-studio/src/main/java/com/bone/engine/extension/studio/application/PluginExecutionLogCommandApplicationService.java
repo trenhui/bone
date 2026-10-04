@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application;
 
 import com.bone.core.annotation.NoDomainEvent;
-import com.bone.core.tenant.context.TenantContext;
+import com.bone.engine.extension.studio.domain.gateway.TenantProvider;
 import com.bone.engine.extension.studio.domain.model.execution.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
@@ -38,6 +38,7 @@ public class PluginExecutionLogCommandApplicationService {
   private final PluginExecutionLogRepository logRepository;
   private final ExtensionRepository extensionRepository;
   private final ExtPointRepository extPointRepository;
+  private final TenantProvider tenantProvider;
 
   /**
    * 数据面运行时上报执行日志。
@@ -47,6 +48,11 @@ public class PluginExecutionLogCommandApplicationService {
    *
    * <p>上报不携带终端用户 JWT：无租户上下文时按平台租户 0 落库， 否则 Metadata SDK 对租户表直接抛 {@code
    * MissingTenantContextException}（fail-closed），整条日志 500 丢弃。
+   *
+   * <p><b>租户访问经 {@link TenantProvider} 端口</b>（E-2，2026-10-03 修正）：此前本方法直接 {@code
+   * TenantContext.setTenantId(0)} + {@code clear()}，违反 {@code tenant_context_via_provider} 规则。现改为
+   * {@code tenantProvider.runAs(0, ...)}，把「设租户 → 执行 → 恢复原上下文」的 try/finally 收敛到基础设施层， 避免业务分支提前
+   * return / 抛异常时 ThreadLocal 上下文泄漏到同线程后续请求。
    */
   @Transactional
   public Optional<PluginExecutionLog> ingestFromRuntime(
@@ -59,15 +65,13 @@ public class PluginExecutionLogCommandApplicationService {
     if (!StringUtils.hasText(className)) {
       return Optional.empty();
     }
-    if (TenantContext.getTenantId() != null) {
+    if (tenantProvider.currentTenantIdOrNull() != null) {
       return doIngest(className, methodName, extPointName, status, durationMs, errorMessage);
     }
-    TenantContext.setTenantId(PLATFORM_TENANT_ID);
-    try {
-      return doIngest(className, methodName, extPointName, status, durationMs, errorMessage);
-    } finally {
-      TenantContext.clear();
-    }
+    // 无租户上下文：经端口在平台租户作用域内执行，作用域与「恢复原上下文」由适配器 try/finally 闭合（E-2）。
+    return tenantProvider.runAs(
+        PLATFORM_TENANT_ID,
+        () -> doIngest(className, methodName, extPointName, status, durationMs, errorMessage));
   }
 
   private Optional<PluginExecutionLog> doIngest(
@@ -114,12 +118,9 @@ public class PluginExecutionLogCommandApplicationService {
     String iface = extPointName.trim();
     ExtPoint point = extPointRepository.findByInterfaceName(iface);
     if (point == null) {
-      ExtPoint created = new ExtPoint();
-      created.setName(simpleName(iface));
-      created.setInterfaceName(iface);
-      created.setDescription("运行时自动登记的扩展点（数据面执行上报发现）");
-      created.setEnabled(true);
-      point = extPointRepository.save(created);
+      point =
+          extPointRepository.save(
+              ExtPoint.create(simpleName(iface), iface, "运行时自动登记的扩展点（数据面执行上报发现）"));
     }
     if (point == null || point.getId() == null) {
       return null;

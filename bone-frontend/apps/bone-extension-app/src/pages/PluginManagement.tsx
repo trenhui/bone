@@ -78,22 +78,22 @@ const PluginManagement: React.FC = () => {
   const [selectedPlugin, setSelectedPlugin] = useState<ExtensionRow | null>(null);
   const [editing, setEditing] = useState<ExtensionRow | null>(null);
   const [jarFile, setJarFile] = useState<File | null>(null);
-  const [deploying, setDeploying] = useState<{ id: number; name: string; progress: number } | null>(
+  const [deploying, setDeploying] = useState<{ id: string; name: string; progress: number } | null>(
     null,
   );
   const [undeployingId, setUndeployingId] = useState<number | null>(null);
   const [bindTarget, setBindTarget] = useState<ExtensionRow | null>(null);
   const [probeResult, setSelectedProbe] = useState<SimulateResult | null>(null);
-  const [bindForm] = Form.useForm<{ extPointId: number }>();
+  const [bindForm] = Form.useForm<{ extPointId: string }>();
   const [bindSubmitting, setBindSubmitting] = useState(false);
   const [form] = Form.useForm<ExtensionPayload>();
   const [uploadForm] = Form.useForm<{
-    extPointId: number;
+    extPointId: string;
     name: string;
     className: string;
     version: string;
     description?: string;
-    pluginId?: number;
+    pluginId?: string;
   }>();
   const [uploadTarget, setUploadTarget] = useState<ExtensionRow | null>(null);
   const [appFilter, setAppFilter] = useState<number | undefined>();
@@ -128,7 +128,7 @@ const PluginManagement: React.FC = () => {
     load(page, pageSize);
   }, [load, page, pageSize]);
 
-  const extPointName = (extPointId: number) => {
+  const extPointName = (extPointId: string) => {
     if (!extPointId || extPointId === UNBOUND_EXT_POINT_ID) {
       return '未绑定';
     }
@@ -292,7 +292,7 @@ const PluginManagement: React.FC = () => {
     }
   };
 
-  const handlePublish = async (id: number) => {
+  const handlePublish = async (id: string) => {
     try {
       await publishPluginRuntime(id);
       message.success('已推送到运行时');
@@ -301,7 +301,7 @@ const PluginManagement: React.FC = () => {
     }
   };
 
-  const handleSimulate = async (id: number) => {
+  const handleSimulate = async (id: string) => {
     try {
       const result = await simulatePlugin(id);
       setSelectedProbe(result);
@@ -310,7 +310,7 @@ const PluginManagement: React.FC = () => {
     }
   };
 
-  const handleRollback = async (pluginId: number, version?: string) => {
+  const handleRollback = async (pluginId: string, version?: string) => {
     try {
       await rollbackPlugin(pluginId, version);
       message.success(version ? `已回滚到 ${version}` : '已回滚到上一版本');
@@ -323,7 +323,7 @@ const PluginManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await deletePlugin(id);
       message.success('已删除');
@@ -420,7 +420,7 @@ const PluginManagement: React.FC = () => {
       title: '扩展点',
       dataIndex: 'extPointId',
       width: 160,
-      render: (id: number) =>
+      render: (id: string) =>
         id && id !== UNBOUND_EXT_POINT_ID ? (
           extPointName(id)
         ) : (
@@ -432,7 +432,7 @@ const PluginManagement: React.FC = () => {
       title: '归属应用',
       dataIndex: 'appId',
       width: 96,
-      render: (appId?: number | null) =>
+      render: (appId?: string | null) =>
         appId ? `#${appId}` : <Tag color="default">平台通用</Tag>,
     },
     { title: '优先级', dataIndex: 'priority', width: 80 },
@@ -510,7 +510,7 @@ const PluginManagement: React.FC = () => {
     },
   ];
 
-  const handleDownloadVersion = async (pluginId: number, version: string) => {
+  const handleDownloadVersion = async (pluginId: string, version: string) => {
     try {
       await downloadPluginVersion(pluginId, version);
       message.success('制品下载已开始');

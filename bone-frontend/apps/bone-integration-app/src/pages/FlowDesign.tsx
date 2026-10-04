@@ -4,6 +4,7 @@ import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '
 import { Graph, Shape, type Node } from '@antv/x6';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { flowApi, connectorApi } from '../services/api';
+import { normalizeTotal } from '@bone/shared-utils';
 import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq, Connector } from '../types';
 
 const { TextArea } = Input;
@@ -54,7 +55,7 @@ export const FlowDesign: React.FC = () => {
   useEffect(() => {
     connectorApi
       .getConnectors({ pageNum: 1, pageSize: 100 })
-      .then((res) => setConnectors(res.data.list ?? []))
+      .then((res) => setConnectors(res.data.records ?? []))
       .catch(() => setConnectors([]));
   }, []);
 
@@ -78,8 +79,8 @@ export const FlowDesign: React.FC = () => {
     setLoading(true);
     try {
       const response = await flowApi.getFlows({ pageNum: page, pageSize });
-      setFlows(response.data.list);
-      setTotal(response.data.total);
+      setFlows(response.data.records);
+      setTotal(normalizeTotal(response.data.total));
     } catch {
       message.error('获取流程列表失败');
     } finally {
@@ -132,7 +133,7 @@ export const FlowDesign: React.FC = () => {
 
   const openNodeConfig = (node: Node) => {
     const data = (node.getData() ?? {}) as {
-      id?: number;
+      id?: string;
       type?: string;
       config?: Record<string, unknown>;
     };
@@ -151,7 +152,7 @@ export const FlowDesign: React.FC = () => {
       const values = await nodeForm.validateFields();
       if (!editingNode) return;
       const data = (editingNode.getData() ?? {}) as {
-        id?: number;
+        id?: string;
         type?: string;
         config?: Record<string, unknown>;
       };
@@ -243,7 +244,7 @@ export const FlowDesign: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await flowApi.deleteFlow(id);
       message.success('删除成功');
@@ -253,7 +254,7 @@ export const FlowDesign: React.FC = () => {
     }
   };
 
-  const handleTest = async (id: number) => {
+  const handleTest = async (id: string) => {
     try {
       const response = await flowApi.testFlow(id, { test: 'data' });
       if (response.data.success) {
@@ -266,7 +267,7 @@ export const FlowDesign: React.FC = () => {
     }
   };
 
-  const handleActivate = async (id: number) => {
+  const handleActivate = async (id: string) => {
     try {
       await flowApi.activateFlow(id);
       message.success('激活成功');
@@ -276,7 +277,7 @@ export const FlowDesign: React.FC = () => {
     }
   };
 
-  const handleDeactivate = async (id: number) => {
+  const handleDeactivate = async (id: string) => {
     try {
       await flowApi.deactivateFlow(id);
       message.success('停用成功');
@@ -300,7 +301,7 @@ export const FlowDesign: React.FC = () => {
           const node = cell as Node;
           const pos = node.getPosition();
           const data = (node.getData() ?? {}) as {
-            id?: number;
+            id?: string;
             type?: string;
             config?: Record<string, unknown>;
           };

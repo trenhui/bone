@@ -4,6 +4,7 @@ import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next';
 import type { ScheduleTask } from '@/types';
 import { scheduleTaskApi } from '@/services/api';
+import { normalizeTotal } from '@bone/shared-utils';
 
 const ScheduleTaskManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -19,8 +20,10 @@ const ScheduleTaskManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await scheduleTaskApi.getScheduleTaskPage({ pageNum: page, pageSize });
-      setData(res.data.list);
-      setPagination({ current: page, pageSize, total: res.data.total });
+      // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，
+      // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
+      setData(res.data.records);
+      setPagination({ current: page, pageSize, total: normalizeTotal(res.data.total) });
     } catch {
       message.error(t('system.scheduleTaskManagement.fetchTaskFailed'));
     } finally {

@@ -13,6 +13,9 @@ export const BonePermissionDomain = {
   MASTERDATA: 'masterdata',
   INTEGRATION: 'integration',
   SYSTEM: 'system',
+  GENERATOR: 'generator',
+  FILE: 'file',
+  ORDER: 'order',
 } as const;
 
 /** As-Is：后端已引用或 JWT 种子已包含 */
@@ -34,9 +37,22 @@ export const BonePermissionCodes = {
   IAM_DEPTS_WRITE: 'iam:depts:write',
   IAM_MENUS_READ: 'iam:menus:read',
   IAM_MENUS_WRITE: 'iam:menus:write',
+  // 应用/模块（ModuleController 路由为 /apps/{appId}/modules，无独立 iam:modules:* 码，随宿主授权）
+  IAM_APPS_READ: 'iam:apps:read',
+  IAM_APPS_WRITE: 'iam:apps:write',
 
   // System / Console（bone-system 控制台聚合 API）
   SYS_CONSOLE_READ: 'sys:console:read',
+  // 平台域写码（全局配置/字典/调度/日志/告警）。租户管理员不授出——全局表写属平台域。
+  // 此前这些码只在后端 DefaultPermissionCodes 与种子库里，前端目录缺项 ⇒ 控制台建权限时选不到。
+  SYS_CONFIG_WRITE: 'sys:config:write',
+  SYS_DICT_WRITE: 'sys:dict:write',
+  SYS_SCHEDULE_WRITE: 'sys:schedule:write',
+  SYS_LOG_WRITE: 'sys:log:write',
+  SYS_ALERT_READ: 'sys:alert:read',
+  SYS_ALERT_WRITE: 'sys:alert:write',
+  // 运维高危动作（部署/升级/重启/关停平台实例）。端点当前恒 501未实现，码已预登记。
+  SYS_OPS_EXECUTE: 'sys:ops:execute',
 
   // 元数据（bone-metadata-server @PreAuthorize）
   METADATA_READ: 'metadata:read',
@@ -48,6 +64,13 @@ export const BonePermissionCodes = {
   METADATA_RUNTIME_WRITE: 'metadata:runtime:write',
   METADATA_TEMPLATE_READ: 'metadata:template:read',
   METADATA_TEMPLATE_WRITE: 'metadata:template:write',
+  METADATA_PUBLISH: 'metadata:publish',
+
+  // bone-blueprint 样板域（order: 码是"样板 scope 示范"，控制器已挂 @PreAuthorize）
+  ORDER_ORDERS_READ: 'order:orders:read',
+  ORDER_ORDERS_WRITE: 'order:orders:write',
+  ORDER_PAYMENT_READ: 'order:payment:read',
+  ORDER_PAYMENT_WRITE: 'order:payment:write',
 
   // 扩展（bone-extension-studio · admin JWT 种子）
   EXTENSION_POINTS_READ: 'extension:points:read',
@@ -79,10 +102,25 @@ export const BonePermissionCodes = {
   MASTERDATA_REFERENCE_WRITE: 'masterdata:reference:write',
   MASTERDATA_GOVERNANCE_WRITE: 'masterdata:governance:write',
 
-  // [Target] 集成
+  // 集成（2026-10-03 收敛：前端已定码名，此前后端未登记 —— 已补 DefaultPermissionCodes + 种子 + @PreAuthorize）
   INTEGRATION_FLOWS_READ: 'integration:flows:read',
   INTEGRATION_FLOWS_WRITE: 'integration:flows:write',
+  INTEGRATION_CONNECTORS_READ: 'integration:connectors:read',
   INTEGRATION_CONNECTORS_WRITE: 'integration:connectors:write',
+  INTEGRATION_EXECUTIONS_WRITE: 'integration:executions:write',
+
+  // 代码生成器（2026-10-03 新增）：数据源改表结构与模板编辑分权
+  GENERATOR_TEMPLATES_WRITE: 'generator:templates:write',
+  GENERATOR_DATASOURCES_WRITE: 'generator:datasources:write',
+  GENERATOR_DATASOURCES_SYNC: 'generator:datasources:sync',
+  GENERATOR_CODEGEN_WRITE: 'generator:codegen:write',
+  GENERATOR_ADMIN_WRITE: 'generator:admin:write',
+
+  // 数据标准（与参考数据 reference 是父子资源非同义，故独立成码）
+  MASTERDATA_STANDARDS_WRITE: 'masterdata:standards:write',
+
+  // 文件对象（上传/删除；必须授予所有活跃角色，否则附件类功能 403）
+  FILE_OBJECTS_WRITE: 'file:objects:write',
 } as const satisfies Record<string, BonePermissionCode>;
 
 /** 控制台创建权限时的推荐编码（含 Target 规划项，便于预置目录） */
@@ -108,7 +146,16 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.IAM_DEPTS_WRITE, name: 'IAM-组织维护', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_MENUS_READ, name: 'IAM-菜单查看', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_MENUS_WRITE, name: 'IAM-菜单维护', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_APPS_READ, name: 'IAM-应用查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_APPS_WRITE, name: 'IAM-应用维护', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.SYS_CONSOLE_READ, name: 'SYS-控制台查看', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_CONFIG_WRITE, name: 'SYS-配置维护', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_DICT_WRITE, name: 'SYS-字典维护', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_SCHEDULE_WRITE, name: 'SYS-调度维护', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_LOG_WRITE, name: 'SYS-日志维护', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_ALERT_READ, name: 'SYS-告警查看', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_ALERT_WRITE, name: 'SYS-告警维护', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_OPS_EXECUTE, name: 'SYS-运维高危动作', domain: 'system', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_READ, name: '元数据-读（deprecated 别名）', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_WRITE, name: '元数据-写（deprecated 别名）', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_MODEL_READ, name: '元数据-建模查看', domain: 'metadata', maturity: 'As-Is' },
@@ -117,9 +164,21 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.METADATA_RUNTIME_WRITE, name: '元数据-运行时维护', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_TEMPLATE_READ, name: '元数据-模板查看', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_TEMPLATE_WRITE, name: '元数据-模板维护', domain: 'metadata', maturity: 'As-Is' },
+  { code: BonePermissionCodes.METADATA_PUBLISH, name: '元数据-发布', domain: 'metadata', maturity: 'As-Is' },
+  { code: BonePermissionCodes.ORDER_ORDERS_READ, name: '订单-查看', domain: 'order', maturity: 'As-Is' },
+  { code: BonePermissionCodes.ORDER_ORDERS_WRITE, name: '订单-维护', domain: 'order', maturity: 'As-Is' },
+  { code: BonePermissionCodes.ORDER_PAYMENT_READ, name: '支付单查询', domain: 'order', maturity: 'As-Is' },
+  { code: BonePermissionCodes.ORDER_PAYMENT_WRITE, name: '支付单发起/退款', domain: 'order', maturity: 'As-Is' },
   { code: BonePermissionCodes.EXTENSION_POINTS_READ, name: '扩展点-读', domain: 'extension', maturity: 'As-Is' },
   { code: BonePermissionCodes.EXTENSION_POINTS_WRITE, name: '扩展点-写', domain: 'extension', maturity: 'As-Is' },
   { code: BonePermissionCodes.EXTENSION_PLUGINS_DEPLOY, name: '插件-部署', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_PLUGINS_READ, name: '插件-查看', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_PLUGINS_WRITE, name: '插件-维护', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_PLUGINS_BIND, name: '插件-绑定', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_RUNTIME_PUBLISH, name: '生效切换（与部署分权，SoD）', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_OBSERVE_READ, name: '观测-查看', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_MARKETPLACE_INSTALL, name: '市场-安装', domain: 'extension', maturity: 'As-Is' },
+  { code: BonePermissionCodes.EXTENSION_MARKETPLACE_MANAGE, name: '市场-管理', domain: 'extension', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_ENTITIES_READ, name: '主数据-实体查看', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_ENTITIES_WRITE, name: '主数据-实体维护', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_RECORDS_READ, name: '主数据-记录查看', domain: 'masterdata', maturity: 'As-Is' },
@@ -135,9 +194,18 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.MASTERDATA_REFERENCE_READ, name: '主数据-参考数据查看', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_REFERENCE_WRITE, name: '主数据-参考数据维护', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE, name: '主数据-治理操作', domain: 'masterdata', maturity: 'As-Is' },
-  { code: BonePermissionCodes.INTEGRATION_FLOWS_READ, name: '集成-流程读', domain: 'integration', maturity: 'Target' },
-  { code: BonePermissionCodes.INTEGRATION_FLOWS_WRITE, name: '集成-流程写', domain: 'integration', maturity: 'Target' },
-  { code: BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE, name: '集成-连接器写', domain: 'integration', maturity: 'Target' },
+  { code: BonePermissionCodes.MASTERDATA_STANDARDS_WRITE, name: '主数据-数据标准维护', domain: 'masterdata', maturity: 'As-Is' },
+  { code: BonePermissionCodes.INTEGRATION_FLOWS_READ, name: '集成-流程读', domain: 'integration', maturity: 'As-Is' },
+  { code: BonePermissionCodes.INTEGRATION_FLOWS_WRITE, name: '集成-流程写', domain: 'integration', maturity: 'As-Is' },
+  { code: BonePermissionCodes.INTEGRATION_CONNECTORS_READ, name: '集成-连接器读', domain: 'integration', maturity: 'As-Is' },
+  { code: BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE, name: '集成-连接器写', domain: 'integration', maturity: 'As-Is' },
+  { code: BonePermissionCodes.INTEGRATION_EXECUTIONS_WRITE, name: '集成-执行触发', domain: 'integration', maturity: 'As-Is' },
+  { code: BonePermissionCodes.GENERATOR_TEMPLATES_WRITE, name: '代码生成-模板维护', domain: 'generator', maturity: 'As-Is' },
+  { code: BonePermissionCodes.GENERATOR_DATASOURCES_WRITE, name: '代码生成-数据源维护', domain: 'generator', maturity: 'As-Is' },
+  { code: BonePermissionCodes.GENERATOR_DATASOURCES_SYNC, name: '代码生成-数据源同步（改表结构）', domain: 'generator', maturity: 'As-Is' },
+  { code: BonePermissionCodes.GENERATOR_CODEGEN_WRITE, name: '代码生成-任务提交', domain: 'generator', maturity: 'As-Is' },
+  { code: BonePermissionCodes.GENERATOR_ADMIN_WRITE, name: '代码生成-管理操作', domain: 'generator', maturity: 'As-Is' },
+  { code: BonePermissionCodes.FILE_OBJECTS_WRITE, name: '文件-对象写入', domain: 'file', maturity: 'As-Is' },
 ];
 
 export const ALL_BONE_PERMISSION_CODE_VALUES: BonePermissionCode[] = Object.values(BonePermissionCodes);

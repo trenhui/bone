@@ -1,6 +1,7 @@
 package com.bone.system.domain.model.log;
 
 import com.bone.core.annotation.Id;
+import com.bone.core.annotation.PhysicalDelete;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@PhysicalDelete(reason = "append-only 操作日志：按保留期归档/清理，删除即永久移除是既定语义（恢复无业务价值）")
 @Table("sys_log")
 public class SystemLog extends AggregateRoot<Long> {
   @Id

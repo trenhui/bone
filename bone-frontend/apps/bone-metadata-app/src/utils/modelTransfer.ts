@@ -33,7 +33,7 @@ export interface ModelTransferFile {
 
 /** 导入执行结果 */
 export interface ImportResult {
-  entityId: number;
+  entityId: string;
   entityCode: string;
   createdFields: number;
   failedFields: Array<{ code: string; reason: string }>;
@@ -65,7 +65,7 @@ export async function exportEntityModel(entity: MetaEntity): Promise<void> {
       deliveryMode: entityRes.data.deliveryMode,
       icon: entityRes.data.icon,
     },
-    fields: (fieldsRes.code === 200 ? fieldsRes.data.list : []).map((f) => ({
+    fields: (fieldsRes.code === 200 ? fieldsRes.data.records : []).map((f) => ({
       name: f.name,
       code: f.code,
       displayName: f.displayName,
@@ -76,7 +76,7 @@ export async function exportEntityModel(entity: MetaEntity): Promise<void> {
       sortOrder: f.sortOrder,
       comment: f.comment,
     })),
-    relations: (relationsRes.code === 200 ? relationsRes.data.list : []).map((r) => ({
+    relations: (relationsRes.code === 200 ? relationsRes.data.records : []).map((r) => ({
       name: r.name,
       type: r.type,
       foreignKeyField: r.foreignKeyField,
@@ -147,7 +147,7 @@ export function validateModelFile(parsed: ModelTransferFile): string[] {
 /** 导入：创建实体草稿 + 逐字段创建（关系不导入，返回提示由 UI 呈现） */
 export async function importEntityModel(
   parsed: ModelTransferFile,
-  options: { moduleId?: number | string; onProgress?: (done: number, total: number) => void },
+  options: { moduleId?: string | string; onProgress?: (done: number, total: number) => void },
 ): Promise<ImportResult> {
   const { moduleId, onProgress } = options;
   const e = parsed.entity;

@@ -28,6 +28,33 @@
 
 两条都被单测掩盖：仓储是 mock，`MissingTenantContextException` 只可能出现在 `BaseRepository` 真身上；且 `@Scheduled` 线程不继承请求上下文（框架内没有 TTL 包装的 `TaskScheduler`）。
 
+
+### 2bis. 复核：metadata-server 的 `MetaEntity` / `MetaField` 不得加 `@Version`（2026-10-03 实测）
+
+诊断阶段曾把「`MetaEntity` / `MetaField` 有 `version` 列但没打 `@Version` ⇒ 静默 Lost Update」列为待修项。
+**逐行核对 SDK 实现后该结论被证伪**，加注解会直接破坏现有乐观锁：
+
+| 证据 | 位置 | 含义 |
+|------|------|------|
+| SDK 侧 | `DynamicUpdateBuilder:70-77` | `SET version = version + 1` + `WHERE version = :old`（old 取自**实体字段当前值**） |
+| SDK 侧 | `BaseRepository:294-300` | update 成功后**自动把实体字段回写为 old+1** |
+| 业务侧 | `MetaEntity.java:151/161/165-167` | `update()` / `publish()` 内部先调 `bumpVersion()` **手工 +1** |
+| 业务侧 | `MetaEntityApplicationService.updateEntity` | 顺序是 `assertExpected(expected, cur)` → `entity.update()`（内含 bumpVersion）→ `repository.update(entity)` |
+
+即：**打上 `@Version` 后，`WHERE version = :old` 会取到已被 `bumpVersion()` 加过的值**，而 DB 里还是旧值
+⇒ 首次更新就必然抛 `OptimisticLockingFailureException`（假冲突），且 SDK 的自动回写与 `bumpVersion()` 双重递增。
+
+正确的并发控制**已经存在**，只是形态是手工的而非注解式：
+- `UpdateMetaEntityCommand` / `publishEntity(id, expectedVersion)` 暴露 If-Match 风格入参；
+- `CatalogVersionSupport.assertExpected(expected, current)` 抛 `CatalogOptimisticLockException`；
+- 覆盖 `updateEntity` 与 `publishEntity` 两条写路径。
+
+**口径**：`@Version` 适用于 blueprint / iam 等**无手工 version 语义**的聚合；metadata-server catalog 侧
+沿用 `CatalogVersionSupport`（AIP-154 语义：If-Match 可选，`expectedVersion == null` 时跳过校验）。
+两者不要混用——同一张表上叠加两套乐观锁会产生"假冲突"。
+
+`CatalogVersionSupport.assertExpected` 的 `expectedVersion == null → return` 是**有意的可选 If-Match 语义**，
+不是缺陷；不传 If-Match 即声明"接受后写覆盖"，与 AIP-154 一致。
 ### 2. `@Version` 是死元数据：写路径无乐观锁
 
 `TableMetadataResolver` 确实解析了 `@Version`，但产物 `TableMetadata.version` 是 `@Getter(AccessLevel.NONE)` 且**全仓零消费者**；`DynamicUpdateBuilder` 的 WHERE 只有「主键 + 租户」，version 既不进 WHERE 也不自增 → `save` / `update` 是**后写覆盖**，并发下静默丢更新。

@@ -25,6 +25,9 @@ public class ColumnAllocator {
   private final ColumnNamingStrategy namingStrategy;
   private static final int MAX_RETRIES = 3;
 
+  /** 退避抖动源：多实例同时冲突时随机化等待，避免同相位重试再次撞车。 */
+  private static final Random RANDOM = new Random();
+
   public ColumnAllocator(ColumnAllocationRepository repo, ColumnNamingStrategy namingStrategy) {
     this.repo = repo;
     this.namingStrategy = namingStrategy;
@@ -54,18 +57,39 @@ public class ColumnAllocator {
   /** 实际创建 count 个新的列记录（仅使用 DB 行锁方案） */
   private List<ColumnAllocation> createNewAllocations(
       AllocationContext ctx, DataType type, int count) {
-    // 通过数据库行锁方式获取连续索引
-    long baseIndex = allocateFromDB(ctx, type, count);
-
-    // 构建待插入的 ColumnAllocation 实例列表
-    List<ColumnAllocation> toInsert =
-        IntStream.range(0, count)
-            .mapToObj(i -> buildAllocation(ctx, type, (int) (baseIndex + i)))
-            .collect(Collectors.toList());
-
-    // 使用重试机制批量插入，处理可能的唯一键冲突
-    runWithRetry(() -> repo.batchInsert(toInsert), MAX_RETRIES);
-    return toInsert;
+    // 唯一键冲突时必须**重算 baseIndex** 再重试：MAX(column_index) 的行锁在聚合查询上可能不生效
+    // （优化器走覆盖索引时 InnoDB 不加行锁），且首次分配（表内尚无行）恰是竞争最激烈、
+    // 行锁最可能失效的场景。此时两个实例会读到同一个 MAX，二者都尝试插入同一批索引，
+    // 靠唯一键兜底——若重试沿用同一份 toInsert，必然连续冲突 MAX_RETRIES 次后抛
+    // FieldAllocationException，把「一次可自愈的并发冲突」放大成「确定性失败」。
+    // 故每次尝试都重新读 MAX 并重建待插入列表。
+    DuplicateKeyException lastConflict = null;
+    for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      long baseIndex = allocateFromDB(ctx, type, count);
+      List<ColumnAllocation> toInsert =
+          IntStream.range(0, count)
+              .mapToObj(i -> buildAllocation(ctx, type, (int) (baseIndex + i)))
+              .collect(Collectors.toList());
+      try {
+        repo.batchInsert(toInsert);
+        return toInsert;
+      } catch (DuplicateKeyException conflict) {
+        lastConflict = conflict;
+        if (attempt == MAX_RETRIES) {
+          break;
+        }
+        // 指数退避 + 随机抖动，让出窗口给并发方完成插入后再重算索引
+        long backoff = (50L << (attempt + 1)) + RANDOM.nextInt(50);
+        log.warn("列分配遇到唯一键冲突，第 {} 次重试（重算 baseIndex 后）：{}", attempt + 1, conflict.getMessage());
+        try {
+          TimeUnit.MILLISECONDS.sleep(backoff);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new FieldAllocationException("分配重试被中断", ie);
+        }
+      }
+    }
+    throw new FieldAllocationException("分配列重试失败，次数：" + MAX_RETRIES, lastConflict);
   }
 
   /** 通过 DB 行锁方案：先在事务中 SELECT FOR UPDATE MAX(column_index)，然后 +1 */
@@ -96,30 +120,6 @@ public class ColumnAllocator {
         .createdBy(userId) // 可根据实际场景设置 createdBy
         .updatedBy(userId)
         .build();
-  }
-
-  /** 对唯一键冲突做重试，并统计冲突次数 */
-  private void runWithRetry(Runnable action, int maxAttempts) {
-    int attempts = 0;
-    Random rnd = new Random();
-    while (true) {
-      try {
-        action.run();
-        return;
-      } catch (DuplicateKeyException ex) {
-        if (++attempts > maxAttempts) {
-          throw new FieldAllocationException("分配列重试失败，次数：" + maxAttempts, ex);
-        }
-        // 指数退避 + 随机抖动
-        long backoff = (50L << attempts) + rnd.nextInt(50);
-        try {
-          TimeUnit.MILLISECONDS.sleep(backoff);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new FieldAllocationException("分配重试被中断", ie);
-        }
-      }
-    }
   }
 
   /** 各种数据类型对应的最大索引限制 */

@@ -4,8 +4,8 @@ properties:
     type: array
     items: {}
   total:
-    type: integer
-    format: int64
+    type: string
+    description: 记录总数；后端为包装类型 Long（PageResult#total），被全局 Long→String 序列化器输出为字符串。page/size/pages 为Integer，仍是 number
   page:
     type: integer
   size:
@@ -17,5 +17,4 @@ properties:
   hasPrevious:
     type: boolean
   nextCursor:
-    type: string
-    nullable: true
+    type: [string, 'null']

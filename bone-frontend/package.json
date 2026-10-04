@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=bone-shell",
     "build": "npm run build --workspaces --if-present",
-    "build:apps": "npm run build --workspace=bone-shell --workspace=bone-iam-app --workspace=bone-metadata-app --workspace=bone-masterdata-app --workspace=bone-integration-app --workspace=bone-system-app --workspace=bone-extension-app --workspace=bone-generator-app",
+    "build:apps": "npm run build --workspace=bone-shell --workspace=bone-iam-app --workspace=bone-metadata-app --workspace=bone-masterdata-app --workspace=bone-integration-app --workspace=bone-system-app --workspace=bone-extension-app --workspace=bone-generator-app --workspace=bone-commerce-app",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "vitest run",

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "shrinkOnly": true,
-  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。",
+  "note": "文档类名漂移检查的白名单。docLevel 为整篇豁免；symbols 为符号级豁免，只可收缩。reason=handler-era-naming 的条目属待修订项：模块详设应用层仍用 Handler 命名，代码已按 ADR-0028 收敛为 ApplicationService，应按模块统一修订后删除登记。｜2026-10-03 新增三类 reason：review-snapshot（带时间戳的夜间复核报告快照）、tobe-named（模块详设的目标态类名，实现未落地）、workflow-sample（流程方案文档的示例类名）与 false-positive（Spring 通用词误报）。与既有 handler-era-naming 同理：改文档会丢失这些文档的时间/目标态信息。",
   "docLevel": [
     {
       "doc": "design/modules/1. 控制台与仪表盘模块详细设计方案.md",
@@ -143,6 +143,15 @@
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
     },
     {
+      "symbol": "AutoConfiguration",
+      "docs": [
+        "doc/design/modules/review-report-bone-system.md",
+        "doc/spring-boot-3.5-upgrade.md"
+      ],
+      "reason": "false-positive",
+      "note": "Spring Boot 生态的通用词（@AutoConfiguration / AutoConfiguration.imports），非项目自定义类名。imports 是 Spring Boot 3 的自动配置注册**文件名约定**（META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports），文档里出现的是文件名而非 Java 类引用。"
+    },
+    {
       "symbol": "AutoExtractFieldsCommandHandler",
       "docs": [
         "doc/design/modules/2. 元数据管理模块详细设计方案.md"
@@ -201,10 +210,11 @@
     {
       "symbol": "CreateConnectorCommandHandler",
       "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+        "doc/design/modules/4. 集成管理模块详细设计方案.md",
+        "doc/design/modules/review-report-bone-integration.md"
       ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+      "reason": "review-snapshot",
+      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
     },
     {
       "symbol": "CreateDataSourceCommandHandler",
@@ -225,10 +235,11 @@
     {
       "symbol": "CreateFlowCommandHandler",
       "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md"
+        "doc/design/modules/4. 集成管理模块详细设计方案.md",
+        "doc/design/modules/review-report-bone-integration.md"
       ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+      "reason": "review-snapshot",
+      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
     },
     {
       "symbol": "CreateTemplateCommandHandler",
@@ -293,6 +304,22 @@
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "DeleteFileApplicationService",
+      "docs": [
+        "doc/design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
+    },
+    {
+      "symbol": "DownloadFileApplicationService",
+      "docs": [
+        "doc/design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
     },
     {
       "symbol": "EntityController",
@@ -368,12 +395,29 @@
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
     },
     {
+      "symbol": "FileObjectListQueryApplicationService",
+      "docs": [
+        "doc/design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
+    },
+    {
+      "symbol": "FileObjectRepository",
+      "docs": [
+        "doc/design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
+    },
+    {
       "symbol": "FileStorageGateway",
       "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
+        "doc/design/modules/review-report-bone-file.md"
       ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+      "reason": "review-snapshot",
+      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
     },
     {
       "symbol": "FlowRepository",
@@ -386,10 +430,19 @@
     {
       "symbol": "GenTypeMappingRepository",
       "docs": [
+        "doc/design/modules/8.Studio Generator 详细设计方案.md",
+        "doc/design/modules/review-report-studio-generator.md"
+      ],
+      "reason": "review-snapshot",
+      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
+    },
+    {
+      "symbol": "GenerateCodeApplicationService",
+      "docs": [
         "doc/design/modules/8.Studio Generator 详细设计方案.md"
       ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
     },
     {
       "symbol": "GenerateCodeCommandHandler",
@@ -409,6 +462,15 @@
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
     },
     {
+      "symbol": "GenerationTaskController",
+      "docs": [
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述。本符号同时出现在元数据与 Studio Generator 两份详设的 Adapter 清单中"
+    },
+    {
       "symbol": "GetAuditSettingsQueryHandler",
       "docs": [
         "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
@@ -417,12 +479,36 @@
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
     },
     {
+      "symbol": "IamUserApplicationService",
+      "docs": [
+        "doc/design/AI-夜间设计复核工作流方案.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "夜间复核工作流方案里的示例类名（用于演示复核流程产出什么），非模块实现真源；真实名是 AccountRepository / AccountApplicationService"
+    },
+    {
+      "symbol": "IamUserRepository",
+      "docs": [
+        "doc/design/AI-夜间设计复核工作流方案.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "夜间复核工作流方案里的示例类名（用于演示复核流程产出什么），非模块实现真源；真实名是 AccountRepository / AccountApplicationService"
+    },
+    {
       "symbol": "MasterDataRecordController",
       "docs": [
         "doc/wiki/07-P0-TODO看板.md"
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "MetaValidationApplicationService",
+      "docs": [
+        "doc/design/modules/2b. 建模工作台功能与用例设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
     },
     {
       "symbol": "MinioStorageGateway",
@@ -451,7 +537,8 @@
     {
       "symbol": "PublishTemplateCommandHandler",
       "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
+        "doc/design/modules/8.Studio Generator 详细设计方案.md"
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
@@ -520,6 +607,14 @@
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "UploadFileApplicationService",
+      "docs": [
+        "doc/design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
     },
     {
       "symbol": "XxxByIdQueryHandler",

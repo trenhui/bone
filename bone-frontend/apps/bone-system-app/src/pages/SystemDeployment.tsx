@@ -31,7 +31,7 @@ import type { SystemInfo } from '@/types';
 const { Option } = Select;
 
 interface DeploymentRecord {
-  id: number;
+  id: string;
   version: string;
   status: 'success' | 'failed' | 'pending' | 'running';
   startTime: string;

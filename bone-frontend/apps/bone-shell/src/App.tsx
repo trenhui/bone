@@ -19,6 +19,7 @@ import {
   CoffeeOutlined, ProfileOutlined,
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
   BellOutlined, ApartmentOutlined, MenuOutlined, ClockCircleOutlined,
+  ShoppingOutlined, TransactionOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -69,10 +70,8 @@ function levelColor(level?: string): string {
  * 标记已读后通过 onUnreadChange 回调让宿主刷新红点计数。
  */
 function NotificationPanel({
-  userId,
   onUnreadChange,
 }: {
-  userId: number;
   onUnreadChange: () => void;
 }): JSX.Element {
   const { message } = AntdApp.useApp();
@@ -83,18 +82,18 @@ function NotificationPanel({
     let alive = true;
     setLoading(true);
     notificationService
-      .getMessages(userId, 30)
+      .getMessages(30)
       .then((data) => alive && setList(data))
       .catch(() => alive && setList([]))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [userId]);
+  }, []);
 
-  const markOne = async (id: number) => {
+  const markOne = async (id: string) => {
     try {
-      await notificationService.markRead(id, userId);
+      await notificationService.markRead(id);
       setList((prev) => prev.map((m) => (m.id === id ? { ...m, read: true } : m)));
       onUnreadChange();
     } catch {
@@ -106,7 +105,7 @@ function NotificationPanel({
     const unread = list.filter((m) => !m.read);
     if (unread.length === 0) return;
     try {
-      await Promise.all(unread.map((m) => notificationService.markRead(m.id, userId)));
+      await Promise.all(unread.map((m) => notificationService.markRead(m.id)));
       setList((prev) => prev.map((m) => ({ ...m, read: true })));
       onUnreadChange();
     } catch {
@@ -280,6 +279,16 @@ const STATIC_MENU: ShellMenuItem[] = [
       { key: 'masterdata-quality-results', label: '质量结果', icon: <AlertOutlined />, path: '/masterdata', hash: '/quality-results', enabled: true },
       { key: 'masterdata-quality-issues', label: '质量问题', icon: <AuditOutlined />, path: '/masterdata', hash: '/quality-issues', enabled: true },
       { key: 'masterdata-governance', label: '治理看板', icon: <DashboardOutlined />, path: '/masterdata', hash: '/governance', enabled: true },
+    ],
+  },
+  {
+    key: 'commerce',
+    label: '交易管理',
+    icon: <ShoppingOutlined />,
+    enabled: true,
+    children: [
+      { key: 'commerce-orders', label: '订单管理', icon: <ProfileOutlined />, path: '/commerce', hash: '/orders', enabled: true },
+      { key: 'commerce-payments', label: '支付管理', icon: <TransactionOutlined />, path: '/commerce', hash: '/payments', enabled: true },
     ],
   },
   {
@@ -506,6 +515,13 @@ function AppContent({
         props: globalContext,
       },
       {
+        name: 'bone-commerce-app',
+        entry: import.meta.env.VITE_COMMERCE_APP_ENTRY || '//localhost:3012',
+        container: '#subapp-viewport',
+        activeRule: '/commerce',
+        props: globalContext,
+      },
+      {
         name: 'bone-integration-app',
         entry: import.meta.env.VITE_INTEGRATION_APP_ENTRY || '//localhost:3006',
         container: '#subapp-viewport',
@@ -695,7 +711,10 @@ function AppContent({
         <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
           <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
             <div className={`app-container ${resolvedTheme}`}>
-              <Router>
+              {/* v7_startTransition / v7_relativeSplatPath：提前 opt-in React Router v7 行为，
+                  消除每次启动必打的 2 条 future flag 警告（2026-10-02 UI 巡检实测）。
+                  两者均为 v7 的向后兼容默认值，语义不变。 */}
+              <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 {!user ? (
                   <LoginPage
                     onLogin={handleLogin}
@@ -741,7 +760,7 @@ interface MainLayoutProps {
   filterEnabled: (items: ShellMenuItem[]) => ShellMenuItem[];
   handleMenuClick: (info: { key: string }, navigate: (path: string) => void) => void;
   handleLogout: () => void;
-  user: { id?: number; name: string } | null;
+  user: { id?: string; name: string } | null;
   theme: Theme;
   toggleTheme: () => void;
   toggleLayoutMode: () => void;
@@ -763,20 +782,18 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifSeq, setNotifSeq] = useState(0);
 
-  // 点击铃铛标已读后刷新红点计数
+  // 点击铃铛标已读后刷新红点计数（归属由后端从 JWT 解析，前端不传 userId）
   const refreshUnread = () => {
-    if (user?.id) {
-      notificationService.getUnreadCount(user.id).then(setUnreadCount).catch(() => {});
-    }
+    notificationService.getUnreadCount().then(setUnreadCount).catch(() => {});
   };
 
-  // 拉取通知未读计数（对齐后端 /messages/unread-count?userId=，失败回退 0）
+  // 拉取通知未读计数（对齐后端 /messages/unread-count，失败回退 0）
   useEffect(() => {
     if (!user?.id) return;
     let alive = true;
     const load = () =>
       notificationService
-        .getUnreadCount(user.id)
+        .getUnreadCount()
         .then((n) => alive && setUnreadCount(n))
         .catch(() => alive && setUnreadCount(0));
     load();
@@ -954,7 +971,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
               arrow={{ pointAtCenter: true }}
               content={
                 user?.id ? (
-                  <NotificationPanel key={notifSeq} userId={user.id} onUnreadChange={refreshUnread} />
+                  <NotificationPanel key={notifSeq} onUnreadChange={refreshUnread} />
                 ) : null
               }
             >
@@ -1030,6 +1047,10 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             />
             <Route
               path="/masterdata/*"
+              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+            />
+            <Route
+              path="/commerce/*"
               element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route

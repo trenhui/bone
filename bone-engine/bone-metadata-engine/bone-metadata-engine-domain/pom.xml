@@ -19,37 +19,37 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <!-- 本模块自身是 1.0.0-SNAPSHOT：bone-core / bone-architecture-test 是 release（1.0.0），
+             必须用固定版本属性，否则 ${project.version} 会解析成不存在的 1.0.0-SNAPSHOT。 -->
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
-            <version>1.0.0</version>
+            <version>${bone-core.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
+        <dependency><groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
-            <version>1.2.1</version>
-            <scope>test</scope>
+                        <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.bone</groupId>
+        <!-- slf4j：DefaultMetadataRegistry 直接用 Logger/LoggerFactory，本模块此前漏声明
+             （同族 -ports 模块已声明）；版本由 Boot BOM 托管，不写 version。 -->
+        <dependency><groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>1.0.0</version>
+            <version>${bone-architecture-test.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

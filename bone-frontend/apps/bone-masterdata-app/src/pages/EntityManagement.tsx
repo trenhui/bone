@@ -24,6 +24,7 @@ import type {
 } from '../types';
 import { masterDataEntityApi } from '../services/api';
 import { useMessage } from '../App';
+import { normalizeTotal } from '@bone/shared-utils';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -47,9 +48,11 @@ const EntityManagement: React.FC = () => {
     // 统计卡片：独立拉取（不受列表筛选/分页影响）
     void masterDataEntityApi.page({ pageNum: 1, pageSize: 200 }).then((res) => {
       if (res.code === 200) {
-        const list = res.data.list;
+        const list = res.data.records;
         setStats({
-          total: res.data.total,
+          // total 运行期是字符串（后端 Long 被全局 Long→String 序列化器接管），
+          // 归一为 number 才能安全进 antd Statistic 的数值展示
+          total: normalizeTotal(res.data.total),
           published: list.filter((e) => e.status === 'PUBLISHED').length,
           draft: list.filter((e) => e.status === 'DRAFT').length
         });
@@ -66,8 +69,8 @@ const EntityManagement: React.FC = () => {
         pageSize: pageSize
       });
       if (response.code === 200) {
-        setData(response.data.list);
-        setTotal(response.data.total);
+        setData(response.data.records);
+        setTotal(normalizeTotal(response.data.total));
       } else {
         message.error(response.message);
       }
@@ -109,7 +112,7 @@ const EntityManagement: React.FC = () => {
   };
 
   // 删除模型
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await masterDataEntityApi.delete(id);
       if (response.code === 200) {
@@ -124,7 +127,7 @@ const EntityManagement: React.FC = () => {
   };
 
   // 发布模型
-  const handlePublish = async (id: number) => {
+  const handlePublish = async (id: string) => {
     try {
       const response = await masterDataEntityApi.publish(id);
       if (response.code === 200) {
@@ -139,7 +142,7 @@ const EntityManagement: React.FC = () => {
   };
 
   // 停用模型
-  const handleDisable = async (id: number) => {
+  const handleDisable = async (id: string) => {
     try {
       const response = await masterDataEntityApi.disable(id);
       if (response.code === 200) {

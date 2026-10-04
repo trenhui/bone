@@ -66,6 +66,50 @@ public class ExtensionStudioProperties {
     public void setLegacyScopeFallback(boolean legacyScopeFallback) {
       this.legacyScopeFallback = legacyScopeFallback;
     }
+
+    /**
+     * 数据面上报通道的共享密钥（对应 SDK 侧 {@code bone.extension.studio.report.token}）。
+     *
+     * <p>上报方是**业务进程**（{@code StudioExecutionLogReporter}）而非终端用户， 它不持有用户 JWT，因此 {@code
+     * /execution-logs:ingest} 在 SecurityConfig 里只能 {@code permitAll()}——而 permitAll
+     * 意味着**任何能访问该端口的人都能伪造执行日志** （className / status / errorMessage 全部取自请求体），污染运维视图与告警依据。
+     *
+     * <p>业界标准做法：数据面用**机器身份**（共享密钥 / mTLS / 网关 ACL）而非用户权限码认证。 本项即该机器身份，SDK 以 {@code
+     * X-Reporter-Token} 头携带。
+     *
+     * <p><b>是否必须配置由 {@link #reporterAuthRequired} 决定，默认必须</b>：留空且要求校验时， 上报端点一律返回 503（拒绝而非放行）， 启动日志打
+     * ERROR。见该字段说明。
+     */
+    private String reporterToken = "";
+
+    /**
+     * 未配置 {@link #reporterToken} 时，是否拒绝一切上报（失败关闭）。
+     *
+     * <p><b>默认 true（失败关闭）</b>。业界安全配置的默认必须是"拒绝"：若默认放行， 那么"忘记配置"就是一次静默的安全降级—— 上报端点退化为匿名可写， 而日志里只有一条
+     * WARN，足够被忽略。生产环境漏配密钥时，正确的表现是**上报失败并报警**（业务方立刻发现日志没上报）， 而不是日志被无声污染。
+     *
+     * <p>确需本地联调时置 {@code false}（或经环境变量 {@code
+     * BONE_EXTENSION_REPORTER_AUTH_REQUIRED=false}），此时行为与旧版一致。
+     *
+     * <p>该开关**不适用于生产**：把"拒绝"改成"放行"必须是一次显式的、有痕迹的动作，不能是默认值。
+     */
+    private boolean reporterAuthRequired = true;
+
+    public String getReporterToken() {
+      return reporterToken;
+    }
+
+    public void setReporterToken(String reporterToken) {
+      this.reporterToken = reporterToken;
+    }
+
+    public boolean isReporterAuthRequired() {
+      return reporterAuthRequired;
+    }
+
+    public void setReporterAuthRequired(boolean reporterAuthRequired) {
+      this.reporterAuthRequired = reporterAuthRequired;
+    }
   }
 
   /** 5a G3 生命周期分权：部署与生效（publish-runtime）分离，SoD 最低要求。 */

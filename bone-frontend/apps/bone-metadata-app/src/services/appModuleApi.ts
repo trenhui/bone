@@ -67,7 +67,7 @@ export interface UpdateModuleReq {
 }
 
 export interface AppPermission {
-  userId: number;
+  userId: string;
   username: string;
   role: 'admin' | 'developer' | 'viewer';
   createdAt: string;
@@ -82,9 +82,18 @@ export const appApi = {
       params: { page: params?.page ?? 1, size: params?.size ?? 100 },
     }),
 
-  /** 分页查询应用（管理员用） */
-  list: (params: { pageNum?: number; pageSize?: number; keyword?: string }) =>
-    api.get<never, ApiResponse<PageResult<BoneApplication>>>('/apps', { params }),
+  /**
+   * 分页查询应用（管理员用）
+   *
+   * 参数名必须是 `page`/`size`：后端 `ApplicationPageQuery` 用的是这两个字段
+   * （`com.bone.iam.application.query.qry.ApplicationPageQuery`），传 `pageNum`/`pageSize`
+   * 会被 Spring 静默忽略并回落到默认 size=10 —— 翻页看似可用、实际恒返第 1 页。
+   */
+  list: (params?: { page?: number; size?: number; keyword?: string; status?: number }) =>
+    api.get<never, ApiResponse<PageResult<BoneApplication>>>('/apps', {
+      // 注意展开顺序：...params 必须在前，否则 params.page 为 undefined 时会覆盖掉默认值
+      params: { ...params, page: params?.page ?? 1, size: params?.size ?? 10 },
+    }),
 
   /** 应用详情 */
   detail: (id: string) =>
@@ -107,18 +116,26 @@ export const appApi = {
     api.get<never, ApiResponse<AppPermission[]>>(`/apps/${appId}/permissions`),
 
   /** 授予用户权限 */
-  grantPermission: (appId: string, userId: number, role: string) =>
+  grantPermission: (appId: string, userId: string, role: string) =>
     api.post<never, ApiResponse<void>>(`/apps/${appId}/permissions`, { userId, role }),
 
   /** 移除用户权限 */
-  revokePermission: (appId: string, userId: number) =>
+  revokePermission: (appId: string, userId: string) =>
     api.delete<never, ApiResponse<void>>(`/apps/${appId}/permissions/${userId}`),
 };
 
 export const moduleApi = {
-  /** 查询模块列表 */
-  listByApp: (appId: string, params?: { pageNum?: number; pageSize?: number }) =>
-    api.get<never, ApiResponse<PageResult<BoneModule>>>(`/apps/${appId}/modules`, { params }),
+  /**
+   * 查询模块列表
+   *
+   * 参数名必须是 `page`/`size`：后端 `ModuleListQuery` 用的是这两个字段
+   * （`com.bone.iam.application.query.qry.ModuleListQuery`，默认 size=100）。
+   * 此前误传 `pageNum`/`pageSize` 会被静默忽略 —— 传 size=50 实际仍拉回 100 条。
+   */
+  listByApp: (appId: string, params?: { page?: number; size?: number }) =>
+    api.get<never, ApiResponse<PageResult<BoneModule>>>(`/apps/${appId}/modules`, {
+      params: { page: params?.page ?? 1, size: params?.size ?? 100 },
+    }),
 
   /** 模块详情 */
   detail: (appId: string, moduleId: string) =>

@@ -23,7 +23,8 @@ public final class NotificationErrors {
           Map.entry(NotificationErrorCodes.NOT_FOUND, 404),
           Map.entry(NotificationErrorCodes.ACCESS_DENIED, 403),
           Map.entry(NotificationErrorCodes.INVALID_PARAM, 400),
-          Map.entry(NotificationErrorCodes.TENANT_MISMATCH, 400));
+          Map.entry(NotificationErrorCodes.TENANT_MISMATCH, 400),
+          Map.entry(NotificationErrorCodes.ACCOUNT_REQUIRED, 401));
 
   static {
     checkEveryCodeRegistered();

@@ -424,7 +424,10 @@ public class ExtensionManagementController {
 
   @PostMapping({"/execution-logs/ingest", "/execution-logs:ingest"})
   // 数据面执行日志上报端点：业务进程 SDK 以进程身份异步上报，不携带终端用户 JWT，
-  // 故不做 @PreAuthorize scope 校验（与 SecurityConfig 的 URL 放行配套）；安全边界由网络层保障。
+  // 故不做 @PreAuthorize scope 校验（与 SecurityConfig 的 URL 放行配套）。
+  // **放行不等于匿名可写** —— ReporterTokenFilter 在此之前校验机器身份
+  // （X-Reporter-Token 共享密钥，见 bone.extension.studio.security.reporter-token），
+  // 令牌不匹配直接 401 且不落库。控制面用用户权限码、数据面用机器身份，是业界通行分工。
   public ResponseEntity<ApiResponse<PluginExecutionLog>> ingestExecutionLog(
       @RequestBody Map<String, Object> body) {
     if (body == null || body.get("className") == null) {

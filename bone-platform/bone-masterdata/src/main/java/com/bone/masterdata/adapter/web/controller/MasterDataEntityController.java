@@ -21,11 +21,13 @@ public class MasterDataEntityController {
 
   private final EntityApplicationService entityService;
 
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCommand cmd) {
     return ApiResponse.success(entityService.create(cmd));
   }
 
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @RequestBody UpdateMasterDataEntityCommand cmd) {
@@ -34,12 +36,20 @@ public class MasterDataEntityController {
     return ApiResponse.success();
   }
 
+  /**
+   * 发布实体（DRAFT → PUBLISHED）。
+   *
+   * <p>复用 {@code masterdata:entities:write}：实体发布是实体生命周期的普通维护动作（与 create/update/disable/delete
+   * 同一决策权），无独立审批流，拆码只增加目录维护成本。
+   */
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping("/{id}/publish")
   public ApiResponse<Void> publish(@PathVariable Long id) {
     entityService.publish(id);
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping("/{id}/disable")
   public ApiResponse<Void> disable(
       @PathVariable Long id, @RequestBody DisableMasterDataEntityCommand cmd) {
@@ -48,6 +58,7 @@ public class MasterDataEntityController {
     return ApiResponse.success();
   }
 
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     entityService.delete(id);
@@ -66,6 +77,8 @@ public class MasterDataEntityController {
     return ApiResponse.success(entityService.detail(qry));
   }
 
+  // convert 从业务实体派生主数据实体，属实体的创建动作，与 create 同码。
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping("/convert")
   public ApiResponse<Long> convert(@RequestParam Long metaEntityId) {
     return ApiResponse.success(entityService.convertFromBusinessEntity(metaEntityId));

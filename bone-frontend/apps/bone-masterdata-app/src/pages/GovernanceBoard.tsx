@@ -4,6 +4,8 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { feedbackApi, driftApi, governanceRoleApi, subscriptionApi } from '../services/api';
+import { useEntityScope } from '../context/EntityScopeContext';
+import EntityScopeSelect from '../components/EntityScopeSelect';
 
 const driftTypeLabel: Record<string, string> = {
   FIELD_ADDED: '字段新增',
@@ -14,7 +16,8 @@ const driftTypeLabel: Record<string, string> = {
 
 /** 治理看板（G3/G10/G16/G17）：订阅 · 治理角色 · 模型漂移 · 下游反馈，围绕主数据模型维度。 */
 const GovernanceBoard: React.FC = () => {
-  const [entityId, setEntityId] = useState<number | undefined>();
+  // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
+  const { entityId } = useEntityScope();
   const [subs, setSubs] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [drifts, setDrifts] = useState<any[]>([]);
@@ -22,7 +25,7 @@ const GovernanceBoard: React.FC = () => {
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleForm] = Form.useForm();
 
-  const loadAll = useCallback(async (eid?: number) => {
+  const loadAll = useCallback(async (eid?: string) => {
     if (!eid) {
       setSubs([]);
       setRoles([]);
@@ -148,17 +151,8 @@ const GovernanceBoard: React.FC = () => {
       title="治理看板"
       extra={
         <Space>
-          <Input.Search
-            placeholder="输入主数据模型ID"
-            enterButton="加载"
-            style={{ width: 260 }}
-            onSearch={(v) => {
-              const n = Number(v);
-              // Long 型 ID 超过 2^53 会静默失真，此处拒绝非安全整数而非截断
-              if (Number.isSafeInteger(n) && n > 0) setEntityId(n);
-              else message.warning('请输入有效模型ID');
-            }}
-          />
+          {/* 模型来自全局作用域（EntityScopeContext）：与分类 / 字段 / 记录页面共享 */}
+          <EntityScopeSelect width={260} />
           {entityId && (
             <Button
               onClick={async () => {

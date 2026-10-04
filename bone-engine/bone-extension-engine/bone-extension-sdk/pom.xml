@@ -12,10 +12,11 @@
     <artifactId>bone-extension-sdk</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.18.28</lombok.version>
+        <!-- lombok 1.18.28 不支持 JDK 21（JCTree$JCImport.qualid 变更导致
+             NoSuchFieldError: ... does not have member field 'qualid'）。
+             需 ≥1.18.34，此处与 bone-parent 对齐到 1.18.38。 -->
+        <lombok.version>1.18.38</lombok.version>
         <spotbugs.version>4.6.0.0</spotbugs.version>
         <checkstyle.version>3.3.0</checkstyle.version>
         <pmd.version>3.21.0</pmd.version>
@@ -25,89 +26,74 @@
 
     <dependencies>
         <!-- Spring Boot Starter -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <optional>true</optional>
         </dependency>
 
         <!-- 工具类依赖 -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
+        <dependency><groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
         
         <!-- Apache Commons Lang -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
+        <dependency><groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.12.0</version>
-        </dependency>
+                    </dependency>
 
         <!-- 核心模块依赖 -->
-        <dependency>
-            <groupId>com.bone</groupId>
+        <dependency><groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
         </dependency>
 
         <!-- Caffeine缓存 -->
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
+        <dependency><groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.1.6</version>
-        </dependency>
+                    </dependency>
         
         <!-- Jackson 依赖 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+        <dependency><groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <!-- 测试依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
         <!-- 可选依赖 -->
-        <dependency>
-            <groupId>com.googlecode.aviator</groupId>
+        <dependency><groupId>com.googlecode.aviator</groupId>
             <artifactId>aviator</artifactId>
-            <version>5.4.1</version>
+            <version>${aviator.version}</version>
             <optional>true</optional>
         </dependency>
         
         <!-- Redis客户端 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <optional>true</optional>
         </dependency>
         
         <!-- Nacos Config客户端 -->
-        <dependency>
-            <groupId>com.alibaba.nacos</groupId>
+        <dependency><groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>2.3.0</version>
+            <version>${nacos-client.version}</version>
             <optional>true</optional>
         </dependency>
         
         <!-- Spring Boot Actuator -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
+        <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <optional>true</optional>
         </dependency>
         
         <!-- Micrometer Prometheus -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
+        <dependency><groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
             <optional>true</optional>
         </dependency>
@@ -115,12 +101,11 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <encoding>UTF-8</encoding>
                     <annotationProcessorPaths>
                         <path>
@@ -133,8 +118,7 @@
             </plugin>
             
             <!-- Checkstyle 插件 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${checkstyle.version}</version>
                 <configuration>
@@ -158,8 +142,7 @@
             </plugin>
             
             <!-- SpotBugs 插件 -->
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
+            <plugin><groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>${spotbugs.version}</version>
                 <configuration>
@@ -182,8 +165,7 @@
 
             
             <!-- 站点报告插件 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
+            <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <version>4.0.0-M8</version>
             </plugin>
