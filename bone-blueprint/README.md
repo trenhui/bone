@@ -21,11 +21,20 @@
 |------|------|----------|
 | `t_order` | 订单头（含 `tenant_id`、审计与软删字段） | Order |
 | `t_order_item` | 订单明细，聚合内实体；无独立租户列，租户隔离经 `t_order.tenant_id` 间接保证 | Order |
-| `bp_payment` | 支付单（独立聚合，经 `orderId` 关联订单） | Payment |
+| `bp_payment` | 支付单（独立聚合，经 `orderId` 关联订单）。**读侧例外**：`Order` 读模型经 JOIN 读取该表的最新支付单号（`OrderWithItemsProjection.paymentId`），见下方「读侧跨聚合读例外」 | Payment（数据所有权）；Order 读模型可读 |
 | `bp_outbox` | Outbox 投递记录（可靠投递三件套之一） | —（基础设施表，非聚合） |
 | `bp_idempotency_record` | 幂等请求记录 | —（基础设施表，非聚合） |
 | `bp_processed_event` | 消费去重记录 | —（基础设施表，非聚合） |
 
+#### 读侧跨聚合读例外（门禁⑥ 显式登记）
+
+| 例外项 | 内容 |
+|--------|------|
+| 读点 | `OrderRepository#findOrderWithItems()` JOIN `bp_payment`，取该订单最新一笔未删除支付单的 id |
+| 背景 | ADR-0030 合并后订单读模型与聚合同住 `OrderRepository`（见 `OrderItemInventoryExecutor` 注释）；门禁⑥ 为后补的治理门禁，登记时需与既有设计对齐 |
+| 为何不改为 QueryPort | 读模型为**列表页展示支付单号**的扁平投影，属 CQRS 读侧；本模块当前**无 `query/port` 模式先例**（`application/query/port` 为空），为单一展示字段新建跨聚合端口成本高于收益 |
+| 边界 | 仅**只读投影**。不涉及聚合不变量、不参与写路径与领域决策；`Order` 聚合的持久化仍只写 `t_order` / `t_order_item` |
+| 复审条件 | 若订单读模型需承载更多支付域字段（超出「单号展示」），应重新评估——届时代码注释中「切勿依赖重载后的聚合」的约束将被突破，需改走 QueryPort |
 
 ### 上下文映射（简图）
 

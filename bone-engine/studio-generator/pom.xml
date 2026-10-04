@@ -23,6 +23,12 @@
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- 契约测试需通过真实认证上下文访问受保护端点（SecurityConfig 已收紧为
+             authenticated + 401），故测试侧引入 spring-security-test 提供 @WithMockUser -->
+        <dependency><groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>

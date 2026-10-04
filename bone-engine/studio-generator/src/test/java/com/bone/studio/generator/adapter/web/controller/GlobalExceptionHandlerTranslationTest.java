@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,8 @@ import org.springframework.http.ResponseEntity;
  * 依赖或误加本地 catch-all 兜底， 这里会立刻由 500 复现而红灯。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@WithGeneratorAdmin
+@Import(GeneratorTestSecurityConfiguration.class)
 class GlobalExceptionHandlerTranslationTest {
 
   @LocalServerPort private int port;
