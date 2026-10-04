@@ -28,6 +28,9 @@ public class OrderDetailResp {
   /** 订单来源渠道中文名（读路径由字典解析；字典不可达时为空）。 */
   private String channelSourceName;
 
+  /** 关联支付单号（雪花 ID，序列化后为字符串）。订单发起支付后随详情返回，前端据此在订单详情常驻展示并可 一键跳转支付管理，避免刷新后丢失定位。 */
+  private Long paymentId;
+
   private List<OrderItemResp> items;
 
   @Data

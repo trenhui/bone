@@ -23,6 +23,7 @@ class OrderDetailAssemblerTest {
             "CREATED",
             LocalDateTime.now(),
             null,
+            null,
             10L,
             100L,
             "A",

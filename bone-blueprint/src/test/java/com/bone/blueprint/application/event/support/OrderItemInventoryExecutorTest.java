@@ -33,6 +33,7 @@ class OrderItemInventoryExecutorTest {
         "CREATED",
         LocalDateTime.now(),
         null,
+        null,
         itemId,
         productId,
         "p",

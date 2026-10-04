@@ -47,8 +47,16 @@ public class AlertProperties {
     private List<String> atMobiles;
   }
 
+  /**
+   * 短信渠道配置。
+   *
+   * <p><b>必须是 {@code static} 嵌套类</b>：非静态内部类会被编译器插入指向外部实例的合成字段 {@code this$0}，Spring Boot 的 relaxed
+   * binding 会把它当成一个待绑定属性，从而抛 {@code InvalidConfigurationPropertyNameException: Configuration
+   * property name 'this$0' is not valid}——该失败发生在<strong>容器启动期</strong>，表现为整个应用起不来，而不是某个配置项不生效。 同级的
+   * {@link MailConfig} / {@link DingTalkConfig} 都已是 static，此处此前漏了。
+   */
   @Data
-  public class SmsConfig {
+  public static class SmsConfig {
     private boolean enabled = false;
     private String provider;
     private String apiKey;

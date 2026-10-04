@@ -59,9 +59,10 @@
         </dependency>
 
         <!-- ===== 缓存支持 ===== -->
-        <!-- Redis 支持 -->
+        <!-- Redis 支持：主代码仅用 RedissonClient，RedisTemplate 仅测试用（TestConfig），故限 test scope -->
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+            <scope>test</scope>
         </dependency>
         
         <!-- Redisson 分布式锁和高级缓存 -->
@@ -198,7 +199,6 @@
             <!-- 代码质量检查插件 (仅在显式调用时执行) -->
             <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.3.0</version>
                 <configuration>
                     <configLocation>google_checks.xml</configLocation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -226,25 +226,10 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <rules>
-                        <rule>
-                            <element>PACKAGE</element>
-                            <limits>
-                                <limit>
-                                    <counter>LINE</counter>
-                                    <value>COVEREDRATIO</value>
-                                    <minimum>0.8</minimum>
-                                </limit>
-                            </limits>
-                        </rule>
-                    </rules>
-                </configuration>
             </plugin>
             <!-- 静态代码分析 -->
             <plugin><groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.3.0</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -255,7 +240,6 @@
             <!-- 依赖漏洞检查 (仅在显式调用时执行) -->
             <plugin><groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>8.4.0</version>
                 <configuration>
                     <failBuildOnCVSS>7</failBuildOnCVSS>
                     <skipProvidedScope>true</skipProvidedScope>

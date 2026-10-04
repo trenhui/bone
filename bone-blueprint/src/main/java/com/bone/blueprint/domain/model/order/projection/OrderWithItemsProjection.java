@@ -21,6 +21,10 @@ public class OrderWithItemsProjection {
   private String status;
   private LocalDateTime createdAt;
   private String channelSource;
+
+  /** 关联支付单号（该订单最新一笔未删除支付单的 id；无支付单时为 null）。 */
+  private Long paymentId;
+
   private Long itemId;
   private Long productId;
   private String productName;
@@ -35,6 +39,7 @@ public class OrderWithItemsProjection {
       String status,
       LocalDateTime createdAt,
       String channelSource,
+      Long paymentId,
       Long itemId,
       Long productId,
       String productName,
@@ -47,6 +52,7 @@ public class OrderWithItemsProjection {
     this.status = status;
     this.createdAt = createdAt;
     this.channelSource = channelSource;
+    this.paymentId = paymentId;
     this.itemId = itemId;
     this.productId = productId;
     this.productName = productName;

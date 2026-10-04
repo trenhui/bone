@@ -1,4 +1,4 @@
-package com.bone.file.domain.model;
+package com.bone.file.domain.model.fileobject;
 
 /**
  * 文件对象聚合（内存态）：承载一次上传产生的对象事实。

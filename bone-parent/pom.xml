@@ -90,6 +90,7 @@
         <bone-core.version>1.0.0</bone-core.version>
         <bone-metadata-sdk.version>1.0.0</bone-metadata-sdk.version>
         <bone-architecture-test.version>1.0.0</bone-architecture-test.version>
+        <bone-security.version>1.0.0</bone-security.version>
 
         <!-- 静态代码分析 -->
         <spotless.version>2.43.0</spotless.version>
@@ -549,6 +550,27 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <!-- 质量门禁插件版本集中管理：子模块仅声明插件、不写版本，统一在此维护，消除 spotbugs 4.6/4.7 漂移 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>4.7.3.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>8.4.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>4.0.0-M8</version>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -1,6 +1,6 @@
 package com.bone.file.adapter.web.controller;
 
-import com.bone.file.domain.model.FileObject;
+import com.bone.file.domain.model.fileobject.FileObject;
 
 /**
  * 上传结果响应体（FL-7）。

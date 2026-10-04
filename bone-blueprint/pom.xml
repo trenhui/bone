@@ -15,10 +15,6 @@
     <name>bone-blueprint</name>
     <description>Bone框架样板工程</description>
 
-    <properties>
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
-    </properties>
-
     <dependencies>
         <!-- Spring Boot -->
         <dependency><groupId>org.springframework.boot</groupId>

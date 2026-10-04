@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -109,6 +110,19 @@ export const PaymentManagement: React.FC = () => {
 
   const [lastPayUrl, setLastPayUrl] = useState<string | null>(null);
   const [detail, setDetail] = useState<PaymentDetail | null>(null);
+
+  // 从订单详情「查看支付单」跳转而来（?paymentId=xxx）：挂载即按 query 自动查询，
+  // 让用户在订单详情刷新后仍能一步定位到对应支付单，无需手动复制粘贴。
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const pid = searchParams.get('paymentId');
+    if (pid) {
+      queryForm.setFieldsValue({ paymentId: pid });
+      void query({ paymentId: pid });
+    }
+    // 仅在挂载时根据初次 query 触发一次，避免与用户手动查询互相干扰
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const initiate = async (values: { orderId: string }) => {
     setInitiating(true);

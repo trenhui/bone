@@ -26,6 +26,12 @@ public class OrderDto {
   /** 订单来源渠道中文名（读路径由字典解析，字典不可达时为 null）。 */
   private String channelSourceName;
 
+  /**
+   * 关联支付单号（雪花 ID）。订单发起支付后，前端凭此从支付管理定位支付单——否则刷新订单详情后 拿不到 paymentId，只能回到发起支付的瞬时 message
+   * 里找，体验断裂。取该订单最新一笔未删除支付单的 id。
+   */
+  private Long paymentId;
+
   @Getter
   @Builder
   public static class OrderItemDto {

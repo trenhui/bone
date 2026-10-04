@@ -13,15 +13,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- lombok 1.18.28 不支持 JDK 21（JCTree$JCImport.qualid 变更导致
-             NoSuchFieldError: ... does not have member field 'qualid'）。
-             需 ≥1.18.34，此处与 bone-parent 对齐到 1.18.38。 -->
-        <lombok.version>1.18.38</lombok.version>
-        <spotbugs.version>4.6.0.0</spotbugs.version>
-        <checkstyle.version>3.3.0</checkstyle.version>
-        <pmd.version>3.21.0</pmd.version>
-        <maven-jxr.version>3.3.0</maven-jxr.version>
-        <maven-project-info-reports.version>3.4.2</maven-project-info-reports.version>
+        <!-- lombok 须 ≥1.18.34 才支持 JDK 21（JCTree$JCImport.qualid 变更导致
+             NoSuchFieldError）。版本统一由 bone-parent 的 ${lombok.version} 管理（当前 1.18.38）。 -->
+
     </properties>
 
     <dependencies>
@@ -120,7 +114,6 @@
             <!-- Checkstyle 插件 -->
             <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${checkstyle.version}</version>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
@@ -144,7 +137,6 @@
             <!-- SpotBugs 插件 -->
             <plugin><groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>${spotbugs.version}</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -167,7 +159,6 @@
             <!-- 站点报告插件 -->
             <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>4.0.0-M8</version>
             </plugin>
         </plugins>
     </build>

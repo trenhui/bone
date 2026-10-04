@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -60,6 +61,8 @@ interface OrderFormValues {
 }
 
 export const OrderManagement: React.FC = () => {
+  const navigate = useNavigate();
+
   const [rows, setRows] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -459,6 +462,9 @@ export const OrderManagement: React.FC = () => {
               <Descriptions.Item label="来源渠道">
                 {detail.channelSourceName || detail.channelSource || '—'}
               </Descriptions.Item>
+              <Descriptions.Item label="支付单号">
+                {detail.paymentId ?? '—'}
+              </Descriptions.Item>
               <Descriptions.Item label="创建时间">
                 {formatDate(detail.createdAt)}
               </Descriptions.Item>
@@ -501,6 +507,13 @@ export const OrderManagement: React.FC = () => {
                 onClick={() => void payFromDetail(detail.id)}
               >
                 发起支付
+              </Button>
+              <Button
+                style={{ marginLeft: 12 }}
+                disabled={!detail.paymentId}
+                onClick={() => navigate(`/payments?paymentId=${detail.paymentId}`)}
+              >
+                查看支付单
               </Button>
               <span style={{ marginLeft: 12, color: '#8c8c8c', fontSize: 12 }}>
                 仅「已创建」订单可发起支付；支付结果由渠道异步回调推进，请到支付管理查看。

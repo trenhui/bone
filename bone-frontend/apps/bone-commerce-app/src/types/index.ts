@@ -48,6 +48,8 @@ export interface OrderSummary {
 }
 
 export interface OrderDetail extends OrderSummary {
+  /** 关联支付单号（雪花 ID，字符串）。订单发起支付后随详情返回，可在订单详情常驻定位支付单。 */
+  paymentId?: string | null;
   items: OrderItem[];
 }
 

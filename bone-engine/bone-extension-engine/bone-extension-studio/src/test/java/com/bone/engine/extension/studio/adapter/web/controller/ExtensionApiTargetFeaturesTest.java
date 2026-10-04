@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.adapter.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -7,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bone.engine.extension.studio.ExtensionStudioApplication;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(classes = ExtensionStudioApplication.class)
 @AutoConfigureMockMvc
@@ -26,13 +29,15 @@ class ExtensionApiTargetFeaturesTest {
   @Test
   @DisplayName("POST /points 返回 201 与 Location")
   void createPoint_returns201AndLocation() throws Exception {
-    // 种子数据占用 id 1、2，新建为 3
-    mockMvc
-        .perform(
-            post("/api/v1/extension/points")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
+    // 不硬编码自增 id：其值取决于种子数据与用例执行顺序（实测在 2 / 3 间波动），跨用例不稳定。
+    // 该端点真正要保证的契约是「Location 指向新建资源，且其 id 与响应体 data.id 自洽」，故按此断言。
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/v1/extension/points")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
                                         {
                                           "name": "契约扩展点",
                                           "interfaceName": "com.bone.test.ContractExtPoint",
@@ -40,9 +45,18 @@ class ExtensionApiTargetFeaturesTest {
                                           "enabled": true
                                         }
                                         """))
-        .andExpect(status().isCreated())
-        .andExpect(header().string("Location", "/api/v1/extension/points/3"))
-        .andExpect(jsonPath("$.success").value(true));
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.success").value(true))
+            .andReturn();
+
+    long createdId =
+        new ObjectMapper()
+            .readTree(result.getResponse().getContentAsString())
+            .at("/data/id")
+            .asLong();
+    assertThat(createdId).isPositive();
+    assertThat(result.getResponse().getHeader("Location"))
+        .isEqualTo("/api/v1/extension/points/" + createdId);
   }
 
   @Test

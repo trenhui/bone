@@ -77,7 +77,7 @@ class ExtensionAppScopeApiTest {
     String response =
         mockMvc
             .perform(
-                post("/api/v1/extension/marketplace/discount.percentage-promo:install")
+                post("/api/v1/extension/marketplace/blueprint.order-pricing.standard:install")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
