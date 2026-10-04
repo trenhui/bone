@@ -1,5 +1,6 @@
 package com.bone.engine.extension.support.config;
 
+import com.alibaba.nacos.api.config.ConfigService;
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
@@ -17,8 +18,12 @@ import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.bone.engine.extension.support.metrics.ExtensionMetricsBridge;
 import com.bone.engine.extension.support.repository.ExtensionRepositoryFactory;
+import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
+import com.bone.engine.extension.support.repository.NacosExtensionRepository;
+import com.bone.engine.extension.support.repository.RedisExtensionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,6 +32,7 @@ import org.springframework.context.annotation.*;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.data.redis.core.RedisTemplate;
 
 /**
  * Bone Extension SDK v2.0 GA - 统一自动配置中心 100% 兼容 @EnableExtensionPoints 所有属性
@@ -110,6 +116,33 @@ public class ExtensionAutoConfiguration implements ImportAware {
     ExtensionRepository repo = factory.getDefault();
     log.info("Using default ExtensionRepository: {}", repo.getClass().getSimpleName());
     return repo;
+  }
+
+  /**
+   * 候选仓储实现（优先级 Nacos &gt; Redis &gt; InMemory），仅供 {@link ExtensionRepositoryFactory#getDefault()} 按
+   * Bean 名挑选。
+   *
+   * <p><b>为何是 autowireCandidate = false</b>：三者都实现 {@code ExtensionRepository}，若作为普通 bean 注册， 就会与
+   * {@code localExtensionRepository}（以及开启 sync 后那个 {@code @Primary} 的 syncing bean）一起成为注入 候选，使
+   * {@code extensionRegister} / {@code extensionRouter} 报 “expected single matching bean but found
+   * 3”。标记为不可注入后，仍可通过 {@code getBean(name)} 取到（工厂正是这么用的），但注入面只剩默认仓储与 sync 包装两种。
+   */
+  @Bean(name = "inMemoryExtensionRepository", autowireCandidate = false)
+  public InMemoryExtensionRepository inMemoryExtensionRepository() {
+    return new InMemoryExtensionRepository();
+  }
+
+  @Bean(name = "redisExtensionRepository", autowireCandidate = false)
+  @ConditionalOnBean(RedisTemplate.class)
+  public RedisExtensionRepository redisExtensionRepository(
+      RedisTemplate<String, Object> redisTemplate) {
+    return new RedisExtensionRepository(redisTemplate);
+  }
+
+  @Bean(name = "nacosExtensionRepository", autowireCandidate = false)
+  @ConditionalOnBean(ConfigService.class)
+  public NacosExtensionRepository nacosExtensionRepository(ConfigService configService) {
+    return new NacosExtensionRepository(configService);
   }
 
   // ==================== 路由器自动装配 ====================

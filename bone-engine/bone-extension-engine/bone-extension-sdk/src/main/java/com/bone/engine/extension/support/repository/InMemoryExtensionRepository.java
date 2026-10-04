@@ -10,14 +10,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 
 /**
  * 基于内存的扩展点仓库实现
  *
  * <p>特性： 1. 线程安全：基于ConcurrentHashMap 2. 高性能：O(1)的读写操作 3. 内存友好：使用紧凑的数据结构 4. 监控支持：内置统计信息
  */
-@Component("inMemoryExtensionRepository")
 @Slf4j
 public class InMemoryExtensionRepository implements ExtensionRepository {
 

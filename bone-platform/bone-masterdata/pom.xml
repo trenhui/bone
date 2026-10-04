@@ -57,8 +57,14 @@
         <dependency><groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <dependency><groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+
+
+        <!-- 方法级 @PreAuthorize 断言所需：ControllerTest 直调 controller 时必须先建立
+             带 authority 的 SecurityContext，否则 Spring Security 抛
+             AuthenticationCredentialsNotFoundException。用法对齐 bone-system 的 ConfigControllerTest。 -->
+        <dependency><groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency><groupId>org.springframework.boot</groupId>

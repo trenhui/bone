@@ -6,15 +6,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 
 /** Redis 扩展点仓库实现 */
-@Component("redisExtensionRepository")
-@ConditionalOnBean(RedisTemplate.class)
 @RequiredArgsConstructor
 @Slf4j
 public class RedisExtensionRepository implements ExtensionRepository {

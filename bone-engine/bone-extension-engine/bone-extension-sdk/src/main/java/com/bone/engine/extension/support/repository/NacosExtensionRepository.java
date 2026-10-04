@@ -15,15 +15,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
 
 /** Nacos 扩展点仓库 - 支持配置热加载、集群全节点同步 */
 @Slf4j
-@Component("nacosExtensionRepository")
-@ConditionalOnBean(com.alibaba.nacos.api.config.ConfigService.class)
 public class NacosExtensionRepository implements ExtensionRepository {
 
   private final ConfigService configService;

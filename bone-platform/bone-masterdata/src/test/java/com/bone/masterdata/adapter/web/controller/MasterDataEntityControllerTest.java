@@ -25,12 +25,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(MetadataSdkIntegrationTestConfiguration.class)
+/**
+ * 本测试直调 controller bean（不走 Filter 链），故须自行建立带权限的 SecurityContext， 否则方法级
+ * {@code @PreAuthorize("hasAuthority('masterdata:entities:write')")} 会抛
+ * AuthenticationCredentialsNotFoundException。用法对齐 bone-system 的 ConfigControllerTest。
+ */
+@WithMockUser(authorities = {"masterdata:entities:write"})
 @Transactional
 public class MasterDataEntityControllerTest {
 

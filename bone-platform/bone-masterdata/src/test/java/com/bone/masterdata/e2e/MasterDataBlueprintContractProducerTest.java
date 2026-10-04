@@ -63,7 +63,18 @@ class MasterDataBlueprintContractProducerTest {
 
   @BeforeEach
   void prepareAuth() {
-    String token = jwtTokenService.generateToken(1L, "e2e-tester", 1L, List.of());
+    // 走真实 HTTP 需经 Filter 链鉴权，而写端点均有方法级 @PreAuthorize，故 token 必须带足 scopes：
+    // 建实体/发实体 → entities:write；造记录 → records:write；发布记录 → records:approve。
+    // 权限码与各 Controller 的 @PreAuthorize 一一对应，缺一个即被全局异常处理器转成 success=false。
+    String token =
+        jwtTokenService.generateToken(
+            1L,
+            "e2e-tester",
+            1L,
+            List.of(
+                "masterdata:entities:write",
+                "masterdata:records:write",
+                "masterdata:records:approve"));
     authHeaders = new HttpHeaders();
     authHeaders.setBearerAuth(token);
     authHeaders.add("X-Tenant-Id", "1");
