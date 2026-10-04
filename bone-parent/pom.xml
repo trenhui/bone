@@ -106,12 +106,10 @@
         <aliyun.dysms.version>2.2.1</aliyun.dysms.version>
         <aliyun.core.version>4.6.3</aliyun.core.version>
         <poi.version>5.3.0</poi.version>
-        <guava.version>33.4.0-jre</guava.version>
         <!-- 第三方（非 Boot/SCA 托管，需显式版本，集中管理避免散落） -->
         <aviator.version>5.4.1</aviator.version>
         <!-- 对齐 SCA 2025.0.0.0 托管的 Nacos 3.0.3（2→3 大版本跨越）；Nacos 服务端须为 3.x，若为 2.x 需评估升级（类 L4 运维项） -->
         <nacos-client.version>3.0.3</nacos-client.version>
-        <javapoet.version>1.13.0</javapoet.version>
 
         <!-- 测试开关默认值（可由 -DskipTests / -Dmaven.test.skip 覆盖） -->
         <skipTests>false</skipTests>
@@ -335,11 +333,6 @@
                 <groupId>com.googlecode.aviator</groupId>
                 <artifactId>aviator</artifactId>
                 <version>${aviator.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.squareup</groupId>
-                <artifactId>javapoet</artifactId>
-                <version>${javapoet.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.aliyun</groupId>

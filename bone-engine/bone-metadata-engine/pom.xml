@@ -32,13 +32,10 @@
              注：7.23.2 未发布且 7.23.0 仅支持 3.4，故用 7.24.0 对齐父 BOM 的 3.5.16。
              不再重导旧 Spring BOM，jjwt 继承父 0.12.6 -->
         <camunda.version>7.24.0</camunda.version>
-        <groovy.version>4.0.15</groovy.version>
-        <antlr.version>4.13.1</antlr.version>
         <!-- lombok 1.18.30 不完整支持 JDK 21（JCTree$JCImport.qualid 变更）；
              与 bone-parent 对齐到 1.18.38。 -->
         <lombok.version>1.18.38</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <langchain4j.version>0.32.0</langchain4j.version>
     </properties>
 
     <dependencyManagement>
