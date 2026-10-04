@@ -88,7 +88,13 @@ def parse_entities() -> tuple[dict[str, list[dict]], list[str]]:
                 # 有 @Table 但取不出表名（如 @Table(value=...)、裸 @Table）——报错而非跳过。
                 unparsed.append(java.relative_to(REPO).as_posix())
                 continue
-            declares = any(b in text for b in TENANT_BASES) or bool(TENANT_FIELD.search(text))
+            # 2026-10-04 修复假阴性：必须用**剥注释后**的 code 判定，不能用原文 text。
+            # 原文匹配让「javadoc 里写一句『若继承 TenantAggregateRoot 就……』」的实体
+            # 获得「已声明租户」判定，而那恰恰是**说明自己没继承**的那句话。
+            # 实测 3 个实体因此误判通过（AlertRule/sys_alert_rule、
+            # DomainTemplate/mdm_domain_template、Permission/iam_permission）。
+            # 同函数对 @Table 的判定用 code（:86），此处口径必须一致。
+            declares = any(b in code for b in TENANT_BASES) or bool(TENANT_FIELD.search(code))
             entities.setdefault(table.group(1), []).append(
                 {
                     "entity": java.stem,
@@ -200,8 +206,16 @@ def main() -> int:
                 table, undeclared, meta["path"], len(meta["mappings"])
             )
         )
-    for table in sorted(set(baseline) - set(gaps)):
-        print("提示：`{}` 已不在缺口列表中，可从基线移除".format(table))
+    # 2026-10-04：基线「只可收缩」此前只靠人工自觉——已不构成缺口的条目仅 print 提示，
+    # 退出码仍为 0，于是任何人 --baseline 刷一次都能把新缺口合法洗白而无人被告知。
+    # 对齐 check-controller-authorization.py 的做法（把 resolved 计入失败条件）。
+    resolved = sorted(set(baseline) - set(gaps))
+    for table in resolved:
+        errors.append(
+            "基线条目 `{}` 已不构成缺口（实体已声明 tenantId，或该表已不在 DDL 租户表集合内）——"
+            "基线只可收缩，请移除本条：python3 scripts/check-tenant-entity-declaration.py --baseline "
+            "会把当前 {} 张缺口整体重写，请勿为消除本条而重刷基线".format(table, len(gaps))
+        )
 
     if errors:
         print("租户表 ↔ 实体声明检查失败：")
@@ -215,8 +229,8 @@ def main() -> int:
         by_kind[kind] = by_kind.get(kind, 0) + 1
     breakdown = "、".join("{} {} 张".format(k, v) for k, v in sorted(by_kind.items()))
     print(
-        "OK: 租户表 ↔ 实体声明检查通过（新增缺口 0；基线内 {} 张存量缺口未扩大：{}）".format(
-            len(baseline), breakdown or "无"
+        "OK: 租户表 ↔ 实体声明检查通过（新增缺口 0；基线内 {} 张存量缺口未扩大：{}；可收缩 {} 条）".format(
+            len(baseline), breakdown or "无", len(resolved)
         )
     )
     return 0

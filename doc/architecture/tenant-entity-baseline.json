@@ -43,6 +43,13 @@
       "classification": "by-design",
       "owner": "bone-system",
       "note": "实测 SystemLogRepository 显式 disableTenantFilter() 并注明「保留期是平台级策略，跨租户生效」⇒ 运维跨租户排查视图，by-design 确认。同 sys_alert_event：查看入口须授权审计。"
+    },
+    "mdm_domain_template": {
+      "entity": "DomainTemplate",
+      "path": "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/domain/model/template/DomainTemplate.java",
+      "classification": "by-design",
+      "owner": "masterdata",
+      "note": "平台模板层（与 mdm_reference_set / mdm_template_version 同构）：域模板是「平台只写、租户只读实例化」的全局目录，实体不映射 tenant_id，DDL 列保留 DEFAULT 0 且无 SDK 租户语义。依据：① 写入受 masterdata:templates:write 门禁，而 TenantAdminBootstrapSupport.TENANT_ADMIN_PERMISSION_CODES 实测只授予 templates:read 与 templates:instantiate，未授予 write（租户管理员拿不到写权限）；② 实例化端点挂 templates:instantiate，是租户的正向能力；③ DomainTemplateTenantVisibilityTest 两例锁边界——tenantCanReadPlatformTemplateAndInstantiate（租户可读平台行并实例化）+ tenantScopedAggregatesRemainIsolated（对照组：手工插 tenant_id=999 的 mdm_entity，当前租户读不到，证明租户作用域聚合隔离未被破坏）。若继承 TenantAggregateRoot，SDK Criteria 通道会注入严格 tenant_id 过滤导致租户读平台行 404、实例化不可用（2026-09-26 实测复现），而 FluentQuery 通道不过滤造成两通道行为分裂 ⇒ 维持不继承。若日后改为租户自配，须同步改实体声明 + 移除本条（走 L3）。"
     }
   }
 }
