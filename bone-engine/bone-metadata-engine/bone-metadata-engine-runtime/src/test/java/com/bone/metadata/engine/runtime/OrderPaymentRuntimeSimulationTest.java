@@ -242,7 +242,7 @@ class OrderPaymentRuntimeSimulationTest {
     var client = new SimulatedFrontendClient("bp_order");
     SimResponse resp =
         client.create(
-            Map.of("customer_id", 1001L, "total_amount", 199.99, "status", "CREATED"), "u-shop-1");
+            Map.of("customer_id", 1001L, "total_amount", 199.99, "status", "CREATED"), "1001");
 
     assertTrue(resp.success(), "创建应成功: " + resp);
     Map<String, Object> row = resp.body();
@@ -250,8 +250,8 @@ class OrderPaymentRuntimeSimulationTest {
     assertEquals(1L, ((Number) row.get("tenant_id")).longValue(), "租户隔离列");
     assertEquals(0L, ((Number) row.get("version")).longValue(), "乐观锁初值");
     assertEquals(0, ((Number) row.get("deleted")).intValue(), "软删初值");
-    assertEquals("u-shop-1", row.get("created_by"), "P0-2 创建者审计");
-    assertEquals("u-shop-1", row.get("updated_by"), "P0-2 更新者审计");
+    assertEquals("1001", row.get("created_by"), "P0-2 创建者审计");
+    assertEquals("1001", row.get("updated_by"), "P0-2 更新者审计");
     assertNotNull(row.get("created_at"), "P0-2 创建时间");
     assertNotNull(row.get("updated_at"), "P0-2 更新时间");
     assertEquals("CREATED", row.get("status"));
@@ -266,7 +266,7 @@ class OrderPaymentRuntimeSimulationTest {
     var orders = new SimulatedFrontendClient("bp_order");
     SimResponse o =
         orders.create(
-            Map.of("customer_id", 1001L, "total_amount", 88.0, "status", "CREATED"), "u-shop-1");
+            Map.of("customer_id", 1001L, "total_amount", 88.0, "status", "CREATED"), "1001");
     String orderId = String.valueOf(o.body().get("id"));
 
     var pays = new SimulatedFrontendClient("bp_payment");
@@ -285,12 +285,12 @@ class OrderPaymentRuntimeSimulationTest {
                 "PENDING",
                 "channel_trade_no",
                 "WX-INV-0001"),
-            "u-pay");
+            "2002");
 
     assertTrue(p.success(), "支付单创建应成功: " + p);
     assertEquals("PENDING", p.body().get("status"));
     assertEquals("WX-INV-0001", p.body().get("channel_trade_no"));
-    assertEquals("u-pay", p.body().get("created_by"), "P0-2 支付操作者审计");
+    assertEquals("2002", p.body().get("created_by"), "P0-2 支付操作者审计");
   }
 
   // ===================== 场景 3：必填校验 =====================
@@ -299,7 +299,7 @@ class OrderPaymentRuntimeSimulationTest {
   @DisplayName("缺失必填字段 total_amount → 400 META_RUNTIME_VALIDATION_FAILED")
   void validation_missingRequiredField_returns400() {
     var client = new SimulatedFrontendClient("bp_order");
-    SimResponse resp = client.create(Map.of("customer_id", 1001L, "status", "CREATED"), "u-x");
+    SimResponse resp = client.create(Map.of("customer_id", 1001L, "status", "CREATED"), "1002");
 
     assertEquals(400, resp.status());
     assertEquals("META_RUNTIME_VALIDATION_FAILED", resp.errorCode());
@@ -314,7 +314,7 @@ class OrderPaymentRuntimeSimulationTest {
     var client = new SimulatedFrontendClient("bp_order");
     SimResponse resp =
         client.create(
-            Map.of("customer_id", 1001L, "total_amount", "不是数字", "status", "CREATED"), "u-x");
+            Map.of("customer_id", 1001L, "total_amount", "不是数字", "status", "CREATED"), "1002");
 
     assertEquals(400, resp.status());
     assertEquals("META_RUNTIME_VALIDATION_FAILED", resp.errorCode());
@@ -342,7 +342,7 @@ class OrderPaymentRuntimeSimulationTest {
                 "PENDING",
                 "channel_trade_no",
                 "WX-DUP-1"),
-            "u-pay");
+            "2002");
     assertTrue(first.success());
 
     SimResponse second =
@@ -360,7 +360,7 @@ class OrderPaymentRuntimeSimulationTest {
                 "PENDING",
                 "channel_trade_no",
                 "WX-DUP-1"),
-            "u-pay");
+            "2002");
 
     assertEquals(409, second.status());
     assertEquals("META_RUNTIME_DUPLICATE", second.errorCode());
@@ -374,17 +374,17 @@ class OrderPaymentRuntimeSimulationTest {
     var client = new SimulatedFrontendClient("bp_order");
     SimResponse created =
         client.create(
-            Map.of("customer_id", 1001L, "total_amount", 50.0, "status", "CREATED"), "u-1");
+            Map.of("customer_id", 1001L, "total_amount", 50.0, "status", "CREATED"), "1011");
     String id = String.valueOf(created.body().get("id"));
     int currentVersion = ((Number) created.body().get("version")).intValue();
 
     // 用错误的（更小的）版本号模拟并发冲突
-    SimResponse conflict = client.update(id, Map.of("status", "PAID"), currentVersion - 1, "u-2");
+    SimResponse conflict = client.update(id, Map.of("status", "PAID"), currentVersion - 1, "1012");
     assertEquals(412, conflict.status());
     assertEquals("META_PRECONDITION_FAILED", conflict.errorCode());
 
     // 用正确版本号应成功
-    SimResponse ok = client.update(id, Map.of("status", "PAID"), currentVersion, "u-2");
+    SimResponse ok = client.update(id, Map.of("status", "PAID"), currentVersion, "1012");
     assertTrue(ok.success(), "正确版本号应更新成功: " + ok);
   }
 
@@ -395,8 +395,7 @@ class OrderPaymentRuntimeSimulationTest {
   void crossTenantIsolation_andPerTenantAudit() {
     var c1 = new SimulatedFrontendClient("bp_order");
     SimResponse o1 =
-        c1.create(
-            Map.of("customer_id", 1001L, "total_amount", 1.0, "status", "CREATED"), "u-tenant-1");
+        c1.create(Map.of("customer_id", 1001L, "total_amount", 1.0, "status", "CREATED"), "3001");
     String id1 = String.valueOf(o1.body().get("id"));
 
     // 以租户 2、操作者 u-tenant-2 再建一笔
@@ -406,7 +405,7 @@ class OrderPaymentRuntimeSimulationTest {
             TENANT_2,
             Map.of("customer_id", 2002L, "total_amount", 2.0, "status", "CREATED"),
             idGen.incrementAndGet(),
-            "u-tenant-2");
+            "3002");
     String id2 = String.valueOf(r2.get("id"));
 
     // 租户 1 看不到租户 2 的订单
@@ -414,8 +413,8 @@ class OrderPaymentRuntimeSimulationTest {
     assertEquals(404, crossGet.status(), "跨租户读取应 404");
 
     // 各自审计列归属正确
-    assertEquals("u-tenant-1", o1.body().get("created_by"));
-    assertEquals("u-tenant-2", r2.get("created_by"));
+    assertEquals("3001", o1.body().get("created_by"));
+    assertEquals("3002", r2.get("created_by"));
 
     // 租户 1 列表仅 1 条
     @SuppressWarnings("unchecked")
@@ -484,7 +483,7 @@ class OrderPaymentRuntimeSimulationTest {
 
     // 软删除第一笔后，租户内查询不再返回（deleted=1 过滤）
     String firstId = String.valueOf(page.getRecords().get(0).get("id"));
-    client.delete(firstId, "u-admin");
+    client.delete(firstId, "9001");
     var after = service.page("bp_payment", TENANT_1, 1, 10);
     assertEquals(2, after.getRecords().size(), "软删除后应只剩 2 条");
     assertThrows(
@@ -499,7 +498,7 @@ class OrderPaymentRuntimeSimulationTest {
     var orders = new SimulatedFrontendClient("bp_order");
     SimResponse o =
         orders.create(
-            Map.of("customer_id", 1001L, "total_amount", 128.0, "status", "CREATED"), "u-shop");
+            Map.of("customer_id", 1001L, "total_amount", 128.0, "status", "CREATED"), "1003");
     String orderId = String.valueOf(o.body().get("id"));
     int orderVer = ((Number) o.body().get("version")).intValue();
 
@@ -519,22 +518,21 @@ class OrderPaymentRuntimeSimulationTest {
                 "PENDING",
                 "channel_trade_no",
                 "WX-FLOW-1"),
-            "u-pay");
+            "2002");
     String payId = String.valueOf(p.body().get("id"));
     int payVer = ((Number) p.body().get("version")).intValue();
 
     // 支付渠道回调成功（模拟 Payment.confirmSuccess）
-    SimResponse paid = pays.update(payId, Map.of("status", "SUCCESS"), payVer, "u-pay-callback");
+    SimResponse paid = pays.update(payId, Map.of("status", "SUCCESS"), payVer, "2003");
     assertTrue(paid.success(), "支付成功应更新: " + paid);
     assertEquals("SUCCESS", paid.body().get("status"));
-    assertEquals("u-pay-callback", paid.body().get("updated_by"), "P0-2 更新者应为回调方");
+    assertEquals("2003", paid.body().get("updated_by"), "P0-2 更新者应为回调方");
 
     // 订单确认支付（模拟 Order.confirmPaid）
-    SimResponse confirmed =
-        orders.update(orderId, Map.of("status", "PAID"), orderVer, "u-order-svc");
+    SimResponse confirmed = orders.update(orderId, Map.of("status", "PAID"), orderVer, "2004");
     assertTrue(confirmed.success(), "订单置 PAID 应成功: " + confirmed);
     assertEquals("PAID", confirmed.body().get("status"));
-    assertEquals("u-order-svc", confirmed.body().get("updated_by"), "P0-2 更新者应为订单服务");
+    assertEquals("2004", confirmed.body().get("updated_by"), "P0-2 更新者应为订单服务");
 
     // 重复回调：再次用同一流水号创建 → 唯一冲突（幂等去重，不重复入账）
     SimResponse dup =
@@ -552,7 +550,7 @@ class OrderPaymentRuntimeSimulationTest {
                 "PENDING",
                 "channel_trade_no",
                 "WX-FLOW-1"),
-            "u-pay");
+            "2002");
     assertEquals(409, dup.status(), "同渠道流水号重复回调应被唯一约束拦截");
   }
 
