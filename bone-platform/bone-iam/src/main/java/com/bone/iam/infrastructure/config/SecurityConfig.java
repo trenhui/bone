@@ -49,11 +49,22 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
+                    // 2026-10-04 移除 "/api/v1/apps/**"（P0-4）：
+                    // 该前缀下有 8 个写端点（App 的create/update/delete + grant/revokePermission
+                    // + Module 的增删改）。permitAll 只作用于 AuthorizationFilter，
+                    // @PreAuthorize 走 MethodInterceptor 仍生效——所以当时"看起来安全"。
+                    // 但它把安全边界从"一条规则"退化为"每个方法各写一次注解"：
+                    // 此后任何人新增端点漏写 @PreAuthorize（SystemController 自己记录过这种真实漏法），
+                    // 别的前缀漏注解只是"任何登录用户可写"，**这个前缀漏注解是"任何人可写"**，
+                    // 爆炸半径差一个量级。
+                    // 实测依据：AppController 全部读端点已挂 iam:apps:read、写端点已挂 iam:apps:write，
+                    // ModuleController 写端点已挂 iam:apps:write；前端 16 处调用全部在已登录的
+                    // iam-app / metadata-app 内（经 createApiClient 带 token），登录页不依赖本前缀。
+                    // ⇒ 收敛后无行为回归，且把"漏注解"的爆炸半径降回与其他前缀一致。
                     .requestMatchers(
                         "/api/v1/iam/login",
                         "/api/v1/iam/sso/callback",
                         "/api/v1/iam/sso/config",
-                        "/api/v1/apps/**",
                         "/.well-known/jwks.json",
                         // 健康检查供网关/容器探针免鉴权调用；其余 actuator 端点仍在鉴权之后
                         "/actuator/health",
