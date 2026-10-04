@@ -256,6 +256,7 @@ class OrderApplicationServiceTest {
                     null,
                     null,
                     null,
+                    null,
                     null)));
     when(dictGateway.resolveLabel("source_channel", "APP")).thenReturn(Optional.of("App 移动端"));
 
