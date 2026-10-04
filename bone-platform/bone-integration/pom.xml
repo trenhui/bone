@@ -75,9 +75,7 @@
         <dependency><groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <dependency><groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
+
 
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -121,10 +119,10 @@
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
-        <!-- Mongo 连接器 -->
+        <!-- Mongo 连接器：不写死版本，统一交给 Spring Boot 依赖管理
+             (与 mongodb-driver-core/bson 同为 5.5.2，避免 sync 4.11.1 引用 core 5.5.2 缺类) -->
         <dependency><groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>${mongodb.version}</version>
         </dependency>
         <!-- MinIO / S3 兼容连接器 -->
         <dependency><groupId>io.minio</groupId>

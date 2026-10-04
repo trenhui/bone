@@ -23,7 +23,7 @@
         <!-- bone-security -->
         <dependency><groupId>com.bone</groupId>
             <artifactId>bone-security</artifactId>
-            <version>${bone-core.version}</version>
+            <version>${bone-security.version}</version>
         </dependency>
 
         <!-- bone-metadata-sdk -->
@@ -53,9 +53,7 @@
         <dependency><groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
-        <dependency><groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
+
 
         <!-- MySQL -->
         <dependency><groupId>com.mysql</groupId>
