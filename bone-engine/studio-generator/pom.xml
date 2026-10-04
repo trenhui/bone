@@ -95,7 +95,9 @@
         </dependency>
         <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>${project.version}</version>
+            <!-- 用固定版本属性：若本模块日后改为 SNAPSHOT，${project.version} 会把它
+                 解析成不存在的 SNAPSHOT（见 bone-parent 的属性注释）。 -->
+            <version>${bone-architecture-test.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

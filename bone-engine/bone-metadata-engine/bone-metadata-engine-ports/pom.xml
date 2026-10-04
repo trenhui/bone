@@ -37,7 +37,9 @@
         </dependency>
         <dependency><groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>${project.version}</version>
+            <!-- 须用固定版本属性：bone-metadata-engine 家族自身是 1.0.0-SNAPSHOT，
+                 用 ${project.version} 会把它解析成不存在的 SNAPSHOT（见 bone-parent 注释）。 -->
+            <version>${bone-architecture-test.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
