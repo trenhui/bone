@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,7 +34,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * <p>比对用 {@link java.security.MessageDigest#isEqual}（常量时间）而非 {@code String#equals}，
  * 避免按字节短路比较带来的时序侧信道。
  */
+/**
+ * 上报令牌校验过滤器，挂在 JWT 认证之前（见 SecurityConfig 的 addFilterBefore）。
+ *
+ * <p>{@code @Order} 为必需：Spring Security 6 会对参与 SecurityFilterChain 的 Filter bean 校验是否已注册
+ * order，未注册时直接抛 “The Filter class ... does not have a registered order” 导致上下文启动失败。order 取值小于
+ * JwtAuthenticationFilter，与链内先后一致。
+ */
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class ReporterTokenFilter extends OncePerRequestFilter {
 
   static final String INGEST_PATH_COLON = "/api/v1/extension/execution-logs:ingest";

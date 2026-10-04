@@ -3,8 +3,10 @@ package com.bone.engine.extension.studio.config;
 import com.bone.engine.extension.studio.security.JwtAuthenticationFilter;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +36,28 @@ public class SecurityConfig {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.reporterTokenFilter = reporterTokenFilter;
     this.permitUnauthenticated = permitUnauthenticated;
+  }
+
+  /**
+   * Spring Security 6 要求：凡参与 SecurityFilterChain 的 Filter bean，都必须带有已注册的 order，否则创建 filterChain
+   * 时直接抛 {@code The Filter class ... does not have a registered order}，上下文启动失败（本模块 以 web
+   * 环境启动即命中）。注意 {@code @Order} 注解不满足该校验——它读取的是 {@code FilterRegistrationBean} 上的
+   * order，故须在此显式注册。order 与链内顺序一致：ReporterTokenFilter 挂在 JwtAuthenticationFilter 之前，故取值更小。
+   */
+  @Bean
+  public FilterRegistrationBean<ReporterTokenFilter> reporterTokenFilterRegistration() {
+    FilterRegistrationBean<ReporterTokenFilter> registration =
+        new FilterRegistrationBean<>(reporterTokenFilter);
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+    return registration;
+  }
+
+  @Bean
+  public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration() {
+    FilterRegistrationBean<JwtAuthenticationFilter> registration =
+        new FilterRegistrationBean<>(jwtAuthenticationFilter);
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
+    return registration;
   }
 
   @Bean
@@ -76,7 +100,11 @@ public class SecurityConfig {
               authorize.requestMatchers("/api/**").authenticated().anyRequest().permitAll();
             })
         .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-        .addFilterBefore(reporterTokenFilter, JwtAuthenticationFilter.class)
+        // 两者均以内置的 UsernamePasswordAuthenticationFilter 作锚点：Spring Security 6 解析锚点 order 时只认
+        // 其内置注册表，用自定义 filter 当锚点（原先 reporter 挂在 JwtAuthenticationFilter.class 之前）会抛
+        // “The Filter class ... does not have a registered order”。同 order 下按插入顺序稳定排序，故先插
+        // reporter（须先于 JWT 校验机器身份），再插 jwt，链内相对顺序与原先一致。
+        .addFilterBefore(reporterTokenFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
