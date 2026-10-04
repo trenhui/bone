@@ -140,7 +140,7 @@ public final class TableMetadataResolver {
                     + ")");
           }
         }
-        cascades.add(new CascadeRelation(field.getName(), fk, childType));
+        cascades.add(new CascadeRelation(field.getName(), fk, childType, cascade.orphanRemoval()));
         seen.add(field.getName());
       }
       current = current.getSuperclass();

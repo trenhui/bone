@@ -56,9 +56,14 @@ public class Order extends TenantAggregateRoot<Long> {
   /**
    * 聚合内部集合：{@code @Transient} 避免映射为 t_order 列；{@code @Cascade} 由 SDK 在根 save/insert/update
    * 后级联落盘（能力需求二 MVP）。
+   *
+   * <p><b>孤儿清除必须关闭（{@code orphanRemoval = false}）</b>：订单明细是创建后不可变的——本聚合 {@code findById} 不会回填
+   * {@code items}（见 {@link #getItems()} 注释），故任何一次状态更新（支付/退款/发货/取消）经 {@code update(order)} 时，内存里
+   * {@code items} 恒为空，SDK 会把 DB 中全部既有明细误判为孤儿而<b>静默清空</b>。 业务上明细只随订单创建一次性落库，后续更新只需 upsert
+   * 集合内成员、绝不能删除既有子行，故关闭孤儿清除。
    */
   @Transient
-  @Cascade(foreignKey = "orderId")
+  @Cascade(foreignKey = "orderId", orphanRemoval = false)
   private List<OrderItem> items = new ArrayList<>();
 
   private BigDecimal totalAmount;

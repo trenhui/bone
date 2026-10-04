@@ -55,7 +55,9 @@ public final class AggregateCascadeWriter {
       @SuppressWarnings("unchecked")
       Collection<Entity<?>> children =
           raw == null ? Collections.emptyList() : (Collection<Entity<?>>) raw;
-      persistRelation(rel, rootId, children, removeOrphans);
+      // 关系级孤儿清除开关优先于调用方传入的 removeOrphans：显式 orphanRemoval=false 的关系
+      // （如订单明细，聚合重载不回填子集合）在 update 时绝不删除既有子行。
+      persistRelation(rel, rootId, children, removeOrphans && rel.isOrphanRemoval());
     }
   }
 
