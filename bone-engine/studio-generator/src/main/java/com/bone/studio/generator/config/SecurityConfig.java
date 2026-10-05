@@ -1,5 +1,6 @@
 package com.bone.studio.generator.config;
 
+import com.bone.studio.generator.infrastructure.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * 代码生成器 API 的安全配置。
@@ -31,12 +33,19 @@ import org.springframework.security.web.SecurityFilterChain;
  *   <li>使用无状态会话。
  * </ul>
  *
- * <p>本模块业务代码不读取任何 principal（无 SecurityContext 依赖），故认证只作访问控制用途。
+ * <p>本模块业务代码不直接读取 principal（无 SecurityContext 依赖），认证只作访问控制用途；但 {@link JwtAuthenticationFilter} 会把
+ * userId / tenantId 写入 MDC 供日志与 Access Log 关联。
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+  }
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -48,6 +57,9 @@ public class SecurityConfig {
         .logout(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .exceptionHandling(eh -> eh.authenticationEntryPoint(unauthorizedEntryPoint()))
+        // 真实流量走平台 JWT（网关/前端统一发 Authorization: Bearer <JWT>）。
+        // 放在 UsernamePasswordAuthenticationFilter 之前，确保在授权判定前就有 Authentication。
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**")
