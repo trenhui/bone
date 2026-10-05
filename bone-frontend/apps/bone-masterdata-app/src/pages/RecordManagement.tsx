@@ -123,8 +123,8 @@ const RecordManagement: React.FC = () => {
         status: selectedStatus,
         keyword: keyword.trim() || undefined,
         onlyCurrent: onlyCurrent || undefined,
-        pageNum: page,
-        pageSize: pageSize
+        page: page,
+        size: pageSize
       });
       if (response.code === 200) {
         // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，

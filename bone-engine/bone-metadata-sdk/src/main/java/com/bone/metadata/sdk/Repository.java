@@ -156,16 +156,16 @@ public interface Repository<T extends Entity<ID>, ID> {
    *
    * @param queryParams 查询条件
    * @param sortingFields 排序条件
-   * @param pageNo 分页页码
-   * @param pageSize 分页大小
+   * @param page 分页页码
+   * @param size 分页大小
    * @param bizIdentityCode 业务主体码，用于获取表字段
    * @return 查询结果
    */
   PageResult<T> queryByCondition(
       List<QueryParam> queryParams,
       List<SortingField> sortingFields,
-      Integer pageNo,
-      Integer pageSize,
+      Integer page,
+      Integer size,
       String bizIdentityCode);
 
   /**
@@ -223,8 +223,8 @@ public interface Repository<T extends Entity<ID>, ID> {
    * @param criteria 查询条件
    * @param groupBy GROUP BY字段列表
    * @param having having字段列表
-   * @param pageNumber 页码
-   * @param pageSize 每页大小
+   * @param page 页码
+   * @param size 每页大小
    * @return 分页的聚合结果
    */
   PageResult<Map<String, Object>> aggregateWithPagination(
@@ -232,8 +232,8 @@ public interface Repository<T extends Entity<ID>, ID> {
       Criteria<T> criteria,
       List<String> groupBy,
       List<String> having,
-      int pageNumber,
-      int pageSize);
+      int page,
+      int size);
 
   /** 获取SQL执行器 - 为DSL查询提供底层支持 实现类应提供此方法的具体实现 */
   SqlExecutor getSqlExecutor();

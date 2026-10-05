@@ -242,8 +242,8 @@ public class PermissionRepositoryTest {
   @Test
   void testPageByCriteria_ShouldReturnPagedResults() {
     Criteria<Permission> criteria = Criteria.<Permission>create();
-    criteria.setPageNo(1);
-    criteria.setPageSize(2);
+    criteria.setPage(1);
+    criteria.setSize(2);
     PageResult<Permission> pageResult = permissionRepository.pageByCriteria(criteria);
     assertNotNull(pageResult, "Page result should not be null");
     assertTrue(

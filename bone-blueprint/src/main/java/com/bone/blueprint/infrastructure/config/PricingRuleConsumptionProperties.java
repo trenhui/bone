@@ -51,5 +51,5 @@ public class PricingRuleConsumptionProperties {
   private long cacheTtlSeconds = 30;
 
   /** 单次拉取记录的页大小上限。 */
-  private int fetchPageSize = 200;
+  private int fetchSize = 200;
 }

@@ -55,17 +55,16 @@ public class UserRepositoryQueryByConditionTest {
             );
     List<SortingField> sortingFields =
         List.of(new SortingField("name", SortDirection.ASC.getDirection()));
-    Integer pageNo = 1;
-    int pageSize = 2;
+    Integer page = 1;
+    int size = 2;
     // Act
     PageResult<User> pageResult =
-        userRepository.queryByCondition(queryParams, sortingFields, pageNo, pageSize, null);
+        userRepository.queryByCondition(queryParams, sortingFields, page, size, null);
 
     // Assert
     assertNotNull(pageResult, "Page result should not be null");
     assertTrue(
-        pageResult.getRecords().size() <= pageSize,
-        "Page size should not exceed the specified limit");
+        pageResult.getRecords().size() <= size, "Page size should not exceed the specified limit");
     assertEquals(
         2L,
         pageResult.getRecords().get(0).getRoleId(),
@@ -102,12 +101,12 @@ public class UserRepositoryQueryByConditionTest {
             new SortingField("name", SortDirection.ASC.getDirection()) // ,
             // new SortingField("email", SortDirection.DESC.getDirection())
             );
-    Integer pageNo = 1;
-    Integer pageSize = 5;
+    Integer page = 1;
+    Integer size = 5;
 
     // Act
     PageResult<User> pageResult =
-        userRepository.queryByCondition(queryParams, sortingFields, pageNo, pageSize, null);
+        userRepository.queryByCondition(queryParams, sortingFields, page, size, null);
 
     // Assert
     assertNotNull(pageResult, "Page result should not be null");
@@ -122,7 +121,7 @@ public class UserRepositoryQueryByConditionTest {
 
   /** Test pagination with a large page number. */
   @Test
-  void testQueryByCondition_ShouldHandleLargePageNumber() {
+  void testQueryByCondition_ShouldHandleLargePage() {
     // Arrange
     List<QueryParam> queryParams = List.of(new QueryParam("role_id", 2L, Operator.EQ));
 

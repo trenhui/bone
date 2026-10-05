@@ -9,11 +9,5 @@ import lombok.EqualsAndHashCode;
 public class UserSearchRequest extends SortablePageParam {
   private String name;
   private Long roleId;
-  private Integer pageNumber = 1;
-  private Integer pageSize = 20;
   private Integer offset;
-
-  public Integer getOffset() {
-    return offset = (pageNumber - 1) * pageSize;
-  }
 }

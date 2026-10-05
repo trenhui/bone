@@ -119,7 +119,7 @@ public class SelectBuilder implements SqlQueryBuilder<SelectContext> {
     }
 
     // 6) 分页
-    String pageSql = dialect.buildPagination(c.getPageSize(), c.getOffset());
+    String pageSql = dialect.buildPagination(c.getSize(), c.getOffset());
     if (!pageSql.isBlank()) {
       sql.append(" ").append(pageSql);
     }

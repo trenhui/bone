@@ -74,7 +74,7 @@ class MasterDataAclAdapterE2ETest {
     props.setCustomerEntityCode("CUSTOMER");
     props.setLevelEntityCode("CUSTOMER_LEVEL");
     props.setCacheTtlSeconds(0); // 每次都重新拉取，避免缓存掩盖 stub 行为
-    props.setFetchPageSize(500);
+    props.setFetchSize(500);
     adapter = new MasterDataAclAdapter(props);
   }
 

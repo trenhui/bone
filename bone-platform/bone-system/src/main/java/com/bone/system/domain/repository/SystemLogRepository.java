@@ -25,10 +25,10 @@ public interface SystemLogRepository extends Repository<SystemLog, Long> {
    * @param keyword 为空或空白时不加内容过滤
    */
   default PageResult<SystemLog> pageByCondition(
-      String keyword, LogLevel level, String service, int pageNum, int pageSize) {
+      String keyword, LogLevel level, String service, int page, int size) {
     var query = QueryBuilder.from(SystemLog.class);
     appendFilters(query, keyword, level, service);
-    return query.orderByDesc(SystemLog::getCreatedAt).page(pageNum, pageSize);
+    return query.orderByDesc(SystemLog::getCreatedAt).page(page, size);
   }
 
   /**

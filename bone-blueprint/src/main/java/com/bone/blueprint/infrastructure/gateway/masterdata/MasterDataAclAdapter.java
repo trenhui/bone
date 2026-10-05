@@ -302,7 +302,7 @@ public class MasterDataAclAdapter implements MasterDataGateway {
                     uriBuilder
                         .path("/api/v1/masterdata/records")
                         .queryParam("page", 1)
-                        .queryParam("size", props.getFetchPageSize())
+                        .queryParam("size", props.getFetchSize())
                         .queryParam("masterDataEntityId", entityId)
                         .queryParam("status", "PUBLISHED")
                         .build())

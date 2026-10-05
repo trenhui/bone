@@ -115,7 +115,7 @@ public class MetadataPricingRuleAdapter implements PricingRuleGateway {
                     uriBuilder
                         .path("/api/v1/runtime/entities/{code}/records")
                         .queryParam("page", 1)
-                        .queryParam("size", props.getFetchPageSize())
+                        .queryParam("size", props.getFetchSize())
                         .build(props.getEntityCode()))
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token())
             .header("X-Tenant-Id", String.valueOf(tenantId))

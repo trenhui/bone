@@ -82,7 +82,7 @@ public interface FluentQuery<T> {
 
   long count();
 
-  PageResult<T> page(int pageNum, int pageSize);
+  PageResult<T> page(int page, int size);
 
   boolean exists();
 

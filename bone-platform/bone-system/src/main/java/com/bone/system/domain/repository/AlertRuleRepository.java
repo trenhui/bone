@@ -18,7 +18,7 @@ public interface AlertRuleRepository extends Repository<AlertRule, Long> {
 
   /** 告警规则分页：关键字命中名称或描述，`enabled` / `alertLevel` 非空时精确过滤；最近创建的在前。 */
   default PageResult<AlertRule> pageByCondition(
-      String keyword, Boolean enabled, AlertLevel level, int pageNum, int pageSize) {
+      String keyword, Boolean enabled, AlertLevel level, int page, int size) {
     var query = QueryBuilder.from(AlertRule.class);
     boolean hasKeyword = keyword != null && !keyword.isBlank();
     if (hasKeyword) {
@@ -34,7 +34,7 @@ public interface AlertRuleRepository extends Repository<AlertRule, Long> {
     if (level != null) {
       query.and(AlertRule::getAlertLevel).eq(level);
     }
-    return query.orderByDesc(AlertRule::getCreatedAt).page(pageNum, pageSize);
+    return query.orderByDesc(AlertRule::getCreatedAt).page(page, size);
   }
 
   /**

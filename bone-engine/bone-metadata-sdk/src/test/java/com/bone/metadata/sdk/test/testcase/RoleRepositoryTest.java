@@ -230,8 +230,8 @@ public class RoleRepositoryTest {
   @Test
   void testPageByCriteria_ShouldReturnPagedResults() {
     Criteria<Role> criteria = Criteria.<Role>create();
-    criteria.setPageNo(1);
-    criteria.setPageSize(2);
+    criteria.setPage(1);
+    criteria.setSize(2);
     PageResult<Role> pageResult = roleRepository.pageByCriteria(criteria);
     assertNotNull(pageResult, "Page result should not be null");
     assertTrue(pageResult.getRecords().size() <= 2, "Page should contain no more than 2 roles");

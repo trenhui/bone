@@ -36,5 +36,5 @@ public class MasterDataConsumptionProperties {
   private long cacheTtlSeconds = 60;
 
   /** 单次拉取已发布记录的页大小上限。 */
-  private int fetchPageSize = 500;
+  private int fetchSize = 500;
 }

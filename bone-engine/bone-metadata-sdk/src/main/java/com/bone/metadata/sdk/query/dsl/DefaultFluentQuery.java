@@ -275,9 +275,9 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
   }
 
   @Override
-  public PageResult<T> page(int pageNum, int pageSize) {
-    validatePositive(pageNum, "Page number");
-    validatePositive(pageSize, "Page size");
+  public PageResult<T> page(int page, int size) {
+    validatePositive(page, "Page number");
+    validatePositive(size, "Page size");
 
     // 保存原始分页设置
     Integer originalLimit = queryContext.getLimit();
@@ -285,8 +285,8 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
 
     try {
       // 设置分页参数并查询数据
-      int offset = (pageNum - 1) * pageSize;
-      queryContext.setLimit(pageSize);
+      int offset = (page - 1) * size;
+      queryContext.setLimit(size);
       queryContext.setOffset(offset);
 
       List<T> records = list();
@@ -296,7 +296,7 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
       queryContext.setOffset(originalOffset);
       long total = count();
 
-      return PageResult.of(records, total, pageNum, pageSize);
+      return PageResult.of(records, total, page, size);
     } finally {
       // 恢复原始设置
       queryContext.setLimit(originalLimit);

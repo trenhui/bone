@@ -265,8 +265,8 @@ public class UserRepositoryCriteriaTest {
     // Arrange
     setUpTestData();
     Criteria<User> criteria = Criteria.<User>create().eq("role_id", 2L); // 查询 role_id 为 2 的用户
-    criteria.setPageNo(1);
-    criteria.setPageSize(2);
+    criteria.setPage(1);
+    criteria.setSize(2);
 
     // Act
     PageResult<User> pageResult = userRepository.pageByCriteria(criteria);
@@ -281,8 +281,8 @@ public class UserRepositoryCriteriaTest {
     // Arrange
     setUpTestData();
     Criteria<User> criteria = Criteria.<User>create().eq("role_id", 999L); // 查询不存在的 role_id
-    criteria.setPageNo(1);
-    criteria.setPageSize(10);
+    criteria.setPage(1);
+    criteria.setSize(10);
 
     // Act
     PageResult<User> pageResult = userRepository.pageByCriteria(criteria);

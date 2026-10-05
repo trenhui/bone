@@ -73,9 +73,9 @@ public interface UserRepository extends Repository<User, Long> {
          <if test="request.roleIds != null and !request.roleIds.isEmpty()">
              AND u.role_id IN #{request.roleIds}
          </if>
-         <if test="request.pageNumber != null and request.pageSize != null">
+         <if test="request.page != null and request.size != null">
              ORDER BY u.created_at DESC
-             LIMIT #{request.pageSize} OFFSET #{request.offset}
+             LIMIT #{request.size} OFFSET #{request.offset}
          </if>
          """)
   List<UserWithRoleDTO> searchUsers(@Param("request") UserSearchRequest request);
@@ -136,9 +136,9 @@ public interface UserRepository extends Repository<User, Long> {
                 FROM users u
                 WHERE u.deleted = 0
                 ORDER BY u.created_at DESC
-                LIMIT #{pageSize} OFFSET #{page}
+                LIMIT #{size} OFFSET #{page}
             """)
-  List<User> findUsersByPage(@Param("page") Integer page, @Param("pageSize") Integer pageSize);
+  List<User> findUsersByPage(@Param("page") Integer page, @Param("size") Integer size);
 
   /** 统计活跃用户数量 */
   @Sql("SELECT COUNT(*) FROM users u WHERE u.deleted = 0")
@@ -160,8 +160,8 @@ public interface UserRepository extends Repository<User, Long> {
                     </if>
                 </where>
                 ORDER BY u.created_at DESC
-                <if test="userPageQuery.page != null and userPageQuery.pageSize != null">
-                    LIMIT #{userPageQuery.pageSize} OFFSET #{userPageQuery.page}
+                <if test="userPageQuery.page != null and userPageQuery.size != null">
+                    LIMIT #{userPageQuery.size} OFFSET #{userPageQuery.page}
                 </if>
             """)
   PageResult<UserRoleDTO> queryUerPermPage(@Param("userPageQuery") UserPageQuery userPageQuery);
@@ -182,8 +182,8 @@ public interface UserRepository extends Repository<User, Long> {
                     </if>
                 </where>
                 ORDER BY u.created_at DESC, u.name ASC
-                <if test="userQuery.page != null and userQuery.pageSize != null">
-                    LIMIT #{userQuery.pageSize} OFFSET #{userQuery.page}
+                <if test="userQuery.page != null and userQuery.size != null">
+                    LIMIT #{userQuery.size} OFFSET #{userQuery.page}
                 </if>
             """)
   PageResult<UserRoleDTO> queryUerPermPageOrderBy(@Param("userQuery") UserPageQuery userQuery);
@@ -222,8 +222,8 @@ public interface UserRepository extends Repository<User, Long> {
                     </if>
                 </where>
                 ORDER BY u.created_at DESC
-                <if test="query.page != null and query.pageSize != null">
-                    LIMIT #{query.pageSize} OFFSET #{query.page}
+                <if test="query.page != null and query.size != null">
+                    LIMIT #{query.size} OFFSET #{query.page}
                 </if>
             """)
   PageResult<User> queryUsers(@Param("query") UserQuery query);

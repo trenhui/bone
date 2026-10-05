@@ -75,12 +75,12 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
                 + havingClause);
 
     // 添加分页逻辑（如果需要）
-    if (ctx.getCriteria() != null && ctx.getCriteria().getPageSize() > 0) {
-      int pageSize = ctx.getCriteria().getPageSize();
-      int page = ctx.getCriteria().getPageNo();
-      int offset = (page - 1) * pageSize;
+    if (ctx.getCriteria() != null && ctx.getCriteria().getSize() > 0) {
+      int size = ctx.getCriteria().getSize();
+      int page = ctx.getCriteria().getPage();
+      int offset = (page - 1) * size;
 
-      sql.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
+      sql.append(" LIMIT ").append(size).append(" OFFSET ").append(offset);
     }
 
     return new CompiledQuery(sql.toString(), ctx.getCriteria().getParameters());

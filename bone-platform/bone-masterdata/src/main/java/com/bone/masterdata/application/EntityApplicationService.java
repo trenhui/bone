@@ -36,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EntityApplicationService {
 
-  /** 单页上限：分页参数由前端传入，必须夹紧，否则 ?pageSize=大数 会直接透传到 LIMIT。 */
+  /** 单页上限：分页参数由前端传入，必须夹紧，否则 ?size=大数 会直接透传到 LIMIT。 */
   private static final int MAX_PAGE_SIZE = 500;
 
   private final MasterDataEntityRepository entityRepository;

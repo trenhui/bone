@@ -269,10 +269,6 @@ public class QueryObjectConverter {
         Set.of(
             "page",
             "size",
-            "pageNo",
-            "pageSize",
-            "page_no",
-            "page_size",
             "sortingFields",
             "sorting_fields",
             "order",
@@ -476,11 +472,11 @@ public class QueryObjectConverter {
     // 处理分页参数
     if (queryObject instanceof PageParam pageParam) {
       if (pageParam.getPage() != null) {
-        criteria.setPageNo(pageParam.getPage());
+        criteria.setPage(pageParam.getPage());
       }
 
       if (pageParam.getSize() != null) {
-        criteria.setPageSize(pageParam.getSize());
+        criteria.setSize(pageParam.getSize());
       }
     }
 

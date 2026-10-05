@@ -158,8 +158,8 @@ public class SqlExecutionInterceptor {
   }
 
   /**
-   * 深度解析嵌套参数（如 paramMap 中的 request 对象） 例：将 {request: UserSearchRequest(pageSize=10, pageNumber=1)}
-   * 解析为 {request.pageSize:10, request.pageNumber:1}
+   * 深度解析嵌套参数（如 paramMap 中的 request 对象） 例：将 {request: UserSearchRequest(size=10, page=1)} 解析为
+   * {request.size:10, request.page:1}
    */
   private Map<String, Object> deepResolveNestedParams(Map<String, Object> paramMap) {
     Map<String, Object> resolvedParams = new HashMap<>();
@@ -175,7 +175,7 @@ public class SqlExecutionInterceptor {
       // 如果值是复杂对象（非基本类型/字符串/集合），则解析其属性
       if (value != null && !isBasicType(value.getClass())) {
         Map<String, Object> nestedProps = extractBeanProperties(value);
-        // 拼接嵌套键（如 request.pageSize）
+        // 拼接嵌套键（如 request.size）
         nestedProps.forEach(
             (nestedKey, nestedValue) -> resolvedParams.put(key + "." + nestedKey, nestedValue));
       } else {

@@ -102,12 +102,10 @@ class PageResultTest {
     PageResult<String> page = PageResult.of(List.of("a"), 1L, 2, 5);
 
     assertThat(page.getList()).isEqualTo(page.getRecords());
-    assertThat(page.getPageNum()).isEqualTo(page.getPage());
-    assertThat(page.getPageSize()).isEqualTo(page.getSize());
   }
 
   /**
-   * 序列化契约：响应只吐权威字段，废弃 getter 的 list/pageNum/pageSize 不得出现。
+   * 序列化契约：响应只吐权威字段，废弃 getter 的 list 不得出现。
    *
    * <p><b>为何必须有这道测试</b>：Jackson <b>默认不因 {@code @Deprecated} 忽略 getter</b>， 所以在加 {@code @JsonIgnore}
    * 之前，响应里 {@code records} 与 {@code list} 两组键同时存在 （实测 14 个键，见 {@code Bone-API-规范.md} §5.3）。
@@ -130,7 +128,7 @@ class PageResultTest {
     assertThat(keys).contains("records", "total", "page", "size", "pages");
     assertThat(keys)
         .as("废弃 getter 的键必须被 @JsonIgnore 抹掉（此前 records 与 list 同时出现）")
-        .doesNotContain("list", "pageNum", "pageSize");
+        .doesNotContain("list");
   }
 
   /**
@@ -151,7 +149,7 @@ class PageResultTest {
   @Test
   void pageResultIsNotDeserializable() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    String legacyJson = "{\"list\":[\"a\"],\"total\":1,\"pageNum\":2,\"pageSize\":5}";
+    String legacyJson = "{\"list\":[\"a\"],\"total\":1,\"page\":2,\"size\":5}";
 
     assertThatThrownBy(() -> mapper.readValue(legacyJson, PageResult.class))
         .isInstanceOf(InvalidDefinitionException.class)

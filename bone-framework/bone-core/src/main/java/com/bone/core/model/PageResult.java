@@ -85,49 +85,12 @@ public class PageResult<T> implements Serializable {
   }
 
   /**
-   * 兼容旧 API 的废弃方法。
-   *
-   * <p><b>2026-10-03 收敛为 {@code @JsonIgnore}</b>：这 3 个 getter此前只标了 {@code @Deprecated}，而 <b>Jackson
-   * 默认不因 {@code @Deprecated} 忽略 getter</b>， 故序列化时 {@code records} 与 {@code list} 两组键<b>同时存在</b>
-   * （实测响应 14 个键，见 {@code Bone-API-规范.md} §5.3）。
-   *
-   * <p><b>顺序不可颠倒</b>：必须先把前端全部改读 {@code records}，才能加本注解 —— 否则响应里 {@code list} 消失，读它的页面直接白屏。前端迁移由门禁
-   * {@code scripts/check-paging-current-field.py}（check.sh [14/17]）守护。
-   *
-   * <p><b>保留方法本身、不删</b>：它们是 {@code PageResult} 的公共 API， 删掉会破坏二进制兼容性（{@code map()} 等内部方法也在用）， 且
-   * SDK/第三方可能仍在调用。{@code @JsonIgnore} 只切断序列化出口。
-   *
-   * <p><b>本类是纯出站响应模型</b>：只有私有全参构造，无无参构造也无 {@code @JsonCreator}，Jackson <b>无法反序列化本类</b>（实测抛 {@code
-   * InvalidDefinitionException: no Creators}）；全仓亦无任何 {@code PageResult} 反序列化入口（无
-   * {@code @RequestBody PageResult}，无 {@code readValue(..., PageResult.class)}）。<b>故不可把任何入参别名当成删除废弃
-   * getter 的安全网</b>——历史上挂在字段上的 {@code @JsonAlias} 从未生效过，已于 2026-10-04 移除。本类只输出、不接收。
-   */
-
-  /**
    * @deprecated 使用 {@link #getRecords()} 代替
    */
   @Deprecated
   @JsonIgnore
   public List<T> getList() {
     return this.records;
-  }
-
-  /**
-   * @deprecated 使用 {@link #getPage()} 代替
-   */
-  @Deprecated
-  @JsonIgnore
-  public Integer getPageNum() {
-    return this.page;
-  }
-
-  /**
-   * @deprecated 使用 {@link #getSize()} 代替
-   */
-  @Deprecated
-  @JsonIgnore
-  public Integer getPageSize() {
-    return this.size;
   }
 
   /**

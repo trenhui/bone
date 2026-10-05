@@ -23,14 +23,14 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
    * <p>单列等值过滤是 Criteria 的主场——自带租户与软删注入，不需要像跨列 OR 那样降级到 QueryBuilder。
    */
   default PageResult<AlertRecord> pageByCondition(
-      Long ruleId, AlertLevel level, AlertStatus status, int pageNum, int pageSize) {
+      Long ruleId, AlertLevel level, AlertStatus status, int page, int size) {
     Criteria<AlertRecord> criteria =
         Criteria.<AlertRecord>create()
             .entityClass(AlertRecord.class)
             .eq(ruleId != null, AlertRecord::getAlertRuleId, ruleId)
             .eq(level != null, AlertRecord::getAlertLevel, level)
             .eq(status != null, AlertRecord::getStatus, status);
-    return pageByCriteria(criteria.page(pageNum, pageSize));
+    return pageByCriteria(criteria.page(page, size));
   }
 
   /**
@@ -39,7 +39,7 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
    * <p>跨列 OR 走 QueryBuilder，原因见 {@link com.bone.system.domain.repository.SystemConfigRepository} 对
    * {@code Criteria.or(Consumer)} 缺陷的说明。
    */
-  default PageResult<AlertRecord> pageByKeyword(String keyword, int pageNum, int pageSize) {
+  default PageResult<AlertRecord> pageByKeyword(String keyword, int page, int size) {
     var query = QueryBuilder.from(AlertRecord.class);
     if (keyword != null && !keyword.isBlank()) {
       query
@@ -48,7 +48,7 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
           .or(AlertRecord::getMessage)
           .contains(keyword);
     }
-    return query.orderByDesc(AlertRecord::getCreatedAt).page(pageNum, pageSize);
+    return query.orderByDesc(AlertRecord::getCreatedAt).page(page, size);
   }
 
   /**

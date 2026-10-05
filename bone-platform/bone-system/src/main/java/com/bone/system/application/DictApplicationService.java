@@ -1038,9 +1038,9 @@ public class DictApplicationService {
     return false;
   }
 
-  private static <T> PageResult<T> paginate(List<T> all, int pageNum, int pageSize) {
-    int pn = Math.max(1, pageNum);
-    int ps = Math.max(1, pageSize);
+  private static <T> PageResult<T> paginate(List<T> all, int page, int size) {
+    int pn = Math.max(1, page);
+    int ps = Math.max(1, size);
     int from = Math.min((pn - 1) * ps, all.size());
     int to = Math.min(from + ps, all.size());
     return PageResult.of(new ArrayList<>(all.subList(from, to)), (long) all.size(), pn, ps);

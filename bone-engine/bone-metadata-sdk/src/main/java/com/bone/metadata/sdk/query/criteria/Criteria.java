@@ -23,8 +23,8 @@ public class Criteria<T> {
   private final Map<String, AtomicInteger> columnCounterMap = new ConcurrentHashMap<>();
 
   private final List<String> sortItems = new ArrayList<>();
-  private int pageSize = 5000;
-  private int pageNo = 1;
+  private int size = 5000;
+  private int page = 1;
   private Class<?> entityClass;
 
   /** 逃生舱：关闭租户过滤（ADR-0029）。仅限跨租户平台操作，须 platform:* 授权 + 审计。 */
@@ -53,15 +53,15 @@ public class Criteria<T> {
   }
 
   /** 分页设置，从1开始 */
-  public Criteria<T> page(int pageNumber, int pageSize) {
-    this.pageNo = pageNumber;
-    this.pageSize = pageSize;
+  public Criteria<T> page(int page, int size) {
+    this.page = page;
+    this.size = size;
     return this;
   }
 
   /** 计算 OFFSET */
   public int getOffset() {
-    return (pageNo - 1) * pageSize;
+    return (page - 1) * size;
   }
 
   // ------------------ 主表条件 (Lambda + String) ------------------

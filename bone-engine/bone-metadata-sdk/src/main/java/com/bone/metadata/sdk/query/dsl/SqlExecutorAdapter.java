@@ -225,10 +225,10 @@
 //     * 执行分页查询
 //     */
 //    public <T> PageResult<T> queryPage(CompiledQuery dataQuery, CompiledQuery countQuery,
-//                                       Class<T> entityClass, int pageNum, int pageSize) {
+//                                       Class<T> entityClass, int page, int size) {
 //        List<T> content = query(dataQuery, entityClass);
 //        long total = count(countQuery);
-//        return PageResult.of(content, total, pageNum, pageSize);
+//        return PageResult.of(content, total, page, size);
 //    }
 //
 //    // ===== 事务操作 =====

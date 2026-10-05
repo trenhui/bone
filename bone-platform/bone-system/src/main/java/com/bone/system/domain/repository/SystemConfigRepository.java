@@ -42,7 +42,7 @@ public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
    * @param keyword 为空或空白时不加过滤条件，等价于全量分页；{@code configType} 为空时不过滤类型
    */
   default PageResult<SystemConfig> pageByKeyword(
-      String keyword, ConfigType configType, int pageNum, int pageSize) {
+      String keyword, ConfigType configType, int page, int size) {
     boolean hasKeyword = keyword != null && !keyword.isBlank();
     var query = QueryBuilder.from(SystemConfig.class);
     if (hasKeyword) {
@@ -55,7 +55,7 @@ public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
     if (configType != null) {
       query.and(SystemConfig::getConfigType).eq(configType);
     }
-    return query.orderByDesc(SystemConfig::getCreatedAt).page(pageNum, pageSize);
+    return query.orderByDesc(SystemConfig::getCreatedAt).page(page, size);
   }
 
   /**

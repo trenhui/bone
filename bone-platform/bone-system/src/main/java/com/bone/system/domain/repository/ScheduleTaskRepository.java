@@ -57,7 +57,7 @@ public interface ScheduleTaskRepository extends Repository<ScheduleTask, Long> {
    * @param keyword 为空或空白时不加名称过滤；{@code status} 为空时不过滤状态
    */
   default PageResult<ScheduleTask> pageByKeywordAndStatus(
-      String keyword, TaskStatus status, int pageNum, int pageSize) {
+      String keyword, TaskStatus status, int page, int size) {
     var query = QueryBuilder.from(ScheduleTask.class);
     if (keyword != null && !keyword.isBlank()) {
       query.where(ScheduleTask::getName).contains(keyword);
@@ -65,6 +65,6 @@ public interface ScheduleTaskRepository extends Repository<ScheduleTask, Long> {
     if (status != null) {
       query.and(ScheduleTask::getStatus).eq(status);
     }
-    return query.page(pageNum, pageSize);
+    return query.page(page, size);
   }
 }

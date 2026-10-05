@@ -579,44 +579,43 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     validateCriteriaFields(criteria);
 
     // 验证分页参数
-    Integer pageNoObj = criteria.getPageNo();
-    Integer pageSizeObj = criteria.getPageSize();
-    int pageNo = Math.max(1, pageNoObj != null ? pageNoObj : DEFAULT_PAGE_NUMBER);
-    int pageSize =
+    Integer pageObj = criteria.getPage();
+    Integer sizeObj = criteria.getSize();
+    int page = Math.max(1, pageObj != null ? pageObj : DEFAULT_PAGE_NUMBER);
+    int size =
         Math.min(
-            Math.max(1, pageSizeObj != null ? pageSizeObj : DEFAULT_PAGE_SIZE),
-            MAX_PAGINATION_THRESHOLD);
+            Math.max(1, sizeObj != null ? sizeObj : DEFAULT_PAGE_SIZE), MAX_PAGINATION_THRESHOLD);
 
-    if (pageNo > MAX_PAGINATION_THRESHOLD) {
-      log.warn("Large page number: {} (consider cursor pagination).", pageNo);
+    if (page > MAX_PAGINATION_THRESHOLD) {
+      log.warn("Large page number: {} (consider cursor pagination).", page);
     }
 
     // 保存原始参数
-    Integer originalPageNumber = criteria.getPageNo();
-    Integer originalPageSize = criteria.getPageSize();
+    Integer originalPage = criteria.getPage();
+    Integer originalSize = criteria.getSize();
 
     // 优化：对于大数据集，使用延迟计数
     Long total;
     List<T> content;
 
     // 快速路径：对于第一页且数据量不大时，可以先查询数据再决定是否需要精确计数
-    if (pageNo == 1 && pageSize <= 100) {
+    if (page == 1 && size <= 100) {
       // 先查询数据
-      criteria.setPageNo(pageNo);
-      criteria.setPageSize(pageSize);
+      criteria.setPage(page);
+      criteria.setSize(size);
       CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
       content = sqlExecutor.query(query, entityClass);
 
       // 如果结果少于请求的页数，说明就是总数
-      if (content.size() < pageSize) {
+      if (content.size() < size) {
         total = (long) content.size();
       } else {
         // 否则需要精确计数
         try {
           total = countByCriteria(criteria);
         } finally {
-          criteria.setPageNo(originalPageNumber);
-          criteria.setPageSize(originalPageSize);
+          criteria.setPage(originalPage);
+          criteria.setSize(originalSize);
         }
       }
     } else {
@@ -624,18 +623,18 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       try {
         total = countByCriteria(criteria);
       } finally {
-        criteria.setPageNo(originalPageNumber);
-        criteria.setPageSize(originalPageSize);
+        criteria.setPage(originalPage);
+        criteria.setSize(originalSize);
       }
 
       // 如果总数为0，直接返回空结果
       if (total == 0) {
-        return PageResult.of(Collections.emptyList(), total, (Integer) pageNo, (Integer) pageSize);
+        return PageResult.of(Collections.emptyList(), total, (Integer) page, (Integer) size);
       }
 
       // 查询数据
-      criteria.setPageNo(pageNo);
-      criteria.setPageSize(pageSize);
+      criteria.setPage(page);
+      criteria.setSize(size);
       CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
       content = sqlExecutor.query(query, entityClass);
     }
@@ -647,7 +646,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       content.forEach(this::loadExtensionFields);
     }
 
-    return PageResult.of(content, total, (Integer) pageNo, (Integer) pageSize);
+    return PageResult.of(content, total, (Integer) page, (Integer) size);
   }
 
   @Override
@@ -666,8 +665,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   public PageResult<T> queryByCondition(
       List<QueryParam> queryParams,
       List<SortingField> sortingFields,
-      Integer pageNo,
-      Integer pageSize,
+      Integer page,
+      Integer size,
       String bizIdentityCode) {
     List<QueryParam> processedQueryParams =
         (queryParams != null) ? queryParams : Collections.emptyList();
@@ -675,10 +674,10 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         (sortingFields != null) ? sortingFields : Collections.emptyList();
     Criteria<T> criteria = buildCriteria(processedQueryParams, bizIdentityCode);
     addSortingToCriteria(criteria, processedSortingFields);
-    int processedPageNo = (pageNo != null && pageNo > 0) ? pageNo : DEFAULT_PAGE_NUMBER;
-    int processedPageSize = (pageSize != null && pageSize > 0) ? pageSize : DEFAULT_PAGE_SIZE;
-    criteria.setPageNo(processedPageNo);
-    criteria.setPageSize(processedPageSize);
+    int processedPage = (page != null && page > 0) ? page : DEFAULT_PAGE_NUMBER;
+    int processedSize = (size != null && size > 0) ? size : DEFAULT_PAGE_SIZE;
+    criteria.setPage(processedPage);
+    criteria.setSize(processedSize);
     return pageByCriteria(criteria);
   }
 
@@ -703,9 +702,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     if (log.isDebugEnabled()) {
       log.debug("QueryPage - Criteria conditions: {}", criteria.getMainConditions());
       log.debug(
-          "QueryPage - Page params: pageNo={}, pageSize={}",
-          criteria.getPageNo(),
-          criteria.getPageSize());
+          "QueryPage - Page params: page={}, size={}", criteria.getPage(), criteria.getSize());
     }
     return pageByCriteria(criteria);
   }
@@ -743,8 +740,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       Criteria<T> criteria,
       List<String> groupBy,
       List<String> having,
-      int pageNumber,
-      int pageSize) {
+      int page,
+      int size) {
     validateAggregations(aggregations);
 
     Long total;
@@ -757,11 +754,11 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     }
 
     // 获取当前页数据
-    criteria.setPageNo(pageNumber);
-    criteria.setPageSize(pageSize);
+    criteria.setPage(page);
+    criteria.setSize(size);
     List<Map<String, Object>> content = aggregate(aggregations, criteria, groupBy, null);
 
-    return PageResult.of(content, total, pageNumber, pageSize);
+    return PageResult.of(content, total, page, size);
   }
 
   /** 使用专用计数构建器计算带HAVING条件的分组结果总数 */
