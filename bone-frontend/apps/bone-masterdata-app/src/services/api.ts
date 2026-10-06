@@ -19,7 +19,7 @@ import type {
   UpdateDataQualityRuleReq,
   CreateMasterDataRecordReq,
   UpdateMasterDataRecordReq,
-  MasterDataEntityPageQry,
+  MasterDataEntityPageRequest,
   MasterDataRecordListQry,
   DataQualityRuleListQry,
   ImportDuplicateStrategy,
@@ -69,7 +69,7 @@ function normalizePage<T>(resp: ApiResponse<PageResult<T>>): ApiResponse<Normali
 
 // 主数据模型相关API
 export const masterDataEntityApi = {
-  page: async (params: MasterDataEntityPageQry): Promise<ApiResponse<NormalizedPageResult<MasterDataEntity>>> => {
+  page: async (params: MasterDataEntityPageRequest): Promise<ApiResponse<NormalizedPageResult<MasterDataEntity>>> => {
     return normalizePage(await apiClient.get(`${MD}/entities`, { params }));
   },
   detail: (id: string): Promise<ApiResponse<MasterDataEntity>> => {

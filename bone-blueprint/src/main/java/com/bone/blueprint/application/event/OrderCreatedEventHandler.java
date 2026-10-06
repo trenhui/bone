@@ -19,7 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * <p><b>为何不在下单事务内预留</b>：{@code reserveStock} 是远程<strong>写</strong>，置于本地 {@code @Transactional}
  * 内会产生「库存悬挂」——远程预留成功而本地事务回滚，预留就再无对应订单，库存被永久占用； 且远程慢会拖长事务、占用连接池。此处订单已提交，预留失败不会造成悬挂，由补偿/对账兜底 （与
- * {@code confirmStock}/{@code releaseStock} 的最终一致策略一致）。
+ * {@code confirmStock}/{@code releaseStockLine} 的最终一致策略一致）。
  *
  * <p><b>失败处理</b>：单个商品预留失败不中断其余商品（避免局部失败放大为整单失败），但必须<strong>落 Outbox 可观测</strong>—— 经 {@link
  * StockActionFailureRecorder}（REQUIRES_NEW）写入 {@code OrderStockActionFailedIntegrationEvent}， 与

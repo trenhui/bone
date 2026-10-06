@@ -6,10 +6,35 @@ import com.bone.blueprint.domain.model.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.model.shared.valueobject.Money;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 class OrderTest {
+
+  /** P1-3/P2-4: 订单号日期段必须在东八区生成，与宿主机默认时区无关（UTC 宿主机是最容易踩的坑）。 */
+  @Test
+  void orderNoDateSegmentUsesBusinessTimezone() {
+    ZoneId hostDefault = ZoneId.systemDefault();
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 1, new BigDecimal("100"));
+    String orderNo = Order.create(1L, 1L, 1L, Collections.singletonList(item)).getOrderNo();
+    String businessDate =
+        LocalDate.now(Order.ORDER_NO_ZONE).format(DateTimeFormatter.BASIC_ISO_DATE);
+    assertTrue(
+        orderNo.contains(businessDate),
+        () ->
+            "订单号应含东八区日期 "
+                + businessDate
+                + "，实际: "
+                + orderNo
+                + "（宿主机 "
+                + hostDefault
+                + " 日期为 "
+                + LocalDate.now(hostDefault).format(DateTimeFormatter.BASIC_ISO_DATE)
+                + "）");
+  }
 
   @Test
   void testCreateOrderWithEmptyItems() {

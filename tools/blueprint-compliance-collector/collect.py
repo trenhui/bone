@@ -93,7 +93,7 @@ def build_as_is_checks() -> list[dict]:
             "evidence": {
                 "java": _grep_files(
                     MAIN_JAVA,
-                    r"OrderPageQry|OrderSummaryResp|ResponseEntity\.created",
+                    r"OrderPageRequest|OrderSummaryResp|ResponseEntity\.created",
                 ),
                 "jakarta_validation": _grep_files(
                     MAIN_JAVA, r"jakarta\.validation"

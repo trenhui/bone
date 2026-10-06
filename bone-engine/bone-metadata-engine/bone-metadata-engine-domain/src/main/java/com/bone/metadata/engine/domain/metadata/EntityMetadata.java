@@ -36,8 +36,18 @@ public class EntityMetadata implements Cloneable {
   // 修复RelationshipMetadata类找不到的问题
   // private Map<String, RelationshipMetadata> relationships = new HashMap<>();
   private Map<String, Object> relationships = new HashMap<>(); // 使用Object代替
-  // 使用简单的Map代替ValidationRules内部类
-  private Map<String, Object> validationRules = new HashMap<>();
+
+  /**
+   * 实体验证规则列表。
+   *
+   * <p>此处此前是 {@code Map<String, Object>}，而 {@link #getValidationRules()} 的契约是返回 {@code
+   * List<Object>} —— 两者类型不匹配，导致该 getter 被写成"简化实现，恒返回空列表"，setter 则被整体注释掉。
+   * 后果是<b>整条自定义规则校验链路在数据层就断了</b>：{@code ValidationEngine#fallbackCustomRuleValidation} 里的 {@code
+   * rules.isEmpty()} 恒为 true，{@code RuleEngine} 的业务规则分支同样永远拿不到规则。
+   *
+   * <p>现改为与 getter 契约一致的 {@code List}，让规则真正可存取。
+   */
+  private List<Object> validationRules = new ArrayList<>();
 
   /** 实体操作列表 */
   private List<OperationMetadata> operations = new ArrayList<>();
@@ -155,15 +165,18 @@ public class EntityMetadata implements Cloneable {
 
   // 移除重复方法，类中已有这些方法的实现
 
+  /**
+   * 设置验证规则列表。
+   *
+   * <p>此前该方法体被整体注释（"暂时不做任何处理"），是上游规则配置丢失的直接原因。 现在真正写入 {@link #validationRules}；入参为 {@code null}
+   * 时按"清空"处理，避免残留旧规则。
+   */
   public void setValidationRules(List<ValidationRuleMetadata> rulesList) {
-    // 暂时注释掉getRules()调用，因为ValidationRules类中似乎没有这个方法
-    // this.validationRules.getRules().clear();
-    // if (rulesList != null) {
-    //     for (ValidationRuleMetadata rule : rulesList) {
-    //         this.validationRules.getRules().put(rule.getName(), rule);
-    //     }
-    // }
-    // 暂时不做任何处理
+    this.validationRules = new ArrayList<>();
+    if (rulesList == null) {
+      return;
+    }
+    this.validationRules.addAll(rulesList);
   }
 
   /** 获取查询缓存TTL（秒） */
@@ -183,8 +196,7 @@ public class EntityMetadata implements Cloneable {
 
   /** 获取验证规则列表 */
   public List<Object> getValidationRules() {
-    // 简化实现，返回空列表
-    return new ArrayList<>();
+    return validationRules;
   }
 
   /** 获取API名称 */
@@ -224,7 +236,7 @@ public class EntityMetadata implements Cloneable {
       cloned.operations = new ArrayList<>(this.operations);
       cloned.attributes = new HashMap<>(this.attributes);
       cloned.relationships = new HashMap<>(this.relationships);
-      cloned.validationRules = new HashMap<>(this.validationRules);
+      cloned.validationRules = new ArrayList<>(this.validationRules);
       return cloned;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException("Clone not supported", e);

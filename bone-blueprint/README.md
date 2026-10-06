@@ -181,6 +181,27 @@ curl -H "Authorization: Bearer $TOKEN" \
 上述三个扫描任务的**周期与门限均可配置**（`bone.blueprint.schedule.*`）：cron 由 `@Scheduled` 占位符直读，超时阈值 /
 宽限期由 `@Value` 注入（默认订单 30min、支付 30min、对账宽限 10min）。调整超时窗口属运营动作，不需改代码发版。
 
+#### 本模块 5 个定时 Job 的多实例部署假设（重要）
+
+`adapter/schedule` 下共 5 个 `@Scheduled` 任务：上述 3 个扫描 Job + 2 个中继 Job
+（`OrderOutboxRelayJob` / `ChannelBroadcastRelayJob`）。它们**均未接分布式锁（ShedLock 等）**，
+互斥依赖**单实例部署假设**——这是样板工程的显式契约，不是疏漏：
+
+- **假设**：`bone-blueprint` 单实例部署。多个扫描 Job 天然幂等（取消/关闭走状态机二次校验），
+  并发但不同实例时结果收敛一致，仅浪费一次扫描；
+- **两个中继 Job 依赖 Outbox CAS 抢占**：抢占走 `updateByCriteria` 的 `WHERE status='PENDING'` 行翻转，并发实例各抢互不重叠的行集；
+  阶段 2 按**本实例抢占成功的 id 集合**读回（不是按 `status='PROCESSING'` 读全表），因此**只投递自己抢到的记录**；
+- **卡死回收有年龄阈值**：`reconcileStuck` 只回收 `claimed_at` 早于 `bone.blueprint.outbox.stuck-timeout-ms`（默认 60s）的 PROCESSING，
+  不会把「其他实例正在投递中」的记录误判为崩溃遗留；
+- ⚠️ **以上是两条独立路径，只修一条仍会双投**：年龄阈值只管「回退误判」，按 id 读回只管「读回越界」。
+  阈值正确但读回按 status 查全表时，实例 B 仍会把实例 A 正在投递的记录捞进自己批次重复投递。
+  改动任一relay 时请连带看另一条路径，`OrderOutboxRelayPortAdapter.findClaimed` 与
+  `ChannelBroadcastTaskRepository.findProcessingByIds` 是同构实现；
+- **若部署多实例**：必须先接入 ShedLock（或等价互斥）再放开 `@Scheduled`，否则扫描 Job 会在同一
+  周期内对同一批超时单重复下发命令（下游幂等可兜底，但日志与事件量翻倍）。
+
+Outbox 中继与卡死回收的完整机制见下文「RocketMQ Outbox 中继」。
+
 #### 读侧归属规则 + 受控例外
 
 **归属规则（一句话）**：**本聚合读 → 域仓储**（ADR-0030 D2 / D6，**含本聚合的全租户运维扫描**）；

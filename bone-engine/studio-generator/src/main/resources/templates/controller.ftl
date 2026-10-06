@@ -3,7 +3,7 @@ package ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.controller;
 import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.assembler.${table.customEntityName}Assembler;
 import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.request.Create${table.customEntityName}Req;
 import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.request.Update${table.customEntityName}Req;
-import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.request.${table.customEntityName}PageQry;
+import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.request.${table.customEntityName}PageRequest;
 import ${utils.getPackagePath(basePackage, moduleName)}.adapter.web.dto.response.${table.customEntityName}Resp;
 import ${utils.getPackagePath(basePackage, moduleName)}.application.${table.customEntityName}ApplicationService;
 import com.bone.core.model.ApiResponse;
@@ -90,7 +90,7 @@ public class ${table.customEntityName}Controller {
   @Operation(summary = "分页查询${table.tableComment!'实体'}")
   @GetMapping
   public ApiResponse<PageResult<${table.customEntityName}Resp>> page(
-      @Valid @ModelAttribute ${table.customEntityName}PageQry qry) {
+      @Valid @ModelAttribute ${table.customEntityName}PageRequest qry) {
     return ApiResponse.success(
         applicationService.page(qry.getPage(), qry.getSize()).map(assembler::to${table.customEntityName}Resp));
   }

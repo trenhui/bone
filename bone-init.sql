@@ -913,6 +913,7 @@ CREATE TABLE bp_outbox (
     schema_version      VARCHAR(16)     NOT NULL DEFAULT '1.0' COMMENT '信封 schema 版本',
     status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '投递状态：PENDING（待抢占）/PROCESSING（已抢占投递中）/SENT（投递成功）/FAILED（终态失败）',
     retry_count         INT             NOT NULL DEFAULT 0 COMMENT '中继重试次数',
+    claimed_at          DATETIME(3)     DEFAULT NULL COMMENT '抢占时间（CAS 翻转 PENDING→PROCESSING 时写入）。多实例下卡死自愈的判据：PROCESSING 且 claimed_at 早于 stuck-timeout-ms（默认 60s）或为 NULL（字段上线前的存量行）才允许回收为 PENDING——缺失该判据会把其他实例正在投递的记录误判为崩溃遗留，造成双投',
     sent_at             DATETIME(3)     DEFAULT NULL COMMENT '发送成功时间',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
@@ -921,8 +922,17 @@ CREATE TABLE bp_outbox (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (id),
     UNIQUE KEY uk_bp_outbox_event_id (event_id),
-    KEY idx_bp_outbox_status (status, created_at)
+    KEY idx_bp_outbox_status (status, created_at),
+    -- 卡死自愈查询（reconcileStuck）：WHERE status='PROCESSING' AND (claimed_at < 阈值 OR claimed_at IS NULL)，
+    -- 两段查询共用本索引的 (status, claimed_at) 前缀，避免全表扫 PROCESSING。
+    KEY idx_bp_outbox_status_claimed (status, claimed_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='蓝图集成事件 Outbox';
+
+-- ↑ 存量库升级提示（2026-10-06）：已部署环境执行
+--   ALTER TABLE bp_outbox
+--     ADD COLUMN claimed_at DATETIME(3) DEFAULT NULL COMMENT '抢占时间（CAS 翻转 PENDING→PROCESSING 时写入）' AFTER retry_count,
+--     ADD KEY idx_bp_outbox_status_claimed (status, claimed_at);
+--   存量 PROCESSING 行 claimed_at 为 NULL，中继自愈（reconcileStuck）按「遗留」直接回收为 PENDING，无需人工刷数。
 
 -- 消费端幂等去重表（消息与事件规范 §5）：Outbox 为至少一次投递，消费端必须按 eventId 落库去重。
 -- 保留期须 ≥ 最长重试窗口，可按 created_at 定期归档（见 idx_processed_event_created_at）。

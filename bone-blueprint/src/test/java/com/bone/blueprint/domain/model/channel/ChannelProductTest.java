@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.blueprint.domain.model.channel.valueobject.ListingStatus;
+import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ class ChannelProductTest {
     product.markListing(null);
     product.markOnline("TB900001", Instant.now());
 
-    assertThrows(IllegalStateException.class, () -> product.markListing(null));
+    assertThrows(DomainException.class, () -> product.markListing(null));
   }
 
   @Test

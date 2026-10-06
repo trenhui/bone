@@ -37,6 +37,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li><b>网络 IO 绝不在 DB 事务内</b>：抢占与终态标记都是极短小事务，调渠道在事务外；
  *   <li><b>抢占用 CAS 而非悲观锁</b>：{@code updateByCriteria} 带 {@code WHERE status='PENDING'}，
  *       多实例并发各抢互不重叠的行集， 零死锁 （HC-0031 禁 FOR UPDATE）；
+ *   <li><b>只同步自己抢到的</b>：抢占返回 id 列表，阶段 2 按 id 读回（{@code findProcessingByIds}）， <strong>不按 {@code
+ *       status='PROCESSING'} 读全表</strong>。多实例下别的实例正在投递的任务同样是 PROCESSING， 读全表会把它捞进本批次再同步一次 ⇒
+ *       重复同步渠道库存。年龄阈值只管「回退误判」，按 id 读回只管「读回越界」， <strong>两条独立路径，只修一条仍会双投</strong>（与 {@code
+ *       OrderOutboxRelayPortAdapter} 同构）。
  *   <li><b>终态标记独立事务</b>：{@code TransactionTemplate(REQUIRES_NEW)}， 避免被未来可能加上的外层事务吞掉。
  * </ol>
  */
@@ -68,12 +72,14 @@ public class ChannelBroadcastRelayPortAdapter implements ChannelBroadcastRelayPo
     reconcileStuck();
 
     // 阶段 1：CAS 抢占 PENDING → PROCESSING（极短事务）
-    if (claimBatch() == 0) {
+    List<Long> claimedIds = claimBatch();
+    if (claimedIds.isEmpty()) {
       return 0;
     }
 
-    // 阶段 2：读回 PROCESSING
-    List<ChannelBroadcastTask> claimed = broadcastTaskRepository.findProcessing();
+    // 阶段 2：按「本实例刚抢占成功的 id」读回——不按 status 读全表 PROCESSING，
+    // 否则多实例下会把别的实例正在投递的任务捞进来重复同步（双投）。
+    List<ChannelBroadcastTask> claimed = broadcastTaskRepository.findProcessingByIds(claimedIds);
     if (claimed == null || claimed.isEmpty()) {
       return 0;
     }
@@ -152,14 +158,18 @@ public class ChannelBroadcastRelayPortAdapter implements ChannelBroadcastRelayPo
     return candidate.getCreatedAt().isAfter(current.getCreatedAt());
   }
 
-  /** CAS 抢占：{@code updateByCriteria} 带 {@code WHERE id=? AND status='PENDING'}。 */
-  private int claimBatch() {
+  /**
+   * CAS 抢占：{@code updateByCriteria} 带 {@code WHERE id=? AND status='PENDING'}。
+   *
+   * @return CAS 抢占成功的 id 列表——阶段 2 据此按 id 读回，是「只同步自己抢到的」这一不变量的唯一载体
+   */
+  private List<Long> claimBatch() {
     List<ChannelBroadcastTask> pendings =
         broadcastTaskRepository.findPendingBatch(properties.getBatchSize());
     if (pendings == null || pendings.isEmpty()) {
-      return 0;
+      return List.of();
     }
-    int claimed = 0;
+    List<Long> claimedIds = new ArrayList<>(pendings.size());
     for (ChannelBroadcastTask task : pendings) {
       task.markClaimed();
       int n =
@@ -170,10 +180,10 @@ public class ChannelBroadcastRelayPortAdapter implements ChannelBroadcastRelayPo
                   .eq(ChannelBroadcastTask::getStatus, BroadcastTaskStatus.PENDING)
                   .disableTenantFilter());
       if (n > 0) {
-        claimed++;
+        claimedIds.add(task.getId());
       }
     }
-    return claimed;
+    return claimedIds;
   }
 
   /** 自愈卡死的 PROCESSING（更新时刻早于 stuckTimeoutMs 视为上次中继崩溃遗留）。 */

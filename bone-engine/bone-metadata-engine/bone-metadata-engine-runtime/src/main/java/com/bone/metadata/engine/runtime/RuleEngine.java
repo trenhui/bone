@@ -3,9 +3,6 @@ package com.bone.metadata.engine.runtime;
 // 统一使用metadata包中的类
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
-import com.bone.metadata.engine.runtime.rule.CustomFunctionRegistry;
-import com.bone.metadata.engine.runtime.rule.EvaluationContextFactory;
-import com.bone.metadata.engine.runtime.rule.ExpressionCache;
 import com.bone.metadata.engine.runtime.validation.ValidationResult;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,26 +11,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 /**
  * Rule Engine Responsible for parsing and executing business rules, calculated fields, and
  * conditional expressions defined in metadata
  */
-@Component
 public class RuleEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RuleEngine.class);
 
   private final ExpressionEngine expressionEngine;
   private final MetadataEngine metadataEngine;
-  private final ExpressionCache expressionCache;
-  private final EvaluationContextFactory contextFactory;
-  private final CustomFunctionRegistry functionRegistry;
 
   // Performance metrics
   private final AtomicLong ruleEvaluations = new AtomicLong(0);
@@ -41,63 +30,10 @@ public class RuleEngine {
   private final AtomicLong fieldCalculations = new AtomicLong(0);
   private final AtomicLong fieldCalculationFailures = new AtomicLong(0);
 
-  @Autowired
-  public RuleEngine(
-      ExpressionEngine expressionEngine,
-      MetadataEngine metadataEngine,
-      ExpressionCache expressionCache,
-      EvaluationContextFactory contextFactory,
-      CustomFunctionRegistry functionRegistry) {
+  public RuleEngine(ExpressionEngine expressionEngine, MetadataEngine metadataEngine) {
     this.expressionEngine = expressionEngine;
     this.metadataEngine = metadataEngine;
-    this.expressionCache = expressionCache;
-    this.contextFactory = contextFactory;
-    this.functionRegistry = functionRegistry;
-
-    // 注册内置函数
-    registerBuiltInFunctions();
-
     LOGGER.info("Rule engine initialized successfully");
-  }
-
-  /** Register built-in functions */
-  private void registerBuiltInFunctions() {
-    try {
-      // 注册常用函数
-      registerFunctionByName("isNull", "检查值是否为null");
-      registerFunctionByName("isNotNull", "检查值是否不为null");
-      registerFunctionByName("isEmpty", "检查字符串是否为空");
-      registerFunctionByName("isNotEmpty", "检查字符串是否不为空");
-      registerFunctionByName("length", "获取字符串长度");
-
-      LOGGER.info("Built-in functions registered successfully");
-    } catch (Exception e) {
-      LOGGER.warn("Failed to register built-in functions", e);
-    }
-  }
-
-  private void registerFunctionByName(String functionName, String description) {
-    try {
-      functionRegistry.registerFunction(functionName, functionName, description);
-    } catch (Exception e) {
-      LOGGER.debug("Failed to register function {}", functionName, e);
-    }
-  }
-
-  /** Get compiled expression */
-  private Object getCompiledExpression(String expression) {
-    return expressionCache.get(
-        expression,
-        expr -> {
-          try {
-            // 这里可以根据需要进行表达式编译
-            // 目前直接返回表达式字符串，由ExpressionEngine处理
-            return expr;
-          } catch (Exception e) {
-            LOGGER.error("Expression compilation failed: {}", expr, e);
-            throw new RuntimeException("Expression compilation failed", e);
-          }
-        });
   }
 
   /**
@@ -135,14 +71,10 @@ public class RuleEngine {
     // 按依赖关系排序计算字段
     calculatedFields = sortCalculatedFieldsByDependency(calculatedFields, metadata);
 
-    // 创建评估上下文
-    EvaluationContextFactory.EvaluationContext context =
-        contextFactory.createContext(entityData, null);
-
     // 计算字段值
     Map<String, Object> result = new HashMap<>(entityData);
     for (SmartFieldMetadata field : calculatedFields) {
-      calculateField(field, entityName, result, context);
+      calculateField(field, entityName, result);
     }
 
     return result;
@@ -203,10 +135,7 @@ public class RuleEngine {
 
   /** 计算单个字段 */
   private void calculateField(
-      SmartFieldMetadata field,
-      String entityName,
-      Map<String, Object> result,
-      EvaluationContextFactory.EvaluationContext context) {
+      SmartFieldMetadata field, String entityName, Map<String, Object> result) {
     fieldCalculations.incrementAndGet();
 
     try {
@@ -216,17 +145,14 @@ public class RuleEngine {
         return;
       }
 
-      // 获取预编译的表达式
-      Object compiledExpression = getCompiledExpression(expression);
-
       // 计算字段值
-      Object value = evaluateFieldExpression(compiledExpression, result, context);
+      Object value = evaluateFieldExpression(expression, result);
 
       // 获取字段名
       String fieldName = getFieldName(field);
 
-      // 更新结果和上下文
-      updateFieldValue(fieldName, value, result, context);
+      // 更新结果
+      updateFieldValue(fieldName, value, result);
 
       LOGGER.debug("Field calculation successful: {}.{} = {}", entityName, fieldName, value);
     } catch (Exception e) {
@@ -273,22 +199,8 @@ public class RuleEngine {
   }
 
   /** 更新字段值 */
-  private void updateFieldValue(
-      String fieldName,
-      Object value,
-      Map<String, Object> result,
-      EvaluationContextFactory.EvaluationContext context) {
-    // 更新结果集
+  private void updateFieldValue(String fieldName, Object value, Map<String, Object> result) {
     result.put(fieldName, value);
-
-    // 尝试更新评估上下文
-    try {
-      Method updateMethod =
-          context.getClass().getMethod("updateEntityData", String.class, Object.class);
-      updateMethod.invoke(context, fieldName, value);
-    } catch (Exception e) {
-      // 如果没有这个方法，忽略
-    }
   }
 
   /** Handle field calculation error */
@@ -312,11 +224,7 @@ public class RuleEngine {
   }
 
   /** Evaluate field expression */
-  private Object evaluateFieldExpression(
-      Object compiledExpression,
-      Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context) {
-    String expression = compiledExpression.toString();
+  private Object evaluateFieldExpression(String expression, Map<String, Object> entityData) {
     try {
       return expressionEngine.evaluateExpression(expression, entityData);
     } catch (Exception e) {
@@ -432,10 +340,6 @@ public class RuleEngine {
       return;
     }
 
-    // 创建评估上下文
-    EvaluationContextFactory.EvaluationContext context =
-        contextFactory.createContext(entityData, null);
-
     // 转换和过滤规则
     List<Object> rules =
         businessRules.stream().filter(Objects::nonNull).collect(Collectors.toList());
@@ -451,7 +355,7 @@ public class RuleEngine {
         }
 
         // 验证规则
-        validateSingleRule(rule, entityData, context, result);
+        validateSingleRule(rule, entityData, result);
 
         // 如果有错误且启用了快速失败模式，停止验证
         if (!result.isValid() && isFailFastEnabled()) {
@@ -477,27 +381,22 @@ public class RuleEngine {
 
   /** 验证单个规则 */
   private void validateSingleRule(
-      Object rule,
-      Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context,
-      ValidationResult result) {
+      Object rule, Map<String, Object> entityData, ValidationResult result) {
     try {
       // 根据规则类型进行验证
       if (rule instanceof com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) {
         validateBusinessRule(
             (com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) rule,
             entityData,
-            context,
             result);
       } else if (rule instanceof com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) {
         validateValidationRule(
             (com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) rule,
             entityData,
-            context,
             result);
       } else {
         // 使用反射处理通用规则对象
-        validateRuleWithReflection(rule, entityData, context, result);
+        validateRuleWithReflection(rule, entityData, result);
       }
     } catch (Exception e) {
       ruleFailures.incrementAndGet();
@@ -515,7 +414,6 @@ public class RuleEngine {
   private void validateBusinessRule(
       com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
       Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
     // 检查规则是否启用
     if (!isRuleEnabled(rule)) {
@@ -526,15 +424,14 @@ public class RuleEngine {
       // 检查条件
       String condition = getCondition(rule);
       if (condition != null && !condition.trim().isEmpty()) {
-        Object compiledCondition = getCompiledExpression(condition);
-        boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
+        boolean conditionMet = evaluateCondition(condition, entityData);
         if (!conditionMet) {
           return; // 条件不满足，跳过验证
         }
       }
 
       // 获取并评估表达式
-      validateRuleExpression(rule, entityData, context, result);
+      validateRuleExpression(rule, entityData, result);
     } catch (Exception e) {
       LOGGER.error("Business rule validation failed", e);
       result.addError(createGeneralError("Business rule validation exception: " + e.getMessage()));
@@ -545,7 +442,6 @@ public class RuleEngine {
   private void validateValidationRule(
       com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata rule,
       Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
     // 检查规则是否激活
     if (!rule.isEnabled()) {
@@ -560,8 +456,7 @@ public class RuleEngine {
       }
 
       // 评估表达式
-      Object compiledExpression = getCompiledExpression(expression);
-      boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+      boolean isValid = evaluateRuleExpression(expression, entityData);
 
       if (!isValid) {
         // 构建错误信息
@@ -585,10 +480,7 @@ public class RuleEngine {
 
   /** 使用反射验证通用规则对象 */
   private void validateRuleWithReflection(
-      Object rule,
-      Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context,
-      ValidationResult result) {
+      Object rule, Map<String, Object> entityData, ValidationResult result) {
     try {
       // 检查规则是否启用/激活
       if (!isRuleActive(rule)) {
@@ -598,8 +490,7 @@ public class RuleEngine {
       // 检查条件
       String condition = getStringProperty(rule, "getCondition");
       if (condition != null && !condition.trim().isEmpty()) {
-        Object compiledCondition = getCompiledExpression(condition);
-        boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
+        boolean conditionMet = evaluateCondition(condition, entityData);
         if (!conditionMet) {
           return;
         }
@@ -611,8 +502,7 @@ public class RuleEngine {
         return;
       }
 
-      Object compiledExpression = getCompiledExpression(expression);
-      boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+      boolean isValid = evaluateRuleExpression(expression, entityData);
 
       if (!isValid) {
         // 构建错误信息
@@ -643,7 +533,6 @@ public class RuleEngine {
   private void validateRuleExpression(
       com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
       Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
     // 获取表达式
     String expression = rule.getExpression();
@@ -652,8 +541,7 @@ public class RuleEngine {
     }
 
     // 评估表达式
-    Object compiledExpression = getCompiledExpression(expression);
-    boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+    boolean isValid = evaluateRuleExpression(expression, entityData);
 
     if (!isValid) {
       String fieldName = rule.getFieldName();
@@ -861,11 +749,7 @@ public class RuleEngine {
   }
 
   /** 评估条件表达式 */
-  private boolean evaluateCondition(
-      Object compiledCondition,
-      Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context) {
-    String condition = compiledCondition.toString();
+  private boolean evaluateCondition(String condition, Map<String, Object> entityData) {
     try {
       Object result = expressionEngine.evaluateExpression(condition, entityData);
       return Boolean.TRUE.equals(result);
@@ -876,11 +760,7 @@ public class RuleEngine {
   }
 
   /** 评估规则表达式 */
-  private boolean evaluateRuleExpression(
-      Object compiledExpression,
-      Map<String, Object> entityData,
-      EvaluationContextFactory.EvaluationContext context) {
-    String expression = compiledExpression.toString();
+  private boolean evaluateRuleExpression(String expression, Map<String, Object> entityData) {
     try {
       Object result = expressionEngine.evaluateExpression(expression, entityData);
       return Boolean.TRUE.equals(result);
@@ -950,18 +830,5 @@ public class RuleEngine {
     public CalculationException(String message, Throwable cause) {
       super(message, null, null, cause);
     }
-  }
-
-  /** 提供默认的RuleEngine Bean */
-  @ConditionalOnMissingBean
-  @Bean
-  public RuleEngine defaultRuleEngine(
-      ExpressionEngine expressionEngine,
-      MetadataEngine metadataEngine,
-      ExpressionCache expressionCache,
-      EvaluationContextFactory contextFactory,
-      CustomFunctionRegistry functionRegistry) {
-    return new RuleEngine(
-        expressionEngine, metadataEngine, expressionCache, contextFactory, functionRegistry);
   }
 }

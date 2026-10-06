@@ -37,7 +37,7 @@
 | [0027](./0027-module-layer-semantics-before-physical.md) | 模块层级语义先立、物理结构后收（Kernel/Framework/Engine/Platform，**已接受**） |
 | [0028](./0028-application-service-first-selective-cqrs.md) | Application Service First + Selective CQRS（**已接受**） |
 | [0029](./0029-sdk-auto-tenant-filter.md) | SDK 查询/更新/删除自动注入 tenant_id（落实多租户规范 §3，**已接受 / 已实现**） |
-| [0030](./0030-domain-repository-read-merge.md) | 单一仓储 + 外置 `.sql` 优先 + `@TenantScope` 自动租户注入（**草案 · 待架构组批准**） |
+| [0030](./0030-domain-repository-read-merge.md) | 单一仓储 + 外置 `.sql` 优先 + `@TenantScope` 自动租户注入（**已采纳 / Accepted**，正文与 DDD 规范 G-1.6 均按已采纳引用） |
 | [0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md) | 写路径租户护栏补全 + SDK 原生乐观锁（`@Version`）+ 异步入口租户声明（**提议 · D0 已实现，D1~D3 待批准**） |
 | [0032](./0032-controlled-batch-convergence.md) | 受控批量收敛通道 — 一次性批量重构的授权与登记（**已采纳**，含 bone-iam 2026-09-20 先例） |
 | [0033](./0033-application-collaboration-service.md) | 应用层协作服务（`application/service`）的定位与落点判据（**已撤销**，由 [0035](./0035-application-layer-keeps-only-application-service.md) 取代） |

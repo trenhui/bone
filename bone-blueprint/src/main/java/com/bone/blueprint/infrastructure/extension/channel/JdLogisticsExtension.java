@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
     tags = {"channel=JD"},
     weight = 100)
 @RequiredArgsConstructor
-public class JdLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
+public class JdLogisticsExtension implements ExtensionChannelFulfillmentExtPoint {
 
   /** 【待核对】京东以「配送单创建」表达发货回传，接口名需按当期文档核对。 */
   private static final String API_PUSH_SHIPMENT = "jos.waybill.create";
@@ -76,7 +76,7 @@ public class JdLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
     }
     ChannelApiResult result =
         openApiClient.call(
-            ChannelApiRequest.of("JD", API_QUERY_TRACE, request.tenantId())
+            ChannelApiRequest.readOnly("JD", API_QUERY_TRACE, request.tenantId())
                 .with("waybillCode", request.trackingNo()));
     if (!result.success()) {
       return ChannelTraceResult.fail(

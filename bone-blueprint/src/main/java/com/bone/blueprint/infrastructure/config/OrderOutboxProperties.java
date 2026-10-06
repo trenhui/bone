@@ -41,4 +41,11 @@ public class OrderOutboxProperties {
 
   /** 死信主题：中继重试超限后转投，人工/工具重放（消息与事件规范 §6）。 */
   private String deadLetterTopic = "platform.dead_letter.v1";
+
+  /**
+   * PROCESSING 卡死判定阈值（毫秒）：抢占时刻早于 now - stuckTimeoutMs 才视为「上轮崩溃遗留」， 供 reconcileStuck
+   * 回收。多实例部署时各实例投递耗时不同，阈值必须显著大于单轮投递的长尾 耗时（MQ 同步发送超时 + GC 停顿），否则会把其他实例正在投递的记录翻回 PENDING 造成双投。 默认
+   * 60s：远大于普通 MQ 同步发送超时（通常 ≤5s），留给慢节点足够余量。
+   */
+  private long stuckTimeoutMs = 60_000;
 }

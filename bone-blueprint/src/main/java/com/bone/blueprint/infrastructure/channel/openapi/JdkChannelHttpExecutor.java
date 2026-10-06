@@ -8,6 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,14 @@ import org.springframework.stereotype.Component;
 public class JdkChannelHttpExecutor implements ChannelHttpExecutor {
 
   private final ChannelOpenApiProperties properties;
+
+  /**
+   * 缓存的客户端快照。
+   *
+   * <p>{@link HttpClient} 线程安全，但「重建」这一步要与并发请求协调：用 {@link AtomicReference#compareAndSet} 让
+   * 只有一个线程真正替换，其余线程继续用旧实例，避免把在途请求打断。
+   */
+  private final AtomicReference<ClientHolder> cached = new AtomicReference<>();
 
   @Override
   public ChannelHttpResponse post(
@@ -62,11 +71,41 @@ public class JdkChannelHttpExecutor implements ChannelHttpExecutor {
     }
   }
 
-  /** 客户端实例按超时缓存：每次调用都 new 一个会丢连接池复用。 */
+  /**
+   * 取可用的 {@link HttpClient}：命中缓存直接复用，键变化时重建。
+   *
+   * <p><b>为什么必须缓存（2026-10-06 修正）</b>：早期实现每次请求都 {@code HttpClient.newBuilder()...build()}，
+   * 注释写着「按超时缓存」但代码里<b>没有任何缓存</b>。{@code HttpClient} 内部持有连接池与 selector 线程池， 每次新建等于每次重建连接池 ⇒ 高并发下
+   * TCP/TLS 握手开销被放大 N 倍，TIME_WAIT 堆积、 偶发「connect timed out」。改为按「连接超时 + 重定向开关」缓存实例，配置变更时重建。
+   *
+   * <p>缓存键<b>只含连接层参数</b>：读超时是每请求设在 {@link HttpRequest} 上的，不影响连接池，进键只会造成无谓重建。
+   */
   private HttpClient client() {
-    return HttpClient.newBuilder()
-        .connectTimeout(Duration.ofMillis(properties.getConnectTimeoutMs()))
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .build();
+    int key = clientKey();
+    ClientHolder holder = cached.get();
+    if (holder != null && holder.key() == key) {
+      return holder.client();
+    }
+    HttpClient rebuilt =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(properties.getConnectTimeoutMs()))
+            .followRedirects(
+                properties.isFollowRedirects()
+                    ? HttpClient.Redirect.NORMAL
+                    : HttpClient.Redirect.NEVER)
+            .build();
+    // CAS：并发下只有一个线程真正替换，其余线程继续用旧实例（不打断在途请求）
+    if (cached.compareAndSet(holder, new ClientHolder(rebuilt, key))) {
+      log.debug("渠道 HTTP 客户端已重建（连接配置变更）: connectTimeoutMs={}", properties.getConnectTimeoutMs());
+    }
+    return rebuilt;
   }
+
+  /** 客户端缓存键：只纳入影响连接行为的参数。 */
+  private int clientKey() {
+    return properties.getConnectTimeoutMs() * 31 + (properties.isFollowRedirects() ? 1 : 0);
+  }
+
+  /** 客户端快照：{@link HttpClient} 与其缓存键。用不可变 record 而非可变字段，便于 CAS 替换。 */
+  private record ClientHolder(HttpClient client, int key) {}
 }

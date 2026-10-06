@@ -204,7 +204,7 @@ export interface UpdateMasterDataRecordReq {
   effectiveTo?: string;
 }
 
-export interface MasterDataEntityPageQry {
+export interface MasterDataEntityPageRequest {
   page?: number;
   size?: number;
   name?: string;

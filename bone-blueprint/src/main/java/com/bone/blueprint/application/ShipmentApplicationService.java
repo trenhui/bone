@@ -18,6 +18,7 @@ import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.repository.ShipmentRepository;
 import com.bone.blueprint.domain.repository.ShipmentTraceRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.time.Instant;
@@ -148,7 +149,7 @@ public class ShipmentApplicationService {
     }
     try {
       entity.ship(logisticsCompany, trackingNo, Instant.now());
-    } catch (IllegalStateException ex) {
+    } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.SHIPMENT_STATUS_CONFLICT, ex.getMessage());
     }
     shipmentRepository.update(entity);
@@ -195,7 +196,7 @@ public class ShipmentApplicationService {
     Shipment entity = requireShipment(tenantId, shipmentId);
     try {
       entity.sign(Instant.now());
-    } catch (IllegalStateException ex) {
+    } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.SHIPMENT_STATUS_CONFLICT, ex.getMessage());
     }
     shipmentRepository.update(entity);

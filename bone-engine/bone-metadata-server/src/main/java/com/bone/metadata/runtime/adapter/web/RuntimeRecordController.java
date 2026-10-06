@@ -41,7 +41,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RuntimeRecordController {
 
+  /**
+   * 注意：此处直接注入 {@code JdbcRuntimeRecordService}（位于 engine.runtime 包，非 {@code application} 包）， 命中
+   * {@code adapterControllersMustNotDependOnGodObjects} 谓词，属 <strong>已冻结的存量例外</strong>
+   * （metadata-server {@code ArchitectureTest} 中 {@code FreezingArchRule.freeze(...)} 登记）。 根因：动态元数据
+   * schema 无法有类型化 {@code *ApplicationService}，运行记录以 {@code Map<String,Object>} 承载， 统一信封（{@code
+   * ApiResponse<PageResult<Map<String,Object>>>}）正确，但 payload 非结构化 DTO。 若未来引入类型化投影，应改为经
+   * ApplicationService，并同步解冻该 ArchUnit 规则。
+   */
   private final JdbcRuntimeRecordService runtimeRecordService;
+
   private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
   private final TenantProvider tenantProvider;

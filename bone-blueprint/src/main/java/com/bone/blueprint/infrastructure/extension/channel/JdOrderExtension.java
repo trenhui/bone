@@ -5,6 +5,7 @@ import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderLine;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiRequest;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelJson;
@@ -61,7 +62,7 @@ public class JdOrderExtension implements ExtensionChannelOrderExtPoint {
   public ChannelOrderDraft pullOrder(ChannelOrderContext request) {
     ChannelApiResult result =
         openApiClient.call(
-            ChannelApiRequest.of("JD", API_PULL_ORDER, request.tenantId())
+            ChannelApiRequest.readOnly("JD", API_PULL_ORDER, request.tenantId())
                 .with("orderId", request.channelOrderNo())
                 .with("page", "1")
                 // pageSize 是京东宙斯 OpenAPI 的请求契约字段名（分页拉单），不是内部入参——
@@ -128,16 +129,30 @@ public class JdOrderExtension implements ExtensionChannelOrderExtPoint {
   }
 
   @Override
-  public boolean ackOrder(ChannelOrderContext request) {
+  public boolean ackOrder(ChannelShipmentContext request) {
     if (request.channelOrderNo() == null || request.channelOrderNo().isBlank()) {
       log.warn("[JD] 回传失败：缺少渠道订单号");
+      return false;
+    }
+    if (request.trackingNo() == null || request.trackingNo().isBlank()) {
+      log.warn("[JD] 回传失败：缺少运单号，拒绝伪造运单号回传 | orderNo={}", request.channelOrderNo());
+      return false;
+    }
+    String companyCode = ChannelLogisticsCodes.codeOf("JD", request.logisticsCompany());
+    if (companyCode == null) {
+      log.warn(
+          "[JD] 回传失败：物流公司未登记渠道编码（拒绝兜底为顺丰）| orderNo={} | company={}",
+          request.channelOrderNo(),
+          request.logisticsCompany());
       return false;
     }
     ChannelApiResult result =
         openApiClient.call(
             ChannelApiRequest.of("JD", API_ACK_ORDER, request.tenantId())
                 .with("orderId", request.channelOrderNo())
-                .with("status", "WMS_SHIPPED"));
+                .with("status", "WMS_SHIPPED")
+                .with("companyCode", companyCode)
+                .with("waybillCode", request.trackingNo()));
     if (!result.success()) {
       log.warn(
           "[JD] 发货回传被拒 | orderNo={} | code={} | msg={}",

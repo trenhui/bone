@@ -7,6 +7,8 @@ import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +30,14 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li><strong>网络 IO 绝不在 DB 事务内</strong>：抢占只做 SELECT + UPDATE（极短事务），发 MQ 在事务外执行。 消除连接池被同步 IO
  *       长时间占用的风险。
  *   <li><strong>先发后更窗口消除</strong>：PROCESSING 状态的记录不会被下一轮 Relay 重复抢占。发 MQ 成功后翻 SENT 用 {@code WHERE
- *       status='PROCESSING'} 保证 CAS——即使 Relay 宕机重启，同一条记录也不会被双投。
+ *       status='PROCESSING'} 保证 CAS——即使单实例 Relay 崩溃重启，同一条记录也不会被本机重复投递。
+ *   <li><strong>只投递自己抢到的（多实例双投的第二道闸）</strong>：阶段 2 按阶段 1 CAS 抢占成功的 id 集合读回（{@code findClaimed}），
+ *       <strong>不按 {@code status='PROCESSING'} 读全表</strong>。多实例下别的实例正在投递的记录同样是
+ *       PROCESSING，读全表会把它捞进本批次 再投一次 ⇒ 双投。与下一条是<strong>两条独立路径</strong>：年龄阈值只管「回退误判」，按 id
+ *       读回只管「读回越界」，<strong>只修一条仍会双投</strong>。
+ *   <li><strong>卡死自愈有年龄阈值</strong>：{@code reconcileStuck} 只回收 {@code claimedAt} 早于 {@code
+ *       stuckTimeoutMs} 的 PROCESSING 记录。多实例部署下，其他实例「正在投递中」的记录不属于崩溃遗留， 无条件回收会把它们翻回 PENDING 造成双投（本条与
+ *       ChannelBroadcastRelayPortAdapter 的 stuckTimeoutMs 语义对齐）。
  * </ol>
  *
  * <p><b>为何用 TransactionTemplate 而非 @Transactional</b>：本类内部方法互调（{@code relayOne} → {@code markSent}
@@ -70,18 +79,20 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
       return 0;
     }
 
-    // 阶段 0：自愈卡死的 PROCESSING 记录（上次 Relay 崩溃遗留）。轻量操作——
-    // PROCESSING 卡死只在进程崩溃时发生，批量回退为 PENDING 让本轮一起处理。
+    // 阶段 0：自愈卡死的 PROCESSING 记录（claimedAt 早于 stuckTimeoutMs 的崩溃遗留）。
+    // 必须带年龄阈值：多实例下其他实例正在投递的记录也是 PROCESSING，无条件回收会双投。
     reconcileStuck();
 
     // 阶段 1：CAS 抢占 PENDING → PROCESSING（极短事务，<10ms）。单语句原子、零死锁。
-    int claimed = claimBatch(properties.getBatchSize());
-    if (claimed == 0) {
+    List<Long> claimedIds = claimBatch(properties.getBatchSize());
+    if (claimedIds.isEmpty()) {
       return 0;
     }
 
-    // 阶段 2：读回 PROCESSING 记录（跨租户全量，disableTenantFilter）。
-    List<OrderOutboxRecord> processing = findClaimed();
+    // 阶段 2：按「本实例刚抢占成功的 id」读回（跨租户，disableTenantFilter）。
+    // 必须按 id 读回而非「所有 PROCESSING」：多实例下别的实例正在投递的记录也是 PROCESSING，
+    // 读全表会把它们捞进来重复投递（双投），而 claimedAt 阈值救不了这条路径——阈值只管回退，不管读回。
+    List<OrderOutboxRecord> processing = findClaimed(claimedIds);
     if (processing.isEmpty()) {
       return 0;
     }
@@ -102,8 +113,10 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
    * id=? AND status='PENDING'}）。零死锁、跨数据库（不依赖 FOR UPDATE SKIP LOCKED / UPDATE LIMIT）。
    *
    * <p>各 Relay 实例并发执行时，每个实例抢占互不重叠的行集：受 UPDATE 行锁串行化，但语句结束即释放（无外层事务）， 不等待、不死锁、不排队。
+   *
+   * @return CAS 抢占成功的记录 id 列表——阶段 2 据此按 id 读回，是「只投递自己抢到的」这一不变量的唯一载体
    */
-  private int claimBatch(int limit) {
+  private List<Long> claimBatch(int limit) {
     Criteria<OrderOutboxRecord> pending =
         Criteria.<OrderOutboxRecord>create()
             .eq(OrderOutboxRecord::getStatus, OutboxStatus.PENDING)
@@ -114,12 +127,12 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
       pendings = outboxRepository.findByCriteria(pending);
     } catch (DataAccessException ex) {
       log.error("Outbox 查询 PENDING 失败: {}", ex.getMessage());
-      return 0;
+      return List.of();
     }
     if (pendings == null || pendings.isEmpty()) {
-      return 0;
+      return List.of();
     }
-    int claimed = 0;
+    List<Long> claimedIds = new ArrayList<>(pendings.size());
     for (OrderOutboxRecord r : pendings) {
       r.markClaimed();
       int n =
@@ -130,38 +143,51 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
                   .eq(OrderOutboxRecord::getStatus, OutboxStatus.PENDING)
                   .disableTenantFilter());
       if (n > 0) {
-        claimed++;
+        claimedIds.add(r.getId());
       }
     }
-    return claimed;
+    return claimedIds;
   }
 
-  /** 读回本轮抢占到的 PROCESSING 记录。 */
-  private List<OrderOutboxRecord> findClaimed() {
-    Criteria<OrderOutboxRecord> criteria =
-        Criteria.<OrderOutboxRecord>create()
-            .eq(OrderOutboxRecord::getStatus, OutboxStatus.PROCESSING)
-            .disableTenantFilter()
-            .page(1, properties.getBatchSize());
-    List<OrderOutboxRecord> records = outboxRepository.findByCriteria(criteria);
+  /**
+   * 读回<strong>本实例本轮抢占到</strong>的 PROCESSING 记录（按 id 集合，非 status 全表）。
+   *
+   * <p><b>为何必须按 id 而非 status='PROCESSING'</b>：多实例部署时，实例 A 抢占的记录在它发MQ 期间对实例 B 可见。若按 status 读全表，B 会把A
+   * 「正在投递中」的记录捞进自己的批次再投一次 ⇒ 同一事件双投。{@code claimedAt} 阈值只约束 {@code reconcileStuck} 的回退动作，
+   * <strong>完全管不到读回越界</strong>——两条独立路径，只修一条仍会双投。
+   *
+   * <p>按 id 读回后语义收敛为「谁抢到谁投递」，与 CAS 抢占同一把锁，不依赖时序假设。
+   */
+  private List<OrderOutboxRecord> findClaimed(List<Long> claimedIds) {
+    if (claimedIds == null || claimedIds.isEmpty()) {
+      return List.of();
+    }
+    List<OrderOutboxRecord> records =
+        outboxRepository.findByCriteria(
+            Criteria.<OrderOutboxRecord>create()
+                .in(OrderOutboxRecord::getId, claimedIds.toArray())
+                .disableTenantFilter());
     return records == null ? List.of() : records;
   }
 
   /**
-   * 自愈卡死的 PROCESSING 记录（Relay 崩溃遗留）。
+   * 自愈卡死的 PROCESSING 记录（claimedAt 早于 {@code stuckTimeoutMs} 的崩溃遗留）。
    *
-   * <p>在 claimBatch <strong>之前</strong>运行：此时 claimBatch 尚未抢新批次，PROCESSING 集合里只可能是 上一轮 Relay
-   * 崩溃遗留（正常结束后 PROCESSING 应为空——成功→SENT / 失败可重试→PENDING / 超限→FAILED）。 逐条回退为 PENDING（updateByCriteria
-   * CAS 避免并发覆盖），让本轮一起处理。
+   * <p><b>为何必须有年龄阈值</b>：旧版「PROCESSING 只可能是崩溃遗留」的前提只在单实例成立。多实例下， 实例 A 抢占记录后处于阶段 3（发 MQ 网络
+   * IO，可达秒级），实例 B 此刻扫描到的 PROCESSING 包含 A 正在投递的记录—— 无条件回退会让第三实例重复抢占，双投同一事件。因此以 {@code
+   * claimedAt}（抢占时刻）距今超过 {@code stuckTimeoutMs} 为判据，与 {@code ChannelBroadcastRelayPortAdapter}
+   * 的久而未决阈值语义对齐。
+   *
+   * <p><b>历史数据兜底</b>：{@code claimedAt} 为新增字段，存量行的更新语句只翻 status 不写该值（IS NULL）。 两段查询合并：IS NULL 的存量
+   * PROCESSING 直接回收（修复前遗留），非空的按阈值判。阈值须显著大于 单轮投递耗时 P99（含 MQ 同步），否则会把慢投递误判为卡死——默认 60s，配置键 {@code
+   * bone.blueprint.outbox.stuck-timeout-ms}。
+   *
+   * <p>在 claimBatch <strong>之前</strong>运行；逐条回退仍走 updateByCriteria CAS（WHERE status='PROCESSING'），
+   * 与正在投递的实例并发安全——若对方恰在阈值边界内完成投递并翻 SENT，本方法 CAS 未命中即放弃。
    */
   private void reconcileStuck() {
     try {
-      Criteria<OrderOutboxRecord> criteria =
-          Criteria.<OrderOutboxRecord>create()
-              .eq(OrderOutboxRecord::getStatus, OutboxStatus.PROCESSING)
-              .disableTenantFilter()
-              .page(1, properties.getBatchSize());
-      List<OrderOutboxRecord> proc = outboxRepository.findByCriteria(criteria);
+      List<OrderOutboxRecord> proc = findStuckProcessing(properties.getStuckTimeoutMs());
       if (proc == null || proc.isEmpty()) {
         return;
       }
@@ -187,6 +213,16 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
     } catch (DataAccessException ex) {
       log.warn("Outbox 自愈 PROCESSING 失败（忽略，下次重试）: {}", ex.getMessage());
     }
+  }
+
+  /**
+   * 卡死 PROCESSING 候选：claimedAt IS NULL（字段新增前的存量行，直接视为遗留）或 claimedAt 早于阈值。 SDK Criteria 不支持 OR
+   * 拼接，以两段查询合并；均强制 disableTenantFilter（Outbox 为基础设施表，跨租户）。
+   */
+  private List<OrderOutboxRecord> findStuckProcessing(long stuckTimeoutMs) {
+    Instant threshold = Instant.now().minusMillis(Math.max(0, stuckTimeoutMs));
+    List<OrderOutboxRecord> merged = outboxRepository.findStuckProcessing(threshold);
+    return merged == null ? List.of() : merged;
   }
 
   /** 单条投递 + 标记终态。发 MQ 在事务外（网络 IO 不占用连接池）， 标记终态用 TransactionTemplate(REQUIRES_NEW) 保证独立小事务。 */

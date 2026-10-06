@@ -20,7 +20,7 @@ import type { ProColumns } from '@ant-design/pro-components';
 import type {
   MasterDataEntity,
   CreateMasterDataEntityReq,
-  MasterDataEntityPageQry
+  MasterDataEntityPageRequest
 } from '../types';
 import { masterDataEntityApi } from '../services/api';
 import { useMessage } from '../App';
@@ -41,7 +41,7 @@ const EntityManagement: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchParams, setSearchParams] = useState<MasterDataEntityPageQry>({});
+  const [searchParams, setSearchParams] = useState<MasterDataEntityPageRequest>({});
   const [stats, setStats] = useState({ total: 0, published: 0, draft: 0 });
 
   useEffect(() => {

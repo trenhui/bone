@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
     tags = {"channel=PDD"},
     weight = 100)
 @RequiredArgsConstructor
-public class PddLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
+public class PddLogisticsExtension implements ExtensionChannelFulfillmentExtPoint {
 
   private static final String API_PUSH_SHIPMENT = "order.logistics.add";
   private static final String API_QUERY_TRACE = "order.logistics.trace.list";
@@ -73,7 +73,7 @@ public class PddLogisticsExtension implements ExtensionChannelLogisticsExtPoint 
     }
     ChannelApiResult result =
         openApiClient.call(
-            ChannelApiRequest.of("PDD", API_QUERY_TRACE, request.tenantId())
+            ChannelApiRequest.readOnly("PDD", API_QUERY_TRACE, request.tenantId())
                 .with("tracking_number", request.trackingNo()));
     if (!result.success()) {
       return ChannelTraceResult.fail(

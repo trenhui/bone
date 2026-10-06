@@ -26,10 +26,18 @@ public interface ChannelOrderExtPoint {
   ChannelOrderDraft pullOrder(ChannelOrderContext request);
 
   /**
-   * 订单状态回传渠道。
+   * 把发货信息回传渠道（订单已发货后调用）。
    *
-   * @param request 渠道订单上下文
+   * <p><b>为何入参是 {@link ChannelShipmentContext} 而不是 {@link ChannelOrderContext}</b>：回传必然要带承运商与运单号， 而
+   * {@code ChannelOrderContext} 里没有这两个字段。早期实现只传订单号、承运商与运单号在实现里写死 （曾硬编码 {@code company_name="SF" /
+   * tracking_no="SF0000000000"}），那意味着<strong>无论真实发什么货，
+   * 回传给渠道的都是同一串假单号</strong>——渠道侧据此判定虚假发货，本地却显示"回传成功"。 契约层强制携带真实物流信息，从签名上就杜绝伪造。
+   *
+   * <p>与 {@link ChannelFulfillmentExtPoint#pushShipment} 的区别：后者是履约链路的正式回传（带失败落库与重试），
+   * 本方法用于人工/补偿触发。二者最终都应汇到同一份渠道回传能力上，不要各自实现一套 HTTP 调用。
+   *
+   * @param request 渠道发货上下文（含承运商与运单号）
    * @return true=渠道已受理
    */
-  boolean ackOrder(ChannelOrderContext request);
+  boolean ackOrder(ChannelShipmentContext request);
 }

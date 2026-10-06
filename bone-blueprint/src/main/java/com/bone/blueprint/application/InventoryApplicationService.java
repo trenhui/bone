@@ -6,6 +6,7 @@ import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.model.inventory.Inventory;
 import com.bone.blueprint.domain.repository.InventoryRepository;
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.util.List;
@@ -100,7 +101,7 @@ public class InventoryApplicationService {
     Inventory entity = requireInventory(tenantId, productId, warehouseCode);
     try {
       entity.deduct(delta);
-    } catch (IllegalStateException ex) {
+    } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, ex.getMessage());
     }
     inventoryRepository.update(entity);
@@ -131,7 +132,7 @@ public class InventoryApplicationService {
     Inventory entity = requireInventory(tenantId, productId, warehouseCode);
     try {
       entity.reserve(quantity);
-    } catch (IllegalStateException ex) {
+    } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, ex.getMessage());
     }
     inventoryRepository.update(entity);

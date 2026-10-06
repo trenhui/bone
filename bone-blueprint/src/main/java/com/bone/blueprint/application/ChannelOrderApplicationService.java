@@ -6,6 +6,7 @@ import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
 import com.bone.blueprint.domain.model.channel.Channel;
 import com.bone.blueprint.domain.model.channel.event.ChannelRoutedEvent;
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
@@ -152,14 +153,23 @@ public class ChannelOrderApplicationService {
     return orderId;
   }
 
-  /** 订单状态回传渠道（发货后由履约链路调用）。 */
+  /**
+   * 发货信息回传渠道（人工/补偿触发；履约链路的正式回传见 {@code ShipmentApplicationService}）。
+   *
+   * <p><b>为何必须携带承运商与运单号</b>：早期本方法只传渠道订单号，承运商与运单号由渠道实现自行填固定值，
+   * 结果是「无论真实发什么货，回传给渠道的都是同一串假运单号」——渠道侧据此展示的物流轨迹与实际不符， 而本地日志显示回传成功。这类错误不会报错、只会在用户收货时暴露。
+   *
+   * @param logisticsCompany 内部物流公司名（如「顺丰速运」），由渠道实现映射为渠道侧编码
+   * @param trackingNo 真实运单号
+   */
   @Transactional
-  public boolean ackToChannel(String channelCode, String channelOrderNo) {
+  public boolean ackToChannel(
+      String channelCode, String channelOrderNo, String logisticsCompany, String trackingNo) {
     long tenantId = tenantProvider.currentTenantId();
     String code = normalize(channelCode);
     return channelExtensionPort.ackOrder(
-        new ChannelOrderContext(
-            tenantId, code, channelOrderNo, null, null, null, null, null, null, List.of()));
+        new ChannelShipmentContext(
+            tenantId, code, channelOrderNo, null, logisticsCompany, trackingNo));
   }
 
   /**

@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.messaging.outbox;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,7 @@ public class OrderOutboxRecord extends AggregateRoot<Long> {
   private String envelopeJson;
   private OutboxStatus status;
   private Integer retryCount;
+  private Instant claimedAt;
   private Instant sentAt;
 
   public static OrderOutboxRecord pending(
@@ -64,14 +66,23 @@ public class OrderOutboxRecord extends AggregateRoot<Long> {
     this.status = OutboxStatus.FAILED;
   }
 
-  /** 抢占：PENDING → PROCESSING（CAS 由调用方经 SDK updateByCriteria 的 WHERE status='PENDING' 保证）。 */
+  /**
+   * 抢占：PENDING → PROCESSING（CAS 由调用方经 SDK updateByCriteria 的 WHERE status='PENDING' 保证）。
+   *
+   * <p><b>claimedAt 的用途</b>：多实例部署下，卡死自愈（reconcileStuck）必须区分「别的实例正在投递」与 「上次崩溃遗留」——判据是抢占时刻距今是否超过
+   * stuckTimeoutMs。没有该字段时，自愈只能无条件回收 全部 PROCESSING，会把其他实例正在投递的记录翻回 PENDING 造成双投（ADR-0021 §卡死自愈）。
+   *
+   * <p>截断到微秒：与 DDL 的 DATETIME(3)（毫秒）精度对齐，避免写入端纳秒精度与读回端毫秒精度的 往返差异让阈值判定抖动。
+   */
   public void markClaimed() {
     this.status = OutboxStatus.PROCESSING;
+    this.claimedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
   }
 
   /** 可重试失败：PROCESSING → PENDING，交还下一轮 relay 抢占。 */
   public void markRetry() {
     this.status = OutboxStatus.PENDING;
+    // 残留的 claimedAt 无需清空：卡死判据只看 status=PROCESSING，重新抢占时 markClaimed 会覆写。
   }
 
   public void incrementRetry() {

@@ -22,8 +22,13 @@ public interface ChannelExtensionPort {
   /** 拉取并归一化渠道订单。 */
   ChannelOrderDraft pullOrder(ChannelOrderContext request);
 
-  /** 订单状态回传渠道。 */
-  boolean ackOrder(ChannelOrderContext request);
+  /**
+   * 发货信息回传渠道（人工/补偿触发）。
+   *
+   * <p><b>与 {@link #pushShipment} 的分工</b>：{@code pushShipment} 是履约链路的正式回传（失败落库、可重试）；
+   * 本方法是给运营/补偿用的旁路入口。两者都要求携带<b>真实</b>承运商与运单号—— 早期实现只传订单号、运单号在渠道实现里写死，导致无论真实发什么货、回传给渠道的都是同一串假单号。
+   */
+  boolean ackOrder(ChannelShipmentContext request);
 
   /** 商品上架到渠道。 */
   ChannelListingResult listProduct(ChannelProductContext request);

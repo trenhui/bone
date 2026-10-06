@@ -15,6 +15,7 @@ import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -237,9 +238,12 @@ public class Order extends TenantAggregateRoot<Long> {
             : payable.subtract(discount).toBigDecimal();
   }
 
+  /** 订单号日期段的业务时区：订单号中的 yyyyMMdd 必须与业务日期（东八区）一致，禁止跟随宿主机默认时区。 */
+  public static final ZoneId ORDER_NO_ZONE = ZoneId.of("Asia/Shanghai");
+
   /** 业务单号生成策略：{@code SO + yyyyMMdd + 雪花 ID}。由 id 派生，全局唯一且可重复推导（对账友好）。 */
   private static String generateOrderNo(long id) {
-    return "SO" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + id;
+    return "SO" + LocalDate.now(ORDER_NO_ZONE).format(DateTimeFormatter.BASIC_ISO_DATE) + id;
   }
 
   /** 订单金额上限不变量：任何导致金额变更的路径都必须经过本校验，避免被绕过。 */

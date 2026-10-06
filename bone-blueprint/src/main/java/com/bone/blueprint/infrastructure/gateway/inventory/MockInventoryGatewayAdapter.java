@@ -81,7 +81,7 @@ public class MockInventoryGatewayAdapter
   }
 
   @Override
-  public void releaseStock(Long orderId) {
-    traceNoop("releaseStock 释放预留", orderId, null, null);
+  public void releaseStockLine(Long orderId, Long productId, Integer quantity) {
+    traceNoop("releaseStockLine 释放预留（行粒度）", orderId, productId, quantity);
   }
 }

@@ -27,11 +27,23 @@ public interface ChannelBroadcastTaskRepository extends Repository<ChannelBroadc
             .page(1, limit));
   }
 
-  /** 抢占后的记录（跨租户全量，按抢占批次读回）。 */
-  default List<ChannelBroadcastTask> findProcessing() {
+  /**
+   * 抢占后的记录——<strong>按本实例 CAS 抢占成功的 id 集合</strong>读回（跨租户，{@code disableTenantFilter()}）。
+   *
+   * <p><b>为何不能按 {@code status='PROCESSING'} 读全表</b>：多实例部署时，实例 A 抢占的记录在它调渠道 HTTP 期间对实例 B 可见。若按
+   * status 读全表， B 会把 A「正在投递中」的任务捞进自己的批次再投一次 ⇒ 同一库存值重复同步到渠道。年龄阈值（{@link #findStuckProcessing}）
+   * 只约束「回退误判」，<strong>管不到读回越界</strong>——两条独立路径，只修一条仍会双投（与 {@code
+   * OrderOutboxRelayPortAdapter.findClaimed} 同构）。
+   *
+   * <p>用方法引用而非字符串字段名：字符串会绕过编译期检查，字段名拼错只在运行期抛 {@code UndefinedFieldException}。
+   */
+  default List<ChannelBroadcastTask> findProcessingByIds(java.util.Collection<Long> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return List.of();
+    }
     return findByCriteria(
         Criteria.<ChannelBroadcastTask>create()
-            .eq(ChannelBroadcastTask::getStatus, BroadcastTaskStatus.PROCESSING)
+            .in(ChannelBroadcastTask::getId, ids.toArray())
             .disableTenantFilter());
   }
 

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.blueprint.domain.model.shipment.valueobject.ShipmentStatus;
+import com.bone.core.exception.DomainException;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +69,7 @@ class ShipmentTest {
   void signOnlyFromShippedOrInTransit() {
     Shipment shipment = newShipment();
 
-    assertThrows(IllegalStateException.class, () -> shipment.sign(Instant.now()), "待发货不能直接签收");
+    assertThrows(DomainException.class, () -> shipment.sign(Instant.now()), "待发货不能直接签收");
 
     shipment.ship("顺丰速运", "SF123", Instant.now());
     shipment.markInTransit();
@@ -83,7 +84,7 @@ class ShipmentTest {
     Shipment shipment = newShipment();
     shipment.ship("顺丰速运", "SF123", Instant.now());
 
-    assertThrows(IllegalStateException.class, () -> shipment.ship("中通快递", "ZTO456", Instant.now()));
+    assertThrows(DomainException.class, () -> shipment.ship("中通快递", "ZTO456", Instant.now()));
     assertEquals("SF123", shipment.getTrackingNo(), "重复发货不得覆盖原运单号");
   }
 }

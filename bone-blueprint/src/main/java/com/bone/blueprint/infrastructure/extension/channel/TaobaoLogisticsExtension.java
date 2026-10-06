@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
     tags = {"channel=TAOBAO"},
     weight = 100)
 @RequiredArgsConstructor
-public class TaobaoLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
+public class TaobaoLogisticsExtension implements ExtensionChannelFulfillmentExtPoint {
 
   private static final String API_PUSH_SHIPMENT = "taobao.logistics.trace.publish";
 
@@ -78,7 +78,7 @@ public class TaobaoLogisticsExtension implements ExtensionChannelLogisticsExtPoi
     }
     ChannelApiResult result =
         openApiClient.call(
-            ChannelApiRequest.of("TAOBAO", API_QUERY_TRACE, request.tenantId())
+            ChannelApiRequest.readOnly("TAOBAO", API_QUERY_TRACE, request.tenantId())
                 .with("tid", request.channelOrderNo())
                 .with("tracking_no", request.trackingNo()));
     if (!result.success()) {

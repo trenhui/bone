@@ -28,10 +28,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>订单取消后由 {@code OrderCancelledEvent} 的 AFTER_COMMIT 订阅释放库存预留（最终一致）。
  *
- * <p><b>全租户扫描（E-2）</b>：定时任务线程无请求上下文，此前用 {@code TenantPort.currentTenantId()} 取到的只会是
- * <strong>降级后的平台租户 0</strong>——结果是除平台租户外的超时订单永不取消，而日志仍显示"扫描完成"。 现改为全租户读端口 {@code
- * findExpiredOrdersAllTenants}，并把扫描行的 {@code tenantId} <strong>显式携带</strong>进命令
- * （异步分支必须显式传租户，不能依赖线程上下文）。
+ * <p><b>全租户扫描（E-2）</b>：扫描行的 {@code tenantId} 必须<strong>显式携带</strong>进命令——异步分支不依赖线程上下文，
+ * 否则除平台租户外的超时订单会静默漏掉；直连仓储与「租户 0」退化机理见上段（E-2 与 ADR-0030）。
  */
 @Slf4j
 @Component

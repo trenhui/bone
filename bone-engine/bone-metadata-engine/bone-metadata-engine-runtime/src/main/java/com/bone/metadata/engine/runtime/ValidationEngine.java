@@ -1343,6 +1343,10 @@ public class ValidationEngine
   /**
    * Fallback implementation for custom rule validation when RuleEngine is unavailable.
    *
+   * <p><b>fail-closed</b>：本方法曾是空实现（只有一行 {@code LOGGER.debug}），意味着「规则引擎没接上」时 所有自定义业务规则被静默跳过 ⇒
+   * 配置了规则也照样写入脏数据，且日志里看不到任何异常线索。 现在改为把错误写进校验结果，由调用方按其错误策略决定拒绝还是放行； {@code
+   * ValidationEngine.validateCustomRules} 外层的 catch 会把异常一并转成 error， 保证「校验不了」永远不会退化为「校验通过」。
+   *
    * @param entityMetadata the entity metadata definition
    * @param entityData the entity data to validate
    * @param result the validation result to accumulate errors
@@ -1354,125 +1358,21 @@ public class ValidationEngine
       return;
     }
 
-    LOGGER.debug("Using fallback logic to validate custom rules, rule count: {}", rules.size());
-    // 简化的降级验证逻辑
-  }
-
-  /**
-   * Evaluates simple expressions for fallback validation scenarios.
-   *
-   * @param expression the expression to evaluate
-   * @param data the data context for evaluation
-   * @return true if the expression evaluates to true, false otherwise
-   */
-  private boolean evaluateSimpleExpression(String expression, Map<String, Object> data) {
-    // 实现简单的表达式求值，例如 "age > 18" 或 "status == 'active'"
-    try {
-      // 清理表达式
-      expression = expression.trim();
-
-      // 处理逻辑与操作
-      if (expression.contains(" && ")) {
-        // 使用更简单的字符串处理方式，避免正则表达式转义符问题
-        StringTokenizer tokenizer = new StringTokenizer(expression, "&&");
-        while (tokenizer.hasMoreTokens()) {
-          String part = tokenizer.nextToken().trim();
-          if (!evaluateSimpleExpression(part, data)) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      // 处理逻辑或操作
-      if (expression.contains(" || ")) {
-        // 使用更简单的字符串处理方式，避免正则表达式转义符问题
-        StringTokenizer tokenizer = new StringTokenizer(expression, "||");
-        while (tokenizer.hasMoreTokens()) {
-          String part = tokenizer.nextToken().trim();
-          if (evaluateSimpleExpression(part, data)) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      // 处理括号表达式
-      if (expression.startsWith("(") && expression.endsWith(")")) {
-        return evaluateSimpleExpression(expression.substring(1, expression.length() - 1), data);
-      }
-
-      // 处理大于等于比较
-      if (expression.contains(">=")) {
-        String[] parts = expression.split(">=", 2);
-        return getNumericValue(data, parts[0].trim()) >= Double.parseDouble(parts[1].trim());
-      }
-
-      // 处理小于等于比较
-      if (expression.contains("<=")) {
-        String[] parts = expression.split("<=", 2);
-        return getNumericValue(data, parts[0].trim()) <= Double.parseDouble(parts[1].trim());
-      }
-
-      // 处理不等于比较
-      if (expression.contains("!=")) {
-        String[] parts = expression.split("!=", 2);
-        String left = parts[0].trim();
-        String right = parts[1].trim();
-        // 移除字符串引号
-        if (right.startsWith("'") && right.endsWith("'")) {
-          right = right.substring(1, right.length() - 1);
-        }
-        return !Objects.equals(getPropertyValue(data, left), right);
-      }
-
-      // 处理大于比较
-      if (expression.contains(">")) {
-        String[] parts = expression.split(">", 2);
-        return getNumericValue(data, parts[0].trim()) > Double.parseDouble(parts[1].trim());
-      }
-
-      // 处理小于比较
-      else if (expression.contains("<")) {
-        String[] parts = expression.split("<", 2);
-        return getNumericValue(data, parts[0].trim()) < Double.parseDouble(parts[1].trim());
-      }
-
-      // 处理等于比较
-      else if (expression.contains("==")) {
-        String[] parts = expression.split("==", 2);
-        String left = parts[0].trim();
-        String right = parts[1].trim();
-        // 移除字符串引号
-        if (right.startsWith("'") && right.endsWith("'")) {
-          right = right.substring(1, right.length() - 1);
-        }
-        return Objects.equals(getPropertyValue(data, left), right);
-      }
-
-      // 处理函数调用
-      if (expression.startsWith("hasField(")) {
-        String fieldName = expression.substring(9, expression.length() - 1).trim();
-        return data.containsKey(fieldName);
-      }
-
-      if (expression.startsWith("isEmpty(")) {
-        String fieldName = expression.substring(8, expression.length() - 1).trim();
-        Object value = getPropertyValue(data, fieldName);
-        return isEmpty(value);
-      }
-
-      if (expression.startsWith("isNotEmpty(")) {
-        String fieldName = expression.substring(11, expression.length() - 1).trim();
-        Object value = getPropertyValue(data, fieldName);
-        return !isEmpty(value);
-      }
-    } catch (Exception e) {
-      LOGGER.warn("Failed to evaluate simple expression: {}", expression, e);
-    }
-
-    // 无法求值的表达式默认返回true
-    return true;
+    LOGGER.warn(
+        "RuleEngine unavailable while entity {} declares {} custom validation rule(s); "
+            + "failing closed instead of silently skipping them",
+        entityMetadata.getApiName(),
+        rules.size());
+    result.addError(
+        ValidationResult.ValidationError.builder()
+            .fieldPath("general")
+            .message(
+                "实体 "
+                    + entityMetadata.getApiName()
+                    + " 配置了 "
+                    + rules.size()
+                    + " 条自定义校验规则，但规则引擎不可用，无法完成校验（已按拒绝处理）")
+            .build());
   }
 
   /**

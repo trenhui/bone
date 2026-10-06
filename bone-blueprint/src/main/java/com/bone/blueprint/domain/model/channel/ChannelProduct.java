@@ -2,6 +2,7 @@ package com.bone.blueprint.domain.model.channel;
 
 import com.bone.blueprint.domain.model.channel.valueobject.ListingStatus;
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
@@ -75,7 +76,8 @@ public class ChannelProduct extends TenantAggregateRoot<Long> {
 
     touch();
     if (!listingStatus.canList()) {
-      throw new IllegalStateException(
+      // 状态违约属领域约束，用领域异常（与 Order/Payment 一致）；HTTP 映射由应用层/全局处理器统一翻译。
+      throw new DomainException(
           "当前状态不允许上架: "
               + listingStatus
               + "（channel="
@@ -115,7 +117,7 @@ public class ChannelProduct extends TenantAggregateRoot<Long> {
 
     touch();
     if (!listingStatus.canDelist()) {
-      throw new IllegalStateException(
+      throw new DomainException(
           "当前状态不允许下架: "
               + listingStatus
               + "（channel="

@@ -4,6 +4,7 @@ import com.bone.blueprint.domain.model.shipment.event.ShipmentShippedEvent;
 import com.bone.blueprint.domain.model.shipment.event.ShipmentSignedEvent;
 import com.bone.blueprint.domain.model.shipment.valueobject.ShipmentStatus;
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.Instant;
@@ -94,7 +95,7 @@ public class Shipment extends TenantAggregateRoot<Long> {
 
     touch();
     if (!status.canShip()) {
-      throw new IllegalStateException("当前状态不允许发货: " + status + "（shipment=" + idForLog() + "）");
+      throw new DomainException("当前状态不允许发货: " + status + "（shipment=" + idForLog() + "）");
     }
     if (trackingNo == null || trackingNo.isBlank()) {
       throw new IllegalArgumentException("运单号不能为空");
@@ -143,7 +144,7 @@ public class Shipment extends TenantAggregateRoot<Long> {
 
     touch();
     if (!status.canSign()) {
-      throw new IllegalStateException("当前状态不允许签收: " + status + "（shipment=" + idForLog() + "）");
+      throw new DomainException("当前状态不允许签收: " + status + "（shipment=" + idForLog() + "）");
     }
     this.status = ShipmentStatus.SIGNED;
     this.signedAt = at;

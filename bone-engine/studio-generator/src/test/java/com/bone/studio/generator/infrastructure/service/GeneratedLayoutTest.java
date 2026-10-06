@@ -148,7 +148,7 @@ class GeneratedLayoutTest {
     GeneratedFile page = generate(new PageQueryGenerator(templateRenderer), "pageQuery");
 
     assertEquals(SOURCE_ROOT + "adapter/web/dto/request/CreateOrderReq.java", create.getFilePath());
-    assertEquals(SOURCE_ROOT + "adapter/web/dto/request/OrderPageQry.java", page.getFilePath());
+    assertEquals(SOURCE_ROOT + "adapter/web/dto/request/OrderPageRequest.java", page.getFilePath());
     assertTrue(
         create.getContent().contains("@NotNull(message = \"客户ID不能为空\")"), create.getContent());
     String pageContent = page.getContent();
@@ -189,7 +189,7 @@ class GeneratedLayoutTest {
     // REST 资源走复数：/api/v1/demo/orders
     assertTrue(content.contains("\"/api/v1/demo/orders\""), content);
     assertTrue(content.contains("@Valid @RequestBody CreateOrderReq"), content);
-    assertTrue(content.contains("@Valid @ModelAttribute OrderPageQry"), content);
+    assertTrue(content.contains("@Valid @ModelAttribute OrderPageRequest"), content);
     assertTrue(content.contains("@ResponseStatus(HttpStatus.CREATED)"), content);
     assertTrue(content.contains("@PutMapping(\"/{id}\")"), content);
     assertTrue(content.contains("@DeleteMapping(\"/{id}\")"), content);

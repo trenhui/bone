@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
     tags = {"channel=DOUYIN"},
     weight = 100)
 @RequiredArgsConstructor
-public class DouyinLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
+public class DouyinLogisticsExtension implements ExtensionChannelFulfillmentExtPoint {
 
   /** 【待核对】抖音电商发货回传接口名需按当期文档核对。 */
   private static final String API_PUSH_SHIPMENT = "order.ship";
@@ -76,7 +76,7 @@ public class DouyinLogisticsExtension implements ExtensionChannelLogisticsExtPoi
     }
     ChannelApiResult result =
         openApiClient.call(
-            ChannelApiRequest.of("DOUYIN", API_QUERY_TRACE, request.tenantId())
+            ChannelApiRequest.readOnly("DOUYIN", API_QUERY_TRACE, request.tenantId())
                 .with("tracking_no", request.trackingNo()));
     if (!result.success()) {
       return ChannelTraceResult.fail(

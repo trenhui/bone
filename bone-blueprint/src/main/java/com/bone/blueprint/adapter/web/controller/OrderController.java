@@ -2,7 +2,7 @@ package com.bone.blueprint.adapter.web.controller;
 
 import com.bone.blueprint.adapter.web.assembler.OrderAssembler;
 import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
-import com.bone.blueprint.adapter.web.dto.request.OrderPageQry;
+import com.bone.blueprint.adapter.web.dto.request.OrderPageRequest;
 import com.bone.blueprint.adapter.web.dto.response.CreateOrderResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
@@ -70,7 +70,8 @@ public class OrderController {
   })
   @PreAuthorize("hasAuthority('order:orders:read')")
   @GetMapping
-  public ApiResponse<PageResult<OrderSummaryResp>> page(@Valid @ModelAttribute OrderPageQry qry) {
+  public ApiResponse<PageResult<OrderSummaryResp>> page(
+      @Valid @ModelAttribute OrderPageRequest qry) {
     return ApiResponse.success(
         orderApplicationService
             .page(qry.getCustomerId(), qry.getStatus(), qry.getPage(), qry.getSize())

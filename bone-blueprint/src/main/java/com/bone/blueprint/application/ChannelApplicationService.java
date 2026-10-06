@@ -66,7 +66,7 @@ public class ChannelApplicationService {
   public ChannelDto setOrderSync(String channelCode, boolean sync) {
     Channel channel = requireChannel(channelCode);
     if (sync) {
-      // 先校验启用状态：domain 的 enableOrderSync 会抛 IllegalStateException，这里转成业务码。
+      // 先校验启用状态：domain 的 enableOrderSync 会抛 DomainException，这里转成业务码。
       if (!channel.isEnabled()) {
         throw BlueprintErrors.of(BlueprintErrorCodes.CHANNEL_DISABLED, channelCode);
       }

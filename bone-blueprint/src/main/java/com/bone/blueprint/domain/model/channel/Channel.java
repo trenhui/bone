@@ -2,6 +2,7 @@ package com.bone.blueprint.domain.model.channel;
 
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.Instant;
@@ -97,12 +98,12 @@ public class Channel extends TenantAggregateRoot<Long> {
    * 同步开关不是「赋个值」，而是有前置约束的业务动作 （停用渠道不得开启）。写成 setter 会把约束推给调用方，
    * 调用方一旦漏判就会出现「停用渠道仍在拉单」；写成具名方法则约束内聚在聚合内，无法绕过。 同时满足 R2 反贫血门禁（应用层不得调用 {@code set*}）。
    *
-   * @throws IllegalStateException 渠道已停用
+   * @throws DomainException 渠道已停用
    */
   public void enableOrderSync() {
     touch();
     if (!isEnabled()) {
-      throw new IllegalStateException("渠道已停用，不能开启订单同步: " + channelCode);
+      throw new DomainException("渠道已停用，不能开启订单同步: " + channelCode);
     }
     this.orderSyncEnabled = Boolean.TRUE;
   }

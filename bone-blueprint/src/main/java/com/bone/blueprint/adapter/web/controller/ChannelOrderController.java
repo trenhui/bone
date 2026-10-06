@@ -63,15 +63,28 @@ public class ChannelOrderController {
                     .toList())));
   }
 
-  /** 订单状态回传渠道。 */
-  @Operation(summary = "订单状态回传渠道")
+  /**
+   * 发货信息回传渠道（人工/补偿触发）。
+   *
+   * <p><b>为何必须由调用方传承运商与运单号</b>：早期本端点只收渠道订单号，运单号由服务端写死， 导致回传给渠道的永远是同一串假单号——渠道展示的物流与实际不符，而接口返回成功。
+   * 服务端不掌握真实运单号（它在发货环节录入），故只能由调用方提供。
+   */
+  @Operation(summary = "发货信息回传渠道（人工/补偿）")
   @PreAuthorize("hasAuthority('commerce:channel:write')")
   @PostMapping("/{channelCode}/{channelOrderNo}/ack")
   public ApiResponse<Boolean> ack(
-      @PathVariable String channelCode, @PathVariable String channelOrderNo) {
+      @PathVariable String channelCode,
+      @PathVariable String channelOrderNo,
+      @RequestBody @Valid AckShipmentReq request) {
     return ApiResponse.success(
-        channelOrderApplicationService.ackToChannel(channelCode, channelOrderNo));
+        channelOrderApplicationService.ackToChannel(
+            channelCode, channelOrderNo, request.logisticsCompany(), request.trackingNo()));
   }
+
+  /** 发货回传请求体：承运商与真实运单号。 */
+  public record AckShipmentReq(
+      @NotBlank(message = "物流公司不能为空") String logisticsCompany,
+      @NotBlank(message = "运单号不能为空") String trackingNo) {}
 
   /** 渠道订单拉取请求（模拟渠道推送的原始报文）。 */
   public record PullChannelOrderReq(

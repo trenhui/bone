@@ -68,6 +68,8 @@ public abstract class AbstractRateOrderPriceCalculator implements ExtensionOrder
       try {
         Optional<BigDecimal> rate = masterDataGateway.findLevelDiscountRate(levelCode);
         if (rate.isPresent()) {
+          // 折扣来源可观测：主数据驱动定价为真源，记录口径以便对账与漂移检测（见实时复核报告 L39-64）
+          log.info("折扣率取自主数据(masterdata): levelCode={}, rate={}", levelCode, rate.get());
           return rate.get();
         }
         log.info("主数据未配置等级折扣率，降级定价规则中心: levelCode={}", levelCode);
@@ -80,6 +82,8 @@ public abstract class AbstractRateOrderPriceCalculator implements ExtensionOrder
       try {
         Optional<BigDecimal> ruleRate = pricingRuleGateway.findScenarioDiscountRate(scenario);
         if (ruleRate.isPresent()) {
+          // 折扣来源可观测：仅当主数据未建模该档位时规则中心才生效，记录口径以便对账
+          log.info("折扣率取自定价规则中心(pricingRule): scenario={}, rate={}", scenario, ruleRate.get());
           return ruleRate.get();
         }
       } catch (Exception e) {

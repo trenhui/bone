@@ -13,7 +13,7 @@
 
 ### 现状：跨进程发布已有两套模块级 Outbox 复制，且无共享公共组件
 
-- **bone-blueprint**：`bp_outbox` 表（`schema.sql:53-70`，含 `UNIQUE KEY uk_bp_outbox_event_id (event_id)`）+ `OrderOutboxRecord` / `OrderOutboxWriter` / `OrderOutboxEnvelopeFactory` / `OrderOutboxRelay` / `OrderOutboxRelayJob` 全链路。记录模型注释已自述：**「多模块都需要 Outbox 时应上抽为平台级公共组件，而非各模块复制本类」**（`OrderOutboxRecord.java:20`）。
+- **bone-blueprint**：`bp_outbox` 表（DDL 位于 `bone-init.sql`，含 `UNIQUE KEY uk_bp_outbox_event_id (event_id)`；2026-10-06 新增 `claimed_at` 列与卡死判定索引用于中继卡死回收，存量部署需执行 DDL 升级）+ `OrderOutboxRecord` / `OrderOutboxWriter` / `OrderOutboxEnvelopeFactory` / `OrderOutboxRelay` / `OrderOutboxRelayJob` 全链路。记录模型注释已自述：**「多模块都需要 Outbox 时应上抽为平台级公共组件，而非各模块复制本类」**（`OrderOutboxRecord.java:20`）。
 - **bone-integration**：`int_outbox` 表（`bone-init.sql:493-512`）+ `IntegrationOutboxRecord` / `IntegrationOutboxRelay`，结构高度雷同、逻辑独立。
 
 两套实现字段集几乎一致（id / tenant_id / event_id / event_type / topic / partition_key / envelope_json / status / retry_count / sent_at），但**代码、表、中继互不相通**。
@@ -39,7 +39,7 @@
 
 ### 1. 统一 Outbox 记录模型（表结构可配）
 
-- 合并 `bp_outbox` / `int_outbox` 的字段集为一套统一模型：`id`、`tenant_id`、`event_id`、`event_type`、`topic`、`partition_key`、`envelope_json`、`status`、`retry_count`、`sent_at`、`created_at`、`deleted`，`UNIQUE(event_id)`。
+- 合并 `bp_outbox` / `int_outbox` 的字段集为一套统一模型：`id`、`tenant_id`、`event_id`、`event_type`、`topic`、`partition_key`、`envelope_json`、`status`、`retry_count`、`claimed_at`（中继认领时刻，卡死回收依据）、`sent_at`、`created_at`、`deleted`，`UNIQUE(event_id)`。
 - **迁移友好**：表名按模块可配置（组件提供记录模型工厂，按模块表名生成 DDL），**存量数据不迁移、表不合并**——先统一代码，再渐进收敛表名；不强制一次性大迁移。
 
 ### 2. 统一写入端口与信封

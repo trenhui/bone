@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Extension(name = "DEFAULT_CHANNEL_LOGISTICS_EXT", description = "渠道物流默认兜底实现（未接入渠道）")
-public class DefaultChannelLogisticsExtension implements ExtensionChannelLogisticsExtPoint {
+public class DefaultChannelLogisticsExtension implements ExtensionChannelFulfillmentExtPoint {
 
   @Override
   public ChannelShipmentResult pushShipment(ChannelShipmentContext request) {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.exception.DomainException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -43,7 +44,7 @@ class InventoryTest {
   void reserveBeyondAvailableIsRejected() {
     Inventory inventory = stock(10);
 
-    assertThrows(IllegalStateException.class, () -> inventory.reserve(11));
+    assertThrows(DomainException.class, () -> inventory.reserve(11));
     assertEquals(10, inventory.getAvailableQty(), "失败的预留不得改变任何数量");
   }
 
@@ -79,7 +80,7 @@ class InventoryTest {
   void deductNeverGoesNegative() {
     Inventory inventory = stock(5);
 
-    assertThrows(IllegalStateException.class, () -> inventory.deduct(6));
+    assertThrows(DomainException.class, () -> inventory.deduct(6));
     assertEquals(5, inventory.getAvailableQty());
   }
 

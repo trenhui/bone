@@ -22,9 +22,15 @@ public class OrderOutboxRelayJob {
 
   @Scheduled(fixedDelayString = "${bone.blueprint.outbox.relay-delay-ms:5000}")
   public void relay() {
-    int sent = orderOutboxRelayPort.relayPending();
-    if (sent > 0) {
-      log.info("Outbox 中继完成: sent={}", sent);
+    try {
+      int sent = orderOutboxRelayPort.relayPending();
+      if (sent > 0) {
+        log.info("Outbox 中继完成: sent={}", sent);
+      }
+    } catch (RuntimeException ex) {
+      // 与 ChannelBroadcastRelayJob 对称：不让异常冒泡中断后续调度，
+      // outbox 中继是「必须持续推进」的日常任务，失败留日志下轮继续。
+      log.error("Outbox 中继异常（本轮跳过，下轮继续）", ex);
     }
   }
 }

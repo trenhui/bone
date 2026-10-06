@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.exception.DomainException;
 import org.junit.jupiter.api.Test;
 
 /** 渠道聚合纯单测（R8：无容器、直接验证领域不变量）。 */
@@ -44,7 +45,7 @@ class ChannelTest {
     Channel channel = Channel.register(4L, 0L, "PDD", null, null);
     channel.disable();
 
-    assertThrows(IllegalStateException.class, channel::enableOrderSync);
+    assertThrows(DomainException.class, channel::enableOrderSync);
   }
 
   @Test

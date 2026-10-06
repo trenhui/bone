@@ -1,6 +1,7 @@
 package com.bone.blueprint.domain.model.inventory;
 
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.Instant;
@@ -87,7 +88,7 @@ public class Inventory extends TenantAggregateRoot<Long> {
       throw new IllegalArgumentException("扣减数量必须为正: " + delta);
     }
     if (this.availableQty < delta) {
-      throw new IllegalStateException(
+      throw new DomainException(
           "可用库存不足，无法扣减: product=" + productId + ", available=" + availableQty + ", delta=" + delta);
     }
     this.availableQty -= delta;
@@ -96,7 +97,7 @@ public class Inventory extends TenantAggregateRoot<Long> {
   /**
    * 预留：下单时占用库存（available 减、reserved 增）。
    *
-   * @throws IllegalStateException 可用量不足——这是超卖的唯一拦截点，调用方必须把该异常转成业务错误码
+   * @throws DomainException 可用量不足——这是超卖的唯一拦截点，调用方必须把该异常转成业务错误码
    */
   public void reserve(int quantity) {
 
@@ -105,7 +106,7 @@ public class Inventory extends TenantAggregateRoot<Long> {
       throw new IllegalArgumentException("预留数量必须为正: " + quantity);
     }
     if (this.availableQty < quantity) {
-      throw new IllegalStateException(
+      throw new DomainException(
           "库存不足: product=" + productId + ", available=" + availableQty + ", required=" + quantity);
     }
     this.availableQty -= quantity;
@@ -120,7 +121,7 @@ public class Inventory extends TenantAggregateRoot<Long> {
       throw new IllegalArgumentException("确认数量必须为正: " + quantity);
     }
     if (this.reservedQty < quantity) {
-      throw new IllegalStateException(
+      throw new DomainException(
           "预留量不足，无法确认出库: product="
               + productId
               + ", reserved="
