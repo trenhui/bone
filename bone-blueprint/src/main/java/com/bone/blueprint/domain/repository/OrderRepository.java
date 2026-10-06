@@ -38,6 +38,22 @@ public interface OrderRepository extends Repository<Order, Long> {
   @TenantScope(TenantScopeMode.ALL)
   List<OrderHeadProjection> findExpiredOrdersAllTenants(@Param("before") Timestamp before);
 
+  /**
+   * 按「渠道 + 渠道原始订单号」查订单（渠道拉单幂等键）。
+   *
+   * <p>渠道推送存在<strong>必然重复</strong>（网络重试、渠道侧重推），若不做幂等会产生重复订单。 数据库层已建 {@code
+   * uk_order_tenant_channel_order_no} 唯一约束兜底， 此处的前置查询是为了<strong>返回已有订单号而不是抛唯一键冲突</strong>——
+   * 让「重复推送」成为正常的幂等响应，而不是 5xx。
+   */
+  default Order findByChannelOrderNo(Long tenantId, String channelCode, String channelOrderNo) {
+    Criteria<Order> criteria =
+        Criteria.<Order>create()
+            .eq(Order::getTenantId, tenantId)
+            .eq(Order::getChannelCode, channelCode)
+            .eq(Order::getChannelOrderNo, channelOrderNo);
+    return findOneByCriteria(criteria);
+  }
+
   /** 订单头分页；{@code customerId} / {@code status} 为可选过滤条件。 */
   default PageResult<OrderHeadProjection> findOrderPage(
       long tenantId, Long customerId, OrderStatus status, int page, int size) {

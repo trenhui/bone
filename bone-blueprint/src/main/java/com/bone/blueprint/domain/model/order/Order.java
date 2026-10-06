@@ -41,8 +41,14 @@ public class Order extends TenantAggregateRoot<Long> {
    */
   private String orderNo;
 
-  /** 订单来源渠道（APP / H5 / 小程序 / POS）——运营分析第一维度。 */
+  /** 订单来源渠道（APP / H5 / 小程序 / POS）——运营分析第一维度，回答「用户从哪儿点的」。 */
   private String channelSource;
+
+  /** 销售渠道码（TAOBAO/JD/DOUYIN/PDD）——回答「订单从哪个平台来的」，与 channelSource 正交。 */
+  private String channelCode;
+
+  /** 渠道原始订单号——回传状态与对账的唯一键，与内部 orderNo 分离。 */
+  private String channelOrderNo;
 
   /** 运费（金额三口径：总额 = 明细小计之和 + 运费 − 优惠）。 */
   private BigDecimal freightAmount;
@@ -136,6 +142,39 @@ public class Order extends TenantAggregateRoot<Long> {
     order.addDomainEvent(
         new OrderCreatedEvent(
             order.getId(), order.getTenantId(), order.getCustomerId(), Instant.now()));
+    return order;
+  }
+
+  /**
+   * 创建渠道订单（多渠道交易域）。
+   *
+   * <p><b>与通用下单的差异：金额以渠道回传为准</b>。渠道订单是<strong>已成交</strong>的事实，
+   * 其成交价、优惠由渠道侧决定（平台补贴、店铺券都发生在渠道），内部再按主数据取价会把渠道实付 改写成另一个数字，导致对账时「订单金额 ≠ 渠道结算金额」。因此这里跳过主数据取价与内部定价链路，
+   * 直接以渠道草稿落单。
+   *
+   * @param channelCode 销售渠道码
+   * @param channelOrderNo 渠道原始订单号（幂等键）
+   */
+  public static Order createFromChannel(
+      long id,
+      Long tenantId,
+      Long customerId,
+      List<OrderItem> items,
+      String channelSource,
+      BigDecimal freightAmount,
+      BigDecimal discountAmount,
+      String channelCode,
+      String channelOrderNo) {
+    if (channelCode == null || channelCode.isBlank()) {
+      throw new DomainException("渠道订单必须携带销售渠道码");
+    }
+    if (channelOrderNo == null || channelOrderNo.isBlank()) {
+      throw new DomainException("渠道订单必须携带渠道原始订单号（对账与幂等键）");
+    }
+    Order order =
+        create(id, tenantId, customerId, items, channelSource, freightAmount, discountAmount);
+    order.channelCode = channelCode;
+    order.channelOrderNo = channelOrderNo;
     return order;
   }
 
@@ -250,6 +289,37 @@ public class Order extends TenantAggregateRoot<Long> {
   }
 
   /**
+   * 渠道订单标记为已支付（CREATED → PAID）。
+   *
+   * <p><b>与 {@link #confirmPaid()} 的区别（必须读懂再用）</b>：
+   *
+   * <ul>
+   *   <li>{@code confirmPaid()} 是<strong>站内</strong>支付链路的入口，由支付回调驱动，会发出 {@link
+   *       OrderPaidEvent}，订阅者据此<b>消费预留</b>（{@code inventoryGateway.confirmStock}）——
+   *       因为站内下单时库存只做了预留，尚未真正扣减。
+   *   <li>本方法是<strong>渠道</strong>订单专用：渠道订单由 {@code ChannelOrderApplicationService}
+   *       在拉单时<strong>已同步完成预留</strong>，若这里再发支付事件就会让同一批预留被扣两次， 库存凭空少一份（表现为可售量异常下降）。
+   * </ul>
+   *
+   * <p><b>为何渠道订单天然是已支付</b>：淘宝/京东/抖音/拼多多都只在买家付款后才向商家推送订单， 钱在渠道侧已收妥，系统内不存在「待支付」这一中间态；若沿用 CREATED 会导致
+   * ①订单列表显示「待支付」与平台事实不符 ②发货守卫把渠道单全部挡下 ③渠道单永远无法退款。
+   *
+   * <p>幂等：已 PAID 直接返回，不重复迁移。
+   */
+  public void markChannelPaid() {
+    if (this.status == OrderStatus.PAID) {
+      return;
+    }
+    if (this.status != OrderStatus.CREATED) {
+      throw new DomainException("只有新建状态的渠道订单可以标记已支付，当前状态: " + this.status);
+    }
+    this.status = OrderStatus.PAID;
+    this.paidTime = Instant.now();
+    this.updatedAt = Instant.now();
+    // 刻意不发 OrderPaidEvent：预留已在拉单事务内完成，再发会让订阅者重复扣减。
+  }
+
+  /**
    * 确认订单已支付（CREATED → PAID）。
    *
    * <p>订单聚合**唯一**的支付确认入口，由真实支付链路驱动：支付单 {@code Payment.confirmSuccess} 成功 → {@code
@@ -298,6 +368,18 @@ public class Order extends TenantAggregateRoot<Long> {
             Instant.now()));
   }
 
+  /**
+   * 取消订单。
+   *
+   * <p><b>守卫只拦 SHIPPED / DELIVERED / CANCELLED，刻意不拦 REFUNDED</b>（P2-8，2026-10-05 记录）： {@code
+   * REFUNDED → CANCELLED} 当前<b>被允许</b>，这是经确认的产品决定，不是漏写的守卫。
+   *
+   * <p><b>客观后果</b>（只陈述实测行为，不代替产品给理由）：该跃迁只把订单状态从「已退款」改为「已取消」 并发出 {@code
+   * OrderCancelledEvent}，<b>不触碰任何支付/退款状态</b> —— 钱在 {@code refund()} 时已经退过， 取消动作不产生新的资金流转。
+   *
+   * <p><b>待补</b>：该跃迁的<b>业务理由</b>（例如财务冲正流程需要、还是历史兼容）尚未在代码库中登记， 待产品/财务确认后补进《Bone-DDD-最终实践方案》或本类
+   * javadoc，以免后人把「允许」当漏洞修掉。
+   */
   public void cancel() {
     if (this.status == OrderStatus.SHIPPED) {
       throw new DomainException("已发货订单无法取消");
