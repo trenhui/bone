@@ -54,7 +54,7 @@ public interface PermissionRepository extends Repository<Permission, Long> {
    * <p>关键字跨 {@code name} / {@code code} / {@code description} 三列 OR，须用 {@link QueryBuilder}。
    */
   default PageResult<Permission> findPermissionPage(
-      String keyword, PermissionType type, Long parentId, int pageNo, int pageSize) {
+      String keyword, PermissionType type, Long parentId, int page, int size) {
     FluentQuery<Permission> query = QueryBuilder.from(Permission.class);
     if (keyword != null && !keyword.isEmpty()) {
       query
@@ -71,6 +71,6 @@ public interface PermissionRepository extends Repository<Permission, Long> {
     if (parentId != null) {
       query.where(Permission::getParentId).eq(parentId);
     }
-    return query.orderByDesc(Permission::getCreatedAt).page(pageNo, pageSize);
+    return query.orderByDesc(Permission::getCreatedAt).page(page, size);
   }
 }

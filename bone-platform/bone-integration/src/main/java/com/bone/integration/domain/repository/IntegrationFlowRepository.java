@@ -25,13 +25,13 @@ public interface IntegrationFlowRepository extends Repository<IntegrationFlow, L
 
   /** 本聚合分页。关键字走 Criteria 全模糊；不关闭租户过滤。 */
   default PageResult<IntegrationFlow> findPage(
-      String keyword, FlowStatus status, int pageNum, int pageSize) {
+      String keyword, FlowStatus status, int page, int size) {
     Criteria<IntegrationFlow> criteria =
         Criteria.<IntegrationFlow>create()
             .like(keyword != null && !keyword.isBlank(), IntegrationFlow::getName, keyword)
             .eq(status != null, IntegrationFlow::getStatus, status)
             .orderByDesc(IntegrationFlow::getId)
-            .page(pageNum, pageSize);
+            .page(page, size);
     return pageByCriteria(criteria);
   }
 

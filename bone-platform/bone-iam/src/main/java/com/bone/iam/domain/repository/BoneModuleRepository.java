@@ -17,12 +17,12 @@ import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 public interface BoneModuleRepository extends Repository<BoneModule, Long> {
 
   /** 模块分页（本聚合读）：按应用过滤，按 {@code sortOrder} 升序。 */
-  default PageResult<BoneModule> findModulePage(Long appId, int pageNo, int pageSize) {
+  default PageResult<BoneModule> findModulePage(Long appId, int page, int size) {
     FluentQuery<BoneModule> query = QueryBuilder.from(BoneModule.class);
     if (appId != null) {
       query.where(BoneModule::getAppId).eq(appId);
     }
-    return query.orderByAsc(BoneModule::getSortOrder).page(pageNo, pageSize);
+    return query.orderByAsc(BoneModule::getSortOrder).page(page, size);
   }
 
   /** 按 id 取模块；不存在返回 {@code null}（与原 {@code single()} 语义一致，由调用方转 404）。 */

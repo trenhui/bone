@@ -4,6 +4,7 @@ import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
+import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateConnectorApplicationService {
   private final ConnectorRepository connectorRepository;
   private final ConnectorSupport connectorSupport;
+  private final ConnectorSecretSupport connectorSecretSupport;
   private final IntegrationDomainEventPublisher domainEventPublisher;
 
   @Transactional
@@ -33,7 +35,11 @@ public class CreateConnectorApplicationService {
     connectorSupport.validateConnectorName(cmd.name(), null);
     Long connectorId = DistributedIdGenerator.generateLongId();
     ConnectorType type = ConnectorType.fromString(cmd.type());
-    Connector connector = Connector.create(connectorId, cmd.name(), type, cmd.config());
+    // 凭据加密后落库：config 是自由 JSON，第三方密钥原本与 endpoint/bucket 混在一起明文保存，
+    // 而读端只需一个读权限就能批量导出全平台凭据。
+    Connector connector =
+        Connector.create(
+            connectorId, cmd.name(), type, connectorSecretSupport.encryptForPersist(cmd.config()));
     connectorRepository.save(connector);
     domainEventPublisher.publishFrom(connector);
     return connector.getId();

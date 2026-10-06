@@ -11,14 +11,14 @@ public interface ConnectorRepository extends Repository<Connector, Long> {
 
   /** 本聚合分页。关键字走 Criteria 全模糊。 */
   default PageResult<Connector> findPage(
-      String keyword, ConnectorType type, ConnectorStatus status, int pageNum, int pageSize) {
+      String keyword, ConnectorType type, ConnectorStatus status, int page, int size) {
     Criteria<Connector> criteria =
         Criteria.<Connector>create()
             .like(keyword != null && !keyword.isBlank(), Connector::getName, keyword)
             .eq(type != null, Connector::getType, type)
             .eq(status != null, Connector::getStatus, status)
             .orderByDesc(Connector::getId)
-            .page(pageNum, pageSize);
+            .page(page, size);
     return pageByCriteria(criteria);
   }
 

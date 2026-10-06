@@ -1,9 +1,9 @@
 package com.bone.integration.application.query.qry;
 
 public record ConnectorPageQuery(
-    Integer pageNum, Integer pageSize, String keyword, String type, String status) {
+    Integer page, Integer size, String keyword, String type, String status) {
   public ConnectorPageQuery {
-    if (pageNum == null || pageNum <= 0) pageNum = 1;
-    if (pageSize == null || pageSize <= 0) pageSize = 10;
+    if (page == null || page <= 0) page = 1;
+    if (size == null || size <= 0) size = 10;
   }
 }

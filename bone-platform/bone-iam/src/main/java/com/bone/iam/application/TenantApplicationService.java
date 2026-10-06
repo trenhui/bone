@@ -140,10 +140,10 @@ public class TenantApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<TenantDTO> page(TenantPageQuery qry) {
-    int pageNo = qry.getPage() != null ? qry.getPage() : 1;
-    int pageSize = qry.getSize() != null ? qry.getSize() : 10;
+    int page = qry.getPage() != null ? qry.getPage() : 1;
+    int size = qry.getSize() != null ? qry.getSize() : 10;
     PageResult<Tenant> result =
-        tenantRepository.findTenantPage(qry.getCode(), qry.getName(), pageNo, pageSize);
+        tenantRepository.findTenantPage(qry.getCode(), qry.getName(), page, size);
     List<TenantDTO> records =
         result.getRecords().stream().map(TenantApplicationService::toDto).toList();
     return PageResult.of(records, result.getTotal(), result.getPage(), result.getSize());

@@ -2,6 +2,8 @@ package com.bone.integration.application;
 
 import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorDetailQuery;
+import com.bone.integration.application.support.ConnectorSecretSupport;
+import com.bone.integration.application.support.ConnectorSecretSupport.MaskedConfig;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.connector.Connector;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConnectorDetailQueryApplicationService {
 
   private final ConnectorRepository connectorRepository;
+  private final ConnectorSecretSupport connectorSecretSupport;
 
   @Transactional(readOnly = true)
   public ConnectorDTO handle(ConnectorDetailQuery query) {
@@ -23,11 +26,13 @@ public class ConnectorDetailQueryApplicationService {
     if (connector == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.CONNECTOR_NOT_FOUND, query.id());
     }
+    MaskedConfig masked = connectorSecretSupport.maskForRead(connector.getConfig());
     return new ConnectorDTO(
         connector.getId(),
         connector.getName(),
         connector.getType().name(),
-        connector.getConfig(),
-        connector.getStatus().name());
+        masked.config(),
+        connector.getStatus().name(),
+        masked.secretKeysConfigured());
   }
 }

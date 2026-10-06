@@ -51,7 +51,7 @@ bone:
   iam:
     jwt:
       # 必须与 bone-iam 的 secret-key 一致，生产由环境变量 BONE_IAM_JWT_SECRET_KEY 注入
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       token-prefix: "Bearer "
       header-name: Authorization
 

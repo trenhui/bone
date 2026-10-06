@@ -3,6 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
+import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateConnectorApplicationService {
   private final ConnectorRepository connectorRepository;
   private final ConnectorSupport connectorSupport;
+  private final ConnectorSecretSupport connectorSecretSupport;
 
   @Transactional
   public void handle(UpdateConnectorCommand cmd) {
@@ -44,7 +46,12 @@ public class UpdateConnectorApplicationService {
     }
     connectorSupport.validateConnectorName(cmd.name(), cmd.id());
     ConnectorType type = ConnectorType.fromString(cmd.type());
-    connector.update(cmd.name(), type, cmd.config());
+    // 合并而非覆盖：读端已不返回凭据，前端回填的 config 里必然没有 secretKey 这类键，
+    // 直接覆盖会让「一次无关字段的编辑」把凭据清空、连接器当场失效。
+    connector.update(
+        cmd.name(),
+        type,
+        connectorSecretSupport.mergeOnUpdate(cmd.config(), connector.getConfig()));
     connectorRepository.save(connector);
   }
 }

@@ -24,7 +24,7 @@ public class FlowPageQueryApplicationService {
     FlowStatus status =
         qry.status() != null && !qry.status().isBlank() ? FlowStatus.valueOf(qry.status()) : null;
     PageResult<IntegrationFlow> result =
-        flowRepository.findPage(qry.keyword(), status, qry.pageNum(), qry.pageSize());
+        flowRepository.findPage(qry.keyword(), status, qry.page(), qry.size());
 
     List<FlowDTO> records =
         result.getRecords().stream()

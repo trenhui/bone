@@ -30,13 +30,13 @@ public interface IntegrationLogRepository extends Repository<IntegrationLog, Lon
 
   /** 本聚合执行记录分页。 */
   default PageResult<IntegrationLog> findPage(
-      Long flowId, ExecutionStatus status, int pageNum, int pageSize) {
+      Long flowId, ExecutionStatus status, int page, int size) {
     Criteria<IntegrationLog> criteria =
         Criteria.<IntegrationLog>create()
             .eq(flowId != null, IntegrationLog::getFlowId, flowId)
             .eq(status != null, IntegrationLog::getStatus, status)
             .orderByDesc(IntegrationLog::getId)
-            .page(pageNum, pageSize);
+            .page(page, size);
     return pageByCriteria(criteria);
   }
 

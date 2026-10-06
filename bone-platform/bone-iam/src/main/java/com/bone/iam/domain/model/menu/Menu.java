@@ -16,8 +16,6 @@ import lombok.NoArgsConstructor;
 @Table("iam_menu")
 public class Menu extends TenantAggregateRoot<Long> {
 
-  @Id
-
   /**
    * 逻辑删除标记。
    *
@@ -29,9 +27,11 @@ public class Menu extends TenantAggregateRoot<Long> {
    * <p>本表<b>无唯一索引</b>，故恢复软删不存在「同值无法重建」冲突（见soft-delete-declaration-baseline.json 的 {@code
    * _uk_conflict} 段）。
    */
-  @Deleted
-  private Boolean deleted = false;
+  // 必须紧贴字段（与 Dept 同理）：门禁 DELETED_FIELD_RE 只看注解与字段相邻，
+  // 中间夹注释块就会被判成「缺软删声明」。
+  @Deleted private Boolean deleted = false;
 
+  @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 

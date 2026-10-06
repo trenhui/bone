@@ -45,6 +45,16 @@
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+
+        <!-- 写端点授权的**端到端**断言（2026-10-05，对应设计诊断 P1-9 剩余缺口）。
+             静态门禁只看「注解在不在」，前一组运行期测试走方法拦截器；只有挂上过滤器链 +
+             spring-security-test 的 request post-processor，才能证明「HTTP 请求真的被 403 拦住」。
+             判据：已登录但无权限码 ⇒ 403；同一端点带权限码 ⇒ 不得为403（否则说明 403 来自 CSRF 之类，
+             断言会变成假绿）。 -->
+        <dependency><groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>

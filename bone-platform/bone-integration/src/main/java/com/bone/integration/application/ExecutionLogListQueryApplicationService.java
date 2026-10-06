@@ -25,7 +25,7 @@ public class ExecutionLogListQueryApplicationService {
             ? ExecutionStatus.valueOf(qry.status())
             : null;
     PageResult<IntegrationLog> result =
-        logRepository.findPage(qry.flowId(), status, qry.pageNum(), qry.pageSize());
+        logRepository.findPage(qry.flowId(), status, qry.page(), qry.size());
 
     List<ExecutionLogDTO> records =
         result.getRecords().stream()

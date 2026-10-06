@@ -69,7 +69,12 @@ public class SecurityConfig {
                         // 健康检查供网关/容器探针免鉴权调用；其余 actuator 端点仍在鉴权之后
                         "/actuator/health",
                         "/actuator/health/**",
-                        "/actuator/info")
+                        "/actuator/info",
+                        // Spring Boot 的错误转发端点。**必须放行**：
+                        // 认证通过 → 业务抛异常 → FORWARD /error → 不在白名单则被 Security 拦下
+                        // → AuthorizationDeniedException → 表现为 401，把真实的
+                        // 404/403/500 统统掩盖成"未认证"。2026-10-06 在 bone-file 上实测确诊。
+                        "/error")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

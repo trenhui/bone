@@ -64,8 +64,8 @@ public interface AccountRepository extends Repository<Account, Long> {
    * @param tenantId 已解析的租户过滤值；{@code null} 表示不加租户条件
    */
   default PageResult<Account> findAccountPage(
-      String keyword, AccountStatus status, Long tenantId, int pageNo, int pageSize) {
-    return findAccountPage(keyword, status, tenantId, null, pageNo, pageSize);
+      String keyword, AccountStatus status, Long tenantId, int page, int size) {
+    return findAccountPage(keyword, status, tenantId, null, page, size);
   }
 
   /**
@@ -78,8 +78,8 @@ public interface AccountRepository extends Repository<Account, Long> {
       AccountStatus status,
       Long tenantId,
       Collection<Long> deptIds,
-      int pageNo,
-      int pageSize) {
+      int page,
+      int size) {
     FluentQuery<Account> query = QueryBuilder.from(Account.class);
     if (keyword != null && !keyword.isEmpty()) {
       query
@@ -101,7 +101,7 @@ public interface AccountRepository extends Repository<Account, Long> {
       // `IN ()` 坏 SQL（BadSqlGrammarException）。入口统一规整为 ArrayList 兜底。
       query.where(Account::getDeptId).in(new java.util.ArrayList<>(deptIds));
     }
-    return query.orderByDesc(Account::getCreatedAt).page(pageNo, pageSize);
+    return query.orderByDesc(Account::getCreatedAt).page(page, size);
   }
 
   /** 某租户账号数（配额校验用，本聚合读）。 */

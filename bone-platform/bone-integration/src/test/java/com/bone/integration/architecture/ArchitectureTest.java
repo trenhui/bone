@@ -36,6 +36,22 @@ public class ArchitectureTest {
           BoneDddArchRules.AllTenantCallers.ofPackages("..adapter.schedule..")
               .andClasses("com.bone.integration.application.support.FlowMonitorSupport"));
 
+  /**
+   * adapter 层不得直接依赖 domain 仓储端口（P2-7，2026-10-05 新增）。
+   *
+   * <p>为什么补这条：{@code FlowStatisticsJob} 曾直接注入 {@code IntegrationFlowRepository} 取流程定义， 越过
+   * application 层。已有的 {@code all_tenants_scan_only_by_registered_callers} 抓不到它 ——
+   * 那条只管"全租户扫描型方法"的调用方，而 {@code findForStatisticsAllTenants()} 只是取流程定义、 并不扫执行日志。判据补上后，这类"轻量直注"也会变红。
+   */
+  @ArchTest
+  static final ArchRule adapter_must_not_depend_on_domain_repository =
+      noClasses()
+          .that()
+          .resideInAPackage("..adapter..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("..domain.repository..");
+
   @ArchTest
   static final ArchRule schedule_only_calls_all_tenants_repository_methods =
       BoneDddArchRules.scheduleOnlyCallsAllTenantScanMethods(DOMAIN_REPOSITORY_PACKAGE);

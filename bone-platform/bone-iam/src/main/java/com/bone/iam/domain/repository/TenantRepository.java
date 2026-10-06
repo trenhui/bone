@@ -19,7 +19,7 @@ public interface TenantRepository extends Repository<Tenant, Long> {
   }
 
   /** 租户分页（本聚合读）：{@code code} / {@code name} 模糊匹配，按创建时间倒序。 */
-  default PageResult<Tenant> findTenantPage(String code, String name, int pageNo, int pageSize) {
+  default PageResult<Tenant> findTenantPage(String code, String name, int page, int size) {
     var query = QueryBuilder.from(Tenant.class);
     if (code != null && !code.isBlank()) {
       query.where(Tenant::getCode).like("%" + code + "%");
@@ -27,6 +27,6 @@ public interface TenantRepository extends Repository<Tenant, Long> {
     if (name != null && !name.isBlank()) {
       query.where(Tenant::getName).like("%" + name + "%");
     }
-    return query.orderByDesc(Tenant::getCreatedAt).page(pageNo, pageSize);
+    return query.orderByDesc(Tenant::getCreatedAt).page(page, size);
   }
 }

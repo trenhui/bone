@@ -26,8 +26,8 @@ public interface AuditLogRepository extends Repository<AuditLog, Long> {
       LocalDateTime startedAt,
       LocalDateTime endedAt,
       Long tenantId,
-      int pageNo,
-      int pageSize) {
+      int page,
+      int size) {
     FluentQuery<AuditLog> query = QueryBuilder.from(AuditLog.class);
     if (userId != null) {
       query.where(AuditLog::getUserId).eq(userId);
@@ -50,6 +50,6 @@ public interface AuditLogRepository extends Repository<AuditLog, Long> {
     if (tenantId != null) {
       query.where(AuditLog::getTenantId).eq(tenantId);
     }
-    return query.orderByDesc(AuditLog::getCreatedAt).page(pageNo, pageSize);
+    return query.orderByDesc(AuditLog::getCreatedAt).page(page, size);
   }
 }

@@ -76,7 +76,7 @@ bone:
     scan-packages: com.bone.iam.domain
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       expiration-ms: ${BONE_JWT_EXPIRATION_MS:7200000}
       refresh-expiration-ms: ${BONE_JWT_REFRESH_EXPIRATION_MS:604800000}
       token-prefix: "Bearer "

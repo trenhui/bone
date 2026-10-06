@@ -54,6 +54,13 @@ spring:
           uri: ${BONE_BLUEPRINT_URI:http://localhost:8082}
           predicates:
             - Path=/api/v1/orders/**, /api/v1/payments/**
+        # 多渠道交易域：渠道注册、渠道商品上架、渠道订单接入、库存、发货物流。
+        # 与 orders/payments 同属 bone-blueprint 上下文（同一进程 8082），此处并列登记，
+        # 否则前端只走网关时整条「渠道拉单 → 发货 → 轨迹」链路会断在 404。
+        - id: bone-blueprint-commerce
+          uri: ${BONE_BLUEPRINT_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/channels/**, /api/v1/channel-products/**, /api/v1/channel-orders/**, /api/v1/inventories/**, /api/v1/shipments/**, /api/v1/channel-broadcasts/**, /api/v1/channel-buyers/**
         - id: bone-system
           uri: ${BONE_SYSTEM_URI:http://localhost:8083}
           predicates:

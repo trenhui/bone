@@ -56,6 +56,14 @@ public final class DefaultPermissionCodes {
         // （metadata:read / metadata:write 已在上方 G5 段登记，此处不重复 —— List.of 不接受重复元素。）
         "order:payment:read",
         "order:payment:write",
+        "commerce:channel:read",
+        "commerce:channel:write",
+        "commerce:product:read",
+        "commerce:product:write",
+        "commerce:inventory:read",
+        "commerce:inventory:write",
+        "commerce:shipment:read",
+        "commerce:shipment:write",
         "sys:console:read",
         // system 平台域写门禁（全局表写端点 @PreAuthorize；租户不应写全局配置/字典/调度任务）
         "sys:config:write",

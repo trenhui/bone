@@ -27,7 +27,7 @@ public interface RoleRepository extends Repository<Role, Long> {
    *
    * @param tenantId 已解析的租户过滤值；{@code null} 表示不加租户条件（平台租户未显式选择租户时）
    */
-  default PageResult<Role> findRolePage(String keyword, Long tenantId, int pageNo, int pageSize) {
+  default PageResult<Role> findRolePage(String keyword, Long tenantId, int page, int size) {
     FluentQuery<Role> query = QueryBuilder.from(Role.class);
     if (keyword != null && !keyword.isEmpty()) {
       // contains = %kw%：like() 不加通配符（等值语义），裸用会导致搜索恒空
@@ -42,7 +42,7 @@ public interface RoleRepository extends Repository<Role, Long> {
     if (tenantId != null) {
       query.where(Role::getTenantId).eq(tenantId);
     }
-    return query.orderByDesc(Role::getCreatedAt).page(pageNo, pageSize);
+    return query.orderByDesc(Role::getCreatedAt).page(page, size);
   }
 
   /** 某租户角色数（配额校验用，本聚合读）。 */

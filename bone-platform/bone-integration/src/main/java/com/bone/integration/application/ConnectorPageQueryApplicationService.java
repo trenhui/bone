@@ -3,6 +3,8 @@ package com.bone.integration.application;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
+import com.bone.integration.application.support.ConnectorSecretSupport;
+import com.bone.integration.application.support.ConnectorSecretSupport.MaskedConfig;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorStatus;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConnectorPageQueryApplicationService {
 
   private final ConnectorRepository connectorRepository;
+  private final ConnectorSecretSupport connectorSecretSupport;
 
   @Transactional(readOnly = true)
   public PageResult<ConnectorDTO> handle(ConnectorPageQuery qry) {
@@ -28,18 +31,22 @@ public class ConnectorPageQueryApplicationService {
             ? ConnectorStatus.valueOf(qry.status())
             : null;
     PageResult<Connector> result =
-        connectorRepository.findPage(qry.keyword(), type, status, qry.pageNum(), qry.pageSize());
+        connectorRepository.findPage(qry.keyword(), type, status, qry.page(), qry.size());
 
+    // 列表同样剔除凭据：翻页即可批量导出全部连接器的第三方密钥，从读端绕过等于零成本泄露。
     List<ConnectorDTO> records =
         result.getRecords().stream()
             .map(
-                c ->
-                    new ConnectorDTO(
-                        c.getId(),
-                        c.getName(),
-                        c.getType().name(),
-                        c.getConfig(),
-                        c.getStatus().name()))
+                c -> {
+                  MaskedConfig masked = connectorSecretSupport.maskForRead(c.getConfig());
+                  return new ConnectorDTO(
+                      c.getId(),
+                      c.getName(),
+                      c.getType().name(),
+                      masked.config(),
+                      c.getStatus().name(),
+                      masked.secretKeysConfigured());
+                })
             .collect(Collectors.toList());
 
     return PageResult.of(records, result.getTotal(), result.getPage(), result.getSize());

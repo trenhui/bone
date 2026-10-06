@@ -14,13 +14,24 @@ import org.springframework.stereotype.Service;
 public class ConnectorSupport {
   private final ConnectorRepository connectorRepository;
   private final Map<String, ExternalSystemClient> externalSystemClients;
+  private final ConnectorSecretSupport connectorSecretSupport;
 
   public boolean testConnector(Connector connector) {
-    return resolveClient(connector).testConnection(connector.getConfig());
+    return resolveClient(connector).testConnection(realConfig(connector));
   }
 
   public Object executeConnector(Connector connector, String endpoint, Map<String, Object> params) {
-    return resolveClient(connector).sendRequest(endpoint, params, connector.getConfig());
+    return resolveClient(connector).sendRequest(endpoint, params, realConfig(connector));
+  }
+
+  /**
+   * 交给外部客户端的必须是**解密后**的真实凭据。
+   *
+   * <p>解密放在这一层（application）而不是 {@code S3ClientImpl}（infrastructure）：凭据的加解密是应用层
+   * 策略，基础设施只该拿到「可用的明文」，不该知道密钥从哪来。
+   */
+  private Map<String, Object> realConfig(Connector connector) {
+    return connectorSecretSupport.decryptForConsume(connector.getConfig());
   }
 
   private ExternalSystemClient resolveClient(Connector connector) {

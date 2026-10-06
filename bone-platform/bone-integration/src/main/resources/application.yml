@@ -49,9 +49,13 @@ bone:
       jwt-enabled: ${BONE_INTEGRATION_JWT_ENABLED:false}
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
 
 integration:
+  # P2-2：连接器第三方凭据的加密密钥（2026-10-05 落地）。未注入时凭据明文存储（读端一律不返回凭据），
+  # 生产必须注入；格式与 bone.system.config.encrypt-key 一致，便于统一运维。
+  config:
+    encrypt-key: ${BONE_INTEGRATION_CONFIG_ENCRYPT_KEY:}
   camel:
     enabled: true
     # INT-11：true 时 FlowExecutionService 走 Camel 编译路由；默认 false 保持线性运行时

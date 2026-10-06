@@ -55,7 +55,15 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/api-docs/**",
-                        "/v3/api-docs/**")
+                        "/v3/api-docs/**",
+                        // Spring Boot 的错误转发端点：Controller 抛异常后浏览器/容器会转发到
+                        // /error，由 DefaultHandlerExceptionResolver 渲染成真正的错误响应。
+                        // **不放行 ⇒ 认证已成功的请求也会在这里被 Security 拦下**：
+                        // 认证通过 → 业务抛异常 → FORWARD /error → AuthorizationDeniedException
+                        // → 表现为 401，把真实业务错误码（404/403/500）统统掩盖成"未认证"。
+                        // 2026-10-06 实测：download 一个不存在的对象返回 401 而非 404，
+                        // 排查时一度误判成"鉴权/密钥不一致"，实际是这条白名单缺 /error。
+                        "/error")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
