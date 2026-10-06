@@ -2013,6 +2013,26 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 
 评审口径同 [G-1.5](#g-15-规则证明能力与模块启用状态) 开头与 [G-3](#g-3-规则准入) 第 7 条：Planned / Advisory 不得声称为全仓已证明。本节不另写一份状态。
 
+##### G-1.1.x 偏差 / 缺口台账（带 Owner 与复验）
+
+> 上面逐条列举的「现状与缺口」在此收敛为**带责任人与复验日期**的结构化台账，作为治理跟踪真源。
+> 每次验证 / 复验报告须回链本表对应行；行状态变更（Planned→Active、缺口→闭环）须同步回填，避免「开放项无主、无复验」导致治理失焦。
+> `Owner` / `里程碑` 列初始为「待认领 / 待排期」，由架构组在季度治理会上指派。
+
+| # | 偏差 / 缺口项 | 载体现状 | 状态 | Owner | 里程碑 / 复验 | 备注 |
+|---|---|---|---|---|---|---|
+| 1 | 规则库完整正反 fixture | ArchUnit 规则库 | Planned | 待认领 | 待排期 | — |
+| 2 | 跨上下文表所有权与 SQL Join 完整静态检测 | — | Planned | 待认领 | 待排期 | — |
+| 3 | QueryPort 新位置门禁 | — | Planned | 待认领 | 待排期 | — |
+| 4 | adapter 入站 / infrastructure 出站方向门禁 | — | Planned | 待认领 | 待排期 | — |
+| 5 | application / domain 端口位置门禁 | — | Planned | 待认领 | 待排期 | — |
+| 6 | 平台 Integration Event Envelope | 落地中 | Active（待复验） | 待认领 | 待复验 | 见 E-5 |
+| 7 | 并发策略模板 | — | Planned | 待认领 | 待排期 | — |
+| 8 | 禁 ORM CI 级门禁 + 统一响应契约静态门禁（HC-003 无载体；HC-001/006 仅本地；HC-008 缺 CI 载体与存量 26 表分类） | 本地 `check.sh` / `check-sdk-persistence.py` | 缺口（Planned→Manual） | 待认领 | 待排期 | 见 [G-1.7](#hc-hard-constraints) |
+| 9 | 集成事件契约 breaking-change 检查（Envelope `version`） | 仅 REST 侧 oasdiff（HC-007） | 缺口（优先） | 待认领 | 待排期 | 事件侧最易静默破坏，优先于 REST 侧补齐 |
+| 10 | `studio-generator` 模板与规范一致性 | 代码已修（投影 DTO） | **已闭环 + 防回退** | — | 已复验 2026-10-07 | 剩余：补生成模板快照 / 门禁断言防回退 |
+| 11 | 仓库内反向引用（代码 → 文档 章节号漂移） | 无机器载体 | 缺口 | 待认领 | 随模块改动 | JavaDoc 旧章节号两处 |
+
 #### G-1.5 规则证明能力与模块启用状态
 
 <!-- gate-state:g1_5_rules:start -->
