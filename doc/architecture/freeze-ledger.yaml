@@ -1,0 +1,85 @@
+# freeze-ledger.yaml — ArchUnit freeze 债务台账（G-2 台账首版，2026-10-06 创建）
+#
+# 口径（与方案 G-2 一致）：
+#   * 只登记「有真实冻结违规」的债务条目（archunit_store 中非空 store 文件）；
+#     「违规=0 的防新增型冻结」（空 store 文件）属于门禁机制本身，不是债务，不入台账。
+#   * `violations` = 该规则冻结的真实违规出现次数（规则判定口径见 stores 内文本）。
+#   * 防新增语义不变：基线只允许收缩；本台账是治理视角的显式登记，不改变 CI 判定。
+#   * CI 消费（到期硬失败）尚未实装前的口径：人工治理（方案 G-2「到期机制未被 CI 消费前，
+#     只能称人工治理，不得为满足台账数字而重写 freeze 基线」）。
+#
+# 数据来源：各模块 archunit_store/<uuid> 现场统计（2026-10-06，9 模块 94 个 store 文件）：
+#   * 非空（真实债务）4 处 → 即下方 4 个条目；
+#   * 空（防新增型）90 处 → 不入台账，机制由 freeze.store.*=false + G-1.1 门禁表守护。
+#
+# 各模块防新增型冻结计数（供复核，明细见各模块 archunit_store/stored.rules）：
+#   bone-blueprint 5 · ext-studio 9 · metadata-server 7 · studio-generator 14 ·
+#   bone-iam 10 · bone-integration 14 · bone-masterdata 9 · bone-notification 6 · bone-system 12 = 86
+#
+# updatePolicy：violations 或 store 路径变化时同步本文件（与 archunit_store 双源对齐，
+#   由 scripts/ci/check-freeze-ledger.py --check 保漂移）。
+
+ledger:
+  # ── studio-generator：Controller 直依赖 application/service ──
+  # （Application Service First 目标形态存量；v5.3 AS-01 应用服务边界）
+  - rule: adapterControllersMustNotDependOnApplicationService
+    module: bone-engine/studio-generator
+    store: bone-engine/studio-generator/archunit_store/bca886eb-2d18-4064-a5ec-7fa710ae2b14
+    classification: debt
+    violations: 9
+    items:
+      - "CodeGenerationController -> CodeGenerationAsyncService / GenerationTaskOperationService"
+      - "GeneratorOperationController -> GenerationTaskOperationService"
+    owner: platform-arch
+    removalCondition: >-
+      CodeGeneration/GeneratorOperation 控制器改注入 ApplicationService 门面，
+      控制器不再触达 application.service 包
+    lastRenewal: null
+
+  # ── ext-studio：Application Service 承载领域规则（E-6.4 反贫血）──
+  - rule: applicationServicesMustNotOwnDomainRules
+    module: bone-engine/bone-extension-engine/bone-extension-studio
+    store: bone-engine/bone-extension-engine/bone-extension-studio/archunit_store/81c04fc3-55da-49df-a376-ddfc65004679
+    classification: debt
+    violations: 72
+    items:
+      - "ExtPointCommandApplicationService -> ExtPoint / PluginVersion setter 直调（约 30 处）"
+      - "ExtensionCommandApplicationService -> Extension / PluginVersion setter 直调（约 42 处）"
+    owner: platform-arch
+    removalCondition: >-
+      ExtPoint / Extension / PluginVersion 聚合补行为方法（含批量版本变更等业务语义方法），
+      应用层改为构造装配替代逐 setter 状态搬运（改造模板见方案 E-6.4 迁移路径）
+    lastRenewal: teaching-case
+    lastRenewalDate: 2026-10-06
+
+  # ── ext-studio：单事务多聚合（CORE-07 / R9）──
+  - rule: oneAggregatePerTransaction
+    module: bone-engine/bone-extension-engine/bone-extension-studio
+    store: bone-engine/bone-extension-engine/bone-extension-studio/archunit_store/8a441f1f-99ed-4b58-b714-663c2bd17b3d
+    classification: debt
+    violations: 3
+    items:
+      - "ExtensionCommandApplicationService.deleteExtension -> [ExtensionRepository, PluginVersionRepository]"
+      - "ExtensionCommandApplicationService.rollbackExtension -> [ExtensionRepository, PluginVersionRepository]"
+      - "ExtensionCommandApplicationService.uploadPluginArtifact -> [ExtensionRepository, PluginVersionRepository]"
+    owner: platform-arch
+    removalCondition: >-
+      Extension 与 PluginVersion 的跨聚合操作改为领域事件 / Outbox 触发的最终一致
+      （R9 处置向导），单事务只持久化 Extension 一个聚合
+    lastRenewal: null
+
+  # ── bone-integration：schedule Job 直依赖 infrastructure 实现（CORE-02 端口导向）──
+  # 注意：entrypointMustOnlyBeCalledFromFramework 语义例外已在方案 E-9.3 白名单登记，
+  # 此处仅为 freeze 视角的对齐登记（规则冻结的 3 处引用），非新增债务。
+  - rule: scheduleOnlyCallsAllTenantScanMethods
+    module: bone-platform/bone-integration
+    store: bone-platform/bone-integration/archunit_store/fd6402f9-2e24-41b9-9c48-63601f85e0bb
+    classification: exception
+    violations: 3
+    items:
+      - "IntegrationOutboxRelayJob -> IntegrationOutboxRelay（构造注入 / 字段 / relayBatch 直调）"
+    owner: platform-arch
+    removalCondition: >-
+      IntegrationOutboxRelay 抽出 application 层端口（OutboxRelayPort），Job 依赖端口，
+      infrastructure 实现由 Spring 装配（CORE-02 端口导向落地）
+    lastRenewal: null
