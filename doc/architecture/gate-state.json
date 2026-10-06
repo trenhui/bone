@@ -116,7 +116,7 @@
         [
           "16",
           "租户表 ↔ 实体声明（DDL 的 `tenant_id` 必须在实体上声明 `tenantId`）",
-          "`scripts/check-tenant-entity-declaration.py --check`（`scripts/ci-check.sh` `[8/9]`；存量 12 张登记在 `doc/architecture/tenant-entity-baseline.json`，只可收缩）",
+          "`scripts/check-tenant-entity-declaration.py --check`（`scripts/ci-check.sh` `[8/9]`；存量 7 张登记在 `doc/architecture/tenant-entity-baseline.json`，只可收缩）",
           "Manual（本地脚本，无 workflow 调用；SDK 按实体字段判定租户表——DDL 有列不等于查询会带租户条件）"
         ],
         [

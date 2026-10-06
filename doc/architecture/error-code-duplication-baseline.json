@@ -1,0 +1,5 @@
+{
+  "_comment": "COMMON_* 错误码重复定义的存量登记（唯一真源）。COMMON_* 只能由 bone-framework/bone-core 的 CommonErrorCodes 定义。2026-10-05 建立时登记 6 组共 16 处，同日已全部收敛（删除模块副本、调用处改用 CommonErrorCodes.X），故本表现为空 —— **空即表示无存量重复，且必须保持为空**。新增重复会被 scripts/check-error-code-duplication.py --check 拦下。",
+  "_rule": "键=码值，值=全部持有者（模块#常量名）；真源 bone-core 也列出以便对照。",
+  "known_duplicates": {}
+}

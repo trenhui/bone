@@ -1,10 +1,20 @@
 name: Bone CI/CD
 
 on:
+  # 2026-10-04 修复「存在 ≠ 生效」P0-1：本仓唯一活跃开发分支是 dev
+  # （实测 master..dev = 254 提交、dev..master = 0，origin/dev 与 origin/master 并存，
+  # 而 origin/HEAD 指向 master），触发器此前却只列 [main, master, develop] ⇒
+  # 5 个 job 与全部门禁在 dev 上**从不运行**，所有"已接线"门禁的回归保护在事实上为零。
+  # develop 的拼写也与真实分支名不符，是显性的失效配置。
+  #
+  # 只改分支名治标不治本（分支会再次漂移），故补一条**门禁自身存活**判据
+  # （scripts/check-gate-liveness.py：断言触发器包含当前分支、且 blocking 步骤数达标），
+  # 让"门禁没跑"这件事本身变成一次红灯，而不是静默失效。
+  # L3：CI 脚本修改，架构师审批后落地。
   push:
-    branches: [main, master, develop]
+    branches: [dev, main, master]
   pull_request:
-    branches: [main, master, develop]
+    branches: [dev, main, master]
 
 env:
   # JDK 21：与 bone-parent 的 java.version=21 严格对齐（各子模块的 17 覆盖已全部清理）。
@@ -17,6 +27,28 @@ jobs:
   backend-quality:
     name: Backend Quality Check
     runs-on: ubuntu-latest
+    # 真机 MySQL（2026-10-05）：H2 的 MODE=MySQL 只覆盖语法子集——实测它连
+    # `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4` 都直接报语法错误，也给不出真实 information_schema
+    # 的行为，所以「这段 DDL 在 MySQL 上到底能不能跑、重复执行会不会炸、字符集落在哪」只能真机验
+    # （见 JdbcPhysicalStructureGatewayAdapterMysqlTest）。
+    # 测试侧连不上会自动 skip（@BeforeAll + assumeTrue），故对无 MySQL 的环境无害；
+    # 这里提供 service，是为了让这些断言在 CI 上**真正生效**而不是恒为 skip。
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.BONE_IT_DB_PASSWORD || 'bone_ci_only' }}
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd="mysqladmin ping -uroot --password=\"$$MYSQL_ROOT_PASSWORD\""
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      BONE_IT_DB_URL: jdbc:mysql://127.0.0.1:3306/bone_ci?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+      BONE_IT_DB_USERNAME: root
+      BONE_IT_DB_PASSWORD: ${{ secrets.BONE_IT_DB_PASSWORD || 'bone_ci_only' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +64,16 @@ jobs:
 
       - name: Build, Test & ArchUnit (verify, skip ITs)
         run: mvn clean verify --batch-mode -DskipITs=true
+
+      # ArchUnit 冻结基线开关（2026-10-04 建立）：ArchUnit 的 allowStoreUpdate 默认 true，
+      # 意味着架构违规**首次运行时被自动写进基线、此后永久豁免**。而 .gitignore 的
+      # `*.properties`（第 139 行）会把 src/test/resources/archunit.properties 全部吞掉
+      # ⇒ 干净 checkout 上这份配置根本不存在，开关恒为 true、"冻结基线"是假的冻结。
+      # 本门禁断言：每个含 ArchitectureTest 的模块都有该文件，且内容关闭 store 更新，
+      # 并且**已纳入版本控制**（未被 .gitignore 吞掉）——只查文件存在会漏掉忽略项，
+      # 只查 gitignore 又会在文件缺失时误报，两条必须同时成立。
+      - name: ArchUnit Freeze Baseline Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-archunit-freeze-baseline.py --check
 
       - name: Generate JaCoCo Coverage Report
         run: mvn jacoco:report --batch-mode
@@ -64,6 +106,48 @@ jobs:
 
       - name: DDD Gate State Tables in sync with gate-state.json (blocking)
         run: /usr/bin/env python3 scripts/check-ddd-gate-state.py generate --check
+
+      # 门禁自身存活（2026-10-04 建立）：断言「CI 会在当前分支上跑」且没有空壳步骤。
+      # 存在理由：此前 ci.yml 触发器只列 [main, master, develop]，而本仓唯一活跃分支是 dev
+      # ⇒ 20+ 个门禁**从不运行**却全绿，改对分支名只治标（分支会再漂移），
+      # 本判据让「门禁没跑」这件事本身成为红灯。L3：CI 脚本修改，架构师审批后落地。
+      - name: Gate Liveness Check (blocking)
+        run: /usr/bin/env python3 scripts/check-gate-liveness.py --strict
+
+      # 以下 6 项此前**只存在于 scripts/ci-check.sh 里，而该脚本在全仓零调用者**
+      # （2026-10-04 实测：命中全是脚本自身 docstring 与 gate-state.json 的描述文本，
+      # ci.yml 里唯一出现处是一句注释）⇒ 六个维度完全没有回归保护。
+      # 接入策略：显式逐条调用，而不是去调 ci-check.sh —— 逐条能看清每条判据、单独标注 blocking，
+      # 也避免把「一个没人跑的脚本」变成第二个没人跑的脚本。
+      # scripts/check.sh（pre-commit）仍会跑其中一部分，但它只认已 staged 的 .java
+      # （见 scripts/check.sh [2/22] 的变更模块检测），删码/未 stage/纯配置改动仍是盲区。
+      - name: DDL Table List Doc Sync Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-ddl-doc-sync.py
+
+      # HC-008：新增表缺必备列（tenant_id/created_at/updated_at/deleted）。
+      # 存量缺口逐表登记在 doc/architecture/ddl-required-columns-baseline.json（只可收缩），
+      # 本步只拦新增缺口。
+      - name: HC-008 Required Columns Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-ddl-required-columns.py --check
+
+      # 多租户：DDL 有 tenant_id ≠ SDK 认这张表是租户表；实体不声明 tenantId 时
+      # TenantFilterInjector 直接 return ⇒ 查询不注入租户条件 = 静默跨租户读。
+      - name: Tenant Entity Declaration Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-tenant-entity-declaration.py --check
+
+      # 租户离场清退覆盖：含 tenant_id 且非平台/全局/样板表必须登记离场清退清单，
+      # 否则租户删除后数据残留。
+      - name: Tenant Deletion Coverage Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-tenant-deletion-coverage.py --check
+
+      # ADR-0035：application 层只放 ApplicationService + 契约端口 + support，
+      # 否则第二类 service / 角色包会长回架构里。
+      - name: Application Constructs Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-application-constructs.py --check
+
+      # ADR-0036 D5：聚合必须包在 domain/model/{聚合}/ 下（两套分组并存是历史债的信号）。
+      - name: Domain Model Layout Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-domain-model-layout.py
 
       # ADR-0040：对外发布模块（SDK）不得以空壳冒充，且有业务类必须有契约测试。
       # 门禁 16 此前只在本地 ci-check.sh [11/11] 运行，.github/workflows 未调用，
@@ -117,6 +201,35 @@ jobs:
       - name: Controller Write Endpoint Authorization Lint (blocking)
         run: /usr/bin/env python3 scripts/check-controller-authorization.py
 
+      # URL 层 permitAll 不得覆盖含写端点的业务路径前缀。两层授权各管一件事：
+      # URL 层决定"要不要认证"，方法层 @PreAuthorize 决定"这次调用准不准"。
+      # 漏写 @PreAuthorize 在普通路径上只是"任何登录用户可写"，而在被 permitAll
+      # 覆盖的路径上是**"任何人可写"** —— 爆炸半径差一个量级。
+      # 本条 2026-10-04 建成但长期未接入任何流水线（= 假门禁），
+      # 2026-10-06 孤儿审计（对每个 check-*.py 查 hooks 引用数）发现并补上。
+      - name: URL Layer PermitAll Bypass Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-controller-authorization-url-bypass.py
+
+      # Spring Security 的 /error 白名单：Controller 抛异常后容器 FORWARD 到 /error，
+      # 若它不在 permitAll 里会被 AuthorizationFilter 拦下 ⇒ AuthorizationDeniedException
+      # ⇒ 对外 **401「未认证」**，把真实的 404/403/500 统统掩盖。
+      # 2026-10-06 在 bone-file 上实测确诊（download 不存在的对象返 401 而非 404），
+      # 排查时被误导到「密钥不一致 / 权限码缺失」，最终靠 TRACE 日志才定位真因。
+      # 其余模块当时未暴露仅因有 @RestControllerAdvice 兜底 —— 任何新增的直写响应体端点
+      # 都会立刻暴露它，故对全仓 SecurityConfig 一律要求。
+      - name: SecurityConfig /error Permit-All Lint (blocking)
+        run: /usr/bin/env python3 scripts/ci/check-error-endpoint-permit-all.py
+
+      # AFTER_COMMIT 处理器必须显式切租户（ADR-0031 D3）。
+      # SDK 写路径对缺租户**失败关闭**，而 Spring 的 AFTER_COMMIT 已脱离 HTTP 请求
+      # 线程、TenantContext 通常为 null ⇒ 处理器漏切租户会让跨聚合联动
+      # **静默失效**：编译通过、单测全绿、功能从未生效，且日志只留一行 WARN。
+      # 2026-10-06 已在 ShipmentOrderSyncEventHandler 上用负向探针实测复现：
+      # 把 callAs 的租户换成 null 后，E2E 精确报 2 条 FAIL，根因日志为
+      # "tenantId must not be null: 异步入口必须显式声明租户（ADR-0031 D3）"。
+      - name: Async Tenant Context Lint (blocking)
+        run: /usr/bin/env python3 scripts/ci/check-async-tenant-context.py
+
       # 软删声明：骨核判定聚合可否软删，依据是**实体内有无带 @Deleted 的字段**，
       # 与 DDL 有无 deleted 列无关 —— 表有列、实体没声明时 `deleteById` 照常
       # 执行 `DELETE FROM`，行永久消失而调用方拿到 HTTP 200。
@@ -132,6 +245,14 @@ jobs:
       # （曾表现为全链路 401 而日志只有「验签失败」）。单测与 ArchUnit 都抓不到。
       # --strict 把 WARN 也计为失败：WARN 的定义是「键不在任何 yml 定义但给了默认值」，
       # 实践中几乎都是笔误。存量若确有合法例外，应在 yml 显式定义该键。
+      # COMMON_* 公共错误码重复定义：`CommonErrorCodes`（bone-core）的设计意图是「跨模块共用的语义
+      # 必须集中一处」，但实测 6 个码值在 2~3 个模块各自字面量重定义。危害不是多一个常量，而是
+      # **修复时漏改** —— 真源改了值/改名，副本还留着旧值，同一语义对外出现两个码。
+      # 存量 6 组登记在 doc/architecture/error-code-duplication-baseline.json（只可收缩）；
+      # 本门禁拦的是**新增**重复。存量替换受 i18n 门禁 CODE_RE 只认字面量的约束，需与扫描口径一起改。
+      - name: Error Code Duplication Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-error-code-duplication.py --check
+
       - name: Config Key Contract Lint (blocking)
         run: /usr/bin/env python3 scripts/ci/check-config-key-contract.py --strict
 

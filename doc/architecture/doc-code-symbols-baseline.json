@@ -19,9 +19,9 @@
       "note": "目标态详细设计，多数构件为 Vision，未实现"
     },
     {
-      "doc": "architecture/smartmeta/BoneSmartMetaDynamic.md",
+      "doc": "archive/BoneSmartMetaDynamic-2026-09-24.md",
       "reason": "vision",
-      "note": "概念与终局能力长文，非实现真源"
+      "note": "概念与终局能力长文，非实现真源；2026-10-05 原文已归档至 doc/archive/（带日期后缀），豁免路径随之更新"
     },
     {
       "doc": "wiki/10-MVP-范围清单.md",

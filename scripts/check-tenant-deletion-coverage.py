@@ -20,6 +20,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -98,6 +99,15 @@ def is_excluded(table: str) -> bool:
 
 
 def main() -> int:
+    # 2026-10-04 补齐：本文件 docstring（:19）早就写了 `--check` 的用法，实现里却没有
+    # argparse ⇒ 传 --check 时 Python 把它当普通 argv、门禁仍按报告模式跑完并 exit 0，
+    # 调用方（ci-check.sh / ci.yml）以为自己在做阻断检查。这与同族三兄弟
+    # （ddl-required-columns / tenant-entity-declaration / application-constructs）
+    # 的 `--check` 语义对齐；默认（无参）仍为报告模式，不阻断。
+    parser = argparse.ArgumentParser(description="租户离场清除覆盖门禁（R8①）")
+    parser.add_argument("--check", action="store_true", help="CI 门禁模式：出现缺口即非零退出")
+    args = parser.parse_args()
+
     ddl_tables = parse_ddl_tenant_tables()
     purge = parse_purge_list()
 
@@ -125,7 +135,9 @@ def main() -> int:
         for t in stale:
             print("    - {}".format(t))
 
-    return 1 if gaps else 0
+    if gaps and not args.check:
+        print("  （报告模式：加 --check 才会以非零退出码阻断）")
+    return 1 if (gaps and args.check) else 0
 
 
 if __name__ == "__main__":

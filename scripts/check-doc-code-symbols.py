@@ -130,6 +130,38 @@ def main() -> int:
 
     classes = collect_java_classes()
     doc_level, baseline_symbols = load_baseline()
+
+    # ---- 基线 stale 检测（2026-10-05 补）--------------------------------
+    # 为什么需要：符号级豁免的语义是「文档里还在写这个类名，暂不报错」，一旦代码里该类
+    # 已被重命名/删除，这条豁免就**永远不会再生效**——而它仍静静躺在基线里，让基线可以
+    # 无限膨胀且无人察觉（这正是「基线只可收缩」缺机器判据的形态）。
+    # 探针实测：往symbols 里塞一个代码中不存在的类名，本脚本原本 EXIT=0 且一句提示都没有。
+    # 故此处对齐 check-soft-delete-declaration.py 的形态：识别 stale 并阻断，让人来收缩。
+    # 注意方向：符号级豁免的语义是「文档里仍在写这个类名，而代码里已不存在（如 ADR-0028 把
+    # Handler 收敛成 ApplicationService）⇒ 登记豁免以免误报」。因此
+    #   代码里**没有**该类 ⇒ 豁免正在生效（正常）；
+    #   代码里**已有**该类   ⇒ 豁免多余（stale，该删）。
+    # 反向判据会把全部正常豁免误判为 stale（实测踩过：首版写成 `not in classes`，
+    # 真实基线直接跑出 EXIT=1 并把 AccountAuthoritiesQueryHandler 等正常条目全列为 stale）。
+    stale_symbols = sorted(s for s in baseline_symbols if s in classes)
+    # 基线里 docLevel 的值是**相对 doc/** 的（如 design/modules/x.md），
+    # 必须用 DOC_DIR 拼接；早先误用 ROOT 导致所有 docLevel 都被判成 stale（假红）。
+    stale_docs = sorted(d for d in doc_level if not (DOC_DIR / d).exists())
+    if stale_symbols or stale_docs:
+        print(
+            "⚠️ 基线中已不再生效的条目（代码里已无对应类 / 文档已删除），可从基线移除：",
+            file=sys.stderr,
+        )
+        for s in stale_symbols:
+            print(f"  [symbol] {s}", file=sys.stderr)
+        for d in stale_docs:
+            print(f"  [doc]    {d}", file=sys.stderr)
+        print(
+            "基线只可收缩：这些条目对门禁已无约束力，留着会让基线变成「什么都能豁免」的口子。"
+            "请删除后重跑。",
+            file=sys.stderr,
+        )
+        return 1
     hits: dict[str, list[tuple[str, int]]] = {}
 
     for doc in collect_docs():

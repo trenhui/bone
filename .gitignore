@@ -140,6 +140,14 @@ tmp/
 # 例外：测试资源目录里的 application.properties 是测试夹具，不是本机私有配置，
 # 被 `*.properties` 吞掉会让 clean checkout 少掉测试所需配置。
 !**/src/test/resources/application.properties
+# ArchUnit 冻结基线的**开关**必须进库。freeze.store.default.allowStoreUpdate=false 的语义是
+# 「新增违规必须变红」，一旦文件不存在（被上面的 *.properties 吞掉，或漏配），ArchUnit 回落到
+# 默认值 true ⇒ 第一次跑测试就把新增违规写进基线、此后永久豁免 —— 门禁还在跑，判断已经失效。
+# 2026-10-04：`bone-architecture-test` 共享库被 10 个模块复用，此前只有 bone-masterdata 一份，
+# 且它是被 `git add -f` 硬塞进来的；新建的 9 份会被 *.properties 静默忽略，clean checkout 上
+# 等于一个都没配。此处开例外，并由 scripts/check-archunit-freeze-baseline.py 双重复核
+# （文件存在 + 已被 git 跟踪，两条缺一即失败）。
+!**/src/test/resources/archunit.properties
 *.secret
 
 # =========================

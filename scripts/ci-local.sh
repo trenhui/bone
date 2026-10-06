@@ -30,4 +30,16 @@ echo "==> frontend"
   npm run build --workspace=bone-shell
 )
 
+# 全量 python 门禁（此前 ci-local.sh 与 ci.yml 的交集为**零**：ci.yml 有 14 个门禁、
+# ci-local.sh 一个都没有，且 ci-local.sh 自述"与 ci.yml 对齐" —— 方向性错误，
+# 本地漏检比本地误报更隐蔽。此处改为直接复用 ci-check.sh，而不是把门禁清单再抄一遍：
+# 抄第二份必然再次漂移（历史上 ci.yml 与 ci-check.sh 就是这么分开的）。
+# ci-check.sh 是全量门禁的唯一实现源：pre-commit 用 check.sh（只跑变更模块，快），
+# CI 用 ci.yml（显式逐条 listing，便于单独标注 blocking）。三者职责不重叠。
+echo "==> gates (全量 python 门禁)"
+bash scripts/ci-check.sh
+
+echo "==> gate liveness"
+python3 scripts/check-gate-liveness.py --strict
+
 echo "All local CI steps passed."
