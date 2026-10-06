@@ -2,7 +2,7 @@ package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
-import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
+import com.bone.integration.application.command.UpdateConnectorCommand;
 import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.common.IntegrationErrorCodes;

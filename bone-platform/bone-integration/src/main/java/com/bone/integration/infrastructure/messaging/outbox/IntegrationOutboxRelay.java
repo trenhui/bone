@@ -2,7 +2,7 @@ package com.bone.integration.infrastructure.messaging.outbox;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.integration.application.config.IntegrationOutboxProperties;
-import com.bone.integration.application.event.port.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSender;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

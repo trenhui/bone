@@ -2,7 +2,7 @@ package com.bone.integration.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.CreateConnectorCommand;
+import com.bone.integration.application.command.CreateConnectorCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSupport;

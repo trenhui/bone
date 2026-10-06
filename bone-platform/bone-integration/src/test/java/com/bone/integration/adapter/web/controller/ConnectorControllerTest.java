@@ -10,9 +10,9 @@ import com.bone.core.model.PageResult;
 import com.bone.integration.application.ConnectorPageQueryApplicationService;
 import com.bone.integration.application.CreateConnectorApplicationService;
 import com.bone.integration.application.UpdateConnectorApplicationService;
-import com.bone.integration.application.command.cmd.CreateConnectorCommand;
-import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.query.dto.ConnectorDTO;
+import com.bone.integration.application.command.CreateConnectorCommand;
+import com.bone.integration.application.command.UpdateConnectorCommand;
+import com.bone.integration.application.query.dto.ConnectorDto;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import java.util.Collections;
 import java.util.Map;
@@ -60,10 +60,10 @@ class ConnectorControllerTest {
   @Test
   void page_returnsResult() {
     ConnectorPageQuery qry = new ConnectorPageQuery(1, 10, null, null, null);
-    PageResult<ConnectorDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
+    PageResult<ConnectorDto> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
     when(connectorPageQueryHandler.handle(qry)).thenReturn(page);
 
-    ApiResponse<PageResult<ConnectorDTO>> response = connectorController.page(qry);
+    ApiResponse<PageResult<ConnectorDto>> response = connectorController.page(qry);
 
     assertTrue(response.isSuccess());
     assertEquals(page, response.getData());

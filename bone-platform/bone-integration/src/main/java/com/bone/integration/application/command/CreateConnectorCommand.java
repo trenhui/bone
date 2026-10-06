@@ -1,4 +1,4 @@
-package com.bone.integration.application.command.cmd;
+package com.bone.integration.application.command;
 
 import java.util.Map;
 

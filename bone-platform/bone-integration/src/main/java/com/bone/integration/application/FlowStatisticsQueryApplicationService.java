@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.query.dto.FlowStatisticsDTO;
+import com.bone.integration.application.query.dto.FlowStatisticsDto;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import com.bone.integration.application.support.FlowMonitorSupport;
 import com.bone.integration.common.IntegrationErrorCodes;
@@ -22,14 +22,14 @@ public class FlowStatisticsQueryApplicationService {
   private final IntegrationFlowRepository flowRepository;
 
   @Transactional(readOnly = true)
-  public List<FlowStatisticsDTO> handle(FlowStatisticsQuery query) {
+  public List<FlowStatisticsDto> handle(FlowStatisticsQuery query) {
     if (query.flowId() != null) {
       return List.of(statisticsOf(flowRepository.findById(query.flowId())));
     }
     return flowRepository.findAll().stream().map(this::statisticsOf).collect(Collectors.toList());
   }
 
-  private FlowStatisticsDTO statisticsOf(IntegrationFlow flow) {
+  private FlowStatisticsDto statisticsOf(IntegrationFlow flow) {
     if (flow == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND);
     }
@@ -37,7 +37,7 @@ public class FlowStatisticsQueryApplicationService {
     long successCount = flowMonitorSupport.getSuccessCount(flow.getId());
     long failureCount = flowMonitorSupport.getFailureCount(flow.getId());
     double successRate = flowMonitorSupport.getSuccessRate(flow.getId());
-    return new FlowStatisticsDTO(
+    return new FlowStatisticsDto(
         flow.getId(), flow.getName(), executionCount, successCount, failureCount, successRate);
   }
 }

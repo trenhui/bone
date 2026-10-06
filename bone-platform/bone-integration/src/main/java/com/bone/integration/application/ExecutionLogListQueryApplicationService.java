@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.query.dto.ExecutionLogDTO;
+import com.bone.integration.application.query.dto.ExecutionLogDto;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.valueobject.ExecutionStatus;
@@ -19,7 +19,7 @@ public class ExecutionLogListQueryApplicationService {
   private final IntegrationLogRepository logRepository;
 
   @Transactional(readOnly = true)
-  public PageResult<ExecutionLogDTO> handle(ExecutionLogListQuery qry) {
+  public PageResult<ExecutionLogDto> handle(ExecutionLogListQuery qry) {
     ExecutionStatus status =
         qry.status() != null && !qry.status().isBlank()
             ? ExecutionStatus.valueOf(qry.status())
@@ -27,11 +27,11 @@ public class ExecutionLogListQueryApplicationService {
     PageResult<IntegrationLog> result =
         logRepository.findPage(qry.flowId(), status, qry.page(), qry.size());
 
-    List<ExecutionLogDTO> records =
+    List<ExecutionLogDto> records =
         result.getRecords().stream()
             .map(
                 log ->
-                    new ExecutionLogDTO(
+                    new ExecutionLogDto(
                         log.getId(),
                         log.getFlowId(),
                         log.getStatus().name(),

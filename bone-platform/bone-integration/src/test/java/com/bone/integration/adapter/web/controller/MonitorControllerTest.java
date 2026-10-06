@@ -11,9 +11,9 @@ import com.bone.integration.application.ExecuteFlowApplicationService;
 import com.bone.integration.application.ExecutionDetailQueryApplicationService;
 import com.bone.integration.application.ExecutionLogListQueryApplicationService;
 import com.bone.integration.application.FlowStatisticsQueryApplicationService;
-import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
-import com.bone.integration.application.query.dto.ExecutionLogDTO;
-import com.bone.integration.application.query.dto.FlowStatisticsDTO;
+import com.bone.integration.application.command.ExecuteFlowCommand;
+import com.bone.integration.application.query.dto.ExecutionLogDto;
+import com.bone.integration.application.query.dto.FlowStatisticsDto;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
@@ -60,7 +60,7 @@ class MonitorControllerTest {
   @Test
   void listExecutions_returnsPage() {
     ExecutionLogListQuery qry = new ExecutionLogListQuery(1, 10, 1L, null);
-    PageResult<ExecutionLogDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
+    PageResult<ExecutionLogDto> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
     when(executionLogListQueryHandler.handle(qry)).thenReturn(page);
 
     var response = monitorController.listExecutions(qry);
@@ -71,8 +71,8 @@ class MonitorControllerTest {
 
   @Test
   void getExecution_mapsDomainToDto() {
-    ExecutionLogDTO dto =
-        new ExecutionLogDTO(1L, 2L, ExecutionStatus.SUCCESS.name(), null, null, "{}", "ok", null);
+    ExecutionLogDto dto =
+        new ExecutionLogDto(1L, 2L, ExecutionStatus.SUCCESS.name(), null, null, "{}", "ok", null);
     when(executionDetailQueryHandler.handle(any(ExecutionDetailQuery.class))).thenReturn(dto);
 
     var response = monitorController.getExecution(1L);
@@ -85,7 +85,7 @@ class MonitorControllerTest {
 
   @Test
   void getStatistics_aggregatesByFlowId() {
-    FlowStatisticsDTO stats = new FlowStatisticsDTO(10L, "demo", 5L, 4L, 1L, 80.0);
+    FlowStatisticsDto stats = new FlowStatisticsDto(10L, "demo", 5L, 4L, 1L, 80.0);
     when(flowStatisticsQueryHandler.handle(any(FlowStatisticsQuery.class)))
         .thenReturn(List.of(stats));
 
@@ -93,7 +93,7 @@ class MonitorControllerTest {
 
     assertTrue(response.isSuccess());
     assertEquals(1, response.getData().size());
-    FlowStatisticsDTO dto = response.getData().get(0);
+    FlowStatisticsDto dto = response.getData().get(0);
     assertEquals(10L, dto.flowId());
     assertEquals(5L, dto.executionCount());
     verify(flowStatisticsQueryHandler).handle(any(FlowStatisticsQuery.class));

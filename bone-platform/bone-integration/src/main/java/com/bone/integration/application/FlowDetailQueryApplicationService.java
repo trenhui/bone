@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.query.dto.FlowDetailDTO;
+import com.bone.integration.application.query.dto.FlowDetailDto;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
 import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.common.IntegrationErrorCodes;
@@ -23,7 +23,7 @@ public class FlowDetailQueryApplicationService {
   private final FlowSupport flowSupport;
 
   @Transactional(readOnly = true)
-  public FlowDetailDTO handle(FlowDetailQuery qry) {
+  public FlowDetailDto handle(FlowDetailQuery qry) {
     IntegrationFlow flow = flowRepository.findById(qry.id());
     if (flow == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, qry.id());
@@ -31,11 +31,11 @@ public class FlowDetailQueryApplicationService {
     List<FlowNode> nodes = flowSupport.getFlowNodes(flow.getId());
     List<FlowConnection> connections = flowSupport.getFlowConnections(flow.getId());
 
-    List<FlowDetailDTO.FlowNodeDTO> nodeDTOs =
+    List<FlowDetailDto.FlowNodeDto> nodeDtos =
         nodes.stream()
             .map(
                 node ->
-                    new FlowDetailDTO.FlowNodeDTO(
+                    new FlowDetailDto.FlowNodeDto(
                         node.getId(),
                         node.getName(),
                         node.getType().name(),
@@ -44,23 +44,23 @@ public class FlowDetailQueryApplicationService {
                         node.getPositionY()))
             .collect(Collectors.toList());
 
-    List<FlowDetailDTO.FlowConnectionDTO> connectionDTOs =
+    List<FlowDetailDto.FlowConnectionDTO> connectionDtos =
         connections.stream()
             .map(
                 conn ->
-                    new FlowDetailDTO.FlowConnectionDTO(
+                    new FlowDetailDto.FlowConnectionDTO(
                         conn.getId(),
                         conn.getSourceNodeId(),
                         conn.getTargetNodeId(),
                         conn.getCondition()))
             .collect(Collectors.toList());
 
-    return new FlowDetailDTO(
+    return new FlowDetailDto(
         flow.getId(),
         flow.getName(),
         flow.getDescription(),
         flow.getStatus().name(),
-        nodeDTOs,
-        connectionDTOs);
+        nodeDtos,
+        connectionDtos);
   }
 }

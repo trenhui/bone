@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.query.dto.ConnectorDTO;
+import com.bone.integration.application.query.dto.ConnectorDto;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSecretSupport.MaskedConfig;
@@ -23,7 +23,7 @@ public class ConnectorPageQueryApplicationService {
   private final ConnectorSecretSupport connectorSecretSupport;
 
   @Transactional(readOnly = true)
-  public PageResult<ConnectorDTO> handle(ConnectorPageQuery qry) {
+  public PageResult<ConnectorDto> handle(ConnectorPageQuery qry) {
     ConnectorType type =
         qry.type() != null && !qry.type().isBlank() ? ConnectorType.fromString(qry.type()) : null;
     ConnectorStatus status =
@@ -34,12 +34,12 @@ public class ConnectorPageQueryApplicationService {
         connectorRepository.findPage(qry.keyword(), type, status, qry.page(), qry.size());
 
     // 列表同样剔除凭据：翻页即可批量导出全部连接器的第三方密钥，从读端绕过等于零成本泄露。
-    List<ConnectorDTO> records =
+    List<ConnectorDto> records =
         result.getRecords().stream()
             .map(
                 c -> {
                   MaskedConfig masked = connectorSecretSupport.maskForRead(c.getConfig());
-                  return new ConnectorDTO(
+                  return new ConnectorDto(
                       c.getId(),
                       c.getName(),
                       c.getType().name(),

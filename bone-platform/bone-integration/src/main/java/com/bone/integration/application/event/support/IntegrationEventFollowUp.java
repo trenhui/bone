@@ -1,6 +1,6 @@
 package com.bone.integration.application.event.support;
 
-import com.bone.integration.application.event.port.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

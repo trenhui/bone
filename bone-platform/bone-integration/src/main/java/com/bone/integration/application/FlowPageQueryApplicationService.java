@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.query.dto.FlowDTO;
+import com.bone.integration.application.query.dto.FlowDto;
 import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.valueobject.FlowStatus;
@@ -20,17 +20,17 @@ public class FlowPageQueryApplicationService {
   private final IntegrationFlowRepository flowRepository;
 
   @Transactional(readOnly = true)
-  public PageResult<FlowDTO> handle(FlowPageQuery qry) {
+  public PageResult<FlowDto> handle(FlowPageQuery qry) {
     FlowStatus status =
         qry.status() != null && !qry.status().isBlank() ? FlowStatus.valueOf(qry.status()) : null;
     PageResult<IntegrationFlow> result =
         flowRepository.findPage(qry.keyword(), status, qry.page(), qry.size());
 
-    List<FlowDTO> records =
+    List<FlowDto> records =
         result.getRecords().stream()
             .map(
                 flow ->
-                    new FlowDTO(
+                    new FlowDto(
                         flow.getId(),
                         flow.getName(),
                         flow.getDescription(),

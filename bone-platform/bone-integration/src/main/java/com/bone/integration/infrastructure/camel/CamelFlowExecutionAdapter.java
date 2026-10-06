@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.camel;
 
-import com.bone.integration.application.port.CamelFlowExecutionPort;
+import com.bone.integration.application.port.out.CamelFlowExecutionPort;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
 import com.bone.integration.domain.model.flow.IntegrationFlow;

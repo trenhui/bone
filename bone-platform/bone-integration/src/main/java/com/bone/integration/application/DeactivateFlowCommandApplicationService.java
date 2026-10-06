@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
-import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
+import com.bone.integration.application.command.DeactivateFlowCommand;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.flow.IntegrationFlow;

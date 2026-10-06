@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.query.dto.ExecutionLogDTO;
+import com.bone.integration.application.query.dto.ExecutionLogDto;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;
@@ -18,12 +18,12 @@ public class ExecutionDetailQueryApplicationService {
   private final IntegrationLogRepository logRepository;
 
   @Transactional(readOnly = true)
-  public ExecutionLogDTO handle(ExecutionDetailQuery query) {
+  public ExecutionLogDto handle(ExecutionDetailQuery query) {
     IntegrationLog log = logRepository.findById(query.id());
     if (log == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.EXECUTION_NOT_FOUND, query.id());
     }
-    return new ExecutionLogDTO(
+    return new ExecutionLogDto(
         log.getId(),
         log.getFlowId(),
         log.getStatus().name(),

@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.integration.application.config.IntegrationOutboxProperties;
-import com.bone.integration.application.event.port.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSender;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

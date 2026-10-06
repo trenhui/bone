@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.command.cmd.TestConnectorCommand;
-import com.bone.integration.application.port.IntegrationExecutionRecorder;
+import com.bone.integration.application.command.TestConnectorCommand;
+import com.bone.integration.application.port.out.IntegrationExecutionRecorder;
 import com.bone.integration.application.support.ConnectorSupport;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;

@@ -1,7 +1,7 @@
 package com.bone.integration.infrastructure.flow;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.application.port.out.FlowRuntime;
+import com.bone.integration.application.port.out.FlowRuntimePort;
 import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.FlowConnection;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
     havingValue = "false",
     matchIfMissing = true)
 @RequiredArgsConstructor
-public class LinearSyncFlowRuntime implements FlowRuntime {
+public class LinearSyncFlowRuntime implements FlowRuntimePort {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 

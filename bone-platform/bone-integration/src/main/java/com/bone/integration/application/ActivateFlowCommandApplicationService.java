@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.command.cmd.ActivateFlowCommand;
+import com.bone.integration.application.command.ActivateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;

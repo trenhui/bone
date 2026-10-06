@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.notification;
 
-import com.bone.integration.application.event.port.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifier;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 

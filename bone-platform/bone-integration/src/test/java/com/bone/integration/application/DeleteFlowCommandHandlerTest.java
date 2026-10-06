@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.bone.integration.application.command.cmd.DeleteFlowCommand;
+import com.bone.integration.application.command.DeleteFlowCommand;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

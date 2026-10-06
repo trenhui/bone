@@ -1,4 +1,4 @@
-package com.bone.integration.application.command.cmd;
+package com.bone.integration.application.command;
 
 /** 删除连接器命令 */
 public record DeleteConnectorCommand(Long id) {}

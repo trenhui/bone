@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.notification;
 
-import com.bone.integration.application.event.port.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifier;
 import com.bone.platform.alert.AlertLevel;
 import com.bone.platform.alert.AlertMessage;
 import com.bone.platform.alert.AlertService;

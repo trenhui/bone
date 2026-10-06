@@ -3,7 +3,7 @@ package com.bone.integration.application;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.UpdateFlowCommand;
+import com.bone.integration.application.command.UpdateFlowCommand;
 import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;

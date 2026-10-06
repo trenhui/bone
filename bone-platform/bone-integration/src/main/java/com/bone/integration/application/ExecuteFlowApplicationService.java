@@ -2,7 +2,7 @@ package com.bone.integration.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
+import com.bone.integration.application.command.ExecuteFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.support.FlowExecutionSupport;
 import com.bone.integration.application.support.FlowSupport;

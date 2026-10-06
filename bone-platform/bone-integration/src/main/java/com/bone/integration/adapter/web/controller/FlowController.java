@@ -12,15 +12,15 @@ import com.bone.integration.application.FlowDetailQueryApplicationService;
 import com.bone.integration.application.FlowPageQueryApplicationService;
 import com.bone.integration.application.FlowVersionListQueryApplicationService;
 import com.bone.integration.application.UpdateFlowApplicationService;
-import com.bone.integration.application.command.cmd.ActivateFlowCommand;
-import com.bone.integration.application.command.cmd.CreateFlowCommand;
-import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
-import com.bone.integration.application.command.cmd.DeleteFlowCommand;
-import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
-import com.bone.integration.application.command.cmd.UpdateFlowCommand;
-import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.dto.FlowDetailDTO;
-import com.bone.integration.application.query.dto.FlowVersionDTO;
+import com.bone.integration.application.command.ActivateFlowCommand;
+import com.bone.integration.application.command.CreateFlowCommand;
+import com.bone.integration.application.command.DeactivateFlowCommand;
+import com.bone.integration.application.command.DeleteFlowCommand;
+import com.bone.integration.application.command.ExecuteFlowCommand;
+import com.bone.integration.application.command.UpdateFlowCommand;
+import com.bone.integration.application.query.dto.FlowDetailDto;
+import com.bone.integration.application.query.dto.FlowDto;
+import com.bone.integration.application.query.dto.FlowVersionDto;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
 import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,14 +69,14 @@ public class FlowController {
   }
 
   @GetMapping
-  public ApiResponse<PageResult<FlowDTO>> page(FlowPageQuery qry) {
-    PageResult<FlowDTO> result = flowPageQueryHandler.handle(qry);
+  public ApiResponse<PageResult<FlowDto>> page(FlowPageQuery qry) {
+    PageResult<FlowDto> result = flowPageQueryHandler.handle(qry);
     return ApiResponse.success(result);
   }
 
   @GetMapping("/{id}")
-  public ApiResponse<FlowDetailDTO> detail(@PathVariable Long id) {
-    FlowDetailDTO dto = flowDetailQueryHandler.handle(new FlowDetailQuery(id));
+  public ApiResponse<FlowDetailDto> detail(@PathVariable Long id) {
+    FlowDetailDto dto = flowDetailQueryHandler.handle(new FlowDetailQuery(id));
     return ApiResponse.success(dto);
   }
 
@@ -118,7 +118,7 @@ public class FlowController {
   }
 
   @GetMapping("/{id}/versions")
-  public ApiResponse<List<FlowVersionDTO>> versions(@PathVariable Long id) {
+  public ApiResponse<List<FlowVersionDto>> versions(@PathVariable Long id) {
     return ApiResponse.success(flowVersionListQueryHandler.handle(id));
   }
 }

@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.command.cmd.DeleteFlowCommand;
+import com.bone.integration.application.command.DeleteFlowCommand;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.annotation.NoDomainEvent;
-import com.bone.integration.application.command.cmd.DisableConnectorCommand;
+import com.bone.integration.application.command.DisableConnectorCommand;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.common.IntegrationErrors;
 import com.bone.integration.domain.model.connector.Connector;

@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.messaging;
 
-import com.bone.integration.application.event.port.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSender;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

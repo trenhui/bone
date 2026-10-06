@@ -11,13 +11,13 @@ import com.bone.integration.application.DisableConnectorApplicationService;
 import com.bone.integration.application.EnableConnectorApplicationService;
 import com.bone.integration.application.TestConnectorApplicationService;
 import com.bone.integration.application.UpdateConnectorApplicationService;
-import com.bone.integration.application.command.cmd.CreateConnectorCommand;
-import com.bone.integration.application.command.cmd.DeleteConnectorCommand;
-import com.bone.integration.application.command.cmd.DisableConnectorCommand;
-import com.bone.integration.application.command.cmd.EnableConnectorCommand;
-import com.bone.integration.application.command.cmd.TestConnectorCommand;
-import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
-import com.bone.integration.application.query.dto.ConnectorDTO;
+import com.bone.integration.application.command.CreateConnectorCommand;
+import com.bone.integration.application.command.DeleteConnectorCommand;
+import com.bone.integration.application.command.DisableConnectorCommand;
+import com.bone.integration.application.command.EnableConnectorCommand;
+import com.bone.integration.application.command.TestConnectorCommand;
+import com.bone.integration.application.command.UpdateConnectorCommand;
+import com.bone.integration.application.query.dto.ConnectorDto;
 import com.bone.integration.application.query.qry.ConnectorDetailQuery;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
 import lombok.RequiredArgsConstructor;
@@ -53,14 +53,14 @@ public class ConnectorController {
   }
 
   @GetMapping
-  public ApiResponse<PageResult<ConnectorDTO>> page(ConnectorPageQuery qry) {
-    PageResult<ConnectorDTO> result = connectorPageQueryHandler.handle(qry);
+  public ApiResponse<PageResult<ConnectorDto>> page(ConnectorPageQuery qry) {
+    PageResult<ConnectorDto> result = connectorPageQueryHandler.handle(qry);
     return ApiResponse.success(result);
   }
 
   @GetMapping("/{id}")
-  public ApiResponse<ConnectorDTO> detail(@PathVariable Long id) {
-    ConnectorDTO dto = connectorDetailQueryHandler.handle(new ConnectorDetailQuery(id));
+  public ApiResponse<ConnectorDto> detail(@PathVariable Long id) {
+    ConnectorDto dto = connectorDetailQueryHandler.handle(new ConnectorDetailQuery(id));
     return ApiResponse.success(dto);
   }
 

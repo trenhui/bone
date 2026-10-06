@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.integration.application.command.cmd.ActivateFlowCommand;
+import com.bone.integration.application.command.ActivateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.common.IntegrationErrorCodes;
 import com.bone.integration.domain.model.flow.IntegrationFlow;

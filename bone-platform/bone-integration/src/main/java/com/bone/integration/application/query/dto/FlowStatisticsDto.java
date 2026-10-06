@@ -1,6 +1,6 @@
 package com.bone.integration.application.query.dto;
 
-public record FlowStatisticsDTO(
+public record FlowStatisticsDto(
     Long flowId,
     String flowName,
     long executionCount,

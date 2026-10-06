@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.query.dto.ConnectorDTO;
+import com.bone.integration.application.query.dto.ConnectorDto;
 import com.bone.integration.application.query.qry.ConnectorDetailQuery;
 import com.bone.integration.application.support.ConnectorSecretSupport;
 import com.bone.integration.application.support.ConnectorSecretSupport.MaskedConfig;
@@ -21,13 +21,13 @@ public class ConnectorDetailQueryApplicationService {
   private final ConnectorSecretSupport connectorSecretSupport;
 
   @Transactional(readOnly = true)
-  public ConnectorDTO handle(ConnectorDetailQuery query) {
+  public ConnectorDto handle(ConnectorDetailQuery query) {
     Connector connector = connectorRepository.findById(query.id());
     if (connector == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.CONNECTOR_NOT_FOUND, query.id());
     }
     MaskedConfig masked = connectorSecretSupport.maskForRead(connector.getConfig());
-    return new ConnectorDTO(
+    return new ConnectorDto(
         connector.getId(),
         connector.getName(),
         connector.getType().name(),

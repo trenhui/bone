@@ -1,6 +1,6 @@
 package com.bone.integration.application;
 
-import com.bone.integration.application.command.cmd.DeleteConnectorCommand;
+import com.bone.integration.application.command.DeleteConnectorCommand;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

@@ -1,8 +1,8 @@
 package com.bone.integration.infrastructure.flow;
 
 import com.bone.core.exception.DomainException;
-import com.bone.integration.application.port.CamelFlowExecutionPort;
-import com.bone.integration.application.port.out.FlowRuntime;
+import com.bone.integration.application.port.out.CamelFlowExecutionPort;
+import com.bone.integration.application.port.out.FlowRuntimePort;
 import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.model.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.FlowConnection;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
     name = "execution-enabled",
     havingValue = "true")
 @RequiredArgsConstructor
-public class CamelFlowRuntime implements FlowRuntime {
+public class CamelFlowRuntime implements FlowRuntimePort {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 

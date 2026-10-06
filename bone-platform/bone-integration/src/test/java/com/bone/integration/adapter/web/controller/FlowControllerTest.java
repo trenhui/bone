@@ -14,10 +14,10 @@ import com.bone.integration.application.DeleteFlowCommandApplicationService;
 import com.bone.integration.application.FlowDetailQueryApplicationService;
 import com.bone.integration.application.FlowPageQueryApplicationService;
 import com.bone.integration.application.UpdateFlowApplicationService;
-import com.bone.integration.application.command.cmd.ActivateFlowCommand;
-import com.bone.integration.application.command.cmd.CreateFlowCommand;
+import com.bone.integration.application.command.ActivateFlowCommand;
+import com.bone.integration.application.command.CreateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.query.dto.FlowDTO;
+import com.bone.integration.application.query.dto.FlowDto;
 import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.bone.integration.application.support.FlowSupport;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -64,10 +64,10 @@ class FlowControllerTest {
   @Test
   void page_returnsResult() {
     FlowPageQuery qry = new FlowPageQuery(1, 10, null, null);
-    PageResult<FlowDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
+    PageResult<FlowDto> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
     when(flowPageQueryHandler.handle(qry)).thenReturn(page);
 
-    ApiResponse<PageResult<FlowDTO>> response = flowController.page(qry);
+    ApiResponse<PageResult<FlowDto>> response = flowController.page(qry);
 
     assertTrue(response.isSuccess());
     assertEquals(page, response.getData());

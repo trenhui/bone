@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.config;
 
-import com.bone.integration.application.event.port.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifier;
 import com.bone.integration.infrastructure.notification.AlertIntegrationEventNotifier;
 import com.bone.integration.infrastructure.notification.CompositeIntegrationEventNotifier;
 import com.bone.integration.infrastructure.notification.LoggingIntegrationEventNotifier;

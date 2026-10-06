@@ -3,16 +3,14 @@ package com.bone.integration.application.query.dto;
 import java.util.List;
 import java.util.Map;
 
-/** 流程详情查询结果 */
-public record FlowDetailDTO(
+public record FlowDto(
     Long id,
     String name,
     String description,
     String status,
-    List<FlowNodeDTO> nodes,
+    List<FlowNodeDto> nodes,
     List<FlowConnectionDTO> connections) {
-
-  public record FlowNodeDTO(
+  public record FlowNodeDto(
       Long id,
       String name,
       String type,
