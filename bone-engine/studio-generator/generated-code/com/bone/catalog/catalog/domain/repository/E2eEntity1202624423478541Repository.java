@@ -12,10 +12,10 @@ import com.bone.catalog.catalog.domain.model.e2eentity1202624423478541.E2eEntity
  */
 public interface E2eEntity1202624423478541Repository extends Repository<E2eEntity1202624423478541, Long> {
 
-  default PageResult<E2eEntity1202624423478541> findPage(int pageNum, int pageSize) {
+  default PageResult<E2eEntity1202624423478541> findPage(int page, int size) {
     return pageByCriteria(
         Criteria.<E2eEntity1202624423478541>create()
             .orderByDesc(E2eEntity1202624423478541::getId)
-            .page(pageNum, pageSize));
+            .page(page, size));
   }
 }

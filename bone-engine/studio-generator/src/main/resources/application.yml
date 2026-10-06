@@ -57,6 +57,15 @@ metadata:
         type: MYSQL
 
 bone:
+  # IAM 签发的 JWT 本地离线验签配置。缺这一段时 JwtConfig 会落到内置默认密钥
+  # "change-me-..."，与 bone-iam 的签发密钥不一致 ⇒ 网关发来的合法 token 一律被判签名无效。
+  # 与其余 7 个消费模块（bone-iam / bone-system / bone-masterdata / bone-blueprint 等）同款声明：
+  # 本地未注入环境变量时各模块落到同一占位符字面量，天然一致；生产由 BONE_IAM_JWT_SECRET_KEY 注入。
+  iam:
+    jwt:
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
+      token-prefix: "Bearer "
+      header-name: Authorization
   # studio-generator 不消费扩展点（未使用 @EnableExtensionPoints / 无扩展实现），
   # 关闭 bone-extension-sdk 的 ExtensionAutoConfiguration：否则 classpath 上自动装配会因缺少其依赖的
   # 自注册 Bean（ExtensionRepositoryFactory 等）导致应用无法启动。

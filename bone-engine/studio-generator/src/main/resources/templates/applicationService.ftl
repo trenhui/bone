@@ -68,8 +68,8 @@ public class ${table.customEntityName}ApplicationService {
 
   /** 分页查询：租户过滤由 SDK 自动注入，仓储侧不重复拼 tenant 条件。 */
   @Transactional(readOnly = true)
-  public PageResult<${table.customEntityName}Dto> page(int pageNum, int pageSize) {
-    return repository.findPage(pageNum, pageSize).map(${table.customEntityName}Dto::from);
+  public PageResult<${table.customEntityName}Dto> page(int page, int size) {
+    return repository.findPage(page, size).map(${table.customEntityName}Dto::from);
   }
 
   private ${table.customEntityName} require(Long id) {

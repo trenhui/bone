@@ -25,11 +25,11 @@ public class GetCodeTemplateListQueryApplicationService {
     if (tenantId == null) {
       throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, null);
     }
-    int pageNo = qry.getPage() != null ? qry.getPage() : 1;
-    int pageSize = qry.getSize() != null ? qry.getSize() : 10;
+    int page = qry.getPage() != null ? qry.getPage() : 1;
+    int size = qry.getSize() != null ? qry.getSize() : 10;
 
     PageResult<CodeTemplate> ownPage =
-        codeTemplateRepository.findPageByTenant(tenantId, pageNo, pageSize);
+        codeTemplateRepository.findPageByTenant(tenantId, page, size);
     // 平台级内置模板种子对所有租户可见：受控跨租户只读（仅 tenant=0 且无创建人），由本服务（已登记的合法调用方）合并。
     if (tenantId != CodeTemplateRepository.PLATFORM_TENANT_ID) {
       PageResult<CodeTemplate> platformPage =
@@ -41,10 +41,9 @@ public class GetCodeTemplateListQueryApplicationService {
       for (CodeTemplate t : platformPage.getRecords()) {
         merged.putIfAbsent(t.getId(), t);
       }
-      return PageResult.of(
-          new ArrayList<>(merged.values()), (long) merged.size(), pageNo, pageSize);
+      return PageResult.of(new ArrayList<>(merged.values()), (long) merged.size(), page, size);
     }
     long total = ownPage.getTotal() != null ? ownPage.getTotal() : 0L;
-    return PageResult.of(ownPage.getRecords(), total, pageNo, pageSize);
+    return PageResult.of(ownPage.getRecords(), total, page, size);
   }
 }

@@ -21,10 +21,10 @@ public interface ${table.customEntityName}Repository extends Repository<${table.
    * 自动在 WHERE 注入 {@code m.tenant_id = :_sdk_tenant_id}。手写会被 SDK 忽略并打 WARN（调用方租户不可信）；
    * 跨租户平台级扫描才需显式 {@code disableTenantFilter()} + {@code platform:*} 授权与审计。
    */
-  default PageResult<${table.customEntityName}> findPage(int pageNum, int pageSize) {
+  default PageResult<${table.customEntityName}> findPage(int page, int size) {
     return pageByCriteria(
         Criteria.<${table.customEntityName}>create()
             .orderByDesc(${table.customEntityName}::getCreatedAt)
-            .page(pageNum, pageSize));
+            .page(page, size));
   }
 }

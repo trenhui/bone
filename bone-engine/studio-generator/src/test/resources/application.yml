@@ -16,6 +16,14 @@ spring:
       schema-locations: classpath:schema-test.sql
 
 bone:
+  # 与主配置同款声明。缺这段时 JwtConfig 落到 SDK 内置默认值
+  # "change-me-change-me-change-me-change-me-32bytes"——测试里签发与验签都用它而"自洽"，
+  # 于是密钥配错这类缺陷在测试中永远测不出来（真实链路上的表现是全部请求 401）。
+  iam:
+    jwt:
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
+      token-prefix: "Bearer "
+      header-name: Authorization
   # 同主配置：测试态同样关闭扩展引擎自动配置（详见 src/main/resources/application.yml）
   extension:
     enabled: false

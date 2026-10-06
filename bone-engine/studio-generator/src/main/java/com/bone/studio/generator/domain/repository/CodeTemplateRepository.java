@@ -29,11 +29,11 @@ public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
    * #findPlatformTemplatesAllTenants} 中受控读取， 再由应用服务（已登记的合法跨租户调用方）合并，见 {@link
    * com.bone.studio.generator.application.GetCodeTemplateListQueryApplicationService}。
    */
-  default PageResult<CodeTemplate> findPageByTenant(long tenantId, int pageNo, int pageSize) {
+  default PageResult<CodeTemplate> findPageByTenant(long tenantId, int page, int size) {
     return QueryBuilder.from(CodeTemplate.class)
         .where(CodeTemplate::getTenantId)
         .eq(tenantId)
-        .page(pageNo, pageSize);
+        .page(page, size);
   }
 
   /**
@@ -46,7 +46,7 @@ public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
    *
    * <p>调用方已在模块的 ArchitectureTest 中登记为合法跨租户调用方（仅此只读场景），不向其它请求侧暴露。
    */
-  default PageResult<CodeTemplate> findPlatformTemplatesAllTenants(int pageNo, int pageSize) {
+  default PageResult<CodeTemplate> findPlatformTemplatesAllTenants(int page, int size) {
     Criteria<CodeTemplate> criteria =
         Criteria.<CodeTemplate>builder()
             .entityClass(CodeTemplate.class)
@@ -64,7 +64,7 @@ public interface CodeTemplateRepository extends Repository<CodeTemplate, Long> {
    * 命令、DTO、装配器等）， 生成的代码包残缺。默认生成读取的是模板内容（与用户显式勾选 {@link #findByIdAllTenants} 同级暴露）， 按 {@code
    * tenant_id = 0 AND status = PUBLISHED} 取全部内建是正确口径。
    */
-  default PageResult<CodeTemplate> findPlatformPublishedAllTenants(int pageNo, int pageSize) {
+  default PageResult<CodeTemplate> findPlatformPublishedAllTenants(int page, int size) {
     Criteria<CodeTemplate> criteria =
         Criteria.<CodeTemplate>builder()
             .entityClass(CodeTemplate.class)

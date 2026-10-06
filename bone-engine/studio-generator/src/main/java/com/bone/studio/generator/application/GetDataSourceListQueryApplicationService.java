@@ -22,11 +22,10 @@ public class GetDataSourceListQueryApplicationService {
     if (tenantId == null) {
       throw GeneratorErrors.of(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, null);
     }
-    int pageNo = qry.getPage() != null ? qry.getPage() : 1;
-    int pageSize = qry.getSize() != null ? qry.getSize() : 10;
-    PageResult<DataSource> sdkPage =
-        dataSourceRepository.findPageByTenant(tenantId, pageNo, pageSize);
+    int page = qry.getPage() != null ? qry.getPage() : 1;
+    int size = qry.getSize() != null ? qry.getSize() : 10;
+    PageResult<DataSource> sdkPage = dataSourceRepository.findPageByTenant(tenantId, page, size);
     long total = sdkPage.getTotal() != null ? sdkPage.getTotal() : 0L;
-    return PageResult.of(sdkPage.getRecords(), total, pageNo, pageSize);
+    return PageResult.of(sdkPage.getRecords(), total, page, size);
   }
 }

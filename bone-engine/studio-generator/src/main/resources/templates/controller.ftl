@@ -92,6 +92,6 @@ public class ${table.customEntityName}Controller {
   public ApiResponse<PageResult<${table.customEntityName}Resp>> page(
       @Valid @ModelAttribute ${table.customEntityName}PageQry qry) {
     return ApiResponse.success(
-        applicationService.page(qry.getPageNum(), qry.getPageSize()).map(assembler::to${table.customEntityName}Resp));
+        applicationService.page(qry.getPage(), qry.getSize()).map(assembler::to${table.customEntityName}Resp));
   }
 }
