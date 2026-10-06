@@ -126,7 +126,24 @@
     "NOTIFICATION_ACCESS_DENIED": "站内信访问被拒绝（非本人/非本租户）",
     "NOTIFICATION_INVALID_PARAM": "入参非法（userId 必填或 limit 超出上限）",
     "NOTIFICATION_TENANT_MISMATCH": "站内信写入缺少租户上下文",
-    "NOTIFICATION_ACCOUNT_REQUIRED": "登录状态无效或已过期，请重新登录"
+    "NOTIFICATION_ACCOUNT_REQUIRED": "登录状态无效或已过期，请重新登录",
+    "BP_CHANNEL_NOT_FOUND": "销售渠道未注册或已删除",
+    "BP_CHANNEL_CODE_INVALID": "渠道码非法",
+    "BP_CHANNEL_DISABLED": "渠道已停用，无法执行该操作",
+    "BP_CHANNEL_PRODUCT_NOT_FOUND": "渠道商品不存在",
+    "BP_CHANNEL_PRODUCT_STATUS_CONFLICT": "渠道商品当前状态不允许该操作",
+    "BP_CHANNEL_PRODUCT_REJECTED": "渠道侧拒绝了本次商品操作，请稍后重试",
+    "BP_CHANNEL_BROADCAST_NOT_FOUND": "渠道广播任务不存在",
+    "BP_CHANNEL_BUYER_NOT_FOUND": "渠道买家映射不存在",
+    "BP_CHANNEL_BUYER_ALREADY_BOUND": "渠道买家已绑定其它内部客户",
+    "BP_CHANNEL_CREDENTIAL_MISSING": "渠道开放平台凭证缺失",
+    "BP_CHANNEL_OPENAPI_FAILED": "渠道开放平台调用失败，请稍后重试",
+    "BP_CHANNEL_OPENAPI_REJECTED": "渠道侧拒绝了本次调用",
+    "BP_INVENTORY_NOT_FOUND": "库存记录不存在",
+    "BP_INVENTORY_INSUFFICIENT": "可用库存不足",
+    "BP_SHIPMENT_NOT_FOUND": "发货单不存在",
+    "BP_SHIPMENT_STATUS_CONFLICT": "发货单当前状态不允许该操作",
+    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "发货必须填写物流运单号"
   },
   "enums": {
     "ORDER_STATUS": {

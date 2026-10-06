@@ -6,6 +6,7 @@ import { subscribeLocaleChange, currentLocale } from '@bone/shared-utils';
 import { setQiankunToken } from '@bone/shared-services';
 import { globalEventBus } from '@bone/core-event-bus';
 import './index.css';
+import { AppAntdProvider } from './components/AppAntdProvider';
 
 /**
  * 订阅 Shell 经 core/event-bus 广播的全局上下文变更（主题/语言），
@@ -62,7 +63,9 @@ function render(props?: QiankunProps) {
   root = createRoot(mountNode);
   root.render(
     <React.StrictMode>
+      <AppAntdProvider>
       <App />
+    </AppAntdProvider>
     </React.StrictMode>,
   );
 }

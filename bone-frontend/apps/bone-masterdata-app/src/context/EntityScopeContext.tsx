@@ -30,7 +30,7 @@ export const EntityScopeProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const message = useMessage();
   const [entities, setEntities] = useState<MasterDataEntity[]>([]);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
-  const [entityId, setEntityIdState] = useState<number | undefined>();
+  const [entityId, setEntityIdState] = useState<string | undefined>();
 
   const load = useCallback(async () => {
     setEntitiesLoading(true);
@@ -42,7 +42,9 @@ export const EntityScopeProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       const list = res.data?.records ?? [];
       setEntities(list);
-      const saved = Number(localStorage.getItem(STORAGE_KEY));
+      // ⚠ 雪花 ID 禁止 Number()：19 位超出 2^53 会静默截断，导致与列表里的 id 比不相等
+      // （选中态永远匹配不上、每次刷新都回落到首个模型）。此处保持字符串比较。
+      const saved = localStorage.getItem(STORAGE_KEY) ?? undefined;
       // 已选模型若仍在列表中则保持，避免使用中被刷新覆盖；否则回落到记忆值或首个模型
       setEntityIdState((prev) => {
         if (prev !== undefined && list.some((e) => e.id === prev)) return prev;

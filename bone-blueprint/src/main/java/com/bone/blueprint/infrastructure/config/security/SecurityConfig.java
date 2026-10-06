@@ -60,6 +60,12 @@ public class SecurityConfig {
                     .requestMatchers(
                         "/actuator/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
+                    // Spring Boot 的错误转发端点。**必须放行**：
+                    // 认证通过 → 业务抛异常 → FORWARD /error → 不在白名单则被 Security 拦下
+                    // → AuthorizationDeniedException → 表现为 401，把真实的
+                    // 404/403/500 统统掩盖成"未认证"。2026-10-06 在 bone-file 上实测确诊。
+                    .requestMatchers("/error")
+                    .permitAll()
                     // 支付回调为渠道 server-to-server 调用，不要求用户凭证；信任由 Handler 内验签 + 端点来源白名单保证
                     .requestMatchers("/api/v1/payments/callback")
                     .permitAll()

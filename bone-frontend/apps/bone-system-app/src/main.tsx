@@ -9,6 +9,7 @@ import { subscribeLocaleChange, i18n } from '@bone/shared-utils';
 void i18n;
 import './dayjs-setup';
 import './index.css';
+import { AppAntdProvider } from './components/AppAntdProvider';
 
 let root: Root | null = null;
 
@@ -28,7 +29,9 @@ function render(props?: QiankunProps) {
   root = createRoot(mountNode);
   root.render(
     <React.StrictMode>
+      <AppAntdProvider>
       <App />
+    </AppAntdProvider>
     </React.StrictMode>,
   );
 }

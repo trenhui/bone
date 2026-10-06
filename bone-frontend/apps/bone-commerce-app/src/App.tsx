@@ -4,6 +4,12 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppLayout } from './components/Layout';
 import { OrderManagement } from './pages/OrderManagement';
 import { PaymentManagement } from './pages/PaymentManagement';
+import { ChannelManagement } from './pages/ChannelManagement';
+import { ChannelProductManagement } from './pages/ChannelProductManagement';
+import { InventoryManagement } from './pages/InventoryManagement';
+import { ShipmentManagement } from './pages/ShipmentManagement';
+import { ChannelBuyerManagement } from './pages/ChannelBuyerManagement';
+import { BroadcastTaskManagement } from './pages/BroadcastTaskManagement';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -17,6 +23,12 @@ export const App: React.FC = () => {
             <Routes>
               <Route path="/orders" element={<OrderManagement />} />
               <Route path="/payments" element={<PaymentManagement />} />
+              <Route path="/channels" element={<ChannelManagement />} />
+              <Route path="/channel-products" element={<ChannelProductManagement />} />
+              <Route path="/inventories" element={<InventoryManagement />} />
+              <Route path="/shipments" element={<ShipmentManagement />} />
+              <Route path="/channel-buyers" element={<ChannelBuyerManagement />} />
+              <Route path="/broadcast-tasks" element={<BroadcastTaskManagement />} />
               <Route path="/" element={<OrderManagement />} />
             </Routes>
           </div>

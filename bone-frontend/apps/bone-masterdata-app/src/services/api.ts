@@ -134,7 +134,9 @@ export const dataQualityRuleApi = {
     return apiClient.delete(`${MD}/quality/rules/${id}`);
   },
   /** 检查为同步执行，返回的是检查任务 ID（不是任务对象）。 */
-  executeCheck: (masterDataEntityId: string): Promise<ApiResponse<number>> => {
+  // ⚠ 该 ID 由后端 Long→String 全局序列化器输出（雪花 ID，19 位），
+  //声明成number 会在调用侧诱发 Number() 截断，故此处保持 string。
+  executeCheck: (masterDataEntityId: string): Promise<ApiResponse<string>> => {
     return apiClient.post(`${MD}/quality/check`, null, { params: { masterDataEntityId } });
   },
 };

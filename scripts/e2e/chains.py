@@ -292,7 +292,7 @@ def c1(tok, sub_tok=None, app_tok=None):
     check("C1", "金额含客户等级折扣（<199）", True, amount < 199.0, f"amount={amount}")
 
     # 4. 支付发起
-    st, j = http("POST", "/api/v1/payments/initiate", {"orderId": int(oid)}, token=tok)
+    st, j = http("POST", "/api/v1/payments/initiate", {"orderId": str(oid)}, token=tok)
     check("C1", "发起支付（网关 payments 路由）", 200, st, str(j)[:160])
     pid = data(j).get("paymentId") if data(j) else None
     if not pid:
@@ -300,7 +300,7 @@ def c1(tok, sub_tok=None, app_tok=None):
 
     # 5. 回调：合法签名通过
     trade = f"TRD{ts}"
-    body = {"paymentId": int(pid), "channelTradeNo": trade,
+    body = {"paymentId": str(pid), "channelTradeNo": trade,
             "paidAmount": amount, "signature": sign(pid, trade, amount), "success": True}
     st, j = http("POST", "/api/v1/payments/callback", body, token=tok)
     check("C1", "支付回调（HMAC 验签通过）", 200, st, str(j)[:140])
@@ -416,11 +416,19 @@ def c3(tok):
     walk(data(depts))
     did = found_id[0] if found_id else None
     check("C3", "部门树可读（取 deptId）", 200, st, f"deptId={did}")
+    # 自建平台租户(0)部门用于账号归属：全租户树首节点可能属于其他租户，
+    # 而账号创建默认落平台租户 0，跨租户部门会触发 IAM_DEPT_NOT_FOUND。
+    # 自建部门保证租户一致（admin 代操作且无 tenantId → 落平台租户 0）。
+    st_d, dj = http("POST", "/api/v1/iam/depts", {"name": f"c3dept{ts}", "orderNo": 1}, token=tok)
+    new_did = rid_of(dj)
+    if new_did:
+        did = new_did
+    check("C3", "自建部门用于受限账号归属", 200, st_d, f"deptId={did}")
     if not did:
         return
     user = f"c3view{ts}"
     st, j = http("POST", "/api/v1/iam/accounts", {
-        "username": user, "password": "C3pass@2026", "deptId": int(did),
+        "username": user, "password": "C3pass@2026", "deptId": str(did),
         "nickname": "只读员", "email": f"{user}@bone.local"
     }, token=tok)
     check("C3", "创建受限账号（无写 scope）", 200, st, str(j)[:160])
@@ -437,7 +445,7 @@ def c3(tok):
     # 重复 code → 409（本次修复项）
     # 重复请求必须同样通过入参校验（username/email 在重名检查之前先校验），否则拿到的是 400 而非 409
     st, j = http("POST", "/api/v1/iam/accounts", {
-        "username": user, "password": "C3pass@2026", "deptId": int(did),
+        "username": user, "password": "C3pass@2026", "deptId": str(did),
         "nickname": "只读员", "email": f"{user}@bone.local"}, token=tok)
     check("C3", "账号重复冲突返回 409", 409, st, str(j)[:140])
     check("C3", "重复冲突业务码稳定", True, "CONFLICT" in str((j or {}).get("message", "")).upper()
@@ -450,9 +458,9 @@ def c3(tok):
 def c4(tok):
     hdr("C4 · 集成引擎：连接器 → 流程 → 执行")
     # 注意：本模块分页入参是 pageNum/pageSize（与 iam 的 page/size 不同族，勿混用）
-    st, j = http("GET", "/api/v1/integration/connectors?pageNum=1&pageSize=3", token=tok)
+    st, j = http("GET", "/api/v1/integration/connectors?page=1&size=3", token=tok)
     check_page_shape("C4", "连接器列表", j, expect_rows=3, required=("id", "name", "type"), min_rows=1)
-    st, j = http("GET", "/api/v1/integration/flows?pageNum=1&pageSize=2", token=tok)
+    st, j = http("GET", "/api/v1/integration/flows?page=1&size=2", token=tok)
     check_page_shape("C4", "流程列表", j, expect_rows=2, required=("id", "name", "status"), min_rows=1)
     st, j = http("GET", "/api/v1/integration/statistics", token=tok)
     check("C4", "集成执行统计面", 200, st, str(j)[:160])
@@ -466,7 +474,7 @@ def c4(tok):
         check("C4", "统计计数自洽(成功+失败=执行数)", [], bad,
               f"行数={len(stats)} 样本={ {k: stats[0].get(k) for k in ('flowId','executionCount','successCount','failureCount')} }")
     # 执行记录允许为空库（total=0），故只断言信封与「行数不超过 pageSize」
-    st, j = http("GET", "/api/v1/integration/executions?pageNum=1&pageSize=10", token=tok)
+    st, j = http("GET", "/api/v1/integration/executions?page=1&size=10", token=tok)
     rows = check_page_shape("C4", "集成执行记录列表", j, required=("id",), min_rows=0)
     if rows is not None and len(rows) < 10:
         check("C4", "执行记录数不超过 pageSize", True, len(rows) <= 10, f"rows={len(rows)}")
@@ -546,14 +554,14 @@ def c6(tok):
 # ============================ C7 元数据 → 主数据 ============================
 def c7(tok):
     hdr("C7 · 元数据建模 → 主数据联动")
-    st, j = http("GET", "/api/v1/metadata/entities?pageNum=1&pageSize=4", token=tok)
+    st, j = http("GET", "/api/v1/metadata/entities?page=1&size=4", token=tok)
     ents = check_page_shape("C7", "元数据实体列表", j, expect_rows=4,
                             required=("id", "code", "displayName"), min_rows=1)
     st, j = http("GET", "/api/v1/metadata/templates", token=tok)
     check("C7", "元数据模板列表", (200, 404), st)
     st, j = http("GET", "/api/v1/metadata/relationships", token=tok)
     check("C7", "元数据关系列表", (200, 404), st)
-    st, j = http("GET", "/api/v1/masterdata/templates?pageNum=1&pageSize=2", token=tok)
+    st, j = http("GET", "/api/v1/masterdata/templates?page=1&size=2", token=tok)
     md_tpl = check_page_shape("C7", "主数据域模板（消费元数据源）", j, expect_rows=2,
                               required=("id", "domainCode"), min_rows=1)
     st, j = http("GET", "/api/v1/masterdata/reference-sets", token=tok)
@@ -573,12 +581,14 @@ def c7(tok):
 # ============================ C8 系统/通知/可观测 ============================
 def c8(tok):
     hdr("C8 · 系统管理 · 通知 · 审计")
-    # 注意：system 用 pageNum/pageSize，iam audit 用 page/size —— 同名不同族，写错静默失效
-    st, j = http("GET", "/api/v1/system/config?pageNum=1&pageSize=3", token=tok)
+    # 全仓分页入参已统一为 page/size（各模块 *PageReq / *PageQuery 均为 page+size，
+    # 无pageNum 残留）。此前 system/integration 用 pageNum/pageSize 时会被静默忽略、
+    # size 回落默认 10 ⇒ 「行数不超过 pageSize」断言恒红。
+    st, j = http("GET", "/api/v1/system/config?page=1&size=3", token=tok)
     check_page_shape("C8", "系统配置", j, expect_rows=3, required=("id", "configKey"), min_rows=1)
-    st, j = http("GET", "/api/v1/system/dict/types/page?pageNum=1&pageSize=5", token=tok)
+    st, j = http("GET", "/api/v1/system/dict/types/page?page=1&size=5", token=tok)
     check_page_shape("C8", "字典类型分页", j, required=("id",), min_rows=0)
-    st, j = http("GET", "/api/v1/system/logs?pageNum=1&pageSize=3", token=tok)
+    st, j = http("GET", "/api/v1/system/logs?page=1&size=3", token=tok)
     check_page_shape("C8", "系统日志分页", j, expect_rows=3, required=("id", "logLevel"), min_rows=1)
     st, j = http("GET", "/api/v1/notification/messages?userId=1", token=tok)
     check_list_shape("C8", "通知站内信", j, required=("id",), min_rows=0)
@@ -613,8 +623,10 @@ def c9(tok):
     st, depts = http("GET", "/api/v1/iam/depts/tree", token=tok)
     did = depts["data"][0]["id"]
     user = f"c9{ts % 100000}"
+    # ⚠ deptId 必须保持字符串：雪花 ID 19 位超出 2^53，int() 会静默截断成
+    # 「另一个」部门 ⇒ 后端报 IAM_DEPT_NOT_FOUND（与前端 map(Number) 同类缺陷）。
     http("POST", "/api/v1/iam/accounts", {
-        "username": user, "password": "C9pass@2026", "deptId": int(did),
+        "username": user, "password": "C9pass@2026", "deptId": str(did),
         "nickname": "受限视角", "email": f"{user}@bone.local"}, token=tok)
     limited = login(user, "C9pass@2026")
     st, j = http("POST", "/api/v1/orders", order_body, token=limited)
@@ -624,14 +636,14 @@ def c9(tok):
     st, j = http("POST", "/api/v1/orders", order_body, token=tok)
     oid = rid_of(j)
     check("C9", "超管下单 → 2xx", (200, 201), st)
-    st, j = http("POST", "/api/v1/payments/initiate", {"orderId": int(oid)}, token=tok)
+    st, j = http("POST", "/api/v1/payments/initiate", {"orderId": str(oid)}, token=tok)
     pid = (data(j) or {}).get("paymentId") or (data(j) or {}).get("id")
     st, j = http("GET", f"/api/v1/orders/{oid}", token=tok)
     amount = (data(j) or {}).get("totalAmount")
 
     # --- 视角 C：无凭证外部渠道方 ---
     trade = f"C9{ts}"
-    ok_body = {"paymentId": int(pid), "channelTradeNo": trade,
+    ok_body = {"paymentId": str(pid), "channelTradeNo": trade,
                "paidAmount": float(amount), "signature": sign(pid, trade, amount),
                "success": True}
     st, j = http("POST", "/api/v1/payments/callback", ok_body, token=None)
@@ -649,7 +661,7 @@ def c9(tok):
             ("/api/v1/payments/initiate", "POST", "发起支付"),
             (f"/api/v1/payments/{pid}/refund", "POST", "退款"),
             (f"/api/v1/payments/{pid}", "GET", "支付单查询")):
-        body = {"refundAmount": 1.0} if "refund" in path else {"orderId": int(oid)}
+        body = {"refundAmount": 1.0} if "refund" in path else {"orderId": str(oid)}
         st, j = http(method, path, body, token=None)
         check("C9", f"无凭证 {desc} → 401（白名单不得误放通）", 401, st)
 
@@ -760,8 +772,13 @@ def main():
     for k in todo:
         try:
             runners[k]()
-        except Exception as e:
+        # 必须连 SystemExit 一起兜住：login() 失败时抛的是 SystemExit，而 SystemExit
+        # 继承 BaseException、不是 Exception ⇒ 原写法会让整条链路炸在半路，
+        # 汇总永远打不出来（实测 C9 一条断言失败就吞掉前面全部 PASS，等于假红）。
+        # 这里兜住是为了「任何单条失败都不许吞掉整份报告」，失败本身照样记进 RESULTS。
+        except (Exception, SystemExit) as e:
             print(f"  [ERROR] {k} 执行异常: {e}")
+            RESULTS.append((k, f"{k} 执行异常", False, str(e)))
             RESULTS.append((k, "执行异常", False, str(e)))
 
     hdr("汇总")

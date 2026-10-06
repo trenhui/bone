@@ -91,7 +91,7 @@ const QualityIssueBoard: React.FC = () => {
         title="新建整改工单"
         open={createOpen}
         onCancel={() => setCreateOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         onOk={async () => {
           const v = await form.validateFields();
           await qualityIssueApi.create({ ...v, masterDataEntityId: entityId, assigneeId: v.assigneeId ? Number(v.assigneeId) : undefined });

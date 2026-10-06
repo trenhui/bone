@@ -166,7 +166,9 @@ export async function importEntityModel(
   if (createRes.code !== 200 && createRes.code !== 201) {
     throw new Error(errorMessage(createRes));
   }
-  const entityId = createRes.data as unknown as number;
+  // ⚠ 雪花 ID 必须保持 string：全局 Long→String 序列化器已把id 转成字符串，
+  // 再cast 成 number 只会引入 2^53 截断风险（本函数后续只用它做请求参数与回显）。
+  const entityId = String(createRes.data);
 
   const failedFields: ImportResult['failedFields'] = [];
   const fields = parsed.fields ?? [];

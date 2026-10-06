@@ -144,7 +144,7 @@ describe('extensionApi', () => {
       data: { success: true, data: { id: 1, enabled: true } },
       headers: {},
     });
-    await deployPlugin(1, true, { sync: true });
+    await deployPlugin('1', true, { sync: true });
     expect(mockPost).toHaveBeenCalledWith(
       '/v1/extension/plugins/1:deploy',
       {},
@@ -165,7 +165,7 @@ describe('extensionApi', () => {
     mockGet.mockResolvedValueOnce({
       data: { success: true, data: { done: true, progress: 100 } },
     });
-    await deployPlugin(1, true, { sync: false, pollIntervalMs: 1, pollTimeoutMs: 5000, onProgress });
+    await deployPlugin('1', true, { sync: false, pollIntervalMs: 1, pollTimeoutMs: 5000, onProgress });
     expect(onProgress).toHaveBeenCalledWith(0, expect.objectContaining({ done: false }));
     expect(onProgress).toHaveBeenCalledWith(40, expect.objectContaining({ progress: 40 }));
     expect(onProgress).toHaveBeenCalledWith(100, expect.objectContaining({ done: true }));
@@ -183,7 +183,7 @@ describe('extensionApi', () => {
     mockGet.mockResolvedValueOnce({
       data: { success: true, data: { done: true, progress: 100, result: { id: 1 } } },
     });
-    await deployPlugin(1, true, { sync: false, pollIntervalMs: 1, pollTimeoutMs: 5000 });
+    await deployPlugin('1', true, { sync: false, pollIntervalMs: 1, pollTimeoutMs: 5000 });
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/operations/op-test');
   });
 
@@ -191,7 +191,7 @@ describe('extensionApi', () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { id: 1, published: true } },
     });
-    await publishPluginRuntime(1);
+    await publishPluginRuntime('1');
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1:publish-runtime');
   });
 
@@ -199,7 +199,7 @@ describe('extensionApi', () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { id: 7, extPointId: 12 } },
     });
-    const row = await bindPlugin(7, 12);
+    const row = await bindPlugin('7', '12');
     expect(mockPost).toHaveBeenCalledWith(
       '/v1/extension/plugins/7:bind',
       { extensionPointId: 12 },
@@ -211,7 +211,7 @@ describe('extensionApi', () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { id: 7, extPointId: 0 } },
     });
-    const row = await unbindPlugin(7);
+    const row = await unbindPlugin('7');
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/7:unbind');
     expect(row).toMatchObject({ id: 7, extPointId: 0 });
   });
@@ -255,7 +255,7 @@ describe('extensionApi', () => {
     mockPut.mockResolvedValue({
       data: { success: true, data: { id: 1, name: 'n', interfaceName: 'com.X', enabled: true, version: 4 } },
     });
-    await updateExtPoint(1, { name: 'n', interfaceName: 'com.X' }, { version: 2 });
+    await updateExtPoint('1', { name: 'n', interfaceName: 'com.X' }, { version: 2 });
     expect(mockPut).toHaveBeenCalledWith(
       '/v1/extension/points/1',
       { name: 'n', interfaceName: 'com.X' },
@@ -276,7 +276,7 @@ describe('extensionApi', () => {
         },
       },
     });
-    const state = await getDeploymentState(5);
+    const state = await getDeploymentState('5');
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/plugins/5/deployment-state');
     expect(state.currentStatus).toBe('ACTIVE');
     expect(state.transitions).toHaveLength(1);
@@ -289,7 +289,7 @@ describe('extensionApi', () => {
         data: { nodes: [], edges: [] },
       },
     });
-    await getDependencyGraph(42);
+    await getDependencyGraph('42');
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/dependency-graph', {
       params: { extPointId: 42 },
     });
@@ -311,7 +311,7 @@ describe('extensionApi', () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { pluginId: 10, itemId: 'sample.foo', extPointId: 3 } },
     });
-    const result = await installMarketplaceItem('sample.foo', 3);
+    const result = await installMarketplaceItem('sample.foo', '3');
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', { extPointId: 3 });
     expect(result.pluginId).toBe(10);
   });
@@ -323,7 +323,7 @@ describe('extensionApi', () => {
         data: { pluginId: 11, itemId: 'sample.foo', extPointId: 3, appId: 77001 },
       },
     });
-    const result = await installMarketplaceItem('sample.foo', 3, 77001);
+    const result = await installMarketplaceItem('sample.foo', '3', '77001');
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', {
       extPointId: 3,
       appId: 77001,
@@ -335,7 +335,7 @@ describe('extensionApi', () => {
     mockGet.mockResolvedValue({
       data: { success: true, data: [{ id: 1, name: 'p1', enabled: true, appId: 9001 }] },
     });
-    await listPlugins({ appId: 9001 });
+    await listPlugins({ appId: '9001' });
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/plugins', {
       params: { extPointId: undefined, appId: 9001, page: undefined, size: undefined },
     });
@@ -378,14 +378,14 @@ describe('extensionApi', () => {
         data: { errorCode: 'EXT_POINT_IN_USE', detail: '扩展点已被引用，无法删除' },
       },
     });
-    const err = await deleteExtPoint(7).catch((e) => e);
+    const err = await deleteExtPoint('7').catch((e) => e);
     expect(err).toBeInstanceOf(StudioApiError);
     expect(err).toMatchObject({ errorCode: 'EXT_POINT_IN_USE', httpStatus: 409 });
   });
 
   it('deleteExtPoint resolves silently when API returns success=true', async () => {
     mockDelete.mockResolvedValue({ data: { success: true, data: null } });
-    await expect(deleteExtPoint(7)).resolves.toBeUndefined();
+    await expect(deleteExtPoint('7')).resolves.toBeUndefined();
   });
 
   it('deletePlugin throws StudioApiError when API returns success=false', async () => {
@@ -397,7 +397,7 @@ describe('extensionApi', () => {
         data: { errorCode: 'PLUGIN_RUNNING', detail: '插件运行中，禁止删除' },
       },
     });
-    const err = await deletePlugin(9).catch((e) => e);
+    const err = await deletePlugin('9').catch((e) => e);
     expect(err).toBeInstanceOf(StudioApiError);
     expect(err).toMatchObject({ errorCode: 'PLUGIN_RUNNING', httpStatus: 409 });
   });
@@ -423,7 +423,7 @@ describe('extensionApi', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     try {
-      await downloadPluginVersion(3, '1.0.0');
+      await downloadPluginVersion('3', '1.0.0');
       expect(mockGet).toHaveBeenCalledWith(
         '/v1/extension/plugins/3/versions/1.0.0:download',
         { responseType: 'blob' },

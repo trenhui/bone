@@ -4,6 +4,7 @@ import App from './App';
 import { subscribeLocaleChange } from '@bone/shared-utils';
 import { setQiankunToken } from './services/api';
 import './index.css';
+import { AppAntdProvider } from './components/AppAntdProvider';
 
 let root: Root | null = null;
 
@@ -25,7 +26,9 @@ function render(props?: QiankunProps) {
   // 注意：antd v5 / @ant-design/pro-components 的工具栏 Tooltip 在 React.StrictMode 下
   // 会触发 findDOMNode 弃用告警（第三方组件内部行为，仅 dev 控制台噪声，不影响运行）。
   // 为获得干净的控制台，这里不启用 StrictMode。
-  root.render(<App />);
+  root.render(<AppAntdProvider>
+      <App />
+    </AppAntdProvider>);
 }
 
 renderWithQiankun({

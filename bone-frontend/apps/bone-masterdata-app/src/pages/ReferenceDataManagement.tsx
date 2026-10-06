@@ -114,7 +114,7 @@ const ReferenceDataManagement: React.FC = () => {
         title="新建值域"
         open={setOpen}
         onCancel={() => setSetOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         onOk={async () => {
           const v = await setForm.validateFields();
           await referenceApi.createSet(v);
@@ -144,7 +144,7 @@ const ReferenceDataManagement: React.FC = () => {
         title={`新增值 · ${selected?.setName ?? ''}`}
         open={valueOpen}
         onCancel={() => setValueOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         onOk={async () => {
           const v = await valueForm.validateFields();
           await referenceApi.createValue(selected!.id, v);

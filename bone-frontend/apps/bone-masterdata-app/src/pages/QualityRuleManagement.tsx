@@ -244,7 +244,8 @@ const QualityRuleManagement: React.FC = () => {
         typeof raw === 'string' ? JSON.parse(raw) : raw
       ) as Partial<QualityReportData>;
       return {
-        entityId: data.entityId ?? 0,
+        // entityId 是雪花 ID（string）；缺失时用空串，不能用 0兜底（会诱出number 语义）
+        entityId: data.entityId ?? '',
         totalRecords: data.totalRecords ?? 0,
         rules: data.rules ?? [],
         unsupportedRules: data.unsupportedRules ?? []

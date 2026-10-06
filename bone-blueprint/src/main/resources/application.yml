@@ -30,7 +30,7 @@ bone:
       # 与其余 7 个模块（bone-system / bone-masterdata / bone-integration 等）同款声明：
       # 必须与 bone-iam 的 bone.iam.jwt.secret-key 一致，本地开发未注入环境变量时各模块
       # 落到同一未解析占位符字面量，天然一致；生产由环境变量 BONE_IAM_JWT_SECRET_KEY 注入。
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
   # 注意：此处不再有 bone.metadata.enabled / scan-packages——全仓无任何 @ConfigurationProperties 以
   # bone.metadata 为前缀（SDK 的真前缀是 metadata.sdk.* 与 bone.metadata.datasource.*），写了也不会被绑定，
   # 属"写了却不生效"的死配置。SDK 相关配置请写 metadata.sdk.*。
@@ -67,6 +67,50 @@ bone:
       callback:
         # 回调来源白名单（逗号分隔 IPv4/IPv6）；为空=不限制来源（默认，便于联调）
         allowed-source-ips: ""
+        # 可信代理白名单（逗号分隔 IPv4/IPv6），填自家网关的出口 IP。
+        # 部署形态=渠道 → bone-gateway → blueprint：此时 remoteAddr 是网关 IP，真实渠道 IP 在
+        # X-Forwarded-For 里。配了本键后，**仅当 remoteAddr 命中本列表**才采信 XFF，
+        # 并从左取第一个非可信代理地址作为来源 IP ⇒ 绕过网关直连本应用并伪造 XFF 的请求无效。
+        # 留空=保持旧行为（无条件采信 XFF 首段，兼容性优先，但该形态下 XFF 可被伪造）。
+        trusted-proxy-ips: ""
+    # === 多渠道开放平台接入（真实渠道网关）===
+    channel:
+      openapi:
+        # MOCK=不出网，只跑归一化逻辑（本地/CI 默认）；HTTP=调真实开放平台。
+        # 切到 HTTP 后凭证缺失会立即失败（BP_CHANNEL_CREDENTIAL_MISSING），不会静默退回 MOCK。
+        transport: ${BONE_CHANNEL_OPENAPI_TRANSPORT:MOCK}
+        connect-timeout-ms: 3000
+        read-timeout-ms: 10000
+        # 仅对网络类错误重试；渠道业务拒绝不重试（重试无意义且会加剧限流）
+        max-attempts: 2
+        # 各渠道凭证（app-key / app-secret / access-token）。
+        # 生产建议走密钥管理并用环境变量注入，此处仅声明结构。
+        credentials:
+          TAOBAO:
+            app-key: ${TAOBAO_APP_KEY:}
+            app-secret: ${TAOBAO_APP_SECRET:}
+            access-token: ${TAOBAO_ACCESS_TOKEN:}
+          JD:
+            app-key: ${JD_APP_KEY:}
+            app-secret: ${JD_APP_SECRET:}
+            access-token: ${JD_ACCESS_TOKEN:}
+          DOUYIN:
+            app-key: ${DOUYIN_APP_KEY:}
+            app-secret: ${DOUYIN_APP_SECRET:}
+            access-token: ${DOUYIN_ACCESS_TOKEN:}
+          PDD:
+            app-key: ${PDD_APP_KEY:}
+            app-secret: ${PDD_APP_SECRET:}
+            access-token: ${PDD_ACCESS_TOKEN:}
+      broadcast:
+        # 库存广播 Outbox 中继：库存变更同事务入队，中继异步投递到各渠道
+        enabled: true
+        batch-size: 50
+        interval-ms: 5000
+        max-retry: 5
+        base-backoff-ms: 10000
+        max-backoff-ms: 300000
+        stuck-timeout-ms: 120000
     outbox:
       enabled: true
       mq-enabled: false

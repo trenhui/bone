@@ -428,6 +428,23 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_PAYMENT_STATUS_CONFLICT` | 409 | 支付单当前状态不允许该操作 |
 | `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |
 | `BP_PAYMENT_CHANNEL_PREPAY_FAILED` | 502 | 渠道预下单失败（上游依赖故障） |
+| `BP_CHANNEL_NOT_FOUND` | 404 | 销售渠道未注册（含跨租户不可见） |
+| `BP_CHANNEL_CODE_INVALID` | 400 | 渠道码非法（不在 `ChannelCode` 枚举内） |
+| `BP_CHANNEL_DISABLED` | 409 | 渠道已停用，不参与拉单 / 上架 / 发货 |
+| `BP_CHANNEL_PRODUCT_NOT_FOUND` | 404 | 渠道商品不存在（该商品未上架到此渠道） |
+| `BP_CHANNEL_PRODUCT_STATUS_CONFLICT` | 409 | 渠道商品当前状态不允许该操作（仅 ONLINE 可下架） |
+| `BP_CHANNEL_PRODUCT_REJECTED` | 502 | 渠道侧拒绝上架 / 下架 / 库存同步（上游依赖故障） |
+| `BP_CHANNEL_BROADCAST_NOT_FOUND` | 404 | 渠道广播任务不存在 |
+| `BP_CHANNEL_BUYER_NOT_FOUND` | 404 | 渠道买家映射不存在（未绑定内部客户，且未开启自动建影子客户） |
+| `BP_CHANNEL_BUYER_ALREADY_BOUND` | 409 | 渠道买家已绑定其它内部客户（重复绑定会污染订单归属） |
+| `BP_CHANNEL_CREDENTIAL_MISSING` | 500 | 渠道开放平台凭证缺失（未配置 appKey/appSecret 即走真实通道） |
+| `BP_CHANNEL_OPENAPI_FAILED` | 502 | 渠道开放平台调用失败（网络/超时/解析异常，重试通常有效） |
+| `BP_CHANNEL_OPENAPI_REJECTED` | 502 | 渠道侧开放平台拒绝了本次调用（已送达被拒，重试无意义） |
+| `BP_INVENTORY_NOT_FOUND` | 404 | 库存记录不存在（商品 + 仓库维度未建储） |
+| `BP_INVENTORY_INSUFFICIENT` | 409 | 可用库存不足（预留数量超过可用量） |
+| `BP_SHIPMENT_NOT_FOUND` | 404 | 发货单不存在（含跨租户不可见） |
+| `BP_SHIPMENT_STATUS_CONFLICT` | 409 | 发货单当前状态不允许该操作（发货需运单号、签收需已发货） |
+| `BP_SHIPMENT_TRACKING_NO_REQUIRED` | 400 | 发货缺少物流运单号 |
 
 > **样板实现范围**：码常量在 `com.bone.blueprint.common.BlueprintErrorCodes`（只承载稳定码字符串与语义）；
 > **「码 → HTTP 状态」的唯一真源是 `com.bone.blueprint.common.BlueprintErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），

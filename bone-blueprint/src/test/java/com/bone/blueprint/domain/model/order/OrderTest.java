@@ -56,6 +56,27 @@ class OrderTest {
     assertEquals(OrderStatus.CANCELLED, order.getStatus());
   }
 
+  /**
+   * 锁定「已退款订单可再取消」这一<b>经确认的产品决定</b>（P2-8）。
+   *
+   * <p>为什么显式锁：守卫里刻意没有 {@code REFUNDED} 分支，后人做「状态机加固」时极易把它补上，
+   * 而这会改变一个已被产品确认的行为。本测试让那种改动<b>必须先改测试、并且被迫思考一次</b>。
+   *
+   * <p>同时钉住一个易被误解的点：取消<b>不产生新的资金动作</b>，退款已在 {@code refund()} 完成。
+   */
+  @Test
+  void refundedOrderCanStillBeCancelledByProductDecision() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    order.refund();
+    assertEquals(OrderStatus.REFUNDED, order.getStatus());
+
+    order.cancel();
+
+    assertEquals(OrderStatus.CANCELLED, order.getStatus());
+  }
+
   @Test
   void testApplyPricingUpdatesTotalAmount() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));

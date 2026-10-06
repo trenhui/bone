@@ -120,7 +120,7 @@ const TemplateManagement: React.FC = () => {
         onOk={handleCreate}
         onCancel={() => setCreateOpen(false)}
         width={640}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={createForm} layout="vertical">
           <Form.Item name="domainCode" label="域编码" rules={[{ required: true, message: '域编码不能为空' }]}>
@@ -152,7 +152,7 @@ const TemplateManagement: React.FC = () => {
         open={!!versionTpl}
         onOk={handlePublishVersion}
         onCancel={() => setVersionTpl(null)}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={verForm} layout="vertical">
           <Form.Item name="versionNumber" label="版本号（semver）" rules={[{ required: true, message: '版本号不能为空' }]}>
@@ -169,7 +169,7 @@ const TemplateManagement: React.FC = () => {
         open={!!instantiateTpl}
         onOk={handleInstantiate}
         onCancel={() => setInstantiateTpl(null)}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={instForm} layout="vertical">
           <Form.Item name="name" label="模型名称" rules={[{ required: true, message: '模型名称不能为空' }]}>

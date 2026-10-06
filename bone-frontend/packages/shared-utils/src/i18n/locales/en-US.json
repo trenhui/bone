@@ -126,7 +126,24 @@
     "NOTIFICATION_ACCESS_DENIED": "Notification access denied",
     "NOTIFICATION_INVALID_PARAM": "Invalid parameter (userId required or limit exceeded)",
     "NOTIFICATION_TENANT_MISMATCH": "Tenant context missing for notification",
-    "NOTIFICATION_ACCOUNT_REQUIRED": "Invalid or expired login session, please sign in again"
+    "NOTIFICATION_ACCOUNT_REQUIRED": "Invalid or expired login session, please sign in again",
+    "BP_CHANNEL_NOT_FOUND": "Sales channel not registered",
+    "BP_CHANNEL_CODE_INVALID": "Invalid channel code",
+    "BP_CHANNEL_DISABLED": "Channel is disabled",
+    "BP_CHANNEL_PRODUCT_NOT_FOUND": "Channel product not found",
+    "BP_CHANNEL_PRODUCT_STATUS_CONFLICT": "Channel product status does not allow this operation",
+    "BP_CHANNEL_PRODUCT_REJECTED": "Channel rejected this product operation, please retry later",
+    "BP_CHANNEL_BROADCAST_NOT_FOUND": "Channel broadcast task not found",
+    "BP_CHANNEL_BUYER_NOT_FOUND": "Channel buyer mapping not found",
+    "BP_CHANNEL_BUYER_ALREADY_BOUND": "Channel buyer is already bound to another customer",
+    "BP_CHANNEL_CREDENTIAL_MISSING": "Channel open-platform credentials are missing",
+    "BP_CHANNEL_OPENAPI_FAILED": "Channel open-platform call failed, please retry later",
+    "BP_CHANNEL_OPENAPI_REJECTED": "Channel rejected this open-platform call",
+    "BP_INVENTORY_NOT_FOUND": "Inventory record not found",
+    "BP_INVENTORY_INSUFFICIENT": "Insufficient available stock",
+    "BP_SHIPMENT_NOT_FOUND": "Shipment not found",
+    "BP_SHIPMENT_STATUS_CONFLICT": "Shipment status does not allow this operation",
+    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "Tracking number is required for shipment"
   },
   "enums": {
     "ORDER_STATUS": {

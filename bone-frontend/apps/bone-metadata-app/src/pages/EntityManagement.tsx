@@ -265,7 +265,7 @@ const EntityManagement: React.FC = () => {
   // 新建双入口（UC-W2）：全新 / 从平台模板（G3 实例化）
   const [createMode, setCreateMode] = useState<'new' | 'template'>('new');
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [tplFields, setTplFields] = useState<MetaTemplateField[]>([]);
 
   const openCreate = () => {
@@ -299,10 +299,10 @@ const EntityManagement: React.FC = () => {
   const handleSubmit = async () => {
     const values = await form.validateFields();
     // ⚠ 雪花 ID 禁止 Number()（2^53 截断）；后端 Jackson 接受字符串转 Long
-    const resolvedModuleId: string | number | undefined = isScoped
+    const resolvedModuleId: string | undefined = isScoped
       ? moduleId
       : values.moduleId != null
-        ? values.moduleId
+        ? String(values.moduleId)
         : undefined;
     try {
       // 从模板实例化（UC-W2 主流程 A）
@@ -624,7 +624,9 @@ const EntityManagement: React.FC = () => {
           <Space style={{ marginBottom: 12 }}>
             <Text type="secondary">已选 {selectedRowKeys.length} 项</Text>
             <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
-              const ids = selectedRowKeys.map(Number);
+              // ⚠ 雪花 ID 必须保持字符串：Number() 会因超出2^53 静默截断，
+              // 导致批量操作命中「另一个」实体。API 签名也是 string[]。
+              const ids = selectedRowKeys.map(String);
               try {
                 const res = await metadataEntityApi.batchPublish(ids);
                 if (res.code === 200) {
@@ -648,7 +650,8 @@ const EntityManagement: React.FC = () => {
               <Button size="small">批量发布</Button>
             </Popconfirm>
             <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
-              const ids = selectedRowKeys.map(Number);
+              // ⚠ 同上：雪花 ID 不能 Number()，会截断后命中错误实体
+              const ids = selectedRowKeys.map(String);
               try {
                 const res = await metadataEntityApi.batchDelete(ids);
                 if (res.code === 200) {

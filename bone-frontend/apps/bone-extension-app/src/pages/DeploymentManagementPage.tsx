@@ -16,7 +16,8 @@ import DeploymentStateDiagram from './DeploymentStateDiagram';
  */
 const DeploymentManagementPage: React.FC = () => {
   const [plugins, setPlugins] = useState<{ id: string; name: string }[]>([]);
-  const [pluginId, setPluginId] = useState<number | undefined>();
+  // ⚠ 插件 ID 是雪花 ID（后端 Long→String），与 loadState(id: string) 保持一致
+  const [pluginId, setPluginId] = useState<string | undefined>();
   const [state, setState] = useState<DeploymentStateView | null>(null);
   const [graph, setGraph] = useState<DependencyGraphView | null>(null);
   const [loading, setLoading] = useState(false);

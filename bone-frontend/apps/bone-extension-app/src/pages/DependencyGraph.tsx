@@ -36,11 +36,11 @@ type Layout = {
 };
 
 function computeLayout(graph: DependencyGraphView): Layout {
-  const nameToId = new Map<string, number>();
+  const nameToId = new Map<string, string>();
   graph.nodes.forEach((n) => {
     if (n.name) nameToId.set(n.name, n.id);
   });
-  const incomingByNode = new Map<number, number>();
+  const incomingByNode = new Map<string, number>();
   graph.nodes.forEach((n) => incomingByNode.set(n.id, 0));
   graph.edges.forEach((e) => {
     const toId = nameToId.get(e.toName);
@@ -49,11 +49,11 @@ function computeLayout(graph: DependencyGraphView): Layout {
     }
   });
 
-  const nodesById = new Map<number, DependencyNode>();
+  const nodesById = new Map<string, DependencyNode>();
   graph.nodes.forEach((n) => nodesById.set(n.id, n));
 
-  const visited = new Set<number>();
-  const columns: number[][] = [];
+  const visited = new Set<string>();
+  const columns: string[][] = [];
 
   const roots = graph.nodes.filter((n) => (incomingByNode.get(n.id) ?? 0) === 0);
   const startNodes = roots.length > 0 ? roots : graph.nodes;
@@ -65,7 +65,7 @@ function computeLayout(graph: DependencyGraphView): Layout {
     }
   });
 
-  const outAdj = new Map<number, Set<number>>();
+  const outAdj = new Map<string, Set<string>>();
   graph.edges.forEach((e) => {
     const toId = nameToId.get(e.toName);
     if (toId != null) {
@@ -140,8 +140,9 @@ const STATUS_COLOR: Record<string, string> = {
 const DependencyGraph: React.FC = () => {
   const [graph, setGraph] = useState<DependencyGraphView | null>(null);
   const [loading, setLoading] = useState(false);
-  const [extPointId, setExtPointId] = useState<number | undefined>(undefined);
-  const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: number }[]>([]);
+  // ⚠ 扩展点 ID 是雪花 ID（后端 Long→String），与 load(filterPointId?: string) 保持一致
+  const [extPointId, setExtPointId] = useState<string | undefined>(undefined);
+  const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: string }[]>([]);
 
   const load = async (filterPointId?: string) => {
     setLoading(true);
@@ -179,7 +180,7 @@ const DependencyGraph: React.FC = () => {
   return (
     <Card>
       <Space style={{ marginBottom: 12 }} wrap>
-        <Select<number>
+        <Select<string>
           allowClear
           placeholder="按扩展点过滤"
           style={{ width: 260 }}

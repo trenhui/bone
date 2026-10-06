@@ -6,7 +6,6 @@ import {
   Col,
   Empty,
   Input,
-  InputNumber,
   message,
   Modal,
   Row,
@@ -32,10 +31,11 @@ const Marketplace: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<string | undefined>(undefined);
-  const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: number }[]>([]);
+  // ⚠ 扩展点 ID 是雪花 ID（后端 Long→String），下拉 value 必须 string
+  const [extPointOptions, setExtPointOptions] = useState<{ label: string; value: string }[]>([]);
   const [installTarget, setInstallTarget] = useState<MarketplaceItem | null>(null);
-  const [selectedExtPointId, setSelectedExtPointId] = useState<number | undefined>(undefined);
-  const [installAppId, setInstallAppId] = useState<number | undefined>(undefined);
+  const [selectedExtPointId, setSelectedExtPointId] = useState<string | undefined>(undefined);
+  const [installAppId, setInstallAppId] = useState<string | undefined>(undefined);
   const [installing, setInstalling] = useState(false);
 
   const categories = Array.from(
@@ -196,11 +196,11 @@ const Marketplace: React.FC = () => {
             onChange={setSelectedExtPointId}
             style={{ width: '100%' }}
           />
-          <InputNumber
-            min={1}
+          {/* 应用 ID 是雪花 ID（19 位），必须文本输入：InputNumber 走 number 会丢精度 */}
+          <Input
             placeholder="归属应用 ID（留空 = 平台通用，5a G5）"
             value={installAppId}
-            onChange={(v) => setInstallAppId(v ?? undefined)}
+            onChange={(e) => setInstallAppId(e.target.value || undefined)}
             style={{ width: '100%' }}
           />
         </Space>

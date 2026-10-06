@@ -20,6 +20,7 @@ import {
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
   BellOutlined, ApartmentOutlined, MenuOutlined, ClockCircleOutlined,
   ShoppingOutlined, TransactionOutlined,
+  DeploymentUnitOutlined, CloudUploadOutlined, InboxOutlined, CarOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -289,6 +290,12 @@ const STATIC_MENU: ShellMenuItem[] = [
     children: [
       { key: 'commerce-orders', label: '订单管理', icon: <ProfileOutlined />, path: '/commerce', hash: '/orders', enabled: true },
       { key: 'commerce-payments', label: '支付管理', icon: <TransactionOutlined />, path: '/commerce', hash: '/payments', enabled: true },
+      { key: 'commerce-channels', label: '渠道管理', icon: <DeploymentUnitOutlined />, path: '/commerce', hash: '/channels', enabled: true },
+      { key: 'commerce-channel-products', label: '商品上架', icon: <CloudUploadOutlined />, path: '/commerce', hash: '/channel-products', enabled: true },
+      { key: 'commerce-inventories', label: '库存管理', icon: <InboxOutlined />, path: '/commerce', hash: '/inventories', enabled: true },
+      { key: 'commerce-channel-buyers', label: '买家映射', icon: <TeamOutlined />, path: '/commerce', hash: '/channel-buyers', enabled: true },
+      { key: 'commerce-broadcast-tasks', label: '广播任务', icon: <ThunderboltOutlined />, path: '/commerce', hash: '/broadcast-tasks', enabled: true },
+      { key: 'commerce-shipments', label: '发货物流', icon: <CarOutlined />, path: '/commerce', hash: '/shipments', enabled: true },
     ],
   },
   {

@@ -126,10 +126,11 @@
 | `domain/repository` | 聚合仓储接口（`OrderRepository` / `PaymentRepository`）——ADR-0030 起**写侧 + 本聚合读**同处一个接口；明细随根 `@Cascade` 落盘，不再单设子实体仓储；全租户运维入口以 `*AllTenants` 后缀声明 |
 | `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实；出站实现在 `infrastructure/gateway/{外部系统}` |
 | `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）与其入参模型（`OrderPriceRequest` record）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
+| `domain/extension/channel` | 多渠道业务契约（订单/商品/物流三个 `*ExtPoint` 与上下文/草稿/结果 record）；扩展引擎技术契约同样下沉到 `infrastructure/extension/channel`（`@ExtensionPoint` 子接口 + 四渠道实现 + `Default*` 兜底） |
 
 **已完成的迁移（ADR-0036 D1）**：`domain/{order,payment}` → `domain/model/{order,payment}`（`event` / `valueobject` / `projection` 子包名已合规，原样下沉）；`domain/shared/{valueobject,exception}` → `domain/model/shared/…`；`domain/{repository,gateway,extension}` **不变**（端口不进 `model/`）。本次同步更新了 15 处引用侧 import 与 3 个测试类的包路径；212 个测试全绿。
 
-> 本节是「目标形态 + 本模块迁移状态」的登记点（原「平铺属合法变体」的口径已由 ADR-0036 取代）。启动类的 `@EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.extension")` 是**字符串包名**，IDE 重命名不会改它——因 `extension` 按 ADR-0036 R3 留根，本次已逐处核对确认无需改动；后续若移动 `extension/` 必须同步改该字面量。
+> 本节是「目标形态 + 本模块迁移状态」的登记点（原「平铺属合法变体」的口径已由 ADR-0036 取代）。启动类的 `@EnableExtensionPoints(basePackages = {"com.bone.blueprint.domain.extension", "com.bone.blueprint.infrastructure.extension"})` 是**字符串包名**，IDE 重命名不会改它——因 `extension` 按 ADR-0036 R3 留根，本次已逐处核对确认无需改动；后续若移动 `extension/` 必须同步改这两处字面量（domain 业务契约与 infrastructure 技术契约都要扫到）。
 
 **与 E-10 参考结构的另一处偏差（登记）**：参考结构给出 `infrastructure/persistence/OrderRepositoryImpl`（= `domain/repository` 的实现），本模块**不存在 `infrastructure/persistence` 包**——仓储由 Bone 元数据 SDK 的 `@EnableSqlRepositories` **运行时生成代理实现**，没有可手写的实现类。故写侧无 `*Impl`/`*PO` 落点；与「明确不做 PO 分离」一致，不是待还技术债。
 

@@ -71,6 +71,20 @@ export const BonePermissionCodes = {
   ORDER_ORDERS_WRITE: 'order:orders:write',
   ORDER_PAYMENT_READ: 'order:payment:read',
   ORDER_PAYMENT_WRITE: 'order:payment:write',
+  COMMERCE_CHANNEL_READ: 'commerce:channel:read',
+  COMMERCE_CHANNEL_WRITE: 'commerce:channel:write',
+  COMMERCE_PRODUCT_READ: 'commerce:product:read',
+  COMMERCE_PRODUCT_WRITE: 'commerce:product:write',
+  COMMERCE_INVENTORY_READ: 'commerce:inventory:read',
+  COMMERCE_INVENTORY_WRITE: 'commerce:inventory:write',
+  COMMERCE_SHIPMENT_READ: 'commerce:shipment:read',
+  COMMERCE_SHIPMENT_WRITE: 'commerce:shipment:write',
+  // 渠道买家 ↔ 内部客户映射：改绑会改变历史订单的客户归属，故读写分权
+  COMMERCE_CHANNEL_BUYER_READ: 'commerce:channel-buyer:read',
+  COMMERCE_CHANNEL_BUYER_WRITE: 'commerce:channel-buyer:write',
+  // 库存广播（Outbox 异步投递）：重试会真实调用渠道接口并消耗配额
+  COMMERCE_BROADCAST_READ: 'commerce:broadcast:read',
+  COMMERCE_BROADCAST_WRITE: 'commerce:broadcast:write',
 
   // 扩展（bone-extension-studio · admin JWT 种子）
   EXTENSION_POINTS_READ: 'extension:points:read',

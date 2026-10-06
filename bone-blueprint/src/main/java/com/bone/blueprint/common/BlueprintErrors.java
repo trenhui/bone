@@ -1,5 +1,6 @@
 package com.bone.blueprint.common;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -40,8 +41,29 @@ public final class BlueprintErrors {
           Map.entry(BlueprintErrorCodes.PAYMENT_SIGNATURE_INVALID, 401),
           Map.entry(BlueprintErrorCodes.PAYMENT_CHANNEL_PREPAY_FAILED, 502),
           Map.entry(BlueprintErrorCodes.PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED, 403),
+          // 多渠道交易：渠道配置类 404/400，状态冲突 409，渠道协议拒绝 409
+          Map.entry(BlueprintErrorCodes.CHANNEL_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.CHANNEL_CODE_INVALID, 400),
+          Map.entry(BlueprintErrorCodes.CHANNEL_DISABLED, 409),
+          Map.entry(BlueprintErrorCodes.CHANNEL_PRODUCT_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.CHANNEL_PRODUCT_STATUS_CONFLICT, 409),
+          Map.entry(BlueprintErrorCodes.CHANNEL_PRODUCT_REJECTED, 409),
+          // 开放平台接入：凭证缺失属配置错误（500），网络/调用失败与渠道拒绝同属上游 502
+          Map.entry(BlueprintErrorCodes.CHANNEL_CREDENTIAL_MISSING, 500),
+          Map.entry(BlueprintErrorCodes.CHANNEL_OPENAPI_FAILED, 502),
+          Map.entry(BlueprintErrorCodes.CHANNEL_OPENAPI_REJECTED, 502),
+          // 买家映射：映射记录缺失 404，重复绑定 409（状态冲突）
+          Map.entry(BlueprintErrorCodes.CHANNEL_BUYER_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.CHANNEL_BUYER_ALREADY_BOUND, 409),
+          // 渠道广播任务（Outbox）：任务不存在 404
+          Map.entry(BlueprintErrorCodes.CHANNEL_BROADCAST_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.INVENTORY_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, 409),
+          Map.entry(BlueprintErrorCodes.SHIPMENT_NOT_FOUND, 404),
+          Map.entry(BlueprintErrorCodes.SHIPMENT_STATUS_CONFLICT, 409),
+          Map.entry(BlueprintErrorCodes.SHIPMENT_TRACKING_NO_REQUIRED, 400),
           // 复用平台公共码，状态同样在此登记，抛出方无需知道它来自 COMMON_
-          Map.entry(BlueprintErrorCodes.IDEMPOTENCY_CONFLICT, 409));
+          Map.entry(CommonErrorCodes.IDEMPOTENCY_CONFLICT, 409));
 
   static {
     checkEveryCodeRegistered();

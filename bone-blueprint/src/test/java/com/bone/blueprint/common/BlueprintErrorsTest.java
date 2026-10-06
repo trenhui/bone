@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -50,7 +51,7 @@ class BlueprintErrorsTest {
         502, BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_CHANNEL_PREPAY_FAILED).getCode());
     assertEquals(
         403, BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED).getCode());
-    assertEquals(409, BlueprintErrors.of(BlueprintErrorCodes.IDEMPOTENCY_CONFLICT).getCode());
+    assertEquals(409, BlueprintErrors.of(CommonErrorCodes.IDEMPOTENCY_CONFLICT).getCode());
   }
 
   @Test

@@ -72,10 +72,10 @@ const SystemDeploymentPage: React.FC = () => {
   };
 
   const fetchDeploymentRecords = () => {
-    // 模拟数据
+    // 模拟数据（当前后端未提供部署历史端点，页面先用占位数据保持可交互）
     setDeploymentRecords([
       {
-        id: 1,
+        id: '1',
         version: 'v1.2.3',
         status: 'success',
         startTime: '2024-04-20 10:00:00',
@@ -84,7 +84,7 @@ const SystemDeploymentPage: React.FC = () => {
         description: '例行升级',
       },
       {
-        id: 2,
+        id: '2',
         version: 'v1.2.2',
         status: 'failed',
         startTime: '2024-04-19 15:00:00',

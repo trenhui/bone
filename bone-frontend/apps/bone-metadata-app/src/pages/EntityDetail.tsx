@@ -200,7 +200,7 @@ const EntityDetail: React.FC = () => {
         metadataRelationApi.page({ page: 1, size: 200, sourceEntityId: id! }),
         metadataRelationApi.page({ page: 1, size: 200, targetEntityId: id! }),
       ]);
-      const merged = new Map<number, MetaRelation>();
+      const merged = new Map<string, MetaRelation>();
       [...(asSource.code === 200 ? asSource.data.records : []),
        ...(asTarget.code === 200 ? asTarget.data.records : [])].forEach((r) => merged.set(r.id, r));
       setRelations([...merged.values()]);

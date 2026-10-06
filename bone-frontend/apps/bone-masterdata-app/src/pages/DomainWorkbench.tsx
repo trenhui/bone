@@ -605,7 +605,7 @@ const DomainWorkbench: React.FC = () => {
         title="指派治理角色"
         open={roleOpen}
         onCancel={() => setRoleOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         onOk={async () => {
           const v = await roleForm.validateFields();
           await governanceRoleApi.assign({ ...v, masterDataEntityId: entityId, accountId: Number(v.accountId) });

@@ -128,7 +128,8 @@ export function useCodeGeneration() {
       const response = await metadataEntitySnapshotApi.list({
         page: 1,
         size: 500,
-        tenantId: 0,
+        // 平台租户同样是雪花 ID 语义（string），不用数字 0
+        tenantId: '0',
       });
       const page = response.data;
       const records = pageRecords(page) as Array<{ tableName?: string; tableComment?: string }>;

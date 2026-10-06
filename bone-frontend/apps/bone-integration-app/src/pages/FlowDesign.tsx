@@ -8,7 +8,6 @@ import { normalizeTotal } from '@bone/shared-utils';
 import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq, Connector } from '../types';
 
 const { TextArea } = Input;
-const { TabPane } = Tabs;
 const { Option } = Select;
 
 // 注册自定义节点
@@ -202,14 +201,16 @@ export const FlowDesign: React.FC = () => {
       name: flow.name,
       description: flow.description,
     });
-    
+
     // 加载流程到画布
     if (graph) {
       graph.clearCells();
-      
+
       // 添加节点
-      const nodeMap = new Map<number, string>();
-      flow.nodes.forEach(node => {
+      // ⚠ 节点 ID 是雪花 ID（后端 Long→String 全局序列化），键必须是 string，
+      // 否则 nodeMap.set(node.id, ...) 传不进去、连线映射整体失效。
+      const nodeMap = new Map<string, string>();
+      flow.nodes.forEach((node) => {
         const x6Node = graph.addNode({
           shape: 'custom-rect',
           x: node.positionX,
@@ -223,9 +224,9 @@ export const FlowDesign: React.FC = () => {
         });
         nodeMap.set(node.id, x6Node.id);
       });
-      
+
       // 添加连接
-      flow.connections.forEach(connection => {
+      flow.connections.forEach((connection) => {
         const sourceId = nodeMap.get(connection.sourceNodeId);
         const targetId = nodeMap.get(connection.targetNodeId);
         if (sourceId && targetId) {
@@ -240,7 +241,7 @@ export const FlowDesign: React.FC = () => {
         }
       });
     }
-    
+
     setModalVisible(true);
   };
 
@@ -290,9 +291,9 @@ export const FlowDesign: React.FC = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       if (!graph) return;
-      
+
       // 从画布中获取节点和连接
       const cells = graph.getCells();
       const nodes = cells
@@ -314,10 +315,10 @@ export const FlowDesign: React.FC = () => {
             positionY: pos.y,
           };
         });
-      
+
       const connections = cells
-        .filter(cell => cell.isEdge())
-        .map(edge => {
+        .filter((cell) => cell.isEdge())
+        .map((edge) => {
           const sourceNode = graph.getCellById(edge.getSourceCellId());
           const targetNode = graph.getCellById(edge.getTargetCellId());
           return {
@@ -327,7 +328,7 @@ export const FlowDesign: React.FC = () => {
             condition: edge.data.condition || '',
           };
         });
-      
+
       if (isEdit && currentFlow) {
         const updateData: UpdateFlowReq = {
           name: values.name,
@@ -364,7 +365,7 @@ export const FlowDesign: React.FC = () => {
         await flowApi.createFlow(createData);
         message.success('创建成功');
       }
-      
+
       setModalVisible(false);
       fetchFlows();
     } catch (error) {
@@ -483,64 +484,72 @@ export const FlowDesign: React.FC = () => {
         width={1000}
         height={600}
       >
-        <Tabs defaultActiveKey="design">
-          <TabPane tab="流程设计" key="design">
-            <div style={{ display: 'flex', height: 500 }}>
-              {/* 节点库 */}
-              <div style={{ width: 150, padding: 10, borderRight: '1px solid #e8e8e8' }}>
-                <h4 style={{ marginBottom: 16 }}>节点库</h4>
-                {nodeTypes.map(type => (
-                  <div
-                    key={type.value}
-                    style={{
-                      padding: 8,
-                      marginBottom: 8,
-                      background: '#f0f2f5',
-                      borderRadius: 4,
-                      textAlign: 'center',
-                      cursor: 'move',
-                    }}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('nodeType', type.value);
-                      e.dataTransfer.setData('nodeLabel', type.label);
-                    }}
-                  >
-                    {type.label}
+        <Tabs
+          defaultActiveKey="design"
+          items={[
+            {
+              key: 'design',
+              label: '流程设计',
+              children: (
+                <div style={{ display: 'flex', height: 500 }}>
+                  {/* 节点库 */}
+                  <div style={{ width: 150, padding: 10, borderRight: '1px solid #e8e8e8' }}>
+                    <h4 style={{ marginBottom: 16 }}>节点库</h4>
+                    {nodeTypes.map((type) => (
+                      <div
+                        key={type.value}
+                        style={{
+                          padding: 8,
+                          marginBottom: 8,
+                          background: '#f0f2f5',
+                          borderRadius: 4,
+                          textAlign: 'center',
+                          cursor: 'move',
+                        }}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('nodeType', type.value);
+                          e.dataTransfer.setData('nodeLabel', type.label);
+                        }}
+                      >
+                        {type.label}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              {/* 画布 */}
-              <div
-                style={{ flex: 1, position: 'relative' }}
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                <div
-                  ref={graphRef}
-                  style={{ width: '100%', height: '100%', background: '#fff' }}
-                />
-              </div>
-            </div>
-          </TabPane>
-          <TabPane tab="流程信息" key="info">
-            <Form form={form} layout="vertical">
-              <Form.Item
-                name="name"
-                label="流程名称"
-                rules={[{ required: true, message: '请输入流程名称' }]}
-              >
-                <Input placeholder="请输入流程名称" />
-              </Form.Item>
-              <Form.Item
-                name="description"
-                label="流程描述"
-              >
-                <TextArea rows={4} placeholder="请输入流程描述" />
-              </Form.Item>
-            </Form>
-          </TabPane>
-        </Tabs>
+                  {/* 画布 */}
+                  <div
+                    style={{ flex: 1, position: 'relative' }}
+                    onDrop={handleDrop}
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    <div
+                      ref={graphRef}
+                      style={{ width: '100%', height: '100%', background: '#fff' }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: 'info',
+              label: '流程信息',
+              children: (
+                <Form form={form} layout="vertical">
+                  <Form.Item
+                    name="name"
+                    label="流程名称"
+                    rules={[{ required: true, message: '请输入流程名称' }]}
+                  >
+                    <Input placeholder="请输入流程名称" />
+                  </Form.Item>
+                  <Form.Item name="description" label="流程描述">
+                    <TextArea rows={4} placeholder="请输入流程描述" />
+                  </Form.Item>
+                </Form>
+              ),
+            },
+          ]}
+        />
       </Modal>
 
       {/* 节点配置面板 */}
@@ -552,10 +561,18 @@ export const FlowDesign: React.FC = () => {
         width={480}
       >
         <Form form={nodeForm} layout="vertical">
-          <Form.Item name="name" label="节点名称" rules={[{ required: true, message: '请输入节点名称' }]}>
+          <Form.Item
+            name="name"
+            label="节点名称"
+            rules={[{ required: true, message: '请输入节点名称' }]}
+          >
             <Input placeholder="请输入节点名称" />
           </Form.Item>
-          <Form.Item name="type" label="节点类型" rules={[{ required: true, message: '请选择节点类型' }]}>
+          <Form.Item
+            name="type"
+            label="节点类型"
+            rules={[{ required: true, message: '请选择节点类型' }]}
+          >
             <Select placeholder="请选择节点类型">
               {nodeTypes.map((t) => (
                 <Option key={t.value} value={t.value}>

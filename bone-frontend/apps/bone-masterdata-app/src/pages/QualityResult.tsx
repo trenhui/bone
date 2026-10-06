@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, InputNumber, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Button, Card, Input, Space, Table, Tag, Tooltip } from 'antd';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { DataQualityResult } from '@/types';
 import { qualityResultApi } from '@/services/api';
@@ -19,8 +19,9 @@ import EntityScopeSelect from '../components/EntityScopeSelect';
  */
 const QualityResult: React.FC = () => {
   const { entityId, currentEntity } = useEntityScope();
-  const [recordId, setRecordId] = useState<number | undefined>(undefined);
-  const [appliedRecordId, setAppliedRecordId] = useState<number | undefined>(undefined);
+  // ⚠ 记录 ID 同样是雪花 ID（后端 Long→String 序列化），必须用 string，禁止 number
+  const [recordId, setRecordId] = useState<string | undefined>(undefined);
+  const [appliedRecordId, setAppliedRecordId] = useState<string | undefined>(undefined);
   const [results, setResults] = useState<DataQualityResult[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -75,12 +76,12 @@ const QualityResult: React.FC = () => {
       extra={
         <Space wrap>
           <EntityScopeSelect width={240} />
-          <InputNumber
+          {/* 记录 ID 是雪花 ID（19 位），必须用文本输入：InputNumber 走 number 会丢精度 */}
+          <Input
             style={{ width: 190 }}
             placeholder="记录 ID（下钻，可空）"
-            min={1}
             value={recordId}
-            onChange={(v) => setRecordId(v ?? undefined)}
+            onChange={(e) => setRecordId(e.target.value || undefined)}
             onPressEnter={() => setAppliedRecordId(recordId)}
           />
           <Tooltip title="按记录查看逐规则判定明细">

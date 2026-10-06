@@ -60,7 +60,10 @@ import {
 } from '@/services/extensionApi';
 import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
 
-const UNBOUND_EXT_POINT_ID = 0;
+// ⚠ 必须用字符串 '0'：extPointId 是雪花 ID（后端 Long→String），
+// 若这里留数字 0，`record.extPointId !== UNBOUND_EXT_POINT_ID` 对'0' 恒为 true，
+// 「未绑定」的判断会静默失效。
+const UNBOUND_EXT_POINT_ID = '0';
 
 const PluginManagement: React.FC = () => {
   const [plugins, setPlugins] = useState<ExtensionRow[]>([]);
@@ -81,7 +84,9 @@ const PluginManagement: React.FC = () => {
   const [deploying, setDeploying] = useState<{ id: string; name: string; progress: number } | null>(
     null,
   );
-  const [undeployingId, setUndeployingId] = useState<number | null>(null);
+  // ⚠ 插件 ID 是雪花 ID（string）；写成number 会让 472/473 行的
+  // `undeployingId === record.id` 恒为 false ⇒ 卸载 loading 永不显示。
+  const [undeployingId, setUndeployingId] = useState<string | null>(null);
   const [bindTarget, setBindTarget] = useState<ExtensionRow | null>(null);
   const [probeResult, setSelectedProbe] = useState<SimulateResult | null>(null);
   const [bindForm] = Form.useForm<{ extPointId: string }>();
@@ -96,7 +101,8 @@ const PluginManagement: React.FC = () => {
     pluginId?: string;
   }>();
   const [uploadTarget, setUploadTarget] = useState<ExtensionRow | null>(null);
-  const [appFilter, setAppFilter] = useState<number | undefined>();
+  // ⚠ 应用 ID 是雪花 ID（后端 Long→String）
+  const [appFilter, setAppFilter] = useState<string | undefined>();
 
   const load = useCallback(
     async (p: number, ps: number) => {
@@ -583,14 +589,14 @@ const PluginManagement: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
-        <InputNumber
-          min={1}
+        {/* 应用 ID 是雪花 ID（19 位），必须文本输入：InputNumber 走 number 会丢精度 */}
+        <Input
           placeholder="按归属应用 ID 过滤"
           style={{ width: 180 }}
           value={appFilter}
-          onChange={(v) => {
+          onChange={(e) => {
             setPage(1);
-            setAppFilter(v ?? undefined);
+            setAppFilter(e.target.value || undefined);
           }}
         />
       </Space>

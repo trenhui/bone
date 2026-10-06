@@ -286,7 +286,21 @@ export const ConnectorManagement: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         width={600}
       >
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            // JSON 模板必须放Form 的 initialValues：
+            // config 是受控字段（name="config"），写在 TextArea 的 defaultValue 上
+            // 不会被 antd 注入 ⇒ 用户看到的永远是空 textarea（antd 会告警
+            // "`defaultValue` will not work on controlled Field"）。
+            config: `{
+  "url": "",
+  "username": "",
+  "password": ""
+}`,
+          }}
+        >
           <Form.Item
             name="name"
             label="名称"
@@ -312,15 +326,7 @@ export const ConnectorManagement: React.FC = () => {
             label="配置"
             rules={[{ required: true, message: '请输入连接器配置' }]}
           >
-            <TextArea
-              rows={6}
-              placeholder="请输入 JSON 格式的配置"
-              defaultValue={`{
-  "url": "",
-  "username": "",
-  "password": ""
-}`}
-            />
+            <TextArea rows={6} placeholder="请输入 JSON 格式的配置" />
           </Form.Item>
         </Form>
       </Modal>

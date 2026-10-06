@@ -4,6 +4,7 @@ import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin
 import App from './App';
 import { subscribeLocaleChange } from '@bone/shared-utils';
 import './index.css';
+import { AppAntdProvider } from './components/AppAntdProvider';
 
 let root: Root | null = null;
 
@@ -23,7 +24,9 @@ function render(props?: QiankunProps) {
   root = createRoot(mountNode);
   root.render(
     <React.StrictMode>
+      <AppAntdProvider>
       <App />
+    </AppAntdProvider>
     </React.StrictMode>,
   );
 }
