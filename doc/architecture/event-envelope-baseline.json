@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "events": {
+    "OrderPaidIntegrationEvent": {
+      "fields": [
+        "orderId",
+        "tenantId",
+        "customerId",
+        "amount",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    },
+    "OrderPaymentInconsistentIntegrationEvent": {
+      "fields": [
+        "orderId",
+        "tenantId",
+        "paymentId",
+        "orderStatus",
+        "reason",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    },
+    "OrderStockActionFailedIntegrationEvent": {
+      "fields": [
+        "orderId",
+        "tenantId",
+        "productId",
+        "quantity",
+        "actionName",
+        "reason",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    },
+    "PaymentRefundedIntegrationEvent": {
+      "fields": [
+        "paymentId",
+        "tenantId",
+        "orderId",
+        "refundAmount",
+        "channelTradeNo",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    },
+    "PaymentSucceededIntegrationEvent": {
+      "fields": [
+        "paymentId",
+        "tenantId",
+        "orderId",
+        "amount",
+        "channelTradeNo",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    },
+    "PaymentFailedIntegrationEvent": {
+      "fields": [
+        "paymentId",
+        "tenantId",
+        "orderId",
+        "amount",
+        "occurredAt",
+        "schemaVersion"
+      ],
+      "schemaVersion": "CURRENT_SCHEMA_VERSION"
+    }
+  },
+  "topics": {
+    "domain.order.order_paid.v1": "versioned",
+    "domain.payment.payment_succeeded.v1": "versioned",
+    "domain.order.order_payment_inconsistent.v1": "versioned",
+    "domain.payment.payment_refunded.v1": "versioned",
+    "domain.payment.payment_failed.v1": "versioned",
+    "domain.order.order_stock_action_failed.v1": "versioned"
+  }
+}
