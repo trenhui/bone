@@ -9,12 +9,7 @@ import org.springframework.util.StringUtils;
 public interface MetaEntityRelationRepository extends Repository<MetaEntityRelation, Long> {
 
   default PageResult<MetaEntityRelation> pageRelations(
-      long tenantId,
-      Long sourceEntityId,
-      Long targetEntityId,
-      String keyword,
-      int pageNum,
-      int pageSize) {
+      long tenantId, Long sourceEntityId, Long targetEntityId, String keyword, int page, int size) {
     var query = query().where(MetaEntityRelation::getTenantId).eq(tenantId);
     if (sourceEntityId != null) {
       query = query.and(MetaEntityRelation::getSourceEntityId).eq(sourceEntityId);
@@ -25,6 +20,6 @@ public interface MetaEntityRelationRepository extends Repository<MetaEntityRelat
     if (StringUtils.hasText(keyword)) {
       query = query.and(MetaEntityRelation::getName).like("%" + keyword.trim() + "%");
     }
-    return query.orderByDesc(MetaEntityRelation::getId).page(pageNum, pageSize);
+    return query.orderByDesc(MetaEntityRelation::getId).page(page, size);
   }
 }

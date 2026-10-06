@@ -25,10 +25,5 @@ public final class GeneratorErrorCodes {
 
   // —— 通用码（沿用平台统一码，同样必须登记状态）——
 
-  public static final String VALIDATION_FAILED = "COMMON_VALIDATION_FAILED";
-  public static final String FORBIDDEN = "COMMON_FORBIDDEN";
-  public static final String INTERNAL_ERROR = "COMMON_INTERNAL_ERROR";
-  public static final String NOT_FOUND = "COMMON_NOT_FOUND";
-
   private GeneratorErrorCodes() {}
 }

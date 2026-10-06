@@ -75,6 +75,12 @@ public class SecurityConfig {
                   .permitAll()
                   .requestMatchers(
                       "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**")
+                  .permitAll()
+                  // Spring Boot 的错误转发端点。**必须放行**：
+                  // 认证通过 → 业务抛异常 → FORWARD /error → 不在白名单则被 Security 拦下
+                  // → AuthorizationDeniedException → 表现为 401，把真实的
+                  // 404/403/500 统统掩盖成"未认证"。2026-10-06 在 bone-file 上实测确诊。
+                  .requestMatchers("/error")
                   .permitAll();
               if (permitUnauthenticated) {
                 // 联调放行：白名单路径需与 Controller 映射一致（/api/v1/extension 单数）

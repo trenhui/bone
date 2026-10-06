@@ -235,10 +235,10 @@ class OrderPaymentMetadataE2ETest {
 
     // 不带 moduleId：两个未归属实体都应出现在全量列表
     mockMvc
-        .perform(get("/api/v1/metadata/entities").param("pageNum", "1").param("pageSize", "50"))
+        .perform(get("/api/v1/metadata/entities").param("page", "1").param("size", "50"))
         .andExpect(status().isOk())
         .andExpect(
-            jsonPath("$.data.list[*].code").value(org.hamcrest.Matchers.hasItems(codeA, codeB)));
+            jsonPath("$.data.records[*].code").value(org.hamcrest.Matchers.hasItems(codeA, codeB)));
 
     // 带 moduleId=999999（不存在的模块）：两个未归属实体都不应被返回（服务端按 moduleId 收敛）
     String body =
@@ -246,14 +246,14 @@ class OrderPaymentMetadataE2ETest {
             .perform(
                 get("/api/v1/metadata/entities")
                     .param("moduleId", "999999")
-                    .param("pageNum", "1")
-                    .param("pageSize", "50"))
+                    .param("page", "1")
+                    .param("size", "50"))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
     List<String> codes =
-        objectMapper.readTree(body).get("data").get("list").findValuesAsText("code");
+        objectMapper.readTree(body).get("data").get("records").findValuesAsText("code");
     assertThat(codes).doesNotContain(codeA);
     assertThat(codes).doesNotContain(codeB);
   }
@@ -300,13 +300,13 @@ class OrderPaymentMetadataE2ETest {
         mockMvc
             .perform(
                 get("/api/v1/metadata/entities/" + copyId + "/fields")
-                    .param("pageNum", "1")
-                    .param("pageSize", "50"))
+                    .param("page", "1")
+                    .param("size", "50"))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
-    assertThat(objectMapper.readTree(copyFields).get("data").get("list").size()).isEqualTo(2);
+    assertThat(objectMapper.readTree(copyFields).get("data").get("records").size()).isEqualTo(2);
 
     // 4) 发布摘要预览：RUNTIME 实体附物理计划（整表不存在 → createTable=true），可发布
     String preview =
@@ -421,14 +421,14 @@ class OrderPaymentMetadataE2ETest {
         mockMvc
             .perform(
                 get("/api/v1/metadata/entities/" + copyId + "/fields")
-                    .param("pageNum", "1")
-                    .param("pageSize", "50"))
+                    .param("page", "1")
+                    .param("size", "50"))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             // 显式 UTF-8：MockHttpServletResponse 默认按 ISO-8859-1 解码，中文治理属性会乱码
             .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-    var listNode = objectMapper.readTree(copyFields).get("data").get("list");
+    var listNode = objectMapper.readTree(copyFields).get("data").get("records");
     boolean stewardMigrated = false;
     for (var f : listNode) {
       if ("buyer_phone".equals(f.path("code").asText())) {

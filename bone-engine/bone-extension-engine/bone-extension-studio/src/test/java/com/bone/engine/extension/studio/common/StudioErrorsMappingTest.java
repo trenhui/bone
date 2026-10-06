@@ -30,7 +30,24 @@ class StudioErrorsMappingTest {
       assertTrue(status >= 400 && status <= 599, code + " 状态越界: " + status);
       checked++;
     }
-    assertEquals(13, checked, "新增/删除错误码时必须同步 StudioErrors 与错误码登记");
+    // 2026-10-05：5 个 COMMON_* 码的模块副本已删除（收敛到 bone-core 的 CommonErrorCodes），
+    // 本类声明的常量数 13 → 8。下面紧跟一条断言确保**公共码的 HTTP 状态映射没跟着丢** ——
+    // 「删副本」与「删状态登记」是两件事，只盯前者会漏后者。
+    assertEquals(8, checked, "新增/删除错误码时必须同步 StudioErrors 与错误码登记");
+  }
+
+  @Test
+  @DisplayName("公共码（COMMON_*，本模块不再声明副本）仍必须有 HTTP 状态登记")
+  void commonCodesStillHaveHttpStatusMapping() {
+    assertEquals(
+        400, StudioErrors.httpStatusOf(com.bone.core.common.CommonErrorCodes.VALIDATION_FAILED));
+    assertEquals(403, StudioErrors.httpStatusOf(com.bone.core.common.CommonErrorCodes.FORBIDDEN));
+    assertEquals(
+        500, StudioErrors.httpStatusOf(com.bone.core.common.CommonErrorCodes.INTERNAL_ERROR));
+    assertEquals(
+        409, StudioErrors.httpStatusOf(com.bone.core.common.CommonErrorCodes.IDEMPOTENCY_CONFLICT));
+    assertEquals(
+        412, StudioErrors.httpStatusOf(com.bone.core.common.CommonErrorCodes.PRECONDITION_FAILED));
   }
 
   @Test

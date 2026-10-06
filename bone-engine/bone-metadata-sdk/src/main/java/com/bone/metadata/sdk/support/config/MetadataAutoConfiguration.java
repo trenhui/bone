@@ -97,7 +97,12 @@ public class MetadataAutoConfiguration {
     return new RemoteMetadataService(client);
   }
 
+  // ⚠️ 必须加 @ConditionalOnMissingBean：extension-studio 走 EMBEDDED 模式时会自带同名
+  // 的 DistributedLockUtil Bean，而自动配置类总是最后求值，宿主已注册 ⇒ SDK 这一份必须让位。
+  // 早期本方法漏了该条件，直接导致 extension-studio 启动报「bean 'distributedLockUtil' 无法注册」
+  // （同类里 metadataSdkContext / embeddedMetadataService / exceptionHandler 都带了，唯独这里漏了）。
   @Bean
+  @ConditionalOnMissingBean
   public DistributedLockUtil distributedLockUtil() {
     return new DistributedLockUtil();
   }

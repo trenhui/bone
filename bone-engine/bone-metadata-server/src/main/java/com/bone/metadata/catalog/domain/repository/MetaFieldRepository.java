@@ -9,8 +9,7 @@ import org.springframework.util.StringUtils;
 /** 字段聚合仓储。读模型方法（ADR-0030）下沉至此；应用层调用而非持有读侧 DSL。 */
 public interface MetaFieldRepository extends Repository<MetaField, Long> {
 
-  default PageResult<MetaField> pageFields(
-      Long entityId, String keyword, int pageNum, int pageSize) {
+  default PageResult<MetaField> pageFields(Long entityId, String keyword, int page, int size) {
     // SDK 读侧不自动过滤软删；列表/校验必须显式排除 deleted 行（否则已删字段仍展示并参与重复检测）
     var query = query().where(MetaField::getDeleted).eq(false);
     if (entityId != null) {
@@ -19,7 +18,7 @@ public interface MetaFieldRepository extends Repository<MetaField, Long> {
     if (StringUtils.hasText(keyword)) {
       query = query.and(MetaField::getName).like("%" + keyword.trim() + "%");
     }
-    return query.orderByAsc(MetaField::getSortOrder).page(pageNum, pageSize);
+    return query.orderByAsc(MetaField::getSortOrder).page(page, size);
   }
 
   default Optional<MetaField> findByEntityAndCode(Long entityId, String code) {

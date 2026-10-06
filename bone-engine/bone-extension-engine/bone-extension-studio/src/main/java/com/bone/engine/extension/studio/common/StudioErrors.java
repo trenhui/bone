@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.common;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -37,11 +38,11 @@ public final class StudioErrors {
           Map.entry(StudioErrorCodes.PLUGIN_PACKAGE_INVALID, 400),
           Map.entry(StudioErrorCodes.RESOURCE_NOT_FOUND, 404),
           Map.entry(StudioErrorCodes.STATE_INVALID, 409),
-          Map.entry(StudioErrorCodes.VALIDATION_FAILED, 400),
-          Map.entry(StudioErrorCodes.FORBIDDEN, 403),
-          Map.entry(StudioErrorCodes.INTERNAL_ERROR, 500),
-          Map.entry(StudioErrorCodes.IDEMPOTENCY_CONFLICT, 409),
-          Map.entry(StudioErrorCodes.PRECONDITION_FAILED, 412));
+          Map.entry(CommonErrorCodes.VALIDATION_FAILED, 400),
+          Map.entry(CommonErrorCodes.FORBIDDEN, 403),
+          Map.entry(CommonErrorCodes.INTERNAL_ERROR, 500),
+          Map.entry(CommonErrorCodes.IDEMPOTENCY_CONFLICT, 409),
+          Map.entry(CommonErrorCodes.PRECONDITION_FAILED, 412));
 
   static {
     checkEveryCodeRegistered();

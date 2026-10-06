@@ -559,10 +559,10 @@ public class MetaEntityApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<MetaEntityDTO> pageEntities(
-      String keyword, Integer status, Long moduleId, int pageNum, int pageSize) {
+      String keyword, Integer status, Long moduleId, int page, int size) {
     long tenantId = tenantProvider.currentTenantId();
     PageResult<MetaEntity> sdkPage =
-        metaEntityRepository.pageEntities(tenantId, keyword, status, moduleId, pageNum, pageSize);
+        metaEntityRepository.pageEntities(tenantId, keyword, status, moduleId, page, size);
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 
@@ -576,10 +576,8 @@ public class MetaEntityApplicationService {
   }
 
   @Transactional(readOnly = true)
-  public PageResult<MetaFieldDTO> pageFields(
-      Long entityId, String keyword, int pageNum, int pageSize) {
-    PageResult<MetaField> sdkPage =
-        metaFieldRepository.pageFields(entityId, keyword, pageNum, pageSize);
+  public PageResult<MetaFieldDTO> pageFields(Long entityId, String keyword, int page, int size) {
+    PageResult<MetaField> sdkPage = metaFieldRepository.pageFields(entityId, keyword, page, size);
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 

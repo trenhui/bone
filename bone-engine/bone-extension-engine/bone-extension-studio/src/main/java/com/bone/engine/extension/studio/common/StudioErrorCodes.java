@@ -36,11 +36,5 @@ public final class StudioErrorCodes {
   /** 扩展/插件状态非法（历史码）。 */
   public static final String STATE_INVALID = "EXT_STATE_INVALID";
 
-  public static final String VALIDATION_FAILED = "COMMON_VALIDATION_FAILED";
-  public static final String FORBIDDEN = "COMMON_FORBIDDEN";
-  public static final String INTERNAL_ERROR = "COMMON_INTERNAL_ERROR";
-  public static final String IDEMPOTENCY_CONFLICT = "COMMON_IDEMPOTENCY_CONFLICT";
-  public static final String PRECONDITION_FAILED = "COMMON_PRECONDITION_FAILED";
-
   private StudioErrorCodes() {}
 }

@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.config;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
@@ -43,20 +44,20 @@ public class StudioWebExceptionHandler {
         ex.getErrorCode() != null
             ? ex.getErrorCode()
             : (status >= 500
-                ? StudioErrorCodes.INTERNAL_ERROR
-                : StudioErrorCodes.VALIDATION_FAILED);
+                ? CommonErrorCodes.INTERNAL_ERROR
+                : CommonErrorCodes.VALIDATION_FAILED);
     return problem(HttpStatus.valueOf(status), errorCode, ex.getMessage());
   }
 
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> forbidden(AccessDeniedException ex) {
     return StudioCommandResponses.problem(
-        HttpStatus.FORBIDDEN, StudioErrorCodes.FORBIDDEN, "无权限访问");
+        HttpStatus.FORBIDDEN, CommonErrorCodes.FORBIDDEN, "无权限访问");
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> badRequest(IllegalArgumentException ex) {
-    return problem(HttpStatus.BAD_REQUEST, StudioErrorCodes.VALIDATION_FAILED, ex.getMessage());
+    return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, ex.getMessage());
   }
 
   @ExceptionHandler(IllegalStateException.class)
@@ -68,19 +69,19 @@ public class StudioWebExceptionHandler {
   public ResponseEntity<ApiResponse<ProblemDetail>> idempotencyConflict(
       IdempotencyConflictException ex) {
     return StudioCommandResponses.problem(
-        HttpStatus.CONFLICT, StudioErrorCodes.IDEMPOTENCY_CONFLICT, ex.getMessage());
+        HttpStatus.CONFLICT, CommonErrorCodes.IDEMPOTENCY_CONFLICT, ex.getMessage());
   }
 
   @ExceptionHandler(OptimisticLockException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> optimisticLock(OptimisticLockException ex) {
     return StudioCommandResponses.problem(
-        HttpStatus.PRECONDITION_FAILED, StudioErrorCodes.PRECONDITION_FAILED, ex.getMessage());
+        HttpStatus.PRECONDITION_FAILED, CommonErrorCodes.PRECONDITION_FAILED, ex.getMessage());
   }
 
   @ExceptionHandler(MissingServletRequestPartException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> missingRequestPart(
       MissingServletRequestPartException ex) {
-    return problem(HttpStatus.BAD_REQUEST, StudioErrorCodes.VALIDATION_FAILED, ex.getMessage());
+    return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, ex.getMessage());
   }
 
   // 405 必须显式声明：本类的 Exception 兜底会抢在 bone-web 的 405 映射之前命中，
@@ -90,7 +91,7 @@ public class StudioWebExceptionHandler {
       HttpRequestMethodNotSupportedException ex) {
     return problem(
         HttpStatus.METHOD_NOT_ALLOWED,
-        StudioErrorCodes.VALIDATION_FAILED,
+        CommonErrorCodes.VALIDATION_FAILED,
         "请求方法不被支持: " + ex.getMethod());
   }
 
@@ -111,14 +112,14 @@ public class StudioWebExceptionHandler {
   })
   public ResponseEntity<ApiResponse<ProblemDetail>> badRequest(Exception ex) {
     log.warn("[API] 非法请求入参 traceId={}", MDC.get(StudioRequestContextFilter.TRACE_ID));
-    return problem(HttpStatus.BAD_REQUEST, StudioErrorCodes.VALIDATION_FAILED, "请求参数不合法");
+    return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, "请求参数不合法");
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> internal(Exception ex) {
     log.error("[API] unhandled traceId={}", MDC.get(StudioRequestContextFilter.TRACE_ID), ex);
     return StudioCommandResponses.problem(
-        HttpStatus.INTERNAL_SERVER_ERROR, StudioErrorCodes.INTERNAL_ERROR, "服务内部错误");
+        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCodes.INTERNAL_ERROR, "服务内部错误");
   }
 
   private static ResponseEntity<ApiResponse<ProblemDetail>> problem(

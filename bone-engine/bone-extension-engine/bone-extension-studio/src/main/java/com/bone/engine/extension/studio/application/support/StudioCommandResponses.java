@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.application.support;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
@@ -65,7 +66,7 @@ public final class StudioCommandResponses {
   @SuppressWarnings("unchecked")
   public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
     return (ResponseEntity<ApiResponse<T>>)
-        (Object) problem(HttpStatus.BAD_REQUEST, StudioErrorCodes.VALIDATION_FAILED, message);
+        (Object) problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, message);
   }
 
   @SuppressWarnings("unchecked")

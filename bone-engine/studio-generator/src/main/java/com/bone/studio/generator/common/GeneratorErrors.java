@@ -1,5 +1,6 @@
 package com.bone.studio.generator.common;
 
+import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.exception.BizException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -25,10 +26,10 @@ public final class GeneratorErrors {
           Map.entry(GeneratorErrorCodes.TEMPLATE_NOT_FOUND, 404),
           Map.entry(GeneratorErrorCodes.GENERATION_FAILED, 500),
           Map.entry(GeneratorErrorCodes.TENANT_CONTEXT_MISSING, 400),
-          Map.entry(GeneratorErrorCodes.VALIDATION_FAILED, 400),
-          Map.entry(GeneratorErrorCodes.FORBIDDEN, 403),
-          Map.entry(GeneratorErrorCodes.INTERNAL_ERROR, 500),
-          Map.entry(GeneratorErrorCodes.NOT_FOUND, 404));
+          Map.entry(CommonErrorCodes.VALIDATION_FAILED, 400),
+          Map.entry(CommonErrorCodes.FORBIDDEN, 403),
+          Map.entry(CommonErrorCodes.INTERNAL_ERROR, 500),
+          Map.entry(CommonErrorCodes.NOT_FOUND, 404));
 
   static {
     checkEveryCodeRegistered();

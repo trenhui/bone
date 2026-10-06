@@ -94,9 +94,13 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     int executed = 0;
     if (execute) {
       for (String ddl : statements) {
-        jdbcTemplate.execute(ddl);
+        executeIdempotently(ddl);
         executed++;
       }
+      // 执行后复核：DDL 在 MySQL 下**隐式提交**且部分失败不会回滚（见 executeIdempotently 的说明），
+      // 所以「executed=3」不等于「三件都成了」。回读一次真实结构，仍有缺口就显式失败 ——
+      // 否则调用方只看到 executed 计数，把「半成功」当成成功继续发布。
+      verifyAligned(table, fields);
     }
     return toPlan(entity.getCode(), table, statements, executed, !exists, execute);
   }
@@ -326,6 +330,78 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
         .orElseThrow(() -> new DomainException("元数据实体不存在: " + entityCode));
   }
 
+  /**
+   * 幂等执行一条 DDL。
+   *
+   * <p><b>为什么需要它</b>：本方法的幂等性原本靠「先查后建」（{@code tableExists}/{@code readExistingColumns}），
+   * 而「查」与「建」之间存在 TOCTOU 窗口 —— 并发 align（页面双击发布、CI 重试叠加定时任务）会让双方 都判定「表不存在」，后执行者撞上 {@code Table
+   * already exists} 抛裸 SQL 异常，前者无从知晓。
+   *
+   * <p><b>建表用 {@code IF NOT EXISTS} 把幂等下沉到数据库约束</b>（这才是真幂等）。而加列**不能**照抄： MySQL 不支持 {@code ALTER
+   * TABLE ... ADD COLUMN IF NOT EXISTS}（MariaDB 才支持），照抄会得到语法错误。 故加列走「容忍重复列」：{@code ALTER TABLE}
+   * 语义本身是原子的，并发下后到者收到的唯一错误就是 「列已存在」（{@code errorCode 1060 / SQLState 42S11}），把它判为「已达成」即幂等。
+   *
+   * <p><b>不用事务</b>：MySQL 的 DDL 会隐式提交，把 DDL 循环包进 {@code TransactionTemplate} 只会制造
+   * 「看起来有事务、实际没有」的错觉。故此处不做事务包装，改用执行后复核兜住部分失败。
+   *
+   * <p><b>已知未覆盖</b>：跨副本并发仍无分布式锁（SDK 无 {@code DistributedLockUtil}），本方法只能让
+   * 重复执行**无害**，不能阻止两个流程同时跑完。真正的互斥需要引入锁基建，属架构决策，本次不做。
+   */
+  private void executeIdempotently(String ddl) {
+    try {
+      jdbcTemplate.execute(ddl);
+    } catch (org.springframework.dao.DataAccessException e) {
+      // MySQL 的「列已存在」(1060/42S11) 会被 Spring 翻译成 BadSqlGrammarException 一类，
+      // 它不属于 DataIntegrityViolationException，所以这里统一按 DataAccessException 兜住再判别。
+      if (isDuplicateColumn(e)) {
+        return; // 并发下另一个执行者已加好该列：视为达成，而非失败
+      }
+      throw e;
+    }
+  }
+
+  private static boolean isDuplicateColumn(Throwable ex) {
+    for (Throwable t = ex; t != null; t = t.getCause()) {
+      // 注意：SQLState / errorCode 只存在于 SQLException 上，Throwable 上没有这两个方法
+      if (t instanceof java.sql.SQLException sql) {
+        String state = sql.getSQLState();
+        if (state != null && state.startsWith("42S11")) {
+          return true;
+        }
+        if (sql.getErrorCode() == 1060) { // MySQL ER_DUP_FIELDNAME
+          return true;
+        }
+      }
+      if (t.getMessage() != null && t.getMessage().contains("Duplicate column name")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 执行后复核：表与全部目标列必须真实存在，否则抛异常把「半成功」变成显式失败。 */
+  private void verifyAligned(String table, List<MetaField> fields) {
+    if (!tableExists(table)) {
+      throw new DomainException("结构对齐未生效：表 " + table + " 执行后仍不存在");
+    }
+    Set<String> actual = readExistingColumns(table);
+    List<String> missing = new ArrayList<>();
+    for (MetaField field : fields) {
+      String col = physicalColumnOf(field);
+      if (!actual.contains(requireIdentifier(col, "field.physicalColumn"))) {
+        missing.add(col);
+      }
+    }
+    if (!missing.isEmpty()) {
+      throw new DomainException(
+          "结构对齐未完全生效：表 "
+              + table
+              + " 执行后仍缺列 "
+              + String.join("、", missing)
+              + "（MySQL DDL 隐式提交，部分失败不会回滚——请检查库表是否被手工改动过）");
+    }
+  }
+
   private boolean tableExists(String table) {
     Integer count =
         jdbcTemplate.queryForObject(
@@ -354,7 +430,11 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
 
   private String buildCreateTable(String table, List<MetaField> fields) {
     StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE `").append(table).append("` (");
+    // IF NOT EXISTS：把建表幂等下沉到数据库约束，消掉「先查后建」的 TOCTOU 窗口
+    // （并发 align 双方都判「表不存在」时，后到者不再撞 Table already exists）。
+    // 显式 ENGINE/CHARSET：不写就跟随库默认字符集，跨环境建出的表字符集不一致，
+    // 后续 information_schema 类型比对会持续误报「类型漂移」。
+    sb.append("CREATE TABLE IF NOT EXISTS `").append(table).append("` (");
     sb.append("`id` BIGINT NOT NULL");
     sb.append(", `tenant_id` BIGINT NOT NULL");
     boolean hasIdField = false;
@@ -379,7 +459,7 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     if (!hasIdField) {
       sb.append(", PRIMARY KEY (`id`)");
     }
-    sb.append(")");
+    sb.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     return sb.toString();
   }
 

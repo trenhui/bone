@@ -97,11 +97,11 @@ public class MetaRelationApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<MetaRelationDTO> pageRelations(
-      Long sourceEntityId, Long targetEntityId, String keyword, int pageNum, int pageSize) {
+      Long sourceEntityId, Long targetEntityId, String keyword, int page, int size) {
     long tenantId = tenantProvider.currentTenantId();
     PageResult<MetaEntityRelation> sdkPage =
         relationRepository.pageRelations(
-            tenantId, sourceEntityId, targetEntityId, keyword, pageNum, pageSize);
+            tenantId, sourceEntityId, targetEntityId, keyword, page, size);
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 

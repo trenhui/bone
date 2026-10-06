@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 public interface MetaEntityRepository extends Repository<MetaEntity, Long> {
 
   default PageResult<MetaEntity> pageEntities(
-      long tenantId, String keyword, Integer status, Long moduleId, int pageNum, int pageSize) {
+      long tenantId, String keyword, Integer status, Long moduleId, int page, int size) {
     // SDK 的 deleteById 对 meta_entity 走逻辑删除（deleted=1），读侧必须显式过滤，
     // 否则已删除实体仍会出现在列表中。
     var query =
@@ -29,7 +29,7 @@ public interface MetaEntityRepository extends Repository<MetaEntity, Long> {
     if (status != null) {
       query = query.and(MetaEntity::getStatus).eq(status);
     }
-    return query.orderByDesc(MetaEntity::getId).page(pageNum, pageSize);
+    return query.orderByDesc(MetaEntity::getId).page(page, size);
   }
 
   default Optional<MetaEntity> findByTenantAndCode(long tenantId, String code) {
