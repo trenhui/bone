@@ -6,6 +6,7 @@ import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderLine;
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiRequest;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelJson;
@@ -129,14 +130,14 @@ public class JdOrderExtension implements ExtensionChannelOrderExtPoint {
   }
 
   @Override
-  public boolean ackOrder(ChannelShipmentContext request) {
+  public ChannelShipmentResult ackOrder(ChannelShipmentContext request) {
     if (request.channelOrderNo() == null || request.channelOrderNo().isBlank()) {
       log.warn("[JD] 回传失败：缺少渠道订单号");
-      return false;
+      return ChannelShipmentResult.fail("MISSING_CHANNEL_ORDER_NO", "缺少渠道订单号");
     }
     if (request.trackingNo() == null || request.trackingNo().isBlank()) {
       log.warn("[JD] 回传失败：缺少运单号，拒绝伪造运单号回传 | orderNo={}", request.channelOrderNo());
-      return false;
+      return ChannelShipmentResult.fail("MISSING_TRACKING_NO", "缺少运单号，拒绝伪造运单号回传");
     }
     String companyCode = ChannelLogisticsCodes.codeOf("JD", request.logisticsCompany());
     if (companyCode == null) {
@@ -144,7 +145,8 @@ public class JdOrderExtension implements ExtensionChannelOrderExtPoint {
           "[JD] 回传失败：物流公司未登记渠道编码（拒绝兜底为顺丰）| orderNo={} | company={}",
           request.channelOrderNo(),
           request.logisticsCompany());
-      return false;
+      return ChannelShipmentResult.fail(
+          "LOGISTICS_COMPANY_UNMAPPED", "物流公司未登记渠道编码: " + request.logisticsCompany());
     }
     ChannelApiResult result =
         openApiClient.call(
@@ -159,10 +161,10 @@ public class JdOrderExtension implements ExtensionChannelOrderExtPoint {
           request.channelOrderNo(),
           result.errorCode(),
           result.errorMessage());
-      return false;
+      return ChannelShipmentResult.fail(result.errorCode(), result.errorMessage());
     }
     log.info("[JD] 订单状态回传成功 | orderNo={}", request.channelOrderNo());
-    return true;
+    return ChannelShipmentResult.ok("发货信息已回传渠道");
   }
 
   /** 分 → 元；渠道给 {@code null} 时返回 {@code null} 以便调用方回落。 */

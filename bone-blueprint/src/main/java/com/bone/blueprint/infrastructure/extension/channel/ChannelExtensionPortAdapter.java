@@ -134,7 +134,7 @@ public class ChannelExtensionPortAdapter implements ChannelExtensionPort {
   }
 
   @Override
-  public boolean ackOrder(ChannelShipmentContext request) {
+  public ChannelShipmentResult ackOrder(ChannelShipmentContext request) {
     try (ExtensionScope ignored =
         ExtensionContextManager.with(
             bizContext(request.tenantId(), request.channelCode(), "ACK_ORDER", request))) {
@@ -143,11 +143,11 @@ public class ChannelExtensionPortAdapter implements ChannelExtensionPort {
   }
 
   @Override
-  public ChannelListingResult listProduct(ChannelProductContext request) {
+  public ChannelListingResult publishProduct(ChannelProductContext request) {
     try (ExtensionScope ignored =
         ExtensionContextManager.with(
             bizContext(request.tenantId(), request.channelCode(), "LIST_PRODUCT", request))) {
-      return channelProductExtPoint.listProduct(request);
+      return channelProductExtPoint.publishProduct(request);
     }
   }
 

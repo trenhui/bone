@@ -37,17 +37,14 @@ public class DouyinApiSpec extends AbstractChannelApiSpec {
   }
 
   @Override
-  public Map<String, String> credentialKeys() {
-    return Map.of("app_key", "appKey");
+  public Map<String, CredentialSlot> credentialKeys() {
+    return Map.of("app_key", CredentialSlot.APP_KEY, "app_secret", CredentialSlot.APP_SECRET);
   }
 
+  /** 抖音走 HMAC-SHA256，不需要 {@code sign_method} 参数（骨架按签名算法自动省略）。 */
   @Override
-  public Map<String, String> commonParams(String apiMethod, long timestampSeconds) {
-    Map<String, String> common = params();
-    common.put("method", apiMethod);
-    common.put("format", "json");
-    common.put("timestamp", String.valueOf(timestampSeconds));
-    return common;
+  protected String signMethodValue() {
+    return null;
   }
 
   /** 抖音：HMAC 已经承载密钥，待签串里不再拼接 secret。 */

@@ -7,6 +7,7 @@ import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.domain.model.channel.Channel;
 import com.bone.blueprint.domain.model.channel.event.ChannelRoutedEvent;
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
@@ -163,7 +164,7 @@ public class ChannelOrderApplicationService {
    * @param trackingNo 真实运单号
    */
   @Transactional
-  public boolean ackToChannel(
+  public ChannelShipmentResult ackToChannel(
       String channelCode, String channelOrderNo, String logisticsCompany, String trackingNo) {
     long tenantId = tenantProvider.currentTenantId();
     String code = normalize(channelCode);

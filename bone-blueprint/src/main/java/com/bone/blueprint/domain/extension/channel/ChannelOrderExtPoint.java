@@ -37,7 +37,7 @@ public interface ChannelOrderExtPoint {
    * 本方法用于人工/补偿触发。二者最终都应汇到同一份渠道回传能力上，不要各自实现一套 HTTP 调用。
    *
    * @param request 渠道发货上下文（含承运商与运单号）
-   * @return true=渠道已受理
+   * @return 回传结果，失败时携带渠道错误码与文案（与 {@code pushShipment} 同族类型）
    */
-  boolean ackOrder(ChannelShipmentContext request);
+  ChannelShipmentResult ackOrder(ChannelShipmentContext request);
 }

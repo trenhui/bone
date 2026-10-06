@@ -1,9 +1,5 @@
 package com.bone.blueprint.infrastructure.channel.openapi;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -27,9 +23,6 @@ public class PddApiSpec extends AbstractChannelApiSpec {
   /** 拼多多开放平台网关。 */
   public static final String GATEWAY = "https://gw-api.pinduoduo.com/api/router";
 
-  private static final DateTimeFormatter PDD_TIME =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
   public PddApiSpec() {
     super(
         "PDD",
@@ -43,22 +36,18 @@ public class PddApiSpec extends AbstractChannelApiSpec {
   }
 
   @Override
-  public Map<String, String> credentialKeys() {
-    return Map.of("client_id", "appKey");
+  public Map<String, CredentialSlot> credentialKeys() {
+    return Map.of("client_id", CredentialSlot.APP_KEY, "client_secret", CredentialSlot.APP_SECRET);
+  }
+
+  /** 拼多多的 {@code format} 取大写 {@code JSON}（其余三家是小写 {@code json}）。 */
+  @Override
+  protected String formatValue() {
+    return "JSON";
   }
 
   @Override
-  public Map<String, String> commonParams(String apiMethod, long timestampSeconds) {
-    Map<String, String> common = params();
-    common.put("method", apiMethod);
-    common.put("format", "JSON");
-    common.put("sign_method", "md5");
-    common.put("timestamp", timestamp(timestampSeconds));
-    return common;
-  }
-
-  private static String timestamp(long epochSeconds) {
-    return PDD_TIME.format(
-        LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault()));
+  protected String formatTimestamp(long epochSeconds) {
+    return topTimestamp(epochSeconds);
   }
 }

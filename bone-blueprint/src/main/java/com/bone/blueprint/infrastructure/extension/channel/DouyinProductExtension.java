@@ -43,7 +43,7 @@ public class DouyinProductExtension implements ExtensionChannelProductExtPoint {
   private final ChannelOpenApiClient openApiClient;
 
   @Override
-  public ChannelListingResult listProduct(ChannelProductContext request) {
+  public ChannelListingResult publishProduct(ChannelProductContext request) {
     if (request.productName() == null || request.productName().isBlank()) {
       return ChannelListingResult.fail(TITLE_REQUIRED, "抖音渠道要求商品标题非空");
     }

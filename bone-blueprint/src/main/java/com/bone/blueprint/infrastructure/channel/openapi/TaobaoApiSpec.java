@@ -1,9 +1,5 @@
 package com.bone.blueprint.infrastructure.channel.openapi;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -31,9 +27,6 @@ public class TaobaoApiSpec extends AbstractChannelApiSpec {
   /** TOP 网关（淘宝开放平台 / 天猫）。 */
   public static final String GATEWAY = "https://eco.taobao.com/router/rest";
 
-  private static final DateTimeFormatter TOP_TIME =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
   public TaobaoApiSpec() {
     super(
         "TAOBAO",
@@ -47,23 +40,18 @@ public class TaobaoApiSpec extends AbstractChannelApiSpec {
   }
 
   @Override
-  public Map<String, String> credentialKeys() {
-    return Map.of("app_key", "appKey");
+  public Map<String, CredentialSlot> credentialKeys() {
+    return Map.of("app_key", CredentialSlot.APP_KEY, "app_secret", CredentialSlot.APP_SECRET);
+  }
+
+  /** TOP 要求带接口版本号（骨架不提供，因只有 TOP 系要）。 */
+  @Override
+  protected Map<String, String> extraCommonParams(String apiMethod) {
+    return Map.of("v", "2.0");
   }
 
   @Override
-  public Map<String, String> commonParams(String apiMethod, long timestampSeconds) {
-    Map<String, String> common = params();
-    common.put("method", apiMethod);
-    common.put("format", "json");
-    common.put("v", "2.0");
-    common.put("sign_method", "md5");
-    common.put("timestamp", timestamp(timestampSeconds));
-    return common;
-  }
-
-  private static String timestamp(long epochSeconds) {
-    return TOP_TIME.format(
-        LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault()));
+  protected String formatTimestamp(long epochSeconds) {
+    return topTimestamp(epochSeconds);
   }
 }

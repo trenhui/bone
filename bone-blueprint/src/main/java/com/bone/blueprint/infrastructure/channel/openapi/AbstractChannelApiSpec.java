@@ -1,5 +1,9 @@
 package com.bone.blueprint.infrastructure.channel.openapi;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -137,6 +141,87 @@ public abstract class AbstractChannelApiSpec implements ChannelApiSpec {
   }
 
   /** 定位业务体：命中任一候选键即解析；都没有则返回 {@code null}（成功但没有业务体）。 */
+  /**
+   * 平台公共参数（不含业务参数、令牌与签名）。
+   *
+   * <p><b>公共骨架统一组装（2026-10-06）</b>：四家平台的公共参数结构高度同构—— {@code method / format / sign_method /
+   * timestamp} 四项里，只有拼多多的 {@code format} 取值是大写 {@code JSON}、 抖音没有 {@code sign_method}。原实现让四个子类各写一遍
+   * {@code commonParams}， 于是「加一项公共参数」要改四个文件、漏一个就是该渠道签名错误。 现在骨架按 {@link #formatValue()} 与 {@link
+   * #signMethodValue()}（均为 {@code null} 表示不带该项）组装， 子类只剩「本平台这两项取什么值」这一行声明。
+   *
+   * @param apiMethod 平台接口名，形如 {@code taobao.trade.orders.get}
+   * @param timestampSeconds 秒级时间戳（各平台时间格式不同，由 {@link #formatTimestamp} 决定）
+   */
+  @Override
+  public Map<String, String> commonParams(String apiMethod, long timestampSeconds) {
+    Map<String, String> common = params();
+    common.put("method", apiMethod);
+    String format = formatValue();
+    if (format != null) {
+      common.put("format", format);
+    }
+    String signMethod = signMethodValue();
+    if (signMethod != null) {
+      common.put("sign_method", signMethod);
+    }
+    common.put("timestamp", formatTimestamp(timestampSeconds));
+    // 平台特有参数（如淘宝的接口版本号 v）：默认无，个别平台覆写
+    Map<String, String> extra = extraCommonParams(apiMethod);
+    if (extra != null && !extra.isEmpty()) {
+      common.putAll(extra);
+    }
+    return common;
+  }
+
+  /**
+   * 平台特有的公共参数（骨架四项之外的部分）。
+   *
+   * <p>存在的意义：像淘宝的 {@code v=2.0} 这类「只有一个平台要」的参数，不该塞进四家共用的组装逻辑里， 否则就得让另外三家都写一句「我不带这个」的空判断。默认返回 {@code
+   * null} 表示无额外参数。
+   */
+  protected Map<String, String> extraCommonParams(String apiMethod) {
+    return null;
+  }
+
+  /** 本平台响应格式声明（{@code json} / 拼多多为 {@code JSON}）；{@code null} 表示不带该参数。 */
+  protected String formatValue() {
+    return "json";
+  }
+
+  /** 本平台签名方法声明；{@code null} 表示不带该参数（抖音走 HMAC，无需声明）。 */
+  protected String signMethodValue() {
+    return signature() == ChannelSignatureAlgorithm.MD5 ? "md5" : null;
+  }
+
+  /**
+   * 时间戳格式化：默认「秒级时间戳原样输出」（抖音），需要人类可读格式的平台覆写。
+   *
+   * <p>三家 TOP 系平台（淘宝 / 京东 / 拼多多）要求 {@code yyyy-MM-dd HH:mm:ss}， 它们各自的 {@code DateTimeFormatter}
+   * 完全相同，故统一由本骨架提供，子类不再各写一份。
+   */
+  protected String formatTimestamp(long epochSeconds) {
+    return String.valueOf(epochSeconds);
+  }
+
+  /** TOP 系（淘宝 / 京东 / 拼多多）的时间格式：{@code yyyy-MM-dd HH:mm:ss}。 */
+  protected static String topTimestamp(long epochSeconds) {
+    return TOP_TIME.format(
+        LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault()));
+  }
+
+  /** TOP 系共用时间格式器。 */
+  private static final DateTimeFormatter TOP_TIME =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+  /**
+   * 业务体定位：命中任一候选键即解析；都没有时按 {@code *_response} 派生节点兜底。
+   *
+   * <p><b>为什么要兜底扫派生节点（2026-10-06 保留并说明边界）</b>：淘宝/京东/拼多多的业务体放在 「以接口名派生的节点」里（如 {@code
+   * trade_orders_get_response}），而解析发生在「只有响应体、 没有请求上下文」的位置，因此无法按当前接口名反算该找哪个节点。
+   *
+   * <p><b>代价与可控性</b>：扫描是 O(n)（n = 响应根节点键数，渠道响应通常 &lt; 10）， 且「取首个命中」在单接口响应下确定。多接口聚合响应理论上会取到第一个派生节点——
+   * 但本模块每个请求只对应一个接口，故不构成实际风险；{@link #payloadCandidates} 仍是第一优先路径，派生节点只在候选键全部落空时才走。
+   */
   private Map<String, Object> resolvePayload(Map<String, Object> root) {
     for (String key : payloadCandidates) {
       Map<String, Object> payload = asPayload(root.get(key));
@@ -144,9 +229,6 @@ public abstract class AbstractChannelApiSpec implements ChannelApiSpec {
         return unwrap(payload);
       }
     }
-    // 兜底：路由网关类渠道把业务体放在以接口名派生的节点里（…_response）。
-    // 不按接口名现算，是因为解析发生在「只有响应体、没有请求上下文」的位置，
-    // 而节点名是响应格式的一部分——扫描比猜规则更稳，且响应里多一个同后缀节点也不会误命中（取首个）。
     for (Map.Entry<String, Object> entry : root.entrySet()) {
       if (entry.getKey().endsWith("_response") || "data".equals(entry.getKey())) {
         Map<String, Object> payload = asPayload(entry.getValue());

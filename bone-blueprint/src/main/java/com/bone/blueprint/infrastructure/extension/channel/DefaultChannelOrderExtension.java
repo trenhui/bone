@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.extension.channel;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.engine.extension.api.annotation.Extension;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,8 +34,10 @@ public class DefaultChannelOrderExtension implements ExtensionChannelOrderExtPoi
   }
 
   @Override
-  public boolean ackOrder(ChannelShipmentContext request) {
-    log.error("[DEFAULT] 渠道订单回传扩展未接入 | channel={}", request == null ? null : request.channelCode());
-    return false;
+  public ChannelShipmentResult ackOrder(ChannelShipmentContext request) {
+    String channel = request == null ? null : request.channelCode();
+    log.error("[DEFAULT] 渠道订单回传扩展未接入 | channel={}", channel);
+    return ChannelShipmentResult.fail(
+        "CHANNEL_EXT_NOT_REGISTERED", "渠道未接入订单扩展实现: channel=" + channel);
   }
 }

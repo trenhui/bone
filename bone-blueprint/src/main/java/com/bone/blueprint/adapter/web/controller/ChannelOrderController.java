@@ -3,6 +3,7 @@ package com.bone.blueprint.adapter.web.controller;
 import com.bone.blueprint.application.ChannelOrderApplicationService;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderLine;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,7 +73,7 @@ public class ChannelOrderController {
   @Operation(summary = "发货信息回传渠道（人工/补偿）")
   @PreAuthorize("hasAuthority('commerce:channel:write')")
   @PostMapping("/{channelCode}/{channelOrderNo}/ack")
-  public ApiResponse<Boolean> ack(
+  public ApiResponse<ChannelShipmentResult> ack(
       @PathVariable String channelCode,
       @PathVariable String channelOrderNo,
       @RequestBody @Valid AckShipmentReq request) {

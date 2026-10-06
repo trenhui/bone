@@ -6,6 +6,7 @@ import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderLine;
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiRequest;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelJson;
@@ -136,12 +137,12 @@ public class PddOrderExtension implements ExtensionChannelOrderExtPoint {
    * 再调一次添加物流，会产生重复运单——所以本方法只做幂等确认并说明真实回传路径，不编造一个不存在的接口。
    */
   @Override
-  public boolean ackOrder(ChannelShipmentContext request) {
+  public ChannelShipmentResult ackOrder(ChannelShipmentContext request) {
     // 拼多多没有独立的「发货回传」接口：发货状态由添加物流（PUSH_SHIPMENT）驱动。
     // 早期实现此处直接 return true（恒成功），会让调用方把「什么都没做」当成「渠道已受理」，
     // 进而推进本地状态 —— 渠道侧其实从未收到发货信息。改为显式失败，把语义交还给上游判断。
     log.warn("[PDD] 不支持独立发货回传（发货状态由添加物流驱动），请走 pushShipment | orderNo={}", request.channelOrderNo());
-    return false;
+    return ChannelShipmentResult.fail("CHANNEL_NO_ACK_API", "拼多多发货状态由添加物流驱动，请改用 pushShipment");
   }
 
   private static BigDecimal toYuan(BigDecimal fen) {

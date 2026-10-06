@@ -34,18 +34,23 @@ public interface ChannelApiSpec {
   String tokenHeaderName();
 
   /**
-   * 渠道凭证 → 请求参数的映射（参数名 → 凭证字段名）。
+   * 渠道凭证 → 请求参数的映射（参数名 → 凭证槽位）。
    *
-   * <p>拼多多把 appKey 叫 {@code client_id}、京东把令牌叫 {@code token}，字段名差异若散落在客户端就变成四个 if； 收在规格里后， 客户端只认
-   * {@code appKey / appSecret / accessToken} 三个凭证槽位。
+   * <p>拼多多把 appKey 叫 {@code client_id}、京东把令牌叫 {@code token}，字段名差异若散落在客户端就变成四个 if； 收在规格里后，客户端只认
+   * {@link CredentialSlot} 三个槽位。
+   *
+   * <p><b>槽位用枚举而非字符串</b>：拼错字符串只会静默跳过（渠道侧表现为「签名错误」，本地看不出原因）， 而枚举让这类错误停在编译期。
    */
-  Map<String, String> credentialKeys();
+  Map<String, CredentialSlot> credentialKeys();
 
   /**
    * 平台公共参数（不含业务参数、令牌与签名）。
    *
+   * <p>由 {@link AbstractChannelApiSpec} 统一组装，子类只在 {@code formatValue / signMethodValue /
+   * formatTimestamp} 三个钩子里声明本平台的取值差异——避免「加一项公共参数要改四个文件」， 那类漏改会以「某渠道签名错误」的形式在联调后期才暴露。
+   *
    * @param apiMethod 平台接口名，形如 {@code taobao.trade.orders.get}
-   * @param timestampSeconds 秒级时间戳（各平台时间格式不同，由实现决定格式）
+   * @param timestampSeconds 秒级时间戳
    */
   Map<String, String> commonParams(String apiMethod, long timestampSeconds);
 

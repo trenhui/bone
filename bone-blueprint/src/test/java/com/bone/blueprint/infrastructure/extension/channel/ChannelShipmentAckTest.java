@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiRequest;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelOpenApiClient;
@@ -31,7 +33,12 @@ import org.junit.jupiter.params.provider.ValueSource;
  * 用户收不到货，而本地日志显示「回传成功」。这类缺陷不抛异常、不影响启动，只在用户收货时暴露， 等发现时通常已被渠道判为虚假发货并罚款。
  *
  * <p><b>契约层已同步收口</b>：入参从 {@code ChannelOrderContext} 改为 {@link ChannelShipmentContext}
- * （它带真实承运商与运单号），从<b>签名上</b>就杜绝伪造。
+ * （它带真实承运商与运单号），从<b>签名上</b>就杜绝伪造； 出参从 {@code boolean} 改为 {@link
+ * ChannelShipmentResult}，让「渠道拒绝了」能带出原因码与文案 —— 运维接到告警时能直接看到「运单号不存在」而不是只看到一个 false。
+ *
+ * <p><b>本类的断言已随出参类型加强</b>：过去 {@code assertFalse(ok)} 只能证明"失败了"， 现在逐条断言 {@code errorCode}（{@code
+ * MISSING_TRACKING_NO} / {@code LOGISTICS_COMPANY_UNMAPPED} / {@code
+ * CHANNEL_NO_ACK_API}）与渠道原始错误码透传（{@code 50008}）。
  */
 class ChannelShipmentAckTest {
 
@@ -98,9 +105,12 @@ class ChannelShipmentAckTest {
     @DisplayName("缺运单号 ⇒ 拒绝回传且不出网（不伪造单号）")
     void refusesWhenTrackingNoMissing() {
       ChannelOpenApiClient client = acceptingClient();
-      boolean ok = new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "顺丰速运", null));
+      ChannelShipmentResult result =
+          new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "顺丰速运", null));
 
-      assertFalse(ok, "没有真实运单号时必须拒绝回传");
+      assertFalse(result.success(), "没有真实运单号时必须拒绝回传");
+      assertEquals("MISSING_TRACKING_NO", result.errorCode(), "失败必须带错误码（boolean 做不到）");
+      assertNotNull(result.message());
       verify(client, never()).call(any());
     }
 
@@ -108,9 +118,11 @@ class ChannelShipmentAckTest {
     @DisplayName("承运商未登记 ⇒ 拒绝回传（不把未知承运商兜底成顺丰）")
     void refusesWhenCompanyUnregistered() {
       ChannelOpenApiClient client = acceptingClient();
-      boolean ok = new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "德邦", "DB123"));
+      ChannelShipmentResult result =
+          new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "德邦", "DB123"));
 
-      assertFalse(ok, "未登记承运商会让渠道按错误承运商投递，必须拒绝");
+      assertFalse(result.success(), "未登记承运商会让渠道按错误承运商投递，必须拒绝");
+      assertEquals("LOGISTICS_COMPANY_UNMAPPED", result.errorCode());
       verify(client, never()).call(any());
     }
   }
@@ -148,7 +160,9 @@ class ChannelShipmentAckTest {
     @DisplayName("京东缺运单号时拒绝出网")
     void jdRefusesWithoutTrackingNo() {
       ChannelOpenApiClient client = acceptingClient();
-      assertFalse(new JdOrderExtension(client).ackOrder(ctx("JD", "顺丰速运", " ")));
+      ChannelShipmentResult result = new JdOrderExtension(client).ackOrder(ctx("JD", "顺丰速运", " "));
+      assertFalse(result.success());
+      assertEquals("MISSING_TRACKING_NO", result.errorCode());
       verify(client, never()).call(any());
     }
   }
@@ -161,9 +175,12 @@ class ChannelShipmentAckTest {
     @DisplayName("拼多多无独立回传接口 ⇒ 显式返回 false（原实现恒返回 true）")
     void pddReportsFailureInsteadOfFakeSuccess() {
       ChannelOpenApiClient client = acceptingClient();
-      boolean ok = new PddOrderExtension(client).ackOrder(ctx("PDD", "顺丰速运", "PDD1"));
+      ChannelShipmentResult result =
+          new PddOrderExtension(client).ackOrder(ctx("PDD", "顺丰速运", "PDD1"));
 
-      assertFalse(ok, "拼多多发货状态由添加物流驱动，此处恒 true 会让上游误认为渠道已受理");
+      assertFalse(result.success(), "拼多多发货状态由添加物流驱动，此处恒 true 会让上游误认为渠道已受理");
+      assertEquals("CHANNEL_NO_ACK_API", result.errorCode());
+      assertTrue(result.message().contains("pushShipment"), "失败文案应指引改用 pushShipment");
       verify(client, never()).call(any());
     }
   }
@@ -178,7 +195,11 @@ class ChannelShipmentAckTest {
       ChannelOpenApiClient client = mock(ChannelOpenApiClient.class);
       when(client.call(any())).thenReturn(ChannelApiResult.rejected("50008", "物流单号不存在", "{}"));
 
-      assertFalse(new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "顺丰速运", "SF1")));
+      ChannelShipmentResult result =
+          new TaobaoOrderExtension(client).ackOrder(ctx("TAOBAO", "顺丰速运", "SF1"));
+      assertFalse(result.success());
+      assertEquals("50008", result.errorCode(), "渠道原始错误码必须透传给调用方（boolean 会丢掉它）");
+      assertEquals("物流单号不存在", result.message());
     }
 
     @Test

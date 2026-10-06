@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultChannelProductExtension implements ExtensionChannelProductExtPoint {
 
   @Override
-  public ChannelListingResult listProduct(ChannelProductContext request) {
+  public ChannelListingResult publishProduct(ChannelProductContext request) {
     log.error("[DEFAULT] 渠道商品上架扩展未接入 | channel={}", request == null ? null : request.channelCode());
     return ChannelListingResult.fail(
         "CHANNEL_PRODUCT_EXT_MISSING",

@@ -194,13 +194,9 @@ public class ChannelOpenApiClient {
       ChannelApiSpec spec, ChannelCredentials credentials, ChannelApiRequest request) {
     Map<String, String> signed =
         new LinkedHashMap<>(spec.commonParams(request.apiMethod(), Instant.now().getEpochSecond()));
-    for (Map.Entry<String, String> entry : spec.credentialKeys().entrySet()) {
-      switch (entry.getValue()) {
-        case "appKey" -> putIfNotBlank(signed, entry.getKey(), credentials.appKey());
-        case "appSecret" -> putIfNotBlank(signed, entry.getKey(), credentials.appSecret());
-        case "accessToken" -> putIfNotBlank(signed, entry.getKey(), credentials.accessToken());
-        default -> log.warn("未知凭证槽位，已跳过: {}", entry.getValue());
-      }
+    for (Map.Entry<String, CredentialSlot> entry : spec.credentialKeys().entrySet()) {
+      // 槽位是枚举 ⇒ 拼错在编译期就被拦下，不会静默跳过导致渠道侧报「签名错误」
+      putIfNotBlank(signed, entry.getKey(), entry.getValue().valueOf(credentials));
     }
     if (!spec.tokenAsHeader()) {
       putIfNotBlank(signed, spec.tokenParamName(), credentials.accessToken());

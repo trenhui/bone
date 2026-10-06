@@ -1,9 +1,5 @@
 package com.bone.blueprint.infrastructure.channel.openapi;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -28,9 +24,6 @@ public class JdApiSpec extends AbstractChannelApiSpec {
   /** 宙斯网关。 */
   public static final String GATEWAY = "https://router.jd.com/api";
 
-  private static final DateTimeFormatter JD_TIME =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
   public JdApiSpec() {
     super(
         "JD",
@@ -44,18 +37,8 @@ public class JdApiSpec extends AbstractChannelApiSpec {
   }
 
   @Override
-  public Map<String, String> credentialKeys() {
-    return Map.of("app_key", "appKey");
-  }
-
-  @Override
-  public Map<String, String> commonParams(String apiMethod, long timestampSeconds) {
-    Map<String, String> common = params();
-    common.put("method", apiMethod);
-    common.put("format", "json");
-    common.put("sign_method", "md5");
-    common.put("timestamp", timestamp(timestampSeconds));
-    return common;
+  public Map<String, CredentialSlot> credentialKeys() {
+    return Map.of("app_key", CredentialSlot.APP_KEY, "app_secret", CredentialSlot.APP_SECRET);
   }
 
   /** 宙斯：密钥只出现在待签串尾部。 */
@@ -65,8 +48,8 @@ public class JdApiSpec extends AbstractChannelApiSpec {
     return secret == null ? joined : joined + secret;
   }
 
-  private static String timestamp(long epochSeconds) {
-    return JD_TIME.format(
-        LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault()));
+  @Override
+  protected String formatTimestamp(long epochSeconds) {
+    return topTimestamp(epochSeconds);
   }
 }

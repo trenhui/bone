@@ -68,7 +68,7 @@ public class ChannelProductApplicationService {
    * @return 上架后的渠道商品（成功为 ONLINE，渠道拒绝为 FAILED 且带失败原因）
    */
   @Transactional
-  public ChannelProductDto listProduct(
+  public ChannelProductDto publishProduct(
       String channelCode, Long productId, String productName, BigDecimal listingPrice) {
     long tenantId = tenantProvider.currentTenantId();
     Channel channel = requireEnabledChannel(channelCode);
@@ -104,7 +104,7 @@ public class ChannelProductApplicationService {
 
     // ② 经扩展点路由到渠道实现
     ChannelListingResult result =
-        channelExtensionPort.listProduct(
+        channelExtensionPort.publishProduct(
             ChannelProductContext.forListing(
                 tenantId, channel.getChannelCode(), productId, productName, listingPrice));
 

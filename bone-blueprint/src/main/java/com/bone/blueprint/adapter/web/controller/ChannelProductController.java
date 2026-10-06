@@ -51,9 +51,9 @@ public class ChannelProductController {
   @Operation(summary = "商品上架到渠道")
   @PreAuthorize("hasAuthority('commerce:product:write')")
   @PostMapping
-  public ApiResponse<ChannelProductDto> listProduct(@Valid @RequestBody ListProductReq req) {
+  public ApiResponse<ChannelProductDto> publishProduct(@Valid @RequestBody PublishProductReq req) {
     return ApiResponse.success(
-        channelProductApplicationService.listProduct(
+        channelProductApplicationService.publishProduct(
             req.channelCode(), req.productId(), req.productName(), req.listingPrice()));
   }
 
@@ -85,7 +85,7 @@ public class ChannelProductController {
   }
 
   /** 上架请求。 */
-  public record ListProductReq(
+  public record PublishProductReq(
       @NotBlank(message = "渠道码不能为空") String channelCode,
       @NotNull(message = "商品ID不能为空") Long productId,
       @NotBlank(message = "商品名称不能为空") String productName,

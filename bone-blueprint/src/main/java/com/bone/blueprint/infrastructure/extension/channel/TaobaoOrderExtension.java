@@ -6,6 +6,7 @@ import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderDraft;
 import com.bone.blueprint.domain.extension.channel.ChannelOrderLine;
 import com.bone.blueprint.domain.extension.channel.ChannelShipmentContext;
+import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiRequest;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelApiResult;
 import com.bone.blueprint.infrastructure.channel.openapi.ChannelJson;
@@ -72,15 +73,15 @@ public class TaobaoOrderExtension extends AbstractChannelOrderExtension
   }
 
   @Override
-  public boolean ackOrder(ChannelShipmentContext request) {
+  public ChannelShipmentResult ackOrder(ChannelShipmentContext request) {
     if (request.channelOrderNo() == null || request.channelOrderNo().isBlank()) {
       log.warn("[{}] 回传失败：缺少渠道订单号", displayName());
-      return false;
+      return ChannelShipmentResult.fail("MISSING_CHANNEL_ORDER_NO", "缺少渠道订单号");
     }
     if (request.trackingNo() == null || request.trackingNo().isBlank()) {
       // 渠道会拿运单号去查真实物流轨迹，伪造单号等于把假货发给用户；宁可回传失败也不能编数据。
       log.warn("[{}] 回传失败：缺少运单号，拒绝伪造运单号回传 | orderNo={}", displayName(), request.channelOrderNo());
-      return false;
+      return ChannelShipmentResult.fail("MISSING_TRACKING_NO", "缺少运单号，拒绝伪造运单号回传");
     }
     String companyCode = ChannelLogisticsCodes.codeOf(channelCode(), request.logisticsCompany());
     if (companyCode == null) {
@@ -89,7 +90,8 @@ public class TaobaoOrderExtension extends AbstractChannelOrderExtension
           displayName(),
           request.channelOrderNo(),
           request.logisticsCompany());
-      return false;
+      return ChannelShipmentResult.fail(
+          "LOGISTICS_COMPANY_UNMAPPED", "物流公司未登记渠道编码: " + request.logisticsCompany());
     }
     ChannelApiResult result =
         openApiClient.call(
@@ -104,10 +106,10 @@ public class TaobaoOrderExtension extends AbstractChannelOrderExtension
           request.channelOrderNo(),
           result.errorCode(),
           result.errorMessage());
-      return false;
+      return ChannelShipmentResult.fail(result.errorCode(), result.errorMessage());
     }
     log.info("[{}] 订单状态回传成功 | orderNo={}", displayName(), request.channelOrderNo());
-    return true;
+    return ChannelShipmentResult.ok("发货信息已回传渠道");
   }
 
   // ==================== 渠道差异 ====================
