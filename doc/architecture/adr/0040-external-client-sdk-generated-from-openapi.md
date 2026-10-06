@@ -170,7 +170,7 @@ A2 才是真正的规范 breaking 变更（L3，oasdiff 会报 `int64`→`string
 - **`PageResult.total` 跨规范已统一为 `string`**：8 份规范里的分页响应 total 原本散落着 `int64`（包装 `Long`，运行时字符串），现已全部对齐；但 `page`/`size`/`pages` 是 `Integer`，仍是 number —— 生成 SDK 后 `getTotal()` 返回 `String`、`getPage()` 返回 `Integer`，调用方需注意。
 - **`servers.url` 全是相对路径**（如 `/api/v1/iam`），无host。生成 SDK 需调用方在构造时提供 base URL，文档需写明。
 - **`components.schemas` 近乎为空**：多数响应内联 schema ⇒ 生成的 model 类会比预期多且可能重复。需在生成后核对 model 类数量与命名。
-- **分页契约不一致会传导进 SDK**：三套命名（`page/size`、`pageNum/pageSize`、`cursor/limit`）并存，生成的 Java 方法签名将直接把这三套差异暴露给调用方。SDK 生成会把 API 规范 §5.2 的存量欠账固化成公开 API，故分页收敛应先于或至少同步于 SDK 首发。
+- **分页契约一致性已达成（2026-10-06 复核）**：`pageNum/pageSize` 存量已按 API 规范 §5.2 路线② 全量收敛，对外入参现仅存 `page/size`（30 个）与语义不同的 `cursor/limit`（2 个）两套。SDK 生成不再面临「三套命名固化进公共 API」的风险，该前置条件已解除。
 - **契约测试**：生成物不手写，但**必须有烟测**（每个 tag 至少一次 `withHttpInfo` 调用断言 HTTP 码），否则「能编译不能用」无人发现。
 
 ## 生成与烟测已落地（2026-10-03，第 11 / 14 项）
@@ -212,7 +212,7 @@ A2 才是真正的规范 breaking 变更（L3，oasdiff 会报 `int64`→`string
 | # | 动作 | 阻塞原因 |
 |---|---|---|
 | 12 | 生成物接入 CI 并发布到制品库，把 oasdiff 结果作为生成的前置门禁 | 需要制品库坐标与发布凭据，属外部条件 |
-| 15 | 分页收敛后再发 SDK，或在 SDK 中显式标注三套命名并存 | 三套入参命名（`page/size`、`pageNum/pageSize`、`cursor/limit`）的收敛属API 规范 §5.2 裁定，**AI 不得自行批量改**（22 个端点） |
+| 15 | ~~分页收敛后再发 SDK，或在 SDK 中显式标注三套命名并存~~ **已解除（2026-10-06）**：存量收敛完成，见上文 | 依赖 API 规范 §5.2 裁定；实测口径见 `scripts/check-paging-param-names.py --report-only` |
 
 **另有一处规范侧待办（本次未改）**：8 份规范的 `servers.url` 全是相对路径（如 `/api/v1/iam`），无 host。生成 SDK 的 `ApiClient` 默认 `basePath` 就是这个相对路径，**调用方必须在构造时显式给绝对地址**，否则运行时才抛 `Expected URL scheme 'http' or 'https' but no scheme was found`（烟测正是因此必须调 `setBasePath`）。规范补 `servers[0].url` 为绝对地址涉及部署域名，属产品裁定。
 
@@ -284,4 +284,4 @@ A2 才是真正的规范 breaking 变更（L3，oasdiff 会报 `int64`→`string
 | 12 | 生成物接入 CI（发布到制品库），并把 oasdiff 结果作为生成的前置门禁 | 待办：需制品库坐标与发布凭据（外部条件）。生成脚本已就绪，接 CI 只是加一个 job |
 | 13 | 把 `check-sdk-contract-surface.py` 升级为 CI 阻断 | ✅ **已完成**（2026-10-03，`.github/workflows/ci.yml` 的 `backend-quality` job `SDK Contract Surface Lint (blocking)`） |
 | 14 | 为生成物补契约烟测（每个 tag 至少一次 `withHttpInfo` 断言 HTTP 码） | ✅ **已完成**（2026-10-03）。`scripts/sdk-contract-smoke-test.sh` + `scripts/sdk/SdkContractSmoke.java`，28 个 tag 全部真发 HTTP 往返 200 且带 Bearer 认证 |
-| 15 | 收敛分页命名后再发 SDK，或在 SDK 中显式标注三套命名并存 | 依赖 API 规范 §5.2 裁定（**AI 不得自行执行**） |
+| 15 | ~~收敛分页命名后再发 SDK~~ **已解除（2026-10-06）**：存量收敛完成 | 依赖 API 规范 §5.2 裁定；实测口径见 `scripts/check-paging-param-names.py --report-only` |

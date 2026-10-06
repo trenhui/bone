@@ -314,6 +314,18 @@ VALUES
     (21, 'order:orders:write', '订单-维护', 'order', 'orders', 'write', 'OPERATION', 200, 'bone-blueprint 下单/取消/发货/送达'),
     (28, 'order:payment:read', '支付单查询', 'API', '/api/v1/payments', 'read', 'OPERATION', 205, 'bone-blueprint 支付单查询/回调查看'),
     (29, 'order:payment:write', '支付单发起/退款', 'API', '/api/v1/payments', 'write', 'OPERATION', 210, 'bone-blueprint 发起支付/退款/回调'),
+    (100, 'commerce:channel:read', '渠道-查看', 'commerce', 'channel', 'read', 'OPERATION', 500, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (101, 'commerce:channel:write', '渠道-维护', 'commerce', 'channel', 'write', 'OPERATION', 501, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (102, 'commerce:product:read', '渠道商品-查看', 'commerce', 'product', 'read', 'OPERATION', 502, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (103, 'commerce:product:write', '渠道商品-上架/下架', 'commerce', 'product', 'write', 'OPERATION', 503, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (104, 'commerce:inventory:read', '库存-查看', 'commerce', 'inventory', 'read', 'OPERATION', 504, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (105, 'commerce:inventory:write', '库存-入库/预留', 'commerce', 'inventory', 'write', 'OPERATION', 505, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (106, 'commerce:shipment:read', '发货物流-查看', 'commerce', 'shipment', 'read', 'OPERATION', 506, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (107, 'commerce:shipment:write', '发货物流-发货/签收', 'commerce', 'shipment', 'write', 'OPERATION', 507, '多渠道交易域（bone-blueprint 渠道/商品/库存/发货）'),
+    (108, 'commerce:channel-buyer:read', '渠道买家映射-查看', 'commerce', 'channel-buyer', 'read', 'OPERATION', 508, '多渠道交易域（渠道买家↔内部客户映射/待绑定清单）'),
+    (109, 'commerce:channel-buyer:write', '渠道买家映射-绑定/改绑/解绑', 'commerce', 'channel-buyer', 'write', 'OPERATION', 509, '多渠道交易域（改绑影响历史订单客户归属，需单独授权）'),
+    (110, 'commerce:broadcast:read', '库存广播任务-查看', 'commerce', 'broadcast', 'read', 'OPERATION', 510, '多渠道交易域（Outbox 投递状态/失败清单）'),
+    (111, 'commerce:broadcast:write', '库存广播任务-重试/手动推送', 'commerce', 'broadcast', 'write', 'OPERATION', 511, '多渠道交易域（重试会真实调用渠道接口并消耗配额）'),
     (22, 'iam:depts:read', 'IAM-组织查看', 'iam', 'depts', 'read', 'OPERATION', 220, '组织机构树查看（DeptController @PreAuthorize）'),
     (23, 'iam:depts:write', 'IAM-组织维护', 'iam', 'depts', 'write', 'OPERATION', 220, '组织机构新建/编辑/删除'),
     (24, 'iam:menus:read', 'IAM-菜单查看', 'iam', 'menus', 'read', 'OPERATION', 230, '菜单树/当前用户菜单查看'),
@@ -387,7 +399,8 @@ VALUES
     (81, 3, 55), (82, 3, 56), (83, 3, 57), (84, 3, 58), (85, 3, 59);
 -- SYS 平台域写码绑定超管（61/62/63；租户管理员不绑——全局表写属平台域）
 INSERT INTO iam_role_permission (id, role_id, permission_id)
-VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63), (89, 1, 64);
+VALUES (86, 1, 61), (87, 1, 62), (88, 1, 63), (89, 1, 64),
+    (300, 1, 100), (301, 1, 101), (302, 1, 102), (303, 1, 103), (304, 1, 104), (305, 1, 105), (306, 1, 106), (307, 1, 107);
 
 -- ===== 2026-10-03 新增 12 个权限码的角色绑定 =====
 -- 超管（role 1）全绑71-82：写端点挂了这些码，超管必须持码否则 403。
@@ -817,6 +830,9 @@ CREATE TABLE t_order (
     total_amount        DECIMAL(18,2)   NOT NULL COMMENT '订单总额（= 明细小计之和 + 运费 - 优惠，金额三口径）',
     order_no            VARCHAR(32)     DEFAULT NULL COMMENT '业务订单号（对外展示/客服检索键，与物理 id 分离）',
     channel_source      VARCHAR(32)     DEFAULT NULL COMMENT '订单来源渠道：APP/H5/小程序/POS',
+    channel_code        VARCHAR(32)     DEFAULT NULL COMMENT '销售渠道码：TAOBAO/JD/DOUYIN/PDD（与 channel_source 不同：后者是下单终端）',
+    channel_order_no    VARCHAR(64)     DEFAULT NULL COMMENT '渠道原始订单号（渠道侧主键，回传/对账用）',
+    channel_buyer_id    VARCHAR(128)    DEFAULT NULL COMMENT '渠道买家账号ID（对账/排障：同一渠道买家的订单聚合）',
     freight_amount      DECIMAL(18,2)   NOT NULL DEFAULT 0 COMMENT '运费',
     discount_amount     DECIMAL(18,2)   NOT NULL DEFAULT 0 COMMENT '优惠总额',
     paid_time           DATETIME(3)     DEFAULT NULL COMMENT '支付完成时刻（订单生命周期时间轴刻度）',
@@ -831,7 +847,10 @@ CREATE TABLE t_order (
     KEY idx_order_tenant_customer (tenant_id, customer_id),
     KEY idx_order_tenant_status (tenant_id, status),
     UNIQUE KEY uk_order_tenant_order_no (tenant_id, order_no),
-    KEY idx_order_tenant_channel (tenant_id, channel_source)
+    UNIQUE KEY uk_order_tenant_channel_order_no (tenant_id, channel_code, channel_order_no),
+    KEY idx_order_tenant_channel (tenant_id, channel_source),
+    KEY idx_order_tenant_channel_code (tenant_id, channel_code),
+    KEY idx_order_tenant_channel_buyer (tenant_id, channel_code, channel_buyer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单（Order 上下文聚合根）';
 
 -- 明细为 Order 聚合内实体：租户隔离经父聚合 t_order.tenant_id 间接保证，
@@ -941,6 +960,181 @@ CREATE TABLE bp_idempotency_record (
     UNIQUE KEY uk_idempotency_tenant_scope (tenant_id, scope_key),
     KEY idx_idempotency_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='幂等请求快照（Idempotency-Key）';
+
+CREATE TABLE bp_channel (
+    id                  BIGINT          NOT NULL COMMENT '渠道主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    channel_code        VARCHAR(32)     NOT NULL COMMENT '渠道码：TAOBAO/JD/DOUYIN/PDD',
+    channel_name        VARCHAR(64)     NOT NULL COMMENT '渠道中文名',
+    ext_impl_code       VARCHAR(64)     DEFAULT NULL COMMENT '命中的扩展实现 code（扩展点路由结果，可观测用）',
+    api_endpoint        VARCHAR(255)    DEFAULT NULL COMMENT '渠道开放平台网关地址',
+    app_key             VARCHAR(128)    DEFAULT NULL COMMENT '渠道 appKey（生产应走密钥管理，此处仅联调占位）',
+    enabled             TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用（停用后不参与拉单/上架/发货）',
+    order_sync_enabled  TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否开启订单自动同步',
+    last_sync_at        DATETIME(3)     DEFAULT NULL COMMENT '最近一次拉单时间',
+    remark              VARCHAR(255)    DEFAULT NULL COMMENT '备注',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_channel_tenant_code (tenant_id, channel_code, deleted),
+    KEY idx_channel_tenant_enabled (tenant_id, enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='销售渠道注册（多渠道交易域）';
+
+-- 渠道种子：四平台「能力」由扩展实现（@Extension tags channel=XXX）提供，
+-- 此处只声明「开通与接入信息」。gateway 指向各平台官方网关，app-key 为占位（生产走密钥管理）。
+INSERT INTO bp_channel (id, tenant_id, channel_code, channel_name, api_endpoint, app_key,
+                        enabled, order_sync_enabled, version, created_at, updated_at, deleted) VALUES
+    (1000000000000000001, 0, 'TAOBAO', '淘宝', 'https://eco.taobao.com/router/rest', 'demo-taobao-app-key', 1, 0, 0, NOW(3), NOW(3), 0),
+    (1000000000000000002, 0, 'JD', '京东', 'https://router.jd.com/api', 'demo-jd-app-key', 1, 0, 0, NOW(3), NOW(3), 0),
+    (1000000000000000003, 0, 'DOUYIN', '抖音', 'https://openapi-fxg.jinritemai.com', 'demo-douyin-app-key', 1, 0, 0, NOW(3), NOW(3), 0),
+    (1000000000000000004, 0, 'PDD', '拼多多', 'https://gw-api.pinduoduo.com/api/router', 'demo-pdd-app-key', 1, 0, 0, NOW(3), NOW(3), 0);
+
+CREATE TABLE bp_channel_product (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    channel_code        VARCHAR(32)     NOT NULL COMMENT '渠道码',
+    product_id          BIGINT          NOT NULL COMMENT '内部商品ID',
+    product_name        VARCHAR(200)    NOT NULL COMMENT '商品名称（上架时快照）',
+    channel_product_id  VARCHAR(64)     DEFAULT NULL COMMENT '渠道侧商品ID（上架成功后回填；下架后清空）',
+    listing_status      VARCHAR(20)     NOT NULL DEFAULT 'UNLISTED' COMMENT 'UNLISTED/LISTING/ONLINE/DELISTING/OFFLINE/FAILED',
+    listing_price       DECIMAL(18,2)   DEFAULT NULL COMMENT '渠道挂牌价',
+    listing_stock       INT             NOT NULL DEFAULT 0 COMMENT '最近一次同步到渠道的库存（对账用）',
+    last_sync_at        DATETIME(3)     DEFAULT NULL COMMENT '最近一次同步时间',
+    fail_reason         VARCHAR(500)    DEFAULT NULL COMMENT '最近一次失败原因（FAILED 态必填）',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_cproduct_tenant_channel_product (tenant_id, channel_code, product_id, deleted),
+    KEY idx_cproduct_tenant_status (tenant_id, listing_status),
+    KEY idx_cproduct_tenant_channel_status (tenant_id, channel_code, listing_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='渠道商品上架（多渠道交易域）';
+
+CREATE TABLE bp_inventory (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    product_id          BIGINT          NOT NULL COMMENT '商品ID',
+    product_name        VARCHAR(200)    DEFAULT NULL COMMENT '商品名称（冗余展示，主数据在 masterdata）',
+    warehouse_code      VARCHAR(32)     NOT NULL DEFAULT 'DEFAULT' COMMENT '仓库编码',
+    available_qty       INT             NOT NULL DEFAULT 0 COMMENT '可用库存 = 总库存 - 预留',
+    reserved_qty        INT             NOT NULL DEFAULT 0 COMMENT '已预留（已下单未出库）',
+    safety_stock        INT             NOT NULL DEFAULT 0 COMMENT '安全库存（低于此值触发补货预警）',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_inventory_tenant_product_warehouse (tenant_id, product_id, warehouse_code, deleted),
+    KEY idx_inventory_tenant_available (tenant_id, available_qty)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='库存（多渠道交易域，替代 MockInventoryGatewayAdapter）';
+
+CREATE TABLE bp_shipment (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    order_id            BIGINT          NOT NULL COMMENT '关联 t_order.id',
+    channel_code        VARCHAR(32)     DEFAULT NULL COMMENT '渠道码（渠道订单发货回传用）',
+    shipment_no         VARCHAR(32)     DEFAULT NULL COMMENT '发货单号（SF + yyyyMMdd + 雪花ID）',
+    logistics_company   VARCHAR(64)     DEFAULT NULL COMMENT '物流公司',
+    tracking_no         VARCHAR(64)     DEFAULT NULL COMMENT '运单号',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'CREATED' COMMENT 'CREATED/SHIPPED/IN_TRANSIT/SIGNED/FAILED',
+    receiver_name       VARCHAR(64)     DEFAULT NULL COMMENT '收货人',
+    receiver_phone      VARCHAR(32)     DEFAULT NULL COMMENT '收货电话',
+    receiver_address    VARCHAR(500)    DEFAULT NULL COMMENT '收货地址',
+    channel_ack         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已回传渠道（1=已回传）',
+    channel_ack_at      DATETIME(3)     DEFAULT NULL COMMENT '渠道回传时间',
+    shipped_at          DATETIME(3)     DEFAULT NULL COMMENT '发货时间',
+    signed_at           DATETIME(3)     DEFAULT NULL COMMENT '签收时间',
+    fail_reason         VARCHAR(500)    DEFAULT NULL COMMENT '失败原因',
+    remark              VARCHAR(500)    DEFAULT NULL COMMENT '备注',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_shipment_tenant_order (tenant_id, order_id, deleted),
+    UNIQUE KEY uk_shipment_tenant_no (tenant_id, shipment_no),
+    KEY idx_shipment_tenant_status (tenant_id, status),
+    KEY idx_shipment_tenant_channel (tenant_id, channel_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='发货单（多渠道交易域）';
+
+CREATE TABLE bp_shipment_trace (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    shipment_id         BIGINT          NOT NULL COMMENT '关联 bp_shipment.id',
+    trace_time          DATETIME(3)     NOT NULL COMMENT '轨迹发生时间',
+    trace_status        VARCHAR(32)     DEFAULT NULL COMMENT '轨迹状态（渠道原始状态码）',
+    trace_desc          VARCHAR(500)    NOT NULL COMMENT '轨迹描述',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_trace_tenant_shipment (tenant_id, shipment_id),
+    KEY idx_trace_time (trace_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='物流轨迹（多渠道交易域）';
+
+CREATE TABLE bp_channel_buyer (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    channel_code        VARCHAR(32)     NOT NULL COMMENT '渠道码：TAOBAO/JD/DOUYIN/PDD',
+    channel_buyer_id    VARCHAR(128)    NOT NULL COMMENT '渠道买家账号ID（淘宝 buyer_user_id / 京东 buyerdno / 抖音 buyer_second_id / 拼多多 user_id）',
+    channel_buyer_nick  VARCHAR(128)    DEFAULT NULL COMMENT '渠道买家昵称快照（仅供运营识别，昵称可变，不作映射键）',
+    customer_id         BIGINT          NOT NULL DEFAULT 0 COMMENT '内部客户ID；0 表示「影子客户（尚未绑定）」',
+    customer_name       VARCHAR(128)    DEFAULT NULL COMMENT '内部客户名称快照（绑定时留痕，渠道侧改名不影响）',
+    binding_source      VARCHAR(16)     NOT NULL DEFAULT 'MANUAL' COMMENT '绑定来源：MANUAL=人工绑定；AUTO_SHADOW=拉单时自动建的影子映射',
+    order_count         INT             NOT NULL DEFAULT 0 COMMENT '累计拉单笔数（用于识别高频渠道买家，优先人工绑定）',
+    first_seen_at       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '首次观测到该渠道买家的时间',
+    last_order_at       DATETIME(3)     DEFAULT NULL COMMENT '最近一次拉单命中该买家的时间',
+    remark              VARCHAR(255)    DEFAULT NULL COMMENT '备注（绑定原因、人工登记等）',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_channel_buyer (tenant_id, channel_code, channel_buyer_id, deleted),
+    KEY idx_channel_buyer_customer (tenant_id, customer_id),
+    KEY idx_channel_buyer_unbound (tenant_id, channel_code, customer_id, last_order_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='渠道买家与内部客户映射（多渠道交易域）';
+
+CREATE TABLE bp_channel_broadcast_task (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    product_id          BIGINT          NOT NULL COMMENT '内部商品ID',
+    channel_code        VARCHAR(32)     NOT NULL COMMENT '渠道码：TAOBAO/JD/DOUYIN/PDD',
+    channel_product_id  VARCHAR(128)    DEFAULT NULL COMMENT '渠道侧商品ID（投递时用；为空表示尚未上架成功，不应入队）',
+    product_name        VARCHAR(255)    DEFAULT NULL COMMENT '商品名称快照（投递失败时便于运营定位）',
+    target_stock        INT             NOT NULL DEFAULT 0 COMMENT '目标库存（覆盖式：渠道库存应为这个值，不是增量）',
+    status              VARCHAR(16)     NOT NULL DEFAULT 'PENDING' COMMENT '投递状态：PENDING/PROCESSING/SENT/FAILED',
+    retry_count         INT             NOT NULL DEFAULT 0 COMMENT '已重试次数',
+    max_retry           INT             NOT NULL DEFAULT 5 COMMENT '最大重试次数，超过置 FAILED（死信）',
+    next_retry_at       DATETIME(3)     DEFAULT NULL COMMENT '下次可重试时间（指数退避）',
+    last_error          VARCHAR(512)    DEFAULT NULL COMMENT '最近一次失败原因（渠道原始 message）',
+    merged_into_id      BIGINT          DEFAULT NULL COMMENT '被合并到哪条任务（同商品同渠道只投最新库存，旧的标 SENT 并记此字段）',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间（合并时刷新，中继据此取最新）',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_broadcast_pending (status, next_retry_at),
+    KEY idx_broadcast_product (tenant_id, product_id, channel_code, status),
+    KEY idx_broadcast_created (tenant_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='渠道库存广播任务（Outbox 异步投递）';
 
 CREATE TABLE int_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',

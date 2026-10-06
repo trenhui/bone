@@ -39,7 +39,7 @@
 | **适用** | `bone-platform/*`、`bone-engine/*` 对外 HTTP API；`bone-frontend` 各微应用；网关与 **Spring Security + JWT** 鉴权配置（平台默认栈；SA-Token **非**默认栈，仅限可选行业包 `bone-business/*`）。 |
 | **真源优先级** | 本规范 > 模块详设 API 章 > 代码实现；偏离须 ADR 或 §13.2「迁移登记」。 |
 | **OpenAPI** | 每服务维护 OpenAPI 3.1；公共 schema 见 §11；CI 做破坏性 diff。 |
-| **实现符合度** | 本规范为**目标态**；`bone-core` 双 `ApiResponse`、`code=0` 成功码、分页入参 `pageNum`/`pageSize` 族等见 §13.2，逐步迁移。 |
+| **实现符合度** | 本规范为**目标态**；`bone-core` 双 `ApiResponse`、`code=0` 成功码等历史偏差见 §13.2，逐步迁移。分页入参 `pageNum`/`pageSize` 存量已于 **2026-10-06 前清零**（门禁 `check-paging-param-names.py` 实测 0 个存量类，`page/size` 30 个、`cursor/limit` 2 个）。 |
 
 ### 1.1 参考标准
 
@@ -313,14 +313,14 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 
 | 命名族 | 对外入参类数 | 状态 |
 |---|---:|---|
-| `page`/`size` | 8 | ✅ 符合本规范 |
-| `pageNum`/`pageSize` | 22 |🟡 存量待收敛（L3，见下） |
+| `page`/`size` | 30 | ✅ 符合本规范 |
+| `pageNum`/`pageSize` | 0 | ✅ **存量已清零（2026-10-06 复核，门禁实测）** |
 | `cursor`/`limit` | 2 | ✅ 语义不同，不算违规 |
 
-> **统计口径（2026-10-03 复核）**：数字与`scripts/check-paging-param-names.py` 的实测一致，
+> **统计口径（2026-10-06 复核）**：数字与`scripts/check-paging-param-names.py --report-only` 的实测一致，
 > 口径是「**按字段声明归族**」（`private int page` / `private Integer page` /继承 `PageParam`
 > 均计入），**不是**按 `Integer` 单词匹配。
-> 手工核对时若只grep `private Integer page;`，会漏掉用 `int` 声明的类（本轮实测漏了 6 个：
+> 手工核对时若只grep `private Integer page;`，会漏掉用 `int` 声明的类（2026-10-03 那轮实测漏了 6 个：
 > `LoadCatalogTablesQuery` / `ModuleListQuery` / `DataSourceListQuery` / `AccountPageQuery` /
 > `TenantPageQuery` / `ApplicationPageQuery`），从而把 8 误算成 2 —— 曾在 AI 侧造成过一次
 > 「规范数字漂移」的误判。以门禁输出为准。
@@ -343,7 +343,7 @@ python3 scripts/check-paging-param-names.py --report-only   # 存量清零前只
 ```
 
 - 🔴 **阻断**：出现白名单外的分页字段名（`pageIndex`/`perPage` 等**第三套命名**）、同一类里跨族字段混搭；
-- 🟡 **警告**：22 个 `pageNum`/`pageSize` 存量类（不阻断，按§5.2 节奏清零）。
+- ✅ **存量清零后警告不再出现**：`pageNum`/`pageSize` 存量类 0 个（2026-10-06 门禁实测；2026-10-03 复核时尚余 22 个，经 7 组双层改名列收敛完毕）。
 
 **接入状态（2026-10-03 补齐）**：本门禁此前**完全游离于所有门禁之外**（`check.sh` / `ci-check.sh` / `.github/workflows` 均未调用），
 是§5.1「新增端点只允许 `page`/`size`」长期未被机械执行的**根因**。现已接入 `scripts/check.sh` `[7/10]`（pre-commit 阻断，
@@ -750,7 +750,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 过渡 | 成功 `code=0` | `code=200` | 2026-09-01 |
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
-| 过渡 | 分页入参 `pageNum`/`pageSize`（**22 个入参类**） | `page`/`size`（见 §5.1，含 7 组 web/application 双层字段重复） | **待架构师裁定** |
+| 已完成 | 分页入参 `pageNum`/`pageSize`（22 个入参类） | `page`/`size`（见 §5.1，含 7 组 web/application 双层字段重复） | 2026-10-06 复核清零 |
 | 过渡 | `PageResult` 额外吐 `list`/`pageNum`/`pageSize`（`@Deprecated` getter 未被 Jackson 忽略） | 仅 `records`/`page`/`size`（见 §5.3，全量影响 8 个子应用契约） | **待架构师裁定** |
 
 > **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**模式 B** 动态数据 `/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布）。**禁止** catalog 与扩展字段 `fields:*` 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
