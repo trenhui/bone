@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.application.support;
 
 import com.bone.core.model.ProblemDetail;
+import com.bone.core.threadlocal.TransmittableThreadLocal;
 import com.bone.engine.extension.studio.application.ExtensionCommandApplicationService;
 import com.bone.engine.extension.studio.application.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
@@ -62,13 +63,14 @@ public class StudioLroSupport {
 
     Map<String, String> mdc = MDC.getCopyOfContextMap();
     executor.submit(
-        () -> {
-          if (mdc != null) {
-            MDC.setContextMap(mdc);
-          }
-          runDeploy(operationId, pluginId);
-          MDC.clear();
-        });
+        TransmittableThreadLocal.wrap(
+            () -> {
+              if (mdc != null) {
+                MDC.setContextMap(mdc);
+              }
+              runDeploy(operationId, pluginId);
+              MDC.clear();
+            }));
     return operationId;
   }
 

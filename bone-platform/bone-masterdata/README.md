@@ -22,9 +22,9 @@
 
 | 表 | 归属聚合 | 说明 |
 |---|---|---|
-| `md_entity` | MasterDataEntity | 主数据实体定义 |
-| `md_field` | MasterDataField | 实体字段定义（MasterDataEntity 的子实体） |
-| `md_record` | MasterDataRecord | 主数据记录 |
+| `mdm_entity` | MasterDataEntity | 主数据实体定义 |
+| `mdm_field` | MasterDataField | 实体字段定义（MasterDataEntity 的子实体） |
+| `mdm_record` | MasterDataRecord | 主数据记录 |
 | `md_standard` | DataStandard | 数据标准 |
 | `md_quality_rule` | DataQualityRule | 质量规则 |
 | `mdm_qcheck_task` / `mdm_qcheck_report` / `mdm_qcheck_detail` | QualityCheck / QualityReport | 质量检查与报告 |

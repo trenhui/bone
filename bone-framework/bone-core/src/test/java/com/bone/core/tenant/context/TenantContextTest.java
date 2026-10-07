@@ -2,9 +2,11 @@ package com.bone.core.tenant.context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.core.threadlocal.TransmittableThreadLocal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -80,6 +82,46 @@ class TenantContextTest {
       CompletableFuture<String> future =
           CompletableFuture.supplyAsync(TenantContext::getTenantId, executor);
       assertThat(future.get()).isEqualTo("thread-main");
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void wrapPropagatesToReusedWorkerThread() throws Exception {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      TenantContext.setTenantId("acme");
+      Future<String> first =
+          executor.submit(TransmittableThreadLocal.wrap(() -> TenantContext.getTenantId()));
+      assertThat(first.get()).isEqualTo("acme");
+
+      // 复用同一 worker：InheritableThreadLocal 不会重新继承，必须靠 wrap() 在提交时捕获
+      TenantContext.setTenantId("acme2");
+      Future<String> second =
+          executor.submit(TransmittableThreadLocal.wrap(() -> TenantContext.getTenantId()));
+      assertThat(second.get()).isEqualTo("acme2");
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void clearDoesNotBreakSubsequentWrapCapture() throws Exception {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      // 先创建并复用 worker 线程（此时主线程无租户，触发一次性继承 null）
+      Future<String> warmup =
+          executor.submit(TransmittableThreadLocal.wrap(() -> TenantContext.getTenantId()));
+      assertThat(warmup.get()).isNull();
+
+      TenantContext.setTenantId("acme");
+      TenantContext.clear();
+      // clear() 之后仍能通过 wrap() 捕获新租户（remove 不再从 HOLDER 注销全局注册）
+      TenantContext.setTenantId("acme2");
+      Future<String> future =
+          executor.submit(TransmittableThreadLocal.wrap(() -> TenantContext.getTenantId()));
+      assertThat(future.get()).isEqualTo("acme2");
     } finally {
       executor.shutdownNow();
     }

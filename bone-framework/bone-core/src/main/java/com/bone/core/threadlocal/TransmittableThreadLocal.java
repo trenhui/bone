@@ -23,8 +23,8 @@ public class TransmittableThreadLocal<T> extends InheritableThreadLocal<T> {
 
   @Override
   public final void remove() {
+    // 仅清除当前线程的值；不得从 HOLDER 注销，否则全局上下文捕获（capture/wrap）将永久失效。
     super.remove();
-    HOLDER.remove(this);
   }
 
   /** 捕获当前线程的所有 TransmittableThreadLocal 值 */

@@ -1,5 +1,6 @@
 package com.bone.studio.generator.application;
 
+import com.bone.core.threadlocal.TransmittableThreadLocal;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,13 +35,14 @@ public class CodeGenerationAsyncApplicationService {
   public String submit(CreateCodeGenerationCommand command) {
     String taskId = createCodeGenerationHandler.startPending(command);
     executor.submit(
-        () -> {
-          try {
-            createCodeGenerationHandler.executeByTaskId(taskId, command);
-          } catch (Exception ex) {
-            log.warn("Async code generation failed for taskId={}", taskId, ex);
-          }
-        });
+        TransmittableThreadLocal.wrap(
+            () -> {
+              try {
+                createCodeGenerationHandler.executeByTaskId(taskId, command);
+              } catch (Exception ex) {
+                log.warn("Async code generation failed for taskId={}", taskId, ex);
+              }
+            }));
     return taskId;
   }
 }
