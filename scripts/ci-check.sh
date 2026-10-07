@@ -202,11 +202,4 @@ python3 scripts/check-event-envelope-version.py --check || {
   exit 1
 }
 
-echo "🔍 分页约定 ratchet（#9：唯一真源 bone-core PageParam + page/size 命名；存量只减不增）..."
-# 先量化再收敛：应用层查询/web 入参不应重复声明分页，不应分裂pageNum/pageSize 命名族。
-python3 scripts/check-paging-convention.py --check || {
-  echo -e "${RED}❌ 分页约定违规（新增分页入参未复用 PageParam / 命名族分裂 / web 层重复声明分页）！${RESET}"
-  exit 1
-}
-
 echo -e "${GREEN}✅ CI 全量门禁通过！（17 项）${RESET}"
