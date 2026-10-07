@@ -383,6 +383,32 @@ public class GlobalExceptionHandler {
   }
 
   /**
+   * 处理领域异常 {@link DomainException} —— 兜底「不是 500」这条底线。
+   *
+   * <p><b>为何必须有这个分支</b>（2026-10-07 实测）：域层抛 {@code DomainException} 是<b>正确分层</b> （{@code domain}
+   * 不依赖传输层），但它<b>不带 errorCode</b>，而本 handler 此前<b>没有</b>对应分支 ⇒ 全部冒泡到 {@link
+   * #defaultExceptionHandler} 兜底 ⇒ 被报成 <b>HTTP 500</b>。 实测全仓 {@code DomainException} 及其子类 {@code
+   * StateConflictException} 共约 170 处 （如「账户已处于启用状态」「只有新建状态的支付单可以提交支付」），这些是<b>用户可纠正的业务错误</b>， 报500
+   * 会：①误导客户端重试（重试无用，状态不会变）②把业务错误混进 5xx 错误预算、污染告警与 SLO。
+   *
+   * <p><b>为何默认 400 + {@code COMMON_CONFLICT} 而非逐个业务码</b>：HTTP 无法从异常本身区分
+   * 「状态冲突(409)」「入参非法(400)」「权限不足(403)」，猜任一具体状态都会误导客户端 （尤其 409 语义要求客户端改状态而非重试）。<b>精确码由调用点给出</b>——
+   * 推荐路径是在应用层显式翻译： {@code catch (DomainException e) → throw XxxErrors.of(XXX_CONFLICT,
+   * e.getMessage())}。 本分支只负责「未被翻译的域异常至少不是 500」。
+   *
+   * <p><b>message 是否脱敏</b>：域异常的 message 是<b>本仓自己写的业务语义</b> （"账户已处于启用状态"），不是容器/驱动原文，<b>不脱敏</b>—— 与
+   * {@code systemExceptionHandler}/{@code infrastructureExceptionHandler}（包底层异常、P1-4 脱敏）不同。
+   * 若哪天域异常改为包第三方异常原文，此处需同步脱敏。
+   */
+  @ExceptionHandler(value = DomainException.class)
+  public ResponseEntity<ApiResponse<?>> domainExceptionHandler(DomainException ex) {
+    log.info("[domainExceptionHandler]", ex);
+    // 400 用字面量：本文件既有分支都用 int 状态码（INTERNAL_SERVER_ERROR.getCode() 等），
+    // 此处保持一致；不引入 HttpStatus 以免同一文件出现两套写法。
+    return problemResponse(400, CommonErrorCodes.CONFLICT, ex.getMessage());
+  }
+
+  /**
    * 处理业务异常 BizException
    *
    * <p>例如说，商品库存不足，用户手机号已存在。
