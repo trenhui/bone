@@ -29,6 +29,8 @@ public final class IntegrationErrors {
           Map.entry(IntegrationErrorCodes.CONNECTOR_NAME_CONFLICT, 409),
           Map.entry(IntegrationErrorCodes.CONNECTOR_TYPE_UNSUPPORTED, 400),
           Map.entry(IntegrationErrorCodes.CONNECTOR_NOT_IMPLEMENTED, 501),
+          // 下游依赖故障用 502（Bad Gateway 语义）：本服务正常，是被调用方不可达/超时/报错
+          Map.entry(IntegrationErrorCodes.CONNECTOR_INVOCATION_FAILED, 502),
           Map.entry(IntegrationErrorCodes.FLOW_NOT_FOUND, 404),
           Map.entry(IntegrationErrorCodes.FLOW_NAME_CONFLICT, 409),
           Map.entry(IntegrationErrorCodes.FLOW_NOT_ACTIVE, 409),

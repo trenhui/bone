@@ -344,6 +344,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `INT_CONNECTOR_NAME_CONFLICT` | 409 | 同一租户作用域内该连接器名称已存在 |
 | `INT_CONNECTOR_TYPE_UNSUPPORTED` | 400 | 连接器类型不受支持（无对应 ExternalSystemClient 实现） |
 | `INT_CONNECTOR_NOT_IMPLEMENTED` | 501 | 连接器能力未实现：协议客户端为 501 占位（INT-01 禁止假成功） |
+| `INT_CONNECTOR_INVOCATION_FAILED` | 502 | 连接器调用失败：目标系统不可达/超时/返回错误/响应无法解析 —— 502 Bad Gateway 语义（本服务正常，是被调用方故障，调用方重试有意义）。与 `CONNECTOR_TYPE_UNSUPPORTED`（400，配置错）、`CONNECTOR_NOT_IMPLEMENTED`（501 占位）三者不可混用 |
 | `INT_FLOW_NOT_FOUND` | 404 | 集成流程不存在（含跨租户不可见） |
 | `INT_FLOW_NAME_CONFLICT` | 409 | 同一租户作用域内该流程名称已存在 |
 | `INT_FLOW_NOT_ACTIVE` | 409 | 流程未激活：执行等动作要求流程处于 ACTIVE |
@@ -442,6 +443,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_CHANNEL_OPENAPI_REJECTED` | 502 | 渠道侧开放平台拒绝了本次调用（已送达被拒，重试无意义） |
 | `BP_INVENTORY_NOT_FOUND` | 404 | 库存记录不存在（商品 + 仓库维度未建储） |
 | `BP_INVENTORY_INSUFFICIENT` | 409 | 可用库存不足（预留数量超过可用量） |
+| `BP_INVENTORY_QUANTITY_INVALID` | 400 | 库存数量非法（入库/扣减/预留/确认/释放的数量非正）—— 与「可用量不足」的 409 语义不同：调用方需修正数量参数，而非减少数量或换仓 |
 | `BP_SHIPMENT_NOT_FOUND` | 404 | 发货单不存在（含跨租户不可见） |
 | `BP_SHIPMENT_STATUS_CONFLICT` | 409 | 发货单当前状态不允许该操作（发货需运单号、签收需已发货） |
 | `BP_SHIPMENT_TRACKING_NO_REQUIRED` | 400 | 发货缺少物流运单号 |

@@ -158,7 +158,8 @@
     "META_TEMPLATE_NOT_PUBLISHED": "Template is not published and cannot be instantiated",
     "META_TEMPLATE_ID_REQUIRED": "Template ID must not be null",
     "META_PHYSICAL_TABLE_NOT_FOUND": "Physical table does not exist; import aborted",
-    "BP_INVENTORY_QUANTITY_INVALID": "Inventory quantity must be positive"
+    "BP_INVENTORY_QUANTITY_INVALID": "Inventory quantity must be positive",
+    "INT_CONNECTOR_INVOCATION_FAILED": "Failed to invoke connector: downstream system unavailable or returned an error"
   },
   "enums": {
     "ORDER_STATUS": {

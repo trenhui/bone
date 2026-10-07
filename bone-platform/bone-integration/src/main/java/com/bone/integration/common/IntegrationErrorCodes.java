@@ -32,6 +32,22 @@ public final class IntegrationErrorCodes {
   /** 连接器能力未实现：协议客户端为 501 占位，禁止假成功（INT-01）。 */
   public static final String CONNECTOR_NOT_IMPLEMENTED = "INT_CONNECTOR_NOT_IMPLEMENTED";
 
+  /**
+   * 连接器调用失败：目标系统不可达 / 超时 / 返回错误 / 响应无法解析。
+   *
+   * <p><b>为何需要它</b>（2026-10-07 实测）：各协议客户端（ {@code S3ClientImpl}/{@code RestClientImpl}/{@code
+   * MongoClientImpl} 等）原先统一 {@code throw new IllegalStateException("S3 请求失败: " + ex.getMessage())}
+   * 且<b>应用层调用点完全没有 catch</b> ⇒ 一路冒泡到 {@code GlobalExceptionHandler} 的
+   * {@code @ExceptionHandler(Exception.class)} 兜底 ⇒ 只得到 {@code COMMON_INTERNAL_ERROR}。
+   * <b>问题不是泄密</b>（兜底分支已脱敏，返回常量文案），<b>而是排障信息全丢</b>： 客户端只能看到「系统异常」，监控无法按「哪个连接器的哪类故障」聚合，
+   * 运维必须去翻日志猜是超时还是 401。
+   *
+   * <p><b>语义边界</b>：这是<b>下游依赖</b>故障（502 Bad Gateway 语义）， 与 {@link
+   * #CONNECTOR_TYPE_UNSUPPORTED}（配置错、400）、{@link #CONNECTOR_NOT_IMPLEMENTED}（501）
+   * 三者不可混用。调用方重试有意义（下游可能瞬时不可用）。
+   */
+  public static final String CONNECTOR_INVOCATION_FAILED = "INT_CONNECTOR_INVOCATION_FAILED";
+
   // ===== 流程（INT_FLOW_*）=====
 
   /** 集成流程不存在（含跨租户不可见）。 */
