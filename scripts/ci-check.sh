@@ -194,4 +194,19 @@ python3 scripts/check-freeze-ledger.py || {
   exit 1
 }
 
+echo "🔍 事件信封版本 / Topic 契约（消息与事件规范 §2/§3：schemaVersion + .v{major} + 载荷兼容性 ratchet）..."
+# 载荷删/改名属不兼容变更，须伴随 schemaVersion 主版本递增（基线 diff）。
+# 存量 ratchet：--baseline 固化、只可收缩；转阻断的载体即本步（ci-check.sh 全量源）。
+python3 scripts/check-event-envelope-version.py --check || {
+  echo -e "${RED}❌ 事件信封版本/Topic 契约违规（缺 schemaVersion / Topic 缺 .v{major} / 载荷删改未升主版本）！${RESET}"
+  exit 1
+}
+
+echo "🔍 分页约定 ratchet（#9：唯一真源 bone-core PageParam + page/size 命名；存量只减不增）..."
+# 先量化再收敛：应用层查询/web 入参不应重复声明分页，不应分裂pageNum/pageSize 命名族。
+python3 scripts/check-paging-convention.py --check || {
+  echo -e "${RED}❌ 分页约定违规（新增分页入参未复用 PageParam / 命名族分裂 / web 层重复声明分页）！${RESET}"
+  exit 1
+}
+
 echo -e "${GREEN}✅ CI 全量门禁通过！（17 项）${RESET}"
