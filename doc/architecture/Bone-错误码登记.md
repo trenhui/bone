@@ -455,6 +455,35 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 > `new BizException(HTTP 状态, 码 + ": " + 说明)` 时，任一处不一致都无机制发现。`BizException(String)` 的默认码是 **500**，
 > 用它等于把「查不到 / 状态冲突 / 参数错」都报成服务端故障（本项目已据此修正 404、400 与库存不足 500 三处误报）。
 
+### META_
+
+落地范围：`bone-metadata-server` 的 `catalog` 上下文 —— `CatalogErrorCodes`（码）+ `CatalogErrors`（码→状态唯一真源 + fail-fast）。
+
+此前该模块**只有码类没有状态表**，全部抛出点退化为 `BizException.of(...)`，而这些重载无一携带 `errorCode`
+⇒ `ProblemDetail.errorCode` 恒空、前端拿不到 i18n 键、监控只能按中文聚合；且状态被兜底成 500，
+把「查不到 / 冲突 / 参数非法」全报成服务端故障（污染 5xx 告警与 SLO）。2026-10-07 已收口。
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `META_ENTITY_NOT_FOUND` | 404 | 实体不存在（含跨租户不可见） |
+| `META_ENTITY_CODE_CONFLICT` | 409 | 实体编码已存在（软删实体曾发布/归档时编码不可复用） |
+| `META_ENTITY_TABLE_NAME_CONFLICT` | 409 | 实体表名已存在（软删实体曾发布/归档时表名不可复用） |
+| `META_ENTITY_COPY_CODE_REQUIRED` | 400 | 复制实体必须提供新编码 |
+| `META_ENTITY_COPY_TABLE_NAME_REQUIRED` | 400 | 复制实体必须提供新表名 |
+| `META_ENTITY_NOT_RUNTIME` | 409 | 仅 RUNTIME 实体支持物理结构维护（非 RUNTIME 实体无物理表） |
+| `META_FIELD_NOT_FOUND` | 404 | 字段不存在（含跨租户不可见） |
+| `META_FIELD_CODE_CONFLICT` | 409 | 字段编码在同实体下已存在 |
+| `META_RELATION_NOT_FOUND` | 404 | 关系不存在（含跨租户不可见） |
+| `META_TEMPLATE_NOT_FOUND` | 404 | 模板不存在（含跨租户不可见） |
+| `META_TEMPLATE_CODE_CONFLICT` | 409 | 模板编码已存在 |
+| `META_TEMPLATE_NOT_PUBLISHED` | 409 | 模板尚未发布，不可实例化（仅 status==1 的已发布模板可实例化） |
+| `META_TEMPLATE_ID_REQUIRED` | 400 | 模板 ID 不能为空（实例化入参缺失） |
+| `META_PHYSICAL_TABLE_NOT_FOUND` | 404 | 物理表不存在，无法导入（发布期物理结构不存在） |
+| `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移拦截：模型类型与物理列类型不兼容（doc2a §328） |
+
+> `META_ENTITY_CODE_CONFLICT` / `META_ENTITY_TABLE_NAME_CONFLICT` 两处收口前经 `of(String)`
+> 兜底成 **500**，现为 **409**——属**有意的状态纠正**，不是回归。
+
 ---
 
 ## 7. HTTP 与业务码对照（速查）

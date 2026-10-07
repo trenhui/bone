@@ -143,7 +143,21 @@
     "BP_INVENTORY_INSUFFICIENT": "Insufficient available stock",
     "BP_SHIPMENT_NOT_FOUND": "Shipment not found",
     "BP_SHIPMENT_STATUS_CONFLICT": "Shipment status does not allow this operation",
-    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "Tracking number is required for shipment"
+    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "Tracking number is required for shipment",
+    "META_ENTITY_NOT_FOUND": "Entity not found",
+    "META_ENTITY_CODE_CONFLICT": "Entity code already exists",
+    "META_ENTITY_TABLE_NAME_CONFLICT": "Entity table name already exists",
+    "META_ENTITY_COPY_CODE_REQUIRED": "New entity code is required when copying",
+    "META_ENTITY_COPY_TABLE_NAME_REQUIRED": "New entity table name is required when copying",
+    "META_ENTITY_NOT_RUNTIME": "Only RUNTIME entities support physical structure maintenance",
+    "META_FIELD_NOT_FOUND": "Field not found",
+    "META_FIELD_CODE_CONFLICT": "Field code already exists in the same entity",
+    "META_RELATION_NOT_FOUND": "Relation not found",
+    "META_TEMPLATE_NOT_FOUND": "Template not found",
+    "META_TEMPLATE_CODE_CONFLICT": "Template code already exists",
+    "META_TEMPLATE_NOT_PUBLISHED": "Template is not published and cannot be instantiated",
+    "META_TEMPLATE_ID_REQUIRED": "Template ID must not be null",
+    "META_PHYSICAL_TABLE_NOT_FOUND": "Physical table does not exist; import aborted"
   },
   "enums": {
     "ORDER_STATUS": {

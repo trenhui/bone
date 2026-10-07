@@ -143,7 +143,21 @@
     "BP_INVENTORY_INSUFFICIENT": "可用库存不足",
     "BP_SHIPMENT_NOT_FOUND": "发货单不存在",
     "BP_SHIPMENT_STATUS_CONFLICT": "发货单当前状态不允许该操作",
-    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "发货必须填写物流运单号"
+    "BP_SHIPMENT_TRACKING_NO_REQUIRED": "发货必须填写物流运单号",
+    "META_ENTITY_NOT_FOUND": "实体不存在（含跨租户不可见）",
+    "META_ENTITY_CODE_CONFLICT": "实体编码已存在（软删实体曾发布/归档时编码不可复用）",
+    "META_ENTITY_TABLE_NAME_CONFLICT": "实体表名已存在（软删实体曾发布/归档时表名不可复用）",
+    "META_ENTITY_COPY_CODE_REQUIRED": "复制实体必须提供新编码",
+    "META_ENTITY_COPY_TABLE_NAME_REQUIRED": "复制实体必须提供新表名",
+    "META_ENTITY_NOT_RUNTIME": "仅 RUNTIME 实体支持物理结构维护（非 RUNTIME 实体无物理表）",
+    "META_FIELD_NOT_FOUND": "字段不存在（含跨租户不可见）",
+    "META_FIELD_CODE_CONFLICT": "字段编码在同实体下已存在",
+    "META_RELATION_NOT_FOUND": "关系不存在（含跨租户不可见）",
+    "META_TEMPLATE_NOT_FOUND": "模板不存在（含跨租户不可见）",
+    "META_TEMPLATE_CODE_CONFLICT": "模板编码已存在",
+    "META_TEMPLATE_NOT_PUBLISHED": "模板尚未发布，不可实例化（仅 status==1 的已发布模板可实例化）",
+    "META_TEMPLATE_ID_REQUIRED": "模板 ID 不能为空（实例化入参缺失）",
+    "META_PHYSICAL_TABLE_NOT_FOUND": "物理表不存在，无法导入（发布期物理结构不存在）"
   },
   "enums": {
     "ORDER_STATUS": {
