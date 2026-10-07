@@ -22,7 +22,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -409,16 +408,15 @@ public class ValidationEngine
   }
 
   /**
-   * Cache-friendly method for validating entity data by type name.
+   * Validates entity data by type name.
+   *
+   * <p>注意：不使用 Spring Cache 缓存该方法结果——验证结果依赖 entityData 内容，Map 的 hashCode 对相同内容不同插入顺序不放回同一键，
+   * 且校验结果可串门（实体 A 的通过结果被实体 B 复用）。本引擎内已有元数据级手写缓存（{@link #entityMetadataCache}）， 验证本身的重复开销可控。
    *
    * @param entityType the entity type name
    * @param entityData the entity data to validate
    * @return the validation result
    */
-  @Cacheable(
-      value = "validationResult",
-      key = "#entityType + '-' + T(java.util.Objects).hashCode(#entityData)",
-      unless = "#result == null || !#result.isValid()")
   public ValidationResult validateEntityByType(String entityType, Map<String, Object> entityData) {
     Assert.hasText(entityType, "Entity type name cannot be empty");
     LOGGER.debug("Validating data by entity type, type: {}", entityType);

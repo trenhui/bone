@@ -266,3 +266,6 @@ __pycache__/
 PR_DESCRIPTION.md
 # 对外 Java SDK 生成物（ADR-0040）：构建产物，不进版本库
 target/sdk/
+
+javac.*.args
+*.dumpstream

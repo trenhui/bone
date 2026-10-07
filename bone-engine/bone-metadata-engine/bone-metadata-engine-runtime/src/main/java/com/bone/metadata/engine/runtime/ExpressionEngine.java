@@ -19,8 +19,6 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -43,11 +41,38 @@ public class ExpressionEngine implements ExpressionEvaluator {
   private boolean strictMode = true;
   private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
 
-  // 表达式缓存
+  // 表达式缓存（方法引用 + 编译产物——均与输入上下文无关，键确定性成立）
   private final Map<String, MethodCacheEntry> propertyAccessorCache = new ConcurrentHashMap<>();
-  private final Map<String, String> expressionResultCache = new ConcurrentHashMap<>();
   // SpEL表达式缓存
   private final Map<String, Expression> compiledExpressionCache = new ConcurrentHashMap<>();
+
+  /** 方法缓存条目，包含方法实例和创建时间 */
+  private static class MethodCacheEntry {
+    private final Method method;
+    private final long creationTime;
+    private final long expirationTime;
+
+    MethodCacheEntry(Method method) {
+      this.method = method;
+      this.creationTime = System.currentTimeMillis();
+      this.expirationTime = 0; // 默认不过期
+    }
+
+    MethodCacheEntry(Method method, long expirationTime) {
+      this.method = method;
+      this.creationTime = System.currentTimeMillis();
+      this.expirationTime = expirationTime;
+    }
+
+    boolean isExpired() {
+      return expirationTime > 0 && System.currentTimeMillis() - creationTime > expirationTime;
+    }
+
+    Method getMethod() {
+      return method;
+    }
+  }
+
   // 表达式解析器
   private final ExpressionParser expressionParser;
   // 模板解析器上下文
@@ -59,12 +84,8 @@ public class ExpressionEngine implements ExpressionEvaluator {
   private final AtomicLong fieldCalculations = new AtomicLong(0);
   private final AtomicLong fieldCalculationFailures = new AtomicLong(0);
 
-  // Spring Cache支持
-  private CacheManager cacheManager;
+  // Jackson，用于求值结果的类型转换
   private ObjectMapper objectMapper;
-
-  // 常量定义
-  private static final String EXPRESSION_CACHE_NAME = "expressionEngineCache";
   private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{([^\\}]*)\\}");
   private static final Pattern BOOLEAN_OPERATOR_PATTERN = Pattern.compile("(==|!=|>=|<=|>|<)");
   private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\(([^\\(\\)]+)\\)");
@@ -114,11 +135,6 @@ public class ExpressionEngine implements ExpressionEvaluator {
 
   /** 构造函数，用于自动配置 */
   @Autowired(required = false)
-  public void setCacheManager(CacheManager cacheManager) {
-    this.cacheManager = cacheManager;
-  }
-
-  @Autowired(required = false)
   public void setObjectMapper(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
@@ -164,10 +180,6 @@ public class ExpressionEngine implements ExpressionEvaluator {
     propertyAccessorCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
     long afterMethodSize = propertyAccessorCache.size();
 
-    // 清理表达式结果缓存 (简单实现，可以根据需要添加过期逻辑)
-    long beforeResultSize = expressionResultCache.size();
-    // 这里可以添加表达式结果缓存的过期逻辑
-
     LOGGER.debug(
         "Cleaned up {} expired method cache entries", (beforeMethodSize - afterMethodSize));
   }
@@ -177,29 +189,6 @@ public class ExpressionEngine implements ExpressionEvaluator {
     Assert.notNull(expression, "表达式不能为空");
     Assert.notNull(context, "上下文对象不能为空");
 
-    // 生成缓存键
-    String cacheKey = expression + ":" + context.hashCode();
-
-    // 尝试从结果缓存获取
-    if (cacheEnabled) {
-      // 先检查本地缓存
-      String cachedResult = expressionResultCache.get(cacheKey);
-      if (cachedResult != null) {
-        cacheHits.incrementAndGet();
-        return cachedResult;
-      }
-
-      // 检查Spring缓存
-      Cache cache = getCache();
-      if (cache != null) {
-        String springCachedResult = cache.get(cacheKey, String.class);
-        if (springCachedResult != null) {
-          cacheHits.incrementAndGet();
-          return springCachedResult;
-        }
-      }
-    }
-
     try {
       expressionEvaluations.incrementAndGet();
 
@@ -207,27 +196,14 @@ public class ExpressionEngine implements ExpressionEvaluator {
       if (expression.contains("${")) {
         // 对于模板表达式，使用模板解析器
         String result = evaluateTemplateExpression(expression, context);
-
-        // 缓存结果
-        if (cacheEnabled) {
-          cacheResult(cacheKey, result);
-        }
-
         return result;
-      } else {
-        // 对于简单表达式，使用普通解析器
-        EvaluationContext evalContext = createEvaluationContext(context);
-        Expression expr = getOrCompileExpression(expression);
-        Object result = expr.getValue(evalContext);
-        String stringResult = result != null ? result.toString() : "";
-
-        // 缓存结果
-        if (cacheEnabled) {
-          cacheResult(cacheKey, stringResult);
-        }
-
-        return stringResult;
       }
+
+      // 对于简单表达式，使用普通解析器
+      EvaluationContext evalContext = createEvaluationContext(context);
+      Expression expr = getOrCompileExpression(expression);
+      Object result = expr.getValue(evalContext);
+      return result != null ? result.toString() : "";
     } catch (Exception e) {
       String errorMsg = String.format("表达式计算失败: %s", expression);
       LOGGER.error(errorMsg, e);
@@ -347,18 +323,6 @@ public class ExpressionEngine implements ExpressionEvaluator {
                 "Failed to compile template expression: " + expr, e);
           }
         });
-  }
-
-  /** 缓存评估结果 */
-  private void cacheResult(String key, String result) {
-    // 本地缓存
-    expressionResultCache.put(key, result);
-
-    // Spring缓存
-    Cache cache = getCache();
-    if (cache != null) {
-      cache.put(key, result);
-    }
   }
 
   /** 原始表达式评估实现（作为回退方案） */
@@ -499,7 +463,6 @@ public class ExpressionEngine implements ExpressionEvaluator {
     stats.put("fieldCalculationFailures", fieldCalculationFailures.get());
     stats.put("cacheSize", compiledExpressionCache.size());
     stats.put("propertyAccessorCacheSize", propertyAccessorCache.size());
-    stats.put("expressionResultCacheSize", expressionResultCache.size());
 
     double totalOperations = expressionEvaluations.get() + fieldCalculations.get();
     double hitRate = totalOperations > 0 ? (double) cacheHits.get() / totalOperations : 0;
@@ -517,28 +480,13 @@ public class ExpressionEngine implements ExpressionEvaluator {
   /** 清除表达式缓存 */
   public void clearCache() {
     propertyAccessorCache.clear();
-    expressionResultCache.clear();
     compiledExpressionCache.clear();
-
-    Cache cache = getCache();
-    if (cache != null) {
-      try {
-        cache.clear();
-      } catch (Exception e) {
-        LOGGER.warn("Failed to clear Spring Cache", e);
-      }
-    }
 
     // 重置统计计数器
     cacheHits.set(0);
     cacheMisses.set(0);
 
     LOGGER.info("Expression engine cache cleared");
-  }
-
-  /** 获取缓存实例 */
-  private Cache getCache() {
-    return cacheManager != null ? cacheManager.getCache(EXPRESSION_CACHE_NAME) : null;
   }
 
   /** 评估布尔表达式并返回结果 使用SpEL引擎进行更强大的布尔表达式评估 */
