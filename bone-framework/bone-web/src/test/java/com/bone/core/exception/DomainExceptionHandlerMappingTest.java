@@ -40,7 +40,7 @@ class DomainExceptionHandlerMappingTest {
   }
 
   @Test
-  @DisplayName("域异常兜底为 400 + COMMON_CONFLICT，errorCode 稳定可被前端 i18n 消费")
+  @DisplayName("域异常兜底为 400 + COMMON_VALIDATION_FAILED（与 masterdata/system/iam/generator 四个服务一致）")
   void mapsTo400WithStableCode() throws Exception {
     ResponseEntity<ApiResponse<?>> resp = invokeHandler(new DomainException("账户已处于启用状态"));
 
@@ -49,7 +49,11 @@ class DomainExceptionHandlerMappingTest {
     assertNotNull(body, "响应体不可为空，否则前端拿不到 errorCode");
     // ⚠️ ApiResponse.code 是 **Integer HTTP 状态**，不是业务码；业务码在 data（ProblemDetail）里。
     assertEquals(400, body.getCode());
-    assertEquals(CommonErrorCodes.CONFLICT, problemErrorCode(body));
+    // ★ 为什么必须是 VALIDATION_FAILED 而不是 CONFLICT：
+    //   台账 §2：COMMON_CONFLICT = 409「版本/状态冲突」、COMMON_VALIDATION_FAILED = 400「参数校验失败」；
+    //   本分支状态码是 400，配 CONFLICT 属语义错配；且另4 个服务自己的 DomainException 分支
+    //   都是 400+VALIDATION_FAILED ⇒ 同一异常跨服务必须同码（RFC 9457），否则前端 i18n 取不到翻译、监控裂成两个口径。
+    assertEquals(CommonErrorCodes.VALIDATION_FAILED, problemErrorCode(body));
   }
 
   @Test
@@ -89,14 +93,19 @@ class DomainExceptionHandlerMappingTest {
     ResponseEntity<ApiResponse<?>> resp = invokeHandler(new SubDomainException("状态不允许该操作"));
 
     assertEquals(400, resp.getStatusCode().value());
-    assertEquals(CommonErrorCodes.CONFLICT, problemErrorCode(resp.getBody()));
+    assertEquals(CommonErrorCodes.VALIDATION_FAILED, problemErrorCode(resp.getBody()));
   }
 
-  /** 从响应的 {@code data}（ProblemDetail）里取稳定业务码。 */
+  /**
+   * 从响应的 {@code data}（ProblemDetail）里取稳定业务码。
+   *
+   * <p><b>刻意不在此硬编码某个具体码</b>（上一版硬编码了 CONFLICT）：helper 硬编码会让「换码」
+   * 这件事在多个用例里同时失败、看不出是哪条语义决策导致的。改为只断言「有码」，具体码由每个 用例显式断言，失败时直接看出是哪条语义决策。
+   */
   private static String problemErrorCode(ApiResponse<?> body) {
     assertNotNull(body.getData(), "error 响应的 data 必须承载 ProblemDetail");
     ProblemDetail problem = (ProblemDetail) body.getData();
-    assertEquals(CommonErrorCodes.CONFLICT, problem.getErrorCode());
+    assertNotNull(problem.getErrorCode(), "ProblemDetail.errorCode 不可为空，否则前端无 i18n 键可用");
     return problem.getErrorCode();
   }
 }

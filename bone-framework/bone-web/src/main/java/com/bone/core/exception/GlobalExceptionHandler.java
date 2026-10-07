@@ -391,10 +391,17 @@ public class GlobalExceptionHandler {
    * StateConflictException} 共约 170 处 （如「账户已处于启用状态」「只有新建状态的支付单可以提交支付」），这些是<b>用户可纠正的业务错误</b>， 报500
    * 会：①误导客户端重试（重试无用，状态不会变）②把业务错误混进 5xx 错误预算、污染告警与 SLO。
    *
-   * <p><b>为何默认 400 + {@code COMMON_CONFLICT} 而非逐个业务码</b>：HTTP 无法从异常本身区分
+   * <p><b>为何默认 400 + {@code COMMON_VALIDATION_FAILED} 而非逐个业务码</b>：HTTP 无法从异常本身区分
    * 「状态冲突(409)」「入参非法(400)」「权限不足(403)」，猜任一具体状态都会误导客户端 （尤其 409 语义要求客户端改状态而非重试）。<b>精确码由调用点给出</b>——
    * 推荐路径是在应用层显式翻译： {@code catch (DomainException e) → throw XxxErrors.of(XXX_CONFLICT,
    * e.getMessage())}。 本分支只负责「未被翻译的域异常至少不是 500」。
+   *
+   * <p><b>为何是 VALIDATION_FAILED 而不是 CONFLICT</b>（2026-10-07 实测订正）：本分支此前配的是 {@code 400 +
+   * COMMON_CONFLICT}，但错误码登记 §2 明确 {@code COMMON_CONFLICT = 409 「版本/状态冲突」}，而 {@code
+   * COMMON_VALIDATION_FAILED = 400「参数校验失败」} ⇒ <b>状态与码语义错配</b>， 且与 masterdata / system / iam /
+   * generator 四个服务自己的 {@code DomainException} 分支（均为 {@code 400 + VALIDATION_FAILED}）<b>不一致</b> ⇒
+   * 同一异常在不同服务返回不同 errorCode，前端 {@code errors['COMMON_VALIDATION_FAILED']} 在部分服务取不到翻译、
+   * 监控也会裂成两个聚合口径。<b>按 RFC 9457「同一错误语义跨服务必须同码」的约束统一到多数派。</b>
    *
    * <p><b>message 是否脱敏</b>：域异常的 message 是<b>本仓自己写的业务语义</b> （"账户已处于启用状态"），不是容器/驱动原文，<b>不脱敏</b>—— 与
    * {@code systemExceptionHandler}/{@code infrastructureExceptionHandler}（包底层异常、P1-4 脱敏）不同。
@@ -405,7 +412,7 @@ public class GlobalExceptionHandler {
     log.info("[domainExceptionHandler]", ex);
     // 400 用字面量：本文件既有分支都用 int 状态码（INTERNAL_SERVER_ERROR.getCode() 等），
     // 此处保持一致；不引入 HttpStatus 以免同一文件出现两套写法。
-    return problemResponse(400, CommonErrorCodes.CONFLICT, ex.getMessage());
+    return problemResponse(400, CommonErrorCodes.VALIDATION_FAILED, ex.getMessage());
   }
 
   /**

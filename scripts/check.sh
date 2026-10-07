@@ -157,6 +157,18 @@ if ! python3 scripts/check-error-code-landing.py; then
   exit_code=1
 fi
 
+echo -e "${YELLOW}[9d/29] 跨服务异常落点一致性（同一异常 ⇒ 同一 status+errorCode）...${RESET}"
+# 错误码是跨系统契约（登记 §2「可聚合」「可i18n」）。同一个异常在不同服务返回不同
+# errorCode ⇒ 前端 errors['COMMON_VALIDATION_FAILED'] 在部分服务取不到翻译、监控会裂成两个
+# 聚合口径。2026-10-07 实测：DomainException 在 bone-web 是 400+COMMON_CONFLICT，而
+# masterdata/system/iam/generator 四个服务是 400+COMMON_VALIDATION_FAILED；且
+# COMMON_CONFLICT 在台账里定义的是 409，与 400 属语义错配。
+# 存量 7 类已冻结（逐条消债），本门禁只阻断**新增**不一致。
+if ! python3 scripts/check-cross-service-exception-mapping.py; then
+  echo -e "${RED}❌ 同一异常类型在不同服务映射到不同 status+errorCode（契约已裂，前端 i18n 与监控聚合都会失真）${RESET}"
+  exit_code=1
+fi
+
 echo -e "${YELLOW}[10/29] 前端 ID 字段类型（Long→String 契约）...${RESET}"
 # 后端 MetadataAutoConfiguration.boneLongToStringCustomizer() 全局把 Long 序列化为
 # JSON 字符串（雪花 ID 超 JS Number 上限 2^53，以 number 返回会被静默截断且无 JS 报错）。
