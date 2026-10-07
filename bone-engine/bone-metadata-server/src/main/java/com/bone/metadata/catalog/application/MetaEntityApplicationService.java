@@ -20,6 +20,7 @@ import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.support.PhysicalTypeMapper;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogErrorCodes;
+import com.bone.metadata.catalog.common.CatalogErrors;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.common.ImportMetaEntityResult;
@@ -134,7 +135,7 @@ public class MetaEntityApplicationService {
   public Integer updateEntity(Long id, UpdateMetaEntityCommand cmd, Integer expectedVersion) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
     entity.update(
@@ -153,7 +154,7 @@ public class MetaEntityApplicationService {
   public void deleteEntity(Long id) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     // 草稿实体先释放 code / table_name 的唯一键占位，再逻辑删除，
     // 否则「建错了重建」会一直卡在「编码已存在」（唯一键覆盖逻辑删除行）。
@@ -173,7 +174,7 @@ public class MetaEntityApplicationService {
   public Integer publishEntity(Long id, Integer expectedVersion) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
     entity.publish();
@@ -228,7 +229,7 @@ public class MetaEntityApplicationService {
     long tenantId = tenantProvider.currentTenantId();
     PhysicalTableSnapshot snapshot = physicalStructureGateway.readTableSnapshot(cmd.getTableName());
     if (!snapshot.exists()) {
-      throw BizException.of("物理表不存在，无法导入: " + cmd.getTableName());
+      throw CatalogErrors.of(CatalogErrorCodes.PHYSICAL_TABLE_NOT_FOUND, cmd.getTableName());
     }
     List<PhysicalTableColumn> columns = selectColumns(snapshot, cmd.getIncludeReserved());
     List<String> skipped =
@@ -359,7 +360,7 @@ public class MetaEntityApplicationService {
     }
     MetaEntity entity = metaEntityRepository.findById(entityId);
     if (entity == null) {
-      throw BizException.of("所属实体不存在: " + entityId);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, entityId);
     }
     assertFieldCodeUnique(entityId, cmd.getCode());
     MetaField field =
@@ -394,7 +395,7 @@ public class MetaEntityApplicationService {
   public Integer updateField(Long fieldId, UpdateMetaFieldCommand cmd, Integer expectedVersion) {
     MetaField field = metaFieldRepository.findById(fieldId);
     if (field == null) {
-      throw BizException.of("字段不存在: " + fieldId);
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, fieldId);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, field.getVersion());
     field.update(
@@ -422,7 +423,7 @@ public class MetaEntityApplicationService {
   public void deleteField(Long fieldId) {
     MetaField field = metaFieldRepository.findById(fieldId);
     if (field == null) {
-      throw BizException.of("字段不存在: " + fieldId);
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, fieldId);
     }
     metaFieldRepository.deleteById(fieldId);
   }
@@ -495,10 +496,10 @@ public class MetaEntityApplicationService {
   @Transactional
   public Long copyEntity(Long sourceId, CopyMetaEntityCommand cmd) {
     if (cmd.getCode() == null || cmd.getCode().isBlank()) {
-      throw BizException.of(400, "复制实体必须提供新编码");
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_COPY_CODE_REQUIRED, "复制实体必须提供新编码");
     }
     if (cmd.getTableName() == null || cmd.getTableName().isBlank()) {
-      throw BizException.of(400, "复制实体必须提供新表名");
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_COPY_TABLE_NAME_REQUIRED, "复制实体必须提供新表名");
     }
     MetaEntity source = requireEntity(sourceId);
     long tenantId = tenantProvider.currentTenantId();
@@ -552,7 +553,7 @@ public class MetaEntityApplicationService {
   public MetaEntityDTO getEntity(Long id) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     return CatalogDtoMapper.toDto(entity);
   }
@@ -570,7 +571,7 @@ public class MetaEntityApplicationService {
   public MetaFieldDTO getField(Long entityId, Long fieldId) {
     MetaField field = metaFieldRepository.findById(fieldId);
     if (field == null || !entityId.equals(field.getEntityId())) {
-      throw BizException.of("字段不存在: " + fieldId);
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, fieldId);
     }
     return CatalogDtoMapper.toDto(field);
   }
@@ -591,7 +592,8 @@ public class MetaEntityApplicationService {
     if (existing.isEmpty()) {
       return;
     }
-    throw BizException.of(describeOccupied("实体编码", code, existing.get()));
+    throw CatalogErrors.of(
+        CatalogErrorCodes.ENTITY_CODE_CONFLICT, describeOccupied("实体编码", code, existing.get()));
   }
 
   /**
@@ -607,7 +609,9 @@ public class MetaEntityApplicationService {
     if (existing.isEmpty()) {
       return;
     }
-    throw BizException.of(describeOccupied("实体表名", tableName, existing.get()));
+    throw CatalogErrors.of(
+        CatalogErrorCodes.ENTITY_TABLE_NAME_CONFLICT,
+        describeOccupied("实体表名", tableName, existing.get()));
   }
 
   /**
@@ -624,17 +628,17 @@ public class MetaEntityApplicationService {
 
   private void assertFieldCodeUnique(long entityId, String code) {
     if (metaFieldRepository.findByEntityAndCode(entityId, code).isPresent()) {
-      throw BizException.of("字段编码已存在: " + code);
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_CODE_CONFLICT, code);
     }
   }
 
   private MetaEntity requireRuntimeEntity(Long entityId) {
     MetaEntity entity = metaEntityRepository.findById(entityId);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + entityId);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, entityId);
     }
     if (!MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
-      throw BizException.of("仅 RUNTIME 实体支持物理结构维护: " + entity.getCode());
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_RUNTIME, entity.getCode());
     }
     return entity;
   }
@@ -644,7 +648,7 @@ public class MetaEntityApplicationService {
   private MetaEntity requireEntity(Long id) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
-      throw BizException.of(404, "实体不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     return entity;
   }

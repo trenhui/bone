@@ -59,6 +59,8 @@ public final class BlueprintErrors {
           Map.entry(BlueprintErrorCodes.CHANNEL_BROADCAST_NOT_FOUND, 404),
           Map.entry(BlueprintErrorCodes.INVENTORY_NOT_FOUND, 404),
           Map.entry(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, 409),
+          // 数量非法（<= 0）属入参非法 400，与「可用量不足」的 409 语义不同
+          Map.entry(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, 400),
           Map.entry(BlueprintErrorCodes.SHIPMENT_NOT_FOUND, 404),
           Map.entry(BlueprintErrorCodes.SHIPMENT_STATUS_CONFLICT, 409),
           Map.entry(BlueprintErrorCodes.SHIPMENT_TRACKING_NO_REQUIRED, 400),

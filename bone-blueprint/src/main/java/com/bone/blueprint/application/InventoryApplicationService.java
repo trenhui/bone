@@ -82,7 +82,16 @@ public class InventoryApplicationService {
               0,
               0);
     }
-    entity.receive(delta);
+    try {
+      entity.receive(delta);
+    } catch (IllegalArgumentException ex) {
+      // 数量非正：业务错误（调用方传了非法数量），不是系统故障。
+      // 域层抛 IllegalArgumentException 是业界惯例（Spring/SQL/JDK 内部也用它表示入参非法），
+      // 不宜改成 DomainException——那会让框架的契约识别失效；在应用层翻译才是职责正确的位置。
+      // 缺此 catch 时异常穿透到 GlobalExceptionHandler 的 Exception 兜底 ⇒ 被报成 500，
+      // 把「参数非法」混进 5xx 错误预算、污染 SLO，并误导客户端重试（重试无用，数量依然非法）。
+      throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, ex.getMessage());
+    }
     if (productName != null && !productName.isBlank()) {
       entity.updateProductName(productName);
     }
@@ -103,7 +112,15 @@ public class InventoryApplicationService {
       entity.deduct(delta);
     } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, ex.getMessage());
+    } catch (IllegalArgumentException ex) {
+      // 数量非正：业务错误（调用方传了非法数量），不是系统故障。
+      // 域层抛 IllegalArgumentException 是业界惯例（Spring/SQL/JDK 内部也用它表示入参非法），
+      // 不宜改成 DomainException——那会让框架的契约识别失效；在应用层翻译才是职责正确的位置。
+      // 缺此 catch 时异常穿透到 GlobalExceptionHandler 的 Exception 兜底 ⇒ 被报成 500，
+      // 把「参数非法」混进 5xx 错误预算、污染 SLO，并误导客户端重试（重试无用，数量依然非法）。
+      throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, ex.getMessage());
     }
+
     inventoryRepository.update(entity);
     enqueueBroadcast(productId, entity);
     return InventoryDto.from(entity);
@@ -134,7 +151,11 @@ public class InventoryApplicationService {
       entity.reserve(quantity);
     } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_INSUFFICIENT, ex.getMessage());
+    } catch (IllegalArgumentException ex) {
+      // 预留数量非正：业务错误，非系统故障（详见 deduct 的同类注释）。
+      throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, ex.getMessage());
     }
+
     inventoryRepository.update(entity);
     enqueueBroadcast(productId, entity);
     return InventoryDto.from(entity);
@@ -145,7 +166,16 @@ public class InventoryApplicationService {
   public InventoryDto confirm(Long productId, String warehouseCode, int quantity) {
     long tenantId = tenantProvider.currentTenantId();
     Inventory entity = requireInventory(tenantId, productId, warehouseCode);
-    entity.confirm(quantity);
+    try {
+      entity.confirm(quantity);
+    } catch (IllegalArgumentException ex) {
+      // 数量非正：业务错误（调用方传了非法数量），不是系统故障。
+      // 域层抛 IllegalArgumentException 是业界惯例（Spring/SQL/JDK 内部也用它表示入参非法），
+      // 不宜改成 DomainException——那会让框架的契约识别失效；在应用层翻译才是职责正确的位置。
+      // 缺此 catch 时异常穿透到 GlobalExceptionHandler 的 Exception 兜底 ⇒ 被报成 500，
+      // 把「参数非法」混进 5xx 错误预算、污染 SLO，并误导客户端重试（重试无用，数量依然非法）。
+      throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, ex.getMessage());
+    }
     inventoryRepository.update(entity);
     return InventoryDto.from(entity);
   }
@@ -155,7 +185,16 @@ public class InventoryApplicationService {
   public InventoryDto release(Long productId, String warehouseCode, int quantity) {
     long tenantId = tenantProvider.currentTenantId();
     Inventory entity = requireInventory(tenantId, productId, warehouseCode);
-    entity.release(quantity);
+    try {
+      entity.release(quantity);
+    } catch (IllegalArgumentException ex) {
+      // 数量非正：业务错误（调用方传了非法数量），不是系统故障。
+      // 域层抛 IllegalArgumentException 是业界惯例（Spring/SQL/JDK 内部也用它表示入参非法），
+      // 不宜改成 DomainException——那会让框架的契约识别失效；在应用层翻译才是职责正确的位置。
+      // 缺此 catch 时异常穿透到 GlobalExceptionHandler 的 Exception 兜底 ⇒ 被报成 500，
+      // 把「参数非法」混进 5xx 错误预算、污染 SLO，并误导客户端重试（重试无用，数量依然非法）。
+      throw BlueprintErrors.of(BlueprintErrorCodes.INVENTORY_QUANTITY_INVALID, ex.getMessage());
+    }
     inventoryRepository.update(entity);
     enqueueBroadcast(productId, entity);
     return InventoryDto.from(entity);

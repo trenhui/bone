@@ -157,7 +157,8 @@
     "META_TEMPLATE_CODE_CONFLICT": "模板编码已存在",
     "META_TEMPLATE_NOT_PUBLISHED": "模板尚未发布，不可实例化（仅 status==1 的已发布模板可实例化）",
     "META_TEMPLATE_ID_REQUIRED": "模板 ID 不能为空（实例化入参缺失）",
-    "META_PHYSICAL_TABLE_NOT_FOUND": "物理表不存在，无法导入（发布期物理结构不存在）"
+    "META_PHYSICAL_TABLE_NOT_FOUND": "物理表不存在，无法导入（发布期物理结构不存在）",
+    "BP_INVENTORY_QUANTITY_INVALID": "库存数量必须为正数"
   },
   "enums": {
     "ORDER_STATUS": {

@@ -157,7 +157,8 @@
     "META_TEMPLATE_CODE_CONFLICT": "Template code already exists",
     "META_TEMPLATE_NOT_PUBLISHED": "Template is not published and cannot be instantiated",
     "META_TEMPLATE_ID_REQUIRED": "Template ID must not be null",
-    "META_PHYSICAL_TABLE_NOT_FOUND": "Physical table does not exist; import aborted"
+    "META_PHYSICAL_TABLE_NOT_FOUND": "Physical table does not exist; import aborted",
+    "BP_INVENTORY_QUANTITY_INVALID": "Inventory quantity must be positive"
   },
   "enums": {
     "ORDER_STATUS": {

@@ -98,6 +98,14 @@ public final class BlueprintErrorCodes {
   /** 库存不足：可用量小于需求量——超卖的唯一拦截点。 */
   public static final String INVENTORY_INSUFFICIENT = "BP_INVENTORY_INSUFFICIENT";
 
+  /**
+   * 库存数量非法（入库/扣减/预留/确认/释放的数量非正）。
+   *
+   * <p><b>与 {@link #INVENTORY_INSUFFICIENT} 区分</b>：后者是「可用量不够」（409 冲突——调用方需减少数量或换仓），
+   * 本码是「数量参数本身非法」（400，如 {@code delta <= 0}）⇒ 语义与处置完全不同，不可混用。
+   */
+  public static final String INVENTORY_QUANTITY_INVALID = "BP_INVENTORY_QUANTITY_INVALID";
+
   /** 发货单不存在。 */
   public static final String SHIPMENT_NOT_FOUND = "BP_SHIPMENT_NOT_FOUND";
 

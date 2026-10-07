@@ -1,8 +1,9 @@
 package com.bone.metadata.catalog.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.InstantiateFromTemplateCommand;
+import com.bone.metadata.catalog.common.CatalogErrorCodes;
+import com.bone.metadata.catalog.common.CatalogErrors;
 import com.bone.metadata.catalog.domain.gateway.TemplateReadPort;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
@@ -57,7 +58,7 @@ public class MetaTemplateApplicationService {
   public Long instantiate(Long templateId, InstantiateFromTemplateCommand cmd) {
     MetaModelTemplate template = requireTemplate(templateId);
     if (template.getStatus() == null || template.getStatus() != 1) {
-      throw BizException.of(409, "模板尚未发布，不可实例化: " + template.getCode());
+      throw CatalogErrors.of(CatalogErrorCodes.TEMPLATE_NOT_PUBLISHED, template.getCode());
     }
     // 复用实体创建门面：编码/表名唯一性校验 + 模块建模准入（G1②）都在其中
     CreateMetaEntityCommand createCmd = new CreateMetaEntityCommand();
@@ -118,10 +119,10 @@ public class MetaTemplateApplicationService {
 
   private MetaModelTemplate requireTemplate(Long templateId) {
     if (templateId == null) {
-      throw BizException.of("模板ID不能为空");
+      throw CatalogErrors.of(CatalogErrorCodes.TEMPLATE_ID_REQUIRED, "模板ID不能为空");
     }
     return templateReadPort
         .findPlatformTemplate(templateId)
-        .orElseThrow(() -> BizException.of(404, "平台模板不存在: " + templateId));
+        .orElseThrow(() -> CatalogErrors.of(CatalogErrorCodes.TEMPLATE_NOT_FOUND, templateId));
   }
 }

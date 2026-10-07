@@ -1,11 +1,12 @@
 package com.bone.metadata.catalog.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCommand;
 import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
+import com.bone.metadata.catalog.common.CatalogErrorCodes;
+import com.bone.metadata.catalog.common.CatalogErrors;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
@@ -62,7 +63,7 @@ public class MetaRelationApplicationService {
   public Integer updateRelation(Long id, UpdateMetaRelationCommand cmd, Integer expectedVersion) {
     MetaEntityRelation relation = relationRepository.findById(id);
     if (relation == null) {
-      throw BizException.of("关系不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.RELATION_NOT_FOUND, id);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, relation.getVersion());
     relation.update(
@@ -81,7 +82,7 @@ public class MetaRelationApplicationService {
   public void deleteRelation(Long id) {
     MetaEntityRelation relation = relationRepository.findById(id);
     if (relation == null) {
-      throw BizException.of("关系不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.RELATION_NOT_FOUND, id);
     }
     relationRepository.deleteById(id);
   }
@@ -90,7 +91,7 @@ public class MetaRelationApplicationService {
   public MetaRelationDTO getRelation(Long id) {
     MetaEntityRelation relation = relationRepository.findById(id);
     if (relation == null) {
-      throw BizException.of("关系不存在: " + id);
+      throw CatalogErrors.of(CatalogErrorCodes.RELATION_NOT_FOUND, id);
     }
     return CatalogDtoMapper.toDto(relation);
   }
@@ -108,7 +109,7 @@ public class MetaRelationApplicationService {
   private void requireEntity(Long entityId) {
     MetaEntity entity = metaEntityRepository.findById(entityId);
     if (entity == null) {
-      throw BizException.of("实体不存在: " + entityId);
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, entityId);
     }
   }
 }
