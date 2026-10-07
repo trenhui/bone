@@ -1,7 +1,11 @@
 package com.bone.blueprint.infrastructure.config;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties(prefix = "bone.pricing-rule")
-public class PricingRuleConsumptionProperties {
+public class PricingRuleConsumptionProperties implements EnvironmentAware {
 
   /** 是否启用定价规则中心（false 时跳过查询，直接走 masterdata / 本地兜底）。 */
   private boolean enabled = true;
@@ -52,4 +56,20 @@ public class PricingRuleConsumptionProperties {
 
   /** 单次拉取记录的页大小上限。 */
   private int fetchSize = 200;
+
+  private Environment environment;
+
+  @Override
+  public void setEnvironment(Environment environment) {
+    this.environment = environment;
+  }
+
+  @PostConstruct
+  public void validate() {
+    boolean nonProd = environment.acceptsProfiles(Profiles.of("dev", "test", "local", "default"));
+    if ("123456".equals(servicePassword) && !nonProd) {
+      throw new IllegalStateException(
+          "非开发环境禁止使用默认服务密码 123456，请通过环境变量外部化 bone.pricing-rule.service-password");
+    }
+  }
 }

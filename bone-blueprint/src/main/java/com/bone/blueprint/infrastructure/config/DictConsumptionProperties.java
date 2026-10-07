@@ -1,7 +1,11 @@
 package com.bone.blueprint.infrastructure.config;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties(prefix = "bone.dict")
-public class DictConsumptionProperties {
+public class DictConsumptionProperties implements EnvironmentAware {
 
   /** bone-system 网关地址（字典 /options 接口所在服务）。 */
   private String systemBaseUrl = "http://localhost:8083";
@@ -29,4 +33,20 @@ public class DictConsumptionProperties {
 
   /** 字典选项本地缓存秒数（字典是「几乎不变」的配置，缓存友好，避免每单都打字典服务）。 */
   private long cacheTtlSeconds = 300;
+
+  private Environment environment;
+
+  @Override
+  public void setEnvironment(Environment environment) {
+    this.environment = environment;
+  }
+
+  @PostConstruct
+  public void validate() {
+    boolean nonProd = environment.acceptsProfiles(Profiles.of("dev", "test", "local", "default"));
+    if ("123456".equals(servicePassword) && !nonProd) {
+      throw new IllegalStateException(
+          "非开发环境禁止使用默认服务密码 123456，请通过环境变量外部化 bone.dict.service-password");
+    }
+  }
 }

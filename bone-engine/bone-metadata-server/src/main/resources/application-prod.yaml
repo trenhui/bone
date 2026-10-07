@@ -43,9 +43,11 @@ sql:
   database:
     type: H2
 
-# 生产环境使用JWT
+# 生产环境强制开启认证（fail-closed）：dev/test/local 才允许匿名放行，prod 必须携带 JWT 或 API Key
 security:
+  enabled: true
   auth-mode: jwt
+  api-key: ${SECURITY_API_KEY:}
 
 metadata:
   sdk:

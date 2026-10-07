@@ -24,8 +24,11 @@ class JwtConfigTest {
 
   @Test
   void defaultSecret_passesInNonProd() {
+    // dev/test/local/default 视为非生产，默认密钥放行（仅告警）
+    when(environment.acceptsProfiles(Profiles.of("dev", "test", "local", "default")))
+        .thenReturn(true);
     JwtConfig config = new JwtConfig(environment);
-    config.validate(); // 默认密钥长度 >= 32 且非 prod，应通过（仅告警）
+    config.validate(); // 默认密钥长度 >= 32 且非生产，应通过（仅告警）
   }
 
   @Test
@@ -46,11 +49,14 @@ class JwtConfigTest {
 
   @Test
   void defaultSecretInProd_rejected() {
+    // prod 等未列入 dev/test/local/default 的 profile 一律拒启（fail-closed）
+    when(environment.acceptsProfiles(Profiles.of("dev", "test", "local", "default")))
+        .thenReturn(false);
     when(environment.acceptsProfiles(Profiles.of("prod"))).thenReturn(true);
     JwtConfig config = new JwtConfig(environment);
     assertThatThrownBy(config::validate)
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("生产环境禁止使用默认 JWT 密钥");
+        .hasMessageContaining("非开发环境禁止使用默认 JWT 密钥");
   }
 
   @Test

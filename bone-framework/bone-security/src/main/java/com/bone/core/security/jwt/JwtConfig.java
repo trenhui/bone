@@ -54,9 +54,11 @@ public class JwtConfig {
       throw new IllegalStateException(
           "bone.iam.jwt.secret-key 长度必须 >= 32 字节，当前长度: " + secretKey.length());
     }
-    if (secretKey.startsWith(DEFAULT_SECRET_PREFIX)
-        && environment.acceptsProfiles(Profiles.of("prod"))) {
-      throw new IllegalStateException("生产环境禁止使用默认 JWT 密钥，请设置 BONE_IAM_JWT_SECRET_KEY 环境变量");
+    // 默认密钥仅在非生产 profile（dev/test/local/default）放行；prod 及未知 profile 一律拒启（fail-closed）。
+    boolean nonProd = environment.acceptsProfiles(Profiles.of("dev", "test", "local", "default"));
+    if (secretKey.startsWith(DEFAULT_SECRET_PREFIX) && !nonProd) {
+      throw new IllegalStateException(
+          "非开发环境禁止使用默认 JWT 密钥，请通过环境变量外部化 bone.iam.jwt.secret-key（如 BONE_IAM_JWT_SECRET_KEY）");
     }
     if (secretKey.startsWith(DEFAULT_SECRET_PREFIX)) {
       log.warn("⚠️ 使用默认 JWT 密钥，仅限开发环境，生产环境将拒绝启动");

@@ -15,6 +15,8 @@ import java.io.InputStream;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 
 /** MinIO 文件存储实现（兼容 S3）。 */
@@ -29,7 +31,12 @@ public class MinioFileStorageService implements FileStoragePort {
       @Value("${bone.file.minio.endpoint:http://localhost:9000}") String endpoint,
       @Value("${bone.file.minio.access-key:minioadmin}") String accessKey,
       @Value("${bone.file.minio.secret-key:minioadmin}") String secretKey,
-      @Value("${bone.file.minio.bucket:platform-files}") String defaultBucket) {
+      @Value("${bone.file.minio.bucket:platform-files}") String defaultBucket,
+      Environment environment) {
+    if ("minioadmin".equals(accessKey) && environment.acceptsProfiles(Profiles.of("prod"))) {
+      throw new IllegalStateException(
+          "生产环境禁止使用默认 MinIO 凭证 minioadmin，请通过 BONE_FILE_MINIO_ACCESS_KEY/SECRET_KEY 外部化");
+    }
     this.defaultBucket = defaultBucket;
     this.minioClient =
         MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();

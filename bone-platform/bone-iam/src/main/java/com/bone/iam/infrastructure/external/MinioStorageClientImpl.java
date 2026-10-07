@@ -13,6 +13,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -25,7 +27,12 @@ public class MinioStorageClientImpl implements StorageClient {
       @Value("${bone.minio.endpoint:http://localhost:9000}") String endpoint,
       @Value("${bone.minio.access-key:minioadmin}") String accessKey,
       @Value("${bone.minio.secret-key:minioadmin}") String secretKey,
-      @Value("${bone.minio.bucket-name:audit-logs}") String bucketName) {
+      @Value("${bone.minio.bucket-name:audit-logs}") String bucketName,
+      Environment environment) {
+    if ("minioadmin".equals(accessKey) && environment.acceptsProfiles(Profiles.of("prod"))) {
+      throw new IllegalStateException(
+          "生产环境禁止使用默认 MinIO 凭证 minioadmin，请通过 BONE_MINIO_ACCESS_KEY/SECRET_KEY 外部化");
+    }
     this.bucketName = bucketName;
     this.minioClient =
         MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
