@@ -1,6 +1,8 @@
 package com.bone.engine.extension.studio.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.CursorPageParam;
+import com.bone.core.model.PageParam;
 import com.bone.core.model.PageResult;
 import com.bone.engine.extension.studio.application.DeploymentStateApplicationService;
 import com.bone.engine.extension.studio.application.ExtPointCommandApplicationService;
@@ -466,24 +468,31 @@ public class ExtensionManagementController {
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer size,
       HttpServletResponse response) {
+    // 本端点同时支持两种分页范式：带 page 走 offset（可跳页、返回 total），否则走 cursor（深翻不漂移）。
+    // 两者入参各自的收窄（@Min(1)/@Max(100)）由 bone-core 的分页真源统一承担，此处不再手写
+    // Math.min/Math.max —— 那段防御逻辑此前在本类复制了多份，改上限需逐处同步。
     if (page != null) {
-      int safePage = Math.max(1, page);
-      int safeSize = size != null ? Math.min(100, Math.max(1, size)) : 20;
+      // 同理：原size 缺省为 20，PageParam.DEFAULT_SIZE 是 10 ⇒ 显式传 20 保持既有契约
+      PageParam pageParam = PageParam.of(page, size != null ? size : 20);
       List<PluginExecutionLog> list =
-          pluginExecutionLogQueryHandler.query(pluginId, status, safePage, safeSize);
+          pluginExecutionLogQueryHandler.query(
+              pluginId, status, pageParam.getPage(), pageParam.getSize());
       long total = pluginExecutionLogQueryHandler.count(pluginId, status);
       return ResponseEntity.ok(
-          ApiResponse.success("获取执行日志成功", PageResult.of(list, total, safePage, safeSize)));
+          ApiResponse.success("获取执行日志成功", PageResult.of(list, total, pageParam)));
     }
-    int safeLimit = limit != null ? Math.min(100, Math.max(1, limit)) : 20;
+    // ⚠️ 原默认值为 20，而 CursorPageParam.DEFAULT_LIMIT 是 10 —— 显式传 20 保持既有契约不变
+    // （否则 limit 缺省时每页条数从 20 静默变成 10，属未声明的契约变更）。
+    CursorPageParam cursorParam = CursorPageParam.of(cursor, limit != null ? limit : 20);
     PageResult<PluginExecutionLog> result =
-        pluginExecutionLogQueryHandler.queryByCursor(pluginId, status, cursor, safeLimit);
+        pluginExecutionLogQueryHandler.queryByCursor(
+            pluginId, status, cursorParam.getCursor(), cursorParam.getLimit());
     if (result.getNextCursor() != null) {
       String nextLink =
           "/api/v1/extension/execution-logs?cursor="
               + result.getNextCursor()
               + "&limit="
-              + safeLimit;
+              + cursorParam.getLimit();
       if (pluginId != null) {
         nextLink += "&pluginId=" + pluginId;
       }
@@ -512,17 +521,21 @@ public class ExtensionManagementController {
       @RequestParam(required = false) String action,
       @RequestParam(required = false) String resourceType,
       @RequestParam(required = false) String cursor,
-      @RequestParam(defaultValue = "20") int limit,
+      @RequestParam(required = false) Integer limit,
       HttpServletResponse response) {
-    int safeLimit = Math.min(100, Math.max(1, limit));
+    // 游标入参收口到 CursorPageParam.of(...)：limit 的下限 1 / 上限 100 由真源统一承担，
+    // 不再在本类手写 Math.min/Math.max（此前同一段防御逻辑在本类复制了两份）。
+    // ⚠️ 原默认值为 20，而 CursorPageParam 的 DEFAULT_LIMIT 是 10 —— 此处显式传 20 保持既有契约不变。
+    CursorPageParam cursorParam = CursorPageParam.of(cursor, limit != null ? limit : 20);
     PageResult<StudioAuditEntry> result =
-        studioAuditQueryHandler.queryByCursor(action, resourceType, cursor, safeLimit);
+        studioAuditQueryHandler.queryByCursor(
+            action, resourceType, cursorParam.getCursor(), cursorParam.getLimit());
     if (result.getNextCursor() != null) {
       StringBuilder link =
           new StringBuilder("/api/v1/extension/audit-logs?cursor=")
               .append(result.getNextCursor())
               .append("&limit=")
-              .append(safeLimit);
+              .append(cursorParam.getLimit());
       if (hasText(action)) {
         link.append("&action=").append(action);
       }
