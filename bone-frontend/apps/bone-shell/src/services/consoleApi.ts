@@ -3,32 +3,35 @@ import axios from 'axios';
 /**
  * 后端契约：`bone-system` `ConsoleController#overview`（详设 §3.3.2 / §5.1）。
  * 字段命名与 `com.bone.system.domain.model.console.*` 值对象一一对应。
+ *
+ * ⚠️ 平台全局 Long → JSON string 序列化：后端 Long 字段（计数/字节数/延迟）实际以字符串返回，
+ * Double（cpuPercent 等）仍为数字 —— 因此数值字段类型为 `number | string`，消费方须用 toNum 归一。
  */
 export type ServiceStatus = {
   name?: string;
   serviceCode?: string;
   port?: string;
   status?: string;
-  latencyMs?: number;
+  latencyMs?: number | string;
 };
 
 export type ResourceUsage = {
-  memoryUsedBytes?: number;
-  memoryMaxBytes?: number;
-  cpuPercent?: number;
-  diskUsedPercent?: number;
+  memoryUsedBytes?: number | string;
+  memoryMaxBytes?: number | string;
+  cpuPercent?: number | string;
+  diskUsedPercent?: number | string;
   updatedAt?: string;
 };
 
 export type KeyMetrics = {
-  userCount?: number;
-  entityCount?: number;
-  integrationFlowCount?: number;
-  extensionPluginCount?: number;
-  orderCount?: number;
-  transactionAmount?: number;
-  jvmThreadsLive?: number;
-  jvmThreadsDaemon?: number;
+  userCount?: number | string;
+  entityCount?: number | string;
+  integrationFlowCount?: number | string;
+  extensionPluginCount?: number | string;
+  orderCount?: number | string;
+  transactionAmount?: number | string;
+  jvmThreadsLive?: number | string;
+  jvmThreadsDaemon?: number | string;
   updatedAt?: string;
 };
 

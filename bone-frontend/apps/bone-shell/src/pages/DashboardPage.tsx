@@ -22,6 +22,7 @@ import {
   type ConsoleOverview,
   type QuickAction,
 } from '../services/consoleApi';
+import { formatDate } from '@bone/shared-utils';
 import { ThemeContext } from '../shellContext';
 
 const OVERVIEW_REFRESH_MS = 30_000;
@@ -99,8 +100,16 @@ function formatBytes(bytes: number): string {
   return `${mb.toFixed(1)} MB`;
 }
 
-const fmtNum = (v?: number): string => (v == null ? '—' : v.toLocaleString('zh-CN'));
-const fmtMoney = (v?: number): string => (v == null ? '—' : `¥${v.toLocaleString('zh-CN')}`);
+/** 后端 Long 以 JSON string 返回（平台约定），数值字段须归一后再参与计算 */
+function toNum(v: number | string | undefined | null): number {
+  const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
+  return Number.isFinite(n) ? n : 0;
+}
+
+const fmtNum = (v?: number | string): string =>
+  v === undefined || v === null || v === '' ? '—' : toNum(v).toLocaleString('zh-CN');
+const fmtMoney = (v?: number | string): string =>
+  v === undefined || v === null || v === '' ? '—' : `¥${toNum(v).toLocaleString('zh-CN')}`;
 
 function ResourceRing({
   percent,
@@ -225,14 +234,10 @@ export default function DashboardPage(): JSX.Element {
 
   const resourceUsage = overview?.resourceUsage;
   const keyMetrics = overview?.keyMetrics ?? {};
-  const memoryPercent =
-    resourceUsage?.memoryMaxBytes && resourceUsage.memoryMaxBytes > 0
-      ? ((resourceUsage.memoryUsedBytes ?? 0) / resourceUsage.memoryMaxBytes) * 100
-      : 0;
-  const memorySub =
-    resourceUsage?.memoryMaxBytes && resourceUsage.memoryMaxBytes > 0
-      ? `${formatBytes(resourceUsage.memoryUsedBytes ?? 0)} / ${formatBytes(resourceUsage.memoryMaxBytes)}`
-      : formatBytes(resourceUsage?.memoryUsedBytes ?? 0);
+  const memUsed = toNum(resourceUsage?.memoryUsedBytes);
+  const memMax = toNum(resourceUsage?.memoryMaxBytes);
+  const memoryPercent = memMax > 0 ? (memUsed / memMax) * 100 : 0;
+  const memorySub = memMax > 0 ? `${formatBytes(memUsed)} / ${formatBytes(memMax)}` : formatBytes(memUsed);
 
   const services = overview?.services ?? [];
   const upCount = services.filter((s) => {
@@ -306,9 +311,9 @@ export default function DashboardPage(): JSX.Element {
           </div>
           <div className="db-rings">
             <ResourceRing
-              percent={resourceUsage?.cpuPercent ?? 0}
+              percent={toNum(resourceUsage?.cpuPercent)}
               label="CPU 使用率"
-              sub={`${resourceUsage?.cpuPercent ?? 0}%`}
+              sub={`${toNum(resourceUsage?.cpuPercent)}%`}
               from="#1677ff"
               to="#69b1ff"
             />
@@ -320,9 +325,9 @@ export default function DashboardPage(): JSX.Element {
               to="#5cdbd3"
             />
             <ResourceRing
-              percent={resourceUsage?.diskUsedPercent ?? 0}
+              percent={toNum(resourceUsage?.diskUsedPercent)}
               label="磁盘占用"
-              sub={`${resourceUsage?.diskUsedPercent ?? 0}%`}
+              sub={`${toNum(resourceUsage?.diskUsedPercent)}%`}
               from="#fa8c16"
               to="#ffc069"
             />
@@ -358,8 +363,8 @@ export default function DashboardPage(): JSX.Element {
                     {item.name ?? item.serviceCode}
                     {item.port && <span className="db-svc-port">:{item.port}</span>}
                   </span>
-                  {typeof item.latencyMs === 'number' && (
-                    <span className="db-svc-latency">{item.latencyMs} ms</span>
+                  {item.latencyMs != null && item.latencyMs !== '' && (
+                    <span className="db-svc-latency">{toNum(item.latencyMs)} ms</span>
                   )}
                   <span className="db-svc-status" style={{ color: 'var(--bone-color-text-secondary)' }}>
                     {st.text}
