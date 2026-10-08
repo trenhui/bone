@@ -89,12 +89,13 @@ public class MetadataEngine implements InitializingBean {
   private boolean validationEnabled = true;
   private boolean calculationEnabled = true;
   private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
-  private int maxRetries = 3; // 操作重试次数
-  private long retryDelay = 100; // 重试延迟时间（毫秒）
   private Object operationService; // 操作服务
 
   private final Map<String, CacheEntry<?>> entityMetadataCache = new ConcurrentHashMap<>();
-  private final Map<String, Map<String, Object>> expressionEngineCache = new ConcurrentHashMap<>();
+
+  // ★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39 整批回退）：
+  //   原expressionEngineCache 已删除 —— 它只有声明，没有任何读写点，
+  //   属于"看起来在缓存、其实从未使用"的死字段（比死配置更迷惑）。
 
   public interface MetadataChangeListener {
     void onMetadataChanged(String entityType, String changeType);
@@ -577,19 +578,10 @@ public class MetadataEngine implements InitializingBean {
     this.cacheExpirationTime = cacheExpirationTime;
   }
 
-  public int getMaxRetries() {
-    return maxRetries;
-  }
-
-  public void setMaxRetries(int maxRetries) {
-    this.maxRetries = maxRetries;
-  }
-
-  public long getRetryDelay() {
-    return retryDelay;
-  }
-
-  public void setRetryDelay(long retryDelay) {
-    this.retryDelay = retryDelay;
-  }
+  // ★ 2026-10-08：maxRetries / retryDelay 已随死字段一并删除（重施 95e4779a）。
+  //   核实依据：① 类内除声明与getter/setter 外无任何读取点；
+  //   ② 全仓无任何地方调用这两个 setter（yml 里的 max-retries 属于
+  //      OutboxRelayProperties，与本类无关）；
+  //   ③ 本类**不是** @ConfigurationProperties，Spring 也不会把它绑进配置。
+  //   ⇒ 它们的唯一作用是"让人以为引擎支持重试"，实际重试从未发生。
 }

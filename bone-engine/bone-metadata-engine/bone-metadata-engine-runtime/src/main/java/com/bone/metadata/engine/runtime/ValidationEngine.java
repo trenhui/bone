@@ -22,7 +22,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -409,16 +408,22 @@ public class ValidationEngine
   }
 
   /**
-   * Cache-friendly method for validating entity data by type name.
+   * Validate entity data by entity type name.
+   *
+   * <p>★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39 整批回退）： 原先带 {@code @Cacheable(value =
+   * "validationResult", key = "...hashCode(#entityData)")}， 是<b>双重失效的死注解</b>：
+   *
+   * <ol>
+   *   <li>全工程没有 {@code @EnableCaching} ⇒ Spring Cache 代理根本不生效，注解纯属摆设；
+   *   <li>即使生效，键用 {@code Objects.hashCode(entityData)} 也会因哈希碰撞 让**不同实体数据串用同一份校验结果**。
+   * </ol>
+   *
+   * 留着它的危害是：读代码的人以为"校验结果有缓存"，实际没有， 且一旦有人补上 {@code @EnableCaching} 就会立刻引入串结果的缺陷。
    *
    * @param entityType the entity type name
    * @param entityData the entity data to validate
    * @return the validation result
    */
-  @Cacheable(
-      value = "validationResult",
-      key = "#entityType + '-' + T(java.util.Objects).hashCode(#entityData)",
-      unless = "#result == null || !#result.isValid()")
   public ValidationResult validateEntityByType(String entityType, Map<String, Object> entityData) {
     Assert.hasText(entityType, "Entity type name cannot be empty");
     LOGGER.debug("Validating data by entity type, type: {}", entityType);
