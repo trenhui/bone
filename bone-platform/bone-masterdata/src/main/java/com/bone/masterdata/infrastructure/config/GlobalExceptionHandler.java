@@ -9,6 +9,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.core.model.ProblemDetails;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,20 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<ProblemDetail>> handleDuplicateKey(DuplicateKeyException e) {
     log.warn("唯一约束冲突: {}", e.getMessage());
     return problem(409, CommonErrorCodes.CONFLICT, "记录已存在（唯一约束冲突）");
+  }
+
+  /**
+   * 数据库完整性约束冲突（NOT NULL / 外键等，源于客户端数据）→ 400。
+   *
+   * <p>与 {@link DuplicateKeyException}→409 同构：{@code @Valid} / 域规则校验是首选防线， 但凡校验因故未拦住、请求数据仍违反 DB
+   * 约束（如本应 {@code @NotBlank} 的字段因控制器漏标 {@code @Valid} 而漏检），应归为客户端错误而非 500
+   * 系统故障——否则「参数不合法」与「服务器内部错误」语义混淆， 且会污染监控告警。{@code DuplicateKeyException} 是更具体的子类，仍由上方专属分支处理为 409。
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleDataIntegrityViolation(
+      DataIntegrityViolationException e) {
+    log.warn("数据完整性约束冲突: {}", e.getMessage());
+    return problem(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束: " + e.getMessage());
   }
 
   @ExceptionHandler(DomainException.class)

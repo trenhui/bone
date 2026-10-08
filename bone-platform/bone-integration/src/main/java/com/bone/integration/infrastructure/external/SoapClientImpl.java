@@ -1,6 +1,7 @@
 package com.bone.integration.infrastructure.external;
 
 import com.bone.integration.domain.client.ExternalSystemClient;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,6 +33,8 @@ public class SoapClientImpl implements ExternalSystemClient {
     }
   }
 
+  /** SOAP 出站：受 Resilience4j connectorHttp 熔断保护。 */
+  @CircuitBreaker(name = "connectorHttp")
   @Override
   public Object sendRequest(
       String endpoint, Map<String, Object> params, Map<String, Object> config) {

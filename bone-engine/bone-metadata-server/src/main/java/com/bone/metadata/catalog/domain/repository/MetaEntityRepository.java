@@ -4,7 +4,6 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.sdk.Repository;
 import java.util.Optional;
-import org.springframework.util.StringUtils;
 
 /**
  * 实体建模聚合仓储。
@@ -23,7 +22,7 @@ public interface MetaEntityRepository extends Repository<MetaEntity, Long> {
     if (moduleId != null) {
       query = query.and(MetaEntity::getModuleId).eq(moduleId);
     }
-    if (StringUtils.hasText(keyword)) {
+    if (keyword != null && !keyword.isBlank()) {
       query = query.and(MetaEntity::getName).like("%" + keyword.trim() + "%");
     }
     if (status != null) {

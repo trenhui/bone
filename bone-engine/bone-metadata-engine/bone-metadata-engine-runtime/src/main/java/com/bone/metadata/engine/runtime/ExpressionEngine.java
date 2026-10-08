@@ -41,15 +41,11 @@ public class ExpressionEngine implements ExpressionEvaluator {
   private boolean strictMode = true;
   private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
 
-  // 方法引用缓存（按"类名#方法名"作键，确定性 ⇒ 保留）
+  // 表达式缓存（方法引用 + 编译产物——均与输入上下文无关，键确定性成立）
   private final Map<String, MethodCacheEntry> propertyAccessorCache = new ConcurrentHashMap<>();
-  // ★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39「批量提交」整批回退）：
-  //   原expressionResultCache 已摘除 —— 它的键是 `expression + ":" + context.hashCode()`，
-  //   hashCode 碰撞会让**不同的 context 串用同一个结果**（表达式算出别的实体的值），
-  //   属"概率性命中"，确定性优先于此。
-  //   下面两个是确定性缓存，保留：方法引用缓存 + 编译后表达式缓存。
   // SpEL表达式缓存
   private final Map<String, Expression> compiledExpressionCache = new ConcurrentHashMap<>();
+
   // 表达式解析器
   private final ExpressionParser expressionParser;
   // 模板解析器上下文
@@ -61,9 +57,8 @@ public class ExpressionEngine implements ExpressionEvaluator {
   private final AtomicLong fieldCalculations = new AtomicLong(0);
   private final AtomicLong fieldCalculationFailures = new AtomicLong(0);
 
+  // Jackson，用于求值结果的类型转换
   private ObjectMapper objectMapper;
-
-  // 常量定义
   private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{([^\\}]*)\\}");
   private static final Pattern BOOLEAN_OPERATOR_PATTERN = Pattern.compile("(==|!=|>=|<=|>|<)");
   private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\(([^\\(\\)]+)\\)");
@@ -111,13 +106,7 @@ public class ExpressionEngine implements ExpressionEvaluator {
     LOGGER.debug("ExpressionEngine initialized with SpEL and expression caching enabled");
   }
 
-  /**
-   * ★ 2026-10-08：原Spring Cache 接线已随「结果缓存摘除」一并移除（重施 95e4779a）。
-   *
-   * <p>原因：{@code @Cacheable} 通道在本工程<b>从未生效</b> —— 没有 {@code @EnableCaching}， 且 {@code
-   * setCacheManager} 是 {@code @Autowired(required = false)}， Spring Cache 拿不到就不注册；而它包裹的那层结果缓存本身键又是
-   * {@code context.hashCode()} ⇒ 双重问题。留着只会让人误以为"结果已被缓存"。
-   */
+  /** 构造函数，用于自动配置 */
   @Autowired(required = false)
   public void setObjectMapper(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
@@ -157,9 +146,9 @@ public class ExpressionEngine implements ExpressionEvaluator {
     this.cacheExpirationTime = cacheExpirationTime;
   }
 
-  // 清理过期缓存条目
+  /** 清理过期缓存条目 */
   public void cleanupExpiredCache() {
-    // 清理方法缓存（确定性键：类名#方法名）
+    // 清理方法缓存
     long beforeMethodSize = propertyAccessorCache.size();
     propertyAccessorCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
     long afterMethodSize = propertyAccessorCache.size();
@@ -168,14 +157,7 @@ public class ExpressionEngine implements ExpressionEvaluator {
         "Cleaned up {} expired method cache entries", (beforeMethodSize - afterMethodSize));
   }
 
-  /**
-   * 评估表达式并返回结果（SpEL 引擎 + 表达式预编译缓存，支持 ${} 语法）。
-   *
-   * <p>★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39 整批回退）：<b>结果缓存已摘除</b>。 原实现先查 {@code
-   * expressionResultCache}（键含 {@code context.hashCode()}）， 命中就直接返回—— hashCode
-   * 碰撞会让<b>不同的实体串用同一个结果</b>。 现在每次都真实求值（表达式本身仍走 {@code compiledExpressionCache}，
-   * 它按表达式文本作键，是<b>确定性</b>的编译产物缓存）。
-   */
+  /** 评估表达式并返回结果 使用SpEL引擎进行表达式预编译和缓存，支持${}语法 */
   public String evaluateExpression(String expression, Map<String, Object> context) {
     Assert.notNull(expression, "表达式不能为空");
     Assert.notNull(context, "上下文对象不能为空");
@@ -186,14 +168,15 @@ public class ExpressionEngine implements ExpressionEvaluator {
       // 使用SpEL引擎解析和评估表达式
       if (expression.contains("${")) {
         // 对于模板表达式，使用模板解析器
-        return evaluateTemplateExpression(expression, context);
-      } else {
-        // 对于简单表达式，使用普通解析器
-        EvaluationContext evalContext = createEvaluationContext(context);
-        Expression expr = getOrCompileExpression(expression);
-        Object result = expr.getValue(evalContext);
-        return result != null ? result.toString() : "";
+        String result = evaluateTemplateExpression(expression, context);
+        return result;
       }
+
+      // 对于简单表达式，使用普通解析器
+      EvaluationContext evalContext = createEvaluationContext(context);
+      Expression expr = getOrCompileExpression(expression);
+      Object result = expr.getValue(evalContext);
+      return result != null ? result.toString() : "";
     } catch (Exception e) {
       String errorMsg = String.format("表达式计算失败: %s", expression);
       LOGGER.error(errorMsg, e);

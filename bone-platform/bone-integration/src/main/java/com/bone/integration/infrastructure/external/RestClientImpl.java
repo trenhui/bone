@@ -2,6 +2,7 @@ package com.bone.integration.infrastructure.external;
 
 import com.bone.integration.domain.client.ExternalSystemClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,6 +35,8 @@ public class RestClientImpl implements ExternalSystemClient {
     }
   }
 
+  /** 出站请求：受 Resilience4j connectorHttp 熔断保护（yml 配置，50% 失败率、窗口 20 次、开 30s）。 */
+  @CircuitBreaker(name = "connectorHttp")
   @Override
   public Object sendRequest(
       String endpoint, Map<String, Object> params, Map<String, Object> config) {

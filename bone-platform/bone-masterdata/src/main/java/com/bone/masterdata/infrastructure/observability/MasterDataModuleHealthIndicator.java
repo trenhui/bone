@@ -1,31 +1,51 @@
 package com.bone.masterdata.infrastructure.observability;
 
+import com.bone.masterdata.domain.model.category.RecordCategoryLink;
+import com.bone.masterdata.domain.repository.RecordCategoryLinkRepository;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
- * 主数据模块健康检查占位实现。
+ * MasterData 模块健康检查。
  *
- * <p>已知限制（技术债，待后续扩展）：
+ * <p>真检查内容：
  *
  * <ul>
- *   <li>当前仅返回静态 UP，未真正校验：主数据实体数、质量检查任务积压、导入导出批处理队列深度、元数据 SDK 目录服务可达性；
- *   <li>未探测扩展字段（EAV）表规模与索引膨胀；
- *   <li>后续建议拆分为 {@code masterdata-entity / masterdata-quality / masterdata-import} 三个子指标 聚合到统一分组。
+ *   <li>轻量 DB 可达探测：对 masterdata 关联表执行一次跨租户 count（disableTenantFilter）， 验证 metadata-sdk
+ *       读路径与数据库连通性。探测本身极低开销（COUNT 走索引）， 异常时整体健康度降为 DOWN。
  * </ul>
+ *
+ * <p>后续可扩展：主数据实体总数、质量检查积压计数。
  */
 @Component
 public class MasterDataModuleHealthIndicator implements HealthIndicator {
 
+  private final RecordCategoryLinkRepository linkRepository;
+
+  public MasterDataModuleHealthIndicator(RecordCategoryLinkRepository linkRepository) {
+    this.linkRepository = linkRepository;
+  }
+
   @Override
   public Health health() {
-    return Health.up()
-        .withDetail("module", "bone-masterdata")
-        .withDetail("status", "STUB")
-        .withDetail(
-            "limitation",
-            "MasterDataModuleHealthIndicator is a placeholder; real entity/quality/import checks pending")
-        .build();
+    Map<String, Object> details = new LinkedHashMap<>();
+    details.put("module", "bone-masterdata");
+
+    long linkCount;
+    try {
+      linkCount =
+          linkRepository.countByCriteria(
+              com.bone.metadata.sdk.query.criteria.Criteria.<RecordCategoryLink>create()
+                  .disableTenantFilter());
+    } catch (Exception ex) {
+      details.put("db-error", ex.getMessage());
+      return Health.down().withDetails(details).build();
+    }
+    details.put("record_category_link-total", linkCount);
+
+    return Health.up().withDetails(details).build();
   }
 }

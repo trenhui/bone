@@ -223,20 +223,6 @@ public class RuleEngine {
     }
   }
 
-  /**
-   * ★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39 整批回退）： 三处求值改走<b>类型正确入口</b>。原代码一律调 {@code
-   * evaluateExpression}， 但它的返回类型是 {@code String}：
-   *
-   * <ul>
-   *   <li>布尔判断：{@code Boolean.TRUE.equals("true")} 恒为 {@code false} ⇒
-   *       条件/规则表达式<b>永远判定为不成立</b>（静默失效，无异常）；
-   *   <li>字段取值：数值结果被 {@code toString()} 成字符串 ⇒ 下游按数值比较会出错。
-   * </ul>
-   *
-   * 正确入口：取值用 {@code eval}（返回 {@code Object}，保留类型）， 布尔判断用 {@code evaluateBooleanExpression}（走 SpEL
-   * 真求值）。
-   */
-
   /** Evaluate field expression */
   private Object evaluateFieldExpression(String expression, Map<String, Object> entityData) {
     try {

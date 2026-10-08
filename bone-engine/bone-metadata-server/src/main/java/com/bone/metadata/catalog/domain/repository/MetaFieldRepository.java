@@ -4,7 +4,6 @@ import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.sdk.Repository;
 import java.util.Optional;
-import org.springframework.util.StringUtils;
 
 /** 字段聚合仓储。读模型方法（ADR-0030）下沉至此；应用层调用而非持有读侧 DSL。 */
 public interface MetaFieldRepository extends Repository<MetaField, Long> {
@@ -15,7 +14,7 @@ public interface MetaFieldRepository extends Repository<MetaField, Long> {
     if (entityId != null) {
       query = query.and(MetaField::getEntityId).eq(entityId);
     }
-    if (StringUtils.hasText(keyword)) {
+    if (keyword != null && !keyword.isBlank()) {
       query = query.and(MetaField::getName).like("%" + keyword.trim() + "%");
     }
     return query.orderByAsc(MetaField::getSortOrder).page(page, size);

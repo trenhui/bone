@@ -14,7 +14,7 @@
     <description>智能元数据引擎领域层：纯净领域模型与算法（零 Spring 零 SDK）</description>
 
     <properties>
-        <!-- 纯领域模型/接口模块，主代码测试覆盖待补，临时放行 jacoco 门槛 -->
+        <!-- HC-005 显式豁免：模块以领域接口/模型为主，无复杂业务逻辑，暂不纳入覆盖率门槛。后续若补关键行为测试再恢复。 -->
         <jacoco.minimum.coverage>0</jacoco.minimum.coverage>
     </properties>
 

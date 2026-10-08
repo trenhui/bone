@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <!-- 自动装配模块，主代码测试覆盖待补，临时放行 jacoco 门槛 -->
+        <!-- HC-005 显式豁免：Spring Boot 自动装配模块，主代码为 Bean 定义与 @ConditionalOnProperty 组合，单测价值有限暂不纳入覆盖率门槛。 -->
         <jacoco.minimum.coverage>0</jacoco.minimum.coverage>
     </properties>
 

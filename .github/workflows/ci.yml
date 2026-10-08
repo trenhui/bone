@@ -130,6 +130,20 @@ jobs:
       - name: HC-008 Required Columns Lint (blocking)
         run: /usr/bin/env python3 scripts/check-ddl-required-columns.py --check
 
+      # HC-003：Controller 返回统一响应信封 ApiResponse<T> / PageResult<T>。
+      # 存量豁免登记在 doc/architecture/controller-response-baseline.json（只可收缩）。
+      # 此前仅 pre-commit 本地拦截，CI 不覆盖 = --no-verify 即可绕过；此处补齐 Manual→Active。
+      - name: HC-003 Controller Response Envelope Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-controller-response-envelope.py
+
+      # HC-006：业务层数据库访问必须走 bone-metadata-sdk Repository。
+      # 扫描业务 src/main/java 的 JdbcTemplate / NamedParameterJdbcTemplate /
+      # java.sql.Connection / PreparedStatement / SqlSession import（SDK 与 engine 除外）。
+      # 存量绕过登记在 doc/architecture/sdk-persistence-bypass-baseline.json（只可收缩）。
+      # 此前仅 pre-commit 本地拦截，CI 不覆盖；此处补齐 Manual→Active。
+      - name: HC-006 SDK-Only Persistence Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-sdk-persistence.py --check
+
       # 多租户：DDL 有 tenant_id ≠ SDK 认这张表是租户表；实体不声明 tenantId 时
       # TenantFilterInjector 直接 return ⇒ 查询不注入租户条件 = 静默跨租户读。
       - name: Tenant Entity Declaration Lint (blocking)

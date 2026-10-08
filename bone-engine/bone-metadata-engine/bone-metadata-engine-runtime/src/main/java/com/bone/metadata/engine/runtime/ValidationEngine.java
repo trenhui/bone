@@ -411,14 +411,17 @@ public class ValidationEngine
    * Validate entity data by entity type name.
    *
    * <p>★ 2026-10-08 重施 95e4779a 的修复（此前被 78515a39 整批回退）： 原先带 {@code @Cacheable(value =
-   * "validationResult", key = "...hashCode(#entityData)")}， 是<b>双重失效的死注解</b>：
+   * "validationResult", key = "...hashCode(#entityData)")}， 危害是<b>缓存是否生效取决于无关宿主、生效即出错</b>：
    *
    * <ol>
-   *   <li>全工程没有 {@code @EnableCaching} ⇒ Spring Cache 代理根本不生效，注解纯属摆设；
-   *   <li>即使生效，键用 {@code Objects.hashCode(entityData)} 也会因哈希碰撞 让**不同实体数据串用同一份校验结果**。
+   *   <li>{@code @EnableCaching} 不在本引擎、而由宿主声明（starter 的 BoneMetadataEngineApplication
+   *       有，metadata-server 没有）⇒ 同一段代码在不同部署形态下行为不同，无法推理；
+   *   <li>一旦生效，键用 {@code Objects.hashCode(entityData)} 会因哈希碰撞 让**不同实体数据串用同一份校验结果**（实体 A 的通过结果被实体 B
+   *       复用）。
    * </ol>
    *
-   * 留着它的危害是：读代码的人以为"校验结果有缓存"，实际没有， 且一旦有人补上 {@code @EnableCaching} 就会立刻引入串结果的缺陷。
+   * 校验结果语义上依赖 entityData 全部内容，不适合做键拆解缓存；本引擎已有元数据级缓存 {@code entityMetadataCache}，
+   * 验证本身重复开销可控。2026-10-08 哨兵门禁 check-cache-discipline.py 禁止把结果缓存加回本类。
    *
    * @param entityType the entity type name
    * @param entityData the entity data to validate

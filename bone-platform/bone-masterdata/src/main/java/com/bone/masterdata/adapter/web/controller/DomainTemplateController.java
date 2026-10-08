@@ -11,6 +11,7 @@ import com.bone.masterdata.application.command.UpdateDomainTemplateCommand;
 import com.bone.masterdata.application.query.dto.DomainTemplateDTO;
 import com.bone.masterdata.application.query.dto.TemplateVersionDTO;
 import com.bone.masterdata.application.query.qry.DomainTemplatePageQuery;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +27,7 @@ public class DomainTemplateController {
 
   @PreAuthorize("hasAuthority('masterdata:templates:write')")
   @PostMapping
-  public ApiResponse<Long> create(@RequestBody CreateDomainTemplateCommand cmd) {
+  public ApiResponse<Long> create(@Valid @RequestBody CreateDomainTemplateCommand cmd) {
     return ApiResponse.success(templateService.create(cmd));
   }
 

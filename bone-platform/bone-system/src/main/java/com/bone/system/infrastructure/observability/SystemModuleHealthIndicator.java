@@ -1,32 +1,51 @@
 package com.bone.system.infrastructure.observability;
 
+import com.bone.system.domain.model.log.SystemLog;
+import com.bone.system.domain.repository.SystemLogRepository;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
- * System 模块健康检查占位实现。
+ * System 模块健康检查。
  *
- * <p>已知限制（技术债，待后续扩展）：
+ * <p>真检查内容：
  *
  * <ul>
- *   <li>当前仅返回静态 UP，未真正校验：sys_log 归档任务运行状态、sys_config 配置读取一致性、 sys_monitor 数据面 DB 查询耗时、keyMetrics
- *       跨表聚合查询耗时；
- *   <li>未暴露配置中心（Nacos）连接健康；
- *   <li>后续建议拆分成 {@code system-config / system-log / system-monitor} 分组，分别回写最近一次 定时任务的执行结果。
+ *   <li>轻量 DB 可达探测：对 sys_log 表执行一次跨租户 count（disableTenantFilter）， 验证 metadata-sdk
+ *       读路径与数据库连通性。探测本身极低开销（COUNT 走索引）， 异常时整体健康度降为 DOWN。
  * </ul>
+ *
+ * <p>后续可扩展：Nacos ConfigService 探测、调度器线程池活跃数暴露。
  */
 @Component
 public class SystemModuleHealthIndicator implements HealthIndicator {
 
+  private final SystemLogRepository systemLogRepository;
+
+  public SystemModuleHealthIndicator(SystemLogRepository systemLogRepository) {
+    this.systemLogRepository = systemLogRepository;
+  }
+
   @Override
   public Health health() {
-    return Health.up()
-        .withDetail("module", "bone-system")
-        .withDetail("status", "STUB")
-        .withDetail(
-            "limitation",
-            "SystemModuleHealthIndicator is a placeholder; real log/config/monitor/keyMetrics checks pending")
-        .build();
+    Map<String, Object> details = new LinkedHashMap<>();
+    details.put("module", "bone-system");
+
+    long logCount;
+    try {
+      logCount =
+          systemLogRepository.countByCriteria(
+              com.bone.metadata.sdk.query.criteria.Criteria.<SystemLog>create()
+                  .disableTenantFilter());
+    } catch (Exception ex) {
+      details.put("db-error", ex.getMessage());
+      return Health.down().withDetails(details).build();
+    }
+    details.put("sys_log-total", logCount);
+
+    return Health.up().withDetails(details).build();
   }
 }
