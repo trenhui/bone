@@ -68,8 +68,8 @@
         [
           "10",
           "Controller 返回统一响应契约",
-          "暂无 ArchUnit 实现",
-          "Planned：待确定可稳定静态判别的实现"
+          "`scripts/check-controller-response-envelope.py`（pre-commit `[28/30]`；`ResponseEntity<Void>`/二进制流/无响应体为合规豁免；存量登记 `controller-response-baseline.json`）",
+          "**Manual**（pre-commit `[28/30]` 本地拦截已落地；CI workflow 载体待补，同 HC-006；存量登记 `controller-response-baseline.json`）"
         ],
         [
           "11",
@@ -496,8 +496,8 @@
         [
           "**HC-003**",
           "Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>`",
-          "**无实现**：`controllerMustReturnApiResponse` 不在共享规则库中",
-          "**Planned**"
+          "`scripts/check-controller-response-envelope.py`（`check.sh` `[28/30]`）：扫描 `@XxxMapping` 端点返回类型，`ResponseEntity<Void>`/下载流/无响应体为合规豁免；存量登记 `controller-response-baseline.json`，只可收缩",
+          "**Manual**（pre-commit `[28/30]` 本地拦截已落地；CI workflow 载体待补，同 HC-006；只拦新增）"
         ],
         [
           "**HC-004**",

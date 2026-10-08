@@ -99,7 +99,7 @@
 ### 1.6 硬约束（规划级）
 
 - **SLA 目标**：核心域 99.99%、支撑域 99.9%（按业务合同调整）。  
-- **技术主栈**：Java 17 + Spring Boot 3.2 + Spring Cloud 2023 + React 18；新增业务服务默认 Java。  
+- **技术主栈**：Java 21 + Spring Boot 3.5 + Spring Cloud 2025.0.x + React 18；新增业务服务默认 Java 21（真源 `bone-parent/pom.xml`：`java.version=21`、`spring-boot.version=3.5.16`）。  
 - **合规方向**：等保三级对齐、国密（SM2/SM3/SM4）按需启用、审计日志留存策略可配置。
 
 ---
@@ -447,9 +447,9 @@ flowchart TD
 
 | 技术 | 版本（规划） | 状态 | 用途 |
 |------|----------------|------|------|
-| Java | 17+ | ✅ 已实现 | 语言 |
-| Spring Boot | 3.2+ | ✅ 已实现 | 应用框架 |
-| Spring Cloud / Alibaba | 2023.x | ✅ 已实现（BOM） | 微服务 |
+| Java | 21 | ✅ 已实现 | 语言（真源 `bone-parent/pom.xml`：`java.version=21`） |
+| Spring Boot | 3.5.x | ✅ 已实现 | 应用框架（真源 `bone-parent/pom.xml`：`spring-boot.version=3.5.16`） |
+| Spring Cloud / Alibaba | 2025.0.x | ✅ 已实现（BOM，配对 Boot 3.5.16） | 微服务 |
 | Bone Metadata SDK | 1.x | ✅ 已实现 | 元数据持久化与仓储扩展（唯一 ORM，禁止 MyBatis / JPA） |
 | RocketMQ | 5.2 | 🟡 可选（integration outbox `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 开启） | 消息 |
 | Seata | — | ⛔ **未实现**（由 outbox + 最终一致替代；规划中，需 ADR 定案） | 分布式事务 |

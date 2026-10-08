@@ -3,7 +3,7 @@
 >
 > | API 规范内容 | DDD 规范对应 | 执行载体 |
 > |-------------|-------------|---------|
-> | Controller 返回 `ApiResponse<T>` / `PageResult<T>` | HC-003 | **无机器载体（Planned）**：`controllerMustReturnApiResponse` 不在共享规则库；本规范定义目标态。状态真源见 [Bone-DDD-最终实践方案 §G-1.7](./Bone-DDD-最终实践方案.md)，勿在此复述 |
+> | Controller 返回 `ApiResponse<T>` / `PageResult<T>` | HC-003 | **Active**：机器载体为 `scripts/check-controller-response-envelope.py`（`check.sh` `[28/30]` 阻断，只拦新增违规）；`ResponseEntity<Void>`（无响应体/204）、文件下载流、标准协议端点（如 JWKS，`controller-response-baseline.json` 方法级豁免）为合规例外。状态真源见 [Bone-DDD-最终实践方案 §G-1.7](./Bone-DDD-最终实践方案.md)，勿在此复述 |
 > | API 设计态与实现态一致性 | HC-007 | oasdiff（CI）+ OpenAPI spec（`openapi/`） |
 > | 请求 DTO 不得直传 domain 类型 | E-4.1 / E-4.2 | adapter 层 Assembler + ArchUnit 包依赖方向 |
 > | 多租户头 `X-Tenant-Id` 传递链 | E-10.2 / `TenantProvider` | Spring 过滤器 + TenantContext |
