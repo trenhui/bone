@@ -32,7 +32,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -467,12 +469,16 @@ public class CreateCodeGenerationApplicationService {
     if (ids == null || ids.isEmpty()) {
       return "";
     }
+    // 仅用于历史记录展示：一次批量查询替代逐 id 查询（避免 N+1），保持原有租户作用域语义。
+    Map<Long, CodeTemplate> byId =
+        codeTemplateRepository.findByIds(ids).stream()
+            .collect(Collectors.toMap(CodeTemplate::getId, t -> t, (a, b) -> a));
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < ids.size(); i++) {
       if (i > 0) {
         sb.append(',');
       }
-      CodeTemplate template = codeTemplateRepository.findById(ids.get(i));
+      CodeTemplate template = byId.get(ids.get(i));
       sb.append(
           template == null
               ? String.valueOf(ids.get(i))

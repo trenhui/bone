@@ -5,6 +5,7 @@ import com.bone.masterdata.application.command.RecordLineageCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
 import com.bone.masterdata.application.query.dto.LineageRecordDTO;
 import com.bone.masterdata.application.query.qry.LineageQuery;
+import com.bone.masterdata.domain.gateway.CurrentUserPort;
 import com.bone.masterdata.domain.model.lineage.LineageRecord;
 import com.bone.masterdata.domain.model.lineage.event.DataLineageEvent;
 import com.bone.masterdata.domain.repository.LineageRecordRepository;
@@ -26,6 +27,7 @@ public class LineageApplicationService {
 
   private final LineageRecordRepository lineageRecordRepository;
   private final MasterdataDomainEventPublisher domainEventPublisher;
+  private final CurrentUserPort currentUser;
 
   @Capability(
       name = "RecordLineage",
@@ -39,9 +41,12 @@ public class LineageApplicationService {
       timeout = 5)
   @Transactional
   public void record(RecordLineageCommand cmd) {
-    // 发布血缘事件，由 DataLineageEventHandler 在事务提交后落库 LineageRecord
+    // 发布血缘事件，由 DataLineageEventHandler 在事务提交后落库 LineageRecord。
+    // 事件携带当前租户，供 AFTER_COMMIT 处理器在脱离 HTTP 上下文后显式重建租户（ADR-0031 D3）。
+    Long tenantId = currentUser.currentTenantId();
     domainEventPublisher.publish(
         new DataLineageEvent(
+            tenantId,
             cmd.getSourceEntity(),
             cmd.getSourceField(),
             cmd.getTransformType(),

@@ -42,6 +42,7 @@ public class LineageRecord extends TenantAggregateRoot<Long> {
 
   public static LineageRecord create(
       Long id,
+      Long tenantId,
       String sourceEntity,
       String sourceField,
       String transformType,
@@ -50,6 +51,7 @@ public class LineageRecord extends TenantAggregateRoot<Long> {
       String schemaName) {
     LineageRecord record = new LineageRecord();
     record.id = id;
+    record.setTenantId(tenantId);
     record.sourceEntity = sourceEntity;
     record.sourceField = sourceField;
     record.transformType = transformType;
