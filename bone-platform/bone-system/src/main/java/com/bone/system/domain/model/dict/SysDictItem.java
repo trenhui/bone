@@ -1,5 +1,6 @@
 package com.bone.system.domain.model.dict;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -31,6 +32,9 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
+
+  /** 软删标记：deleteById 据此走 UPDATE deleted=1 而非物理删除。 */
+  @Deleted private Boolean deleted = false;
 
   @com.bone.metadata.sdk.domain.annotation.Version private Long version;
 

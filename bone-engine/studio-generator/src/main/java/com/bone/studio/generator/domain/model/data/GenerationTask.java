@@ -1,5 +1,6 @@
 package com.bone.studio.generator.domain.model.data;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -35,7 +36,7 @@ public class GenerationTask extends AggregateRoot<Long> {
   private Long createdBy;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
-  private boolean deleted;
+  @Deleted private boolean deleted;
   private int version;
 
   private GenerationTask() {}

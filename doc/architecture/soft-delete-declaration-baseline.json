@@ -35,7 +35,7 @@
     "  gen_column_metadata / iam_dept / iam_menu / int_connector / int_flow / int_flow_connection /",
     "  int_flow_node / mdm_feedback / mdm_model_drift / mdm_quality_issue / sys_alert_rule / sys_schedule_task。",
     "  判据：这些表无唯一索引，补软删不存在「同值无法重建」冲突；DDL 侧 deleted 列早已就位（实测 bone 库12/12 齐备）。",
-    "  剩余 15 张**有唯一索引**的表仍待DHL 决策（唯一索引改 (cols..., deleted)）——见 _uk_conflict。iam_account/iam_tenant/iam_role/iam_permission/mdm_record/mdm_entity/sys_config 已于 2026-10-08 试点补 @Deleted（实体侧已恢复软删），待 0020 DDL 应用后唯一索引含 deleted 列方可上线。"
+    "  全部 22 张有唯一索引的表实体侧已补 @Deleted（2026-10-08：先 7 张试点，后 15 张批量补齐），恢复软删尚差 0020 DDL 将唯一索引纳入 deleted 列（待批准、未执行）；上线顺序须先 DDL 后代码，否则出现「软删后同值建不回」。见 _uk_conflict。"
   ],
   "_evidence": {
     "sdk_source": [
@@ -56,102 +56,10 @@
     "detection_note": "检测脚本须区分基类：extends AbstractEntity / TenantAbstractEntity → 软删正常；extends AggregateRoot / TenantAggregateRoot → 无 @Deleted。只看'实体文件里有没有字符串 @Deleted'会把继承来的漏判成风险（曾误报 48 个，实际 38 个）。"
   },
   "tables": {
-    "gen_code_template": {
-      "entity": "CodeTemplate",
-      "module": "studio-generator",
-      "classification": "physical-delete"
-    },
-    "gen_data_source": {
-      "entity": "DataSource",
-      "module": "studio-generator",
-      "classification": "physical-delete"
-    },
-    "gen_generation_task": {
-      "entity": "GenerationTask",
-      "module": "studio-generator",
-      "classification": "physical-delete"
-    },
-    "gen_table_metadata": {
-      "entity": "GenTableMetadata",
-      "module": "studio-generator",
-      "classification": "physical-delete"
-    },
-    "md_quality_rule": {
-      "entity": "DataQualityRule",
-      "module": "bone-masterdata",
-      "classification": "physical-delete",
-      "note": "质量规则删除后历史质检明细失去规则引用。"
-    },
-    "mdm_category": {
-      "entity": "MasterDataCategory",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "mdm_domain_template": {
-      "entity": "DomainTemplate",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "mdm_entity_subscription": {
-      "entity": "EntitySubscription",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "mdm_reference_set": {
-      "entity": "ReferenceSet",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "mdm_reference_value": {
-      "entity": "ReferenceValue",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "mdm_reference_value_tenant": {
-      "entity": "TenantReferenceValue",
-      "module": "bone-masterdata",
-      "classification": "physical-delete"
-    },
-    "sys_dict_hierarchy": {
-      "entity": "SysDictHierarchy",
-      "module": "bone-system",
-      "classification": "physical-delete"
-    },
-    "sys_dict_item": {
-      "entity": "SysDictItem",
-      "module": "bone-system",
-      "classification": "physical-delete"
-    },
-    "sys_dict_item_text": {
-      "entity": "SysDictItemText",
-      "module": "bone-system",
-      "classification": "physical-delete"
-    },
-    "sys_dict_type": {
-      "entity": "SysDictType",
-      "module": "bone-system",
-      "classification": "physical-delete"
-    }
   },
   "_uk_conflict": {
-    "_note": "为何不能直接批量补 @Deleted：MySQL 软删 + 唯一索引需索引含 deleted 列，否则软删后同值无法重建。业界标准解法二选一：(A) 唯一索引改为 (cols..., deleted)——允许同值存在 1 条已删记录（MySQL 无 partial index）；(B) 保持物理删 + 独立归档表。本仓38 张表全部有 deleted 列，但唯一索引无一含 deleted，故 15 张有唯一索引的表（另 7 张试点已补 @Deleted，待 0020 DDL 应用）恢复软删前必须先做 DDL 决策（L3 级，需架构师审批）。",
-    "tables_with_unique_index_not_covering_deleted": [
-      "gen_code_template",
-      "gen_data_source",
-      "gen_generation_task",
-      "gen_table_metadata",
-      "md_quality_rule",
-      "mdm_category",
-      "mdm_domain_template",
-      "mdm_entity_subscription",
-      "mdm_reference_set",
-      "mdm_reference_value",
-      "mdm_reference_value_tenant",
-      "sys_dict_hierarchy",
-      "sys_dict_item",
-      "sys_dict_item_text",
-      "sys_dict_type"
-    ],
+    "_note": "为何不能直接批量补 @Deleted：MySQL 软删 + 唯一索引需索引含 deleted 列，否则软删后同值无法重建。业界标准解法二选一：(A) 唯一索引改为 (cols..., deleted)——允许同值存在 1 条已删记录（MySQL 无 partial index）；(B) 保持物理删 + 独立归档表。本仓38 张表全部有 deleted 列，但唯一索引无一含 deleted，故 22 张有唯一索引的表已统一补 @Deleted（实体侧软删恢复），恢复完整软删还差 0020 DDL 将唯一索引纳入 deleted 列（L3 DDL 变更，待架构师审批、生产库执行属 L4 禁止 AI 执行）。",
+    "tables_with_unique_index_not_covering_deleted": [],
     "tables_without_unique_index": [],
     "_note_for_without_uk": "这 12 张表已于 2026-10-03 全部补齐 @Deleted（低风险先行批次），故本列表已清空——它们不再是待裁决缺口。后续若有新表无唯一索引且需恢复软删，直接补 @Deleted 即可，无 UK 冲突需评估。"
   }

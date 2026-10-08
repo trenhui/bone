@@ -1,5 +1,6 @@
 package com.bone.masterdata.domain.model.reference;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -28,6 +29,9 @@ public class TenantReferenceValue extends TenantAggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
+
+  /** 软删标记：deleteById 据此走 UPDATE deleted=1 而非物理删除。 */
+  @Deleted private Boolean deleted = false;
 
   /** 所属值域ID（引用平台值域 {@code mdm_reference_set.id}，值域全局可见）。 */
   @Column(name = "set_id")

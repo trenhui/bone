@@ -1,5 +1,6 @@
 package com.bone.masterdata.domain.model.reference;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -25,6 +26,9 @@ public class ReferenceValue extends AggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
+
+  /** 软删标记：deleteById 据此走 UPDATE deleted=1 而非物理删除。 */
+  @Deleted private Boolean deleted = false;
 
   /** 所属值域ID。 */
   @Column(name = "set_id")

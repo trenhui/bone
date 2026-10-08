@@ -1,5 +1,6 @@
 package com.bone.masterdata.domain.model.template;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -31,6 +32,9 @@ public class DomainTemplate extends AggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
+
+  /** 软删标记：deleteById 据此走 UPDATE deleted=1 而非物理删除。 */
+  @Deleted private Boolean deleted = false;
 
   /** 域编码：CUSTOMER/SUPPLIER/MATERIAL/ORG_UNIT/FIN_ACCOUNT/EMPLOYEE/PROJECT，租户内唯一。 */
   @Column(name = "domain_code")
