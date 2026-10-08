@@ -11,18 +11,21 @@ public class AggregationContext {
   private final Criteria<?> criteria;
   private final List<String> groupByFields;
   private final List<String> havingConditions;
+  private final boolean includeDeleted;
 
   public AggregationContext(
       TableMetadata tableMetadata,
       List<String> aggregations,
       Criteria<?> criteria,
       List<String> groupByFields,
-      List<String> havingConditions) {
+      List<String> havingConditions,
+      boolean includeDeleted) {
     this.tableMetadata = tableMetadata;
     this.aggregations = aggregations != null ? aggregations : Collections.emptyList();
     this.criteria = criteria;
     this.groupByFields = groupByFields != null ? groupByFields : Collections.emptyList();
     this.havingConditions = havingConditions != null ? havingConditions : Collections.emptyList();
+    this.includeDeleted = includeDeleted;
   }
 
   /** 聚合表达式列表，比如 ["COUNT(*)", "SUM(amount)"] */
@@ -48,6 +51,11 @@ public class AggregationContext {
   /** HAVING 条件列表 */
   public List<String> getHavingConditions() {
     return havingConditions;
+  }
+
+  /** 是否包含已软删行（默认 false，与 SELECT/COUNT 通道一致）。 软删表聚合默认只统计未删除行； 仅在显式 opt-in 时统计已删除行。 */
+  public boolean isIncludeDeleted() {
+    return includeDeleted;
   }
 
   /** 验证聚合表达式和GROUP BY字段的合法性 */

@@ -1,16 +1,45 @@
 package com.bone.metadata.sdk.query.builder;
 
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.context.AggregationContext;
+import com.bone.metadata.sdk.query.criteria.Condition;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.support.util.SqlInjectionPreventer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
+/**
+ * 聚合查询构建器（GROUP BY + 聚合表达式 + HAVING + 分页）。
+ *
+ * <p>与 {@link SelectBuilder}/{@link CountBuilder} 对齐：统一注入 {@code m.deleted = false}（软删表且未 opt-in
+ * 包含已删）与租户过滤（ADR-0029 fail-closed，复用 {@link TenantFilterInjector}）。此前聚合通道漏注这两类谓词， 会导致租户表聚合越权（违反
+ * ADR-0029）与软删表聚合含脏数据——这是 HC-006 中两个指标网关被迫回退裸 JDBC 的根因。
+ */
 public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
   @Override
   public CompiledQuery build(AggregationContext ctx) {
     ctx.validate();
+
+    TableMetadata tbl = ctx.getTableMetadata();
+    Criteria<?> c = ctx.getCriteria();
+
+    // 拷贝用户传入的参数，并承载租户注入追加的命名参数
+    Map<String, Object> params = new LinkedHashMap<>(c.getParameters());
+
+    // WHERE 片段：主表条件 + 软删 + 租户（与 SelectBuilder 同构，保证 fail-closed 不变量）
+    List<String> where = new ArrayList<>();
+    where.addAll(c.getMainConditions().stream().map(Condition::toSql).toList());
+    if (tbl.isSoftDeletable() && !ctx.isIncludeDeleted()) {
+      where.add("m.deleted = false");
+    }
+    TenantFilterInjector.inject(where, params, tbl, c, true);
+
+    String whereClause = where.isEmpty() ? "" : " WHERE " + String.join(" AND ", where);
 
     // 构建SELECT列表：包含分组字段和聚合表达式
     StringJoiner selectJoiner = new StringJoiner(", ");
@@ -30,15 +59,7 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
     }
 
     String selectList = selectJoiner.toString();
-    String table = ctx.getTableMetadata().getName();
-
-    // 构建WHERE子句
-    String whereSql = ctx.getCriteria().whereSql();
-    String whereClause = "";
-    if (StringUtils.hasText(whereSql)) {
-      whereClause =
-          whereSql.trim().toUpperCase().startsWith("WHERE") ? " " + whereSql : " WHERE " + whereSql;
-    }
+    String table = tbl.getName();
 
     // 构建GROUP BY子句
     String groupByClause = "";
@@ -69,20 +90,20 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
                 + selectList
                 + " FROM "
                 + table
-                + " m "
+                + " m"
                 + whereClause
                 + groupByClause
                 + havingClause);
 
     // 添加分页逻辑（如果需要）
-    if (ctx.getCriteria() != null && ctx.getCriteria().getSize() > 0) {
-      int size = ctx.getCriteria().getSize();
-      int page = ctx.getCriteria().getPage();
+    if (c != null && c.getSize() > 0) {
+      int size = c.getSize();
+      int page = c.getPage();
       int offset = (page - 1) * size;
 
       sql.append(" LIMIT ").append(size).append(" OFFSET ").append(offset);
     }
 
-    return new CompiledQuery(sql.toString(), ctx.getCriteria().getParameters());
+    return new CompiledQuery(sql.toString(), params);
   }
 }

@@ -63,3 +63,13 @@ CREATE TABLE sales_record (
     quantity INT,
     is_deleted BOOLEAN DEFAULT FALSE
 );
+
+-- 租户作用域 + 软删测试表（用于验证聚合通道的租户/软删谓词注入）
+CREATE TABLE tenant_metric (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    category VARCHAR(50),
+    amount DECIMAL(15, 2),
+    status VARCHAR(20),
+    tenant_id BIGINT,
+    deleted BOOLEAN DEFAULT FALSE
+);

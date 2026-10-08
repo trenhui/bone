@@ -235,6 +235,40 @@ public interface Repository<T extends Entity<ID>, ID> {
       int page,
       int size);
 
+  /**
+   * 执行聚合查询（包含HAVING子句），可显式包含已软删行。
+   *
+   * @param includeDeleted true 时聚合结果包含 {@code deleted = true} 的行（默认 false，与 SELECT/COUNT 对齐）
+   */
+  List<Map<String, Object>> aggregate(
+      List<String> aggregations,
+      Criteria<T> criteria,
+      List<String> groupBy,
+      List<String> having,
+      boolean includeDeleted);
+
+  /**
+   * 执行聚合查询（无GROUP BY），可显式包含已软删行。
+   *
+   * @param includeDeleted true 时聚合结果包含 {@code deleted = true} 的行（默认 false，与 SELECT/COUNT 对齐）
+   */
+  Map<String, Object> aggregate(
+      List<String> aggregations, Criteria<T> criteria, boolean includeDeleted);
+
+  /**
+   * 执行带有分页的聚合查询，可显式包含已软删行。
+   *
+   * @param includeDeleted true 时聚合结果包含 {@code deleted = true} 的行（默认 false，与 SELECT/COUNT 对齐）
+   */
+  PageResult<Map<String, Object>> aggregateWithPagination(
+      List<String> aggregations,
+      Criteria<T> criteria,
+      List<String> groupBy,
+      List<String> having,
+      int page,
+      int size,
+      boolean includeDeleted);
+
   /** 获取SQL执行器 - 为DSL查询提供底层支持 实现类应提供此方法的具体实现 */
   SqlExecutor getSqlExecutor();
 

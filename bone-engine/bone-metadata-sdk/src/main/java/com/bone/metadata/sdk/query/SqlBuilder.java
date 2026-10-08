@@ -120,17 +120,40 @@ public class SqlBuilder {
       Criteria<?> criteria,
       List<String> groupBy,
       List<String> having) {
+    return buildAggregation(cls, aggregations, criteria, groupBy, having, false);
+  }
+
+  @SuppressWarnings("unchecked")
+  public CompiledQuery buildAggregation(
+      Class<?> cls,
+      List<String> aggregations,
+      Criteria<?> criteria,
+      List<String> groupBy,
+      List<String> having,
+      boolean includeDeleted) {
     TableMetadata t = TableMetadataResolver.load(cls);
     return ((SqlQueryBuilder<AggregationContext>) builders.get(QueryType.AGGREGATION))
-        .build(new AggregationContext(t, aggregations, criteria, groupBy, having));
+        .build(new AggregationContext(t, aggregations, criteria, groupBy, having, includeDeleted));
   }
 
   // 新增方法：构建带HAVING条件的聚合计数查询
   @SuppressWarnings("unchecked")
   public CompiledQuery buildCountAggregation(
       Class<?> cls, Criteria<?> criteria, List<String> groupBy, List<String> having) {
+    return buildCountAggregation(cls, criteria, groupBy, having, false);
+  }
+
+  @SuppressWarnings("unchecked")
+  public CompiledQuery buildCountAggregation(
+      Class<?> cls,
+      Criteria<?> criteria,
+      List<String> groupBy,
+      List<String> having,
+      boolean includeDeleted) {
     TableMetadata t = TableMetadataResolver.load(cls);
     return ((SqlQueryBuilder<AggregationContext>) builders.get(QueryType.COUNT_AGGREGATION))
-        .build(new AggregationContext(t, Collections.emptyList(), criteria, groupBy, having));
+        .build(
+            new AggregationContext(
+                t, Collections.emptyList(), criteria, groupBy, having, includeDeleted));
   }
 }

@@ -720,16 +720,36 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   @Transactional(readOnly = true)
   public List<Map<String, Object>> aggregate(
       List<String> aggregations, Criteria<T> criteria, List<String> groupBy, List<String> having) {
+    return aggregate(aggregations, criteria, groupBy, having, false);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<Map<String, Object>> aggregate(
+      List<String> aggregations,
+      Criteria<T> criteria,
+      List<String> groupBy,
+      List<String> having,
+      boolean includeDeleted) {
     validateAggregations(aggregations);
     CompiledQuery query =
-        sqlBuilder.buildAggregation(entityClass, aggregations, criteria, groupBy, having);
+        sqlBuilder.buildAggregation(
+            entityClass, aggregations, criteria, groupBy, having, includeDeleted);
     return sqlExecutor.queryForMap(query);
   }
 
   @Override
   @Transactional(readOnly = true)
   public Map<String, Object> aggregate(List<String> aggregations, Criteria<T> criteria) {
-    List<Map<String, Object>> results = aggregate(aggregations, criteria, null, null);
+    return aggregate(aggregations, criteria, false);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Map<String, Object> aggregate(
+      List<String> aggregations, Criteria<T> criteria, boolean includeDeleted) {
+    List<Map<String, Object>> results =
+        aggregate(aggregations, criteria, null, null, includeDeleted);
     return results.isEmpty() ? Collections.emptyMap() : results.get(0);
   }
 
@@ -742,6 +762,19 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       List<String> having,
       int page,
       int size) {
+    return aggregateWithPagination(aggregations, criteria, groupBy, having, page, size, false);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PageResult<Map<String, Object>> aggregateWithPagination(
+      List<String> aggregations,
+      Criteria<T> criteria,
+      List<String> groupBy,
+      List<String> having,
+      int page,
+      int size,
+      boolean includeDeleted) {
     validateAggregations(aggregations);
 
     Long total;
@@ -750,13 +783,14 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       total = countByCriteria(criteria);
     } else {
       // 有分组情况：使用专用计数构建器
-      total = countGroupByResultsWithHaving(criteria, groupBy, having);
+      total = countGroupByResultsWithHaving(criteria, groupBy, having, includeDeleted);
     }
 
     // 获取当前页数据
     criteria.setPage(page);
     criteria.setSize(size);
-    List<Map<String, Object>> content = aggregate(aggregations, criteria, groupBy, null);
+    List<Map<String, Object>> content =
+        aggregate(aggregations, criteria, groupBy, null, includeDeleted);
 
     return PageResult.of(content, total, page, size);
   }
@@ -764,8 +798,14 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   /** 使用专用计数构建器计算带HAVING条件的分组结果总数 */
   private Long countGroupByResultsWithHaving(
       Criteria<T> criteria, List<String> groupBy, List<String> having) {
+    return countGroupByResultsWithHaving(criteria, groupBy, having, false);
+  }
+
+  /** 使用专用计数构建器计算带HAVING条件的分组结果总数（支持包含已软删行） */
+  private Long countGroupByResultsWithHaving(
+      Criteria<T> criteria, List<String> groupBy, List<String> having, boolean includeDeleted) {
     CompiledQuery countQuery =
-        sqlBuilder.buildCountAggregation(entityClass, criteria, groupBy, having);
+        sqlBuilder.buildCountAggregation(entityClass, criteria, groupBy, having, includeDeleted);
     return sqlExecutor.queryForObject(countQuery, Long.class);
   }
 

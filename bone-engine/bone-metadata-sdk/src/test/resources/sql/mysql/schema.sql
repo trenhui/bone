@@ -101,6 +101,16 @@ CREATE TABLE sales_record (
     is_deleted TINYINT(1) DEFAULT 0
 );
 
+-- 租户作用域 + 软删测试表（用于验证聚合通道的租户/软删谓词注入）
+CREATE TABLE tenant_metric (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(50),
+    amount DECIMAL(15, 2),
+    status VARCHAR(20),
+    tenant_id BIGINT,
+    deleted TINYINT(1) DEFAULT 0
+);
+
 ---- 创建索引以提高查询性能
 --CREATE INDEX idx_sales_category ON sales_record(category);
 --CREATE INDEX idx_sales_status ON sales_record(status);

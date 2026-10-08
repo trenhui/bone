@@ -1,44 +1,50 @@
 package com.bone.metadata.sdk.query.builder;
 
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.context.AggregationContext;
+import com.bone.metadata.sdk.query.criteria.Condition;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.support.util.SqlInjectionPreventer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
-/** 专用计数查询构建器，用于生成计算分组结果总数的SQL 不包含分页和字段选择，只返回总数 */
+/**
+ * 专用计数查询构建器，用于生成计算分组结果总数的SQL 不包含分页和字段选择，只返回总数。
+ *
+ * <p>与 {@link CountBuilder} 对齐：统一注入 {@code m.deleted = false}（软删表且未 opt-in）与租户过滤 （ADR-0029
+ * fail-closed，复用 {@link TenantFilterInjector}）。子查询内聚合同样必须受租户/软删约束， 否则外层 COUNT(*) 会放大越权/含脏数据的结果。
+ */
 public class CountAggregationBuilder implements SqlQueryBuilder<AggregationContext> {
 
   @Override
   public CompiledQuery build(AggregationContext ctx) {
     ctx.validate();
-
-    // 构建基础计数查询
-    StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM (");
-
-    // 构建子查询（不包含分页和字段选择）
-    String subQuery = buildSubQuery(ctx);
-    sql.append(subQuery).append(") count_table");
-
-    return new CompiledQuery(sql.toString(), ctx.getCriteria().getParameters());
+    CompiledQuery sub = buildSubQuery(ctx);
+    String sql = "SELECT COUNT(*) FROM (" + sub.getSql() + ") count_table";
+    return new CompiledQuery(sql, sub.getParameters());
   }
 
   /** 构建子查询（不包含分页和字段选择） */
-  private String buildSubQuery(AggregationContext ctx) {
-    // 1. 构建SELECT子句：只选择1作为占位符
-    String selectSql = "1";
+  private CompiledQuery buildSubQuery(AggregationContext ctx) {
+    TableMetadata tbl = ctx.getTableMetadata();
+    Criteria<?> c = ctx.getCriteria();
 
-    // 2. 表名
-    String table = ctx.getTableMetadata().getName();
+    Map<String, Object> params = new LinkedHashMap<>(c.getParameters());
 
-    // 3. WHERE子句
-    String whereSql = ctx.getCriteria().whereSql();
-    String whereClause = "";
-    if (StringUtils.hasText(whereSql)) {
-      whereClause =
-          whereSql.trim().toUpperCase().startsWith("WHERE") ? " " + whereSql : " WHERE " + whereSql;
+    // WHERE 片段：主表条件 + 软删 + 租户（与 CountBuilder 同构）
+    List<String> where = new ArrayList<>();
+    where.addAll(c.getMainConditions().stream().map(Condition::toSql).toList());
+    if (tbl.isSoftDeletable() && !ctx.isIncludeDeleted()) {
+      where.add("m.deleted = false");
     }
+    TenantFilterInjector.inject(where, params, tbl, c, true);
+
+    String whereClause = where.isEmpty() ? "" : " WHERE " + String.join(" AND ", where);
 
     // 4. GROUP BY子句
     String groupByClause = "";
@@ -67,13 +73,15 @@ public class CountAggregationBuilder implements SqlQueryBuilder<AggregationConte
     }
 
     // 6. 构建完整子查询
-    return "SELECT "
-        + selectSql
-        + " FROM "
-        + table
-        + " m"
-        + whereClause
-        + groupByClause
-        + havingClause;
+    String subSql =
+        "SELECT "
+            + "1"
+            + " FROM "
+            + tbl.getName()
+            + " m"
+            + whereClause
+            + groupByClause
+            + havingClause;
+    return new CompiledQuery(subSql, params);
   }
 }
