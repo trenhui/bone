@@ -1,7 +1,7 @@
 package com.bone.system.adapter.schedule;
 
+import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
-import com.bone.system.infrastructure.scheduler.TaskSchedulerRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 public class ScheduleTaskLoadJob {
 
   private final ScheduleTaskRepository scheduleTaskRepository;
-  private final TaskSchedulerRegistry taskSchedulerRegistry;
+  private final ScheduleTaskSchedulerPort taskSchedulerRegistry;
 
   /** 就绪即装载：早于任何 CRON 触发点，避免重启后首轮漏跑。 */
   @EventListener(ApplicationReadyEvent.class)

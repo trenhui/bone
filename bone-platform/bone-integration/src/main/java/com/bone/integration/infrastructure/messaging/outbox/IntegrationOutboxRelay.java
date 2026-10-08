@@ -3,6 +3,7 @@ package com.bone.integration.infrastructure.messaging.outbox;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.integration.application.config.IntegrationOutboxProperties;
 import com.bone.integration.application.port.out.IntegrationMessageSenderPort;
+import com.bone.integration.application.port.out.IntegrationOutboxRelayPort;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class IntegrationOutboxRelay {
+public class IntegrationOutboxRelay implements IntegrationOutboxRelayPort {
 
   private final IntegrationOutboxProperties properties;
   private final IntegrationOutboxRepository outboxRepository;

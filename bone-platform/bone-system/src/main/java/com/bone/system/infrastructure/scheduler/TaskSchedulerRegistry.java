@@ -54,6 +54,7 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
    *
    * <p><b>逐条容错</b>：单条任务的脏 cron / 缺失处理器不应让整批装载失败——那会导致本实例上<b>所有</b>租户的 定时任务静默不跑。故失败只记日志并继续。
    */
+  @Override
   public void loadEnabledTasks(Iterable<ScheduleTask> tasks) {
     int failed = 0;
     for (ScheduleTask task : tasks) {

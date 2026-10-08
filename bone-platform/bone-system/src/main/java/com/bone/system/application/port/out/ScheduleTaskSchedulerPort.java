@@ -39,4 +39,11 @@ public interface ScheduleTaskSchedulerPort {
    *     SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND）；处理器自身异常原样透传，由调用方包装。
    */
   long triggerNow(ScheduleTask task);
+
+  /**
+   * 装载一批已取好的启用任务并逐条容错注册（入站侧 {@code ScheduleTaskLoadJob} 跨租户取数后调用）。
+   *
+   * <p>逐条容错：单条脏 cron / 缺失处理器不应中断整批装载，避免本实例全部租户的定时任务静默不跑。 参数已是取好的任务列表，本端口不再触碰跨租户入口（E-2 / ADR-0030）。
+   */
+  void loadEnabledTasks(Iterable<ScheduleTask> tasks);
 }
