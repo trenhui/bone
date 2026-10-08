@@ -44,6 +44,22 @@ public class SqlInjectionPreventer {
     return fieldName;
   }
 
+  /**
+   * 归一化字段引用的表别名限定：先走字段名白名单校验，再剥离调用方可能已写的前缀，最后统一补上目标别名。
+   *
+   * <p>用于聚合 GROUP BY / SELECT 列表，使 {@code AggregationBuilder} 与 {@code CountAggregationBuilder}
+   * 走同一份逻辑， 避免各自实现漂移；剥离再补是为了防止调用方传入 {@code m.category} 时产生 {@code m.m.category} 这种重复限定。
+   *
+   * @param fieldName 调用方给的字段名（可裸列名，也可自带别名）
+   * @param alias 目标表别名（如聚合通道主表别名 {@code m}）
+   * @return 形如 {@code m.category} 的限定列名
+   */
+  public static String qualifyWithAlias(String fieldName, String alias) {
+    String safe = sanitizeFieldName(fieldName);
+    String bare = safe.contains(".") ? safe.substring(safe.lastIndexOf('.') + 1) : safe;
+    return alias + "." + bare;
+  }
+
   /** 验证并清理HAVING条件 */
   public static String sanitizeHavingCondition(String havingCondition) {
     if (!StringUtils.hasText(havingCondition)) {

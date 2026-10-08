@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.test.testcase;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.bone.core.model.PageResult;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
@@ -155,5 +156,30 @@ public class TenantMetricAggregationTest {
             tenantMetricRepository.aggregate(
                 List.of("COUNT(*) as total"),
                 Criteria.<TenantMetric>create().eqExtra("someExtField", "x")));
+  }
+
+  /**
+   * {@code aggregateWithPagination} 不得改写调用方传入的 {@code Criteria}：分页参数随查询上下文传递。
+   *
+   * <p>回归锁：早期实现直接 criteria.setPage/setSize，把分页状态泄漏回调用方对象，调用方复用该 Criteria 时会意外被加上分页。 Criteria 默认
+   * size=5000 / page=1，故断言其保持默认值即证明未被改写。
+   */
+  @Test
+  public void aggregateWithPaginationDoesNotMutateCallerCriteria() {
+    TenantContext.setTenantId(1L);
+    insert(1L, "A", false);
+    insert(1L, "B", false);
+    insert(1L, "C", false);
+
+    Criteria<TenantMetric> criteria = Criteria.<TenantMetric>create();
+    PageResult<Map<String, Object>> page =
+        tenantMetricRepository.aggregateWithPagination(
+            List.of("category", "COUNT(*) as cnt"), criteria, List.of("category"), null, 1, 2);
+
+    assertEquals(3L, page.getTotal()); // 3 个分组
+    assertEquals(2, page.getRecords().size()); // 每页 2 条
+    // 关键断言：调用方的 criteria 分页状态未被改写
+    assertEquals(5000, criteria.getSize());
+    assertEquals(1, criteria.getPage());
   }
 }

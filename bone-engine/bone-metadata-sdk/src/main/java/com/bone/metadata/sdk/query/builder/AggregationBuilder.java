@@ -54,11 +54,10 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
     // 构建SELECT列表：包含分组字段和聚合表达式
     StringJoiner selectJoiner = new StringJoiner(", ");
 
-    // 添加分组字段
+    // 添加分组字段（统一 m. 限定，与 GROUP BY / CountAggregationBuilder 同构）
     if (!CollectionUtils.isEmpty(ctx.getGroupByFields())) {
       for (String groupBy : ctx.getGroupByFields()) {
-        String safeGroupBy = SqlInjectionPreventer.sanitizeFieldName(groupBy);
-        selectJoiner.add(safeGroupBy);
+        selectJoiner.add(SqlInjectionPreventer.qualifyWithAlias(groupBy, "m"));
       }
     }
 
@@ -71,13 +70,12 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
     String selectList = selectJoiner.toString();
     String table = tbl.getName();
 
-    // 构建GROUP BY子句
+    // 构建GROUP BY子句（与 SELECT 列表同源，保证引用同一表达式）
     String groupByClause = "";
     if (!CollectionUtils.isEmpty(ctx.getGroupByFields())) {
       StringJoiner groupByJoiner = new StringJoiner(", ");
       for (String groupBy : ctx.getGroupByFields()) {
-        String safeGroupBy = SqlInjectionPreventer.sanitizeFieldName(groupBy);
-        groupByJoiner.add(safeGroupBy);
+        groupByJoiner.add(SqlInjectionPreventer.qualifyWithAlias(groupBy, "m"));
       }
       groupByClause = " GROUP BY " + groupByJoiner.toString();
     }
@@ -105,13 +103,12 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
                 + groupByClause
                 + havingClause);
 
-    // 添加分页逻辑（如果需要）
-    if (c != null && c.getSize() > 0) {
-      int size = c.getSize();
-      int page = c.getPage();
-      int offset = (page - 1) * size;
-
-      sql.append(" LIMIT ").append(size).append(" OFFSET ").append(offset);
+    // 添加分页逻辑（显式分页优先，否则回退 Criteria 上的分页状态）
+    int effSize = ctx.getSize() != null ? ctx.getSize() : (c != null ? c.getSize() : 0);
+    if (effSize > 0) {
+      int effPage = ctx.getPage() != null ? ctx.getPage() : (c != null ? c.getPage() : 1);
+      int offset = (effPage - 1) * effSize;
+      sql.append(" LIMIT ").append(effSize).append(" OFFSET ").append(offset);
     }
 
     return new CompiledQuery(sql.toString(), params);

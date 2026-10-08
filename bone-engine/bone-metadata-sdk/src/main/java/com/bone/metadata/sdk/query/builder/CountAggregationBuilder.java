@@ -55,17 +55,12 @@ public class CountAggregationBuilder implements SqlQueryBuilder<AggregationConte
 
     String whereClause = where.isEmpty() ? "" : " WHERE " + String.join(" AND ", where);
 
-    // 4. GROUP BY子句
+    // 4. GROUP BY子句（复用与 AggregationBuilder 同一份别名归一化逻辑）
     String groupByClause = "";
     if (!CollectionUtils.isEmpty(ctx.getGroupByFields())) {
       StringJoiner groupByJoiner = new StringJoiner(", ");
       for (String groupBy : ctx.getGroupByFields()) {
-        String safeGroupBy = SqlInjectionPreventer.sanitizeFieldName(groupBy);
-        String bareColumnName =
-            safeGroupBy.contains(".")
-                ? safeGroupBy.substring(safeGroupBy.lastIndexOf('.') + 1)
-                : safeGroupBy;
-        groupByJoiner.add("m." + bareColumnName);
+        groupByJoiner.add(SqlInjectionPreventer.qualifyWithAlias(groupBy, "m"));
       }
       groupByClause = " GROUP BY " + groupByJoiner.toString();
     }

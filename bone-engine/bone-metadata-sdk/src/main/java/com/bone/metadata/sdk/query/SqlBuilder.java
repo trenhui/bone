@@ -131,9 +131,30 @@ public class SqlBuilder {
       List<String> groupBy,
       List<String> having,
       boolean includeDeleted) {
+    return buildAggregation(
+        cls, aggregations, criteria, groupBy, having, includeDeleted, null, null);
+  }
+
+  /**
+   * 构建聚合查询；page/size 为显式分页（null 表示回退 Criteria 上的分页状态）。
+   *
+   * <p>供 {@code aggregateWithPagination} 使用，使分页参数随查询传递，无需改写调用方的 {@link Criteria}。
+   */
+  @SuppressWarnings("unchecked")
+  public CompiledQuery buildAggregation(
+      Class<?> cls,
+      List<String> aggregations,
+      Criteria<?> criteria,
+      List<String> groupBy,
+      List<String> having,
+      boolean includeDeleted,
+      Integer page,
+      Integer size) {
     TableMetadata t = TableMetadataResolver.load(cls);
     return ((SqlQueryBuilder<AggregationContext>) builders.get(QueryType.AGGREGATION))
-        .build(new AggregationContext(t, aggregations, criteria, groupBy, having, includeDeleted));
+        .build(
+            new AggregationContext(
+                t, aggregations, criteria, groupBy, having, includeDeleted, page, size));
   }
 
   // 新增方法：构建带HAVING条件的聚合计数查询

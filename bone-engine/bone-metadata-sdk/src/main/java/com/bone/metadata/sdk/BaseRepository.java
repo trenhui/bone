@@ -786,11 +786,11 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       total = countGroupByResultsWithHaving(criteria, groupBy, having, includeDeleted);
     }
 
-    // 获取当前页数据
-    criteria.setPage(page);
-    criteria.setSize(size);
-    List<Map<String, Object>> content =
-        aggregate(aggregations, criteria, groupBy, null, includeDeleted);
+    // 获取当前页数据：分页随查询上下文传递，不改写调用方传入的 criteria（避免副作用外溢）
+    CompiledQuery contentQuery =
+        sqlBuilder.buildAggregation(
+            entityClass, aggregations, criteria, groupBy, null, includeDeleted, page, size);
+    List<Map<String, Object>> content = sqlExecutor.queryForMap(contentQuery);
 
     return PageResult.of(content, total, page, size);
   }
