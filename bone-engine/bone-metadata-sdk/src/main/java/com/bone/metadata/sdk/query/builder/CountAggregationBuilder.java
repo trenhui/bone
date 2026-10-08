@@ -34,6 +34,15 @@ public class CountAggregationBuilder implements SqlQueryBuilder<AggregationConte
     TableMetadata tbl = ctx.getTableMetadata();
     Criteria<?> c = ctx.getCriteria();
 
+    // 与 AggregationBuilder 同构：聚合通道不 JOIN ext_data_reserved，扩展表字段条件显式失败关闭，
+    // 避免静默丢弃过滤条件导致分组计数偏大。
+    if (c.requiresExtJoin()) {
+      throw new IllegalArgumentException(
+          "聚合计数不支持扩展表字段条件（requiresExtJoin=true）：聚合通道不 JOIN ext_data_reserved，"
+              + "无法把扩展字段解析为物理列。请仅用主表字段做聚合。表: "
+              + tbl.getName());
+    }
+
     Map<String, Object> params = new LinkedHashMap<>(c.getParameters());
 
     // WHERE 片段：主表条件 + 软删 + 租户（与 CountBuilder 同构）

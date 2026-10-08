@@ -4,9 +4,7 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenIssuerGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenSessionGatewayAdapter.java",
-    "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java",
-    "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
-    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
+    "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java"
   ],
   "technicalExemptions": [
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java",
@@ -15,7 +13,9 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java",
+    "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
+    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
   ],
   "debugToolExemptions": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java"
@@ -28,6 +28,8 @@
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java": "数据库元数据 / INFORMATION_SCHEMA 内省，SDK 无法表达",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java": "70+ 租户表批量 DELETE + FOREIGN_KEY_CHECKS=0 + 跨表 JOIN 删除；SDK 无批量删 / 跨表删能力，by-design 运维操作",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java": "定时全租户物理清理，无请求级租户上下文；按设计跨租户物理删，须走 Criteria.disableTenantFilter() 受控出口（ADR-0029 逃生舱）+ 平台授权与审计，SDK 无法用租户通道表达",
+    "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java": "SELECT tenant_id, COUNT(*) ... GROUP BY tenant_id —— 语义本身是「跨租户分租户统计」（@Scheduled 无租户上下文）；SDK 聚合通道是租户作用域的，直接用会被 fail-closed 拦下。要么走 disableTenantFilter() 受控跨租户出口（须平台授权+审计），要么 SDK 另提供平台级跨租户指标 API。属设计缺口，非单纯表达式能力不足",
+    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java": "跨 4 张表（iam_account/meta_entity/int_flow/exts_plugin_version，跨模块）全库级 COUNT(*)，且异构软删（deleted 与 is_active 两种语义）+ graceful degradation 逐表 try/catch 计 0；SDK 聚合是单表+租户作用域，无法一次表达跨表全库概览",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java": "@Profile(\"dev\") 临时调试工具，仅 dev 环境启动期运行"
   }
 }

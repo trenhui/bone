@@ -140,4 +140,20 @@ public class TenantMetricAggregationTest {
 
     assertEquals(1L, ((Number) result.get("total")).longValue());
   }
+
+  /**
+   * 扩展表字段条件必须「显式失败」而非「静默丢弃」—— 静默丢弃会让聚合过滤失效、指标偏大， 比抛异常更危险。 这是一条回归锁：早期实现把 extConditions 拼成
+   * `ext.<col>`（未知别名→SQL 报错）， 中间版本改为只取 mainConditions 后会静默漏过滤；本测试锁定为 fail-fast。
+   */
+  @Test
+  public void aggregateWithExtensionFieldConditionFailsFast() {
+    TenantContext.setTenantId(1L);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            tenantMetricRepository.aggregate(
+                List.of("COUNT(*) as total"),
+                Criteria.<TenantMetric>create().eqExtra("someExtField", "x")));
+  }
 }

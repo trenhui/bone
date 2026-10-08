@@ -28,6 +28,16 @@ public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
     TableMetadata tbl = ctx.getTableMetadata();
     Criteria<?> c = ctx.getCriteria();
 
+    // 聚合通道不 JOIN ext_data_reserved：扩展表字段条件无法解析为物理列，
+    // 历史实现会拼出 `ext.<col>`（未知别名 → SQL 报错）。这里显式失败关闭，
+    // 避免「静默丢弃过滤条件」导致聚合结果偏大（指标失真）。
+    if (c.requiresExtJoin()) {
+      throw new IllegalArgumentException(
+          "聚合查询不支持扩展表字段条件（requiresExtJoin=true）：聚合通道不 JOIN ext_data_reserved，"
+              + "无法把扩展字段解析为物理列。请仅用主表字段做聚合。表: "
+              + tbl.getName());
+    }
+
     // 拷贝用户传入的参数，并承载租户注入追加的命名参数
     Map<String, Object> params = new LinkedHashMap<>(c.getParameters());
 
