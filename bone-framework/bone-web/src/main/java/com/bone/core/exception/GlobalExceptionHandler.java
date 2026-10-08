@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -521,6 +522,29 @@ public class GlobalExceptionHandler {
         NOT_FOUND.getCode(),
         NOT_FOUND.getMsg(),
         problem(NOT_FOUND.getCode(), CommonErrorCodes.NOT_FOUND, NOT_FOUND.getMsg()));
+  }
+
+  /**
+   * 数据库完整性约束冲突（NOT NULL / 唯一键 / 外键 / 长度超限等，源于客户端数据）→ 400。
+   *
+   * <p><b>为何在框架基类统一处理（2026-10-08 实测）</b>：masterdata 补过此分支，但各服务曾各自为政 —— 一旦 {@code @Valid} /
+   * 域规则校验因故未拦住（如控制器漏标 {@code @Valid}、或规则本身覆盖不到 DB 约束）， 请求数据会直达数据库撞约束，抛出的 {@link
+   * DataIntegrityViolationException} 此前<b>没有任何 advice 处理</b>， 一律冒泡到 {@link
+   * #defaultExceptionHandler} 被兜底成 <b>500</b>。后果：①「参数不合法」被报成「服务器内部出错」， 误导客户端重试（重试无用）；②纯客户端笔误会计入 5xx
+   * 错误预算、污染 SLI 与告警。
+   *
+   * <p><b>为何回 400 而非 409/500</b>：能落到这里的约束冲突，成因是<b>请求数据不满足表结构</b>，属调用方 可纠正的错误 ⇒ 400 + {@code
+   * COMMON_VALIDATION_FAILED}。唯一键冲突需要 409 语义时由各模块自建更具体的 分支处理（本类无自定义子类分支，Spring 按最具体类型匹配），不与本分支冲突。
+   *
+   * <p><b>脱敏</b>：{@code ex.getMessage()} 形如 {@code Column 'domain_code' cannot be null}，
+   * 等于把表结构送给调用方 ⇒ 只入日志，响应体用常量文案，排障走 X-Trace-Id 回查（同 P1-4 口径）。
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<?>> handleDataIntegrityViolation(
+      DataIntegrityViolationException ex) {
+    log.warn("[handleDataIntegrityViolation] 数据完整性约束冲突", ex);
+    return problemResponse(
+        BAD_REQUEST.getCode(), CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段");
   }
 
   @ExceptionHandler(SQLException.class)

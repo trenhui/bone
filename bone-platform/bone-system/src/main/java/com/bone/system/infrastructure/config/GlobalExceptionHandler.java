@@ -7,6 +7,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.core.model.ProblemDetails;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -137,6 +138,21 @@ public class GlobalExceptionHandler {
   public ApiResponse<ProblemDetail> handleBadRequest(Exception e) {
     log.warn("请求参数不合法: {}", e.getMessage());
     return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, "请求参数不合法");
+  }
+
+  /**
+   * 数据库完整性约束冲突 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p>本模块自带 advice（不复用 bone-web 框架 handler），故必须在此显式声明。成因是请求数据不满足表结构 （NOT NULL / 唯一键 /
+   * 长度超限），属调用方可纠正的错误；漏到 500 会把客户端笔误计入 5xx 错误预算。 唯一键冲突需 409 语义时可在此另加更具体的 {@code
+   * DuplicateKeyException} 分支（Spring 按最具体类型匹配， 不会被本分支抢走）。响应体用常量文案，原始异常只入日志，避免回显表名/约束名。
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiResponse<ProblemDetail> handleDataIntegrityViolation(
+      DataIntegrityViolationException e) {
+    log.warn("数据完整性约束冲突: {}", e.getMessage());
+    return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段");
   }
 
   @ExceptionHandler(Exception.class)

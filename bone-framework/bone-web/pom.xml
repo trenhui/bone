@@ -47,6 +47,16 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!--
+          Spring 事务异常（org.springframework.dao.*）：GlobalExceptionHandler 需要
+          DataIntegrityViolationException 才能把「请求数据违反 DB 约束」翻译成 400 而非兜底 500。
+          spring-boot-starter-* 均不含该包（它在 spring-tx 里），本模块又不依赖 bone-metadata-sdk
+          （经 spring-jdbc 传递获得），故必须显式声明。版本由 Spring Boot BOM 统一管理。
+        -->
+        <dependency><groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </dependency>
+
         <!-- Swagger 注解支持 -->
         <dependency><groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>

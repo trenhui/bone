@@ -14,6 +14,7 @@ import com.bone.metadata.exception.FieldConflictException;
 import com.bone.metadata.exception.TooManyRequestsException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -190,6 +191,20 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST,
         CommonErrorCodes.MALFORMED_REQUEST,
         String.format("参数 %s 格式不正确", ex.getName()));
+  }
+
+  /**
+   * 数据库完整性约束冲突 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p>本模块自带 advice（不复用 bone-web 框架 handler），故必须在此显式声明。成因是请求数据不满足表结构， 属调用方可纠正的错误；漏到 500 会把客户端笔误计入
+   * 5xx 错误预算并误导其重试。本模块已有 {@link FieldConflictException}→409 覆盖"字段唯一冲突"的显式业务场景，本分支只兜剩余的裸约束违规。
+   * 响应体用常量文案，原始异常只入日志，避免回显表名/约束名。
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleDataIntegrityViolation(
+      DataIntegrityViolationException ex) {
+    log.warn("数据完整性约束冲突: {}", ex.getMessage());
+    return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段");
   }
 
   /** 兜底 —— 500。 */
