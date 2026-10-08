@@ -13,6 +13,7 @@ import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.model.connector.valueobject.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import java.util.Map;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,7 +124,12 @@ class ConnectorSupportInvocationFailureTest {
     ConnectorSupport service = serviceWith(client);
     when(client.sendRequest(anyString(), any(), any())).thenReturn(Map.of("ok", true));
 
-    assertThat(service.executeConnector(connector(), "/obj", Map.of())).containsEntry("ok", true);
+    // executeConnector 返回 Object：直接 assertThat 得到 ObjectAssert（无 containsEntry），
+    // 而 (Map<?, ?>) 转型会让 containsEntry 的键类型变成通配符捕获 CAP#1，同样接不住 String。
+    // 用 asInstanceOf 显式给出键值类型，既类型安全又保留 Map 断言语义。
+    assertThat(service.executeConnector(connector(), "/obj", Map.of()))
+        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+        .containsEntry("ok", true);
   }
 
   @Test

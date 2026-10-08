@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("mdm_feedback")
 public class DataFeedback extends TenantAggregateRoot<Long> {
-  @Id
 
   /**
    * 逻辑删除标记。
@@ -31,9 +30,9 @@ public class DataFeedback extends TenantAggregateRoot<Long> {
    * <p>本表<b>无唯一索引</b>，故恢复软删不存在「同值无法重建」冲突（见soft-delete-declaration-baseline.json 的 {@code
    * _uk_conflict} 段）。
    */
-  @Deleted
-  private Boolean deleted = false;
+  @Deleted private Boolean deleted = false;
 
+  @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 

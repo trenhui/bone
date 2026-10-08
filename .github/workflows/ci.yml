@@ -149,6 +149,12 @@ jobs:
       - name: Domain Model Layout Lint (blocking)
         run: /usr/bin/env python3 scripts/check-domain-model-layout.py
 
+      # 主键注解落位：@Id 标在哪个字段就决定 SDK 所有按主键 SQL 的 where 条件。
+      # 2026-10-07 实测 9 个实体的 @Id 被 javadoc 顶到 deleted 上 ⇒ findById 恒 404、
+      # update/软删静默失效，而列表照常返回（findPage 无主键谓词）。javac/spotless 均不报错。
+      - name: Id Annotation Placement Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-id-annotation.py
+
       # ADR-0040：对外发布模块（SDK）不得以空壳冒充，且有业务类必须有契约测试。
       # 门禁 16 此前只在本地 ci-check.sh [11/11] 运行，.github/workflows 未调用，
       # 即"看起来有门禁、实则 CI 形同虚设"。此处补齐使它真正成为阻断门禁。

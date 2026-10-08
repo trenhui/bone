@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.notification;
 
-import com.bone.integration.application.port.out.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifierPort;
 import com.bone.platform.alert.AlertLevel;
 import com.bone.platform.alert.AlertMessage;
 import com.bone.platform.alert.AlertService;
@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-public class AlertIntegrationEventNotifier implements IntegrationEventNotifier {
+public class AlertIntegrationEventNotifier implements IntegrationEventNotifierPort {
 
   private final AlertService alertService;
 

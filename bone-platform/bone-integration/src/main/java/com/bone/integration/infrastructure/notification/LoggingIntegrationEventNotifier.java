@@ -1,10 +1,10 @@
 package com.bone.integration.infrastructure.notification;
 
-import com.bone.integration.application.port.out.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifierPort;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LoggingIntegrationEventNotifier implements IntegrationEventNotifier {
+public class LoggingIntegrationEventNotifier implements IntegrationEventNotifierPort {
 
   @Override
   public void sendInfo(String action, String title, String content, String businessId) {

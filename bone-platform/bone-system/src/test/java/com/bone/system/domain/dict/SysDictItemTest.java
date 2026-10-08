@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.dict.SysDictItem;
 import com.bone.system.domain.model.dict.enums.DictTagType;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
@@ -50,7 +50,7 @@ class SysDictItemTest {
   @Test
   void labelIsRequired() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictItem.create(
                 2L,
@@ -76,7 +76,7 @@ class SysDictItemTest {
     LocalDateTime from = LocalDateTime.of(2026, 9, 1, 0, 0);
     LocalDateTime to = LocalDateTime.of(2026, 8, 1, 0, 0);
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictItem.create(
                 3L,

@@ -1,0 +1,27 @@
+# Spring Boot 3 自动配置注册（Boot 3 唯一支持的机制）
+#
+# ★ 为什么必须用这个文件而不是 META-INF/spring.factories（2026-10-07 迁移）：
+#   Spring Boot **2.7 引入**本文件、3.0 **彻底移除**了 spring.factories 里
+#   EnableAutoConfiguration 键的支持。本工程 Boot 版本 = 3.5.16
+#   ⇒ 写在 spring.factories 的自动配置类**永远不会被加载**（且不会有任何报错）。
+#   这正是「bone-metadata-engine-starter 建好却一直没被用」的直接原因。
+#
+# 官方要求（Boot 3.x reference「Creating Your Own Auto-configuration」）：
+#   · 自动配置类必须标注 @AutoConfiguration（它本身是 @Configuration(proxyBeanMethods=false)
+#     的元注解，并支持 before/after 排序）。
+#   · 需要条件时用 @ConditionalOnClass / @ConditionalOnMissingBean，且@ConditionalOnClass
+#     打在@Bean 方法上**不生效**（条件按方法返回类型判断），须打在嵌套配置类上。
+#
+# 文件格式：一行一个全限定类名，# 开头为注释。
+
+# 平台桥接（SDK 可用时用 SDK 实现，否则 Noop）——必须排在引擎装配之前，
+# 因为 MetadataEngineInitializer 启动时会向平台桥接注册元数据。
+com.bone.metadata.engine.starter.platform.MetadataEnginePlatformAutoConfiguration
+
+# 引擎核心装配（注册中心 / 校验引擎 / 表达式引擎 / 通用操作服务等）
+com.bone.metadata.engine.starter.config.MetadataEngineAutoConfiguration
+
+# 规则引擎接线（2026-06 修复「自定义业务规则恒 fail-open」的关键装配类）。
+# ★ 它此前**未注册到任何清单** ⇒ 那个修复在生产同样不生效（只有单测手工 new 出来验证，
+#   属"测试绕过装配链"的假绿）。2026-10-07 补上注册。
+com.bone.metadata.engine.runtime.rule.RuleEngineAutoConfiguration

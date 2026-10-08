@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.schedule.ScheduleTask;
 import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
 import java.time.LocalDateTime;
@@ -74,6 +74,6 @@ class ScheduleTaskTest {
 
   @Test
   void testUnknownTaskStatusRejected() {
-    assertThrows(BizException.class, () -> TaskStatus.fromString("PAUSED"));
+    assertThrows(DomainException.class, () -> TaskStatus.fromString("PAUSED"));
   }
 }

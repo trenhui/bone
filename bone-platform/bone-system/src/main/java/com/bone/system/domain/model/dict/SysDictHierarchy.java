@@ -4,7 +4,7 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
 import java.time.LocalDateTime;
@@ -125,7 +125,7 @@ public class SysDictHierarchy extends TenantAggregateRoot<Long> {
     }
     String trimmed = hierarchyCode.trim();
     if (trimmed.length() > 64) {
-      throw BizException.of("层级视图编码长度不能超过 64");
+      throw new DomainException("层级视图编码长度不能超过 64");
     }
     return trimmed;
   }

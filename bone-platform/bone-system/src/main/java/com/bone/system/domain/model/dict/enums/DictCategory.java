@@ -1,6 +1,6 @@
 package com.bone.system.domain.model.dict.enums;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import java.util.Arrays;
 
 /**
@@ -30,7 +30,9 @@ public enum DictCategory {
         .filter(c -> c.name().equalsIgnoreCase(value.trim()))
         .findFirst()
         .orElseThrow(
-            () -> BizException.of("字典值域分类非法：" + value + "（可选 " + Arrays.toString(values()) + "）"));
+            () ->
+                new DomainException(
+                    "字典值域分类非法：" + value + "（可选 " + Arrays.toString(values()) + "）"));
   }
 
   public boolean isEnum() {

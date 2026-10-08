@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.messaging;
 
-import com.bone.integration.application.port.out.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSenderPort;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "bone.integration.outbox.mq-enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class RocketMqIntegrationMessageSender implements IntegrationMessageSender {
+public class RocketMqIntegrationMessageSender implements IntegrationMessageSenderPort {
 
   private final RocketMQTemplate rocketMQTemplate;
 

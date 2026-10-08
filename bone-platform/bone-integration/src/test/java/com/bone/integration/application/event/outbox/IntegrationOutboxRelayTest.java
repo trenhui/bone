@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.integration.application.config.IntegrationOutboxProperties;
-import com.bone.integration.application.port.out.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSenderPort;
 import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRecord;
 import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRelay;
 import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRepository;
@@ -24,7 +24,7 @@ class IntegrationOutboxRelayTest {
 
   @Mock private IntegrationOutboxRepository outboxRepository;
 
-  @Mock private IntegrationMessageSender messageSender;
+  @Mock private IntegrationMessageSenderPort messageSender;
 
   private IntegrationOutboxRelay relay;
 

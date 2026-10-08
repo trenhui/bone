@@ -65,6 +65,32 @@ def load_baseline() -> list[str]:
     return sorted(data.get("files", []))
 
 
+def load_exemptions() -> tuple[dict[str, str], dict[str, str]]:
+    """加载「技术豁免」与「调试工具豁免」。
+
+    ★ **为什么要有独立于 baseline 的豁免（2026-10-07）**：
+    baseline 的语义是「**欠债**——将来要收敛回 SDK 的写法」，规则是「只可收缩」。
+    但存量 14 条里有一类是**永远不会收敛**的：`information_schema` DDL 对齐、
+    定时任务无租户上下文的跨表清理、配置类的传递依赖……
+    把它们放进 baseline 会让 baseline 变成「永不缩小的黑名单」，
+    于是「只可收缩」这条规则失去意义（谁也无法让数字变小）。
+
+    分类依据见 `doc/architecture/HC-006-存量绕过裁决.md`，裁决权归模块 Owner。
+    豁免同样**只可收缩**：条目被改造成走 SDK 后，应从豁免中移除。
+
+    返回：(技术豁免 → 理由, 调试工具豁免 → 理由)
+    """
+    if not BASELINE.exists():
+        return {}, {}
+    data = json.loads(BASELINE.read_text(encoding="utf-8"))
+    tech = data.get("technicalExemptions", [])
+    debug = data.get("debugToolExemptions", [])
+    reasons = data.get("exemptionReasons", {})
+    tech_map = {p: reasons.get(p, "（未登记理由）") for p in tech}
+    debug_map = {p: reasons.get(p, "（未登记理由）") for p in debug}
+    return tech_map, debug_map
+
+
 def write_baseline(files: list[str]) -> None:
     payload = {
         "description": "HC-006 存量绕过 SDK 的 JDBC/MyBatis import。只可收缩，新增文件不得加入。",
@@ -86,21 +112,48 @@ def main() -> int:
         return 0
 
     registered = load_baseline()
-    extra = sorted(set(current) - set(registered))
+    tech_exempt, debug_exempt = load_exemptions()
+    all_exempt = {**tech_exempt, **debug_exempt}
+
+    # 豁免清单里若有不复存在的文件 => 应收敛（与 baseline 同样的「只可收缩」纪律）
+    stale_exempt = sorted(set(all_exempt) - set(current))
+
+    extra = sorted(set(current) - set(registered) - set(all_exempt))
     gone = sorted(set(registered) - set(current))
 
-    print(f"HC-006 bypass imports: current={len(current)} baseline={len(registered)}")
+    print(f"HC-006 bypass imports: current={len(current)}")
+    print(
+        f"  baseline(待收敛)={len(registered)}  "
+        f"技术豁免={len(tech_exempt)}  调试工具豁免={len(debug_exempt)}"
+    )
     if gone:
         print(f"  shrinkable ({len(gone)}), remove from baseline when convenient:")
         for path in gone:
             print(f"    - {path}")
+    if stale_exempt:
+        print(
+            f"  ⚠️ 豁免清单中已无对应代码（应收敛）: {len(stale_exempt)} 条",
+            file=sys.stderr,
+        )
+        for path in stale_exempt:
+            print(f"    - {path}", file=sys.stderr)
+    unreasoned = [p for p, why in all_exempt.items() if why == "（未登记理由）"]
+    if unreasoned:
+        print(
+            f"  ⚠️ 豁免条目未登记理由: {len(unreasoned)} 条（见 exemptionReasons）",
+            file=sys.stderr,
+        )
+        for path in unreasoned:
+            print(f"    ! {path}", file=sys.stderr)
     if extra:
-        print("  new bypass (not in baseline):", file=sys.stderr)
+        print("  new bypass (not in baseline nor exempt):", file=sys.stderr)
         for path in extra:
             print(f"    + {path}", file=sys.stderr)
         if args.check:
             return 1
     if args.check:
+        if stale_exempt or unreasoned:
+            return 1
         print("HC-006 check passed")
     return 0
 

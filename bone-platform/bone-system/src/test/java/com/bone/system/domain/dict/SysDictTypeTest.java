@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.dict.SysDictType;
 import com.bone.system.domain.model.dict.enums.DictCategory;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
@@ -41,7 +41,7 @@ class SysDictTypeTest {
   @Test
   void enumCategoryRequiresEnumClass() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictType.create(
                 2L,
@@ -61,7 +61,7 @@ class SysDictTypeTest {
   @Test
   void nonEnumCategoryRejectsEnumClass() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictType.create(
                 3L,
@@ -81,7 +81,7 @@ class SysDictTypeTest {
   @Test
   void maxDepthOnlyAllowedForCascade() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictType.create(
                 4L,
@@ -132,7 +132,7 @@ class SysDictTypeTest {
             null,
             null);
     assertTrue(type.isBuiltin());
-    assertThrows(BizException.class, type::assertDeletable);
+    assertThrows(DomainException.class, type::assertDeletable);
   }
 
   @Test
@@ -200,8 +200,8 @@ class SysDictTypeTest {
     type.applyValueFormat("DECIMAL", "^\\d+(\\.\\d{1,2})?$", null);
 
     type.assertValueFormat("12.50");
-    assertThrows(BizException.class, () -> type.assertValueFormat("abc"));
-    assertThrows(BizException.class, () -> type.assertValueFormat("12.345"));
+    assertThrows(DomainException.class, () -> type.assertValueFormat("abc"));
+    assertThrows(DomainException.class, () -> type.assertValueFormat("12.345"));
   }
 
   @Test
@@ -247,6 +247,6 @@ class SysDictTypeTest {
             false,
             null,
             null);
-    assertThrows(BizException.class, () -> type.applyValueFormat(null, null, "2,x,2"));
+    assertThrows(DomainException.class, () -> type.applyValueFormat(null, null, "2,x,2"));
   }
 }

@@ -169,6 +169,18 @@ if ! python3 scripts/check-cross-service-exception-mapping.py; then
   exit_code=1
 fi
 
+echo -e "${YELLOW}[9e/29] 主键注解落位（@Id 必须标在 id 字段上）...${RESET}"
+# @Id 落到哪个字段，直接决定 SDK 所有按主键 SQL 的 where 条件。
+# 2026-10-07 实测：9 个实体（integration×4 / masterdata×3 / system×2）的 @Id 被一段
+# javadoc 顶到了 `deleted` 字段上 ⇒ findById 恒 404、update/软删静默失效，
+# 而列表接口照常返回数据（findPage 不带主键谓词），症状极易误判成前端或权限问题。
+# 这种错位 javac 与 spotless 都不报错，只能靠静态判据拦。
+if ! python3 scripts/check-id-annotation.py; then
+  echo -e "${RED}❌ @Id 未标注在 id 字段上（findById 恒 404、update/软删静默失效）${RESET}"
+  echo -e "${YELLOW}   把 @Id 移到 @GeneratedValue 之上、紧贴 private Long id; 之前${RESET}"
+  exit_code=1
+fi
+
 echo -e "${YELLOW}[10/29] 前端 ID 字段类型（Long→String 契约）...${RESET}"
 # 后端 MetadataAutoConfiguration.boneLongToStringCustomizer() 全局把 Long 序列化为
 # JSON 字符串（雪花 ID 超 JS Number 上限 2^53，以 number 返回会被静默截断且无 JS 报错）。

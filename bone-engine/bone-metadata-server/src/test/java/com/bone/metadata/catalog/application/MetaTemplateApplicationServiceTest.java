@@ -102,7 +102,8 @@ class MetaTemplateApplicationServiceTest {
     BizException ex =
         org.assertj.core.api.Assertions.catchThrowableOfType(
             () -> service.instantiate(9101L, cmd), BizException.class);
-    assertThat(ex.getMessage()).contains("模板尚未发布");
+    assertThat(ex.getErrorCode()).isEqualTo("META_TEMPLATE_NOT_PUBLISHED");
+    assertThat(ex.getCode()).isEqualTo(409);
     verify(metaFieldRepository, never()).insert(any(MetaField.class));
   }
 
@@ -113,7 +114,8 @@ class MetaTemplateApplicationServiceTest {
     BizException ex =
         org.assertj.core.api.Assertions.catchThrowableOfType(
             () -> service.instantiate(9101L, cmd), BizException.class);
-    assertThat(ex.getMessage()).contains("平台模板不存在");
+    assertThat(ex.getErrorCode()).isEqualTo("META_TEMPLATE_NOT_FOUND");
+    assertThat(ex.getCode()).isEqualTo(404);
     verify(metaEntityApplicationService, never()).createEntity(any());
   }
 

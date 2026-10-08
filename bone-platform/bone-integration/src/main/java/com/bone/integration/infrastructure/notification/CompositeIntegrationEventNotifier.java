@@ -1,13 +1,13 @@
 package com.bone.integration.infrastructure.notification;
 
-import com.bone.integration.application.port.out.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifierPort;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class CompositeIntegrationEventNotifier implements IntegrationEventNotifier {
+public class CompositeIntegrationEventNotifier implements IntegrationEventNotifierPort {
 
-  private final List<IntegrationEventNotifier> delegates;
+  private final List<IntegrationEventNotifierPort> delegates;
 
   @Override
   public void sendInfo(String action, String title, String content, String businessId) {

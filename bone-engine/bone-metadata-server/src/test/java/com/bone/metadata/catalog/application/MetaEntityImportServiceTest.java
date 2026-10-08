@@ -136,7 +136,7 @@ class MetaEntityImportServiceTest {
 
     assertThatThrownBy(() -> service.importEntityFromTable(cmd("not_exists", false)))
         .isInstanceOf(BizException.class)
-        .hasMessageContaining("物理表不存在");
+        .hasFieldOrPropertyWithValue("errorCode", "META_PHYSICAL_TABLE_NOT_FOUND");
     verify(metaEntityRepository, never()).insert(any());
     verify(metaFieldRepository, never()).insert(any());
   }

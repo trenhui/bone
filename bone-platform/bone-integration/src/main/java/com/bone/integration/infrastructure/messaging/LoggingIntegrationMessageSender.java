@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.messaging;
 
-import com.bone.integration.application.port.out.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSenderPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
     havingValue = "false",
     matchIfMissing = true)
 @Slf4j
-public class LoggingIntegrationMessageSender implements IntegrationMessageSender {
+public class LoggingIntegrationMessageSender implements IntegrationMessageSenderPort {
 
   @Override
   public void send(String topic, String partitionKey, String envelopeJson) {

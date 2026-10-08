@@ -152,7 +152,7 @@ class MetaEntityPublishEventTest {
 
     assertThatThrownBy(() -> service.publishEntity(404L, null))
         .isInstanceOf(BizException.class)
-        .hasMessageContaining("实体不存在");
+        .hasFieldOrPropertyWithValue("errorCode", "META_ENTITY_NOT_FOUND");
 
     verify(domainEventPublisher, never()).publish(any());
   }

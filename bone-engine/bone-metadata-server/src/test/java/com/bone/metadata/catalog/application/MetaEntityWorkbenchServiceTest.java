@@ -305,7 +305,7 @@ class MetaEntityWorkbenchServiceTest {
     cmd.setTableName("t_x");
     assertThatThrownBy(() -> service.copyEntity(404L, cmd))
         .isInstanceOf(BizException.class)
-        .hasMessageContaining("实体不存在");
+        .hasFieldOrPropertyWithValue("errorCode", "META_ENTITY_NOT_FOUND");
   }
 
   // ===================== 辅助 =====================

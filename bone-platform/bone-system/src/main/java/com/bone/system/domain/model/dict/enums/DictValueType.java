@@ -1,6 +1,6 @@
 package com.bone.system.domain.model.dict.enums;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import java.util.Arrays;
 
 /**
@@ -21,7 +21,7 @@ public enum DictValueType {
     return Arrays.stream(values())
         .filter(t -> t.name().equalsIgnoreCase(value.trim()))
         .findFirst()
-        .orElseThrow(() -> BizException.of("字典值类型非法：" + value));
+        .orElseThrow(() -> new DomainException("字典值类型非法：" + value));
   }
 
   /** 校验值是否满足该类型，不满足返回 false（由调用方决定转成哪个错误码）。 */

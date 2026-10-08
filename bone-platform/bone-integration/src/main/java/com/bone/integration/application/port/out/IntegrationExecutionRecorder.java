@@ -1,4 +1,4 @@
-package com.bone.integration.application.port;
+package com.bone.integration.application.port.out;
 
 import com.bone.integration.domain.model.execution.IntegrationLog;
 

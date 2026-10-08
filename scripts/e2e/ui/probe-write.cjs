@@ -23,8 +23,8 @@ const WRITE_TARGETS = [
   { app: 'metadata', route: '#/entities', add: '新建实体', name: 'md-entities' },
   { app: 'masterdata', route: '#/entities', add: '创建模型', name: 'mdata-entities' },
   { app: 'generator', route: '#/datasources', add: '新增数据源', name: 'gen-datasources' },
-  { app: 'extension', route: '#/points', add: '', name: 'ext-points' },
-  { app: 'commerce', route: '#/orders', add: '', name: 'commerce-orders' },
+  { app: 'extension', route: '#/points', add: '新建扩展点', name: 'ext-points' },
+  { app: 'commerce', route: '#/orders', add: '新建订单', name: 'commerce-orders' },
 ];
 
 (async () => {
@@ -75,6 +75,26 @@ const WRITE_TARGETS = [
     rec.modal = modal;
     if (!modal) { results.push({ ...rec, step: 'MODAL_NOT_OPEN', verdict: 'FAIL' }); await page.screenshot({ path: `${OUT}/w-${t.name}.png` }); continue; }
     rec.kind = modal.kind;
+    // 弹窗内含 Tab 时（如流程设计器：默认「流程设计」是画布页无表单，表单在「流程信息」页懒渲染），
+    // antd Tabs 未激活的 TabPane 不入 DOM，直接计数会得到 inputs=0 的假 NO_INPUT。
+    // 逐个点开 Tab 取最大表单项数，才是该写入口真实的输入面。
+    const TAB_SEL = '.ant-modal-content .ant-tabs-tab, .ant-drawer-content .ant-tabs-tab';
+    const nTabs = await page.locator(TAB_SEL).count();
+    if (nTabs) {
+      const countInputs = () => page.evaluate(() => {
+        const m = document.querySelector('.ant-modal-content') || document.querySelector('.ant-drawer-content');
+        return m ? m.querySelectorAll('input.ant-input, textarea, .ant-select-selector').length : 0;
+      });
+      rec.tabs = nTabs;
+      let best = modal.inputs;
+      for (let i = 0; i < nTabs; i++) {
+        try { await page.locator(TAB_SEL).nth(i).click({ timeout: 3000 }); } catch (e) { continue; }
+        await page.waitForTimeout(700);
+        const n = await countInputs().catch(() => 0);
+        if (n > best) best = n;
+      }
+      modal.inputs = best;
+    }
     await page.screenshot({ path: `${OUT}/w-${t.name}-modal.png` });
     // 点「确定」触发校验（不填数据，看校验是否拦住 —— 这是最常见的"点了没反应"来源）
     const okBtn = page.locator('.ant-modal-footer button, .ant-drawer-footer button').filter({ hasText: /确定|保存|新增|提交|创建|OK/ }).first();
@@ -91,8 +111,30 @@ const WRITE_TARGETS = [
     if (await cancel.count()) { try { await cancel.click({ timeout: 4000 }); } catch (e) {} }
     await page.waitForTimeout(900);
     rec.modalClosed = await page.evaluate(() => !(document.querySelector('.ant-modal-content') || document.querySelector('.ant-drawer-content')));
+    // ---- 编辑回填：点首行「编辑」，断言表单确实带出原值 ----
+    // destroyOnHidden 让每次开弹窗都是全新 Form 实例；若页面用「开弹窗前 form.setFieldsValue()」
+    // 的写法，值写进的是未挂载的旧实例，回填会静默失效（弹窗全空 + rc-field-form 告警）。
+    // 这一检查专门兜「用例/伪实现」之外的真实数据链路缺陷。
+    try {
+      const editBtn = page.locator('tbody tr').first().locator('button').filter({ hasText: /编辑|Edit/ }).first();
+      if (await editBtn.count()) {
+        await editBtn.click({ timeout: 4000 });
+        await page.waitForTimeout(1600);
+        rec.edit = await page.evaluate(() => {
+          const m = document.querySelector('.ant-modal-content') || document.querySelector('.ant-drawer-content');
+          if (!m) return { opened: false };
+          const vals = [...m.querySelectorAll('input, textarea')]
+            .map(el => (el.value ?? '').trim()).filter(Boolean);
+          const selects = [...m.querySelectorAll('.ant-select-selection-item')]
+            .map(el => (el.innerText || '').trim()).filter(Boolean);
+          return { title: (m.querySelector('.ant-modal-title,.ant-drawer-title')?.innerText || '').trim(), opened: true, filled: vals.length + selects.length, sample: vals.slice(0, 3) };
+        });
+        if (rec.edit?.opened && !rec.edit.filled) rec.verdict = 'EDIT_EMPTY';
+      }
+    } catch (e) { rec.editErr = String(e.message).slice(0, 80); }
+
     rec.newFailed = failedReq.slice(f0);
-    // 判定：弹窗能开 + 空提交被校验拦住 + 取消能关 ⇒ 该写入口的 UI 链路正常
+    // 判定：弹窗能开 + 空提交被校验拦住 ⇒ 该写入口的 UI 链路正常
     rec.verdict = modal.inputs > 0 && rec.afterEmptySubmit.modalStillOpen ? 'OK'
       : (!modal.inputs ? 'NO_INPUT' : 'SUSPECT');
     results.push(rec);

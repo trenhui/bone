@@ -4,7 +4,7 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
 import java.time.LocalDateTime;
@@ -49,13 +49,13 @@ public class SysDictItemText extends TenantAggregateRoot<Long> {
       String label,
       String description) {
     if (language == null || language.isBlank()) {
-      throw BizException.of("语言标签不能为空");
+      throw new DomainException("语言标签不能为空");
     }
     if (language.length() > MAX_LANGUAGE_LENGTH) {
-      throw BizException.of("语言标签长度不能超过 " + MAX_LANGUAGE_LENGTH);
+      throw new DomainException("语言标签长度不能超过 " + MAX_LANGUAGE_LENGTH);
     }
     if (label == null || label.isBlank()) {
-      throw BizException.of("译文显示名不能为空");
+      throw new DomainException("译文显示名不能为空");
     }
     SysDictItemText text = new SysDictItemText();
     text.id = id;
@@ -73,7 +73,7 @@ public class SysDictItemText extends TenantAggregateRoot<Long> {
   public void update(String label, String description) {
     if (label != null && !label.isBlank()) {
       if (label.length() > 100) {
-        throw BizException.of("译文显示名长度不能超过 100");
+        throw new DomainException("译文显示名长度不能超过 100");
       }
       this.label = label.trim();
     }

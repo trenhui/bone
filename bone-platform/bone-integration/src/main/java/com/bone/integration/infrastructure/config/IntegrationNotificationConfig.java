@@ -1,6 +1,6 @@
 package com.bone.integration.infrastructure.config;
 
-import com.bone.integration.application.port.out.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifierPort;
 import com.bone.integration.infrastructure.notification.AlertIntegrationEventNotifier;
 import com.bone.integration.infrastructure.notification.CompositeIntegrationEventNotifier;
 import com.bone.integration.infrastructure.notification.LoggingIntegrationEventNotifier;
@@ -26,10 +26,10 @@ public class IntegrationNotificationConfig {
   static class AlertAutoImport {}
 
   @Bean
-  IntegrationEventNotifier integrationEventNotifier(
+  IntegrationEventNotifierPort integrationEventNotifier(
       IntegrationAlertProperties integrationAlertProperties,
       ObjectProvider<AlertService> alertServiceProvider) {
-    List<IntegrationEventNotifier> delegates = new ArrayList<>();
+    List<IntegrationEventNotifierPort> delegates = new ArrayList<>();
     delegates.add(new LoggingIntegrationEventNotifier());
     if (integrationAlertProperties.isEnabled()) {
       alertServiceProvider.ifAvailable(

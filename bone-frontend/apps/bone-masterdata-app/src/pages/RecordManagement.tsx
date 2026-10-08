@@ -31,7 +31,7 @@ import type {
   UpdateMasterDataRecordReq,
   ImportDuplicateStrategy,
 } from '../types';
-import { masterDataRecordApi, masterDataFieldApi, approvalApi } from '../services/api';
+import { masterDataRecordApi, masterDataFieldApi, approvalApi, referenceApi } from '../services/api';
 import { normalizeTotal } from '@bone/shared-utils';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
@@ -82,6 +82,8 @@ const RecordManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<MasterDataRecord[]>([]);
   const [fields, setFields] = useState<MasterDataField[]>([]);
+  // 参考数据值域：field.code(大写) -> 允许值列表；命中则字段渲染为下拉，避免手填非法值被后端 400 拒绝
+  const [refDomains, setRefDomains] = useState<Record<string, { value: string; label: string }[]>>({});
   // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
   const { entityId: selectedEntityId } = useEntityScope();
   const [total, setTotal] = useState(0);
@@ -415,10 +417,50 @@ const RecordManagement: React.FC = () => {
     return <Tag color="green">生效中</Tag>;
   };
 
+  // 拉取所有参考数据值域，按 setCode(大写) 建索引，供枚举字段渲染下拉
+  const fetchRefDomains = useCallback(async () => {
+    try {
+      const setsResp = await referenceApi.sets();
+      if (setsResp.code !== 200 || !setsResp.data) return;
+      const map: Record<string, { value: string; label: string }[]> = {};
+      for (const s of setsResp.data as Array<{ id: string; setCode?: string }>) {
+        const code = (s.setCode || '').toUpperCase();
+        if (!code) continue;
+        try {
+          const vResp = await referenceApi.values(s.id);
+          const opts = ((vResp.data || []) as Array<{ valueCode?: string | number; valueName?: string; enabled?: boolean }>)
+            .filter(v => v.enabled !== false && v.valueCode != null)
+            .map(v => ({ value: String(v.valueCode), label: v.valueName || String(v.valueCode) }));
+          if (opts.length) map[code] = opts;
+        } catch {
+          // 单个值域不可达不影响其余字段
+        }
+      }
+      setRefDomains(map);
+    } catch {
+      // 参考数据不可达时退化为文本输入，不阻断建表
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRefDomains();
+  }, [fetchRefDomains]);
+
   // 动态生成表单字段
   const generateFormFields = () => {
     return fields.map(field => {
       let formItem;
+      // 枚举/值域字段：渲染为受参考数据约束的下拉，避免用户手填非法值被后端 400 拒绝
+      const dom = refDomains[(field.code ?? '').toUpperCase()];
+      if (dom && dom.length) {
+        formItem = (
+          <Select placeholder={`请选择${field.name}`} showSearch optionFilterProp="label" allowClear>
+            {dom.map(o => (
+              <Option key={o.value} value={o.value}>{o.label}</Option>
+            ))}
+          </Select>
+        );
+      } else {
       switch (field.type) {
       case 'STRING':
       case 'TEXT':
@@ -453,6 +495,7 @@ const RecordManagement: React.FC = () => {
         break;
       default:
         formItem = <Input placeholder={`请输入${field.name}`} />;
+      }
       }
       return (
         <Form.Item

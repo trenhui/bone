@@ -1,6 +1,6 @@
 package com.bone.system.domain.model.dict.valueobject;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 
 /**
  * 字典编码值对象：类型编码与项编码共用的不变量（非空、无空白、长度上限）。
@@ -15,13 +15,13 @@ public record DictCode(String value, int maxLength) {
 
   public DictCode {
     if (value == null || value.isBlank()) {
-      throw BizException.of("字典编码不能为空");
+      throw new DomainException("字典编码不能为空");
     }
     if (value.length() > maxLength) {
-      throw BizException.of("字典编码长度不能超过 " + maxLength);
+      throw new DomainException("字典编码长度不能超过 " + maxLength);
     }
     if (value.chars().anyMatch(Character::isWhitespace)) {
-      throw BizException.of("字典编码不能包含空白字符");
+      throw new DomainException("字典编码不能包含空白字符");
     }
   }
 

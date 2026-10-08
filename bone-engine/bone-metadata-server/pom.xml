@@ -36,6 +36,15 @@
             <artifactId>bone-metadata-engine-runtime</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- ★ 2026-10-07 接线：引入 engine-starter 以启用元数据引擎的自动装配。
+             starter 只提供装配层（自动配置类 + 装配集成测试已验证的 bean 集合），
+             本身不含新的业务实现；实现仍在 runtime 里（上面那个依赖）。
+             ⇒ 引入前metadata-server 已能拿到 runtime 的类，但 starter 的
+             自动配置（含 @AutoConfiguration + Bean 装配）此前从未被加载过。 -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-metadata-engine-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

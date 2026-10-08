@@ -226,7 +226,7 @@ public class RuleEngine {
   /** Evaluate field expression */
   private Object evaluateFieldExpression(String expression, Map<String, Object> entityData) {
     try {
-      return expressionEngine.eval(expression, entityData);
+      return expressionEngine.evaluateExpression(expression, entityData);
     } catch (Exception e) {
       LOGGER.error("Expression evaluation failed: {}", expression, e);
       throw new RuntimeException("Expression evaluation failed", e);
@@ -751,7 +751,8 @@ public class RuleEngine {
   /** 评估条件表达式 */
   private boolean evaluateCondition(String condition, Map<String, Object> entityData) {
     try {
-      return expressionEngine.evaluateBooleanExpression(condition, entityData);
+      Object result = expressionEngine.evaluateExpression(condition, entityData);
+      return Boolean.TRUE.equals(result);
     } catch (Exception e) {
       LOGGER.warn("Condition evaluation failed: {}", condition, e);
       return true; // 条件评估失败时默认通过
@@ -761,7 +762,8 @@ public class RuleEngine {
   /** 评估规则表达式 */
   private boolean evaluateRuleExpression(String expression, Map<String, Object> entityData) {
     try {
-      return expressionEngine.evaluateBooleanExpression(expression, entityData);
+      Object result = expressionEngine.evaluateExpression(expression, entityData);
+      return Boolean.TRUE.equals(result);
     } catch (Exception e) {
       LOGGER.warn("Rule expression evaluation failed: {}", expression, e);
       return false; // 表达式评估失败时默认失败

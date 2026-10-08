@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.integration.application.config.IntegrationOutboxProperties;
-import com.bone.integration.application.port.out.IntegrationMessageSender;
+import com.bone.integration.application.port.out.IntegrationMessageSenderPort;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IntegrationOutboxRelayTest {
 
   @Mock IntegrationOutboxRepository outboxRepository;
-  @Mock IntegrationMessageSender messageSender;
+  @Mock IntegrationMessageSenderPort messageSender;
 
   IntegrationOutboxProperties properties;
   IntegrationOutboxRelay relay;

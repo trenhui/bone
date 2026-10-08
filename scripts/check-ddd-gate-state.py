@@ -67,7 +67,6 @@ ANCHOR_SECTION = "稳定锚点与索引"
 
 # 4) 已确知"文档引用但共享规则库中不存在"的规则名，必须逐条登记原因。
 KNOWN_MISSING = {
-    "controllerMustReturnApiResponse": "HC-003 无机器载体，G-1.7 标注 Planned",
     "repositoryMustUseSdk": "HC-006 本地脚本 check-sdk-persistence.py 已落地（Manual）；ArchUnit 规则仍未实现，故保留登记",
     "domainCoreShouldOnlyDependOnAllowedPackages": (
         "bone-iam 模块级 ArchUnit 规则（不在共享规则库）；5.5.16 版本行引用它解释 "

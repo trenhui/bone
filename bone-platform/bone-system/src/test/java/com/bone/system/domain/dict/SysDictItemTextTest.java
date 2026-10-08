@@ -3,7 +3,7 @@ package com.bone.system.domain.dict;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.dict.SysDictItemText;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class SysDictItemTextTest {
   @Test
   void languageIsRequired() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictItemText.create(
                 2L, 0L, DictCode.typeCode("sys_status"), DictCode.of("ENABLED"), " ", "启用", null));
@@ -39,7 +39,7 @@ class SysDictItemTextTest {
   @Test
   void labelIsRequired() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictItemText.create(
                 3L,
@@ -65,7 +65,7 @@ class SysDictItemTextTest {
   @Test
   void tooLongLanguageIsRejected() {
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictItemText.create(
                 5L,

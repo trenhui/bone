@@ -4,7 +4,6 @@ import com.bone.metadata.engine.runtime.ExpressionEngine;
 import com.bone.metadata.engine.runtime.MetadataEngine;
 import com.bone.metadata.engine.runtime.TransformationEngine;
 import com.bone.metadata.engine.runtime.ValidationEngine;
-import com.bone.metadata.engine.runtime.adapter.config.EngineSdkRepositoryConfig;
 import com.bone.metadata.engine.runtime.metadata.MetadataRegistry;
 import com.bone.metadata.engine.runtime.metadata.OperationRegistry;
 import com.bone.metadata.engine.runtime.metadata.processor.CompositeMetadataProcessor;
@@ -13,20 +12,18 @@ import com.bone.metadata.engine.runtime.repository.MetadataRepository;
 import com.bone.metadata.engine.runtime.service.DynamicDataService;
 import com.bone.metadata.engine.runtime.service.GenericOperationService;
 import com.bone.metadata.engine.runtime.service.impl.InMemoryDynamicDataService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.ComponentScan.Filter;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 /**
@@ -39,12 +36,14 @@ import org.springframework.context.annotation.Primary;
  * {@code @EnableSqlRepositories} 注册两次，触发重复 bean 定义冲突。故此处显式排除。
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties(MetadataEngineProperties.class)
-@ComponentScan(
-    basePackages = "com.bone.metadata.engine.runtime",
-    excludeFilters =
-        @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = EngineSdkRepositoryConfig.class))
+// ★ 2026-10-07：原先此处是 @ComponentScan("com.bone.metadata.engine.runtime")。
+//   官方明确要求「auto-configuration classes should not enable component scanning」
+//   （reference「Creating Your Own Auto-configuration」），故改为引用一个**独立的**
+//   组件注册类，由它承担扫描职责 —— 扫描行为不变，但不再发生在自动配置类自身。
+//   详见 RuntimeComponentScanConfiguration。
+@Import(RuntimeComponentScanConfiguration.class)
 public class MetadataEngineAutoConfiguration {
 
   private final MetadataEngineProperties smartMetaProperties;
@@ -54,6 +53,26 @@ public class MetadataEngineAutoConfiguration {
   }
 
   /** 配置元数据注册中心 */
+  /**
+   * 校验策略执行器（{@code StrategyValidationExecutor}）需要的并发执行器。
+   *
+   * <p><b>为什么 starter 必须提供（2026-10-07 装配测试实测发现）</b>： {@code StrategyValidationExecutor} 被
+   * {@code @ComponentScan} 扫入，其构造器第 1 个参数要 {@code
+   * java.util.concurrent.Executor}（用于并行跑各校验策略）。宿主通常不会注册一个裸 {@code Executor} bean ⇒ starter 单独装配时
+   * {@code UnsatisfiedDependencyException}。
+   *
+   * <p><b>按官方最佳实践用 {@code @ConditionalOnMissingBean}</b>：宿主若自己注册了 {@code TaskExecutor} / {@code
+   * Executor}，本方法自动退让（{@code @ConditionalOnMissingBean} 官方文档指出：自动配置类<b>只在用户未声明时才生效</b>，这是"让 Boot
+   * 礼貌"的机制）。
+   */
+  @Bean
+  @ConditionalOnMissingBean(Executor.class)
+  public Executor metadataValidationExecutor() {
+    // 用虚拟线程（Java 21）承接并行校验：校验是 CPU 密集 + 大量等待混合，
+    // 虚拟线程无需调参即可获得高并发，且不额外占用平台线程。
+    return Executors.newVirtualThreadPerTaskExecutor();
+  }
+
   @Bean
   @ConditionalOnMissingBean
   public MetadataRegistry metadataRegistry() {
@@ -61,39 +80,23 @@ public class MetadataEngineAutoConfiguration {
     return new MetadataRegistry();
   }
 
-  @Bean
-  @ConditionalOnMissingBean(name = "registryMetadataRegistry")
-  public com.bone.metadata.engine.ports.registry.MetadataRegistry registryMetadataRegistry() {
-    // 创建registry包的MetadataRegistry实现
-    return new com.bone.metadata.engine.ports.registry.MetadataRegistry() {
-      private final Map<String, Object> metadataMap = new ConcurrentHashMap<>();
-
-      @Override
-      public void registerMetadata(Object metadata) {
-        metadataMap.put(metadata.toString(), metadata);
-      }
-
-      @Override
-      public Object findMetadata(String entityName) {
-        return metadataMap.get(entityName);
-      }
-
-      @Override
-      public boolean unregisterMetadata(String entityName) {
-        return metadataMap.remove(entityName) != null;
-      }
-
-      @Override
-      public Iterable<String> getAllEntityNames() {
-        return metadataMap.keySet();
-      }
-
-      @Override
-      public void clear() {
-        metadataMap.clear();
-      }
-    };
-  }
+  /**
+   * ★ 关于 {@code ports.registry.MetadataRegistry}（2026-10-07 修正）
+   *
+   * <p><b>此前本类重复定义了它</b>（bean 名 {@code registryMetadataRegistry}）， 而 runtime 的 {@code
+   * RuntimeEngineAutoConfiguration} 也定义了一个 （bean 名 {@code portsMetadataRegistry}）⇒ 两者都注册时，按接口注入会报
+   * {@code NoUniqueBeanDefinitionException: expected single matching bean but found 2}。
+   *
+   * <p><b>为什么 starter 自带的那份"排除"救不了</b>：{@code @ComponentScan} 的 {@code excludeFilters} <b>只作用于
+   * starter 自己那次扫描</b>；宿主（如 {@code bone-metadata-server}）的 {@code @SpringBootApplication} 扫 {@code
+   * com.bone.metadata.**} 时<b>范围更大</b>（包含 {@code ...engine.runtime.**}）， 照常注册 runtime 那份 ⇒ 冲突依然存在。
+   *
+   * <p><b>处置（业界最佳实践：单一事实来源）</b>：删除本类的重复定义， 让 runtime 的 {@code
+   * RuntimeEngineAutoConfiguration#portsMetadataRegistry} 成为 <b>唯一来源</b>（它本来就带
+   * {@code @ConditionalOnMissingBean}，宿主可覆盖）。 这样无论宿主是否引入 starter，都只会有一份注册中心。
+   *
+   * <p>该类之所以存在于 runtime（而非 starter），正是为了支持 "宿主直接依赖 runtime、不引 starter"这条路径—— starter 不应再重复一份。
+   */
 
   /** 配置元数据仓库（默认使用内存实现） */
   @Bean
@@ -243,23 +246,5 @@ public class MetadataEngineAutoConfiguration {
             metadataRegistry, metadataRepository,
             processorAdapter, eventPublisher);
     return engine;
-  }
-
-  /** 配置Jackson ObjectMapper */
-  @Bean
-  @ConditionalOnMissingBean
-  public ObjectMapper objectMapper() {
-    // 返回简单的ObjectMapper实例
-    return new ObjectMapper();
-  }
-
-  /** 元数据引擎初始化器 */
-  @Bean
-  @ConditionalOnMissingBean
-  public MetadataEngineInitializer metadataEngineInitializer(
-      MetadataEngine metadataEngine,
-      MetadataEngineProperties smartMetaProperties,
-      org.springframework.core.io.ResourceLoader resourceLoader) {
-    return new MetadataEngineInitializer(metadataEngine, smartMetaProperties, resourceLoader);
   }
 }

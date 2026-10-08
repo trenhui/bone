@@ -1,6 +1,6 @@
 package com.bone.system.domain.model.schedule.valueobject;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 
 /** 定时任务状态。 */
 public enum TaskStatus {
@@ -16,6 +16,6 @@ public enum TaskStatus {
         return s;
       }
     }
-    throw BizException.of("未知任务状态: " + value);
+    throw new DomainException("未知任务状态: " + value);
   }
 }

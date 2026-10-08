@@ -1,15 +1,15 @@
 package com.bone.integration.application.event.support;
 
-import com.bone.integration.application.port.out.IntegrationEventNotifier;
+import com.bone.integration.application.port.out.IntegrationEventNotifierPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 集成事件后续动作门面：统一标题/业务 ID 拼装，委托 {@link IntegrationEventNotifier}。 */
+/** 集成事件后续动作门面：统一标题/业务 ID 拼装，委托 {@link IntegrationEventNotifierPort}。 */
 @Component
 @RequiredArgsConstructor
 public class IntegrationEventFollowUp {
 
-  private final IntegrationEventNotifier eventNotifier;
+  private final IntegrationEventNotifierPort eventNotifier;
 
   public void notifyInfo(String action, String detail, String businessId) {
     eventNotifier.sendInfo(action, humanTitle(action), detail, businessId);

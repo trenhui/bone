@@ -32,19 +32,35 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class ExtensionStudioSyncConfiguration {
 
-  @Bean
+  /**
+   * Redis 相关 Bean【移入嵌套配置类】（2026-10-07 修正，与 ExtensionSyncConfiguration 同因）。
+   *
+   * <p>{@code @ConditionalOnClass} 原先直接打在 {@code @Bean} 方法上。Spring Boot 官方文档 （reference「Developing
+   * Your Own Auto-configuration」· Class Conditions）明确写道：该机制 「does not apply the same way to
+   * {@code @Bean} methods where typically <b>the return type is the target of the condition</b>」⇒
+   * 条件按方法返回类型（{@code ExtensionMetadataStore}， 恒在 classpath）判断，<b>而不是</b>按 {@code RedisTemplate} 判断
+   * ⇒ 条件形同虚设。
+   *
+   * <p><b>实证</b>：{@code ExtensionSyncConfiguration} 上的同类写法用 {@code FilteredClassLoader}
+   * 实测确认条件未生效（Redis 缺失时根因链仍点名 RedisTemplate）， 改为本嵌套类写法后条件才真正生效。
+   */
+  @Configuration(proxyBeanMethods = false)
   @ConditionalOnClass(RedisTemplate.class)
-  @ConditionalOnMissingBean(ExtensionMetadataStore.class)
-  public ExtensionMetadataStore studioRedisMetadataStore(
-      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
-          RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
-      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
-          StringRedisTemplate metadataIndexRedisTemplate,
-      ExtensionStudioProperties properties) {
-    String channel = resolveRefreshChannel(properties);
-    log.info("Studio runtime-sync: RedisExtensionMetadataStore, channel={}", channel);
-    return new RedisExtensionMetadataStore(
-        metadataRedisTemplate, metadataIndexRedisTemplate, channel);
+  static class RedisBackedStudioMetadataConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(ExtensionMetadataStore.class)
+    ExtensionMetadataStore studioRedisMetadataStore(
+        @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
+            RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
+        @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
+            StringRedisTemplate metadataIndexRedisTemplate,
+        ExtensionStudioProperties properties) {
+      String channel = resolveRefreshChannel(properties);
+      log.info("Studio runtime-sync: RedisExtensionMetadataStore, channel={}", channel);
+      return new RedisExtensionMetadataStore(
+          metadataRedisTemplate, metadataIndexRedisTemplate, channel);
+    }
   }
 
   @Bean

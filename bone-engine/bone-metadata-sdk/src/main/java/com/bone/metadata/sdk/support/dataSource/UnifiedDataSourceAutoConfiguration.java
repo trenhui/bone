@@ -22,11 +22,27 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 /** 统一数据源自动配置类 合并了动态数据源和多数据源的配置功能，提供统一的数据源管理和切换支持 */
 @Configuration(proxyBeanMethods = false)
+// ★ 2026-10-07 把 matchIfMissing 从 true 改为 false（业界最佳实践：能力型组件应「显式开启」）。
+//
+// 【为什么改】本类提供 DynamicDataSource（**extends AbstractRoutingDataSource，切库代理**），
+// 一旦生效会**替换服务的标准 DataSource**。而matchIfMissing=true 意味着
+// 「只要没显式关闭就默认生效」——结合它被列在 spring.factories 的旧式注册里
+// （Boot 3 下不生效，故当前生产是"安全的"），一旦有人把该类补进
+// META-INF/spring 下的 .imports 清单，就会在**所有服务**里静默接管 DataSource。
+//
+// 【实测依据】DataSourceContextHolder 的 44 处引用**全部在 SDK 内部的 7 个文件**，
+// **业务代码零使用** ⇒ 该能力建好但从未被业务启用；且实测全仓没有任何服务
+// 配置 bone.metadata.datasource.enabled。⇒ 改成"显式开启"不改变任何现有行为，
+// 只是把「默认全开」换成「默认全关」，消除误接线的风险。
+//
+// 【需要启用时】在目标服务的 application.yml 里显式声明：
+//   bone.metadata.datasource.enabled: true
+// 若同时要启用切库，再配 bone.metadata.datasource.primary 之类的键（见 DataSourceProperties）。
 @ConditionalOnProperty(
     prefix = "bone.metadata.datasource",
     name = "enabled",
     havingValue = "true",
-    matchIfMissing = true)
+    matchIfMissing = false)
 @ConditionalOnClass({DynamicDataSource.class, DataSourceContextHolder.class})
 @EnableConfigurationProperties(com.bone.metadata.sdk.support.dataSource.DataSourceProperties.class)
 @AutoConfigureAfter({DataSourceAutoConfiguration.class})

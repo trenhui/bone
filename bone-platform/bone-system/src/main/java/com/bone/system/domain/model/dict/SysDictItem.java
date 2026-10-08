@@ -4,7 +4,7 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.system.domain.model.dict.enums.DictTagType;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
@@ -78,10 +78,10 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
       Integer status,
       String description) {
     if (label == null || label.isBlank()) {
-      throw BizException.of("字典项显示名不能为空");
+      throw new DomainException("字典项显示名不能为空");
     }
     if (label.length() > 100) {
-      throw BizException.of("字典项显示名长度不能超过 100");
+      throw new DomainException("字典项显示名长度不能超过 100");
     }
     assertRange(effectiveFrom, effectiveTo);
     SysDictItem item = new SysDictItem();
@@ -120,7 +120,7 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
       String description) {
     if (label != null && !label.isBlank()) {
       if (label.length() > 100) {
-        throw BizException.of("字典项显示名长度不能超过 100");
+        throw new DomainException("字典项显示名长度不能超过 100");
       }
       this.label = label.trim();
     }
@@ -205,7 +205,7 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
 
   private static void assertRange(LocalDateTime from, LocalDateTime to) {
     if (from != null && to != null && from.isAfter(to)) {
-      throw BizException.of("生效开始时间不能晚于结束时间");
+      throw new DomainException("生效开始时间不能晚于结束时间");
     }
   }
 }

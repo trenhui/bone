@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.system.domain.model.dict.SysDictHierarchy;
 import com.bone.system.domain.model.dict.valueobject.DictCode;
 import org.junit.jupiter.api.Test;
@@ -95,7 +95,7 @@ class SysDictHierarchyTest {
   void tooLongHierarchyCodeIsRejected() {
     String tooLong = "H".repeat(65);
     assertThrows(
-        BizException.class,
+        DomainException.class,
         () ->
             SysDictHierarchy.create(
                 4L,

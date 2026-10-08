@@ -5,9 +5,9 @@ import com.bone.metadata.engine.runtime.MetadataEngine;
 import com.bone.metadata.engine.runtime.RuleEngine;
 import com.bone.metadata.engine.runtime.ValidationEngine;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * 规则引擎自动配置类 负责管理规则引擎相关组件的初始化和依赖注入
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  * {@code validateCustomRules} 恒走 else 分支的 {@code fallbackCustomRuleValidation}， 而该方法曾是空实现 ⇒
  * <b>元数据自定义业务规则校验在生产上完全静默跳过（fail-open）</b>。 这里显式把它接回去，让规则校验真正生效。
  */
-@Configuration
+@AutoConfiguration
 public class RuleEngineAutoConfiguration {
 
   /**

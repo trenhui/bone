@@ -1,0 +1,16 @@
+{
+  "description": "HC-003 存量违反『Controller 必须返回 ApiResponse<T> / PageResult<T>』的端点。只可收缩，新增端点不得加入。判断口径见 scripts/check-controller-response-envelope.py。",
+  "allowedBareReturnTypes": {
+    "byte[]": "文件下载流（Content-Disposition），非业务数据",
+    "ByteArrayResource": "文件下载流（Spring Resource），非业务数据",
+    "Resource": "文件下载流（Spring Resource），非业务数据",
+    "void": "无响应体（204/异步触发），由 @ResponseStatus 表达状态",
+    "boolean": "JWKS 等标准协议端点，见下方豁免登记",
+    "Date": "仅 DefaultMetadataVersionController 的遗留端点，已登记豁免",
+    "String": "仅 DefaultMetadataVersionController 的遗留端点，已登记豁免"
+  },
+  "methodExemptions": {
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/JwksController.java::jwks": "RFC 7517 / OIDC Discovery 规定的 JWKS 端点：响应体必须是标准 JWK Set（kty/use/kid/alg/n/e），包一层 ApiResponse 会让所有消费方（网关、各微服务）解析失败。ADR-0005 已确认协议归属。"
+  },
+  "endpoints": []
+}

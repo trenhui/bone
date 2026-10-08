@@ -89,9 +89,12 @@ public class MetadataEngine implements InitializingBean {
   private boolean validationEnabled = true;
   private boolean calculationEnabled = true;
   private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
+  private int maxRetries = 3; // 操作重试次数
+  private long retryDelay = 100; // 重试延迟时间（毫秒）
   private Object operationService; // 操作服务
 
   private final Map<String, CacheEntry<?>> entityMetadataCache = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, Object>> expressionEngineCache = new ConcurrentHashMap<>();
 
   public interface MetadataChangeListener {
     void onMetadataChanged(String entityType, String changeType);
@@ -572,5 +575,21 @@ public class MetadataEngine implements InitializingBean {
 
   public void setCacheExpirationTime(long cacheExpirationTime) {
     this.cacheExpirationTime = cacheExpirationTime;
+  }
+
+  public int getMaxRetries() {
+    return maxRetries;
+  }
+
+  public void setMaxRetries(int maxRetries) {
+    this.maxRetries = maxRetries;
+  }
+
+  public long getRetryDelay() {
+    return retryDelay;
+  }
+
+  public void setRetryDelay(long retryDelay) {
+    this.retryDelay = retryDelay;
   }
 }

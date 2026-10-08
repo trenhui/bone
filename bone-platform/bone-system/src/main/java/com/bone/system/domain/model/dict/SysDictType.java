@@ -5,6 +5,7 @@ import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.system.domain.model.dict.enums.DictCategory;
 import com.bone.system.domain.model.dict.enums.DictValueType;
@@ -80,23 +81,23 @@ public class SysDictType extends TenantAggregateRoot<Long> {
       Integer sort,
       Integer status) {
     if (name == null || name.isBlank()) {
-      throw BizException.of("字典类型名称不能为空");
+      throw new DomainException("字典类型名称不能为空");
     }
     if (name.length() > 100) {
-      throw BizException.of("字典类型名称长度不能超过 100");
+      throw new DomainException("字典类型名称长度不能超过 100");
     }
     if (category.isEnum() && (enumClass == null || enumClass.isBlank())) {
-      throw BizException.of("ENUM 类字典类型必须绑定枚举类（enumClass）");
+      throw new DomainException("ENUM 类字典类型必须绑定枚举类（enumClass）");
     }
     if (!category.isEnum() && enumClass != null && !enumClass.isBlank()) {
-      throw BizException.of("仅 ENUM 类字典类型可绑定枚举类");
+      throw new DomainException("仅 ENUM 类字典类型可绑定枚举类");
     }
     int depth = maxDepth == null ? 0 : maxDepth;
     if (depth < 0) {
-      throw BizException.of("层级上限不能为负数");
+      throw new DomainException("层级上限不能为负数");
     }
     if (!category.isCascade() && depth > 0) {
-      throw BizException.of("仅 CASCADE 类字典类型可设置层级上限");
+      throw new DomainException("仅 CASCADE 类字典类型可设置层级上限");
     }
 
     SysDictType type = new SysDictType();
@@ -130,17 +131,17 @@ public class SysDictType extends TenantAggregateRoot<Long> {
       Integer status) {
     DictCategory cat = category();
     if (name == null || name.isBlank()) {
-      throw BizException.of("字典类型名称不能为空");
+      throw new DomainException("字典类型名称不能为空");
     }
     if (cat.isEnum() && (enumClass == null || enumClass.isBlank())) {
-      throw BizException.of("ENUM 类字典类型必须绑定枚举类（enumClass）");
+      throw new DomainException("ENUM 类字典类型必须绑定枚举类（enumClass）");
     }
     int depth = maxDepth == null ? 0 : maxDepth;
     if (depth < 0) {
-      throw BizException.of("层级上限不能为负数");
+      throw new DomainException("层级上限不能为负数");
     }
     if (!cat.isCascade() && depth > 0) {
-      throw BizException.of("仅 CASCADE 类字典类型可设置层级上限");
+      throw new DomainException("仅 CASCADE 类字典类型可设置层级上限");
     }
     this.name = name.trim();
     this.moduleCode = moduleCode;
@@ -197,10 +198,10 @@ public class SysDictType extends TenantAggregateRoot<Long> {
     }
     DictValueType type = DictValueType.of(valueType);
     if (!type.matches(value)) {
-      throw BizException.of("值不符合值域类型 " + type.name() + "：" + value);
+      throw new DomainException("值不符合值域类型 " + type.name() + "：" + value);
     }
     if (valueRegex != null && !value.matches(valueRegex)) {
-      throw BizException.of("值不匹配值域格式 " + valueRegex + "：" + value);
+      throw new DomainException("值不匹配值域格式 " + valueRegex + "：" + value);
     }
   }
 
@@ -218,11 +219,11 @@ public class SysDictType extends TenantAggregateRoot<Long> {
       try {
         int len = Integer.parseInt(trimmed);
         if (len <= 0) {
-          throw BizException.of("编码分段必须为正整数：" + codeSegments);
+          throw new DomainException("编码分段必须为正整数：" + codeSegments);
         }
         result.add(len);
       } catch (NumberFormatException ex) {
-        throw BizException.of("编码分段格式非法（应为逗号分隔的长度，如 2,2,2）：" + codeSegments);
+        throw new DomainException("编码分段格式非法（应为逗号分隔的长度，如 2,2,2）：" + codeSegments);
       }
     }
     return result;
@@ -274,14 +275,14 @@ public class SysDictType extends TenantAggregateRoot<Long> {
   /** 删除前置校验：内置类型是平台护栏，运营态不可删。 */
   public void assertDeletable() {
     if (isBuiltin()) {
-      throw BizException.of("内置字典类型不可删除：" + code);
+      throw new DomainException("内置字典类型不可删除：" + code);
     }
   }
 
   /** 租户改项前置校验：{@code editable=0} 的值域由平台统一口径，租户只读。 */
   public void assertEditableByTenant() {
     if (editable != null && editable == 0) {
-      throw BizException.of("该字典类型的项由平台统一维护，租户只读：" + code);
+      throw new DomainException("该字典类型的项由平台统一维护，租户只读：" + code);
     }
   }
 
