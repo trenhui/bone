@@ -1,5 +1,6 @@
 package com.bone.iam.domain.model.permission;
 
+import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
@@ -20,6 +21,12 @@ public class Permission extends AggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
+
+  // 逻辑删除标记：聚合根基类（TenantAggregateRoot / AggregateRoot）不自带 deleted 字段；
+  // 不声明则 Repository#deleteById 发出 DELETE FROM，行永久消失且不可审计、不可恢复。
+  // 补 @Deleted 后 SDK 走 UPDATE deleted=1 软删；配套 DDL（0020_soft_delete_unique_index.sql）
+  // 已把本表唯一索引纳入 deleted 列，避免「软删后同值无法重建」。
+  @Deleted private Boolean deleted = false;
 
   private String code;
   private String name;

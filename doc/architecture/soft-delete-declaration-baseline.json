@@ -35,7 +35,7 @@
     "  gen_column_metadata / iam_dept / iam_menu / int_connector / int_flow / int_flow_connection /",
     "  int_flow_node / mdm_feedback / mdm_model_drift / mdm_quality_issue / sys_alert_rule / sys_schedule_task。",
     "  判据：这些表无唯一索引，补软删不存在「同值无法重建」冲突；DDL 侧 deleted 列早已就位（实测 bone 库12/12 齐备）。",
-    "  剩余 22 张**有唯一索引**的表仍待DHL 决策（唯一索引改 (cols..., deleted)）——见 _uk_conflict。"
+    "  剩余 15 张**有唯一索引**的表仍待DHL 决策（唯一索引改 (cols..., deleted)）——见 _uk_conflict。iam_account/iam_tenant/iam_role/iam_permission/mdm_record/mdm_entity/sys_config 已于 2026-10-08 试点补 @Deleted（实体侧已恢复软删），待 0020 DDL 应用后唯一索引含 deleted 列方可上线。"
   ],
   "_evidence": {
     "sdk_source": [
@@ -76,30 +76,6 @@
       "module": "studio-generator",
       "classification": "physical-delete"
     },
-    "iam_account": {
-      "entity": "Account",
-      "module": "bone-iam",
-      "classification": "physical-delete",
-      "note": "★ 风险最高：账号被删除即不可恢复，审计与登录痕迹同时消失。租户注销链路亦涉此表。"
-    },
-    "iam_permission": {
-      "entity": "Permission",
-      "module": "bone-iam",
-      "classification": "physical-delete",
-      "note": "★ 权限删除即彻底回收授权，无法复原误授。"
-    },
-    "iam_role": {
-      "entity": "Role",
-      "module": "bone-iam",
-      "classification": "physical-delete",
-      "note": "★ 与 iam_role_permission 的授权关联会一并失去引用。"
-    },
-    "iam_tenant": {
-      "entity": "Tenant",
-      "module": "bone-iam",
-      "classification": "physical-delete",
-      "note": "★ 租户实体被删除即不可恢复，且 iam 侧多表以其为外键归属。2026-10-03 补登记：首版基线因正则误匹配到同名类 ExtIamTenantDirectory 而漏掉本表。"
-    },
     "md_quality_rule": {
       "entity": "DataQualityRule",
       "module": "bone-masterdata",
@@ -116,22 +92,10 @@
       "module": "bone-masterdata",
       "classification": "physical-delete"
     },
-    "mdm_entity": {
-      "entity": "MasterDataEntity",
-      "module": "bone-masterdata",
-      "classification": "physical-delete",
-      "note": "★ 实体删除连带mdm_field / mdm_record 的引用完整性，且平台模板层实体被删后租户实例层无处对齐。"
-    },
     "mdm_entity_subscription": {
       "entity": "EntitySubscription",
       "module": "bone-masterdata",
       "classification": "physical-delete"
-    },
-    "mdm_record": {
-      "entity": "MasterDataRecord",
-      "module": "bone-masterdata",
-      "classification": "physical-delete",
-      "note": "★★ 风险最高：主数据记录是业务数据本体，物理删除不可恢复且绕过 mdm_record_version 版本链。"
     },
     "mdm_reference_set": {
       "entity": "ReferenceSet",
@@ -147,12 +111,6 @@
       "entity": "TenantReferenceValue",
       "module": "bone-masterdata",
       "classification": "physical-delete"
-    },
-    "sys_config": {
-      "entity": "SystemConfig",
-      "module": "bone-system",
-      "classification": "physical-delete",
-      "note": "实测确认（2026-10-03 探针）：删除后 total 1 → 0。配置值历史不可追溯。"
     },
     "sys_dict_hierarchy": {
       "entity": "SysDictHierarchy",
@@ -176,26 +134,19 @@
     }
   },
   "_uk_conflict": {
-    "_note": "为何不能直接批量补 @Deleted：MySQL 软删 + 唯一索引需索引含 deleted 列，否则软删后同值无法重建。业界标准解法二选一：(A) 唯一索引改为 (cols..., deleted)——允许同值存在 1 条已删记录（MySQL 无 partial index）；(B) 保持物理删 + 独立归档表。本仓38 张表全部有 deleted 列，但唯一索引无一含 deleted，故 23 张有唯一索引的表恢复软删前必须先做 DDL 决策（L3 级，需架构师审批）。",
+    "_note": "为何不能直接批量补 @Deleted：MySQL 软删 + 唯一索引需索引含 deleted 列，否则软删后同值无法重建。业界标准解法二选一：(A) 唯一索引改为 (cols..., deleted)——允许同值存在 1 条已删记录（MySQL 无 partial index）；(B) 保持物理删 + 独立归档表。本仓38 张表全部有 deleted 列，但唯一索引无一含 deleted，故 15 张有唯一索引的表（另 7 张试点已补 @Deleted，待 0020 DDL 应用）恢复软删前必须先做 DDL 决策（L3 级，需架构师审批）。",
     "tables_with_unique_index_not_covering_deleted": [
       "gen_code_template",
       "gen_data_source",
       "gen_generation_task",
       "gen_table_metadata",
-      "iam_account",
-      "iam_permission",
-      "iam_role",
-      "iam_tenant",
       "md_quality_rule",
       "mdm_category",
       "mdm_domain_template",
-      "mdm_entity",
       "mdm_entity_subscription",
-      "mdm_record",
       "mdm_reference_set",
       "mdm_reference_value",
       "mdm_reference_value_tenant",
-      "sys_config",
       "sys_dict_hierarchy",
       "sys_dict_item",
       "sys_dict_item_text",
