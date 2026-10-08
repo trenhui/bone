@@ -92,11 +92,22 @@ def load_exemptions() -> tuple[dict[str, str], dict[str, str]]:
 
 
 def write_baseline(files: list[str]) -> None:
-    payload = {
-        "description": "HC-006 存量绕过 SDK 的 JDBC/MyBatis import。只可收缩，新增文件不得加入。",
-        "files": files,
-    }
-    BASELINE.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # 保留既有的两层豁免，避免 --baseline 重写时把 technicalExemptions /
+    # debugToolExemptions / exemptionReasons 一并抹掉（否则分类裁决丢失，所有项退回"待收敛"）。
+    data: dict = {}
+    if BASELINE.exists():
+        try:
+            data = json.loads(BASELINE.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+    data["description"] = (
+        "HC-006 存量绕过 SDK 的 JDBC/MyBatis import。基线分两层：files=真正待收敛的技术债"
+        "（须排期迁 SDK / 服务客户端）；technicalExemptions / debugToolExemptions=结构性或工具性"
+        "豁免（SDK 无法表达或 by-design，仍只可收缩）。新增文件命中即失败。"
+        "裁决依据见 doc/architecture/HC-006-存量绕过裁决.md。"
+    )
+    data["files"] = files
+    BASELINE.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> int:
