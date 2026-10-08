@@ -57,13 +57,28 @@ SRC_DIRS = [
     ROOT / "bone-framework",
 ]
 
-# 显式豁免：类名 -> 理由（必须写清"为何不碰租户数据"）
-EXEMPT: dict[str, str] = {}
+# 显式豁免：类名 -> 理由（必须写清"为何不碰租户数据"）。
+# 以下处理器均不访问任何租户作用域仓储/网关，无需显式切租户；
+# 若后续新增租户数据访问，须移出 EXEMPT 并补 TenantContextRunner.callAs/runAs。
+EXEMPT: dict[str, str] = {
+    # 纯事件发布器：仅委托 ApplicationEventPublisher.publishEvent，不碰租户持久化
+    "SpringDomainEventPublisher": "纯事件发布实现，仅 applicationEventPublisher.publishEvent，不访问租户作用域仓储/网关",
+    # masterdata 事件处理器：当前仅 log.info 事件载荷（占位 stub），无租户数据访问
+    "MasterDataEntityCreatedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "DataQualityCheckCompletedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "MasterDataRecordCreatedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "MasterDataRecordPublishedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "DataQualityRuleCreatedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "MasterDataFieldAddedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+    "MasterDataEntityPublishedHandler": "当前仅 log.info 事件载荷，无租户作用域持久化访问",
+}
 
 # 内部已完成租户切换的辅助类：委托给它们的处理器不重复要求切租户
 DELEGATING_HELPERS = ("OrderItemInventoryExecutor",)
 
-AFTER_COMMIT_RE = re.compile(r"@TransactionalEventListener\s*\(\s*phase\s*=\s*TransactionPhase\.AFTER_COMMIT")
+# 默认 AFTER_COMMIT：Spring 的 @TransactionalEventListener 不写 phase 即 AFTER_COMMIT。
+# 必须用「裸注解」也能命中，否则裸写法会逃过门禁（实测全仓 0 个写 phase=，门禁恒绿却查 0 个处理器 → 假绿）。
+AFTER_COMMIT_RE = re.compile(r"@TransactionalEventListener\b")
 # ★只认「真正调用」——不能匹配 import 行。
 #   否则「留着一行没用的 import」就能骗过门禁（实测踩过：注入了违规代码门禁仍报绿，
 #   因为 import 的 TenantContextRunner 被正则命中）。
@@ -82,9 +97,9 @@ def iter_java_files() -> list[Path]:
         if not base.is_dir():
             continue
         for p in base.rglob("*.java"):
-            # 排除构建产物与依赖
+            # 排除构建产物、依赖与测试（测试不是生产处理器，不应受此门禁约束）
             s = str(p)
-            if "/target/" in s or "/node_modules/" in s:
+            if "/target/" in s or "/node_modules/" in s or "/src/test/" in s:
                 continue
             yield p
 

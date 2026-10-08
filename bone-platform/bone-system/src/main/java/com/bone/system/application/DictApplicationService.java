@@ -495,15 +495,22 @@ public class DictApplicationService {
     long tenantId = currentTenant();
     DictCode type = parseTypeCode(typeCode);
     DictCode itemCode = parseItemCode(code);
+    // 一次性拉取该项下当前租户的全部已有译文，循环内改为 Map 查找，
+    // 消除逐条 SELECT 的 N+1（payload 越大，省下的查询越多）。
+    List<SysDictItemText> existingTexts =
+        dictItemTextRepository.listByItemAllTenants(type.value(), itemCode.value(), tenantId);
+    Map<String, SysDictItemText> byLang = new LinkedHashMap<>();
+    for (SysDictItemText t : existingTexts) {
+      if (Objects.equals(t.getTenantId(), tenantId)) {
+        byLang.put(t.getLanguage(), t);
+      }
+    }
     int affected = 0;
     for (DictItemTextDto dto : payload) {
-      Optional<SysDictItemText> hit =
-          dictItemTextRepository.findByItemAndLanguageAllTenants(
-              type.value(), itemCode.value(), dto.getLanguage(), tenantId);
-      if (hit.isPresent() && Objects.equals(hit.get().getTenantId(), tenantId)) {
-        SysDictItemText text = hit.get();
-        text.update(dto.getLabel(), dto.getDescription());
-        dictItemTextRepository.save(text);
+      SysDictItemText hit = byLang.get(dto.getLanguage());
+      if (hit != null) {
+        hit.update(dto.getLabel(), dto.getDescription());
+        dictItemTextRepository.save(hit);
       } else {
         dictItemTextRepository.save(
             SysDictItemText.create(
