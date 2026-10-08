@@ -1,7 +1,6 @@
 {
   "description": "HC-006 存量绕过 SDK 的 JDBC/MyBatis import。基线分两层：files=真正待收敛的技术债（须排期迁 SDK / 服务客户端）；technicalExemptions / debugToolExemptions=结构性或工具性豁免（SDK 无法表达或 by-design，仍只可收缩）。新增文件命中即失败。裁决依据见 doc/architecture/HC-006-存量绕过裁决.md。",
   "files": [
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenIssuerGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenSessionGatewayAdapter.java",
     "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java"
@@ -13,6 +12,7 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java",
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
     "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
@@ -27,6 +27,7 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java": "引擎内部模板读取（动态），属引擎边界，SDK 无法表达",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java": "数据库元数据 / INFORMATION_SCHEMA 内省，SDK 无法表达",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java": "70+ 租户表批量 DELETE + FOREIGN_KEY_CHECKS=0 + 跨表 JOIN 删除；SDK 无批量删 / 跨表删能力，by-design 运维操作",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java": "单表 CRUD，但端口被 AuditLogCleanupJob（每日 03:00 cron）逐租户循环调用以读取**全部租户**的保留期 ⇒ 该端口本质是「平台级跨租户读」，与 AuditLogRetentionPortAdapter 同类。SDK 聚合/条件通道是租户作用域且 TenantFilterInjector 优先 TenantContext 并忽略 caller 传入的 tenantId，直接迁移会在上下文存在时读到**别的租户**的设置（静默错配+越权读风险）；正确迁移须先把 job 改为 TenantContextRunner.runAs(tenantId,...)逐租户切换。等§4 平台级指标能力落地后再收敛",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java": "定时全租户物理清理，无请求级租户上下文；按设计跨租户物理删，须走 Criteria.disableTenantFilter() 受控出口（ADR-0029 逃生舱）+ 平台授权与审计，SDK 无法用租户通道表达",
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java": "SELECT tenant_id, COUNT(*) ... GROUP BY tenant_id —— 语义本身是「跨租户分租户统计」（@Scheduled 无租户上下文）；SDK 聚合通道是租户作用域的，直接用会被 fail-closed 拦下。要么走 disableTenantFilter() 受控跨租户出口（须平台授权+审计），要么 SDK 另提供平台级跨租户指标 API。属设计缺口，非单纯表达式能力不足",
     "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java": "跨 4 张表（iam_account/meta_entity/int_flow/exts_plugin_version，跨模块）全库级 COUNT(*)，且异构软删（deleted 与 is_active 两种语义）+ graceful degradation 逐表 try/catch 计 0；SDK 聚合是单表+租户作用域，无法一次表达跨表全库概览",
