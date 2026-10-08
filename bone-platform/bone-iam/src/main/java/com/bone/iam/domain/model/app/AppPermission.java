@@ -4,6 +4,7 @@ import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.iam.domain.model.app.valueobject.AppRole;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,6 +26,7 @@ public class AppPermission extends TenantAggregateRoot<Long> {
   private AppRole role;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+  @Version private Long version;
 
   public static AppPermission create(Long appId, Long userId, AppRole role, Long tenantId) {
     if (appId == null) {

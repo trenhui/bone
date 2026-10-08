@@ -2,6 +2,7 @@ package com.bone.iam.domain.model.app;
 
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class BoneApplication extends TenantAggregateRoot<Long> {
   private Integer status;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+  @Version private Long version;
 
   public static BoneApplication create(
       String name, String code, String description, String icon, Long tenantId) {

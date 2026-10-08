@@ -204,7 +204,8 @@ bone:
   缺 `publishFrom` 等于把事件丢掉，编译与单测都不会报错
 - 失败一律走 `SystemErrors.of(SystemErrorCodes.XXX, 上下文)`，**不在抛出点手写 HTTP 状态数字**；
   领域异常（`DomainException`）在应用层翻译成 4xx，任其冒泡会被兜底成 500
-- 持久化只用 `bone-metadata-sdk`：禁 MyBatis / JPA / JdbcTemplate；SQL 模板真源是外置 `resources/sql/**`
+- 持久化只用 `bone-metadata-sdk`：禁 MyBatis / JPA；SQL 模板真源是外置 `resources/sql/**`。
+  JdbcTemplate 属 SDK 绕过通道，**仅限**已登记进 `doc/architecture/sdk-persistence-bypass-baseline.json` 的只读指标查询（如 `JdbcKeyMetricsGatewayAdapter`），且 SQL 须手写 `tenant_id` 条件；其余一律走 `Repository<>`
 - 使用 Lombok（`@Getter` / `@Builder` / `@RequiredArgsConstructor`）与 MapStruct（adapter 装配）
 
 ## 测试
