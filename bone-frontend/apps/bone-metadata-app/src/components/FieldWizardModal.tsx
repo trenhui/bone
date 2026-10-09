@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Select, Space, Steps, Tag, Typography } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { Button, Form, Input, InputNumber, Modal, Select, Space, Steps, Tag, Typography, message } from 'antd';
+import { LeftOutlined, PlusOutlined, RightOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { CreateMetaFieldReq } from '../types';
 import {
   FIELD_TYPE_MAP,
@@ -9,6 +9,12 @@ import {
 } from '../types';
 
 const { Text, Title } = Typography;
+
+/** ENUM 码表选项（T3：字段向导的枚举值编辑器数据模型） */
+interface EnumOptionRow {
+  code: string;
+  label: string;
+}
 
 /**
  * 字段向导（2b F10，对标 Salesforce New Field 类型面板）：
@@ -26,6 +32,7 @@ const TYPE_GROUPS: TypeGroup[] = [
   { key: 'number', label: '数字类', types: ['INTEGER', 'LONG', 'DECIMAL'] },
   { key: 'bool', label: '布尔类', types: ['BOOLEAN'] },
   { key: 'date', label: '日期类', types: ['DATE', 'DATETIME'] },
+  { key: 'enum', label: '枚举/码表', types: ['ENUM'] },
 ];
 
 export interface FieldWizardProps {
@@ -39,20 +46,62 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
   const [step, setStep] = useState(0);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /** T3：ENUM 字段的选项编辑器（替代手敲 JSON，避免码表格式写错导致运行时控件降级） */
+  const [enumRows, setEnumRows] = useState<EnumOptionRow[]>([]);
 
   useEffect(() => {
     if (open) {
       setStep(0);
       setSelectedType(null);
+      setEnumRows([]);
       form.resetFields();
     }
   }, [open, form]);
+
+  const isEnum = selectedType === 'ENUM';
+
+  const updateEnumRow = (idx: number, key: keyof EnumOptionRow, value: string) => {
+    setEnumRows((prev) => prev.map((r, i) => (i === idx ? { ...r, [key]: value } : r)));
+  };
+
+  const addEnumRow = () => setEnumRows((prev) => [...prev, { code: '', label: '' }]);
+
+  const removeEnumRow = (idx: number) =>
+    setEnumRows((prev) => prev.filter((_, i) => i !== idx));
+
+  /**
+   * 选项行 → enumValues JSON 文本。
+   * 校验：code 必填且唯一；label 缺省回落 code。任一行非法 → 返回 undefined 并阻断提交。
+   */
+  const serializeEnumValues = (): string | undefined => {
+    if (!isEnum) return form.getFieldValue('enumValues') || undefined;
+    if (enumRows.length === 0) return undefined;
+    const seen = new Set<string>();
+    for (const r of enumRows) {
+      const code = (r.code || '').trim();
+      if (!code) {
+        message.error('枚举选项的「选项值」不能为空');
+        return undefined;
+      }
+      if (seen.has(code)) {
+        message.error(`枚举选项值重复：${code}`);
+        return undefined;
+      }
+      seen.add(code);
+    }
+    return JSON.stringify(
+      enumRows.map((r) => ({ code: (r.code || '').trim(), label: (r.label || '').trim() || (r.code || '').trim() })),
+    );
+  };
 
   const needsLength = (t: string | null) => t === 'STRING' || t === 'TEXT' || t === 'DECIMAL';
 
   const handleFinish = async () => {
     if (!selectedType) return;
     const values = await form.validateFields();
+    // ENUM 走结构化选项编辑器；码表非法时 serializeEnumValues 已提示并阻断
+    const enumValues = serializeEnumValues();
+    if (isEnum && enumValues === undefined && enumRows.length > 0) return;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -71,12 +120,21 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
         dataSteward: values.dataSteward || undefined,
         businessTerm: values.businessTerm || undefined,
         sourceSystem: values.sourceSystem || undefined,
-        enumValues: values.enumValues || undefined,
+        enumValues,
         validationRules: values.validationRules || undefined,
       });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /** 「下一步」守卫：ENUM 至少一项，避免建出无码表的空枚举（运行时会渲染成不可用的空 Select） */
+  const goStep1 = () => {
+    if (!selectedType) return;
+    if (selectedType === 'ENUM' && enumRows.length === 0) {
+      setEnumRows([{ code: '', label: '' }]);
+    }
+    setStep(1);
   };
 
   return (
@@ -90,7 +148,7 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
         step === 0 ? (
           <Space>
             <Button onClick={onCancel}>取消</Button>
-            <Button type="primary" disabled={!selectedType} icon={<RightOutlined />} iconPosition="end" onClick={() => setStep(1)}>
+            <Button type="primary" disabled={!selectedType} icon={<RightOutlined />} iconPosition="end" onClick={goStep1}>
               下一步
             </Button>
           </Space>
@@ -169,6 +227,47 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
               <InputNumber min={1} max={selectedType === 'DECIMAL' ? 38 : 65535} style={{ width: '100%' }} placeholder={selectedType === 'DECIMAL' ? '如 10' : '如 64'} />
             </Form.Item>
           )}
+          {isEnum && (
+            <div style={{ marginBottom: 12 }}>
+              <Title level={5} style={{ marginTop: 8 }}>枚举选项</Title>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                落库存为标准码表；数据 Tab 会渲染为下拉选择，列表 Tab 渲染为徽标。
+              </Text>
+              {enumRows.length === 0 ? (
+                <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
+                  添加第一个选项
+                </Button>
+              ) : (
+                <>
+                  {enumRows.map((row, idx) => (
+                    <Space key={idx} style={{ display: 'flex', marginTop: 8 }} align="baseline">
+                      <Input
+                        style={{ width: 160 }}
+                        placeholder="选项值，如 OPEN"
+                        value={row.code}
+                        onChange={(e) => updateEnumRow(idx, 'code', e.target.value)}
+                      />
+                      <Input
+                        style={{ width: 160 }}
+                        placeholder="显示名，如 待处理"
+                        value={row.label}
+                        onChange={(e) => updateEnumRow(idx, 'label', e.target.value)}
+                      />
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeEnumRow(idx)}
+                      />
+                    </Space>
+                  ))}
+                  <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
+                    添加选项
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
           <Form.Item name="required" label="必填" initialValue={false}>
             <Select options={[{ value: true, label: '是' }, { value: false, label: '否' }]} />
           </Form.Item>
@@ -208,9 +307,11 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
           <Form.Item name="sourceSystem" label="来源系统（血缘）">
             <Input placeholder="如：交易系统" />
           </Form.Item>
-          <Form.Item name="enumValues" label="枚举值/标准码表（JSON）" tooltip="标准码表，如 [{\&quot;code\&quot;:\&quot;M\&quot;,\&quot;label\&quot;:\&quot;男\&quot;}]">
-            <Input.TextArea rows={2} placeholder='可选，如 [{"code":"M","label":"男"}]' />
-          </Form.Item>
+          {!isEnum && (
+            <Form.Item name="enumValues" label="枚举值/标准码表（JSON）" tooltip="标准码表，如 [{\&quot;code\&quot;:\&quot;M\&quot;,\&quot;label\&quot;:\&quot;男\&quot;}]">
+              <Input.TextArea rows={2} placeholder='可选，如 [{"code":"M","label":"男"}]' />
+            </Form.Item>
+          )}
           <Form.Item name="validationRules" label="校验规则/质量规则（JSON）" tooltip="字段级质量规则，如 {&quot;min&quot;:0,&quot;max&quot;:120}">
             <Input.TextArea rows={2} placeholder='可选，如 {"min":0,"max":120}' />
           </Form.Item>

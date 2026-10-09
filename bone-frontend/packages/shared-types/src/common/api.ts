@@ -24,6 +24,11 @@ export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
+  /**
+   * 乐观并发令牌（运行时写路径 If-Match/412）。
+   * 由 shared-services 响应拦截器从 `ETag` 响应头透传，缺失时为 undefined。
+   */
+  etag?: string;
 }
 
 /**

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BONE 元数据 · 实体工作区 v0.32（代码实测修正 · 0→1/1→n）</title>
+<title>BONE 元数据 · 实体工作区 v0.34（复核收口 · 0→1/1→n）</title>
 <style>
   :root{
     --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
@@ -234,9 +234,9 @@
       <div class="grp">参考</div>
       <div class="item" data-nav="t-err" onclick="goTab('t-err')"><span class="ico">⚠</span>状态与异常</div>
       <div class="item" data-nav="t-gap" onclick="goTab('t-gap')"><span class="ico">🔬</span>实现差距 · W0</div>
-      <div class="item" data-nav="t-plan" onclick="goTab('t-plan')"><span class="ico">🧭</span>落地路线 · v0.32</div>
+      <div class="item" data-nav="t-plan" onclick="goTab('t-plan')"><span class="ico">🧭</span>落地路线 · v0.34</div>
     </nav>
-    <div class="sider-foot">原型 v0.32 · 代码实测修正 · 0→1/1→n</div>
+    <div class="sider-foot">原型 v0.34 · 复核收口 · 0→1/1→n</div>
   </aside>
 
   <main class="main">
@@ -536,7 +536,7 @@
               <select style="width:100px"><option>排序</option><option>数量↓</option><option>数量↑</option></select>
               <button class="btn primary sm" onclick="toast('查询 · filter/sort（RC-004）')">查询</button>
               <button class="btn sm" onclick="toast('列选择器')">列显隐</button>
-              <button class="btn sm primary" style="margin-left:auto" onclick="openReplNewModal()">+ 新建补货单</button>
+              <button class="btn sm primary" style="margin-left:auto" onclick="swView('form')">+ 新建补货单</button>
             </div>
             <table>
               <thead><tr id="data-thead"></tr></thead>
@@ -672,16 +672,16 @@
           </div>
           <div class="foot-bar">
             <span style="font-size:12px;color:var(--text-3)">业界对照：先释放已实现 API → 修数据正确性 → 界面 Tab 预览 → 组件化（strangler）→ 再治理</span>
-            <button class="btn" onclick="goTab('t-plan')">看落地路线 v0.32</button>
+            <button class="btn" onclick="goTab('t-plan')">看落地路线 v0.34</button>
             <button class="btn primary" onclick="goTab('t-fields')">从结构演示</button>
           </div>
         </div>
       </div>
 
-      <!-- ===== Tab: 落地路线 v0.32 ===== -->
+      <!-- ===== Tab: 落地路线 v0.34 ===== -->
       <div class="panel" id="t-plan">
         <div class="card">
-          <h4>v0.32 代码实测：三处假设被推翻 <span class="pill red">先读</span></h4>
+          <h4>v0.34 代码实测修正（三处假设） <span class="pill red">先读</span></h4>
           <div class="alert warn" style="margin-bottom:12px">
             <span>以下均为<b>逐行代码实测</b>结论（<code>bone-metadata-app</code> 4677 行 + <code>0024</code> 菜单种子 + <code>bone-init.sql</code> +后端契约），<b>优先于原型演示与 PRD 前文 As-Is 声明</b>。</span>
           </div>
@@ -713,16 +713,12 @@
         <div class="card">
           <h4>ENUM 贯通三步 <span class="pill orange">场景串联的前置</span></h4>
           <div style="font-size:12.5px;line-height:2;color:var(--text-2)">
-            <div><span class="pill red">T1</span> <code>meta_model_template_field</code> 增 <code>enum_values</code> / <code>validation_rules</code>　<span class="pill red">L3 · DDL 需架构师审批</span></div>
+            <div><span class="pill red">T1</span> <code>0028_meta_template_enum.sql</code>：增 <code>enum_values</code> / <code>validation_rules</code>　<span class="pill red">L3 · DDL 需架构师审批</span></div>
             <div><span class="pill orange">T2</span> <code>MetaTemplateApplicationService.instantiate</code> 透传两列（替换两处 <code>null</code>）</div>
             <div><span class="pill orange">T3</span> <code>FIELD_TYPES</code> 增 ENUM + 枚举值编辑器 + <code>Select</code>/<code>Tag</code> 渲染；未支持类型<b>显式降级提示</b>（禁静默渲染空）</div>
           </div>
-          <div class="alert good" style="margin-top:12px">
-            <span><b>验收判据</b>：本页三场景的字段表必须<b>能在生产建模 UI 里逐字敲出来</b>；敲不出来就是 T3 未完成，<b>不得以「原型已演示」替代</b>。</span>
-          </div>
           <div class="foot-bar">
             <button class="btn" onclick="switchEntity('repl');goTab('t-fields')">看补货 5 态字段表</button>
-            <button class="btn primary" onclick="toast('判据：三场景字段表能在生产建模 UI 逐字敲出')">验收判据</button>
           </div>
         </div>
 
@@ -733,7 +729,7 @@
             <tbody>
               <tr>
                 <td><span class="pill blue">W0a</span></td>
-                <td>默认 RUNTIME · 创建后落 <code>?tab=structure</code> · <b><code>/data</code> 绑 <code>:id</code></b> · 工作台 CTA · 顶栏「打开数据」</td>
+                <td>默认 RUNTIME · 空白落 <code>?tab=structure</code> / 模板落 <code>?tab=ui</code> · <b><code>/data</code> 绑 <code>:id</code></b> · 工作台 CTA · 顶栏「打开数据」</td>
                 <td>3次点击进结构空态；<b>已发布实体点数据必打开本实体</b>（造 2 实体 A/B 负向断言）</td>
               </tr>
               <tr>
@@ -782,23 +778,23 @@
             </tbody>
           </table>
           <div class="alert warn" style="margin-top:12px">
-            <span><b>菜单↔路由零门禁</b>正是「关系管理点了跳模型管理」这类跨文件漂移的根因⇒ 新增 <b>G32 死链检测</b>。迁移须新增脚本（如 <code>0027_menu_metadata_ia.sql</code>）并沿用 <code>0025</code> 的「备份 → 软删 → 计数校验 + SIGNAL」范式，<b>不改已执行的 0024</b>。</span>
+            <span><b>菜单↔路由零门禁</b>正是「关系管理点了跳模型管理」这类跨文件漂移的根因⇒ 新增 <b>G32 死链检测</b>。菜单迁移 = <code>0027_menu_metadata_ia.sql</code>；ENUM DDL = <code>0028_meta_template_enum.sql</code>（<b>0026 已被 replenishment 占用</b>）。仿 <code>0025</code>「备份 → 软删 → 计数校验 + SIGNAL」，<b>不改已执行的 0024</b>。</span>
           </div>
         </div>
 
         <div class="card">
-          <h4>两处建议偏离前文 <span class="pill amber">待拍板</span></h4>
+          <h4>两处产品定案 <span class="pill green">v0.34 已关闭</span></h4>
           <table>
             <thead><tr><th style="width:44px">#</th><th>偏离</th><th>理由</th></tr></thead>
             <tbody>
               <tr>
                 <td><b>P1</b></td>
-                <td>从<b>模板</b>起盘后落 <code>?tab=ui</code>（界面）而非 <code>?tab=structure</code>（结构）</td>
+                <td><b>定案</b>：从模板起盘落 <code>?tab=ui</code>；空白建模落 <code>?tab=structure</code></td>
                 <td>模板已带字段 ⇒ 落结构是<b>零信息量</b>页面；落界面立刻「见结果」，呼应「界面可先看再发，降低返工」。空白建模仍落结构</td>
               </tr>
               <tr>
                 <td><b>P2</b></td>
-                <td>工作台首屏：三个 CTA 优先，统计卡降级为一行小字</td>
+                <td><b>定案</b>：工作台首屏三个 CTA 优先；统计卡降级；「全新建模」开新建对话框（禁硬取 apps[0]）</td>
                 <td>现状 4 张 Stat 卡占据首屏，而「全新建模」落到模块列表且硬取 <code>apps[0]</code> ⇒ <b>降低门槛的本质是让「下一步」在第一屏且唯一</b></td>
               </tr>
             </tbody>
@@ -936,8 +932,8 @@
     <div class="step" data-k="published"><span class="dot">4</span><span>发布 · 热加载<span class="uc">UC-01</span></span></div>
     <div class="step" data-k="crudDone"><span class="dot">5</span><span>数据：首条记录<span class="uc">UC-01</span></span></div>
     <div class="step" data-k="hotReload"><span class="dot">6</span><span>再加字段 → 再发布<span class="uc">UC-02 · 1→n</span></span></div>
-    <div class="step" data-k="reused" id="coach-reused"><span class="dot">8</span><span>复用到新场景 · 业务线+1<span class="uc">UC-04 · 换皮</span></span></div>
     <div class="step" data-k="escape" id="coach-escape" style="display:none"><span class="dot">7</span><span>状态推进 → 📦到货入库<span class="uc">UC-05 · 仅补货</span></span></div>
+    <div class="step" data-k="reused" id="coach-reused"><span class="dot">8</span><span>复用到新场景 · 业务线+1<span class="uc">UC-04 · 换皮</span></span></div>
   </div>
   <div class="cf">
     <button class="btn sm primary" onclick="startClosedLoop()">重置 0→1</button>
@@ -1147,6 +1143,8 @@
     renderStructure();
     renderUiPreview();
     renderOverlay();
+    if(opts.landUi){ goTab('t-ui'); }
+    else if(opts.landStruct){ goTab('t-fields'); }
     renderDataChrome();
     syncGates();
     if(!opts.silent) toast('已切换场景包 · '+sc.name+'（'+sc.role+'）· 闭环步骤不变');
@@ -1289,7 +1287,13 @@
     }
   }
 
-  function switchEntity(entity){ applyScenario(entity, {}); goTab('t-fields'); }
+  function switchEntity(entity, opts){
+    opts = opts || {};
+    applyScenario(entity, opts);
+    if(opts.landUi) goTab('t-ui');
+    else if(opts.landStruct) goTab('t-fields');
+    else goTab('t-fields');
+  }
 
   function goTab(id){
     if(id==='t-data' && !S.published){ toast('数据 Tab 已锁定 · 请先发布','warning'); id='t-pub'; }
@@ -1492,10 +1496,13 @@
     var order=['device','repl','visitor'];
     var nx=order[(order.indexOf(S.entity)+1)%order.length];
     S.bizLine=(S.bizLine||1)+1;
-    switchEntity(nx);
+    // UC-04 ≈ 从模板换皮：落界面（P1 定案），再重置为草稿 0→1
+    switchEntity(nx, {asDraft:true, emptyRecords:true, landUi:true, silent:true});
+    S.demoMode='zero';
+    S.loop={created:true,fieldAdded:true,uiChecked:false,published:false,crudDone:false,hotReload:false,uiVisited:false};
     markLoop('reused');
     updatePhaseUI();
-    toast('业务线 #'+S.bizLine+' ·「'+scene().name+'」· 步骤与 UC-01 完全相同 · 点「重置 0→1」或「自动播放」走第 '+S.bizLine+' 遍','success');
+    toast('业务线 #'+S.bizLine+' ·「'+scene().name+'」· 已落界面 Tab（模板起盘惯例）· 走第 '+S.bizLine+' 遍 0→1','success');
   }
   function coachNext(){
     if(!S.loop) S.loop={};

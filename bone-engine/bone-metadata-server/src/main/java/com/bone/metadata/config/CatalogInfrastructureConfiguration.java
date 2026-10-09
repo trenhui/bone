@@ -101,18 +101,28 @@ public class CatalogInfrastructureConfiguration {
     return new CaffeineCachedRuntimeEntityCatalog(delegate, properties.getRuntimeEntityCacheTtl());
   }
 
+  /**
+   * 失效器（RC-002 热生效）。
+   *
+   * <p>踩坑记录（2026-10-09 实证修复）：原按<b>类型</b>匹配 {@code CaffeineCachedRuntimeEntityCatalog}，但 catalog
+   * 的声明返回类型是 {@code RuntimeEntityCatalog}——Spring 对 {@code @Bean} 方法按声明返回类型推断类型， 条件恒不成立 ⇒ 本 @Bean
+   * 从未注册 ⇒ 注入点 {@code Optional<RuntimeEntityCacheEvictor>} 恒为 empty ⇒ 发布后永不失效缓存。
+   *
+   * <p>后果（数据正确性，非性能）：已发布实体新增字段后，写入仍按旧快照过滤字段， 新字段被<b>静默丢弃</b>，直到 Caffeine TTL(60s) 过期才自愈， PRD §1.2
+   * G1「热加载 P95≤5s」实际不成立。
+   *
+   * <p>故改为按 <b>bean 名</b>匹配，入参用声明类型再转型。
+   */
   @Bean
-  @ConditionalOnBean(CaffeineCachedRuntimeEntityCatalog.class)
-  public RuntimeEntityCacheEvictor caffeineRuntimeEntityCacheEvictor(
-      CaffeineCachedRuntimeEntityCatalog catalog) {
-    return catalog;
+  @ConditionalOnBean(name = "caffeineCachedRuntimeEntityCatalog")
+  public RuntimeEntityCacheEvictor caffeineRuntimeEntityCacheEvictor(RuntimeEntityCatalog catalog) {
+    return (RuntimeEntityCacheEvictor) catalog;
   }
 
   @Bean
-  @ConditionalOnBean(RedisCachedRuntimeEntityCatalog.class)
-  public RuntimeEntityCacheEvictor redisRuntimeEntityCacheEvictor(
-      RedisCachedRuntimeEntityCatalog catalog) {
-    return catalog;
+  @ConditionalOnBean(name = "redisCachedRuntimeEntityCatalog")
+  public RuntimeEntityCacheEvictor redisRuntimeEntityCacheEvictor(RuntimeEntityCatalog catalog) {
+    return (RuntimeEntityCacheEvictor) catalog;
   }
 
   /**

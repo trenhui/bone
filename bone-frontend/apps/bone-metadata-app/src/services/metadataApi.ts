@@ -180,11 +180,31 @@ export const metadataRelationApi = {
 };
 
 export const runtimeRecordApi = {
-  page: (entityCode: string, params?: { page?: number; size?: number }) =>
-    api.get<never, ApiResponse<PageResult<RuntimeRecord>>>(
+  /**
+   * 运行时分页查询。
+   *
+   * 后端契约（RuntimePageQuery.parse）：
+   *   · fields = 逗号分隔列名（白名单校验）→ 此处由**列投影**产出，保证「界面配置的列」=「实际请求的列」
+   *   · sort   = 逗号分隔列名，`-` 前缀降序（如 `-updated_at,insp_no`）
+   *   · q      = `field:value` 单条件过滤
+   * 三者此前前端均未消费（后端已实现 ⇒ 属 W0a2「能力悬空」，此处补齐接线）。
+   */
+  page: (
+    entityCode: string,
+    params?: { page?: number; size?: number; fields?: string; sort?: string; q?: string },
+  ) => {
+    const query: Record<string, unknown> = {
+      page: params?.page ?? 1,
+      size: params?.size ?? 20,
+    };
+    if (params?.fields) query.fields = params.fields;
+    if (params?.sort) query.sort = params.sort;
+    if (params?.q) query.q = params.q;
+    return api.get<never, ApiResponse<PageResult<RuntimeRecord>>>(
       `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records`,
-      { params: { page: params?.page ?? 1, size: params?.size ?? 20 } },
-    ),
+      { params: query },
+    );
+  },
 
   get: (entityCode: string, id: string) =>
     api.get<never, ApiResponse<RuntimeRecord>>(
@@ -197,10 +217,11 @@ export const runtimeRecordApi = {
       body,
     ),
 
-  update: (entityCode: string, id: string, body: RuntimeRecord) =>
+  update: (entityCode: string, id: string, body: RuntimeRecord, etag?: string) =>
     api.put<never, ApiResponse<RuntimeRecord>>(
       `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
       body,
+      etag ? { headers: { 'If-Match': etag } } : undefined,
     ),
 
   delete: (entityCode: string, id: string) =>

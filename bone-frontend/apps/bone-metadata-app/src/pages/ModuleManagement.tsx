@@ -115,11 +115,11 @@ const ModuleManagement: React.FC = () => {
                 hoverable
                 loading={loading}
                 actions={[
-                  <Button type="link" size="small" icon={<DatabaseOutlined />}
+                  <Button key="modeling" type="link" size="small" icon={<DatabaseOutlined />}
                     onClick={() => navigate(`/apps/${appId}/modules/${mod.id}/entities`)}>
                     领域建模
                   </Button>,
-                  <Button type="link" size="small" icon={<LinkOutlined />}
+                  <Button key="relations" type="link" size="small" icon={<LinkOutlined />}
                     onClick={() => navigate(`/apps/${appId}/modules/${mod.id}/relations`)}>
                     关系管理
                   </Button>,

@@ -47,6 +47,14 @@ public class MetaModelTemplateField extends AbstractEntity<Long> {
   @Column(name = "comment")
   private String comment;
 
+  /** ENUM 标准码表（JSON 文本）：实例化时透传到 meta_field.enum_values（W1a T2） */
+  @Column(name = "enum_values")
+  private String enumValues;
+
+  /** 字段级校验 / 质量规则（JSON 文本）：实例化时透传（W1a T2） */
+  @Column(name = "validation_rules")
+  private String validationRules;
+
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
 
@@ -64,6 +72,41 @@ public class MetaModelTemplateField extends AbstractEntity<Long> {
       String defaultValue,
       String comment,
       Integer sortOrder) {
+    return create(
+        id,
+        tenantId,
+        templateId,
+        code,
+        name,
+        displayName,
+        fieldType,
+        length,
+        required,
+        unique,
+        defaultValue,
+        comment,
+        sortOrder,
+        null,
+        null);
+  }
+
+  /** 含 ENUM / 校验规则的工厂（W1a T2）：模板字段可携带码表与质量规则。 */
+  public static MetaModelTemplateField create(
+      Long id,
+      Long tenantId,
+      Long templateId,
+      String code,
+      String name,
+      String displayName,
+      String fieldType,
+      Integer length,
+      Boolean required,
+      Boolean unique,
+      String defaultValue,
+      String comment,
+      Integer sortOrder,
+      String enumValues,
+      String validationRules) {
     MetaModelTemplateField f = new MetaModelTemplateField();
     f.setId(id);
     f.tenantId = tenantId;
@@ -77,6 +120,8 @@ public class MetaModelTemplateField extends AbstractEntity<Long> {
     f.unique = unique != null ? unique : false;
     f.defaultValue = defaultValue;
     f.comment = comment;
+    f.enumValues = enumValues;
+    f.validationRules = validationRules;
     f.sortOrder = sortOrder != null ? sortOrder : 0;
     Date now = new Date();
     f.setCreatedAt(now);

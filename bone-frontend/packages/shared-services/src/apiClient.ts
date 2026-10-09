@@ -63,7 +63,16 @@ export function createApiClient(baseURL: string, config?: AxiosRequestConfig): A
 
   // 响应拦截器：解包 ApiResponse + 统一错误处理
   instance.interceptors.response.use(
-    (response) => response.data,
+    (response) => {
+      // 透传乐观并发所需的 ETag（运行时写路径 If-Match/412）。
+      // 拦截器默认返回 response.data 会丢掉 headers，这里把 ETag 挂到包装体，
+      // 消费方从 ApiResponse.etag 读取（缺失时为 undefined，零侵入）。
+      const etag = response.headers?.etag;
+      if (etag && response.data && typeof response.data === 'object') {
+        (response.data as Record<string, unknown>).etag = etag;
+      }
+      return response.data;
+    },
     (error) => {
       if (error.response?.status === 401) {
         // 微应用不直接跳转，通知主应用处理

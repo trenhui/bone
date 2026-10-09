@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert, Button, Breadcrumb, Card, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select,
   Space, Table, Tag, Tree, message, Badge, Typography, Row, Col,
@@ -44,6 +44,8 @@ const EntityManagement: React.FC = () => {
   const navigate = useNavigate();
   const { appId, moduleId } = useParams<{ appId: string; moduleId: string }>();
   const isScoped = !!appId && !!moduleId;
+  // §3.3.3 工作台直达：?new=1 自动打开新建对话框；?import=1 打开从存量表导入（打开一次后清参，刷新不复发）
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -276,12 +278,27 @@ const EntityManagement: React.FC = () => {
     setSelectedTemplateId(null);
     setTplFields([]);
     form.resetFields();
-    form.setFieldsValue({ type: 0, deliveryMode: 0 });
+    form.setFieldsValue({ type: 0, deliveryMode: 1 });
     setModalOpen(true);
     metadataTemplateApi.list().then((res) => {
       if (res.code === 200) setTemplates(res.data.filter((t) => t.status === 1));
     }).catch(() => { /* 模板目录不可用时保留全新入口 */ });
   };
+
+  // 深链自动打开：依赖 openCreate 稳定后执行一次（§3.3.3 工作台落点）
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      openCreate();
+      searchParams.delete('new');
+      setSearchParams(searchParams, { replace: true });
+    } else if (searchParams.get('import') === '1') {
+      setTableImportOpen(true);
+      searchParams.delete('import');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // openCreate 为组件内定义的稳定闭包，仅初始化时消费深链参数
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const chooseTemplate = (id: string | null) => {
     setSelectedTemplateId(id);
@@ -319,13 +336,14 @@ const EntityManagement: React.FC = () => {
           deliveryMode: values.deliveryMode,
         });
         if (res.code === 200 || res.code === 201) {
-          message.success('模板实例化成功，默认字段已复制');
+          message.success('已从模板实例化成功（已复制为独立副本，后续编辑与模板互不影响）');
           setModalOpen(false);
           const newId = res.data;
+          // 从模板起盘 → 落「界面」Tab（PRD §0.6.6 定案：模板已带字段，先见结果而非结构）
           navigate(
             appId && moduleId
-              ? `/apps/${appId}/modules/${moduleId}/entities/${newId}`
-              : `/entities/${newId}`,
+              ? `/apps/${appId}/modules/${moduleId}/entities/${newId}?tab=ui`
+              : `/entities/${newId}?tab=ui`,
           );
         } else {
           message.error(errorMessage(res));
@@ -359,7 +377,13 @@ const EntityManagement: React.FC = () => {
         if (res.code === 200) {
           message.success('创建成功');
           setModalOpen(false);
-          load();
+          const newId = res.data;
+          // 落点：实体详情「结构」Tab（W0-7：新建后直接进结构空态，而非停在列表）
+          navigate(
+            appId && moduleId
+              ? `/apps/${appId}/modules/${moduleId}/entities/${newId}?tab=structure`
+              : `/entities/${newId}?tab=structure`,
+          );
         } else {
           message.error(res.message);
         }
@@ -635,56 +659,56 @@ const EntityManagement: React.FC = () => {
               <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
               // ⚠ 雪花 ID 必须保持字符串：Number() 会因超出2^53 静默截断，
               // 导致批量操作命中「另一个」实体。API 签名也是 string[]。
-              const ids = selectedRowKeys.map(String);
-              try {
-                const res = await metadataEntityApi.batchPublish(ids);
-                if (res.code === 200) {
-                  const { successCount, failCount, errors } = res.data;
-                  if (failCount === 0) {
-                    message.success(`已批量发布 ${successCount} 个实体`);
+                const ids = selectedRowKeys.map(String);
+                try {
+                  const res = await metadataEntityApi.batchPublish(ids);
+                  if (res.code === 200) {
+                    const { successCount, failCount, errors } = res.data;
+                    if (failCount === 0) {
+                      message.success(`已批量发布 ${successCount} 个实体`);
+                    } else {
+                      message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
+                      errors.forEach((e) => console.warn('[batch-publish]', e));
+                    }
                   } else {
-                    message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
-                    errors.forEach((e) => console.warn('[batch-publish]', e));
+                    message.error(res.message || '批量发布失败');
                   }
-                } else {
-                  message.error(res.message || '批量发布失败');
+                } catch {
+                  message.error('批量发布失败，请确认 bone-metadata-server :9001 已启动');
+                } finally {
+                  setSelectedRowKeys([]);
+                  load();
                 }
-              } catch {
-                message.error('批量发布失败，请确认 bone-metadata-server :9001 已启动');
-              } finally {
-                setSelectedRowKeys([]);
-                load();
-              }
-            }}>
-              <Button size="small">批量发布</Button>
-            </Popconfirm>
+              }}>
+                <Button size="small">批量发布</Button>
+              </Popconfirm>
             </Auth>
             <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
-            <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+              <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
               // ⚠ 同上：雪花 ID 不能 Number()，会截断后命中错误实体
-              const ids = selectedRowKeys.map(String);
-              try {
-                const res = await metadataEntityApi.batchDelete(ids);
-                if (res.code === 200) {
-                  const { successCount, failCount, errors } = res.data;
-                  if (failCount === 0) {
-                    message.success(`已批量删除 ${successCount} 个实体`);
+                const ids = selectedRowKeys.map(String);
+                try {
+                  const res = await metadataEntityApi.batchDelete(ids);
+                  if (res.code === 200) {
+                    const { successCount, failCount, errors } = res.data;
+                    if (failCount === 0) {
+                      message.success(`已批量删除 ${successCount} 个实体`);
+                    } else {
+                      message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
+                      errors.forEach((e) => console.warn('[batch-delete]', e));
+                    }
                   } else {
-                    message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
-                    errors.forEach((e) => console.warn('[batch-delete]', e));
+                    message.error(res.message || '批量删除失败');
                   }
-                } else {
-                  message.error(res.message || '批量删除失败');
+                } catch {
+                  message.error('批量删除失败，请确认 bone-metadata-server :9001 已启动');
+                } finally {
+                  setSelectedRowKeys([]);
+                  load();
                 }
-              } catch {
-                message.error('批量删除失败，请确认 bone-metadata-server :9001 已启动');
-              } finally {
-                setSelectedRowKeys([]);
-                load();
-              }
-            }}>
-              <Button size="small" danger>批量删除</Button>
-            </Popconfirm>
+              }}>
+                <Button size="small" danger>批量删除</Button>
+              </Popconfirm>
             </Auth>
           </Space>
         )}

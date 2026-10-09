@@ -55,6 +55,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -69,6 +70,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * QueryPort。实体与字段同属「实体建模」限界上下文，故收敛于同一门面；关系建模见 {@link MetaRelationApplicationService}。
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class MetaEntityApplicationService {
 
@@ -179,6 +181,14 @@ public class MetaEntityApplicationService {
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
     entity.publish();
     metaEntityRepository.update(entity);
+    if (runtimeEntityCacheEvictor.isEmpty()) {
+      // 失效器缺失 ⇒ 发布后运行时仍读旧快照（最长 TTL 60s），新字段写入会被**静默丢弃**。
+      // 这是数据正确性缺陷而非性能问题，必须显式报警而不是静默降级。
+      log.error(
+          "[RC-002] 运行时缓存失效器未装配：发布后最长 {} 内运行时仍用旧快照，新字段写入将被丢弃。"
+              + "请检查 CatalogInfrastructureConfiguration 的 RuntimeEntityCacheEvictor 注册条件。",
+          "TTL");
+    }
     runtimeEntityCacheEvictor.ifPresent(
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
@@ -187,6 +197,14 @@ public class MetaEntityApplicationService {
       // 发布前先校验物理表类型漂移（非破坏性 align 无法修正），把运行期 SQL 错误前移为发布期拒绝
       validatePhysicalStructureForPublish(entity);
       physicalStructureGateway.align(entity.getTenantId(), entity.getCode());
+    }
+    // RC-002 热生效：缓存在**全部发布期变更完成后**再失效一次。
+    // 前置失效不够 —— allocateReservedColumns / align 之间若发生任何读取，都会把「尚未带上新字段/新物理列」
+    // 的快照回填进 Caffeine（TTL 60s），表现为「发布成功但新字段写入被静默丢弃」的数据丢失，
+    // 只有等 TTL 过期才自愈。RUNTIME 模式必须二次失效。
+    if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      runtimeEntityCacheEvictor.ifPresent(
+          evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     }
     domainEventPublisher.publish(new MetaEntityPublishedEvent(entity));
     return entity.getVersion();

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -18,11 +19,11 @@ import {
 } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import dayjs, { type Dayjs } from 'dayjs';
 import {
   errorMessage,
   metadataEntityApi,
   metadataFieldApi,
-  normalizePage,
   runtimeRecordApi,
 } from '../services/metadataApi';
 import type { MetaEntity, MetaField, RuntimeRecord } from '../types';
@@ -31,10 +32,19 @@ import {
   ENTITY_STATUS,
   META_DELIVERY_RUNTIME,
   META_ENTITY_PUBLISHED,
+  parseEnumValues,
   RUNTIME_READONLY_FIELDS,
 } from '../types';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
+import {
+  enumOptionsOf,
+  isEnumField,
+  isRenderSupported,
+  loadOverlay,
+  projectColumns,
+  tableSizeOf,
+} from '../utils/columnProjection';
 
 const { Text } = Typography;
 
@@ -49,11 +59,27 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-const RuntimeDataManagement: React.FC = () => {
+/** ENUM 单元格：码值 → 展示名 */
+function renderEnumCell(value: unknown, field: MetaField): string {
+  if (value == null || value === '') return '—';
+  const opt = enumOptionsOf(field).find((o) => o.code === String(value));
+  return opt ? `${opt.label}（${value}）` : String(value);
+}
+
+export interface RuntimeDataManagementProps {
+  /** 嵌入实体详情「数据」Tab 时传入实体 id；为空则走独立全局「运行时数据」路由（带实体选择器） */
+  embeddedEntityId?: string | null;
+}
+
+const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedEntityId = null }) => {
+  const { id: pathId } = useParams<{ id?: string }>();
+  const resolvedId = embeddedEntityId ?? pathId ?? null;
   const [searchParams] = useSearchParams();
+
   const [form] = Form.useForm();
   const [entities, setEntities] = useState<MetaEntity[]>([]);
   const [entityCode, setEntityCode] = useState<string | null>(null);
+  const [detailEntity, setDetailEntity] = useState<MetaEntity | null>(null);
   const [fields, setFields] = useState<MetaField[]>([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RuntimeRecord[]>([]);
@@ -62,10 +88,19 @@ const RuntimeDataManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<RuntimeRecord | null>(null);
+  const [editingEtag, setEditingEtag] = useState<string | undefined>(undefined);
+  const [conflict, setConflict] = useState(false);
+  /** W0a2：q/sort 接线 —— 单条件过滤（field:value）*/
+  const [searchField, setSearchField] = useState<string | undefined>(undefined);
+  const [keyword, setKeyword] = useState('');
+  /** sort 契约：逗号分隔列名，`-` 前缀降序（RuntimePageQuery.parseSort） */
+  const [sortField, setSortField] = useState<string | undefined>(undefined);
+  const [sortDesc, setSortDesc] = useState(false);
 
+  /** 当前选中实体：嵌入模式来自详情接口，独立模式来自列表选择 */
   const selectedEntity = useMemo(
-    () => entities.find((e) => e.code === entityCode) ?? null,
-    [entities, entityCode],
+    () => detailEntity ?? entities.find((e) => e.code === entityCode) ?? null,
+    [detailEntity, entities, entityCode],
   );
 
   const writableFields = useMemo(
@@ -73,50 +108,88 @@ const RuntimeDataManagement: React.FC = () => {
     [fields],
   );
 
+  /** 列投影（预览 ≡ 数据 单一真源）：始终应用本地覆盖 */
+  const overlay = useMemo(
+    () => (entityCode ? loadOverlay(entityCode) : null),
+    // overlay 随选中实体变化重新读取（localStorage 变更由界面 Tab 写入后重载）
+    [entityCode, fields],
+  );
+  const projectedFields = useMemo(
+    () => projectColumns(writableFields, overlay),
+    [writableFields, overlay],
+  );
+
+  // 独立全局路由（/runtime、无 id）：加载 RUNTIME 已发布实体供选择器（W0-2：size 50→500，避免第 51 个后不可选）
   useEffect(() => {
-    metadataEntityApi.page({ page: 1, size: 50, deliveryMode: 1, status: 1 }).then((res) => {
-      if (res.code !== 200) {
-        message.error(errorMessage(res));
-        return;
-      }
-      const pageData = normalizePage(res.data);
-      const runtimePublished = pageData.records.filter(
-        (e) =>
-          e.deliveryMode === META_DELIVERY_RUNTIME && e.status === META_ENTITY_PUBLISHED,
-      );
-      setEntities(runtimePublished);
-      const fromQuery = searchParams.get('entity');
-      if (fromQuery && runtimePublished.some((e) => e.code === fromQuery)) {
-        setEntityCode(fromQuery);
-      } else if (runtimePublished.length > 0 && entityCode == null) {
-        setEntityCode(runtimePublished[0].code);
-      }
-    });
+    if (resolvedId) return;
+    metadataEntityApi
+      .page({ page: 1, size: 500, deliveryMode: META_DELIVERY_RUNTIME, status: META_ENTITY_PUBLISHED })
+      .then((res) => {
+        if (res.code !== 200) {
+          message.error(errorMessage(res));
+          return;
+        }
+        const runtimePublished = normalizeRuntimePublished(res.data.records);
+        setEntities(runtimePublished);
+        const fromQuery = searchParams.get('entity');
+        if (fromQuery && runtimePublished.some((e) => e.code === fromQuery)) {
+          setEntityCode(fromQuery);
+        } else if (runtimePublished.length > 0 && entityCode == null) {
+          setEntityCode(runtimePublished[0].code);
+        }
+      });
     // entityCode 仅用于首次为空时初始化，不应作为依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, resolvedId]);
 
+  // 嵌入模式：按实体 id 拉详情得到 code（W0-1：/…/:id/data 绑定 :id，不再静默看错实体）
   useEffect(() => {
-    if (!selectedEntity) {
+    if (!resolvedId) return;
+    setDetailEntity(null);
+    metadataEntityApi.detail(resolvedId).then((res) => {
+      if (res.code === 200) {
+        setDetailEntity(res.data);
+        setEntityCode(res.data.code);
+      } else {
+        message.error(errorMessage(res));
+      }
+    });
+  }, [resolvedId]);
+
+  // 字段随选中实体变化加载
+  useEffect(() => {
+    const eid = selectedEntity?.id;
+    if (!eid) {
       setFields([]);
       return;
     }
-    metadataFieldApi
-      .page(selectedEntity.id, { page: 1, size: 500 })
-      .then((res) => {
-        if (res.code === 200) {
-          setFields(normalizePage(res.data).records);
-        }
-      });
-    // 仅当 selectedEntity.id 变化时重新加载字段
+    metadataFieldApi.page(eid, { page: 1, size: 500 }).then((res) => {
+      if (res.code === 200) setFields(normalizePageRecords(res.data));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity?.id]);
 
+  /**
+   * 请求参数由列投影产出（W0a2 + §0.6.3）：
+   * `fields` = 当前可见列的 code ⇒ 界面 Tab 关掉的列不会出现在响应里，
+   * 与「预览列 ≡ 数据列」同源，杜绝两边各算一遍导致的漂移。
+   */
   const load = useCallback(async () => {
     if (!entityCode) return;
     setLoading(true);
     try {
-      const res = await runtimeRecordApi.page(entityCode, { page, size: pageSize });
+      const fieldsParam = projectedFields.length
+        ? projectedFields.map((f) => f.code).join(',')
+        : undefined;
+      const res = await runtimeRecordApi.page(entityCode, {
+        page,
+        size: pageSize,
+        fields: fieldsParam,
+        // q 契约：field:value（后端 RuntimePageQuery.parseFilter）
+        q: searchField && keyword ? `${searchField}:${keyword}` : undefined,
+        // sort 契约：`-` 前缀降序（后端 RuntimePageQuery.parseSort）
+        sort: sortField ? `${sortDesc ? '-' : ''}${sortField}` : undefined,
+      });
       if (res.code === 200) {
         const pageData = normalizePage(res.data);
         setData(pageData.records);
@@ -129,7 +202,7 @@ const RuntimeDataManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [entityCode, page, pageSize]);
+  }, [entityCode, page, pageSize, projectedFields, searchField, keyword, sortField, sortDesc]);
 
   useEffect(() => {
     load();
@@ -137,18 +210,45 @@ const RuntimeDataManagement: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
+    setEditingEtag(undefined);
+    setConflict(false);
     form.resetFields();
     setModalOpen(true);
   };
 
-  const openEdit = (record: RuntimeRecord) => {
-    setEditing(record);
-    const values: Record<string, unknown> = {};
-    writableFields.forEach((f) => {
-      values[f.code] = record[f.code];
-    });
-    form.setFieldsValue(values);
-    setModalOpen(true);
+  const openEdit = async (record: RuntimeRecord) => {
+    if (!entityCode) return;
+    setConflict(false);
+    const rid = recordId(record);
+    if (!rid) {
+      message.error('记录缺少主键 id');
+      return;
+    }
+    // 拉取最新记录以捕获 ETag（W0-4：乐观并发，编辑提交带 If-Match）
+    try {
+      const res = await runtimeRecordApi.get(entityCode, rid);
+      if (res.code !== 200) {
+        message.error(errorMessage(res));
+        return;
+      }
+      const latest = res.data;
+      setEditing(latest);
+      setEditingEtag(res.etag);
+      const values: Record<string, unknown> = {};
+      writableFields.forEach((f) => {
+        const v = latest[f.code];
+        if ((f.type === 'DATE' || f.type === 'DATETIME') && v != null) {
+          const d = dayjs(String(v));
+          values[f.code] = d.isValid() ? d : undefined;
+        } else {
+          values[f.code] = v;
+        }
+      });
+      form.setFieldsValue(values);
+      setModalOpen(true);
+    } catch {
+      message.error('加载记录失败');
+    }
   };
 
   const handleDelete = async (record: RuntimeRecord) => {
@@ -171,17 +271,33 @@ const RuntimeDataManagement: React.FC = () => {
     }
   };
 
+  /** 把表单值按字段类型规整（DATE/DATETIME 的 dayjs → 字符串） */
+  const buildBody = (values: Record<string, unknown>): RuntimeRecord => {
+    const body: RuntimeRecord = {};
+    writableFields.forEach((f) => {
+      const v = values[f.code];
+      if ((f.type === 'DATE' || f.type === 'DATETIME') && v != null && dayjs.isDayjs(v)) {
+        body[f.code] = (v as Dayjs).format(f.type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss');
+      } else {
+        body[f.code] = v as unknown;
+      }
+    });
+    return body;
+  };
+
   const handleSubmit = async () => {
     if (!entityCode) return;
     const values = await form.validateFields();
-    const body: RuntimeRecord = { ...values };
+    const body = buildBody(values);
     try {
       if (editing) {
         const id = recordId(editing);
-        const res = await runtimeRecordApi.update(entityCode, id, body);
+        const res = await runtimeRecordApi.update(entityCode, id, body, editingEtag);
         if (res.code === 200) {
           message.success('更新成功');
           setModalOpen(false);
+          setEditing(null);
+          setEditingEtag(undefined);
           load();
         } else {
           message.error(errorMessage(res));
@@ -196,18 +312,38 @@ const RuntimeDataManagement: React.FC = () => {
           message.error(errorMessage(res));
         }
       }
-    } catch {
-      message.error(editing ? '更新失败' : '创建失败');
+    } catch (err) {
+      // W0-4：412 并发冲突 —— 提示重新加载，而非静默失败
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 412) {
+        setConflict(true);
+        message.warning('数据已被他人修改（412 并发冲突），请重新加载后再编辑');
+        if (editing) {
+          const rid = recordId(editing);
+          const res = await runtimeRecordApi.get(entityCode, rid);
+          if (res.code === 200) {
+            setEditing(res.data);
+            setEditingEtag(res.etag);
+          }
+        }
+      } else {
+        message.error(editing ? '更新失败' : '创建失败');
+      }
     }
   };
 
   const tableColumns: ColumnsType<RuntimeRecord> = useMemo(() => {
-    const cols: ColumnsType<RuntimeRecord> = writableFields.slice(0, 8).map((f) => ({
+    const cols: ColumnsType<RuntimeRecord> = projectedFields.map((f) => ({
       title: f.displayName || f.code,
       dataIndex: f.code,
       key: f.code,
       ellipsis: true,
-      render: (_: unknown, row) => formatCell(row[f.code]),
+      sorter: true,
+      sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
+      render: (_: unknown, row) => {
+        if (isEnumField(f)) return renderEnumCell(row[f.code], f);
+        return formatCell(row[f.code]);
+      },
     }));
     if (cols.length === 0) {
       cols.push({
@@ -222,13 +358,13 @@ const RuntimeDataManagement: React.FC = () => {
       key: 'actions',
       fixed: 'right',
       width: 160,
+      sorter: false,
+      sortOrder: null,
       render: (_: unknown, row) => (
         <Space>
           <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
             编辑
           </AuthButton>
-          {/* 删除按钮被 Popconfirm 包裹：用 <Auth> 包外层而非把 Button 换成 AuthButton——
-              AuthButton 无权限返回 null，会成为 Popconfirm 的 children，antd cloneElement 抛异常 */}
           <Auth code={BonePermissionCodes.METADATA_RUNTIME_WRITE}>
             <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
               <Button type="link" size="small" danger>
@@ -242,10 +378,23 @@ const RuntimeDataManagement: React.FC = () => {
     return cols;
     // handleDelete/openEdit 为稳定的页面级函数引用，加入会导致循环
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [writableFields, entityCode]);
+  }, [projectedFields, entityCode, sortField, sortDesc]);
 
   const renderFieldInput = (field: MetaField) => {
     const type = (field.type || 'STRING').toUpperCase();
+    // W0-5 / PRD §5.5：未支持类型必须显式降级提示 + 字段名，禁止静默渲染成裸 Input
+    if (!isRenderSupported(field)) {
+      return (
+        <Alert
+          key={field.id}
+          type="warning"
+                    showIcon
+          style={{ marginBottom: 12 }}
+          message={`字段「${field.displayName || field.code}」的类型 ${field.type} 暂不支持录入控件`}
+          description="该类型在运行时 API 中可读写，但建模界面暂无对应控件；如需界面录入请改用受支持类型。"
+        />
+      );
+    }
     if (type === 'BOOLEAN') {
       return (
         <Form.Item name={field.code} label={field.displayName} valuePropName="checked">
@@ -275,6 +424,37 @@ const RuntimeDataManagement: React.FC = () => {
         </Form.Item>
       );
     }
+    if (type === 'DATE' || type === 'DATETIME') {
+      return (
+        <Form.Item
+          name={field.code}
+          label={field.displayName}
+          rules={field.required ? [{ required: true }] : []}
+        >
+          <DatePicker
+            showTime={type === 'DATETIME'}
+            format={type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss'}
+            style={{ width: '100%' }}
+          />
+        </Form.Item>
+      );
+    }
+    if (type === 'ENUM') {
+      const options = parseEnumValues(field.enumValues);
+      return (
+        <Form.Item
+          name={field.code}
+          label={field.displayName}
+          rules={field.required ? [{ required: true }] : []}
+        >
+          <Select
+            allowClear
+            placeholder={options.length ? '请选择' : '该枚举未配置码表'}
+            options={options.map((o) => ({ value: o.code, label: `${o.label}（${o.code}）` }))}
+          />
+        </Form.Item>
+      );
+    }
     if (type === 'TEXT') {
       return (
         <Form.Item
@@ -297,45 +477,54 @@ const RuntimeDataManagement: React.FC = () => {
     );
   };
 
+  // 嵌入模式且实体非 RUNTIME / 未发布：给出明确指引，而非静默错误
+  const embeddedBlocked = resolvedId != null && selectedEntity != null
+    && (selectedEntity.deliveryMode !== META_DELIVERY_RUNTIME || selectedEntity.status !== META_ENTITY_PUBLISHED);
+
   return (
     <div className="page">
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="模式 B · 运行时数据"
-        description={
-          <>
-            仅展示 <Tag color="purple">运行时 (B)</Tag> 且 <Tag color="green">已发布</Tag>{' '}
-            的实体。数据经 <Text code>/api/v1/runtime/entities/&#123;code&#125;/records</Text>{' '}
-            读写物理表，无需代码生成。
-          </>
-        }
-      />
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <span>实体：</span>
-        <Select
-          style={{ minWidth: 280 }}
-          placeholder="选择 RUNTIME 已发布实体"
-          value={entityCode ?? undefined}
-          onChange={(code) => {
-            setEntityCode(code);
-            setPage(1);
-          }}
-          options={entities.map((e) => ({
-            value: e.code,
-            label: `${e.displayName} (${e.code}) → ${e.tableName}`,
-          }))}
-          notFoundContent="暂无符合条件的模型，请先在模型管理中创建并发布 RUNTIME 模型"
+      {!resolvedId && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="模式 B · 运行时数据"
+          description={
+            <>
+              仅展示 <Tag color="purple">运行时 (B)</Tag> 且 <Tag color="green">已发布</Tag>{' '}
+              的实体。数据经 <Text code>/api/v1/runtime/entities/&#123;code&#125;/records</Text>{' '}
+              读写物理表，无需代码生成。
+            </>
+          }
         />
-        <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
-          刷新
-        </Button>
-        <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
-          新建记录
-        </AuthButton>
-      </Space>
+      )}
+
+      {/* 独立全局路由：实体选择器；嵌入模式不显示 */}
+      {!resolvedId && (
+        <Space style={{ marginBottom: 16 }} wrap>
+          <span>实体：</span>
+          <Select
+            style={{ minWidth: 280 }}
+            placeholder="选择 RUNTIME 已发布实体"
+            value={entityCode ?? undefined}
+            onChange={(code) => {
+              setEntityCode(code);
+              setPage(1);
+            }}
+            options={entities.map((e) => ({
+              value: e.code,
+              label: `${e.displayName} (${e.code}) → ${e.tableName}`,
+            }))}
+            notFoundContent="暂无符合条件的模型，请先在模型管理中创建并发布 RUNTIME 模型"
+          />
+          <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
+            刷新
+          </Button>
+          <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
+            新建记录
+          </AuthButton>
+        </Space>
+      )}
 
       {selectedEntity && (
         <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
@@ -345,23 +534,81 @@ const RuntimeDataManagement: React.FC = () => {
         </Text>
       )}
 
-      <Table<RuntimeRecord>
-        rowKey={(row) => recordId(row) || JSON.stringify(row)}
-        loading={loading}
-        columns={tableColumns}
-        dataSource={data}
-        scroll={{ x: true }}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
-          },
-        }}
-      />
+      {embeddedBlocked && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="该实体暂不支持运行时数据管理"
+          description={
+            selectedEntity?.deliveryMode !== META_DELIVERY_RUNTIME
+              ? '仅「运行时 (B)」交付模式的实体发布后才提供动态 CRUD 数据管理，请改用生成式(A)实体的业务应用录入数据。'
+              : '请先在工作区「发布」Tab 完成发布，物理表建表后即可在此管理数据。'
+          }
+        />
+      )}
+
+      {!embeddedBlocked && selectedEntity && (
+        <>
+          {resolvedId && (
+            <Space style={{ marginBottom: 16 }} wrap>
+              <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                新建记录
+              </AuthButton>
+              <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
+              {/* W0a2：q 接线（契约 = field:value） */}
+              <Select
+                allowClear
+                style={{ minWidth: 160 }}
+                placeholder="搜索字段"
+                value={searchField}
+                onChange={(v) => { setSearchField(v); setPage(1); }}
+                options={projectedFields.map((f) => ({ value: f.code, label: f.displayName || f.code }))}
+              />
+              <Input.Search
+                allowClear
+                style={{ width: 240 }}
+                placeholder="搜索值（精确/模糊取决于后端规则）"
+                value={keyword}
+                disabled={!searchField}
+                onChange={(e) => setKeyword(e.target.value)}
+                onSearch={() => setPage(1)}
+              />
+            </Space>
+          )}
+
+          <Table<RuntimeRecord>
+            rowKey={(row) => recordId(row) || JSON.stringify(row)}
+            loading={loading}
+            columns={tableColumns}
+            dataSource={data}
+            size={tableSizeOf(overlay?.density)}
+            scroll={{ x: true }}
+            /* 排序交给后端：列排序变化 → 受控状态 → sort 契约（- 前缀降序） */
+            onChange={(_pagination, _filters, sorter) => {
+              const s = Array.isArray(sorter) ? sorter[0] : sorter;
+              const field = s?.field ?? s?.columnKey;
+              if (s?.order && field) {
+                setSortField(String(field));
+                setSortDesc(s.order === 'descend');
+              } else {
+                setSortField(undefined);
+                setSortDesc(false);
+              }
+            }}
+            pagination={{
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+              onChange: (p, ps) => {
+                setPage(p);
+                setPageSize(ps);
+              },
+            }}
+          />
+        </>
+      )}
 
       <Modal
         title={editing ? '编辑记录' : '新建记录'}
@@ -372,10 +619,19 @@ const RuntimeDataManagement: React.FC = () => {
         destroyOnHidden
       >
         <Form form={form} layout="vertical">
+          {conflict && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message="记录已被他人修改"
+              description="下方表单已重新加载最新数据，请确认后再次提交。"
+            />
+          )}
           {writableFields.length === 0 ? (
             <Alert
               type="warning"
-              message="该模型尚未配置建模字段，请先在模型详情的「字段」页签中维护"
+              message="该模型尚未配置建模字段，请先在模型详情的「结构」页签中维护"
             />
           ) : (
             writableFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
@@ -385,5 +641,25 @@ const RuntimeDataManagement: React.FC = () => {
     </div>
   );
 };
+
+// ----- 内部工具 -----
+function normalizeRuntimePublished(list: MetaEntity[]): MetaEntity[] {
+  return list.filter(
+    (e) => e.deliveryMode === META_DELIVERY_RUNTIME && e.status === META_ENTITY_PUBLISHED,
+  );
+}
+
+function normalizePageRecords(page: { records?: MetaEntity[] | MetaField[] }): MetaField[] {
+  return (page.records as MetaField[]) || [];
+}
+
+function normalizePage<T>(raw: { records?: T[]; total?: string | number; page?: number; size?: number }) {
+  return {
+    records: raw.records ?? [],
+    total: typeof raw.total === 'string' ? Number(raw.total) : (raw.total ?? 0),
+    page: raw.page ?? 1,
+    size: raw.size ?? 20,
+  };
+}
 
 export default RuntimeDataManagement;

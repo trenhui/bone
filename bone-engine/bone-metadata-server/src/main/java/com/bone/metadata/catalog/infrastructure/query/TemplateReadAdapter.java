@@ -31,6 +31,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
               rs.getString("current_version"),
               rs.getInt("status"));
 
+  // W1a T2：SELECT 与 RowMapper 必须带上 enum_values / validation_rules，
+  // 否则实例化时 tf.getEnumValues() 恒为 null —— 场景模板的枚举状态机在第一步就丢（PRD §0.6.2）。
   private static final RowMapper<MetaModelTemplateField> FIELD_MAPPER =
       (rs, i) ->
           MetaModelTemplateField.create(
@@ -46,7 +48,9 @@ public class TemplateReadAdapter implements TemplateReadPort {
               rs.getBoolean("is_unique"),
               rs.getString("default_value"),
               rs.getString("comment"),
-              rs.getInt("sort_order"));
+              rs.getInt("sort_order"),
+              rs.getString("enum_values"),
+              rs.getString("validation_rules"));
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -82,7 +86,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
   public List<MetaModelTemplateField> fieldsOf(Long templateId) {
     return jdbcTemplate.query(
         "SELECT id, tenant_id, template_id, code, name, display_name, field_type, length,"
-            + " is_required, is_unique, default_value, comment, sort_order"
+            + " is_required, is_unique, default_value, comment, sort_order,"
+            + " enum_values, validation_rules"
             + " FROM meta_model_template_field WHERE tenant_id = 0 AND deleted = 0 AND template_id = ?"
             + " ORDER BY sort_order",
         FIELD_MAPPER,

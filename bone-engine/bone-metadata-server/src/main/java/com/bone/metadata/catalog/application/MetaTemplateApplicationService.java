@@ -103,8 +103,8 @@ public class MetaTemplateApplicationService {
               null, // dataSteward
               null, // businessTerm
               null, // sourceSystem
-              null, // enumValues
-              null); // validationRules
+              tf.getEnumValues(), // enumValues（W1a T2：模板码表透传）
+              tf.getValidationRules()); // validationRules（W1a T2：模板质量规则透传）
       metaFieldRepository.insert(field);
     }
     log.info(

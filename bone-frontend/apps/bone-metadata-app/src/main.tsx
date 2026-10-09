@@ -5,6 +5,7 @@ import App from './App';
 import { subscribeLocaleChange } from '@bone/shared-utils';
 import './index.css';
 import { AppAntdProvider } from './components/AppAntdProvider';
+import AppErrorBoundary from './components/AppErrorBoundary';
 
 let root: Root | null = null;
 
@@ -25,8 +26,10 @@ function render(props?: QiankunProps) {
   root.render(
     <React.StrictMode>
       <AppAntdProvider>
-      <App />
-    </AppAntdProvider>
+        <AppErrorBoundary>
+          <App />
+        </AppErrorBoundary>
+      </AppAntdProvider>
     </React.StrictMode>,
   );
 }
@@ -34,7 +37,7 @@ function render(props?: QiankunProps) {
 renderWithQiankun({
   bootstrap() {},
   mount(props: QiankunProps) {
-  subscribeLocaleChange();
+    subscribeLocaleChange();
     const token = (props as { token?: string })?.token;
     if (token) {
       localStorage.setItem('token', token);

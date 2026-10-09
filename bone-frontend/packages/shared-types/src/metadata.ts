@@ -19,6 +19,8 @@ export interface MetaEntity {
   icon?: string;
   /** 所属 IAM 模块（应用→模块→模型分层归属；未归属为空） */
   moduleId?: string;
+  /** 最后修改时间（发布脏态判定：updatedAt 晚于上次发布时刻 ⇒ 待重新发布） */
+  updatedAt?: string;
 }
 
 export interface MetaField {
@@ -172,7 +174,7 @@ export const DELIVERY_MODE: Record<number, string> = {
 
 export const RELATION_TYPES = ['OneToOne', 'OneToMany', 'ManyToOne', 'ManyToMany'];
 
-export const FIELD_TYPES = ['STRING', 'INTEGER', 'LONG', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME', 'TEXT'];
+export const FIELD_TYPES = ['STRING', 'INTEGER', 'LONG', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME', 'TEXT', 'ENUM'];
 
 /** 字段类型 → 展示元数据（图标/描述/颜色），用于字段表单与列表 Tag 展示 */
 export const FIELD_TYPE_MAP: Record<
@@ -187,7 +189,39 @@ export const FIELD_TYPE_MAP: Record<
   DATE: { icon: '📅', desc: '日期', color: 'magenta' },
   DATETIME: { icon: '🕐', desc: '日期时间', color: 'volcano' },
   TEXT: { icon: 'T', desc: '文本', color: 'geekblue' },
+  ENUM: { icon: '◉', desc: '枚举/码表', color: 'gold' },
 };
+
+/** 枚举选项（ENUM 控件：标准码表） */
+export interface EnumOption {
+  code: string;
+  label: string;
+}
+
+/**
+ * 解析 ENUM 字段的 enumValues（JSON 文本）为选项数组。
+ * 兼容 [{code,label}] 与 [{value,label}] 两种形态；非法输入返回 []，不抛异常。
+ */
+export function parseEnumValues(raw?: string | null): EnumOption[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((it) => {
+        if (it && typeof it === 'object') {
+          const o = it as Record<string, unknown>;
+          const code = o.code ?? o.value;
+          const label = o.label ?? code;
+          return code != null ? { code: String(code), label: String(label) } : null;
+        }
+        return null;
+      })
+      .filter((x): x is EnumOption => x !== null);
+  } catch {
+    return [];
+  }
+}
 
 /** 模式 B 动态行（物理表列名 → 值） */
 export type RuntimeRecord = Record<string, unknown>;
