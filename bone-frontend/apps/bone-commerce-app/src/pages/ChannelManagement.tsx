@@ -15,6 +15,8 @@ import {
   message,
 } from 'antd';
 import { CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { formatDate, normalizeTotal } from '@bone/shared-utils';
 import { channelApi, channelOrderApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -164,30 +166,43 @@ export const ChannelManagement: React.FC = () => {
       width: 240,
       render: (_: unknown, r: ChannelSummary) => (
         <Space size="small">
-          <Popconfirm
-            title={r.enabled ? '确认停用该渠道？' : '确认启用该渠道？'}
-            description={
-              r.enabled ? '停用后该渠道不再参与拉单、上架与发货。' : undefined
-            }
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => void toggleEnabled(r, !r.enabled)}
-          >
-            <Button type="link" size="small">
-              {r.enabled ? '停用' : '启用'}
-            </Button>
-          </Popconfirm>
-          <Button type="link" size="small" onClick={() => setPullOpen(true)} disabled={!r.enabled}>
-            拉单
-          </Button>
-          <Switch
+          {/* 被 Popconfirm 包住的按钮只能用 <Auth> 包外层：AuthButton 无权限时返回
+              null，会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.COMMERCE_CHANNEL_WRITE}>
+            <Popconfirm
+              title={r.enabled ? '确认停用该渠道？' : '确认启用该渠道？'}
+              description={
+                r.enabled ? '停用后该渠道不再参与拉单、上架与发货。' : undefined
+              }
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void toggleEnabled(r, !r.enabled)}
+            >
+              <Button type="link" size="small">
+                {r.enabled ? '停用' : '启用'}
+              </Button>
+            </Popconfirm>
+          </Auth>
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_CHANNEL_WRITE}
+            type="link"
             size="small"
-            checkedChildren="同步开"
-            unCheckedChildren="同步关"
-            checked={r.orderSyncEnabled}
+            onClick={() => setPullOpen(true)}
             disabled={!r.enabled}
-            onChange={(checked) => void toggleSync(r, checked)}
-          />
+          >
+            拉单
+          </AuthButton>
+          {/* 同步开关不是 Button，用 <Auth> 包片段；它同样会写渠道配置。 */}
+          <Auth code={BonePermissionCodes.COMMERCE_CHANNEL_WRITE}>
+            <Switch
+              size="small"
+              checkedChildren="同步开"
+              unCheckedChildren="同步关"
+              checked={r.orderSyncEnabled}
+              disabled={!r.enabled}
+              onChange={(checked) => void toggleSync(r, checked)}
+            />
+          </Auth>
         </Space>
       ),
     },
@@ -201,13 +216,14 @@ export const ChannelManagement: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={() => void fetchChannels()}>
             刷新
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_CHANNEL_WRITE}
             type="primary"
             icon={<CloudDownloadOutlined />}
             onClick={() => setPullOpen(true)}
           >
             渠道拉单
-          </Button>
+          </AuthButton>
         </Space>
       }
     >
@@ -288,9 +304,14 @@ export const ChannelManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setPullOpen(false)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_CHANNEL_WRITE}
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
                 拉取并落单
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>

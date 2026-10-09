@@ -22,6 +22,8 @@ import {
   SearchOutlined,
   DollarOutlined,
 } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { formatDate, normalizeTotal } from '@bone/shared-utils';
 import { orderApi, paymentApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -223,27 +225,34 @@ export const OrderManagement: React.FC = () => {
           <Button type="link" size="small" onClick={() => void openDetail(r.id)}>
             详情
           </Button>
-          <Popconfirm
-            title="确认发货？"
-            description="订单须处于已支付状态，否则服务端会拒绝。"
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => void runAction(r.id, 'ship', '发货')}
-          >
-            <Button type="link" size="small" disabled={r.status !== 'PAID'}>
-              发货
-            </Button>
-          </Popconfirm>
-          <Popconfirm
-            title="确认送达？"
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => void runAction(r.id, 'deliver', '送达')}
-          >
-            <Button type="link" size="small" disabled={r.status !== 'SHIPPED'}>
-              送达
-            </Button>
-          </Popconfirm>
+          {/* 发货/送达属于物流域写操作，走 COMMERCE_SHIPMENT_WRITE；订单取消不加门禁。
+              被 Popconfirm 包住的按钮只能用 <Auth> 包外层：AuthButton 无权限返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}>
+            <Popconfirm
+              title="确认发货？"
+              description="订单须处于已支付状态，否则服务端会拒绝。"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void runAction(r.id, 'ship', '发货')}
+            >
+              <Button type="link" size="small" disabled={r.status !== 'PAID'}>
+                发货
+              </Button>
+            </Popconfirm>
+          </Auth>
+          <Auth code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}>
+            <Popconfirm
+              title="确认送达？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void runAction(r.id, 'deliver', '送达')}
+            >
+              <Button type="link" size="small" disabled={r.status !== 'SHIPPED'}>
+                送达
+              </Button>
+            </Popconfirm>
+          </Auth>
           <Popconfirm
             title="确认取消订单？"
             okText="确认"
@@ -299,7 +308,8 @@ export const OrderManagement: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>
             刷新
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.ORDER_ORDERS_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             // 不在此处 form.resetFields()：此刻 Modal 还没渲染，form 实例未绑定任何
@@ -309,7 +319,7 @@ export const OrderManagement: React.FC = () => {
             onClick={() => setCreateOpen(true)}
           >
             新建订单
-          </Button>
+          </AuthButton>
         </Space>
       </Card>
 
@@ -500,14 +510,15 @@ export const OrderManagement: React.FC = () => {
             />
 
             <div style={{ marginTop: 16 }}>
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.ORDER_PAYMENT_WRITE}
                 type="primary"
                 icon={<DollarOutlined />}
                 disabled={detail.status !== 'CREATED'}
                 onClick={() => void payFromDetail(detail.id)}
               >
                 发起支付
-              </Button>
+              </AuthButton>
               <Button
                 style={{ marginLeft: 12 }}
                 disabled={!detail.paymentId}

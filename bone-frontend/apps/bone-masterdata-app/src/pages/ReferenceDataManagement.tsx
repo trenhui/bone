@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Form, Input, Modal, Table, Tag, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { referenceApi } from '../services/api';
 import type { ReferenceSet, ReferenceValue } from '../types/governance';
 
@@ -62,7 +64,8 @@ const ReferenceDataManagement: React.FC = () => {
       key: 'act',
       render: (_: unknown, r: ReferenceValue) =>
         r.enabled ? (
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_REFERENCE_WRITE}
             size="small"
             danger
             onClick={async () => {
@@ -72,7 +75,7 @@ const ReferenceDataManagement: React.FC = () => {
             }}
           >
             停用
-          </Button>
+          </AuthButton>
         ) : null
     }
   ];
@@ -81,9 +84,9 @@ const ReferenceDataManagement: React.FC = () => {
     <Card
       title="参考数据（与主数据分离治理 · 不走审批流）"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setSetOpen(true)}>
+        <AuthButton code={BonePermissionCodes.MASTERDATA_REFERENCE_WRITE} type="primary" icon={<PlusOutlined />} onClick={() => setSetOpen(true)}>
           新建值域
-        </Button>
+        </AuthButton>
       }
     >
       <Table
@@ -101,9 +104,9 @@ const ReferenceDataManagement: React.FC = () => {
           type="inner"
           title={`值列表 · ${selected.setName}（${selected.setCode}）`}
           extra={
-            <Button size="small" icon={<PlusOutlined />} onClick={() => setValueOpen(true)}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_REFERENCE_WRITE} size="small" icon={<PlusOutlined />} onClick={() => setValueOpen(true)}>
               新增值
-            </Button>
+            </AuthButton>
           }
         >
           <Table rowKey="id" size="small" columns={valueColumns} dataSource={values} pagination={false} />

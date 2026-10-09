@@ -43,6 +43,8 @@ import type {
 } from '@/types';
 import { dictApi } from '@/services/api';
 import { invalidateDictCache } from '@/hooks/useDict';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -78,6 +80,10 @@ const toLocalIso = (v?: unknown) =>
 
 const DictManagement: React.FC = () => {
   const { t } = useTranslation();
+  // 启停 Switch 无法用 AuthButton 替代（它不是 Button 而是受控组件），
+  // 故单独取权限码决定是否渲染为可写开关。
+  const { has } = usePermission();
+  const canWrite = has(BonePermissionCodes.SYS_DICT_WRITE);
 
   // 标签类型 / 值类型 / 语言 选项（含用户可见文案，置于 useTranslation 作用域内）
   const tagTypeOptions = [
@@ -467,36 +473,59 @@ const DictManagement: React.FC = () => {
       title: t('system.dictManagement.colStatus'),
       dataIndex: 'status',
       width: 90,
-      render: (v: number, r: DictItem) => (
-        <Switch size="small" checked={v === 1} onChange={(c) => toggleItemStatus(r, c)} />
-      ),
+      render: (v: number, r: DictItem) =>
+        // 启停开关会调updateItem 改状态，属写操作，需门禁。
+        canWrite ? (
+          <Switch size="small" checked={v === 1} onChange={(c) => toggleItemStatus(r, c)} />
+        ) : (
+          <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? '1' : '0'}</Tag>
+        ),
     },
     {
       title: t('system.dictManagement.colAction'),
       width: 230,
       render: (_: unknown, r: DictItem) => (
         <Space size={0}>
-          <Button type="link" size="small" onClick={() => openEditItem(r)}>
+          <AuthButton
+            code={BonePermissionCodes.SYS_DICT_WRITE}
+            type="link"
+            size="small"
+            onClick={() => openEditItem(r)}
+          >
             {t('system.dictManagement.edit')}
-          </Button>
+          </AuthButton>
           {isCascade && (
-            <Button type="link" size="small" onClick={() => openCreateItem(r.code)}>
+            <AuthButton
+              code={BonePermissionCodes.SYS_DICT_WRITE}
+              type="link"
+              size="small"
+              onClick={() => openCreateItem(r.code)}
+            >
               {t('system.dictManagement.addChild')}
-            </Button>
+            </AuthButton>
           )}
           {(r.isDefault ?? 0) !== 1 && (
-            <Button type="link" size="small" onClick={() => markDefault(r)}>
+            <AuthButton
+              code={BonePermissionCodes.SYS_DICT_WRITE}
+              type="link"
+              size="small"
+              onClick={() => markDefault(r)}
+            >
               {t('system.dictManagement.default')}
-            </Button>
+            </AuthButton>
           )}
-          <Popconfirm
-            title={t('system.dictManagement.deleteItemConfirm', { label: r.label })}
-            onConfirm={() => removeItem(r)}
-          >
-            <Button type="link" size="small" danger>
-              {t('system.dictManagement.delete')}
-            </Button>
-          </Popconfirm>
+          {/* 删除被 Popconfirm 包住，只能用<Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+            <Popconfirm
+              title={t('system.dictManagement.deleteItemConfirm', { label: r.label })}
+              onConfirm={() => removeItem(r)}
+            >
+              <Button type="link" size="small" danger>
+                {t('system.dictManagement.delete')}
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -508,9 +537,15 @@ const DictManagement: React.FC = () => {
         <Card
           title={t('system.dictManagement.dictTypeTitle')}
           extra={
-            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreateType}>
+            <AuthButton
+              code={BonePermissionCodes.SYS_DICT_WRITE}
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={openCreateType}
+            >
               {t('system.dictManagement.create')}
-            </Button>
+            </AuthButton>
           }
         >
           <Space direction="vertical" style={{ width: '100%' }} size={8}>
@@ -557,26 +592,34 @@ const DictManagement: React.FC = () => {
                 {t('system.dictManagement.refresh')}
               </Button>
               {isEnum && (
+                /* 打开枚举漂移抽屉只是查看差异（只读），真正的写操作是抽屉内的
+                   「同步到字典」，在那里门禁。 */
                 <Button icon={<SyncOutlined />} onClick={openEnumDrawer} disabled={!selectedType}>
                   {t('system.dictManagement.enumSync')}
                 </Button>
               )}
+              {/* 导出是纯下载，不改服务端状态，按只读处理，不加门禁。 */}
               <Button icon={<DownloadOutlined />} onClick={exportType} disabled={!selectedType}>
                 {t('system.dictManagement.export')}
               </Button>
-              <Upload beforeUpload={importType} showUploadList={false} accept=".json">
-                <Button icon={<UploadOutlined />} disabled={!selectedType}>
-                  {t('system.dictManagement.import')}
-                </Button>
-              </Upload>
-              <Button
+              {/* 导入会写入字典项，属写操作。Upload 会cloneElement 其 children，
+                  故用 <Auth> 包外层而非 AuthButton。 */}
+              <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+                <Upload beforeUpload={importType} showUploadList={false} accept=".json">
+                  <Button icon={<UploadOutlined />} disabled={!selectedType}>
+                    {t('system.dictManagement.import')}
+                  </Button>
+                </Upload>
+              </Auth>
+              <AuthButton
+                code={BonePermissionCodes.SYS_DICT_WRITE}
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => openCreateItem()}
                 disabled={!selectedType}
               >
                 {t('system.dictManagement.createItem')}
-              </Button>
+              </AuthButton>
             </Space>
           }
         >
@@ -597,17 +640,24 @@ const DictManagement: React.FC = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label={t('system.dictManagement.descOperation')}>
                   <Space size={0}>
-                    <Button type="link" size="small" onClick={() => openEditType(selectedType)}>
-                      {t('system.dictManagement.editType')}
-                    </Button>
-                    <Popconfirm
-                      title={t('system.dictManagement.deleteTypeConfirm', { name: selectedType.name })}
-                      onConfirm={() => removeType(selectedType)}
+                    <AuthButton
+                      code={BonePermissionCodes.SYS_DICT_WRITE}
+                      type="link"
+                      size="small"
+                      onClick={() => openEditType(selectedType)}
                     >
-                      <Button type="link" size="small" danger disabled={selectedType.builtin === 1}>
-                        {t('system.dictManagement.deleteType')}
-                      </Button>
-                    </Popconfirm>
+                      {t('system.dictManagement.editType')}
+                    </AuthButton>
+                    <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+                      <Popconfirm
+                        title={t('system.dictManagement.deleteTypeConfirm', { name: selectedType.name })}
+                        onConfirm={() => removeType(selectedType)}
+                      >
+                        <Button type="link" size="small" danger disabled={selectedType.builtin === 1}>
+                          {t('system.dictManagement.deleteType')}
+                        </Button>
+                      </Popconfirm>
+                    </Auth>
                   </Space>
                 </Descriptions.Item>
               </Descriptions>
@@ -653,244 +703,249 @@ const DictManagement: React.FC = () => {
       </Col>
 
       {/* 类型表单 */}
-      <Modal
-        title={editingType ? t('system.dictManagement.editDictType') : t('system.dictManagement.createDictType')}
-        open={typeModalOpen}
-        onCancel={() => setTypeModalOpen(false)}
-        onOk={submitType}
-        width={560}
-        destroyOnHidden
-      >
-        <Form form={typeForm} layout="vertical">
-          <Form.Item
-            name="code"
-            label={t('system.dictManagement.fieldScopeCode')}
-            rules={[{ required: true, message: t('system.dictManagement.scopeCodeRequired') }]}
-          >
-            <Input placeholder={t('system.dictManagement.scopeCodePlaceholder')} disabled={!!editingType} />
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label={t('system.dictManagement.fieldScopeName')}
-            rules={[{ required: true, message: t('system.dictManagement.scopeNameRequired') }]}
-          >
-            <Input placeholder={t('system.dictManagement.scopeNamePlaceholder')} />
-          </Form.Item>
-          <Form.Item name="category" label={t('system.dictManagement.fieldScopeCategory')} rules={[{ required: true }]}>
-            <Select
-              options={[
-                { value: 'ENUM', label: t('system.dictManagement.catEnumDesc') },
-                { value: 'LIST', label: t('system.dictManagement.catListDesc') },
-                { value: 'CASCADE', label: t('system.dictManagement.catCascadeDesc') },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="moduleCode" label={t('system.dictManagement.fieldModule')}>
-            <Input placeholder={t('system.dictManagement.modulePlaceholder')} />
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.category !== cur.category}>
-            {({ getFieldValue }) =>
-              getFieldValue('category') === 'ENUM' ? (
-                <Form.Item
-                  name="enumClass"
-                  label={t('system.dictManagement.fieldEnumClass')}
-                  rules={[{ required: true, message: t('system.dictManagement.enumClassRequired') }]}
-                >
-                  <Input placeholder={t('system.dictManagement.enumClassPlaceholder')} />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.category !== cur.category}>
-            {({ getFieldValue }) =>
-              getFieldValue('category') === 'CASCADE' ? (
-                <Form.Item name="maxDepth" label={t('system.dictManagement.fieldMaxDepth')}>
-                  <InputNumber min={0} max={10} style={{ width: '100%' }} />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-          <Space size={16} align="start">
-            <Form.Item name="valueType" label={t('system.dictManagement.fieldValueType')}>
-              <Select style={{ width: 160 }} options={valueTypeOptions} />
-            </Form.Item>
-            <Form.Item name="valueRegex" label={t('system.dictManagement.fieldValueRegex')}>
-              <Input style={{ width: 200 }} placeholder={t('system.dictManagement.valueRegexPlaceholder')} />
-            </Form.Item>
-          </Space>
-          <Form.Item
-            name="codeSegments"
-            label={t('system.dictManagement.fieldCodeSegments')}
-            tooltip={t('system.dictManagement.codeSegmentsTooltip')}
-          >
-            <Input placeholder={t('system.dictManagement.codeSegmentsPlaceholder')} />
-          </Form.Item>
-          <Form.Item name="description" label={t('system.dictManagement.fieldDescription')}>
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Space size={16}>
-            <Form.Item name="sort" label={t('system.dictManagement.fieldSort')} initialValue={0}>
-              <InputNumber />
+      {/* 弹窗「确定」由 antd 内部渲染，不能替换为 AuthButton；用 <Auth> 包住 Modal。 */}
+      <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+        <Modal
+          title={editingType ? t('system.dictManagement.editDictType') : t('system.dictManagement.createDictType')}
+          open={typeModalOpen}
+          onCancel={() => setTypeModalOpen(false)}
+          onOk={submitType}
+          width={560}
+          destroyOnHidden
+        >
+          <Form form={typeForm} layout="vertical">
+            <Form.Item
+              name="code"
+              label={t('system.dictManagement.fieldScopeCode')}
+              rules={[{ required: true, message: t('system.dictManagement.scopeCodeRequired') }]}
+            >
+              <Input placeholder={t('system.dictManagement.scopeCodePlaceholder')} disabled={!!editingType} />
             </Form.Item>
             <Form.Item
-              name="status"
-              label={t('system.dictManagement.fieldEnabled')}
-              valuePropName="checked"
-              getValueProps={(v) => ({ checked: v !== 0 })}
-              normalize={(v) => (v ? 1 : 0)}
+              name="name"
+              label={t('system.dictManagement.fieldScopeName')}
+              rules={[{ required: true, message: t('system.dictManagement.scopeNameRequired') }]}
             >
-              <Switch />
+              <Input placeholder={t('system.dictManagement.scopeNamePlaceholder')} />
             </Form.Item>
-          </Space>
-        </Form>
-      </Modal>
+            <Form.Item name="category" label={t('system.dictManagement.fieldScopeCategory')} rules={[{ required: true }]}>
+              <Select
+                options={[
+                  { value: 'ENUM', label: t('system.dictManagement.catEnumDesc') },
+                  { value: 'LIST', label: t('system.dictManagement.catListDesc') },
+                  { value: 'CASCADE', label: t('system.dictManagement.catCascadeDesc') },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item name="moduleCode" label={t('system.dictManagement.fieldModule')}>
+              <Input placeholder={t('system.dictManagement.modulePlaceholder')} />
+            </Form.Item>
+            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.category !== cur.category}>
+              {({ getFieldValue }) =>
+                getFieldValue('category') === 'ENUM' ? (
+                  <Form.Item
+                    name="enumClass"
+                    label={t('system.dictManagement.fieldEnumClass')}
+                    rules={[{ required: true, message: t('system.dictManagement.enumClassRequired') }]}
+                  >
+                    <Input placeholder={t('system.dictManagement.enumClassPlaceholder')} />
+                  </Form.Item>
+                ) : null
+              }
+            </Form.Item>
+            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.category !== cur.category}>
+              {({ getFieldValue }) =>
+                getFieldValue('category') === 'CASCADE' ? (
+                  <Form.Item name="maxDepth" label={t('system.dictManagement.fieldMaxDepth')}>
+                    <InputNumber min={0} max={10} style={{ width: '100%' }} />
+                  </Form.Item>
+                ) : null
+              }
+            </Form.Item>
+            <Space size={16} align="start">
+              <Form.Item name="valueType" label={t('system.dictManagement.fieldValueType')}>
+                <Select style={{ width: 160 }} options={valueTypeOptions} />
+              </Form.Item>
+              <Form.Item name="valueRegex" label={t('system.dictManagement.fieldValueRegex')}>
+                <Input style={{ width: 200 }} placeholder={t('system.dictManagement.valueRegexPlaceholder')} />
+              </Form.Item>
+            </Space>
+            <Form.Item
+              name="codeSegments"
+              label={t('system.dictManagement.fieldCodeSegments')}
+              tooltip={t('system.dictManagement.codeSegmentsTooltip')}
+            >
+              <Input placeholder={t('system.dictManagement.codeSegmentsPlaceholder')} />
+            </Form.Item>
+            <Form.Item name="description" label={t('system.dictManagement.fieldDescription')}>
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Space size={16}>
+              <Form.Item name="sort" label={t('system.dictManagement.fieldSort')} initialValue={0}>
+                <InputNumber />
+              </Form.Item>
+              <Form.Item
+                name="status"
+                label={t('system.dictManagement.fieldEnabled')}
+                valuePropName="checked"
+                getValueProps={(v) => ({ checked: v !== 0 })}
+                normalize={(v) => (v ? 1 : 0)}
+              >
+                <Switch />
+              </Form.Item>
+            </Space>
+          </Form>
+        </Modal>
+      </Auth>
 
       {/* 项表单 */}
-      <Modal
-        title={editingItem ? t('system.dictManagement.editDictItem') : t('system.dictManagement.createDictItem')}
-        open={itemModalOpen}
-        onCancel={() => setItemModalOpen(false)}
-        onOk={submitItem}
-        width={620}
-        destroyOnHidden
-      >
-        <Form
-          form={itemForm}
-          layout="vertical"
-          initialValues={{ tagType: 'default', status: 1, sort: 0, isDefault: false }}
+      <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+        <Modal
+          title={editingItem ? t('system.dictManagement.editDictItem') : t('system.dictManagement.createDictItem')}
+          open={itemModalOpen}
+          onCancel={() => setItemModalOpen(false)}
+          onOk={submitItem}
+          width={620}
+          destroyOnHidden
         >
-          <Form.Item name="typeCode" label={t('system.dictManagement.fieldOwnerScope')}>
-            <Input disabled />
-          </Form.Item>
-          {isCascade && (
-            <Space size={16} align="start">
-              <Form.Item name="hierarchyCode" label={t('system.dictManagement.fieldHierarchyView')}>
-                <Select
-                  style={{ width: 160 }}
-                  options={hierarchies.map((h) => ({ value: h, label: h }))}
-                />
-              </Form.Item>
-              <Form.Item name="parentCode" label={t('system.dictManagement.fieldParentItem')}>
-                <TreeSelect
-                  allowClear
-                  showSearch
-                  treeDefaultExpandAll
-                  style={{ width: 240 }}
-                  placeholder={t('system.dictManagement.parentPlaceholder')}
-                  treeNodeFilterProp="title"
-                  treeData={parentOptions}
-                />
-              </Form.Item>
-            </Space>
-          )}
-          <Form.Item
-            name="code"
-            label={t('system.dictManagement.fieldCode')}
-            rules={[{ required: true, message: t('system.dictManagement.codeRequired') }]}
+          <Form
+            form={itemForm}
+            layout="vertical"
+            initialValues={{ tagType: 'default', status: 1, sort: 0, isDefault: false }}
           >
-            <Input placeholder={t('system.dictManagement.codePlaceholder')} disabled={!!editingItem} />
-          </Form.Item>
-          <Form.Item
-            name="label"
-            label={t('system.dictManagement.fieldLabel')}
-            rules={[{ required: true, message: t('system.dictManagement.labelRequired') }]}
-          >
-            <Input placeholder={t('system.dictManagement.labelPlaceholder')} />
-          </Form.Item>
-          <Form.Item
-            name="value"
-            label={t('system.dictManagement.fieldValue')}
-            tooltip={t('system.dictManagement.valueTooltip', {
-              constraint: `${selectedType?.valueType ?? 'STRING'}${
-                selectedType?.valueRegex ? ' / ' + selectedType.valueRegex : ''
-              }`,
-            })}
-          >
-            <Input placeholder={t('system.dictManagement.valuePlaceholder')} />
-          </Form.Item>
-          <Form.Item
-            name="externalCode"
-            label={t('system.dictManagement.fieldExternalCode')}
-            tooltip={t('system.dictManagement.externalCodeTooltip')}
-          >
-            <Input placeholder={t('system.dictManagement.externalCodePlaceholder')} />
-          </Form.Item>
-          <Form.Item
-            label={t('system.dictManagement.fieldEffectiveRange')}
-            tooltip={t('system.dictManagement.effectiveRangeTooltip')}
-          >
-            <Space>
-              <Form.Item name="effectiveFrom" noStyle>
-                <DatePicker showTime placeholder={t('system.dictManagement.effectiveFromPlaceholder')} />
-              </Form.Item>
-              <Form.Item name="effectiveTo" noStyle>
-                <DatePicker showTime placeholder={t('system.dictManagement.effectiveToPlaceholder')} />
-              </Form.Item>
-            </Space>
-          </Form.Item>
-          <Form.Item name="tagType" label={t('system.dictManagement.fieldTagType')}>
-            <Select options={tagTypeOptions} />
-          </Form.Item>
-          <Form.Item
-            name="i18nKey"
-            label={t('system.dictManagement.fieldI18nKey')}
-            tooltip={t('system.dictManagement.i18nKeyTooltip')}
-          >
-            <Input placeholder={t('system.dictManagement.i18nKeyPlaceholder')} />
-          </Form.Item>
-          <Form.Item label={t('system.dictManagement.fieldTranslations')}>
-            <Form.List name="texts" initialValue={itemTexts}>
-              {(fields, { add, remove }) => (
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {fields.map((field) => (
-                    <Space key={field.key} align="baseline">
-                      <Form.Item {...field} name={[field.name, 'language']} rules={[{ required: true }]}>
-                        <Select
-                          style={{ width: 130 }}
-                          options={languageOptions}
-                          placeholder={t('system.dictManagement.langPlaceholder')}
-                        />
-                      </Form.Item>
-                      <Form.Item {...field} name={[field.name, 'label']} rules={[{ required: true }]}>
-                        <Input
-                          style={{ width: 200 }}
-                          placeholder={t('system.dictManagement.translationLabelPlaceholder')}
-                        />
-                      </Form.Item>
-                      <Button type="link" danger onClick={() => remove(field.name)}>
-                        {t('system.dictManagement.remove')}
-                      </Button>
-                    </Space>
-                  ))}
-                  <Button type="dashed" block onClick={() => add({ language: 'en-US' })}>
-                    {t('system.dictManagement.addTranslation')}
-                  </Button>
-                </Space>
-              )}
-            </Form.List>
-          </Form.Item>
-          <Form.Item name="description" label={t('system.dictManagement.fieldRemark')}>
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Space size={16}>
-            <Form.Item name="sort" label={t('system.dictManagement.fieldSort')} initialValue={0}>
-              <InputNumber />
+            <Form.Item name="typeCode" label={t('system.dictManagement.fieldOwnerScope')}>
+              <Input disabled />
+            </Form.Item>
+            {isCascade && (
+              <Space size={16} align="start">
+                <Form.Item name="hierarchyCode" label={t('system.dictManagement.fieldHierarchyView')}>
+                  <Select
+                    style={{ width: 160 }}
+                    options={hierarchies.map((h) => ({ value: h, label: h }))}
+                  />
+                </Form.Item>
+                <Form.Item name="parentCode" label={t('system.dictManagement.fieldParentItem')}>
+                  <TreeSelect
+                    allowClear
+                    showSearch
+                    treeDefaultExpandAll
+                    style={{ width: 240 }}
+                    placeholder={t('system.dictManagement.parentPlaceholder')}
+                    treeNodeFilterProp="title"
+                    treeData={parentOptions}
+                  />
+                </Form.Item>
+              </Space>
+            )}
+            <Form.Item
+              name="code"
+              label={t('system.dictManagement.fieldCode')}
+              rules={[{ required: true, message: t('system.dictManagement.codeRequired') }]}
+            >
+              <Input placeholder={t('system.dictManagement.codePlaceholder')} disabled={!!editingItem} />
             </Form.Item>
             <Form.Item
-              name="status"
-              label={t('system.dictManagement.fieldEnabled')}
-              valuePropName="checked"
-              getValueProps={(v) => ({ checked: v !== 0 })}
-              normalize={(v) => (v ? 1 : 0)}
+              name="label"
+              label={t('system.dictManagement.fieldLabel')}
+              rules={[{ required: true, message: t('system.dictManagement.labelRequired') }]}
             >
-              <Switch />
+              <Input placeholder={t('system.dictManagement.labelPlaceholder')} />
             </Form.Item>
-            <Form.Item name="isDefault" label={t('system.dictManagement.default')} valuePropName="checked">
-              <Switch />
+            <Form.Item
+              name="value"
+              label={t('system.dictManagement.fieldValue')}
+              tooltip={t('system.dictManagement.valueTooltip', {
+                constraint: `${selectedType?.valueType ?? 'STRING'}${
+                  selectedType?.valueRegex ? ' / ' + selectedType.valueRegex : ''
+                }`,
+              })}
+            >
+              <Input placeholder={t('system.dictManagement.valuePlaceholder')} />
             </Form.Item>
-          </Space>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="externalCode"
+              label={t('system.dictManagement.fieldExternalCode')}
+              tooltip={t('system.dictManagement.externalCodeTooltip')}
+            >
+              <Input placeholder={t('system.dictManagement.externalCodePlaceholder')} />
+            </Form.Item>
+            <Form.Item
+              label={t('system.dictManagement.fieldEffectiveRange')}
+              tooltip={t('system.dictManagement.effectiveRangeTooltip')}
+            >
+              <Space>
+                <Form.Item name="effectiveFrom" noStyle>
+                  <DatePicker showTime placeholder={t('system.dictManagement.effectiveFromPlaceholder')} />
+                </Form.Item>
+                <Form.Item name="effectiveTo" noStyle>
+                  <DatePicker showTime placeholder={t('system.dictManagement.effectiveToPlaceholder')} />
+                </Form.Item>
+              </Space>
+            </Form.Item>
+            <Form.Item name="tagType" label={t('system.dictManagement.fieldTagType')}>
+              <Select options={tagTypeOptions} />
+            </Form.Item>
+            <Form.Item
+              name="i18nKey"
+              label={t('system.dictManagement.fieldI18nKey')}
+              tooltip={t('system.dictManagement.i18nKeyTooltip')}
+            >
+              <Input placeholder={t('system.dictManagement.i18nKeyPlaceholder')} />
+            </Form.Item>
+            <Form.Item label={t('system.dictManagement.fieldTranslations')}>
+              <Form.List name="texts" initialValue={itemTexts}>
+                {(fields, { add, remove }) => (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {fields.map((field) => (
+                      <Space key={field.key} align="baseline">
+                        <Form.Item {...field} name={[field.name, 'language']} rules={[{ required: true }]}>
+                          <Select
+                            style={{ width: 130 }}
+                            options={languageOptions}
+                            placeholder={t('system.dictManagement.langPlaceholder')}
+                          />
+                        </Form.Item>
+                        <Form.Item {...field} name={[field.name, 'label']} rules={[{ required: true }]}>
+                          <Input
+                            style={{ width: 200 }}
+                            placeholder={t('system.dictManagement.translationLabelPlaceholder')}
+                          />
+                        </Form.Item>
+                        <Button type="link" danger onClick={() => remove(field.name)}>
+                          {t('system.dictManagement.remove')}
+                        </Button>
+                      </Space>
+                    ))}
+                    <Button type="dashed" block onClick={() => add({ language: 'en-US' })}>
+                      {t('system.dictManagement.addTranslation')}
+                    </Button>
+                  </Space>
+                )}
+              </Form.List>
+            </Form.Item>
+            <Form.Item name="description" label={t('system.dictManagement.fieldRemark')}>
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Space size={16}>
+              <Form.Item name="sort" label={t('system.dictManagement.fieldSort')} initialValue={0}>
+                <InputNumber />
+              </Form.Item>
+              <Form.Item
+                name="status"
+                label={t('system.dictManagement.fieldEnabled')}
+                valuePropName="checked"
+                getValueProps={(v) => ({ checked: v !== 0 })}
+                normalize={(v) => (v ? 1 : 0)}
+              >
+                <Switch />
+              </Form.Item>
+              <Form.Item name="isDefault" label={t('system.dictManagement.default')} valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </Space>
+          </Form>
+        </Modal>
+      </Auth>
 
       {/* 枚举漂移抽屉 */}
       <Drawer
@@ -899,9 +954,9 @@ const DictManagement: React.FC = () => {
         onClose={() => setEnumDrawerOpen(false)}
         width={560}
         extra={
-          <Button type="primary" onClick={runSync}>
+          <AuthButton code={BonePermissionCodes.SYS_DICT_WRITE} type="primary" onClick={runSync}>
             {t('system.dictManagement.syncToDict')}
-          </Button>
+          </AuthButton>
         }
       >
         {!enumDiff ? (

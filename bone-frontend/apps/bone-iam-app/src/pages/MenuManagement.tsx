@@ -37,6 +37,8 @@ import {
   type MenuNodeItem,
   type MenuReq,
 } from '../services/api';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import ModulePage from '../components/ModulePage';
 import { ProCard, StatisticCard } from '@ant-design/pro-components';
 
@@ -170,7 +172,8 @@ const MenuManagement: React.FC = () => {
               </span>
             </Space>
             <Space size={0} className="menu-node-actions">
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_MENUS_WRITE}
                 type="link"
                 size="small"
                 icon={<PlusSquareOutlined />}
@@ -180,7 +183,8 @@ const MenuManagement: React.FC = () => {
                 }}
                 title="添加子菜单"
               />
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_MENUS_WRITE}
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
@@ -190,7 +194,8 @@ const MenuManagement: React.FC = () => {
                 }}
                 title="编辑"
               />
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_MENUS_WRITE}
                 type="link"
                 size="small"
                 danger
@@ -322,9 +327,9 @@ const MenuManagement: React.FC = () => {
       <Button onClick={() => setExpandedKeys([])} title="折叠全部">
         折叠
       </Button>
-      <Button type="primary" icon={<PlusSquareOutlined />} onClick={() => openCreate(null)}>
+      <AuthButton code={BonePermissionCodes.IAM_MENUS_WRITE} type="primary" icon={<PlusSquareOutlined />} onClick={() => openCreate(null)}>
         新建顶级菜单
-      </Button>
+      </AuthButton>
     </Space>
   );
 
@@ -374,15 +379,15 @@ const MenuManagement: React.FC = () => {
             extra={
               selectedNode && (
                 <Space>
-                  <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
+                  <AuthButton code={BonePermissionCodes.IAM_MENUS_WRITE} size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
                   子菜单
-                  </Button>
-                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
+                  </AuthButton>
+                  <AuthButton code={BonePermissionCodes.IAM_MENUS_WRITE} size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
                   编辑
-                  </Button>
-                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
+                  </AuthButton>
+                  <AuthButton code={BonePermissionCodes.IAM_MENUS_WRITE} size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
                   删除
-                  </Button>
+                  </AuthButton>
                 </Space>
               )
             }
@@ -420,9 +425,9 @@ const MenuManagement: React.FC = () => {
         footer={
           <Flex justify="end" gap={8}>
             <Button onClick={() => setDrawerOpen(false)}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={submit}>
+            <AuthButton code={BonePermissionCodes.IAM_MENUS_WRITE} type="primary" loading={submitting} onClick={submit}>
               保存
-            </Button>
+            </AuthButton>
           </Flex>
         }
       >

@@ -19,6 +19,8 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { resolveErrorMessage } from '@bone/shared-utils';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { useTranslation } from 'react-i18next';
 import type { SystemConfig, ConfigHistory } from '@/types';
 import { systemConfigApi } from '@/services/api';
@@ -164,9 +166,15 @@ const SystemConfigPage: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: SystemConfig) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          {/* 修改配置值属平台域写操作，走 SYS_CONFIG_WRITE；配置历史是只读查看，不加门禁。 */}
+          <AuthButton
+            code={BonePermissionCodes.SYS_CONFIG_WRITE}
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
             {t('system.systemConfig.editButton')}
-          </Button>
+          </AuthButton>
           <Button type="link" icon={<HistoryOutlined />} onClick={() => handleViewHistory(record)}>
             {t('system.systemConfig.historyButton')}
           </Button>
@@ -207,9 +215,14 @@ const SystemConfigPage: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={fetchConfigs}>
             {t('system.systemConfig.refreshButton')}
           </Button>
-          <Upload beforeUpload={handleImport} showUploadList={false} accept=".json">
-            <Button icon={<UploadOutlined />}>{t('system.systemConfig.importButton')}</Button>
-          </Upload>
+          {/* 导入会写入配置（POST /system/config/import），属写操作，走 SYS_CONFIG_WRITE。
+              Upload 会对其 children 做 cloneElement，故用 <Auth> 包外层而非 AuthButton。 */}
+          <Auth code={BonePermissionCodes.SYS_CONFIG_WRITE}>
+            <Upload beforeUpload={handleImport} showUploadList={false} accept=".json">
+              <Button icon={<UploadOutlined />}>{t('system.systemConfig.importButton')}</Button>
+            </Upload>
+          </Auth>
+          {/* 导出是纯下载（POST 仅用于 blob 响应，不改服务端状态），按只读处理，不加门禁。 */}
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
             {t('system.systemConfig.exportButton')}
           </Button>
@@ -223,31 +236,35 @@ const SystemConfigPage: React.FC = () => {
         loading={loading}
       />
 
-      <Modal
-        title={t('system.systemConfig.editModalTitle')}
-        open={editModalVisible}
-        onOk={handleEditSubmit}
-        onCancel={() => setEditModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label={t('system.systemConfig.configKeyLabel')} name="configKey">
-            <Input disabled />
-          </Form.Item>
-          <Form.Item label={t('system.systemConfig.configValueLabel')} name="configValue" rules={[{ required: true }]}>
-            <TextArea rows={4} />
-          </Form.Item>
-          <Form.Item label={t('system.systemConfig.configTypeLabel')} name="configType">
-            <Select disabled>
-              <Option value="SYSTEM">{t('system.systemConfig.typeSystem')}</Option>
-              <Option value="SERVICE">{t('system.systemConfig.typeService')}</Option>
-              <Option value="FEATURE">{t('system.systemConfig.typeFeature')}</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label={t('system.systemConfig.descriptionLabel')} name="description">
-            <TextArea rows={2} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* 「确定」由 antd 内部渲染，不能替换为 AuthButton；用 <Auth> 包住 Modal，
+          无权限时弹窗与确定按钮都不渲染。 */}
+      <Auth code={BonePermissionCodes.SYS_CONFIG_WRITE}>
+        <Modal
+          title={t('system.systemConfig.editModalTitle')}
+          open={editModalVisible}
+          onOk={handleEditSubmit}
+          onCancel={() => setEditModalVisible(false)}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item label={t('system.systemConfig.configKeyLabel')} name="configKey">
+              <Input disabled />
+            </Form.Item>
+            <Form.Item label={t('system.systemConfig.configValueLabel')} name="configValue" rules={[{ required: true }]}>
+              <TextArea rows={4} />
+            </Form.Item>
+            <Form.Item label={t('system.systemConfig.configTypeLabel')} name="configType">
+              <Select disabled>
+                <Option value="SYSTEM">{t('system.systemConfig.typeSystem')}</Option>
+                <Option value="SERVICE">{t('system.systemConfig.typeService')}</Option>
+                <Option value="FEATURE">{t('system.systemConfig.typeFeature')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label={t('system.systemConfig.descriptionLabel')} name="description">
+              <TextArea rows={2} />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
 
       <Modal
         title={t('system.systemConfig.historyModalTitle')}

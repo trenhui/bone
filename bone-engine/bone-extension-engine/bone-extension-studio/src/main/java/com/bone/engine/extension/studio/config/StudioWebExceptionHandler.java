@@ -60,6 +60,23 @@ public class StudioWebExceptionHandler {
     return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, ex.getMessage());
   }
 
+  /**
+   * 数据库完整性约束冲突 → 400（而非被下方 {@link #internal} 的 {@code Exception} 兜底成 500）。
+   *
+   * <p><b>2026-10-08 实测补录</b>：本 advice {@code @RestControllerAdvice(basePackages=...)} 限定在
+   * controller 包， 其 {@code Exception} 兜底会<b>抢在</b> bone-web 框架基类的同名分支之前命中，故框架基类的 {@code
+   * DataIntegrityViolationException}→400 分支对本模块<b>不生效</b>，必须在此显式声明。 该异常 100%
+   * 由客户端输入触发（字段长度/非空是表结构的一部分），报 500 会误导调用方重试并污染 5xx 错误预算。
+   *
+   * <p>响应体用常量文案、原始异常只入日志（{@code ex.getMessage()} 含完整 SQL 与列名，回显等于泄露表结构）。
+   */
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> dataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex) {
+    log.warn("[API] 数据完整性约束冲突: {}", ex.getMessage());
+    return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段");
+  }
+
   @ExceptionHandler(IllegalStateException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> conflict(IllegalStateException ex) {
     return problem(HttpStatus.CONFLICT, StudioErrorCodes.STATE_INVALID, ex.getMessage());

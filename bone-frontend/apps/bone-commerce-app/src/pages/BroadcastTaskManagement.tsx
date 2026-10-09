@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Select, Space, Statistic, Table, Tag, Tooltip, message } from 'antd';
 import { ReloadOutlined, SendOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { normalizeTotal, formatDate } from '@bone/shared-utils';
 import { channelBroadcastApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -156,14 +158,15 @@ export const BroadcastTaskManagement: React.FC = () => {
         r.status === 'SENT' ? (
           <span style={{ color: '#999' }}>—</span>
         ) : (
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_BROADCAST_WRITE}
             type="link"
             size="small"
             loading={retryingId === r.id}
             onClick={() => void retry(r)}
           >
             重试
-          </Button>
+          </AuthButton>
         ),
     },
   ];
@@ -188,9 +191,14 @@ export const BroadcastTaskManagement: React.FC = () => {
               { value: 'all', label: '全部' },
             ]}
           />
-          <Button icon={<ThunderboltOutlined />} onClick={() => void relayNow()}>
+          {/* 手动推进中继会真实调用渠道接口并消耗配额，与重试同码。 */}
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_BROADCAST_WRITE}
+            icon={<ThunderboltOutlined />}
+            onClick={() => void relayNow()}
+          >
             立即推送一轮
-          </Button>
+          </AuthButton>
           <Button icon={<ReloadOutlined />} onClick={() => void fetchRows()}>
             刷新
           </Button>

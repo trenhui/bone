@@ -31,7 +31,14 @@ let root: Root | null = null;
  */
 function initGlobalContext(props?: QiankunProps) {
   const ctx = props as
-    | { token?: string; user?: unknown; permissions?: unknown; theme?: string; locale?: string }
+    | {
+        token?: string;
+        tenantId?: string;
+        user?: unknown;
+        permissions?: unknown;
+        theme?: string;
+        locale?: string;
+      }
     | undefined;
   const token = ctx?.token;
   if (token) {
@@ -40,8 +47,11 @@ function initGlobalContext(props?: QiankunProps) {
   // 如果 Shell 下发了完整全局上下文，写入 window 供 shared-services 读取。
   // locale 必须以 Shell 下发值为准：硬编码 'zh-CN' 会让切英文后本应用仍是中文（详设 §2.11）。
   if (ctx && (ctx.user || ctx.theme)) {
+    // ⚠ tenantId 必须顶层透传：改造前这里只挑了 4 个字段拼新对象，把 Shell 下发的
+    // tenantId 直接丢掉，于是 generator-app 那类按租户取数的代码在本应用里恒为空。
     (window as unknown as Record<string, unknown>).__BONE_GLOBAL_CONTEXT__ = {
       token: token ?? null,
+      tenantId: ctx.tenantId ?? null,
       user: ctx.user ?? null,
       permissions: ctx.permissions ?? null,
       theme: ctx.theme ?? 'light',

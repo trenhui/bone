@@ -29,11 +29,16 @@ import {
 } from '@ant-design/icons';
 import type { AlertRule, AlertRecord, Metrics, SystemInfo } from '@/types';
 import { monitorApi } from '@/services/api';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Option } = Select;
 
 const MonitorAlertPage: React.FC = () => {
   const { t } = useTranslation();
+  // 规则启停用 Switch（非 Button，无法用 AuthButton 替代），故按权限切换为只读 Tag。
+  const { has } = usePermission();
+  const canWrite = has(BonePermissionCodes.SYS_ALERT_WRITE);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
@@ -226,29 +231,43 @@ const MonitorAlertPage: React.FC = () => {
       title: t('system.monitorAlert.status'),
       dataIndex: 'enabled',
       key: 'enabled',
-      render: (enabled: boolean, record: AlertRule) => (
-        <Switch
-          checked={enabled}
-          onChange={(checked) => handleToggleRule(record.id!, checked)}
-        />
-      ),
+      render: (enabled: boolean, record: AlertRule) =>
+        // 启停规则会调update 改 enabled，属写操作，需门禁。
+        canWrite ? (
+          <Switch
+            checked={enabled}
+            onChange={(checked) => handleToggleRule(record.id!, checked)}
+          />
+        ) : (
+          <Tag color={enabled ? 'green' : 'default'}>{enabled ? 'ON' : 'OFF'}</Tag>
+        ),
     },
     {
       title: t('system.monitorAlert.action'),
       key: 'action',
       render: (_: unknown, record: AlertRule) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEditRule(record)}>
-            {t('system.monitorAlert.edit')}
-          </Button>
-          <Popconfirm
-            title={t('system.monitorAlert.confirmDeleteRule')}
-            onConfirm={() => handleDeleteRule(record.id!)}
+          {/* 告警规则的新增/编辑/删除/启停均走 SYS_ALERT_WRITE（读权限是 SYS_ALERT_READ）。 */}
+          <AuthButton
+            code={BonePermissionCodes.SYS_ALERT_WRITE}
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEditRule(record)}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              {t('system.monitorAlert.delete')}
-            </Button>
-          </Popconfirm>
+            {t('system.monitorAlert.edit')}
+          </AuthButton>
+          {/* 删除被 Popconfirm 包住，只能用 <Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.SYS_ALERT_WRITE}>
+            <Popconfirm
+              title={t('system.monitorAlert.confirmDeleteRule')}
+              onConfirm={() => handleDeleteRule(record.id!)}
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                {t('system.monitorAlert.delete')}
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -372,9 +391,14 @@ const MonitorAlertPage: React.FC = () => {
       <Card
         title={t('system.monitorAlert.alertRules')}
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateRule}>
+          <AuthButton
+            code={BonePermissionCodes.SYS_ALERT_WRITE}
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateRule}
+          >
             {t('system.monitorAlert.createRule')}
-          </Button>
+          </AuthButton>
         }
         style={{ marginBottom: 16 }}
       >
@@ -399,50 +423,54 @@ const MonitorAlertPage: React.FC = () => {
         />
       </Card>
 
-      <Modal
-        title={editingRule ? t('system.monitorAlert.editAlertRule') : t('system.monitorAlert.createAlertRule')}
-        open={ruleModalVisible}
-        onOk={handleSaveRule}
-        onCancel={() => setRuleModalVisible(false)}
-        okText={t('common.confirm')}
-        cancelText={t('common.cancel')}
-        width={600}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label={t('system.monitorAlert.ruleName')} name="name" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label={t('system.monitorAlert.metricName')} name="metricName" rules={[{ required: true }]}>
-            <Select>
-              <Option value="cpu">{t('system.monitorAlert.cpuUsage')}</Option>
-              <Option value="memory">{t('system.monitorAlert.memoryUsage')}</Option>
-              <Option value="disk">{t('system.monitorAlert.diskUsage')}</Option>
-              <Option value="errorRate">{t('system.monitorAlert.apiErrorRate')}</Option>
-              <Option value="apiResponseTime">{t('system.monitorAlert.apiResponseTime')}</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label={t('system.monitorAlert.threshold')} name="threshold" rules={[{ required: true }]}>
-            <InputNumber style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label={t('system.monitorAlert.alertLevel')} name="alertLevel" rules={[{ required: true }]}>
-            <Select>
-              <Option value="CRITICAL">{t('system.monitorAlert.levelCritical')}</Option>
-              <Option value="WARNING">{t('system.monitorAlert.levelWarning')}</Option>
-              <Option value="INFO">{t('system.monitorAlert.levelInfo')}</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            label={t('system.monitorAlert.notificationChannels')}
-            name="notificationChannels"
-            rules={[{ required: true }]}
-          >
-            <Input placeholder="email, sms, wechat, dingtalk" />
-          </Form.Item>
-          <Form.Item label={t('system.monitorAlert.enabledLabel')} name="enabled" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* 弹窗「确定」由 antd 内部渲染，不能替换为 AuthButton；用 <Auth> 包住 Modal，
+          无权限时弹窗与确定按钮都不渲染。 */}
+      <Auth code={BonePermissionCodes.SYS_ALERT_WRITE}>
+        <Modal
+          title={editingRule ? t('system.monitorAlert.editAlertRule') : t('system.monitorAlert.createAlertRule')}
+          open={ruleModalVisible}
+          onOk={handleSaveRule}
+          onCancel={() => setRuleModalVisible(false)}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          width={600}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item label={t('system.monitorAlert.ruleName')} name="name" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item label={t('system.monitorAlert.metricName')} name="metricName" rules={[{ required: true }]}>
+              <Select>
+                <Option value="cpu">{t('system.monitorAlert.cpuUsage')}</Option>
+                <Option value="memory">{t('system.monitorAlert.memoryUsage')}</Option>
+                <Option value="disk">{t('system.monitorAlert.diskUsage')}</Option>
+                <Option value="errorRate">{t('system.monitorAlert.apiErrorRate')}</Option>
+                <Option value="apiResponseTime">{t('system.monitorAlert.apiResponseTime')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label={t('system.monitorAlert.threshold')} name="threshold" rules={[{ required: true }]}>
+              <InputNumber style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label={t('system.monitorAlert.alertLevel')} name="alertLevel" rules={[{ required: true }]}>
+              <Select>
+                <Option value="CRITICAL">{t('system.monitorAlert.levelCritical')}</Option>
+                <Option value="WARNING">{t('system.monitorAlert.levelWarning')}</Option>
+                <Option value="INFO">{t('system.monitorAlert.levelInfo')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label={t('system.monitorAlert.notificationChannels')}
+              name="notificationChannels"
+              rules={[{ required: true }]}
+            >
+              <Input placeholder="email, sms, wechat, dingtalk" />
+            </Form.Item>
+            <Form.Item label={t('system.monitorAlert.enabledLabel')} name="enabled" valuePropName="checked" initialValue={true}>
+              <Switch />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
     </div>
   );
 };

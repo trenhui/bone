@@ -7,3 +7,5 @@ export * from './i18n/index';
 export * from './i18n/format';
 export * from './i18n/errorMessage';
 export * from './i18n/subscribe';
+// 统一权限判定（纯函数层；UI 层入口见 @bone/ui 的 <Auth> / <AuthButton>）
+export * from './authority/index';

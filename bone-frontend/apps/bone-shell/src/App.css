@@ -155,26 +155,39 @@
   text-align: center;
 }
 
-/* ── 菜单配置 Popover ──────────────────────────────────────── */
-.menu-config {
-  width: 200px;
-  padding: 16px;
-}
-
-.menu-config h3 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--bone-color-text);
-}
-
-.menu-config-item {
+/* ── 菜单加载 / 空态 / 错误态（动态菜单接管后新增）──────────
+   此前菜单是写死的常量，"侧边栏为空"是不可能发生的，所以从来没设计过这三种状态。
+   现在菜单来自后端，空态必须给出**归因**，否则用户只会认为系统坏了。 */
+.menu-placeholder {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 8px;
+  padding: 32px 16px;
+  font-size: 13px;
+  color: var(--bone-color-text-tertiary);
+}
+
+.menu-placeholder-error {
   color: var(--bone-color-text);
+}
+
+.menu-placeholder-hint {
+  font-size: 12px;
+  opacity: 0.75;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── 租户切换器（仅平台租户 + iam:tenants:read 可见） ───────── */
+.tenant-switcher {
+  min-width: 148px;
+  margin-right: 4px;
+  font-size: 13px;
+}
+
+.tenant-switcher .ant-select-selection-placeholder {
+  color: var(--bone-color-text-tertiary);
 }
 
 /* ============================================================
@@ -386,6 +399,20 @@
   height: 16px;
   border-radius: 2px;
   background: var(--bone-color-primary);
+  flex-shrink: 0;
+}
+
+.db-section-icon {
+  color: var(--bone-color-primary);
+  font-size: 15px;
+}
+
+.db-badge-count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--bone-color-error-bg);
+  color: var(--bone-color-error);
+  font-weight: 600;
 }
 
 .db-section-extra {
@@ -409,7 +436,7 @@
 /* ── KPI 指标 ── */
 .db-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
 }
 
@@ -517,6 +544,15 @@
   text-align: center;
 }
 
+.db-ring-pct {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.db-ring-pct-na {
+  font-size: 20px;
+}
+
 .db-ring-label {
   margin-top: 6px;
   font-size: 13px;
@@ -526,6 +562,23 @@
 .db-ring-sub {
   font-size: 12px;
   color: var(--bone-color-text-tertiary);
+}
+
+/* 空态面板：带图标的居中提示（告警/资源无数据） */
+.db-empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 0;
+  color: var(--bone-color-text-tertiary);
+  font-size: 13px;
+}
+
+.db-empty-panel > :first-child {
+  font-size: 30px;
+  color: var(--bone-color-success);
 }
 
 .db-jvm {

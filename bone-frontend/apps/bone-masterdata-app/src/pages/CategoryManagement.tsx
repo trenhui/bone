@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Space, Tree, TreeSelect } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { categoryApi } from '../services/api';
 import type { MasterDataCategory } from '../types/governance';
 import { useEntityScope } from '../context/EntityScopeContext';
@@ -153,9 +155,9 @@ const CategoryManagement: React.FC = () => {
       extra={
         <Space>
           <EntityScopeSelect width={260} />
-          <Button type="primary" icon={<PlusOutlined />} disabled={!entityId} onClick={openCreate}>
+          <AuthButton code={BonePermissionCodes.MASTERDATA_CATEGORIES_WRITE} type="primary" icon={<PlusOutlined />} disabled={!entityId} onClick={openCreate}>
             新建分类
-          </Button>
+          </AuthButton>
           <Button icon={<ReloadOutlined />} disabled={!entityId} onClick={() => void load(entityId)}>
             刷新
           </Button>
@@ -178,26 +180,29 @@ const CategoryManagement: React.FC = () => {
               <Space>
                 <span>{node.title}</span>
                 {cat && (
-                  <Button size="small" type="text" onClick={() => openEdit(cat)}>
+                  <AuthButton code={BonePermissionCodes.MASTERDATA_CATEGORIES_WRITE} size="small" type="text" onClick={() => openEdit(cat)}>
                     编辑
-                  </Button>
+                  </AuthButton>
                 )}
-                <Popconfirm
-                  title="删除该分类？（有子分类时不可删）"
-                  onConfirm={async () => {
-                    try {
-                      await categoryApi.delete(node.key);
-                      message.success('已删除');
-                      void load(entityId);
-                    } catch {
-                      message.error('删除失败（可能存在子分类）');
-                    }
-                  }}
-                >
-                  <Button size="small" type="text" danger>
-                    删除
-                  </Button>
-                </Popconfirm>
+                {/* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */}
+                <Auth code={BonePermissionCodes.MASTERDATA_CATEGORIES_WRITE}>
+                  <Popconfirm
+                    title="删除该分类？（有子分类时不可删）"
+                    onConfirm={async () => {
+                      try {
+                        await categoryApi.delete(node.key);
+                        message.success('已删除');
+                        void load(entityId);
+                      } catch {
+                        message.error('删除失败（可能存在子分类）');
+                      }
+                    }}
+                  >
+                    <Button size="small" type="text" danger>
+                      删除
+                    </Button>
+                  </Popconfirm>
+                </Auth>
               </Space>
             );
           }}

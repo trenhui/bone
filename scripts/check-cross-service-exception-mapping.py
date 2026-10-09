@@ -81,7 +81,6 @@ BASELINE: dict[str, set[tuple[str, str]]] = {
         ("400", "VALIDATION_FAILED"),
     },
     "NoResourceFoundException": {("400", "VALIDATION_FAILED"), ("404", "NOT_FOUND")},
-    "ResponseStatusException": {("400", "VALIDATION_FAILED"), ("500", "INTERNAL_ERROR")},
     "SystemException": {("400", "VALIDATION_FAILED"), ("500", "INTERNAL_ERROR")},
 }
 

@@ -75,6 +75,25 @@ public class GeneratorExceptionHandler {
   }
 
   /** 领域校验异常 → 400。 */
+  /**
+   * 数据库完整性约束冲突 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p><b>2026-10-08 实测补录</b>：本模块有<b>两个</b> advice（本类与同模块 {@code config.GlobalExceptionHandler}），
+   * 且<b>均未标 {@code @Order}</b> —— Spring 依bean 名排序，二者谁优先并不可靠（bean 名排序为实现细节， 不构成稳定契约）。两者又都带 {@code
+   * Exception} 兜底，故该异常会先被命中而<b>到不了</b>更具体的分支。 为消除这一顺序依赖，<b>两个 advice 都声明</b>本分支：无论哪个优先，DB 约束冲突都被翻译成
+   * 400。
+   *
+   * <p>该异常 100% 由客户端输入触发（字段长度/非空属表结构），报 500 会误导调用方重试并污染 5xx 错误预算。 响应体用常量文案、原始异常只入日志（{@code
+   * ex.getMessage()} 含完整 SQL 与列名，回显等于泄露表结构）。
+   */
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleDataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex) {
+    log.warn("[handleDataIntegrityViolation] 数据完整性约束冲突: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(problem(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段"));
+  }
+
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleDomainException(DomainException ex) {
     log.warn("[handleDomainException] {}", ex.getMessage());

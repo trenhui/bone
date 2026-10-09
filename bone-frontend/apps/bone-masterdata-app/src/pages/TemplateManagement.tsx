@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
 import { PlusOutlined, RocketOutlined, TagOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { domainTemplateApi } from '../services/api';
 
 const statusColor = (s: string) =>
@@ -81,10 +83,11 @@ const TemplateManagement: React.FC = () => {
       key: 'actions',
       render: (_: unknown, r: any) => (
         <Space>
-          <Button size="small" icon={<TagOutlined />} onClick={() => setVersionTpl(r)}>
+          <AuthButton code={BonePermissionCodes.MASTERDATA_TEMPLATES_WRITE} size="small" icon={<TagOutlined />} onClick={() => setVersionTpl(r)}>
             发布版本
-          </Button>
-          <Button
+          </AuthButton>
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_TEMPLATES_INSTANTIATE}
             size="small"
             type="primary"
             icon={<RocketOutlined />}
@@ -92,12 +95,15 @@ const TemplateManagement: React.FC = () => {
             onClick={() => setInstantiateTpl(r)}
           >
             实例化
-          </Button>
-          <Popconfirm title="确认归档该模板？" onConfirm={async () => { await domainTemplateApi.archive(r.id); message.success('已归档'); void load(); }}>
-            <Button size="small" danger disabled={r.status !== 'PUBLISHED'}>
-              归档
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */}
+          <Auth code={BonePermissionCodes.MASTERDATA_TEMPLATES_WRITE}>
+            <Popconfirm title="确认归档该模板？" onConfirm={async () => { await domainTemplateApi.archive(r.id); message.success('已归档'); void load(); }}>
+              <Button size="small" danger disabled={r.status !== 'PUBLISHED'}>
+                归档
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       )
     }
@@ -107,9 +113,9 @@ const TemplateManagement: React.FC = () => {
     <Card
       title="主数据域模板"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+        <AuthButton code={BonePermissionCodes.MASTERDATA_TEMPLATES_WRITE} type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
           新建模板
-        </Button>
+        </AuthButton>
       }
     >
       <Table rowKey="id" loading={loading} columns={columns} dataSource={rows} pagination={false} />

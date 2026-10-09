@@ -16,6 +16,8 @@ import {
   message,
 } from 'antd';
 import { CarOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { formatDate, normalizeTotal } from '@bone/shared-utils';
 import { shipmentApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -205,7 +207,8 @@ export const ShipmentManagement: React.FC = () => {
       width: 220,
       render: (_: unknown, r: ShipmentSummary) => (
         <Space size="small">
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}
             type="link"
             size="small"
             disabled={r.status !== 'CREATED' && r.status !== 'FAILED'}
@@ -215,21 +218,25 @@ export const ShipmentManagement: React.FC = () => {
             }}
           >
             发货
-          </Button>
-          <Popconfirm
-            title="确认签收？"
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => void runSign(r)}
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={r.status !== 'SHIPPED' && r.status !== 'IN_TRANSIT'}
+          </AuthButton>
+          {/* 被 Popconfirm 包住的按钮只能用 <Auth> 包外层：AuthButton 无权限时返回
+              null，会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}>
+            <Popconfirm
+              title="确认签收？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void runSign(r)}
             >
-              签收
-            </Button>
-          </Popconfirm>
+              <Button
+                type="link"
+                size="small"
+                disabled={r.status !== 'SHIPPED' && r.status !== 'IN_TRANSIT'}
+              >
+                签收
+              </Button>
+            </Popconfirm>
+          </Auth>
           <Button type="link" size="small" onClick={() => void openTraces(r)}>
             轨迹
           </Button>
@@ -276,13 +283,14 @@ export const ShipmentManagement: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={() => void fetchRows()}>
             刷新
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}
             type="primary"
             icon={<CarOutlined />}
             onClick={() => setCreateOpen(true)}
           >
             新建发货单
-          </Button>
+          </AuthButton>
         </Space>
       }
     >
@@ -339,9 +347,14 @@ export const ShipmentManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setCreateOpen(false)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
                 创建
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>
@@ -375,9 +388,14 @@ export const ShipmentManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setShipTarget(null)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_SHIPMENT_WRITE}
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
                 确认发货
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>

@@ -3,6 +3,8 @@ import {
   Button, Card, Col, Form, Input, Modal, Popconfirm, Row, Select, Space, Table, Tabs, Tag, message
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { feedbackApi, driftApi, governanceRoleApi, subscriptionApi } from '../services/api';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
@@ -64,14 +66,17 @@ const GovernanceBoard: React.FC = () => {
       render: (_: unknown, r: any) => (
         <Space>
           {r.status === 'PENDING' && (
-            <Button size="small" type="primary" onClick={async () => { await subscriptionApi.approve(r.id); message.success('已批准'); entityId && void loadAll(entityId); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE} size="small" type="primary" onClick={async () => { await subscriptionApi.approve(r.id); message.success('已批准'); entityId && void loadAll(entityId); }}>
               批准
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'ACTIVE' && (
-            <Popconfirm title="确认撤销订阅？" onConfirm={async () => { await subscriptionApi.revoke(r.id); entityId && void loadAll(entityId); }}>
-              <Button size="small" danger>撤销</Button>
-            </Popconfirm>
+            /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
+            <Auth code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}>
+              <Popconfirm title="确认撤销订阅？" onConfirm={async () => { await subscriptionApi.revoke(r.id); entityId && void loadAll(entityId); }}>
+                <Button size="small" danger>撤销</Button>
+              </Popconfirm>
+            </Auth>
           )}
         </Space>
       )
@@ -90,9 +95,12 @@ const GovernanceBoard: React.FC = () => {
       title: '操作',
       key: 'act',
       render: (_: unknown, r: any) => (
-        <Popconfirm title="移除该角色？" onConfirm={async () => { await governanceRoleApi.unassign(r.id); entityId && void loadAll(entityId); }}>
-          <Button size="small" danger>移除</Button>
-        </Popconfirm>
+        /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
+        <Auth code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}>
+          <Popconfirm title="移除该角色？" onConfirm={async () => { await governanceRoleApi.unassign(r.id); entityId && void loadAll(entityId); }}>
+            <Button size="small" danger>移除</Button>
+          </Popconfirm>
+        </Auth>
       )
     }
   ];
@@ -115,9 +123,9 @@ const GovernanceBoard: React.FC = () => {
       render: (_: unknown, r: any) =>
         r.status === 'PENDING' ? (
           <Space>
-            <Button size="small" onClick={async () => { await driftApi.handle(r.id, 'SYNCED'); entityId && void loadAll(entityId); }}>已同步</Button>
-            <Button size="small" onClick={async () => { await driftApi.handle(r.id, 'IGNORED'); entityId && void loadAll(entityId); }}>忽略</Button>
-            <Button size="small" danger onClick={async () => { await driftApi.handle(r.id, 'BLOCKED'); entityId && void loadAll(entityId); }}>阻断</Button>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" onClick={async () => { await driftApi.handle(r.id, 'SYNCED'); entityId && void loadAll(entityId); }}>已同步</AuthButton>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" onClick={async () => { await driftApi.handle(r.id, 'IGNORED'); entityId && void loadAll(entityId); }}>忽略</AuthButton>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" danger onClick={async () => { await driftApi.handle(r.id, 'BLOCKED'); entityId && void loadAll(entityId); }}>阻断</AuthButton>
           </Space>
         ) : null
     }
@@ -133,13 +141,13 @@ const GovernanceBoard: React.FC = () => {
       render: (_: unknown, r: any) => (
         <Space>
           {r.status === 'PENDING' && (
-            <Button size="small" type="primary" onClick={async () => { await feedbackApi.accept(r.id); entityId && void loadAll(entityId); }}>受理</Button>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" type="primary" onClick={async () => { await feedbackApi.accept(r.id); entityId && void loadAll(entityId); }}>受理</AuthButton>
           )}
           {r.status !== 'DONE' && r.status !== 'REJECTED' && (
-            <Button size="small" onClick={async () => { await feedbackApi.complete(r.id, '已修正'); message.success('已完成'); entityId && void loadAll(entityId); }}>完成</Button>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" onClick={async () => { await feedbackApi.complete(r.id, '已修正'); message.success('已完成'); entityId && void loadAll(entityId); }}>完成</AuthButton>
           )}
           {r.status === 'PENDING' && (
-            <Button size="small" danger onClick={async () => { await feedbackApi.reject(r.id, '不成立'); entityId && void loadAll(entityId); }}>驳回</Button>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} size="small" danger onClick={async () => { await feedbackApi.reject(r.id, '不成立'); entityId && void loadAll(entityId); }}>驳回</AuthButton>
           )}
         </Space>
       )
@@ -154,7 +162,8 @@ const GovernanceBoard: React.FC = () => {
           {/* 模型来自全局作用域（EntityScopeContext）：与分类 / 字段 / 记录页面共享 */}
           <EntityScopeSelect width={260} />
           {entityId && (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 const res = await driftApi.reconcile(entityId);
                 message.success(res.data?.length ? `发现 ${res.data.length} 条漂移（含历史）` : '对账完成，无漂移');
@@ -162,7 +171,7 @@ const GovernanceBoard: React.FC = () => {
               }}
             >
               模型对账
-            </Button>
+            </AuthButton>
           )}
         </Space>
       }
@@ -173,14 +182,15 @@ const GovernanceBoard: React.FC = () => {
             输入主数据模型 ID 后可查看该模型的订阅关系、治理角色、模型漂移与下游反馈；
             「模型对账」触发元数据↔主数据结构比对（UC-T10，只检测不自动同步）。
           </Card>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
             icon={<PlusOutlined />}
             disabled={!entityId}
             onClick={() => setRoleOpen(true)}
             style={{ marginBottom: 16 }}
           >
             指派治理角色
-          </Button>
+          </AuthButton>
         </Col>
       </Row>
 

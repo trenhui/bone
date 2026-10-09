@@ -21,6 +21,8 @@ import {
   CheckCircleOutlined, InboxOutlined, SendOutlined, AuditOutlined, CloseCircleOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
@@ -581,64 +583,79 @@ const RecordManagement: React.FC = () => {
           <Space size="middle" wrap>
             {record.status === 'DRAFT' && (
               <>
-                <Button
+                <AuthButton
+                  code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}
                   icon={<EditOutlined />}
                   onClick={() => handleEdit(record)}
                 >
                   编辑
-                </Button>
-                <Popconfirm
-                  title="确定要删除吗？"
-                  onConfirm={() => handleDelete(record.id)}
-                  okText="确定"
-                  cancelText="取消"
-                >
-                  <Button danger icon={<DeleteOutlined />}>删除</Button>
-                </Popconfirm>
-                <Button
+                </AuthButton>
+                {/* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */}
+                <Auth code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}>
+                  <Popconfirm
+                    title="确定要删除吗？"
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="确定"
+                    cancelText="取消"
+                  >
+                    <Button danger icon={<DeleteOutlined />}>删除</Button>
+                  </Popconfirm>
+                </Auth>
+                <AuthButton
+                  code={BonePermissionCodes.MASTERDATA_RECORDS_APPROVE}
                   icon={<SendOutlined />}
                   onClick={() => handleSubmitApproval(record.id)}
                 >
                   提交审批
-                </Button>
-                <Button
+                </AuthButton>
+                <AuthButton
+                  code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}
                   icon={<CheckCircleOutlined />}
                   onClick={() => handlePublish(record.id)}
                 >
                   直接发布
-                </Button>
+                </AuthButton>
               </>
             )}
             {record.status === 'PENDING_APPROVAL' && (
               <>
-                <Popconfirm
-                  title="确认审批通过？"
-                  onConfirm={() => handleApprove(record.id)}
-                  okText="通过"
-                  cancelText="取消"
+                <Auth code={BonePermissionCodes.MASTERDATA_RECORDS_APPROVE}>
+                  <Popconfirm
+                    title="确认审批通过？"
+                    onConfirm={() => handleApprove(record.id)}
+                    okText="通过"
+                    cancelText="取消"
+                  >
+                    <Button type="primary" icon={<AuditOutlined />}>审批通过</Button>
+                  </Popconfirm>
+                </Auth>
+                <AuthButton
+                  code={BonePermissionCodes.MASTERDATA_RECORDS_APPROVE}
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => setRejectTarget(record)}
                 >
-                  <Button type="primary" icon={<AuditOutlined />}>审批通过</Button>
-                </Popconfirm>
-                <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectTarget(record)}>
                   驳回
-                </Button>
+                </AuthButton>
               </>
             )}
             {record.status === 'APPROVED' && (
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}
                 icon={<CheckCircleOutlined />}
                 onClick={() => handlePublish(record.id)}
               >
                 发布
-              </Button>
+              </AuthButton>
             )}
             {record.status === 'PUBLISHED' && (
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}
                 icon={<InboxOutlined />}
                 onClick={() => handleArchive(record.id)}
               >
                 归档
-              </Button>
+              </AuthButton>
             )}
             <Button
               icon={<HistoryOutlined />}
@@ -710,25 +727,28 @@ const RecordManagement: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               创建记录
-            </Button>
+            </AuthButton>
           </Form.Item>
           <Form.Item>
-            <Upload
-              showUploadList={false}
-              beforeUpload={handleImport}
-              maxCount={1}
-            >
-              <Button icon={<UploadOutlined />} loading={importLoading}>
-                导入
-              </Button>
-            </Upload>
+            {/* Upload 同样会对 children 做 cloneElement：用 <Auth> 包外层 */}
+            <Auth code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE}>
+              <Upload
+                showUploadList={false}
+                beforeUpload={handleImport}
+                maxCount={1}
+              >
+                <Button icon={<UploadOutlined />} loading={importLoading}>
+                  导入
+                </Button>
+              </Upload>
+            </Auth>
           </Form.Item>
           <Form.Item>
-            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_RECORDS_WRITE} icon={<DownloadOutlined />} onClick={handleExport}>
               导出
-            </Button>
+            </AuthButton>
           </Form.Item>
         </Form>
 

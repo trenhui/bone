@@ -32,6 +32,8 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';
 import type { MenuProps } from 'antd';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import {
   bindPlugin,
   createPlugin,
@@ -66,6 +68,10 @@ import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
 const UNBOUND_EXT_POINT_ID = '0';
 
 const PluginManagement: React.FC = () => {
+  // 「更多」菜单里绑定与只读的路由探测混在一起，故在菜单项层面按权限过滤，
+  // 而不是把整个 Dropdown 门禁掉。
+  const { has } = usePermission();
+  const canBind = has(BonePermissionCodes.EXTENSION_PLUGINS_BIND);
   const [plugins, setPlugins] = useState<ExtensionRow[]>([]);
   const [pluginTotal, setPluginTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -112,15 +118,15 @@ const PluginManagement: React.FC = () => {
           listPlugins({ page: p, size: ps, appId: appFilter }),
           listExtPoints(),
         ]);
-      const pluginList = Array.isArray(pluginResult)
-        ? pluginResult
-        : (pluginResult as StudioPageResult<ExtensionRow>).records;
-      const pluginCount = Array.isArray(pluginResult)
-        ? pluginResult.length
-        : (pluginResult as StudioPageResult<ExtensionRow>).total ?? pluginList.length;
-      setPlugins(pluginList);
-      setPluginTotal(pluginCount);
-      setExtPoints(Array.isArray(pointResult) ? pointResult : pointResult.records);
+        const pluginList = Array.isArray(pluginResult)
+          ? pluginResult
+          : (pluginResult as StudioPageResult<ExtensionRow>).records;
+        const pluginCount = Array.isArray(pluginResult)
+          ? pluginResult.length
+          : (pluginResult as StudioPageResult<ExtensionRow>).total ?? pluginList.length;
+        setPlugins(pluginList);
+        setPluginTotal(pluginCount);
+        setExtPoints(Array.isArray(pointResult) ? pointResult : pointResult.records);
       } catch (e) {
         message.error(formatStudioError(e, '加载插件失败'));
       } finally {
@@ -379,15 +385,18 @@ const PluginManagement: React.FC = () => {
   };
 
   const buildMoreMenu = (record: ExtensionRow): MenuProps['items'] => {
-    const items: NonNullable<MenuProps['items']> = [
-      {
+    const items: NonNullable<MenuProps['items']> = [];
+    // 绑定/解绑是插件与扩展点的绑定关系维护，走 EXTENSION_PLUGINS_BIND。
+    // 无权限时整个菜单项不出现（而非置灰），避免诱导权限申请。
+    if (canBind) {
+      items.push({
         key: 'bind',
         icon: <ApiOutlined />,
         label: isBound(record) ? '重新绑定扩展点…' : '绑定扩展点…',
         onClick: () => openBind(record),
-      },
-    ];
-    if (isBound(record)) {
+      });
+    }
+    if (isBound(record) && canBind) {
       items.push({
         key: 'unbind',
         icon: <DisconnectOutlined />,
@@ -458,17 +467,30 @@ const PluginManagement: React.FC = () => {
         const deployDisabled = !isBound(record) && !record.enabled;
         return (
           <Space size="small" wrap>
-            <Button type="link" size="small" onClick={() => openEdit(record)}>
+            <AuthButton
+              code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}
+              type="link"
+              size="small"
+              onClick={() => openEdit(record)}
+            >
               编辑
-            </Button>
+            </AuthButton>
             <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openVersions(record)}>
               版本
             </Button>
-            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => openUpload(record)}>
+            <AuthButton
+              code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}
+              type="link"
+              size="small"
+              icon={<UploadOutlined />}
+              onClick={() => openUpload(record)}
+            >
               上传包
-            </Button>
+            </AuthButton>
+            {/* 部署/卸载同属部署域动作，走 EXTENSION_PLUGINS_DEPLOY（与发布分权，SoD）。 */}
             {record.enabled ? (
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.EXTENSION_PLUGINS_DEPLOY}
                 type="link"
                 size="small"
                 loading={undeployingId === record.id}
@@ -476,9 +498,10 @@ const PluginManagement: React.FC = () => {
                 onClick={() => handleDeploy(record, false)}
               >
                 卸载
-              </Button>
+              </AuthButton>
             ) : (
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.EXTENSION_PLUGINS_DEPLOY}
                 type="link"
                 size="small"
                 loading={deploying?.id === record.id}
@@ -490,26 +513,36 @@ const PluginManagement: React.FC = () => {
                 onClick={() => handleDeploy(record, true)}
               >
                 部署
-              </Button>
+              </AuthButton>
             )}
-            <Button
+            {/* 推送到运行时属「生效切换」，与部署分权：EXTENSION_RUNTIME_PUBLISH。 */}
+            <AuthButton
+              code={BonePermissionCodes.EXTENSION_RUNTIME_PUBLISH}
               type="link"
               size="small"
               icon={<CloudUploadOutlined />}
               onClick={() => handlePublish(record.id)}
             >
               推送运行时
-            </Button>
+            </AuthButton>
+            {/* 「更多」里混有写操作（绑定/解绑）与只读操作（路由探测），
+                故 Dropdown 本身不门禁，只在菜单项层面过滤：否则无绑定权的人会连带
+                看不到「路由探测」。Dropdown 会对其 children 做 cloneElement，
+                所以此处保持 <Button> 而非 AuthButton。 */}
             <Dropdown menu={{ items: buildMoreMenu(record) }} trigger={['click']}>
               <Button type="link" size="small" icon={<EllipsisOutlined />}>
                 更多
               </Button>
             </Dropdown>
-            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" size="small" danger>
-                删除
-              </Button>
-            </Popconfirm>
+            {/* 删除被 Popconfirm 包住，只能用 <Auth> 包外层：AuthButton 无权限时返回 null，
+                会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+            <Auth code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}>
+              <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger>
+                  删除
+                </Button>
+              </Popconfirm>
+            </Auth>
           </Space>
         );
       },
@@ -562,15 +595,17 @@ const PluginManagement: React.FC = () => {
           >
             下载
           </Button>
+          {/* 下载是读取制品（GET），属只读操作，按约束不加门禁；回滚会真实切换生效版本，属写操作。 */}
           {!row.active && selectedPlugin ? (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.EXTENSION_PLUGINS_DEPLOY}
               type="link"
               size="small"
               icon={<RollbackOutlined />}
               onClick={() => handleRollback(selectedPlugin.id, row.version)}
             >
               回滚
-            </Button>
+            </AuthButton>
           ) : null}
         </Space>
       ),
@@ -580,12 +615,21 @@ const PluginManagement: React.FC = () => {
   return (
     <>
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <AuthButton
+          code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+        >
           注册插件
-        </Button>
-        <Button icon={<UploadOutlined />} onClick={() => openUpload()}>
+        </AuthButton>
+        <AuthButton
+          code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}
+          icon={<UploadOutlined />}
+          onClick={() => openUpload()}
+        >
           上传 JAR
-        </Button>
+        </AuthButton>
         <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
@@ -617,108 +661,114 @@ const PluginManagement: React.FC = () => {
         }}
       />
 
-      <Modal
-        title={editing ? '编辑插件' : '注册插件'}
-        open={modalOpen}
-        onOk={handleSubmit}
-        onCancel={() => setModalOpen(false)}
-        width={560}
-        forceRender
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="extPointId" label="关联扩展点" rules={[{ required: true }]}>
-            <Select
-              options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
-              placeholder="选择扩展点"
-            />
-          </Form.Item>
-          <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="appId"
-            label="归属应用 ID"
-            tooltip="bone_application 的应用 ID；留空表示平台通用插件（5a G1）"
-          >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="留空 = 平台通用" />
-          </Form.Item>
-          <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
-            <Input placeholder="com.bone.example.MyExtension" />
-          </Form.Item>
-          <Form.Item name="priority" label="优先级">
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="tenantCode" label="租户">
-            <Input />
-          </Form.Item>
-          <Form.Item name="bizCode" label="业务码">
-            <Input />
-          </Form.Item>
-          <Form.Item name="config" label="路由配置 (JSON)">
-            <Input.TextArea rows={3} placeholder='{"traffic":80,"defaultImpl":true}' />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="上传插件 JAR"
-        open={uploadOpen}
-        onOk={handleUpload}
-        onCancel={() => setUploadOpen(false)}
-        width={560}
-        forceRender
-        destroyOnHidden
-      >
-        <Form form={uploadForm} layout="vertical">
-          <Form.Item name="pluginId" hidden>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="extPointId"
-            label="关联扩展点"
-            rules={[{ required: !uploadTarget, message: '请选择扩展点' }]}
-          >
-            <Select
-              disabled={!!uploadTarget}
-              options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
-            />
-          </Form.Item>
-          <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
-            <Input disabled={!!uploadPlugin} />
-          </Form.Item>
-          <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
-            <Input disabled={!!uploadPlugin} />
-          </Form.Item>
-          <Form.Item name="version" label="版本号" rules={[{ required: true }]}>
-            <Input placeholder="1.0.0" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item label="JAR 文件" required>
-            <Upload
-              accept=".jar"
-              maxCount={1}
-              beforeUpload={(file) => {
-                setJarFile(file);
-                return false;
-              }}
-              onRemove={() => setJarFile(null)}
-              fileList={
-                jarFile
-                  ? [{ uid: '-1', name: jarFile.name, status: 'done' } as UploadFile]
-                  : []
-              }
+      {/* 弹窗「确定」由 antd 内部渲染，无法替换为 AuthButton；用 <Auth> 包住 Modal，
+          无权限时弹窗与确定按钮都不渲染。 */}
+      <Auth code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}>
+        <Modal
+          title={editing ? '编辑插件' : '注册插件'}
+          open={modalOpen}
+          onOk={handleSubmit}
+          onCancel={() => setModalOpen(false)}
+          width={560}
+          forceRender
+          destroyOnHidden
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item name="extPointId" label="关联扩展点" rules={[{ required: true }]}>
+              <Select
+                options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
+                placeholder="选择扩展点"
+              />
+            </Form.Item>
+            <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="appId"
+              label="归属应用 ID"
+              tooltip="bone_application 的应用 ID；留空表示平台通用插件（5a G1）"
             >
-              <Button icon={<UploadOutlined />}>选择 JAR 文件</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <InputNumber min={1} style={{ width: '100%' }} placeholder="留空 = 平台通用" />
+            </Form.Item>
+            <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
+              <Input placeholder="com.bone.example.MyExtension" />
+            </Form.Item>
+            <Form.Item name="priority" label="优先级">
+              <InputNumber min={0} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="tenantCode" label="租户">
+              <Input />
+            </Form.Item>
+            <Form.Item name="bizCode" label="业务码">
+              <Input />
+            </Form.Item>
+            <Form.Item name="config" label="路由配置 (JSON)">
+              <Input.TextArea rows={3} placeholder='{"traffic":80,"defaultImpl":true}' />
+            </Form.Item>
+            <Form.Item name="description" label="描述">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
+
+      <Auth code={BonePermissionCodes.EXTENSION_PLUGINS_WRITE}>
+        <Modal
+          title="上传插件 JAR"
+          open={uploadOpen}
+          onOk={handleUpload}
+          onCancel={() => setUploadOpen(false)}
+          width={560}
+          forceRender
+          destroyOnHidden
+        >
+          <Form form={uploadForm} layout="vertical">
+            <Form.Item name="pluginId" hidden>
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="extPointId"
+              label="关联扩展点"
+              rules={[{ required: !uploadTarget, message: '请选择扩展点' }]}
+            >
+              <Select
+                disabled={!!uploadTarget}
+                options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
+              />
+            </Form.Item>
+            <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
+              <Input disabled={!!uploadPlugin} />
+            </Form.Item>
+            <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
+              <Input disabled={!!uploadPlugin} />
+            </Form.Item>
+            <Form.Item name="version" label="版本号" rules={[{ required: true }]}>
+              <Input placeholder="1.0.0" />
+            </Form.Item>
+            <Form.Item name="description" label="描述">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item label="JAR 文件" required>
+              <Upload
+                accept=".jar"
+                maxCount={1}
+                beforeUpload={(file) => {
+                  setJarFile(file);
+                  return false;
+                }}
+                onRemove={() => setJarFile(null)}
+                fileList={
+                  jarFile
+                    ? [{ uid: '-1', name: jarFile.name, status: 'done' } as UploadFile]
+                    : []
+                }
+              >
+                <Button icon={<UploadOutlined />}>选择 JAR 文件</Button>
+              </Upload>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
 
       <Modal
         title="正在部署插件"
@@ -751,9 +801,13 @@ const PluginManagement: React.FC = () => {
         width={640}
         extra={
           selectedPlugin ? (
-            <Button icon={<RollbackOutlined />} onClick={() => handleRollback(selectedPlugin.id)}>
+            <AuthButton
+              code={BonePermissionCodes.EXTENSION_PLUGINS_DEPLOY}
+              icon={<RollbackOutlined />}
+              onClick={() => handleRollback(selectedPlugin.id)}
+            >
               回滚上一版本
-            </Button>
+            </AuthButton>
           ) : null
         }
       >
@@ -769,50 +823,52 @@ const PluginManagement: React.FC = () => {
         />
       </Drawer>
 
-      <Modal
-        title={bindTarget ? `绑定扩展点 — ${bindTarget.name}` : '绑定扩展点'}
-        open={!!bindTarget}
-        onOk={handleBindSubmit}
-        confirmLoading={bindSubmitting}
-        onCancel={() => setBindTarget(null)}
-        okText="确认绑定"
-        cancelText="取消"
-        forceRender
-        destroyOnHidden
-        width={520}
-      >
-        {bindTarget ? (
-          <Form form={bindForm} layout="vertical" preserve={false}>
-            {isBound(bindTarget) && (
-              <p style={{ color: 'rgba(0,0,0,0.55)', marginBottom: 16 }}>
+      <Auth code={BonePermissionCodes.EXTENSION_PLUGINS_BIND}>
+        <Modal
+          title={bindTarget ? `绑定扩展点 — ${bindTarget.name}` : '绑定扩展点'}
+          open={!!bindTarget}
+          onOk={handleBindSubmit}
+          confirmLoading={bindSubmitting}
+          onCancel={() => setBindTarget(null)}
+          okText="确认绑定"
+          cancelText="取消"
+          forceRender
+          destroyOnHidden
+          width={520}
+        >
+          {bindTarget ? (
+            <Form form={bindForm} layout="vertical" preserve={false}>
+              {isBound(bindTarget) && (
+                <p style={{ color: 'rgba(0,0,0,0.55)', marginBottom: 16 }}>
                 当前绑定：<strong>{extPointName(bindTarget.extPointId)}</strong>
                 ，选择新的扩展点将覆盖原绑定。
-              </p>
-            )}
-            <Form.Item
-              name="extPointId"
-              label="目标扩展点"
-              rules={[{ required: true, message: '请选择目标扩展点' }]}
-            >
-              <Select
-                placeholder="选择扩展点"
-                showSearch
-                optionFilterProp="label"
-                options={extPoints
-                  .filter((p) => p.enabled !== false)
-                  .map((p) => ({
-                    value: p.id,
-                    label: `${p.name} (#${p.id})`,
-                  }))}
-                notFoundContent="没有可用扩展点，请先到「扩展点管理」启用"
-              />
-            </Form.Item>
-            <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+                </p>
+              )}
+              <Form.Item
+                name="extPointId"
+                label="目标扩展点"
+                rules={[{ required: true, message: '请选择目标扩展点' }]}
+              >
+                <Select
+                  placeholder="选择扩展点"
+                  showSearch
+                  optionFilterProp="label"
+                  options={extPoints
+                    .filter((p) => p.enabled !== false)
+                    .map((p) => ({
+                      value: p.id,
+                      label: `${p.name} (#${p.id})`,
+                    }))}
+                  notFoundContent="没有可用扩展点，请先到「扩展点管理」启用"
+                />
+              </Form.Item>
+              <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
               提示：绑定后插件仍处于「未部署」状态，需在表格中执行「部署」才能进入路由。
-            </p>
-          </Form>
-        ) : null}
-      </Modal>
+              </p>
+            </Form>
+          ) : null}
+        </Modal>
+      </Auth>
 
       <Modal
         title={probeResult ? `路由探测 — ${probeResult.pluginName}` : '路由探测'}

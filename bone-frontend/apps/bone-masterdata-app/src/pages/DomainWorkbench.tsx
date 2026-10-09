@@ -28,6 +28,8 @@ import {
   SafetyCertificateOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { useNavigate } from 'react-router-dom';
 import type { QualityCheck } from '../types';
 import {
@@ -211,15 +213,18 @@ const DomainWorkbench: React.FC = () => {
       title: '操作',
       key: 'act',
       render: (_: unknown, r: any) => (
-        <Popconfirm
-          title="移除该角色？"
-          onConfirm={async () => {
-            await governanceRoleApi.unassign(r.id);
-            if (entityId) void loadDomain(entityId);
-          }}
-        >
-          <Button size="small" danger>移除</Button>
-        </Popconfirm>
+        /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
+        <Auth code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}>
+          <Popconfirm
+            title="移除该角色？"
+            onConfirm={async () => {
+              await governanceRoleApi.unassign(r.id);
+              if (entityId) void loadDomain(entityId);
+            }}
+          >
+            <Button size="small" danger>移除</Button>
+          </Popconfirm>
+        </Auth>
       )
     }
   ];
@@ -239,9 +244,10 @@ const DomainWorkbench: React.FC = () => {
       render: (_: unknown, r: any) => (
         <Space>
           {r.status === 'PENDING' && (
-            <Button
+            <AuthButton
               size="small"
               type="primary"
+              code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}
               onClick={async () => {
                 await subscriptionApi.approve(r.id);
                 message.success('已批准订阅');
@@ -249,18 +255,21 @@ const DomainWorkbench: React.FC = () => {
               }}
             >
               批准
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'ACTIVE' && (
-            <Popconfirm
-              title="确认撤销订阅？"
-              onConfirm={async () => {
-                await subscriptionApi.revoke(r.id);
-                if (entityId) void loadDomain(entityId);
-              }}
-            >
-              <Button size="small" danger>撤销</Button>
-            </Popconfirm>
+            /* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */
+            <Auth code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}>
+              <Popconfirm
+                title="确认撤销订阅？"
+                onConfirm={async () => {
+                  await subscriptionApi.revoke(r.id);
+                  if (entityId) void loadDomain(entityId);
+                }}
+              >
+                <Button size="small" danger>撤销</Button>
+              </Popconfirm>
+            </Auth>
           )}
         </Space>
       )
@@ -310,8 +319,9 @@ const DomainWorkbench: React.FC = () => {
       render: (_: unknown, r: any) => (
         <Space>
           {r.status === 'OPEN' && (
-            <Button
+            <AuthButton
               size="small"
+              code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
                 await qualityIssueApi.fix(r.id);
                 message.success('已标记整改');
@@ -319,12 +329,13 @@ const DomainWorkbench: React.FC = () => {
               }}
             >
               整改
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'FIXED' && (
-            <Button
+            <AuthButton
               size="small"
               type="primary"
+              code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
                 await qualityIssueApi.close(r.id);
                 message.success('复检通过已关闭');
@@ -332,19 +343,20 @@ const DomainWorkbench: React.FC = () => {
               }}
             >
               关闭
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'OPEN' && (
-            <Button
+            <AuthButton
               size="small"
               danger
+              code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
                 await qualityIssueApi.ignore(r.id);
                 if (entityId) void loadDomain(entityId);
               }}
             >
               忽略
-            </Button>
+            </AuthButton>
           )}
         </Space>
       )
@@ -369,24 +381,26 @@ const DomainWorkbench: React.FC = () => {
       render: (_: unknown, r: any) =>
         r.status === 'PENDING' ? (
           <Space>
-            <Button
+            <AuthButton
               size="small"
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 await driftApi.handle(r.id, 'SYNCED');
                 if (entityId) void loadDomain(entityId);
               }}
             >
               同步
-            </Button>
-            <Button
+            </AuthButton>
+            <AuthButton
               size="small"
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 await driftApi.handle(r.id, 'IGNORED');
                 if (entityId) void loadDomain(entityId);
               }}
             >
               忽略
-            </Button>
+            </AuthButton>
           </Space>
         ) : null
     }
@@ -402,20 +416,22 @@ const DomainWorkbench: React.FC = () => {
       render: (_: unknown, r: any) => (
         <Space>
           {r.status === 'PENDING' && (
-            <Button
+            <AuthButton
               size="small"
               type="primary"
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 await feedbackApi.accept(r.id);
                 if (entityId) void loadDomain(entityId);
               }}
             >
               受理
-            </Button>
+            </AuthButton>
           )}
           {r.status !== 'DONE' && r.status !== 'REJECTED' && (
-            <Button
+            <AuthButton
               size="small"
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 await feedbackApi.complete(r.id, '已修正');
                 message.success('反馈已完成');
@@ -423,19 +439,20 @@ const DomainWorkbench: React.FC = () => {
               }}
             >
               完成
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'PENDING' && (
-            <Button
+            <AuthButton
               size="small"
               danger
+              code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
                 await feedbackApi.reject(r.id, '不成立');
                 if (entityId) void loadDomain(entityId);
               }}
             >
               驳回
-            </Button>
+            </AuthButton>
           )}
         </Space>
       )
@@ -457,12 +474,12 @@ const DomainWorkbench: React.FC = () => {
         <Space size="middle" wrap>
           <EntityScopeSelect width={320} />
           {currentEntity && <Tag color={currentEntity.status === 'PUBLISHED' ? 'green' : 'blue'}>{currentEntity.status}</Tag>}
-          <Button icon={<RocketOutlined />} disabled={!entityId} onClick={() => void handleRunCheck()}>
+          <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} icon={<RocketOutlined />} disabled={!entityId} onClick={() => void handleRunCheck()}>
             执行质检
-          </Button>
-          <Button icon={<ReconciliationOutlined />} disabled={!entityId} onClick={() => void handleReconcile()}>
+          </AuthButton>
+          <AuthButton code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE} icon={<ReconciliationOutlined />} disabled={!entityId} onClick={() => void handleReconcile()}>
             模型对账
-          </Button>
+          </AuthButton>
           <Button icon={<ReloadOutlined />} disabled={!entityId} onClick={() => entityId && void loadDomain(entityId)}>
             刷新
           </Button>
@@ -549,15 +566,16 @@ const DomainWorkbench: React.FC = () => {
                   label: `治理角色 (${roles.length})`,
                   children: (
                     <>
-                      <Button
+                      <AuthButton
                         type="primary"
                         ghost
                         icon={<TeamOutlined />}
                         style={{ marginBottom: 12 }}
+                        code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
                         onClick={() => setRoleOpen(true)}
                       >
                         指派治理角色
-                      </Button>
+                      </AuthButton>
                       <Table rowKey="id" size="small" columns={roleCols} dataSource={roles} pagination={false} />
                     </>
                   )

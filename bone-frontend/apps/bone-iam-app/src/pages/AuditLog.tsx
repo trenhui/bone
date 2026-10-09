@@ -13,6 +13,8 @@ import {
 import * as api from '../services/api';
 import ModulePage from '../components/ModulePage';
 import { StatisticCard } from '@ant-design/pro-components';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { unwrapPage } from '../utils/pageResult';
 import { downloadBlob } from '../utils/download';
 import { formatDate } from '@bone/shared-utils';
@@ -314,14 +316,15 @@ const AuditLogPage: React.FC = () => {
           />
           <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
         </Space>
-        <Button
+        <AuthButton
+          code={BonePermissionCodes.IAM_AUDIT_READ}
           type="primary"
           icon={<DownloadOutlined />}
           loading={exporting}
           onClick={handleExport}
         >
           导出CSV
-        </Button>
+        </AuthButton>
       </div>
 
       {/* 数据表格 */}

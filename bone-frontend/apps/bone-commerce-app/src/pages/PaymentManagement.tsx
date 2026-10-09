@@ -14,6 +14,8 @@ import {
   message,
 } from 'antd';
 import { DollarOutlined, SearchOutlined, RollbackOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { formatDate } from '@bone/shared-utils';
 import { paymentApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -74,22 +76,26 @@ const RefundSection: React.FC<{
           <InputNumber step={0.01} min={0.01} style={{ width: 160 }} />
         </Form.Item>
         <Form.Item>
-          <Popconfirm
-            title="确认退款？"
-            description="仅已支付成功的支付单可退款，服务端会校验。"
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => form.submit()}
-          >
-            <Button
-              danger
-              icon={<RollbackOutlined />}
-              loading={refunding}
-              disabled={status !== 'SUCCESS'}
+          {/* 被 Popconfirm 包住的按钮只能用 <Auth> 包外层：AuthButton 无权限时返回
+              null，会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.ORDER_PAYMENT_WRITE}>
+            <Popconfirm
+              title="确认退款？"
+              description="仅已支付成功的支付单可退款，服务端会校验。"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => form.submit()}
             >
-              退款
-            </Button>
-          </Popconfirm>
+              <Button
+                danger
+                icon={<RollbackOutlined />}
+                loading={refunding}
+                disabled={status !== 'SUCCESS'}
+              >
+                退款
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Form.Item>
       </Form>
       {status !== 'SUCCESS' && (
@@ -165,14 +171,15 @@ export const PaymentManagement: React.FC = () => {
               <Input placeholder="订单号（如 761591360082935808）" style={{ width: 260 }} />
             </Form.Item>
             <Form.Item>
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.ORDER_PAYMENT_WRITE}
                 type="primary"
                 htmlType="submit"
                 icon={<DollarOutlined />}
                 loading={initiating}
               >
                 发起支付
-              </Button>
+              </AuthButton>
             </Form.Item>
           </Form>
           {lastPayUrl && (

@@ -14,6 +14,8 @@ import {
   message,
 } from 'antd';
 import { InboxOutlined, ReloadOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { normalizeTotal } from '@bone/shared-utils';
 import { inventoryApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -165,13 +167,14 @@ export const InventoryManagement: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={() => void fetchRows()}>
             刷新
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_INVENTORY_WRITE}
             type="primary"
             icon={<InboxOutlined />}
             onClick={() => setModalAction('receive')}
           >
             入库
-          </Button>
+          </AuthButton>
         </Space>
       }
     >
@@ -238,14 +241,15 @@ export const InventoryManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setModalAction(null)}>取消</Button>
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_INVENTORY_WRITE}
                 type="primary"
                 htmlType="submit"
                 loading={submitting}
                 danger={modalAction ? ACTION_META[modalAction].danger : false}
               >
                 提交
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>

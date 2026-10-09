@@ -23,6 +23,8 @@ import {
   TagsOutlined,
 } from '@ant-design/icons';
 import { StatisticCard } from '@ant-design/pro-components';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
@@ -236,21 +238,25 @@ const PermissionManagement: React.FC = () => {
       width: 150,
       render: (_: unknown, record: Permission) => (
         <Space size={0}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <AuthButton code={BonePermissionCodes.IAM_PERMISSIONS_WRITE} type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
-          </Button>
-          <Popconfirm
-            title="确定要删除这个权限吗？"
-            description="删除后引用该权限点的角色将同步失效"
-            onConfirm={() => handleDelete(record.id)}
-            okText="删除"
-            okButtonProps={{ danger: true }}
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* 行内删除被 Popconfirm 包裹：AuthButton 无权限时返回 null 会成为 Popconfirm 的
+              children，antd 的 cloneElement 会抛异常，故用 <Auth> 包外层 */}
+          <Auth code={BonePermissionCodes.IAM_PERMISSIONS_WRITE}>
+            <Popconfirm
+              title="确定要删除这个权限吗？"
+              description="删除后引用该权限点的角色将同步失效"
+              onConfirm={() => handleDelete(record.id)}
+              okText="删除"
+              okButtonProps={{ danger: true }}
+              cancelText="取消"
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -267,9 +273,9 @@ const PermissionManagement: React.FC = () => {
         style={{ width: 260 }}
       />
       <Button icon={<ReloadOutlined />} onClick={reload} title="刷新" />
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+      <AuthButton code={BonePermissionCodes.IAM_PERMISSIONS_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
         新增权限
-      </Button>
+      </AuthButton>
     </Space>
   );
 
@@ -320,9 +326,9 @@ const PermissionManagement: React.FC = () => {
         footer={
           <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={() => setIsModalVisible(false)}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={handleSubmit}>
+            <AuthButton code={BonePermissionCodes.IAM_PERMISSIONS_WRITE} type="primary" loading={submitting} onClick={handleSubmit}>
               保存
-            </Button>
+            </AuthButton>
           </Space>
         }
       >

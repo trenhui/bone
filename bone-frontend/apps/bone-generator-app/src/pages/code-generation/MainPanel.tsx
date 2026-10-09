@@ -1,5 +1,7 @@
 import { Alert, Button, Card, Typography, Select, Table, Space } from 'antd';
 import { ReloadOutlined, PlusOutlined, DownloadOutlined, ToolOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import type { UseCodeGeneration } from './useCodeGeneration';
 
 const { Title, Text } = Typography;
@@ -71,14 +73,17 @@ export default function MainPanel(props: UseCodeGeneration): JSX.Element {
           message={`检测到 ${zeroColumnCount} 张已同步表缺少列元数据`}
           description="这些表是历史版本同步的存量数据，基于它们生成的实体只有 id 字段。建议一键按物理库回填列信息（幂等，不影响已正确同步的表）。"
           action={
-            <Button
+            // 回填列元数据会按物理库改写已同步表的列信息，属同步类写操作，与
+            // 「同步表结构」同码（GENERATOR_DATASOURCES_SYNC），非普通维护。
+            <AuthButton
+              code={BonePermissionCodes.GENERATOR_DATASOURCES_SYNC}
               size="small"
               icon={<ToolOutlined />}
               onClick={repairColumns}
               loading={repairing}
             >
               回填列元数据
-            </Button>
+            </AuthButton>
           }
         />
       )}
@@ -110,17 +115,24 @@ export default function MainPanel(props: UseCodeGeneration): JSX.Element {
       )}
 
       <Space style={{ marginBottom: '24px' }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openSyncModal}>
+        {/* 同步表结构会写入元数据表（改表结构语义），故用 SYNC 码而非维护码 */}
+        <AuthButton
+          code={BonePermissionCodes.GENERATOR_DATASOURCES_SYNC}
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openSyncModal}
+        >
           同步表结构
-        </Button>
-        <Button
+        </AuthButton>
+        <AuthButton
+          code={BonePermissionCodes.GENERATOR_CODEGEN_WRITE}
           type="primary"
           icon={<DownloadOutlined />}
           onClick={openConfigModal}
           disabled={selectedTables.length === 0}
         >
           生成代码
-        </Button>
+        </AuthButton>
       </Space>
     </Card>
   );

@@ -5,6 +5,8 @@ import { DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { codeGenerationApi, getGeneratorOperation } from '../../services/api';
 import type { GeneratedFileItem } from '../../services/types';
 import type { UseCodeGeneration } from './useCodeGeneration';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
 
@@ -99,15 +101,16 @@ export default function ResultModal(props: UseCodeGeneration): JSX.Element {
         <Button key="close" onClick={closeResultModal}>
           关闭
         </Button>,
-        <Button
+        <AuthButton
           key="download"
+          code={BonePermissionCodes.GENERATOR_CODEGEN_WRITE}
           type="primary"
           icon={<DownloadOutlined />}
           onClick={downloadCode}
           disabled={status !== 'SUCCESS'}
         >
           下载代码
-        </Button>,
+        </AuthButton>,
       ]}
       width={960}
     >

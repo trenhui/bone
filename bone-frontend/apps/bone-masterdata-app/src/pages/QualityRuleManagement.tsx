@@ -15,6 +15,8 @@ import {
   Result
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type {
@@ -294,21 +296,25 @@ const QualityRuleManagement: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: DataQualityRule) => (
         <Space size="middle">
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
             type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
             编辑
-          </Button>
-          <Popconfirm
-            title="确定要删除吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */}
+          <Auth code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}>
+            <Popconfirm
+              title="确定要删除吗？"
+              onConfirm={() => handleDelete(record.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       )
     }
@@ -323,14 +329,14 @@ const QualityRuleManagement: React.FC = () => {
             <EntityScopeSelect showStatus={false} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               创建规则
-            </Button>
+            </AuthButton>
           </Form.Item>
           <Form.Item>
-            <Button type="default" icon={<PlayCircleOutlined />} onClick={handleExecuteCheck}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} type="default" icon={<PlayCircleOutlined />} onClick={handleExecuteCheck}>
               执行质量检查
-            </Button>
+            </AuthButton>
           </Form.Item>
         </Form>
 

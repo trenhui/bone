@@ -1,4 +1,6 @@
-import { Modal, Form, Select } from 'antd';
+import { Modal, Form, Select, Button } from 'antd';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import type { UseCodeGeneration, MetadataSource } from './useCodeGeneration';
 
 export default function SyncTablesModal(props: UseCodeGeneration): JSX.Element {
@@ -23,11 +25,23 @@ export default function SyncTablesModal(props: UseCodeGeneration): JSX.Element {
       title="同步表结构"
       open={syncModalVisible}
       onCancel={closeSyncModal}
-      onOk={syncTables}
-      okText="同步"
-      cancelText="取消"
       width={800}
-      confirmLoading={loading}
+      // 自定义 footer 才能给「同步」加门禁（antd 默认确定按钮由 ModalContext 内部渲染）。
+      // 传数组时 antd 原样渲染、不做 cloneElement，AuthButton 安全。
+      footer={[
+        <AuthButton
+          key="ok"
+          code={BonePermissionCodes.GENERATOR_DATASOURCES_SYNC}
+          type="primary"
+          loading={loading}
+          onClick={() => void syncTables()}
+        >
+          同步
+        </AuthButton>,
+        <Button key="cancel" onClick={closeSyncModal}>
+          取消
+        </Button>,
+      ]}
     >
       <Form form={syncForm} layout="vertical" requiredMark={false}>
         <Form.Item label="元数据来源">

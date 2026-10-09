@@ -5,6 +5,8 @@ import { Graph, Shape, type Node } from '@antv/x6';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { flowApi, connectorApi } from '../services/api';
 import { normalizeTotal } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq, Connector } from '../types';
 
 const { TextArea } = Input;
@@ -404,48 +406,55 @@ export const FlowDesign: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: IntegrationFlow) => (
         <div>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             style={{ marginRight: 8 }}
           >
             编辑
-          </Button>
-          <Button
+          </AuthButton>
+          {/* 测试会真正跑一遍流程（触发节点执行），属执行类写操作，
+              与「编辑流程」分权：INTEGRATION_EXECUTIONS_WRITE。 */}
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_EXECUTIONS_WRITE}
             type="link"
             icon={<PlayCircleOutlined />}
             onClick={() => handleTest(record.id)}
             style={{ marginRight: 8 }}
           >
             测试
-          </Button>
+          </AuthButton>
           {record.status === 'ACTIVE' ? (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
               type="link"
               danger
               onClick={() => handleDeactivate(record.id)}
               style={{ marginRight: 8 }}
             >
               停用
-            </Button>
+            </AuthButton>
           ) : (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
               type="link"
               onClick={() => handleActivate(record.id)}
               style={{ marginRight: 8 }}
             >
               激活
-            </Button>
+            </AuthButton>
           )}
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
             type="link"
             danger
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
           >
             删除
-          </Button>
+          </AuthButton>
         </div>
       ),
     },
@@ -456,9 +465,14 @@ export const FlowDesign: React.FC = () => {
       <Card
         title="流程设计"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
             新建流程
-          </Button>
+          </AuthButton>
         }
       >
         <Table
@@ -479,10 +493,24 @@ export const FlowDesign: React.FC = () => {
       <Modal
         title={isEdit ? '编辑流程' : '新建流程'}
         open={modalVisible}
-        onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
         width={1000}
         height={600}
+        // 自定义 footer 才能给「确定」加门禁（antd 默认确定/取消按钮由 ModalContext 内部
+        // 渲染，页面拿不到元素）。传数组时 antd 原样渲染、不做 cloneElement。
+        footer={[
+          <AuthButton
+            key="ok"
+            code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
+            type="primary"
+            onClick={() => void handleSubmit()}
+          >
+            确定
+          </AuthButton>,
+          <Button key="cancel" onClick={() => setModalVisible(false)}>
+            取消
+          </Button>,
+        ]}
       >
         <Tabs
           defaultActiveKey="design"
@@ -556,9 +584,23 @@ export const FlowDesign: React.FC = () => {
       <Modal
         title="节点配置"
         open={nodeConfigVisible}
-        onOk={saveNodeConfig}
         onCancel={() => setNodeConfigVisible(false)}
         width={480}
+        // 节点配置是流程编排的一部分（写入画布节点，随流程保存一并落库），
+        // 故与流程维护同码。传footer 数组时 antd 原样渲染、不做 cloneElement。
+        footer={[
+          <AuthButton
+            key="ok"
+            code={BonePermissionCodes.INTEGRATION_FLOWS_WRITE}
+            type="primary"
+            onClick={() => void saveNodeConfig()}
+          >
+            确定
+          </AuthButton>,
+          <Button key="cancel" onClick={() => setNodeConfigVisible(false)}>
+            取消
+          </Button>,
+        ]}
       >
         <Form form={nodeForm} layout="vertical">
           <Form.Item

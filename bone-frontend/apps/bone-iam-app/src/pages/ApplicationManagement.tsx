@@ -21,6 +21,8 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { appApi, type BoneApplication, type CreateAppReq, type UpdateAppReq } from '../services/appApi';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
 
@@ -187,15 +189,21 @@ const ApplicationManagement: React.FC = () => {
       key: 'actions',
       width: 100,
       render: (_, app) => (
+        // 行内操作被 Tooltip / Popconfirm 包裹：AuthButton 无权限时返回 null 会成为它们的
+        // children，antd 的 cloneElement 会抛异常，故统一用 <Auth> 包外层
         <Space size={2}>
-          <Tooltip title="编辑">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(app)} />
-          </Tooltip>
-          <Popconfirm title="确认删除该应用？" onConfirm={() => handleDelete(app.id)}>
-            <Tooltip title="删除">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+          <Auth code={BonePermissionCodes.IAM_APPS_WRITE}>
+            <Tooltip title="编辑">
+              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(app)} />
             </Tooltip>
-          </Popconfirm>
+          </Auth>
+          <Auth code={BonePermissionCodes.IAM_APPS_WRITE}>
+            <Popconfirm title="确认删除该应用？" onConfirm={() => handleDelete(app.id)}>
+              <Tooltip title="删除">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -216,9 +224,9 @@ const ApplicationManagement: React.FC = () => {
             style={{ width: 240 }}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchApps} title="刷新" />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          <AuthButton code={BonePermissionCodes.IAM_APPS_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             新建应用
-          </Button>
+          </AuthButton>
         </Space>
       }
       card={false}

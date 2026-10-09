@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd';
+import { Card, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd';
 import { CheckOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { qualityIssueApi } from '../services/api';
 import type { QualityIssue } from '../types/governance';
 import { useEntityScope } from '../context/EntityScopeContext';
@@ -46,19 +48,19 @@ const QualityIssueBoard: React.FC = () => {
       render: (_: unknown, r: QualityIssue) => (
         <Space>
           {r.status === 'OPEN' && (
-            <Button size="small" icon={<CheckOutlined />} onClick={async () => { await qualityIssueApi.fix(r.id); message.success('已标记整改'); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CheckOutlined />} onClick={async () => { await qualityIssueApi.fix(r.id); message.success('已标记整改'); void load(entityId, status); }}>
               整改
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'FIXED' && (
-            <Button size="small" type="primary" onClick={async () => { await qualityIssueApi.close(r.id); message.success('复检通过已关闭'); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" type="primary" onClick={async () => { await qualityIssueApi.close(r.id); message.success('复检通过已关闭'); void load(entityId, status); }}>
               关闭
-            </Button>
+            </AuthButton>
           )}
           {r.status === 'OPEN' && (
-            <Button size="small" icon={<CloseOutlined />} onClick={async () => { await qualityIssueApi.ignore(r.id); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CloseOutlined />} onClick={async () => { await qualityIssueApi.ignore(r.id); void load(entityId, status); }}>
               忽略
-            </Button>
+            </AuthButton>
           )}
         </Space>
       )
@@ -79,9 +81,9 @@ const QualityIssueBoard: React.FC = () => {
             onChange={(v) => setStatus(v)}
             options={['OPEN', 'FIXED', 'CLOSED', 'IGNORED'].map((s) => ({ value: s, label: s }))}
           />
-          <Button type="primary" icon={<PlusOutlined />} disabled={!entityId} onClick={() => setCreateOpen(true)}>
+          <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} type="primary" icon={<PlusOutlined />} disabled={!entityId} onClick={() => setCreateOpen(true)}>
             建工单
-          </Button>
+          </AuthButton>
         </Space>
       }
     >

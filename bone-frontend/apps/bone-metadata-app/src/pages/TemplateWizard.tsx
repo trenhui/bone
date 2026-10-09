@@ -10,6 +10,8 @@ import { appApi, moduleApi, type BoneApplication, type BoneModule } from '../ser
 import { metadataTemplateApi } from '../services/metadataApi';
 import type { MetaTemplate, MetaTemplateField } from '../types';
 import { DELIVERY_MODE, META_DELIVERY_RUNTIME } from '../types';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -264,9 +266,10 @@ const TemplateWizard: React.FC = () => {
             </Form.Item>
             <Space>
               <Button onClick={() => setStep(1)}>上一步</Button>
-              <Button type="primary" loading={submitting} onClick={handleSubmit}>
+              {/* 实例化=平台模板写动作：无 METADATA_TEMPLATE_WRITE 时不渲染（后端 @PreAuthorize 兜底） */}
+              <AuthButton code={BonePermissionCodes.METADATA_TEMPLATE_WRITE} type="primary" loading={submitting} onClick={handleSubmit}>
                 实例化并进入详情
-              </Button>
+              </AuthButton>
             </Space>
           </Form>
         </Card>

@@ -11,6 +11,8 @@ import {
 import {
   moduleApi, appApi, type BoneApplication, type BoneModule,
 } from '../services/appModuleApi';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -89,7 +91,7 @@ const ModuleManagement: React.FC = () => {
         <Col>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>返回</Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>新建模块</Button>
+            <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>新建模块</AuthButton>
           </Space>
         </Col>
       </Row>

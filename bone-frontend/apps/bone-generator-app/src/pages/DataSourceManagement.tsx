@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { dataSourceApi } from '../services/api';
 import { DataSource } from '../services/types';
 import { useDataSources } from '../hooks/useDataSources';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -205,22 +207,24 @@ const DataSourceManagement: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: DataSource) => (
         <Space size="middle">
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.GENERATOR_DATASOURCES_WRITE}
             type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => showEditModal(record)}
           >
             编辑
-          </Button>
-          <Button
+          </AuthButton>
+          <AuthButton
+            code={BonePermissionCodes.GENERATOR_DATASOURCES_WRITE}
             danger
             icon={<DeleteOutlined />}
             size="small"
             onClick={() => handleDelete(record.id)}
           >
             删除
-          </Button>
+          </AuthButton>
         </Space>
       ),
     },
@@ -240,13 +244,14 @@ const DataSourceManagement: React.FC = () => {
             >
               刷新
             </Button>
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.GENERATOR_DATASOURCES_WRITE}
               type="primary"
               icon={<PlusOutlined />}
               onClick={showAddModal}
             >
               新增数据源
-            </Button>
+            </AuthButton>
           </Space>
         </div>
         
@@ -263,10 +268,25 @@ const DataSourceManagement: React.FC = () => {
       <Modal
         title={editingDataSource ? '编辑数据源' : '新增数据源'}
         open={isModalVisible}
-        onOk={handleSave}
         onCancel={() => setIsModalVisible(false)}
-        confirmLoading={loading}
         width={600}
+        // 自定义 footer 才能给「确定」加门禁：antd 默认的确定/取消按钮是由 ModalContext
+        // 内部渲染的（shared.js Footer），页面拿不到那个元素，包不进 <Auth>。
+        // 传数组时antd 直接原样渲染、不做 cloneElement，故此处 AuthButton 安全。
+        footer={[
+          <AuthButton
+            key="ok"
+            code={BonePermissionCodes.GENERATOR_DATASOURCES_WRITE}
+            type="primary"
+            loading={loading}
+            onClick={() => void handleSave()}
+          >
+            确定
+          </AuthButton>,
+          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+            取消
+          </Button>,
+        ]}
       >
         <Form
           form={form}
@@ -338,14 +358,17 @@ const DataSourceManagement: React.FC = () => {
           <Divider />
           
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Button
+            {/* 测试连接并非只读：未保存时它会先 create 一个临时数据源再 delete（见
+                testConnection），属于写操作，故与数据源维护同码。 */}
+            <AuthButton
+              code={BonePermissionCodes.GENERATOR_DATASOURCES_WRITE}
               type="primary"
               onClick={testConnection}
               loading={testLoading}
               style={{ marginRight: '12px' }}
             >
               测试连接
-            </Button>
+            </AuthButton>
           </div>
         </Form>
       </Modal>

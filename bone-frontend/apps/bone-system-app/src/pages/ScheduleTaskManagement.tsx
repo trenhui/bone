@@ -5,9 +5,14 @@ import { useTranslation } from 'react-i18next';
 import type { ScheduleTask } from '@/types';
 import { scheduleTaskApi } from '@/services/api';
 import { normalizeTotal } from '@bone/shared-utils';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const ScheduleTaskManagement: React.FC = () => {
   const { t } = useTranslation();
+  // 启停 Switch 不是 Button，无法用 AuthButton 替代，单独取权限码决定是否可写。
+  const { has } = usePermission();
+  const canWrite = has(BonePermissionCodes.SYS_SCHEDULE_WRITE);
   const [data, setData] = useState<ScheduleTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
@@ -122,12 +127,19 @@ const ScheduleTaskManagement: React.FC = () => {
     {
       title: t('system.scheduleTaskManagement.columnToggle'),
       width: 90,
-      render: (_: unknown, record: ScheduleTask) => (
-        <Switch
-          checked={record.status === 'ENABLED'}
-          onChange={(checked) => toggle(record, checked)}
-        />
-      ),
+      render: (_: unknown, record: ScheduleTask) =>
+        canWrite ? (
+          <Switch
+            checked={record.status === 'ENABLED'}
+            onChange={(checked) => toggle(record, checked)}
+          />
+        ) : (
+          <Tag color={record.status === 'ENABLED' ? 'green' : 'default'}>
+            {record.status === 'ENABLED'
+              ? t('system.scheduleTaskManagement.statusEnabled')
+              : t('system.scheduleTaskManagement.statusDisabled')}
+          </Tag>
+        ),
     },
     { title: t('system.scheduleTaskManagement.columnLastRun'), dataIndex: 'lastRunAt', width: 170, render: (v?: string) => v || '-' },
     {
@@ -135,20 +147,34 @@ const ScheduleTaskManagement: React.FC = () => {
       width: 190,
       render: (_: unknown, record: ScheduleTask) => (
         <Space>
-          <Button
+          {/* 立即执行会真实触发任务处理器，属写操作（副作用），与增删改同码。 */}
+          <AuthButton
+            code={BonePermissionCodes.SYS_SCHEDULE_WRITE}
             type="link"
             size="small"
             loading={runningIds.has(record.id!)}
             onClick={() => runNow(record)}
           >
             {t('system.scheduleTaskManagement.runNow')}
-          </Button>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          </AuthButton>
+          <AuthButton
+            code={BonePermissionCodes.SYS_SCHEDULE_WRITE}
+            type="link"
+            size="small"
+            onClick={() => openEdit(record)}
+          >
             {t('system.scheduleTaskManagement.edit')}
-          </Button>
-          <Button type="link" size="small" danger onClick={() => remove(record)}>
+          </AuthButton>
+          {/* 删除走 Modal.confirm（命令式），无法包 <Auth>，故门禁落在触发按钮上。 */}
+          <AuthButton
+            code={BonePermissionCodes.SYS_SCHEDULE_WRITE}
+            type="link"
+            size="small"
+            danger
+            onClick={() => remove(record)}
+          >
             {t('system.scheduleTaskManagement.delete')}
-          </Button>
+          </AuthButton>
         </Space>
       ),
     },
@@ -168,9 +194,14 @@ const ScheduleTaskManagement: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current)}>
           {t('system.scheduleTaskManagement.refresh')}
         </Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <AuthButton
+          code={BonePermissionCodes.SYS_SCHEDULE_WRITE}
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+        >
           {t('system.scheduleTaskManagement.createTask')}
-        </Button>
+        </AuthButton>
       </Space>
       <Table
         rowKey="id"
@@ -193,32 +224,35 @@ const ScheduleTaskManagement: React.FC = () => {
         showTotal={(total) => t('system.scheduleTaskManagement.totalItems', { total })}
         onChange={(page, pageSize) => fetchData(page, pageSize)}
       />
-      <Modal
-        title={editing ? t('system.scheduleTaskManagement.editModalTitle') : t('system.scheduleTaskManagement.createModalTitle')}
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={submit}
-        okText={t('common.confirm')}
-        cancelText={t('common.cancel')}
-        width={520}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label={t('system.scheduleTaskManagement.taskName')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleNameRequired') }]}>
-            <Input placeholder={t('system.scheduleTaskManagement.namePlaceholder')} />
-          </Form.Item>
-          <Form.Item name="cron" label={t('system.scheduleTaskManagement.cronLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleCronRequired') }]}>
-            <Input placeholder={t('system.scheduleTaskManagement.cronPlaceholder')} />
-          </Form.Item>
-          <Form.Item name="handler" label={t('system.scheduleTaskManagement.handlerLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleHandlerRequired') }]}>
-            <Input placeholder={t('system.scheduleTaskManagement.handlerPlaceholder')} />
-          </Form.Item>
-          {!editing && (
-            <Form.Item name="status" label={t('system.scheduleTaskManagement.initialStatusLabel')}>
-              <Input placeholder="ENABLED / DISABLED" />
+      {/* 弹窗「确定」由 antd 内部渲染，用 <Auth> 包住 Modal，无权限时弹窗不渲染。 */}
+      <Auth code={BonePermissionCodes.SYS_SCHEDULE_WRITE}>
+        <Modal
+          title={editing ? t('system.scheduleTaskManagement.editModalTitle') : t('system.scheduleTaskManagement.createModalTitle')}
+          open={modalOpen}
+          onCancel={() => setModalOpen(false)}
+          onOk={submit}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          width={520}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item name="name" label={t('system.scheduleTaskManagement.taskName')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleNameRequired') }]}>
+              <Input placeholder={t('system.scheduleTaskManagement.namePlaceholder')} />
             </Form.Item>
-          )}
-        </Form>
-      </Modal>
+            <Form.Item name="cron" label={t('system.scheduleTaskManagement.cronLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleCronRequired') }]}>
+              <Input placeholder={t('system.scheduleTaskManagement.cronPlaceholder')} />
+            </Form.Item>
+            <Form.Item name="handler" label={t('system.scheduleTaskManagement.handlerLabel')} rules={[{ required: true, message: t('system.scheduleTaskManagement.ruleHandlerRequired') }]}>
+              <Input placeholder={t('system.scheduleTaskManagement.handlerPlaceholder')} />
+            </Form.Item>
+            {!editing && (
+              <Form.Item name="status" label={t('system.scheduleTaskManagement.initialStatusLabel')}>
+                <Input placeholder="ENABLED / DISABLED" />
+              </Form.Item>
+            )}
+          </Form>
+        </Modal>
+      </Auth>
     </Card>
   );
 };

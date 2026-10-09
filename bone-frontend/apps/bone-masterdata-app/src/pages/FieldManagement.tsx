@@ -13,6 +13,8 @@ import {
   InputNumber
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type {
@@ -219,21 +221,25 @@ const FieldManagement: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: MasterDataField) => (
         <Space size="middle">
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
             type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
             编辑
-          </Button>
-          <Popconfirm
-            title="确定要删除吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* Popconfirm 会对 children 做 cloneElement：用 <Auth> 包外层，不能把内部 Button 换成 AuthButton */}
+          <Auth code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}>
+            <Popconfirm
+              title="确定要删除吗？"
+              onConfirm={() => handleDelete(record.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       )
     }
@@ -248,9 +254,9 @@ const FieldManagement: React.FC = () => {
             <EntityScopeSelect showStatus={false} />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
               创建字段
-            </Button>
+            </AuthButton>
           </Form.Item>
         </Form>
 

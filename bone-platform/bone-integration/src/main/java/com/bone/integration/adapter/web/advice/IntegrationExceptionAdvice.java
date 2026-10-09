@@ -60,6 +60,24 @@ public class IntegrationExceptionAdvice {
         .body(problem(500, CommonErrorCodes.INTERNAL_ERROR, ex.getMessage()));
   }
 
+  /**
+   * 数据库完整性约束冲突 → 400。
+   *
+   * <p><b>2026-10-08 实测补录</b>：写入连接器/集成实体时若字段超长或违反非空约束，DB 抛 {@code
+   * DataIntegrityViolationException}。本 advice 带 {@code @Order(HIGHEST_PRECEDENCE)}、 <b>优先于 bone-web
+   * 框架基类</b>，且本类此前<b>没有</b> {@code Exception} 之外的通用兜底之外的分支 （该异常此前直接冒泡到框架基类的 {@code Exception} 兜底）⇒
+   * 框架基类里的同名分支对本模块<b>不生效</b>， 必须在此显式声明，否则仍会被翻成 500「系统内部错误」，把客户端参数错误计入 5xx 错误预算。
+   *
+   * <p>响应体用常量文案、原始异常只入日志（{@code ex.getMessage()} 含完整 SQL 与列名，回显等于泄露表结构）。
+   */
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> dataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex) {
+    log.warn("数据完整性约束冲突: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(problem(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段"));
+  }
+
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> domainException(DomainException ex) {
     log.warn("Domain exception: {}", ex.getMessage());

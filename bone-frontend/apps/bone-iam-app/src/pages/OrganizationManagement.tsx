@@ -35,6 +35,8 @@ import {
   type DeptNode,
   type DeptReq,
 } from '../services/api';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import ModulePage from '../components/ModulePage';
 import { ProCard, StatisticCard } from '@ant-design/pro-components';
 
@@ -164,7 +166,8 @@ const OrganizationManagement: React.FC = () => {
               {statusTag(d.status)}
             </Space>
             <Space size={0} className="org-node-actions">
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_DEPTS_WRITE}
                 type="link"
                 size="small"
                 icon={<PlusSquareOutlined />}
@@ -174,7 +177,8 @@ const OrganizationManagement: React.FC = () => {
                 }}
                 title="添加子部门"
               />
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_DEPTS_WRITE}
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
@@ -184,7 +188,8 @@ const OrganizationManagement: React.FC = () => {
                 }}
                 title="编辑"
               />
-              <Button
+              <AuthButton
+                code={BonePermissionCodes.IAM_DEPTS_WRITE}
                 type="link"
                 size="small"
                 danger
@@ -317,9 +322,9 @@ const OrganizationManagement: React.FC = () => {
       <Button onClick={() => setExpandedKeys([])} title="折叠全部">
         折叠
       </Button>
-      <Button type="primary" icon={<PlusSquareOutlined />} onClick={() => openCreate(null)}>
+      <AuthButton code={BonePermissionCodes.IAM_DEPTS_WRITE} type="primary" icon={<PlusSquareOutlined />} onClick={() => openCreate(null)}>
         新建根部门
-      </Button>
+      </AuthButton>
     </Space>
   );
 
@@ -366,15 +371,15 @@ const OrganizationManagement: React.FC = () => {
             extra={
               selectedNode && (
                 <Space>
-                  <Button size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
+                  <AuthButton code={BonePermissionCodes.IAM_DEPTS_WRITE} size="small" icon={<PlusSquareOutlined />} onClick={() => openCreate(selectedNode.id)}>
                   子部门
-                  </Button>
-                  <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
+                  </AuthButton>
+                  <AuthButton code={BonePermissionCodes.IAM_DEPTS_WRITE} size="small" icon={<EditOutlined />} onClick={() => openEdit(selectedNode)}>
                   编辑
-                  </Button>
-                  <Button size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
+                  </AuthButton>
+                  <AuthButton code={BonePermissionCodes.IAM_DEPTS_WRITE} size="small" danger icon={<DeleteOutlined />} onClick={() => remove(selectedNode)}>
                   删除
-                  </Button>
+                  </AuthButton>
                 </Space>
               )
             }
@@ -412,9 +417,9 @@ const OrganizationManagement: React.FC = () => {
         footer={
           <Flex justify="end" gap={8}>
             <Button onClick={() => setDrawerOpen(false)}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={submit}>
+            <AuthButton code={BonePermissionCodes.IAM_DEPTS_WRITE} type="primary" loading={submitting} onClick={submit}>
               保存
-            </Button>
+            </AuthButton>
           </Flex>
         }
       >

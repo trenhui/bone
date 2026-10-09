@@ -60,8 +60,15 @@ public class MenuController {
     return ApiResponse.success(menuApplicationService.tree(qry));
   }
 
+  /**
+   * 当前登录用户可见菜单树（租户 + 权限码双重过滤在 {@link MenuApplicationService#current} 内完成）。
+   *
+   * <p><b>为什么这里不挂 {@code iam:menus:read}</b>（2026-10-08 修正）：{@code iam:menus:read} 是
+   * 「进入菜单管理页做增删改」的<b>管理面</b>码，普通角色不会被授予。挂在「读自己的菜单」这条链路上， 结果是除 IAM 管理员外所有人 403 ⇒ 前端只能回退静态菜单 ⇒
+   * 按租户/角色过滤的能力完全失效。 自助读 ≠ 管理面读：主体取自 JWT，返回内容已按该主体的租户与权限码收敛，不存在越权面； URL 层 {@code
+   * anyRequest().authenticated()} 已是唯一必要的认证门禁。
+   */
   @GetMapping("/current")
-  @PreAuthorize("hasAuthority('iam:menus:read')")
   public ApiResponse<List<MenuNode>> current(MenuCurrentQuery qry) {
     return ApiResponse.success(menuApplicationService.current(qry));
   }

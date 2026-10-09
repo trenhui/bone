@@ -33,6 +33,8 @@ import {
   META_ENTITY_PUBLISHED,
   RUNTIME_READONLY_FIELDS,
 } from '../types';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
 
@@ -222,14 +224,18 @@ const RuntimeDataManagement: React.FC = () => {
       width: 160,
       render: (_: unknown, row) => (
         <Space>
-          <Button type="link" size="small" onClick={() => openEdit(row)}>
+          <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
             编辑
-          </Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
-            <Button type="link" size="small" danger>
-              删除
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* 删除按钮被 Popconfirm 包裹：用 <Auth> 包外层而非把 Button 换成 AuthButton——
+              AuthButton 无权限返回 null，会成为 Popconfirm 的 children，antd cloneElement 抛异常 */}
+          <Auth code={BonePermissionCodes.METADATA_RUNTIME_WRITE}>
+            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
+              <Button type="link" size="small" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     });
@@ -326,9 +332,9 @@ const RuntimeDataManagement: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
           刷新
         </Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
+        <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
           新建记录
-        </Button>
+        </AuthButton>
       </Space>
 
       {selectedEntity && (

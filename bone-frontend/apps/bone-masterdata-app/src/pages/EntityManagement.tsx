@@ -15,6 +15,8 @@ import {
   Descriptions,
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import type {
@@ -227,36 +229,43 @@ const EntityManagement: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: MasterDataEntity) => (
         <Space size="middle">
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
             type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
             编辑
-          </Button>
-          <Popconfirm
-            title="确定要删除吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* Popconfirm 会对 children 做 cloneElement：这里必须用 <Auth> 包外层，
+              把内部 Button 换成 AuthButton（无权限返回 null）会触发运行时异常。 */}
+          <Auth code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}>
+            <Popconfirm
+              title="确定要删除吗？"
+              onConfirm={() => handleDelete(record.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Auth>
           {record.status === 'DRAFT' && (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
               icon={<RocketOutlined />}
               onClick={() => handlePublish(record.id)}
             >
               发布
-            </Button>
+            </AuthButton>
           )}
           {record.status === 'PUBLISHED' && (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
               icon={<CloseCircleOutlined />}
               onClick={() => handleDisable(record.id)}
             >
               停用
-            </Button>
+            </AuthButton>
           )}
         </Space>
       )
@@ -273,9 +282,9 @@ const EntityManagement: React.FC = () => {
             定义主数据域的结构与发布状态；全流程治理（质检/订阅/漂移/反馈）请进入「域工作台」
           </div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+        <AuthButton code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           创建模型
-        </Button>
+        </AuthButton>
       </div>
 
       {/* 统计卡片 */}

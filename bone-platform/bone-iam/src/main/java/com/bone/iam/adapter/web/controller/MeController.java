@@ -7,14 +7,17 @@ import com.bone.iam.adapter.web.dto.request.ChangeMyPasswordReq;
 import com.bone.iam.adapter.web.dto.request.UpdateMyProfileReq;
 import com.bone.iam.adapter.web.dto.response.MeResp;
 import com.bone.iam.application.AccountApplicationService;
+import com.bone.iam.application.RoleApplicationService;
 import com.bone.iam.application.command.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.UpdateMyProfileCommand;
 import com.bone.iam.application.port.out.CurrentPrincipalPort;
+import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +45,7 @@ public class MeController {
 
   private final AccountApplicationService accountApplicationService;
   private final CurrentPrincipalPort currentPrincipalPort;
+  private final RoleApplicationService roleApplicationService;
 
   @GetMapping
   public ApiResponse<MeResp> me() {
@@ -68,6 +72,18 @@ public class MeController {
                   return resp;
                 })
             .orElseThrow(() -> IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND)));
+  }
+
+  /**
+   * 我的角色列表：前端据此展示「当前生效角色」，并与 {@code scopes} 一起解释某个按钮为何可见/隐藏。
+   *
+   * <p>与 {@code GET /roles} 的分工：那条是<b>管理面</b>（需 {@code iam:roles:read}，可查任意角色的带租户分页）；
+   * 这条是<b>自助读</b>，只能读自己，主体取自 JWT ⇒ 无需额外权限码。
+   */
+  @GetMapping("/roles")
+  public ApiResponse<List<RoleDTO>> myRoles() {
+    Long accountId = parseAccountId(requirePrincipal());
+    return ApiResponse.success(roleApplicationService.rolesOfAccount(accountId));
   }
 
   // 2026-10-04 复核（P1-8 的**不**执行项）：这里**不**加 @PreAuthorize("isAuthenticated()")。

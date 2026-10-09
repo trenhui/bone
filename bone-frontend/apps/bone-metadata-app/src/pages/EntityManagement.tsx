@@ -21,6 +21,8 @@ import type {
   CopyEntityReq, CreateMetaEntityReq, MetaEntity, MetaTemplate, MetaTemplateField, UpdateMetaEntityReq,
 } from '../types';
 import { DELIVERY_MODE, ENTITY_STATUS, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
 
@@ -449,9 +451,9 @@ const EntityManagement: React.FC = () => {
       render: (_, record) =>
         canWrite ? (
           <Space size={2} wrap>
-            <Button type="link" size="small" onClick={() => openEdit(record)} disabled={record.status === 1}>
+            <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="link" size="small" onClick={() => openEdit(record)} disabled={record.status === 1}>
               编辑
-            </Button>
+            </AuthButton>
             <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
               字段
             </Button>
@@ -460,7 +462,8 @@ const EntityManagement: React.FC = () => {
                 数据
               </Button>
             )}
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.METADATA_MODEL_WRITE}
               type="link"
               size="small"
               icon={<CopyOutlined />}
@@ -468,11 +471,11 @@ const EntityManagement: React.FC = () => {
               title="复制定义与字段为新草稿"
             >
               复制
-            </Button>
+            </AuthButton>
             {record.status === 0 && (
-              <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => openPublishPreview(record)}>
+              <AuthButton code={BonePermissionCodes.METADATA_PUBLISH} type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => openPublishPreview(record)}>
                 发布
-              </Button>
+              </AuthButton>
             )}
             <Button
               type="link"
@@ -483,9 +486,13 @@ const EntityManagement: React.FC = () => {
             >
               导出
             </Button>
-            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" size="small" danger disabled={record.status === 1}>删除</Button>
-            </Popconfirm>
+            {/* 删除挂在 Popconfirm 下：无权限时必须整体不渲染（<Auth> 包外层），
+                换成 AuthButton 会让 null 成为 Popconfirm children，antd cloneElement 抛异常 */}
+            <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
+              <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger disabled={record.status === 1}>删除</Button>
+              </Popconfirm>
+            </Auth>
           </Space>
         ) : (
           <Space size={2} wrap>
@@ -597,13 +604,13 @@ const EntityManagement: React.FC = () => {
             <Space>
               <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
               {canWrite && (
-                <Button icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</Button>
+                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</AuthButton>
               )}
               {canWrite && (
-                <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</Button>
+                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</AuthButton>
               )}
               {canWrite && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</Button>
+                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</AuthButton>
               )}
             </Space>
           </Col>
@@ -623,7 +630,9 @@ const EntityManagement: React.FC = () => {
         {selectedRowKeys.length > 0 && (
           <Space style={{ marginBottom: 12 }}>
             <Text type="secondary">已选 {selectedRowKeys.length} 项</Text>
-            <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+            {/* 批量操作：整组 Popconfirm 挂 <Auth>，理由同行内删除（AuthButton 返回 null 会炸 antd cloneElement） */}
+            <Auth code={BonePermissionCodes.METADATA_PUBLISH}>
+              <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
               // ⚠ 雪花 ID 必须保持字符串：Number() 会因超出2^53 静默截断，
               // 导致批量操作命中「另一个」实体。API 签名也是 string[]。
               const ids = selectedRowKeys.map(String);
@@ -649,6 +658,8 @@ const EntityManagement: React.FC = () => {
             }}>
               <Button size="small">批量发布</Button>
             </Popconfirm>
+            </Auth>
+            <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
             <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
               // ⚠ 同上：雪花 ID 不能 Number()，会截断后命中错误实体
               const ids = selectedRowKeys.map(String);
@@ -674,6 +685,7 @@ const EntityManagement: React.FC = () => {
             }}>
               <Button size="small" danger>批量删除</Button>
             </Popconfirm>
+            </Auth>
           </Space>
         )}
 

@@ -12,6 +12,8 @@ import { appApi, type BoneApplication } from '../services/appModuleApi';
 import { metadataEntityApi } from '../services/metadataApi';
 import { normalizeTotal } from '@bone/shared-utils';
 import { listRecent, recentPath, type RecentEntityItem } from '../utils/recent';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -93,17 +95,18 @@ const ModelingWorkspace: React.FC = () => {
         </Col>
         <Col>
           <Space>
-            <Button icon={<SolutionOutlined />} onClick={() => navigate('/template-wizard')}>
+            <AuthButton code={BonePermissionCodes.METADATA_TEMPLATE_WRITE} icon={<SolutionOutlined />} onClick={() => navigate('/template-wizard')}>
               从模板新建
-            </Button>
-            <Button
+            </AuthButton>
+            <AuthButton
+              code={BonePermissionCodes.METADATA_MODEL_WRITE}
               type="primary"
               icon={<PlusOutlined />}
               disabled={apps.length === 0 && !loading}
               onClick={() => (apps.length > 0 ? navigate(`/apps/${apps[0].id}/modules`) : undefined)}
             >
               全新建模
-            </Button>
+            </AuthButton>
           </Space>
         </Col>
       </Row>

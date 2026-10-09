@@ -3,6 +3,8 @@ import { Card, Table, Button, Modal, message, Tabs, Descriptions, Tag, Badge } f
 import { ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { monitorApi } from '../services/api';
 import { normalizeTotal } from '@bone/shared-utils';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import type { IntegrationLog, FlowStatistics } from '../types';
 
 export const FlowMonitor: React.FC = () => {
@@ -121,13 +123,16 @@ export const FlowMonitor: React.FC = () => {
             查看
           </Button>
           {record.status === 'FAILED' && (
-            <Button
+            /* 重试会重新触发一次流程执行（真实副作用），属执行类写操作，
+               与只读的「查看」区分开。 */
+            <AuthButton
+              code={BonePermissionCodes.INTEGRATION_EXECUTIONS_WRITE}
               type="link"
               icon={<ReloadOutlined />}
               onClick={() => handleRetry(record.id)}
             >
               重试
-            </Button>
+            </AuthButton>
           )}
         </div>
       ),

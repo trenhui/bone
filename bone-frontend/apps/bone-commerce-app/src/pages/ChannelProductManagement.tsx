@@ -15,6 +15,8 @@ import {
   message,
 } from 'antd';
 import { CloudUploadOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { formatDate, normalizeTotal } from '@bone/shared-utils';
 import { channelProductApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -189,24 +191,30 @@ export const ChannelProductManagement: React.FC = () => {
       width: 160,
       render: (_: unknown, r: ChannelProductSummary) => (
         <Space size="small">
-          <Popconfirm
-            title="确认从该渠道下架？"
-            okText="确认"
-            cancelText="取消"
-            onConfirm={() => void runDelist(r)}
-          >
-            <Button type="link" size="small" disabled={r.listingStatus !== 'ONLINE'}>
-              下架
-            </Button>
-          </Popconfirm>
-          <Button
+          {/* 被 Popconfirm 包住的按钮只能用 <Auth> 包外层：AuthButton 无权限时返回
+              null，会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.COMMERCE_PRODUCT_WRITE}>
+            <Popconfirm
+              title="确认从该渠道下架？"
+              okText="确认"
+              cancelText="取消"
+              onConfirm={() => void runDelist(r)}
+            >
+              <Button type="link" size="small" disabled={r.listingStatus !== 'ONLINE'}>
+                下架
+              </Button>
+            </Popconfirm>
+          </Auth>
+          {/* 同步库存把本地库存推给渠道，属库存调整域。 */}
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_INVENTORY_WRITE}
             type="link"
             size="small"
             icon={<SyncOutlined />}
             onClick={() => void runSync(r)}
           >
             同步库存
-          </Button>
+          </AuthButton>
         </Space>
       ),
     },
@@ -248,13 +256,14 @@ export const ChannelProductManagement: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={() => void fetchRows()}>
             刷新
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_PRODUCT_WRITE}
             type="primary"
             icon={<CloudUploadOutlined />}
             onClick={() => setListOpen(true)}
           >
             商品上架
-          </Button>
+          </AuthButton>
         </Space>
       }
     >
@@ -320,9 +329,14 @@ export const ChannelProductManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setListOpen(false)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_PRODUCT_WRITE}
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
                 提交上架
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>

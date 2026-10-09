@@ -16,6 +16,8 @@ import {
   Typography,
 } from 'antd';
 import { CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import {
   type ExtPointRow,
   type MarketplaceItem,
@@ -144,15 +146,16 @@ const Marketplace: React.FC = () => {
                   item.category ? <Tag color="blue">{item.category}</Tag> : null
                 }
                 actions={[
-                  <Button
+                  <AuthButton
                     key="install"
+                    code={BonePermissionCodes.EXTENSION_MARKETPLACE_INSTALL}
                     type="link"
                     icon={<CloudDownloadOutlined />}
                     disabled={item.installed}
                     onClick={() => setInstallTarget(item)}
                   >
                     {item.installed ? '已安装' : '安装'}
-                  </Button>,
+                  </AuthButton>,
                 ]}
               >
                 <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ minHeight: 44 }}>
@@ -171,40 +174,44 @@ const Marketplace: React.FC = () => {
           ))}
         </Row>
       )}
-      <Modal
-        open={!!installTarget}
-        title={installTarget ? `安装 ${installTarget.name}` : '安装'}
-        confirmLoading={installing}
-        onCancel={() => {
-          setInstallTarget(null);
-          setSelectedExtPointId(undefined);
-        }}
-        onOk={handleInstallConfirm}
-        okText="确认安装"
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Typography.Paragraph>
-            将创建一条扩展实现（className=<code>{installTarget?.className}</code>），并将其
-            绑定到扩展点。若不显式选择，将按接口名 <code>{installTarget?.extPointInterface}</code>{' '}
-            自动匹配。
-          </Typography.Paragraph>
-          <Select
-            allowClear
-            placeholder="扩展点（不选则自动匹配接口）"
-            options={extPointOptions}
-            value={selectedExtPointId}
-            onChange={setSelectedExtPointId}
-            style={{ width: '100%' }}
-          />
-          {/* 应用 ID 是雪花 ID（19 位），必须文本输入：InputNumber 走 number 会丢精度 */}
-          <Input
-            placeholder="归属应用 ID（留空 = 平台通用，5a G5）"
-            value={installAppId}
-            onChange={(e) => setInstallAppId(e.target.value || undefined)}
-            style={{ width: '100%' }}
-          />
-        </Space>
-      </Modal>
+      {/* 「确认安装」是 antd 内部渲染的确定按钮，不能替换成 AuthButton；
+          用 <Auth> 包住整个 Modal，无权限时弹窗与确定按钮都不渲染。 */}
+      <Auth code={BonePermissionCodes.EXTENSION_MARKETPLACE_INSTALL}>
+        <Modal
+          open={!!installTarget}
+          title={installTarget ? `安装 ${installTarget.name}` : '安装'}
+          confirmLoading={installing}
+          onCancel={() => {
+            setInstallTarget(null);
+            setSelectedExtPointId(undefined);
+          }}
+          onOk={handleInstallConfirm}
+          okText="确认安装"
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Typography.Paragraph>
+              将创建一条扩展实现（className=<code>{installTarget?.className}</code>），并将其
+              绑定到扩展点。若不显式选择，将按接口名 <code>{installTarget?.extPointInterface}</code>{' '}
+              自动匹配。
+            </Typography.Paragraph>
+            <Select
+              allowClear
+              placeholder="扩展点（不选则自动匹配接口）"
+              options={extPointOptions}
+              value={selectedExtPointId}
+              onChange={setSelectedExtPointId}
+              style={{ width: '100%' }}
+            />
+            {/* 应用 ID 是雪花 ID（19 位），必须文本输入：InputNumber 走 number 会丢精度 */}
+            <Input
+              placeholder="归属应用 ID（留空 = 平台通用，5a G5）"
+              value={installAppId}
+              onChange={(e) => setInstallAppId(e.target.value || undefined)}
+              style={{ width: '100%' }}
+            />
+          </Space>
+        </Modal>
+      </Auth>
     </Card>
   );
 };

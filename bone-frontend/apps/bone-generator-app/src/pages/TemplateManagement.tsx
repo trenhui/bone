@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Card, Tag, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import { pageRecords, templateApi } from '../services/api';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -166,31 +168,37 @@ const TemplateManagement: React.FC = () => {
           >
             预览
           </Button>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.GENERATOR_TEMPLATES_WRITE}
             icon={<EditOutlined />}
             onClick={() => handleEditTemplate(record)}
           >
             编辑
-          </Button>
-          <Button
+          </AuthButton>
+          <AuthButton
+            code={BonePermissionCodes.GENERATOR_TEMPLATES_WRITE}
             type="primary"
             disabled={record.status === 'ACTIVE'}
             onClick={() => handlePublishTemplate(record.id)}
           >
             发布
-          </Button>
-          <Popconfirm
-            title="确认删除该模板？"
-            description="删除后不可恢复"
-            okText="删除"
-            okButtonProps={{ danger: true }}
-            cancelText="取消"
-            onConfirm={() => handleDeleteTemplate(record.id)}
-          >
-            <Button danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* 删除被 Popconfirm 包住，只能用 <Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.GENERATOR_TEMPLATES_WRITE}>
+            <Popconfirm
+              title="确认删除该模板？"
+              description="删除后不可恢复"
+              okText="删除"
+              okButtonProps={{ danger: true }}
+              cancelText="取消"
+              onConfirm={() => handleDeleteTemplate(record.id)}
+            >
+              <Button danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -210,13 +218,14 @@ const TemplateManagement: React.FC = () => {
             onChange={(e) => setKeyword(e.target.value)}
             style={{ width: 300 }}
           />
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.GENERATOR_TEMPLATES_WRITE}
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddTemplate}
           >
             新建模板
-          </Button>
+          </AuthButton>
         </div>
         
         <Table
@@ -237,8 +246,22 @@ const TemplateManagement: React.FC = () => {
         title={editingTemplate ? '编辑模板' : '新建模板'}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
-        onOk={handleSaveTemplate}
         width={800}
+        // 自定义 footer 才能给「确定」加门禁（antd 默认确定/取消按钮由 ModalContext 内部
+        // 渲染，页面拿不到元素）。传数组时 antd 原样渲染、不做 cloneElement。
+        footer={[
+          <AuthButton
+            key="ok"
+            code={BonePermissionCodes.GENERATOR_TEMPLATES_WRITE}
+            type="primary"
+            onClick={() => void handleSaveTemplate()}
+          >
+            确定
+          </AuthButton>,
+          <Button key="cancel" onClick={() => setModalVisible(false)}>
+            取消
+          </Button>,
+        ]}
       >
         <Form form={form} layout="vertical">
           <Form.Item

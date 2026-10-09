@@ -27,6 +27,8 @@ import {
 } from '@ant-design/icons';
 import { systemApi } from '@/services/api';
 import type { SystemInfo } from '@/types';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Option } = Select;
 
@@ -223,18 +225,39 @@ const SystemDeploymentPage: React.FC = () => {
           </Descriptions>
           <div style={{ marginTop: 16 }}>
             <Space>
-              <Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setDeployModalVisible(true)}>
+              {/* 部署/升级/重启/关停属运维高危动作，统一走 SYS_OPS_EXECUTE
+                  （该码已在BonePermissionCodes 预登记，端点当前恒501 未实现）。
+                  部署历史与刷新是只读，不加门禁。 */}
+              <AuthButton
+                code={BonePermissionCodes.SYS_OPS_EXECUTE}
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                onClick={() => setDeployModalVisible(true)}
+              >
                 {t('system.systemDeployment.deploySystem')}
-              </Button>
-              <Button icon={<CloudUploadOutlined />} onClick={() => setUpgradeModalVisible(true)}>
+              </AuthButton>
+              <AuthButton
+                code={BonePermissionCodes.SYS_OPS_EXECUTE}
+                icon={<CloudUploadOutlined />}
+                onClick={() => setUpgradeModalVisible(true)}
+              >
                 {t('system.systemDeployment.upgradeVersion')}
-              </Button>
-              <Button icon={<PlayCircleOutlined />} onClick={handleRestart}>
+              </AuthButton>
+              <AuthButton
+                code={BonePermissionCodes.SYS_OPS_EXECUTE}
+                icon={<PlayCircleOutlined />}
+                onClick={handleRestart}
+              >
                 {t('system.systemDeployment.restartSystem')}
-              </Button>
-              <Button danger icon={<StopOutlined />} onClick={handleShutdown}>
+              </AuthButton>
+              <AuthButton
+                code={BonePermissionCodes.SYS_OPS_EXECUTE}
+                danger
+                icon={<StopOutlined />}
+                onClick={handleShutdown}
+              >
                 {t('system.systemDeployment.shutdownSystem')}
-              </Button>
+              </AuthButton>
               <Button icon={<HistoryOutlined />} onClick={() => setHistoryModalVisible(true)}>
                 {t('system.systemDeployment.deployHistory')}
               </Button>
@@ -277,61 +300,66 @@ const SystemDeploymentPage: React.FC = () => {
         </Descriptions>
       </Card>
 
-      {/* 部署弹窗 */}
-      <Modal
-        title={t('system.systemDeployment.deploySystem')}
-        open={deployModalVisible}
-        onOk={handleDeploy}
-        onCancel={() => setDeployModalVisible(false)}
-        confirmLoading={deployLoading}
-        okText={t('common.confirm')}
-        cancelText={t('common.cancel')}
-        width={600}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label={t('system.systemDeployment.environment')} name="environment" rules={[{ required: true }]} initialValue="production">
-            <Select>
-              <Option value="development">{t('system.systemDeployment.envDevelopment')}</Option>
-              <Option value="testing">{t('system.systemDeployment.envTesting')}</Option>
-              <Option value="staging">{t('system.systemDeployment.envStaging')}</Option>
-              <Option value="production">{t('system.systemDeployment.envProduction')}</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label={t('system.systemDeployment.version')} name="version" rules={[{ required: true }]}>
-            <Input placeholder={t('system.systemDeployment.versionPlaceholder')} />
-          </Form.Item>
-          <Form.Item label={t('system.systemDeployment.replicas')} name="replicas" rules={[{ required: true }]} initialValue={3}>
-            <InputNumber min={1} max={10} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label={t('system.systemDeployment.enableAutoScaling')} name="autoScaling" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
-          <Form.Item label={t('system.systemDeployment.description')} name="description">
-            <Input.TextArea rows={3} placeholder={t('system.systemDeployment.deployDescriptionPlaceholder')} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* 弹窗「确定」由 antd 内部渲染，不能替换为 AuthButton；用 <Auth> 包住 Modal，
+          无权限时弹窗与确定按钮都不渲染。部署历史弹窗是只读，不包。 */}
+      <Auth code={BonePermissionCodes.SYS_OPS_EXECUTE}>
+        <Modal
+          title={t('system.systemDeployment.deploySystem')}
+          open={deployModalVisible}
+          onOk={handleDeploy}
+          onCancel={() => setDeployModalVisible(false)}
+          confirmLoading={deployLoading}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          width={600}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item label={t('system.systemDeployment.environment')} name="environment" rules={[{ required: true }]} initialValue="production">
+              <Select>
+                <Option value="development">{t('system.systemDeployment.envDevelopment')}</Option>
+                <Option value="testing">{t('system.systemDeployment.envTesting')}</Option>
+                <Option value="staging">{t('system.systemDeployment.envStaging')}</Option>
+                <Option value="production">{t('system.systemDeployment.envProduction')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label={t('system.systemDeployment.version')} name="version" rules={[{ required: true }]}>
+              <Input placeholder={t('system.systemDeployment.versionPlaceholder')} />
+            </Form.Item>
+            <Form.Item label={t('system.systemDeployment.replicas')} name="replicas" rules={[{ required: true }]} initialValue={3}>
+              <InputNumber min={1} max={10} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label={t('system.systemDeployment.enableAutoScaling')} name="autoScaling" valuePropName="checked" initialValue={true}>
+              <Switch />
+            </Form.Item>
+            <Form.Item label={t('system.systemDeployment.description')} name="description">
+              <Input.TextArea rows={3} placeholder={t('system.systemDeployment.deployDescriptionPlaceholder')} />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
 
       {/* 升级弹窗 */}
-      <Modal
-        title={t('system.systemDeployment.upgradeSystem')}
-        open={upgradeModalVisible}
-        onOk={handleUpgrade}
-        onCancel={() => setUpgradeModalVisible(false)}
-        confirmLoading={upgradeLoading}
-        okText={t('common.confirm')}
-        cancelText={t('common.cancel')}
-        width={500}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label={t('system.systemDeployment.targetVersion')} name="version" rules={[{ required: true }]}>
-            <Input placeholder={t('system.systemDeployment.targetVersionPlaceholder')} />
-          </Form.Item>
-          <Form.Item label={t('system.systemDeployment.description')} name="description">
-            <Input.TextArea rows={3} placeholder={t('system.systemDeployment.upgradeDescriptionPlaceholder')} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Auth code={BonePermissionCodes.SYS_OPS_EXECUTE}>
+        <Modal
+          title={t('system.systemDeployment.upgradeSystem')}
+          open={upgradeModalVisible}
+          onOk={handleUpgrade}
+          onCancel={() => setUpgradeModalVisible(false)}
+          confirmLoading={upgradeLoading}
+          okText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          width={500}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item label={t('system.systemDeployment.targetVersion')} name="version" rules={[{ required: true }]}>
+              <Input placeholder={t('system.systemDeployment.targetVersionPlaceholder')} />
+            </Form.Item>
+            <Form.Item label={t('system.systemDeployment.description')} name="description">
+              <Input.TextArea rows={3} placeholder={t('system.systemDeployment.upgradeDescriptionPlaceholder')} />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
 
       {/* 部署历史弹窗 */}
       <Modal

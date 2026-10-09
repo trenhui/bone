@@ -15,16 +15,20 @@ import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.TenantProvider;
+import com.bone.iam.domain.model.account.AccountRole;
 import com.bone.iam.domain.model.permission.Permission;
 import com.bone.iam.domain.model.role.Role;
+import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.iam.domain.repository.RoleRepository;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +62,7 @@ public class RoleApplicationService {
   private final TenantQuotaEnforcer tenantQuotaEnforcer;
   private final TenantProvider tenantProvider;
   private final AccountAuthorityCache accountAuthorityCache;
+  private final AccountRoleRepository accountRoleRepository;
 
   @Transactional
   public Long create(CreateRoleCommand cmd) {
@@ -189,6 +194,39 @@ public class RoleApplicationService {
     }
     return rolePermissionRepository.findPermissionsOfRole(roleId).stream()
         .map(RoleApplicationService::toPermissionDto)
+        .toList();
+  }
+
+  /**
+   * 某账号被授予的角色清单（自助读：仅供该账号本人查看自己所属角色）。
+   *
+   * <p>与 {@link #permissions} 的差别：那条查「角色→权限」的<b>定义</b>，这条查「账号→角色」的 <b>绑定</b>。前端要展示「我的角色」并在 UI
+   * 上解释"为什么我有/没有某个按钮"，缺的正是这条。
+   *
+   * <p>只返回 id / name / code：description 与时间戳属于管理面信息，自助读不做外泄面。
+   */
+  @Transactional(readOnly = true)
+  public List<RoleDTO> rolesOfAccount(Long accountId) {
+    if (accountId == null) {
+      return Collections.emptyList();
+    }
+    List<Long> roleIds =
+        accountRoleRepository.findByAccount(accountId).stream()
+            .map(AccountRole::getRoleId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    if (roleIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+    Map<Long, Role> roles =
+        roleRepository.findByIds(roleIds).stream()
+            .collect(Collectors.toMap(Role::getId, r -> r, (a, b) -> a));
+    // 按绑定顺序输出，避免 roles 顺序随机导致 UI 抖动
+    return roleIds.stream()
+        .map(roles::get)
+        .filter(Objects::nonNull)
+        .map(RoleApplicationService::toDto)
         .toList();
   }
 

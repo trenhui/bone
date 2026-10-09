@@ -131,6 +131,32 @@ public class IamExceptionHandler {
     return problemResponse(status, errorCode, message, request);
   }
 
+  /**
+   * 数据库完整性约束冲突 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p><b>2026-10-08 实测补录</b>：创建角色时 {@code name} 传超长字符串，DB 抛 {@code
+   * DataIntegrityViolationException: Data truncation: Data too long for column 'name'}， 本 advice 的
+   * {@code Exception} 兜底把它翻成<b>500「系统内部错误」</b>。这类失败 100% 由客户端输入 触发（字段长度是表结构的一部分），报 500
+   * 会①误导调用方以为可重试②把参数笔误计入 5xx 错误预算、 污染 SLI 与告警。语义应为 <b>400 参数校验失败</b>。
+   *
+   * <p><b>为何不能指望 bone-web 框架 handler 兜住</b>：本 advice 与框架的 {@code GlobalExceptionHandler}
+   * <b>并存</b>（{@code @ConditionalOnMissingBean(name = "globalExceptionHandler")} 只按 bean 名让路， 而本类
+   * bean 名为 {@code iamExceptionHandler}），同一异常由哪个 advice 处理取决于 order ——实测 <b>本 advice
+   * 优先</b>，故框架基类的同名分支对本模块<b>不生效</b>，必须在此显式声明。
+   *
+   * <p>响应体用常量文案、原始异常只入日志：{@code ex.getMessage()} 含完整 SQL 与列名 （{@code Data too long for column
+   * 'name'}），回给调用方等于泄露表结构（同框架P1-4脱敏口径）。
+   */
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleDataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+    log.warn(
+        "[handleDataIntegrityViolation] 数据完整性约束冲突: uri={}, message={}",
+        request.getRequestURI(),
+        ex.getMessage());
+    return problemResponse(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段", request);
+  }
+
   /** 兜底处理所有未捕获异常 */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleException(

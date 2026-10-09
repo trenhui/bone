@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Modal, Form, Input, Select, Checkbox, Progress, Divider } from 'antd';
+import { Modal, Form, Input, Select, Checkbox, Progress, Divider, Button } from 'antd';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { templateApi } from '../../services/api';
 import type { UseCodeGeneration } from './useCodeGeneration';
 
@@ -56,11 +58,23 @@ export default function GenerateConfigModal(props: UseCodeGeneration): JSX.Eleme
       title="生成配置"
       open={configModalVisible}
       onCancel={closeConfigModal}
-      onOk={generateCode}
-      okText="生成"
-      cancelText="取消"
       width={800}
-      confirmLoading={loadingGenerate}
+      // 自定义 footer 才能给「生成」加门禁（antd 默认确定按钮由 ModalContext 内部渲染）。
+      // 传数组时 antd 原样渲染、不做 cloneElement，AuthButton 安全。
+      footer={[
+        <AuthButton
+          key="ok"
+          code={BonePermissionCodes.GENERATOR_CODEGEN_WRITE}
+          type="primary"
+          loading={loadingGenerate}
+          onClick={() => void generateCode()}
+        >
+          生成
+        </AuthButton>,
+        <Button key="cancel" onClick={closeConfigModal}>
+          取消
+        </Button>,
+      ]}
     >
       {loadingGenerate && (
         <Progress percent={generateProgress} status="active" style={{ marginBottom: 16 }} />

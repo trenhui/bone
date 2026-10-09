@@ -14,6 +14,8 @@ import {
   message,
 } from 'antd';
 import { ReloadOutlined, TeamOutlined, WarningOutlined } from '@ant-design/icons';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { normalizeTotal, formatDate } from '@bone/shared-utils';
 import { channelBuyerApi } from '../services/api';
 import { errMsg } from '../utils/error';
@@ -208,13 +210,25 @@ export const ChannelBuyerManagement: React.FC = () => {
       width: 190,
       render: (_: unknown, r: ChannelBuyerSummary) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => openBind(r, r.bound ? 'rebind' : 'bind')}>
+          {/* 绑定/改绑/解绑都会改变历史订单的客户归属，统一走 COMMERCE_CHANNEL_BUYER_WRITE。 */}
+          <AuthButton
+            code={BonePermissionCodes.COMMERCE_CHANNEL_BUYER_WRITE}
+            type="link"
+            size="small"
+            onClick={() => openBind(r, r.bound ? 'rebind' : 'bind')}
+          >
             {r.bound ? '改绑' : '绑定'}
-          </Button>
+          </AuthButton>
           {r.bound && (
-            <Button type="link" size="small" danger onClick={() => doUnbind(r)}>
+            <AuthButton
+              code={BonePermissionCodes.COMMERCE_CHANNEL_BUYER_WRITE}
+              type="link"
+              size="small"
+              danger
+              onClick={() => doUnbind(r)}
+            >
               解绑
-            </Button>
+            </AuthButton>
           )}
         </Space>
       ),
@@ -321,9 +335,14 @@ export const ChannelBuyerManagement: React.FC = () => {
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setModal(null)}>取消</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
+              <AuthButton
+                code={BonePermissionCodes.COMMERCE_CHANNEL_BUYER_WRITE}
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
                 提交
-              </Button>
+              </AuthButton>
             </Space>
           </Form.Item>
         </Form>

@@ -3,6 +3,8 @@ import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } 
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { connectorApi } from '../services/api';
 import { normalizeTotal } from '@bone/shared-utils';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import type { Connector, CreateConnectorReq, UpdateConnectorReq } from '../types';
 
 const { Option } = Select;
@@ -197,50 +199,59 @@ export const ConnectorManagement: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: Connector) => (
         <div>
-          <Button
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
             type="link"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             style={{ marginRight: 8 }}
           >
             编辑
-          </Button>
-          <Button
+          </AuthButton>
+          {/* 测试会真实调用下游连接器（发起一次外部请求），按写操作门禁 */}
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
             type="link"
             icon={<ReloadOutlined />}
             onClick={() => handleTest(record.id)}
             style={{ marginRight: 8 }}
           >
             测试
-          </Button>
+          </AuthButton>
           {record.status === 'ENABLED' ? (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
               type="link"
               danger
               onClick={() => handleDisable(record.id)}
               style={{ marginRight: 8 }}
             >
               禁用
-            </Button>
+            </AuthButton>
           ) : (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
               type="link"
               onClick={() => handleEnable(record.id)}
               style={{ marginRight: 8 }}
             >
               启用
-            </Button>
+            </AuthButton>
           )}
-          <Popconfirm
-            title="确定删除此连接器吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          {/* 删除被 Popconfirm 包住，只能用 <Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}>
+            <Popconfirm
+              title="确定删除此连接器吗？"
+              onConfirm={() => handleDelete(record.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </div>
       ),
     },
@@ -251,9 +262,14 @@ export const ConnectorManagement: React.FC = () => {
       <Card
         title="连接器管理"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          <AuthButton
+            code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
             新建连接器
-          </Button>
+          </AuthButton>
         }
       >
         <Input
@@ -282,9 +298,23 @@ export const ConnectorManagement: React.FC = () => {
       <Modal
         title={isEdit ? '编辑连接器' : '新建连接器'}
         open={modalVisible}
-        onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
         width={600}
+        // 自定义 footer 才能给「确定」加门禁（antd 默认确定/取消按钮由 ModalContext 内部
+        // 渲染，页面拿不到元素）。传数组时 antd 原样渲染、不做 cloneElement。
+        footer={[
+          <AuthButton
+            key="ok"
+            code={BonePermissionCodes.INTEGRATION_CONNECTORS_WRITE}
+            type="primary"
+            onClick={() => void handleSubmit()}
+          >
+            确定
+          </AuthButton>,
+          <Button key="cancel" onClick={() => setModalVisible(false)}>
+            取消
+          </Button>,
+        ]}
       >
         <Form
           form={form}

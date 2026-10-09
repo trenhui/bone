@@ -186,9 +186,20 @@ public class MenuApplicationService {
             .map(p -> new HashSet<>(p.scopes()))
             .orElseThrow(() -> IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, "未登录"));
 
+    List<Menu> all = menuRepository.listAll();
+
+    // 租户自有菜单为空 ⇒ 继承平台租户（0）的菜单模板。
+    // 不继承的话，新建租户（无菜单数据）的所有成员登录后会看到空侧边栏，整个平台不可用；
+    // 而菜单是"导航目录"不是业务数据，继承平台模板不泄漏任何租户数据——真正的门禁在下一行的
+    // 权限码过滤：租户成员拿不到平台域权限码（且平台域码本身就禁止授予租户角色），
+    // 对应的菜单项照样不会下发。
+    List<Menu> scoped = all.stream().filter(m -> tenantId.equals(m.getTenantId())).toList();
+    if (scoped.isEmpty() && tenantId != 0L) {
+      scoped = all.stream().filter(m -> Long.valueOf(0L).equals(m.getTenantId())).toList();
+    }
+
     List<Menu> visible =
-        menuRepository.listAll().stream()
-            .filter(m -> tenantId.equals(m.getTenantId()))
+        scoped.stream()
             .filter(
                 m ->
                     m.getPermission() == null
@@ -254,6 +265,7 @@ public class MenuApplicationService {
     node.setIcon(m.getIcon());
     node.setOrder(m.getOrderNo());
     node.setPermission(m.getPermission());
+    node.setType(m.getType());
     node.setChildren(new ArrayList<>());
     return node;
   }

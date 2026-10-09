@@ -15,6 +15,11 @@ import {
   ApartmentOutlined,
   TeamOutlined,
   ApiOutlined,
+  ThunderboltOutlined,
+  CloudServerOutlined,
+  BellOutlined,
+  RocketOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import {
   fetchConsoleOverview,
@@ -35,6 +40,19 @@ const QUICK_ACTION_ICONS: Record<string, ReactNode> = {
   AppstoreOutlined: <AppstoreOutlined />,
   CodeOutlined: <CodeOutlined />,
 };
+
+/** 快捷操作按业务域差异化配色，便于视觉分区快速定位 */
+const QUICK_ACTION_ACCENTS: Record<string, string> = {
+  iam: 'linear-gradient(135deg,#1677ff,#69b1ff)',
+  metadata: 'linear-gradient(135deg,#52c41a,#95de64)',
+  masterdata: 'linear-gradient(135deg,#13c2c2,#5cdbd3)',
+  integration: 'linear-gradient(135deg,#fa8c16,#ffc069)',
+  system: 'linear-gradient(135deg,#722ed1,#b37feb)',
+  extension: 'linear-gradient(135deg,#eb2f96,#ff85c0)',
+  commerce: 'linear-gradient(135deg,#faad14,#ffd666)',
+  generator: 'linear-gradient(135deg,#2f54eb,#85a5ff)',
+};
+const DEFAULT_QUICK_ACCENT = 'linear-gradient(135deg,#1677ff,#4096ff)';
 
 /** BONE 平台真实架构能力 —— 用于"架构能力墙"展示框架专业度 */
 const CAPABILITIES: { icon: ReactNode; title: string; desc: string }[] = [
@@ -118,22 +136,29 @@ function ResourceRing({
   from,
   to,
 }: {
-  percent: number;
+  /** null = 该指标无有效基准（如 JVM 未设 -Xmx），显示「—」而非误导性的 0% */
+  percent: number | null;
   label: string;
   sub?: string;
   from: string;
   to: string;
 }): JSX.Element {
+  const hasValue = percent !== null;
   return (
     <div className="db-ring">
       <Progress
         type="dashboard"
-        percent={Math.round(percent)}
+        percent={hasValue ? Math.min(100, Math.max(0, Math.round(percent))) : 0}
         size={118}
-        strokeColor={{ '0%': from, '100%': to }}
+        strokeColor={hasValue ? { '0%': from, '100%': to } : 'var(--bone-color-border)'}
         trailColor="var(--bone-color-border-secondary)"
-        format={(p) => (
-          <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--bone-color-text)' }}>{p}%</span>
+        format={() => (
+          <span
+            className={hasValue ? 'db-ring-pct' : 'db-ring-pct db-ring-pct-na'}
+            style={{ color: hasValue ? 'var(--bone-color-text)' : 'var(--bone-color-text-tertiary)' }}
+          >
+            {hasValue ? `${Math.min(100, Math.max(0, Math.round(percent)))}%` : '—'}
+          </span>
         )}
       />
       <div className="db-ring-label">{label}</div>
@@ -236,8 +261,12 @@ export default function DashboardPage(): JSX.Element {
   const keyMetrics = overview?.keyMetrics ?? {};
   const memUsed = toNum(resourceUsage?.memoryUsedBytes);
   const memMax = toNum(resourceUsage?.memoryMaxBytes);
-  const memoryPercent = memMax > 0 ? (memUsed / memMax) * 100 : 0;
-  const memorySub = memMax > 0 ? `${formatBytes(memUsed)} / ${formatBytes(memMax)}` : formatBytes(memUsed);
+  // JVM 未显式配置 -Xmx 时后端返回 -1：此时没有分母，不能算百分比（否则恒为 0% 且误导）
+  const memoryPercent = memMax > 0 ? (memUsed / memMax) * 100 : null;
+  const memorySub =
+    memMax > 0
+      ? `${formatBytes(memUsed)} / ${formatBytes(memMax)}`
+      : `已用 ${formatBytes(memUsed)} · 未设上限`;
 
   const services = overview?.services ?? [];
   const upCount = services.filter((s) => {
@@ -274,7 +303,7 @@ export default function DashboardPage(): JSX.Element {
           </div>
         </div>
         <div className="db-hero-right">
-          {overview?.updatedAt && <span className="db-hero-time">数据更新于 {overview.updatedAt}</span>}
+          {overview?.updatedAt && <span className="db-hero-time">数据更新于 {formatDate(overview.updatedAt)}</span>}
           <button className="db-refresh" onClick={onRefresh} disabled={refreshing}>
             <ReloadOutlined spin={refreshing} />
             {refreshing ? '刷新中…' : '刷新数据'}
@@ -306,14 +335,17 @@ export default function DashboardPage(): JSX.Element {
       <div className="db-grid-2">
         <section className="db-section">
           <div className="db-section-head">
-            <h2 className="db-section-title">系统资源</h2>
+            <h2 className="db-section-title">
+              <ThunderboltOutlined className="db-section-icon" />
+              系统资源
+            </h2>
             <span className="db-section-extra">实时占用</span>
           </div>
           <div className="db-rings">
             <ResourceRing
-              percent={toNum(resourceUsage?.cpuPercent)}
+              percent={resourceUsage ? toNum(resourceUsage.cpuPercent) : null}
               label="CPU 使用率"
-              sub={`${toNum(resourceUsage?.cpuPercent)}%`}
+              sub={resourceUsage ? `${toNum(resourceUsage.cpuPercent)}%` : undefined}
               from="#1677ff"
               to="#69b1ff"
             />
@@ -325,9 +357,9 @@ export default function DashboardPage(): JSX.Element {
               to="#5cdbd3"
             />
             <ResourceRing
-              percent={toNum(resourceUsage?.diskUsedPercent)}
+              percent={resourceUsage ? toNum(resourceUsage.diskUsedPercent) : null}
               label="磁盘占用"
-              sub={`${toNum(resourceUsage?.diskUsedPercent)}%`}
+              sub={resourceUsage ? `${toNum(resourceUsage.diskUsedPercent)}%` : undefined}
               from="#fa8c16"
               to="#ffc069"
             />
@@ -346,7 +378,10 @@ export default function DashboardPage(): JSX.Element {
 
         <section className="db-section">
           <div className="db-section-head">
-            <h2 className="db-section-title">服务健康</h2>
+            <h2 className="db-section-title">
+              <CloudServerOutlined className="db-section-icon" />
+              服务健康
+            </h2>
             <span className="db-section-extra">
               {upCount}/{services.length} 正常
             </span>
@@ -380,7 +415,10 @@ export default function DashboardPage(): JSX.Element {
       <div className="db-grid-2">
         <section className="db-section">
           <div className="db-section-head">
-            <h2 className="db-section-title">BONE 架构能力</h2>
+            <h2 className="db-section-title">
+              <ApartmentOutlined className="db-section-icon" />
+              BONE 架构能力
+            </h2>
           </div>
           <div className="db-arch-grid">
             {CAPABILITIES.map((cap) => (
@@ -397,10 +435,19 @@ export default function DashboardPage(): JSX.Element {
 
         <section className="db-section">
           <div className="db-section-head">
-            <h2 className="db-section-title">系统告警</h2>
+            <h2 className="db-section-title">
+              <BellOutlined className="db-section-icon" />
+              系统告警
+            </h2>
+            {alerts && alerts.length > 0 && (
+              <span className="db-section-extra db-badge-count">{alerts.length} 条</span>
+            )}
           </div>
           {!alerts || alerts.length === 0 ? (
-            <div className="db-empty">暂无告警</div>
+            <div className="db-empty-panel">
+              <CheckCircleOutlined />
+              <span>暂无告警，系统运行平稳</span>
+            </div>
           ) : (
             alerts.map((alert, index) => {
               const as = alertStyle(alert.level);
@@ -424,7 +471,10 @@ export default function DashboardPage(): JSX.Element {
       {/* ── 快捷操作 ── */}
       <section className="db-section">
         <div className="db-section-head">
-          <h2 className="db-section-title">快捷操作</h2>
+          <h2 className="db-section-title">
+            <RocketOutlined className="db-section-icon" />
+            快捷操作
+          </h2>
         </div>
         {quickActions.length === 0 ? (
           <div className="db-empty">暂无快捷操作配置</div>
@@ -432,7 +482,10 @@ export default function DashboardPage(): JSX.Element {
           <div className="db-quick">
             {quickActions.map((action) => (
               <Link key={action.id} to={action.path} className="db-quick-item">
-                <div className="db-quick-ico">
+                <div
+                  className="db-quick-ico"
+                  style={{ background: QUICK_ACTION_ACCENTS[action.id] ?? DEFAULT_QUICK_ACCENT }}
+                >
                   {QUICK_ACTION_ICONS[action.icon ?? ''] ?? <AppstoreOutlined />}
                 </div>
                 <span>{action.title}</span>

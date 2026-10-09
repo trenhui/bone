@@ -15,6 +15,8 @@ import {
 import { DownloadOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import { codeGenerationApi, historyApi } from '../services/api';
 import type { GenerationHistoryItem } from '../services/types';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
 
@@ -130,13 +132,14 @@ const GenerationHistory: React.FC = () => {
             查看详情
           </Button>
           {record.status === 'SUCCESS' && (
-            <Button
+            <AuthButton
+              code={BonePermissionCodes.GENERATOR_CODEGEN_WRITE}
               type="primary"
               icon={<DownloadOutlined />}
               onClick={() => void handleDownloadCode(record.taskId)}
             >
               下载代码
-            </Button>
+            </AuthButton>
           )}
         </Space>
       ),
@@ -206,14 +209,15 @@ const GenerationHistory: React.FC = () => {
             关闭
           </Button>,
           selectedHistory?.status === 'SUCCESS' && (
-            <Button
+            <AuthButton
               key="download"
+              code={BonePermissionCodes.GENERATOR_CODEGEN_WRITE}
               type="primary"
               icon={<DownloadOutlined />}
               onClick={() => selectedHistory && void handleDownloadCode(selectedHistory.taskId)}
             >
               下载代码
-            </Button>
+            </AuthButton>
           ),
         ]}
         width={800}

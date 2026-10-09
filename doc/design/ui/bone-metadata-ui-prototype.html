@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BONE 元数据管理 · UI 原型（低代码最小闭环 v0.1）</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
+    --purple:#722ed1; --purple-bg:#f9f0ff;
+    --green:#52c41a; --green-bg:#f6ffed; --green-border:#b7eb8f;
+    --orange:#fa8c16; --orange-bg:#fff7e6; --orange-border:#ffd591;
+    --red:#ff4d4f;
+    --gray:#8c8c8c; --gray-bg:#f5f5f5; --gray-border:#d9d9d9;
+    --text:#1f1f1f; --text-2:#595959; --text-3:#8c8c8c;
+    --bg:#f0f2f5; --card:#fff; --border:#e8e8e8;
+    --radius:6px;
+    --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
+    --shadow-lg:0 6px 16px rgba(0,0,0,.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:1200px}
+  .app{display:flex;min-height:100vh}
+  /* ---------- 左侧导航 ---------- */
+  .sider{width:200px;background:#001529;color:#rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
+  .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;font-size:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .nav{padding:8px 0;flex:1}
+  .nav .grp{font-size:11px;color:rgba(255,255,255,.35);padding:12px 16px 4px;letter-spacing:1px}
+  .nav .item{padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:8px;transition:all .2s}
+  .nav .item:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .nav .item.on{color:#fff;background:var(--primary);font-weight:500}
+  .nav .item .ico{width:14px;text-align:center;font-size:13px}
+  .nav .tag{margin-left:auto;font-size:10px;padding:0 6px;border-radius:8px;background:rgba(255,255,255,.18)}
+  .nav .tag.g{background:rgba(82,196,26,.35)}
+  .sider-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.35)}
+  /* ---------- 主区域 ---------- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:var(--shadow);z-index:2}
+  .crumb{font-size:13px;color:var(--text-2)}
+  .crumb b{color:var(--text)}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:#4096ff}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.green:hover{background:#73d13d}
+  .btn.orange{background:#fff;border-color:var(--orange);color:var(--orange)}
+  .btn.orange:hover{background:var(--orange-bg)}
+  .btn.danger{color:var(--red);border-color:#ffa39e}
+  .btn.danger:hover{background:#fff1f0}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.sm{padding:1px 10px;font-size:12px}
+  /* ---------- Tab ---------- */
+  .tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px}
+  .tab{padding:11px 16px;cursor:pointer;color:var(--text-2);border-bottom:2px solid transparent;font-size:14px;transition:all .2s;position:relative}
+  .tab:hover{color:var(--primary)}
+  .tab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:500}
+  .tab .badge{display:inline-block;min-width:16px;height:16px;line-height:16px;text-align:center;border-radius:8px;background:var(--red);color:#fff;font-size:10px;margin-left:4px}
+  .content{padding:20px 24px;flex:1;overflow:auto}
+  .panel{display:none}
+  .panel.on{display:block}
+  /* ---------- 通用组件 ---------- */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+  .card h4{font-size:14px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .card .sub{font-size:12px;color:var(--text-3);font-weight:400}
+  .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
+  .pill.gray{background:var(--gray-bg);color:var(--text-2)}
+  .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
+  .pill.purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d3adf7}
+  .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .pill.red{background:#fff1f0;color:var(--red);border:1px solid #ffa39e}
+  table{width:100%;border-collapse:collapse}
+  th{background:var(--gray-bg);color:var(--text-2);font-weight:500;text-align:left;padding:9px 12px;font-size:12px}
+  td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:13px}
+  tr:hover td{background:#fafafa}
+  .input,select{height:30px;border:1px solid var(--gray-border);border-radius:var(--radius);padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--text)}
+  .input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+  .label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+  /* ---------- 建模画布 ---------- */
+  .canvas-wrap{display:flex;gap:16px}
+  .entity-tree{width:180px;flex-shrink:0}
+  .tree-item{padding:6px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);border:1px solid transparent;margin-bottom:4px}
+  .tree-item:hover{background:var(--gray-bg)}
+  .tree-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tree-item.on{background:var(--primary-bg);border-color:var(--primary-border);color:var(--primary)}
+  .tree-item .cnt{font-size:11px;color:var(--text-3)}
+  .canvas{flex:1;min-height:380px;background:linear-gradient(#f5f7fa 0,#eef1f5 100%);border:1px dashed #b7c4d1;border-radius:var(--radius);position:relative;padding:20px}
+  .canvas .hint{position:absolute;top:10px;left:12px;font-size:11px;color:var(--text-3);user-select:none}
+  .entity-card{position:absolute;width:250px;background:#fff;border:1px solid var(--gray-border);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:all .2s}
+  .entity-card:hover,.entity-card.on{box-shadow:var(--shadow-lg);border-color:var(--primary)}
+  .entity-card .head{padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0}
+  .entity-card .head .nm{font-weight:600;font-size:13px}
+  .entity-card .head .code{font-size:11px;color:var(--text-3)}
+  .entity-card .row{padding:5px 12px;display:flex;align-items:center;gap:8px;font-size:12px;border-bottom:1px solid #fafafa;color:var(--text-2)}
+  .entity-card .row .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .entity-card .row .ftype{font-size:11px;color:var(--text-3)}
+  .entity-card .row .cons{display:flex;gap:3px}
+  .entity-card .row .cons i{font-style:normal;font-size:10px;padding:0 4px;border-radius:3px;background:var(--gray-bg);color:var(--text-2)}
+  .entity-card .row .cons i.pk{background:var(--primary-bg);color:var(--primary)}
+  .entity-card .row .cons i.fk{background:var(--orange-bg);color:var(--orange)}
+  .entity-card .row .cons i.json{background:var(--purple-bg);color:var(--purple)}
+  .entity-card .foot{padding:6px 12px;font-size:11px;color:var(--text-3);display:flex;justify-content:space-between}
+  .rel-line{position:absolute;border-top:1.5px solid #b7c4d1;transform-origin:left;z-index:0}
+  .rel-line .label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 8px;font-size:10px;color:var(--text-2);white-space:nowrap}
+  .canvas-toolbar{position:absolute;top:34px;left:12px;display:flex;gap:6px}
+  .canvas-toolbar .btn.sm{border-color:var(--gray-border)}
+  .props-panel{width:250px;flex-shrink:0}
+  .props-panel .field{margin-bottom:12px}
+  .props-panel .row2{display:flex;gap:8px}
+  .props-panel .row2 .field{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:var(--radius);overflow:hidden}
+  .seg .seg-it{padding:3px 12px;font-size:12px;cursor:pointer;color:var(--text-2);background:#fff}
+  .seg .seg-it.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+  /* ---------- 发布与变更 ---------- */
+  .pub-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+  .timeline{position:relative;padding-left:20px}
+  .timeline::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:#e8e8e8}
+  .tl-item{position:relative;padding:0 0 18px}
+  .tl-item::before{content:"";position:absolute;left:-18px;top:5px;width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid var(--primary)}
+  .tl-item.orange::before{border-color:var(--orange)}
+  .tl-item.green::before{border-color:var(--green)}
+  .tl-item .t1{font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
+  .tl-item .t2{font-size:12px;color:var(--text-3);margin-top:2px}
+  .chg-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed #f0f0f0;font-size:12px}
+  .chg-row .op{font-weight:500}
+  .chg-row .op.add{color:var(--green)}.chg-row .op.del{color:var(--red)}.chg-row .op.mod{color:var(--orange)}
+  .chg-row .desc{color:var(--text-2);flex:1}
+  .kv{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--text-2);border-bottom:1px dashed #f0f0f0}
+  .kv b{color:var(--text)}
+  .alert{padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start}
+  .alert.info{background:var(--primary-bg);border:1px solid var(--primary-border);color:#0958d9}
+  .alert.warn{background:var(--orange-bg);border:1px solid var(--orange-border);color:#ad6800}
+  .alert.good{background:var(--green-bg);border:1px solid var(--green-border);color:#389e0d}
+  /* ---------- 向导 ---------- */
+  .steps{display:flex;align-items:center;gap:0;margin:6px 0 22px;font-size:12.5px}
+  .step{display:flex;align-items:center;gap:8px;color:var(--text-3)}
+  .step .num{width:26px;height:26px;border-radius:50%;background:var(--gray-bg);border:1px solid var(--gray-border);display:flex;align-items:center;justify-content:center;font-weight:600}
+  .step.on{color:var(--text)}
+  .step.on .num{background:var(--primary);border-color:var(--primary);color:#fff}
+  .step.done .num{background:var(--green);border-color:var(--green);color:#fff}
+  .step-line{width:60px;height:1px;background:var(--gray-border);margin:0 12px}
+  .mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mode-card{border:2px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all .2s;background:#fff;position:relative}
+  .mode-card:hover{border-color:var(--primary-border);box-shadow:var(--shadow-lg)}
+  .mode-card.on{border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,119,255,.12)}
+  .mode-card .badge-rec{position:absolute;top:-10px;right:14px;background:var(--green);color:#fff;font-size:11px;padding:1px 10px;border-radius:10px}
+  .mode-card h3{font-size:15px;margin:4px 0 6px;display:flex;align-items:center;gap:8px}
+  .mode-card .desc{font-size:12.5px;color:var(--text-2);line-height:1.7}
+  .mode-card ul{margin:10px 0 0 18px;font-size:12.5px;color:var(--text-2)}
+  .mode-card ul li{margin:4px 0}
+  .mode-card .tag-a{width:34px;height:34px;border-radius:8px;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .mode-card .tag-b{width:34px;height:34px;border-radius:8px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .foot-bar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+  /* ---------- 运行时数据 ---------- */
+  .qbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .qbar .input{width:200px}
+  .pager{display:flex;justify-content:flex-end;gap:6px;align-items:center;margin-top:12px;font-size:12px;color:var(--text-2)}
+  .pager .btn{padding:1px 10px}
+  .modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+  .modal-mask.on{display:flex}
+  .modal{width:460px;background:#fff;border-radius:8px;box-shadow:var(--shadow-lg);overflow:hidden}
+  .modal .m-head{padding:14px 18px;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .modal .m-body{padding:16px 18px;font-size:13px;color:var(--text-2);line-height:1.8}
+  .modal .m-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--green-border);box-shadow:var(--shadow-lg);border-radius:var(--radius);padding:9px 18px;font-size:13px;color:#389e0d;display:none;z-index:200}
+  .toast.on{display:block}
+  .empty-tip{text-align:center;color:var(--text-3);padding:30px 0;font-size:12.5px}
+  .foot-note{margin-top:18px;padding:10px 16px;border-radius:var(--radius);background:var(--gray-bg);font-size:12px;color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧导航 -->
+  <aside class="sider">
+    <div class="logo"><div class="dot">B</div>BONE 元数据管理</div>
+    <nav class="nav">
+      <div class="grp">建模控制面</div>
+      <div class="item" data-nav="workspace"><span class="ico">🗂</span>建模工作区</div>
+      <div class="item on" data-nav="tpl"><span class="ico">🧩</span>模板向导 <span class="tag g">NEW</span></div>
+      <div class="item"><span class="ico">📦</span>模块管理</div>
+      <div class="grp">元数据运行时</div>
+      <div class="item"><span class="ico">🧬</span>实体管理 <span class="tag">8</span></div>
+      <div class="item"><span class="ico">🕹</span>运行时数据 <span class="tag g">RUNTIME</span></div>
+      <div class="grp">治理</div>
+      <div class="item"><span class="ico">🚀</span>发布与变更</div>
+      <div class="item"><span class="ico">📜</span>审计日志</div>
+    </nav>
+    <div class="sider-foot">UI 原型 v0.1 · 低代码最小闭环</div>
+  </aside>
+
+  <!-- 主区域 -->
+  <main class="main">
+    <header class="header">
+      <div class="crumb">BONE 元数据管理 / <b>订单领域 · 实体详情</b></div>
+      <div class="header-actions">
+        <button class="btn">保存草稿</button>
+        <button class="btn primary" onclick="openModal('pub')">发布 <span id="pubBadge" style="display:none;background:#fff;color:var(--primary);border-radius:8px;padding:0 6px;font-size:11px"></span></button>
+        <div style="width:1px;height:20px;background:var(--border)"></div>
+        <button class="btn">登录：admin</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab on" data-tab="t1" onclick="switchTab('t1')">可视化建模画布 <span class="pill blue" style="margin-left:6px">VM-001</span></div>
+      <div class="tab" data-tab="t2" onclick="switchTab('t2')">发布与变更 <span class="pill orange" style="margin-left:6px">VM-002</span></div>
+      <div class="tab" data-tab="t3" onclick="switchTab('t3')">交付模式向导 <span class="pill purple" style="margin-left:6px">VM-003</span></div>
+      <div class="tab" data-tab="t4" onclick="switchTab('t4')">运行时数据 <span class="pill gray" style="margin-left:6px">RC-004</span></div>
+    </div>
+
+    <div class="content">
+      <!-- ===== Tab 1 建模画布 ===== -->
+      <div class="panel on" id="t1">
+        <div class="canvas-wrap">
+          <!-- 左：实体树 -->
+          <div class="entity-tree card" style="padding:10px">
+            <h4 style="font-size:13px">实体导航</h4>
+            <div class="tree-item on" data-ent="order" onclick="selEntity('order')"><span>📦</span><span class="name">订单</span><span class="pill blue" style="margin-left:auto">RUNTIME</span></div>
+            <div class="tree-item" data-ent="customer" onclick="selEntity('customer')"><span>👤</span><span class="name">客户</span><span class="pill blue" style="margin-left:auto">RUNTIME</span></div>
+            <div class="tree-item" data-ent="product" onclick="selEntity('product')"><span>🏷</span><span class="name">商品</span><span class="pill purple" style="margin-left:auto">GEN</span></div>
+            <div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
+              <button class="btn sm" style="width:100%">+ 新建实体</button>
+            </div>
+          </div>
+
+          <!-- 中：画布 -->
+          <div class="canvas">
+            <div class="hint">画布视图 · 与表单视图同源（catalog API）</div>
+            <div class="canvas-toolbar">
+              <button class="btn sm">+ 添加字段</button>
+              <button class="btn sm">+ 添加关系</button>
+              <button class="btn sm">🔍 适应画布</button>
+              <span class="seg" style="margin-left:8px">
+                <span class="seg-it on">画布</span><span class="seg-it" onclick="toast('表单视图（同源数据）')">表单</span>
+              </span>
+            </div>
+            <!-- 关系线 -->
+            <div class="rel-line" style="top:150px;left:338px;width:180px"><span class="label">N : 1 · 客户ID</span></div>
+            <!-- 订单实体卡片 -->
+            <div class="entity-card on" data-ent="order" style="top:52px;left:30px" onclick="selEntity('order')">
+              <div class="head"><span>📦</span><div><div class="nm">订单</div><div class="code">t_order · RUNTIME</div></div></div>
+              <div class="row"><span class="fname">订单号</span><span class="ftype">varchar(32)</span><span class="cons"><i class="pk">PK</i><i>唯一</i></span></div>
+              <div class="row"><span class="fname">客户ID</span><span class="ftype">bigint</span><span class="cons"><i class="fk">FK</i></span></div>
+              <div class="row"><span class="fname">金额</span><span class="ftype">decimal(10,2)</span><span class="cons"><i>必填</i><i>校验</i></span></div>
+              <div class="row"><span class="fname">状态</span><span class="ftype">varchar(16)</span><span class="cons"><i>枚举</i></span></div>
+              <div class="row" style="background:var(--purple-bg)"><span class="fname">优惠券码</span><span class="ftype">varchar(64)</span><span class="cons"><i class="json">扩展·预留列</i></span></div>
+              <div class="foot"><span>5 字段 · 1 扩展</span><span class="pill green">PUBLISHED</span></div>
+            </div>
+            <!-- 客户实体卡片 -->
+            <div class="entity-card" data-ent="customer" style="top:200px;left:30px" onclick="selEntity('customer')">
+              <div class="head"><span>👤</span><div><div class="nm">客户</div><div class="code">t_customer · RUNTIME</div></div></div>
+              <div class="row"><span class="fname">客户ID</span><span class="ftype">bigint</span><span class="cons"><i class="pk">PK</i></span></div>
+              <div class="row"><span class="fname">名称</span><span class="ftype">varchar(64)</span><span class="cons"><i>必填</i></span></div>
+              <div class="row"><span class="fname">等级</span><span class="ftype">varchar(8)</span><span class="cons"><i>枚举</i></span></div>
+              <div class="row"><span class="fname">手机号</span><span class="ftype">varchar(20)</span><span class="cons"><i>唯一</i></span></div>
+              <div class="foot"><span>4 字段</span><span class="pill green">PUBLISHED</span></div>
+            </div>
+          </div>
+
+          <!-- 右：属性面板 -->
+          <div class="props-panel card">
+            <h4>属性面板 <span class="sub" id="propTitle">· 实体：订单</span></h4>
+            <div class="field"><span class="label">实体标识 code</span><input class="input" style="width:100%" value="t_order" disabled></div>
+            <div class="field"><span class="label">交付模式 delivery_mode</span>
+              <span class="seg" style="width:100%">
+                <span class="seg-it">GENERATIVE</span><span class="seg-it on">RUNTIME</span>
+              </span>
+            </div>
+            <div class="field"><span class="label">扩展字段模式</span>
+              <select style="width:100%"><option>预留列（默认推荐）</option><option>JSON 列</option><option>EAV 键值对</option></select>
+            </div>
+            <div class="field"><span class="label">字段：金额</span>
+              <div class="row2">
+                <div><span class="label">类型</span><select style="width:100%"><option>decimal(10,2)</option><option>bigint</option></select></div>
+                <div><span class="label">必填</span><select style="width:100%"><option>是</option><option>否</option></select></div>
+              </div>
+            </div>
+            <div class="field"><span class="label">校验规则</span>
+              <div style="font-size:12px;background:var(--gray-bg);border-radius:4px;padding:6px 10px;color:var(--text-2)">
+                <div>✓ amount &gt;= 0（表达式）</div>
+                <div>✓ 状态 ∈ [CREATED,PAID,SHIPPED]（枚举）</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button class="btn sm primary">应用修改</button>
+              <button class="btn sm">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Tab 2 发布与变更 ===== -->
+      <div class="panel" id="t2">
+        <div class="alert info" id="pubAlert">当前有 <b>1 项 L1 在线变更</b> 与 <b>2 项 L2 破坏性变更</b> 待处理（草稿 v1.1.0 相对已发布 v1.0.3）</div>
+        <div class="pub-grid">
+          <div>
+            <div class="card">
+              <h4>版本历史 <span class="sub">不可变快照 · 全部留痕</span></h4>
+              <div class="timeline">
+                <div class="tl-item green">
+                  <div class="t1">v1.0.3 · 在线发布 <span class="pill green">L1</span> <button class="btn sm" style="margin-left:auto" onclick="openModal('diff')">查看 diff</button></div>
+                  <div class="t2">2026-10-08 14:32 · 张工 · 新增字段「优惠券码」（扩展·预留列）</div>
+                </div>
+                <div class="tl-item">
+                  <div class="t1">v1.0.2 · 在线发布 <span class="pill green">L1</span></div>
+                  <div class="t2">2026-10-02 11:08 · 张工 · 放宽「金额」精度 decimal(10,2)→(12,2)</div>
+                </div>
+                <div class="tl-item">
+                  <div class="t1">v1.0.1 · 初始发布</div>
+                  <div class="t2">2026-09-25 09:00 · 李工 · 实体「订单」首次发布（4 字段）</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <h4>草稿变更集 <span class="sub">当前草稿 v1.1.0 · 未发布</span></h4>
+              <div class="chg-row"><span class="op add">+ 新增</span><span class="desc">字段「收货地址」varchar(200) · L1 在线</span><span class="pill green">L1</span></div>
+              <div class="chg-row"><span class="op del">− 删除</span><span class="desc">字段「渠道来源」，被 1 条校验规则引用 · L2 破坏性</span><span class="pill orange">L2</span></div>
+              <div class="chg-row"><span class="op mod">~ 修改</span><span class="desc">「金额」添加唯一约束（涉及存量 12,483 行）· L2 破坏性</span><span class="pill orange">L2</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <h4>影响分析 <span class="sub">发布确认前必读</span></h4>
+              <div class="kv"><span>字段变更</span><b>3 项（1 新增 / 1 删除 / 1 收紧）</b></div>
+              <div class="kv"><span>引用校验规则</span><b>2 条（其中 1 条随字段删除失效）</b></div>
+              <div class="kv"><span>引用扩展点</span><b>0 个</b></div>
+              <div class="kv"><span>运行时记录规模估算</span><b>≈ 12,483 行</b></div>
+              <div class="kv"><span>预计停机窗口</span><b>L1 无需 · L2 需 5–10 分钟迁移窗口</b></div>
+              <div style="margin-top:12px;display:flex;gap:8px">
+                <button class="btn green" onclick="openModal('l1')">发布 L1 在线变更</button>
+                <button class="btn orange" onclick="openModal('l2')">提交 L2 破坏性变更</button>
+              </div>
+            </div>
+            <div class="card">
+              <h4>变更分级规则 <span class="sub">引擎判定 · 不接受人工拍脑袋</span></h4>
+              <div style="font-size:12.5px;color:var(--text-2);line-height:1.8">
+                <div>🟢 <b>L1 在线</b>：新增可空字段、放宽长度、新增索引 → 热加载生效（P95 ≤ 60s）</div>
+                <div>🟠 <b>L2 迁移窗口</b>：删除字段、收紧约束、主键语义变更 → 需显式窗口 + 二次确认</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Tab 3 交付模式向导 ===== -->
+      <div class="panel" id="t3">
+        <div class="card">
+          <div class="steps">
+            <div class="step done"><span class="num">✓</span>选择模板</div>
+            <div class="step-line"></div>
+            <div class="step on"><span class="num">2</span>交付模式</div>
+            <div class="step-line"></div>
+            <div class="step"><span class="num">3</span>边界提示</div>
+            <div class="step-line"></div>
+            <div class="step"><span class="num">4</span>完成</div>
+          </div>
+          <div class="mode-cards">
+            <div class="mode-card" data-mode="A" onclick="selMode('A')">
+              <div class="badge-rec" style="background:var(--purple)">源码审计</div>
+              <h3><span class="tag-a">A</span>模式 A · 生成式交付</h3>
+              <div class="desc">元数据 → <b>生成可审计源码</b> → 编译部署，代码进 Git 可 diff/review。</div>
+              <ul>
+                <li>适合：复杂领域逻辑、源码审计、深度定制</li>
+                <li>由 <b>studio-generator</b> 承担 DDD 骨架与定制代码生成</li>
+                <li>交付路径：server → generator → Java/TS 工程 → sdk 仓储绑定物理表</li>
+              </ul>
+            </div>
+            <div class="mode-card on" data-mode="B" onclick="selMode('B')">
+              <div class="badge-rec">标准 CRUD 免生成</div>
+              <h3><span class="tag-b">B</span>模式 B · 运行时交付</h3>
+              <div class="desc">元数据 → <b>运行时解释执行</b>，动态 CRUD/API，无需为每张表生成 Controller。</div>
+              <ul>
+                <li>适合：配置型实体、运营后台、SaaS 标准对象</li>
+                <li>发布后 <b>P95 ≤ 60s 热加载生效</b>，支持 L1/L2 变更分级</li>
+                <li>复杂领域逻辑需逃逸舱（生成器 / 扩展点）</li>
+              </ul>
+            </div>
+          </div>
+          <div class="foot-bar">
+            <span style="font-size:12px;color:var(--text-3)">当前选择：<b style="color:var(--primary)" id="modeNow">模式 B · 运行时交付</b></span>
+            <div style="display:flex;gap:8px">
+              <button class="btn">上一步</button>
+              <button class="btn primary" onclick="toast('已选择模式 B · RUNTIME，进入边界提示')">下一步：边界提示</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Tab 4 运行时数据 ===== -->
+      <div class="panel" id="t4">
+        <div class="card">
+          <h4>运行时记录 · t_order <span class="sub">/api/v1/runtime/entities/t_order/records</span></h4>
+          <div class="qbar">
+            <input class="input" placeholder="关键字：订单号 / 客户">
+            <select style="width:110px"><option>状态：全部</option><option>CREATED</option><option>PAID</option><option>SHIPPED</option></select>
+            <select style="width:130px"><option>优惠券码：全部</option><option>有值</option><option>为空</option></select>
+            <select style="width:120px"><option>金额 ≥ 0（校验规则）</option></select>
+            <button class="btn primary sm">查询</button>
+            <span style="font-size:12px;color:var(--text-3);margin-left:auto">扩展字段条件：预留列语义 ✅（fail-fast 保护已开启）</span>
+          </div>
+          <div class="alert good" style="display:none" id="validOk">✓ 校验通过 · 2 条记录写入成功并已审计</div>
+          <table>
+            <thead><tr><th>订单号</th><th>客户</th><th>金额</th><th>状态</th><th>优惠券码（扩展）</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>SO20261008001</td><td>客户 A</td><td>¥1,299.00</td><td><span class="pill green">PAID</span></td><td><span class="pill purple">SUM-2026-10</span></td><td>2026-10-08 14:40</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
+              <tr><td>SO20261008002</td><td>客户 B</td><td>¥388.50</td><td><span class="pill blue">CREATED</span></td><td>—</td><td>2026-10-08 15:02</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
+              <tr><td>SO20261009003</td><td>客户 C</td><td>¥56.00</td><td><span class="pill blue">CREATED</span></td><td><span class="pill purple">VIP-001</span></td><td>2026-10-09 09:12</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
+            </tbody>
+          </table>
+          <div class="pager"><span>共 12,483 行</span><button class="btn sm">&lt;</button><span style="padding:0 6px">1 / 4162</span><button class="btn sm">&gt;</button></div>
+        </div>
+        <div class="card">
+          <h4>校验与审计 <span class="sub">规则运行时接线（复用 bone-metadata-engine）</span></h4>
+          <div style="font-size:12.5px;color:var(--text-2);line-height:1.9">
+            <div>✗ <b style="color:var(--red)">非法金额 -10.00</b> → 规则级错误 <code style="background:var(--gray-bg);padding:0 6px;border-radius:3px">RUNTIME_VALIDATION_FAILED(amount&gt;=0)</code>，拒绝入库</div>
+            <div>✗ <b style="color:var(--red)">扩展字段条件命中 JSON 降级列</b> → fail-fast 返回 <code style="background:var(--gray-bg);padding:0 6px;border-radius:3px">AGGREGATE_EXT_FIELD_CONDITION_UNSUPPORTED</code></div>
+            <div>✓ 全部写操作已审计（操作人 / 时间 / 租户 / 前后值 diff）</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot-note">原型说明：本 HTML 为 PRD「§5. UI 设计」配套的交互原型（自包含，无后端依赖）。数据为演示数据；真实能力以 PRD 需求 RC-001~004 / VM-001~003 及工程实现为准。</div>
+    </div>
+  </main>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-mask" id="m-l1">
+  <div class="modal">
+    <div class="m-head">确认发布 L1 在线变更<span style="cursor:pointer" onclick="closeModal('l1')">✕</span></div>
+    <div class="m-body">
+      <div class="alert good" style="margin-bottom:8px">✓ 本批次仅含 1 项 L1 在线变更，预计 <b>P95 ≤ 60s 热加载生效</b>，无需停机窗口。</div>
+      变更内容：新增字段「收货地址」varchar(200) · 可空 · 扩展·预留列<br>
+      <span style="font-size:12px;color:var(--text-3)">发布人 admin · 操作将 100% 留痕审计</span>
+    </div>
+    <div class="m-foot">
+      <button class="btn" onclick="closeModal('l1')">取消</button>
+      <button class="btn primary" onclick="doPublish()">确认发布</button>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="m-l2">
+  <div class="modal">
+    <div class="m-head">⚠ 破坏性变更（L2）二次确认<span style="cursor:pointer" onclick="closeModal('l2')">✕</span></div>
+    <div class="m-body">
+      <div class="alert warn">删除字段「渠道来源」+ 「金额」添加唯一约束，涉及存量 ≈ 12,483 行。<br><b>需显式 5–10 分钟迁移窗口</b>，窗口期内写入将被暂停（接口幂等重试）。</div>
+      影响分析：1 条校验规则将随字段删除失效 · 0 个扩展点引用<br>
+      <span style="font-size:12px;color:var(--text-3)">请先填写迁移窗口时间：<input class="input" style="width:150px;margin-left:6px" value="2026-10-10 02:00"></span>
+    </div>
+    <div class="m-foot">
+      <button class="btn" onclick="closeModal('l2')">取消</button>
+      <button class="btn orange" onclick="doPublish()">提交迁移计划</button>
+    </div>
+  </div>
+</div>
+<div class="modal-mask" id="m-diff">
+  <div class="modal">
+    <div class="m-head">版本 diff · v1.0.2 → v1.0.3<span style="cursor:pointer" onclick="closeModal('diff')">✕</span></div>
+    <div class="m-body">
+      <div class="chg-row"><span class="op add">+ 新增</span><span class="desc">字段「优惠券码」varchar(64) · 扩展·预留列（扩展字段分配成功）</span></div>
+      <div class="chg-row"><span class="op mod">~ 修改</span><span class="desc">「金额」精度 decimal(10,2) → decimal(12,2)</span></div>
+    </div>
+    <div class="m-foot"><button class="btn primary" onclick="closeModal('diff')">关闭</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  function switchTab(id){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===id));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===id));
+  }
+  window.addEventListener('load',()=>{ const h=location.hash.replace('#',''); if(h && ['t1','t2','t3','t4'].includes(h)) switchTab(h); });
+  function selEntity(name){
+    document.querySelectorAll('.tree-item').forEach(t=>t.classList.toggle('on',t.dataset.ent===name));
+    document.querySelectorAll('.entity-card').forEach(c=>c.classList.toggle('on',c.dataset.ent===name));
+    var titles={order:'· 实体：订单',customer:'· 实体：客户',product:'· 实体：商品'};
+    var el=document.getElementById('propTitle'); if(el) el.textContent=titles[name];
+  }
+  function selMode(m){
+    document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('on',c.dataset.mode===m));
+    document.getElementById('modeNow').textContent = m==='A'?'模式 A · 生成式交付':'模式 B · 运行时交付';
+  }
+  function openModal(id){ document.getElementById('m-'+id).classList.add('on'); }
+  function closeModal(id){ document.getElementById('m-'+id).classList.remove('on'); }
+  function doPublish(){
+    closeModal('l1'); closeModal('l2');
+    toast('发布成功：运行时已热加载（P95 ≤ 60s）· 审计已留痕');
+  }
+  function toast(msg){
+    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+    setTimeout(()=>t.classList.remove('on'),2600);
+  }
+</script>
+</body>
+</html>

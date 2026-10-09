@@ -31,6 +31,8 @@ import {
   UnlockOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { StatisticCard } from '@ant-design/pro-components';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
@@ -385,33 +387,44 @@ const AccountManagement: React.FC = () => {
       key: 'actions',
       width: 168,
       render: (_: unknown, record: Account) => (
+        // 表格行内操作：用 <Auth> 包 Tooltip+Button 而不是把 Button 换成 AuthButton——
+        // AuthButton 无权限时返回 null，会成为 Tooltip 的 children，antd 会对 children
+        // 做 cloneElement，null 直接触发运行时异常。
         <Space size={2}>
-          <Tooltip title="编辑">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          </Tooltip>
-          <Tooltip title={record.status === 1 ? '禁用' : '启用'}>
-            <Button
-              type="text"
-              size="small"
-              icon={record.status === 1 ? <LockOutlined /> : <UnlockOutlined />}
-              onClick={() => handleToggleStatus(record)}
-            />
-          </Tooltip>
-          <Tooltip title="重置密码">
-            <Button type="text" size="small" icon={<KeyOutlined />} onClick={() => handleResetPassword(record)} />
-          </Tooltip>
-          <Popconfirm
-            title="确定要删除这个账号吗？"
-            description="删除后该账号将无法登录平台"
-            onConfirm={() => handleDelete(record.id)}
-            okText="删除"
-            okButtonProps={{ danger: true }}
-            cancelText="取消"
-          >
-            <Tooltip title="删除">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+          <Auth code={BonePermissionCodes.IAM_ACCOUNTS_WRITE}>
+            <Tooltip title="编辑">
+              <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
             </Tooltip>
-          </Popconfirm>
+          </Auth>
+          <Auth code={BonePermissionCodes.IAM_ACCOUNTS_WRITE}>
+            <Tooltip title={record.status === 1 ? '禁用' : '启用'}>
+              <Button
+                type="text"
+                size="small"
+                icon={record.status === 1 ? <LockOutlined /> : <UnlockOutlined />}
+                onClick={() => handleToggleStatus(record)}
+              />
+            </Tooltip>
+          </Auth>
+          <Auth code={BonePermissionCodes.IAM_ACCOUNTS_WRITE}>
+            <Tooltip title="重置密码">
+              <Button type="text" size="small" icon={<KeyOutlined />} onClick={() => handleResetPassword(record)} />
+            </Tooltip>
+          </Auth>
+          <Auth code={BonePermissionCodes.IAM_ACCOUNTS_WRITE}>
+            <Popconfirm
+              title="确定要删除这个账号吗？"
+              description="删除后该账号将无法登录平台"
+              onConfirm={() => handleDelete(record.id)}
+              okText="删除"
+              okButtonProps={{ danger: true }}
+              cancelText="取消"
+            >
+              <Tooltip title="删除">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -428,9 +441,9 @@ const AccountManagement: React.FC = () => {
         style={{ width: 280 }}
       />
       <Button icon={<ReloadOutlined />} onClick={reload} title="刷新" />
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+      <AuthButton code={BonePermissionCodes.IAM_ACCOUNTS_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
         新增账号
-      </Button>
+      </AuthButton>
     </Space>
   );
 

@@ -1,16 +1,15 @@
-import { useEffect, useState, useContext, useMemo, Component, ReactNode } from 'react';
+import { useEffect, useState, useContext, useMemo, useCallback, Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result, List, Tag, Spin, Empty } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Popover, Tooltip, Badge, Result, List, Tag, Spin, Empty, Select } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import { createApiClient, notificationService, type NotificationDTO } from '@bone/shared-services';
 import type { MenuNode } from '@bone/shared-types';
 import { registerMicroApps, start as startQiankun, addGlobalUncaughtErrorHandler } from 'qiankun';
 import {
-  UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined,
+  UserOutlined, LogoutOutlined, DashboardOutlined,
   LockOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined,
   SunOutlined, MoonOutlined, AppstoreOutlined, CodeOutlined,
-  SettingOutlined as SettingIcon,
   SafetyCertificateOutlined, AuditOutlined, TeamOutlined,
   FileTextOutlined, PartitionOutlined, ApiOutlined, ThunderboltOutlined,
   ClusterOutlined, OrderedListOutlined, ReconciliationOutlined,
@@ -45,24 +44,24 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/Profile';
 import {
   LayoutContext,
-  MenuConfigContext,
   ThemeContext,
   type ShellMenuItem,
 } from './shellContext';
 import Authorized from './auth/Authorized';
 import { PermissionCodes, clearScopes, persistScopesFromToken, readScopes } from './auth/jwt';
+import { PERMISSIONS_CHANGE_EVENT } from '@bone/shared-utils';
 
 /** 通知等级 → antd Tag 颜色 */
 function levelColor(level?: string): string {
   switch ((level || '').toUpperCase()) {
-    case 'ERROR':
-      return 'red';
-    case 'WARN':
-    case 'WARNING':
-      return 'orange';
-    case 'INFO':
-    default:
-      return 'blue';
+  case 'ERROR':
+    return 'red';
+  case 'WARN':
+  case 'WARNING':
+    return 'orange';
+  case 'INFO':
+  default:
+    return 'blue';
   }
 }
 
@@ -160,18 +159,18 @@ function NotificationPanel({
                     m.read
                       ? []
                       : [
-                          <Button
-                            type="link"
-                            size="small"
-                            key="r"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markOne(m.id);
-                            }}
-                          >
+                        <Button
+                          type="link"
+                          size="small"
+                          key="r"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markOne(m.id);
+                          }}
+                        >
                             标为已读
-                          </Button>,
-                        ]
+                        </Button>,
+                      ]
                   }
                 >
                   <List.Item.Meta
@@ -205,204 +204,199 @@ function App(): JSX.Element {
   // locale 是**单源**：唯一 state 在 Shell，经 core-event-bus 广播给各微应用；
   // 微应用只读并被动继承，禁止自决语言（i18n 方案 §4.3）。
   const [locale, setLocale] = useState<SupportedLanguage>(() => currentLocale());
+  // 主题同样是**单源**：唯一 state 在 App，向下双通道消费 ——
+  // ① BoneAppProvider（AntD token + applyThemeCss 持久化）② AppContent（ThemeContext 下发）。
+  // ⚠️ 此前硬编码 themeMode="system"：BoneAppProvider 渲染时经 toAntdTheme → applyThemeCss
+  //    把 "system" 写回 localStorage，且父组件先于子组件渲染，导致 AppContent 的
+  //    readStoredTheme() 永远读到被覆写的值 —— 用户主题偏好每次启动都被清掉（暗色模式失效根因）。
+  const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
 
   return (
-    <BoneAppProvider themeMode="system" locale={locale}>
+    <BoneAppProvider themeMode={theme} locale={locale}>
       <AntdApp>
-        <AppContent locale={locale} onLocaleChange={setLocale} />
+        <AppContent
+          locale={locale}
+          onLocaleChange={setLocale}
+          theme={theme}
+          onThemeChange={setTheme}
+        />
       </AntdApp>
     </BoneAppProvider>
   );
 }
 
-/** 静态菜单基线：路由真相源（path+hash）。动态菜单按 label 对齐继承路由信息，仅提供过滤/排序。 */
-const STATIC_MENU: ShellMenuItem[] = [
-  { key: 'dashboard', label: '首页仪表盘', icon: <DashboardOutlined />, path: '/', enabled: true },
-  {
-    key: 'iam-org',
-    label: '组织与成员',
-    icon: <ApartmentOutlined />,
-    enabled: true,
-    children: [
-      { key: 'iam-organizations', label: '组织机构', icon: <ApartmentOutlined />, path: '/iam', hash: '/organizations', enabled: true },
-      { key: 'iam-accounts', label: '用户管理', icon: <UserOutlined />, path: '/iam', hash: '/accounts', enabled: true },
-    ],
-  },
-  {
-    key: 'iam-perm',
-    label: '权限与角色',
-    icon: <SafetyCertificateOutlined />,
-    enabled: true,
-    children: [
-      { key: 'iam-roles', label: '角色管理', icon: <TeamOutlined />, path: '/iam', hash: '/roles', enabled: true },
-      { key: 'iam-permissions', label: '权限管理', icon: <SafetyCertificateOutlined />, path: '/iam', hash: '/permissions', enabled: true },
-      { key: 'iam-menus', label: '菜单管理', icon: <MenuOutlined />, path: '/iam', hash: '/menus', enabled: true },
-      { key: 'iam-apps', label: '应用管理', icon: <AppstoreOutlined />, path: '/iam', hash: '/apps', enabled: true },
-    ],
-  },
-  {
-    key: 'iam-audit-group',
-    label: '安全与审计',
-    icon: <AuditOutlined />,
-    enabled: true,
-    children: [
-      { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
-      { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
-      { key: 'iam-audit-settings', label: '审计设置', icon: <SettingOutlined />, path: '/iam', hash: '/audit-settings', enabled: true },
-    ],
-  },
-  {
-    key: 'metadata',
-    label: '业务建模',
-    icon: <DatabaseOutlined />,
-    enabled: true,
-    children: [
-      { key: 'metadata-apps', label: '建模工作台', icon: <AppstoreOutlined />, path: '/metadata', hash: '/apps', enabled: true },
-      { key: 'metadata-entities', label: '模型管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
-      { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
-      { key: 'metadata-runtime', label: '运行时数据', icon: <ThunderboltOutlined />, path: '/metadata', hash: '/runtime', enabled: true },
-    ],
-  },
-  {
-    key: 'masterdata',
-    label: '主数据管理',
-    icon: <ClusterOutlined />,
-    enabled: true,
-    children: [
-      { key: 'masterdata-workbench', label: '域工作台', icon: <ClusterOutlined />, path: '/masterdata', hash: '/workbench', enabled: true },
-      { key: 'masterdata-entities', label: '主数据模型', icon: <ApiOutlined />, path: '/masterdata', hash: '/entities', enabled: true },
-      { key: 'masterdata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/masterdata', hash: '/fields', enabled: true },
-      { key: 'masterdata-categories', label: '分类管理', icon: <ApartmentOutlined />, path: '/masterdata', hash: '/categories', enabled: true },
-      { key: 'masterdata-templates', label: '模板管理', icon: <ProfileOutlined />, path: '/masterdata', hash: '/templates', enabled: true },
-      { key: 'masterdata-records', label: '记录管理', icon: <FileTextOutlined />, path: '/masterdata', hash: '/records', enabled: true },
-      { key: 'masterdata-reference', label: '参考数据', icon: <UnorderedListOutlined />, path: '/masterdata', hash: '/reference-sets', enabled: true },
-      { key: 'masterdata-rules', label: '质量规则', icon: <ReconciliationOutlined />, path: '/masterdata', hash: '/rules', enabled: true },
-      { key: 'masterdata-quality-results', label: '质量结果', icon: <AlertOutlined />, path: '/masterdata', hash: '/quality-results', enabled: true },
-      { key: 'masterdata-quality-issues', label: '质量问题', icon: <AuditOutlined />, path: '/masterdata', hash: '/quality-issues', enabled: true },
-      { key: 'masterdata-governance', label: '治理看板', icon: <DashboardOutlined />, path: '/masterdata', hash: '/governance', enabled: true },
-    ],
-  },
-  {
-    key: 'commerce',
-    label: '交易管理',
-    icon: <ShoppingOutlined />,
-    enabled: true,
-    children: [
-      { key: 'commerce-orders', label: '订单管理', icon: <ProfileOutlined />, path: '/commerce', hash: '/orders', enabled: true },
-      { key: 'commerce-payments', label: '支付管理', icon: <TransactionOutlined />, path: '/commerce', hash: '/payments', enabled: true },
-      { key: 'commerce-channels', label: '渠道管理', icon: <DeploymentUnitOutlined />, path: '/commerce', hash: '/channels', enabled: true },
-      { key: 'commerce-channel-products', label: '商品上架', icon: <CloudUploadOutlined />, path: '/commerce', hash: '/channel-products', enabled: true },
-      { key: 'commerce-inventories', label: '库存管理', icon: <InboxOutlined />, path: '/commerce', hash: '/inventories', enabled: true },
-      { key: 'commerce-channel-buyers', label: '买家映射', icon: <TeamOutlined />, path: '/commerce', hash: '/channel-buyers', enabled: true },
-      { key: 'commerce-broadcast-tasks', label: '广播任务', icon: <ThunderboltOutlined />, path: '/commerce', hash: '/broadcast-tasks', enabled: true },
-      { key: 'commerce-shipments', label: '发货物流', icon: <CarOutlined />, path: '/commerce', hash: '/shipments', enabled: true },
-    ],
-  },
-  {
-    key: 'integration',
-    label: '集成管理',
-    icon: <LinkOutlined />,
-    enabled: true,
-    children: [
-      { key: 'integration-connectors', label: '连接器管理', icon: <NodeIndexOutlined />, path: '/integration', hash: '/connectors', enabled: true },
-      { key: 'integration-flows', label: '流程编排', icon: <ControlOutlined />, path: '/integration', hash: '/flows', enabled: true },
-      { key: 'integration-monitor', label: '运行监控', icon: <LineChartOutlined />, path: '/integration', hash: '/monitor', enabled: true },
-    ],
-  },
-  {
-    key: 'extension',
-    label: '扩展管理',
-    icon: <AppstoreOutlined />,
-    enabled: true,
-    children: [
-      { key: 'extension-points', label: '扩展点目录', icon: <NodeCollapseOutlined />, path: '/extension', hash: '/points', enabled: true },
-      { key: 'extension-plugins', label: '插件仓库', icon: <UnorderedListOutlined />, path: '/extension', hash: '/plugins', enabled: true },
-      { key: 'extension-deploy', label: '部署管理', icon: <CloudServerOutlined />, path: '/extension', hash: '/deploy', enabled: true },
-      { key: 'extension-graph', label: '依赖图谱', icon: <BranchesOutlined />, path: '/extension', hash: '/graph', enabled: true },
-      { key: 'extension-market', label: '低代码市场', icon: <CoffeeOutlined />, path: '/extension', hash: '/market', enabled: true },
-      { key: 'extension-logs', label: '运行日志', icon: <ProfileOutlined />, path: '/extension', hash: '/logs', enabled: true },
-    ],
-  },
-  {
-    key: 'generator',
-    label: '代码生成',
-    icon: <CodeOutlined />,
-    enabled: true,
-    children: [
-      { key: 'generator-datasources', label: '数据源管理', icon: <DatabaseOutlined />, path: '/generator', hash: '/datasources', enabled: true },
-      { key: 'generator-generate', label: '代码生成', icon: <CodeOutlined />, path: '/generator', hash: '/generate', enabled: true },
-      { key: 'generator-templates', label: '模板管理', icon: <FileTextOutlined />, path: '/generator', hash: '/templates', enabled: true },
-      { key: 'generator-history', label: '生成历史', icon: <HistoryOutlined />, path: '/generator', hash: '/history', enabled: true },
-    ],
-  },
-  {
-    key: 'system',
-    label: '系统管理',
-    icon: <SettingOutlined />,
-    enabled: true,
-    children: [
-      { key: 'system-config', label: '系统配置', icon: <ControlOutlined />, path: '/system', hash: '/config', enabled: true },
-      { key: 'system-alerts', label: '监控告警', icon: <AlertOutlined />, path: '/system', hash: '/alerts', enabled: true },
-      { key: 'system-logs', label: '日志管理', icon: <CloudOutlined />, path: '/system', hash: '/logs', enabled: true },
-      { key: 'system-k8s', label: 'K8s 部署', icon: <CloudServerOutlined />, path: '/system', hash: '/k8s', enabled: true },
-      { key: 'system-dict', label: '字典管理', icon: <OrderedListOutlined />, path: '/system', hash: '/dict', enabled: true },
-      { key: 'system-schedule', label: '定时任务', icon: <ClockCircleOutlined />, path: '/system', hash: '/schedule', enabled: true },
-    ],
-  },
-];
+/**
+ * 前端**渲染元数据**（不是可见性真源）。
+ *
+ * 改造前这里是一份 130 行的 `STATIC_MENU` 常量：11 个分组 / 约 60 个叶子，`enabled: true`
+ * 全开、没有任何 permission 字段 ⇒ **任何租户、任何角色登录后看到的侧边栏一模一样**。
+ * 可见性现在由 IAM 决定（`GET /api/v1/iam/menus/current` 按租户 + 角色权限码过滤后下发），
+ * 这里只回答两件后端不该管、前端必须知道的事：
+ *
+ *   1. 某个 path 究竟落到哪个微应用容器（qiankun 容器路由的前缀集合）；
+ *   2. 后端菜单里的图标名（antd 组件名字符串）该怎么渲染成 React 节点。
+ *
+ * 反过来说：**这里没有的菜单 = 平台不可达**，需要时在 IAM「菜单管理」里新增即可，
+ * 不必再改前端代码、不必重新构建。
+ */
 
-/** 在静态菜单基线中按 label 深度查找（动态菜单节点对齐路由信息用） */
-const findStaticByLabel = (
-  items: ShellMenuItem[],
-  label: string,
-): ShellMenuItem | undefined => {
-  for (const item of items) {
-    if (item.label === label) return item;
-    if (item.children) {
-      const found = findStaticByLabel(item.children, label);
-      if (found) return found;
-    }
+/** 由各微前端容器 `<Route>` 提供的 pathname 前缀；一切菜单 path 必须落在其中。 */
+const MICRO_APP_ROUTE_PREFIXES = [
+  '/iam',
+  '/metadata',
+  '/masterdata',
+  '/commerce',
+  '/integration',
+  '/system',
+  '/extension',
+  '/generator',
+] as const;
+
+/** path 形态为 `pathname` 或 `pathname#/hash`（微应用内是 HashRouter）。 */
+function parseMenuPath(raw?: string | null): { path?: string; hash?: string } {
+  if (!raw) {
+    return {};
   }
-  return undefined;
-};
+  const [pathname, hash] = raw.split('#');
+  if (!hash) {
+    return { path: raw };
+  }
+  return { path: pathname, hash: hash.startsWith('/') ? hash : `/${hash}` };
+}
+
+function isKnownMenuPath(path?: string | null): boolean {
+  if (!path) {
+    return false;
+  }
+  if (path === '/' || path === '/profile') {
+    return true;
+  }
+  return MICRO_APP_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}#`));
+}
 
 /**
- * 将后端 MenuNode[] 转换为 Shell 前端菜单结构。
- * 后端已按当前用户角色过滤；路由信息（path+hash）以静态基线为准——
- * 后端 MenuNode 无 hash 字段，仅靠 path 无法区分同组叶子。
+ * 图标名 → antd 图标组件。
+ *
+ * 后端 `iam_menu.icon` 存的是**组件名字符串**（而非 SVG / iconfont 编码）：数据库里可读，
+ * 前端改版也不用碰数据。
+ * 这里做白名单映射而不是 `require('@ant-design/icons')[name]` 动态取——动态取会把整个图标
+ * 包打进产物（体积翻倍）且逃过类型检查，写错名字要到运行时才发现。
  */
-function buildMenuFromNodes(nodes: MenuNode[]): ShellMenuItem[] {
-  const iconMap: Record<string, JSX.Element> = {
-    DashboardOutlined: <DashboardOutlined />,
-    UserAddOutlined: <UserAddOutlined />,
-    DatabaseOutlined: <DatabaseOutlined />,
-    LinkOutlined: <LinkOutlined />,
-    AppstoreOutlined: <AppstoreOutlined />,
-    CodeOutlined: <CodeOutlined />,
-    SettingOutlined: <SettingOutlined />,
-  };
-  return nodes.map((node) => {
-    const staticMatch = findStaticByLabel(STATIC_MENU, node.name);
-    return {
-      key: node.id,
-      label: node.name,
-      icon: node.icon ? (iconMap[node.icon] ?? <AppstoreOutlined />) : undefined,
-      path: staticMatch?.path ?? node.path,
-      hash: staticMatch?.hash,
-      enabled: true,
-      children: node.children && node.children.length > 0
-        ? buildMenuFromNodes(node.children)
-        : undefined,
-    };
-  });
+const MENU_ICON_MAP: Record<string, JSX.Element> = {
+  DashboardOutlined: <DashboardOutlined />,
+  ApartmentOutlined: <ApartmentOutlined />,
+  UserOutlined: <UserOutlined />,
+  SafetyCertificateOutlined: <SafetyCertificateOutlined />,
+  TeamOutlined: <TeamOutlined />,
+  MenuOutlined: <MenuOutlined />,
+  AppstoreOutlined: <AppstoreOutlined />,
+  AuditOutlined: <AuditOutlined />,
+  PartitionOutlined: <PartitionOutlined />,
+  SettingOutlined: <SettingOutlined />,
+  DatabaseOutlined: <DatabaseOutlined />,
+  ApiOutlined: <ApiOutlined />,
+  BranchesOutlined: <BranchesOutlined />,
+  ThunderboltOutlined: <ThunderboltOutlined />,
+  ClusterOutlined: <ClusterOutlined />,
+  OrderedListOutlined: <OrderedListOutlined />,
+  ProfileOutlined: <ProfileOutlined />,
+  FileTextOutlined: <FileTextOutlined />,
+  UnorderedListOutlined: <UnorderedListOutlined />,
+  ReconciliationOutlined: <ReconciliationOutlined />,
+  AlertOutlined: <AlertOutlined />,
+  ShoppingOutlined: <ShoppingOutlined />,
+  TransactionOutlined: <TransactionOutlined />,
+  DeploymentUnitOutlined: <DeploymentUnitOutlined />,
+  CloudUploadOutlined: <CloudUploadOutlined />,
+  InboxOutlined: <InboxOutlined />,
+  CarOutlined: <CarOutlined />,
+  LinkOutlined: <LinkOutlined />,
+  NodeIndexOutlined: <NodeIndexOutlined />,
+  ControlOutlined: <ControlOutlined />,
+  LineChartOutlined: <LineChartOutlined />,
+  NodeCollapseOutlined: <NodeCollapseOutlined />,
+  CloudServerOutlined: <CloudServerOutlined />,
+  CoffeeOutlined: <CoffeeOutlined />,
+  CodeOutlined: <CodeOutlined />,
+  HistoryOutlined: <HistoryOutlined />,
+  CloudOutlined: <CloudOutlined />,
+  ClockCircleOutlined: <ClockCircleOutlined />,
+};
+
+/** 默认图标：后端没配 icon（大量历史菜单为 NULL）时的占位，避免侧边栏出现空白。 */
+const DEFAULT_MENU_ICON = <AppstoreOutlined />;
+
+function resolveMenuIcon(icon?: string | null): JSX.Element {
+  return (icon && MENU_ICON_MAP[icon]) || DEFAULT_MENU_ICON;
+}
+
+/** 后端节点类型；未下发时按命名保守推断为菜单。 */
+const MENU_NODE_TYPE = { GROUP: 0, MENU: 1, BUTTON: 2 } as const;
+
+/**
+ * 把后端菜单树转换为 Shell 菜单结构。
+ *
+ * 与旧实现的两处**实质性**差异：
+ *  - 旧实现按 **label 文本**去静态表里借路由（`findStaticByLabel`），label 一改就全部
+ *    对不上 ⇒ 菜单点击跳错地方。现在路由**只**来自后端 `path`。
+ *  - 旧实现无脑保留所有节点。现在 type=2 的**按钮权限点**不入导航树，而是收集成 action
+ *    清单下发给微应用（见 `actionCodes`），并剪掉「权限过滤后已空掉」的分组
+ *    ——否则用户会看到一个没有任何子项的空分组。
+ */
+function buildMenuFromNodes(
+  nodes: MenuNode[],
+  actions: Set<string> = new Set<string>(),
+): ShellMenuItem[] {
+  const items: ShellMenuItem[] = [];
+  for (const node of nodes) {
+    const type = node.type ?? MENU_NODE_TYPE.MENU;
+    const permission = node.permission ?? undefined;
+
+    // 按钮权限点：登记到 action 清单，不进导航树
+    if (type === MENU_NODE_TYPE.BUTTON) {
+      if (permission) {
+        actions.add(permission);
+      }
+      continue;
+    }
+
+    const children = buildMenuFromNodes(node.children ?? [], actions);
+    const isLeaf = children.length === 0;
+    const { path, hash } = parseMenuPath(node.path);
+
+    // 叶子在这之前已被后端按权限码过滤；前端再拦一次未知路由，避免跳到 `<Route path="*">`
+    // 被静默重定向回首页（用户点击无反应最难排查）。
+    if (isLeaf && !isKnownMenuPath(path)) {
+      continue;
+    }
+    // 目录/分组若无可见子项则整体剪掉——否则用户会看到一个点不开的空分组
+    if (!isLeaf || isKnownMenuPath(path)) {
+      items.push({
+        key: node.id,
+        label: node.name,
+        icon: resolveMenuIcon(node.icon),
+        path,
+        hash,
+        permission,
+        type,
+        children: isLeaf ? undefined : children,
+      });
+    }
+  }
+  return items;
 }
 
 function AppContent({
   locale,
   onLocaleChange,
+  theme,
+  onThemeChange,
 }: {
   locale: SupportedLanguage;
   onLocaleChange: (next: SupportedLanguage) => void;
+  /** 主题单源在 App（经 BoneAppProvider 持久化），AppContent 只消费 + 上报变更 */
+  theme: Theme;
+  onThemeChange: (next: Theme) => void;
 }): JSX.Element {
   const { message: messageApi } = AntdApp.useApp();
   const [collapsed, setCollapsed] = useState(false);
@@ -415,11 +409,24 @@ function AppContent({
     }
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
+  // 主题 state 已提升至 App（见 App 注释）；保留 setTheme 别名以复用既有切换逻辑
+  const setTheme = onThemeChange;
   const resolvedTheme = resolveThemeMode(theme);
   const [layoutMode, setLayoutMode] = useState<'side' | 'top' | 'mix'>('side');
 
-  const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>(STATIC_MENU);
+  const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState<string | null>(null);
+  /**
+   * 菜单里登记的按钮权限点（type=2 节点的 permission 集合）。
+   * 随菜单一起下发 => 租户管理员可以在 IAM「菜单管理」里直接增删某个页面的按钮。
+   */
+  const [actionCodes, setActionCodes] = useState<string[]>([]);
+  /** 当前登录账号的角色 code（新增 GET /api/v1/iam/me/roles）。 */
+  const [roleCodes, setRoleCodes] = useState<string[]>([]);
+  /** 平台管理员代操作时选定的租户（仅 JWT tenantId=0 且持 iam:tenants:read 可用）。 */
+  const [actingTenantId, setActingTenantId] = useState<string | null>(null);
+  const [tenantOptions, setTenantOptions] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     applyTheme(theme);
@@ -427,23 +434,110 @@ function AppContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 动态菜单：拉取 IAM 当前用户菜单树（后端已完成角色过滤），失败保留本地 fallback。
-  // 依赖 iam-org-menu-baseline 提供 GET /api/v1/iam/menu/current；未就绪时静默回退。
+  /**
+   * 动态菜单：按**当前租户**向 IAM 拉取菜单树（后端已完成「租户 + 角色权限码」双重过滤）。
+   *
+   * ⚠️ 两处不可回退的写法，都是此前「动态菜单从未生效」的根因：
+   *  ① **必须自己解信封**：`createApiClient` 的响应拦截器返回的是 `ApiResponse` 本体
+   *     （不是里面的 data），`await api.get(...)` 拿到的是 `{code,message,data}` 对象。
+   *     旧代码写 `api.get<never, MenuNode[]>()` 再 `Array.isArray(nodes)` —— 恒为 false，
+   *     于是每一次都静默回退到写死的静态菜单。
+   *  ② **失败不许回退全量菜单**：空数组要显示「暂无可见菜单」，而不是偷偷把
+   *     STATIC_MENU 铺出来。回退会让「租户隔离 / 角色授权」在最关键的失败时刻失效，
+   *     表现却是"一切正常"，最难揪。
+   */
   useEffect(() => {
     if (!user) return;
+    let alive = true;
+    setMenuLoading(true);
+    setMenuError(null);
+
+    const api = createApiClient('/api/v1/iam');
+    const params = actingTenantId != null ? { tenantId: String(actingTenantId) } : undefined;
+
+    api
+      .get<never, { code?: number; data?: MenuNode[] }>('/menus/current', { params })
+      .then((envelope) => {
+        if (!alive) return;
+        const nodes = envelope?.data;
+        if (!Array.isArray(nodes)) {
+          // 后端未就绪/返回空：同样不许回退静态菜单
+          setMenuConfig([]);
+          setActionCodes([]);
+          return;
+        }
+        const actions = new Set<string>();
+        const items = buildMenuFromNodes(nodes, actions);
+        setMenuConfig(items);
+        setActionCodes([...actions]);
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        const err = e as { displayMessage?: string };
+        setMenuError(err?.displayMessage ?? '菜单加载失败，请联系管理员');
+        setMenuConfig([]);
+        setActionCodes([]);
+      })
+      .finally(() => {
+        if (alive) setMenuLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [user, actingTenantId]);
+
+  /** 我的角色（自助端点，无额外权限码要求）。 */
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
     const api = createApiClient('/api/v1/iam');
     api
-      .get<never, MenuNode[]>('/menus/current')
-      .then((nodes) => {
-        if (Array.isArray(nodes) && nodes.length > 0) {
-          setMenuConfig(buildMenuFromNodes(nodes));
-        }
+      .get<never, { data?: { code?: string }[] }>('/me/roles')
+      .then((envelope) => {
+        if (!alive) return;
+        const rows = envelope?.data ?? [];
+        setRoleCodes(rows.map((r) => r?.code).filter((c): c is string => Boolean(c)));
       })
       .catch(() => {
-        // 后端未提供菜单接口时，保留静态 fallback（menuConfig 初始值）
+        if (alive) setRoleCodes([]);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      alive = false;
+    };
   }, [user]);
+
+  /**
+   * 平台管理员的「代租户视角」候选列表。
+   *
+   * 只有 JWT tenantId=0 且持有 `iam:tenants:read` 才拉——普通租户成员看到租户列表本身
+   * 就是越权信息面；后端对 `/api/v1/iam/tenants` 也有同样的 @PreAuthorize。
+   */
+  const canSwitchTenant = String(user?.tenantId ?? 0) === '0' && readScopes().includes('iam:tenants:read');
+  useEffect(() => {
+    if (!user || !canSwitchTenant) return;
+    let alive = true;
+    const api = createApiClient('/api/v1/iam');
+    api
+      .get<never, { data?: { records?: { id?: string; name?: string }[] } }>('/tenants', {
+        params: { page: '1', size: '100' },
+      })
+      .then((envelope) => {
+        if (!alive) return;
+        const records = envelope?.data?.records ?? [];
+        setTenantOptions(
+          records
+            .map((r) => ({ id: r?.id != null ? String(r?.id) : '', name: r?.name ?? (r?.id ?? '') }))
+            .filter((t) => t.id !== ''),
+        );
+      })
+      .catch(() => {
+        if (alive) setTenantOptions([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [user, canSwitchTenant]);
 
   /**
    * 语言切换：**不刷新页面**的热更新。
@@ -473,28 +567,55 @@ function AppContent({
     globalEventBus.emit('bone:theme:change', { theme, locale });
   }, [theme, user, locale]);
 
-  // 初始化 qiankun 微应用（登录后执行，仅注册一次）
-  useEffect(() => {
-    if (!user) return;
-
+  /**
+   * 权限/租户快照：window 上下文的唯一组装处。
+   *
+   * `__BONE_GLOBAL_CONTEXT__` 是 window 上的**可变对象**，本身不触发 React 更新：
+   * 只更新它，已挂载微应用里的 `<AuthButton>` 会停留在旧判定上（典型症状＝切租户后
+   * 按钮该出现的不出现）。所以每次重算后必须补一次 `bone:permissions:change` 广播，
+   * `usePermission()` 订阅后可重渲染。
+   */
+  const buildGlobalContext = useCallback(() => {
     const token = localStorage.getItem('token') || '';
-
-    // 构建全局上下文，通过 qiankun props 下发给各微应用
-    const globalContext = {
+    const scopedTenantId = actingTenantId ?? user?.tenantId ?? '0';
+    return {
       token,
+      /** ⚠ 顶层也必须放 tenantId：generator-app 是直接从这里读的，改动前它取不到。 */
+      tenantId: scopedTenantId,
       user: user ? {
         id: user.id,
         username: user.username,
         realName: user.realName,
         avatarUrl: user.avatarUrl,
-        tenantId: user.tenantId ?? 0,
+        tenantId: scopedTenantId,
         tenantName: user.tenantName,
         isAdmin: user.isAdmin ?? false,
       } : null,
-      permissions: readScopes() ? { codes: readScopes(), roles: [] } : null,
+      permissions: {
+        codes: readScopes(),
+        /** 角色：来自新增的 GET /api/v1/iam/me/roles（此前恒为空数组，角色信息根本没下发）。 */
+        roles: roleCodes,
+        /** 菜单里登记的按钮权限点（type=2 节点），租户管理员可在 IAM 菜单管理维护。 */
+        actions: actionCodes,
+        tenantId: scopedTenantId,
+      },
       theme: resolveThemeMode(theme) === 'dark' ? 'dark' : 'light',
       locale,
     };
+  }, [user, roleCodes, actionCodes, actingTenantId, theme, locale]);
+
+  // 登录后始终保持 window 上下文为最新（qiankun 只在首次注册时下发 props，故此处专门同步）
+  useEffect(() => {
+    if (!user) return;
+    (window as unknown as Record<string, unknown>).__BONE_GLOBAL_CONTEXT__ = buildGlobalContext();
+    window.dispatchEvent(new CustomEvent(PERMISSIONS_CHANGE_EVENT));
+  }, [user, buildGlobalContext]);
+
+  // 初始化 qiankun 微应用（登录后执行，仅注册一次）
+  useEffect(() => {
+    if (!user) return;
+
+    const globalContext = buildGlobalContext();
 
     // 同时写入 window，供未通过 props 接收的微应用读取
     (window as unknown as Record<string, unknown>).__BONE_GLOBAL_CONTEXT__ = globalContext;
@@ -565,7 +686,12 @@ function AppContent({
     });
 
     startQiankun({
-      prefetch: 'all',
+      // ⚠️ 必须是 false（按 activeRule 匹配时才加载），不能是 'all'。
+      // `#subapp-viewport` 只在微应用路由（/iam/*、/system/* …）被渲染后才存在于 DOM，
+      // 登录后默认停在 `/`（仪表盘）——此刻容器尚未挂载。qiankun 的 prefetch 在 start()
+      // 里同步发起，若为 'all' 会在容器出现前就加载全部微应用，八个应用全部抛
+      // 「Target container with #subapp-viewport not existed while loading」并停在空白页。
+      prefetch: false,
       sandbox: {
         strictStyleIsolation: false,
         experimentalStyleIsolation: true,
@@ -605,28 +731,9 @@ function AppContent({
     setLayoutMode(modes[nextIndex]);
   };
 
-  // 递归更新菜单配置（支持子菜单）
-  const updateMenuConfig = (key: string, enabled: boolean) => {
-    const updateRecursive = (items: ShellMenuItem[]): ShellMenuItem[] =>
-      items.map((item) => {
-        if (item.key === key) {
-          return { ...item, enabled };
-        }
-        if (item.children) {
-          return { ...item, children: updateRecursive(item.children) };
-        }
-        return item;
-      });
-    setMenuConfig((prev) => updateRecursive(prev));
-  };
-
-  // 递归过滤启用的菜单项
-  const filterEnabled = (items: ShellMenuItem[]): ShellMenuItem[] =>
-    items
-      .filter((item) => item.enabled)
-      .map((item) =>
-        item.children ? { ...item, children: filterEnabled(item.children) } : item,
-      );
+  // ⚠️ 原「本地菜单开关」（updateMenuConfig + filterEnabled(`enabled`)）已随动态菜单一并删除：
+  // 菜单可见性现在是 IAM 的职责（租户 + 角色授权），壳层再留一套本地开关只会製造
+  // 「用户在壳层关掉某菜单，刷新后又出现」的假控制感 —— 那是典型的假门禁，宁可没有。
 
   // 登录处理
   const [requirePasswordChange, setRequirePasswordChange] = useState(false);
@@ -660,7 +767,7 @@ function AppContent({
         username: account.username || username,
         realName: account.realName || username,
         avatarUrl: account.avatarUrl || null,
-        tenantId: account.tenantId ?? 0,
+        tenantId: account.tenantId ?? '0',
         tenantName: account.tenantName || '',
         isAdmin: account.isAdmin ?? false,
         name: username,
@@ -714,46 +821,49 @@ function AppContent({
   };
 
   return (
-      <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
-        <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
-          <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
-            <div className={`app-container ${resolvedTheme}`}>
-              {/* v7_startTransition / v7_relativeSplatPath：提前 opt-in React Router v7 行为，
+    <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
+      <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
+        <div className={`app-container ${resolvedTheme}`}>
+          {/* v7_startTransition / v7_relativeSplatPath：提前 opt-in React Router v7 行为，
                   消除每次启动必打的 2 条 future flag 警告（2026-10-02 UI 巡检实测）。
                   两者均为 v7 的向后兼容默认值，语义不变。 */}
-              <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                {!user ? (
-                  <LoginPage
-                    onLogin={handleLogin}
-                    requirePasswordChange={requirePasswordChange}
-                    onPasswordChange={() => {
-                      messageApi.success('密码修改成功，请重新登录');
-                      setRequirePasswordChange(false);
-                    }}
-                  />
-                ) : (
-                  <MainLayout
-                    collapsed={collapsed}
-                    setCollapsed={setCollapsed}
-                    resolvedTheme={resolvedTheme}
-                    layoutMode={layoutMode}
-                    menuConfig={menuConfig}
-                    filterEnabled={filterEnabled}
-                    handleMenuClick={handleMenuClick}
-                    handleLogout={handleLogout}
-                    user={user}
-                    theme={theme}
-                    toggleTheme={toggleTheme}
-                    toggleLayoutMode={toggleLayoutMode}
-                    locale={locale}
-                    onLocaleChange={handleLocaleChange}
-                  />
-                )}
-              </Router>
-            </div>
-          </MenuConfigContext.Provider>
-        </LayoutContext.Provider>
-      </ThemeContext.Provider>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            {!user ? (
+              <LoginPage
+                onLogin={handleLogin}
+                requirePasswordChange={requirePasswordChange}
+                onPasswordChange={() => {
+                  messageApi.success('密码修改成功，请重新登录');
+                  setRequirePasswordChange(false);
+                }}
+              />
+            ) : (
+              <MainLayout
+                collapsed={collapsed}
+                setCollapsed={setCollapsed}
+                resolvedTheme={resolvedTheme}
+                layoutMode={layoutMode}
+                menuConfig={menuConfig}
+                menuLoading={menuLoading}
+                menuError={menuError}
+                canSwitchTenant={canSwitchTenant}
+                tenantOptions={tenantOptions}
+                actingTenantId={actingTenantId}
+                onTenantChange={setActingTenantId}
+                handleMenuClick={handleMenuClick}
+                handleLogout={handleLogout}
+                user={user}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                toggleLayoutMode={toggleLayoutMode}
+                locale={locale}
+                onLocaleChange={handleLocaleChange}
+              />
+            )}
+          </Router>
+        </div>
+      </LayoutContext.Provider>
+    </ThemeContext.Provider>
   );
 }
 
@@ -764,7 +874,15 @@ interface MainLayoutProps {
   resolvedTheme: 'light' | 'dark';
   layoutMode: 'side' | 'top' | 'mix';
   menuConfig: ShellMenuItem[];
-  filterEnabled: (items: ShellMenuItem[]) => ShellMenuItem[];
+  /** 菜单首屏加载中：需要显式 loading，避免"空白侧边栏"被误判成"我没有任何权限"。 */
+  menuLoading: boolean;
+  /** 菜单拉取失败信息（非空时展示告警而非空菜单）。 */
+  menuError: string | null;
+  /** 是否允许切换租户视角（平台租户 + iam:tenants:read）。 */
+  canSwitchTenant: boolean;
+  tenantOptions: { id: string; name: string }[];
+  actingTenantId: string | null;
+  onTenantChange: (tenantId: string | null) => void;
   handleMenuClick: (info: { key: string }, navigate: (path: string) => void) => void;
   handleLogout: () => void;
   user: { id?: string; name: string } | null;
@@ -778,7 +896,9 @@ interface MainLayoutProps {
 function MainLayout(props: MainLayoutProps): JSX.Element {
   const {
     collapsed, setCollapsed, resolvedTheme, layoutMode,
-    menuConfig, filterEnabled, handleMenuClick,
+    menuConfig, menuLoading, menuError, canSwitchTenant,
+    tenantOptions, actingTenantId, onTenantChange,
+    handleMenuClick,
     handleLogout, user, theme, toggleTheme,
     locale, onLocaleChange,
   } = props;
@@ -811,7 +931,49 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     };
   }, [user]);
 
-  const enabledMenus = useMemo(() => filterEnabled(menuConfig), [menuConfig, filterEnabled]);
+  /**
+   * 菜单空态 / 加载态 / 错误态。
+   *
+   * 「空」必须有明确归因：拿到空数组可能是真的没授任何菜单，也可能是后端没配种子数据。
+   * 直接渲染空侧边栏，用户只会认为"系统坏了"；给出原因才是可运维的。
+   */
+  const renderMenuBody = (): JSX.Element => {
+    if (menuLoading && menuConfig.length === 0) {
+      return (
+        <div className="menu-placeholder">
+          <Spin size="small" />
+          <span>加载菜单…</span>
+        </div>
+      );
+    }
+    if (menuError) {
+      return (
+        <div className="menu-placeholder menu-placeholder-error">
+          <AlertOutlined />
+          <span>{menuError}</span>
+        </div>
+      );
+    }
+    if (menuConfig.length === 0) {
+      return (
+        <div className="menu-placeholder">
+          <span>暂无可见菜单</span>
+          <span className="menu-placeholder-hint">请联系管理员在 IAM 中分配菜单与角色</span>
+        </div>
+      );
+    }
+    return (
+      <Menu
+        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        openKeys={openKeys}
+        onOpenChange={onOpenChange}
+        onClick={onMenuClick}
+        items={menuItems}
+      />
+    );
+  };
 
   // 基于当前 pathname + hash 计算 selectedKey 和 openKey
   const { selectedKey, parentKey } = useMemo(() => {
@@ -898,7 +1060,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
       };
     });
 
-  const menuItems = buildMenuItems(enabledMenus);
+  const menuItems = buildMenuItems(menuConfig);
 
   const onMenuClick = (info: { key: string }) => {
     handleMenuClick(info, navigate);
@@ -932,15 +1094,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
               </div>
             )}
           </div>
-          <Menu
-            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            openKeys={openKeys}
-            onOpenChange={onOpenChange}
-            onClick={onMenuClick}
-            items={menuItems}
-          />
+          {renderMenuBody()}
         </Sider>
       )}
       <Layout className="site-layout">
@@ -1006,7 +1160,22 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 {locale === 'en-US' ? 'EN' : '中'}
               </Button>
             </Tooltip>
-            <MenuConfig />
+            {canSwitchTenant && (
+              <Tooltip title="切换租户视角：以目标租户的菜单与权限重新加载">
+                <Select
+                  size="small"
+                  className="tenant-switcher"
+                  placeholder="平台视角"
+                  value={actingTenantId ?? undefined}
+                  allowClear
+                  clearIcon={<span />}
+                  onClear={() => onTenantChange(null)}
+                  onChange={(v) => onTenantChange(v == null ? null : String(v))}
+                  popupMatchSelectWidth={false}
+                  options={tenantOptions.map((t) => ({ value: t.id, label: t.name }))}
+                />
+              </Tooltip>
+            )}
             <Dropdown menu={{ items: userMenu(handleLogout, () => navigate('/profile')) }} placement="bottomRight">
               <Button type="text" className="user-button">
                 <Avatar size="small" icon={<UserOutlined />} />
@@ -1198,42 +1367,6 @@ function PasswordChangePage({ theme, onPasswordChange }: PasswordChangePageProps
         </Form>
       </Card>
     </div>
-  );
-}
-
-function MenuConfig(): JSX.Element {
-  const { menuConfig, updateMenuConfig } = useContext(MenuConfigContext);
-  const { resolvedTheme } = useContext(ThemeContext);
-
-  const renderItem = (item: ShellMenuItem, level: number = 0): JSX.Element => (
-    <div key={item.key}>
-      <div
-        className="menu-config-item"
-        style={{ paddingLeft: `${level * 16}px` }}
-      >
-        <span style={{ fontWeight: item.children ? 600 : 400 }}>{item.label}</span>
-        <Switch
-          checked={item.enabled}
-          onChange={(checked) => updateMenuConfig(item.key, checked)}
-        />
-      </div>
-      {item.children && item.children.map(child => renderItem(child, level + 1))}
-    </div>
-  );
-
-  return (
-    <Popover
-      content={
-        <div className={`menu-config ${resolvedTheme}`}>
-          <h3>菜单配置</h3>
-          {menuConfig.map(item => renderItem(item))}
-        </div>
-      }
-      title="菜单配置"
-      trigger="click"
-    >
-      <Button type="text" icon={<SettingIcon />} className="header-button" />
-    </Popover>
   );
 }
 

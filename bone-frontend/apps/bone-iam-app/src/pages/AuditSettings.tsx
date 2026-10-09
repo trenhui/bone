@@ -3,6 +3,8 @@ import { Card, Form, InputNumber, Switch, Select, Button, Divider, Typography, S
 import { App as AntdApp } from 'antd';
 import { SaveOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import { resolveIamErrorMessage } from '../utils/iamErrorMessages';
 import ModulePage from '../components/ModulePage';
 
@@ -156,9 +158,9 @@ const AuditSettingsPage: React.FC = () => {
 
           <Form.Item>
             <Space>
-              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
+              <AuthButton code={BonePermissionCodes.IAM_AUDIT_WRITE} type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
                 保存设置
-              </Button>
+              </AuthButton>
               <Button onClick={() => form.resetFields()}>重置</Button>
             </Space>
           </Form.Item>

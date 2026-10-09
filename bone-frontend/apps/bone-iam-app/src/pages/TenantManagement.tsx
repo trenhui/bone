@@ -25,6 +25,8 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 import { StatisticCard } from '@ant-design/pro-components';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
@@ -291,31 +293,36 @@ const TenantManagement: React.FC = () => {
       width: 300,
       render: (_: unknown, record: Tenant) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <AuthButton code={BonePermissionCodes.IAM_TENANTS_WRITE} type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
-          </Button>
-          <Button type="link" size="small" onClick={() => handleQuotaEdit(record)}>
+          </AuthButton>
+          <AuthButton code={BonePermissionCodes.IAM_TENANTS_WRITE} type="link" size="small" onClick={() => handleQuotaEdit(record)}>
             配额
-          </Button>
-          <Switch
-            checked={record.status === 1}
-            checkedChildren="启用"
-            unCheckedChildren="禁用"
-            size="small"
-            onChange={() => handleToggleStatus(record)}
-          />
-          <Popconfirm
-            title="确定要删除这个租户吗？"
-            description="删除后该租户关联的账号、角色等数据将被清理"
-            onConfirm={() => handleDelete(record.id)}
-            okText="删除"
-            okButtonProps={{ danger: true }}
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* 启停 Switch 与删除（Popconfirm 包裹）不是 Button：用 <Auth> 做外层条件渲染 */}
+          <Auth code={BonePermissionCodes.IAM_TENANTS_WRITE}>
+            <Switch
+              checked={record.status === 1}
+              checkedChildren="启用"
+              unCheckedChildren="禁用"
+              size="small"
+              onChange={() => handleToggleStatus(record)}
+            />
+          </Auth>
+          <Auth code={BonePermissionCodes.IAM_TENANTS_WRITE}>
+            <Popconfirm
+              title="确定要删除这个租户吗？"
+              description="删除后该租户关联的账号、角色等数据将被清理"
+              onConfirm={() => handleDelete(record.id)}
+              okText="删除"
+              okButtonProps={{ danger: true }}
+              cancelText="取消"
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -332,9 +339,9 @@ const TenantManagement: React.FC = () => {
         style={{ width: 260 }}
       />
       <Button icon={<ReloadOutlined />} onClick={reload} title="刷新" />
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+      <AuthButton code={BonePermissionCodes.IAM_TENANTS_WRITE} type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
         新增租户
-      </Button>
+      </AuthButton>
     </Space>
   );
 
@@ -386,9 +393,9 @@ const TenantManagement: React.FC = () => {
         footer={
           <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button onClick={() => setIsModalVisible(false)}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={handleSubmit}>
+            <AuthButton code={BonePermissionCodes.IAM_TENANTS_WRITE} type="primary" loading={submitting} onClick={handleSubmit}>
               保存
-            </Button>
+            </AuthButton>
           </Space>
         }
       >

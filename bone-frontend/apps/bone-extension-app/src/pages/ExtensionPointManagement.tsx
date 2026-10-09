@@ -13,6 +13,8 @@ import {
 } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { Auth, AuthButton } from '@bone/ui';
+import { BonePermissionCodes } from '@bone/shared-types';
 import {
   createExtPoint,
   deleteExtPoint,
@@ -136,21 +138,31 @@ const ExtensionPointManagement: React.FC = () => {
       width: 220,
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
+          <AuthButton
+            code={BonePermissionCodes.EXTENSION_POINTS_WRITE}
+            type="link"
+            size="small"
+            onClick={() => openEdit(record)}
+          >
             编辑
-          </Button>
-          <Button
+          </AuthButton>
+          <AuthButton
+            code={BonePermissionCodes.EXTENSION_POINTS_WRITE}
             type="link"
             size="small"
             onClick={() => handleToggle(record, !record.enabled)}
           >
             {record.enabled ? '禁用' : '启用'}
-          </Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger>
-              删除
-            </Button>
-          </Popconfirm>
+          </AuthButton>
+          {/* 删除被 Popconfirm 包住，只能用 <Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其cloneElement 会抛异常。 */}
+          <Auth code={BonePermissionCodes.EXTENSION_POINTS_WRITE}>
+            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Auth>
         </Space>
       ),
     },
@@ -159,9 +171,14 @@ const ExtensionPointManagement: React.FC = () => {
   return (
     <>
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <AuthButton
+          code={BonePermissionCodes.EXTENSION_POINTS_WRITE}
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+        >
           新建扩展点
-        </Button>
+        </AuthButton>
         <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
@@ -182,39 +199,43 @@ const ExtensionPointManagement: React.FC = () => {
           },
         }}
       />
-      <Modal
-        title={editing ? '编辑扩展点' : '新建扩展点'}
-        open={modalOpen}
-        forceRender
-        onOk={handleSubmit}
-        onCancel={() => setModalOpen(false)}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="interfaceName"
-            label="接口全限定名"
-            rules={[{ required: true, message: '请输入接口名' }]}
-          >
-            <Input placeholder="com.bone.example.ExtPoint" />
-          </Form.Item>
-          <Form.Item name="domain" label="领域">
-            <Input />
-          </Form.Item>
-          <Form.Item name="category" label="分类">
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="enabled" label="启用" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* 弹窗内的「确定」是antd 内部渲染的按钮，无法直接替换为 AuthButton；
+          改为用 <Auth> 包住整个 Modal，无权限时弹窗（含确定按钮）根本不渲染。 */}
+      <Auth code={BonePermissionCodes.EXTENSION_POINTS_WRITE}>
+        <Modal
+          title={editing ? '编辑扩展点' : '新建扩展点'}
+          open={modalOpen}
+          forceRender
+          onOk={handleSubmit}
+          onCancel={() => setModalOpen(false)}
+          destroyOnHidden
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="interfaceName"
+              label="接口全限定名"
+              rules={[{ required: true, message: '请输入接口名' }]}
+            >
+              <Input placeholder="com.bone.example.ExtPoint" />
+            </Form.Item>
+            <Form.Item name="domain" label="领域">
+              <Input />
+            </Form.Item>
+            <Form.Item name="category" label="分类">
+              <Input />
+            </Form.Item>
+            <Form.Item name="description" label="描述">
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="enabled" label="启用" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Auth>
     </>
   );
 };

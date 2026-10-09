@@ -25,6 +25,14 @@ export interface MenuNode {
   order?: number;
   /** 可见所需的权限码；为空表示所有已登录用户可见 */
   permission?: string;
+  /**
+   * 节点类型，与 `iam_menu.type` / 后端 `MenuNode` 一致：0-目录 1-菜单 2-按钮。
+   *
+   * 2026-10-08 补齐：此前 `/menus/current` 的类型定义里没有这个字段，前端拿到的
+   * type=2「按钮权限点」无法被识别，只能混在导航树里或干脆丢弃 ⇒ 按钮没法跟着 IAM
+   * 的角色授权走。补齐后 Shell 可据此把按钮权限点单独下发（见 App.tsx 的 actionCodes）。
+   */
+  type?: number;
   /** 子菜单 */
   children?: MenuNode[];
 }
