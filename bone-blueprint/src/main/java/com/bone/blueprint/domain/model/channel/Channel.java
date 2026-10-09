@@ -20,6 +20,11 @@ import lombok.NoArgsConstructor;
  * <p><b>扩展实现码 {@code extImplCode}</b>：由扩展点路由结果回填，仅用于可观测（排障时确认「这次请求
  * 究竟命中了哪个实现」）。它<strong>不参与路由</strong>——路由由 {@code BizContext} 的 {@code channel} 维度决定。
  * 写成可反查的冗余字段，是为了避免「配置说走 A 实现、实际走了 B 实现」这类无法自证的偏差。
+ *
+ * <p><b>事件豁免（E-5.4）</b>：本聚合的全部状态迁移（{@code enable/disable/enableOrderSync/disableOrderSync}/ {@code
+ * markRoutedImpl/markSynced/updateRemark/updateEndpoint}）均属<b>内部状态迁移</b>：无跨聚合订阅方、无审计
+ * 必须事实、失败无副作用链，故写路径不配 {@code publishFrom}、不发 DomainEvent。若未来渠道启停需通知下游 （如订阅方、网关路由），应补发 {@code
+ * ChannelStatusChangedEvent} 并登记。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

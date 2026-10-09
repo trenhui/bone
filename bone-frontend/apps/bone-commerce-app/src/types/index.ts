@@ -166,6 +166,43 @@ export interface InventorySummary {
   updatedAt: string | null;
 }
 
+export type ReplenishmentStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'APPROVED'
+  | 'RECEIVED'
+  | 'CANCELLED';
+
+export interface ReplenishmentSuggestion {
+  productId: string;
+  productName: string | null;
+  warehouseCode: string;
+  availableQty: number;
+  safetyStock: number;
+  suggestedQty: number;
+  hasOpenOrder: boolean;
+}
+
+export interface ReplenishmentOrderSummary {
+  id: string;
+  replenishNo: string;
+  productId: string;
+  productName: string | null;
+  warehouseCode: string;
+  quantity: number;
+  suggestedQty: number | null;
+  availableSnapshot: number | null;
+  safetySnapshot: number | null;
+  supplierCode: string | null;
+  status: ReplenishmentStatus;
+  remark: string | null;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  receivedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export type ShipmentStatus =
   | 'CREATED'
   | 'SHIPPED'

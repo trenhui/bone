@@ -447,6 +447,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `BP_SHIPMENT_NOT_FOUND` | 404 | 发货单不存在（含跨租户不可见） |
 | `BP_SHIPMENT_STATUS_CONFLICT` | 409 | 发货单当前状态不允许该操作（发货需运单号、签收需已发货） |
 | `BP_SHIPMENT_TRACKING_NO_REQUIRED` | 400 | 发货缺少物流运单号 |
+| `BP_REPLENISHMENT_NOT_FOUND` | 404 | 补货单不存在（含跨租户不可见） |
+| `BP_REPLENISHMENT_STATUS_CONFLICT` | 409 | 补货单当前状态不允许该操作（提交/审批/入库状态机） |
+| `BP_REPLENISHMENT_STATUS_INVALID` | 400 | 补货单状态值非法（查询筛选等入参） |
+| `BP_REPLENISHMENT_DUPLICATE_OPEN` | 409 | 同商品+仓库已有未完结补货单（防重复开单） |
 
 > **样板实现范围**：码常量在 `com.bone.blueprint.common.BlueprintErrorCodes`（只承载稳定码字符串与语义）；
 > **「码 → HTTP 状态」的唯一真源是 `com.bone.blueprint.common.BlueprintErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），

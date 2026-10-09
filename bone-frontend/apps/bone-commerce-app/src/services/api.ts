@@ -10,6 +10,8 @@ import type {
   InitiatePaymentReq,
   InitiatePaymentResp,
   InventorySummary,
+  ReplenishmentOrderSummary,
+  ReplenishmentSuggestion,
   OrderDetail,
   OrderPageQuery,
   OrderSummary,
@@ -107,6 +109,7 @@ const CHANNELS = '/api/v1/channels';
 const CHANNEL_PRODUCTS = '/api/v1/channel-products';
 const CHANNEL_ORDERS = '/api/v1/channel-orders';
 const INVENTORIES = '/api/v1/inventories';
+const REPLENISHMENTS = '/api/v1/replenishments';
 const SHIPMENTS = '/api/v1/shipments';
 
 export const channelApi = {
@@ -201,6 +204,59 @@ export const inventoryApi = {
     warehouseCode?: string;
     quantity: number;
   }) => api.post<never, ApiResponse<InventorySummary>>(`${INVENTORIES}/safety-stock`, data),
+};
+
+/** 供应链补货（新场景 · 不改库存页） */
+export const replenishmentApi = {
+  page: (params: {
+    productId?: string;
+    status?: string;
+    page: number;
+    size: number;
+  }) =>
+    api.get<never, ApiResponse<PageResult<ReplenishmentOrderSummary>>>(REPLENISHMENTS, {
+      params,
+    }),
+
+  suggestions: (params?: { page?: number; size?: number }) =>
+    api.get<never, ApiResponse<ReplenishmentSuggestion[]>>(`${REPLENISHMENTS}/suggestions`, {
+      params,
+    }),
+
+  create: (data: {
+    productId: string;
+    productName?: string;
+    warehouseCode?: string;
+    quantity?: number;
+    supplierCode?: string;
+    remark?: string;
+  }) => api.post<never, ApiResponse<ReplenishmentOrderSummary>>(REPLENISHMENTS, data),
+
+  fromSuggestions: (data?: { supplierCode?: string }) =>
+    api.post<never, ApiResponse<ReplenishmentOrderSummary[]>>(
+      `${REPLENISHMENTS}/from-suggestions`,
+      data ?? {},
+    ),
+
+  submit: (id: string) =>
+    api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
+      `${REPLENISHMENTS}/${id}/submit`,
+    ),
+
+  approve: (id: string) =>
+    api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
+      `${REPLENISHMENTS}/${id}/approve`,
+    ),
+
+  receive: (id: string) =>
+    api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
+      `${REPLENISHMENTS}/${id}/receive`,
+    ),
+
+  cancel: (id: string) =>
+    api.post<never, ApiResponse<ReplenishmentOrderSummary>>(
+      `${REPLENISHMENTS}/${id}/cancel`,
+    ),
 };
 
 export const shipmentApi = {

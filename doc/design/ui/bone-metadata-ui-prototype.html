@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BONE 元数据管理 · UI 原型（低代码最小闭环 v0.1）</title>
+<title>BONE 元数据 · 实体工作区 v0.32（代码实测修正 · 0→1/1→n）</title>
 <style>
   :root{
     --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
@@ -18,482 +18,1686 @@
     --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
     --shadow-lg:0 6px 16px rgba(0,0,0,.12);
   }
+  body.dark{
+    --primary:#4096ff; --primary-bg:#111a2c; --primary-border:#15395b;
+    --purple:#9254de; --purple-bg:#1f1435;
+    --green:#49aa19; --green-bg:#162312; --green-border:#274916;
+    --orange:#d87a16; --orange-bg:#2b1d11; --orange-border:#5f3a15;
+    --red:#dc4446;
+    --gray:#8c8c8c; --gray-bg:#1f1f1f; --gray-border:#424242;
+    --text:rgba(255,255,255,.88); --text-2:rgba(255,255,255,.65); --text-3:rgba(255,255,255,.45);
+    --bg:#141414; --card:#1f1f1f; --border:#303030;
+    --shadow:0 1px 2px rgba(0,0,0,.3); --shadow-lg:0 6px 16px rgba(0,0,0,.5);
+  }
+  body.dark .modal,body.dark .cmd{background:#1f1f1f}
+  body.dark .input,body.dark select{background:#141414;border-color:#424242;color:var(--text)}
+  body.dark tr:hover td{background:#141414}
+  body.dark kbd{background:#141414;border-color:#424242;color:var(--text-2)}
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:1200px}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:960px}
   .app{display:flex;min-height:100vh}
-  /* ---------- 左侧导航 ---------- */
-  .sider{width:200px;background:#001529;color:#rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
+  .sider{width:200px;background:#001529;color:rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
   .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;font-size:14px;border-bottom:1px solid rgba(255,255,255,.12)}
   .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
   .nav{padding:8px 0;flex:1}
   .nav .grp{font-size:11px;color:rgba(255,255,255,.35);padding:12px 16px 4px;letter-spacing:1px}
-  .nav .item{padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:8px;transition:all .2s}
+  .nav .item{padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:8px}
   .nav .item:hover{color:#fff;background:rgba(255,255,255,.06)}
   .nav .item.on{color:#fff;background:var(--primary);font-weight:500}
-  .nav .item .ico{width:14px;text-align:center;font-size:13px}
-  .nav .tag{margin-left:auto;font-size:10px;padding:0 6px;border-radius:8px;background:rgba(255,255,255,.18)}
-  .nav .tag.g{background:rgba(82,196,26,.35)}
+  .nav .item .ico{width:14px;text-align:center}
   .sider-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.35)}
-  /* ---------- 主区域 ---------- */
   .main{flex:1;display:flex;flex-direction:column;min-width:0}
   .header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:var(--shadow);z-index:2}
-  .crumb{font-size:13px;color:var(--text-2)}
-  .crumb b{color:var(--text)}
+  .crumb{font-size:13px;color:var(--text-2)}.crumb b{color:var(--text)}
   .header-actions{display:flex;gap:8px;align-items:center}
-  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
+  body.dark .btn{background:var(--card);color:var(--text-2)}
   .btn:hover{border-color:var(--primary);color:var(--primary)}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
-  .btn.primary:hover{background:#4096ff}
   .btn.green{background:var(--green);border-color:var(--green);color:#fff}
-  .btn.green:hover{background:#73d13d}
   .btn.orange{background:#fff;border-color:var(--orange);color:var(--orange)}
-  .btn.orange:hover{background:var(--orange-bg)}
   .btn.danger{color:var(--red);border-color:#ffa39e}
-  .btn.danger:hover{background:#fff1f0}
-  .btn[disabled]{opacity:.5;cursor:not-allowed}
   .btn.sm{padding:1px 10px;font-size:12px}
-  /* ---------- Tab ---------- */
-  .tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px}
-  .tab{padding:11px 16px;cursor:pointer;color:var(--text-2);border-bottom:2px solid transparent;font-size:14px;transition:all .2s;position:relative}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  /* Tab bar (replaces step bar · UID-9) */
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 24px;background:var(--card)}
+  .tab{padding:10px 18px;cursor:pointer;color:var(--text-2);font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px}
   .tab:hover{color:var(--primary)}
   .tab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:500}
-  .tab .badge{display:inline-block;min-width:16px;height:16px;line-height:16px;text-align:center;border-radius:8px;background:var(--red);color:#fff;font-size:10px;margin-left:4px}
+  .tab .badge{font-size:10px;background:var(--gray-bg);color:var(--text-3);padding:0 5px;border-radius:8px;line-height:16px}
+  .tab.on .badge{background:var(--primary-bg);color:var(--primary)}
+  .tab.disabled{color:var(--text-3);cursor:not-allowed;opacity:.6}
   .content{padding:20px 24px;flex:1;overflow:auto}
-  .panel{display:none}
-  .panel.on{display:block}
-  /* ---------- 通用组件 ---------- */
+  .panel{display:none}.panel.on{display:block}
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
-  .card h4{font-size:14px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .card h4{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .card .sub{font-size:12px;color:var(--text-3);font-weight:400}
   .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
   .pill.gray{background:var(--gray-bg);color:var(--text-2)}
   .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
-  .pill.purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d3adf7}
+  .pill.purple{background:var(--purple-bg);color:var(--purple)}
   .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
   .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
-  .pill.red{background:#fff1f0;color:var(--red);border:1px solid #ffa39e}
+  .pill.red{background:#fff1f0;color:var(--red)}
   table{width:100%;border-collapse:collapse}
   th{background:var(--gray-bg);color:var(--text-2);font-weight:500;text-align:left;padding:9px 12px;font-size:12px}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
   td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:13px}
   tr:hover td{background:#fafafa}
   .input,select{height:30px;border:1px solid var(--gray-border);border-radius:var(--radius);padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--text)}
   .input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(22,119,255,.1)}
-  .label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
-  /* ---------- 建模画布 ---------- */
-  .canvas-wrap{display:flex;gap:16px}
-  .entity-tree{width:180px;flex-shrink:0}
-  .tree-item{padding:6px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);border:1px solid transparent;margin-bottom:4px}
-  .tree-item:hover{background:var(--gray-bg)}
-  .tree-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tree-item.on{background:var(--primary-bg);border-color:var(--primary-border);color:var(--primary)}
-  .tree-item .cnt{font-size:11px;color:var(--text-3)}
-  .canvas{flex:1;min-height:380px;background:linear-gradient(#f5f7fa 0,#eef1f5 100%);border:1px dashed #b7c4d1;border-radius:var(--radius);position:relative;padding:20px}
-  .canvas .hint{position:absolute;top:10px;left:12px;font-size:11px;color:var(--text-3);user-select:none}
-  .entity-card{position:absolute;width:250px;background:#fff;border:1px solid var(--gray-border);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:all .2s}
-  .entity-card:hover,.entity-card.on{box-shadow:var(--shadow-lg);border-color:var(--primary)}
-  .entity-card .head{padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f0f0}
-  .entity-card .head .nm{font-weight:600;font-size:13px}
-  .entity-card .head .code{font-size:11px;color:var(--text-3)}
-  .entity-card .row{padding:5px 12px;display:flex;align-items:center;gap:8px;font-size:12px;border-bottom:1px solid #fafafa;color:var(--text-2)}
-  .entity-card .row .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .entity-card .row .ftype{font-size:11px;color:var(--text-3)}
-  .entity-card .row .cons{display:flex;gap:3px}
-  .entity-card .row .cons i{font-style:normal;font-size:10px;padding:0 4px;border-radius:3px;background:var(--gray-bg);color:var(--text-2)}
-  .entity-card .row .cons i.pk{background:var(--primary-bg);color:var(--primary)}
-  .entity-card .row .cons i.fk{background:var(--orange-bg);color:var(--orange)}
-  .entity-card .row .cons i.json{background:var(--purple-bg);color:var(--purple)}
-  .entity-card .foot{padding:6px 12px;font-size:11px;color:var(--text-3);display:flex;justify-content:space-between}
-  .rel-line{position:absolute;border-top:1.5px solid #b7c4d1;transform-origin:left;z-index:0}
-  .rel-line .label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 8px;font-size:10px;color:var(--text-2);white-space:nowrap}
-  .canvas-toolbar{position:absolute;top:34px;left:12px;display:flex;gap:6px}
-  .canvas-toolbar .btn.sm{border-color:var(--gray-border)}
-  .props-panel{width:250px;flex-shrink:0}
-  .props-panel .field{margin-bottom:12px}
-  .props-panel .row2{display:flex;gap:8px}
-  .props-panel .row2 .field{flex:1}
-  .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:var(--radius);overflow:hidden}
-  .seg .seg-it{padding:3px 12px;font-size:12px;cursor:pointer;color:var(--text-2);background:#fff}
-  .seg .seg-it.on{background:var(--primary);color:#fff;border-color:var(--primary)}
-  /* ---------- 发布与变更 ---------- */
-  .pub-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
-  .timeline{position:relative;padding-left:20px}
-  .timeline::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:#e8e8e8}
-  .tl-item{position:relative;padding:0 0 18px}
-  .tl-item::before{content:"";position:absolute;left:-18px;top:5px;width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid var(--primary)}
-  .tl-item.orange::before{border-color:var(--orange)}
-  .tl-item.green::before{border-color:var(--green)}
-  .tl-item .t1{font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
-  .tl-item .t2{font-size:12px;color:var(--text-3);margin-top:2px}
-  .chg-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed #f0f0f0;font-size:12px}
-  .chg-row .op{font-weight:500}
-  .chg-row .op.add{color:var(--green)}.chg-row .op.del{color:var(--red)}.chg-row .op.mod{color:var(--orange)}
-  .chg-row .desc{color:var(--text-2);flex:1}
-  .kv{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--text-2);border-bottom:1px dashed #f0f0f0}
-  .kv b{color:var(--text)}
-  .alert{padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start}
+  .alert{padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
   .alert.info{background:var(--primary-bg);border:1px solid var(--primary-border);color:#0958d9}
   .alert.warn{background:var(--orange-bg);border:1px solid var(--orange-border);color:#ad6800}
   .alert.good{background:var(--green-bg);border:1px solid var(--green-border);color:#389e0d}
-  /* ---------- 向导 ---------- */
-  .steps{display:flex;align-items:center;gap:0;margin:6px 0 22px;font-size:12.5px}
-  .step{display:flex;align-items:center;gap:8px;color:var(--text-3)}
-  .step .num{width:26px;height:26px;border-radius:50%;background:var(--gray-bg);border:1px solid var(--gray-border);display:flex;align-items:center;justify-content:center;font-weight:600}
-  .step.on{color:var(--text)}
-  .step.on .num{background:var(--primary);border-color:var(--primary);color:#fff}
-  .step.done .num{background:var(--green);border-color:var(--green);color:#fff}
-  .step-line{width:60px;height:1px;background:var(--gray-border);margin:0 12px}
   .mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .mode-card{border:2px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all .2s;background:#fff;position:relative}
-  .mode-card:hover{border-color:var(--primary-border);box-shadow:var(--shadow-lg)}
+  .mode-card{border:2px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;background:var(--card)}
   .mode-card.on{border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,119,255,.12)}
-  .mode-card .badge-rec{position:absolute;top:-10px;right:14px;background:var(--green);color:#fff;font-size:11px;padding:1px 10px;border-radius:10px}
   .mode-card h3{font-size:15px;margin:4px 0 6px;display:flex;align-items:center;gap:8px}
   .mode-card .desc{font-size:12.5px;color:var(--text-2);line-height:1.7}
   .mode-card ul{margin:10px 0 0 18px;font-size:12.5px;color:var(--text-2)}
-  .mode-card ul li{margin:4px 0}
-  .mode-card .tag-a{width:34px;height:34px;border-radius:8px;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
-  .mode-card .tag-b{width:34px;height:34px;border-radius:8px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
-  .foot-bar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
-  /* ---------- 运行时数据 ---------- */
+  .mode-card .tag-a,.mode-card .tag-b{width:34px;height:34px;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .mode-card .tag-a{background:var(--purple)}.mode-card .tag-b{background:var(--primary)}
+  .foot-bar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+  .flabel{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:5px}
+  .flabel .req{color:var(--red)}
+  .ctrl{height:32px;border:1px solid var(--gray-border);border-radius:var(--radius);padding:0 10px;font-size:13px;background:#fff;color:var(--text);display:flex;align-items:center;width:100%}
+  body.dark .ctrl{background:#141414}
+  .rule-tip{font-size:11px;color:var(--text-3);margin-top:3px}
   .qbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   .qbar .input{width:200px}
   .pager{display:flex;justify-content:flex-end;gap:6px;align-items:center;margin-top:12px;font-size:12px;color:var(--text-2)}
-  .pager .btn{padding:1px 10px}
+  .kv{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--text-2);border-bottom:1px dashed #f0f0f0}
+  .kv b{color:var(--text)}
+  .chg-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed #f0f0f0;font-size:12px}
+  .chg-row .op.add{color:var(--green);font-weight:500}.chg-row .op.del{color:var(--red);font-weight:500}
+  .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:var(--radius);overflow:hidden}
+  .seg .seg-it{padding:3px 12px;font-size:12px;cursor:pointer;color:var(--text-2);background:#fff}
+  body.dark .seg .seg-it{background:var(--card)}
+  .seg .seg-it.on{background:var(--primary);color:#fff}
   .modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
   .modal-mask.on{display:flex}
   .modal{width:460px;background:#fff;border-radius:8px;box-shadow:var(--shadow-lg);overflow:hidden}
-  .modal .m-head{padding:14px 18px;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .modal .m-head{padding:14px 18px;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
   .modal .m-body{padding:16px 18px;font-size:13px;color:var(--text-2);line-height:1.8}
   .modal .m-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--green-border);box-shadow:var(--shadow-lg);border-radius:var(--radius);padding:9px 18px;font-size:13px;color:#389e0d;display:none;z-index:200}
-  .toast.on{display:block}
-  .empty-tip{text-align:center;color:var(--text-3);padding:30px 0;font-size:12.5px}
-  .foot-note{margin-top:18px;padding:10px 16px;border-radius:var(--radius);background:var(--gray-bg);font-size:12px;color:var(--text-2)}
+  .cmd{width:460px;background:#fff;border-radius:8px;box-shadow:var(--shadow-lg);overflow:hidden}
+  body.dark .cmd{background:#1f1f1f}
+  .cmd input{width:100%;border:none;border-bottom:1px solid var(--border);padding:14px 18px;font-size:14px;outline:none;background:transparent;color:var(--text)}
+  .cmd .row{display:flex;align-items:center;gap:10px;padding:8px 18px;cursor:pointer;font-size:13px;color:var(--text-2)}
+  .cmd .row:hover{background:rgba(22,119,255,.1)}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--green-border);box-shadow:var(--shadow-lg);border-radius:var(--radius);padding:9px 18px;font-size:13px;color:#389e0d;display:none;z-index:200;align-items:center;gap:8px}
+  .toast.on{display:flex}
+  .toast-error{border-color:#ffa39e;color:var(--red);min-width:280px}
+  kbd{background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:4px;padding:1px 5px;font-size:11px;font-family:inherit;color:var(--text-2)}
+  details.later{margin-top:8px}
+  details.later>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);padding:8px 0}
+  .later-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .later-card{border:1px dashed var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text-3)}
+  .later-card b{display:block;color:var(--text-2);margin-bottom:4px}
+  /* Schema diff (v0.20) */
+  .diff-section{margin:12px 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .diff-header{background:var(--gray-bg);padding:8px 12px;font-size:12px;color:var(--text-2);display:flex;justify-content:space-between;align-items:center}
+  .diff-row{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid #f5f5f5;font-size:12.5px}
+  .diff-row:last-child{border-bottom:none}
+  .diff-op{width:20px;text-align:center;font-weight:700}
+  .diff-op.add{color:var(--green)} .diff-op.del{color:var(--red)} .diff-op.mod{color:var(--orange)} .diff-op.same{color:var(--text-3)}
+  .diff-field{font-family:Menlo,Consolas,monospace;font-size:12px;color:var(--text)}
+  .diff-detail{color:var(--text-3);font-size:11px;margin-left:auto}
+  body.dark .diff-row{border-color:#262626}
+  /* Skeleton loading (v0.20) */
+  .skel-row{display:flex;gap:12px;padding:9px 12px;border-bottom:1px solid #f0f0f0}
+  .skel-cell{height:14px;border-radius:3px;background:linear-gradient(90deg,var(--gray-bg) 25%,#e8e8e8 50%,var(--gray-bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  body.dark .skel-cell{background:linear-gradient(90deg,#1f1f1f 25%,#2a2a2a 50%,#1f1f1f 75%);background-size:200% 100%}
+  /* Inline edit hint (v0.20) */
+  .cell-edit{cursor:text;position:relative}
+  .cell-edit:hover{background:rgba(22,119,255,.06)}
+  .edit-ico{font-size:10px;color:var(--text-3);margin-left:4px;opacity:0;transition:opacity .15s}
+  .cell-edit:hover .edit-ico{opacity:.7}
+  /* UI Tab overlay (v0.22) */
+  .ov-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #f0f0f0;font-size:12.5px}
+  .ov-row:last-child{border-bottom:none}
+  .ov-row .ov-label{flex:1;min-width:0}
+  .ov-row .ov-label input{width:100%;height:26px;font-size:12px}
+  .ov-row .drag{color:var(--text-3);cursor:grab;font-size:11px;user-select:none}
+  .preview-frame{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--card)}
+  .preview-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--gray-bg);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-2);flex-wrap:wrap}
+  .type-chip{font-size:10px;padding:0 5px;border-radius:3px;background:var(--gray-bg);color:var(--text-3);margin-left:4px}
+  .hl-pulse{outline:2px solid var(--primary);outline-offset:1px;border-radius:2px;animation:pulse .8s ease 2}
+  @keyframes pulse{0%,100%{outline-color:var(--primary)}50%{outline-color:transparent}}
+  .sticky-cta{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--border);padding:12px 0;margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;z-index:1}
+  .dirty-bar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:var(--orange-bg);border-bottom:1px solid var(--orange-border);font-size:12.5px;color:#ad6800}
+  .dirty-bar.clean{background:var(--green-bg);border-color:var(--green-border);color:#389e0d}
+  .ov-row.on{background:var(--primary-bg);border-radius:4px;outline:1px solid var(--primary-border)}
+  .pickable{cursor:pointer}
+  .pickable.on,.pickable.on th,.pickable.on td{background:rgba(22,119,255,.08)!important;outline:2px solid var(--primary);outline-offset:-2px}
+  th.pickable:hover,td.pickable:hover,.form-grid>[data-f].pickable:hover .ctrl{background:rgba(22,119,255,.05)}
+  .ui-workspace.preview-mode{grid-template-columns:1fr!important}
+  .ui-workspace.preview-mode .ui-side{display:none}
+  .map-table{width:100%;font-size:11.5px}
+  .map-table th,.map-table td{padding:4px 6px;border-bottom:1px dashed #f0f0f0}
+  .sel-card{font-size:12px;line-height:1.8;color:var(--text-2)}
+  .sel-card b{color:var(--text)}
+  .data-lock{display:none;padding:28px;text-align:center;border:1px dashed var(--orange-border);border-radius:var(--radius);background:var(--orange-bg);margin-bottom:14px}
+  .data-lock.on{display:block}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  /* Replenishment entity (v0.25) */
+  .state-machine{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:14px;background:var(--gray-bg);border-radius:var(--radius);margin-top:10px}
+  .state-machine .sm-node{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;border:2px solid}
+  .state-machine .sm-node.draft{background:var(--gray-bg);color:var(--text-2);border-color:var(--gray-border)}
+  .state-machine .sm-node.submitted{background:var(--primary-bg);color:var(--primary);border-color:var(--primary-border)}
+  .state-machine .sm-node.approved{background:var(--orange-bg);color:var(--orange);border-color:var(--orange-border)}
+  .state-machine .sm-node.received{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+  .state-machine .sm-node.cancelled{background:#fff1f0;color:var(--red);border-color:#ffa39e}
+  .state-machine .sm-arrow{color:var(--text-3);font-size:14px}
+  .state-machine .sm-branch{color:var(--text-3);font-size:11px;font-style:italic}
+  .write-once{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--purple-bg);color:var(--purple);border:1px dashed var(--purple)}
+  .cross-ent{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:#fff1f0;color:var(--red);font-size:11px;border:1px dashed #ffa39e}
+  .cross-ent .warn-ico{font-size:13px}
+  .ent-list .item{font-size:12px}
+  .ent-list .item .ent-code{font-size:10px;color:rgba(255,255,255,.4);margin-left:auto}
+
+  .phase-bar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:var(--card);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap}
+  .phase-bar .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:6px;overflow:hidden}
+  .phase-bar .seg-it{padding:4px 12px;cursor:pointer;color:var(--text-2);background:var(--card)}
+  .phase-bar .seg-it.on{background:var(--primary);color:#fff;font-weight:500}
+  .phase-bar .uc-chip{padding:2px 8px;border-radius:4px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border);font-size:11px}
+  .phase-bar .uc-chip.dim{background:var(--gray-bg);color:var(--text-3);border-color:var(--gray-border)}
+  .coach{position:fixed;right:16px;bottom:16px;width:300px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);z-index:40;overflow:hidden}
+  .coach.mini .cb,.coach.mini .cf{display:none}
+  .coach .ch{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(90deg,#1677ff,#36cfc9);color:#fff;font-size:12.5px;font-weight:600}
+  .coach .cb{padding:8px 10px;max-height:280px;overflow:auto}
+  .coach .step{display:flex;align-items:flex-start;gap:8px;padding:6px 4px;font-size:12px;color:var(--text-2);border-radius:6px}
+  .coach .step .dot{width:18px;height:18px;border-radius:50%;background:var(--gray-bg);color:var(--text-3);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px}
+  .coach .step .uc{font-size:10px;color:var(--text-3);margin-left:4px}
+  .coach .step.done{color:var(--green)}.coach .step.done .dot{background:var(--green-bg);color:var(--green)}
+  .coach .step.now{background:var(--primary-bg);color:var(--primary);font-weight:500}.coach .step.now .dot{background:var(--primary);color:#fff}
+  .coach .cf{display:flex;gap:6px;padding:8px 10px 10px;border-top:1px solid var(--border);flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- 左侧导航 -->
   <aside class="sider">
     <div class="logo"><div class="dot">B</div>BONE 元数据管理</div>
     <nav class="nav">
-      <div class="grp">建模控制面</div>
-      <div class="item" data-nav="workspace"><span class="ico">🗂</span>建模工作区</div>
-      <div class="item on" data-nav="tpl"><span class="ico">🧩</span>模板向导 <span class="tag g">NEW</span></div>
-      <div class="item"><span class="ico">📦</span>模块管理</div>
-      <div class="grp">元数据运行时</div>
-      <div class="item"><span class="ico">🧬</span>实体管理 <span class="tag">8</span></div>
-      <div class="item"><span class="ico">🕹</span>运行时数据 <span class="tag g">RUNTIME</span></div>
-      <div class="grp">治理</div>
-      <div class="item"><span class="ico">🚀</span>发布与变更</div>
-      <div class="item"><span class="ico">📜</span>审计日志</div>
+      <div class="grp">场景包 · 可切换</div>
+      <div class="item on" data-entity="device" onclick="switchEntity('device')"><span class="ico">◇</span>设备巡检 <span class="ent-code">够用</span></div>
+      <div class="item" data-entity="repl" onclick="switchEntity('repl')"><span class="ico">◇</span>供应链补货 <span class="ent-code">边界</span></div>
+      <div class="item" data-entity="visitor" onclick="switchEntity('visitor')"><span class="ico">◇</span>访客登记 <span class="ent-code">换皮</span></div>
+      <div class="grp">实体工作区</div>
+      <div class="item on" data-nav="t-fields" onclick="goTab('t-fields')"><span class="ico">≡</span>结构</div>
+      <div class="item" data-nav="t-ui" onclick="goTab('t-ui')"><span class="ico">◫</span>界面</div>
+      <div class="item" data-nav="t-data" onclick="goTab('t-data')"><span class="ico">▦</span>数据</div>
+      <div class="item" data-nav="t-pub" onclick="goTab('t-pub')"><span class="ico">▲</span>发布</div>
+      <div class="grp">参考</div>
+      <div class="item" data-nav="t-err" onclick="goTab('t-err')"><span class="ico">⚠</span>状态与异常</div>
+      <div class="item" data-nav="t-gap" onclick="goTab('t-gap')"><span class="ico">🔬</span>实现差距 · W0</div>
+      <div class="item" data-nav="t-plan" onclick="goTab('t-plan')"><span class="ico">🧭</span>落地路线 · v0.32</div>
     </nav>
-    <div class="sider-foot">UI 原型 v0.1 · 低代码最小闭环</div>
+    <div class="sider-foot">原型 v0.32 · 代码实测修正 · 0→1/1→n</div>
   </aside>
 
-  <!-- 主区域 -->
   <main class="main">
     <header class="header">
-      <div class="crumb">BONE 元数据管理 / <b>订单领域 · 实体详情</b></div>
+      <div class="crumb"><span id="crumb-domain">场景域</span> / <b id="crumb-ent">补货单 · t_replenishment</b> <span class="pill blue" style="margin-left:8px">RUNTIME</span> <span class="pill green" id="pub-pill">已发布</span> <span class="pill orange" id="draft-pill" style="display:none">草稿</span> <span class="pill orange" id="dirty-pill">未发布 · 2</span></div>
       <div class="header-actions">
-        <button class="btn">保存草稿</button>
-        <button class="btn primary" onclick="openModal('pub')">发布 <span id="pubBadge" style="display:none;background:#fff;color:var(--primary);border-radius:8px;padding:0 6px;font-size:11px"></span></button>
-        <div style="width:1px;height:20px;background:var(--border)"></div>
-        <button class="btn">登录：admin</button>
+        <button class="btn primary" onclick="startClosedLoop()" title="UC-01 从草稿走通">▶ 0→1 走通</button>
+        <button class="btn orange" onclick="startEvolve()" title="UC-02 已发布上加字段">1→n 演进</button>
+        <button class="btn" onclick="toggleTheme()" title="暗色/亮色">🌙</button>
+        <button class="btn" onclick="openCmd()">🔍 <kbd>Ctrl+K</kbd></button>
+        <button class="btn" onclick="openModal('new')">+ 新建实体</button>
+        <button class="btn" onclick="toast('草稿已保存 ✓')">保存草稿</button>
+        <button class="btn primary" onclick="goTab('t-pub')">发布</button>
+        <button class="btn green" id="btn-open-data" onclick="openData()">打开数据</button>
       </div>
     </header>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <div class="tab on" data-tab="t1" onclick="switchTab('t1')">可视化建模画布 <span class="pill blue" style="margin-left:6px">VM-001</span></div>
-      <div class="tab" data-tab="t2" onclick="switchTab('t2')">发布与变更 <span class="pill orange" style="margin-left:6px">VM-002</span></div>
-      <div class="tab" data-tab="t3" onclick="switchTab('t3')">交付模式向导 <span class="pill purple" style="margin-left:6px">VM-003</span></div>
-      <div class="tab" data-tab="t4" onclick="switchTab('t4')">运行时数据 <span class="pill gray" style="margin-left:6px">RC-004</span></div>
+    <!-- UID-9: Tab bar replaces step bar -->
+    <div class="tabs" id="tabBar">
+      <div class="tab on" data-t="t-fields" onclick="goTab('t-fields')">结构 <span class="badge">字段 15</span> <span class="pill orange" id="tab-dirty-s" style="font-size:10px">脏</span></div>
+      <div class="tab" data-t="t-ui" onclick="goTab('t-ui')">界面 <span class="badge">配置|预览</span> <span class="pill orange" id="tab-dirty-u" style="font-size:10px">脏</span></div>
+      <div class="tab" data-t="t-data" id="tab-data" onclick="goTab('t-data')">数据 <span class="badge" id="data-badge">10</span></div>
+      <div class="tab" data-t="t-pub" onclick="goTab('t-pub')">发布</div>
+      <div style="margin-left:auto;padding:10px 0;font-size:12px;color:var(--text-3)">目标 ≤15 分钟 · 业务仓 0 新增页面 · 热加载 P95≤5s</div>
+    </div>
+    <div class="dirty-bar" id="dirty-bar">
+      <span class="pill orange">UID-12</span>
+      <span id="dirty-msg"><b>未发布 · 2 项变更</b>（结构 1 · 界面覆盖 1）· 线上仍跑上一版快照</span>
+      <button class="btn sm" style="margin-left:auto" onclick="goTab('t-pub')">去发布</button>
+      <button class="btn sm" onclick="discardDirty()">丢弃演示脏态</button>
+    </div>
+    <div class="phase-bar" id="phase-bar">
+      <span style="color:var(--text-3)">演示阶段</span>
+      <span class="seg" id="demo-mode">
+        <span class="seg-it on" data-dm="zero" onclick="setDemoMode('zero')">0→1 创建</span>
+        <span class="seg-it" data-dm="evolve" onclick="setDemoMode('evolve')">1→n 演进</span>
+      </span>
+      <span class="uc-chip" id="uc-chip">当前 · UC-01</span>
+      <span style="color:var(--text-3)" id="phase-hint">从零建模到第一条数据</span>
+      <span style="margin-left:auto;color:var(--text-3)">场景包只换数据 · 步骤不变 · PRD §2.0</span>
     </div>
 
     <div class="content">
-      <!-- ===== Tab 1 建模画布 ===== -->
-      <div class="panel on" id="t1">
-        <div class="canvas-wrap">
-          <!-- 左：实体树 -->
-          <div class="entity-tree card" style="padding:10px">
-            <h4 style="font-size:13px">实体导航</h4>
-            <div class="tree-item on" data-ent="order" onclick="selEntity('order')"><span>📦</span><span class="name">订单</span><span class="pill blue" style="margin-left:auto">RUNTIME</span></div>
-            <div class="tree-item" data-ent="customer" onclick="selEntity('customer')"><span>👤</span><span class="name">客户</span><span class="pill blue" style="margin-left:auto">RUNTIME</span></div>
-            <div class="tree-item" data-ent="product" onclick="selEntity('product')"><span>🏷</span><span class="name">商品</span><span class="pill purple" style="margin-left:auto">GEN</span></div>
-            <div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px">
-              <button class="btn sm" style="width:100%">+ 新建实体</button>
-            </div>
-          </div>
-
-          <!-- 中：画布 -->
-          <div class="canvas">
-            <div class="hint">画布视图 · 与表单视图同源（catalog API）</div>
-            <div class="canvas-toolbar">
-              <button class="btn sm">+ 添加字段</button>
-              <button class="btn sm">+ 添加关系</button>
-              <button class="btn sm">🔍 适应画布</button>
-              <span class="seg" style="margin-left:8px">
-                <span class="seg-it on">画布</span><span class="seg-it" onclick="toast('表单视图（同源数据）')">表单</span>
-              </span>
-            </div>
-            <!-- 关系线 -->
-            <div class="rel-line" style="top:150px;left:338px;width:180px"><span class="label">N : 1 · 客户ID</span></div>
-            <!-- 订单实体卡片 -->
-            <div class="entity-card on" data-ent="order" style="top:52px;left:30px" onclick="selEntity('order')">
-              <div class="head"><span>📦</span><div><div class="nm">订单</div><div class="code">t_order · RUNTIME</div></div></div>
-              <div class="row"><span class="fname">订单号</span><span class="ftype">varchar(32)</span><span class="cons"><i class="pk">PK</i><i>唯一</i></span></div>
-              <div class="row"><span class="fname">客户ID</span><span class="ftype">bigint</span><span class="cons"><i class="fk">FK</i></span></div>
-              <div class="row"><span class="fname">金额</span><span class="ftype">decimal(10,2)</span><span class="cons"><i>必填</i><i>校验</i></span></div>
-              <div class="row"><span class="fname">状态</span><span class="ftype">varchar(16)</span><span class="cons"><i>枚举</i></span></div>
-              <div class="row" style="background:var(--purple-bg)"><span class="fname">优惠券码</span><span class="ftype">varchar(64)</span><span class="cons"><i class="json">扩展·预留列</i></span></div>
-              <div class="foot"><span>5 字段 · 1 扩展</span><span class="pill green">PUBLISHED</span></div>
-            </div>
-            <!-- 客户实体卡片 -->
-            <div class="entity-card" data-ent="customer" style="top:200px;left:30px" onclick="selEntity('customer')">
-              <div class="head"><span>👤</span><div><div class="nm">客户</div><div class="code">t_customer · RUNTIME</div></div></div>
-              <div class="row"><span class="fname">客户ID</span><span class="ftype">bigint</span><span class="cons"><i class="pk">PK</i></span></div>
-              <div class="row"><span class="fname">名称</span><span class="ftype">varchar(64)</span><span class="cons"><i>必填</i></span></div>
-              <div class="row"><span class="fname">等级</span><span class="ftype">varchar(8)</span><span class="cons"><i>枚举</i></span></div>
-              <div class="row"><span class="fname">手机号</span><span class="ftype">varchar(20)</span><span class="cons"><i>唯一</i></span></div>
-              <div class="foot"><span>4 字段</span><span class="pill green">PUBLISHED</span></div>
-            </div>
-          </div>
-
-          <!-- 右：属性面板 -->
-          <div class="props-panel card">
-            <h4>属性面板 <span class="sub" id="propTitle">· 实体：订单</span></h4>
-            <div class="field"><span class="label">实体标识 code</span><input class="input" style="width:100%" value="t_order" disabled></div>
-            <div class="field"><span class="label">交付模式 delivery_mode</span>
-              <span class="seg" style="width:100%">
-                <span class="seg-it">GENERATIVE</span><span class="seg-it on">RUNTIME</span>
-              </span>
-            </div>
-            <div class="field"><span class="label">扩展字段模式</span>
-              <select style="width:100%"><option>预留列（默认推荐）</option><option>JSON 列</option><option>EAV 键值对</option></select>
-            </div>
-            <div class="field"><span class="label">字段：金额</span>
-              <div class="row2">
-                <div><span class="label">类型</span><select style="width:100%"><option>decimal(10,2)</option><option>bigint</option></select></div>
-                <div><span class="label">必填</span><select style="width:100%"><option>是</option><option>否</option></select></div>
-              </div>
-            </div>
-            <div class="field"><span class="label">校验规则</span>
-              <div style="font-size:12px;background:var(--gray-bg);border-radius:4px;padding:6px 10px;color:var(--text-2)">
-                <div>✓ amount &gt;= 0（表达式）</div>
-                <div>✓ 状态 ∈ [CREATED,PAID,SHIPPED]（枚举）</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:4px">
-              <button class="btn sm primary">应用修改</button>
-              <button class="btn sm">取消</button>
-            </div>
-          </div>
-        </div>
+      <div class="alert info" id="scene-banner">
+        <span id="scene-banner-text"><b>演示路径</b>：0→1 走通 = UC-01；再 1→n 加字段 = UC-02。侧栏换场景 = UC-04。</span>
+        <button class="btn sm primary" style="margin-left:auto" onclick="startClosedLoop()">▶ 0→1</button>
+        <button class="btn sm" onclick="startEvolve()">1→n</button>
       </div>
 
-      <!-- ===== Tab 2 发布与变更 ===== -->
-      <div class="panel" id="t2">
-        <div class="alert info" id="pubAlert">当前有 <b>1 项 L1 在线变更</b> 与 <b>2 项 L2 破坏性变更</b> 待处理（草稿 v1.1.0 相对已发布 v1.0.3）</div>
-        <div class="pub-grid">
-          <div>
-            <div class="card">
-              <h4>版本历史 <span class="sub">不可变快照 · 全部留痕</span></h4>
-              <div class="timeline">
-                <div class="tl-item green">
-                  <div class="t1">v1.0.3 · 在线发布 <span class="pill green">L1</span> <button class="btn sm" style="margin-left:auto" onclick="openModal('diff')">查看 diff</button></div>
-                  <div class="t2">2026-10-08 14:32 · 张工 · 新增字段「优惠券码」（扩展·预留列）</div>
-                </div>
-                <div class="tl-item">
-                  <div class="t1">v1.0.2 · 在线发布 <span class="pill green">L1</span></div>
-                  <div class="t2">2026-10-02 11:08 · 张工 · 放宽「金额」精度 decimal(10,2)→(12,2)</div>
-                </div>
-                <div class="tl-item">
-                  <div class="t1">v1.0.1 · 初始发布</div>
-                  <div class="t2">2026-09-25 09:00 · 李工 · 实体「订单」首次发布（4 字段）</div>
-                </div>
-              </div>
-            </div>
-            <div class="card">
-              <h4>草稿变更集 <span class="sub">当前草稿 v1.1.0 · 未发布</span></h4>
-              <div class="chg-row"><span class="op add">+ 新增</span><span class="desc">字段「收货地址」varchar(200) · L1 在线</span><span class="pill green">L1</span></div>
-              <div class="chg-row"><span class="op del">− 删除</span><span class="desc">字段「渠道来源」，被 1 条校验规则引用 · L2 破坏性</span><span class="pill orange">L2</span></div>
-              <div class="chg-row"><span class="op mod">~ 修改</span><span class="desc">「金额」添加唯一约束（涉及存量 12,483 行）· L2 破坏性</span><span class="pill orange">L2</span></div>
-            </div>
-          </div>
-          <div>
-            <div class="card">
-              <h4>影响分析 <span class="sub">发布确认前必读</span></h4>
-              <div class="kv"><span>字段变更</span><b>3 项（1 新增 / 1 删除 / 1 收紧）</b></div>
-              <div class="kv"><span>引用校验规则</span><b>2 条（其中 1 条随字段删除失效）</b></div>
-              <div class="kv"><span>引用扩展点</span><b>0 个</b></div>
-              <div class="kv"><span>运行时记录规模估算</span><b>≈ 12,483 行</b></div>
-              <div class="kv"><span>预计停机窗口</span><b>L1 无需 · L2 需 5–10 分钟迁移窗口</b></div>
-              <div style="margin-top:12px;display:flex;gap:8px">
-                <button class="btn green" onclick="openModal('l1')">发布 L1 在线变更</button>
-                <button class="btn orange" onclick="openModal('l2')">提交 L2 破坏性变更</button>
-              </div>
-            </div>
-            <div class="card">
-              <h4>变更分级规则 <span class="sub">引擎判定 · 不接受人工拍脑袋</span></h4>
-              <div style="font-size:12.5px;color:var(--text-2);line-height:1.8">
-                <div>🟢 <b>L1 在线</b>：新增可空字段、放宽长度、新增索引 → 热加载生效（P95 ≤ 60s）</div>
-                <div>🟠 <b>L2 迁移窗口</b>：删除字段、收紧约束、主键语义变更 → 需显式窗口 + 二次确认</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== Tab 3 交付模式向导 ===== -->
-      <div class="panel" id="t3">
+      <!-- ===== Tab: 结构 ===== -->
+      <div class="panel on" id="t-fields">
         <div class="card">
-          <div class="steps">
-            <div class="step done"><span class="num">✓</span>选择模板</div>
-            <div class="step-line"></div>
-            <div class="step on"><span class="num">2</span>交付模式</div>
-            <div class="step-line"></div>
-            <div class="step"><span class="num">3</span>边界提示</div>
-            <div class="step-line"></div>
-            <div class="step"><span class="num">4</span>完成</div>
-          </div>
-          <div class="mode-cards">
-            <div class="mode-card" data-mode="A" onclick="selMode('A')">
-              <div class="badge-rec" style="background:var(--purple)">源码审计</div>
-              <h3><span class="tag-a">A</span>模式 A · 生成式交付</h3>
-              <div class="desc">元数据 → <b>生成可审计源码</b> → 编译部署，代码进 Git 可 diff/review。</div>
-              <ul>
-                <li>适合：复杂领域逻辑、源码审计、深度定制</li>
-                <li>由 <b>studio-generator</b> 承担 DDD 骨架与定制代码生成</li>
-                <li>交付路径：server → generator → Java/TS 工程 → sdk 仓储绑定物理表</li>
-              </ul>
-            </div>
-            <div class="mode-card on" data-mode="B" onclick="selMode('B')">
-              <div class="badge-rec">标准 CRUD 免生成</div>
-              <h3><span class="tag-b">B</span>模式 B · 运行时交付</h3>
-              <div class="desc">元数据 → <b>运行时解释执行</b>，动态 CRUD/API，无需为每张表生成 Controller。</div>
-              <ul>
-                <li>适合：配置型实体、运营后台、SaaS 标准对象</li>
-                <li>发布后 <b>P95 ≤ 60s 热加载生效</b>，支持 L1/L2 变更分级</li>
-                <li>复杂领域逻辑需逃逸舱（生成器 / 扩展点）</li>
-              </ul>
-            </div>
-          </div>
-          <div class="foot-bar">
-            <span style="font-size:12px;color:var(--text-3)">当前选择：<b style="color:var(--primary)" id="modeNow">模式 B · 运行时交付</b></span>
-            <div style="display:flex;gap:8px">
-              <button class="btn">上一步</button>
-              <button class="btn primary" onclick="toast('已选择模式 B · RUNTIME，进入边界提示')">下一步：边界提示</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== Tab 4 运行时数据 ===== -->
-      <div class="panel" id="t4">
-        <div class="card">
-          <h4>运行时记录 · t_order <span class="sub">/api/v1/runtime/entities/t_order/records</span></h4>
-          <div class="qbar">
-            <input class="input" placeholder="关键字：订单号 / 客户">
-            <select style="width:110px"><option>状态：全部</option><option>CREATED</option><option>PAID</option><option>SHIPPED</option></select>
-            <select style="width:130px"><option>优惠券码：全部</option><option>有值</option><option>为空</option></select>
-            <select style="width:120px"><option>金额 ≥ 0（校验规则）</option></select>
-            <button class="btn primary sm">查询</button>
-            <span style="font-size:12px;color:var(--text-3);margin-left:auto">扩展字段条件：预留列语义 ✅（fail-fast 保护已开启）</span>
-          </div>
-          <div class="alert good" style="display:none" id="validOk">✓ 校验通过 · 2 条记录写入成功并已审计</div>
+          <h4>结构 · 字段 <span class="pill green" id="struct-pill">表长什么样</span> <span class="sub" id="struct-sub">场景驱动</span></h4>
+          <div class="alert good" style="margin-bottom:12px" id="struct-hint">字段变更发布后，将同步到界面预览与数据页。</div>
+          <div class="alert warn" style="margin-bottom:12px;display:none" id="enum-gate"></div>
           <table>
-            <thead><tr><th>订单号</th><th>客户</th><th>金额</th><th>状态</th><th>优惠券码（扩展）</th><th>创建时间</th><th>操作</th></tr></thead>
+            <thead><tr><th>字段</th><th>code</th><th>类型</th><th>约束</th><th>操作</th></tr></thead>
+            <tbody id="fields-tbody"></tbody>
+          </table>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sm primary" onclick="addDemoField()">+ 添加字段（演示）</button>
+            <button class="btn sm" onclick="toast('关系：MVP 可用表单配置 FK；画布连线 v1.1')">+ 关系</button>
+            <button class="btn sm" onclick="toast('复用既有 GET …/validate')">运行校验</button>
+            <button class="btn sm" onclick="goTab('t-pub');toast('publish-preview 已刷新')">发布预览</button>
+            <button class="btn primary" onclick="goTab('t-ui');markLoop('uiVisited')">下一步：看界面</button>
+          </div>
+        </div>
+        <div class="card" id="boundary-card">
+          <h4>Mode B 边界 <span class="pill orange">随场景</span></h4>
+          <div id="boundary-body" style="font-size:12.5px;color:var(--text-2);line-height:1.8"></div>
+        </div>
+        <div class="card">
+          <h4>关系 <span class="sub">结构的一部分 · 可选</span></h4>
+          <table>
+            <thead><tr><th>关系名</th><th>类型</th><th>目标实体</th><th>操作</th></tr></thead>
             <tbody>
-              <tr><td>SO20261008001</td><td>客户 A</td><td>¥1,299.00</td><td><span class="pill green">PAID</span></td><td><span class="pill purple">SUM-2026-10</span></td><td>2026-10-08 14:40</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
-              <tr><td>SO20261008002</td><td>客户 B</td><td>¥388.50</td><td><span class="pill blue">CREATED</span></td><td>—</td><td>2026-10-08 15:02</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
-              <tr><td>SO20261009003</td><td>客户 C</td><td>¥56.00</td><td><span class="pill blue">CREATED</span></td><td><span class="pill purple">VIP-001</span></td><td>2026-10-09 09:12</td><td><button class="btn sm">编辑</button> <button class="btn sm danger">删除</button></td></tr>
+              <tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:20px">暂无关系 · <button class="btn sm primary" onclick="toast('添加关系（可选）')">+ 添加关系</button></td></tr>
             </tbody>
           </table>
-          <div class="pager"><span>共 12,483 行</span><button class="btn sm">&lt;</button><span style="padding:0 6px">1 / 4162</span><button class="btn sm">&gt;</button></div>
+        </div>
+      </div>
+
+      <!-- ===== Tab: 界面（建模即页面 · v0.23） ===== -->
+      <div class="panel" id="t-ui">
+        <div class="alert info">
+          <span><b>界面 = 状态感知 + 徽标自动渲染</b>。ENUM 状态字段自动渲染为彩色徽标（DRAFT=gray/SUBMITTED=blue/APPROVED=orange/RECEIVED=green/CANCELLED=red）；表单根据状态决定字段可编辑性（DRAFT 可改计划，非 DRAFT 只读）。</span>
+        </div>
+        <div class="preview-frame" style="margin-bottom:14px">
+          <div class="preview-bar">
+            <span class="seg" id="ui-mode">
+              <span class="seg-it on" data-mode="config" onclick="swUiMode('config')">配置</span>
+              <span class="seg-it" data-mode="preview" onclick="swUiMode('preview')">预览</span>
+            </span>
+            <span class="pill green">自动生成 · 0 行手写</span>
+            <span class="pill blue">UID-10</span>
+            <span class="seg" style="margin-left:auto">
+              <span class="seg-it on" data-uv="list" onclick="swUiView('list')">列表</span>
+              <span class="seg-it" data-uv="form" onclick="swUiView('form')">表单</span>
+            </span>
+          </div>
+        </div>
+        <div class="ui-workspace" id="ui-workspace" style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+          <div>
+            <div class="card" style="margin:0">
+              <div id="ui-list">
+                <div class="qbar">
+                  <input class="input" style="width:160px" placeholder="搜索…" disabled>
+                  <select style="width:120px" disabled><option>状态：全部</option></select>
+                  <span style="font-size:11px;color:var(--text-3)">演示数据 · 点击列可选中（UID-11）</span>
+                </div>
+                <table id="ui-preview-table">
+                  <thead><tr id="ui-thead"></tr></thead>
+                  <tbody id="ui-tbody"></tbody>
+                </table>
+              </div>
+              <div id="ui-form" style="display:none">
+                <div class="form-grid">
+                  <div data-f="ref_unsupported" id="ui-unsupported" style="display:none;grid-column:1/-1">
+                    <div class="alert warn" style="margin:0"><span><b>REFERENCE</b> 未映射 → 显式降级</span></div>
+                  </div>
+                </div>
+                <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+                  <button class="btn" disabled>取消</button>
+                  <button class="btn primary" disabled>提交（预览只读）</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ui-side">
+            <div class="card" style="margin-bottom:12px">
+              <h4>选中字段 <span class="sub">UID-11</span></h4>
+              <div class="sel-card" id="sel-card">
+                <div>点击左侧列/控件选中</div>
+                <div style="color:var(--text-3);font-size:11px;margin-top:4px">对标 Airtable：画布选中 → 右侧属性</div>
+              </div>
+              <button class="btn sm" id="btn-jump-struct" style="margin-top:8px;width:100%" disabled onclick="jumpToStruct()">在结构中编辑</button>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+              <h4>显示微调 <span class="sub">覆盖 · D2</span></h4>
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">显隐 · 显示名 · 列序 · 不改元数据</div>
+              <div id="ov-list"></div>
+              <div style="margin-top:10px">
+                <div class="flabel">表格密度</div>
+                <select style="width:100%" onchange="markDirty();toast('密度写入覆盖草稿')"><option>默认</option><option>紧凑</option><option>宽松</option></select>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:10px">
+                <button class="btn sm primary" style="flex:1" onclick="toast('覆盖已存草稿（D2）')">保存</button>
+                <button class="btn sm" style="flex:1" onclick="resetOverlay()">恢复默认</button>
+              </div>
+            </div>
+            <div class="card" style="margin-bottom:12px">
+              <h4>状态徽标颜色映射 <span class="sub">ENUM 自动渲染</span></h4>
+              <table class="map-table">
+                <thead><tr><th>状态值</th><th>颜色</th><th>预览</th></tr></thead>
+                <tbody>
+                  <tr><td>DRAFT</td><td>gray</td><td><span class="pill gray">DRAFT</span></td></tr>
+                  <tr><td>SUBMITTED</td><td>blue</td><td><span class="pill blue">SUBMITTED</span></td></tr>
+                  <tr><td>APPROVED</td><td>orange</td><td><span class="pill orange">APPROVED</span></td></tr>
+                  <tr><td>RECEIVED</td><td>green</td><td><span class="pill green">RECEIVED</span></td></tr>
+                  <tr><td>CANCELLED</td><td>red</td><td><span class="pill red">CANCELLED</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <details class="card" style="margin-bottom:12px">
+              <summary style="cursor:pointer;font-size:13px;font-weight:600">控件映射速查 <span class="sub">§5.5</span></summary>
+              <table class="map-table" style="margin-top:8px">
+                <thead><tr><th>类型</th><th>控件</th></tr></thead>
+                <tbody>
+                  <tr><td>STRING</td><td>Input</td></tr>
+                  <tr><td>TEXT</td><td>TextArea</td></tr>
+                  <tr><td>DATE</td><td>DatePicker</td></tr>
+                  <tr><td>ENUM</td><td>Select</td></tr>
+                  <tr><td>BOOLEAN</td><td>Switch</td></tr>
+                  <tr><td>REFERENCE</td><td><span class="pill orange">MVP 显式提示</span></td></tr>
+                </tbody>
+              </table>
+            </details>
+            <div class="card" style="margin-bottom:0">
+              <h4>联动演示</h4>
+              <button class="btn sm" style="width:100%;margin-bottom:6px" onclick="simFieldChange();markDirty()">模拟：结构 +DATE</button>
+              <button class="btn sm" style="width:100%;margin-bottom:6px" onclick="simUnsupported()">模拟：REFERENCE 降级</button>
+              <button class="btn sm" style="width:100%" onclick="swUiMode('preview');toast('预览态 = 用户眼中所见（藏覆盖面板）')">切到纯预览</button>
+            </div>
+          </div>
+        </div>
+        <div class="sticky-cta">
+          <span style="font-size:12px;color:var(--text-3);flex:1" id="cta-hint">配置态：可改覆盖 · 预览态：用户所见</span>
+          <button class="btn" onclick="goTab('t-fields')">← 结构</button>
+          <button class="btn green" onclick="goTab('t-pub')">去发布</button>
+          <button class="btn primary" onclick="openData()">打开数据</button>
+        </div>
+      </div>
+
+      <!-- ===== Tab: 发布 ===== -->
+      <div class="panel" id="t-pub">
+        <div class="alert info"><span class="pill blue">RUNTIME · 模式 B</span> 发布目标 = <b>运行时热加载</b>（非「生成进 Git」）。模式 A 请走 generator，勿共用本生效链路文案。</div>
+        <div class="card">
+          <h4>发布确认 <span class="sub">VM-002 最小面板 · MVP</span></h4>
+          <div class="chg-row"><span class="op add">+ 新增</span><span style="flex:1">实体 <span id="pub-ent-label">…</span> 首次发布</span><span class="pill green">L1</span></div>
+          <div class="kv"><span>变更分级</span><b>全部 L1 在线（新增实体 · 含 ENUM 状态机字段）</b></div>
+          <div class="kv"><span>状态机</span><b>DRAFT → SUBMITTED → APPROVED → RECEIVED · 旁路 CANCELLED</b></div>
+          <div class="kv"><span>跨实体操作</span><b>1 项（到货入库 → Inventory.receive · v1.1）</b></div>
+          <div class="kv"><span>引用规则 / 扩展点 / UI 覆盖</span><b>0 / 0 / 1（列显隐+显示名）</b></div>
+          <div class="kv"><span>热加载目标</span><b>P95 ≤ 5s（告警上限 60s）</b></div>
+          <div class="kv"><span>脏态清除</span><b>发布成功后 UID-12 清零</b></div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn green" onclick="openModal('pub')">确认发布</button>
+            <button class="btn" onclick="toast('已取消')">取消</button>
+          </div>
+        </div>
+
+        <!-- Schema Diff 可视化 (v0.20 · 业界实践: Liquibase/Flyway/Prisma diff) -->
+        <div class="card">
+          <h4>Schema 变更预览 <span class="pill orange">v0.20 新增</span> <span class="sub">publish-preview 可视化 · 对标 Prisma migrate diff / Flyway</span></h4>
+          <div class="diff-section">
+            <div class="diff-header"><span>字段变更 Diff</span><span class="pill green">3 新增</span> <span class="pill orange">1 修改</span> <span class="pill red">1 删除</span></div>
+            <div class="diff-row"><span class="diff-op add">+</span><span class="diff-field">expected_arrival_date</span><span class="diff-detail">新增 · date · 可空 · 热加载示范</span></div>
+            <div class="diff-row"><span class="diff-op add">+</span><span class="diff-field">suggested_qty</span><span class="diff-detail">新增 · int · 可空 · 建议量快照</span></div>
+            <div class="diff-row"><span class="diff-op add">+</span><span class="diff-field">safety_snapshot</span><span class="diff-detail">新增 · int · 可空 · 安全库存快照</span></div>
+            <div class="diff-row"><span class="diff-op mod">✎</span><span class="diff-field">status</span><span class="diff-detail">varchar(16) → enum · <span class="pill orange">L2</span> 破坏性（类型变更）</span></div>
+            <div class="diff-row"><span class="diff-op del">-</span><span class="diff-field">legacy_sku</span><span class="diff-detail">删除 · <span class="pill red">L2</span> 破坏性（字段移除）</span></div>
+            <div class="diff-row"><span class="diff-op same">=</span><span class="diff-field">replenish_no</span><span class="diff-detail">不变 · varchar(32) · PK</span></div>
+            <div class="diff-row"><span class="diff-op same">=</span><span class="diff-field">product_name</span><span class="diff-detail">不变 · varchar(128) · 必填</span></div>
+          </div>
+          <div class="alert warn" style="margin-bottom:0">
+            <span><b>L2 破坏性变更需迁移窗口</b>：2 项（result 类型变更 / legacy_sku 删除）不可在线生效，需进入迁移流程。L1 变更可在线发布。</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>状态机可视化 <span class="sub">DRAFT→SUBMITTED→APPROVED→RECEIVED · 旁路 CANCELLED</span></h4>
+          <div class="state-machine">
+            <span class="sm-node draft">DRAFT</span>
+            <span class="sm-arrow">→</span>
+            <span class="sm-node submitted">SUBMITTED</span>
+            <span class="sm-arrow">→</span>
+            <span class="sm-node approved">APPROVED</span>
+            <span class="sm-arrow">→</span>
+            <span class="sm-node received">RECEIVED</span>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-3);text-align:center">
+            <span class="sm-branch">↘ 任何非终态 →</span>
+            <span class="sm-node cancelled" style="display:inline-block;padding:4px 12px;border-radius:14px;font-size:11px;font-weight:500;border:2px solid;background:#fff1f0;color:var(--red);border-color:#ffa39e">CANCELLED</span>
+            <span class="sm-branch">（旁路）</span>
+          </div>
+          <div class="alert warn" style="margin-top:12px;margin-bottom:0">
+            <span><b>跨实体操作（v1.1）</b>：APPROVED → RECEIVED 时触发 <code>Inventory.receive(replenishId)</code> · 跨实体副作用需在元数据中声明。</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>生效链路 <span class="sub">RC-002 · 嵌入式同步 evict（Outbox → v1.1）</span></h4>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap">
+            <span class="pill gray">发布中</span><span>→</span>
+            <span class="pill orange">生效中</span><span class="sub">通常数秒</span><span>→</span>
+            <span class="pill green">已生效</span>
+          </div>
+        </div>
+        <details class="later card">
+          <summary>后续 · 版本快照回滚 / Outbox（RC-005/006 · v1.1）</summary>
+          <p style="font-size:12.5px;color:var(--text-3);margin-top:8px">MVP 回退 = 功能开关 + 草稿再发布。不可变快照与可靠投递进 v1.1。</p>
+        </details>
+      </div>
+
+      <!-- ===== Tab: 数据 ===== -->
+      <div class="panel" id="t-data">
+        <div class="alert good">
+          <span><b>数据 = 填真数据</b>（须已发布）。本页 = UIF-007 运行时 CRUD · 与界面同源 Meta*。</span>
+          <button class="btn sm" style="margin-left:auto" onclick="goTab('t-ui')">回界面预览</button>
+        </div>
+        <div class="data-lock" id="data-lock">
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px">尚未发布 · 数据 Tab 锁定</div>
+          <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px">对标 Salesforce：草稿对象无运行时记录。先发布再录入。</div>
+          <button class="btn green" onclick="goTab('t-pub')">去发布解锁</button>
+        </div>
+        <div id="data-body">
+        <div class="alert warn">
+          <span><b>代码差距（W0）</b>：仅 page/size · slice(0,8) · 缺 DATE/ENUM · 无 If-Match · 412 无重载。</span>
+          <button class="btn sm" style="margin-left:auto" onclick="demo412()">演示 412</button>
         </div>
         <div class="card">
-          <h4>校验与审计 <span class="sub">规则运行时接线（复用 bone-metadata-engine）</span></h4>
-          <div style="font-size:12.5px;color:var(--text-2);line-height:1.9">
-            <div>✗ <b style="color:var(--red)">非法金额 -10.00</b> → 规则级错误 <code style="background:var(--gray-bg);padding:0 6px;border-radius:3px">RUNTIME_VALIDATION_FAILED(amount&gt;=0)</code>，拒绝入库</div>
-            <div>✗ <b style="color:var(--red)">扩展字段条件命中 JSON 降级列</b> → fail-fast 返回 <code style="background:var(--gray-bg);padding:0 6px;border-radius:3px">AGGREGATE_EXT_FIELD_CONDITION_UNSUPPORTED</code></div>
-            <div>✓ 全部写操作已审计（操作人 / 时间 / 租户 / 前后值 diff）</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <h4 style="margin:0">运行时 · <span id="data-ent-name">供应链补货单</span></h4>
+            <span class="pill green">自动生成 · 0 行业务仓手写</span>
+            <span class="seg" style="margin-left:auto">
+              <span class="seg-it on" data-v="list" onclick="swView('list')">列表 MetaList</span>
+              <span class="seg-it" data-v="form" onclick="swView('form')">表单 MetaForm</span>
+              <span class="seg-it" data-v="skel" onclick="swView('skel')">骨架屏</span>
+            </span>
+          </div>
+
+          <!-- 列表视图 -->
+          <div id="view-list">
+            <div class="qbar">
+              <input class="input" placeholder="关键字：补货单号 / 商品 / 仓库">
+              <select style="width:120px"><option>状态：全部</option><option>DRAFT</option><option>SUBMITTED</option><option>APPROVED</option><option>RECEIVED</option></select>
+              <select style="width:100px"><option>排序</option><option>数量↓</option><option>数量↑</option></select>
+              <button class="btn primary sm" onclick="toast('查询 · filter/sort（RC-004）')">查询</button>
+              <button class="btn sm" onclick="toast('列选择器')">列显隐</button>
+              <button class="btn sm primary" style="margin-left:auto" onclick="openReplNewModal()">+ 新建补货单</button>
+            </div>
+            <table>
+              <thead><tr id="data-thead"></tr></thead>
+              <tbody id="data-tbody"></tbody>
+            </table>
+            <div class="pager"><span id="data-pager">共 0 行</span><button class="btn sm">&lt;</button><span style="padding:0 6px">1</span><button class="btn sm">&gt;</button></div>
+            <div class="alert info" style="margin-top:10px;margin-bottom:0;font-size:11.5px">
+              <span><b>状态动作推导（v1.1）</b>：DRAFT→提交/取消 · SUBMITTED→审批/取消 · APPROVED→到货入库（<span class="cross-ent"><span class="warn-ico">⚠</span>跨实体：Inventory.receive</span>）· RECEIVED/CANCELLED→终态</span>
+            </div>
+          </div>
+
+          <!-- 表单视图 -->
+          <div id="view-form" style="display:none">
+            <div class="form-grid">
+              <div><div class="flabel">补货单号 <span class="req">*</span></div><div class="ctrl">RPL-20261009-002</div><div class="rule-tip">varchar(32) · 唯一</div></div>
+              <div><div class="flabel">商品名称 <span class="req">*</span></div><div class="ctrl">蓝牙耳机 Pro</div></div>
+              <div><div class="flabel">仓库编码 <span class="req">*</span></div><div class="ctrl">DEFAULT</div></div>
+              <div><div class="flabel">补货数量 <span class="req">*</span></div><div class="ctrl">80</div><div class="rule-tip">INTEGER · &gt;0</div></div>
+              <div><div class="flabel">状态 <span class="req">*</span></div><div class="ctrl">DRAFT ▼</div><div class="rule-tip">Select · 枚举</div></div>
+              <div><div class="flabel">供应商 <span class="pill purple">扩展</span></div><div class="ctrl">SUP-DEMO</div></div>
+              <div style="grid-column:1/-1"><div class="flabel">备注</div><div class="ctrl">低于安全库存</div></div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+              <button class="btn" onclick="swView('list')">取消</button>
+              <button class="btn primary" onclick="submitRecord()">提交</button>
+            </div>
+          </div>
+
+          <!-- 骨架屏视图 (v0.20 · 业界实践: LinkedIn/YouTube skeleton screens) -->
+          <div id="view-skel" style="display:none">
+            <div class="qbar">
+              <div class="skel-cell" style="width:200px;height:30px"></div>
+              <div class="skel-cell" style="width:120px;height:30px"></div>
+              <div class="skel-cell" style="width:80px;height:30px"></div>
+            </div>
+            <table>
+              <thead><tr><th>补货单号</th><th>商品名称</th><th>仓库</th><th>数量</th><th>建议量</th><th>状态</th><th>供应商</th><th>操作</th></tr></thead>
+              <tbody id="skel-body"></tbody>
+            </table>
+            <script>
+              (function(){
+                var tb=document.getElementById('skel-body');
+                if(!tb) return;
+                for(var i=0;i<5;i++){
+                  var tr=document.createElement('tr');
+                  tr.innerHTML='<td><div class="skel-cell" style="width:120px"></div></td><td><div class="skel-cell" style="width:90px"></div></td><td><div class="skel-cell" style="width:70px"></div></td><td><div class="skel-cell" style="width:40px"></div></td><td><div class="skel-cell" style="width:50px"></div></td><td><div class="skel-cell" style="width:70px"></div></td><td><div class="skel-cell" style="width:60px"></div></td><td><div class="skel-cell" style="width:50px"></div></td>';
+                  tb.appendChild(tr);
+                }
+              })();
+            </script>
+            <div class="alert info" style="margin-top:10px;margin-bottom:0;font-size:11.5px">
+              <span><b>骨架屏（v0.20）</b>：列表加载中用骨架屏替代 spinner，减少感知等待时间（对标 LinkedIn/YouTube/Facebook）；<code>stale-while-revalidate</code> 策略保持旧数据可见。</span>
+            </div>
+          </div>
+        </div>
+        </div><!-- /data-body -->
+        <div class="card">
+          <h4>catalog 快照（只读消费）</h4>
+          <pre style="background:#1e1e1e;color:#d4d4d4;border-radius:6px;padding:12px;font:11px/1.7 Menlo,Consolas,monospace;overflow:auto">{"entity":"t_replenishment","deliveryMode":"RUNTIME","fields":[
+  {"code":"replenish_no","type":"varchar","pk":true},
+  {"code":"product_id","type":"bigint","required":true},
+  {"code":"product_name","type":"varchar"},
+  {"code":"warehouse_code","type":"varchar","default":"DEFAULT"},
+  {"code":"quantity","type":"int","required":true},
+  {"code":"suggested_qty","type":"int","writeOnce":true},
+  {"code":"available_snapshot","type":"int","writeOnce":true},
+  {"code":"safety_snapshot","type":"int","writeOnce":true},
+  {"code":"supplier_code","type":"varchar"},
+  {"code":"status","type":"enum","options":["DRAFT","SUBMITTED","APPROVED","RECEIVED","CANCELLED"],"stateMachine":true},
+  {"code":"remark","type":"varchar"},
+  {"code":"submitted_at","type":"datetime","stateTriggered":"DRAFT->SUBMITTED"},
+  {"code":"approved_at","type":"datetime","stateTriggered":"SUBMITTED->APPROVED"},
+  {"code":"received_at","type":"datetime","stateTriggered":"APPROVED->RECEIVED"},
+  {"code":"version","type":"int","optimisticLock":true}
+]}</pre>
+        </div>
+      </div>
+
+      <!-- ===== Tab: 实现差距 ===== -->
+      <div class="panel" id="t-gap">
+        <div class="card">
+          <h4>代码体检 → 方案落点 <span class="sub">PRD §1.1.2 + §0.6 · 2026-10-09</span></h4>
+          <table>
+            <thead><tr><th>层</th><th>已具备（复用）</th><th>缺口（做）</th><th>波次</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Backend</td>
+                <td>fields/sort/q · If-Match · Idempotency · 发布 evict+align · validate · publish-preview · import-from-table</td>
+                <td>OpenAPI 落后实现 · ValidationEngine 未接写路径 · 无快照回滚 · publish-preview 缺 schema diff/影响面</td>
+                <td><span class="pill blue">W0</span> 契约 · <span class="pill purple">W2</span> 校验 · <span class="pill gray">v1.1</span> 回滚</td>
+              </tr>
+              <tr>
+                <td>Frontend</td>
+                <td>EntityDetail 行内编辑 · Runtime 页路由 · PublishPreviewModal · 编辑器质量高（只改非破坏属性 + 原样回传治理列）</td>
+                <td><b><code>/…/data</code> 不读 <code>:id</code>（看错实体）</b> · <code>size:50</code> · 列截断 8 · 无 If-Match/412 · 缺 DATE/ENUM 控件 · <b>无 MetaList/MetaForm（全仓零命中）</b> · <b>发布按钮仅草稿可见（1→n 断路）</b> · Tab 不与 URL 同步 · 无 ErrorBoundary</td>
+                <td><span class="pill blue">W0a/a2/a3</span> 断点 · <span class="pill blue">W0b</span> 壳 · <span class="pill green">W1</span> Meta*+ENUM</td>
+              </tr>
+              <tr>
+                <td>契约</td>
+                <td>实现 7 errorCode + ApiResponse</td>
+                <td><code>metadata-runtime-v1.yaml</code> 仍只写 page/size · RuntimeErrorEnvelope 叙述漂移</td>
+                <td><span class="pill blue">W0</span> D5：以代码为准改文档</td>
+              </tr>
+              <tr>
+                <td>元数据</td>
+                <td><code>meta_field.enum_values</code> 列已存在 · <code>meta_model_template</code> 已有 1 套种子</td>
+                <td><code>FIELD_TYPES</code> <b>无 ENUM</b> · <code>meta_model_template_field</code> <b>无 <code>enum_values</code> 列</b> · 仅 1 套模板（5 个文本字段）</td>
+                <td><span class="pill red">T1</span> <span class="pill gray">L3 DDL</span> → <span class="pill orange">T2/T3/T4</span></td>
+              </tr>
+              <tr>
+                <td>菜单/门禁</td>
+                <td>菜单已运行时化（失败不回退静态，刻意设计）</td>
+                <td>关系管理已 302（自欺） · <b>菜单↔路由零门禁</b>（跨文件漂移根因）</td>
+                <td><span class="pill gray">L3 迁移</span> · <span class="pill gray">G31-33</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h4>W0 退出标准（开发待办 · 可脚本化判据）</h4>
+          <div style="font-size:12.5px;line-height:2;color:var(--text-2)">
+            <div>☐ OpenAPI 声明 fields/sort/q、If-Match、Idempotency-Key、ETag、7 errorCode</div>
+            <div>☐ <b>Runtime 页绑 <code>:id</code>（优先于 query）</b>—— 造 2 个已发布实体 A/B，点 A 必须断言请求 code 为 A（变异：改回只读 query <b>必须变红</b>）</div>
+            <div>☐ <code>runtimeRecordApi</code> 传齐查询参数；update 带 If-Match；412 → 重新加载</div>
+            <div>☐ 实体选择器去 <code>size:50</code>（改服务端搜索）；列表取消 <code>slice(0,8)</code> 硬截断</div>
+            <div>☐ 控件补 DATE/DATETIME→DatePicker、<code>enumValues</code>→Select；未支持类型<b>显式降级提示</b></div>
+            <div>☐ 新建默认 <code>deliveryMode=RUNTIME</code>；创建成功落 <code>?tab=structure</code>；工作台「全新建模」打开对话框</div>
+            <div>☐ EntityDetail Tabs＝结构｜界面｜数据｜发布；<code>?tab=</code> URL 同步；<b>顶栏发布常驻</b>（1→n 前提）；脏态徽标；ErrorBoundary</div>
+            <div>☐ 顶栏「打开数据」：未发布 disabled + tooltip；已发布打开<b>本实体</b></div>
+            <div>☐ <b>T1–T3 ENUM 贯通</b>：模板表增列(L3) · 实例化透传 · FIELD_TYPES+编辑器+Select/Tag 渲染</div>
+            <div>☐ 发布后新字段在界面预览与数据 Tab 均可见（复用同步 evict，记时戳）</div>
+            <div>☐ <b>G31/G32/G33 门禁</b>接入 <code>check.sh</code> [31]–[33]，每道做变异验证</div>
+          </div>
+          <div class="foot-bar">
+            <span style="font-size:12px;color:var(--text-3)">业界对照：先释放已实现 API → 修数据正确性 → 界面 Tab 预览 → 组件化（strangler）→ 再治理</span>
+            <button class="btn" onclick="goTab('t-plan')">看落地路线 v0.32</button>
+            <button class="btn primary" onclick="goTab('t-fields')">从结构演示</button>
           </div>
         </div>
       </div>
 
-      <div class="foot-note">原型说明：本 HTML 为 PRD「§5. UI 设计」配套的交互原型（自包含，无后端依赖）。数据为演示数据；真实能力以 PRD 需求 RC-001~004 / VM-001~003 及工程实现为准。</div>
+      <!-- ===== Tab: 落地路线 v0.32 ===== -->
+      <div class="panel" id="t-plan">
+        <div class="card">
+          <h4>v0.32 代码实测：三处假设被推翻 <span class="pill red">先读</span></h4>
+          <div class="alert warn" style="margin-bottom:12px">
+            <span>以下均为<b>逐行代码实测</b>结论（<code>bone-metadata-app</code> 4677 行 + <code>0024</code> 菜单种子 + <code>bone-init.sql</code> +后端契约），<b>优先于原型演示与 PRD 前文 As-Is 声明</b>。</span>
+          </div>
+          <table>
+            <thead><tr><th style="width:44px">#</th><th>原假设</th><th>代码实测</th><th style="width:150px">结论</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>C1</b></td>
+                <td>MetaList/MetaForm 已存在，只需接线</td>
+                <td><b>全仓零命中</b>；<code>@bone/ui</code> 仅导出 tokens/theme/authority；<code>@bone/shared-components</code> 是<b>零消费死包</b></td>
+                <td><span class="pill red">从零新建</span><br><span style="font-size:11px;color:var(--text-3)">不是接线 ⇒ W1 工作量被低估</span></td>
+              </tr>
+              <tr>
+                <td><b>C2</b></td>
+                <td>场景矩阵以 5 态 ENUM 状态机验收</td>
+                <td><code>FIELD_TYPES</code> <b>无 ENUM/SELECT</b>；模板实例化显式丢 <code>enumValues</code>；<code>meta_model_template_field</code> 无 <code>enum_values</code> 列</td>
+                <td><span class="pill red">场景串联断点</span><br><span style="font-size:11px;color:var(--text-3)">补货 5 态在建模 UI 建不出来 ⇒ T1/T2/T3</span></td>
+              </tr>
+              <tr>
+                <td><b>C3</b></td>
+                <td><code>/…/data</code> 绑 <code>:id</code> 是「体验摩擦」</td>
+                <td>列表跳 <b>path id</b>，页面只读 <b>query code</b> ⇒ <code>:id</code> 被丢弃，点任意实体都落到列表第一个</td>
+                <td><span class="pill red">数据正确性缺陷</span><br><span style="font-size:11px;color:var(--text-3)">静默看错实体 ⇒ 提为 P0 首位</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h4>ENUM 贯通三步 <span class="pill orange">场景串联的前置</span></h4>
+          <div style="font-size:12.5px;line-height:2;color:var(--text-2)">
+            <div><span class="pill red">T1</span> <code>meta_model_template_field</code> 增 <code>enum_values</code> / <code>validation_rules</code>　<span class="pill red">L3 · DDL 需架构师审批</span></div>
+            <div><span class="pill orange">T2</span> <code>MetaTemplateApplicationService.instantiate</code> 透传两列（替换两处 <code>null</code>）</div>
+            <div><span class="pill orange">T3</span> <code>FIELD_TYPES</code> 增 ENUM + 枚举值编辑器 + <code>Select</code>/<code>Tag</code> 渲染；未支持类型<b>显式降级提示</b>（禁静默渲染空）</div>
+          </div>
+          <div class="alert good" style="margin-top:12px">
+            <span><b>验收判据</b>：本页三场景的字段表必须<b>能在生产建模 UI 里逐字敲出来</b>；敲不出来就是 T3 未完成，<b>不得以「原型已演示」替代</b>。</span>
+          </div>
+          <div class="foot-bar">
+            <button class="btn" onclick="switchEntity('repl');goTab('t-fields')">看补货 5 态字段表</button>
+            <button class="btn primary" onclick="toast('判据：三场景字段表能在生产建模 UI 逐字敲出')">验收判据</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>落地切片与依赖 <span class="sub">先让闭环通，再谈覆盖配置</span></h4>
+          <table>
+            <thead><tr><th style="width:96px">切片</th><th>做什么</th><th style="width:210px">完成定义（DoD）</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="pill blue">W0a</span></td>
+                <td>默认 RUNTIME · 创建后落 <code>?tab=structure</code> · <b><code>/data</code> 绑 <code>:id</code></b> · 工作台 CTA · 顶栏「打开数据」</td>
+                <td>3次点击进结构空态；<b>已发布实体点数据必打开本实体</b>（造 2 实体 A/B 负向断言）</td>
+              </tr>
+              <tr>
+                <td><span class="pill blue">W0a2</span></td>
+                <td>去 <code>size:50</code> · 去 <code>slice(0,8)</code> · <code>fields/sort/q</code> · If-Match + 412</td>
+                <td>51+ 实体可搜到；12 字段第 9–12 列可见；并发改同一条见 412 而非静默覆盖</td>
+              </tr>
+              <tr>
+                <td><span class="pill blue">W0a3</span></td>
+                <td>DATE/DATETIME → DatePicker · <code>enumValues</code> → Select · 未支持类型显式降级</td>
+                <td>建 DATE 得日期选择器；造 REFERENCE 得降级提示</td>
+              </tr>
+              <tr>
+                <td><span class="pill blue">W0b</span></td>
+                <td>四 Tab 重排 · <code>?tab=</code> URL 同步 · <b>发布常驻</b> · 脏态 · ErrorBoundary · 返回上下文</td>
+                <td>Tab 可深链/刷新不丢；<b>1→n 可在详情页再发布</b>；单Tab 崩不白屏</td>
+              </tr>
+              <tr>
+                <td><span class="pill green">W1</span></td>
+                <td><b>T1–T4 ENUM + 场景模板</b> · <code>projectColumns()</code>列投影单一真源 · 从零建 Meta* · 覆盖走 localStorage</td>
+                <td><b>三场景字段表可在生产逐字敲出</b>；界面预览列 ≡ 发布后数据列</td>
+              </tr>
+              <tr>
+                <td><span class="pill purple">W2</span></td>
+                <td>Validation接线 · publish-preview 补schema diff/影响面 · 发布成功三动作 · React Query</td>
+                <td>非法写入有 <code>META_</code> 码；发布后不留下一步猜测</td>
+              </tr>
+              <tr>
+                <td><span class="pill gray">G31-33</span></td>
+                <td>路由 id 绑定 · 菜单↔路由可达（死链检测） · 列截断禁令；接 <code>check.sh</code> [31]–[33]</td>
+                <td><b>故意制造违规时必须变红</b>（变异验证，否则门禁无效）</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h4>菜单收口 <span class="pill red">L3 迁移</span></h4>
+          <table>
+            <thead><tr><th>菜单</th><th>动作</th><th>理由</th></tr></thead>
+            <tbody>
+              <tr><td>建模工作台</td><td><span class="pill green">保留</span></td><td>唯一首页；首屏改为<b>三个 CTA 优先</b>，4 张 Stat 卡降级为一行小字</td></tr>
+              <tr><td>模型管理</td><td><span class="pill orange">改名「实体」</span></td><td>与「实体工作区」心智一致</td></tr>
+              <tr><td>关系管理</td><td><span class="pill red">软删</span></td><td>路由已 302 到实体列表 ⇒<b>点了等于「模型管理」，是自欺</b></td></tr>
+              <tr><td>运行时数据</td><td><span class="pill blue">降 order</span></td><td>跨实体批量运营真实高频，但主路径已改走工作区「数据」Tab</td></tr>
+            </tbody>
+          </table>
+          <div class="alert warn" style="margin-top:12px">
+            <span><b>菜单↔路由零门禁</b>正是「关系管理点了跳模型管理」这类跨文件漂移的根因⇒ 新增 <b>G32 死链检测</b>。迁移须新增脚本（如 <code>0027_menu_metadata_ia.sql</code>）并沿用 <code>0025</code> 的「备份 → 软删 → 计数校验 + SIGNAL」范式，<b>不改已执行的 0024</b>。</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>两处建议偏离前文 <span class="pill amber">待拍板</span></h4>
+          <table>
+            <thead><tr><th style="width:44px">#</th><th>偏离</th><th>理由</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>P1</b></td>
+                <td>从<b>模板</b>起盘后落 <code>?tab=ui</code>（界面）而非 <code>?tab=structure</code>（结构）</td>
+                <td>模板已带字段 ⇒ 落结构是<b>零信息量</b>页面；落界面立刻「见结果」，呼应「界面可先看再发，降低返工」。空白建模仍落结构</td>
+              </tr>
+              <tr>
+                <td><b>P2</b></td>
+                <td>工作台首屏：三个 CTA 优先，统计卡降级为一行小字</td>
+                <td>现状 4 张 Stat 卡占据首屏，而「全新建模」落到模块列表且硬取 <code>apps[0]</code> ⇒ <b>降低门槛的本质是让「下一步」在第一屏且唯一</b></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="foot-bar">
+            <span style="font-size:12px;color:var(--text-3)">落地细则：<code>doc/design/ui/元数据工作区前端融合方案.md</code>（逐文件 <code>file:line</code> 级改法）</span>
+            <button class="btn primary" onclick="goTab('t-fields')">回到工作区</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Tab: 状态异常 ===== -->
+      <div class="panel" id="t-err">
+        <div class="card">
+          <h4>关键异常演示</h4>
+          <table>
+            <thead><tr><th>场景</th><th>表现</th><th>演示</th></tr></thead>
+            <tbody>
+              <tr><td>412 并发冲突</td><td>非破坏提示 + 重新加载</td><td><button class="btn sm" onclick="toast('记录已被他人修改','error',[{label:'重新加载',onclick:'toast(\'已加载最新版本\',\'success\')'}])">模拟 412</button></td></tr>
+              <tr><td>校验失败</td><td>META_ 错误码 i18n</td><td><button class="btn sm" onclick="toast('VALIDATION_FAILED：补货数量必须为正','error')">模拟校验</button></td></tr>
+              <tr><td>L2 破坏性</td><td>拒绝或迁移窗口</td><td><button class="btn sm orange" onclick="toast('L2：删除必填字段需迁移窗口','warning')">模拟 L2</button></td></tr>
+              <tr><td>无权限</td><td>操作禁用态 + 说明，不报错（UIF-006）</td><td><button class="btn sm" onclick="toast('发布需要管理员权限，已为你提交审批草稿','warning',[{label:'查看申请',onclick:'toast(\'已打开我的变更申请\',\'success\')'}])">模拟无权限</button></td></tr>
+              <tr><td>筛选无结果</td><td>空态三分：说明 + 引导 + 清除筛选</td><td><button class="btn sm" onclick="toast('没有匹配「status=CANCELLED」的记录','info',[{label:'清除筛选',onclick:'toast(\'已清除筛选条件\',\'success\')'}])">模拟空态</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <details class="later card" open>
+        <summary><b>后续能力（v1.1+ · 非本迭代评审默认页）</b></summary>
+        <div class="later-grid">
+          <div class="later-card"><b>W1 · UIF-003</b><span style="color:var(--red)">从零新建</span> MetaList/MetaForm（非「提取」，全仓零命中）</div>
+          <div class="later-card"><b>W1 · UC-IMP</b>暴露 import-from-table（后端已有；拟作工作台第三 CTA）</div>
+          <div class="later-card"><b>W2 · RC-007</b>ValidationEngine 接入写路径</div>
+          <div class="later-card"><b>v1.1 画布</b>VM-001 + 双态预览</div>
+          <div class="later-card"><b>v1.1 Outbox/回滚</b>RC-005/006</div>
+          <div class="later-card"><b>v1.1 覆盖服务端化</b>localStorage → 团队级共享（涉 DDL 走 L3）</div>
+          <div class="later-card"><b>UIF-004</b>业务仓一次声明式挂载示例</div>
+        </div>
+      </details>
     </div>
   </main>
 </div>
 
-<!-- 弹窗 -->
-<div class="modal-mask" id="m-l1">
+<!-- 新建实体对话框 (UID-9: 对话框非步骤) -->
+<div class="modal-mask" id="m-new">
   <div class="modal">
-    <div class="m-head">确认发布 L1 在线变更<span style="cursor:pointer" onclick="closeModal('l1')">✕</span></div>
+    <div class="m-head">新建实体 <span style="cursor:pointer;font-weight:400" onclick="closeModal('new')">✕</span></div>
     <div class="m-body">
-      <div class="alert good" style="margin-bottom:8px">✓ 本批次仅含 1 项 L1 在线变更，预计 <b>P95 ≤ 60s 热加载生效</b>，无需停机窗口。</div>
-      变更内容：新增字段「收货地址」varchar(200) · 可空 · 扩展·预留列<br>
-      <span style="font-size:12px;color:var(--text-3)">发布人 admin · 操作将 100% 留痕审计</span>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div><div class="flabel">实体名称 <span class="req">*</span></div><input class="input" style="width:100%" placeholder="如：设备巡检单 / 补货单 / 访客登记" oninput="document.getElementById('newCode').value=this.value.replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase()"></div>
+        <div><div class="flabel">编码 <span class="req">*</span></div><input class="input" style="width:100%" id="newCode" placeholder="自动生成，可改"></div>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">交付模式</div>
+      <div class="mode-cards">
+        <div class="mode-card" data-mode="A" onclick="selMode('A')">
+          <h3><span class="tag-a">A</span>生成式</h3>
+          <div class="desc">元数据 → 生成可审计源码进 Git。适合<strong>复杂领域</strong>（订单/库存入库联动）。</div>
+        </div>
+        <div class="mode-card on" data-mode="B" onclick="selMode('B')">
+          <h3><span class="tag-b">B</span>运行时</h3>
+          <div class="desc">元数据 → 动态 CRUD。适合<strong>配置型对象</strong>（如补货单）。</div>
+        </div>
+      </div>
     </div>
     <div class="m-foot">
-      <button class="btn" onclick="closeModal('l1')">取消</button>
-      <button class="btn primary" onclick="doPublish()">确认发布</button>
+      <button class="btn" onclick="closeModal('new')">取消</button>
+      <button class="btn primary" onclick="createEntity()">创建</button>
     </div>
   </div>
 </div>
-<div class="modal-mask" id="m-l2">
+
+<div class="modal-mask" id="m-pub">
   <div class="modal">
-    <div class="m-head">⚠ 破坏性变更（L2）二次确认<span style="cursor:pointer" onclick="closeModal('l2')">✕</span></div>
-    <div class="m-body">
-      <div class="alert warn">删除字段「渠道来源」+ 「金额」添加唯一约束，涉及存量 ≈ 12,483 行。<br><b>需显式 5–10 分钟迁移窗口</b>，窗口期内写入将被暂停（接口幂等重试）。</div>
-      影响分析：1 条校验规则将随字段删除失效 · 0 个扩展点引用<br>
-      <span style="font-size:12px;color:var(--text-3)">请先填写迁移窗口时间：<input class="input" style="width:150px;margin-left:6px" value="2026-10-10 02:00"></span>
-    </div>
+    <div class="m-head">确认发布 <span style="cursor:pointer;font-weight:400" onclick="closeModal('pub')">✕</span></div>
+    <div class="m-body">将发布 <b>t_replenishment</b> 为 RUNTIME。<br>热加载目标 P95 ≤ 5s（嵌入式同步失效）。<br>发布后可切「数据」Tab 试用（UIF-007）。</div>
     <div class="m-foot">
-      <button class="btn" onclick="closeModal('l2')">取消</button>
-      <button class="btn orange" onclick="doPublish()">提交迁移计划</button>
+      <button class="btn" onclick="closeModal('pub')">取消</button>
+      <button class="btn green" onclick="doPublish()">确认发布</button>
     </div>
   </div>
 </div>
-<div class="modal-mask" id="m-diff">
-  <div class="modal">
-    <div class="m-head">版本 diff · v1.0.2 → v1.0.3<span style="cursor:pointer" onclick="closeModal('diff')">✕</span></div>
-    <div class="m-body">
-      <div class="chg-row"><span class="op add">+ 新增</span><span class="desc">字段「优惠券码」varchar(64) · 扩展·预留列（扩展字段分配成功）</span></div>
-      <div class="chg-row"><span class="op mod">~ 修改</span><span class="desc">「金额」精度 decimal(10,2) → decimal(12,2)</span></div>
+<div class="modal-mask" id="m-cmd">
+  <div class="modal cmd">
+    <input id="cmdInput" placeholder="搜索实体 / 切 Tab…" onkeydown="if(event.key==='Escape')closeCmd()">
+    <div class="row" onclick="startClosedLoop();closeCmd()"><b>▶ 0→1 走通</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">UC-01</span></div>
+    <div class="row" onclick="startEvolve();closeCmd()"><b>1→n 演进</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">UC-02</span></div>
+    <div class="row" onclick="switchEntity('device');closeCmd()"><b>场景 · 设备巡检</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">够用</span></div>
+    <div class="row" onclick="switchEntity('repl');closeCmd()"><b>场景 · 供应链补货</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">边界</span></div>
+    <div class="row" onclick="switchEntity('visitor');closeCmd()"><b>场景 · 访客登记</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">换皮</span></div>
+    <div class="row" onclick="goTab('t-fields');closeCmd()"><b>结构</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">字段/关系</span></div>
+    <div class="row" onclick="goTab('t-ui');closeCmd()"><b>界面</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">预览页面</span></div>
+    <div class="row" onclick="goTab('t-data');closeCmd()"><b>数据</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">填真数据</span></div>
+    <div class="row" onclick="goTab('t-pub');closeCmd()"><b>发布</b></div>
+    <div class="m-foot"><kbd>Esc</kbd> 关闭</div>
+  </div>
+</div>
+<div class="modal-mask" id="m-del"><div class="modal"><div class="m-body"></div></div></div>
+
+<!-- 到货入库 · 跨实体逃逸说明（UC-05 / PRD §2.5.8 UC-C） -->
+<div class="modal-mask" id="m-escape">
+  <div class="modal" style="max-width:560px">
+    <div class="m-head">📦 到货入库 · 跨实体逃逸（UC-05） <span style="cursor:pointer;font-weight:400" onclick="closeModal('escape')">✕</span></div>
+    <div class="m-body" style="font-size:12.5px;line-height:1.8">
+      <div class="alert warn" style="margin-bottom:12px">
+        <span>补货单 <b id="escape-no">—</b>（数量 <b id="escape-qty">—</b>）当前 <b>APPROVED</b>。这一步<b>不能只把 status 枚举改成 RECEIVED</b>——还必须给库存账真的加数量，否则单据与库存账实不一致。</span>
+      </div>
+      <div style="margin-bottom:10px"><b>MVP 怎么落地（本迭代）</b></div>
+      <div style="background:var(--gray-bg);border-radius:6px;padding:10px 12px;margin-bottom:12px">
+        <div>① bone-blueprint 手写 <code>ReplenishmentApplicationService.receive(id)</code>（约 50 行），暴露 <code>POST /api/v1/replenishments/{id}/receive</code></div>
+        <div>② <b>同一本地事务</b>内：补货单 APPROVED→RECEIVED ＋ <code>Inventory.receive()</code> 给 availableQty 加数量（库存入库还会触发渠道广播入 Outbox）</div>
+        <div>③ 运行时列表通过 <b>UIF-004 声明式挂载</b>在 APPROVED 行挂这个按钮——页面其余部分仍是 MetaList 自动生成</div>
+      </div>
+      <div style="margin-bottom:6px"><b>v1.1 目标态</b></div>
+      <div style="color:var(--text-2)">元数据声明跨实体动作 <code>receive → service://blueprint/replenishment#receive</code>；<b>UIF-008</b> 自动生成按钮、VF-001/扩展点负责事务编排，无需手工挂载。</div>
     </div>
-    <div class="m-foot"><button class="btn primary" onclick="closeModal('diff')">关闭</button></div>
+    <div class="m-foot">
+      <button class="btn" onclick="closeModal('escape')">取消</button>
+      <button class="btn green" onclick="confirmReceive()">确认入库（演示同事务两步）</button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- 闭环演示清单（对齐 UC · 非步骤条） -->
+<div class="coach" id="coach">
+  <div class="ch">
+    <span id="coach-title">闭环 · 0→1 · UC-01</span>
+    <span style="cursor:pointer;opacity:.85" onclick="document.getElementById('coach').classList.toggle('mini')" title="折叠">▁</span>
+  </div>
+  <div class="cb" id="coach-steps">
+    <div class="step" data-k="created"><span class="dot">1</span><span>新建 RUNTIME<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="fieldAdded"><span class="dot">2</span><span>结构：确认/加字段<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="uiChecked"><span class="dot">3</span><span>界面：结构预览<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="published"><span class="dot">4</span><span>发布 · 热加载<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="crudDone"><span class="dot">5</span><span>数据：首条记录<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="hotReload"><span class="dot">6</span><span>再加字段 → 再发布<span class="uc">UC-02 · 1→n</span></span></div>
+    <div class="step" data-k="reused" id="coach-reused"><span class="dot">8</span><span>复用到新场景 · 业务线+1<span class="uc">UC-04 · 换皮</span></span></div>
+    <div class="step" data-k="escape" id="coach-escape" style="display:none"><span class="dot">7</span><span>状态推进 → 📦到货入库<span class="uc">UC-05 · 仅补货</span></span></div>
+  </div>
+  <div class="cf">
+    <button class="btn sm primary" onclick="startClosedLoop()">重置 0→1</button>
+    <button class="btn sm" onclick="runAutoLoop()">自动播放</button>
+    <button class="btn sm" onclick="coachNext()">下一步</button>
+  </div>
+</div>
+
 <script>
-  function switchTab(id){
-    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===id));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===id));
+/* BONE metadata UI prototype v0.26 — scenario packs (generic closed loop) */
+  var TYPE_CTRL = {STRING:'Input',TEXT:'TextArea',DATE:'DatePicker',DATETIME:'DateTimePicker',INTEGER:'InputNumber',ENUM:'Select',BOOLEAN:'Switch'};
+  var SCENARIOS = {
+    device: {
+      id:'device', name:'设备巡检', code:'t_device_inspect', domain:'运维配置域',
+      role:'够用', tagline:'纯配置型 · 无跨聚合',
+      banner:'UC-01 够用样例：设备巡检 · 纯配置型。侧栏可换补货/访客（UC-04）。',
+      hint:'纯配置型示例：ENUM 结果徽标即可，无状态推进、无跨实体。',
+      modeB:['字段建模 / 列表表单 / filter / 热加载'],
+      escape:['无（本场景 MVP 全覆盖）'],
+      asIs:'—',
+      listCols:['inspect_no','device_code','inspect_date','result','ext_tag'],
+      formSample:{inspect_no:'INS-DEMO-003',device_code:'EQ-C01',inspect_date:'2026-10-09',result:'PENDING',remark:'待复检',ext_tag:'季度'},
+      filterLabel:'结果',
+      hotField:{code:'device_location',label:'设备位置',type:'STRING',sql:'varchar(128)',sample:'A区-12'},
+      fields:[
+        {code:'inspect_no',label:'巡检单号',type:'STRING',sql:'varchar(32)',constraint:'PK · 唯一',req:true},
+        {code:'device_code',label:'设备编码',type:'STRING',sql:'varchar(64)',constraint:'必填',req:true},
+        {code:'inspect_date',label:'巡检日期',type:'DATE',sql:'date',constraint:'必填',req:true},
+        {code:'result',label:'结果',type:'ENUM',sql:'enum',constraint:'PASS / FAIL / PENDING',req:true,enum:true},
+        {code:'remark',label:'备注',type:'TEXT',sql:'text',constraint:'—',req:false},
+        {code:'ext_tag',label:'扩展标签',type:'STRING',sql:'varchar(64)',constraint:'扩展·可空',req:false,ext:true}
+      ],
+      previewRows:[
+        {inspect_no:'INS-DEMO-001',device_code:'EQ-A12',inspect_date:'2026-10-09',result:'PASS',ext_tag:'季度'},
+        {inspect_no:'INS-DEMO-002',device_code:'EQ-B03',inspect_date:'2026-10-08',result:'PENDING',ext_tag:'—'}
+      ],
+      seed:function(){
+        return [
+          {cells:['INS-20261009-001','EQ-A12','2026-10-09','PASS','季度']},
+          {cells:['INS-20261008-014','EQ-B03','2026-10-08','PENDING','']},
+          {cells:['INS-20261007-008','EQ-A12','2026-10-07','FAIL','复检']}
+        ];
+      },
+      newRecord:function(seq, extra){
+        return {cells:['INS-DEMO-'+String(100+seq),'EQ-C01','2026-10-09','PENDING', extra?'A区-12':'季度']};
+      },
+      enumPill:function(v){
+        if(v==='PASS') return '<span class="pill green">PASS</span>';
+        if(v==='FAIL') return '<span class="pill red">FAIL</span>';
+        return '<span class="pill orange">'+v+'</span>';
+      },
+      enumCol:3
+    },
+    repl: {
+      id:'repl', name:'补货单', code:'t_replenishment', domain:'供应链域',
+      role:'边界', tagline:'配置型 + 轻状态机',
+      banner:'边界样例：补货 CRUD 壳 = Mode B；入库/建议量 = UC-05 逃逸。',
+      hint:'边界样例：ENUM 状态展示在 MVP；状态动作与跨聚合入库 → v1.1 / 逃逸。',
+      modeB:['补货单 CRUD 壳','status ENUM 徽标','filter / 热加载'],
+      escape:['建议补货算法','入库 Inventory.receive','多级审批'],
+      asIs:'commerce 手写 ReplenishmentManagement（本迭代不改）',
+      listCols:['replenish_no','product_name','warehouse_code','quantity','status','supplier_code'],
+      formSample:{replenish_no:'RPL-DEMO-003',product_name:'蓝牙耳机 Pro',warehouse_code:'DEFAULT',quantity:'80',status:'DRAFT',remark:'低于安全库存',supplier_code:'SUP-DEMO',available_snapshot:'8086',safety_snapshot:'10000'},
+      filterLabel:'状态',
+      hotField:{code:'expected_arrival_date',label:'预计到货日',type:'DATE',sql:'date',sample:'2026-10-20'},
+      fields:[
+        {code:'replenish_no',label:'补货单号',type:'STRING',sql:'varchar(32)',constraint:'PK · 唯一',req:true},
+        {code:'product_name',label:'商品名称',type:'STRING',sql:'varchar(128)',constraint:'必填',req:true},
+        {code:'warehouse_code',label:'仓库编码',type:'STRING',sql:'varchar(64)',constraint:'必填',req:true},
+        {code:'quantity',label:'补货数量',type:'INTEGER',sql:'int',constraint:'必填 · >0',req:true},
+        {code:'status',label:'状态',type:'ENUM',sql:'enum',constraint:'DRAFT→…→RECEIVED',req:true,enum:true,stateMachine:true},
+        {code:'remark',label:'备注',type:'TEXT',sql:'text',constraint:'—',req:false},
+        {code:'supplier_code',label:'供应商',type:'STRING',sql:'varchar(64)',constraint:'扩展·可空',req:false,ext:true},
+        {code:'available_snapshot',label:'可用量快照',type:'INTEGER',sql:'int',constraint:'writeOnce',req:false,writeOnce:true},
+        {code:'safety_snapshot',label:'安全库存快照',type:'INTEGER',sql:'int',constraint:'writeOnce',req:false,writeOnce:true}
+      ],
+      previewRows:[
+        {replenish_no:'RPL-DEMO-001',product_name:'蓝牙耳机 Pro',warehouse_code:'DEFAULT',quantity:'120',status:'APPROVED',supplier_code:'SUP-DEMO',available_snapshot:'8086',safety_snapshot:'10000'},
+        {replenish_no:'RPL-DEMO-002',product_name:'机械键盘',warehouse_code:'WH-EAST',quantity:'50',status:'SUBMITTED',supplier_code:'—',available_snapshot:'3120',safety_snapshot:'5000'}
+      ],
+      seed:function(){
+        return [
+          {cells:['RPL-20261009-001','蓝牙耳机 Pro','DEFAULT','120','APPROVED','SUP-DEMO']},
+          {cells:['RPL-20261008-014','机械键盘','WH-EAST','50','SUBMITTED','']},
+          {cells:['RPL-20261007-008','蓝牙耳机 Pro','DEFAULT','30','DRAFT','SUP-DEMO']}
+        ];
+      },
+      newRecord:function(seq, extra){
+        return {cells:['RPL-DEMO-'+String(100+seq),'蓝牙耳机 Pro','DEFAULT','80','DRAFT', extra?'ETA '+extra:'SUP-DEMO']};
+      },
+      enumPill:function(v){
+        if(v==='APPROVED'||v==='RECEIVED') return '<span class="pill green">'+v+'</span>';
+        if(v==='DRAFT') return '<span class="pill gray">'+v+'</span>';
+        if(v==='CANCELLED') return '<span class="pill red">'+v+'</span>';
+        return '<span class="pill orange">'+v+'</span>';
+      },
+      enumCol:4
+    },
+    visitor: {
+      id:'visitor', name:'访客登记', code:'t_visitor_pass', domain:'行政后勤域',
+      role:'换皮', tagline:'另一垂直 · 证通用性',
+      banner:'换皮样例：访客登记 · 步骤与巡检相同（UC-04）。',
+      hint:'换皮验证：证明 Meta* 不绑死供应链文案。',
+      modeB:['访客 CRUD 壳','ENUM 访问类型','filter / 热加载'],
+      escape:['门禁硬件联动（集成）','背景调查工作流'],
+      asIs:'—',
+      listCols:['pass_no','visitor_name','host_dept','visit_date','visit_type','badge_no'],
+      formSample:{pass_no:'VP-DEMO-003',visitor_name:'王访客',host_dept:'研发中心',visit_date:'2026-10-09',visit_type:'商务',badge_no:'B-118'},
+      filterLabel:'类型',
+      hotField:{code:'plate_no',label:'车牌号',type:'STRING',sql:'varchar(16)',sample:'浙A·D1234'},
+      fields:[
+        {code:'pass_no',label:'通行证号',type:'STRING',sql:'varchar(32)',constraint:'PK · 唯一',req:true},
+        {code:'visitor_name',label:'访客姓名',type:'STRING',sql:'varchar(64)',constraint:'必填',req:true},
+        {code:'host_dept',label:'接待部门',type:'STRING',sql:'varchar(64)',constraint:'必填',req:true},
+        {code:'visit_date',label:'访问日期',type:'DATE',sql:'date',constraint:'必填',req:true},
+        {code:'visit_type',label:'访问类型',type:'ENUM',sql:'enum',constraint:'商务 / 面试 / 施工',req:true,enum:true},
+        {code:'badge_no',label:'临时工牌',type:'STRING',sql:'varchar(32)',constraint:'可空',req:false},
+        {code:'remark',label:'事由',type:'TEXT',sql:'text',constraint:'—',req:false}
+      ],
+      previewRows:[
+        {pass_no:'VP-DEMO-001',visitor_name:'李明',host_dept:'销售部',visit_date:'2026-10-09',visit_type:'商务',badge_no:'B-101'},
+        {pass_no:'VP-DEMO-002',visitor_name:'陈面试',host_dept:'人力',visit_date:'2026-10-08',visit_type:'面试',badge_no:'—'}
+      ],
+      seed:function(){
+        return [
+          {cells:['VP-20261009-001','李明','销售部','2026-10-09','商务','B-101']},
+          {cells:['VP-20261008-014','陈面试','人力','2026-10-08','面试','']},
+          {cells:['VP-20261007-008','施工队A','行政','2026-10-07','施工','B-088']}
+        ];
+      },
+      newRecord:function(seq, extra){
+        return {cells:['VP-DEMO-'+String(100+seq),'王访客','研发中心','2026-10-09','商务', extra||'B-118']};
+      },
+      enumPill:function(v){
+        if(v==='商务') return '<span class="pill blue">商务</span>';
+        if(v==='面试') return '<span class="pill green">面试</span>';
+        return '<span class="pill orange">'+v+'</span>';
+      },
+      enumCol:4
+    }
+  };
+
+  var FIELD_META = {};
+  var S = {
+    entity:'device', published:true, dirty:2, name:'', code:'',
+    records:[], loop:{}, demoMode:'zero', extraField:false, recSeq:2, listCols:[]
+  };
+  var selectedField=null, autoTimer=null;
+
+  function scene(){ return SCENARIOS[S.entity] || SCENARIOS.repl; }
+
+  function rebuildFieldMeta(sc, withHot){
+    FIELD_META = {};
+    sc.fields.forEach(function(f){
+      FIELD_META[f.code] = {
+        label:f.label, type:f.type, ctrl:TYPE_CTRL[f.type]||'Input',
+        req:!!f.req, ext:!!f.ext, stateMachine:!!f.stateMachine
+      };
+    });
+    if(withHot && sc.hotField){
+      var h=sc.hotField;
+      FIELD_META[h.code]={label:h.label,type:h.type,ctrl:TYPE_CTRL[h.type]||'Input',req:false};
+    }
   }
-  window.addEventListener('load',()=>{ const h=location.hash.replace('#',''); if(h && ['t1','t2','t3','t4'].includes(h)) switchTab(h); });
-  function selEntity(name){
-    document.querySelectorAll('.tree-item').forEach(t=>t.classList.toggle('on',t.dataset.ent===name));
-    document.querySelectorAll('.entity-card').forEach(c=>c.classList.toggle('on',c.dataset.ent===name));
-    var titles={order:'· 实体：订单',customer:'· 实体：客户',product:'· 实体：商品'};
-    var el=document.getElementById('propTitle'); if(el) el.textContent=titles[name];
+
+  function applyScenario(id, opts){
+    opts = opts || {};
+    if(!SCENARIOS[id]) id='repl';
+    S.entity=id;
+    var sc=scene();
+    S.name=sc.name; S.code=sc.code;
+    S.listCols=sc.listCols.slice();
+    S.extraField=false;
+    if(!opts.keepLoop){
+      S.published = opts.asDraft ? false : true;
+      S.dirty = opts.asDraft ? 1 : 2;
+      S.records = opts.emptyRecords ? [] : sc.seed();
+      S.recSeq = S.records.length;
+      S.loop={created:true,fieldAdded:true,uiChecked:false,published:S.published,crudDone:false,hotReload:false,uiVisited:false};
+    }
+    rebuildFieldMeta(sc, false);
+    document.querySelectorAll('.nav .item[data-entity]').forEach(function(i){
+      i.classList.toggle('on', i.dataset.entity===id);
+    });
+    var ban=document.getElementById('scene-banner-text');
+    if(ban) ban.innerHTML=''+(sc.banner||sc.hint||'');
+    var sp=document.getElementById('struct-pill');
+    if(sp) sp.textContent=sc.role+' · '+sc.code;
+    var ss=document.getElementById('struct-sub');
+    if(ss) ss.textContent=sc.tagline;
+    var sh=document.getElementById('struct-hint');
+    if(sh) sh.innerHTML=(sc.hint||'');
+    var bb=document.getElementById('boundary-body');
+    if(bb){
+      bb.innerHTML=
+        '<div>✅ Mode B：'+sc.modeB.join(' · ')+'</div>'+
+        '<div>⏭ 逃逸：'+sc.escape.join(' · ')+'</div>'+
+        '<div>📎 As-Is：'+sc.asIs+'</div>'+
+        '<div style="margin-top:6px;color:var(--text-3)">能力通用 · 场景只是数据包（PRD §2.5.0）</div>';
+    }
+    var uiTip=document.querySelector('#t-ui > .alert.info span');
+    if(uiTip) uiTip.innerHTML='<b>界面 = 用户将来看到的页面</b>（当前场景：'+sc.name+'）。catalog → Meta* 自动生成；换场景包不换产品能力。';
+    var pub=document.getElementById('pub-ent-label');
+    if(pub) pub.textContent=sc.code+' · '+sc.fields.length+' 字段';
+    var pubModal=document.querySelector('#m-pub .m-body');
+    if(pubModal) pubModal.innerHTML='将发布 <b>'+sc.code+'</b> 为 RUNTIME。<br>热加载目标 P95 ≤ 5s。<br>发布后可切「数据」Tab（UIF-007）。';
+    renderStructure();
+    renderUiPreview();
+    renderOverlay();
+    renderDataChrome();
+    syncGates();
+    if(!opts.silent) toast('已切换场景包 · '+sc.name+'（'+sc.role+'）· 闭环步骤不变');
   }
-  function selMode(m){
-    document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('on',c.dataset.mode===m));
-    document.getElementById('modeNow').textContent = m==='A'?'模式 A · 生成式交付':'模式 B · 运行时交付';
+
+  function renderStructure(){
+    var sc=scene();
+    var tb=document.getElementById('fields-tbody');
+    if(!tb) return;
+    tb.innerHTML='';
+    sc.fields.forEach(function(f){
+      var tr=document.createElement('tr');
+      tr.setAttribute('data-f', f.code);
+      if(f.ext) tr.style.background='var(--purple-bg)';
+      if(f.stateMachine) tr.style.background='var(--primary-bg)';
+      tr.innerHTML='<td>'+f.label+'</td><td><code>'+f.code+'</code></td><td>'+f.sql+'</td><td>'+f.constraint+
+        (f.stateMachine?' <span class="pill blue">状态机</span>':'')+
+        '</td><td><button class="btn sm" onclick="markDirty()">编辑</button></td>';
+      tb.appendChild(tr);
+    });
+    var badge=document.querySelector('.tab[data-t="t-fields"] .badge');
+    if(badge) badge.textContent='字段 '+sc.fields.length;
+    renderEnumGate(sc);
   }
-  function openModal(id){ document.getElementById('m-'+id).classList.add('on'); }
-  function closeModal(id){ document.getElementById('m-'+id).classList.remove('on'); }
-  function doPublish(){
-    closeModal('l1'); closeModal('l2');
-    toast('发布成功：运行时已热加载（P95 ≤ 60s）· 审计已留痕');
+
+  /**
+   * v0.32 · ENUM 建模入口门（PRD §0.6.2 T3）
+   * 场景包里所有 ENUM 字段，依赖 `FIELD_TYPES` 增 ENUM + 模板表增 enum_values 列（L3 DDL）。
+   * 未落地前，生产建模 UI 建不出这些字段 —— 这里显式标出「本场景依赖哪些 ENUM 字段」，
+   * 避免评审误以为「原型能演示 = 生产能建模」。
+   */
+  function renderEnumGate(sc){
+    var host=document.getElementById('enum-gate');
+    if(!host) return;
+    var enums=sc.fields.filter(function(f){ return f.type==='ENUM'; });
+    if(!enums.length){ host.style.display='none'; return; }
+    host.style.display='';
+    host.innerHTML='<span class="pill red">T3 前置</span> 本场景有 <b>'+enums.length+
+      '</b> 个 ENUM 字段（<code>'+enums.map(function(f){return f.code;}).join('</code> · <code>')+
+      '</code>）—— 生产建模 UI 必须能录入枚举值，否则本场景无法从零建起';
   }
-  function toast(msg){
-    var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
-    setTimeout(()=>t.classList.remove('on'),2600);
+
+  function cellHtml(sc, code, val, first){
+    var meta=FIELD_META[code]||{};
+    var v = (val==null||val==='') ? '—' : String(val);
+    if(meta.type==='ENUM' || code===sc.listCols[sc.enumCol]) v = sc.enumPill(val);
+    else if(meta.ext && v!=='—') v='<span class="pill purple">'+v+'</span>';
+    var cls='pickable'+(first?' cell-edit':'')+(meta.type==='INTEGER'?' num':'');
+    return '<td data-col="'+code+'" class="'+cls+'" onclick="selectField(\''+code+'\')">'+v+(first?'<span class="edit-ico">✎</span>':'')+'</td>';
   }
+
+  function renderUiPreview(){
+    var sc=scene();
+    var thead=document.getElementById('ui-thead');
+    var tbody=document.getElementById('ui-tbody');
+    if(!thead||!tbody) return;
+    thead.innerHTML='';
+    sc.listCols.forEach(function(c){
+      var f=sc.fields.find(function(x){return x.code===c;})||{label:c};
+      var th=document.createElement('th');
+      th.setAttribute('data-col',c); th.className='pickable';
+      th.textContent=f.label; th.onclick=function(){ selectField(c); };
+      thead.appendChild(th);
+    });
+    tbody.innerHTML='';
+    sc.previewRows.forEach(function(row, ri){
+      var tr=document.createElement('tr');
+      var html='';
+      sc.listCols.forEach(function(c, ci){ html+=cellHtml(sc,c,row[c], ri===0&&ci===0); });
+      tr.innerHTML=html; tbody.appendChild(tr);
+    });
+    var grid=document.querySelector('#ui-form .form-grid');
+    if(!grid) return;
+    var uns=document.getElementById('ui-unsupported');
+    grid.innerHTML='';
+    var tip=document.createElement('div');
+    tip.id='ui-form-scene-tip'; tip.style.gridColumn='1/-1';
+    tip.innerHTML='<div class="alert info" style="margin:0"><span>预览只读 · 场景 <b>'+sc.name+'</b> · 真提交在「数据」Tab</span></div>';
+    grid.appendChild(tip);
+    sc.fields.forEach(function(f){
+      var sample=sc.formSample[f.code];
+      if(sample===undefined) sample='';
+      var div=document.createElement('div');
+      div.setAttribute('data-f',f.code); div.className='pickable';
+      if(f.type==='TEXT') div.style.gridColumn='1/-1';
+      div.onclick=function(){ selectField(f.code); };
+      var ctrl = f.type==='ENUM' ? sc.enumPill(sample)+' ▾' : (sample||'（空）');
+      if(f.writeOnce) ctrl='<span class="pill gray">写一次 · 创建后只读</span> '+ctrl;
+      div.innerHTML='<div class="flabel">'+f.label+(f.req?' <span class="req">*</span>':'')+
+        '<span class="type-chip">'+f.type+'→'+(TYPE_CTRL[f.type]||'Input')+'</span></div><div class="ctrl">'+ctrl+'</div>';
+      grid.appendChild(div);
+    });
+    if(uns){ uns.style.display='none'; grid.appendChild(uns); }
+  }
+
+  function renderOverlay(){
+    var sc=scene();
+    var ov=document.getElementById('ov-list');
+    if(!ov) return;
+    ov.innerHTML='';
+    sc.listCols.forEach(function(c){
+      var f=sc.fields.find(function(x){return x.code===c;})||{label:c};
+      var row=document.createElement('div');
+      row.className='ov-row'; row.setAttribute('data-col',c);
+      row.onclick=function(){ selectField(c); };
+      row.innerHTML='<span class="drag">⋮⋮</span>'+
+        '<input type="checkbox" checked onclick="event.stopPropagation()" onchange="toggleCol(\''+c+'\',this.checked);markDirty()">'+
+        '<div class="ov-label"><input class="input" value="'+f.label+'" onclick="event.stopPropagation()" onchange="renameCol(\''+c+'\',this.value);markDirty()"></div>'+
+        '<button class="btn sm" onclick="event.stopPropagation();moveCol(\''+c+'\',-1);markDirty()">↑</button>'+
+        '<button class="btn sm" onclick="event.stopPropagation();moveCol(\''+c+'\',1);markDirty()">↓</button>';
+      ov.appendChild(row);
+    });
+  }
+
+  function renderDataChrome(){
+    var sc=scene();
+    var thead=document.getElementById('data-thead');
+    if(thead){
+      thead.innerHTML=sc.listCols.map(function(c){
+        var f=sc.fields.find(function(x){return x.code===c;})||{label:c};
+        return '<th>'+f.label+'</th>';
+      }).join('')+'<th>操作</th>';
+    }
+    var q=document.querySelector('#view-list .qbar input');
+    if(q) q.placeholder='关键字：'+sc.name;
+    var sel=document.querySelector('#view-list .qbar select');
+    if(sel) sel.innerHTML='<option>'+sc.filterLabel+'：全部</option>';
+    var form=document.querySelector('#view-form .form-grid');
+    if(form){
+      form.innerHTML=sc.fields.map(function(f){
+        var sample=sc.formSample[f.code]; if(sample===undefined) sample='';
+        return '<div><div class="flabel">'+f.label+(f.req?' <span class="req">*</span>':'')+'</div><div class="ctrl">'+sample+'</div></div>';
+      }).join('');
+    }
+    var pre=document.querySelector('#t-data pre');
+    if(pre){
+      pre.textContent=JSON.stringify({entity:sc.code,deliveryMode:'RUNTIME',fields:sc.fields.map(function(f){
+        return {code:f.code,type:f.sql,required:!!f.req};
+      })}, null, 2);
+    }
+  }
+
+  function switchEntity(entity){ applyScenario(entity, {}); goTab('t-fields'); }
+
+  function goTab(id){
+    if(id==='t-data' && !S.published){ toast('数据 Tab 已锁定 · 请先发布','warning'); id='t-pub'; }
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('on', p.id===id); });
+    document.querySelectorAll('.nav .item[data-nav]').forEach(function(i){ i.classList.toggle('on', i.dataset.nav===id); });
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.t===id); });
+    // v0.32：Tab 与 URL 同步（对齐生产整改项W0b-B2 —— 现状 EntityDetail 用纯 useState，
+    // 刷新丢上下文、不可深链）。原型用hash 承载，便于评审时直接分享某一Tab。
+    location.hash=id;
+    if(id==='t-fields' && selectedField){
+      var row=document.querySelector('#t-fields tr[data-f="'+selectedField+'"]');
+      if(row){ row.classList.add('hl-pulse'); row.scrollIntoView({block:'nearest'}); }
+    }
+    syncGates();
+  }
+  function selMode(m){ document.querySelectorAll('.mode-card').forEach(function(c){ c.classList.toggle('on', c.dataset.mode===m); }); }
+  function swView(v){
+    document.querySelectorAll('#t-data .seg-it').forEach(function(s){ s.classList.toggle('on', s.dataset.v===v); });
+    var vl=document.getElementById('view-list'); if(vl) vl.style.display=v==='list'?'':'none';
+    var vf=document.getElementById('view-form'); if(vf) vf.style.display=v==='form'?'':'none';
+    var sk=document.getElementById('view-skel'); if(sk) sk.style.display=v==='skel'?'':'none';
+  }
+  function swUiView(v){
+    document.querySelectorAll('#t-ui .seg-it[data-uv]').forEach(function(s){ s.classList.toggle('on', s.dataset.uv===v); });
+    document.getElementById('ui-list').style.display=v==='list'?'':'none';
+    document.getElementById('ui-form').style.display=v==='form'?'':'none';
+  }
+  function swUiMode(mode){
+    document.querySelectorAll('#ui-mode .seg-it').forEach(function(s){ s.classList.toggle('on', s.dataset.mode===mode); });
+    var ws=document.getElementById('ui-workspace');
+    if(ws) ws.classList.toggle('preview-mode', mode==='preview');
+    var hint=document.getElementById('cta-hint');
+    if(hint) hint.textContent=mode==='preview'?'预览态：用户眼中所见':'配置态：可改覆盖';
+    if(mode==='preview') markLoop('uiChecked');
+    toast(mode==='preview'?'纯预览（用户所见）':'配置模式');
+  }
+  function selectField(code){
+    selectedField=code;
+    document.querySelectorAll('.pickable').forEach(function(el){
+      var c=el.getAttribute('data-col')||el.getAttribute('data-f');
+      el.classList.toggle('on', c===code);
+    });
+    document.querySelectorAll('#ov-list .ov-row').forEach(function(r){ r.classList.toggle('on', r.dataset.col===code); });
+    var m=FIELD_META[code]||{label:code,type:'?',ctrl:'?',req:false};
+    var card=document.getElementById('sel-card');
+    if(card){
+      card.innerHTML='<div><b>'+m.label+'</b> <code>'+code+'</code></div>'+
+        '<div>类型 → 控件：'+m.type+' → <b>'+m.ctrl+'</b>'+(m.ext?' · <span class="pill purple">扩展</span>':'')+
+        (m.stateMachine?' · <span class="pill blue">状态机</span>':'')+'</div>'+
+        '<div>必填：'+(m.req?'是':'否')+' · 覆盖不改元数据</div>';
+    }
+    var btn=document.getElementById('btn-jump-struct');
+    if(btn) btn.disabled=false;
+  }
+  function jumpToStruct(){ if(!selectedField) return; goTab('t-fields'); toast('已定位结构 · '+selectedField); }
+  function markDirty(){ S.dirty++; syncGates(); }
+  function discardDirty(){ S.dirty=0; syncGates(); toast('演示：脏态已清除'); }
+  function clearDirty(){ S.dirty=0; syncGates(); }
+  function syncGates(){
+    var pub=document.getElementById('pub-pill');
+    var draft=document.getElementById('draft-pill');
+    var dirty=document.getElementById('dirty-pill');
+    var bar=document.getElementById('dirty-bar');
+    var msg=document.getElementById('dirty-msg');
+    var ds=document.getElementById('tab-dirty-s');
+    var du=document.getElementById('tab-dirty-u');
+    var lock=document.getElementById('data-lock');
+    var body=document.getElementById('data-body');
+    var tabData=document.getElementById('tab-data');
+    if(pub) pub.style.display=S.published?'':'none';
+    if(draft) draft.style.display=S.published?'none':'';
+    var has=S.dirty>0;
+    if(dirty){ dirty.style.display=has?'':'none'; dirty.textContent='未发布 · '+S.dirty; }
+    if(bar) bar.style.display=has?'flex':'none';
+    if(msg) msg.innerHTML=S.published
+      ? ('<b>未发布 · '+S.dirty+' 项变更</b> · 线上仍跑上一版快照')
+      : ('<b>草稿实体 · '+S.dirty+' 项待发布</b> · 尚无运行时数据');
+    if(ds) ds.style.display=has?'':'none';
+    if(du) du.style.display=has?'':'none';
+    if(lock) lock.classList.toggle('on', !S.published);
+    if(body) body.style.display=S.published?'':'none';
+    if(tabData) tabData.classList.toggle('disabled', !S.published);
+    var crumb=document.getElementById('crumb-ent');
+    if(crumb){
+      var sc=scene();
+      crumb.textContent=sc.name+' · '+sc.code;
+      var dom=document.getElementById('crumb-domain');
+      if(dom) dom.textContent=sc.domain;
+    }
+    var den=document.getElementById('data-ent-name');
+    if(den) den.textContent=S.name;
+    renderRecords();
+    if(typeof renderCoach==='function') renderCoach();
+    if(typeof updatePhaseUI==='function') updatePhaseUI();
+  }
+  function renderRecords(){
+    var sc=scene();
+    var tb=document.getElementById('data-tbody');
+    if(!tb) return;
+    tb.innerHTML='';
+    S.records.forEach(function(r, idx){
+      var tr=document.createElement('tr');
+      var html='';
+      (r.cells||[]).forEach(function(val, i){
+        var v=val;
+        if(i===sc.enumCol) v=sc.enumPill(val);
+        else if(i===0) v=val+' <span class="edit-ico">✎</span>';
+        html+='<td'+(i===0?' class="cell-edit"':'')+'>'+v+'</td>';
+      });
+      var no=r.cells?r.cells[0]:'';
+      var acts='<button class="btn sm" onclick="editRecord('+idx+')">编辑</button> '+
+        '<button class="btn sm danger" onclick="confirmDelete(\''+no+'\')">删除</button>';
+      // 补货场景：按状态机合法转移推导行内动作（MVP=ENUM 手工推进；v1.1 由 UIF-008 自动生成）
+      if(sc.id==='repl'){
+        var st=r.cells[sc.enumCol];
+        if(st==='DRAFT') acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'SUBMITTED\')" title="DRAFT→SUBMITTED · MVP 手工改 ENUM">提交</button>';
+        else if(st==='SUBMITTED') acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'APPROVED\')" title="SUBMITTED→APPROVED">审批</button>';
+        else if(st==='APPROVED') acts+=' <button class="btn sm orange" onclick="receiveStock('+idx+')" title="跨实体逃逸：调手写 receive 服务，同事务改库存">📦 到货入库</button>';
+      }
+      html+='<td>'+acts+'</td>';
+      tr.innerHTML=html; tb.appendChild(tr);
+    });
+    var pg=document.getElementById('data-pager');
+    if(pg) pg.textContent='共 '+S.records.length+' 行';
+    var badge=document.getElementById('data-badge');
+    if(badge) badge.textContent=String(S.records.length);
+  }
+
+  // ===== UC-C · 状态推进与跨实体逃逸（仅补货场景）=====
+  var escapeIdx=null;
+  /** MVP 状态推进：本质是改本单 ENUM（v1.1 由 UIF-008 按状态机元数据自动出按钮）。 */
+  function advanceState(idx, next){
+    var r=S.records[idx]; if(!r) return;
+    var sc=scene();
+    r.cells[sc.enumCol]=next;
+    renderRecords();
+    var label={SUBMITTED:'提交',APPROVED:'审批'}[next]||'状态推进';
+    toast(r.cells[0]+' · '+label+' → '+next+'（MVP：ENUM 手工推进 · v1.1 UIF-008 自动按钮）','success');
+  }
+  /** 到货入库：不能只改枚举——弹跨实体逃逸说明（手写服务 + UIF-004 挂载 / v1.1 声明式动作）。 */
+  function receiveStock(idx){
+    var r=S.records[idx]; if(!r) return;
+    escapeIdx=idx;
+    var elNo=document.getElementById('escape-no'), elQty=document.getElementById('escape-qty');
+    if(elNo) elNo.textContent=r.cells[0];
+    if(elQty) elQty.textContent=r.cells[3]||'—';
+    openModal('escape');
+  }
+  /** 确认入库（演示）：同一事务内 补货单→RECEIVED ＋ Inventory.receive 加库存。 */
+  function confirmReceive(){
+    var r=S.records[escapeIdx]; if(!r){ closeModal('escape'); return; }
+    var sc=scene();
+    var qty=r.cells[3];
+    r.cells[sc.enumCol]='RECEIVED';
+    closeModal('escape'); renderRecords();
+    markLoop('escape');
+    toast('到货入库完成：'+r.cells[0]+' → RECEIVED；库存 availableQty +'+qty+'（同事务 Inventory.receive · 渠道广播已入 Outbox）','success');
+  }
+  /** 编辑某行：进入 MetaForm，表单按当前场景字段渲染（含该行值）。 */
+  function editRecord(idx){
+    renderFormView(S.records[idx]);
+    swView('form');
+  }
+  function markLoop(k){ if(!S.loop||S.loop[k]===undefined) return; S.loop[k]=true; renderCoach(); updatePhaseUI(); }
+  function renderCoach(){
+    var order=['created','fieldAdded','uiChecked','published','crudDone','hotReload','reused'];
+    var firstOpen=null;
+    order.forEach(function(k){
+      var el=document.querySelector('#coach-steps .step[data-k="'+k+'"]');
+      if(!el) return;
+      el.classList.remove('done','now');
+      if(S.loop[k]) el.classList.add('done');
+      else if(!firstOpen){ firstOpen=k; el.classList.add('now'); }
+    });
+  }
+  function updatePhaseUI(){
+    var mode = S.demoMode || 'zero';
+    document.querySelectorAll('#demo-mode .seg-it').forEach(function(el){
+      el.classList.toggle('on', el.dataset.dm===mode);
+    });
+    var chip=document.getElementById('uc-chip');
+    var hint=document.getElementById('phase-hint');
+    var title=document.getElementById('coach-title');
+    var uc='UC-01', h='从零建模到第一条数据', ct='闭环 · 0→1 · UC-01';
+    if(mode==='evolve' || (S.loop && S.loop.crudDone && !S.loop.hotReload)){
+      uc='UC-02'; h='已上线 · 加字段再发布（1→n）'; ct='闭环 · 1→n · UC-02';
+    }
+    if(S.loop && S.loop.hotReload){ uc='UC-01✓ UC-02✓'; h='0→1 与 1→n 均已演示 · 可换场景包（UC-04）'; ct='闭环完成 · 可换场景'; }
+    if((S.bizLine||1)>1){ uc+=' · 业务线#'+S.bizLine; }
+    if(chip) chip.textContent='当前 · '+uc;
+    if(hint) hint.textContent=h;
+    if(title) title.textContent=ct;
+  }
+  function setDemoMode(mode){
+    S.demoMode=mode;
+    if(mode==='zero') startClosedLoop();
+    else startEvolve();
+  }
+  function cycleScene(){
+    var order=['device','repl','visitor'];
+    var nx=order[(order.indexOf(S.entity)+1)%order.length];
+    S.bizLine=(S.bizLine||1)+1;
+    switchEntity(nx);
+    markLoop('reused');
+    updatePhaseUI();
+    toast('业务线 #'+S.bizLine+' ·「'+scene().name+'」· 步骤与 UC-01 完全相同 · 点「重置 0→1」或「自动播放」走第 '+S.bizLine+' 遍','success');
+  }
+  function coachNext(){
+    if(!S.loop) S.loop={};
+    if(!S.loop.created){ openModal('new'); return; }
+    if(!S.loop.fieldAdded){ goTab('t-fields'); toast('点「+ 添加字段（演示）」或确认已有字段'); markLoop('fieldAdded'); return; }
+    if(!S.loop.uiChecked){ goTab('t-ui'); swUiMode('preview'); return; }
+    if(!S.loop.published || S.dirty>0){ goTab('t-pub'); return; }
+    if(!S.loop.crudDone){ openData(); swView('form'); toast('填写并提交一条记录 · UC-01'); return; }
+    if(!S.loop.hotReload){ S.demoMode='evolve'; updatePhaseUI(); goTab('t-fields'); toast('1→n：再点「+ 添加字段」→ 发布 · UC-02'); return; }
+    cycleScene();
+  }
+  function startClosedLoop(){
+    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+    S.demoMode='zero';
+    applyScenario(S.entity||'device', {asDraft:true, emptyRecords:true, silent:true});
+    goTab('t-fields');
+    updatePhaseUI();
+    toast('UC-01 · 0→1：草稿已重置 · 按右下清单走通');
+  }
+  function startEvolve(){
+    if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+    S.demoMode='evolve';
+    applyScenario(S.entity||'device', {silent:true});
+    // published with seed data, ready for UC-02
+    S.published=true; S.dirty=0; S.extraField=false;
+    S.loop={created:true,fieldAdded:true,uiChecked:true,published:true,crudDone:true,hotReload:false,uiVisited:true};
+    // remove hot field if present
+    var sc=scene();
+    if(sc.hotField && FIELD_META[sc.hotField.code]){
+      delete FIELD_META[sc.hotField.code];
+      var xf=document.querySelector('#fields-tbody tr[data-f="'+sc.hotField.code+'"]');
+      if(xf) xf.remove();
+      S.listCols=sc.listCols.slice();
+      renderUiPreview(); renderOverlay(); renderDataChrome();
+    }
+    syncGates(); updatePhaseUI();
+    goTab('t-fields');
+    toast('UC-02 · 1→n：实体已发布 · 点「+ 添加字段」再发布看热加载');
+  }
+  function runAutoLoop(){
+    startClosedLoop();
+    var steps=[
+      function(){ goTab('t-ui'); },
+      function(){ swUiMode('preview'); },
+      function(){ goTab('t-pub'); },
+      function(){ doPublish(true); },
+      function(){ swView('form'); },
+      function(){ submitRecord(); },
+      function(){ S.demoMode='evolve'; updatePhaseUI(); addDemoField(); },
+      function(){ doPublish(true); toast('0→1 + 1→n 完成 · 可换场景包','success'); }
+    ];
+    var i=0;
+    function tick(){ if(i>=steps.length) return; steps[i++](); autoTimer=setTimeout(tick, 1000); }
+    autoTimer=setTimeout(tick, 600);
+  }
+  function createEntity(){
+    var codeEl=document.getElementById('newCode');
+    var code=(codeEl && codeEl.value)||'t_new_entity';
+    var nameInp=document.querySelector('#m-new .input');
+    S.name=(nameInp && nameInp.value)||'新实体';
+    S.code=code;
+    S.published=false; S.dirty=1; S.records=[];
+    S.loop={created:true,fieldAdded:false,uiChecked:false,published:false,crudDone:false,hotReload:false,uiVisited:false};
+    S.demoMode='zero';
+    closeModal('new'); syncGates(); updatePhaseUI(); goTab('t-fields');
+    toast('实体已创建 · 草稿 · UC-01');
+  }
+  function addDemoField(){
+    var sc=scene(); var h=sc.hotField;
+    if(S.extraField || FIELD_META[h.code]){
+      toast('示范字段已存在 · 去发布即可'); markLoop('fieldAdded'); return;
+    }
+    S.extraField=true;
+    FIELD_META[h.code]={label:h.label,type:h.type,ctrl:TYPE_CTRL[h.type]||'Input',req:false};
+    var tb=document.getElementById('fields-tbody');
+    var tr=document.createElement('tr');
+    tr.setAttribute('data-f',h.code); tr.style.background='var(--primary-bg)';
+    tr.innerHTML='<td>'+h.label+'</td><td><code>'+h.code+'</code></td><td>'+h.sql+'</td><td><span class="pill orange">新·可空 · 1→n</span></td><td><button class="btn sm" onclick="markDirty()">编辑</button></td>';
+    tb.appendChild(tr);
+    S.listCols.push(h.code);
+    renderUiPreview(); renderOverlay(); renderDataChrome();
+    markDirty(); markLoop('fieldAdded');
+    toast('已加 '+h.code+' · 去界面确认 → 发布（UC-02）');
+  }
+  function openData(){
+    if(!S.published){ toast('须先发布','warning'); goTab('t-pub'); return; }
+    goTab('t-data'); toast('UIF-007 · …/data?entity='+S.code);
+  }
+  function submitRecord(){
+    if(!S.published){ toast('须先发布','warning'); return; }
+    S.recSeq++;
+    var sc=scene();
+    var rec=sc.newRecord(S.recSeq, S.extraField?sc.hotField.sample:'');
+    S.records.unshift(rec);
+    markLoop('crudDone'); renderRecords(); swView('list'); updatePhaseUI();
+    toast('提交成功 · '+rec.cells[0]+' · UC-01 数据步完成','success');
+  }
+  function demo412(){
+    toast('412 并发冲突 · UC-06','error',[
+      {label:'重新加载', onclick:"toast('已加载最新版本','success')"}
+    ]);
+  }
+  function doPublish(silent){
+    closeModal('pub');
+    var wasPublished=S.published;
+    S.published=true; clearDirty(); markLoop('published');
+    if(wasPublished && S.extraField) markLoop('hotReload');
+    if(S.extraField) markLoop('fieldAdded');
+    syncGates(); updatePhaseUI();
+    if(!silent) toast('发布成功 · 热加载 ~1.2s','success');
+    setTimeout(function(){ goTab('t-data'); if(!silent) toast('数据 Tab 已解锁'); }, silent?200:800);
+  }
+  function toggleCol(code,on){
+    document.querySelectorAll('#ui-preview-table [data-col="'+code+'"]').forEach(function(el){ el.style.display=on?'':'none'; });
+    toast((on?'显示':'隐藏')+'列 · '+code+'（UC-03 覆盖）');
+  }
+  function renameCol(code,name){
+    if(FIELD_META[code]) FIELD_META[code].label=name;
+    var th=document.querySelector('#ui-preview-table thead th[data-col="'+code+'"]');
+    if(th){ th.textContent=name; th.onclick=function(){ selectField(code); }; }
+    if(selectedField===code) selectField(code);
+    toast('显示名覆盖：'+name+'（UC-03）');
+  }
+  function moveCol(code,dir){
+    var row=document.querySelector('#ov-list .ov-row[data-col="'+code+'"]');
+    if(!row) return;
+    if(dir<0 && row.previousElementSibling) row.parentNode.insertBefore(row,row.previousElementSibling);
+    if(dir>0 && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling,row);
+    var order=[].map.call(document.querySelectorAll('#ov-list .ov-row'),function(r){return r.dataset.col;});
+    S.listCols=order.slice();
+    var table=document.getElementById('ui-preview-table');
+    ['thead tr','tbody tr'].forEach(function(sel){
+      table.querySelectorAll(sel).forEach(function(tr){
+        order.forEach(function(c){ var cell=tr.querySelector('[data-col="'+c+'"]'); if(cell) tr.appendChild(cell); });
+      });
+    });
+    toast('列序已写入覆盖草稿（UC-03）');
+  }
+  function resetOverlay(){ if(!confirm('恢复 catalog 默认显示？')) return; clearDirty(); toast('已恢复默认显示'); }
+  function simFieldChange(){ addDemoField(); goTab('t-ui'); swUiView('form'); }
+  function simUnsupported(){
+    swUiMode('config'); swUiView('form');
+    var el=document.getElementById('ui-unsupported');
+    if(el){ el.style.display=''; el.classList.add('hl-pulse'); }
+    toast('未支持类型须显式提示');
+  }
+  function openModal(id){ var m=document.getElementById('m-'+id); if(m) m.classList.add('on'); }
+  function closeModal(id){ var m=document.getElementById('m-'+id); if(m) m.classList.remove('on'); }
+  function openCmd(){ document.getElementById('m-cmd').classList.add('on'); setTimeout(function(){var i=document.getElementById('cmdInput');if(i)i.focus();},40); }
+  function closeCmd(){ document.getElementById('m-cmd').classList.remove('on'); }
+  function toggleTheme(){ document.body.classList.toggle('dark'); toast(document.body.classList.contains('dark')?'暗色主题':'亮色主题'); }
+  function toast(msg,level,actions){
+    var t=document.getElementById('toast');
+    t.className='toast';
+    var html='<span>'+msg+'</span>';
+    if(level==='error'||level==='warning'){
+      t.classList.add('toast-error');
+      if(actions){
+        html+='<span style="display:flex;gap:6px;margin-left:8px">';
+        actions.forEach(function(a){ html+='<button class="btn sm" onclick="'+a.onclick+'">'+a.label+'</button>'; });
+        html+='</span>';
+      }
+      html+='<button class="btn sm" onclick="document.getElementById(\'toast\').classList.remove(\'on\')">✕</button>';
+    } else {
+      setTimeout(function(){ t.classList.remove('on'); },2800);
+    }
+    t.innerHTML=html; t.classList.add('on');
+  }
+  function confirmDelete(code){
+    var html='<div style="padding:8px;text-align:center"><h3 style="margin-bottom:8px">确认删除？</h3><p style="color:var(--text-3);font-size:12.5px;margin-bottom:12px">输入 <code>'+code+'</code> 确认（L3）</p>'+
+      '<input class="input" id="delIn" style="width:100%;margin-bottom:12px" oninput="document.getElementById(\'delBtn\').disabled=this.value!==\''+code+'\'">'+
+      '<div style="display:flex;gap:8px;justify-content:center"><button class="btn" onclick="closeModal(\'del\')">取消</button>'+
+      '<button class="btn danger" id="delBtn" disabled onclick="closeModal(\'del\');S.records=S.records.filter(function(r){return !r.cells||r.cells[0]!==\''+code+'\'});renderRecords();toast(\'已删除 '+code+'\',\'success\')">确认删除</button></div></div>';
+    document.querySelector('#m-del .m-body').innerHTML=html;
+    openModal('del');
+  }
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); openCmd(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveDraft(); }
+    if(e.key==='Escape'){ closeCmd(); closeModal('pub'); closeModal('new'); closeModal('del'); }
+  });
+  window.addEventListener('load',function(){
+    var h=location.hash.replace('#','');
+    var sceneFromHash=null, tabFromHash=null;
+    if(h.indexOf('scene=')===0){
+      var segs=h.slice(6).split('&');
+      sceneFromHash=segs[0];
+      for(var si=1;si<segs.length;si++){ if(segs[si].indexOf('t-')===0) tabFromHash=segs[si]; }
+    }
+    if(!S.loop) S.loop={};
+    if(S.demoMode===undefined) S.demoMode='zero';
+    applyScenario(sceneFromHash||'device', {silent:true});
+    updatePhaseUI();
+    if(h==='loop'){ startClosedLoop(); return; }
+    if(h==='auto'){ runAutoLoop(); return; }
+    if(h==='evolve'){ startEvolve(); return; }
+    if(sceneFromHash){ history.replaceState(null,'',location.pathname+'#'+(tabFromHash||'t-fields')); goTab(tabFromHash||'t-fields'); return; }
+    if(['t-fields','t-ui','t-pub','t-data','t-err','t-gap'].indexOf(h)>=0) goTab(h);
+    if(h==='dark') document.body.classList.add('dark');
+  });
+
+
 </script>
 </body>
 </html>

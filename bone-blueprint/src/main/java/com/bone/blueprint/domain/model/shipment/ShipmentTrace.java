@@ -16,6 +16,11 @@ import lombok.NoArgsConstructor;
  *
  * <p><b>为何独立成表而不是塞进 {@link Shipment} 的 JSON 字段</b>：轨迹是<strong>只增不改</strong>的时间序列，
  * 客服要按时间正序展示、风控要查「某运单是否出现过异常退回」。塞进 JSON 后无法按轨迹状态检索， 且每次新增都要整体读改写（并发下覆盖丢失）。独立表让查询与追加都退化成单行操作。
+ *
+ * <p><b>子实体级仓储登记（E-4.1）</b>：本实体无 {@code @Cascade} 标注，经 {@code ShipmentTraceRepository}
+ * 独立存取。三条限制自证：① 只服务 {@code Shipment} 一个聚合根；② 不提升为独立聚合（轨迹无独立业务入口， 只能经 {@code
+ * ShipmentApplicationService} 随发货单追加）；③ <b>读侧走投影</b>——仓储读方法返回 {@code ShipmentTraceProjection}（见
+ * {@code domain/model/shipment/projection}），不返回实体列表。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

@@ -1,9 +1,9 @@
-package com.bone.blueprint.application.port.out;
+package com.bone.blueprint.application.query.port;
 
 import java.time.Instant;
 
 /**
- * 渠道库存广播任务的查询端口（技术出站端口）。
+ * 渠道库存广播任务的查询端口（读侧端口，E-4.2 / E-13.3：*QueryPort 固定落点 application/query/port）。
  *
  * <p><b>为何任务表在 infrastructure
  * 却还要一个查询端口</b>：广播任务是<strong>技术投递状态</strong>（PENDING/PROCESSING/SENT/FAILED）， 没有业务不变量，按 Bone

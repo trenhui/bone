@@ -11,6 +11,7 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
+import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -78,8 +79,23 @@ public class MinioFileStorageService implements FileStoragePort {
   public InputStream download(String bucket, String objectName) {
     String targetBucket = bucket == null || bucket.isBlank() ? defaultBucket : bucket;
     try {
+      // 先 stat 确认对象存在：getObject 返回的是惰性流，缺失错误在 controller 的 in.transferTo(out)
+      // 时才抛出，无法在 download() 内被 ErrorResponseException 捕获，最终会被 controller 兜底成
+      // DOWNLOAD_FAILED(500)。用 statObject（急切 HEAD）提前把「对象不存在」识别为 NOT_FOUND(404)，
+      // 让前端按 errorCode 正确分流，避免把「请求合理但资源缺失」误判为「服务端故障」。
+      minioClient.statObject(
+          StatObjectArgs.builder().bucket(targetBucket).object(objectName).build());
       return minioClient.getObject(
           GetObjectArgs.builder().bucket(targetBucket).object(objectName).build());
+    } catch (ErrorResponseException e) {
+      // 对象不存在（NoSuchKey / NoSuchObject / NoSuchBucket）→ 404，而非 500 下载失败。
+      String errorCode = e.errorResponse() != null ? e.errorResponse().code() : "";
+      if ("NoSuchKey".equals(errorCode)
+          || "NoSuchObject".equals(errorCode)
+          || "NoSuchBucket".equals(errorCode)) {
+        throw FileErrors.of(FileErrorCodes.NOT_FOUND, objectName, e);
+      }
+      throw FileErrors.of(FileErrorCodes.DOWNLOAD_FAILED, objectName, e);
     } catch (Exception e) {
       throw FileErrors.of(FileErrorCodes.DOWNLOAD_FAILED, objectName, e);
     }

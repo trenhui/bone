@@ -158,7 +158,7 @@ public class OrderApplicationService {
 
   @Transactional
   public void cancel(CancelOrderCommand command) {
-    mutate(command.orderId(), Order::cancel);
+    mutate(command.orderId(), Order::cancel, BlueprintErrorCodes.ORDER_STATUS_CONFLICT);
   }
 
   @Transactional
@@ -174,7 +174,8 @@ public class OrderApplicationService {
   /**
    * 写操作模板：加载 → 领域变更 → 保存 → 发布事件。
    *
-   * @param errorCode 领域变更抛 {@link DomainException} 时转成的业务码；null 表示不拦截 DomainException（如 cancel）。
+   * @param errorCode 领域变更抛 {@link DomainException} 时转成的业务码；null 表示不拦截 DomainException（仅当调用方确实需要
+   *     DomainException 原样上抛时使用，如框架级契约——业务写用例一律传业务码，E-5.3.1）。
    */
   private void mutate(long orderId, java.util.function.Consumer<Order> mutator, String errorCode) {
     Order order = load(orderId);
@@ -187,10 +188,6 @@ public class OrderApplicationService {
       throw BlueprintErrors.of(errorCode, ex.getMessage(), ex);
     }
     saveAndPublish(order);
-  }
-
-  private void mutate(long orderId, java.util.function.Consumer<Order> mutator) {
-    mutate(orderId, mutator, null);
   }
 
   /** 加载订单：不存在抛 ORDER_NOT_FOUND。 */

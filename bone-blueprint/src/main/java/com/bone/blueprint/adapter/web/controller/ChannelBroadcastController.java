@@ -1,7 +1,7 @@
 package com.bone.blueprint.adapter.web.controller;
 
 import com.bone.blueprint.application.ChannelBroadcastApplicationService;
-import com.bone.blueprint.application.port.out.ChannelBroadcastQueryPort;
+import com.bone.blueprint.application.query.port.ChannelBroadcastQueryPort;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import io.swagger.v3.oas.annotations.Operation;

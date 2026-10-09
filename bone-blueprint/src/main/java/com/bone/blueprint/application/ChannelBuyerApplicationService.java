@@ -4,11 +4,11 @@ import com.bone.blueprint.application.port.out.TenantPort;
 import com.bone.blueprint.application.query.dto.ChannelBuyerDto;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
-import com.bone.blueprint.domain.extension.channel.ChannelOrderContext;
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
 import com.bone.blueprint.domain.model.channelbuyer.ChannelBuyer;
 import com.bone.blueprint.domain.model.channelbuyer.event.ChannelBuyerObservedEvent;
 import com.bone.blueprint.domain.repository.ChannelBuyerRepository;
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.util.List;
@@ -25,7 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 算出来的。昵称可被买家随时修改， 改名即换客户——同一人的订单被拆到不同客户下，客户维度的统计、会员权益、售后与对账全部失真； 且哈希值不是真实客户ID， 无法与其它域 join。
  * 现在映射是一条<strong>可运营的显式数据</strong>。
  *
- * <p><b>拉单时如何解析客户（{@link #resolveCustomerId}）</b>：
+ * <p><b>拉单时如何解析客户</b>（解析逻辑在 {@link com.bone.blueprint.application.ChannelOrderApplicationService}
+ * 内联实现）：
  *
  * <ul>
  *   <li>命中映射且已绑定 → 订单落真实客户ID；
@@ -36,8 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>写映射为何在 {@link Propagation#REQUIRES_NEW} 里</b>：拉单主事务只读映射（不违反 R9 一事务一聚合）， 写入由 AFTER_COMMIT
  * 处理器调本方法 完成。AFTER_COMMIT 阶段原事务已提交但连接仍绑定， 此处若用默认 {@code REQUIRED} 会加入已提交事务导致写入被静默丢弃。
+ *
+ * <p><b>事件豁免（E-5.4）</b>：本服务消费 AFTER_COMMIT 事件（{@code observeChannelBuyer}）在独立事务写映射， 绑定/解绑/刷新均为
+ * {@code ChannelBuyer} 聚合的内部状态迁移，自身不再发布新事件，故声明 {@code @NoDomainEvent} （聚合方法豁免理由见 {@code
+ * ChannelBuyer} 类注释）。
  */
 @Slf4j
+@NoDomainEvent
 @Service
 @RequiredArgsConstructor
 public class ChannelBuyerApplicationService {
@@ -47,34 +53,6 @@ public class ChannelBuyerApplicationService {
 
   private final ChannelBuyerRepository channelBuyerRepository;
   private final TenantPort tenantProvider;
-
-  // ==================== 拉单主链路（只读） ====================
-
-  /**
-   * 解析渠道订单的内部客户ID（<strong>只读</strong>，不写库）。
-   *
-   * @return 内部客户ID；无法识别时返回 {@link ChannelBuyer#UNBOUND_CUSTOMER_ID}（0）
-   */
-  @Transactional(readOnly = true)
-  public long resolveCustomerId(ChannelOrderContext context, String normalizedChannelCode) {
-    long tenantId = tenantProvider.currentTenantId();
-    String buyerId = context == null ? null : context.buyerId();
-    if (buyerId == null || buyerId.isBlank()) {
-      // 没有渠道买家ID就没有映射键。此处退化为「未知客户」并告警，而不是用昵称哈希：
-      // 哈希会把改名买家拆成两个客户，那正是本映射表要消灭的问题。
-      log.warn(
-          "[{}] 渠道订单未携带买家ID，客户维度落「未知客户」| orderNo={}",
-          normalizedChannelCode,
-          context == null ? null : context.channelOrderNo());
-      return ChannelBuyer.UNBOUND_CUSTOMER_ID;
-    }
-    ChannelBuyer buyer =
-        channelBuyerRepository.findByChannelBuyer(tenantId, normalizedChannelCode, buyerId.trim());
-    if (buyer == null) {
-      return ChannelBuyer.UNBOUND_CUSTOMER_ID;
-    }
-    return buyer.getCustomerId() == null ? ChannelBuyer.UNBOUND_CUSTOMER_ID : buyer.getCustomerId();
-  }
 
   // ==================== 写侧（独立事务，供 AFTER_COMMIT 处理器调用） ====================
 

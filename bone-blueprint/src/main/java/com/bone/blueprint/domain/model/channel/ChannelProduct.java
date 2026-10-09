@@ -20,6 +20,10 @@ import lombok.NoArgsConstructor;
  *
  * <p><b>为何要冗余 productName / listingPrice 快照</b>：渠道侧商品的标题与价格一旦提交即独立演化
  * （运营会在渠道后台改价）。落快照才能在「内部主数据改价了但渠道没同步」时做出对账差异； 只存外键的话，历史对账无从下手。
+ *
+ * <p><b>事件豁免（E-5.4）</b>：本聚合的上架/下架/同步标记（{@code markListing/markOnline/markFailed/
+ * markDelisting/markOffline/markStockSynced/updateProductName}）为<b>内部状态迁移</b>，写路径不配 {@code
+ * publishFrom}、不发 DomainEvent。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

@@ -255,7 +255,7 @@ public class ShipmentApplicationService {
     return saved;
   }
 
-  /** 本地轨迹列表（按时间正序）。 */
+  /** 本地轨迹列表（按时间正序）。读侧走投影（E-4.1 ③），仓储不返回实体列表。 */
   @Transactional(readOnly = true)
   public List<ShipmentTraceDto> traces(Long shipmentId) {
     long tenantId = tenantProvider.currentTenantId();

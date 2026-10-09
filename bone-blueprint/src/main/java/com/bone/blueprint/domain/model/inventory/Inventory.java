@@ -21,6 +21,10 @@ import lombok.NoArgsConstructor;
  *
  * <p><b>不变量</b>：{@code availableQty >= 0} 恒成立。预留时若不足则抛异常，不允许负库存
  * ——负库存会把「超卖」这个业务问题降级成数据问题，事后无法区分是超卖还是记账错误。
+ *
+ * <p><b>事件豁免（E-5.4）</b>：本聚合的库存增减（{@code receive/deduct/reserve/confirm/release}）为<b>内部
+ * 状态迁移</b>，写路径不配 {@code publishFrom}、不发 DomainEvent；跨聚合协作（如渠道拉单防超卖）走 应用层服务编排 + AFTER_COMMIT
+ * 事件，而非库存自身发事件。若未来库存调整需通知下游订阅方，应补发 {@code InventoryAdjustedEvent} 并登记。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

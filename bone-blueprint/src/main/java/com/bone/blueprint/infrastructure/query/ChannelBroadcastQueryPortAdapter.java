@@ -1,6 +1,9 @@
-package com.bone.blueprint.infrastructure.messaging.outbox;
+package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.application.port.out.ChannelBroadcastQueryPort;
+import com.bone.blueprint.application.query.port.ChannelBroadcastQueryPort;
+import com.bone.blueprint.infrastructure.messaging.outbox.BroadcastTaskStatus;
+import com.bone.blueprint.infrastructure.messaging.outbox.ChannelBroadcastTask;
+import com.bone.blueprint.infrastructure.messaging.outbox.ChannelBroadcastTaskRepository;
 import com.bone.core.model.PageResult;
 import java.util.ArrayList;
 import java.util.List;

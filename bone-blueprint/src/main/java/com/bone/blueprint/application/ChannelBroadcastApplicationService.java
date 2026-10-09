@@ -1,9 +1,9 @@
 package com.bone.blueprint.application;
 
 import com.bone.blueprint.application.port.out.ChannelBroadcastOutboxPort;
-import com.bone.blueprint.application.port.out.ChannelBroadcastQueryPort;
 import com.bone.blueprint.application.port.out.ChannelBroadcastRelayPort;
 import com.bone.blueprint.application.port.out.TenantPort;
+import com.bone.blueprint.application.query.port.ChannelBroadcastQueryPort;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.model.channel.ChannelProduct;

@@ -623,6 +623,14 @@
       ],
       "reason": "handler-era-naming",
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
+    },
+    {
+      "symbol": "ReplenishmentApplicationService",
+      "docs": [
+        "doc/prd/BONE-低代码最小闭环PRD.md"
+      ],
+      "reason": "tobe-named",
+      "note": "PRD 补货能力设计稿描述的目标态 ApplicationService 边界（到货入库 receive 跨聚合事务），实现尚未落地；改文档会把目标态设计降格为 As-Is 描述"
     }
   ]
 }

@@ -7,6 +7,7 @@ import { PaymentManagement } from './pages/PaymentManagement';
 import { ChannelManagement } from './pages/ChannelManagement';
 import { ChannelProductManagement } from './pages/ChannelProductManagement';
 import { InventoryManagement } from './pages/InventoryManagement';
+import { ReplenishmentManagement } from './pages/ReplenishmentManagement';
 import { ShipmentManagement } from './pages/ShipmentManagement';
 import { ChannelBuyerManagement } from './pages/ChannelBuyerManagement';
 import { BroadcastTaskManagement } from './pages/BroadcastTaskManagement';
@@ -26,6 +27,7 @@ export const App: React.FC = () => {
               <Route path="/channels" element={<ChannelManagement />} />
               <Route path="/channel-products" element={<ChannelProductManagement />} />
               <Route path="/inventories" element={<InventoryManagement />} />
+              <Route path="/replenishments" element={<ReplenishmentManagement />} />
               <Route path="/shipments" element={<ShipmentManagement />} />
               <Route path="/channel-buyers" element={<ChannelBuyerManagement />} />
               <Route path="/broadcast-tasks" element={<BroadcastTaskManagement />} />

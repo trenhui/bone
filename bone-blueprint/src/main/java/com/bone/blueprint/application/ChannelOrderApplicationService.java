@@ -11,9 +11,11 @@ import com.bone.blueprint.domain.extension.channel.ChannelShipmentResult;
 import com.bone.blueprint.domain.model.channel.Channel;
 import com.bone.blueprint.domain.model.channel.event.ChannelRoutedEvent;
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
+import com.bone.blueprint.domain.model.channelbuyer.ChannelBuyer;
 import com.bone.blueprint.domain.model.channelbuyer.event.ChannelBuyerObservedEvent;
 import com.bone.blueprint.domain.model.order.Order;
 import com.bone.blueprint.domain.model.order.OrderItem;
+import com.bone.blueprint.domain.repository.ChannelBuyerRepository;
 import com.bone.blueprint.domain.repository.ChannelRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -49,9 +51,9 @@ public class ChannelOrderApplicationService {
 
   private final OrderRepository orderRepository;
   private final ChannelRepository channelRepository;
+  private final ChannelBuyerRepository channelBuyerRepository;
   private final ChannelExtensionPort channelExtensionPort;
   private final InventoryApplicationService inventoryApplicationService;
-  private final ChannelBuyerApplicationService channelBuyerApplicationService;
   private final DomainEventPublisher domainEventPublisher;
   private final TenantPort tenantProvider;
 
@@ -183,7 +185,21 @@ public class ChannelOrderApplicationService {
    * <p>本方法<strong>只读</strong>：写映射属于另一个聚合，必须在独立事务里做（R9）。
    */
   private long resolveCustomerId(ChannelOrderContext context, String normalizedChannelCode) {
-    return channelBuyerApplicationService.resolveCustomerId(context, normalizedChannelCode);
+    String buyerId = context == null ? null : context.buyerId();
+    if (buyerId == null || buyerId.isBlank()) {
+      log.warn(
+          "[{}] 渠道订单未携带买家ID，客户维度落「未知客户」| orderNo={}",
+          normalizedChannelCode,
+          context == null ? null : context.channelOrderNo());
+      return ChannelBuyer.UNBOUND_CUSTOMER_ID;
+    }
+    ChannelBuyer buyer =
+        channelBuyerRepository.findByChannelBuyer(
+            tenantProvider.currentTenantId(), normalizedChannelCode, buyerId.trim());
+    if (buyer == null) {
+      return ChannelBuyer.UNBOUND_CUSTOMER_ID;
+    }
+    return buyer.getCustomerId() == null ? ChannelBuyer.UNBOUND_CUSTOMER_ID : buyer.getCustomerId();
   }
 
   private Channel requireEnabledChannel(long tenantId, String code, String raw) {

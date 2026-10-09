@@ -10,7 +10,8 @@
 |--------|------|------------|
 | **订单（Order）** | 订单生命周期：创建、确认支付、取消 | `t_order`、`t_order_item` |
 | **支付（Payment）** | 支付单生命周期：发起、渠道预下单、回调确认（幂等） | `bp_payment` |
-| **库存（Inventory）** | 库存校验、预留、确认、释放 | 库存服务自有数据（经 ACL 访问） |
+| **库存（Inventory）** | 库存校验、预留、确认、释放 | `bp_inventory`（经 ACL / 应用服务访问） |
+| **补货（Replenishment）** | 安全库存预警 → 补货单 → 到货入库 | `bp_replenishment_order`（到货调用 Inventory.receive） |
 
 ### 本上下文拥有的表（E-1.2 数据所有权声明）
 
@@ -22,6 +23,8 @@
 | `t_order` | 订单头（含 `tenant_id`、审计与软删字段） | Order |
 | `t_order_item` | 订单明细，聚合内实体；无独立租户列，租户隔离经 `t_order.tenant_id` 间接保证 | Order |
 | `bp_payment` | 支付单（独立聚合，经 `orderId` 关联订单）。**读侧例外**：`Order` 读模型经 JOIN 读取该表的最新支付单号（`OrderWithItemsProjection.paymentId`），见下方「读侧跨聚合读例外」 | Payment（数据所有权）；Order 读模型可读 |
+| `bp_inventory` | 多渠道共享库存真源（可用/预留/安全库存） | Inventory |
+| `bp_replenishment_order` | 供应链补货单（DRAFT→SUBMITTED→APPROVED→RECEIVED） | Replenishment |
 | `bp_outbox` | Outbox 投递记录（可靠投递三件套之一） | —（基础设施表，非聚合） |
 | `bp_idempotency_record` | 幂等请求记录 | —（基础设施表，非聚合） |
 | `bp_processed_event` | 消费去重记录 | —（基础设施表，非聚合） |
@@ -32,7 +35,7 @@
 |--------|------|
 | 读点 | `OrderRepository#findOrderWithItems()` JOIN `bp_payment`，取该订单最新一笔未删除支付单的 id |
 | 背景 | ADR-0030 合并后订单读模型与聚合同住 `OrderRepository`（见 `OrderItemInventoryExecutor` 注释）；门禁⑥ 为后补的治理门禁，登记时需与既有设计对齐 |
-| 为何不改为 QueryPort | 读模型为**列表页展示支付单号**的扁平投影，属 CQRS 读侧；本模块当前**无 `query/port` 模式先例**（`application/query/port` 为空），为单一展示字段新建跨聚合端口成本高于收益 |
+| 为何不改为 QueryPort | 读模型为**列表页展示支付单号**的扁平投影，属 CQRS 读侧，且与订单读模型同源（`OrderRepository` 内 `@Sql` 联表）；为单一展示字段另立跨聚合端口与适配器成本高于收益。既有 `ChannelBroadcastQueryPort` 先例针对的是**独立的跨聚合技术读**（广播任务表），与本读点形态不同，不构成迁移义务 |
 | 边界 | 仅**只读投影**。不涉及聚合不变量、不参与写路径与领域决策；`Order` 聚合的持久化仍只写 `t_order` / `t_order_item` |
 | 复审条件 | 若订单读模型需承载更多支付域字段（超出「单号展示」），应重新评估——届时代码注释中「切勿依赖重载后的聚合」的约束将被突破，需改走 QueryPort |
 | 审批状态 | **已备案**（2026-10-04，架构师决策采纳方案 A「认可例外」）。本行即 ADR-0030 门禁⑥ 对该读点的显式豁免凭据，门禁据此放行；一旦触发上方复审条件，本审批自动失效，须改走 QueryPort 或另行申报 |
@@ -66,6 +69,8 @@
 | 渠道流水号 | Channel Trade No | 渠道回填的唯一流水号（幂等去重键） | transactionId（易混淆） |
 | 预留库存 | Reserve Stock | 创建订单后占用 | Lock、Hold（技术词） |
 | 确认扣减 | Confirm Stock | 支付确认后消费预留 | Deduct（单独使用易混淆） |
+| 补货单 | Replenishment Order | 低于安全库存后的采购补货凭证 | Purchase（易与财务采购单混淆） |
+| 安全库存 | Safety Stock | 可用量 ≤ 此值触发补货建议 | Min Stock（口语） |
 
 ### 库存与支付协作策略（本样板）
 
@@ -77,8 +82,11 @@
 6. **退款**：`Payment.refund()`（**每单仅一次**；重复**同金额**幂等跳过、`false` + warn 留痕，**金额不一致抛错**；退 0 元 / 超付拒绝）→ 发 `PaymentRefundedEvent` → `AFTER_COMMIT` 确认订单退款（`Order.refund()`）+ `releaseStock`
 7. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
 8. **发货 / 送达**：`Order.ship()`（仅 PAID → SHIPPED）/ `Order.deliver()`（仅 SHIPPED → DELIVERED），经 `/api/v1/orders/{id}/ship`、`/ship`、`/deliver` 触发
+9. **供应链补货（新场景）**：`GET /api/v1/replenishments/suggestions`（低库存建议）→ 建草稿 → `submit` → `approve` → `receive`（同事务 `Inventory.receive`）。前端新页 `/commerce#/replenishments`，**不改**既有「库存管理」手写页。DDL：`scripts/migration/0026_replenishment_order.sql`。
 
 > **订单状态机**：`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED`（CREATED/PAID）、`REFUNDED`（PAID/SHIPPED/DELIVERED 退款）。`ship/deliver/refund` 为领域行为（反贫血 E-6.4 / CORE-03），Handler 仅编排调用。
+
+> **补货状态机**：`DRAFT → SUBMITTED → APPROVED → RECEIVED`，旁路 `CANCELLED`（DRAFT/SUBMITTED）。多聚合事务例外：`receive` 同事务改补货单 + 库存（到货与入库必须原子，否则账实分叉）。
 
 ### 支付样板边界说明（业界标准 vs 样板简化）
 
@@ -117,7 +125,7 @@
 
 | 子包 | 内容 |
 |---|---|
-| `domain/model/order`、`domain/model/payment` | 聚合根（`Order` / `Payment`）与聚合内实体（`OrderItem`） |
+| `domain/model/order`、`domain/model/payment`、`domain/model/inventory`、`domain/model/replenishment` | 聚合根与值对象（补货见 `ReplenishmentOrder`） |
 | `domain/model/{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
 | `domain/model/{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
 | `domain/model/{aggregate}/projection` | 读侧投影（`OrderHeadProjection` / `OrderWithItemsProjection` / `PaymentProjection`） |
@@ -208,7 +216,7 @@ Outbox 中继与卡死回收的完整机制见下文「RocketMQ Outbox 中继」
 **跨聚合 / 报表 / 搜索 → `application/query/port/*QueryPort` + `infrastructure/query/*QueryAdapter`**。
 判据是**读的归属与有无读模型分歧**，不是聚合种类。本模块订单与支付两侧都属第一种：订单读并入 `OrderRepository`；
 支付的单笔直查走 `PaymentRepository.findByIdInTenant`，两个全租户扫描走同仓储的 `*AllTenants` default 方法。
-因此本模块**当前不存在任何 `*QueryPort`**——出现跨聚合报表 / 搜索读时，才按规则新建端口与 `infrastructure/query` 实现。
+因此本模块**只有一个 `*QueryPort`**：`ChannelBroadcastQueryPort`（`application/query/port` + `infrastructure/query/ChannelBroadcastQueryPortAdapter`），服务于渠道拉单的**广播任务状态查询**——技术投递表而非业务聚合，属跨聚合/技术读，按规则新建端口；其余业务读全部并入各自域仓储（ADR-0030）。
 
 **受控例外（本模块唯一形态，现有 3 个类）**：`adapter/schedule` 下的 `CancelExpiredOrderJob` / `CloseExpiredPaymentJob` /
 `OrderPaymentInconsistencyJob` 直接注入**域仓储**调用其 `*AllTenants` 方法（`@TenantScope(ALL)` 或 Criteria
@@ -240,6 +248,15 @@ domainEventPublisher.publishFrom(order); // default 方法：publishAll + clearD
 | 否（只读 + 远程调用） | 不加 | `OrderPaidEventHandler`、`OrderCancelledEventHandler` |
 
 > 领域事件经 `SpringDomainEventPublisher` 同步投递到 Spring 事件总线；`@TransactionalEventListener(AFTER_COMMIT)` 保证**事务提交后才触发**，事务回滚则不会执行。
+
+### 渠道域登记（例外 / 豁免）
+
+1. **多聚合事务例外（E-5.1）**：`ChannelOrderApplicationService.pullAndCreate()` 在**同一 `@Transactional` 内修改 Order + Inventory 两个聚合**。业务不变量：渠道单已由渠道方扣款，必须同步锁库存才能防超卖窗口（异步 AFTER_COMMIT 会引入超卖间隙）；失败语义：任一聚合失败整体回滚，拉单入口重试幂等；并发成本：库存锁持有随拉单事务，需 `findByIdInTenant` 悲观锁兜底。**不经过第三个 ApplicationService**：`reserve` 后不再级联调用（ChannelBroadcast 由事件驱动，见下）。
+2. **简单域状态迁移不发 DomainEvent（E-5.4 豁免）**：`Channel.enable()/disable()`、`ChannelBuyer.bind()/unbind()`、`ChannelProduct.sync()`、`Inventory.receive()/deduct()/reserve()` 均为**内部状态迁移**（无跨聚合订阅方、无审计必须事实），聚合 JavaDoc 已注明豁免理由，写路径用 `insert`/`update` 不配 `publishFrom`。库存调整若未来出现跨聚合依赖（如渠道广播），应改发 `InventoryAdjustedEvent` 走事件驱动，而非服务互调。
+   - **豁免载体**：`ChannelApplicationService` / `ChannelBuyerApplicationService` / `InventoryApplicationService` 已声明 `@NoDomainEvent`（类注释注明豁免理由）；`ChannelProductApplicationService.publishProduct()` 的上架写随 `DomainEventPublisher.publish(ChannelRoutedEvent)` 直发（跨聚合通知，非 ChannelProduct 聚合自身事件），不属豁免、属事件声明形态。
+   - **门禁覆盖（v3.6 扩展）**：`savePairedWithPublishFromOrExempt` 由仅检查 `save*` 扩展为检查 `save/insert/update/persist/merge/flush/deleteById(s)/deleteByCriteria` 全写方法集，并排除 ADR-0030 读通道 `updateByCriteria`；事件声明识别 `publishFrom(聚合)` 与 `DomainEventPublisher.publish(DomainEvent)` 两种形态。扩展规则自带 fixture 测试（`bone-architecture-test` 的 `SavePublishRuleFixtureTest`，违规/合规各一组）。
+3. **渠道拉单主链路**：`pullAndCreate` 内库存预留为**同步本地写**（防超卖，见第 1 条）；`resolveCustomerId` 经 `ChannelBuyerRepository` 只读映射，不经过 ApplicationService 互调（E-13.2 合规）。
+4. **子实体级仓储（E-4.1）**：`ShipmentTrace` 无 `@Cascade`，经 `ShipmentTraceRepository` 独立存取；三条限制自证见该仓储与 `ShipmentTrace` 类注释——① 只服务 `Shipment` 一个聚合根 ② 不提升为独立聚合 ③ **读侧走投影**（`findByShipment` 返回 `ShipmentTraceProjection`，位于 `domain/model/shipment/projection`，不返回实体列表）。
 
 ## 文档
 
@@ -284,7 +301,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
 | **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentApplicationService.getById`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | **本模块无 `*QueryPort`**：订单/支付的本聚合读（`@Sql` / Criteria 读方法 + `domain/model/{order,payment}/projection`）与全租户运维扫描（`*AllTenants`）全部并入各自域仓储（ADR-0030）；域仓储不承载跨聚合报表 / Join。归属规则与受控例外见下节「读侧归属规则」 |
+| **CQRS 读侧** | 订单/支付的本聚合读（`@Sql` / Criteria 读方法 + `domain/model/{order,payment}/projection`）与全租户运维扫描（`*AllTenants`）全部并入各自域仓储（ADR-0030）；域仓储不承载跨聚合报表 / Join。跨聚合技术读仅一处：`ChannelBroadcastQueryPort`（`application/query/port` + `infrastructure/query`，渠道广播任务状态查询）。归属规则与受控例外见下节「读侧归属规则」 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
@@ -354,12 +371,7 @@ scope 由 IAM 登录时按「账号 → 角色（含继承闭包）→ 权限」
 权限目录种子在 `bone-init.sql`（`iam_permission` + `iam_role_permission`，管理员角色已授予），管理员另有代码侧回退清单
 `DefaultPermissionCodes#adminFallback`——**本地不必先造角色即可跑通**。照抄本模块时把 scope 换成自己域的命名。
 
-**已知未覆盖（登记，非遗漏）**：① 支付端点（`PaymentController`）尚未声明 scope——该文件正随验签端口迁移一起改动，
-避免同批冲突；② 渠道回调 `POST /api/v1/payments/callback` 目前仍要求认证，而真实渠道无法持有 JWT，生产需改为
-「白名单放行 + 验签即认证」或由网关代签内部凭证——与「验签迁到应用层」是同一次改造；③ **本模块仍无装配级测试**
-（无 `@SpringBootTest` / MockMvc 契约 / Testcontainers 集成测试，`pom.xml` 缺测试依赖）。这不是形式主义：本轮实机验证抓到的
-4 个缺陷中有 3 个（Bean 名与框架冲突导致起不来、统一异常处理器未注册导致错误全变 500、SDK 读路径缺 `Instant` 转换导致读库
-500）**单测全绿也照样存在**——收敛路径是先补「上下文加载 + 一条 HTTP 主链路」，再谈覆盖率阈值。
+**历史未覆盖项（已全部闭环，非遗留）**：① 支付端点 scope——`PaymentController` 已声明 `order:payment:write` / `order:payment:read`；② 渠道回调 `POST /api/v1/payments/callback` 认证——已改为 `permitAll()` + **应用层验签**（`PaymentSignaturePort`）+ 来源 IP 白名单纵深防御，符合「白名单放行 + 验签即认证」；③ 装配级测试——`BlueprintAssemblySmokeTest`（`@SpringBootTest` + H2）已落地，`pom.xml` 含 `spring-boot-starter-test`，另有 `EventTenantContextIntegrationTest` 等集成测试。回顾当时抓到的 4 个缺陷（Bean 名冲突、异常处理器未注册、SDK 读路径缺 `Instant` 转换、回调未验签）均已修复并有测试守护。
 
 > **持久化模型的时间字段一律用 `Instant`**（UTC 语义，与领域事件一致），这依赖 bone-metadata-sdk 读路径的
 > `InstantConverter`——它此前缺失，表现为「写得进、读不出」（非空 DATETIME 列读取抛

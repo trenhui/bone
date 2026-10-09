@@ -11,6 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.command.CancelOrderCommand;
 import com.bone.blueprint.application.command.CreateOrderCommand;
 import com.bone.blueprint.application.command.DeliverOrderCommand;
 import com.bone.blueprint.application.command.ShipOrderCommand;
@@ -359,6 +360,57 @@ class OrderApplicationServiceTest {
     assertEquals(
         404,
         assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)))
+            .getCode());
+    verify(orderRepository, never()).update(any());
+  }
+
+  // ===================== cancel() =====================
+
+  @Test
+  void cancel_fromCreated_success() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    when(orderRepository.findById(1L)).thenReturn(order);
+
+    service.cancel(new CancelOrderCommand(1L, null));
+
+    assertEquals(OrderStatus.CANCELLED, order.getStatus());
+    verify(orderRepository).update(order);
+  }
+
+  @Test
+  void cancel_fromShipped_mapsDomainExceptionTo409Not500() {
+    Order order = shippedOrder(); // 已发货
+    when(orderRepository.findById(1L)).thenReturn(order);
+
+    // 领域拒绝必须映射成 409（E-5.3.1），不能把 DomainException 上抛成 500 污染服务端告警/SLO。
+    BizException ex =
+        assertThrows(BizException.class, () -> service.cancel(new CancelOrderCommand(1L, null)));
+    assertEquals(409, ex.getCode());
+    assertEquals(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, ex.getErrorCode());
+    verify(orderRepository, never()).update(any());
+  }
+
+  @Test
+  void cancel_fromCancelled_mapsDomainExceptionTo409() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.cancel(); // 已取消
+    when(orderRepository.findById(1L)).thenReturn(order);
+
+    BizException ex =
+        assertThrows(BizException.class, () -> service.cancel(new CancelOrderCommand(1L, null)));
+    assertEquals(409, ex.getCode());
+    verify(orderRepository, never()).update(any());
+  }
+
+  @Test
+  void cancel_notFound_throws() {
+    when(orderRepository.findById(1L)).thenReturn(null);
+
+    assertEquals(
+        404,
+        assertThrows(BizException.class, () -> service.cancel(new CancelOrderCommand(1L, null)))
             .getCode());
     verify(orderRepository, never()).update(any());
   }

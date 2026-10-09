@@ -22,6 +22,9 @@ import lombok.NoArgsConstructor;
  * <p><b>影子客户（{@code customerId = 0}）的语义</b>：拉单时遇到没绑过的渠道买家，本聚合登记一条 {@link BindingSource#AUTO_SHADOW}
  * 记录并让该笔订单落在 {@code customerId = 0}（未知客户）维度，而不是拒绝建单—— 拒绝会让新买家的第一单在渠道侧表现为「店铺没收到订单」，
  * 是比「客户未识别」严重得多的故障。影子记录随后出现在「未绑定清单」里，由运营或规则补绑。
+ *
+ * <p><b>事件豁免（E-5.4）</b>：本聚合的绑定/解绑/刷新（{@code bindTo/unbind/recordOrder/refreshNick/updateRemark}）
+ * 为<b>内部状态迁移</b>，写路径不配 {@code publishFrom}、不发 DomainEvent。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
