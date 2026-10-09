@@ -8,7 +8,6 @@ import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
 import com.bone.blueprint.domain.model.channelbuyer.ChannelBuyer;
 import com.bone.blueprint.domain.model.channelbuyer.event.ChannelBuyerObservedEvent;
 import com.bone.blueprint.domain.repository.ChannelBuyerRepository;
-import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.util.List;
@@ -37,13 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>写映射为何在 {@link Propagation#REQUIRES_NEW} 里</b>：拉单主事务只读映射（不违反 R9 一事务一聚合）， 写入由 AFTER_COMMIT
  * 处理器调本方法 完成。AFTER_COMMIT 阶段原事务已提交但连接仍绑定， 此处若用默认 {@code REQUIRED} 会加入已提交事务导致写入被静默丢弃。
- *
- * <p><b>事件豁免（E-5.4）</b>：本服务消费 AFTER_COMMIT 事件（{@code observeChannelBuyer}）在独立事务写映射， 绑定/解绑/刷新均为
- * {@code ChannelBuyer} 聚合的内部状态迁移，自身不再发布新事件，故声明 {@code @NoDomainEvent} （聚合方法豁免理由见 {@code
- * ChannelBuyer} 类注释）。
  */
 @Slf4j
-@NoDomainEvent
 @Service
 @RequiredArgsConstructor
 public class ChannelBuyerApplicationService {

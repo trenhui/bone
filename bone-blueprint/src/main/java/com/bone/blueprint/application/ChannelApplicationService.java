@@ -7,7 +7,6 @@ import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.model.channel.Channel;
 import com.bone.blueprint.domain.model.channel.valueobject.ChannelCode;
 import com.bone.blueprint.domain.repository.ChannelRepository;
-import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import java.util.List;
@@ -20,11 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>渠道的「能力」与「配置」分离</b>：能接哪些渠道由扩展实现（{@code @Extension}）决定， 是否开通由本服务维护的 {@code bp_channel}
  * 决定。因此本服务不需要理解任何渠道协议—— 它只管租户侧的开关与凭证，协议差异全部在扩展实现里。
- *
- * <p><b>事件豁免（E-5.4）</b>：本服务全部写路径均为 {@code Channel} 聚合的内部状态迁移（启停/路由标记/凭证维护）， 无跨聚合订阅方、无审计必须事实，故声明
- * {@code @NoDomainEvent}（聚合方法豁免理由见 {@code Channel} 类注释）。
  */
-@NoDomainEvent
 @Service
 @RequiredArgsConstructor
 public class ChannelApplicationService {

@@ -6,7 +6,6 @@ import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.model.inventory.Inventory;
 import com.bone.blueprint.domain.repository.InventoryRepository;
-import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
@@ -25,12 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>并发模型</b>：全部写操作走 {@code @Version} 乐观锁（架构硬约束禁 {@code SELECT ... FOR UPDATE}）。 预留失败（库存不足）转成
  * {@code BP_INVENTORY_INSUFFICIENT} 业务码——超卖是业务问题，不是系统故障， 报成 5xx 会污染 SLO 口径。
- *
- * <p><b>事件豁免（E-5.4）</b>：本服务全部写路径均为 {@code Inventory} 聚合的内部状态迁移（收货/扣减/预留/确认/释放），
- * 跨聚合协作（渠道拉单防超卖）由应用层服务编排而非库存自身发事件，故声明 {@code @NoDomainEvent} （聚合方法豁免理由见 {@code Inventory} 类注释）。
  */
 @Slf4j
-@NoDomainEvent
 @Service
 @RequiredArgsConstructor
 public class InventoryApplicationService {
