@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
   DatePicker,
+  Empty,
   Form,
   Input,
   InputNumber,
@@ -75,6 +76,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const { id: pathId } = useParams<{ id?: string }>();
   const resolvedId = embeddedEntityId ?? pathId ?? null;
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  /** 数据 Tab 空态 CTA：由 /…/data 回溯到实体详情并定位「结构」Tab（B1） */
+  const structurePath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=structure`;
 
   const [form] = Form.useForm();
   const [entities, setEntities] = useState<MetaEntity[]>([]);
@@ -132,10 +137,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         const runtimePublished = normalizeRuntimePublished(res.data.records);
         setEntities(runtimePublished);
         const fromQuery = searchParams.get('entity');
+        // W0-1 / PRD D12：无 :id 且无 ?entity= 时**不替用户决策**——保持空态由用户显式选择。
+        // 旧实现会 setEntityCode(runtimePublished[0].code)，即「/runtime 静默选中第一个实体」：
+        // 用户以为在看自己选的实体，实际看到的是列表首项的数据（静默串实体）。
         if (fromQuery && runtimePublished.some((e) => e.code === fromQuery)) {
           setEntityCode(fromQuery);
-        } else if (runtimePublished.length > 0 && entityCode == null) {
-          setEntityCode(runtimePublished[0].code);
         }
       });
     // entityCode 仅用于首次为空时初始化，不应作为依赖
@@ -483,17 +489,34 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
 
   return (
     <div className="page">
+      {/* 页头：声明本页职责边界。
+          「运行时数据」与实体列表的「数据」按钮、实体工作区的「数据」页签是**同一份数据**，
+          区别只在**上下文来源**：本页是跨实体运营台（需自己选实体），后两者已锁定实体。
+          此前页面只说「模式 B 是什么」，没说「我什么时候该来这里」，用户因此把它
+          当成第三个数据入口，在三个入口间反复试错。 */}
+      {!resolvedId && (
+        <Space direction="vertical" size={0} style={{ marginBottom: 16, width: '100%' }}>
+          <Space size={8} wrap>
+            <Typography.Title level={5} style={{ margin: 0 }}>运行时数据</Typography.Title>
+            <Tag color="purple" style={{ fontSize: 12 }}>跨实体数据运营台</Tag>
+          </Space>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            这里是<Text strong>跨实体</Text>的数据入口，适合你不确定数据在哪个模型、或者要跨多个模型巡检记录时使用。
+            若你已知要操作哪个实体，请从「实体」列表点行内「数据」按钮，或在实体工作区打开「数据」页签——
+            那两条路径会自动锁定当前实体，不会看错数据。
+          </Text>
+        </Space>
+      )}
       {!resolvedId && (
         <Alert
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="模式 B · 运行时数据"
+          message="仅「运行时 (B) + 已发布」的实体有物理表"
           description={
             <>
-              仅展示 <Tag color="purple">运行时 (B)</Tag> 且 <Tag color="green">已发布</Tag>{' '}
-              的实体。数据经 <Text code>/api/v1/runtime/entities/&#123;code&#125;/records</Text>{' '}
-              读写物理表，无需代码生成。
+              经 <Text code>/api/v1/runtime/entities/&#123;code&#125;/records</Text>{' '}
+              直接读写物理表，无需代码生成。生成式 (A) 实体请到「代码生成」查看。
             </>
           }
         />
@@ -516,6 +539,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               label: `${e.displayName} (${e.code}) → ${e.tableName}`,
             }))}
             notFoundContent="暂无符合条件的模型，请先在模型管理中创建并发布 RUNTIME 模型"
+            /* W0-2：size 50→500 后候选可达数百个，选择器必须可搜索——
+               否则「去截断」只是把不可达项从「第 51 个之后」推迟到「第 501 个之后」。 */
+            showSearch
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
           />
           <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
             刷新
@@ -550,6 +580,26 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
 
       {!embeddedBlocked && selectedEntity && (
         <>
+          {/* B1：数据 Tab 空态 —— 无字段时给「补齐字段并发布」结构建议，
+              而不是渲染一张零列的空表格（用户会以为「没数据」而非「没字段」） */}
+          {writableFields.length === 0 ? (
+            <Empty
+              style={{ margin: '32px 0' }}
+              description={
+                <Space direction="vertical" size={2}>
+                  <Text>该实体还没有可录入的字段</Text>
+                  <Text type="secondary">
+                    请先在「结构」页签补齐字段并发布，物理表建表后即可在此录入数据
+                  </Text>
+                </Space>
+              }
+            >
+              <Button type="primary" onClick={() => navigate(structurePath)}>
+                去结构补齐字段
+              </Button>
+            </Empty>
+          ) : (
+            <>
           {resolvedId && (
             <Space style={{ marginBottom: 16 }} wrap>
               <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
@@ -607,6 +657,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               },
             }}
           />
+            </>
+          )}
         </>
       )}
 

@@ -40,6 +40,8 @@ export interface MetaField {
   version?: number;
   /** 创建时间（展示用） */
   createdAt?: string;
+  /** 最后修改时间（脏态计数：晚于上次发布时刻 ⇒ 该字段待重新发布） */
+  updatedAt?: string;
 
   // ===== 业界元数据 / 数据治理属性 =====
   /** 数据分级：PUBLIC/INTERNAL/CONFIDENTIAL/SECRET/TOP_SECRET */

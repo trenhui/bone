@@ -57,6 +57,8 @@ const EntityManagement: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<number | null>(null);
   const [deliveryFilter, setDeliveryFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
+  /** 全局草稿数（页头「待发布 N」角标，不受列表筛选影响） */
+  const [draftTotal, setDraftTotal] = useState<number | null>(null);
   const [selectedModule, setSelectedModule] = useState<string>(isScoped ? moduleId! : 'all');
   // 树选中语义（提前声明，供 load 依赖）：all=全部分组视图；app-<id>=该应用下模块；mod-<id>=该模块平铺列表
   const selectedIsModule = selectedModule.startsWith('mod-');
@@ -172,6 +174,22 @@ const EntityManagement: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  /**
+   * 页头的「待发布 N」角标：与当前筛选无关的全局草稿数。
+   *
+   * 为何单独请求而不是从当前页 data 数推算：当前页可能正被 `?status=0` / 模块 /
+   * 关键词筛选，此时「本页 10 条草稿」≠「还有多少草稿待发布」，用它会给出
+   * 误导性的数字（用户以为发布完了其实还有）。对标 GitHub「Open issues」计数：
+   * 概览数必须是**不受列表筛选影响**的口径。
+   */
+  useEffect(() => {
+    let cancelled = false;
+    metadataEntityApi.page({ page: 1, size: 1, status: 0 })
+      .then((res) => { if (!cancelled) setDraftTotal(res.code === 200 ? normalizeTotal(res.data.total) : null); })
+      .catch(() => { if (!cancelled) setDraftTotal(null); });
+    return () => { cancelled = true; };
+  }, [isScoped, selectedModule, selectedIsModule]);
+
   // ----- 真实应用/模块树（IAM 真源；仅非 scoped 模式加载）-----
   const [appModules, setAppModules] = useState<{ appId: string; appName: string; modules: BoneModule[] }[]>([]);
   useEffect(() => {
@@ -270,6 +288,8 @@ const EntityManagement: React.FC = () => {
   const [createMode, setCreateMode] = useState<'new' | 'template'>('new');
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  /** 当前选中模板（T5：展示「适用场景一句话」，只给 name/code 用户无法判断选哪个场景） */
+  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) ?? null;
   const [tplFields, setTplFields] = useState<MetaTemplateField[]>([]);
 
   const openCreate = () => {
@@ -295,6 +315,12 @@ const EntityManagement: React.FC = () => {
       setTableImportOpen(true);
       searchParams.delete('import');
       setSearchParams(searchParams, { replace: true });
+    } else if (searchParams.get('status') !== null) {
+      // 工作台「待发布实体 → 查看全部实体」深链：?status=0 落到「草稿」筛选态。
+      // 此处**保留** status 参数（与 new/import 不同）——它是可分享的筛选态，
+      // 刷新/复制链接后仍应停在同一视图。
+      const s = searchParams.get('status');
+      setStatusFilter(s === null || s === '' ? null : Number(s));
     }
     // openCreate 为组件内定义的稳定闭包，仅初始化时消费深链参数
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -545,17 +571,35 @@ const EntityManagement: React.FC = () => {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
           <Breadcrumb
             items={[
-              { title: <a onClick={() => navigate('/apps')}>应用管理</a> },
+              { title: <a onClick={() => navigate('/apps')}>建模工作台</a> },
               { title: <a onClick={() => navigate(`/apps/${appId}/modules`)}>模块</a> },
-              { title: '领域建模' },
+              { title: '实体' },
             ]}
           />
         </div>
       )}
 
+      {/* 页头：声明本页职责边界（消除「工作台/实体/运行时数据三个菜单到底管什么」的困惑） */}
+      <div style={{ position: 'absolute', top: isScoped ? 28 : 0, left: isScoped ? 0 : 236, right: 0 }}>
+        <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <Space size={8} wrap>
+            <Typography.Title level={5} style={{ margin: 0 }}>实体</Typography.Title>
+            <Tag color="blue" style={{ fontSize: 12 }}>模型清单（唯一真源）</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              共 {total} 个{isScoped ? '（当前模块）' : ''} · 待发布{' '}
+              {draftTotal ?? '…'}
+            </Text>
+          </Space>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            在这里检索、筛选、批量发布、复制与维护实体。点「字段」进入实体工作区（结构 / 界面 / 数据 / 发布四页签）；
+            录制业务数据请用行内「数据」按钮或工作区的「数据」页签，它会锁定当前实体、不会看错数据。
+          </Text>
+        </Space>
+      </div>
+
       {/* 左侧模块树（仅非 scoped 模式；数据来自 IAM 应用/模块真源） */}
       {!isScoped && (
-        <Card size="small" style={{ width: 220, flexShrink: 0 }} styles={{ body: { padding: 8 } }}>
+        <Card size="small" style={{ width: 220, flexShrink: 0, marginTop: 64 }} styles={{ body: { padding: 8 } }}>
           <Tree
             showIcon
             defaultExpandAll
@@ -571,7 +615,8 @@ const EntityManagement: React.FC = () => {
       {/* 右侧列表 */}
       {/* minWidth:0 是关键：flex 子项默认 min-width:auto，会被 Table 的 scroll.x=1160 撑破导致页面横向溢出 */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {isScoped && <div style={{ height: 36 }} /> /* 面包屑占位 */}
+        {/* 页头占位：面包屑（scoped）+ 职责页头（absolute 定位，需让出高度，否则压住过滤栏） */}
+        <div style={{ height: isScoped ? 96 : 64 }} />
         {/* 过滤与操作栏 */}
         {/* gutter 会给 Row 加 -6px 左右负边距，在 flex:1 容器里会把内容顶出视口（实测溢出 10px）
             这里把 Row 自身外边距归零，列间距由 Col 的 padding 承担，视觉间隔不变。 */}
@@ -800,6 +845,12 @@ const EntityManagement: React.FC = () => {
               options={templates.map((t) => ({ value: t.id, label: `${t.name}（${t.code}${t.currentVersion ? ' · ' + t.currentVersion : ''}）` }))}
               allowClear
             />
+            {/* T5：模板「适用场景一句话」 */}
+            {selectedTemplate?.description && (
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                适用场景：{selectedTemplate.description}
+              </Text>
+            )}
             {tplFields.length > 0 && (
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
                 默认字段：{tplFields.map((f) => f.code).join('、')}（实例化后可在实体详情中扩展）

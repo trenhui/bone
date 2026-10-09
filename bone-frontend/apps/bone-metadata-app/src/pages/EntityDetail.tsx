@@ -437,8 +437,13 @@ const EntityDetail: React.FC = () => {
   const isRuntimePublished = entity.deliveryMode === META_DELIVERY_RUNTIME && entity.status === META_ENTITY_PUBLISHED;
 
   // 脏态（MVP 近似）：已发布实体，结构 updatedAt 晚于最近一次本地记录的发布时刻 ⇒ 待重新发布
-  const dirtySincePublish =
-    entity.status === 1 && isDirtySincePublish(entity.updatedAt, getLastPublish(id ?? ''));
+  const lastPublishAt = getLastPublish(id ?? '');
+  const dirtySincePublish = entity.status === 1 && isDirtySincePublish(entity.updatedAt, lastPublishAt);
+  /**
+   * 脏态项数（设计 §3.2「未发布 · N 项」）：发布之后新增/修改过的字段数。
+   * 计数为 0 时（后端未回传字段 updatedAt 等）退化为定性 Tag，绝不显示误导性的「0 项」。
+   */
+  const dirtyFieldCount = fields.filter((f) => isDirtySincePublish(f.updatedAt, lastPublishAt)).length;
 
   // 发布成功统一步骤：记录发布时刻（驱动脏态徽标由「有更新待重新发布」转绿）+ 回拉最新实体与字段。
   // 发布 Tab 与顶栏 Modal 两个入口必须共用，否则从 Modal 发布后脏态不刷新（同一事实两个写口 ⇒ 漂移）。
@@ -478,6 +483,8 @@ const EntityDetail: React.FC = () => {
               <Col span={4}><Text type="secondary">发布态</Text><div>
                 {entity.status === 0 ? (
                   <Tag color="orange">草稿</Tag>
+                ) : dirtySincePublish && dirtyFieldCount > 0 ? (
+                  <Tag color="gold">未发布 · {dirtyFieldCount} 项</Tag>
                 ) : dirtySincePublish ? (
                   <Tag color="gold">有更新待重新发布</Tag>
                 ) : (
@@ -486,6 +493,24 @@ const EntityDetail: React.FC = () => {
               </div></Col>
             </Row>
             {entity.description && (<Row style={{ marginTop: 8 }}><Col span={24}><Text type="secondary">描述：</Text><Text>{entity.description}</Text></Col></Row>)}
+            {/* 脏态条（设计 §3.2）：显式告知「线上仍跑上一版快照」，并就近给出重新发布入口 */}
+            {dirtySincePublish && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 12 }}
+                message={
+                  dirtyFieldCount > 0
+                    ? `有 ${dirtyFieldCount} 项结构变更尚未发布，线上仍跑上一版快照`
+                    : '结构有更新尚未发布，线上仍跑上一版快照'
+                }
+                action={
+                  <Button size="small" type="primary" icon={<ThunderboltOutlined />} onClick={() => setPreviewOpen(true)}>
+                    重新发布
+                  </Button>
+                }
+              />
+            )}
           </Col>
           <Col>
             <Space>
