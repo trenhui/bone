@@ -27,7 +27,7 @@ import {
   type ConsoleOverview,
   type QuickAction,
 } from '../services/consoleApi';
-import { formatDate } from '@bone/shared-utils';
+import { formatDate, formatNumber } from '@bone/shared-utils';
 import { ThemeContext } from '../shellContext';
 
 const OVERVIEW_REFRESH_MS = 30_000;
@@ -125,9 +125,9 @@ function toNum(v: number | string | undefined | null): number {
 }
 
 const fmtNum = (v?: number | string): string =>
-  v === undefined || v === null || v === '' ? '—' : toNum(v).toLocaleString('zh-CN');
+  v === undefined || v === null || v === '' ? '—' : formatNumber(toNum(v));
 const fmtMoney = (v?: number | string): string =>
-  v === undefined || v === null || v === '' ? '—' : `¥${toNum(v).toLocaleString('zh-CN')}`;
+  v === undefined || v === null || v === '' ? '—' : `¥${formatNumber(toNum(v))}`;
 
 function ResourceRing({
   percent,
