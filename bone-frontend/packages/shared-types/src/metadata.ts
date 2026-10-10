@@ -170,8 +170,8 @@ export const ENTITY_STATUS: Record<number, string> = {
 };
 
 export const DELIVERY_MODE: Record<number, string> = {
-  0: '生成式 (A)',
-  1: '运行时 (B)',
+  0: '手写界面',
+  1: '自动生成界面',
 };
 
 export const RELATION_TYPES = ['OneToOne', 'OneToMany', 'ManyToOne', 'ManyToMany'];
@@ -242,6 +242,8 @@ export const RUNTIME_READONLY_FIELDS = new Set([
 
 export const META_ENTITY_PUBLISHED = 1;
 export const META_DELIVERY_RUNTIME = 1;
+/** 手写界面（GENERATIVE）· PRD §0.7 双界面模式：页面在业务仓手写；显式选择时使用本常量，禁止裸写 0 */
+export const META_DELIVERY_GENERATIVE = 0;
 
 // ===== 业界元数据 / 数据治理枚举（对齐后端 MetaField 治理属性） =====
 

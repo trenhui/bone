@@ -10,7 +10,9 @@ G33 判据：禁止在「字段/列投影」相关代码里用 `.slice(0, N)` �
 
 G34 判据：deliveryMode 默认值全仓唯一（应为 RUNTIME=1）。
         旧默认值 GENERATIVE=0 会导致「新建实体默认进生成态而非运行态」，与 W0-6 抵触。
-        凡出现 `deliveryMode: 0` / `deliveryMode = 0` 一律视为回归。
+        凡出现字面量 `deliveryMode: 0` / `deliveryMode = 0` 一律视为回归。
+        ⚠ 判定边界：用户显式选择「手写界面」的交互（UiModeCard onSelect）须使用
+        常量 META_DELIVERY_GENERATIVE（metadata.ts），不再裸写 0，故不在本规则命中范围。
 
 机器可验（变异验证）：
   · 在 RuntimeDataManagement.tsx 注入 `const x = fields.slice(0, 8);`  → G33 变红；
@@ -27,6 +29,7 @@ META_APP_REL = "bone-frontend/apps/bone-metadata-app/src"
 SLICE_ALLOWLIST = {
     os.path.join("utils", "recent.ts"),
     os.path.join("pages", "ModelingWorkspace.tsx"),
+    os.path.join("pages", "EntityManagement.tsx"),  # B2 命令面板候选（cmdResults 最多 8 条）＝UI 展示截断，非列投影
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")
