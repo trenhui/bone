@@ -38,6 +38,22 @@ public final class MetadataErrorCodes {
   /** 标识符非法（表名 / 列名不符合 {@code [a-zA-Z][a-zA-Z0-9_]*}）。 */
   public static final String RUNTIME_INVALID_IDENTIFIER = "META_RUNTIME_INVALID_IDENTIFIER";
 
+  // ===== 运行时状态机动作（META_RUNTIME_ACTION_*）=====
+
+  /** 动作定义不存在（实体/动作码查不到）。 */
+  public static final String RUNTIME_ACTION_NOT_FOUND = "META_RUNTIME_ACTION_NOT_FOUND";
+
+  /** 状态机边非法（当前状态 != from_status），拒绝推进。 */
+  public static final String RUNTIME_ACTION_ILLEGAL_TRANSITION =
+      "META_RUNTIME_ACTION_ILLEGAL_TRANSITION";
+
+  /** 动作入参校验失败（必填缺失 / 非法值）。 */
+  public static final String RUNTIME_ACTION_INVALID_PARAMS = "META_RUNTIME_ACTION_INVALID_PARAMS";
+
+  /** 资金类动作缺少 Idempotency-Key（防重放二次记账）。 */
+  public static final String RUNTIME_ACTION_IDEMPOTENCY_REQUIRED =
+      "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED";
+
   // ===== 运行时前置条件（META_*）=====
 
   /** 乐观锁版本冲突（If-Match 与当前记录不一致）。 */

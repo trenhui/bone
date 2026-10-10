@@ -1,16 +1,26 @@
 openapi: 3.1.0
 info:
   title: Bone Metadata Runtime API（模式 B）
-  version: 1.0.0
+  version: 1.2.2
   description: |
     已发布且 `delivery_mode=RUNTIME` 的实体，通过 `bone-metadata-engine` 的 `JdbcRuntimeRecordService`
-    对物理表执行动态 CRUD。服务宿主：**bone-metadata-server** :9001。
+    对物理表执行动态 CRUD；动作通道（P1 / UIF-008）为：
+    - Describe：`GET  …/records/{id}/actions`
+    - Invoke：`POST …/records/{id}/actions/{actionCode}`
+    服务宿主：**bone-metadata-server** :9001。
 
     - 规范：[Bone-API-规范.md](../Bone-API-规范.md)
     - 详设：[元数据管理模块](../../design/modules/2.%20元数据管理模块详细设计方案.md) §0.1、§2.4
-    - PRD：META-002B
+    - **低代码读/动态动作**：[BONE-低代码Runtime数据面设计.md](../../design/lowcode/BONE-低代码Runtime数据面设计.md)
+    - PRD：META-002B / 低代码最小闭环 §2.5.8–2.5.9 / UIF-008
+    - 业界对标：Salesforce sObject + Actions describe/invoke；NocoBase collection + resource:action ACL（见设计文 §0.1）
 
     **前置条件**：实体 status=已发布(1)、delivery_mode=RUNTIME(1)；物理表 `table_name` 已存在且列名与 `meta_field.code` 对齐。
+
+    **边界**：
+    - CRUD（本文件已实现路径）：单实体行读写。
+    - Actions Describe/Invoke：**目标态 / P1**；内置 state_transition + SPI escape Handler。
+    - **禁止** MetaList 默认挂 `/expense-claims`、`/replenishments`；Mode A 可自有 Controller。
 
 servers:
   - url: /api/v1/runtime
@@ -34,6 +44,27 @@ paths:
           in: query
           schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
           description: 每页条数
+        - name: fields
+          in: query
+          schema: { type: string }
+          description: |
+            列投影，逗号分隔的 `meta_field.code`。
+            与前端 `projectColumns` 对齐；省略则返回引擎默认列集。
+          example: claim_no,title,amount,status
+        - name: sort
+          in: query
+          schema: { type: string }
+          description: |
+            排序：`[-|+]field[,…]`。`-` 降序，`+` 或无前缀为升序。
+            实现见 `RuntimePageQuery.parseSort`。
+          example: -expense_date,claim_no
+        - name: q
+          in: query
+          schema: { type: string }
+          description: |
+            **MVP 单条件等值过滤**，格式 `field:value`（不是全文 keyword）。
+            例：`status:APPROVED`。多条件/运算符 → v1.1。
+          example: status:APPROVED
       responses:
         '200':
           description: OK
@@ -56,6 +87,11 @@ paths:
       tags: [RuntimeRecord]
       parameters:
         - $ref: '#/components/parameters/EntityCode'
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string }
+          description: 创建幂等键（可选）；重复提交回放首次结果
       requestBody:
         required: true
         content:
@@ -63,8 +99,19 @@ paths:
             schema:
               $ref: '#/components/schemas/RuntimeRecordBody'
       responses:
+        '201':
+          description: Created（创建后的完整记录）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecord'
         '200':
-          description: OK（创建后的完整记录）
+          description: 幂等回放（若带 Idempotency-Key 且命中）
           content:
             application/json:
               schema:
@@ -87,7 +134,11 @@ paths:
         - $ref: '#/components/parameters/RecordId'
       responses:
         '200':
-          description: OK
+          description: OK；成功时响应头带 ETag（version）
+          headers:
+            ETag:
+              schema: { type: string }
+              description: 乐观锁版本，供后续 If-Match
           content:
             application/json:
               schema:
@@ -106,6 +157,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/EntityCode'
         - $ref: '#/components/parameters/RecordId'
+        - name: If-Match
+          in: header
+          required: false
+          schema: { type: string }
+          description: |
+            与 GET 返回的 ETag 对齐；冲突返回 412。
+            MVP 宽限期可省略（见 PRD D3）；强制后客户端必须带。
       requestBody:
         required: true
         content:
@@ -114,7 +172,10 @@ paths:
               $ref: '#/components/schemas/RuntimeRecordBody'
       responses:
         '200':
-          description: OK
+          description: OK；响应带新 ETag
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
@@ -124,6 +185,12 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/RuntimeRecord'
+        '412':
+          description: 版本冲突（If-Match）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
         '404':
           $ref: '#/components/responses/RuntimeError'
     delete:
@@ -143,6 +210,106 @@ paths:
         '404':
           $ref: '#/components/responses/RuntimeError'
 
+  /entities/{entityCode}/records/{id}/actions:
+    get:
+      summary: 描述当前行可用动作（目标态 · Describe）
+      description: |
+        **尚未实现**——对标 Salesforce Actions describe / NocoBase allowedActions。
+        按 catalog actions ∩ 当前状态 ∩ 权限 ∩ Handler 是否注册 返回按钮清单。
+        MetaList **应以本接口（或等价计算）为按钮真源**，禁止前端写死动作列表。
+      operationId: describeRuntimeRecordActions
+      tags: [RuntimeAction]
+      x-implementation-status: planned
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeActionDescribe'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+
+  /entities/{entityCode}/records/{id}/actions/{actionCode}:
+    post:
+      summary: 执行记录动作（目标态 · Invoke）
+      description: |
+        **尚未实现于 engine**——契约先行，对齐 PRD UIF-008 与 Runtime 数据面设计 §4。
+
+        - `actionCode` 动态：`submit` / `approve` / `confirmPayout` / `receive` 等。
+        - `kind=state_transition`：内置矩阵校验 + 改 ENUM。
+        - `kind=escape`：SPI Handler（打款/入库）；逃逸建议强制 `Idempotency-Key`。
+        - MetaList **只拼本路径**，不写死业务名词资源。
+      operationId: invokeRuntimeRecordAction
+      tags: [RuntimeAction]
+      x-implementation-status: planned
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/ActionCode'
+        - name: If-Match
+          in: header
+          required: false
+          schema: { type: string }
+          description: 强烈建议；冲突 412
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string }
+          description: escape 副作用类 Should 强制；重复 Key → 200 + idempotentReplay
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeActionBody'
+      responses:
+        '200':
+          description: OK（含幂等回放）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeActionResult'
+        '400':
+          description: 缺 Idempotency-Key 等
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '403':
+          description: 无动作权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '404':
+          description: 实体/行/动作未注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '409':
+          description: 非法状态转移
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '412':
+          description: If-Match 冲突
+
 components:
   securitySchemes:
     bearerAuth:
@@ -157,7 +324,7 @@ components:
       schema:
         type: string
         pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
-      description: 元数据实体编码（meta_entity.code）
+      description: 元数据实体编码（meta_entity.code），如 t_expense_claim
     RecordId:
       name: id
       in: path
@@ -165,6 +332,16 @@ components:
       schema:
         type: string
       description: 主键值（通常为 Snowflake 数字字符串）
+    ActionCode:
+      name: actionCode
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+      description: |
+        动作编码（动态）。例：submit、approve、confirmPayout、receive。
+      example: confirmPayout
 
   schemas:
     RuntimeRecord:
@@ -172,31 +349,91 @@ components:
       additionalProperties: true
       description: 物理表行，键为列名（与 meta_field.code 对齐）
       example:
-        id: 1234567890123456789
-        tenant_id: 1
-        order_no: O-20260517-001
-        amount: 99.5
-        deleted: 0
+        id: '1234567890123456789'
+        tenant_id: '1'
+        claim_no: EXP-20261009-001
+        title: 上海客户拜访
+        amount: 128.50
+        status: APPROVED
+        version: 3
 
     RuntimeRecordBody:
       type: object
       additionalProperties: true
       description: 可写字段子集；禁止传 id/tenant_id 等系统列（服务端过滤）
+      example:
+        title: 客户拜访差旅
+        amount: 128.50
+        category: 差旅
+        status: DRAFT
+        applicant: 张三
+
+    RuntimeActionBody:
+      type: object
+      description: 动作可选载荷；纯状态转移可空体
+      properties:
+        payload:
+          type: object
+          additionalProperties: true
+      example:
+        payload: {}
+
+    RuntimeActionDescriptor:
+      type: object
+      properties:
+        code: { type: string, example: confirmPayout }
+        label: { type: string, example: 确认打款 }
+        kind:
+          type: string
+          enum: [state_transition, escape]
+        enabled: { type: boolean }
+        permission: { type: string, example: runtime:t_expense_claim:confirmPayout }
+        requiresIdempotencyKey: { type: boolean }
+        confirm:
+          type: object
+          properties:
+            required: { type: boolean }
+            message: { type: string }
+
+    RuntimeActionDescribe:
+      type: object
+      properties:
+        recordId: { type: string }
+        status: { type: string, example: APPROVED }
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuntimeActionDescriptor'
+
+    RuntimeActionResult:
+      type: object
+      description: Invoke 结果信封（设计文 §4.4）
+      properties:
+        record:
+          $ref: '#/components/schemas/RuntimeRecord'
+        action: { type: string, example: confirmPayout }
+        fromStatus: { type: string, example: APPROVED }
+        toStatus: { type: string, example: PAID }
+        sideEffects:
+          type: array
+          items: { type: string }
+          example: [payment_voucher_created]
+        idempotentReplay: { type: boolean, default: false }
 
     RuntimeRecordPage:
       type: object
-      description: 与 catalog API 一致，使用 list/pageNum/pageSize（CatalogPageMapper）
+      description: 平台统一分页信封（components/PageResult.yaml）：records/total/page/size/pages/hasNext/hasPrevious。`list` 为后端 @Deprecated getter（@JsonIgnore），**不出现在响应中**
       properties:
-        list:
+        records:
           type: array
           items:
             $ref: '#/components/schemas/RuntimeRecord'
         total:
           type: string
-          description: 记录总数；后端为包装类型 Long，被全局 Long→String 序列化器输出为字符串
-        pageNum:
+          description: 记录总数；后端 Long 经全局序列化为字符串（MetadataAutoConfiguration boneLongToStringCustomizer，勿在业务侧注册自定义 ObjectMapper 覆盖）
+        page:
           type: integer
-        pageSize:
+        size:
           type: integer
         pages:
           type: integer
@@ -214,18 +451,19 @@ components:
             - META_RUNTIME_ENTITY_NOT_FOUND
             - META_RUNTIME_RECORD_NOT_FOUND
             - META_RUNTIME_INVALID_IDENTIFIER
+            - META_RUNTIME_INVALID_QUERY
+            - META_RUNTIME_ACTION_NOT_FOUND
+            - META_RUNTIME_ACTION_ILLEGAL_TRANSITION
+            - META_RUNTIME_ACTION_INVALID_PARAMS
+            - META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED
+            - META_RUNTIME_FORBIDDEN_ACTION
         message:
           type: string
 
   responses:
     RuntimeError:
-      description: 运行时数据面错误（GlobalExceptionHandler / ErrorResponse）
+      description: 运行时数据面错误（GlobalExceptionHandler）
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              errorCode:
-                type: string
-              message:
-                type: string
+            $ref: '#/components/schemas/RuntimeErrorEnvelope'

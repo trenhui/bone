@@ -242,6 +242,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_VALIDATION_FAILED` | 400 | 字段校验失败（必填缺失 / 类型不匹配） |
 | `META_RUNTIME_DUPLICATE` | 409 | 唯一约束冲突（字段值已存在） |
 | `META_RUNTIME_INVALID_IDENTIFIER` | 400 | 标识符非法（表名 / 列名不符合 `[a-zA-Z][a-zA-Z0-9_]*`） |
+| `META_RUNTIME_ACTION_NOT_FOUND` | 404 | 非法动作：动作定义不存在或未注册 Handler |
+| `META_RUNTIME_ACTION_ILLEGAL_TRANSITION` | 409 | 状态机推进非法：当前状态与 `from_status` 不匹配或已终态 |
+| `META_RUNTIME_ACTION_INVALID_PARAMS` | 400 | 动作入参校验失败（必填缺失 / 非法值） |
+| `META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED` | 400 | 资金类动作缺少 Idempotency-Key（防重放二次记账；开发宽限期可配，生产强制） |
 | `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移：模型类型与物理列类型不兼容（doc2a §328） |
 
