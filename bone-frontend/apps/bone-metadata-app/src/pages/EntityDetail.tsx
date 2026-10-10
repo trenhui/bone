@@ -127,6 +127,20 @@ const EntityDetail: React.FC = () => {
     setSearchParams(next, { replace: true });
   };
   const [innerTab, setInnerTab] = useState('fields');
+  /** UID-11：从「界面」Tab 定位过来的字段编码，用于结构列表高亮（短时自动消退） */
+  const [highlightFieldCode, setHighlightFieldCode] = useState<string | null>(null);
+
+  /**
+   * UID-11：定位到结构后滚动到目标字段并高亮，3 秒后自动消退。
+   * 必须自动消退——高亮是「刚跳过来」的临时信号，永久残留会让用户以为该字段有异常。
+   */
+  useEffect(() => {
+    if (!highlightFieldCode) return;
+    const el = document.querySelector('.bone-field-highlight');
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const timer = setTimeout(() => setHighlightFieldCode(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightFieldCode]);
 
   const [entity, setEntity] = useState<MetaEntity | null>(null);
   const [fields, setFields] = useState<MetaField[]>([]);
@@ -576,6 +590,7 @@ const EntityDetail: React.FC = () => {
                       children: (
                         <Table rowKey="id" loading={fieldLoading} columns={fieldColumns} dataSource={fields} pagination={false} size="small" scroll={{ x: 'max-content' }}
                           components={{ body: { row: EditableRow as unknown as React.ComponentType<React.HTMLAttributes<HTMLTableRowElement>>, cell: EditableCell as unknown as React.ComponentType<React.TdHTMLAttributes<HTMLTableCellElement>> } }}
+                          rowClassName={(r) => (r.code === highlightFieldCode ? 'bone-field-highlight' : '')}
                           onRow={(record) => ({ record, onSave: saveFieldInline } as unknown as React.HTMLAttributes<HTMLTableRowElement>)} />
                       ),
                     },
@@ -638,6 +653,11 @@ const EntityDetail: React.FC = () => {
                     setOuterTab('structure');
                     setInnerTab('fields');
                     setWizardOpen(true);
+                  }}
+                  onLocateField={(code) => {
+                    setOuterTab('structure');
+                    setInnerTab('fields');
+                    setHighlightFieldCode(code);
                   }}
                 />
               ),

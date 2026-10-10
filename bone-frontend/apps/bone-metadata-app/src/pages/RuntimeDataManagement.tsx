@@ -72,6 +72,14 @@ export interface RuntimeDataManagementProps {
   embeddedEntityId?: string | null;
 }
 
+/** 412 并发冲突的字段级差异行（供「查看差异」展示：只含真正不同的字段） */
+interface ConflictDiffRow {
+  code: string;
+  name: string;
+  mine: unknown;
+  theirs: unknown;
+}
+
 const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedEntityId = null }) => {
   const { id: pathId } = useParams<{ id?: string }>();
   const resolvedId = embeddedEntityId ?? pathId ?? null;
@@ -95,6 +103,9 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [editing, setEditing] = useState<RuntimeRecord | null>(null);
   const [editingEtag, setEditingEtag] = useState<string | undefined>(undefined);
   const [conflict, setConflict] = useState(false);
+  /** 412 冲突时线上值 vs 本次提交的差异（W0-4「查看差异」，避免只说「被改了」却不说是哪几项） */
+  const [conflictDiff, setConflictDiff] = useState<ConflictDiffRow[]>([]);
+  const [diffOpen, setDiffOpen] = useState(false);
   /** W0a2：q/sort 接线 —— 单条件过滤（field:value）*/
   const [searchField, setSearchField] = useState<string | undefined>(undefined);
   const [keyword, setKeyword] = useState('');
@@ -218,6 +229,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     setEditing(null);
     setEditingEtag(undefined);
     setConflict(false);
+    setConflictDiff([]);
     form.resetFields();
     setModalOpen(true);
   };
@@ -225,6 +237,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const openEdit = async (record: RuntimeRecord) => {
     if (!entityCode) return;
     setConflict(false);
+    setConflictDiff([]);
     const rid = recordId(record);
     if (!rid) {
       message.error('记录缺少主键 id');
@@ -328,6 +341,19 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           const rid = recordId(editing);
           const res = await runtimeRecordApi.get(entityCode, rid);
           if (res.code === 200) {
+            // 「查看差异」：把线上最新值与本次提交逐字段比对，只保留真正不同的字段。
+            // 只提示「被他人修改」而不指出改了哪几项，用户只能全表重填。
+            const server = (res.data ?? {}) as Record<string, unknown>;
+            setConflictDiff(
+              writableFields
+                .map((f) => ({
+                  code: f.code,
+                  name: f.displayName || f.code,
+                  mine: body[f.code],
+                  theirs: server[f.code],
+                }))
+                .filter((d) => String(d.mine ?? '') !== String(d.theirs ?? '')),
+            );
             setEditing(res.data);
             setEditingEtag(res.etag);
           }
@@ -676,8 +702,19 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               type="warning"
               showIcon
               style={{ marginBottom: 12 }}
-              message="记录已被他人修改"
+              message={
+                conflictDiff.length > 0
+                  ? `记录已被他人修改（${conflictDiff.length} 个字段与你的提交不同）`
+                  : '记录已被他人修改'
+              }
               description="下方表单已重新加载最新数据，请确认后再次提交。"
+              action={
+                conflictDiff.length > 0 ? (
+                  <Button size="small" onClick={() => setDiffOpen(true)}>
+                    查看差异
+                  </Button>
+                ) : undefined
+              }
             />
           )}
           {writableFields.length === 0 ? (
@@ -689,6 +726,41 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
             writableFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
           )}
         </Form>
+      </Modal>
+
+      {/* 412 冲突「查看差异」：逐字段展示「你的提交」vs「当前线上值」 */}
+      <Modal
+        title="与线上数据的差异"
+        open={diffOpen}
+        onCancel={() => setDiffOpen(false)}
+        footer={<Button onClick={() => setDiffOpen(false)}>关闭</Button>}
+        width={560}
+        destroyOnHidden
+      >
+        <Table<ConflictDiffRow>
+          rowKey="code"
+          size="small"
+          pagination={false}
+          dataSource={conflictDiff}
+          columns={[
+            { title: '字段', dataIndex: 'name', width: 140, ellipsis: true },
+            {
+              title: '你的提交',
+              dataIndex: 'mine',
+              render: (v: unknown) =>
+                v == null || v === '' ? <Text type="secondary">（空）</Text> : String(v),
+            },
+            {
+              title: '当前线上值',
+              dataIndex: 'theirs',
+              render: (v: unknown) =>
+                v == null || v === '' ? <Text type="secondary">（空）</Text> : String(v),
+            },
+          ]}
+        />
+        <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>
+          表单已载入线上最新值；确认后再提交，提交会自动带上新的 ETag。
+        </Text>
       </Modal>
     </div>
   );

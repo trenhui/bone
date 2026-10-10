@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Button, Empty, Form, Input, InputNumber, Segmented, Select, Space, Switch,
-  Table, Tag, Typography, DatePicker, message,
+  Table, Tag, Tooltip, Typography, DatePicker, message,
 } from 'antd';
 import {
-  ArrowDownOutlined, ArrowUpOutlined, EyeOutlined,
+  AimOutlined, ArrowDownOutlined, ArrowUpOutlined, EyeOutlined,
   PlusOutlined, ReloadOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -31,11 +31,13 @@ interface Props {
   fields: MetaField[];
   /** 空态 CTA「去结构添加第一个字段」：由 EntityDetail 注入，避免反向依赖路由 */
   onAddField?: () => void;
+  /** UID-11：定位某列对应的字段 —— 跳到「结构」Tab 并高亮该字段 */
+  onLocateField?: (code: string) => void;
 }
 
 type ViewMode = 'list' | 'form';
 
-const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField }) => {
+const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocateField }) => {
   // 仅用户可见的数据列参与投影（排除系统只读列，与数据 Tab 口径一致）
   const baseFields = useMemo(
     () => fields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
@@ -162,6 +164,18 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField }) => {
         );
       },
     },
+    {
+      // UID-11：从「界面」的某一列反查到「结构」里的字段定义（双向联动的一半）
+      title: '定位',
+      key: 'locate',
+      width: 70,
+      render: (_: unknown, f: MetaField) =>
+        onLocateField ? (
+          <Tooltip title="跳到「结构」并高亮该字段">
+            <Button size="small" type="link" icon={<AimOutlined />} onClick={() => onLocateField(f.code)} />
+          </Tooltip>
+        ) : null,
+    },
   ];
 
   const listPreviewColumns: ColumnsType<MetaField> = [
@@ -233,7 +247,7 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField }) => {
 
       {mode === 'config' ? (
         <>
-          <div style={{ marginBottom: 8 }}><Text strong>列配置</Text><Text type="secondary">（显隐 / 显示名 / 列序）</Text></div>
+          <div style={{ marginBottom: 8 }}><Text strong>列配置</Text><Text type="secondary">（显隐 / 显示名 / 列序{onLocateField ? '；点击任意行可跳到「结构」高亮该字段' : ''}）</Text></div>
           <Table
             rowKey="code"
             size="small"
@@ -241,6 +255,11 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField }) => {
             columns={configColumns}
             dataSource={baseFields}
             scroll={{ x: 'max-content' }}
+            /* UID-11：整行可点，等价于右侧「定位」按钮（大目标更好点） */
+            onRow={(f) => ({
+              onClick: () => onLocateField?.(f.code),
+              style: { cursor: onLocateField ? 'pointer' : 'default' },
+            })}
           />
           <div style={{ margin: '12px 0 8px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -258,6 +277,10 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField }) => {
           dataSource={projected}
           locale={{ emptyText: '当前没有可见列，请在「配置」中开启显示' }}
           scroll={{ x: 'max-content' }}
+          onRow={(f) => ({
+            onClick: () => onLocateField?.(f.code),
+            style: { cursor: onLocateField ? 'pointer' : 'default' },
+          })}
         />
       ) : (
         <div style={{ maxWidth: 560 }}>

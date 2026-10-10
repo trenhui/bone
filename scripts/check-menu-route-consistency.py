@@ -139,7 +139,7 @@ def main():
         # 未命中真实路由
         if (app, hash_) in KNOWN_DEAD_ALLOWLIST:
             warnings.append(
-                f"{app}#{hash_} 是已知死链（302 兼容，待 0027 软删）—— 允许但需跟踪"
+                f"{app}#{hash_} 是已知死链（302 兼容；0027 已软删落库，0024 种子仍保留故此处仍可见）—— 允许但需跟踪"
             )
             continue
         problems.append(

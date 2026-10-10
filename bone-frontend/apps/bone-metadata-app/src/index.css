@@ -16,3 +16,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* UID-11：从「界面」Tab 定位到「结构」时高亮目标字段行（3 秒后由前端自动消退）。
+   !important 用于压过 antd 可编辑行 hover/斑马纹的背景色，否则高亮会被覆盖看不见。 */
+.bone-field-highlight > td {
+  background-color: #fff1b8 !important;
+}
