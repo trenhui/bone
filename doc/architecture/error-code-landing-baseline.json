@@ -1,0 +1,47 @@
+{
+  "note": "存量基线，只可收缩。修复后应移除对应条目。",
+  "rule": "application/ 与 adapter/web/ 内业务异常必须携带 errorCode",
+  "strictViolations": [],
+  "advisoryViolations": [
+    {
+      "file": "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/invoker/ExtPointInvocationHandler.java",
+      "line": 119,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/invoker/ExtPointInvocationHandler.java",
+      "line": 150,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamApplicationValidator.java",
+      "line": 22,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamApplicationValidator.java",
+      "line": 27,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamModuleValidator.java",
+      "line": 60,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamModuleValidator.java",
+      "line": 71,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamModuleValidator.java",
+      "line": 76,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    },
+    {
+      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/service/IamModuleValidator.java",
+      "line": 86,
+      "form": "BizException.of(...) ⇒ errorCode=null（9个重载全丢码）"
+    }
+  ]
+}

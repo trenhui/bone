@@ -1,0 +1,5 @@
+{
+  "note": "offset 裸 class 存量，只可收缩。cursor 族待 CursorPageParam 落地后接管。",
+  "rule": "对外分页入参类必须 extends PageParam/SortablePageParam",
+  "offsetViolations": []
+}

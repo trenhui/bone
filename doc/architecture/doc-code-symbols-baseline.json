@@ -14,7 +14,7 @@
       "note": "各节「命名提示」给出 MasterDataModel→MasterDataEntity 等 To-Be 到 As-Is 映射"
     },
     {
-      "doc": "design/BONE-X-Studio-详细设计方案.md",
+      "doc": "design/modules/BONE-X-Studio-详细设计方案.md",
       "reason": "vision",
       "note": "目标态详细设计，多数构件为 Vision，未实现"
     },
@@ -146,7 +146,7 @@
       "symbol": "AutoConfiguration",
       "docs": [
         "doc/design/modules/review-report-bone-system.md",
-        "doc/spring-boot-3.5-upgrade.md"
+        "doc/plans/spring-boot-3.5-upgrade.md"
       ],
       "reason": "false-positive",
       "note": "Spring Boot 生态的通用词（@AutoConfiguration / AutoConfiguration.imports），非项目自定义类名。imports 是 Spring Boot 3 的自动配置注册**文件名约定**（META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports），文档里出现的是文件名而非 Java 类引用。"
@@ -627,10 +627,46 @@
     {
       "symbol": "ReplenishmentApplicationService",
       "docs": [
-        "doc/prd/BONE-低代码最小闭环PRD.md"
+        "doc/design/lowcode/BONE-低代码最小闭环PRD.md"
       ],
       "reason": "tobe-named",
       "note": "PRD 补货能力设计稿描述的目标态 ApplicationService 边界（到货入库 receive 跨聚合事务），实现尚未落地；改文档会把目标态设计降格为 As-Is 描述"
+    },
+    {
+      "symbol": "ExpenseClaimApplicationService",
+      "docs": [
+        "doc/design/lowcode/BONE-低代码最小闭环PRD.md",
+        "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",
+        "doc/design/lowcode/runtime/元数据Runtime数据面-低代码读API与动作逃逸设计.md",
+        "doc/design/lowcode/ui/README.md"
+      ],
+      "reason": "tobe-named",
+      "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地"
+    },
+    {
+      "symbol": "ExpenseClaimConfirmPayoutHandler",
+      "docs": [
+        "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",
+        "doc/design/lowcode/runtime/元数据Runtime数据面-低代码读API与动作逃逸设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "费用报销 case 建模方案的确认打款动作目标态命名（SPI 逃逸 Handler），实现尚未落地"
+    },
+    {
+      "symbol": "RuntimeActionHandler",
+      "docs": [
+        "doc/design/lowcode/runtime/元数据Runtime数据面-低代码读API与动作逃逸设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "Runtime 数据面设计的动作逃逸 SPI 目标态命名，实现尚未落地"
+    },
+    {
+      "symbol": "ReplenishmentReceiveHandler",
+      "docs": [
+        "doc/design/lowcode/runtime/元数据Runtime数据面-低代码读API与动作逃逸设计.md"
+      ],
+      "reason": "tobe-named",
+      "note": "补货到货入库 receive 动作逃逸 Handler 目标态命名，实现尚未落地"
     }
   ]
 }
