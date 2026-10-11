@@ -650,6 +650,14 @@
       ],
       "reason": "tobe-named",
       "note": "补货到货入库 receive 动作逃逸 Handler 目标态命名，实现尚未落地"
+    },
+    {
+      "symbol": "DataSourceAdapter",
+      "docs": [
+        "doc/design/procuraAI/采购AI-智能风险审查与合同智能处理-技术方案.md"
+      ],
+      "reason": "workflow-sample",
+      "note": "采购AI 技术方案 §5.3 的示意接口（interface DataSourceAdapter {...}），定义集成适配器标准方法（pullContract/pullPayments/...），非项目实现真源类名；属设计文档示例，改文档会丢失方案示意信息"
     }
   ]
 }
