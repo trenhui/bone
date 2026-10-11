@@ -104,7 +104,7 @@ export const metadataEntityApi = {
 
   // 批量发布：后端 MetaEntityCatalogController.batchPublish 已实现（部分成功语义）
   batchPublish: (ids: string[]) =>
-    api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-publish`, { ids }),
+    api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: string[] }>>(`${META}/entities/batch-publish`, { ids }),
 
   batchDelete: (ids: string[]) =>
     api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-delete`, { ids }),

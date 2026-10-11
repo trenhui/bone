@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>幕二 · 结构建模与即时预览 — 费用报销串联</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif; background:#f0f2f5; color:#1f2329; font-size:14px; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:200px; background:#fff; border-right:1px solid #e5e6eb; padding:16px 8px; }
+  .brand { display:flex; align-items:center; gap:8px; padding:0 12px 16px; font-weight:600; font-size:15px; }
+  .brand .logo { width:26px; height:26px; border-radius:6px; background:#1677ff; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .nav-group { font-size:12px; color:#8a8f99; padding:10px 12px 4px; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:7px 12px; border-radius:6px; color:#4e5158; margin-bottom:1px; }
+  .nav-item.active { background:#e8f1ff; color:#1677ff; font-weight:600; }
+  .nav-item .arr { margin-left:auto; color:#8a8f99; font-size:10px; }
+  .main { margin-left:200px; padding:0 24px 24px; }
+  .crumb { color:#8a8f99; font-size:12px; padding:14px 0 6px; }
+  .crumb b { color:#4e5158; font-weight:500; }
+  .head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+  .head h1 { font-size:20px; margin-bottom:4px; }
+  .head .sub { color:#8a8f99; font-size:12px; }
+  .head .sub b { color:#1677ff; font-weight:500; }
+  .tabs { display:flex; gap:24px; border-bottom:1px solid #e5e6eb; margin-bottom:16px; }
+  .tab { padding:8px 2px 10px; color:#4e5158; position:relative; }
+  .tab.active { color:#1677ff; font-weight:600; }
+  .tab.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:#1677ff; border-radius:1px; }
+  .tab .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#faad14; margin-left:4px; vertical-align:2px; }
+  .grid { display:grid; grid-template-columns: 1fr 560px; gap:16px; align-items:start; }
+  .card { background:#fff; border-radius:10px; border:1px solid #e5e6eb; }
+  .card .c-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #f0f1f3; }
+  .card .c-head b { font-size:14px; }
+  .card .c-head .ops { display:flex; gap:8px; }
+  .btn-sm { border:1px solid #d9dce1; background:#fff; border-radius:6px; padding:3px 10px; font-size:12px; color:#4e5158; }
+  .btn-primary-sm { border:none; background:#1677ff; color:#fff; border-radius:6px; padding:4px 12px; font-size:12px; }
+  table.fields { width:100%; border-collapse:collapse; font-size:13px; }
+  table.fields th { text-align:left; font-weight:500; color:#8a8f99; font-size:12px; padding:8px 16px; background:#fafbfc; border-bottom:1px solid #f0f1f3; }
+  table.fields td { padding:9px 16px; border-bottom:1px solid #f5f6f7; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:4px; font-size:12px; }
+  .tag-blue { background:#e8f1ff; color:#1677ff; }
+  .tag-purple { background:#f4ecff; color:#722ed1; }
+  .tag-gray { background:#f2f3f5; color:#6b7075; }
+  .tag-gold { background:#fff7e6; color:#d48806; }
+  .badge-new { background:#fff1f0; color:#f5222d; border:1px dashed #ffa39e; padding:0 6px; border-radius:4px; font-size:11px; margin-left:6px; }
+  .req { color:#f5222d; margin-left:2px; }
+  .preview-pane { position:sticky; top:16px; }
+  .phone-wrap { background:#fff; border-radius:10px; border:1px solid #e5e6eb; padding:14px; }
+  .pv-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .pv-head b { font-size:14px; }
+  .sync { font-size:12px; color:#52c41a; background:#f6ffed; border:1px solid #b7eb8f; border-radius:12px; padding:1px 10px; }
+  .phone { width:300px; margin:0 auto; border:1px solid #e5e6eb; border-radius:18px; padding:14px 14px 16px; background:#fafbfc; }
+  .phone .notch { width:80px; height:4px; border-radius:2px; background:#e5e6eb; margin:0 auto 12px; }
+  .f-label { font-size:12px; color:#4e5158; margin:10px 0 4px; }
+  .f-label .req { color:#f5222d; }
+  .f-input { border:1px solid #d9dce1; background:#fff; border-radius:6px; padding:7px 10px; font-size:13px; color:#1f2329; }
+  .f-input .ph { color:#b8bcc4; }
+  .f-row { display:flex; gap:8px; }
+  .f-row > div { flex:1; }
+  .hl { border-color:#1677ff !important; box-shadow:0 0 0 2px rgba(22,119,255,.12); background:#f5f9ff; }
+  .demo-amount { color:#1677ff; font-weight:600; }
+  .hint-row { display:flex; gap:6px; align-items:flex-start; background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:7px 10px; font-size:12px; color:#614700; margin-top:12px; }
+  .hint-row .ico { color:#faad14; }
+  .item-row { display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #e5e6eb; border-radius:8px; padding:8px 10px; margin-top:8px; font-size:12px; }
+  .item-left b { display:block; font-size:13px; }
+  .item-left span { color:#8a8f99; }
+  .item-amt { font-weight:600; }
+  .add-item { width:100%; text-align:center; border:1px dashed #d9dce1; color:#1677ff; border-radius:8px; padding:7px; margin-top:8px; font-size:12px; background:#fff; }
+  .mini-attach { display:flex; gap:6px; margin-top:6px; }
+  .mini-attach span { background:#f2f3f5; border-radius:4px; padding:2px 8px; font-size:11px; color:#4e5158; }
+  .bottom-bar { position:fixed; bottom:0; left:200px; right:0; background:#fff; border-top:1px solid #e5e6eb; padding:10px 24px; display:flex; align-items:center; gap:10px; }
+  .draft-state { margin-right:auto; font-size:12px; color:#8a8f99; }
+  .draft-state .sw { display:inline-block; width:7px; height:7px; border-radius:50%; background:#faad14; margin-right:6px; }
+  .btn { border-radius:7px; padding:7px 18px; font-size:13px; border:1px solid #d9dce1; background:#fff; color:#4e5158; }
+  .btn-primary { border:none; background:#1677ff; color:#fff; font-weight:500; }
+  .flow-note { position:fixed; right:20px; bottom:70px; width:250px; background:#fffbe6; border:1px solid #ffe58f; border-radius:10px; padding:12px 14px; font-size:12px; color:#614700; }
+  .flow-note b { display:block; margin-bottom:6px; color:#874d00; }
+  .flow-note ol { margin-left:16px; }
+  .flow-note li { margin-bottom:4px; }
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">B</span> Bone Admin</div>
+    <div class="nav-group">业务建模</div>
+    <div class="nav-item">模型设计</div>
+    <div class="nav-item active">业务对象</div>
+    <div class="nav-item">业务数据</div>
+    <div class="nav-group">平台管理</div>
+    <div class="nav-item">组织与成员 <span class="arr">▸</span></div>
+    <div class="nav-item">权限与角色 <span class="arr">▸</span></div>
+    <div class="nav-item">系统管理 <span class="arr">▸</span></div>
+  </aside>
+  <main class="main">
+    <div class="crumb">模型设计 / <b>业务对象</b> / <b>费用报销</b></div>
+    <div class="head">
+      <div>
+        <h1>费用报销</h1>
+        <div class="sub"><code style="font-size:12px;background:#f2f3f5;padding:1px 6px;border-radius:4px;">t_expense_claim</code> · 财务云 / 费用管理 · <b>对象工作区</b>（结构 / 界面 / 数据 / 发布）</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span class="tag tag-gold" style="padding:3px 12px;">● 草稿</span>
+        <button class="btn">发布</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">结构</div>
+      <div class="tab">界面</div>
+      <div class="tab">数据</div>
+      <div class="tab">发布</div>
+      <div class="tab">动作</div>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <div class="c-head">
+          <b>字段清单 · 8 个业务字段</b>
+          <div class="ops">
+            <button class="btn-sm">从字段库添加</button>
+            <button class="btn-primary-sm">＋ 添加字段</button>
+          </div>
+        </div>
+        <table class="fields">
+          <tr><th style="width:170px;">字段名</th><th style="width:120px;">类型</th><th>约束</th><th style="width:120px;">操作</th></tr>
+          <tr>
+            <td><b>报销单标题</b> <code style="color:#8a8f99;font-size:11px;">title</code></td>
+            <td><span class="tag tag-blue">文本</span></td>
+            <td>必填 · 列表展示</td>
+            <td style="color:#8a8f99;">编辑</td>
+ </tr>
+          <tr>
+            <td><b>报销金额</b> <code style="color:#8a8f99;font-size:11px;">amount</code> <span class="badge-new">新增</span></td>
+            <td><span class="tag tag-blue">金额</span></td>
+            <td>必填 · <b style="color:#fa8c16;">min 0.01</b> · 汇总列</td>
+            <td style="color:#1677ff;">编辑</td>
+          </tr>
+          <tr>
+            <td><b>费用类别</b> <code style="color:#8a8f99;font-size:11px;">category_id</code></td>
+            <td><span class="tag tag-purple">引用</span></td>
+            <td>引用 <b>费用类别</b> 主数据 · labelField=name</td>
+            <td style="color:#1677ff;">编辑</td>
+          </div>
+          <tr>
+            <td><b>报销明细</b> <code style="color:#8a8f99;font-size-11px;">items</code></td>
+            <td><span class="tag tag-purple">子表</span></td>
+            <td>1—N 明细行 · <b>金额 min 0.01</b> 服务端强制 · 级联软删</td>
+            <td style="color:#1677ff;">编辑</td>
+          </tr>
+          <tr>
+            <td><b>发票附件</b> <code style="color:#8a8f99;font-size:11px;">attachment</code></td>
+            ≤
+            <td><span class="tag tag-purple">附件</span></td>
+            <td>≤10 个 · ≤10MB</td>
+            <td style="color:#8a8f99;">编辑</td>
+          </tr>
+          <tr>
+            <td><b>报销状态</b> <code style="color:#8a8f99;font-size:11px;">status</code></td>
+            <td><span class="tag tag-blue">枚举</span></td>
+            <td>五态：草稿→已提交→已审批/已驳回→已打款</td>
+            <td style="color:#8a8f99;">编辑</td>
+          </tr>
+          <tr>
+            <td><b>审批人</b> <code style="color:#8a8f99;font-size:11px;">approver_id</code></td>
+            <td><span class="tag tag-blue">成员</span></td>
+            <td>行策略 owner_or_approver 维度</td>
+          </tr>
+          <tr>
+            <td><b>报销日期</b> <code style="color:#8a8f99;font-size:11px;">expense_date</code></td>
+            <td><span class="tag tag-blue">日期</span></td>
+            <td>必填</td>
+          </tr>
+        </table>
+        <div style="padding:10px 16px 12px;">
+          <div class="hint-row"><span class="ico">⚡</span><div>拖动调整顺序 · 点行内「编辑」改约束——<b>右侧表单 300ms 实时联动</b>；改「金额」可看到预览中必填星号与占位提示同步变化</div></div>
+          </div>
+      </section>
+      <aside class="preview-pane">
+        <div class="phone-wrap">
+          <div class="pv-head">
+            <b>即时预览 · 自动生成界面</b>
+            <span class="sync">● 实时</span>
+          </div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="f-label">报销单标题 <span class="req">*</span></div>
+            <div class="f-input"><span class="ph">如：10月杭州客户拜访差旅</span></div>
+            <div class="f-row">
+              <div>
+                <div class="f-label">报销金额 <span class="req">*</span></div>
+                <div class="f-input hl demo-amount">128.50</div>
+              </div>
+              <div>
+                <div class="f-label">报销日期 <span class="req">*</span></div>
+                <div class="f-input" style="color:#8a8f99;">2026-10-11</div>
+              </div>
+            </div>
+            <div class="f-label">费用类别 <span class="req">*</span></div>
+            <div class="f-input" style="display:flex; justify-content:space-between;">交通 <span style="color:#b8bcc4;">▾</span></div>
+            <div class="f-label">审批人 <span class="req">*</span></div>
+            <div class="f-input" style="display:flex; justify-content:space-between;">张主管 <span style="color:#b8bcc4;">▾</span></div>
+            <div class="f-label">报销明细（子表）</div>
+          <div class="item-row">
+              <div class="item-left"><b>高铁票 G34 · 10-11</b><span>交通</span></div>
+              <div class="item-amt">¥ 88.50</div>
+            </div>
+            <div class="item-row">
+              <div class="item-left"><b>酒店 1 晚 · 汉庭</b><span>住宿</span></div>
+              <div class="item-amt">¥ 40.00</div>
+            </div>
+            <div class="add-item">＋ 添加明细行（自动 1—N）</div>
+            <div class="f-label">发票附件</div>
+            <div class="mini-attach"><span>📄 发票-酒店.pdf</span><span>📄 高铁票.pdf</span></div>
+            <button class="btn btn-primary" style="width:100%; margin-top:14px; border-radius:8px;">提 交</button>
+          </div>
+          <div style="margin-top:12px; font-size:12px; color:#8a8f99; text-align:center;">改结构 → 预览即时变 · 无需发布后猜测</div>
+        </div>
+      </aside>
+    </div>
+    <div style="height:64px;"></div>
+    <div class="bottom-bar">
+      <span class="draft-state"><span class="sw"></span>未保存更改 · 自动保存于 18:24</span>
+      <span style="flex:1"></span>
+      <button class="btn">预览历史</button>
+      <button class="btn btn-primary">下一步：发布预览</button>
+    </div>
+    <div class="flow-note">
+      <b>幕二 · 关键改造（对标融合方案 W0 系）</b>
+      <ol>
+        <li>结构↔预览<b>双向高亮联</b>（UID-11 已落地，本图视觉化）；</li>
+        <li>底栏常驻<b>「下一步：发布预览」</b>——黄金路径不再找顶栏；</li>
+        <li>子表/引用/附件三控件预览可感（v0.46 已实现）；</li>
+        <li>金额 min 0.01 服务端强制（RC-007）在预览中可见。</li>
+      </ol>
+    </div>
+  </main>
+</body>
+</html>

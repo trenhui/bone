@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>业务建模三入口 · 最佳方案融合终稿</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f5f6f8; color:#1f2329; font-size:14px; padding:28px 36px; }
+  h1 { font-size:20px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .sub { color:#646a73; margin:8px 0 22px; font-size:13px; }
+
+  .screen { background:#fff; border:1px solid #e5e6eb; border-radius:12px; margin-bottom:26px; overflow:hidden; }
+  .scr-head { display:flex; align-items:center; gap:10px; padding:12px 20px; border-bottom:1px solid #eef0f3; background:#fafbfc; }
+  .scr-head .no { width:22px; height:22px; border-radius:50%; background:#1f2329; color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .scr-head b { font-size:14px; }
+
+  .app { display:flex; min-height:480px; }
+  .side { width:172px; border-right:1px solid #eef0f3; padding:14px 10px; flex-shrink:0; }
+  .brand { display:flex; align-items:center; gap:8px; padding:0 8px 14px; font-weight:600; font-size:14px; }
+  .brand .logo { width:24px; height:24px; border-radius:6px; background:#1f2329; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
+  .nav-g { font-size:11px; color:#8f959e; padding:8px 8px 4px; }
+  .nav { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; color:#41464c; font-size:13px; margin-bottom:2px; }
+  .nav.on { background:#eaf1ff; color:#3370ff; font-weight:600; }
+  .main { flex:1; padding:18px 22px; min-width:0; }
+
+  /* ===== 屏 A 模型设计 ===== */
+  .hero-row { display:flex; gap:12px; }
+  .tile { flex:1; border:1px solid #e5e6eb; border-radius:10px; padding:14px 16px; }
+  .tile.hl { border-color:#3370ff; background:#f5f9ff; position:relative; }
+  .tile .rec { position:absolute; top:-9px; right:10px; background:#ff8800; color:#fff; font-size:11px; border-radius:4px; padding:1px 7px; }
+  .tile h4 { font-size:14px; margin-bottom:4px; }
+  .tile p { font-size:12px; color:#646a73; line-height:1.5; }
+  .cols { display:flex; gap:14px; margin-top:14px; }
+  .col-l { width:58%; }
+  .col-r { flex:1; }
+  .panel { border:1px solid #e5e6eb; border-radius:10px; }
+  .panel .p-h { display:flex; align-items:center; padding:10px 14px; border-bottom:1px solid #f0f1f3; font-size:13px; font-weight:600; }
+  .panel .p-h .lnk { margin-left:auto; font-size:12px; color:#3370ff; font-weight:400; }
+  .drow { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f5f6f8; font-size:13px; }
+  .drow:last-child { border-bottom:none; }
+  .drow .ico { width:26px; height:26px; border-radius:6px; background:#f2f3f5; color:#646a73; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .drow .meta { font-size:11px; color:#8f959e; }
+  .btn-go { margin-left:auto; font-size:12px; color:#3370ff; background:#eaf1ff; border-radius:5px; padding:3px 10px; flex-shrink:0; }
+  .stat-line { display:flex; gap:18px; padding:10px 14px; }
+  .stat-line .st { font-size:12px; color:#646a73; }
+  .stat-line .st b { display:block; font-size:20px; color:#1f2329; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; padding:4px 14px 14px; }
+  .chip { font-size:12px; background:#f2f3f5; border-radius:14px; padding:3px 12px; color:#41464c; }
+  .empty-line { font-size:12px; color:#8f959e; padding:2px 14px 12px; }
+
+  /* modal */
+  .modal-wrap { position:relative; }
+  .modal { position:absolute; top:0; bottom:0; left:0; right:180px; background:rgba(31,35,41,.42); border-radius:0; z-index:5; display:flex; align-items:flex-start; justify-content:center; padding-top:56px; }
+  .m-box { width:560px; background:#fff; border-radius:10px; box-shadow:0 12px 40px rgba(31,35,41,.18); }
+  .m-h { padding:14px 18px; font-size:15px; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
+  .m-b { padding:6px 18px 4px; }
+  .f-row2 { display:flex; gap:12px; margin-bottom:12px; }
+  .f-g { flex:1; }
+  .f-lb { font-size:12px; color:#41464c; margin-bottom:5px; }
+  .f-lb .req { color:#f54a45; }
+  .f-in { border:1px solid #dcdfe3; border-radius:6px; padding:7px 10px; font-size:13px; color:#1f2329; background:#fff; display:flex; justify-content:space-between; align-items:center; }
+  .f-in.ph { color:#8f959e; }
+  .f-in.focus { border-color:#3370ff; box-shadow:0 0 0 2px rgba(51,112,255,.12); }
+  .dropdown { border:1px solid #e5e6eb; border-radius:8px; box-shadow:0 8px 24px rgba(31,35,41,.12); margin-top:6px; background:#fff; overflow:hidden; }
+  .dd-item { display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:13px; }
+  .dd-item:hover { background:#f5f6f8; }
+  .dd-item .cnt { margin-left:auto; font-size:11px; color:#8f959e; }
+  .dd-item .ap-ico { width:20px; height:20px; border-radius:5px; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .dd-new { border-top:1px solid #f0f1f3; color:#3370ff; }
+  .dd-new .plus { width:20px; height:20px; border-radius:5px; border:1px dashed #3370ff; color:#3370ff; font-size:12px; display:flex; align-items:center; justify-content:center; }
+  .dd-new .kbd { margin-left:6px; font-size:11px; color:#8f959e; border:1px solid #e5e6eb; border-radius:4px; padding:0 4px; }
+  .dd-new small { color:#8f959e; margin-left:auto; font-size:11px; }
+  .mode-cards { display:flex; gap:10px; margin-bottom:14px; }
+  .mode-c { flex:1; border:1px solid #e5e6eb; border-radius:8px; padding:10px 12px; font-size:12px; color:#646a73; }
+  .mode-c.on { border-color:#3370ff; background:#f5f9ff; }
+  .mode-c b { display:flex; align-items:center; gap:6px; color:#1f2329; font-size:13px; margin-bottom:3px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:#3370ff; }
+  .dot.o { background:transparent; border:1px solid #c9cdd4; }
+  .m-f { padding:12px 18px 16px; border-top:1px solid #f0f1f3; display:flex; justify-content:flex-end; gap:10px; align-items:center; }
+  .btn { border:1px solid #dcdfe3; background:#fff; border-radius:6px; padding:6px 16px; font-size:13px; color:#41464c; }
+  .btn.pr { background:#3370ff; border-color:#3370ff; color:#fff; font-weight:500; }
+  .m-f .hint { margin-right:auto; font-size:11px; color:#8f959e; }
+
+  /* ===== 屏 B 业务对象 ===== */
+  .em-body { display:flex; }
+  .tree { width:210px; border-right:1px solid #eef0f3; padding:12px; flex-shrink:0; }
+  .t-title { font-size:12px; color:#8f959e; margin-bottom:8px; }
+  .t-node { display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:6px; font-size:13px; color:#41464c; }
+  .t-node.on { background:#eaf1ff; color:#3370ff; font-weight:600; }
+  .t-node .cnt { margin-left:auto; font-size:11px; color:#8f959e; }
+  .t-sub { padding-left:20px; }
+  .em-main { flex:1; padding:14px 18px; min-width:0; }
+  .toolbar { display:flex; gap:10px; margin-bottom:12px; align-items:center; }
+  .search { flex:1; max-width:300px; border:1px solid #dcdfe3; border-radius:6px; padding:7px 10px; font-size:13px; color:#8f959e; }
+  .seg { display:flex; border:1px solid #dcdfe3; border-radius:6px; overflow:hidden; font-size:13px; }
+  .seg span { padding:6px 12px; color:#41464c; border-right:1px solid #e5e6eb; }
+  .seg span:last-child { border-right:none; }
+  .seg .on { background:#3370ff; color:#fff; font-weight:500; }
+  .seg .n { font-size:11px; opacity:.75; margin-left:3px; }
+  .tb-tip { margin-left:auto; font-size:11px; color:#8f959e; }
+  .tb-tip .kbd { border:1px solid #e5e6eb; border-radius:4px; padding:0 5px; font-size:11px; background:#fafbfc; }
+  table.grid { width:100%; border-collapse:collapse; font-size:13px; }
+  table.grid th { text-align:left; font-size:12px; color:#8f959e; font-weight:500; padding:8px 10px; border-bottom:1px solid #e5e6eb; background:#fafbfc; }
+  table.grid td { padding:10px; border-bottom:1px solid #f0f1f3; }
+  .name-cell b { display:block; }
+  .name-cell code { font-size:11px; color:#8a8f99; font-weight:400; }
+  .pill-t { font-size:11px; border-radius:4px; padding:1px 8px; }
+  .pill-t.blue { background:#eaf1ff; color:#3370ff; }
+  .pill-t.green { background:#e8fae0; color:#1a8245; }
+  .pill-t.gray { background:#f2f3f5; color:#646a73; }
+  .pill-t.purple { background:#f0e8ff; color:#722ed1; }
+  .pill-t.orange { background:#fff3e0; color:#d46b08; }
+  .ops { white-space:nowrap; }
+  .ops a { color:#3370ff; font-size:12px; margin-right:10px; text-decoration:none; }
+  .ops a.warn { color:#f54a45; }
+  .ops .more { color:#41464c; font-size:12px; }
+  .batch-bar { display:flex; align-items:center; gap:12px; background:#eaf1ff; border:1px solid #bccdff; border-radius:8px; padding:8px 14px; margin-bottom:10px; font-size:13px; }
+  .batch-bar .res { margin-left:auto; font-size:12px; }
+  .batch-bar .res .ok { color:#1a8245; font-weight:600; }
+  .batch-bar .res .bad { color:#d4380d; font-weight:600; }
+
+  /* ===== 屏 C 业务数据 ===== */
+  .rt-main { flex:1; padding:14px 18px; min-width:0; position:relative; }
+  .chips-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .chips-row .lb { font-size:12px; color:#8f959e; }
+  .screen { position:relative; }
+  .drawer { position:absolute; top:44px; right:16px; width:390px; background:#fff; border-left:1px solid #e5e6eb; box-shadow:-8px 0 24px rgba(31,35,41,.08); padding:16px 18px; z-index:4; display:flex; flex-direction:column; }
+  .drawer .d-h { display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:600; margin-bottom:12px; }
+  .drawer .d-h .x { color:#8f959e; font-weight:400; }
+  .amt-danger { font-size:12px; color:#d4380d; margin:-4px 0 10px; }
+  .items { border:1px solid #e5e6eb; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .items .i-h { font-size:12px; font-weight:600; margin-bottom:8px; }
+  .items .i-h small { color:#8f959e; font-weight:400; }
+  .i-row { display:flex; gap:8px; margin-bottom:6px; }
+  .i-row .f-in { flex:1; font-size:12px; padding:5px 8px; }
+  .add-i { font-size:12px; color:#3370ff; }
+  .sum-line { display:flex; justify-content:space-between; font-size:13px; padding:8px 2px 2px; border-top:1px dashed #e5e6eb; margin-top:2px; }
+  .sum-line b { font-size:15px; }
+  .sum-line small { color:#8f959e; font-weight:400; align-self:flex-end; }
+  .d-f { margin-top:auto; display:flex; gap:10px; padding-top:12px; }
+  .d-f .btn { flex:1; }
+
+  /* flow strip */
+  .flow-strip { display:flex; align-items:center; gap:0; margin:10px 0 6px; }
+  .fstage { flex:1; background:#fafbfc; border:1px solid #e5e6eb; border-radius:8px; padding:8px 10px; font-size:12px; position:relative; margin-right:26px; }
+  .fstage:last-child { margin-right:0; }
+  .fstage .fs-no { position:absolute; top:-8px; left:8px; width:16px; height:16px; border-radius:50%; background:#3370ff; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .fstage b { display:block; font-size:12.5px; }
+  .fstage small { color:#8f959e; font-size:11px; }
+  .fstage.green { background:#f2fbef; border-color:#b7e39b; }
+  .fstage .arrow { position:absolute; right:-19px; top:50%; transform:translateY(-50%); color:#c9cdd4; }
+  .rt-head { display:flex; align-items:baseline; gap:10px; margin-bottom:4px; }
+  .rt-head b { font-size:16px; }
+  .rt-head .rt-badge { font-size:12px; color:#3370ff; background:#eaf1ff; border:1px solid #bccdff; border-radius:4px; padding:1px 8px; font-weight:400; }
+  .rt-head .rt-desc { font-size:12px; color:#8f959e; }
+</style>
+</head>
+<body>
+  <h1>业务建模三入口 · 最终交互稿</h1>
+  <div class="sub">模型设计 / 业务对象 / 业务数据 —— 三个入口页面的最终交互方案，以企业费用报销场景贯穿验证。</div>
+
+  <!-- ============ 屏 A：模型设计 ============ -->
+  <div class="screen modal-wrap">
+    <div class="scr-head"><span class="no">A</span><b>模型设计 — Action-first + 单弹完型</b></div>
+    <div class="app">
+      <div class="side">
+        <div class="brand"><span class="logo">B</span>Bone Admin</div>
+        <div class="nav-g">业务建模</div>
+        <div class="nav on">◆ 模型设计</div>
+        <div class="nav">▤ 业务对象</div>
+        <div class="nav">▦ 业务数据</div>
+        <div class="nav-g">平台管理</div>
+        <div class="nav">组织与成员</div>
+        <div class="nav">权限与角色</div>
+      </div>
+      <div class="main">
+        <div class="hero-row">
+          <div class="tile hl"><span class="rec">推荐</span><h4>从场景模板开始</h4><p>开箱即用行业模型，含字段与界面。企业报销/巡检/补货…</p></div>
+          <div class="tile"><h4>空白建模</h4><p>自定义新业务对象，一步完成落点与命名</p></div>
+          <div class="tile"><h4>从存量表导入</h4><p>反推现有物理表结构；归属可创建时现建</p></div>
+        </div>
+        <div class="cols">
+          <div class="col-l panel">
+            <div class="p-h">待发布草稿 <span class="lnk">查看全部业务对象 →</span></div>
+            <div class="drow"><span class="ico">费</span><div><b>费用报销</b> <span class="meta">t_expense_claim · 自动界面 · 15 分钟前</span></div><span class="btn-go">去发布</span></div>
+            <div class="drow"><span class="ico">差</span><div><b>差旅申请</b> <span class="meta">t_travel_apply · 自动界面 · 昨天</span></div><span class="btn-go">去发布</span></div>
+            <div class="drow"><span class="ico">采</span><div><b>采购合同</b> <span class="meta">t_purchase_contract · 手写界面 · 10-08</span></div><span class="btn-go">去发布</span></div>
+            <div class="empty-line">发布前将进入变更预览，确认后生效。</div>
+          </div>
+          <div class="col-r" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="panel">
+              <div class="p-h">概览</div>
+              <div class="stat-line">
+                <div class="st"><b>337</b>业务对象</div>
+                <div class="st"><b>291</b>已发布</div>
+                <div class="st"><b style="color:#3370ff;">46</b>待发布</div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="p-h">继续建模 <span class="lnk">最近编辑</span></div>
+              <div class="chips"><span class="chip">费用报销</span><span class="chip">差旅申请</span><span class="chip">采购合同</span><span class="chip">报销明细</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal">
+      <div class="m-box">
+        <div class="m-h">新建业务对象 <span style="color:#c9cdd4;">✕</span></div>
+        <div class="m-b">
+          <div class="f-row2">
+            <div class="f-g"><div class="f-lb"><span class="req">*</span> 对象名称</div><div class="f-in">报销申请</div></div>
+            <div class="f-g"><div class="f-lb"><span class="req">*</span> 对象编码</div><div class="f-in ph">expense_claim · 创建后不可改</div></div>
+          </div>
+          <div class="f-row2">
+            <div class="f-g">
+              <div class="f-lb"><span class="req">*</span> 归属应用 <small style="color:#8f959e;">选不到？直接键入新建</small></div>
+              <div class="f-in focus">费用报销 ▾</div>
+              <div class="dropdown">
+                <div class="dd-item"><span class="ap-ico" style="background:#1a8245;">人</span>人事系统<span class="cnt">12 对象</span></div>
+                <div class="dd-item"><span class="ap-ico" style="background:#d4380d;">费</span>费用管理<span class="cnt">8 对象</span></div>
+                <div class="dd-new dd-item"><span class="plus">＋</span>新建应用「费用报销」<span class="kbd">Enter</span><small>创建即授权你为建模者</small></div>
+              </div>
+            </div>
+            <div class="f-g"><div class="f-lb"><span class="req">*</span> 模块</div><div class="f-in ph">先选应用，或下拉里直接新建</div></div>
+          </div>
+          <div class="mode-cards">
+            <div class="mode-c on"><b><span class="dot"></span>自动生成界面</b>字段建好即列表与表单，适合配置型对象，可后续微调</div>
+            <div class="mode-c"><b><span class="dot o"></span>手写界面</b>复杂交互自行实现，自动界面不生成</div>
+          </div>
+        </div>
+        <div class="m-f"><span class="hint">首次建模无需预先申请，归属可发前再定（个人草稿箱）</span><span class="btn">存入个人草稿箱</span><span class="btn pr">创建并进入结构</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 屏 B：业务对象 ============ -->
+  <div class="screen">
+    <div class="scr-head"><span class="no">B</span><b>业务对象 — 唯一真源清单 · 操作收敛</b></div>
+    <div class="app">
+      <div class="side">
+        <div class="brand"><span class="logo">B</span>Bone Admin</div>
+        <div class="nav-g">业务建模</div>
+        <div class="nav">◆ 模型设计</div>
+        <div class="nav on">▤ 业务对象</div>
+        <div class="nav">▦ 业务数据</div>
+      </div>
+      <div class="em-body">
+        <div class="tree">
+          <div class="t-title">应用 / 模块</div>
+          <div class="t-node">📁 全部模型 <span class="cnt">337</span></div>
+          <div class="t-node">人事系统 <span class="cnt">12</span></div>
+          <div class="t-node">费用管理 <span class="cnt">8</span></div>
+          <div class="t-sub">
+            <div class="t-node on">报销单 <span class="cnt">3</span></div>
+            <div class="t-node">报销明细 <span class="cnt">1</span></div>
+            <div class="t-node">费用类别 <span class="cnt">5</span></div>
+          </div>
+          <div class="t-node">销售云 <span class="cnt">86</span></div>
+        </div>
+        <div class="em-main">
+          <div class="batch-bar">已选 2 项 <span class="btn" style="padding:3px 12px;">批量发布</span><span class="btn warn" style="color:#f54a45; padding:3px 12px;">批量删除</span><span class="res">上次执行：成功 <b class="ok">3</b> · 失败 <b class="bad">1</b>（查看明细 ▾）</span></div>
+          <div class="toolbar">
+            <div class="search">🔍 搜索名称 / 编码 / 表名…</div>
+            <div class="seg"><span class="on">全部<span class="n">337</span></span><span>草稿<span class="n">46</span></span><span>已发布<span class="n">291</span></span><span>已下线<span class="n">6</span></span></div>
+            <div class="tb-tip"><span class="kbd">⌘K</span> 全平台搜对象（不受当前筛选限制）</div>
+            <span class="btn">导入 ▾</span>
+            <span class="btn pr">＋ 新建业务对象</span>
+          </div>
+          <table class="grid">
+            <tr><th style="width:26px;"></th><th>名称</th><th>模块</th><th>类型</th><th>模式</th><th>状态 · 下一步</th><th>字段</th><th>最近更新</th><th style="width:170px;">操作</th></tr>
+            <tr><td>☑</td><td class="name-cell"><b>报销明细</b><code>t_expense_claim_item</code></td><td>费用管理 / 报销单</td><td><span class="pill-t gray">子表</span></td><td><span class="pill-t purple">自动界面</span></td><td><span class="pill-t green">已发布</span></td><td>6</td><td>今天 08:55</td><td class="ops"><a>打开</a><a>数据</a><span class="more">更多 ▾</span></td></tr>
+            <tr><td>☑</td><td class="name-cell"><b>差旅申请</b><code>t_travel_apply</code></td><td>费用管理 / 报销单</td><td><span class="pill-t gray">普通业务</span></td><td><span class="pill-t purple">自动界面</span></td><td><span class="pill-t blue">草稿</span> <a style="font-size:12px; color:#3370ff;">下一步：完善 2 个字段</a></td><td>7</td><td>昨天 17:20</td><td class="ops"><a>打开</a><a>发布</a><span class="more">更多 ▾</span></td></tr>
+            <tr><td>☐</td><td class="name-cell"><b>费用类别</b><code>t_expense_category</code></td><td>费用管理 / 报销单</td><td><span class="pill-t orange">主数据</span></td><td><span class="pill-t purple">自动界面</span></td><td><span class="pill-t green">已发布</span></td><td>3</td><td>10-09 14:02</td><td class="ops"><a>打开</a><a>数据</a><span class="more">更多 ▾</span></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 屏 C：业务数据 ============ -->
+  <div class="screen">
+    <div class="scr-head"><span class="no">C</span><b>业务数据 + 报销全流程串联 — 运营台与业务闭环</b></div>
+    <div class="app">
+      <div class="side">
+        <div class="brand"><span class="logo">B</span>Bone Admin</div>
+        <div class="nav-g">业务建模</div>
+        <div class="nav">◆ 模型设计</div>
+        <div class="nav">▤ 业务对象</div>
+        <div class="nav on">▦ 业务数据</div>
+      </div>
+      <div class="rt-main">
+        <div class="flow-strip">
+          <div class="fstage"><span class="fs-no">1</span><b>模板起盘</b><small>模型设计 · 实例化</small><span class="arrow">→</span></div>
+          <div class="fstage"><span class="fs-no">2</span><b>发布</b><small>结构校验通过 · 生成数据表</small><span class="arrow">→</span></div>
+          <div class="fstage"><span class="fs-no">3</span><b>清单出现</b><small>业务对象 · 唯一真源</small><span class="arrow">→</span></div>
+          <div class="fstage"><span class="fs-no">4</span><b>录入</b><small>右侧抽屉 · 申请人自动带</small><span class="arrow">→</span></div>
+          <div class="fstage"><span class="fs-no">5</span><b>提交</b><small>提交后金额锁定</small><span class="arrow">→</span></div>
+          <div class="fstage"><span class="fs-no">6</span><b>审批</b><small>仅本人与审批人可见</small><span class="arrow">→</span></div>
+          <div class="fstage green"><span class="fs-no">7</span><b>打款</b><small>校验通过后打款</small></div>
+        </div>
+        <div class="chips-row"><span class="lb">最近操作：</span><span class="chip" style="background:#eaf1ff; color:#3370ff;">费用报销</span><span class="chip">差旅申请</span><span class="chip">采购合同</span><span class="chip">报销明细</span></div>
+        <table class="grid" style="max-width:calc(100% - 420px);">
+          <tr><th>单号</th><th>申请人</th><th>类别</th><th style="text-align:right;">金额</th><th>状态</th></tr>
+          <tr><td>EC-202610-0012</td><td>张伟 · 研发部</td><td>差旅</td><td style="text-align:right;">¥3,280.00</td><td><span class="pill-t orange">⏳ 已提交</span> <small style="color:#d4380d;">超 24h</small></td></tr>
+          <tr><td>EC-202610-0011</td><td>李娜 · 市场部</td><td>招待</td><td style="text-align:right;">¥1,560.00</td><td><span class="pill-t orange">⏳ 已提交</span></td></tr>
+          <tr><td>EC-202610-0009</td><td>王强 · 销售部</td><td>差旅</td><td style="text-align:right;">¥5,420.00</td><td><span class="pill-t blue">下一步：财务负责人审</span></td></tr>
+          <tr><td>EC-202610-0007</td><td>赵敏 · 财务部</td><td>办公</td><td style="text-align:right;">¥320.00</td><td><span class="pill-t gray">草稿</span></td></tr>
+        </table><div class="rt-head"><b>业务数据</b><span class="rt-badge">跨实体的业务数据运营台</span><span class="rt-desc">单实体日常录入请从「业务对象 → 打开 → 数据」进入，自动锁定对象上下文。</span></div>
+      </div>
+      <div class="drawer">
+        <div class="d-h">新建报销单 · t_expense_claim <span class="x">✕</span></div>
+        <div class="f-row2">
+          <div class="f-g"><div class="f-lb"><span class="req">*</span> 申请人</div><div class="f-in">张伟（自动带入）</div></div>
+          <div class="f-g"><div class="f-lb"><span class="req">*</span> 部门</div><div class="f-in">研发部（自动带入）</div></div>
+        </div>
+        <div class="f-lb"><span class="req">*</span> 金额</div>
+        <div class="f-in" style="border-color:#f54a45;">0</div>
+        <div class="amt-danger">金额必须大于 0（最低 0.01 元），提交前需修正</div>
+        <div class="items">
+          <div class="i-h">报销明细 <small>（逐行录入 · 合计自动汇总）</small></div>
+          <div class="i-row"><div class="f-in ph">发票号 INV-8821</div><div class="f-in">高铁票 ¥560</div><span style="color:#c9cdd4;">✕</span></div>
+          <div class="i-row"><div class="f-in ph">发票号 INV-8822</div><div class="f-in">酒店 ¥890</div><span style="color:#c9cdd4;">✕</span></div>
+          <div class="add-i">＋ 添加明细行</div>
+          <div class="sum-line"><b>¥1,450.00</b><small>= 明细自动合计</small></div>
+        </div>
+        <div class="f-lb"><span class="req">*</span> 费用类别</div>
+        <div class="f-in ph" style="margin-bottom:10px;">差旅 / 招待 / 办公 / 其他…</div>
+        <div class="f-lb">事由</div>
+        <div class="f-in ph" style="margin-bottom:10px;">填写报销说明…</div>
+        <div class="f-in ph" style="margin-bottom:4px;">📎 点击或拖拽上传发票 / 附件（≤10 项 · 支持 PDF/JPG）</div>
+        <div class="d-f"><span class="btn">存草稿</span><span class="btn pr">提交审批</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

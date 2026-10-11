@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BONE 应用上下文动线优化稿（模型设计 + 业务对象）</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
+    --purple:#722ed1; --purple-bg:#f9f0ff;
+    --green:#52c41a; --green-bg:#f6ffed; --green-border:#b7eb8f;
+    --orange:#fa8c16; --orange-bg:#fff7e6; --orange-border:#ffd591;
+    --red:#ff4d4f; --red-bg:#fff1f0;
+    --gray:#8c8c8c; --gray-bg:#f5f5f5; --gray-border:#d9d9d9;
+    --text:#1f1f1f; --text-2:#595959; --text-3:#8c8c8c;
+    --bg:#f0f2f5; --card:#fff; --border:#e8e8e8;
+    --radius:6px; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:1000px}
+  .sider{width:200px;background:#001529;color:rgba(255,255,255,.65);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column}
+  .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;border-bottom:1px solid rgba(255,255,255,.12)}
+  .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .nav{padding:8px 0}
+  .nav .item{padding:8px 16px;color:rgba(255,255,255,.65)}
+  .nav .item.on{background:var(--primary);color:#fff;font-weight:500}
+  .main{margin-left:200px}
+  .header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:var(--shadow);position:sticky;top:0;z-index:2}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .content{padding:20px 24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+  .card h4{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
+  .pill.gray{background:var(--gray-bg);color:var(--text-2)}
+  .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
+  .pill.purple{background:var(--purple-bg);color:var(--purple)}
+  .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .tag-opt{display:inline-block;background:#000;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:1px 5px;margin-right:6px;vertical-align:middle}
+  .optnote{font-size:11.5px;color:var(--text-3);line-height:1.7;margin-top:8px;background:#fafafa;border-left:3px solid var(--primary-border);padding:8px 10px;border-radius:0 6px 6px 0}
+  .banner{background:linear-gradient(90deg,#e6f4ff,#f9f0ff);border:1px solid var(--primary-border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#0958d9;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .hero{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:12px}
+  .hero .cta-primary{flex:1 1 320px;background:var(--primary);color:#fff;border-radius:10px;padding:16px 22px;cursor:pointer;box-shadow:var(--shadow)}
+  .hero .cta-primary .t{font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px}
+  .hero .cta-primary .d{font-size:12.5px;opacity:.92;margin-top:6px}
+  .ctx-bar{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 12px}
+  .ctx-bar .lbl{font-size:12px;opacity:.9}
+  .ctx-sel{background:#fff;color:var(--text);border:none;border-radius:6px;height:28px;padding:0 10px;font-size:12px}
+  .link{color:var(--primary);cursor:pointer}
+  .scenario{display:flex;gap:0;flex-wrap:wrap}
+  .scenario .col{flex:1 1 320px;padding:0 10px}
+  .scenario .col + .col{border-left:1px solid var(--border)}
+  .nowbad{background:var(--red-bg);border:1px solid #ffccc7;color:var(--red);border-radius:8px;padding:10px 12px;font-size:12.5px}
+  .appopt{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .appopt .o{flex:1 1 200px;border:1px solid var(--border);border-radius:10px;padding:14px;background:#fff;cursor:pointer;transition:.2s}
+  .appopt .o:hover{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+  .appopt .o .t{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+  .appopt .o .d{font-size:12px;color:var(--text-2);margin-top:4px}
+  .mini-form{border:1px dashed var(--green-border);background:var(--green-bg);border-radius:8px;padding:12px;margin-top:10px}
+  .mini-form label{display:block;font-size:12px;color:var(--text-2);margin:8px 0 3px}
+  .mini-form input,.mini-form select{width:100%;height:30px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;background:#fff}
+  .modal{background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg,0 6px 16px rgba(0,0,0,.12));padding:18px;max-width:560px;margin:0 auto}
+  .modal h3{font-size:15px;margin-bottom:12px}
+  .row2{display:flex;gap:14px;flex-wrap:wrap}
+  .row2 .c{flex:1 1 220px}
+  .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+  .field .ctrl{width:100%;height:32px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;background:#fff}
+  .addmod{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--green);cursor:pointer;font-size:12px}
+  .tree{font-size:13px}
+  .tree .node{padding:5px 8px;border-radius:6px;cursor:pointer}
+  .tree .node:hover{background:var(--gray-bg)}
+  .tree .node.sel{background:var(--primary-bg);color:var(--primary)}
+  .tree .child{padding-left:22px;color:var(--text-2)}
+  .tree .add{color:var(--green);font-size:12px;cursor:pointer;margin-left:6px}
+  .tip{font-size:11.5px;color:var(--text-3);margin-top:8px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="sider">
+  <div class="logo"><span class="dot">B</span> BONE 元数据</div>
+  <div class="nav">
+    <div class="item on">◈ 模型设计</div>
+    <div class="item">▤ 业务对象</div>
+    <div class="item">▦ 业务数据</div>
+  </div>
+</div>
+<div class="main">
+  <div class="header">
+    <div class="crumb"><b>模型设计</b></div>
+    <div class="header-actions"><button class="btn primary">＋ 新建模型</button></div>
+  </div>
+  <div class="content">
+
+    <div class="banner"><b>本图聚焦「应用选择 / 创建」动线优化</b><span>对照 Salesforce（对象与 app 解耦）/ Airtable·宜搭（容器内联自助建）。优化点 ①②③④⑤。</span></div>
+
+    <!-- ============ 模型设计 ============ -->
+    <div class="card">
+      <h4>① 模型设计 · 新建不再被「无应用」挡死</h4>
+      <div class="hero">
+        <div class="cta-primary" onclick="alert('直接进入实体编辑器（草稿，可暂不带归属）')">
+          <div class="t">＋ 新建模型 <span style="font-size:12px;opacity:.85;font-weight:400">一步进编辑器</span></div>
+          <div class="d">草稿可暂不带归属；归属（应用/模块）在编辑器头部随时改，或选「稍后分配」。</div>
+          <div class="ctx-bar">
+            <span class="lbl">归属</span>
+            <select class="ctx-sel"><option>办公域 / 报销模块（上次使用）</option><option>供应链 / 库存</option><option>稍后分配（未分组草稿）</option></select>
+            <span class="lbl" style="opacity:.8">可在编辑器内改</span>
+          </div>
+        </div>
+        <div class="cta-primary" style="background:#722ed1;box-shadow:none;cursor:pointer" onclick="alert('打开模板中心')">
+          <div class="t">📦 从模板</div>
+          <div class="d">实例化行业模型，归属在实例化时选（可后补）。</div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">①</span>原版无可写应用时「空白建模/导入」磁贴直接 <code>disabled</code>（L292/299），用户被推出门。优化：主 CTA 永远可按，归属用上次使用预填 + 「稍后分配」可选——结构归属是进阶决策，不该挡住"先画个模型"（渐进披露）。对标 Salesforce 对象创建与 app 解耦。</div>
+    </div>
+
+    <!-- 无应用场景 -->
+    <div class="card">
+      <h4>③ 无应用？就地「创建 / 申请」，而非跳 IAM 死路</h4>
+      <div class="scenario">
+        <div class="col">
+          <div class="nowbad">现状：无应用时仅显示 Alert「还没有可建模的应用，请去 IAM 创建」——死路，本应用内无任何创建入口。</div>
+        </div>
+        <div class="col">
+          <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px"><b>优化：两条自助路径</b></div>
+          <div class="appopt">
+            <div class="o" onclick="document.getElementById('mini').style.display='block'">
+              <div class="t">⚡ 快速创建应用</div>
+              <div class="d">若你有平台/租户级权限，内联建应用（或一键深链 IAM，建完带回并预填）。</div>
+              <div class="mini-form" id="mini" style="display:none">
+                <label>应用名</label><input value="我的新应用">
+                <label>编码</label><input value="my_app">
+                <label>归属租户 / 描述</label><input placeholder="选租户（默认当前）">
+                <div style="margin-top:10px;text-align:right"><button class="btn" onclick="document.getElementById('mini').style.display='none'">取消</button><button class="btn green" onclick="alert('创建成功 → 自动回填归属并进入编辑器');document.getElementById('mini').style.display='none'">创建并继续</button></div>
+              </div>
+            </div>
+            <div class="o">
+              <div class="t">🔑 申请应用权限</div>
+              <div class="d">无创建权限时，提交申请给应用管理员；状态可见（待审/已批），批后自动进入。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">③</span>原版把用户弹到 IAM 是典型"摩擦悬崖"。Airtable/宜搭 把容器创建做成自助；治理仍可在 IAM（应用 CRUD 归 IAM 不变），但**前门不 dead-end**：有平台权限→内联/深链建完带回；无权限→提交申请（状态可见），而不是 Alert 一句"去 IAM"。</div>
+    </div>
+
+    <!-- ============ 业务对象 ============ -->
+    <div class="card">
+      <h4>业务对象 · 新建实体 Modal（优化 ④⑤）</h4>
+      <div class="scenario">
+        <div class="col" style="flex:1 1 300px">
+          <div class="tree">
+            <div class="node sel">全部模型</div>
+            <div class="node">办公域 <span class="add" onclick="alert('内联：在该应用下新建模块（小表单：模块名/编码）')">＋模块</span></div>
+            <div class="node child">报销模块</div>
+            <div class="node child">主数据模块</div>
+            <div class="node">供应链 <span class="add" onclick="alert('内联新建模块')">＋模块</span></div>
+            <div class="node child">库存</div>
+          </div>
+          <div class="tip"><span class="tag-opt">⑤</span>左侧树每个 app 下提供「＋模块」内联新建，无需跳 IAM 再回来。</div>
+        </div>
+        <div class="col" style="flex:1 1 360px">
+          <div class="modal">
+            <h3>新建实体</h3>
+            <div class="row2">
+              <div class="c field"><label>显示名</label><input class="ctrl" value="费用报销"></div>
+              <div class="c field"><label>编码</label><input class="ctrl" value="expense_claim"></div>
+            </div>
+            <div class="field" style="margin-top:10px"><label>界面怎么来？</label>
+              <div class="row2"><div class="c" style="border:1px solid var(--primary);background:var(--primary-bg);border-radius:8px;padding:8px">自动生成界面</div><div class="c" style="border:1px solid var(--gray-border);border-radius:8px;padding:8px">手写界面</div></div>
+            </div>
+            <div class="field" style="margin-top:10px">
+              <label>所属模块 <span class="pill green">可选</span></label>
+              <select class="ctrl"><option>未分组（稍后分配）— 先建草稿</option><option>办公域 / 报销模块</option><option>供应链 / 库存</option></select>
+              <div class="addmod" onclick="alert('内联新建模块：选应用 + 模块名/编码')">＋ 新建模块</div>
+            </div>
+            <div style="margin-top:14px;text-align:right"><button class="btn" onclick="alert('关闭')">取消</button><button class="btn primary" onclick="alert('创建草稿（可无归属）')">创建</button></div>
+          </div>
+          <div class="tip"><span class="tag-opt">④</span>原版「所属模块」在非 scoped 视图是 <code>required</code>（L1017-1021），每次新建都强制选模块。优化：默认「未分组（稍后分配）」，草稿可无归属——与"草稿尚未建物理表"语义自洽，结构归属延后到发布前。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BONE 业务建模三入口 · 最佳方案综合稿（最终稿 v2）</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
+    --purple:#722ed1; --purple-bg:#f9f0ff;
+    --green:#52c41a; --green-bg:#f6ffed; --green-border:#b7eb8f;
+    --orange:#fa8c16; --orange-bg:#fff7e6; --orange-border:#ffd591;
+    --red:#ff4d4f; --red-bg:#fff1f0; --red-border:#ffccc7;
+    --gray:#8c8c8c; --gray-bg:#f5f5f5; --gray-border:#d9d9d9;
+    --text:#1f1f1f; --text-2:#595959; --text-3:#8c8c8c;
+    --bg:#f0f2f5; --card:#fff; --border:#e8e8e8;
+    --radius:6px; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:1040px}
+  .sider{width:200px;background:#001529;color:rgba(255,255,255,.65);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:5}
+  .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;border-bottom:1px solid rgba(255,255,255,.12)}
+  .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .nav{padding:8px 0}
+  .nav .item{padding:11px 16px;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer}
+  .nav .item:hover{color:#fff}
+  .nav .item.on{background:var(--primary);color:#fff;font-weight:500}
+  .nav .item .ic{width:16px;text-align:center}
+  .main{margin-left:200px}
+  .topbar{height:54px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:3}
+  .crumbs{color:var(--text-2);font-size:13px}
+  .crumbs b{color:var(--text)}
+  .topbar .right{display:flex;gap:8px;align-items:center}
+  .searchbox{height:32px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;width:230px;background:#fff;display:flex;align-items:center;gap:8px;color:var(--text-3);cursor:text}
+  .kbd{border:1px solid var(--gray-border);border-radius:4px;padding:0 6px;font-size:11px;background:#fafafa}
+  .content{padding:14px 22px 30px}
+  .preview-bar{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:#fafcff;border:1px dashed var(--primary-border);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--text-2)}
+  .preview-bar .grp{display:flex;align-items:center;gap:8px}
+  .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:6px;overflow:hidden}
+  .seg span{padding:3px 12px;cursor:pointer;font-size:12px;background:#fff}
+  .seg span.on{background:var(--primary);color:#fff}
+  .readonly-banner{display:none;background:var(--orange-bg);border:1px solid var(--orange-border);color:#ad6800;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12.5px}
+  body.readonly .readonly-banner{display:block}
+  body.readonly .write{display:none!important}
+
+  .page{display:none}
+  .page.on{display:block}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+  .pagehead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .pagehead .h{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
+  .pill.gray{background:var(--gray-bg);color:var(--text-2)}
+  .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
+  .pill.purple{background:var(--purple-bg);color:var(--purple)}
+  .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .pill.red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px;transition:.15s}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
+  .btn.primary:hover{color:#fff;background:#4096ff}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}
+  .btn.danger{color:var(--red);border-color:var(--red-border)}
+  .btn.sm{padding:2px 9px;font-size:12px}
+
+  /* hero tiles */
+  .hero{display:flex;gap:14px;flex-wrap:wrap}
+  .tile{flex:1 1 220px;border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;background:#fff;display:flex;gap:12px;align-items:flex-start;position:relative}
+  .tile:hover{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-bg);transform:translateY(-1px)}
+  .tile .ic{font-size:22px;color:var(--primary);line-height:1.1}
+  .tile .t{font-weight:600;font-size:14px}
+  .tile .d{font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5}
+  .tile .rec-sub{font-size:11px;color:var(--orange);margin-top:4px}
+  .tile.rec::after{content:"推荐";position:absolute;top:-8px;right:10px;background:var(--orange);color:#fff;font-size:10px;padding:1px 7px;border-radius:8px}
+
+  /* dual rail */
+  .rail{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .rail .col-left{flex:1 1 430px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:12px 14px}
+  .rail .col-right{flex:1 1 320px;display:flex;flex-direction:column;gap:14px}
+  .stat-row{display:flex;gap:10px}
+  .stat{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+  .stat .v{font-size:22px;font-weight:600;line-height:1.2}
+  .stat .k{font-size:11px;color:var(--text-3)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .chip{border:1px solid var(--gray-border);border-radius:16px;padding:3px 12px;font-size:12px;background:#fff;cursor:pointer;transition:.15s}
+  .chip:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
+  .draft-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .draft-row:hover{background:#fafafa;margin:0 -8px;padding:9px 8px;border-radius:6px}
+  .draft-row:last-child{border-bottom:none}
+  .draft-row .meta{font-size:12px;color:var(--text-2)}
+  .draft-row .code{font-family:monospace;color:var(--text-3);font-size:11px}
+
+  /* empty state */
+  .empty{border:1px dashed var(--green-border);background:var(--green-bg);border-radius:12px;padding:30px 24px;text-align:center}
+  .empty .big{font-size:16px;font-weight:600;color:var(--green)}
+  .empty .sm{font-size:13px;color:var(--text-2);margin:8px auto 16px;max-width:440px;line-height:1.7}
+  .empty .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .empty.neutral{border-color:var(--gray-border);background:var(--gray-bg);color:var(--text-2)}
+  .empty.neutral .big{color:var(--text-2)}
+
+  /* noapp toggling */
+  .noapp-block{display:none}
+  body.noapp .hasapp{display:none}
+  body.noapp .noapp-block{display:block}
+
+  /* left tree */
+  .layout{display:flex;gap:16px;align-items:flex-start}
+  .tree{width:210px;flex-shrink:0;border:1px solid var(--border);border-radius:8px;background:#fff;padding:8px}
+  .tree .node{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+  .tree .node:hover{background:var(--gray-bg)}
+  .tree .node.sel{background:var(--primary-bg);color:var(--primary);font-weight:500}
+  .tree .child{padding-left:24px;color:var(--text-2)}
+  .tree .add{color:var(--green);font-size:12px;cursor:pointer;opacity:0;transition:.15s}
+  .tree .node:hover .add{opacity:1}
+  .tblwrap{flex:1;min-width:0;border:1px solid var(--border);border-radius:8px;background:#fff;padding:12px;overflow-x:auto}
+
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .tbl th{background:#fafafa;text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text-2);font-weight:500;white-space:nowrap}
+  .tbl th .sort{cursor:pointer;color:var(--gray)}
+  .tbl td{padding:9px 10px;border-bottom:1px solid #f5f5f5}
+  .tbl tr:hover td{background:#fafafa}
+  .tbl.hide-mod .col-module{display:none}
+  .opt-col{display:flex;gap:6px;align-items:center}
+  .opt-col .lk{color:var(--primary);cursor:pointer;font-size:12.5px}
+  .opt-col .lk:hover{text-decoration:underline}
+  .opt-col .lk.danger{color:var(--red)}
+  .more{position:relative}
+  .more .trig{border:1px solid var(--gray-border);border-radius:4px;padding:1px 9px;cursor:pointer;font-size:12px;color:var(--text-2)}
+  .more .trig:hover{border-color:var(--primary);color:var(--primary)}
+  .menu{position:absolute;right:0;top:26px;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);min-width:120px;z-index:9;display:none}
+  .menu.open{display:block}
+  .menu .mi{padding:7px 12px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .menu .mi:hover{background:var(--primary-bg);color:var(--primary)}
+  .menu .mi.danger:hover{background:var(--red-bg);color:var(--red)}
+
+  /* import dropdown */
+  .imp{position:relative}
+  .imp .imenu{position:absolute;right:0;top:34px;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);min-width:160px;z-index:9;display:none}
+  .imp .imenu.open{display:block}
+  .imp .imenu .mi{padding:8px 12px;font-size:12.5px;cursor:pointer}
+  .imp .imenu .mi:hover{background:var(--primary-bg);color:var(--primary)}
+
+  /* batch bar */
+  .batchbar{display:none;align-items:center;gap:10px;background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+  .batchbar.show{display:flex}
+  .batchbar .cnt{color:var(--primary);font-weight:600}
+
+  /* drawer */
+  .drawer{border:1px solid var(--primary-border);border-radius:12px;background:#fff;padding:18px;margin-top:14px;box-shadow:var(--shadow)}
+  .drawer .dh{font-weight:600;font-size:15px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  .form-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+  .form-row .f{flex:1 1 200px}
+  .form-row .f label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+  .form-row .f input,.form-row .f select{width:100%;height:32px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;background:#fff;font-size:13px}
+  .subtable{border:1px dashed var(--gray-border);border-radius:8px;padding:12px;margin-top:8px;background:#fafafa}
+  .subtable .st-title{font-weight:600;font-size:12px;margin-bottom:8px;color:var(--text-2)}
+
+  /* stepper */
+  .steps{display:flex;align-items:center;gap:0;margin-bottom:16px}
+  .step{display:flex;align-items:center;gap:8px}
+  .step .dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1px solid var(--gray-border);color:var(--gray-bg);background:#fff}
+  .step .dot.done{background:var(--green);border-color:var(--green);color:#fff}
+  .step .dot.cur{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 3px var(--primary-bg)}
+  .step .lbl{font-size:12px;color:var(--text-3)}
+  .step .lbl.cur{color:var(--primary);font-weight:600}
+  .step .lbl.done{color:var(--text-2)}
+  .steps .bar{flex:1;height:2px;background:var(--gray-border);margin:0 8px}
+  .steps .bar.done{background:var(--green)}
+
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:20}
+  .ov.show{display:flex}
+  .modal{background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:20px;width:480px;max-width:92vw}
+  .modal h3{font-size:16px;margin-bottom:16px}
+  .modal .field{margin-bottom:14px}
+  .modal .field label{display:block;font-size:12px;color:var(--text-2);margin-bottom:5px}
+  .modal .field select{width:100%;height:34px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;background:#fff}
+  .modal .inline-add{color:var(--green);cursor:pointer;font-size:12px;margin-top:6px;display:inline-block}
+  .modal .mini{border:1px dashed var(--green-border);background:var(--green-bg);border-radius:8px;padding:12px;margin-top:8px;display:none}
+  .modal .mini.show{display:block}
+  .modal .mini label{display:block;font-size:12px;color:var(--text-2);margin:8px 0 3px}
+  .modal .mini input{width:100%;height:30px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;background:#fff}
+  .modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--green-border);color:var(--green);padding:8px 16px;border-radius:8px;box-shadow:var(--shadow);z-index:30;display:none}
+  .toast.show{display:block;animation:fade 2s}
+  @keyframes fade{0%{opacity:0;transform:translate(-50%,-8px)}15%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
+  .ctx-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-bg);border:1px solid var(--primary-border);color:var(--primary);border-radius:14px;padding:2px 10px;font-size:12px}
+  .flow{display:flex;align-items:center;gap:4px;padding:8px 12px;background:#f7f8fa;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
+  .fstep{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2);cursor:pointer;padding:3px 9px;border-radius:12px;transition:.15s}
+  .fstep:hover{background:var(--primary-bg);color:var(--primary)}
+  .fstep .fd{width:16px;height:16px;border-radius:50%;border:1px solid var(--gray-border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-3)}
+  .fstep.done{color:var(--green)}
+  .fstep.done .fd{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .fstep.cur{background:var(--primary-bg);color:var(--primary);font-weight:600}
+  .fstep.cur .fd{border-color:var(--primary);color:var(--primary)}
+  .farr{color:var(--gray-border);font-size:11px}
+</style>
+</head>
+<body>
+<div class="sider">
+  <div class="logo"><span class="dot">B</span> BONE 元数据</div>
+  <div class="nav">
+    <div class="item on" data-page="model"><span class="ic">◈</span> 模型设计</div>
+    <div class="item" data-page="entity"><span class="ic">▤</span> 业务对象</div>
+    <div class="item" data-page="data"><span class="ic">▦</span> 业务数据</div>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <div class="crumbs"><b id="crumb">模型设计</b></div>
+    <div class="right">
+      <div class="searchbox" onclick="focusSearch()">🔍 搜索对象 / 编码<span class="kbd" style="margin-left:auto">⌘K</span></div>
+      <button class="btn primary write" onclick="openWizard()">＋ 新建模型</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- 预览开关（原型演示用） -->
+    <div class="preview-bar">
+      <div class="grp">演示状态：
+        <div class="seg" id="segApp">
+          <span class="on" data-v="has">有应用</span><span data-v="no">无应用</span>
+        </div>
+      </div>
+      <div class="grp">角色：
+        <div class="seg" id="segRole">
+          <span class="on" data-v="admin">管理员</span><span data-v="readonly">只读成员</span>
+        </div>
+      </div>
+      <div class="grp" style="color:var(--text-3)">（开关仅用于审阅两种状态，非产品界面）</div>
+    </div>
+    <div class="readonly-banner">⚠ 当前为只读成员视图：仅可浏览与查看数据，新建 / 发布 / 删除 / 导入等写操作已隐藏。</div>
+
+    <!-- ============ 模型设计 ============ -->
+    <section class="page on" id="page-model">
+      <div class="card hasapp">
+        <div class="pagehead">
+          <div class="h">模型设计 <span class="pill blue">建模入口</span></div>
+          <div class="ctx-chip" id="ctxChip">归属：办公域 / 报销模块</div>
+        </div>
+        <div class="hero">
+          <div class="tile rec" onclick="toast('打开模板中心')"><div class="ic">📦</div><div><div class="t">从场景模板开始</div><div class="d">开箱即用行业模型，实例化即可录入数据</div><div class="rec-sub">推荐 · 费用报销模板（基于你的使用）</div></div></div>
+          <div class="tile" onclick="openWizard()"><div class="ic">＋</div><div><div class="t">空白建模</div><div class="d">从零定义对象与字段，发布后即可录数据</div></div></div>
+          <div class="tile" onclick="openImport()"><div class="ic">🗄️</div><div><div class="t">从存量表导入</div><div class="d">已有物理表反向生成模型草稿</div></div></div>
+        </div>
+        <div class="rail">
+          <div class="col-left">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px">待发布草稿 <span class="pill blue">3 个</span> <a style="margin-left:auto;color:var(--primary);font-size:12px;cursor:pointer" onclick="switchPage('entity')">查看全部 ›</a></div>
+            <div class="draft-row"><div><div style="font-weight:500">报销单 <span class="code">t_expense_claim</span></div><div class="meta">草稿 · 自动界面 · 26 字段</div></div><button class="btn primary sm write" onclick="toast('已加入发布队列')">去发布</button></div>
+            <div class="draft-row"><div><div style="font-weight:500">供应商 <span class="code">t_supplier</span></div><div class="meta">草稿 · 手写界面</div></div><button class="btn primary sm write" onclick="toast('已加入发布队列')">去发布</button></div>
+            <div class="draft-row"><div><div style="font-weight:500">库存台账 <span class="code">t_stock</span></div><div class="meta">草稿 · 自动界面</div></div><button class="btn primary sm write" onclick="toast('已加入发布队列')">去发布</button></div>
+          </div>
+          <div class="col-right">
+            <div>
+              <div class="stat-row">
+                <div class="stat" style="cursor:pointer" title="点击查看全部业务对象" onclick="switchPage('entity');toast('已打开全部业务对象')"><div class="v">71</div><div class="k">业务对象总数</div></div>
+                <div class="stat" style="cursor:pointer" title="点击查看已发布对象" onclick="switchPage('entity');toast('已筛选：已发布')"><div class="v" style="color:var(--green)">48</div><div class="k">已发布</div></div>
+                <div class="stat" style="cursor:pointer" title="点击查看待发布草稿" onclick="switchPage('entity');toast('已按「草稿」筛选待发布对象')"><div class="v" style="color:var(--primary)">3</div><div class="k">待发布草稿</div></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:6px">继续建模（最近编辑）</div>
+              <div class="chips">
+                <span class="chip" onclick="toast('打开 报销单 工作区')">报销单</span>
+                <span class="chip" onclick="toast('打开 费用类别 工作区')">费用类别</span>
+                <span class="chip" onclick="toast('打开 供应商 工作区')">供应商</span>
+                <span class="chip" onclick="toast('打开 库存台账 工作区')">库存台账</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card noapp-block">
+        <div class="empty">
+          <div class="big">🚀 还没有可建模的应用</div>
+          <div class="sm">无需离开本页。有平台权限可立即创建应用；无权限可提交申请，审批通过后自动回到建模流程。</div>
+          <div class="acts">
+            <button class="btn green" onclick="openCreateApp()">⚡ 快速创建应用</button>
+            <button class="btn" onclick="toast('已提交应用权限申请')">🔑 申请应用权限</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 业务对象 ============ -->
+    <section class="page" id="page-entity">
+      <div class="card hasapp">
+        <div class="pagehead">
+          <div class="h">业务对象 <span class="pill blue">模型清单 · 唯一真源</span> <span class="pill gray">共 71 个</span></div>
+        </div>
+        <div class="layout">
+          <div class="tree">
+            <div class="node" data-mod="" onclick="selectTree(this,'')">全部模型</div>
+            <div class="node sel" data-mod="办公域" onclick="selectTree(this,'办公域')">办公域 <span class="add write" onclick="event.stopPropagation();openCreateModule()">＋ 模块</span></div>
+            <div class="node child" data-mod="报销模块" onclick="selectTree(this,'报销模块')">报销模块</div>
+            <div class="node child" data-mod="主数据模块" onclick="selectTree(this,'主数据模块')">主数据模块</div>
+            <div class="node" data-mod="供应链" onclick="selectTree(this,'供应链')">供应链 <span class="add write" onclick="event.stopPropagation();openCreateModule()">＋ 模块</span></div>
+            <div class="node child" data-mod="库存" onclick="selectTree(this,'库存')">库存</div>
+          </div>
+          <div class="tblwrap">
+            <div class="batchbar" id="batchbar">
+              <span class="cnt" id="batchCnt">已选 0 项</span>
+              <button class="btn sm primary write" onclick="toast('批量发布完成：成功 3 · 失败 1（失败：库存台账 金额未设下限）')">批量发布</button>
+              <button class="btn sm danger write" onclick="toast('批量删除成功')">批量删除</button>
+              <span style="color:var(--text-3);font-size:12px">上次执行：成功 3 · 失败 1（<span style="color:var(--primary);cursor:pointer" onclick="toast('失败明细：库存台账 — 金额未设下限')">查看明细</span>）</span>
+              <span style="flex:1"></span>
+              <span style="color:var(--text-3);cursor:pointer;font-size:12px" onclick="clearSel()">取消选择</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+              <input style="height:32px;border:1px solid var(--gray-border);border-radius:6px;padding:0 10px;width:210px" placeholder="搜索对象名称/编码">
+              <select style="height:32px;border:1px solid var(--gray-border);border-radius:6px"><option>全部类型</option><option>普通业务</option><option>主数据类</option></select>
+              <select style="height:32px;border:1px solid var(--gray-border);border-radius:6px"><option>全部状态</option><option>草稿</option><option>已发布</option></select>
+              <span style="flex:1"></span>
+              <button class="btn" onclick="toast('已刷新')">↻ 刷新</button>
+              <span class="imp"><button class="btn" onclick="toggleImp(event)">导入 ▾</button><div class="imenu" id="impMenu"><div class="mi" onclick="toast('从存量表导入')">从存量表导入</div><div class="mi" onclick="toast('导入模型 JSON')">导入模型 JSON</div></div></span>
+              <button class="btn primary write" onclick="openWizard()">＋ 新建业务对象</button>
+            </div>
+            <table class="tbl" id="entityTbl">
+              <thead><tr>
+                <th style="width:34px"><input type="checkbox" onchange="toggleAll(this)"></th>
+                <th>名称 <span class="sort">⇅</span></th><th>编码</th><th class="col-module">模块</th><th>类型</th><th>状态</th><th>更新时间 <span class="sort">⇅</span></th><th style="width:170px">操作</th>
+              </tr></thead>
+              <tbody>
+                <tr><td><input type="checkbox" class="rowcb" onchange="updateBatch()"></td><td style="font-weight:500">报销单</td><td><span style="font-family:monospace;color:var(--text-3)">t_expense_claim</span></td><td class="col-module">报销模块</td><td><span class="pill gray">普通</span></td><td><span class="pill green">已发布</span></td><td>10-11 09:24</td><td><div class="opt-col"><span class="lk" onclick="toast('打开工作区')">打开</span><span class="lk write" onclick="toast('发布中…')">发布</span><span class="lk danger write" onclick="confirmDel(this)">删除</span><span class="more"><span class="trig" onclick="toggleMenu(event,this)">更多▾</span><div class="menu"><div class="mi write" onclick="toast('复制为草稿')">复制</div><div class="mi write" onclick="toast('导出模型 JSON')">导出</div><div class="mi" onclick="toast('打开数据页签')">数据</div></div></span></div></td></tr>
+                <tr><td><input type="checkbox" class="rowcb" onchange="updateBatch()"></td><td style="font-weight:500">费用类别</td><td><span style="font-family:monospace;color:var(--text-3)">t_expense_category</span></td><td class="col-module">主数据模块</td><td><span class="pill blue">主数据</span></td><td><span class="pill blue">草稿</span></td><td>10-10 18:02</td><td><div class="opt-col"><span class="lk" onclick="toast('打开工作区')">打开</span><span class="lk write" onclick="toast('发布中…')">发布</span><span class="lk danger write" onclick="confirmDel(this)">删除</span><span class="more"><span class="trig" onclick="toggleMenu(event,this)">更多▾</span><div class="menu"><div class="mi write" onclick="toast('复制为草稿')">复制</div><div class="mi write" onclick="toast('导出模型 JSON')">导出</div><div class="mi" onclick="toast('打开数据页签')">数据</div></div></span></div></td></tr>
+                <tr><td><input type="checkbox" class="rowcb" onchange="updateBatch()"></td><td style="font-weight:500">供应商</td><td><span style="font-family:monospace;color:var(--text-3)">t_supplier</span></td><td class="col-module">主数据模块</td><td><span class="pill blue">主数据</span></td><td><span class="pill green">已发布</span></td><td>10-09 11:30</td><td><div class="opt-col"><span class="lk" onclick="toast('打开工作区')">打开</span><span class="lk write" onclick="toast('发布中…')">发布</span><span class="lk danger write" onclick="confirmDel(this)">删除</span><span class="more"><span class="trig" onclick="toggleMenu(event,this)">更多▾</span><div class="menu"><div class="mi write" onclick="toast('复制为草稿')">复制</div><div class="mi write" onclick="toast('导出模型 JSON')">导出</div><div class="mi" onclick="toast('打开数据页签')">数据</div></div></span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card noapp-block">
+        <div class="empty neutral">
+          <div class="big">📭 尚未创建应用</div>
+          <div class="sm">业务对象依赖应用容器。请先到「模型设计」创建或申请应用，完成后此处将展示对应对象清单。</div>
+          <div class="acts"><button class="btn primary" onclick="switchPage('model')">前往模型设计</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 业务数据 ============ -->
+    <section class="page" id="page-data">
+      <div class="card hasapp">
+        <div class="pagehead">
+          <div class="h">业务数据 <span class="pill blue">跨实体运营台</span></div>
+          <span style="margin-left:auto;display:inline-flex;border:1px solid var(--gray-border);border-radius:6px;overflow:hidden;font-size:12px">
+            <span style="padding:4px 12px;background:var(--primary-bg);color:var(--primary);font-weight:600">列表</span>
+            <span style="padding:4px 12px;color:var(--text-3);cursor:not-allowed" title="看板视图将于 v1.1 提供" onclick="toast('看板视图规划于 v1.1，当前提供列表视图')">看板 v1.1</span>
+          </span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text-2)">最近操作实体：</span>
+          <span class="chip" onclick="toast('进入 报销单 数据')">报销单</span>
+          <span class="chip" onclick="toast('进入 费用类别 数据')">费用类别</span>
+          <span class="chip" onclick="toast('进入 供应商 数据')">供应商</span>
+        </div>
+        <div class="flow" id="flowStrip">
+            <span style="font-size:12px;color:var(--text-3);margin-right:2px">报销全流程：</span>
+            <span class="fstep" onclick="flowStep(0)"><span class="fd">1</span>模板起盘</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(1)"><span class="fd">2</span>发布</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(2)"><span class="fd">3</span>清单出现</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(3)"><span class="fd">4</span>录入</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(4)"><span class="fd">5</span>提交</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(5)"><span class="fd">6</span>审批</span><span class="farr">→</span>
+            <span class="fstep" onclick="flowStep(6)"><span class="fd">7</span>打款</span>
+          </div>
+          <div class="layout">
+          <div style="flex:1 1 360px">
+            <table class="tbl">
+              <thead><tr><th>单号</th><th>申请人</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td style="font-family:monospace">EXP-2026-001</td><td>张三</td><td>¥1,280.50</td><td><span class="pill blue">已提交</span></td><td><span class="lk" onclick="openDrawer('EXP-2026-001',1)">录入/查看</span></td></tr>
+                <tr><td style="font-family:monospace">EXP-2026-002</td><td>李四</td><td>¥320.00</td><td><span class="pill green">已审批</span></td><td><span class="lk" onclick="openDrawer('EXP-2026-002',2)">录入/查看</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="flex:1 1 400px">
+            <div class="drawer">
+              <div class="dh">录入报销单 <span class="pill orange" id="dStatus">草稿</span></div>
+              <div class="steps" id="steps">
+                <div class="step"><span class="dot" id="s0">1</span><span class="lbl" id="l0">草稿</span></div><span class="bar" id="b0"></span>
+                <div class="step"><span class="dot" id="s1">2</span><span class="lbl" id="l1">已提交</span></div><span class="bar" id="b1"></span>
+                <div class="step"><span class="dot" id="s2">3</span><span class="lbl" id="l2">已审批</span></div><span class="bar" id="b2"></span>
+                <div class="step"><span class="dot" id="s3">4</span><span class="lbl" id="l3">已打款</span></div>
+              </div>
+              <div class="form-row">
+                <div class="f"><label>申请人（自动带）</label><input value="张三"></div>
+                <div class="f"><label>费用类别</label><select><option>差旅 TRAVEL</option><option>餐饮 MEAL</option><option>交通 TRANSPORT</option></select></div>
+              </div>
+              <div class="form-row">
+                <div class="f"><label>金额（元）<span style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:3px;padding:0 5px;margin-left:4px;font-weight:400;font-size:10.5px;color:var(--green)">＝ 明细合计（自动）</span></label><input id="amtAuto" value="1280.50" readonly style="background:var(--green-bg);border-color:var(--green-border)"></div>
+                <div class="f"><label>发生日期</label><input value="2026-10-09"></div>
+              </div>
+              <div class="subtable">
+                <div class="st-title">明细（子表）</div>
+                <table class="tbl">
+                  <thead><tr><th>项目</th><th>金额</th></tr></thead>
+                  <tbody id="subAmt"><tr><td>高铁票</td><td class="amt">553.00</td></tr><tr><td>住宿</td><td class="amt">727.50</td></tr></tbody>
+                </table>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">逐行金额 &gt; 0（精确到 0.01）；头表金额＝明细合计，保存时以服务端计算为准。</div>
+              <div style="margin-top:12px;font-size:12px;color:var(--text-2)">附件：<span class="pill gray">发票.pdf</span> <span class="pill gray">行程单.jpg</span></div>
+              <div style="text-align:right;margin-top:14px" id="drawerActions"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card noapp-block">
+        <div class="empty neutral">
+          <div class="big">📭 尚无可录入数据</div>
+          <div class="sm">业务数据依赖已发布的业务对象。请先在「业务对象」发布模型，完成后此处将展示对应数据录入入口。</div>
+          <div class="acts"><button class="btn primary" onclick="switchPage('entity')">前往业务对象</button></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- 创建向导弹层（归属应用/模块 just-in-time 内联创建） -->
+<div class="ov" id="wizardOv">
+  <div class="modal">
+    <h3 id="wizardTitle">选择归属（应用 / 模块）</h3>
+    <div class="field">
+      <label>归属应用</label>
+      <select id="wApp"><option>办公域</option><option>供应链</option></select>
+      <span class="inline-add" onclick="toggleMini('app')">＋ 新建应用</span>
+      <div class="mini" id="miniApp">
+        <label>应用名</label><input placeholder="如：财务中台">
+        <label>编码</label><input placeholder="如：finance">
+      </div>
+    </div>
+    <div class="field">
+      <label>归属模块</label>
+      <select id="wMod"><option>报销模块</option><option>主数据模块</option></select>
+      <span class="inline-add" onclick="toggleMini('mod')">＋ 新建模块</span>
+      <div class="mini" id="miniMod">
+        <label>模块名</label><input placeholder="如：预算">
+        <label>编码</label><input placeholder="如：budget">
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" onclick="closeWizard()">取消</button>
+      <button class="btn primary" onclick="closeWizard();toast('已进入建模编辑器（归属已带入）')">进入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新建应用弹层 -->
+<div class="ov" id="appOv">
+  <div class="modal">
+    <h3>快速创建应用</h3>
+    <div class="field"><label>应用名</label><input placeholder="如：财务中台"></div>
+    <div class="field"><label>编码</label><input placeholder="如：finance"></div>
+    <div class="field"><label>归属租户</label><select><option>当前租户（默认）</option></select></div>
+    <div class="foot">
+      <button class="btn" onclick="closeApp()">取消</button>
+      <button class="btn green" onclick="closeApp();toast('应用已创建，自动进入建模')">创建并继续</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');}
+  function focusSearch(){toast('全局搜索：输入对象名称/编码，回车打开');}
+
+  // 导航：单页切换 + sider 高亮 + 面包屑
+  function switchPage(p){
+    document.querySelectorAll('.page').forEach(s=>s.classList.remove('on'));
+    document.getElementById('page-'+p).classList.add('on');
+    document.querySelectorAll('.nav .item').forEach(i=>i.classList.toggle('on',i.dataset.page===p));
+    const names={model:'模型设计',entity:'业务对象',data:'业务数据'};
+    document.getElementById('crumb').textContent=names[p];
+  }
+  document.querySelectorAll('.nav .item').forEach(i=>i.onclick=()=>switchPage(i.dataset.page));
+  // 深链：/#page=entity 直达对应页（与拓扑面包屑一致，可分享/收藏）
+  (function(){var m=(location.hash||'').match(/page=(\w+)/);if(m&&document.getElementById('page-'+m[1]))switchPage(m[1]);})();
+
+  // 预览开关：有/无应用
+  document.querySelectorAll('#segApp span').forEach(s=>s.onclick=()=>{
+    document.querySelectorAll('#segApp span').forEach(x=>x.classList.remove('on'));s.classList.add('on');
+    document.body.classList.toggle('noapp',s.dataset.v==='no');
+  });
+  // 预览开关：角色
+  document.querySelectorAll('#segRole span').forEach(s=>s.onclick=()=>{
+    document.querySelectorAll('#segRole span').forEach(x=>x.classList.remove('on'));s.classList.add('on');
+    document.body.classList.toggle('readonly',s.dataset.v==='readonly');
+  });
+
+  // 向导
+  function openWizard(){document.getElementById('wizardOv').classList.add('show');}
+  function closeWizard(){document.getElementById('wizardOv').classList.remove('show');}
+  function openCreateApp(){document.getElementById('appOv').classList.add('show');}
+  function closeApp(){document.getElementById('appOv').classList.remove('show');}
+  function toggleMini(k){document.getElementById('mini'+(k==='app'?'App':'Mod')).classList.toggle('show');}
+  function openCreateModule(){toast('在该应用下新建模块：模块名 / 编码');}
+  function openImport(){toast('从存量表导入向导');}
+
+  // 更多▾ 菜单
+  function toggleMenu(e,el){e.stopPropagation();document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open'));el.parentElement.querySelector('.menu').classList.toggle('open');}
+  document.addEventListener('click',()=>document.querySelectorAll('.menu,.imenu').forEach(m=>m.classList.remove('open')));
+
+  // 导入▾ 菜单
+  function toggleImp(e){e.stopPropagation();document.querySelectorAll('.imenu').forEach(m=>m.classList.remove('open'));document.getElementById('impMenu').classList.toggle('open');}
+
+  // 批量
+  function updateBatch(){const n=document.querySelectorAll('.rowcb:checked').length;const bar=document.getElementById('batchbar');bar.classList.toggle('show',n>0);document.getElementById('batchCnt').textContent='已选 '+n+' 项';}
+  function toggleAll(cb){document.querySelectorAll('.rowcb').forEach(x=>x.checked=cb.checked);updateBatch();}
+  function clearSel(){document.querySelectorAll('.rowcb').forEach(x=>x.checked=false);updateBatch();}
+
+  // 删除二次确认
+  function confirmDel(el){const row=el.closest('tr');const orig=el.textContent;el.textContent='确认?';el.style.color='var(--red)';el.onclick=()=>{toast('已删除');row.remove();clearSel();};setTimeout(()=>{el.textContent=orig;el.onclick=()=>confirmDel(el);},2500);}
+
+  // 左树选择：作用域到单模块时隐藏模块列
+  function selectTree(el,mod){
+    document.querySelectorAll('.tree .node').forEach(n=>n.classList.remove('sel'));
+    el.classList.add('sel');
+    // 仅选中具体子模块（作用域）时隐藏冗余的模块列
+    const scoped=['报销模块','主数据模块','库存'].includes(mod);
+    document.getElementById('entityTbl').classList.toggle('hide-mod',scoped);
+    if(scoped){toast('已按「'+mod+'」作用域过滤，模块列已隐藏');}
+  }
+
+  // 报销五态步进（不跳步）
+  const EX_STATES=['草稿','已提交','已审批','已打款'];
+  function openDrawer(no,state){renderExpense(state);document.getElementById('dStatus').textContent=EX_STATES[state];toast('打开 '+no+' 录入抽屉');}
+  function renderExpense(state){
+    for(let i=0;i<4;i++){
+      const dot=document.getElementById('s'+i),lbl=document.getElementById('l'+i),bar=document.getElementById('b'+i);
+      dot.className='dot'+(i<state?' done':i===state?' cur':'');
+      dot.textContent=i<state?'✓':(i+1);
+      lbl.className='lbl'+(i<state?' done':i===state?' cur':'');
+      if(bar)bar.className='bar'+(i<state?' done':'');
+    }
+    renderFlow(state);
+    const acts=document.getElementById('drawerActions');
+    if(state===0){acts.innerHTML='<button class="btn" onclick="toast(\'已存草稿\')">保存草稿</button><button class="btn primary" onclick="renderExpense(1);updStatus(1)">提交</button>';}
+    else if(state===1){acts.innerHTML='<button class="btn primary" onclick="renderExpense(2);updStatus(2)">审批通过</button><button class="btn" onclick="toast(\'已退回\')">退回</button>';}
+    else if(state===2){acts.innerHTML='<button class="btn purple" onclick="renderExpense(3);updStatus(3)">确认打款</button>';}
+    else {acts.innerHTML='<span class="pill green">✓ 已完成打款</span>';}
+  }
+  function updStatus(s){document.getElementById('dStatus').textContent=EX_STATES[s];}
+  /* 金额 = 明细合计（自动汇总） */
+  function recalcAmount(){var s=0;document.querySelectorAll('#subAmt .amt').forEach(function(td){var v=parseFloat(td.textContent);if(!isNaN(v))s+=v;});var inp=document.getElementById('amtAuto');if(inp)inp.value=s.toFixed(2);}
+  recalcAmount();
+
+  /* 页面级全流程串联：点击任一步跳转对应页并呈现对应状态 */
+  var FS_STATE=[null,null,null,0,1,2,3];
+  function flowStep(i){
+    if(i<3){switchPage(i===0?'model':'entity');toast('全流程第'+(i+1)+'步：'+['模板起盘（模型设计）','发布（业务对象）','清单出现（业务对象）'][i]);return;}
+    switchPage('data');
+    openDrawer(i===3?'EXP-2026-001':'EXP-2026-002',FS_STATE[i]);
+  }
+  function renderFlow(state){
+    var doneN=[3,4,6,7][state]||0;
+    document.querySelectorAll('#flowStrip .fstep').forEach(function(f,i){
+      f.classList.remove('done','cur');
+      if(i<doneN)f.classList.add('done'); else if(i===doneN)f.classList.add('cur');
+      var fd=f.querySelector('.fd'); if(fd)fd.innerHTML=i<doneN?'✓':(i+1);
+    });
+  }
+  renderFlow(0);
+
+  /* 键盘：⌘K 搜索提示 · Esc 关浮层 · Enter 提交当前弹层 */
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();focusSearch();return;}
+    if(e.key==='Escape'){document.querySelectorAll('.ov.show').forEach(function(o){o.classList.remove('show');});return;}
+    if(e.key==='Enter'&&!/textarea|select/i.test(e.target.tagName)){
+      var w=document.getElementById('wizardOv'),a=document.getElementById('appOv');
+      if(a.classList.contains('show')){closeApp();toast('应用已创建，自动进入建模');}
+      else if(w.classList.contains('show')){closeWizard();toast('已进入建模编辑器（归属已带入）');}
+    }
+  });
+</script>
+</body>
+</html>

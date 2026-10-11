@@ -5,10 +5,12 @@ import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand
 import com.bone.metadata.catalog.application.command.cmd.InstantiateFromTemplateCommand;
 import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.common.CatalogErrors;
+import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.TemplateReadPort;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
+import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
@@ -37,6 +39,9 @@ public class MetaTemplateApplicationService {
   private final MetaEntityApplicationService metaEntityApplicationService;
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
+
+  /** 模板状态机动作展开（迁移 0040）：产出 meta_entity_action_def，使实例化结果「可用」而非只是「有形」。 */
+  private final ActionDefMaterializePort actionDefMaterializePort;
 
   /** 模板目录（平台层全租户共享，keyword 模糊匹配编码/名称）。 */
   @Transactional(readOnly = true)
@@ -109,13 +114,30 @@ public class MetaTemplateApplicationService {
               tf.getValidationRules()); // validationRules（W1a T2：模板质量规则透传）
       metaFieldRepository.insert(field);
     }
+
+    // ── 状态机动作：实例化必须同步产出 meta_entity_action_def（迁移 0040）────────────
+    // 只复制对象与字段是不够的：state_field 只能从动作定义推导，缺失 ⇒
+    //   ① 入口状态不被注入 → 受保护状态列必填却无来源 → 创建记录恒 400（UI 实测录入失败）；
+    //   ② 写保护不生效 → 可绕过状态机直写终态（实测 status=PAID 201）。
+    // 无状态机的模板（如主数据类）actionsOf 返回空列表是正常情况，不是错误。
+    List<MetaModelTemplateAction> templateActions = templateReadPort.actionsOf(templateId);
+    int actionCount = 0;
+    if (!templateActions.isEmpty()) {
+      actionCount =
+          actionDefMaterializePort.materialize(
+              entity.getTenantId() == null ? 0L : entity.getTenantId(),
+              entity.getCode(),
+              templateActions);
+    }
+
     log.info(
-        "[G3] 模板实例化完成: template={}({}) -> entity={}({}) fields={}",
+        "[G3] 模板实例化完成: template={}({}) -> entity={}({}) fields={} actions={}",
         template.getCode(),
         template.getCurrentVersion(),
         entity.getCode(),
         entityId,
-        templateFields.size());
+        templateFields.size(),
+        actionCount);
     return entityId;
   }
 

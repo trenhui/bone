@@ -1,6 +1,7 @@
 package com.bone.metadata.catalog.domain.gateway;
 
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
+import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateField;
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +23,14 @@ public interface TemplateReadPort {
 
   /** 模板默认字段集（按 sort_order 升序）。 */
   List<MetaModelTemplateField> fieldsOf(Long templateId);
+
+  /**
+   * 模板状态机动作定义（按 sort_order 升序；迁移 0040）。
+   *
+   * <p>没有动作定义 ⇒ 实例化出的实体 {@code state_field} 推导为空 ⇒ 受保护状态列既不被注入入口态
+   * （创建必失败）也不被保护（可绕过状态机直写终态）。故实例化必须同步消费本端口。
+   *
+   * @return 空列表表示该模板无状态机（如主数据类模板），属正常情况
+   */
+  List<MetaModelTemplateAction> actionsOf(Long templateId);
 }

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>幕三 · 发布即交付：业务人员在真实系统里走完报销闭环</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f2f5; color:rgba(0,0,0,.88); font-size:14px; }
+  .shell { display:flex; min-height:100vh; }
+  .side { width:208px; background:#fff; border-right:1px solid #f0f0f0; padding:16px 8px; flex-shrink:0; }
+  .brand { display:flex; align-items:center; gap:10px; padding:8px 12px 20px; font-weight:600; }
+  .logo { width:28px; height:28px; border-radius:6px; background:#1677ff; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .snav { color:rgba(0,0,0,.65); padding:9px 12px; border-radius:6px; display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .snav.on { background:#e6f4ff; color:#1677ff; font-weight:500; }
+  .sgroup { font-size:12px; color:rgba(0,0,0,.45); padding:14px 12px 6px; }
+  .main { flex:1; padding:0 24px 24px; min-width:0; }
+  .crumb { color:rgba(0,0,0,.45); font-size:13px; padding:14px 0 6px; }
+  .crumb b { color:rgba(0,0,0,.88); font-weight:500; }
+  .hrow { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px; }
+  h1 { font-size:20px; font-weight:600; }
+  .hd-tag { font-size:12px; color:#1677ff; background:#e6f4ff; border:1px solid #91caff; padding:1px 8px; border-radius:4px; margin-left:10px; font-weight:400; }
+  .sub { color:rgba(0,0,0,.45); font-size:13px; margin-bottom:16px; }
+  .sub a { color:#1677ff; }
+  .ops { display:flex; gap:8px; padding-top:2px; }
+  .btn { height:32px; padding:0 15px; border-radius:6px; border:1px solid #d9d9d9; background:#fff; font-size:14px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; }
+  .btn.pri { background:#1677ff; border-color:#1677ff; color:#fff; }
+  .btn.sm { height:26px; padding:0 10px; font-size:12px; border-radius:4px; }
+  .card { background:#fff; border-radius:8px; border:1px solid #f0f0f0; }
+  .flow { display:flex; gap:12px; padding:16px 20px; margin-bottom:16px; background:linear-gradient(90deg,#f0f7ff,#fff); align-items:center; }
+  .st { flex:1; }
+  .st .l1 { display:flex; align-items:center; gap:8px; font-weight:500; }
+  .dot { width:8px; height:8px; border-radius:50%; }
+  .st .l2 { font-size:12px; color:rgba(0,0,0,.45); margin-top:2px; padding-left:16px; }
+  .st .l2 b { color:#fa8c16; font-weight:500; }
+  .arrow { color:#bfbfbf; font-size:16px; padding:0 2px; }
+  .toolbar { display:flex; gap:12px; align-items:center; padding:14px 16px; border-bottom:1px solid #f0f0f0; }
+  .search { flex:1; max-width:280px; height:32px; background:#f5f5f5; border-radius:6px; display:flex; align-items:center; padding:0 11px; color:rgba(0,0,0,.30); font-size:13px; gap:8px; }
+  .tabs { display:flex; gap:22px; margin-left:8px; }
+  .tab { padding:6px 2px; color:rgba(0,0,0,.65); border-bottom:2px solid transparent; cursor:pointer; }
+  .tab.on { color:#1677ff; border-color:#1677ff; font-weight:500; }
+  .tab .n { font-size:12px; color:rgba(0,0,0,.45); margin-left:3px; }
+  .seg { display:flex; background:#f5f5f5; border-radius:6px; padding:2px; font-size:13px; }
+  .seg i { padding:3px 12px; border-radius:4px; font-style:normal; color:rgba(0,0,0,.65); }
+  .seg i.on { background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.1); color:#1677ff; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-weight:500; color:rgba(0,0,0,.65); background:#fafafa; padding:11px 16px; border-bottom:1px solid #f0f0f0; font-size:13px; white-space:nowrap; }
+  td { padding:13px 16px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  tr.hl { background:#fffbe6; box-shadow:inset 3px 0 0 #faad14; }
+  .nm { color:#1677ff; display:flex; align-items:center; gap:8px; }
+  .ico { width:22px; height:22px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .i-bl { background:#e6f4ff; }
+  .i-fp { background:#fff7e6; }
+  .amt { font-variant-numeric:tabular-nums; }
+  .tag { display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:1px 8px; border-radius:4px; border:1px solid; white-space:nowrap; }
+  .t-draft { color:#d4380d; border-color:#ffcfb9; background:#fff2e8; }
+  .t-sub { color:#d46b08; border-color:#ffd591; background:#fff7e6; }
+  .t-appr { color:#389e0d; border-color:#b7eb8f; background:#f6ffed; }
+  .t-paid { color:#0958d9; border-color:#91caff; background:#e6f4ff; }
+  .next { font-size:12px; }
+  .next a { color:#1677ff; }
+  .next .warn { color:#fa8c16; }
+  .lk { color:#1677ff; cursor:pointer; }
+  .mut { color:rgba(0,0,0,.45); }
+  .act { display:flex; gap:2px; flex-wrap:wrap; }
+  .lkbtn { color:#1677ff; cursor:pointer; padding:2px 6px; border-radius:4px; font-size:13px; white-space:nowrap; }
+  .lkbtn:hover { background:#f0f7ff; }
+  .foot { display:flex; justify-content:flex-end; align-items:center; gap:16px; padding:14px 16px; color:rgba(0,0,0,.45); font-size:13px; }
+  .pg { display:flex; gap:4px; }
+  .pg i { width:26px; height:26px; border:1px solid #d9d9d9; border-radius:5px; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:13px; }
+  .pg i.on { border-color:#1677ff; color:#1677ff; }
+  /* 附件抽屉 */
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:420px; background:#fff; box-shadow:-8px 0 24px rgba(0,0,0,.12); z-index:30; display:flex; flex-direction:column; }
+  .dhead { display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid #f0f0f0; font-size:16px; font-weight:600; }
+  .dx { color:rgba(0,0,0,.45); cursor:pointer; font-size:16px; }
+  .dbody { flex:1; overflow:auto; padding:20px 20px 12px; }
+  .kv { display:flex; padding:7px 0; font-size:13px; }
+  .kv .k { width:84px; color:rgba(0,0,0,.45); flex-shrink:0; }
+  .kid { font-family:Menlo,monospace; background:#f5f5f5; padding:0 6px; border-radius:4px; font-size:12px; }
+  .steps { margin:6px 0 14px; }
+  .stp { display:flex; gap:10px; padding:7px 0; }
+  .stp .r { width:22px; display:flex; flex-direction:column; align-items:center; }
+  .stp .c { width:9px; height:9px; border-radius:50%; border:2px solid #d9d9d9; background:#fff; flex-shrink:0; }
+  .stp .bar { width:2px; flex:1; background:#f0f0f0; margin-top:2px; }
+  .stp.done .c { background:#52c41a; border-color:#52c41a; }
+  .stp.done .bar { background:#52c41a; }
+  .stp.cur .c { border-color:#fa8c16; box-shadow:0 0 0 3px #fff7e6; }
+  .stp .t { font-size:13px; }
+  .stp .t small { display:block; color:rgba(0,0,0,.45); margin-top:1px; }
+  .stitle { margin:16px 0 4px; font-size:13px; font-weight:600; }
+  .fcard { border:1px solid #f0f0f0; border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .fic { width:30px; height:30px; border-radius:6px; background:#fff7e6; color:#fa8c16; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .fmeta { flex:1; min-width:0; }
+  .fmeta b { font-size:13px; font-weight:500; display:block; }
+  .fmeta small { color:rgba(0,0,0,.45); font-size:12px; }
+  .hint { background:#fffbe6; border:1px solid #ffe58f; color:#874d00; padding:8px 12px; border-radius:6px; font-size:12px; margin:10px 0 4px; }
+  .dfoot { padding:12px 16px; border-top:1px solid #f0f0f0; display:flex; gap:8px; }
+  .btn.grn { background:#52c41a; border-color:#52c41a; color:#fff; flex:1; justify-content:center; }
+  .mask { position:fixed; inset:0; background:rgba(0,0,0,.18); z-index:20; }
+  /* 幕三注解 */
+  .note { position:fixed; left:24px; bottom:24px; right:460px; background:#fff; border:1px solid #d3adf7; border-radius:10px; padding:14px 18px; font-size:12.5px; color:#531dab; box-shadow:0 6px 20px rgba(0,0,0,.08); z-index:40; }
+  .note b { font-size:13px; }
+  .note ol { margin:6px 0 0 18px; }
+  .note li { margin-top:3px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="logo">B</div>Bone Admin</div>
+    <div class="snav">▦ 首页仪表盘</div>
+    <div class="sgroup">业务建模</div>
+    <div class="snav">◆ 模型设计</div>
+    <div class="snav">▤ 业务对象</div>
+    <div class="snav on">▥ 业务数据</div>
+    <div class="sgroup">平台管理</div>
+    <div class="snav">👥 组织与成员</div>
+    <div class="snav">🛡 权限与角色</div>
+  </aside>
+  <main class="main">
+    <div class="crumb">业务数据 / <b>业务数据</b></div>
+    <div class="hrow">
+      <div>
+        <h1>业务数据<span class="hd-tag">跨对象的业务数据运营台</span></h1>
+        <div class="sub">集中检索与处理所有已发布对象的记录；对象级管理仍从「业务对象 → 详情 → 数据」进入。当前锚定：<b>费用报销（财务云 / 费用域）</b> <a>更换锚定</a></div>
+      </div>
+      <div class="ops"><button class="btn">导出</button><button class="btn pri">＋ 新建报销单</button></div>
+    </div>
+    <div class="card">
+      <div class="flow">
+        <div class="st"><div class="l1"><span class="dot" style="background:#52c41a"></span>草稿 12</div><div class="l2">员工编辑中</div></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="l1"><span class="dot" style="background:#fa8c16"></span>已提交 4</div><div class="l2">待审批 · <b>超 24h 2 单</b></div></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="l1"><span class="dot" style="background:#52c41a"></span>已审批 9</div><div class="l2">待打款</div></div>
+        <div class="arrow">→</div>
+        <div class="st"><div class="l1"><span class="dot" style="background:#1677ff"></span>已打款 41</div><div class="l2">本月闭环</div></div>
+        <div style="width:1px;height:34px;background:#eee;margin:0 6px;"></div>
+        <div style="width:190px;font-size:12.5px;color:rgba(0,0,0,.60);">
+          状态即路由：点任意阶段=过滤视图；金额档路由 ≤1000 主管 / ≤5000 部门负责人 / >5000 财务（§1.7）
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="search">🔍 搜索单号 / 标题 / 申请人…</div>
+        <div class="tabs">
+          <div class="tab on">全部 <span class="n">66</span></div>
+          <div class="tab">我提交的 <span class="n">7</span></div>
+          <div class="tab">待我审批 <span class="n">3</span></div>
+          <div class="tab">已驳回 <span class="n">1</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="seg"><i class="on">列表</i><i>看板（按状态）</i><i>日历</i></div>
+        <button class="btn">⚙</button>
+      </div>
+      <table>
+        <thead><tr><th style="width:34px"><input type="checkbox"></th><th>单号</th><th>标题</th><th>申请人</th><th>类别</th><th style="text-align:right">金额</th><th>状态</th><th>下一步</th><th style="width:210px">操作</th></tr></thead>
+        <tbody>
+          <tr class="hl">
+            <td><input type="checkbox" checked></td>
+            <td><span class="kid">EXP-2026-0618</span></td>
+            <td class="nm"><span class="ico i-fp">🧾</span>6月差旅·杭州客户现场</td>
+            <td>王琳</td>
+            <td>差旅 <span class="mut">· 交通 3 张</span></td>
+            <td class="amt" style="text-align:right"><b>¥1,286.50</b></td>
+            <td><span class="tag t-appr">✓ 已审批</span></td>
+            <td class="next"><span class="warn">待打款</span><br><span class="mut">打款需动作端点</span></td>
+            <td class="act"><span class="lkbtn">查看</span><span class="lkbtn" style="background:#f6ffed;font-weight:500">✓ 确认打款…</span></td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td><span class="kid">EXP-2026-0617</span></td>
+            <td class="nm"><span class="ico i-fp">🍚</span> Q3 团队建设聚餐</td>
+            <td>李强</td>
+            <td>餐饮</td>
+            <td class="amt" style="text-align:right">¥860.00</td>
+            <td><span class="tag t-sub">⏳ 已提交</span></td>
+            <td class="next"><span class="warn">待主管审批</span><br><span class="mut">≤¥1000 档</span></td>
+            <td class="act"><span class="lkbtn">通过</span><span class="lkbtn" style="color:#d4380d">驳回…</span><span class="lkbtn">查看</span></td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td><span class="kid">EXP-2026-0616</span></td>
+            <td class="nm"><span class="ico i-bl">💻</span>外设采购·显示器</td>
+            <td>赵敏</td>
+            <td>办公 <span class="mut">· 2 张明细</span></td>
+            <td class="amt" style="text-align:right">¥5,799.00</td>
+            <td><span class="tag t-sub">⏳ 已提交</span></td>
+            <td class="next"><span class="warn">待财务负责人</span><br><span class="mut">>¥5000 档</span></td>
+            <td class="act"><span class="lkbtn">通过</span><span class="lkbtn" style="color:#d4380d">驳回…</span></td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td><span class="kid">EXP-2026-0412</span></td>
+            <td class="nm"><span class="ico i-bl">✈</span>4月差旅·北京</td>
+            <td>王琳</td>
+            <td>差旅</td>
+            <td class="amt" style="text-align:right">¥2,340.00</td>
+            <td><span class="tag t-paid">¥ 已打款</span></td>
+            <td class="next mut">闭环 <span class="mut">· 06-12 14:22</span></td>
+            <td class="act"><span class="lkbtn">查看</span><span class="lkbtn">凭证</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="foot"><span>共 66 条</span><div class="pg"><i>‹</i><i class="on">1</i><i>2</i><i>3</i></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="mask"></div>
+<aside class="drawer">
+  <div class="dhead"><span>报销单 EXP-2026-0618</span><span class="dx">✕</span></div>
+  <div class="dbody">
+    <div class="kv"><span class="k">申请人</span><span>王琳 · 行政部</span></div>
+    <div class="kv"><span class="k">金额</span><span style="font-size:18px;font-weight:600">¥1,286.50</span><span style="color:rgba(0,0,0,.45);margin-left:6px;font-size:12px">= 明细合计（服务端计算）</span></div>
+    <div class="kv"><span class="k">附件</span><span>3 份凭证</span></div>
+    <div class="steps">
+      <div class="stp done"><div class="r"><div class="c"></div><div class="bar"></div></div><div class="t">已提交 <small>王琳 · 06-18 09:12</small></div></div>
+      <div class="stp done"><div class="r"><div class="c"></div><div class="bar"></div></div><div class="t">主管审批通过 <small>陈国 · 06-18 14:05 · ≤¥1000→部门负责人（>1000 时）</small></div></div>
+      <div class="stp done"><div class="r"><div class="c"></div><div class="bar"></div></div><div class="t">部门负责人通过 <small>周敏 · 06-18 16:40 · 意见：同意</small></div></div>
+      <div class="stp cur"><div class="r"><div class="c"></div></div><div class="t" style="color:#fa8c16;font-weight:500">待财务打款 <small>动作端点 confirmPayout（§4.8）</small></div></div>
+    </div>
+    <div class="stitle">附件（3）</div>
+    <div class="fcard"><div class="fic">🧾</div><div class="fmeta"><b>高铁票-去程.pdf</b><small>553.00 元 · 06-11</small></div><span class="lk">下载</span></div>
+    <div class="fcard"><div class="fic">🏨</div><div class="fmeta"><b>酒店发票.jpg</b><small>486.50 元 · 06-12</small></div><span class="lk">下载</span></div>
+    <div class="fcard"><div class="fic">🚕</div><div class="fmeta"><b>市内交通.pdf</b><small>247.00 元 · 3 张</small></div><span class="lk">下载</span></div>
+    <div class="hint">🔒 写保护生效：金额在 SUBMITTED 后不可改（ExpenseClaimWriteHook v0.47）· 明细与附件只读</div>
+  </div>
+  <div class="dfoot">
+    <button class="btn">驳回…</button>
+    <button class="btn grn">✓ 确认打款（PAYROLL 通道）</button>
+  </div>
+</aside>
+
+<div class="note">
+  <b>幕三 · 发布即交付，业务人员在真实系统里走完闭环（界面零代码生成，动作走逃逸端点）</b>
+  <ol>
+    <li><b>状态管道置顶</b>：四个阶段卡片即过滤器（点「已提交 4」= 只看待审批）；超时单据标红提示（超 24h 2 单）——审批催办不用另建报表；</li>
+    <li><b>下一步列</b>：每行明示「现在该谁、做什么」——待主管审批（≤¥1000 档）/ 待财务负责人（>¥5000 档）——报销路由规则（case §1.7）直接体现在数据上，用户不用记规则；</li>
+    <li><b>审批人视角 Tab</b>：「待我审批 3」与「我提交的 7」分行——行级 ACL（owner_or_approver）保证各自只见其单；</li>
+    <li><b>打款必须走动作端点</b>：详情抽屉「✓ 确认打款（PAYROLL 通道）」调 <code>…/actions/confirmPayout</code>（状态+凭证同事务），<b>不是</b>改 status 字段；写保护提示条讲清「金额不可改」的保障；</li>
+    <li><b>列表/看板/日历</b>三视图与「我提交的/待我审批」视角 Tab 属 v1.1（UIF-008 动作按钮自动化后的自然延伸），MVP 先给列表+管道。</li>
+  </ol>
+</div>
+</body>
+</html>

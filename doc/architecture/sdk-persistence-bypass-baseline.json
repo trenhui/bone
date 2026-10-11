@@ -19,7 +19,9 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java",
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
     "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java",
-    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java"
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcActionDefMaterializeAdapter.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ChildAmountAggregator.java"
   ],
   "debugToolExemptions": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java"
@@ -39,6 +41,8 @@
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java": "SELECT tenant_id, COUNT(*) ... GROUP BY tenant_id —— 语义本身是「跨租户分租户统计」（@Scheduled 无租户上下文）；SDK 聚合通道是租户作用域的，直接用会被 fail-closed 拦下。要么走 disableTenantFilter() 受控跨租户出口（须平台授权+审计），要么 SDK 另提供平台级跨租户指标 API。属设计缺口，非单纯表达式能力不足",
     "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java": "跨 4 张表（iam_account/meta_entity/int_flow/exts_plugin_version，跨模块）全库级 COUNT(*)，且异构软删（deleted 与 is_active 两种语义）+ graceful degradation 逐表 try/catch 计 0；SDK 聚合是单表+租户作用域，无法一次表达跨表全库概览",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java": "@Profile(\"dev\") 临时调试工具，仅 dev 环境启动期运行",
-    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java": "RuntimeWriteHook SPI 演示（Directus Filter 分层）：server 层钩子避免注入 JdbcRuntimeRecordService 造成构造循环（service 持有 hooks 列表），用同源 NamedParameterJdbcTemplate 直查单据当前状态做业务阻断；属结构性技术豁免，随钩子机制转 v1.1 官方 SPI 时收敛。"
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java": "RuntimeWriteHook SPI 演示（Directus Filter 分层）：server 层钩子避免注入 JdbcRuntimeRecordService 造成构造循环（service 持有 hooks 列表），用同源 NamedParameterJdbcTemplate 直查单据当前状态做业务阻断；属结构性技术豁免，随钩子机制转 v1.1 官方 SPI 时收敛。",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcActionDefMaterializeAdapter.java": "模板动作→实体动作定义物化（迁移 0040）：写 meta_entity_action_def 引擎专属表（与已豁免的 JdbcRuntimeActionDefRepository 同依据——该表随 0032 迁移创建、未纳入 SDK 聚合面，表名/列固定）；UPSERT 以 uk_action_tenant_entity_code(tenant_id,entity_code,action_code) 去重，重复实例化不撞唯一键。SDK 静态 Repository 无法表达「模板→实体动作定义」的批量展开写，属引擎内部目录写通道。",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ChildAmountAggregator.java": "子表明细金额 SUM 聚合回填（G10 配套，报销头表金额=明细合计服务端计算）：动态物理子表名（t_{childEntityCode}）+ 审批链冻结态直查阻断，属引擎写钩子上下文。与已豁免的 ExpenseClaimWriteHook 同口径（namedparam 直查单据状态做业务阻断）；回填本身仍走 JdbcRuntimeRecordService#update 公共写链（校验/乐观锁/审计复用）。SDK 聚合通道是单表+租户作用域，无法表达「按场景约定匹配父子实体、动态子表名 SUM」的聚合，属结构性技术豁免。"
   }
 }

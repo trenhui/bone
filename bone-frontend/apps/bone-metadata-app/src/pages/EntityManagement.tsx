@@ -1,17 +1,18 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  Alert, Button, Breadcrumb, Card, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select,
-  Space, Table, Tag, Tree, message, Badge, Typography, Row, Col, Radio,
+  Alert, Button, Breadcrumb, Card, Dropdown, Empty, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select,
+  Space, Table, Tag, Tree, Tooltip, message, Badge, Typography, Row, Col, Radio,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
-  PlusOutlined, AppstoreOutlined, CopyOutlined, DatabaseOutlined, FolderOutlined, SearchOutlined,
-  ThunderboltOutlined, DownloadOutlined, ImportOutlined,
+  PlusOutlined, AppstoreOutlined, CopyOutlined, DatabaseOutlined, FolderOutlined,
+  ThunderboltOutlined, DownloadOutlined, ImportOutlined, DownOutlined, EditOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
 import { errorMessage, metadataEntityApi, metadataTemplateApi } from '../services/metadataApi';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, formatDate } from '@bone/shared-utils';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import ImportModelModal from '../components/ImportModelModal';
 import ImportTableModal from '../components/ImportTableModal';
@@ -21,7 +22,7 @@ import type {
   CopyEntityReq, CreateMetaEntityReq, MetaEntity, MetaTemplate, MetaTemplateField, UpdateMetaEntityReq,
 } from '../types';
 import { DELIVERY_MODE, ENTITY_STATUS, META_DELIVERY_GENERATIVE, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
-import { Auth, AuthButton } from '@bone/ui';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
@@ -68,14 +69,6 @@ const UiModeCard: React.FC<{
 const CODE_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 const CODE_RULE = { pattern: CODE_PATTERN, message: '以字母开头，仅字母/数字/下划线' };
 
-// ----- types -----
-
-interface EntityGroup {
-  key: string;
-  label: string;
-  entities: MetaEntity[];
-}
-
 // ----- Component -----
 
 const EntityManagement: React.FC = () => {
@@ -106,13 +99,30 @@ const EntityManagement: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MetaEntity | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  /** B2 批量结果可追溯：发布/删除的逐项失败明细（null=隐藏结果条） */
+  const [batchResult, setBatchResult] = useState<{
+    kind: 'publish' | 'delete'; successCount: number; failCount: number; errors: { id: string; reason: string }[];
+  } | null>(null);
   /** B2 命令面板（Ctrl+K 只做「跳实体」）：打开态 + 关键字 */
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdKeyword, setCmdKeyword] = useState('');
+  /**
+   * 命令面板高亮位：↑↓ 移动、Enter 打开（对标 VSCode / Linear / GitHub 快捷跳转）。
+   * 此前只能「回车打开第一条」，候选多于一条时用户无法选择第二、三条 ——
+   * 命令面板的价值恰恰在于快速定位到**指定**目标，不是永远取第一条。
+   */
+  const [cmdIndex, setCmdIndex] = useState(0);
+
+  /** 打开面板时重置高亮，避免沿用上次的位（候选集已变，位可能越界） */
+  useEffect(() => {
+    if (cmdOpen) setCmdIndex(0);
+  }, [cmdOpen, cmdKeyword]);
 
   // ----- 权限形态（UC-W8 / 2b F2）：scoped 模式下按应用角色收敛为只读；后端 403 永远兜底 -----
   const [myRole, setMyRole] = useState<string | undefined>(undefined);
   const canWrite = myRole !== 'viewer'; // undefined（平台管理员 / 非 scoped 视图）视为可写
+  /** 细粒度权限判定（复制等动作需按 METADATA_MODEL_WRITE 单独判断，不能仅靠角色 canWrite 近似） */
+  const { has } = usePermission();
 
   useEffect(() => {
     if (!appId) { setMyRole(undefined); return; }
@@ -154,6 +164,21 @@ const EntityManagement: React.FC = () => {
   const openPublishPreview = (record: MetaEntity) => {
     setPreviewEntity(record);
     setPreviewOpen(true);
+  };
+  /** 发布成功后前向引导（动线闭环）：发布预览的「打开数据 / 查看界面 / 继续加字段」回调。
+   *  列表页此前只传了 onPublished，导致这三个 CTA 被 `onOpenData &&` 守卫隐藏，
+   *  发布后无法一键进入下一环；详情页已接，此处补齐以统一两条发布入口的动线。 */
+  const previewGoData = () => {
+    if (previewEntity?.id) navigate(`/entities/${previewEntity.id}/data`);
+    setPreviewOpen(false);
+  };
+  const previewGoInterface = () => {
+    if (previewEntity?.id) navigate(`/entities/${previewEntity.id}?tab=ui`);
+    setPreviewOpen(false);
+  };
+  const previewGoAddField = () => {
+    if (previewEntity?.id) navigate(`/entities/${previewEntity.id}?tab=structure`);
+    setPreviewOpen(false);
   };
 
   // ----- 实体复制（UC-W2 流程 B） -----
@@ -208,6 +233,14 @@ const EntityManagement: React.FC = () => {
       message.error('复制失败，请检查编码/表名是否已被占用');
     }
   };
+
+  /**
+   * 当前是否有生效筛选（决定空态给「新建入口」还是「清除筛选」）。
+   * 关键词/类型/交付/状态/模块树任一非默认即算有 —— 与 load() 组装的查询参数同口径。
+   */
+  const hasActiveFilter =
+    keyword.trim() !== '' || typeFilter !== null || deliveryFilter !== null
+    || statusFilter !== null || selectedModule !== 'all';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -300,16 +333,14 @@ const EntityManagement: React.FC = () => {
     [appModules],
   );
 
-  // moduleId → 模块名（分组标题）与 moduleId → 应用树键（应用级过滤）
+  // moduleId → 模块名（「所属模块」列与新建表单预填共用）
   const moduleIndex = useMemo(() => {
     const labelById = new Map<string, string>();
-    const appKeyById = new Map<string, string>();
     appModules.forEach((a) =>
       a.modules.forEach((m) => {
         labelById.set(String(m.id), m.name);
-        appKeyById.set(String(m.id), `app-${a.appId}`);
       }));
-    return { labelById, appKeyById };
+    return { labelById };
   }, [appModules]);
 
   // 真实模块下拉选项（IAM 真源，替代原硬编码假选项）
@@ -321,32 +352,20 @@ const EntityManagement: React.FC = () => {
     [appModules],
   );
 
-  // ----- 模块分组（按实体真实 moduleId 归属；未归属进「未分组」）-----
-  const grouped = useMemo<EntityGroup[]>(() => {
-    const groups: Record<string, EntityGroup> = {
-      uncategorized: { key: 'uncategorized', label: '未分组', entities: [] },
-    };
-    moduleIndex.labelById.forEach((label, id) => {
-      groups[`mod-${id}`] = { key: `mod-${id}`, label, entities: [] };
-    });
-    data.forEach((entity) => {
-      const key = entity.moduleId != null ? `mod-${entity.moduleId}` : 'uncategorized';
-      (groups[key] ?? groups.uncategorized).entities.push(entity);
-    });
-    return Object.values(groups).filter((g) => g.entities.length > 0);
-  }, [data, moduleIndex]);
-
-  // 树选中语义：all=全部分组视图；app-<id>=该应用下模块的分组视图；mod-<id>=该模块平铺列表
-  const groupsToRender = useMemo(() => {
-    if (!selectedIsApp) return grouped;
-    return grouped.filter(
-      (g) => g.key === 'uncategorized' || moduleIndex.appKeyById.get(g.key.slice(4)) === selectedModule,
-    );
-  }, [grouped, selectedIsApp, selectedModule, moduleIndex]);
-  const moduleScopedData = useMemo(
-    () => (selectedIsModule ? data.filter((e) => `mod-${e.moduleId}` === selectedModule) : data),
-    [data, selectedIsModule, selectedModule],
-  );
+  // 树选中语义：all=全部；app-<id>=该应用下所有模块的对象；mod-<id>=该模块平铺列表
+  /** 应用级选中时需在客户端按 moduleId 收敛（后端 page 查询只认 mod- 前缀的 moduleId 过滤） */
+  const tableData = useMemo(() => {
+    if (selectedIsModule) return data;
+    if (selectedIsApp) {
+      const ids = new Set(
+        appModules
+          .filter((a) => `app-${a.appId}` === selectedModule)
+          .flatMap((a) => a.modules.map((m) => String(m.id))),
+      );
+      return data.filter((e) => e.moduleId != null && ids.has(String(e.moduleId)));
+    }
+    return data;
+  }, [data, selectedIsModule, selectedIsApp, selectedModule, appModules]);
 
   // ----- Modal handlers -----
   // 新建双入口（UC-W2）：全新 / 从平台模板（G3 实例化）
@@ -363,7 +382,18 @@ const EntityManagement: React.FC = () => {
     setSelectedTemplateId(null);
     setTplFields([]);
     form.resetFields();
-    form.setFieldsValue({ type: 0, deliveryMode: 1 });
+    // O3：左树已选中某个模块时，把归属自动带入表单——用户点的上下文就是他的意图，
+    // 再要求他重选一次是纯粹的重复劳动（此前 openCreate 无条件 resetFields）。
+    const preselectModuleId = isScoped
+      ? moduleId
+      : selectedIsModule
+        ? selectedModule.slice('mod-'.length)
+        : undefined;
+    form.setFieldsValue({
+      type: 0,
+      deliveryMode: 1,
+      ...(preselectModuleId ? { moduleId: preselectModuleId } : {}),
+    });
     setModalOpen(true);
     metadataTemplateApi.list().then((res) => {
       if (res.code === 200) setTemplates(res.data.filter((t) => t.status === 1));
@@ -495,6 +525,50 @@ const EntityManagement: React.FC = () => {
     }
   };
 
+  /**
+   * 行内「更多」菜单项：把复制 / 导出收进下拉，主操作区只留高频动作（详情 / 数据 / 发布 / 删除），
+   * 减少操作列换行与视觉噪音（对标 Ant Design Pro 行操作「更多」范式）。
+   * 复制按 METADATA_MODEL_WRITE 细粒度判定（避免仅靠角色 canWrite 近似导致越权可见）；
+   * 导出无权限限制，所有角色均可见。
+   */
+  const moreItems = (record: MetaEntity): MenuProps['items'] => {
+    const items: NonNullable<MenuProps['items']> = [];
+    // 编辑并入「打开」：两者都进对象工作区，两个入口进同一个地方是噪音主源（B1）。
+    // 这里保留「编辑」作为工作区直达的快捷方式，供习惯先改定义的老用户使用。
+    if (has(BonePermissionCodes.METADATA_MODEL_WRITE)) {
+      // 已发布对象原本的「编辑」按钮是 disabled（禁止改已发布结构），
+      // 收进下拉后必须**保留**这个约束，否则用户点进去填半天提交却被后端拒。
+      items.push(
+        record.status === META_ENTITY_PUBLISHED
+          ? { key: 'edit', icon: <EditOutlined />, label: '编辑定义（需先下线）', disabled: true }
+          : { key: 'edit', icon: <EditOutlined />, label: '编辑定义', onClick: () => openEdit(record) },
+      );
+    }
+    if (record.deliveryMode === META_DELIVERY_RUNTIME && record.status === META_ENTITY_PUBLISHED) {
+      items.push({
+        key: 'data',
+        icon: <DatabaseOutlined />,
+        label: '业务数据',
+        onClick: () => navigate(`/entities/${record.id}/data`),
+      });
+    }
+    if (has(BonePermissionCodes.METADATA_MODEL_WRITE)) {
+      items.push({
+        key: 'copy',
+        icon: <CopyOutlined />,
+        label: '复制',
+        onClick: () => openCopy(record),
+      });
+    }
+    items.push({
+      key: 'export',
+      icon: <DownloadOutlined />,
+      label: '导出模型 JSON',
+      onClick: () => handleExport(record),
+    });
+    return items;
+  };
+
   // ----- 表格列定义 -----
   // ⚠ 本表含 ellipsis 列 → antd 自动启用 tableLayout:fixed。容器不足时无 width 的列会被压成 0 宽，
   // 其 nowrap 内容会溢出叠加到相邻列（实测「名称」叠到「编码」）。故名称列必须给 width+ellipsis，
@@ -517,6 +591,20 @@ const EntityManagement: React.FC = () => {
       ),
     },
     { title: '编码', dataIndex: 'code', key: 'code', width: 140, ellipsis: true },
+    {
+      // 模块列：并表后（B3）模块归属必须可见——此前它是卡片分组标题，
+      // 改成单表后若不补这一列，用户在「全部模型」视图就不知道对象归属哪个模块。
+      title: '所属模块',
+      key: 'module',
+      width: 130,
+      ellipsis: true,
+      render: (_, record) => {
+        const label = record.moduleId != null ? moduleIndex.labelById.get(String(record.moduleId)) : undefined;
+        return label
+          ? <Text style={{ fontSize: 12 }}>{label}</Text>
+          : <Text type="secondary" style={{ fontSize: 12 }}>未分组</Text>;
+      },
+    },
     { title: '表名', dataIndex: 'tableName', key: 'tableName', width: 140, ellipsis: true },
     {
       title: '类型',
@@ -560,71 +648,49 @@ const EntityManagement: React.FC = () => {
       ),
     },
     {
+      // 运维型清单的必备列（B4）：此前「找最近改的/谁动的」只能靠 ⌘K 跳转，
+      // 列表本身不支持，而巡检/交接场景恰恰高频问这个问题。
+      title: '最近更新',
+      key: 'updatedAt',
+      width: 110,
+      render: (_, record) => (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {record.updatedAt ? formatDate(record.updatedAt) : '—'}
+        </Text>
+      ),
+    },
+    {
+      // 操作列收敛为 [打开][发布][删除][更多▾]（B1）：
+      // 「编辑」并入「更多」（两者都进对象工作区）；「数据」仅对已发布 RUNTIME 对象出现，
+      // 移入「更多」可避免它与「打开」并列造成误点不同页签。删除保留 inline + Popconfirm，
+      // 不塞进下拉——antd Dropdown 内嵌 Popconfirm 会在确认时关闭菜单造成竞态。
       title: '操作',
       key: 'action',
-      width: 340,
-      render: (_, record) =>
-        canWrite ? (
-          <Space size={2} wrap>
-            <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="link" size="small" onClick={() => openEdit(record)} disabled={record.status === 1}>
-              编辑
+      width: 170,
+      render: (_, record) => (
+        <Space size={2}>
+          <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
+            打开
+          </Button>
+          {record.status === 0 && (
+            <AuthButton code={BonePermissionCodes.METADATA_PUBLISH} type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => openPublishPreview(record)}>
+              发布
             </AuthButton>
-            <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
-              字段
-            </Button>
-            {record.deliveryMode === META_DELIVERY_RUNTIME && record.status === META_ENTITY_PUBLISHED && (
-              <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}/data`)}>
-                数据
-              </Button>
-            )}
-            <AuthButton
-              code={BonePermissionCodes.METADATA_MODEL_WRITE}
-              type="link"
-              size="small"
-              icon={<CopyOutlined />}
-              onClick={() => openCopy(record)}
-              title="复制定义与字段为新草稿"
-            >
-              复制
-            </AuthButton>
-            {record.status === 0 && (
-              <AuthButton code={BonePermissionCodes.METADATA_PUBLISH} type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => openPublishPreview(record)}>
-                发布
-              </AuthButton>
-            )}
-            <Button
-              type="link"
-              size="small"
-              icon={<DownloadOutlined />}
-              onClick={() => handleExport(record)}
-              title="导出模型 JSON（定义+字段+关系）"
-            >
-              导出
-            </Button>
-            {/* 删除挂在 Popconfirm 下：无权限时必须整体不渲染（<Auth> 包外层），
-                换成 AuthButton 会让 null 成为 Popconfirm children，antd cloneElement 抛异常 */}
+          )}
+          {canWrite && (
+            /* 删除挂在 Popconfirm 下：无权限时必须整体不渲染（<Auth> 包外层），
+               换成 AuthButton 会让 null 成为 Popconfirm children，antd cloneElement 抛异常 */
             <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
               <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
                 <Button type="link" size="small" danger disabled={record.status === 1}>删除</Button>
               </Popconfirm>
             </Auth>
-          </Space>
-        ) : (
-          <Space size={2} wrap>
-            <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
-              查看
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              icon={<DownloadOutlined />}
-              onClick={() => handleExport(record)}
-              title="导出模型 JSON（定义+字段+关系）"
-            >
-              导出
-            </Button>
-          </Space>
-        ),
+          )}
+          <Dropdown menu={{ items: moreItems(record) }} trigger={['click']}>
+            <Button type="link" size="small">更多 <DownOutlined /></Button>
+          </Dropdown>
+        </Space>
+      ),
     },
   ];
 
@@ -638,25 +704,36 @@ const EntityManagement: React.FC = () => {
         <Breadcrumb
           style={{ marginBottom: 8 }}
           items={[
-            { title: <a onClick={() => navigate('/apps')}>建模工作台</a> },
+            { title: <a onClick={() => navigate('/apps')}>模型设计</a> },
             { title: <a onClick={() => navigate(`/apps/${appId}/modules`)}>模块</a> },
-            { title: '实体' },
+            { title: '业务对象' },
           ]}
         />
       )}
 
-      {/* 页头：声明本页职责边界（消除「工作台 / 实体 / 运行时数据三个菜单到底管什么」的困惑） */}
+      {/* 页头：声明本页职责边界（消除「模型设计 / 业务对象 / 业务数据三个菜单到底管什么」的困惑） */}
       <div style={{ marginBottom: 12 }}>
         <Space size={8} wrap style={{ marginBottom: 2 }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>实体</Typography.Title>
+          <Typography.Title level={5} style={{ margin: 0 }}>业务对象</Typography.Title>
           <Tag color="blue" style={{ fontSize: 12 }}>模型清单（唯一真源）</Tag>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            共 {total} 个{isScoped ? '（当前模块）' : ''} · 全局待发布 {draftTotal ?? '…'}
+            共 {total} 个{isScoped ? '（当前模块）' : ''}
           </Text>
+          {/* 待发布数做成可点：概览数字若不能下钻，就只是个装饰。
+              此前写死成静态文本，用户看到「待发布 7」却要自己去点 Segmented 找「草稿」。 */}
+          {draftTotal != null && draftTotal > 0 && (
+            <Tag
+              color="processing"
+              style={{ fontSize: 12, cursor: 'pointer', marginInlineEnd: 0 }}
+              onClick={() => { setStatusFilter(0); setPage(1); }}
+            >
+              待发布 {draftTotal} · 点击筛选
+            </Tag>
+          )}
         </Space>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          在这里检索、筛选、批量发布、复制与维护实体。点「字段」进入实体工作区（结构 / 界面 / 数据 / 发布四页签）；
-          录入业务数据请用行内「数据」按钮或工作区的「数据」页签，它会锁定当前实体、不会看错数据。
+          在这里检索、筛选、批量发布、复制与维护业务对象。点「打开」进入对象工作区（结构 / 界面 / 数据 / 发布四页签）；
+          录入业务数据请用「更多 → 业务数据」或工作区的「数据」页签，它会锁定当前对象、不会看错数据。
         </Text>
       </div>
 
@@ -685,63 +762,102 @@ const EntityManagement: React.FC = () => {
           <Row gutter={[12, 12]} style={{ marginBottom: 16, marginLeft: 0, marginRight: 0 }}>
             <Col>
               <Input.Search
-                placeholder="搜索实体名称/编码"
+                placeholder="搜索对象名称/编码"
                 allowClear
                 style={{ width: 220 }}
                 onSearch={(v) => { setKeyword(v); setPage(1); }}
               />
             </Col>
             <Col>
-              <Select
-                style={{ width: 130 }}
-                placeholder="类型"
-                allowClear
-                value={typeFilter}
-                onChange={(v) => { setTypeFilter(v ?? null); setPage(1); }}
+              {/* 状态分段：对标 Pro 列表页把高频筛选提到一行，低频的类型/交付模式收进「更多筛选」 */}
+              <Segmented
+                value={statusFilter ?? -1}
+                onChange={(v) => { setStatusFilter(Number(v) === -1 ? null : Number(v)); setPage(1); }}
                 options={[
-                  { value: 0, label: '普通业务' },
-                  { value: 1, label: '主数据类' },
-                ]}
-              />
-            </Col>
-            <Col>
-              <Select
-                style={{ width: 120 }}
-                placeholder="交付模式"
-                allowClear
-                value={deliveryFilter}
-                onChange={(v) => { setDeliveryFilter(v ?? null); setPage(1); }}
-                options={[
-                  { value: 0, label: '手写界面' },
-                  { value: 1, label: '自动生成界面' },
-                ]}
-              />
-            </Col>
-            <Col>
-              <Select
-                style={{ width: 100 }}
-                placeholder="状态"
-                allowClear
-                value={statusFilter}
-                onChange={(v) => { setStatusFilter(v ?? null); setPage(1); }}
-                options={[
+                  { value: -1, label: '全部' },
                   { value: 0, label: '草稿' },
                   { value: 1, label: '已发布' },
                   { value: 2, label: '已下线' },
                 ]}
               />
             </Col>
+            <Col>
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'type',
+                      label: '类型',
+                      children: [
+                        { key: 'type-all', label: '全部类型' },
+                        { key: 'type-0', label: '普通业务' },
+                        { key: 'type-1', label: '主数据类' },
+                      ],
+                    },
+                    {
+                      key: 'delivery',
+                      label: '交付模式',
+                      children: [
+                        { key: 'dm-all', label: '全部模式' },
+                        { key: 'dm-0', label: '手写界面' },
+                        { key: 'dm-1', label: '自动生成界面' },
+                      ],
+                    },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'type-all') setTypeFilter(null);
+                    else if (key === 'type-0') setTypeFilter(0);
+                    else if (key === 'type-1') setTypeFilter(1);
+                    else if (key === 'dm-all') setDeliveryFilter(null);
+                    else if (key === 'dm-0') setDeliveryFilter(0);
+                    else if (key === 'dm-1') setDeliveryFilter(1);
+                    setPage(1);
+                  },
+                }}
+              >
+                <Button>
+                  更多筛选
+                  {(typeFilter !== null || deliveryFilter !== null) && (
+                    <Badge
+                      count={(typeFilter !== null ? 1 : 0) + (deliveryFilter !== null ? 1 : 0)}
+                      style={{ marginLeft: 4 }}
+                    />
+                  )}
+                </Button>
+              </Dropdown>
+            </Col>
+            <Col>
+              {/* ⌘K 快速跳转实体：显式露出提示，避免"藏起来的能力等于不存在" */}
+              <Tooltip title="按名称/编码/表名快速定位对象">
+                <Button onClick={() => setCmdOpen(true)}>⌘K 定位</Button>
+              </Tooltip>
+            </Col>
             <Col flex="auto" style={{ textAlign: 'right' }}>
               <Space>
-                <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
+                {/* 导入合并为一个下拉（B2）：此前工具栏有「从存量表导入」和「导入模型」两个按钮，
+                    稀释了右侧「新建」这个真正的主行动。两个都是低频的"导入既有资产"动作。 */}
                 {canWrite && (
-                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</AuthButton>
+                  <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
+                    <Dropdown
+                      menu={{
+                        items: [
+                          { key: 'table', icon: <DatabaseOutlined />, label: '从存量表导入' },
+                          { key: 'model', icon: <ImportOutlined />, label: '导入模型 JSON' },
+                        ],
+                        onClick: ({ key }) => {
+                          if (key === 'table') setTableImportOpen(true);
+                          else setImportOpen(true);
+                        },
+                      }}
+                    >
+                      <Button icon={<ImportOutlined />}>导入</Button>
+                    </Dropdown>
+                  </Auth>
                 )}
                 {canWrite && (
-                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</AuthButton>
-                )}
-                {canWrite && (
-                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</AuthButton>
+                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                    新建业务对象
+                  </AuthButton>
                 )}
               </Space>
             </Col>
@@ -754,6 +870,26 @@ const EntityManagement: React.FC = () => {
               style={{ marginBottom: 12 }}
               message="只读模式"
               description="您在该应用中的角色为「只读（viewer）」，仅可查看模型；建模与发布需要 ADMIN / DEVELOPER 角色（请联系应用管理员在 IAM 授予）。"
+            />
+          )}
+
+          {/* B2 批量结果条：失败必须可追溯——成功数 + 失败明细 List，替代 message+console 组合 */}
+          {batchResult && (
+            <Alert
+              type={batchResult.errors.length > 0 ? 'warning' : 'success'}
+              showIcon
+              closable
+              onClose={() => setBatchResult(null)}
+              style={{ marginBottom: 12 }}
+              message={`发布成功 ${batchResult.successCount} 个，失败 ${batchResult.errors.length} 个`}
+              description={
+                batchResult.errors.length > 0 ? (
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                    {batchResult.errors.slice(0, 5).map((e, i) => (
+                      <li key={i} style={{ fontSize: 12 }}>{String(e)}</li>
+                    ))}
+                  </ul>
+                ) : undefined}
             />
           )}
 
@@ -774,8 +910,8 @@ const EntityManagement: React.FC = () => {
                       if (failCount === 0) {
                         message.success(`已批量发布 ${successCount} 个实体`);
                       } else {
-                        message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
-                        errors.forEach((e) => console.warn('[batch-publish]', e));
+                        // 批量失败必须可追溯（B2）：结果条逐项展示，不留 console-only
+                        setBatchResult({ kind: 'publish', successCount, failCount, errors: errors.map((raw) => { const m = String(raw).match(/^id=([^:]+):\s*(.+)$/); return { id: m ? m[1] : String(raw), reason: m ? m[2] : String(raw) }; }) });
                       }
                     } else {
                       message.error(res.message || '批量发布失败');
@@ -801,8 +937,8 @@ const EntityManagement: React.FC = () => {
                       if (failCount === 0) {
                         message.success(`已批量删除 ${successCount} 个实体`);
                       } else {
-                        message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
-                        errors.forEach((e) => console.warn('[batch-delete]', e));
+                        // 删除失败同样可追溯（与发布同一条结果通道）
+                        setBatchResult({ kind: 'delete', successCount, failCount, errors: errors.map((raw) => { const m = String(raw).match(/^id=([^:]+):\s*(.+)$/); return { id: m ? m[1] : String(raw), reason: m ? m[2] : String(raw) }; }) });
                       }
                     } else {
                       message.error(res.message || '批量删除失败');
@@ -820,57 +956,70 @@ const EntityManagement: React.FC = () => {
             </Space>
           )}
 
-          {/* 模块分组展示（模块级选中时为客户端过滤的平铺列表） */}
-          {!selectedIsModule && groupsToRender.length > 0 ? (
-            groupsToRender.map((group) => (
-              <Card
-                key={group.key}
-                size="small"
-                title={
-                  <Space>
-                    <FolderOutlined />
-                    <span>{group.label}</span>
-                    <Tag>{group.entities.length}</Tag>
-                  </Space>
-                }
-                style={{ marginBottom: 12 }}
-                styles={{ body: { padding: 0 } }}
-              >
-                <Table
-                  rowKey="id"
-                  loading={loading}
-                  columns={columns}
-                  dataSource={group.entities}
-                  pagination={false}
-                  size="small"
-                  scroll={{ x: 1160 }}
-                  rowSelection={{
-                    selectedRowKeys,
-                    onChange: setSelectedRowKeys,
-                  }}
-                />
-              </Card>
-            ))
-          ) : (
-            <Table
-              rowKey="id"
-              loading={loading}
-              columns={columns}
-              dataSource={moduleScopedData}
-              scroll={{ x: 1160 }}
-              rowSelection={{
-                selectedRowKeys,
-                onChange: setSelectedRowKeys,
-              }}
-              pagination={{
-                current: page,
-                pageSize,
-                total,
-                showSizeChanger: true,
-                onChange: (p, ps) => { setPage(p); setPageSize(ps); },
-              }}
-            />
-          )}
+          {/* 单表替代分组卡片（B3）：
+              此前左树按模块过滤、右又把实体按模块拆成 N 张独立 Table（各自带表头/分页缺失），
+              同一维度表达两次且操作列重复渲染。现在左树做模块导航、右一张表 + 「所属模块」列，
+              分页/勾选/批量统一，避免「点两处得两个视图」的冗余。 */}
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={tableData}
+            scroll={{ x: 1300 }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            /* 空态区分「一个对象都没有」与「筛选后没匹配」：
+               前者要给建模入口，后者要给清除筛选 —— 同一个默认 Empty 会让用户
+               在「我还没建过模型」和「筛选条件写错了」之间反复猜。 */
+            locale={{
+              emptyText: (
+                <Empty description={null}>
+                  {hasActiveFilter ? (
+                    <Space direction="vertical" size={4}>
+                      <Text>没有符合条件的业务对象</Text>
+                      <Button
+                        onClick={() => {
+                          setKeyword('');
+                          setTypeFilter(null);
+                          setDeliveryFilter(null);
+                          setStatusFilter(null);
+                          setSelectedModule('all');
+                          setPage(1);
+                        }}
+                      >
+                        清除筛选条件
+                      </Button>
+                    </Space>
+                  ) : (
+                    <Space direction="vertical" size={4}>
+                      <Text>还没有任何业务对象</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        从模型设计页选模板起盘，或从此处空白建模
+                      </Text>
+                      <Space>
+                        {canWrite && (
+                          <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                            新建业务对象
+                          </AuthButton>
+                        )}
+                        <Button onClick={() => navigate('/apps')}>去模型设计</Button>
+                      </Space>
+                    </Space>
+                  )}
+                </Empty>
+              ),
+            }}
+            pagination={{
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: (t) => `共 ${t} 个业务对象`,
+              onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+            }}
+          />
         </div>
         {/* ↑ 右侧列表结束（flex row：左树 + 右表） */}
       </div>
@@ -1019,6 +1168,12 @@ const EntityManagement: React.FC = () => {
             name="moduleId"
             label="所属模块"
             rules={isScoped ? [] : [{ required: true, message: '请选择所属模块' }]}
+            extra={(
+              /* 上下文提示：左树已选中模块时告诉用户「已按上下文预选」，避免他以为是默认值 */
+              !isScoped && selectedIsModule
+                ? '已按左侧选中的模块预选，如需改归属可重新选择'
+                : undefined
+            )}
           >
             <Select
               disabled={isScoped}
@@ -1093,6 +1248,9 @@ const EntityManagement: React.FC = () => {
         entityName={previewEntity?.displayName}
         onClose={() => setPreviewOpen(false)}
         onPublished={load}
+        onViewInterface={previewGoInterface}
+        onOpenData={previewGoData}
+        onAddField={previewGoAddField}
       />
 
       {/* 逆向建模 Modal（UC-IMP：存量物理表 → 目录实体草稿） */}
@@ -1119,9 +1277,10 @@ const EntityManagement: React.FC = () => {
         }}
       />
 
-      {/* B2 命令面板：Ctrl+K 只做「跳实体」（PRD §5.4 规则 31；融合方案 §3.3.3） */}
+      {/* B2 命令面板：Ctrl+K 只做「跳实体」（PRD §5.4 规则 31；融合方案 §3.3.3）
+          键盘完备：↑↓ 移动 / Enter 打开 / Esc 关闭（antd Modal 自带 Esc，这里只需处理前后键）。 */}
       <Modal
-        title={<Space><Text strong>跳转实体</Text><Text type="secondary" style={{ fontSize: 12 }}>Ctrl / ⌘ + K · 实体搜索</Text></Space>}
+        title={<Space><Text strong>跳转对象</Text><Text type="secondary" style={{ fontSize: 12 }}>Ctrl / ⌘ + K · ↑↓ 选择 · Enter 打开</Text></Space>}
         open={cmdOpen}
         onCancel={() => { setCmdOpen(false); setCmdKeyword(''); }}
         footer={null}
@@ -1131,29 +1290,49 @@ const EntityManagement: React.FC = () => {
         <Input
           autoFocus
           allowClear
-          placeholder="输入实体名称 / 编码 / 表名，回车打开第一个匹配"
+          placeholder="输入对象名称 / 编码 / 表名，回车打开第一个匹配"
           value={cmdKeyword}
-          onChange={(e) => setCmdKeyword(e.target.value)}
-          onPressEnter={() => {
-            const first = cmdResults[0];
-            if (first) {
-              navigate(`/entities/${first.id}`);
-              setCmdOpen(false);
-              setCmdKeyword('');
+          onChange={(e) => { setCmdKeyword(e.target.value); setCmdIndex(0); }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setCmdIndex((i) => (cmdResults.length === 0 ? 0 : (i + 1) % cmdResults.length));
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setCmdIndex((i) => (cmdResults.length === 0 ? 0 : (i - 1 + cmdResults.length) % cmdResults.length));
+            } else if (e.key === 'Enter') {
+              // 高亮位优先（↑↓ 选中什么就打开什么）；未移动过则等价于第一条
+              e.preventDefault();
+              const target = cmdResults[cmdIndex] ?? cmdResults[0];
+              if (target) {
+                navigate(`/entities/${target.id}`);
+                setCmdOpen(false);
+                setCmdKeyword('');
+              }
             }
           }}
         />
         <div style={{ marginTop: 12, maxHeight: 320, overflow: 'auto' }}>
           {cmdResults.length === 0 ? (
-            <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '24px 0' }}>无匹配实体</Text>
+            <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '24px 0' }}>
+              {cmdKeyword.trim() ? `无匹配「${cmdKeyword.trim()}」的对象` : '输入名称 / 编码 / 表名开始搜索'}
+            </Text>
           ) : (
-            cmdResults.map((e) => (
+            cmdResults.map((e, i) => (
               <div
                 key={e.id}
                 onClick={() => { navigate(`/entities/${e.id}`); setCmdOpen(false); setCmdKeyword(''); }}
-                onMouseEnter={(ev) => { ev.currentTarget.style.background = '#f5f5f5'; }}
-                onMouseLeave={(ev) => { ev.currentTarget.style.background = ''; }}
-                style={{ padding: '8px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={() => setCmdIndex(i)}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  // 高亮跟随键盘位，鼠标悬停也会同步（业界通例）
+                  background: i === cmdIndex ? '#e6f4ff' : 'transparent',
+                }}
               >
                 <Space>
                   <Text strong>{e.displayName}</Text>
@@ -1167,6 +1346,11 @@ const EntityManagement: React.FC = () => {
             ))
           )}
         </div>
+        {cmdResults.length > 0 && (
+          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+            共 {cmdResults.length} 条（最多显示 8 条）
+          </Text>
+        )}
       </Modal>
     </div>
   );

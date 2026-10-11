@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BONE 模型设计 · 优化稿（深诊建议 A–F）</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
+    --purple:#722ed1; --purple-bg:#f9f0ff;
+    --green:#52c41a; --green-bg:#f6ffed; --green-border:#b7eb8f;
+    --orange:#fa8c16; --orange-bg:#fff7e6; --orange-border:#ffd591;
+    --red:#ff4d4f;
+    --gray:#8c8c8c; --gray-bg:#f5f5f5; --gray-border:#d9d9d9;
+    --text:#1f1f1f; --text-2:#595959; --text-3:#8c8c8c;
+    --bg:#f0f2f5; --card:#fff; --border:#e8e8e8;
+    --radius:6px; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
+    --shadow-lg:0 6px 16px rgba(0,0,0,.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:980px}
+  .app{display:flex;min-height:100vh}
+  .sider{width:200px;background:#001529;color:rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
+  .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;font-size:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .nav{padding:8px 0;flex:1}
+  .nav .grp{font-size:11px;color:rgba(255,255,255,.35);padding:12px 16px 4px;letter-spacing:1px}
+  .nav .item{padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:8px}
+  .nav .item:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .nav .item.on{color:#fff;background:var(--primary);font-weight:500}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:var(--shadow);z-index:2}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
+  .btn.primary.lg{padding:10px 22px;font-size:15px}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .content{padding:20px 24px;flex:1;overflow:auto}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+  .card h4{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
+  .pill.gray{background:var(--gray-bg);color:var(--text-2)}
+  .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
+  .pill.purple{background:var(--purple-bg);color:var(--purple)}
+  .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .tag-opt{display:inline-block;background:#000;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:1px 5px;margin-right:6px;vertical-align:middle}
+  .optnote{font-size:11px;color:var(--text-3)}
+  /* 优化点标注条 */
+  .banner{background:linear-gradient(90deg,#e6f4ff,#f9f0ff);border:1px solid var(--primary-border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#0958d9;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  /* Hero CTA */
+  .hero{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:16px}
+  .hero .cta-primary{flex:1 1 320px;background:var(--primary);color:#fff;border-radius:10px;padding:18px 22px;cursor:pointer;box-shadow:var(--shadow)}
+  .hero .cta-primary .t{font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px}
+  .hero .cta-primary .d{font-size:12.5px;opacity:.9;margin-top:6px}
+  .hero .cta-side{flex:1 1 320px;display:flex;gap:14px;flex-wrap:wrap}
+  .hero .cta-sm{flex:1 1 140px;border:1px solid var(--border);background:#fff;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s}
+  .hero .cta-sm:hover{border-color:var(--primary);box-shadow:var(--shadow)}
+  .hero .cta-sm .t{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .hero .cta-sm .d{font-size:12px;color:var(--text-2);margin-top:4px}
+  /* Stat actionable cards */
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{flex:1 1 200px;border:1px solid var(--border);background:#fff;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+  .stat .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--text-3)}
+  .stat .act{margin-top:6px;font-size:12px}
+  .stat .act a{color:var(--primary);cursor:pointer;font-weight:500}
+  /* fused recent+todo */
+  .fused{display:flex;gap:0;flex-wrap:wrap}
+  .fused .col{flex:1 1 280px;padding:0 12px}
+  .fused .col + .col{border-left:1px solid var(--border)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--border);border-radius:14px;font-size:12px;background:#fff;margin:3px 4px 3px 0;cursor:pointer}
+  .chip:hover{border-color:var(--primary);color:var(--primary)}
+  .chip code{font-size:11px;color:var(--text-3)}
+  .todo-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed #f0f0f0}
+  .todo-item .nm{font-weight:500}
+  /* template showcase */
+  .tmpl{display:flex;gap:14px;flex-wrap:wrap}
+  .tmpl .t{flex:1 1 180px;border:1px solid var(--border);border-radius:10px;padding:14px;background:#fff;cursor:pointer;transition:.2s}
+  .tmpl .t:hover{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-bg)}
+  .tmpl .t .k{font-size:24px}
+  .tmpl .t .nm{font-weight:600;margin:6px 0 4px;display:flex;align-items:center;gap:6px}
+  .tmpl .t .d{font-size:12px;color:var(--text-2)}
+  /* app context chips */
+  .scope{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .scope .sc{font-size:12px;padding:4px 12px;border-radius:16px;border:1px solid var(--gray-border);cursor:pointer}
+  .scope .sc.on{background:var(--primary-bg);border-color:var(--primary);color:var(--primary);font-weight:500}
+  .footer-note{font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sider">
+    <div class="logo"><span class="dot">B</span> BONE 元数据</div>
+    <div class="nav">
+      <div class="grp">设计域</div>
+      <div class="item on">◈ 模型设计</div>
+      <div class="item">▤ 业务对象</div>
+      <div class="item">▦ 业务数据</div>
+      <div class="grp">其他</div>
+      <div class="item">⚙ 应用管理</div>
+      <div class="item">⎘ 模板中心</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="header">
+      <div class="crumb"><b>模型设计</b> <span style="color:var(--text-3)">/ 建模入口</span></div>
+      <div class="header-actions">
+        <button class="btn">⌘K 搜索对象</button>
+        <button class="btn primary">＋ 新建模型</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <div class="banner">
+        <b>本图为「模型设计」优化稿</b>
+        <span>对标 NocoBase 首页 / Salesforce Setup / Retool 新建流，标注优化点 A–F（详见右侧说明）。</span>
+      </div>
+
+      <!-- A: 首屏一步直达，去掉二次选 app+module 弹窗 -->
+      <div class="hero">
+        <div class="cta-primary" onclick="alert('直接进实体编辑器（带默认应用/模块上下文，可中途改）；不再弹「选应用+模块」二次对话框')">
+          <div class="t">＋ 新建模型 <span style="font-size:12px;opacity:.85;font-weight:400">一键直达编辑器</span></div>
+          <div class="d">空白起步。默认落入你最近使用的应用/模块，编辑器中可随时调整归属——把"建模型"的摩擦从 3 步压到 1 步。</div>
+        </div>
+        <div class="cta-side">
+          <div class="cta-sm" onclick="alert('打开模板中心：行业模型列表 → 选一个 → 实例化（复制为独立副本）')">
+            <div class="t">📦 从模板</div>
+            <div class="d">开箱即用的行业模型，实例化即可录数据。</div>
+          </div>
+          <div class="cta-sm" onclick="alert('打开逆向建模向导：选物理表 → 生成草稿字段')">
+            <div class="t">🗄 导入存量表</div>
+            <div class="d">已有物理表反向生成模型草稿。</div>
+          </div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">A</span>原版"空白建模/导入"需先弹「选应用+模块」对话框再跳实体列表再开对话框（3 步）；优化后主 CTA 直接进编辑器，归属可在编辑器内改，符合 Retool/Airtable「Create → 编辑」最短路径。</div>
+
+      <!-- B: 概览指标变为可行动卡片（数字 + 下一步 CTA），闭环待办 -->
+      <div class="stats">
+        <div class="stat"><div class="n">71</div><div class="l">业务对象总数</div><div class="optnote">跨应用聚合（不受筛选影响）</div></div>
+        <div class="stat"><div class="n" style="color:var(--green)">58</div><div class="l">已发布</div><div class="act"><a onclick="alert('跳业务对象，状态=已发布筛选')">查看 ↗</a></div></div>
+        <div class="stat"><div class="n" style="color:var(--orange)">9</div><div class="l">待发布草稿</div><div class="act"><a onclick="alert('跳业务对象，状态=草稿 + 预选批量发布')">去发布这 9 个 ↗</a></div></div>
+      </div>
+      <div class="optnote"><span class="tag-opt">B</span>原版指标条是孤立数字；优化后每个数字带「下一步」召唤（查看/去发布），把"待办"变成可闭环的行动，对标 NocoBase/Airtable 首页"建议下一步"。</div>
+
+      <!-- C: 待办 + 最近 合并为一个区，消除"待发布草稿卡片网格 vs 业务对象清单"的视觉重复 -->
+      <div class="card">
+        <h4>继续 & 待办 <span class="pill gray">本区是入口，不是清单</span> <span class="optnote">清单真源 → <a style="color:var(--primary);cursor:pointer" onclick="alert('跳业务对象页')">业务对象 ↗</a></span></h4>
+        <div class="fused">
+          <div class="col">
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">最近编辑</div>
+            <span class="chip">费用报销 <code>expense_claim</code></span>
+            <span class="chip">客户 <code>customer</code></span>
+            <span class="chip">订单 <code>order</code></span>
+            <span class="chip">补货单 <code>replenishment</code></span>
+            <span class="chip">访客 <code>visitor</code></span>
+          </div>
+          <div class="col">
+            <div style class="font-size:12px;color:var(--text-2);margin-bottom:6px">待我发布（草稿）</div>
+            <div class="todo-item"><span class="pill orange">草稿</span><span class="nm">临时盘点表</span><a style="color:var(--primary);cursor:pointer;margin-left:auto" onclick="alert('打开发布预览')">发布 ↗</a></div>
+            <div class="todo-item"><span class="pill orange">草稿</span><span class="nm">设备台账扩展</span><a style="color:var(--primary);cursor:pointer;margin-left:auto" onclick="alert('打开发布预览')">发布 ↗</a></div>
+            <div class="todo-item"><span class="pill orange">草稿</span><span class="nm">合同附件</span><a style="color:var(--primary);cursor:pointer;margin-left:auto" onclick="alert('打开发布预览')">发布 ↗</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">C</span>原版"待发布业务对象"用卡片网格 + "查看全部业务对象"链接，与左侧菜单清单视觉重复、边界不清；优化后"最近 + 待办"合并为单一入口区，明确指向权威清单，消除"这俩啥区别"困惑。</div>
+
+      <!-- D: 模板市场前置展示（带场景），而非埋在磁贴 -->
+      <div class="card">
+        <h4>行业模板 <span class="pill purple">开箱即用</span> <span class="optnote">点任一卡片即实例化（复制为独立副本，与模板互不影响）</span></h4>
+        <div class="tmpl">
+          <div class="t" onclick="alert('实例化 费用报销 L1')"><div class="k">💰</div><div class="nm">费用报销 L1</div><div class="d">头+明细+类别主数据，含审批流。</div></div>
+          <div class="t" onclick="alert('实例化 客户主数据')"><div class="k">👥</div><div class="nm">客户主数据</div><div class="d">标准主数据类实体骨架。</div></div>
+          <div class="t" onclick="alert('实例化 补货')"><div class="k">📦</div><div class="nm">库存补货</div><div class="d">补货单+入库动作示例。</div></div>
+          <div class="t" onclick="alert('打开模板中心')"><div class="k">➕</div><div class="nm">更多模板</div><div class="d">进入模板中心浏览全部。</div></div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">D</span>原版模板入口只是三磁贴之一，行业模型的"价值"未前置；优化后首屏直接展示场景卡，降低首次用户决策成本（对标 Airtable template gallery）。</div>
+
+      <!-- E: 应用上下文作为常驻筛选条（替代折叠在底部的"我的应用"） -->
+      <div class="card">
+        <h4>我的应用上下文 <span class="optnote">用于把"新建/列表"默认落到某应用（可跳过）</span></h4>
+        <div class="scope">
+          <span class="sc on">全部应用</span>
+          <span class="sc">办公域</span>
+          <span class="sc">供应链</span>
+          <span class="sc">访客系统</span>
+          <span class="sc" style="border-style:dashed">＋ 更多</span>
+        </div>
+        <div class="footer-note">E：原版"我的应用"收进底部 Collapse 低频区，让"我先选应用"的用户找不到浏览入口；优化后应用作为常驻上下文条，既支持默认落点，又保留"全部"无摩擦起步。无应用时的空状态改为引导"申请应用权限"或"先浏览示例对象"。</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

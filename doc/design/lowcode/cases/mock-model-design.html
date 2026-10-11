@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>模型设计 · 优化效果图</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  body { background:#f0f2f7; font-size:14px; color:#1f2329; }
+  .shell { display:flex; height:1024px; overflow:hidden; }
+  /* ---- 侧边导航 ---- */
+  .sider { width:208px; background:#fff; border-right:1px solid #e5e8ef; padding:16px 8px; flex-shrink:0; }
+  .logo { display:flex; align-items:center; gap:8px; padding:4px 12px 20px; }
+  .logo .mark { width:28px; height:28px; border-radius:6px; background:#1677ff; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .logo .name { font-weight:600; font-size:14px; }
+  .mgroup { color:#8a9099; font-size:12px; padding:10px 12px 6px; }
+  .mitem { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:6px; color:#4b5563; margin-bottom:2px; }
+  .mitem.act { background:#e8f1ff; color:#1677ff; font-weight:600; }
+  .mitem.sub { padding-left:32px; }
+  .mitem .ic { width:14px; text-align:center; font-size:13px; color:inherit; opacity:.85; }
+  /* ---- 主区 ---- */
+  .main { flex:1; overflow:hidden; padding:20px 28px; position:relative; }
+  .crumb { color:#8a9099; font-size:13px; margin-bottom:10px; }
+  .crumb b { color:#1f2329; font-weight:500; }
+  .headrow { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .htitle { font-size:22px; font-weight:700; display:flex; align-items:center; gap:10px; }
+  .hdesc { color:#6b7280; margin-top:6px; max-width:760px; line-height:1.55; }
+  .hdesc .k { color:#1677ff; font-weight:600; }
+  .btn { display:inline-flex; align-items:center; gap:6px; border-radius:6px; padding:7px 15px; font-size:14px; cursor:pointer; border:1px solid #d9dce3; background:#fff; color:#1f2329; }
+  .btn.primary { background:#1677ff; border-color:#1677ff; color:#fff; font-weight:500; }
+  .btn.sm { padding:4px 10px; font-size:13px; border-radius:5px; }
+  .btn.dashed { border-style:dashed; }
+  .hbtns { display:flex; gap:10px; flex-shrink:0; }
+  /* 步骤带 */
+  .steps { display:flex; align-items:center; gap:0; background:#fff; border:1px solid #e5e8ef; border-radius:10px; padding:12px 20px; margin-bottom:14px; }
+  .step { display:flex; align-items:center; gap:10px; }
+  .step .no { width:22px; height:22px; border-radius:50%; background:#e8f1ff; color:#1677ff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step .t { font-weight:600; font-size:13px; }
+  .step .d { color:#8a9099; font-size:12px; margin-top:2px; }
+  .step-arrow { color:#c3c9d4; margin:0 22px; font-size:14px; }
+  /* 指标条 */
+  .kpis { display:flex; gap:14px; margin-bottom:14px; }
+  .kpi { flex:1; background:#fff; border:1px solid #e5e8ef; border-radius:10px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+  .kpi:hover { border-color:#1677ff33; box-shadow:0 2px 8px #1677ff14; }
+  .kpi .v { font-size:26px; font-weight:700; }
+  .kpi .l { color:#6b7280; font-size:13px; margin-top:2px; }
+  .kpi .go { color:#1677ff; font-size:12px; }
+  .kpi.hl .v { color:#fa8c16; }
+  /* 主体两栏 */
+  .cols { display:flex; gap:14px; align-items:flex-start; }
+  .col-l { flex:1.9; display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .col-r { flex:1; display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .card { background:#fff; border:1px solid #e5e8ef; border-radius:10px; padding:16px 18px; }
+  .chead { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .chead .t { font-size:15px; font-weight:600; }
+  .chead .n { color:#8a9099; font-weight:400; font-size:13px; margin-left:6px; }
+  .chead a { color:#1677ff; font-size:13px; text-decoration:none; }
+  /* 继续建模 chips */
+  .chips { display:flex; gap:10px; }
+  .chip { flex:1; border:1px solid #e5e8ef; border-radius:8px; padding:10px 12px; cursor:pointer; }
+  .chip:hover { border-color:#1677ff55; }
+  .chip .cn { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
+  .chip .cm { color:#8a9099; font-size:12px; margin-top:4px; display:flex; justify-content:space-between; }
+  .chip .lt { color:#fa8c16; font-size:11px; border:1px solid #ffd591; background:#fff7e6; padding:0 6px; border-radius:8px; }
+  /* 草稿卡网格 */
+  .dgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .dcard { border:1px solid #e5e8ef; border-radius:8px; padding:12px 14px; cursor:pointer; }
+  .dcard:hover { border-color:#1677ff66; box-shadow:0 2px 8px #1677ff12; }
+  .dcard .dn { font-weight:600; display:flex; align-items:center; justify-content:space-between; }
+  .dcard .dn .cd { color:#8a9099; font-weight:400; font-size:12px; font-family:Menlo,monospace; }
+  .dcard .dm { color:#8a9099; font-size:12px; margin:6px 0 10px; }
+  .dcard .df { display:flex; align-items:center; justify-content:space-between; }
+  .dcard .tm { color:#b0b6c0; font-size:12px; }
+  .tag { display:inline-flex; align-items:center; gap:4px; font-size:12px; padding:1px 8px; border-radius:4px; line-height:20px; }
+  .tag.draft { color:#1677ff; background:#e8f1ff; }
+  .tag.pub { color:#389e0d; background:#f0f9eb; }
+  .tag.auto { color:#722ed1; background:#f5effa; }
+  .tag.hand { color:#4b5563; background:#f0f1f4; }
+  .dot { width:6px; height:6px; border-radius:50%; background:currentColor; display:inline-block; }
+  /* 右栏磁贴 */
+  .tiles { display:flex; flex-direction:column; gap:10px; }
+  .tile { display:flex; gap:12px; align-items:flex-start; border:1px solid #e5e8ef; border-radius:8px; padding:12px 14px; cursor:pointer; }
+  .tile:hover { border-color:#1677ff66; }
+  .tile .ic { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:17px; color:#fff; flex-shrink:0; }
+  .tile .tt { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
+  .tile .td { color:#8a9099; font-size:12px; margin-top:3px; line-height:1.5; }
+  .reco { font-size:11px; color:#fa8c16; border:1px solid #ffd591; background:#fff7e6; padding:0 6px; border-radius:8px; }
+  /* 右栏应用列表 */
+  .app { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; border-bottom:1px solid #f0f1f4; }
+  .app:last-child { border-bottom:none; }
+  .app .an { font-weight:600; font-size:13px; }
+  .app .ad { color:#8a9099; font-size:12px; margin-top:2px; }
+  .app a { color:#1677ff; font-size:13px; text-decoration:none; }
+  /* ---- 弹窗 ---- */
+  .mask { position:absolute; inset:0; background:rgba(15,23,42,.42); display:flex; align-items:center; justify-content:center; }
+  .modal { width:560px; background:#fff; border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.22); overflow:hidden; }
+  .mhead { padding:18px 22px 0; display:flex; align-items:center; justify-content:space-between; }
+  .mhead .t { font-size:17px; font-weight:700; }
+  .mhead .x { color:#8a9099; font-size:16px; }
+  .mbody { padding:14px 22px 4px; }
+  .form-row { margin-bottom:14px; }
+  .lbl { font-size:13px; color:#4b5563; margin-bottom:6px; display:block; }
+  .lbl .req { color:#ff4d4f; margin-right:3px; }
+  .inp { width:100%; border:1px solid #d9dce3; border-radius:6px; padding:8px 12px; font-size:14px; background:#fff; color:#b9bec7; }
+  .inp.filled { color:#1f2329; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .uimode { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:2px; }
+  .ucard { border:1.5px solid #d9dce3; border-radius:8px; padding:12px 14px; }
+  .ucard.sel { border-color:#1677ff; background:#f0f6ff; }
+  .ucard .ut { font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; }
+  .ucard .sel-dot { margin-left:auto; width:14px; height:14px; border-radius:50%; border:1px solid #d9dce3; background:#fff; }
+  .ucard.sel .sel-dot { border-color:#1677ff; border-width:4px; }
+  .ucard .ud { color:#8a9099; font-size:12px; margin-top:5px; line-height:1.5; }
+  .mfoot { padding:14px 22px 18px; display:flex; justify-content:flex-end; gap:10px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sider">
+    <div class="logo"><div class="mark">B</div><div class="name">Bone Admin</div></div>
+    <div class="mitem"><span class="ic">◧</span>首页仪表盘</div>
+    <div class="mgroup">业务建模</div>
+    <div class="mitem sub act"><span class="ic">▣</span>模型设计</div>
+    <div class="mitem sub"><span class="ic">▤</span>业务对象</div>
+    <div class="mitem sub"><span class="ic">▦</span>业务数据</div>
+    <div class="mgroup">平台管理</div>
+    <div class="mitem"><span class="ic">👥</span>组织与成员</div>
+    <div class="mitem"><span class="ic">🛡</span>权限与角色</div>
+    <div class="mitem"><span class="ic">⚙</span>系统管理</div>
+  </aside>
+  <section class="main">
+    <div class="crumb">业务建模 / <b>模型设计</b></div>
+    <div class="headrow">
+      <div>
+        <div class="htitle">模型设计</div>
+        <div class="hdesc">在这里<b>开始一次建模</b>并<b>推进发布</b>：选择起点 → 定义结构与界面 → 发布交付。对象清单与数据管理分别在 <span class="k">业务对象</span>、<span class="k">业务数据</span>。</div>
+      </div>
+      <div class="hbtns">
+        <div class="btn">◈ 从场景模板开始</div>
+        <div class="btn primary">＋ 新建业务对象</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><div class="no">1</div><div><div class="t">选择起点</div><div class="d">模板 / 空白 / 存量表导入</div></div></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><div class="no">2</div><div><div class="t">定义结构与界面</div><div class="d">对象工作区四页签</div></div></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><div class="no">3</div><div><div class="t">发布交付</div><div class="d">预览 → 发布 → 录数据</div></div></div>
+      <div style="margin-left:auto;color:#8a9099;font-size:12px;">数据更新于今天 08:55</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div><div class="v">337</div><div class="l">业务对象总数</div></div><div class="go">进清单 →</div></div>
+      <div class="kpi"><div><div class="v">291</div><div class="l">已发布</div></div><div class="go">查看 →</div></div>
+      <div class="kpi hl"><div><div class="v">46</div><div class="l">待发布草稿</div></div><div class="go">去发布 →</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="col-l">
+        <div class="card">
+          <div class="chead"><div class="t">继续建模<span class="n">最近编辑</span></div></div>
+          <div class="chips">
+            <div class="chip"><div class="cn">报销单 <span class="lt">草稿</span></div><div class="cm"><span>人事系统 · 费用</span><span>今天 14:32</span></div></div>
+            <div class="chip"><div class="cn">客户主数据 <span class="lt">草稿</span></div><div class="cm"><span>营销平台 · 客户</span><span>昨天 18:07</span></div></div>
+            <div class="chip"><div class="cn">固定资产</div><div class="cm"><span>行政系统 · 资产</span><span>10-08</span></div></div>
+          </div>
+        </div>
+        <div class="card" style="flex:1;">
+          <div class="chead"><div class="t">待发布草稿<span class="n">46</span></div><a>查看全部业务对象 →</a></div>
+          <div class="dgrid">
+            <div class="dcard">
+              <div class="dn">报销单<span class="cd">biz_expense</span></div>
+              <div class="dm"><span class="tag auto"><span class="dot"></span>自动生成界面</span> · biz_expense · 18 字段</div>
+              <div class="df"><span class="tag draft"><span class="dot"></span>草稿</span><span class="df" style="gap:8px;"><span class="tm">今天 14:32</span><span class="btn sm primary">发布</span></span></div>
+            </div>
+            <div class="dcard">
+              <div class="dn">客户主数据<span class="cd">md_customer</span></div>
+              <div class="dm"><span class="tag hand"><span class="dot"></span>手写界面</span> · md_customer · 24 字段</div>
+              <div class="df"><span class="tag draft"><span class="dot"></span>草稿</span><span class="df" style="gap:8px;"><span class="tm">昨天 18:07</span><span class="btn sm primary">发布</span></span></div>
+            </div>
+            <div class="dcard">
+              <div class="dn">固定资产<span class="cd">md_asset</span></div>
+              <div class="dm"><span class="tag auto"><span class="dot"></span>自动生成界面</span> · md_asset · 11 字段</div>
+              <div class="df"><span class="tag draft"><span class="dot"></span>草稿</span><span class="df" style="gap:8px;"><span class="tm">10-08</span><span class="btn sm primary">发布</span></span></div>
+            </div>
+            <div class="dcard">
+              <div class="dn">采购订单<span class="cd">biz_po</span></div>
+              <div class="dm"><span class="tag auto"><span class="dot"></span>自动生成界面</span> · biz_po · 15 字段</div>
+              <div class="df"><span class="tag draft"><span class="dot"></span>草稿</span><span class="df" style="gap:8px;"><span class="tm">10-07</span><span class="btn sm primary">发布</span></span></div>
+            </div>
+            <div class="dcard">
+              <div class="dn">供应商准入<span class="cd">md_vendor</span></div>
+              <div class="dm"><span class="tag hand"><span class="dot"></span>手写界面</span> · md_vendor · 9 字段</div>
+              <div class="df"><span class="tag draft"><span class="dot"></span>草稿</span><span class="df" style="gap:8px;"><span class="tm">10-06</span><span class="btn sm primary">发布</span></span></div>
+            </div>
+            <div class="dcard" style="border-style:dashed; display:flex; align-items:center; justify-content:center; color:#8a9099; min-height:96px;">还有 41 个草稿 · 查看全部 →</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-r">
+        <div class="card">
+          <div class="chead"><div class="t">快速开始</div></div>
+          <div class="tiles">
+            <div class="tile"><div class="ic" style="background:#1677ff;">◈</div><div><div class="tt">从场景模板开始 <span class="reco">推荐</span></div><div class="td">报销单、审批单等 12 个开箱模板，含字段与界面</div></div></div>
+            <div class="tile"><div class="ic" style="background:#52c41a;">＋</div><div><div class="tt">空白建模</div><div class="td">自定义全新业务对象，一步完成落点与命名</div></div></div>
+            <div class="tile"><div class="ic" style="background:#fa8c16;">⇪</div><div><div class="tt">从存量表导入</div><div class="td">反推现有数据表结构，生成对象与字段</div></div></div>
+          </div>
+        </div>
+        <div class="card" style="flex:1;">
+          <div class="chead"><div class="t">我的应用<span class="n">3 个应用 · 12 个模块</span></div></div>
+          <div class="app"><div><div class="an">人事系统</div><div class="ad">6 个模块 · 82 个对象</div></div><a>进入建模 →</a></div>
+          <div class="app"><div><div class="an">营销平台</div><div class="ad">4 个模块 · 131 个对象</div></div><a>进入建模 →</a></div>
+          <div class="app"><div><div class="an">行政系统</div><div class="ad">2 个模块 · 47 个对象</div></div><a>进入建模 →</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="mask">
+  <div class="modal">
+    <div class="mhead"><div class="t">新建业务对象</div><div class="x">✕</div></div>
+    <div class="mbody">
+      <div class="form-row grid2">
+        <div><label class="lbl"><span class="req">*</span>对象名称</label><div class="inp filled">报销申请</div></div>
+        <div><label class="lbl"><span class="req">*</span>对象编码</label><div class="inp filled">biz_expense_apply</div></div>
+      </div>
+      <div class="form-row grid2">
+        <div><label class="lbl"><span class="req">*</span>所属应用</label><div class="inp filled">人事系统 ▾</div></div>
+        <div><label class="lbl"><span class="req">*</span>所属模块</label><div class="inp filled">费用管理 ▾</div></div>
+      </div>
+      <div class="form-row">
+        <label class="lbl"><span class="req">*</span>界面怎么来（发布后可随时调整）</label>
+        <div class="uimode">
+          <div class="ucard sel"><div class="ut"><span class="dot" style="color:#722ed1;"></span>自动生成界面 <span class="sel-dot"></span></div><div class="ud">字段建好即得列表与表单，适合配置型对象，可后续微调</div></div>
+          <div class="ucard"><div class="ut"><span class="dot" style="color:#4b5563;"></span>手写界面 <span class="sel-dot"></span></div><div class="ud">复杂交互自行实现，自动界面不生成</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot"><div class="btn">取消</div><div class="btn primary">创建并进入结构</div></div>
+  </div>
+</div>
+</body>
+</html>

@@ -263,7 +263,7 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
           />
           <div style={{ margin: '12px 0 8px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              以上调整即时生效于「预览」以及发布后的运行时数据表（两者共用同一套列投影）。
+              以上调整即时生效于「预览」以及发布后的业务数据表（两者共用同一套列投影）。
               MVP 覆盖保存在浏览器本地（PRD §12.2 D2），团队级共享将在 v1.1 服务端化。
             </Text>
           </div>

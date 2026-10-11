@@ -4,7 +4,9 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import {
   Alert,
   Button,
+  Card,
   DatePicker,
+  Dropdown,
   Empty,
   Form,
   Input,
@@ -14,15 +16,17 @@ import {
   Segmented,
   Select,
   Space,
+  Steps,
   Switch,
   Table,
   Tag,
   Typography,
   message,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, DownOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { formatNumber } from '@bone/shared-utils';
 import {
   errorMessage,
   metadataEntityApi,
@@ -56,8 +60,64 @@ import {
   projectColumns,
   tableSizeOf,
 } from '../utils/columnProjection';
+import { listRecent } from '../utils/recent';
+import CommandPalette from '../components/CommandPalette';
 
 const { Text } = Typography;
+
+/**
+ * 数据生命周期步骤条 —— **由实体自身的状态机定义推导，不含任何硬编码业务状态**。
+ *
+ * 此前此处写死了报销场景的 7 步（模板起盘→发布→清单出现→录入→提交→审批→打款）与
+ * `EXPENSE_STATES=['DRAFT','SUBMITTED','APPROVED','PAID']`。本页是**通用** Runtime 数据页，
+ * 任何 RUNTIME 已发布实体都会进来 —— 一个「订单」实体也会被告知要「审批」「打款」，
+ * 且 `flowDoneOf` 对非报销状态返回 3，流程条恒停在「录入」，是纯装饰甚至误导。
+ *
+ * 现改为从 `GET /actions`（actionDefs：fromStatus/toStatus/label/sortOrder/escape）推导：
+ *   · 建模侧固定 2 步（模型已定义 / 已发布出物理表）—— 这是进入本页的**前置条件**，
+ *     由 selectedEntity.status 实测判定，不假设；
+ *   · 数据侧 = 状态机真实状态链；无状态机（escape-only 或无动作）时**不渲染**状态链，
+ *     只留建模侧 2 步，避免给无流程实体编造流程。
+ *
+ * 点击数据侧某状态步骤 → 把列表筛选切到该状态（q=status:<code>，后端为精确匹配，
+ * 见 RuntimeQuerySupport#buildFilterClause），步骤从「指示器」变成真正的下钻入口。
+ */
+const MODEL_STEPS = [
+  { key: 'model', label: '模型已定义' },
+  { key: 'publish', label: '已发布出物理表' },
+] as const;
+
+/**
+ * 推导状态链：从无入边的初始态出发，沿动作定义顺序跟进。
+ * 分叉时取 sortOrder 最小的出边（与行内「主推进动作」同一约定：后端先声明者为主线）。
+ * 带环 / 不可达时截断，保证渲染必然终止。
+ */
+function deriveStateChain(defs: RuntimeActionDef[]): string[] {
+  // escape 动作（打款等副作用动作）不进状态链：它们是某一态上的逃逸，不是流程的下一站
+  const edges = defs
+    .filter((d) => !d.escape && d.fromStatus && d.toStatus)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  if (edges.length === 0) return [];
+  const hasIncoming = new Set(edges.map((e) => e.toStatus!));
+  const start =
+    edges.find((e) => !hasIncoming.has(e.fromStatus!))?.fromStatus ?? edges[0].fromStatus!;
+  const chain: string[] = [];
+  let cursor: string | undefined = start;
+  while (cursor && !chain.includes(cursor)) {
+    chain.push(cursor);
+    cursor = edges.find((e) => e.fromStatus === cursor)?.toStatus ?? undefined;
+  }
+  return chain;
+}
+
+/** 状态码 → 中文标签：优先取 status 字段的 ENUM 码表，回落到状态码本身。 */
+function makeStatusLabelOf(fields: MetaField[]): (code?: string | null) => string {
+  const opts = parseEnumValues(fields.find((f) => f.code === 'status')?.enumValues);
+  return (code) => {
+    if (!code) return '—';
+    return opts.find((o) => o.code === code)?.label ?? code;
+  };
+}
 
 function recordId(row: RuntimeRecord): string {
   const id = row.id;
@@ -84,7 +144,7 @@ function renderEnumCell(value: unknown, field: MetaField): ReactNode {
 }
 
 export interface RuntimeDataManagementProps {
-  /** 嵌入实体详情「数据」Tab 时传入实体 id；为空则走独立全局「运行时数据」路由（带实体选择器） */
+  /** 嵌入实体详情「数据」Tab 时传入实体 id；为空则走独立全局「业务数据」路由（带对象选择器） */
   embeddedEntityId?: string | null;
 }
 
@@ -125,13 +185,36 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [diffOpen, setDiffOpen] = useState(false);
   /** W0a2：q/sort 接线 —— 单条件过滤（field:value）*/
   const [searchField, setSearchField] = useState<string | undefined>(undefined);
+  /**
+   * 关键字拆成「输入中」与「已生效」两份：
+   * `keyword` 是 load() 的依赖，若直接绑 onChange 则**每敲一个键就发一次请求**
+   * （实测：输入 8 位单号 = 8 次 page 查询 + 表格闪烁）。
+   * 业界标准做法（Ant Design Pro / GitHub 搜索）= 输入本地即时回显 + 停顿后生效。
+   */
+  const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   /** sort 契约：逗号分隔列名，`-` 前缀降序（RuntimePageQuery.parseSort） */
   const [sortField, setSortField] = useState<string | undefined>(undefined);
   const [sortDesc, setSortDesc] = useState(false);
+  /**
+   * 流程步骤下钻产生的筛选说明（非空时在工具栏上方显示「已按 X 筛选 · 清除」）。
+   * 后端 page 接口不回显生效筛选，前端若不留痕，用户点了步骤条却不知道列表被改了口径 ——
+   * 表现为「我明明没筛选，怎么只有 3 条」。
+   */
+  const [selectedFilterNote, setSelectedFilterNote] = useState<string | null>(null);
 
   /** 运行时状态机动作定义（按实体加载一次，按行 status 渲染可用按钮） */
   const [actionDefs, setActionDefs] = useState<RuntimeActionDef[]>([]);
+  /**
+   * 记录级状态链（元数据驱动，见 deriveStateChain）+ 中文标签解析。
+   * 列表高亮、抽屉步骤条、动作回显文案三处共用同一份真源，避免各算一遍导致漂移。
+   * ⚠ 声明必须在 actionDefs/fields 之后 —— useMemo 回调在渲染期求值，
+   *   早于声明引用会命中 TDZ（TS2448）。
+   */
+  const stateChain = useMemo(() => deriveStateChain(actionDefs), [actionDefs]);
+  const statusLabelOf = useMemo(() => makeStatusLabelOf(fields), [fields]);
+  /** 抽屉内记录的状态所处链位（-1 = 该态不在链上，如终态或 escape 后的态） */
+  const [editingStateIdx, setEditingStateIdx] = useState(-1);
   /**
    * page 级动作发现（Runtime §4.3.1 唯一形态）：`meta.allowedActionsByStatus[status]`。
    * 优先消费它；后端未返回 meta（旧版本 / 无动作实体）时降级到 listActions 全量拉取。
@@ -173,6 +256,19 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     [detailEntity, entities, entityCode],
   );
 
+  /**
+   * 最近操作实体（跨实体运营台快捷入口）：复用 localStorage 的「最近编辑」记录，
+   * 仅展示当前 RUNTIME 已发布候选中命中的实体，避免点开无物理表的实体。
+   * 让高频跨实体巡检的用户免重复在数百个候选里搜索（对标飞书/Notion「最近打开」）。
+   */
+  const recentForRuntime = useMemo(() => {
+    if (resolvedId) return [];
+    const codes = new Set(entities.map((e) => e.code));
+    return listRecent()
+      .filter((r) => codes.has(r.code))
+      .slice(0, 5);
+  }, [entities, resolvedId]);
+
   const writableFields = useMemo(
     () => fields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
     [fields],
@@ -205,7 +301,16 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     [writableFields, overlay],
   );
 
-  // 独立全局路由（/runtime、无 id）：加载 RUNTIME 已发布实体供选择器（W0-2：size 50→500，避免第 51 个后不可选）
+  /**
+   * 独立全局路由（/runtime、无 id）：加载 RUNTIME 已发布实体供选择器（W0-2：size 50→500，避免第 51 个后不可选）
+   *
+   * ⚠ 依赖必须是**原始字符串**而非 `searchParams` 对象：
+   *   useSearchParams() 每次渲染都返回新对象引用 ⇒ 把它放进依赖会让本 effect
+   *   在每次 setEntities 触发的重渲染后再次执行 ⇒ 请求 → setState → 重渲染 的无限循环。
+   *   实测症状：/api/v1/metadata/entities 被反复请求，且页面永远无法稳定，
+   *   下游依赖 selectedEntity 的 UI（生命周期步骤条）拿不到稳定值而不渲染。
+   */
+  const entityFromQuery = searchParams.get('entity');
   useEffect(() => {
     if (resolvedId) return;
     metadataEntityApi
@@ -217,16 +322,15 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         }
         const runtimePublished = normalizeRuntimePublished(res.data.records);
         setEntities(runtimePublished);
-        const fromQuery = searchParams.get('entity');
         // W0-1 / PRD D12：无 :id 且无 ?entity= 时**不替用户决策**——保持空态由用户显式选择。
         // 旧实现会 setEntityCode(runtimePublished[0].code)，即「/runtime 静默选中第一个实体」：
         // 用户以为在看自己选的实体，实际看到的是列表首项的数据（静默串实体）。
-        if (fromQuery && runtimePublished.some((e) => e.code === fromQuery)) {
-          setEntityCode(fromQuery);
+        if (entityFromQuery && runtimePublished.some((e) => e.code === entityFromQuery)) {
+          setEntityCode(entityFromQuery);
         }
       });
     // entityCode 仅用于首次为空时初始化，不应作为依赖
-  }, [searchParams, resolvedId]);
+  }, [entityFromQuery, resolvedId]);
 
   // 嵌入模式：按实体 id 拉详情得到 code（W0-1：/…/:id/data 绑定 :id，不再静默看错实体）
   useEffect(() => {
@@ -299,7 +403,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         message.error(errorMessage(res));
       }
     } catch {
-      message.error('加载运行时数据失败，请确认实体已发布且物理表存在');
+      message.error('加载业务数据失败，请确认实体已发布且物理表存在');
     } finally {
       setLoading(false);
     }
@@ -319,12 +423,52 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     load();
   }, [load]);
 
+  /**
+   * 关键字防抖：350ms 停顿后才把输入值提交为生效关键字（触发 load）。
+   * 回车 / 点搜索按钮走 onSearch 立即生效，不等防抖 —— 显式操作必须即时响应。
+   */
+  useEffect(() => {
+    if (keywordInput === keyword) return;
+    const t = setTimeout(() => {
+      setKeyword(keywordInput);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [keywordInput, keyword]);
+
+  /**
+   * 切换实体时清空全部筛选/排序/分页/视图态。
+   *
+   * 不重置的后果是真实可复现的脏读：按「单号」筛完 A 实体，切到 B 实体后
+   * q 仍是 A 的字段与值，而 B 里没有同名列 —— 后端直接 400「q 过滤字段未建模」，
+   * 页面只剩一条红色报错；即便同名字段能查，列表也是空的，用户会以为 B 没数据。
+   * 业界通例（同 Ant Design Pro 切换数据源）：换源即换查询条件。
+   */
+  useEffect(() => {
+    setSearchField(undefined);
+    setKeywordInput('');
+    setKeyword('');
+    setSortField(undefined);
+    setSortDesc(false);
+    setTrashMode(false);
+    setPage(1);
+    setPageSize(20);
+    setData([]);
+    setTotal(0);
+    setSelectedFilterNote(null);
+    // 首挂载时这几个值本就是初始值，setState 为同值 no-op，不产生额外请求
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityCode]);
+
   const openCreate = () => {
     setEditing(null);
     setEditingEtag(undefined);
     setConflict(false);
     setConflictDiff([]);
     form.resetFields();
+    // 新建即初始态（链上第 0 站，若该实体有状态机）
+    setEditingStateIdx(0);
+    setChildRows([]);
     // G10：预取全部 REFERENCE 字段选项（下拉回显/首选项）
     writableFields.forEach((f) => {
       if ((f.type || '').toUpperCase() === 'REFERENCE') loadReferenceOptions(f);
@@ -369,6 +513,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       formFields.forEach((f) => {
         if ((f.type || '').toUpperCase() === 'REFERENCE') loadReferenceOptions(f);
       });
+      // 打开已有记录：状态步骤条随其状态在**真实状态链**上的位置推进
+      setEditingStateIdx(stateChain.indexOf(String((latest as Record<string, unknown>).status ?? '')));
       setModalOpen(true);
     } catch {
       message.error('加载记录失败');
@@ -511,7 +657,19 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     }
   };
 
-  /** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
+  /** 明细合计（实时联动 C3）：对 amount 列（或唯一数值列）求和，供弹窗底栏展示 */
+const childSumOf = (rows: RuntimeChildRow[]): number =>
+  rows.reduce((sum, r) => {
+    const raw = r.amount ?? (Object.entries(r).find(([, v]) => typeof v === 'number')?.[1] as number | undefined);
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
+
+/**
+ * C3 交互细节：保存明细后，头部金额（amount）由后端 ChildAmountAggregator 事务内回填，
+ * 前端提示已联动 —— 用户不必再手改头表金额（业界标准：头表=明细合计，服务端计算为准）。
+ */
+/** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
   const handleChildrenSave = async () => {
     const { record, field } = childModal;
     if (!record || !field || !entityCode) return;
@@ -527,7 +685,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         childRows,
       );
       if (res.code === 200) {
-        message.success(`明细已保存（${res.data?.count ?? childRows.length} 行）`);
+        message.success(`明细已保存（${res.data?.count ?? childRows.length} 行），头表金额已按合计自动回填`);
         setChildModal({ open: false, record: null, field: null });
         load();
       } else {
@@ -555,6 +713,23 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 真源优先级：① page 级 `meta.allowedActionsByStatus`（后端已按权限裁剪）——
    * 拿到即用，零额外请求；② 降级到 `GET /actions` 全量 + 前端按 fromStatus 过滤。
    */
+  /**
+   * 动作按钮的鉴权码 —— **必须与后端 RuntimeAccessGuard#requireAction 同口径**，否则前端比后端严。
+   *
+   * 后端口径（§4.6）：
+   *  · 非逃逸动作（状态流转）：实体级 write / 通配 write / 动作细码 **任一** 即可放行；
+   *  · 逃逸动作（有资金/外部副作用，如确认打款）：**必须**命中动作级细码 runtime:{entity}:{action}，
+   *    实体级与通配 write 均不覆盖。
+   *
+   * 若前端对所有动作都强求细码，模板实例化产出的新实体（细码尚未在 IAM 授予）会
+   * **一个流转按钮都看不到**，而后端实际是放行状态流转的 —— 真实表现为「按钮凭空消失」。
+   * 故：非逃逸回落实体级维护码，逃逸仍强制细码（UI 侧保持 fail-closed）。
+   */
+  const authCodeOf = (d: RuntimeActionView): string =>
+    d.kind === 'escape'
+      ? d.permission ?? BonePermissionCodes.METADATA_RUNTIME_WRITE
+      : BonePermissionCodes.METADATA_RUNTIME_WRITE;
+
   const actionsOf = (row: RuntimeRecord): RuntimeActionView[] => {
     if (actionsByStatus) {
       const key = String(row.status ?? '');
@@ -595,7 +770,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       );
       if (res.code === 200) {
         const idem = res.data?.idempotent ? '（幂等命中，未重复执行）' : '';
-        const flow = res.data?.fromStatus ? `${res.data.fromStatus} → ${res.data.toStatus}` : '';
+        // 状态用中文标签回显：后端回的是 fromStatus/toStatus 码（如 DRAFT→SUBMITTED），
+        // 直出会让用户看到内部枚举码（与页面上其他位置的中文状态不一致）。
+        const flow = res.data?.fromStatus
+          ? `${statusLabelOf(res.data.fromStatus)} → ${statusLabelOf(res.data.toStatus)}`
+          : '';
         message.success(`动作「${def.label}」执行成功${flow ? `（${flow}）` : ''}${idem}`);
         setActionModal({ open: false, def: null, record: null });
         load();
@@ -714,7 +893,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       title: '操作',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      // 收敛为主推进动作 + 更多 + 明细 + 编辑 + 归档（原按状态机动作数平铺需 200+）
+      width: 170,
       sorter: false,
       sortOrder: null,
       render: (_: unknown, row) =>
@@ -734,31 +914,62 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           <Space>
             {/* 动作按钮真源 = meta.allowedActionsByStatus（后端已按权限裁剪）；
                 降级态用 listActions 全量 + 前端按 fromStatus 过滤。前端禁止硬编码按钮列表。 */}
-            {actionsOf(row).map((def) => (
-              <AuthButton
-                key={def.code}
-                code={def.permission ?? BonePermissionCodes.METADATA_RUNTIME_WRITE}
-                type="link"
-                size="small"
-                onClick={() => openAction(row, def)}
-              >
-                {def.label}
-              </AuthButton>
-            ))}
-            {/* G10：CHILD_TABLE 声明字段 → 「明细」入口（整组替换编辑器） */}
-            {writableFields
-              .filter((f) => (f.type || '').toUpperCase() === 'CHILD_TABLE')
-              .map((f) => (
-                <AuthButton
-                  key={`child-${f.code}`}
-                  code={BonePermissionCodes.METADATA_RUNTIME_WRITE}
-                  type="link"
-                  size="small"
-                  onClick={() => openChildren(row, f)}
+            {(() => {
+              /* 状态流转「下一步」引导（对标终稿屏⑤/⑥）：
+                 一条记录在某个状态下通常只有 1 个**主推进动作**（如 待审批→审批 / 已审批→确认打款）。
+                 原实现把该状态的**全部**动作平铺 inline，操作列随状态机配置宽度漂移、用户也分不清
+                 「哪个是主线」。这里只把主推进动作 inline 展示，其余（回退/终止等低频或破坏性动作）
+                 收进「更多」下拉——主线一眼可见，次要动作仍可达。
+                 判定规则：后端未提供显式 primary 标记时，取**动作定义顺序里的第一个**作为主动作
+                 （后端约定主推进动作先声明）；一个动作都没有时不渲染任何引导。 */
+              const act = actionsOf(row);
+              if (act.length === 0) return null;
+              const primary = act.find((d) => (d as unknown as { primary?: boolean }).primary) ?? act[0];
+              const rest = act.filter((d) => d.code !== primary.code);
+              return (
+                <>
+                  <AuthButton
+                    code={authCodeOf(primary)}
+                    type="link"
+                    size="small"
+                    onClick={() => openAction(row, primary)}
+                  >
+                    {primary.label}
+                  </AuthButton>
+                  {rest.length > 0 && (
+                    <Dropdown menu={{ items: rest.map((d) => ({
+                      key: d.code,
+                      label: d.label,
+                      onClick: () => openAction(row, d),
+                    })) }} trigger={['click']}>
+                      <Button type="link" size="small">更多 <DownOutlined /></Button>
+                    </Dropdown>
+                  )}
+                </>
+              );
+            })()}
+            {/* G10：CHILD_TABLE 声明字段 → 「明细」入口（整组替换编辑器）。
+                低频数据维护动作，收进「更多」与状态流转动作并列，主线不被稀释。 */}
+            {(() => {
+              const childFields = writableFields.filter(
+                (f) => (f.type || '').toUpperCase() === 'CHILD_TABLE',
+              );
+              if (childFields.length === 0) return null;
+              return (
+                <Dropdown
+                  menu={{
+                    items: childFields.map((f) => ({
+                      key: `child-${f.code}`,
+                      label: `${f.displayName || f.code}明细`,
+                      onClick: () => openChildren(row, f),
+                    })),
+                  }}
+                  trigger={['click']}
                 >
-                  {f.displayName || f.code}
-                </AuthButton>
-              ))}
+                  <Button type="link" size="small">明细 <DownOutlined /></Button>
+                </Dropdown>
+              );
+            })()}
             <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
               编辑
             </AuthButton>
@@ -922,21 +1133,21 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
 
   return (
     <div className="page">
+      <CommandPalette />
       {/* 页头：声明本页职责边界。
-          「运行时数据」与实体列表的「数据」按钮、实体工作区的「数据」页签是**同一份数据**，
+          「业务数据」与实体列表的「数据」按钮、实体工作区的「数据」页签是**同一份数据**，
           区别只在**上下文来源**：本页是跨实体运营台（需自己选实体），后两者已锁定实体。
           此前页面只说「模式 B 是什么」，没说「我什么时候该来这里」，用户因此把它
           当成第三个数据入口，在三个入口间反复试错。 */}
       {!resolvedId && (
         <Space direction="vertical" size={0} style={{ marginBottom: 16, width: '100%' }}>
           <Space size={8} wrap>
-            <Typography.Title level={5} style={{ margin: 0 }}>运行时数据</Typography.Title>
+            <Typography.Title level={5} style={{ margin: 0 }}>业务数据</Typography.Title>
             <Tag color="purple" style={{ fontSize: 12 }}>跨实体数据运营台</Tag>
           </Space>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            这里是<Text strong>跨实体</Text>的数据入口，适合你不确定数据在哪个模型、或者要跨多个模型巡检记录时使用。
-            若你已知要操作哪个实体，请从「实体」列表点行内「数据」按钮，或在实体工作区打开「数据」页签——
-            那两条路径会自动锁定当前实体，不会看错数据。
+            跨实体的数据运营台：当你不确定数据在哪个模型、或要跨多个模型巡检记录时使用。
+            已知目标实体时，从「业务对象」列表点行内「数据」按钮进入，会自动锁定当前实体、不会看错。
           </Text>
         </Space>
       )}
@@ -989,6 +1200,84 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         </Space>
       )}
 
+      {/* 数据生命周期步骤条：建模侧 2 步（实测状态）+ 状态机真实状态链。
+          建模侧给出「去建模/去发布」的回跳入口（用户常从数据页发现「模型还没定」）；
+          状态链可点击下钻 —— 点某状态即把列表筛到该态（q=status:<code>，后端精确匹配）。 */}
+      {!embeddedBlocked && selectedEntity && (
+        <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '14px 16px 16px' } }}>
+          <Steps
+            size="small"
+            current={-1}
+            items={[
+              {
+                title: (
+                  <a onClick={() => navigate(structurePath)}>{MODEL_STEPS[0].label}</a>
+                ),
+                status: 'finish',
+              },
+              {
+                title: selectedEntity.status === META_ENTITY_PUBLISHED ? (
+                  <Text strong style={{ fontSize: 13 }}>{MODEL_STEPS[1].label}</Text>
+                ) : (
+                  <a onClick={() => navigate(structurePath)}>待发布</a>
+                ),
+                status: selectedEntity.status === META_ENTITY_PUBLISHED ? 'finish' : 'error',
+              },
+              ...(stateChain.length > 0
+                ? stateChain.map((code) => {
+                    const active = searchField === 'status' && keyword === code;
+                    return {
+                      title: (
+                        <a
+                          onClick={() => {
+                            // 再次点击已选中的状态 = 取消筛选（幂等下钻，符合 Ant Design Pro 筛选标签行为）
+                            const nextActive = !active;
+                            setSearchField(nextActive ? 'status' : undefined);
+                            setKeyword(nextActive ? code : '');
+                            setKeywordInput(nextActive ? code : '');
+                            setSelectedFilterNote(
+                              nextActive ? `已按状态「${statusLabelOf(code)}」筛选` : null,
+                            );
+                            setPage(1);
+                          }}
+                          style={active ? { fontWeight: 600 } : undefined}
+                        >
+                          {statusLabelOf(code)}
+                        </a>
+                      ),
+                      status: active ? ('process' as const) : ('wait' as const),
+                      description: active ? '已筛选' : undefined,                    };
+                  })
+                : []),
+            ]}
+          />
+          {stateChain.length === 0 && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              该对象未配置状态机，所有记录处于同一状态，无需流转操作。
+            </Text>
+          )}
+        </Card>
+      )}
+
+      {/* 最近操作实体：跨实体高频巡检的一键入口（仅显示 RUNTIME 已发布候选） */}
+      {!resolvedId && recentForRuntime.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <Space size={4} wrap>
+            <Text type="secondary" style={{ fontSize: 12 }}>最近操作：</Text>
+            {recentForRuntime.map((r) => (
+              <Tag
+                key={r.code}
+                style={{ cursor: 'pointer', marginInlineEnd: 4 }}
+                color={entityCode === r.code ? 'processing' : undefined}
+                onClick={() => { setEntityCode(r.code); setPage(1); }}
+              >
+                {r.displayName}
+              </Tag>
+            ))}
+          </Space>
+        </div>
+      )}
+
       {selectedEntity && (
         <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
           物理表：<Text code>{selectedEntity.tableName}</Text> · 交付模式：
@@ -1002,7 +1291,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="该实体暂不支持运行时数据管理"
+          message="该实体暂不支持业务数据管理"
           description={
             selectedEntity?.deliveryMode !== META_DELIVERY_RUNTIME
               ? '仅「自动生成界面」交付模式的实体发布后才提供动态 CRUD 数据管理，请改用手写界面实体的业务应用录入数据。'
@@ -1062,25 +1351,62 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                     { label: '回收站', value: 'trash' },
                   ]}
                 />
-                {/* W0a2：q 接线（契约 = field:value） */}
+                {/* W0a2：q 接线（契约 = field:value，后端为精确匹配） */}
                 <Select
                   allowClear
                   style={{ minWidth: 160 }}
                   placeholder="搜索字段"
                   value={searchField}
-                  onChange={(v) => { setSearchField(v); setPage(1); }}
+                  onChange={(v) => {
+                    setSearchField(v);
+                    setSelectedFilterNote(null);
+                    setPage(1);
+                  }}
                   options={projectedFields.map((f) => ({ value: f.code, label: f.displayName || f.code }))}
                 />
                 <Input.Search
                   allowClear
                   style={{ width: 240 }}
-                  placeholder="搜索值（精确/模糊取决于后端规则）"
-                  value={keyword}
+                  placeholder="搜索值（精确匹配）"
+                  value={keywordInput}
                   disabled={!searchField}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  onSearch={() => setPage(1)}
+                  onChange={(e) => {
+                    setKeywordInput(e.target.value);
+                    // 手工改值即视为用户接管筛选，撤掉步骤条留下的说明
+                    setSelectedFilterNote(null);
+                  }}
+                  onSearch={(v) => {
+                    // 显式提交立即生效，不等防抖
+                    setKeyword(v);
+                    setPage(1);
+                  }}
                 />
               </Space>
+
+              {/* 筛选口径留痕：步骤条下钻改变了列表口径但 URL/工具栏都不体现，
+                  不提示的话用户会误判「数据变少了」（详见 selectedFilterNote 注释）。 */}
+              {selectedFilterNote && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  message={selectedFilterNote}
+                  action={
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setSearchField(undefined);
+                        setKeyword('');
+                        setKeywordInput('');
+                        setSelectedFilterNote(null);
+                        setPage(1);
+                      }}
+                    >
+                      清除筛选
+                    </Button>
+                  }
+                />
+              )}
 
               <Table<RuntimeRecord>
                 rowKey={(row) => recordId(row) || JSON.stringify(row)}
@@ -1111,6 +1437,45 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                     setPageSize(ps);
                   },
                 }}
+                /* 空态必须区分「没有数据」与「筛选后没匹配」：前者要给录入 CTA，
+                   后者要给清除筛选 CTA —— 同一个 antd 默认 Empty 会让用户在
+                   「我明明录了 50 条」和「筛选条件写错了」之间反复猜。 */
+                locale={{
+                  emptyText: (
+                    <Empty description={null}>
+                      {searchField && keyword ? (
+                        <Space direction="vertical" size={4}>
+                          <Text>没有匹配「{searchField} = {keyword}」的记录</Text>
+                          <Button
+                            onClick={() => {
+                              setSearchField(undefined);
+                              setKeyword('');
+                              setKeywordInput('');
+                              setSelectedFilterNote(null);
+                              setPage(1);
+                            }}
+                          >
+                            清除筛选条件
+                          </Button>
+                        </Space>
+                      ) : trashMode ? (
+                        <Space direction="vertical" size={4}>
+                          <Text>回收站是空的</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            归档的记录会出现在这里，可随时恢复
+                          </Text>
+                        </Space>
+                      ) : (
+                        <Space direction="vertical" size={4}>
+                          <Text>还没有任何记录</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            点击「新建记录」录入第一条
+                          </Text>
+                        </Space>
+                      )}
+                    </Empty>
+                  ),
+                }}
               />
             </>
           )}
@@ -1125,6 +1490,16 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         width={560}
         destroyOnHidden
       >
+        {/* 抽屉内状态进度：只在该实体**确有状态机**且记录状态在链上时显示。
+            标签取自 status 字段的 ENUM 码表（makeStatusLabelOf），不硬编码业务状态。 */}
+        {editing && stateChain.length > 0 && editingStateIdx >= 0 && (
+          <Steps
+            size="small"
+            current={editingStateIdx}
+            items={stateChain.map((code) => ({ title: statusLabelOf(code) }))}
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Form form={form} layout="vertical">
           {conflict && (
             <Alert
@@ -1260,6 +1635,14 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           </Button>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {childRows.length} 行
+          </Text>
+          <Text style={{ fontSize: 12, marginLeft: 16 }}>
+            合计：
+            <Text strong style={{ fontFamily: 'ui-monospace, monospace' }}>
+              ¥{formatNumber(childSumOf(childRows), { minimumFractionDigits: 2 })}
+              {/* C3：保存后由后端 ChildAmountAggregator 事务内回填头表 amount，前端实时预览 */}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>（保存后自动回填头表金额）</Text>
           </Text>
         </Space>
         <Table<RuntimeChildRow>

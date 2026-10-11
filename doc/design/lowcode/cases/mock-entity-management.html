@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>业务对象 · 优化效果图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: rgba(0,0,0,.88); font-size: 14px; }
+
+  /* ───────── 页头：面包屑 + 一句话契约 + 全局动作收纳 ───────── */
+  .page-head { padding: 12px 24px 0; }
+  .crumb { color: rgba(0,0,0,.45); font-size: 13px; }
+  .crumb b { color: rgba(0,0,0,.88); font-weight: 500; }
+  .head-main { display: flex; align-items: flex-start; justify-content: space-between; margin: 8px 0 6px; }
+  .head-title { display: flex; align-items: center; gap: 10px; }
+  .head-title h1 { font-size: 20px; font-weight: 600; }
+  .tag { display: inline-block; font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: 4px; }
+  .tag-blue { color: #1677ff; background: #e6f4ff; border: 1px solid #91caff; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 15px; border-radius: 6px;
+         font-size: 14px; cursor: pointer; border: 1px solid #d9d9d9; background: #fff; color: rgba(0,0,0,.88); }
+  .btn-primary { background: #1677ff; border-color: #1677ff; color: #fff; }
+  .btn-sm { height: 26px; padding: 0 10px; font-size: 12px; border-radius: 4px; }
+  .btn-link { border: none; background: none; color: #1677ff; padding: 0 4px; height: 22px; }
+  .head-desc { color: rgba(0,0,0,.65); font-size: 13px; margin-bottom: 12px; }
+  .head-desc b { color: #1677ff; font-weight: 500; }
+
+  /* ───────── 双栏：左树 + 右列表 ───────── */
+  .layout { display: flex; gap: 16px; padding: 0 24px 24px; align-items: flex-start; }
+  .card { background: #fff; border-radius: 8px; border: 1px solid #f0f0f0; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  .side { width: 240px; flex-shrink: 0; padding: 12px; }
+  .side-title { font-size: 12px; color: rgba(0,0,0,.45); padding: 2px 8px 8px; display: flex; justify-content: space-between; }
+  .tree-node { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border-radius: 6px; color: rgba(0,0,0,.88); }
+  .tree-node .cnt { margin-left: auto; font-size: 12px; color: rgba(0,0,0,.35); }
+  .tree-node.active { background: #e6f4ff; color: #1677ff; font-weight: 500; }
+  .tree-node.l2 { padding-left: 26px; }
+  .tree-node .ico { color: #8c8c8c; font-size: 12px; }
+
+  .main { flex: 1; min-width: 0; }
+  /* 过滤区 + 快捷状态分段器 */
+  .filter-bar { padding: 14px 16px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #f0f0f0; }
+  .search { width: 220px; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; color: rgba(0,0,0,.25); gap: 6px; }
+  .sel { height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; display: flex; align-items: center; padding: 0 10px; color: rgba(0,0,0,.88); gap: 8px; font-size: 13px; }
+  .sel .arw { color: rgba(0,0,0,.25); font-size: 10px; }
+  .seg { margin-left: auto; display: flex; background: #f5f5f5; border-radius: 6px; padding: 2px; }
+  .seg span { padding: 3px 12px; font-size: 13px; border-radius: 5px; color: rgba(0,0,0,.65); }
+  .seg span.on { background: #fff; color: rgba(0,0,0,.88); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .seg span i { font-style: normal; color: #1677ff; }
+  .seg span.on i { color: #1677ff; }
+
+  /* 批量操作栏（选中才出现 → 示意选中两条） */
+  .bulkbar { display: flex; align-items: center; gap: 8px; margin: 12px 16px 0; padding: 6px 12px;
+             background: #e6f4ff; border: 1px solid #91caff; border-radius: 6px; font-size: 13px; }
+  .bulkbar .lnk { color: #1677ff; }
+  .bulkbar .lnk.danger { color: #ff4d4f; }
+  .bulkbar .sep { color: #d9d9d9; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { text-align: left; font-size: 12.5px; font-weight: 500; color: rgba(0,0,0,.65); background: #fafafa;
+       padding: 10px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  td { padding: 11px 12px; border-bottom: 1px solid #f5f5f5; font-size: 13.5px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .name-cell { display: flex; align-items: center; gap: 8px; }
+  .name-cell a { color: rgba(0,0,0,.88); font-weight: 500; text-decoration: none; }
+  .name-cell .code { color: rgba(0,0,0,.45); font-size: 12px; font-family: "SF Mono", Menlo, monospace; }
+  .tag-draft { color: #1677ff; background: #e6f4ff; border: 1px solid #91caff; }
+  .tag-pub   { color: #389e0d; background: #f6ffed; border: 1px solid #b7eb8f; }
+  .tag-off   { color: rgba(0,0,0,.45); background: #fafafa; border: 1px solid #d9d9d9; }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #1677ff; margin-right: 6px; vertical-align: 2px; }
+  .dot.g { background: #52c41a; }
+  .acts { display: flex; gap: 2px; align-items: center; }
+  .acts .btn-link { font-size: 13px; }
+  .acts .divider { color: #f0f0f0; }
+  .more { width: 22px; height: 22px; border-radius: 4px; color: rgba(0,0,0,.65); display: inline-flex; align-items: center; justify-content: center; }
+  .pager { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; color: rgba(0,0,0,.65); }
+  .pg { display: flex; gap: 6px; }
+  .pg span { min-width: 26px; height: 26px; border: 1px solid #d9d9d9; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; background: #fff; font-size: 13px; }
+  .pg span.on { border-color: #1677ff; color: #1677ff; }
+
+  /* ───────── 新增：首录引导 Alert（发布后首屏可见） ───────── */
+  .guide { margin: 12px 16px 0; padding: 9px 14px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px;
+           display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(0,0,0,.88); }
+  .guide .ic { color: #52c41a; }
+  .guide .lnk { color: #1677ff; margin-left: 4px; }
+  .guide .close { margin-left: auto; color: rgba(0,0,0,.45); }
+
+  /* ───────── 新增：Ctrl+K 全局面板（示意浮层） ───────── */
+  .cmdk { position: fixed; top: 120px; left: 50%; transform: translateX(-50%); width: 560px; z-index: 50;
+          background: #fff; border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.18); overflow: hidden; border: 1px solid #f0f0f0; }
+  .cmdk-in { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; color: rgba(0,0,0,.25); }
+  .cmdk-list { max-height: 300px; overflow: auto; }
+  .cmdk-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13.5px; }
+  .cmdk-item.sel-bg { background: #f5f5f5; }
+  .cmdk-item .path { margin-left: auto; color: rgba(0,0,0,.40); font-size: 12px; }
+  .cmdk-item .st { margin-left: auto; }
+  .cmdk-item .path + .st { margin-left: 12px; }
+  .cmdk-ft { display: flex; gap: 14px; padding: 8px 16px; border-top: 1px solid #f0f0f0; color: rgba(0,0,0,.45); font-size: 12px; }
+  .kbd { display: inline-block; padding: 0 5px; border: 1px solid #d9d9d9; border-bottom-width: 2px; border-radius: 4px; font-size: 11px; line-height: 16px; background: #fafafa; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 40; }
+
+  .note { position: fixed; right: 18px; bottom: 14px; background: rgba(0,0,0,.72); color: #fff; padding: 7px 12px;
+          border-radius: 6px; font-size: 12.5px; z-index: 60; }
+  .note b { color: #95de64; }
+</style>
+</head>
+<body>
+  <!-- 页头 -->
+  <div class="page-head">
+    <div class="crumb">模型设计 / <b>业务对象</b></div>
+    <div class="head-main">
+      <div class="head-title">
+        <h1>业务对象</h1>
+        <span class="tag tag-blue">全平台唯一真源</span>
+      </div>
+      <!-- 优化点①：页头只留「新建」，低频「导入模型/存量表导入」收进更多 ⌄ -->
+      <div style="display:flex; gap:8px;">
+        <button class="btn">更多导入 <span style="color:rgba(0,0,0,.3); font-size:10px;">▼</span></button>
+        <button class="btn btn-primary">＋ 新建业务对象</button>
+      </div>
+    </div>
+    <!-- 优化点②：一句话契约重写——不再指引不存在的入口 -->
+    <div class="head-desc">维护业务对象的定义、字段结构与发布状态；双击行进对象工作区（结构 / 界面 / 数据 / 发布）<b>详情</b>可打开工作区，录入业务数据请进工作区「数据」页签。</div>
+  </div>
+
+  <!-- 双栏 -->
+  <div class="layout">
+    <!-- 左树 -->
+    <div class="card side">
+      <div class="side-title"><span>应用 / 模块</span></div>
+      <div class="tree-node active"><span class="ico">▸</span> 全部业务对象 <span class="cnt">337</span></div>
+      <div class="tree-node"><span class="ico">▾</span> 销售云 <span class="cnt">86</span></div>
+      <div class="tree-node l2"><span class="ico">▪</span> 客户域 <span class="cnt">42</span></div>
+      <div class="tree-node l2"><span class="ico">▪</span> 商机域 <span class="cnt">44</span></div>
+      <div class="tree-node"><span class="ico">▸</span> 供应链 <span class="cnt">121</span></div>
+      <div class="tree-node"><span class="ico">▸</span> 财务云 <span class="cnt">95</span></div>
+      <div class="tree-node"><span class="ico">▸</span> 人力云 <span class="cnt">35</span></div>
+    </div>
+
+    <!-- 右列表 -->
+    <div class="card main">
+      <!-- 优化点③：状态一秒过滤——Segmented 就在过滤器行，和搜索/下拉同级 -->
+      <div class="filter-bar">
+        <div class="search">🔍 搜索对象名称 / 编码</div>
+        <div class="sel">全部类型 <span class="arw">▼</span></div>
+        <div class="sel">全部交付模式 <span class="arw">▼</span></div>
+        <div class="seg">
+          <span class="on">全部 <i>337</i></span>
+          <span>草稿 <i>19</i></span>
+          <span>已发布 <i>312</i></span>
+          <span>已下线 <i>6</i></span>
+        </div>
+      </div>
+
+      <!-- 优化点④：批量操作条——每格有失败明细入口（对齐 GitHub 批量操作反馈）；示意 2 条选中 -->
+      <div class="bulkbar">
+        已选 2 项
+        <button class="btn btn-sm">批量发布</button>
+        <button class="btn btn-sm">批量删除</button>
+        <button class="btn btn-sm">批量导出</button>
+        <span class="sep">|</span>
+        <button class="btn-link btn-sm">清空</button>
+        <span style="margin-left:auto; color:rgba(0,0,0,.45); font-size:12.5px;">上次批量发布：成功 3 · <span style="color:#fa8c16;">失败 1</span>（<span style="color:#1677ff;">查看明细</span>）</span>
+        <!-- 优化点⑤：草稿行首录引导（发布成功后出现，断点接回） -->
+        <div class="guide" style="display:none;">✓ 已发布</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34px;"><span style="display:inline-block; width:14px; height:14px; border:1px solid #d9d9d9; border-radius:3px; vertical-align:-2px;"></span></th>
+            <th>对象名称</th>
+            <th>类型</th>
+            <th>交付模式</th>
+            <th>状态</th>
+            <th style="width:80px;">字段数</th>
+            <th style="width:64px;">记录数</th>
+            <th style="width:190px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #1677ff; border-radius:3px; background:#1677ff; vertical-align:-2px;"></span></td>
+            <td><div class="name-cell"><a>客户主数据</a> <span class="code">customer</span></div></td>
+            <td>主数据类</td>
+            <td>自动生成界面</td>
+            <td><span class="tag tag-pub"><span class="dot g"></span>已发布</span></td>
+            <td>24</td>
+            <td>1,284 <span style="color:#1677ff; font-size:12px;">↗</span></td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">数据</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">下线</button>
+                <span class="more">⋯</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #1677ff; border-radius:3px; background:#1677ff; vertical-align:-2px;"></span></td>
+            <td><div class="name-cell"><a>报销单</a> <span class="code">expense</span></div></td>
+            <td>普通业务</td>
+            <td>自动生成界面</td>
+            <td><span class="tag tag-pub"><span class="dot g"></span>已发布</span></td>
+            <td>18</td>
+            <td>326 <span style="color:#1677ff; font-size:12px;">↗</span></td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">数据</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">下线</button>
+                <span class="more">⋯</span>
+              </div>
+            </td>
+          </tr>
+          <!-- 优化点⑤：草稿行 = 平台最大的悬空断点。发布后首录缺指引 → 草稿行给「完善」弱 CTA + 状态徽标给下一步 -->
+          <tr style="background:#fcfcfc;">
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #d9d9d9; border-radius:3px; vertical-align:-2px;"></span></td>
+            <td><div class="name-cell"><a>采购合同</a> <span class="code">purchase_contract</span></div>
+                <div style="font-size:12px; color:#fa8c16; margin-top:2px;">⚠ 字段 6 → 界面未配置</div></td>
+            <td>普通业务</td>
+            <td>自动生成界面</td>
+            <td><span class="tag tag-draft"><span class="dot"></span>草稿 · 下一步：配界面</span></td>
+            <td>6</td>
+            <td>—</td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">完善</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">发布</button>
+                <span class="more">⋯</span>
+                <!-- 优化点①：低频动作全收「更多」：复制/导出/删除 -->
+              </div>
+            </td>
+          </tr>
+          <tr style="background:#fcfcfc;">
+            <td><span style="display:inline-block; width:14 State:</span></td>
+            <td><div class="name-cell"><a>供应商准入</a> <span class="code">vendor_access</span></div></td>
+            <td>普通业务</td>
+            <td>手写界面</td>
+            <td><span class="tag tag-draft"><span class="dot"></span>草稿 · 下一步：完善 2 字段</span></td>
+            <td>2</td>
+            <td>—</td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">完善</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">发布</button>
+                <span class="more">⋯</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #d9d9d9; border-radius:3px; vertical-align:-2px;"></span></td>
+            <td><div class="name} -cell"><a>销售订单</a> <span class="code">sales_order</span></div></td>
+            <td>普通业务</td>
+            <td>自动生成界面</td>
+            <td><span class="tag tag-pub"><span class="dot g"></span>已发布</span></td>
+            <td>32</td>
+            <td>8,427 <span style="color:#1677ff; font-size:12px;">↗</span></td>
+            <td>
+              <div class="acts">
+                <button class="btn-data">数据</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">下线</button>
+                <按钮 class="more">⋯</按钮>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #d9d9d9; border-radius: 3px; vertical-align:-2px;"></span></td>
+            <td><div class="name-cell"><a>合同台账</a> <span class="code">contract</span></div></td>
+            <td>普通业务</td>
+            <td>手写界面</td>
+            <td><span class="tag tag-off">已下线</span></td>
+            <td>15</td>
+            <td>97</td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">详情</button>
+                <span class="more">⋯</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block; width:14px; height:14px; border:1px solid #d9d9d9; border-radius:3px; vertical-align:-2px;"></span></td>
+            <td><div class="name-cell"><a>价格政策</a> <span class="code">price_policy</span></div></td>
+            <td>普通业务</td
+>
+            <td>自动生成界面</td>
+            <td><span class="tag tag-pub"><span class="dot g"></span>已发布</span></td>
+            <td>21</td>
+            <td>512 <span style="color:#1677ff; font-size:12px;">↗</span></td>
+            <td>
+              <div class="acts">
+                <button class="btn-link">数据</button>
+                <button class="btn-link">编辑</button>
+                <span class="divider">|</span>
+                <button class="btn-link">下线</span>
+                <span class="more">⋯</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+    </div>
+    </table>
+      <!-- 优化点⑦：分页补 showTotal、修复分组模式假计数（全平台真源不再分组计数误导） -->
+        <div class="pager">共 337 个对象，已选 2 项　<div class="pg"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>…</span><span>48</span><span>›</span></div></div>
+    </div>
+  </div>
+
+  <!-- 优化点⑧：Ctrl+K 全局化示意（不再只搜当前页已筛过的列表） -->
+  <div class="scrim"></div>
+  <div class="cmdk">
+    <div class="cmdk-in">⌘ + K　搜索全平台业务对象，含草稿与其他应用…</div>
+    <div class="cmdk-list">
+      <div class="cmdk-item sel-bg">📦 报销单 <span class="st tag tag-draft">草稿</span><span class="path">财务云 / 费用域</span></div>
+      <div class="cmdk-item">📦 报销单明细 <span class="st tag tag-draft">草稿</span><span class="path">财务云 / 费用域</span></div>
+      <div class="cmdk-item">📦 报销预算 <span class="st tag tag-pub">已发布</span><span class="path">财务云 / 预算域</span></div>
+      <div class="cmdk-item">📦 差旅报销规则 <span class="st tag tag-pub">已发布</span><span class="path">财务云 / 制度</span></div>
+      <div class="cmdk-item">📦 项目报销归集 <span class="st tag tag-draft">草稿</span><span class="path">财务云 / 项目</span></div>
+    </条>
+    <div class="cmdk-ft"><span><span class="kbd">↑</span><span class="kbd">↓</span> 切换</span><span><span class="kbd">↵</span> 打开对象工作区</span><span><span class="kbd">Esc</span> 关闭</span></div>
+  </div>
+
+  <div class="note">「业务对象」优化效果图 · 新增 8 处 · tsc 未动（设计稿）</div>
+</body>
+</html>

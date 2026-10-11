@@ -2,6 +2,7 @@ package com.bone.metadata.catalog.infrastructure.query;
 
 import com.bone.metadata.catalog.domain.gateway.TemplateReadPort;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
+import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateField;
 import java.util.List;
 import java.util.Optional;
@@ -93,4 +94,34 @@ public class TemplateReadAdapter implements TemplateReadPort {
         FIELD_MAPPER,
         templateId);
   }
+
+  @Override
+  public List<MetaModelTemplateAction> actionsOf(Long templateId) {
+    return jdbcTemplate.query(
+        "SELECT id, tenant_id, template_id, action_code, label, from_status, to_status,"
+            + " status_field, is_escape, handler_bean, params_schema, requires_idempotency,"
+            + " sort_order"
+            + " FROM meta_model_template_action WHERE tenant_id = 0 AND deleted = 0 AND template_id = ?"
+            + " ORDER BY sort_order",
+        ACTION_MAPPER,
+        templateId);
+  }
+
+  /** 模板动作行映射（迁移 0040）：字段与 meta_entity_action_def 一一对应。 */
+  private static final RowMapper<MetaModelTemplateAction> ACTION_MAPPER =
+      (rs, i) ->
+          MetaModelTemplateAction.create(
+              rs.getLong("id"),
+              rs.getLong("tenant_id"),
+              rs.getLong("template_id"),
+              rs.getString("action_code"),
+              rs.getString("label"),
+              rs.getString("from_status"),
+              rs.getString("to_status"),
+              rs.getString("status_field"),
+              rs.getInt("is_escape") == 1,
+              rs.getString("handler_bean"),
+              rs.getString("params_schema"),
+              rs.getInt("requires_idempotency") == 1,
+              rs.getInt("sort_order"));
 }

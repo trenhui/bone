@@ -433,7 +433,7 @@ const EntityDetail: React.FC = () => {
     { title: '长度', dataIndex: 'length', key: 'length', width: 60, onCell: (record) => ({ record, dataIndex: 'length', cellType: 'number', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>), render: (v: number | null) => v ?? '—' },
     { title: '必填', dataIndex: 'required', key: 'required', width: 50, onCell: (record) => ({ record, dataIndex: 'required', cellType: 'boolean', onSave: saveFieldInline, editable: true } as unknown as React.TdHTMLAttributes<HTMLTableCellElement>), render: (v: boolean) => v ? <Tag color="red">是</Tag> : <Tag>否</Tag> },
     { title: '数据治理', key: 'governance', width: 200, render: (_: unknown, record: MetaField) => (<Space size={4} wrap>{record.pii && <Tag color="red">PII</Tag>}{record.dataClassification && <Tag color={DATA_CLASSIFICATION_MAP[record.dataClassification]?.color ?? 'default'}>{DATA_CLASSIFICATION_MAP[record.dataClassification]?.label ?? record.dataClassification}</Tag>}{record.sensitivityLevel && <Tag color={SENSITIVITY_LEVEL_MAP[record.sensitivityLevel]?.color ?? 'default'}>{record.sensitivityLevel}</Tag>}{record.dataSteward && <Tag color="blue">管家:{record.dataSteward}</Tag>}</Space>) },
-    { title: '操作', key: 'action', width: 170, render: (_, record) => (<Space><Tooltip title="查看字段详情"><Button type="link" size="small" onClick={() => openDetail(record)}>查看</Button></Tooltip><Tooltip title="编辑字段属性"><Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} /></Tooltip>{entity?.status === 1 ? (<Tooltip title="已发布实体不可删除字段；结构性变更须先归档或回退草稿"><Button type="link" size="small" danger icon={<DeleteOutlined />} disabled /></Tooltip>) : (<Popconfirm title="确认删除？" description="删除字段可能导致运行时数据异常，请谨慎操作。" onConfirm={() => handleDeleteField(record.id)}><Tooltip title="删除字段"><Button type="link" size="small" danger icon={<DeleteOutlined />} /></Tooltip></Popconfirm>)}</Space>) },
+    { title: '操作', key: 'action', width: 170, render: (_, record) => (<Space><Tooltip title="查看字段详情"><Button type="link" size="small" onClick={() => openDetail(record)}>查看</Button></Tooltip><Tooltip title="编辑字段属性"><Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} /></Tooltip>{entity?.status === 1 ? (<Tooltip title="已发布实体不可删除字段；结构性变更须先归档或回退草稿"><Button type="link" size="small" danger icon={<DeleteOutlined />} disabled /></Tooltip>) : (<Popconfirm title="确认删除？" description="删除字段可能导致业务数据异常，请谨慎操作。" onConfirm={() => handleDeleteField(record.id)}><Tooltip title="删除字段"><Button type="link" size="small" danger icon={<DeleteOutlined />} /></Tooltip></Popconfirm>)}</Space>) },
   ];
 
   if (!entity) return <div className="page"><Text>加载中...</Text></div>;
@@ -530,7 +530,7 @@ const EntityDetail: React.FC = () => {
             <Space>
               {/* W0-8：常驻「打开数据」——未发布/非运行时为 disabled + tooltip，而非隐藏按钮，
                   让用户知道入口存在以及为何点不了（禁「按钮凭空消失」型静默） */}
-              <Tooltip title={isRuntimePublished ? '打开本实体的运行时数据' : '发布后（运行时交付模式）可录入数据'}>
+              <Tooltip title={isRuntimePublished ? '打开本对象的业务数据' : '发布后（自动生成界面模式）可录入数据'}>
                 <Button
                   icon={<TableOutlined />}
                   disabled={!isRuntimePublished}

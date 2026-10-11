@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BONE 业务对象 · 优化稿（深诊建议 G–P）</title>
+<style>
+  :root{
+    --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
+    --purple:#722ed1; --purple-bg:#f9f0ff;
+    --green:#52c41a; --green-bg:#f6ffed; --green-border:#b7eb8f;
+    --orange:#fa8c16; --orange-bg:#fff7e6; --orange-border:#ffd591;
+    --red:#ff4d4f; --red-bg:#fff1f0;
+    --gray:#8c8c8c; --gray-bg:#f5f5f5; --gray-border:#d9d9d9;
+    --text:#1f1f1f; --text-2:#595959; --text-3:#8c8c8c;
+    --bg:#f0f2f5; --card:#fff; --border:#e8e8e8;
+    --radius:6px; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 6px rgba(0,0,0,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font:13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);min-width:1000px}
+  .app{display:flex;min-height:100vh}
+  .sider{width:200px;background:#001529;color:rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
+  .logo{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;color:#fff;font-weight:600;font-size:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .logo .dot{width:22px;height:22px;border-radius:4px;background:linear-gradient(135deg,#1677ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .nav{padding:8px 0;flex:1}
+  .nav .grp{font-size:11px;color:rgba(255,255,255,.35);padding:12px 16px 4px;letter-spacing:1px}
+  .nav .item{padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:8px}
+  .nav .item:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .nav .item.on{color:#fff;background:var(--primary);font-weight:500}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:var(--shadow);z-index:2}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .btn{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--gray-border);background:#fff;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.sm{padding:1px 10px;font-size:12px}
+  .content{padding:20px 24px;flex:1;overflow:auto}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+  .card h4{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-block;padding:0 8px;border-radius:4px;font-size:11px;line-height:20px}
+  .pill.gray{background:var(--gray-bg);color:var(--text-2)}
+  .pill.blue{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-border)}
+  .pill.purple{background:var(--purple-bg);color:var(--purple)}
+  .pill.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .pill.orange{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .pill.red{background:var(--red-bg);color:var(--red)}
+  .tag-opt{display:inline-block;background:#000;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:1px 5px;margin-right:6px;vertical-align:middle}
+  .optnote{font-size:11px;color:var(--text-3);line-height:1.7;margin-top:6px}
+  .banner{background:linear-gradient(90deg,#e6f4ff,#f9f0ff);border:1px solid var(--primary-border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#0958d9;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse}
+  th{background:var(--gray-bg);color:var(--text-2);font-weight:500;text-align:left;padding:9px 12px;font-size:12px}
+  td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:13px}
+  tr:hover td{background:#fafafa}
+  .input,select{height:30px;border:1px solid var(--gray-border);border-radius:var(--radius);padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--text)}
+  .input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .toolbar .grow{flex:1}
+  .qbar{display:flex;gap:8px;align-items:center}
+  .seg{display:inline-flex;border:1px solid var(--gray-border);border-radius:var(--radius);overflow:hidden}
+  .seg .si{padding:3px 12px;font-size:12px;cursor:pointer;color:var(--text-2);background:#fff}
+  .seg .si.on{background:var(--primary);color:#fff}
+  .row-actions{display:flex;gap:2px;align-items:center}
+  .link{color:var(--primary);cursor:pointer}
+  .dots{cursor:pointer;border:1px solid var(--gray-border);border-radius:4px;padding:0 7px;line-height:22px}
+  .batchbar{display:flex;gap:12px;align-items:center;background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:8px;padding:10px 14px;margin-bottom:12px}
+  /* object workspace */
+  .ws-head{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .kv{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--text-2)}
+  .kv b{color:var(--text);font-weight:600}
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 4px;background:var(--card)}
+  .tab{padding:10px 18px;cursor:pointer;color:var(--text-2);font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+  .tab.on{color:var(--primary);border-bottom-color:var(--primary)}
+  .ws-body{background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:16px}
+  .struc-cols{display:flex;gap:16px;flex-wrap:wrap}
+  .struc-cols .fields{flex:2 1 460px}
+  .struc-cols .side{flex:1 1 260px}
+  .rel-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed #f0f0f0;font-size:12.5px}
+  .rel-row .badge-r{font-size:10px;padding:0 6px;border-radius:3px;background:var(--primary-bg);color:var(--primary)}
+  .valinline{color:var(--red);font-weight:500}
+  .drawer{position:fixed;top:0;right:0;width:380px;height:100vh;background:#fff;box-shadow:-6px 0 16px rgba(0,0,0,.12);display:none;z-index:50;flex-direction:column}
+  .drawer.on{display:flex}
+  .drawer .dh{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .drawer .db{padding:16px 18px;overflow:auto;flex:1}
+  .drawer .df{padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+  .form-row{margin-bottom:12px}
+  .form-row label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+  .form-row .ctrl{width:100%;height:32px;border:1px solid var(--gray-border);border-radius:var(--radius);padding:0 10px;background:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sider">
+    <div class="logo"><span class="dot">B</span> BONE 元数据</div>
+    <div class="nav">
+      <div class="grp">设计域</div>
+      <div class="item">◈ 模型设计</div>
+      <div class="item on">▤ 业务对象</div>
+      <div class="item">▦ 业务数据</div>
+      <div class="grp">其他</div>
+      <div class="item">⚙ 应用管理</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="header">
+      <div class="crumb"><b>业务对象</b> <span style="color:var(--text-3)">/ 模型清单（唯一真源）</span></div>
+      <div class="header-actions"><button class="btn">⌘K 全局搜索</button><button class="btn primary">＋ 新建实体</button></div>
+    </div>
+    <div class="content">
+
+      <div class="banner"><b>本图为「业务对象」优化稿</b><span>对标 NocoBase 集合管理 / Airtable base / Salesforce Object Manager / Directus，标注优化点 G–P（列表 + 对象工作区）。</span></div>
+
+      <!-- ===== 列表（优化后） ===== -->
+      <div class="card">
+        <h4>业务对象 <span class="pill gray">共 71 个</span> <span class="pill blue">全局待发布 9</span></h4>
+
+        <!-- G: 去掉左侧树 + 右侧分组的双重分组；改为顶部「应用/模块」单一下拉 + 可选分组开关 -->
+        <div class="toolbar">
+          <div class="qbar">
+            <input class="input" style="width:220px" placeholder="搜索名称/编码/表名（全局）">
+            <select style="width:150px"><option>全部应用</option><option>办公域</option><option>供应链</option></select>
+            <select style="width:130px"><option>全部模块</option><option>报销</option><option>主数据</option></select>
+          </div>
+          <div class="qbar">
+            <select style="width:110px"><option>全部状态</option><option>草稿</option><option>已发布</option><option>已下线</option></select>
+            <select style="width:110px"><option>全部类型</option><option>普通业务</option><option>主数据类</option></select>
+            <select style="width:110px"><option>全部交付</option><option>自动界面</option><option>手写界面</option></select>
+          </div>
+          <div class="grow"></div>
+          <div class="qbar">
+            <span class="seg"><span class="si on">列表</span><span class="si">按模块分组</span></span>
+            <button class="btn sm">⭐ 保存视图</button>
+            <button class="btn sm">↺ 刷新</button>
+          </div>
+        </div>
+        <div class="optnote"><span class="tag-opt">G</span>原版左树（app→mod）+ 右侧再按 module 分组卡片 = 双重分组，认知叠加且"全部模型"根冗余；优化为顶部单一下拉过滤 + 可选"按模块分组"开关，列表保持单一真源视图（对标 Directus/NocoBase 扁平集合 + 筛选）。</div>
+
+        <!-- H: 行操作收敛：打开 + 尾部 ⋯；去掉重复的"详情"（点击名称即打开） -->
+        <table>
+          <thead><tr>
+            <th>名称</th><th>编码</th><th>表名</th><th>类型</th><th>交付模式</th><th>状态</th>
+            <th>字段</th><th>记录数</th><th>最后修改</th><th>操作</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="link">费用报销</span> <code style="font-size:11px;color:var(--text-3)">expense_claim</code></td>
+              <td>expense_claim</td><td>t_expense_claim</td>
+              <td><span class="pill blue">普通业务</span></td><td><span class="pill purple">自动界面</span></td>
+              <td><span class="pill green">已发布</span></td>
+              <td>12</td><td>1,284</td><td>10-11 09:20</td>
+              <td><div class="row-actions"><span class="link" onclick="alert('打开对象工作区（结构默认页）')">打开</span><span class="dots" onclick="alert('⋮ 数据 / 发布 / 复制 / 导出 / 删除')">⋯</span></div></td>
+            </tr>
+            <tr>
+              <td><span class="link">客户</span> <code style="font-size:11px;color:var(--text-3)">customer</code></td>
+              <td>customer</td><td>t_customer</td>
+              <td><span class="pill blue">主数据类</span></td><td><span class="pill purple">自动界面</span></td>
+              <td><span class="pill green">已发布</span></td>
+              <td>8</td><td>5,902</td><td>10-10 17:02</td>
+              <td><div class="row-actions"><span class="link" onclick="alert('打开对象工作区')">打开</span><span class="dots" onclick="alert('⋮ …')">⋯</span></div></td>
+            </tr>
+            <tr>
+              <td><span class="link">临时盘点表</span> <code style="font-size:11px;color:var(--text-3)">temp_stock</code></td>
+              <td>temp_stock</td><td>t_tmp_stock</td>
+              <td><span class="pill blue">普通业务</span></td><td><span class="pill gray">手写界面</span></td>
+              <td><span class="pill orange">草稿</span></td>
+              <td>5</td><td>0</td><td>10-11 08:55</td>
+              <td><div class="row-actions"><span class="link" onclick="alert('打开对象工作区')">打开</span><span class="dots" onclick="alert('⋮ 发布 / 复制 / 导出 / 删除')">⋯</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="optnote"><span class="tag-opt">H</span>原版操作列宽 260px，含 编辑/详情/数据/发布/删除/更多 6 个入口，且"详情"与点击名称重复；优化后主操作仅"打开"（默认进结构页），其余收进 ⋯ 菜单，并新增"记录数/最后修改"列（对标 NocoBase/Airtable 集合列表展示活跃度）。</div>
+
+        <!-- I: 批量发布结果明细呈现（不再只 console.warn） -->
+        <div class="optnote"><span class="tag-opt">I</span>原版批量发布失败仅 <code>console.warn</code>，UI 不呈现失败明细；优化后失败项在结果 Toast/抽屉中逐条列出（实体 + 原因），生产场景可追。批量删除同理。</div>
+      </div>
+
+      <!-- ===== 对象工作区（优化后） ===== -->
+      <div class="ws-head">
+        <div>
+          <div style="font-size:16px;font-weight:600">费用报销 <code style="font-size:12px;color:var(--text-3)">expense_claim</code></div>
+          <div class="kv" style="margin-top:8px">
+            <span>表 <b>t_expense_claim</b></span><span>交付 <b>自动生成界面</b></span>
+            <span>状态 <span class="pill green">已发布</span></span><span>字段 <b>12</b></span>
+            <span>发布态 <span class="pill orange">未发布 · 2 项</span></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" disabled title="发布后（自动界面）才可录数据">打开数据</button>
+          <button class="btn" style="border-color:var(--orange);color:var(--orange)" onclick="alert('打开发布预览（含本次 2 项结构变更 diff）')">重新发布</button>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">J</span>原版顶栏发布按钮 + 脏态 Alert + 独立的"发布"Tab 三处；优化后"发布"只作为顶栏动作（与"打开数据"并排），从 Tab 中移除——发布是动作不是"内容浏览"，不应与 结构/界面/数据 并列（对标 Airtable 把 Publish 置于顶栏而非视图 Tab）。</div>
+
+      <div class="tabs">
+        <div class="tab on">结构</div>
+        <div class="tab">界面</div>
+        <div class="tab">数据</div>
+      </div>
+      <div class="ws-body">
+        <!-- K: 去掉结构内"字段/关系/校验"三级嵌套 Tab：结构页内用左主区(字段) + 右侧栏(关系+实时校验) -->
+        <div class="struc-cols">
+          <div class="fields">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <b>字段 <span class="pill gray">12</span></b>
+              <div style="display:flex;gap:8px"><button class="btn sm">↺ 刷新</button><button class="btn sm primary" onclick="openDrawer()">＋ 新建字段</button></div>
+            </div>
+            <table>
+              <thead><tr><th>字段名</th><th>编码</th><th>类型</th><th>必填</th><th>治理</th><th style="width:60px">操作</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>报销单号</td><td>claim_no</td><td><span class="pill green">STRING</span></td><td><span class="pill red">是</span></td><td>—</td>
+                  <td><span class="link" onclick="openDrawer()">编辑</span></td>
+                </tr>
+                <tr>
+                  <td>金额</td><td>amount</td><td><span class="pill purple">DECIMAL</span></td><td><span class="pill red">是</span></td>
+                  <td><span class="pill red">PII</span></td>
+                  <td><span class="link" onclick="openDrawer()">编辑</span></td>
+                </tr>
+                <!-- L: 实时校验就近标红，而非独立"校验"页 -->
+                <tr style="background:var(--red-bg)">
+                  <td><span class="valinline">⚠ 类别</span></td><td>category_id</td><td><span class="pill purple">REFERENCE</span></td><td><span class="pill red">是</span></td>
+                  <td>—</td>
+                  <td><span class="link" onclick="openDrawer()">编辑</span></td>
+                </tr>
+                <tr>
+                  <td>明细</td><td>items</td><td><span class="pill purple">CHILD_TABLE</span></td><td><span class="pill gray">否</span></td><td>—</td>
+                  <td><span class="link" onclick="openDrawer()">编辑</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="optnote"><span class="tag-opt">K</span>原版 结构(外Tab)→字段/关系/校验(内Tab) 两级嵌套 + 另设"校验"需手动触发；优化后结构页用"字段主区 + 右栏(关系/校验)"单屏呈现，校验随保存实时跑、问题就近标红（行底色 + 警告图标），对标 Strapi/Airtable 字段即时校验。</div>
+          </div>
+
+          <div class="side">
+            <div style="margin-bottom:16px">
+              <b style="font-size:13px">关系 <span class="pill purple">2</span></b>
+              <div class="rel-row"><span class="badge-r">1—N</span><span>报销单 <b>拥有</b> 明细行（expense_claim_item）</span></div>
+              <div class="rel-row"><span class="badge-r">N—1</span><span>报销单 <b>归属</b> 类别（expense_category）</span></div>
+              <div class="optnote"><span class="tag-opt">M</span>原版关系显示"作为源/作为目标"对普通用户晦涩；优化为业务语义名（拥有/归属），并标注基数（1—N / N—1）。</div>
+            </div>
+            <div>
+              <b style="font-size:13px">实时校验 <span class="pill orange">1 警告</span></b>
+              <div class="rel-row" style="color:var(--orange)">⚠ category_id 引用了未发布的类别主数据，发布前请确认。</div>
+              <div class="optnote"><span class="tag-opt">N</span>校验结果实时显示在此栏（错误就近在左表标红 + 此处列原因），保存即校验，无需进独立"校验"页。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="optnote"><span class="tag-opt">O</span>字段编辑统一为「行内快速改（单属性）＋ 打开抽屉看全部属性」，取代原版"编辑 Modal + 查看 Modal"两个弹窗并存的心智不一致（对标 Notion/Linear 行内 + 抽屉详情）。<span class="tag-opt">P</span>⌘K 改为全局搜索（搜全部实体，跨页/跨模块），而非原版仅当前页前 8 条。</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 字段抽屉（取代 编辑/查看 两个 Modal） -->
+<div class="drawer" id="drawer">
+  <div class="dh"><span>字段：金额 (amount)</span><span class="link" onclick="closeDrawer()">✕</span></div>
+  <div class="db">
+    <div class="form-row"><label>显示名</label><input class="ctrl" value="金额"></div>
+    <div class="form-row"><label>编码</label><input class="ctrl" value="amount" disabled></div>
+    <div class="form-row"><label>类型</label><input class="ctrl" value="DECIMAL" disabled></div>
+    <div class="form-row"><label>必填</label><select class="ctrl"><option>是</option><option>否</option></select></div>
+    <div class="form-row"><label>数据分级</label><select class="ctrl"><option>请选择</option><option>公开</option><option>内部</option></select></div>
+    <div class="form-row"><label>PII</label><select class="ctrl"><option>否</option><option>是</option></select></div>
+    <div class="form-row"><label>校验规则 (JSON)</label><input class="ctrl" value='{"min":0.01}'></div>
+  </div>
+  <div class="df"><button class="btn" onclick="closeDrawer()">取消</button><button class="btn primary" onclick="closeDrawer()">保存</button></div>
+</div>
+<script>
+  function openDrawer(){document.getElementById('drawer').classList.add('on');}
+  function closeDrawer(){document.getElementById('drawer').classList.remove('on');}
+</script>
+</body>
+</html>
