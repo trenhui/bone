@@ -1,5 +1,6 @@
 package com.bone.metadata.config;
 
+import com.bone.metadata.runtime.application.RuntimeAccessGuard;
 import com.bone.metadata.security.APIKeyFilter;
 import com.bone.metadata.security.JwtAuthenticationFilter;
 import com.bone.metadata.security.JwtUtil;
@@ -56,7 +57,18 @@ public class SecurityConfig {
                               "metadata:runtime:read",
                               "metadata:runtime:write",
                               "metadata:template:read",
-                              "metadata:template:write")));
+                              "metadata:template:write",
+                              // RC-004：实体级权限通配 —— dev 关闭安全时等价于旧粗粒度码（全实体 CRUD）。
+                              // 形状统一到 runtime:* 命名空间后，「无实体级权限 → 403」在生产才可能成立：
+                              // 生产只需把 wildcard 换发成具体 runtime:{entity}:{op}，无需改一行代码。
+                              "runtime:*:read",
+                              "runtime:*:write",
+                              // 平台管理员：动作级判定（RuntimeAccessGuard#requireAction）对 admin
+                              // early-return。dev 匿名主体必须带上它，否则 0034 把动作 permission_code
+                              // 换成 runtime:{entity}:{action} 细码后，本地不带 JWT 的直连请求会在
+                              // 「具备通配写码、但没有该动作的细码」时被判 403 —— 那正是 §4.6 想达到的
+                              // 效果，只是 dev 不该被它挡住。生产开启鉴权后由真实 scopes 决定。
+                              RuntimeAccessGuard.PLATFORM_ADMIN)));
     } else {
       http.authorizeHttpRequests(
               auth ->
@@ -94,6 +106,11 @@ public class SecurityConfig {
         new SimpleGrantedAuthority("metadata:runtime:read"),
         new SimpleGrantedAuthority("metadata:runtime:write"),
         new SimpleGrantedAuthority("metadata:template:read"),
-        new SimpleGrantedAuthority("metadata:template:write"));
+        new SimpleGrantedAuthority("metadata:template:write"),
+        // 与匿名主体同口径：服务级凭证默认持有全实体读写（见上「通配」说明）
+        new SimpleGrantedAuthority("runtime:*:read"),
+        new SimpleGrantedAuthority("runtime:*:write"),
+        // 与匿名主体同口径：服务级凭证需能触发已登记细码的动作（含逃逸动作），见上 PLATFORM_ADMIN 说明
+        new SimpleGrantedAuthority(RuntimeAccessGuard.PLATFORM_ADMIN));
   }
 }

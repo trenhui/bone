@@ -99,4 +99,74 @@ class JdbcRuntimeRecordServiceTest {
         RuntimeRecordException.class,
         () -> service.update("demo_order", 1L, "100", Map.of("amount", 2), 999));
   }
+
+  @Test
+  void shouldRejectStateFieldDirectWriteOnCreateAndUpdate() {
+    // G14：声明了 state_field 的实体，POST/PUT 直写状态字段必须 422（Runtime 设计 §4.5）
+    var url = "jdbc:h2:mem:demo_state;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
+    var ds = new SimpleDriverDataSource(new Driver(), url);
+    var jdbc = new NamedParameterJdbcTemplate(ds);
+    jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS demo_claim");
+    jdbc.getJdbcTemplate()
+        .execute(
+            "CREATE TABLE demo_claim ("
+                + "`id` BIGINT PRIMARY KEY, `tenant_id` BIGINT NOT NULL, "
+                + "`title` VARCHAR(128) NOT NULL, `status` VARCHAR(32) NOT NULL, "
+                + "`amount` DOUBLE, `version` INT NOT NULL DEFAULT 0, "
+                + "`deleted` SMALLINT NOT NULL DEFAULT 0)");
+    RuntimeEntityCatalog catalog =
+        (code, tenantId) ->
+            Optional.of(
+                new PublishedRuntimeEntity(
+                    "demo_claim",
+                    "demo_claim",
+                    "id",
+                    tenantId,
+                    List.of(
+                        new RuntimeFieldColumn("id", "LONG", true, false, true),
+                        new RuntimeFieldColumn("title", "STRING", true, false, false),
+                        new RuntimeFieldColumn("status", "STRING", true, false, false),
+                        new RuntimeFieldColumn("amount", "DOUBLE", false, false, false)),
+                    "status"));
+    JdbcRuntimeRecordService guard = new JdbcRuntimeRecordService(jdbc, catalog);
+
+    RuntimeRecordException createEx =
+        assertThrows(
+            RuntimeRecordException.class,
+            () ->
+                guard.create(
+                    "demo_claim", 1L, Map.of("title", "T", "status", "PAID", "amount", 88), 2001L));
+    assertEquals(
+        MetadataErrorCodes.RUNTIME_FIELD_PROTECTED, createEx.getErrorCode(), "POST 直写状态字段须 422");
+
+    // 先以合法途径建一条（无状态字段的目录快照，模拟动作引擎已写入初始态）
+    RuntimeEntityCatalog bareCatalog =
+        (code, tenantId) ->
+            Optional.of(
+                new PublishedRuntimeEntity(
+                    "demo_claim",
+                    "demo_claim",
+                    "id",
+                    tenantId,
+                    List.of(
+                        new RuntimeFieldColumn("id", "LONG", true, false, true),
+                        new RuntimeFieldColumn("title", "STRING", true, false, false),
+                        new RuntimeFieldColumn("status", "STRING", true, false, false),
+                        new RuntimeFieldColumn("amount", "DOUBLE", false, false, false)),
+                    null));
+    new JdbcRuntimeRecordService(jdbc, bareCatalog)
+        .create("demo_claim", 1L, Map.of("title", "T2", "status", "DRAFT"), 2002L);
+
+    RuntimeRecordException updateEx =
+        assertThrows(
+            RuntimeRecordException.class,
+            () -> guard.update("demo_claim", 1L, "2002", Map.of("status", "PAID"), 0, "tester"));
+    assertEquals(
+        MetadataErrorCodes.RUNTIME_FIELD_PROTECTED, updateEx.getErrorCode(), "PUT 直写状态字段须 422");
+
+    // 同一实体、不含状态字段的普通更新不受影响
+    Map<String, Object> updated =
+        guard.update("demo_claim", 1L, "2002", Map.of("amount", 128.50), 0, "tester");
+    assertEquals(128.50, ((Number) updated.get("amount")).doubleValue());
+  }
 }

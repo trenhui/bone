@@ -20,19 +20,30 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-/** 元数据 catalog / EAV 写操作幂等（对齐 Stripe Idempotency-Key，默认进程内 24h）。 */
+/**
+ * 元数据 catalog / EAV / runtime 写操作幂等（对齐 Stripe Idempotency-Key）。
+ *
+ * <p><b>TTL 配置化</b>（原硬编码 24h，Runtime §4.6.1 缺陷 #2）：资金类动作 24h 后重放同一 Key 会
+ * 二次记账——幂等记录已过期，而状态机再校验也不足够（若凭证已生成但状态回滚）。 保存时长必须能覆盖业务窗口，故改为配置项 {@code
+ * bone.metadata.idempotency.ttl}。
+ */
 @Service
 public class CatalogIdempotencySupport {
 
-  private static final Duration TTL = Duration.ofHours(24);
-
   private final ObjectMapper objectMapper;
   private final CatalogIdempotencyStore store;
+  private final Duration ttl;
 
-  public CatalogIdempotencySupport(ObjectMapper objectMapper, CatalogIdempotencyStore store) {
+  public CatalogIdempotencySupport(
+      ObjectMapper objectMapper,
+      CatalogIdempotencyStore store,
+      @org.springframework.beans.factory.annotation.Value(
+              "${bone.metadata.catalog.idempotency.ttl:PT24H}")
+          Duration ttl) {
     this.objectMapper =
         objectMapper.copy().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     this.store = store;
+    this.ttl = ttl == null || ttl.isZero() || ttl.isNegative() ? Duration.ofHours(24) : ttl;
   }
 
   public static String fingerprint(String raw) {
@@ -48,10 +59,18 @@ public class CatalogIdempotencySupport {
     }
   }
 
+  /**
+   * 幂等作用域：<strong>租户 + Key + 方法 + 路径，不含 user</strong>（Runtime §4.6.1 缺陷 #1）。
+   *
+   * <p><b>为什么要去掉 user</b>：幂等的语义是「同一个业务意图只执行一次」。绑 user 后， 同一 Key
+   * 被两个用户各用一次会<strong>执行两次</strong>——网关重试、换标签页、重试代理都能击穿它。 Stripe 的 scope 是 account + key，同样不含 user。
+   *
+   * <p>请求体差异由 {@code requestFingerprint} 承担（同 Key 不同体 → 409 {@code
+   * CatalogIdempotencyConflictException}），与 user 无关。
+   */
   public String scopeKey(String idempotencyKey, String method, String path) {
     String tenant = nullToEmpty(MDC.get("tenantId"));
-    String user = nullToEmpty(MDC.get("userId"));
-    return tenant + "|" + user + "|" + idempotencyKey.trim() + "|" + method + "|" + path;
+    return tenant + "|" + idempotencyKey.trim() + "|" + method + "|" + path;
   }
 
   public boolean hasKey(String idempotencyKey) {
@@ -111,7 +130,7 @@ public class CatalogIdempotencySupport {
           scopeKey(idempotencyKey, method, path),
           new CatalogIdempotencyStore.Snapshot(
               requestFingerprint, objectMapper.writeValueAsString(snap)),
-          TTL);
+          ttl);
     } catch (JsonProcessingException ignored) {
       // skip cache on serialization failure
     }
@@ -139,7 +158,7 @@ public class CatalogIdempotencySupport {
           scopeKey(idempotencyKey, method, path),
           new CatalogIdempotencyStore.Snapshot(
               requestFingerprint, objectMapper.writeValueAsString(snap)),
-          TTL);
+          ttl);
     } catch (JsonProcessingException ignored) {
       // skip
     }

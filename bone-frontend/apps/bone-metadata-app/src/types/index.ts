@@ -6,7 +6,8 @@ export * from '@bone/shared-types';
 export type { ApiResponse, PageResult, NormalizedPageResult } from '@bone/shared-types';
 export type EntityStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
-import type { MetaField } from '@bone/shared-types';
+import type { MetaField, RuntimeRecord } from '@bone/shared-types';
+export type { RuntimeRecord };
 
 // ===== 建模工作台闭环（2b 方案）新增类型 =====
 
@@ -114,4 +115,45 @@ export interface InstantiateTemplateReq {
   moduleId?: string | string;
   icon?: string;
   deliveryMode?: number;
+}
+
+// ===== 运行时状态机动作（RuntimeActionController） =====
+
+/** 动作入参声明（meta_entity_action_def.params_schema 元素）。 */
+export interface RuntimeActionParamSpec {
+  name: string;
+  type: string;
+  required: boolean;
+  values?: string[];
+  label?: string;
+}
+
+/** 状态机动作定义（GET /api/v1/runtime/entities/{code}/actions）。 */
+export interface RuntimeActionDef {
+  id: number;
+  entityCode: string;
+  actionCode: string;
+  label: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  statusField: string;
+  escape: boolean;
+  handlerBean: string | null;
+  params: RuntimeActionParamSpec[];
+  permissionCode: string | null;
+  requiresIdempotency: boolean;
+  sortOrder: number;
+}
+
+/** 触发动作后的响应体（POST .../records/{id}/actions/{code}）。 */
+export interface RuntimeActionResult {
+  record: RuntimeRecord;
+  result: Record<string, unknown>;
+  idempotent: boolean;
+  /** 动作码（回显，便于前端日志/埋点对齐） */
+  action?: string;
+  /** 状态机审计：流转前状态 */
+  fromStatus?: string | null;
+  /** 状态机审计：流转后状态 */
+  toStatus?: string | null;
 }

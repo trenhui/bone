@@ -23,7 +23,7 @@ import type {
   EntityValidationIssue, MetaEntity, MetaField, MetaRelation,
   CreateMetaFieldReq, CreateMetaRelationReq, UpdateMetaFieldReq, UpdateMetaRelationReq,
 } from '../types';
-import { DELIVERY_MODE, ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES, DATA_CLASSIFICATION_MAP, SENSITIVITY_LEVEL_MAP, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
+import { ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES, DATA_CLASSIFICATION_MAP, SENSITIVITY_LEVEL_MAP, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
 
 const { Text, Title } = Typography;
 
@@ -491,7 +491,7 @@ const EntityDetail: React.FC = () => {
             <Row gutter={[16, 12]}>
               <Col span={6}><Text type="secondary">编码</Text><div><Text code>{entity.code}</Text></div></Col>
               <Col span={6}><Text type="secondary">数据库表</Text><div><Text code>{entity.tableName}</Text></div></Col>
-              <Col span={4}><Text type="secondary">交付模式</Text><div><Tag color={entity.deliveryMode === 1 ? 'purple' : 'default'}>{DELIVERY_MODE[entity.deliveryMode ?? 0]}</Tag></div></Col>
+              <Col span={4}><Text type="secondary">交付模式</Text><div><Tag color={entity.deliveryMode === META_DELIVERY_RUNTIME ? 'purple' : 'default'}>{entity.deliveryMode === META_DELIVERY_RUNTIME ? '自动生成界面' : '手写界面'}</Tag></div></Col>
               <Col span={4}><Text type="secondary">状态</Text><div><Tag color={entity.status === 1 ? 'green' : 'blue'}>{ENTITY_STATUS[entity.status]}</Tag></div></Col>
               <Col span={4}><Text type="secondary">字段数</Text><div><Badge count={fields.length} showZero style={{ backgroundColor: '#1890ff' }} /></div></Col>
               <Col span={4}><Text type="secondary">发布态</Text><div>
@@ -645,7 +645,7 @@ const EntityDetail: React.FC = () => {
             {
               key: 'ui',
               label: (<Space size={4}><TableOutlined /><span>界面</span></Space>),
-              children: (
+              children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
                 <InterfaceTab
                   entityCode={entity.code}
                   fields={fields}
@@ -659,6 +659,28 @@ const EntityDetail: React.FC = () => {
                     setInnerTab('fields');
                     setHighlightFieldCode(code);
                   }}
+                />
+              ) : (
+                /* 手写界面模式（PRD §0.7）：说明卡 + 组件契约，不做 Meta* 覆盖编辑 */
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ margin: 8 }}
+                  message="该实体使用「手写界面」"
+                  description={
+                    <div style={{ fontSize: 13 }}>
+                      <div>页面由代码生成或业务仓手写，不提供自动渲染与列覆盖编辑（PRD §0.7）。</div>
+                      <div style={{ marginTop: 8 }}>手写页面组件契约（v1.1）：</div>
+                      <div style={{ marginTop: 4 }}>
+                        <Tag>实体 code</Tag><Text code style={{ fontSize: 12 }}>{entity.code}</Text>
+                        <Tag style={{ marginLeft: 8 }}>catalog 快照</Tag><Text code style={{ fontSize: 12 }}>meta_entity 已发布元数据</Text>
+                        <Tag style={{ marginLeft: 8 }}>records API</Tag><Text code style={{ fontSize: 12 }}>runtime records 接口</Text>
+                      </div>
+                      <div style={{ marginTop: 8, color: '#86909c' }}>
+                        若标准增删改查够用，可在实体编辑中改为「自动生成界面」（运行时交付）后获得 Meta* 自动列表/表单。
+                      </div>
+                    </div>
+                  }
                 />
               ),
             },

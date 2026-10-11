@@ -76,6 +76,48 @@ export interface PageResult<T = unknown> {
   total: string | number;
   page: number;
   size: number;
+  /**
+   * 分页级扩展元数据（后端为 null 时不序列化）。
+   *
+   * 目前唯一用途：低代码 Runtime 的**动作发现**——`meta.allowedActionsByStatus`
+   * 按行状态分组一次算全量（Runtime 数据面设计 §4.3.1），列表与详情共用同一份结果，
+   * 前端不得再逐行请求动作列表（N+1）或硬编码按钮。
+   */
+  meta?: RuntimePageMeta | null;
+}
+
+/**
+ * 分页级扩展元数据（与后端 `PageResult.meta` 同构）。
+ *
+ * `allowedActionsByStatus` 的键是状态值；键 `"*"` 表示「任意状态均可触发」的动作兜底集合。
+ * 无权限的动作后端**不会返回**（而非返回 `enabled:false`），故前端只需按表渲染。
+ */
+export interface RuntimePageMeta {
+  allowedActionsByStatus?: Record<string, RuntimeActionView[]>;
+}
+
+/** 动作视图（Describe 返回形状；与后端 `RuntimeActionDescribeSupport#toView` 对齐）。 */
+export interface RuntimeActionView {
+  code: string;
+  label: string;
+  /** `state_transition` = 平台内置状态流转；`escape` = 有副作用的逃逸动作（需 Handler） */
+  kind: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  /** 是否需要二次确认（逃逸 / 资金类为 true） */
+  confirm: boolean;
+  requiresIdempotencyKey: boolean;
+  permission: string | null;
+  /** 动作入参声明：前端按此动态渲染表单，禁止硬编码参数名 */
+  params?: RuntimeActionParamView[];
+}
+
+export interface RuntimeActionParamView {
+  code: string;
+  label: string | null;
+  type: string;
+  required: boolean;
+  enumValues?: string[] | null;
 }
 
 /**

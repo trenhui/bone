@@ -85,6 +85,16 @@ public class GlobalExceptionHandler {
           case MetadataErrorCodes.RUNTIME_DUPLICATE -> HttpStatus.CONFLICT;
           case MetadataErrorCodes.RUNTIME_INVALID_QUERY,
               MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER -> HttpStatus.BAD_REQUEST;
+          case MetadataErrorCodes.RUNTIME_ACTION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+          case MetadataErrorCodes.RUNTIME_ACTION_ILLEGAL_TRANSITION -> HttpStatus.CONFLICT;
+          case MetadataErrorCodes.RUNTIME_ACTION_INVALID_PARAMS,
+              MetadataErrorCodes.RUNTIME_ACTION_IDEMPOTENCY_REQUIRED -> HttpStatus.BAD_REQUEST;
+            // RC-008：state_field 直写 → 422。语义是「请求体字段合法但当前写路径不接受」，
+            // 归 400 会与「类型/必填错误」混为一类，前端无法区分「改字段值」与「换入口」两种修复动作。
+          case MetadataErrorCodes.RUNTIME_FIELD_PROTECTED -> HttpStatus.UNPROCESSABLE_ENTITY;
+            // RC-004：实体级 / 动作级授权拒绝 → 403。
+          case MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN,
+              MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION -> HttpStatus.FORBIDDEN;
           default -> HttpStatus.BAD_REQUEST;
         };
     return problem(status, ex.getErrorCode(), ex.getMessage());

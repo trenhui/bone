@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Button, Collapse, Space, Spin, Table, Tag, Typography, message,
+  Alert, Button, Collapse, Modal, Space, Spin, Table, Tag, Typography, message,
 } from 'antd';
 import { ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { errorMessage, metadataEntityApi } from '../services/metadataApi';
 import type { EntityValidationIssue, MetaField, PublishPreview } from '../types';
+import { parseSchemaDiff } from '../utils/schemaDiff';
 
 const { Text, Paragraph } = Typography;
 
@@ -67,24 +68,42 @@ const PublishPreviewPanel: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
+  // schema diff（PRD §5.4 规则 32：+ / ✎ / - 三色；MVP 仅 + / -，✎ 受后端发布保护不可达）
+  const schemaDiff = parseSchemaDiff(preview?.physical ?? null, preview?.fields.map((f) => f.code) ?? []);
+
   const handlePublish = async () => {
     if (!entityId) return;
-    setPublishing(true);
-    try {
-      const res = await metadataEntityApi.publish(entityId);
-      if (res.code === 200) {
-        message.success(`「${entityName || preview?.entityCode || entityId}」已发布`);
-        setJustPublished(true);
-        onPublished?.();
-        refresh();
-      } else {
-        message.error(errorMessage(res));
+    const doPublish = async () => {
+      setPublishing(true);
+      try {
+        const res = await metadataEntityApi.publish(entityId);
+        if (res.code === 200) {
+          message.success(`「${entityName || preview?.entityCode || entityId}」已发布`);
+          setJustPublished(true);
+          onPublished?.();
+          refresh();
+        } else {
+          message.error(errorMessage(res));
+        }
+      } catch {
+        message.error('发布失败，请确认服务可用');
+      } finally {
+        setPublishing(false);
       }
-    } catch {
-      message.error('发布失败，请确认服务可用');
-    } finally {
-      setPublishing(false);
+    };
+    // L2 破坏性变更（删列）需二次确认（PRD §0.3 G6 L2 管控）
+    if (preview && schemaDiff.l2Count > 0) {
+      Modal.confirm({
+        title: '本次发布包含破坏性变更（L2）',
+        content: `将删除 ${schemaDiff.droppedColumns.join('、')} 列，历史数据将不可恢复。确认继续发布？`,
+        okText: '确认发布',
+        okButtonProps: { danger: true },
+        cancelText: '取消',
+        onOk: doPublish,
+      });
+      return;
     }
+    doPublish();
   };
 
   const issueColumns: ColumnsType<EntityValidationIssue> = [
@@ -94,12 +113,18 @@ const PublishPreviewPanel: React.FC<Props> = ({
   ];
 
   const fieldColumns: ColumnsType<MetaField> = [
+    { title: '发布动作', dataIndex: 'code', width: 100, render: (code: string) => {
+      if (schemaDiff.addedColumns.includes(code)) return <Tag color="green" icon={<PlusOutlined />}>新增 L1</Tag>;
+      if (schemaDiff.droppedColumns.includes(code)) return <Tag color="red">删除 L2</Tag>;
+      return <Tag style={{ color: '#8c8c8c', borderColor: '#d9d9d9', background: '#fafafa' }}>稳定</Tag>;
+    } },
     { title: '字段', dataIndex: 'displayName', width: 140, ellipsis: true },
     { title: '编码', dataIndex: 'code', width: 140, ellipsis: true },
     { title: '类型', dataIndex: 'type', width: 90 },
     { title: '长度', dataIndex: 'length', width: 70, render: (v: number | null) => v ?? '—' },
     { title: '必填', dataIndex: 'required', width: 60, render: (v: boolean) => (v ? <Tag color="red">是</Tag> : <Tag>否</Tag>) },
   ];
+
 
   return (
     <div>
@@ -145,7 +170,21 @@ const PublishPreviewPanel: React.FC<Props> = ({
           {preview.hasBlockingErrors ? (
             <Alert type="error" showIcon icon={<ExclamationCircleOutlined />} message="存在阻断性问题，发布按钮已禁用" description="请先解决下方「错误」级别的问题再发布。" style={{ marginBottom: 12 }} />
           ) : (
-            <Alert type="success" showIcon icon={<CheckCircleOutlined />} message="校验通过，可发布" description={`字段 ${preview.fields.length} 个 · 关系 ${preview.relationCount} 条`} style={{ marginBottom: 12 }} />
+            <Alert
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              message="校验通过，可发布"
+              description={
+                <Space size={8} wrap>
+                  <span>字段 {preview.fields.length} 个 · 关系 {preview.relationCount} 条</span>
+                  {schemaDiff.l1Count > 0 && <Tag color="green">新增 {schemaDiff.l1Count} 列（L1）</Tag>}
+                  {schemaDiff.l2Count > 0 && <Tag color="red">删除 {schemaDiff.l2Count} 列（L2）</Tag>}
+                  {schemaDiff.l1Count === 0 && schemaDiff.l2Count === 0 && <Tag>结构无变更</Tag>}
+                </Space>
+              }
+              style={{ marginBottom: 12 }}
+            />
           )}
 
           <Collapse

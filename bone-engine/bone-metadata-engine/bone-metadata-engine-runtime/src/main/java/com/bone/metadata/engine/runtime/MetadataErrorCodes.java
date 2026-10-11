@@ -38,6 +38,28 @@ public final class MetadataErrorCodes {
   /** 标识符非法（表名 / 列名不符合 {@code [a-zA-Z][a-zA-Z0-9_]*}）。 */
   public static final String RUNTIME_INVALID_IDENTIFIER = "META_RUNTIME_INVALID_IDENTIFIER";
 
+  // ===== 数据安全（RC-008 / RC-004 · Must）=====
+
+  /**
+   * 受保护字段不可直写（实体声明 {@code state_field} 后，{@code POST}/{@code PUT} 请求体含该字段）→ 422。
+   *
+   * <p><b>为什么必须是显式 422 而不是静默忽略</b>：静默 drop 会让调用方误以为状态已写入，
+   * 从而在「以为打款成功」的前提下继续下游业务；显式拒绝把「状态只能经状态机推进」变成可观测契约。 唯一合法入口是 {@code POST
+   * …/records/{id}/actions/{actionCode}}。
+   */
+  public static final String RUNTIME_FIELD_PROTECTED = "META_RUNTIME_FIELD_PROTECTED";
+
+  /**
+   * 无实体级权限 {@code runtime:{entityCode}:{read|write}}（或通配 {@code runtime:*:{read|write}}）→ 403。
+   *
+   * <p>现状 {@code metadata:runtime:write} 等于「租户内全库 CRUD」；实体级码是「全库 CRUD」 与「按实体授权」的分界线（Runtime 数据面设计
+   * §4.7）。
+   */
+  public static final String RUNTIME_ENTITY_FORBIDDEN = "META_RUNTIME_ENTITY_FORBIDDEN";
+
+  /** 无动作级权限 {@code runtime:{entityCode}:{actionCode}} → 403。 */
+  public static final String RUNTIME_FORBIDDEN_ACTION = "META_RUNTIME_FORBIDDEN_ACTION";
+
   // ===== 运行时状态机动作（META_RUNTIME_ACTION_*）=====
 
   /** 动作定义不存在（实体/动作码查不到）。 */

@@ -142,8 +142,8 @@ const ImportTableModal: React.FC<ImportTableModalProps> = ({ open, onClose, onIm
             <Select
               disabled={importing || !!result}
               options={[
-                { value: 1, label: 'RUNTIME（运行时元数据面）' },
-                { value: 0, label: 'GENERATIVE（生成式交付）' },
+                { value: 1, label: 'RUNTIME（自动生成界面）' },
+                { value: 0, label: 'GENERATIVE（手写界面）' },
               ]}
             />
           </Form.Item>

@@ -24,6 +24,8 @@ import type {
   CreateMetaRelationReq,
   UpdateMetaRelationReq,
   RuntimeRecord,
+  RuntimeActionDef,
+  RuntimeActionResult,
 } from '../types';
 
 export { setQiankunToken };
@@ -224,8 +226,73 @@ export const runtimeRecordApi = {
       etag ? { headers: { 'If-Match': etag } } : undefined,
     ),
 
-  delete: (entityCode: string, id: string) =>
+  /**
+   * 归档（软删）。
+   *
+   * `etag` 可选但生效（判据 R13）：带上后端按版本前置条件校验，冲突 412。
+   * 归档记录进回收站，可经 {@link restore} 恢复 —— 但物理表无 deleted 列时是**物理删除**，
+   * 故 UI 必须明示「不可恢复」，不能让用户以为「删了还能找回来」。
+   */
+  delete: (entityCode: string, id: string, etag?: string) =>
     api.delete<never, ApiResponse<void>>(
       `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
+      etag ? { headers: { 'If-Match': etag } } : undefined,
     ),
+
+  /** 回收站视图（只查 deleted=1 的归档记录）。 */
+  trash: (
+    entityCode: string,
+    params?: { page?: number; size?: number; fields?: string; sort?: string; q?: string },
+  ) => {
+    const query: Record<string, unknown> = {
+      page: params?.page ?? 1,
+      size: params?.size ?? 20,
+    };
+    if (params?.fields) query.fields = params.fields;
+    if (params?.sort) query.sort = params.sort;
+    if (params?.q) query.q = params.q;
+    return api.get<never, ApiResponse<PageResult<RuntimeRecord>>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/deleted`,
+      { params: query },
+    );
+  },
+
+  /** 恢复归档记录（回收站 → 在用）。 */
+  restore: (entityCode: string, id: string) =>
+    api.post<never, ApiResponse<RuntimeRecord>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/restore`,
+    ),
+
+  /**
+   * 列出某实体可用动作定义（状态机）。不带 status 返回全部（前端按 fromStatus 分组）；
+   * 带 status 返回该状态下可触发的动作。
+   */
+  listActions: (entityCode: string, status?: string) =>
+    api.get<never, ApiResponse<RuntimeActionDef[]>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/actions`,
+      status ? { params: { status } } : undefined,
+    ),
+
+  /**
+   * 触发某条记录的某个状态机动作。escape 动作（资金类）必须带 idempotencyKey 防重放二次记账。
+   * 响应体为 { record, result, idempotent }。
+   */
+  invokeAction: (
+    entityCode: string,
+    id: string,
+    actionCode: string,
+    params: Record<string, unknown>,
+    idempotencyKey?: string,
+    etag?: string,
+  ) => {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+    // If-Match 与列表/详情返回的 ETag 对齐，避免基于陈旧快照推进状态（动作与 CRUD 同一套乐观并发语义）
+    if (etag) headers['If-Match'] = etag;
+    return api.post<never, ApiResponse<RuntimeActionResult>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/actions/${encodeURIComponent(actionCode)}`,
+      { params },
+      Object.keys(headers).length ? { headers } : undefined,
+    );
+  },
 };

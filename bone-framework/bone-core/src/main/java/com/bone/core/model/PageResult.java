@@ -5,6 +5,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 
 /** 分页结果模型 */
@@ -27,6 +28,16 @@ public class PageResult<T> implements Serializable {
 
   /** 游标分页：下一页游标；offset 分页时为 null */
   private String nextCursor;
+
+  /**
+   * 分页级扩展元数据（null 时不参与序列化）。
+   *
+   * <p>用途：Runtime 数据面「动作发现」唯一形态 {@code meta.allowedActionsByStatus}（设计 §4.3.1）——按当前 status
+   * 分组一次算全量，天然防 N+1，且列表与详情共用一份结果。 放在 {@code PageResult} 而非另建信封，是为了避免「数据与动作两套响应结构」的双真源。
+   */
+  @com.fasterxml.jackson.annotation.JsonInclude(
+      com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+  private Map<String, Object> meta;
 
   // 私有构造方法
   private PageResult(List<T> records, Long total, Integer page, Integer size) {

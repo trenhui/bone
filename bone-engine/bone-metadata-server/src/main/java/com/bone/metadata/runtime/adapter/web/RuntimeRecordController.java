@@ -9,6 +9,8 @@ import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
 import com.bone.metadata.engine.runtime.RuntimePageQuery;
+import com.bone.metadata.runtime.application.RuntimeAccessGuard;
+import com.bone.metadata.runtime.application.RuntimeActionDescribeSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
@@ -54,6 +56,9 @@ public class RuntimeRecordController {
   private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
   private final TenantProvider tenantProvider;
+  private final com.bone.metadata.runtime.application.RuntimeStatusGuard statusGuard;
+  private final RuntimeAccessGuard accessGuard;
+  private final RuntimeActionDescribeSupport describeSupport;
 
   @GetMapping
   @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
@@ -64,16 +69,22 @@ public class RuntimeRecordController {
       @RequestParam(required = false) String fields,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String q) {
+    accessGuard.requireRead(entityCode);
     long tenantId = tenantProvider.currentTenantId();
     RuntimePageQuery query = RuntimePageQuery.parse(fields, sort, q);
-    var sdkPage = runtimeRecordService.page(entityCode, tenantId, page, size, query);
-    return ApiResponse.success(CatalogPageMapper.toApiPage(sdkPage, row -> row));
+    PageResult<Map<String, Object>> apiPage =
+        CatalogPageMapper.toApiPage(
+            runtimeRecordService.page(entityCode, tenantId, page, size, query), row -> row);
+    // 动作发现唯一形态（Runtime §4.3.1）：按 status 分组一次算全量，天然防 N+1，列表与详情共用一份
+    apiPage.setMeta(describeSupport.describe(tenantId, entityCode));
+    return ApiResponse.success(apiPage);
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> get(
       @PathVariable String entityCode, @PathVariable String id) {
+    accessGuard.requireRead(entityCode);
     long tenantId = tenantProvider.currentTenantId();
     Map<String, Object> row = runtimeRecordService.getById(entityCode, tenantId, id);
     Object version = row.get("version");
@@ -91,6 +102,10 @@ public class RuntimeRecordController {
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       @RequestBody Map<String, Object> body)
       throws JsonProcessingException {
+    accessGuard.requireWrite(entityCode);
+    long tenantId = tenantProvider.currentTenantId();
+    // 状态机守卫：客户端不得指定状态字段（指定即 422）；入口状态由写路径按转移矩阵注入
+    statusGuard.applyCreateGuard(tenantId, entityCode, body);
     String path = "/api/v1/runtime/entities/" + entityCode + "/records";
     String fingerprint =
         CatalogIdempotencySupport.fingerprint(objectMapper.writeValueAsString(body));
@@ -102,7 +117,6 @@ public class RuntimeRecordController {
       return replay.get();
     }
 
-    long tenantId = tenantProvider.currentTenantId();
     long newId = DistributedIdGenerator.generateLongId();
     Map<String, Object> created =
         runtimeRecordService.create(entityCode, tenantId, body, newId, currentOperator());
@@ -123,7 +137,10 @@ public class RuntimeRecordController {
       @PathVariable String id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestBody Map<String, Object> body) {
+    accessGuard.requireWrite(entityCode);
     long tenantId = tenantProvider.currentTenantId();
+    // 状态机守卫：状态字段只允许经动作端点流转（G14 收口，客户端携带即 422）
+    statusGuard.applyUpdateGuard(tenantId, entityCode, body);
     Map<String, Object> updated =
         runtimeRecordService.update(
             entityCode,
@@ -140,12 +157,61 @@ public class RuntimeRecordController {
     return builder.body(ApiResponse.success(updated));
   }
 
+  /**
+   * 归档（软删）。
+   *
+   * <p>{@code If-Match} <strong>可选但生效</strong>（判据 R13）：携带时按版本前置条件校验，冲突 412；
+   * 未携带时按无并发保护处理。归档记录进回收站（{@code GET /records/deleted}），可经 {@code restore} 恢复。
+   */
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
-  public ApiResponse<Void> delete(@PathVariable String entityCode, @PathVariable String id) {
+  public ApiResponse<Void> delete(
+      @PathVariable String entityCode,
+      @PathVariable String id,
+      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+    accessGuard.requireWrite(entityCode);
     long tenantId = tenantProvider.currentTenantId();
-    runtimeRecordService.delete(entityCode, tenantId, id);
+    runtimeRecordService.delete(
+        entityCode,
+        tenantId,
+        id,
+        CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null),
+        currentOperator());
     return ApiResponse.success();
+  }
+
+  /**
+   * 回收站视图（只查 {@code deleted = 1}）。
+   *
+   * <p>为什么必须补：Runtime §0.3 实测——软删单向不可逆，且列探测失败会静默降级为<strong>物理 DELETE</strong>。
+   * 「不可恢复」只能是<strong>明示</strong>，不能是默认行为；否则一次误归档就是永久丢数据。
+   */
+  @GetMapping("/deleted")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  public ApiResponse<PageResult<Map<String, Object>>> trash(
+      @PathVariable String entityCode,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(required = false) String fields,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) String q) {
+    accessGuard.requireRead(entityCode);
+    long tenantId = tenantProvider.currentTenantId();
+    RuntimePageQuery query = RuntimePageQuery.parse(fields, sort, q);
+    return ApiResponse.success(
+        CatalogPageMapper.toApiPage(
+            runtimeRecordService.pageDeleted(entityCode, tenantId, page, size, query), row -> row));
+  }
+
+  /** 恢复归档记录（回收站 → 在用）。 */
+  @PostMapping("/{id}/restore")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
+  public ApiResponse<Map<String, Object>> restore(
+      @PathVariable String entityCode, @PathVariable String id) {
+    accessGuard.requireWrite(entityCode);
+    long tenantId = tenantProvider.currentTenantId();
+    return ApiResponse.success(
+        runtimeRecordService.restore(entityCode, tenantId, id, currentOperator()));
   }
 
   /**

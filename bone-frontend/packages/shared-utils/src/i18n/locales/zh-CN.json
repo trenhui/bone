@@ -110,10 +110,10 @@
     "META_RUNTIME_INVALID_QUERY": "查询约束非法（含未建模列或 q 格式错误）",
     "META_RUNTIME_RECORD_NOT_FOUND": "运行时记录不存在",
     "META_RUNTIME_VALIDATION_FAILED": "字段校验失败",
-    "META_RUNTIME_ACTION_NOT_FOUND": "动作不存在或不可用",
-    "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "当前状态不允许执行该动作",
-    "META_RUNTIME_ACTION_INVALID_PARAMS": "动作参数缺失或非法",
-    "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "缺少幂等键（Idempotency-Key）",
+    "META_RUNTIME_ACTION_NOT_FOUND": "操作不存在或不可用",
+    "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "当前状态不允许此操作",
+    "META_RUNTIME_ACTION_INVALID_PARAMS": "操作参数不完整或不合法",
+    "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "缺少幂等键（Idempotency-Key）：资金/状态类动作必须携带以防重放",
     "FILE_UPLOAD_FAILED": "文件上传失败",
     "FILE_DOWNLOAD_FAILED": "文件下载失败",
     "FILE_DELETE_FAILED": "文件删除失败",
@@ -164,10 +164,7 @@
     "META_PHYSICAL_TABLE_NOT_FOUND": "物理表不存在，无法导入（发布期物理结构不存在）",
     "BP_INVENTORY_QUANTITY_INVALID": "库存数量必须为正数",
     "INT_CONNECTOR_INVOCATION_FAILED": "连接器调用失败：目标系统不可达、超时或返回错误",
-    "META_RUNTIME_ACTION_NOT_FOUND": "操作不存在或不可用",
-    "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "当前状态不允许此操作",
-    "META_RUNTIME_ACTION_INVALID_PARAMS": "操作参数不完整或不合法",
-    "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "缺少幂等键（Idempotency-Key）：资金/状态类动作必须携带以防重放"
+    "META_RUNTIME_FIELD_PROTECTED": "状态字段不可直接修改，请使用动作接口推进状态"
   },
   "enums": {
     "ORDER_STATUS": {

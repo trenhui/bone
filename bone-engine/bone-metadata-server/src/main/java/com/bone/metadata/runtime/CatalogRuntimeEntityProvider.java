@@ -9,8 +9,11 @@ import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;
 import com.bone.metadata.engine.runtime.RuntimeFieldColumn;
+import com.bone.metadata.runtime.application.RuntimeActionDefRepository;
+import com.bone.metadata.runtime.domain.RuntimeActionDef;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,6 +26,7 @@ public class CatalogRuntimeEntityProvider {
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
   private final TenantProvider tenantProvider;
+  private final RuntimeActionDefRepository actionDefRepository;
 
   public Optional<PublishedRuntimeEntity> findPublishedRuntime(String entityCode, long tenantId) {
     List<MetaEntity> found =
@@ -68,8 +72,17 @@ public class CatalogRuntimeEntityProvider {
               f.getPhysicalColumn()));
     }
 
+    // G14：state_field 从动作定义推导（零 DDL 过渡方案，Runtime 设计 §4.5.1）——
+    // 同一实体全部动作的 status_field 必须一致（种子由迁移保证），任取其一即可。
+    String stateField =
+        actionDefRepository.listByEntity(tenantId, entity.getCode()).stream()
+            .map(RuntimeActionDef::getStatusField)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
     return Optional.of(
-        new PublishedRuntimeEntity(entity.getCode(), entity.getTableName(), pk, tenantId, columns));
+        new PublishedRuntimeEntity(
+            entity.getCode(), entity.getTableName(), pk, tenantId, columns, stateField));
   }
 
   /** 供 Controller 默认租户 */

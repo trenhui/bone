@@ -50,3 +50,7 @@ bone:
       idempotency:
         backend: memory
         key-prefix: "bone:metadata:idempotency:"
+        # 幂等记录保存时长（Runtime §4.6.1 缺陷 #2：原硬编码 24h）。
+        # 资金类动作的幂等窗口必须覆盖整个业务窗口（对账 / 退款周期常以天计），
+        # 否则记录过期后重放同一 Key 会二次记账。生产建议 PT72H 起。
+        ttl: ${BONE_IDEMPOTENCY_TTL:PT24H}

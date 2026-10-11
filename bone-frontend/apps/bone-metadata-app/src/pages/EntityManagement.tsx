@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert, Button, Breadcrumb, Card, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select,
-  Space, Table, Tag, Tree, message, Badge, Typography, Row, Col,
+  Space, Table, Tag, Tree, message, Badge, Typography, Row, Col, Radio,
 } from 'antd';
 import {
   PlusOutlined, AppstoreOutlined, CopyOutlined, DatabaseOutlined, FolderOutlined, SearchOutlined,
@@ -20,11 +20,49 @@ import { appApi, moduleApi, type BoneModule } from '../services/appModuleApi';
 import type {
   CopyEntityReq, CreateMetaEntityReq, MetaEntity, MetaTemplate, MetaTemplateField, UpdateMetaEntityReq,
 } from '../types';
-import { DELIVERY_MODE, ENTITY_STATUS, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
+import { DELIVERY_MODE, ENTITY_STATUS, META_DELIVERY_GENERATIVE, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 
 const { Text } = Typography;
+
+/**
+ * 双界面模式卡片（PRD §0.7 · 产品主语言）：用户只选「手写界面 / 自动生成界面」，
+ * 底层仍存 delivery_mode（0=GENERATIVE / 1=RUNTIME，1:1 映射、不新增字段）。
+ * 新建对话框用卡片替代下拉：10 秒判据见 PRD §0.7.1（标准 CRUD→自动；整页不像 CRUD→手写）。
+ */
+const UiModeCard: React.FC<{
+  title: string;
+  badge?: string;
+  desc: string;
+  active: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+}> = ({ title, badge, desc, active, disabled, onSelect }) => (
+  <div
+    role="radio"
+    aria-checked={active}
+    aria-disabled={disabled}
+    onClick={disabled ? undefined : onSelect}
+    style={{
+      flex: 1,
+      padding: '10px 12px',
+      borderRadius: 8,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      border: active ? '2px solid #1677ff' : '2px solid #d9d9d9',
+      background: active ? '#e6f4ff' : '#fff',
+      opacity: disabled ? 0.5 : 1,
+      transition: 'border-color .2s, background .2s',
+    }}
+  >
+    <Space size={6}>
+      <Radio checked={active} disabled={disabled} />
+      <Text strong style={{ fontSize: 13 }}>{title}</Text>
+      {badge && <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', marginInlineEnd: 0 }}>{badge}</Tag>}
+    </Space>
+    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4, lineHeight: 1.6 }}>{desc}</Text>
+  </div>
+);
 
 /** 标识符白名单（与后端 2a UC-MT2 / validate 规则一致） */
 const CODE_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
@@ -48,6 +86,8 @@ const EntityManagement: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [form] = Form.useForm();
+  /** 双界面模式当前选中（PRD §0.7）：新建对话框卡片联动用 */
+  const uiModeWatch = Form.useWatch('deliveryMode', form);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<MetaEntity[]>([]);
   const [total, setTotal] = useState(0);
@@ -66,6 +106,9 @@ const EntityManagement: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MetaEntity | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  /** B2 命令面板（Ctrl+K 只做「跳实体」）：打开态 + 关键字 */
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cmdKeyword, setCmdKeyword] = useState('');
 
   // ----- 权限形态（UC-W8 / 2b F2）：scoped 模式下按应用角色收敛为只读；后端 403 永远兜底 -----
   const [myRole, setMyRole] = useState<string | undefined>(undefined);
@@ -82,6 +125,28 @@ const EntityManagement: React.FC = () => {
     }).catch(() => { /* 角色获取失败时不收敛 UI，交由后端 403 兜底 */ });
     return () => { cancelled = true; };
   }, [appId]);
+
+  // B2 命令面板：Ctrl+K 收窄为「跳实体」（融合方案 §3.3.3；PRD §5.4 规则 31）——
+  // 作用域只做实体搜索，不做模块/页面，降低「应用/模块/实体三层找路」成本。
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  /** B2：命令面板候选（当前列表数据 + 关键字过滤，最多 8 条） */
+  const cmdResults = useMemo(() => {
+    const kw = cmdKeyword.trim().toLowerCase();
+    if (!kw) return data.slice(0, 8);
+    return data
+      .filter((e) => `${e.displayName} ${e.code} ${e.tableName}`.toLowerCase().includes(kw))
+      .slice(0, 8);
+  }, [data, cmdKeyword]);
 
   // ----- 发布预览（UC-W7 摘要级） -----
   const [previewEntity, setPreviewEntity] = useState<MetaEntity | null>(null);
@@ -362,7 +427,7 @@ const EntityManagement: React.FC = () => {
           deliveryMode: values.deliveryMode,
         });
         if (res.code === 200 || res.code === 201) {
-          message.success('已从模板实例化成功（已复制为独立副本，后续编辑与模板互不影响）');
+          message.success(`已从模板「${selectedTemplate?.name || '未知'}」实例化成功（已复制为独立副本，后续编辑与模板互不影响）`);
           setModalOpen(false);
           const newId = res.data;
           // 从模板起盘 → 落「界面」Tab（PRD §0.6.6 定案：模板已带字段，先见结果而非结构）
@@ -565,250 +630,249 @@ const EntityManagement: React.FC = () => {
 
   // ----- Render -----
   return (
-    <div className="page" style={{ display: 'flex', gap: 16 }}>
-      {/* 面包屑（模块上下文时） */}
+    <div className="page">
+      {/* 面包屑（模块上下文时）。**正常流定位**，不用 absolute ——
+          absolute + top:0 会压到 shell 顶栏下方（实测截图：标题与全局搜索框重叠），
+          且需要靠「占位 div」硬凑高度。改为正常流后不需要任何占位 hack。 */}
       {isScoped && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-          <Breadcrumb
-            items={[
-              { title: <a onClick={() => navigate('/apps')}>建模工作台</a> },
-              { title: <a onClick={() => navigate(`/apps/${appId}/modules`)}>模块</a> },
-              { title: '实体' },
-            ]}
-          />
-        </div>
+        <Breadcrumb
+          style={{ marginBottom: 8 }}
+          items={[
+            { title: <a onClick={() => navigate('/apps')}>建模工作台</a> },
+            { title: <a onClick={() => navigate(`/apps/${appId}/modules`)}>模块</a> },
+            { title: '实体' },
+          ]}
+        />
       )}
 
-      {/* 页头：声明本页职责边界（消除「工作台/实体/运行时数据三个菜单到底管什么」的困惑） */}
-      <div style={{ position: 'absolute', top: isScoped ? 28 : 0, left: isScoped ? 0 : 236, right: 0 }}>
-        <Space direction="vertical" size={0} style={{ width: '100%' }}>
-          <Space size={8} wrap>
-            <Typography.Title level={5} style={{ margin: 0 }}>实体</Typography.Title>
-            <Tag color="blue" style={{ fontSize: 12 }}>模型清单（唯一真源）</Tag>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              共 {total} 个{isScoped ? '（当前模块）' : ''} · 待发布{' '}
-              {draftTotal ?? '…'}
-            </Text>
-          </Space>
+      {/* 页头：声明本页职责边界（消除「工作台 / 实体 / 运行时数据三个菜单到底管什么」的困惑） */}
+      <div style={{ marginBottom: 12 }}>
+        <Space size={8} wrap style={{ marginBottom: 2 }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>实体</Typography.Title>
+          <Tag color="blue" style={{ fontSize: 12 }}>模型清单（唯一真源）</Tag>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            在这里检索、筛选、批量发布、复制与维护实体。点「字段」进入实体工作区（结构 / 界面 / 数据 / 发布四页签）；
-            录制业务数据请用行内「数据」按钮或工作区的「数据」页签，它会锁定当前实体、不会看错数据。
+            共 {total} 个{isScoped ? '（当前模块）' : ''} · 全局待发布 {draftTotal ?? '…'}
           </Text>
         </Space>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          在这里检索、筛选、批量发布、复制与维护实体。点「字段」进入实体工作区（结构 / 界面 / 数据 / 发布四页签）；
+          录入业务数据请用行内「数据」按钮或工作区的「数据」页签，它会锁定当前实体、不会看错数据。
+        </Text>
       </div>
 
-      {/* 左侧模块树（仅非 scoped 模式；数据来自 IAM 应用/模块真源） */}
-      {!isScoped && (
-        <Card size="small" style={{ width: 220, flexShrink: 0, marginTop: 64 }} styles={{ body: { padding: 8 } }}>
-          <Tree
-            showIcon
-            defaultExpandAll
-            selectedKeys={[selectedModule]}
-            onSelect={(keys) => {
-              if (keys.length > 0) setSelectedModule(String(keys[0]));
-            }}
-            treeData={moduleTree}
-          />
-        </Card>
-      )}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        {/* 左侧模块树（仅非 scoped 模式；数据来自 IAM 应用/模块真源） */}
+        {!isScoped && (
+          <Card size="small" style={{ width: 220, flexShrink: 0 }} styles={{ body: { padding: 8 } }}>
+            <Tree
+              showIcon
+              defaultExpandAll
+              selectedKeys={[selectedModule]}
+              onSelect={(keys) => {
+                if (keys.length > 0) setSelectedModule(String(keys[0]));
+              }}
+              treeData={moduleTree}
+            />
+          </Card>
+        )}
 
-      {/* 右侧列表 */}
-      {/* minWidth:0 是关键：flex 子项默认 min-width:auto，会被 Table 的 scroll.x=1160 撑破导致页面横向溢出 */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* 页头占位：面包屑（scoped）+ 职责页头（absolute 定位，需让出高度，否则压住过滤栏） */}
-        <div style={{ height: isScoped ? 96 : 64 }} />
-        {/* 过滤与操作栏 */}
-        {/* gutter 会给 Row 加 -6px 左右负边距，在 flex:1 容器里会把内容顶出视口（实测溢出 10px）
+        {/* 右侧列表 */}
+        {/* minWidth:0 是关键：flex 子项默认 min-width:auto，会被 Table 的 scroll.x=1160 撑破导致页面横向溢出 */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* 过滤与操作栏 */}
+          {/* gutter 会给 Row 加 -6px 左右负边距，在 flex:1 容器里会把内容顶出视口（实测溢出 10px）
             这里把 Row 自身外边距归零，列间距由 Col 的 padding 承担，视觉间隔不变。 */}
-        <Row gutter={[12, 12]} style={{ marginBottom: 16, marginLeft: 0, marginRight: 0 }}>
-          <Col>
-            <Input.Search
-              placeholder="搜索实体名称/编码"
-              allowClear
-              style={{ width: 220 }}
-              onSearch={(v) => { setKeyword(v); setPage(1); }}
-            />
-          </Col>
-          <Col>
-            <Select
-              style={{ width: 130 }}
-              placeholder="类型"
-              allowClear
-              value={typeFilter}
-              onChange={(v) => { setTypeFilter(v ?? null); setPage(1); }}
-              options={[
-                { value: 0, label: '普通业务' },
-                { value: 1, label: '主数据类' },
-              ]}
-            />
-          </Col>
-          <Col>
-            <Select
-              style={{ width: 120 }}
-              placeholder="交付模式"
-              allowClear
-              value={deliveryFilter}
-              onChange={(v) => { setDeliveryFilter(v ?? null); setPage(1); }}
-              options={[
-                { value: 0, label: '生成式(A)' },
-                { value: 1, label: '运行时(B)' },
-              ]}
-            />
-          </Col>
-          <Col>
-            <Select
-              style={{ width: 100 }}
-              placeholder="状态"
-              allowClear
-              value={statusFilter}
-              onChange={(v) => { setStatusFilter(v ?? null); setPage(1); }}
-              options={[
-                { value: 0, label: '草稿' },
-                { value: 1, label: '已发布' },
-                { value: 2, label: '已下线' },
-              ]}
-            />
-          </Col>
-          <Col flex="auto" style={{ textAlign: 'right' }}>
-            <Space>
-              <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
-              {canWrite && (
-                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</AuthButton>
-              )}
-              {canWrite && (
-                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</AuthButton>
-              )}
-              {canWrite && (
-                <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</AuthButton>
-              )}
-            </Space>
-          </Col>
-        </Row>
-
-        {!canWrite && (
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 12 }}
-            message="只读模式"
-            description="您在该应用中的角色为「只读（viewer）」，仅可查看模型；建模与发布需要 ADMIN / DEVELOPER 角色（请联系应用管理员在 IAM 授予）。"
-          />
-        )}
-
-        {/* 批量操作栏 */}
-        {selectedRowKeys.length > 0 && (
-          <Space style={{ marginBottom: 12 }}>
-            <Text type="secondary">已选 {selectedRowKeys.length} 项</Text>
-            {/* 批量操作：整组 Popconfirm 挂 <Auth>，理由同行内删除（AuthButton 返回 null 会炸 antd cloneElement） */}
-            <Auth code={BonePermissionCodes.METADATA_PUBLISH}>
-              <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
-              // ⚠ 雪花 ID 必须保持字符串：Number() 会因超出2^53 静默截断，
-              // 导致批量操作命中「另一个」实体。API 签名也是 string[]。
-                const ids = selectedRowKeys.map(String);
-                try {
-                  const res = await metadataEntityApi.batchPublish(ids);
-                  if (res.code === 200) {
-                    const { successCount, failCount, errors } = res.data;
-                    if (failCount === 0) {
-                      message.success(`已批量发布 ${successCount} 个实体`);
-                    } else {
-                      message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
-                      errors.forEach((e) => console.warn('[batch-publish]', e));
-                    }
-                  } else {
-                    message.error(res.message || '批量发布失败');
-                  }
-                } catch {
-                  message.error('批量发布失败，请确认 bone-metadata-server :9001 已启动');
-                } finally {
-                  setSelectedRowKeys([]);
-                  load();
-                }
-              }}>
-                <Button size="small">批量发布</Button>
-              </Popconfirm>
-            </Auth>
-            <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
-              <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
-              // ⚠ 同上：雪花 ID 不能 Number()，会截断后命中错误实体
-                const ids = selectedRowKeys.map(String);
-                try {
-                  const res = await metadataEntityApi.batchDelete(ids);
-                  if (res.code === 200) {
-                    const { successCount, failCount, errors } = res.data;
-                    if (failCount === 0) {
-                      message.success(`已批量删除 ${successCount} 个实体`);
-                    } else {
-                      message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
-                      errors.forEach((e) => console.warn('[batch-delete]', e));
-                    }
-                  } else {
-                    message.error(res.message || '批量删除失败');
-                  }
-                } catch {
-                  message.error('批量删除失败，请确认 bone-metadata-server :9001 已启动');
-                } finally {
-                  setSelectedRowKeys([]);
-                  load();
-                }
-              }}>
-                <Button size="small" danger>批量删除</Button>
-              </Popconfirm>
-            </Auth>
-          </Space>
-        )}
-
-        {/* 模块分组展示（模块级选中时为客户端过滤的平铺列表） */}
-        {!selectedIsModule && groupsToRender.length > 0 ? (
-          groupsToRender.map((group) => (
-            <Card
-              key={group.key}
-              size="small"
-              title={
-                <Space>
-                  <FolderOutlined />
-                  <span>{group.label}</span>
-                  <Tag>{group.entities.length}</Tag>
-                </Space>
-              }
-              style={{ marginBottom: 12 }}
-              styles={{ body: { padding: 0 } }}
-            >
-              <Table
-                rowKey="id"
-                loading={loading}
-                columns={columns}
-                dataSource={group.entities}
-                pagination={false}
-                size="small"
-                scroll={{ x: 1160 }}
-                rowSelection={{
-                  selectedRowKeys,
-                  onChange: setSelectedRowKeys,
-                }}
+          <Row gutter={[12, 12]} style={{ marginBottom: 16, marginLeft: 0, marginRight: 0 }}>
+            <Col>
+              <Input.Search
+                placeholder="搜索实体名称/编码"
+                allowClear
+                style={{ width: 220 }}
+                onSearch={(v) => { setKeyword(v); setPage(1); }}
               />
-            </Card>
-          ))
-        ) : (
-          <Table
-            rowKey="id"
-            loading={loading}
-            columns={columns}
-            dataSource={moduleScopedData}
-            scroll={{ x: 1160 }}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: setSelectedRowKeys,
-            }}
-            pagination={{
-              current: page,
-              pageSize,
-              total,
-              showSizeChanger: true,
-              onChange: (p, ps) => { setPage(p); setPageSize(ps); },
-            }}
-          />
-        )}
+            </Col>
+            <Col>
+              <Select
+                style={{ width: 130 }}
+                placeholder="类型"
+                allowClear
+                value={typeFilter}
+                onChange={(v) => { setTypeFilter(v ?? null); setPage(1); }}
+                options={[
+                  { value: 0, label: '普通业务' },
+                  { value: 1, label: '主数据类' },
+                ]}
+              />
+            </Col>
+            <Col>
+              <Select
+                style={{ width: 120 }}
+                placeholder="交付模式"
+                allowClear
+                value={deliveryFilter}
+                onChange={(v) => { setDeliveryFilter(v ?? null); setPage(1); }}
+                options={[
+                  { value: 0, label: '手写界面' },
+                  { value: 1, label: '自动生成界面' },
+                ]}
+              />
+            </Col>
+            <Col>
+              <Select
+                style={{ width: 100 }}
+                placeholder="状态"
+                allowClear
+                value={statusFilter}
+                onChange={(v) => { setStatusFilter(v ?? null); setPage(1); }}
+                options={[
+                  { value: 0, label: '草稿' },
+                  { value: 1, label: '已发布' },
+                  { value: 2, label: '已下线' },
+                ]}
+              />
+            </Col>
+            <Col flex="auto" style={{ textAlign: 'right' }}>
+              <Space>
+                <Button icon={<SearchOutlined />} onClick={load}>刷新</Button>
+                {canWrite && (
+                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<DatabaseOutlined />} onClick={() => setTableImportOpen(true)}>从存量表导入</AuthButton>
+                )}
+                {canWrite && (
+                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>导入模型</AuthButton>
+                )}
+                {canWrite && (
+                  <AuthButton code={BonePermissionCodes.METADATA_MODEL_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建实体</AuthButton>
+                )}
+              </Space>
+            </Col>
+          </Row>
+
+          {!canWrite && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message="只读模式"
+              description="您在该应用中的角色为「只读（viewer）」，仅可查看模型；建模与发布需要 ADMIN / DEVELOPER 角色（请联系应用管理员在 IAM 授予）。"
+            />
+          )}
+
+          {/* 批量操作栏 */}
+          {selectedRowKeys.length > 0 && (
+            <Space style={{ marginBottom: 12 }}>
+              <Text type="secondary">已选 {selectedRowKeys.length} 项</Text>
+              {/* 批量操作：整组 Popconfirm 挂 <Auth>，理由同行内删除（AuthButton 返回 null 会炸 antd cloneElement） */}
+              <Auth code={BonePermissionCodes.METADATA_PUBLISH}>
+                <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+                  // ⚠ 雪花 ID 必须保持字符串：Number() 会因超出2^53 静默截断，
+                  // 导致批量操作命中「另一个」实体。API 签名也是 string[]。
+                  const ids = selectedRowKeys.map(String);
+                  try {
+                    const res = await metadataEntityApi.batchPublish(ids);
+                    if (res.code === 200) {
+                      const { successCount, failCount, errors } = res.data;
+                      if (failCount === 0) {
+                        message.success(`已批量发布 ${successCount} 个实体`);
+                      } else {
+                        message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
+                        errors.forEach((e) => console.warn('[batch-publish]', e));
+                      }
+                    } else {
+                      message.error(res.message || '批量发布失败');
+                    }
+                  } catch {
+                    message.error('批量发布失败，请确认 bone-metadata-server :9001 已启动');
+                  } finally {
+                    setSelectedRowKeys([]);
+                    load();
+                  }
+                }}>
+                  <Button size="small">批量发布</Button>
+                </Popconfirm>
+              </Auth>
+              <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
+                <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+                  // ⚠ 同上：雪花 ID 不能 Number()，会截断后命中错误实体
+                  const ids = selectedRowKeys.map(String);
+                  try {
+                    const res = await metadataEntityApi.batchDelete(ids);
+                    if (res.code === 200) {
+                      const { successCount, failCount, errors } = res.data;
+                      if (failCount === 0) {
+                        message.success(`已批量删除 ${successCount} 个实体`);
+                      } else {
+                        message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
+                        errors.forEach((e) => console.warn('[batch-delete]', e));
+                      }
+                    } else {
+                      message.error(res.message || '批量删除失败');
+                    }
+                  } catch {
+                    message.error('批量删除失败，请确认 bone-metadata-server :9001 已启动');
+                  } finally {
+                    setSelectedRowKeys([]);
+                    load();
+                  }
+                }}>
+                  <Button size="small" danger>批量删除</Button>
+                </Popconfirm>
+              </Auth>
+            </Space>
+          )}
+
+          {/* 模块分组展示（模块级选中时为客户端过滤的平铺列表） */}
+          {!selectedIsModule && groupsToRender.length > 0 ? (
+            groupsToRender.map((group) => (
+              <Card
+                key={group.key}
+                size="small"
+                title={
+                  <Space>
+                    <FolderOutlined />
+                    <span>{group.label}</span>
+                    <Tag>{group.entities.length}</Tag>
+                  </Space>
+                }
+                style={{ marginBottom: 12 }}
+                styles={{ body: { padding: 0 } }}
+              >
+                <Table
+                  rowKey="id"
+                  loading={loading}
+                  columns={columns}
+                  dataSource={group.entities}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 1160 }}
+                  rowSelection={{
+                    selectedRowKeys,
+                    onChange: setSelectedRowKeys,
+                  }}
+                />
+              </Card>
+            ))
+          ) : (
+            <Table
+              rowKey="id"
+              loading={loading}
+              columns={columns}
+              dataSource={moduleScopedData}
+              scroll={{ x: 1160 }}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }}
+              pagination={{
+                current: page,
+                pageSize,
+                total,
+                showSizeChanger: true,
+                onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+              }}
+            />
+          )}
+        </div>
+        {/* ↑ 右侧列表结束（flex row：左树 + 右表） */}
       </div>
 
       {/* 新建/编辑 Modal */}
@@ -837,25 +901,43 @@ const EntityManagement: React.FC = () => {
               <Text strong style={{ fontSize: 13 }}>平台模板</Text>
               <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>默认字段将复制到新实体</Text>
             </div>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="选择平台预置模板"
-              value={selectedTemplateId}
-              onChange={(v) => chooseTemplate(v ?? null)}
-              options={templates.map((t) => ({ value: t.id, label: `${t.name}（${t.code}${t.currentVersion ? ' · ' + t.currentVersion : ''}）` }))}
-              allowClear
-            />
-            {/* T5：模板「适用场景一句话」 */}
-            {selectedTemplate?.description && (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                适用场景：{selectedTemplate.description}
-              </Text>
-            )}
-            {tplFields.length > 0 && (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                默认字段：{tplFields.map((f) => f.code).join('、')}（实例化后可在实体详情中扩展）
-              </Text>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {templates.map((t) => {
+                const active = selectedTemplateId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => chooseTemplate(active ? null : t.id)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      border: active ? '2px solid #1677ff' : '2px solid #d9d9d9',
+                      background: active ? '#e6f4ff' : '#fff',
+                    }}
+                  >
+                    <Space size={6} wrap>
+                      <Radio checked={active} />
+                      <Text strong style={{ fontSize: 13 }}>{t.name}</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{t.code}{t.currentVersion ? ` · v${t.currentVersion}` : ''}</Text>
+                    </Space>
+                    {t.description && (
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4, lineHeight: 1.5 }}>
+                        {t.description}
+                      </Text>
+                    )}
+                    {active && tplFields.length > 0 && (
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                        默认字段（{tplFields.length} 个）：{tplFields.map((f) => f.displayName || f.code).join('、')}（实例化后可扩展）
+                      </Text>
+                    )}
+                  </div>
+                );
+              })}
+              {templates.length === 0 && (
+                <Text type="secondary">暂无平台模板，请直接「全新建模」。</Text>
+              )}
+            </div>
           </Card>
         )}
         <Form form={form} layout="vertical">
@@ -896,14 +978,24 @@ const EntityManagement: React.FC = () => {
           </Form.Item>
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="deliveryMode" label="交付模式" tooltip="生成式走代码生成；运行时由 metadata-engine 提供动态 API">
-                <Select
-                  disabled={!!editing && editing.status === 1}
-                  options={[
-                    { value: 0, label: '生成式 (A)' },
-                    { value: 1, label: '运行时 (B)' },
-                  ]}
-                />
+              <Form.Item label="界面怎么来？" tooltip="页面产生方式（底层仍存 delivery_mode，1:1 映射见 PRD §0.7）；标准 CRUD 选自动，整页不像 CRUD 选手写">
+                <div style={{ display: 'flex', gap: 12, paddingTop: 4 }}>
+                  <UiModeCard
+                    title="自动生成界面"
+                    badge="默认"
+                    desc="字段建好即自动列表/表单（catalog 投影 + 可微调列），适合配置型对象"
+                    active={uiModeWatch === META_DELIVERY_RUNTIME}
+                    disabled={!!editing && editing.status === 1}
+                    onSelect={() => form.setFieldsValue({ deliveryMode: META_DELIVERY_RUNTIME })}
+                  />
+                  <UiModeCard
+                    title="手写界面"
+                    desc="元数据进代码生成，页面在业务仓手写（或生成后改），适合复杂领域"
+                    active={uiModeWatch === 0}
+                    disabled={!!editing && editing.status === 1}
+                    onSelect={() => form.setFieldsValue({ deliveryMode: META_DELIVERY_GENERATIVE })}
+                  />
+                </div>
               </Form.Item>
             </Col>
             {!editing && (
@@ -1026,6 +1118,56 @@ const EntityManagement: React.FC = () => {
           navigate(`/entities/${entityId}`);
         }}
       />
+
+      {/* B2 命令面板：Ctrl+K 只做「跳实体」（PRD §5.4 规则 31；融合方案 §3.3.3） */}
+      <Modal
+        title={<Space><Text strong>跳转实体</Text><Text type="secondary" style={{ fontSize: 12 }}>Ctrl / ⌘ + K · 实体搜索</Text></Space>}
+        open={cmdOpen}
+        onCancel={() => { setCmdOpen(false); setCmdKeyword(''); }}
+        footer={null}
+        width={520}
+        destroyOnHidden
+      >
+        <Input
+          autoFocus
+          allowClear
+          placeholder="输入实体名称 / 编码 / 表名，回车打开第一个匹配"
+          value={cmdKeyword}
+          onChange={(e) => setCmdKeyword(e.target.value)}
+          onPressEnter={() => {
+            const first = cmdResults[0];
+            if (first) {
+              navigate(`/entities/${first.id}`);
+              setCmdOpen(false);
+              setCmdKeyword('');
+            }
+          }}
+        />
+        <div style={{ marginTop: 12, maxHeight: 320, overflow: 'auto' }}>
+          {cmdResults.length === 0 ? (
+            <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '24px 0' }}>无匹配实体</Text>
+          ) : (
+            cmdResults.map((e) => (
+              <div
+                key={e.id}
+                onClick={() => { navigate(`/entities/${e.id}`); setCmdOpen(false); setCmdKeyword(''); }}
+                onMouseEnter={(ev) => { ev.currentTarget.style.background = '#f5f5f5'; }}
+                onMouseLeave={(ev) => { ev.currentTarget.style.background = ''; }}
+                style={{ padding: '8px 10px', borderRadius: 6, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <Space>
+                  <Text strong>{e.displayName}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{e.code}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{e.tableName}</Text>
+                </Space>
+                <Tag color={e.deliveryMode === META_DELIVERY_RUNTIME ? 'purple' : 'default'} style={{ marginInlineEnd: 0 }}>
+                  {e.deliveryMode === META_DELIVERY_RUNTIME ? '自动界面' : '手写界面'}
+                </Tag>
+              </div>
+            ))
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

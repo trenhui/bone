@@ -96,7 +96,7 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
   const renderUnsupported = (field: MetaField) => (
     <Alert
       type="warning"
-            showIcon
+      showIcon
       message={`字段「${field.displayName || field.code}」的类型 ${field.type} 暂不支持自动生成界面控件`}
       description="该字段仍会随结构发布到运行时；如需界面支持请使用受支持类型（STRING/TEXT/INTEGER/LONG/DECIMAL/BOOLEAN/DATE/DATETIME/ENUM）。"
       style={{ marginBottom: 8 }}

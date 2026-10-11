@@ -8,7 +8,7 @@
  *   3. 各应用不得自决语言。
  *
  * 语言包用**静态 import**（非异步 fetch），避免首屏语言闪烁（FOUC）。
- * 详见：doc/design/国际化设计方案.md §5.2
+ * 详见：doc/design/modules/国际化设计方案.md §5.2
  */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';

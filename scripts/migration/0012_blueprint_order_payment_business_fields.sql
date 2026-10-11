@@ -1,7 +1,7 @@
 -- ============================================================
 -- 0012_blueprint_order_payment_business_fields.sql
 -- bone-blueprint 真实交易场景字段扩展（机制 A：领域核心字段，进聚合模型与金额不变量）。
--- 依据：doc/design/bone-blueprint-元数据字段扩展设计.md §2.1 / §2.3「机制 A」清单。
+-- 依据：doc/design/modules/bone-blueprint-元数据字段扩展设计.md §2.1 / §2.3「机制 A」清单。
 --       现有 t_order 仅 customer_id/total_amount/status，缺业务单号、订单来源、
 --       运费/优惠（金额三口径）、支付完成时刻；bp_payment 缺币种与支付有效期。
 -- 策略：ADR-生产数据库增量迁移策略（expand/contract）。只加可空列 + 索引，不改既有列、

@@ -127,4 +127,48 @@ class MetaTemplateApplicationServiceTest {
     assertThatThrownBy(() -> service.instantiate(9101L, cmd)).isInstanceOf(BizException.class);
     verify(templateReadPort, never()).fieldsOf(anyLong());
   }
+
+  @Test
+  void instantiate_shouldPassThroughEnumAndValidationRules_whenTemplateFieldCarriesThem() {
+    // W1a T2：模板字段携带码表（enumValues）与质量规则（validationRules）时，实例化必须透传到实体字段
+    MetaModelTemplate tpl = template(9101L, 1);
+    when(templateReadPort.findPlatformTemplate(9101L)).thenReturn(Optional.of(tpl));
+    MetaModelTemplateField enumField =
+        MetaModelTemplateField.create(
+            null,
+            0L,
+            9101L,
+            "cust_level",
+            "cust_level",
+            "客户等级",
+            "enum",
+            32,
+            true,
+            false,
+            null,
+            null,
+            1,
+            "[{\"code\":\"A\",\"label\":\"高\"},{\"code\":\"B\",\"label\":\"低\"}]",
+            "[{\"rule\":\"required\"}]");
+    when(templateReadPort.fieldsOf(9101L)).thenReturn(List.of(enumField));
+    when(metaEntityApplicationService.createEntity(any())).thenReturn(8001L);
+    MetaEntity created =
+        MetaEntity.create(null, 1L, "客户", "customer", "客户", null, "t_customer", 1, 1, null, 1L);
+    when(metaEntityRepository.findById(8001L)).thenReturn(created);
+
+    InstantiateFromTemplateCommand cmd = new InstantiateFromTemplateCommand();
+    cmd.setName("客户");
+    cmd.setCode("customer");
+    cmd.setDisplayName("客户");
+    cmd.setTableName("t_customer");
+    cmd.setModuleId(1L);
+
+    service.instantiate(9101L, cmd);
+
+    ArgumentCaptor<MetaField> captor = ArgumentCaptor.forClass(MetaField.class);
+    verify(metaFieldRepository).insert(captor.capture());
+    MetaField inserted = captor.getValue();
+    assertThat(inserted.getEnumValues()).contains("A");
+    assertThat(inserted.getValidationRules()).contains("required");
+  }
 }

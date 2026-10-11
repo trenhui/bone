@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert, Button, Card, Col, Collapse, Modal, Row,
-  Select, Segmented, Space, Tag, Typography, message,
+  Select, Space, Tag, Typography, message,
 } from 'antd';
 import {
   ArrowRightOutlined, ClockCircleOutlined, DatabaseOutlined, PlusOutlined, SolutionOutlined,
@@ -40,30 +40,40 @@ function appEmoji(icon?: string): string {
 }
 
 /**
- * 建模工作台（消费侧入口）—— 任务导向首页（2b F1/UC-W1）。
+ * 建模工作台 —— **元数据域的唯一入口**，任务导向首页（2b F1/UC-W1）。
+ *
+ * ── 三个菜单的职责边界（本页 / 「实体」/ 「运行时数据」）──────────────
+ *「你在这里提问的是『从零开始建一个模型吗』，不是『我有哪些模型』」：
+ *   · 本页（`/apps`）      = **入口与待办**：怎么开始建模（3 个 CTA）+ 有多少草稿待发布 + 最近编辑。
+ *                不做实体清单 —— 清单真源在「实体」页（有搜索/筛选/批量发布）。
+ *   · 实体   （`/entities`）= **实体的唯一权威清单**：搜索、筛选、批量发布、复制、导出、删除。
+ *   · 运行时数据（`/runtime`）= **跨实体的数据运营台**：录入/编辑物理表记录。
+ *                            单个实体的数据请走「实体详情 → 数据 Tab」（带上下文，不会看错实体）。
+ * 三者不是三个并列的「同类列表」，而是 **建模入口 → 模型管理 → 数据运营** 的一条动线。
+ *
+ * 对标依据：NocoBase「集合页即入口」（列表单真源）、Salesforce Setup「对象」页
+ * （工作台不重复列对象，只给待办与快捷动作）。
  *
  * 领域边界：应用(App)聚合的管理（新建/编辑/删除/成员授权）归 IAM —— 见
- * bone-iam-app `ApplicationManagement` 页面（shell 菜单「IAM 管理 → 应用管理」）。
+ * bone-iam-app `ApplicationManagement` 页面（shell 菜单「权限与角色 → 应用管理」）。
  *
- * 布局定案（融合方案 §3.3.3，对齐 NocoBase「集合页即入口」）：首屏 = 主 CTA 区
- * （从场景模板开始 / 空白建模 / 从存量表导入）→ 最近编辑 → 我的实体（DRAFT/PUBLISHED
- * 展示切换）→ 应用折叠区（低频）。统计降级为一行小字；「全新建模 / 从存量表导入」
- * 不再跳模块列表（不再硬取 apps[0]），改为选应用+模块后直达实体列表并自动开对话框
- * （?new=1 / ?import=1，由 EntityManagement 消费）。
+ * 「全新建模 / 从存量表导入」不跳模块列表（不再硬取 apps[0]），改为选应用+模块后直达
+ * 实体列表并自动开对话框（?new=1 / ?import=1，由 EntityManagement 消费）。
  */
 const ModelingWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const [apps, setApps] = useState<BoneApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [draftTotal, setDraftTotal] = useState<number | null>(null);
+  /** 实体总数（元数据分页 total；不用 sum(app.entityCount)，后者恒为 0） */
+  const [entityTotal, setEntityTotal] = useState<number | null>(null);
   const [recent, setRecent] = useState<RecentEntityItem[]>([]);
   /** 新建/导入落点选择：「选应用+模块 → 直达实体列表并自动开对话框」 */
   const [targetOpen, setTargetOpen] = useState(false);
   const [targetIntent, setTargetIntent] = useState<'new' | 'import'>('new');
   const [targetAppId, setTargetAppId] = useState<string | undefined>(undefined);
   const [targetModuleId, setTargetModuleId] = useState<string | undefined>(undefined);
-  /** 我的实体（取代「我的应用」网格成为主路径）：status 切换 + 分应用加载 */
-  const [entityView, setEntityView] = useState<'draft' | 'published'>('draft');
+  /** 待发布实体前 6 条（仅作待办提示，完整清单在 /entities） */
   const [myEntities, setMyEntities] = useState<MetaEntity[]>([]);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
   const [appModules, setAppModules] = useState<{ appId: string; appName: string; modules: BoneModule[] }[]>([]);
@@ -104,7 +114,14 @@ const ModelingWorkspace: React.FC = () => {
   const loadDraftTotal = async () => {
     try {
       const res = await metadataEntityApi.page({ page: 1, size: 1, status: 0 });
-      if (res.code === 200) setDraftTotal(normalizeTotal(res.data.total));
+      if (res.code === 200) {
+        setDraftTotal(normalizeTotal(res.data.total));
+        // 实体总数取**元数据侧**分页 total，不取 sum(app.entityCount)：
+        // 后者实测恒为 0（IAM 的 app 响应不带 entityCount），会让首屏显示
+        // 「实体共 0」而实际有 71 个——一个比不显示更糟的错数字。
+        const all = await metadataEntityApi.page({ page: 1, size: 1 });
+        if (all.code === 200) setEntityTotal(normalizeTotal(all.data.total));
+      }
     } catch {
       // 统计条为增强信息，失败静默
     }
@@ -135,18 +152,26 @@ const ModelingWorkspace: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  /** 我的实体（主路径网格）：按展示状态加载前 20 条 */
+  /**
+   * 待发布实体（**不是**实体清单）。
+   *
+   * 此前此处是一张「我的实体」网格（前 20 条 + 草稿/已发布切换），与左侧菜单「实体」
+   * 是**同一份数据的第二个残缺版**（无搜索、无分页、无批量操作），用户点两处得到两个
+   * 不同结果 ⇒ 不知道该在哪管理实体。对标 Salesforce Setup / NocoBase「集合页即入口」：
+   * 列表只应有一个真源。工作台退回到它该有的角色 —— **待办入口**：把「有多少草稿待发布」
+   * 这个跨应用聚合数字告诉用户，并一键跳到实体列表的对应筛选态。
+   */
   useEffect(() => {
     let cancelled = false;
     setEntitiesLoading(true);
-    metadataEntityApi.page({ page: 1, size: 20, status: entityView === 'draft' ? 0 : 1 })
+    metadataEntityApi.page({ page: 1, size: 6, status: 0 })
       .then((res) => {
         if (!cancelled) setMyEntities(res.code === 200 ? res.data.records ?? [] : []);
       })
-      .catch(() => { /* 网格增强信息，失败静默 */ })
+      .catch(() => { /* 待办增强信息，失败静默 */ })
       .finally(() => { if (!cancelled) setEntitiesLoading(false); });
     return () => { cancelled = true; };
-  }, [entityView]);
+  }, []);
 
   useEffect(() => {
     loadApps();
@@ -169,21 +194,22 @@ const ModelingWorkspace: React.FC = () => {
     );
   };
 
-  const totalEntities = useMemo(
-    () => apps.reduce((sum, a) => sum + (a.entityCount ?? 0), 0),
-    [apps],
-  );
-
   return (
     <div className="page">
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
-          <Title level={4} style={{ margin: 0 }}>建模工作台</Title>
-          <Text type="secondary">从建模到发布：选择基线（模板 / 复制 / 全新）→ 定义实体与字段 → 校验 → 发布；应用的创建与维护请前往 IAM 管理 → 应用管理</Text>
+          <Title level={4} style={{ margin: 0 }}>
+            建模工作台
+            <Tag color="blue" style={{ marginLeft: 8, fontSize: 12 }}>元数据建模入口</Tag>
+          </Title>
+          <Text type="secondary">
+            从零开始建一个模型：选基线（模板 / 空白 / 存量表）→ 定义实体与字段 → 校验 → 发布。
+            已有模型请到左侧菜单「实体」检索与管理；录入业务数据请到「运行时数据」或实体详情的「数据」页签。
+          </Text>
         </Col>
         <Col>
           <Text type="secondary">
-            实体共 {loading ? '…' : totalEntities} · 待发布 {draftTotal === null ? '…' : draftTotal}
+            实体共 {entityTotal === null ? '…' : entityTotal} · 待发布 {draftTotal === null ? '…' : draftTotal}
           </Text>
         </Col>
       </Row>
@@ -242,46 +268,53 @@ const ModelingWorkspace: React.FC = () => {
         </Card>
       )}
 
-      {/* 我的实体（主路径网格，取代「我的应用」首屏；§3.3.3） */}
+      {/* 待发布实体（待办入口，非实体清单 —— 清单真源在左侧菜单「实体」） */}
       <Card
         size="small"
         title={(
           <Space>
-            <span>我的实体</span>
-            <Segmented
-              size="small"
-              value={entityView}
-              onChange={(v) => setEntityView(v as 'draft' | 'published')}
-              options={[{ label: '草稿', value: 'draft' }, { label: '已发布', value: 'published' }]}
-            />
+            <span>待发布实体</span>
+            {draftTotal != null && (
+              <Tag color={draftTotal > 0 ? 'blue' : 'green'}>{draftTotal} 个草稿待发布</Tag>
+            )}
           </Space>
+        )}
+        extra={(
+          <Button type="link" size="small" onClick={() => navigate('/entities?status=0')}>
+            查看全部实体 <ArrowRightOutlined />
+          </Button>
         )}
         style={{ marginBottom: 16 }}
       >
         {myEntities.length === 0 && !entitiesLoading ? (
-          <Text type="secondary">暂无{entityView === 'draft' ? '草稿' : '已发布'}实体；用上方「从场景模板开始 / 空白建模」创建</Text>
+          <Text type="secondary">没有待发布的草稿；用上方「从场景模板开始 / 空白建模 / 从存量表导入」创建。实体清单与批量操作见左侧菜单「实体」。</Text>
         ) : (
-          <Row gutter={[12, 12]}>
-            {myEntities.map((e) => (
-              <Col xs={24} sm={12} lg={8} xl={6} key={e.id}>
-                <Card
-                  size="small"
-                  hoverable
-                  loading={entitiesLoading}
-                  onClick={() => navigate(entityPath(e))}
-                >
-                  <Card.Meta
-                    title={<Space size={4}>{e.displayName} <Text code style={{ fontSize: 12 }}>{e.code}</Text></Space>}
-                    description={(
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {entityView === 'draft' ? '草稿' : '已发布'}{e.deliveryMode === 0 ? ' · 生成式' : ' · 运行时'} · {e.tableName}
-                      </Text>
-                    )}
-                  />
-                </Card>
-              </Col>
-            ))}
-          </Row>
+          <>
+            <Paragraph type="secondary" style={{ marginBottom: 8, fontSize: 12 }}>
+              草稿尚未生成物理表，发布后才能录入数据。完整列表（搜索 / 筛选 / 批量发布）见左侧菜单「实体」。
+            </Paragraph>
+            <Row gutter={[12, 12]}>
+              {myEntities.map((e) => (
+                <Col xs={24} sm={12} lg={8} xl={6} key={e.id}>
+                  <Card
+                    size="small"
+                    hoverable
+                    loading={entitiesLoading}
+                    onClick={() => navigate(entityPath(e))}
+                  >
+                    <Card.Meta
+                      title={<Space size={4}>{e.displayName} <Text code style={{ fontSize: 12 }}>{e.code}</Text></Space>}
+                      description={(
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          草稿 · {e.deliveryMode === 0 ? '手写界面' : '自动生成界面'} · {e.tableName}
+                        </Text>
+                      )}
+                    />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </>
         )}
       </Card>
 

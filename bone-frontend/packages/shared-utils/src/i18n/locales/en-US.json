@@ -163,7 +163,8 @@
     "META_RUNTIME_ACTION_NOT_FOUND": "Action not found or unavailable",
     "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "Action not allowed in current status",
     "META_RUNTIME_ACTION_INVALID_PARAMS": "Action parameters are missing or invalid",
-    "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "Idempotency-Key header is required for this action"
+    "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "Idempotency-Key header is required for this action",
+    "META_RUNTIME_FIELD_PROTECTED": "Field protected by state machine; direct writes are forbidden, use action endpoint"
   },
   "enums": {
     "ORDER_STATUS": {

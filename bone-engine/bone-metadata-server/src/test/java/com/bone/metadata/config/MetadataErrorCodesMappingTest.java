@@ -69,6 +69,36 @@ class MetadataErrorCodesMappingTest {
         call(MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER).getStatusCode());
   }
 
+  /** 动作定义缺失 → 404（状态机动作 SPI 新增契约）。 */
+  @Test
+  void runtimeActionNotFound_mapsTo404() {
+    assertEquals(
+        HttpStatus.NOT_FOUND, call(MetadataErrorCodes.RUNTIME_ACTION_NOT_FOUND).getStatusCode());
+  }
+
+  /** 状态机边非法（当前状态不符 from_status）→ 409。 */
+  @Test
+  void runtimeActionIllegalTransition_mapsTo409() {
+    assertEquals(
+        HttpStatus.CONFLICT,
+        call(MetadataErrorCodes.RUNTIME_ACTION_ILLEGAL_TRANSITION).getStatusCode());
+  }
+
+  /** 动作入参非法 / 缺少幂等键 → 400。 */
+  @Test
+  void runtimeActionInvalidParams_mapsTo400() {
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        call(MetadataErrorCodes.RUNTIME_ACTION_INVALID_PARAMS).getStatusCode());
+  }
+
+  @Test
+  void runtimeActionIdempotencyRequired_mapsTo400() {
+    assertEquals(
+        HttpStatus.BAD_REQUEST,
+        call(MetadataErrorCodes.RUNTIME_ACTION_IDEMPOTENCY_REQUIRED).getStatusCode());
+  }
+
   /** 常量值与错误码登记 §6 / 前端 errors.* 键必须完全一致，否则 i18n 断链。 */
   @Test
   void constantsMatchRegisteredCodes() {
@@ -79,5 +109,14 @@ class MetadataErrorCodesMappingTest {
     assertEquals("META_RUNTIME_DUPLICATE", MetadataErrorCodes.RUNTIME_DUPLICATE);
     assertEquals("META_RUNTIME_INVALID_QUERY", MetadataErrorCodes.RUNTIME_INVALID_QUERY);
     assertEquals("META_RUNTIME_INVALID_IDENTIFIER", MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER);
+    assertEquals("META_RUNTIME_ACTION_NOT_FOUND", MetadataErrorCodes.RUNTIME_ACTION_NOT_FOUND);
+    assertEquals(
+        "META_RUNTIME_ACTION_ILLEGAL_TRANSITION",
+        MetadataErrorCodes.RUNTIME_ACTION_ILLEGAL_TRANSITION);
+    assertEquals(
+        "META_RUNTIME_ACTION_INVALID_PARAMS", MetadataErrorCodes.RUNTIME_ACTION_INVALID_PARAMS);
+    assertEquals(
+        "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED",
+        MetadataErrorCodes.RUNTIME_ACTION_IDEMPOTENCY_REQUIRED);
   }
 }

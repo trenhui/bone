@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
@@ -10,6 +11,7 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Segmented,
   Select,
   Space,
   Switch,
@@ -20,14 +22,20 @@ import {
 } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import {
   errorMessage,
   metadataEntityApi,
   metadataFieldApi,
   runtimeRecordApi,
 } from '../services/metadataApi';
-import type { MetaEntity, MetaField, RuntimeRecord } from '../types';
+import type {
+  MetaEntity,
+  MetaField,
+  RuntimeRecord,
+  RuntimeActionDef,
+  RuntimeActionView,
+} from '../types';
 import {
   DELIVERY_MODE,
   ENTITY_STATUS,
@@ -60,11 +68,17 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
-/** ENUM 单元格：码值 → 展示名 */
-function renderEnumCell(value: unknown, field: MetaField): string {
+/** ENUM 列表 Tag 色板（§5.5：MetaList ENUM 列 → Tag 徽标，可选色板） */
+const ENUM_TAG_COLORS = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'gold', 'geekblue', 'volcano', 'lime'];
+
+/** ENUM 单元格：码值 → Tag 徽标（选项按定义序取色，稳定不闪烁；未命中码值兜底灰 Tag） */
+function renderEnumCell(value: unknown, field: MetaField): ReactNode {
   if (value == null || value === '') return '—';
-  const opt = enumOptionsOf(field).find((o) => o.code === String(value));
-  return opt ? `${opt.label}（${value}）` : String(value);
+  const opts = enumOptionsOf(field);
+  const idx = opts.findIndex((o) => o.code === String(value));
+  const opt = idx >= 0 ? opts[idx] : null;
+  if (!opt) return <Tag>{String(value)}</Tag>;
+  return <Tag color={ENUM_TAG_COLORS[idx % ENUM_TAG_COLORS.length]}>{opt.label}</Tag>;
 }
 
 export interface RuntimeDataManagementProps {
@@ -90,6 +104,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const structurePath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=structure`;
 
   const [form] = Form.useForm();
+  const [actionForm] = Form.useForm();
   const [entities, setEntities] = useState<MetaEntity[]>([]);
   const [entityCode, setEntityCode] = useState<string | null>(null);
   const [detailEntity, setDetailEntity] = useState<MetaEntity | null>(null);
@@ -113,6 +128,24 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [sortField, setSortField] = useState<string | undefined>(undefined);
   const [sortDesc, setSortDesc] = useState(false);
 
+  /** 运行时状态机动作定义（按实体加载一次，按行 status 渲染可用按钮） */
+  const [actionDefs, setActionDefs] = useState<RuntimeActionDef[]>([]);
+  /**
+   * page 级动作发现（Runtime §4.3.1 唯一形态）：`meta.allowedActionsByStatus[status]`。
+   * 优先消费它；后端未返回 meta（旧版本 / 无动作实体）时降级到 listActions 全量拉取。
+   */
+  const [actionsByStatus, setActionsByStatus] = useState<
+    Record<string, RuntimeActionView[]> | null
+  >(null);
+  /** 回收站视图：true 时只展示已归档（deleted=1）记录，并提供「恢复」 */
+  const [trashMode, setTrashMode] = useState(false);
+  /** 动作执行弹窗：当前动作 + 触发记录 */
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    def: RuntimeActionView | null;
+    record: RuntimeRecord | null;
+  }>({ open: false, def: null, record: null });
+
   /** 当前选中实体：嵌入模式来自详情接口，独立模式来自列表选择 */
   const selectedEntity = useMemo(
     () => detailEntity ?? entities.find((e) => e.code === entityCode) ?? null,
@@ -122,6 +155,17 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const writableFields = useMemo(
     () => fields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
     [fields],
+  );
+
+  /**
+   * 表单可编辑字段 = 可写字段排除 `status`。
+   * status 由状态机（动作 SPI）驱动，禁止在新建/编辑表单里直接编辑，
+   * 否则可绕过状态机边（DRAFT→SUBMITTED→…）直达任一状态，是 G14 漏洞的 UI 回归点。
+   * 表格展示列仍使用含 status 的 writableFields（见 projectedFields），保证用户可见当前状态。
+   */
+  const formFields = useMemo(
+    () => writableFields.filter((f) => f.code !== 'status'),
+    [writableFields],
   );
 
   /** 列投影（预览 ≡ 数据 单一真源）：始终应用本地覆盖 */
@@ -156,7 +200,6 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         }
       });
     // entityCode 仅用于首次为空时初始化，不应作为依赖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, resolvedId]);
 
   // 嵌入模式：按实体 id 拉详情得到 code（W0-1：/…/:id/data 绑定 :id，不再静默看错实体）
@@ -183,8 +226,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     metadataFieldApi.page(eid, { page: 1, size: 500 }).then((res) => {
       if (res.code === 200) setFields(normalizePageRecords(res.data));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity?.id]);
+
+  // 状态机动作定义随选中实体加载一次（前端按行 status 过滤渲染按钮）
+  useEffect(() => {
+    if (!entityCode) {
+      setActionDefs([]);
+      return;
+    }
+    runtimeRecordApi.listActions(entityCode).then((res) => {
+      if (res.code === 200) setActionDefs(res.data ?? []);
+    });
+  }, [entityCode]);
 
   /**
    * 请求参数由列投影产出（W0a2 + §0.6.3）：
@@ -198,7 +251,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       const fieldsParam = projectedFields.length
         ? projectedFields.map((f) => f.code).join(',')
         : undefined;
-      const res = await runtimeRecordApi.page(entityCode, {
+      const query = {
         page,
         size: pageSize,
         fields: fieldsParam,
@@ -206,11 +259,16 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         q: searchField && keyword ? `${searchField}:${keyword}` : undefined,
         // sort 契约：`-` 前缀降序（后端 RuntimePageQuery.parseSort）
         sort: sortField ? `${sortDesc ? '-' : ''}${sortField}` : undefined,
-      });
+      };
+      const res = trashMode
+        ? await runtimeRecordApi.trash(entityCode, query)
+        : await runtimeRecordApi.page(entityCode, query);
       if (res.code === 200) {
         const pageData = normalizePage(res.data);
         setData(pageData.records);
         setTotal(pageData.total);
+        // 动作发现：随列表一次返回，按 status 分组（天然防 N+1；详情页复用同一份）
+        setActionsByStatus(res.data.meta?.allowedActionsByStatus ?? null);
       } else {
         message.error(errorMessage(res));
       }
@@ -219,7 +277,17 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     } finally {
       setLoading(false);
     }
-  }, [entityCode, page, pageSize, projectedFields, searchField, keyword, sortField, sortDesc]);
+  }, [
+    entityCode,
+    page,
+    pageSize,
+    projectedFields,
+    searchField,
+    keyword,
+    sortField,
+    sortDesc,
+    trashMode,
+  ]);
 
   useEffect(() => {
     load();
@@ -254,9 +322,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       setEditing(latest);
       setEditingEtag(res.etag);
       const values: Record<string, unknown> = {};
-      writableFields.forEach((f) => {
+      formFields.forEach((f) => {
         const v = latest[f.code];
-        if ((f.type === 'DATE' || f.type === 'DATETIME') && v != null) {
+        // 后端字段类型统一小写（date/datetime）；比较必须忽略大小写，否则 date 字段会原样
+        // 以字符串塞进表单，antd DatePicker 收到非 dayjs 值即抛 `isValid is not a function` 崩溃。
+        const ftype = (f.type || '').toUpperCase();
+        if ((ftype === 'DATE' || ftype === 'DATETIME') && v != null) {
           const d = dayjs(String(v));
           values[f.code] = d.isValid() ? d : undefined;
         } else {
@@ -270,6 +341,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     }
   };
 
+  /**
+   * 归档（软删）。
+   *
+   * 文案必须是「归档」而非「删除」：物理表无 deleted 列时后端会降级为**物理 DELETE**，
+   * 且通用通道没有「彻底删除」语义。叫「删除」会让用户以为这是可逆的常规操作。
+   */
   const handleDelete = async (record: RuntimeRecord) => {
     if (!entityCode) return;
     const id = recordId(record);
@@ -278,30 +355,139 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       return;
     }
     try {
-      const res = await runtimeRecordApi.delete(entityCode, id);
+      // 先取最新 ETag，避免基于陈旧快照归档（判据 R13：If-Match 可选但生效）
+      let etag: string | undefined;
+      try {
+        const latest = await runtimeRecordApi.get(entityCode, id);
+        etag = latest.etag;
+      } catch {
+        /* 取不到 ETag 时按无并发保护处理 */
+      }
+      const res = await runtimeRecordApi.delete(entityCode, id, etag);
       if (res.code === 200) {
-        message.success('已删除');
+        message.success('已归档，可在「回收站」中恢复');
         load();
       } else {
         message.error(errorMessage(res));
       }
     } catch {
-      message.error('删除失败');
+      message.error('归档失败');
     }
   };
 
-  /** 把表单值按字段类型规整（DATE/DATETIME 的 dayjs → 字符串） */
+  /** 恢复归档记录（回收站 → 在用）。 */
+  const handleRestore = async (record: RuntimeRecord) => {
+    if (!entityCode) return;
+    const id = recordId(record);
+    if (!id) {
+      message.error('记录缺少主键 id');
+      return;
+    }
+    try {
+      const res = await runtimeRecordApi.restore(entityCode, id);
+      if (res.code === 200) {
+        message.success('已恢复');
+        load();
+      } else {
+        message.error(errorMessage(res));
+      }
+    } catch {
+      message.error('恢复失败');
+    }
+  };
+
+  /** 把表单值按字段类型规整（DATE/DATETIME → 本地时区字符串；dayjs 跨实例识别失败时仍按对象能力归一化） */
   const buildBody = (values: Record<string, unknown>): RuntimeRecord => {
     const body: RuntimeRecord = {};
-    writableFields.forEach((f) => {
+    formFields.forEach((f) => {
       const v = values[f.code];
-      if ((f.type === 'DATE' || f.type === 'DATETIME') && v != null && dayjs.isDayjs(v)) {
-        body[f.code] = (v as Dayjs).format(f.type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss');
+      const type = (f.type || 'STRING').toUpperCase();
+      if (type === 'DATE' || type === 'DATETIME') {
+        if (v == null || v === '') return; // 空值不写，交由后端必填校验
+        const fmt = type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss';
+        const anyV = v as unknown as { format?: (t: string) => string; $d?: Date };
+        let s: string;
+        if (anyV && typeof anyV.format === 'function') {
+          // dayjs 对象（任意实例，含 antd 内部实例）：直接按其本地时区格式化
+          s = anyV.format(fmt);
+        } else if (v instanceof Date) {
+          s = dayjs(v).format(fmt);
+        } else if (typeof v === 'string') {
+          // 偶发被序列化为 UTC ISO（dayjs 跨实例 isDayjs 误判）→ 按本地时区还原，避免跨时区差一天
+          s = /^\d{4}-\d{2}-\d{2}T/.test(v) ? dayjs(v).format(fmt) : v;
+        } else {
+          s = String(v);
+        }
+        body[f.code] = s;
       } else {
         body[f.code] = v as unknown;
       }
     });
     return body;
+  };
+
+  /** 打开动作执行弹窗（按动作声明的 params 动态渲染表单） */
+  const openAction = (record: RuntimeRecord, def: RuntimeActionView) => {
+    setActionModal({ open: true, def, record });
+    actionForm.resetFields();
+  };
+
+  /**
+   * 某行当前可用的动作。
+   *
+   * 真源优先级：① page 级 `meta.allowedActionsByStatus`（后端已按权限裁剪）——
+   * 拿到即用，零额外请求；② 降级到 `GET /actions` 全量 + 前端按 fromStatus 过滤。
+   */
+  const actionsOf = (row: RuntimeRecord): RuntimeActionView[] => {
+    if (actionsByStatus) {
+      const key = String(row.status ?? '');
+      return actionsByStatus[key] ?? actionsByStatus['*'] ?? [];
+    }
+    return actionDefs
+      .filter((d) => d.fromStatus == null || d.fromStatus === String(row.status ?? ''))
+      .map(toActionView);
+  };
+
+  /** 提交动作：资金类 escape 动作自动生成 Idempotency-Key 防重放 */
+  const handleActionSubmit = async () => {
+    const { def, record } = actionModal;
+    if (!def || !record || !entityCode) return;
+    const rid = recordId(record);
+    if (!rid) {
+      message.error('记录缺少主键 id');
+      return;
+    }
+    let params: Record<string, unknown> = {};
+    if (def.params && def.params.length) {
+      try {
+        params = await actionForm.validateFields();
+      } catch {
+        return; // 必填校验未过，停留弹窗
+      }
+    }
+    const idempotencyKey = def.requiresIdempotencyKey
+      ? (globalThis.crypto?.randomUUID?.() ?? `idem-${Date.now()}-${Math.random()}`)
+      : undefined;
+    try {
+      const res = await runtimeRecordApi.invokeAction(
+        entityCode,
+        rid,
+        def.code,
+        params,
+        idempotencyKey,
+      );
+      if (res.code === 200) {
+        const idem = res.data?.idempotent ? '（幂等命中，未重复执行）' : '';
+        const flow = res.data?.fromStatus ? `${res.data.fromStatus} → ${res.data.toStatus}` : '';
+        message.success(`动作「${def.label}」执行成功${flow ? `（${flow}）` : ''}${idem}`);
+        setActionModal({ open: false, def: null, record: null });
+        load();
+      } else {
+        message.error(errorMessage(res));
+      }
+    } catch {
+      message.error('动作执行失败');
+    }
   };
 
   const handleSubmit = async () => {
@@ -345,7 +531,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
             // 只提示「被他人修改」而不指出改了哪几项，用户只能全表重填。
             const server = (res.data ?? {}) as Record<string, unknown>;
             setConflictDiff(
-              writableFields
+              formFields
                 .map((f) => ({
                   code: f.code,
                   name: f.displayName || f.code,
@@ -389,28 +575,62 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       title: '操作',
       key: 'actions',
       fixed: 'right',
-      width: 160,
+      width: 200,
       sorter: false,
       sortOrder: null,
-      render: (_: unknown, row) => (
-        <Space>
-          <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
-            编辑
-          </AuthButton>
+      render: (_: unknown, row) =>
+        trashMode ? (
           <Auth code={BonePermissionCodes.METADATA_RUNTIME_WRITE}>
-            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
-              <Button type="link" size="small" danger>
-                删除
+            <Popconfirm
+              title="恢复该记录？"
+              description="恢复后记录重新出现在数据列表中。"
+              onConfirm={() => handleRestore(row)}
+            >
+              <Button type="link" size="small">
+                恢复
               </Button>
             </Popconfirm>
           </Auth>
-        </Space>
-      ),
+        ) : (
+          <Space>
+            {/* 动作按钮真源 = meta.allowedActionsByStatus（后端已按权限裁剪）；
+                降级态用 listActions 全量 + 前端按 fromStatus 过滤。前端禁止硬编码按钮列表。 */}
+            {actionsOf(row).map((def) => (
+              <AuthButton
+                key={def.code}
+                code={def.permission ?? BonePermissionCodes.METADATA_RUNTIME_WRITE}
+                type="link"
+                size="small"
+                onClick={() => openAction(row, def)}
+              >
+                {def.label}
+              </AuthButton>
+            ))}
+            <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
+              编辑
+            </AuthButton>
+            <Auth code={BonePermissionCodes.METADATA_RUNTIME_WRITE}>
+              {/* 文案必须是「归档」+「不可恢复」提示：物理表无 deleted 列时后端会降级为物理 DELETE，
+                  叫「删除」会让用户以为这是可逆的常规操作（Runtime §0.3 / 判据 R13）。 */}
+              <Popconfirm
+                title="归档该记录？"
+                description="归档后不再出现在数据列表；若当前物理表不支持软删，归档即永久删除、不可恢复。"
+                okText="确认归档"
+                cancelText="取消"
+                onConfirm={() => handleDelete(row)}
+              >
+                <Button type="link" size="small" danger>
+                  归档
+                </Button>
+              </Popconfirm>
+            </Auth>
+          </Space>
+        ),
     });
     return cols;
-    // handleDelete/openEdit 为稳定的页面级函数引用，加入会导致循环
+    // handleDelete/handleRestore/openEdit/openAction/actionsOf 为稳定的页面级函数引用，加入会导致循环
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectedFields, entityCode, sortField, sortDesc]);
+  }, [projectedFields, entityCode, sortField, sortDesc, actionDefs, actionsByStatus, trashMode]);
 
   const renderFieldInput = (field: MetaField) => {
     const type = (field.type || 'STRING').toUpperCase();
@@ -420,7 +640,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         <Alert
           key={field.id}
           type="warning"
-                    showIcon
+          showIcon
           style={{ marginBottom: 12 }}
           message={`字段「${field.displayName || field.code}」的类型 ${field.type} 暂不支持录入控件`}
           description="该类型在运行时 API 中可读写，但建模界面暂无对应控件；如需界面录入请改用受支持类型。"
@@ -538,11 +758,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="仅「运行时 (B) + 已发布」的实体有物理表"
+          message="仅「自动生成界面 + 已发布」的实体有物理表"
           description={
             <>
               经 <Text code>/api/v1/runtime/entities/&#123;code&#125;/records</Text>{' '}
-              直接读写物理表，无需代码生成。生成式 (A) 实体请到「代码生成」查看。
+              直接读写物理表，无需代码生成。手写界面实体请到「代码生成」查看。
             </>
           }
         />
@@ -598,7 +818,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           message="该实体暂不支持运行时数据管理"
           description={
             selectedEntity?.deliveryMode !== META_DELIVERY_RUNTIME
-              ? '仅「运行时 (B)」交付模式的实体发布后才提供动态 CRUD 数据管理，请改用生成式(A)实体的业务应用录入数据。'
+              ? '仅「自动生成界面」交付模式的实体发布后才提供动态 CRUD 数据管理，请改用手写界面实体的业务应用录入数据。'
               : '请先在工作区「发布」Tab 完成发布，物理表建表后即可在此管理数据。'
           }
         />
@@ -608,7 +828,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         <>
           {/* B1：数据 Tab 空态 —— 无字段时给「补齐字段并发布」结构建议，
               而不是渲染一张零列的空表格（用户会以为「没数据」而非「没字段」） */}
-          {writableFields.length === 0 ? (
+          {formFields.length === 0 ? (
             <Empty
               style={{ margin: '32px 0' }}
               description={
@@ -626,63 +846,85 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
             </Empty>
           ) : (
             <>
-          {resolvedId && (
-            <Space style={{ marginBottom: 16 }} wrap>
-              <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                新建记录
-              </AuthButton>
-              <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
-              {/* W0a2：q 接线（契约 = field:value） */}
-              <Select
-                allowClear
-                style={{ minWidth: 160 }}
-                placeholder="搜索字段"
-                value={searchField}
-                onChange={(v) => { setSearchField(v); setPage(1); }}
-                options={projectedFields.map((f) => ({ value: f.code, label: f.displayName || f.code }))}
-              />
-              <Input.Search
-                allowClear
-                style={{ width: 240 }}
-                placeholder="搜索值（精确/模糊取决于后端规则）"
-                value={keyword}
-                disabled={!searchField}
-                onChange={(e) => setKeyword(e.target.value)}
-                onSearch={() => setPage(1)}
-              />
-            </Space>
-          )}
+              {/* 工具栏必须在「实体详情嵌入」与「独立 /runtime 路由」两种形态下都完整可用。
+                  历史实现把整条工具栏包在 `resolvedId &&` 里 ⇒ 独立路由没有回收站入口，
+                  用户点了「归档」后再也看不到、也恢复不了这条记录 —— 语义上等同永久删除，
+                  正是 Runtime §0.3 / 判据 R13 要防的「软删不可观测」。
+                  因此 Segmented 与过滤控件移出门控；「新建/刷新」保留在嵌入模式，
+                  独立模式下对照组在上方实体选择器工具栏（已含新建记录 + 刷新）。 */}
+              <Space style={{ marginBottom: 16 }} wrap>
+                {resolvedId && (
+                  <>
+                    {!trashMode && (
+                      <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                      新建记录
+                      </AuthButton>
+                    )}
+                    <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
+                  </>
+                )}
+                {/* 回收站：软删必须可观测、可恢复。没有这个入口，「归档」就等同于「永久删除」。 */}
+                <Segmented
+                  value={trashMode ? 'trash' : 'active'}
+                  onChange={(v) => {
+                    setTrashMode(v === 'trash');
+                    setPage(1);
+                  }}
+                  options={[
+                    { label: '在用', value: 'active' },
+                    { label: '回收站', value: 'trash' },
+                  ]}
+                />
+                {/* W0a2：q 接线（契约 = field:value） */}
+                <Select
+                  allowClear
+                  style={{ minWidth: 160 }}
+                  placeholder="搜索字段"
+                  value={searchField}
+                  onChange={(v) => { setSearchField(v); setPage(1); }}
+                  options={projectedFields.map((f) => ({ value: f.code, label: f.displayName || f.code }))}
+                />
+                <Input.Search
+                  allowClear
+                  style={{ width: 240 }}
+                  placeholder="搜索值（精确/模糊取决于后端规则）"
+                  value={keyword}
+                  disabled={!searchField}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onSearch={() => setPage(1)}
+                />
+              </Space>
 
-          <Table<RuntimeRecord>
-            rowKey={(row) => recordId(row) || JSON.stringify(row)}
-            loading={loading}
-            columns={tableColumns}
-            dataSource={data}
-            size={tableSizeOf(overlay?.density)}
-            scroll={{ x: true }}
-            /* 排序交给后端：列排序变化 → 受控状态 → sort 契约（- 前缀降序） */
-            onChange={(_pagination, _filters, sorter) => {
-              const s = Array.isArray(sorter) ? sorter[0] : sorter;
-              const field = s?.field ?? s?.columnKey;
-              if (s?.order && field) {
-                setSortField(String(field));
-                setSortDesc(s.order === 'descend');
-              } else {
-                setSortField(undefined);
-                setSortDesc(false);
-              }
-            }}
-            pagination={{
-              current: page,
-              pageSize,
-              total,
-              showSizeChanger: true,
-              onChange: (p, ps) => {
-                setPage(p);
-                setPageSize(ps);
-              },
-            }}
-          />
+              <Table<RuntimeRecord>
+                rowKey={(row) => recordId(row) || JSON.stringify(row)}
+                loading={loading}
+                columns={tableColumns}
+                dataSource={data}
+                size={tableSizeOf(overlay?.density)}
+                scroll={{ x: true }}
+                /* 排序交给后端：列排序变化 → 受控状态 → sort 契约（- 前缀降序） */
+                onChange={(_pagination, _filters, sorter) => {
+                  const s = Array.isArray(sorter) ? sorter[0] : sorter;
+                  const field = s?.field ?? s?.columnKey;
+                  if (s?.order && field) {
+                    setSortField(String(field));
+                    setSortDesc(s.order === 'descend');
+                  } else {
+                    setSortField(undefined);
+                    setSortDesc(false);
+                  }
+                }}
+                pagination={{
+                  current: page,
+                  pageSize,
+                  total,
+                  showSizeChanger: true,
+                  onChange: (p, ps) => {
+                    setPage(p);
+                    setPageSize(ps);
+                  },
+                }}
+              />
             </>
           )}
         </>
@@ -717,13 +959,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               }
             />
           )}
-          {writableFields.length === 0 ? (
+          {formFields.length === 0 ? (
             <Alert
               type="warning"
               message="该模型尚未配置建模字段，请先在模型详情的「结构」页签中维护"
             />
           ) : (
-            writableFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
+            formFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
           )}
         </Form>
       </Modal>
@@ -762,11 +1004,81 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           表单已载入线上最新值；确认后再提交，提交会自动带上新的 ETag。
         </Text>
       </Modal>
+
+      {/* 状态机动作执行弹窗：按动作定义的 params_schema 动态渲染入参；无参动作直接确认执行 */}
+      <Modal
+        title={actionModal.def ? `动作：${actionModal.def.label}` : '执行动作'}
+        open={actionModal.open}
+        onCancel={() => setActionModal({ open: false, def: null, record: null })}
+        onOk={handleActionSubmit}
+        width={520}
+        destroyOnHidden
+      >
+        {actionModal.def?.requiresIdempotencyKey && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="资金类动作已自动携带 Idempotency-Key，重复提交不会二次打款"
+          />
+        )}
+        <Form form={actionForm} layout="vertical">
+          {/* 入参按 Describe 声明的 params[] 动态渲染 —— 前端禁止硬编码参数名 */}
+          {actionModal.def?.params?.map((p) => (
+            <Form.Item
+              key={p.code}
+              name={p.code}
+              label={p.label || p.code}
+              rules={p.required ? [{ required: true, message: `请填写${p.label || p.code}` }] : []}
+            >
+              {(p.type || '').toUpperCase() === 'ENUM' && p.enumValues && p.enumValues.length ? (
+                <Select
+                  placeholder="请选择"
+                  options={p.enumValues.map((v) => ({ value: v, label: v }))}
+                />
+              ) : (
+                <Input placeholder={p.label || p.code} />
+              )}
+            </Form.Item>
+          ))}
+          {actionModal.def && (!actionModal.def.params || actionModal.def.params.length === 0) && (
+            <Alert type="info" showIcon message="该动作无需额外参数，确认即执行" />
+          )}
+        </Form>
+      </Modal>
     </div>
   );
 };
 
 // ----- 内部工具 -----
+
+/**
+ * 把 `GET /actions` 的后端领域对象适配为 Describe 视图形状。
+ *
+ * 为什么需要适配而不是两套渲染：page 级 `meta.allowedActionsByStatus` 是唯一 Describe 形态（§4.3.1），
+ * `GET /actions` 只是它的降级通道。两者在前端必须收敛成同一种视图对象，
+ * 否则「按钮渲染」会出现两条分支、两次权限判断 —— 那是双真源的另一种写法。
+ */
+function toActionView(def: RuntimeActionDef): RuntimeActionView {
+  return {
+    code: def.actionCode,
+    label: def.label,
+    kind: def.escape ? 'escape' : 'state_transition',
+    fromStatus: def.fromStatus,
+    toStatus: def.toStatus,
+    confirm: def.escape || def.requiresIdempotency,
+    requiresIdempotencyKey: def.requiresIdempotency,
+    permission: def.permissionCode,
+    params: (def.params ?? []).map((p) => ({
+      code: p.name,
+      label: p.label ?? null,
+      type: p.type,
+      required: p.required,
+      enumValues: p.values ?? null,
+    })),
+  };
+}
+
 function normalizeRuntimePublished(list: MetaEntity[]): MetaEntity[] {
   return list.filter(
     (e) => e.deliveryMode === META_DELIVERY_RUNTIME && e.status === META_ENTITY_PUBLISHED,
