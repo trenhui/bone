@@ -1,12 +1,13 @@
 openapi: 3.1.0
 info:
   title: Bone Metadata Runtime API（模式 B）
-  version: 1.2.2
+  version: 1.2.4
   description: |
     已发布且 `delivery_mode=RUNTIME` 的实体，通过 `bone-metadata-engine` 的 `JdbcRuntimeRecordService`
-    对物理表执行动态 CRUD；动作通道（P1 / UIF-008）为：
-    - Describe：`GET  …/records/{id}/actions`
-    - Invoke：`POST …/records/{id}/actions/{actionCode}`
+    对物理表执行动态 CRUD；动作通道（已实现，Runtime 数据面设计 §4）为：
+    - Describe（唯一形态，§4.3.1）：page 级 `meta.allowedActionsByStatus`（list 响应内嵌）；
+      另提供实体级动作清单 `GET  …/actions`（按权限裁剪，供管理/调试）。
+    - Invoke：`POST …/records/{id}/actions/{actionCode}`（状态机校验 + 幂等去重 + 执行生命周期）。
     服务宿主：**bone-metadata-server** :9001。
 
     - 规范：[Bone-API-规范.md](../Bone-API-规范.md)
@@ -18,8 +19,9 @@ info:
     **前置条件**：实体 status=已发布(1)、delivery_mode=RUNTIME(1)；物理表 `table_name` 已存在且列名与 `meta_field.code` 对齐。
 
     **边界**：
-    - CRUD（本文件已实现路径）：单实体行读写。
-    - Actions Describe/Invoke：**目标态 / P1**；内置 state_transition + SPI escape Handler。
+    - CRUD：单实体行读写（本文件已实现路径）。
+    - Actions Invoke + 实体级清单：**已实现**（状态机边校验、requires_idempotency 幂等去重、执行日志四态生命周期）。
+    - 单行 Describe 端点：**取消**（§4.3.1 唯一形态 = page 级 `meta.allowedActionsByStatus`），本文件保留仅为契约历史。
     - **禁止** MetaList 默认挂 `/expense-claims`、`/replenishments`；Mode A 可自有 Controller。
 
 servers:
@@ -124,6 +126,51 @@ paths:
         '400':
           $ref: '#/components/responses/RuntimeError'
 
+  /entities/{entityCode}/records/deleted:
+    get:
+      summary: 回收站视图（仅查 deleted=1 的归档记录）
+      operationId: listDeletedRuntimeRecords
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: 页码（从 1 开始）
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+          description: 每页条数
+        - name: fields
+          in: query
+          schema: { type: string }
+          description: 列投影，逗号分隔的 meta_field.code；省略则返回引擎默认列集。
+        - name: sort
+          in: query
+          schema: { type: string }
+          description: 排序：[-|+]field[,…]；- 为降序。
+        - name: q
+          in: query
+          schema: { type: string }
+          description: MVP 单条件等值过滤，格式 field:value。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecordPage'
+        '400':
+          $ref: '#/components/responses/RuntimeError'
+        '401':
+          description: 未认证
+      x-implementation-status: implemented
+
   /entities/{entityCode}/records/{id}:
     get:
       summary: 按主键查询记录
@@ -210,16 +257,69 @@ paths:
         '404':
           $ref: '#/components/responses/RuntimeError'
 
+  /entities/{entityCode}/records/{id}/restore:
+    post:
+      summary: 恢复归档记录（回收站 → 在用）
+      operationId: restoreRuntimeRecord
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+      responses:
+        '200':
+          description: OK；恢复后的完整记录
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecord'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+      x-implementation-status: implemented
+
+  /entities/{entityCode}/actions:
+    get:
+      summary: 实体级动作清单（已实现 · 按权限裁剪）
+      description: |
+        返回该实体全部已注册动作（含状态机边、is_escape、requires_idempotency、permission）。
+        由 RuntimeAccessGuard 按动作细码裁剪（§4.6）；页面按钮真源仍是 page 级
+        `meta.allowedActionsByStatus`（§4.3.1 唯一 Describe 形态），本端点供管理/调试。
+      operationId: listRuntimeActions
+      tags: [RuntimeAction]
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RuntimeActionDescriptor'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+
   /entities/{entityCode}/records/{id}/actions:
     get:
-      summary: 描述当前行可用动作（目标态 · Describe）
+      summary: 描述当前行可用动作（单行 Describe · 已取消）
       description: |
-        **尚未实现**——对标 Salesforce Actions describe / NocoBase allowedActions。
-        按 catalog actions ∩ 当前状态 ∩ 权限 ∩ Handler 是否注册 返回按钮清单。
-        MetaList **应以本接口（或等价计算）为按钮真源**，禁止前端写死动作列表。
+        **已取消**（Runtime 数据面设计 §4.3.1 定案：唯一形态 = page 级 `meta.allowedActionsByStatus`，
+        按 (entityCode, status) 分组一次算全量，前端按行 status 查本地映射，零额外请求）。
+        保留此路径仅为契约历史，客户端不应依赖；页面按钮真源请读 list 响应的 meta 字段。
       operationId: describeRuntimeRecordActions
       tags: [RuntimeAction]
-      x-implementation-status: planned
+      x-implementation-status: superseded
       parameters:
         - $ref: '#/components/parameters/EntityCode'
         - $ref: '#/components/parameters/RecordId'
@@ -240,17 +340,18 @@ paths:
 
   /entities/{entityCode}/records/{id}/actions/{actionCode}:
     post:
-      summary: 执行记录动作（目标态 · Invoke）
+      summary: 执行记录动作（已实现 · Invoke）
       description: |
-        **尚未实现于 engine**——契约先行，对齐 PRD UIF-008 与 Runtime 数据面设计 §4。
+        **已实现于 engine**（Runtime 数据面设计 §4，RuntimeActionService + RuntimeActionDispatcher）。
 
-        - `actionCode` 动态：`submit` / `approve` / `confirmPayout` / `receive` 等。
-        - `kind=state_transition`：内置矩阵校验 + 改 ENUM。
-        - `kind=escape`：SPI Handler（打款/入库）；逃逸建议强制 `Idempotency-Key`。
+        - `actionCode` 动态：`submit` / `approve` / `reject` / `confirmPayout` 等。
+        - `kind=state_transition`：内置状态机边校验（from→to）+ 由平台统一流转 status_field（G14，调用方无法直写）。
+        - `kind=escape`：SPI Handler（打款）；逃逸动作经执行日志生命周期（PENDING→succeeded/failed/orphaned），
+          orphan 重放拒绝自动重跑（对真实网关重放 = 二次出金），幂等命中返回原结果 + `idempotentReplay`。
         - MetaList **只拼本路径**，不写死业务名词资源。
       operationId: invokeRuntimeRecordAction
       tags: [RuntimeAction]
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/EntityCode'
         - $ref: '#/components/parameters/RecordId'
@@ -310,6 +411,150 @@ paths:
         '412':
           description: If-Match 冲突
 
+  # ----- G10 关联/子表（v1.2.4 · RuntimeRelationController 为真源） -----
+  /entities/{entityCode}/lookup-options:
+    get:
+      summary: REFERENCE 候选选项（G10 已实现）
+      description: |
+        返回目标实体满足条件的候选行，每条含 value(目标主键) + label(labelField 翻译，缺省目标 id)。
+        供 REFERENCE 字段选择器展开时调用（未展开零请求）；服务端按 reference 声明过滤（filterField 生效），
+        前端只负责渲染。权限：目标实体 runtime 读码。
+      operationId: lookupRuntimeReferenceOptions
+      tags: [RuntimeRelation]
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - name: field
+          in: query
+          required: true
+          schema: { type: string }
+          description: 本实体上的 REFERENCE 字段 code（关系声明在 validation_rules.reference）
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: 关键字（labelField 前缀/包含匹配）
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value: { type: string, description: 目标实体主键 }
+                            label: { type: string, description: labelField 翻译值 }
+        '403':
+          description: 无读权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '404':
+          description: 实体/字段未注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+
+  /entities/{entityCode}/records/{id}/children/{childEntityCode}:
+    get:
+      summary: 列出一行父记录的子表行（G10 已实现）
+      description: |
+        按 CHILD_TABLE 声明（validation_rules.childTable）的 foreignKey/orderColumn 查子表；
+        REFERENCE 字段已补 `{code}__label`（enrichReferenceLabels）。权限：父/子实体 runtime 读码。
+      operationId: listRuntimeChildRecords
+      tags: [RuntimeRelation]
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/ChildEntityCode'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: object, additionalProperties: true }
+        '403':
+          description: 无读权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '404':
+          description: 实体/关系声明未注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+    post:
+      summary: 批量替换子表行（G10 已实现）
+      description: |
+        整组替换语义（同一事务）：父行存在性校验 + 子行增删改 + 孤儿软删原子提交；
+        rows 为空即清空。行内键 = 子实体字段 code（含 id 则更新，无 id 则插入）。
+        权限：父/子实体 runtime 写码。
+      operationId: replaceRuntimeChildRecords
+      tags: [RuntimeRelation]
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+        - $ref: '#/components/parameters/ChildEntityCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rows:
+                  type: array
+                  items: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: OK（返回保存后的子表行）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: object, additionalProperties: true }
+        '403':
+          description: 无写权限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+        '404':
+          description: 实体/关系声明未注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeErrorEnvelope'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -341,6 +586,14 @@ components:
         pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
       description: |
         动作编码（动态）。例：submit、approve、confirmPayout、receive。
+    ChildEntityCode:
+      name: childEntityCode
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+      description: 子实体编码（CHILD_TABLE 声明 childEntityCode），如 expense_claim_item
       example: confirmPayout
 
   schemas:
@@ -452,11 +705,16 @@ components:
             - META_RUNTIME_RECORD_NOT_FOUND
             - META_RUNTIME_INVALID_IDENTIFIER
             - META_RUNTIME_INVALID_QUERY
+            - META_RUNTIME_VALIDATION_FAILED
+            - META_RUNTIME_DUPLICATE
+            - META_RUNTIME_FIELD_PROTECTED
+            - META_RUNTIME_ENTITY_FORBIDDEN
             - META_RUNTIME_ACTION_NOT_FOUND
             - META_RUNTIME_ACTION_ILLEGAL_TRANSITION
             - META_RUNTIME_ACTION_INVALID_PARAMS
             - META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED
-            - META_RUNTIME_FORBIDDEN_ACTION
+            - META_RUNTIME_ACTION_ORPHANED
+            - META_PRECONDITION_FAILED
         message:
           type: string
 

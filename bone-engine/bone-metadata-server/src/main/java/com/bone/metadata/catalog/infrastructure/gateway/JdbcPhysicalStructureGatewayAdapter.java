@@ -84,6 +84,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     } else {
       Set<String> existing = readExistingColumns(table);
       for (MetaField field : fields) {
+        // v0.46（G10）：CHILD_TABLE 无物理列——跳列（含加列路径），不建无意义 VARCHAR 列
+        if (isChildTableField(field)) {
+          continue;
+        }
         String physCol = physicalColumnOf(field);
         String col = requireIdentifier(physCol, "field.physicalColumn");
         if (!existing.contains(col)) {
@@ -94,6 +98,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     int executed = 0;
     if (execute) {
       for (String ddl : statements) {
+        // v0.46（G10）：CHILD_TABLE 无物理列，buildAddColumn 返回 null，跳过执行
+        if (ddl == null) {
+          continue;
+        }
         executeIdempotently(ddl);
         executed++;
       }
@@ -387,6 +395,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     Set<String> actual = readExistingColumns(table);
     List<String> missing = new ArrayList<>();
     for (MetaField field : fields) {
+      // v0.46（G10）：CHILD_TABLE 声明字段无物理列，不参与对齐校验
+      if (isChildTableField(field)) {
+        continue;
+      }
       String col = physicalColumnOf(field);
       if (!actual.contains(requireIdentifier(col, "field.physicalColumn"))) {
         missing.add(col);
@@ -439,6 +451,10 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     sb.append(", `tenant_id` BIGINT NOT NULL");
     boolean hasIdField = false;
     for (MetaField field : fields) {
+      // v0.46（G10）：CHILD_TABLE 是纯逻辑子表声明，无物理列——跳列，不建无意义 VARCHAR 列
+      if (isChildTableField(field)) {
+        continue;
+      }
       String physCol = physicalColumnOf(field);
       String col = requireIdentifier(physCol, "field.physicalColumn");
       if ("id".equals(col)) {
@@ -464,8 +480,17 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
   }
 
   private String buildAddColumn(String table, MetaField field, String col) {
+    // v0.46（G10）：CHILD_TABLE 无物理列，加列时跳过（防止 ALTER 建无意义列）
+    if (isChildTableField(field)) {
+      return null;
+    }
     // 加列不破坏既有数据：不允许 NOT NULL（避免存量行约束失败）
     return "ALTER TABLE `" + table + "` ADD COLUMN `" + col + "` " + toSqlType(field);
+  }
+
+  /** v0.46（G10）：CHILD_TABLE 类型字段是纯逻辑子表声明（外键/子实体在 validation_rules 中），无物理列。 */
+  private static boolean isChildTableField(MetaField field) {
+    return field.getType() != null && "CHILD_TABLE".equalsIgnoreCase(field.getType());
   }
 
   /** 机制 B：逻辑字段的物理列名 = physicalColumn（已分配预留列时）否则回退 code（真实物理列）。 */
@@ -500,11 +525,15 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
         return "DECIMAL(20,6)";
       case "TEXT":
       case "JSON":
+      case "ATTACHMENT": // v0.46（G10）：附件列表存 JSON 数组字符串（对象元数据），TEXT 承载防截断
         return "TEXT";
       case "STRING":
       case "VARCHAR":
       case "EMAIL":
       case "URL":
+        return length != null && length > 0 ? "VARCHAR(" + length + ")" : "VARCHAR(255)";
+      case "REFERENCE": // v0.46（G10）：单值引用物理列存目标记录主键值（BIGINT）
+        return "BIGINT";
       default:
         return length != null && length > 0 ? "VARCHAR(" + length + ")" : "VARCHAR(255)";
     }

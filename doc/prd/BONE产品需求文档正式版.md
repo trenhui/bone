@@ -1918,7 +1918,7 @@ flowchart TD
 | BONE-总体架构设计方案（doc/architecture/BONE-总体架构设计方案.md） | 随仓库（头部 v2.2 / 2026-05-27） | 总体架构与技术方案唯一权威 |
 | Bone-DDD 最终实践方案（doc/architecture/Bone-DDD-最终实践方案.md） | 随仓库（头部 5.5.23） | DDD 分层、CQRS、Metadata SDK 持久化 P0 门禁 |
 | 模块详细设计索引（doc/design/modules/README.md） | 随仓库 | 控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta |
-| BONE X Studio 详细设计（doc/design/BONE-X-Studio-详细设计方案.md） | v5.0 | Studio 跨模块技术详设 |
+| BONE X Studio 详细设计（doc/design/modules/BONE-X-Studio-详细设计方案.md） | v5.0 | Studio 跨模块技术详设 |
 | bone-metadata-sdk/doc/README.md | 随仓库 | Metadata SDK 使用说明 |
 | 元数据能力-实现映射与竞品对照（doc/design/modules/） | 随仓库 | 三模块定义、协作关系、竞品对标 |
 | Spring Boot官方文档 | 3.2 | 后端框架参考 |

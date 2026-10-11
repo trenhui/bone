@@ -93,7 +93,7 @@ modules:
 
   - name: "bone-extension-studio"
     design_doc: "doc/design/modules/5. 扩展管理模块详细设计方案.md"
-    design_docs: ["doc/design/modules/5. 扩展管理模块详细设计方案.md", "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
+    design_docs: ["doc/design/modules/5. 扩展管理模块详细设计方案.md", "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md", "doc/design/modules/BONE-X-Studio-详细设计方案.md"]
     port: 8088
     status: "implementing"
     last_reviewed_at: "2026-09-27T23:45:00+08:00"
@@ -108,7 +108,7 @@ modules:
 
   - name: "studio-generator"
     design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
-    design_docs: ["doc/design/modules/8.Studio Generator 详细设计方案.md", "doc/design/BONE-X-Studio-详细设计方案.md"]
+    design_docs: ["doc/design/modules/8.Studio Generator 详细设计方案.md", "doc/design/modules/BONE-X-Studio-详细设计方案.md"]
     port: 8086
     status: "done"
     last_reviewed_at: "2026-09-29T09:50:00+08:00"
@@ -260,7 +260,7 @@ modules:
 
   - name: "bone-frontend/bone-shell"
     design_doc: "doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md"
-    design_docs: ["doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md", "doc/design/bone-pages-spec.html", "doc/design/国际化设计方案.md"]
+    design_docs: ["doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md", "doc/design/bone-pages-spec.html", "doc/design/modules/国际化设计方案.md"]
     port: 3000
     status: "pending"
     last_reviewed_at: null

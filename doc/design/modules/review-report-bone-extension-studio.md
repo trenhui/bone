@@ -1,6 +1,6 @@
 # 扩展管理模块（bone-extension-studio）设计方案复核报告
 
-> 执行时间：2026-09-27 ｜ 轮换序号 #6 ｜ 对应设计稿：`doc/design/modules/5. 扩展管理模块详细设计方案.md`、`5a. 扩展管理模块核心场景及用例设计方案.md`、`doc/design/BONE-X-Studio-详细设计方案.md`
+> 执行时间：2026-09-27 ｜ 轮换序号 #6 ｜ 对应设计稿：`doc/design/modules/5. 扩展管理模块详细设计方案.md`、`5a. 扩展管理模块核心场景及用例设计方案.md`、`doc/design/modules/BONE-X-Studio-详细设计方案.md`
 > 锚定版本：`doc/design/_global-contracts.yaml` generated_at=2026-09-26T23:40
 > 代码快照：分支 `codex/nightly-bone-system-20260927`（基于 `a28803b62`，工作树干净）
 > 对标基线：锚定 `hc_semantics` + `doc/architecture/多租户数据隔离方案设计.md`（§3.6 / §5 R4、通则 T1/T2）+ `doc/architecture/Bone-消息与事件规范.md`

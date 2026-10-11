@@ -3,8 +3,11 @@ package com.bone.metadata.runtime;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
 import com.bone.metadata.engine.runtime.RuntimeAuditSink;
 import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
+import com.bone.metadata.engine.runtime.RuntimeRelationSupport;
 import com.bone.metadata.engine.runtime.RuntimeStateEntryResolver;
+import com.bone.metadata.engine.runtime.RuntimeWriteHook;
 import com.bone.metadata.runtime.application.RuntimeStatusGuard;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -23,9 +26,27 @@ public class RuntimeEngineConfiguration {
       NamedParameterJdbcTemplate jdbcTemplate,
       RuntimeEntityCatalog runtimeEntityCatalog,
       RuntimeAuditSink auditSink,
-      RuntimeStateEntryResolver stateEntryResolver) {
+      RuntimeStateEntryResolver stateEntryResolver,
+      RuntimeRelationSupport runtimeRelationSupport,
+      List<RuntimeWriteHook> writeHooks) {
     return new JdbcRuntimeRecordService(
-        jdbcTemplate, runtimeEntityCatalog, auditSink, stateEntryResolver);
+        jdbcTemplate,
+        runtimeEntityCatalog,
+        auditSink,
+        stateEntryResolver,
+        runtimeRelationSupport,
+        writeHooks);
+  }
+
+  /**
+   * G10 关系能力（关联lookup / 子表 / 附件）：引用存在性校验 + 显示值批量补全 + 子表级联。
+   *
+   * <p>与 {@code JdbcRuntimeRecordService} 同源同连接（bone-metadata-sdk JDBC），避免第二条数据通道。
+   */
+  @Bean
+  public RuntimeRelationSupport runtimeRelationSupport(
+      NamedParameterJdbcTemplate jdbcTemplate, RuntimeEntityCatalog runtimeEntityCatalog) {
+    return new RuntimeRelationSupport(jdbcTemplate, runtimeEntityCatalog);
   }
 
   /**

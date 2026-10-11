@@ -271,7 +271,7 @@ S-5（dayjs locale/utc）、S-6（ErrorBoundary/403）、S-7（`id: string`，�
 
 ### 10.7 S-5 整页 i18n 落地（2026-09-28，本轮）
 
-> grill 阶段先确认：按 `doc/design/国际化设计方案.md` §1.2/§1.3/§89，微应用**全量页面** i18n 被划为 **P3 / Vision**，不在首期验收；首期范围是错误文案 + 壳层 common/nav + 业务枚举 + 日期/数字。但用户最终裁定**在本模块先行落地整页 i18n 以验证模式**。
+> grill 阶段先确认：按 `doc/design/modules/国际化设计方案.md` §1.2/§1.3/§89，微应用**全量页面** i18n 被划为 **P3 / Vision**，不在首期验收；首期范围是错误文案 + 壳层 common/nav + 业务枚举 + 日期/数字。但用户最终裁定**在本模块先行落地整页 i18n 以验证模式**。
 
 **改动范围（仅 bone-system-app + 共享语言包，未动后端与其他 app）**
 - 6 个页面全部 `useTranslation()` 化：`SystemConfig` / `MonitorAlert` / `LogManagement` / `SystemDeployment` / `DictManagement` / `ScheduleTaskManagement`。

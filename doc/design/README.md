@@ -1,9 +1,27 @@
 # 详细设计文档（`doc/design`）
 
-| 文档 | 说明 |
+| 路径 | 说明 |
 |------|------|
-| [modules/README.md](./modules/README.md) | **模块详设索引**（控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta） |
-| [BONE-X-Studio-详细设计方案.md](./BONE-X-Studio-详细设计方案.md) | BONE X Studio 终局详设（文首含 **As-Is / Vision** 分层） |
-| [国际化设计方案.md](./国际化设计方案.md) | 控制台多语言（zh-CN / en-US）详设：错误文案、locale 单源管道、枚举翻译、CI 门禁；含 v1.3 代码复核勘误。**§12 已落地 `bone-blueprint` 样板**（后端 errorCode 链路 + UTC 契约 + 前端语言包 + `scripts/check-i18n-sync.py`） |
+| [modules/README.md](./modules/README.md) | **模块详设索引**（编号详设 + 横切方案；`review-report-*` 封箱原地） |
+| [**lowcode/README.md**](./lowcode/README.md) | **低代码 Mode B 专题包**（迭代 PRD + runtime / cases / ui） |
+| [assets/](./assets/) | 配图（如运行时拓扑 SVG） |
+| [AI-夜间设计复核工作流方案.md](./AI-夜间设计复核工作流方案.md) | 过程稿（nightly）；**勿迁入 modules** |
 
-**上游（做什么）**：[`doc/prd/`](../prd/) · **平台架构（怎么做）**：[`doc/architecture/`](../architecture/) · **默认端口真源**：[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)（与各模块 `application.yml` 对照）
+**上游**：[`doc/prd/`](../prd/) · **架构**：[`doc/architecture/`](../architecture/) · **升级草案**：[`doc/plans/`](../plans/) · **端口真源**：[wiki/03](../wiki/03-本地开发与构建.md)
+
+## 运行工件区（封箱 · 勿随意改路径）
+
+下列路径被 `scripts/prompts/02-nightly-design-review.md` 等写死，**只改内容、不改路径/文件名**：
+
+| 工件 | 用途 |
+|------|------|
+| `_global-contracts.yaml` | 夜间锚定契约清单 |
+| `_review-status.yaml` | 轮换状态 |
+| `_nightly-log.md` | 夜间日志 |
+| `_pending-fixes-*.md` / `.patch` | 待修补丁稿 |
+| `bone-pages-spec.html` | 页面规格辅助 |
+| `modules/review-report-*.md` | 各模块夜间复核输出 |
+
+## 已删除空壳
+
+原 `design/ui/`、`design/cases/`（仅跳转 README）已删除 → 一律进 [`lowcode/`](./lowcode/)。

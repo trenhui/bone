@@ -65,12 +65,18 @@ public class RedisCachedRuntimeEntityCatalog
 
   /** Jackson 可序列化的 RUNTIME 实体快照。 */
   public record CachedPayload(
-      String physicalTableName, String primaryKeyColumn, List<ColumnPayload> columns) {
+      String physicalTableName,
+      String primaryKeyColumn,
+      String stateField,
+      String rowPolicies,
+      List<ColumnPayload> columns) {
 
     static CachedPayload from(PublishedRuntimeEntity entity) {
       return new CachedPayload(
           entity.physicalTableName(),
           entity.primaryKeyColumn(),
+          entity.stateField(),
+          entity.rowPolicies(),
           entity.columns().stream()
               .map(
                   c ->
@@ -98,7 +104,7 @@ public class RedisCachedRuntimeEntityCatalog
                           c.physicalColumn()))
               .toList();
       return new PublishedRuntimeEntity(
-          entityCode, physicalTableName, primaryKeyColumn, tenantId, cols);
+          entityCode, physicalTableName, primaryKeyColumn, tenantId, cols, stateField, rowPolicies);
     }
 
     record ColumnPayload(

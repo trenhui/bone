@@ -74,7 +74,8 @@ public class RuntimeRecordController {
     RuntimePageQuery query = RuntimePageQuery.parse(fields, sort, q);
     PageResult<Map<String, Object>> apiPage =
         CatalogPageMapper.toApiPage(
-            runtimeRecordService.page(entityCode, tenantId, page, size, query), row -> row);
+            runtimeRecordService.page(entityCode, tenantId, page, size, query, resolveRowOwnerId()),
+            row -> row);
     // 动作发现唯一形态（Runtime §4.3.1）：按 status 分组一次算全量，天然防 N+1，列表与详情共用一份
     apiPage.setMeta(describeSupport.describe(tenantId, entityCode));
     return ApiResponse.success(apiPage);
@@ -86,7 +87,8 @@ public class RuntimeRecordController {
       @PathVariable String entityCode, @PathVariable String id) {
     accessGuard.requireRead(entityCode);
     long tenantId = tenantProvider.currentTenantId();
-    Map<String, Object> row = runtimeRecordService.getById(entityCode, tenantId, id);
+    Map<String, Object> row =
+        runtimeRecordService.getById(entityCode, tenantId, id, resolveRowOwnerId());
     Object version = row.get("version");
     ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
     if (version instanceof Number number) {
@@ -243,5 +245,20 @@ public class RuntimeRecordController {
     }
     // 主体名为非数值（如 username）时仍返回，交由下层按数值校验跳过 BIGINT 列
     return name;
+  }
+
+  /**
+   * 行级 ACL 操作者判定（Runtime §4.7.1）：平台管理员传 null（豁免）；非数值主体传 null（与 BIGINT created_by
+   * 无可比性，按既有审计语义不启用）；否则传数值用户 ID，数据面按本人过滤。
+   */
+  private Long resolveRowOwnerId() {
+    if (accessGuard.isPlatformAdmin()) {
+      return null;
+    }
+    String op = currentOperator();
+    if (op == null || !op.matches("\\d+")) {
+      return null;
+    }
+    return Long.parseLong(op);
   }
 }

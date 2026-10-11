@@ -34,8 +34,8 @@ public class RuntimeActionController {
 
   private final RuntimeActionService actionService;
   private final RuntimeActionMetaService metaService;
-  private final TenantProvider tenantProvider;
   private final RuntimeAccessGuard accessGuard;
+  private final TenantProvider tenantProvider;
 
   /**
    * 触发某条记录的某个动作（状态机驱动）。
@@ -53,8 +53,9 @@ public class RuntimeActionController {
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestBody(required = false) Map<String, Object> body) {
     long tenantId = tenantProvider.currentTenantId();
-    // 动作级授权：实体级写 + 动作定义声明的细粒度权限码（逃逸动作上线前必备，Runtime §4.6 门禁）
-    accessGuard.requireAction(entityCode, actionCode, null);
+    // 动作授权统一在 RuntimeActionService 内做（def 感知，Runtime §4.6 门禁）：
+    // 控制器不解析 def，无法区分逃逸/非逃逸——在控制器按「实体级写」预判会让
+    // 逃逸动作的细码持有者（无实体写时的独立资金授权面）先被 403，判定顺序冲突。
     Map<String, Object> params =
         (body == null) ? Map.of() : (Map<String, Object>) body.getOrDefault("params", body);
     Map<String, Object> result =

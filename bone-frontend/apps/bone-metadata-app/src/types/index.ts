@@ -130,7 +130,8 @@ export interface RuntimeActionParamSpec {
 
 /** 状态机动作定义（GET /api/v1/runtime/entities/{code}/actions）。 */
 export interface RuntimeActionDef {
-  id: number;
+  /** 后端 Long→string 序列化（雪花 ID 超 2^53）；前端禁止做数值运算 */
+  id: string;
   entityCode: string;
   actionCode: string;
   label: string;
@@ -156,4 +157,24 @@ export interface RuntimeActionResult {
   fromStatus?: string | null;
   /** 状态机审计：流转后状态 */
   toStatus?: string | null;
+}
+
+// ===== 运行时关系（G10：REFERENCE / CHILD_TABLE / ATTACHMENT） =====
+
+/** REFERENCE 下拉选项（GET .../records/lookup-options，含 labelField 翻译值）。 */
+export interface RuntimeReferenceOption {
+  /** 目标实体记录主键（Long→string 序列化） */
+  id: string;
+  /** labelField 翻译值（如类别名） */
+  label: string;
+  [key: string]: unknown;
+}
+
+/** 子表（CHILD_TABLE）明细行 —— 与 RuntimeRecord 同构，行内键为子实体字段 code。 */
+export type RuntimeChildRow = RuntimeRecord;
+
+/** 子表批量替换响应（POST .../children/{childEntityCode}）。 */
+export interface RuntimeChildrenReplaceResult {
+  count: number;
+  replaced: boolean;
 }

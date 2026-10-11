@@ -270,7 +270,7 @@ A2 才是真正的规范 breaking 变更（L3，oasdiff 会报 `int64`→`string
 - 全仓残余 9 处 `bone-sdk` 字样**全为有意保留的历史说明**（门禁 docstring、基线注释、本 ADR），无一是活构建引用
 - 逐文件 diff 均为 1~4 行精准改动，无意外扩散
 
-**有意不改的一处**：`doc/design/BONE-X-Studio-详细设计方案.md` 中的 `| bone-sdk | core/metadata/extension-sdk | Apache 2.0 |` —— 那是**未来商业版仓库**的设计提案（含 core/metadata/extension-sdk），不是当前仓库清单。
+**有意不改的一处**：`doc/design/modules/BONE-X-Studio-详细设计方案.md` 中的 `| bone-sdk | core/metadata/extension-sdk | Apache 2.0 |` —— 那是**未来商业版仓库**的设计提案（含 core/metadata/extension-sdk），不是当前仓库清单。
 
 **后续待执行（本 ADR 尚未涉及的改动）**
 

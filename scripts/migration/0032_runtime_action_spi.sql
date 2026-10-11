@@ -74,7 +74,7 @@ VALUES
   (0, 'expense_claim', 'submit',        '提交',     'DRAFT',     'SUBMITTED', 'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 10, NOW(3), NOW(3), 0, 0),
   (0, 'expense_claim', 'approve',       '审批通过', 'SUBMITTED', 'APPROVED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 20, NOW(3), NOW(3), 0, 0),
   (0, 'expense_claim', 'reject',        '驳回',     'SUBMITTED', 'REJECTED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 21, NOW(3), NOW(3), 0, 0),
-  (0, 'expense_claim', 'confirmPayout', '确认打款', 'APPROVED',  'PAID',      'status', 1, 'paymentApplicationService',
+  (0, 'expense_claim', 'confirmPayout', '确认打款', 'APPROVED',  'PAID',      'status', 1, 'expenseClaimConfirmPayoutHandler',
    '[{"name":"channel","type":"enum","required":true,"values":["PAYROLL","BANK_TRANSFER"],"label":"打款渠道"},{"name":"note","type":"string","required":false,"label":"备注"}]',
    'metadata:runtime:write', 1, 30, NOW(3), NOW(3), 0, 0)
 ON DUPLICATE KEY UPDATE

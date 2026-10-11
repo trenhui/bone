@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BONE 元数据 · 实体工作区 v0.34（复核收口 · 0→1/1→n）</title>
+<title>BONE 元数据 · 实体工作区 v0.37（双界面 · B1–B4 演示）</title>
 <style>
   :root{
     --primary:#1677ff; --primary-bg:#e6f4ff; --primary-border:#91caff;
@@ -226,6 +226,7 @@
       <div class="item on" data-entity="device" onclick="switchEntity('device')"><span class="ico">◇</span>设备巡检 <span class="ent-code">够用</span></div>
       <div class="item" data-entity="repl" onclick="switchEntity('repl')"><span class="ico">◇</span>供应链补货 <span class="ent-code">边界</span></div>
       <div class="item" data-entity="visitor" onclick="switchEntity('visitor')"><span class="ico">◇</span>访客登记 <span class="ent-code">换皮</span></div>
+      <div class="item" data-entity="expense" onclick="switchEntity('expense')"><span class="ico">◇</span>费用报销 <span class="ent-code">办公</span></div>
       <div class="grp">实体工作区</div>
       <div class="item on" data-nav="t-fields" onclick="goTab('t-fields')"><span class="ico">≡</span>结构</div>
       <div class="item" data-nav="t-ui" onclick="goTab('t-ui')"><span class="ico">◫</span>界面</div>
@@ -234,14 +235,14 @@
       <div class="grp">参考</div>
       <div class="item" data-nav="t-err" onclick="goTab('t-err')"><span class="ico">⚠</span>状态与异常</div>
       <div class="item" data-nav="t-gap" onclick="goTab('t-gap')"><span class="ico">🔬</span>实现差距 · W0</div>
-      <div class="item" data-nav="t-plan" onclick="goTab('t-plan')"><span class="ico">🧭</span>落地路线 · v0.34</div>
+      <div class="item" data-nav="t-plan" onclick="goTab('t-plan')"><span class="ico">🧭</span>落地路线 · v0.40</div>
     </nav>
-    <div class="sider-foot">原型 v0.34 · 复核收口 · 0→1/1→n</div>
+    <div class="sider-foot">原型 v0.40 · 报销 L0</div>
   </aside>
 
   <main class="main">
     <header class="header">
-      <div class="crumb"><span id="crumb-domain">场景域</span> / <b id="crumb-ent">补货单 · t_replenishment</b> <span class="pill blue" style="margin-left:8px">RUNTIME</span> <span class="pill green" id="pub-pill">已发布</span> <span class="pill orange" id="draft-pill" style="display:none">草稿</span> <span class="pill orange" id="dirty-pill">未发布 · 2</span></div>
+      <div class="crumb"><span id="crumb-domain">场景域</span> / <b id="crumb-ent">补货单 · t_replenishment</b> <span class="pill blue" style="margin-left:8px" id="ui-mode-pill" title="delivery_mode=RUNTIME">自动界面</span> <span class="pill green" id="pub-pill">已发布</span> <span class="pill orange" id="draft-pill" style="display:none">草稿</span> <span class="pill orange" id="dirty-pill">未发布 · 2</span></div>
       <div class="header-actions">
         <button class="btn primary" onclick="startClosedLoop()" title="UC-01 从草稿走通">▶ 0→1 走通</button>
         <button class="btn orange" onclick="startEvolve()" title="UC-02 已发布上加字段">1→n 演进</button>
@@ -321,6 +322,23 @@
 
       <!-- ===== Tab: 界面（建模即页面 · v0.23） ===== -->
       <div class="panel" id="t-ui">
+        <div id="ui-hand-panel" style="display:none">
+          <div class="card">
+            <h4>手写界面 · 说明卡 <span class="pill orange">GENERATIVE</span></h4>
+            <div class="alert info"><span>页面不在本工作区自动生成。元数据进 <b>studio-generator</b>，业务仓手写/改生成代码。</span></div>
+            <div style="font-size:12.5px;line-height:1.8;color:var(--text-2);margin:12px 0">
+              <div><b>组件契约 props（挂载时）</b>：<code>entityCode</code> · <code>catalogSnapshot</code> · <code>recordsApi</code></div>
+              <div><b>v1.1 起点</b>：可从自动生成页「复制再改」（对齐 Salesforce Edit Page / React Admin Guesser）</div>
+              <div><b>数据</b>：在业务应用使用，本 Tab 不提供 Meta* 覆盖编辑</div>
+            </div>
+            <div class="foot-bar">
+              <button class="btn primary" onclick="toast('演示：打开代码生成（studio-generator）')">去代码生成</button>
+              <button class="btn" onclick="goTab('t-fields')">回结构</button>
+              <button class="btn" onclick="goTab('t-pub')">去发布</button>
+            </div>
+          </div>
+        </div>
+        <div id="ui-auto-panel">
         <div class="alert info">
           <span><b>界面 = 状态感知 + 徽标自动渲染</b>。ENUM 状态字段自动渲染为彩色徽标（DRAFT=gray/SUBMITTED=blue/APPROVED=orange/RECEIVED=green/CANCELLED=red）；表单根据状态决定字段可编辑性（DRAFT 可改计划，非 DRAFT 只读）。</span>
         </div>
@@ -428,6 +446,7 @@
           <button class="btn green" onclick="goTab('t-pub')">去发布</button>
           <button class="btn primary" onclick="openData()">打开数据</button>
         </div>
+        </div><!-- /ui-auto-panel -->
       </div>
 
       <!-- ===== Tab: 发布 ===== -->
@@ -510,6 +529,10 @@
         <div class="data-lock" id="data-lock">
           <div style="font-size:15px;font-weight:600;margin-bottom:6px">尚未发布 · 数据 Tab 锁定</div>
           <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px">对标 Salesforce：草稿对象无运行时记录。先发布再录入。</div>
+          <div class="alert warn" style="text-align:left;margin-bottom:12px">
+            <span><b>结构建议（B1）</b>：若还缺必填字段，先补齐再发布，避免「能进数据却录不了」。</span>
+          </div>
+          <button class="btn" onclick="goTab('t-fields');toast('去结构补齐字段')">补齐字段并发布</button>
           <button class="btn green" onclick="goTab('t-pub')">去发布解锁</button>
         </div>
         <div id="data-body">
@@ -531,20 +554,20 @@
           <!-- 列表视图 -->
           <div id="view-list">
             <div class="qbar">
-              <input class="input" placeholder="关键字：补货单号 / 商品 / 仓库">
-              <select style="width:120px"><option>状态：全部</option><option>DRAFT</option><option>SUBMITTED</option><option>APPROVED</option><option>RECEIVED</option></select>
-              <select style="width:100px"><option>排序</option><option>数量↓</option><option>数量↑</option></select>
+              <input class="input" id="data-q" placeholder="关键字">
+              <select id="data-filter" style="width:140px"><option>状态：全部</option></select>
+              <select style="width:100px"><option>排序</option><option>默认</option></select>
               <button class="btn primary sm" onclick="toast('查询 · filter/sort（RC-004）')">查询</button>
               <button class="btn sm" onclick="toast('列选择器')">列显隐</button>
-              <button class="btn sm primary" style="margin-left:auto" onclick="swView('form')">+ 新建补货单</button>
+              <button class="btn sm primary" id="data-new-btn" style="margin-left:auto" onclick="swView('form')">+ 新建</button>
             </div>
             <table>
               <thead><tr id="data-thead"></tr></thead>
               <tbody id="data-tbody"></tbody>
             </table>
             <div class="pager"><span id="data-pager">共 0 行</span><button class="btn sm">&lt;</button><span style="padding:0 6px">1</span><button class="btn sm">&gt;</button></div>
-            <div class="alert info" style="margin-top:10px;margin-bottom:0;font-size:11.5px">
-              <span><b>状态动作推导（v1.1）</b>：DRAFT→提交/取消 · SUBMITTED→审批/取消 · APPROVED→到货入库（<span class="cross-ent"><span class="warn-ico">⚠</span>跨实体：Inventory.receive</span>）· RECEIVED/CANCELLED→终态</span>
+            <div class="alert info" id="data-state-tip" style="margin-top:10px;margin-bottom:0;font-size:11.5px">
+              <span><b>状态动作</b>：随场景</span>
             </div>
           </div>
 
@@ -663,7 +686,7 @@
             <div>☐ <code>runtimeRecordApi</code> 传齐查询参数；update 带 If-Match；412 → 重新加载</div>
             <div>☐ 实体选择器去 <code>size:50</code>（改服务端搜索）；列表取消 <code>slice(0,8)</code> 硬截断</div>
             <div>☐ 控件补 DATE/DATETIME→DatePicker、<code>enumValues</code>→Select；未支持类型<b>显式降级提示</b></div>
-            <div>☐ 新建默认 <code>deliveryMode=RUNTIME</code>；创建成功落 <code>?tab=structure</code>；工作台「全新建模」打开对话框</div>
+            <div>☐ 新建默认「自动生成界面」(<code>deliveryMode=RUNTIME</code>)；创建成功落 <code>?tab=structure</code>；工作台「全新建模」打开对话框</div>
             <div>☐ EntityDetail Tabs＝结构｜界面｜数据｜发布；<code>?tab=</code> URL 同步；<b>顶栏发布常驻</b>（1→n 前提）；脏态徽标；ErrorBoundary</div>
             <div>☐ 顶栏「打开数据」：未发布 disabled + tooltip；已发布打开<b>本实体</b></div>
             <div>☐ <b>T1–T3 ENUM 贯通</b>：模板表增列(L3) · 实例化透传 · FIELD_TYPES+编辑器+Select/Tag 渲染</div>
@@ -672,16 +695,29 @@
           </div>
           <div class="foot-bar">
             <span style="font-size:12px;color:var(--text-3)">业界对照：先释放已实现 API → 修数据正确性 → 界面 Tab 预览 → 组件化（strangler）→ 再治理</span>
-            <button class="btn" onclick="goTab('t-plan')">看落地路线 v0.34</button>
+            <button class="btn" onclick="goTab('t-plan')">看落地路线 v0.40</button>
             <button class="btn primary" onclick="goTab('t-fields')">从结构演示</button>
           </div>
         </div>
       </div>
 
-      <!-- ===== Tab: 落地路线 v0.34 ===== -->
+      <!-- ===== Tab: 落地路线 v0.40 ===== -->
       <div class="panel" id="t-plan">
         <div class="card">
-          <h4>v0.34 代码实测修正（三处假设） <span class="pill red">先读</span></h4>
+          <h4>费用报销 · L0 串联 <span class="pill green">v0.40</span></h4>
+          <div class="alert info" style="margin-bottom:12px">
+            <span>原型 = PRD §2.5.9 = case <b>L0</b>：实体 <code>t_expense_claim</code> · 模板 <code>expense_claim</code> · 打款逃逸拟议 <code>ExpenseClaimApplicationService.confirmPayout</code>
+           （<b>禁</b>复用订单 <code>PaymentApplicationService</code>）。串联序：巡检→报销→补货→访客。
+            <b>L1</b> 不进原型。详见 case / <code>doc/design/lowcode/ui/README.md</code>。</span>
+          </div>
+          <div class="foot-bar">
+            <button class="btn primary" onclick="switchEntity('expense');goTab('t-fields')">打开报销 · 结构</button>
+            <button class="btn" onclick="switchEntity('expense');goTab('t-data')">打开报销 · 数据（打款）</button>
+            <button class="btn" onclick="switchEntity('repl');goTab('t-data')">对照补货 · 入库逃逸</button>
+          </div>
+        </div>
+        <div class="card">
+          <h4>代码实测修正（三处假设 · 仍有效） <span class="pill red">先读</span></h4>
           <div class="alert warn" style="margin-bottom:12px">
             <span>以下均为<b>逐行代码实测</b>结论（<code>bone-metadata-app</code> 4677 行 + <code>0024</code> 菜单种子 + <code>bone-init.sql</code> +后端契约），<b>优先于原型演示与 PRD 前文 As-Is 声明</b>。</span>
           </div>
@@ -716,9 +752,11 @@
             <div><span class="pill red">T1</span> <code>0028_meta_template_enum.sql</code>：增 <code>enum_values</code> / <code>validation_rules</code>　<span class="pill red">L3 · DDL 需架构师审批</span></div>
             <div><span class="pill orange">T2</span> <code>MetaTemplateApplicationService.instantiate</code> 透传两列（替换两处 <code>null</code>）</div>
             <div><span class="pill orange">T3</span> <code>FIELD_TYPES</code> 增 ENUM + 枚举值编辑器 + <code>Select</code>/<code>Tag</code> 渲染；未支持类型<b>显式降级提示</b>（禁静默渲染空）</div>
+            <div><span class="pill green">T4</span> 四套模板：巡检 / 补货 / 访客 / <b>expense_claim</b>（对齐侧栏报销 L0）</div>
           </div>
           <div class="foot-bar">
             <button class="btn" onclick="switchEntity('repl');goTab('t-fields')">看补货 5 态字段表</button>
+            <button class="btn" onclick="switchEntity('expense');goTab('t-fields')">看报销 DECIMAL + ENUM</button>
           </div>
         </div>
 
@@ -749,8 +787,8 @@
               </tr>
               <tr>
                 <td><span class="pill green">W1</span></td>
-                <td><b>T1–T4 ENUM + 场景模板</b> · <code>projectColumns()</code>列投影单一真源 · 从零建 Meta* · 覆盖走 localStorage</td>
-                <td><b>三场景字段表可在生产逐字敲出</b>；界面预览列 ≡ 发布后数据列</td>
+                <td><b>T1–T4 ENUM + 四场景模板</b>（含 <code>expense_claim</code>）· <code>projectColumns()</code> · 从零 Meta* · localStorage 覆盖</td>
+                <td><b>四场景字段表可在生产逐字敲出</b>；预览列 ≡ 数据列</td>
               </tr>
               <tr>
                 <td><span class="pill purple">W2</span></td>
@@ -782,8 +820,39 @@
           </div>
         </div>
 
+
         <div class="card">
-          <h4>两处产品定案 <span class="pill green">v0.34 已关闭</span></h4>
+          <h4>双界面模式 <span class="pill green">v0.37 · PRD §0.7</span></h4>
+          <table>
+            <thead><tr><th>用户选项</th><th>存库</th><th>页面从哪来</th><th>工作区</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>自动生成界面</b>（默认）</td>
+                <td><code>RUNTIME</code></td>
+                <td>MetaList/MetaForm · catalog 投影 + 轻覆盖</td>
+                <td>结构→界面→发布→数据 全开</td>
+              </tr>
+              <tr>
+                <td><b>手写界面</b></td>
+                <td><code>GENERATIVE</code></td>
+                <td>generator + 业务仓页面</td>
+                <td>界面/数据降级为说明卡</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="alert good" style="margin-top:12px">
+            <span><b>业界务实最佳实践</b>：自动 UI = 模型投影 + 轻量视图覆盖（NocoBase / Locode / Salesforce 轻布局 / React Admin Resource 级替换）。<b>不做</b>第二套 UI Schema / 画布（MVP）。复杂整页 → 选手写；个别按钮 → UIF-004 逃逸。</span>
+          </div>
+          <div class="alert info" style="margin-top:12px">
+            <span><b>10 秒判据</b>：标准 CRUD / 配置型 / 想 15 分钟上线 → <b>自动生成界面</b>；整页都不像 CRUD / 逐像素交互 / 存量手写页 → <b>手写界面</b>。RUNTIME 数据 + 局部手写 → UIF-004 逃逸（PRD §0.7.5）。</span>
+          </div>
+          <div class="foot-bar">
+            <button class="btn primary" onclick="openModal('new')">看新建对话框文案</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>两处产品定案 <span class="pill green">已关闭</span></h4>
           <table>
             <thead><tr><th style="width:44px">#</th><th>偏离</th><th>理由</th></tr></thead>
             <tbody>
@@ -800,7 +869,7 @@
             </tbody>
           </table>
           <div class="foot-bar">
-            <span style="font-size:12px;color:var(--text-3)">落地细则：<code>doc/design/ui/元数据工作区前端融合方案.md</code>（逐文件 <code>file:line</code> 级改法）</span>
+            <span style="font-size:12px;color:var(--text-3)">落地细则：<code>doc/design/lowcode/ui/元数据工作区前端融合方案.md</code>（逐文件 <code>file:line</code> 级改法）</span>
             <button class="btn primary" onclick="goTab('t-fields')">回到工作区</button>
           </div>
         </div>
@@ -848,21 +917,36 @@
         <div><div class="flabel">实体名称 <span class="req">*</span></div><input class="input" style="width:100%" placeholder="如：设备巡检单 / 补货单 / 访客登记" oninput="document.getElementById('newCode').value=this.value.replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase()"></div>
         <div><div class="flabel">编码 <span class="req">*</span></div><input class="input" style="width:100%" id="newCode" placeholder="自动生成，可改"></div>
       </div>
-      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">交付模式</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">界面怎么来？<span style="color:var(--text-3)">（底层仍是 delivery_mode，见 PRD §0.7）</span></div>
       <div class="mode-cards">
         <div class="mode-card" data-mode="A" onclick="selMode('A')">
-          <h3><span class="tag-a">A</span>生成式</h3>
-          <div class="desc">元数据 → 生成可审计源码进 Git。适合<strong>复杂领域</strong>（订单/库存入库联动）。</div>
+          <h3><span class="tag-a">手写</span>手写界面</h3>
+          <div class="desc">元数据 → 代码生成 / 业务仓自己写页。适合<strong>复杂领域</strong>（订单、库存联动）。工作区「界面」只给说明，不做自动预览。</div>
         </div>
         <div class="mode-card on" data-mode="B" onclick="selMode('B')">
-          <h3><span class="tag-b">B</span>运行时</h3>
-          <div class="desc">元数据 → 动态 CRUD。适合<strong>配置型对象</strong>（如补货单）。</div>
+          <h3><span class="tag-b">自动</span>自动生成界面</h3>
+          <div class="desc">字段 → 自动列表/表单（catalog 投影 + 可微调列）。适合<strong>配置型对象</strong>。本迭代验收主路径。</div>
         </div>
       </div>
     </div>
     <div class="m-foot">
       <button class="btn" onclick="closeModal('new')">取消</button>
       <button class="btn primary" onclick="createEntity()">创建</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-mask" id="m-pub-ok">
+  <div class="modal">
+    <div class="m-head">发布成功 <span style="cursor:pointer;font-weight:400" onclick="closeModal('pub-ok')">✕</span></div>
+    <div class="m-body">
+      <div class="alert good"><span>热加载约 1.2s · 线上已是新快照。下一步？（B3）</span></div>
+      <div class="foot-bar" style="margin-top:14px;flex-direction:column;align-items:stretch;gap:8px">
+        <button class="btn primary" onclick="closeModal('pub-ok');goTab('t-ui');swUiMode('preview')">查看界面预览</button>
+        <button class="btn green" onclick="closeModal('pub-ok');openData()">打开数据</button>
+        <button class="btn" onclick="closeModal('pub-ok');goTab('t-fields');toast('继续加字段 · 1→n')">继续加字段</button>
+      </div>
     </div>
   </div>
 </div>
@@ -885,6 +969,7 @@
     <div class="row" onclick="switchEntity('device');closeCmd()"><b>场景 · 设备巡检</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">够用</span></div>
     <div class="row" onclick="switchEntity('repl');closeCmd()"><b>场景 · 供应链补货</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">边界</span></div>
     <div class="row" onclick="switchEntity('visitor');closeCmd()"><b>场景 · 访客登记</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">换皮</span></div>
+    <div class="row" onclick="switchEntity('expense');closeCmd()"><b>场景 · 费用报销</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">办公·DECIMAL</span></div>
     <div class="row" onclick="goTab('t-fields');closeCmd()"><b>结构</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">字段/关系</span></div>
     <div class="row" onclick="goTab('t-ui');closeCmd()"><b>界面</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">预览页面</span></div>
     <div class="row" onclick="goTab('t-data');closeCmd()"><b>数据</b><span style="margin-left:auto;font-size:11px;color:var(--text-3)">填真数据</span></div>
@@ -897,23 +982,11 @@
 <!-- 到货入库 · 跨实体逃逸说明（UC-05 / PRD §2.5.8 UC-C） -->
 <div class="modal-mask" id="m-escape">
   <div class="modal" style="max-width:560px">
-    <div class="m-head">📦 到货入库 · 跨实体逃逸（UC-05） <span style="cursor:pointer;font-weight:400" onclick="closeModal('escape')">✕</span></div>
-    <div class="m-body" style="font-size:12.5px;line-height:1.8">
-      <div class="alert warn" style="margin-bottom:12px">
-        <span>补货单 <b id="escape-no">—</b>（数量 <b id="escape-qty">—</b>）当前 <b>APPROVED</b>。这一步<b>不能只把 status 枚举改成 RECEIVED</b>——还必须给库存账真的加数量，否则单据与库存账实不一致。</span>
-      </div>
-      <div style="margin-bottom:10px"><b>MVP 怎么落地（本迭代）</b></div>
-      <div style="background:var(--gray-bg);border-radius:6px;padding:10px 12px;margin-bottom:12px">
-        <div>① bone-blueprint 手写 <code>ReplenishmentApplicationService.receive(id)</code>（约 50 行），暴露 <code>POST /api/v1/replenishments/{id}/receive</code></div>
-        <div>② <b>同一本地事务</b>内：补货单 APPROVED→RECEIVED ＋ <code>Inventory.receive()</code> 给 availableQty 加数量（库存入库还会触发渠道广播入 Outbox）</div>
-        <div>③ 运行时列表通过 <b>UIF-004 声明式挂载</b>在 APPROVED 行挂这个按钮——页面其余部分仍是 MetaList 自动生成</div>
-      </div>
-      <div style="margin-bottom:6px"><b>v1.1 目标态</b></div>
-      <div style="color:var(--text-2)">元数据声明跨实体动作 <code>receive → service://blueprint/replenishment#receive</code>；<b>UIF-008</b> 自动生成按钮、VF-001/扩展点负责事务编排，无需手工挂载。</div>
-    </div>
+    <div class="m-head" id="escape-head">📦 到货入库 · 跨实体逃逸（UC-05） <span style="cursor:pointer;font-weight:400" onclick="closeModal('escape')">✕</span></div>
+    <div class="m-body" id="escape-body" style="font-size:12.5px;line-height:1.8"></div>
     <div class="m-foot">
       <button class="btn" onclick="closeModal('escape')">取消</button>
-      <button class="btn green" onclick="confirmReceive()">确认入库（演示同事务两步）</button>
+      <button class="btn green" id="escape-confirm" onclick="confirmReceive()">确认入库（演示同事务两步）</button>
     </div>
   </div>
 </div>
@@ -926,7 +999,7 @@
     <span style="cursor:pointer;opacity:.85" onclick="document.getElementById('coach').classList.toggle('mini')" title="折叠">▁</span>
   </div>
   <div class="cb" id="coach-steps">
-    <div class="step" data-k="created"><span class="dot">1</span><span>新建 RUNTIME<span class="uc">UC-01</span></span></div>
+    <div class="step" data-k="created"><span class="dot">1</span><span>新建·自动界面<span class="uc">UC-01</span></span></div>
     <div class="step" data-k="fieldAdded"><span class="dot">2</span><span>结构：确认/加字段<span class="uc">UC-01</span></span></div>
     <div class="step" data-k="uiChecked"><span class="dot">3</span><span>界面：结构预览<span class="uc">UC-01</span></span></div>
     <div class="step" data-k="published"><span class="dot">4</span><span>发布 · 热加载<span class="uc">UC-01</span></span></div>
@@ -944,7 +1017,7 @@
 
 <script>
 /* BONE metadata UI prototype v0.26 — scenario packs (generic closed loop) */
-  var TYPE_CTRL = {STRING:'Input',TEXT:'TextArea',DATE:'DatePicker',DATETIME:'DateTimePicker',INTEGER:'InputNumber',ENUM:'Select',BOOLEAN:'Switch'};
+  var TYPE_CTRL = {STRING:'Input',TEXT:'TextArea',DATE:'DatePicker',DATETIME:'DateTimePicker',INTEGER:'InputNumber',DECIMAL:'InputNumber',ENUM:'Select',BOOLEAN:'Switch'};
   var SCENARIOS = {
     device: {
       id:'device', name:'设备巡检', code:'t_device_inspect', domain:'运维配置域',
@@ -1073,13 +1146,61 @@
         return '<span class="pill orange">'+v+'</span>';
       },
       enumCol:4
+    },
+    expense: {
+      id:'expense', name:'费用报销', code:'t_expense_claim', domain:'行政财务域',
+      role:'办公', tagline:'DECIMAL + 轻状态 · 黄金路径',
+      banner:'L0 黄金路径（= case 费用报销 §1）：单实体 CRUD = Mode B；打款 = UC-05 逃逸。L1 头+明细不进原型。',
+      hint:'对齐 doc/design/lowcode/cases/费用报销系统-元数据建模方案.md L0 · 验 DECIMAL + 双 ENUM；真打款不在 Mode B。',
+      modeB:['报销单 CRUD 壳','amount DECIMAL','status/category ENUM','filter / 热加载'],
+      escape:['确认打款 ExpenseClaimApplicationService.confirmPayout（拟议）','多级审批 BPM（后置）','FILE/OCR（L1·G1）'],
+      asIs:'case L0；禁复用订单 PaymentApplicationService；L1 仅文档探针',
+      listCols:['claim_no','title','amount','category','expense_date','status'],
+      formSample:{claim_no:'EXP-DEMO-003',title:'客户拜访差旅',amount:'128.50',category:'差旅',expense_date:'2026-10-09',status:'DRAFT',applicant:'张三',remark:'高铁往返'},
+      filterLabel:'状态',
+      hotField:{code:'cost_center',label:'成本中心',type:'STRING',sql:'varchar(32)',sample:'CC-RD-01'},
+      fields:[
+        {code:'claim_no',label:'报销单号',type:'STRING',sql:'varchar(32)',constraint:'PK · 唯一',req:true},
+        {code:'title',label:'事由',type:'STRING',sql:'varchar(128)',constraint:'必填',req:true},
+        {code:'amount',label:'金额',type:'DECIMAL',sql:'decimal(12,2)',constraint:'必填 · >0',req:true},
+        {code:'category',label:'类目',type:'ENUM',sql:'enum',constraint:'差旅/餐饮/交通/办公/其他',req:true,enum:true},
+        {code:'expense_date',label:'发生日期',type:'DATE',sql:'date',constraint:'必填',req:true},
+        {code:'status',label:'状态',type:'ENUM',sql:'enum',constraint:'DRAFT→…→PAID',req:true,enum:true,stateMachine:true},
+        {code:'applicant',label:'申请人',type:'STRING',sql:'varchar(64)',constraint:'必填',req:true},
+        {code:'remark',label:'说明',type:'TEXT',sql:'text',constraint:'—',req:false}
+      ],
+      previewRows:[
+        {claim_no:'EXP-DEMO-001',title:'上海客户拜访',amount:'128.50',category:'差旅',expense_date:'2026-10-09',status:'APPROVED'},
+        {claim_no:'EXP-DEMO-002',title:'团队午餐',amount:'86.00',category:'餐饮',expense_date:'2026-10-08',status:'SUBMITTED'}
+      ],
+      seed:function(){
+        return [
+          {cells:['EXP-20261009-001','上海客户拜访','128.50','差旅','2026-10-09','APPROVED']},
+          {cells:['EXP-20261008-014','团队午餐','86.00','餐饮','2026-10-08','SUBMITTED']},
+          {cells:['EXP-20261007-008','地铁通勤月票','120.00','交通','2026-10-07','DRAFT']}
+        ];
+      },
+      newRecord:function(seq, extra){
+        return {cells:['EXP-DEMO-'+String(100+seq),'客户拜访差旅','128.50','差旅','2026-10-09', extra?'DRAFT':'DRAFT']};
+      },
+      enumPill:function(v){
+        if(v==='PAID'||v==='APPROVED') return '<span class="pill green">'+v+'</span>';
+        if(v==='DRAFT') return '<span class="pill gray">'+v+'</span>';
+        if(v==='REJECTED') return '<span class="pill red">'+v+'</span>';
+        if(v==='差旅') return '<span class="pill blue">差旅</span>';
+        if(v==='餐饮') return '<span class="pill orange">餐饮</span>';
+        if(v==='交通'||v==='办公') return '<span class="pill purple">'+v+'</span>';
+        return '<span class="pill orange">'+v+'</span>';
+      },
+      enumCol:5
     }
   };
 
   var FIELD_META = {};
   var S = {
     entity:'device', published:true, dirty:2, name:'', code:'',
-    records:[], loop:{}, demoMode:'zero', extraField:false, recSeq:2, listCols:[]
+    records:[], loop:{}, demoMode:'zero', extraField:false, recSeq:2, listCols:[],
+    uiMode:'auto', _fromTpl:false
   };
   var selectedField=null, autoTimer=null;
 
@@ -1192,7 +1313,7 @@
     var v = (val==null||val==='') ? '—' : String(val);
     if(meta.type==='ENUM' || code===sc.listCols[sc.enumCol]) v = sc.enumPill(val);
     else if(meta.ext && v!=='—') v='<span class="pill purple">'+v+'</span>';
-    var cls='pickable'+(first?' cell-edit':'')+(meta.type==='INTEGER'?' num':'');
+    var cls='pickable'+(first?' cell-edit':'')+((meta.type==='INTEGER'||meta.type==='DECIMAL')?' num':'');
     return '<td data-col="'+code+'" class="'+cls+'" onclick="selectField(\''+code+'\')">'+v+(first?'<span class="edit-ico">✎</span>':'')+'</td>';
   }
 
@@ -1261,6 +1382,8 @@
 
   function renderDataChrome(){
     var sc=scene();
+    var nameEl=document.getElementById('data-ent-name');
+    if(nameEl) nameEl.textContent=sc.name;
     var thead=document.getElementById('data-thead');
     if(thead){
       thead.innerHTML=sc.listCols.map(function(c){
@@ -1268,10 +1391,35 @@
         return '<th>'+f.label+'</th>';
       }).join('')+'<th>操作</th>';
     }
-    var q=document.querySelector('#view-list .qbar input');
-    if(q) q.placeholder='关键字：'+sc.name;
-    var sel=document.querySelector('#view-list .qbar select');
-    if(sel) sel.innerHTML='<option>'+sc.filterLabel+'：全部</option>';
+    var q=document.getElementById('data-q');
+    if(q){
+      var keys=sc.listCols.slice(0,3).map(function(c){
+        var f=sc.fields.find(function(x){return x.code===c;});
+        return f?f.label:c;
+      });
+      q.placeholder='关键字：'+keys.join(' / ');
+    }
+    var sel=document.getElementById('data-filter');
+    if(sel){
+      var opts=['<option>'+sc.filterLabel+'：全部</option>'];
+      if(sc.id==='expense') opts=opts.concat(['DRAFT','SUBMITTED','APPROVED','REJECTED','PAID'].map(function(o){return '<option>'+o+'</option>';}));
+      else if(sc.id==='repl') opts=opts.concat(['DRAFT','SUBMITTED','APPROVED','RECEIVED','CANCELLED'].map(function(o){return '<option>'+o+'</option>';}));
+      else if(sc.id==='device') opts=opts.concat(['PASS','FAIL','PENDING'].map(function(o){return '<option>'+o+'</option>';}));
+      else if(sc.id==='visitor') opts=opts.concat(['商务','面试','施工'].map(function(o){return '<option>'+o+'</option>';}));
+      sel.innerHTML=opts.join('');
+    }
+    var nb=document.getElementById('data-new-btn');
+    if(nb) nb.textContent='+ 新建'+sc.name;
+    var tip=document.getElementById('data-state-tip');
+    if(tip){
+      if(sc.id==='repl'){
+        tip.innerHTML='<span><b>状态动作推导（v1.1）</b>：DRAFT→提交 · SUBMITTED→审批 · APPROVED→到货入库（<span class="cross-ent"><span class="warn-ico">⚠</span>跨实体：Inventory.receive</span>）· RECEIVED/CANCELLED→终态</span>';
+      } else if(sc.id==='expense'){
+        tip.innerHTML='<span><b>状态动作（L0）</b>：DRAFT→提交 · SUBMITTED→审批/驳回 · APPROVED→确认打款（<span class="cross-ent"><span class="warn-ico">⚠</span>逃逸：ExpenseClaimApplicationService.confirmPayout</span>）· PAID/REJECTED→终态 · case L0</span>';
+      } else {
+        tip.innerHTML='<span><b>状态 / 枚举</b>：本场景以 Tag 展示为主；无跨实体逃逸（见边界卡）</span>';
+      }
+    }
     var form=document.querySelector('#view-form .form-grid');
     if(form){
       form.innerHTML=sc.fields.map(function(f){
@@ -1307,9 +1455,24 @@
       var row=document.querySelector('#t-fields tr[data-f="'+selectedField+'"]');
       if(row){ row.classList.add('hl-pulse'); row.scrollIntoView({block:'nearest'}); }
     }
+    if(id==='t-ui') syncUiModePanel();
     syncGates();
   }
-  function selMode(m){ document.querySelectorAll('.mode-card').forEach(function(c){ c.classList.toggle('on', c.dataset.mode===m); }); }
+  function syncUiModePanel(){
+    var hand=document.getElementById('ui-hand-panel');
+    var auto=document.getElementById('ui-auto-panel');
+    if(!hand||!auto) return;
+    var isHand = S.uiMode==='hand';
+    hand.style.display = isHand ? '' : 'none';
+    auto.style.display = isHand ? 'none' : '';
+  }
+  function selMode(m){
+    document.querySelectorAll('.mode-card').forEach(function(c){ c.classList.toggle('on', c.dataset.mode===m); });
+    S.uiMode = (m==='A') ? 'hand' : 'auto';
+    var pill=document.getElementById('ui-mode-pill');
+    if(pill){ pill.textContent = S.uiMode==='hand' ? '手写界面' : '自动界面'; pill.title = S.uiMode==='hand' ? 'delivery_mode=GENERATIVE' : 'delivery_mode=RUNTIME'; }
+    syncUiModePanel();
+  }
   function swView(v){
     document.querySelectorAll('#t-data .seg-it').forEach(function(s){ s.classList.toggle('on', s.dataset.v===v); });
     var vl=document.getElementById('view-list'); if(vl) vl.style.display=v==='list'?'':'none';
@@ -1412,6 +1575,13 @@
         if(st==='DRAFT') acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'SUBMITTED\')" title="DRAFT→SUBMITTED · MVP 手工改 ENUM">提交</button>';
         else if(st==='SUBMITTED') acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'APPROVED\')" title="SUBMITTED→APPROVED">审批</button>';
         else if(st==='APPROVED') acts+=' <button class="btn sm orange" onclick="receiveStock('+idx+')" title="跨实体逃逸：调手写 receive 服务，同事务改库存">📦 到货入库</button>';
+      } else if(sc.id==='expense'){
+        var st=r.cells[sc.enumCol];
+        if(st==='DRAFT') acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'SUBMITTED\')" title="DRAFT→SUBMITTED">提交</button>';
+        else if(st==='SUBMITTED'){
+          acts+=' <button class="btn sm primary" onclick="advanceState('+idx+',\'APPROVED\')" title="SUBMITTED→APPROVED">审批</button>';
+          acts+=' <button class="btn sm danger" onclick="advanceState('+idx+',\'REJECTED\')" title="SUBMITTED→REJECTED">驳回</button>';
+        } else if(st==='APPROVED') acts+=' <button class="btn sm orange" onclick="payExpense('+idx+')" title="逃逸：手写打款服务，不能只改 ENUM">💰 确认打款</button>';
       }
       html+='<td>'+acts+'</td>';
       tr.innerHTML=html; tb.appendChild(tr);
@@ -1423,7 +1593,7 @@
   }
 
   // ===== UC-C · 状态推进与跨实体逃逸（仅补货场景）=====
-  var escapeIdx=null;
+  var escapeIdx=null, escapeKind='repl';
   /** MVP 状态推进：本质是改本单 ENUM（v1.1 由 UIF-008 按状态机元数据自动出按钮）。 */
   function advanceState(idx, next){
     var r=S.records[idx]; if(!r) return;
@@ -1434,18 +1604,58 @@
     toast(r.cells[0]+' · '+label+' → '+next+'（MVP：ENUM 手工推进 · v1.1 UIF-008 自动按钮）','success');
   }
   /** 到货入库：不能只改枚举——弹跨实体逃逸说明（手写服务 + UIF-004 挂载 / v1.1 声明式动作）。 */
+  function fillEscapeModal(kind, no, qtyOrAmt){
+    escapeKind=kind;
+    var head=document.getElementById('escape-head');
+    var body=document.getElementById('escape-body');
+    var btn=document.getElementById('escape-confirm');
+    if(kind==='expense'){
+      if(head) head.innerHTML='💰 确认打款 · 财务逃逸（UC-05） <span style="cursor:pointer;font-weight:400" onclick="closeModal(\'escape\')">✕</span>';
+      if(btn) btn.textContent='确认打款（演示）';
+      if(body) body.innerHTML=
+        '<div class="alert warn" style="margin-bottom:12px"><span>报销单 <b>'+no+'</b>（金额 <b>'+qtyOrAmt+'</b>）当前 <b>APPROVED</b>。这一步<b>不能只把 status 改成 PAID</b>——还必须走付款记账。</span></div>'+
+        '<div style="margin-bottom:10px"><b>MVP 怎么落地（拟议 · 非订单支付）</b></div>'+
+        '<div style="background:var(--gray-bg);border-radius:6px;padding:10px 12px;margin-bottom:12px">'+
+        '<div>① 手写 Handler：<code>ExpenseClaimApplicationService.confirmPayout</code>（<b>勿</b>复用订单域 <code>PaymentApplicationService</code>）</div>'+
+        '<div>② <b>Invoke</b>：<code>POST …/entities/t_expense_claim/records/{id}/actions/confirmPayout</code> + <code>Idempotency-Key</code> / <code>If-Match</code></div>'+
+        '<div>③ 按钮真源：<b>Describe</b> <code>GET …/records/{id}/actions</code>（勿前端写死；勿 <code>/expense-claims</code>）</div></div>'+
+        '<div style="color:var(--text-2)">对标 SF Actions describe/invoke · NocoBase resource:action；对称补货换 code 即可（Runtime 数据面 §0.1/§4）。</div>';
+    } else {
+      if(head) head.innerHTML='📦 到货入库 · 跨实体逃逸（UC-05） <span style="cursor:pointer;font-weight:400" onclick="closeModal(\'escape\')">✕</span>';
+      if(btn) btn.textContent='确认入库（演示同事务两步）';
+      if(body) body.innerHTML=
+        '<div class="alert warn" style="margin-bottom:12px"><span>补货单 <b>'+no+'</b>（数量 <b>'+qtyOrAmt+'</b>）当前 <b>APPROVED</b>。这一步<b>不能只把 status 改成 RECEIVED</b>——还必须给库存账真的加数量。</span></div>'+
+        '<div style="margin-bottom:10px"><b>MVP 怎么落地</b></div>'+
+        '<div style="background:var(--gray-bg);border-radius:6px;padding:10px 12px;margin-bottom:12px">'+
+        '<div>① 手写 Handler：<code>ReplenishmentApplicationService.receive(id)</code></div>'+
+        '<div>② <b>Invoke</b>：<code>POST …/entities/t_replenishment/records/{id}/actions/receive</code> + 幂等 Key</div>'+
+        '<div>③ <b>Describe</b> 出「到货入库」按钮；同事务 RECEIVED + <code>Inventory.receive()</code></div></div>'+
+        '<div style="color:var(--text-2)">v1.1：UIF-008 + catalog actions（PRD §2.5.8 · Runtime 数据面 §4）。</div>';
+    }
+  }
   function receiveStock(idx){
     var r=S.records[idx]; if(!r) return;
     escapeIdx=idx;
-    var elNo=document.getElementById('escape-no'), elQty=document.getElementById('escape-qty');
-    if(elNo) elNo.textContent=r.cells[0];
-    if(elQty) elQty.textContent=r.cells[3]||'—';
+    fillEscapeModal('repl', r.cells[0], r.cells[3]||'—');
     openModal('escape');
   }
-  /** 确认入库（演示）：同一事务内 补货单→RECEIVED ＋ Inventory.receive 加库存。 */
+  function payExpense(idx){
+    var r=S.records[idx]; if(!r) return;
+    escapeIdx=idx;
+    fillEscapeModal('expense', r.cells[0], '¥'+(r.cells[2]||'—'));
+    openModal('escape');
+  }
+  /** 确认入库/打款（演示）。 */
   function confirmReceive(){
     var r=S.records[escapeIdx]; if(!r){ closeModal('escape'); return; }
     var sc=scene();
+    if(escapeKind==='expense'){
+      r.cells[sc.enumCol]='PAID';
+      closeModal('escape'); renderRecords();
+      markLoop('escape');
+      toast('打款完成：'+r.cells[0]+' → PAID；付款凭证已记账（ExpenseClaimApplicationService.confirmPayout · 非 Mode B）','success');
+      return;
+    }
     var qty=r.cells[3];
     r.cells[sc.enumCol]='RECEIVED';
     closeModal('escape'); renderRecords();
@@ -1493,7 +1703,7 @@
     else startEvolve();
   }
   function cycleScene(){
-    var order=['device','repl','visitor'];
+    var order=['device','expense','repl','visitor'];
     var nx=order[(order.indexOf(S.entity)+1)%order.length];
     S.bizLine=(S.bizLine||1)+1;
     // UC-04 ≈ 从模板换皮：落界面（P1 定案），再重置为草稿 0→1
@@ -1568,7 +1778,7 @@
     S.loop={created:true,fieldAdded:false,uiChecked:false,published:false,crudDone:false,hotReload:false,uiVisited:false};
     S.demoMode='zero';
     closeModal('new'); syncGates(); updatePhaseUI(); goTab('t-fields');
-    toast('实体已创建 · 草稿 · UC-01');
+    toast('实体已创建 · 草稿 · UC-01'+(S._fromTpl?' · 已复制自模板（更新不影响本实体）':''),'success');
   }
   function addDemoField(){
     var sc=scene(); var h=sc.hotField;
@@ -1612,8 +1822,12 @@
     if(wasPublished && S.extraField) markLoop('hotReload');
     if(S.extraField) markLoop('fieldAdded');
     syncGates(); updatePhaseUI();
-    if(!silent) toast('发布成功 · 热加载 ~1.2s','success');
-    setTimeout(function(){ goTab('t-data'); if(!silent) toast('数据 Tab 已解锁'); }, silent?200:800);
+    if(silent){
+      setTimeout(function(){ goTab('t-data'); }, 200);
+      return;
+    }
+    toast('发布成功 · 热加载 ~1.2s','success');
+    openModal('pub-ok'); // B3：三动作，不留白
   }
   function toggleCol(code,on){
     document.querySelectorAll('#ui-preview-table [data-col="'+code+'"]').forEach(function(el){ el.style.display=on?'':'none'; });

@@ -378,13 +378,13 @@ class OrderPaymentRuntimeSimulationTest {
     String id = String.valueOf(created.body().get("id"));
     int currentVersion = ((Number) created.body().get("version")).intValue();
 
-    // 用错误的（更小的）版本号模拟并发冲突
-    SimResponse conflict = client.update(id, Map.of("status", "PAID"), currentVersion - 1, "1012");
+    // 用错误的（更小的）版本号模拟并发冲突（owner 1011 自身 stale，行级 ACL 后非 owner 一律 404 不达版本层）
+    SimResponse conflict = client.update(id, Map.of("status", "PAID"), currentVersion - 1, "1011");
     assertEquals(412, conflict.status());
     assertEquals("META_PRECONDITION_FAILED", conflict.errorCode());
 
     // 用正确版本号应成功
-    SimResponse ok = client.update(id, Map.of("status", "PAID"), currentVersion, "1012");
+    SimResponse ok = client.update(id, Map.of("status", "PAID"), currentVersion, "1011");
     assertTrue(ok.success(), "正确版本号应更新成功: " + ok);
   }
 
@@ -522,17 +522,17 @@ class OrderPaymentRuntimeSimulationTest {
     String payId = String.valueOf(p.body().get("id"));
     int payVer = ((Number) p.body().get("version")).intValue();
 
-    // 支付渠道回调成功（模拟 Payment.confirmSuccess）
-    SimResponse paid = pays.update(payId, Map.of("status", "SUCCESS"), payVer, "2003");
+    // 支付渠道回调（系统身份，非业务用户越权）：行级 ACL 下回调以 system 身份执行，审计留痕为 "system"
+    SimResponse paid = pays.update(payId, Map.of("status", "SUCCESS"), payVer, "system");
     assertTrue(paid.success(), "支付成功应更新: " + paid);
     assertEquals("SUCCESS", paid.body().get("status"));
-    assertEquals("2003", paid.body().get("updated_by"), "P0-2 更新者应为回调方");
+    assertEquals("system", paid.body().get("updated_by"), "P0-2 更新者应为回调方");
 
-    // 订单确认支付（模拟 Order.confirmPaid）
-    SimResponse confirmed = orders.update(orderId, Map.of("status", "PAID"), orderVer, "2004");
+    // 订单确认支付（模拟 Order.confirmPaid，服务间调用同样以 system 身份）
+    SimResponse confirmed = orders.update(orderId, Map.of("status", "PAID"), orderVer, "system");
     assertTrue(confirmed.success(), "订单置 PAID 应成功: " + confirmed);
     assertEquals("PAID", confirmed.body().get("status"));
-    assertEquals("2004", confirmed.body().get("updated_by"), "P0-2 更新者应为订单服务");
+    assertEquals("system", confirmed.body().get("updated_by"), "P0-2 更新者应为订单服务");
 
     // 重复回调：再次用同一流水号创建 → 唯一冲突（幂等去重，不重复入账）
     SimResponse dup =

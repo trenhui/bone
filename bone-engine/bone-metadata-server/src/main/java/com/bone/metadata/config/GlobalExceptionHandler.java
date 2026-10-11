@@ -87,11 +87,20 @@ public class GlobalExceptionHandler {
               MetadataErrorCodes.RUNTIME_INVALID_IDENTIFIER -> HttpStatus.BAD_REQUEST;
           case MetadataErrorCodes.RUNTIME_ACTION_NOT_FOUND -> HttpStatus.NOT_FOUND;
           case MetadataErrorCodes.RUNTIME_ACTION_ILLEGAL_TRANSITION -> HttpStatus.CONFLICT;
+            // P0-2：孤儿命中（副作用已发出、状态流转未完成）→ 409，禁止自动重放（对真实支付网关重放即二次出金），
+            // 由对账作业 / 人工确认后续转；语义与「非法转移」同族（当前状态不允许该操作）。
+          case MetadataErrorCodes.RUNTIME_ACTION_ORPHANED -> HttpStatus.CONFLICT;
           case MetadataErrorCodes.RUNTIME_ACTION_INVALID_PARAMS,
               MetadataErrorCodes.RUNTIME_ACTION_IDEMPOTENCY_REQUIRED -> HttpStatus.BAD_REQUEST;
             // RC-008：state_field 直写 → 422。语义是「请求体字段合法但当前写路径不接受」，
             // 归 400 会与「类型/必填错误」混为一类，前端无法区分「改字段值」与「换入口」两种修复动作。
           case MetadataErrorCodes.RUNTIME_FIELD_PROTECTED -> HttpStatus.UNPROCESSABLE_ENTITY;
+            // G10：引用指向的目标记录不存在 → 422（调用方数据问题，非权限非服务端故障）。
+          case MetadataErrorCodes.RUNTIME_REFERENCE_NOT_FOUND -> HttpStatus.UNPROCESSABLE_ENTITY;
+            // G10：关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列）→ 500，
+            // 因为这是建模侧元数据错误，重试无用，需建模者修validation_rules。
+          case MetadataErrorCodes.RUNTIME_RELATION_CONFIG_INVALID -> HttpStatus
+              .INTERNAL_SERVER_ERROR;
             // RC-004：实体级 / 动作级授权拒绝 → 403。
           case MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN,
               MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION -> HttpStatus.FORBIDDEN;

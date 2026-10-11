@@ -644,16 +644,6 @@
       "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地"
     },
     {
-      "symbol": "ExpenseClaimConfirmPayoutHandler",
-      "docs": [
-        "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",
-        "doc/design/lowcode/BONE-低代码Runtime数据面设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "费用报销 case 建模方案的确认打款动作目标态命名（SPI 逃逸 Handler），实现尚未落地"
-    },
-
-    {
       "symbol": "ReplenishmentReceiveHandler",
       "docs": [
         "doc/design/lowcode/BONE-低代码Runtime数据面设计.md"

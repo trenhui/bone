@@ -48,6 +48,11 @@ export const SUPPORTED_RENDER_TYPES = new Set([
   'DATE',
   'DATETIME',
   'ENUM',
+  // G10（PRD v0.46）：关系字段受支持 —— REFERENCE 渲染远程下拉（含 __label），
+  // CHILD_TABLE/ATTACHMENT 由弹窗内专用编辑器（明细行 / 附件清单）处理，不再降级 Alert。
+  'REFERENCE',
+  'CHILD_TABLE',
+  'ATTACHMENT',
 ]);
 
 /**

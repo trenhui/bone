@@ -12,12 +12,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /** 模式 B：基于已发布元数据对物理表执行动态 CRUD（经 bone-metadata-sdk 同源 JDBC）。 */
 public class JdbcRuntimeRecordService {
 
+  /** Jackson 单例：用于解析字段级校验规则（validation_rules JSON）与枚举取值。 */
   private static final Set<String> SYSTEM_COLUMNS =
       Set.of(
           "id",
@@ -33,7 +35,11 @@ public class JdbcRuntimeRecordService {
   private final RuntimeEntityCatalog catalog;
   private final RuntimeAuditSink auditSink;
   private final RuntimeStateEntryResolver stateEntryResolver;
+  private final RuntimeRelationSupport relationSupport;
+  private final List<RuntimeWriteHook> writeHooks;
   private final Map<String, Set<String>> physicalColumnsCache = new ConcurrentHashMap<>();
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(JdbcRuntimeRecordService.class);
 
   public JdbcRuntimeRecordService(NamedParameterJdbcTemplate jdbc, RuntimeEntityCatalog catalog) {
     this(jdbc, catalog, RuntimeAuditSink.NOOP, RuntimeStateEntryResolver.NONE);
@@ -49,11 +55,38 @@ public class JdbcRuntimeRecordService {
       RuntimeEntityCatalog catalog,
       RuntimeAuditSink auditSink,
       RuntimeStateEntryResolver stateEntryResolver) {
+    this(jdbc, catalog, auditSink, stateEntryResolver, null);
+  }
+
+  /**
+   * 完整构造（G10 关系能力 + 写路径前置钩子）。
+   *
+   * @param relationSupport 关系支持（引用校验/label 补全/子表级联）；为 null 时降级为「无关系能力」，保持既有测试与调用方兼容
+   * @param writeHooks 实体级写前置钩子（Directus Filter 分层，见 {@link RuntimeWriteHook}）；为空列表时不触发
+   */
+  public JdbcRuntimeRecordService(
+      NamedParameterJdbcTemplate jdbc,
+      RuntimeEntityCatalog catalog,
+      RuntimeAuditSink auditSink,
+      RuntimeStateEntryResolver stateEntryResolver,
+      RuntimeRelationSupport relationSupport,
+      List<RuntimeWriteHook> writeHooks) {
     this.jdbc = Objects.requireNonNull(jdbc);
     this.catalog = Objects.requireNonNull(catalog);
     this.auditSink = auditSink == null ? RuntimeAuditSink.NOOP : auditSink;
     this.stateEntryResolver =
         stateEntryResolver == null ? RuntimeStateEntryResolver.NONE : stateEntryResolver;
+    this.relationSupport = relationSupport;
+    this.writeHooks = writeHooks == null ? List.of() : writeHooks;
+  }
+
+  public JdbcRuntimeRecordService(
+      NamedParameterJdbcTemplate jdbc,
+      RuntimeEntityCatalog catalog,
+      RuntimeAuditSink auditSink,
+      RuntimeStateEntryResolver stateEntryResolver,
+      RuntimeRelationSupport relationSupport) {
+    this(jdbc, catalog, auditSink, stateEntryResolver, relationSupport, List.of());
   }
 
   public PageResult<Map<String, Object>> page(
@@ -63,6 +96,22 @@ public class JdbcRuntimeRecordService {
 
   public PageResult<Map<String, Object>> page(
       String entityCode, long tenantId, int page, int size, RuntimePageQuery query) {
+    return page(entityCode, tenantId, page, size, query, null);
+  }
+
+  /**
+   * 分页查询（行级 ACL 版本）：{@code rowOwnerId} 非 null 且实体表存在 {@code created_by} 列时， 追加 {@code AND
+   * created_by = :rowOwner} 过滤（数据面行级 ACL，Runtime §4.7.1）。
+   *
+   * <p>内部调用（动作执行、级联等）必须走无参版（不传 {@code rowOwnerId}），避免被数据面 ACL 拦截； 平台管理员豁免由 Controller 层传 null 实现。
+   */
+  public PageResult<Map<String, Object>> page(
+      String entityCode,
+      long tenantId,
+      int page,
+      int size,
+      RuntimePageQuery query,
+      Long rowOwnerId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     int safePage = Math.max(1, page);
     int safeSize = Math.min(Math.max(1, size), 200);
@@ -72,7 +121,9 @@ public class JdbcRuntimeRecordService {
     String table = quoteTable(entity.physicalTableName());
     MapSqlParameterSource params = tenantParams(entity, tenantId);
     String filterClause = RuntimeQuerySupport.buildFilterClause(entity, effective, params);
-    String where = buildTenantWhere(entity, tenantId) + filterClause;
+    StringBuilder where =
+        new StringBuilder(buildTenantWhere(entity, tenantId)).append(filterClause);
+    applyRowOwnerFilter(entity, entity.physicalTableName(), where, params, rowOwnerId);
 
     String countSql = "SELECT COUNT(*) FROM " + table + where;
     List<String> selectCols = RuntimeQuerySupport.resolveSelectColumns(entity, effective);
@@ -97,28 +148,50 @@ public class JdbcRuntimeRecordService {
     // 机制 B：物理 ext_* 列 → 逻辑 code 回填，保证返回字段名稳定
     List<Map<String, Object>> translated =
         rows.stream().map(r -> toLogical(entity, r)).collect(Collectors.toList());
+    // G10：引用字段显示值批量补全（每「目标实体+label字段」组合至多一次 IN 查询，与行数无关）
+    enrichLabels(entity, tenantId, translated);
     return PageResult.of(translated, total != null ? total : 0L, safePage, safeSize);
   }
 
   public Map<String, Object> getById(String entityCode, long tenantId, String recordId) {
+    return getById(entityCode, tenantId, recordId, null);
+  }
+
+  /**
+   * 详情查询（行级 ACL 版本）：{@code rowOwnerId} 非 null 且实体表存在 {@code created_by} 列时追加 {@code AND created_by
+   * = :rowOwner}，非本人记录自然查不到（404，不暴露行存在性）。
+   */
+  public Map<String, Object> getById(
+      String entityCode, long tenantId, String recordId, Long rowOwnerId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     String pk = sanitizeIdentifier(entity.primaryKeyColumn());
-    String sql =
-        "SELECT * FROM "
-            + quoteTable(entity.physicalTableName())
-            + buildTenantWhere(entity, tenantId)
-            + " AND `"
-            + pk
-            + "` = :pk";
+    StringBuilder sql =
+        new StringBuilder("SELECT * FROM ")
+            .append(quoteTable(entity.physicalTableName()))
+            .append(buildTenantWhere(entity, tenantId))
+            .append(" AND `")
+            .append(pk)
+            .append("` = :pk");
     MapSqlParameterSource params = tenantParams(entity, tenantId);
     params.addValue("pk", parsePkValue(recordId));
-    List<Map<String, Object>> rows = jdbc.queryForList(sql, params);
+    applyRowOwnerFilter(entity, entity.physicalTableName(), sql, params, rowOwnerId);
+    System.out.println(
+        "ACL_DBG getById#"
+            + Thread.currentThread().getStackTrace()[2].getLineNumber()
+            + " sql="
+            + sql
+            + " params="
+            + params.getValues());
+    List<Map<String, Object>> rows = jdbc.queryForList(sql.toString(), params);
     if (rows.isEmpty()) {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
     // 机制 B：物理 ext_* 列 → 逻辑 code 回填，保证返回字段名稳定
-    return toLogical(entity, rows.get(0));
+    Map<String, Object> logicalRow = toLogical(entity, rows.get(0));
+    // G10：引用字段显示值补全（详情路径单行）
+    enrichLabels(entity, tenantId, logicalRow);
+    return logicalRow;
   }
 
   public Map<String, Object> create(
@@ -133,6 +206,7 @@ public class JdbcRuntimeRecordService {
     Map<String, Object> payload = filterWritable(entity, body);
     injectEntryState(entity, entityCode, tenantId, payload);
     validateForCreate(entity, tenantId, payload);
+    assertRelationConstraints(entity, tenantId, payload);
     String pk = entity.primaryKeyColumn();
     if (!payload.containsKey(pk)) {
       payload.put(pk, newId);
@@ -143,6 +217,7 @@ public class JdbcRuntimeRecordService {
     if (entityHasColumn(entity, "deleted")) {
       payload.putIfAbsent("deleted", 0);
     }
+    invokeBeforeCreate(entity, tenantId, payload, operatorId);
     stampAuditColumns(entity, payload, operatorId, true);
 
     // 机制 B：逻辑 code → 物理 ext_* 列；机制 A：physicalColumn 为 null，物理列即 code
@@ -188,6 +263,7 @@ public class JdbcRuntimeRecordService {
       String operatorId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertStateFieldNotWritable(entity, body, "PUT");
+    assertRowOwner(entity, tenantId, recordId, operatorId);
     return updateInternal(entityCode, tenantId, recordId, body, expectedVersion, operatorId);
   }
 
@@ -206,6 +282,8 @@ public class JdbcRuntimeRecordService {
     Map<String, Object> payload = filterWritable(entity, body);
     payload.remove(entity.primaryKeyColumn());
     validateForUpdate(entity, tenantId, payload, recordId);
+    assertRelationConstraints(entity, tenantId, payload);
+    invokeBeforeUpdate(entity, tenantId, recordId, payload, operatorId);
 
     boolean versioned = entityHasColumn(entity, "version");
     if (expectedVersion != null && !versioned) {
@@ -280,6 +358,7 @@ public class JdbcRuntimeRecordService {
       Integer expectedVersion,
       String operatorId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
+    assertRowOwner(entity, tenantId, recordId, operatorId);
     String pk = sanitizeIdentifier(entity.primaryKeyColumn());
     boolean versioned = entityHasColumn(entity, "version");
     if (expectedVersion != null && !versioned) {
@@ -322,27 +401,15 @@ public class JdbcRuntimeRecordService {
               null,
               "delete",
               null));
+      // G10：父行软删成功后级联软删子行（cascadeDelete=true 时），避免子行成为孤儿
+      cascadeChildrenOnDelete(entity, tenantId, recordId);
       return;
     }
-    // 无 deleted 列：物理删除（不可恢复）。此分支不写审计行——行本身已不存在，审计无对象可指。
-    StringBuilder where =
-        new StringBuilder(buildTenantWhere(entity, tenantId))
-            .append(" AND `")
-            .append(pk)
-            .append("` = :pk");
-    if (versioned && expectedVersion != null) {
-      where.append(" AND `version` = :expectedVersion");
-    }
-    String sql = "DELETE FROM " + quoteTable(entity.physicalTableName()) + where;
-    MapSqlParameterSource params = tenantParams(entity, tenantId);
-    params.addValue("pk", parsePkValue(recordId));
-    if (versioned && expectedVersion != null) {
-      params.addValue("expectedVersion", expectedVersion);
-    }
-    int deleted = jdbc.update(sql, params);
-    if (deleted == 0) {
-      throw resolveDeleteFailure(entity, tenantId, recordId, expectedVersion, versioned);
-    }
+    // 无 deleted 列：物理删除（不可恢复）。不静默执行——「删除不可恢复」必须是明示而非默认行为
+    // （Runtime §8 R13 / G17）：拒绝并提示启用软删能力，防误删永久丢数据。
+    throw new RuntimeRecordException(
+        MetadataErrorCodes.RUNTIME_INVALID_QUERY,
+        "物理表无 deleted 列（软删未生效），该实体的删除为物理删除且不可恢复；" + "如需归档能力请先为实体启用软删（deleted 列），当前已拒绝删除");
   }
 
   /**
@@ -355,6 +422,7 @@ public class JdbcRuntimeRecordService {
   public Map<String, Object> restore(
       String entityCode, long tenantId, String recordId, String operatorId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
+    assertRowOwner(entity, tenantId, recordId, operatorId);
     if (!entityHasColumn(entity, "deleted")) {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_INVALID_QUERY, "物理表无 deleted 列（软删未生效），该实体的归档为物理删除，不可恢复");
@@ -581,61 +649,115 @@ public class JdbcRuntimeRecordService {
             + "/records/{id}/actions/{actionCode} 经状态机推进");
   }
 
-  // ===================== 写入校验（P0-5） =====================
+  // ===================== G10 关系能力挂钩 =====================
 
-  private void validateForCreate(
+  /** 引用字段显示值批量补全；未装配 relationSupport 或实体无引用字段时零开销返回。 */
+  private void enrichLabels(
+      PublishedRuntimeEntity entity, long tenantId, List<Map<String, Object>> rows) {
+    if (relationSupport == null || rows == null || rows.isEmpty()) {
+      return;
+    }
+    if (entity.columns().stream().noneMatch(c -> RuntimeRelationSpec.of(c).isReference())) {
+      return;
+    }
+    relationSupport.enrichReferenceLabels(entity, tenantId, rows);
+  }
+
+  /** 引用字段显示值补全（详情单行）。 */
+  private void enrichLabels(PublishedRuntimeEntity entity, long tenantId, Map<String, Object> row) {
+    if (relationSupport == null || row == null || row.isEmpty()) {
+      return;
+    }
+    relationSupport.enrichReferenceLabel(entity, tenantId, row);
+  }
+
+  /**
+   * 写入前的关系校验：引用存在性（阻断悬空引用）+ 附件数量上限。
+   *
+   * <p>在字段轻校验之后调用，保证「先字段后关系」的错误优先级。
+   */
+  /** 触发匹配实体的创建前钩子（Directus Filter 分层，见 {@link RuntimeWriteHook}）。 */
+  private void invokeBeforeCreate(
+      PublishedRuntimeEntity entity,
+      long tenantId,
+      Map<String, Object> payload,
+      String operatorId) {
+    for (RuntimeWriteHook hook : writeHooks) {
+      if (hook.entityCode().equals(entity.entityCode())) {
+        hook.beforeCreate(new RuntimeWriteHookContext(entity, tenantId, null, payload, operatorId));
+      }
+    }
+  }
+
+  /** 触发匹配实体的更新前钩子（可阻断或改写载荷）。 */
+  private void invokeBeforeUpdate(
+      PublishedRuntimeEntity entity,
+      long tenantId,
+      String recordId,
+      Map<String, Object> payload,
+      String operatorId) {
+    for (RuntimeWriteHook hook : writeHooks) {
+      if (hook.entityCode().equals(entity.entityCode())) {
+        hook.beforeUpdate(
+            new RuntimeWriteHookContext(entity, tenantId, recordId, payload, operatorId));
+      }
+    }
+  }
+
+  private void assertRelationConstraints(
       PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload) {
-    // G14：state_field 独占写入保护（Runtime 设计 §4.5）——CRUD 直写一律显式拒绝（勿静默忽略，
-    // 静默忽略会让调用方误以为写入成功；唯一合法入口是 POST …/actions/{code}）
+    if (relationSupport == null) {
+      return;
+    }
     for (RuntimeFieldColumn col : entity.columns()) {
-      if (col.primaryKey()) {
+      RuntimeRelationSpec spec = RuntimeRelationSpec.of(col);
+      if (!spec.isAttachment()) {
         continue;
       }
-      boolean present = payload.containsKey(col.code()) && payload.get(col.code()) != null;
-      if (col.required() && !present) {
-        throw new RuntimeRecordException(
-            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填");
+      Object value = payload.get(col.code());
+      if (value != null) {
+        relationSupport.assertAttachmentCount(col, spec, value);
       }
-      if (present) {
-        validateType(col, payload.get(col.code()));
-        if (col.unique()) {
-          assertUnique(entity, tenantId, col, payload.get(col.code()), null);
-        }
+    }
+    relationSupport.assertReferencesExist(entity, tenantId, payload);
+  }
+
+  /** 父行软删/恢复时级联处理子表（级联软删/ 恢复由 delete 调用；恢复暂不级联，保持保守）。 */
+  private void cascadeChildrenOnDelete(
+      PublishedRuntimeEntity entity, long tenantId, String recordId) {
+    if (relationSupport == null) {
+      return;
+    }
+    for (RuntimeFieldColumn col : entity.columns()) {
+      RuntimeRelationSpec spec = RuntimeRelationSpec.of(col);
+      if (!spec.isChildTable() || !spec.cascadeDelete()) {
+        continue;
+      }
+      relationSupport.cascadeDeleteChildren(entity, tenantId, recordId, spec);
+    }
+  }
+
+  // ===================== 写入校验（P0-5 · v0.46 抽公共校验器） =====================
+
+  /**
+   * 必填/类型/元数据规则（min/max/ENUM）校验委托 {@link RuntimeWriteValidator}（与子表写路径单一真源）； 唯一性查重因需按行定位查库，留在本类实现。
+   */
+  private void validateForCreate(
+      PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload) {
+    RuntimeWriteValidator.validateForCreate(entity, payload);
+    for (RuntimeFieldColumn col : entity.columns()) {
+      if (col.unique() && payload.containsKey(col.code()) && payload.get(col.code()) != null) {
+        assertUnique(entity, tenantId, col, payload.get(col.code()), null);
       }
     }
   }
 
   private void validateForUpdate(
       PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload, String recordId) {
+    RuntimeWriteValidator.validateForUpdate(entity, payload);
     for (RuntimeFieldColumn col : entity.columns()) {
-      if (!payload.containsKey(col.code())) {
-        continue;
-      }
-      Object value = payload.get(col.code());
-      if (col.required() && value == null) {
-        throw new RuntimeRecordException(
-            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」为必填，不可置空");
-      }
-      if (value != null) {
-        validateType(col, value);
-        if (col.unique()) {
-          assertUnique(entity, tenantId, col, value, recordId);
-        }
-      }
-    }
-  }
-
-  private void validateType(RuntimeFieldColumn col, Object value) {
-    String type = col.type() == null ? "" : col.type().toUpperCase();
-    if (type.matches("LONG|BIGINT|INT|INTEGER|DECIMAL|DOUBLE|FLOAT|NUMBER")) {
-      if (!(value instanceof Number)) {
-        throw new RuntimeRecordException(
-            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为数值类型");
-      }
-    } else if (type.matches("BOOLEAN|BOOL")) {
-      if (!(value instanceof Boolean)) {
-        throw new RuntimeRecordException(
-            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "字段「" + col.code() + "」应为布尔类型");
+      if (col.unique() && payload.containsKey(col.code()) && payload.get(col.code()) != null) {
+        assertUnique(entity, tenantId, col, payload.get(col.code()), recordId);
       }
     }
   }
@@ -747,6 +869,16 @@ public class JdbcRuntimeRecordService {
     if (isCreate && hasPhysicalColumn(table, "created_at")) {
       payload.put("created_at", new Timestamp(System.currentTimeMillis()));
     }
+    // 系统操作者（服务/渠道回调身份）：审计留痕为字符串常量（非数值主体不落 BIGINT）
+    if ("system".equals(operatorId)) {
+      if (hasPhysicalColumn(table, "created_by")) {
+        payload.put("created_by", "system");
+      }
+      if (hasPhysicalColumn(table, "updated_by")) {
+        payload.put("updated_by", "system");
+      }
+      return;
+    }
     // 操作者：仅当可解析为数值用户 ID 时注入 BIGINT 列
     Long numericOp = toNumericOperatorId(operatorId);
     if (numericOp != null) {
@@ -756,6 +888,150 @@ public class JdbcRuntimeRecordService {
       if (hasPhysicalColumn(table, "updated_by")) {
         payload.put("updated_by", numericOp);
       }
+    }
+  }
+
+  /**
+   * 行级 ACL 过滤注入（数据面）：{@code rowOwnerId} 非 null 且表存在 {@code created_by} 列时追加 {@code AND created_by =
+   * :rowOwner}。无 created_by 列的实体（系统表/主数据）自动豁免； 平台管理员豁免由 Controller 层传 null 实现（Runtime §4.7.1）。
+   */
+  private void applyRowOwnerFilter(
+      PublishedRuntimeEntity entity,
+      String table,
+      StringBuilder where,
+      MapSqlParameterSource params,
+      Long rowOwnerId) {
+    if (rowOwnerId == null) {
+      return;
+    }
+    RowPolicySpec policy = resolveRowPolicy(entity, table);
+    if (policy == null) {
+      // 无策略声明 → 默认 owner 语义：存在 created_by 物理列即按本人过滤
+      if (hasPhysicalColumn(table, "created_by")) {
+        where.append(" AND `created_by` = :rowOwner");
+        params.addValue("rowOwner", rowOwnerId);
+      }
+      return;
+    }
+    if (!hasPhysicalColumn(table, policy.ownerField())) {
+      // 声明了策略但 owner 列不存在：保守跳过（不注入过滤 = 等价于该策略失效），告警暴露配置错误
+      log.warn("行策略 owner_field={} 在表 无物理列，跳过行级过滤注入", policy.ownerField(), table);
+      return;
+    }
+    String op = Long.toString(rowOwnerId);
+    where.append(" AND ").append(policy.buildWhere(table, true, op));
+    policy.bindParams(params, op);
+  }
+
+  /** 解析实体行策略（缓存无则每次解析；列校验 = 实体声明 + 物理列存在）。 */
+  private RowPolicySpec resolveRowPolicy(PublishedRuntimeEntity entity, String table) {
+    String raw = entity.rowPolicies();
+    if (raw == null || raw.isBlank()) {
+      return null;
+    }
+    // 白名单 = 物理列集合：when/owner_field 仅允许「物理表真实存在的列」用于 WHERE 注入。
+    // 注意不能用 entity.hasColumn —— 审计列（created_by/updated_by）与扩展物理列（ext_*）不在实体声明
+    // 列集合中，但行级 ACL 的 WHERE 注入只需要物理列存在即可（读过滤，非写载荷校验）。
+    return RowPolicySpec.parse(raw, col -> hasPhysicalColumn(table, col));
+  }
+
+  /**
+   * 写路径行级 ACL 断言（数据面）：非本人记录拒绝（404，不暴露行存在性）。
+   *
+   * <p>仅作用于数据面 CRUD（public update/delete/restore 入口）；状态机内部流转（updateState/adminFixState） 走
+   * updateInternal 不经此断言，动作面由动作级权限独立管控，避免审批人无法操作他人单据（Runtime §4.7.1）。
+   *
+   * <p><b>v0.50 扩展用途</b>：子表端点（listChildren/replaceChildren）复用本断言校验<b>主行归属</b>（子表可见性由父行控制， 避免「知道父行
+   * id 即可枚举/替换任意明细」的行级 ACL 旁路）。包内 private 提升为 public 供 {@code RuntimeRelationController}
+   * 编排复用；豁免口径与主行一致（null 管理员 / "system" 回调 / 非数值主体）。
+   */
+  public void assertRowOwner(
+      PublishedRuntimeEntity entity, long tenantId, String recordId, String operatorId) {
+    if (operatorId == null) {
+      return; // 未登录/匿名/平台管理员豁免（Controller 传 null）
+    }
+    if ("system".equals(operatorId)) {
+      return; // 系统操作者（服务/渠道回调身份）：豁免行级 ACL，审计留痕见 stampAuditColumns
+    }
+    Long ownerId = toNumericOperatorId(operatorId);
+    if (ownerId == null) {
+      return; // 非数值主体：与 BIGINT created_by 无可比性，按既有审计语义跳过
+    }
+    String table = entity.physicalTableName();
+    String op = Long.toString(ownerId);
+    RowPolicySpec policy = resolveRowPolicy(entity, table);
+    if (policy == null) {
+      assertOwnerOnly(entity, table, tenantId, recordId, ownerId);
+      return;
+    }
+    if (!hasPhysicalColumn(table, policy.ownerField())) {
+      log.warn("行策略 owner_field={} 在表 无物理列，写路径跳过行级断言", policy.ownerField(), table);
+      return;
+    }
+    String pk = sanitizeIdentifier(entity.primaryKeyColumn());
+    // 策略 WHERE：owner_field 规则 + 自定义规则（approver 等）；手写租户过滤（不用 buildTenantWhere：
+    // 其自带 deleted=0，会误杀 restore 场景的已归档行）——行级校验是访问控制而非状态过滤
+    StringBuilder sql =
+        new StringBuilder("SELECT 1 FROM ")
+            .append(quoteTable(table))
+            .append(
+                entityHasColumn(entity, "tenant_id")
+                    ? " WHERE `tenant_id` = :tenantId"
+                    : " WHERE 1=1")
+            .append(" AND `")
+            .append(pk)
+            .append("` = :pk")
+            .append(" AND ")
+            .append(policy.buildWhere(table, true, op));
+    MapSqlParameterSource params = new MapSqlParameterSource();
+    if (entityHasColumn(entity, "tenant_id")) {
+      params.addValue("tenantId", tenantId);
+    }
+    params.addValue("pk", parsePkValue(recordId));
+    policy.bindParams(params, op);
+    try {
+      jdbc.queryForObject(sql.toString(), params, Integer.class);
+    } catch (EmptyResultDataAccessException ex) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
+    }
+  }
+
+  /** 无策略声明的默认 owner 断言（created_by 单列校验）。 */
+  private void assertOwnerOnly(
+      PublishedRuntimeEntity entity, String table, long tenantId, String recordId, Long ownerId) {
+    if (!hasPhysicalColumn(table, "created_by")) {
+      return; // 无 owner 语义的实体（系统表/主数据）不启用行级 ACL
+    }
+    String pk = sanitizeIdentifier(entity.primaryKeyColumn());
+    // 手写租户过滤（不用 buildTenantWhere：其自带 deleted=0，会误杀 restore 场景的已归档行）——
+    // owner 校验是访问控制而非状态过滤，与 deleted/version 解耦
+    StringBuilder sql =
+        new StringBuilder("SELECT `created_by` FROM ")
+            .append(quoteTable(table))
+            .append(
+                entityHasColumn(entity, "tenant_id")
+                    ? " WHERE `tenant_id` = :tenantId"
+                    : " WHERE 1=1")
+            .append(" AND `")
+            .append(pk)
+            .append("` = :pk");
+    MapSqlParameterSource params = new MapSqlParameterSource();
+    if (entityHasColumn(entity, "tenant_id")) {
+      params.addValue("tenantId", tenantId);
+    }
+    params.addValue("pk", parsePkValue(recordId));
+    String rowOwner;
+    try {
+      rowOwner = jdbc.queryForObject(sql.toString(), params, String.class);
+    } catch (EmptyResultDataAccessException ex) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
+    }
+    // 字符串比较：兼容 BIGINT（数字字符串）与 VARCHAR(64)（测试环境）两类 created_by 物理形态
+    if (!ownerId.toString().equals(rowOwner)) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
   }
 

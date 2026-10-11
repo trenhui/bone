@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """i18n 同步校验：后端 errorCode 常量 <-> 错误码台账 <-> 前端语言包 <-> 内置枚举清单。
 
-设计依据: doc/design/国际化设计方案.md §8.2（v1.5）。
+设计依据: doc/design/modules/国际化设计方案.md §8.2（v1.5）。
 
 为什么用 python3 而不是 bash+rg:
     本机实测未安装 rg / jq（`command -v rg`、`command -v jq` 均无输出），shell 版接入

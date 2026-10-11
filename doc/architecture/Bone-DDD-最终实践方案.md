@@ -1,6 +1,6 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
-> **版本**：5.5.24。本批次收敛写端点授权存量基线（68 → 43）：修复 `NotificationController` 的真实 IDOR（`userId` 由请求参数改为 JWT 主体解析）并登记为豁免，自动补齐可唯一推导的 25 处 `@PreAuthorize`，余下 43 条需人工裁定权限码归属，已出[决策清单](./写端点授权收敛报告.md)。上一批次把 E-4.4 的参考实现描述移入 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)（属展开说明，不是判据），规范只留通道规则与硬约束表。变更明细见历史归档 [CHANGELOG-legacy.md](../archive/CHANGELOG-legacy.md) 与 Git 历史。
+> **版本**：5.5.24。本批次收敛写端点授权存量基线（68 → 43）：修复 `NotificationController` 的真实 IDOR（`userId` 由请求参数改为 JWT 主体解析）并登记为豁免，自动补齐可唯一推导的 25 处 `@PreAuthorize`，余下 43 条需人工裁定权限码归属，已出[决策清单](./reports/写端点授权收敛报告.md)。上一批次把 E-4.4 的参考实现描述移入 [ADR-0034 附节](./adr/0034-tenant-scope-explicitness-and-all-entry-gate.md)（属展开说明，不是判据），规范只留通道规则与硬约束表。变更明细见历史归档 [CHANGELOG-legacy.md](../archive/CHANGELOG-legacy.md) 与 Git 历史。
 
 ## 文档说明
 

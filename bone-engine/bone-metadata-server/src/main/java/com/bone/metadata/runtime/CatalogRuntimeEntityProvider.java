@@ -69,7 +69,9 @@ public class CatalogRuntimeEntityProvider {
               Boolean.TRUE.equals(f.getRequired()),
               Boolean.TRUE.equals(f.getUnique()),
               Boolean.TRUE.equals(f.getPk()),
-              f.getPhysicalColumn()));
+              f.getPhysicalColumn(),
+              f.getEnumValues(),
+              f.getValidationRules()));
     }
 
     // G14：state_field 从动作定义推导（零 DDL 过渡方案，Runtime 设计 §4.5.1）——
@@ -82,7 +84,13 @@ public class CatalogRuntimeEntityProvider {
             .orElse(null);
     return Optional.of(
         new PublishedRuntimeEntity(
-            entity.getCode(), entity.getTableName(), pk, tenantId, columns, stateField));
+            entity.getCode(),
+            entity.getTableName(),
+            pk,
+            tenantId,
+            columns,
+            stateField,
+            entity.getRowPolicies()));
   }
 
   /** 供 Controller 默认租户 */

@@ -33,7 +33,9 @@
 ## 2. 枚举设计文档与模块
 
 1. `doc/design/modules/**/*.md`（含 `README.md`、`2. 元数据管理模块-生产就绪优化计划(P0·P1).md` 这类计划稿）
-2. `doc/design/*.md`（如 `BONE-X-Studio-详细设计方案.md`、`国际化设计方案.md`、`AI-夜间设计复核工作流方案.md`）→ 按 `doc_kind` 标注为 `cross-cutting | process`，**不混入模块轮换**
+2. 横切 / 过程稿 → 按 `doc_kind` 标注为 `cross-cutting | process`，**不混入模块轮换**：
+   - `doc/design/modules/BONE-X-Studio-详细设计方案.md`、`doc/design/modules/国际化设计方案.md`（cross-cutting）
+   - `doc/design/AI-夜间设计复核工作流方案.md`（process，仍在 `design/` 根）
 3. **模块以代码目录为锚**：`bone-platform/*`、`bone-engine/*`、`bone-framework/*`、`bone-frontend/apps/*`；设计稿只是模块的属性：
    - 一个模块可对应**多份**设计稿（例：`bone-metadata-server` ↔ `2.` + `2a.` + `2b.` + `元数据能力-实现映射与竞品对照.md`）
    - **无设计稿的模块必须显式登记 `design_doc: null`**，不得用别的模块的设计稿顶替（当前已知：`bone-gateway`、`bone-file`、`bone-notification`）

@@ -56,8 +56,8 @@ design_doc_index:
   - {path: "doc/design/modules/9. SmartMeta 引擎模块技术说明.md", kind: "module-design", lines: 103, module: "bone-metadata-engine"}
   - {path: "doc/design/modules/10. 应用与模块管理详细设计方案.md", kind: "module-design", lines: 300, module: "bone-iam"}
   - {path: "doc/design/modules/README.md", kind: "index", lines: 43, module: null}
-  - {path: "doc/design/BONE-X-Studio-详细设计方案.md", kind: "cross-cutting", lines: 5317, module: null}
-  - {path: "doc/design/国际化设计方案.md", kind: "cross-cutting", lines: 1565, module: null}
+  - {path: "doc/design/modules/BONE-X-Studio-详细设计方案.md", kind: "cross-cutting", lines: 5317, module: null}
+  - {path: "doc/design/modules/国际化设计方案.md", kind: "cross-cutting", lines: 1565, module: null}
   - {path: "doc/design/AI-夜间设计复核工作流方案.md", kind: "process", lines: 447, module: null}
   - {path: "doc/design/README.md", kind: "index", lines: 9, module: null}
 
@@ -380,7 +380,7 @@ modules:
     design_docs:
       - "doc/design/modules/5. 扩展管理模块详细设计方案.md"
       - "doc/design/modules/5a. 扩展管理模块核心场景及用例设计方案.md"
-      - "doc/design/BONE-X-Studio-详细设计方案.md"
+      - "doc/design/modules/BONE-X-Studio-详细设计方案.md"
     doc_kind: "module-design"
     lines: 842
     port: 8088
@@ -420,7 +420,7 @@ modules:
     design_doc: "doc/design/modules/8.Studio Generator 详细设计方案.md"
     design_docs:
       - "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      - "doc/design/BONE-X-Studio-详细设计方案.md"
+      - "doc/design/modules/BONE-X-Studio-详细设计方案.md"
     doc_kind: "module-design"
     lines: 1533
     port: 8086

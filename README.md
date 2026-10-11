@@ -227,7 +227,7 @@ Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术
 
 **开发环境拓扑**（端口真源为各模块 `application.yml`；最小登录路径见图下注释）：
 
-![运行时拓扑](doc/design/readme-runtime-topology.svg)
+![运行时拓扑](doc/design/assets/readme-runtime-topology.svg)
 
 ### 环境要求
 

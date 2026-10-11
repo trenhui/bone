@@ -24,6 +24,7 @@
 - **[CONTRIBUTING.md](../../CONTRIBUTING.md)**：提交前检查、CI、Spotless / Gitleaks / blueprint 约定。
 - **[doc/architecture/ 与 adr/](../architecture/README.md)**：架构与决策真源（HC 状态、门禁、ADR）。
 - **[doc/prd/](../prd/) / [doc/design/modules/](../design/modules/README.md)**：需求与模块详设。
-- **[doc/README.md](../README.md)**：`doc/` 总索引与本页的上层入口。
+- **[doc/design/lowcode/](../design/lowcode/README.md)**：低代码 Mode B 专题包（runtime / cases / ui）。
+- **[doc/plans/](../plans/README.md)**：升级/迁移草案（如 Spring Boot 3.5）。- **[doc/README.md](../README.md)**：`doc/` 总索引与本页的上层入口。
 
 历史长文档 `CODE_WIKI.md` 的内容已并入本 Wiki（01/03/04/05/06）与 `doc/agents/`，**旧文件已删除**；需要旧版本请查 Git 历史。

@@ -110,6 +110,9 @@
     "META_RUNTIME_INVALID_QUERY": "Invalid query constraint (unmodeled column or malformed q)",
     "META_RUNTIME_RECORD_NOT_FOUND": "Runtime record not found",
     "META_RUNTIME_VALIDATION_FAILED": "Field validation failed",
+    "META_RUNTIME_ACTION_ORPHANED": "Action execution orphaned (side effect dispatched but state transition unfinished; replay rejected, requires reconciliation)",
+    "META_RUNTIME_REFERENCE_NOT_FOUND": "Referenced runtime record not found",
+    "META_RUNTIME_RELATION_CONFIG_INVALID": "Relation configuration is invalid",
     "FILE_UPLOAD_FAILED": "File upload failed",
     "FILE_DOWNLOAD_FAILED": "File download failed",
     "FILE_DELETE_FAILED": "File deletion failed",
@@ -164,6 +167,8 @@
     "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "Action not allowed in current status",
     "META_RUNTIME_ACTION_INVALID_PARAMS": "Action parameters are missing or invalid",
     "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "Idempotency-Key header is required for this action",
+    "META_RUNTIME_ENTITY_FORBIDDEN": "Entity-level permission required: runtime:{entity}:read or runtime:{entity}:write",
+    "META_RUNTIME_FORBIDDEN_ACTION": "Action permission required: runtime:{entity}:{action} or the declared permission code",
     "META_RUNTIME_FIELD_PROTECTED": "Field protected by state machine; direct writes are forbidden, use action endpoint"
   },
   "enums": {

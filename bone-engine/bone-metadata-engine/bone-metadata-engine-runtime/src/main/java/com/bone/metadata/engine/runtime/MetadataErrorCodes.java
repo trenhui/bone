@@ -60,6 +60,23 @@ public final class MetadataErrorCodes {
   /** 无动作级权限 {@code runtime:{entityCode}:{actionCode}} → 403。 */
   public static final String RUNTIME_FORBIDDEN_ACTION = "META_RUNTIME_FORBIDDEN_ACTION";
 
+  // ===== 运行时关系（G10 · 关联/子表/附件）=====
+
+  /**
+   * 引用字段指向的目标记录不存在（同租户、未软删）→ 422。
+   *
+   * <p>用于写入路径阻断悬空引用：允许「类别已删除但报销单仍指向它」会把脏数据带进统计与对账，且删除目标时无拦截（对标 Directus M2O / NocoBase 关联字段的写入侧强制）。
+   */
+  public static final String RUNTIME_REFERENCE_NOT_FOUND = "META_RUNTIME_REFERENCE_NOT_FOUND";
+
+  /**
+   * 关系声明配置非法（缺 targetEntityCode / foreignKey 列不存在 / 子表实体无 deleted 列却要求替换）→ 500。
+   *
+   * <p>归500 而非 400 的理由：这是<b>建模侧</b>配置错误（validation_rules 写错），不是调用方请求错误；重试无用，需要建模者修元数据。
+   */
+  public static final String RUNTIME_RELATION_CONFIG_INVALID =
+      "META_RUNTIME_RELATION_CONFIG_INVALID";
+
   // ===== 运行时状态机动作（META_RUNTIME_ACTION_*）=====
 
   /** 动作定义不存在（实体/动作码查不到）。 */
@@ -75,6 +92,13 @@ public final class MetadataErrorCodes {
   /** 资金类动作缺少 Idempotency-Key（防重放二次记账）。 */
   public static final String RUNTIME_ACTION_IDEMPOTENCY_REQUIRED =
       "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED";
+
+  /**
+   * 动作执行孤儿态（副作用已发出、状态流转未完成；幂等重放被拒绝）→ 409。
+   *
+   * <p>P0-2 半事务防护：对真实支付网关自动重放可能造成二次出金，孤儿态只允许对账作业或人工确认后续转（Runtime 数据面设计 §4.8.1）。
+   */
+  public static final String RUNTIME_ACTION_ORPHANED = "META_RUNTIME_ACTION_ORPHANED";
 
   // ===== 运行时前置条件（META_*）=====
 

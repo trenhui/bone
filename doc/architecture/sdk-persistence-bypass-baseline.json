@@ -9,13 +9,17 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/RuntimeEngineConfiguration.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeActionDefRepository.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeActionExecutionRepository.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeAuditSink.java",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/AuditSettingsGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java",
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java",
-    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
+    "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java"
   ],
   "debugToolExemptions": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java"
@@ -24,6 +28,9 @@
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java": "物理表结构 / INFORMATION_SCHEMA 内省；SDK 静态 Repository 无法表达 DDL 与目录读取，属引擎边界职责",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java": "上述 JDBC 适配器的装配配置，随引擎内部 JDBC 通道存在，非业务模块偷跑",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/RuntimeEngineConfiguration.java": "同上，引擎运行时 JDBC 通道装配",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeActionDefRepository.java": "动作定义读取作用于 meta_entity_action_def（引擎专属表，随 0032 迁移创建，未纳入 SDK 聚合面）；表名/列固定，无租户误删风险，NamespaceJdbcSubChannel 检测器基于『业务表可静态枚举』假设判定，对引擎自有表不适用",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeActionExecutionRepository.java": "动作执行日志（幂等去重）写入 meta_runtime_action_execution，同动作定义表：引擎专属、固定结构、高频小事务，SDK 聚合通道无对等能力",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/JdbcRuntimeAuditSink.java": "记录级审计经 RuntimeAuditSink 端口注入引擎写路径（RuntimeEngineConfiguration 装配），属引擎内部 JDBC 通道的对外实现；表 meta_runtime_record_audit 同为 0033 专设结构",
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/query/TemplateReadAdapter.java": "引擎内部模板读取（动态），属引擎边界，SDK 无法表达",
     "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/DatabaseMetadataGatewayAdapter.java": "数据库元数据 / INFORMATION_SCHEMA 内省，SDK 无法表达",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/TenantDeletionGatewayAdapter.java": "70+ 租户表批量 DELETE + FOREIGN_KEY_CHECKS=0 + 跨表 JOIN 删除；SDK 无批量删 / 跨表删能力，by-design 运维操作",
@@ -31,6 +38,7 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/persistence/AuditLogRetentionPortAdapter.java": "定时全租户物理清理，无请求级租户上下文；按设计跨租户物理删，须走 Criteria.disableTenantFilter() 受控出口（ADR-0029 逃生舱）+ 平台授权与审计，SDK 无法用租户通道表达",
     "bone-platform/bone-integration/src/main/java/com/bone/integration/infrastructure/observability/DeadLetterMetricsRefresher.java": "SELECT tenant_id, COUNT(*) ... GROUP BY tenant_id —— 语义本身是「跨租户分租户统计」（@Scheduled 无租户上下文）；SDK 聚合通道是租户作用域的，直接用会被 fail-closed 拦下。要么走 disableTenantFilter() 受控跨租户出口（须平台授权+审计），要么 SDK 另提供平台级跨租户指标 API。属设计缺口，非单纯表达式能力不足",
     "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java": "跨 4 张表（iam_account/meta_entity/int_flow/exts_plugin_version，跨模块）全库级 COUNT(*)，且异构软删（deleted 与 is_active 两种语义）+ graceful degradation 逐表 try/catch 计 0；SDK 聚合是单表+租户作用域，无法一次表达跨表全库概览",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java": "@Profile(\"dev\") 临时调试工具，仅 dev 环境启动期运行"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/debug/DatabaseDebugTool.java": "@Profile(\"dev\") 临时调试工具，仅 dev 环境启动期运行",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/application/ExpenseClaimWriteHook.java": "RuntimeWriteHook SPI 演示（Directus Filter 分层）：server 层钩子避免注入 JdbcRuntimeRecordService 造成构造循环（service 持有 hooks 列表），用同源 NamedParameterJdbcTemplate 直查单据当前状态做业务阻断；属结构性技术豁免，随钩子机制转 v1.1 官方 SPI 时收敛。"
   }
 }

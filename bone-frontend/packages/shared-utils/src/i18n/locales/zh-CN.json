@@ -110,6 +110,9 @@
     "META_RUNTIME_INVALID_QUERY": "查询约束非法（含未建模列或 q 格式错误）",
     "META_RUNTIME_RECORD_NOT_FOUND": "运行时记录不存在",
     "META_RUNTIME_VALIDATION_FAILED": "字段校验失败",
+    "META_RUNTIME_ACTION_ORPHANED": "动作执行孤儿态（副作用已发出但状态流转未完成，重放被拒，须对账/人工确认）",
+    "META_RUNTIME_REFERENCE_NOT_FOUND": "引用的运行时记录不存在",
+    "META_RUNTIME_RELATION_CONFIG_INVALID": "关联关系配置非法",
     "META_RUNTIME_ACTION_NOT_FOUND": "操作不存在或不可用",
     "META_RUNTIME_ACTION_ILLEGAL_TRANSITION": "当前状态不允许此操作",
     "META_RUNTIME_ACTION_INVALID_PARAMS": "操作参数不完整或不合法",
@@ -164,7 +167,9 @@
     "META_PHYSICAL_TABLE_NOT_FOUND": "物理表不存在，无法导入（发布期物理结构不存在）",
     "BP_INVENTORY_QUANTITY_INVALID": "库存数量必须为正数",
     "INT_CONNECTOR_INVOCATION_FAILED": "连接器调用失败：目标系统不可达、超时或返回错误",
-    "META_RUNTIME_FIELD_PROTECTED": "状态字段不可直接修改，请使用动作接口推进状态"
+    "META_RUNTIME_FIELD_PROTECTED": "状态字段不可直接修改，请使用动作接口推进状态",
+    "META_RUNTIME_ENTITY_FORBIDDEN": "无该实体的运行时访问权限，请申请 runtime:{entityCode}:read|write 或通配授权",
+    "META_RUNTIME_FORBIDDEN_ACTION": "无该动作的执行权限，请申请动作级权限码授权"
   },
   "enums": {
     "ORDER_STATUS": {

@@ -1225,6 +1225,7 @@ CREATE TABLE meta_entity (
     is_builtin          TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否内置',
     icon                VARCHAR(100)    DEFAULT NULL COMMENT '图标',
     sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    row_policies       TEXT            DEFAULT NULL COMMENT '行级 ACL 策略 JSON（owner_field + rules；null=默认 created_by 单规则，Runtime §4.7.1）',
     created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',

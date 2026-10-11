@@ -14,7 +14,7 @@
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 需求名称  | 低代码最小闭环：建模即页面 · 发布即生效                                                                                                                                                                                                                                   |
 | 产品    | BONE 企业级全栈开源快速开发平台                                                                                                                                                                                                                                      |
-| 文档版本  | v0.42                                                                                                                                                                                                                                                   |
+| 文档版本  | v0.50                                                                                                                                                                                                                                                   |
 | 文档状态  | Draft（待评审）                                                                                                                                                                                                                                              |
 | 产品经理  | [TBD: 由需求提出方指定]                                                                                                                                                                                                                                         |
 | 技术负责人 | [TBD: 由模块 owner 指定]                                                                                                                                                                                                                                     |
@@ -52,7 +52,7 @@
 > - **状态推进方式**：**声明式 `state_transition`**（`POST …/actions/{code}`，平台读转移矩阵校验）。⛔ **不再以「手工改 ENUM」作为 MVP 状态推进路径**——该路径绕过状态机/审批/幂等/审计，已由 RC-008 关闭。  
 > - **escape 类动作（打款/入库/跨实体）= Should（P1）**，**不进**本迭代 DoD。MVP 仅 **原型弹层或 UIF-004 演示话术**；真Handler 上线须满足 Runtime §4.6（Idempotency-Key + 动作级权限码 +幂等三缺陷已修）。  
 > - **Describe 只有一种形态**：page级 `meta.allowedActionsByStatus`。⛔ 不做单行 Describe 端点（双真源，见 Runtime §4.3.1）。  
-> - **诚实性纪律**：运行时**不支持**关联/子表 lookup、多条件过滤、复合唯一、深分页游标——任何材料不得暗示可用（§1.1.1 G10–G13 + Runtime §0.3）。  
+> - **诚实性纪律**：运行时**已支持**关联/引用（REFERENCE 候选 + label 翻译）、子表明细（CHILD_TABLE list/replace 整组事务）、附件清单（ATTACHMENT JSON）——**G10 已实现（v0.46）**；**仍不支持**：多条件过滤（G11，`filter` JSON 已提前 v1.0.5）、复合唯一（G12）、深分页游标（G13）——任何材料不得暗示可用（§1.1.1 + Runtime §0.3）。  
 
 
 ### 0.3 诚实指标（替换旧口径处见 §1.2 / §9）
@@ -258,6 +258,12 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 
 | 版本      | 日期         | 修订人 | 核心变更                                                                                                                                                                                                                                                                                                                                                                                            | 状态                                                                           |       |
 | ------- | ---------- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----- |
+| v0.50   | 2026-10-11 | —   | **行级 ACL 旁路封堵（子表/引用候选全链路）**：① **子表端点旁路封堵**：`listChildren`/`replaceChildren` 前置主行行级 ACL 断言（`assertRowOwner` private→public 复用）——非本人/非审批人/非管理员枚举或替换他人单据明细 → 404（防「知道主行 id 即可旁路枚举子表」）（Runtime §4.7.1 + §9.7）；② **REFERENCE 候选旁路封堵**：`lookup-options` 内部行级过滤（目标实体有行策略含默认 owner 时仅返回操作者可见候选；无 created_by 主数据豁免；管理员 null/非数值主体豁免）——防「引用字段指向他人私有单据时候选列表泄露全部行」；③ 新增 `RuntimeLookupAclTest` 5 例；④ runtime 96 / server 125 全绿 | Draft |
+| v0.49   | 2026-10-11 | —   | **行策略落地（approver 维度，RLS「策略即 WHERE」完整落地）**：① `meta_entity.row_policies` JSON 声明（owner_field + rules 多规则 OR），报销 `owner_or_approver` = `created_by = :operator OR approver_id = :operator`——本人 + 单据指定审批人可见，其余 404（不泄露行存在性）（Runtime §4.7.1）；② 解析安全：when 仅支持「列 = :operator」+ AND/OR、列白名单 = 物理列集合（审计列可用）、`:operator` 参数化、未知列保守回退；③ Redis 缓存透传 rowPolicies/stateField（修复缓存命中丢 G14 状态保护 bug）；④ 0038 迁移（row_policies 列 + approver_id 列 + **approver_id 字段声明**防死规则）+ bone-init.sql 真源同步；⑤ runtime 87 全绿（新增 `RuntimeRowPolicyTest` 6 例）、server 125 全绿 | Draft |
+| v0.48   | 2026-10-11 | —   | **行级 ACL 落地（owner 维度，RLS 默认拒绝首层）**：① `page/getById` 注入 `AND created_by = :rowOwner` + 写路径（update/delete/restore）同判 404（不泄露行存在性），无 created_by 列实体自动豁免（Runtime §4.7.1）；② 身份三层：平台管理员（null）豁免 + **系统操作者 `system`**（服务/渠道回调身份豁免但审计留痕）+ 数值用户按本人过滤；③ 状态机不冲突：updateState/adminFixState 走 updateInternal 不经行级断言，动作面由动作级权限独立管控；④ 既有测试语义适配（并发 412 改 owner stale、回调改 system 身份），runtime 81 / server 125 全绿；⑤ 行策略（approver 等自定义）仍 v1.1 | Draft |
+| v0.47   | 2026-10-11 | —   | **业界对标落地（动作/写路径加固）**：① **动作入参契约化**（对标 Hasura Actions inputSchema）：`ActionParamSpec` 扩展 `min/max/pattern`，`RuntimeActionService.validateParams` 统一类型（string/number/integer/boolean/enum）+ 约束校验 → `META_RUNTIME_ACTION_INVALID_PARAMS`，Handler 不再各自校验（Runtime §4.8.2）；② **写路径前置钩子 `RuntimeWriteHook`**（对标 Directus Filter 分层）：实体级业务规则 SPI（可阻断 422 / 可改写载荷），与平台级 `RuntimeWriteValidator` 分离，报销演示 `ExpenseClaimWriteHook`（审批后禁改金额，防绕过审批改单）（Runtime §4.8.3）；③ **幂等重放语义核验确认**：动作幂等走执行记录表命中即复用首响（Stripe 语义已实现），CRUD 幂等 TTL 配置化（Runtime §4.6）；④ **行级 ACL v1.1 设计就绪**（对标 Supabase RLS 默认拒绝）：owner_field + 行策略声明 + 无策略默认仅管理员可见 + 查询 WHERE 注入 + 写路径同判 404（Runtime §4.7.1），D6 引用；⑤ runtime 模块测试 75 全绿（新增 `RuntimeWriteHookTest` 4 例） | Draft |
+| v0.46   | 2026-10-11 | —   | **G10 关联/子表落地（L1 报销真实形态）**：① **运行时关系引擎三类型已实现**（`RuntimeRelationSupport`，零 DDL）：`REFERENCE`（lookup-options 候选 + label 翻译）、`CHILD_TABLE`（listChildren/replaceChildren 整组替换事务）、`ATTACHMENT`（TEXT JSON 清单）；② **公共写校验器** `RuntimeWriteValidator`（required/type/rules/enum，主行与子行同一门禁）+ DDL 适配器三类型映射（REFERENCE→BIGINT、ATTACHMENT→TEXT、CHILD_TABLE→跳列）+ align/verify 对齐豁免；③ **报销场景 L1 实例化（0037 迁移）**：`t_expense_claim_item` 明细子表 + `t_expense_category` 类别主数据（初始 5 类）+ 主实体补建，`category_id` 由 ENUM 码表演进为 REFERENCE（case §3），明细/类别实体权限细码；④ **前端三控件**（`RuntimeDataManagement.tsx`）：REFERENCE 下拉（预取选项）、ATTACHMENT 文件清单（JSON 数组）、CHILD_TABLE 明细弹窗（行编辑/删除/批替换）；⑤ **OpenAPI v1.2.4**：补 lookup-options / children 三端点 + ChildEntityCode 参数；⑥ §0 诚实性纪律同步（关联/子表已支持，多条件过滤/复合唯一/深分页仍不支持）；⑦ G10 由「P2 另立项」转为**已实现**，L1 进 case 落地注记；⑧ 修 PRD 元信息版本号滞后（v0.42 → v0.46） | Draft |
+| v0.45   | 2026-10-11 | —   | **生产就绪补漏（诊断落地 · 契约/代码/文档三方刷新）**：① OpenAPI **v1.2.3**：错误码枚举补 `META_RUNTIME_ENTITY_FORBIDDEN`（403，代码 `GlobalExceptionHandler` 已处理）、`META_RUNTIME_VALIDATION_FAILED`（422，写路径规则校验新码）、`META_RUNTIME_ACTION_INVALID_PARAMS`（422，对齐 Runtime §4.10/§10.3 Playbook），清理残留 `META_RUNTIME_FORBIDDEN_ACTION`；② **RC-007 规则引擎接线（轻量子集）**：`meta_field.validation_rules`（min/max）+ `enum_values`（ENUM 越界）由「死数据」变为写路径强制（`JdbcRuntimeRecordService.validateRules`，422 `META_RUNTIME_VALIDATION_FAILED`；种子 `amount` 的 `min:0.01` 服务端生效），完整业务规则管线仍 v1.1；③ **软删物理降级明示（R13 强化）**：无 `deleted` 列实体的删除由「静默物理 DELETE」改为**拒绝 + 明示不可恢复**（`RuntimeRecordException`，防误删永久丢数据）；④ **命名纪律整改**：报销打款 Handler 由 `PaymentApplicationService`（与 blueprint 订单域同名同 bean 名）改为 **`ExpenseClaimConfirmPayoutHandler`**（0032 种子 + 新增 **0036 存量迁移**改名）；⑤ §0.5.5 契约「v0.42 待补」更新为已入 spec；⑥ 审计触发面现状核实：RC-009 动作链路已落（`meta_runtime_record_audit` 0033），**普通 CRUD 写路径记录级审计待接全**（v1.0.5）；⑦ 待决策 D2/D10/D11/D12/D13 状态刷新（均 W0 前必须定，未关闭） | Draft |
 | v0.44   | 2026-10-10 | —   | **契约/文档-实现对齐**（D5「以代码为准」执行）：① OpenAPI v1.2.2：`RuntimeRecordPage.list` → **`records`**（`@Deprecated getList` 从未序列化，`list` 系文档遗产）+ `pageNum/pageSize` → **`page`/`size`**；② 错误码命名对齐代码真源：`META_RUNTIME_ILLEGAL_TRANSITION` → **`META_RUNTIME_ACTION_ILLEGAL_TRANSITION`**、`META_RUNTIME_IDEMPOTENCY_REQUIRED` → **`META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED`**、`META_RUNTIME_FORBIDDEN_ACTION` → **`META_RUNTIME_ACTION_NOT_FOUND` 之外的细权限码留 P1**；台账 §6 + zh/en 语言包登记 4 个 `META_RUNTIME_ACTION_*`（i18n 门禁回绿）、清孤儿旧键；③ 示例金额 `128.50` + 补 `precision/scale` 语义示例；④ §1.1.1 新增 **G20 DECIMAL 精度未实接**（MyBatis-Plus 写读均按 DECIMAL(20,6) 四舍五入，`meta_field` 无 scale 列，接线为跨 5 层改造，与 Runtime v0.43 范围锁一致）；⑤ §2.5.9/§9 演示口径诚实化（`128.50 → 128.500000` 内部精度差异）；⑥ Runtime 设计 §2.3/§2.4 信封 + §4.5/§4.6/§4.9 错误码命名同步（其版本线 v0.43 不动，v0.43 变更表 #10/#11 已含本项）；⑦ 修订记录 v0.32 重复条目拆分 v0.32a/v0.32 | Draft |
 | v0.42   | 2026-10-10 | —| **数据面安全补漏 + 范围重切**（代码级实测驱动）：① 新增 §1.1.1 G10–G19 运行时能力缺口表（**关联/子表/多条件过滤/复合唯一/深分页实测均不存在**）；② **G14 状态字段可直写** → 新增 **RC-008**（`state_field` → 422 + 声明式 `state_transition`，**替代「手工改 ENUM」**）；③ **G15 权限=租户内全库 CRUD** → RC-004 增补实体级 `runtime:{entity}:{read\|write}`；④ **G18 记录级审计缺失** → 新增 **RC-009**；⑤ 幂等三缺陷（scope 绑 user / TTL 硬编码 / 软删不可恢复）+ DELETE 补 If-Match 列入 Must-1；⑥ §0.2 硬口径重写 + §11.1 按风险重切为 **Must-1 数据安全 / Must-2 可交付闭环 / Should**；⑦ 修正三条超纲 BDD（UIF-002 的 FK 下拉、UIF-001 的查询区、§2.2 的复合唯一 409）；⑧ **D2 覆盖配置重开**（localStorage 与三处条款矛盾）→ 推荐 `meta_entity.ui_overlay JSON`；⑨ **D5 关闭**（假决策项）；**D3 关闭**（新建 API 无需宽限期）；新增 **D13/D14**；⑩ 门禁表述修正：G31–G35 **已由并发提交者落地**（`86a5e696` 补 G33/G34），§0.6.5 改为「已落地 + 维护要求」（G32 判据待补、G33 `SLICE_ALLOWLIST` 需 owner）；⑪ §0.6.3 修正「共用函数使漂移在结构上不可能」过强论证 → 改用跨端 golden fixtures；⑫ §9.1 验收场景主推改访客/巡检（补货的入库动作落在 MVP 边界外）；⑬ `filter` JSON 从 P2 提前 v1.0.5；⑭ STRIDE 三行状态由 ✅ 改回 🟡/❌ | Draft |
 | v0.41   | 2026-10-10 | —   | **范围纪律 + 数据面收口**：薄读本；§0.2 硬口径（Actions/Describe/Invoke=Should，MVP=CRUD）；UC-C/§2.5.9 动态 actions；UIF-008 错误码 `META_RUNTIME_ACTION_ILLEGAL_TRANSITION`；§1.1.1 契约对齐说明；Runtime 设计 As-Is 矩阵/列表 allowedActions/Handler 部署 | Draft                                                                        |       |
@@ -351,10 +357,10 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 状态机         | `DRAFT(0) / PUBLISHED(1) / ARCHIVED(2)`；发布走乐观锁 + `entity.publish()` 域逻辑 + 发布后变更保护                                                                                                                                                                                                                                                                                      | `MetaEntityStatus.java`；`MetaEntityApplicationService.java:174-192`                                                                                 |
 | 发布动作        | **同步调用** `runtimeEntityCacheEvictor.evict(...)`（非事件驱动）；发 `MetaEntityPublishedEvent` 但**无订阅方**（事件总线注释"当前无订阅方属预期"）                                                                                                                                                                                                                                                       | `SpringDomainEventPublisher.java`；`CaffeineCachedRuntimeEntityCatalog`（expireAfterWrite:20）/ `RedisCachedRuntimeEntityCatalog`                      |
 | 运行时 CRUD    | GET 已支持 `fields`/`sort`/`q`（`RuntimePageQuery.parse` + 列白名单）；PUT `If-Match` 乐观锁(:177-219)；POST `Idempotency-Key`；GET `/{id}` 返回 `ETag`；DELETE 软删（deleted 列）                                                                                                                                                                                                            | `RuntimeRecordController.java:58-149`（page/GET/POST/PUT/DELETE 五端点）；`JdbcRuntimeRecordService.java:40-260`（engine-runtime）                          |
-| 契约          | **（v0.40/v1.2.x 已对齐 CRUD）** OpenAPI 已声明 `fields`/`sort`/`q`、`If-Match`、`Idempotency-Key`、`ETag` 及 CRUD 错误码子集。**仍为 Planned**：Describe/Invoke（`…/actions`）与动作错误码——见 OpenAPI `x-implementation-status: planned` 与 [Runtime §0.1](./BONE-低代码Runtime数据面设计.md)。（2026-10-09 体检时「契约落后」结论**已过时**，勿再当缺口开 W0）。<br>**⚠️ v0.42 待补**：RC-008/RC-004 增补引入的 `422 META_RUNTIME_FIELD_PROTECTED`、`403 META_RUNTIME_ENTITY_FORBIDDEN`、DELETE 的 `If-Match`、以及 `state_field` 元数据声明——**均尚未入 spec**，须随 RC-004 一并同步（登记纪律见 Runtime §4.10） | `metadata-runtime-v1.yaml` v1.2.2；`MetadataErrorCodes.java`；Runtime §0.1 矩阵 |
-| 校验          | 写路径仅 required/type/unique **轻校验**；engine 规则引擎（`ValidationEngine`/`BusinessRuleRegistry`/`ExpressionEngine`）**存在但未接入写路径**（`RuleEngineAutoConfiguration` 注释自证仅解决构造器问题）                                                                                                                                                                                                   | `JdbcRuntimeRecordService.java:266-305`（validateForCreate/Update）                                                                                   |
+| 契约          | **（v0.40/v1.2.x 已对齐 CRUD）** OpenAPI 已声明 `fields`/`sort`/`q`、`If-Match`、`Idempotency-Key`、`ETag` 及 CRUD 错误码子集。**仍为 Planned**：Describe/Invoke（`…/actions`）与动作错误码——见 OpenAPI `x-implementation-status: planned` 与 [Runtime §0.1](./BONE-低代码Runtime数据面设计.md)。（2026-10-09 体检时「契约落后」结论**已过时**，勿再当缺口开 W0）。<br>**✅ v0.45/v0.46 已补**：RC-008/RC-004 增补引入的 `422 META_RUNTIME_FIELD_PROTECTED`、`403 META_RUNTIME_ENTITY_FORBIDDEN`、DELETE 的 `If-Match`、`state_field` 元数据声明、写路径规则校验 `422 META_RUNTIME_VALIDATION_FAILED`——**已全部入 spec（v1.2.3；v1.2.4 增关系端点）**，登记纪律见 Runtime §4.10；**G10 关系三端点**（lookup-options / children list / replace）已入 spec v1.2.4 | `metadata-runtime-v1.yaml` **v1.2.4**；`MetadataErrorCodes.java`；Runtime §0.1 矩阵 |
+| 校验          | **v0.45 已接线轻量规则子集**：required/type/unique + `meta_field.validation_rules`（min/max）+ `enum_values`（ENUM 越界）→ 422 `META_RUNTIME_VALIDATION_FAILED`（`JdbcRuntimeRecordService.validateRules`）；engine 完整规则引擎（`ValidationEngine`/`BusinessRuleRegistry`/`ExpressionEngine`）**仍 v1.1**（`RuleEngineAutoConfiguration` 注释自证仅解决构造器问题）                                                                                                                                                                                                   | `JdbcRuntimeRecordService.java`（validateForCreate/Update + validateRules）                                                                                   |
 | 快照/回滚       | **无版本快照、无回滚实现类**；仅有 `PhysicalTableSnapshot`（表结构，非版本快照）与乐观锁版本号                                                                                                                                                                                                                                                                                                          | `version/DefaultMetadataVersionController.java`（AtomicLong 简单实现）                                                                                    |
-| 审计          | `DefaultAuditService`（异步 executor）存在但**未接入 metadata-server 写路径**；运行时仅 `stampAuditColumns`(:415) 写 created_by/updated_by                                                                                                                                                                                                                                                | `security/DefaultAuditService.java`（engine-runtime）                                                                                                 |
+| 审计          | **RC-009 现状（v0.45 核实）**：动作链路已落记录级审计（0033 `meta_runtime_record_audit` append-only，`RuntimeActionService` 执行生命周期写审计）；**普通 CRUD 写路径（PUT/DELETE 非状态字段变更）仍仅 `stampAuditColumns` 行级 updated_by，记录级审计待接全（v1.0.5）**                                                                                                                                                                                                                                                | `RuntimeActionService.java`；`JdbcRuntimeRecordService.java`（stampAuditColumns）                                                                                                 |
 | 架构门禁        | ArchUnit 门禁存在 **freeze 例外**（Controller 直注 `JdbcRuntimeRecordService` 被登记为冻结项）                                                                                                                                                                                                                                                                                          | `ArchitectureTest.java`（@ArchTest + FreezingArchRule）                                                                                               |
 
 **前端实测（`bone-frontend/apps/bone-metadata-app`）**：
@@ -374,7 +380,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | #  | Gap                                               | 级别                | 业界最佳实践对照                                                          | 落点                        |
 | -- | ------------------------------------------------- | ----------------- | ----------------------------------------------------------------- | ------------------------- |
 | G1 | ~~契约落后于实现~~ **已闭环（v0.40 `metadata-runtime-v1` v1.2.1）** | ✅ 已闭环 | **契约即真源**：OpenAPI 先行 + 契约测试门禁 | RC-004（**剩余**：新增 Must 错误码入 spec，见 G14/G15） |
-| G2 | engine 规则引擎未接入运行时写路径（仅轻校验）                        | P0                | **写路径统一校验门禁（Validation Pipeline）**：字段约束 + 业务规则同一入口、错误信封化          | 新增 RC-007                 |
+| G2 | engine 规则引擎未接入运行时写路径（仅轻校验）                        | P0                | **写路径统一校验门禁（Validation Pipeline）**：字段约束 + 业务规则同一入口、错误信封化          | 新增 RC-007（**v0.45 已接线轻量子集**：min/max/enum 越界，完整管线仍 v1.1）                 |
 | G3 | 发布为同步 evict、非事件驱动，`MetaEntityPublishedEvent` 无订阅方 | P2（MVP）/ P1（多实例）  | 嵌入式 MVP：**同步实体级 evict + 指标**即可；Outbox → v1.1（RC-005）              | RC-002 Must；RC-005 Should |
 | G4 | 无版本快照与回滚实现                                        | P2（MVP）/ P1（v1.1） | MVP 用开关回退 + 再发布；快照回滚 → v1.1（RC-006）                               | RC-006 Should             |
 | G5 | 审计未接入写路径                                          | P2                | 审计为横切关注点：写路径统一 append-only 埋点                                     | G6 需求强化                   |
@@ -389,14 +395,14 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 
 | # | Gap | 级别 | 代码真源证据 | 业界对照 | 落点 |
 |---|-----|------|-------------|---------|------|
-| **G10** | **关联/引用字段（lookup）运行时不可用** | **P2 · 另立项** | `RuntimeFieldColumn.java:11-23` 仅 6 属性（无关系/目标实体/聚合）；`JdbcRuntimeRecordService` 全文件**无 JOIN / 子查询 / group by** | Airtable / NocoBase 均有真关联 | **不进本迭代**，但 UI/文档须显式降级（UIF-002 BDD 已改）。关联是低代码「像不像样」的分水岭，须在路线图显式登记 |
+| **G10** | **关联/引用字段（lookup）运行时不可用**（原缺口） | **✅ v0.46 已实现** | 三类型：`REFERENCE`（lookup-options 候选 + label 翻译，`RuntimeRelationController`）、`CHILD_TABLE`（listChildren/replaceChildren 整组替换事务，`RuntimeRelationSupport`）、`ATTACHMENT`（TEXT JSON 清单）；关系声明 = `meta_field.validation_rules` 内嵌 JSON（零 DDL）；报销 L1 实例化 = 0037（明细子表 + 类别主数据 + ENUM→REFERENCE 演迁）；公共写校验器 `RuntimeWriteValidator` 主行/子行同门禁；DDL 适配器三类型映射 + align/verify 豁免 | Airtable / NocoBase 真关联（三类型对齐） | **已落地**；剩余演进：`filter` 多条件（G11，v1.0.5）、多对多/反向引用（另立项，v1.1+） |
 | **G11** | **无多条件过滤 / 范围 / 关键词搜索** | **P2 · v1.0.5** | `RuntimePageQuery.java:59-70` 仅解析**单个** `FilterSpec`；`RuntimeQuerySupport.java:56-70` 渲染 `` `col` = :v `` **严格等值** | Directus filter / NocoBase JSON filter | Runtime §2.6。**从 P2 提前到 v1.0.5**：实体超 10 列即失去可用性，远低于 A3 假设的「字段数十级」 |
 | **G12** | **无复合唯一约束** | P2 · 另立项 | `JdbcRuntimeRecordService.java:342-344` 仅单字段 `unique` | DB 级复合唯一索引 | §2.2「同商品同仓库无未完结单」**已标注不可实现** |
 | **G13** | **深分页无游标** | P2 | `offset=(page-1)*size`；`size` **硬截断 1..200**（无配置项） | Salesforce / Retool 大表用 cursor | RC-004 性能基线须按 **offset 口径**声明（P99 ≤ 200ms @1万行偏乐观），勿按游标口径 |
 | **G14** | 🔺 **状态字段可经 `PUT` 直写** —— 任何持 `metadata:runtime:write` 者可 `PUT {status:PAID}` **冒充打款**，绕过状态机/审批/幂等/审计 | **P0 · Must** | `JdbcRuntimeRecordService` 对业务字段无差别放行（`filterWritable` 仅滤系统列） | Directus **special fields**；Salesforce **restrict picklist** + validation rule | **RC-008**（新增）；Runtime §4.5。**这是本迭代最高优先级修复** |
 | **G15** | 🔺 **权限 = 租户内全库 CRUD** —— `metadata:runtime:read\|write` 可读写**本租户所有低代码实体的所有行**，实体间/行间均不隔离；且硬编码于 `@PreAuthorize` 注解字符串、无配置 | **P0 · Must** | `RuntimeRecordController.java:59/74/88/120/144`；权限种子 `bone-init.sql:292-293` | Directus collection permissions；Power Platform 表级权限 | **RC-004** 增补实体级 `runtime:{entity}:{read\|write}`。**前端裁剪（UIF-006）可后置，后端实体级授权不可后置** |
 | **G16** | 🔺 **幂等实现三缺陷**：① scopeKey 含 `user` → 同 Key 换用户即失效；② TTL 硬编码 24h 不可配 → 资金类 24h 后重放会二次记账；③ 软删 + 单字段 unique 组合下软删记录**永久不可恢复**且占用 key | **P0 · Must** | `CatalogIdempotencySupport.java:27,51-55`；`JdbcRuntimeRecordService.java:230-254,342-344` | Stripe：scope = account+key（**不含 user**），TTL 覆盖整个业务窗口 | Runtime §4.6.1 |
-| **G17** | 🔺 **软删静默降级为物理 DELETE** —— `information_schema` 列探测失败即走硬删，**不可逆且无提示**；且无 undelete 接口 | **P0 · Must** | `JdbcRuntimeRecordService.java:230-254` | Directus trash / NocoBase 回收站 | UI 明示「归档不可恢复」+ 回收站视图/恢复动作 |
+| **G17** | 🔺 **软删静默降级为物理 DELETE** —— `information_schema` 列探测失败即走硬删，**不可逆且无提示**；且无 undelete 接口 | **P0 · Must** | `JdbcRuntimeRecordService.java` | Directus trash / NocoBase 回收站 | **v0.45 已修复降级面**：无 `deleted` 列实体的删除改为**拒绝 + 明示不可恢复**（不再静默物理删）；回收站视图/恢复动作（`GET /records/deleted` + `POST /{id}/restore`）已落地 |
 | **G18** | 🔺 **记录级变更审计缺失** —— `DefaultAuditService` 实测**未接入 metadata-server 写路径**，无法回答「谁把哪张单据从 APPROVED 改成 PAID」 | **P0 · Must** | `DefaultAuditService`（engine-runtime，异步 executor，孤岛） | 支付类 API audit trail 是平台底线 | **RC-009**（新增）。**MVP 交付状态流转 ⇒ 记录级审计是唯一兜底，不能是 P2** |
 | **G19** | **无租户级资源配额** —— 任何用户可建实体→建表（DDL 归 L3 是 AI 自主权，非运行时约束）；无限流、无实体数/行数上限 | P2 | PRD 未覆盖 | Salesforce Org Limits；Directus collection 授权 | 另立项；本迭代至少在§10.4 声明「无限流」为已知风险 |
 
@@ -412,7 +418,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 > - **P0-安全（G14/G15/G16/G17/G18 + G2 校验）** —— 先关洞，再谈体验。**这批不扩张范围，是补存量漏**。
 > - **P0-闭环（契约 G1 余项 + 前端接线 G7 + Schema 渲染 G8）** —— 「建模→发布→能读能写能查」。
 > - **P1/G3G4/G9** —— 治理与效率增强。
-> - **P2/G10-G13/G19 + G5/G6** —— 另立项或随迭代收敛。
+> - **P2/G11-G13/G19 + G5/G6** —— 另立项或随迭代收敛（**G10 已实现 v0.46**，见 §1.1.1；G11 `filter` 提前 v1.0.5）。
 
 
 ### 1.1.2 二次体检增量（2026-10-09 · 对照代码真源，驱动 v0.18）
@@ -428,7 +434,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 发布治理 API     | `validate` / `publish-preview` / `copy` / `import-from-table` / `batch-publish` + 发布 `If-Match` + `Idempotency-Key` | `MetaEntityCatalogController:85-167`                                                            | VM-002 MVP = **接线既有 publish-preview**，不新建影响分析服务           |
 | 运行时查询/写      | `fields`/`sort`/`q`、If-Match→412、Idempotency-Key、ETag、软删、租户谓词、系统列过滤                                                 | `RuntimeRecordController` + `JdbcRuntimeRecordService`                                          | **后端能力超前于 OpenAPI 与前端**——波次 0 只补契约与消费方                    |
 | 统一响应         | Controller 返回 **`ApiResponse`/`PageResult`**（非独立 RuntimeErrorEnvelope 路径）                                           | `RuntimeRecordController`；前端 `errorMessage` 读 `data.errorCode`                                  | D5/RC-004：契约文档须与 **ApiResponse + errorCode** 真源对齐，避免双信封叙述 |
-| 规则引擎         | `ValidationEngine`/`RuleEngine` 在 engine 存在；**runtime 写路径未调用**                                                      | `JdbcRuntimeRecordService.validate*` 仅轻校验                                                       | RC-007 仍 Must，但是「接线」不是「新建引擎」                              |
+| 规则引擎         | **v0.45 已接线轻量子集**：`validation_rules`（min/max）+ `enum_values`（ENUM 越界）→ 422 `META_RUNTIME_VALIDATION_FAILED`（`JdbcRuntimeRecordService.validateRules`）；`ValidationEngine`/`RuleEngine` 完整管线仍 v1.1                                                      | 字段轻校验 + 规则子集（required/type/unique/min/max/enum）                                                       | RC-007 仍 Must，但是「接线」不是「新建引擎」                              |
 
 #### B. 前端：闭环最短路径已半成形
 
@@ -898,7 +904,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | A3 | 切「界面」Tab → 默认就在**预览**（列表↔表单可切）                                                                                                                                                                                                        | 前端用**草稿快照**渲染，不要求已发布（UIF-005）                                                                   | 列表列 = 单号/商品/仓库/数量/状态/供应商；**status 自动渲染成彩色徽标**（DRAFT 灰）；表单里 quantity 是数字框、status 是下拉、snapshot 字段置灰；右侧可试列显隐/改显示名（覆盖，不动元数据） |
 | A4 | 切「发布」Tab → 看发布预览 → 确认发布                                                                                                                                                                                                               | `publish()`：L1 判定（全是新增）→ 物理对齐（建表或对齐既有 `bp_replenishment_order`）→ **同步 evict 实体缓存**；写审计          | diff 全是「+ 新增」绿行，无 L2 风险项；确认后脏态徽标消失；toast「热加载 ~1s」；**自动跳到数据 Tab**（锁已解）                                                    |
 | A5 | 数据 Tab 首次进入                                                                                                                                                                                                                           | 前端按 IAM 菜单树（UIF-007）/ 深链 `?entity=t_replenishment` 挂 MetaList；`GET /runtime/.../records` 返回空页   | 空态（三分空态之「首次使用」）：插画 +「还没有补货单」+ 单个主按钮「+ 新建补货单」                                                                             |
-| A6 | 点「+ 新建补货单」→ MetaForm 填：蓝牙耳机 Pro / DEFAULT / 120 / 供应商 SUP-01 / 备注「低于安全库存」→ 提交                                                                                                                                                         | `POST` 带必填/类型轻校验（RC-007 接入前）；后端补 tenant_id/审计列；status 缺省 DRAFT                                  | 列表顶部多一行 `RPL-… · DRAFT(灰徽标)`；toast 成功；再开 shell（bone-commerce-app）——**菜单里已有「补货单」，业务仓 0 新增页面源码**                           |
+| A6 | 点「+ 新建补货单」→ MetaForm 填：蓝牙耳机 Pro / DEFAULT / 120 / 供应商 SUP-01 / 备注「低于安全库存」→ 提交                                                                                                                                                         | `POST` 带必填/类型/规则轻校验（RC-007 轻量子集 v0.45 已接入）；后端补 tenant_id/审计列；status 缺省 DRAFT                                  | 列表顶部多一行 `RPL-… · DRAFT(灰徽标)`；toast 成功；再开 shell（bone-commerce-app）——**菜单里已有「补货单」，业务仓 0 新增页面源码**                           |
 
 **A 路线验收（对齐 §0.3）**：A1→A6 总耗时 **≤15 分钟**；业务仓新增页面源码 = **0**（UIF-007）或 ≤1 次声明式挂载（UIF-004）；全程无四步向导，只有对话框 + 工作区。
 
@@ -948,12 +954,12 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | UC-C    | 数据 Tab：编辑任一行用 ENUM 下拉改状态；APPROVED 行点「📦 到货入库」看跨实体逃逸说明弹窗（v1.1 声明式动作演示） |
 | 换皮验证    | 同一路径在「设备巡检」「访客登记」「费用报销」各走一遍——步骤不变，只换字段（§2.5.0a / §2.5.9）             |
 
-#### 2.5.9 样例叙事 B · 费用报销（办公域黄金路径 · v0.40）
+#### 2.5.9 样例叙事 B · 费用报销（办公域黄金路径 · v0.46）
 
 > **业界惯例**：简道云 / 钉钉宜搭 / 飞书多维表格 / NocoBase 常以「报销」作首秀。BONE 用同一 Mode B 路径承接，**不新建报销微应用**。  
-> **字段/状态真源**：本节 = 原型 `#scene=expense` = case **L0**；冲突以本节为准。
+> **字段/状态真源**：本节 = 原型 `#scene=expense` = case **L1**（v0.46 由 L0 升级）；冲突以本节为准。
 
-**一句话**：员工填报销单 → 提交/审批（ENUM）→（财务打款属逃逸）。
+**一句话**：员工填报销单（含明细行 + 附件 + 类别）→ 提交/审批（ENUM）→（财务打款属逃逸）。
 
 ##### 命名对齐（防三套叫法）
 
@@ -963,7 +969,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 模板 code（T4） | `expense_claim` | `meta_model_template` |
 | 实体 code（RUNTIME） | `t_expense_claim` | 发布后物理表/路由 |
 | 原型场景 id | `expense` | `#scene=expense` |
-| 打款逃逸（拟议） | `ExpenseClaimApplicationService.confirmPayout` | 对称 `ReplenishmentApplicationService.receive`；**禁止**复用 blueprint 订单域 `PaymentApplicationService` |
+| 打款逃逸（已实现 v0.45） | `ExpenseClaimConfirmPayoutHandler`（bean 名同，`RuntimeActionDispatcher` 装配） | 对称 `ReplenishmentApplicationService.receive`；**禁止**复用 blueprint 订单域 `PaymentApplicationService`（已遵行——原 `PaymentApplicationService` 类已改名，见 0036 迁移） |
 
 | 状态（ENUM） | 含义 | Mode B 数据 Tab |
 |---|---|---|
@@ -973,23 +979,28 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | `REJECTED` | 已驳回 | ✅ |
 | `PAID` | 已打款完结 | ✅ 展示；**真打款不在 Mode B** |
 
-**MVP 示范字段**（初建 8 列；`cost_center` 仅 1→n 热加载演示）：
+**MVP 示范字段**（初建 8 列 + **L1 三列**；`cost_center` 仅 1→n 热加载演示）：
 
 | 字段 code | 类型 | 约束 | 说明 |
 |---|---|---|---|
 | `claim_no` | STRING | PK / 唯一 | 报销单号 |
 | `title` | STRING | 必填 | 事由摘要 |
 | `amount` | DECIMAL | 必填 · >0 | **金额**（InputNumber step=0.01；⚠️ 存储口径见 G20） |
-| `category` | ENUM | 必填 | 差旅 / 餐饮 / 交通 / 办公 / 其他 |
+| `category_id` | **REFERENCE** | 可空 | **L1（v0.46）**：消费类别 → `expense_category` 主数据（labelField=name）；L0 的 ENUM `category` 码表演进为此引用（case §3） |
 | `expense_date` | DATE | 必填 | 发生日期 |
 | `status` | ENUM | 必填 | 上表五态 |
 | `applicant` | STRING | 必填 | 申请人（MVP 文本） |
 | `remark` | TEXT | 可空 | 说明 |
 | `cost_center` | STRING | 可空 | **不进初建模板**；UC-02 再加 |
+| `attachment` | **ATTACHMENT** | 可空 | **L1（v0.46）**：附件清单（TEXT JSON 数组串，maxCount=10/maxSizeMB=10） |
+| `items` | **CHILD_TABLE** | 可空 | **L1（v0.46）**：明细行声明字段（无物理列）→ `expense_claim_item`，1—N（maxRows=200） |
 
 | 能力 | 落点 | 说明 |
 |---|---|---|
 | 建模 / 列表表单 / 单条件等值 `q` / 热加载 | **Mode B · Must** | 与巡检同路径；额外验 DECIMAL |
+| **REFERENCE 候选下拉 + label 翻译** | **Mode B · 已实现（v0.46）** | lookup-options 端点 + 列表 `{code}__label`；类别主数据 `expense_category`（0037 初始 5 类） |
+| **CHILD_TABLE 明细行（1—N 批替换）** | **Mode B · 已实现（v0.46）** | `expense_claim_item` 明细弹窗；整组替换同一事务（listChildren/replaceChildren）；明细 `amount` 服务端强制 min:0.01（RC-007） |
+| **ATTACHMENT 附件清单** | **Mode B · 已实现（v0.46）** | JSON 数组串（name/url/size），前端清单式渲染 |
 | 状态徽标 + **声明式状态推进**（`POST …/actions/{code}`） | **Mode B · Must**（v0.42 提级，见RC-008） | 🔺 原「MVP 手工改 ENUM」**已废止**——该路径绕过状态机/审批/幂等/审计。**打款（escape）仍属 P1** |
 | 多级审批 BPM | **逃逸 · VF-001** | MVP 不承诺 |
 | **确认打款** | **逃逸 · P1 `escape` Handler** | 见上表命名；禁止只改 PAID |
@@ -1009,9 +1020,9 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | W2 | Meta* + `projectColumns` | 预览列 ≡ 数据列 |
 | 逃逸（另任务） | UIF-004 挂 `confirmPayout` | **非**本迭代 Must |
 
-**数据面**：**Must** = Runtime CRUD（`sort`/`fields`/单条件等值 `q` + 412）+ **RC-008 状态字段保护**（422，`state_transition` 为唯一合法状态入口）+ **实体级权限** + **记录级审计**。**Should/P1** = escape `POST …/actions/confirmPayout`（Handler）+ page 级 `meta.allowedActionsByStatus`。MVP 打款仅原型口述——见 [Runtime §0.1 矩阵](./BONE-低代码Runtime数据面设计.md) + OpenAPI v1.2.2（**新错误码待入 spec**）。
+**数据面**：**Must** = Runtime CRUD（`sort`/`fields`/单条件等值 `q` + 412）+ **RC-008 状态字段保护**（422，`state_transition` 为唯一合法状态入口）+ **实体级权限** + **记录级审计** + **G10 关系三类型**（v0.46：REFERENCE / CHILD_TABLE / ATTACHMENT，端点见 OpenAPI）。**Should/P1** = escape `POST …/actions/confirmPayout`（Handler）+ page 级 `meta.allowedActionsByStatus`。MVP 打款仅原型口述——见 [Runtime §0.1 矩阵](./BONE-低代码Runtime数据面设计.md) + OpenAPI **v1.2.4**（关系端点 + 错误码已同步，v0.45/46 收敛）。
 
-****扩展探针（非 Must）**：[`费用报销系统-元数据建模方案.md`](./cases/费用报销系统-元数据建模方案.md) **L1**；工程改法见[融合方案](./ui/元数据工作区前端融合方案.md)；UI 索引见 [`doc/design/lowcode/ui/README.md`](./ui/README.md)。
+**L1 扩展（已实现 v0.46）**：[`费用报销系统-元数据建模方案.md`](./cases/费用报销系统-元数据建模方案.md) case **L1**——0037 迁移：`t_expense_claim_item` 明细子表 + `t_expense_category` 类别主数据 + 主实体补建；前端明细弹窗/REFERENCE 下拉/附件清单在 `RuntimeDataManagement.tsx`；工程改法见[融合方案](./ui/元数据工作区前端融合方案.md)；UI 索引见 [`doc/design/lowcode/ui/README.md`](./ui/README.md)。
 
 ---
 
@@ -1063,7 +1074,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 2  | 发布生命周期：版本快照、影响分析、回滚、审计             | OutSystems / Mendix 应用生命周期管理                                                                                     | `DRAFT/PUBLISHED` + 发布后变更保护（基础）                                       | **采纳（P0）**：RC-001、RC-003、VM-002                                                                                                                                                               |
 | 3  | 元数据运行时热生效（免重启）                     | Salesforce 声明式标准对象、Mendix                                                                                        | 发布 → 运行时未闭环                                                           | **采纳（P0）**：RC-002                                                                                                                                                                             |
 | 4  | 环境提升（Dev→Test→Prod 元数据迁移、Git 化）    | OutSystems ALM、Appsmith Git 同步                                                                                   | 无快照导出/导入                                                              | **后置（v1.1）**：catalog 快照 JSON 导出/导入工件，衔接 Git/CI；模式 A 已天然源码进 Git，BONE 双模式在"进 Git"上殊途同归                                                                                                          |
-| 5  | 细粒度权限（屏/字段/记录/动作级）                 | Power Platform 安全角色、NocoBase 集合/字段权限、简道云数据权限                                                                     | IAM JWT + RBAC、租户隔离 As-Is；**运行时鉴权仅到「方法级」，无实体粒度**（G15：任一持 `metadata:runtime:write` 者可读写本租户所有实体所有行） | **v0.42 调整分级**：**实体级 `runtime:{entity}:{read\|write}` → Must**（RC-004 增补；「谁能动哪些数据」这条线上唯一的一级，缺失即等于全库 CRUD）；**动作级 → P1**（随 escape）；**渲染面裁剪（UIF-006）→ Should**（可后置）；字段级/行级数据权限后置（D6）。**前端裁剪可后置，后端实体级授权不可后置** |
+| 5  | 细粒度权限（屏/字段/记录/动作级）                 | Power Platform 安全角色、NocoBase 集合/字段权限、简道云数据权限                                                                     | IAM JWT + RBAC、租户隔离 As-Is；**运行时鉴权仅到「方法级」，无实体粒度**（G15：任一持 `metadata:runtime:write` 者可读写本租户所有实体所有行） | **v0.42 调整分级**：**实体级 `runtime:{entity}:{read\|write}` → Must**（RC-004 增补；「谁能动哪些数据」这条线上唯一的一级，缺失即等于全库 CRUD）；**动作级 → P1**（随 escape）；**渲染面裁剪（UIF-006）→ Should**（可后置）；字段级/行级数据权限后置（D6）。**前端裁剪可后置，后端实体级授权不可后置**。**v0.48 增补**：行级 ACL **owner 维度已实现**（RLS 默认拒绝首层：`page/getById` WHERE 注入 + 写路径同判 404 + 管理员/system 豁免，Runtime §4.7.1）。**v0.49 增补**：行策略 **approver 维度已实现**（`row_policies` JSON 多规则 OR，报销 `owner_or_approver`：本人 + 单据指定审批人可见，其余 404；列白名单 = 物理列集合、`:operator` 参数化、未知列保守回退；Redis 缓存透传；0038 迁移含 approver_id 字段声明——Runtime §4.7.1）；角色组策略（`:role`）/ 列级 FLS 仍 v1.1。**v0.50 增补**：**旁路封堵完成**——子表端点（listChildren/replaceChildren）前置主行行级 ACL（防子表枚举旁路）+ lookup-options 候选行级过滤（防 REFERENCE 候选泄露他人私有单据），Runtime §4.7.1 |
 | 6  | 表达式/公式/计算字段                        | 简道云公式字段、Salesforce formula                                                                                       | SmartMeta 引擎库 As-Is（未 HTTP 暴露）                                        | **后置（v1.2）**：本迭代仅复用规则运行时做校验；计算字段随后续迭代（对齐既有路线图，不重复立项）                                                                                                                                          |
 | 7  | 数据导入/导出（Excel/CSV）                 | 简道云、NocoBase 内置                                                                                                  | 无                                                                     | **后置（v1.2）**：runtime 记录导入导出                                                                                                                                                                   |
 | 8  | AI 辅助建模（自然语言 → 实体/表单/应用）           | Gartner：2026 年超 80% 企业将部署 AI 应用；Power Apps AI authoring、Mendix Assist                                            | 无                                                                     | **探索（v2.0 路线图）**：原则"AI 增强治理而非绕过治理"——AI 产物必须走同一 RC-001 发布/影响分析/门禁管线；另立 PRD，不在本迭代承诺                                                                                                             |
@@ -2142,9 +2153,9 @@ flowchart LR
 
 可交互 HTML 原型（自包含、离线可打开）：
 
-> **`doc/design/lowcode/ui/bone-metadata-ui-prototype.html`** — **v0.40 · 双界面 + 报销 L0**：  
-> - 场景序：巡检 → **报销** → 补货 → 访客；`#scene=expense` = §2.5.9 = case L0。  
-> - 打款弹层：拟议 `ExpenseClaimApplicationService.confirmPayout`（禁订单 Payment）。  
+> **`doc/design/lowcode/ui/bone-metadata-ui-prototype.html`** — **v0.46 · 双界面 + 报销 L1（明细/类别/附件）**：  
+> - 场景序：巡检 → **报销** → 补货 → 访客；`#scene=expense` = §2.5.9 = case **L1**（v0.46：明细+类别+附件）。  
+> - 打款弹层：**已实现 v0.45** `ExpenseClaimConfirmPayoutHandler`（原拟议 `ExpenseClaimApplicationService.confirmPayout`，0036 改名）。  
 > - 索引：[`doc/design/lowcode/ui/README.md`](./ui/README.md) · [`walkthrough`](./ui/walkthrough-2026-10-09.md)。  
 >
 > 历史截图（对照）：`preview-1-canvas.png` … `preview-14-notify.png`；补货场景截图若有则见 `preview-scene-replenishment.png`。
@@ -2407,6 +2418,10 @@ flowchart LR
 | `META_RUNTIME_RECORD_NOT_FOUND` | 404 | 记录不存在或跨租户不可见 | ①查 `tenant_id` 是否匹配（JWT 中的租户 vs 记录的 tenant_id）；②查 `deleted` 是否=1（软删后不可见） | 若软删需恢复：直接改 `deleted=0`（DBA 介入）；若是租户错误：纠正调用方 JWT | GET `/{entityCode}/records/{id}` 返回 200 |
 | `META_RUNTIME_INVALID_QUERY` | 400 | fields/sort/q 含未建模列或格式错 | ①查 `meta_field` 的 `code` 是否匹配查询参数；②查 `q` 格式是否为 `code:value` | 修正查询参数为已声明字段；参考 `GET /entities/{code}/fields` 查可用字段 | 重放原请求返回 200 |
 | `META_RUNTIME_VALIDATION_FAILED` | 400 | 必填缺失/类型不匹配/长度超限 | ①查 `meta_field` 的 `required`/`type`/`length`；②查提交 payload 是否含系统列（id/tenant_id/deleted/version） | 按 meta_field 约束修正 payload；移除系统列（服务端已过滤但显式移除更安全） | POST/PUT 重放返回 200 |
+| `META_RUNTIME_VALIDATION_FAILED` | 422 | **字段级规则校验失败（v0.45 新增）**：`validation_rules`（min/max）越界或 `enum_values` 越界 | ①查 `meta_field` 的 `validation_rules` JSON / `enum_values`；②核对提交值是否满足 min/max/枚举白名单 | 按字段规则修正取值；ENUM 字段用 `GET /entities/{code}/fields` 查合法枚举 | POST/PUT 重放返回 200 |
+| `META_RUNTIME_ENTITY_FORBIDDEN` | 403 | 实体级权限拒绝：调用方无 `runtime:{entityCode}:{read|write}` 或通配 `runtime:*` | ①查调用方 JWT 的 authority 是否含 `runtime:{entityCode}:read/write` 或 `runtime:*`；②查实体 code 是否拼错（拼错=落通配外的无权限集） | 由 IAM 分配实体级权限（RC-004 增补）；紧急处置可临时授 `runtime:*`（需登记） | GET/POST 重放返回 200 |
+| `META_RUNTIME_FIELD_PROTECTED` | 422 | 状态字段直写保护（RC-008）：payload 含 `state_field` 或受保护系统列 | ①确认是否绕过状态机直写 status；②受保护列清单见 `meta_entity.state_field` | 状态推进走 `POST …/actions/{code}`（声明式状态机），不得直写 | 动作重放返回 200 |
+| `META_RUNTIME_ACTION_INVALID_PARAMS` | 422 | 动作入参校验失败（必填缺失/类型不匹配） | ①查动作定义 `ActionParamSpec` 的必填/类型声明；②对照文档核对入参 | 按动作定义修正入参；参考 `GET /entities/{code}/actions` 的 allowedActions 声明 | 动作重放返回 200 |
 | `META_RUNTIME_DUPLICATE` | 409 | 唯一约束冲突 | ①查 `meta_field.unique=true` 的字段值是否已存在；②查是否有软删记录占用唯一值 | 改唯一字段值或恢复软删记录后重用原值 | POST 重放返回 200 |
 | `META_RUNTIME_INVALID_IDENTIFIER` | 400 | entityCode/表名/列名不符合 `[a-zA-Z][a-zA-Z0-9_]*` | ①查 entityCode 拼写；②查物理表名是否含特殊字符 | 修正标识符为合法格式 | GET 请求返回 200 |
 | `META_PRECONDITION_FAILED` | 412 | If-Match 版本与当前记录不一致（并发冲突） | ①查记录当前 `version` 值；②查其他用户是否已修改同一条记录 | **前端自动恢复**：GET 最新记录 → 合并字段差异 → 重新提交（带新 If-Match）；**无法自动合并时**：提示用户"他人已修改 X 字段，请刷新后重试" | PUT 重放返回 200；或用户手动合并后 PUT 200 |
@@ -2544,7 +2559,7 @@ flowchart LR
 | **RC-009 记录级变更审计**（接 `DefaultAuditService`） | W0–W2 | ✅ | G18；append-only；含软删/恢复/管理员修复 |
 | 幂等三缺陷修（scope 去 `user` / TTL 配置化） | W0 | ✅ | G16；Runtime §4.6.1 |
 | **DELETE 补 `If-Match`** | W0 | ✅ | G16 关联；软删并发保护 |
-| 软删「不可恢复」明示 + 回收站视图 / 恢复动作 | W1 | ✅ | G17；物理 DELETE 静默降级须UI 警示 |
+| 软删「不可恢复」明示 + 回收站视图 / 恢复动作 | W1 | ✅ | G17；**v0.45：无 `deleted` 列实体删除已拒绝 + 明示，不再静默物理删** |
 
 ### 11.1.1 Must-2 · 可交付闭环（原Must 重排）
 
@@ -2615,17 +2630,17 @@ flowchart LR
 | D0 | **engine 部署形态**：嵌入式 starter（推荐）vs 独立进程订阅事件——阻塞 RC-002 设计 | 本 PRD | 架构师 / 技术负责人 | **迭代启动第一项** |
 | D1 | 建模/发布 UI 与渲染组件归属（**已定案 v0.22**：建模 ∈ `bone-metadata-app`；渲染 ∈ `bone-frontend` 共享层；**覆盖配置编辑入口 = 界面 Tab 右侧「显示微调」**） | 本 PRD | 前端架构 | ✅ 关闭 |
 | D2 | 🔺 **重开（v0.42）** —— 原「localStorage 零 DDL」定案**与三处条款自相矛盾**，须重拍。<br>**矛盾证据**：① §4.5 VM-002「覆盖配置随实体发布一并管理」；② §4.5 UIF-003「覆盖配置支持草稿/发布状态与变更审计」；③ §9.3「5 人 × 3 任务完成率」——**localStorage 三者都给不了**（换设备/换人即失、不随发布、无审计）。业界亦无一家把页面配置放浏览器本地（SF Page Layout / NocoBase 字段显示 / Airtable 视图均为服务端持久化）。<br>**方案 A（推荐）**：`meta_entity` 增 `ui_overlay JSON` **一列**（L3；这是 §3.3 说的「JSON 承载」，**不是新表**——PRD 把「避免新表」误等同「避免 DDL」）→ 天然随实体发布、随快照下发、可审计、可团队共享。<br>**方案 B（兜底）**：维持 localStorage，但产品改称「**本设备视图偏好**」、UI 明示、**并删除 VM-002/UIF-003 那两条矛盾条款**（不做假承诺）。<br>⚠️ 无论选哪个，**A4「不新增 DDL」假设需同步修正**（§12.1）。 | 本 PRD | 架构师 + 产品 | **W0 前必须定**（阻塞界面 Tab 覆盖项落地） |
-| **D10** | **ENUM 字段的建模入口归属**：`FIELD_TYPES` 新增 `ENUM` 后，「枚举值」是 `FieldWizardModal` 的一个独立步骤，还是 `STRING/TEXT` + 字段级 `enumValues` 属性？—— 前者是新类型（一等公民，对标 Airtable 单选字段），后者是属性（复用现有 `meta_field.enum_values JSON` 列，零 DDL）。**实测现状：列已存在（`bone-init.sql:1255`）但词表无该类型**，且模板层无对应列 ⇒ 建议**属性路线**（改动面小、`meta_field` 不用改），但需确认 `MetaFieldDTO` 与运行时 `Select` 渲染的映射约定 | 本 PRD | 前端架构 + 后端 owner | **W0a3 前必须定**（阻塞 T3） |
+| **D10** | **ENUM 字段的建模入口归属**：`FIELD_TYPES` 新增 `ENUM` 后，「枚举值」是 `FieldWizardModal` 的一个独立步骤，还是 `STRING/TEXT` + 字段级 `enumValues` 属性？—— 前者是新类型（一等公民，对标 Airtable 单选字段），后者是属性（复用现有 `meta_field.enum_values JSON` 列，零 DDL）。**v0.45 更新：运行时侧已按属性路线接线**（`RuntimeFieldColumn.enumValues` + 写路径 ENUM 越界校验 422 `META_RUNTIME_VALIDATION_FAILED`），**建模入口（向导步骤 vs 属性表单）仍待定**。实测现状：列已存在（`bone-init.sql:1255`）但词表无该类型，且模板层无对应列 ⇒ 建议**属性路线**（改动面小、`meta_field` 不用改），但需确认 `MetaFieldDTO` 与运行时 `Select` 渲染的映射约定 | 本 PRD | 前端架构 + 后端 owner | **W0a3 前必须定**（阻塞 T3） |
 | **D11** | **门禁 G32（菜单↔路由可达）的解析规则**：`path` 采用 `path#hash` 形态（如 `/metadata#/apps`），判定「可达」的规则是——① hash 段须有显式路由；② 或存在**显式声明的通配/重定向**（如 `/fields → /entities`）。否则 `App.tsx:36-38` 的兼容重定向会被误判为死链 | 本 PRD | 架构师 | 技术方案评审前 |
 | **D12** | **`/runtime`（全局跨实体入口）的存废**：保留则需声明「非主路径」文案并承接跨实体批量运营；下线则跨实体查看只能逐实体进工作区。当前实测：无参进入会**默认选中列表第一个实体**（`RuntimeDataManagement.tsx:91-93`），属「静默替用户决策」，建议改为**显式选择空态** | 本 PRD | 产品 + 架构师 | W0b前 |
 | D3 | ~~`If-Match` 宽限期长度与强制时间点~~ → **v0.42 直接关闭：MVP 即强制，不设宽限期**。理由：业界「契约渐进式发布」的宽限期是为**保护存量调用方**，而`/api/v1/runtime/**` 上**没有任何存量调用方**——既有手写页走模式 A、不走 runtime，MetaList 是本迭代新建组件。**新建 API 没有宽限期的理由**。`ifmatch_missing_count` 埋点保留作观测，**不作决策依据**；强制时 `412` 由RC-004 直接返回 | 本 PRD | 技术负责人 | ✅ v0.42 关闭 |
 | D4 | 目标发布时间与灰度租户范围 | [TBD: 需求提出方] | 产品 | 排期会 |
 | D5 | ✅ **关闭（v0.42 · 假决策项）**。原文纠结「runtime 错误/分页真源：实现为 `ApiResponse`+`PageResult`，OpenAPI 仍写 `RuntimeErrorEnvelope`/`list`」——但**同一份文档 §1.1.2 已给出答案**（Controller 返回 `ApiResponse`/`PageResult`，前端 `errorMessage` 读 `data.errorCode`）。这是文档漂移造成的假待决策项，不应占用评审带宽。<br>**定案**：**契约文档改齐代码**（符合 HC-003 统一响应 + AGENTS.md §1.4），以 `metadata-runtime-v1.yaml` 为唯一动作点，同步 `RuntimeErrorEnvelope`→`ApiResponse`、`list`→`records`、补 `hasNext`/`hasPrevious`、并纳入 RC-008/RC-004 新增错误码。与 `ProblemDetail` 的深度对齐**另立项** | 本 PRD | 架构师 / 技术负责人 | ✅ v0.42 关闭 |
-| D6 | **细粒度权限推进节奏**：本迭代仅实体/操作级（UIF-006）；字段级/行级数据权限的立项时机，以及 `bone-iam` 资源权限粒度是否满足（不满足则 UIF-006 降级 v1.1）——对标 §3.4 #5 | 本 PRD | 架构师 / 安全负责人 | 技术方案评审前 |
+| D6 | **细粒度权限推进节奏**：本迭代仅实体/操作级（UIF-006）；字段级/行级数据权限的立项时机，以及 `bone-iam` 资源权限粒度是否满足（不满足则 UIF-006 降级 v1.1）——对标 §3.4 #5。**v0.48**：行级 ACL **owner 维度已实现**（Runtime §4.7.1：WHERE 注入 + 写路径同判 404 + 管理员/system 豁免）。**v0.49**：行策略 **approver 维度已实现**（`row_policies` 多规则 OR + 0038 迁移 + approver_id 字段声明，报销「本人 + 审批人」闭环）；`:role` 角色组策略 / 列级 FLS 仍 v1.1，`bone-iam` 粒度核验随 v1.1 实施前完成。**v0.50**：**旁路封堵完成**——子表端点（listChildren/replaceChildren）前置主行行级 ACL（防子表枚举旁路）+ `lookup-options` 候选行级过滤（防 REFERENCE 候选泄露他人私有单据，Runtime §4.7.1）；`:role` 角色组策略 / 列级 FLS 仍 v1.1，`bone-iam` 粒度核验随 v1.1 实施前完成 | 本 PRD | 架构师 / 安全负责人 | 技术方案评审前 |
 | D7 | **前端埋点上报通道**：复用 Shell 既有日志/上报 vs 新增轻量埋点接口——决定 §9.2 前端事件（CTA/Ctrl+K/UIF 挂载）的落地方式；须满足数据最小化（只发事件与耗时） | 本 PRD | 前端架构 / 数据负责人 | 技术方案评审前 |
 | D8 | **前端数据层选型**：`@tanstack/react-query` vs `swr` vs 既有 `useState`+`useEffect` 手动管理——实查 `RuntimeDataManagement.tsx` 为 `useState`+`useEffect` 手动管理，无缓存/无竞态丢弃/无乐观更新/无 SWR。React Query 能提供缓存失效、自动重新获取、乐观更新、请求竞态（latest-wins 对齐 §5.4 规则 13）、`ErrorBoundary` 集成（对齐规则 26）。需评估包体积（React Query ~13KB gzip）与学习成本是否值得 | 本 PRD | 前端架构 | 技术方案评审前 |
 | D9 | **数据保留策略**：运行时记录软删后保留多久？是否需要 TTL 自动清理？是否需要 PII 标识字段（GDPR 合规前置）？——关联 §3.4 #17 数据生命周期管理后置决策，但 `retention_policy` 字段是否本迭代预留需明确 | 本 PRD | 架构师 / 数据负责人 | 技术方案评审前 |
-| **D13** | 🔺 **「不可恢复」的产品表述**（v0.42 新增）：软删在 runtime 是**单向**的（无 undelete），且列探测失败会**静默降级为物理 DELETE**（G17）。本迭代定案为「UI 明示 + 回收站视图」，但**须产品拍板对外表述**——是宣称「支持回收站与恢复」，还是如实说「删除即归档、不可恢复」？后者对实施/配置人员的心智负担更大，但更诚实 | 本 PRD | 产品 + 架构师 | **Must-1 落地前** |
+| **D13** | 🔺 **「不可恢复」的产品表述**（v0.42 新增）：软删在 runtime 是**单向**的（无 undelete）。**v0.45 更新：原「列探测失败会静默降级为物理 DELETE」前提已消除**——无 `deleted` 列实体的删除已改为**拒绝 + 明示不可恢复**（`JdbcRuntimeRecordException`，需先启用软删能力）。**剩余待拍板**：对外表述是宣称「支持回收站与恢复」，还是如实说「删除即归档、不可恢复」？后者对实施/配置人员的心智负担更大，但更诚实 | 本 PRD | 产品 + 架构师 | **Must-1 落地前** |
 | **D14** | 🔺 **`state_field` 物理落点**（v0.42 新增）：RC-008 需在 catalog 存「哪个字段是状态字段 + 转移矩阵」。方案①新增 `meta_entity.state_field JSON` 列（**L3 DDL**）；方案②复用既有扩展位/`actions`声明（同`actions` 前置能力），**零 DDL**。若走①，须并入 §0.6.7 迁移脚本编号（**0029**，0026/0027/0028 已占用） | 本 PRD | 架构师 | **W0 前必须定**（阻塞 RC-008） |
 
 ---
@@ -2677,7 +2692,7 @@ flowchart LR
 | [2. 元数据管理模块详细设计方案.md](../modules/2.%20元数据管理模块详细设计方案.md) | runtime As-Is/Target/Vision 口径、§0.1/§2.4/§5.3.1/§13.2 |
 | [元数据工作区前端融合方案.md](./ui/元数据工作区前端融合方案.md) | 工程落地：`file:line`、W0–W2、门禁（对照 §0.6 / §0.7） |
 | [bone-metadata-ui-prototype.html](./ui/bone-metadata-ui-prototype.html) | 评审原型（v0.40）；**仅演示用** |
-| [费用报销系统-元数据建模方案.md](./cases/费用报销系统-元数据建模方案.md) | 报销 L0（=§2.5.9）+ L1 探针 |
+| [费用报销系统-元数据建模方案.md](./cases/费用报销系统-元数据建模方案.md) | 报销 **L1**（=§2.5.9，v0.46 已实现：明细/类别/附件） |
 | [Runtime 数据面设计](./BONE-低代码Runtime数据面设计.md) | 读 API + Describe/Invoke + 逃逸 SPI |
 | [openapi/metadata-runtime-v1.yaml](../../architecture/openapi/metadata-runtime-v1.yaml) | Runtime 契约真源 |
 | [frontend-ui-spec.md](../../architecture/frontend/frontend-ui-spec.md) | UI 组件、令牌与主题规范 |

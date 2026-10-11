@@ -25,7 +25,7 @@
 | 编号 | 文档 | 仓库模块（As-Is） | Docs-as-Code | 默认端口（开发） | PRD |
 |------|------|-------------------|--------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md)（**v2.0**） | `bone-system` `/api/v1/console/*` | [`_generated/console`](../../_generated/console/) | **8083** | §4.3 |
-| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**核心场景及用例**](./2a.%20元数据管理模块核心场景及用例设计方案.md) · [**建模工作台**](./2b.%20建模工作台功能与用例设计方案.md) · [**对照**](./元数据能力-实现映射与竞品对照.md) | sdk + server + engine | [`_generated/metadata`](../../_generated/metadata/) + 详设 `META_COMPLIANCE_*` | **9001** | §4.4 |
+| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**核心场景及用例**](./2a.%20元数据管理模块核心场景及用例设计方案.md) · [**建模工作台**](./2b.%20建模工作台功能与用例设计方案.md) · [**对照**](./元数据能力-实现映射与竞品对照.md) · [**Mode B 专题包**](../lowcode/README.md) | sdk + server + engine | [`_generated/metadata`](../../_generated/metadata/) + 详设 `META_COMPLIANCE_*` | **9001** | §4.4 · [低代码闭环 PRD](../BONE-低代码最小闭环PRD.md) |
 | 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) · [**核心场景及用例**](./3a.%20主数据管理模块核心场景及用例设计方案.md) | `bone-masterdata` | [`_generated/masterdata`](../../_generated/masterdata/) + 详设 `MDM_COMPLIANCE_*` | **8084** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-integration` | [`_generated/integration`](../../_generated/integration/) + 详设 `INT_COMPLIANCE_*` | **8085** | §4.7 |
 | 5 | [扩展](./5.%20扩展管理模块详细设计方案.md)（**v2.5**） · [**核心场景及用例**](./5a.%20扩展管理模块核心场景及用例设计方案.md) | extension-engine + studio | [`_generated/extension`](../../_generated/extension/) + 详设附录 A/C | Studio **8088** | §4.6 |
@@ -35,7 +35,23 @@
 | 9 | [SmartMeta](./9.%20SmartMeta%20引擎模块技术说明.md) | `bone-metadata-engine` | — | 随宿主 | 引擎能力 |
 | 10 | [应用与模块管理](./10.%20应用与模块管理详细设计方案.md) | `bone-platform` 平台注册中心 | — | N/A | §4 |
 
-**跨模块**： [BONE X Studio 详细设计](../BONE-X-Studio-详细设计方案.md)
+**跨模块 / 横切**（与编号详设并列，**不替代**各模块详设）：
+
+| 文档 | 说明 |
+|------|------|
+| [BONE-X-Studio-详细设计方案.md](./BONE-X-Studio-详细设计方案.md) | Studio 终局愿景（与 [8.Studio Generator](./8.Studio%20Generator%20详细设计方案.md) **并存不合并**） |
+| [国际化设计方案.md](./国际化设计方案.md) | 控制台/微应用 i18n 横切 |
+| [bone-blueprint-元数据字段扩展设计.md](./bone-blueprint-元数据字段扩展设计.md) | blueprint 元数据字段扩展 |
+
+**Mode B 专题包**（非本目录）：[`../lowcode/`](../lowcode/README.md)
+
+### 目录分层（导航用 · 文件不搬）
+
+| 分层 | 含什么 | 移动策略 |
+|------|--------|----------|
+| **详设** | `1.`～`10.`、`2a/2b/3a/…`、能力对照 | 正常维护 |
+| **横切方案** | BONE-X / 国际化 / blueprint 字段扩展 | 已迁入本目录 |
+| **reports（封箱）** | `review-report-*.md` | **原地不动**（nightly prompt 写死输出路径） |
 
 ## 工程债与实现状态
 

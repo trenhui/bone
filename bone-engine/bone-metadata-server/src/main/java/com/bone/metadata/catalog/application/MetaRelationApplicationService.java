@@ -1,5 +1,6 @@
 package com.bone.metadata.catalog.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCommand;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent
 public class MetaRelationApplicationService {
 
   private final MetaEntityRelationRepository relationRepository;

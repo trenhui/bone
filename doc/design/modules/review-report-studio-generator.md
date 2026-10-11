@@ -1,6 +1,6 @@
 # Studio Generator（studio-generator）设计方案复核报告
 
-> 执行时间：2026-09-27 ｜ 轮换序号 #7 ｜ 对应设计稿：`doc/design/modules/8.Studio Generator 详细设计方案.md`、`doc/design/BONE-X-Studio-详细设计方案.md`  
+> 执行时间：2026-09-27 ｜ 轮换序号 #7 ｜ 对应设计稿：`doc/design/modules/8.Studio Generator 详细设计方案.md`、`doc/design/modules/BONE-X-Studio-详细设计方案.md`  
 > 锚定版本：`doc/design/_global-contracts.yaml` generated_at=2026-09-26T23:40  
 > 代码快照：分支 `codex/nightly-bone-system-20260927`（基于 `8eafc978b`，工作树干净）  
 > 对标基线：锚定 `hc_semantics` + `doc/architecture/多租户数据隔离方案设计.md`（§3.6 / §5 R4、通则 T1）+ AIP-151（LRO）+ AIP-133/134

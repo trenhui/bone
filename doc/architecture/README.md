@@ -34,6 +34,18 @@
 |------|------|
 | `doc/prd/` | 产品需求 |
 | `doc/design/modules/` | 模块详设（API 细节以 OpenAPI + 本目录规范为准） |
+| `doc/design/lowcode/` | Mode B 专题包 |
+| [`reports/`](./reports/) | 人工收敛报告（非 CI 基线） |
+
+## CI 运行工件（封箱 · 勿改路径）
+
+下列文件被 `scripts/check-*.py` / `check.sh` **写死路径**，只改内容、**禁止**挪到子目录（含勿建 `standards/` 再下沉规范正文——`Bone-API-规范.md` 等亦被脚本与 `AGENTS.md` 引用）：
+
+| 类型 | 示例 |
+|------|------|
+| baseline | `*-baseline.json`（15 个，含 error-code-landing / paging-param-ssot） |
+| 门禁状态 | `gate-state.json`、`freeze-ledger.yaml` |
+| 裁决权正文 | `HC-006-存量绕过裁决.md`、各 `Bone-*-规范.md`、`数据库开发规范.md` 等 |
 
 ## 审查清单
 

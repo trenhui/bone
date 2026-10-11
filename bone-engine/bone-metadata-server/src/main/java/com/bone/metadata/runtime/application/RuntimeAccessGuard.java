@@ -2,6 +2,7 @@ package com.bone.metadata.runtime.application;
 
 import com.bone.metadata.engine.runtime.MetadataErrorCodes;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
+import com.bone.metadata.runtime.domain.RuntimeActionDef;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
@@ -41,6 +42,11 @@ public class RuntimeAccessGuard {
   /** 平台管理员（数据修复通道，Runtime §4.5 例外：允许直写受保护状态字段，但强制 reason + 审计）。 */
   public static final String PLATFORM_ADMIN = "platform.admin";
 
+  /** 当前主体是否为平台管理员（行级 ACL 豁免判据，Runtime §4.7.1）。 */
+  public boolean isPlatformAdmin() {
+    return currentAuthorities().contains(PLATFORM_ADMIN);
+  }
+
   /** 读：实体级读 或 通配读 或 平台管理员。 */
   public void requireRead(String entityCode) {
     Set<String> authorities = currentAuthorities();
@@ -64,11 +70,15 @@ public class RuntimeAccessGuard {
   }
 
   /**
-   * 动作：实体级写 + （动作码在库时）动作级权限。
+   * 动作：实体级写 + （动作码在库时）动作级权限；<strong>逃逸动作必须命中动作级细码</strong>。
    *
    * <p>动作级码为 {@code null} 时只校验实体级写——未登记细码的动作不该因为「没配码」而不可用； 逃逸动作（打款 / 入库）上线前须在 {@code
    * meta_entity_action_def.permission_code} 登记细码（§4.6 门禁）。
+   *
+   * @deprecated 控制器不再持有 def 前无法实现逃逸语义（P0-1 修复）；控制器统一走 {@link
+   *     #requireAction(RuntimeActionDef)}，本重载仅保留给无 def 场景的测试。
    */
+  @Deprecated
   public void requireAction(String entityCode, String actionCode, String declaredPermissionCode) {
     Set<String> authorities = currentAuthorities();
     if (authorities.contains(PLATFORM_ADMIN)) {
@@ -86,6 +96,54 @@ public class RuntimeAccessGuard {
         && !declaredPermissionCode.isBlank()
         && (authorities.contains(declaredPermissionCode)
             || authorities.contains("runtime:" + entityCode + ":" + actionCode))) {
+      return;
+    }
+    throw new RuntimeRecordException(
+        MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
+        "无动作权限: runtime:" + entityCode + ":" + actionCode);
+  }
+
+  /**
+   * 动作授权（def 感知，P0-1 修复）：<strong>逃逸动作（有副作用，如确认打款）必须命中「声明码或动作级细码」之一</strong>； 实体级写 / 通配写只覆盖非逃逸动作。
+   *
+   * <p><b>为什么实体级写不能覆盖逃逸动作</b>：{@code runtime:expense_claim:write} 管的是「这笔报销单的数据」， 而 {@code
+   * runtime:expense_claim:confirmPayout} 管的是「允许把钱从公司账户放出去」——后者是资金授权面， 前者不隐含后者。 0034 迁移特意不给 demo
+   * 租户管理员发 {@code confirmPayout} 细码，就是为了让「按动作收回授权」 有真实的不动点；若实体级写可以短路掉这层判定， 0034 的整张角色-权限表退化为摆设，§4.6
+   * 门禁空转。
+   *
+   * <p>非逃逸动作（状态流转如提交 / 审批）保持「实体级写 OR 通配 OR 细码」——它们不产生资金/外部副作用， 与 CRUD 共用授权面是 {@code
+   * meta_entity_action_def.permission_code} 的本意（种子 0032 即按粗码登记）。
+   */
+  public void requireAction(RuntimeActionDef def) {
+    Set<String> authorities = currentAuthorities();
+    if (authorities.contains(PLATFORM_ADMIN)) {
+      return;
+    }
+    String entityCode = def.getEntityCode();
+    String actionCode = def.getActionCode();
+    String entityWrite = "runtime:" + entityCode + ":write";
+    boolean actionFineCode =
+        authorities.contains("runtime:" + entityCode + ":" + actionCode)
+            || (def.getPermissionCode() != null
+                && !def.getPermissionCode().isBlank()
+                && authorities.contains(def.getPermissionCode()));
+    // 逃逸动作：细码以外一律拒绝（实体级写 / 通配写不含「放款/入库」授权，§4.6 门禁）
+    if (def.isEscape()) {
+      if (actionFineCode) {
+        return;
+      }
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
+          "逃逸动作需动作级授权: runtime:"
+              + entityCode
+              + ":"
+              + actionCode
+              + "（实体级 write / 通配 write 不覆盖有副作用的动作，见 Runtime 数据面设计 §4.6）");
+    }
+    // 非逃逸动作：实体级写 OR 通配写 OR 动作级细码
+    if (authorities.contains(entityWrite)
+        || authorities.contains(WILDCARD_WRITE)
+        || actionFineCode) {
       return;
     }
     throw new RuntimeRecordException(

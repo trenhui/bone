@@ -116,8 +116,8 @@
 
 | # | 维度 | 验证方法 | 对标 |
 |---|------|----------|------|
-| F1 | 微前端契约 | token 注入、locale 订阅、lifecycle 是否单一真源、独立运行 fallback、路由守卫 / 权限码 | qiankun 实践、`bone-前端架构.md`、`国际化设计方案.md` |
-| F2 | i18n 与 locale 管道 | `python3 scripts/check-i18n-sync.py`；dayjs locale / utc 插件是否同步；locale 是否被硬编码覆盖 | `国际化设计方案.md` |
+| F1 | 微前端契约 | token 注入、locale 订阅、lifecycle 是否单一真源、独立运行 fallback、路由守卫 / 权限码 | qiankun 实践、`bone-前端架构.md`、`doc/design/modules/国际化设计方案.md` |
+| F2 | i18n 与 locale 管道 | `python3 scripts/check-i18n-sync.py`；dayjs locale / utc 插件是否同步；locale 是否被硬编码覆盖 | `doc/design/modules/国际化设计方案.md` |
 | F3 | 组件与状态 | 列表/表单/弹窗组件用法；空态 / 加载态 / 错误态 / 无权限态是否覆盖 | 组件库既有约定 |
 | F4 | 前后端契约一致 | API 路径、DTO 字段、**ID 精度（Long→string，禁 `Number()`）**、错误码是否与锚定 `exposed_apis` / `shared_dtos` 一致 | 锚定文件 |
 | F5 | 功能与 UI 完整性 | 对照功能场景稿（`2a/3a/5a/6a/7a`）与 `doc/design/bone-pages-spec.html` 逐页核对；后端已就绪但前端无页面的能力缺口 | 本仓库设计稿 |

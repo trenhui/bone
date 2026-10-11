@@ -11,7 +11,7 @@ package com.bone.metadata.engine.runtime;
 public record RuntimeFieldColumn(
     /** 字段编码（逻辑名；机制 A 时同时是物理列名） */
     String code,
-    /** 声明类型（STRING/INTEGER/LONG/DECIMAL/BOOLEAN/DATETIME/...），用于运行期写入校验 */
+    /** 声明类型（STRING/INTEGER/LONG/DECIMAL/BOOLEAN/DATETIME/ENUM/...），用于运行期写入校验 */
     String type,
     /** 是否必填（写前校验） */
     boolean required,
@@ -20,12 +20,27 @@ public record RuntimeFieldColumn(
     /** 是否主键 */
     boolean primaryKey,
     /** 预留列物理列名（机制 B 指向 ext_*）；为 null 时回退到 code（机制 A） */
-    String physicalColumn) {
+    String physicalColumn,
+    /** 枚举取值（JSON 数组，ENUM 类型字段的合法值；null 时不校验枚举越界） */
+    String enumValues,
+    /** 校验规则（JSON，如 {"min":0.01}；null 时仅做 required/type/unique 轻校验） */
+    String validationRules) {
 
   /** 兼容构造：机制 A（无预留列），物理列名回退到 code。 */
   public RuntimeFieldColumn(
       String code, String type, boolean required, boolean unique, boolean primaryKey) {
-    this(code, type, required, unique, primaryKey, null);
+    this(code, type, required, unique, primaryKey, null, null, null);
+  }
+
+  /** 兼容构造：机制 B（预留列物理列名）。 */
+  public RuntimeFieldColumn(
+      String code,
+      String type,
+      boolean required,
+      boolean unique,
+      boolean primaryKey,
+      String physicalColumn) {
+    this(code, type, required, unique, primaryKey, physicalColumn, null, null);
   }
 
   /** 解析运行期真实物理列名：机制 B 用 physicalColumn，否则回退 code。 */

@@ -85,7 +85,10 @@ public class JdbcRuntimeActionDefRepository implements RuntimeActionDefRepositor
                             (String) m.get("type"),
                             Boolean.TRUE.equals(m.get("required")),
                             castValues(m.get("values")),
-                            (String) m.get("label")))
+                            (String) m.get("label"),
+                            toDouble(m.get("min")),
+                            toDouble(m.get("max")),
+                            (String) m.get("pattern")))
                 .toList();
       } catch (Exception ignored) {
         params = List.of();
@@ -113,5 +116,19 @@ public class JdbcRuntimeActionDefRepository implements RuntimeActionDefRepositor
       return list.stream().map(String::valueOf).toList();
     }
     return List.of();
+  }
+
+  private static Double toDouble(Object v) {
+    if (v instanceof Number n) {
+      return n.doubleValue();
+    }
+    if (v instanceof String s && !s.isBlank()) {
+      try {
+        return Double.parseDouble(s);
+      } catch (NumberFormatException ignored) {
+        return null;
+      }
+    }
+    return null;
   }
 }

@@ -62,6 +62,9 @@ public class MetaEntity extends AbstractEntity<Long> {
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
 
+  @Column(name = "row_policies")
+  private String rowPolicies;
+
   @Column(name = "version", nullable = false)
   private Integer version;
 

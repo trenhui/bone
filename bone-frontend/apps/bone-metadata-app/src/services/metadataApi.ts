@@ -26,6 +26,9 @@ import type {
   RuntimeRecord,
   RuntimeActionDef,
   RuntimeActionResult,
+  RuntimeReferenceOption,
+  RuntimeChildRow,
+  RuntimeChildrenReplaceResult,
 } from '../types';
 
 export { setQiankunToken };
@@ -295,4 +298,51 @@ export const runtimeRecordApi = {
       Object.keys(headers).length ? { headers } : undefined,
     );
   },
+
+  /**
+   * REFERENCE 下拉选项（G10，RuntimeRelationController.lookupOptions）。
+   * 契约：GET /api/v1/runtime/entities/{code}/lookup-options?field={field}&q=&limit=50
+   * 返回目标实体满足条件的记录，每条含 value(id) + label(labelField 翻译)。
+   * 服务端按 reference 声明过滤（filterField 生效），前端只负责渲染。
+   */
+  lookupOptions: (
+    entityCode: string,
+    field: string,
+    q?: string,
+    limit?: number,
+  ): Promise<ApiResponse<RuntimeReferenceOption[]>> =>
+    api.get<never, ApiResponse<RuntimeReferenceOption[]>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/lookup-options`,
+      { params: { field, q: q ?? undefined, limit: limit ?? 50 } },
+    ),
+
+  /**
+   * 子表明细列表（G10，RuntimeRelationController.listChildren）。
+   * 契约：GET /api/v1/runtime/entities/{code}/records/{id}/children/{childEntityCode}
+   * 返回按 orderColumn 排序的明细行，REFERENCE 字段已补 code__label（enrichReferenceLabels）。
+   */
+  listChildren: (
+    entityCode: string,
+    id: string,
+    childEntityCode: string,
+  ): Promise<ApiResponse<RuntimeChildRow[]>> =>
+    api.get<never, ApiResponse<RuntimeChildRow[]>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/children/${encodeURIComponent(childEntityCode)}`,
+    ),
+
+  /**
+   * 子表批量替换（G10，RuntimeRelationController.replaceChildren）。
+   * 契约：POST /api/v1/runtime/entities/{code}/records/{id}/children/{childEntityCode}
+   * 整组替换语义：先删后插（同一事务），rows 为空即清空。行内键 = 子实体字段 code。
+   */
+  replaceChildren: (
+    entityCode: string,
+    id: string,
+    childEntityCode: string,
+    rows: RuntimeChildRow[],
+  ): Promise<ApiResponse<RuntimeChildrenReplaceResult>> =>
+    api.post<never, ApiResponse<RuntimeChildrenReplaceResult>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/children/${encodeURIComponent(childEntityCode)}`,
+      rows,
+    ),
 };

@@ -1,5 +1,6 @@
 package com.bone.metadata.catalog.application;
 
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.InstantiateFromTemplateCommand;
 import com.bone.metadata.catalog.common.CatalogErrorCodes;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@NoDomainEvent // E-5.4 豁免：技术中间态落库，见类 JavaDoc
 public class MetaTemplateApplicationService {
 
   private final TemplateReadPort templateReadPort;

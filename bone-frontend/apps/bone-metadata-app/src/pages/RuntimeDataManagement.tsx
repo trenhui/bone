@@ -35,6 +35,8 @@ import type {
   RuntimeRecord,
   RuntimeActionDef,
   RuntimeActionView,
+  RuntimeReferenceOption,
+  RuntimeChildRow,
 } from '../types';
 import {
   DELIVERY_MODE,
@@ -146,6 +148,25 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     record: RuntimeRecord | null;
   }>({ open: false, def: null, record: null });
 
+  /** 子表（CHILD_TABLE）编辑弹窗状态：当前主记录 + 声明字段 */
+  const [childModal, setChildModal] = useState<{
+    open: boolean;
+    record: RuntimeRecord | null;
+    field: MetaField | null;
+  }>({ open: false, record: null, field: null });
+  /** 明细编辑中的行（键驱动渲染，不依赖子实体 schema） */
+  const [childRows, setChildRows] = useState<RuntimeChildRow[]>([]);
+  /** 明细行编辑小 Form 状态（-1 = 新增行） */
+  const [childRowEditor, setChildRowEditor] = useState<{
+    open: boolean;
+    idx: number;
+    row: RuntimeChildRow | null;
+  }>({ open: false, idx: -1, row: null });
+  /** REFERENCE 下拉选项缓存（field → options，首次打开/搜索时刷新） */
+  const [referenceCache, setReferenceCache] = useState<
+    Record<string, RuntimeReferenceOption[]>
+  >({});
+
   /** 当前选中实体：嵌入模式来自详情接口，独立模式来自列表选择 */
   const selectedEntity = useMemo(
     () => detailEntity ?? entities.find((e) => e.code === entityCode) ?? null,
@@ -162,9 +183,14 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * status 由状态机（动作 SPI）驱动，禁止在新建/编辑表单里直接编辑，
    * 否则可绕过状态机边（DRAFT→SUBMITTED→…）直达任一状态，是 G14 漏洞的 UI 回归点。
    * 表格展示列仍使用含 status 的 writableFields（见 projectedFields），保证用户可见当前状态。
+   * CHILD_TABLE 声明字段不进主表单（由「明细」弹窗整组替换，G10）——
+   * 否则 Form.Item 会把 items 当普通字段提交，产生无物理列的写路径错误。
    */
   const formFields = useMemo(
-    () => writableFields.filter((f) => f.code !== 'status'),
+    () =>
+      writableFields.filter(
+        (f) => f.code !== 'status' && (f.type || '').toUpperCase() !== 'CHILD_TABLE',
+      ),
     [writableFields],
   );
 
@@ -299,6 +325,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     setConflict(false);
     setConflictDiff([]);
     form.resetFields();
+    // G10：预取全部 REFERENCE 字段选项（下拉回显/首选项）
+    writableFields.forEach((f) => {
+      if ((f.type || '').toUpperCase() === 'REFERENCE') loadReferenceOptions(f);
+    });
     setModalOpen(true);
   };
 
@@ -335,6 +365,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         }
       });
       form.setFieldsValue(values);
+      // G10：预取全部 REFERENCE 字段选项（含当前值回显映射 label）
+      formFields.forEach((f) => {
+        if ((f.type || '').toUpperCase() === 'REFERENCE') loadReferenceOptions(f);
+      });
       setModalOpen(true);
     } catch {
       message.error('加载记录失败');
@@ -402,6 +436,16 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     formFields.forEach((f) => {
       const v = values[f.code];
       const type = (f.type || 'STRING').toUpperCase();
+      if (type === 'ATTACHMENT') {
+        // 附件清单：Form 值（数组对象）→ JSON 数组串（物理列 TEXT）
+        if (v != null && Array.isArray(v)) {
+          const cleaned = v
+            .filter((a) => a && (String(a.name ?? '').trim() || String(a.url ?? '').trim()))
+            .map((a) => ({ name: String(a.name ?? ''), url: String(a.url ?? ''), size: a.size ?? null }));
+          body[f.code] = cleaned.length ? JSON.stringify(cleaned) : undefined;
+        }
+        return;
+      }
       if (type === 'DATE' || type === 'DATETIME') {
         if (v == null || v === '') return; // 空值不写，交由后端必填校验
         const fmt = type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss';
@@ -424,6 +468,79 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       }
     });
     return body;
+  };
+
+  /**
+   * REFERENCE 下拉选项：按需加载（field 首次渲染 / 搜索时）。
+   * 返回后写入缓存；编辑回显时选项含全部候选，选中 id 能直接映射到 label。
+   */
+  const loadReferenceOptions = useCallback(async (field: MetaField, q?: string) => {
+    if (!entityCode || (field.type || '').toUpperCase() !== 'REFERENCE') return;
+    try {
+      const res = await runtimeRecordApi.lookupOptions(entityCode, field.code, q);
+      if (res.code === 200) {
+        setReferenceCache((prev) => ({ ...prev, [field.code]: res.data ?? [] }));
+      }
+    } catch {
+      /* 下拉加载失败不阻塞主流程，Select 保持空态可手动重试 */
+    }
+  }, [entityCode]);
+
+  /** 打开明细（CHILD_TABLE）编辑弹窗：拉现有明细行（键驱动渲染，不依赖子实体 schema 端点） */
+  const openChildren = async (record: RuntimeRecord, field: MetaField) => {
+    const rid = recordId(record);
+    if (!rid) return;
+    const spec = childSpecOf(field);
+    if (!spec) {
+      message.error('明细声明缺少 childEntityCode');
+      return;
+    }
+    setChildModal({ open: true, record, field });
+    try {
+      const res = await runtimeRecordApi.listChildren(entityCode!, rid, spec.childEntityCode);
+      if (res.code === 200) {
+        // REFERENCE 行内翻译值（code__label）仅供回显，保存前需剔除（后端 filterChildColumns 也会过滤）
+        setChildRows((res.data ?? []).map((r) => stripLabelKeys(r)));
+      } else {
+        message.error(errorMessage(res));
+        setChildRows([]);
+      }
+    } catch {
+      message.error('加载明细失败');
+      setChildRows([]);
+    }
+  };
+
+  /** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
+  const handleChildrenSave = async () => {
+    const { record, field } = childModal;
+    if (!record || !field || !entityCode) return;
+    const rid = recordId(record);
+    if (!rid) return;
+    const spec = childSpecOf(field);
+    if (!spec) return;
+    try {
+      const res = await runtimeRecordApi.replaceChildren(
+        entityCode,
+        rid,
+        spec.childEntityCode,
+        childRows,
+      );
+      if (res.code === 200) {
+        message.success(`明细已保存（${res.data?.count ?? childRows.length} 行）`);
+        setChildModal({ open: false, record: null, field: null });
+        load();
+      } else {
+        message.error(errorMessage(res));
+      }
+    } catch {
+      message.error('明细保存失败');
+    }
+  };
+
+  /** 打开明细行编辑小 Form（idx=-1 为新增） */
+  const openChildRowEditor = (idx: number, row: RuntimeChildRow | null) => {
+    setChildRowEditor({ open: true, idx, row });
   };
 
   /** 打开动作执行弹窗（按动作声明的 params 动态渲染表单） */
@@ -560,6 +677,28 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
       render: (_: unknown, row) => {
         if (isEnumField(f)) return renderEnumCell(row[f.code], f);
+        const ftype = (f.type || '').toUpperCase();
+        if (ftype === 'REFERENCE') {
+          // G10：主行查询已 enrich code__label（JdbcRuntimeRecordService），label 兜底 id
+          const label = row[`${f.code}__label`];
+          const v = row[f.code];
+          if (v == null) return '—';
+          return label != null && label !== '' ? `${String(label)}` : String(v);
+        }
+        if (ftype === 'ATTACHMENT') {
+          // 附件列：JSON 数组串 → 数量徽标
+          const v = row[f.code];
+          if (v == null || v === '') return '—';
+          try {
+            const arr = typeof v === 'string' ? JSON.parse(v) : v;
+            if (Array.isArray(arr) && arr.length) {
+              return <Tag color="cyan">{arr.length} 个附件</Tag>;
+            }
+          } catch {
+            /* 非 JSON（历史脏数据）按原样展示 */
+          }
+          return formatCell(v);
+        }
         return formatCell(row[f.code]);
       },
     }));
@@ -606,6 +745,20 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                 {def.label}
               </AuthButton>
             ))}
+            {/* G10：CHILD_TABLE 声明字段 → 「明细」入口（整组替换编辑器） */}
+            {writableFields
+              .filter((f) => (f.type || '').toUpperCase() === 'CHILD_TABLE')
+              .map((f) => (
+                <AuthButton
+                  key={`child-${f.code}`}
+                  code={BonePermissionCodes.METADATA_RUNTIME_WRITE}
+                  type="link"
+                  size="small"
+                  onClick={() => openChildren(row, f)}
+                >
+                  {f.displayName || f.code}
+                </AuthButton>
+              ))}
             <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
               编辑
             </AuthButton>
@@ -688,6 +841,40 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
             format={type === 'DATE' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss'}
             style={{ width: '100%' }}
           />
+        </Form.Item>
+      );
+    }
+    if (type === 'REFERENCE') {
+      // G10：远程下拉（lookupOptions，服务端按 reference 声明过滤）。
+      // 选项由 openCreate/openEdit 预取（referenceCache）；value=目标记录 id，列表列显示 __label。
+      const options = referenceCache[field.code] ?? [];
+      return (
+        <Form.Item
+          name={field.code}
+          label={field.displayName}
+          rules={field.required ? [{ required: true, message: `请选择${field.displayName}` }] : []}
+        >
+          <Select
+            allowClear
+            showSearch
+            placeholder="请选择"
+            notFoundContent={options.length ? '无匹配项' : '加载中…'}
+            options={options.map((o) => ({ value: o.id, label: String(o.label ?? o.id) }))}
+            onSearch={(q) => {
+              if (!q) return;
+              const f = fields.find((x) => x.code === field.code);
+              if (f) loadReferenceOptions(f, q);
+            }}
+          />
+        </Form.Item>
+      );
+    }
+    if (type === 'ATTACHMENT') {
+      // G10：附件清单编辑器（name/url/size）。物理列 TEXT 存 JSON 数组串，无真实文件存储通道
+      // （上传通道属 v1.1 路线）——前端维护元数据清单，正文留白由后端 TEXT 列承接。
+      return (
+        <Form.Item name={field.code} label={field.displayName}>
+          <AttachmentEditor />
         </Form.Item>
       );
     }
@@ -1046,6 +1233,91 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           )}
         </Form>
       </Modal>
+      {/* G10：子表明细（CHILD_TABLE）整组替换编辑器 —— 键驱动通用行编辑，
+          必填/类型校验由后端 RuntimeWriteValidator 兜底（422 明细错误信息）。 */}
+      <Modal
+        title={`明细：${childModal.field?.displayName ?? ''}`}
+        open={childModal.open}
+        onCancel={() => setChildModal({ open: false, record: null, field: null })}
+        onOk={handleChildrenSave}
+        width={760}
+        destroyOnHidden
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="保存时整组替换明细行（同事务先删后插）"
+          description={
+            childModal.record
+              ? `主记录：${formatCell(childModal.record.id)}`
+              : '未选中主记录'
+          }
+        />
+        <Space style={{ marginBottom: 12 }} wrap>
+          <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => setChildRows((r) => [...r,])}>
+            添加明细行
+          </Button>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {childRows.length} 行
+          </Text>
+        </Space>
+        <Table<RuntimeChildRow>
+          rowKey={(row, i) => String(row.id ?? `new-${i}`)}
+          size="small"
+          pagination={false}
+          scroll={{ x: true }}
+          dataSource={childRows}
+          columns={
+            [
+              ...childColumnsOf(childRows).map((c) => ({
+                title: c,
+                dataIndex: c,
+                key: c,
+                ellipsis: true,
+                render: (v: unknown) => formatCell(v),
+              })),
+              {
+                title: '操作',
+                key: 'ops',
+                width: 140,
+                render: (_: unknown, row: RuntimeChildRow, idx: number) => (
+                  <Space>
+                    <Button size="small" type="link" onClick={() => openChildRowEditor(idx, row)}>
+                      编辑
+                    </Button>
+                    <Popconfirm
+                      title="删除该明细行？"
+                      onConfirm={() => setChildRows((r) => r.filter((_, i) => i !== idx))}
+                    >
+                      <Button size="small" type="link" danger>
+                        删除
+                      </Button>
+                    </Popconfirm>
+                  </Space>
+                ),
+              },
+            ] as ColumnsType<RuntimeChildRow>
+          }
+        />
+      </Modal>
+
+      {/* 明细行编辑小 Form：键驱动（union 行键），必填/类型由后端兜底 */}
+      <ChildRowEditorModal
+        open={childRowEditor.open}
+        fields={childColumnsOf(childRows)}
+        initial={childRowEditor.row}
+        onCancel={() => setChildRowEditor({ open: false, idx: -1, row: null })}
+        onSave={(next) => {
+          const idx = childRowEditor.idx;
+          if (idx >= 0) {
+            setChildRows((r) => r.map((row, i) => (i === idx ? next : row)));
+          } else {
+            setChildRows((r) => [...r, next]);
+          }
+          setChildRowEditor({ open: false, idx: -1, row: null });
+        }}
+      />
     </div>
   );
 };
@@ -1097,5 +1369,209 @@ function normalizePage<T>(raw: { records?: T[]; total?: string | number; page?: 
     size: raw.size ?? 20,
   };
 }
+
+// ----- G10 关系工具（REFERENCE / CHILD_TABLE / ATTACHMENT） -----
+
+/** 从 CHILD_TABLE 字段的 validation_rules 解析子表声明。 */
+export interface ChildTableSpec {
+  childEntityCode: string;
+  foreignKey: string;
+  orderColumn?: string;
+  cascadeDelete?: boolean;
+  minRows?: number;
+  maxRows?: number;
+}
+
+export function childSpecOf(field: MetaField): ChildTableSpec | null {
+  if ((field.type || '').toUpperCase() !== 'CHILD_TABLE') return null;
+  const raw = field.validationRules;
+  if (!raw) return null;
+  try {
+    const rules = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const ct = (rules as { childTable?: Partial<ChildTableSpec> })?.childTable;
+    if (!ct?.childEntityCode || !ct?.foreignKey) return null;
+    return {
+      childEntityCode: ct.childEntityCode,
+      foreignKey: ct.foreignKey,
+      orderColumn: ct.orderColumn,
+      cascadeDelete: ct.cascadeDelete ?? true,
+      minRows: ct.minRows ?? 0,
+      maxRows: ct.maxRows,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 剔除 enrich 注入的 code__label 键（仅供回显，提交会被后端过滤但前端先清，防脏载荷） */
+export function stripLabelKeys(row: Record<string, unknown>): RuntimeChildRow {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (!k.endsWith('__label')) out[k] = v;
+  }
+  return out;
+}
+
+/** 明细行可编辑列 = union 行键，排除外键/主键/审计列/标签键 */
+const CHILD_SKIP_KEYS = new Set([
+  'id',
+  'tenant_id',
+  'claim_id',
+  'created_by',
+  'updated_by',
+  'created_at',
+  'updated_at',
+  'deleted',
+  'version',
+]);
+
+export function childColumnsOf(rows: RuntimeChildRow[]): string[] {
+  const seen = new Set<string>();
+  for (const r of rows) {
+    for (const k of Object.keys(r)) {
+      if (k.endsWith('__label')) continue;
+      if (CHILD_SKIP_KEYS.has(k)) continue;
+      seen.add(k);
+    }
+  }
+  return [...seen];
+}
+
+/** 明细行字段控件启发式：数值列（amount/price/数量/*_count/*_id）→ InputNumber，其余 Input */
+export function isNumericColumn(code: string): boolean {
+  const c = code.toLowerCase();
+  return (
+    c === 'amount' ||
+    c === 'price' ||
+    c === 'sort_order' ||
+    c.endsWith('_id') ||
+    c.endsWith('_count') ||
+    c.endsWith('_qty') ||
+    c.endsWith('_num')
+  );
+}
+
+/** G10 附件清单编辑器（受控组件：Form.Item value/onChange）。 */
+interface AttachmentItem {
+  name?: string;
+  url?: string;
+  size?: number | null;
+}
+
+const AttachmentEditor: React.FC<{
+  value?: AttachmentItem[];
+  onChange?: (v: AttachmentItem[]) => void;
+}> = ({ value = [], onChange }) => {
+  const items = Array.isArray(value) ? value : [];
+  const patch = (idx: number, key: keyof AttachmentItem, v: unknown) => {
+    const next = items.map((it, i) => (i === idx ? { ...it, [key]: v } : it));
+    onChange?.(next);
+  };
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size={4}>
+      {items.map((it, idx) => (
+        <Space key={idx} style={{ width: '100%' }} size={4} wrap>
+          <Input
+            placeholder="附件名称"
+            style={{ width: 160 }}
+            value={it.name}
+            onChange={(e) => patch(idx, 'name', e.target.value)}
+          />
+          <Input
+            placeholder="URL（http/https）"
+            style={{ width: 240 }}
+            value={it.url}
+            onChange={(e) => patch(idx, 'url', e.target.value)}
+          />
+          <InputNumber
+            placeholder="大小(KB)"
+            style={{ width: 100 }}
+            min={0}
+            value={it.size ?? null}
+            onChange={(v) => patch(idx, 'size', v)}
+          />
+          <Button
+            size="small"
+            type="link"
+            danger
+            onClick={() => onChange?.(items.filter((_, i) => i !== idx))}
+          >
+            删除
+          </Button>
+        </Space>
+      ))}
+      <Button
+        size="small"
+        type="dashed"
+        icon={<PlusOutlined />}
+        onClick={() => onChange?.([...items, { name: '', url: '', size: null }])}
+      >
+        添加附件
+      </Button>
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        当前为附件元数据清单（名称/URL/大小）；真实文件上传通道属 v1.1 路线，后端 TEXT 列存 JSON 数组串。
+      </Text>
+    </Space>
+  );
+};
+
+/** 明细行编辑小 Form（键驱动：union 行键渲染控件，必填/类型由后端校验兜底）。 */
+const ChildRowEditorModal: React.FC<{
+  open: boolean;
+  fields: string[];
+  initial: RuntimeChildRow | null;
+  onCancel: () => void;
+  onSave: (row: RuntimeChildRow) => void;
+}> = ({ open, fields, initial, onCancel, onSave }) => {
+  const [form] = Form.useForm();
+  useEffect(() => {
+    if (open) {
+      form.resetFields();
+      if (initial) form.setFieldsValue(initial);
+    }
+  }, [open, initial, form]);
+  return (
+    <Modal
+      title={initial ? '编辑明细行' : '新增明细行'}
+      open={open}
+      onCancel={onCancel}
+      width={520}
+      destroyOnHidden
+      onOk={() => {
+        form
+          .validateFields()
+          .then((values) => {
+            const row: RuntimeChildRow = {};
+            for (const k of Object.keys(values)) {
+              if (values[k] === undefined) continue;
+              row[k] = values[k] as never;
+            }
+            // 新增行由后端补主键/外键；若 initial 存在则保留其 id（替换更新）
+            if (initial && initial.id != null) row.id = initial.id;
+            onSave(row);
+          })
+          .catch(() => {
+            /* 校验未过，停留弹窗 */
+          });
+      }}
+    >
+      {fields.length === 0 ? (
+        <Alert type="warning" showIcon message="明细行尚无字段，请先添加一行后再编辑" />
+      ) : (
+        <Form form={form} layout="vertical">
+          {fields.map((c) => (
+            <Form.Item key={c} name={c} label={c}>
+              {isNumericColumn(c) ? (
+                <InputNumber style={{ width: '100%' }} />
+              ) : (
+                <Input />
+              )}
+            </Form.Item>
+          ))}
+        </Form>
+      )}
+    </Modal>
+  );
+};
 
 export default RuntimeDataManagement;
