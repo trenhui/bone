@@ -1,0 +1,50 @@
+# L3 待审批总账（派生视图 · 单一真源仍是各模块 pending_approvals）
+# 生成：2026-10-12 由 doc/design/_review-status.yaml 各模块 pending_approvals 聚合
+# 消费：架构师审批排期；本文件只读，新增/关闭 L3 项须回到 _review-status.yaml 对应模块字段改
+# 规则：本文件与 _review-status.yaml 必须同步；若不一致以 _review-status.yaml 为准
+
+generated_at: "2026-10-12T00:00:00+08:00"
+source_of_truth: "doc/design/_review-status.yaml (各模块 pending_approvals)"
+total: 16
+
+modules:
+  - name: "bone-iam"
+    items:
+      - "L3 乐观锁 version 列 DDL（B-3 跨实例配额串行）"
+      - "L3 新增 JDBC 出站端口做 SELECT ... FOR UPDATE（受 sdk-persistence-bypass-baseline.json 约束）"
+      - "L3 删 Capability.java / Layout.tsx"
+      - "L3 iam-app dayjs 依赖收敛"
+      - "L3 ddl-baseline iam_permission → by-design"
+
+  - name: "bone-masterdata"
+    items:
+      # 2026-10-12 由 note 提升进 pending_approvals（此前散落未进列表）
+      - "L3 HC-008 主数据审计/租户列缺口 DDL：mdm_qcheck_task 补 updated_at/deleted；mdm_qcheck_detail/report 补同列；mdm_record_category/version 补 tenant_id（bone-init.sql:1719-1776）"
+
+  - name: "bone-extension-studio"
+    items:
+      - "L3 exts_plugin_version 表归属裁决（平台种子层 0 ↔ 租户实例层二选一；若判平台种子层 → 按通则 T1 拆表或整表去租户作用域）"
+      - "L3 ExtIamTenantDirectory（IAM 租户目录本地副本）去留裁定（CORE-01）"
+
+  - name: "studio-generator"
+    items:
+      - "L3 gen_type_mapping 下线（DDL 移除）或补实现的裁决"
+      - "L3 doc8 领域事件定位裁定（路线图标 [Target] vs 应落地）"
+      - "L3 doc8 #L68 模板承诺 7 类的口径订正或补齐"
+
+  - name: "bone-file"
+    items:
+      - "L3 bone-init.sql 新增 file_object 表（含 tenant_id + 审计列 + version）"
+      - "L3 删除旧包路径 application/port/out/FileStoragePort（迁移至 domain/gateway）"
+      - "L3 bone-file/pom.xml 未使用的 bone-metadata-sdk 去留"
+      - "L3 回收站 / 软删保留期裁定"
+
+  - name: "bone-system"
+    items:
+      # 2026-10-12 由 note 提升进 pending_approvals（此前散落未进列表）
+      - "L3 HC-008 系统管理审计列缺口 DDL：sys_alert_event/sys_log 补 updated_at/deleted"
+
+# 说明：
+# - bone-metadata-server（HC-008 误报已澄清）、bone-integration（HC-008 by-design）、bone-notification
+#   当前无 L3 pending_approvals，故未列入。
+# - HC-008 门禁状态以 doc/architecture/Bone-DDD-最终实践方案.md §G-1.7 为单一真源。

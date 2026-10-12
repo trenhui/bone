@@ -3,7 +3,8 @@
   "files": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenIssuerGatewayAdapter.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/gateway/RefreshTokenSessionGatewayAdapter.java",
-    "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java"
+    "bone-platform/bone-masterdata/src/main/java/com/bone/masterdata/infrastructure/gateway/MetaEntityCatalogPortAdapter.java",
+    "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcUiOverlayAdapter.java"
   ],
   "technicalExemptions": [
     "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/gateway/JdbcPhysicalStructureGatewayAdapter.java",

@@ -64,6 +64,8 @@ modules:
     implemented_at: null
     report_path: "doc/design/modules/review-report-bone-masterdata.md"
     has_active_comet_change: false
+    pending_approvals:
+      - "L3 HC-008 主数据审计/租户列缺口 DDL：mdm_qcheck_task 补 updated_at/deleted；mdm_qcheck_detail/report 补同列；mdm_record_category/version 补 tenant_id（bone-init.sql:1719-1776）"
     stages_done: ["A", "A'", "B", "B'"]
     note: "A+A' 设计复核完成（2026-09-27）：HC-003 确认 implemented（16 控制器全 ApiResponse 信封，0 裸 ResponseEntity）；HC-008 确认 violated（真实 L3 DDL 缺口：mdm_qcheck_task 缺 updated_at/deleted，mdm_qcheck_detail/report 缺同列，mdm_record_category/version 缺 tenant_id，见 bone-init.sql:1719-1776）。**B 阶段 F1 已落地**：设计稿 doc3/3a 三处 `businessEntityId`→`metaEntityId` 对齐代码 `MasterDataEntityController.convert(@RequestParam Long metaEntityId)` 与锚定文件（零 API 风险，见报告 §8.1）。**B 阶段 F4 已落地（第 2 夜，2026-09-27）**：新增 `MasterDataRecordVersionResp` + `MasterDataRecordWebConverter.toVersionResp(List)`，`MasterDataRecordTopController:104` versions() 由域模型改为 DTO（HC-003 仍 implemented）；前端 `api.ts:305` 声明 `any[]` 且无页面消费 ⇒ 零契约影响；`spotless:apply` + 模块测试 118 全绿（ArchitectureTest 26）；B' 复核 PASS（见报告 §8.3）。F2 跨模块 RocketMQ 事件/F3 Idempotency+LRO/F5 事件 Outbox 属路线图（归「事件总线/Outbox」专项，与 bone-integration 协同）。HC-008 的 L3 DDL 登记待架构师审批。状态 `implementing`（stages_done A/A'/B/B'）。"
 
@@ -88,6 +90,8 @@ modules:
     implemented_at: null
     report_path: "doc/design/modules/review-report-bone-system.md"
     has_active_comet_change: false
+    pending_approvals:
+      - "L3 HC-008 系统管理审计列缺口 DDL：sys_alert_event/sys_log 补 updated_at/deleted"
     stages_done: ["A", "A'", "B", "B'"]
     note: "A+A' 设计复核完成（2026-09-27）：HC-003 锚定 violated 经复核为误报（ResponseEntity 仅 byte[] 下载与 501 占位，已刷新锚定）；HC-008 确认 violated（sys_alert_event/sys_log 缺 updated_at/deleted，L3 待审批）；SystemErrorCodes(37) 常量类合规；数据字典 v3 对齐良好（亮点）。前端阻断级：F4.2 告警创建必 400（metric/level vs metricName/alertLevel）、F4.1 配置编辑不生效（key/value/type vs configValue/configType）；另 F1 token 注入/F2 dayjs/i18n/F3 错误边界/F4.5 ID 精度/F4.6 错误码映射 等建议项。设计可放行；B 阶段默认落地前端 S-1/S-2（阻断）+ S-4~S-8 建议、后端 S-9~S-11 建议，S-3/S-12/S-13 待 L3 裁决。**B 第 1 夜（2026-09-27）已落 S-1/S-2**（前端字段对齐，4 文件，tsc 通过）。**B 第 2 夜（同日）已落 P0 + S-8 + S-11**：P0=SystemErrors.of 三参致 errorCode=null（与 bone-integration 同款，四参修复 + SystemErrorsMappingTest 9 条；本地/全局 handler 实测无缺陷故未动）；S-8=apiClient 挂 errorCode + shared-utils 新增 resolveErrorMessage + 语言包补齐 19 个 SYS_* 译文（37 码全覆盖）+ SystemConfig 5 处样板；S-11=AlertRecord javadoc 命名口径说明（重命名属 L3 待审批）。**S-9 复核纠正**：HealthIndicator「占位标注」实测已满足（javadoc + STUB/limitation detail），真正未做的是 MDC(tenantId/traceId)。验证：mvn -o -pl bone-platform/bone-system test 175 全绿（ArchitectureTest 26）+ tsc --noEmit 双包 0 + check-i18n-sync 通过。状态 implementing（stages_done A/A'/B/B'）；剩余：S-8 其余页面铺开、S-9 MDC、S-4/S-5/S-6、S-7（id:string，跨 shared-services 高风险）、S-10（聚合 version）、C 联调/D 验收。"
 
@@ -285,3 +289,4 @@ warnings:
   - "轮换实际夜数：12 个产品轮换项 × 2 阶段（A 设计 / B 实现）≈ 24 个有效夜晚（bone-metadata-engine 另计）。"
   - "【2026-09-29】轮换 #7 studio-generator 的 B 段被并发会话占用而跳过：git status 显示 bone-engine/studio-generator 有 15 改 + 20 新文件（新增 7 个模板生成器与 7 个 .ftl，BUILT_IN_TEMPLATE_TYPES 5→12 类，即本模块 A 段 G-4 的在途实现），最后改动 2026-09-29 03:41。故本晚取 #8 bone-file。在途改动落库后须回补 studio-generator B 段（G-1 租户闭环）。"
   - "【2026-09-29】工作树长期不洁净（48 项在途）→ 夜间任务按「保护他人 WIP」口径运行：只新增文档、显式路径 git add、绝不 -A、绝不把在途改动卷入提交。若某模块正被并发会话改动，按上一条口径顺延到下一未被占用模块。"
+  - "【2026-10-12】L3 待审批总账已收口为 doc/design/l3-backlog.yaml（聚合各模块 pending_approvals + 本次补登的 masterdata/system HC-008）。各模块 pending_approvals 仍为单一真源，l3-backlog 仅派生视图；新增 L3 项须两处同步。"

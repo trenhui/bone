@@ -658,6 +658,78 @@
       ],
       "reason": "workflow-sample",
       "note": "采购AI 技术方案 §5.3 的示意接口（interface DataSourceAdapter {...}），定义集成适配器标准方法（pullContract/pullPayments/...），非项目实现真源类名；属设计文档示例，改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "ClaimApplicationService",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿（ClaimSphere 智能理赔平台设计方案.md）的目标态构件名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "ClaimApplicationRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "ClaimCaseRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "EvidenceRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "InvestigationRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "DecisionRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "IndemnityRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "SettlementRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "PolicyRepository",
+      "docs": [
+        "doc/design/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
     }
   ]
 }
