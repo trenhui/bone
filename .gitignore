@@ -269,3 +269,22 @@ target/sdk/
 
 javac.*.args
 *.dumpstream
+
+# =========================
+# 本地 AI 工具工作区（非源码，勿入库）
+# =========================
+.comate-e2e/
+.s.comate/
+
+# =========================
+# UI 端到端测试证据截图与脚本（本地运行产物，非源码）
+# =========================
+evidence_ui_*.png
+ui_e2e_loginpage.cjs
+
+# =========================
+# 设计 / 演示草稿素材（非源码，本地保留，勿入库）
+# =========================
+doc/design/procuraAI/
+doc/design/synapClaim/
+doc/design/synapEquity/
