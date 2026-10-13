@@ -1,5 +1,6 @@
 package com.bone.metadata.runtime.application;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,6 +35,16 @@ public interface RuntimeActionExecutionRepository {
    */
   Map<String, Object> findByIdempotency(
       long tenantId, String entityCode, String recordId, String actionCode, String idempotencyKey);
+
+  /**
+   * 查某记录的<b>全部</b>动作执行历史（按时间正序，供记录详情的时间线 UI）。
+   *
+   * <p>为什么需要：执行日志此前只服务幂等去重（按 idempotencyKey 点查），没有任何按记录回放的入口——
+   * 而「这张单据什么时候被谁提交/审批/打款、每次结果如何」恰是审计时间线的刚需 （等保/SOX 场景）。数据早已落库（P0-2 时序保证半事务也有行），缺的只是读路径。
+   *
+   * @return 行视图（id / action_code / status / result_json / operator_id / created_at）；无记录返回空列表
+   */
+  List<Map<String, Object>> findByRecord(long tenantId, String entityCode, String recordId);
 
   /**
    * 落一条 PENDING 执行记录（副作用执行<strong>之前</strong>调用，P0-2 核心时序）。

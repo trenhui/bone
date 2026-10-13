@@ -49,6 +49,24 @@ public class JdbcRuntimeActionExecutionRepository implements RuntimeActionExecut
   }
 
   @Override
+  public List<Map<String, Object>> findByRecord(long tenantId, String entityCode, String recordId) {
+    if (recordId == null || recordId.isBlank()) {
+      return List.of();
+    }
+    MapSqlParameterSource p =
+        new MapSqlParameterSource()
+            .addValue("tenantId", tenantId)
+            .addValue("entityCode", entityCode)
+            .addValue("recordId", recordId);
+    String sql =
+        "SELECT id, action_code, status, result_json, operator_id, created_at "
+            + "FROM meta_runtime_action_execution "
+            + "WHERE tenant_id = :tenantId AND entity_code = :entityCode AND record_id = :recordId "
+            + "ORDER BY id ASC";
+    return jdbc.queryForList(sql, p);
+  }
+
+  @Override
   public long begin(
       long tenantId,
       String entityCode,

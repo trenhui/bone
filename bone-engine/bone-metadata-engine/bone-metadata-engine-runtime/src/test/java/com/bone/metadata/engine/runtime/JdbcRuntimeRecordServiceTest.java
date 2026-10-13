@@ -1,8 +1,12 @@
 package com.bone.metadata.engine.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +19,7 @@ import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 class JdbcRuntimeRecordServiceTest {
 
   private JdbcRuntimeRecordService service;
+  private NamedParameterJdbcTemplate jdbc;
 
   @BeforeEach
   void setUp() {
@@ -23,7 +28,7 @@ class JdbcRuntimeRecordServiceTest {
     // 返回的 Map key 为大写、与逻辑 code 不匹配）。
     var url = "jdbc:h2:mem:demo_order;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
     var ds = new SimpleDriverDataSource(new Driver(), url);
-    var jdbc = new NamedParameterJdbcTemplate(ds);
+    jdbc = new NamedParameterJdbcTemplate(ds);
     jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS demo_order");
     jdbc.getJdbcTemplate()
         .execute(
@@ -168,5 +173,127 @@ class JdbcRuntimeRecordServiceTest {
     Map<String, Object> updated =
         guard.update("demo_claim", 1L, "2002", Map.of("amount", 128.50), 0, "tester");
     assertEquals(128.50, ((Number) updated.get("amount")).doubleValue());
+  }
+
+  @Test
+  void shouldReturn404WhenPhysicalTableMissing() {
+    // 已知 minor（非阻断）修复验证：实体的物理表缺失（已 DROP）时查询记录，
+    // 必须返回干净 404（RUNTIME_ENTITY_NOT_FOUND），而非底层 SQL 500。
+    // 注：H2 命名内存库在 SimpleDriverDataSource 多连接间不共享，故此处用「从未建表」的实体
+    // 直接验证守卫逻辑（表不存在 → 404），与生产行为一致。
+    var ghostUrl = "jdbc:h2:mem:demo_ghost;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
+    var ghostDs = new SimpleDriverDataSource(new Driver(), ghostUrl);
+    var ghostJdbc = new NamedParameterJdbcTemplate(ghostDs);
+    RuntimeEntityCatalog ghostCatalog =
+        (code, tenantId) ->
+            Optional.of(
+                new PublishedRuntimeEntity(
+                    "demo_ghost",
+                    "demo_ghost",
+                    "id",
+                    tenantId,
+                    List.of(
+                        new RuntimeFieldColumn("id", "LONG", true, false, true),
+                        new RuntimeFieldColumn("order_no", "STRING", true, false, false))));
+    JdbcRuntimeRecordService ghostService = new JdbcRuntimeRecordService(ghostJdbc, ghostCatalog);
+
+    RuntimeRecordException ex =
+        assertThrows(
+            RuntimeRecordException.class, () -> ghostService.page("demo_ghost", 1L, 1, 10));
+    assertEquals(
+        MetadataErrorCodes.RUNTIME_ENTITY_NOT_FOUND, ex.getErrorCode(), "物理表缺失时查询须返回 404 而非 500");
+  }
+
+  @Test
+  void shouldInjectAutoNumberWhenFieldMissing() {
+    // 自动编号（合理建议①）：实体声明 auto_number 后，创建记录缺省该字段时由平台生成单据号
+    // （如 CLM-20261012-0001），替换原先 PAY-<nanoTime> 的无意义占位。
+    var url = "jdbc:h2:mem:demo_an;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
+    var ds = new SimpleDriverDataSource(new Driver(), url);
+    var anJdbc = new NamedParameterJdbcTemplate(ds);
+    anJdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS demo_an");
+    anJdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS meta_runtime_sequence");
+    anJdbc
+        .getJdbcTemplate()
+        .execute(
+            "CREATE TABLE demo_an ("
+                + "`id` BIGINT PRIMARY KEY, `tenant_id` BIGINT NOT NULL, "
+                + "`order_no` VARCHAR(64) NOT NULL, `amount` DOUBLE, `version` INT NOT NULL DEFAULT 0, "
+                + "`deleted` SMALLINT NOT NULL DEFAULT 0)");
+    anJdbc
+        .getJdbcTemplate()
+        .execute(
+            "CREATE TABLE meta_runtime_sequence ("
+                + "`seq_key` VARCHAR(200) NOT NULL, `current_value` BIGINT NOT NULL DEFAULT 0, "
+                + "PRIMARY KEY (`seq_key`))");
+    RuntimeEntityCatalog anCatalog =
+        (code, tenantId) ->
+            Optional.of(
+                new PublishedRuntimeEntity(
+                    "demo_an",
+                    "demo_an",
+                    "id",
+                    tenantId,
+                    List.of(
+                        new RuntimeFieldColumn("id", "LONG", true, false, true),
+                        new RuntimeFieldColumn("order_no", "STRING", true, true, false),
+                        new RuntimeFieldColumn("amount", "DOUBLE", false, false, false)),
+                    null,
+                    null,
+                    "{\"field\":\"order_no\",\"prefix\":\"CLM\",\"reset\":\"daily\"}"));
+    JdbcRuntimeRecordService anService = new JdbcRuntimeRecordService(anJdbc, anCatalog);
+
+    // 两次创建均不传 order_no → 平台注入，且序号单调递增
+    Map<String, Object> r1 = anService.create("demo_an", 1L, Map.of("amount", 10), 9001L);
+    Map<String, Object> r2 = anService.create("demo_an", 1L, Map.of("amount", 20), 9002L);
+    String n1 = String.valueOf(r1.get("order_no"));
+    String n2 = String.valueOf(r2.get("order_no"));
+    String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    assertTrue(n1.matches("CLM-" + today + "-\\d{4}"), "首条单据号须为 CLM-<日期>-<4位序号>，实际: " + n1);
+    assertTrue(n2.matches("CLM-" + today + "-\\d{4}"), "第二条单据号须为 CLM-<日期>-<4位序号>，实际: " + n2);
+    assertNotEquals(n1, n2, "两条单据号必须不同（序号自增）");
+  }
+
+  @Test
+  void shouldPreserveClientProvidedAutoNumberField() {
+    // 负向探针：客户端显式传了该字段，平台不覆盖（避免破坏既有单据号流程）
+    var url = "jdbc:h2:mem:demo_an2;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
+    var ds = new SimpleDriverDataSource(new Driver(), url);
+    var anJdbc = new NamedParameterJdbcTemplate(ds);
+    anJdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS demo_an2");
+    anJdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS meta_runtime_sequence");
+    anJdbc
+        .getJdbcTemplate()
+        .execute(
+            "CREATE TABLE demo_an2 ("
+                + "`id` BIGINT PRIMARY KEY, `tenant_id` BIGINT NOT NULL, "
+                + "`order_no` VARCHAR(64) NOT NULL, `amount` DOUBLE, `version` INT NOT NULL DEFAULT 0, "
+                + "`deleted` SMALLINT NOT NULL DEFAULT 0)");
+    anJdbc
+        .getJdbcTemplate()
+        .execute(
+            "CREATE TABLE meta_runtime_sequence ("
+                + "`seq_key` VARCHAR(200) NOT NULL, `current_value` BIGINT NOT NULL DEFAULT 0, "
+                + "PRIMARY KEY (`seq_key`))");
+    RuntimeEntityCatalog anCatalog =
+        (code, tenantId) ->
+            Optional.of(
+                new PublishedRuntimeEntity(
+                    "demo_an2",
+                    "demo_an2",
+                    "id",
+                    tenantId,
+                    List.of(
+                        new RuntimeFieldColumn("id", "LONG", true, false, true),
+                        new RuntimeFieldColumn("order_no", "STRING", true, true, false),
+                        new RuntimeFieldColumn("amount", "DOUBLE", false, false, false)),
+                    null,
+                    null,
+                    "{\"field\":\"order_no\",\"prefix\":\"CLM\",\"reset\":\"daily\"}"));
+    JdbcRuntimeRecordService anService = new JdbcRuntimeRecordService(anJdbc, anCatalog);
+
+    Map<String, Object> created =
+        anService.create("demo_an2", 1L, Map.of("order_no", "CUSTOM-001", "amount", 5), 9101L);
+    assertEquals("CUSTOM-001", created.get("order_no"), "客户端显式单据号必须被保留");
   }
 }

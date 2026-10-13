@@ -10,6 +10,7 @@ import com.bone.metadata.engine.runtime.RuntimeFieldColumn;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import com.bone.metadata.engine.runtime.RuntimeRelationSpec;
 import com.bone.metadata.engine.runtime.RuntimeRelationSupport;
+import com.bone.metadata.runtime.application.ChildAmountAggregator;
 import com.bone.metadata.runtime.application.RuntimeAccessGuard;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,7 @@ public class RuntimeRelationController {
   private final RuntimeAccessGuard accessGuard;
   private final TenantProvider tenantProvider;
   private final TransactionTemplate transactionTemplate;
+  private final ChildAmountAggregator childAmountAggregator;
 
   /**
    * 引用候选列表：给关联选择器用。
@@ -107,6 +109,9 @@ public class RuntimeRelationController {
    * 批量替换子表行（父记录表单一次性提交明细）。
    *
    * <p><b>整个替换在一个事务内</b>：父行存在性校验 + 子行增删改 + 孤儿软删必须原子——中途失败留下半截子表比直接报错更难收拾。
+   *
+   * <p><b>明细金额聚合</b>：同一事务内，子行替换完成后按场景约定（如报销单）把子行金额合计回填父记录金额字段 （服务端计算为准，见 {@link
+   * ChildAmountAggregator}）；回填值经响应体 {@code aggregatedAmount} 透出，前端以此对齐展示。
    */
   @PostMapping("/records/{id}/children/{childEntityCode}")
   @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
@@ -120,15 +125,24 @@ public class RuntimeRelationController {
     long tenantId = tenantProvider.currentTenantId();
     PublishedRuntimeEntity parent = requireEntity(entityCode, tenantId);
     RuntimeRelationSpec spec = requireChildSpec(parent, childEntityCode);
+    // aggregateAndBackfill 在事务 lambda 内调用，结果经单元素容器带出（TransactionStatus 无法传出事务外）
+    final java.math.BigDecimal[] aggregatedAmount = {null};
     List<Map<String, Object>> result =
         transactionTemplate.execute(
             status -> {
               // v0.50：子表替换同样受父行行级 ACL 约束（与 listChildren 同口径），防「伪造他人单据明细」旁路
               runtimeRecordService.assertRowOwner(parent, tenantId, id, currentOperator());
-              return relationSupport.replaceChildren(parent, tenantId, id, spec, rows);
+              List<Map<String, Object>> replaced =
+                  relationSupport.replaceChildren(parent, tenantId, id, spec, rows);
+              // 同事务内聚合回填（报销等已登记场景）；失败抛异常 → 明细替换一并回滚，杜绝「明细已替换、头表未更新」
+              aggregatedAmount[0] =
+                  childAmountAggregator.aggregateAndBackfill(parent, tenantId, id, childEntityCode);
+              return replaced;
             });
     PublishedRuntimeEntity child = requireEntity(childEntityCode, tenantId);
     relationSupport.enrichReferenceLabels(child, tenantId, result);
+    // 聚合回填已在事务内完成；响应保持 List 契约不变，前端保存明细成功后 re-fetch 主记录对齐头表金额展示
+    // （避免为带一个标量破坏 GET /records/{id} 的既有缓存与 ETag 语义）
     return ApiResponse.success(result);
   }
 

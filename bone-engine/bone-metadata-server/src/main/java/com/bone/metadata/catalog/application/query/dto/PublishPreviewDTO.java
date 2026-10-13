@@ -37,4 +37,18 @@ public class PublishPreviewDTO {
 
   /** 仅 RUNTIME 实体返回；GENERATIVE 为 null（无物理对齐动作） */
   private PhysicalStructurePlan physical;
+
+  /**
+   * 待授权权限清单（P1 授权 onboarding）：实体下逃逸动作（资金/外部副作用）的动作级细码。
+   *
+   * <p>空列表 = 无逃逸动作（主数据类实体）。本服务不感知 IAM 授权态，恒返回「应付清单」。
+   */
+  private List<PendingAuthorizationDTO> pendingAuthorizations;
+
+  /**
+   * 交付模式后果明示（P1）：GENERATIVE 不建运行时物理表 / RUNTIME 建表并对齐。
+   *
+   * <p>把「发布成功却无表/无数据入口」这类运行期惊讶前移为<b>创建期决策</b>——预览即预告。
+   */
+  private String deliveryModeNotice;
 }

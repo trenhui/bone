@@ -75,6 +75,22 @@ class CatalogErrorsTest {
   }
 
   @Test
+  @DisplayName("★ 回归：自动编号配置非法属入参问题（400），且该码必须已在 DEFAULT_HTTP_STATUS 登记")
+  void autoNumberConfigInvalidIsBadRequest() {
+    // 缺陷背景（实测 P0）：AUTO_NUMBER_CONFIG_INVALID 曾被加进 CatalogErrorCodes 却漏登记进
+    // DEFAULT_HTTP_STATUS。本类的 static 自检 checkEveryCodeRegistered() 会因此抛
+    // IllegalStateException ⇒ CatalogErrors 无法初始化 ⇒ catalog 模块**所有**错误路径
+    // （ENTITY_NOT_FOUND / FIELD_NOT_FOUND / *_CONFLICT …）全部退化为
+    // NoClassDefFoundError → 500 COMMON_INTERNAL_ERROR。
+    // 线上实证：GET /api/v1/metadata/entities/{不存在} 返回 500 而非 404。
+    // 本断言锁住「登记存在」+「状态=400」两件事。
+    BizException ex = CatalogErrors.of(CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID, "缺少 field");
+
+    assertThat(ex.getCode()).as("配置非法是入参问题，不是服务端故障").isEqualTo(400);
+    assertThat(ex.getErrorCode()).isEqualTo(CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID);
+  }
+
+  @Test
   @DisplayName("supplier 延迟构造器产出的异常与直接构造等价（供 Optional.orElseThrow 用）")
   void supplierMatchesDirectConstruction() {
     BizException direct = CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, 7L);

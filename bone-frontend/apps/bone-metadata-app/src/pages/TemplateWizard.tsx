@@ -60,6 +60,9 @@ const TemplateWizard: React.FC = () => {
   const chooseTemplate = async (tpl: MetaTemplate | null) => {
     setSelectedTemplate(tpl);
     setTplFields([]);
+    // 交付模式默认继承模板声明（P1/0041）：模板是蓝图，实例化继承而非重新猜；
+    // 用户仍可在下一步显式改选（后端以显式值为优先）。
+    form.setFieldsValue({ deliveryMode: tpl?.deliveryMode ?? META_DELIVERY_RUNTIME });
     if (!tpl) return;
     setFieldsLoading(true);
     try {
@@ -167,6 +170,10 @@ const TemplateWizard: React.FC = () => {
                           <Text strong>{t.name}</Text>
                           <Text code style={{ fontSize: 12 }}>{t.code}</Text>
                           {t.currentVersion && <Tag>{t.currentVersion}</Tag>}
+                          {/* 交付模式前置可见（P1）：选模板时就知道实例化后「发布即得物理表」还是「只出模型」 */}
+                          <Tag color={t.deliveryMode === META_DELIVERY_RUNTIME ? 'purple' : 'default'}>
+                            {t.deliveryMode === META_DELIVERY_RUNTIME ? '运行时交付' : '生成式交付'}
+                          </Tag>
                         </Space>
                         <Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 12 }}>
                           {t.description || t.domain || '—'}
@@ -236,6 +243,9 @@ const TemplateWizard: React.FC = () => {
           <Descriptions size="small" column={2} style={{ marginBottom: 12 }}>
             <Descriptions.Item label="模板">{selectedTemplate?.name}</Descriptions.Item>
             <Descriptions.Item label="默认字段">{tplFields.length} 个（实例化时复制）</Descriptions.Item>
+            <Descriptions.Item label="模板交付模式">
+              {DELIVERY_MODE[selectedTemplate?.deliveryMode ?? 0] ?? '—'}（下方可改选）
+            </Descriptions.Item>
           </Descriptions>
           <Form form={form} layout="vertical" style={{ maxWidth: 420 }}>
             <Form.Item name="code" label="实体编码" rules={[
@@ -256,7 +266,7 @@ const TemplateWizard: React.FC = () => {
             <Form.Item name="displayName" label="显示名" rules={[{ required: true }]}>
               <Input placeholder="如：客户" />
             </Form.Item>
-            <Form.Item name="deliveryMode" label="交付模式" initialValue={META_DELIVERY_RUNTIME} tooltip="模式A=生成源码入Git；模式B=发布即得运行时 CRUD API">
+            <Form.Item name="deliveryMode" label="交付模式" initialValue={META_DELIVERY_RUNTIME} tooltip="模式A=生成源码入Git；模式B=发布即得运行时 CRUD API。默认继承所选模板的声明，可改选">
               <Select
                 options={Object.entries(DELIVERY_MODE).map(([value, label]) => ({ value: Number(value), label }))}
               />

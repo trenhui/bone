@@ -14,6 +14,7 @@ import com.bone.metadata.runtime.application.RuntimeActionDescribeSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,8 @@ public class RuntimeRecordController {
   private final com.bone.metadata.runtime.application.RuntimeStatusGuard statusGuard;
   private final RuntimeAccessGuard accessGuard;
   private final RuntimeActionDescribeSupport describeSupport;
+  private final com.bone.metadata.runtime.application.RuntimeActionExecutionRepository
+      actionExecutionRepository;
 
   @GetMapping
   @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
@@ -95,6 +98,23 @@ public class RuntimeRecordController {
       builder.eTag(CatalogHttpSupport.formatEtag(number.intValue()));
     }
     return builder.body(ApiResponse.success(row));
+  }
+
+  /**
+   * 记录的动作执行时间线（按时间正序）。
+   *
+   * <p>为什么单独一个端点：执行日志（{@code meta_runtime_action_execution}）此前只服务幂等去重的点查，
+   * 没有按记录回放的读路径；而「这张单据被谁何时提交/审批/打款、每次结果如何」是审计刚需 （等保/SOX）。P0-2 的半事务时序保证任何一次执行都留有痕迹（含孤儿），时间线即业务事实的投影。
+   *
+   * <p>读权限与记录详情一致（{@code requireRead}）：能看单据就能看它的变更历史—— 反过来（能看历史却看不了单据） 没有任何业务意义，且会诱导越权探测。
+   */
+  @GetMapping("/{id}/action-executions")
+  @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  public ApiResponse<List<Map<String, Object>>> actionExecutions(
+      @PathVariable String entityCode, @PathVariable String id) {
+    accessGuard.requireRead(entityCode);
+    long tenantId = tenantProvider.currentTenantId();
+    return ApiResponse.success(actionExecutionRepository.findByRecord(tenantId, entityCode, id));
   }
 
   @PostMapping

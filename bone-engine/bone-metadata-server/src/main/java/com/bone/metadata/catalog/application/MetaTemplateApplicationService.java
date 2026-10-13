@@ -76,7 +76,11 @@ public class MetaTemplateApplicationService {
     createCmd.setTableName(cmd.getTableName());
     createCmd.setModuleId(cmd.getModuleId());
     createCmd.setIcon(cmd.getIcon());
-    createCmd.setDeliveryMode(cmd.getDeliveryMode());
+    // 交付模式：调用方显式值优先，缺省继承模板声明（0041）。
+    // 继承而非重猜——模板是蓝图，其实例化漏传 GENERATIVE 会「发布成功但无表」（E2E 实证坑）；
+    // 模板自身未声明时（存量 0）兜底 GENERATIVE，保守不建表。
+    createCmd.setDeliveryMode(
+        cmd.getDeliveryMode() != null ? cmd.getDeliveryMode() : template.getDeliveryMode());
     Long entityId = metaEntityApplicationService.createEntity(createCmd);
 
     MetaEntity entity = metaEntityRepository.findById(entityId);

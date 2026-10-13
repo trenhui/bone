@@ -21,6 +21,8 @@ export interface MetaTemplate {
   currentVersion?: string;
   /** 1=已发布可实例化 */
   status?: number;
+  /** 交付模式（0041）：0=生成式(GENERATIVE) 1=运行时(RUNTIME)；实例化默认继承，可改选 */
+  deliveryMode?: number;
 }
 
 /** 平台模板默认字段 */
@@ -66,6 +68,20 @@ export interface PublishPreview {
     status: string;
     message: string;
   } | null;
+  /**
+   * 待授权权限清单（P1 onboarding）：逃逸动作（资金/外部副作用）的动作级细码。
+   * 元数据服务不感知 IAM 授权态——这是「应付清单」而非「缺失清单」，已授过的码用户自行忽略。
+   */
+  pendingAuthorizations?: PendingAuthorization[];
+  /** 交付模式后果明示：GENERATIVE 不建物理表 / RUNTIME 建表对齐（把运行期惊讶前移为创建期决策） */
+  deliveryModeNotice?: string;
+}
+
+/** 待授权权限项：动作中文名 + 需授予的权限码（复制后去 IAM 授权管理粘贴） */
+export interface PendingAuthorization {
+  code: string;
+  actionCode: string;
+  actionLabel: string;
 }
 
 export interface CopyEntityReq {
@@ -157,6 +173,20 @@ export interface RuntimeActionResult {
   fromStatus?: string | null;
   /** 状态机审计：流转后状态 */
   toStatus?: string | null;
+}
+
+/**
+ * 动作执行日志行（meta_runtime_action_execution，GET .../records/{id}/action-executions）。
+ * P0-2 半事务时序：副作用执行前先落 PENDING 行 ⇒ 任何一次执行（含崩溃/孤儿）都留有痕迹。
+ */
+export interface RuntimeActionExecution {
+  id: string;
+  actionCode: string;
+  /** 1=成功 2=失败 3=执行中(PENDING) 4=孤儿（副作用已发出、状态流转未完成，禁自动重放） */
+  status: number;
+  resultJson: string | null;
+  operatorId: string | null;
+  createdAt: string;
 }
 
 // ===== 运行时关系（G10：REFERENCE / CHILD_TABLE / ATTACHMENT） =====

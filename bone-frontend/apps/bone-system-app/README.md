@@ -128,4 +128,5 @@ VITE_API_BASE_URL=http://your-backend-api:8080
 
 ## License
 
-MIT
+BSL 1.1 —— 个人学习/研究/评估/开发测试免费，企业生产与商业使用需购买商业授权。
+详见仓库根目录 [LICENSE](../../../LICENSE)。

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import {
   Alert, Button, Collapse, Modal, Space, Spin, Table, Tag, Typography, message,
 } from 'antd';
-import { ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined } from '@ant-design/icons';
+import { CopyOutlined, ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { errorMessage, metadataEntityApi } from '../services/metadataApi';
-import type { EntityValidationIssue, MetaField, PublishPreview } from '../types';
+import type { EntityValidationIssue, MetaField, PublishPreview, PendingAuthorization } from '../types';
+import { META_DELIVERY_RUNTIME } from '../types';
 import { parseSchemaDiff } from '../utils/schemaDiff';
 
 const { Text, Paragraph } = Typography;
@@ -14,6 +15,30 @@ const LEVEL_TAG: Record<string, { color: string; label: string }> = {
   ERROR: { color: 'red', label: '错误' },
   WARNING: { color: 'orange', label: '警告' },
   INFO: { color: 'blue', label: '提示' },
+};
+
+/** IAM 权限管理页深链（qiankun 子应用间唯一可靠的跨应用导航 = 整页指派，token 同源随行） */
+const IAM_PERMISSIONS_URL = '/iam#/permissions';
+
+/** 复制权限码：clipboard API 优先，非安全上下文（http 非 localhost）降级 execCommand */
+const copyCode = async (code: string) => {
+  try {
+    await navigator.clipboard.writeText(code);
+    message.success(`已复制：${code}`);
+    return;
+  } catch {
+    /* 走兜底 */
+  }
+  const ta = document.createElement('textarea');
+  ta.value = code;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(ta);
+  if (ok) message.success(`已复制：${code}`);
+  else message.error('复制失败，请手动选择复制');
 };
 
 /**
@@ -71,6 +96,10 @@ const PublishPreviewPanel: React.FC<Props> = ({
   // schema diff（PRD §5.4 规则 32：+ / ✎ / - 三色；MVP 仅 + / -，✎ 受后端发布保护不可达）
   const schemaDiff = parseSchemaDiff(preview?.physical ?? null, preview?.fields.map((f) => f.code) ?? []);
 
+  // P1 onboarding：待授权权限应付清单（后端不感知授权态，恒返回逃逸动作细码全量）
+  const pendingAuths: PendingAuthorization[] = preview?.pendingAuthorizations ?? [];
+  const pendingCount = pendingAuths.length;
+
   const handlePublish = async () => {
     if (!entityId) return;
     const doPublish = async () => {
@@ -112,6 +141,22 @@ const PublishPreviewPanel: React.FC<Props> = ({
     { title: '说明', dataIndex: 'message', ellipsis: true },
   ];
 
+  const pendingAuthColumns: ColumnsType<PendingAuthorization> = [
+    { title: '动作', dataIndex: 'actionLabel', width: 140 },
+    { title: '动作编码', dataIndex: 'actionCode', width: 170, ellipsis: true },
+    { title: '需授予的权限码', dataIndex: 'code', ellipsis: true },
+    {
+      title: '操作',
+      key: 'copy',
+      width: 80,
+      render: (_, r) => (
+        <Button type="link" size="small" icon={<CopyOutlined />} onClick={() => copyCode(r.code)}>
+          复制
+        </Button>
+      ),
+    },
+  ];
+
   const fieldColumns: ColumnsType<MetaField> = [
     { title: '发布动作', dataIndex: 'code', width: 100, render: (code: string) => {
       if (schemaDiff.addedColumns.includes(code)) return <Tag color="green" icon={<PlusOutlined />}>新增 L1</Tag>;
@@ -134,7 +179,24 @@ const PublishPreviewPanel: React.FC<Props> = ({
           showIcon
           style={{ marginBottom: 12 }}
           message="发布成功，闭环已完成"
-          description="下一步：在「界面」Tab 微调展示，或在「数据」Tab 录入首条记录。下方为本次发布的变更摘要，可核对。"
+          description={
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <span>下一步：在「界面」Tab 微调展示，或在「数据」Tab 录入首条记录。下方为本次发布的变更摘要，可核对。</span>
+              {/* P1 onboarding：发布成功≠功能可用——逃逸动作须动作级授权，发布当场告知缺什么，
+                  避免用户到数据页看到置灰按钮再来问「为什么不能打款」 */}
+              {pendingCount > 0 && (
+                <Space size={8} wrap>
+                  <SafetyCertificateOutlined style={{ color: '#faad14' }} />
+                  <span>
+                    另有 {pendingCount} 个逃逸动作（资金/外部副作用）需动作级授权后生效，授权前数据页对应按钮置灰不可用——见下方「待授权权限」。
+                  </span>
+                  <Button size="small" type="link" onClick={() => { window.location.assign(IAM_PERMISSIONS_URL); }}>
+                    去授权
+                  </Button>
+                </Space>
+              )}
+            </Space>
+          }
           action={
             <Space size={8} wrap>
               {onViewInterface && (
@@ -187,6 +249,17 @@ const PublishPreviewPanel: React.FC<Props> = ({
             />
           )}
 
+          {/* P1：交付模式后果明示——把「发布成功却无表/无数据入口」前移为发布前可见信息 */}
+          {preview.deliveryModeNotice && (
+            <Alert
+              type={preview.deliveryMode === META_DELIVERY_RUNTIME ? 'info' : 'warning'}
+              showIcon
+              message="交付模式"
+              description={preview.deliveryModeNotice}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+
           <Collapse
             size="small"
             defaultActiveKey={preview.hasBlockingErrors ? ['issues'] : []}
@@ -205,6 +278,28 @@ const PublishPreviewPanel: React.FC<Props> = ({
                   <Table rowKey="id" columns={fieldColumns} dataSource={preview.fields} pagination={false} size="small" scroll={{ y: 220 }} />
                 ),
               },
+              // P1 onboarding：逃逸动作细码应付清单——发布前可见，授权不断链
+              ...(pendingCount > 0
+                ? [{
+                    key: 'auth',
+                    label: `待授权权限（${pendingCount}）`,
+                    children: (
+                      <>
+                        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                          逃逸动作（资金/外部副作用）采用<b>动作级授权</b>（fail-closed，后端强制校验）：发布后需在 IAM「权限管理」授予以下权限码，数据页对应按钮才会启用。非逃逸的状态流转动作由实体级写权限覆盖，无需逐条授权。
+                        </Paragraph>
+                        <Table rowKey="code" columns={pendingAuthColumns} dataSource={pendingAuths} pagination={false} size="small" />
+                        <Button
+                          type="link"
+                          style={{ marginTop: 8, paddingLeft: 0 }}
+                          onClick={() => { window.location.assign(IAM_PERMISSIONS_URL); }}
+                        >
+                          前往 IAM 权限管理授予 →
+                        </Button>
+                      </>
+                    ),
+                  }]
+                : []),
               ...(preview.physical
                 ? [{
                   key: 'physical',

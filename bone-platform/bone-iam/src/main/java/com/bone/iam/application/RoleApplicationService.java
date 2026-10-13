@@ -87,9 +87,8 @@ public class RoleApplicationService {
     if (role == null) {
       throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, "角色不存在");
     }
-    if (cmd.getDescription() != null) {
-      role.update(cmd.getDescription());
-    }
+    // 名称同样要应用：历史实现只传 description，导致 UI「编辑角色改名」200 但名字不变。
+    role.update(cmd.getName(), cmd.getDescription());
     roleRepository.update(role);
   }
 

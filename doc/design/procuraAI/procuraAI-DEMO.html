@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>procuraAI · 采购智能审查</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:#2563EB; --blue-d:#1E3A5F; --blue-l:#DBEAFE; --blue-bg:#EFF6FF;
+  --red:#DC2626; --red-l:#FEE2E2; --orange:#D97706; --orange-l:#FEF3C7;
+  --green:#059669; --green-l:#D1FAE5; --gray:#64748B; --gray-l:#F1F5F9;
+  --line:#E2E8F0; --text:#0F172A; --text-2:#475569;
+  --shadow:0 1px 3px rgba(15,23,42,.08),0 4px 16px rgba(15,23,42,.06);
+}
+body { font-family:"PingFang SC","Helvetica Neue",Arial,sans-serif; background:#F8FAFC; color:var(--text); font-size:14px; }
+button { font-family:inherit; cursor:pointer; border:none; border-radius:6px; }
+input,select,textarea { font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:6px; padding:6px 10px; outline:none; }
+input:focus,select:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+
+/* 顶栏 */
+header { position:fixed; top:0; left:0; right:0; height:56px; background:linear-gradient(90deg,var(--blue-d),var(--blue)); display:flex; align-items:center; padding:0 20px; z-index:50; box-shadow:var(--shadow); }
+.logo { display:flex; align-items:center; gap:10px; color:#fff; font-size:16px; font-weight:700; }
+.logo .mark { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:16px; }
+.h-nav { margin-left:32px; display:flex; gap:4px; }
+.h-nav button { background:transparent; color:rgba(255,255,255,.82); padding:8px 14px; font-size:14px; border-radius:8px; }
+.h-nav button.on, .h-nav button:hover { background:rgba(255,255,255,.16); color:#fff; }
+.h-right { margin-left:auto; display:flex; align-items:center; gap:14px; color:#fff; }
+.h-right .noti { position:relative; background:rgba(255,255,255,.14); width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.h-right .noti .dot { position:absolute; top:6px; right:6px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid #fff; }
+.h-right .user { display:flex; align-items:center; gap:8px; font-size:13px; }
+.h-right .avatar { width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:13px; }
+
+/* 布局 */
+.layout { display:flex; padding-top:56px; min-height:100vh; }
+aside { width:216px; flex-shrink:0; background:#fff; border-right:1px solid var(--line); padding:16px 10px; position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto; }
+.side-group { font-size:11px; color:var(--gray); font-weight:600; letter-spacing:.5px; padding:10px 12px 6px; }
+.side-item { display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:8px; color:var(--text-2); font-size:13px; cursor:pointer; margin-bottom:2px; }
+.side-item:hover { background:var(--gray-l); }
+.side-item.on { background:var(--blue-l); color:var(--blue); font-weight:600; }
+.side-item .badge { margin-left:auto; font-size:11px; background:var(--red); color:#fff; border-radius:10px; padding:1px 7px; }
+main { flex:1; padding:24px 28px; max-width:1280px; }
+
+/* 卡片 */
+.card { background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); }
+.card-h { display:flex; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line); font-weight:600; font-size:14px; }
+.card-h .sub { font-weight:400; color:var(--gray); font-size:12px; margin-left:8px; }
+.card-h .right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.card-b { padding:16px 18px; }
+
+/* 按钮 */
+.btn { padding:7px 14px; font-size:13px; border-radius:6px; background:var(--blue); color:#fff; transition:.15s; }
+.btn:hover { background:#1D4ED8; }
+.btn.ghost { background:#fff; color:var(--text-2); border:1px solid var(--line); }
+.btn.ghost:hover { background:var(--gray-l); color:var(--text); }
+.btn.green { background:var(--green); }
+.btn.green:hover { background:#047857; }
+.btn.red { background:var(--red); }
+.btn.red:hover { background:#B91C1C; }
+.btn.sm { padding:4px 10px; font-size:12px; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* 徽标与级别 */
+.lv { display:inline-flex; align-items:center; font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
+.lv.high { background:var(--red-l); color:var(--red); }
+.lv.mid { background:var(--orange-l); color:var(--orange); }
+.lv.low { background:#E0F2FE; color:#0369A1; }
+.tag { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; background:var(--gray-l); color:var(--text-2); margin-right:4px; }
+.tag.rule { background:var(--blue-l); color:var(--blue); }
+.tag.llm { background:#F3E8FF; color:#7C3AED; }
+
+/* 工作台 */
+.dash-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+.dash-card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow); cursor:pointer; transition:.15s; }
+.dash-card:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(37,99,235,.12); }
+.dash-card .num { font-size:28px; font-weight:700; color:var(--blue); }
+.dash-card .num.red { color:var(--red); }
+.dash-card .num.orange { color:var(--orange); }
+.dash-card .lbl { font-size:13px; color:var(--text-2); margin-top:4px; }
+.dash-card .more { font-size:11px; color:var(--blue); margin-top:8px; }
+.dash-wrap { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.todo-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px dashed var(--line); cursor:pointer; }
+.todo-item:last-child { border-bottom:none; }
+.todo-item:hover .tt { color:var(--blue); }
+.todo-item .ico { width:32px; height:32px; border-radius:8px; background:var(--blue-bg); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.todo-item .tt { font-size:13px; font-weight:500; }
+.todo-item .ts { font-size:11px; color:var(--gray); margin-top:2px; }
+.todo-item .go { margin-left:auto; color:var(--gray); font-size:12px; }
+
+/* 审查报告 */
+.report-wrap { display:flex; gap:0; height:calc(100vh - 150px); min-height:520px; }
+.panel-left { width:380px; flex-shrink:0; background:#fff; border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; }
+.panel-left .p-h { padding:12px 16px; border-bottom:1px solid var(--line); }
+.filter-row { display:flex; gap:6px; padding:10px 16px; border-bottom:1px solid var(--line); }
+.fchip { font-size:12px; padding:4px 10px; border-radius:14px; background:var(--gray-l); color:var(--text-2); cursor:pointer; }
+.fchip.on { background:var(--blue); color:#fff; }
+.risk-list { flex:1; overflow-y:auto; padding:8px; }
+.risk-item { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:.15s; }
+.risk-item:hover { border-color:var(--blue); box-shadow:var(--shadow); }
+.risk-item.on { border-color:var(--blue); background:var(--blue-bg); }
+.risk-item .r-t { display:flex; align-items:center; gap:8px; }
+.risk-item .r-title { font-size:13px; font-weight:600; }
+.risk-item .r-meta { font-size:11px; color:var(--gray); margin-top:4px; line-height:1.5; }
+.risk-item .r-act { display:flex; gap:6px; margin-top:8px; }
+.risk-item.done { opacity:.65; }
+.risk-item.done .r-t::after { content:"✓ 已处理"; font-size:11px; color:var(--green); margin-left:auto; font-weight:600; }
+.panel-right { flex:1; margin-left:14px; background:#fff; border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; }
+.doc-bar { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--gray-l); gap:10px; }
+.doc-bar .dt { font-weight:600; font-size:13px; }
+.doc-bar .mini { font-size:11px; color:var(--gray); }
+.doc-body { flex:1; overflow-y:auto; padding:24px 32px; line-height:2; font-size:13.5px; color:#1E293B; }
+.doc-body h4 { font-size:15px; margin:18px 0 8px; color:var(--text); }
+.doc-body .hl { background:#FDE68A; padding:0 2px; border-radius:2px; cursor:pointer; }
+.doc-body .hl.lv-h { background:#FECACA; }
+.doc-body .hl.lv-m { background:#FDE68A; }
+.doc-body .hl.lv-l { background:#BAE6FD; }
+.hl-panel { border:2px solid var(--blue); border-radius:8px; padding:12px 16px; margin:10px 0; background:var(--blue-bg); }
+.hl-panel .hp-t { font-size:12px; font-weight:600; color:var(--blue); margin-bottom:4px; }
+
+/* 表格 */
+table.t { width:100%; border-collapse:collapse; font-size:13px; }
+table.t th { background:var(--gray-l); color:var(--text-2); font-weight:600; text-align:left; padding:9px 12px; font-size:12px; border-bottom:1px solid var(--line); }
+table.t td { padding:10px 12px; border-bottom:1px solid var(--line); }
+table.t tr:hover td { background:#FAFCFF; }
+table.t tr.cursor { cursor:pointer; }
+
+/* 三一致对照 */
+.cmp-table { margin:10px 0; }
+.cmp-table .ct-h { display:flex; }
+.cmp-table .ct-h div { flex:1; font-size:12px; font-weight:600; padding:8px 10px; background:var(--blue-bg); color:var(--blue); text-align:center; border:1px solid var(--blue-l); }
+.cmp-table .ct-r { display:flex; }
+.cmp-table .ct-r div { flex:1; font-size:12.5px; padding:10px; border:1px solid var(--line); border-top:none; line-height:1.7; }
+.cmp-table .ct-r div.diff { background:var(--red-l); }
+.cmp-table .ct-r div:first-child { border-right:none; }
+.cmp-table .ct-r div:nth-child(2) { border-right:none; }
+.cmp-table .ct-r .diff-mark { color:var(--red); font-weight:700; }
+
+/* 处置流 */
+.steps { display:flex; align-items:center; margin:14px 0 18px; }
+.step { display:flex; align-items:center; gap:8px; }
+.step .sc { width:28px; height:28px; border-radius:50%; background:#E2E8F0; color:var(--text-2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; border:2px solid #CBD5E1; }
+.step .sl { font-size:12px; color:var(--gray); }
+.step.done .sc { background:var(--green); border-color:var(--green); color:#fff; }
+.step.cur .sc { background:var(--blue); border-color:var(--blue); color:#fff; }
+.step.cur .sl { color:var(--blue); font-weight:600; }
+.step-line { flex:1; height:2px; background:var(--line); margin:0 10px; }
+.step-line.done { background:var(--green); }
+
+/* 弹层 */
+.mask { position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; z-index:100; }
+.mask.show { display:flex; }
+.modal { background:#fff; border-radius:14px; width:520px; max-width:92vw; max-height:86vh; overflow-y:auto; box-shadow:0 20px 60px rgba(15,23,42,.25); }
+.modal .m-h { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); font-weight:600; font-size:15px; }
+.modal .m-h .x { margin-left:auto; width:28px; height:28px; border-radius:50%; background:var(--gray-l); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--gray); }
+.modal .m-h .x:hover { background:#E2E8F0; }
+.modal .m-b { padding:18px 20px; }
+.modal .m-f { display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid var(--line); }
+.fm { margin-bottom:14px; }
+.fm label { display:block; font-size:12px; color:var(--text-2); margin-bottom:6px; font-weight:600; }
+.fm .reason-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.fm .reason-chips span { font-size:12px; padding:6px 12px; border-radius:16px; background:var(--gray-l); cursor:pointer; border:1px solid var(--line); }
+.fm .reason-chips span.on { background:var(--blue-l); border-color:var(--blue); color:var(--blue); font-weight:600; }
+.radio-group { display:flex; gap:10px; }
+.radio-group label { display:flex; align-items:center; gap:5px; font-weight:400; cursor:pointer; margin:0; }
+
+/* toast */
+#toast { position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; }
+.toast-item { background:#0F172A; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; box-shadow:var(--shadow); animation:tp .25s; }
+@keyframes tp { from { opacity:0; transform:translateY(-8px);} to { opacity:1; transform:translateY(0);} }
+
+/* 进度 */
+.prog { height:8px; background:var(--gray-l); border-radius:4px; overflow:hidden; }
+.prog i { display:block; height:100%; background:var(--blue); border-radius:4px; transition:width .3s; }
+.prog.green i { background:var(--green); }
+
+/* 预警 */
+.cal { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:10px; }
+.cal .d { border:1px solid var(--line); border-radius:8px; min-height:64px; padding:6px 8px; font-size:12px; position:relative; }
+.cal .d .dn { color:var(--gray); font-size:11px; }
+.cal .d.warn { background:var(--orange-l); border-color:#F59E0B; }
+.cal .d.over { background:var(--red-l); border-color:var(--red); }
+.cal .d .mk { font-size:10px; margin-top:3px; display:block; }
+.view { display:none; }
+.view.show { display:block; }
+.mt8 { margin-top:8px; } .mt12 { margin-top:12px; } .mt16 { margin-top:16px; }
+.muted { color:var(--gray); font-size:12px; }
+.row { display:flex; align-items:center; gap:10px; }
+.right { margin-left:auto; }
+/* ===== 增量样式（投标响应/起草/画像/搜索/通知） ===== */
+.page-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+.page-head h2{ font-size:20px; margin:0; }
+.page-head p{ font-size:12px; color:var(--gray); margin:0; }
+.sec-t{ font-weight:600; font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+.tbl th{ text-align:left; color:var(--gray); font-weight:500; font-size:12px; padding:8px 10px; border-bottom:1px solid var(--line); }
+.tbl td{ padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.tbl tr:last-child td{ border-bottom:none; }
+.pill{ display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+.pill.g{ background:#ECFDF5; color:#059669; }
+.pill.o{ background:#FFF7ED; color:#EA580C; }
+.pill.y{ background:#FEF9C3; color:#CA8A04; }
+.pill.r{ background:#FEE2E2; color:#DC2626; }
+.pill.b{ background:#EFF6FF; color:#2563EB; }
+.lnk{ color:var(--blue); cursor:pointer; font-size:13px; }
+.lnk:hover{ text-decoration:underline; }
+.bar{ height:8px; background:var(--gray-l); border-radius:4px; overflow:hidden; }
+.bar .fill{ height:100%; background:var(--blue); border-radius:4px; }
+.chip{ display:inline-block; padding:4px 12px; border-radius:14px; background:var(--gray-l); color:var(--text-2); font-size:12px; cursor:pointer; border:1px solid var(--line); }
+.chip.on{ background:var(--blue); color:#fff; border-color:var(--blue); }
+.btn.primary{ background:var(--blue); color:#fff; }
+.btn.primary:hover{ background:#1D4ED8; }
+.h-search{ position:relative; margin-right:14px; }
+.h-search input{ width:230px; padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.12); color:#fff; font-size:12px; outline:none; }
+.h-search input::placeholder{ color:rgba(255,255,255,.65); }
+.h-search input:focus{ border-color:rgba(255,255,255,.6); background:rgba(255,255,255,.2); }
+.g-suggest{ position:absolute; top:34px; right:0; width:280px; background:#fff; border-radius:8px; box-shadow:0 8px 24px rgba(15,23,42,.18); z-index:99; overflow:hidden; display:none; }
+.g-suggest.show{ display:block; }
+.g-suggest .gs-i{ padding:9px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--gray-l); color:#334155; }
+.g-suggest .gs-i:hover{ background:var(--gray-l); }
+.g-suggest .gs-i .gs-t{ color:var(--gray); font-size:11px; margin-left:6px; }
+.noti-panel{ position:absolute; top:44px; right:0; width:300px; background:#fff; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.18); z-index:99; display:none; overflow:hidden; }
+.noti-panel.show{ display:block; }
+.noti-panel .np-h{ padding:10px 14px; font-weight:600; font-size:13px; border-bottom:1px solid var(--line); }
+.noti-panel .np-i{ padding:10px 14px; font-size:12px; border-bottom:1px solid var(--gray-l); cursor:pointer; display:flex; gap:8px; align-items:flex-start; }
+.noti-panel .np-i:hover{ background:var(--gray-l); }
+.noti-panel .np-i .np-d{ color:var(--gray); font-size:11px; margin-top:2px; }
+.noti-panel .np-empty{ padding:20px; text-align:center; color:var(--gray); font-size:12px; }
+.toast-item{ transition:opacity .3s; }
+.toast-undo:hover{ text-decoration:underline; }
+.risk-item{ transition:all .25s; }
+.risk-item.done{ opacity:.62; }
+.risk-item.just-decided{ animation:flash .6s; }
+@keyframes flash{ 0%{background:var(--blue);color:#fff} 100%{background:transparent} }
+.empty{ padding:40px; text-align:center; color:var(--gray); font-size:13px; }
+.skel{ background:linear-gradient(90deg,var(--gray-l) 25%,#fff 50%,var(--gray-l) 75%); background-size:200% 100%; animation:sk 1.2s infinite; border-radius:6px; }
+@keyframes sk{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="mark">📋</span> procuraAI <span style="font-weight:400;font-size:12px;opacity:.75">采购智能审查</span></div>
+  <nav class="h-nav">
+    <button class="on" data-nav="home">工作台</button>
+    <button data-nav="review">审查中心</button>
+    <button data-nav="alert">履约预警</button>
+    <button data-nav="rules">规则管理</button>
+  </nav>
+  <div class="h-right">
+    <div class="h-search"><input id="gSearch" placeholder="搜索合同 / 供应商 / 风险…" autocomplete="off"><div id="gSuggest" class="g-suggest"></div></div>
+    <div class="noti" id="notiBtn">🔔<span class="dot"></span><div id="notiPanel" class="noti-panel"></div></div>
+    <div class="user"><span class="avatar">法</span> 王法务 <span style="font-size:11px;opacity:.75">法务 · 合同审查</span></div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="side">
+    <div class="side-group">工作台</div>
+    <div class="side-item on" data-view="dashboard">🏠 工作台</div>
+    <div class="side-group">审查中心</div>
+    <div class="side-item" data-view="tender">📄 招标体检</div>
+    <div class="side-item" data-view="contract">📑 合同审查</div>
+    <div class="side-group">采购响应</div>
+    <div class="side-item" data-view="bid">🎯 投标响应</div>
+    <div class="side-item" data-view="draft">✍️ 合同起草</div>
+    <div class="side-item" data-view="vendor">🏢 供应商画像</div>
+    <div class="side-group">履约与规则</div>
+    <div class="side-item" data-view="alert">⏰ 履约预警 <span class="badge">3</span></div>
+    <div class="side-item" data-view="rules">⚙️ 规则管理</div>
+  </aside>
+
+  <main id="main"></main>
+</div>
+
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ============ 模拟数据 ============ */
+const DATA = {
+  tenderRisk: [
+    { id:"R01", rule:true, level:"high", type:"注册地限制", title:"投标人注册地须在本省（不合理限制）", quote:"投标人须在X省境内注册，且注册时间不少于3年", basis:"《招标投标法实施条例》第32条(六)", suggest:"删除注册地限制，改为对履约能力的要求（同类业绩、人员资质）", conf:1.0, decision:null },
+    { id:"R07", rule:true, level:"high", type:"资质指向性", title:"技术参数指向特定品牌（排他条款）", quote:"核心交换机须为N品牌同档次产品，并提供N厂商授权书", basis:"《招标投标法实施条例》第32条(二)(三)", suggest:"改为\"不低于下述参数的知名品牌\"并开放≥3家满足", conf:1.0, decision:null },
+    { id:"R12", rule:true, level:"mid", type:"付款节点不明", title:"付款条件与验收节点绑定不清", quote:"货到后支付50%款项，验收合格后支付剩余款项", basis:"财库〔2021〕22号 第20条", suggest:"明确\"货到验收合格后 30 日内\"等可计算节点", conf:.92, decision:null },
+    { id:"LLM03", rule:false, level:"mid", type:"权责不对等", title:"质保期责任单向倾斜，采购方义务缺失", quote:"质保期内一切维修费用由供应商承担，采购方无配合义务条款", basis:"民法典 第582条 质量不符救济", suggest:"补充采购方配合义务与供应商响应时限（如 48h）", conf:.88, decision:null },
+    { id:"R18", rule:true, level:"mid", type:"评标规则倾向", title:"评分项\"本地业绩\"权重过高", quote:"本地业绩满分为10分，其余地区业绩满分5分", basis:"《招标投标法实施条例》第32条(五)", suggest:"统一业绩地域口径，按业绩类型与规模评分", conf:.95, decision:null },
+    { id:"LLM07", rule:false, level:"low", type:"条款一致性", title:"质保期前后表述不一致（3年/5年）", quote:"\"整机质保3年\"（P12）与\"核心部件质保5年\"（P23）", basis:"内部质检规范", suggest:"统一质保期限口径并核对明细清单", conf:.80, decision:null }
+  ],
+  cmpDiffs: [
+    { field:"付款方式", tender:"货到验收合格后 30 日内支付 90%", bid:"货到后支付 90%", contract:"货到后 60 日内支付 90%", diff:"合同与招标文件不一致：验收前置被删除" },
+    { field:"交货期", tender:"合同签订后 45 日历天", bid:"合同签订后 45 日历天", contract:"合同签订后 60 日历天", diff:"合同交货期晚于招标文件 15 天" }
+  ],
+  contractRisk: [
+    { id:"R25-1", rule:true, level:"high", type:"实质性背离", title:"付款方式背离招标文件（三一致命中）", quote:"货到后 60 日内支付 90%，无验收前置", basis:"《招标投标法实施条例》第57条", suggest:"改回\"货到验收合格后 30 日内支付 90%\"", conf:1.0, decision:null, cmp:true },
+    { id:"R25-2", rule:true, level:"high", type:"实质性背离", title:"交货期晚于招标文件 15 天", quote:"合同签订后 60 日历天交付", basis:"《招标投标法实施条例》第57条", suggest:"改回\"合同签订后 45 日历天\"", conf:1.0, decision:null, cmp:true },
+    { id:"R14", rule:true, level:"mid", type:"付款节点不明", title:"付款依据引用\"双方协商\"无明确节点", quote:"剩余款项支付时间由双方协商确定", basis:"《政采法实施条例》第75条", suggest:"改为可计算节点（如\"验收合格后 30 日内\"）", conf:.94, decision:null },
+    { id:"LLM11", rule:false, level:"low", type:"文字错误", title:"金额大小写不一致（元/万元）", quote:"合同总价 壹佰贰拾万元（￥1,200,000 元）", basis:"内部质检规范", suggest:"统一为\"人民币 120 万元\"并核对", conf:.82, decision:null }
+  ],
+  alerts: [
+    { id:"A01", no:"CG-HW-2026-012", vendor:"华信科技", node:"付款到期", due:"2026-10-18", days:6, amt:"¥ 480,000", status:"UPCOMING", rule:"T-15 提醒" },
+    { id:"A02", no:"CG-SW-2026-005", vendor:"中软智达", node:"验收截止", due:"2026-10-12", days:0, amt:"¥ 1,200,000", status:"EXPIRED", rule:"T-0 到期" },
+    { id:"A03", no:"CG-FW-2026-002", vendor:"蓝盾安全", node:"质保到期", due:"2026-10-09", days:-3, amt:"—", status:"OVERDUE", rule:"T+0 逾期" }
+  ]
+};
+
+/* ============ 状态 ============ */
+let state = { view:"dashboard", tenderDone:0, contractStep:0, activeRisk:null, filter:"all", cmpShown:false };
+
+/* ============ 工具 ============ */
+function toast(msg, undoFn){
+  const t=document.createElement('div'); t.className='toast-item';
+  t.innerHTML = esc(msg) + (undoFn?` <a class="toast-undo" style="color:var(--blue);cursor:pointer;margin-left:10px;font-weight:600">撤销</a>`:'');
+  document.getElementById('toast').appendChild(t);
+  if(undoFn){ t.querySelector('.toast-undo').addEventListener('click', ()=>{ undoFn(); t.remove(); }); }
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 3600);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lvBadge = l => `<span class="lv ${l}">${l==='high'?'高':l==='mid'?'中':'低'}</span>`;
+const tagHtml = r => r.rule ? '<span class="tag rule">规则</span>' : '<span class="tag llm">AI 语义</span>';
+const money = s => s.replace('¥','￥');
+
+/* ============ 视图切换 ============ */
+function nav(view){
+  state.view = view;
+  syncNav(view);
+  render();
+}
+function syncNav(view){
+  const topMap = { dashboard:'home', tender:'review', contract:'review', bid:'review', draft:'review', vendor:'review', alert:'alert', rules:'rules' };
+  document.querySelectorAll('.h-nav button').forEach(b=>b.classList.toggle('on', b.dataset.nav === topMap[view]));
+  document.querySelectorAll('.side-item').forEach(s=>s.classList.toggle('on', s.dataset.view===view));
+}
+function render(){
+  const main = document.getElementById('main');
+  const views = { dashboard:renderDash, tender:renderTender, contract:renderContract, alert:renderAlert, rules:renderRules };
+  main.innerHTML = (views[state.view]||renderDash)();
+  bind();
+}
+
+/* ============ 工作台 ============ */
+function renderDash(){
+  const pending = DATA.tenderRisk.filter(r=>!r.decision).length;
+  const alerts = DATA.alerts.filter(a=>a.status!=='CLEARED').length;
+  const hr = new Date().getHours();
+  const greet = hr<6?'凌晨好':hr<12?'上午好':hr<14?'中午好':hr<18?'下午好':'晚上好';
+  const today = new Date();
+  const wd = ['日','一','二','三','四','五','六'][today.getDay()];
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日 周${wd}`;
+  return `
+  <h2 style="font-size:20px;margin-bottom:4px">${greet}，王法务 👋</h2>
+  <div class="muted mt8">${dateStr} · 今天有 ${pending+alerts} 项待处理：招标体检风险确认 ${pending} 条 · 履约预警 ${alerts} 条</div>
+  <div class="dash-cards mt16">
+    <div class="dash-card" onclick="goReview('tender')"><div class="num red">${pending}</div><div class="lbl">招标体检 · 待确认风险</div><div class="more">前往处理 →</div></div>
+    <div class="dash-card" onclick="goReview('contract')"><div class="num">${DATA.contractRisk.filter(r=>!r.decision).length}</div><div class="lbl">合同审查 · 待确认</div><div class="more">前往处理 →</div></div>
+    <div class="dash-card" onclick="nav('alert')"><div class="num orange">${alerts}</div><div class="lbl">履约预警 · 待跟进</div><div class="more">查看台账 →</div></div>
+    <div class="dash-card" onclick="goReview('contract')"><div class="num">${state.contractStep<3?1:0}</div><div class="lbl">处置流 · 修订中</div><div class="more">继续处理 →</div></div>
+  </div>
+  <div class="dash-wrap">
+    <div class="card">
+      <div class="card-h">待办清单 <span class="sub">点击即可处理</span><div class="right"><span class="tag rule">按优先级排序</span></div></div>
+      <div class="card-b">
+        <div class="todo-item" onclick="goReview('tender')"><div class="ico">📄</div><div><div class="tt">设备采购项目（一期）招标文件 · 体检报告待确认</div><div class="ts">6 条风险 · 高 2 · 中 3 · 低 1 · 10 分钟前更新</div></div><span class="go">→</span></div>
+        <div class="todo-item" onclick="goReview('contract')"><div class="ico">📑</div><div><div class="tt">CG-HW-2026-012 采购合同 · 三一致校验命中 2 处背离</div><div class="ts">需在签约前处理 · 已升级为高优先级</div></div><span class="go">→</span></div>
+        <div class="todo-item" onclick="nav('alert')"><div class="ico">⏰</div><div><div class="tt">CG-SW-2026-005 验收节点今日到期 · 待核销</div><div class="ts">T-0 到期 · 金额 ¥1,200,000</div></div><span class="go">→</span></div>
+        <div style="text-align:center;padding:10px"><a class="lnk" onclick="toast('共 9 项待办，已展开全部')">查看全部 9 项 →</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">近 30 日审查概况<div class="right"><span class="muted">数据为演示样例</span></div></div>
+      <div class="card-b">
+        <div class="row" style="gap:24px">
+          <div><div style="font-size:24px;font-weight:700;color:var(--blue)">87</div><div class="muted">审查文档（份）</div></div>
+          <div><div style="font-size:24px;font-weight:700;color:var(--green)">94%</div><div class="muted">建议采纳率</div></div>
+          <div><div style="font-size:24px;font-weight:700;color:var(--blue)">4.2 分</div><div class="muted">平均审查耗时（分钟）</div></div>
+        </div>
+        <div class="prog mt16"><i style="width:72%"></i></div>
+        <div class="row mt8 muted">规则层命中 342 条 · AI 语义命中 128 条 · 人工确认后采纳 441 条</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 招标体检 ============ */
+function renderTender(){
+  const all = DATA.tenderRisk;
+  const done = all.filter(r=>r.decision).length;
+  const undone = all.filter(r=>!r.decision);
+  return `
+  <div class="card">
+    <div class="card-h">📄 招标文件体检 <span class="sub">上传招标文件，先体检、再发布</span>
+      <div class="right"><span class="muted">设备采购项目（一期）招标文件 · 32 页 · 12.4MB</span>
+        <button class="btn ghost sm" style="margin-left:10px" onclick="openUpload()">上传新文件</button></div></div>
+    <div class="card-b">
+      <div class="row">
+        <div class="prog" style="flex:1"><i style="width:100%" class="green"></i></div>
+        <span class="muted" style="margin-left:12px">体检完成 · 检出 6 条风险</span>
+      </div>
+      <div class="row mt16" style="gap:18px">
+        <div><span class="lv high">高 2</span></div><div><span class="lv mid">中 3</span></div><div><span class="lv low">低 1</span></div>
+        <div class="right" style="display:flex;gap:8px">
+          <button class="btn ghost sm" onclick="openExportReport()">导出报告</button>
+          <button class="btn sm" ${undone.length?'':'disabled'} onclick="goReport()">逐条确认（剩余 ${undone.length}）</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="report-wrap mt16" id="reportWrap"></div>`;
+}
+
+/* ============ 审查报告（体检/合同共用） ============ */
+function reportData(){
+  return state.view==='tender' ? DATA.tenderRisk : DATA.contractRisk;
+}
+function docHtml(){
+  const h = (s,l) => `<span class="hl lv-${l}">${s}</span>`;
+  if(state.view==='tender') return `
+    <h4>第一章 招标公告</h4>
+    本招标项目 设备采购项目（一期）已由相关部门批准，资金来源为自有资金，招标人为金源集团。现对该项目进行公开招标，欢迎符合条件的投标人参加投标。<br><br>
+    <b>投标人资格要求：</b><br>
+    3.1 投标人须为中华人民共和国境内合法注册的企业法人；<br>
+    3.2 ${h('投标人须在X省境内注册，且注册时间不少于3年','h')}；<br>
+    3.3 投标人须具有同类项目业绩不少于 2 个，并提供合同复印件；<br>
+    3.4 本项目不接受联合体投标。<br><br>
+    <h4>第四章 技术规格与要求</h4>
+    4.2 核心设备参数：<br>
+    4.2.1 ${h('核心交换机须为N品牌同档次产品，并提供N厂商授权书','h')}；<br>
+    4.2.2 服务器内存 ≥ 128GB，存储 ≥ 10TB；<br>
+    4.2.3 支持国产化操作系统兼容（麒麟/UOS）。<br><br>
+    <h4>第五章 评标办法</h4>
+    5.1 评标采用综合评分法，价格 40 分，技术 35 分，商务 25 分；<br>
+    5.2 ${h('投标人在本省行政区域内的同类业绩，每项得 10 分（满分 10 分）；省外业绩每项得 5 分（满分 5 分）','m')}；<br><br>
+    <h4>第六章 合同主要条款</h4>
+    6.3 付款方式：${h('货到后支付 50% 款项，验收合格后支付剩余款项','m')}；<br>
+    6.4 质保期：${h('整机质保 3 年','l')}，${h('核心部件质保 5 年','l')}；<br>
+    6.5 ${h('质保期内一切维修费用由供应商承担','m')}；<br><br>
+    <div class="hl-panel"><div class="hp-t">📌 原文高亮说明</div>黄色 = 中风险命中 · 红色 = 高风险命中 · 蓝色 = 低风险命中。点击左侧风险条目可定位到原文。</div>`;
+  return `
+    <h4>合同编号 CG-HW-2026-012</h4>
+    甲方：金源集团 · 乙方：华信科技<br>
+    签订日期：2026-09-28<br><br>
+    <h4>二、合同标的与价款</h4>
+    2.1 合同总价为人民币 壹佰贰拾万元（${h('￥1,200,000 元','l')}）；<br>
+    2.2 价格包含设备、运输、安装调试与培训费用。<br><br>
+    <h4>三、交付与验收</h4>
+    3.1 乙方应于 ${h('合同签订后 60 日历天','h')} 内完成交付；<br>
+    3.2 甲方在收到乙方书面验收申请后 15 个工作日内组织验收；<br><br>
+    <h4>四、付款</h4>
+    4.1 ${h('货到后 60 日内支付 90%，无验收前置','h')}；<br>
+    4.2 剩余款项支付时间 ${h('由双方协商确定','m')}。<br><br>
+    <div class="hl-panel"><div class="hp-t">📌 三一致校验（R25）</div>本合同的付款方式与交货期条款与招标文件不一致，构成实质性背离（条例57条），须在签约前修订。<button class="btn sm mt8" onclick="toggleCmp()">${state.cmpShown?'收起':'查看'}三一致对照</button></div>
+    ${state.cmpShown ? cmpTable() : ''}`;
+}
+function cmpTable(){
+  return `<div class="cmp-table">
+    <div class="ct-h"><div>招标文件要求</div><div>投标文件承诺</div><div>合同条款</div></div>
+    ${DATA.cmpDiffs.map(d=>`<div class="ct-r"><div class="diff"><span class="diff-mark">▲</span> ${esc(d.tender)}</div><div>${esc(d.bid)}</div><div class="diff"><span class="diff-mark">▲</span> ${esc(d.contract)}</div></div>`).join('')}
+  </div>`;
+}
+function toggleCmp(){ state.cmpShown=!state.cmpShown; render(); }
+</script>
+
+<script>
+/* ============ 审查报告渲染与绑定 ============ */
+function renderReport(){
+  const data = reportData();
+  const list = data.filter(r=> state.filter==='all' || r.level===state.filter);
+  const lv = {high:'高',mid:'中',low:'低'};
+  return `
+  <div class="panel-left">
+    <div class="p-h row"><b>风险清单</b><span class="muted" style="font-size:12px">${data.filter(r=>!r.decision).length} 条待确认</span>
+      <div class="right"><span class="tag rule">规则</span><span class="tag llm">AI 语义</span></div></div>
+    <div class="filter-row">
+      ${['all','high','mid','low'].map(f=>`<span class="fchip ${state.filter===f?'on':''}" onclick="setFilter('${f}')">${f==='all'?'全部':lv[f]}</span>`).join('')}
+    </div>
+    <div class="risk-list">
+      ${list.map(r=>`
+      <div class="risk-item ${r.decision?'done':''} ${state.activeRisk===r.id?'on':''}" onclick="locate('${r.id}')">
+        <div class="r-t">${lvBadge(r.level)} <span class="r-title">${esc(r.title)}</span></div>
+        <div class="r-meta">${tagHtml(r)} ${esc(r.basis)} <span style="color:var(--gray-l);margin:0 4px">· 置信 ${r.conf}</span></div>
+        ${r.suggest ? `<div class="r-sug" style="font-size:12px;color:#475569;margin:6px 0;padding:6px 8px;background:var(--gray-l);border-radius:6px;border-left:3px solid var(--blue)"><b style="color:var(--blue)">修改建议：</b>${esc(r.suggest)}</div>`:''}
+        ${r.decision ? `<div class="r-meta" style="color:var(--green)">✓ ${r.decision==='ACCEPTED'?'已采纳':r.decision==='REJECTED'?'已驳回（'+(r.rejectReason||'')+'）':'已改判为 '+({high:'高',mid:'中',low:'低'}[r.decision.level]||'')+' · 变更已留痕'}</div>` : `
+        <div class="r-act">
+          <button class="btn green sm" onclick="event.stopPropagation();decide('${r.id}','ACCEPTED')">采纳</button>
+          <button class="btn ghost sm" onclick="event.stopPropagation();openReject('${r.id}')">驳回</button>
+          <button class="btn ghost sm" onclick="event.stopPropagation();openModify('${r.id}')">改判</button>
+        </div>`}
+      </div>`).join('') || '<div class="muted" style="padding:20px;text-align:center">当前筛选无条目</div>'}
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--gray)">
+      确认规则：高风险默认建议人工复核；规则层命中置信度 1.0 · AI 语义 ≥0.85 才出高风险
+    </div>
+  </div>
+  <div class="panel-right">
+    <div class="doc-bar">
+      <div class="dt">${state.view==='tender'?'设备采购项目（一期）招标文件':'CG-HW-2026-012 采购合同'}</div>
+      <span class="mini">${state.view==='tender'?'32 页 · PDF':'9 页 · PDF'}</span>
+      <div class="right"><button class="btn ghost sm" onclick="toast('原文下载中（脱敏版）')">⬇ 原文</button></div>
+    </div>
+    <div class="doc-body" id="docBody">${docHtml()}</div>
+  </div>`;
+}
+function setFilter(f){ state.filter=f; render(); }
+function locate(id){
+  state.activeRisk = id; render();
+  const r = reportData().find(x=>x.id===id); if(!r) return;
+  const els = [...document.querySelectorAll('.doc-body .hl')];
+  const target = els.find(e=>e.textContent.includes(r.quote.slice(0,10))) || els[0];
+  if(target){
+    target.scrollIntoView({behavior:'smooth', block:'center'});
+    target.style.outline='3px solid #2563EB';
+    target.style.background='rgba(37,99,235,.18)';
+    let n=0; const blink=setInterval(()=>{ target.style.background = n%2? 'rgba(37,99,235,.18)':''; if(++n>5){ clearInterval(blink); target.style.background=''; } }, 280);
+    setTimeout(()=>target.style.outline='', 1800);
+  }
+}
+function decide(id, d){
+  const r = reportData().find(x=>x.id===id);
+  r.decision = 'ACCEPTED';
+  state.activeRisk = null;
+  toast(`已采纳：${r.title.slice(0,16)}…`, ()=>{ r.decision=null; toast('已撤销采纳'); render(); });
+  if(state.view==='tender' && reportData().every(x=>x.decision)) setTimeout(()=>toast('体检风险已全部确认，可导出修改建议汇总'), 400);
+  render();
+}
+function openReject(id){
+  const r = reportData().find(x=>x.id===id);
+  openModal(`
+    <div class="m-h">驳回风险条目<span class="x" onclick="closeModal()">✕</span></div>
+    <div class="m-b">
+      <div class="fm"><label>风险条目</label><div>${lvBadge(r.level)} ${esc(r.title)}</div></div>
+      <div class="fm"><label>驳回理由（必选）</label>
+        <div class="reason-chips" id="reasons">
+          ${['不构成风险','适用范围不符','依据不成立','重复条目','误读原文','其他'].map((s,i)=>`<span class="${i===0?'on':''}" onclick="pickReason(this)">${s}</span>`).join('')}
+        </div></div>
+      <div class="fm"><label>备注</label><textarea rows="2" style="width:100%" placeholder="补充说明（选填）"></textarea></div>
+    </div>
+    <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" onclick="submitReject('${id}')">确认驳回</button></div>
+  `);
+}
+function pickReason(el){ el.parentElement.querySelectorAll('span').forEach(s=>s.classList.remove('on')); el.classList.add('on'); }
+function submitReject(id){
+  const picked = document.querySelector('#reasons .on');
+  if(!picked){ toast('请选择驳回理由'); return; }
+  const r = reportData().find(x=>x.id===id); r.decision='REJECTED'; r.rejectReason=picked.textContent;
+  closeModal(); state.activeRisk=null;
+  toast(`已驳回（${r.rejectReason}）：理由将回流到规则优化`, ()=>{ r.decision=null; r.rejectReason=null; toast('已撤销驳回'); render(); });
+  render();
+}
+function openModify(id){
+  const r = reportData().find(x=>x.id===id);
+  openModal(`
+    <div class="m-h">改判风险条目<span class="x" onclick="closeModal()">✕</span></div>
+    <div class="m-b">
+      <div class="fm"><label>风险级别</label><div class="radio-group">
+        <label><input type="radio" name="mlv" value="high" ${r.level==='high'?'checked':''}> 高</label>
+        <label><input type="radio" name="mlv" value="mid" ${r.level==='mid'?'checked':''}> 中</label>
+        <label><input type="radio" name="mlv" value="low" ${r.level==='low'?'checked':''}> 低</label></div></div>
+      <div class="fm"><label>修改建议</label><textarea rows="3" style="width:100%">${esc(r.suggest)}</textarea></div>
+    </div>
+    <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" onclick="submitModify('${id}')">确认改判</button></div>
+  `);
+}
+function submitModify(id){
+  const lv = document.querySelector('input[name="mlv"]:checked');
+  if(!lv){ toast('请选择风险级别'); return; }
+  const r = reportData().find(x=>x.id===id);
+  const ta = document.querySelector('.m-b textarea');
+  r.decision = {level: lv.value, suggest: ta?ta.value:r.suggest};
+  closeModal(); state.activeRisk=null;
+  toast('已改判：级别与建议已更新，变更已留痕', ()=>{ r.decision=null; toast('已撤销改判'); render(); });
+  render();
+}
+
+/* ============ 合同审查（台账 + 处置流） ============ */
+function renderContract(){
+  const step = state.contractStep;
+  const cf = state.cFilter||'all';
+  const steps = ['待修订','修订中','已重审','已定稿'];
+  const stDesc = step===0 ? '合同待修订 · 命中 4 条风险（含 2 处实质性背离）'
+    : step===1 ? '修订稿已提交 · 增量重审中（仅变更条款 + 20% 抽检）'
+    : step===2 ? '重审完成 · 无新增高风险 · 可定稿'
+    : '合同已定稿并归档';
+  const cRows = [
+    {no:'CG-HW-2026-012', sup:'华信科技', amt:'￥1,200,000', st: step>=3?'已定稿':'待处理', tag: step>=3?'—':'<span class="tag rule">命中 2</span>', con:['待修订','修订中','已重审','定稿归档'][Math.min(step,3)], act:'处理 →', cb:'startContract()', alive:true},
+    {no:'CG-SW-2026-008', sup:'中软智达', amt:'￥860,000', st:'已定稿', tag:'无背离', con:'定稿归档', act:'查看 →', cb:"toast('演示样例：该合同已于 9 月定稿归档')", alive:true},
+    {no:'CG-FW-2026-009（草稿）', sup:'蓝盾安全', amt:'￥320,000', st:'草稿', tag:'—', con:'未审查', act:'查看 →', cb:"toast('演示样例：该合同为 10 月新建草稿')", alive:true}
+  ].filter(r=> cf==='all' || r.st===cf);
+  return `
+  <div class="card">
+    <div class="card-h">📑 合同审查 <span class="sub">签约前审查 · 三一致校验 · 处置闭环</span>
+      <div class="right"><button class="btn ghost sm" onclick="openUpload('上传合同','审查完成 · 检出 4 条风险（含 2 处实质性背离）')">上传合同</button></div></div>
+    <div class="card-b">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span class="chip ${cf==='all'?'on':''}" onclick="state.cFilter='all';render()">全部</span>
+        <span class="chip ${cf==='待处理'?'on':''}" onclick="state.cFilter='待处理';render()">待处理</span>
+        <span class="chip ${cf==='已定稿'?'on':''}" onclick="state.cFilter='已定稿';render()">已定稿</span>
+        <span class="chip ${cf==='草稿'?'on':''}" onclick="state.cFilter='草稿';render()">草稿</span>
+        <div style="flex:1"></div>
+        <button class="btn ghost sm" onclick="confirmExport(${cRows.length})">批量导出</button>
+      </div>
+      <table class="t">
+        <tr><th>合同编号</th><th>供应商</th><th>金额</th><th>状态</th><th>三一致</th><th>审查结论</th><th></th></tr>
+        ${cRows.map(r=>`<tr class="cursor" onclick="${r.cb}"><td>${r.no}</td><td>${r.sup}</td><td>${r.amt}</td><td><span class="lv ${r.st==='待处理'?'high':r.st==='草稿'?'mid':'low'}">${r.st}</span></td><td>${r.tag}</td><td>${r.con}</td><td style="color:var(--blue)">${r.act}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--gray)">当前筛选无合同</td></tr>'}
+      </table>
+    </div>
+  </div>
+  <div class="card mt16">
+    <div class="card-h">🔄 审查处置流 <span class="sub">CG-HW-2026-012</span>
+      <div class="right"><span class="muted">${stDesc}</span></div></div>
+    <div class="card-b">
+      <div class="steps">
+        ${steps.map((s,i)=>`
+          <div class="step ${i<step?'done':i===step?'cur':''}"><span class="sc">${i<step?'✓':i+1}</span><span class="sl">${s}</span></div>
+          ${i<3?`<div class="step-line ${i<step?'done':''}"></div>`:''}`).join('')}
+      </div>
+      ${step===0 ? `
+      <div class="row">
+        <button class="btn" onclick="beginRevise()">开始修订</button>
+        <span class="muted">按 4 条风险的修改建议修订合同文本（可在下方报告逐条确认后一键汇入）</span>
+      </div>` : ''}
+      ${step===1 ? `
+      <div class="row">
+        <div class="prog" style="flex:1"><i style="width:64%"></i></div><span class="muted" style="margin-left:10px">重审中 · 变更条款 4 条 + 抽检 20%</span>
+        <button class="btn sm" style="margin-left:14px" onclick="finishRecheck()">完成重审</button>
+      </div>` : ''}
+      ${step===2 ? `
+      <div class="row">
+        <span class="tag rule">重审结论：无新增高风险 · 2 处背离已修正</span>
+        <button class="btn green sm" onclick="finalize()">确认定稿</button>
+      </div>` : ''}
+      ${step>=3 ? `<div class="row"><span class="tag rule">已归档 · 合同生效 · 履约节点已进入预警台账</span></div>` : ''}
+      <div class="mt12 muted">处置过程全程留痕：修订人 / 时间 / 变更条款 / 重审快照（review_snapshot 可回放）</div>
+    </div>
+  </div>
+  ${state.view==='contract' ? `<div class="report-wrap mt16" id="reportWrap"></div>` : ''}`;
+}
+function startContract(){ state.contractStep=Math.min(state.contractStep,3); state.view='contract'; render(); }
+function beginRevise(){ state.contractStep=1; toast('已进入修订：可在报告区核对修改建议'); render(); }
+function finishRecheck(){ state.contractStep=2; toast('重审完成：无新增高风险，2 处背离已修正'); render(); }
+function finalize(){ state.contractStep=3; toast('已定稿并归档，履约节点已同步至预警台账'); render(); }
+
+/* ============ 履约预警 ============ */
+function renderAlert(){
+  const clearAll = DATA.alerts.filter(a=>a.status==='CLEARED').length;
+  return `
+  <div class="card">
+    <div class="card-h">⏰ 履约预警 <span class="sub">付款 / 验收 / 质保节点到期跟踪</span>
+      <div class="right"><span class="muted">已核销 ${clearAll} · 待跟进 ${3-clearAll}</span></div></div>
+    <div class="card-b">
+      <table class="t">
+        <tr><th>合同编号</th><th>供应商</th><th>节点</th><th>到期日</th><th>金额</th><th>状态</th><th>触发</th><th></th></tr>
+        ${DATA.alerts.map(a=>`
+        <tr style="${a.status==='CLEARED'?'opacity:.55':''}">
+          <td>${a.no}</td><td>${a.vendor}</td><td>${a.node}</td><td>${a.due}</td><td>${money(a.amt)}</td>
+          <td>${a.status==='UPCOMING'?'<span class="lv low">临期</span>':a.status==='EXPIRED'?'<span class="lv mid">今日到期</span>':a.status==='OVERDUE'?'<span class="lv high">已逾期</span>':'<span class="tag rule">已核销</span>'}</td>
+          <td class="muted">${a.rule}</td>
+          <td>${a.status==='CLEARED' ? '<span class="muted">已闭环</span>' : `<button class="btn sm ${a.status==='OVERDUE'?'red':''}" onclick="openClear('${a.id}')">核销</button>`}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  </div>
+  <div class="dash-wrap mt16">
+    <div class="card">
+      <div class="card-h">节点日历 <span class="sub">2026 年 10 月</span></div>
+      <div class="card-b">
+        <div class="cal">
+          ${[0,1,2,3,4,5,6].map(w=>`<div class="d"><div class="dn">${['一','二','三','四','五','六','日'][w]}</div></div>`).join('')}
+          ${[1,2,3,4,5].map(d=>`<div class="d"><div class="dn">${d}</div></div>`).join('')}
+          <div class="d"><div class="dn">6</div></div>
+          <div class="d"><div class="dn">7</div></div>
+          <div class="d"><div class="dn">8</div></div>
+          <div class="d over"><div class="dn">9</div><span class="mk" style="color:var(--red)">▲ 蓝盾质保逾期</span></div>
+          <div class="d"><div class="dn">10</div></div>
+          <div class="d"><div class="dn">11</div></div>
+          <div class="d warn"><div class="dn">12</div><span class="mk" style="color:var(--orange)">◆ 中软验收到期</span></div>
+          <div class="d"><div class="dn">13</div></div>
+          <div class="d"><div class="dn">14</div></div>
+          <div class="d"><div class="dn">15</div></div>
+          <div class="d"><div class="dn">16</div></div>
+          <div class="d"><div class="dn">17</div></div>
+          <div class="d warn"><div class="dn">18</div><span class="mk" style="color:var(--orange)">◆ 华信付款临期</span></div>
+          <div class="d"><div class="dn">19</div></div><div class="d"><div class="dn">20</div></div>
+          <div class="d"><div class="dn">21</div></div><div class="d"><div class="dn">22</div></div>
+          <div class="d"><div class="dn">23</div></div><div class="d"><div class="dn">24</div></div>
+          <div class="d"><div class="dn">25</div></div><div class="d"><div class="dn">26</div></div>
+          <div class="d"><div class="dn">27</div></div><div class="d"><div class="dn">28</div></div>
+          <div class="d"><div class="dn">29</div></div><div class="d"><div class="dn">30</div></div>
+          <div class="d"><div class="dn">31</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">预警规则 <span class="sub">触发阈值配置</span></div>
+      <div class="card-b">
+        <table class="t">
+          <tr><th>节点</th><th>前置提醒</th><th>颜色</th></tr>
+          <tr><td>付款到期</td><td>T-15 提醒 · T-0 升级</td><td><span class="lv low">黄</span>→<span class="lv mid">橙</span></td></tr>
+          <tr><td>验收截止</td><td>T-7 提醒 · T-0 到期</td><td><span class="lv low">黄</span>→<span class="lv mid">橙</span></td></tr>
+          <tr><td>质保到期</td><td>T-30 提醒 · 逾期升级</td><td><span class="lv mid">橙</span>→<span class="lv high">红</span></td></tr>
+        </table>
+        <div class="muted mt12">消警依据：ERP 付款记录自动匹配 / 验收单上传 / 人工核销（留痕）</div>
+      </div>
+    </div>
+  </div>`;
+}
+function openClear(id){
+  const a = DATA.alerts.find(x=>x.id===id);
+  openModal(`
+    <div class="m-h">核销预警 <span class="sub" style="font-weight:400">${a.no} · ${a.node}</span><span class="x" onclick="closeModal()">✕</span></div>
+    <div class="m-b">
+      <div class="fm"><label>核销依据</label>
+        <div class="radio-group">
+          <label><input type="radio" name="basis" value="ERP_PAYMENT" checked> ERP 付款记录</label>
+          <label><input type="radio" name="basis" value="DOC"> 验收单上传</label>
+          <label><input type="radio" name="basis" value="MANUAL"> 人工说明</label></div></div>
+      <div class="fm"><label>${a.status==='OVERDUE'?'逾期说明（必填）':'备注'}</label><textarea rows="2" style="width:100%" placeholder="${a.status==='OVERDUE'?'说明逾期原因与补救安排':''}"></textarea></div>
+      <div class="muted">核销后将同步台账状态并留痕（操作人 / 时间 / 依据）</div>
+    </div>
+    <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn green" onclick="submitClear('${id}')">确认核销</button></div>
+  `);
+}
+function submitClear(id){
+  const a = DATA.alerts.find(x=>x.id===id); a.status='CLEARED';
+  closeModal(); toast(`已核销：${a.vendor} · ${a.node} 已闭环`);
+  render();
+}
+
+/* ============ 规则管理 ============ */
+function renderRules(){
+  return `
+  <div class="card">
+    <div class="card-h">⚙️ 规则库管理 <span class="sub">法规源 + 企业源 · 版本灰度 · 回归测试</span>
+      <div class="right"><button class="btn ghost sm" onclick="openNewRule()">+ 新增企业规则</button></div></div>
+    <div class="card-b">
+      <div class="row" style="gap:18px;margin-bottom:12px">
+        <span><span class="tag rule">法规源 R01-R25</span> 25 条 · 全部启用</span>
+        <span><span class="tag llm">企业源 ER01-ER08</span> 8 条 · 6 启用 2 灰度</span>
+        <div class="right"><span class="muted">最近发布：v1.3.2（3 天前）</span></div>
+      </div>
+      <table class="t">
+        <tr><th>规则</th><th>来源</th><th>风险类型</th><th>依据</th><th>状态</th><th>灰度</th><th>测试</th></tr>
+        <tr><td>R01 注册地限制</td><td><span class="tag rule">法规</span></td><td>排他性条款</td><td>条例32条(六)</td><td><span class="lv low">启用</span></td><td>100%</td><td><span class="tag rule">通过</span></td></tr>
+        <tr><td>R07 品牌指向性</td><td><span class="tag rule">法规</span></td><td>排他性条款</td><td>条例32条(二)</td><td><span class="lv low">启用</span></td><td>100%</td><td><span class="tag rule">通过</span></td></tr>
+        <tr><td>R25 实质性背离</td><td><span class="tag rule">法规</span></td><td>三一致背离</td><td>条例57条</td><td><span class="lv low">启用</span></td><td>100%</td><td><span class="tag rule">通过</span></td></tr>
+        <tr><td>ER05 供应商黑名单</td><td><span class="tag llm">企业</span></td><td>准入限制</td><td>集团采购制度</td><td><span class="lv mid">灰度</span></td><td>30%</td><td><span class="tag rule">通过</span></td></tr>
+        <tr><td>ER06 预付款上限</td><td><span class="tag llm">企业</span></td><td>资金风险</td><td>集团财务制度</td><td><span class="lv mid">灰度</span></td><td>30%</td><td><span class="tag rule">通过</span></td></tr>
+      </table>
+      <div class="muted mt12">规则入库流程：法务确认 → 回归测试（≥1 正例 + 1 反例）→ 灰度观察 → 全量发布；驳回理由季度回流评测集</div>
+    </div>
+  </div>
+  <div class="dash-wrap mt16">
+    <div class="card">
+      <div class="card-h">评测集 <span class="sub">质量门禁</span></div>
+      <div class="card-b">
+        <div class="row" style="gap:24px">
+          <div><div style="font-size:22px;font-weight:700;color:var(--green)">98.6%</div><div class="muted">规则层召回</div></div>
+          <div><div style="font-size:22px;font-weight:700;color:var(--green)">94.2%</div><div class="muted">AI 语义准确率</div></div>
+          <div><div style="font-size:22px;font-weight:700;color:var(--blue)">3.1%</div><div class="muted">误报率</div></div>
+        </div>
+        <div class="prog mt16"><i style="width:64%"></i></div>
+        <div class="muted mt8">评测样本 200 条（双人标注 · Kappa 0.84）· 生产反馈季度回流 · 对抗样本 32 条</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">标注任务 <span class="sub">法务协作</span></div>
+      <div class="card-b">
+        <table class="t">
+          <tr><th>批次</th><th>样本</th><th>进度</th><th>一致性</th></tr>
+          <tr><td>2026-Q4-A</td><td>48 条</td><td>37/48</td><td><span class="tag rule">Kappa 0.84</span></td></tr>
+          <tr><td>2026-Q4-B（对抗）</td><td>32 条</td><td>12/32</td><td>—</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 弹层 & 导航绑定 ============ */
+/* ============ 投标响应助手（M6） ============ */
+function renderBid(){
+  return `
+  <div class="page-head"><h2>投标响应</h2><p>任务拆解 · 响应模板 · 评分预估</p></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><b>综合楼弱电智能化改造项目</b><span style="color:var(--gray);font-size:12px;margin-left:8px">招标文件 · 45 页 · 2026-10-15 截标</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" onclick="openBidAssign()">派发任务</button>
+        <button class="btn sm primary" onclick="openBidTpl()">生成响应模板</button>
+        <button class="btn sm" onclick="openClarify()">对比澄清</button>
+      </div>
+    </div>
+    <div class="bar"><div class="fill" style="width:72%"></div></div>
+    <div style="font-size:12px;color:var(--gray);margin-top:8px">拆解完成 4/4 · 已派发 5/9 · 模板生成中</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card">
+      <div class="sec-t">任务拆解 <span class="tag">9 项 · 已派发 5</span></div>
+      <table class="tbl"><tr><th>栏目</th><th>条目</th><th>负责人</th><th>状态</th></tr>
+        <tr><td>资质</td><td>注册资金 ≥ 500 万、ISO 9001</td><td>李工</td><td><span class="pill g">已派发</span></td></tr>
+        <tr><td>技术</td><td>监控系统参数、UPS 容量</td><td>陈工</td><td><span class="pill o">待派发</span></td></tr>
+        <tr><td>商务</td><td>报价单、付款方式</td><td>赵工</td><td><span class="pill g">已派发</span></td></tr>
+        <tr><td>评分规则</td><td>价格分权重 40%、业绩分 20%</td><td>—</td><td><span class="pill o">待派发</span></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="sec-t">评分预估 <span class="tag">客观分 AI 预估</span></div>
+      <table class="tbl"><tr><th>评分项</th><th>预估</th><th>口径</th></tr>
+        <tr><td>资质证书</td><td>3.5–4.0 / 5</td><td>证书齐全度</td></tr>
+        <tr><td>价格分</td><td>32–35 / 40</td><td>按报价区间测算</td></tr>
+        <tr><td>业绩分</td><td>14–16 / 20</td><td>近 3 年合同额</td></tr>
+        <tr><td>主观分</td><td>—</td><td style="color:var(--gray)">需人工评估</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-t">响应模板 · 工商信息逐字核对</div>
+    <table class="tbl"><tr><th>字段</th><th>AI 预填</th><th>营业执照</th><th>核对</th></tr>
+      <tr><td>企业名称</td><td>华信科技（杭州）有限公司</td><td>华信科技（杭州）有限公司</td><td><span class="pill g">一致</span></td></tr>
+      <tr><td>法定代表人</td><td>张伟</td><td>张伟峰</td><td><span class="pill y">不一致 · 待确认</span></td></tr>
+      <tr><td>统一社会信用代码</td><td>91330101MA2XXXX</td><td>91330101MA2XXXX</td><td><span class="pill g">一致</span></td></tr>
+      <tr><td>注册资本</td><td>1,000 万元</td><td>1,000 万元</td><td><span class="pill g">一致</span></td></tr>
+    </table>
+    <div style="font-size:12px;color:var(--gray);margin-top:8px">不一致字段须人工确认后方可保留在响应文件中</div>
+  </div>`;
+}
+function openBidAssign(){ openModal(`<h3>派发任务</h3><div style="font-size:13px;color:var(--gray);margin:6px 0 12px">选择负责人并生成 OA 待办</div><div style="display:flex;flex-direction:column;gap:10px">
+  <div style="display:flex;justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:8px"><div>技术参数核对</div><select style="padding:6px;border:1px solid var(--line);border-radius:6px"><option>陈工</option><option>李工</option></select></div>
+  <div style="display:flex;justify-content:space-between;padding:10px;border:1px solid var(--line);border-radius:8px"><div>评分规则测算</div><select style="padding:6px;border:1px solid var(--line);border-radius:6px"><option>赵工</option><option>李工</option></select></div>
+</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn sm" onclick="closeModal()">取消</button><button class="btn sm primary" onclick="closeModal();toast('已派发 2 项任务，OA 待办已生成')">确认派发</button></div>`); }
+function openBidTpl(){ openModal(`<h3>生成响应模板</h3><div style="font-size:13px;color:var(--gray);margin:6px 0 12px">按招标文件结构自动生成字段级响应模板</div>
+<div style="font-size:13px">已识别 4 栏 · 18 个待填字段 · AI 预填 12 · 待核对 1</div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn sm" onclick="closeModal()">取消</button><button class="btn sm primary" onclick="closeModal();toast('响应模板已生成，共 18 个字段')">生成</button></div>`); }
+
+/* ============ 合同起草（M7） ============ */
+function renderDraft(){
+  return `
+  <div class="page-head"><h2>合同起草</h2><p>条款库 · 起草任务 · 起草即审查</p></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b>条款库 <span class="tag">仅法务确认条款可引用</span></b>
+      <button class="btn sm primary" onclick="openNewDraft()">+ 新建起草</button>
+    </div>
+    <div style="display:flex;gap:8px;margin:12px 0"><span class="chip on">标准条款 12</span><span class="chip">备选条款 6</span><span class="chip">禁用条款 3</span></div>
+    <table class="tbl"><tr><th>条款</th><th>分类</th><th>来源</th><th>状态</th></tr>
+      <tr><td>付款方式：验收合格后 30 日内支付</td><td>标准</td><td>法务确认 · 2026-08</td><td><span class="pill g">可引用</span></td></tr>
+      <tr><td>质保期：自验收之日起 24 个月</td><td>标准</td><td>法务确认 · 2026-08</td><td><span class="pill g">可引用</span></td></tr>
+      <tr><td>违约金：逾期按日 0.05% 计</td><td>备选</td><td>审查采纳回流</td><td><span class="pill o">备选</span></td></tr>
+      <tr><td>预付款比例超过 30%</td><td style="color:#dc2626">禁用</td><td>审查驳回回流</td><td><span class="pill r">禁止引用</span></td></tr>
+    </table>
+    <div style="font-size:12px;color:var(--gray);margin-top:8px">审查中人工采纳/改判的结论自动回流条款库，经法务确认后成为可引用条款</div>
+  </div>
+  <div class="card">
+    <div class="sec-t">起草任务 <span class="tag">3 个进行中</span></div>
+    <table class="tbl"><tr><th>任务</th><th>模板</th><th>状态</th><th>回审</th><th>操作</th></tr>
+      <tr><td>设备采购协议（一期）</td><td>采购协议</td><td><span class="pill b">初稿生成</span></td><td><span class="pill g">回审通过 · 0 高风</span></td><td><a class="lnk" onclick="openDraftEdit('设备采购协议（一期）','初稿生成 · 回审通过')">编辑 →</a></td></tr>
+      <tr><td>弱电运维框架协议</td><td>框架协议</td><td><span class="pill o">起草中</span></td><td>—</td><td><a class="lnk" onclick="openDraftEdit('弱电运维框架协议','起草中')">继续 →</a></td></tr>
+      <tr><td>NDA-华信科技</td><td>保密协议</td><td><span class="pill g">已定稿</span></td><td><span class="pill g">无风险</span></td><td><a class="lnk" onclick="openDraftEdit('NDA-华信科技','已定稿 · 无风险')">查看 →</a></td></tr>
+    </table>
+  </div>`;
+}
+function openNewDraft(){ openModal(`<h3>新建起草</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+  <div><label style="font-size:12px;color:var(--gray)">合同模板</label><select style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;margin-top:4px"><option>采购协议</option><option>框架协议</option><option>保密协议（NDA）</option></select></div>
+  <div><label style="font-size:12px;color:var(--gray)">甲方 / 乙方</label><input value="金源集团 / 华信科技（杭州）有限公司" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;margin-top:4px"></div>
+  <div><label style="font-size:12px;color:var(--gray)">金额（元）</label><input value="1,200,000" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;margin-top:4px"></div>
+</div><div style="font-size:12px;color:var(--gray);margin-top:10px">生成初稿后自动触发审查，回审结果将内嵌展示</div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn sm" onclick="closeModal()">取消</button><button class="btn sm primary" onclick="closeModal();toast('初稿已生成，自动审查中…')">生成初稿</button></div>`); }
+
+/* ============ 供应商画像（M3） ============ */
+function renderVendor(){
+  return `
+  <div class="page-head"><h2>供应商画像</h2><p>信用 · 资质 · 关联自查</p></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+    <div class="card"><div style="display:flex;justify-content:space-between"><b>华信科技</b><span class="pill g">信用 82</span></div>
+      <div style="font-size:12px;color:var(--gray);margin:8px 0">统一社会信用代码 91330101MA2XXXX · 成立 2015</div>
+      <div style="font-size:13px">资质：ISO 9001 ✅ · 安防一级 ✅<br>风险：涉诉 1（2024 合同纠纷·已结）</div>
+      <a class="lnk" onclick="toast('查看画像明细')">画像明细 →</a></div>
+    <div class="card"><div style="display:flex;justify-content:space-between"><b>中软智达</b><span class="pill g">信用 88</span></div>
+      <div style="font-size:12px;color:var(--gray);margin:8px 0">统一社会信用代码 91330108MA1CXXX · 成立 2012</div>
+      <div style="font-size:13px">资质：ISO 9001 ✅ · CMMI3 ✅<br>风险：无涉诉记录</div>
+      <a class="lnk" onclick="toast('查看画像明细')">画像明细 →</a></div>
+    <div class="card"><div style="display:flex;justify-content:space-between"><b>蓝盾安全</b><span class="pill o">信用 61</span></div>
+      <div style="font-size:12px;color:var(--gray);margin:8px 0">统一社会信用代码 91330106MA3BXXX · 成立 2019</div>
+      <div style="font-size:13px">资质：ISO 27001 ✅ · 涉诉 3（2 未结）<br><span style="color:#dc2626">列入重点关注</span></div>
+      <a class="lnk" onclick="toast('查看画像明细')">画像明细 →</a></div>
+  </div>
+  <div class="card">
+    <div class="sec-t">投标主体关联自查 <span class="tag">围串标风险提示</span></div>
+    <table class="tbl"><tr><th>投标主体</th><th>关联主体</th><th>关联特征</th><th>结论</th></tr>
+      <tr><td>华信科技</td><td>华信智能科技</td><td>同法定代表人 · 同办公地址</td><td><span class="pill r">高度关联 · 人工确认</span></td></tr>
+      <tr><td>中软智达</td><td>—</td><td>—</td><td><span class="pill g">无关联</span></td></tr>
+      <tr><td>蓝盾安全</td><td>蓝盾数据服务</td><td>控股 100%</td><td><span class="pill y">需关注</span></td></tr>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" onclick="openDeclTpl()">生成声明模板</button><button class="btn sm" onclick="confirmBlacklist()">同步黑名单</button></div>
+  </div>`;
+}
+
+function openModal(html){ document.getElementById('modal').innerHTML=html; document.getElementById('mask').classList.add('show');
+  /* 弹窗内 Enter 提交：找主按钮（.m-f .btn 不含 ghost）或唯一 primary */
+  const mb = document.querySelector('#modal .m-b');
+  if(mb){ mb.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){ e.preventDefault(); const pri = document.querySelector('#modal .m-f .btn.primary') || [...document.querySelectorAll('#modal .m-f .btn')].find(b=>!b.classList.contains('ghost')); if(pri) pri.click(); } }); }
+}
+function closeModal(){ document.getElementById('mask').classList.remove('show'); }
+document.getElementById('mask').addEventListener('click', e=>{ if(e.target.id==='mask') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const m=document.getElementById('mask'); if(m.classList.contains('show')) closeModal(); const np=document.getElementById('notiPanel'); if(np) np.classList.remove('show'); const gs=document.getElementById('gSuggest'); if(gs) gs.classList.remove('show'); } });
+
+function bind(){
+  document.querySelectorAll('.side-item').forEach(s=> s.addEventListener('click', ()=>nav(s.dataset.view)));
+}
+function goReview(v){ state.view=v; state.filter='all'; nav(v); }
+function goReport(){
+  state.filter='all'; state.activeRisk=null; render();
+  const w = document.getElementById('reportWrap');
+  if(w) w.scrollIntoView({behavior:'smooth', block:'start'});
+  /* 定位第一条未确认风险 */
+  const first = reportData().find(r=>!r.decision);
+  if(first) setTimeout(()=>locate(first.id), 450);
+  else toast('所有风险均已处理，可导出报告');
+}
+
+/* ============ 全局搜索 ============ */
+const SEARCH_ITEMS = [
+  {k:'CG-HW-2026-012', t:'合同', v:'contract'},
+  {k:'CG-SW-2026-008', t:'合同', v:'contract'},
+  {k:'华信', t:'供应商', v:'vendor'},
+  {k:'中软智达', t:'供应商', v:'vendor'},
+  {k:'付款方式', t:'风险', v:'contract'},
+  {k:'设备采购项目', t:'项目', v:'tender'},
+  {k:'综合楼弱电', t:'项目', v:'bid'},
+  {k:'验收', t:'节点', v:'alert'},
+  {k:'注册地限制', t:'规则', v:'rules'},
+  {k:'三一致', t:'功能', v:'contract'}
+];
+function initGlobalSearch(){
+  const input = document.getElementById('gSearch');
+  const box = document.getElementById('gSuggest');
+  if(!input||!box) return;
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim();
+    if(!q){ box.classList.remove('show'); return; }
+    const hits = SEARCH_ITEMS.filter(i=>i.k.toLowerCase().includes(q.toLowerCase()));
+    box.innerHTML = hits.length
+      ? hits.map(i=>`<div class="gs-i" data-v="${i.v}">${i.k.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\\\]/g,'\\\\$&')+')','ig'),'<b style="color:var(--blue)">$1</b>')}<span class="gs-t">${i.t}</span></div>`).join('')
+      : '<div class="np-empty">无匹配结果</div>';
+    box.classList.add('show');
+  });
+  box.addEventListener('click', e=>{
+    const it = e.target.closest('.gs-i'); if(!it) return;
+    box.classList.remove('show'); input.value='';
+    nav(it.dataset.v);
+  });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.h-search')) box.classList.remove('show'); });
+}
+
+/* ============ 通知中心 ============ */
+const NOTIS = [
+  {t:'招标体检报告待确认', d:'设备采购项目（一期）· 6 条风险', v:'tender', tm:'10 分钟前'},
+  {t:'三一致校验命中 2 处背离', d:'CG-HW-2026-012 · 须在签约前处理', v:'contract', tm:'1 小时前'},
+  {t:'验收节点今日到期', d:'CG-SW-2026-005 · ￥1,200,000', v:'alert', tm:'今天 09:00'}
+];
+function initNoti(){
+  const btn = document.getElementById('notiBtn');
+  const panel = document.getElementById('notiPanel');
+  if(!btn||!panel) return;
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const show = panel.classList.toggle('show');
+    if(show){
+      panel.innerHTML = `<div class="np-h">通知 <span style="color:var(--gray);font-weight:400">3 条未读</span></div>`
+        + NOTIS.map(n=>`<div class="np-i" data-v="${n.v}"><span>🔔</span><div><div>${n.t}</div><div class="np-d">${n.d} · ${n.tm}</div></div></div>`).join('');
+    }
+  });
+  panel.addEventListener('click', e=>{
+    const it = e.target.closest('.np-i'); if(!it) return;
+    panel.classList.remove('show');
+    nav(it.dataset.v);
+  });
+  document.addEventListener('click', ()=>{ panel.classList.remove('show'); });
+}
+
+/* ============ 批量导出二次确认 ============ */
+function confirmExport(n){
+  openModal(`<div class="m-h">确认导出<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b"><div style="font-size:14px;margin:8px 0">将导出 <b>${n}</b> 条合同审查台账（含风险条目、审查结论、处置状态），生成 Excel 文件。</div>
+  <div style="font-size:12px;color:var(--gray)">导出范围受当前筛选条件限制</div></div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast('已导出 ${n} 条合同审查台账（.xlsx）')">确认导出</button></div>`);
+}
+
+/* ============ 导出报告（格式 + 范围选择） ============ */
+function openExportReport(){
+  openModal(`<div class="m-h">导出体检报告<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div class="fm"><label>报告格式</label>
+      <div class="radio-group">
+        <label><input type="radio" name="fmt" value="docx" checked> Word（.docx）</label>
+        <label><input type="radio" name="fmt" value="pdf"> PDF</label>
+        <label><input type="radio" name="fmt" value="xlsx"> Excel（风险清单）</label>
+      </div></div>
+    <div class="fm"><label>包含内容</label>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+        <label><input type="checkbox" checked> 风险清单与修改建议</label>
+        <label><input type="checkbox" checked> 原文高亮标注</label>
+        <label><input type="checkbox" checked> 审查依据（法条引用）</label>
+        <label><input type="checkbox"> 置信度与来源标记</label>
+        <label><input type="checkbox"> 处置过程留痕</label>
+      </div></div>
+    <div class="fm"><label>文件名</label><input type="text" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" value="设备采购项目（一期）招标文件-体检报告"></div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitExportReport()">导出报告</button></div>`);
+}
+function submitExportReport(){
+  const fmt = document.querySelector('input[name="fmt"]:checked');
+  if(!fmt){ toast('请选择报告格式'); return; }
+  const ext = {docx:'.docx', pdf:'.pdf', xlsx:'.xlsx'}[fmt.value];
+  closeModal(); toast(`报告已生成：体检报告${ext} · 含风险清单与修改建议`);
+}
+
+/* ============ 上传合同（复用 openUpload 参数化） ============ */
+
+/* ============ 新增企业规则 ============ */
+function openNewRule(){
+  openModal(`<div class="m-h">新增企业规则<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div class="fm"><label>规则名称</label><input type="text" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" placeholder="如：预付款比例不得超过 30%"></div>
+    <div class="fm"><label>风险级别</label>
+      <div class="radio-group">
+        <label><input type="radio" name="rlv" value="high"> 高</label>
+        <label><input type="radio" name="rlv" value="mid" checked> 中</label>
+        <label><input type="radio" name="rlv" value="low"> 低</label>
+      </div></div>
+    <div class="fm"><label>特征模式（正则或关键词）</label><input type="text" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" placeholder="如：预付款.*超过.*30%"></div>
+    <div class="fm"><label>风险描述</label><textarea rows="2" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" placeholder="描述该条款的风险点"></textarea></div>
+    <div class="fm"><label>依据</label><input type="text" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" placeholder="如：集团采购管理办法 第 12 条"></div>
+    <div class="fm"><label>修改建议</label><textarea rows="2" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px" placeholder="如：预付款比例调整为不超过 30%"></textarea></div>
+    <div style="font-size:12px;color:var(--gray);margin-top:8px">入库流程：法务确认 → 回归测试（≥1 正例 + 1 反例）→ 灰度 30% → 全量发布</div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitNewRule()">提交法务确认</button></div>`);
+}
+function submitNewRule(){
+  const nm = document.querySelector('.m-b input[type="text"]');
+  if(nm && !nm.value.trim()){ toast('请填写规则名称'); return; }
+  closeModal(); toast('企业规则已提交，待法务确认后入库（灰度 30%）');
+}
+
+/* ============ 对比澄清文件 ============ */
+function openClarify(){
+  openModal(`<div class="m-h">对比澄清文件<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:10px">上传澄清/补遗文件，与原始招标文件逐条对比变更</div>
+    <div id="dropZone" style="border:2px dashed #CBD5E1;border-radius:10px;padding:26px;text-align:center;color:var(--gray);font-size:13px;cursor:pointer" onclick="pickClarify()">点击选择澄清文件，或拖拽到此处</div>
+    <div id="upProg" style="display:none;margin-top:12px"><div style="font-size:12px;color:var(--gray);margin-bottom:6px" id="upTxt">对比中 10%…</div><div class="bar"><div class="fill" id="upFill" style="width:10%"></div></div></div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+}
+function pickClarify(){
+  const dz = document.getElementById('dropZone'); const pg = document.getElementById('upProg');
+  if(!dz||!pg) return;
+  dz.style.display='none'; pg.style.display='block';
+  let p=10; clearInterval(upTimer);
+  upTimer = setInterval(()=>{
+    p = Math.min(p + 8 + Math.floor(Math.random()*10), 100);
+    document.getElementById('upFill').style.width = p+'%';
+    document.getElementById('upTxt').textContent = p<100 ? `对比中 ${p}%…` : '对比完成 · 检出 2 处变更';
+    if(p>=100){ clearInterval(upTimer); setTimeout(()=>{ closeModal(); toast('对比完成 · 检出 2 处变更（1 处已同步风险清单）'); }, 900); }
+  }, 260);
+}
+
+/* ============ 供应商画像明细 ============ */
+function openVendorDetail(name, credit, risk){
+  openModal(`<div class="m-h">${esc(name)} · 画像明细<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div class="row" style="gap:16px;margin-bottom:12px">
+      <div style="flex:1;text-align:center;padding:12px;background:var(--gray-l);border-radius:8px"><div style="font-size:24px;font-weight:700;color:${credit>=80?'var(--green)':credit>=70?'var(--orange)':'var(--red)'}">${credit}</div><div class="muted">信用评分</div></div>
+      <div style="flex:1;text-align:center;padding:12px;background:var(--gray-l);border-radius:8px"><div style="font-size:24px;font-weight:700">${risk||0}</div><div class="muted">涉诉记录</div></div>
+    </div>
+    <div class="fm"><label>工商信息</label><div style="font-size:13px;line-height:1.8">法定代表人：张伟<br>注册资本：5000 万元<br>成立日期：2015-03-12<br>经营范围：计算机软硬件开发与销售</div></div>
+    <div class="fm"><label>资质证书</label><div style="font-size:13px">ISO 9001 质量管理体系 ✅<br>安防工程一级 ✅<br>计算机信息系统集成二级 ✅</div></div>
+    <div class="fm"><label>历史合作</label><div style="font-size:13px">近 3 年中标 4 次 · 合同金额合计 ¥2,800 万 · 验收合格率 100%</div></div>
+    <div class="fm"><label>风险事件</label><div style="font-size:13px;color:${risk>0?'var(--red)':'var(--green)'}">${risk>0?'2024 合同纠纷 · 已结案':'无涉诉记录'}</div></div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">关闭</button><button class="btn primary" onclick="closeModal();toast('画像明细已导出（.pdf）')">导出明细</button></div>`);
+}
+
+/* ============ 生成声明模板 ============ */
+function openDeclTpl(){
+  openModal(`<div class="m-h">关联自查声明模板<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:10px">根据关联自查结果自动生成声明模板，可下载后填写盖章</div>
+    <div style="background:var(--gray-l);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;max-height:200px;overflow:auto">
+      <b>投标主体关联关系声明</b><br><br>
+      本投标人在此声明：经自查，我方与以下投标主体存在关联关系：<br><br>
+      1. 华信科技 ↔ 华信智能科技：同法定代表人、同办公地址<br>
+      2. 蓝盾安全 ↔ 蓝盾数据服务：控股 100%<br><br>
+      我方承诺上述关联关系真实有效，不存在围标串标行为，如有隐瞒愿承担法律责任。<br><br>
+      投标人（盖章）：________<br>
+      日期：________
+    </div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast('声明模板已下载（.docx）')">下载模板</button></div>`);
+}
+
+/* ============ 起草编辑器 ============ */
+function openDraftEdit(name, status){
+  openModal(`<div class="m-h">${esc(name)}<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:10px">状态：${esc(status)} · 起草完成后自动触发回审</div>
+    <div style="border:1px solid var(--line);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;max-height:240px;overflow:auto;background:#fff">
+      <b>采购协议（初稿）</b><br><br>
+      甲方：金源集团　　乙方：华信科技<br>
+      合同编号：CG-HW-2026-012<br><br>
+      第一条　标的物<br>
+      1.1　设备名称：核心交换机及配套设备<br>
+      1.2　数量：1 套<br><br>
+      第二条　价款<br>
+      2.1　总价：人民币壹佰贰拾万元（¥1,200,000）<br>
+      2.2　价格含设备运输、安装、调试与培训<br><br>
+      第三条　交付与验收<br>
+      3.1　合同签订后 45 日历天内交货<br>
+      3.2　货到 15 个工作日内组织验收<br><br>
+      第四条　付款<br>
+      4.1　货到验收合格后 30 日内支付 90%<br>
+      4.2　剩余 10% 作为质保金，质保期满后支付<br>
+    </div>
+    <div style="font-size:12px;color:var(--blue);margin-top:8px">💡 已引用条款库 3 条标准条款 · 禁用条款已自动拦截</div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast('初稿已保存，自动审查中…')">保存并回审</button></div>`);
+}
+
+/* ============ 同步黑名单二次确认 ============ */
+function confirmBlacklist(){
+  openModal(`<div class="m-h">确认同步黑名单<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b"><div style="font-size:14px;margin:8px 0">将 <b>蓝盾安全</b>（信用 61 · 涉诉 3）同步至集团黑名单库，同步后全集团采购将自动拦截。</div>
+  <div style="font-size:12px;color:var(--red);margin-top:8px">⚠ 此操作不可撤销，请确认已获法务审批</div></div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast('已同步集团黑名单库 · 全集团自动拦截')">确认同步</button></div>`);
+}
+
+/* ============ 批量导出二次确认 ============ */
+
+/* ============ 上传招标文件（拖拽/选择 → 解析进度） ============ */
+let upTimer;
+function openUpload(title, doneMsg){
+  const t = title || '上传招标文件';
+  const dm = doneMsg || '体检完成 · 检出 6 条风险（高 2 · 中 3 · 低 1）';
+  openModal(`<div class="m-h">${esc(t)}<span class="x" onclick="closeModal()">✕</span></div>
+  <div class="m-b">
+    <div style="font-size:13px;color:var(--gray);margin:6px 0 12px">支持 PDF / Word · 单个文件不超过 50MB</div>
+    <div id="dropZone" style="border:2px dashed #CBD5E1;border-radius:10px;padding:26px;text-align:center;color:var(--gray);font-size:13px;cursor:pointer" onclick="pickFile('${esc(dm)}')">点击选择文件，或将文件拖拽到此处</div>
+    <div id="upProg" style="display:none;margin-top:12px"><div style="font-size:12px;color:var(--gray);margin-bottom:6px" id="upTxt">解析中 10%…</div><div class="bar"><div class="fill" id="upFill" style="width:10%"></div></div></div>
+  </div>
+  <div class="m-f"><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+  const dz = document.getElementById('dropZone');
+  if(dz){
+    dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.style.borderColor='var(--blue)'; dz.style.background='var(--gray-l)'; });
+    dz.addEventListener('dragleave', ()=>{ dz.style.borderColor='#CBD5E1'; dz.style.background=''; });
+    dz.addEventListener('drop', e=>{ e.preventDefault(); dz.style.borderColor='#CBD5E1'; dz.style.background=''; pickFile(dm); });
+  }
+}
+function pickFile(doneMsg){
+  const dm = doneMsg || '体检完成 · 检出 6 条风险（高 2 · 中 3 · 低 1）';
+  const dz = document.getElementById('dropZone'); const pg = document.getElementById('upProg');
+  if(!dz||!pg) return;
+  dz.style.display='none'; pg.style.display='block';
+  let p = 10;
+  clearInterval(upTimer);
+  upTimer = setInterval(()=>{
+    p = Math.min(p + 6 + Math.floor(Math.random()*10), 100);
+    document.getElementById('upFill').style.width = p+'%';
+    document.getElementById('upTxt').textContent = p<100 ? `解析中 ${p}%…` : '解析完成 · 正在生成报告…';
+    if(p>=100){
+      clearInterval(upTimer);
+      setTimeout(()=>{ closeModal(); toast(dm); }, 900);
+    }
+  }, 260);
+}
+
+/* ============ 初始化 ============ */
+function init(){
+  const main = document.getElementById('main');
+  /* URL hash 导航支持（#dashboard / #tender / #contract / #alert / #rules） */
+  const h = (location.hash||'').replace('#','');
+  if(['dashboard','tender','contract','bid','draft','vendor','alert','rules'].includes(h)) state.view = h;
+  syncNav(state.view);
+  const views = { dashboard:renderDash, tender:renderTender, contract:renderContract, bid:renderBid, draft:renderDraft, vendor:renderVendor, alert:renderAlert, rules:renderRules };
+  main.innerHTML = (views[state.view]||renderDash)();
+  const w = document.getElementById('reportWrap');
+  if(w && (state.view==='tender'||state.view==='contract')) w.innerHTML = renderReport();
+  document.querySelectorAll('.h-nav button').forEach(b=> b.addEventListener('click', ()=>{
+    const v = b.dataset.nav==='home'?'dashboard':b.dataset.nav==='review'?'contract':b.dataset.nav;
+    nav(v);
+  }));
+  initGlobalSearch();
+  initNoti();
+}
+/* 报告区注入：仅体检/合同视图有 reportWrap */
+function renderReportInto(){
+  const w = document.getElementById('reportWrap');
+  if(w && (state.view==='tender'||state.view==='contract')) w.innerHTML = renderReport();
+}
+/* 在 render() 内联渲染后补齐报告区 */
+const _origRender = render;
+render = function(){
+  const main = document.getElementById('main');
+  const views = { dashboard:renderDash, tender:renderTender, contract:renderContract, bid:renderBid, draft:renderDraft, vendor:renderVendor, alert:renderAlert, rules:renderRules };
+  main.innerHTML = (views[state.view]||renderDash)();
+  const w = document.getElementById('reportWrap');
+  if(w && (state.view==='tender'||state.view==='contract')) w.innerHTML = renderReport();
+  bind();
+};
+init();
+</script>
+</body>
+</html>

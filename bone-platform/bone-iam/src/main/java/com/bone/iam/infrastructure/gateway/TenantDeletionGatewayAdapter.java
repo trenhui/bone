@@ -3,6 +3,7 @@ package com.bone.iam.infrastructure.gateway;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class TenantDeletionGatewayAdapter implements TenantDeletionGateway {
 
   private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -60,9 +62,10 @@ public class TenantDeletionGatewayAdapter implements TenantDeletionGateway {
           "mdm_entity",
           "mdm_field",
           "mdm_record",
-          "mdm_record_version",
+          // mdm_record_version / mdm_record_category 是 mdm_record 的**子表**（只有 record_id，无
+          // tenant_id），
+          // 不能按 tenant_id 直删——它们走下面的 JOIN 子表清退分支，见 CHILD_TABLE_PURGE_SQL。
           "mdm_category",
-          "mdm_record_category",
           "mdm_steward",
           "mdm_steward_scope",
           "mdm_entity_subscription",
@@ -108,30 +111,66 @@ public class TenantDeletionGatewayAdapter implements TenantDeletionGateway {
           // bone-notification（R9：站内信按租户隔离，用户 PII）
           "ntf_message");
 
+  /**
+   * 无 {@code tenant_id} 的<strong>子表</strong>：只能挂靠租户作用域父表经 JOIN 清退。
+   *
+   * <p>{@code iam_role_permission} 是最早的一个（挂 {@code iam_role}）；{@code mdm_record_version} 与 {@code
+   * mdm_record_category} 同形（只有 {@code record_id}，挂 {@code mdm_record}）—— 它们曾被直接写进 {@link
+   * #TENANT_TABLES} 走 {@code WHERE tenant_id = ?}，而库里根本没有该列， 于是 <b>整个租户删除
+   * 500</b>（SQLSyntaxErrorException: Unknown column 'tenant_id'）， 且因 {@code @Transactional} 全批回滚 ⇒
+   * 租户永远删不掉。
+   *
+   * <p>必须在父表（{@link #TENANT_TABLES}）被清掉<strong>之前</strong>执行，否则 JOIN 不到任何父行。
+   */
+  private static final List<String> CHILD_TABLE_PURGE_SQL =
+      List.of(
+          "DELETE rp FROM iam_role_permission rp INNER JOIN iam_role r ON r.id = rp.role_id"
+              + " WHERE r.tenant_id = :tenantId",
+          "DELETE rv FROM mdm_record_version rv INNER JOIN mdm_record r ON r.id = rv.record_id"
+              + " WHERE r.tenant_id = :tenantId",
+          "DELETE rc FROM mdm_record_category rc INNER JOIN mdm_record r ON r.id = rc.record_id"
+              + " WHERE r.tenant_id = :tenantId");
+
   @Override
   @Transactional
   public void purgeTenantData(long tenantId) {
     MapSqlParameterSource params = new MapSqlParameterSource("tenantId", tenantId);
 
-    // iam_role_permission 无 tenant_id，随主表 iam_role 经 JOIN 清除（by-design：只经租户作用域主表访问）
-    jdbcTemplate.update(
-        """
-                DELETE rp FROM iam_role_permission rp
-                INNER JOIN iam_role r ON r.id = rp.role_id
-                WHERE r.tenant_id = :tenantId
-                """,
-        params);
+    // 1) 先清子表（父行还在，JOIN 得出来）
+    for (String sql : CHILD_TABLE_PURGE_SQL) {
+      jdbcTemplate.update(sql, params);
+    }
 
-    // 跨模块租户隔离表统一按 tenant_id 清除。整批置于 FOREIGN_KEY_CHECKS=0 下执行，
+    // 2) 跨模块租户隔离表统一按 tenant_id 清除。整批置于 FOREIGN_KEY_CHECKS=0 下执行，
     // 避免 70+ 表间外键顺序耦合导致部分删除失败（租户内父子表同批清除，无悬空引用）。
     // @Transactional 保证 SET 与全部 DELETE 在同一连接/事务内生效。
     jdbcTemplate.getJdbcTemplate().execute("SET FOREIGN_KEY_CHECKS = 0");
     try {
       for (String table : TENANT_TABLES) {
+        if (!hasTenantIdColumn(table)) {
+          // 韧性：清退清单是手写常量，跨模块 68 张表必然会有登记漂移（DDL 门禁只比对
+          // bone-init.sql，迁移脚本建的表扫不到）。缺列就跳过并告警——让「租户删除」这个
+          // 功能仍可用（其余 66 张表正常清退），而不是整条链路 500。
+          // 遗留数据的可见性由 scripts/check-tenant-deletion-coverage.py 与这里 WARN 日志兜底。
+          log.warn("[tenant-purge] 跳过表 {}：无 tenant_id 列，无法按租户清退（请修正 TENANT_TABLES 登记）", table);
+          continue;
+        }
         jdbcTemplate.update("DELETE FROM " + table + " WHERE tenant_id = :tenantId", params);
       }
     } finally {
       jdbcTemplate.getJdbcTemplate().execute("SET FOREIGN_KEY_CHECKS = 1");
     }
+  }
+
+  /** 探测目标表是否真的有 tenant_id 列（information_schema 点查，零数据扫描）。 */
+  private boolean hasTenantIdColumn(String table) {
+    Integer n =
+        jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM information_schema.columns"
+                + " WHERE table_schema = DATABASE() AND table_name = :tableName"
+                + " AND column_name = 'tenant_id'",
+            new MapSqlParameterSource("tableName", table),
+            Integer.class);
+    return n != null && n > 0;
   }
 }

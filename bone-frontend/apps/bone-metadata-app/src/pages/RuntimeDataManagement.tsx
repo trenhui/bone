@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -6,6 +6,8 @@ import {
   Button,
   Card,
   DatePicker,
+  Descriptions,
+  Drawer,
   Dropdown,
   Empty,
   Form,
@@ -20,13 +22,14 @@ import {
   Switch,
   Table,
   Tag,
+  Timeline,
   Typography,
   message,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined, DownOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, DownOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { formatNumber } from '@bone/shared-utils';
+import { formatDate, formatNumber } from '@bone/shared-utils';
 import {
   errorMessage,
   metadataEntityApi,
@@ -39,6 +42,7 @@ import type {
   RuntimeRecord,
   RuntimeActionDef,
   RuntimeActionView,
+  RuntimeActionExecution,
   RuntimeReferenceOption,
   RuntimeChildRow,
 } from '../types';
@@ -50,16 +54,17 @@ import {
   parseEnumValues,
   RUNTIME_READONLY_FIELDS,
 } from '../types';
-import { Auth, AuthButton } from '@bone/ui';
+import { Auth, AuthButton, usePermission } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import {
   enumOptionsOf,
   isEnumField,
   isRenderSupported,
-  loadOverlay,
   projectColumns,
   tableSizeOf,
+  type UiOverlay,
 } from '../utils/columnProjection';
+import { fetchOverlay } from '../utils/overlaySync';
 import { listRecent } from '../utils/recent';
 import CommandPalette from '../components/CommandPalette';
 
@@ -162,6 +167,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  /** 权限快照（与 AuthButton 同源）：用于「更多」下拉里逃逸动作的置灰判定 */
+  const { has } = usePermission();
   /** 数据 Tab 空态 CTA：由 /…/data 回溯到实体详情并定位「结构」Tab（B1） */
   const structurePath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=structure`;
 
@@ -183,16 +190,28 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   /** 412 冲突时线上值 vs 本次提交的差异（W0-4「查看差异」，避免只说「被改了」却不说是哪几项） */
   const [conflictDiff, setConflictDiff] = useState<ConflictDiffRow[]>([]);
   const [diffOpen, setDiffOpen] = useState(false);
-  /** W0a2：q/sort 接线 —— 单条件过滤（field:value）*/
-  const [searchField, setSearchField] = useState<string | undefined>(undefined);
   /**
-   * 关键字拆成「输入中」与「已生效」两份：
-   * `keyword` 是 load() 的依赖，若直接绑 onChange 则**每敲一个键就发一次请求**
-   * （实测：输入 8 位单号 = 8 次 page 查询 + 表格闪烁）。
-   * 业界标准做法（Ant Design Pro / GitHub 搜索）= 输入本地即时回显 + 停顿后生效。
+   * P2-⑤：多条件等值过滤（AND）。q 契约 = {@code field:value;field:value}
+   * （后端 RuntimePageQuery.parseFilters；单条件无分隔符时与旧 field:value 完全兼容）。
+   *
+   * <p>双状态：{@link #conditions} 是编辑中的草稿（输入框直绑，不发请求）；
+   * {@link #appliedConditions} 是生效值，「查询」按钮才把前者提交为后者。
+   * 为什么不防抖直发生效：多行条件表单的业界标准形态是显式 Apply（Ant Design Pro
+   * 筛选表单 / GitHub 高级搜索）——边打边查会让「填到一半的条件」产生一次错误口径的
+   * 结果集，用户以为「没有匹配数据」实则条件还没填完。
    */
-  const [keywordInput, setKeywordInput] = useState('');
-  const [keyword, setKeyword] = useState('');
+  const [conditions, setConditions] = useState<{ field?: string; value: string }[]>([]);
+  const [appliedConditions, setAppliedConditions] = useState<{ field?: string; value: string }[]>(
+    [],
+  );
+  /** 生效筛选的 q 串（空数组 ⇒ undefined，不带 q 参数） */
+  const appliedQ = useMemo(() => {
+    const q = appliedConditions
+      .filter((c) => c.field && c.value.trim())
+      .map((c) => `${c.field}:${c.value.trim()}`)
+      .join(';');
+    return q || undefined;
+  }, [appliedConditions]);
   /** sort 契约：逗号分隔列名，`-` 前缀降序（RuntimePageQuery.parseSort） */
   const [sortField, setSortField] = useState<string | undefined>(undefined);
   const [sortDesc, setSortDesc] = useState(false);
@@ -230,6 +249,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     def: RuntimeActionView | null;
     record: RuntimeRecord | null;
   }>({ open: false, def: null, record: null });
+
+  /**
+   * 记录详情抽屉（P2-② 收口）：全字段只读视图 + 动作执行时间线。
+   * 时间线数据源 meta_runtime_action_execution（幂等去重与审计同表），
+   * P0-2 半事务时序保证任何一次执行（含 PENDING/孤儿）都留有痕迹。
+   */
+  const [detailDrawer, setDetailDrawer] = useState<{
+    open: boolean;
+    record: RuntimeRecord | null;
+  }>({ open: false, record: null });
+  const [executions, setExecutions] = useState<RuntimeActionExecution[]>([]);
+  const [executionsLoading, setExecutionsLoading] = useState(false);
 
   /** 子表（CHILD_TABLE）编辑弹窗状态：当前主记录 + 声明字段 */
   const [childModal, setChildModal] = useState<{
@@ -290,12 +321,34 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     [writableFields],
   );
 
-  /** 列投影（预览 ≡ 数据 单一真源）：始终应用本地覆盖 */
-  const overlay = useMemo(
-    () => (entityCode ? loadOverlay(entityCode) : null),
-    // overlay 随选中实体变化重新读取（localStorage 变更由界面 Tab 写入后重载）
-    [entityCode, fields],
-  );
+  /**
+   * 列投影覆盖（预览 ≡ 数据 单一真源）：服务端优先 hydrate（0042 · P2-④）。
+   *
+   * <p>为什么从 useMemo 直读改为 state + effect：服务端往返是异步的，同步读接口
+   * （localStorage）升级为异步读（HTTP）后，hydration 只能由 effect 驱动；
+   * 投影纯函数 projectColumns 不变，数据 Tab 与界面 Tab 仍共用同一真源。
+   *
+   * <p>{@link #hydratedEntityRef} 防重复请求：fields 重载（结构 Tab 加字段后返回）
+   * 不重新 hydrate —— 投影随 fields 重算，新字段按「无覆盖排末尾」规则处理即可。
+   */
+  const [overlay, setOverlay] = useState<UiOverlay | null>(null);
+  const hydratedEntityRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!entityCode) {
+      setOverlay(null);
+      hydratedEntityRef.current = null;
+      return;
+    }
+    if (hydratedEntityRef.current === entityCode) return;
+    hydratedEntityRef.current = entityCode;
+    let cancelled = false;
+    fetchOverlay(entityCode).then((ov) => {
+      if (!cancelled) setOverlay(ov);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [entityCode, fields]);
   const projectedFields = useMemo(
     () => projectColumns(writableFields, overlay),
     [writableFields, overlay],
@@ -385,8 +438,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         page,
         size: pageSize,
         fields: fieldsParam,
-        // q 契约：field:value（后端 RuntimePageQuery.parseFilter）
-        q: searchField && keyword ? `${searchField}:${keyword}` : undefined,
+        // q 契约：field:value;field:value 多条件 AND（后端 RuntimePageQuery.parseFilters）
+        q: appliedQ,
         // sort 契约：`-` 前缀降序（后端 RuntimePageQuery.parseSort）
         sort: sortField ? `${sortDesc ? '-' : ''}${sortField}` : undefined,
       };
@@ -412,8 +465,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     page,
     pageSize,
     projectedFields,
-    searchField,
-    keyword,
+    appliedQ,
     sortField,
     sortDesc,
     trashMode,
@@ -424,19 +476,6 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   }, [load]);
 
   /**
-   * 关键字防抖：350ms 停顿后才把输入值提交为生效关键字（触发 load）。
-   * 回车 / 点搜索按钮走 onSearch 立即生效，不等防抖 —— 显式操作必须即时响应。
-   */
-  useEffect(() => {
-    if (keywordInput === keyword) return;
-    const t = setTimeout(() => {
-      setKeyword(keywordInput);
-      setPage(1);
-    }, 350);
-    return () => clearTimeout(t);
-  }, [keywordInput, keyword]);
-
-  /**
    * 切换实体时清空全部筛选/排序/分页/视图态。
    *
    * 不重置的后果是真实可复现的脏读：按「单号」筛完 A 实体，切到 B 实体后
@@ -445,9 +484,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 业界通例（同 Ant Design Pro 切换数据源）：换源即换查询条件。
    */
   useEffect(() => {
-    setSearchField(undefined);
-    setKeywordInput('');
-    setKeyword('');
+    setConditions([]);
+    setAppliedConditions([]);
     setSortField(undefined);
     setSortDesc(false);
     setTrashMode(false);
@@ -708,6 +746,30 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
   };
 
   /**
+   * 打开记录详情抽屉：全字段只读 + 动作执行时间线（P2-②）。
+   * 时间线单独拉取（不在 page 里带）：多数用户不进详情，避免每次列表请求都付全量审计行的带宽。
+   */
+  const openDetail = async (record: RuntimeRecord) => {
+    if (!entityCode) return;
+    setDetailDrawer({ open: true, record });
+    setExecutionsLoading(true);
+    try {
+      const res = await runtimeRecordApi.actionExecutions(entityCode, String(record.id));
+      if (res.code === 200) {
+        setExecutions(res.data ?? []);
+      } else {
+        setExecutions([]);
+        message.error(errorMessage(res));
+      }
+    } catch {
+      setExecutions([]);
+      message.error('加载动作执行历史失败');
+    } finally {
+      setExecutionsLoading(false);
+    }
+  };
+
+  /**
    * 某行当前可用的动作。
    *
    * 真源优先级：① page 级 `meta.allowedActionsByStatus`（后端已按权限裁剪）——
@@ -878,6 +940,20 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
           }
           return formatCell(v);
         }
+        /* §0.3 G20：DECIMAL 物理存储硬编码 DECIMAL(20,6)（如 128.500000），
+           设计口径「界面按 scale=2 渲染」。此处按 2 位标度格式化，避免金额列
+           显示成 128.500000 这类对业务用户无意义的长尾零（FLOAT/DOUBLE 同处理）。 */
+        if (ftype === 'DECIMAL' || ftype === 'FLOAT' || ftype === 'DOUBLE') {
+          const v = row[f.code];
+          if (v == null || v === '') return '—';
+          const n = typeof v === 'string' ? Number(v) : (v as number);
+          if (!Number.isFinite(n)) return formatCell(v);
+          return (
+            <span style={{ fontFamily: 'ui-monospace, monospace' }}>
+              {formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          );
+        }
         return formatCell(row[f.code]);
       },
     }));
@@ -928,20 +1004,40 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
               const rest = act.filter((d) => d.code !== primary.code);
               return (
                 <>
+                  {/* 逃逸动作（资金/外部副作用）无权限时「置灰+解释」而非隐藏：
+                      后端 fail-closed 不变（RuntimeAccessGuard 仍是唯一门禁），
+                      前端「看不见」与「不让点」是两回事——隐藏会让用户无法区分
+                      「没有这个功能」和「我没权限」，直接转化为支持工单；
+                      置灰并给出确切权限码（对齐设计系统 disable 模式语义：
+                      「为什么我不能开票」类场景必须可见+可解释）。 */}
                   <AuthButton
                     code={authCodeOf(primary)}
                     type="link"
                     size="small"
+                    mode={primary.kind === 'escape' ? 'disable' : 'hide'}
+                    deniedHint={
+                      primary.kind === 'escape'
+                        ? `需授权：${authCodeOf(primary)}（资金类动作须动作级授权，联系管理员）`
+                        : undefined
+                    }
                     onClick={() => openAction(row, primary)}
                   >
                     {primary.label}
                   </AuthButton>
                   {rest.length > 0 && (
-                    <Dropdown menu={{ items: rest.map((d) => ({
-                      key: d.code,
-                      label: d.label,
-                      onClick: () => openAction(row, d),
-                    })) }} trigger={['click']}>
+                    <Dropdown menu={{ items: rest.map((d) => {
+                      // 逃逸动作进「更多」同样 fail-closed：无细码时置灰并提示缺哪个码，
+                      // 避免用户点进去才被后端 403 拒绝（先于错误发生的能力提示）。
+                      const fineRequired = d.kind === 'escape';
+                      const allowed = !fineRequired || has(authCodeOf(d));
+                      return {
+                        key: d.code,
+                        label: d.label,
+                        disabled: !allowed,
+                        title: allowed ? undefined : `需授权：${authCodeOf(d)}`,
+                        onClick: () => openAction(row, d),
+                      };
+                    }) }} trigger={['click']}>
                       <Button type="link" size="small">更多 <DownOutlined /></Button>
                     </Dropdown>
                   )}
@@ -970,6 +1066,17 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                 </Dropdown>
               );
             })()}
+            {/* 详情：全字段只读 + 动作执行时间线（P2-②）。
+                读权限与列表一致（列表可见即可见），不额外设码——
+                审计时间线的可发现性本身就是合规诉求（等保/SOX）。 */}
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => openDetail(row)}
+            >
+              详情
+            </Button>
             <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="link" size="small" onClick={() => openEdit(row)}>
               编辑
             </AuthButton>
@@ -1225,16 +1332,23 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
               },
               ...(stateChain.length > 0
                 ? stateChain.map((code) => {
-                    const active = searchField === 'status' && keyword === code;
+                    // 下钻态判定：生效条件恰为「单条 status=code」（用户可能另有多条件，
+                    // 那时步骤条不算激活——避免「看着高亮但其实还叠着别的筛选」的误判）。
+                    const active =
+                      appliedConditions.length === 1 &&
+                      appliedConditions[0].field === 'status' &&
+                      appliedConditions[0].value === code;
                     return {
                       title: (
                         <a
                           onClick={() => {
                             // 再次点击已选中的状态 = 取消筛选（幂等下钻，符合 Ant Design Pro 筛选标签行为）
                             const nextActive = !active;
-                            setSearchField(nextActive ? 'status' : undefined);
-                            setKeyword(nextActive ? code : '');
-                            setKeywordInput(nextActive ? code : '');
+                            const next: { field?: string; value: string }[] = nextActive
+                              ? [{ field: 'status', value: code }]
+                              : [];
+                            setConditions(next);
+                            setAppliedConditions(next);
                             setSelectedFilterNote(
                               nextActive ? `已按状态「${statusLabelOf(code)}」筛选` : null,
                             );
@@ -1351,39 +1465,84 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                     { label: '回收站', value: 'trash' },
                   ]}
                 />
-                {/* W0a2：q 接线（契约 = field:value，后端为精确匹配） */}
-                <Select
-                  allowClear
-                  style={{ minWidth: 160 }}
-                  placeholder="搜索字段"
-                  value={searchField}
-                  onChange={(v) => {
-                    setSearchField(v);
-                    setSelectedFilterNote(null);
-                    setPage(1);
-                  }}
-                  options={projectedFields.map((f) => ({ value: f.code, label: f.displayName || f.code }))}
-                />
-                <Input.Search
-                  allowClear
-                  style={{ width: 240 }}
-                  placeholder="搜索值（精确匹配）"
-                  value={keywordInput}
-                  disabled={!searchField}
-                  onChange={(e) => {
-                    setKeywordInput(e.target.value);
-                    // 手工改值即视为用户接管筛选，撤掉步骤条留下的说明
-                    setSelectedFilterNote(null);
-                  }}
-                  onSearch={(v) => {
-                    // 显式提交立即生效，不等防抖
-                    setKeyword(v);
-                    setPage(1);
-                  }}
-                />
+                {/* P2-⑤：多条件等值过滤（AND）。q 契约 = field:value;field:value。
+                    显式「查询」提交（不防抖直发）：填到一半的条件不该产出错误口径的结果集。 */}
+                <Space.Compact>
+                  {conditions.map((c, idx) => (
+                    <Space key={idx} size={4} align="start" wrap>
+                      <Select
+                        allowClear
+                        style={{ minWidth: 130 }}
+                        placeholder="筛选字段"
+                        value={c.field}
+                        onChange={(v) => {
+                          setConditions((prev) =>
+                            prev.map((p, i) => (i === idx ? { ...p, field: v } : p)),
+                          );
+                          // 手工改条件即视为用户接管筛选，撤掉步骤条留下的说明
+                          setSelectedFilterNote(null);
+                        }}
+                        options={projectedFields.map((f) => ({
+                          value: f.code,
+                          label: f.displayName || f.code,
+                        }))}
+                      />
+                      <Input
+                        allowClear
+                        style={{ width: 200 }}
+                        placeholder="筛选值（精确匹配）"
+                        value={c.value}
+                        onChange={(e) => {
+                          setConditions((prev) =>
+                            prev.map((p, i) => (i === idx ? { ...p, value: e.target.value } : p)),
+                          );
+                          setSelectedFilterNote(null);
+                        }}
+                        onPressEnter={() => {
+                          setAppliedConditions(conditions);
+                          setPage(1);
+                        }}
+                      />
+                      <Button
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          setConditions((prev) => prev.filter((_, i) => i !== idx));
+                        }}
+                      />
+                    </Space>
+                  ))}
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => setConditions((prev) => [...prev, { value: '' }])}
+                  >
+                    添加条件
+                  </Button>
+                  <Button
+                    type="primary"
+                    disabled={conditions.every((c) => !c.field || !c.value.trim())}
+                    onClick={() => {
+                      setAppliedConditions(conditions);
+                      setPage(1);
+                    }}
+                  >
+                    查询
+                  </Button>
+                  {appliedConditions.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        setConditions([]);
+                        setAppliedConditions([]);
+                        setSelectedFilterNote(null);
+                        setPage(1);
+                      }}
+                    >
+                      重置
+                    </Button>
+                  )}
+                </Space.Compact>
               </Space>
 
-              {/* 筛选口径留痕：步骤条下钻改变了列表口径但 URL/工具栏都不体现，
+              {/* 筛选口径留痕：步骤条下钻/多条件查询改变了列表口径但 URL/工具栏都不体现，
                   不提示的话用户会误判「数据变少了」（详见 selectedFilterNote 注释）。 */}
               {selectedFilterNote && (
                 <Alert
@@ -1395,9 +1554,8 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                     <Button
                       size="small"
                       onClick={() => {
-                        setSearchField(undefined);
-                        setKeyword('');
-                        setKeywordInput('');
+                        setConditions([]);
+                        setAppliedConditions([]);
                         setSelectedFilterNote(null);
                         setPage(1);
                       }}
@@ -1443,14 +1601,23 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                 locale={{
                   emptyText: (
                     <Empty description={null}>
-                      {searchField && keyword ? (
+                      {appliedConditions.some((c) => c.field && c.value.trim()) ? (
                         <Space direction="vertical" size={4}>
-                          <Text>没有匹配「{searchField} = {keyword}」的记录</Text>
+                          <Text>
+                            没有匹配「
+                            {appliedConditions
+                              .filter((c) => c.field && c.value.trim())
+                              .map((c) => {
+                                const f = projectedFields.find((pf) => pf.code === c.field);
+                                return `${f?.displayName || c.field} = ${c.value.trim()}`;
+                              })
+                              .join(' 且 ')}
+                            」的记录
+                          </Text>
                           <Button
                             onClick={() => {
-                              setSearchField(undefined);
-                              setKeyword('');
-                              setKeywordInput('');
+                              setConditions([]);
+                              setAppliedConditions([]);
                               setSelectedFilterNote(null);
                               setPage(1);
                             }}
@@ -1585,29 +1752,129 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
           />
         )}
         <Form form={actionForm} layout="vertical">
-          {/* 入参按 Describe 声明的 params[] 动态渲染 —— 前端禁止硬编码参数名 */}
-          {actionModal.def?.params?.map((p) => (
-            <Form.Item
-              key={p.code}
-              name={p.code}
-              label={p.label || p.code}
-              rules={p.required ? [{ required: true, message: `请填写${p.label || p.code}` }] : []}
-            >
-              {(p.type || '').toUpperCase() === 'ENUM' && p.enumValues && p.enumValues.length ? (
-                <Select
-                  placeholder="请选择"
-                  options={p.enumValues.map((v) => ({ value: v, label: v }))}
-                />
-              ) : (
-                <Input placeholder={p.label || p.code} />
-              )}
-            </Form.Item>
-          ))}
+          {/* 入参按 Describe 声明的 params[] 动态渲染 —— 前端禁止硬编码参数名。
+              控件按声明 type 选择（§4.8.2：string/number/integer/boolean/enum），
+              使金额/数量类入参成为真正的数值、布尔类成为开关，而非一律文本输入框。 */}
+          {actionModal.def?.params?.map((p) => {
+            const ptype = (p.type || 'STRING').toUpperCase();
+            const isEnum = ptype === 'ENUM' && p.enumValues && p.enumValues.length > 0;
+            const isNumber = ptype === 'NUMBER' || ptype === 'INTEGER' || ptype === 'LONG';
+            const isBool = ptype === 'BOOLEAN';
+            const control = isEnum ? (
+              <Select
+                placeholder="请选择"
+                options={(p.enumValues ?? []).map((v) => ({ value: v, label: v }))}
+              />
+            ) : isNumber ? (
+              <InputNumber style={{ width: '100%' }} />
+            ) : isBool ? (
+              <Switch />
+            ) : (
+              <Input placeholder={p.label || p.code} />
+            );
+            return (
+              <Form.Item
+                key={p.code}
+                name={p.code}
+                label={p.label || p.code}
+                valuePropName={isBool ? 'checked' : 'value'}
+                rules={p.required && !isBool ? [{ required: true, message: `请填写${p.label || p.code}` }] : []}
+              >
+                {control}
+              </Form.Item>
+            );
+          })}
           {actionModal.def && (!actionModal.def.params || actionModal.def.params.length === 0) && (
             <Alert type="info" showIcon message="该动作无需额外参数，确认即执行" />
           )}
         </Form>
       </Modal>
+
+      {/* 记录详情抽屉（P2-②）：全字段只读 + 动作执行时间线。
+          时间线 = meta_runtime_action_execution 按记录回放（P0-2 保证半事务也有行），
+          状态色：成功=绿 / 失败=红 / 执行中=蓝 / 孤儿=橙（禁自动重放，须对账）。 */}
+      <Drawer
+        title={detailDrawer.record ? `记录详情 #${String(detailDrawer.record.id).slice(-8)}` : '记录详情'}
+        open={detailDrawer.open}
+        onClose={() => setDetailDrawer({ open: false, record: null })}
+        width={560}
+        destroyOnHidden
+      >
+        {detailDrawer.record && (
+          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Descriptions
+              size="small"
+              column={1}
+              bordered
+              labelStyle={{ width: 132 }}
+              items={(fields.length > 0 ? fields : [])
+                .filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code))
+                .map((f) => ({
+                  key: f.code,
+                  label: f.displayName || f.code,
+                  children:
+                    detailDrawer.record?.[f.code] == null ||
+                    detailDrawer.record[f.code] === ''
+                      ? '—'
+                      : String(detailDrawer.record[f.code]),
+                }))}
+            />
+            <div>
+              <Typography.Title level={5} style={{ marginTop: 0 }}>
+                动作执行时间线
+              </Typography.Title>
+              {executionsLoading ? (
+                <div style={{ padding: 24, textAlign: 'center' }}>
+                  <Timeline pending="加载中…" />
+                </div>
+              ) : executions.length === 0 ? (
+                <Empty description="该记录还没有执行过动作" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              ) : (
+                <Timeline
+                  items={executions.map((ex) => {
+                    const meta =
+                      ex.status === 1
+                        ? { color: 'green', label: '成功' }
+                        : ex.status === 2
+                          ? { color: 'red', label: '失败' }
+                          : ex.status === 3
+                            ? { color: 'blue', label: '执行中' }
+                            : { color: 'orange', label: '孤儿' };
+                    return {
+                      color: meta.color,
+                      children: (
+                        <div>
+                          <Space size={8} wrap>
+                            <Text strong>{ex.actionCode}</Text>
+                            <Tag color={meta.color}>{meta.label}</Tag>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {ex.createdAt ? formatDate(ex.createdAt) : '—'}
+                            </Text>
+                            {ex.operatorId && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                操作人 {ex.operatorId}
+                              </Text>
+                            )}
+                          </Space>
+                          {ex.resultJson && (
+                            <Typography.Paragraph
+                              type="secondary"
+                              style={{ marginBottom: 0, fontSize: 12, wordBreak: 'break-all' }}
+                            >
+                              {ex.resultJson}
+                            </Typography.Paragraph>
+                          )}
+                        </div>
+                      ),
+                    };
+                  })}
+                />
+              )}
+            </div>
+          </Space>
+        )}
+      </Drawer>
+
       {/* G10：子表明细（CHILD_TABLE）整组替换编辑器 —— 键驱动通用行编辑，
           必填/类型校验由后端 RuntimeWriteValidator 兜底（422 明细错误信息）。 */}
       <Modal
@@ -1658,7 +1925,21 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                 dataIndex: c,
                 key: c,
                 ellipsis: true,
-                render: (v: unknown) => formatCell(v),
+                render: (v: unknown) => {
+                  /* 明细金额类列（amount/price/数量）按 2 位标度渲染，与头表合计
+                     （childSumOf 已用 formatNumber）保持一致；非数值原样展示。 */
+                  if (isNumericColumn(c)) {
+                    const n = typeof v === 'string' ? Number(v) : v;
+                    if (typeof n === 'number' && Number.isFinite(n)) {
+                      return (
+                        <span style={{ fontFamily: 'ui-monospace, monospace' }}>
+                          {formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      );
+                    }
+                  }
+                  return formatCell(v);
+                },
               })),
               {
                 title: '操作',

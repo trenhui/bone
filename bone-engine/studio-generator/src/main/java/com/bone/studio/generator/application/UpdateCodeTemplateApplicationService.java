@@ -33,7 +33,14 @@ public class UpdateCodeTemplateApplicationService {
       throw new IllegalArgumentException("模板不存在: " + command.getId());
     }
 
-    template.updateContent(command.getContent());
+    // 不仅要写正文：name / code / description / type 同样要应用。
+    // 历史实现只调 updateContent，导致 UI「编辑模板」返回 200 但改名/改描述都不生效。
+    template.update(
+        command.getName(),
+        command.getCode(),
+        command.getDescription(),
+        command.getType(),
+        command.getContent());
     codeTemplateRepository.save(template);
     return template.getId();
   }

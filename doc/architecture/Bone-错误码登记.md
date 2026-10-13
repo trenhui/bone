@@ -254,6 +254,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_RELATION_CONFIG_INVALID` | 500 | 关联关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列等建模侧错误，需修正 validation_rules） |
 | `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移：模型类型与物理列类型不兼容（doc2a §328） |
+| `META_AUTO_NUMBER_CONFIG_INVALID` | 400 | 自动编号配置非法（`auto_number` 缺必填项 `field` / `prefix`、`reset` 不是 `none`/`daily`、或不是合法 JSON） |
 
 ### MD_
 

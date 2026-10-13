@@ -247,6 +247,24 @@ public class JdbcPhysicalStructureGatewayAdapter implements PhysicalStructureGat
     return PhysicalStructurePlan.of(entity.getCode(), table, statements, executed, status, message);
   }
 
+  @Override
+  public PhysicalStructurePlan dropTable(String tableName) {
+    // 表名直传定位（删除流程中实体行已软删且 code 被追加 _del_<id> 后缀，按 entityCode 反查必然落空，
+    // 契约理由见 PhysicalStructureGateway#dropTable）。GENERATIVE 判断在应用层，此处不重复。
+    String table = requireIdentifier(tableName, "tableName");
+    if (!tableExists(table)) {
+      // 幂等：表已不存在（并发删除/手工清理过）时视为已达成，与 dropColumn 的「不存在即无需删」同口径
+      return PhysicalStructurePlan.of(
+          null, table, List.of(), 0, PhysicalStructurePlan.STATUS_READY, "物理表不存在，无需删除: " + table);
+    }
+    // DDL 在 MySQL 下隐式提交：DROP 之后即使外层事务回滚，表也回不来。
+    // 因此本方法只在「用户显式勾选连表删除」的路径末端被调用，删除意图本身就是不可回滚的用户决策。
+    String ddl = "DROP TABLE IF EXISTS `" + table + "`";
+    jdbcTemplate.execute(ddl);
+    return PhysicalStructurePlan.of(
+        null, table, List.of(ddl), 1, PhysicalStructurePlan.STATUS_DROPPED, "已删除物理表: " + table);
+  }
+
   /** 当前实体下所有活动（未软删）字段的物理列名集合（含机制 B 的 ext_* 预留列）。 */
   private Set<String> activeFieldCodes(MetaEntity entity) {
     Set<String> codes = new LinkedHashSet<>();

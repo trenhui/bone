@@ -65,6 +65,10 @@ public class MetaEntity extends AbstractEntity<Long> {
   @Column(name = "row_policies")
   private String rowPolicies;
 
+  /** 自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）；非空时由平台生成单据号。 */
+  @Column(name = "auto_number")
+  private String autoNumber;
+
   @Column(name = "version", nullable = false)
   private Integer version;
 
@@ -105,6 +109,34 @@ public class MetaEntity extends AbstractEntity<Long> {
       int deliveryMode,
       String icon,
       Long moduleId) {
+    return create(
+        id,
+        tenantId,
+        name,
+        code,
+        displayName,
+        description,
+        tableName,
+        entityType,
+        deliveryMode,
+        icon,
+        moduleId,
+        null);
+  }
+
+  public static MetaEntity create(
+      Long id,
+      Long tenantId,
+      String name,
+      String code,
+      String displayName,
+      String description,
+      String tableName,
+      int entityType,
+      int deliveryMode,
+      String icon,
+      Long moduleId,
+      String autoNumber) {
     MetaEntity e = new MetaEntity();
     e.setId(id);
     e.tenantId = tenantId;
@@ -121,6 +153,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     e.version = 0;
     e.icon = icon;
     e.moduleId = moduleId;
+    e.autoNumber = autoNumber;
     e.scope = MetaModelTemplate.SCOPE_TENANT;
     Date now = new Date();
     e.setCreatedAt(now);
@@ -137,6 +170,18 @@ public class MetaEntity extends AbstractEntity<Long> {
       Integer sortOrder,
       String icon,
       Integer deliveryMode) {
+    update(name, displayName, description, tableName, sortOrder, icon, deliveryMode, null);
+  }
+
+  public void update(
+      String name,
+      String displayName,
+      String description,
+      String tableName,
+      Integer sortOrder,
+      String icon,
+      Integer deliveryMode,
+      String autoNumber) {
     if (MetaEntityStatus.fromCode(this.status) == MetaEntityStatus.PUBLISHED) {
       throw new DomainException("已发布实体不可修改，请先归档或回退草稿");
     }
@@ -151,6 +196,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     if (deliveryMode != null) {
       this.deliveryMode = deliveryMode;
     }
+    this.autoNumber = autoNumber;
     bumpVersion();
     this.setUpdatedAt(new Date());
   }

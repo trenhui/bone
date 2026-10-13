@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "BONE frontend monorepo",
+  "license": "BUSL-1.1",
   "workspaces": [
     "apps/*",
     "packages/*",

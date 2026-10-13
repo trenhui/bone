@@ -171,4 +171,67 @@ class MetaTemplateApplicationServiceTest {
     assertThat(inserted.getEnumValues()).contains("A");
     assertThat(inserted.getValidationRules()).contains("required");
   }
+
+  // ===================== 交付模式继承（0041 / P1） =====================
+
+  @Test
+  void instantiate_shouldInheritTemplateDeliveryMode_whenCmdOmitsIt() {
+    // 模板声明 RUNTIME 而 cmd 漏传 ⇒ 必须继承 1，否则「发布成功但无表」（E2E 实证坑）
+    MetaModelTemplate tpl = template(9150L, 1);
+    ReflectionTestUtils.setField(tpl, "deliveryMode", 1);
+    when(templateReadPort.findPlatformTemplate(9150L)).thenReturn(Optional.of(tpl));
+    when(templateReadPort.fieldsOf(9150L)).thenReturn(List.of());
+    when(templateReadPort.actionsOf(9150L)).thenReturn(List.of());
+    when(metaEntityApplicationService.createEntity(any())).thenReturn(8002L);
+    MetaEntity created =
+        MetaEntity.create(null, 1L, "报销", "claim", "报销", null, "t_claim", 1, 1, null, 1L);
+    when(metaEntityRepository.findById(8002L)).thenReturn(created);
+
+    InstantiateFromTemplateCommand cmd = new InstantiateFromTemplateCommand();
+    cmd.setName("报销");
+    cmd.setCode("claim");
+    cmd.setDisplayName("报销");
+    cmd.setTableName("t_claim");
+    cmd.setModuleId(1L);
+
+    service.instantiate(9150L, cmd);
+
+    ArgumentCaptor<com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand>
+        captor =
+            ArgumentCaptor.forClass(
+                com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand.class);
+    verify(metaEntityApplicationService).createEntity(captor.capture());
+    assertThat(captor.getValue().getDeliveryMode()).isEqualTo(1);
+  }
+
+  @Test
+  void instantiate_shouldPreferExplicitCmdDeliveryMode_overTemplate() {
+    // 调用方显式传 GENERATIVE ⇒ 以调用方为准（模板只提供缺省，不强制）
+    MetaModelTemplate tpl = template(9150L, 1);
+    ReflectionTestUtils.setField(tpl, "deliveryMode", 1);
+    when(templateReadPort.findPlatformTemplate(9150L)).thenReturn(Optional.of(tpl));
+    when(templateReadPort.fieldsOf(9150L)).thenReturn(List.of());
+    when(templateReadPort.actionsOf(9150L)).thenReturn(List.of());
+    when(metaEntityApplicationService.createEntity(any())).thenReturn(8003L);
+    MetaEntity created =
+        MetaEntity.create(null, 1L, "报销", "claim2", "报销", null, "t_claim2", 1, 1, null, 1L);
+    when(metaEntityRepository.findById(8003L)).thenReturn(created);
+
+    InstantiateFromTemplateCommand cmd = new InstantiateFromTemplateCommand();
+    cmd.setName("报销");
+    cmd.setCode("claim2");
+    cmd.setDisplayName("报销");
+    cmd.setTableName("t_claim2");
+    cmd.setModuleId(1L);
+    cmd.setDeliveryMode(0);
+
+    service.instantiate(9150L, cmd);
+
+    ArgumentCaptor<com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand>
+        captor =
+            ArgumentCaptor.forClass(
+                com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand.class);
+    verify(metaEntityApplicationService).createEntity(captor.capture());
+    assertThat(captor.getValue().getDeliveryMode()).isZero();
+  }
 }

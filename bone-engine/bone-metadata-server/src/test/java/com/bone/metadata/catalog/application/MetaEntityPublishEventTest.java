@@ -16,6 +16,7 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.common.BatchOperateResult;
+import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
@@ -71,6 +72,7 @@ class MetaEntityPublishEventTest {
             mock(com.bone.metadata.sdk.metadata.api.MetadataService.class),
             () -> null,
             Optional.empty(),
+            mock(ActionDefMaterializePort.class),
             domainEventPublisher,
             mock(PlatformTransactionManager.class));
   }

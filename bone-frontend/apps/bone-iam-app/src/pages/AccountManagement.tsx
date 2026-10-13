@@ -253,7 +253,8 @@ const AccountManagement: React.FC = () => {
     try {
       const values = await resetPwdForm.validateFields();
       if (currentAccount) {
-        await api.resetAccountPassword(currentAccount.id, { password: values.password });
+        // 后端 ResetPasswordReq 的字段名是 newPassword（不是 password），写错会 400 IAM_WEAK_PASSWORD
+        await api.resetAccountPassword(currentAccount.id, { newPassword: values.password });
         antMessage.success('密码重置成功');
         setIsResetPwdModalVisible(false);
       }

@@ -352,4 +352,4 @@ func (f *CustomFilter) DoFilter(ctx *model.Context, chain spi.FilterChain) (*mod
 
 ## 许可证
 
-Bone Extension Go 采用 MIT 许可证。
+Bone Extension Go 采用 BSL 1.1 授权：个人学习/研究/评估/开发测试免费，企业生产与商业使用需购买商业授权。详见仓库根目录 [LICENSE](../../../../LICENSE)。

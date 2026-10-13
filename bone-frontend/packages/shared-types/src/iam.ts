@@ -59,8 +59,16 @@ export interface UpdateAccountRequest {
   roleIds?: string[];
 }
 
+/**
+ * 重置密码入参。
+ *
+ * 字段名必须与后端 `ResetPasswordReq#newPassword` 一致（`@NotBlank` + `@Size(min = 8)`）。
+ * 历史 bug：这里曾写作 `password`，与后端字段名不符 ⇒ `newPassword` 收到 null ⇒
+ * 后端抛 `IAM_WEAK_PASSWORD`（"密码长度至少 8 位"），UI 上「重置密码」无论输入什么都失败。
+ * 与相邻的 {@link ChangePasswordRequest} 保持同一命名口径。
+ */
 export interface ResetPasswordRequest {
-  password: string;
+  newPassword: string;
 }
 
 export interface ChangePasswordRequest {

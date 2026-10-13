@@ -55,4 +55,18 @@ public interface PhysicalStructureGateway {
    * @return 快照；表不存在时 {@code exists=false} 且 columns 为空
    */
   PhysicalTableSnapshot readTableSnapshot(String tableName);
+
+  /**
+   * 删除指定物理表（<b>破坏性</b>，须由用户显式勾选「同时删除物理表」触发）。
+   *
+   * <p><b>为什么按表名而非实体 code</b>：删除流程中实体行先被软删、code 还被追加 {@code _del_<id>} 后缀 （释放唯一键），按 entityCode
+   * 反查此时已必然落空；而调用方（应用层）本就持有实体对象， 表名是更稳定的定位符。GENERATIVE 实体无物理表，由调用方判断是否调用，本方法不重复该判断。
+   *
+   * <p>安全边界：① {@code IF EXISTS} 保证幂等（表已不存在时 executed=0 而非报错）；② 表名经实现层标识符校验； ③ MySQL DDL
+   * 隐式提交，调用方不得依赖外层事务回滚——故仅在删除流程末端、用户显式意图下调用。
+   *
+   * @param tableName 物理表名（当前 schema 内）
+   * @return 执行结果；表不存在时 {@code executed=0}
+   */
+  PhysicalStructurePlan dropTable(String tableName);
 }

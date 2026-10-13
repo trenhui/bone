@@ -29,6 +29,7 @@ public final class CatalogDtoMapper {
     dto.setIcon(e.getIcon());
     dto.setModuleId(e.getModuleId());
     dto.setVersion(e.getVersion());
+    dto.setAutoNumber(e.getAutoNumber());
     return dto;
   }
 

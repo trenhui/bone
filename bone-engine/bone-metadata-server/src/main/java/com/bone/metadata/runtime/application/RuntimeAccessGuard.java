@@ -70,40 +70,6 @@ public class RuntimeAccessGuard {
   }
 
   /**
-   * 动作：实体级写 + （动作码在库时）动作级权限；<strong>逃逸动作必须命中动作级细码</strong>。
-   *
-   * <p>动作级码为 {@code null} 时只校验实体级写——未登记细码的动作不该因为「没配码」而不可用； 逃逸动作（打款 / 入库）上线前须在 {@code
-   * meta_entity_action_def.permission_code} 登记细码（§4.6 门禁）。
-   *
-   * @deprecated 控制器不再持有 def 前无法实现逃逸语义（P0-1 修复）；控制器统一走 {@link
-   *     #requireAction(RuntimeActionDef)}，本重载仅保留给无 def 场景的测试。
-   */
-  @Deprecated
-  public void requireAction(String entityCode, String actionCode, String declaredPermissionCode) {
-    Set<String> authorities = currentAuthorities();
-    if (authorities.contains(PLATFORM_ADMIN)) {
-      return;
-    }
-    // 通配写 / 实体级写：覆盖该实体全部动作（含逃逸动作），必须先于声明细码判定短路——
-    // 否则通配持有者会因「无具体 runtime:{entity}:{action} 细码」被误拒（§4.6 本意是让未授权者 403，
-    // 而非让通配持有者 403）。dev 匿名主体带 PLATFORM_ADMIN 已 early-return，此处仅影响真实鉴权语义。
-    if (authorities.contains(WILDCARD_WRITE)
-        || authorities.contains("runtime:" + entityCode + ":write")) {
-      return;
-    }
-    // 细粒度：必须持有声明码或动作级码，否则 403
-    if (declaredPermissionCode != null
-        && !declaredPermissionCode.isBlank()
-        && (authorities.contains(declaredPermissionCode)
-            || authorities.contains("runtime:" + entityCode + ":" + actionCode))) {
-      return;
-    }
-    throw new RuntimeRecordException(
-        MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
-        "无动作权限: runtime:" + entityCode + ":" + actionCode);
-  }
-
-  /**
    * 动作授权（def 感知，P0-1 修复）：<strong>逃逸动作（有副作用，如确认打款）必须命中「声明码或动作级细码」之一</strong>； 实体级写 / 通配写只覆盖非逃逸动作。
    *
    * <p><b>为什么实体级写不能覆盖逃逸动作</b>：{@code runtime:expense_claim:write} 管的是「这笔报销单的数据」， 而 {@code
@@ -113,6 +79,10 @@ public class RuntimeAccessGuard {
    *
    * <p>非逃逸动作（状态流转如提交 / 审批）保持「实体级写 OR 通配 OR 细码」——它们不产生资金/外部副作用， 与 CRUD 共用授权面是 {@code
    * meta_entity_action_def.permission_code} 的本意（种子 0032 即按粗码登记）。
+   *
+   * <p><b>2026-10-12 删除废弃重载</b>：原 {@code requireAction(String,String,String)} 零调用方（生产与测试皆无），
+   * 且其「通配写/实体级写先于细码短路」的判定会让 {@code runtime:*:write} 持有者绕过逃逸动作细码—— 与本方法的 §4.6
+   * 语义直接矛盾，留着就是等后人踩的语义陷阱（footgun）。控制层统一走本重载。
    */
   public void requireAction(RuntimeActionDef def) {
     Set<String> authorities = currentAuthorities();
@@ -149,10 +119,6 @@ public class RuntimeAccessGuard {
     throw new RuntimeRecordException(
         MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
         "无动作权限: runtime:" + entityCode + ":" + actionCode);
-  }
-
-  public boolean isPlatformAdmin() {
-    return currentAuthorities().contains(PLATFORM_ADMIN);
   }
 
   /** 当前主体的权限码集合（Spring Security 上下文）。 */

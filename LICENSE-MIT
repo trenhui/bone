@@ -1,0 +1,32 @@
+适用范围说明（非许可正文的一部分）
+
+本文件保留本仓库在 **2026-10-11 之前** 已公开发布的版本及其历史快照所使用的授权条款。
+自 2026-10-11 起，本仓库新发布的版本改用 [BSL 1.1](LICENSE) 授权；本文件不再适用于此后发布的版本。
+
+MIT 授权是不可撤销的：任何人在上述日期之前已取得的 MIT 授权（含复制、修改、分发、sublicense、
+以及商用、销售的权利）持续有效，不受本次变更影响。
+
+以下为原本的 MIT 许可正文：
+
+--------------------------------------------------------------------
+
+The MIT License (MIT)
+
+Copyright (c) 2021 bone-cloud
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

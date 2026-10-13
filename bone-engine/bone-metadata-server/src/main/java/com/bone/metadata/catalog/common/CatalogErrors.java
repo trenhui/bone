@@ -38,6 +38,8 @@ public final class CatalogErrors {
           Map.entry(CatalogErrorCodes.ENTITY_COPY_CODE_REQUIRED, 400),
           Map.entry(CatalogErrorCodes.ENTITY_COPY_TABLE_NAME_REQUIRED, 400),
           Map.entry(CatalogErrorCodes.ENTITY_NOT_RUNTIME, 409),
+          // 自动编号（写入口守卫：配置非法属入参问题，400 而非 500）
+          Map.entry(CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID, 400),
           // 字段
           Map.entry(CatalogErrorCodes.FIELD_NOT_FOUND, 404),
           Map.entry(CatalogErrorCodes.FIELD_CODE_CONFLICT, 409),

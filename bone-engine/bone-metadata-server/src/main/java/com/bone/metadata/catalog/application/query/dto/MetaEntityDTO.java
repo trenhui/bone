@@ -23,4 +23,7 @@ public class MetaEntityDTO {
 
   /** 乐观锁版本（PUT 使用 If-Match: "v{version}"） */
   private Integer version;
+
+  /** 自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）； 空 = 未启用。编辑表单据此回填子配置。 */
+  private String autoNumber;
 }

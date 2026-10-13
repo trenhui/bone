@@ -47,6 +47,15 @@ public class MetaModelTemplate extends AbstractEntity<Long> {
   @Column(name = "status", nullable = false)
   private Integer status;
 
+  /**
+   * 交付模式（0041）：0=GENERATIVE 生成式交付（不建运行时物理表）；1=RUNTIME 运行时元数据面（发布即建表对齐）。
+   *
+   * <p>与 {@code meta_entity.delivery_mode} 同口径。模板是蓝图——交付模式在模板侧声明、实例化侧继承， 而不是每次实例化让调用方重猜（漏传
+   * GENERATIVE 会「发布成功但无表」，E2E 实证坑）。
+   */
+  @Column(name = "delivery_mode", nullable = false)
+  private Integer deliveryMode;
+
   public static MetaModelTemplate create(
       Long id,
       String code,
@@ -70,6 +79,8 @@ public class MetaModelTemplate extends AbstractEntity<Long> {
     t.category = category;
     t.currentVersion = currentVersion != null ? currentVersion : "v1.0.0";
     t.status = 0;
+    // 保守默认：不建表的清理成本远低于建错表；需要运行时语义的模板由种子/维护显式置 1
+    t.deliveryMode = 0;
     Date now = new Date();
     t.setCreatedAt(now);
     t.setUpdatedAt(now);
@@ -83,7 +94,7 @@ public class MetaModelTemplate extends AbstractEntity<Long> {
     this.setUpdatedAt(new Date());
   }
 
-  /** 读侧重建（含 status）：仅 infrastructure/query 装配领域对象使用，不做校验性变更。 */
+  /** 读侧重建（含 status / deliveryMode）：仅 infrastructure/query 装配领域对象使用，不做校验性变更。 */
   public static MetaModelTemplate reconstitute(
       Long id,
       String code,
@@ -91,9 +102,16 @@ public class MetaModelTemplate extends AbstractEntity<Long> {
       String description,
       String category,
       String currentVersion,
-      int status) {
+      int status,
+      int deliveryMode) {
     MetaModelTemplate t = create(id, code, name, description, category, currentVersion);
     t.status = status;
+    t.deliveryMode = deliveryMode;
     return t;
+  }
+
+  /** 交付模式枚举视图（与 MetaEntity#deliveryModeEnum 同口径）。 */
+  public com.bone.metadata.catalog.domain.model.meta.MetaDeliveryMode deliveryModeEnum() {
+    return com.bone.metadata.catalog.domain.model.meta.MetaDeliveryMode.fromCode(deliveryMode);
   }
 }

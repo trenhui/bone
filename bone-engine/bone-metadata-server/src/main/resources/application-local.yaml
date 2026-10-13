@@ -2,6 +2,9 @@
 spring:
   main:
     allow-circular-references: true
+    # SDK RepositoryRegistrar 对 engineMetaEntityRepository 会做「标准扫描 + 手动注册」两遍，
+    # 触发 BeanDefinitionOverrideException；该重复注册是同一定义的良性覆盖，放开 override 以兼容本地 fat-jar 启动。
+    allow-bean-definition-overriding: true
   sql:
     init:
       mode: never

@@ -30,7 +30,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
               rs.getString("description"),
               rs.getString("category"),
               rs.getString("current_version"),
-              rs.getInt("status"));
+              rs.getInt("status"),
+              rs.getInt("delivery_mode"));
 
   // W1a T2：SELECT 与 RowMapper 必须带上 enum_values / validation_rules，
   // 否则实例化时 tf.getEnumValues() 恒为 null —— 场景模板的枚举状态机在第一步就丢（PRD §0.6.2）。
@@ -62,8 +63,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
   @Override
   public List<MetaModelTemplate> listPlatformTemplates(String keyword) {
     String base =
-        "SELECT id, code, name, description, category, current_version, status FROM meta_model_template"
-            + " WHERE tenant_id = 0 AND deleted = 0";
+        "SELECT id, code, name, description, category, current_version, status, delivery_mode"
+            + " FROM meta_model_template WHERE tenant_id = 0 AND deleted = 0";
     if (StringUtils.hasText(keyword)) {
       String like = "%" + keyword.trim() + "%";
       return jdbcTemplate.query(
@@ -76,8 +77,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
   public Optional<MetaModelTemplate> findPlatformTemplate(Long templateId) {
     List<MetaModelTemplate> list =
         jdbcTemplate.query(
-            "SELECT id, code, name, description, category, current_version, status FROM meta_model_template"
-                + " WHERE tenant_id = 0 AND deleted = 0 AND id = ?",
+            "SELECT id, code, name, description, category, current_version, status, delivery_mode"
+                + " FROM meta_model_template WHERE tenant_id = 0 AND deleted = 0 AND id = ?",
             TEMPLATE_MAPPER,
             templateId);
     return list.stream().findFirst();

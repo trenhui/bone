@@ -12,6 +12,7 @@ import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTableCommand;
 import com.bone.metadata.catalog.application.support.PhysicalTypeMapper;
 import com.bone.metadata.catalog.common.ImportMetaEntityResult;
+import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
@@ -64,6 +65,7 @@ class MetaEntityImportServiceTest {
             mock(com.bone.metadata.sdk.metadata.api.MetadataService.class),
             () -> null,
             Optional.empty(),
+            mock(ActionDefMaterializePort.class),
             domainEventPublisher,
             mock(PlatformTransactionManager.class));
   }

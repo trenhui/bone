@@ -15,6 +15,7 @@ import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
+import com.bone.metadata.catalog.application.query.dto.PendingAuthorizationDTO;
 import com.bone.metadata.catalog.application.query.dto.PublishPreviewDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.support.PhysicalTypeMapper;
@@ -24,6 +25,7 @@ import com.bone.metadata.catalog.common.CatalogErrors;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.common.ImportMetaEntityResult;
+import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
@@ -44,6 +46,8 @@ import com.bone.metadata.runtime.RuntimeEntityCacheEvictor;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -87,6 +91,9 @@ public class MetaEntityApplicationService {
   /** 敏感级别合法取值（业界通用：L1 一般/L2 较敏感/L3 敏感/L4 极敏感）。 */
   private static final Set<String> ALLOWED_SENSITIVITY_LEVELS = Set.of("L1", "L2", "L3", "L4");
 
+  /** 自动编号配置 JSON 解析器（校验写入前配置合法性，避免脏数据静默失效）。 */
+  private static final ObjectMapper AUTO_NUMBER_MAPPER = new ObjectMapper();
+
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
   private final MetaEntityRelationRepository metaEntityRelationRepository;
@@ -96,6 +103,7 @@ public class MetaEntityApplicationService {
   private final MetadataService metadataService;
   private final CurrentUserProvider currentUserProvider;
   private final Optional<RuntimeEntityCacheEvictor> runtimeEntityCacheEvictor;
+  private final ActionDefMaterializePort actionDefMaterializePort;
   private final DomainEventPublisher domainEventPublisher;
   private final PlatformTransactionManager transactionManager;
 
@@ -116,6 +124,7 @@ public class MetaEntityApplicationService {
         cmd.getDeliveryMode() != null
             ? MetaDeliveryMode.fromCode(cmd.getDeliveryMode()).getCode()
             : MetaDeliveryMode.GENERATIVE.getCode();
+    assertAutoNumberConfigValid(cmd.getAutoNumber());
     MetaEntity entity =
         MetaEntity.create(
             null,
@@ -128,7 +137,8 @@ public class MetaEntityApplicationService {
             type,
             deliveryMode,
             cmd.getIcon(),
-            cmd.getModuleId());
+            cmd.getModuleId(),
+            cmd.getAutoNumber());
     metaEntityRepository.insert(entity);
     return entity.getId();
   }
@@ -140,6 +150,7 @@ public class MetaEntityApplicationService {
       throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
+    assertAutoNumberConfigValid(cmd.getAutoNumber());
     entity.update(
         cmd.getName(),
         cmd.getDisplayName(),
@@ -147,23 +158,61 @@ public class MetaEntityApplicationService {
         cmd.getTableName(),
         cmd.getSortOrder(),
         cmd.getIcon(),
-        cmd.getDeliveryMode());
+        cmd.getDeliveryMode(),
+        cmd.getAutoNumber());
     metaEntityRepository.update(entity);
     return entity.getVersion();
   }
 
   @Transactional
   public void deleteEntity(Long id) {
+    deleteEntity(id, false);
+  }
+
+  /**
+   * 删除实体（可选联动 DROP 物理表）。
+   *
+   * @param dropPhysicalTable true=同时删除 RUNTIME 实体的物理表（破坏性，用户显式勾选时才为 true）； GENERATIVE 实体无物理表，该旗标对它是
+   *     no-op。false=仅软删定义，物理表保留（默认）。
+   */
+  @Transactional
+  public void deleteEntity(Long id, boolean dropPhysicalTable) {
     MetaEntity entity = metaEntityRepository.findById(id);
     if (entity == null) {
       throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
+    // 先取原始 code / tenantId / tableName：草稿删除会追加 _del_<id> 后缀释放唯一键，级联必须按原始 code 定位动作定义。
+    long tenantId = entity.getTenantId();
+    String entityCode = entity.getCode();
+    String tableName = entity.getTableName();
     // 草稿实体先释放 code / table_name 的唯一键占位，再逻辑删除，
     // 否则「建错了重建」会一直卡在「编码已存在」（唯一键覆盖逻辑删除行）。
     if (entity.releaseUniqueKeysForDelete()) {
       metaEntityRepository.update(entity);
     }
     metaEntityRepository.deleteById(id);
+    // 级联软删运行时动作定义：否则实体已删而定义仍活跃，运行时会继续暴露一个不存在实体的动作入口，
+    // 且重建同名实体时 UPSERT 会把旧定义复活（用户看到「没配过却有动作」）。
+    int cascaded = actionDefMaterializePort.deleteByEntity(tenantId, entityCode);
+    if (cascaded > 0) {
+      log.info("[MetaEntity] 删除实体 {} 时级联软删 {} 条运行时动作定义", entityCode, cascaded);
+    }
+    if (dropPhysicalTable) {
+      // 用户显式勾选「同时删除物理表」⇒ 补上删除闭环（此前只软删定义，库里积压 36 张无主表）。
+      // GENERATIVE 实体从未建表（align 仅对 RUNTIME 生效）⇒ 不调网关，避免无意义 DDL。
+      // 注意：MySQL DDL 隐式提交，DROP 不受本事务回滚保护——放在流程末端且仅在显式意图下执行。
+      if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum()) && tableName != null) {
+        PhysicalStructurePlan dropPlan = physicalStructureGateway.dropTable(tableName);
+        if (dropPlan.executed() > 0) {
+          log.info("[MetaEntity] 删除实体 {} 时联动 DROP 物理表 {}", entityCode, dropPlan.tableName());
+        } else {
+          log.info("[MetaEntity] 删除实体 {} 联动 DROP 跳过：{}", entityCode, dropPlan.message());
+        }
+      }
+    }
+    // RC-002 对称：删除（含联动 DROP 物理表）后失效 runtime 缓存，使运行时的已发布实体快照随之失效，
+    // 否则缓存 TTL 内仍命中旧快照并对已 DROP 的物理表发起查询 → 500（应为 404 实体不存在）。
+    runtimeEntityCacheEvictor.ifPresent(evictor -> evictor.evict(entityCode, tenantId));
   }
 
   /**
@@ -477,6 +526,13 @@ public class MetaEntityApplicationService {
    * 发布摘要预览（UC-W7 摘要级）：实体 + 字段清单 + 关系数 + 校验问题 + RUNTIME 物理 inspect 计划。
    *
    * <p>摘要级先行于 ADR-0039 R1 的完整发布包：此处不产生审批/快照语义，仅回答「发布将发生什么」。
+   *
+   * <p>P1 onboarding 两项附加回答（2026-10 诊断落地）：
+   *
+   * <ul>
+   *   <li>{@code pendingAuthorizations}：逃逸动作的动作级细码应付清单——回答「发布后要授哪些码」， 把「按钮置灰却不知道找谁授」的断链前移为发布时可见的清单；
+   *   <li>{@code deliveryModeNotice}：交付模式后果明示——回答「发布成功为什么没有表/没有数据入口」， 把运行期惊讶前移为创建期决策。
+   * </ul>
    */
   @Transactional(readOnly = true)
   public PublishPreviewDTO getPublishPreview(Long id) {
@@ -503,7 +559,32 @@ public class MetaEntityApplicationService {
         .hasBlockingErrors(hasBlocking)
         .runnable(!hasBlocking)
         .physical(runtimePlan(entity))
+        .pendingAuthorizations(pendingAuthorizationsOf(tenantId, entity))
+        .deliveryModeNotice(deliveryModeNoticeOf(entity))
         .build();
+  }
+
+  /** 逃逸动作细码应付清单（P1 onboarding）。非逃逸动作由实体级/通配 write 覆盖，无逐动作补权必要，故只收 escape。 */
+  private List<PendingAuthorizationDTO> pendingAuthorizationsOf(long tenantId, MetaEntity entity) {
+    return actionDefMaterializePort.listEscapeActions(tenantId, entity.getCode()).stream()
+        .map(
+            a ->
+                PendingAuthorizationDTO.builder()
+                    .code(a.permissionCode())
+                    .actionCode(a.actionCode())
+                    .actionLabel(a.label())
+                    .build())
+        .toList();
+  }
+
+  /** 交付模式后果明示（P1）：与 MetaDeliveryMode 语义同源，文案面向建模决策者。 */
+  private static String deliveryModeNoticeOf(MetaEntity entity) {
+    if (MetaDeliveryMode.RUNTIME.equals(entity.deliveryModeEnum())) {
+      return "运行时交付（RUNTIME）：发布将创建/对齐物理表 "
+          + entity.getTableName()
+          + "，之后即可在「数据」页录入业务记录；其中的逃逸动作（资金/外部副作用）须动作级授权后方可执行。";
+    }
+    return "生成式交付（GENERATIVE）：发布不创建运行时物理表，记录不落 runtime 数据面；" + "如需录入业务数据并驱动状态机，请在建模时选择「运行时交付」。";
   }
 
   /**
@@ -534,6 +615,8 @@ public class MetaEntityApplicationService {
     createCmd.setDeliveryMode(source.getDeliveryMode());
     createCmd.setIcon(source.getIcon());
     createCmd.setModuleId(targetModuleId);
+    // 复制定义时一并复制自动编号配置（auto_number 属实体定义，避免副本丢失单据号能力）
+    createCmd.setAutoNumber(source.getAutoNumber());
     Long newId = createEntity(createCmd);
     List<MetaField> fields = loadAllFields(sourceId);
     for (MetaField f : fields) {
@@ -630,6 +713,39 @@ public class MetaEntityApplicationService {
     throw CatalogErrors.of(
         CatalogErrorCodes.ENTITY_TABLE_NAME_CONFLICT,
         describeOccupied("实体表名", tableName, existing.get()));
+  }
+
+  /**
+   * 自动编号配置合法性预检（0043）：空 = 不启用，直接放行；非空必须能解析为 JSON 且含非空 {@code field} / {@code prefix}，否则在写入前给出明确
+   * 400，而非写脏数据后运行时静默不注入。
+   *
+   * <p>与运行时 {@code JdbcRuntimeRecordService#parseAutoNumber} 同源校验口径，但此处是「写入口守卫」——
+   * 把错误挡在用户操作那一刻，而不是等首次录入业务数据时才发现单据号没生成。
+   */
+  private void assertAutoNumberConfigValid(String json) {
+    if (json == null || json.isBlank()) {
+      return;
+    }
+    // 仅把 JSON 解析失败包成配置非法；字段校验直接用 CatalogErrors.of()（运行时异常）透传，带规范错误码。
+    JsonNode n;
+    try {
+      n = AUTO_NUMBER_MAPPER.readTree(json);
+    } catch (Exception e) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID, "自动编号配置不是合法 JSON: " + e.getMessage());
+    }
+    String field = n.path("field").asText(null);
+    String prefix = n.path("prefix").asText(null);
+    String reset = n.path("reset").asText("none");
+    if (field == null || prefix == null || field.isBlank() || prefix.isBlank()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID, "自动编号配置缺少必填项 field / prefix");
+    }
+    if (!reset.equals("none") && !reset.equals("daily")) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID,
+          "自动编号重置粒度 reset 仅支持 none（全局递增）/ daily（每日重置）");
+    }
   }
 
   /**

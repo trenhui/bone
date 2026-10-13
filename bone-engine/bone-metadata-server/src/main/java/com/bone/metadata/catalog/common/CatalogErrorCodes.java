@@ -31,6 +31,9 @@ public final class CatalogErrorCodes {
   /** 仅 RUNTIME 实体支持物理结构维护（非 RUNTIME 实体无物理表）。 */
   public static final String ENTITY_NOT_RUNTIME = "META_ENTITY_NOT_RUNTIME";
 
+  /** 自动编号配置非法（缺 field/prefix 或 reset 取值越界，或整体非 JSON）。 */
+  public static final String AUTO_NUMBER_CONFIG_INVALID = "META_AUTO_NUMBER_CONFIG_INVALID";
+
   // ===== 字段（catalog META_FIELD_*）=====
 
   /** 字段不存在（含跨租户不可见）。 */

@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrMain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrFeed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="600" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">采购 AI 端到端业务闭环（标前 / 标中 / 标后）</text>
+
+  <!-- 三段泳道 -->
+  <rect x="20" y="52" width="370" height="470" rx="14" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.2"/>
+  <text x="40" y="78" font-size="14" font-weight="700" fill="#3730a3">标前 · 招标</text>
+  <text x="40" y="94" font-size="10.5" fill="#6366f1">发布前体检 · 源头纠偏</text>
+
+  <rect x="410" y="52" width="380" height="470" rx="14" fill="#fffbeb" stroke="#fde68a" stroke-width="1.2"/>
+  <text x="430" y="78" font-size="14" font-weight="700" fill="#92400e">标中 · 投标与评标</text>
+  <text x="430" y="94" font-size="10.5" fill="#d97706">响应性比对 · 信用筛查</text>
+
+  <rect x="810" y="52" width="370" height="470" rx="14" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1.2"/>
+  <text x="830" y="78" font-size="14" font-weight="700" fill="#065f46">标后 · 签约与履约</text>
+  <text x="830" y="94" font-size="10.5" fill="#059669">合同审查 · 履约预警</text>
+
+  <!-- ============ 标前泳道 ============ -->
+  <g>
+    <rect x="105" y="118" width="200" height="52" rx="10" fill="#ffffff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <text x="205" y="140" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">招标需求 / 文件编制</text>
+    <text x="205" y="158" text-anchor="middle" font-size="10.5" fill="#64748b">范本匹配 · 需求提炼</text>
+  </g>
+  <line x1="205" y1="170" x2="205" y2="192" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="105" y="196" width="200" height="52" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+    <rect x="116" y="205" width="34" height="18" rx="5" fill="#2563eb"/>
+    <text x="133" y="218" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">M1</text>
+    <text x="205" y="218" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">招标文件智能体检</text>
+    <text x="205" y="236" text-anchor="middle" font-size="10.5" fill="#475569">四维检测：合规 / 合理 / 一致 / 错敏词</text>
+  </g>
+  <line x1="205" y1="248" x2="205" y2="270" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="105" y="274" width="200" height="52" rx="10" fill="#ffffff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <text x="205" y="296" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">风险清单 + 修改建议</text>
+    <text x="205" y="314" text-anchor="middle" font-size="10.5" fill="#64748b">条款级引用 · 法规依据</text>
+  </g>
+  <line x1="205" y1="326" x2="205" y2="348" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="105" y="352" width="200" height="52" rx="10" fill="#ffffff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <text x="205" y="374" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">人工确认修正（HITL）</text>
+    <text x="205" y="392" text-anchor="middle" font-size="10.5" fill="#64748b">AI 提议 · 人审批 · 落地</text>
+  </g>
+  <line x1="205" y1="404" x2="205" y2="426" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="105" y="430" width="200" height="52" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="205" y="452" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">发布 · 全量留痕</text>
+    <text x="205" y="470" text-anchor="middle" font-size="10.5" fill="#64748b">先体检、再发布（195 号文）</text>
+  </g>
+
+  <!-- ============ 标中泳道 ============ -->
+  <g>
+    <rect x="490" y="118" width="220" height="52" rx="10" fill="#ffffff" stroke="#fde68a" stroke-width="1.5"/>
+    <text x="600" y="140" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">投标文件</text>
+    <text x="600" y="158" text-anchor="middle" font-size="10.5" fill="#64748b">响应招标文件的实质要求</text>
+  </g>
+  <line x1="600" y1="170" x2="600" y2="192" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="490" y="196" width="220" height="52" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+    <rect x="501" y="205" width="34" height="18" rx="5" fill="#d97706"/>
+    <text x="518" y="218" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">M3</text>
+    <text x="600" y="218" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">投标合规自查 + 信用画像</text>
+    <text x="600" y="236" text-anchor="middle" font-size="10.5" fill="#92400e">第三方信用源 · 多维画像</text>
+  </g>
+  <line x1="600" y1="248" x2="600" y2="270" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="490" y="274" width="220" height="52" rx="10" fill="#ffffff" stroke="#fde68a" stroke-width="1.5"/>
+    <text x="600" y="296" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">响应性比对 · 异常提示</text>
+    <text x="600" y="314" text-anchor="middle" font-size="10.5" fill="#64748b">缺漏定位 · 低于成本价提示</text>
+  </g>
+  <line x1="600" y1="326" x2="600" y2="348" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrGray)"/>
+
+  <g>
+    <rect x="490" y="352" width="220" height="52" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <rect x="501" y="361" width="34" height="18" rx="5" fill="#94a3b8"/>
+    <text x="518" y="374" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">S1</text>
+    <text x="600" y="374" text-anchor="middle" font-size="13" font-weight="600" fill="#64748b">评标辅助（P2 · 可裁剪）</text>
+    <text x="600" y="392" text-anchor="middle" font-size="10.5" fill="#94a3b8">评分核验 · 偏离提示</text>
+  </g>
+
+  <!-- ============ 标后泳道（两列） ============ -->
+  <g>
+    <rect x="880" y="118" width="230" height="52" rx="10" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="995" y="140" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">中标合同</text>
+    <text x="995" y="158" text-anchor="middle" font-size="10.5" fill="#64748b">招标文件 / 中标通知书</text>
+  </g>
+  <line x1="995" y1="170" x2="995" y2="192" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="880" y="196" width="230" height="52" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+    <rect x="891" y="205" width="34" height="18" rx="5" fill="#059669"/>
+    <text x="908" y="218" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">M2</text>
+    <text x="995" y="218" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">合同智能审查</text>
+    <text x="995" y="236" text-anchor="middle" font-size="10.5" fill="#065f46">六类风险 · 合同-招标比对</text>
+  </g>
+  <line x1="995" y1="248" x2="995" y2="270" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="880" y="274" width="230" height="52" rx="10" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="995" y="296" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">预审摘要 + 风险清单</text>
+    <text x="995" y="314" text-anchor="middle" font-size="10.5" fill="#64748b">付款 / 违约 / 权责 / 质保</text>
+  </g>
+  <line x1="995" y1="326" x2="995" y2="348" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="880" y="352" width="230" height="52" rx="10" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="995" y="374" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">法务复核 · 签署</text>
+    <text x="995" y="392" text-anchor="middle" font-size="10.5" fill="#64748b">三态流转 · 采纳 / 驳回 / 改判</text>
+  </g>
+  <line x1="935" y1="404" x2="935" y2="428" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="880" y="430" width="110" height="52" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="935" y="452" text-anchor="middle" font-size="13" font-weight="600" fill="#1e293b">合同台账</text>
+    <text x="935" y="470" text-anchor="middle" font-size="10.5" fill="#64748b">要素自动入库</text>
+  </g>
+  <path d="M990,456 L1174,456 L1174,346 L1159,346" fill="none" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="1050" y="320" width="105" height="52" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+    <rect x="1061" y="329" width="34" height="18" rx="5" fill="#dc2626"/>
+    <text x="1078" y="342" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">M4</text>
+    <text x="1102" y="352" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1e293b">履约到期预警</text>
+  </g>
+  <line x1="1105" y1="372" x2="1105" y2="398" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+
+  <g>
+    <rect x="1040" y="400" width="130" height="52" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="1105" y="418" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e293b">付款 / 验收 /</text>
+    <text x="1105" y="434" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e293b">质保闭环</text>
+  </g>
+  <path d="M1105,452 L1105,502 L935,502 L935,486" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrFeed)"/>
+
+  <!-- ============ 风险库 ============ -->
+  <g>
+    <rect x="455" y="545" width="290" height="52" rx="10" fill="#1e293b"/>
+    <text x="600" y="567" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">风险库 · 可审计</text>
+    <text x="600" y="586" text-anchor="middle" font-size="10.5" fill="#cbd5e1">全量留痕 · 回流规则库（月度调优）</text>
+  </g>
+
+  <!-- 回流虚线 -->
+  <path d="M305,456 C370,520 400,560 450,565" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrFeed)"/>
+  <path d="M490,300 C420,440 470,530 530,542" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrFeed)"/>
+  <path d="M880,300 C806,430 790,530 745,565" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrFeed)"/>
+
+  <!-- 跨泳道主流程 -->
+  <path d="M305,456 C400,470 430,150 486,145" fill="none" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+  <path d="M710,406 L775,406 L775,146 L876,146" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrGray)"/>
+
+  <!-- 图例 -->
+  <g font-size="10.5" fill="#64748b">
+    <text x="40" y="575">图例：</text>
+    <line x1="78" y1="571" x2="108" y2="571" stroke="#475569" stroke-width="1.6" marker-end="url(#arrMain)"/>
+    <text x="114" y="575">主流程（实线）</text>
+    <line x1="200" y1="571" x2="230" y2="571" stroke="#d97706" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrFeed)"/>
+    <text x="236" y="575">留痕回流（虚线）</text>
+    <line x1="330" y1="571" x2="360" y2="571" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrGray)"/>
+    <text x="366" y="575">可选降级（P2）</text>
+  </g>
+</svg>

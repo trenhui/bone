@@ -16,8 +16,8 @@
 
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <name>Business Source License 1.1</name>
+            <url>https://mariadb.com/bsl11/</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -383,8 +383,23 @@
                     <version>${spring-boot.version}</version>
                     <executions>
                         <execution>
+                            <id>repackage</id>
                             <goals>
                                 <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                        <!--
+                          build-info：生成 META-INF/build-info.properties，供 actuator /info 暴露
+                          build.time / version / group / artifact。
+                          为什么需要：2026-10 E2E 联调踩过「jar 07:16 vs 源码 11:27」的构建漂移
+                          （旧 jar 在跑，级联修复看似未生效，靠负向探针才发现）。启动即自证
+                          「这个进程构建于何时、哪个版本」，把漂移检测从人工考古变成一次 curl。
+                          挂在 pluginManagement：子模块声明该插件即生效（repackage 同款语义）。
+                        -->
+                        <execution>
+                            <id>build-info</id>
+                            <goals>
+                                <goal>build-info</goal>
                             </goals>
                         </execution>
                     </executions>

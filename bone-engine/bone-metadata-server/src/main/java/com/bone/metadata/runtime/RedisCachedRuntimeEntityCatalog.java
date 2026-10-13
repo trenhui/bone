@@ -69,6 +69,7 @@ public class RedisCachedRuntimeEntityCatalog
       String primaryKeyColumn,
       String stateField,
       String rowPolicies,
+      String autoNumber,
       List<ColumnPayload> columns) {
 
     static CachedPayload from(PublishedRuntimeEntity entity) {
@@ -77,6 +78,7 @@ public class RedisCachedRuntimeEntityCatalog
           entity.primaryKeyColumn(),
           entity.stateField(),
           entity.rowPolicies(),
+          entity.autoNumber(),
           entity.columns().stream()
               .map(
                   c ->
@@ -104,7 +106,14 @@ public class RedisCachedRuntimeEntityCatalog
                           c.physicalColumn()))
               .toList();
       return new PublishedRuntimeEntity(
-          entityCode, physicalTableName, primaryKeyColumn, tenantId, cols, stateField, rowPolicies);
+          entityCode,
+          physicalTableName,
+          primaryKeyColumn,
+          tenantId,
+          cols,
+          stateField,
+          rowPolicies,
+          autoNumber);
     }
 
     record ColumnPayload(

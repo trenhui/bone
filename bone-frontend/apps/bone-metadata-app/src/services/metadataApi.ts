@@ -26,6 +26,7 @@ import type {
   RuntimeRecord,
   RuntimeActionDef,
   RuntimeActionResult,
+  RuntimeActionExecution,
   RuntimeReferenceOption,
   RuntimeChildRow,
   RuntimeChildrenReplaceResult,
@@ -109,8 +110,15 @@ export const metadataEntityApi = {
   batchDelete: (ids: string[]) =>
     api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-delete`, { ids }),
 
-  delete: (id: SnowflakeId) =>
-    api.delete<never, ApiResponse<void>>(`${META}/entities/${id}`),
+  /**
+   * 删除实体（软删定义 + 级联动作定义）。
+   * dropPhysicalTable=true 时联动 DROP RUNTIME 物理表（破坏性，须用户勾选确认后传 true）；
+   * 缺省 false = 仅软删，物理表与历史数据保留。
+   */
+  delete: (id: SnowflakeId, dropPhysicalTable = false) =>
+    api.delete<never, ApiResponse<void>>(`${META}/entities/${id}`, {
+      params: { dropPhysicalTable },
+    }),
 
   /** 建模期静态校验（UC-W5）：问题分级列表，ERROR 阻断发布 */
   validate: (id: SnowflakeId) =>
@@ -214,6 +222,15 @@ export const runtimeRecordApi = {
   get: (entityCode: string, id: string) =>
     api.get<never, ApiResponse<RuntimeRecord>>(
       `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
+    ),
+
+  /**
+   * 记录的动作执行时间线（按时间正序）。
+   * 数据源 meta_runtime_action_execution（幂等去重 + 审计同表），含 PENDING/成功/失败/孤儿全状态。
+   */
+  actionExecutions: (entityCode: string, id: string) =>
+    api.get<never, ApiResponse<RuntimeActionExecution[]>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/action-executions`,
     ),
 
   create: (entityCode: string, body: RuntimeRecord) =>
@@ -344,5 +361,34 @@ export const runtimeRecordApi = {
     api.post<never, ApiResponse<RuntimeChildrenReplaceResult>>(
       `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}/children/${encodeURIComponent(childEntityCode)}`,
       rows,
+    ),
+};
+
+/**
+ * 界面列投影覆盖的用户级存取（0042 · P2-④ 服务端化）。
+ *
+ * 契约（MetaEntityCatalogController）：
+ *   GET    /entities/{entityCode}/ui-overlay → ApiResponse<string | null>（UiOverlay JSON；null=从未配置）
+ *   PUT    /entities/{entityCode}/ui-overlay → body 为 overlay 对象（JsonNode），UPSERT 幂等
+ *   DELETE /entities/{entityCode}/ui-overlay → 重置为默认投影（服务端软删）
+ *
+ * 键由后端从 JWT 推导（tenantId + userId），前端不传 —— 避免前端伪造他人偏好。
+ * localStorage 键降级为离线缓存（hydrate 策略见 utils/overlaySync.ts）。
+ */
+export const metadataUiOverlayApi = {
+  get: (entityCode: string): Promise<ApiResponse<string | null>> =>
+    api.get<never, ApiResponse<string | null>>(
+      `${META}/entities/${encodeURIComponent(entityCode)}/ui-overlay`,
+    ),
+
+  save: (entityCode: string, overlay: unknown): Promise<ApiResponse<void>> =>
+    api.put<unknown, ApiResponse<void>>(
+      `${META}/entities/${encodeURIComponent(entityCode)}/ui-overlay`,
+      overlay,
+    ),
+
+  reset: (entityCode: string): Promise<ApiResponse<void>> =>
+    api.delete<never, ApiResponse<void>>(
+      `${META}/entities/${encodeURIComponent(entityCode)}/ui-overlay`,
     ),
 };

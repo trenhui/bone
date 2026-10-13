@@ -1,7 +1,11 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.core.model.PageResult;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -18,6 +22,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /** 模式 B：基于已发布元数据对物理表执行动态 CRUD（经 bone-metadata-sdk 同源 JDBC）。 */
 public class JdbcRuntimeRecordService {
+
+  /** Jackson 单例：解析 auto_number 配置 JSON。 */
+  private static final ObjectMapper AUTO_NUMBER_MAPPER = new ObjectMapper();
+
+  /** 日期格式（单据号日期段）。 */
+  private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
   /** Jackson 单例：用于解析字段级校验规则（validation_rules JSON）与枚举取值。 */
   private static final Set<String> SYSTEM_COLUMNS =
@@ -38,6 +48,7 @@ public class JdbcRuntimeRecordService {
   private final RuntimeRelationSupport relationSupport;
   private final List<RuntimeWriteHook> writeHooks;
   private final Map<String, Set<String>> physicalColumnsCache = new ConcurrentHashMap<>();
+  private final Map<String, Boolean> physicalTableExistsCache = new ConcurrentHashMap<>();
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(JdbcRuntimeRecordService.class);
 
@@ -113,6 +124,9 @@ public class JdbcRuntimeRecordService {
       RuntimePageQuery query,
       Long rowOwnerId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
+    // 防御：实体已删且物理表已 DROP 时，缓存 TTL 内仍可能命中旧快照并对缺失表查询 → 500。
+    // 显式判表存在，缺失则统一返回 404（实体不存在），避免把底层 SQL 错误暴露给用户。
+    assertPhysicalTableExists(entity);
     int safePage = Math.max(1, page);
     int safeSize = Math.min(Math.max(1, size), 200);
     int offset = (safePage - 1) * safeSize;
@@ -164,6 +178,7 @@ public class JdbcRuntimeRecordService {
   public Map<String, Object> getById(
       String entityCode, long tenantId, String recordId, Long rowOwnerId) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
+    assertPhysicalTableExists(entity);
     String pk = sanitizeIdentifier(entity.primaryKeyColumn());
     StringBuilder sql =
         new StringBuilder("SELECT * FROM ")
@@ -205,6 +220,7 @@ public class JdbcRuntimeRecordService {
     assertStateFieldNotWritable(entity, body, "POST");
     Map<String, Object> payload = filterWritable(entity, body);
     injectEntryState(entity, entityCode, tenantId, payload);
+    injectAutoNumber(entity, tenantId, payload);
     validateForCreate(entity, tenantId, payload);
     assertRelationConstraints(entity, tenantId, payload);
     String pk = entity.primaryKeyColumn();
@@ -237,6 +253,19 @@ public class JdbcRuntimeRecordService {
 
     MapSqlParameterSource params = new MapSqlParameterSource(sqlPayload);
     jdbc.update(sql, params);
+    // 审计：创建整行（source=create，字段 "*" 表示整行新建，to_value=新主键）
+    auditSink.record(
+        RuntimeAuditEntry.of(
+            tenantId,
+            entityCode,
+            String.valueOf(newId),
+            "*",
+            null,
+            String.valueOf(newId),
+            operatorId,
+            null,
+            "create",
+            null));
     return getById(entityCode, tenantId, String.valueOf(payload.get(pk)));
   }
 
@@ -264,7 +293,33 @@ public class JdbcRuntimeRecordService {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertStateFieldNotWritable(entity, body, "PUT");
     assertRowOwner(entity, tenantId, recordId, operatorId);
-    return updateInternal(entityCode, tenantId, recordId, body, expectedVersion, operatorId);
+    // 审计：逐字段记录数据面 UPDATE 的 from→to（source=update）；
+    // 状态机流转由 updateState/adminFixState 单独审计（source=action/admin-fix），避免重复。
+    Map<String, Object> before = getById(entityCode, tenantId, recordId);
+    Map<String, Object> writable = filterWritable(entity, body);
+    Map<String, Object> result =
+        updateInternal(entityCode, tenantId, recordId, body, expectedVersion, operatorId);
+    if (!writable.isEmpty()) {
+      for (Map.Entry<String, Object> e : writable.entrySet()) {
+        String f = e.getKey();
+        if (SYSTEM_COLUMNS.contains(f)) {
+          continue;
+        }
+        auditSink.record(
+            RuntimeAuditEntry.of(
+                tenantId,
+                entityCode,
+                recordId,
+                f,
+                str(before.get(f)),
+                str(e.getValue()),
+                operatorId,
+                null,
+                "update",
+                null));
+      }
+    }
+    return result;
   }
 
   /**
@@ -467,6 +522,7 @@ public class JdbcRuntimeRecordService {
   public PageResult<Map<String, Object>> pageDeleted(
       String entityCode, long tenantId, int page, int size, RuntimePageQuery query) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
+    assertPhysicalTableExists(entity);
     if (!entityHasColumn(entity, "deleted")) {
       return PageResult.of(List.of(), 0L, page, size);
     }
@@ -620,6 +676,81 @@ public class JdbcRuntimeRecordService {
     String entry = stateEntryResolver.entryState(entityCode, tenantId);
     if (entry != null && !entry.isBlank()) {
       payload.put(stateField, entry);
+    }
+  }
+
+  /**
+   * 平台级自动编号注入（0043）：实体声明 {@code auto_number} 配置时，若客户端未提供承载字段（或为空）， 由平台按「前缀-日期-序号」生成可读单据号并注入，替换
+   * PAY-<nanoTime> 之类的占位。
+   *
+   * <p><b>不覆盖客户端值</b>：若客户端已显式传该字段，保留其值（平台不替用户决定单据号，避免破坏既有流程）； 仅作「补默认」式注入。序号原子性由 {@link
+   * #nextSequence} 的 INSERT ... ON DUPLICATE KEY UPDATE 行锁保证，无需 SELECT FOR UPDATE。
+   */
+  private void injectAutoNumber(
+      PublishedRuntimeEntity entity, long tenantId, Map<String, Object> payload) {
+    String cfgJson = entity.autoNumber();
+    if (cfgJson == null || cfgJson.isBlank()) {
+      return;
+    }
+    AutoNumberConfig cfg = parseAutoNumber(cfgJson);
+    if (cfg == null) {
+      return;
+    }
+    Object clientVal = payload.get(cfg.field());
+    boolean missing = clientVal == null || (clientVal instanceof String s && s.isBlank());
+    if (missing) {
+      payload.put(cfg.field(), generateAutoNumber(tenantId, entity.entityCode(), cfg));
+    }
+  }
+
+  /** 生成单据号：daily 重置→{prefix}-{yyyyMMdd}-{NNNN}；否则→{prefix}-{NNNN}（全局单调递增）。 */
+  private String generateAutoNumber(long tenantId, String entityCode, AutoNumberConfig cfg) {
+    String datePart = cfg.resetDaily() ? LocalDate.now().format(DAY_FMT) : "0";
+    String seqKey = tenantId + ":" + entityCode + ":" + cfg.field() + ":" + datePart;
+    long seq = nextSequence(seqKey);
+    String padded = String.format("%04d", seq);
+    return cfg.resetDaily()
+        ? cfg.prefix() + "-" + datePart + "-" + padded
+        : cfg.prefix() + "-" + padded;
+  }
+
+  /**
+   * 原子取号：以 {@code seq_key} 为键自增并返回新值。InnoDB 下 INSERT ... ON DUPLICATE KEY UPDATE 对冲突键加 next-key 锁，
+   * 并发调用串行化，等价于「读-改-写」原子，避免 SELECT FOR UPDATE（Bone 架构约束）。
+   */
+  private long nextSequence(String seqKey) {
+    jdbc.update(
+        "INSERT INTO meta_runtime_sequence (seq_key, current_value) VALUES (:key, 1) "
+            + "ON DUPLICATE KEY UPDATE current_value = current_value + 1",
+        Map.of("key", seqKey));
+    Long v =
+        jdbc.queryForObject(
+            "SELECT current_value FROM meta_runtime_sequence WHERE seq_key = :key",
+            Map.of("key", seqKey),
+            Long.class);
+    return v != null ? v : 1;
+  }
+
+  /** 解析 auto_number JSON 配置；格式非法或字段缺失时返回 null（静默降级为不注入）。 */
+  private static AutoNumberConfig parseAutoNumber(String json) {
+    try {
+      JsonNode n = AUTO_NUMBER_MAPPER.readTree(json);
+      String field = n.path("field").asText(null);
+      String prefix = n.path("prefix").asText(null);
+      String reset = n.path("reset").asText("none");
+      if (field == null || prefix == null || field.isBlank() || prefix.isBlank()) {
+        return null;
+      }
+      return new AutoNumberConfig(field, prefix, reset);
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
+  /** 自动编号配置：承载字段 / 前缀 / 重置粒度。 */
+  private record AutoNumberConfig(String field, String prefix, String reset) {
+    boolean resetDaily() {
+      return "daily".equalsIgnoreCase(reset);
     }
   }
 
@@ -1088,6 +1219,37 @@ public class JdbcRuntimeRecordService {
                     "未找到已发布的 RUNTIME 实体: " + entityCode));
   }
 
+  /**
+   * 防御性判表：实体已删且物理表已 DROP 时，缓存 TTL 内仍可能命中旧快照并对缺失表发起查询（500）。 显式判表存在，缺失则统一抛 {@code
+   * RUNTIME_ENTITY_NOT_FOUND}（404），把底层 SQL 错误收敛为干净的错误响应。
+   *
+   * <p>探测失败（如 information_schema 不可达）降级为「表存在」，不影响正常查询——只拦「确定缺失」的情况。
+   */
+  private void assertPhysicalTableExists(PublishedRuntimeEntity entity) {
+    if (!physicalTableExists(entity.physicalTableName())) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_ENTITY_NOT_FOUND, "实体物理表不存在（可能已被删除）: " + entity.entityCode());
+    }
+  }
+
+  private boolean physicalTableExists(String table) {
+    return physicalTableExistsCache.computeIfAbsent(
+        table,
+        t -> {
+          try {
+            // LIMIT 1 零全表扫描；空表抛 EmptyResultDataAccessException（仍判定为「存在」），
+            // 仅当表本身不存在（SQL 语法错误）时抛其他异常→判缺失，使查询返回 404。
+            jdbc.getJdbcTemplate()
+                .queryForObject("SELECT 1 FROM " + quoteTable(t) + " LIMIT 1", Integer.class);
+            return true;
+          } catch (EmptyResultDataAccessException ignored) {
+            return true; // 空表也是存在
+          } catch (Exception ignored) {
+            return false; // 表不存在（已 DROP）→ 缺失
+          }
+        });
+  }
+
   private static Map<String, Object> filterWritable(
       PublishedRuntimeEntity entity, Map<String, Object> body) {
     if (body == null || body.isEmpty()) {
@@ -1151,5 +1313,10 @@ public class JdbcRuntimeRecordService {
     } catch (NumberFormatException ex) {
       return recordId;
     }
+  }
+
+  /** 审计值字符串化：null → null；其余取 toString（超长由 sink 截断）。 */
+  private static String str(Object v) {
+    return v == null ? null : v.toString();
   }
 }

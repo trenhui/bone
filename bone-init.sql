@@ -1226,6 +1226,7 @@ CREATE TABLE meta_entity (
     icon                VARCHAR(100)    DEFAULT NULL COMMENT '图标',
     sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
     row_policies       TEXT            DEFAULT NULL COMMENT '行级 ACL 策略 JSON（owner_field + rules；null=默认 created_by 单规则，Runtime §4.7.1）',
+    auto_number        JSON            DEFAULT NULL COMMENT '自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）；非空时记录创建由平台生成单据号',
     created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -1285,6 +1286,7 @@ CREATE TABLE meta_model_template (
     category            VARCHAR(100)    DEFAULT NULL COMMENT '业务域分类（客户/订单/支付/物料/组织…）',
     current_version     VARCHAR(50)     NOT NULL DEFAULT 'v1.0.0' COMMENT '当前版本',
     status              TINYINT         NOT NULL DEFAULT 0 COMMENT '0-草稿 1-已发布（发布后方可实例化）',
+    delivery_mode       TINYINT         NOT NULL DEFAULT 0 COMMENT '交付模式（0041）：0-生成式(GENERATIVE)不建运行时物理表 1-运行时(RUNTIME)发布即建表对齐；实例化默认继承',
     created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -1334,6 +1336,22 @@ VALUES
     (9115, 0, 9101, 'address', 'address', '地址', 'string', 500, 0, 0, NULL, NULL, 5, 1, NOW(3), NOW(3), 0, 0)
 ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), sort_order = VALUES(sort_order);
 
+-- 界面列投影覆盖（0042 · P2-④ 服务端化）：用户级 UI 偏好，替代 MVP 的 localStorage 方案。
+-- 唯一键不含 deleted —— reset 语义为软删后重建，不撞 uk_overlay_tenant_user_entity。
+CREATE TABLE IF NOT EXISTS meta_ui_overlay (
+    id                  BIGINT          NOT NULL COMMENT '雪花ID',
+    tenant_id           BIGINT          NOT NULL COMMENT '租户ID',
+    user_id             BIGINT          NOT NULL COMMENT '账号ID（CurrentUserProvider；无主体落 0）',
+    entity_code         VARCHAR(128)    NOT NULL COMMENT '实体编码',
+    overlay_json        JSON            NOT NULL COMMENT 'UiOverlay 序列化（version+overrides+density）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_overlay_tenant_user_entity (tenant_id, user_id, entity_code),
+    KEY idx_overlay_entity (entity_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='界面列投影覆盖（用户级UI偏好）';
+
 CREATE TABLE meta_entity_relation (
     id                  BIGINT          NOT NULL COMMENT '关系主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL COMMENT '租户ID',
@@ -1357,6 +1375,13 @@ CREATE TABLE meta_entity_relation (
     KEY idx_meta_er_source (source_entity_id),
     KEY idx_meta_er_target (target_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实体关系表';
+
+-- 运行时单据号序列计数器（0043）：以 (tenant:entity:field:date) 为键原子自增。
+CREATE TABLE meta_runtime_sequence (
+    seq_key       VARCHAR(200) NOT NULL COMMENT '序号键（tenant:entity:field:date）',
+    current_value BIGINT        NOT NULL DEFAULT 0 COMMENT '当前序号值',
+    PRIMARY KEY (seq_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='运行时单据号序列计数器';
 
 CREATE TABLE meta_code_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',

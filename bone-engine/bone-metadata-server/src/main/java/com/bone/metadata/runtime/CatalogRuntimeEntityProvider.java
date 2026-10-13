@@ -90,7 +90,8 @@ public class CatalogRuntimeEntityProvider {
             tenantId,
             columns,
             stateField,
-            entity.getRowPolicies()));
+            entity.getRowPolicies(),
+            entity.getAutoNumber()));
   }
 
   /** 供 Controller 默认租户 */

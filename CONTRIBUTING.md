@@ -9,6 +9,28 @@
 - **MySQL / Redis / JWT**：仓库根 [`.env.example`](.env.example) → 复制为 `.env`（已 gitignore），`source scripts/dev/load-env.sh`；说明见 [config/env/README.md](config/env/README.md)
 - 库表：`bone-init.sql`；连通性 `./scripts/dev/db-verify.sh`
 
+## 许可与贡献者授权（必读）
+
+本仓库自 2026-10-11 起采用 [BSL 1.1](LICENSE) 授权（个人学习免费、商业使用需购买授权），
+每个版本在 Change Date（当前为 2030-10-11）后自动转为 **Mozilla Public License 2.0**。
+
+**你提交 PR 即表示同意以下条款：**
+
+1. 你对你提交的内容拥有合法权利，并授权 Licensor 按 **BSL 1.1 及其 Change License（MPL 2.0）** 对外发布；
+2. 你同意你的贡献在 Change Date 后随仓库一并转为 MPL 2.0，且该授权不可撤销；
+3. 你提交的内容不得包含第三方受限制代码（与 MPL 2.0 不兼容的许可、商业 SDK、闭源片段）；
+4. 商业授权不包含你的贡献——如需商业条款请单独与 Licensor 联系。
+
+### AI 辅助产出
+
+- AI **不构成著作权主体**，其产出本身不产生著作权。本仓库中 AI 辅助产出的内容由你以自身名义提交，
+  并按上述条款授权给 Licensor，由 Licensor 统一主张与处分（见 [NOTICE](NOTICE) §四）。
+- 提交前你应自行审核：不含第三方受版权保护代码的逐字复制、不含密钥与隐私数据、不含来路不明的闭源片段。
+  **AI 生成不免除你的审核责任。**
+- 请在 PR 描述中标注涉及 AI 辅助的部分，便于复核。
+
+不接受上述条款的贡献请**不要**提交 PR。
+
 ## 提交前检查（推荐）
 
 ```bash

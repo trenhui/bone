@@ -48,8 +48,29 @@ public class Role extends TenantAggregateRoot<Long> {
     return role;
   }
 
+  /**
+   * 更新角色描述（保留旧签名：只改描述的场景）。
+   *
+   * @deprecated 用 {@link #update(String, String)} —— 只改描述的单参重载会让调用方「忘了还能改名字」， 实测缺陷：{@code
+   *     RoleApplicationService#update} 长期只调这个重载，导致 UI 上改角色名返回 200 但 名字纹丝不动（命令里 name 已带过来却没人应用）。
+   */
+  @Deprecated
   public void update(String description) {
-    this.description = description;
+    update(null, description);
+  }
+
+  /**
+   * 更新角色名称与描述。
+   *
+   * <p>{@code null} 表示「本次不修改该字段」（PATCH 语义），与 {@code UpdateRoleReq} 允许部分字段缺省一致； 只有显式传入非空值才覆盖。
+   */
+  public void update(String name, String description) {
+    if (name != null) {
+      this.name = name;
+    }
+    if (description != null) {
+      this.description = description;
+    }
     this.updatedAt = LocalDateTime.now();
   }
 }

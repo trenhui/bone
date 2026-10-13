@@ -19,6 +19,9 @@ public class AppWebConverter {
 
   public UpdateApplicationCommand toUpdateCommand(UpdateAppReq req, Long id) {
     UpdateApplicationCommand cmd = new UpdateApplicationCommand();
+    // 路径变量 id 是本次更新的定位键：漏设会让下游 updateApplication 以 null 主键查库 ⇒ 500
+    // 且改动静默不生效（定位不到聚合）。此处必须显式回填。
+    cmd.setId(id);
     cmd.setName(req.getName());
     cmd.setDescription(req.getDescription());
     cmd.setIcon(req.getIcon());

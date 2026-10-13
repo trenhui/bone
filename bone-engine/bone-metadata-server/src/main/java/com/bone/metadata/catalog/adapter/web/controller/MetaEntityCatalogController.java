@@ -3,6 +3,7 @@ package com.bone.metadata.catalog.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.MetaEntityApplicationService;
+import com.bone.metadata.catalog.application.UiOverlayApplicationService;
 import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CopyMetaEntityCommand;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 public class MetaEntityCatalogController {
 
   private final MetaEntityApplicationService metaEntityApplicationService;
+  private final UiOverlayApplicationService uiOverlayApplicationService;
   private final CatalogIdempotencySupport catalogIdempotencySupport;
   private final ObjectMapper objectMapper;
 
@@ -123,6 +125,45 @@ public class MetaEntityCatalogController {
     return ApiResponse.success(metaEntityApplicationService.getPublishPreview(id));
   }
 
+  /**
+   * 读当前用户的实体列投影覆盖（0042 · P2-④ 服务端化）。
+   *
+   * <p>读权限含 {@code metadata:runtime:read}：数据 Tab 的列 hydrate 走此端点，
+   * 只持有运行时可读权限的数据录入用户也必须能取回自己的偏好（否则每次打开都退回默认列）。 返回体为 UiOverlay 的 JSON 字符串（version 校验在前端）；从未配置返回
+   * {@code data=null}。
+   */
+  @GetMapping("/{entityCode}/ui-overlay")
+  @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read', 'metadata:runtime:read')")
+  public ApiResponse<Object> getUiOverlay(@PathVariable String entityCode) {
+    // 强转 Object：避免 String 被解析为 success(String message) 重载导致 data 为空
+    // （前端 fetchOverlay 读 res.data，见 overlaySync.ts:41）
+    return ApiResponse.success((Object) uiOverlayApplicationService.getOverlayJson(entityCode));
+  }
+
+  /**
+   * 保存当前用户的实体列投影覆盖（UPSERT 幂等）。
+   *
+   * <p>写权限限建模角色（界面 Tab 的受众）：列结构是建模决策而非数据录入决策。 后续若数据 Tab 开放列设置，再把 {@code metadata:runtime:write}
+   * 追加进白名单（加法变更）。
+   */
+  @PutMapping("/{entityCode}/ui-overlay")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
+  public ApiResponse<Void> saveUiOverlay(
+      @PathVariable String entityCode,
+      @RequestBody com.fasterxml.jackson.databind.JsonNode overlay) {
+    uiOverlayApplicationService.saveOverlayJson(
+        entityCode, overlay == null ? null : overlay.toString());
+    return ApiResponse.success();
+  }
+
+  /** 重置为默认投影（软删；localStorage 缓存由前端同步清除）。 */
+  @DeleteMapping("/{entityCode}/ui-overlay")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
+  public ApiResponse<Void> clearUiOverlay(@PathVariable String entityCode) {
+    uiOverlayApplicationService.clearOverlay(entityCode);
+    return ApiResponse.success();
+  }
+
   /** 实体复制（UC-W2 流程 B）：复制定义与字段为新草稿实体；目标模块建模角色（G1②）统一校验。 */
   @PostMapping("/{id}/copy")
   @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
@@ -133,10 +174,17 @@ public class MetaEntityCatalogController {
         .body(ApiResponse.success(newId));
   }
 
+  /**
+   * 删除实体（软删定义 + 级联动作定义）。
+   *
+   * @param dropPhysicalTable true=同时 DROP RUNTIME 物理表（破坏性，须前端二次确认勾选后传 true）； 缺省
+   *     false=仅软删，物理表保留（历史数据不丢，可经孤儿表门禁事后治理）。
+   */
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
-  public ApiResponse<Void> delete(@PathVariable Long id) {
-    metaEntityApplicationService.deleteEntity(id);
+  public ApiResponse<Void> delete(
+      @PathVariable Long id, @RequestParam(defaultValue = "false") boolean dropPhysicalTable) {
+    metaEntityApplicationService.deleteEntity(id, dropPhysicalTable);
     return ApiResponse.success();
   }
 

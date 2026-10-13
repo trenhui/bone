@@ -55,6 +55,10 @@ class MetaEntityWorkbenchServiceTest {
   @Mock private PhysicalStructureGateway physicalStructureGateway;
   @Mock private com.bone.core.domain.event.DomainEventPublisher domainEventPublisher;
 
+  @Mock
+  private com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort
+      actionDefMaterializePort;
+
   private MetaEntityApplicationService service;
 
   @BeforeEach
@@ -70,6 +74,7 @@ class MetaEntityWorkbenchServiceTest {
             mock(com.bone.metadata.sdk.metadata.api.MetadataService.class),
             () -> null,
             Optional.empty(),
+            actionDefMaterializePort,
             domainEventPublisher,
             mock(PlatformTransactionManager.class));
   }
@@ -204,6 +209,46 @@ class MetaEntityWorkbenchServiceTest {
 
     assertThat(preview.isRunnable()).isFalse();
     assertThat(preview.isHasBlockingErrors()).isTrue();
+  }
+
+  @Test
+  @DisplayName("预览 onboarding：RUNTIME 实体的逃逸动作细码进待授权清单，并明示交付模式后果（含物理表名）")
+  void preview_shouldListEscapeActionAuthorizations_forRuntime() {
+    MetaEntity entity = entity(507L, "bp_esc", "t_bp_esc", 1, 1L);
+    stubFields(entity.getId(), List.of());
+    stubRelationsEmpty();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(actionDefMaterializePort.listEscapeActions(1L, "bp_esc"))
+        .thenReturn(
+            List.of(
+                new com.bone.metadata.catalog.domain.gateway.ActionDefSnapshot(
+                    "confirmPayout", "确认打款", "runtime:bp_esc:confirmPayout")));
+
+    PublishPreviewDTO preview = service.getPublishPreview(entity.getId());
+
+    assertThat(preview.getPendingAuthorizations()).hasSize(1);
+    assertThat(preview.getPendingAuthorizations().get(0).getCode())
+        .isEqualTo("runtime:bp_esc:confirmPayout");
+    assertThat(preview.getPendingAuthorizations().get(0).getActionCode())
+        .isEqualTo("confirmPayout");
+    assertThat(preview.getPendingAuthorizations().get(0).getActionLabel()).isEqualTo("确认打款");
+    // 交付模式后果必须明示且带物理表名：把「发布成功却无表」前移为创建期可见信息
+    assertThat(preview.getDeliveryModeNotice()).contains("运行时交付", "t_bp_esc");
+  }
+
+  @Test
+  @DisplayName("预览 onboarding：GENERATIVE 实体无逃逸动作时清单为空，明示不建物理表后果")
+  void preview_shouldReturnEmptyAuthorizations_forGenerativeWithoutEscape() {
+    MetaEntity entity = entity(508L, "bp_gen_esc", "t_bp_gen_esc", 0, 1L);
+    stubFields(entity.getId(), List.of());
+    stubRelationsEmpty();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(actionDefMaterializePort.listEscapeActions(1L, "bp_gen_esc")).thenReturn(List.of());
+
+    PublishPreviewDTO preview = service.getPublishPreview(entity.getId());
+
+    assertThat(preview.getPendingAuthorizations()).isEmpty();
+    assertThat(preview.getDeliveryModeNotice()).contains("不创建运行时物理表");
   }
 
   // ===================== UC-W2 流程 B 实体复制 =====================

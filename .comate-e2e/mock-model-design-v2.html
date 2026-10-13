@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>模型设计 · 冷启动优化效果图 v2</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#f5f6f8; color:#1f2329; font-size:14px; }
+  .layout { display:flex; height:100vh; }
+  /* 侧栏 */
+  .side { width:200px; background:#fff; border-right:1px solid #e5e6eb; padding:16px 8px; }
+  .logo { display:flex; align-items:center; gap:8px; padding:0 12px 16px; font-weight:600; }
+  .logo-badge { width:28px; height:28px; border-radius:6px; background:#3370ff; color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; }
+  .nav-group-title { font-size:12px; color:#8f959e; padding:12px 12px 6px; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:6px; color:#41464c; cursor:pointer; margin-bottom:2px; }
+  .nav-item.active { background:#eaf1ff; color:#3370ff; font-weight:500; }
+  .nav-item .ico { width:16px; text-align:center; opacity:.75; font-size:13px; }
+  .nav-item .arrow { margin-left:auto; font-size:10px; color:#8f959e; }
+  /* 主区 */
+  .main { flex:1; overflow:hidden; padding:16px 28px 0; position:relative; }
+  .crumb { font-size:12px; color:#8f959e; margin-bottom:6px; }
+  .crumb b { color:#1f2329; font-weight:500; }
+  .head { display:flex; align-items:flex-start; justify-content:space-between; }
+  .head h1 { font-size:22px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .head .tag { font-size:12px; color:#3370ff; background:#eaf1ff; border:1px solid #bccdff; border-radius:4px; padding:1px 8px; font-weight:400; }
+  .head-desc { color:#646a73; margin:6px 0 2px; font-size:13px; }
+  .head-desc a { color:#3370ff; text-decoration:none; }
+  .btn { border-radius:6px; font-size:14px; cursor:pointer; border:1px solid #d0d3d9; background:#fff; padding:6px 14px; }
+  .btn-primary { background:#3370ff; border-color:#3370ff; color:#fff; font-weight:500; padding:7px 16px; }
+  .btn-ghost { color:#3370ff; border-color:#8fb0ff; }
+  /* 冷解锁横幅 */
+  .banner { margin:12px 0; background:linear-gradient(90deg,#f0f6ff,#eaf1ff); border:1px solid #bccdff; border-radius:8px; padding:10px 16px; display:flex; align-items:center; gap:10px; }
+  .banner .b-ico { width:20px; height:20px; border-radius:50%; background:#3370ff; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; }
+  .banner b { font-weight:600; }
+  .banner .link { margin-left:auto; color:#3370ff; font-size:13px; cursor:pointer; }
+  /* 指标 */
+  .metrics { display:flex; gap:12px; margin-top:14px; }
+  .metric { background:#fff; border:1px solid #e5e6eb; border-radius:8px; padding:12px 18px; width:200px; }
+  .metric .num { font-size:24px; font-weight:600; }
+  .metric .cap { font-size:12px; color:#646a73; margin-top:2px; }
+  .metric .spark { font-size:11px; color:#8f959e; margin-top:4px; }
+  /* 三步引导 */
+  .steps { background:#fff; border:1px solid #e5e6eb; border-radius:8px; margin-top:12px; padding:12px 20px; display:flex; align-items:center; gap:18px; }
+  .step { display:flex; align-items:center; gap:8px; }
+  .step-num { width:22px; height:22px; border-radius:50%; background:#f2f3f5; color:#646a73; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:600; }
+  .step.hot .step-num { background:#3370ff; color:#fff; }
+  .step-title { font-weight:500; font-size:13px; }
+  .step-sub { font-size:11px; color:#8f959e; }
+  .step-arrow { color:#c9cdd4; font-size:12px; }
+  /* 磁贴 */
+  .tiles { display:flex; gap:12px; margin-top:12px; }
+  .tile { background:#fff; border:1px solid #e5e6eb; border-radius:8px; padding:14px 18px; flex:1; display:flex; gap:12px; align-items:flex-start; position:relative; }
+  .tile-ico { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; flex-shrink:0; }
+  .tile-t { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .tile-d { font-size:12px; color:#646a73; line-height:1.5; }
+  .tile-foot { font-size:11px; color:#3370ff; margin-top:6px; }
+  /* 空草稿区 */
+  .draft-empty { background:#fff; border:1px dashed #d0d3d9; border-radius:8px; margin-top:12px; padding:22px; text-align:center; color:#646a73; }
+  .draft-empty b { color:#1f2329; display:block; font-size:14px; margin-bottom:4px; }
+  /* Modal */
+  .mask { position:absolute; inset:0; background:rgba(31,35,41,.45); display:flex; align-items:flex-start; justify-content:center; z-index:10; padding-top:52px; }
+  .modal { width:560px; background:#fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,.18); }
+  .m-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; }
+  .m-title { font-size:16px; font-weight:600; }
+  .m-close { color:#8f959e; font-size:16px; cursor:pointer; }
+  .m-body { padding:4px 20px 8px; }
+  .frow { display:flex; gap:14px; margin-bottom:12px; }
+  .field { flex:1; }
+  .f-label { font-size:12px; color:#41464c; margin-bottom:5px; }
+  .f-label .req { color:#f54a45; margin-right:3px; }
+  .f-input { height:34px; border:1px solid #d0d3d9; border-radius:6px; padding:0 11px; display:flex; align-items:center; font-size:13px; color:#1f2329; background:#fff; }
+  .f-input.hint { color:#8f959e; }
+  .f-help { font-size:11px; color:#8f959e; margin-top:3px; }
+  /* 归属组 */
+  .own { border:1px solid #e5e6eb; border-radius:8px; padding:12px 14px 6px; margin:4px 0 10px; background:#fafbfc; }
+  .own-title { font-size:12px; font-weight:600; color:#41464c; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .own-title .tip { font-weight:400; color:#8f959e; font-size:11px; }
+  .own-grid { display:flex; gap:12px; }
+  .own-grid .field { flex:1; }
+  /* 下拉展开态 */
+  .select { position:relative; }
+  .select-box { height:34px; border:1px solid #3370ff; border-radius:6px; padding:0 11px; display:flex; align-items:center; justify-content:space-between; background:#fff; box-shadow:0 0 0 2px #d6e4ff; font-size:13px; }
+  .select-box .ph { color:#8f959e; }
+  .select-box .carets { color:#8f959e; font-size:11px; letter-spacing:-1px; }
+  .dropdown { position:absolute; top:38px; left:0; right:0; background:#fff; border:1px solid #e5e6eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:5; overflow:hidden; }
+  .opt { display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:13px; }
+  .opt:hover { background:#f2f3f5; }
+  .opt .dot { width:22px; height:22px; border-radius:5px; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; }
+  .opt .sub { margin-left:auto; font-size:11px; color:#8f959e; }
+  .opt-create { border-top:1px solid #f2f3f5; background:#f7f9ff; padding:9px 12px; }
+  .opt-create .plus { width:22px; height:22px; border-radius:5px; border:1px dashed #8fb0ff; color:#3370ff; display:flex; align-items:center; justify-content:center; font-size:12px; background:#fff; }
+  .opt-create b { font-weight:500; color:#3370ff; }
+  .opt-create .hint2 { display:block; font-size:11px; color:#646a73; margin-top:1px; margin-left:30px; }
+  .kbd { font-size:10px; color:#8f959e; border:1px solid #e0e2e6; border-radius:3px; padding:0 4px; margin-left:8px; }
+  /* 草稿箱逃生舱 */
+  .escape { display:flex; align-items:center; gap:6px; font-size:12px; color:#646a73; background:#f7f8fa; border:1px solid #e5e6eb; border-radius:6px; padding:8px 12px; margin-bottom:12px; }
+  .escape a { color:#3370ff; cursor:pointer; }
+  .m-foot { display:flex; justify-content:flex-end; gap:10px; padding:12px 20px 16px; border-top:1px solid #f2f3f5; margin-top:6px; }
+  /* 角标徽章（设计稿注记） */
+  .callout { position:absolute; right:24px; bottom:20px; background:#fffbe6; border:1px solid #ffe58f; border-radius:8px; padding:10px 14px; font-size:12px; color:#614700; box-shadow:0 4px 16px rgba(0,0,0,.08); max-width:320px; line-height:1.6; }
+  .callout b { display:block; margin-bottom:2px; color:#874d00; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- 侧栏 -->
+  <div class="side">
+    <div class="logo"><div class="logo-badge">B</div>Bone Admin</div>
+    <div class="nav-item"><span class="ico">▦</span>首页仪表盘</div>
+    <div class="nav-group-title">业务建模</div>
+    <div class="nav-item active"><span class="ico">◈</span>模型设计</div>
+    <div class="nav-item"><span class="ico">▤</span>业务对象</div>
+    <div class="nav-item"><span class="ico">▩</span>业务数据</div>
+    <div class="nav-group-title">平台管理</div>
+    <div class="nav-item"><span class="ico">👥</span>组织与成员 <span class="arrow">⌄</span></div>
+    <div class="nav-item"><span class="ico">🛡</span>权限与角色 <span class="arrow">⌄</span></div>
+    <div class="nav-item"><span class="ico">⚙</span>系统管理 <span class="arrow">⌄</span></div>
+  </div>
+
+  <!-- 主区 -->
+  <div class="main">
+    <div class="crumb">业务建模 / <b>模型设计</b></div>
+    <div class="head">
+      <div>
+        <h1>模型设计 <span class="tag">建模入口 · 从零建一个模型</span></h1>
+        <div class="head-desc">选择起点 → 定义结构与界面 → 发布交付。对象清单与数据管理分别在 <a>业务对象</a>、<a>业务数据</a>。</div>
+      </div>
+      <div style="display:flex; gap:10px; padding-top:6px;">
+        <button class="btn btn-ghost">◇ 从场景模板开始</button>
+        <button class="btn btn-primary">＋ 新建业务对象</button>
+      </div>
+    </div>
+
+    <!-- 冷解锁横幅 -->
+    <div class="banner">
+      <div class="b-ico">✓</div>
+      <div><b>首次建模无需预先申请：</b>选择归属时可以直接创建应用与模块，也可以先存入「个人草稿箱」，后续再移动归属。</div>
+      <div class="link">查看 3 步上手 →</div>
+    </div>
+
+    <!-- 指标 -->
+    <div class="metrics">
+      <div class="metric"><div class="num">337</div><div class="cap">业务对象总数</div><div class="spark">较上周 +12</div></div>
+      <div class="metric"><div class="num">46</div><div class="cap">待发布草稿</div><div class="spark" style="color:#3370ff;">点此筛选草稿 →</div></div>
+      <div class="metric"><div class="num">291</div><div class="cap">已发布</div></div>
+      <div class="metric"><div class="num">3</div><div class="cap">我的应用（可建模）</div><div class="spark">＋ 新建应用</div></div>
+    </div>
+
+    <!-- 三步引导 -->
+    <div class="steps">
+      <div class="step hot"><div class="step-num">1</div><div><div class="step-title">选择起点</div><div class="step-sub">模板 / 空白 / 存量表</div></div></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><div class="step-num">2</div><div><div class="step-title">定义结构与界面</div><div class="step-sub">字段 · 界面 · 关联</div></div></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><div class="step-num">3</div><div><div class="step-title">发布交付</div><div class="step-sub">校验 · DDL · 上线</div></div></div>
+      <div style="margin-left:auto; font-size:11px; color:#8f959e;">数据更新于今天 08:55</div>
+    </div>
+
+    <!-- 磁贴（全部可用） -->
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-ico" style="background:#3370ff;">＋</div>
+        <div>
+          <div class="tile-t">空白建模</div>
+          <div class="tile-d">从零定义对象与字段，发布后即可录数据</div>
+          <div class="tile-foot">无需已有应用 · 落点可现建</div>
+        </div>
+      </div>
+      <div class="tile">
+        <div class="tile-ico" style="background:#00b42a;">⇪</div>
+        <div>
+          <div class="tile-t">从存量表导入</div>
+          <div class="tile-d">反向推演现有数据结构，生成对象与字段</div>
+          <div class="tile-foot">无需已有应用 · 落点可现建</div>
+        </div>
+      </div>
+      <div class="tile">
+        <div class="tile-ico" style="background:#ff7d00;">◇</div>
+        <div>
+          <div class="tile-t">从场景模板开始 <span style="font-size:10px;background:#fff1d6;color:#874d00;border-radius:3px;padding:1px 5px;margin-left:4px;">推荐</span></div>
+          <div class="tile-d">12 个开箱精模板，含字段与界面</div>
+          <div class="tile-foot">报销单 / 审批单 / 台账…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 草稿空态 -->
+    <div class="draft-empty">
+      <b>还没有待发布的草稿</b>
+      从上方选择一个起点，2 分钟即可得到第一个业务对象草稿。
+    </div>
+
+    <!-- Modal：单弹完型 + 内联建应用 -->
+    <div class="mask">
+      <div class="modal">
+        <div class="m-head">
+          <div class="m-title">新建业务对象</div>
+          <div class="m-close">✕</div>
+        </div>
+        <div class="m-body">
+          <div class="frow">
+            <div class="field">
+              <div class="f-label"><span class="req">*</span>对象名称</div>
+              <div class="f-input">报销申请</div>
+            </div>
+            <div class="field">
+              <div class="f-label"><span class="req">*</span>对象编码</div>
+              <div class="f-input">biz_expense_apply</div>
+              <div class="f-help">编码创建后不可修改，将作为接口与表名前缀</div>
+            </div>
+          </div>
+
+          <!-- 归属组（核心改造点） -->
+          <div class="own">
+            <div class="own-title">归属 <span class="tip">选择对象挂在哪个应用/模块下；没有合适的可直接现建</span></div>
+            <div class="own-grid">
+              <!-- 应用下拉：展开态，含内联新建 -->
+              <div class="field select">
+                <div class="f-label"><span class="req">*</span>应用</div>
+                <div class="select-box"><span>选择或创建应用…</span><span class="carets">⌃⌄</span></div>
+                <div class="dropdown">
+                  <div class="opt"><div class="dot" style="background:#3370ff;">人</div>人事系统<span class="sub">12 个对象</span></div>
+                  <div class="opt"><div class="dot" style="background:#00b42a;">费</div>费用管理<span class="sub">8 个对象</span></div>
+                  <div class="opt"><div class="dot" style="background:#ff7d00;">销</div>销售云 <span class="sub">86 个对象</span></div>
+                  <div class="opt opt-create"><div class="plus">＋</div><div><b>新建应用「费用报销」<span class="kbd">Enter</span></b><span class="hint2">创建后自动授权你为该应用建模者，无需走管理审批</span></div></div>
+                </div>
+              </div>
+              <div class="field">
+                <div class="f-label"><span class="req">*</span>模块</div>
+                <div class="f-input hint">先选择应用，或直接新建</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 界面模式 -->
+          <div class="frow">
+            <div class="field">
+              <div class="f-label"><span class="req">*</span>界面怎么来 <span style="color:#8f959e;font-weight:400;">（发布后可随时调整）</span></div>
+              <div style="display:flex; gap:10px;">
+                <div style="flex:1;border:1px solid #3370ff;border-radius:7px;padding:9px 11px;box-shadow:0 0 0 2px #d6e4ff;">
+                  <div style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#3370ff;display:inline-block;"></span>自动生成界面</div>
+                  <div style="font-size:11px;color:#646a73;margin-top:3px;line-height:1.5;">字段建好即得列表与表单，适合配置型对象，可后续微调</div>
+                </div>
+                <div style="flex:1;border:1px solid #e5e6eb;border-radius:7px;padding:9px 11px;">
+                  <div style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#c9cdd4;display:inline-block;"></span>手写界面</div>
+                  <div style="font-size:11px;color:#646a73;margin-top:3px;line-height:1.5;">复杂交互自行实现，自动界面不生成</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 逃生舱 -->
+          <div class="escape">↩ 还没想好归属？<a>先存入个人草稿箱，发布前再选择</a>（仅自己可见，不占应用配额）</div>
+        </div>
+        <div class="m-foot">
+          <button class="btn">取消</button>
+          <button class="btn btn-primary">创建并进入结构</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>冷启动动线 v2 · 关键改动</b>
+      ① 内联建应用/模块（下拉「＋新建应用」，创建即自动授权建模者，不走管理审批）；② 个人草稿箱逃生舱（先设计后归属）；③ 磁贴永不禁用。对标 Airtable「建 Base 即建表」、Mendix「建 App 即建 Module」：容器创建是内容创建的附带动作，而非前置审批。
+    </div>
+  </div>
+</div>
+</body>
+</html>

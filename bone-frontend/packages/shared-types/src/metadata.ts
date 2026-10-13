@@ -21,6 +21,11 @@ export interface MetaEntity {
   moduleId?: string;
   /** 最后修改时间（发布脏态判定：updatedAt 晚于上次发布时刻 ⇒ 待重新发布） */
   updatedAt?: string;
+  /**
+   * 自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）；
+   * 空 = 未启用。仅对自动生成界面（RUNTIME）实体生效，业务数据写入时平台生成单据号。
+   */
+  autoNumber?: string;
 }
 
 export interface MetaField {
@@ -89,6 +94,11 @@ export interface CreateMetaEntityReq {
    * ⚠ 雪花 ID 禁止 Number() 转换（19 位超出 2^53 静默截断）；JSON 中以字符串透传，Jackson 自动转 Long。
    */
   moduleId?: string | string;
+  /**
+   * 自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）；空 = 不启用。
+   * 仅对自动生成界面（RUNTIME）实体生效。
+   */
+  autoNumber?: string;
 }
 
 export interface UpdateMetaEntityReq {
@@ -99,6 +109,11 @@ export interface UpdateMetaEntityReq {
   sortOrder?: number;
   deliveryMode?: number;
   icon?: string;
+  /**
+   * 自动编号配置 JSON（如 {"field":"claim_no","prefix":"CLM","reset":"daily"}）；空 = 不启用。
+   * 仅草稿实体可改；已发布实体结构锁死，更新请求中的该值被后端忽略。
+   */
+  autoNumber?: string;
 }
 
 export interface CreateMetaFieldReq {

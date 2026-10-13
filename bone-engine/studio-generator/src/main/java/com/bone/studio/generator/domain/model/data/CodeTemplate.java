@@ -99,6 +99,35 @@ public class CodeTemplate extends AggregateRoot<Long> {
   }
 
   /**
+   * 更新模板的元信息与正文（{@code null} 表示「本次不修改该字段」，PATCH 语义）。
+   *
+   * <p><b>为什么需要它：</b>{@link #updateContent} 只改正文。{@code UpdateCodeTemplateApplicationService}
+   * 长期只调这一个方法，导致 {@code PUT /api/v1/generator/templates/{id}} 返回 200、UI 提示保存成功，但模板名称/编码/描述/类型全部纹丝不动
+   * —— 命令里这些字段都带过来了却没人应用。
+   *
+   * <p>正文变化才把状态打回 DRAFT（需重新发布）；仅改元信息不重置发布状态。
+   */
+  public void update(String name, String code, String description, String type, String content) {
+    if (name != null) {
+      this.name = name;
+    }
+    if (code != null) {
+      this.code = code;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (type != null) {
+      this.type = type;
+    }
+    if (content != null) {
+      this.content = content;
+      this.status = "DRAFT";
+    }
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
    * 读侧回填内置模板正文：仅当本行没有自定义正文时填入，供「模板预览 / 详情」展示。
    *
    * <p><b>为何不复用 {@link #updateContent}</b>：那会把状态打成 DRAFT 并视作用户改动， 而这里只是把 classpath

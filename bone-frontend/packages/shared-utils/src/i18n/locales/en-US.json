@@ -110,6 +110,7 @@
     "META_RUNTIME_INVALID_QUERY": "Invalid query constraint (unmodeled column or malformed q)",
     "META_RUNTIME_RECORD_NOT_FOUND": "Runtime record not found",
     "META_RUNTIME_VALIDATION_FAILED": "Field validation failed",
+    "META_AUTO_NUMBER_CONFIG_INVALID": "Invalid auto-number configuration (missing required field/prefix, reset must be 'none' or 'daily', or malformed JSON)",
     "META_RUNTIME_ACTION_ORPHANED": "Action execution orphaned (side effect dispatched but state transition unfinished; replay rejected, requires reconciliation)",
     "META_RUNTIME_REFERENCE_NOT_FOUND": "Referenced runtime record not found",
     "META_RUNTIME_RELATION_CONFIG_INVALID": "Relation configuration is invalid",

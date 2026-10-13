@@ -1,13 +1,14 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  Alert, Button, Breadcrumb, Card, Dropdown, Empty, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select,
-  Space, Table, Tag, Tree, Tooltip, message, Badge, Typography, Row, Col, Radio,
+  Alert, Button, Breadcrumb, Card, Checkbox, Dropdown, Empty, Form, Input, InputNumber, Modal, Popconfirm, Popover, Segmented, Select,
+  Space, Table, Tag, Tree, Tooltip, message, Badge, Typography, Row, Col, Radio, Switch,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   PlusOutlined, AppstoreOutlined, CopyOutlined, DatabaseOutlined, FolderOutlined,
   ThunderboltOutlined, DownloadOutlined, ImportOutlined, DownOutlined, EditOutlined,
+  DeleteOutlined, ExclamationCircleFilled, SettingOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
@@ -31,43 +32,143 @@ const { Text } = Typography;
  * 双界面模式卡片（PRD §0.7 · 产品主语言）：用户只选「手写界面 / 自动生成界面」，
  * 底层仍存 delivery_mode（0=GENERATIVE / 1=RUNTIME，1:1 映射、不新增字段）。
  * 新建对话框用卡片替代下拉：10 秒判据见 PRD §0.7.1（标准 CRUD→自动；整页不像 CRUD→手写）。
+ *
+ * 用原生 <button> 承载：原生键盘可达（Tab/Enter/Space）+ role=radio 语义，
+ * 避免 div 点击导致「鼠标能选、键盘选不了」的可访问性缺口。
+ * 布局要求：父容器必须给足宽度（整行 antd Row），否则标题会被逐字折行成竖排。
  */
 const UiModeCard: React.FC<{
+  icon: React.ReactNode;
   title: string;
   badge?: string;
   desc: string;
   active: boolean;
   disabled?: boolean;
   onSelect: () => void;
-}> = ({ title, badge, desc, active, disabled, onSelect }) => (
+}> = ({ icon, title, badge, desc, active, disabled, onSelect }) => {
+  const [hover, setHover] = useState(false);
+  const hoverable = hover && !disabled;
+  const borderColor = active ? '#1677ff' : hoverable ? '#91caff' : '#d9d9d9';
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      disabled={disabled}
+      onClick={onSelect}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        textAlign: 'left',
+        font: 'inherit',
+        padding: '12px 14px',
+        borderRadius: 10,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        border: `2px solid ${borderColor}`,
+        background: active ? '#e6f4ff' : hoverable ? '#fafafa' : '#fff',
+        boxShadow: active ? '0 0 0 3px rgba(22,119,255,.08)' : 'none',
+        opacity: disabled ? 0.55 : 1,
+        transition: 'border-color .2s, background .2s, box-shadow .2s',
+      }}
+    >
+      {/* 标题行：nowrap 防中文逐字折行；图标给一眼可辨的语义 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <Radio checked={active} disabled={disabled} style={{ marginInlineEnd: 0 }} />
+        <span style={{ display: 'inline-flex', fontSize: 15, color: active ? '#1677ff' : '#595959' }}>{icon}</span>
+        <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{title}</Text>
+        {badge && (
+          <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', marginInlineEnd: 0 }}>{badge}</Tag>
+        )}
+      </div>
+      <Text
+        type="secondary"
+        style={{ fontSize: 12, display: 'block', marginTop: 6, lineHeight: 1.6, wordBreak: 'break-word' }}
+      >
+        {desc}
+      </Text>
+    </button>
+  );
+};
+
+/**
+ * 双界面模式「受控选择组」：作为 antd Form.Item 的受控子组件使用（Form.Item 自动注入
+ * value / onChange），值直接落在 form store 的 deliveryMode 上。
+ *
+ * 为什么不用 Form.useWatch + form.setFieldsValue 手搓联动：Modal 是 destroyOnHidden，
+ * 表单通常在「打开前」由 openCreate/openEdit 写值，而 useWatch 的订阅/首帧时序会让
+ * 卡片出现「初始不高亮、点了不切换」。受控子组件由 Form.Item 的绑定链负责同步，
+ * 天然免疫这个时序问题（这也是 antd 官方推荐的封装方式）。
+ */
+const UiModeRadioGroup: React.FC<{
+  value?: number;
+  onChange?: (v: number) => void;
+  disabled?: boolean;
+}> = ({ value, onChange, disabled }) => (
   <div
-    role="radio"
-    aria-checked={active}
-    aria-disabled={disabled}
-    onClick={disabled ? undefined : onSelect}
-    style={{
-      flex: 1,
-      padding: '10px 12px',
-      borderRadius: 8,
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      border: active ? '2px solid #1677ff' : '2px solid #d9d9d9',
-      background: active ? '#e6f4ff' : '#fff',
-      opacity: disabled ? 0.5 : 1,
-      transition: 'border-color .2s, background .2s',
-    }}
+    role="radiogroup"
+    aria-label="界面产生方式"
+    style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}
   >
-    <Space size={6}>
-      <Radio checked={active} disabled={disabled} />
-      <Text strong style={{ fontSize: 13 }}>{title}</Text>
-      {badge && <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', marginInlineEnd: 0 }}>{badge}</Tag>}
-    </Space>
-    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4, lineHeight: 1.6 }}>{desc}</Text>
+    <UiModeCard
+      icon={<ThunderboltOutlined />}
+      title="自动生成界面"
+      badge="默认"
+      desc="字段建好即自动列表/表单（catalog 投影 + 可微调列），适合配置型对象"
+      active={value === META_DELIVERY_RUNTIME}
+      disabled={disabled}
+      onSelect={() => onChange?.(META_DELIVERY_RUNTIME)}
+    />
+    <UiModeCard
+      icon={<EditOutlined />}
+      title="手写界面"
+      desc="元数据进代码生成，页面在业务仓手写（或生成后改），适合复杂领域"
+      active={value === META_DELIVERY_GENERATIVE}
+      disabled={disabled}
+      onSelect={() => onChange?.(META_DELIVERY_GENERATIVE)}
+    />
   </div>
 );
 
 /** 标识符白名单（与后端 2a UC-MT2 / validate 规则一致） */
 const CODE_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 const CODE_RULE = { pattern: CODE_PATTERN, message: '以字母开头，仅字母/数字/下划线' };
+
+// ----- 自动编号（0043）前端配置形态 -----
+// 表单内部用「开关 + 子字段」承载，提交时序列化为后端约定的 auto_number JSON；
+// 回填时反序列化。后端契约：{"field":"<承载字段>","prefix":"<前缀>","reset":"none|daily"}。
+interface AutoNumberFormState {
+  autoEnabled: boolean;
+  anField: string;
+  anPrefix: string;
+  anReset: 'none' | 'daily';
+}
+const EMPTY_AUTO_NUMBER: AutoNumberFormState = { autoEnabled: false, anField: '', anPrefix: '', anReset: 'none' };
+
+/** 后端 auto_number JSON → 表单子状态；非法/缺失回退默认（关闭）。 */
+function parseAutoNumber(json?: string | null): AutoNumberFormState {
+  if (!json) return { ...EMPTY_AUTO_NUMBER };
+  try {
+    const o = JSON.parse(json);
+    if (o && typeof o === 'object') {
+      const field = typeof o.field === 'string' ? o.field : '';
+      const prefix = typeof o.prefix === 'string' ? o.prefix : '';
+      const reset: 'none' | 'daily' = o.reset === 'daily' ? 'daily' : 'none';
+      return { autoEnabled: !!(field && prefix), anField: field, anPrefix: prefix, anReset: reset };
+    }
+  } catch {
+    /* 损坏配置静默降级为关闭，不阻断表单 */
+  }
+  return { ...EMPTY_AUTO_NUMBER };
+}
+
+/** 表单子状态 → 后端 auto_number JSON；未启用或字段不全则返回 undefined（不写配置）。 */
+function buildAutoNumberJson(s: AutoNumberFormState): string | undefined {
+  if (!s.autoEnabled) return undefined;
+  if (!s.anField.trim() || !s.anPrefix.trim()) return undefined;
+  return JSON.stringify({ field: s.anField.trim(), prefix: s.anPrefix.trim(), reset: s.anReset });
+}
 
 // ----- Component -----
 
@@ -79,8 +180,6 @@ const EntityManagement: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [form] = Form.useForm();
-  /** 双界面模式当前选中（PRD §0.7）：新建对话框卡片联动用 */
-  const uiModeWatch = Form.useWatch('deliveryMode', form);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<MetaEntity[]>([]);
   const [total, setTotal] = useState(0);
@@ -92,6 +191,32 @@ const EntityManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<number | null>(null);
   /** 全局草稿数（页头「待发布 N」角标，不受列表筛选影响） */
   const [draftTotal, setDraftTotal] = useState<number | null>(null);
+  /**
+   * 列显示设置（密度治理 · 对齐 mock-best-scheme 七列默认）：
+   * 表名 / 交付模式 / 字段数是低频运维列（开发/DBA 视角），默认收起进「列设置」，
+   * 避免 10 列宽表把「状态 / 操作」挤出首屏（横向滚动 = 巡检成本）。
+   * 选择持久化到 localStorage（对标 Ant Design Pro 列设置，用户偏好不随刷新丢）。
+   */
+  const COLUMN_SETTINGS_KEY = 'bone-entity-columns';
+  type OptionalColumnKey = 'tableName' | 'deliveryMode' | 'fieldCount';
+  const OPTIONAL_COLUMN_LABELS: Record<OptionalColumnKey, string> = {
+    tableName: '表名',
+    deliveryMode: '交付模式',
+    fieldCount: '字段数',
+  };
+  const [visibleCols, setVisibleCols] = useState<Record<OptionalColumnKey, boolean>>(() => {
+    const fallback: Record<OptionalColumnKey, boolean> = { tableName: false, deliveryMode: false, fieldCount: false };
+    try {
+      const raw = localStorage.getItem(COLUMN_SETTINGS_KEY);
+      if (raw) return { ...fallback, ...(JSON.parse(raw) as Partial<Record<OptionalColumnKey, boolean>>) };
+    } catch {
+      /* 损坏的偏好回退默认值，不阻断页面 */
+    }
+    return fallback;
+  });
+  useEffect(() => {
+    localStorage.setItem(COLUMN_SETTINGS_KEY, JSON.stringify(visibleCols));
+  }, [visibleCols]);
   const [selectedModule, setSelectedModule] = useState<string>(isScoped ? moduleId! : 'all');
   // 树选中语义（提前声明，供 load 依赖）：all=全部分组视图；app-<id>=该应用下模块；mod-<id>=该模块平铺列表
   const selectedIsModule = selectedModule.startsWith('mod-');
@@ -123,6 +248,8 @@ const EntityManagement: React.FC = () => {
   const canWrite = myRole !== 'viewer'; // undefined（平台管理员 / 非 scoped 视图）视为可写
   /** 细粒度权限判定（复制等动作需按 METADATA_MODEL_WRITE 单独判断，不能仅靠角色 canWrite 近似） */
   const { has } = usePermission();
+  /** 已发布实体结构锁死，自动编号配置不可改（domain update 守卫会拒绝；UI 同步禁用） */
+  const autoNumberDisabled = !!editing && editing.status === META_ENTITY_PUBLISHED;
 
   useEffect(() => {
     if (!appId) { setMyRole(undefined); return; }
@@ -393,6 +520,8 @@ const EntityManagement: React.FC = () => {
       type: 0,
       deliveryMode: 1,
       ...(preselectModuleId ? { moduleId: preselectModuleId } : {}),
+      // 自动编号默认关闭（0043）
+      ...EMPTY_AUTO_NUMBER,
     });
     setModalOpen(true);
     metadataTemplateApi.list().then((res) => {
@@ -432,7 +561,9 @@ const EntityManagement: React.FC = () => {
 
   const openEdit = (record: MetaEntity) => {
     setEditing(record);
-    form.setFieldsValue(record);
+    const an = parseAutoNumber(record.autoNumber);
+    // 反序列化 auto_number JSON → 子字段（0043）；其余字段直接透传 setFieldsValue
+    form.setFieldsValue({ ...record, ...an });
     setModalOpen(true);
   };
 
@@ -444,6 +575,26 @@ const EntityManagement: React.FC = () => {
       : values.moduleId != null
         ? String(values.moduleId)
         : undefined;
+    // 自动编号（0043）：启用时承载字段/前缀必填；否则置字段错误并中止提交
+    const anEnabled = !!values.autoEnabled;
+    if (anEnabled) {
+      if (!values.anField || !values.anField.trim()) {
+        form.setFields([{ name: 'anField', errors: ['启用自动编号时必须指定承载字段'] }]);
+        message.error('启用自动编号时必须指定承载字段');
+        return;
+      }
+      if (!values.anPrefix || !values.anPrefix.trim()) {
+        form.setFields([{ name: 'anPrefix', errors: ['启用自动编号时必须指定编号前缀'] }]);
+        message.error('启用自动编号时必须指定编号前缀');
+        return;
+      }
+    }
+    const autoJson = buildAutoNumberJson({
+      autoEnabled: anEnabled,
+      anField: values.anField ?? '',
+      anPrefix: values.anPrefix ?? '',
+      anReset: values.anReset ?? 'none',
+    });
     try {
       // 从模板实例化（UC-W2 主流程 A）
       if (!editing && createMode === 'template' && selectedTemplateId) {
@@ -480,6 +631,8 @@ const EntityManagement: React.FC = () => {
           sortOrder: values.sortOrder,
           deliveryMode: values.deliveryMode,
           icon: values.icon,
+          // 0043：仅草稿可改；已发布实体后端整体拒绝（domain update 守卫）
+          autoNumber: autoJson,
         };
         const res = await metadataEntityApi.update(editing.id, body);
         if (res.code === 200) {
@@ -493,6 +646,8 @@ const EntityManagement: React.FC = () => {
         const body: CreateMetaEntityReq = {
           ...values,
           moduleId: resolvedModuleId,
+          // 0043：自动编号配置（启用时序列化 JSON，未启用/残缺为 null）
+          autoNumber: autoJson,
         };
         const res = await metadataEntityApi.create(body);
         if (res.code === 200) {
@@ -515,10 +670,10 @@ const EntityManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const res = await metadataEntityApi.delete(id);
+  const handleDelete = async (id: string, dropPhysicalTable = false) => {
+    const res = await metadataEntityApi.delete(id, dropPhysicalTable);
     if (res.code === 200) {
-      message.success('已删除');
+      message.success(dropPhysicalTable ? '已删除（含物理表）' : '已删除');
       load();
     } else {
       message.error(res.message);
@@ -526,9 +681,70 @@ const EntityManagement: React.FC = () => {
   };
 
   /**
-   * 行内「更多」菜单项：把复制 / 导出收进下拉，主操作区只留高频动作（详情 / 数据 / 发布 / 删除），
-   * 减少操作列换行与视觉噪音（对标 Ant Design Pro 行操作「更多」范式）。
-   * 复制按 METADATA_MODEL_WRITE 细粒度判定（避免仅靠角色 canWrite 近似导致越权可见）；
+   * 删除二次确认（综述 §1.2 定案 + 决策表「删除用 Modal.confirm 置于『更多』」）：
+   * Modal 渲染在 body portal，不随 Dropdown 菜单关闭而销毁 —— 这正是「Popconfirm 内嵌
+   * Dropdown 确认时菜单先关、弹层错位」竞态的修法（已踩坑记录在诊断文档）。
+   *
+   * 已发布对象的确认文案必须明示**物理表残留**：后端 deleteEntity 只软删实体 + 级联
+   * 动作定义，不 drop 物理表（表内历史数据仍在）。不让用户在不知情下制造孤儿表；
+   * 也因此解除「已发布不可删」的 UI 禁用——那会让人建错即永久卡死（本平台无下线流程）。
+   *
+   * P1-③ 收口（2026-10-12）：已发布 RUNTIME 实体提供「同时删除物理表」勾选（默认不勾）。
+   * 勾选即显式授权破坏性 DROP：okText 随之变为「删除并清理物理表」，把后果写在按钮上；
+   * 不勾则保持软删语义（历史数据保留，孤儿表由门禁 G36 事后治理）。
+   */
+  const confirmDelete = (record: MetaEntity) => {
+    const published = record.status === META_ENTITY_PUBLISHED;
+    const hasPhysicalTable =
+      published && record.deliveryMode === META_DELIVERY_RUNTIME && !!record.tableName;
+    // Modal.confirm 的 content 是 React 渲染产物、onOk 是普通闭包，勾选态用可变 ref 穿透
+    // （不引入受控 state：该组件仅在确认框内存活，ref 更直白且无重渲染）。
+    const dropTableRef = { current: false };
+    Modal.confirm({
+      title: published ? '删除已发布对象？' : '删除草稿？',
+      icon: published ? <ExclamationCircleFilled style={{ color: '#ff4d4f' }} /> : undefined,
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      width: 460,
+      content: (
+        <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+          {published ? (
+            <>
+              <p style={{ marginBottom: 6 }}>
+                「{record.displayName}」（<Text code>{record.code}</Text>）已发布并生成物理表{' '}
+                <Text code>{record.tableName}</Text>。
+              </p>
+              <p style={{ marginBottom: 6 }}>
+                删除后该对象与它的业务数据录入入口一并消失，<b>物理表与历史数据不会自动清理</b>，需 DBA 另行处理。
+              </p>
+              {hasPhysicalTable && (
+                <Checkbox
+                  onChange={(e) => {
+                    dropTableRef.current = e.target.checked;
+                  }}
+                  style={{ marginTop: 4 }}
+                >
+                  同时删除物理表 <Text code>{record.tableName}</Text>（破坏性，表内历史数据一并丢失且不可恢复）
+                </Checkbox>
+              )}
+            </>
+          ) : (
+            <p style={{ marginBottom: 6 }}>
+              「{record.displayName}」（<Text code>{record.code}</Text>）尚未发布，无物理表。
+            </p>
+          )}
+          <Text type="secondary">此操作不可恢复。</Text>
+        </div>
+      ),
+      onOk: () => handleDelete(record.id, dropTableRef.current),
+    });
+  };
+
+  /**
+   * 行内「更多」菜单项（综述 §1.2 定案）：复制 / 导出 / **删除（Modal.confirm）** 收进下拉，
+   * 行内主动作只留 [打开][数据|发布][更多▾]（≤3 inline，解 B1 列宽换行）。
+   * 复制 / 删除按 METADATA_MODEL_WRITE 细粒度判定（避免仅靠角色 canWrite 近似导致越权可见）；
    * 导出无权限限制，所有角色均可见。
    */
   const moreItems = (record: MetaEntity): MenuProps['items'] => {
@@ -544,14 +760,6 @@ const EntityManagement: React.FC = () => {
           : { key: 'edit', icon: <EditOutlined />, label: '编辑定义', onClick: () => openEdit(record) },
       );
     }
-    if (record.deliveryMode === META_DELIVERY_RUNTIME && record.status === META_ENTITY_PUBLISHED) {
-      items.push({
-        key: 'data',
-        icon: <DatabaseOutlined />,
-        label: '业务数据',
-        onClick: () => navigate(`/entities/${record.id}/data`),
-      });
-    }
     if (has(BonePermissionCodes.METADATA_MODEL_WRITE)) {
       items.push({
         key: 'copy',
@@ -566,6 +774,18 @@ const EntityManagement: React.FC = () => {
       label: '导出模型 JSON',
       onClick: () => handleExport(record),
     });
+    // 删除置于「更多」+ Modal.confirm（诊断补充定案）：Dropdown 内嵌 Popconfirm 会在
+    // 确认时先关菜单再弹层，造成「点确认时弹层消失/错位」的竞态；Modal 无此问题。
+    // 已发布对象同样可删（确认文案明示物理表残留），解除此前的 UI 禁用死路。
+    if (has(BonePermissionCodes.METADATA_MODEL_WRITE)) {
+      items.push({ key: 'divider-delete', type: 'divider' });
+      items.push({
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: <Text type="danger">删除</Text>,
+        onClick: () => confirmDelete(record),
+      });
+    }
     return items;
   };
 
@@ -660,31 +880,32 @@ const EntityManagement: React.FC = () => {
       ),
     },
     {
-      // 操作列收敛为 [打开][发布][删除][更多▾]（B1）：
-      // 「编辑」并入「更多」（两者都进对象工作区）；「数据」仅对已发布 RUNTIME 对象出现，
-      // 移入「更多」可避免它与「打开」并列造成误点不同页签。删除保留 inline + Popconfirm，
-      // 不塞进下拉——antd Dropdown 内嵌 Popconfirm 会在确认时关闭菜单造成竞态。
+      // 操作列收敛（综述 §1.2 定案）：行内主动作 ≤3 —— [打开][数据|发布][更多▾]；
+      // 「编辑/复制/导出/删除」全部收进「更多」（删除走 Modal.confirm，见 moreItems），
+      // 列宽不再随按钮数换行（解 B1）。
       title: '操作',
       key: 'action',
-      width: 170,
+      // fixed:right —— 运维列（表名/交付模式/字段数/最近更新）勾选后表格必然横滚，
+      // 操作列不固定会被滚出视口，用户要拖回最右才能点「打开」（antd 固定列必须显式宽度）。
+      fixed: 'right',
+      width: 150,
       render: (_, record) => (
         <Space size={2}>
           <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}`)}>
             打开
           </Button>
+          {/* 综述 §1.2：已发布 RUNTIME 实体操作列收敛为 [打开][数据][更多]；「数据」须 inline，
+              让用户一键直达业务数据录入（深链 §1.4 锁定实体，不会看错对象）。
+              此前「数据」只收在「更多」下拉，与 综述最佳实践落点不一致。 */}
+          {record.status === META_ENTITY_PUBLISHED && record.deliveryMode === META_DELIVERY_RUNTIME && (
+            <Button type="link" size="small" onClick={() => navigate(`/entities/${record.id}/data`)}>
+              数据
+            </Button>
+          )}
           {record.status === 0 && (
             <AuthButton code={BonePermissionCodes.METADATA_PUBLISH} type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => openPublishPreview(record)}>
               发布
             </AuthButton>
-          )}
-          {canWrite && (
-            /* 删除挂在 Popconfirm 下：无权限时必须整体不渲染（<Auth> 包外层），
-               换成 AuthButton 会让 null 成为 Popconfirm children，antd cloneElement 抛异常 */
-            <Auth code={BonePermissionCodes.METADATA_MODEL_WRITE}>
-              <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
-                <Button type="link" size="small" danger disabled={record.status === 1}>删除</Button>
-              </Popconfirm>
-            </Auth>
           )}
           <Dropdown menu={{ items: moreItems(record) }} trigger={['click']}>
             <Button type="link" size="small">更多 <DownOutlined /></Button>
@@ -693,6 +914,17 @@ const EntityManagement: React.FC = () => {
       ),
     },
   ];
+
+  /**
+   * 列收敛（对齐 mock-best-scheme 七列默认）：表名 / 交付模式 / 字段数为可选运维列，
+   * 经「列设置」勾选后才进 visibleColumns。scroll.x 按可见列宽合计动态计算——
+   * 固定 1300 会把 7 列表格横向拉伸出滚动条（简洁 = 首屏放得下，不是留白）。
+   */
+  const visibleColumns: ColumnsType<MetaEntity> = columns.filter((c) => {
+    const key = String(c.key);
+    return key in visibleCols ? visibleCols[key as OptionalColumnKey] : true;
+  });
+  const tableScrollX = visibleColumns.reduce((sum, c) => sum + (Number(c.width) || 0), 0);
 
   // ----- Render -----
   return (
@@ -733,7 +965,7 @@ const EntityManagement: React.FC = () => {
         </Space>
         <Text type="secondary" style={{ fontSize: 12 }}>
           在这里检索、筛选、批量发布、复制与维护业务对象。点「打开」进入对象工作区（结构 / 界面 / 数据 / 发布四页签）；
-          录入业务数据请用「更多 → 业务数据」或工作区的「数据」页签，它会锁定当前对象、不会看错数据。
+          已发布对象可直接点行内「数据」录入业务数据，它会锁定当前对象、不会看错数据。
         </Text>
       </div>
 
@@ -825,6 +1057,35 @@ const EntityManagement: React.FC = () => {
                   )}
                 </Button>
               </Dropdown>
+            </Col>
+            <Col>
+              {/* 列设置：默认七列（mock 定案），表名/交付模式/字段数按需展开。
+                  用 Popover 而非 Dropdown：多选勾选不应点一下就关菜单。 */}
+              <Popover
+                trigger="click"
+                placement="bottom"
+                title="显示列（默认仅核心列）"
+                content={
+                  <Checkbox.Group
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                    value={(Object.keys(OPTIONAL_COLUMN_LABELS) as OptionalColumnKey[]).filter((k) => visibleCols[k])}
+                    onChange={(vals) => {
+                      const set = new Set(vals as string[]);
+                      setVisibleCols({
+                        tableName: set.has('tableName'),
+                        deliveryMode: set.has('deliveryMode'),
+                        fieldCount: set.has('fieldCount'),
+                      });
+                    }}
+                    options={(Object.keys(OPTIONAL_COLUMN_LABELS) as OptionalColumnKey[]).map((k) => ({
+                      value: k,
+                      label: OPTIONAL_COLUMN_LABELS[k],
+                    }))}
+                  />
+                }
+              >
+                <Button icon={<SettingOutlined />}>列设置</Button>
+              </Popover>
             </Col>
             <Col>
               {/* ⌘K 快速跳转实体：显式露出提示，避免"藏起来的能力等于不存在" */}
@@ -963,9 +1224,9 @@ const EntityManagement: React.FC = () => {
           <Table
             rowKey="id"
             loading={loading}
-            columns={columns}
+            columns={visibleColumns}
             dataSource={tableData}
-            scroll={{ x: 1300 }}
+            scroll={{ x: tableScrollX }}
             rowSelection={{
               selectedRowKeys,
               onChange: setSelectedRowKeys,
@@ -1031,7 +1292,7 @@ const EntityManagement: React.FC = () => {
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
         destroyOnHidden
-        width={600}
+        width={640}
       >
         {!editing && (
           <Segmented
@@ -1089,7 +1350,13 @@ const EntityManagement: React.FC = () => {
             </div>
           </Card>
         )}
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          /* 初值兜底：Modal 为 destroyOnHidden，openCreate 的 setFieldsValue 可能早于 Form 挂载，
+             仅靠它会让「界面怎么来」开局不高亮。initialValues 在 Form 挂载时即成默认态。 */
+          initialValues={{ type: 0, deliveryMode: META_DELIVERY_RUNTIME }}
+        >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="displayName" label="显示名" rules={[{ required: true }]}>
@@ -1125,30 +1392,80 @@ const EntityManagement: React.FC = () => {
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} placeholder="实体的业务含义说明" />
           </Form.Item>
+          {/* 界面怎么来：独占整行。此前与「类型/排序」挤在同一 Row 的 span=8 三列栅格里，
+              Modal 宽 600 时单卡仅约 78px，中文标题/描述被逐字折成竖排（错乱根因）。 */}
+          <Form.Item
+            name="deliveryMode"
+            label="界面怎么来？"
+            tooltip="页面产生方式（底层仍存 delivery_mode，1:1 映射见 PRD §0.7）；标准 CRUD 选自动，整页不像 CRUD 选手写"
+          >
+            <UiModeRadioGroup disabled={!!editing && editing.status === META_ENTITY_PUBLISHED} />
+          </Form.Item>
+          {/* 自动编号配置（0043）：启用后业务数据写入时平台按「前缀-序号」生成单据号，
+              替换 PAY-<nanoTime> 占位。仅对自动生成界面（RUNTIME）实体生效；已发布实体禁用。 */}
+          <Form.Item
+            name="autoEnabled"
+            label="启用自动编号"
+            valuePropName="checked"
+            tooltip="启用后，业务数据写入时由平台生成可读单据号（如 CLM-20261012-0001），避免用时间戳占位；仅对「自动生成界面」实体生效"
+          >
+            <Switch disabled={autoNumberDisabled} />
+          </Form.Item>
+          <Form.Item
+            shouldUpdate={(prev, cur) => prev.autoEnabled !== cur.autoEnabled || prev.deliveryMode !== cur.deliveryMode}
+          >
+            {({ getFieldValue }) => {
+              const enabled = !!getFieldValue('autoEnabled');
+              if (!enabled) return null;
+              const isGenerative = getFieldValue('deliveryMode') === META_DELIVERY_GENERATIVE;
+              return (
+                <>
+                  {isGenerative && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      message="当前为「手写界面」交付模式，自动编号仅在「自动生成界面」实体的业务数据写入时生效，此配置暂不会生成单据号。"
+                    />
+                  )}
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item
+                        name="anField"
+                        label="承载字段"
+                        tooltip="单据号写入的物理表字段（如 claim_no），需与已建字段编码一致"
+                      >
+                        <Input placeholder="如 claim_no" disabled={autoNumberDisabled} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="anPrefix" label="编号前缀" tooltip="单据号前缀（如 CLM / ORD）">
+                        <Input placeholder="如 CLM" disabled={autoNumberDisabled} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        name="anReset"
+                        label="重置粒度"
+                        tooltip="none=全局单调递增；daily=每日从 0001 重新开始"
+                      >
+                        <Select
+                          disabled={autoNumberDisabled}
+                          options={[
+                            { value: 'none', label: '全局递增' },
+                            { value: 'daily', label: '每日重置' },
+                          ]}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </>
+              );
+            }}
+          </Form.Item>
           <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item label="界面怎么来？" tooltip="页面产生方式（底层仍存 delivery_mode，1:1 映射见 PRD §0.7）；标准 CRUD 选自动，整页不像 CRUD 选手写">
-                <div style={{ display: 'flex', gap: 12, paddingTop: 4 }}>
-                  <UiModeCard
-                    title="自动生成界面"
-                    badge="默认"
-                    desc="字段建好即自动列表/表单（catalog 投影 + 可微调列），适合配置型对象"
-                    active={uiModeWatch === META_DELIVERY_RUNTIME}
-                    disabled={!!editing && editing.status === 1}
-                    onSelect={() => form.setFieldsValue({ deliveryMode: META_DELIVERY_RUNTIME })}
-                  />
-                  <UiModeCard
-                    title="手写界面"
-                    desc="元数据进代码生成，页面在业务仓手写（或生成后改），适合复杂领域"
-                    active={uiModeWatch === 0}
-                    disabled={!!editing && editing.status === 1}
-                    onSelect={() => form.setFieldsValue({ deliveryMode: META_DELIVERY_GENERATIVE })}
-                  />
-                </div>
-              </Form.Item>
-            </Col>
             {!editing && (
-              <Col span={8}>
+              <Col span={12}>
                 <Form.Item name="type" label="类型">
                   <Select options={[
                     { value: 0, label: '普通业务实体' },
@@ -1157,7 +1474,7 @@ const EntityManagement: React.FC = () => {
                 </Form.Item>
               </Col>
             )}
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="sortOrder" label="排序">
                 <InputNumber min={0} style={{ width: '100%' }} />
               </Form.Item>

@@ -1,6 +1,7 @@
 package com.bone.metadata.catalog.infrastructure.gateway;
 
 import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
+import com.bone.metadata.catalog.domain.gateway.ActionDefSnapshot;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -40,6 +41,15 @@ public class JdbcActionDefMaterializeAdapter implements ActionDefMaterializePort
           + "permission_code = VALUES(permission_code), "
           + "requires_idempotency = VALUES(requires_idempotency), sort_order = VALUES(sort_order), "
           + "updated_at = NOW(3), version = version + 1, deleted = 0";
+
+  private static final String SOFT_DELETE_BY_ENTITY =
+      "UPDATE meta_entity_action_def SET deleted = 1, updated_at = NOW(3) "
+          + "WHERE tenant_id = ? AND entity_code = ? AND deleted = 0";
+
+  private static final String SELECT_ESCAPE_ACTIONS =
+      "SELECT action_code, label, permission_code FROM meta_entity_action_def "
+          + "WHERE tenant_id = ? AND entity_code = ? AND is_escape = 1 AND deleted = 0 "
+          + "ORDER BY sort_order ASC, id ASC";
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -90,5 +100,31 @@ public class JdbcActionDefMaterializeAdapter implements ActionDefMaterializePort
   /** 动作级细粒度权限码形状：{@code runtime:{entityCode}:{actionCode}}（RuntimeAccessGuard §4.7）。 */
   private static String permissionCodeOf(String entityCode, MetaModelTemplateAction a) {
     return "runtime:" + entityCode + ":" + a.getActionCode();
+  }
+
+  @Override
+  public int deleteByEntity(long tenantId, String entityCode) {
+    if (entityCode == null || entityCode.isBlank()) {
+      return 0;
+    }
+    return jdbcTemplate.update(SOFT_DELETE_BY_ENTITY, tenantId, entityCode);
+  }
+
+  @Override
+  public List<ActionDefSnapshot> listEscapeActions(long tenantId, String entityCode) {
+    if (entityCode == null || entityCode.isBlank()) {
+      return List.of();
+    }
+    // 只取逃逸动作：非逃逸（状态流转）由实体级 write / 通配 write 覆盖，无逐动作补权必要；
+    // deleted=0 与 UPSERT 的复活语义对齐——软删定义不进入 onboarding 清单。
+    return jdbcTemplate.query(
+        SELECT_ESCAPE_ACTIONS,
+        (rs, rowNum) ->
+            new ActionDefSnapshot(
+                rs.getString("action_code"),
+                rs.getString("label"),
+                rs.getString("permission_code")),
+        tenantId,
+        entityCode);
   }
 }

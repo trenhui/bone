@@ -11,9 +11,10 @@ import type { ColumnsType } from 'antd/es/table';
 import type { MetaField } from '../types';
 import { FIELD_TYPE_MAP, parseEnumValues, RUNTIME_READONLY_FIELDS } from '../types';
 import {
-  clearOverlay, defaultOverlay, isEnumField, isRenderSupported, loadOverlay,
-  projectColumns, reorderOverlay, saveOverlay, tableSizeOf, type UiOverlay,
+  defaultOverlay, isEnumField, isRenderSupported,
+  projectColumns, reorderOverlay, tableSizeOf, type UiOverlay,
 } from '../utils/columnProjection';
+import { fetchOverlay, persistOverlay, resetOverlay } from '../utils/overlaySync';
 
 const { Text } = Typography;
 
@@ -22,7 +23,7 @@ const { Text } = Typography;
  *
  * 关键：预览列与运行时数据列都由同一个 `projectColumns(fields, overlay)` 投影得到，
  * 因此「界面预览列 ≡ 发布后数据列」在结构上成立（PRD v0.32 §0.6.3）。
- * MVP 覆盖存 localStorage（PRD §12.2 D2）；v1.1 服务端化时只需替换底层读写。
+ * 覆盖存储：服务端优先 + localStorage 离线缓存（0042 · P2-④， hydrate 策略见 utils/overlaySync.ts）。
  *
  * 明确不做：拖拽画布 / 组件市场 / 多页面路由设计器（PRD §3.2 Out of Scope）。
  */
@@ -51,7 +52,17 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
   const defaultOv = useMemo(() => defaultOverlay(baseFields), [baseFields]);
 
   useEffect(() => {
-    setOverlay(loadOverlay(entityCode) ?? defaultOverlay(baseFields));
+    // 服务端优先 hydrate（0042）：请求期间用默认投影占位，回来后静默替换 ——
+    // 不用全屏 loading：列配置是次要信息，骨架/占位比阻塞主内容更轻。
+    // cancelled 标志防竞态：快速切换实体时旧实体的覆盖晚到，会把新实体的列投影带偏。
+    let cancelled = false;
+    setOverlay(defaultOverlay(baseFields));
+    fetchOverlay(entityCode).then((ov) => {
+      if (!cancelled) setOverlay(ov ?? defaultOverlay(baseFields));
+    });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityCode]);
 
@@ -68,7 +79,7 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
 
   const persist = (next: UiOverlay) => {
     setOverlay(next);
-    saveOverlay(entityCode, next);
+    persistOverlay(entityCode, next);
   };
 
   const toggleVisible = (code: string, visible: boolean) => {
@@ -86,8 +97,8 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
     persist(reorderOverlay(overlay, projectedCodes, code, direction));
   };
 
-  const restoreDefault = () => {
-    clearOverlay(entityCode);
+  const restoreDefault = async () => {
+    await resetOverlay(entityCode);
     setOverlay(defaultOverlay(baseFields));
     message.success('已恢复默认显示');
   };

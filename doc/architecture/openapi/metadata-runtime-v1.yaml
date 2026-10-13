@@ -64,9 +64,11 @@ paths:
           in: query
           schema: { type: string }
           description: |
-            **MVP 单条件等值过滤**，格式 `field:value`（不是全文 keyword）。
-            例：`status:APPROVED`。多条件/运算符 → v1.1。
-          example: status:APPROVED
+            **多条件等值过滤（AND）**，格式 `field:value;field2:value2`（不是全文 keyword）。
+            例：`status:APPROVED;amount:99.99`。单条件（无 `;`）与旧契约 `field:value` 完全兼容。
+            分隔符用 `;` 而非 `,`：字段值是可含逗号的自由文本（地址/备注/枚举列表）。
+            空段跳过（如条件行删除后的残留）；字段须已建模，否则 400 RUNTIME_INVALID_QUERY。
+          example: status:APPROVED;amount:99.99
       responses:
         '200':
           description: OK
@@ -152,7 +154,7 @@ paths:
         - name: q
           in: query
           schema: { type: string }
-          description: MVP 单条件等值过滤，格式 field:value。
+          description: 多条件等值过滤（AND），格式 field:value;field2:value2；单条件兼容旧 field:value。
       responses:
         '200':
           description: OK
