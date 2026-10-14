@@ -1,0 +1,1049 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bone.local/schemas/bone-ui-schema-v1.json",
+  "title": "BoneUiSchema v1.2",
+  "description": "业务对象界面 JSON 协议 v1.2（向后兼容 v1.0/v1.1：所有新增字段可选；v1.0/v1.1 实例仍合法。v1.1 patch 2026-10-13：复合条件 all/any/not、虚拟控件 virtual 标识、上下文变量 $me/$myteam/$all、版本协商 minor、规则编码 code、computedFn.expectedRevenue。v1.2 2026-10-14：规则级启停 enabled/disabledReason、表单页头 pageHeader、码表覆写 dictionaries 结构落实 §3.1；props.optionsRef 关闭提案，改按 fieldCode 隐式绑定码表）。只引用结构真源，不重复定义字段。配套设计见 BONE-业务对象界面JSON协议设计.md §10/§11。通用性覆盖：费用报销 / 医疗理赔(synapClaim) / 采购审查(procuraAI) / 股票投研(synapEquity) / ERP 单据 / CRM 商机。",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "entityCode",
+    "views"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "大版本锁 1；v1.1 为兼容增量，不升大版本"
+    },
+    "minor": {
+      "type": "integer",
+      "default": 2,
+      "description": "版本协商：渲染器遇未知 minor 只告警、不拒绝，前向忽略未知字段（业界 JSON Schema 前向兼容惯例）"
+    },
+    "entityCode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "displayModes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "create",
+          "edit",
+          "view"
+        ]
+      },
+      "default": [
+        "create",
+        "edit",
+        "view"
+      ]
+    },
+    "views": {
+      "type": "object",
+      "required": [
+        "list",
+        "form"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "list": {
+          "$ref": "#/definitions/listView"
+        },
+        "form": {
+          "$ref": "#/definitions/formView"
+        },
+        "detail": {
+          "$ref": "#/definitions/formView"
+        }
+      }
+    },
+    "linkageRules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/linkageRule"
+      }
+    },
+    "submitRules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/submitRule"
+      }
+    },
+    "actionBar": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "actionCode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "actionCode": {
+            "type": "string",
+            "description": "引用 meta_entity_action_def.actionCode"
+          },
+          "visibleWhen": {
+            "$ref": "#/definitions/condition"
+          },
+          "sortOrder": {
+            "type": "integer"
+          },
+          "decisionKind": {
+            "enum": [
+              "open",
+              "hitl"
+            ],
+            "default": "open",
+            "description": "hitl=采纳/驳回/改判三态（审查/核赔）"
+          },
+          "reasonTypes": {
+            "type": "array",
+            "description": "驳回理由分类（审查六类；理赔拒赔理由）",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confirm": {
+            "type": "object",
+            "description": "二次确认（批量采纳/过账不可逆/退款）",
+            "required": [
+              "title",
+              "content"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "titleKey": {
+                "type": "string"
+              },
+              "contentKey": {
+                "type": "string"
+              }
+            }
+          },
+          "maxRounds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "处置流最多 3 轮，超限转人工"
+          },
+          "requireDualApproveWhen": {
+            "$ref": "#/definitions/condition",
+            "description": "大额双人复核门控（如金额≥10000）"
+          }
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "description": "常驻合规条（投研免责+AI 标识；理赔条款依据入口）",
+      "additionalProperties": false,
+      "properties": {
+        "disclaimer": {
+          "type": "string"
+        },
+        "aiBadge": {
+          "type": "boolean",
+          "default": false
+        },
+        "mockDataMark": {
+          "type": "boolean",
+          "default": false
+        },
+        "disclaimerKey": {
+          "type": "string"
+        }
+      }
+    },
+    "dictionaries": {
+      "type": "object",
+      "description": "枚举/码表覆写：只允许「引用」元数据域 enumValues，不允许在 UI 层新造 value（协议 §3.1）。key = 码表 code，值为覆写体。",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "labelOverride": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "value -> 显示名覆写；未列出的 value 沿用元数据域原名"
+          },
+          "hidden": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "本表单隐藏的 value 列表（只能在既有 value 内裁剪，不得新增）"
+          }
+        }
+      }
+    },
+    "i18n": {
+      "type": "object",
+      "description": "key 引用式 i18n：文案字段配 *Key 即走 t(namespace:key)，缺失回落内联中文（fallbackLng zh-CN，与 shared-utils/i18n 同源；切换经 Shell 广播，各应用不得自决语言）",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "如 bone.ui.t_claim_case；键缺失时渲染内联中文，不裸奔 key"
+        }
+      }
+    },
+    "base": {
+      "type": "object",
+      "description": "模板跟随指针（实例侧元数据）：只声明来源与版本，合入走租户确认式 pull（diff 预览→一键合入），永不自动推送",
+      "additionalProperties": false,
+      "properties": {
+        "templateCode": {
+          "type": "string"
+        },
+        "baseVersion": {
+          "type": "string"
+        },
+        "followMode": {
+          "enum": [
+            "pinned",
+            "notify"
+          ],
+          "default": "pinned",
+          "description": "pinned=不提示更新；notify=有新版本时提示（仍须租户确认合入）"
+        }
+      }
+    },
+    "variants": {
+      "type": "array",
+      "description": "场景变体（同一实体多副面孔）：员工端/审批端、免费/付费、法务/采购。无 variants 时即今日行为（全量兼容）。命中裁决见 §12：按 priority 首个全匹配胜出；命中后按块整块替换 base 对应块（views.list/form/detail、linkageRules、submitRules、actionBar），不做深度归并（可预测）",
+      "items": {
+        "$ref": "#/definitions/variant"
+      }
+    }
+  },
+  "definitions": {
+    "formView": {
+      "type": "object",
+      "required": [
+        "sections"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pageHeader": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "页头关键信息条（字段 code 列表），独立于 sections 渲染在表单顶部（如案件号/申请人）；引用的字段必须同时存在于某个 section，否则视为悬空引用（机器校验 ERROR）。form/detail 视图各自独立配置"
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "controls"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "form",
+                  "dashboard",
+                  "timeline",
+                  "compare",
+                  "report",
+                  "tasks"
+                ],
+                "default": "form",
+                "description": "dashboard=统计卡区；timeline=版本链/决策轨迹；compare=三一致对照/对账；report=数字注入报告；tasks=待办"
+              },
+              "layout": {
+                "enum": [
+                  "single",
+                  "split-left-40",
+                  "split-left-60"
+                ],
+                "default": "single",
+                "description": "审查报告左右分栏用 split"
+              },
+              "controls": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/definitions/control"
+                }
+              },
+              "titleKey": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "required": [
+        "fieldCode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fieldCode": {
+          "type": "string"
+        },
+        "virtual": {
+          "type": "boolean",
+          "default": false,
+          "description": "展示型控件（STAT/CHART/TIMELINE/COMPUTED 聚合口径）必须 virtual:true，声明该 fieldCode 不是 meta_field 引用，经 dataRef/lineage 解析，禁与真实字段码碰撞"
+        },
+        "controlKind": {
+          "enum": [
+            "INPUT",
+            "TEXTAREA",
+            "NUMBER",
+            "MONEY",
+            "SWITCH",
+            "DATE",
+            "DATETIME",
+            "ENUM",
+            "REFERENCE",
+            "CHILD_TABLE",
+            "ATTACHMENT",
+            "SLIDER",
+            "CHART",
+            "STAT",
+            "QUOTE",
+            "TIMELINE",
+            "COMPUTED",
+            "ALERT"
+          ]
+        },
+        "labelOverride": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readonly": {
+          "type": "boolean"
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "控件静态默认可见性；缺省 = true。false 表示默认隐藏，由联动规则 then[].visible 动态揭示（与 then[].visible 配合，先隐后显）"
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number"
+            },
+            "precision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "maxLength": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "currencyField": {
+              "type": "string"
+            },
+            "targetEntity": {
+              "type": "string"
+            },
+            "labelField": {
+              "type": "string"
+            },
+            "valueField": {
+              "type": "string",
+              "const": "id"
+            },
+            "childEntity": {
+              "type": "string"
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "maxCount": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "maxSizeMB": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "chartType": {
+              "enum": [
+                "line",
+                "band",
+                "scatter",
+                "matrix",
+                "funnel",
+                "bar",
+                "donut"
+              ],
+              "description": "投研 PE Band/敏感性矩阵/同业散点；CRM 漏斗；财务趋势；donut=环形占比（费用构成/风险分布）。"
+            },
+            "dataRef": {
+              "type": "string",
+              "description": "图表数据源引用（快照/聚合口径 code），UI 不自算"
+            },
+            "computedFn": {
+              "enum": [
+                "daysLeft",
+                "pricePosition",
+                "debitDiff",
+                "payableAmount",
+                "expectedRevenue"
+              ],
+              "description": "命名计算白名单：剩余天数/价格区间位置/借贷差额/应赔金额/预期收入(金额×概率)。纯前端展示，资金与理算仍后端确定性计算"
+            },
+            "computedFrom": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "anchorRef": {
+              "type": "string",
+              "description": "原文锚点 section_ref，点击滚动定位（审查 quote_original+basis）"
+            },
+            "lineage": {
+              "type": "string",
+              "description": "数字溯源：数据源+口径+计算链路说明 key"
+            },
+            "ai": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "generated": {
+                  "type": "boolean"
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "mask": {
+              "enum": [
+                "hash",
+                "last4"
+              ],
+              "description": "PII 脱敏显示（理赔假名化 ID）"
+            },
+            "tier": {
+              "type": "array",
+              "description": "订阅档可见性 free/pro（投研跟踪提醒付费）",
+              "items": {
+                "type": "string"
+              }
+            },
+            "roles": {
+              "type": "array",
+              "description": "四角色可见性（法务/采购/管理员/IT；销售/经理）",
+              "items": {
+                "type": "string"
+              }
+            },
+            "warningText": {
+              "type": "string",
+              "description": "内联即时警告（禁用条款红字；DCF 手动假设强警告）"
+            },
+            "quoteText": {
+              "type": "string",
+              "description": "引用块正文；QUOTE 控件展示文案（无 anchorRef 时也可独立成卡）"
+            }
+          }
+        },
+        "labelKey": {
+          "type": "string"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "原子条件（fieldCode+operator）或组合（all/any/not 三选一与原子互斥；all 空数组=真，any 空数组=假）。快赔四条件（R-FAST-01）必须用 all 表达，禁拆成四条独立规则（语义从“与”漂成“或”）。深度上限 3，超限发布校验 ERROR。",
+      "properties": {
+        "fieldCode": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "isNull",
+            "isNotNull",
+            "in",
+            "notIn",
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "between",
+            "earlierThan",
+            "laterThan"
+          ]
+        },
+        "value": {},
+        "valueType": {
+          "enum": [
+            "fixed",
+            "field"
+          ],
+          "default": "fixed"
+        },
+        "compareField": {
+          "type": "string"
+        },
+        "all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        },
+        "any": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        },
+        "not": {
+          "$ref": "#/definitions/condition"
+        }
+      }
+    },
+    "linkageRule": {
+      "type": "object",
+      "required": [
+        "when",
+        "then"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "description": "规则编码（前后端对账用：前端先拦、后端强制同一 code，日志与审计对齐，防两边文案漂移）"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "规则级启停。缺省/true 生效；显式 false 时渲染引擎与后端强制均跳过本条（可临时停用而不删除规则，保留审计轨迹）"
+        },
+        "disabledReason": {
+          "type": "string",
+          "description": "停用原因（enabled:false 时建议填写）。停用后若不记原因，排查期只剩「谁关的」没有「为什么关」，与 §13.1 的审计意图不符"
+        },
+        "when": {
+          "$ref": "#/definitions/condition"
+        },
+        "then": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "fieldCode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "fieldCode": {
+                "type": "string"
+              },
+              "visible": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "readonly": {
+                "type": "boolean"
+              },
+              "disabled": {
+                "type": "boolean",
+                "description": "动作/按钮可用性（v1.1 新增）"
+              },
+              "notice": {
+                "type": "string",
+                "description": "内联提示文案（黄色核对标注；v1.1 新增）"
+              },
+              "tier": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "value": {},
+              "noticeKey": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "submitRule": {
+      "type": "object",
+      "required": [
+        "name",
+        "function",
+        "fields",
+        "operator",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "description": "规则编码（前后端对账用，同 linkageRule.code）"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "规则级启停，语义同 linkageRule.enabled（false 时后端强制执行也跳过）"
+        },
+        "disabledReason": {
+          "type": "string",
+          "description": "停用原因，语义同 linkageRule.disabledReason"
+        },
+        "when": {
+          "$ref": "#/definitions/condition",
+          "description": "可选生效前置（如拒赔完整性仅 status=REJECTING 时跑；缺省全量跑。串联验证实证：无 when 则 SUB-COMP-01 误伤正常提交）"
+        },
+        "function": {
+          "enum": [
+            "sum",
+            "count",
+            "max",
+            "min",
+            "compare",
+            "balance",
+            "unique",
+            "consistency",
+            "completeness"
+          ],
+          "description": "compare=两值直接比较（取 fields[0] 为左值，如结束≥开始）；balance=借贷平衡；unique=查重提示；consistency=发票vs清单；completeness=模板要素完整性（拒赔≥3理由/研究卡片六要素）"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte"
+          ]
+        },
+        "compare": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "valueType": {
+              "enum": [
+                "fixed",
+                "field"
+              ]
+            },
+            "value": {},
+            "fieldCode": {
+              "type": "string"
+            }
+          }
+        },
+        "params": {
+          "type": "object",
+          "description": "命名断言参数（tolerance 差额容差；minReasons 最少理由数；scope 查重范围）",
+          "additionalProperties": false,
+          "properties": {
+            "tolerance": {
+              "type": "number"
+            },
+            "minReasons": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "scope": {
+              "type": "string"
+            }
+          }
+        },
+        "verifyType": {
+          "enum": [
+            "ERROR",
+            "WARNING"
+          ],
+          "default": "ERROR"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "messageKey": {
+          "type": "string"
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "required": [
+        "key",
+        "match"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "变体键（稳定，缓存/审计引用），如 reviewer、pro"
+        },
+        "label": {
+          "type": "string"
+        },
+        "labelKey": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "integer",
+          "default": 100,
+          "description": "越小越优先；缺省 100；同值按数组序"
+        },
+        "match": {
+          "type": "object",
+          "description": "全维度同时满足才命中；维度缺省=通配。roles 来自 JWT 应用角色；tiers 来自订阅档上下文；channels 载体（web/h5/miniapp，投研载体决策即此维度）；devices 形态（desktop/mobile，触控与底部导航即此维度）",
+          "additionalProperties": false,
+          "properties": {
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tiers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "channels": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "如 web/h5/miniapp（投研载体决策即此维度）"
+              }
+            },
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "如 desktop/mobile（44px 触控、底部导航即此维度）"
+              }
+            }
+          }
+        },
+        "views": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "list": {
+              "$ref": "#/definitions/listView"
+            },
+            "form": {
+              "$ref": "#/definitions/formView"
+            },
+            "detail": {
+              "$ref": "#/definitions/formView"
+            }
+          }
+        },
+        "linkageRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/linkageRule"
+          }
+        },
+        "submitRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/submitRule"
+          }
+        },
+        "actionBar": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "actionCode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "actionCode": {
+                "type": "string"
+              },
+              "visibleWhen": {
+                "$ref": "#/definitions/condition"
+              },
+              "sortOrder": {
+                "type": "integer"
+              },
+              "decisionKind": {
+                "enum": [
+                  "open",
+                  "hitl"
+                ],
+                "default": "open"
+              },
+              "reasonTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confirm": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "content"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "titleKey": {
+                    "type": "string"
+                  },
+                  "contentKey": {
+                    "type": "string"
+                  }
+                }
+              },
+              "maxRounds": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "requireDualApproveWhen": {
+                "$ref": "#/definitions/condition"
+              }
+            }
+          }
+        }
+      }
+    },
+    "listView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "viewKind": {
+          "enum": [
+            "table",
+            "calendar",
+            "kanban"
+          ],
+          "default": "table",
+          "description": "履约预警用 calendar；CRM 商机漏斗用 kanban"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "fieldCode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "fieldCode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "visible": {
+                "type": "boolean",
+                "default": true
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 40
+              },
+              "pinned": {
+                "enum": [
+                  "left",
+                  "right"
+                ]
+              },
+              "format": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "currencyField": {
+                    "type": "string"
+                  },
+                  "precision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 6
+                  }
+                }
+              }
+            }
+          }
+        },
+        "searchFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quickFilters": {
+          "type": "array",
+          "description": "投研三个一键入口：便宜的/更稳的/增长快的",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tabs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "fieldCode",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "fieldCode": {
+                "type": "string"
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "上下文变量用 $me（本人）/$myteam（本团队）/$all（全部）；布尔/原文值直写"
+              },
+              "titleKey": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "stats": {
+          "type": "array",
+          "description": "工作台三卡片（审查量/命中分布/采纳率；漏斗阶段计数）",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "valueRef"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "valueRef": {
+                "type": "string",
+                "description": "引用聚合口径 code，由后端聚合端点提供，UI 不计算"
+              },
+              "trend": {
+                "type": "string"
+              },
+              "titleKey": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dataScope": {
+          "type": "object",
+          "required": [
+            "policyCode"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "policyCode": {
+              "type": "string",
+              "description": "只引用后端 row_policies code，WHERE 仍后端强制"
+            }
+          }
+        },
+        "batchActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "degradedBanner": {
+          "type": "object",
+          "description": "LLM 不可用时提示规则审查模式（procuraAI 约束）",
+          "required": [
+            "when",
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "when": {
+              "type": "string",
+              "description": "命名条件：llm_unavailable"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "minor": 2
+}

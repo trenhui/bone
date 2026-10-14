@@ -2456,6 +2456,25 @@ CREATE TABLE IF NOT EXISTS `bone_app_permission` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用权限表';
 
 -- ------------------------------------------------------------
+-- 10. AI 证据链（bone-ai-trace）：LLM 调用留痕快照（输入哈希 + IR + 引擎版本三元组）
+-- ------------------------------------------------------------
+CREATE TABLE ai_trace_snapshot (
+    id                  BIGINT          NOT NULL COMMENT '证据快照主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    trace_id            VARCHAR(64)     NOT NULL COMMENT 'LLM调用追踪ID（回放关联键）',
+    evidence_type       VARCHAR(32)     NOT NULL COMMENT '证据类型（LLM_CALL）',
+    input_hash          VARCHAR(64)     NOT NULL COMMENT '输入IR的SHA-256（防篡改校验）',
+    engine_version      VARCHAR(128)    DEFAULT NULL COMMENT '引擎/模型版本（回放复现）',
+    payload             MEDIUMTEXT      DEFAULT NULL COMMENT '证据IR（请求+响应JSON）',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_ai_trace_trace_id (trace_id),
+    KEY idx_ai_trace_tenant_time (tenant_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI证据快照（LLM调用留痕）';
+
+-- ------------------------------------------------------------
 -- 9.1 应用 / 模块演示种子数据（MVP-08：元数据建模 UI 的「应用 → 模块」导航开箱即有内容）
 --
 -- 背景：bone_application / bone_module 此前零数据，前端「元数据 / 应用管理」空列表，

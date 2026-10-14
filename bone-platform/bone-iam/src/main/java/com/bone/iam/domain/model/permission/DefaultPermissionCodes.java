@@ -31,6 +31,15 @@ public final class DefaultPermissionCodes {
         "metadata:runtime:write",
         "metadata:template:read",
         "metadata:template:write",
+        // RC-004 运行时数据面实体级授权（RuntimeAccessGuard 判据三件套，2026-10-13 补齐）：
+        // 此前 adminFallback 只有粗粒度 metadata:runtime:*——注解层能过、RuntimeAccessGuard
+        // 的实体级判定（platform.admin / runtime:* / runtime:{entity}:*）却全不命中，
+        // 生产开启鉴权后 admin 访问一切运行时端点 403。dev 匿名主体与 API-Key 主体
+        // （SecurityConfig.getApiKeyAuthorities）本就把这三码列为同口径默认持有，
+        // admin 回退路径没有理由更严——平台管理员即数据修复通道（Runtime §4.5，强制 reason+审计）。
+        "runtime:*:read",
+        "runtime:*:write",
+        "platform.admin",
         "iam:accounts:read",
         "iam:accounts:write",
         "iam:apps:read",
@@ -64,6 +73,13 @@ public final class DefaultPermissionCodes {
         "commerce:inventory:write",
         "commerce:shipment:read",
         "commerce:shipment:write",
+        // 多渠道交易域（2026-10-13 补齐漂移）：买家映射 / 广播任务两菜单此前只在
+        // iam_permission 种子与 Controller @PreAuthorize 两侧存在，admin 回退路径缺码，
+        // 导致超管侧边栏不见这两个菜单（menus/current 按 permission 码过滤，缺码即不下发）。
+        "commerce:channel-buyer:read",
+        "commerce:channel-buyer:write",
+        "commerce:broadcast:read",
+        "commerce:broadcast:write",
         "sys:console:read",
         // system 平台域写门禁（全局表写端点 @PreAuthorize；租户不应写全局配置/字典/调度任务）
         "sys:config:write",

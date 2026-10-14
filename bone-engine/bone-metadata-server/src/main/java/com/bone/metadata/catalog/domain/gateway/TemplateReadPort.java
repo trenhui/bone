@@ -33,4 +33,21 @@ public interface TemplateReadPort {
    * @return 空列表表示该模板无状态机（如主数据类模板），属正常情况
    */
   List<MetaModelTemplateAction> actionsOf(Long templateId);
+
+  /**
+   * 模板当前界面快照（迁移 0046：实例化拷贝 + 跟随的 {@code base.new}）。
+   *
+   * @param templateCode 模板 code
+   * @return empty = 模板不存在，或资产未补齐（{@code ui_schema_json} 为空，跟随入口保持 disabled）
+   */
+  Optional<TemplateUiSnapshot> findUiSnapshotByCode(String templateCode);
+
+  /**
+   * 模板界面版本历史快照（迁移 0046：三路归并的 {@code base.old}）。
+   *
+   * @param templateCode 模板 code
+   * @param version 实例 {@code base_version} 指向的版本
+   * @return empty = 无历史快照，降级为两路归并（base.new vs instance）
+   */
+  Optional<String> findUiHistorySnapshot(String templateCode, String version);
 }

@@ -6,10 +6,31 @@ export * from '@bone/shared-types';
 export type { ApiResponse, PageResult, NormalizedPageResult } from '@bone/shared-types';
 export type EntityStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
-import type { MetaField, RuntimeRecord } from '@bone/shared-types';
+import type { MetaEntity, MetaField, RuntimeRecord } from '@bone/shared-types';
 export type { RuntimeRecord };
 
 // ===== 建模工作台闭环（2b 方案）新增类型 =====
+
+/**
+ * 建模工作台聚合数据（P0-1：GET /api/v1/metadata/modeling/workspace）。
+ *
+ * 一次返回统计 + 待发布草稿 + 应用→模块结构，替代此前的 N+5 次串行请求。
+ * 注意：雪花 ID 一律字符串透传（后端全局 Long→String 序列化），禁止 Number()。
+ */
+export interface ModelingWorkspaceData {
+  entityTotal: number;
+  draftTotal: number;
+  publishedTotal: number;
+  recentDrafts: MetaEntity[];
+  appModules: WorkspaceAppModules[];
+}
+
+/** 应用→模块分组（聚合端点的模块最小读模型：id/name/code） */
+export interface WorkspaceAppModules {
+  appId: string;
+  appName: string;
+  modules: { id: string; name: string; code: string }[];
+}
 
 /** 平台模型模板（G3/ADR-0038，tenant_id=0 平台资产，租户只读） */
 export interface MetaTemplate {

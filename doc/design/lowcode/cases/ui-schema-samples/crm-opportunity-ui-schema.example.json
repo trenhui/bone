@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_crm_opportunity",
+  "displayModes": ["create", "edit", "view"],
+  "views": {
+    "list": {
+      "viewKind": "kanban",
+      "columns": [
+        { "fieldCode": "opp_name", "visible": true, "width": 200 },
+        { "fieldCode": "customer_name", "visible": true, "width": 160 },
+        { "fieldCode": "stage", "visible": true, "width": 110 },
+        { "fieldCode": "probability", "visible": true, "width": 80 },
+        { "fieldCode": "expected_amount", "visible": true, "width": 130 },
+        { "fieldCode": "owner_name", "visible": true, "width": 100 }
+      ],
+      "searchFields": ["opp_name", "customer_name", "stage"],
+      "tabs": [
+        { "title": "我的商机", "fieldCode": "owner_id", "value": "$me" },
+        { "title": "团队商机", "fieldCode": "team_id", "value": "$myteam" },
+        { "title": "公海", "fieldCode": "pool", "value": "public" }
+      ],
+      "stats": [
+        { "title": "本季漏斗", "valueRef": "funnel_by_stage" },
+        { "title": "预期收入", "valueRef": "expected_revenue" }
+      ],
+      "dataScope": { "policyCode": "owner_team_pool" }
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_360",
+          "title": "客户 360（主档 + 联系人 + 跟进时间线）",
+          "controls": [
+            { "fieldCode": "customer_id", "controlKind": "REFERENCE", "props": { "targetEntity": "crm_customer", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "contacts", "controlKind": "CHILD_TABLE", "props": { "childEntity": "crm_contact", "columns": ["name", "phone", "role"] } },
+            { "fieldCode": "follow_ups", "controlKind": "TIMELINE" }
+          ]
+        },
+        {
+          "id": "sec_opp",
+          "title": "商机（阶段→概率联动，预期收入计算）",
+          "controls": [
+            { "fieldCode": "opp_name", "controlKind": "INPUT" },
+            { "fieldCode": "stage", "controlKind": "ENUM" },
+            { "fieldCode": "probability", "controlKind": "NUMBER", "props": { "min": 0, "max": 100 } },
+            { "fieldCode": "amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "expected_amount", "controlKind": "COMPUTED", "props": { "computedFn": "expectedRevenue", "computedFrom": ["amount", "probability"], "lineage": "opp-expected-revenue" } }
+          ]
+        },
+        {
+          "id": "sec_funnel",
+          "title": "漏斗位置",
+          "kind": "dashboard",
+          "controls": [
+            { "fieldCode": "funnel_view", "virtual": true, "controlKind": "CHART", "props": { "chartType": "funnel", "dataRef": "funnel_by_stage" } }
+          ]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "阶段决定概率",
+      "when": { "fieldCode": "stage", "operator": "eq", "value": "NEGOTIATION" },
+      "then": [{ "fieldCode": "probability", "value": 80 }]
+    },
+    {
+      "name": "经理可见折扣审批",
+      "when": { "fieldCode": "discount", "operator": "gt", "value": 20 },
+      "then": [{ "fieldCode": "discount_approver", "visible": true, "required": true }]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "查重提示（同名客户+同商机名）",
+      "function": "unique",
+      "fields": ["customer_id", "opp_name"],
+      "operator": "eq",
+      "params": { "scope": "team" },
+      "verifyType": "WARNING",
+      "message": "团队内已存在同客户同名商机，请确认是否重复创建"
+    },
+    {
+      "name": "赢单完整性",
+      "function": "completeness",
+      "fields": ["contract_id", "win_reason"],
+      "operator": "gte",
+      "params": { "minReasons": 2 },
+      "verifyType": "ERROR",
+      "message": "赢单须关联合同并填写赢单原因"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "qualify", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "LEAD" }, "sortOrder": 1 },
+    { "actionCode": "propose", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "QUALIFIED" }, "sortOrder": 2 },
+    { "actionCode": "negotiate", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "PROPOSED" }, "sortOrder": 3 },
+    { "actionCode": "win", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "NEGOTIATION" }, "confirm": { "title": "确认赢单", "content": "赢单后商机锁定并转订单，请确认合同已关联" }, "sortOrder": 4 },
+    { "actionCode": "lose", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "NEGOTIATION" }, "reasonTypes": ["价格失利", "需求变更", "竞对截胡", "项目取消", "其他"], "sortOrder": 5 },
+    { "actionCode": "claimFromPool", "visibleWhen": { "fieldCode": "pool", "operator": "eq", "value": "public" }, "sortOrder": 6 }
+  ],
+  "footer": { "disclaimer": "公海领取受领取上限与保护期约束，以行策略为准" }
+}

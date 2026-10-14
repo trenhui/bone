@@ -22,9 +22,15 @@ import org.springframework.stereotype.Component;
  *
  * <p>多租户：所有查询统一经 {@link #withTenantEntity(Criteria)} / {@link #withTenantField(Criteria)} 注入 {@code
  * tenant_id} 过滤（取自 {@link MetadataPlatformBridge#currentTenantId()}），避免散落。
+ *
+ * <p>调用方状态：现行模式 B 入口是 server 侧 {@code CatalogRuntimeEntityProvider}（直接读 catalog 聚合），
+ * 本端口暂无生产调用方，仅测试装配 + 保留给规则/影响分析。新增调用方前须确认已发布过滤与列子集仍成立。
  */
 @Component
 public class SdkMetadataRepository implements MetadataRepositoryPort {
+
+  /** catalog 状态 PUBLISHED=1。用字面量而不用 server 侧枚举，避免 engine-runtime 反向依赖 server（成环）。 */
+  private static final int PUBLISHED_STATUS = 1;
 
   private final Repository<MetaEntityPo, Long> entityRepository;
   private final Repository<MetaFieldPo, Long> fieldRepository;
@@ -64,7 +70,10 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
     }
     return Optional.ofNullable(
             entityRepository.findOneByCriteria(
-                withTenantEntity(Criteria.<MetaEntityPo>create().eq("id", Long.valueOf(id)))))
+                withTenantEntity(
+                    Criteria.<MetaEntityPo>create()
+                        .eq("status", PUBLISHED_STATUS)
+                        .eq("id", Long.valueOf(id)))))
         .map(po -> MetaEntityConverter.toEntityMetadata(po, findFields(po.getId())));
   }
 
@@ -72,7 +81,10 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
   public EntityMetadata findEntityByApiName(String apiName) {
     MetaEntityPo po =
         entityRepository.findOneByCriteria(
-            withTenantEntity(Criteria.<MetaEntityPo>create().eq("code", apiName)));
+            withTenantEntity(
+                Criteria.<MetaEntityPo>create()
+                    .eq("status", PUBLISHED_STATUS)
+                    .eq("code", apiName)));
     if (po == null) {
       throw new IllegalStateException("元数据实体不存在: " + apiName);
     }
@@ -82,7 +94,8 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
   @Override
   public List<EntityMetadata> findAllEntities() {
     return toEntityMetadataList(
-        entityRepository.findByCriteria(withTenantEntity(Criteria.<MetaEntityPo>create())));
+        entityRepository.findByCriteria(
+            withTenantEntity(Criteria.<MetaEntityPo>create().eq("status", PUBLISHED_STATUS))));
   }
 
   @Override
@@ -93,7 +106,8 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
 
   @Override
   public List<EntityMetadata> searchEntities(String query, int offset, int limit) {
-    Criteria<MetaEntityPo> criteria = withTenantEntity(Criteria.<MetaEntityPo>create());
+    Criteria<MetaEntityPo> criteria =
+        withTenantEntity(Criteria.<MetaEntityPo>create().eq("status", PUBLISHED_STATUS));
     if (query != null && !query.isEmpty()) {
       criteria = criteria.like("name", "%" + query + "%");
     }
@@ -106,7 +120,8 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
   @Override
   public boolean existsEntity(String apiName) {
     return entityRepository.findOneByCriteria(
-            withTenantEntity(Criteria.<MetaEntityPo>create().eq("code", apiName)))
+            withTenantEntity(
+                Criteria.<MetaEntityPo>create().eq("status", PUBLISHED_STATUS).eq("code", apiName)))
         != null;
   }
 

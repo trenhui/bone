@@ -16,6 +16,10 @@ spring:
             # commerce 3010，见设计稿 §5.4）。
             # 原配置漏 3003-3006、3009——子应用独立 dev 直连网关会被 CORS 拒绝（G-10）；
             # 3010 随交易域微应用（bone-commerce-app）新增，漏配会让订单/支付页直连网关被拒。
+            # 只写 localhost 不写 127.0.0.1 ⇒ 用 http://127.0.0.1:3000 打开外壳时，
+            # 浏览器同源 POST 仍带 Origin: http://127.0.0.1:3000，Spring CORS 拒绝 → 全站 403
+            # （实测：登录接口 403、界面停留在登录页，无任何提示）。vite/qiankun 的 allowedHosts
+            # 两种写法都放行，故此处必须两套 host 都登记，否则「能打开页面但一个接口都调不通」。
             allowedOrigins:
               - "http://localhost:3000"
               - "http://localhost:3003"
@@ -23,8 +27,16 @@ spring:
               - "http://localhost:3005"
               - "http://localhost:3006"
               - "http://localhost:3008"
+              - "http://127.0.0.1:3000"
+              - "http://127.0.0.1:3003"
+              - "http://127.0.0.1:3004"
+              - "http://127.0.0.1:3005"
+              - "http://127.0.0.1:3006"
+              - "http://127.0.0.1:3008"
               - "http://localhost:3009"
               - "http://localhost:3012"
+              - "http://127.0.0.1:3009"
+              - "http://127.0.0.1:3012"
             allowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
             allowedHeaders: "*"
             allowCredentials: true

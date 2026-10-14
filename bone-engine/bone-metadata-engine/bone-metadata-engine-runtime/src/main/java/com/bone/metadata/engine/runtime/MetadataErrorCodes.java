@@ -100,6 +100,16 @@ public final class MetadataErrorCodes {
    */
   public static final String RUNTIME_ACTION_ORPHANED = "META_RUNTIME_ACTION_ORPHANED";
 
+  /**
+   * 界面协议 {@code submitRules} / {@code linkageRules} 服务端强制不通过 → 422。
+   *
+   * <p><b>为什么必须有</b>：协议把 {@code submitRule.code} 定义为「前后端对账用：前端先拦、后端强制同一 code」，若后端只做引用校验不执行规则，
+   * 绕过前端直接调动作 API 即可提交不合规数据（明细合计不符、结束日期早于开始日期），规则沦为纯装饰。
+   *
+   * <p>用 422（不可满足的语义）而非 400：请求本身合法，是业务规则不满足，与 {@code RUNTIME_VALIDATION_FAILED}（字段级校验失败）区分开。
+   */
+  public static final String RUNTIME_UI_RULES_VIOLATED = "META_RUNTIME_UI_RULES_VIOLATED";
+
   // ===== 运行时前置条件（META_*）=====
 
   /** 乐观锁版本冲突（If-Match 与当前记录不一致）。 */

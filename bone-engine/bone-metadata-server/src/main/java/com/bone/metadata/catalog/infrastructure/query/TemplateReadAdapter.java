@@ -1,11 +1,15 @@
 package com.bone.metadata.catalog.infrastructure.query;
 
 import com.bone.metadata.catalog.domain.gateway.TemplateReadPort;
+import com.bone.metadata.catalog.domain.gateway.TemplateUiSnapshot;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateField;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -20,6 +24,8 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class TemplateReadAdapter implements TemplateReadPort {
+
+  private static final Logger log = LoggerFactory.getLogger(TemplateReadAdapter.class);
 
   private static final RowMapper<MetaModelTemplate> TEMPLATE_MAPPER =
       (rs, i) ->
@@ -125,4 +131,46 @@ public class TemplateReadAdapter implements TemplateReadPort {
               rs.getString("params_schema"),
               rs.getInt("requires_idempotency") == 1,
               rs.getInt("sort_order"));
+
+  @Override
+  public Optional<TemplateUiSnapshot> findUiSnapshotByCode(String templateCode) {
+    if (templateCode == null || templateCode.isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      List<TemplateUiSnapshot> list =
+          jdbcTemplate.query(
+              "SELECT ui_schema_version, ui_schema_json FROM meta_model_template"
+                  + " WHERE tenant_id = 0 AND deleted = 0 AND code = ?",
+              (rs, i) ->
+                  new TemplateUiSnapshot(
+                      rs.getString("ui_schema_version"), rs.getString("ui_schema_json")),
+              templateCode);
+      return list.stream().findFirst();
+    } catch (BadSqlGrammarException ex) {
+      // 0046 未执行（列不存在）：资产未补齐即 disabled，不炸错（技术方案 §5.2 前置诚实门）
+      log.warn("[ui-schema] 模板界面列缺失（0046 未执行），跟随入口保持 disabled: {}", ex.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<String> findUiHistorySnapshot(String templateCode, String version) {
+    if (templateCode == null || templateCode.isBlank() || version == null || version.isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      List<String> list =
+          jdbcTemplate.queryForList(
+              "SELECT schema_json FROM meta_model_template_ui_history"
+                  + " WHERE tenant_id = 0 AND template_code = ? AND version = ?",
+              String.class,
+              templateCode,
+              version);
+      return list.stream().findFirst().filter(s -> !s.isBlank());
+    } catch (BadSqlGrammarException ex) {
+      log.warn("[ui-schema] 模板界面历史表缺失（0046 未执行），降级为两路归并: {}", ex.getMessage());
+      return Optional.empty();
+    }
+  }
 }

@@ -1968,8 +1968,8 @@ G-1.1 与 G-1.5 里的 `Active` / `Frozen` 描述的是**模块接入状态**：
 
 HC-001～HC-008 的实现载体与实测状态见 [G-1.7](#hc-hard-constraints)。本节不复述条数与模块清单，只留三条容易讲错的边界：
 
-- **HC-003 目前无机器载体。**
-- **HC-001 / HC-004 / HC-006 / HC-008 只有本地脚本**（pre-commit 与 `ci-check.sh`，无工作流调用），不得宣称已被 CI 阻断（CORE-08）。HC-008 的本地载体只拦新增表，存量缺口逐表登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），所以「全表已含必备列」不成立，`by-design` 也不等于已合规。
+- **HC-001 仍是 Manual。** 本地 `check.sh` / `ci-check.sh` 扫 ORM import 与 pom，没有 CI 级 `bannedDependencies`。不得把 HC-001 说成已被工作流阻断。
+- **HC-003、HC-004、HC-006、HC-008 的状态以 [G-1.7](#hc-hard-constraints) 为准**（`ci.yml` 已调用对应脚本）。HC-008 拦截的是新增表；存量缺口在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），所以「全表已含必备列」不成立，`by-design` 也不等于已合规。
 - **HC-005 虽为 Active，但有模块下调了阈值**（见 G-1.7），「全模块统一门槛」同样不成立。
 
 条数与模块清单只读 G-1.7 与 baseline 的现算结果。本节此前手抄过一份计数副本（表数、逐表分类数、下调阈值的模块数），已删除：它随每次 DDL 与阈值调整过期，而门禁查的正是「状态只有一处真源」（G-3 第 7 条）。
@@ -2006,7 +2006,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 - application/domain 端口位置门禁；
 - 平台 Integration Event Envelope；
 - 并发策略模板；
-- 禁 ORM（banned-dependencies）的 **CI 级**门禁与统一响应契约的静态门禁仍缺失：HC-003 无任何载体；HC-001 / HC-006 只有本地载体（import / pom 拦截、`check-sdk-persistence.py`，见 [G-1.7](#hc-hard-constraints)）。HC-008 的本地新增表拦截已落地，缺的是 ① 存量 26 张表的逐表分类（`ddl-required-columns-baseline.json`）② CI 级载体（`ci-check.sh` 是本地脚本，未进 GitHub Actions）；
+- 禁 ORM 的 **CI 级** `bannedDependencies` 仍缺失（HC-001 = Manual，只有本地 import / pom 扫描）。HC-003 / HC-006 / HC-008 已由 `ci.yml` 执行，状态只读 [G-1.7](#hc-hard-constraints)。HC-008 的存量缺口仍在 `ddl-required-columns-baseline.json`（26 张，只可收缩）。
 - 集成事件契约的 breaking-change 检查：REST 侧已有 oasdiff（HC-007），事件侧（[E-5.2](#e-52-可靠发布) Envelope 的 `version`）目前**无任何兼容性规则**，跨上下文解耦后却最需要它。
 - **`studio-generator` 模板与本文规范一致性（偏差已闭环）**：模板集 `controller.ftl` / `repository.ftl` / `entity.ftl` / `applicationService.ftl` 本身无 Command / Handler 全家桶（符合Application Service First，见 [E-3.8](#e-38-applicationservice-拆分标准)）。早期记录「`controller.ftl` 直接外吐领域实体（`ApiResponse<${Entity}>`）」的偏差**已在代码侧修复**——当前 `controller.ftl` 仅依赖 `ApplicationService` + `Assembler`，返回 `ApiResponse<${Entity}Resp>` / `PageResult<${Entity}Resp>`（adapter 层投影 DTO，符合 CORE-05 读侧出投影，[E-6.6](#e-66-务实对象映射与-mapstruct)）。**剩余动作（防回退）**：补一条生成模板快照 / 门禁断言，锁定「`controller.ftl` 不得返回 `${Entity}` 实体类型」；本项已从「开放整改」转为「已闭环 + 防回退」，不再作为新模块起点的阻断项。
 - 仓库内反向引用（代码注释 → 本文）的清理：`bone-blueprint` 部分 JavaDoc 仍引用旧版章节号（原「PO 分离退出信号」与「领域端口包唯一」两处），对应内容现已落在 [E-6.3](#e-63-po-分离信号) 与 [E-4.1](#e-41-写侧)，须随模块改动同步修正。当前所有检查都只覆盖「文档 → 代码」方向，此类「代码 → 文档」漂移无机器载体。
@@ -2028,7 +2028,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | 5 | application / domain 端口位置门禁 | — | Planned | 待认领 | 待排期 | — |
 | 6 | 平台 Integration Event Envelope | 落地中 | Active（待复验） | 待认领 | 待复验 | 见 E-5 |
 | 7 | 并发策略模板 | — | Planned | 待认领 | 待排期 | — |
-| 8 | 禁 ORM CI 级门禁 + 统一响应契约静态门禁（HC-003 无载体；HC-001/006 仅本地；HC-008 缺 CI 载体与存量 26 表分类） | 本地 `check.sh` / `check-sdk-persistence.py` | 缺口（Planned→Manual） | 待认领 | 待排期 | 见 [G-1.7](#hc-hard-constraints) |
+| 8 | 禁 ORM 的 CI 级 `bannedDependencies`（HC-001 仍为 Manual） | 本地 `check.sh` / `ci-check.sh`；HC-003/006/008 已在 `ci.yml` | 缺口（HC-001 Manual） | 待认领 | 待排期 | 统一响应、SDK 持久化与新增表必备列见 [G-1.7](#hc-hard-constraints)；存量 26 表只可收缩 |
 | 9 | 集成事件契约 breaking-change 检查（Envelope `version`） | 仅 REST 侧 oasdiff（HC-007） | 缺口（优先） | 待认领 | 待排期 | 事件侧最易静默破坏，优先于 REST 侧补齐 |
 | 10 | `studio-generator` 模板与规范一致性 | 代码已修（投影 DTO） | **已闭环 + 防回退** | — | 已复验 2026-10-07 | 剩余：补生成模板快照 / 门禁断言防回退 |
 | 11 | 仓库内反向引用（代码 → 文档 章节号漂移） | 无机器载体 | 缺口 | 待认领 | 随模块改动 | JavaDoc 旧章节号两处 |

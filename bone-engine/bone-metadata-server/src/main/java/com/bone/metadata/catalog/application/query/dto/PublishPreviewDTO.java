@@ -51,4 +51,7 @@ public class PublishPreviewDTO {
    * <p>把「发布成功却无表/无数据入口」这类运行期惊讶前移为<b>创建期决策</b>——预览即预告。
    */
   private String deliveryModeNotice;
+
+  /** 界面摘要区块（技术方案 §4：sections/rules/actions 计数 + 阻断问题，供发布弹窗渲染界面 diff）。 */
+  private UiSchemaSummary ui;
 }

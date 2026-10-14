@@ -14,6 +14,9 @@ import java.util.Map;
  * <p>采用<b>最小字段映射</b>策略：仅映射 server 侧 {@code MetaEntity}/{@code MetaField} 实际存在的字段， 引擎特有的扩展属性（AI
  * 自动填充、计算字段、虚拟字段、动态显示等）保留 {@code SmartFieldMetadata} 默认值， 不在此处强行对齐。后续 T2 领域模型归一时可在此补全。
  *
+ * <p>子集映射说明：PO 是 catalog 写模型的只读子集。{@code deliveryMode}/{@code type} 等列暂不映射—— RUNTIME 与 GENERATIVE
+ * 的区分由 server 侧 {@code CatalogRuntimeEntityProvider} 判定；PO 路径成为运行时入口前须先补齐， 不得默认放行。
+ *
  * <p>本类位于 {@code adapter} 层，是端口与领域之间的唯一转换点，领域层不感知 SDK PO。
  */
 public final class MetaEntityConverter {
@@ -36,7 +39,9 @@ public final class MetaEntityConverter {
     entity.setLabel(entityPo.getDisplayName());
     entity.setDescription(entityPo.getDescription());
     entity.setTableName(entityPo.getTableName());
-    entity.setActive(entityPo.getStatus() != null && entityPo.getStatus() == 2);
+    // catalog 状态：DRAFT=0、PUBLISHED=1、ARCHIVED=2。用字面量 1 而不用 server 侧枚举，
+    // 以避免 engine-runtime 反向依赖 bone-metadata-server（成环）。
+    entity.setActive(entityPo.getStatus() != null && entityPo.getStatus() == 1);
     entity.setSystem(Boolean.TRUE.equals(entityPo.getBuiltin()));
 
     Map<String, SmartFieldMetadata> fields = new LinkedHashMap<>();

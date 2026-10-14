@@ -2161,7 +2161,7 @@ flowchart LR
 > - 打款弹层：**已实现 v0.45** `ExpenseClaimConfirmPayoutHandler`（原拟议 `ExpenseClaimApplicationService.confirmPayout`，0036 改名）。  
 > - 索引：[`doc/design/lowcode/ui/README.md`](./ui/README.md) · [`walkthrough`](./ui/walkthrough-2026-10-09.md)。  
 >
-> 历史截图（对照）：`preview-1-canvas.png` … `preview-14-notify.png`；补货场景截图若有则见 `preview-scene-replenishment.png`。
+> 历史截图（对照，已归档 `ui/archive/`）：`preview-1-canvas.png` … `preview-14-notify.png`；补货场景截图见 `ui/preview-scene-replenishment.png`。
 
 > 评审低保真基线：§0 + 本原型主路径；正式设计稿 [TBD]。
 

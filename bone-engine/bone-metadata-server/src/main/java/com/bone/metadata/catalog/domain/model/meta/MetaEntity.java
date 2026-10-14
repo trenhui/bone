@@ -137,6 +137,36 @@ public class MetaEntity extends AbstractEntity<Long> {
       String icon,
       Long moduleId,
       String autoNumber) {
+    return create(
+        id,
+        tenantId,
+        name,
+        code,
+        displayName,
+        description,
+        tableName,
+        entityType,
+        deliveryMode,
+        icon,
+        moduleId,
+        autoNumber,
+        null);
+  }
+
+  public static MetaEntity create(
+      Long id,
+      Long tenantId,
+      String name,
+      String code,
+      String displayName,
+      String description,
+      String tableName,
+      int entityType,
+      int deliveryMode,
+      String icon,
+      Long moduleId,
+      String autoNumber,
+      String rowPolicies) {
     MetaEntity e = new MetaEntity();
     e.setId(id);
     e.tenantId = tenantId;
@@ -154,6 +184,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     e.icon = icon;
     e.moduleId = moduleId;
     e.autoNumber = autoNumber;
+    e.rowPolicies = rowPolicies;
     e.scope = MetaModelTemplate.SCOPE_TENANT;
     Date now = new Date();
     e.setCreatedAt(now);
@@ -182,6 +213,26 @@ public class MetaEntity extends AbstractEntity<Long> {
       String icon,
       Integer deliveryMode,
       String autoNumber) {
+    update(
+        name, displayName, description, tableName, sortOrder, icon, deliveryMode, autoNumber, null);
+  }
+
+  /**
+   * 全量更新（含行策略）。
+   *
+   * <p>{@code rowPolicies} 与 {@code autoNumber} 同为「传 null 即清空」的全量语义（PUT 而非 PATCH）；行策略清空后引擎退回 {@code
+   * created_by} 单列 owner 规则（最小可见性，保守方向），不会放宽。
+   */
+  public void update(
+      String name,
+      String displayName,
+      String description,
+      String tableName,
+      Integer sortOrder,
+      String icon,
+      Integer deliveryMode,
+      String autoNumber,
+      String rowPolicies) {
     if (MetaEntityStatus.fromCode(this.status) == MetaEntityStatus.PUBLISHED) {
       throw new DomainException("已发布实体不可修改，请先归档或回退草稿");
     }
@@ -197,6 +248,7 @@ public class MetaEntity extends AbstractEntity<Long> {
       this.deliveryMode = deliveryMode;
     }
     this.autoNumber = autoNumber;
+    this.rowPolicies = rowPolicies;
     bumpVersion();
     this.setUpdatedAt(new Date());
   }
@@ -257,5 +309,36 @@ public class MetaEntity extends AbstractEntity<Long> {
     }
     String suffix = "_del_" + getId();
     return value.endsWith(suffix) ? value : value + suffix;
+  }
+
+  /**
+   * 归档（P0-2）：已发布实体下线为 ARCHIVED。
+   *
+   * <p>语义：保留物理表与已生成产物，运行时拒绝该实体的新写入/状态流转（由网关/运行时按 status 判定）， 但历史数据可查。归档是发布态的「软下线」，编码与表名保持占用（不可复用）。
+   *
+   * <p>逆向：ARCHIVED 可经 {@link #revertToDraft()} 回到草稿重新编辑；DRAFT 不可直接归档（无意义）。
+   */
+  public void archive() {
+    MetaEntityStatus s = statusEnum();
+    if (s != MetaEntityStatus.PUBLISHED) {
+      throw new DomainException("仅已发布实体可归档，当前状态=" + s);
+    }
+    this.status = MetaEntityStatus.ARCHIVED.getCode();
+    bumpVersion();
+    this.setUpdatedAt(new Date());
+  }
+
+  /**
+   * 回退草稿（P1.5）：已发布 / 归档实体回到 DRAFT，解锁结构性编辑。
+   *
+   * <p>已发布实体的 {@code update()} 会拒绝（「请先归档或回退草稿」），故必须先经本方法回到草稿态。 回退不删物理表（已发布数据仍可读），下次发布会重新对齐。
+   */
+  public void revertToDraft() {
+    if (statusEnum() == MetaEntityStatus.DRAFT) {
+      return; // 幂等
+    }
+    this.status = MetaEntityStatus.DRAFT.getCode();
+    bumpVersion();
+    this.setUpdatedAt(new Date());
   }
 }

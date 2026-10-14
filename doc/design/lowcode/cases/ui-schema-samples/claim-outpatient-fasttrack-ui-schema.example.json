@@ -1,0 +1,539 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_claim_case",
+  "displayModes": [
+    "create",
+    "edit",
+    "view"
+  ],
+  "views": {
+    "list": {
+      "columns": [
+        {
+          "fieldCode": "claim_no",
+          "visible": true,
+          "width": 150
+        },
+        {
+          "fieldCode": "insured_name",
+          "visible": true,
+          "width": 100
+        },
+        {
+          "fieldCode": "hospital_level",
+          "visible": true,
+          "width": 110
+        },
+        {
+          "fieldCode": "claim_amount",
+          "visible": true,
+          "width": 120
+        },
+        {
+          "fieldCode": "payable_amount",
+          "visible": true,
+          "width": 120
+        },
+        {
+          "fieldCode": "status",
+          "visible": true,
+          "width": 120
+        }
+      ],
+      "searchFields": [
+        "status",
+        "hospital_level",
+        "claim_amount"
+      ],
+      "tabs": [
+        {
+          "title": "待我审核",
+          "fieldCode": "reviewer_id",
+          "value": "$me",
+          "titleKey": "tabs.todo"
+        },
+        {
+          "title": "风险标记",
+          "fieldCode": "fraud_flag",
+          "value": true
+        },
+        {
+          "title": "已达封顶",
+          "fieldCode": "cap_reached",
+          "value": true
+        }
+      ],
+      "stats": [
+        {
+          "title": "今日待办",
+          "valueRef": "todo_today",
+          "titleKey": "stats.todo_today"
+        },
+        {
+          "title": "快赔自动通过",
+          "valueRef": "fasttrack_rate"
+        },
+        {
+          "title": "转人工率",
+          "valueRef": "manual_rate"
+        }
+      ],
+      "dataScope": {
+        "policyCode": "reviewer_or_owner"
+      }
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_apply",
+          "title": "申请信息（员工端）",
+          "controls": [
+            {
+              "fieldCode": "policy_no",
+              "controlKind": "INPUT"
+            },
+            {
+              "fieldCode": "insured_id_hash",
+              "controlKind": "INPUT",
+              "readonly": true,
+              "props": {
+                "mask": "hash"
+              }
+            },
+            {
+              "fieldCode": "claim_type",
+              "controlKind": "ENUM"
+            },
+            {
+              "fieldCode": "hospital_level",
+              "controlKind": "ENUM"
+            },
+            {
+              "fieldCode": "invoice_no",
+              "controlKind": "INPUT"
+            },
+            {
+              "fieldCode": "invoice_date",
+              "controlKind": "DATE"
+            }
+          ],
+          "titleKey": "sections.sec_apply"
+        },
+        {
+          "id": "sec_items",
+          "title": "费用明细",
+          "controls": [
+            {
+              "fieldCode": "items",
+              "controlKind": "CHILD_TABLE",
+              "props": {
+                "childEntity": "claim_item",
+                "columns": [
+                  "name",
+                  "amount",
+                  "category"
+                ]
+              }
+            }
+          ],
+          "titleKey": "sections.sec_items"
+        },
+        {
+          "id": "sec_evidences",
+          "title": "材料证据",
+          "controls": [
+            {
+              "fieldCode": "evidences",
+              "controlKind": "ATTACHMENT",
+              "props": {
+                "maxCount": 20,
+                "maxSizeMB": 10
+              }
+            }
+          ],
+          "titleKey": "sections.sec_evidences"
+        },
+        {
+          "id": "sec_calc",
+          "title": "理算引用（只读：规则引擎计算，后端为准）",
+          "kind": "dashboard",
+          "controls": [
+            {
+              "fieldCode": "deductible_used",
+              "virtual": true,
+              "controlKind": "STAT",
+              "props": {
+                "lineage": "deductible-annual-cumu"
+              }
+            },
+            {
+              "fieldCode": "payable_amount",
+              "controlKind": "COMPUTED",
+              "props": {
+                "computedFn": "payableAmount",
+                "computedFrom": [
+                  "claim_amount",
+                  "deductible_used"
+                ],
+                "lineage": "rat-cap-formula"
+              }
+            },
+            {
+              "fieldCode": "fraud_flags",
+              "controlKind": "ALERT",
+              "props": {
+                "warningText": "命中 R-FRAUD 标记一律转人工（P0 优先级）"
+              }
+            }
+          ],
+          "titleKey": "sections.sec_calc"
+        },
+        {
+          "id": "sec_trace",
+          "title": "决策轨迹",
+          "kind": "timeline",
+          "controls": [
+            {
+              "fieldCode": "decision_trace",
+              "virtual": true,
+              "controlKind": "TIMELINE"
+            }
+          ],
+          "titleKey": "sections.sec_trace"
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "大额强制双人复核提示",
+      "when": {
+        "fieldCode": "claim_amount",
+        "operator": "gte",
+        "value": 10000
+      },
+      "then": [
+        {
+          "fieldCode": "second_reviewer",
+          "visible": true,
+          "required": true,
+          "notice": "金额≥1 万元须双人复核（R-MAN-01）",
+          "noticeKey": "notice.dual_review"
+        }
+      ],
+      "code": "LINK-DUAL-01"
+    },
+    {
+      "name": "材料缺失转补件提示",
+      "when": {
+        "fieldCode": "evidences",
+        "operator": "isNull"
+      },
+      "then": [
+        {
+          "fieldCode": "evidences",
+          "required": true,
+          "notice": "材料缺失请补件，不阻塞其他案件（R-DEC P5）"
+        }
+      ],
+      "code": "LINK-EVID-01"
+    },
+    {
+      "code": "LINK-FAST-01",
+      "name": "快赔资格四条件全满足才亮快赔入口（R-FAST-01，all 语义禁拆分）",
+      "when": {
+        "all": [
+          {
+            "fieldCode": "calc_amount",
+            "operator": "lte",
+            "value": 500
+          },
+          {
+            "fieldCode": "evidences",
+            "operator": "isNotNull"
+          },
+          {
+            "fieldCode": "fraud_flags",
+            "operator": "isNull"
+          },
+          {
+            "fieldCode": "coverage_clear",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "fieldCode": "fasttrack_entry",
+          "visible": true
+        }
+      ]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "发票与清单一致",
+      "function": "consistency",
+      "fields": [
+        "invoice_amount",
+        "items.amount"
+      ],
+      "operator": "eq",
+      "params": {
+        "tolerance": 1
+      },
+      "verifyType": "ERROR",
+      "message": "发票金额与清单合计不一致（差额>1 元，R-FRAUD-04）",
+      "code": "SUB-CONS-01",
+      "messageKey": "submit.consistency"
+    },
+    {
+      "name": "拒赔理由完整性",
+      "function": "completeness",
+      "fields": [
+        "reject_reasons"
+      ],
+      "operator": "gte",
+      "params": {
+        "minReasons": 3
+      },
+      "when": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "REJECTING"
+      },
+      "verifyType": "ERROR",
+      "message": "拒赔必须≥3 条理由+条款原文+证据位置（R-MAN-03）",
+      "code": "SUB-COMP-01",
+      "messageKey": "submit.reject_reasons"
+    }
+  ],
+  "actionBar": [
+    {
+      "actionCode": "submit",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "DRAFT"
+      },
+      "sortOrder": 1
+    },
+    {
+      "actionCode": "approve",
+      "decisionKind": "hitl",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "REVIEWING"
+      },
+      "requireDualApproveWhen": {
+        "fieldCode": "claim_amount",
+        "operator": "gte",
+        "value": 10000
+      },
+      "sortOrder": 2
+    },
+    {
+      "actionCode": "reject",
+      "decisionKind": "hitl",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "REVIEWING"
+      },
+      "reasonTypes": [
+        "责任范围不符",
+        "目录外不赔",
+        "已达封顶",
+        "风险标记",
+        "材料造假",
+        "其他"
+      ],
+      "sortOrder": 3
+    },
+    {
+      "actionCode": "requestMoreEvidence",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "REVIEWING"
+      },
+      "sortOrder": 4
+    },
+    {
+      "actionCode": "pay",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "APPROVED"
+      },
+      "confirm": {
+        "title": "确认支付",
+        "content": "支付经资金两段式（硬预占→已支付），幂等键=报案号",
+        "titleKey": "confirm.pay.title",
+        "contentKey": "confirm.pay.content"
+      },
+      "sortOrder": 5
+    },
+    {
+      "actionCode": "appeal",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "REJECTED"
+      },
+      "sortOrder": 6
+    }
+  ],
+  "footer": {
+    "disclaimer": "拒赔结论附条款原文与证据位置；申诉 48h 响应",
+    "aiBadge": true,
+    "disclaimerKey": "footer.disclaimer"
+  },
+  "i18n": {
+    "namespace": "bone.ui.t_claim_case"
+  },
+  "base": {
+    "templateCode": "outpatient_fasttrack",
+    "baseVersion": "1.0.0",
+    "followMode": "notify"
+  },
+  "variants": [
+    {
+      "key": "reviewer",
+      "label": "核赔工作台",
+      "priority": 10,
+      "match": {
+        "roles": [
+          "reviewer",
+          "admin"
+        ]
+      },
+      "views": {
+        "form": {
+          "sections": [
+            {
+              "id": "sec_calc",
+              "title": "理算与风险（先看结论）",
+              "kind": "dashboard",
+              "controls": [
+                {
+                  "fieldCode": "payable_amount",
+                  "controlKind": "COMPUTED",
+                  "virtual": true,
+                  "props": {
+                    "computedFn": "payableAmount",
+                    "computedFrom": [
+                      "claim_amount",
+                      "deductible_used"
+                    ],
+                    "lineage": "rat-cap-formula"
+                  }
+                },
+                {
+                  "fieldCode": "fraud_flags",
+                  "controlKind": "ALERT",
+                  "props": {
+                    "warningText": "命中 R-FRAUD 标记一律转人工（P0 优先级）"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "sec_trace",
+              "title": "决策轨迹",
+              "kind": "timeline",
+              "controls": [
+                {
+                  "fieldCode": "decision_trace",
+                  "controlKind": "TIMELINE",
+                  "virtual": true
+                }
+              ]
+            },
+            {
+              "id": "sec_items",
+              "title": "费用明细（只读核对）",
+              "controls": [
+                {
+                  "fieldCode": "items",
+                  "controlKind": "CHILD_TABLE",
+                  "readonly": true,
+                  "props": {
+                    "childEntity": "claim_item",
+                    "columns": [
+                      "name",
+                      "amount",
+                      "category"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "detail": {
+          "sections": [
+            {
+              "id": "sec_trace",
+              "title": "决策轨迹",
+              "kind": "timeline",
+              "controls": [
+                {
+                  "fieldCode": "decision_trace",
+                  "controlKind": "TIMELINE",
+                  "virtual": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "actionBar": [
+        {
+          "actionCode": "approve",
+          "decisionKind": "hitl",
+          "visibleWhen": {
+            "fieldCode": "status",
+            "operator": "eq",
+            "value": "REVIEWING"
+          },
+          "requireDualApproveWhen": {
+            "fieldCode": "claim_amount",
+            "operator": "gte",
+            "value": 10000
+          },
+          "sortOrder": 1
+        },
+        {
+          "actionCode": "reject",
+          "decisionKind": "hitl",
+          "visibleWhen": {
+            "fieldCode": "status",
+            "operator": "eq",
+            "value": "REVIEWING"
+          },
+          "reasonTypes": [
+            "责任范围不符",
+            "目录外不赔",
+            "已达封顶",
+            "风险标记",
+            "材料造假",
+            "其他"
+          ],
+          "sortOrder": 2
+        },
+        {
+          "actionCode": "requestMoreEvidence",
+          "visibleWhen": {
+            "fieldCode": "status",
+            "operator": "eq",
+            "value": "REVIEWING"
+          },
+          "sortOrder": 3
+        }
+      ]
+    }
+  ]
+}

@@ -8,13 +8,12 @@ import {
   ArrowRightOutlined, ClockCircleOutlined, DatabaseOutlined, PlusOutlined, SolutionOutlined,
   AppstoreOutlined, BlockOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
-import { appApi, moduleApi, type BoneApplication, type BoneModule } from '../services/appModuleApi';
-import { metadataEntityApi } from '../services/metadataApi';
-import { normalizeTotal } from '@bone/shared-utils';
+import { appApi, moduleApi, type BoneApplication } from '../services/appModuleApi';
+import { metadataWorkspaceApi } from '../services/metadataApi';
 import { listRecent, recentPath, type RecentEntityItem } from '../utils/recent';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import CommandPalette from '../components/CommandPalette';
-import type { MetaEntity } from '../types';
+import type { MetaEntity, WorkspaceAppModules } from '../types';
 const { Title, Text } = Typography;
 
 /** 标识符白名单（与后端 validate 规则一致：字母开头，仅字母/数字/下划线） */
@@ -157,7 +156,11 @@ const ModelingWorkspace: React.FC = () => {
    * 且发布成功给出「打开数据 / 继续加字段」的前向引导（动线闭环，与业务对象页同一条路径）。
    */
   const [publishTarget, setPublishTarget] = useState<MetaEntity | null>(null);
-  const [appModules, setAppModules] = useState<{ appId: string; appName: string; modules: BoneModule[] }[]>([]);
+  /**
+   * 应用→模块两级结构（P0-1：改由聚合端点一次返回，替代此前 listMine + N×listByApp）。
+   * 仅承载目标选择器下拉与 moduleId→appId 反查所需的最小集（id/name/code）。
+   */
+  const [appModules, setAppModules] = useState<WorkspaceAppModules[]>([]);
   /**
    * 内联容器创建（O2）：应用/模块的**管理**归 IAM，但建模流最常见的「还没有应用/模块」
    * 不该把用户踢到另一个微应用（他甚至未必有 IAM 菜单入口）。这里就地创建并自动选中，
@@ -171,7 +174,7 @@ const ModelingWorkspace: React.FC = () => {
   /** 建应用/模块后刷新可写应用 + 应用→模块结构，并把新建项自动选中（免去二次手选） */
   const refreshAppsAndModules = async (selectAppId?: string, selectModuleId?: string) => {
     await loadApps();
-    await loadAppModules();
+    await loadWorkspace();
     if (selectAppId) setTargetAppId(selectAppId);
     if (selectModuleId) setTargetModuleId(selectModuleId);
   };
@@ -249,47 +252,34 @@ const ModelingWorkspace: React.FC = () => {
     }
   };
 
-  const loadDraftTotal = async () => {
+  /**
+   * 建模工作台聚合加载（P0-1：一次请求拿全 统计 + 待发布草稿 + 应用→模块结构）。
+   *
+   * 改造前这里是 4 条独立加载路径：listMine×2 + listByApp×N + entities page×3（串行），
+   * 首屏 RTT 随应用数线性增长，且三次 size=1 分页只为凑 total。现由后端
+   * GET /api/v1/metadata/modeling/workspace 一次返回（统计口径与业务对象页同源）。
+   *
+   * 降级策略与改造前逐加载器 catch 的行为一致：聚合失败时统计留空（null）、
+   * 待办与模块结构留空——页面主体（应用 rail / 空态引导）不依赖本调用，仍可用。
+   */
+  const loadWorkspace = useCallback(async () => {
+    setEntitiesLoading(true);
     try {
-      const res = await metadataEntityApi.page({ page: 1, size: 1, status: 0 });
+      const res = await metadataWorkspaceApi.workspace();
       if (res.code === 200) {
-        setDraftTotal(normalizeTotal(res.data.total));
-        // 实体总数取**元数据侧**分页 total，不取 sum(app.entityCount)：
-        // 后者实测恒为 0（IAM 的 app 响应不带 entityCount），会让首屏显示
-        // 「实体共 0」而实际有 71 个——一个比不显示更糟的错数字。
-        const all = await metadataEntityApi.page({ page: 1, size: 1 });
-        if (all.code === 200) setEntityTotal(normalizeTotal(all.data.total));
-        // 已发布口径（status=1）独立于列表筛选，供首页概览指标条展示
-        const pub = await metadataEntityApi.page({ page: 1, size: 1, status: 1 });
-        if (pub.code === 200) setPublishedTotal(normalizeTotal(pub.data.total));
+        const d = res.data;
+        setDraftTotal(d.draftTotal ?? null);
+        setEntityTotal(d.entityTotal ?? null);
+        setPublishedTotal(d.publishedTotal ?? null);
+        setMyEntities(d.recentDrafts ?? []);
+        setAppModules(d.appModules ?? []);
       }
     } catch {
-      // 统计条为增强信息，失败静默
+      // 统计条/待办/模块结构均为增强信息，失败静默（与改造前各加载器一致）
+    } finally {
+      setEntitiesLoading(false);
     }
-  };
-
-  /** 应用→模块两级结构：目标选择器的模块下拉 + 实体行反查 appId 共用 */
-  const loadAppModules = useCallback(async () => {
-    const res = await appApi.listMine({ page: 1, size: 100 });
-    const list = res.code === 200 ? res.data.records ?? [] : [];
-    const pairs = await Promise.all(
-      list.map(async (a) => {
-        try {
-          const mr = await moduleApi.listByApp(a.id, { page: 1, size: 100 });
-          return { appId: a.id, appName: a.name, modules: mr.code === 200 ? mr.data.records ?? [] : [] };
-        } catch {
-          return { appId: a.id, appName: a.name, modules: [] as BoneModule[] };
-        }
-      }),
-    );
-    setAppModules(pairs);
   }, []);
-
-  useEffect(() => {
-    // loadAppModules 内部自带异常兜底（模块拉取失败退化为空数组），此处无需 cancelled 守卫：
-    // 竞态保护由「每次刷新后整体覆盖 appModules」保证，卸载后 setState 为无操作。
-    loadAppModules().catch(() => { /* 模块结构仅增强导航，失败静默 */ });
-  }, [loadAppModules]);
 
   /**
    * 待发布草稿列表（前 6 条待办，**不是**实体清单 —— 完整清单真源在「业务对象」页）。
@@ -300,29 +290,17 @@ const ModelingWorkspace: React.FC = () => {
    * 列表只应有一个真源。工作台退回到它该有的角色 —— **待办入口**：把「有多少草稿待发布」
    * 这个跨应用聚合数字告诉用户，并一键跳到实体列表的对应筛选态。
    *
-   * 抽成 useCallback 是因为「就地发布」成功后必须重拉（该条已不再是草稿）。
+   * P0-1 起数据来自聚合端点 {@link loadWorkspace}（统计 + 草稿 + 模块结构一次返回）；
+   * 「就地发布」成功后重调 loadWorkspace（该条已不再是草稿）。
    */
-  const loadRecentDrafts = useCallback(() => {
-    let cancelled = false;
-    setEntitiesLoading(true);
-    metadataEntityApi.page({ page: 1, size: 6, status: 0 })
-      .then((res) => {
-        if (!cancelled) setMyEntities(res.code === 200 ? res.data.records ?? [] : []);
-      })
-      .catch(() => { /* 待办增强信息，失败静默 */ })
-      .finally(() => { if (!cancelled) setEntitiesLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
     loadApps();
-    loadDraftTotal();
+    loadWorkspace().catch(() => { /* 增强信息，失败静默 */ });
     setRecent(listRecent().slice(0, 5));
-    const off = loadRecentDrafts();
-    return off;
-    // loadApps/loadDraftTotal 为组件内定义的一次性加载器，故意不入依赖（避免无限触发）
+    // loadApps 为组件内定义的一次性加载器，故意不入依赖（避免无限触发）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadRecentDrafts]);
+  }, [loadWorkspace]);
 
   const openTargetPicker = (intent: 'new' | 'import') => {
     setTargetIntent(intent);
@@ -638,8 +616,7 @@ const ModelingWorkspace: React.FC = () => {
         entityName={publishTarget?.displayName}
         onClose={() => setPublishTarget(null)}
         onPublished={() => {
-          loadDraftTotal();
-          loadRecentDrafts();
+          loadWorkspace();
         }}
         onViewInterface={() => {
           if (publishTarget?.id) navigate(`/entities/${publishTarget.id}?tab=ui`);

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_expense_claim",
+  "displayModes": ["create", "edit", "view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "claim_no", "visible": true, "width": 140 },
+        { "fieldCode": "title", "visible": true, "width": 220 },
+        { "fieldCode": "amount", "visible": true, "width": 130, "format": { "currencyField": "currency", "precision": 2 } },
+        { "fieldCode": "category_id", "visible": true, "width": 120 },
+        { "fieldCode": "status", "visible": true, "width": 100 },
+        { "fieldCode": "applicant", "visible": true, "width": 100 },
+        { "fieldCode": "expense_date", "visible": true, "width": 120 }
+      ],
+      "searchFields": ["department", "status", "amount"],
+      "tabs": [
+        { "title": "待我审批", "fieldCode": "approver_id", "value": "$me" },
+        { "title": "我提交的", "fieldCode": "applicant", "value": "$me" },
+        { "title": "全部", "fieldCode": "status", "value": "$all" }
+      ],
+      "dataScope": { "policyCode": "owner_or_approver" },
+      "batchActions": ["submit"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_base",
+          "title": "基本信息",
+          "controls": [
+            { "fieldCode": "title", "controlKind": "INPUT", "placeholder": "如：10 月差旅报销" },
+            { "fieldCode": "category_id", "controlKind": "REFERENCE", "props": { "targetEntity": "expense_category", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "applicant", "controlKind": "INPUT", "readonly": true },
+            { "fieldCode": "expense_date", "controlKind": "DATE" }
+          ]
+        },
+        {
+          "id": "sec_travel",
+          "title": "行程与金额",
+          "controls": [
+            { "fieldCode": "amount", "controlKind": "NUMBER", "props": { "min": 0.01, "precision": 2 } },
+            { "fieldCode": "currency", "controlKind": "ENUM" },
+            { "fieldCode": "expense_start", "controlKind": "DATE" },
+            { "fieldCode": "expense_end", "controlKind": "DATE" },
+            { "fieldCode": "invoice_type", "controlKind": "ENUM" },
+            { "fieldCode": "tax_no", "controlKind": "INPUT", "placeholder": "增值税专票时必填" }
+          ]
+        },
+        {
+          "id": "sec_items",
+          "title": "费用明细",
+          "controls": [
+            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_claim_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
+          ]
+        },
+        {
+          "id": "sec_files",
+          "title": "发票影像",
+          "controls": [
+            { "fieldCode": "attachment", "controlKind": "ATTACHMENT", "props": { "maxCount": 10, "maxSizeMB": 10 } }
+          ]
+        },
+        {
+          "id": "sec_approval",
+          "title": "审批",
+          "controls": [
+            { "fieldCode": "approver_id", "controlKind": "REFERENCE", "props": { "targetEntity": "sys_user", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "status", "controlKind": "ENUM", "readonly": true }
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "sections": [
+        {
+          "id": "sec_base",
+          "title": "基本信息",
+          "controls": [
+            { "fieldCode": "title" },
+            { "fieldCode": "category_id" },
+            { "fieldCode": "amount" },
+            { "fieldCode": "status" }
+          ]
+        },
+        {
+          "id": "sec_items",
+          "title": "费用明细",
+          "controls": [{ "fieldCode": "items", "controlKind": "CHILD_TABLE" }]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "专票必填税号",
+      "when": { "fieldCode": "invoice_type", "operator": "eq", "value": "SPECIAL" },
+      "then": [{ "fieldCode": "tax_no", "visible": true, "required": true }]
+    },
+    {
+      "name": "结束日期不得早于开始日期",
+      "when": { "fieldCode": "expense_end", "operator": "earlierThan", "valueType": "field", "compareField": "expense_start" },
+      "then": [{ "fieldCode": "expense_end", "readonly": false, "notice": "结束日期早于开始日期，请修正（提交时阻断）" }]
+    },
+    {
+      "name": "大额报销必须指定审批人",
+      "when": { "fieldCode": "amount", "operator": "gt", "value": 5000 },
+      "then": [{ "fieldCode": "approver_id", "visible": true, "required": true }]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "明细合计一致",
+      "function": "sum",
+      "fields": ["items.amount"],
+      "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "amount" },
+      "verifyType": "ERROR",
+      "message": "费用明细合计必须等于申报金额"
+    },
+    {
+      "name": "单行金额下限",
+      "function": "min",
+      "fields": ["items.amount"],
+      "operator": "gte",
+      "compare": { "valueType": "fixed", "value": 0.01 },
+      "verifyType": "ERROR",
+      "message": "费用明细单行金额不得小于 0.01（与服务端 min:0.01 同值）"
+    },
+    {
+      "name": "结束日期不得早于开始日期",
+      "function": "compare",
+      "fields": ["expense_end"],
+      "operator": "gte",
+      "compare": { "valueType": "field", "fieldCode": "expense_start" },
+      "verifyType": "ERROR",
+      "message": "结束日期不得早于开始日期"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "submit", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "DRAFT" }, "sortOrder": 1 },
+    { "actionCode": "approve", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 2 },
+    { "actionCode": "reject", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 3 },
+    { "actionCode": "confirmPayout", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "APPROVED" }, "sortOrder": 4 }
+  ]
+}

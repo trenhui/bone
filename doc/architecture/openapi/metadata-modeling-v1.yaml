@@ -1,0 +1,375 @@
+openapi: 3.1.0
+info:
+  title: Bone Metadata Modeling API（业务对象界面协议 · 团队级 schema）
+  version: 1.0.0
+  description: |
+    建模页团队级界面 schema（`meta_entity_ui_schema`，迁移 0046）服务端化契约。
+    服务宿主：**bone-metadata-server** :9001（`MetaEntityCatalogController` 为真源）。
+
+    - 规范：[Bone-API-规范.md](../Bone-API-规范.md)
+    - 协议：[BONE-业务对象界面JSON协议设计.md](../../design/lowcode/ui/ui-protocol/BONE-业务对象界面JSON协议设计.md)
+    - 技术方案：[BONE-业务对象界面前后端技术方案.md](../../design/lowcode/ui/ui-protocol/BONE-业务对象界面前后端技术方案.md) §3
+    - 前端实现：`bone-metadata-app` `UiSchemaTab` + `useBoneUiSchema`（三色旗管线）
+
+    **键规则**：路径键走实体主键 `{id}`（与 `/{id}/validate`、`/{id}/publish-preview` 一致）；
+    `data=null` = 从未配置，前端回落列投影（运行时录入 Modal 开关关闭）。
+
+    **并发规则**（PUT / merge-confirm）：锁版本走标准头 `If-Match: <lockVersion>`，
+    响应 `ETag: "<lockVersion>"` 同值；`If-Match: *` 表"我不管并发"。
+    缺头且行已存在 → 412 防误覆盖；锁不一致 / SDK 乐观锁失败 → 409（业务码
+    `UI_SCHEMA_VERSION_CONFLICT`）；结构/引用校验失败 → 400（`UI_SCHEMA_INVALID` / `UI-REF-xx`）。
+
+    **模板跟随**：`base-update` 只返计数 digest（不返全量）；`merge-preview` 服务端三路归并，
+    无历史快照时两路降级（`degradedTwoWay=true`）；`merge-confirm` 租户确认后写回草稿，
+    模板又发版或草稿被并发修改 → 409（`UI_SCHEMA_MERGE_CONFLICT`，旧 preview 作废重跑）。
+
+servers:
+  - url: /api/v1/metadata/entities
+
+security:
+  - bearerAuth: []
+
+paths:
+  /{id}/ui-schema:
+    get:
+      summary: 读团队级界面 schema 草稿
+      operationId: getUiSchema
+      tags: [UiSchema]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK；data=null 表示从未配置（前端回落列投影）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UiSchemaResp'
+    put:
+      summary: 保存团队级界面 schema 草稿（PUT 全量替换幂等）
+      operationId: saveUiSchema
+      tags: [UiSchema]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BoneUiSchema'
+      responses:
+        '200':
+          description: OK；响应带 ETag（= 新 lockVersion）
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: 形如 `"7"`，与 data.lockVersion 同值
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UiSchemaResp'
+        '400':
+          description: 结构非法（UI_SCHEMA_INVALID）或引用校验失败（UI-REF-01~09）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+        '409':
+          description: 锁冲突（UI_SCHEMA_VERSION_CONFLICT）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+        '412':
+          description: 缺 If-Match 且行已存在（防误覆盖）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+        '503':
+          description: 迁移 0046 未执行（META_UI_SCHEMA_STORE_UNAVAILABLE），读路径不受影响
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+    delete:
+      summary: 删草稿行（已发布快照随行走；运行时读以结构为准）
+      operationId: deleteUiSchema
+      tags: [UiSchema]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK（幂等：无行亦成功）
+          content:
+            application/json:
+              schema:
+                $ref: './components/ApiResponse.yaml'
+
+  /{id}/ui-schema/validate:
+    post:
+      summary: 界面 schema 引用完整性校验（UI-REF-xx，与实体校验码正交）
+      operationId: validateUiSchema
+      tags: [UiSchema]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK；空数组 = 通过；无行亦返回空数组
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EntityValidationIssue'
+
+  /{id}/ui-schema/base-update:
+    get:
+      summary: 模板跟随更新检查（digest 只含计数，不返全量）
+      operationId: checkUiSchemaBaseUpdate
+      tags: [UiSchemaFollow]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK；无指针/资产缺失一律 hasUpdate=false（诚实降级）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TemplateUpdateCheck'
+
+  /{id}/ui-schema/merge-preview:
+    post:
+      summary: 模板跟随三路归并预览（服务端算，前端只确认）
+      operationId: previewUiSchemaMerge
+      tags: [UiSchemaFollow]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK；degradedTwoWay=true 表无历史快照的两路降级
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MergePreview'
+
+  /{id}/ui-schema/merge-confirm:
+    post:
+      summary: 模板跟随合入确认（租户确认后写回草稿）
+      operationId: confirmUiSchemaMerge
+      tags: [UiSchemaFollow]
+      parameters:
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmUiSchemaMerge'
+      responses:
+        '200':
+          description: OK；响应带 ETag（= 新 lockVersion）
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UiSchemaResp'
+        '409':
+          description: 模板又发版或草稿被并发修改（UI_SCHEMA_MERGE_CONFLICT / UI_SCHEMA_VERSION_CONFLICT）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+        '412':
+          description: 缺 If-Match 且行已存在（防误覆盖）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+        '503':
+          description: 迁移 0046 未执行（META_UI_SCHEMA_STORE_UNAVAILABLE）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogErrorEnvelope'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    EntityId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: 元数据实体主键（meta_entity.id）
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema:
+        type: string
+      description: |
+        乐观锁版本（UiSchemaResp.lockVersion 原值）；`*` 表"我不管并发"。
+        缺头且行已存在 → 412；无行首存可缺省。
+  schemas:
+    UiSchemaResp:
+      type: object
+      required: [json, minor, lockVersion]
+      properties:
+        json:
+          type: string
+          description: BoneUiSchema 全量 JSON（草稿）
+        minor:
+          type: integer
+          description: 协议增量版本（未知 minor 只告警不拒绝）
+        lockVersion:
+          type: string
+          description: 乐观锁版本（下次 PUT 回传 If-Match；后端 Long 序列化为字符串）
+        updatedAt:
+          type: string
+          format: date-time
+    EntityValidationIssue:
+      type: object
+      required: [level, code, message]
+      properties:
+        level:
+          type: string
+          enum: [ERROR, WARN]
+        code:
+          type: string
+          description: UI-REF-01~09（引用完整性）或 UI_SCHEMA_INVALID（结构）
+          example: UI-REF-04
+        message:
+          type: string
+        fieldId:
+          type: string
+          description: 字段主键（后端 Long 序列化为字符串）
+        fieldName:
+          type: string
+    TemplateUpdateCheck:
+      type: object
+      required: [hasUpdate]
+      properties:
+        hasUpdate:
+          type: boolean
+        baseVersion:
+          type: string
+          description: 实例化/上次确认时的模板版本指针
+        currentVersion:
+          type: string
+          description: 模板当前版本
+        sectionAdded:
+          type: integer
+        sectionRemoved:
+          type: integer
+        ruleAdded:
+          type: integer
+        ruleRemoved:
+          type: integer
+        actionAdded:
+          type: integer
+        actionRemoved:
+          type: integer
+        reason:
+          type: string
+          description: 诚实降级原因（NO_BASE_POINTER / TEMPLATE_MISSING / HISTORY_MISSING 等）
+          example: NO_BASE_POINTER
+    MergePreview:
+      type: object
+      properties:
+        autoMerged:
+          type: array
+          items:
+            type: string
+          description: 租户未改段、自动取新版的路径
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MergeConflict'
+        degradedTwoWay:
+          type: boolean
+          description: true = 无历史快照的两路降级（冲突面全量标出）
+    MergeConflict:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          example: section:form:s2
+        baseNew:
+          type: string
+          description: 模板新版该段 JSON（降级时为空）
+        instance:
+          type: string
+          description: 租户实例该段 JSON
+    ConfirmUiSchemaMerge:
+      type: object
+      required: [templateVersion]
+      properties:
+        acceptConflicts:
+          type: boolean
+          default: false
+          description: true = 冲突段以模板新版覆盖；false = 冲突段保留租户版（默认）
+        templateVersion:
+          type: string
+          description: preview 时的模板版本（不一致 → 409 作废重跑）
+    BoneUiSchema:
+      type: object
+      description: 全量结构见 ui-protocol/bone-ui-schema.schema.json（本契约只收草稿原文）
+    CatalogErrorEnvelope:
+      type: object
+      required: [success, code, message]
+      properties:
+        success:
+          type: boolean
+          example: false
+        code:
+          type: string
+          description: 业务码（UI_SCHEMA_INVALID / UI_SCHEMA_VERSION_CONFLICT / UI_SCHEMA_MERGE_CONFLICT / UI-REF-01~09）
+          example: UI_SCHEMA_VERSION_CONFLICT
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

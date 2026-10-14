@@ -17,6 +17,7 @@ import PublishPreviewModal from '../components/PublishPreviewModal';
 import PublishPreviewPanel from '../components/PublishPreviewPanel';
 import FieldWizardModal from '../components/FieldWizardModal';
 import InterfaceTab from '../components/InterfaceTab';
+import UiSchemaTab from '../components/UiSchemaTab';
 import RuntimeDataManagement from './RuntimeDataManagement';
 import { touchRecent } from '../utils/recent';
 import type {
@@ -591,7 +592,7 @@ const EntityDetail: React.FC = () => {
                         <Table rowKey="id" loading={fieldLoading} columns={fieldColumns} dataSource={fields} pagination={false} size="small" scroll={{ x: 'max-content' }}
                           components={{ body: { row: EditableRow as unknown as React.ComponentType<React.HTMLAttributes<HTMLTableRowElement>>, cell: EditableCell as unknown as React.ComponentType<React.TdHTMLAttributes<HTMLTableCellElement>> } }}
                           rowClassName={(r) => (r.code === highlightFieldCode ? 'bone-field-highlight' : '')}
-                          onRow={(record) => ({ record, onSave: saveFieldInline } as unknown as React.HTMLAttributes<HTMLTableRowElement>)} />
+                          onRow={(record) => ({ record } as unknown as React.HTMLAttributes<HTMLTableRowElement>)} />
                       ),
                     },
                     {
@@ -682,6 +683,19 @@ const EntityDetail: React.FC = () => {
                     </div>
                   }
                 />
+              ),
+            },
+            {
+              key: 'uischema',
+              label: (<Space size={4}><TableOutlined /><span>界面（协议）</span></Space>),
+              children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
+                <UiSchemaTab
+                  entityId={id ?? ''}
+                  entityCode={entity.code}
+                  fields={fields}
+                />
+              ) : (
+                <Alert type="info" showIcon message="该实体使用「手写界面」，不提供协议化界面设计" />
               ),
             },
             {

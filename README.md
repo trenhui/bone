@@ -201,7 +201,7 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 
 | 层面 | 当前主线 | 演进方向 |
 |------|----------|----------|
-| 后端 | Java 17、Spring Boot 3.2、DDD + CQRS | 持续强化模块边界与契约测试 |
+| 后端 | Java 21、Spring Boot 3.5、DDD + Application Service | 持续强化模块边界与契约测试 |
 | 数据 | Bone Metadata SDK、MySQL、Redis | 元数据发布、热加载与低停机变更 |
 | API 与安全 | REST、OpenAPI、Spring Security、JWT、Gateway | 更细粒度权限与统一治理 |
 | 集成与可靠性 | HTTP、Camel 编译器、Outbox；RocketMQ 可选 | 更多连接器、流程运行时和可观测性 |

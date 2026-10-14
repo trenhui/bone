@@ -42,6 +42,7 @@ SPECS=(
   "blueprint-orders-v1:blueprintorders"
   "masterdata-v1:masterdata"
   "metadata-runtime-v1:metadataruntime"
+  "metadata-modeling-v1:metadatamodeling"
   "integration-v1:integration"
   "extension-v1:extension"
   "generator-v1:generator"

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_purch_order",
+  "displayModes": ["create", "edit", "view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "order_no", "visible": true, "width": 150 },
+        { "fieldCode": "vendor_name", "visible": true, "width": 180 },
+        { "fieldCode": "total_amount", "visible": true, "width": 130, "format": { "currencyField": "currency", "precision": 2 } },
+        { "fieldCode": "period", "visible": true, "width": 100 },
+        { "fieldCode": "status", "visible": true, "width": 110 }
+      ],
+      "searchFields": ["order_no", "vendor_name", "status", "period"],
+      "tabs": [
+        { "title": "待审核", "fieldCode": "status", "value": "PENDING" },
+        { "title": "待过账", "fieldCode": "status", "value": "APPROVED" },
+        { "title": "已过账", "fieldCode": "status", "value": "POSTED" }
+      ],
+      "dataScope": { "policyCode": "dept_scoped" },
+      "batchActions": ["approve"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_head",
+          "title": "单据头（编号自动生成，期间控制）",
+          "controls": [
+            { "fieldCode": "order_no", "controlKind": "INPUT", "readonly": true },
+            { "fieldCode": "vendor_id", "controlKind": "REFERENCE", "props": { "targetEntity": "vendor", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "period", "controlKind": "ENUM" },
+            { "fieldCode": "currency", "controlKind": "ENUM" },
+            { "fieldCode": "exchange_rate", "controlKind": "NUMBER", "props": { "min": 0, "precision": 6 } }
+          ]
+        },
+        {
+          "id": "sec_lines",
+          "title": "物料分录行",
+          "controls": [
+            { "fieldCode": "lines", "controlKind": "CHILD_TABLE", "props": { "childEntity": "purch_order_line", "columns": ["material_id", "qty", "price", "debit", "credit"] } }
+          ]
+        },
+        {
+          "id": "sec_balance",
+          "title": "借贷平衡校验（只读引用）",
+          "kind": "dashboard",
+          "controls": [
+            { "fieldCode": "balance_diff", "virtual": true, "controlKind": "COMPUTED", "props": { "computedFn": "debitDiff", "computedFrom": ["lines.debit", "lines.credit"], "lineage": "voucher-balance-check" } }
+          ]
+        },
+        {
+          "id": "sec_files",
+          "title": "附件（合同/验收单）",
+          "controls": [
+            { "fieldCode": "attachments", "controlKind": "ATTACHMENT", "props": { "maxCount": 10, "maxSizeMB": 50 } }
+          ]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "跨期警告",
+      "when": { "fieldCode": "period", "operator": "neq", "value": "2026-10" },
+      "then": [{ "fieldCode": "period", "notice": "非当前会计期，过账将受期间控制拦截，请确认" }]
+    },
+    {
+      "name": "大额采购指定审批人",
+      "when": { "fieldCode": "total_amount", "operator": "gte", "value": 50000 },
+      "then": [{ "fieldCode": "approver_id", "visible": true, "required": true }]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "借贷平衡",
+      "function": "balance",
+      "fields": ["lines.debit", "lines.credit"],
+      "operator": "eq",
+      "params": { "tolerance": 0.01 },
+      "verifyType": "ERROR",
+      "message": "借贷不平衡（差额>0.01），不得保存"
+    },
+    {
+      "name": "分录行完整性",
+      "function": "completeness",
+      "fields": ["lines.material_id", "lines.qty", "lines.price"],
+      "operator": "gte",
+      "params": { "minReasons": 3 },
+      "verifyType": "ERROR",
+      "message": "分录行物料/数量/单价缺一不可"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "saveDraft", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "DRAFT" }, "sortOrder": 1 },
+    { "actionCode": "approve", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "PENDING" }, "sortOrder": 2 },
+    { "actionCode": "post", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "APPROVED" }, "confirm": { "title": "确认过账", "content": "过账不可逆，将锁定本单并生成凭证，请确认期间正确" }, "sortOrder": 3 }
+  ],
+  "footer": { "disclaimer": "过账后不可修改，错账以红字冲销；外币按汇率折算，本位币精度 2 位" }
+}

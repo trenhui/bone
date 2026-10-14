@@ -55,4 +55,44 @@ public interface ActionDefMaterializePort {
    * @return 逃逸动作快照（空列表 = 无逃逸动作，如主数据类实体）
    */
   List<ActionDefSnapshot> listEscapeActions(long tenantId, String entityCode);
+
+  /**
+   * 列出某实体全部动作定义（建模工作台「状态机」面板的数据源），按 {@code sort_order, id} 升序。
+   *
+   * <p>与 {@link #listEscapeActions} 同表同端口（catalog 不反向依赖 runtime 读仓储），只是不做逃逸过滤。
+   *
+   * @param tenantId 租户
+   * @param entityCode 实体 code
+   * @return 动作定义列表（空 = 该实体未配状态机，运行时 {@code stateField} 恒 null）
+   */
+  List<ActionDefSpec> listByEntity(long tenantId, String entityCode);
+
+  /**
+   * 按 {@code actionCode} UPSERT 单条动作定义（同名即更新）。
+   *
+   * <p>用 {@code uk_action_tenant_entity_code} 判重而非先查后写：并发下「查不到→插入」会撞唯一键，UPSERT 让重复提交退化为更新，与 {@link
+   * #materialize} 语义一致（重复实例化不中断流程）。
+   *
+   * <p>{@code permission_code} 由实现按 {@code runtime:{entityCode}:{actionCode}}
+   * 推导写入，不接受调用方传入——放开会让细码与动作码脱钩， 逃逸动作因此永远命中不了授权。
+   *
+   * @param tenantId 租户
+   * @param entityCode 实体 code（权限码命名空间）
+   * @param spec 动作定义
+   * @return 1（UPSERT 恒写一行）
+   */
+  int upsert(long tenantId, String entityCode, ActionDefSpec spec);
+
+  /**
+   * 软删单条动作定义。
+   *
+   * <p>软删而非物理删：与 {@code meta_entity} 同口径保留审计线索；{@code uk_action_tenant_entity_code} 不含 {@code
+   * deleted}， 故同名动作可被 {@link #upsert} 复活。
+   *
+   * @param tenantId 租户
+   * @param entityCode 实体 code
+   * @param actionCode 动作编码
+   * @return 实际软删行数（0 = 该动作不存在或已软删，调用方据此判 404）
+   */
+  int softDeleteOne(long tenantId, String entityCode, String actionCode);
 }

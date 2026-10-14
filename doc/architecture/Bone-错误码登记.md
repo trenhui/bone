@@ -254,7 +254,18 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_RELATION_CONFIG_INVALID` | 500 | 关联关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列等建模侧错误，需修正 validation_rules） |
 | `META_PRECONDITION_FAILED` | 412 | 乐观锁版本冲突（If-Match 与当前记录不一致） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移：模型类型与物理列类型不兼容（doc2a §328） |
+| `META_UI_SCHEMA_INVALID` | 400 | 界面 schema 非法（schemaVersion≠1 / minor 非法 / JSON 非法 / UI-REF-xx 引用校验失败） |
+| `META_UI_SCHEMA_VERSION_CONFLICT` | 409 | 界面 schema 并发写冲突（If-Match 锁版本不一致或 SDK 乐观锁失败） |
+| `META_UI_SCHEMA_PRECONDITION_REQUIRED` | 412 | 缺 If-Match 且界面 schema 行已存在（防误覆盖） |
+| `META_UI_SCHEMA_MERGE_CONFLICT` | 409 | 模板跟随合入时模板又发版（旧归并预览作废，需重跑） |
+| `META_UI_SCHEMA_TEMPLATE_ASSET_INCOMPLETE` | 409 | 模板界面资产未补齐（跟随入口保持 disabled，不静默开放） |
+| `META_UI_SCHEMA_STORE_UNAVAILABLE` | 503 | 迁移 0046 未执行（界面 schema 存储不可用，读路径降级回落） |
 | `META_AUTO_NUMBER_CONFIG_INVALID` | 400 | 自动编号配置非法（`auto_number` 缺必填项 `field` / `prefix`、`reset` 不是 `none`/`daily`、或不是合法 JSON） |
+| `META_ACTION_DEF_INVALID` | 400 | 动作定义入参非法（逃逸动作缺 `handlerBean` / 未声明幂等） |
+| `META_ACTION_DEF_NOT_FOUND` | 404 | 动作定义不存在（含已软删） |
+| `META_PUBLISH_BLOCKED` | 409 | 发布闸门拦截：实体存在 ERROR 级校验问题（命名/字段/关系/物理漂移/UI-REF 引用），不允许发布 |
+| `META_ROW_POLICIES_INVALID` | 400 | 行级 ACL 策略配置非法（非 JSON / 缺 `rules` / 规则缺 `name`） |
+| `META_RUNTIME_UI_RULES_VIOLATED` | 422 | 界面提交校验未通过（`submitRules`/`linkageRules` 服务端强制不通过） |
 
 ### MD_
 
@@ -496,6 +507,12 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_TEMPLATE_NOT_PUBLISHED` | 409 | 模板尚未发布，不可实例化（仅 status==1 的已发布模板可实例化） |
 | `META_TEMPLATE_ID_REQUIRED` | 400 | 模板 ID 不能为空（实例化入参缺失） |
 | `META_PHYSICAL_TABLE_NOT_FOUND` | 404 | 物理表不存在，无法导入（发布期物理结构不存在） |
+| `META_UI_SCHEMA_INVALID` | 400 | 界面 schema 非法（结构/引用校验失败，UI-REF-xx 见校验面板） |
+| `META_UI_SCHEMA_VERSION_CONFLICT` | 409 | 界面 schema 并发冲突（If-Match 锁版本与库内不一致） |
+| `META_UI_SCHEMA_TEMPLATE_ASSET_INCOMPLETE` | 409 | 模板界面资产缺失（跟随入口保持 disabled） |
+| `META_UI_SCHEMA_MERGE_CONFLICT` | 409 | 模板跟随合入冲突（模板又发版或草稿被并发修改，重跑归并预览） |
+| `META_UI_SCHEMA_STORE_UNAVAILABLE` | 503 | 界面 schema 存储不可用（迁移 0046 未执行；写路径 503，读路径静默降级） |
+| `META_UI_SCHEMA_PRECONDITION_REQUIRED` | 412 | 缺 If-Match 前置条件（行已存在时防误覆盖，刷新后重试） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移拦截：模型类型与物理列类型不兼容（doc2a §328） |
 
 > `META_ENTITY_CODE_CONFLICT` / `META_ENTITY_TABLE_NAME_CONFLICT` 两处收口前经 `of(String)`

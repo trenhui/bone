@@ -32,4 +32,36 @@ public final class CatalogHttpSupport {
   public static String formatEtag(Integer version) {
     return version == null ? null : "\"v" + version + "\"";
   }
+
+  /**
+   * If-Match 长整型解析（ui-schema {@code lock_version} BIGINT 口径；与 {@link #parseIfMatchVersion} 同容错文法：W/
+   * 弱前缀、引号、v 前缀）。
+   */
+  public static Optional<Long> parseIfMatchLong(String ifMatch) {
+    if (!StringUtils.hasText(ifMatch)) {
+      return Optional.empty();
+    }
+    String token = ifMatch.trim();
+    if (token.startsWith("W/")) {
+      token = token.substring(2).trim();
+    }
+    if (token.startsWith("\"") && token.endsWith("\"") && token.length() >= 2) {
+      token = token.substring(1, token.length() - 1);
+    }
+    if (token.startsWith("v") || token.startsWith("V")) {
+      token = token.substring(1);
+    }
+    if ("*".equals(token)) {
+      return Optional.of(-1L);
+    }
+    try {
+      return Optional.of(Long.parseLong(token));
+    } catch (NumberFormatException ex) {
+      return Optional.empty();
+    }
+  }
+
+  public static String formatEtagLong(Long version) {
+    return version == null ? null : "\"v" + version + "\"";
+  }
 }

@@ -76,7 +76,8 @@ class MetaEntityWorkbenchServiceTest {
             Optional.empty(),
             actionDefMaterializePort,
             domainEventPublisher,
-            mock(PlatformTransactionManager.class));
+            mock(PlatformTransactionManager.class),
+            mock(UiSchemaApplicationService.class));
   }
 
   // ===================== UC-W5 静态校验 =====================

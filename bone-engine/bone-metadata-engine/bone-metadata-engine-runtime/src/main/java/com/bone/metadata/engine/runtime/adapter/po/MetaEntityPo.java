@@ -13,8 +13,9 @@ import lombok.Setter;
  * <p>仅用于 {@code adapter} 层经 {@code bone-metadata-sdk} 的 {@code Repository} 读取已发布元数据， 并转换为引擎领域模型
  * {@code EntityMetadata}。本类不含领域行为，不得对外暴露。
  *
- * <p>字段对齐 {@code bone-metadata-server} 的 {@code MetaEntity}（@Table("meta_entity")）， 但保持为独立 PO 以避免
- * engine 反向依赖 server（循环依赖风险）。属于防腐层（ACL）的外部表示。
+ * <p>本类是 catalog 写模型 {@code MetaEntity} 的<b>列子集映射</b>（非全量对齐），保持独立 PO 以避免 engine 反向依赖
+ * server（循环依赖风险）。属于防腐层（ACL）的外部表示。catalog 加列时须同步更新本类或在列契约测试 {@code MetaEntityPoColumnContractTest}
+ * 的忽略名单中登记，否则测试变红。
  */
 @Getter
 @Setter

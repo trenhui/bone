@@ -20,7 +20,7 @@ Bone 的产品定位是**元数据驱动的快速开发平台**。不可被采�
 1. **当前核心域**：Bone 在当前产品战略下只认定 **Metadata**（Smart Metadata：建模 catalog + 元数据运行时）为核心域。未来可以通过新 ADR 增加或调整核心域，不受“只能有一个”的数量限制。
 2. **支撑域**：MasterData、Integration、Extension、Notification、Generator、Payment（blueprint 样板）。
 3. **通用域**：IAM、System。
-4. **基础设施**（非限界上下文）：Gateway、File（空壳）、bone-framework 共享内核。
+4. **基础设施**（非限界上下文）：Gateway（JWT、限流、熔断、路由）、File（上传下载已实现，文件元数据表未落库）、bone-framework 共享内核。
 5. L 档与门禁强度：
    - 核心域优先配齐 `TEST-HYGIENE-01`、application `*QueryPort`、表归属清单；跨进程发布时再上 L3（依赖 ADR-0021）。
    - 支撑域默认 L1–L2，**不得**仅因「重要」上 L3。

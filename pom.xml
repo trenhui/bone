@@ -19,6 +19,7 @@
         <module>bone-framework</module>
         <module>bone-engine</module>
         <module>bone-platform</module>
+        <module>bone-ai</module>
         <module>bone-blueprint</module>
     </modules>
 

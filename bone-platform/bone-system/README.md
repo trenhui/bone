@@ -19,8 +19,8 @@ Bone System 是 Bone 平台的系统管理模块，提供系统配置、监控�
 
 ## 技术栈
 
-- Java 17+
-- Spring Boot 3.2+
+- Java 21
+- Spring Boot 3.5（版本以 `bone-parent/pom.xml` 为准）
 - Bone Core (领域驱动设计核心库)
 - Bone Metadata SDK (元数据驱动持久化)
 - Bone Notification (告警通知服务)

@@ -1,11 +1,18 @@
 package com.bone.metadata.architecture;
 
 import com.bone.architecture.BoneDddArchRules;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
+import java.util.Set;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * bone-metadata-server 架构守护 — 统一来自 {@link BoneDddArchRules}（《Bone-DDD》§21 附录 B.3）。
@@ -142,4 +149,67 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule spring_component_bean_names_unique =
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
+  // P1-2（2026-10-13）：运行时端点授权口径门禁——@PreAuthorize 必须是
+  // "@runtimeAccessGuard.canRead/canWrite(#entityCode)" 动态判据（与 Guard 同源），
+  // 不得回退粗粒度 hasAnyAuthority('metadata:runtime:*'/'metadata:read'/'metadata:write')：
+  // 粗码放行会让「注解层已授权」的假象掩盖 Guard 的实体级判定，两套口径必漂移
+  // （RuntimeAccessGuard javadoc §通配论述）。豁免清单仅 RuntimeActionController.invoke——
+  // 动作级判据 canInvoke(def) 无单一布尔简化形式，注解预判会误伤仅持细码的独立资金授权面，
+  // 判定全部下沉 RuntimeActionService（该方法 javadoc 有完整论证）。
+  private static final Set<String> RUNTIME_PREAUTHORIZE_EXEMPT =
+      Set.of("RuntimeActionController.invoke");
+
+  @ArchTest
+  static final ArchRule runtime_endpoint_preauthorize_must_bind_guard =
+      ArchRuleDefinition.methods()
+          .that()
+          .areDeclaredInClassesThat()
+          .resideInAPackage("com.bone.metadata.runtime.adapter.web..")
+          .and()
+          .arePublic() // 端点均为 public；私有辅助（currentOperator/requireEntity/lambda）不挂授权注解，不属口径范围
+          .should(
+              new ArchCondition<JavaMethod>(
+                  "annotate @runtimeAccessGuard.canRead/canWrite(#entityCode)") {
+                @Override
+                public void check(JavaMethod method, ConditionEvents events) {
+                  String qualified = method.getOwner().getSimpleName() + "." + method.getName();
+                  try {
+                    PreAuthorize annotation = method.getAnnotationOfType(PreAuthorize.class);
+                    if (annotation == null) {
+                      events.add(
+                          new SimpleConditionEvent(
+                              method, false, qualified + " 缺少 @PreAuthorize（运行时端点必须显式授权）"));
+                      return;
+                    }
+                    String value = annotation.value();
+                    boolean satisfied =
+                        RUNTIME_PREAUTHORIZE_EXEMPT.contains(qualified)
+                            || value.matches(
+                                "@runtimeAccessGuard\\.can(Read|Write)\\(#entityCode\\)");
+                    events.add(
+                        new SimpleConditionEvent(method, satisfied, qualified + ": " + value));
+                  } catch (IllegalArgumentException ex) {
+                    // 注解类型不在 classpath 时 ArchUnit 抛此异常——本模块 PreAuthorize 恒在，视为失败而非跳过
+                    events.add(
+                        new SimpleConditionEvent(
+                            method, false, qualified + " 注解解析失败: " + ex.getMessage()));
+                  }
+                }
+              })
+          .because("粗粒度注解放行与 RuntimeAccessGuard 实体级判定是两套口径，必漂移");
+
+  // P2-1（2026-10-13）：adapter 不得直注 engine 运行时持久化服务——
+  // JdbcRuntimeRecordService（记录 CRUD + 行 ACL + 审计 + 乐观锁横切）/ RuntimeRelationSupport（关系 JDBC）
+  // 是引擎侧持久化组件，adapter 直注即绕过 ADR-0028「Application Service First」。
+  // 原 RuntimeRecordController javadoc 宣称「命中 god-object 谓词属已冻结例外」与事实不符：
+  // archunit_store 中该规则冻结文件为空（从未冻结任何违规），谓词只查 ..application.. 包，
+  // Jdbc 服务因位于 engine.runtime 包而根本不在谓词范围内——门禁不是「例外登记」而是「视而不见」。
+  // 收敛后横切判定（currentOperator/rowOwnerId/状态机守卫/ID 生成）唯一真源在
+  // RuntimeRecordApplicationService（与 RuntimeActionService 同构）。
+  // 谓词边界：RuntimeEntityCatalog（实体目录查询接口）不中招——它是无副作用查询端口，
+  // 非持久化编排服务；未来若其长出写能力，应一并收敛并收紧本规则。
+  @ArchTest
+  static final ArchRule adapter_no_engine_runtime_persistence =
+      BoneDddArchRules.adapterMustNotDependOnEngineRuntimePersistence();
 }

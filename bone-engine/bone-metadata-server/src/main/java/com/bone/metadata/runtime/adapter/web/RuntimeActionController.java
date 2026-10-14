@@ -42,6 +42,12 @@ public class RuntimeActionController {
    *
    * <p>请求体：{@code {"params": {...}}}（逃逸动作必填入参）； 资金类动作需携带 {@code Idempotency-Key} 请求头防重放； 建议携带
    * {@code If-Match} 与列表/详情返回的 ETag 对齐，避免基于陈旧快照推进状态。
+   *
+   * <p><b>注解层为何保持粗码 {@code metadata:runtime:write}</b>（其余运行时端点均用
+   * {@code @runtimeAccessGuard.canXxx(#entityCode)} 动态判据）：动作级授权判据是 {@code canInvoke(def)}，其形状（逃逸要细码
+   * / 非逃逸要实体写或细码）<strong>没有单一布尔简化形式</strong>；在注解层用 {@code canRead}/{@code canWrite}
+   * 预判都会误伤「仅持有动作细码的独立资金授权面」（无实体读写的审批人）。故注解只表达「能进运行时写域」，动作级判定全部下沉 {@code RuntimeActionService}（def
+   * 感知）。ArchitectureTest 注解口径门禁对本方法登记豁免。
    */
   @PostMapping("/records/{id}/actions/{actionCode}")
   @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
@@ -71,9 +77,14 @@ public class RuntimeActionController {
     return ApiResponse.success(result);
   }
 
-  /** 列出某实体可用动作：不带 status 返回全部（前端一次拉取按 from_status 分组）；带 status 返回该状态可触发的动作。 */
+  /**
+   * 列出某实体可用动作：不带 status 返回全部（前端一次拉取按 from_status 分组）；带 status 返回该状态可触发的动作。
+   *
+   * <p>注解判据与记录读一致（{@code canRead}）：动作按钮挂在列表/详情页，「看得见单据」是触发动作的产品前提； 细粒度裁剪（含逃逸动作必须细码）由 {@code
+   * describe} 按 {@code canInvoke} 完成，与本注解同源。
+   */
   @GetMapping("/actions")
-  @PreAuthorize("hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  @PreAuthorize("@runtimeAccessGuard.canRead(#entityCode)")
   public ApiResponse<List<RuntimeActionDef>> listActions(
       @PathVariable String entityCode, @RequestParam(required = false) String status) {
     accessGuard.requireRead(entityCode);

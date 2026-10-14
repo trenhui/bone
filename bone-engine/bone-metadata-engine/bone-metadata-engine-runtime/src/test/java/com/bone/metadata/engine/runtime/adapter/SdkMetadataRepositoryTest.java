@@ -8,12 +8,16 @@ import com.bone.metadata.engine.ports.spi.MetadataPlatformBridge;
 import com.bone.metadata.engine.runtime.adapter.po.MetaEntityPo;
 import com.bone.metadata.engine.runtime.adapter.po.MetaFieldPo;
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -29,6 +33,8 @@ class SdkMetadataRepositoryTest {
   @Mock private Repository<MetaEntityPo, Long> entityRepository;
   @Mock private Repository<MetaFieldPo, Long> fieldRepository;
   @Mock private MetadataPlatformBridge platformBridge;
+
+  @Captor private ArgumentCaptor<Criteria<MetaEntityPo>> entityCriteriaCaptor;
 
   private SdkMetadataRepository repository;
 
@@ -46,7 +52,8 @@ class SdkMetadataRepositoryTest {
     po.setDisplayName("订单");
     po.setDescription("订单实体");
     po.setTableName("t_order");
-    po.setStatus(2);
+    // catalog 已发布=1（草稿=0、归档=2）。样例用已发布，归档/草稿见下方的反例测试。
+    po.setStatus(1);
     po.setBuiltin(false);
     po.setTenantId(100L);
     return po;
@@ -83,9 +90,52 @@ class SdkMetadataRepositoryTest {
     assertThat(result.getApiName()).isEqualTo("order");
     assertThat(result.getName()).isEqualTo("订单");
     assertThat(result.getTableName()).isEqualTo("t_order");
+    assertThat(result.isActive()).isTrue();
     assertThat(result.getFields()).containsKey("orderNo");
     assertThat(result.getFields().get("orderNo").isPrimaryKey()).isTrue();
     assertThat(result.getFields().get("orderNo").getType()).isEqualTo("string");
+  }
+
+  @Test
+  void findEntityByApiName_shouldFilterPublishedStatus() {
+    when(platformBridge.currentTenantId()).thenReturn(Optional.of("100"));
+    when(entityRepository.findOneByCriteria(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(sampleEntity());
+    when(fieldRepository.findByCriteria(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.of(sampleField()));
+
+    repository.findEntityByApiName("order");
+
+    Mockito.verify(entityRepository).findOneByCriteria(entityCriteriaCaptor.capture());
+    boolean hasPublishedFilter =
+        entityCriteriaCaptor.getValue().getMainConditions().stream()
+            .anyMatch(
+                c ->
+                    "status".equals(c.getFieldName())
+                        && c.getValues() != null
+                        && c.getValues().length > 0
+                        && Integer.valueOf(1).equals(c.getValues()[0]));
+    assertThat(hasPublishedFilter).isTrue();
+  }
+
+  @Test
+  void converter_archivedEntity_shouldMapToInactive() {
+    MetaEntityPo archived = sampleEntity();
+    archived.setStatus(2);
+
+    EntityMetadata result = MetaEntityConverter.toEntityMetadata(archived, List.of(sampleField()));
+
+    assertThat(result.isActive()).isFalse();
+  }
+
+  @Test
+  void converter_draftEntity_shouldMapToInactive() {
+    MetaEntityPo draft = sampleEntity();
+    draft.setStatus(0);
+
+    EntityMetadata result = MetaEntityConverter.toEntityMetadata(draft, List.of(sampleField()));
+
+    assertThat(result.isActive()).isFalse();
   }
 
   @Test

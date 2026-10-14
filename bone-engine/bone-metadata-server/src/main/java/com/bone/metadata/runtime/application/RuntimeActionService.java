@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
  *   <li>资金类动作：校验 Idempotency-Key 并幂等去重——成功复用首次结果；孤儿态拒绝自动重放（对真实网关重放 = 可能二次出金）；
  *   <li>校验动作必填入参；
  *   <li>校验 {@code from_status -> to_status} 状态机边；
+ *   <li>界面协议 {@code submitRules/linkageRules} 服务端强制（{@link UiSchemaRuleEnforcer}：前端先拦、此处置底， 违规带
+ *       rule code 抛 422）；
  *   <li>逃逸动作先落 PENDING 执行日志（begin），再执行副作用（{@link RuntimeActionDispatcher}）；
  *   <li>平台统一把 {@code status_field} 流转到 {@code to_status}（调用方无法绕过状态机直写 status，修复 G14）；
  *   <li>关闭执行生命周期：成功 markSucceeded；If-Match 冲突视副作用已触达按孤儿语义收口；其余失败 markFailed；
@@ -39,6 +41,7 @@ public class RuntimeActionService {
   private final RuntimeActionDispatcher dispatcher;
   private final ObjectMapper objectMapper;
   private final RuntimeAccessGuard accessGuard;
+  private final UiSchemaRuleEnforcer uiSchemaRuleEnforcer;
 
   public RuntimeActionService(
       JdbcRuntimeRecordService runtimeRecordService,
@@ -46,13 +49,15 @@ public class RuntimeActionService {
       RuntimeActionExecutionRepository executionRepository,
       RuntimeActionDispatcher dispatcher,
       ObjectMapper objectMapper,
-      RuntimeAccessGuard accessGuard) {
+      RuntimeAccessGuard accessGuard,
+      UiSchemaRuleEnforcer uiSchemaRuleEnforcer) {
     this.runtimeRecordService = runtimeRecordService;
     this.actionDefRepository = actionDefRepository;
     this.executionRepository = executionRepository;
     this.dispatcher = dispatcher;
     this.objectMapper = objectMapper;
     this.accessGuard = accessGuard;
+    this.uiSchemaRuleEnforcer = uiSchemaRuleEnforcer;
   }
 
   /**
@@ -147,18 +152,35 @@ public class RuntimeActionService {
           "动作「" + actionCode + "」要求当前状态为 " + def.getFromStatus() + "，实际为 " + current);
     }
 
-    // 6. 逃逸动作先记 PENDING（begin），再做副作用 —— 执行留痕前置（P0-2 核心）。
+    // 6. 界面协议强制（submitRules / linkageRules 服务端执行期兜底）。
+    //    前端 runSubmit 先拦是「体验」，这里是「安全底线」：绕过界面直接调本 API 也必须被同一批规则拦下，
+    //    且违规文案带 rule code（协议 §submitRule.code 的前后端对账用途）。
+    //    位置在「幂等命中短路」与「副作用」之间 —— 既不能因规则失败而消费幂等键（用户改正数据后重试应能成功），
+    //    也必须在逃逸动作 begin 前拦下（否则已打款才发现单据不合规）。
+    uiSchemaRuleEnforcer.enforceBeforeAction(entityCode, recordId, record, operatorId);
+
+    // 7. 逃逸动作先记 PENDING（begin），再做副作用 —— 执行留痕前置（P0-2 核心）。
     //    旧实现「副作用→状态流转→成功才写日志」存在半事务窗口：网关已受理、
     //    平台 updateState 失败时零留痕，重试即可能二次出金（Runtime §4.8.1）。
     //    新时序：begin(status=PENDING) → dispatch → markSucceeded/markFailed/markOrphaned，
     //    任何一环崩溃（含 JVM kill、DB 闪断）系统里都有一行 pending/orphaned 记录可对账。
     Long executionId = null;
     Map<String, Object> sideEffect = new LinkedHashMap<>();
-    if (def.isEscape()) {
-      executionId =
-          executionRepository.begin(
-              tenantId, entityCode, recordId, actionCode, idempotencyKey, operatorId, params);
-    }
+    // 留痕对所有动作生效（不再只逃逸动作）：GET /records/{id}/action-executions 的契约是
+    // 「这张单据被谁何时提交/审批/打款、每次结果如何」——只记逃逸动作会让提交/审批/驳回在审计时间线上
+    // 完全不可见（实测：一条走完 提交→审批→打款 的报销单只有 1 条打款留痕），与端点 javadoc 宣称的
+    // 「任何一次执行都留有痕迹（含孤儿）」不符，也不满足等保/SOX 对全量状态流转留痕的要求。
+    // 幂等键仅在动作声明 requiresIdempotency 时落库：非幂等动作带同一 key 重试是合法行为
+    // （网络超时后重发），落唯一键会把它变成冲突错误。
+    executionId =
+        executionRepository.begin(
+            tenantId,
+            entityCode,
+            recordId,
+            actionCode,
+            def.isRequiresIdempotency() ? idempotencyKey : null,
+            operatorId,
+            params);
     try {
       if (def.isEscape()) {
         sideEffect =
@@ -166,7 +188,7 @@ public class RuntimeActionService {
                 new RuntimeActionContext(entityCode, tenantId, recordId, def, params, operatorId));
       }
 
-      // 7. 统一状态流转（平台负责，调用方无法绕过状态机）。
+      // 8. 统一状态流转（平台负责，调用方无法绕过状态机）。
       //    走 updateState 而非 update：后者对 state_field 一律 422；前者是状态机唯一合法推进入口，
       //    内部落记录级审计（RC-009：who 在何时把 status 从 from 改到 to）。
       Map<String, Object> updated =
@@ -185,7 +207,7 @@ public class RuntimeActionService {
         executionRepository.markSucceeded(executionId, encode(sideEffect));
       }
 
-      // 9. 返回最新记录 + 结构化摘要（Runtime §4.4：fromStatus/toStatus 供前端 toast 与审计对齐）
+      // 10. 返回最新记录 + 结构化摘要（Runtime §4.4：fromStatus/toStatus 供前端 toast 与审计对齐）
       Map<String, Object> result = new LinkedHashMap<>();
       result.put("record", updated);
       result.put("result", sideEffect);

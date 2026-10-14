@@ -7,6 +7,7 @@ import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.common.CatalogErrors;
 import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.TemplateReadPort;
+import com.bone.metadata.catalog.domain.gateway.TemplateUiSnapshot;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplate;
@@ -42,6 +43,9 @@ public class MetaTemplateApplicationService {
 
   /** 模板状态机动作展开（迁移 0040）：产出 meta_entity_action_def，使实例化结果「可用」而非只是「有形」。 */
   private final ActionDefMaterializePort actionDefMaterializePort;
+
+  /** 界面 schema 拷贝（迁移 0046）：实例化同步复制模板快照 + base 指针（同界应用服务互调）。 */
+  private final UiSchemaApplicationService uiSchemaApplicationService;
 
   /** 模板目录（平台层全租户共享，keyword 模糊匹配编码/名称）。 */
   @Transactional(readOnly = true)
@@ -133,6 +137,21 @@ public class MetaTemplateApplicationService {
               entity.getCode(),
               templateActions);
     }
+
+    // ── 界面 schema：实例化同步拷贝模板快照 + 写 base 指针（迁移 0046）────────────
+    // 模板作者看不到目标租户字段定义，只能引用抽象列；实例化后草稿态可改，发布冻结快照。
+    // 模板资产缺失（ui_schema_json 为空）即跳过，不阻断实例化（前置诚实门，技术方案 §5.2）。
+    templateReadPort
+        .findUiSnapshotByCode(template.getCode())
+        .filter(TemplateUiSnapshot::hasSchema)
+        .ifPresent(
+            snapshot ->
+                uiSchemaApplicationService.copyFromTemplate(
+                    entityId,
+                    entity.getCode(),
+                    template.getCode(),
+                    template.getCurrentVersion(),
+                    snapshot.schemaJson()));
 
     log.info(
         "[G3] 模板实例化完成: template={}({}) -> entity={}({}) fields={} actions={}",

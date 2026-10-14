@@ -23,6 +23,7 @@ import type {
   UpdateMetaFieldReq,
   CreateMetaRelationReq,
   UpdateMetaRelationReq,
+  ModelingWorkspaceData,
   RuntimeRecord,
   RuntimeActionDef,
   RuntimeActionResult,
@@ -141,6 +142,17 @@ export const metadataEntityApi = {
       `${META}/entities/import-from-table`,
       data,
     ),
+};
+
+/**
+ * 建模工作台聚合（P0-1：消除模型设计页 N+5 次串行请求）。
+ *
+ * 契约：GET /api/v1/metadata/modeling/workspace → 统计 + 待发布草稿前 6 + 应用→模块结构。
+ * 统计口径与「业务对象」页同源（后端同一 pageEntities 读模型），不再前端三次 size=1 分页凑 total。
+ */
+export const metadataWorkspaceApi = {
+  workspace: () =>
+    api.get<never, ApiResponse<ModelingWorkspaceData>>(`${META}/modeling/workspace`),
 };
 
 /** 平台模型模板（G3）：目录/字段为平台层只读资产；实例化=建模写 */
@@ -390,5 +402,84 @@ export const metadataUiOverlayApi = {
   reset: (entityCode: string): Promise<ApiResponse<void>> =>
     api.delete<never, ApiResponse<void>>(
       `${META}/entities/${encodeURIComponent(entityCode)}/ui-overlay`,
+    ),
+};
+
+/**
+ * 实体动作定义（建模期视图，对应后端 `ActionDefSpec`）。
+ * 用于界面配置器动作条的动作码下拉，避免手填 code 与真源漂移。
+ */
+export interface ActionDefSpec {
+  actionCode: string;
+  label?: string;
+  fromStatus?: string;
+  toStatus?: string;
+  statusField?: string;
+  escape?: boolean;
+  handlerBean?: string;
+  paramsSchema?: string;
+  requiresIdempotency?: boolean;
+  sortOrder?: number;
+}
+
+/** 业务对象界面 schema 响应（团队级；null=从未配置，前端回落列投影） */
+export interface UiSchemaResp {
+  json: string;
+  minor?: number;
+  /** 乐观锁版本（P0-3 后端落盘后回填；缺省=0，前端 If-Match 透传；线上传字符串，读侧归一为 number） */
+  lockVersion?: number | string;
+  updatedAt?: string;
+}
+
+/** 业务对象界面 schema 校验问题（UI-REF-xx 码，与实体校验码正交） */
+export interface UiSchemaIssue {
+  code: string;
+  message: string;
+  fieldCode?: string;
+}
+
+/**
+ * 业务对象界面 schema（团队级，P0 协议驱动界面）。
+ *
+ * 契约（MetaEntityCatalogController，与 ui-overlay 同控制器内聚；键走实体主键 `{id}`）：
+ *   GET    /entities/{id}/ui-schema            → ApiResponse<UiSchemaResp | null>
+ *   PUT    /entities/{id}/ui-schema            → 头 If-Match: <lockVersion> + body {json}，全量替换幂等
+ *            （锁版本走标准头不进 body，与 runtime invokeAction 的 If-Match/ETag/412 同语义，技术方案 §3.2）
+ *   DELETE /entities/{id}/ui-schema            → 删草稿行（已发布快照保留）
+ *   POST   /entities/{id}/ui-schema/validate   → UiSchemaIssue[]
+ * 运行时零新增端点：渲染数据继续走 runtime records/children/lookup/actions 通道。
+ */
+export const metadataUiSchemaApi = {
+  get: (id: SnowflakeId): Promise<ApiResponse<UiSchemaResp | null>> =>
+    api.get<never, ApiResponse<UiSchemaResp | null>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema`,
+    ),
+
+  save: (id: SnowflakeId, json: string, lockVersion: number): Promise<ApiResponse<UiSchemaResp>> =>
+    api.put<unknown, ApiResponse<UiSchemaResp>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema`,
+      { json },
+      { headers: { 'If-Match': String(lockVersion) } },
+    ),
+
+  remove: (id: SnowflakeId): Promise<ApiResponse<void>> =>
+    api.delete<never, ApiResponse<void>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema`,
+    ),
+
+  validate: (id: SnowflakeId): Promise<ApiResponse<UiSchemaIssue[]>> =>
+    api.post<never, ApiResponse<UiSchemaIssue[]>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema/validate`,
+    ),
+};
+
+/**
+ * 实体动作定义建模接口（UI Schema actionBar 的动作码真源）。
+ * 契约：GET/POST /entities/{id}/action-defs，DELETE /entities/{id}/action-defs/{actionCode}
+ */
+export const metadataActionDefApi = {
+  list: (id: SnowflakeId): Promise<ApiResponse<ActionDefSpec[]>> =>
+    api.get<never, ApiResponse<ActionDefSpec[]>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/action-defs`,
     ),
 };

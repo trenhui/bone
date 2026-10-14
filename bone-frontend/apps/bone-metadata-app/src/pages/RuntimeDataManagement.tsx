@@ -67,8 +67,26 @@ import {
 import { fetchOverlay } from '../utils/overlaySync';
 import { listRecent } from '../utils/recent';
 import CommandPalette from '../components/CommandPalette';
+import { BoneDynamicForm } from '../components/BoneDynamicForm';
+import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 
 const { Text } = Typography;
+
+/**
+ * 筛选运算符选项（P1-3）——token 与后端 {@code RuntimePageQuery.FilterOp} 一一对应。
+ * eq 保留为默认：存量 q 形状（field:value）与状态步骤下钻零变更。
+ * 每加一个运算符 = 后端一条 SQL 分支 + 一组单测 + 前端一个选项，收敛在高价值七元组。
+ */
+const FILTER_OP_OPTIONS: { value: string; label: string }[] = [
+  { value: 'eq', label: '等于' },
+  { value: 'ne', label: '不等于' },
+  { value: 'gt', label: '大于' },
+  { value: 'gte', label: '不小于' },
+  { value: 'lt', label: '小于' },
+  { value: 'lte', label: '不大于' },
+  { value: 'contains', label: '包含' },
+  { value: 'in', label: '属于' },
+];
 
 /**
  * 数据生命周期步骤条 —— **由实体自身的状态机定义推导，不含任何硬编码业务状态**。
@@ -191,24 +209,29 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const [conflictDiff, setConflictDiff] = useState<ConflictDiffRow[]>([]);
   const [diffOpen, setDiffOpen] = useState(false);
   /**
-   * P2-⑤：多条件等值过滤（AND）。q 契约 = {@code field:value;field:value}
-   * （后端 RuntimePageQuery.parseFilters；单条件无分隔符时与旧 field:value 完全兼容）。
+   * P2-⑤：多条件过滤（AND）。q 契约 = {@code field:value}（等值）或 {@code field:op:value}（运算符），
+   * 多条件用 {@code ;} 分隔（后端 RuntimePageQuery.parseFilters；单条件无分隔符时与旧 field:value 完全兼容）。
    *
    * <p>双状态：{@link #conditions} 是编辑中的草稿（输入框直绑，不发请求）；
    * {@link #appliedConditions} 是生效值，「查询」按钮才把前者提交为后者。
    * 为什么不防抖直发生效：多行条件表单的业界标准形态是显式 Apply（Ant Design Pro
    * 筛选表单 / GitHub 高级搜索）——边打边查会让「填到一半的条件」产生一次错误口径的
    * 结果集，用户以为「没有匹配数据」实则条件还没填完。
+   *
+   * <p>P1-3 运算符：eq 走存量形状（{@code field:value}，步骤条下钻与旧请求零变更）；
+   * 其余运算符拼 {@code field:op:value}（后端 {@code RuntimePageQuery.FilterOp}）。 含冒号的值（URL/备注）零歧义——后端按「第二段是否为已知运算符」回退等值。
    */
-  const [conditions, setConditions] = useState<{ field?: string; value: string }[]>([]);
-  const [appliedConditions, setAppliedConditions] = useState<{ field?: string; value: string }[]>(
+  const [conditions, setConditions] = useState<{ field?: string; op: string; value: string }[]>(
     [],
   );
+  const [appliedConditions, setAppliedConditions] = useState<
+    { field?: string; op: string; value: string }[]
+  >([]);
   /** 生效筛选的 q 串（空数组 ⇒ undefined，不带 q 参数） */
   const appliedQ = useMemo(() => {
     const q = appliedConditions
       .filter((c) => c.field && c.value.trim())
-      .map((c) => `${c.field}:${c.value.trim()}`)
+      .map((c) => (c.op === 'eq' ? `${c.field}:${c.value.trim()}` : `${c.field}:${c.op}:${c.value.trim()}`))
       .join(';');
     return q || undefined;
   }, [appliedConditions]);
@@ -286,6 +309,17 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     () => detailEntity ?? entities.find((e) => e.code === entityCode) ?? null,
     [detailEntity, entities, entityCode],
   );
+
+  /**
+   * 协议表单开关（P0-1 · 技术方案 §6.1/§6.8）：
+   * 实体配了团队 schema 且版本校验过（绿 ok/黄 warn-unknown-minor）→ 录入弹窗走 BoneDynamicForm；
+   * 无 schema/红 error → 老表单零变化。ctx 暂空（$me/roles/tier 身份源待定：
+   * 待 shell 广播用户上下文后接入，技术方案 §12.2 待定①；缺席时规则凡涉身份一律不命中）。
+   */
+  const uiSchemaPipe = useBoneUiSchema(selectedEntity?.id != null ? String(selectedEntity.id) : null);
+  const useSchemaForm =
+    (uiSchemaPipe.status === 'ok' || uiSchemaPipe.status === 'warn-unknown-minor') &&
+    !!uiSchemaPipe.schema?.views.form?.sections?.length;
 
   /**
    * 最近操作实体（跨实体运营台快捷入口）：复用 localStorage 的「最近编辑」记录，
@@ -438,7 +472,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         page,
         size: pageSize,
         fields: fieldsParam,
-        // q 契约：field:value;field:value 多条件 AND（后端 RuntimePageQuery.parseFilters）
+        // q 契约：field:value 或 field:op:value，多条件 AND（后端 RuntimePageQuery.parseFilters）
         q: appliedQ,
         // sort 契约：`-` 前缀降序（后端 RuntimePageQuery.parseSort）
         sort: sortField ? `${sortDesc ? '-' : ''}${sortField}` : undefined,
@@ -851,7 +885,16 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
   const handleSubmit = async () => {
     if (!entityCode) return;
     const values = await form.validateFields();
-    const body = buildBody(values);
+    await saveBody(buildBody(values));
+  };
+
+  /** 协议表单提交入口（BoneDynamicForm 已做 linkage/submit 前端校验，直接落 runtime 通道） */
+  const handleSchemaSubmit = async (data: Record<string, unknown>) => {
+    await saveBody(buildBody(data));
+  };
+
+  const saveBody = async (body: RuntimeRecord) => {
+    if (!entityCode) return;
     try {
       if (editing) {
         const id = recordId(editing);
@@ -1344,9 +1387,10 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                           onClick={() => {
                             // 再次点击已选中的状态 = 取消筛选（幂等下钻，符合 Ant Design Pro 筛选标签行为）
                             const nextActive = !active;
-                            const next: { field?: string; value: string }[] = nextActive
-                              ? [{ field: 'status', value: code }]
-                              : [];
+                            const next: { field?: string; op: string; value: string }[] =
+                              nextActive
+                                ? [{ field: 'status', value: code, op: 'eq' }]
+                                : [];
                             setConditions(next);
                             setAppliedConditions(next);
                             setSelectedFilterNote(
@@ -1465,7 +1509,7 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                     { label: '回收站', value: 'trash' },
                   ]}
                 />
-                {/* P2-⑤：多条件等值过滤（AND）。q 契约 = field:value;field:value。
+                {/* P2-⑤/P1-3：多条件过滤（AND），运算符扩展集。q 契约 = field:value;field:op:value。
                     显式「查询」提交（不防抖直发）：填到一半的条件不该产出错误口径的结果集。 */}
                 <Space.Compact>
                   {conditions.map((c, idx) => (
@@ -1487,10 +1531,27 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                           label: f.displayName || f.code,
                         }))}
                       />
+                      <Select
+                        style={{ minWidth: 96 }}
+                        value={c.op}
+                        onChange={(v) => {
+                          setConditions((prev) =>
+                            prev.map((p, i) => (i === idx ? { ...p, op: v } : p)),
+                          );
+                          setSelectedFilterNote(null);
+                        }}
+                        options={FILTER_OP_OPTIONS}
+                      />
                       <Input
                         allowClear
                         style={{ width: 200 }}
-                        placeholder="筛选值（精确匹配）"
+                        placeholder={
+                          c.op === 'in'
+                            ? '多值用逗号分隔（属于）'
+                            : c.op === 'eq'
+                              ? '筛选值（精确匹配）'
+                              : `筛选值（${FILTER_OP_OPTIONS.find((o) => o.value === c.op)?.label ?? c.op}）`
+                        }
                         value={c.value}
                         onChange={(e) => {
                           setConditions((prev) =>
@@ -1513,7 +1574,7 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
                   ))}
                   <Button
                     icon={<PlusOutlined />}
-                    onClick={() => setConditions((prev) => [...prev, { value: '' }])}
+                    onClick={() => setConditions((prev) => [...prev, { value: '', op: 'eq' }])}
                   >
                     添加条件
                   </Button>
@@ -1650,13 +1711,37 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
       )}
 
       <Modal
-        title={editing ? '编辑记录' : '新建记录'}
+        title={`${editing ? '编辑记录' : '新建记录'}${useSchemaForm ? ' · 协议表单' : ''}`}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        onOk={handleSubmit}
-        width={560}
+        onOk={useSchemaForm ? undefined : handleSubmit}
+        footer={useSchemaForm ? null : undefined}
+        width={useSchemaForm ? 880 : 560}
         destroyOnHidden
       >
+        {useSchemaForm && uiSchemaPipe.schema && entityCode ? (
+          <>
+            {uiSchemaPipe.status === 'warn-unknown-minor' && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="界面协议有新版本字段，当前页面可能未展示全部内容"
+              />
+            )}
+            <BoneDynamicForm
+              schema={uiSchemaPipe.schema}
+              fields={fields}
+              record={(editing ?? undefined) as Record<string, unknown> | undefined}
+              recordId={editing ? recordId(editing) : undefined}
+              entityCode={entityCode}
+              displayMode={editing ? 'edit' : 'create'}
+              onSubmit={handleSchemaSubmit}
+              quiet
+            />
+          </>
+        ) : (
+        <>
         {/* 抽屉内状态进度：只在该实体**确有状态机**且记录状态在链上时显示。
             标签取自 status 字段的 ENUM 码表（makeStatusLabelOf），不硬编码业务状态。 */}
         {editing && stateChain.length > 0 && editingStateIdx >= 0 && (
@@ -1697,6 +1782,8 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
             formFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
           )}
         </Form>
+        </>
+        )}
       </Modal>
 
       {/* 412 冲突「查看差异」：逐字段展示「你的提交」vs「当前线上值」 */}
@@ -1897,7 +1984,7 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
           }
         />
         <Space style={{ marginBottom: 12 }} wrap>
-          <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => setChildRows((r) => [...r,])}>
+          <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => setChildRows((r) => [...r, {}])}>
             添加明细行
           </Button>
           <Text type="secondary" style={{ fontSize: 12 }}>

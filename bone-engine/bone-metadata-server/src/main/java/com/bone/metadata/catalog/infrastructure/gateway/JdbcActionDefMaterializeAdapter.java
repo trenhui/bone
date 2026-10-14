@@ -2,10 +2,14 @@ package com.bone.metadata.catalog.infrastructure.gateway;
 
 import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.ActionDefSnapshot;
+import com.bone.metadata.catalog.domain.gateway.ActionDefSpec;
+import com.bone.metadata.catalog.domain.gateway.UiSchemaRefCheckPort;
 import com.bone.metadata.catalog.domain.model.template.MetaModelTemplateAction;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -24,9 +28,13 @@ import org.springframework.stereotype.Component;
  *
  * <p>UPSERT：以 {@code uk_action_tenant_entity_code(tenant_id, entity_code, action_code)} 为准，
  * 重复实例化同一实体不会撞唯一键而中断整个建模流程。
+ *
+ * <p>同时实现 {@link UiSchemaRefCheckPort} 的只读动作码查询（同表 {@code meta_entity_action_def}、 同豁免依据，不另起 JDBC
+ * 文件，防 HC-006 门禁新增面）。
  */
 @Component
-public class JdbcActionDefMaterializeAdapter implements ActionDefMaterializePort {
+public class JdbcActionDefMaterializeAdapter
+    implements ActionDefMaterializePort, UiSchemaRefCheckPort {
 
   private static final String UPSERT =
       "INSERT INTO meta_entity_action_def "
@@ -50,6 +58,34 @@ public class JdbcActionDefMaterializeAdapter implements ActionDefMaterializePort
       "SELECT action_code, label, permission_code FROM meta_entity_action_def "
           + "WHERE tenant_id = ? AND entity_code = ? AND is_escape = 1 AND deleted = 0 "
           + "ORDER BY sort_order ASC, id ASC";
+
+  private static final String SELECT_ACTION_CODES =
+      "SELECT action_code FROM meta_entity_action_def "
+          + "WHERE tenant_id = ? AND entity_code = ? AND deleted = 0";
+
+  private static final String SELECT_ALL_ACTIONS =
+      "SELECT action_code, label, from_status, to_status, status_field, is_escape, handler_bean, "
+          + "params_schema, requires_idempotency, sort_order "
+          + "FROM meta_entity_action_def "
+          + "WHERE tenant_id = ? AND entity_code = ? AND deleted = 0 "
+          + "ORDER BY sort_order ASC, id ASC";
+
+  private static final String UPSERT_ONE =
+      "INSERT INTO meta_entity_action_def "
+          + "(tenant_id, entity_code, action_code, label, from_status, to_status, status_field, "
+          + " is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order, "
+          + " created_at, updated_at, deleted, version) "
+          + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3),NOW(3),0,0) "
+          + "ON DUPLICATE KEY UPDATE "
+          + "label = VALUES(label), from_status = VALUES(from_status), to_status = VALUES(to_status), "
+          + "status_field = VALUES(status_field), is_escape = VALUES(is_escape), "
+          + "handler_bean = VALUES(handler_bean), params_schema = VALUES(params_schema), "
+          + "requires_idempotency = VALUES(requires_idempotency), sort_order = VALUES(sort_order), "
+          + "updated_at = NOW(3), version = version + 1, deleted = 0";
+
+  private static final String SOFT_DELETE_ONE =
+      "UPDATE meta_entity_action_def SET deleted = 1, updated_at = NOW(3) "
+          + "WHERE tenant_id = ? AND entity_code = ? AND action_code = ? AND deleted = 0";
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -126,5 +162,70 @@ public class JdbcActionDefMaterializeAdapter implements ActionDefMaterializePort
                 rs.getString("permission_code")),
         tenantId,
         entityCode);
+  }
+
+  /**
+   * 界面 schema 引用检查的动作码集合（UI-REF-02）。
+   *
+   * <p>catalog 不反向依赖 runtime 界读仓储，依赖方向保持 application → domain ← infrastructure。 软删行显式排除。
+   */
+  @Override
+  public Set<String> actionCodesOf(long tenantId, String entityCode) {
+    if (entityCode == null || entityCode.isBlank()) {
+      return Set.of();
+    }
+    return new HashSet<>(
+        jdbcTemplate.queryForList(SELECT_ACTION_CODES, String.class, tenantId, entityCode));
+  }
+
+  @Override
+  public List<ActionDefSpec> listByEntity(long tenantId, String entityCode) {
+    if (entityCode == null || entityCode.isBlank()) {
+      return List.of();
+    }
+    return jdbcTemplate.query(
+        SELECT_ALL_ACTIONS,
+        (rs, rowNum) ->
+            new ActionDefSpec(
+                rs.getString("action_code"),
+                rs.getString("label"),
+                rs.getString("from_status"),
+                rs.getString("to_status"),
+                rs.getString("status_field"),
+                rs.getInt("is_escape") == 1,
+                rs.getString("handler_bean"),
+                rs.getString("params_schema"),
+                rs.getInt("requires_idempotency") == 1,
+                rs.getInt("sort_order")),
+        tenantId,
+        entityCode);
+  }
+
+  @Override
+  public int upsert(long tenantId, String entityCode, ActionDefSpec spec) {
+    // permission_code 只按命名空间推导后写入，不接受外部指定（见端口 javadoc）。
+    return jdbcTemplate.update(
+        UPSERT_ONE,
+        tenantId,
+        entityCode,
+        spec.actionCode(),
+        spec.label(),
+        spec.fromStatus(),
+        spec.toStatus(),
+        spec.statusField() == null ? ActionDefSpec.DEFAULT_STATUS_FIELD : spec.statusField(),
+        Boolean.TRUE.equals(spec.escape()) ? 1 : 0,
+        spec.handlerBean(),
+        spec.paramsSchema(),
+        spec.permissionCodeOf(entityCode),
+        Boolean.TRUE.equals(spec.requiresIdempotency()) ? 1 : 0,
+        spec.sortOrder() == null ? 0 : spec.sortOrder());
+  }
+
+  @Override
+  public int softDeleteOne(long tenantId, String entityCode, String actionCode) {
+    if (entityCode == null || entityCode.isBlank() || actionCode == null || actionCode.isBlank()) {
+      return 0;
+    }
+    return jdbcTemplate.update(SOFT_DELETE_ONE, tenantId, entityCode, actionCode);
   }
 }

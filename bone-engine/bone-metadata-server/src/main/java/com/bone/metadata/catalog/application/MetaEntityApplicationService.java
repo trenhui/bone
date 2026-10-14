@@ -12,6 +12,7 @@ import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTableCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
+import com.bone.metadata.catalog.application.command.cmd.UpsertActionDefCommand;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
@@ -26,6 +27,7 @@ import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.common.ImportMetaEntityResult;
 import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
+import com.bone.metadata.catalog.domain.gateway.ActionDefSpec;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
@@ -34,6 +36,7 @@ import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntityRelation;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
+import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityArchivedEvent;
 import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityPublishedEvent;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalTableColumn;
@@ -107,6 +110,9 @@ public class MetaEntityApplicationService {
   private final DomainEventPublisher domainEventPublisher;
   private final PlatformTransactionManager transactionManager;
 
+  /** 界面 schema 服务（发布快照 / 校验混入 / 删除联动 / 列表 hasUiSchema；同界应用服务互调）。 */
+  private final UiSchemaApplicationService uiSchemaApplicationService;
+
   // ===================== 实体写操作 =====================
 
   @Transactional
@@ -125,6 +131,7 @@ public class MetaEntityApplicationService {
             ? MetaDeliveryMode.fromCode(cmd.getDeliveryMode()).getCode()
             : MetaDeliveryMode.GENERATIVE.getCode();
     assertAutoNumberConfigValid(cmd.getAutoNumber());
+    assertRowPoliciesValid(cmd.getRowPolicies());
     MetaEntity entity =
         MetaEntity.create(
             null,
@@ -138,7 +145,8 @@ public class MetaEntityApplicationService {
             deliveryMode,
             cmd.getIcon(),
             cmd.getModuleId(),
-            cmd.getAutoNumber());
+            cmd.getAutoNumber(),
+            cmd.getRowPolicies());
     metaEntityRepository.insert(entity);
     return entity.getId();
   }
@@ -151,6 +159,7 @@ public class MetaEntityApplicationService {
     }
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
     assertAutoNumberConfigValid(cmd.getAutoNumber());
+    assertRowPoliciesValid(cmd.getRowPolicies());
     entity.update(
         cmd.getName(),
         cmd.getDisplayName(),
@@ -159,7 +168,8 @@ public class MetaEntityApplicationService {
         cmd.getSortOrder(),
         cmd.getIcon(),
         cmd.getDeliveryMode(),
-        cmd.getAutoNumber());
+        cmd.getAutoNumber(),
+        cmd.getRowPolicies());
     metaEntityRepository.update(entity);
     return entity.getVersion();
   }
@@ -197,6 +207,8 @@ public class MetaEntityApplicationService {
     if (cascaded > 0) {
       log.info("[MetaEntity] 删除实体 {} 时级联软删 {} 条运行时动作定义", entityCode, cascaded);
     }
+    // 界面 schema 行应用层同步删（非 FK 级联；删实体改码回收不影响寻址，schema 跟实体主键走）。
+    uiSchemaApplicationService.deleteByEntity(id);
     if (dropPhysicalTable) {
       // 用户显式勾选「同时删除物理表」⇒ 补上删除闭环（此前只软删定义，库里积压 36 张无主表）。
       // GENERATIVE 实体从未建表（align 仅对 RUNTIME 生效）⇒ 不调网关，避免无意义 DDL。
@@ -228,6 +240,31 @@ public class MetaEntityApplicationService {
       throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
+    // P1-4 发布闸门：与 getPublishPreview 的 hasBlockingErrors/runnable 同源，服务端兜底拦截。
+    // 预览说「不可发布」而服务端放行 = 前端按钮置灰形同虚设；此处把 ERROR 级校验问题挡在落库前。
+    // 物理漂移(PHYSICAL_DRIFT)由发布期专属 validateForPublish 拦截为 META_DOMAIN_ERROR（更精确的状态码），
+    // 不在此处二次拦截，避免覆盖其语义。
+    List<EntityValidationIssue> blocking =
+        collectIssues(entity).stream()
+            .filter(i -> EntityValidationIssue.LEVEL_ERROR.equals(i.getLevel()))
+            .filter(i -> !"PHYSICAL_DRIFT".equals(i.getCode()))
+            .toList();
+    if (!blocking.isEmpty()) {
+      String codes =
+          blocking.stream()
+              .map(EntityValidationIssue::getCode)
+              .distinct()
+              .limit(8)
+              .collect(java.util.stream.Collectors.joining(", "));
+      throw CatalogErrors.of(
+          CatalogErrorCodes.META_PUBLISH_BLOCKED,
+          "存在 "
+              + blocking.size()
+              + " 个阻断问题（"
+              + codes
+              + (blocking.size() > 8 ? ", ..." : "")
+              + "），请先修复后再发布");
+    }
     entity.publish();
     metaEntityRepository.update(entity);
     if (runtimeEntityCacheEvictor.isEmpty()) {
@@ -255,8 +292,126 @@ public class MetaEntityApplicationService {
       runtimeEntityCacheEvictor.ifPresent(
           evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
     }
+    // 发布即快照：draft→published 同事务冻结（快照失败则发布整体回滚，不出现半吊子）。
+    // 位置：align 成功后、发领域事件前（技术方案 §4）。
+    uiSchemaApplicationService.snapshotOnPublish(id, entity.getVersion());
     domainEventPublisher.publish(new MetaEntityPublishedEvent(entity));
     return entity.getVersion();
+  }
+
+  /**
+   * 归档实体（P0-2）：已发布实体软下线为 ARCHIVED。
+   *
+   * <p>保留物理表与已生成产物，运行时按 status 拒绝该实体的新写入/状态流转，但历史数据可查。 落库后失效 runtime 缓存并发布归档事件（RC-002 同源：避免缓存 TTL
+   * 内仍接受已下线实体的写入）。
+   */
+  @Transactional
+  public Integer archiveEntity(Long id, Integer expectedVersion) {
+    MetaEntity entity = metaEntityRepository.findById(id);
+    if (entity == null) {
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
+    }
+    CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
+    entity.archive();
+    metaEntityRepository.update(entity);
+    runtimeEntityCacheEvictor.ifPresent(
+        evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
+    domainEventPublisher.publish(new MetaEntityArchivedEvent(entity));
+    return entity.getVersion();
+  }
+
+  /**
+   * 回退草稿（P1.5）：已发布 / 归档实体回到 DRAFT，解锁结构性编辑。
+   *
+   * <p>已发布实体的 {@code update()} 会拒绝（「请先归档或回退草稿」），故必须先经本方法回到草稿态。 回退不删物理表（已发布数据仍可读），下次发布会重新对齐。
+   */
+  @Transactional
+  public Integer revertEntityToDraft(Long id, Integer expectedVersion) {
+    MetaEntity entity = metaEntityRepository.findById(id);
+    if (entity == null) {
+      throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, id);
+    }
+    CatalogVersionSupport.assertExpected(expectedVersion, entity.getVersion());
+    entity.revertToDraft();
+    metaEntityRepository.update(entity);
+    runtimeEntityCacheEvictor.ifPresent(
+        evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
+    return entity.getVersion();
+  }
+
+  // ===================== 状态机动作定义（meta_entity_action_def 建模入口）=====================
+
+  /**
+   * 列出实体动作定义（状态机建模面板数据源）。
+   *
+   * <p>不限定 RUNTIME：动作定义也可先在主数据实体上备好，切 {@code deliveryMode=RUNTIME} 即生效。 但
+   * GENERATIVE（无物理表）实体配状态机无意义——引擎无表可流转。
+   */
+  public List<ActionDefSpec> listActionDefs(Long entityId) {
+    MetaEntity entity = requireEntity(entityId);
+    return actionDefMaterializePort.listByEntity(entity.getTenantId(), entity.getCode());
+  }
+
+  /**
+   * 登记/更新单条动作定义（P0-3）。
+   *
+   * <p><b>为什么必须有</b>：动作定义此前只有模板实例化一条自动生成路径，手工建模的实体（含 UI Schema {@code actionBar} 引用）无法配状态机—— {@code
+   * actionBar} 引用恒报 {@code UI-REF-02}，且 {@code stateField} 无从推导，运行时既不能创建记录（受保护状态字段无人注入）也不能流转。
+   *
+   * <p>写后<b>必须失效 runtime 缓存</b>：{@code CatalogRuntimeEntityProvider} 从动作定义推导 {@code stateField}
+   * 并随已发布实体快照入缓存， 不 evict 会让新配的状态机在缓存 TTL 内不生效（用户看到「配了没反应」）。
+   *
+   * <p>规则：① 仅 {@code escape=true} 允许 {@code handlerBean} 非空（无处理器的逃逸动作点了必 500）； ② 逃逸动作必须声明幂等（防重复打款），
+   * 不自动补——静默替用户决定资金安全属性比报错更危险。
+   */
+  @Transactional
+  public void upsertActionDef(Long entityId, UpsertActionDefCommand cmd) {
+    MetaEntity entity = requireEntity(entityId);
+    boolean escape = Boolean.TRUE.equals(cmd.getEscape());
+    if (escape && (cmd.getHandlerBean() == null || cmd.getHandlerBean().isBlank())) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ACTION_DEF_INVALID,
+          "逃逸动作「" + cmd.getActionCode() + "」必须指定 handlerBean（无处理器则点击即 500）");
+    }
+    if (escape && !Boolean.TRUE.equals(cmd.getRequiresIdempotency())) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ACTION_DEF_INVALID,
+          "逃逸动作「" + cmd.getActionCode() + "」必须要求幂等键（requiresIdempotency=true），防重复副作用");
+    }
+    actionDefMaterializePort.upsert(
+        entity.getTenantId(),
+        entity.getCode(),
+        new ActionDefSpec(
+            cmd.getActionCode(),
+            cmd.getLabel(),
+            cmd.getFromStatus(),
+            cmd.getToStatus(),
+            cmd.getStatusField(),
+            escape,
+            cmd.getHandlerBean(),
+            cmd.getParamsSchema(),
+            cmd.getRequiresIdempotency(),
+            cmd.getSortOrder()));
+    runtimeEntityCacheEvictor.ifPresent(
+        evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
+  }
+
+  /**
+   * 软删单条动作定义。
+   *
+   * <p>软删后仍需 evict 缓存：{@code stateField} 是从动作定义「任取其一」推导的，删掉最后一条会让已发布实体退化为无状态机（引擎不再保护状态字段，
+   * 可绕过状态机直写终态）。
+   */
+  @Transactional
+  public void deleteActionDef(Long entityId, String actionCode) {
+    MetaEntity entity = requireEntity(entityId);
+    int removed =
+        actionDefMaterializePort.softDeleteOne(entity.getTenantId(), entity.getCode(), actionCode);
+    if (removed == 0) {
+      throw CatalogErrors.of(CatalogErrorCodes.ACTION_DEF_NOT_FOUND, actionCode);
+    }
+    runtimeEntityCacheEvictor.ifPresent(
+        evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
   }
 
   /**
@@ -561,6 +716,7 @@ public class MetaEntityApplicationService {
         .physical(runtimePlan(entity))
         .pendingAuthorizations(pendingAuthorizationsOf(tenantId, entity))
         .deliveryModeNotice(deliveryModeNoticeOf(entity))
+        .ui(uiSchemaApplicationService.summarizeForPreview(id))
         .build();
   }
 
@@ -661,11 +817,26 @@ public class MetaEntityApplicationService {
 
   @Transactional(readOnly = true)
   public PageResult<MetaEntityDTO> pageEntities(
-      String keyword, Integer status, Long moduleId, int page, int size) {
+      String keyword,
+      Integer status,
+      Long moduleId,
+      Integer type,
+      Integer deliveryMode,
+      int page,
+      int size) {
     long tenantId = tenantProvider.currentTenantId();
     PageResult<MetaEntity> sdkPage =
-        metaEntityRepository.pageEntities(tenantId, keyword, status, moduleId, page, size);
-    return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
+        metaEntityRepository.pageEntities(
+            tenantId, keyword, status, moduleId, type, deliveryMode, page, size);
+    PageResult<MetaEntityDTO> dtoPage =
+        CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
+    // hasUiSchema 批量填充（一次 IN 查询，禁 N+1；技术方案 §3.4）。
+    if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+      List<Long> ids = dtoPage.getRecords().stream().map(MetaEntityDTO::getId).toList();
+      Set<Long> withSchema = uiSchemaApplicationService.schemaEntityIds(ids);
+      dtoPage.getRecords().forEach(dto -> dto.setHasUiSchema(withSchema.contains(dto.getId())));
+    }
+    return dtoPage;
   }
 
   @Transactional(readOnly = true)
@@ -722,6 +893,49 @@ public class MetaEntityApplicationService {
    * <p>与运行时 {@code JdbcRuntimeRecordService#parseAutoNumber} 同源校验口径，但此处是「写入口守卫」——
    * 把错误挡在用户操作那一刻，而不是等首次录入业务数据时才发现单据号没生成。
    */
+  /**
+   * 行策略写入口守卫：解析失败 / 形态非法即拒，绝不静默落库。
+   *
+   * <p><b>为什么必须拦</b>：引擎 {@code RowPolicySpec#parse} 对非法 JSON 的语义是「记 warn 后<b>回退 owner 单规则</b>」——
+   * 建模者以为配了「本人或审批人可见」，实际线上是「仅本人可见」，审批人打开单据 404，且没有任何界面提示。安全策略静默失效比报错危险得多。
+   *
+   * <p>放行两种形态（与 {@code UiSchemaApplicationService#parsePolicyCodes} 的引用口径一致）：① {@code
+   * {"owner_field","rules":[{"name","effect","when"}]}} 引擎形态；② {@code [{"code"|"policyCode"}]}
+   * 简写形态。列名白名单校验在引擎侧（需物理表存在），此处只管结构。
+   */
+  private void assertRowPoliciesValid(String json) {
+    if (json == null || json.isBlank()) {
+      return;
+    }
+    JsonNode n;
+    try {
+      n = AUTO_NUMBER_MAPPER.readTree(json);
+    } catch (Exception e) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ROW_POLICIES_INVALID, "行策略配置不是合法 JSON: " + e.getMessage());
+    }
+    if (n.isArray()) {
+      if (n.isEmpty()) {
+        throw CatalogErrors.of(CatalogErrorCodes.ROW_POLICIES_INVALID, "行策略配置为空数组（清空请传 null 或空串）");
+      }
+      return;
+    }
+    if (!n.isObject()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ROW_POLICIES_INVALID, "行策略配置须为对象 {owner_field, rules[]} 或数组");
+    }
+    if (!n.path("rules").isArray() || n.path("rules").isEmpty()) {
+      throw CatalogErrors.of(CatalogErrorCodes.ROW_POLICIES_INVALID, "行策略配置缺少非空 rules 数组");
+    }
+    for (JsonNode rule : n.path("rules")) {
+      if (!rule.isObject() || rule.path("name").asText("").isBlank()) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.ROW_POLICIES_INVALID,
+            "每条规则须为对象且带 name（策略码，UI Schema dataScope.policyCode 引用的就是它）");
+      }
+    }
+  }
+
   private void assertAutoNumberConfigValid(String json) {
     if (json == null || json.isBlank()) {
       return;
@@ -868,7 +1082,7 @@ public class MetaEntityApplicationService {
     };
   }
 
-  /** 汇总静态校验问题：基础规范 → 字段 → 关系 → RUNTIME 物理漂移 → 已发布说明。 */
+  /** 汇总静态校验问题：基础规范 → 字段 → 关系 → RUNTIME 物理漂移 → 已发布说明 → 界面 schema 引用。 */
   private List<EntityValidationIssue> collectIssues(MetaEntity entity) {
     List<EntityValidationIssue> issues = new ArrayList<>();
     validateBasics(entity, issues);
@@ -890,6 +1104,8 @@ public class MetaEntityApplicationService {
       issues.add(
           EntityValidationIssue.info("PUBLISHED_READONLY", "已发布实体仅允许加字段或修改非破坏属性；结构性变更须先归档或回退草稿"));
     }
+    // 界面 schema 引用校验（UI-REF-xx 与现有校验码正交；删被 schema 引用的字段 → 发布阻断 + 定位到 UiSchemaTab）。
+    issues.addAll(uiSchemaApplicationService.validateSchema(entity.getId()));
     return issues;
   }
 

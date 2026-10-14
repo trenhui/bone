@@ -1,0 +1,403 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_equity_research",
+  "displayModes": [
+    "view",
+    "edit"
+  ],
+  "views": {
+    "list": {
+      "viewKind": "table",
+      "columns": [
+        {
+          "fieldCode": "symbol",
+          "visible": true,
+          "width": 110
+        },
+        {
+          "fieldCode": "name",
+          "visible": true,
+          "width": 150
+        },
+        {
+          "fieldCode": "band_position",
+          "visible": true,
+          "width": 130
+        },
+        {
+          "fieldCode": "quality_score",
+          "visible": true,
+          "width": 100
+        },
+        {
+          "fieldCode": "fair_value_range",
+          "visible": true,
+          "width": 180
+        }
+      ],
+      "searchFields": [
+        "symbol",
+        "name",
+        "industry"
+      ],
+      "quickFilters": [
+        "cheap",
+        "stable",
+        "growth"
+      ],
+      "tabs": [
+        {
+          "title": "标的发现",
+          "fieldCode": "pool",
+          "value": "discovery"
+        },
+        {
+          "title": "自选池",
+          "fieldCode": "pool",
+          "value": "watch"
+        },
+        {
+          "title": "研究档案",
+          "fieldCode": "pool",
+          "value": "archive"
+        }
+      ],
+      "stats": [
+        {
+          "title": "覆盖标的",
+          "valueRef": "symbol_count"
+        },
+        {
+          "title": "跟踪提醒",
+          "valueRef": "alert_count"
+        }
+      ],
+      "dataScope": {
+        "policyCode": "owner_or_team"
+      }
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_card",
+          "title": "研究卡片（白话结论先行）",
+          "kind": "dashboard",
+          "controls": [
+            {
+              "fieldCode": "plain_summary",
+              "virtual": true,
+              "controlKind": "STAT",
+              "props": {
+                "lineage": "plain-summary-from-band"
+              }
+            },
+            {
+              "fieldCode": "data_source",
+              "controlKind": "QUOTE",
+              "props": {
+                "lineage": "snapshot-asof"
+              }
+            },
+            {
+              "fieldCode": "quality_stars",
+              "virtual": true,
+              "controlKind": "STAT",
+              "props": {
+                "lineage": "five-dim体检"
+              }
+            },
+            {
+              "fieldCode": "fair_value_band",
+              "virtual": true,
+              "controlKind": "CHART",
+              "props": {
+                "chartType": "band",
+                "dataRef": "valuation-range",
+                "lineage": "pe-pb-engine"
+              }
+            },
+            {
+              "fieldCode": "risk_factors",
+              "controlKind": "TEXTAREA",
+              "readonly": true
+            }
+          ]
+        },
+        {
+          "id": "sec_assume",
+          "title": "自己调一调（假设面板：拖动即重算）",
+          "controls": [
+            {
+              "fieldCode": "growth_rate",
+              "controlKind": "SLIDER",
+              "props": {
+                "min": -10,
+                "max": 30,
+                "step": 0.5,
+                "lineage": "dcf-manual-assume"
+              }
+            },
+            {
+              "fieldCode": "wacc",
+              "controlKind": "SLIDER",
+              "props": {
+                "min": 5,
+                "max": 15,
+                "step": 0.1
+              }
+            },
+            {
+              "fieldCode": "perpetual_growth",
+              "controlKind": "SLIDER",
+              "props": {
+                "min": 0,
+                "max": 5,
+                "step": 0.1,
+                "warningText": "DCF 为实验性模块：假设为手动输入，非市场一致预期"
+              }
+            }
+          ]
+        },
+        {
+          "id": "sec_valuation",
+          "title": "估值进阶（PE Band 历史分位 / 敏感性矩阵 / 同业散点）",
+          "controls": [
+            {
+              "fieldCode": "pe_band_history",
+              "virtual": true,
+              "controlKind": "CHART",
+              "props": {
+                "chartType": "line",
+                "dataRef": "pe-band-5y"
+              }
+            },
+            {
+              "fieldCode": "sensitivity_matrix",
+              "virtual": true,
+              "controlKind": "CHART",
+              "props": {
+                "chartType": "matrix",
+                "dataRef": "growth-wacc-matrix"
+              }
+            },
+            {
+              "fieldCode": "peer_scatter",
+              "virtual": true,
+              "controlKind": "CHART",
+              "props": {
+                "chartType": "scatter",
+                "dataRef": "peer-compare"
+              }
+            }
+          ]
+        },
+        {
+          "id": "sec_track",
+          "title": "跟踪条件（财报季/价格边界，提醒为付费）",
+          "controls": [
+            {
+              "fieldCode": "track_rules",
+              "controlKind": "CHILD_TABLE",
+              "props": {
+                "childEntity": "track_rule",
+                "columns": [
+                  "trigger_type",
+                  "threshold",
+                  "tier"
+                ]
+              }
+            },
+            {
+              "fieldCode": "price_position",
+              "controlKind": "COMPUTED",
+              "props": {
+                "computedFn": "pricePosition",
+                "computedFrom": [
+                  "current_price",
+                  "fair_value_band"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "sec_archive",
+          "title": "研究档案版本链与对账",
+          "kind": "timeline",
+          "controls": [
+            {
+              "fieldCode": "archive_versions",
+              "virtual": true,
+              "controlKind": "TIMELINE"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "付费提醒样例可见",
+      "when": {
+        "fieldCode": "subscribe_tier",
+        "operator": "eq",
+        "value": "free"
+      },
+      "then": [
+        {
+          "fieldCode": "track_rules",
+          "tier": [
+            "free"
+          ],
+          "notice": "价格离开区间提醒为付费功能，免费用户仅见样例",
+          "noticeKey": "notice.tier_sample"
+        }
+      ]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "六要素完整性",
+      "function": "completeness",
+      "fields": [
+        "data_source",
+        "quality_stars",
+        "fair_value_band",
+        "growth_rate",
+        "risk_factors",
+        "track_rules"
+      ],
+      "operator": "gte",
+      "params": {
+        "minReasons": 6
+      },
+      "verifyType": "ERROR",
+      "message": "缺任一模板要素不得发布结论（六要素强制）",
+      "messageKey": "submit.six_elements"
+    }
+  ],
+  "actionBar": [
+    {
+      "actionCode": "publishArchive",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "DRAFT"
+      },
+      "sortOrder": 1
+    },
+    {
+      "actionCode": "addToWatch",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "PUBLISHED"
+      },
+      "sortOrder": 2
+    },
+    {
+      "actionCode": "createAlert",
+      "visibleWhen": {
+        "fieldCode": "status",
+        "operator": "eq",
+        "value": "PUBLISHED"
+      },
+      "sortOrder": 3
+    }
+  ],
+  "footer": {
+    "disclaimer": "估值区间非收益承诺；假设写在明处，结论可复算；每个数字可点开溯源",
+    "aiBadge": true,
+    "mockDataMark": true,
+    "disclaimerKey": "footer.disclaimer"
+  },
+  "i18n": {
+    "namespace": "bone.ui.t_equity_research"
+  },
+  "base": {
+    "templateCode": "equity_research_card",
+    "baseVersion": "1.0.0",
+    "followMode": "pinned"
+  },
+  "variants": [
+    {
+      "key": "pro",
+      "label": "Pro 进阶",
+      "priority": 10,
+      "match": {
+        "tiers": [
+          "pro",
+          "team"
+        ]
+      },
+      "views": {
+        "form": {
+          "sections": [
+            {
+              "id": "sec_assume",
+              "title": "自己调一调（含 DCF 实验模块）",
+              "controls": [
+                {
+                  "fieldCode": "growth_rate",
+                  "controlKind": "SLIDER",
+                  "props": {
+                    "min": -10,
+                    "max": 30,
+                    "step": 0.5,
+                    "lineage": "dcf-manual-assume"
+                  }
+                },
+                {
+                  "fieldCode": "wacc",
+                  "controlKind": "SLIDER",
+                  "props": {
+                    "min": 5,
+                    "max": 15,
+                    "step": 0.1
+                  }
+                },
+                {
+                  "fieldCode": "perpetual_growth",
+                  "controlKind": "SLIDER",
+                  "props": {
+                    "min": 0,
+                    "max": 5,
+                    "step": 0.1,
+                    "warningText": "DCF 为实验性模块：假设为手动输入，非市场一致预期"
+                  }
+                },
+                {
+                  "fieldCode": "dcf_value",
+                  "controlKind": "STAT",
+                  "virtual": true,
+                  "props": {
+                    "lineage": "dcf-engine-manual",
+                    "warningText": "手动假设输出，仅供参考"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "sec_track",
+              "title": "跟踪提醒（全开）",
+              "controls": [
+                {
+                  "fieldCode": "track_rules",
+                  "controlKind": "CHILD_TABLE",
+                  "props": {
+                    "childEntity": "track_rule",
+                    "columns": [
+                      "trigger_type",
+                      "threshold",
+                      "tier"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

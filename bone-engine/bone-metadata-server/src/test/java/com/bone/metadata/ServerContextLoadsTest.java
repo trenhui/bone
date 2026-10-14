@@ -24,7 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * </ul>
  *
  * <p>依赖真实 MySQL（profile=local，jdbc:mysql://localhost:3306/bone）。测试环境未设置 TenantContext， 故 {@code
- * SdkMetadataRepository} 不加租户过滤，读取 meta_entity 全量行（当前库含 30 行已发布实体）。
+ * SdkMetadataRepository} 不加租户过滤，但仍只读已发布行（status=1；当前库含 30 行已发布实体）。
  */
 @SpringBootTest
 class ServerContextLoadsTest {

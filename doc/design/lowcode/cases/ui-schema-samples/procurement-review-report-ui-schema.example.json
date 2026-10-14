@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_review_report",
+  "displayModes": ["edit", "view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "contract_no", "visible": true, "width": 150 },
+        { "fieldCode": "vendor_name", "visible": true, "width": 180 },
+        { "fieldCode": "high_risks", "visible": true, "width": 80 },
+        { "fieldCode": "confidence", "visible": true, "width": 100 },
+        { "fieldCode": "status", "visible": true, "width": 120 }
+      ],
+      "searchFields": ["contract_no", "vendor_name", "status"],
+      "tabs": [
+        { "title": "待确认风险", "fieldCode": "status", "value": "REVIEWING" },
+        { "title": "已确认", "fieldCode": "status", "value": "CONFIRMED" },
+        { "title": "已归档", "fieldCode": "status", "value": "ARCHIVED" }
+      ],
+      "stats": [
+        { "title": "近 30 日审查量", "valueRef": "review_count_30d" },
+        { "title": "规则命中分布", "valueRef": "rule_hit_dist" },
+        { "title": "采纳率", "valueRef": "accept_rate" }
+      ],
+      "dataScope": { "policyCode": "role_scoped" },
+      "degradedBanner": { "when": "llm_unavailable", "text": "LLM 不可用，当前为规则审查模式，不渲染 LLM 专属字段" }
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_risks",
+          "title": "风险面板（左 40%）",
+          "layout": "split-left-40",
+          "controls": [
+            { "fieldCode": "risk_stats", "virtual": true, "controlKind": "STAT", "props": { "lineage": "risk-level-count" } },
+            { "fieldCode": "risks", "controlKind": "CHILD_TABLE", "props": { "childEntity": "review_risk", "columns": ["level", "risk_type", "confidence", "decision"] } }
+          ]
+        },
+        {
+          "id": "sec_doc",
+          "title": "原文阅读区（右 60%）",
+          "controls": [
+            { "fieldCode": "quote_original", "controlKind": "QUOTE", "props": { "anchorRef": "section_ref", "lineage": "doc-ir-anchor" } },
+            { "fieldCode": "basis", "controlKind": "QUOTE", "props": { "lineage": "law-lib-article" } }
+          ]
+        },
+        {
+          "id": "sec_compare",
+          "title": "三一致对照（R25 命中时）",
+          "kind": "compare",
+          "controls": [
+            { "fieldCode": "tender_req", "controlKind": "TEXTAREA", "readonly": true },
+            { "fieldCode": "bid_promise", "controlKind": "TEXTAREA", "readonly": true },
+            { "fieldCode": "contract_term", "controlKind": "TEXTAREA", "readonly": true }
+          ]
+        },
+        {
+          "id": "sec_history",
+          "title": "修订历史（谁/何时/改了什么/依据条目）",
+          "kind": "timeline",
+          "controls": [
+            { "fieldCode": "revise_history", "virtual": true, "controlKind": "TIMELINE" }
+          ]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "无依据不出结果",
+      "when": { "fieldCode": "quote_original", "operator": "isNull" },
+      "then": [{ "fieldCode": "risks", "visible": true, "notice": "该条目无原文引用+法规依据，请人工补录后展示" }]
+    },
+    {
+      "name": "禁用条款即时红字",
+      "when": { "fieldCode": "clause_tag", "operator": "eq", "value": "FORBIDDEN" },
+      "then": [{ "fieldCode": "clause_tag", "notice": "引用禁用条款，已提示并开放法务审批入口" }]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "驳回必填理由分类",
+      "function": "completeness",
+      "fields": ["reject_reason_type"],
+      "operator": "gte",
+      "params": { "minReasons": 1 },
+      "verifyType": "ERROR",
+      "message": "驳回须选理由分类（六类）+备注方可生效"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "acceptRisk", "decisionKind": "hitl", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVIEWING" }, "sortOrder": 1 },
+    { "actionCode": "rejectRisk", "decisionKind": "hitl", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVIEWING" }, "reasonTypes": ["不构成风险", "适用范围不符", "依据不成立", "重复条目", "误读原文", "其他"], "sortOrder": 2 },
+    { "actionCode": "modifyRisk", "decisionKind": "hitl", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVIEWING" }, "sortOrder": 3 },
+    { "actionCode": "batchAccept", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVIEWING" }, "confirm": { "title": "批量采纳确认", "content": "全量采纳将一次性确认所有待确认条目，可撤销" }, "sortOrder": 4 },
+    { "actionCode": "submitReReview", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVISING" }, "maxRounds": 3, "sortOrder": 5 }
+  ],
+  "footer": { "disclaimer": "风险条目均附原文引用与法规依据版本快照；锚点随快照版本锁定", "aiBadge": true }
+}

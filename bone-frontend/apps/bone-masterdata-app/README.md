@@ -118,8 +118,8 @@ npm run type-check
 
 API 请求通过 Vite 代理转发到后端服务。默认配置：
 
-- 前端地址：`http://localhost:3003`
-- API 代理目标：`http://localhost:8080`
+- 前端地址：`http://localhost:3005`
+- API 代理目标：`http://localhost:8888`（bone-gateway）
 - API 前缀：`/api`
 
 如需修改，请编辑 `vite.config.ts` 中的代理配置。

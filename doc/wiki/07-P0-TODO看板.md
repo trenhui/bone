@@ -48,7 +48,7 @@
 | INT-OBS-01 | `IntegrationExecutionMetrics` | `bone_integration_execution_*` + `connector_test_total` + `dead_letter_gauge` | done | P2 |
 | INT-OBS-02 | OpenAPI + Gateway | `integration-v1.yaml` + `IntegrationGatewayRouteIT` | done | P2 |
 
-**建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。
+**建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。INT-02 / INT-03 / INT-04 的 done 只表示这条失败契约已落地。FTP、JDBC、MQ 协议调用仍是 `*ClientImpl` 的 `notImplemented`，不是已交付的连接器。
 
 ---
 
@@ -124,7 +124,7 @@
 | META-ASIS-01 | `bone-metadata-server` | 扩展字段 API `/api/v1/metadata/fields:*` | done | P0 |
 | META-ASIS-02 | `bone-metadata-sdk` | 平台 `@EnableSqlRepositories` + 扩展字段三模式（预留列/JSON/EAV） | done | P0 |
 | META-VIS-01 | `bone-metadata-server` catalog | 实体/关系 REST：`/api/v1/metadata/entities`、`…/entities/{id}/fields`、`…/relationships` | done | P0 |
-| META-VIS-02 | `bone-metadata-app` :3004 | 建模 UI CRUD；代理 **9001** + `VITE_API_KEY` | done | P0 |
+| META-VIS-02 | `bone-metadata-app` :3004 | 建模 UI CRUD；开发态 `/api` 代理网关 **8888** + `VITE_API_KEY` | done | P0 |
 | META-VIS-03 | `studio-generator` | 物理库 + **CATALOG_SNAPSHOT**；`GET /api/v1/generator/metadata-entity-snapshots`、`GET …/data-sources/{id}/tables` | done | P0 |
 | META-VIS-04 | `bone-generator-app` | 与 generator :8086 API 对齐 | done | P1 |
 | GEN-TEST-01 | `studio-generator` | H2 `schema-test.sql` + 数据源/模板 Controller 集成测试 | done | P2 |
@@ -165,7 +165,7 @@
 |----|------|------|------|--------|
 | LYR-01 | `bone-engine/bone-metadata-sdk`、`bone-engine/bone-extension-engine/bone-extension-sdk` | SDK 底座迁出 `bone-engine`，独立为底层基础模块（角色已是"被任意层依赖"，物理位置待收敛） | open | P1 |
 | LYR-02 | `bone-engine/bone-metadata-server`、`bone-extension-studio`、`studio-generator` | 可部署应用壳收敛至 Platform 层（规则上已按 Platform 约束，物理位置待收敛） | open | P1 |
-| LYR-03 | `bone-iam` 的 `CreateTenantCommandHandler` | 存量违规：CommandHandler 直用 `Criteria` 做租户编码唯一性检查（违反 CORE-05 / P0-6），已重建 freeze 基线接受存量；修复为走 QueryPort 后收缩基线 | open | P1 |
+| LYR-03 | `TenantApplicationService` | 原 `CreateTenantCommandHandler` 已内联；租户编码唯一性走 `TenantRepository.countByCode`，不再由 Handler 直用 `Criteria` | done | P1 |
 
 ---
 

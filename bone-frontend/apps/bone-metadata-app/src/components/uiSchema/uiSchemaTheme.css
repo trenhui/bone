@@ -1,0 +1,243 @@
+/* ===========================================================================
+ * BONE 界面配置 · 预览画布设计令牌（对标 bone-ui-schema-demo.html 高端范式）
+ * 只作用于 SchemaPreview 画布；不污染 antd 全局皮肤，避免影响其余页面。
+ * =========================================================================== */
+.uis-root {
+  --bg: #f2f4f8;
+  --panel: #ffffff;
+  --panel2: #fafbfd;
+  --ink: #131720;
+  --sub: #6b7280;
+  --line: #e5e7ee;
+  --line2: #eef0f5;
+  --pri: #2f6bff;
+  --pri2: #5b8cff;
+  --pri-weak: #eef3ff;
+  --pri-soft: #dfe9ff;
+  --ok: #15a34a;
+  --warn: #d97706;
+  --err: #dc2626;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+  --shadow-md: 0 4px 14px rgba(16, 24, 40, .08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, .10);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --dot: #dfe3ea;
+}
+
+.uis-root {
+  color: var(--ink);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.uis-root * { box-sizing: border-box; }
+
+/* ---------- 顶部头部 ---------- */
+.uis-pv-head {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.uis-pv-entity { font-weight: 700; font-size: 15px; letter-spacing: .2px; }
+.uis-pv-badge {
+  font-size: 11px; color: var(--sub); border: 1px solid var(--line);
+  background: var(--panel); border-radius: 20px; padding: 2px 10px;
+}
+.uis-pv-desc { font-size: 12px; color: var(--sub); display: block; margin-bottom: 12px; line-height: 1.6; }
+
+/* ---------- 身份模拟栏 ---------- */
+.uis-idbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.uis-idbar .uis-lbl { font-size: 11px; color: var(--sub); font-weight: 600; }
+.uis-ctx-badge {
+  font-size: 11px; border-radius: 20px; padding: 2px 10px;
+  border: 1px solid var(--pri-soft); background: var(--pri-weak); color: var(--pri);
+  font-weight: 600; white-space: nowrap;
+}
+.uis-ctx-badge.base { background: #e7f7ec; border-color: #bfe6cb; color: var(--ok); }
+
+/* ---------- 设备框 ---------- */
+.uis-stage { transition: max-width .25s ease; margin: 0 auto; }
+.uis-stage.desktop { max-width: 100%; }
+.uis-stage.tablet  { max-width: 760px; }
+.uis-stage.mobile  { max-width: 390px; }
+.uis-stage.mobile .uis-seccard { border-radius: 16px; }
+
+/* ---------- 分区卡片 ---------- */
+.uis-seccard {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-md); padding: 18px; margin-bottom: 16px;
+}
+.uis-sec-title {
+  font-weight: 700; font-size: 14px; margin: 0 0 14px; padding-left: 10px;
+  border-left: 3px solid var(--pri); display: flex; align-items: center; gap: 8px;
+}
+.uis-sec-title .kind {
+  font-size: 11px; color: var(--sub); font-weight: 400;
+  border: 1px solid var(--line2); border-radius: 6px; padding: 1px 6px;
+}
+.uis-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.uis-grid2 .uis-full { grid-column: 1 / -1; }
+@media (max-width: 560px) { .uis-grid2 { grid-template-columns: 1fr; } }
+.uis-dash {
+  background: linear-gradient(135deg, var(--pri-weak), var(--panel));
+  border: 1px solid var(--pri-soft);
+}
+
+/* ---------- 字段行 ---------- */
+.uis-fld { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.uis-fld > label {
+  font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.uis-fld .req { color: var(--err); }
+.uis-fld .ro {
+  font-size: 10px; color: #b08d3a; background: #fdf3e0; border-radius: 4px; padding: 0 5px;
+}
+.uis-notice {
+  background: #fff8e6; border: 1px solid #ffe1a8; color: #92591b;
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; margin-top: 2px; line-height: 1.5;
+}
+
+/* 让 antd 控件在画布内更精致（仅画布作用域） */
+.uis-fld .ant-input, .uis-fld .ant-input-number, .uis-fld .ant-select-selector,
+.uis-fld .ant-input-affix-wrapper, .uis-fld .ant-picker {
+  border-radius: 8px !important;
+}
+.uis-fld .ant-input:focus, .uis-fld .ant-input-focused,
+.uis-fld .ant-input-number-focused .ant-input-number-input,
+.uis-fld .ant-select-focused .ant-select-selector {
+  box-shadow: 0 0 0 3px var(--pri-weak) !important; border-color: var(--pri) !important;
+}
+
+/* ---------- 统计卡 ---------- */
+.uis-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.uis-stat {
+  background: linear-gradient(135deg, var(--pri-weak), var(--panel));
+  border: 1px solid var(--pri-soft); border-radius: 11px; padding: 14px;
+}
+.uis-stat .v { font-size: 22px; font-weight: 700; color: var(--pri); }
+.uis-stat .k { color: var(--sub); font-size: 12px; margin-top: 2px; }
+
+/* ---------- 时间线 ---------- */
+.uis-timeline { position: relative; padding-left: 18px; margin: 0; }
+.uis-timeline::before {
+  content: ""; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px; background: var(--line);
+}
+.uis-tl-item { position: relative; margin-bottom: 12px; font-size: 12px; }
+.uis-tl-item::before {
+  content: ""; position: absolute; left: -16px; top: 3px; width: 9px; height: 9px;
+  border-radius: 50%; background: var(--pri); box-shadow: 0 0 0 3px var(--panel);
+}
+.uis-tl-t { font-weight: 600; }
+.uis-tl-d { color: var(--sub); font-size: 11px; }
+
+/* ---------- 明细子表 ---------- */
+.uis-ctable { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.uis-ctable table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.uis-ctable th, .uis-ctable td { border-bottom: 1px solid var(--line2); padding: 7px 9px; text-align: left; }
+.uis-ctable th { background: var(--panel2); color: var(--sub); font-weight: 600; }
+.uis-ctable tr:hover td { background: var(--pri-weak); }
+.uis-ctable input {
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%;
+  background: var(--panel); color: var(--ink);
+}
+.uis-sum-line { margin-top: 8px; font-size: 12px; color: var(--sub); }
+
+/* ---------- 附件 ---------- */
+.uis-att-list { display: flex; flex-direction: column; gap: 6px; }
+.uis-att-item {
+  display: flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 9px; font-size: 12px; background: var(--panel2);
+}
+.uis-att-item .nm { flex: 1; }
+
+/* ---------- 引用块 / 告警 ---------- */
+.uis-quote {
+  border-left: 3px solid var(--pri); background: var(--pri-weak);
+  padding: 8px 12px; border-radius: 0 9px 9px 0; font-size: 12px;
+}
+.uis-alert-box {
+  background: #fff1f0; border: 1px solid #ffccc7; color: #a8071a;
+  border-radius: 9px; padding: 8px 12px; font-size: 12px;
+}
+
+/* ---------- 动作条 ---------- */
+.uis-actionbar {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.uis-btn {
+  padding: 8px 18px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink); font-weight: 600; font-size: 12px;
+  cursor: pointer; transition: .16s;
+}
+.uis-btn:hover { border-color: var(--pri); color: var(--pri); transform: translateY(-1px); box-shadow: var(--shadow); }
+.uis-btn.primary {
+  background: linear-gradient(135deg, var(--pri), var(--pri2)); border-color: transparent; color: #fff;
+}
+.uis-btn.primary:hover { color: #fff; box-shadow: 0 4px 14px rgba(47, 107, 255, .35); }
+.uis-btn.danger:hover { border-color: var(--err); color: var(--err); }
+
+/* ---------- 规则追踪 ---------- */
+.uis-trace {
+  border: 1px solid var(--pri-soft); background: var(--pri-weak);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px;
+}
+.uis-trace summary {
+  cursor: pointer; font-weight: 600; color: var(--pri); list-style: none;
+  display: flex; align-items: center; gap: 6px;
+}
+.uis-trace summary::-webkit-details-marker { display: none; }
+.uis-trace .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.uis-chip {
+  border: 1px solid var(--pri-soft); background: var(--panel); border-radius: 16px;
+  padding: 2px 10px; font-family: var(--mono); font-size: 11px; color: var(--pri);
+}
+.uis-chip.warn { border-color: #ffe6a3; background: #fff7e0; color: #92591b; }
+.uis-chip.err { border-color: #ffccc7; background: #fff1f0; color: #a8071a; }
+
+/* ---------- 列表视图 ---------- */
+.uis-list-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-md); padding: 16px; margin-bottom: 16px;
+}
+.uis-tabs-bar { display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap; }
+.uis-tab {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 20px;
+  padding: 5px 15px; color: var(--sub); font-size: 12px; cursor: pointer; transition: .16s;
+}
+.uis-tab:hover { color: var(--pri); border-color: var(--pri-soft); }
+.uis-tab.active { background: var(--pri); color: #fff; border-color: var(--pri); box-shadow: 0 2px 8px rgba(47, 107, 255, .3); }
+.uis-search-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.uis-search-box {
+  flex: 1; min-width: 120px; border: 1px solid var(--line); border-radius: 9px;
+  padding: 6px 10px; background: var(--panel); display: flex; align-items: center; gap: 6px; transition: .16s;
+}
+.uis-search-box:focus-within { border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-weak); }
+.uis-search-box input { border: 0; outline: 0; flex: 1; width: 100%; background: transparent; font-size: 12px; }
+.uis-grid { width: 100%; border-collapse: collapse; background: var(--panel); font-size: 12px; }
+.uis-grid th, .uis-grid td { border-bottom: 1px solid var(--line2); padding: 9px 11px; text-align: left; }
+.uis-grid th { background: var(--panel2); color: var(--sub); font-weight: 600; position: sticky; top: 0; }
+.uis-grid tr:hover td { background: var(--pri-weak); }
+.uis-scope-chip {
+  font-size: 11px; color: #7a5b00; background: #fff7e0; border: 1px solid #ffe6a3;
+  border-radius: 20px; padding: 2px 10px; display: inline-flex; align-items: center; gap: 4px;
+}
+.uis-empty {
+  color: var(--sub); text-align: center; padding: 30px; font-size: 12px;
+  border: 1px dashed var(--line); border-radius: 10px; background: var(--panel2);
+}
+
+/* ---------- 页脚合规条 ---------- */
+.uis-footer {
+  margin-top: 16px; padding: 10px 14px; border: 1px solid var(--line2);
+  border-radius: 10px; background: var(--panel2); font-size: 11px; color: var(--sub);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.uis-footer .ai-badge {
+  font-size: 10px; color: var(--pri); background: var(--pri-weak);
+  border-radius: 20px; padding: 1px 8px; font-weight: 600;
+}

@@ -95,6 +95,9 @@ public class GlobalExceptionHandler {
             // RC-008：state_field 直写 → 422。语义是「请求体字段合法但当前写路径不接受」，
             // 归 400 会与「类型/必填错误」混为一类，前端无法区分「改字段值」与「换入口」两种修复动作。
           case MetadataErrorCodes.RUNTIME_FIELD_PROTECTED -> HttpStatus.UNPROCESSABLE_ENTITY;
+            // 界面协议 submitRules/linkageRules 服务端强制不通过 → 422（与 state_field 直写同档：
+            // 请求合法但业务规则不满足；前端据此弹规则清单而非「参数错误」）。
+          case MetadataErrorCodes.RUNTIME_UI_RULES_VIOLATED -> HttpStatus.UNPROCESSABLE_ENTITY;
             // G10：引用指向的目标记录不存在 → 422（调用方数据问题，非权限非服务端故障）。
           case MetadataErrorCodes.RUNTIME_REFERENCE_NOT_FOUND -> HttpStatus.UNPROCESSABLE_ENTITY;
             // G10：关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列）→ 500，

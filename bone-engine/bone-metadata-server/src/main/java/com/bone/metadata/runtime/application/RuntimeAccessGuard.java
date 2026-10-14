@@ -47,26 +47,65 @@ public class RuntimeAccessGuard {
     return currentAuthorities().contains(PLATFORM_ADMIN);
   }
 
+  /**
+   * 读判定（布尔版）。与 {@link #requireRead} 同一判据——<strong>判据只此一份</strong>， 布尔版供
+   * {@code @PreAuthorize("@runtimeAccessGuard.canRead(#entityCode)")} 注解层 fail-fast 与 Describe
+   * 展示裁剪复用， 避免「注解放行 / Guard 拒绝」两套口径互相漂移。
+   */
+  public boolean canRead(String entityCode) {
+    Set<String> authorities = currentAuthorities();
+    return authorities.contains(PLATFORM_ADMIN)
+        || authorities.contains(WILDCARD_READ)
+        || authorities.contains("runtime:" + entityCode + ":read");
+  }
+
+  /** 写判定（布尔版）。与 {@link #requireWrite} 同一判据，供注解层与展示层复用。 */
+  public boolean canWrite(String entityCode) {
+    Set<String> authorities = currentAuthorities();
+    return authorities.contains(PLATFORM_ADMIN)
+        || authorities.contains(WILDCARD_WRITE)
+        || authorities.contains("runtime:" + entityCode + ":write");
+  }
+
+  /**
+   * 动作判定（布尔版）。与 {@link #requireAction} <strong>逐行同一判据</strong>： {@code
+   * RuntimeActionDescribeSupport} 按本方法裁剪「可见动作」，执行门禁走 {@link #requireAction}—— 两者共用一份判据，
+   * 从结构上杜绝「按钮可见但点击 403」的漂移（2026-10-13 实测缺陷：Describe 曾各自复制一份判定，漏掉逃逸动作必须细码的约束）。
+   */
+  public boolean canInvoke(RuntimeActionDef def) {
+    Set<String> authorities = currentAuthorities();
+    if (authorities.contains(PLATFORM_ADMIN)) {
+      return true;
+    }
+    String entityCode = def.getEntityCode();
+    String actionCode = def.getActionCode();
+    boolean actionFineCode =
+        authorities.contains("runtime:" + entityCode + ":" + actionCode)
+            || (def.getPermissionCode() != null
+                && !def.getPermissionCode().isBlank()
+                && authorities.contains(def.getPermissionCode()));
+    if (def.isEscape()) {
+      // 逃逸动作：细码以外一律拒绝（实体级写 / 通配写不含「放款/入库」授权，§4.6 门禁）
+      return actionFineCode;
+    }
+    // 非逃逸动作：实体级写 OR 通配写 OR 动作级细码
+    return authorities.contains("runtime:" + entityCode + ":write")
+        || authorities.contains(WILDCARD_WRITE)
+        || actionFineCode;
+  }
+
   /** 读：实体级读 或 通配读 或 平台管理员。 */
   public void requireRead(String entityCode) {
-    Set<String> authorities = currentAuthorities();
-    if (authorities.contains(PLATFORM_ADMIN)
-        || authorities.contains(WILDCARD_READ)
-        || authorities.contains("runtime:" + entityCode + ":read")) {
-      return;
+    if (!canRead(entityCode)) {
+      throw forbidden(entityCode, "read");
     }
-    throw forbidden(entityCode, "read");
   }
 
   /** 写：实体级写 或 通配写 或 平台管理员。 */
   public void requireWrite(String entityCode) {
-    Set<String> authorities = currentAuthorities();
-    if (authorities.contains(PLATFORM_ADMIN)
-        || authorities.contains(WILDCARD_WRITE)
-        || authorities.contains("runtime:" + entityCode + ":write")) {
-      return;
+    if (!canWrite(entityCode)) {
+      throw forbidden(entityCode, "write");
     }
-    throw forbidden(entityCode, "write");
   }
 
   /**
@@ -85,40 +124,22 @@ public class RuntimeAccessGuard {
    * 语义直接矛盾，留着就是等后人踩的语义陷阱（footgun）。控制层统一走本重载。
    */
   public void requireAction(RuntimeActionDef def) {
-    Set<String> authorities = currentAuthorities();
-    if (authorities.contains(PLATFORM_ADMIN)) {
+    if (canInvoke(def)) {
       return;
     }
-    String entityCode = def.getEntityCode();
-    String actionCode = def.getActionCode();
-    String entityWrite = "runtime:" + entityCode + ":write";
-    boolean actionFineCode =
-        authorities.contains("runtime:" + entityCode + ":" + actionCode)
-            || (def.getPermissionCode() != null
-                && !def.getPermissionCode().isBlank()
-                && authorities.contains(def.getPermissionCode()));
-    // 逃逸动作：细码以外一律拒绝（实体级写 / 通配写不含「放款/入库」授权，§4.6 门禁）
+    // 拒绝消息按逃逸/非逃逸分流：逃逸动作必须提示「细码」而非笼统无权限（§4.6 可审计性）
     if (def.isEscape()) {
-      if (actionFineCode) {
-        return;
-      }
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
           "逃逸动作需动作级授权: runtime:"
-              + entityCode
+              + def.getEntityCode()
               + ":"
-              + actionCode
+              + def.getActionCode()
               + "（实体级 write / 通配 write 不覆盖有副作用的动作，见 Runtime 数据面设计 §4.6）");
-    }
-    // 非逃逸动作：实体级写 OR 通配写 OR 动作级细码
-    if (authorities.contains(entityWrite)
-        || authorities.contains(WILDCARD_WRITE)
-        || actionFineCode) {
-      return;
     }
     throw new RuntimeRecordException(
         MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION,
-        "无动作权限: runtime:" + entityCode + ":" + actionCode);
+        "无动作权限: runtime:" + def.getEntityCode() + ":" + def.getActionCode());
   }
 
   /** 当前主体的权限码集合（Spring Security 上下文）。 */

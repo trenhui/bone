@@ -322,6 +322,38 @@ public final class BoneDddArchRules {
   }
 
   /**
+   * <b>ADR-0028 补丁（2026-10-13，metadata-server P2-1）</b>：入站 adapter 不得直注 {@code ..engine.runtime..}
+   * 的持久化服务（{@code *Service} / {@code *Support} 后缀：JdbcRuntimeRecordService / RuntimeRelationSupport
+   * / RuntimeQuerySupport）。
+   *
+   * <p><b>为什么 god-object 规则兜不住</b>：{@link #adaptersMustNotDependOnGodObjects()} 的谓词只查 {@code
+   * ..application..} 包，而引擎持久化服务位于 {@code engine.runtime} 包——adapter 直注它们时 god-object
+   * 规则<strong>永远绿</strong>（metadata-server 实例：RuntimeRecordController 曾直注
+   * JdbcRuntimeRecordService，其 javadoc 却宣称「命中谓词属已冻结例外」；archunit_store 中该规则的冻结文件为
+   * 空，证明从未冻结任何违规——不是例外登记，是门禁视而不见）。
+   *
+   * <p><b>谓词边界</b>：{@code RuntimeEntityCatalog}（实体目录查询接口）不中招——无副作用查询端口，非持久化
+   * 编排服务；其若长出写能力，应一并收敛并收紧本规则。{@code ..adapter.schedule..} 不开例外：全租户运维扫描的 授权形态由 {@link
+   * #adaptersMustNotDependOnDomainRepository()} 的既有例外与模块级规则承载，与本规则目标 （运行时记录持久化直注）无关。
+   */
+  public static ArchRule adapterMustNotDependOnEngineRuntimePersistence() {
+    DescribedPredicate<JavaClass> engineRuntimePersistence =
+        resideInAPackage("..engine.runtime..")
+            .and(simpleNameEndingWith("Service").or(simpleNameEndingWith("Support")));
+    return noClasses()
+        .that()
+        .resideInAPackage("..adapter..")
+        .should()
+        .dependOnClassesThat(engineRuntimePersistence)
+        .allowEmptyShould(true)
+        .because(
+            "ADR-0028: adapter must not inject engine runtime persistence "
+                + "(JdbcRuntimeRecordService / RuntimeRelationSupport / RuntimeQuerySupport); "
+                + "orchestrate via *ApplicationService (god-object rule only covers ..application.., "
+                + "engine.runtime services bypassed it silently)");
+  }
+
+  /**
    * 过渡别名：语义已由 {@link #adaptersMustNotDependOnGodObjects()} 承载（见 ADR-0028）。保留以兼容尚在 引用旧名的模块 {@code
    * ArchitectureTest} 与工具脚本；新代码请改用新名。
    *

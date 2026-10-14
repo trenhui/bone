@@ -31,6 +31,7 @@ SLICE_ALLOWLIST = {
     os.path.join("pages", "ModelingWorkspace.tsx"),
     os.path.join("pages", "EntityManagement.tsx"),  # B2 命令面板候选（cmdResults 最多 8 条）＝UI 展示截断，非列投影
     os.path.join("pages", "RuntimeDataManagement.tsx"),  # recentForRuntime＝listRecent() 近期访问列表最多 5 条，UI 展示截断，非列投影
+    os.path.join("components", "uiSchema", "UiSchemaDesigner.tsx"),  # undo/redo future 历史栈缓冲（保留最近 50 个状态），UI 历史缓冲截断，非字段/列投影
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")

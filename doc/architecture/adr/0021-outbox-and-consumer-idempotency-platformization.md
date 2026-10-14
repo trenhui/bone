@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | 提议 |
+| **状态** | 提议（平台级公共 Outbox 组件仍未抽出；blueprint 消费端 eventId 幂等已于 2026-09-18 闭环，见正文注记） |
 | **日期** | 2026-08-30 |
 | **决策者** | 平台架构组（待评审） |
 | **关联** | [Bone-DDD-最终实践方案](../Bone-DDD-最终实践方案.md) §5.4 / §5.5 / D6；`bone-blueprint`、`bone-integration`；change `ddd-spec-v4-5-convergence`（D6 / M3） |

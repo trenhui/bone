@@ -253,7 +253,7 @@ components:
       type: object
       properties:
         name: { type: string }
-        type: { type: string, description: 'REST / JDBC / FTP / MQ' }
+        type: { type: string, description: 'REST、HTTP、HTTPS、SOAP、REDIS、ELASTICSEARCH、MONGO_DB、S3 可调用；JDBC、FTP、MQ 已注册但调用返回 501；FILE、SMTP、SFTP、KAFKA 等其余枚举暂无客户端' }
         config: { type: object, additionalProperties: true }
     UpdateConnectorCommand:
       type: object

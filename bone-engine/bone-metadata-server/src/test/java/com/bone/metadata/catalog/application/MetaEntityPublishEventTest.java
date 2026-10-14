@@ -3,6 +3,8 @@ package com.bone.metadata.catalog.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
@@ -14,12 +16,17 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
+import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.common.BatchOperateResult;
+import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.domain.gateway.ActionDefMaterializePort;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
+import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
+import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityArchivedEvent;
 import com.bone.metadata.catalog.domain.model.meta.event.MetaEntityPublishedEvent;
 import com.bone.metadata.catalog.domain.model.physical.PhysicalTableSnapshot;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
@@ -51,6 +58,7 @@ class MetaEntityPublishEventTest {
   @Mock private TenantProvider tenantProvider;
   @Mock private PhysicalStructureGateway physicalStructureGateway;
   @Mock private DomainEventPublisher domainEventPublisher;
+  @Mock private UiSchemaApplicationService uiSchemaApplicationService;
 
   private MetaEntityApplicationService service;
 
@@ -61,6 +69,17 @@ class MetaEntityPublishEventTest {
     lenient()
         .when(physicalStructureGateway.readTableSnapshot(anyString()))
         .thenReturn(new PhysicalTableSnapshot("placeholder", false, List.of()));
+    // P1-4 发布闸门会调 collectIssues（字段/关系/界面 schema 引用三类子校验）；本类只验证事件，
+    // 统一用空结果桩让子校验早退，避免 Mockito 默认 null 触发 NPE。
+    lenient()
+        .when(metaFieldRepository.pageFields(any(), any(), anyInt(), anyInt()))
+        .thenReturn(com.bone.core.model.PageResult.empty());
+    lenient()
+        .when(
+            metaEntityRelationRepository.pageRelations(
+                anyLong(), any(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(com.bone.core.model.PageResult.empty());
+    lenient().when(uiSchemaApplicationService.validateSchema(anyLong())).thenReturn(List.of());
     service =
         new MetaEntityApplicationService(
             metaEntityRepository,
@@ -74,7 +93,8 @@ class MetaEntityPublishEventTest {
             Optional.empty(),
             mock(ActionDefMaterializePort.class),
             domainEventPublisher,
-            mock(PlatformTransactionManager.class));
+            mock(PlatformTransactionManager.class),
+            uiSchemaApplicationService);
   }
 
   @Test
@@ -105,7 +125,8 @@ class MetaEntityPublishEventTest {
 
     service.publishEntity(2L, null);
 
-    verify(physicalStructureGateway).validateForPublish(1L, "pub_rt");
+    // validateForPublish 在 P1-4 发布闸门(collectIssues) 与发布期显式漂移拦截各调一次（去重冗余，无害）
+    verify(physicalStructureGateway, times(2)).validateForPublish(1L, "pub_rt");
     verify(physicalStructureGateway).align(1L, "pub_rt");
     verify(domainEventPublisher).publish(any(MetaEntityPublishedEvent.class));
   }
@@ -181,6 +202,64 @@ class MetaEntityPublishEventTest {
         .containsExactly(ok1.getId(), ok2.getId());
     // 部分成功回执含失败原因
     assertThat(result.getErrors()).anyMatch(e -> e.contains("id=12"));
+  }
+
+  @Test
+  @DisplayName("P1-4 发布闸门：UI-REF ERROR 拦截发布（409 META_PUBLISH_BLOCKED），不发事件")
+  void publish_shouldBlock_whenUiRefError() {
+    entity(5L, "pub_block", "t_pub_block", 0);
+    when(uiSchemaApplicationService.validateSchema(5L))
+        .thenReturn(List.of(EntityValidationIssue.error("UI-REF-02", "actionCode 未在动作定义中：submit")));
+
+    assertThatThrownBy(() -> service.publishEntity(5L, null))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e -> {
+              BizException biz = (BizException) e;
+              org.junit.jupiter.api.Assertions.assertEquals(409, biz.getCode());
+              org.junit.jupiter.api.Assertions.assertEquals(
+                  CatalogErrorCodes.META_PUBLISH_BLOCKED, biz.getErrorCode());
+            });
+
+    verify(domainEventPublisher, never()).publish(any());
+  }
+
+  @Test
+  @DisplayName("归档（P0-2）：已发布实体 → ARCHIVED + 发归档事件")
+  void archive_shouldTransitionPublishedToArchived_andEmitEvent() {
+    MetaEntity e = entity(6L, "arc", "t_arc", 0);
+    e.publish();
+    when(metaEntityRepository.findById(6L)).thenReturn(e);
+
+    service.archiveEntity(6L, null);
+
+    assertThat(e.statusEnum()).isEqualTo(MetaEntityStatus.ARCHIVED);
+    ArgumentCaptor<MetaEntityArchivedEvent> captor =
+        ArgumentCaptor.forClass(MetaEntityArchivedEvent.class);
+    verify(domainEventPublisher).publish(captor.capture());
+    assertThat(captor.getValue().entityId()).isEqualTo(6L);
+  }
+
+  @Test
+  @DisplayName("回退草稿（P1.5）：已发布实体 → DRAFT")
+  void revert_shouldTransitionPublishedToDraft() {
+    MetaEntity e = entity(7L, "rev", "t_rev", 0);
+    e.publish();
+    when(metaEntityRepository.findById(7L)).thenReturn(e);
+
+    service.revertEntityToDraft(7L, null);
+
+    assertThat(e.statusEnum()).isEqualTo(MetaEntityStatus.DRAFT);
+  }
+
+  @Test
+  @DisplayName("归档（P0-2）：草稿实体不可归档，抛 DomainException 且不发事件")
+  void archive_shouldRejectDraft() {
+    entity(8L, "arc_d", "t_arc_d", 0); // 默认 DRAFT
+
+    assertThatThrownBy(() -> service.archiveEntity(8L, null)).isInstanceOf(DomainException.class);
+
+    verify(domainEventPublisher, never()).publish(any());
   }
 
   // ===================== 辅助 =====================

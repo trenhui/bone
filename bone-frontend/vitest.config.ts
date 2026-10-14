@@ -5,6 +5,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  // 允许测试读取仓库根目录下的设计样例（doc/design/lowcode 在 bone-frontend 之外，
+  // 默认 fs allowlist 会拦截，导致 uiSchemaScenarios 读取样例 JSON 报 ENOENT）。
+  server: { fs: { allow: [resolve(__dirname, '..')] } },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

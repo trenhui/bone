@@ -93,15 +93,15 @@ bone-system-app/
 
 ### API 地址配置
 
-复制 `.env.example` 为 `.env`，并修改 `VITE_API_BASE_URL` 为实际的后端 API 地址：
+复制 `.env.example` 为 `.env`。开发环境把 `VITE_API_BASE_URL` 留空，请求走 Vite 的 `/api` 代理：
 
 ```env
-VITE_API_BASE_URL=http://your-backend-api:8080
+VITE_API_BASE_URL=
 ```
 
 ### 代理配置
 
-开发环境代理在 `vite.config.ts` 中配置，默认将 `/api` 请求代理到 `http://localhost:8080`。
+开发环境代理在 `vite.config.ts` 中配置，默认将 `/api` 请求代理到网关 `http://localhost:8888`。
 
 ## API 接口
 

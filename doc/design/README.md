@@ -6,6 +6,7 @@
 | [**lowcode/README.md**](./lowcode/README.md) | **低代码 Mode B 专题包**（迭代 PRD + runtime / cases / ui） |
 | [assets/](./assets/) | 配图（如运行时拓扑 SVG） |
 | [AI-夜间设计复核工作流方案.md](./AI-夜间设计复核工作流方案.md) | 过程稿（nightly）；**勿迁入 modules** |
+| [../ai-product/](../ai-product/) | **AI 文档区**（AI 能力中台三件套 + procuraAI / synapClaim / synapEquity 产品包，2026-10-14 自本目录迁出） |
 
 **上游**：[`doc/prd/`](../prd/) · **架构**：[`doc/architecture/`](../architecture/) · **升级草案**：[`doc/plans/`](../plans/) · **端口真源**：[wiki/03](../wiki/03-本地开发与构建.md)
 

@@ -55,8 +55,8 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 可选依赖 -->
-        <dependency><groupId>com.googlecode.aviator</groupId>
+        <!-- 可选依赖；io.github.aviatorscript GAV 为 Apache-2.0（替代 LGPL 的 com.googlecode.aviator，包名不变） -->
+        <dependency><groupId>io.github.aviatorscript</groupId>
             <artifactId>aviator</artifactId>
             <version>${aviator.version}</version>
             <optional>true</optional>

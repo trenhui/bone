@@ -40,11 +40,15 @@ public final class CatalogErrors {
           Map.entry(CatalogErrorCodes.ENTITY_NOT_RUNTIME, 409),
           // 自动编号（写入口守卫：配置非法属入参问题，400 而非 500）
           Map.entry(CatalogErrorCodes.AUTO_NUMBER_CONFIG_INVALID, 400),
+          Map.entry(CatalogErrorCodes.ROW_POLICIES_INVALID, 400),
           // 字段
           Map.entry(CatalogErrorCodes.FIELD_NOT_FOUND, 404),
           Map.entry(CatalogErrorCodes.FIELD_CODE_CONFLICT, 409),
           // 关系
           Map.entry(CatalogErrorCodes.RELATION_NOT_FOUND, 404),
+          // 状态机动作定义
+          Map.entry(CatalogErrorCodes.ACTION_DEF_NOT_FOUND, 404),
+          Map.entry(CatalogErrorCodes.ACTION_DEF_INVALID, 400),
           // 模板
           Map.entry(CatalogErrorCodes.TEMPLATE_NOT_FOUND, 404),
           Map.entry(CatalogErrorCodes.TEMPLATE_CODE_CONFLICT, 409),
@@ -52,8 +56,17 @@ public final class CatalogErrors {
           Map.entry(CatalogErrorCodes.TEMPLATE_ID_REQUIRED, 400),
           // 导入
           Map.entry(CatalogErrorCodes.PHYSICAL_TABLE_NOT_FOUND, 404),
+          // 界面 schema（迁移 0046）
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_INVALID, 400),
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_VERSION_CONFLICT, 409),
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_TEMPLATE_ASSET_INCOMPLETE, 409),
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_MERGE_CONFLICT, 409),
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_STORE_UNAVAILABLE, 503),
+          Map.entry(CatalogErrorCodes.UI_SCHEMA_PRECONDITION_REQUIRED, 412),
           // 发布期漂移（保持收口前的 409 不变）
-          Map.entry(CatalogErrorCodes.META_DOMAIN_ERROR, 409));
+          Map.entry(CatalogErrorCodes.META_DOMAIN_ERROR, 409),
+          // 发布闸门拦截（与 META_DOMAIN_ERROR 同属 409 冲突语义）
+          Map.entry(CatalogErrorCodes.META_PUBLISH_BLOCKED, 409));
 
   static {
     checkEveryCodeRegistered();

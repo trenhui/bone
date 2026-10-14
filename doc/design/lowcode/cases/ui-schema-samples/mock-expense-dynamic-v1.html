@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报销场景 · 协议驱动动态渲染 Demo v1（mock-expense-dynamic-v1）</title>
+<!--
+  协议驱动声明：
+  - 本页不手写任何"报销单长什么样"：分区/控件/规则/动作条全部来自文末内嵌的 BoneUiSchema JSON
+   （与同目录 expense-claim-ui-schema.example.json 同源，改 JSON 即改界面，不改本页 JS）。
+  - 渲染器只实现协议 §3/§4：sections.controls 映射、linkage（原子+all/any/not）、submit（sum/min/compare）、actionBar 状态门控。
+  - 业务真源（meta_field/action_def/row_policies）用行内常量模拟；后端强制（min:0.01/审批后禁改金额/行策略）不在此演示。
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 0; background: #f5f6f8; color: #1f2329; }
+  header { background: #001529; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header code { background: rgba(255,255,255,.12); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .badge { font-size: 12px; padding: 2px 10px; border-radius: 10px; background: #faad14; color: #000; }
+  .badge.SUBMITTED { background: #1890ff; color: #fff; } .badge.APPROVED { background: #52c41a; color: #fff; }
+  .badge.REJECTED { background: #ff4d4f; color: #fff; } .badge.PAID { background: #722ed1; color: #fff; }
+  nav.tabs { background: #fff; border-bottom: 1px solid #e5e6eb; padding: 0 20px; display: flex; gap: 4px; }
+  nav.tabs button { border: none; background: none; padding: 12px 16px; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+  nav.tabs button.active { color: #1677ff; border-bottom-color: #1677ff; font-weight: 600; }
+  main { max-width: 1080px; margin: 16px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .card h3 { margin: 0 0 12px; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .field label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; }
+  .field label .req { color: #ff4d4f; margin-left: 2px; }
+  .field input, .field select { width: 100%; padding: 7px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+  .field input:disabled, .field select:disabled { background: #f5f5f5; color: #999; }
+  .field.hidden { display: none; }
+  .notice { font-size: 12px; color: #fa8c16; margin-top: 4px; }
+  table.rows { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.rows th, table.rows td { border: 1px solid #eef0f3; padding: 6px 8px; text-align: left; }
+  table.rows th { background: #fafbfc; }
+  table.rows input, table.rows select { width: 100%; border: 1px solid #d9d9d9; border-radius: 4px; padding: 4px 6px; }
+  .btn { padding: 7px 16px; border-radius: 6px; border: 1px solid #d9d9d9; background: #fff; cursor: pointer; font-size: 14px; }
+  .btn.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+  .btn.danger { background: #ff4d4f; color: #fff; border-color: #ff4d4f; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .err { background: #fff2f0; border: 1px solid #ffccc7; color: #a8071a; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin: 6px 0; }
+  .ok { background: #f6ffed; border: 1px solid #b7eb8f; color: #135200; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin: 6px 0; }
+  .log { font-size: 12px; color: #555; line-height: 1.8; }
+  .log code { background: #f0f1f4; padding: 0 5px; border-radius: 3px; }
+  .pill { display: inline-block; font-size: 12px; background: #eef4ff; color: #1677ff; border-radius: 4px; padding: 1px 8px; margin-right: 6px; }
+  .muted { color: #888; font-size: 12px; }
+  .script { font-size: 13px; line-height: 1.9; }
+  .script b { color: #1677ff; }
+</style>
+</head>
+<body>
+<header>
+  <strong>费用报销 · 协议驱动渲染 Demo</strong>
+  <code id="hdr-entity">t_expense_claim</code>
+  <span>状态 <span class="badge" id="hdr-status">DRAFT</span></span>
+  <span class="muted" style="color:#aaa">Schema 渲染 · 数据行内模拟 · 后端强制不在此演示</span>
+  <span style="flex:1"></span>
+  <button class="btn" onclick="resetDoc()">重置单据</button>
+</header>
+<nav class="tabs">
+  <button data-tab="list" class="active" onclick="switchTab('list')">列表</button>
+  <button data-tab="form" onclick="switchTab('form')">表单</button>
+  <button data-tab="detail" onclick="switchTab('detail')">详情</button>
+  <button data-tab="mapping" onclick="switchTab('mapping')">协议映射 · 走查剧本</button>
+</nav>
+<main>
+  <section id="tab-list">
+    <div class="card">
+      <h3>报销单列表 <span class="muted">（views.list：columns / tabs / search / dataScope=owner_or_approver 行内示意）</span></h3>
+      <div class="toolbar" style="margin-bottom:10px">
+        <span id="list-tabs"></span>
+        <input id="list-q" placeholder="搜索：单据号/标题" style="padding:6px 10px;border:1px solid #d9d9d9;border-radius:6px" oninput="renderList()">
+        <button class="btn" onclick="batchSubmit()">批量提交选中草稿</button>
+      </div>
+      <div id="list-body"></div>
+    </div>
+  </section>
+  <section id="tab-form" style="display:none">
+    <div class="card">
+      <h3>报销单表单 <span class="muted">（views.form：5 区 sections；改 JSON 即改界面）</span></h3>
+      <div id="form-body"></div>
+      <div class="toolbar" style="margin-top:12px">
+        <span class="muted">动作条（actionBar，状态门控自动显隐）：</span>
+        <span id="action-bar"></span>
+      </div>
+      <div id="pay-params" style="display:none;margin-top:10px"></div>
+      <div id="form-msg"></div>
+    </div>
+    <div class="card"><h3>状态机审计（含幂等演示）</h3><div class="log" id="audit-log"><span class="muted">暂无流转</span></div></div>
+  </section>
+  <section id="tab-detail" style="display:none">
+    <div class="card"><h3>单据详情 <span class="muted">（views.detail 只读渲染）</span></h3><div id="detail-body"></div></div>
+  </section>
+  <section id="tab-mapping" style="display:none">
+    <div class="card"><h3>协议映射（引用不复制：真源仍在后端）</h3>
+      <div class="log">
+        <div><span class="pill">entityCode</span><code>t_expense_claim</code> → meta_entity（结构真源）</div>
+        <div><span class="pill">actionBar</span><code>submit / approve / reject / confirmPayout</code> → meta_entity_action_def（流转/权限码/幂等/params_schema 后端强制）</div>
+        <div><span class="pill">dataScope</span><code>owner_or_approver</code> → row_policies（本人+审批人可见，WHERE 后端强制）</div>
+        <div><span class="pill">submit</span>明细合计/单行下限/日期顺序 → 前端先拦，后端 <code>RuntimeWriteValidator(min:0.01)</code> + <code>ExpenseClaimWriteHook</code> 再强制</div>
+      </div>
+    </div>
+    <div class="card"><h3>走查剧本（5 步）</h3>
+      <div class="script">
+        1. 发票类型选 <b>增值税专票</b> → 税号现身且必填（linkage 专票规则）。<br>
+        2. 把申报金额改成与明细合计不一致 → 点动作条外任意处无感，点 <b>提交</b> 被拦（submit 明细合计）。<br>
+        3. 金额填 <b>6000</b> → 审批区要求指定审批人（linkage 大额规则）；结束日期改到开始之前 → 行内警告且提交阻断（compare）。<br>
+        4. 点 <b>提交</b> → 状态 DRAFT→SUBMITTED，动作条自动换成审批/驳回；点 <b>审批通过</b> → 出现打款。<br>
+        5. 点 <b>确认打款</b> → 填渠道+备注（params_schema 入参表单）→ PAID；再点一次同动作 → 幂等命中提示（未重复执行）。
+      </div>
+    </div>
+  </section>
+</main>
+
+<script id="bone-ui-schema" type="application/json">
+{
+  "schemaVersion": 1,
+  "entityCode": "t_expense_claim",
+  "displayModes": ["create", "edit", "view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "claim_no", "visible": true, "width": 140 },
+        { "fieldCode": "title", "visible": true, "width": 220 },
+        { "fieldCode": "amount", "visible": true, "width": 130 },
+        { "fieldCode": "category_id", "visible": true, "width": 120 },
+        { "fieldCode": "status", "visible": true, "width": 100 },
+        { "fieldCode": "applicant", "visible": true, "width": 100 },
+        { "fieldCode": "expense_date", "visible": true, "width": 120 }
+      ],
+      "searchFields": ["title", "claim_no"],
+      "tabs": [
+        { "title": "待我审批", "fieldCode": "approver_id", "value": "$me" },
+        { "title": "我提交的", "fieldCode": "applicant", "value": "$me" },
+        { "title": "全部", "fieldCode": "status", "value": "$all" }
+      ],
+      "dataScope": { "policyCode": "owner_or_approver" },
+      "batchActions": ["submit"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_base", "title": "基本信息",
+          "controls": [
+            { "fieldCode": "title", "controlKind": "INPUT", "placeholder": "如：10 月差旅报销" },
+            { "fieldCode": "category_id", "controlKind": "REFERENCE", "props": { "targetEntity": "expense_category", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "applicant", "controlKind": "INPUT", "readonly": true },
+            { "fieldCode": "expense_date", "controlKind": "DATE" }
+          ]
+        },
+        {
+          "id": "sec_travel", "title": "行程与金额",
+          "controls": [
+            { "fieldCode": "amount", "controlKind": "NUMBER", "props": { "min": 0.01, "precision": 2 } },
+            { "fieldCode": "currency", "controlKind": "ENUM" },
+            { "fieldCode": "expense_start", "controlKind": "DATE" },
+            { "fieldCode": "expense_end", "controlKind": "DATE" },
+            { "fieldCode": "invoice_type", "controlKind": "ENUM" },
+            { "fieldCode": "tax_no", "controlKind": "INPUT", "placeholder": "增值税专票时必填" }
+          ]
+        },
+        {
+          "id": "sec_items", "title": "费用明细",
+          "controls": [
+            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_claim_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
+          ]
+        },
+        {
+          "id": "sec_files", "title": "发票影像",
+          "controls": [
+            { "fieldCode": "attachment", "controlKind": "ATTACHMENT", "props": { "maxCount": 10, "maxSizeMB": 10 } }
+          ]
+        },
+        {
+          "id": "sec_approval", "title": "审批",
+          "controls": [
+            { "fieldCode": "approver_id", "controlKind": "REFERENCE", "props": { "targetEntity": "sys_user", "labelField": "name", "valueField": "id" } },
+            { "fieldCode": "status", "controlKind": "ENUM", "readonly": true }
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "sections": [
+        {
+          "id": "sec_base", "title": "基本信息",
+          "controls": [{ "fieldCode": "title" }, { "fieldCode": "category_id" }, { "fieldCode": "amount" }, { "fieldCode": "status" }]
+        },
+        {
+          "id": "sec_items", "title": "费用明细",
+          "controls": [{ "fieldCode": "items", "controlKind": "CHILD_TABLE" }]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "name": "专票必填税号",
+      "when": { "fieldCode": "invoice_type", "operator": "eq", "value": "SPECIAL" },
+      "then": [{ "fieldCode": "tax_no", "visible": true, "required": true }]
+    },
+    {
+      "name": "结束日期不得早于开始日期",
+      "when": { "fieldCode": "expense_end", "operator": "earlierThan", "valueType": "field", "compareField": "expense_start" },
+      "then": [{ "fieldCode": "expense_end", "readonly": false, "notice": "结束日期早于开始日期，请修正（提交时阻断）" }]
+    },
+    {
+      "name": "大额报销必须指定审批人",
+      "when": { "fieldCode": "amount", "operator": "gt", "value": 5000 },
+      "then": [{ "fieldCode": "approver_id", "visible": true, "required": true }]
+    }
+  ],
+  "submitRules": [
+    {
+      "name": "明细合计一致", "function": "sum", "fields": ["items.amount"], "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "amount" },
+      "verifyType": "ERROR", "message": "费用明细合计必须等于申报金额"
+    },
+    {
+      "name": "单行金额下限", "function": "min", "fields": ["items.amount"], "operator": "gte",
+      "compare": { "valueType": "fixed", "value": 0.01 },
+      "verifyType": "ERROR", "message": "费用明细单行金额不得小于 0.01（与服务端 min:0.01 同值）"
+    },
+    {
+      "name": "结束日期不得早于开始日期", "function": "compare", "fields": ["expense_end"], "operator": "gte",
+      "compare": { "valueType": "field", "fieldCode": "expense_start" },
+      "verifyType": "ERROR", "message": "结束日期不得早于开始日期"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "submit", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "DRAFT" }, "sortOrder": 1 },
+    { "actionCode": "approve", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 2 },
+    { "actionCode": "reject", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 3 },
+    { "actionCode": "confirmPayout", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "APPROVED" }, "sortOrder": 4 }
+  ]
+}
+</script>
+
+<script>
+"use strict";
+/* ============ 行内模拟真源（meta_* / 模板 / 行策略在后端，Demo 用常量代替） ============ */
+const ME = "张三";
+const CATEGORIES = [["TRAVEL","差旅"],["MEAL","餐饮"],["TRANSPORT","交通"],["OFFICE","办公"],["OTHER","其他"]];
+const USERS = [["张三","申请人"],["李四","部门经理"],["王五","财务"]];
+const CURRENCIES = [["CNY","人民币"],["USD","美元"],["EUR","欧元"]];
+const INVOICES = [["NORMAL","增值税普票"],["SPECIAL","增值税专票"]];
+const STATUS = [["DRAFT","草稿"],["SUBMITTED","已提交"],["APPROVED","已审批"],["REJECTED","已驳回"],["PAID","已打款"]];
+const LABEL = { claim_no:"单据号", title:"标题", category_id:"费用类别", applicant:"申请人", expense_date:"报销日期",
+  amount:"申报金额", currency:"币种", expense_start:"行程开始", expense_end:"行程结束",
+  invoice_type:"发票类型", tax_no:"税号", items:"费用明细", attachment:"发票影像",
+  approver_id:"审批人", status:"状态", remark:"备注" };
+const ACTION_LABEL = { submit:"提交", approve:"审批通过", reject:"驳回", confirmPayout:"确认打款" };
+const NEXT_STATUS = { submit:"SUBMITTED", approve:"APPROVED", reject:"REJECTED", confirmPayout:"PAID" };
+const SCHEMA = JSON.parse(document.getElementById("bone-ui-schema").textContent);
+const BASE_REQUIRED = { title:true, category_id:true, applicant:true, expense_date:true, amount:true };
+
+/* ============ 单据状态（内存，重置可复原） ============ */
+function freshItems() {
+  return [
+    { expense_date:"2026-10-08", category_id:"TRAVEL", amount:88.50, remark:"机票" },
+    { expense_date:"2026-10-09", category_id:"MEAL", amount:40.00, remark:"客户餐" }
+  ];
+}
+function freshDoc() {
+  return { claim_no:"EXP-DEMO-001", title:"10 月差旅报销", category_id:"TRAVEL", applicant:ME,
+    expense_date:"2026-10-10", amount:128.50, currency:"CNY",
+    expense_start:"2026-10-08", expense_end:"2026-10-10",
+    invoice_type:"NORMAL", tax_no:"", items:freshItems(), attachment:[{name:"发票-1008.pdf"}],
+    approver_id:"", status:"DRAFT" };
+}
+let doc = freshDoc();
+let records = [freshDoc()];
+let audit = [];
+let executed = new Set();
+let listTab = 2, checked = new Set([0]);
+
+/* ============ 条件引擎（原子 + all/any/not，$me/$all 上下文） ============ */
+function pathVal(obj, path) {
+  // 支持穿透数组：items.amount → 各行 amount 组成的数组（聚合规则用）
+  const parts = path.split(".");
+  let cur = [obj];
+  for (const k of parts) {
+    const next = [];
+    for (const o of cur) {
+      if (o == null) continue;
+      if (Array.isArray(o)) { for (const it of o) { if (it != null && k in it) next.push(it[k]); } }
+      else if (k in o) next.push(o[k]);
+    }
+    cur = next;
+  }
+  if (!cur.length) return undefined;
+  return cur.length === 1 ? cur[0] : cur;
+}
+function ctxVal(v) {
+  if (v === "$me") return ME;
+  if (v === "$all") return "$all";
+  return v;
+}
+function cmpOrd(op, left, right) {
+  // 双数值走数值比较，否则走字符串比较（ISO 日期 yyyy-mm-dd 可直接比）
+  const ln = Number(left), rn = Number(right);
+  if (left!=="" && right!=="" && !isNaN(ln) && !isNaN(rn)) {
+    left = ln; right = rn;
+  } else { left = String(left); right = String(right); }
+  switch (op) {
+    case "gt": return left > right;
+    case "gte": return left >= right;
+    case "lt": return left < right;
+    case "lte": return left <= right;
+    default: return false;
+  }
+}
+function cmp(op, left, right) {
+  switch (op) {
+    case "eq": return left === right;
+    case "neq": return left !== right;
+    case "gt": case "gte": case "lt": case "lte": return cmpOrd(op, left, right);
+    case "isNull": return left==null || left==="" || (Array.isArray(left)&&!left.length);
+    case "isNotNull": return !(left==null || left==="" || (Array.isArray(left)&&!left.length));
+    case "in": return Array.isArray(right) && right.includes(left);
+    case "notIn": return Array.isArray(right) && !right.includes(left);
+    case "between": return Array.isArray(right) && Number(left)>=Number(right[0]) && Number(left)<=Number(right[1]);
+    case "earlierThan": return !!left && !!right && left < right;
+    case "laterThan": return !!left && !!right && left > right;
+    default: return false;
+  }
+}
+function evalCond(c, d) {
+  if (c.all) return c.all.every(x=>evalCond(x,d));
+  if (c.any) return c.any.some(x=>evalCond(x,d));
+  if (c.not) return !evalCond(c.not,d);
+  if (!c.fieldCode || !c.operator) return true;
+  const left = pathVal(d, c.fieldCode);
+  let right = c.valueType==="field" ? pathVal(d, c.compareField) : ctxVal(c.value);
+  if (right === "$all") return true;
+  return cmp(c.operator, left, right);
+}
+/* linkage 求值：返回每字段 UI 态 */
+function linkageState(d) {
+  const st = {};
+  const ensure = f => st[f] || (st[f] = { visible:true, required:!!BASE_REQUIRED[f], readonly:false, disabled:false, notice:"" });
+  // tax_no 默认隐藏（专票才现身）
+  ensure("tax_no").visible = false; ensure("tax_no").required = false;
+  ensure("approver_id").required = false;
+  for (const r of SCHEMA.linkageRules) {
+    if (!evalCond(r.when, d)) continue;
+    for (const t of r.then) {
+      const s = ensure(t.fieldCode);
+      if (t.visible!==undefined) s.visible=t.visible;
+      if (t.required!==undefined) s.required=t.required;
+      if (t.readonly!==undefined) s.readonly=t.readonly;
+      if (t.disabled!==undefined) s.disabled=t.disabled;
+      if (t.notice) s.notice=t.notice;
+      if (t.value!==undefined && t.value!==null) d[t.fieldCode]=t.value;
+    }
+  }
+  return st;
+}
+/* submit 求值 */
+function aggVals(d, fields) {
+  const out=[];
+  for (const f of fields) {
+    const v = pathVal(d,f);
+    if (Array.isArray(v)) out.push(...v.map(Number).filter(x=>!isNaN(x)));
+    else if (v!=null && v!=="") out.push(Number(v));
+  }
+  return out;
+}
+function runSubmit(d) {
+  const errors=[], warnings=[];
+  for (const r of SCHEMA.submitRules) {
+    let left;
+    if (r.function==="compare") left = pathVal(d, r.fields[0]);
+    else {
+      const vs = aggVals(d, r.fields);
+      if (r.function==="sum") left = vs.reduce((a,b)=>a+b,0);
+      else if (r.function==="min") left = vs.length?Math.min(...vs):undefined;
+      else if (r.function==="max") left = vs.length?Math.max(...vs):undefined;
+      else if (r.function==="count") left = vs.length;
+      else continue;
+    }
+    // 金额比较容差 0.01（DECIMAL 精度口径）
+    let right = r.compare && r.compare.valueType==="field" ? pathVal(d, r.compare.fieldCode) : r.compare && r.compare.value;
+    let pass;
+    if (typeof left==="number" && typeof right==="number" && (r.operator==="eq"||r.operator==="neq")) {
+      pass = r.operator==="eq" ? Math.abs(left-right)<0.005 : Math.abs(left-right)>=0.005;
+    } else pass = cmp(r.operator, left, right);
+    if (!pass) (r.verifyType==="WARNING"?warnings:errors).push("【"+r.name+"】"+r.message);
+  }
+  // 必填 short-circuit（与后端必填同口径）
+  const st = linkageState(d);
+  for (const [f,s] of Object.entries(st)) {
+    if (s.visible && s.required) {
+      const v = d[f];
+      if (v==null||v===""||(Array.isArray(v)&&!v.length)) errors.push("【必填】"+(LABEL[f]||f)+" 不能为空");
+    }
+  }
+  return { errors, warnings };
+}
+
+/* ============ 控件渲染 ============ */
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function enumOpts(list, val){ return list.map(([v,t])=>`<option value="${v}"${v===val?" selected":""}>${t}</option>`).join(""); }
+function refOpts(list, val){ return `<option value="">请选择</option>`+list.map(([v,t])=>`<option value="${v}"${v===val?" selected":""}>${t}</option>`).join(""); }
+function renderControl(c, d, st, readonlyAll) {
+  const f=c.fieldCode, s=st[f]||{visible:true,required:false,readonly:false,notice:""};
+  if (!s.visible) return `<div class="field hidden" data-f="${f}"></div>`;
+  const ro = readonlyAll || s.readonly || c.readonly;
+  const req = s.required?'<span class="req">*</span>':"";
+  const label = `<label>${esc(c.labelOverride||LABEL[f]||f)}${req}</label>`;
+  const dis = ro?" disabled":"";
+  let body="";
+  const kind=c.controlKind||"INPUT", v=d[f];
+  if (kind==="CHILD_TABLE") {
+    const cols=(c.props&&c.props.columns)||["expense_date","category_id","amount","remark"];
+    body=`<table class="rows"><thead><tr>${cols.map(k=>`<th>${esc(LABEL[k]||k)}</th>`).join("")}${ro?"":"<th>操作</th>"}</tr></thead><tbody>`+
+      d.items.map((row,i)=>`<tr>${cols.map(k=>{
+        if(k==="category_id") return `<td><select data-item="${i}" data-k="category_id"${dis}>${enumOpts(CATEGORIES,row.category_id)}</select></td>`;
+        if(k==="amount") return `<td><input type="number" step="0.01" min="0" data-item="${i}" data-k="amount" value="${row.amount}"${dis}></td>`;
+        if(k==="expense_date") return `<td><input type="date" data-item="${i}" data-k="expense_date" value="${esc(row.expense_date)}"${dis}></td>`;
+        return `<td><input data-item="${i}" data-k="remark" value="${esc(row.remark||"")}"${dis}></td>`;
+      }).join("")}${ro?"":`<td><button class="btn" onclick="delItem(${i})">删除</button></td>`}</tr>`).join("")+
+      `</tbody></table>`+(ro?"":`<div style="margin-top:6px"><button class="btn" onclick="addItem()">+ 添加明细行</button>
+      <span class="muted">合计 <b id="items-sum"></b>（submit 明细合计规则实时可验）</span></div>`);
+  } else if (kind==="ATTACHMENT") {
+    body=(d.attachment||[]).map((a,i)=>`<div>📎 ${esc(a.name)} ${ro?"":`<button class="btn" onclick="delFile(${i})">删除</button>`}</div>`).join("")||'<span class="muted">暂无附件</span>';
+    if(!ro) body+=`<div style="margin-top:6px"><button class="btn" onclick="addFile()">+ 添加附件（清单示意，maxCount=10）</button></div>`;
+  } else if (kind==="ENUM") {
+    const list = f==="currency"?CURRENCIES : f==="invoice_type"?INVOICES : f==="status"?STATUS : [];
+    body=`<select data-f="${f}"${dis}>${enumOpts(list,v)}</select>`;
+  } else if (kind==="REFERENCE") {
+    const list = (c.props&&c.props.targetEntity==="expense_category")?CATEGORIES:USERS;
+    body=`<select data-f="${f}"${dis}>${refOpts(list,v)}</select>`;
+  } else if (kind==="NUMBER") {
+    body=`<input type="number" step="0.01" data-f="${f}" value="${esc(v)}"${dis} placeholder="">`;
+  } else if (kind==="DATE") {
+    body=`<input type="date" data-f="${f}" value="${esc(v||"")}"${dis}>`;
+  } else {
+    body=`<input data-f="${f}" value="${esc(v||"")}"${dis} placeholder="${esc(c.placeholder||"")}">`;
+  }
+  return `<div class="field" data-f="${f}">${label}${body}${s.notice?`<div class="notice">⚠ ${esc(s.notice)}</div>`:""}</div>`;
+}
+function collectForm() {
+  document.querySelectorAll("#form-body [data-f]").forEach(el=>{
+    const f=el.getAttribute("data-f");
+    if(f in doc && f!=="items" && f!=="attachment") doc[f]=el.value;
+  });
+  document.querySelectorAll("#form-body [data-item]").forEach(el=>{
+    const i=+el.getAttribute("data-item"), k=el.getAttribute("data-k");
+    doc.items[i][k] = k==="amount" ? Number(el.value) : el.value;
+  });
+}
+function renderForm() {
+  const st=linkageState(doc);
+  const host=document.getElementById("form-body"); host.innerHTML="";
+  for (const sec of SCHEMA.views.form.sections) {
+    const div=document.createElement("div"); div.innerHTML=`<h3>${esc(sec.title)}</h3>`;
+    const grid=document.createElement("div"); grid.className="grid";
+    for (const c of sec.controls) {
+      const w=document.createElement("div"); w.innerHTML=renderControl(c,doc,st,false); grid.appendChild(w.firstChild||w);
+    }
+    div.appendChild(grid); host.appendChild(div);
+  }
+  const sum=doc.items.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  const sumEl=document.getElementById("items-sum"); if(sumEl) sumEl.textContent=sum.toFixed(2);
+  renderActions(); renderHeader();
+  host.onchange=e=>{ collectForm(); renderForm(); };
+  host.oninput=e=>{ if(e.target.matches("[data-f],[data-item]")){ collectForm();
+    const s2=linkageState(doc);
+    document.querySelectorAll("#form-body .field").forEach(fl=>{
+      const f=fl.getAttribute("data-f"); if(!f||!(f in s2))return;
+      fl.classList.toggle("hidden",!s2[f].visible);
+      let n=fl.querySelector(".notice"); if(s2[f].notice&&!n){n=document.createElement("div");n.className="notice";fl.appendChild(n);} if(n)n.textContent=s2[f].notice?("⚠ "+s2[f].notice):"";
+    });
+    const s3=doc.items.reduce((a,r)=>a+(Number(r.amount)||0),0); const se=document.getElementById("items-sum"); if(se)se.textContent=s3.toFixed(2);
+    renderActions();
+  }};
+}
+function renderActions() {
+  const bar=document.getElementById("action-bar"); bar.innerHTML="";
+  SCHEMA.actionBar.slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).forEach(a=>{
+    if(!evalCond(a.visibleWhen,doc))return;
+    const b=document.createElement("button");
+    b.className="btn "+(a.actionCode==="reject"?"danger":"primary");
+    b.textContent=ACTION_LABEL[a.actionCode]||a.actionCode;
+    b.onclick=()=>fireAction(a.actionCode);
+    bar.appendChild(b);
+  });
+}
+function renderHeader(){
+  const h=document.getElementById("hdr-status"); h.textContent=doc.status; h.className="badge "+doc.status;
+  document.getElementById("hdr-entity").textContent=SCHEMA.entityCode;
+}
+function renderDetail(){
+  const host=document.getElementById("detail-body"); host.innerHTML="";
+  for(const sec of SCHEMA.views.detail.sections){
+    const div=document.createElement("div"); div.innerHTML=`<h3>${esc(sec.title)}</h3>`;
+    const grid=document.createElement("div"); grid.className="grid";
+    for(const c of sec.controls){ const w=document.createElement("div"); w.innerHTML=renderControl(c,doc,linkageState(doc),true); grid.appendChild(w.firstChild||w); }
+    div.appendChild(grid); host.appendChild(div);
+  }
+}
+/* ============ 列表 ============ */
+function renderList(){
+  const tabs=SCHEMA.views.list.tabs;
+  document.getElementById("list-tabs").innerHTML=tabs.map((t,i)=>`<button class="btn${i===listTab?" primary":""}" onclick="listTab=${i};renderList()">${esc(t.title)}</button>`).join(" ");
+  const q=(document.getElementById("list-q").value||"").trim();
+  const t=tabs[listTab];
+  const rows=records.filter(r=>{
+    if(t.value==="$me"){ if(!(r[t.fieldCode]===ME))return false; }
+    else if(t.value==="$all"){ /* 全部（dataScope 行策略后端强制，此处示意） */ }
+    else if(r[t.fieldCode]!==t.value)return false;
+    if(q && !(r.claim_no.includes(q)||r.title.includes(q)))return false;
+    return true;
+  });
+  const cols=SCHEMA.views.list.columns.filter(c=>c.visible);
+  document.getElementById("list-body").innerHTML=`<table class="rows"><thead><tr><th></th>${cols.map(c=>`<th>${esc(LABEL[c.fieldCode]||c.fieldCode)}</th>`).join("")}<th>操作</th></tr></thead><tbody>`+
+    rows.map((r)=>{const gi=records.indexOf(r);
+      const disp=f=>f==="category_id"?(CATEGORIES.find(x=>x[0]===r[f])||[])[1]||r[f]:f==="status"?(STATUS.find(x=>x[0]===r[f])||[])[1]||r[f]:Array.isArray(r[f])?`（${r[f].length}行）`:r[f];
+      return `<tr><td><input type="checkbox" ${checked.has(gi)?"checked":""} onchange="toggleCheck(${gi},this.checked)"></td>${cols.map(c=>`<td>${esc(disp(c.fieldCode))}</td>`).join("")}<td><button class="btn" onclick="openRecord(${gi})">打开</button></td></tr>`;}).join("")+
+    `</tbody></table><div class="muted" style="margin-top:6px">dataScope=owner_or_approver：本人+审批人可见（后端 WHERE 强制，此处用内存数据示意）</div>`;
+}
+function toggleCheck(i,on){ on?checked.add(i):checked.delete(i); }
+function openRecord(i){ doc=records[i]; audit=[]; executed=new Set(); switchTab("form"); renderForm(); renderDetail(); document.getElementById("form-msg").innerHTML=""; }
+function batchSubmit(){
+  let n=0;
+  checked.forEach(i=>{ if(records[i].status==="DRAFT"){ const r=runSubmit(records[i]); if(!r.errors.length){ audit.push(`批量提交 <code>${esc(records[i].claim_no)}</code> DRAFT→SUBMITTED`); records[i].status="SUBMITTED"; n++; } } });
+  renderList(); renderAudit();
+  alert(n?`已提交 ${n} 条（阻断：明细合计/必填/日期顺序逐条校验）`:"选中草稿均未通过提交校验，未执行");
+}
+/* ============ 动作执行（状态机 + 幂等 + 打款入参） ============ */
+function fireAction(code){
+  collectForm();
+  if(code==="submit"){
+    const r=runSubmit(doc);
+    const host=document.getElementById("form-msg");
+    if(r.errors.length){ host.innerHTML=r.errors.map(e=>`<div class="err">${esc(e)}</div>`).join(""); return; }
+    host.innerHTML=`<div class="ok">提交校验通过（明细合计/单行下限/日期顺序/必填全绿）</div>`;
+  }
+  if(code==="confirmPayout"){
+    const p=document.getElementById("pay-params");
+    p.style.display="block";
+    p.innerHTML=`<div class="card" style="background:#fafbff"><b>打款入参</b>（params_schema 契约：后端 validateParams 统一校验）
+      <div class="grid" style="margin-top:8px">
+      <div class="field"><label>打款渠道 *</label><select id="pay-channel"><option value="">请选择</option><option>PAYROLL</option><option>BANK_TRANSFER</option></select></div>
+      <div class="field"><label>备注</label><input id="pay-note" placeholder="可选"></div></div>
+      <div class="toolbar" style="margin-top:8px"><button class="btn primary" onclick="doPayout()">执行打款</button></div></div>`;
+    return;
+  }
+  execAction(code,{});
+}
+function doPayout(){
+  const ch=document.getElementById("pay-channel").value;
+  if(!ch){ alert("打款渠道为必填（params_schema required）"); return; }
+  execAction("confirmPayout",{channel:ch,note:document.getElementById("pay-note").value});
+  document.getElementById("pay-params").style.display="none";
+}
+function execAction(code,params){
+  const key=doc.claim_no+":"+code;
+  const from=doc.status, to=NEXT_STATUS[code];
+  if(executed.has(key)){
+    renderAudit(`<div>幂等命中 <code>${esc(key)}</code>：返回首次执行结果，未重复流转（当前仍为 ${from}）</div>`);
+    document.getElementById("form-msg").innerHTML=`<div class="ok">幂等命中：${esc(ACTION_LABEL[code])} 已执行过，未重复流转</div>`;
+    return;
+  }
+  executed.add(key);
+  doc.status=to;
+  audit.push(`${ACTION_LABEL[code]} <code>${from}→${to}</code>${code==="confirmPayout"?`（渠道=${esc(params.channel)}）`:""}`);
+  const gi=records.indexOf(doc); if(gi>=0)records[gi]=doc;
+  document.getElementById("form-msg").innerHTML=`<div class="ok">${esc(ACTION_LABEL[code])}成功：${from} → ${to}</div>`;
+  renderForm(); renderDetail(); renderList();
+}
+function renderAudit(extra){
+  const host=document.getElementById("audit-log");
+  host.innerHTML=(extra||"")+(audit.length?audit.map(a=>`<div>· ${a}</div>`).join(""):"<span class='muted'>暂无流转</span>");
+}
+/* ============ 明细/附件行操作 ============ */
+function addItem(){ collectForm(); doc.items.push({expense_date:doc.expense_date||"2026-10-10",category_id:"OTHER",amount:0,remark:""}); renderForm(); }
+function delItem(i){ collectForm(); doc.items.splice(i,1); renderForm(); }
+function addFile(){ const n=prompt("附件名（如 发票-1010.pdf）","发票-1010.pdf"); if(!n)return; collectForm(); doc.attachment.push({name:n}); renderForm(); }
+function delFile(i){ collectForm(); doc.attachment.splice(i,1); renderForm(); }
+function resetDoc(){ doc=freshDoc(); records=[freshDoc()]; audit=[]; executed=new Set(); checked=new Set([0]); renderForm(); renderDetail(); renderList(); renderAudit(); document.getElementById("form-msg").innerHTML=""; }
+function switchTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  ["list","form","detail","mapping"].forEach(k=>document.getElementById("tab-"+k).style.display=k===t?"block":"none");
+  if(t==="form")renderForm(); if(t==="detail")renderDetail(); if(t==="list")renderList();
+}
+renderList(); renderForm(); renderDetail();
+</script>
+</body>
+</html>

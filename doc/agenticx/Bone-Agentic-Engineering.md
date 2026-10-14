@@ -1055,7 +1055,7 @@ bone/
 人定义意图，AI 负责实现，契约保证质量，CI 担任裁判，Ralph Loop 保障 7×24 小时交付。
 
 ## 🏗️ 技术栈（当前态 + 目标态）
-- 后端：**当前** Java 17 + Spring Boot 3.2.5（真源 `bone-parent/pom.xml`）；**目标** Java 21 + Spring Boot 3.5.x + MySQL Connector 9.3.0 + bone-metadata-sdk（自研 ORM）
+- 后端：**当前** Java 21 + Spring Boot 3.5.16 + mysql-connector-j 8.4.0 + bone-metadata-sdk（真源 `bone-parent/pom.xml`）
 - 前端：React 18.2 + TypeScript 5.8 + Ant Design 5.x + Vite 5.x
 - 测试：JUnit 5 + Testcontainers + JaCoCo (后端)，Vitest + React Testing Library (前端)
 - 覆盖率门禁：≥80%（L2 功能 ≥85%）—— **目标态**；实测状态与执行载体以 [Bone-DDD G-1.7 的 HC-005](../architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints) 为唯一真源，本文**不**另立门禁状态

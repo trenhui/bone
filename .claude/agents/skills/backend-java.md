@@ -1,6 +1,6 @@
 ---
 name: backend-java
-description: Java 17 + Spring Boot 3.2 后端开发技能包（Bone DDD + bone-metadata-sdk）
+description: Java 21 + Spring Boot 3.5 后端开发技能包（Bone DDD + bone-metadata-sdk）
 ---
 
 > 规范真源：[`doc/agents/03-架构分层规范.md`](../../../doc/agents/03-架构分层规范.md) 与
@@ -8,7 +8,7 @@ description: Java 17 + Spring Boot 3.2 后端开发技能包（Bone DDD + bone-m
 > 本文件是**操作摘要**，冲突一律以真源为准；门禁状态只在 §G-1.7 查，不在此处复制。
 
 ## 技术栈约束
-- Java 17，Spring Boot 3.2.5（版本真源：`bone-parent/pom.xml`）。
+- Java 21，Spring Boot 3.5.16（版本真源：`bone-parent/pom.xml`，不要另写一份版本）。
 - **持久化唯一方案：`bone-metadata-sdk`**（`@EnableSqlRepositories`）——禁 MyBatis-Plus / JPA / Hibernate / MyBatis（HC-001 · HC-006）。
 - DDD 四层：`adapter → application → domain ← infrastructure`；`domain` 零框架依赖，`application` 不直连 `infrastructure`。
 - 参数校验：Jakarta Validation；测试：JUnit 5 + Mockito + AssertJ。

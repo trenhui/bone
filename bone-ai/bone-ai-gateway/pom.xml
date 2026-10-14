@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.bone</groupId>
+        <artifactId>bone-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../../bone-parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>com.bone</groupId>
+    <artifactId>bone-ai-gateway</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <name>Bone AI Gateway</name>
+    <description>LLM 运行时门面：模型调用唯一出口 + 成本红线强制 + 双实现可替换（OpenAI 兼容 / Mock）</description>
+
+    <dependencies>
+        <!-- 共享内核：BizException 等（bone-core 版本由 bone-parent dependencyManagement 托管） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-core</artifactId>
+        </dependency>
+
+        <!-- 自动配置（Boot 3 .imports 机制宿主）；spring-context 由此传递获得 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <!-- JSON 编解码（版本由 Spring Boot BOM 托管） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

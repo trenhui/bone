@@ -5,12 +5,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -36,6 +32,13 @@ public class RuntimeActionDescribeSupport {
   private final RuntimeActionDefRepository actionDefRepository;
 
   /**
+   * 动作授权判据的<strong>唯一真源</strong>（2026-10-13 收敛）：本类曾各自复制一份判定，漏掉「逃逸动作必须动作级细码」约束， 导致持有 {@code
+   * runtime:*:write} 的用户看得到「确认打款」按钮、点击却 403（按钮可见不可用， 比 {@code enabled:false}
+   * 更糟——诱导越权探测且把授权判断推给用户）。现统一委托 {@link RuntimeAccessGuard#canInvoke}：展示裁剪与执行门禁逐行同一判据，结构性杜绝漂移。
+   */
+  private final RuntimeAccessGuard accessGuard;
+
+  /**
    * @return {@code {"allowedActionsByStatus": {"DRAFT": [ {...}, ... ], "APPROVED": [...] }}}
    *     实体无任何动作定义时返回 {@code null}（PageResult.meta 为 null 时不序列化，避免无意义空对象）
    */
@@ -44,10 +47,9 @@ public class RuntimeActionDescribeSupport {
     if (defs.isEmpty()) {
       return null;
     }
-    Set<String> authorities = currentAuthorities();
     Map<String, List<Map<String, Object>>> grouped = new TreeMap<>();
     for (RuntimeActionDef def : defs) {
-      if (!permitted(def, authorities)) {
+      if (!accessGuard.canInvoke(def)) {
         continue;
       }
       // from_status 为 null 表示「任意状态均可触发」：归入通配键 "*"，前端按行 status 查不到时兜底
@@ -89,31 +91,5 @@ public class RuntimeActionDescribeSupport {
       view.put("params", params);
     }
     return view;
-  }
-
-  private static boolean permitted(RuntimeActionDef def, Set<String> authorities) {
-    if (authorities.contains(RuntimeAccessGuard.PLATFORM_ADMIN)) {
-      return true;
-    }
-    String declared = def.getPermissionCode();
-    // 通配写 / 实体级写 / 动作级细码 / 声明码 任一即授权。
-    // 关键顺序：通配写必须排在声明细码之前短路——否则持有 runtime:*:write 的主体
-    // 会因「不持有具体 runtime:{entity}:{action} 声明码」被判 false（§4.6 的本意是
-    // 让未授权者不可见，而非让通配持有者不可见）。dev 模式匿名主体带 PLATFORM_ADMIN 已 early-return，
-    // 此处顺序仅影响 securityEnabled=true 时的真实鉴权语义。
-    return authorities.contains("runtime:" + def.getEntityCode() + ":write")
-        || authorities.contains(RuntimeAccessGuard.WILDCARD_WRITE)
-        || authorities.contains("runtime:" + def.getEntityCode() + ":" + def.getActionCode())
-        || (declared != null && !declared.isBlank() && authorities.contains(declared));
-  }
-
-  private static Set<String> currentAuthorities() {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || auth.getAuthorities() == null) {
-      return Set.of();
-    }
-    return auth.getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority)
-        .collect(java.util.stream.Collectors.toSet());
   }
 }
