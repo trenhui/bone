@@ -1,0 +1,32 @@
+# AI 文档区（`doc/ai-product`）
+
+> 本目录收 **AI 产品与 AI 能力的方案与交付物**。2026-10-14 自 `doc/design/` 迁入归位。
+
+## 归类原则（三条，按序过滤）
+
+1. **主题判定**：文档主体是 AI（LLM / 智能体 / AI 能力 / AI 产品），AI 是主题而非点缀；
+2. **归属判定**：只收"AI 产品/能力的**方案与交付物**"；教 AI 怎么干活、或被工具链引用的**工程规范/流程**留在工程域（见下"不入本目录"）；
+3. **可迁性判定**：路径被工具链钉死、或拆散会破坏成套系列的，不迁（路径纪律优先）。
+
+## 目录索引（单入口 + 双分区）
+
+| 路径 | 说明 |
+|------|------|
+| [platform/](./platform/) | **AI 能力中台分区**（平台能力资产的方案与设计，随批次生长） |
+| ├ [BONE-AI能力中台最佳方案.md](./platform/BONE-AI能力中台最佳方案.md) | **AI 能力中台架构真源**（v3.4，含家底核查/框架选型/网关必要性论证） |
+| ├ [BONE-AI能力沉淀模块规划与框架选型建议.md](./platform/BONE-AI能力沉淀模块规划与框架选型建议.md) | 能力沉淀模块规划 + 框架/许可选型（v1.2） |
+| └ [三大方案智能化能力沉淀图谱.md](./platform/三大方案智能化能力沉淀图谱.md) | 上游：三产品 C1–C10 能力同构证据（v1.1，落点以最佳方案为准） |
+| [procuraAI/](./procuraAI/) | 采购 AI 专题包（PRD / 技术方案 / POC / 接口契约 / DEMO + assets） |
+| [synapClaim/](./synapClaim/) | ClaimSphere 智能理赔专题包（PRD / 设计 / MVP / delivery 交付包 / DEMO） |
+| [synapEquity/](./synapEquity/) | Synap Equity 估值专题包（产品方案 / 方法学 / 合规 / 技术 / 评测 / DEMO） |
+
+**分区语义**：`platform/` 收 AI 能力的**方案与设计**（含将来的 bone-ai 模块设计、治理面/评测/OTel 对齐等，**替代**"详设散进 `doc/design/modules/`"的做法，modules/ 继续是元数据平台模块域，两不相扰）；三个产品目录是**成品快照**（PRD/DEMO/交付包，趋稳）。产品包是 platform 中台论证的输入旁证，中台是产品的能力上游。
+
+## 不入本目录（含理由）
+
+| 文档 | 不入理由 |
+|------|----------|
+| `doc/design/AI-夜间设计复核工作流方案.md` | 路径被 `scripts/prompts/01-global-anchor.md` 与 `_global-contracts.yaml` 夜间锚定契约钉死；性质是工作流程，非 AI 产品 |
+| `doc/agenticx/` | Bone Agentic Engineering 工程宪法（与 CLAUDE.md/AGENTS.md/doc/agents 成套），工程规范 ≠ AI 产品 |
+| `doc/agents/06-AI协作与编码准则.md` | 01–06 编号系列成套，属工程规范域 |
+| `design/modules/`、`lowcode/`、`architecture/` 等 | BONE 平台本体设计，AI 只是章节点缀 |

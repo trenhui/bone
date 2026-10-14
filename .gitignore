@@ -285,6 +285,6 @@ ui_e2e_loginpage.cjs
 # =========================
 # 设计 / 演示草稿素材（非源码，本地保留，勿入库）
 # =========================
-doc/design/procuraAI/
-doc/design/synapClaim/
-doc/design/synapEquity/
+doc/ai-product/procuraAI/
+doc/ai-product/synapClaim/
+doc/ai-product/synapEquity/
