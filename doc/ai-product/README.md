@@ -18,7 +18,7 @@
 | └ [三大方案智能化能力沉淀图谱.md](./platform/三大方案智能化能力沉淀图谱.md) | 上游：三产品 C1–C10 能力同构证据（v1.1，落点以最佳方案为准） |
 | [procuraAI/](./procuraAI/) | 采购 AI 专题包（PRD / 技术方案 / POC / 接口契约 / DEMO + assets） |
 | [synapClaim/](./synapClaim/) | ClaimSphere 智能理赔专题包（PRD / 设计 / MVP / delivery 交付包 / DEMO） |
-| [synapEquity/](./synapEquity/) | Synap Equity 估值专题包（产品方案 / 方法学 / 合规 / 技术 / 评测 / DEMO） |
+| [synapEquity/](./synapEquity/) | Synap Equity 估值专题包（产品方案 v0.17 / 方法学 v0.2 / 合规 v0.2 / 数据源 v0.2 / 技术 v0.2 / 评测 v0.2 / 开发 Backlog v0.2 / DEMO） |
 
 **分区语义**：`platform/` 收 AI 能力的**方案与设计**（含将来的 bone-ai 模块设计、治理面/评测/OTel 对齐等，**替代**"详设散进 `doc/design/modules/`"的做法，modules/ 继续是元数据平台模块域，两不相扰）；三个产品目录是**成品快照**（PRD/DEMO/交付包，趋稳）。产品包是 platform 中台论证的输入旁证，中台是产品的能力上游。
 
