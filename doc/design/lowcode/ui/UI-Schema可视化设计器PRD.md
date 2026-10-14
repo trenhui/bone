@@ -1,7 +1,7 @@
 # BONE UI Schema 可视化设计器 PRD：协议驱动 · 所见即所得
 
 > **定位**：本 PRD 为**子需求 / 迭代 PRD**（依据 [`PRD模板.md`](../../../prd/PRD模板.md) 编制），不替代平台级 [`BONE产品需求文档正式版.md`](../../../prd/BONE产品需求文档正式版.md)，不替代 [`BONE-低代码最小闭环PRD.md`](../BONE-低代码最小闭环PRD.md)（下称「父 PRD」）。
-> **一句话**：把已验证的单文件 DEMO（`ui-protocol/bone-ui-schema-demo.html` v1.9）产品化为 `bone-metadata-app` 建模工作区的**「界面 Tab」设计器**，让 ui-schema 从"手写 JSON"变为"可视配置 + 同构预览 + 自检发布"。
+> **一句话**：把已验证的单文件设计器（`ui-protocol/bone-ui-schema-designer.html`，由 DEMO 引擎演进而来）产品化为 `bone-metadata-app` 建模工作区的**「界面 Tab」设计器**，让 ui-schema 从"手写 JSON"变为"可视配置 + 同构预览 + 自检发布"。
 > **决策前置**：本迭代**不做自由画布、不新增后端 `ui_config` 表、不做自定义 render**（结论依据见 §1.1；与父 PRD Must-2「画布/拖拽设计器/自定义 render/后端 `ui_config` 表不进 Must」完全一致）。
 
 ## 文档元信息
@@ -23,6 +23,7 @@
 |------|------|--------|----------|------|
 | v0.1 | 2026-10-14 | AI 起草 | 初稿：DEMO v1.4 能力产品化，MVP/Should 切分对齐父 PRD | Draft |
 | v0.2 | 2026-10-14 | AI 修订 | 同步 DEMO v1.7：三栏 IDE 信息架构、联动演练（FR-04）、机器协议校验（FR-09）、Cmd+K/引导；功能点不变，无 Scope 变更 | Draft |
+| v0.3 | 2026-10-14 | AI 修订 | 单文件原型真源由 `demo.html` 切换为 `designer.html`（designer 已是 demo 的超集：实体目录绑定 CHILD_TABLE/Σ 合计、品牌化、高端视觉美化，并经三套机器门禁零漂移验证）；DEMO 归档为历史参考；术语统一 | Draft |
 
 ---
 
@@ -30,14 +31,14 @@
 
 ### 1.1 问题陈述
 
-`bone-ui-schema.schema.json`（v1.1）与运行时引擎（`uiSchemaEngine.ts` + `useBoneUiSchema`）已落地，单文件 DEMO v1.7 已验证全套交互（三栏 IDE：结构树 + 多态属性面板 + 活预览；变体自动裁决；规则追踪 + 联动演练；inspect 点选定位；试运行；语义自检 + 机器协议校验）。但生产侧仍缺一个**产品化设计器**：今天配一个报销单界面要手写数百行 JSON，字段拼写漂移、规则悬空引用、`$` 变量写错全部在运行时才暴露，实施顾问无法向客户演示"改配置即生效"。
+`bone-ui-schema.schema.json`（v1.1）与运行时引擎（`uiSchemaEngine.ts` + `useBoneUiSchema`）已落地，单文件设计器（由 DEMO 引擎演进）已验证全套交互（三栏 IDE：结构树 + 多态属性面板 + 活预览；变体自动裁决；规则追踪 + 联动演练；inspect 点选定位；试运行；语义自检 + 机器协议校验）。但生产侧仍缺一个**产品化设计器**：今天配一个报销单界面要手写数百行 JSON，字段拼写漂移、规则悬空引用、`$` 变量写错全部在运行时才暴露，实施顾问无法向客户演示"改配置即生效"。
 
 不做的代价：ui-schema 协议停留在"开发者手写契约"阶段，父 PRD 的 B 路径叙事（实施自助建模上线）无载体，A 路径（少写 CRUD）每次仍要手写整份 JSON。
 
 ### 1.2 变更动机（为什么是现在）
 
 1. **协议已冻结可用**：schema.json v1.1 + 引擎同口径（9 聚合函数、`submit.when`、容差 epsilon、条件深度≤3 fail-closed），设计器有稳定靶子可对齐。
-2. **交互已低成本验证**：DEMO v1.7 覆盖三场景（报销/智能理赔/采购），交互模式（Preview-as、规则追踪 + 联动演练、试运行、Cmd+K）对标 Retool/Appsmith/Salesforce/VSCode 最佳实践，无需再做可用性探索。
+2. **交互已低成本验证**：设计器覆盖三场景（报销/智能理赔/采购），交互模式（Preview-as、规则追踪 + 联动演练、试运行、Cmd+K）对标 Retool/Appsmith/Salesforce/VSCode 最佳实践，无需再做可用性探索。
 3. **宿主已就绪**：父 PRD UID-9 四 Tab（结构｜界面｜数据｜发布）要求「界面 Tab=Must」，设计器正是该 Tab 的实现载体。
 
 ### 1.3 目标与成功标准
@@ -55,7 +56,7 @@
 |------|------|
 | 父 PRD | 本 PRD = 父 PRD UID-9「界面 Tab」+ VM-002（publish-preview）的设计器实现；Must/Should 切分以父 PRD §0.2 为准，冲突时以父 PRD 为准 |
 | 架构约束 | 分层/边界/门禁见 `doc/architecture/Bone-DDD-最终实践方案.md`（HC-001～HC-008 引用编号，不复述）；前端规范见 `doc/architecture/bone-前端架构.md` §6 |
-| 协议真源 | `ui-protocol/bone-ui-schema.schema.json`（v1.1）；DEMO 为交互原型，**不直接上线**（单文件技术债，产品化时重写为工作区模块） |
+| 协议真源 | `ui-protocol/bone-ui-schema.schema.json`（v1.1）；单文件设计器为交互原型，**不直接上线**（单文件技术债，产品化时重写为工作区模块） |
 | AI 中台 | AI 辅助起草规则/样板见《BONE-AI能力中台最佳方案》，列为 v2.0 候选（§11.2），本迭代不做 |
 
 ### 1.5 核心竞争力
@@ -227,7 +228,7 @@
 
 ## 8. 设计与交互
 
-- **设计稿/原型**：`doc/design/lowcode/ui/ui-protocol/bone-ui-schema-demo.html`（v1.9，三栏 IDE + 调试闭环，自检含内嵌 schema.json 真源机校；可交互原型即规格；Figma [TBD: 待设计师确认是否需要视觉还原稿]）。
+- **设计稿/原型**：`doc/design/lowcode/ui/ui-protocol/bone-ui-schema-designer.html`（由 DEMO v1.9 演进，三栏 IDE + 调试闭环 + 实体目录绑定，自检含内嵌 schema.json 真源机校；可交互原型即规格；Figma [TBD: 待设计师确认是否需要视觉还原稿]）。
 - **关键交互**：空态（分区无控件引导添加）/ 错误态（JSON 非法隔离展示）/ 极限态（200 字段性能）/ 微交互（追踪 chip、inspect 闪光、入场动画、动效遵循 `prefers-reduced-motion`）。
 - **与设计系统偏差**：暂无；深色主题硬编码色已在 v1.4 清理完毕。
 
@@ -248,7 +249,7 @@
 ### 9.2 前提条件 & 阻塞项
 
 - 前置：§3.3 两处 TBD 确认（catalog 发布接口、SDK 码表只读）。
-- 阻塞：暂无（DEMO 已验证交互，协议已冻结）。
+- 阻塞：暂无（设计器已验证交互，协议已冻结）。
 
 ---
 
@@ -311,7 +312,7 @@
 |------|-------|------|----------|
 | 协议与引擎语义分叉（双端漂移） | 中 | 高 | fixture 共享 + 版本号跟随 + changelog（§7.2/§10） |
 | 范围蔓延（"顺手做个画布"） | 高 | 中 | 父 PRD §0.2 背书 Must 边界；画布需求一律转 v1.1 |
-| DEMO 单文件债被误认为可直接上线 | 中 | 中 | 本 PRD §1.4 明示重写；DEMO 仅作交互规格 |
+| 单文件设计器原型债被误认为可直接上线 | 中 | 中 | 本 PRD §1.4 明示重写；设计器仅作交互规格，归档 DEMO 仅作回溯 |
 | 性能（200 字段卡顿） | 低 | 中 | 虚拟滚动/分区懒渲染预留；验收卡 200ms 线 |
 | 样板 mock 被误认为生产可用 | 低 | 高 | 诚实性纪律：样板页常驻 mock 标注；评审复核 |
 
@@ -348,6 +349,6 @@
 |------|------|
 | [BONE产品需求文档正式版.md](../../../prd/BONE产品需求文档正式版.md) | 平台范围与 NFR 基线 |
 | [BONE-低代码最小闭环PRD.md](../BONE-低代码最小闭环PRD.md) | 父 PRD：Must/Should 边界与验收口径 |
-| [bone-ui-schema-demo.html](./ui-protocol/bone-ui-schema-demo.html) | 可交互原型（v1.9 即规格） |
+| [bone-ui-schema-designer.html](./ui-protocol/bone-ui-schema-designer.html) | 权威单文件设计器（配置界面真源，由 DEMO 演进） |
 | [Bone-DDD-最终实践方案](../../architecture/Bone-DDD-最终实践方案.md) | HC 门禁定义与实测状态（§G-1.7） |
 | [BONE-AI能力中台最佳方案](../../../ai-product/platform/BONE-AI能力中台最佳方案.md) | v2.0 AI 起草上游 |

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * DEMO ⇄ 协议一致性校验
+ * 设计器 ⇄ 协议一致性校验
  *
- * 作用：把 bone-ui-schema-demo.html 内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
- * 导出成 JSON，再用协议真源 bone-ui-schema.schema.json 做机器校验，找出「DEMO 能配、
+ * 作用：把 bone-ui-schema-designer.html（权威单文件设计器）内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
+ * 导出成 JSON，再用协议真源 bone-ui-schema.schema.json 做机器校验，找出「设计器能配、
  * 协议不认」的漂移。
  *
  * 用法：node doc/design/lowcode/ui/ui-protocol/validate-demo-samples.js
+ * 注：本脚本原校验 DEMO 样板，现重定向到权威设计器 bone-ui-schema-designer.html（DEMO 已归档）。
  *
  * 退出码：
  *   0 = 无意外漂移（已知豁免项只提示，不算失败）
@@ -25,36 +26,40 @@ const fs = require("fs");
 const path = require("path");
 
 const DIR = __dirname;
-const DEMO = path.join(DIR, "bone-ui-schema-demo.html");
+const DESIGNER = path.join(DIR, "bone-ui-schema-designer.html");
 const SCHEMA_FILE = path.join(DIR, "bone-ui-schema.schema.json");
 
 /* ---------- 1. 从 DEMO 里取出 SAMPLES（不执行 boot，只取数据） ---------- */
 function extractSamples() {
-  const html = fs.readFileSync(DEMO, "utf8");
+  const html = fs.readFileSync(DESIGNER, "utf8");
   const m = html.match(/<script>([\s\S]*)<\/script>/);
-  if (!m) throw new Error("DEMO 中未找到 <script> 块");
+  if (!m) throw new Error("设计器中未找到 <script> 块");
   let src = m[1].replace(/\nboot\(\);\s*$/, "\n") + "\nreturn {SAMPLES};";
   // 最小 DOM 桩：SAMPLES 是纯数据，不需要真实 DOM
   const mkEl = () => {
     const n = {
       children: [], style: {}, dataset: {}, value: "", textContent: "",
-      classList: { add() {}, remove() {}, contains: () => false },
-      append() {}, addEventListener() {}, setAttribute() {}, remove() {},
-      focus() {}, click() {}, querySelector: () => null, querySelectorAll: () => [],
+      _cls: "", _html: "",
+      classList: { add() {}, remove() {}, contains: () => false, toggle() {} },
+      append(c) { if (c) this.children.push(c); }, prepend(c) { if (c) this.children.unshift(c); }, addEventListener() {}, setAttribute() {},
+      remove() {}, focus() {}, click() {}, querySelector: () => null, querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+      get parentElement() { return null; }, offsetWidth: 0, offsetHeight: 0,
     };
-    Object.defineProperty(n, "className", { get: () => "", set() {} });
-    Object.defineProperty(n, "innerHTML", { get: () => "", set() {} });
+    Object.defineProperty(n, "className", { get() { return this._cls; }, set(v) { this._cls = v; } });
+    Object.defineProperty(n, "innerHTML", { get() { return this._html; }, set(v) { this._html = v; this.children = []; } });
     return n;
   };
   global.document = {
     createElement: mkEl, createTextNode: (t) => ({ nodeType: 3, textContent: String(t) }),
-    querySelector: mkEl, querySelectorAll: () => [], addEventListener() {},
+    querySelector: () => mkEl(), querySelectorAll: () => [], addEventListener() {},
+    getElementById: () => mkEl(), body: mkEl(),
     activeElement: null, documentElement: { getAttribute: () => null, setAttribute() {} },
   };
   global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
   // navigator 在 Node 18+ 是只读 getter，取不到也不影响取 SAMPLES，容错处理
   try { global.navigator = { clipboard: { writeText: () => Promise.resolve() } }; } catch (e) {}
-  global.window = {};
+  global.window = { innerWidth: 1280, innerHeight: 800, addEventListener() {}, removeEventListener() {} };
   return new Function(src)().SAMPLES;
 }
 
@@ -115,4 +120,4 @@ Object.keys(SAMPLES).forEach((id) => {
 });
 console.log("\n合计：意外漂移 " + unexpected + " 处，已知豁免 " + expected + " 处");
 if (unexpected) { console.log("FAIL：出现协议未定义且不在豁免清单内的字段"); process.exit(1); }
-console.log("PASS：DEMO 产出与协议真源一致（豁免项已在 §13.4 登记）");
+console.log("PASS：设计器产出与协议真源一致（豁免项已在 §13.4 登记）");

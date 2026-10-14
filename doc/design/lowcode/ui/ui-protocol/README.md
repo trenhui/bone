@@ -33,13 +33,17 @@
 |------|------|
 | `BONE-业务对象界面JSON协议设计.md` | 协议规范（v1.0 + §10/§11/§12 复核增量 + §13 v1.2 待评审） |
 | `BONE-业务对象界面前后端技术方案.md` | 前后端详细设计（v1.1） |
-| `bone-ui-schema.schema.json` | JSON Schema 真源 |
-| `bone-ui-schema-demo.html` | 可配置 DEMO（单文件双击即开，用于评审/走查；**内嵌本 schema.json，自检含“真源机校”，发布=真源机校+语义+变体组合冲烟三道门硬门禁**——协议 §13.6/§14 同源；协议演进时只改 schema.json，DEMO 校验自动跟随，避免人工镜像滞后） |
-| `bone-ui-schema-designer.html` | ⚠️ 实验稿（并行会话产物，boot 存在 5 处 id 脱节空指针，不可作为规格引用；差异化能力已并入 demo，后续以此收敕为单文件） |
+| `bone-ui-schema.schema.json` | JSON Schema 真源（设计器内嵌同一份，自检含"真源机校"） |
+| `bone-ui-schema-designer.html` | **权威单文件设计器（配置界面真源）**：在 DEMO 引擎+IDE+三场景之上叠加实体目录绑定（CHILD_COLS / CHILD_TABLE 元数据驱动子表 + Σ 合计行，支撑 SUB-1 明细合计提交规则）、品牌化与高端视觉美化；内嵌 schema.json，自检含真源机校+语义+变体组合冲烟三道硬门禁；经三套机器门禁（协议机校 / 实体绑定 / 启动冒烟）零漂移验证，报销/智能理赔/采购三场景联调（正向命中 + 负向不命中）全绿 |
+| `archive/bone-ui-schema-demo.html` | 历史参考（v1.9 引擎+IDE+三场景基线，已被 designer 完全覆盖；仅作回溯，不作为规格引用） |
+| `validate-designer-gates.js` | 门禁1：设计器产出 vs schema.json 真源机校 + 语义自检 + 三场景运行时探针（正向命中 + 负向不命中） |
+| `validate-entity-binding.js` | 门禁2：实体目录生成/绑定零漂移 + 10 种字段类型映射全覆盖 |
+| `smoke-boot.js` | 门禁3：真实 boot + 渲染路径零异常（含 CHILD_TABLE 子表渲染与 Σ 合计） |
+| `check-contrast.py` | 对比度门禁（深浅主题可读） |
 
-## DEMO 边界（避免把演示能力误读成协议能力）
+## 设计器边界（避免把演示能力误读成协议能力）
 
 - **协议内**：结构/分区/控件、linkageRules、submitRules、actionBar、variants、`dictionaries` 覆写。
 - **v1.2 待评审**：`enabled`（规则级启停）、`pageHeader`（页头信息条）——已落 Schema 描述并带待评审前缀，见协议 §13。
-- **DEMO 演示扩展（`x_` 前缀，非协议）**：`x_cols` 分区栅格。导出 JSON 过不了 `schema.json` 属**预期**：DEMO「自检」面板会显式报出；且 v1.8 起 DEMO 内嵌本 `schema.json`，浏览器内即可真源机校（打开自检 → 真源机校 PASS/FAIL）。
+- **设计器演示扩展（`x_` 前缀，非协议）**：`x_cols` 分区栅格。导出 JSON 过不了 `schema.json` 属**预期**：设计器「自检」面板会显式报出；且 v1.8 起设计器内嵌本 `schema.json`，浏览器内即可真源机校（打开自检 → 真源机校 PASS/FAIL）。
 - **明确不做**：在 UI 层新建/删除码表（协议 §3.1 禁止）、按主体做码表覆盖（差异化归 `variants` + 租户隔离，见 §12）。
