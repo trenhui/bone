@@ -8,16 +8,17 @@
 #   * CI 消费（到期硬失败）尚未实装前的口径：人工治理（方案 G-2「到期机制未被 CI 消费前，
 #     只能称人工治理，不得为满足台账数字而重写 freeze 基线」）。
 #
-# 数据来源：各模块 archunit_store/<uuid> 现场统计（2026-10-06，9 模块 94 个 store 文件）：
-#   * 非空（真实债务）4 处 → 即下方 4 个条目；
-#   * 空（防新增型）90 处 → 不入台账，机制由 freeze.store.*=false + G-1.1 门禁表守护。
+# 数据来源：各模块 archunit_store/<uuid> 现场统计（不含 stored.rules；2026-10-16 复核，9 模块 94 个 store 文件）：
+#   * 非空（真实债务）3 处 → 即下方 3 个条目；
+#   * 空（防新增型）91 处 → 不入台账，机制由 freeze.store.*=false + G-1.1 门禁表守护。
 #
 # 各模块防新增型冻结计数（供复核，明细见各模块 archunit_store/stored.rules）：
-#   bone-blueprint 5 · ext-studio 9 · metadata-server 7 · studio-generator 14 ·
-#   bone-iam 10 · bone-integration 14 · bone-masterdata 9 · bone-notification 6 · bone-system 12 = 86
+#   bone-blueprint 5 · ext-studio 9 · metadata-server 9 · studio-generator 14 ·
+#   bone-iam 10 · bone-integration 15 · bone-masterdata 9 · bone-notification 6 · bone-system 14 = 91
 #
 # updatePolicy：violations 或 store 路径变化时同步本文件（与 archunit_store 双源对齐，
-#   由 scripts/ci/check-freeze-ledger.py --check 保漂移）。
+#   由 scripts/check-freeze-ledger.py --check 保漂移——该门禁 2026-10-16 接入 scripts/check.sh；
+#   此前只存在于零调用者的 scripts/ci-check.sh，台账失漂不会被任何门禁发现）。
 
 ledger:
   # ── studio-generator：Controller 直依赖 application/service ──
@@ -69,17 +70,6 @@ ledger:
     lastRenewal: null
 
   # ── bone-integration：schedule Job 直依赖 infrastructure 实现（CORE-02 端口导向）──
-  # 注意：entrypointMustOnlyBeCalledFromFramework 语义例外已在方案 E-9.3 白名单登记，
-  # 此处仅为 freeze 视角的对齐登记（规则冻结的 3 处引用），非新增债务。
-  - rule: scheduleOnlyCallsAllTenantScanMethods
-    module: bone-platform/bone-integration
-    store: bone-platform/bone-integration/archunit_store/fd6402f9-2e24-41b9-9c48-63601f85e0bb
-    classification: exception
-    violations: 3
-    items:
-      - "IntegrationOutboxRelayJob -> IntegrationOutboxRelay（构造注入 / 字段 / relayBatch 直调）"
-    owner: platform-arch
-    removalCondition: >-
-      IntegrationOutboxRelay 抽出 application 层端口（OutboxRelayPort），Job 依赖端口，
-      infrastructure 实现由 Spring 装配（CORE-02 端口导向落地）
-    lastRenewal: null
+  # 2026-10-16 移除登记：该 store（fd6402f9-…）已清空 —— IntegrationOutboxRelay 相关引用
+  # 收敛后冻结的 3 处违规不再出现，债务已消除，按「基线只可收缩」从台账移除。
+  # （entrypointMustOnlyBeCalledFromFramework 的语义例外仍在方案 E-9.3 白名单登记，与本条无关。）

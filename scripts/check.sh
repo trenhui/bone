@@ -465,6 +465,15 @@ if ! python3 scripts/check-orphan-tables.py; then
   exit_code=1
 fi
 
+# 2026-10-16 接入（G-2 · ArchUnit 冻结债务台账）。此前 check-freeze-ledger.py 只存在于
+# 零调用者的 scripts/ci-check.sh —— 台账条目失漂（已修复债务未移除 / violations 计数失真）
+# 没有任何门禁能发现，本次接入后本地自检即可拦截。CI 接入属 L3，另行走审批。
+echo -e "${YELLOW}[36/37] ArchUnit 冻结债务台账（G-2：ledger 与 archunit_store 双源一致）...${RESET}"
+if ! python3 scripts/check-freeze-ledger.py --check; then
+  echo -e "${RED}❌ freeze-ledger.yaml 校验失败（隐瞒债务 / store 路径失配 / violations 与 store 实际不一致）${RESET}"
+  exit_code=1
+fi
+
 # 2026-10-13 新增（G37 · 业务建模三入口职责边界）。三入口职责定稿（综述文档）：
 # 模型设计=待办工作台（无实体清单）、业务对象=清单唯一权威、业务数据=数据面（显式选择进入）。
 # 「一份数据只允许一个列表真源」：工作台再渲染实体清单 = 用户点两处得两个结果；
@@ -472,7 +481,7 @@ fi
 # 判据按净效果（剥离注释），规则1 = 工作台禁引用 metadataEntityApi，
 # 规则2 = 禁 setEntityCode(...[0]...) 默认选中形状。
 # 变异验证已做：①植入 import ⇒ 红 ②植入 [0] 选中 ⇒ 红 ③撤掉 ⇒ 绿。
-echo -e "${YELLOW}[36/36] 三入口职责边界（工作台无清单 / 数据面无默认选中 · G37）...${RESET}"
+echo -e "${YELLOW}[37/37] 三入口职责边界（工作台无清单 / 数据面无默认选中 · G37）...${RESET}"
 if ! python3 scripts/check-three-entry-boundaries.py; then
   echo -e "${RED}❌ 三入口职责边界漂移：工作台出现实体清单，或业务数据默认选中实体${RESET}"
   exit_code=1

@@ -31,7 +31,7 @@
 | [0021](./0021-outbox-and-consumer-idempotency-platformization.md) | Outbox 与消费端 `eventId` 幂等平台化（**提议**） |
 | [0022](./0022-external-callback-signature-verification-port.md) | 外部回调验签端口化 — 由支付样板推广为全局硬规则（**提议**） |
 | [0023](./0023-core-domain-smart-metadata.md) | Bone 当前核心域定为 Smart Metadata（**已接受**） |
-| [0024](./0024-ddd-v5-rule-semantics-and-document-split.md) | DDD v5.0 规则语义校准与文档分册（**已接受**） |
+| [0024](./0024-ddd-v5-rule-semantics-and-document-split.md) | DDD v5.0 规则语义校准与文档分册（**已接受**；分册结构已被 [0026](./0026-ddd-single-document-consolidation.md) 取代） |
 | [0025](./0025-ddd-v5-0-2-implementation-alignment.md) | DDD v5.0.2 规则标识与实现状态对齐（**已接受**） |
 | [0026](./0026-ddd-single-document-consolidation.md) | DDD v5.1.0 单文档整合（**已接受，取代 ADR-0024 的分册决定**） |
 | [0027](./0027-module-layer-semantics-before-physical.md) | 模块层级语义先立、物理结构后收（Kernel/Framework/Engine/Platform，**已接受**） |
@@ -47,4 +47,10 @@
 | [0037](./0037-integration-engine-single-module.md) | 集成引擎单模块收敛 — 仅保留 `bone-platform/bone-integration`，删除 `bone-engine/bone-integration`（**已实现**） |
 | [0038](./0038-platform-model-template-and-scope.md) | 平台模型层 — 模板 + 三层归属 + 租户实例化（**已接受 / 已实现最小切片**，2a §G3） |
 | [0039](./0039-release-package-with-approval-and-rollback.md) | 发布包 — 以模块为单元的变更集、审批与回滚（**已接受 · 分批落地**，2a §G4） |
-| [0040](./0040-external-client-sdk-generated-from-openapi.md) | 对外客户端 SDK — 以 OpenAPI 规范为唯一真源生成，不手写占位模块（**提议 · 待批准**；决策已落地其半：空壳 `bone-sdk` 已于 2026-10-03 整棵移除，基线登记清空，门禁改盯两个真 SDK） |
+| [0040](./0040-external-client-sdk-generated-from-openapi.md) | 对外客户端 SDK — 以 OpenAPI 规范为唯一真源生成，不手写占位模块（**已接受**，2026-10-03 架构组裁定；生成与烟测已落地，空壳 `bone-sdk` 整棵移除，门禁 #16/#18/#19/#21 以其为依据） |
+
+**非编号附录**
+
+| ADR | 标题 |
+|-----|------|
+| [ADR-生产数据库增量迁移策略](./ADR-生产数据库增量迁移策略.md) | 生产环境增量迁移 — expand/contract 模式（**已接受**，2026-06-19；被 [数据库开发规范](../数据库开发规范.md) 与 [0001](./0001-database-ddl-single-source.md) 概念性引用） |
