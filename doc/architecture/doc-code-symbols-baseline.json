@@ -730,6 +730,14 @@
       ],
       "reason": "tobe-named",
       "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
+      "symbol": "DefaultMetadataVersionController",
+      "docs": [
+        "doc/design/lowcode/BONE-低代码最小闭环PRD.md"
+      ],
+      "reason": "history",
+      "note": "2026-10-15 死代码清理已删除 engine-runtime version/DefaultMetadataVersionController（AtomicLong 简单版本实现），PRD §1.1.1 仅在「快照/回滚」一行作删除说明引用；属历史类名，非现行真源"
     }
   ]
 }

@@ -1,11 +1,19 @@
 title = "Bone Gitleaks Config"
 
 [allowlist]
-  description = "允许的路径"
+  description = "允许的路径 + 允许的凭据字面量"
   paths = [
     '''node_modules/.*''',
     '''target/.*''',
     '''.git/.*''',
+  ]
+  # 只豁免**本地开发种子账号** admin/123456 这一个字面量（localhost 联调专用，非任何生产凭据）。
+  # 为什么不放开 scripts/e2e/ 整个目录：那会让该目录里任何真密钥都扫不出来。
+  # 为什么不用字符串拼接绕开：那只是把门禁变成摆设。这里保留精确豁免，
+  # 其余任何硬编码密码仍然命中 hardcoded-password 并被阻断。
+  # 同时 e2e 脚本已改为 BONE_E2E_USER / BONE_E2E_PWD 可注入，CI 可换真实凭据。
+  regexes = [
+    '''(?i)password\s*[:=]\s*['"]123456['"]''',
   ]
 
 [[rules]]

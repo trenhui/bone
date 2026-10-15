@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""报销 + 智能理赔 双样板场景「全功能」端到端串联（经网关，模拟人工建模与业务操作）。
+"""报销 + 智能理赔 + 采购订单 三样板场景「全功能」端到端串联（经网关，模拟人工建模与业务操作）。
 
 与 scripts/e2e/ui-schema-samples-e2e.py 的区别：那份只跑「协议提交/联动强制」的样例对账，
 本脚本把**上一轮收口的全部功能点**串成一条真人操作链路，逐项落断言：
@@ -581,6 +581,265 @@ if rid3 and rid2:
     no3 = (d3.get("data") or {}).get("claim_no")
     seq = lambda v: int(v.split("-")[-1]) if isinstance(v, str) and v.split("-")[-1].isdigit() else -1
     check("自动编号：序号原子递增（第三条 > 第二条）", seq(no3) > seq(no2) >= 0, f"{no2} → {no3}")
+
+# ==================================================================
+# 场景三：采购订单（purchase-order）— 行项目 + 三单匹配 + 预算闸门
+# ==================================================================
+section("场景三：采购订单（purchase-order）— 行项目 · 预算 · 三单匹配 · 付款")
+
+PO = "purchase_order_chain_" + SUFFIX
+PO_ITEM = "purchase_item"
+po_fields = [
+    {"code": "po_no", "label": "采购单号"},
+    {"code": "title", "label": "采购事由", "required": True},
+    {"code": "vendor_code", "label": "供应商编码"},
+    {"code": "vendor", "label": "供应商"},
+    {"code": "buyer", "label": "采购员"},
+    {"code": "department", "label": "需求部门"},
+    {"code": "need_date", "label": "需求日期"},
+    {"code": "currency", "label": "币种"},
+    {"code": "budget_subject", "label": "预算科目"},
+    {"code": "budget_amount", "label": "预算金额", "type": "DECIMAL"},
+    {"code": "contract_no", "label": "合同号"},
+    {"code": "payment_terms", "label": "付款条款"},
+    {"code": "po_amount", "label": "采购金额", "type": "DECIMAL"},
+    {"code": "tax_amount", "label": "税额合计", "type": "DECIMAL"},
+    {"code": "received_amount", "label": "累计收货金额", "type": "DECIMAL"},
+    {"code": "invoiced_amount", "label": "累计开票金额", "type": "DECIMAL"},
+    {"code": "invoice_no", "label": "发票号"},
+    {"code": "remark", "label": "备注", "type": "TEXT"},
+    {"code": "attachment", "label": "合同与验收附件", "type": "ATTACHMENT"},
+    {"code": "status", "label": "状态"},
+]
+po_item_fields = [
+    {"code": "material_code", "label": "物料编码"},
+    {"code": "material_name", "label": "物料名称"},
+    {"code": "spec", "label": "规格型号"},
+    {"code": "qty", "label": "数量", "type": "DECIMAL"},
+    {"code": "unit", "label": "单位"},
+    {"code": "unit_price", "label": "单价", "type": "DECIMAL"},
+    {"code": "amount", "label": "金额", "type": "DECIMAL"},
+    {"code": "tax_rate", "label": "税率", "type": "DECIMAL"},
+    {"code": "tax_amount", "label": "税额", "type": "DECIMAL"},
+    {"code": "received_qty", "label": "已收货数量", "type": "DECIMAL"},
+]
+po_policy = {
+    "owner_field": "created_by",
+    "rules": [{"name": "dept_or_buyer", "effect": "allow", "when": "created_by = :operator"}],
+}
+
+po_id = create_entity("采购订单", PO, f"t_{PO}", po_policy, po_fields,
+                      auto_number={"field": "po_no", "prefix": "PO", "reset": "none"})
+po_item_id = create_entity("采购行项目", PO_ITEM, f"t_{PO_ITEM}", None, po_item_fields)
+note(f"实体：采购订单={po_id} 行项目={po_item_id}")
+
+child_table_field(po_id, "items", PO_ITEM, "order_id")
+child_table_field(po_item_id, "order_id", physical=True)
+child_table_field(po_item_id, "sort_order", physical=True, type="INT")
+
+s, d = publish(po_item_id)
+check("采购：行项目实体先发布", s == 200, f"{s} {d.get('message')}")
+
+for code, label, frm, to, esc, hdl, idem, order in [
+    ("submit", "提交审批", "DRAFT", "SUBMITTED", False, None, False, 1),
+    ("approve", "审批通过", "SUBMITTED", "APPROVED", False, None, False, 2),
+    ("reject", "驳回", "SUBMITTED", "REJECTED", False, None, False, 3),
+    ("startReceive", "开始收货", "APPROVED", "RECEIVING", False, None, False, 4),
+    ("confirmReceive", "确认收货", "RECEIVING", "RECEIVED", False, None, False, 5),
+    ("pay", "付款", "RECEIVED", "PAID", True, "purchaseOrderPayHandler", True, 6),
+]:
+    s, d = add_action(po_id, code, label, frm, to, esc, hdl, idem, order)
+    if s != 200:
+        note(f"[warn] 动作 {code} 写入 {s} {str(d)[:160]}")
+
+# 付款动作声明入参契约（平台据此校验必填，Handler 不再各自判空）
+s, d = call("POST", f"/metadata/entities/{po_id}/action-defs", {
+    "actionCode": "pay", "label": "付款", "fromStatus": "RECEIVED", "toStatus": "PAID",
+    "escape": True, "handlerBean": "purchaseOrderPayHandler", "requiresIdempotency": True,
+    "sortOrder": 6,
+    "paramsSchema": json.dumps([
+        {"name": "channel", "label": "付款渠道", "type": "enum", "required": True,
+         "values": ["BANK", "ACCEPTANCE", "WECHAT"]},
+        {"name": "payAmount", "label": "付款金额", "type": "number", "required": True, "min": 0.01},
+        {"name": "note", "label": "备注", "type": "string", "required": False},
+    ], ensure_ascii=False),
+})
+check("采购：付款动作声明 params_schema（平台统一校验入参）", s == 200, f"{s} {str(d)[:180]}")
+
+s, d = put_schema(po_id, "purchase-order-ui-schema.example.json")
+check("采购：界面协议 PUT 成功", s == 200, f"{s} {d.get('message')}")
+s, errs, _ = validate(po_id)
+check("采购：validate 零 ERROR", s == 200 and not errs,
+      "; ".join(str(i.get("code")) for i in errs[:5]))
+s, d = publish(po_id)
+check("采购：publish 放行", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+
+# ---------------- 业务侧：建单 → 行项目 → 预算/合计/三单闸门 → 审批 → 收货 → 付款 ----------------
+ITEMS_OK = [
+    {"material_code": "M-1001", "material_name": "笔记本电脑", "spec": "16G/1T",
+     "qty": 2, "unit": "台", "unit_price": 6000, "amount": 12000,
+     "tax_rate": 0.13, "tax_amount": 1560, "received_qty": 0},
+    {"material_code": "M-2002", "material_name": "显示器", "spec": "27寸 2K",
+     "qty": 4, "unit": "台", "unit_price": 1500, "amount": 6000,
+     "tax_rate": 0.13, "tax_amount": 780, "received_qty": 0},
+    {"material_code": "M-3003", "material_name": "人体工学椅", "spec": "网布",
+     "qty": 10, "unit": "把", "unit_price": 800, "amount": 8000,
+     "tax_rate": 0.13, "tax_amount": 1040, "received_qty": 0},
+]
+PO_AMOUNT = 26000.0
+TAX_TOTAL = 3380.0
+
+s, d = rec_create(PO, {"title": "研发中心 Q4 办公设备采购", "vendor_code": "V-8801",
+                       "vendor": "晨光办公设备有限公司", "buyer": "李四",
+                       "department": "研发中心", "need_date": "2026-11-30", "currency": "CNY",
+                       "budget_subject": "6401-办公费", "budget_amount": 50000,
+                       "contract_no": "CT-2026-0712", "payment_terms": "NET30",
+                       "po_amount": PO_AMOUNT, "tax_amount": TAX_TOTAL,
+                       "received_amount": 0, "invoiced_amount": 0})
+check("采购：创建订单（预算 50000 / 采购 26000）", s in (200, 201), f"{s} {d.get('message')}")
+prid = (d.get("data") or {}).get("id")
+
+if prid:
+    s, d = call("GET", f"/runtime/entities/{PO}/records/{prid}")
+    po_no = (d.get("data") or {}).get("po_no")
+    check("采购：自动编号注入 PO-NNNN", isinstance(po_no, str) and po_no.startswith("PO-"),
+          f"po_no={po_no}")
+
+    # 【负向 1】无行项目 → SUB-COUNT-01
+    child_replace(PO, prid, PO_ITEM, [])
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】无行项目 → 422 SUB-COUNT-01",
+          s == 422 and ecode(d) == "META_RUNTIME_UI_RULES_VIOLATED", f"{s} {ecode(d)}")
+
+    # 【负向 2】行项目合计 ≠ 采购金额 → SUB-ITEMS-01
+    bad = [dict(r) for r in ITEMS_OK]
+    bad[0]["amount"] = 12001
+    child_replace(PO, prid, PO_ITEM, bad)
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】行项目合计≠采购金额 → 422 SUB-ITEMS-01",
+          s == 422 and "SUB-ITEMS-01" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
+
+    # 【负向 3】税额合计不符 → SUB-TAX-01
+    bad_tax = [dict(r) for r in ITEMS_OK]
+    bad_tax[2]["tax_amount"] = 1000
+    child_replace(PO, prid, PO_ITEM, bad_tax)
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】税额合计不符 → 422 SUB-TAX-01",
+          s == 422 and "SUB-TAX-01" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
+
+    # 【负向 4】超预算 → SUB-BUDGET-01 + LINK-BUDGET-01 必填说明
+    child_replace(PO, prid, PO_ITEM, ITEMS_OK)
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"budget_amount": 10000})
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】超预算 → 422（SUB-BUDGET-01 且 remark 被 linkage 判必填）",
+          s == 422 and "SUB-BUDGET-01" in (d.get("message") or "")
+          and "remark" in (d.get("message") or ""), f"{s} {d.get('message', '')[:240]}")
+
+    # 【负向 5】预付款缺合同号 → LINK-PREPAY-01
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}",
+         {"budget_amount": 50000, "payment_terms": "PREPAY", "contract_no": ""})
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】预付款缺合同号 → 422（contract_no 必填）",
+          s == 422 and "contract_no" in (d.get("message") or ""), f"{s} {d.get('message', '')[:240]}")
+
+    # 合规态：恢复 NET30 + 合同号 → submit 放行
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}",
+         {"payment_terms": "NET30", "contract_no": "CT-2026-0712"})
+    s, d = act(PO, prid, "submit")
+    check("采购：submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
+          f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
+
+    s, d = act(PO, prid, "approve")
+    check("采购：approve（SUBMITTED→APPROVED）", s == 200 and rec_status(d) == "APPROVED",
+          f"{s} status={rec_status(d)}")
+    s, d = act(PO, prid, "submit")
+    check("采购【负向】已审批再提交 → 409 非法流转",
+          s == 409 and ecode(d) == "META_RUNTIME_ACTION_ILLEGAL_TRANSITION", f"{s} {ecode(d)}")
+
+    s, d = act(PO, prid, "startReceive")
+    check("采购：startReceive（APPROVED→RECEIVING）", s == 200 and rec_status(d) == "RECEIVING",
+          f"{s} status={rec_status(d)}")
+
+    # 收货：已收货金额 > 0 但缺发票号 → LINK-RECV-01
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"received_amount": PO_AMOUNT})
+    s, d = act(PO, prid, "confirmReceive")
+    check("采购【负向】已收货缺发票号 → 422（LINK-RECV-01）",
+          s == 422 and "invoice_no" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
+
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}",
+         {"invoice_no": "INV-PO-2026-0091", "invoiced_amount": PO_AMOUNT})
+    s, d = act(PO, prid, "confirmReceive")
+    check("采购：confirmReceive（RECEIVING→RECEIVED）", s == 200 and rec_status(d) == "RECEIVED",
+          f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
+
+    # 【负向 6】三单不匹配 → SUB-MATCH-02 拦截付款
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"invoiced_amount": PO_AMOUNT - 1000})
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT},
+               idem=f"popay-mismatch-{prid}")
+    check("采购【负向】发票金额≠订单金额 → 422 SUB-MATCH-02（三单匹配拦截付款）",
+          s == 422 and "SUB-MATCH-02" in (d.get("message") or ""), f"{s} {d.get('message', '')[:240]}")
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"invoiced_amount": PO_AMOUNT})
+
+    # 【负向 7】逃逸动作缺幂等键 → 400
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT})
+    check("采购【负向】付款缺幂等键 → 400",
+          s == 400 and ecode(d) == "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED", f"{s} {ecode(d)}")
+
+    # 【负向 8】缺必填入参 channel（params_schema 平台校验）→ 400
+    s, d = act(PO, prid, "pay", params={"payAmount": PO_AMOUNT}, idem=f"popay-nochannel-{prid}")
+    check("采购【负向】付款缺必填 channel → 400（params_schema 平台校验）",
+          s == 400 and ecode(d) == "META_RUNTIME_ACTION_INVALID_PARAMS",
+          f"{s} {ecode(d)} {d.get('message', '')[:160]}")
+
+    # 【负向 9】payAmount 非法（0）→ 400
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": 0},
+               idem=f"popay-zero-{prid}")
+    check("采购【负向】payAmount=0 → 400（min:0.01 约束）",
+          s == 400 and ecode(d) == "META_RUNTIME_ACTION_INVALID_PARAMS",
+          f"{s} {ecode(d)} {d.get('message', '')[:160]}")
+
+    # 正式付款 + 幂等重放
+    key = f"popay-{prid}"
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT,
+                                        "note": "Q4 办公设备采购"}, idem=key)
+    se = (d.get("data") or {}).get("result") or {}
+    check("采购：pay（RECEIVED→PAID）并回传付款流水号",
+          s == 200 and rec_status(d) == "PAID" and str(se.get("paymentSerial", "")).startswith("POPAY-"),
+          f"{s} status={rec_status(d)} sideEffect={se}")
+
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT}, idem=key)
+    check("采购：同幂等键重放复用首次结果", s == 200 and (d.get("data", {}) or {}).get("idempotent") is True,
+          f"{s} idempotent={(d.get('data', {}) or {}).get('idempotent')}")
+
+    s, d = call("GET", f"/runtime/entities/{PO}/records/{prid}/action-executions")
+    execs = d.get("data") or []
+    # 5 条成功动作（submit/approve/startReceive/confirmReceive/pay）留痕；
+    # 被 422/400 拦下的动作按设计不入执行日志（未触达状态机，记入审计会污染「谁真的动了单据」）
+    check("采购：审计时间线留痕（5 条成功动作）", s == 200 and len(execs) >= 5, f"{s} 条数={len(execs)}")
+
+# 第二张单：超预算但已填写说明 → 不得被 remark 必填拦（说明规则本身是条件命中才强制）
+s, d = rec_create(PO, {"title": "临时追加采购", "vendor": "晨光办公", "payment_terms": "NET30",
+                       "contract_no": "CT-2026-0713", "budget_amount": 1000,
+                       "po_amount": 1200, "tax_amount": 0, "remark": "预算外紧急采购，已获分管副总口头批准"})
+prid2 = (d.get("data") or {}).get("id")
+if prid2:
+    child_replace(PO, prid2, PO_ITEM, [{"material_code": "M-9009", "material_name": "碎纸机",
+                                        "qty": 1, "unit": "台", "unit_price": 1200, "amount": 1200,
+                                        "tax_rate": 0, "tax_amount": 0}])
+    s, d = act(PO, prid2, "submit")
+    check("采购：超预算但已填说明 → 仅 SUB-BUDGET-01 拦截（remark 不再是拦点）",
+          s == 422 and "SUB-BUDGET-01" in (d.get("message") or "")
+          and "remark" not in (d.get("message") or ""), f"{s} {d.get('message', '')[:240]}")
+
+# 回收站：软删 → /deleted → restore
+if prid2:
+    s, d = call("DELETE", f"/runtime/entities/{PO}/records/{prid2}")
+    check("采购：软删成功", s in (200, 204), f"{s} {str(d)[:120]}")
+    s, d = call("GET", f"/runtime/entities/{PO}/records/deleted?page=1&size=50")
+    ids = [str(r.get("id")) for r in ((d.get("data") or {}).get("records") or [])]
+    check("采购：GET /deleted 可见已归档订单", s == 200 and str(prid2) in ids, f"{s} ids={ids[:5]}")
+    s, d = call("POST", f"/runtime/entities/{PO}/records/{prid2}/restore")
+    check("采购：restore 恢复成功", s == 200, f"{s} {str(d)[:120]}")
 
 # ==================================================================
 # 横切能力：筛选服务化 / 发布闸门负向 / 行策略守卫 / 动作定义删除

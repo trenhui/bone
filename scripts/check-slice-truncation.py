@@ -15,7 +15,10 @@ G34 判据：deliveryMode 默认值全仓唯一（应为 RUNTIME=1）。
         常量 META_DELIVERY_GENERATIVE（metadata.ts），不再裸写 0，故不在本规则命中范围。
 
 机器可验（变异验证）：
-  · 在 RuntimeDataManagement.tsx 注入 `const x = fields.slice(0, 8);`  → G33 变红；
+  · 在任一**非**允许列表文件（如 components/uiSchema/StructurePanel.tsx）注入
+    `const x = fields.slice(0, 8);`  → G33 变红；
+    （注意：RuntimeDataManagement.tsx / UiSchemaDesigner.tsx / snapshots.ts 等已在
+     允许列表内，向它们注入不会变红——那是获批的 UI 展示/缓冲截断，不是回归。）
   · 在任意元数据文件注入 `deliveryMode: 0` → G34 变红。
 
 用法：python3 scripts/check-slice-truncation.py [--root <repo-root>]
@@ -32,6 +35,7 @@ SLICE_ALLOWLIST = {
     os.path.join("pages", "EntityManagement.tsx"),  # B2 命令面板候选（cmdResults 最多 8 条）＝UI 展示截断，非列投影
     os.path.join("pages", "RuntimeDataManagement.tsx"),  # recentForRuntime＝listRecent() 近期访问列表最多 5 条，UI 展示截断，非列投影
     os.path.join("components", "uiSchema", "UiSchemaDesigner.tsx"),  # undo/redo future 历史栈缓冲（保留最近 50 个状态），UI 历史缓冲截断，非字段/列投影
+    os.path.join("components", "uiSchema", "snapshots.ts"),  # saveSnap 本地快照环形缓冲（保留最近 30 版，防 localStorage 配额耗尽），存储缓冲截断，非字段/列投影
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")

@@ -70,8 +70,10 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   console.log('\n===== A. 前置：模块上下文 & 平台模板（T4） =====');
   const ents = await api('GET', '/api/v1/metadata/entities?page=1&size=50');
   const recs = payload(ents)?.records || [];
-  const moduleId = (recs.find((e) => e.moduleId != null) || recs[0])?.moduleId;
-  assert('获取可用 moduleId', moduleId != null, { moduleId, entities: recs.length });
+  // moduleId 容忍 null：前 50 实体多为早期建模数据（module_id IS NULL），
+  // 实例化接口对 null 模块上下文宽容（不构成门禁项，仅记录）。
+  const moduleId = (recs.find((e) => e.moduleId != null) || recs[0])?.moduleId ?? null;
+  assert('获取实体列表（moduleId 可空）', ents.status === 200, { moduleId, entities: recs.length });
 
   const tpls = await api('GET', '/api/v1/metadata/templates');
   const tplList = Array.isArray(payload(tpls)) ? payload(tpls) : [];
@@ -111,23 +113,62 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   const afterPub = await api('GET', `/api/v1/metadata/entities/${inspId}`);
   assert('发布后状态 = 已发布', payload(afterPub)?.status === 1, { status: payload(afterPub)?.status });
 
+  // 0040/0048 状态机契约：status 是受保护字段（is_entry 入口动作标记 + G14 422 保护），
+  // 客户端不再直写初始状态——由状态机入口态注入（巡检全环：close.from_status=OPEN）。
   const rec1 = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '张三', insp_date: '2026-10-09', result: 'NORMAL', status: 'OPEN', remark: '首次巡检' },
+    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '张三', insp_date: '2026-10-09', result: 'NORMAL', remark: '首次巡检' },
   });
   const rec1Id = payload(rec1)?.id;
-  assert('录首条记录（含 ENUM）', okOf(rec1) && !!rec1Id, { status: rec1.status, id: rec1Id, result: payload(rec1)?.result });
+  assert('录首条记录（不含 status，入口态由状态机注入）', okOf(rec1) && !!rec1Id, { status: rec1.status, id: rec1Id, result: payload(rec1)?.result });
+  assert('入口态注入 = OPEN（0048 is_entry 显式标记优先于图推导）', payload(rec1)?.status === 'OPEN', { status: payload(rec1)?.status });
+
+  // 负向：直写受保护状态字段 → 422 META_RUNTIME_FIELD_PROTECTED（G14）
+  const protectedWrite = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
+    body: { insp_no: `WO-BAD-${stamp}`, device_code: 'DEV-001', inspector: '张三', insp_date: '2026-10-09', result: 'NORMAL', status: 'CLOSED' },
+  });
+  assert('负向：POST 直写 status → 422 META_RUNTIME_FIELD_PROTECTED',
+    protectedWrite.status === 422 && protectedWrite.data?.data?.errorCode === 'META_RUNTIME_FIELD_PROTECTED',
+    { status: protectedWrite.status, errorCode: protectedWrite.data?.data?.errorCode });
+
+  console.log('\n===== C2. 0048 状态机：动作是唯一合法流转入口 =====');
+  // 负向：OPEN 态触发 reopen（要求 CLOSED）→ 409 META_RUNTIME_ACTION_ILLEGAL_TRANSITION
+  const illegalReopen = await api('POST', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}/actions/reopen`, { body: { params: {} } });
+  assert('负向：OPEN 态触发 reopen → 409 非法流转',
+    illegalReopen.status === 409 && illegalReopen.data?.data?.errorCode === 'META_RUNTIME_ACTION_ILLEGAL_TRANSITION',
+    { status: illegalReopen.status, errorCode: illegalReopen.data?.data?.errorCode });
+  // 正向：close（OPEN→CLOSED）
+  const actClose = await api('POST', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}/actions/close`, { body: { params: {} } });
+  assert('动作 close：OPEN→CLOSED（唯一合法流转入口）',
+    actClose.status === 200 && payload(actClose)?.toStatus === 'CLOSED' && payload(actClose)?.fromStatus === 'OPEN',
+    { status: actClose.status, to: payload(actClose)?.toStatus, from: payload(actClose)?.fromStatus });
+  // 负向：CLOSED 态重复 close → 409
+  const dupClose = await api('POST', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}/actions/close`, { body: { params: {} } });
+  assert('负向：CLOSED 态重复 close → 409', dupClose.status === 409, { status: dupClose.status });
+  // 正向：reopen（CLOSED→OPEN）回环
+  const actReopen = await api('POST', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}/actions/reopen`, { body: { params: {} } });
+  assert('动作 reopen：CLOSED→OPEN（全环回路的另一半）',
+    actReopen.status === 200 && payload(actReopen)?.toStatus === 'OPEN', { status: actReopen.status, to: payload(actReopen)?.toStatus });
 
   console.log('\n===== D. W0-4 / UC-06 并发 412 =====');
   const got = await api('GET', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`);
   assert('GET /{id} 返回 ETag', !!got.etag, { etag: got.etag });
 
   const upd = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '李四', insp_date: '2026-10-09', result: 'NORMAL', status: 'CLOSED', remark: '已闭环' }, etag: got.etag,
+    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '李四', insp_date: '2026-10-09', result: 'NORMAL', remark: '已闭环' }, etag: got.etag,
   });
   assert('If-Match 正确 → 200（并发受控）', upd.status === 200, { status: upd.status });
 
+  // 负向：PUT 直写受保护状态字段 → 422（状态推进只能走动作端点，G14/Runtime §4.7）
+  // 不带 If-Match：ETag 宽限期允许缺省，确保唯一失败原因就是 422 字段保护本身。
+  const protectedUpdate = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
+    body: { inspector: '测试员', status: 'CLOSED' },
+  });
+  assert('负向：PUT 直写 status → 422 META_RUNTIME_FIELD_PROTECTED',
+    protectedUpdate.status === 422 && protectedUpdate.data?.data?.errorCode === 'META_RUNTIME_FIELD_PROTECTED',
+    { status: protectedUpdate.status, errorCode: protectedUpdate.data?.data?.errorCode });
+
   const stale = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { insp_no: `WO-${stamp}`, inspector: '王五', status: 'OPEN' }, etag: got.etag,
+    body: { insp_no: `WO-${stamp}`, inspector: '王五' }, etag: got.etag,
   });
   assert('陈旧 ETag → 412（未静默覆盖）', stale.status === 412, { status: stale.status, code: stale.data?.data?.errorCode });
 
@@ -144,7 +185,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
 
   console.log('\n===== E. W0a2 查询能力：fields / sort / q =====');
   await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO2-${stamp}`, device_code: 'DEV-002', inspector: '钱七', insp_date: '2026-10-10', result: 'ABNORMAL', status: 'OPEN' },
+    body: { insp_no: `WO2-${stamp}`, device_code: 'DEV-002', inspector: '钱七', insp_date: '2026-10-10', result: 'ABNORMAL' },
   });
   // 契约口径：q = field:value（RuntimePageQuery.parseFilter）；sort = [-]field（parseSort）
   const q = await api('GET', `/api/v1/runtime/entities/${inspCode}/records?page=1&size=10&q=device_code:DEV-002`);
@@ -176,7 +217,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   assert('已发布实体再次发布（顶栏常驻发布口径）', okOf(pub2), { status: pub2.status });
 
   const rec3 = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO3-${stamp}`, device_code: 'DEV-003', inspector: '孙八', insp_date: '2026-10-11', result: 'NORMAL', status: 'CLOSED', duration: 35 },
+    body: { insp_no: `WO3-${stamp}`, device_code: 'DEV-003', inspector: '孙八', insp_date: '2026-10-11', result: 'NORMAL', duration: 35 },
   });
   const rec3Id = payload(rec3)?.id;
   assert('新列写入（再次发布后热生效）', okOf(rec3) && !!rec3Id, { status: rec3.status, echoDuration: payload(rec3)?.duration });
@@ -204,10 +245,26 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   const pub3 = await api('POST', `/api/v1/metadata/entities/${replId}/publish`);
   assert('补货实体发布', okOf(pub3), { status: pub3.status });
   const replRec = await api('POST', `/api/v1/runtime/entities/${replCode}/records`, {
-    body: { order_no: `RO-${stamp}`, sku: 'SKU-1001', warehouse: 'WH-SZ', qty: 120, priority: 'HIGH', status: 'PENDING', expect_date: '2026-10-20' },
+    body: { order_no: `RO-${stamp}`, sku: 'SKU-1001', warehouse: 'WH-SZ', qty: 120, priority: 'HIGH', expect_date: '2026-10-20' },
   });
-  assert('补货记录录入（5 态 + 优先级枚举）', okOf(replRec) && payload(replRec)?.status === 'PENDING',
-    { status: replRec.status, priority: payload(replRec)?.priority });
+  const replRecId = payload(replRec)?.id;
+  assert('补货记录录入（不含 status，入口态注入 PENDING）', okOf(replRec) && payload(replRec)?.status === 'PENDING',
+    { status: replRec.status, priority: payload(replRec)?.priority, injected: payload(replRec)?.status });
+
+  console.log('\n===== G2. 0048 状态机：补货 5 态动作链 + 非法流转 =====');
+  const actPlace = await api('POST', `/api/v1/runtime/entities/${replCode}/records/${replRecId}/actions/placeOrder`, { body: { params: {} } });
+  assert('动作 placeOrder：PENDING→ORDERED', actPlace.status === 200 && payload(actPlace)?.toStatus === 'ORDERED',
+    { status: actPlace.status, to: payload(actPlace)?.toStatus });
+  // 负向：ORDERED 态触发 receive（要求 SHIPPED）→ 409
+  const actEarlyReceive = await api('POST', `/api/v1/runtime/entities/${replCode}/records/${replRecId}/actions/receive`, { body: { params: {} } });
+  assert('负向：ORDERED 态触发 receive → 409 非法流转', actEarlyReceive.status === 409,
+    { status: actEarlyReceive.status, errorCode: actEarlyReceive.data?.data?.errorCode });
+  const actShip = await api('POST', `/api/v1/runtime/entities/${replCode}/records/${replRecId}/actions/ship`, { body: { params: {} } });
+  assert('动作 ship：ORDERED→SHIPPED', actShip.status === 200 && payload(actShip)?.toStatus === 'SHIPPED',
+    { status: actShip.status, to: payload(actShip)?.toStatus });
+  const actReceive = await api('POST', `/api/v1/runtime/entities/${replCode}/records/${replRecId}/actions/receive`, { body: { params: {} } });
+  assert('动作 receive：SHIPPED→RECEIVED（链尾）', actReceive.status === 200 && payload(actReceive)?.toStatus === 'RECEIVED',
+    { status: actReceive.status, to: payload(actReceive)?.toStatus });
 
   console.log('\n===== H. W0-1 数据正确性：/data 绑 id（负向断言 A/B）=====');
   assert('A/B 两实体 code 不同且各自 detail 可解析', inspCode !== replCode, { inspCode, replCode });
@@ -241,9 +298,9 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
       hasEnumTag: document.body.innerText.includes('ENUM'),
     };
   });
-  assert('四 Tab = 结构/界面/数据/发布', ['结构', '界面', '数据', '发布'].every((t) => uiState.tabs.some((x) => x.includes(t))), { tabs: uiState.tabs });
-  assert('?tab=ui 深链选中界面 Tab（URL 同步）', uiState.url.includes('tab=ui'), { hash: uiState.url });
-  assert('界面 Tab 含「配置|预览」与「自动生成」角标', uiState.hasInterface && uiState.hasAutoBadge, uiState);
+  assert('五 Tab = 结构/显示设置/界面设计器/数据/发布', ['结构', '显示设置', '界面设计器', '数据', '发布'].every((t) => uiState.tabs.some((x) => x.includes(t))), { tabs: uiState.tabs });
+  assert('?tab=ui 深链选中显示设置 Tab（URL 同步）', uiState.url.includes('tab=ui'), { hash: uiState.url });
+  assert('显示设置 Tab 含「配置|预览」与「自动生成」角标', uiState.hasInterface && uiState.hasAutoBadge, uiState);
   assert('界面 Tab 展示 ENUM 字段（T3 渲染）', uiState.hasEnumTag, {});
 
   // 数据 Tab（嵌入模式）：断言绑定的是本实体
@@ -252,9 +309,11 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   const dataState = await mp.evaluate(() => document.body.innerText.slice(0, 2500));
   assert('数据 Tab 显示本实体物理表（md_insp_*）', /md_insp_/.test(dataState), { snippet: dataState.replace(/\s+/g, ' ').slice(0, 120) });
 
-  const sidebar = await mp.evaluate(() => document.body.innerText.slice(0, 1200));
-  assert('0027 菜单收口生效：侧栏含「实体」且无「关系管理」',
-    /实体/.test(sidebar) && !/关系管理/.test(sidebar), { hasEntity: /实体/.test(sidebar), hasRelation: /关系管理/.test(sidebar) });
+  // 0027 菜单收口：live 菜单树中实体入口名为「业务对象 [/metadata#/entities]」（非「实体」），
+  // 且无「关系管理」重复入口——按 live 数据校准断言口径（L3 数据迁移范畴，只观测不修改）。
+  const sidebar = await mp.evaluate(() => document.body.innerText.slice(0, 3000));
+  assert('0027 菜单收口生效：侧栏含「业务对象」且无「关系管理」',
+    /业务对象/.test(sidebar) && !/关系管理/.test(sidebar), { hasBusinessObject: /业务对象/.test(sidebar), hasRelation: /关系管理/.test(sidebar) });
 
   // 已知存量告警（非本次改动引入，全仓 grep 无 clearIcon 字面量，源自 antd 内部/其他微应用）
   const KNOWN = /clearIcon.{0,4}is deprecated/;

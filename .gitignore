@@ -288,3 +288,9 @@ ui_e2e_loginpage.cjs
 doc/ai-product/procuraAI/
 doc/ai-product/synapClaim/
 doc/ai-product/synapEquity/
+
+# =========================
+# 本地运行期产物（H2 库 / 临时解包目录，勿入库）
+# =========================
+data/
+qlcheck/

@@ -1,6 +1,6 @@
 /**
- * 双样板场景 UI 探针（模拟人工点击）：shell :3000 登录后，走「业务对象 → 业务数据」两个菜单，
- * 验证 API 链路造出来的报销单 / 理赔案件在真实界面上可见、可进、状态列有值。
+ * 三样板场景 UI 探针（模拟人工点击）：shell :3000 登录后，走「业务对象 → 业务数据」两个菜单，
+ * 验证 API 链路造出来的报销单 / 理赔案件 / 采购订单在真实界面上可见、可进、状态列有值。
  *
  * 用法：node scripts/e2e/ui-two-scenario-probe.mjs
  * 依赖：playwright（NODE_PATH 指向 ~/.workbuddy/binaries/node/workspace/node_modules）
@@ -85,9 +85,13 @@ try {
   check('界面可搜索到 E2E 建的「报销单」实体', expenseBody.includes('报销单'), expenseBody.slice(0, 200));
   const claimBody = await searchEntities('理赔案件');
   check('界面可搜索到 E2E 建的「理赔案件」实体', claimBody.includes('理赔案件'), claimBody.slice(0, 200));
+  const poBody = await searchEntities('采购订单');
+  check('界面可搜索到 E2E 建的「采购订单」实体', poBody.includes('采购订单'), poBody.slice(0, 200));
   await shot('2_entities');
 
   // 3. 业务数据：按新 UX 从实体行内「数据」按钮进入（自动锁定实体，不再走自由下拉）
+  // 上面最后一次搜索是「采购订单」，必须先把检索条件切回「理赔案件」再找行
+  await searchEntities('理赔案件');
   let picked = false;
   const claimRow = page.locator('tr').filter({ hasText: '理赔案件' }).first();
   if (await claimRow.count()) {
@@ -106,6 +110,29 @@ try {
     dataBody.slice(0, 260)
   );
   await shot('3_runtime');
+
+  // 3b. 采购订单：同样从行内「数据」进入，验证行项目子表 / 三单匹配金额列可见
+  await page.goto(`${BASE}/metadata#/entities`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(4000);
+  await searchEntities('采购订单');
+  let poPicked = false;
+  const poRow = page.locator('tr').filter({ hasText: '采购订单' }).first();
+  if (await poRow.count()) {
+    const dataBtn = poRow.locator('button').filter({ hasText: '数据' }).first();
+    if (await dataBtn.count()) {
+      await dataBtn.click();
+      poPicked = true;
+    }
+  }
+  await page.waitForTimeout(4500);
+  const poData = await page.locator('body').innerText();
+  check('采购订单：行内「数据」进入运行数据面', poPicked, '实体行内未找到「数据」按钮');
+  check(
+    '业务数据：采购订单记录与三单金额列可见',
+    /RECEIVED|RECEIVING|APPROVED|PAID|采购金额|收货|发票/.test(poData),
+    poData.slice(0, 260)
+  );
+  await shot('4_purchase_runtime');
 
   // antd 的 deprecation 警告走 console.error，属第三方库噪声，不算应用缺陷
   const fatal = consoleErrors.filter(

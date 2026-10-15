@@ -275,6 +275,21 @@ public final class BoneDddArchRules {
   }
 
   /**
+   * AI 中台 §4.3：Aviator（新旧 GAV）零消费者死实现已删，禁止重新引入（LGPL 许可 + CVE / SBOM 面收敛）。
+   *
+   * <p>advisory（allowEmptyShould）：全仓当前零引用恒绿；一旦有类重新 import aviator 即被拦截。
+   */
+  public static ArchRule noAviatorDependency() {
+    return noClasses()
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage("com.googlecode.aviator..", "io.github.aviatorscript..")
+        .allowEmptyShould(true)
+        .because(
+            "AI 中台 §4.3: Aviator dead impl removed; do not reintroduce (license + CVE/SBOM surface)");
+  }
+
+  /**
    * <b>ADR-0028（2026-09-14）</b>：默认入站边界是语义化 {@code *ApplicationService}（Application Service
    * First），因此<strong>取消</strong>对 {@code ..application.service..} 的一刀切禁止；仅守护 {@code
    * ..application..} 层 {@code *Manager} / {@code Common*} / {@code Base*} / {@code Business*}
