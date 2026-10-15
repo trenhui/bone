@@ -122,7 +122,7 @@ HITL 不单列服务，是 orchestration 内嵌子域（确认 API + 置信度�
 
 ### 4.1 LLM 抽象：一期不引 Spring AI，自建 OpenAI 兼容客户端
 
-Spring AI 官方 1.1.x 止于 1.1.8、随 Boot 3.5 于 2026-06-30 OSS EOL 且有 4 个未修复 CVE（CVE-2026-59318 工具调用越权 / -47851 / -47852 / -59294，2 high）；2.x（2026-06-12 GA）绑定 Boot 4 / Framework 7 / Jackson 3，**无法在 Boot 3.x 加载**。而 Bone 基线仍为 Boot 3.5.x——升 Boot 4 是全仓 breaking 升级（Framework 7 / Jackson 3 改包 / Cloud 2026.x，约 83 处），回归面是整个 Bone。定案：自建 OpenAI 兼容客户端（WebClient + JSON mode + Micrometer，约 200 行、零新依赖），`LLMClient` 门面契约冻结，POC 两周可跑。网关的核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 也不提供——它只是门面后的一个 provider 适配器，两件事解耦：AI 用自建先跑业务，Boot 4 走平台升级轨道（§6 时限），捆绑则互相阻塞。
+Spring AI 官方 1.1.x 止于 1.1.8、随 Boot 3.5 于 2026-06-30 OSS EOL 且有未修复 CVE（含 CVE-2026-59318 工具调用越权，多个 High，明细见 spring.io CVE 公告）；2.x（2026-06-12 GA）绑定 Boot 4 / Framework 7 / Jackson 3，**无法在 Boot 3.x 加载**。而 Bone 基线仍为 Boot 3.5.x——升 Boot 4 是全仓 breaking 升级（Framework 7 / Jackson 3 改包 / Cloud 2026.x，约 83 处），回归面是整个 Bone。定案：自建 OpenAI 兼容客户端（WebClient + JSON mode + Micrometer，约 200 行、零新依赖），`LLMClient` 门面契约冻结，POC 两周可跑。网关的核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 也不提供——它只是门面后的一个 provider 适配器，两件事解耦：AI 用自建先跑业务，Boot 4 走平台升级轨道（§6 时限），捆绑则互相阻塞。
 
 **迁移阶梯（三级，只换门面实现，不动业务）**：① 现在 = 自建（默认）；② 自建覆盖不了的 provider/能力 → LangChain4j（Apache-2.0，Boot 3.5 可用）局部替换，不全家桶；③ Boot 4 落地后 → 按需评估 Spring AI 2.x。例外：Boot 4 已立项且排期先于 AI POC，可直连 2.x，需 L3 单批。若引框架：只用修复版，tool calling 默认关、语义缓存自建（租户 key + 全长度哈希）、PDF 解析深度限阈，需 L3 单批。
 
