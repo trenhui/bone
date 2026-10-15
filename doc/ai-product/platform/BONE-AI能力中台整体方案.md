@@ -1,22 +1,20 @@
 # BONE AI 能力中台 · 整体方案
 
-> **版本**：v1.4（2026-10-15，归口：平台架构组）｜本文是 Bone AI 能力中台**唯一方案真源**：模块边界、框架选型、许可红线、落地批次以本文为准。
+> **版本**：v1.5（2026-10-15，归口：平台架构组）｜本文是 Bone AI 能力中台**唯一方案真源**：模块边界、框架选型、许可红线、落地批次以本文为准。业界对位见附录 B。
 
 ## 0. 一句话结论（TL;DR）
 
-1. **沉淀什么**：跨域同构的**机制**进平台（解析 / 双引擎编排 / HITL / 留痕 / 网关 / 检索 / 评测 / 安全 / 预警 / 交付），领域**资产**留产品（规则库 / 图谱 / 估值引擎 / 快照库）。**平台只做"证明与治理"，不做"判断与决策"**。
-2. **怎么建**：新建 `bone-ai/` 平行聚合 7 模块 + 扩展 4 个现有模块 + 1 个 AI 子应用，只补空白与治理面，能复用的不新建。
-3. **关键选型**：一期不引 Spring AI 与重型 Agent 框架；自建 OpenAI 兼容客户端 + `LLMClient` 门面（可替换）；编排用显式状态机（复用 `WorkflowMetadata` 模型、补执行器）；规则 DSL 默认 QLExpress、Aviator 并存。
-4. **治理靠结构强制**：网关唯一入站 + 无证据拒返 + 类型隔离（`AiSuggestion` / `Confirmed`）+ ArchUnit 门禁，不靠约定。
-5. **怎么落**：POC（第 0 批）→ 三批次垂直切片，每批有出口判据与机械门禁；许可排雷前置（SBOM + CVE 扫描）。
-
-业界对位：网关模式对标 LiteLLM / Portkey / Kong AI Gateway / Cloudflare AI Gateway；编排模式遵循 Anthropic "Building Effective Agents"（受监管领域用确定性工作流 + 人工终审，不用自主 Agent 循环）；工具互操作走 MCP / A2A；观测对齐 OTel GenAI 语义约定；评测对标 Langfuse / LangSmith + RAGAS。
+1. **沉淀机制、留住资产**：跨域同构的**机制**进平台（解析 / 双引擎编排 / HITL / 留痕 / 网关 / 检索 / 评测 / 安全 / 预警 / 交付），领域**资产**留产品（规则库 / 图谱 / 估值引擎 / 快照库）。平台只做"证明与治理"，不做"判断与决策"。
+2. **怎么建**：新建 `bone-ai/` 平行聚合（7 新模块 + 扩展 4 存量模块 + 1 AI 子应用），只补空白与治理面；一期**不引 Spring AI 与重型 Agent 框架**——自建 OpenAI 兼容客户端 + `LLMClient` 门面、显式状态机编排、QLExpress / Aviator 双规则 DSL。
+3. **怎么落**：治理靠结构强制（网关唯一入站 + 无证据拒返 + `AiSuggestion`/`Confirmed` 类型隔离 + ArchUnit 门禁）；POC（第 0 批）→ 三批次垂直切片，每批有出口判据与机械门禁；许可排雷前置（SBOM + CVE 扫描）。
 
 ---
 
 ## 1. 背景与结论
 
-三个领域完全不同（采购审查 / 智能理赔 / 智能估值）的产品方案，独立设计出 10 项高度同构能力（8 项三方案同构、2 项两方案同构），连选型都重复：规则热更、混合检索 + rerank、三元组快照、HITL 三态、评测集 + 双人 Kappa。不沉淀的后果：① 重复建设；② 合规能力（可复现 / 可回放 / 人工终审 / 数据不出域）各自拼装、各自面对审计；③ 成本红线 / 证据链 / PII 脱敏散落调用点必被绕过——治理必须结构强制。
+procuraAI / ClaimSphere / Synap Equity 三产品方案独立设计，收敛出 10 项高度同构能力（8 项三方案同构、2 项两方案同构），连选型都重复（规则热更、混合检索 + rerank、三元组快照、HITL 三态、评测集 + 双人 Kappa）。这正是业界 AI 演进**阶段二**的触发信号——多业务线重复建设同类能力时，RAG / 模型路由 / 评测 / 治理自然沉淀为平台层（阶段一：AI 增强微服务，AI 输出给人看；阶段二：AI 原生服务层，能力平台化；阶段三：Agent 化协作，AI 输出触发业务写操作）。BONE 三产品均为"建议 + 人工裁决"形态，定位在阶段二起点，不做阶段三。
+
+不沉淀的后果：① 重复建设；② 合规能力（可复现 / 可回放 / 人工终审 / 数据不出域）各自拼装、各自面对审计；③ 成本红线 / 证据链 / PII 脱敏散落调用点必被绕过——治理必须结构强制。
 
 ### 1.1 家底核查（源码实证，明细见附录 A）
 
@@ -32,8 +30,6 @@ BONE 存量比预期厚，真正空白只有五处：**LLM 运行时、工作流
 | `bone-integration` / `bone-notification` | Flow / Outbox / alert 域齐全 | C9 / C10 落扩展，不新建 |
 | Aviator 5.4.1（LGPL） | 已升级 `io.github.aviatorscript:aviator` 5.9.0（Apache-2.0） | 许可已解决，见 §4.3 |
 
-**剩余缺口 = 工作流执行器、文档解析 IR、RAG / 评测 + 网关治理面。**
-
 ---
 
 ## 2. 沉淀边界
@@ -42,7 +38,7 @@ BONE 存量比预期厚，真正空白只有五处：**LLM 运行时、工作流
 
 | # | 能力 | 沉淀内容 | 优先级 |
 |---|---|---|---|
-| C1 | 文档解析与 IR | 统一 IR（章节树 / 表格 / 条款索引 / span）+ OCR / 表格管线 + 语义切片 + 脱敏回填；引用必须定位原文 | P0 |
+| C1 | 文档解析与 IR | 统一 IR（章节树 / 表格 / 条款索引 / span）+ OCR / 表格管线 + 语义切片 + 脱敏回填；引用必须定位原文。**最小 IR（存量 PDFBox/Tika 条款切片 + span 定位）第一批先用，完整管线第二批** | P0 |
 | C2 | 双引擎与编排 | 规则 DSL（JSON + 表达式 + 沙箱热更）+ 版本 / 灰度 / shadow + 显式状态机（排队→解析→规则→LLM→确认→归档）+ fallback 降级矩阵 | P0 |
 | C3 | HITL 确认与回流 | 条目化建议（引用 + 依据 + 建议值）+ 置信度分级（初始 ≥0.85 直出 / 0.7–0.85 复核 / <0.7 强制人工，POC 后按评测校准）+ 三态 + `reason_type` 回流 + 按风险分派裁决人 | P0 |
 | C4 | 快照与审计追溯 | 输入哈希 + IR + 引擎版本三元组 + 不可变档案 / 版本链 + 全量留痕 + 回放 | P0 |
@@ -57,7 +53,7 @@ BONE 存量比预期厚，真正空白只有五处：**LLM 运行时、工作流
 
 procuraAI（法规规则库 R01–R25、三一致校验、供应商画像）、ClaimSphere（资金状态机、理算引擎、医学图谱、决策图模板）、Equity（PE/PB/DCF 引擎、财务体检、时点快照库）留在产品侧。
 
-边界三原则：① 资产是壁垒（2–3 年积累，模型可买、数据难买），吞进平台拖慢领域迭代；② 平台只沉淀机制与治理，不吞内容与领域逻辑；③ 平台能力契约化暴露，智能体外置隔离（Clean Core）。**判断标准：跨域同构的工程机制进平台，领域知识与数据资产留产品。**
+**判断标准（一条）**：跨域同构的工程机制进平台，领域知识与数据资产留产品。理由：① 资产是壁垒（2–3 年积累，模型可买、数据难买），吞进平台拖慢领域迭代；② 平台能力契约化暴露，智能体外置隔离（Clean Core）。
 
 ---
 
@@ -105,15 +101,15 @@ eval → 横切发布流水线
 产品域 → bone-ai-* + integration + notification
 ```
 
-**分层铁律**：确定性内核（规则 / 计算 / 资金状态机）永远在 domain / 产品侧；AI 模块只给"建议 + 证据"，不做最终裁决。**类型护栏**：AI 结论一律 `AiSuggestion<T>`（置信度 + 证据引用），资金 / 责任 / 数值判定入口只收 `Confirmed<T>`（HITL 裁决或规则产出），ArchUnit 禁止隐式互转。**检索边界**：向量库实例形态可推迟（§4.5），但切分 / 权限过滤 / 引用强制 / RRF / rerank 策略留 rag，gateway 只做调用代理、不下放检索决策。
+**设计约束（§5 门禁实现）**：① 分层铁律——确定性内核（规则 / 计算 / 资金状态机）永远在 domain / 产品侧，AI 模块只给"建议 + 证据"，不做最终裁决；② 类型护栏——AI 结论一律 `AiSuggestion<T>`（置信度 + 证据引用），资金 / 责任 / 数值判定入口只收 `Confirmed<T>`（HITL 裁决或规则产出），ArchUnit 禁止隐式互转；③ 检索边界——向量库实例形态可推迟（§4.5），但切分 / 权限过滤 / 引用强制 / RRF / rerank 策略留 rag，gateway 只做调用代理、不下放检索决策。
 
 ### 3.3 HITL 落点与状态契约
 
-HITL 不单列服务，是 orchestration 内嵌子域（确认 API + 置信度分级 + 三态 + `reason_type` 回流 trace），前端确认台落 `bone-ai-app`。AI 到"待人工"即停在编排收敛节点等待裁决；不自造审批流、不把主编排托管给 Camel Flow（避免第二份流程真源）。
+HITL 不单列服务，是 orchestration 内嵌子域（确认 API + 置信度分级 + 三态 + `reason_type` 回流 trace），前端确认台落 `bone-ai-app`（权限/组织复用 bone-iam）；合规硬门槛：195 号文“辅助性定位”与人责归属。AI 到"待人工"即停在编排收敛节点等待裁决；不自造审批流、不把主编排托管给 Camel Flow（避免第二份流程真源）。
 
 | 状态 | 语义 | 回流 |
 |---|---|---|
-| `pending` | 待裁决；<0.7 强制进入，不得直出 | — |
+| `pending` | 待裁决；<0.7 强制进入，不得直出 | —（等待裁决，不回流） |
 | `confirmed` | 建议值生效，进下一节点 | trace 记操作人 + 时间 |
 | `rejected` | 建议值作废，走驳回分支 | trace 记 `reason_type` + 备注 |
 | `modified` | 改判值生效，作纠错样本 | trace 记 `reason_type` + 原值 vs 改判值 diff |
@@ -126,15 +122,13 @@ HITL 不单列服务，是 orchestration 内嵌子域（确认 API + 置信度�
 
 ### 4.1 LLM 抽象：一期不引 Spring AI，自建 OpenAI 兼容客户端
 
-官方 1.1.x 止于 1.1.8、随 Boot 3.5 于 2026-06-30 OSS EOL 且有 4 个未修复 CVE；2.x 绑定 Boot 4，与基线冲突。定案自建客户端（WebClient + JSON mode + Micrometer，零新依赖），`LLMClient` 门面契约冻结。
+Spring AI 官方 1.1.x 止于 1.1.8、随 Boot 3.5 于 2026-06-30 OSS EOL 且有 4 个未修复 CVE（CVE-2026-59318 工具调用越权 / -47851 / -47852 / -59294，2 high）；2.x（2026-06-12 GA）绑定 Boot 4 / Framework 7 / Jackson 3，**无法在 Boot 3.x 加载**。而 Bone 基线仍为 Boot 3.5.x——升 Boot 4 是全仓 breaking 升级（Framework 7 / Jackson 3 改包 / Cloud 2026.x，约 83 处），回归面是整个 Bone。定案：自建 OpenAI 兼容客户端（WebClient + JSON mode + Micrometer，约 200 行、零新依赖），`LLMClient` 门面契约冻结，POC 两周可跑。网关的核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 也不提供——它只是门面后的一个 provider 适配器，两件事解耦：AI 用自建先跑业务，Boot 4 走平台升级轨道（§6 时限），捆绑则互相阻塞。
 
-**为什么不"直接升 Boot 4 用 Spring AI 2.x"**：Boot 4 是全仓 breaking 升级（Framework 7 / Jackson 3 改包 / Cloud 2026.x，约 83 处），回归面是整个 Bone；自建客户端约 200 行、零新依赖，POC 两周可跑。网关的核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 本来也不提供——它只是门面后的一个 provider 适配器。两件事解耦：AI 用自建先跑业务，Boot 4 走平台升级轨道（§6 时限）；捆绑则两边互相阻塞。
+**迁移阶梯（三级，只换门面实现，不动业务）**：① 现在 = 自建（默认）；② 自建覆盖不了的 provider/能力 → LangChain4j（Apache-2.0，Boot 3.5 可用）局部替换，不全家桶；③ Boot 4 落地后 → 按需评估 Spring AI 2.x。例外：Boot 4 已立项且排期先于 AI POC，可直连 2.x，需 L3 单批。若引框架：只用修复版，tool calling 默认关、语义缓存自建（租户 key + 全长度哈希）、PDF 解析深度限阈，需 L3 单批。
 
-**迁移阶梯（三级，只换门面实现，不动业务）**：① 现在 = 自建（默认）；② 自建覆盖不了的 provider/能力 → LangChain4j（Apache-2.0，Boot 3.5 可用）局部替换，不全家桶；③ Boot 4 落地后 → 按需评估 Spring AI 2.x。例外：Boot 4 已立项且排期先于 AI POC，可直连 2.x，需 L3 单批。
+**供应链论证**：网关是模型密钥集中点，2026-03 LiteLLM PyPI 包（1.82.7/1.82.8）被植入凭据窃取恶意软件，暴露了"Python 深依赖树承载密钥"的结构性风险；Java 自建客户端零新增依赖，无此攻击面，也更适配私有化交付与气隙环境。
 
-**先进性增量（P1 同批，不单独立项）**：级联路由（小模型先行、不足自动升级）+ 结构化输出强制（JSON Schema 校验，失败转 HITL）+ 提示词版本化（随 `AiMetadata` 版本走、可回滚）+ 灾备路由（本地为主、云端 API 作备，同口径计量脱敏）。若引框架：只用修复版，tool calling 默认关、语义缓存自建（租户 key + 全长度哈希）、PDF 解析深度限阈，需 L3 单批。
-
-MCP 双角色（预留）：Bone 作 Server（模型 / 检索 / 规则以 Tool 暴露，产品智能体经 MCP 消费）；作 Client（消费外部 MCP Server，共用网关 Tool 注册表、同一权限 / 配额 / 审计出口）。MCP Server 单列 POC，不捆绑 Spring AI；MCP SDK 版本需同步复核 CVE。
+MCP 双角色（预留）：Bone 作 Server（模型 / 检索 / 规则以 Tool 暴露，产品智能体经 MCP 消费）；作 Client（消费外部 MCP Server，共用网关 Tool 注册表、同一权限 / 配额 / 审计出口）。MCP Server 单列 POC，不捆绑 Spring AI；MCP SDK 锁 ≥2.0.1（CVE-2026-59279 会话无界增长修复）。
 
 ### 4.2 编排 / Agent：不引重型框架
 
@@ -148,14 +142,14 @@ LangGraph / AutoGen / CrewAI / Dify 内核 / Spring AI Alibaba Agent 均不引�
 
 ### 4.4 文档解析 sidecar 契约（冻结基线）
 
-先冻契约、后选实现，PaddleOCR 与 Docling 互为可替换实现（替换成本 = 一个适配器类）：HTTP REST（JSON）唯一基线；输入 = 文件引用（MinIO objectKey 优先）+ 解析配置 + 租户上下文；输出 = 统一 IR JSON + `provider_meta`；统一错误字典（`PARSE_TIMEOUT` / `UNSUPPORTED_FORMAT` / `OCR_LOW_CONFIDENCE` / `SIDECAR_UNAVAILABLE` / `PAYLOAD_TOO_LARGE`）对齐 `ApiResponse`；超时按页数分档、仅幂等失败有限重试，超时返部分 IR + `partial=true` 转 HITL（具体阈值见详设，不在总案硬编码）；独立 Deployment + HPA + `/healthz`；sidecar 不持租户凭证（短期 URL），IR 走内网（mTLS 若启用则强制）。
+先冻契约、后选实现，PaddleOCR 与 Docling 互为可替换实现（替换成本 = 一个适配器类）：HTTP REST（JSON）唯一基线；输入 = 文件引用（MinIO objectKey 优先）+ 解析配置 + 租户上下文；输出 = 统一 IR JSON + `provider_meta`；统一错误字典（`PARSE_TIMEOUT` / `UNSUPPORTED_FORMAT` / `OCR_LOW_CONFIDENCE` / `SIDECAR_UNAVAILABLE` / `PAYLOAD_TOO_LARGE`）对齐 `ApiResponse`；超时按页数分档、仅幂等失败有限重试，超时返部分 IR + `partial=true` 转 HITL（阈值见详设，不在总案硬编码）；独立 Deployment + HPA + `/healthz`；sidecar 不持租户凭证（短期 URL），IR 走内网（mTLS 若启用则强制）。
 
 ### 4.5 组件选型总表
 
 | 能力 | 选型 | 说明 |
 |---|---|---|
 | Java 基线解析 | PDFBox / Tika / POI（已有，Apache-2.0） | 默认管线 |
-| OCR / 复杂版面 | Docling（MIT，版面 / 表格，CPU 可起步）或 PaddleOCR（Apache-2.0，扫描件） | 按形态路由；精度不达标时候选 MinerU（自定义许可，私有化内部署需法务确认，对外 SaaS 不用）；禁用 PyMuPDF（AGPL）/ Marker（OpenRAIL-M）/ pg_search（AGPL），产品侧历史选型迁至本行 |
+| OCR / 复杂版面 | Docling（MIT，版面 / 表格，CPU 可起步）或 PaddleOCR（Apache-2.0，扫描件） | 按形态路由；精度不达标时候选 MinerU（自定义许可，私有化内部署需法务确认，对外 SaaS 不用）；禁用 PyMuPDF（AGPL）/ Marker（OpenRAIL-M，$5M 收入阈值）/ pg_search（AGPL），产品侧历史选型迁至本行 |
 | rerank | 本地 ONNX cross-encoder（bge 系，数据不出域）为主，云端 API 经网关计量为辅 | Spring AI 无 rerank 类型，rag 自建 |
 | Embedding | bge-m3 系（兼顾中英条款，1024 维起步） | 维度变更走版本迁移；切片条款级优先、超长条款按语义段二次切分（阈值见详设） |
 | 向量库 | 终局 pgvector 独立实例；**实例决策推迟至 rag 启动时实测**，过渡用 MySQL JSON + 应用层余弦（百万级以下）/ 既有 ES | 不为想象规模预付运维税；不用 MySQL 主库存向量 |
@@ -165,23 +159,32 @@ LangGraph / AutoGen / CrewAI / Dify 内核 / Spring AI Alibaba Agent 均不引�
 
 ### 4.6 许可红线（POC 签前法务出 SBOM）
 
-Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 未修复 CVE）❌一期不引；旧 Aviator GAV（LGPL）✅已升级解决；MinerU / Qwen 非 Apache 档按部署形态法务确认；Aviator 5.9.0 / Docling / PaddleOCR / QLExpress 4.1.3 / pgvector ✅可用。新增依赖一律过 CVE / SBOM 门禁。
+Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 未修复 CVE）❌一期不引；旧 Aviator GAV（LGPL）✅已升级解决；MinerU / Qwen 非 Apache 档按部署形态法务确认；Aviator 5.9.0 / Docling / PaddleOCR / QLExpress 4.1.3 / pgvector ✅可用。新增依赖一律过 CVE / SBOM 门禁。送审底稿见 `BONE-AI依赖与许可SBOM清单.md`（5 项待法务确认）。
 
 ### 4.7 网关形态：先库、后服务（与业界对齐但一处分歧）
 
-网关的必要性是"模型调用的治理强制点"，不是"大而全的服务"：调用点分散则成本 / 证据 / PII 必被绕过（Kong 定义即集中式策略强制点）；多供应商 + OpenAI 兼容协议是 2026 常态；租户配额只能平台强制；fallback / 重试 / 熔断跨产品重复。故**一期 = 库形态**（进程内门面，零额外延时、无 SPOF）；任一触发即演进为集中式网关（LiteLLM Proxy / Portkey 形态）：出现非 JVM 调用方、跨产品集中配额审计、或供应商 ≥3。演进成本可控（`LLMClient` 契约不变）。
+网关必要性 = "模型调用的治理强制点"，不是"大而全的服务"：调用点分散则成本 / 证据 / PII 必被绕过（Kong 定义即集中式策略强制点）；多供应商 + OpenAI 兼容协议是 2026 常态；租户配额只能平台强制；fallback / 重试 / 熔断跨产品重复。故**一期 = 库形态**（进程内门面，零额外延时、无 SPOF）；任一触发即演进为集中式网关（LiteLLM Proxy / Portkey 形态）：出现非 JVM 调用方、跨产品集中配额审计、或供应商 ≥3。演进成本可控（`LLMClient` 契约不变）。
 
 **刻意分歧**：业界网关故障建议 fail open 直连供应商；BONE 合规场景直连即断证据链。定案 **fail 到"纯确定性 / 人工替代"路径，绝不 fail 到直连模型**，能力级灰度开关支持秒级降级。
 
-能力落点（对标 LiteLLM / Portkey / Kong / Bedrock 2026-10）：统一 OpenAI 兼容 API ✅保持；预算 / 配额 / spend tracking / Virtual Keys（P1①，密钥走 bone-security）、路由降级重试（P1②）、精确缓存（P2③，与成本红线同款短路）、语义缓存（后置，租户隔离实证前禁用）、Guardrails / PII DLP（P1④，OWASP LLM01 / LLM02 对表）、调用日志证据 ✅保持（哈希防篡改 + 回放超业界基线）、观测（P1⑤，对齐 OTel GenAI `gen_ai.*` 映射表版本化、提示词默认不采集）。
+**能力落点（对标 LiteLLM / Portkey / Kong / Bedrock 2026-10，P1 同批不单独立项）**：统一 OpenAI 兼容 API ✅；预算 / 配额 / spend tracking / Virtual Keys（密钥走 bone-security）；路由降级重试；精确缓存（与成本红线同款短路）；语义缓存（后置，租户隔离实证前禁用）；Guardrails / PII DLP（OWASP LLM01 / LLM02 对表）；调用日志证据 ✅（哈希防篡改 + 回放超业界基线）；观测（对齐 OTel GenAI `gen_ai.*` 映射表版本化、提示词默认不采集）。先进增量随第一批：级联路由（小模型先行、不足自动升级）+ 结构化输出强制（JSON Schema 校验，失败转 HITL）+ 提示词版本化（随 `AiMetadata` 版本走、可回滚）+ 灾备路由（本地为主、云端 API 作备，同口径计量脱敏）。
 
 ---
 
 ## 5. 治理与质量门禁
 
-**证据链结构强制**：① 网关唯一入站，每调用必发 `LlmCallRecorded`、trace 必落快照；② ArchUnit 禁业务代码 import `LlmClient` 实现类；③ 响应对不上快照拒绝返回。**缺证据 = 拒返**，可追溯由代码保证。
+**治理靠结构强制，不靠约定**——证据链、类型护栏、许可红线全部机械落地：
 
-**网关治理面**：路由 / 降级 / 租户配额 + PII 出口强制脱敏（复用 `bone-security`）+ 能力级一键灰度降级。**评测口径**：影子模式 + 抽检 + `reason_type` 回流是运行机制，最小 eval（评测集 + 指标字典 + CI 门禁）保留，不做全量标注平台。冷启动用小规模人工标注 + HITL 回流滚雪球，不搞一次性大标注。**机械门禁**：`check.sh` + ArchUnit（产品不直连 AI 实现、AI 不 import 产品域、模型 HTTP / key 只在 gateway、AI 服务必经 trace 落盘、资金 / 责任 / 数值入口禁收 `AiSuggestion`、禁旧 Aviator GAV）+ 评测基线 + 负向探针。契约先行、实现可替换，P0 以"平台默认实现 + 产品可覆盖"落地。
+| 门禁 | 规则 | 违反后果 |
+|---|---|---|
+| 证据链 | 网关唯一入站，每调用必发 `LlmCallRecorded`、trace 必落快照；响应对不上快照**拒绝返回** | 缺证据 = 拒返，可追溯由代码保证 |
+| 类型护栏 | 资金 / 责任 / 数值判定入口禁收 `AiSuggestion`，只收 `Confirmed<T>` | ArchUnit 编译期拦截 |
+| 依赖单向 | 产品不直连 AI 实现类（禁 import `LlmClient` 实现）；AI 不 import 产品域 | ArchUnit 编译期拦截 |
+| 密钥边界 | 模型 HTTP / key 只在 gateway | ArchUnit + 代码评审 |
+| 许可 | 禁旧 Aviator GAV；新增依赖过 CVE / SBOM | CI 门禁 |
+| 质量 | 评测基线 + 负向探针（成本红线、rerank 越权、规则灰度、网关延时增量、trace 落盘成功率） | 发布流水线拦截 |
+
+**评测口径**：影子模式 + 抽检 + `reason_type` 回流是运行机制；最小 eval（评测集 + 指标字典 + CI 门禁）保留，不做全量标注平台；冷启动用小规模人工标注 + HITL 回流滚雪球，不搞一次性大标注。契约先行、实现可替换，P0 以"平台默认实现 + 产品可覆盖"落地；入站边界治理约束继续有效（ADR-0028 `*ApplicationService`、`ApiResponse`/`PageResult`、全表租户隔离）。
 
 ---
 
@@ -190,11 +193,11 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 | 批次 | 范围 | 出口判据 |
 |---|---|---|
 | 第 0 批 POC（2 周） | gateway 门面 + 自建客户端（一家 provider + vLLM 本地）；`LLMClient` 契约冻结；法务 SBOM 首版；CVE 门禁上线 | 换 provider 不改业务代码；成本红线有负向探针 |
-| 第一批（最小内核） | gateway 治理面 + trace + rules 最小版（CRUD + 版本 + 命中标记 + 方言路由）+ orchestration（含 HITL）+ metadata 语义扩展 | procuraAI 端到端（解析→规则→LLM→HITL→回放）；引用定位原文 100%；三元组可回放；rules 最小版必含（否则规则节点要么 stub 假跑、要么逻辑写死编排层成第二真源） |
-| 第二批（解析检索） | document（契约冻结）+ rag + rules 完整面（灰度 / shadow / 回归 + 规则级兼容补齐） | 双解析器互换实证；RAG 引用正确率 ≥98%；rerank 越权 / 规则灰度有负向探针；pgvector 形态按实测决策 |
+| 第一批（最小内核） | gateway 治理面 + trace + rules 最小版（CRUD + 版本 + 命中标记 + 方言路由）+ orchestration（含 HITL）+ metadata 语义扩展 + **最小 IR（存量 PDFBox/Tika 条款切片 + span 定位）** | procuraAI 端到端（解析→规则→LLM→HITL→回放）；引用定位原文 100%；三元组可回放；rules 最小版必含（否则规则节点要么 stub 假跑、要么逻辑写死编排层成第二真源） |
+| 第二批（解析检索） | document 完整管线（契约冻结，OCR / 复杂版面 / 双解析器互换）+ rag + rules 完整面（灰度 / shadow / 回归 + 规则级兼容补齐） | 双解析器互换实证；RAG 引用正确率 ≥98%；rerank 越权 / 规则灰度有负向探针；pgvector 形态按实测决策 |
 | 第三批（评测交付） | eval + notification 消警闭环 + integration AI 节点三态 + `bone-ai-app` | 评测门禁挂 CI；客户接入目标 ≤15 人日；三态可回退实证 |
 
-现状：第一批中 gateway / trace 最小版已落地，其余未动工。各批通用基线：网关延时增量、trace 落盘成功率、负向探针全绿（阈值见详设，不在总案硬编码）。平台级风险（解耦单列）：Boot 3.5.x 已 OSS EOL，AI 中台零框架依赖不加深该风险；建议 2026-11-30 前二选一拍板（商业订阅或 Boot 4 排期），不与 AI 项目捆绑升级。
+现状：第一批中 gateway / trace 最小版已落地，其余未动工。各批通用基线阈值见详设，不在总案硬编码。**平台级风险（解耦单列）**：Boot 3.5.x 已 OSS EOL，AI 中台零框架依赖不加深该风险；建议 2026-11-30 前二选一拍板（商业订阅或 Boot 4 排期），不与 AI 项目捆绑升级。
 
 ---
 
@@ -226,3 +229,15 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 | 8 | `bone-file` 单 jar 实现 | `bone-platform/bone-file/` |
 | 9–11 | GAV 升级 / Boot 基线 / 许可 CVE 外部来源 | `bone-parent/pom.xml`；endoflife.date + Central + spring.io 公告；ParadeDB / Dify LICENSE 原文；Qwen 官方模型卡 |
 | 12–13 | gateway / trace 最小版已落地 | `bone-ai/bone-ai-gateway/.../application/LlmGatewayService.java`、`infrastructure/OpenAiCompatibleClient.java`；`bone-ai-trace/.../domain/model/EvidenceSnapshot.java`、`infrastructure/event/EvidenceTraceListener.java` |
+
+## 附录 B：业界对位
+
+| 主题 | 业界主流（2026-10） | BONE 定案 | 差异说明 |
+|---|---|---|---|
+| 网关 | LiteLLM / Portkey / Kong AI Gateway / Cloudflare AI Gateway（统一 OpenAI 兼容 API + 路由 / 配额 / 缓存 / Guardrails / 观测） | 一期库形态自建门面，`LLMClient` 契约兼容演进为集中式网关 | 库形态零延时无 SPOF；供应链更安全（见 §4.1）；证据链与回放超业界基线 |
+| 编排 | Anthropic "Building Effective Agents"：受监管领域用确定性工作流 + 人工终审，不用自主 Agent 循环 | 显式状态机（WorkflowMetadata）+ HITL 收敛节点 | 与业界共识一致，自主循环仅限试点四条件 |
+| 工具互操作 | MCP / A2A 成为标准协议 | MCP 双角色（Server + Client），SDK ≥2.0.1 | 预留同向演进，不捆绑框架 |
+| 观测 | OTel GenAI 语义约定（`gen_ai.*`） | 对齐映射表版本化，提示词默认不采集 | 一致 |
+| 评测 | Langfuse / LangSmith + RAGAS；LLM-as-Judge 省标注 | 自建最小 eval（评测集 + 指标字典 + CI 门禁）+ judge 走网关 | 不做全量标注平台，HITL 回流滚雪球 |
+| 检索 | Modular RAG（混合检索 + RRF + rerank + 强制出处）为生产主流 | 条款级切片 + 向量 + BM25 + RRF + rerank + 无依据不编造 | 一致，权限隔离为私有化增量 |
+| 模型 | 开源权重 + 私有化部署是政企主线 | Qwen3.5 / 3.8 系 27B（Apache-2.0 档，已核定终局） | 许可红线前置（多租户 SaaS 触发 MaaS 条款需审批） |
