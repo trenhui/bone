@@ -13,7 +13,8 @@
 | 路径 | 说明 |
 |------|------|
 | [platform/](./platform/) | **AI 能力中台分区**（平台能力资产的方案与设计，随批次生长） |
-| └ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（正式版：能力同构论证 + 七模块架构 + 框架/许可定案 + 落地计划） |
+| ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（正式版：能力同构论证 + 七模块架构 + 框架/许可定案 + 落地计划） |
+| └ [BONE-AI依赖与许可SBOM清单.md](./platform/BONE-AI依赖与许可SBOM清单.md) | 法务送审版 SBOM：依赖许可总表 + 禁用负表 + 5 项待确认点（POC 签前冻结选型） |
 | [procuraAI/](./procuraAI/) | 采购 AI 专题包（PRD / 技术方案 / POC / 接口契约 / DEMO + assets） |
 | [synapClaim/](./synapClaim/) | ClaimSphere 智能理赔专题包（PRD / 设计 / MVP / delivery 交付包 / DEMO） |
 | [synapEquity/](./synapEquity/) | Synap Equity 估值专题包（产品方案 v0.18 / 方法学 v0.2 / 合规 v0.2 / 数据源 v0.2 / 技术 v0.2 / 评测 v0.2 / 开发 Backlog v0.2 / DEMO） |
