@@ -371,7 +371,7 @@ export const metadataUiSchemaApi = {
 
 - 全链路 API E2E `scripts/e2e/two-scenario-full-chain-e2e.py` **58/58 通过**：建实体→发布→字段/动作/ui-schema/运行数据→`validate` 零 ERROR→发布门控（UI-REF-01 拒绝 + 过闸放行）→回滚态清理；实体级与 schema 级 ETag/乐观锁语义两侧自证一致。
 - 浏览器探针 `scripts/e2e/ui-two-scenario-probe.mjs` **7/7 通过**（登录、双场景实体搜索、数据面记录与状态、无致命 console 错误）。
-- 产品「界面（协议）」自检两实体均**「自检通过」**：修复前端 `PROP_WHITELIST` 滞后协议 v1.2 导致的 9 项误报（补 `mask/maxSizeMB/lineage/…` 26 项），并为自检补 `virtual` 控件跳过字段存在性校验 + 与真实字段码碰撞 ERROR（对齐后端 UI-REF-04 口径）；`EntityDetail` 结构表 `onRow` 误传 `onSave` 的 React Unknown event handler 警告已修。
+- 产品「界面设计器」自检两实体均**「自检通过」**：修复前端 `PROP_WHITELIST` 滞后协议 v1.2 导致的 9 项误报（补 `mask/maxSizeMB/lineage/…` 26 项），并为自检补 `virtual` 控件跳过字段存在性校验 + 与真实字段码碰撞 ERROR（对齐后端 UI-REF-04 口径）；`EntityDetail` 结构表 `onRow` 误传 `onSave` 的 React Unknown event handler 警告已修。
 
 ---
 

@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "minor": 2,
+  "entityCode": "t_purchase_order",
+  "displayModes": ["create", "edit", "view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "po_no", "visible": true, "width": 150 },
+        { "fieldCode": "title", "visible": true, "width": 220 },
+        { "fieldCode": "vendor", "visible": true, "width": 160 },
+        { "fieldCode": "po_amount", "visible": true, "width": 130, "format": { "currencyField": "currency", "precision": 2 } },
+        { "fieldCode": "received_amount", "visible": true, "width": 130, "format": { "currencyField": "currency", "precision": 2 } },
+        { "fieldCode": "invoiced_amount", "visible": true, "width": 130, "format": { "currencyField": "currency", "precision": 2 } },
+        { "fieldCode": "payment_terms", "visible": true, "width": 110 },
+        { "fieldCode": "status", "visible": true, "width": 110 },
+        { "fieldCode": "buyer", "visible": true, "width": 100 },
+        { "fieldCode": "need_date", "visible": true, "width": 120 }
+      ],
+      "searchFields": ["vendor", "status", "po_no", "budget_subject"],
+      "tabs": [
+        { "title": "待我审批", "fieldCode": "status", "value": "SUBMITTED" },
+        { "title": "待收货", "fieldCode": "status", "value": "RECEIVING" },
+        { "title": "待付款", "fieldCode": "status", "value": "RECEIVED" },
+        { "title": "全部", "fieldCode": "status", "value": "$all" }
+      ],
+      "dataScope": { "policyCode": "dept_or_buyer" },
+      "batchActions": ["submit", "export"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_base",
+          "title": "采购订单基本信息",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "po_no", "controlKind": "INPUT", "readonly": true, "placeholder": "保存后自动生成（PO-）" },
+            { "fieldCode": "title", "controlKind": "INPUT", "placeholder": "如：研发中心 Q4 办公设备采购" },
+            { "fieldCode": "vendor_code", "controlKind": "INPUT", "placeholder": "供应商主数据编码" },
+            { "fieldCode": "vendor", "controlKind": "INPUT" },
+            { "fieldCode": "buyer", "controlKind": "INPUT", "readonly": true },
+            { "fieldCode": "department", "controlKind": "INPUT" },
+            { "fieldCode": "need_date", "controlKind": "DATE" },
+            { "fieldCode": "currency", "controlKind": "ENUM" }
+          ]
+        },
+        {
+          "id": "sec_budget",
+          "title": "预算与合同",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "budget_subject", "controlKind": "INPUT", "placeholder": "如：6401-办公费" },
+            { "fieldCode": "budget_amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "contract_no", "controlKind": "INPUT", "placeholder": "预付款 / 框架协议时必填" },
+            { "fieldCode": "payment_terms", "controlKind": "ENUM" },
+            { "fieldCode": "remark", "controlKind": "TEXTAREA", "props": { "rows": 3 }, "placeholder": "超预算时必须填写说明" }
+          ]
+        },
+        {
+          "id": "sec_items",
+          "title": "采购行项目",
+          "kind": "form",
+          "controls": [
+            {
+              "fieldCode": "items",
+              "controlKind": "CHILD_TABLE",
+              "labelOverride": "行项目",
+              "props": {
+                "childEntity": "purchase_item",
+                "columns": ["material_code", "material_name", "spec", "qty", "unit", "unit_price", "amount", "tax_rate", "tax_amount", "received_qty"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "sec_amount",
+          "title": "金额与三单匹配",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "po_amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "tax_amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "received_amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "invoiced_amount", "controlKind": "MONEY", "props": { "currencyField": "currency", "precision": 2 } },
+            { "fieldCode": "invoice_no", "controlKind": "INPUT", "placeholder": "已收货后必填，用于三单匹配" }
+          ]
+        },
+        {
+          "id": "sec_files",
+          "title": "合同与验收附件",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "attachment", "controlKind": "ATTACHMENT", "props": { "maxCount": 10, "maxSizeMB": 20 } },
+            { "fieldCode": "status", "controlKind": "ENUM", "readonly": true }
+          ]
+        }
+      ]
+    },
+    "detail": {
+      "pageHeader": ["po_no", "vendor", "po_amount"],
+      "sections": [
+        {
+          "id": "d_base",
+          "title": "订单概要",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "po_no", "controlKind": "INPUT", "labelOverride": "采购单号", "readonly": true },
+            { "fieldCode": "vendor", "controlKind": "INPUT", "labelOverride": "供应商", "readonly": true },
+            { "fieldCode": "po_amount", "controlKind": "MONEY", "labelOverride": "采购金额", "readonly": true },
+            { "fieldCode": "need_date", "controlKind": "DATE", "labelOverride": "需求日期", "readonly": true },
+            { "fieldCode": "status", "controlKind": "ENUM", "labelOverride": "状态", "readonly": true }
+          ]
+        },
+        {
+          "id": "d_match",
+          "title": "三单匹配（订单 / 收货 / 发票）",
+          "kind": "compare",
+          "controls": [
+            { "fieldCode": "po_amount", "controlKind": "MONEY", "labelOverride": "订单金额", "readonly": true },
+            { "fieldCode": "received_amount", "controlKind": "MONEY", "labelOverride": "收货金额", "readonly": true },
+            { "fieldCode": "invoiced_amount", "controlKind": "MONEY", "labelOverride": "发票金额", "readonly": true }
+          ]
+        },
+        {
+          "id": "d_items",
+          "title": "采购行项目",
+          "kind": "form",
+          "controls": [
+            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "readonly": true, "props": { "childEntity": "purchase_item" } }
+          ]
+        }
+      ]
+    }
+  },
+  "linkageRules": [
+    {
+      "code": "LINK-BUDGET-01",
+      "name": "超预算必须填写说明",
+      "when": { "fieldCode": "po_amount", "operator": "gt", "valueType": "field", "compareField": "budget_amount" },
+      "then": [
+        { "fieldCode": "remark", "visible": true, "required": true, "notice": "采购金额已超预算，必须填写超预算说明（提交时阻断）" }
+      ]
+    },
+    {
+      "code": "LINK-PREPAY-01",
+      "name": "预付款必须挂合同",
+      "when": { "fieldCode": "payment_terms", "operator": "eq", "value": "PREPAY" },
+      "then": [
+        { "fieldCode": "contract_no", "visible": true, "required": true, "notice": "预付款条款必须关联合同号" }
+      ]
+    },
+    {
+      "code": "LINK-RECV-01",
+      "name": "已收货必须登记发票号",
+      "when": { "fieldCode": "received_amount", "operator": "gt", "value": 0 },
+      "then": [
+        { "fieldCode": "invoice_no", "visible": true, "required": true, "notice": "已发生收货，必须登记发票号用于三单匹配" }
+      ]
+    }
+  ],
+  "submitRules": [
+    {
+      "code": "SUB-ITEMS-01",
+      "name": "行项目金额合计一致",
+      "function": "sum",
+      "fields": ["items.amount"],
+      "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "po_amount" },
+      "verifyType": "ERROR",
+      "message": "采购行项目金额合计必须等于采购金额"
+    },
+    {
+      "code": "SUB-TAX-01",
+      "name": "税额合计一致",
+      "function": "sum",
+      "fields": ["items.tax_amount"],
+      "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "tax_amount" },
+      "verifyType": "ERROR",
+      "message": "行项目税额合计必须等于税额合计字段"
+    },
+    {
+      "code": "SUB-BUDGET-01",
+      "name": "不得突破预算",
+      "function": "compare",
+      "fields": ["po_amount"],
+      "operator": "lte",
+      "compare": { "valueType": "field", "fieldCode": "budget_amount" },
+      "verifyType": "ERROR",
+      "message": "采购金额不得超出预算金额（如需超预算请走预算调整流程）"
+    },
+    {
+      "code": "SUB-RECV-01",
+      "name": "收货金额不得超订单",
+      "function": "compare",
+      "fields": ["received_amount"],
+      "operator": "lte",
+      "compare": { "valueType": "field", "fieldCode": "po_amount" },
+      "verifyType": "ERROR",
+      "message": "累计收货金额不得超出采购订单金额"
+    },
+    {
+      "code": "SUB-INV-01",
+      "name": "开票金额不得超订单",
+      "function": "compare",
+      "fields": ["invoiced_amount"],
+      "operator": "lte",
+      "compare": { "valueType": "field", "fieldCode": "po_amount" },
+      "verifyType": "ERROR",
+      "message": "累计开票金额不得超出采购订单金额"
+    },
+    {
+      "code": "SUB-COUNT-01",
+      "name": "至少一条行项目",
+      "function": "count",
+      "fields": ["items.material_code"],
+      "operator": "gte",
+      "compare": { "valueType": "fixed", "value": 1 },
+      "verifyType": "ERROR",
+      "message": "采购订单至少需要一个行项目（物料明细）"
+    },
+    {
+      "code": "SUB-QTY-01",
+      "name": "行项目数量下限",
+      "function": "min",
+      "fields": ["items.qty"],
+      "operator": "gte",
+      "compare": { "valueType": "fixed", "value": 1 },
+      "verifyType": "ERROR",
+      "message": "行项目数量不得小于 1"
+    },
+    {
+      "code": "SUB-MATCH-01",
+      "name": "三单相符：收货 = 订单",
+      "function": "compare",
+      "fields": ["received_amount"],
+      "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "po_amount" },
+      "when": { "fieldCode": "status", "operator": "eq", "value": "RECEIVED" },
+      "verifyType": "ERROR",
+      "message": "付款前置（三单匹配）：累计收货金额必须与采购订单金额相符"
+    },
+    {
+      "code": "SUB-MATCH-02",
+      "name": "三单相符：发票 = 订单",
+      "function": "compare",
+      "fields": ["invoiced_amount"],
+      "operator": "eq",
+      "compare": { "valueType": "field", "fieldCode": "po_amount" },
+      "when": { "fieldCode": "status", "operator": "eq", "value": "RECEIVED" },
+      "verifyType": "ERROR",
+      "message": "付款前置（三单匹配）：累计开票金额必须与采购订单金额相符"
+    }
+  ],
+  "actionBar": [
+    { "actionCode": "submit", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "DRAFT" }, "sortOrder": 1 },
+    { "actionCode": "approve", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 2 },
+    { "actionCode": "reject", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "SUBMITTED" }, "sortOrder": 3 },
+    { "actionCode": "startReceive", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "APPROVED" }, "sortOrder": 4 },
+    { "actionCode": "confirmReceive", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "RECEIVING" }, "sortOrder": 5 },
+    { "actionCode": "pay", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "RECEIVED" }, "sortOrder": 6 }
+  ],
+  "variants": [
+    {
+      "key": "finance",
+      "label": "财务应付视角",
+      "priority": 10,
+      "match": { "roles": ["finance", "admin"] },
+      "views": {
+        "form": {
+          "sections": [
+            {
+              "id": "v_match",
+              "title": "三单匹配核对（订单 / 收货 / 发票）",
+              "kind": "compare",
+              "controls": [
+                { "fieldCode": "po_amount", "controlKind": "MONEY", "labelOverride": "订单金额", "readonly": true },
+                { "fieldCode": "received_amount", "controlKind": "MONEY", "labelOverride": "收货金额", "readonly": true },
+                { "fieldCode": "invoiced_amount", "controlKind": "MONEY", "labelOverride": "发票金额", "readonly": true },
+                { "fieldCode": "invoice_no", "controlKind": "INPUT", "labelOverride": "发票号", "readonly": true },
+                { "fieldCode": "payment_terms", "controlKind": "ENUM", "labelOverride": "付款条款", "readonly": true },
+                { "fieldCode": "contract_no", "controlKind": "INPUT", "labelOverride": "合同号", "readonly": true }
+              ]
+            },
+            {
+              "id": "v_items",
+              "title": "行项目（只读核对）",
+              "kind": "form",
+              "controls": [
+                { "fieldCode": "items", "controlKind": "CHILD_TABLE", "readonly": true, "props": { "childEntity": "purchase_item" } }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -91,7 +91,7 @@ bone/
 
 ```
 gateway → bone-security / bone-core
-trace → bone-core
+trace → bone-core + bone-ai-gateway（订阅 LlmCallRecorded，唯一事件落库方）
 rules → bone-metadata-engine + extension-sdk + sdk
 document → gateway + FileStorage Port（走 MinIO 规范直连或 HTTP，不进程内依赖 bone-file 单 jar）
 orchestration → gateway + rules + trace + metadata-engine（经 Port，不直连实现）
@@ -123,7 +123,7 @@ HITL 不单列服务，是 orchestration 内嵌子域（确认 API + 置信度�
 
 ### 4.1 LLM 抽象：一期不引 Spring AI，自建 OpenAI 兼容客户端
 
-Spring AI 1.1.x 已 OSS EOL（2026-06-30）且有未修复 CVE（含 CVE-2026-59318 工具调用越权）；2.x 绑定 Boot 4 / Jackson 3，Boot 3.5.x 基线无法加载，升 Boot 4 是全仓 breaking 升级（约 83 处）。定案：自建 OpenAI 兼容客户端（WebClient + JSON mode + Micrometer，约 200 行、零新依赖），`LLMClient` 门面契约冻结。网关核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 本就不提供，两者解耦：AI 先跑业务，Boot 4 走平台升级轨道（§6 时限）。
+Spring AI 1.1.x 已 OSS EOL（2026-06-30）且有未修复 CVE（含 CVE-2026-59318 工具调用越权）；2.x 绑定 Boot 4 / Jackson 3，Boot 3.5.x 基线无法加载，升 Boot 4 是全仓 breaking 升级（约 83 处）。定案：自建 OpenAI 兼容客户端（**已落地用 JDK `HttpClient` + Jackson**，约 200 行、**零新依赖**，与 bone-integration `RestClientImpl` 一致；JSON mode + Micrometer 观测随治理面补），`LLMClient` 门面契约冻结。网关核心价值（路由 / 配额 / 审计 / 脱敏 / 成本红线 / 证据链）Spring AI 本就不提供，两者解耦：AI 先跑业务，Boot 4 走平台升级轨道（§6 时限）。
 
 **迁移阶梯（只换门面实现，不动业务）**：① 自建（默认）；② 覆盖不了的 provider/能力 → LangChain4j（Apache-2.0，Boot 3.5 可用）局部替换，不全家桶；③ Boot 4 落地后按需评估 Spring AI 2.x。若引框架：只用修复版、tool calling 默认关、语义缓存自建（租户 key + 全长度哈希），须 L3 单批。
 

@@ -2,6 +2,7 @@
 
 > **定位**：模式 B（RUNTIME）低代码场景的**数据读契约 + 副作用动作边界**。  
 > **原则**：复用既有 `JdbcRuntimeRecordService` / `RuntimeRecordController`，**不新建平行读通道**；有副作用的动作走显式 Handler（逃逸），HTTP 形状仍通用。  
+> **v0.50 修订摘要（第三场景「采购订单」落地 · 三单匹配声明式闸门）**：① **采购订单场景全链路打通**（`t_purchase_order` 头 + `t_purchase_item` 行项目 10 列 + 6 态状态机 `DRAFT→SUBMITTED→APPROVED→RECEIVING→RECEIVED→PAID`）——与报销/理赔并列为**第三验收场景**，证明「换场景不改代码」（§5.0）；② **三单匹配（3-way match）声明式落地**：对标 SAP MM / Ariba / Coupa「PO-GR-Invoice 三单相符才可付款」，实现为 `submitRules` + `when: status eq RECEIVED` 门控（`SUB-MATCH-01/02`），由 `UiSchemaRuleEnforcer` 在动作前强制 → 422 `META_RUNTIME_UI_RULES_VIOLATED`，**不写进 Handler**（§4.8.4：配置改了代码不必改，杜绝双真源）；③ **预算闸门 + 行项目合计 + 税额一致 + 至少一行**：`SUB-BUDGET-01`（compare/lte 跨字段）、`SUB-ITEMS-01`（sum 穿透子表）、`SUB-TAX-01`、`SUB-COUNT-01`（count 穿透子表）、`LINK-BUDGET-01/PREPAY-01/RECV-01`（条件必填）；④ **逃逸 Handler 增员 `PurchaseOrderPayHandler`**（bean 名即 `handler_bean`）：与报销打款**分链**（对公供应商 vs 对私员工，对账口径/失败语义/审计线索不同），出参 `paymentSerial` + `voucherNo`（会计凭证号）；⑤ **动作入参契约下沉到建模**：`pay` 声明 `params_schema`（`channel` enum 必填 / `payAmount` number min 0.01），平台 `validateParams` 统一拦截 → 400，Handler 只补一道防 NPE 守卫（§4.8.2 已在用的 Hasura inputSchema 语义，本轮扩到采购）；⑥ **前后端规则同源纪律补丁**：修设计器预览 `getVal` **缺数组穿透**导致 `count`/`completeness` 类子表路径规则恒判 0（有 3 行仍报「至少一条行项目」）——与 `UiSchemaRuleEngine#pathVal` / 前端 `uiSchemaEngine.pathVal` 三方对齐（§4.8.5）；⑦ 新增 `PurchaseOrderPayHandlerTest` 4 例（含 3 例负向）；三场景 E2E **87 项全绿**、设计器门禁/冒烟/对比度 **0 失败**、UI 探针 **10/10 + 19/19 全绿**。
 > **v0.49 修订摘要（行级 ACL 旁路封堵 · 子表/引用候选全链路）**：① **子表端点旁路封堵**：`listChildren`/`replaceChildren` 前置主行行级 ACL 断言（`assertRowOwner` 转 public 复用，Controller 编排层接入）——非本人/非审批人/非管理员枚举或替换他人单据明细 → 404（防「知道主行 id 即可旁路枚举子表」）（§4.7.1）；② **REFERENCE 候选旁路封堵**：`lookup-options` 内部行级过滤（目标实体有行策略含默认 owner 时仅返回操作者可见候选；无 created_by 主数据豁免；管理员 null/非数值主体豁免）——防「引用字段指向他人私有单据时候选列表泄露全部行」（§4.7.1）；③ 新增 `RuntimeLookupAclTest` 5 例（本人全量/他人滤除/陌生人空/创建者本人可见/非数值豁免）；④ runtime 模块测试 **96 全绿**、server **125 全绿**。
 > **v0.48 修订摘要（行策略落地 · approver 维度）**：① **行策略已实现**（对标 Supabase RLS「策略即 WHERE」完整落地）：`meta_entity.row_policies` JSON 声明（owner_field + rules 多规则 OR），报销实体声明 `owner_or_approver`（`created_by = :operator OR approver_id = :operator`）——本人 + 单据指定审批人可见，其余 404（RLS 默认拒绝不泄露行存在性）（§4.7.1）；② `RowPolicySpec` 解析安全约束：when 仅支持「列 = :operator」原子 + AND/OR，**列白名单 = 物理列集合**（审计列 created_by 亦可用，读过滤不依赖实体声明列），`:operator` 参数化绑定，未知列规则保守丢弃回退 owner 单规则；③ **Redis 缓存透传 rowPolicies/stateField**（修复缓存命中丢 G14 状态保护的既有 bug）；④ **0038 迁移**：`meta_entity.row_policies` + `t_expense_claim.approver_id` + **approver_id 字段声明**（写路径 filterWritable 放行、前端动态渲染）+ 报销策略 UPDATE；⑤ bone-init.sql 真源 DDL 同步 + 本地库迁移；⑥ runtime 模块测试 **87 全绿**（含新增 `RuntimeRowPolicyTest` 6 例：本人可见/审批人可见/陌生人 404/审批人可写他人单/未知列降级/注入拒绝）、server **125 全绿**。
 > **v0.47 修订摘要（行级 ACL 落地 · owner 维度）**：① **行级 ACL 已实现**（RLS「默认拒绝」首层落地）：`page/getById` 注入 `AND created_by = :rowOwner`、`update/delete/restore` 写路径同判 404（不泄露行存在性），平台管理员（null）豁免，**新增系统操作者 `system`**（服务/渠道回调身份：豁免行级 ACL 但审计留痕，`stampAuditColumns` 写字符串常量）——解决「回调方 ≠ 单据 owner」的服务间调用场景（§4.7.1）；② 既有测试语义适配：并发乐观锁用例改为 **owner 自身 stale**（412 语义保留），支付渠道回调改为 system 身份（updated_by=system）；③ runtime 模块测试 **81 全绿**、server 模块 **125 全绿**（含上轮被并行会话阻塞的复验）；④ 行策略（approver 等自定义规则）仍 v1.1（§4.7.1 剩余设计）。
@@ -12,7 +13,7 @@
 > **基线**：[低代码闭环 PRD](./BONE-低代码最小闭环PRD.md) **v0.50** §2.5.9（L1 报销） / §0.6 / UIF-008；OpenAPI [`metadata-runtime-v1.yaml`](../../architecture/openapi/metadata-runtime-v1.yaml) **v1.2.4**（关系端点 + 错误码已同步）；宿主 `bone-metadata-server :9001`。  
 > **专题包**：[`README.md`](./README.md)  
 > **样例**：费用报销 **L1**（`t_expense_claim` 头 + `t_expense_claim_item` 明细 + `t_expense_category` 类别 + `ExpenseClaimConfirmPayoutHandler` 原 `PaymentApplicationService` 0036 改名）；补货 `t_replenishment` + `receive`。
-> **版本**：v0.49（2026-10-11）｜继承 v0.42~v0.48；本轮为 **行级 ACL 旁路封堵**（子表/引用候选全链路 + 矩阵/§4.7.1/§9.7 同步）（approver 维度，RLS「策略即 WHERE」完整落地 + 0038 迁移 + Redis 缓存透传修复）。
+> **版本**：v0.50（2026-10-14）｜继承 v0.42~v0.49；本轮为 **第三场景「采购订单」落地**（三单匹配声明式闸门 + `PurchaseOrderPayHandler` + params_schema 入参契约 + 前后端 pathVal 同源补丁）。
 
 ---
 
@@ -617,6 +618,57 @@ public interface RuntimeWriteHook {
 
 **为什么不是「把规则写进 validation_rules」**：规则引擎能表达 `amount >= 0`，但表达不了「当前状态是 APPROVED 时禁止改 amount」（需要读当前行状态）——这是跨字段/跨状态约束，属业务规则，天然适合代码钩子。声明式规则 + 代码钩子各管一域，谁也不越界。
 
+### 4.8.4 三单匹配（3-way match）：声明式付款前置闸门（v0.50 · 对标 SAP MM / Ariba / Coupa）
+
+> **业务原型**：企业采购的付款前置条件是**订单（PO）、收货单（GR）、发票（Invoice）三者金额相符**——SAP MM 的 `MIRO` 三单匹配、Ariba 的 invoice reconciliation、Coupa 的 3-way match 都是这条规则。不符即挂账（blocked for payment），是**财务内控**而非业务逻辑偏好。
+
+**为什么做成声明式而不是写进 Handler**：
+
+| 方案 | 后果 |
+|------|------|
+| 写进 `PurchaseOrderPayHandler` 代码 | 规则成为**第二真源**：业务改容忍差（如允许 ±1% 或分两次收货）要发版；前端拿不到规则 code，界面放行/接口拒绝无法对账；审计日志只有「付款失败」没有「哪条规则拦的」 |
+| **协议 `submitRules` + `when` 门控**（采纳） | 规则随模型发布而生效（**配置即代码，零发版**）；`code` 前后端同一份（前端先拦、后端强制，日志与审计对齐）；`UiSchemaRuleEnforcer` 在**任何动作**前统一强制，绕过界面直接调 API 同样被拦 |
+
+**配置形态（采购订单 `pay` 动作的付款闸门）**：
+
+```json
+{
+  "code": "SUB-MATCH-02",
+  "name": "三单相符：发票 = 订单",
+  "function": "compare",
+  "fields": ["invoiced_amount"],
+  "operator": "eq",
+  "compare": { "valueType": "field", "fieldCode": "po_amount" },
+  "when": { "fieldCode": "status", "operator": "eq", "value": "RECEIVED" },
+  "verifyType": "ERROR",
+  "message": "付款前置（三单匹配）：累计开票金额必须与采购订单金额相符"
+}
+```
+
+**执行链**：`POST /runtime/entities/t_purchase_order/records/{id}/actions/pay`
+→ 动作定义解析（逃逸 + 幂等键必填）→ 幂等去重 → **`UiSchemaRuleEnforcer.enforceBeforeAction`**（此时 `status` 仍为 `RECEIVED`，故 `when` 命中）→ 违规抛 **422 `META_RUNTIME_UI_RULES_VIOLATED`**，message 带 `[SUB-MATCH-02]` → 通过后才 dispatch `PurchaseOrderPayHandler`。
+
+**设计纪律**：
+
+1. **`when` 门控是关键**：三单匹配只在「待付款」态生效。若不做门控，收货前（`invoiced_amount=0`）连提交审批都会被拦死——条件门控让同一条规则在不同状态下有不同约束力。
+2. **Handler 不重复校验**：已在协议声明的规则，Handler 里不再写一遍（双真源漂移）。Handler 只做**平台兜不住的事**：外部网关调用、流水号/凭证号生成、补偿。
+3. **容差由协议 `params.tolerance` 承载**（默认 `0.005`，DECIMAL(20,6) 精度口径），不硬编码在代码里。
+4. **失败语义区分**：三单不符 = 422（业务规则，用户可修正）；缺 `channel` = 400（入参契约，调用方错误）；终态重复付款 = 409（状态机）；缺幂等键 = 400。四类各有其码，不混用。
+
+### 4.8.5 前后端规则同源纪律（v0.50 · 一次真实漂移的修复）
+
+> 协议把规则 `code` 定义为「前后端对账用」。本轮 E2E 抓到一处**真实漂移**，记录下来作为该纪律的实证：设计器预览的 `getVal()` **不做数组穿透**，而后端 `UiSchemaRuleEngine#pathVal` 与前端 `uiSchemaEngine.pathVal` 都做。
+> 症状：`items.material_code` 这类**子表路径**在设计器里恒为 `undefined` ⇒ `count`/`completeness` 类规则恒判 0 ⇒ 采购单有 3 条行项目时仍报「至少需要一个行项目」——**界面误报、后端放行**，正是协议 `code` 要抓的那类不一致。
+
+| 端 | 实现 | 数组穿透 | 状态 |
+|----|------|---------|------|
+| 后端 | `UiSchemaRuleEngine#pathVal` | ✅ 逐行取多值 | 真源 |
+| 前端 | `uiSchemaEngine.pathVal` | ✅ 逐行取多值 | ✅ 已对齐 |
+| 设计器预览 | `getVal()` | ❌ 只走到倒数第二段 | ✅ **本轮修复**（改为与两侧同源：无命中 `undefined` / 单值返标量 / 多值返数组） |
+
+**门禁要求（新增，纳入回归）**：任何改动规则求值语义的 PR，必须同时过三端 golden fixtures（同一 schema + 同一数据 ⇒ 同一结论）。本轮已落地：
+`validate-designer-gates.js`（4 样板 × 3 门禁 + 20 条运行时探针，含正负向）、`ui-designer-three-scenario-probe.mjs`（19 断言，含「改单元格→合计重算」「试运行负向点名规则」）、`scripts/e2e/two-scenario-full-chain-e2e.py`（三场景 87 项，含 9 条采购负向）。
+
 ### 4.9 Catalog 动作声明（驱动 UI）
 
 ```yaml
@@ -696,6 +748,35 @@ MetaList：Describe → 按钮；`confirm: true` → 二次确认（原型已演
 > **档位变化的实质**：MVP 不再以「手工改 ENUM」推进状态，而是交付**声明式状态机 + 直写保护 + 审计**三件套。代价是MVP 多一项 `state_field` 元数据声明（§4.9），收益是 MVP 上线当天即不存在「谁都能审批」的洞。
 
 ---
+
+## 5.0 采购订单端到端（第三验收场景 · v0.50）
+
+> **为什么需要第三个场景**：报销（对私、单实体为主）与理赔（规则密集）已验证「金额 + 状态机 + 逃逸」。采购补上最后一块——**头-行结构（10 列行项目）+ 跨单据一致性（三单匹配）+ 预算约束**。三场景合起来才敢说「换场景不改代码」。
+
+```
+建模  t_purchase_order（头：预算/合同/金额/收货/开票/状态） + t_purchase_item（行：物料/数量/单价/金额/税率/税额/已收货）
+     CHILD_TABLE 关系（childEntity + foreignKey=order_id，零 DDL）
+     动作：submit / approve / reject / startReceive / confirmReceive / pay(escape+幂等+params_schema)
+发布  行项目实体先发布（子表端点要求目标已 RUNTIME）→ 头实体 validate 零 ERROR → publish
+业务  建单(PO-自动编号) → 行项目整组替换 → 提交（行项目合计/税额/预算/至少一行 四闸门）
+     → 审批 → 开始收货 → 收货(发票号必填 LINK-RECV-01) → 确认收货
+     → 付款（SUB-MATCH-01/02 三单匹配闸门 → PurchaseOrderPayHandler → 回传 paymentSerial/voucherNo）
+```
+
+**关键断言（E2E 已绿，负向全部有牙齿）**：
+
+| 场景 | 断言 | 期望 |
+|------|------|------|
+| 无行项目提交 | `SUB-COUNT-01` | 422 |
+| 行项目合计 ≠ 采购金额 | `SUB-ITEMS-01` | 422 |
+| 税额合计 ≠ 行项目税额 | `SUB-TAX-01` | 422 |
+| 超预算且未填说明 | `SUB-BUDGET-01` + `LINK-BUDGET-01` 必填 remark | 422 |
+| 超预算**已**填说明 | 仅 `SUB-BUDGET-01` 拦（remark 不再是拦点） | 422（证明 linkage 是条件命中才强制） |
+| 预付款缺合同号 | `LINK-PREPAY-01` | 422 |
+| 已收货缺发票号 | `LINK-RECV-01` | 422 |
+| 发票金额 ≠ 订单金额 | `SUB-MATCH-02` | 422（**付款闸门**） |
+| 付款缺幂等键 / 缺 channel / payAmount=0 | 幂等必填 / params_schema / min:0.01 | 400（均不得 500） |
+| 同幂等键重放 | 复用首次结果 | 200 + `idempotent=true` |
 
 ## 5. 报销 L0 端到端（全动态）
 

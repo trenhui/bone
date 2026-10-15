@@ -225,7 +225,7 @@ BoneUiSchema（新增，有版本，可发布快照）
 
 1. **协议冻结**：本设计 + `bone-ui-schema.schema.json` 评审通过（L2 双人 Review；Schema 变更走 ADR 增补，不随手改）。
 2. **P0-1 渲染器**：`<BoneDynamicForm/List>` + linkage/submit hooks + 回落 `projectColumns`（不 block 现有界面 Tab）。
-3. **P0-2 建模 Tab**：结构 Tab 旁新增「界面（协议）」：分区编辑 + 控件 props 白名单表单 + linkage/submit 条件构建器（表格行编辑）+ actionBar 门控表；`validationRules` JSON 文本框同步替换为条件构建器。
+3. **P0-2 建模 Tab**：结构 Tab 旁新增「界面设计器」：分区编辑 + 控件 props 白名单表单 + linkage/submit 条件构建器（表格行编辑）+ actionBar 门控表；`validationRules` JSON 文本框同步替换为条件构建器。
 4. **P0-3 服务端化**：`UiSchemaDef` + Modeling CRUD/validate + 发布快照 + 模板资产打包（base 快照）。
 5. **P1**：MONEY 建模类型（DDL，L3 审批）、行策略选择器（引用口径）、汇总显示、在途影响分析（删除被引用字段阻断发布）。
 

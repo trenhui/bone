@@ -13,15 +13,17 @@
 
 | 路径 | 角色 | 最后更新基线 |
 |------|------|--------------|
-| [`BONE-低代码最小闭环PRD.md`](./BONE-低代码最小闭环PRD.md) | **产品** Why / What / 验收（MoSCoW） | v0.50 |
-| [`BONE-低代码Runtime数据面设计.md`](./BONE-低代码Runtime数据面设计.md) | **数据面** CRUD + Describe/Invoke + 逃逸 | v0.49 |
+| [`BONE-低代码最小闭环PRD.md`](./BONE-低代码最小闭环PRD.md) | **产品** Why / What / 验收（MoSCoW）｜§2.5.10 = 采购订单第三验收场景 | v0.51 |
+| [`BONE-低代码Runtime数据面设计.md`](./BONE-低代码Runtime数据面设计.md) | **数据面** CRUD + Describe/Invoke + 逃逸｜§4.8.4 三单匹配闸门 · §5.0 采购端到端 | v0.50 |
 | `ui/元数据工作区前端融合方案.md` | **前端工程 · 已落地记录**：四 Tab 工作区 As-Is→To-Be、W0–W2 切片、门禁 | 2026-10-09 |
 | `ui/ui-protocol/` | **界面协议族 v1.0 详细设计**：JSON 协议 + 前后端技术方案 + Schema | 2026-10-13 |
 | `ui/bone-metadata-ui-prototype.html` | 评审可点原型（UID-9 四 Tab + 场景包 + 双界面 + 逃逸弹层） | 2026-10-09 |
 | `cases/费用报销系统-元数据建模方案.md` | **业务示范 + 缺口探针**：报销 L0/L1 | 2026-10-11 (v0.50) |
 | `ui/业务建模三入口页UI优化方案.md` | **诊断证据**：D1–D4 / B1–B5 / O1–O5，每条绑定代码行号 + 业界对标（"是什么问题"） | 效果图见 `ui/optimized-*.png` |
 | `ui/业务建模三入口页最佳方案综述.md` | **决策综述**：取各家之长的取舍与关键交互决策（"为什么这样改"） | 结论载体 `cases/mock-best-scheme.html`（外部引用，勿移动） |
-| `cases/ui-schema-samples/` | **界面协议样板**：6 个场景 Schema 样例 + 协议驱动渲染 Demo | 2026-10-13 |
+| `cases/ui-schema-samples/` | **界面协议样板**：7 个场景 Schema 样例（**三验收场景**：`expense-claim` / `claim-outpatient-fasttrack` / `purchase-order`）+ 协议驱动渲染 Demo | 2026-10-14 |
+| `cases/ui-schema-samples/purchase-order-ui-schema.example.json` | **采购订单协议样例**：10 列行项目 + 预算闸门 + 三单匹配 `SUB-MATCH-01/02`（与 PRD §2.5.10 同构） | 2026-10-14 |
+| `../../scripts/e2e/ui-designer-three-scenario-probe.mjs` | **设计器 UI 探针**（19 断言）：三场景切换 + 企业子表合计/增删 + 试运行负向点名规则 | 2026-10-14 |
 | `reviews/生产就绪诊断-2026-10-11.md` | **生产就绪诊断**：P0/P1/P2 + 修复追踪（**已闭环**） | 2026-10-11 |
 
 ## 推荐阅读顺序
