@@ -23,6 +23,11 @@
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
         </dependency>
+        <!-- 唯一持久化方案（HC-001）：Repository 动态代理 + 实体注解（@Table/@Column） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-sdk</artifactId>
+        </dependency>
         <!-- 规则 DSL 唯一引擎（AI 中台 §4.3 定案；bone-parent 托管版本） -->
         <dependency>
             <groupId>com.alibaba</groupId>

@@ -15,7 +15,7 @@ public class RuleQueryService {
   }
 
   public Optional<RuleAsset> findById(String id) {
-    return repository.findById(id);
+    return Optional.ofNullable(repository.findById(id));
   }
 
   public Optional<RuleAsset> findByCode(String tenantId, String code) {

@@ -50,7 +50,7 @@ class RuleServiceTest {
   private RuleAsset createdRule() {
     RuleAsset rule = RuleAsset.create("t1", "R01", "大额风险", "金额≥1万");
     rule.setId("id-1");
-    when(repository.findById("id-1")).thenReturn(Optional.of(rule));
+    when(repository.findById("id-1")).thenReturn(rule);
     return rule;
   }
 
@@ -58,7 +58,7 @@ class RuleServiceTest {
   void create_and_publish_first() {
     RuleAsset rule = service.create("t1", "R01", "大额风险", "金额≥1万");
     assertThat(rule.getStatus().name()).isEqualTo("DRAFT");
-    when(repository.findById(rule.getId())).thenReturn(Optional.of(rule));
+    when(repository.findById(rule.getId())).thenReturn(rule);
 
     RuleAssetVersion v = service.publishFirst(rule.getId(), "amount >= 10000", true, 0, "ops");
     assertThat(v.getVersionNo()).isEqualTo(1);

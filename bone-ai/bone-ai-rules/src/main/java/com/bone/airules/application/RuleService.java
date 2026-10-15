@@ -148,7 +148,7 @@ public class RuleService {
   }
 
   private RuleAsset require(String ruleId) {
-    return Optional.ofNullable(repository.findById(ruleId).orElse(null))
+    return Optional.ofNullable(repository.findById(ruleId))
         .orElseThrow(() -> new IllegalArgumentException("rule not found: " + ruleId));
   }
 }

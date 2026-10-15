@@ -1,36 +1,65 @@
 package com.bone.airules.domain.model;
 
+import com.bone.core.annotation.Deleted;
+import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Table;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 规则资产（租户聚合根）：治理面模型——DSL 文本 + 版本链 + 灰度 + 命中标记，不承载执行引擎。
+ * 规则资产（租户聚合根，bone-metadata-sdk 持久化）：治理面模型——DSL 文本 + 版本链 + 灰度 + 命中标记，不承载执行引擎。
  *
- * <p>执行交给 {@code RuleEngine} SPI（QLExpress 唯一实现）；本聚合只管理资产与发布语义： 首版发布 / 新版本 / 灰度 / 命中标记开关 / 启停。
+ * <p>表 {@code rule_asset}；{@code RuleAssetRepository extends Repository} 由 SDK
+ * 动态代理（{@code @EnableSqlRepositories} 扫描），无需手写实现。执行交 {@code RuleEngine} SPI（QLExpress 唯一）；版本链
+ * {@code versions} 暂 {@code @Transient} （批二以 {@code @Cascade} 落 {@code rule_asset_version} 子表）。
  */
 @Getter
 @Setter
+@Table("rule_asset")
 public class RuleAsset extends TenantAggregateRoot<String> {
+
+  /**
+   * 影子主键：应用生成 UUID。覆盖基类 {@code Entity.id} 以去掉 {@code @GeneratedValue} 的雪花生成（本聚合用 app UUID）； 不加
+   * Lombok 访问器，沿用 {@code Entity} 的反射 getId/setId（子类字段优先，读写一致）。
+   */
+  @Id
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private String id;
 
   private String code; // 业务编码（R01–R25 等），租户内唯一
   private String name;
   private String description;
   private RuleStatus status = RuleStatus.DRAFT;
+
+  @Column(name = "gray_percent")
   private int grayPercent; // 当前灰度 0-100（0=全量，100=全灰测）
+
+  @Column(name = "hit_block")
   private boolean hitBlock; // RULE_HIT_BLOCK：命中时网关短路，不调 LLM
+
+  @Column(name = "current_version_no")
   private int currentVersionNo = 0;
+
   private String expression; // 当前生效表达式（与 currentVersionNo 对应）
-  private final List<RuleAssetVersion> versions = new ArrayList<>();
+
+  @Deleted private Boolean deleted = false;
+
+  @Transient private final List<RuleAssetVersion> versions = new ArrayList<>();
 
   public RuleAsset() {}
 
   /** 领域工厂：创建规则草稿（应用服务经工厂获得聚合，不得直接 new）。 */
   public static RuleAsset create(String tenantId, String code, String name, String description) {
-    return new RuleAsset(java.util.UUID.randomUUID().toString(), tenantId, code, name, description);
+    return new RuleAsset(UUID.randomUUID().toString(), tenantId, code, name, description);
   }
 
   private RuleAsset(String id, String tenantId, String code, String name, String description) {

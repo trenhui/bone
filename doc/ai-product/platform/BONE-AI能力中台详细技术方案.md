@@ -373,7 +373,7 @@ CREATE TABLE eval_run (
 
 | # | 任务 | 验收物 |
 |---|---|---|
-| 2.1 | document 完整管线（sidecar 契约接入，默认 Docling；PaddleOCR 候选按需启用） | 双解析器互换实证（一个适配器类替换） |
+| 2.1 | document 完整管线（sidecar 契约接入，默认 Docling；PaddleOCR 候选按需启用） | 契约冻结 + 默认 Docling 跑通 + PaddleOCR 单适配器就位（替换成本 = 一个类）；互换性由契约保证，不强制双跑实证 |
 | 2.2 | IR schema 全量落地（条款索引/span/置信度）+ 最小 IR 平滑切换 | IR 引用率达标（评测口径） |
 | 2.3 | rag 全链（切片/双路/RRF/rerank/引用强制/权限过滤） | RAG 引用正确率 ≥98%；rerank 越权负向探针 |
 | 2.4 | rules 完整治理面（灰度/shadow/正负例回归/规则级兼容性检查） | 规则灰度负向探针；兼容门禁实证 |
