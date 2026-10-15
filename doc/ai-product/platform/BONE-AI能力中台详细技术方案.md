@@ -1,6 +1,6 @@
 # BONE AI 能力中台 · 详细技术方案（详设）
 
-> **版本**：v1.0　**日期**：2026-10-15　**归口**：平台架构组
+> **版本**：v1.1　**日期**：2026-10-15　**归口**：平台架构组
 > **配套**：《BONE-AI 能力中台整体方案》（下称**总案**）——总案定"做什么 / 为什么 / 边界红线"（选型定案、许可红线、沉淀边界见总案 §2/§4/§5，不在本文重述），本文定"怎么建"：模块详设、接口与数据结构、阈值初值、任务分解。《BONE-AI 依赖与许可 SBOM 清单》为许可真源。
 > **阈值约定**：标注（初值）的口径均为可校准值，压测/评测后修订登记在本文；总案不硬编码阈值。所有新 DDL 以最终 L3 批复为准（总案 §7），本文 DDL 为**拟定稿**。
 
@@ -104,7 +104,7 @@ public record Confirmed<T>(T value, ConfirmedBy by, Instant at) {}              
 | POST | `/api/ai/v1/hitl/items/{id}/act` | `{action: confirm\|reject\|modify, value?, reason_type?, comment}`；`reject/modify` 必带 `reason_type` |
 | GET | `/api/ai/v1/hitl/items/{id}` | 处置链（含 ESCALATED 记录） |
 
-`reason_type` 字典：`RULE_MISS`/`CONTEXT_MISS`/`SUGGESTION_WRONG`/`POLICY_CONFLICT`（唯一回流入口，自由文本不进管道）。四态与回流口径见总案 §3.3，不重复。
+`reason_type` 字典：`RULE_MISS`/`CONTEXT_MISS`/`SUGGESTION_WRONG`/`POLICY_CONFLICT`（唯一回流入口，自由文本不进管道）。五态（PENDING / CONFIRMED / REJECTED / MODIFIED / ESCALATED）与回流口径见总案 §3.3（含与产品侧业务状态机的分层说明），不重复。
 
 ```sql
 -- 拟定，待 L3
@@ -254,7 +254,7 @@ LLM-as-Judge 经网关计量（省 60–80% 人工标注）；冷启动 = 小规
 | 1.1 | gateway 治理面（路由/配额/脱敏/灰度/降档） | 配额超限降档实证；PII 出口脱敏用例 |
 | 1.2 | trace 完整（DDL+留存+回放 API） | 三元组回放实证；无证据拒返断言 |
 | 1.3 | rules 最小版（CRUD/版本/命中标记/兼容性检查补齐） | 规则命中不调 LLM 语义打通 orchestration 规则节点 |
-| 1.4 | orchestration 执行器 + HITL 子域（四态/ESCALATED/确认台 API） | procuraAI 端到端：解析→规则→LLM→HITL→回放 |
+| 1.4 | orchestration 执行器 + HITL 子域（五态/确认台 API） | procuraAI 端到端：解析→规则→LLM→HITL→回放 |
 | 1.5 | metadata 语义扩展（AiMetadata 档位/阈值、WorkflowMetadata AI 节点） | 建模→执行链路一致性 |
 | 1.6 | 最小 IR（PDFBox/Tika 条款切片 + span） | 引用定位原文 100% |
 | 1.7 | ArchUnit 规则集 + 门禁接入 | 7 条规则拦截演示 |
