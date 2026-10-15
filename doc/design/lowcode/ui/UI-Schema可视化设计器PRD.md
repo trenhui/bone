@@ -57,7 +57,7 @@
 | 父 PRD | 本 PRD = 父 PRD UID-9「界面 Tab」+ VM-002（publish-preview）的设计器实现；Must/Should 切分以父 PRD §0.2 为准，冲突时以父 PRD 为准 |
 | 架构约束 | 分层/边界/门禁见 `doc/architecture/Bone-DDD-最终实践方案.md`（HC-001～HC-008 引用编号，不复述）；前端规范见 `doc/architecture/bone-前端架构.md` §6 |
 | 协议真源 | `ui-protocol/bone-ui-schema.schema.json`（v1.1）；单文件设计器为交互原型，**不直接上线**（单文件技术债，产品化时重写为工作区模块） |
-| AI 中台 | AI 辅助起草规则/样板见《BONE-AI能力中台最佳方案》，列为 v2.0 候选（§11.2），本迭代不做 |
+| AI 中台 | AI 辅助起草规则/样板见《BONE-AI能力中台整体方案》，列为 v2.0 候选（§11.2），本迭代不做 |
 
 ### 1.5 核心竞争力
 
@@ -351,4 +351,4 @@
 | [BONE-低代码最小闭环PRD.md](../BONE-低代码最小闭环PRD.md) | 父 PRD：Must/Should 边界与验收口径 |
 | [bone-ui-schema-designer.html](./ui-protocol/bone-ui-schema-designer.html) | 权威单文件设计器（配置界面真源，由 DEMO 演进） |
 | [Bone-DDD-最终实践方案](../../architecture/Bone-DDD-最终实践方案.md) | HC 门禁定义与实测状态（§G-1.7） |
-| [BONE-AI能力中台最佳方案](../../../ai-product/platform/BONE-AI能力中台最佳方案.md) | v2.0 AI 起草上游 |
+| [BONE-AI能力中台整体方案](../../../ai-product/platform/BONE-AI能力中台整体方案.md) | v2.0 AI 起草上游 |
