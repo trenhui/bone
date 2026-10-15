@@ -23,9 +23,12 @@ const check = (name, cond, detail = '') => {
 };
 
 // 联调用种子账号凭据通过环境变量注入：BONE_E2E_USER / BONE_E2E_PWD。
-// 本地 dev 缺省用户名 admin；口令一律走环境变量（源码不硬编码测试凭据，过 gitleaks 门禁）。
+// 本地 dev 缺省种子账号 admin/123456（与 ui-create-data-probe 同口径，字面量已在
+// .gitleaks.toml 精确豁免）；CI / 其它环境用 BONE_E2E_USER / BONE_E2E_PWD 注入真实凭据。
+// ★ 口令必须带缺省值：只留环境变量会在本地裸跑时变成 `password: undefined`，
+//   登录 401 → 整个巡检在取菜单阶段就崩，且看起来像「后端挂了」。
 const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD;
+const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
 
 // ---------- 菜单真源：IAM menus/tree（不是硬编码，避免与运行时漂移） ----------
 async function fetchMenus() {
@@ -103,6 +106,30 @@ const waitForContent = async (ms = 15000) => {
   return len;
 };
 
+/**
+ * 等微应用内容**稳定**（连续两次采样文本一致）再动手点按钮。
+ * ★ 没有这一步会踩「点了上一页的按钮」：qiankun 切子应用时 #subapp-viewport 里
+ *   可能还残留上一个页面（或壳层工作台）的 DOM —— 只判「长度 > 20」会提前放行，
+ *   于是点到了旧页面的「新建」，随后子应用挂载把该节点替换掉 →
+ *   innerText() 抛异常、断言文案退化成「?」，看起来像死按钮，实际是探针抢跑。
+ */
+const waitForStable = async (ms = 8000) => {
+  const deadline = Date.now() + ms;
+  let prev = '';
+  while (Date.now() < deadline) {
+    const cur = await page
+      .evaluate(() => {
+        const e = document.querySelector('#subapp-viewport');
+        return e ? (e.innerText || '').trim() : '';
+      })
+      .catch(() => '');
+    if (cur && cur === prev) return true;
+    prev = cur;
+    await page.waitForTimeout(500);
+  }
+  return false;
+};
+
 try {
   // ---------- 登录 ----------
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
@@ -135,6 +162,8 @@ try {
     try {
       await page.goto(`${BASE}${m.path}`, { waitUntil: 'domcontentloaded' });
       const bodyLen = await waitForContent(12000);
+      // 等子应用挂载稳定，避免点到上一个页面残留 DOM 里的按钮（见 waitForStable 注释）
+      await waitForStable(8000);
 
       // 1) 路由落点保持（没被 <Route path="*"> 静默送回首页）
       const curHash = await page.evaluate(() => location.hash);
@@ -168,7 +197,9 @@ try {
       //         点击后应出现校验提示，这同样证明按钮已接线，只是入参未齐。
       // 只点**可见**按钮：页面里常存在隐藏的模板/抽屉按钮，点到它会静默超时，
       // 被误判成「死按钮」（日志管理就踩过这个坑）。
-      const primary = page
+      // 只在微应用容器内找按钮：壳层顶栏/侧栏不参与，避免点到壳层自己的控件
+      const scopeRoot = isShellHome ? page.locator('body') : page.locator('#subapp-viewport');
+      const primary = scopeRoot
         .locator('button:visible')
         .filter({ hasText: /^(新建|新增|创建|发起|登记|录入)/ })
         .first();
@@ -176,6 +207,9 @@ try {
         if (await primary.isDisabled().catch(() => false)) {
           results.push({ name: `${label} 主操作按钮按上下文禁用（跳过点击）`, ok: true });
         } else {
+          // ★ 先取文案再点击：点击后节点可能被子应用重挂载替换，
+          //   那时 innerText() 会抛异常，失败文案退化成「?」，没法定位
+          const btnText = (await primary.innerText().catch(() => '')).trim().slice(0, 20);
           const urlBefore = page.url();
           await primary.click({ timeout: 6000 }).catch(() => {});
           await page.waitForTimeout(2200);
@@ -202,9 +236,8 @@ try {
             clicked++;
             results.push({ name: `${label} 主操作按钮有反馈（表单校验/toast，需补全入参）`, ok: true });
           } else {
-            const btnText = (await primary.innerText().catch(() => '?')).trim().slice(0, 20);
             check(
-              `${label} 主操作按钮「${btnText}」点击有反应`,
+              `${label} 主操作按钮「${btnText || '(空文案)'}」点击有反应`,
               false,
               '点击后无弹窗、无跳转、无校验/提示 → 疑似死按钮'
             );
