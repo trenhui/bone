@@ -109,6 +109,10 @@
         <!-- 第三方（非 Boot/SCA 托管，需显式版本，集中管理避免散落） -->
         <!-- 对齐 SCA 2025.0.0.0 托管的 Nacos 3.0.3（2→3 大版本跨越）；Nacos 服务端须为 3.x，若为 2.x 需评估升级（类 L4 运维项） -->
         <nacos-client.version>3.0.3</nacos-client.version>
+        <!-- 规则 DSL 唯一引擎（AI 中台 §4.3）：QLExpress 4.1.3，表达式追踪服务“判定路径可回放” -->
+        <qlexpress.version>4.1.3</qlexpress.version>
+        <!-- 文档解析（AI 中台 §4.4 第一批最小 IR）：PDFBox 2.0.31 存量本地可用 -->
+        <pdfbox.version>2.0.31</pdfbox.version>
 
         <!-- 测试开关默认值（可由 -DskipTests / -Dmaven.test.skip 覆盖） -->
         <skipTests>false</skipTests>
@@ -337,6 +341,44 @@
                 <groupId>com.aliyun</groupId>
                 <artifactId>aliyun-java-sdk-core</artifactId>
                 <version>${aliyun.core.version}</version>
+            </dependency>
+            <!-- 规则 DSL（AI 中台 §4.3 定案：QLExpress 唯一，Aviator 已移出选型） -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>qlexpress4</artifactId>
+                <version>${qlexpress.version}</version>
+            </dependency>
+            <!-- 文档解析（AI 中台 §4.4 第一批最小 IR：PDFBox 文本提取；Tika parsers 就绪时可插拔互换） -->
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <!-- bone-ai 模块（AI 能力中台；模块间依赖统一由此管理） -->
+            <dependency>
+                <groupId>com.bone</groupId>
+                <artifactId>bone-ai-gateway</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bone</groupId>
+                <artifactId>bone-ai-trace</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bone</groupId>
+                <artifactId>bone-ai-rules</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bone</groupId>
+                <artifactId>bone-ai-orchestration</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bone</groupId>
+                <artifactId>bone-ai-document</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

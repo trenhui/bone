@@ -22,5 +22,8 @@
     <modules>
         <module>bone-ai-gateway</module>
         <module>bone-ai-trace</module>
+        <module>bone-ai-rules</module>
+        <module>bone-ai-orchestration</module>
+        <module>bone-ai-document</module>
     </modules>
 </project>

@@ -21,6 +21,8 @@ package com.bone.metadata.catalog.domain.gateway;
  * @param paramsSchema 动作入参 JSON Schema
  * @param requiresIdempotency 是否要求 {@code Idempotency-Key} 头（资金类动作必须为 true）
  * @param sortOrder 同状态内动作排序（前端动作条 order）
+ * @param entry 入口动作标记（0041）：{@code true} 时其 {@code fromStatus} 即新记录初始状态；全环状态机（无无入边态）必须显式声明，
+ *     否则运行期创建记录死锁。与 {@code fromStatus=null}（任意态可触发）正交，互不替代
  */
 public record ActionDefSpec(
     String actionCode,
@@ -32,7 +34,8 @@ public record ActionDefSpec(
     String handlerBean,
     String paramsSchema,
     Boolean requiresIdempotency,
-    Integer sortOrder) {
+    Integer sortOrder,
+    Boolean entry) {
 
   /**
    * 落库用的 status_field 缺省值（DDL DEFAULT 'status'，与引擎 {@code CatalogRuntimeEntityProvider} 推导口径一致）。

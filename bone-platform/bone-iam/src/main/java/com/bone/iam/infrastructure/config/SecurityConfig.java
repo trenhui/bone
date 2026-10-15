@@ -106,7 +106,8 @@ public class SecurityConfig {
     List<String> origins = List.of(allowedOrigins.split(",")).stream().map(String::trim).toList();
     config.setAllowedOrigins(origins);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Request-Id"));
+    config.setAllowedHeaders(
+        List.of("Content-Type", "Authorization", "X-Request-Id", "X-Tenant-Id"));
     config.setAllowCredentials(true);
     config.setMaxAge(3600L);
 

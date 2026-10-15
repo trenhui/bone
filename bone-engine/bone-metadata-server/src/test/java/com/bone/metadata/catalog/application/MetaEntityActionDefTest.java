@@ -146,6 +146,31 @@ class MetaEntityActionDefTest {
     verify(cacheEvictor).evict("expense_claim", 1L);
   }
 
+  @Test
+  @DisplayName("入口动作标记（0041）：entry 原样透传到 ActionDefSpec（全环机器靠它解死锁）")
+  void upsert_entryFlag_passesToSpec() {
+    UpsertActionDefCommand c = cmd("close", false, null, false);
+    c.setFromStatus("OPEN");
+    c.setEntry(true);
+    service.upsertActionDef(9L, c);
+
+    ArgumentCaptor<com.bone.metadata.catalog.domain.gateway.ActionDefSpec> captor =
+        ArgumentCaptor.forClass(com.bone.metadata.catalog.domain.gateway.ActionDefSpec.class);
+    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_claim"), captor.capture());
+    assertEquals(Boolean.TRUE, captor.getValue().entry(), "entry 不得在服务层被吞");
+  }
+
+  @Test
+  @DisplayName("入口动作缺 fromStatus → 400 ACTION_DEF_INVALID（空白源态的入口标记只会静默失效，必须显式报错）")
+  void upsert_entryWithoutFromStatus_shouldReject() {
+    UpsertActionDefCommand c = cmd("close", false, null, false);
+    c.setFromStatus(null);
+    c.setEntry(true);
+    BizException e = assertThrows(BizException.class, () -> service.upsertActionDef(9L, c));
+    assertEquals(CatalogErrorCodes.ACTION_DEF_INVALID, e.getErrorCode());
+    verify(actionDefMaterializePort, never()).upsert(anyLong(), anyString(), any());
+  }
+
   // ==================== 负向：守卫必须有牙齿 ====================
 
   @Test

@@ -69,6 +69,15 @@ public class MetaModelTemplateAction extends AbstractEntity<Long> {
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
 
+  /**
+   * 入口动作标记（0041）：{@code true} 时其 {@code fromStatus} 即实例化实体的初始状态。
+   *
+   * <p>全环状态机（如设备巡检 {@code OPEN↔CLOSED}）没有「无入边」状态，图推导不出入口 ⇒ 创建记录死锁； 模板侧必须显式声明，实例化时原样展开到 {@code
+   * meta_entity_action_def.is_entry}。与 {@code fromStatus=null}（任意态可触发）正交。
+   */
+  @Column(name = "is_entry", nullable = false)
+  private Boolean entry;
+
   public static MetaModelTemplateAction create(
       Long id,
       Long tenantId,
@@ -82,7 +91,8 @@ public class MetaModelTemplateAction extends AbstractEntity<Long> {
       String handlerBean,
       String paramsSchema,
       Boolean requiresIdempotency,
-      Integer sortOrder) {
+      Integer sortOrder,
+      Boolean entry) {
     MetaModelTemplateAction a = new MetaModelTemplateAction();
     a.setId(id);
     a.tenantId = tenantId;
@@ -97,6 +107,7 @@ public class MetaModelTemplateAction extends AbstractEntity<Long> {
     a.paramsSchema = paramsSchema;
     a.requiresIdempotency = requiresIdempotency != null ? requiresIdempotency : false;
     a.sortOrder = sortOrder != null ? sortOrder : 0;
+    a.entry = entry != null ? entry : false;
     Date now = new Date();
     a.setCreatedAt(now);
     a.setUpdatedAt(now);

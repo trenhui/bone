@@ -224,7 +224,8 @@ public class MetaEntityCatalogController {
         cmd.getHandlerBean(),
         cmd.getParamsSchema(),
         Boolean.TRUE.equals(cmd.getRequiresIdempotency()),
-        cmd.getSortOrder());
+        cmd.getSortOrder(),
+        Boolean.TRUE.equals(cmd.getEntry()));
   }
 
   /** 建模期静态校验（UC-W5）：问题分级列表，ERROR 阻断发布。 */

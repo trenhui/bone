@@ -18,8 +18,10 @@ import org.springframework.stereotype.Component;
  * status=PAID} 直接落库（客户端可跳过 DRAFT→SUBMITTED→APPROVED 铸造终态单据）。 本守卫在 Controller 入口收口：
  *
  * <ul>
- *   <li><strong>create</strong>：剥离客户端 status，强制注入状态机入口状态（{@code from_status} 集合减 {@code to_status}
- *       集合，即无入边者）。入口不可推导时 fail-closed（status 置空 → 交由必填校验拒绝）， 绝不采信客户端值。
+ *   <li><strong>create</strong>：**剥**离**客**户**端** status，**强**制**注**入**状**态**机**入**口**状**态**（0041
+ *       起：**显**式**入**口**动**作** {@code is_entry} 的 {@code from_status} **优**先**，**回**退** {@code
+ *       from_status} 集**合**减** {@code to_status} 集**合**的**无**入**边**者**）。**入**口**不**可**推**导**时**
+ *       fail-closed（status 置**空** → **交**由**必**填**校**验**拒**绝**）， **绝**不**采**信**客**户**端**值**。
  *   <li><strong>update</strong>：仅剥离 status —— 状态只允许经动作端点（{@code POST /records/{id}/actions/{code}}）
  *       流转。
  * </ul>
@@ -85,13 +87,32 @@ public class RuntimeStatusGuard {
   }
 
   /**
-   * 入口状态推导：{@code from_status} 集合 − {@code to_status} 集合（无入边者）。
+   * 入口状态推导（0041）：<b>显式入口动作优先，图推导兜底，都不可推导则 fail-closed</b>。
    *
-   * <p>按 {@code sort_order} 升序取首个候选；全环（无候选）时返回 {@code null}（fail-closed，由必填校验拒绝）。
+   * <ol>
+   *   <li><b>显式入口动作</b>（{@code is_entry=1}，按 {@code sort_order} 取首个）：其 {@code from_status} 即初始状态。
+   *       这是 UML 状态图「初始状态伪状态」的等价物——全环状态机（如设备巡检 {@code OPEN→CLOSED→OPEN}）每个状态都有入边，
+   *       图推导无解，必须由建模者显式声明，否则「创建记录」死锁（不传 → 必填失败；传 → 422）。
+   *   <li><b>图推导</b>：{@code from_status} 集合 − {@code to_status} 集合（无入边者）。
+   *   <li>都不可推导 → {@code null}（fail-closed，由必填校验拒绝，绝不采信客户端值）。
+   * </ol>
+   *
+   * <p>显式优先于推断：建模者声明即意图，推断只在前者缺席时生效。入口动作要求 {@code from_status} 非空（空白视为未声明，回退图推导）。 {@code
+   * from_status IS NULL} 的「任意状态可触发」边<b>不是</b>入口候选——入口与任意态是两个正交语义。
    */
   private String entryStatusOf(List<RuntimeActionDef> defs) {
     List<RuntimeActionDef> sorted =
         defs.stream().sorted(Comparator.comparingInt(RuntimeActionDef::getSortOrder)).toList();
+    String explicit =
+        sorted.stream()
+            .filter(RuntimeActionDef::isEntry)
+            .map(RuntimeActionDef::getFromStatus)
+            .filter(s -> s != null && !s.isBlank())
+            .findFirst()
+            .orElse(null);
+    if (explicit != null) {
+      return explicit;
+    }
     Set<String> targets =
         sorted.stream()
             .map(RuntimeActionDef::getToStatus)

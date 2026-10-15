@@ -30,7 +30,8 @@ import org.junit.jupiter.api.Test;
  *   <li>删掉 {@code applyCreateGuard} 的 {@code rejectIfPresent} → bypass 用例红；
  *   <li>删掉「无状态机直接 return」→ 无状态机实体被误伤用例红；
  *   <li>删掉 statusFieldOf 的缺省回退 → 自定义状态字段用例红；
- *   <li>resolver 参数序写反（(tenantId, entityCode) 直传）→ 接线用例红。
+ *   <li>resolver 参数序写反（(tenantId, entityCode) 直传）→ 接线用例红；
+ *   <li>删掉 {@code entryStatusOf} 的 is_entry 分支 → 全环显式入口用例红（0041：巡检机器退回 fail-closed，创建死锁）。
  * </ul>
  */
 class RuntimeStatusGuardTest {
@@ -63,6 +64,11 @@ class RuntimeStatusGuardTest {
 
   private static RuntimeActionDef def(
       String code, String from, String to, int sortOrder, String statusField) {
+    return def(code, from, to, sortOrder, statusField, false);
+  }
+
+  private static RuntimeActionDef def(
+      String code, String from, String to, int sortOrder, String statusField, boolean entry) {
     return new RuntimeActionDef(
         1L,
         "expense_claim",
@@ -76,7 +82,8 @@ class RuntimeStatusGuardTest {
         List.<ActionParamSpec>of(),
         "metadata:runtime:write",
         false,
-        sortOrder);
+        sortOrder,
+        entry);
   }
 
   /** expense_claim 形态：DRAFT→SUBMITTED→APPROVED→PAID（+ SUBMITTED→REJECTED）。 */
@@ -166,6 +173,41 @@ class RuntimeStatusGuardTest {
     RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(CLAIM_DEFS));
     // from={DRAFT,SUBMITTED,APPROVED}, to={SUBMITTED,APPROVED,REJECTED,PAID} ⇒ 入口=DRAFT
     assertEquals("DRAFT", guard.entryStatus(0L, "expense_claim"));
+  }
+
+  @Test
+  void entryStatus_explicitEntryAction_resolvesFullCycle() {
+    // 0041 核心场景：全环（巡检 OPEN↔CLOSED）图推导无解 ⇒ 必须显式标记入口动作，其 from_status 即初始状态。
+    // 负向探针：删掉 entryStatusOf 的 is_entry 分支 → 本用例红（回退全环 fail-closed）。
+    List<RuntimeActionDef> inspection =
+        List.of(
+            def("close", "OPEN", "CLOSED", 10, "status", true),
+            def("reopen", "CLOSED", "OPEN", 20, "status"));
+    RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(inspection));
+    assertEquals("OPEN", guard.entryStatus(0L, "insp"), "显式入口动作的源状态即初始状态（全环机器的唯一活路）");
+  }
+
+  @Test
+  void entryStatus_explicitEntry_beatsGraphDerivation() {
+    // 显式优先于推断：建模者声明即意图。标记 approve 为入口 ⇒ SUBMITTED，而非图推导的 DRAFT。
+    List<RuntimeActionDef> marked =
+        List.of(
+            def("submit", "DRAFT", "SUBMITTED", 10, "status"),
+            def("approve", "SUBMITTED", "APPROVED", 20, "status", true));
+    RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(marked));
+    assertEquals("SUBMITTED", guard.entryStatus(0L, "expense_claim"), "显式入口动作覆盖图推导结果");
+  }
+
+  @Test
+  void entryStatus_entryActionWithBlankFromStatus_ignored() {
+    // 入口动作缺 from_status 是建模错误：不得当成入口（否则初始状态为空白），回退图推导。
+    List<RuntimeActionDef> badEntry =
+        List.of(
+            def("weird", null, "OPEN", 5, "status", true),
+            def("close", "OPEN", "CLOSED", 10, "status"),
+            def("reopen", "CLOSED", "OPEN", 20, "status"));
+    RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(badEntry));
+    assertNull(guard.entryStatus(0L, "insp"), "空白源态的入口标记被忽略；全环仍 fail-closed");
   }
 
   @Test

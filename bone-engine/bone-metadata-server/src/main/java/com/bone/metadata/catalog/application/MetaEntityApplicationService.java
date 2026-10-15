@@ -362,7 +362,8 @@ public class MetaEntityApplicationService {
    * 并随已发布实体快照入缓存， 不 evict 会让新配的状态机在缓存 TTL 内不生效（用户看到「配了没反应」）。
    *
    * <p>规则：① 仅 {@code escape=true} 允许 {@code handlerBean} 非空（无处理器的逃逸动作点了必 500）； ② 逃逸动作必须声明幂等（防重复打款），
-   * 不自动补——静默替用户决定资金安全属性比报错更危险。
+   * 不自动补——静默替用户决定资金安全属性比报错更危险； ③ {@code entry=true}（入口动作）必须声明 {@code fromStatus}——其源状态即新记录初始状态，
+   * 空源态的入口标记只会让运行期静默回退图推导，建模者却以为已声明（0041）。
    */
   @Transactional
   public void upsertActionDef(Long entityId, UpsertActionDefCommand cmd) {
@@ -378,6 +379,12 @@ public class MetaEntityApplicationService {
           CatalogErrorCodes.ACTION_DEF_INVALID,
           "逃逸动作「" + cmd.getActionCode() + "」必须要求幂等键（requiresIdempotency=true），防重复副作用");
     }
+    if (Boolean.TRUE.equals(cmd.getEntry())
+        && (cmd.getFromStatus() == null || cmd.getFromStatus().isBlank())) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ACTION_DEF_INVALID,
+          "入口动作「" + cmd.getActionCode() + "」必须声明 fromStatus（其源状态即新记录初始状态，0041）");
+    }
     actionDefMaterializePort.upsert(
         entity.getTenantId(),
         entity.getCode(),
@@ -391,7 +398,8 @@ public class MetaEntityApplicationService {
             cmd.getHandlerBean(),
             cmd.getParamsSchema(),
             cmd.getRequiresIdempotency(),
-            cmd.getSortOrder()));
+            cmd.getSortOrder(),
+            Boolean.TRUE.equals(cmd.getEntry())));
     runtimeEntityCacheEvictor.ifPresent(
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
   }

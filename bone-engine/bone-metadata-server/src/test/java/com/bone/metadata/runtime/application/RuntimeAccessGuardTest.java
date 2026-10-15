@@ -239,7 +239,8 @@ class RuntimeAccessGuardTest {
         List.<ActionParamSpec>of(),
         permissionCode,
         true,
-        30);
+        30,
+        false);
   }
 
   private static RuntimeActionDef nonEscapeDef() {
@@ -260,6 +261,7 @@ class RuntimeAccessGuardTest {
         List.<ActionParamSpec>of(),
         permissionCode,
         false,
-        10);
+        10,
+        false);
   }
 }

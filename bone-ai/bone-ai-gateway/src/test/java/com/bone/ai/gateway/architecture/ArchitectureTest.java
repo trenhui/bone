@@ -53,4 +53,6 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule spring_component_bean_names_unique =
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
+  @ArchTest static final ArchRule no_aviator_dependency = BoneDddArchRules.noAviatorDependency();
 }

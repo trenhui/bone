@@ -2,22 +2,25 @@ package com.bone.metadata.engine.runtime.security;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/** 默认审计服务实现 负责记录系统中的安全相关操作日志 */
+/**
+ * 默认审计服务实现 负责记录系统中的安全相关操作日志。
+ *
+ * <p><b>当前能力边界（务必知悉）</b>：安全事件（越权访问 / 字段脱敏 / 敏感操作 / 认证授权结果） 以 WARN / INFO
+ * 级结构化日志同步输出，即「日志态审计」——应用日志的留存与轮转策略就是它的留存策略。
+ *
+ * <p><b>尚未接入持久化审计</b>：本类不落库。等保 / SOX 类场景需要的「不可篡改、可追溯」审计表 需要独立的表设计（DDL）与宿主注入，
+ * 属于架构决策，不在引擎层单方面引入；接入前不要把本类当作数据库审计。
+ */
 @Service
 public class DefaultAuditService implements AuditService {
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultAuditService.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-  // 使用线程池异步处理审计日志
-  private final ExecutorService auditExecutor = Executors.newFixedThreadPool(2);
 
   @Override
   public void logAccessDenied(
@@ -31,11 +34,6 @@ public class DefaultAuditService implements AuditService {
             "[访问拒绝] 时间: %s, 用户: %s, 资源类型: %s, 资源ID: %s, 操作: %s",
             getCurrentTime(), username, resourceType, resourceId, operation);
     logger.warn(message);
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () ->
-            saveAuditLog(username, "ACCESS_DENIED", resourceType, resourceId, operation, message));
   }
 
   @Override
@@ -51,10 +49,6 @@ public class DefaultAuditService implements AuditService {
             "[字段访问] 时间: %s, 用户: %s, 实体: %s, 字段: %s, 操作: %s, 脱敏: %s",
             getCurrentTime(), username, entityName, fieldName, operation, isMasked ? "是" : "否");
     logger.info(message);
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () -> saveAuditLog(username, "FIELD_ACCESS", entityName, fieldName, operation, message));
   }
 
   @Override
@@ -66,10 +60,6 @@ public class DefaultAuditService implements AuditService {
             "[记录访问] 时间: %s, 用户: %s, 实体: %s, 记录ID: %s, 操作: %s",
             getCurrentTime(), username, entityName, recordId, operation);
     logger.info(message);
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () -> saveAuditLog(username, "RECORD_ACCESS", entityName, recordId, operation, message));
   }
 
   @Override
@@ -81,10 +71,6 @@ public class DefaultAuditService implements AuditService {
             "[敏感操作] 时间: %s, 用户: %s, 操作: %s, 详情: %s",
             getCurrentTime(), username, operation, details);
     logger.warn(message);
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () -> saveAuditLog(username, "SENSITIVE_OPERATION", "SYSTEM", "", operation, message));
   }
 
   @Override
@@ -106,13 +92,6 @@ public class DefaultAuditService implements AuditService {
             successCount,
             recordCount - successCount);
     logger.info(message);
-
-    // 异步保存到数据库
-    String details =
-        String.format(
-            "总数: %d, 成功: %d, 失败: %d", recordCount, successCount, recordCount - successCount);
-    auditExecutor.submit(
-        () -> saveAuditLog(username, "BATCH_OPERATION", entityName, "", operation, message));
   }
 
   @Override
@@ -126,17 +105,6 @@ public class DefaultAuditService implements AuditService {
     } else {
       logger.warn(message);
     }
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () ->
-            saveAuditLog(
-                username,
-                "AUTHENTICATION",
-                "SYSTEM",
-                ipAddress,
-                success ? "SUCCESS" : "FAILURE",
-                message));
   }
 
   @Override
@@ -152,47 +120,10 @@ public class DefaultAuditService implements AuditService {
     } else {
       logger.warn(message);
     }
-
-    // 异步保存到数据库
-    auditExecutor.submit(
-        () -> saveAuditLog(username, "AUTHORIZATION", resource, "", operation, message));
   }
 
   /** 获取当前时间字符串 */
   private String getCurrentTime() {
     return LocalDateTime.now().format(DATE_TIME_FORMATTER);
-  }
-
-  /** 保存审计日志到数据库 实际项目中应该保存到数据库中 */
-  private void saveAuditLog(
-      String username,
-      String logType,
-      String resourceType,
-      String resourceId,
-      String operation,
-      String message) {
-    try {
-      // 这里应该是保存到数据库的逻辑
-      // 暂时只是打印日志
-      logger.debug(
-          "保存审计日志: {}, {}, {}, {}, {}, {}",
-          username,
-          logType,
-          resourceType,
-          resourceId,
-          operation,
-          message);
-
-      // 模拟数据库操作延迟
-      Thread.sleep(10);
-    } catch (Exception e) {
-      // 审计日志保存失败不影响主流程
-      logger.error("保存审计日志失败", e);
-    }
-  }
-
-  /** 关闭线程池 在应用关闭时调用 */
-  public void shutdown() {
-    auditExecutor.shutdown();
   }
 }

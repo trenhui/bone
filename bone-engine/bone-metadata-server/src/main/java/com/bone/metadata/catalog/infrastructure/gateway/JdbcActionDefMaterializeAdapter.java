@@ -40,14 +40,15 @@ public class JdbcActionDefMaterializeAdapter
       "INSERT INTO meta_entity_action_def "
           + "(tenant_id, entity_code, action_code, label, from_status, to_status, status_field, "
           + " is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order, "
-          + " created_at, updated_at, deleted, version) "
-          + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3),NOW(3),0,0) "
+          + " is_entry, created_at, updated_at, deleted, version) "
+          + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3),NOW(3),0,0) "
           + "ON DUPLICATE KEY UPDATE "
           + "label = VALUES(label), from_status = VALUES(from_status), to_status = VALUES(to_status), "
           + "status_field = VALUES(status_field), is_escape = VALUES(is_escape), "
           + "handler_bean = VALUES(handler_bean), params_schema = VALUES(params_schema), "
           + "permission_code = VALUES(permission_code), "
           + "requires_idempotency = VALUES(requires_idempotency), sort_order = VALUES(sort_order), "
+          + "is_entry = VALUES(is_entry), "
           + "updated_at = NOW(3), version = version + 1, deleted = 0";
 
   private static final String SOFT_DELETE_BY_ENTITY =
@@ -65,7 +66,7 @@ public class JdbcActionDefMaterializeAdapter
 
   private static final String SELECT_ALL_ACTIONS =
       "SELECT action_code, label, from_status, to_status, status_field, is_escape, handler_bean, "
-          + "params_schema, requires_idempotency, sort_order "
+          + "params_schema, requires_idempotency, sort_order, is_entry "
           + "FROM meta_entity_action_def "
           + "WHERE tenant_id = ? AND entity_code = ? AND deleted = 0 "
           + "ORDER BY sort_order ASC, id ASC";
@@ -74,13 +75,14 @@ public class JdbcActionDefMaterializeAdapter
       "INSERT INTO meta_entity_action_def "
           + "(tenant_id, entity_code, action_code, label, from_status, to_status, status_field, "
           + " is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order, "
-          + " created_at, updated_at, deleted, version) "
-          + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3),NOW(3),0,0) "
+          + " is_entry, created_at, updated_at, deleted, version) "
+          + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3),NOW(3),0,0) "
           + "ON DUPLICATE KEY UPDATE "
           + "label = VALUES(label), from_status = VALUES(from_status), to_status = VALUES(to_status), "
           + "status_field = VALUES(status_field), is_escape = VALUES(is_escape), "
           + "handler_bean = VALUES(handler_bean), params_schema = VALUES(params_schema), "
           + "requires_idempotency = VALUES(requires_idempotency), sort_order = VALUES(sort_order), "
+          + "is_entry = VALUES(is_entry), "
           + "updated_at = NOW(3), version = version + 1, deleted = 0";
 
   private static final String SOFT_DELETE_ONE =
@@ -119,6 +121,7 @@ public class JdbcActionDefMaterializeAdapter
                 ps.setString(11, permissionCodeOf(entityCode, a));
                 ps.setInt(12, Boolean.TRUE.equals(a.getRequiresIdempotency()) ? 1 : 0);
                 ps.setInt(13, a.getSortOrder());
+                ps.setInt(14, Boolean.TRUE.equals(a.getEntry()) ? 1 : 0);
               }
 
               @Override
@@ -196,7 +199,8 @@ public class JdbcActionDefMaterializeAdapter
                 rs.getString("handler_bean"),
                 rs.getString("params_schema"),
                 rs.getInt("requires_idempotency") == 1,
-                rs.getInt("sort_order")),
+                rs.getInt("sort_order"),
+                rs.getInt("is_entry") == 1),
         tenantId,
         entityCode);
   }
@@ -218,7 +222,8 @@ public class JdbcActionDefMaterializeAdapter
         spec.paramsSchema(),
         spec.permissionCodeOf(entityCode),
         Boolean.TRUE.equals(spec.requiresIdempotency()) ? 1 : 0,
-        spec.sortOrder() == null ? 0 : spec.sortOrder());
+        spec.sortOrder() == null ? 0 : spec.sortOrder(),
+        Boolean.TRUE.equals(spec.entry()) ? 1 : 0);
   }
 
   @Override

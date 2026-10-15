@@ -47,4 +47,12 @@ public class UpsertActionDefCommand {
 
   /** 同状态内动作排序；缺省 0。 */
   private Integer sortOrder;
+
+  /**
+   * 入口动作标记（0041）：{@code true} 时其 {@code fromStatus} 即新记录初始状态。
+   *
+   * <p><b>什么时候必须传</b>：全环状态机（每个状态都有入边，如巡检 {@code OPEN→CLOSED→OPEN}）图推导不出入口， 不标记则运行期「创建记录」死锁（不传
+   * status → 必填 400；传 → 422）。非全环机器可不传（回退图推导）。 与 {@code fromStatus} 不传（任意态可触发）是两个正交语义，互不替代。
+   */
+  private Boolean entry;
 }

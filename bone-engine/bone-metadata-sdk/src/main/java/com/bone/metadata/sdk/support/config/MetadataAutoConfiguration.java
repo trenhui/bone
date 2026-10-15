@@ -13,6 +13,7 @@ import com.bone.metadata.sdk.support.util.DistributedLockUtil;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
@@ -66,15 +67,25 @@ public class MetadataAutoConfiguration {
             .serializerByType(Long.TYPE, ToStringSerializer.instance);
   }
 
+  // ⚠️ @ConditionalOnBean：extension-studio 自带 @Primary 的 studioMetadataService 占位实现，
+  // 此时本自动配置里的 delegatingMetadataService 已被下方的
+  // @ConditionalOnMissingBean(name="studioMetadataService") 抑制；若仍强行创建本指示器，
+  // 会因缺少 DelegatingMetadataService 而启动失败。
   @Bean
   @ConditionalOnEnabledHealthIndicator("metadataService")
+  @ConditionalOnBean(DelegatingMetadataService.class)
   public MetadataHealthIndicator metadataHealthIndicator(
       DelegatingMetadataService delegatingService) {
     return new MetadataHealthIndicator(delegatingService);
   }
 
+  // ⚠️ 必须 @ConditionalOnMissingBean(name="studioMetadataService")：extension-studio 在
+  // StudioMetadataBootstrapConfiguration 中提供了同名 @Primary 占位实现（控制面不需要 SDK 真实元数据能力），
+  // 若不做此让步，studio 上下文里会出现 2 个 @Primary 的 MetadataService，Spring 启动直接抛
+  // NoUniqueBeanDefinitionException。其他模块不定义 studioMetadataService，本 Bean 照常创建。
   @Bean
   @Primary
+  @ConditionalOnMissingBean(name = "studioMetadataService")
   public DelegatingMetadataService delegatingMetadataService(
       ApplicationContext applicationContext, MetadataSdkProperties properties) {
     return new DelegatingMetadataService(applicationContext, properties);

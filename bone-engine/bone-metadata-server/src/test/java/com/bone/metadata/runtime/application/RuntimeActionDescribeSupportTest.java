@@ -202,7 +202,8 @@ class RuntimeActionDescribeSupportTest {
           List.<ActionParamSpec>of(),
           "runtime:" + entityCode + ":" + actionCode,
           escape,
-          10);
+          10,
+          false);
     }
   }
 }

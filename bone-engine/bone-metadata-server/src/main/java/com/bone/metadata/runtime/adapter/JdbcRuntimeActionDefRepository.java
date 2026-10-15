@@ -20,7 +20,8 @@ public class JdbcRuntimeActionDefRepository implements RuntimeActionDefRepositor
 
   private static final String BASE =
       "SELECT id, entity_code, action_code, label, from_status, to_status, status_field, "
-          + "is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order "
+          + "is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order, "
+          + "is_entry "
           + "FROM meta_entity_action_def "
           + "WHERE deleted = 0 AND tenant_id = :tenantId AND entity_code = :entityCode";
 
@@ -107,7 +108,8 @@ public class JdbcRuntimeActionDefRepository implements RuntimeActionDefRepositor
         params,
         rs.getString("permission_code"),
         rs.getInt("requires_idempotency") == 1,
-        rs.getInt("sort_order"));
+        rs.getInt("sort_order"),
+        rs.getInt("is_entry") == 1);
   }
 
   @SuppressWarnings("unchecked")

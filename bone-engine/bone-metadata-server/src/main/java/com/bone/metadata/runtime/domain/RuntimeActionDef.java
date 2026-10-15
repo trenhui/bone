@@ -8,6 +8,10 @@ import java.util.List;
  * <p>一条定义描述一条「状态机边」：{@code from_status -> to_status}， 作用在 {@code status_field} 字段上；{@code
  * is_escape} 为真时表示有副作用的逃逸动作， 由 {@code handler_bean} 指定的 {@link
  * com.bone.metadata.runtime.application.RuntimeActionHandler} 执行副作用， 再由平台统一负责状态流转。
+ *
+ * <p>{@code entry}（0041）：<b>入口动作标记</b>——其 {@code from_status} 即新记录的初始状态（UML 状态图「初始状态伪状态」的等价物）。
+ * 全环状态机（如设备巡检 {@code OPEN↔CLOSED}）没有「无入边」状态，图推导不出入口，必须由建模者显式声明； 未标记时回退到图推导（{@code from −
+ * to}），仍不可推导则 fail-closed（拒绝创建，绝不采信客户端直写值）。
  */
 public class RuntimeActionDef {
 
@@ -24,6 +28,7 @@ public class RuntimeActionDef {
   private final String permissionCode;
   private final boolean requiresIdempotency;
   private final int sortOrder;
+  private final boolean entry;
 
   public RuntimeActionDef(
       long id,
@@ -38,7 +43,8 @@ public class RuntimeActionDef {
       List<ActionParamSpec> params,
       String permissionCode,
       boolean requiresIdempotency,
-      int sortOrder) {
+      int sortOrder,
+      boolean entry) {
     this.id = id;
     this.entityCode = entityCode;
     this.actionCode = actionCode;
@@ -52,6 +58,7 @@ public class RuntimeActionDef {
     this.permissionCode = permissionCode;
     this.requiresIdempotency = requiresIdempotency;
     this.sortOrder = sortOrder;
+    this.entry = entry;
   }
 
   public long getId() {
@@ -108,5 +115,15 @@ public class RuntimeActionDef {
 
   public int getSortOrder() {
     return sortOrder;
+  }
+
+  /**
+   * 入口动作标记（0041）：{@code true} 时其 {@link #getFromStatus()} 即新记录的初始状态。
+   *
+   * <p>与 {@code from_status IS NULL}（任意状态可触发）是两件事——NULL-from 边不得当作入口候选， 入口必须显式声明（见 {@code
+   * RuntimeStatusGuardTest#entryStatus_nullFromStatus_isNotTreatedAsEntry}）。
+   */
+  public boolean isEntry() {
+    return entry;
   }
 }

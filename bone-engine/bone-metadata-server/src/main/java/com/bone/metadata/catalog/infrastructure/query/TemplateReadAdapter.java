@@ -107,7 +107,7 @@ public class TemplateReadAdapter implements TemplateReadPort {
     return jdbcTemplate.query(
         "SELECT id, tenant_id, template_id, action_code, label, from_status, to_status,"
             + " status_field, is_escape, handler_bean, params_schema, requires_idempotency,"
-            + " sort_order"
+            + " sort_order, is_entry"
             + " FROM meta_model_template_action WHERE tenant_id = 0 AND deleted = 0 AND template_id = ?"
             + " ORDER BY sort_order",
         ACTION_MAPPER,
@@ -130,7 +130,8 @@ public class TemplateReadAdapter implements TemplateReadPort {
               rs.getString("handler_bean"),
               rs.getString("params_schema"),
               rs.getInt("requires_idempotency") == 1,
-              rs.getInt("sort_order"));
+              rs.getInt("sort_order"),
+              rs.getInt("is_entry") == 1);
 
   @Override
   public Optional<TemplateUiSnapshot> findUiSnapshotByCode(String templateCode) {

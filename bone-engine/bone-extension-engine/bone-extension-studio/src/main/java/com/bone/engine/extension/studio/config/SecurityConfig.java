@@ -130,7 +130,10 @@ public class SecurityConfig {
             "http://localhost:3007",
             "http://localhost:3008"));
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+    // X-Tenant-Id 必须放行：WebTenantConfiguration 依赖它绑定租户上下文；X-Request-Id：StudioRequestContextFilter
+    // 透传链路追踪。
+    config.setAllowedHeaders(
+        List.of("Content-Type", "Authorization", "X-Tenant-Id", "X-Request-Id"));
     config.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
