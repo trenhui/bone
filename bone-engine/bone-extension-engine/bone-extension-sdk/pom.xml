@@ -55,13 +55,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- 可选依赖；io.github.aviatorscript GAV 为 Apache-2.0（替代 LGPL 的 com.googlecode.aviator，包名不变） -->
-        <dependency><groupId>io.github.aviatorscript</groupId>
-            <artifactId>aviator</artifactId>
-            <version>${aviator.version}</version>
-            <optional>true</optional>
-        </dependency>
-        
         <!-- Redis客户端 -->
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>

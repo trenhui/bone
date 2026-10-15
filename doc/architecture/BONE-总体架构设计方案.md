@@ -458,7 +458,7 @@ flowchart TD
 | Sentinel | — | ⛔ 未实现（gateway 限流/熔断用 Spring Cloud CircuitBreaker + resilience4j） | 限流熔断 |
 | Apache Camel | — | 🟡 部分（integration `CamelFlowRuntime` 已启用） | 集成编排 |
 | LiteFlow | — | ⛔ 未实现 | 规则编排 |
-| Aviator | 5.4 | ✅ 已实现（extension 表达式） | 规则与表达式 |
+| SpEL | Spring 6.x | ✅ 已实现（extension / metadata 表达式） | 规则与表达式 |
 
 > **状态说明（2026-08 补充）**：状态列区分「已实现 / 部分 / 可选 / 未实现」；⛔ 项为规划中或已被替代方案，实现前不视为平台能力承诺。
 

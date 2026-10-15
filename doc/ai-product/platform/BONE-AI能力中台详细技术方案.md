@@ -11,9 +11,9 @@
 ```
 产品服务（procuraAI / ClaimSphere / Equity，独立部署，Spring Boot 3.5.x）
    │ 进程内 starter 依赖（bone-ai-gateway/trace/rules…，库形态零额外跳）
-   ├─▶ bone-ai-gateway ──HTTP(OpenAI 兼容)──▶ 模型服务（vLLM/Ollama 本地 | 云端 API 备援）
+   ├─▶ bone-ai-gateway ──HTTP(OpenAI 兼容)──▶ 模型服务（vLLM/Ollama 本地；云端备援随客户形态启用）
    ├─▶ bone-ai-document ──HTTP REST──▶ 解析 sidecar（默认 Docling | PaddleOCR 候选，K8s 独立 Deployment）
-   ├─▶ bone-ai-rag ──▶ 向量库（过渡 MySQL JSON/ES | 终局 pgvector 独立实例，实测后定）
+   ├─▶ bone-ai-rag ──▶ 向量库（过渡 MySQL JSON + 应用层余弦 | 终局 pgvector 独立实例，实测后定）
    ├─▶ bone-ai-orchestration（状态机 + HITL） / bone-ai-rules（治理面）
    └─▶ bone-ai-trace ──▶ MySQL 8.0.31（快照表，分区见 §2.2）+ MinIO（大 IR 对象）
 横切：bone-security（脱敏/密钥）· bone-iam（权限）· bone-metadata-engine（建模语义）· 发布流水线（eval 门禁，不建独立模块）
@@ -121,11 +121,12 @@ CREATE TABLE hitl_item (
 
 ### 2.4 bone-ai-rules（治理面，不造执行引擎）
 
-**职责**：规则资产 CRUD + 版本（`rule_asset`/`rule_asset_version`）+ 灰度（`gray_percent`）+ shadow 双跑比对 + 正负例回归（连评测门禁）+ **命中标记语义**（`RULE_HIT_BLOCK`，供网关成本红线消费）+ 回放（QLExpress 表达式追踪写入 trace 的 `engine_version` 链路）。
+**职责**：规则资产 CRUD + 版本（`rule_asset`/`rule_asset_version`）+ 灰度（`gray_percent`）+ shadow 双跑比对 + 正负例回归（连评测门禁）+ **命中标记语义**（`RULE_HIT_BLOCK`，供网关成本红线消费）+ 回放（QLExpress 表达式追踪 + 三元组快照写入 trace 的 `engine_version` 链路）。
 
-**方言口径（总案 §4.3 定案，落地约束）**：
-- 新规则域**单方言 QLExpress 4.1.3**（沙箱策略显式保持"禁止脚本与应用代码交互"，禁止 open security strategy）；
-- 存量 Aviator（`io.github.aviatorscript` 5.9.0）**冻结沿用**：SPI 路由只为存量资产继续运行，**不扩展、不发展为长期双方言机制**；新领域规则（如 R01–R25）第一天起只写 QLExpress；
+**引擎口径（总案 §4.3 定案，落地约束）**：
+- 规则 DSL = **QLExpress 4.1.3 唯一**：表达式追踪直接服务"判定路径可回放"，原生支持脚本热更与版本治理；沙箱保持"禁止脚本与应用代码交互"（禁用 open security strategy）；
+- 规则文本保持声明式（比较 / 阈值 / 字符串匹配），复杂逻辑留 domain；
+- 存量 SpEL（extension / metadata 域，字段/公式计算）**冻结不动且不算规则引擎**：嵌入式表达式、无热更、无追踪，与 QLExpress 定位不同，不构成双规则引擎；
 - 规则级兼容性检查（`MetadataVersionController` 规则层空白）由本模块补齐：版本 diff 同 `rule_eval_case` 回归绿灯才允许发布。
 
 ### 2.5 bone-ai-document（解析 + IR + 脱敏）
@@ -206,7 +207,7 @@ LLM-as-Judge 经网关计量（省 60–80% 人工标注）；冷启动 = 小规
 4. 模型 HTTP/key 出现处收敛于 gateway 包（白名单路径）；
 5. AI 服务出口必须经 trace 落盘（调用侧断言 + 事件监听兜底）；
 6. 资金/责任/数值判定入口禁 `AiSuggestion` 参数（只收 `Confirmed`）；
-7. 禁旧 Aviator GAV（`com.googlecode.aviator` groupId）。
+7. 禁 Aviator 全量 GAV（`com.googlecode.aviator` / `io.github.aviatorscript`；零消费者死实现已删除）。
 
 ### 3.4 数据库与安全
 - 全表租户隔离 + 审计字段（`tenant_id/created_by/created_at`）对齐《数据库开发规范》；
@@ -252,7 +253,7 @@ LLM-as-Judge 经网关计量（省 60–80% 人工标注）；冷启动 = 小规
 |---|---|---|
 | 1.1 | gateway 治理面（路由/配额/脱敏/灰度/降档） | 配额超限降档实证；PII 出口脱敏用例 |
 | 1.2 | trace 完整（DDL+留存+回放 API） | 三元组回放实证；无证据拒返断言 |
-| 1.3 | rules 最小版（CRUD/版本/命中标记/存量方言路由/兼容性检查补齐） | 规则命中不调 LLM 语义打通 orchestration 规则节点 |
+| 1.3 | rules 最小版（CRUD/版本/命中标记/兼容性检查补齐） | 规则命中不调 LLM 语义打通 orchestration 规则节点 |
 | 1.4 | orchestration 执行器 + HITL 子域（四态/ESCALATED/确认台 API） | procuraAI 端到端：解析→规则→LLM→HITL→回放 |
 | 1.5 | metadata 语义扩展（AiMetadata 档位/阈值、WorkflowMetadata AI 节点） | 建模→执行链路一致性 |
 | 1.6 | 最小 IR（PDFBox/Tika 条款切片 + span） | 引用定位原文 100% |

@@ -8,7 +8,7 @@
 
 ## 1. 一句话结论
 
-AI 中台范围内**默认选型全部为宽松许可**（Apache-2.0 / MIT / PostgreSQL License），已执行的许可修复（Aviator GAV 升级）构建验证通过、零代码迁移；**禁用清单**（AGPL/自定义红线/带 CVE 的 EOL 框架）已从选型中排除并写入门禁。法务需裁定的仅 5 项（§5），均不影响第一批开工节奏。
+AI 中台范围内**默认选型全部为宽松许可**（Apache-2.0 / MIT / PostgreSQL License）；规则 DSL 为 QLExpress 4.1.3 唯一引擎，存量表达式执行为 SpEL（字段/公式计算域，非规则引擎，冻结不动）；Aviator 新旧 GAV 均移出选型（零消费者死实现删除）。**禁用清单**（AGPL/自定义红线/带 CVE 的 EOL 框架）已从选型中排除并写入门禁。法务需裁定的仅 5 项（§5），均不影响第一批开工节奏。
 
 ---
 
@@ -16,19 +16,20 @@ AI 中台范围内**默认选型全部为宽松许可**（Apache-2.0 / MIT / Pos
 
 | 组件 | 版本 | 许可 | 状态 | 使用范围 | 备注 |
 |---|---|---|---|---|---|
-| `io.github.aviatorscript:aviator` | 5.9.0 | Apache-2.0 | ✅（替代旧 GAV `com.googlecode.aviator:aviator` 5.4.1 LGPL-2.1+） | bone-extension-sdk 表达式 SPI（低延迟场景） | 升级已执行：三处 POM 迁移 + 7 模块构建验证通过，包名兼容零代码迁移 |
-| `com.alibaba:qlexpress4` | 4.1.3 | Apache-2.0 | ✅（2026-08 活跃维护） | bone-ai-rules 规则 DSL 默认 | 安全策略须显式保持"禁止脚本与应用代码交互"（禁用 open security strategy） |
+| `com.alibaba:qlexpress4` | 4.1.3 | Apache-2.0 | ✅（2026-08 活跃维护） | bone-ai-rules 规则 DSL 唯一引擎 | 表达式追踪服务"判定路径可回放"；沙箱保持"禁止脚本与应用代码交互"（禁用 open security strategy）；存量表达式执行为 SpEL（计算域，非规则引擎），见方案 §4.3 |
+| `io.github.aviatorscript:aviator` | 5.9.0 | Apache-2.0 | ⛔ 移出选型 | 无（从未启用：extension / metadata 域实际均为 SpEL） | 零消费者死实现，随 `AviatorExpressionEvaluator` 一并删除；旧 GAV `com.googlecode.aviator:aviator` 5.4.1 为 LGPL-2.1+，曾完成 GAV 升级，现整体移除，不进冻结面 |
 | Apache PDFBox / Tika / POI | 现行（POI 5.3.0） | Apache-2.0 | ✅ | bone-ai-document 解析基线 | 全部已在库 |
 | `pgvector`（PostgreSQL 扩展） | 随发行版 | PostgreSQL License（宽松） | ✅ | bone-ai-rag 向量检索（最终形态；实例形态推迟实测后决策） | 禁用同类 pg_search（见 §4） |
 | bge-reranker 系 ONNX 模型 | 随选型 | ⚠️ 模型许可随选型确认 | ⚠️ | bone-ai-rag rerank（本地推理，数据不出域） | 选定具体模型后回填许可与来源哈希 |
-| RAGAS / promptfoo（可选 sidecar） | 节奏跟进 | Apache-2.0 / MIT | ✅ | 离线评测辅助 | 非主链路，可裁剪 |
+| bge-m3 系 ONNX 模型（embedding） | 随选型 | ⚠️ 模型许可随选型确认 | ⚠️ | bone-ai-rag embedding（1024 维起步） | 与 bge-reranker 同族不同任务（向量化 / 重排），非重复依赖；选定后回填许可与来源哈希 |
+| RAGAS（可选 sidecar） | 节奏跟进 | Apache-2.0 | ✅ | 离线评测辅助（RAG 指标） | 非主链路，可裁剪；对抗评测走 C8 对抗样本库 + CI 负向探针，不另引 promptfoo |
 | MCP Java SDK（预留） | 2.0.x 复核 | ⚠️ 随版本复核 | ⚠️（未引入） | MCP Server/Client 能力（独立 POC） | CVE-2026-59279（会话无界增长）修复于 2.0.1，锁定 ≥2.0.1 |
 
 ## 3. sidecar 与模型权重清单
 
 | 对象 | 版本/来源 | 许可 | 状态 | 备注 |
 |---|---|---|---|---|
-| Docling（含 docling-serve/docling-java） | LF AI & Data 官方 | MIT | ✅ | OCR/版面 sidecar 实现一 |
+| Docling（docling-serve） | LF AI & Data 官方 | MIT | ✅ | OCR/版面 sidecar 实现一 | sidecar 契约为 HTTP REST JSON 唯一基线，不引任何一方 SDK 客户端（docling-java 等），保 Docling/PaddleOCR 适配器级互换 |
 | PaddleOCR（PP-StructureV3） | 百度官方 | Apache-2.0 | ✅ | OCR/版面 sidecar 实现二，与 Docling 同契约为可互换实现 |
 | MinerU | ≥3.1.0 | ⚠️ 基于 Apache-2.0 的自定义许可（>100M MAU 或 >$20M/月营收需商业授权 + 在线服务署名） | ⚠️（仅精度候选，**默认不引入**） | 私有化内部部署基本不触发门槛；若启用须法务书面确认版本与模型权重许可；对外 SaaS 不建议 |
 | vLLM（部署侧推理服务） | 随锁型 | ⚠️ 随版本记录 | ⚠️ | 私有化部署组件，随模型锁型一并入 SBOM 扫描 |
@@ -43,8 +44,8 @@ AI 中台范围内**默认选型全部为宽松许可**（Apache-2.0 / MIT / Pos
 | PyMuPDF | AGPL/商业双授权 | 分发传染 | PDFBox/Docling/PaddleOCR |
 | Marker | 权重 OpenRAIL-M（$5M 收入阈值） | 权重许可阈值条款 | 同上 |
 | Dify 内核 | Apache-2.0 修改版，多租户运营需书面授权（tenant=workspace），LOGO 不可移除 | 多租户红线且私有化交付不豁免 | 不引入（编排自建） |
-| Spring AI 官方 1.1.x（≤1.1.8） | 4 个未修复 CVE（2 high，含工具调用越权）+ 已随 Boot 3.5.x 于 2026-06-30 OSS EOL | 安全 + 生命周期双重不达标 | 自建 OpenAI 兼容客户端 |
-| `com.googlecode.aviator:aviator`（旧 GAV） | LGPL-2.1+ | 传染性许可 | 已升级 `io.github.aviatorscript:aviator` 5.9.0 |
+| Spring AI 官方 1.1.x（≤1.1.8） | 未修复 CVE（含 CVE-2026-59318 工具调用越权，多个 High，明细见 spring.io 公告）+ 已随 Boot 3.5.x 于 2026-06-30 OSS EOL | 安全 + 生命周期双重不达标 | 自建 OpenAI 兼容客户端 |
+| `com.googlecode.aviator:aviator`（旧 GAV） | LGPL-2.1+ | 传染性许可 | 整体移出选型（新 GAV 亦删：实现零消费者从未启用） |
 
 ## 5. 待法务确认点（5 项，POC 签前回复）
 
