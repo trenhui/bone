@@ -13,10 +13,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Button, Dropdown, Empty, message, Popconfirm, Space, Spin, Tabs, Tag, Tooltip, Typography,
+  Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  CheckCircleOutlined, CloudUploadOutlined, FileTextOutlined, RedoOutlined,
+  CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, FileTextOutlined, FullscreenExitOutlined,
+  FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
   ReloadOutlined, SaveOutlined, UndoOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
@@ -25,14 +26,17 @@ import { metadataActionDefApi, metadataUiSchemaApi, type ActionDefSpec, type UiS
 import { buildDefaultSchema, type ViewKey } from './schemaOps';
 import { enumFieldsOf, lintSchema, type LintIssue, type LintLocate } from './lint';
 import { UI_SCHEMA_SAMPLES } from './samples';
-import StructurePanel from './StructurePanel';
+import { sampleApplies } from './scenarios';
+import StructurePanel, { FieldPalette } from './StructurePanel';
 import RulesPanel from './RulesPanel';
 import ActionBarPanel from './ActionBarPanel';
 import ListPanel from './ListPanel';
 import DictionaryPanel from './DictionaryPanel';
 import LintPanel from './LintPanel';
 import JsonPanel from './JsonPanel';
+import VariantsPanel from './VariantsPanel';
 import SchemaPreview from './SchemaPreview';
+import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } from './snapshots';
 
 const { Text } = Typography;
 
@@ -42,7 +46,7 @@ interface Props {
   fields: MetaField[];
 }
 
-type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'lint' | 'json';
+type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'variants' | 'lint' | 'json';
 
 const TAB_LABEL: Record<TabKey, string> = {
   structure: '结构',
@@ -50,9 +54,27 @@ const TAB_LABEL: Record<TabKey, string> = {
   actions: '动作条',
   list: '列表',
   dict: '字典',
+  variants: '变体',
   lint: '自检',
   json: 'JSON',
 };
+
+/** 首次进入设计器的 3 步上手引导（localStorage 记忆；对标原型 showGuide 首访自动弹出） */
+const GUIDE_KEY = 'bone-designer-guide-v1';
+const GUIDE_STEPS: { title: string; body: string }[] = [
+  {
+    title: '① 左侧配置，右侧实时预览',
+    body: '结构 / 规则 / 动作条 / 列表 / 变体在左侧面板配置，点左下角「＋」调出字段库；右侧预览跑的是运行时同一套引擎——左改右见，不用保存发布才能看到效果。',
+  },
+  {
+    title: '② 用「身份模拟」验证差异化',
+    body: '预览区顶部可切换角色 / 档位 / 渠道 / 设备，实时裁决变体与联动规则；「规则追踪」显示哪些联动命中。配好变体后在这里确认各身份看到的画面。',
+  },
+  {
+    title: '③ 自检 + 后端校验全绿后再发布',
+    body: '「自检」查协议一致性，「后端校验」核对字段/动作码是否真实存在。发布链路有硬门禁：存在协议错误会被阻止发布。',
+  },
+];
 
 export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
@@ -136,6 +158,156 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     setSchema((cur) => { if (cur) setPast((p) => [...p, cur]); return nxt; });
   };
 
+  /* ---------- 全屏（禅模式） ---------- */
+  const [zen, setZen] = useState(false);
+  /* ---------- 3 步上手引导（首访自动，可从工具栏重显） ---------- */
+  const [guideOpen, setGuideOpen] = useState(false);
+  /* ---------- 版本快照（P2 · 本地 30 份上限，恢复前协议 Gate） ---------- */
+  const [snaps, setSnaps] = useState<DesignerSnapshot[]>([]);
+  const [snapModalOpen, setSnapModalOpen] = useState(false);
+  /* ---------- 命令面板（Cmd/Ctrl+K） ---------- */
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cmdQuery, setCmdQuery] = useState('');
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(GUIDE_KEY)) setGuideOpen(true);
+    } catch { /* localStorage 不可用（隐私模式）时静默跳过引导 */ }
+  }, []);
+  const closeGuide = () => {
+    setGuideOpen(false);
+    try { localStorage.setItem(GUIDE_KEY, '1'); } catch { /* 忽略 */ }
+  };
+
+  /**
+   * 保存请求（鼠标与键盘共用同一路径）：有本地自检错误时先确认，
+   * 避免「点了保存 → 静默存进一份带错配置」。存草稿本身允许（不阻断），
+   * 真正的硬门禁在发布链路（PublishPreviewPanel 调后端 validate）。
+   */
+  const requestSave = () => {
+    if (!schema) return;
+    if (errCount > 0) {
+      Modal.confirm({
+        title: '保存界面配置',
+        content: `本地自检仍有 ${errCount} 个错误，确定保存？（发布前必须修复）`,
+        okText: '保存', cancelText: '取消',
+        onOk: save,
+      });
+      return;
+    }
+    void save();
+  };
+
+  /**
+   * 键盘快捷键（业界编辑器标配；tooltip 早已宣称 Ctrl+Z，此前无监听 = 假承诺，现补成真）：
+   * - Ctrl/⌘+Z 撤销，Ctrl/⌘+Shift+Z（或 Ctrl+Y）重做，Ctrl/⌘+S 保存，Ctrl/⌘+K 命令面板
+   * - Esc 退出全屏
+   * 输入聚焦（Input/TextArea/Select/contentEditable）时编辑类快捷键不劫持——
+   * 否则在 JSON 面板 / 条件编辑器里打字会误触撤销（曾预演：ConditionEditor 内 Ctrl+Z 被全局吞）。
+   * Ctrl+K 是全局约定（VS Code 等均不排除输入态），故置于输入 guard 之前。
+   */
+  const actionsRef = useRef({ undo, redo, requestSave });
+  actionsRef.current = { undo, redo, requestSave };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen((v) => !v);
+        return;
+      }
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === 'Escape') {
+        // 有弹层（Modal/下拉/气泡）时 Esc 归弹层自己，不退出全屏。
+        // 必须判「可见」而非「在 DOM 中」：qiankun 沙箱里 antd Modal 关闭后 portal 不卸载
+        // （motion 结束事件丢失），隐藏 wrap 残留 DOM——按存在性判断会永久吞掉 Esc。
+        // antd 对下拉/气泡/浮层用 display:none 隐藏，对 Modal wrap 同样如此，统一用计算样式判可见。
+        const popupOpen = Array.from(document.querySelectorAll(
+          '.ant-modal-wrap, .ant-select-dropdown, .ant-dropdown, .ant-popover',
+        )).some((el) => {
+          const s = getComputedStyle(el);
+          return s.display !== 'none' && s.visibility !== 'hidden';
+        });
+        if (!popupOpen) setZen(false);
+        return;
+      }
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); actionsRef.current.undo(); }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); actionsRef.current.redo(); }
+      else if (k === 's') { e.preventDefault(); void actionsRef.current.requestSave(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  /* ---------- 版本快照（P2 · 对标原型：本地 30 份上限，恢复前协议 Gate） ---------- */
+  const doSnapshot = () => {
+    if (!schema) return;
+    const snap: DesignerSnapshot = {
+      id: `snap-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      ts: Date.now(),
+      entityCode,
+      label: entityCode,
+      views: Object.keys(schema.views ?? {}).length,
+      schema: JSON.parse(JSON.stringify(schema)) as BoneUiSchema,
+    };
+    const next = saveSnap(entityId, snap);
+    setSnaps(next);
+    message.success(`已保存快照（${next.length}/30）`);
+  };
+
+  const restoreSnap = (s: DesignerSnapshot) => {
+    // 协议 Gate：恢复前若快照含 error 级问题，阻断（与发布门禁同口径：坏配置不静默顶上来）
+    const errs = lintSchema(s.schema, knownFields, enumFields).filter((i) => i.level === 'error');
+    if (errs.length) {
+      Modal.warning({
+        title: '恢复被拦截 · 协议错误',
+        content: `该快照含 ${errs.length} 处协议错误，已阻止恢复：${errs.slice(0, 3).map((e) => e.message).join('；')}${errs.length > 3 ? '…' : ''}`,
+      });
+      return;
+    }
+    commit(s.schema);
+    setBaseline(JSON.stringify(s.schema));
+    setPast([]);
+    setFuture([]);
+    setSnapModalOpen(false);
+    message.success('已恢复到快照');
+  };
+
+  const delSnap = (id: string) => setSnaps(removeSnap(entityId, id));
+
+  /**
+   * 命令面板命令集（Cmd/Ctrl+K · 业界编辑器标配）。
+   * 不用 useMemo 缓存：命令闭包需要每渲染捕获最新的 save/undo 等引用，
+   *  memo 化会把「保存」固化成旧闭包（stale schema/lock → 409 冲突）。
+   */
+  const COMMANDS: { key: string; group: string; label: string; run: () => void; disabled?: boolean }[] = [
+    { key: 'view-form', group: '视图', label: '切换：录入表单视图', run: () => setView('form') },
+    { key: 'view-detail', group: '视图', label: '切换：详情视图', run: () => setView('detail') },
+    { key: 'validate', group: '校验', label: '运行后端校验', run: () => void revalidate() },
+    { key: 'save', group: '保存', label: '保存界面配置', run: () => requestSave() },
+    { key: 'snapshot', group: '保存', label: '保存当前快照', run: doSnapshot },
+    { key: 'undo', group: '编辑', label: '撤销（Ctrl+Z）', run: undo, disabled: !past.length },
+    { key: 'redo', group: '编辑', label: '重做（Ctrl+Shift+Z）', run: redo, disabled: !future.length },
+    { key: 'zen-on', group: '视图', label: '进入全屏设计器', run: () => setZen(true) },
+    { key: 'zen-off', group: '视图', label: '退出全屏', run: () => setZen(false) },
+    { key: 'guide', group: '帮助', label: '显示 3 步上手引导', run: () => setGuideOpen(true) },
+    { key: 'go-structure', group: '跳转面板', label: '跳到：结构', run: () => setTab('structure') },
+    { key: 'go-rules', group: '跳转面板', label: '跳到：规则', run: () => setTab('rules') },
+    { key: 'go-actions', group: '跳转面板', label: '跳到：动作条', run: () => setTab('actions') },
+    { key: 'go-list', group: '跳转面板', label: '跳到：列表', run: () => setTab('list') },
+    { key: 'go-dict', group: '跳转面板', label: '跳到：字典', run: () => setTab('dict') },
+    { key: 'go-variants', group: '跳转面板', label: '跳到：变体', run: () => setTab('variants') },
+    { key: 'go-lint', group: '跳转面板', label: '跳到：自检', run: () => setTab('lint') },
+    { key: 'go-json', group: '跳转面板', label: '跳到：JSON', run: () => setTab('json') },
+  ];
+  // 不过滤 memo：18 条命令的过滤成本可忽略，而 memo 化会把命令闭包固化（stale save/undo 引用）
+  const cmdFiltered = COMMANDS.filter((c) => {
+    const q = cmdQuery.trim().toLowerCase();
+    return !q || c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q);
+  });
+
   const dirty = useMemo(
     () => !!schema && JSON.stringify(schema) !== baseline,
     [schema, baseline],
@@ -143,6 +315,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
 
   /* ---------- 自检 ---------- */
   const knownFields = useMemo(() => new Set(fields.map((f) => f.code)), [fields]);
+  // 样例按实体领域过滤：跨领域样例（如报销单里出现「门诊快赔」）不进入「载入场景样例」下拉
+  const visibleSamples = useMemo(() => UI_SCHEMA_SAMPLES.filter((s) => sampleApplies(s, fields)), [fields]);
   const enumFields = useMemo(() => enumFieldsOf(fields), [fields]);
   const issues = useMemo<LintIssue[]>(
     () => (schema ? lintSchema(schema, knownFields, enumFields) : []),
@@ -214,7 +388,13 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   }, []);
 
   if (loading) {
-    return <div style={{ padding: 40, textAlign: 'center' }}><Spin tip="加载界面配置…" /></div>;
+    return (
+      <div style={{ padding: 40, textAlign: 'center' }}>
+        <Spin />
+        {/* tip 仅 nest/fullscreen 模式生效，独立 Spin 带 tip 会告警；文案作兄弟节点渲染，视觉等价 */}
+        <div style={{ marginTop: 8, color: '#00000073', fontSize: 12 }}>加载界面配置…</div>
+      </div>
+    );
   }
 
   if (!schema) {
@@ -223,8 +403,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
 
   const isEmptyConfig = (schema.views.form?.sections?.length ?? 0) === 0;
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 680 }}>
+  const content = (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: zen ? '100%' : 680 }}>
       {/* ---------- 工具条 ---------- */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
@@ -257,9 +437,25 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           <Button size="small" icon={<ReloadOutlined />} onClick={() => void load()}>重新加载</Button>
         </Tooltip>
 
+        <Tooltip title={zen ? '退出全屏（Esc）' : '全屏编辑（Esc 退出）'}>
+          <Button
+            size="small"
+            icon={zen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+            onClick={() => setZen((v) => !v)}
+          >
+            {zen ? '退出全屏' : '全屏'}
+          </Button>
+        </Tooltip>
+
+        <Tooltip title="3 步上手引导">
+          <Button size="small" icon={<QuestionCircleOutlined />} onClick={() => setGuideOpen(true)}>
+            帮助
+          </Button>
+        </Tooltip>
+
         <Dropdown
           menu={{
-            items: UI_SCHEMA_SAMPLES.map((s) => ({
+            items: visibleSamples.map((s) => ({
               key: s.key,
               label: (
                 <div>
@@ -279,16 +475,27 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         </Dropdown>
 
         <Button size="small" loading={validating} onClick={revalidate}>后端校验</Button>
-        <Popconfirm
-          title="保存界面配置"
-          description={errCount > 0 ? `本地自检仍有 ${errCount} 个错误，确定保存？` : '保存后需发布才对运行时生效'}
-          onConfirm={save}
-          okText="保存" cancelText="取消"
+
+        <Dropdown
+          menu={{
+            items: [
+              { key: 'save', label: '保存当前快照', icon: <CameraOutlined />, onClick: doSnapshot },
+              { key: 'history', label: '版本历史…', icon: <HistoryOutlined />, onClick: () => { setSnaps(loadSnaps(entityId)); setSnapModalOpen(true); } },
+            ],
+          }}
         >
-          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty}>
+          <Button size="small" icon={<CameraOutlined />}>快照</Button>
+        </Dropdown>
+
+        <Tooltip title="命令面板（Cmd/Ctrl + K）">
+          <Button size="small" icon={<MacCommandOutlined />} onClick={() => setCmdOpen(true)}>命令</Button>
+        </Tooltip>
+
+        <Tooltip title="保存（Ctrl+S）。保存后需发布才对运行时生效">
+          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={requestSave}>
             保存
           </Button>
-        </Popconfirm>
+        </Tooltip>
       </div>
 
       {isEmptyConfig && (
@@ -299,12 +506,32 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         />
       )}
 
+      {/* 协议错误阻断式横幅（对标原型 Gate：错误不藏在 Tab 里，顶出来 + 给修复捷径） */}
+      {errCount > 0 && (
+        <Alert
+          type="error" showIcon style={{ marginBottom: 10 }}
+          message={`界面协议存在 ${errCount} 处错误，保存前建议修复`}
+          description={
+            <div>
+              <div style={{ marginBottom: 6 }}>
+                {issues.filter((i) => i.level === 'error').slice(0, 3).map((i, idx) => (
+                  <div key={idx}>· {i.message}</div>
+                ))}
+                {errCount > 3 && <div>…等 {errCount} 处</div>}
+              </div>
+              <Button size="small" danger onClick={() => setTab('lint')}>前往「自检」面板修复</Button>
+            </div>
+          }
+        />
+      )}
+
       {/* ---------- 主体两栏 ---------- */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 0 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 0, position: 'relative' }}>
         {/* 左：配置面板 */}
         <div style={{
           width, flex: '0 0 auto', display: 'flex', flexDirection: 'column',
           background: '#fff', border: '1px solid #e6eaf0', borderRadius: 10, overflow: 'hidden',
+          position: 'relative',
         }}>
           <Tabs
             size="small" activeKey={tab}
@@ -320,6 +547,17 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
               { key: 'actions', label: TAB_LABEL.actions },
               { key: 'list', label: TAB_LABEL.list },
               { key: 'dict', label: TAB_LABEL.dict },
+              {
+                key: 'variants',
+                label: (
+                  <Space size={4}>
+                    {TAB_LABEL.variants}
+                    {(schema.variants?.length ?? 0) > 0 && (
+                      <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>{schema.variants?.length}</Tag>
+                    )}
+                  </Space>
+                ),
+              },
               {
                 key: 'lint',
                 label: (
@@ -364,6 +602,9 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
                 focus={focus?.tab === 'dict' ? focus : undefined}
               />
             )}
+            {tab === 'variants' && (
+              <VariantsPanel schema={schema} onChange={commit} fields={fields} actionDefs={actionDefs} />
+            )}
             {tab === 'lint' && (
               <LintPanel
                 issues={issues} serverIssues={serverIssues}
@@ -378,6 +619,20 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
               />
             )}
           </div>
+
+          {/* FAB 控件库（对标原型：就近调出字段库，不必滚到面板底部） */}
+          <Popover
+            trigger="click"
+            placement="topRight"
+            title="添加字段到界面"
+            content={<FieldPalette schema={schema} fields={fields} onChange={commit} view={view} />}
+          >
+            <Button
+              shape="circle" size="large" type="primary"
+              icon={<PlusOutlined />}
+              style={{ position: 'absolute', right: 14, bottom: 14, zIndex: 5, boxShadow: '0 6px 16px rgba(22,119,255,.35)' }}
+            />
+          </Popover>
         </div>
 
         {/* 拖拽分隔条 */}
@@ -400,5 +655,130 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         </div>
       </div>
     </div>
+  );
+
+  /* 3 步上手引导 Modal（首访自动弹出；antd Modal 走 portal，全屏/常态挂载点无关） */
+  const guideModal = (
+    <Modal
+      title="BONE 界面设计器 · 3 步上手"
+      open={guideOpen}
+      onOk={closeGuide}
+      onCancel={closeGuide}
+      okText="开始使用"
+      cancelText="稍后再说"
+      width={560}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {GUIDE_STEPS.map((s) => (
+          <div key={s.title}>
+            <Text strong style={{ fontSize: 13 }}>{s.title}</Text>
+            <div><Text type="secondary" style={{ fontSize: 12 }}>{s.body}</Text></div>
+          </div>
+        ))}
+        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 10 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            快捷键：<Text code style={{ fontSize: 11 }}>Ctrl/⌘+Z</Text> 撤销 ·
+            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+Shift+Z</Text> 重做 ·
+            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+S</Text> 保存 ·
+            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+K</Text> 命令面板 ·
+            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Esc</Text> 退出全屏。随时点工具栏「帮助」重看本引导。
+          </Text>
+        </div>
+      </div>
+    </Modal>
+  );
+
+  /* 版本历史 Modal（本地快照；恢复前跑协议 Gate） */
+  const snapModal = (
+    <Modal title="版本历史（本地快照 · 上限 30）" open={snapModalOpen} onCancel={() => setSnapModalOpen(false)} footer={null} width={560}>
+      {snaps.length === 0 ? (
+        <Empty description="还没有快照，点工具栏「快照 → 保存当前快照」即可存档" />
+      ) : (
+        <List
+          dataSource={snaps}
+          renderItem={(s) => (
+            <List.Item
+              actions={[
+                <Button key="r" type="link" onClick={() => restoreSnap(s)}>恢复</Button>,
+                <Button key="d" type="link" danger onClick={() => delSnap(s.id)}>删除</Button>,
+              ]}
+            >
+              <List.Item.Meta
+                title={`${s.label} · ${s.views} 视图`}
+                description={`${fmtSnapTime(s.ts)}（${snaps.indexOf(s) + 1}/30）`}
+              />
+            </List.Item>
+          )}
+        />
+      )}
+    </Modal>
+  );
+
+  /* 命令面板 Modal（Cmd/Ctrl+K） */
+  const cmdModal = (
+    <Modal
+      title="命令面板（Cmd/Ctrl + K）" open={cmdOpen} onCancel={() => setCmdOpen(false)} footer={null} width={520}
+    >
+      <Input
+        autoFocus
+        placeholder="搜索命令，如：全屏 / 校验 / 撤销 / 跳到 结构"
+        value={cmdQuery}
+        onChange={(e) => setCmdQuery(e.target.value)}
+        style={{ marginBottom: 10 }}
+      />
+      <div style={{ maxHeight: '50vh', overflow: 'auto' }}>
+        {cmdFiltered.length === 0 ? (
+          <Empty description="无匹配命令" />
+        ) : (
+          cmdFiltered.map((c) => (
+            <div
+              key={c.key}
+              onClick={() => { if (!c.disabled) { c.run(); setCmdOpen(false); } }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+                borderRadius: 6, cursor: c.disabled ? 'not-allowed' : 'pointer',
+                opacity: c.disabled ? 0.45 : 1,
+              }}
+              onMouseEnter={(e) => { if (!c.disabled) e.currentTarget.style.background = '#f0f7ff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Tag style={{ margin: 0, fontSize: 10 }}>{c.group}</Tag>
+              <span style={{ fontSize: 13 }}>{c.label}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </Modal>
+  );
+
+  /* 全屏（禅模式）：fixed 覆盖层吃满视口 + 上下文头（业界 IDE Zen Mode / Figma 演示范式），Esc 退出。
+     不做 window.open 新窗——qiankun 子应用脱离 shell 会丢登录态/租户头/菜单上下文。
+     头部不做 navigate 回跳：本页同时服务 /apps/:appId/modules/:moduleId/entities/:id 作用域路由，
+     硬跳 /entities/:id 会丢 app/module 上下文（退出全屏本身即回到原页面）。 */
+  if (zen) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 1080, background: '#f0f2f5', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #e6eaf0', background: '#fff' }}>
+          <Text strong>界面设计器 · {entityCode}</Text>
+          <Tag color="blue" style={{ margin: 0 }}>全屏模式</Tag>
+          <span style={{ flex: 1 }} />
+          <Button size="small" icon={<FullscreenExitOutlined />} onClick={() => setZen(false)}>退出全屏（Esc）</Button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12 }}>
+          {content}
+          {guideModal}
+          {snapModal}
+          {cmdModal}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <>
+      {content}
+      {guideModal}
+      {snapModal}
+      {cmdModal}
+    </>
   );
 }

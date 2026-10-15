@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   Alert, Button, Collapse, Modal, Space, Spin, Table, Tag, Typography, message,
 } from 'antd';
-import { CopyOutlined, ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { CopyOutlined, ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined, SafetyCertificateOutlined, SettingOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { errorMessage, metadataEntityApi } from '../services/metadataApi';
+import { errorMessage, metadataEntityApi, metadataUiSchemaApi, type UiSchemaIssue } from '../services/metadataApi';
 import type { EntityValidationIssue, MetaField, PublishPreview, PendingAuthorization } from '../types';
 import { META_DELIVERY_RUNTIME } from '../types';
 import { parseSchemaDiff } from '../utils/schemaDiff';
@@ -57,6 +57,8 @@ interface Props {
   onViewInterface?: () => void;
   /** 发布成功后「继续加字段」回调（跳结构 Tab 并唤起字段向导） */
   onAddField?: () => void;
+  /** 界面协议存在阻断错误时「去修复」回调（跳界面设计器 Tab） */
+  onFixUiSchema?: () => void;
 }
 
 const PublishPreviewPanel: React.FC<Props> = ({
@@ -66,12 +68,16 @@ const PublishPreviewPanel: React.FC<Props> = ({
   onOpenData,
   onViewInterface,
   onAddField,
+  onFixUiSchema,
 }) => {
   const [preview, setPreview] = useState<PublishPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
+  /** 界面协议阻断问题（ERROR 级；发布前由后端 validate 兜底，与本地自检双轨） */
+  const [schemaIssues, setSchemaIssues] = useState<UiSchemaIssue[] | null>(null);
+  const [checkingSchema, setCheckingSchema] = useState(false);
 
   const refresh = () => {
     if (!entityId) return;
@@ -102,6 +108,31 @@ const PublishPreviewPanel: React.FC<Props> = ({
 
   const handlePublish = async () => {
     if (!entityId) return;
+    /**
+     * 界面协议硬门禁（发布链路最后一道闸，业界低代码平台「配置错误不静默上线」范式）：
+     * 调后端 validate（跨真源一致性：字段/动作码是否真实存在），ERROR 级即阻断。
+     * - 保存仍允许存草稿（不阻断保存），此处才拦——与原型 doPublish 的 realErrCount 门禁同语义；
+     * - validate 自身失败（服务不可用）同样 fail-closed：宁可挡住也不放行未知状态的配置。
+     */
+    setCheckingSchema(true);
+    let blocking: UiSchemaIssue[] = [];
+    try {
+      const res = await metadataUiSchemaApi.validate(entityId);
+      if (res.code !== 200) throw new Error(errorMessage(res));
+      blocking = (res.data ?? []).filter((i) => i.level === 'ERROR');
+    } catch {
+      setCheckingSchema(false);
+      setSchemaIssues(null);
+      message.error('界面协议校验失败（服务不可用），已阻止发布；请稍后重试');
+      return;
+    }
+    setCheckingSchema(false);
+    if (blocking.length > 0) {
+      setSchemaIssues(blocking);
+      message.error(`界面协议存在 ${blocking.length} 个错误，已阻止发布，请先到「界面设计器」修复`);
+      return;
+    }
+    setSchemaIssues(null);
     const doPublish = async () => {
       setPublishing(true);
       try {
@@ -181,7 +212,7 @@ const PublishPreviewPanel: React.FC<Props> = ({
           message="发布成功，闭环已完成"
           description={
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <span>下一步：在「界面」Tab 微调展示，或在「数据」Tab 录入首条记录。下方为本次发布的变更摘要，可核对。</span>
+              <span>下一步：在「显示设置」Tab 微调展示，或在「数据」Tab 录入首条记录。下方为本次发布的变更摘要，可核对。</span>
               {/* P1 onboarding：发布成功≠功能可用——逃逸动作须动作级授权，发布当场告知缺什么，
                   避免用户到数据页看到置灰按钮再来问「为什么不能打款」 */}
               {pendingCount > 0 && (
@@ -200,7 +231,7 @@ const PublishPreviewPanel: React.FC<Props> = ({
           action={
             <Space size={8} wrap>
               {onViewInterface && (
-                <Button size="small" icon={<TableOutlined />} onClick={onViewInterface}>
+                <Button size="small" icon={<SettingOutlined />} onClick={onViewInterface}>
                   查看界面预览
                 </Button>
               )}
@@ -219,8 +250,43 @@ const PublishPreviewPanel: React.FC<Props> = ({
         />
       )}
 
+      {schemaIssues && schemaIssues.length > 0 && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={`界面协议存在 ${schemaIssues.length} 个阻断错误，发布已阻止`}
+          description={
+            <div>
+              {/* 全量展示不截断：阻断错误必须逐条可见可定位——静默隐藏第 9 条起的错误
+                  正是 G33 禁令针对的「看不见也解释不了」反模式；超长时滚动而非截断。 */}
+              <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                {schemaIssues.map((it, i) => (
+                  <div key={i} style={{ fontSize: 12, lineHeight: 1.8 }}>
+                    <Tag color="red" style={{ fontSize: 10, marginRight: 6 }}>{it.code}</Tag>
+                    {it.message}
+                    {it.fieldCode && <Text code style={{ fontSize: 11, marginLeft: 6 }}>{it.fieldCode}</Text>}
+                  </div>
+                ))}
+              </div>
+              {onFixUiSchema && (
+                <div style={{ marginTop: 6 }}>
+                  <Button size="small" type="link" style={{ padding: 0 }} onClick={onFixUiSchema}>
+                    去「界面设计器」修复 →
+                  </Button>
+                </div>
+              )}
+            </div>
+          }
+        />
+      )}
+
       {loading && (
-        <div style={{ textAlign: 'center', padding: 32 }}><Spin tip="正在生成发布预览..." /></div>
+        <div style={{ textAlign: 'center', padding: 32 }}>
+          <Spin />
+          {/* tip 仅 nest/fullscreen 模式生效，独立 Spin 带 tip 会告警；文案作兄弟节点渲染，视觉等价 */}
+          <div style={{ marginTop: 8, color: '#00000073', fontSize: 12 }}>正在生成发布预览...</div>
+        </div>
       )}
 
       {!loading && previewFailed && (
@@ -268,7 +334,8 @@ const PublishPreviewPanel: React.FC<Props> = ({
                 key: 'issues',
                 label: `校验问题（${preview.validationIssues.length}）`,
                 children: (
-                  <Table rowKey={(r, i) => `${r.code}-${i}`} columns={issueColumns} dataSource={preview.validationIssues} pagination={false} size="small" />
+                  // rowKey 用内容组合键：antd 已弃用 rowKey 函数的 index 参数
+                  <Table rowKey={(r) => `${r.code}-${r.fieldId ?? r.fieldName ?? ''}-${r.message}`} columns={issueColumns} dataSource={preview.validationIssues} pagination={false} size="small" />
                 ),
               },
               {
@@ -281,24 +348,24 @@ const PublishPreviewPanel: React.FC<Props> = ({
               // P1 onboarding：逃逸动作细码应付清单——发布前可见，授权不断链
               ...(pendingCount > 0
                 ? [{
-                    key: 'auth',
-                    label: `待授权权限（${pendingCount}）`,
-                    children: (
-                      <>
-                        <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                  key: 'auth',
+                  label: `待授权权限（${pendingCount}）`,
+                  children: (
+                    <>
+                      <Paragraph type="secondary" style={{ marginBottom: 8 }}>
                           逃逸动作（资金/外部副作用）采用<b>动作级授权</b>（fail-closed，后端强制校验）：发布后需在 IAM「权限管理」授予以下权限码，数据页对应按钮才会启用。非逃逸的状态流转动作由实体级写权限覆盖，无需逐条授权。
-                        </Paragraph>
-                        <Table rowKey="code" columns={pendingAuthColumns} dataSource={pendingAuths} pagination={false} size="small" />
-                        <Button
-                          type="link"
-                          style={{ marginTop: 8, paddingLeft: 0 }}
-                          onClick={() => { window.location.assign(IAM_PERMISSIONS_URL); }}
-                        >
+                      </Paragraph>
+                      <Table rowKey="code" columns={pendingAuthColumns} dataSource={pendingAuths} pagination={false} size="small" />
+                      <Button
+                        type="link"
+                        style={{ marginTop: 8, paddingLeft: 0 }}
+                        onClick={() => { window.location.assign(IAM_PERMISSIONS_URL); }}
+                      >
                           前往 IAM 权限管理授予 →
-                        </Button>
-                      </>
-                    ),
-                  }]
+                      </Button>
+                    </>
+                  ),
+                }]
                 : []),
               ...(preview.physical
                 ? [{
@@ -320,7 +387,7 @@ const PublishPreviewPanel: React.FC<Props> = ({
           />
 
           <Space style={{ marginTop: 12 }}>
-            <Button type="primary" danger loading={publishing} disabled={loading || (!!preview && !preview.runnable)} onClick={handlePublish}>
+            <Button type="primary" danger loading={publishing || checkingSchema} disabled={loading || (!!preview && !preview.runnable)} onClick={handlePublish}>
               确认发布
             </Button>
             <Button onClick={refresh} disabled={loading}>刷新预览</Button>

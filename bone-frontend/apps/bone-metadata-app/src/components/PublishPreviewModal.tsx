@@ -14,6 +14,8 @@ interface Props {
   onViewInterface?: () => void;
   onOpenData?: () => void;
   onAddField?: () => void;
+  /** 界面协议存在阻断错误时「去修复」回调（跳界面设计器 Tab） */
+  onFixUiSchema?: () => void;
 }
 
 const PublishPreviewModal: React.FC<Props> = ({
@@ -25,6 +27,7 @@ const PublishPreviewModal: React.FC<Props> = ({
   onViewInterface,
   onOpenData,
   onAddField,
+  onFixUiSchema,
 }) => {
   return (
     <Modal
@@ -43,6 +46,7 @@ const PublishPreviewModal: React.FC<Props> = ({
           onViewInterface={onViewInterface}
           onOpenData={onOpenData}
           onAddField={onAddField}
+          onFixUiSchema={onFixUiSchema}
         />
       )}
     </Modal>

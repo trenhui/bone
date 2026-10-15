@@ -431,8 +431,15 @@ export interface UiSchemaResp {
   updatedAt?: string;
 }
 
-/** 业务对象界面 schema 校验问题（UI-REF-xx 码，与实体校验码正交） */
+/**
+ * 业务对象界面 schema 校验问题（UI-REF-xx 码，与实体校验码正交）。
+ *
+ * 后端 `POST /entities/{id}/ui-schema/validate` 实际返回 `EntityValidationIssue`
+ * （level: ERROR/WARNING/INFO）——ERROR 为发布硬门禁判据（与实体校验同语义），
+ * WARNING/INFO 不阻断。level 缺省按非 ERROR 处理（前向兼容旧响应）。
+ */
 export interface UiSchemaIssue {
+  level?: 'ERROR' | 'WARNING' | 'INFO';
   code: string;
   message: string;
   fieldCode?: string;

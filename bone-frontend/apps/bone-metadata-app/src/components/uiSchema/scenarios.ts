@@ -6,7 +6,13 @@
  *
  * 场景按键名匹配实体字段（只填得进去的才填），因此同一份场景可以套到不同实体上，
  * 不绑定具体 entityCode。
+ *
+ * 但「能套用」≠「该展示」：门诊快赔的演示数据套在报销单上毫无意义，只会造成领域混淆。
+ * 因此消费方（预览沙盒 Tabs、「载入场景样例」下拉）必须先做领域相关性过滤 ——
+ * 以场景/样例引用的字段与实体字段的重合率为判据，不绑定 entityCode（用户可自取 code，不可靠）。
  */
+
+import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 
 export interface Scenario {
   key: string;
@@ -80,6 +86,47 @@ export const SCENARIO_CLAIM: Scenario = {
 };
 
 export const SCENARIOS: Scenario[] = [SCENARIO_BLANK, SCENARIO_EXPENSE, SCENARIO_CLAIM];
+
+/* ============================== 领域相关性过滤 ============================== */
+
+/** 领域无关的通用键：多数实体都有，参与判定会虚增重合率，故排除 */
+const GENERIC_KEYS = new Set(['title', 'status', 'items', 'attachment', 'approver_id', 'id']);
+
+/**
+ * 领域相关性判定：keys（场景/样例引用的字段）与实体字段的重合率 ≥ minRatio 才视为相关。
+ * - 场景键里几乎全是领域特征字段（policy_no/claim_type vs invoice_type/tax_no），
+ *   跨领域时重合率趋近 0，阈值 0.5 足以干净区分。
+ * - 不绑定 entityCode：code 由用户自取，不可靠；字段签名才是实体的真实领域指纹。
+ */
+export function matchesEntityDomain(keys: string[], fieldCodes: string[], minRatio = 0.5): boolean {
+  const domainKeys = keys.filter((k) => !GENERIC_KEYS.has(k));
+  if (domainKeys.length === 0) return true;
+  const set = new Set(fieldCodes);
+  const hit = domainKeys.filter((k) => set.has(k)).length;
+  return hit / domainKeys.length >= minRatio;
+}
+
+/** 场景是否适用于当前实体（预览沙盒 Tabs 按此过滤；空白场景无数据键，恒适用） */
+export function scenarioApplies(sc: Scenario, fields: Array<{ code: string }>): boolean {
+  return matchesEntityDomain(Object.keys(sc.data), fields.map((f) => f.code));
+}
+
+/** 从样例 schema 提取引用的字段码（表单控件 + 列表列），供样例适用性判定 */
+function schemaFieldRefs(schema: BoneUiSchema): string[] {
+  const out = new Set<string>();
+  const views = schema.views as {
+    form?: { sections?: Array<{ controls?: Array<{ fieldCode?: string }> }> };
+    list?: { columns?: Array<{ fieldCode?: string }> };
+  };
+  views.form?.sections?.forEach((sec) => sec.controls?.forEach((c) => { if (c.fieldCode) out.add(c.fieldCode); }));
+  views.list?.columns?.forEach((c) => { if (c.fieldCode) out.add(c.fieldCode); });
+  return [...out];
+}
+
+/** 样例是否适用于当前实体（「载入场景样例」下拉按此过滤；样例定义在生成文件 samples.ts，判定逻辑放在本手工文件防再生成覆盖） */
+export function sampleApplies(sample: { schema: BoneUiSchema }, fields: Array<{ code: string }>): boolean {
+  return matchesEntityDomain(schemaFieldRefs(sample.schema), fields.map((f) => f.code));
+}
 
 /** 把场景数据套用到实体字段上（只填字段存在的键，其余忽略） */
 export function applyScenario(

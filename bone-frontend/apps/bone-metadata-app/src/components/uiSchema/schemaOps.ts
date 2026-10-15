@@ -5,7 +5,7 @@
  * 这样所有编辑天然可撤销（保留上一份引用即可），且不出现"改 A 影响 B"的隐式共享。
  */
 import type {
-  ActionBarItem, BoneUiSchema, Control, LinkageRule, LinkageThen, ListColumn, Section, SubmitRule,
+  ActionBarItem, BoneUiSchema, Control, LinkageRule, LinkageThen, ListColumn, Section, SubmitRule, Variant,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { FIELD_TYPE_TO_KIND } from './constants';
@@ -299,3 +299,67 @@ export function buildDefaultSchema(entityCode: string, fields: MetaField[]): Bon
     actionBar: [],
   };
 }
+
+/* ============================== 变体（v1.1） ============================== */
+
+/**
+ * 变体裁决语义（engine `resolveVariant`）：命中 priority 最小（缺省 100）且维度全匹配的变体，
+ * views/linkageRules/submitRules/actionBar **按块整体替换** base（未声明的块回落 base）；
+ * 空 match（{}）视为全匹配兜底。同 priority 取声明顺序。
+ * 创作侧口径必须与裁决侧一致，否则「预览看到的 ≠ 运行时得到的」。
+ */
+export const addVariant = (s: BoneUiSchema): BoneUiSchema => ({
+  ...s,
+  variants: [...(s.variants ?? []), {
+    key: `variant_${(s.variants?.length ?? 0) + 1}`,
+    label: '新变体',
+    priority: 10,
+    match: { roles: [] },
+    views: { form: { sections: [] } },
+  }],
+});
+
+export const updateVariant = (s: BoneUiSchema, idx: number, patch: Partial<Variant>): BoneUiSchema => ({
+  ...s,
+  variants: (s.variants ?? []).map((v, i) => (i === idx ? { ...v, ...patch } : v)),
+});
+
+export const removeVariant = (s: BoneUiSchema, idx: number): BoneUiSchema => ({
+  ...s,
+  variants: (s.variants ?? []).filter((_, i) => i !== idx),
+});
+
+/** 变体分区按 id 覆盖 base 同名分区、新 id 追加尾部（块级替换，与 resolveVariant 口径一致） */
+const mergeSections = (base: Section[] = [], over: Section[] = []): Section[] => {
+  const out = [...base];
+  const idIdx = new Map(out.map((sec, i) => [sec.id, i]));
+  for (const vs of over) {
+    const at = idIdx.get(vs.id);
+    if (at != null) out[at] = vs;
+    else { out.push(vs); idIdx.set(vs.id, out.length - 1); }
+  }
+  return out;
+};
+
+/**
+ * 变体合入基础模板（原型 FR-07 语义）：
+ * - views：变体分区按 id 覆盖 base 同名分区，新 id 追加尾部；
+ * - linkageRules/submitRules/actionBar：变体声明了才覆盖 base（未声明不抹掉 base 配置）；
+ * - 合入后移除该变体。误操作可在设计器内 Ctrl+Z 撤销（编辑历史在 Designer 层）。
+ */
+export const mergeVariantIntoBase = (s: BoneUiSchema, idx: number): BoneUiSchema => {
+  const v = (s.variants ?? [])[idx];
+  if (!v) return s;
+  const views = { ...s.views };
+  if (v.views?.form) views.form = { sections: mergeSections(views.form?.sections, v.views.form.sections) };
+  if (v.views?.detail) views.detail = { sections: mergeSections(views.detail?.sections, v.views.detail.sections) };
+  if (v.views?.list) views.list = v.views.list;
+  return {
+    ...s,
+    views,
+    linkageRules: v.linkageRules ?? s.linkageRules,
+    submitRules: v.submitRules ?? s.submitRules,
+    actionBar: v.actionBar ?? s.actionBar,
+    variants: (s.variants ?? []).filter((_, i) => i !== idx),
+  };
+};

@@ -26,7 +26,7 @@ import {
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { dictOf, formOf } from './schemaOps';
-import { SCENARIOS, applyScenario } from './scenarios';
+import { SCENARIOS, applyScenario, scenarioApplies } from './scenarios';
 import './uiSchemaTheme.css';
 
 const { Text } = Typography;
@@ -338,12 +338,19 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
   const shapeKey = allCodes.join('|');
   const fieldsKey = fields.map((f) => f.code).join('|');
 
+  // 场景按实体领域过滤：报销单不出现「门诊快赔」这类跨领域演示场景
+  const visibleScenarios = useMemo(() => SCENARIOS.filter((s) => scenarioApplies(s, fields)), [fieldsKey]);
+  // 当前选中场景被过滤掉时（如切换实体），优先回落到领域场景，其次空白
+  const effScenarioKey = visibleScenarios.some((s) => s.key === scenarioKey)
+    ? scenarioKey
+    : (visibleScenarios.find((s) => s.key !== 'blank') ?? visibleScenarios[0])?.key ?? 'blank';
+
   useEffect(() => {
-    const sc = SCENARIOS.find((s) => s.key === scenarioKey) ?? SCENARIOS[0];
+    const sc = SCENARIOS.find((s) => s.key === effScenarioKey) ?? SCENARIOS[0];
     setData(applyScenario(sc, allCodes, (code) => defaultOf(code, fields)));
     setResult(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenarioKey, shapeKey, fieldsKey]);
+  }, [effScenarioKey, shapeKey, fieldsKey]);
 
   // 变体裁决（与运行时同源）
   const resolved = useMemo(() => resolveVariant(schema, ctx), [schema, ctx]);
@@ -400,15 +407,15 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
           options={[{ value: 'form', label: '表单' }, { value: 'list', label: '列表' }]}
         />
         <Segmented
-          size="small" value={scenarioKey} onChange={(v) => setScenarioKey(String(v))}
-          options={SCENARIOS.map((s) => ({ value: s.key, label: s.label }))}
+          size="small" value={effScenarioKey} onChange={(v) => setScenarioKey(String(v))}
+          options={visibleScenarios.map((s) => ({ value: s.key, label: s.label }))}
         />
         <Tooltip title="预览跑运行时同一套引擎，但不落库">
           <span className="uis-pv-badge">沙盒 · 不落库</span>
         </Tooltip>
       </div>
 
-      <span className="uis-pv-desc">{SCENARIOS.find((s) => s.key === scenarioKey)?.desc}</span>
+      <span className="uis-pv-desc">{SCENARIOS.find((s) => s.key === effScenarioKey)?.desc}</span>
 
       {/* 身份模拟栏 */}
       <div className="uis-idbar">

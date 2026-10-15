@@ -8,6 +8,7 @@ import {
   PlusOutlined, ArrowLeftOutlined, EditOutlined, DeleteOutlined, FieldStringOutlined,
   ReloadOutlined, FieldNumberOutlined, CalendarOutlined, ThunderboltOutlined,
   ApartmentOutlined, CheckCircleOutlined, WarningOutlined, InfoCircleOutlined, AimOutlined, TableOutlined,
+  SettingOutlined, LayoutOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormInstance } from 'antd';
@@ -128,7 +129,7 @@ const EntityDetail: React.FC = () => {
     setSearchParams(next, { replace: true });
   };
   const [innerTab, setInnerTab] = useState('fields');
-  /** UID-11：从「界面」Tab 定位过来的字段编码，用于结构列表高亮（短时自动消退） */
+  /** UID-11：从「显示设置」Tab 定位过来的字段编码，用于结构列表高亮（短时自动消退） */
   const [highlightFieldCode, setHighlightFieldCode] = useState<string | null>(null);
 
   /**
@@ -645,7 +646,7 @@ const EntityDetail: React.FC = () => {
             },
             {
               key: 'ui',
-              label: (<Space size={4}><TableOutlined /><span>界面</span></Space>),
+              label: (<Space size={4}><SettingOutlined /><span>显示设置</span></Space>),
               children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
                 <InterfaceTab
                   entityCode={entity.code}
@@ -687,7 +688,7 @@ const EntityDetail: React.FC = () => {
             },
             {
               key: 'uischema',
-              label: (<Space size={4}><TableOutlined /><span>界面（协议）</span></Space>),
+              label: (<Space size={4}><LayoutOutlined /><span>界面设计器</span></Space>),
               children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
                 <UiSchemaTab
                   entityId={id ?? ''}
@@ -706,7 +707,7 @@ const EntityDetail: React.FC = () => {
             {
               key: 'publish',
               label: (<Space size={4}><ThunderboltOutlined /><span>发布</span></Space>),
-              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />,
+              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} onFixUiSchema={() => setOuterTab('uischema')} />,
             },
           ]}
         />
@@ -771,7 +772,7 @@ const EntityDetail: React.FC = () => {
       </Modal>
 
       {/* 发布预览 Modal（顶栏发布入口） */}
-      <PublishPreviewModal open={previewOpen} entityId={entity?.id ?? null} entityName={entity?.displayName} onClose={() => setPreviewOpen(false)} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />
+      <PublishPreviewModal open={previewOpen} entityId={entity?.id ?? null} entityName={entity?.displayName} onClose={() => setPreviewOpen(false)} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} onFixUiSchema={() => { setPreviewOpen(false); setOuterTab('uischema'); }} />
     </div>
   );
 };

@@ -176,7 +176,7 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
       },
     },
     {
-      // UID-11：从「界面」的某一列反查到「结构」里的字段定义（双向联动的一半）
+      // UID-11：从「显示设置」的某一列反查到「结构」里的字段定义（双向联动的一半）
       title: '定位',
       key: 'locate',
       width: 70,

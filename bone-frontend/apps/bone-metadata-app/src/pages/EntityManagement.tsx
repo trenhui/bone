@@ -611,7 +611,7 @@ const EntityManagement: React.FC = () => {
           message.success(`已从模板「${selectedTemplate?.name || '未知'}」实例化成功（已复制为独立副本，后续编辑与模板互不影响）`);
           setModalOpen(false);
           const newId = res.data;
-          // 从模板起盘 → 落「界面」Tab（PRD §0.6.6 定案：模板已带字段，先见结果而非结构）
+          // 从模板起盘 → 落「显示设置」Tab（PRD §0.6.6 定案：模板已带字段，先见结果而非结构）
           navigate(
             appId && moduleId
               ? `/apps/${appId}/modules/${moduleId}/entities/${newId}?tab=ui`

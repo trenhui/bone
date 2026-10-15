@@ -99,7 +99,6 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
   const [dragOver, setDragOver] = useState<string | null>(null);
 
   const sections = viewOf(schema, view).sections ?? [];
-  const palette = unusedFields(schema, fields, view);
 
   const isFocused = (si: number, ci?: number) =>
     focus?.si === si && (ci === undefined || focus.ci === ci);
@@ -273,37 +272,53 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
       >
         添加分区
       </Button>
+    </div>
+  );
+}
 
-      {/* 字段库 */}
-      <div style={{ border: '1px dashed #d9d9d9', borderRadius: 10, padding: 10, background: '#fafbfd' }}>
-        <Space style={{ marginBottom: 6 }}>
-          <Text strong style={{ fontSize: 12 }}>字段库</Text>
-          <Badge count={palette.length} style={{ backgroundColor: palette.length ? '#1677ff' : '#d9d9d9' }} />
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            {palette.length ? '点选加入最后一个分区，或拖到目标分区' : '实体字段已全部使用'}
-          </Text>
-        </Space>
-        {palette.length === 0 ? (
-          <Text type="secondary" style={{ fontSize: 12 }}>无待用字段</Text>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {palette.map((f) => (
-              <Tooltip key={f.id} title={`${f.type}${f.required ? ' · 必填' : ''}`}>
-                <Tag
-                  draggable
-                  onDragStart={(e) => { e.dataTransfer.setData('text/plain', `F:${f.code}`); e.dataTransfer.effectAllowed = 'copy'; }}
-                  onClick={() => onChange(addControl(schema, view, Math.max(0, sections.length - 1), f))}
-                  style={{ cursor: 'pointer', margin: 0, padding: '2px 8px' }}
-                  color="blue"
-                >
-                  {f.displayName}
-                  <Text type="secondary" style={{ fontSize: 10, marginLeft: 4 }}>{f.code}</Text>
-                </Tag>
-              </Tooltip>
-            ))}
-          </div>
-        )}
-      </div>
+/**
+ * 字段库（控件面板）：被左栏 FAB 复用。
+ * 点选即把字段落到当前视图的最后一个分区；支持 HTML5 拖拽（dataTransfer=F:code，拖到目标分区即追加）。
+ */
+export function FieldPalette({
+  schema, fields, onChange, view,
+}: {
+  schema: BoneUiSchema;
+  fields: MetaField[];
+  onChange: (next: BoneUiSchema) => void;
+  view: ViewKey;
+}): React.ReactElement {
+  const palette = unusedFields(schema, fields, view);
+  const sections = viewOf(schema, view).sections ?? [];
+  return (
+    <div style={{ maxWidth: 320 }}>
+      <Space style={{ marginBottom: 6 }} wrap>
+        <Text strong style={{ fontSize: 12 }}>字段库</Text>
+        <Badge count={palette.length} style={{ backgroundColor: palette.length ? '#1677ff' : '#d9d9d9' }} />
+        <Text type="secondary" style={{ fontSize: 11 }}>
+          {palette.length ? '点选加入最后一个分区，或拖到目标分区' : '实体字段已全部使用'}
+        </Text>
+      </Space>
+      {palette.length === 0 ? (
+        <Text type="secondary" style={{ fontSize: 12 }}>无待用字段</Text>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {palette.map((f) => (
+            <Tooltip key={f.id} title={`${f.type}${f.required ? ' · 必填' : ''}`}>
+              <Tag
+                draggable
+                onDragStart={(e) => { e.dataTransfer.setData('text/plain', `F:${f.code}`); e.dataTransfer.effectAllowed = 'copy'; }}
+                onClick={() => onChange(addControl(schema, view, Math.max(0, sections.length - 1), f))}
+                style={{ cursor: 'pointer', margin: 0, padding: '2px 8px' }}
+                color="blue"
+              >
+                {f.displayName}
+                <Text type="secondary" style={{ fontSize: 10, marginLeft: 4 }}>{f.code}</Text>
+              </Tag>
+            </Tooltip>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
