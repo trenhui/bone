@@ -37,8 +37,6 @@ ALLOWED_BARE = {
     "Resource": "文件下载流（Spring Resource），非业务数据",
     "void": "无响应体（204/异步触发），由 @ResponseStatus 表达状态",
     "boolean": "JWKS 等标准协议端点，见下方豁免登记",
-    "Date": "仅 DefaultMetadataVersionController 的遗留端点，已登记豁免",
-    "String": "仅 DefaultMetadataVersionController 的遗留端点，已登记豁免",
 }
 
 # ★ 方法级显式豁免：标准协议端点，响应体由协议规定，**不能**包业务信封。
@@ -127,7 +125,7 @@ def scan() -> list[dict]:
                 path = dp / fn
                 src = path.read_text(encoding="utf-8")
                 # ★ 必须有 Spring MVC 立体注解才算 HTTP Controller。
-                #   实测反例：`MetadataVersionController` / `DefaultMetadataVersionController`
+                #   实测反例：`MetadataVersionController`
                 #   **类名带 Controller 但零 Spring 注解**，是纯 POJO（版本号生成 / 兼容性检查算法），
                 #   它的 `public String generateNewVersion(...)` 等方法不是 HTTP 端点。
                 #   若只看「文件名以 Controller 结尾」，会把这几十个算法方法误登记成 HC-003 违规，

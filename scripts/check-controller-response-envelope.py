@@ -32,9 +32,8 @@ Controller 的**HTTP 端点方法**（带 `@GetMapping`/`@PostMapping`/`@PutMapp
 1. **嵌套 record/enum/interface**：`public record AckShipmentReq(...)` 形似方法签名，
    实为 DTO 定义。判据：返回类型为 record/enum/interface/class 且首字母大写。
 2. **类内 public 辅助方法**：`public String render(...)` 没有映射注解 ⇒ 不是端点。
-3. **名为 Controller 但无 Spring 注解的 POJO**：实测 `MetadataVersionController` /
-   `DefaultMetadataVersionController` **零 Spring 注解**，是纯算法类
-   （版本号生成 / 兼容性检查），其 public 方法不构成 HTTP 端点。
+3. **名为 Controller 但无 Spring 注解的 POJO**：实测 `MetadataVersionController`
+   **零 Spring 注解**，是纯算法类（版本号生成 / 兼容性检查），其 public 方法不构成 HTTP 端点。
    判据：类上必须有 ``@RestController`` 或 ``@Controller``。
 
 存量baseline 只可收缩：新增端点不得加入；条目被修复后应从 baseline 移除。

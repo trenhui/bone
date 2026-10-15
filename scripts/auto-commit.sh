@@ -19,11 +19,11 @@ fi
 # 获取 user
 USER=$(git config user.name || echo "agent")
 
-# 生成 commit message
-COMMIT_MSG="feat(agentic): auto-commit by ralph-loop [skip ci]"
+# 生成 commit message（不加 [skip ci]：自动提交同样必须过 CI 门禁）
+COMMIT_MSG="feat(agentic): auto-commit by ralph-loop"
 
-# 添加所有变更
-git add .
+# 只暂存已跟踪文件的修改（git add . 会把误落在工作区的未跟踪垃圾一起提交）
+git add -u
 
 # 提交
 git commit -m "$COMMIT_MSG"
