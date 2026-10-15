@@ -10,6 +10,11 @@
  *
  * 用法：node validate-entity-binding.js
  * 退出码 0 = 全部通过；否则 1。
+ *
+ * 状态（2026-10-15）：中性化 SKIP。实体目录绑定扩展（ENTITY_CATALOG / doGenerate /
+ * bindEntityField / controlFromEntityField）随 designer.html 回退为纯 UI 骨架原型而移除，
+ * 归档 demo 亦不含，故本门禁当前无可测对象；脚本与协议校验器保留，待引擎 + 实体绑定重新合回
+ * designer.html 时再启用。
  */
 "use strict";
 const fs = require("fs");
@@ -91,9 +96,11 @@ function makeValidator(schema) {
 }
 const isExempt = (e) => e.x || /props\.optionsRef$/.test(e.p);
 
-const api = extract();
-const schemaJson = JSON.parse(fs.readFileSync(SCHEMA_FILE, "utf8"));
-const validate = makeValidator(schemaJson);
+/* 2026-10-15 中性化：实体目录绑定扩展随 designer.html 回退为纯 UI 骨架原型而移除，
+ * 归档 demo 中亦不含，本门禁当前无可测对象。保留脚本与协议校验器，
+ * 待引擎 + 实体绑定重新合回 designer.html 时再启用。 */
+console.log("⏭  SKIP：实体目录绑定扩展不在当前 designer.html 原型 / 归档 demo 中，本门禁无可测对象（exit 0）。");
+process.exit(0);
 
 console.log("校验目标：" + path.basename(DESIGNER) + "（实体目录绑定扩展）\n");
 

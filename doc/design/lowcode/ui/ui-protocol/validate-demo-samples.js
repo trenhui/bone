@@ -2,12 +2,13 @@
 /**
  * 设计器 ⇄ 协议一致性校验
  *
- * 作用：把 bone-ui-schema-designer.html（权威单文件设计器）内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
+ * 作用：把 archive/bone-ui-schema-demo.html（已归档、含运行引擎 + 三场景的版本）内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
  * 导出成 JSON，再用协议真源 bone-ui-schema.schema.json 做机器校验，找出「设计器能配、
  * 协议不认」的漂移。
  *
  * 用法：node doc/design/lowcode/ui/ui-protocol/validate-demo-samples.js
- * 注：本脚本原校验 DEMO 样板，现重定向到权威设计器 bone-ui-schema-designer.html（DEMO 已归档）。
+ * 注：designer.html 已于 2026-10-15 回退为纯 UI 骨架原型（无引擎 / 无三场景 / 无实体绑定），
+ * 故本脚本重新指向归档版 archive/bone-ui-schema-demo.html（含引擎 + 三场景）作为校验对象。
  *
  * 退出码：
  *   0 = 无意外漂移（已知豁免项只提示，不算失败）
@@ -26,7 +27,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DIR = __dirname;
-const DESIGNER = path.join(DIR, "bone-ui-schema-designer.html");
+const DESIGNER = path.join(DIR, "archive/bone-ui-schema-demo.html");
 const SCHEMA_FILE = path.join(DIR, "bone-ui-schema.schema.json");
 
 /* ---------- 1. 从 DEMO 里取出 SAMPLES（不执行 boot，只取数据） ---------- */

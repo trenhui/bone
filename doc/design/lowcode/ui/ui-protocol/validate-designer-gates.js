@@ -2,7 +2,7 @@
 /**
  * BONE 业务对象界面设计器 · 三道门禁 + 运行时联调探针
  *
- * 作用：把 bone-ui-schema-designer.html 内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
+ * 作用：把 archive/bone-ui-schema-demo.html（已归档、含运行引擎 + 三场景的版本）内置的三套样板（费用报销 / 采购审查 / 医疗理赔）
  * 与引擎函数一并取出（不执行 boot），做四重验证：
  *   门禁 1：协议真源机校   validateAgainstSchema（内嵌 schema.json v1.2）
  *   门禁 2：语义自检 lint  lintSchema（重复字段 / props 白名单 / 规则引用 / 字典 / 变体 / $变量）
@@ -21,7 +21,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DIR = __dirname;
-const DESIGNER = path.join(DIR, "bone-ui-schema-designer.html");
+const DESIGNER = path.join(DIR, "archive/bone-ui-schema-demo.html");
 const SCHEMA_FILE = path.join(DIR, "bone-ui-schema.schema.json");
 
 /* ---------- 1. 从设计器 HTML 取 SAMPLES + 引擎函数（不执行 boot，只取数据/函数） ---------- */
@@ -274,7 +274,8 @@ Object.keys(api.SAMPLES).forEach((id) => {
 
 // 联调 4：运行时探针
 probeExpense(api);
-probePurchase(api);
+if (api.SAMPLES && api.SAMPLES.purchase) probePurchase(api);
+else console.log("\n--- 联调探针 · 采购订单 —— ⏭ 跳过（purchase 样板为 designer 增强项，当前校验文件不含） ---");
 probeClaim(api);
 probeProcurement(api);
 
