@@ -172,7 +172,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 
 **刻意分歧**：业界网关故障建议 fail open 直连供应商；BONE 合规场景直连即断证据链。定案 **fail 到"纯确定性 / 人工替代"路径，绝不 fail 到直连模型**，能力级灰度开关支持秒级降级。
 
-**能力落点（对标 LiteLLM / Portkey / Kong / Bedrock，P1 同批不单独立项）**：统一 OpenAI 兼容 API ✅；预算 / 配额 / spend tracking / Virtual Keys（密钥走 bone-security）；路由降级 + 重试 + 熔断（circuit breaker，防 provider 退化重试风暴）；精确缓存（与成本红线同款短路）；语义缓存后置（租户隔离实证前禁用）；Guardrails / PII DLP（OWASP LLM01 / LLM02 对表）；调用日志证据 ✅（哈希防篡改 + 回放超业界基线）；观测（对齐 OTel GenAI `gen_ai.*` 映射表版本化、提示词默认不采集）。随第一批增量：级联路由（小模型先行、不足自动升级）+ 结构化输出强制（JSON Schema 校验，失败转 HITL）+ 提示词版本化（随 `AiMetadata` 版本走、可回滚）；灾备路由（云端作备）随客户形态启用，默认 fail 到确定性 / 人工路径。
+**能力落点（对标 LiteLLM / Portkey / Kong / Bedrock，P1 同批不单独立项）**：统一 OpenAI 兼容 API ✅；预算 / 配额 / spend tracking / Virtual Keys（密钥走 bone-security）；路由降级 + 重试（仅幂等可重试故障，如 sidecar 不可用，绝不重试 provider 语义错误）+ 熔断（circuit breaker，防 provider 退化重试风暴）；精确缓存（与成本红线同款短路）；语义缓存后置（租户隔离实证前禁用）；Guardrails / PII DLP（OWASP LLM01 / LLM02 对表）；调用日志证据 ✅（哈希防篡改 + 回放超业界基线）；观测（对齐 OTel GenAI `gen_ai.*` 映射表版本化、提示词默认不采集）。随第一批增量：级联路由（小模型先行、不足自动升级）+ 结构化输出强制（JSON Schema 校验，失败转 HITL）+ 提示词版本化（随 `AiMetadata` 版本走、可回滚）；灾备路由（云端作备）随客户形态启用，默认 fail 到确定性 / 人工路径。
 
 ---
 

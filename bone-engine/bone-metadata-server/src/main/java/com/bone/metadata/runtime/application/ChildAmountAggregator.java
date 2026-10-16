@@ -3,6 +3,7 @@ package com.bone.metadata.runtime.application;
 import com.bone.metadata.engine.runtime.MetadataErrorCodes;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
+import com.bone.metadata.engine.runtime.RuntimeRelationSpec;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,9 +58,13 @@ public class ChildAmountAggregator {
    * @return 回填后的金额（供响应附加展示；未匹配场景返回 null）
    */
   public BigDecimal aggregateAndBackfill(
-      PublishedRuntimeEntity parent, long tenantId, String parentId, String childEntityCode) {
-    AggSpec spec = SPECS.get(parent.entityCode());
-    if (spec == null || !spec.childEntityCode().equals(childEntityCode)) {
+      PublishedRuntimeEntity parent,
+      long tenantId,
+      String parentId,
+      String childEntityCode,
+      RuntimeRelationSpec relationSpec) {
+    AggSpec agg = SPECS.get(parent.entityCode());
+    if (agg == null || !agg.childEntityCode().equals(childEntityCode)) {
       return null;
     }
     String parentTable = parent.physicalTableName();
@@ -88,18 +93,18 @@ public class ChildAmountAggregator {
     }
 
     // 聚合：SUM(子行金额)，仅未删除行（replaceChildren 已把孤儿软删，此处天然一致）
-    String childTable = childTableOf(parent, spec);
+    String childTable = childTableOf(parent, agg);
     if (childTable == null) {
       return null;
     }
     BigDecimal sum =
         jdbc.queryForObject(
             "SELECT COALESCE(SUM(`"
-                + spec.childAmountColumn()
+                + agg.childAmountColumn()
                 + "`), 0) FROM `"
                 + childTable
                 + "` WHERE `"
-                + childFkColumn(parent, spec)
+                + relationSpec.foreignKey()
                 + "` = :pk AND `deleted` = 0",
             new MapSqlParameterSource("pk", Long.valueOf(parentId)),
             BigDecimal.class);
@@ -107,7 +112,7 @@ public class ChildAmountAggregator {
     // 回填父记录金额字段：走公共写链（filterWritable/校验/乐观锁/审计复用，见类 javadoc）。
     // 金额列非 state_field，_stateField 保护不适用；DRAFT 门禁已在本方法前置完成。
     Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put(spec.parentAmountColumn(), sum);
+    payload.put(agg.parentAmountColumn(), sum);
     recordService.update(parent.entityCode(), tenantId, parentId, payload, null, null);
     return sum;
   }
@@ -115,15 +120,6 @@ public class ChildAmountAggregator {
   private String childTableOf(PublishedRuntimeEntity parent, AggSpec spec) {
     // 子实体物理表名：运行时目录按实体编码解析（缺省同 code 表名约定）
     return "t_" + spec.childEntityCode();
-  }
-
-  private String childFkColumn(PublishedRuntimeEntity parent, AggSpec spec) {
-    // CHILD_TABLE 外键列约定：{父实体去前缀}_id（t_expense_claim → claim_id）
-    String code = parent.entityCode();
-    if (code.startsWith("t_")) {
-      code = code.substring(2);
-    }
-    return code + "_id";
   }
 
   /** 场景聚合声明。 */

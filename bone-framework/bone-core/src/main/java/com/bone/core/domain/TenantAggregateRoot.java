@@ -1,6 +1,7 @@
 package com.bone.core.domain;
 
 import com.bone.core.domain.entity.Tenantable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
@@ -16,6 +17,7 @@ public abstract class TenantAggregateRoot<ID> extends AggregateRoot<ID> implemen
   private ID tenantId;
 
   @Override
+  @JsonIgnore
   public ID getTenantId() {
     return tenantId;
   }

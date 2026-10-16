@@ -85,7 +85,8 @@ public class RuntimeRelationApplicationService {
               List<Map<String, Object>> result =
                   relationSupport.replaceChildren(parent, tenantId, id, spec, rows);
               // 同事务内聚合回填（报销等已登记场景）
-              childAmountAggregator.aggregateAndBackfill(parent, tenantId, id, childEntityCode);
+              childAmountAggregator.aggregateAndBackfill(
+                  parent, tenantId, id, childEntityCode, spec);
               return result;
             });
     PublishedRuntimeEntity child = requireEntity(childEntityCode, tenantId);
