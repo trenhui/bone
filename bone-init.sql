@@ -2475,6 +2475,27 @@ CREATE TABLE ai_trace_snapshot (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI证据快照（LLM调用留痕）';
 
 -- ------------------------------------------------------------
+-- 10.1 规则资产（bone-ai-rules）：治理面（版本链 versions 暂 @Transient 不落库，批二 @Cascade 子表）
+-- ------------------------------------------------------------
+CREATE TABLE rule_asset (
+    id                 VARCHAR(64)  NOT NULL COMMENT '规则ID（应用UUID）',
+    tenant_id          BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    code               VARCHAR(64)  NOT NULL COMMENT '业务编码（租户内唯一）',
+    name               VARCHAR(128) DEFAULT NULL COMMENT '规则名',
+    description        VARCHAR(512) DEFAULT NULL COMMENT '描述',
+    status             VARCHAR(16)  NOT NULL DEFAULT 'DRAFT' COMMENT '状态（DRAFT/ACTIVE/DEPRECATED）',
+    gray_percent       INT          NOT NULL DEFAULT 0 COMMENT '灰度0-100',
+    hit_block          TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'RULE_HIT_BLOCK 命中短路',
+    current_version_no INT          NOT NULL DEFAULT 0 COMMENT '当前生效版本号',
+    expression         TEXT         DEFAULT NULL COMMENT '当前生效QLExpress表达式',
+    deleted            TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at         DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at         DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_rule_asset_tenant_code (tenant_id, code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI规则资产';
+
+-- ------------------------------------------------------------
 -- 9.1 应用 / 模块演示种子数据（MVP-08：元数据建模 UI 的「应用 → 模块」导航开箱即有内容）
 --
 -- 背景：bone_application / bone_module 此前零数据，前端「元数据 / 应用管理」空列表，

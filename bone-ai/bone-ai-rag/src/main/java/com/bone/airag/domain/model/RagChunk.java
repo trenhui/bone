@@ -1,0 +1,113 @@
+package com.bone.airag.domain.model;
+
+import com.bone.core.annotation.Deleted;
+import com.bone.core.annotation.Id;
+import com.bone.core.domain.TenantAggregateRoot;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+/**
+ * RAG 切片（受控检索的最小存储单元）。
+ *
+ * <p>承载「引用强制」所需锚点——{@code clauseRef}（条款 id）+ {@code spanStart/spanEnd}（条款内 span），
+ * 无此二者的切片视为「无出处」，检索结果须 fail-closed 丢弃（详设 §2.6「无出处不得生成」）。
+ *
+ * <p>嵌入向量过渡形态存于 {@code embedding} 列（CSV float，终局改 MySQL JSON 列 + 向量检索）。
+ */
+@Getter
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Table("ai_rag_chunk")
+public class RagChunk extends TenantAggregateRoot<Long> {
+
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
+  private Long id;
+
+  @Column(name = "doc_id")
+  private String docId;
+
+  @Column(name = "section_path")
+  private String sectionPath; // chunk.path 面包屑（条款/章节层级）
+
+  @Column(name = "chunk_text")
+  private String text;
+
+  @Column(name = "embedding")
+  private String embedding; // 过渡：CSV float；终局 MySQL JSON 列
+
+  @Column(name = "clause_ref")
+  private String clauseRef; // 引用强制锚点（clause_id）
+
+  @Column(name = "span_start")
+  private int spanStart;
+
+  @Column(name = "span_end")
+  private int spanEnd;
+
+  @Deleted private Boolean deleted = false;
+
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
+
+  public static RagChunk of(
+      Long id,
+      Long tenantId,
+      String docId,
+      String sectionPath,
+      String text,
+      float[] embedding,
+      String clauseRef,
+      int spanStart,
+      int spanEnd) {
+    RagChunk chunk = new RagChunk();
+    chunk.id = id;
+    chunk.setTenantId(tenantId);
+    chunk.docId = docId;
+    chunk.sectionPath = sectionPath;
+    chunk.text = text;
+    chunk.embedding = encode(embedding);
+    chunk.clauseRef = clauseRef;
+    chunk.spanStart = spanStart;
+    chunk.spanEnd = spanEnd;
+    LocalDateTime now = LocalDateTime.now();
+    chunk.createdAt = now;
+    chunk.updatedAt = now;
+    return chunk;
+  }
+
+  public float[] parseEmbedding() {
+    return decode(embedding);
+  }
+
+  private static String encode(float[] v) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < v.length; i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append(v[i]);
+    }
+    return sb.toString();
+  }
+
+  private static float[] decode(String s) {
+    if (s == null || s.isEmpty()) {
+      return new float[0];
+    }
+    String[] parts = s.split(",");
+    float[] v = new float[parts.length];
+    for (int i = 0; i < parts.length; i++) {
+      v[i] = Float.parseFloat(parts[i]);
+    }
+    return v;
+  }
+}
