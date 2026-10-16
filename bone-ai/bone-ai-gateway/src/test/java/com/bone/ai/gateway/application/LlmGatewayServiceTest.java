@@ -14,6 +14,7 @@ import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
+import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.util.List;
@@ -34,6 +35,7 @@ class LlmGatewayServiceTest {
     assertThat(service.invoke(req)).isSameAs(resp);
     verify(client).chat(req);
     verify(publisher).publish(any(LlmCallRecorded.class));
+    verify(publisher).publish(any(LlmUsageRecorded.class)); // 计量事件与证据链分离发布
   }
 
   @Test

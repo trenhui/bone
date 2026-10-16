@@ -1,11 +1,13 @@
 package com.bone.airules.application;
 
 import com.bone.airules.domain.gateway.RuleEngine;
+import com.bone.airules.domain.model.RegressionCase;
 import com.bone.airules.domain.model.RuleAsset;
 import com.bone.airules.domain.model.RuleAssetVersion;
 import com.bone.airules.domain.model.RuleEvalResult;
 import com.bone.airules.domain.model.RuleStatus;
 import com.bone.airules.domain.repository.RuleAssetRepository;
+import com.bone.airules.domain.service.RuleRegressionGate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +43,23 @@ public class RuleService {
     return rule;
   }
 
-  /** 首版发布（草稿 → ACTIVE v1）。表达式发布前预检编译。 */
+  /** 首版发布（草稿 → ACTIVE v1）。表达式发布前预检编译；无回归样本时仅编译校验。 */
   public RuleAssetVersion publishFirst(
       String ruleId, String expression, boolean hitBlock, int grayPercent, String operator) {
+    return publishFirst(ruleId, expression, hitBlock, grayPercent, operator, List.of());
+  }
+
+  /** 首版发布，带回归样本集：正/负例任一不符即拒绝发布（业界规则平台发布即回归，总案 §4.3）。 */
+  public RuleAssetVersion publishFirst(
+      String ruleId,
+      String expression,
+      boolean hitBlock,
+      int grayPercent,
+      String operator,
+      List<RegressionCase> regressionCases) {
     RuleAsset rule = require(ruleId);
     precheck(expression);
+    assertRegression(expression, regressionCases);
     RuleAssetVersion v = rule.publishFirst(expression, hitBlock, grayPercent, operator);
     repository.save(rule);
     log.info(
@@ -57,15 +71,44 @@ public class RuleService {
     return v;
   }
 
-  /** 发布新版本（版本 +1，历史留链；规则级兼容性检查由回归门禁在发布流水线强制）。 */
+  /** 发布新版本（版本 +1，历史留链；无回归样本时仅编译校验）。 */
   public RuleAssetVersion publishNext(
       String ruleId, String expression, boolean hitBlock, int grayPercent, String operator) {
+    return publishNext(ruleId, expression, hitBlock, grayPercent, operator, List.of());
+  }
+
+  /** 发布新版本，带回归样本集：正/负例任一不符即拒绝（规则级兼容性检查在发布流水线强制）。 */
+  public RuleAssetVersion publishNext(
+      String ruleId,
+      String expression,
+      boolean hitBlock,
+      int grayPercent,
+      String operator,
+      List<RegressionCase> regressionCases) {
     RuleAsset rule = require(ruleId);
     precheck(expression);
+    assertRegression(expression, regressionCases);
     RuleAssetVersion v = rule.publishNext(expression, hitBlock, grayPercent, operator);
     repository.save(rule);
     log.info("Rule v published: id={}, code={}", v.getVersionNo(), ruleId, rule.getCode());
     return v;
+  }
+
+  /** 回归门禁：正/负例任一不符即拒绝发布，失败明细逐条回显标签。 */
+  private void assertRegression(String expression, List<RegressionCase> cases) {
+    if (cases == null || cases.isEmpty()) {
+      return;
+    }
+    RuleRegressionGate.RegressionResult result =
+        new RuleRegressionGate(ruleEngine).evaluate(expression, cases);
+    if (!result.passed()) {
+      List<String> failed =
+          result.cases().stream()
+              .filter(c -> !c.passed())
+              .map(c -> c.label() + "(期望 " + c.expectHit() + ", 实际 " + c.actualHit() + ")")
+              .toList();
+      throw new IllegalArgumentException("rule regression failed: " + String.join("; ", failed));
+    }
   }
 
   /** 调整灰度比例（0-100；0=全量不灰度）。 */

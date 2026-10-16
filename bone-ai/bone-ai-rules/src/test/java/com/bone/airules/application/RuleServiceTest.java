@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bone.airules.domain.gateway.RuleEngine;
+import com.bone.airules.domain.model.RegressionCase;
 import com.bone.airules.domain.model.RuleAsset;
 import com.bone.airules.domain.model.RuleAssetVersion;
 import com.bone.airules.domain.model.RuleEvalResult;
@@ -143,5 +144,41 @@ class RuleServiceTest {
     List<RuleEvalResult> results = service.evaluateAll("t1", Map.of("amount", 15000.0), false);
     assertThat(results).hasSize(1);
     assertThat(results.get(0).hit()).isTrue();
+  }
+
+  @Test
+  void publish_first_passes_when_regression_cases_match() {
+    RuleAsset rule = createdRule();
+    RuleAssetVersion v =
+        service.publishFirst(
+            rule.getId(),
+            "amount >= 10000",
+            true,
+            0,
+            "ops",
+            List.of(
+                RegressionCase.positive(Map.of("amount", 20000), "大额应命中"),
+                RegressionCase.negative(Map.of("amount", 100), "小额不应命中")));
+    assertThat(v.getVersionNo()).isEqualTo(1);
+    assertThat(rule.getStatus().name()).isEqualTo("ACTIVE");
+  }
+
+  @Test
+  void publish_first_rejects_when_regression_case_fails() {
+    RuleAsset rule = createdRule();
+    // 负例样本要求小额不命中，但表达式 amount>=10000 对 15000 命中 → 拒绝发布
+    assertThatThrownBy(
+            () ->
+                service.publishFirst(
+                    rule.getId(),
+                    "amount >= 10000",
+                    false,
+                    0,
+                    "ops",
+                    List.of(RegressionCase.negative(Map.of("amount", 15000), "小额不应命中"))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("regression failed")
+        .hasMessageContaining("小额不应命中");
+    assertThat(rule.getStatus().name()).isEqualTo("DRAFT"); // 拒绝发布，状态不变
   }
 }

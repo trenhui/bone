@@ -1,7 +1,9 @@
 package com.bone.aiorch.config;
 
 import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.aiorch.application.HitlService;
 import com.bone.aiorch.application.OrchestrationService;
+import com.bone.aiorch.domain.hitl.HitlItemRepository;
 import com.bone.airules.application.RuleQueryService;
 import com.bone.airules.application.RuleService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -21,5 +23,13 @@ public class OrchestrationAutoConfiguration {
       RuleQueryService ruleQueryService,
       LlmGatewayService llmGatewayService) {
     return new OrchestrationService(ruleService, ruleQueryService, llmGatewayService);
+  }
+
+  /** HITL 人工终审子域（§4.2；依赖 SDK 生成的 HitlItemRepository，未启用持久化时缺 Bean 自动跳过）。 */
+  @Bean
+  @ConditionalOnBean(HitlItemRepository.class)
+  @ConditionalOnMissingBean
+  public HitlService hitlService(HitlItemRepository hitlItemRepository) {
+    return new HitlService(hitlItemRepository);
   }
 }

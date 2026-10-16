@@ -37,6 +37,16 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- 出站韧性：provider 熔断 + 重试（AI 中台 §4.1 治理面；core 编程式，版本由 bone-parent 托管） -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

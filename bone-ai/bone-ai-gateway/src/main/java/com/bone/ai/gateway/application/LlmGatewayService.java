@@ -4,6 +4,7 @@ import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
+import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 
@@ -38,7 +39,15 @@ public class LlmGatewayService {
       throw new BizException(400, "规则已命中，按成本红线跳过 LLM 调用", ERROR_CODE_REDLINE_BLOCKED);
     }
     LlmResponse response = llmClient.chat(request);
+    // 证据链（发生了什么）与计量（花了多少）分离发布：spend tracking 消费者订阅 LlmUsageRecorded
     domainEventPublisher.publish(LlmCallRecorded.of(request, response));
+    domainEventPublisher.publish(
+        LlmUsageRecorded.of(tenantOf(request), request.model(), response.usage()));
     return response;
+  }
+
+  /** 租户取自请求（POC 单租户时可为空）；集中式网关演进后由调用上下文注入。 */
+  private String tenantOf(LlmRequest request) {
+    return null;
   }
 }

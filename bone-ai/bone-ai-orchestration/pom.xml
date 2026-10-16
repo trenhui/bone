@@ -27,6 +27,16 @@
             <groupId>com.bone</groupId>
             <artifactId>bone-ai-gateway</artifactId>
         </dependency>
+        <!-- HITL 子域持久化（HC-001 唯一方案，同 RuleAsset 模式） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- 测试 -->
         <dependency>

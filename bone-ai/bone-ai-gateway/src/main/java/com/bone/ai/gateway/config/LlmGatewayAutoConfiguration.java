@@ -5,8 +5,11 @@ import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
+import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
+import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
 import com.bone.core.domain.event.DomainEventPublisher;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -46,12 +49,26 @@ public class LlmGatewayAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public LlmClient llmClient(LlmGatewayProperties props) {
+  public LlmClient llmClient(LlmHttpTransport llmTransport, LlmGatewayProperties props) {
     if (props.getBaseUrl() != null && !props.getBaseUrl().isBlank()) {
       return new OpenAiCompatibleClient(
-          jdkTransport(props), props.getBaseUrl(), props.getApiKey(), props.getModel());
+          llmTransport, props.getBaseUrl(), props.getApiKey(), props.getModel());
     }
     return new MockLlmClient();
+  }
+
+  /** 出站传输：出现 Resilience4j registry 即包熔断+重试（§4.1 治理面），否则回落直连（POC 零依赖）。 */
+  @Bean
+  @ConditionalOnMissingBean
+  public LlmHttpTransport llmTransport(
+      LlmGatewayProperties props,
+      org.springframework.beans.factory.ObjectProvider<CircuitBreakerRegistry> registryProvider) {
+    LlmHttpTransport direct = jdkTransport(props);
+    CircuitBreakerRegistry registry = registryProvider.getIfAvailable();
+    if (registry != null) {
+      return new ResilientLlmTransport(direct, registry);
+    }
+    return direct;
   }
 
   private static LlmHttpTransport jdkTransport(LlmGatewayProperties props) {
@@ -66,13 +83,16 @@ public class LlmGatewayAutoConfiguration {
       try {
         HttpResponse<String> resp =
             http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        if (resp.statusCode() >= 500) {
+          throw new RetriableHttpException("LLM 服务端错误: HTTP " + resp.statusCode(), null);
+        }
         if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
           throw new IllegalStateException("LLM 调用失败: HTTP " + resp.statusCode());
         }
         return resp.body();
       } catch (java.io.IOException | InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new IllegalStateException("LLM 调用异常: " + e.getMessage(), e);
+        throw new RetriableHttpException("LLM 调用异常: " + e.getMessage(), e);
       }
     };
   }

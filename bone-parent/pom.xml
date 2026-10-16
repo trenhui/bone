@@ -113,6 +113,8 @@
         <qlexpress.version>4.1.3</qlexpress.version>
         <!-- 文档解析（AI 中台 §4.4 第一批最小 IR）：PDFBox 2.0.31 存量本地可用 -->
         <pdfbox.version>2.0.31</pdfbox.version>
+        <!-- 出站 LLM 调用的熔断/重试（AI 中台 §4.1 网关治理面；1.7.0 与 spring-cloud 2025.0.3 兼容） -->
+        <resilience4j.version>1.7.0</resilience4j.version>
 
         <!-- 测试开关默认值（可由 -DskipTests / -Dmaven.test.skip 覆盖） -->
         <skipTests>false</skipTests>
@@ -353,6 +355,28 @@
                 <groupId>org.apache.pdfbox</groupId>
                 <artifactId>pdfbox</artifactId>
                 <version>${pdfbox.version}</version>
+            </dependency>
+            <!-- 网关出站韧性（AI 中台 §4.1：provider 熔断防退化重试风暴 + 重试降档；core 编程式，不引 Spring Cloud 封装） -->
+            <!-- 注：spring-cloud 2025.0.3 BOM 将 resilience4j 提升到 2.2.0（vavr 换代、API 变更）；此处显式压回 1.7.0 统一编程式 API，core 一并托管防版本分裂 -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-circuitbreaker</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-retry</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-core</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.vavr</groupId>
+                <artifactId>vavr</artifactId>
+                <version>0.10.2</version>
             </dependency>
             <!-- bone-ai 模块（AI 能力中台；模块间依赖统一由此管理） -->
             <dependency>
