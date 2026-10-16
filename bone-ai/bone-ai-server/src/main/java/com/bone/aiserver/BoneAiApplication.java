@@ -12,7 +12,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @EnableSqlRepositories(
-    basePackages = {"com.bone.airules.domain.repository", "com.bone.aitrace.domain.repository"})
+    basePackages = {
+      "com.bone.airules.domain.repository",
+      "com.bone.aitrace.domain.repository",
+      "com.bone.aiorch.domain.hitl" // HITL 子域仓储（智能理赔人工终审）
+    })
 public class BoneAiApplication {
 
   public static void main(String[] args) {
