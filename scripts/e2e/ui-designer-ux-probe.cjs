@@ -6,6 +6,7 @@
  *   4. 变体创作（variants tab：新增 / 命中条件 / 覆盖编辑）
  *   5. 快捷键：Ctrl+Z 撤销成真；负向——输入框内 Ctrl+Z 不劫持
  *   6. 发布协议硬门禁：负向（坏 schema 阻断发布）+ 正向（修复后放行）
+ *   7. 可视化编辑历史栈（jumpToPast：跳回后被跳过的中间态压入 future，重做不断链）
  *
  * 策略：Playwright 走 shell :3000 真实登录拿 JWT（沿用 lowcode-closed-loop 模式），
  *      实体经网关 API 建（探针自产自销，不碰他人在途数据），UI 断言走真实页面。
@@ -179,6 +180,57 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   await sleep(300);
   await page.keyboard.press('Control+z');
   await sleep(400);
+
+  // ---------- E2. 可视化编辑历史栈（jumpToPast 的 future 堆叠） ----------
+  console.log('\n===== E2. 可视化编辑历史栈 =====');
+  // E 段负向用例遗留 1 步脏（past=[初始态]）；先归位干净态，保证历史步数可数
+  await page.keyboard.press('Control+z');
+  await sleep(500);
+  const dirtyNorm = await page.locator('text=未保存改动').count();
+  assert('E2 前置：归位干净态', dirtyNorm === 0, { dirtyNorm });
+  // 制造 2 步编辑 → past 恰好 2 项
+  await page.locator('button').filter({ hasText: '添加分区' }).first().click();
+  await sleep(600);
+  await page.locator('button').filter({ hasText: '添加分区' }).first().click();
+  await sleep(600);
+  const dirty2 = await page.locator('text=未保存改动').count();
+  assert('2 次添加后出现未保存改动', dirty2 > 0, { dirty2 });
+  // 打开编辑历史 Popover（aria-label 定位，图标按钮无文本）
+  await page.locator('button[aria-label="编辑历史"]').click();
+  await sleep(800);
+  const histPop = page.locator('.ant-popover').filter({ hasText: '编辑历史' });
+  const histVisible = await histPop.first().isVisible().catch(() => false);
+  assert('历史 Popover 可打开', histVisible, {});
+  const histText = await histPop.first().innerText().catch(() => '');
+  const pastCount = /共 (\d+) 步可回退/.exec(histText.replace(/\n/g, ' '));
+  assert('历史 Popover 恰好列出 2 个回退项（回退 1 步 / 回退 2 步，无 phantom 条目）',
+    /回退 1 步/.test(histText) && /回退 2 步/.test(histText) && pastCount !== null && Number(pastCount[1]) === 2,
+    { snippet: histText.replace(/\n/g, ' ').slice(0, 160), pastCount: pastCount?.[1] });
+  await page.screenshot({ path: '/Users/renhui.trh/wps/bone/logs/ui_designer_ux_2b_history.png' });
+  // 跳回最近 1 步：被跳过的中间态必须压入 future，否则重做断链
+  await histPop.locator('text=回退 1 步').click();
+  await sleep(900);
+  const redoEnabled = await page.locator('button[aria-label="重做"]').isEnabled().catch(() => false);
+  assert('跳回后「重做」可用（被跳过的状态压入 future）', redoEnabled, {});
+  const dirtyAfterJump = await page.locator('text=未保存改动').count();
+  assert('跳回后仍有未保存改动（保留 1 步编辑）', dirtyAfterJump > 0, { dirtyAfterJump });
+  // 二次打开：past 应只剩 1 项，且被跳过的中间态恰好 1 条压入 future（不重不漏）
+  await page.locator('button[aria-label="编辑历史"]').click();
+  await sleep(700);
+  const histText2 = await histPop.first().innerText().catch(() => '');
+  const pastCount2 = /共 (\d+) 步可回退/.exec(histText2.replace(/\n/g, ' '));
+  const futureCount2 = /可重做 (\d+) 步/.exec(histText2.replace(/\n/g, ' '));
+  assert('二次打开仅 1 个回退项且 future 恰为 1（时间线与实际状态一致，无重复压栈）',
+    pastCount2 !== null && Number(pastCount2[1]) === 1 && !/回退 2 步/.test(histText2)
+    && futureCount2 !== null && Number(futureCount2[1]) === 1,
+    { snippet: histText2.replace(/\n/g, ' ').slice(0, 120), past: pastCount2?.[1], future: futureCount2?.[1] });
+  // 收尾：toggle 关 Popover → 撤销回干净态，避免影响 F2 段「可见删除图标 nth(1)」假设
+  await page.locator('button[aria-label="编辑历史"]').click();
+  await sleep(500);
+  await page.keyboard.press('Control+z');
+  await sleep(500);
+  const dirtyFinal = await page.locator('text=未保存改动').count();
+  assert('E2 收尾后恢复干净态', dirtyFinal === 0, { dirtyFinal });
 
   // ---------- F. 变体创作 ----------
   console.log('\n===== F. 变体创作 =====');

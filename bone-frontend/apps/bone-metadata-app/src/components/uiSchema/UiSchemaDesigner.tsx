@@ -103,6 +103,16 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   // 撤销/重做
   const [past, setPast] = useState<BoneUiSchema[]>([]);
   const [future, setFuture] = useState<BoneUiSchema[]>([]);
+  /**
+   * schema 的渲染期镜像（与下方 actionsRef 同一模式）。
+   * 编辑动作需要在事件处理器里取「当前 schema」压栈；曾经把 setPast/setFuture 嵌套在
+   * setSchema 的更新器函数里读 cur——useState 更新器必须纯粹（React 契约），嵌套
+   * setState 会转入 render-phase update 重放路径并被双倍应用（实测：undo /
+   * jumpToPast 的 future 每次 +2、连续编辑时 past 出现 phantom 条目，历史栈
+   * 「共 N 步可回退」与真实步数漂移）。改为更新器全部纯粹、当前值由 ref 提供。
+   */
+  const schemaRef = useRef<BoneUiSchema | null>(null);
+  schemaRef.current = schema;
 
   /* ---------- 加载 ---------- */
   const load = useCallback(async () => {
@@ -145,24 +155,27 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
 
   /* ---------- 编辑 ---------- */
   const commit = useCallback((next: BoneUiSchema) => {
-    setSchema((cur) => {
-      if (cur) setPast((p) => [...p.slice(-49), cur]);
-      return next;
-    });
+    const cur = schemaRef.current;
+    if (cur) setPast((p) => [...p.slice(-49), cur]);
+    setSchema(next);
     setFuture([]);
   }, []);
 
   const undo = () => {
     if (!past.length) return;
     const prev = past[past.length - 1];
+    const cur = schemaRef.current;
     setPast((p) => p.slice(0, -1));
-    setSchema((cur) => { if (cur) setFuture((f) => [cur, ...f].slice(0, 50)); return prev; });
+    if (cur) setFuture((f) => [cur, ...f].slice(0, 50));
+    setSchema(prev);
   };
   const redo = () => {
     if (!future.length) return;
     const nxt = future[0];
+    const cur = schemaRef.current;
     setFuture((f) => f.slice(1));
-    setSchema((cur) => { if (cur) setPast((p) => [...p, cur]); return nxt; });
+    if (cur) setPast((p) => [...p, cur]);
+    setSchema(nxt);
   };
 
   /**
@@ -176,11 +189,10 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     if (pastIndex < 0 || pastIndex >= n) return;
     const target = past[pastIndex];
     const dropped = past.slice(pastIndex + 1); // target 之后、当前态之前的若干中间态
+    const cur = schemaRef.current;
     setPast(past.slice(0, pastIndex));
-    setSchema((cur) => {
-      if (cur) setFuture((f) => [...dropped, cur, ...f].slice(0, 50));
-      return target;
-    });
+    if (cur) setFuture((f) => [...dropped, cur, ...f].slice(0, 50));
+    setSchema(target);
     setHistOpen(false);
   };
 
