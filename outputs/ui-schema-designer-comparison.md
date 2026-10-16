@@ -221,3 +221,42 @@
 ### 10.4 环境备注
 - metadata-server(:9001) 本轮曾崩溃（后端整站 503），后自行恢复（PID 10911）；探针失败三连发曾疑为前端缺陷，实为后端抖动 + 探针缺陷叠加。后端实况：gateway 8888 / iam 8081 / blueprint 8082 / masterdata 8084 / metadata-server 9001 均正常。
 - 截图：`outputs/probe_polish_报销单.png`、`outputs/probe_polish_理赔案件.png`。
+
+
+---
+
+## 11. 第四轮：「显示设置」定位修正 + 设计器 list 契约真源收敛（2026-10-16）
+
+### 11.1 问题诊断（源码实证，非推断）
+- **「显示设置」（tab=ui）**：`InterfaceTab` 列投影 overlay（显隐/显示名覆盖/列序/密度），独立 `ui-overlay` API + localStorage，**是运行时数据列表列与密度的唯一真源**（`RuntimeDataManagement: projectColumns(writableFields, overlay)`）。
+- **「界面设计器」（tab=uischema）**：`UiSchemaDesigner` 的 `views.list`（列/列宽/固定列/列序/列标题）**零运行时消费方**——grep `views.list` 全部命中都在设计器内部（ListPanel/SchemaPreview/lint/schemaOps/variants），写入了 published 快照却没人读，「配了不生效」。
+- 两处都能配列表列 ⇒ 用户认知重叠（不知谁生效）。直接删「显示设置」不可行（运行时列表会立刻失去配置源）。
+
+### 11.2 方案（对标 Salesforce Search Layouts 组织级 + List View 个人偏好双轨）
+| 层 | 归属 | 内容 | 生效方式 |
+|---|---|---|---|
+| 契约层 | 界面设计器 `views.list`（published 快照优先，与后端 `schemaForExecution` 同口径） | 列集合/列序/列宽/固定列/列标题 | 发布后生效 |
+| 偏好层 | 列表显示页 overlay | 个人显隐/密度/个人改名 | 即时生效 |
+
+- **strict 集合语义**：契约即完整列集合（未列入字段不进运行时列表）——该实体 22 字段、契约仅 6 列，若"未列出即追加"会把策划清单淹没；新字段由建模者在设计器显式加入，「列表显示」页以「未在契约」标签 + 「去设计器加入」引导，不静默追加。
+- 可见性：契约隐藏或个人隐藏任一为真即隐藏；列标题：个人改名（仅确实改过名）> 契约 `format.title` > 字段名。
+- ListPanel「移除列」由删条目改为**契约内置隐藏**（`visible:false` 保留条目）：strict 集合下删条目与置隐藏的运行时效果相同，但删条目会丢失显式契约记录、无法原路恢复；保留 `visible:false` 条目让「这列被契约隐藏」成为可审计、可反转的决策（原 `removeColumn` 随之删除，理由写入 schemaOps 注释）。
+
+### 11.3 代码改动
+- `utils/columnProjection.ts`：新增 `projectRuntimeColumns(fields, overlay, listView)` + `fieldsOutsideContract(fields, listView)` 纯函数；无契约列时整体回落旧 `projectColumns`（零回归）。
+- `hooks/useBoneUiSchema.ts`：新增 `executionSchema`/`executionSource`（published 快照优先、从未发布回落草稿）——与后端 `schemaForExecution` 同口径；草稿管线 `schema` 不动（设计器表单行为零变化）。
+- `pages/RuntimeDataManagement.tsx`：列表列投影切到契约优先；antd Table 接入契约 `width`/`pinned`（`fixed:'left'`）。
+- `components/InterfaceTab.tsx`：契约感知——分层 banner、契约列序置灰（「契约」标签）、契约隐藏列置灰+解释、未列入字段「未在契约」+去设计器加入、预览与运行时共用同一投影。
+- `components/uiSchema/ListPanel.tsx` + `schemaOps.ts`：移除列 = 契约内置隐藏；删 `removeColumn` 死代码。
+- `pages/EntityDetail.tsx`：tab 更名「显示设置」→「列表显示」（URL key `?tab=ui` 不变，深链兼容）；注入 `entityId`/`onOpenDesigner`。
+
+### 11.4 验证（三重）
+1. **单测** `columnProjection.test.ts` 27/27 PASS（含 2 个负向探针：无 width 契约列不得产 width、overlay 列序不得颠覆契约序）。
+2. **存量回归** `scripts/_probe_designer_polish.js` 全绿（保存 200/重载持久化/预览跟随/三态徽标未破坏）。
+3. **P1 联调探针** `scripts/_probe_p1_contract.js`（理赔案件 765601790585470976，published 契约 6 列）：HARD 4/4——表头严格=契约 6 列同序、非契约字段（理算金额）不出现、**契约列宽生效**（colgroup = 150/100/110/120/120/120px，设计器配置第一次真正驱动运行时）；SOFT 5/5——tab 更名、分层 banner、「未在契约」引导、预览≡运行时同列；零 console error。
+
+### 11.5 运维踩坑（复用价值）
+- **环境变量 `SERVER__PORT=58926` 会被 Spring 宽松绑定成 `server.port`**：本机 shell 注入了该变量（WorkBuddy），导致 `java -jar` 不读 yaml 的 9001 而去抢 58926，与僵死实例冲突后「Web server failed to start」。**解法：显式 `--server.port=9001`**（CLI 优先于环境变量）。
+- 本机 curl 走 `HTTP_PROXY=127.0.0.1:53687`，localhost 探测也被代理劫持返回 502——**本地健康检查必须 `--noproxy '*'`**，否则把代理故障误判为服务故障。
+- 前台 bash 里 `nohup java &` 会被沙箱回收（进程组清理）；长驻服务必须用后台任务方式启动。
+- antd v5 在 `scroll.x` 下渲染 `.ant-table-measure-row`（无 td 的度量行），探针统计行数必须剔除，否则每表多一行导致断言失败。
