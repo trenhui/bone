@@ -35,6 +35,8 @@ interface Props {
   schema: BoneUiSchema;
   fields: MetaField[];
   entityCode: string;
+  /** 左侧结构面板正在编辑的视图（form/detail），预览默认跟随，保持「左改右见」一致 */
+  editView?: 'form' | 'detail';
 }
 
 function defaultOf(code: string, fields: MetaField[]): unknown {
@@ -316,11 +318,12 @@ function ListViewPreview({ schema, fields, scenarioData }: {
 }
 
 /* ---------------- 主组件 ---------------- */
-export default function SchemaPreview({ schema, fields, entityCode }: Props): React.ReactElement {
-  const [scenarioKey, setScenarioKey] = useState(SCENARIOS[1].key);
+export default function SchemaPreview({ schema, fields, entityCode, editView = 'form' }: Props): React.ReactElement {
+  const [scenarioKey, setScenarioKey] = useState('blank');
+  const [scenarioPicked, setScenarioPicked] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'form' | 'detail' | 'list'>(editView);
   const [data, setData] = useState<Record<string, unknown>>({});
   const [result, setResult] = useState<{ errors: string[]; warnings: string[] } | null>(null);
-  const [view, setView] = useState<'form' | 'list'>('form');
 
   // 身份模拟：实时裁决变体
   const [roles, setRoles] = useState<string[]>([]);
@@ -333,9 +336,6 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
     [roles, tier, channel, device],
   );
 
-  const sections = useMemo(() => formOf(schema).sections ?? [], [schema]);
-  const allCodes = useMemo(() => sections.flatMap((sec) => (sec.controls ?? []).map((c) => c.fieldCode)), [sections]);
-  const shapeKey = allCodes.join('|');
   const fieldsKey = fields.map((f) => f.code).join('|');
 
   // 场景按实体领域过滤：报销单不出现「门诊快赔」这类跨领域演示场景
@@ -344,6 +344,31 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
   const effScenarioKey = visibleScenarios.some((s) => s.key === scenarioKey)
     ? scenarioKey
     : (visibleScenarios.find((s) => s.key !== 'blank') ?? visibleScenarios[0])?.key ?? 'blank';
+
+  // 首次进入：根据实体领域自动选最贴合的演示场景（不再硬编码「门诊快赔」），避免跨领域误导；
+  // 用户一旦显式选择（scenarioPicked=true）即固定，不再被自动覆盖。
+  useEffect(() => {
+    if (scenarioPicked) return;
+    const best = visibleScenarios.find((s) => s.key !== 'blank');
+    if (best) setScenarioKey(best.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleScenarios]);
+
+  // 预览视图默认跟随左侧正在编辑的视图（form/detail）；用户手动点「列表」后不再被拽回
+  useEffect(() => {
+    if (previewMode !== 'list') setPreviewMode(editView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editView]);
+
+  // 预览渲染的视图分区（表单 / 详情；列表视图由 ListViewPreview 单独渲染）
+  const previewSections = previewMode === 'list'
+    ? []
+    : (previewMode === 'detail' ? (schema.views.detail?.sections ?? []) : formOf(schema).sections ?? []);
+  const listCodes = (schema.views.list?.columns ?? []).map((c) => c.fieldCode);
+  const allCodes = previewMode === 'list'
+    ? listCodes
+    : previewSections.flatMap((sec) => (sec.controls ?? []).map((c) => c.fieldCode));
+  const shapeKey = allCodes.join('|');
 
   useEffect(() => {
     const sc = SCENARIOS.find((s) => s.key === effScenarioKey) ?? SCENARIOS[0];
@@ -401,13 +426,13 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
     <div className="uis-root">
       <div className="uis-pv-head">
         <span className="uis-pv-entity">{entityCode}</span>
-        <span className="uis-pv-badge">{view === 'form' ? '表单视图' : '列表视图'}</span>
+        <span className="uis-pv-badge">{previewMode === 'list' ? '列表视图' : previewMode === 'detail' ? '详情视图' : '表单视图'}</span>
         <Segmented
-          size="small" value={view} onChange={(v) => setView(v as 'form' | 'list')}
-          options={[{ value: 'form', label: '表单' }, { value: 'list', label: '列表' }]}
+          size="small" value={previewMode} onChange={(v) => setPreviewMode(v as 'form' | 'detail' | 'list')}
+          options={[{ value: 'form', label: '表单' }, { value: 'detail', label: '详情' }, { value: 'list', label: '列表' }]}
         />
         <Segmented
-          size="small" value={effScenarioKey} onChange={(v) => setScenarioKey(String(v))}
+          size="small" value={effScenarioKey} onChange={(v) => { setScenarioKey(String(v)); setScenarioPicked(true); }}
           options={visibleScenarios.map((s) => ({ value: s.key, label: s.label }))}
         />
         <Tooltip title="预览跑运行时同一套引擎，但不落库">
@@ -456,7 +481,7 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
       </details>
 
       <div className={`uis-stage ${device}`}>
-        {view === 'list' ? (
+        {previewMode === 'list' ? (
           <div className="uis-list-card">
             <ListViewPreview schema={resolved} fields={fields} scenarioData={data} />
           </div>
@@ -482,9 +507,9 @@ export default function SchemaPreview({ schema, fields, entityCode }: Props): Re
               </div>
             )}
 
-            {sections.length === 0 && <div className="uis-empty">还没有配置任何分区</div>}
+            {previewSections.length === 0 && <div className="uis-empty">{previewMode === 'detail' ? '详情视图还没有配置任何分区' : '还没有配置任何分区'}</div>}
 
-            {(formOf(resolved).sections ?? []).map((sec, si) => {
+            {previewSections.map((sec, si) => {
               const ctrls = (sec.controls ?? []).filter((c) => states[c.fieldCode]?.visible !== false);
               if (!ctrls.length) return null;
               return (

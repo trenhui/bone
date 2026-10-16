@@ -746,7 +746,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           flex: 1, minWidth: 0, overflow: 'auto', padding: 16,
           background: '#f5f7fa', border: '1px solid #e6eaf0', borderRadius: 10,
         }}>
-          <MemoSchemaPreview schema={schema} fields={fields} entityCode={entityCode} />
+          <MemoSchemaPreview schema={schema} fields={fields} entityCode={entityCode} editView={view} />
         </div>
       </div>
     </div>

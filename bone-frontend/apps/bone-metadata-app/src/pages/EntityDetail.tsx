@@ -129,7 +129,7 @@ const EntityDetail: React.FC = () => {
     setSearchParams(next, { replace: true });
   };
   const [innerTab, setInnerTab] = useState('fields');
-  /** UID-11：从「显示设置」Tab 定位过来的字段编码，用于结构列表高亮（短时自动消退） */
+  /** UID-11：从「界面」Tab 定位过来的字段编码，用于结构列表高亮（短时自动消退） */
   const [highlightFieldCode, setHighlightFieldCode] = useState<string | null>(null);
 
   /**
@@ -471,7 +471,7 @@ const EntityDetail: React.FC = () => {
     loadFields();
   };
 
-  const goInterface = () => setOuterTab('ui');
+  const goInterface = () => setOuterTab('uischema');
   const goData = isRuntimePublished ? () => navigate(dataPath) : undefined;
   const goAddField = () => {
     setOuterTab('structure');
@@ -707,7 +707,7 @@ const EntityDetail: React.FC = () => {
             {
               key: 'publish',
               label: (<Space size={4}><ThunderboltOutlined /><span>发布</span></Space>),
-              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} onFixUiSchema={() => setOuterTab('uischema')} />,
+              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />,
             },
           ]}
         />
@@ -772,7 +772,7 @@ const EntityDetail: React.FC = () => {
       </Modal>
 
       {/* 发布预览 Modal（顶栏发布入口） */}
-      <PublishPreviewModal open={previewOpen} entityId={entity?.id ?? null} entityName={entity?.displayName} onClose={() => setPreviewOpen(false)} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} onFixUiSchema={() => { setPreviewOpen(false); setOuterTab('uischema'); }} />
+      <PublishPreviewModal open={previewOpen} entityId={entity?.id ?? null} entityName={entity?.displayName} onClose={() => setPreviewOpen(false)} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />
     </div>
   );
 };
