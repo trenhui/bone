@@ -25,5 +25,6 @@
         <module>bone-ai-rules</module>
         <module>bone-ai-orchestration</module>
         <module>bone-ai-document</module>
+        <module>bone-ai-server</module>
     </modules>
 </project>

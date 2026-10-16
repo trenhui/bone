@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: bone-ai-server
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/bone?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 3000
+
+#  bone-ai 参考宿主配置（模板）：以下 SDK 段与 bone-metadata-sdk 文档一致
+#  关闭统一动态数据源——本宿主用上面的直连 DataSource（避免 UnifiedDataSource 的 @Primary 冲突）
+bone:
+  metadata:
+    datasource:
+      enabled: false
+    sql:
+      enabled: true
+      executor:
+        allow:
+          dml: true
+          batch: true
+          max-rows: 5000
+      database:
+        type: ${DB_TYPE:MYSQL}
+        auto-detect-dialect: true
+        default-ds: primary
+        batch-size: 500
+      template:
+        base-path: classpath:/sql/
+        yaml-path: classpath:/sql-templates/
+        load-priority: annotation-first
+        fallback-enabled: true
+      security:
+        allowed-tables:
+          - "*"
+      tenant:
+        enabled: false
+
+metadata:
+  sdk:
+    deployment-mode: EMBEDDED
+
+#  模型默认 MockLlmClient（bone-ai-gateway 未配 base-url 时）；切真实 OpenAI 兼容 provider 时配置
+#  bone-ai-gateway 的 base-url / api-key（见 LlmGatewayProperties），其余成本红线 / trace 装配不变。
