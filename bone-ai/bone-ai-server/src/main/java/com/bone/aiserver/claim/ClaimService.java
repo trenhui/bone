@@ -176,6 +176,9 @@ public class ClaimService {
       case "modify":
         item = hitlService.modify(tenantId, itemId, actor, value, reasonType, comment);
         break;
+      case "escalate":
+        item = hitlService.escalate(tenantId, itemId, actor, comment);
+        break;
       default:
         throw new IllegalArgumentException("unknown action: " + action);
     }
