@@ -732,6 +732,14 @@
       "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
     },
     {
+      "symbol": "FundingEventRepository",
+      "docs": [
+        "doc/ai-product/synapClaim/智能理赔详细技术方案（bone-ai落地）.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 智能理赔详细技术方案（bone-ai落地）设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+    },
+    {
       "symbol": "DefaultMetadataVersionController",
       "docs": [
         "doc/design/lowcode/BONE-低代码最小闭环PRD.md"
