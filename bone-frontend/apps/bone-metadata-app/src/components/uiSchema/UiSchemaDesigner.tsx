@@ -11,7 +11,7 @@
  * - dirty 标记只由「与已保存快照的差异」决定，不做猜测；
  * - 乐观锁（If-Match）冲突不去猜，直接提示用户重新加载。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
@@ -37,6 +37,13 @@ import JsonPanel from './JsonPanel';
 import VariantsPanel from './VariantsPanel';
 import SchemaPreview from './SchemaPreview';
 import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } from './snapshots';
+
+/**
+ * 预览画布包裹 memo：左栏宽度拖拽 / 切换 Tab / 工具栏状态变化都不应触发重型预览重渲染
+ * （大 schema 下区块与联动引擎开销显著）。预览的内部状态（身份模拟/场景/数据）自洽保留，
+ * 仅当 schema / fields / entityCode 真变化时才重渲染——与运行时同源引擎的昂贵推导解耦。
+ */
+const MemoSchemaPreview = memo(SchemaPreview);
 
 const { Text } = Typography;
 
@@ -158,6 +165,25 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     setSchema((cur) => { if (cur) setPast((p) => [...p, cur]); return nxt; });
   };
 
+  /**
+   * 跳回「最近第 fromMostRecentIndex 步之前」的状态（可视化历史栈的核心）。
+   * fromMostRecentIndex=0 等价于一次 undo；=k 等价于连撤 k+1 步。
+   * 被跳过的若干中间态全部压入 future，保证后续仍可逐条 redo（与 undo 语义一致）。
+   */
+  const jumpToPast = (fromMostRecentIndex: number) => {
+    const n = past.length;
+    const pastIndex = n - 1 - fromMostRecentIndex;
+    if (pastIndex < 0 || pastIndex >= n) return;
+    const target = past[pastIndex];
+    const dropped = past.slice(pastIndex + 1); // target 之后、当前态之前的若干中间态
+    setPast(past.slice(0, pastIndex));
+    setSchema((cur) => {
+      if (cur) setFuture((f) => [...dropped, cur, ...f].slice(0, 50));
+      return target;
+    });
+    setHistOpen(false);
+  };
+
   /* ---------- 全屏（禅模式） ---------- */
   const [zen, setZen] = useState(false);
   /* ---------- 3 步上手引导（首访自动，可从工具栏重显） ---------- */
@@ -168,11 +194,24 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   /* ---------- 命令面板（Cmd/Ctrl+K） ---------- */
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdQuery, setCmdQuery] = useState('');
+  /* ---------- 命令面板键盘导航游标（箭头/Enter 可达） ---------- */
+  const [cmdActive, setCmdActive] = useState(0);
+  /* ---------- 编辑历史栈（可视化 undo 时间线 · 对标 VS Code Timeline / Figma 版本历史） ---------- */
+  const [histOpen, setHistOpen] = useState(false);
+  /* 命令面板键盘导航：当前高亮项 ref（用于滚入视口） */
+  const cmdActiveRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     try {
       if (!localStorage.getItem(GUIDE_KEY)) setGuideOpen(true);
     } catch { /* localStorage 不可用（隐私模式）时静默跳过引导 */ }
   }, []);
+
+  // 命令面板每次打开或筛选变化，键盘游标归零（避免残留旧游标越界）
+  useEffect(() => { if (cmdOpen) setCmdActive(0); }, [cmdOpen]);
+  useEffect(() => { setCmdActive(0); }, [cmdQuery]);
+  // 键盘游标移动时把高亮项滚入视口（长命令列表不丢焦点）
+  useEffect(() => { cmdActiveRef.current?.scrollIntoView({ block: 'nearest' }); }, [cmdActive, cmdOpen]);
+
   const closeGuide = () => {
     setGuideOpen(false);
     try { localStorage.setItem(GUIDE_KEY, '1'); } catch { /* 忽略 */ }
@@ -313,6 +352,23 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     [schema, baseline],
   );
 
+  /**
+   * 未保存改动离开页面拦截（业界基线：Google Docs / Figma / VS Code 均在脏状态时阻止误关/刷新）。
+   * 仅拦截浏览器级卸载（关页 / 刷新 / 地址栏跳转）——这是跨框架最稳的防丢基线。
+   * 说明：qiankun 微应用内「点 shell 菜单切换路由」由主应用路由主导，react-router 的
+   * useBlocker 无法可靠拦截主应用级跳转（且会误伤正常导航），故不在此硬拦；
+   * 路由级拦截需主应用（shell）配合暴露「脏状态回调」后再统一确认，列为后续。
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
   /* ---------- 自检 ---------- */
   const knownFields = useMemo(() => new Set(fields.map((f) => f.code)), [fields]);
   // 样例按实体领域过滤：跨领域样例（如报销单里出现「门诊快赔」）不进入「载入场景样例」下拉
@@ -411,7 +467,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         padding: '8px 10px', background: '#fff', border: '1px solid #e6eaf0',
         borderRadius: 10, marginBottom: 10,
       }}>
-        <Tooltip title={dirty ? '有改动尚未保存' : '与已保存内容一致'}>
+        <Tooltip title={dirty ? '有改动尚未保存，离开/刷新页面会提示确认' : '与已保存内容一致'}>
           <Tag
             icon={<CheckCircleOutlined />}
             color={dirty ? 'orange' : 'green'}
@@ -428,13 +484,51 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         <span style={{ flex: 1 }} />
 
         <Tooltip title="撤销（Ctrl+Z）">
-          <Button size="small" icon={<UndoOutlined />} disabled={!past.length} onClick={undo} />
+          <Button size="small" aria-label="撤销" icon={<UndoOutlined />} disabled={!past.length} onClick={undo} />
         </Tooltip>
         <Tooltip title="重做（Ctrl+Shift+Z）">
-          <Button size="small" icon={<RedoOutlined />} disabled={!future.length} onClick={redo} />
+          <Button size="small" aria-label="重做" icon={<RedoOutlined />} disabled={!future.length} onClick={redo} />
         </Tooltip>
+        <Popover
+          open={histOpen}
+          onOpenChange={setHistOpen}
+          trigger="click"
+          placement="bottom"
+          title="编辑历史 · 点击跳回该步"
+          content={
+            <div style={{ maxHeight: 320, overflow: 'auto', minWidth: 230 }}>
+              {past.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可回退步骤" />
+              ) : (
+                <List
+                  size="small"
+                  dataSource={past.map((_s, i) => i).reverse()}
+                  renderItem={(i) => (
+                    <List.Item
+                      style={{ cursor: 'pointer', padding: '6px 8px', borderRadius: 6 }}
+                      onClick={() => jumpToPast(past.length - 1 - i)}
+                    >
+                      <List.Item.Meta
+                        avatar={<span style={{ color: '#1677ff', fontWeight: 700 }}>↶</span>}
+                        title={`回退 ${past.length - i} 步`}
+                        description={`点此跳回该状态（共 ${past.length} 步可回退）`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
+              {future.length > 0 && (
+                <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>
+                  可重做 {future.length} 步（Ctrl+Shift+Z）
+                </div>
+              )}
+            </div>
+          }
+        >
+          <Button size="small" aria-label="编辑历史" icon={<HistoryOutlined />} disabled={!past.length}>历史</Button>
+        </Popover>
         <Tooltip title="放弃改动，重新从服务端加载">
-          <Button size="small" icon={<ReloadOutlined />} onClick={() => void load()}>重新加载</Button>
+          <Button size="small" aria-label="重新加载" icon={<ReloadOutlined />} onClick={() => void load()}>重新加载</Button>
         </Tooltip>
 
         <Tooltip title={zen ? '退出全屏（Esc）' : '全屏编辑（Esc 退出）'}>
@@ -629,6 +723,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           >
             <Button
               shape="circle" size="large" type="primary"
+              aria-label="添加字段到界面"
               icon={<PlusOutlined />}
               style={{ position: 'absolute', right: 14, bottom: 14, zIndex: 5, boxShadow: '0 6px 16px rgba(22,119,255,.35)' }}
             />
@@ -651,7 +746,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           flex: 1, minWidth: 0, overflow: 'auto', padding: 16,
           background: '#f5f7fa', border: '1px solid #e6eaf0', borderRadius: 10,
         }}>
-          <SchemaPreview schema={schema} fields={fields} entityCode={entityCode} />
+          <MemoSchemaPreview schema={schema} fields={fields} entityCode={entityCode} />
         </div>
       </div>
     </div>
@@ -681,7 +776,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
             <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+Shift+Z</Text> 重做 ·
             <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+S</Text> 保存 ·
             <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+K</Text> 命令面板 ·
-            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Esc</Text> 退出全屏。随时点工具栏「帮助」重看本引导。
+            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Esc</Text> 退出全屏。工具栏「历史」可一键跳回任意历史步骤；
+            有未保存改动时离开或刷新页面会提示确认，避免误操作丢失配置。随时点工具栏「帮助」重看本引导。
           </Text>
         </div>
       </div>
@@ -714,38 +810,56 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     </Modal>
   );
 
-  /* 命令面板 Modal（Cmd/Ctrl+K） */
+  /* 命令面板 Modal（Cmd/Ctrl+K · 键盘可达：↑/↓ 移动、Enter 执行、Esc 关闭，对标 VS Code/Sublime） */
   const cmdModal = (
     <Modal
       title="命令面板（Cmd/Ctrl + K）" open={cmdOpen} onCancel={() => setCmdOpen(false)} footer={null} width={520}
     >
       <Input
         autoFocus
-        placeholder="搜索命令，如：全屏 / 校验 / 撤销 / 跳到 结构"
+        placeholder="搜索命令，如：全屏 / 校验 / 撤销 / 跳到 结构（↑↓ 选择，Enter 执行）"
         value={cmdQuery}
         onChange={(e) => setCmdQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setCmdActive((i) => Math.min(cmdFiltered.length - 1, i + 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setCmdActive((i) => Math.max(0, i - 1));
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const c = cmdFiltered[cmdActive];
+            if (c && !c.disabled) { c.run(); setCmdOpen(false); }
+          }
+        }}
         style={{ marginBottom: 10 }}
       />
       <div style={{ maxHeight: '50vh', overflow: 'auto' }}>
         {cmdFiltered.length === 0 ? (
           <Empty description="无匹配命令" />
         ) : (
-          cmdFiltered.map((c) => (
-            <div
-              key={c.key}
-              onClick={() => { if (!c.disabled) { c.run(); setCmdOpen(false); } }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-                borderRadius: 6, cursor: c.disabled ? 'not-allowed' : 'pointer',
-                opacity: c.disabled ? 0.45 : 1,
-              }}
-              onMouseEnter={(e) => { if (!c.disabled) e.currentTarget.style.background = '#f0f7ff'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <Tag style={{ margin: 0, fontSize: 10 }}>{c.group}</Tag>
-              <span style={{ fontSize: 13 }}>{c.label}</span>
-            </div>
-          ))
+          cmdFiltered.map((c, idx) => {
+            const active = idx === cmdActive;
+            return (
+              <div
+                key={c.key}
+                ref={active ? cmdActiveRef : undefined}
+                onClick={() => { if (!c.disabled) { c.run(); setCmdOpen(false); } }}
+                onMouseEnter={() => setCmdActive(idx)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+                  borderRadius: 6, cursor: c.disabled ? 'not-allowed' : 'pointer',
+                  opacity: c.disabled ? 0.45 : 1,
+                  background: active ? '#e6f4ff' : 'transparent',
+                }}
+              >
+                <Tag style={{ margin: 0, fontSize: 10 }}>{c.group}</Tag>
+                <span style={{ fontSize: 13 }}>{c.label}</span>
+                {active && <span style={{ marginLeft: 'auto', fontSize: 10, color: '#1677ff' }}>↵</span>}
+              </div>
+            );
+          })
         )}
       </div>
     </Modal>

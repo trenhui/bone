@@ -738,6 +738,14 @@
       ],
       "reason": "history",
       "note": "2026-10-15 死代码清理已删除 engine-runtime version/DefaultMetadataVersionController（AtomicLong 简单版本实现），PRD §1.1.1 仅在「快照/回滚」一行作删除说明引用；属历史类名，非现行真源"
+    },
+    {
+      "symbol": "VersionController",
+      "docs": [
+        "doc/ai-product/platform/BONE-AI能力中台整体方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
     }
   ]
 }
