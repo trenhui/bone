@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>界面设计 · 交互稿</title>
+<style>
+  :root { --ink:#1f1f1f; --sub:#8c8c8c; --line:#e6eaf0; --bg:#f4f6f9; --pri:#1677ff; --pri-weak:#e6f4ff; --ok:#237804; --gold:#ad6800; --err:#cf1322; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; color: var(--ink); background: #eef1f5; font-size: 13px; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--pri); outline-offset: 1px; }
+  .shell { max-width: 1280px; margin: 14px auto 28px; padding: 0 16px; }
+  .crumb { color: var(--sub); margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .etabs { display: flex; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--line); background: #fafafa; border-radius: 12px 12px 0 0; }
+  .etabs button { border: 0; background: transparent; padding: 12px 14px; color: var(--sub); font-weight: 650; border-bottom: 2px solid transparent; }
+  .etabs button.on { color: var(--pri); border-bottom-color: var(--pri); background: #fff; }
+  .pad { padding: 12px; }
+  .goal { background: #f7f9fc; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; display: flex; gap: 16px; align-items: center; }
+  .goal b { display: block; }
+  .goal ol { display: flex; gap: 14px; margin: 0; padding: 0; list-style: none; color: #595959; flex-wrap: wrap; }
+  .goal li.ok { color: var(--ok); }
+  .bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; }
+  .tag { border-radius: 6px; padding: 1px 8px; font-weight: 650; font-size: 12px; }
+  .tag.warn { color: #d46b08; background: #fff7e6; }
+  .tag.ok { color: var(--ok); background: #f6ffed; }
+  .tag.gold { color: var(--gold); background: #fff7e6; }
+  .muted { color: #595959; }
+  .spacer { flex: 1; }
+  .seg { display: inline-flex; padding: 2px; background: #f5f5f5; border-radius: 8px; }
+  .seg button, .btn { border: 0; background: transparent; border-radius: 6px; padding: 4px 10px; font-weight: 650; color: #595959; }
+  .seg button.on { background: #fff; color: var(--pri); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .btn { border: 1px solid #d9d9d9; background: #fff; color: var(--ink); }
+  .btn:hover { border-color: #91caff; color: var(--pri); }
+  .btn.pri { background: var(--pri); border-color: var(--pri); color: #fff; }
+  .btn.pri:hover { color: #fff; }
+  .split { display: flex; min-height: 700px; }
+  .left { width: 420px; min-width: 320px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; position: relative; background: #fff; }
+  .modes { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 2; }
+  .modes button { border: 0; background: #f5f5f5; border-radius: 6px; padding: 4px 8px; font-weight: 650; color: #595959; }
+  .modes button.on { background: var(--pri-weak); color: var(--pri); }
+  .cardlet { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px; background: #fff; }
+  .cardlet.on { border-color: var(--pri); }
+  .trace { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  textarea.json { width: 100%; min-height: 460px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; border: 1px solid #d9d9d9; border-radius: 8px; padding: 8px; }
+  .grip { width: 10px; cursor: col-resize; }
+  .right { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: auto; padding: 16px; }
+  .body { overflow: auto; padding: 10px 10px 76px; flex: 1; }
+  .sec { border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 8px; }
+  .sec.on { border-color: var(--pri); box-shadow: 0 0 0 3px rgba(22,119,255,.12); }
+  .hd { display: flex; gap: 8px; align-items: center; padding: 7px 8px; background: #fafbfd; }
+  .hd input { font-weight: 700; border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; width: 140px; background: transparent; }
+  .hd input:focus { border-color: #d9d9d9; background: #fff; }
+  .row { display: flex; gap: 6px; align-items: center; margin: 6px 8px; padding: 6px 8px; border: 1px solid #f0f0f0; border-radius: 8px; cursor: pointer; }
+  .row:hover { border-color: #91caff; }
+  .row.on { border-color: var(--pri); background: var(--pri-weak); }
+  .row.over { box-shadow: inset 0 2px 0 var(--pri); }
+  .pill { font-size: 11px; color: #595959; background: #f5f5f5; border-radius: 4px; padding: 0 6px; }
+  .insp { margin: 0 8px 8px; padding: 10px; background: #fafbfd; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .insp .wide { grid-column: 1 / -1; }
+  .insp span, .opt span { display: block; color: var(--sub); font-size: 11px; margin-bottom: 2px; }
+  .insp input, .insp select, .opt input { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 4px 8px; }
+  .suggest { margin: 8px; padding: 10px; border-radius: 8px; background: #f0f5ff; border: 1px solid #d6e4ff; }
+  .fab { position: absolute; right: 14px; bottom: 14px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--pri); color: #fff; font-size: 22px; box-shadow: 0 6px 16px rgba(22,119,255,.35); }
+  .pop { position: absolute; right: 14px; bottom: 66px; width: 260px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 10px; }
+  .chip { display: flex; width: 100%; text-align: left; gap: 8px; border: 1px solid #d6e4ff; background: #fff; border-radius: 8px; padding: 7px 8px; margin-top: 6px; }
+  .chip:hover { border-color: var(--pri); }
+  .idbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .sheet { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .mobile { width: 390px; margin: 0 auto; border: 10px solid #1f1f1f; border-radius: 28px; overflow: hidden; background: #fff; }
+  .mobile .sheet { border: 0; border-radius: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .mobile .grid, .full { grid-column: 1 / -1; }
+  .mobile .grid { display: grid; grid-template-columns: 1fr; }
+  .fld { border-radius: 8px; padding: 4px; cursor: pointer; }
+  .fld:hover { background: #f7fbff; }
+  .fld.on { outline: 2px solid var(--pri); background: #f0f7ff; }
+  .fld b { font-weight: 650; }
+  .req { color: var(--err); }
+  .fld input, .fld select { width: 100%; margin-top: 4px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 5px 8px; }
+  .note { color: var(--gold); font-size: 12px; margin-top: 4px; }
+  .bad { color: var(--err); font-size: 12px; margin-top: 4px; }
+  .good { color: var(--ok); font-size: 12px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #f0f0f0; text-align: left; padding: 6px; }
+  th { font-size: 12px; color: #595959; font-weight: 650; }
+  td input { width: 100%; border: 1px solid #d9d9d9; border-radius: 4px; padding: 3px 6px; }
+  .tabs span { display: inline-block; padding: 6px 10px; cursor: pointer; color: #595959; }
+  .tabs span.on { color: var(--pri); font-weight: 700; box-shadow: inset 0 -2px 0 var(--pri); }
+  .ph { border: 1px dashed #d9d9d9; border-radius: 8px; padding: 12px; color: var(--sub); background: #fafafa; margin-top: 4px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #1f1f1f; color: #fff; border-radius: 8px; padding: 8px 14px; opacity: 0; transition: .2s; max-width: 520px; }
+  .toast.show { opacity: 1; }
+  .callout { padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+  .callout.bad { background: #fff1f0; color: var(--err); }
+  .callout.ok { background: #f6ffed; color: var(--ok); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="crumb">
+    <span>元数据</span>
+    <div class="seg" id="objects"></div>
+    <span>界面 · 交互稿，不会写入真实数据</span>
+  </div>
+  <div class="card">
+    <div class="etabs" id="etabs">
+      <button type="button" data-page="design" class="on">界面</button>
+      <button type="button" data-page="data">线上页面</button>
+      <button type="button" data-page="publish">发布</button>
+    </div>
+    <div class="pad">
+      <div class="goal" id="goal"></div>
+      <div id="design">
+        <div class="bar" id="bar"></div>
+        <div class="split">
+          <aside class="left">
+            <div class="modes" id="modes"></div>
+            <div class="body" id="outline"></div>
+            <button class="fab" id="fab" type="button" title="添加字段">+</button>
+            <div class="pop" id="pop" hidden></div>
+          </aside>
+          <div class="grip" id="grip"></div>
+          <main class="right" id="stage"></main>
+        </div>
+      </div>
+      <div id="other" hidden></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2200); }
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function fld(code, extra) { return Object.assign({ fieldCode: code, label: "" }, extra); }
+function sec(id, title, codes, patch) {
+  return { id, title, controls: codes.map((c) => ({ ...(patch?.[c] || {}), fieldCode: c, label: "" })) };
+}
+
+const CATALOG = {
+  expense: () => scenarioExpense(),
+  purchase: () => scenarioPurchase(),
+  claim: () => scenarioClaim()
+};
+
+function scenarioExpense() {
+  const names = {
+    claim_no: "报销单号", applicant: "申请人", department: "部门", cost_center: "成本中心",
+    expense_date: "费用日期", title: "事由", invoice_type: "发票类型", amount: "价税合计",
+    tax_amount: "税额", tax_no: "纳税人识别号", lines: "费用明细", files: "发票附件",
+    approver: "审批人", remark: "备注", project: "项目"
+  };
+  const opts = {
+    invoice_type: { NORMAL: "普通发票", SPECIAL: "增值税专用发票" },
+    department: { RD: "研发中心", SALES: "销售中心", FIN: "财务部" },
+    cost_center: { CC01: "研发-平台", CC02: "销售-华东", CC09: "管理-公共" },
+    approver: { li: "李四 · 部门负责人", zhou: "周敏 · 财务经理" },
+    project: { P1: "华东客户", P2: "内部培训" }
+  };
+  const base = {
+    claim_no: { readonly: true }, tax_amount: { hidden: true }, tax_no: { hidden: true }, amount: { props: { precision: 2 } }
+  };
+  return {
+    id: "expense", objectName: "费用报销", audience: "员工",
+    fillTitle: "填写报销单", viewTitle: "查看报销单",
+    names, opts,
+    form: {
+      fill: [
+        sec("base", "基本信息", ["claim_no", "applicant", "department", "cost_center", "expense_date", "title"], base),
+        sec("money", "发票", ["invoice_type", "amount", "tax_amount", "tax_no"], base),
+        sec("lines", "费用明细", ["lines"], base),
+        sec("file", "附件", ["files"], base),
+        sec("appr", "审批", ["remark"], base)
+      ],
+      view: [sec("sum", "报销摘要", ["claim_no", "applicant", "title", "amount", "invoice_type"], { claim_no: { readonly: true }, applicant: { readonly: true }, title: { readonly: true }, amount: { readonly: true }, invoice_type: { readonly: true } })]
+    },
+    rules: [{
+      id: "vat", name: "专票要填税号和税额", on: true, when: "发票类型是增值税专用发票",
+      test: { field: "invoice_type", op: "eq", value: "SPECIAL" },
+      effects: { tax_no: { show: true, required: true, notice: "专票必须填写纳税人识别号" }, tax_amount: { show: true } }
+    }],
+    policyRule: {
+      id: "big", name: "超过 5000 元指定审批人", on: true, when: "价税合计超过 5000 元",
+      test: { field: "amount", op: "gt", value: 5000 },
+      effects: { approver: { show: true, required: true, notice: "单笔超过 5000 元，需要部门负责人审批" } }
+    },
+    policy: {
+      title: "公司新制度：单笔超过 5000 元，必须指定审批人。",
+      hint: "专票税号、明细合计已经在线上生效，这次只要补审批。",
+      done: "费用报销的界面已经按新制度配好。",
+      doneHint: "发布之后，员工新开的超标单据才会要求指定审批人。可以再换采购申请或理赔报案，设计器是同一套。",
+      steps: ["加上审批人", "用一笔超过 5000 的单据看效果", "保存", "到「线上页面」核对"],
+      sectionId: "appr", field: "approver",
+      suggestTitle: "超过 5000 元谁来批？",
+      suggestBody: "加上审批人后，只有超标单据才必须填写。",
+      saveToast: "已保存。去「线上页面」确认他们暂时还没有审批人。",
+      publishToast: "已发布。员工新开的超标单据会要求审批人。",
+      publishBody: "这次会多出一个「审批人」。只有价税合计超过 5000 元时才必填。",
+      dataOld: "你加上的审批人还没有发布，所以这里没有。",
+      dataNone: "线上还没有审批人字段。",
+      dataLive: "线上已经要求超标单据指定审批人。",
+      tryToast: "已加上。右侧改成一笔 8600 的专票，审批人出现了，可以直接提交看结果。"
+    },
+    roles: [
+      { id: "wang", label: "王五 · 申请人" },
+      { id: "li", label: "李四 · 审批人", openList: true, decide: ["同意", "退回"], readonly: ["amount"] }
+    ],
+    values: {
+      claim_no: "BX20261016018", applicant: "王五", department: "SALES", cost_center: "CC02",
+      expense_date: "2026-10-16", title: "华东客户拜访", invoice_type: "NORMAL", amount: "1280.00",
+      tax_amount: "147.20", tax_no: "", approver: "", remark: "", project: "",
+      lines: [{ date: "10-15", cat: "交通", amount: "1280.00", note: "高铁 上海-杭州" }]
+    },
+    samples: [
+      { id: "normal", label: "试一笔普通差旅", values: { title: "华东客户拜访", invoice_type: "NORMAL", amount: "1280.00", tax_no: "", approver: "" }, lines: [{ date: "10-15", cat: "交通", amount: "1280.00", note: "高铁 上海-杭州" }] },
+      { id: "big", label: "试一笔 8600 的招待", values: { title: "客户晚宴", invoice_type: "SPECIAL", amount: "8600.00", tax_amount: "991.15", tax_no: "91310000MA1FL0XX1X", approver: "li" }, lines: [{ date: "10-16", cat: "招待", amount: "8600.00", note: "客户晚宴" }] }
+    ],
+    policySample: "big",
+    lines: { field: "lines", cols: [{ k: "date", label: "日期" }, { k: "cat", label: "类别" }, { k: "amount", label: "金额" }, { k: "note", label: "说明" }], sumField: "amount", sumName: "价税合计" },
+    files: { field: "files", live: "这里会上传发票影像。演示不接收真实文件。", quiet: "附件在提交时上传" },
+    wide: ["lines", "files", "title", "remark"],
+    money: ["amount"],
+    palette: ["approver", "project"],
+    keep: ["lines", "amount"],
+    keepToast: "金额和明细要留在表单上",
+    sel: { sec: 1, ci: 1 },
+    list: {
+      note: "待我审批只显示需要这个人处理的单据。",
+      tabs: [
+        { id: "approve", label: "待我审批", by: "approver" },
+        { id: "mine", label: "我提交的", by: "owner" },
+        { id: "all", label: "全部" }
+      ],
+      cols: [{ key: "title", label: "事由" }, { key: "applicant", label: "申请人" }, { key: "amount", label: "金额" }, { key: "status", label: "状态" }],
+      rows: [
+        { title: "华东客户拜访", applicant: "王五", amount: "1,280.00", status: "草稿", owner: "wang", approver: "li" },
+        { title: "客户晚宴", applicant: "王五", amount: "8,600.00", status: "待审批", owner: "wang", approver: "li" },
+        { title: "测试机采购", applicant: "赵六", amount: "32,000.00", status: "待审批", owner: "zhao", approver: "wang" },
+        { title: "新员工培训", applicant: "王五", amount: "2,400.00", status: "已通过", owner: "wang", approver: "li" }
+      ]
+    }
+  };
+}
+
+function scenarioPurchase() {
+  const names = {
+    pr_no: "申请单号", requester: "申请人", department: "申请部门", need_date: "需求日期", title: "采购事由",
+    buy_type: "采购类型", vendor: "建议供应商", amount: "预算金额", urgent_reason: "紧急原因",
+    lines: "采购明细", files: "报价附件", finance: "财务会签人", remark: "备注", contract: "框架合同"
+  };
+  const opts = {
+    department: { IT: "信息技术部", ADMIN: "行政部", MFG: "制造部" },
+    buy_type: { STANDARD: "标准采购", URGENT: "紧急采购" },
+    vendor: { V1: "联想企业购", V2: "京东企业", V3: "指定供应商" },
+    finance: { ma: "马丽 · 采购经理", qian: "钱程 · 财务负责人" },
+    contract: { C0: "无框架", C9: "2026 办公集采" }
+  };
+  const base = { pr_no: { readonly: true }, urgent_reason: { hidden: true }, amount: { props: { precision: 2 } } };
+  return {
+    id: "purchase", objectName: "采购申请", audience: "申请人",
+    fillTitle: "填写采购申请", viewTitle: "查看采购申请",
+    names, opts,
+    form: {
+      fill: [
+        sec("base", "基本信息", ["pr_no", "requester", "department", "need_date", "title"], base),
+        sec("buy", "采购内容", ["buy_type", "vendor", "amount", "urgent_reason"], base),
+        sec("lines", "明细", ["lines"], base),
+        sec("file", "附件", ["files"], base),
+        sec("sign", "会签", ["remark"], base)
+      ],
+      view: [sec("sum", "申请摘要", ["pr_no", "requester", "title", "amount", "buy_type"], { pr_no: { readonly: true }, requester: { readonly: true }, title: { readonly: true }, amount: { readonly: true }, buy_type: { readonly: true } })]
+    },
+    rules: [{
+      id: "urgent", name: "紧急采购要写原因", on: true, when: "采购类型是紧急采购",
+      test: { field: "buy_type", op: "eq", value: "URGENT" },
+      effects: { urgent_reason: { show: true, required: true, notice: "紧急采购需要说明为什么不能走标准周期" } }
+    }],
+    policyRule: {
+      id: "budget", name: "超过 10 万财务会签", on: true, when: "预算金额超过 10 万",
+      test: { field: "amount", op: "gt", value: 100000 },
+      effects: { finance: { show: true, required: true, notice: "预算超过 10 万，需要财务负责人会签" } }
+    },
+    policy: {
+      title: "采购制度：预算超过 10 万，必须指定财务会签人。",
+      hint: "紧急原因和明细合计已经在线上生效，这次只要补会签。",
+      done: "采购申请的界面已经按新制度配好。",
+      doneHint: "发布之后，新开的大额申请才会要求财务会签。可以再换费用报销或理赔报案。",
+      steps: ["加上财务会签人", "用一笔超过 10 万的申请看效果", "保存", "到「线上页面」核对"],
+      sectionId: "sign", field: "finance",
+      suggestTitle: "超过 10 万谁来会签？",
+      suggestBody: "加上财务会签人后，只有大额申请才必须填写。",
+      saveToast: "已保存。去「线上页面」确认他们暂时还没有财务会签人。",
+      publishToast: "已发布。新开的大额采购会要求财务会签。",
+      publishBody: "这次会多出一个「财务会签人」。只有预算超过 10 万时才必填。",
+      dataOld: "你加上的财务会签人还没有发布，所以这里没有。",
+      dataNone: "线上还没有财务会签人。",
+      dataLive: "线上已经要求大额申请指定财务会签人。",
+      tryToast: "已加上。右侧改成一笔 12.8 万的紧急采购，会签人出现了，可以直接提交看结果。"
+    },
+    roles: [
+      { id: "chen", label: "陈晨 · 申请人" },
+      { id: "ma", label: "马丽 · 采购经理", openList: true, decide: ["同意采购", "退回"], readonly: ["amount"] }
+    ],
+    values: {
+      pr_no: "PR20261016007", requester: "陈晨", department: "IT", need_date: "2026-10-28", title: "第四季度办公耗材",
+      buy_type: "STANDARD", vendor: "V2", amount: "8600.00", urgent_reason: "", finance: "", remark: "", contract: "",
+      lines: [{ item: "A4 纸", qty: "20", price: "280.00", amount: "5600.00" }, { item: "硒鼓", qty: "10", price: "300.00", amount: "3000.00" }]
+    },
+    samples: [
+      { id: "normal", label: "试一笔办公耗材", values: { title: "第四季度办公耗材", buy_type: "STANDARD", amount: "8600.00", urgent_reason: "", finance: "" }, lines: [{ item: "A4 纸", qty: "20", price: "280.00", amount: "5600.00" }, { item: "硒鼓", qty: "10", price: "300.00", amount: "3000.00" }] },
+      { id: "big", label: "试一笔 12.8 万服务器", values: { title: "测试环境服务器", buy_type: "URGENT", vendor: "V1", amount: "128000.00", urgent_reason: "现网容量不足，本月必须到货", finance: "qian" }, lines: [{ item: "机架服务器", qty: "2", price: "64000.00", amount: "128000.00" }] }
+    ],
+    policySample: "big",
+    lines: { field: "lines", cols: [{ k: "item", label: "物料" }, { k: "qty", label: "数量" }, { k: "price", label: "单价" }, { k: "amount", label: "金额" }], sumField: "amount", sumName: "预算金额" },
+    files: { field: "files", live: "这里会上传报价单。演示不接收真实文件。", quiet: "附件在提交时上传" },
+    wide: ["lines", "files", "title", "urgent_reason", "remark"],
+    money: ["amount"],
+    palette: ["finance", "contract"],
+    keep: ["lines", "amount"],
+    keepToast: "预算金额和明细要留在表单上",
+    sel: { sec: 1, ci: 2 },
+    list: {
+      note: "待我会签只显示需要这个人处理的申请。",
+      tabs: [
+        { id: "approve", label: "待我会签", by: "approver" },
+        { id: "mine", label: "我提交的", by: "owner" },
+        { id: "all", label: "全部" }
+      ],
+      cols: [{ key: "title", label: "事由" }, { key: "applicant", label: "申请人" }, { key: "amount", label: "预算" }, { key: "status", label: "状态" }],
+      rows: [
+        { title: "第四季度办公耗材", applicant: "陈晨", amount: "8,600.00", status: "草稿", owner: "chen", approver: "ma" },
+        { title: "测试环境服务器", applicant: "陈晨", amount: "128,000.00", status: "待会签", owner: "chen", approver: "ma" },
+        { title: "产线备件", applicant: "周工", amount: "46,000.00", status: "待会签", owner: "zhou", approver: "chen" }
+      ]
+    }
+  };
+}
+
+function scenarioClaim() {
+  const names = {
+    claim_no: "报案号", insured: "被保险人", loss_type: "出险类型", loss_date: "出险日期",
+    amount: "估损金额", desc: "事故经过", plate: "车牌号", liability: "责任比例",
+    lines: "损失明细", files: "影像材料", adjuster: "核赔人", remark: "备注", hospital: "就诊医院"
+  };
+  const opts = {
+    loss_type: { AUTO: "车险", MEDICAL: "医疗", PROPERTY: "财产" },
+    liability: { FULL: "全责", MAIN: "主责", SHARE: "同责" },
+    adjuster: { sun: "孙核赔 · 车险", he: "何核赔 · 人伤" },
+    hospital: { H1: "市第一人民医院", H2: "市中医院" }
+  };
+  const base = { claim_no: { readonly: true }, plate: { hidden: true }, liability: { hidden: true }, amount: { props: { precision: 2 } } };
+  return {
+    id: "claim", objectName: "理赔报案", audience: "报案岗",
+    fillTitle: "填写报案", viewTitle: "查看报案",
+    names, opts,
+    form: {
+      fill: [
+        sec("base", "报案信息", ["claim_no", "insured", "loss_type", "loss_date", "amount", "desc"], base),
+        sec("auto", "车辆", ["plate", "liability"], base),
+        sec("lines", "损失", ["lines"], base),
+        sec("file", "影像", ["files"], base),
+        sec("review", "核赔", ["remark"], base)
+      ],
+      view: [sec("sum", "案件摘要", ["claim_no", "insured", "loss_type", "amount"], { claim_no: { readonly: true }, insured: { readonly: true }, loss_type: { readonly: true }, amount: { readonly: true } })]
+    },
+    rules: [{
+      id: "auto", name: "车险要填车牌和责任", on: true, when: "出险类型是车险",
+      test: { field: "loss_type", op: "eq", value: "AUTO" },
+      effects: {
+        plate: { show: true, required: true, notice: "车险必须填写车牌号" },
+        liability: { show: true, required: true }
+      }
+    }],
+    policyRule: {
+      id: "large", name: "估损超过 5 万指定核赔人", on: true, when: "估损金额超过 5 万",
+      test: { field: "amount", op: "gt", value: 50000 },
+      effects: { adjuster: { show: true, required: true, notice: "估损超过 5 万，需要指定核赔人" } }
+    },
+    policy: {
+      title: "理赔制度：估损超过 5 万，必须指定核赔人。",
+      hint: "车险车牌、损失明细合计已经在线上生效，这次只要补核赔。",
+      done: "理赔报案的界面已经按新制度配好。",
+      doneHint: "发布之后，新开的大额案件才会要求核赔人。可以再换费用报销或采购申请。",
+      steps: ["加上核赔人", "用一笔超过 5 万的案件看效果", "保存", "到「线上页面」核对"],
+      sectionId: "review", field: "adjuster",
+      suggestTitle: "超过 5 万谁来核赔？",
+      suggestBody: "加上核赔人后，只有大额案件才必须填写。",
+      saveToast: "已保存。去「线上页面」确认他们暂时还没有核赔人。",
+      publishToast: "已发布。新开的大额案件会要求核赔人。",
+      publishBody: "这次会多出一个「核赔人」。只有估损超过 5 万时才必填。",
+      dataOld: "你加上的核赔人还没有发布，所以这里没有。",
+      dataNone: "线上还没有核赔人。",
+      dataLive: "线上已经要求大额案件指定核赔人。",
+      tryToast: "已加上。右侧改成一笔 8.6 万的医疗案件，核赔人出现了，可以直接提交看结果。"
+    },
+    roles: [
+      { id: "zhao", label: "赵启明 · 报案岗" },
+      { id: "sun", label: "孙核赔 · 核赔员", openList: true, decide: ["立案", "退回补材"], readonly: ["amount"] }
+    ],
+    values: {
+      claim_no: "LP20261016042", insured: "张海", loss_type: "AUTO", loss_date: "2026-10-15",
+      amount: "3200.00", desc: "停车场倒车蹭到立柱", plate: "沪A·D12345", liability: "FULL",
+      adjuster: "", remark: "", hospital: "",
+      lines: [{ item: "后保险杠", qty: "1", amount: "3200.00" }]
+    },
+    samples: [
+      { id: "normal", label: "试一笔小额划痕", values: { loss_type: "AUTO", amount: "3200.00", desc: "停车场倒车蹭到立柱", plate: "沪A·D12345", liability: "FULL", adjuster: "", hospital: "" }, lines: [{ item: "后保险杠", qty: "1", amount: "3200.00" }] },
+      { id: "big", label: "试一笔 8.6 万医疗", values: { insured: "李娜", loss_type: "MEDICAL", amount: "86000.00", desc: "跌倒致股骨骨折，住院手术", plate: "", liability: "", adjuster: "he", hospital: "H1" }, lines: [{ item: "手术及住院", qty: "1", amount: "86000.00" }] }
+    ],
+    policySample: "big",
+    lines: { field: "lines", cols: [{ k: "item", label: "损失项目" }, { k: "qty", label: "数量" }, { k: "amount", label: "估损" }], sumField: "amount", sumName: "估损金额" },
+    files: { field: "files", live: "这里会上传现场照片或诊断材料。演示不接收真实文件。", quiet: "影像在提交时上传" },
+    wide: ["lines", "files", "desc", "remark"],
+    money: ["amount"],
+    palette: ["adjuster", "hospital"],
+    keep: ["lines", "amount"],
+    keepToast: "估损金额和损失明细要留在表单上",
+    sel: { sec: 0, ci: 2 },
+    list: {
+      note: "待核赔只显示需要这个人处理的案件。",
+      tabs: [
+        { id: "approve", label: "待核赔", by: "approver" },
+        { id: "mine", label: "我报案的", by: "owner" },
+        { id: "all", label: "全部" }
+      ],
+      cols: [{ key: "title", label: "被保险人" }, { key: "applicant", label: "报案岗" }, { key: "amount", label: "估损" }, { key: "status", label: "状态" }],
+      rows: [
+        { title: "张海 · 划痕", applicant: "赵启明", amount: "3,200.00", status: "草稿", owner: "zhao", approver: "sun" },
+        { title: "李娜 · 骨折", applicant: "赵启明", amount: "86,000.00", status: "待核赔", owner: "zhao", approver: "sun" },
+        { title: "王厂 · 仓库进水", applicant: "陈晨", amount: "210,000.00", status: "待核赔", owner: "chen", approver: "zhao" }
+      ]
+    }
+  };
+}
+
+const memory = {};
+let state;
+
+function fresh(id) {
+  const spec = CATALOG[id]();
+  spec.form.fill.forEach((s) => s.controls.forEach((c) => { if (!c.label) c.label = spec.names[c.fieldCode]; }));
+  spec.form.view.forEach((s) => s.controls.forEach((c) => { if (!c.label) c.label = spec.names[c.fieldCode]; }));
+  const next = {
+    ...spec,
+    page: "design", view: "fill", device: "desktop", mode: "layout",
+    who: spec.roles[0].id, pop: false, msg: null, sawOld: false, past: [],
+    labels: clone(spec.opts),
+    dictHidden: {},
+    dictReject: "",
+    jsonText: "",
+    ruleFocus: "",
+    actions: defaultActions(spec),
+    variants: spec.roles.map((r) => ({ roleId: r.id, readonly: r.readonly ? r.readonly.slice() : [], hidden: [], openList: !!r.openList })),
+    submit: { on: true, tolerance: 0.01, message: `明细合计要和${spec.lines.sumName}一致` },
+    listTab: spec.list.tabs[0].id,
+    listCols: Object.fromEntries(spec.list.cols.map((c) => [c.key, true])),
+    listTabs: spec.list.tabs.map((t) => ({ id: t.id, label: t.label }))
+  };
+  next.server = packOf(next);
+  next.published = packOf(next);
+  return next;
+}
+function defaultActions(spec) {
+  const owner = spec.roles[0];
+  const reviewer = spec.roles.find((r) => r.decide);
+  const actions = [{ id: "submit", label: "提交", roles: [owner.id], kind: "submit", confirm: "", view: "fill" }];
+  (reviewer?.decide || []).forEach((label, i) => {
+    actions.push({ id: "d" + i, label, roles: [reviewer.id], kind: "decide", confirm: /退回/.test(label) ? "确认退回？对方需要补充后再提交。" : "", view: "fill" });
+  });
+  return actions;
+}
+function packOf(s) {
+  return clone({
+    form: s.form, rules: s.rules, labels: s.labels, dictHidden: s.dictHidden,
+    actions: s.actions, variants: s.variants, submit: s.submit,
+    listCols: s.listCols, listTabs: s.listTabs
+  });
+}
+function pack() { return packOf(state); }
+function dirty() { return JSON.stringify(pack()) !== JSON.stringify(state.server); }
+function pending() { return JSON.stringify(state.server) !== JSON.stringify(state.published); }
+function push() { state.past.push(JSON.stringify(pack())); if (state.past.length > 40) state.past.shift(); }
+function role() { return state.roles.find((r) => r.id === state.who) || state.roles[0]; }
+function shortName(r) { return r.label.split(" · ")[0]; }
+function secs() { return state.form[state.view === "view" ? "view" : "fill"]; }
+function cur() { const s = state.sel; if (!s || state.view === "list") return null; return secs()[s.sec]?.controls[s.ci] || null; }
+function nameOf(c) { return c.label || state.names[c.fieldCode] || c.fieldCode; }
+function hasField(form, code) { return form.fill.some((s) => s.controls.some((c) => c.fieldCode === code)); }
+function hit(rule, values) {
+  if (!rule.on || !rule.test) return false;
+  const left = values[rule.test.field];
+  if (rule.test.op === "eq") return left === rule.test.value;
+  if (rule.test.op === "gt") return Number(left) > Number(rule.test.value);
+  return false;
+}
+function rulesOf(packRules, values) { return packRules.filter((r) => hit(r, values)); }
+function activeVariant() { return (bagVariants() || []).find((v) => v.roleId === bagWho()); }
+function face(c, rules, values) {
+  let show = !c.hidden, required = false, notice = "", readonly = !!c.readonly;
+  const variant = activeVariant();
+  if (variant?.hidden?.includes(c.fieldCode)) show = false;
+  if (variant?.readonly?.includes(c.fieldCode)) readonly = true;
+  for (const r of rules) {
+    const e = r.effects[c.fieldCode];
+    if (!e) continue;
+    if (e.show) show = true;
+    if (e.required) required = true;
+    if (e.notice) notice = e.notice;
+  }
+  return { show, required, notice, readonly };
+}
+function fieldChoices() {
+  return Object.keys(state.names).filter((c) => c !== state.lines.field && c !== state.files.field);
+}
+function describeRule(rule) {
+  const fname = state.names[rule.test?.field] || rule.test?.field || "字段";
+  if (rule.test?.op === "gt") return `${fname}超过 ${rule.test.value}`;
+  const lab = state.labels[rule.test?.field]?.[rule.test?.value] || rule.test?.value || "（未选）";
+  return `${fname}是${lab}`;
+}
+function issues() {
+  const out = [];
+  const codes = state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode));
+  codes.filter((c, i) => codes.indexOf(c) !== i).filter((c, i, a) => a.indexOf(c) === i).forEach((c) => {
+    out.push({ level: "err", mode: "layout", text: `「${state.names[c] || c}」在填写页出现了多次` });
+  });
+  state.rules.forEach((rule) => {
+    if (!state.names[rule.test?.field]) out.push({ level: "err", mode: "rules", text: `规则「${rule.name}」的条件字段不在这个对象上` });
+    if (rule.test?.op === "gt" && Number.isNaN(Number(rule.test.value))) out.push({ level: "err", mode: "rules", text: `规则「${rule.name}」的比较值不是数字` });
+    Object.keys(rule.effects || {}).forEach((f) => {
+      if (!state.names[f]) out.push({ level: "err", mode: "rules", text: `规则「${rule.name}」作用的字段不在这个对象上` });
+    });
+  });
+  state.actions.forEach((a) => {
+    if (!a.label) out.push({ level: "err", mode: "actions", text: "有一个动作没有名称" });
+    if (!a.roles?.length) out.push({ level: "err", mode: "actions", text: `动作「${a.label || "未命名"}」没有指定谁能看见` });
+    (a.roles || []).forEach((id) => {
+      if (!state.roles.some((r) => r.id === id)) out.push({ level: "err", mode: "actions", text: `动作「${a.label}」引用了不存在的角色` });
+    });
+  });
+  if (state.submit.on && !(Number(state.submit.tolerance) >= 0)) out.push({ level: "err", mode: "rules", text: "明细合计的容差必须是不小于 0 的数字" });
+  if (state.dictReject) out.push({ level: "err", mode: "dict", text: state.dictReject });
+  Object.entries(state.dictHidden || {}).forEach(([field, flags]) => {
+    const opts = state.labels[field] || {};
+    if (Object.keys(opts).length && Object.keys(opts).every((k) => flags[k])) out.push({ level: "warn", mode: "dict", text: `「${state.names[field] || field}」的选项全被隐藏了` });
+  });
+  return out;
+}
+function lineRowsOf(values) { return values[state.lines.field] || []; }
+function lineSumOf(values) { return lineRowsOf(values).reduce((a, r) => a + (Number(r.amount) || 0), 0); }
+let labelBag = null;
+function goals() {
+  const p = state.policy;
+  const added = hasField(state.form, p.field);
+  const tried = added && state.view === "fill" && state.rules.some((r) => r.id === state.policyRule.id && r.on) && hit(state.policyRule, state.values);
+  const saved = !dirty() && pending() && hasField(state.server.form, p.field);
+  return [[added, p.steps[0]], [tried, p.steps[1]], [saved, p.steps[2]], [state.sawOld, p.steps[3]]];
+}
+function openObject(id) {
+  if (state?.id === id) return;
+  if (state) memory[state.id] = state;
+  state = memory[id] || fresh(id);
+  document.title = state.objectName + " · 界面设计";
+  render();
+}
+function undo() {
+  const r = state.past.pop();
+  if (!r) return;
+  const keep = { past: state.past, values: state.values, page: state.page, view: state.view, device: state.device, who: state.who, msg: null, id: state.id, mode: state.mode };
+  Object.assign(state, JSON.parse(r), keep);
+  applyListTabs();
+  render();
+}
+function applyListTabs() {
+  (state.listTabs || []).forEach((t) => {
+    const row = state.list.tabs.find((x) => x.id === t.id);
+    if (row) row.label = t.label;
+  });
+}
+let runtime = null;
+function bagVariants() { return runtime?.variants || state.variants; }
+function bagWho() { return runtime?.who || state.who; }
+function bagLabels() { return runtime?.labels || state.labels; }
+function bagHiddenDict() { return runtime?.dictHidden || state.dictHidden || {}; }
+function bagSubmit() { return runtime?.submit || state.submit; }
+function applySample(sample, quiet) {
+  Object.assign(state.values, clone(sample.values));
+  if (sample.lines) state.values[state.lines.field] = clone(sample.lines);
+  if (!quiet) { state.view = "fill"; state.msg = null; render(); }
+}
+function blankLine() { return Object.fromEntries(state.lines.cols.map((c) => [c.k, ""])); }
+
+function renderObjects() {
+  $("#objects").innerHTML = Object.keys(CATALOG).map((id) => {
+    const name = id === state.id ? state.objectName : CATALOG[id]().objectName;
+    return `<button type="button" data-object="${id}" class="${id === state.id ? "on" : ""}">${esc(name)}</button>`;
+  }).join("");
+}
+function renderGoal() {
+  const g = goals();
+  const p = state.policy;
+  $("#goal").innerHTML = g.every((x) => x[0])
+    ? `<div><b>${esc(p.done)}</b><span class="muted">${esc(p.doneHint)}</span></div>`
+    : `<div><b>${esc(p.title)}</b><span class="muted">${esc(p.hint)}</span></div><ol>${g.map(([ok, t]) => `<li class="${ok ? "ok" : ""}">${ok ? "✓" : "○"} ${esc(t)}</li>`).join("")}</ol>`;
+}
+function renderBar() {
+  const d = dirty(), p = pending();
+  const text = d ? "还没保存。线上用的仍是已发布的那一版。" : p ? "已保存。要等发布，线上页面才会变。" : "现在和线上页面是同一版。";
+  const errN = issues().filter((i) => i.level === "err").length;
+  $("#bar").innerHTML = `
+    <span class="tag ${d ? "warn" : "ok"}">${d ? "未保存" : "已保存"}</span>
+    <span class="tag ${p ? "gold" : "ok"}">${p ? "待发布" : "已发布"}</span>
+    <button class="btn" type="button" data-mode="lint">${errN ? `自检 ${errN}` : "自检通过"}</button>
+    <span class="muted">${text}</span><span class="spacer"></span>
+    <div class="seg">${[["fill", "填写"], ["view", "查看"], ["list", "列表"]].map(([k, l]) => `<button type="button" data-view="${k}" class="${state.view === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    <button class="btn" type="button" data-act="validate">校验已保存草稿</button>
+    <button class="btn" type="button" data-act="undo" ${state.past.length ? "" : "disabled"}>撤销</button>
+    <button class="btn pri" type="button" data-act="save" ${d ? "" : "disabled"}>保存</button>`;
+}
+function insp(c) {
+  const opts = state.labels[c.fieldCode];
+  const related = state.rules.filter((r) => r.effects[c.fieldCode]);
+  return `<div class="insp">
+    <div><span>页面上的名称</span><input data-bind="label" value="${esc(c.label || "")}" placeholder="${esc(state.names[c.fieldCode] || "")}" /></div>
+    <div><span>填写提示</span><input data-bind="ph" value="${esc(c.placeholder || "")}" /></div>
+    ${state.money.includes(c.fieldCode) ? `<div><span>小数位</span><input data-bind="precision" value="${esc(c.props?.precision ?? 2)}" /></div>` : ""}
+    ${opts ? `<div class="wide opt">${Object.entries(opts).map(([k, lab]) => `<div style="margin-top:6px"><span>选项 ${esc(k)}</span><input data-bind="opt" data-code="${esc(k)}" value="${esc(lab)}" /></div>`).join("")}</div>` : ""}
+    <div class="wide muted">${related.length ? related.map((r) => `显示条件：${esc(r.when)}。`).join("") : "这个字段一直显示。"} ${c.hidden ? "没满足条件时先藏起来。" : ""}<div style="margin-top:6px"><button class="btn" type="button" data-act="remove">从这里移出</button></div></div>
+  </div>`;
+}
+function outlineFill() {
+  return secs().map((secItem, si) => {
+    const onSec = state.sel?.sec === si && state.sel.ci == null;
+    const rows = secItem.controls.map((c, ci) => {
+      const on = state.sel?.sec === si && state.sel.ci === ci;
+      return `<div class="row ${on ? "on" : ""}" draggable="true" data-si="${si}" data-ci="${ci}"><b>${esc(nameOf(c))}</b>${c.hidden ? `<span class="pill">先隐藏</span>` : ""}</div>${on ? insp(c) : ""}`;
+    }).join("");
+    const suggest = state.view === "fill" && secItem.id === state.policy.sectionId && !hasField(state.form, state.policy.field)
+      ? `<div class="suggest"><b>${esc(state.policy.suggestTitle)}</b><div class="muted">${esc(state.policy.suggestBody)}</div><button class="btn pri" type="button" data-act="add-policy" style="margin-top:8px">按制度添加</button></div>` : "";
+    return `<div class="sec ${onSec ? "on" : ""}"><div class="hd" data-sec="${si}"><input data-bind="sec" data-si="${si}" value="${esc(secItem.title)}" /><span class="pill">${secItem.controls.length}</span></div>${rows}${suggest}</div>`;
+  }).join("");
+}
+function outlineList() {
+  return `<div class="muted" style="margin-bottom:8px">列表只决定台账里看到哪些列。页签按当前人过滤，已经接在数据范围上。</div>`
+    + state.list.cols.map((c) => `<label class="row" style="cursor:default"><input type="checkbox" data-bind="col" data-col="${c.key}" ${state.listCols[c.key] ? "checked" : ""}/> ${esc(c.label)}</label>`).join("");
+}
+function renderOutline() {
+  const modes = [["layout", "布局"], ["rules", "规则"], ["actions", "动作"], ["variants", "变体"], ["dict", "字典"], ["list", "列表"], ["lint", "自检"], ["json", "JSON"]];
+  const errN = issues().filter((i) => i.level === "err").length;
+  $("#modes").innerHTML = modes.map(([k, l]) => `<button type="button" data-mode="${k}" class="${state.mode === k ? "on" : ""}">${l}${k === "lint" && errN ? ` ${errN}` : ""}</button>`).join("");
+  if (state.mode === "json" && document.activeElement?.id === "jsonbox") {
+    $("#fab").style.display = "none";
+    return;
+  }
+  const active = document.activeElement;
+  const keep = active && active.dataset.bind === "sec" ? { si: active.dataset.si, pos: active.selectionStart } : null;
+  $("#outline").innerHTML = panel();
+  if (keep && state.mode === "layout") { const n = $(`#outline input[data-bind=sec][data-si="${keep.si}"]`); if (n) { n.focus(); n.setSelectionRange(keep.pos, keep.pos); } }
+  $("#outline .row.on")?.scrollIntoView({ block: "nearest" });
+  $("#fab").style.display = state.mode === "layout" && state.view === "fill" ? "block" : "none";
+}
+function panel() {
+  if (state.mode === "rules") return panelRules();
+  if (state.mode === "actions") return panelActions();
+  if (state.mode === "variants") return panelVariants();
+  if (state.mode === "dict") return panelDict();
+  if (state.mode === "list") return panelList();
+  if (state.mode === "lint") return panelLint();
+  if (state.mode === "json") return panelJson();
+  return state.view === "list" ? outlineList() : outlineFill();
+}
+function selectFields(selected) {
+  return fieldChoices().map((c) => `<option value="${esc(c)}" ${selected === c ? "selected" : ""}>${esc(state.names[c])}</option>`).join("");
+}
+function panelRules() {
+  const cards = state.rules.map((rule, i) => {
+    const effects = Object.entries(rule.effects || {}).map(([code, e]) => `<div style="margin-top:6px">
+      <span>作用字段</span>
+      <select data-bind="fx-field" data-i="${i}" data-from="${esc(code)}">${selectFields(code)}</select>
+      <label><input type="checkbox" data-bind="fx-show" data-i="${i}" data-code="${esc(code)}" ${e.show ? "checked" : ""}/> 显示</label>
+      <label><input type="checkbox" data-bind="fx-req" data-i="${i}" data-code="${esc(code)}" ${e.required ? "checked" : ""}/> 必填</label>
+      <input data-bind="fx-note" data-i="${i}" data-code="${esc(code)}" value="${esc(e.notice || "")}" placeholder="命中时的提示" />
+    </div>`).join("");
+    const valueBox = state.labels[rule.test.field]
+      ? `<select data-bind="rule-value" data-i="${i}">${Object.entries(state.labels[rule.test.field]).map(([k, lab]) => `<option value="${esc(k)}" ${rule.test.value === k ? "selected" : ""}>${esc(lab)}</option>`).join("")}</select>`
+      : `<input data-bind="rule-value" data-i="${i}" value="${esc(rule.test.value)}" />`;
+    return `<div class="cardlet ${state.ruleFocus === rule.id ? "on" : ""}">
+      <input data-bind="rule-name" data-i="${i}" value="${esc(rule.name)}" />
+      <label><input type="checkbox" data-bind="rule-on" data-i="${i}" ${rule.on ? "checked" : ""}/> 启用</label>
+      <div class="muted" style="margin:6px 0">${esc(describeRule(rule))}</div>
+      <div class="insp">
+        <div><span>当</span><select data-bind="rule-field" data-i="${i}">${selectFields(rule.test.field)}</select></div>
+        <div><span>比较</span><select data-bind="rule-op" data-i="${i}"><option value="eq" ${rule.test.op === "eq" ? "selected" : ""}>等于</option><option value="gt" ${rule.test.op === "gt" ? "selected" : ""}>大于</option></select></div>
+        <div class="wide"><span>值</span>${valueBox}</div>
+      </div>
+      ${effects}
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" type="button" data-act="add-effect" data-i="${i}">再加一个字段</button>
+        <button class="btn" type="button" data-act="drill" data-i="${i}">按条件演练</button>
+        <button class="btn" type="button" data-act="del-rule" data-i="${i}">删除</button>
+      </div>
+    </div>`;
+  }).join("");
+  return `<div class="muted" style="margin:8px">显隐和必填写在这里。右侧用当前单据实时命中。提交时的明细合计单独一条，容差给金额四舍五入留余量。</div>
+    ${cards}
+    <div class="cardlet"><b>提交校验 · 明细合计</b>
+      <label><input type="checkbox" data-bind="sum-on" ${state.submit.on ? "checked" : ""}/> 启用</label>
+      <div class="insp"><div><span>容差</span><input data-bind="sum-tol" value="${esc(state.submit.tolerance)}" /></div>
+      <div><span>不通过时的提示</span><input data-bind="sum-msg" value="${esc(state.submit.message)}" /></div></div>
+    </div>
+    <button class="btn pri" type="button" data-act="add-rule" style="margin:0 8px 8px">添加显隐规则</button>`;
+}
+function panelActions() {
+  const cards = state.actions.map((a, i) => `<div class="cardlet">
+    <div class="insp">
+      <div><span>按钮文字</span><input data-bind="act-label" data-i="${i}" value="${esc(a.label)}" /></div>
+      <div><span>出现在</span><select data-bind="act-view" data-i="${i}"><option value="fill" ${a.view === "fill" ? "selected" : ""}>填写</option><option value="view" ${a.view === "view" ? "selected" : ""}>查看</option></select></div>
+      <div class="wide"><span>二次确认，留空则直接执行</span><input data-bind="act-confirm" data-i="${i}" value="${esc(a.confirm || "")}" /></div>
+      <div class="wide">${state.roles.map((r) => `<label style="margin-right:8px"><input type="checkbox" data-bind="act-role" data-i="${i}" data-role="${esc(r.id)}" ${a.roles.includes(r.id) ? "checked" : ""}/> ${esc(r.label)}</label>`).join("")}</div>
+    </div>
+    <button class="btn" type="button" data-act="del-action" data-i="${i}">删除</button>
+  </div>`).join("");
+  return `<div class="muted" style="margin:8px">动作只决定谁看见哪个按钮。演示里的提交会跑必填和明细合计，不会进入真实流程。</div>${cards}
+    <button class="btn pri" type="button" data-act="add-action" style="margin:0 8px 8px">添加动作</button>`;
+}
+function panelVariants() {
+  const fields = [...new Set(state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode)))];
+  return `<div class="muted" style="margin:8px">变体是同一张界面按身份看到的差别。勾上的只读或隐藏会叠在字段本身和规则之上，规则仍可以把隐藏字段重新显示出来。</div>`
+    + state.variants.map((v, i) => {
+      const role = state.roles.find((r) => r.id === v.roleId);
+      return `<div class="cardlet"><b>${esc(role?.label || v.roleId)}</b>
+        <label><input type="checkbox" data-bind="var-list" data-i="${i}" ${v.openList ? "checked" : ""}/> 切换到这个人时先看列表</label>
+        ${fields.map((c) => `<div class="row" style="cursor:default"><b>${esc(state.names[c] || c)}</b>
+          <label><input type="checkbox" data-bind="var-ro" data-i="${i}" data-code="${esc(c)}" ${v.readonly.includes(c) ? "checked" : ""}/> 只读</label>
+          <label><input type="checkbox" data-bind="var-hide" data-i="${i}" data-code="${esc(c)}" ${v.hidden.includes(c) ? "checked" : ""}/> 隐藏</label>
+        </div>`).join("")}
+      </div>`;
+    }).join("");
+}
+function panelDict() {
+  const blocks = Object.entries(state.labels).map(([field, opts]) => `<div class="cardlet"><b>${esc(state.names[field] || field)}</b>
+    ${Object.entries(opts).map(([code, lab]) => `<div class="insp"><div><span>编码 ${esc(code)}</span><input value="${esc(code)}" readonly /></div>
+      <div><span>页面文案</span><input data-bind="dict" data-field="${esc(field)}" data-code="${esc(code)}" value="${esc(lab)}" /></div>
+      <label><input type="checkbox" data-bind="dict-hide" data-field="${esc(field)}" data-code="${esc(code)}" ${state.dictHidden[field]?.[code] ? "checked" : ""}/> 隐藏这个选项</label></div>`).join("")}
+    <div style="margin-top:8px;display:flex;gap:6px"><input data-bind="newcode" data-field="${esc(field)}" placeholder="新的选项编码" /><button class="btn" type="button" data-act="reject-code" data-field="${esc(field)}">添加选项</button></div>
+  </div>`).join("");
+  return `<div class="muted" style="margin:8px">只能改已有选项的文案，或把它藏起来。新编码要先加到字段字典，界面层不能新造。</div>
+    ${state.dictReject ? `<div class="cardlet"><b>这次没有加上</b><div>${esc(state.dictReject)}</div><button class="btn" type="button" data-act="clear-reject">知道了</button></div>` : ""}
+    ${blocks}`;
+}
+function panelList() {
+  return `<div class="muted" style="margin:8px">列决定台账看到什么。页签名称可以改，过滤仍按当前人。</div>`
+    + state.list.cols.map((c) => `<label class="row" style="cursor:default"><input type="checkbox" data-bind="col" data-col="${c.key}" ${state.listCols[c.key] ? "checked" : ""}/> ${esc(c.label)}</label>`).join("")
+    + state.listTabs.map((t, i) => `<div class="cardlet"><span>页签</span><input data-bind="tab" data-i="${i}" value="${esc(t.label)}" /></div>`).join("");
+}
+function panelLint() {
+  const rows = issues();
+  if (!rows.length) return `<div class="cardlet"><b>自检通过</b><div class="muted">没有重复字段、悬空引用或空动作。发布前还会再查一次已保存草稿。</div></div>`;
+  return rows.map((i) => `<button class="cardlet" type="button" data-mode="${i.mode}" style="display:block;width:calc(100% - 16px);text-align:left"><b>${i.level === "err" ? "错误" : "提醒"}</b><div>${esc(i.text)}</div></button>`).join("");
+}
+function panelJson() {
+  return `<div class="muted" style="margin:8px">给需要对照协议的人。改完要点「应用到草稿」，预览才会变。</div>
+    <div style="margin:0 8px 8px"><textarea class="json" id="jsonbox">${esc(JSON.stringify(pack(), null, 2))}</textarea>
+    <button class="btn pri" type="button" data-act="apply-json" style="margin-top:8px">应用到草稿</button></div>`;
+}
+function controlBox(c, values, live) {
+  if (c.fieldCode === state.lines.field) return linesTable(live, values);
+  if (c.fieldCode === state.files.field) return `<div class="ph">${live ? esc(state.files.live) : esc(state.files.quiet)}</div>`;
+  const ro = !live;
+  const opts = bagLabels()[c.fieldCode];
+  const hidden = bagHiddenDict()[c.fieldCode] || {};
+  if (opts) return `<select data-val="${esc(c.fieldCode)}" ${ro ? "disabled" : ""}>${Object.entries(opts).filter(([v]) => !hidden[v]).map(([v, lab]) => `<option value="${esc(v)}" ${values[c.fieldCode] === v ? "selected" : ""}>${esc(lab)}</option>`).join("")}</select>`;
+  return `<input data-val="${esc(c.fieldCode)}" ${ro ? "readonly" : ""} value="${esc(values[c.fieldCode] || "")}" placeholder="${esc(c.placeholder || "")}" />`;
+}
+function fieldBlock(c, si, ci, rules, values, live) {
+  const st = face(c, rules, values);
+  if (!st.show) return "";
+  const on = live && state.sel?.sec === si && state.sel.ci === ci && state.view !== "list";
+  const wide = state.wide.includes(c.fieldCode);
+  return `<div class="${wide ? "full" : ""}"><div class="fld ${on ? "on" : ""}" data-psi="${si}" data-pci="${ci}"><b>${esc(nameOf(c))}</b>${st.required ? `<span class="req"> *</span>` : ""}${st.readonly ? `<span class="pill">只读</span>` : ""}${controlBox(c, values, live && !st.readonly)}${st.notice ? `<div class="note">${esc(st.notice)}</div>` : ""}</div></div>`;
+}
+function linesTable(live, values) {
+  const cols = state.lines.cols;
+  const rows = lineRowsOf(values).map((r, i) => `<tr>${cols.map((c) => `<td>${live ? `<input data-line="${i}" data-k="${c.k}" value="${esc(r[c.k] || "")}" />` : esc(r[c.k] || "")}</td>`).join("")}${live ? `<td><button class="btn" type="button" data-act="del-line" data-i="${i}">删除</button></td>` : ""}</tr>`).join("");
+  const sum = lineSumOf(values);
+  const total = Number(values[state.lines.sumField]) || 0;
+  const tol = Number(bagSubmit().tolerance);
+  const same = bagSubmit().on ? Math.abs(sum - total) <= (Number.isNaN(tol) ? 0.01 : tol) : true;
+  const hint = !bagSubmit().on ? "明细合计校验已关闭" : same ? `与${state.lines.sumName}一致` : (bagSubmit().message || `和${state.lines.sumName}不一致，提交会被拦住`);
+  return `<table><thead><tr>${cols.map((c) => `<th>${esc(c.label)}</th>`).join("")}${live ? "<th></th>" : ""}</tr></thead><tbody>${rows}</tbody></table>
+    ${live ? `<button class="btn" type="button" data-act="add-line" style="margin-top:6px">加一行</button>` : ""}
+    <div class="${same ? "good" : "bad"}">明细合计 ${sum.toFixed(2)}，${esc(hint)}</div>`;
+}
+function sheet(form, rules, values, live, which) {
+  const src = which === "view" ? form.view : form.fill;
+  return src.map((secItem, si) => {
+    const html = secItem.controls.map((c, ci) => fieldBlock(c, si, ci, rules, values, live)).join("");
+    if (!html.replace(/\s/g, "")) return "";
+    return `<div class="sheet"><h3 style="margin:0 0 10px">${esc(secItem.title)}</h3><div class="grid">${html}</div></div>`;
+  }).join("");
+}
+function renderStage() {
+  const who = role();
+  let body = "";
+  if (state.view === "list") {
+    const tab = state.list.tabs.find((t) => t.id === state.listTab) || state.list.tabs[0];
+    const rows = state.list.rows.filter((r) => !tab.by || r[tab.by] === state.who);
+    const cols = state.list.cols.filter((c) => state.listCols[c.key]);
+    body = `<div class="sheet"><div class="tabs">${state.list.tabs.map((t) => `<span data-ltab="${t.id}" class="${state.listTab === t.id ? "on" : ""}">${esc(t.label)}</span>`).join("")}</div>
+      <div class="muted" style="margin:8px 0">当前人是 ${esc(shortName(who))}。${esc(state.list.note)}</div>
+      <table><thead><tr>${cols.map((c) => `<th>${esc(c.label)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${cols.map((c) => `<td>${esc(r[c.key])}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${cols.length || 1}">这里没有单据</td></tr>`}</tbody></table></div>`;
+  } else {
+    const rules = rulesOf(state.rules, state.values);
+    const acts = state.actions.filter((a) => a.view === (state.view === "view" ? "view" : "fill") && a.roles.includes(state.who));
+    const actions = acts.map((a) => `<button class="${a.kind === "submit" ? "btn pri" : "btn"}" type="button" data-act="${a.kind === "submit" ? "submit" : "decide"}" data-name="${esc(a.label)}" data-confirm="${esc(a.confirm || "")}">${esc(a.label)}</button>`).join("")
+      || `<span class="muted">${state.view === "view" ? "查看页没有给当前人配置动作。" : "当前人没有可见动作。到「动作」里指定。"}</span>`;
+    const trace = rules.map((r) => `<button class="btn" type="button" data-act="focus-rule" data-id="${esc(r.id)}">命中 ${esc(r.name)}</button>`).join("");
+    body = `<div class="sheet"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(state.view === "view" ? state.viewTitle : state.fillTitle)}</b><span class="spacer"></span>${actions}</div>${state.msg ? `<div class="callout ${state.msg.ok ? "ok" : "bad"}">${esc(state.msg.text)}</div>` : ""}${trace ? `<div class="trace">${trace}</div>` : ""}</div>
+      ${sheet(state.form, rules, state.values, true, state.view === "view" ? "view" : "fill")}`;
+  }
+  const samples = state.samples.map((s) => `<button class="btn" type="button" data-act="scene" data-scene="${esc(s.id)}">${esc(s.label)}</button>`).join("");
+  $("#stage").innerHTML = `<div class="idbar"><span>我是</span><select id="who">${state.roles.map((r) => `<option value="${esc(r.id)}" ${state.who === r.id ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select>
+    <div class="seg">${[["desktop", "电脑"], ["mobile", "手机"]].map(([k, l]) => `<button type="button" data-device="${k}" class="${state.device === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    ${samples}</div><div class="${state.device === "mobile" ? "mobile" : ""}">${body}</div>`;
+}
+function renderPop() {
+  const pop = $("#pop");
+  pop.hidden = !state.pop;
+  if (!state.pop) return;
+  const used = new Set(state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode)));
+  const items = state.palette.filter((c) => !used.has(c));
+  const where = state.sel?.ci != null ? "放在选中字段后面" : "放在当前分区末尾";
+  pop.innerHTML = `<b>添加字段</b><div class="muted">${esc(where)}。只列出这个对象上还没放进去的字段。</div>` + (items.map((c) => `<button class="chip" type="button" data-add="${esc(c)}"><b>${esc(state.names[c])}</b></button>`).join("") || `<div class="muted" style="margin-top:8px">能加的字段都已经在表单上了。</div>`);
+}
+function previewValues() {
+  const sample = state.samples.find((s) => s.id === state.policySample);
+  const values = clone(state.values);
+  Object.assign(values, clone(sample.values));
+  if (sample.lines) values[state.lines.field] = clone(sample.lines);
+  return values;
+}
+function renderOther() {
+  const p = state.policy;
+  const code = p.field;
+  if (state.page === "data") {
+    const old = !hasField(state.published.form, code);
+    const draft = hasField(state.form, code);
+    if (draft && old) state.sawOld = true;
+    const values = previewValues();
+    const note = draft && old ? p.dataOld : old ? p.dataNone : p.dataLive;
+    runtime = { variants: state.published.variants, labels: state.published.labels, dictHidden: state.published.dictHidden, submit: state.published.submit, who: state.roles[0].id };
+    const html = sheet(state.published.form, rulesOf(state.published.rules, values), values, false, "fill");
+    runtime = null;
+    $("#other").innerHTML = `<div class="sheet"><b>${esc(shortName(state.roles[0]))}现在新建${esc(state.objectName)}，看到的是已发布的这一版</b><div class="muted" style="margin:6px 0 10px">${esc(note)} 下面用的是会触发新制度的那笔样例。</div>
+      ${html}</div>`;
+  } else {
+    const added = hasField(state.server.form, code) && !hasField(state.published.form, code);
+    const errN = issues().filter((i) => i.level === "err").length;
+    $("#other").innerHTML = `<div class="sheet"><b>发布给${esc(state.audience)}</b><div class="muted" style="margin:6px 0">${dirty() ? "还有没保存的修改。发布用的是上次保存的内容。" : errN ? `自检还有 ${errN} 个错误，发布已拦住。` : added ? esc(p.publishBody) : "和线上相比，没有新的字段。"}</div>
+      <button class="btn pri" type="button" data-act="publish" ${dirty() || errN ? "disabled" : ""}>发布</button></div>`;
+  }
+}
+function render() {
+  const design = state.page === "design";
+  $("#design").hidden = !design;
+  $("#other").hidden = design;
+  $("#etabs").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.page === state.page));
+  renderObjects();
+  renderGoal();
+  if (!design) { renderOther(); return; }
+  renderBar(); renderOutline(); renderStage(); renderPop();
+}
+function place(code, hidden) {
+  const c = { fieldCode: code, label: state.names[code], hidden: !!hidden };
+  const list = state.form.fill;
+  let si = state.sel?.sec ?? list.length - 1;
+  if (!list[si]) si = list.length - 1;
+  if (state.sel?.ci != null && state.sel.sec === si) list[si].controls.splice(state.sel.ci + 1, 0, c);
+  else list[si].controls.push(c);
+  state.sel = { sec: si, ci: list[si].controls.findIndex((x) => x.fieldCode === code) };
+}
+function addControl(code) {
+  push();
+  const hidden = code === state.policy.field;
+  place(code, hidden);
+  state.pop = false;
+  toast(`${state.names[code]}已放入。${hidden ? "满足条件时才会出现。" : ""}`);
+  render();
+}
+function addPolicy() {
+  push();
+  const code = state.policy.field;
+  if (!hasField(state.form, code)) {
+    const si = state.form.fill.findIndex((s) => s.id === state.policy.sectionId);
+    state.sel = { sec: si };
+    place(code, true);
+  }
+  if (!state.rules.some((r) => r.id === state.policyRule.id)) state.rules.push(clone(state.policyRule));
+  const view = state.form.view[0];
+  if (!view.controls.some((c) => c.fieldCode === code)) view.controls.push({ fieldCode: code, label: state.names[code], readonly: true, hidden: true });
+  applySample(state.samples.find((s) => s.id === state.policySample), true);
+  state.view = "fill";
+  state.msg = null;
+  const si = state.form.fill.findIndex((s) => s.id === state.policy.sectionId);
+  const ci = state.form.fill[si].controls.findIndex((c) => c.fieldCode === code);
+  state.sel = { sec: si, ci };
+  toast(state.policy.tryToast);
+  render();
+}
+function save() {
+  if (!dirty()) return;
+  state.server = pack();
+  toast(pending() ? state.policy.saveToast : "已保存，和线上一致。");
+  render();
+}
+function publish() {
+  if (dirty()) return;
+  const errN = issues().filter((i) => i.level === "err").length;
+  if (errN) { state.page = "design"; state.mode = "lint"; toast("自检还有错误，发布已拦住"); render(); return; }
+  state.published = pack();
+  state.page = "data";
+  toast(state.policy.publishToast);
+  render();
+}
+function submit() {
+  const rules = rulesOf(state.rules, state.values);
+  const miss = [];
+  for (const secItem of state.form.fill) for (const c of secItem.controls) {
+    const st = face(c, rules, state.values);
+    if (st.show && st.required && !state.values[c.fieldCode]) miss.push(nameOf(c));
+  }
+  const sum = lineSumOf(state.values);
+  const tol = Number(state.submit.tolerance);
+  const badSum = state.submit.on && Math.abs(sum - (Number(state.values[state.lines.sumField]) || 0)) > (Number.isNaN(tol) ? 0.01 : tol);
+  if (miss.length || badSum) {
+    state.msg = { ok: false, text: [miss.length ? "请填写" + miss.join("、") : "", badSum ? state.submit.message : ""].filter(Boolean).join("。") };
+  } else state.msg = { ok: true, text: "可以提交。演示没有送进后续流程。" };
+  renderStage();
+}
+function touchRule(i) { state.rules[i].when = describeRule(state.rules[i]); }
+function toggleIn(list, code, on) {
+  const i = list.indexOf(code);
+  if (on && i < 0) list.push(code);
+  if (!on && i >= 0) list.splice(i, 1);
+}
+
+document.body.addEventListener("click", (e) => {
+  if (e.target.closest("input, textarea, select")) return;
+  const t = e.target.closest("[data-object],[data-page],[data-view],[data-device],[data-mode],[data-act],[data-add],[data-sec],[data-si],[data-psi],[data-ltab]");
+  if (!t) return;
+  if (t.dataset.object) { openObject(t.dataset.object); return; }
+  if (t.dataset.page) { state.page = t.dataset.page; render(); return; }
+  if (t.dataset.mode && !t.dataset.act) { state.mode = t.dataset.mode; state.pop = false; render(); return; }
+  if (t.dataset.view) { state.view = t.dataset.view; state.msg = null; if (state.view !== "fill") state.pop = false; render(); return; }
+  if (t.dataset.device) { state.device = t.dataset.device; renderStage(); return; }
+  if (t.dataset.ltab) { state.listTab = t.dataset.ltab; renderStage(); return; }
+  if (t.dataset.add) { addControl(t.dataset.add); return; }
+  if (t.dataset.psi != null && state.view !== "list") { state.sel = { sec: +t.dataset.psi, ci: +t.dataset.pci }; renderOutline(); renderStage(); return; }
+  if (t.dataset.ci != null) { state.sel = { sec: +t.dataset.si, ci: +t.dataset.ci }; renderOutline(); renderStage(); return; }
+  if (t.dataset.sec != null) { state.sel = { sec: +t.dataset.sec }; renderOutline(); return; }
+  const act = t.dataset.act;
+  if (act === "undo") undo();
+  if (act === "save") save();
+  if (act === "validate") {
+    if (dirty()) { toast("先保存。校验看的是已保存草稿，不是正在改的内容。"); return; }
+    const n = issues().filter((i) => i.level === "err").length;
+    state.mode = "lint";
+    toast(n ? `已保存草稿还有 ${n} 个错误` : "已保存草稿自检通过");
+    render();
+  }
+  if (act === "publish") publish();
+  if (act === "add-policy") addPolicy();
+  if (act === "focus-rule") { state.mode = "rules"; state.ruleFocus = t.dataset.id; state.view = "fill"; render(); }
+  if (act === "add-rule") {
+    push();
+    const field = fieldChoices()[0];
+    const value = state.labels[field] ? Object.keys(state.labels[field])[0] : "";
+    const rule = { id: "r" + Date.now(), name: "新规则", on: true, test: { field, op: "eq", value }, effects: {} };
+    rule.when = describeRule(rule);
+    state.rules.push(rule);
+    state.ruleFocus = rule.id;
+    render();
+  }
+  if (act === "del-rule") { push(); state.rules.splice(+t.dataset.i, 1); render(); }
+  if (act === "add-effect") {
+    push();
+    const rule = state.rules[+t.dataset.i];
+    const code = fieldChoices().find((c) => !rule.effects[c]) || fieldChoices()[0];
+    rule.effects[code] = { show: true, required: true, notice: "" };
+    render();
+  }
+  if (act === "drill") {
+    const rule = state.rules[+t.dataset.i];
+    if (rule.test.op === "eq") state.values[rule.test.field] = rule.test.value;
+    if (rule.test.op === "gt") state.values[rule.test.field] = String(Number(rule.test.value) + 1);
+    state.view = "fill"; state.msg = null;
+    toast("已按这条规则填了一笔，右侧能看到命中结果。");
+    render();
+  }
+  if (act === "add-action") {
+    push();
+    state.actions.push({ id: "a" + Date.now(), label: "新动作", roles: [state.roles[0].id], kind: "decide", confirm: "", view: "fill" });
+    render();
+  }
+  if (act === "del-action") { push(); state.actions.splice(+t.dataset.i, 1); render(); }
+  if (act === "clear-reject") { state.dictReject = ""; render(); }
+  if (act === "reject-code") {
+    const field = t.dataset.field;
+    const code = $(`input[data-bind=newcode][data-field="${CSS.escape(field)}"]`)?.value.trim();
+    state.dictReject = code ? `不能在界面层新增「${code}」。请先在字段字典里增加这个编码。` : "请先填写要新增的选项编码。";
+    state.mode = "dict";
+    toast(state.dictReject);
+    render();
+  }
+  if (act === "apply-json") {
+    const raw = state.jsonText || $("#jsonbox")?.value || "";
+    try {
+      const data = JSON.parse(raw);
+      if (!data.form?.fill || !Array.isArray(data.rules)) throw new Error("需要 form.fill 和 rules");
+      push();
+      state.form = data.form;
+      state.rules = data.rules;
+      if (data.labels) state.labels = data.labels;
+      if (data.dictHidden) state.dictHidden = data.dictHidden;
+      if (data.actions) state.actions = data.actions;
+      if (data.variants) state.variants = data.variants;
+      if (data.submit) state.submit = data.submit;
+      if (data.listCols) state.listCols = data.listCols;
+      if (data.listTabs) state.listTabs = data.listTabs;
+      applyListTabs();
+      state.jsonText = "";
+      toast("已按 JSON 更新草稿");
+      render();
+    } catch (err) { toast("JSON 不能用：" + err.message); }
+  }
+  if (act === "remove") {
+    const c = cur();
+    if (!c || state.keep.includes(c.fieldCode)) { toast(state.keepToast); return; }
+    push(); secs()[state.sel.sec].controls.splice(state.sel.ci, 1); state.sel = { sec: state.sel.sec }; toast(`已移出${nameOf(c)}`); render();
+  }
+  if (act === "add-line") { lineRowsOf(state.values).push(blankLine()); renderStage(); }
+  if (act === "del-line") { lineRowsOf(state.values).splice(+t.dataset.i, 1); renderStage(); }
+  if (act === "scene") applySample(state.samples.find((s) => s.id === t.dataset.scene));
+  if (act === "submit") submit();
+  if (act === "decide") {
+    const confirmText = t.dataset.confirm;
+    if (confirmText && !window.confirm(confirmText)) return;
+    toast(`${t.dataset.name}这笔${state.objectName}。演示不会改单据状态。`);
+  }
+});
+document.body.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.dataset.val) {
+    const key = t.dataset.val, pos = t.selectionStart;
+    state.values[key] = t.value; state.msg = null; renderStage(); renderGoal();
+    const n = document.querySelector(`[data-val="${CSS.escape(key)}"]`);
+    if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* 下拉没有光标 */ } }
+    return;
+  }
+  if (t.dataset.line != null) {
+    lineRowsOf(state.values)[+t.dataset.line][t.dataset.k] = t.value;
+    const box = t.closest("table")?.parentElement?.querySelector(".good, .bad");
+    if (box) {
+      const sum = lineSumOf(state.values);
+      const tol = Number(bagSubmit().tolerance);
+      const same = !bagSubmit().on || Math.abs(sum - (Number(state.values[state.lines.sumField]) || 0)) <= (Number.isNaN(tol) ? 0.01 : tol);
+      box.className = same ? "good" : "bad";
+      box.textContent = `明细合计 ${sum.toFixed(2)}，${same ? `与${state.lines.sumName}一致` : (bagSubmit().message || "不一致")}`;
+    }
+    return;
+  }
+  if (!t.dataset.bind || t.dataset.bind === "newcode") return;
+  if (t.dataset.bind === "json") { state.jsonText = t.value; return; }
+  if (t.dataset.once !== "1" && t.dataset.bind !== "col") { push(); t.dataset.once = "1"; t.addEventListener("blur", () => { t.dataset.once = ""; }, { once: true }); }
+  const c = cur();
+  if (t.dataset.bind === "label" && c) { c.label = t.value; renderStage(); renderBar(); renderGoal(); }
+  if (t.dataset.bind === "ph" && c) { c.placeholder = t.value; renderStage(); }
+  if (t.dataset.bind === "precision" && c) { c.props = { precision: Number(t.value) || 0 }; renderBar(); }
+  if (t.dataset.bind === "sec") { secs()[+t.dataset.si].title = t.value; renderStage(); renderBar(); }
+  if (t.dataset.bind === "opt" && c) { state.labels[c.fieldCode][t.dataset.code] = t.value; renderStage(); renderBar(); }
+  if (t.dataset.bind === "rule-name") { state.rules[+t.dataset.i].name = t.value; renderBar(); }
+  if (t.dataset.bind === "rule-value") { state.rules[+t.dataset.i].test.value = t.value; touchRule(+t.dataset.i); renderStage(); renderBar(); }
+  if (t.dataset.bind === "fx-note") { state.rules[+t.dataset.i].effects[t.dataset.code].notice = t.value; renderStage(); }
+  if (t.dataset.bind === "act-label") { state.actions[+t.dataset.i].label = t.value; renderStage(); renderBar(); }
+  if (t.dataset.bind === "act-confirm") state.actions[+t.dataset.i].confirm = t.value;
+  if (t.dataset.bind === "sum-tol") { state.submit.tolerance = t.value; renderStage(); renderBar(); }
+  if (t.dataset.bind === "sum-msg") { state.submit.message = t.value; renderBar(); }
+  if (t.dataset.bind === "dict") { state.labels[t.dataset.field][t.dataset.code] = t.value; renderStage(); renderBar(); }
+  if (t.dataset.bind === "tab") { state.listTabs[+t.dataset.i].label = t.value; applyListTabs(); renderStage(); renderBar(); }
+});
+document.body.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset.val) { state.values[t.dataset.val] = t.value; state.msg = null; renderStage(); renderGoal(); }
+  if (t.dataset.bind === "col") { state.listCols[t.dataset.col] = t.checked; renderStage(); renderBar(); }
+  if (t.dataset.bind === "rule-on") { push(); state.rules[+t.dataset.i].on = t.checked; render(); }
+  if (t.dataset.bind === "rule-field") {
+    push();
+    const rule = state.rules[+t.dataset.i];
+    rule.test.field = t.value;
+    rule.test.value = state.labels[t.value] ? Object.keys(state.labels[t.value])[0] : "";
+    touchRule(+t.dataset.i);
+    render();
+  }
+  if (t.dataset.bind === "rule-op") { push(); state.rules[+t.dataset.i].test.op = t.value; touchRule(+t.dataset.i); render(); }
+  if (t.dataset.bind === "rule-value") { push(); state.rules[+t.dataset.i].test.value = t.value; touchRule(+t.dataset.i); render(); }
+  if (t.dataset.bind === "fx-field") {
+    push();
+    const rule = state.rules[+t.dataset.i];
+    const effect = rule.effects[t.dataset.from];
+    delete rule.effects[t.dataset.from];
+    rule.effects[t.value] = effect;
+    render();
+  }
+  if (t.dataset.bind === "fx-show") { push(); state.rules[+t.dataset.i].effects[t.dataset.code].show = t.checked; render(); }
+  if (t.dataset.bind === "fx-req") { push(); state.rules[+t.dataset.i].effects[t.dataset.code].required = t.checked; render(); }
+  if (t.dataset.bind === "act-view") { push(); state.actions[+t.dataset.i].view = t.value; render(); }
+  if (t.dataset.bind === "act-role") { push(); toggleIn(state.actions[+t.dataset.i].roles, t.dataset.role, t.checked); render(); }
+  if (t.dataset.bind === "var-list") { push(); state.variants[+t.dataset.i].openList = t.checked; render(); }
+  if (t.dataset.bind === "var-ro") { push(); toggleIn(state.variants[+t.dataset.i].readonly, t.dataset.code, t.checked); render(); }
+  if (t.dataset.bind === "var-hide") { push(); toggleIn(state.variants[+t.dataset.i].hidden, t.dataset.code, t.checked); render(); }
+  if (t.dataset.bind === "dict-hide") {
+    push();
+    const field = t.dataset.field;
+    state.dictHidden[field] = state.dictHidden[field] || {};
+    state.dictHidden[field][t.dataset.code] = t.checked;
+    if (!t.checked) delete state.dictHidden[field][t.dataset.code];
+    render();
+  }
+  if (t.dataset.bind === "sum-on") { push(); state.submit.on = t.checked; render(); }
+  if (t.id === "who") {
+    state.who = t.value;
+    const variant = state.variants.find((v) => v.roleId === t.value);
+    if (variant?.openList) { state.view = "list"; state.listTab = state.list.tabs[0].id; }
+    render();
+  }
+});
+$("#fab").onclick = () => { state.pop = !state.pop; renderPop(); };
+let drag = null;
+$("#outline").addEventListener("dragstart", (e) => { const row = e.target.closest(".row"); if (!row || row.dataset.ci == null) return; drag = { si: +row.dataset.si, ci: +row.dataset.ci }; });
+$("#outline").addEventListener("dragover", (e) => { const row = e.target.closest(".row"); if (!row || !drag || row.dataset.ci == null) return; e.preventDefault(); row.classList.add("over"); });
+$("#outline").addEventListener("dragleave", (e) => e.target.closest(".row")?.classList.remove("over"));
+$("#outline").addEventListener("drop", (e) => {
+  const row = e.target.closest(".row"); if (!row || !drag || row.dataset.ci == null) return; e.preventDefault();
+  if (drag.si !== +row.dataset.si || drag.ci === +row.dataset.ci) { drag = null; return; }
+  push(); const arr = secs()[drag.si].controls; const [it] = arr.splice(drag.ci, 1); arr.splice(+row.dataset.ci, 0, it);
+  state.sel = { sec: drag.si, ci: +row.dataset.ci }; drag = null; render();
+});
+let resizing = false;
+$("#grip").onmousedown = () => { resizing = true; };
+window.addEventListener("mouseup", () => { resizing = false; });
+window.addEventListener("mousemove", (e) => {
+  if (!resizing) return;
+  const left = $(".left");
+  left.style.width = Math.max(300, Math.min(560, e.clientX - left.parentElement.getBoundingClientRect().left)) + "px";
+});
+window.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+  const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); undo(); }
+  if (e.key === "Escape") { state.pop = false; renderPop(); }
+});
+window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
+openObject("expense");
+</script>
+</body>
+</html>
