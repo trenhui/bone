@@ -61,11 +61,22 @@ class RuleRegressionGateTest {
   }
 
   @Test
-  void eval_error_counts_as_failure() {
+  void eval_error_counts_as_failure_for_positive_case() {
     when(engine.evaluate(anyString(), anyMap(), anyBoolean()))
         .thenReturn(RuleEngine.RuleEvaluation.error("parse error", 1));
     RegressionResult r =
         gate.evaluate("bad (", List.of(RegressionCase.positive(Map.of(), "编译错误样本")));
+    assertThat(r.passed()).isFalse();
+    assertThat(r.cases().get(0).detail()).contains("EVAL_ERROR");
+  }
+
+  @Test
+  void eval_error_counts_as_failure_even_for_negative_case() {
+    // 负例 + 求值错误：不得借“命中失败”误通过（运行时缺陷仍须暴露）
+    when(engine.evaluate(anyString(), anyMap(), anyBoolean()))
+        .thenReturn(RuleEngine.RuleEvaluation.error("type mismatch", 1));
+    RegressionResult r =
+        gate.evaluate("amount > name", List.of(RegressionCase.negative(Map.of("amount", 1), "负例")));
     assertThat(r.passed()).isFalse();
     assertThat(r.cases().get(0).detail()).contains("EVAL_ERROR");
   }

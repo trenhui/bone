@@ -35,17 +35,16 @@ public class RuleRegressionGate {
     List<RegressionResult.CaseResult> results = new ArrayList<>();
     for (RegressionCase c : cases) {
       RuleEngine.RuleEvaluation ev = ruleEngine.evaluate(expression, c.input(), false);
-      boolean hit;
-      String detail;
       if (ev.errorMessage() != null) {
-        hit = false;
-        detail = "EVAL_ERROR: " + ev.errorMessage();
-      } else {
-        hit = ev.hit();
-        detail = ev.tracePath();
+        // 求值错误（编译后运行时缺陷，如类型不匹配 / NPE）恒计失败——不借负例样本“命中失败”混过
+        results.add(
+            new RegressionResult.CaseResult(
+                c.label(), c.expectHit(), false, false, "EVAL_ERROR: " + ev.errorMessage()));
+        continue;
       }
-      boolean ok = hit == c.expectHit();
-      results.add(new RegressionResult.CaseResult(c.label(), c.expectHit(), hit, ok, detail));
+      boolean ok = ev.hit() == c.expectHit();
+      results.add(
+          new RegressionResult.CaseResult(c.label(), c.expectHit(), ev.hit(), ok, ev.tracePath()));
     }
     return new RegressionResult(
         results.stream().allMatch(RegressionResult.CaseResult::passed), results);

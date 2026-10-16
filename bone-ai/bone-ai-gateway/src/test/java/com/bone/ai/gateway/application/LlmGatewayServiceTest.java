@@ -39,6 +39,20 @@ class LlmGatewayServiceTest {
   }
 
   @Test
+  void invoke_does_not_publish_when_client_rejects_circuit_open() {
+    // 熔断拒绝（CallNotPermittedException 由 client 抛出）：fail-closed 到确定性路径，不留计量/证据事件
+    LlmRequest req = LlmRequest.of("m", List.of(LlmMessage.user("hi")));
+    when(client.chat(req)).thenThrow(new IllegalStateException("CircuitBreaker OPEN"));
+
+    assertThatThrownBy(() -> service.invoke(req))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("CircuitBreaker");
+    // 断言在异常传播处终止，未走到发布（计量/证据双事件均未发）
+    verify(publisher, org.mockito.Mockito.never()).publish(any(LlmCallRecorded.class));
+    verify(publisher, org.mockito.Mockito.never()).publish(any(LlmUsageRecorded.class));
+  }
+
+  @Test
   void invoke_blocks_and_never_calls_client_or_publishes_when_rule_short_circuited() {
     LlmRequest req = LlmRequest.of("m", List.of(LlmMessage.user("hi"))).withRuleShortCircuit();
 
