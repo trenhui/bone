@@ -646,9 +646,10 @@ const EntityDetail: React.FC = () => {
             },
             {
               key: 'ui',
-              label: (<Space size={4}><SettingOutlined /><span>显示设置</span></Space>),
+              label: (<Space size={4}><SettingOutlined /><span>列表显示</span></Space>),
               children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
                 <InterfaceTab
+                  entityId={id ?? null}
                   entityCode={entity.code}
                   fields={fields}
                   onAddField={() => {
@@ -661,6 +662,7 @@ const EntityDetail: React.FC = () => {
                     setInnerTab('fields');
                     setHighlightFieldCode(code);
                   }}
+                  onOpenDesigner={() => setOuterTab('uischema')}
                 />
               ) : (
                 /* 手写界面模式（PRD §0.7）：说明卡 + 组件契约，不做 Meta* 覆盖编辑 */

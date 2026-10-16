@@ -16,7 +16,7 @@ import {
   Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, FileTextOutlined, FullscreenExitOutlined,
+  CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, FileTextOutlined, FullscreenExitOutlined,
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
   ReloadOutlined, SaveOutlined, UndoOutlined,
 } from '@ant-design/icons';
@@ -46,6 +46,21 @@ import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } f
 const MemoSchemaPreview = memo(SchemaPreview);
 
 const { Text } = Typography;
+
+/** JSON 规范化（递归排序键）字符串：跨前后端序列化差异做内容等价比较（三态判定 / 版式 diff 用）。 */
+const normJson = (raw: string): string => {
+  const sort = (v: unknown): unknown =>
+    Array.isArray(v)
+      ? v.map(sort)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(
+            Object.keys(v as Record<string, unknown>)
+              .sort()
+              .map((k): [string, unknown] => [k, sort((v as Record<string, unknown>)[k])]),
+          )
+        : v;
+  return JSON.stringify(sort(JSON.parse(raw)));
+};
 
 interface Props {
   entityId: string;
@@ -88,6 +103,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
   const [baseline, setBaseline] = useState<string>(''); // 已保存快照，用于判脏
   const [lock, setLock] = useState(0);
+  /** 已发布快照真源（后端 published_schema_json/version；null=从未发布）。三态徽标与待发布改动规模的同源基线。 */
+  const [published, setPublished] = useState<{ json: string | null; version: number | null }>({ json: null, version: null });
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
   const [serverIssues, setServerIssues] = useState<UiSchemaIssue[] | null>(null);
@@ -128,9 +145,14 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           next = buildDefaultSchema(entityCode, fields);
         }
         setLock(Number(res.data.lockVersion ?? 0));
+        setPublished({
+          json: res.data.publishedSchemaJson ?? null,
+          version: res.data.publishedVersion != null ? Number(res.data.publishedVersion) : null,
+        });
       } else {
         next = buildDefaultSchema(entityCode, fields);
         setLock(0);
+        setPublished({ json: null, version: null });
       }
       setSchema(next);
       setBaseline(JSON.stringify(next));
@@ -365,6 +387,49 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   );
 
   /**
+   * 发布态三态（对标原型 dirty()/pending() 双判定，但真源走后端已发布快照，非前端近似）：
+   * - never：从未发布（publishedSchemaJson 为空）
+   * - pending：已存草稿(baseline) ≠ 已发布快照 → 有已保存但未发布的改动
+   * - published：已存草稿 === 已发布快照（内容等价，键序/空白无关）
+   */
+  const publishState = useMemo<'never' | 'pending' | 'published'>(() => {
+    if (!published || published.json == null) return 'never';
+    if (!baseline) return 'pending';
+    try {
+      return normJson(baseline) === normJson(published.json) ? 'published' : 'pending';
+    } catch {
+      return 'pending';
+    }
+  }, [baseline, published]);
+
+  /** 待发布改动规模（已存草稿 vs 已发布快照的顶层维度差异；供发布态徽标悬浮说明，不虚构逐字段自然语言）。 */
+  const pendingChange = useMemo(() => {
+    if (publishState !== 'pending') return '';
+    let draft: BoneUiSchema | null = null;
+    let pub: BoneUiSchema | null = null;
+    try {
+      draft = baseline ? (JSON.parse(baseline) as BoneUiSchema) : null;
+      pub = published.json ? (JSON.parse(published.json) as BoneUiSchema) : null;
+    } catch {
+      return '';
+    }
+    if (!draft || !pub) return '';
+    const parts: string[] = [];
+    const dims: [keyof BoneUiSchema, string][] = [
+      ['linkageRules', '联动规则'], ['submitRules', '提交校验'], ['actionBar', '动作条'], ['variants', '角色变体'],
+    ];
+    for (const [k, label] of dims) {
+      const d = ((draft[k] as unknown[] | undefined)?.length ?? 0) - ((pub[k] as unknown[] | undefined)?.length ?? 0);
+      if (d !== 0) parts.push(`${label}${d > 0 ? '+' : ''}${d}`);
+    }
+    const vc = (['form', 'detail', 'list'] as const)
+      .filter((v) => normJson(JSON.stringify(draft.views?.[v] ?? null)) !== normJson(JSON.stringify(pub.views?.[v] ?? null)))
+      .map((v) => (v === 'form' ? '表单' : v === 'detail' ? '详情' : '列表'));
+    if (vc.length) parts.push(`${vc.join('/')}版式`);
+    return parts.join('、');
+  }, [publishState, baseline, published]);
+
+  /**
    * 未保存改动离开页面拦截（业界基线：Google Docs / Figma / VS Code 均在脏状态时阻止误关/刷新）。
    * 仅拦截浏览器级卸载（关页 / 刷新 / 地址栏跳转）——这是跨框架最稳的防丢基线。
    * 说明：qiankun 微应用内「点 shell 菜单切换路由」由主应用路由主导，react-router 的
@@ -492,6 +557,24 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         {errCount > 0 && <Tag color="red" style={{ margin: 0 }}>{errCount} 错误</Tag>}
         {warnCount > 0 && <Tag color="orange" style={{ margin: 0 }}>{warnCount} 警告</Tag>}
         {errCount === 0 && warnCount === 0 && <Tag color="blue" style={{ margin: 0 }}>自检通过</Tag>}
+
+        <Tooltip
+          title={
+            publishState === 'published'
+              ? '已存草稿与线上发布版一致'
+              : publishState === 'pending'
+                ? `有已保存但未发布的改动${pendingChange ? `：${pendingChange}` : ''}，发布后才对终端生效`
+                : '尚未发布过，终端暂按结构投影渲染'
+          }
+        >
+          <Tag
+            icon={publishState === 'published' ? <CheckCircleOutlined /> : publishState === 'pending' ? <CloudUploadOutlined /> : <ExclamationCircleOutlined />}
+            color={publishState === 'published' ? 'green' : publishState === 'pending' ? 'gold' : 'default'}
+            style={{ margin: 0, fontWeight: 600 }}
+          >
+            {publishState === 'published' ? '已发布' : publishState === 'pending' ? '待发布' : '未发布'}
+          </Tag>
+        </Tooltip>
 
         <span style={{ flex: 1 }} />
 

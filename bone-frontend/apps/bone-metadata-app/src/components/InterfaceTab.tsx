@@ -11,38 +11,66 @@ import type { ColumnsType } from 'antd/es/table';
 import type { MetaField } from '../types';
 import { FIELD_TYPE_MAP, parseEnumValues, RUNTIME_READONLY_FIELDS } from '../types';
 import {
-  defaultOverlay, isEnumField, isRenderSupported,
-  projectColumns, reorderOverlay, tableSizeOf, type UiOverlay,
+  defaultOverlay, fieldsOutsideContract, isEnumField, isRenderSupported,
+  projectRuntimeColumns, reorderOverlay, tableSizeOf, type UiOverlay,
 } from '../utils/columnProjection';
 import { fetchOverlay, persistOverlay, resetOverlay } from '../utils/overlaySync';
+import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 
 const { Text } = Typography;
 
 /**
- * 界面 Tab（W2 · UIF-005 MVP / UID-10/11/12）。
+ * 列表显示 Tab（个人偏好层 · P0 定位修正 + P1 真源收敛）。
  *
- * 关键：预览列与运行时数据列都由同一个 `projectColumns(fields, overlay)` 投影得到，
+ * 关键：预览列与运行时数据列都由同一个 `projectRuntimeColumns(fields, overlay, 契约)` 投影得到，
  * 因此「界面预览列 ≡ 发布后数据列」在结构上成立（PRD v0.32 §0.6.3）。
- * 覆盖存储：服务端优先 + localStorage 离线缓存（0042 · P2-④， hydrate 策略见 utils/overlaySync.ts）。
  *
- * 明确不做：拖拽画布 / 组件市场 / 多页面路由设计器（PRD §3.2 Out of Scope）。
+ * 与「界面设计器」的分层（对标 Salesforce Search Layouts 组织级 + List View 个人偏好）：
+ * - 契约层（设计器 ui-schema views.list，发布后生效）：列集合/列序/列宽/固定列/列标题；
+ * - 偏好层（本页 overlay，即时生效）：个人显隐/密度/个人改名。
+ * 任一维度可隐藏列（展示需两层都放行）；契约存在时列序/列宽/固定列以契约为准，
+ * 本页的 ↑↓ 置灰并引导去设计器——避免「两处都能配、用户不知谁生效」的认知重叠。
+ *
+ * 覆盖存储：服务端优先 + localStorage 离线缓存（0042 · P2-④，hydrate 策略见 utils/overlaySync.ts）。
  */
 interface Props {
+  entityId?: string | null;
   entityCode: string;
   fields: MetaField[];
   /** 空态 CTA「去结构添加第一个字段」：由 EntityDetail 注入，避免反向依赖路由 */
   onAddField?: () => void;
   /** UID-11：定位某列对应的字段 —— 跳到「结构」Tab 并高亮该字段 */
   onLocateField?: (code: string) => void;
+  /** strict 集合引导：未列入契约的字段，跳「界面设计器 → 列表」加入 */
+  onOpenDesigner?: () => void;
 }
 
 type ViewMode = 'list' | 'form';
 
-const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocateField }) => {
+const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, onAddField, onLocateField, onOpenDesigner }) => {
   // 仅用户可见的数据列参与投影（排除系统只读列，与数据 Tab 口径一致）
   const baseFields = useMemo(
     () => fields.filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code)),
     [fields],
+  );
+
+  // 契约层：执行期 ui-schema（published 快照优先）的列表视图；无契约时整页回落纯偏好模式
+  const uiSchemaPipe = useBoneUiSchema(entityId);
+  const contractListView = useMemo(
+    () =>
+      uiSchemaPipe.executionSchema?.views.list?.columns?.length
+        ? uiSchemaPipe.executionSchema.views.list
+        : null,
+    [uiSchemaPipe.executionSchema],
+  );
+  const contractByCode = useMemo(
+    () => new Map((contractListView?.columns ?? []).map((c) => [c.fieldCode, c])),
+    [contractListView],
+  );
+  /** strict 集合：未列入契约的字段不出现在运行时列表——显式提示 + 跳设计器，不静默 */
+  const outsideContract = useMemo(
+    () => (contractListView ? fieldsOutsideContract(baseFields, contractListView) : []),
+    [baseFields, contractListView],
   );
 
   const [mode, setMode] = useState<'config' | 'preview'>('config');
@@ -66,7 +94,12 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityCode]);
 
-  const projected = useMemo(() => projectColumns(baseFields, overlay), [baseFields, overlay]);
+  // 预览列与运行时数据列共用同一投影（契约优先 + 个人偏好叠加）——结构上保证两处一致
+  const projectedColumns = useMemo(
+    () => projectRuntimeColumns(baseFields, overlay, contractListView),
+    [baseFields, overlay, contractListView],
+  );
+  const projected = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
   const projectedCodes = useMemo(() => projected.map((f) => f.code), [projected]);
 
   const dirty = useMemo(() => {
@@ -140,14 +173,38 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
     {
       title: '显示',
       key: 'visible',
-      width: 70,
-      render: (_, f) => (
-        <Switch
-          size="small"
-          checked={overlay?.overrides[f.code]?.visible !== false}
-          onChange={(v) => toggleVisible(f.code, v)}
-        />
-      ),
+      width: 110,
+      render: (_, f) => {
+        // strict 集合：未列入契约的字段不进运行时列表——置灰 + 引导去设计器加入
+        if (contractListView && !contractByCode.has(f.code)) {
+          return (
+            <Space size={2}>
+              <Switch size="small" checked={false} disabled />
+              <Tag color="orange" style={{ fontSize: 11 }}>未在契约</Tag>
+              {onOpenDesigner && (
+                <Button type="link" size="small" style={{ padding: 0 }} onClick={onOpenDesigner}>
+                  去加入
+                </Button>
+              )}
+            </Space>
+          );
+        }
+        // 契约隐藏：置灰 + 解释（对齐设计系统 disable 模式：让用户分清「契约不给显示」与「我可以自己开」）
+        if (contractByCode.get(f.code)?.visible === false) {
+          return (
+            <Tooltip title="该列被「界面设计器」契约隐藏；如需显示请去设计器修改并发布">
+              <Switch size="small" checked={false} disabled />
+            </Tooltip>
+          );
+        }
+        const personalHidden = overlay?.overrides[f.code]?.visible === false;
+        return (
+          <Space size={2}>
+            <Switch size="small" checked={!personalHidden} onChange={(v) => toggleVisible(f.code, v)} />
+            {personalHidden && <Tag style={{ fontSize: 11 }}>个人隐藏</Tag>}
+          </Space>
+        );
+      },
     },
     {
       title: '覆盖显示名',
@@ -164,8 +221,20 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
     {
       title: '列序',
       key: 'order',
-      width: 90,
+      width: 100,
       render: (_, f) => {
+        // 契约存在时列序归设计器：置灰 ↑↓ 并明示真源，避免「两处都能配、不知谁生效」
+        if (contractListView) {
+          return contractByCode.has(f.code) ? (
+            <Tooltip title="列序由「界面设计器」契约定义（发布后生效）">
+              <Tag color="blue" style={{ fontSize: 11 }}>契约</Tag>
+            </Tooltip>
+          ) : (
+            <Tooltip title="该字段未列入列表契约，运行时不可见；去设计器「列表」加入后可参与排序">
+              <Tag color="orange" style={{ fontSize: 11 }}>未在契约</Tag>
+            </Tooltip>
+          );
+        }
         const idx = projectedCodes.indexOf(f.code);
         return (
           <Space size={2}>
@@ -246,6 +315,29 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
         </Space>
       </Space>
 
+      {contractListView && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="列集合、列序、列宽、固定列与列标题由「界面设计器」契约定义（发布后生效）"
+          description={
+            <div style={{ fontSize: 13 }}>
+              <div>本页管理你的个人偏好：显隐、表格密度与个人改名——任一层隐藏该列即不显示。</div>
+              <div>
+                未列入契约的字段不会出现在运行时列表
+                {outsideContract.length > 0 && <>（当前有 {outsideContract.length} 个：{outsideContract.slice(0, 5).map((f) => f.displayName || f.code).join('、')}{outsideContract.length > 5 ? ' 等' : ''}）</>}
+                {onOpenDesigner && outsideContract.length > 0 && (
+                  <Button type="link" size="small" style={{ padding: '0 4px' }} onClick={onOpenDesigner}>
+                    去设计器加入
+                  </Button>
+                )}
+              </div>
+            </div>
+          }
+        />
+      )}
+
       {unsupported.length > 0 && (
         <Alert
           type="warning"
@@ -274,8 +366,8 @@ const InterfaceTab: React.FC<Props> = ({ entityCode, fields, onAddField, onLocat
           />
           <div style={{ margin: '12px 0 8px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              以上调整即时生效于「预览」以及发布后的业务数据表（两者共用同一套列投影）。
-              MVP 覆盖保存在浏览器本地（PRD §12.2 D2），团队级共享将在 v1.1 服务端化。
+              个人调整（显隐 / 密度 / 改名）即时生效于「预览」与运行时数据列表（两者共用同一套投影）；
+              覆盖按用户保存于服务端（离线时回落本机缓存）。契约列（列序 / 列宽 / 固定列）以「界面设计器」发布版为准。
             </Text>
           </div>
         </>

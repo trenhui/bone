@@ -8,11 +8,11 @@ import {
   Button, Empty, Input, InputNumber, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined, PushpinOutlined,
+  ArrowDownOutlined, ArrowUpOutlined, EyeInvisibleOutlined, PlusOutlined, PushpinOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
-import { addColumn, moveColumn, removeColumn, updateColumn } from './schemaOps';
+import { addColumn, moveColumn, updateColumn } from './schemaOps';
 
 const { Text } = Typography;
 
@@ -78,7 +78,10 @@ export default function ListPanel({ schema, onChange, fields, focus }: Props): R
             onClick={() => onChange(moveColumn(schema, i, i - 1))} />
           <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={i === cols.length - 1}
             onClick={() => onChange(moveColumn(schema, i, i + 1))} />
-          <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onChange(removeColumn(schema, i))} />
+          <Tooltip title="从列表移除（保留契约记录，可再开启；彻底删条目会让该列在运行时重新追加到末尾）">
+            <Button size="small" type="text" danger icon={<EyeInvisibleOutlined />}
+              onClick={() => onChange(updateColumn(schema, i, { visible: false }))} />
+          </Tooltip>
         </div>
       ))}
 

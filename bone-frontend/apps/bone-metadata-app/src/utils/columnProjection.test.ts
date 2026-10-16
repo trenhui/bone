@@ -5,15 +5,18 @@ import {
   clearOverlay,
   defaultOverlay,
   enumOptionsOf,
+  fieldsOutsideContract,
   isEnumField,
   isRenderSupported,
   loadOverlay,
   overlayKey,
   projectColumns,
+  projectRuntimeColumns,
   reorderOverlay,
   saveOverlay,
   tableSizeOf,
 } from './columnProjection';
+import type { ListView } from './uiSchemaEngine';
 
 /** 构造测试字段 */
 function field(code: string, extra: Partial<MetaField> = {}): MetaField {
@@ -93,6 +96,102 @@ describe('projectColumns', () => {
     const ov = defaultOverlay([FIELDS[0], FIELDS[1]]);
     const out = projectColumns(FIELDS, ov); // 传入含新增字段 qty 的完整列表
     expect(out.map((f) => f.code)).toEqual(['code', 'name', 'qty']);
+  });
+});
+
+describe('projectRuntimeColumns（P1 · 契约优先 + 个人偏好叠加）', () => {
+  const listView = (columns: ListView['columns']): ListView => ({ columns });
+
+  it('无契约列：整体回落 projectColumns 旧行为（零回归）', () => {
+    const ov = defaultOverlay(FIELDS);
+    const viaNew = projectRuntimeColumns(FIELDS, ov, null).map((c) => c.field);
+    const viaOld = projectColumns(FIELDS, ov);
+    expect(viaNew).toEqual(viaOld);
+    expect(projectRuntimeColumns(FIELDS, ov, listView([])).map((c) => c.field)).toEqual(viaOld);
+    expect(projectRuntimeColumns(FIELDS, ov, listView(undefined)).map((c) => c.field)).toEqual(viaOld);
+  });
+
+  it('契约列序/列宽/固定列/列标题生效（设计器配的终于有人消费）', () => {
+    const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), listView([
+      { fieldCode: 'qty', width: 220, pinned: true },
+      { fieldCode: 'name', format: { title: '商品名称' } },
+      { fieldCode: 'code', width: 80 },
+    ]));
+    expect(out.map((c) => c.field.code)).toEqual(['qty', 'name', 'code']);
+    expect(out[0]).toMatchObject({ width: 220, pinned: true });
+    expect(out[2]).toMatchObject({ width: 80, pinned: undefined });
+    // 契约列标题覆盖字段 displayName
+    expect(out[1].field.displayName).toBe('商品名称');
+  });
+
+  it('个人改名优先于契约列标题', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.name = { ...ov.overrides.name, displayName: '我起的名字' };
+    const out = projectRuntimeColumns(FIELDS, ov, listView([
+      { fieldCode: 'name', format: { title: '契约标题' } },
+    ]));
+    expect(out[0].field.displayName).toBe('我起的名字');
+  });
+
+  it('可见性：契约隐藏或个人隐藏任一为真即隐藏', () => {
+    const ov = defaultOverlay(FIELDS);
+    const out = projectRuntimeColumns(FIELDS, ov, listView([
+      { fieldCode: 'code' },
+      { fieldCode: 'name', visible: false },
+      { fieldCode: 'qty' },
+    ]));
+    expect(out.map((c) => c.field.code)).toEqual(['code', 'qty']); // 契约隐藏 name
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    const out2 = projectRuntimeColumns(FIELDS, ov, listView([
+      { fieldCode: 'code' },
+      { fieldCode: 'name', visible: false },
+      { fieldCode: 'qty' },
+    ]));
+    expect(out2.map((c) => c.field.code)).toEqual(['code']); // 个人再隐藏 qty
+  });
+
+  it('契约引用已删字段：跳过；契约未列出的字段不进运行时列（strict 集合）', () => {
+    const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), listView([
+      { fieldCode: 'code' },
+      { fieldCode: 'ghost_deleted' },
+      { fieldCode: 'name' },
+    ]));
+    // ghost 被跳过；qty 不在契约中 → 不出现在运行时列（策划清单不被字段洪流淹没）
+    expect(out.map((c) => c.field.code)).toEqual(['code', 'name']);
+  });
+
+  it('fieldsOutsideContract：报告未列入契约的字段；无契约时为空', () => {
+    const lv = listView([{ fieldCode: 'code' }, { fieldCode: 'name' }]);
+    expect(fieldsOutsideContract(FIELDS, lv).map((f) => f.code)).toEqual(['qty']);
+    expect(fieldsOutsideContract(FIELDS, null)).toEqual([]);
+    expect(fieldsOutsideContract(FIELDS, listView([]))).toEqual([]);
+  });
+
+  it('契约后新增字段不进入运行时列（strict）；由 fieldsOutsideContract 提示去设计器加入', () => {
+    const lv = listView([
+      { fieldCode: 'name', width: 100 },
+      { fieldCode: 'code' },
+    ]);
+    const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), lv);
+    expect(out.map((c) => c.field.code)).toEqual(['name', 'code']);
+    expect(fieldsOutsideContract(FIELDS, lv).map((f) => f.code)).toEqual(['qty']);
+  });
+
+  it('负向探针：无 width 的契约列不得凭空产出 width（断言有牙）', () => {
+    const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), listView([{ fieldCode: 'code' }]));
+    expect(out).toHaveLength(1); // strict：仅契约列
+    expect(out[0]).toMatchObject({ width: undefined, pinned: undefined });
+  });
+
+  it('负向探针：契约存在时 overlay 的列序不得颠覆契约顺序', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.code.order = 99; // 个人把 code 排到最后
+    const out = projectRuntimeColumns(FIELDS, ov, listView([
+      { fieldCode: 'code' },
+      { fieldCode: 'name' },
+      { fieldCode: 'qty' },
+    ]));
+    expect(out.map((c) => c.field.code)).toEqual(['code', 'name', 'qty']);
   });
 });
 

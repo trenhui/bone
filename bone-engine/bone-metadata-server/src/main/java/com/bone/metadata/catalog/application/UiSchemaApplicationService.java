@@ -520,6 +520,8 @@ public class UiSchemaApplicationService {
     resp.setMinor(def.getSchemaMinor());
     resp.setLockVersion(def.getLockVersion());
     resp.setUpdatedAt(def.getUpdatedAt() == null ? null : def.getUpdatedAt().toString());
+    resp.setPublishedSchemaJson(def.getPublishedSchemaJson());
+    resp.setPublishedVersion(def.getPublishedVersion());
     return resp;
   }
 

@@ -20,4 +20,10 @@ public class UiSchemaResp {
   private Long lockVersion;
 
   private String updatedAt;
+
+  /** 已发布快照 JSON（发布时冻结、线上运行真源；从未发布为 null）。设计器据此做「待发布/已发布」判定与线上对照。 */
+  private String publishedSchemaJson;
+
+  /** 已发布时对应的实体版本（snapshotOnPublish 写入；从未发布为 null）。 */
+  private Integer publishedVersion;
 }

@@ -60,7 +60,7 @@ import {
   enumOptionsOf,
   isEnumField,
   isRenderSupported,
-  projectColumns,
+  projectRuntimeColumns,
   tableSizeOf,
   type UiOverlay,
 } from '../utils/columnProjection';
@@ -356,11 +356,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   );
 
   /**
-   * 列投影覆盖（预览 ≡ 数据 单一真源）：服务端优先 hydrate（0042 · P2-④）。
+   * 运行时列表列投影（P1 · 真源收敛）：
+   * 契约（执行期 published ui-schema views.list，个人 overlay 叠加显隐/密度/改名）。
    *
-   * <p>为什么从 useMemo 直读改为 state + effect：服务端往返是异步的，同步读接口
-   * （localStorage）升级为异步读（HTTP）后，hydration 只能由 effect 驱动；
-   * 投影纯函数 projectColumns 不变，数据 Tab 与界面 Tab 仍共用同一真源。
+   * <p>为什么从 {@code projectColumns(fields, overlay)} 升级：此前设计器里配的
+   * 列表列（列宽/固定列/列序/列标题）**无任何运行时消费方**——写入了 published
+   * 快照却没人读，运行时表格仍按 overlay 投影，"配了不生效"。此处把执行期 schema
+   * 的 views.list 接为列真源；未配契约列的实体整体回落旧行为（零回归）。
    *
    * <p>{@link #hydratedEntityRef} 防重复请求：fields 重载（结构 Tab 加字段后返回）
    * 不重新 hydrate —— 投影随 fields 重算，新字段按「无覆盖排末尾」规则处理即可。
@@ -383,10 +385,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       cancelled = true;
     };
   }, [entityCode, fields]);
-  const projectedFields = useMemo(
-    () => projectColumns(writableFields, overlay),
-    [writableFields, overlay],
+  const projectedColumns = useMemo(
+    () => projectRuntimeColumns(writableFields, overlay, uiSchemaPipe.executionSchema?.views.list),
+    [writableFields, overlay, uiSchemaPipe.executionSchema],
   );
+  /** 字段视图（列查询 fieldsParam / 筛选选项 / 列渲染共用）——由投影列去契约元数据得到 */
+  const projectedFields = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
 
   /**
    * 独立全局路由（/runtime、无 id）：加载 RUNTIME 已发布实体供选择器（W0-2：size 50→500，避免第 51 个后不可选）
@@ -952,12 +956,15 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
   };
 
   const tableColumns: ColumnsType<RuntimeRecord> = useMemo(() => {
-    const cols: ColumnsType<RuntimeRecord> = projectedFields.map((f) => ({
+    const cols: ColumnsType<RuntimeRecord> = projectedColumns.map(({ field: f, width, pinned }) => ({
       title: f.displayName || f.code,
       dataIndex: f.code,
       key: f.code,
       ellipsis: true,
       sorter: true,
+      // 契约列宽/固定列（P1）：设计器 views.list 配的 width/pinned 在此真正生效
+      width,
+      fixed: pinned ? ('left' as const) : undefined,
       sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
       render: (_: unknown, row) => {
         if (isEnumField(f)) return renderEnumCell(row[f.code], f);

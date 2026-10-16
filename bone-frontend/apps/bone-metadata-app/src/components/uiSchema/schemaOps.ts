@@ -210,8 +210,9 @@ export const updateColumn = (s: BoneUiSchema, idx: number, patch: Partial<ListCo
 export const addColumn = (s: BoneUiSchema, fieldCode: string): BoneUiSchema =>
   ({ ...s, views: { ...s.views, list: { ...s.views.list, columns: [...(s.views.list?.columns ?? []), { fieldCode, visible: true, width: 120 }] } } });
 
-export const removeColumn = (s: BoneUiSchema, idx: number): BoneUiSchema =>
-  ({ ...s, views: { ...s.views, list: { ...s.views.list, columns: (s.views.list?.columns ?? []).filter((_, i) => i !== idx) } } });
+// 注意：不提供 removeColumn（删条目）。契约列「移除」= updateColumn(visible:false) 保留条目——
+// 删条目后该列在运行时会按「契约未列出字段」重新追加到末尾（projectRuntimeColumns 语义），
+// 删除动作会 silently 失效；保留 visible:false 条目才是显式、可恢复的契约决策。
 
 export const moveColumn = (s: BoneUiSchema, from: number, to: number): BoneUiSchema => {
   const arr = [...(s.views.list?.columns ?? [])];

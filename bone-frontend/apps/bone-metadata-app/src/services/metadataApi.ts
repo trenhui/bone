@@ -429,6 +429,10 @@ export interface UiSchemaResp {
   /** 乐观锁版本（P0-3 后端落盘后回填；缺省=0，前端 If-Match 透传；线上传字符串，读侧归一为 number） */
   lockVersion?: number | string;
   updatedAt?: string;
+  /** 已发布快照 JSON（发布时冻结、线上运行真源；从未发布为 null）。用于「待发布/已发布」三态与线上对照预览。 */
+  publishedSchemaJson?: string | null;
+  /** 已发布时对应的实体版本（snapshotOnPublish 写入；从未发布为 null）。 */
+  publishedVersion?: number | null;
 }
 
 /**

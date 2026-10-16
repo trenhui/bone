@@ -1,5 +1,6 @@
 import type { MetaField } from '../types';
 import { parseEnumValues, type EnumOption } from '@bone/shared-types';
+import type { ListView } from './uiSchemaEngine';
 
 /**
  * 界面列投影（预览 ≡ 数据 的单一真源）。
@@ -109,6 +110,76 @@ export function projectColumns(fields: MetaField[], overlay?: UiOverlay | null):
     return a.i - b.i;
   });
   return withIdx.map((x) => x.f);
+}
+
+/** 运行时投影列：字段 + 契约列宽/固定列（个人 overlay 不含这两个维度） */
+export interface ProjectedColumn {
+  field: MetaField;
+  /** 契约列宽（px）；无契约列时 undefined，由表格自适应 */
+  width?: number;
+  /** 契约固定列（横向滚动时钉住） */
+  pinned?: boolean;
+}
+
+/**
+ * 运行时列表列投影（P1 · 真源收敛）：
+ * 契约（执行期 ui-schema `views.list.columns`）定义 列集合/顺序/列宽/固定列/列标题，
+ * 个人 overlay 仅叠加 显隐/密度/个人改名 —— 偏好层不颠覆契约层（对标
+ * Salesforce Search Layouts 组织级 + List View 个人偏好双轨）。
+ *
+ * 语义（strict 集合，对齐 Salesforce Search Layouts / Notion 视图属性）：
+ * - 列集合：**契约即完整列集合**——未列入契约的字段不出现在运行时列表
+ *   （策划 6 列的实体不该被 20 个字段淹没；新字段由建模者在设计器显式加入，
+ *   「列表显示」页以「未在契约」提示 + 跳转设计器引导，不静默追加）；
+ * - 可见性：契约 `visible===false` 或个人 `visible===false` 任一为真即隐藏；
+ * - 列标题：个人改名（仅确实改过名时）> 契约 `format.title` > 字段 displayName；
+ * - 契约引用已删字段：跳过（防幽灵列）。
+ *
+ * 无契约列（含从未配 ui-schema / 只配了 searchFields 等）时整体回落
+ * {@link projectColumns} 旧行为，保证零回归。
+ */
+export function projectRuntimeColumns(
+  fields: MetaField[],
+  overlay?: UiOverlay | null,
+  listView?: ListView | null,
+): ProjectedColumn[] {
+  const contractCols = (listView?.columns ?? []).filter((c) => !!c.fieldCode);
+  if (contractCols.length === 0) {
+    return projectColumns(fields, overlay).map((field) => ({ field }));
+  }
+  const byCode = new Map(fields.map((f) => [f.code, f]));
+  const out: ProjectedColumn[] = [];
+  for (const c of contractCols) {
+    const f = byCode.get(c.fieldCode);
+    if (!f) continue; // 契约引用已删字段：跳过
+    const ov = overlay?.overrides[c.fieldCode];
+    if (c.visible === false || ov?.visible === false) continue; // 任一维度隐藏即隐藏
+    const contractTitle =
+      typeof c.format?.title === 'string' && c.format.title ? c.format.title : undefined;
+    // 个人改名仅在「确实改过」（与字段名不同）时生效：defaultOverlay 会为每个字段生成
+    // displayName=字段名的占位条目，那不是用户意图，不能拿来压契约标题
+    const personalRename =
+      ov?.displayName && ov.displayName !== f.displayName ? ov.displayName : undefined;
+    const displayName = personalRename ?? contractTitle ?? f.displayName;
+    out.push({
+      field: displayName === f.displayName ? f : { ...f, displayName },
+      width: c.width,
+      pinned: c.pinned,
+    });
+  }
+  return out;
+}
+
+/**
+ * 未列入契约的字段（strict 集合下运行时不可见）。
+ * 供「列表显示」页显式提示 + 跳转设计器加入——把「新字段不见了」从静默事故
+ * 变为可见引导。无契约列时返回空（整页回落纯偏好模式）。
+ */
+export function fieldsOutsideContract(fields: MetaField[], listView?: ListView | null): MetaField[] {
+  const contractCols = (listView?.columns ?? []).filter((c) => !!c.fieldCode);
+  if (contractCols.length === 0) return [];
+  const inContract = new Set(contractCols.map((c) => c.fieldCode));
+  return fields.filter((f) => !inContract.has(f.code));
 }
 
 /**
