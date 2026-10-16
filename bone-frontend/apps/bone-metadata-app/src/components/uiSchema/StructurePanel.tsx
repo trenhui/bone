@@ -6,7 +6,7 @@
  * - 未使用的实体字段在底部「字段库」待选，点一下即落到当前分区（避免手填 code 打错字）；
  * - 点选控件就地展开属性卡，不弹窗（减少一次上下文切换）。
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Badge, Button, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
@@ -98,6 +98,24 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
   const [sel, setSel] = useState<{ si: number; ci: number } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
 
+  /**
+   * 拖拽强制收尾：dragend/drop 冒泡到 window 时无条件清高亮。
+   * 为什么不能只靠行内 onDragEnd：它只清「自己那个键」——从 A 行拖到 B 行
+   * 松手（或按 Esc 取消）时，dragend 在 A 上触发，B 的高亮会残留
+   * （实测探针复现：dragover B 后 dragend A，B 边框仍蓝）。
+   * 行内 functional 守卫负责「慢速滑走时迟滞的 dragleave 不误清他人高亮」，
+   * 这里负责「任何理由的拖拽结束都全清」，两层互补。
+   */
+  useEffect(() => {
+    const clearAll = () => setDragOver(null);
+    window.addEventListener('dragend', clearAll);
+    window.addEventListener('drop', clearAll);
+    return () => {
+      window.removeEventListener('dragend', clearAll);
+      window.removeEventListener('drop', clearAll);
+    };
+  }, []);
+
   const sections = viewOf(schema, view).sections ?? [];
 
   const isFocused = (si: number, ci?: number) =>
@@ -125,33 +143,36 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         />
       )}
 
-      {sections.map((sec, si) => (
+      {sections.map((sec, si) => {
+        // 分区级落点高亮：标题悬停（S=整区重排落点）或分区体悬停（C=字段库拖入落点）
+        const secOver = dragOver === `S${si}` || dragOver === `C${si}`;
+        return (
         <div
           key={sec.id ?? si}
           style={{
-            border: `1px solid ${isFocused(si) ? '#1677ff' : '#f0f0f0'}`,
+            border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
             borderRadius: 10, marginBottom: 10, background: '#fff',
-            boxShadow: isFocused(si) ? '0 0 0 3px rgba(22,119,255,.12)' : '0 1px 2px rgba(16,24,40,.04)',
+            boxShadow: isFocused(si) ? '0 0 0 3px rgba(22,119,255,.12)' : secOver ? '0 0 0 3px rgba(105,192,255,.18)' : '0 1px 2px rgba(16,24,40,.04)',
             transition: 'box-shadow .18s, border-color .18s',
           }}
         >
           {/* 分区头 */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
-            borderBottom: '1px solid #f5f5f5', background: '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
+            borderBottom: '1px solid #f5f5f5', background: dragOver === `S${si}` ? '#f0f7ff' : '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
           }}>
             <Tooltip title="拖拽调整分区顺序">
               <span
                 draggable
                 onDragStart={(e) => { e.dataTransfer.setData('text/plain', `S${si}`); e.dataTransfer.effectAllowed = 'move'; }}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(`S${si}`); }}
-                onDragLeave={() => setDragOver(null)}
+                onDragLeave={() => setDragOver((cur) => (cur === `S${si}` ? null : cur))}
                 onDrop={(e) => {
                   e.preventDefault(); setDragOver(null);
                   const raw = e.dataTransfer.getData('text/plain');
                   if (raw.startsWith('S')) onChange(moveSection(schema, view, Number(raw.slice(1)), si));
                 }}
-                style={{ cursor: 'grab', color: '#bfbfbf', display: 'inline-flex' }}
+                style={{ cursor: 'grab', color: dragOver === `S${si}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
               >
                 <DragOutlined />
               </span>
@@ -185,7 +206,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
           <div
             style={{ padding: 8, background: dragOver === `C${si}` ? '#f0f7ff' : undefined, transition: 'background .15s' }}
             onDragOver={(e) => { e.preventDefault(); setDragOver(`C${si}`); }}
-            onDragLeave={() => setDragOver(null)}
+            onDragLeave={() => setDragOver((cur) => (cur === `C${si}` ? null : cur))}
             onDrop={(e) => {
               e.preventDefault(); setDragOver(null);
               const raw = e.dataTransfer.getData('text/plain');
@@ -207,17 +228,21 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               const kind = KIND_MAP[c.controlKind ?? ''] ?? KIND_MAP.INPUT;
               const Icon = kind.icon;
               const selected = sel?.si === si && sel?.ci === ci;
+              // 行级落点高亮（拖拽悬停本行=重排落点）；functional 守卫防迟滞 leave 误清
+              const rowOver = dragOver === `R${si}:${ci}`;
               return (
                 <div key={`${c.fieldCode}-${ci}`}>
                   <div
                     {...dragSort2(si, ci, (fs, fc, ts, tc) => {
                       onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
-                    })}
+                    }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}
                     onClick={() => setSel(selected ? null : { si, ci })}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
-                      border: `1px solid ${selected ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
-                      borderRadius: 8, marginBottom: 5, background: selected ? '#f0f7ff' : '#fff',
+                      border: `1px solid ${selected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
+                      borderRadius: 8, marginBottom: 5,
+                      background: selected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
+                      boxShadow: rowOver ? '0 0 0 2px rgba(22,119,255,.15)' : undefined,
                       cursor: 'pointer', transition: 'all .15s',
                     }}
                   >
@@ -237,6 +262,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                     {c.labelOverride && <Tag color="blue" style={{ fontSize: 11 }}>{c.labelOverride}</Tag>}
                     {c.visible === false && <Tooltip title="默认隐藏"><EyeInvisibleOutlined style={{ color: '#faad14' }} /></Tooltip>}
                     {c.readonly && <Tag style={{ fontSize: 11 }}>只读</Tag>}
+                    {rowOver && <Text type="secondary" style={{ fontSize: 10 }}>松开落到此处</Text>}
                     <span style={{ flex: 1 }} />
                     <Tooltip title="控件属性">
                       <SettingOutlined
@@ -264,7 +290,8 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
             })}
           </div>
         </div>
-      ))}
+      );
+      })}
 
       <Button
         block size="small" icon={<PlusOutlined />} style={{ marginBottom: 12 }}

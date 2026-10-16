@@ -8,8 +8,9 @@
  */
 import { Typography } from 'antd';
 import type {
-  ActionBarItem, LinkageRule, SubmitRule, UiCondition,
+  ActionBarItem, LinkageRule, SubmitRule, UiCondition, Variant,
 } from '../../utils/uiSchemaEngine';
+import { matchText, variantOverrideText } from '../../utils/uiSchemaChangePreview';
 import { FUNCTION_MAP, opLabel } from './constants';
 
 const { Text } = Typography;
@@ -119,6 +120,19 @@ export function describeAction(a: ActionBarItem): React.ReactNode {
     <>
       动作 <Code>{a.actionCode || '（未填动作码）'}</Code> · {gate}
       {a.confirm?.title ? <> · 需确认</> : null}
+    </>
+  );
+}
+
+/**
+ * 变体 → 句子（配置即人话摘要：命中条件 + 覆盖块统计）。
+ * matchText/variantOverrideText 与变更预告（uiSchemaChangePreview）共用同一真源——
+ * 变体摘要改口径时两边同步改，不漂移。
+ */
+export function describeVariant(v: Variant): React.ReactNode {
+  return (
+    <>
+      当 <b>{matchText(v.match)}</b> 时：{variantOverrideText(v)}。
     </>
   );
 }

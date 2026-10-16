@@ -260,3 +260,40 @@
 - 本机 curl 走 `HTTP_PROXY=127.0.0.1:53687`，localhost 探测也被代理劫持返回 502——**本地健康检查必须 `--noproxy '*'`**，否则把代理故障误判为服务故障。
 - 前台 bash 里 `nohup java &` 会被沙箱回收（进程组清理）；长驻服务必须用后台任务方式启动。
 - antd v5 在 `scroll.x` 下渲染 `.ant-table-measure-row`（无 td 的度量行），探针统计行数必须剔除，否则每表多一行导致断言失败。
+
+---
+
+## 12. 第五轮：发布可见性三件套 + 拖放高亮 + 变体人话摘要 + 守卫补口（2026-10-16 深夜）
+
+### 12.1 范围（demo 评估 P0/P1 剩余项 + 合并回归负向发现）
+| # | 项 | 类型 | 业界依据 |
+|---|----|------|---------|
+| 1 | 「线上页面」已发布版对照预览（预览头「草稿/线上」开关） | WYSIWYG 缺口 | Figma 版本对比 / 飞书「草稿已启用」 |
+| 2 | 发布变更预告（baseline vs published → 人话清单） | 变更可见性 | GitHub PR summary / Salesforce 激活态 |
+| 3 | 拖放落点高亮（控件行/分区体/分区头） | 交互反馈 | Retool/Appsmith 拖放范式 |
+| 4 | 变体人话摘要（describeVariant） | 配置即人话 | 钉钉/宜搭规则卡片 |
+| 5 | 丢弃守卫补口（重新加载/退出全屏/Esc 的脏态确认） | **合并回归缺陷** | Google Docs / Figma / VS Code |
+
+### 12.2 实现要点
+- **对照预览**：`SchemaPreview` 增 `publishedSchema` prop，头部出「草稿/线上」Segmented + `data-source` 徽标；切到线上时以 `published_schema_json`（后端真源，禁前端近似）渲染同一引擎，草稿有差异时警示。设计器 `useMemo` 单次解析 published.json 双消费（对照预览 + 变更预告）。
+- **变更预告**：`utils/uiSchemaChangePreview.ts` 纯函数（baseline vs published → 7 组人话项）；分区新建/移除**折叠**字段项、跨分区移动识别为 modify（非删+增）、同集合换序报「顺序调整」；规则类项载荷交 UI 层 `describe.tsx` 组句（无双份文案）。`ChangePreview.tsx` 弹层挂工具栏「变更预告/首发内容」按钮；**删除**原 `pendingChange`（顶层维度计数）——同一信息的第二套实现且粒度粗，违反单真源。
+- **normJson 单一真源**：从 UiSchemaDesigner 提取到 `utils/normJson.ts`，三态判定与规则 modify 判定共用。
+- **拖放高亮**：`drag.ts` 删无调用方的 `dragSort` 死代码（grep 实证），`dragSort2` 增可选 `onState` + dragover `stopPropagation`（行级悬停不冒泡抢分区高亮）；StructurePanel 三态高亮（`R{si}:{ci}`/`C{si}`/`S{si}`）统一键空间，functional setState 守卫防迟滞 dragleave 误清，**window 级 dragend/drop 兜底全清**（探针实测：只靠行内 onDragEnd 会残留目标行高亮）。
+- **变体摘要**：`describeVariant`（命中条件 + 覆盖块统计）；`matchText`/`variantOverrideText` 上移为 uiSchemaChangePreview 导出真源，VariantsPanel 删本地 `matchSummary` 去重。
+
+### 12.3 守卫补口（负向回归发现，重要）
+`_probe_designer_polish.js` 复跑发现 **2 类失败**，逐一定位：
+1. **探针选择器漂移（假绿风险）**：全局 `.ant-segmented` 下标法读到新增的「草稿/线上」开关（`scen=草稿`）——探针自身缺陷，改为语义锚定（结构=含「录入表单」、视图=预览头第一个、场景=预览头最后一个）。
+2. **真缺陷：第三轮「丢弃未保存改动的三道守卫」在合并中丢失**——dev 的 UiSchemaDesigner 取用户在途演进版后只剩 `beforeunload` 一道，重新加载/退出全屏均无确认（worktree 7d1b6f59 有、合并时被覆盖丢失）。已补回：重新加载 Popconfirm、退出全屏按钮 Popconfirm、Esc 键盘路径 Modal.confirm（zenRef/dirtyRef 镜像，避免 effect 只挂一次拿到首次渲染值）。
+
+### 12.4 验证（三重 + 负向探针）
+1. **单测**：`uiSchemaChangePreview.test.ts` 20/20（负向探针：同键修改不得判成删+增、无差异必须零项、分区内纯换序不得逐字段报移动、normJson 键序不敏感/值敏感、ActionBarItem 按 actionCode 匹配——最后一条为测试抓出的真 bug）。
+2. **存量回归**：`_probe_designer_polish.js` 19/19 ALL PASS（含补回的重加载丢弃确认）；`_probe_p1_contract.js` HARD 4/4 + SOFT 5/5（运行时契约 6 列同序/列宽生效未破坏）。
+3. **P5 联调探针** `scripts/_probe_p5_publish_visibility.js`：HARD 9/9 + SOFT 3/3——对照开关双向切换（`data-source` 真切换）、拖放悬停高亮（边框 #1677ff + 「松开落到此处」+ dragend 复原 + 非悬停行不误亮）、自造 pending 全流程（字段库加「理算金额」→ 保存 → 待发布 → 弹层「新增字段「理算金额」到分区「决策轨迹」」→ 删除 → 回已发布 → 按钮消失）、零 console error。
+4. **tsc** `--noEmit` EXIT=0；全量 vitest：metadata-app 全绿（存量 2 个失败为环境问题：overlaySync 的 localStorage 只读注入、extension-app 参数序列化，均未改动文件，与本轮无关）。
+
+### 12.5 探针方法论踩坑（复用价值，本轮新增）
+- **页面级 `getByText('已发布')` 假绿**：实体详情页头部另有可见的「已发布/已发布且最新」标签，设计器工具栏的发布态标签必须**限定作用域**（撤销按钮的父容器），否则「回到已发布」断言被页面别处元素满足——探针假绿比探针失败更危险。
+- **HTML5 DnD 合成事件**：Playwright `evaluateHandle(() => new DataTransfer())` + `dispatchEvent(el,'dragstart'/'dragover'/'dragend', {dataTransfer})` 可在 Chromium 完整驱动 React 的 DnD 处理器；但合成 dragend **不触发**目标元素的 dragleave，拖拽高亮的清理必须挂 window 级兜底。
+- **行选择器取字段 code**：字段库 Tag 的 innerText 无分隔符（「理算金额calc_amount」），split 取不到 code——用 `lastElementChild.textContent` 拿 code span。
+- **合并丢功能的检出方式**：以「上一轮验收探针」为回归基线复跑，比读 diff 可靠——本轮两道守卫丢失正是探针负向报出（代码 diff 里看不出「曾经有过」）。

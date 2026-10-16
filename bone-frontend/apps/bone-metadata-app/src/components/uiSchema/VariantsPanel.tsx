@@ -25,6 +25,7 @@ import StructurePanel from './StructurePanel';
 import RulesPanel from './RulesPanel';
 import ActionBarPanel from './ActionBarPanel';
 import ListPanel from './ListPanel';
+import { describeVariant } from './describe';
 import { addVariant, removeVariant, updateVariant, mergeVariantIntoBase, type ViewKey } from './schemaOps';
 
 const { Text, Paragraph } = Typography;
@@ -51,17 +52,6 @@ interface Props {
   fields: MetaField[];
   /** 实体已定义的动作（建模期真源） */
   actionDefs: ActionDefSpec[] | null;
-}
-
-/** match 维度摘要（人类可读的命中条件） */
-function matchSummary(m?: VariantMatch): string {
-  if (!m) return '全部身份（兜底）';
-  const parts: string[] = [];
-  if (m.roles?.length) parts.push(`角色∈{${m.roles.join('、')}}`);
-  if (m.tiers?.length) parts.push(`档位∈{${m.tiers.join('、')}}`);
-  if (m.channels?.length) parts.push(`渠道∈{${m.channels.join('、')}}`);
-  if (m.devices?.length) parts.push(`设备∈{${m.devices.join('、')}}`);
-  return parts.length ? parts.join(' 且 ') : '全部身份（兜底）';
 }
 
 function VariantCard({
@@ -185,9 +175,7 @@ function VariantCard({
             options={DEVICE_OPTIONS}
           />
         </div>
-        <div style={{ marginTop: 6 }}>
-          <Text style={{ fontSize: 12 }}>命中：<Text code style={{ fontSize: 12 }}>{matchSummary(variant.match)}</Text></Text>
-        </div>
+        <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7 }}>{describeVariant(variant)}</div>
       </div>
 
       {/* 覆盖编辑 */}

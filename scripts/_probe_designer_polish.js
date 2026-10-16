@@ -53,7 +53,17 @@ const { chromium } = require('playwright');
         .join('|'),
     );
   // .ant-segmented 顺序：0=结构面板(录入/详情) 1=预览视图(表单/详情/列表) 2=预览场景 3=设备
-  const segSelected = async (n) => (await page.locator('.ant-segmented').nth(n).locator('.ant-segmented-item-selected').innerText().catch(() => '')) || '';
+  // Segmented 选择器全部按语义锚定，不按全局下标（防新增控件漂移）：
+  // - struct：结构面板视图档（左栏，含「录入表单」选项，全局唯一）
+  // - view：预览头第一个（表单/详情/列表）
+  // - scenario：预览头最后一个（场景样例）——第五轮新增的「草稿/线上」开关
+  //   插在视图与场景之间，全局下标法曾因此假绿失败，故改用锚定。
+  const segOf = {
+    struct: () => page.locator('.ant-segmented').filter({ hasText: '录入表单' }).first(),
+    view: () => page.locator('.uis-pv-head .ant-segmented').first(),
+    scenario: () => page.locator('.uis-pv-head .ant-segmented').last(),
+  };
+  const segSelected = async (which) => (await segOf[which]().locator('.ant-segmented-item-selected').innerText().catch(() => '')) || '';
   const badge = async () => (await page.evaluate(() => document.querySelector('.uis-pv-badge')?.innerText || ''));
 
   // ---------- 报销单 ----------
@@ -65,15 +75,15 @@ const { chromium } = require('playwright');
   await dismissOnboard();
   const bodyA = await page.evaluate(() => document.body.innerText);
   note('报销单: 设计器挂载', bodyA.includes('界面设计器') || bodyA.includes('添加分区'));
-  note('报销单: 预览默认场景=差旅报销', (await segSelected(2)).includes('差旅报销'), `scen=${await segSelected(2)}`);
+  note('报销单: 预览默认场景=差旅报销', (await segSelected('scenario')).includes('差旅报销'), `scen=${await segSelected('scenario')}`);
   note('报销单: 预览不含跨领域门诊快赔', !bodyA.includes('门诊快赔'));
-  note('报销单: 预览视图默认=表单', (await segSelected(1)).includes('表单'), `view=${await segSelected(1)}`);
+  note('报销单: 预览视图默认=表单', (await segSelected('view')).includes('表单'), `view=${await segSelected('view')}`);
 
   // 预览跟随编辑视图：结构面板切到「详情视图」
   await page.locator('.ant-segmented').nth(0).getByText('详情视图').click();
   await page.waitForTimeout(1000);
-  note('报销单: 结构面板切到详情视图', (await segSelected(0)).includes('详情视图'), `struct=${await segSelected(0)}`);
-  note('报销单: 预览跟随→详情视图', (await segSelected(1)).includes('详情'), `preview=${await segSelected(1)}`);
+  note('报销单: 结构面板切到详情视图', (await segSelected('struct')).includes('详情视图'), `struct=${await segSelected('struct')}`);
+  note('报销单: 预览跟随→详情视图', (await segSelected('view')).includes('详情'), `preview=${await segSelected('view')}`);
   note('报销单: 预览徽标=详情视图', (await badge()).includes('详情视图'), `badge=${await badge()}`);
   // 切回表单
   await page.locator('.ant-segmented').nth(0).getByText('录入表单').click();
@@ -126,7 +136,7 @@ const { chromium } = require('playwright');
   await dismissOnboard();
   const bodyB = await page.evaluate(() => document.body.innerText);
   note('理赔: 设计器挂载', bodyB.includes('界面设计器') || bodyB.includes('添加分区'));
-  note('理赔: 预览默认场景=门诊快赔', (await segSelected(2)).includes('门诊快赔'), `scen=${await segSelected(2)}`);
+  note('理赔: 预览默认场景=门诊快赔', (await segSelected('scenario')).includes('门诊快赔'), `scen=${await segSelected('scenario')}`);
   note('理赔: 预览不含差旅报销', !bodyB.includes('差旅报销'));
   await page.screenshot({ path: 'outputs/probe_polish_理赔案件.png' });
 

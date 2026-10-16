@@ -37,6 +37,14 @@ interface Props {
   entityCode: string;
   /** 左侧结构面板正在编辑的视图（form/detail），预览默认跟随，保持「左改右见」一致 */
   editView?: 'form' | 'detail';
+  /**
+   * 已发布快照（线上真源，后端 published_schema_json）。传入后预览头部出现
+   * 「草稿 / 线上」对照开关——对标 Figma 版本对比 / 飞书已启用态：
+   * 建模者不出设计器即可看到「终端用户此刻看到的画面」，再决定是否发布。
+   */
+  publishedSchema?: BoneUiSchema | null;
+  /** 已存草稿与线上快照存在差异（设计器 publishState==='pending'）；线上视图下给出提示 */
+  draftDiffers?: boolean;
 }
 
 function defaultOf(code: string, fields: MetaField[]): unknown {
@@ -318,10 +326,19 @@ function ListViewPreview({ schema, fields, scenarioData }: {
 }
 
 /* ---------------- 主组件 ---------------- */
-export default function SchemaPreview({ schema, fields, entityCode, editView = 'form' }: Props): React.ReactElement {
+export default function SchemaPreview({
+  schema, fields, entityCode, editView = 'form', publishedSchema = null, draftDiffers = false,
+}: Props): React.ReactElement {
   const [scenarioKey, setScenarioKey] = useState('blank');
   const [scenarioPicked, setScenarioPicked] = useState(false);
   const [previewMode, setPreviewMode] = useState<'form' | 'detail' | 'list'>(editView);
+  /**
+   * 预览源：draft=正在编辑的草稿（默认，左改右见）；
+   * published=线上发布快照（终端用户真实画面，只读对照）。
+   * 无 publishedSchema 时开关不渲染，恒为草稿。
+   */
+  const [source, setSource] = useState<'draft' | 'published'>('draft');
+  const activeSchema = source === 'published' && publishedSchema ? publishedSchema : schema;
   const [data, setData] = useState<Record<string, unknown>>({});
   const [result, setResult] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
@@ -363,8 +380,8 @@ export default function SchemaPreview({ schema, fields, entityCode, editView = '
   // 预览渲染的视图分区（表单 / 详情；列表视图由 ListViewPreview 单独渲染）
   const previewSections = previewMode === 'list'
     ? []
-    : (previewMode === 'detail' ? (schema.views.detail?.sections ?? []) : formOf(schema).sections ?? []);
-  const listCodes = (schema.views.list?.columns ?? []).map((c) => c.fieldCode);
+    : (previewMode === 'detail' ? (activeSchema.views.detail?.sections ?? []) : formOf(activeSchema).sections ?? []);
+  const listCodes = (activeSchema.views.list?.columns ?? []).map((c) => c.fieldCode);
   const allCodes = previewMode === 'list'
     ? listCodes
     : previewSections.flatMap((sec) => (sec.controls ?? []).map((c) => c.fieldCode));
@@ -378,13 +395,13 @@ export default function SchemaPreview({ schema, fields, entityCode, editView = '
   }, [effScenarioKey, shapeKey, fieldsKey]);
 
   // 变体裁决（与运行时同源）
-  const resolved = useMemo(() => resolveVariant(schema, ctx), [schema, ctx]);
+  const resolved = useMemo(() => resolveVariant(activeSchema, ctx), [activeSchema, ctx]);
   const activeVariant = useMemo(() => {
-    const hit = (schema.variants ?? [])
+    const hit = (activeSchema.variants ?? [])
       .filter((v) => fieldMatch(v.match, ctx))
       .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100))[0];
     return hit ? (hit.label ?? hit.key) : 'base（默认）';
-  }, [schema.variants, ctx]);
+  }, [activeSchema.variants, ctx]);
 
   const baseStates = useMemo(() => {
     const out: Record<string, Partial<FieldUiState>> = {};
@@ -431,6 +448,28 @@ export default function SchemaPreview({ schema, fields, entityCode, editView = '
           size="small" value={previewMode} onChange={(v) => setPreviewMode(v as 'form' | 'detail' | 'list')}
           options={[{ value: 'form', label: '表单' }, { value: 'detail', label: '详情' }, { value: 'list', label: '列表' }]}
         />
+        {/* 草稿 / 线上对照开关（仅存在已发布快照时出现；对标 Figma 版本对比） */}
+        {publishedSchema && (
+          <Segmented
+            size="small" value={source}
+            onChange={(v) => setSource(v as 'draft' | 'published')}
+            options={[{ value: 'draft', label: '草稿' }, { value: 'published', label: '线上' }]}
+          />
+        )}
+        <Tooltip
+          title={
+            source === 'published' && publishedSchema
+              ? '线上发布快照（后端 published_schema_json）——终端用户真实画面，只读'
+              : '正在编辑的草稿；保存并发布后才对终端用户生效'
+          }
+        >
+          <span
+            className="uis-pv-badge uis-pv-source"
+            data-source={source === 'published' && publishedSchema ? 'published' : 'draft'}
+          >
+            {source === 'published' && publishedSchema ? '线上发布版 · 只读' : '草稿'}
+          </span>
+        </Tooltip>
         <Segmented
           size="small" value={effScenarioKey} onChange={(v) => { setScenarioKey(String(v)); setScenarioPicked(true); }}
           options={visibleScenarios.map((s) => ({ value: s.key, label: s.label }))}
@@ -441,6 +480,14 @@ export default function SchemaPreview({ schema, fields, entityCode, editView = '
       </div>
 
       <span className="uis-pv-desc">{SCENARIOS.find((s) => s.key === effScenarioKey)?.desc}</span>
+
+      {/* 线上对照 + 草稿有未发布改动 ⇒ 显式警示，避免误把草稿效果当成线上现状 */}
+      {source === 'published' && publishedSchema && draftDiffers && (
+        <Alert
+          type="warning" showIcon style={{ marginBottom: 10 }}
+          message="正在查看线上发布版；已存草稿有未发布改动（见工具栏「变更预告」）"
+        />
+      )}
 
       {/* 身份模拟栏 */}
       <div className="uis-idbar">

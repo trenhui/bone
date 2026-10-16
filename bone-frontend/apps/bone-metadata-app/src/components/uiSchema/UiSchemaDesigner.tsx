@@ -13,15 +13,17 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
+  Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popconfirm, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, FileTextOutlined, FullscreenExitOutlined,
+  CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, EyeOutlined, FileTextOutlined, FullscreenExitOutlined,
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
   ReloadOutlined, SaveOutlined, UndoOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
+import { normJson } from '../../utils/normJson';
+import { previewChanges, type ChangePreview } from '../../utils/uiSchemaChangePreview';
 import { metadataActionDefApi, metadataUiSchemaApi, type ActionDefSpec, type UiSchemaIssue } from '../../services/metadataApi';
 import { buildDefaultSchema, type ViewKey } from './schemaOps';
 import { enumFieldsOf, lintSchema, type LintIssue, type LintLocate } from './lint';
@@ -36,6 +38,7 @@ import LintPanel from './LintPanel';
 import JsonPanel from './JsonPanel';
 import VariantsPanel from './VariantsPanel';
 import SchemaPreview from './SchemaPreview';
+import ChangePreviewPanel from './ChangePreview';
 import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } from './snapshots';
 
 /**
@@ -46,21 +49,6 @@ import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } f
 const MemoSchemaPreview = memo(SchemaPreview);
 
 const { Text } = Typography;
-
-/** JSON 规范化（递归排序键）字符串：跨前后端序列化差异做内容等价比较（三态判定 / 版式 diff 用）。 */
-const normJson = (raw: string): string => {
-  const sort = (v: unknown): unknown =>
-    Array.isArray(v)
-      ? v.map(sort)
-      : v && typeof v === 'object'
-        ? Object.fromEntries(
-            Object.keys(v as Record<string, unknown>)
-              .sort()
-              .map((k): [string, unknown] => [k, sort((v as Record<string, unknown>)[k])]),
-          )
-        : v;
-  return JSON.stringify(sort(JSON.parse(raw)));
-};
 
 interface Props {
   entityId: string;
@@ -301,7 +289,19 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           const s = getComputedStyle(el);
           return s.display !== 'none' && s.visibility !== 'hidden';
         });
-        if (!popupOpen) setZen(false);
+        if (popupOpen) return;
+        // 脏态退出全屏同样要守卫（业界基线：Google Docs / Figma / VS Code）——
+        // 与工具栏「退出全屏」按钮的 Popconfirm 同口径；键盘路径无锚点故用命令式 Modal。
+        if (zenRef.current && dirtyRef.current) {
+          Modal.confirm({
+            title: '放弃未保存改动？',
+            content: '退出全屏不会保存当前改动；可先保存（Ctrl+S）再退出。',
+            okText: '放弃并退出', okButtonProps: { danger: true }, cancelText: '取消',
+            onOk: () => setZen(false),
+          });
+          return;
+        }
+        setZen(false);
         return;
       }
       if (!mod) return;
@@ -313,6 +313,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // 键盘 Esc 退出全屏的脏态守卫需读最新 zen/dirty：键盘 effect 只挂一次，
+  // 直接闭包捕获会拿到首次渲染值（恒 false）——ref 镜像，与 schemaRef 同模式。
+  const zenRef = useRef(zen);
+  zenRef.current = zen;
 
   /* ---------- 版本快照（P2 · 对标原型：本地 30 份上限，恢复前协议 Gate） ---------- */
   const doSnapshot = () => {
@@ -386,6 +391,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     [schema, baseline],
   );
 
+  // dirty 的 ref 镜像（Esc 退出全屏守卫用；声明晚于键盘 effect 无妨——
+  // effect 回调在事件期读 ref，与渲染体赋值顺序无关）
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+
   /**
    * 发布态三态（对标原型 dirty()/pending() 双判定，但真源走后端已发布快照，非前端近似）：
    * - never：从未发布（publishedSchemaJson 为空）
@@ -396,38 +406,35 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     if (!published || published.json == null) return 'never';
     if (!baseline) return 'pending';
     try {
-      return normJson(baseline) === normJson(published.json) ? 'published' : 'pending';
+      return normJson(JSON.parse(baseline)) === normJson(JSON.parse(published.json)) ? 'published' : 'pending';
     } catch {
       return 'pending';
     }
   }, [baseline, published]);
 
-  /** 待发布改动规模（已存草稿 vs 已发布快照的顶层维度差异；供发布态徽标悬浮说明，不虚构逐字段自然语言）。 */
-  const pendingChange = useMemo(() => {
-    if (publishState !== 'pending') return '';
-    let draft: BoneUiSchema | null = null;
+  /**
+   * 已发布快照解析 + 发布变更预告（同一 useMemo 内解析一次，双消费）：
+   * - publishedSchema：线上对照预览的真源（传给 SchemaPreview「草稿/线上」开关）；
+   * - changePreview：baseline（已存草稿） vs 线上快照的人话变更清单——
+   *   真源走后端 published_schema_json（util 头注），不用前端时间戳近似。
+   *   取代此前的 pendingChange（顶层维度计数）：那是同一信息的第二套实现，
+   * 且粒度粗（只报「联动规则+1」不报是哪条），违反单真源纪律，故删除。
+   */
+  const { publishedSchema, changePreview } = useMemo(() => {
     let pub: BoneUiSchema | null = null;
     try {
-      draft = baseline ? (JSON.parse(baseline) as BoneUiSchema) : null;
       pub = published.json ? (JSON.parse(published.json) as BoneUiSchema) : null;
     } catch {
-      return '';
+      pub = null;
     }
-    if (!draft || !pub) return '';
-    const parts: string[] = [];
-    const dims: [keyof BoneUiSchema, string][] = [
-      ['linkageRules', '联动规则'], ['submitRules', '提交校验'], ['actionBar', '动作条'], ['variants', '角色变体'],
-    ];
-    for (const [k, label] of dims) {
-      const d = ((draft[k] as unknown[] | undefined)?.length ?? 0) - ((pub[k] as unknown[] | undefined)?.length ?? 0);
-      if (d !== 0) parts.push(`${label}${d > 0 ? '+' : ''}${d}`);
+    let draft: BoneUiSchema | null = null;
+    try {
+      draft = baseline ? (JSON.parse(baseline) as BoneUiSchema) : null;
+    } catch {
+      draft = null;
     }
-    const vc = (['form', 'detail', 'list'] as const)
-      .filter((v) => normJson(JSON.stringify(draft.views?.[v] ?? null)) !== normJson(JSON.stringify(pub.views?.[v] ?? null)))
-      .map((v) => (v === 'form' ? '表单' : v === 'detail' ? '详情' : '列表'));
-    if (vc.length) parts.push(`${vc.join('/')}版式`);
-    return parts.join('、');
-  }, [publishState, baseline, published]);
+    return { publishedSchema: pub, changePreview: previewChanges(draft, pub, fields) as ChangePreview };
+  }, [baseline, published, fields]);
 
   /**
    * 未保存改动离开页面拦截（业界基线：Google Docs / Figma / VS Code 均在脏状态时阻止误关/刷新）。
@@ -563,7 +570,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
             publishState === 'published'
               ? '已存草稿与线上发布版一致'
               : publishState === 'pending'
-                ? `有已保存但未发布的改动${pendingChange ? `：${pendingChange}` : ''}，发布后才对终端生效`
+                ? `有已保存但未发布的改动${changePreview?.summary ? `：${changePreview.summary}` : ''}，发布后才对终端生效`
                 : '尚未发布过，终端暂按结构投影渲染'
           }
         >
@@ -575,6 +582,22 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
             {publishState === 'published' ? '已发布' : publishState === 'pending' ? '待发布' : '未发布'}
           </Tag>
         </Tooltip>
+
+        {/* 发布变更预告（第五轮：上线前用业务语言看清改变什么；never 态=首发内容） */}
+        {(publishState === 'pending' || publishState === 'never') && changePreview.total > 0 && (
+          <Popover
+            trigger="click"
+            placement="bottomLeft"
+            title={publishState === 'never' ? '首次发布内容预告' : '发布变更预告（已存草稿 vs 线上发布版）'}
+            content={
+              <ChangePreviewPanel preview={changePreview} mode={publishState === 'never' ? 'first' : 'pending'} />
+            }
+          >
+            <Button size="small" icon={<EyeOutlined />}>
+              {publishState === 'never' ? '首发内容' : '变更预告'}
+            </Button>
+          </Popover>
+        )}
 
         <span style={{ flex: 1 }} />
 
@@ -623,17 +646,42 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           <Button size="small" aria-label="编辑历史" icon={<HistoryOutlined />} disabled={!past.length}>历史</Button>
         </Popover>
         <Tooltip title="放弃改动，重新从服务端加载">
-          <Button size="small" aria-label="重新加载" icon={<ReloadOutlined />} onClick={() => void load()}>重新加载</Button>
+          {dirty ? (
+            /* 第三轮「丢弃未保存改动的三道守卫」之一：重新加载前确认。
+             * 曾因合并取用户在途演进版而丢失（dev 只剩 beforeunload 一道），
+             * 由 _probe_designer_polish 回归探针负向发现，现补回。 */
+            <Popconfirm
+              title="放弃未保存改动？"
+              description="重新加载会从服务端拉取最新版本，当前未保存的界面配置将丢失。"
+              okText="重新加载" okButtonProps={{ danger: true }} cancelText="取消"
+              onConfirm={() => void load()}
+            >
+              <Button size="small" aria-label="重新加载" icon={<ReloadOutlined />}>重新加载</Button>
+            </Popconfirm>
+          ) : (
+            <Button size="small" aria-label="重新加载" icon={<ReloadOutlined />} onClick={() => void load()}>重新加载</Button>
+          )}
         </Tooltip>
 
         <Tooltip title={zen ? '退出全屏（Esc）' : '全屏编辑（Esc 退出）'}>
-          <Button
-            size="small"
-            icon={zen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-            onClick={() => setZen((v) => !v)}
-          >
-            {zen ? '退出全屏' : '全屏'}
-          </Button>
+          {zen && dirty ? (
+            <Popconfirm
+              title="放弃未保存改动？"
+              description="退出全屏不会保存当前改动；可先保存（Ctrl+S）再退出。"
+              okText="放弃并退出" okButtonProps={{ danger: true }} cancelText="取消"
+              onConfirm={() => setZen(false)}
+            >
+              <Button size="small" icon={<FullscreenExitOutlined />}>退出全屏</Button>
+            </Popconfirm>
+          ) : (
+            <Button
+              size="small"
+              icon={zen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+              onClick={() => setZen((v) => !v)}
+            >
+              {zen ? '退出全屏' : '全屏'}
+            </Button>
+          )}
         </Tooltip>
 
         <Tooltip title="3 步上手引导">
@@ -841,7 +889,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           flex: 1, minWidth: 0, overflow: 'auto', padding: 16,
           background: '#f5f7fa', border: '1px solid #e6eaf0', borderRadius: 10,
         }}>
-          <MemoSchemaPreview schema={schema} fields={fields} entityCode={entityCode} editView={view} />
+          <MemoSchemaPreview
+            schema={schema} fields={fields} entityCode={entityCode} editView={view}
+            publishedSchema={publishedSchema}
+            draftDiffers={publishState === 'pending'}
+          />
         </div>
       </div>
     </div>
@@ -971,7 +1023,18 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           <Text strong>界面设计器 · {entityCode}</Text>
           <Tag color="blue" style={{ margin: 0 }}>全屏模式</Tag>
           <span style={{ flex: 1 }} />
-          <Button size="small" icon={<FullscreenExitOutlined />} onClick={() => setZen(false)}>退出全屏（Esc）</Button>
+          {dirty ? (
+            <Popconfirm
+              title="放弃未保存改动？"
+              description="退出全屏不会保存当前改动；可先保存（Ctrl+S）再退出。"
+              okText="放弃并退出" okButtonProps={{ danger: true }} cancelText="取消"
+              onConfirm={() => setZen(false)}
+            >
+              <Button size="small" icon={<FullscreenExitOutlined />}>退出全屏（Esc）</Button>
+            </Popconfirm>
+          ) : (
+            <Button size="small" icon={<FullscreenExitOutlined />} onClick={() => setZen(false)}>退出全屏（Esc）</Button>
+          )}
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12 }}>
           {content}
