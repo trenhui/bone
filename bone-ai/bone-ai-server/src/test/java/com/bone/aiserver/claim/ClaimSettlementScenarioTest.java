@@ -192,10 +192,11 @@ class ClaimSettlementScenarioTest {
     assertThat(saved.getEngineVersion()).isNotBlank(); // 哈希三元组含引擎版本
   }
 
-  // ===== 走查 C：高风险转 HITL 人工终审（HITL 五态 + ReasonType + 处置链） =====
+  // ===== 走查 C：低置信 / 高风险转 HITL 人工终审（HITL 五态 + ReasonType + 处置链可回放） =====
 
   @Test
-  void walkthroughC_high_risk_claim_escalates_to_hitl_and_disposition_replays() throws IOException {
+  void walkthroughC_low_confidence_claim_escalates_to_hitl_and_disposition_replays()
+      throws IOException {
     RuleAsset risk = RuleAsset.create("t1", "RISK", "风控", "金额≥5万");
     risk.setId("risk-1");
     risk.publishFirst("amount >= 50000", false, 0, "ops");
@@ -203,44 +204,74 @@ class ClaimSettlementScenarioTest {
 
     byte[] policyPdf = policyPdf("Clause 1: Insurance Coverage\nCovers medical expenses.\n");
 
+    // 低置信 LlmClient：content 携带 conf:0.5 → 触发 <0.7 强制人工（覆盖低置信 HITL 分支可达性）
+    LlmClient lowConfidence =
+        request ->
+            new com.bone.ai.gateway.domain.LlmResponse(
+                "conf:0.5 建议核赔",
+                "claim-assessor",
+                "stop",
+                new com.bone.ai.gateway.domain.LlmUsage(10, 5, 15));
+
+    // 低置信 client + mock hitlRepo 构造 ClaimService；裁决作用于 underwrite 真实产出项（捕获 save）
+    DomainEventPublisher bus =
+        new DomainEventPublisher() {
+          @Override
+          public void publish(DomainEvent event) {}
+
+          @Override
+          public void publishAll(Collection<? extends DomainEvent> events) {}
+        };
+    LlmGatewayService gateway = new LlmGatewayService(lowConfidence, bus);
+    OrchestrationService orch = new OrchestrationService(ruleService, ruleQueryService, gateway);
+    HitlService hitlService = new HitlService(hitlRepo);
+    ClaimService localService = new ClaimService(orch, new PdfBoxDocumentParser(), hitlService);
+
     ClaimService.ClaimRequest request =
         new ClaimService.ClaimRequest(
             "t1",
             "claim-C",
-            "大额手术报销",
+            "手术报销",
             30000.0,
-            "HIGH",
+            "MEDIUM",
             new ByteArrayInputStream(policyPdf),
             "policy-C.pdf");
 
-    // 预置 hitl item：让 claimService.act / dispositionHistory 能取到
-    HitlItem pendingItem = HitlItem.create("t1", "claim-claim-C", "建议核赔", 30000.0, "HIGH", 0.9);
-    pendingItem.setId("hitl-C");
-    when(hitlRepo.findPendingById("t1", "hitl-C")).thenReturn(java.util.Optional.of(pendingItem));
-    when(hitlRepo.findById("hitl-C")).thenReturn(pendingItem);
+    ClaimService.ClaimDecision decision = localService.underwrite(request);
 
-    ClaimService.ClaimDecision decision = claimService.underwrite(request);
-
-    // 高风险 ⇒ 强制 HITL 待人工，平台不擅自决策
+    // 低置信（0.5 < 0.7）⇒ 强制 HITL 待人工，平台不擅自决策
     assertThat(decision.mode()).isEqualTo("HITL_PENDING");
     assertThat(decision.verdict()).isEqualTo("UNDER_REVIEW");
+    assertThat(decision.confidence()).isEqualTo(0.5);
     assertThat(decision.hitlItemId()).isNotBlank();
     assertThat(decision.hitlStatus()).isEqualTo("PENDING");
 
-    // 人工驳回（必带 ReasonType）→ REJECTED + 处置链可回放
-    ClaimService.ClaimDecision finalDecision = decision;
+    // 捕获 underwrite 产出的 HITL item，使 act/dispositionHistory 按真实 itemId 取回——裁决与创建打通
+    String itemId = decision.hitlItemId();
+    HitlItem created = captureSavedItem();
+    assertThat(created.getStatus()).isEqualTo(HitlStatus.PENDING);
+    when(hitlRepo.findPendingById("t1", itemId)).thenReturn(java.util.Optional.of(created));
+    when(hitlRepo.findById(itemId)).thenReturn(created);
+
     HitlItem.Disposition disposition =
-        claimService.act("t1", "hitl-C", "ops-1", "reject", null, ReasonType.RULE_MISS, "既往症漏判");
+        localService.act("t1", itemId, "ops-1", "reject", null, ReasonType.RULE_MISS, "既往症漏判");
     assertThat(disposition.action()).isEqualTo("reject");
     assertThat(disposition.reasonType()).isEqualTo("RULE_MISS");
-    assertThat(pendingItem.getStatus()).isEqualTo(HitlStatus.REJECTED);
+    assertThat(created.getStatus()).isEqualTo(HitlStatus.REJECTED);
 
     // 处置链回放：谁在何时做了什么裁决、带什么原因
-    var history = claimService.dispositionHistory("t1", "hitl-C");
+    var history = localService.dispositionHistory("t1", itemId);
     assertThat(history).hasSize(1);
     assertThat(history.get(0).actor()).isEqualTo("ops-1");
     assertThat(history.get(0).comment()).isEqualTo("既往症漏判");
-    assertThat(finalDecision.claimId()).isEqualTo("claim-C");
+    assertThat(decision.claimId()).isEqualTo("claim-C");
+  }
+
+  /** 捕获 underwrite 触发 hitlRepo.save 的 HITL item（使 act 可作用于真实产出项）。 */
+  private HitlItem captureSavedItem() {
+    ArgumentCaptor<HitlItem> captor = ArgumentCaptor.forClass(HitlItem.class);
+    verify(hitlRepo).save(captor.capture());
+    return captor.getValue();
   }
 
   /** 生成一页理赔条款 PDF（PDFBox 自举：写入 → 解析链验证）。 */

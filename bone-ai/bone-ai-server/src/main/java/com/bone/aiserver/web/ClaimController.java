@@ -56,7 +56,7 @@ public class ClaimController {
   @PostMapping("/{itemId}/act")
   public Object act(
       @RequestPart("tenantId") String tenantId,
-      @RequestPart("itemId") String itemId,
+      @org.springframework.web.bind.annotation.PathVariable("itemId") String itemId,
       @RequestPart("actor") String actor,
       @RequestPart("action") String action,
       @RequestPart(value = "value", required = false) Object value,
@@ -69,7 +69,8 @@ public class ClaimController {
   /** 处置链回放。 */
   @PostMapping("/{itemId}/history")
   public List<com.bone.aiorch.domain.hitl.HitlItem.Disposition> history(
-      @RequestPart("tenantId") String tenantId, @RequestPart("itemId") String itemId) {
+      @RequestPart("tenantId") String tenantId,
+      @org.springframework.web.bind.annotation.PathVariable("itemId") String itemId) {
     return claimService.dispositionHistory(tenantId, itemId);
   }
 
