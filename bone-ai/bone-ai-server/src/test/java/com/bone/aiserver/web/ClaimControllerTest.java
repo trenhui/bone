@@ -40,7 +40,8 @@ class ClaimControllerTest {
     MockMultipartFile pdf =
         new MockMultipartFile("policyPdf", "policy.pdf", "application/pdf", new byte[0]);
 
-    ClaimDecision got = controller.underwrite("t1", "claim-1", "门诊报销", 2000.0, "LOW", pdf);
+    ClaimDecision got =
+        controller.underwrite("t1", "claim-1", "门诊报销", 2000.0, "LOW", pdf).getData();
 
     assertThat(got.claimId()).isEqualTo("claim-1");
     assertThat(got.verdict()).isEqualTo("AUTO_APPROVE");
@@ -51,7 +52,8 @@ class ClaimControllerTest {
   void act_binds_reason_type() {
     when(claimService.act("t1", "hitl-1", "ops-1", "reject", null, ReasonType.RULE_MISS, "既往症漏判"))
         .thenReturn(null);
-    Object result = controller.act("t1", "hitl-1", "ops-1", "reject", null, "RULE_MISS", "既往症漏判");
+    Object result =
+        controller.act("t1", "hitl-1", "ops-1", "reject", null, "RULE_MISS", "既往症漏判").getData();
     assertThat(result).isNull();
     verify(claimService)
         .act("t1", "hitl-1", "ops-1", "reject", null, ReasonType.RULE_MISS, "既往症漏判");
@@ -60,7 +62,7 @@ class ClaimControllerTest {
   @Test
   void history_delegates_to_claimService() {
     when(claimService.dispositionHistory("t1", "hitl-1")).thenReturn(List.of());
-    assertThat(controller.history("t1", "hitl-1")).isEmpty();
+    assertThat(controller.history("t1", "hitl-1").getData()).isEmpty();
     verify(claimService).dispositionHistory("t1", "hitl-1");
   }
 }

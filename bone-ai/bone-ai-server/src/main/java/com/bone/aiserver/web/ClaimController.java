@@ -4,6 +4,7 @@ import com.bone.aiorch.domain.hitl.ReasonType;
 import com.bone.aiserver.claim.ClaimService;
 import com.bone.aiserver.claim.ClaimService.ClaimDecision;
 import com.bone.aiserver.claim.ClaimService.ClaimRequest;
+import com.bone.core.model.ApiResponse;
 import java.io.InputStream;
 import java.util.List;
 import org.springframework.http.MediaType;
@@ -33,7 +34,7 @@ public class ClaimController {
   }
 
   @PostMapping(value = "/underwrite", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ClaimDecision underwrite(
+  public ApiResponse<ClaimDecision> underwrite(
       @RequestPart("tenantId") String tenantId,
       @RequestPart("claimId") String claimId,
       @RequestPart("patientDesc") String patientDesc,
@@ -41,20 +42,21 @@ public class ClaimController {
       @RequestPart("riskLevel") String riskLevel,
       @RequestPart(value = "policyPdf", required = false) MultipartFile policyPdf) {
     InputStream pdf = policyPdf == null ? InputStream.nullInputStream() : safeStream(policyPdf);
-    return claimService.underwrite(
-        new ClaimRequest(
-            tenantId,
-            claimId,
-            patientDesc,
-            amount,
-            riskLevel,
-            pdf,
-            policyPdf == null ? claimId + ".pdf" : policyPdf.getOriginalFilename()));
+    return ApiResponse.success(
+        claimService.underwrite(
+            new ClaimRequest(
+                tenantId,
+                claimId,
+                patientDesc,
+                amount,
+                riskLevel,
+                pdf,
+                policyPdf == null ? claimId + ".pdf" : policyPdf.getOriginalFilename())));
   }
 
   /** 人工终审回写（confirm / reject / modify；reject/modify 必带 reasonType）。 */
   @PostMapping("/{itemId}/act")
-  public Object act(
+  public ApiResponse<Object> act(
       @RequestPart("tenantId") String tenantId,
       @org.springframework.web.bind.annotation.PathVariable("itemId") String itemId,
       @RequestPart("actor") String actor,
@@ -63,15 +65,16 @@ public class ClaimController {
       @RequestPart(value = "reasonType", required = false) String reasonType,
       @RequestPart(value = "comment", required = false) String comment) {
     ReasonType rt = reasonType == null ? null : ReasonType.valueOf(reasonType);
-    return claimService.act(tenantId, itemId, actor, action, value, rt, comment);
+    return ApiResponse.success(
+        claimService.act(tenantId, itemId, actor, action, value, rt, comment));
   }
 
   /** 处置链回放。 */
   @PostMapping("/{itemId}/history")
-  public List<com.bone.aiorch.domain.hitl.HitlItem.Disposition> history(
+  public ApiResponse<List<com.bone.aiorch.domain.hitl.HitlItem.Disposition>> history(
       @RequestPart("tenantId") String tenantId,
       @org.springframework.web.bind.annotation.PathVariable("itemId") String itemId) {
-    return claimService.dispositionHistory(tenantId, itemId);
+    return ApiResponse.success(claimService.dispositionHistory(tenantId, itemId));
   }
 
   private static InputStream safeStream(MultipartFile file) {

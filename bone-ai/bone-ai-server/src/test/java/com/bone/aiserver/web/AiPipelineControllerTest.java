@@ -27,7 +27,7 @@ class AiPipelineControllerTest {
     when(orchestration.run(request))
         .thenReturn(new OrchestrationResult(List.of(), false, null, null));
 
-    assertThat(controller.run(request)).isNotNull();
+    assertThat(controller.run(request).getData()).isNotNull();
     verify(orchestration).run(request);
   }
 }

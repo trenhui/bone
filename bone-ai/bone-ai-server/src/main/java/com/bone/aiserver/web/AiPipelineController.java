@@ -3,6 +3,7 @@ package com.bone.aiserver.web;
 import com.bone.aiorch.application.OrchestrationRequest;
 import com.bone.aiorch.application.OrchestrationResult;
 import com.bone.aiorch.application.OrchestrationService;
+import com.bone.core.model.ApiResponse;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +26,7 @@ public class AiPipelineController {
   }
 
   @PostMapping
-  public OrchestrationResult run(@RequestBody OrchestrationRequest request) {
-    return orchestration.run(request);
+  public ApiResponse<OrchestrationResult> run(@RequestBody OrchestrationRequest request) {
+    return ApiResponse.success(orchestration.run(request));
   }
 }
