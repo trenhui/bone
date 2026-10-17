@@ -195,6 +195,8 @@ describe('extensionApi', () => {
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1:publish-runtime');
   });
 
+  // 请求体 ID 走 string 线状（2026-10-06 ID string 化清扫：调用点已改 string，
+  // 断言期望值同步补齐——后端 Spring 从 string 绑定 Long 无碍）
   it('bindPlugin POSTs extensionPointId payload', async () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { id: 7, extPointId: 12 } },
@@ -202,7 +204,7 @@ describe('extensionApi', () => {
     const row = await bindPlugin('7', '12');
     expect(mockPost).toHaveBeenCalledWith(
       '/v1/extension/plugins/7:bind',
-      { extensionPointId: 12 },
+      { extensionPointId: '12' },
     );
     expect(row).toMatchObject({ id: 7, extPointId: 12 });
   });
@@ -291,7 +293,7 @@ describe('extensionApi', () => {
     });
     await getDependencyGraph('42');
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/dependency-graph', {
-      params: { extPointId: 42 },
+      params: { extPointId: '42' },
     });
     await getDependencyGraph();
     expect(mockGet).toHaveBeenLastCalledWith('/v1/extension/dependency-graph', { params: undefined });
@@ -312,7 +314,7 @@ describe('extensionApi', () => {
       data: { success: true, data: { pluginId: 10, itemId: 'sample.foo', extPointId: 3 } },
     });
     const result = await installMarketplaceItem('sample.foo', '3');
-    expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', { extPointId: 3 });
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', { extPointId: '3' });
     expect(result.pluginId).toBe(10);
   });
 
@@ -325,8 +327,8 @@ describe('extensionApi', () => {
     });
     const result = await installMarketplaceItem('sample.foo', '3', '77001');
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', {
-      extPointId: 3,
-      appId: 77001,
+      extPointId: '3',
+      appId: '77001',
     });
     expect(result.appId).toBe(77001);
   });
@@ -337,7 +339,7 @@ describe('extensionApi', () => {
     });
     await listPlugins({ appId: '9001' });
     expect(mockGet).toHaveBeenCalledWith('/v1/extension/plugins', {
-      params: { extPointId: undefined, appId: 9001, page: undefined, size: undefined },
+      params: { extPointId: undefined, appId: '9001', page: undefined, size: undefined },
     });
   });
 

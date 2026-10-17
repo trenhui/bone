@@ -16,10 +16,10 @@ export function normJson(value: unknown): string {
       ? v.map(sort)
       : v && typeof v === 'object'
         ? Object.fromEntries(
-            Object.keys(v as Record<string, unknown>)
-              .sort()
-              .map((k): [string, unknown] => [k, sort((v as Record<string, unknown>)[k])]),
-          )
+          Object.keys(v as Record<string, unknown>)
+            .sort()
+            .map((k): [string, unknown] => [k, sort((v as Record<string, unknown>)[k])]),
+        )
         : v;
   return JSON.stringify(sort(value));
 }
