@@ -250,171 +250,171 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         // 分区级落点高亮：标题悬停（S=整区重排落点）或分区体悬停（C=字段库拖入落点）
         const secOver = dragOver === `S${si}` || dragOver === `C${si}`;
         return (
-        <div
-          key={sec.id ?? si}
-          data-tour="section"
-          style={{
-            border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
-            borderRadius: 10, marginBottom: 10, background: '#fff',
-            boxShadow: isFocused(si) ? '0 0 0 3px rgba(22,119,255,.12)' : secOver ? '0 0 0 3px rgba(105,192,255,.18)' : '0 1px 2px rgba(16,24,40,.04)',
-            transition: 'box-shadow .18s, border-color .18s',
-          }}
-        >
-          {/* 分区头 */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
-            borderBottom: '1px solid #f5f5f5', background: dragOver === `S${si}` ? '#f0f7ff' : '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
-          }}>
-            <Tooltip title="拖拽调整分区顺序">
-              <span
-                draggable
-                onDragStart={(e) => { e.dataTransfer.setData('text/plain', `S${si}`); e.dataTransfer.effectAllowed = 'move'; }}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(`S${si}`); }}
-                onDragLeave={() => setDragOver((cur) => (cur === `S${si}` ? null : cur))}
-                onDrop={(e) => {
-                  e.preventDefault(); setDragOver(null);
-                  const raw = e.dataTransfer.getData('text/plain');
-                  if (raw.startsWith('S')) onChange(moveSection(schema, view, Number(raw.slice(1)), si));
-                }}
-                style={{ cursor: 'grab', color: dragOver === `S${si}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
-              >
-                <DragOutlined />
-              </span>
-            </Tooltip>
-            <Input
-              size="small" style={{ width: 110, fontWeight: 600 }} value={sec.id ?? ''}
-              onChange={(e) => onChange(updateSection(schema, view, si, { id: e.target.value }))}
-            />
-            <Input
-              size="small" style={{ flex: 1, maxWidth: 220, fontWeight: 600 }} placeholder="分区标题"
-              value={sec.title ?? ''}
-              onChange={(e) => onChange(updateSection(schema, view, si, { title: e.target.value }))}
-            />
-            <Tooltip title="分区类型（v1.1：表单区/统计卡区/时间轴/对照区/报告区/待办区）">
-              <Select
-                size="small" style={{ width: 104 }} value={sec.kind ?? 'form'}
-                onChange={(v) => onChange(updateSection(schema, view, si, { kind: v }))}
-                options={SECTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Tooltip>
-            <Tooltip title="分区布局（split 用于审查分栏：左 40% 风险面板 + 右 60% 原文）">
-              <Select
-                size="small" style={{ width: 96 }} value={sec.layout ?? 'single'}
-                onChange={(v) => onChange(updateSection(schema, view, si, { layout: v }))}
-                options={SECTION_LAYOUTS.map((l) => ({ value: l.value, label: l.label }))}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Tooltip>
-            <Tag style={{ fontSize: 11 }}>{sec.controls?.length ?? 0} 控件</Tag>
-            <Space size={2}>
-              <Tooltip title="上移">
-                <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={si === 0}
-                  onClick={() => onChange(moveSection(schema, view, si, si - 1))} />
-              </Tooltip>
-              <Tooltip title="下移">
-                <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={si === sections.length - 1}
-                  onClick={() => onChange(moveSection(schema, view, si, si + 1))} />
-              </Tooltip>
-              <Tooltip title="删除分区">
-                <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onChange(removeSection(schema, view, si))} />
-              </Tooltip>
-            </Space>
-          </div>
-
-          {/* 控件列表 */}
           <div
-            style={{ padding: 8, background: dragOver === `C${si}` ? '#f0f7ff' : undefined, transition: 'background .15s' }}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(`C${si}`); }}
-            onDragLeave={() => setDragOver((cur) => (cur === `C${si}` ? null : cur))}
-            onDrop={(e) => {
-              e.preventDefault(); setDragOver(null);
-              const raw = e.dataTransfer.getData('text/plain');
-              // 从字段库拖入：追加到末尾
-              if (raw.startsWith('F:')) {
-                const code = raw.slice(2);
-                const f = fields.find((x) => x.code === code);
-                onChange(addControl(schema, view, si, f));
-              }
+            key={sec.id ?? si}
+            data-tour="section"
+            style={{
+              border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
+              borderRadius: 10, marginBottom: 10, background: '#fff',
+              boxShadow: isFocused(si) ? '0 0 0 3px rgba(22,119,255,.12)' : secOver ? '0 0 0 3px rgba(105,192,255,.18)' : '0 1px 2px rgba(16,24,40,.04)',
+              transition: 'box-shadow .18s, border-color .18s',
             }}
           >
-            {(sec.controls ?? []).length === 0 && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                空分区 —— 从下方「字段库」点选或拖入字段
-              </Text>
-            )}
+            {/* 分区头 */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
+              borderBottom: '1px solid #f5f5f5', background: dragOver === `S${si}` ? '#f0f7ff' : '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
+            }}>
+              <Tooltip title="拖拽调整分区顺序">
+                <span
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.setData('text/plain', `S${si}`); e.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(`S${si}`); }}
+                  onDragLeave={() => setDragOver((cur) => (cur === `S${si}` ? null : cur))}
+                  onDrop={(e) => {
+                    e.preventDefault(); setDragOver(null);
+                    const raw = e.dataTransfer.getData('text/plain');
+                    if (raw.startsWith('S')) onChange(moveSection(schema, view, Number(raw.slice(1)), si));
+                  }}
+                  style={{ cursor: 'grab', color: dragOver === `S${si}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
+                >
+                  <DragOutlined />
+                </span>
+              </Tooltip>
+              <Input
+                size="small" style={{ width: 110, fontWeight: 600 }} value={sec.id ?? ''}
+                onChange={(e) => onChange(updateSection(schema, view, si, { id: e.target.value }))}
+              />
+              <Input
+                size="small" style={{ flex: 1, maxWidth: 220, fontWeight: 600 }} placeholder="分区标题"
+                value={sec.title ?? ''}
+                onChange={(e) => onChange(updateSection(schema, view, si, { title: e.target.value }))}
+              />
+              <Tooltip title="分区类型（v1.1：表单区/统计卡区/时间轴/对照区/报告区/待办区）">
+                <Select
+                  size="small" style={{ width: 104 }} value={sec.kind ?? 'form'}
+                  onChange={(v) => onChange(updateSection(schema, view, si, { kind: v }))}
+                  options={SECTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Tooltip>
+              <Tooltip title="分区布局（split 用于审查分栏：左 40% 风险面板 + 右 60% 原文）">
+                <Select
+                  size="small" style={{ width: 96 }} value={sec.layout ?? 'single'}
+                  onChange={(v) => onChange(updateSection(schema, view, si, { layout: v }))}
+                  options={SECTION_LAYOUTS.map((l) => ({ value: l.value, label: l.label }))}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Tooltip>
+              <Tag style={{ fontSize: 11 }}>{sec.controls?.length ?? 0} 控件</Tag>
+              <Space size={2}>
+                <Tooltip title="上移">
+                  <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={si === 0}
+                    onClick={() => onChange(moveSection(schema, view, si, si - 1))} />
+                </Tooltip>
+                <Tooltip title="下移">
+                  <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={si === sections.length - 1}
+                    onClick={() => onChange(moveSection(schema, view, si, si + 1))} />
+                </Tooltip>
+                <Tooltip title="删除分区">
+                  <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onChange(removeSection(schema, view, si))} />
+                </Tooltip>
+              </Space>
+            </div>
 
-            {(sec.controls ?? []).map((c, ci) => {
-              const kind = KIND_MAP[c.controlKind ?? ''] ?? KIND_MAP.INPUT;
-              const Icon = kind.icon;
-              const selected = sel?.si === si && sel?.ci === ci;
-              // 行级落点高亮（拖拽悬停本行=重排落点）；functional 守卫防迟滞 leave 误清
-              const rowOver = dragOver === `R${si}:${ci}`;
-              return (
-                <div key={`${c.fieldCode}-${ci}`}>
-                  <div
+            {/* 控件列表 */}
+            <div
+              style={{ padding: 8, background: dragOver === `C${si}` ? '#f0f7ff' : undefined, transition: 'background .15s' }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(`C${si}`); }}
+              onDragLeave={() => setDragOver((cur) => (cur === `C${si}` ? null : cur))}
+              onDrop={(e) => {
+                e.preventDefault(); setDragOver(null);
+                const raw = e.dataTransfer.getData('text/plain');
+                // 从字段库拖入：追加到末尾
+                if (raw.startsWith('F:')) {
+                  const code = raw.slice(2);
+                  const f = fields.find((x) => x.code === code);
+                  onChange(addControl(schema, view, si, f));
+                }
+              }}
+            >
+              {(sec.controls ?? []).length === 0 && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                空分区 —— 从下方「字段库」点选或拖入字段
+                </Text>
+              )}
+
+              {(sec.controls ?? []).map((c, ci) => {
+                const kind = KIND_MAP[c.controlKind ?? ''] ?? KIND_MAP.INPUT;
+                const Icon = kind.icon;
+                const selected = sel?.si === si && sel?.ci === ci;
+                // 行级落点高亮（拖拽悬停本行=重排落点）；functional 守卫防迟滞 leave 误清
+                const rowOver = dragOver === `R${si}:${ci}`;
+                return (
+                  <div key={`${c.fieldCode}-${ci}`}>
+                    <div
                     // 控件行锚点：分区头的「删除分区」按钮与控件行的「移出分区」图标同为
                     // .anticon-delete，探针/引导无法用样式类区分二者（无脑 .first() 会删掉整个分区）。
                     // 给出稳定锚点，行级操作才能被精确定位。
-                    data-tour="control-row"
-                    {...dragSort2(si, ci, (fs, fc, ts, tc) => {
-                      onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
-                    }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}
-                    onClick={() => setSel(selected ? null : { si, ci })}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
-                      border: `1px solid ${selected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
-                      borderRadius: 8, marginBottom: 5,
-                      background: selected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
-                      boxShadow: rowOver ? '0 0 0 2px rgba(22,119,255,.15)' : undefined,
-                      cursor: 'pointer', transition: 'all .15s',
-                    }}
-                  >
-                    <span style={{ color: '#bfbfbf', cursor: 'grab', display: 'inline-flex' }}><DragOutlined /></span>
-                    <Icon />
-                    <Text code style={{ fontSize: 12 }}>{c.fieldCode || '（未绑定）'}</Text>
-                    <Select
-                      size="small" style={{ width: 118 }} value={c.controlKind}
-                      onChange={(v) => onChange(updateControl(schema, view, si, ci, { controlKind: v as ControlKind }))}
-                      options={KIND_GROUPS.map((g) => ({
-                        label: g,
-                        options: CONTROL_KINDS.filter((k) => k.group === g)
-                          .map((k) => ({ value: k.value, label: k.label })),
-                      }))}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    {c.labelOverride && <Tag color="blue" style={{ fontSize: 11 }}>{c.labelOverride}</Tag>}
-                    {c.visible === false && <Tooltip title="默认隐藏"><EyeInvisibleOutlined style={{ color: '#faad14' }} /></Tooltip>}
-                    {c.readonly && <Tag style={{ fontSize: 11 }}>只读</Tag>}
-                    {rowOver && <Text type="secondary" style={{ fontSize: 10 }}>松开落到此处</Text>}
-                    <span style={{ flex: 1 }} />
-                    <Tooltip title="控件属性">
-                      <SettingOutlined
-                        style={{ color: selected ? '#1677ff' : '#bfbfbf' }}
-                        onClick={(e) => { e.stopPropagation(); setSel(selected ? null : { si, ci }); }}
+                      data-tour="control-row"
+                      {...dragSort2(si, ci, (fs, fc, ts, tc) => {
+                        onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
+                      }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}
+                      onClick={() => setSel(selected ? null : { si, ci })}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
+                        border: `1px solid ${selected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
+                        borderRadius: 8, marginBottom: 5,
+                        background: selected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
+                        boxShadow: rowOver ? '0 0 0 2px rgba(22,119,255,.15)' : undefined,
+                        cursor: 'pointer', transition: 'all .15s',
+                      }}
+                    >
+                      <span style={{ color: '#bfbfbf', cursor: 'grab', display: 'inline-flex' }}><DragOutlined /></span>
+                      <Icon />
+                      <Text code style={{ fontSize: 12 }}>{c.fieldCode || '（未绑定）'}</Text>
+                      <Select
+                        size="small" style={{ width: 118 }} value={c.controlKind}
+                        onChange={(v) => onChange(updateControl(schema, view, si, ci, { controlKind: v as ControlKind }))}
+                        options={KIND_GROUPS.map((g) => ({
+                          label: g,
+                          options: CONTROL_KINDS.filter((k) => k.group === g)
+                            .map((k) => ({ value: k.value, label: k.label })),
+                        }))}
+                        onClick={(e) => e.stopPropagation()}
                       />
-                    </Tooltip>
-                    <Tooltip title="移出分区">
-                      <DeleteOutlined
-                        style={{ color: '#ff7875' }}
-                        onClick={(e) => { e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); }}
-                      />
-                    </Tooltip>
-                  </div>
+                      {c.labelOverride && <Tag color="blue" style={{ fontSize: 11 }}>{c.labelOverride}</Tag>}
+                      {c.visible === false && <Tooltip title="默认隐藏"><EyeInvisibleOutlined style={{ color: '#faad14' }} /></Tooltip>}
+                      {c.readonly && <Tag style={{ fontSize: 11 }}>只读</Tag>}
+                      {rowOver && <Text type="secondary" style={{ fontSize: 10 }}>松开落到此处</Text>}
+                      <span style={{ flex: 1 }} />
+                      <Tooltip title="控件属性">
+                        <SettingOutlined
+                          style={{ color: selected ? '#1677ff' : '#bfbfbf' }}
+                          onClick={(e) => { e.stopPropagation(); setSel(selected ? null : { si, ci }); }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="移出分区">
+                        <DeleteOutlined
+                          style={{ color: '#ff7875' }}
+                          onClick={(e) => { e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); }}
+                        />
+                      </Tooltip>
+                    </div>
 
-                  {selected && (
-                    <ControlInspector
-                      control={c}
-                      fields={fields}
-                      onPatch={(p) => onChange(updateControl(schema, view, si, ci, p))}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                    {selected && (
+                      <ControlInspector
+                        control={c}
+                        fields={fields}
+                        onPatch={(p) => onChange(updateControl(schema, view, si, ci, p))}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      );
+        );
       })}
 
       <Button

@@ -331,30 +331,30 @@ function cmpOrd(op: Operator, left: unknown, right: unknown): boolean {
     right = String(right ?? '');
   }
   switch (op) {
-    case 'gt': return (left as number) > (right as number);
-    case 'gte': return (left as number) >= (right as number);
-    case 'lt': return (left as number) < (right as number);
-    case 'lte': return (left as number) <= (right as number);
-    default: return false;
+  case 'gt': return (left as number) > (right as number);
+  case 'gte': return (left as number) >= (right as number);
+  case 'lt': return (left as number) < (right as number);
+  case 'lte': return (left as number) <= (right as number);
+  default: return false;
   }
 }
 
 function cmp(op: Operator, left: unknown, right: unknown): boolean {
   switch (op) {
-    case 'eq': return left === right;
-    case 'neq': return left !== right;
-    case 'gt':
-    case 'gte':
-    case 'lt':
-    case 'lte': return cmpOrd(op, left, right);
-    case 'isNull': return left == null || left === '' || (Array.isArray(left) && left.length === 0);
-    case 'isNotNull': return !(left == null || left === '' || (Array.isArray(left) && left.length === 0));
-    case 'in': return Array.isArray(right) && right.includes(left);
-    case 'notIn': return Array.isArray(right) && !right.includes(left);
-    case 'between': return Array.isArray(right) && Number(left) >= Number(right[0]) && Number(left) <= Number(right[1]);
-    case 'earlierThan': return !!left && !!right && String(left) < String(right);
-    case 'laterThan': return !!left && !!right && String(left) > String(right);
-    default: return false;
+  case 'eq': return left === right;
+  case 'neq': return left !== right;
+  case 'gt':
+  case 'gte':
+  case 'lt':
+  case 'lte': return cmpOrd(op, left, right);
+  case 'isNull': return left == null || left === '' || (Array.isArray(left) && left.length === 0);
+  case 'isNotNull': return !(left == null || left === '' || (Array.isArray(left) && left.length === 0));
+  case 'in': return Array.isArray(right) && right.includes(left);
+  case 'notIn': return Array.isArray(right) && !right.includes(left);
+  case 'between': return Array.isArray(right) && Number(left) >= Number(right[0]) && Number(left) <= Number(right[1]);
+  case 'earlierThan': return !!left && !!right && String(left) < String(right);
+  case 'laterThan': return !!left && !!right && String(left) > String(right);
+  default: return false;
   }
 }
 
@@ -547,50 +547,50 @@ export function runSubmit(
     let left: unknown;
     let right: unknown;
     switch (r.function) {
-      case 'compare':
-        left = pathVal(data, r.fields[0]);
-        break;
-      case 'sum':
-        left = numVals(data, r.fields).reduce((a, b) => a + b, 0);
-        break;
-      case 'min': {
-        const vs = numVals(data, r.fields);
-        left = vs.length ? Math.min(...vs) : undefined;
-        break;
-      }
-      case 'max': {
-        const vs = numVals(data, r.fields);
-        left = vs.length ? Math.max(...vs) : undefined;
-        break;
-      }
-      case 'count':
-        left = countVals(data, r.fields);
-        break;
-      case 'balance': {
-        // erp 借贷平衡：fields[0] 借方和 vs fields[1] 贷方和
-        if (r.fields.length < 2) {
-          push(`配置错误：balance 需两组字段（借/贷），rule=${r.code ?? r.name}`);
-          continue;
-        }
-        left = numVals(data, [r.fields[0]]).reduce((a, b) => a + b, 0);
-        right = numVals(data, [r.fields[1]]).reduce((a, b) => a + b, 0);
-        break;
-      }
-      case 'consistency': {
-        // claim 发票一致：fields[0] 标量 vs 其余列聚合和
-        left = scalarOrSum(data, r.fields[0]);
-        right = numVals(data, r.fields.slice(1)).reduce((a, b) => a + b, 0);
-        break;
-      }
-      case 'completeness': {
-        // 要素完整性：非空要素数 vs minReasons（缺省 fields.length）
-        left = countVals(data, r.fields);
-        right = r.params?.minReasons ?? r.fields.length;
-        break;
-      }
-      default:
-        push(`配置错误：未知函数 ${String((r as SubmitRule).function)}（rule=${r.code ?? r.name})`);
+    case 'compare':
+      left = pathVal(data, r.fields[0]);
+      break;
+    case 'sum':
+      left = numVals(data, r.fields).reduce((a, b) => a + b, 0);
+      break;
+    case 'min': {
+      const vs = numVals(data, r.fields);
+      left = vs.length ? Math.min(...vs) : undefined;
+      break;
+    }
+    case 'max': {
+      const vs = numVals(data, r.fields);
+      left = vs.length ? Math.max(...vs) : undefined;
+      break;
+    }
+    case 'count':
+      left = countVals(data, r.fields);
+      break;
+    case 'balance': {
+      // erp 借贷平衡：fields[0] 借方和 vs fields[1] 贷方和
+      if (r.fields.length < 2) {
+        push(`配置错误：balance 需两组字段（借/贷），rule=${r.code ?? r.name}`);
         continue;
+      }
+      left = numVals(data, [r.fields[0]]).reduce((a, b) => a + b, 0);
+      right = numVals(data, [r.fields[1]]).reduce((a, b) => a + b, 0);
+      break;
+    }
+    case 'consistency': {
+      // claim 发票一致：fields[0] 标量 vs 其余列聚合和
+      left = scalarOrSum(data, r.fields[0]);
+      right = numVals(data, r.fields.slice(1)).reduce((a, b) => a + b, 0);
+      break;
+    }
+    case 'completeness': {
+      // 要素完整性：非空要素数 vs minReasons（缺省 fields.length）
+      left = countVals(data, r.fields);
+      right = r.params?.minReasons ?? r.fields.length;
+      break;
+    }
+    default:
+      push(`配置错误：未知函数 ${String((r as SubmitRule).function)}（rule=${r.code ?? r.name})`);
+      continue;
     }
 
     // sum/count/max/min/compare 的右值来自 compare；缺 compare = 配置错误

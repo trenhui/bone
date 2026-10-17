@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   checkSchemaVersion,
   evalCond,
+  fieldVisible,
   linkageState,
   pathVal,
   resolveVariant,
@@ -326,5 +327,38 @@ describe('checkSchemaVersion 版本协商', () => {
   });
   it('历史别名 schemaMinor 照读', () => {
     expect(checkSchemaVersion({ schemaVersion: 1, schemaMinor: 1, entityCode: 't', views: {} })).toBe('ok');
+  });
+});
+
+describe('fieldVisible 档位门控（预览/运行时同源；曾踩坑：RulesPanel 可配 tier 但渲染器不消费）', () => {
+  it('未声明 tier ⇒ 不限制，visible=true 即可见', () => {
+    expect(fieldVisible({ visible: true, required: false, readonly: false, disabled: false, notice: '', noticeKey: '' })).toBe(true);
+    expect(fieldVisible(undefined)).toBe(true);
+  });
+
+  it('声明 tier 且 ctx.tier 命中 ⇒ 可见', () => {
+    const st = { visible: true, required: false, readonly: false, disabled: false, notice: '', noticeKey: '', tier: ['pro', 'max'] };
+    expect(fieldVisible(st, { tier: 'pro' })).toBe(true);
+  });
+
+  it('声明 tier 但 ctx.tier 未命中/缺失 ⇒ 隐藏（负向：订阅档内容对低档用户不可见）', () => {
+    const st = { visible: true, required: false, readonly: false, disabled: false, notice: '', noticeKey: '', tier: ['pro'] };
+    expect(fieldVisible(st, { tier: 'free' })).toBe(false);
+    expect(fieldVisible(st, {})).toBe(false);
+  });
+
+  it('联动 then.tier 落进 state 后由 fieldVisible 裁决（端到端）', () => {
+    const rules: LinkageRule[] = [{
+      name: 'pro 档看预估赔付', when: { fieldCode: 'status', operator: 'eq', value: 'DRAFT' },
+      then: [{ fieldCode: 'amount', tier: ['pro'] }],
+    }];
+    const st = linkageState(baseDoc(), rules);
+    expect(fieldVisible(st.amount, { tier: 'pro' })).toBe(true);
+    expect(fieldVisible(st.amount, { tier: 'free' })).toBe(false);
+  });
+
+  it('负向探针：visible=false 优先于 tier 命中（静态隐藏不可被档位解锁）', () => {
+    const st = { visible: false, required: false, readonly: false, disabled: false, notice: '', noticeKey: '', tier: ['pro'] };
+    expect(fieldVisible(st, { tier: 'pro' })).toBe(false);
   });
 });

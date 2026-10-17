@@ -122,9 +122,11 @@ export const BoneDynamicForm: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
 
   const fieldMap = useMemo(() => Object.fromEntries(fields.map((f) => [f.code, f])), [fields]);
-  const linkageRules: LinkageRule[] = schema.linkageRules ?? [];
-  const submitRules: SubmitRule[] = schema.submitRules ?? [];
-  const actionBar: ActionBarItem[] = schema.actionBar ?? [];
+  // 规则/动作条包 useMemo：下游 linkageState/visibleActions 的 useMemo 依赖它们，
+  // 不包则每次渲染新数组引用 ⇒ state 重算死循环风险（react-hooks/exhaustive-deps 要求）
+  const linkageRules: LinkageRule[] = useMemo(() => schema.linkageRules ?? [], [schema.linkageRules]);
+  const submitRules: SubmitRule[] = useMemo(() => schema.submitRules ?? [], [schema.submitRules]);
+  const actionBar: ActionBarItem[] = useMemo(() => schema.actionBar ?? [], [schema.actionBar]);
 
   // 初始化数据
   useEffect(() => {
@@ -145,16 +147,16 @@ export const BoneDynamicForm: React.FC<Props> = ({
     }));
     // 预载 CHILD_TABLE 明细（编辑态）
     if (recordId) {
-    form?.sections.forEach((s) => s.controls.forEach((c) => {
-      if (c.controlKind === 'CHILD_TABLE') {
-        const child = (c.props as { childEntity?: string } | undefined)?.childEntity;
-        if (child) {
-          runtimeRecordApi.listChildren(entityCode, recordId, child).then((res) => {
-            if (res.code === 200) setChildRows((prev) => ({ ...prev, [c.fieldCode]: res.data.map((r, i) => ({ ...(r as Record<string, unknown>), __rowKey: `r${i}` })) }));
-          });
+      form?.sections.forEach((s) => s.controls.forEach((c) => {
+        if (c.controlKind === 'CHILD_TABLE') {
+          const child = (c.props as { childEntity?: string } | undefined)?.childEntity;
+          if (child) {
+            runtimeRecordApi.listChildren(entityCode, recordId, child).then((res) => {
+              if (res.code === 200) setChildRows((prev) => ({ ...prev, [c.fieldCode]: res.data.map((r, i) => ({ ...(r as Record<string, unknown>), __rowKey: `r${i}` })) }));
+            });
+          }
         }
-      }
-    }));
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityCode, recordId]);

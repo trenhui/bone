@@ -209,7 +209,7 @@ export default function DesignerTour({ open, steps, index, onIndex, onClose }: P
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 2100, pointerEvents: 'none' }}>
-      <style>{`@keyframes tour-pulse{0%,100%{box-shadow:0 0 0 3px rgba(22,119,255,.25)}50%{box-shadow:0 0 0 8px rgba(22,119,255,.08)}}.tour-ring{animation:tour-pulse 1.6s ease-in-out infinite}.tour-chip{animation:tour-pulse 1.6s ease-in-out infinite}`}</style>
+      <style>{'@keyframes tour-pulse{0%,100%{box-shadow:0 0 0 3px rgba(22,119,255,.25)}50%{box-shadow:0 0 0 8px rgba(22,119,255,.08)}}.tour-ring{animation:tour-pulse 1.6s ease-in-out infinite}.tour-chip{animation:tour-pulse 1.6s ease-in-out infinite}'}</style>
       {spotlight}
       <div
         ref={cardRef}

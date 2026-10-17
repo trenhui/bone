@@ -106,7 +106,7 @@ export default function I18nPanel({ schema, onChange, entityCode }: Props): Reac
               addonBefore={<GlobalOutlined />}
             />
             {ns !== suggestedNs && (
-              <Tooltip title={`按实例隔离命名空间，防多实例共用同一 namespace 导致词条串味（服务端实例化时重写）`}>
+              <Tooltip title={'按实例隔离命名空间，防多实例共用同一 namespace 导致词条串味（服务端实例化时重写）'}>
                 <Button size="small" onClick={() => onChange(setI18nNamespace(schema, suggestedNs))}>
                   用建议值 {suggestedNs}
                 </Button>

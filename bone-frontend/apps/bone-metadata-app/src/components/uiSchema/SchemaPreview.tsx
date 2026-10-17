@@ -465,7 +465,10 @@ export default function SchemaPreview({
 
   const fieldsKey = fields.map((f) => f.code).join('|');
 
-  // 场景按实体领域过滤：报销单不出现「门诊快赔」这类跨领域演示场景
+  // 场景按实体领域过滤：报销单不出现「门诊快赔」这类跨领域演示场景。
+  // 依赖取 fieldsKey（fields.code 集合的稳定投影）：fields 引用每渲染可能新对象，
+  // 而内容变化必反映在 fieldsKey —— 以 key 为依赖既可重算又不抖动。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const visibleScenarios = useMemo(() => SCENARIOS.filter((s) => scenarioApplies(s, fields)), [fieldsKey]);
   // 当前选中场景被过滤掉时（如切换实体），优先回落到领域场景，其次空白
   const effScenarioKey = visibleScenarios.some((s) => s.key === scenarioKey)
@@ -701,20 +704,30 @@ export default function SchemaPreview({
                 const mid = Math.ceil(ctrls.length / 2);
                 const pct = layout === 'split-left-40' ? '40%' : '60%';
                 return (
-                  <div key={sec.id ?? si} className={`uis-split ${layout === 'split-left-40' ? 's40' : 's60'}`}>
-                    <div className="uis-split-col">
-                      <span className="uis-split-tag">◀ 左栏（{pct}）</span>
-                      {ctrls.slice(0, mid).map((c, ci) => (
-                        <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
-                          states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
-                      ))}
+                  <div key={sec.id ?? si}>
+                    {/* 分栏分区同样要渲染标题 + kind 徽标（探针实测：漏渲染会让
+                        「split + dashboard」分区的身份不可见——采购审查左风险面板
+                        右原文时，用户分不清哪栏是什么） */}
+                    <div className="uis-sec-title" style={{ marginBottom: 10 }}>
+                      {sec.title ?? sec.id}
+                      {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
+                      <span className="kind">分栏 {pct}/{layout === 'split-left-40' ? '60%' : '40%'}</span>
                     </div>
-                    <div className="uis-split-col">
-                      <span className="uis-split-tag">右栏 ▶</span>
-                      {ctrls.slice(mid).map((c, ci) => (
-                        <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
-                          states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
-                      ))}
+                    <div className={`uis-split ${layout === 'split-left-40' ? 's40' : 's60'}`}>
+                      <div className="uis-split-col">
+                        <span className="uis-split-tag">◀ 左栏（{pct}）</span>
+                        {ctrls.slice(0, mid).map((c, ci) => (
+                          <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                            states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
+                        ))}
+                      </div>
+                      <div className="uis-split-col">
+                        <span className="uis-split-tag">右栏 ▶</span>
+                        {ctrls.slice(mid).map((c, ci) => (
+                          <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                            states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 );

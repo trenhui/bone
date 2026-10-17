@@ -734,18 +734,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   };
 
   /** 明细合计（实时联动 C3）：对 amount 列（或唯一数值列）求和，供弹窗底栏展示 */
-const childSumOf = (rows: RuntimeChildRow[]): number =>
-  rows.reduce((sum, r) => {
-    const raw = r.amount ?? (Object.entries(r).find(([, v]) => typeof v === 'number')?.[1] as number | undefined);
-    const n = typeof raw === 'number' ? raw : Number(raw);
-    return Number.isFinite(n) ? sum + n : sum;
-  }, 0);
+  const childSumOf = (rows: RuntimeChildRow[]): number =>
+    rows.reduce((sum, r) => {
+      const raw = r.amount ?? (Object.entries(r).find(([, v]) => typeof v === 'number')?.[1] as number | undefined);
+      const n = typeof raw === 'number' ? raw : Number(raw);
+      return Number.isFinite(n) ? sum + n : sum;
+    }, 0);
 
-/**
+  /**
  * C3 交互细节：保存明细后，头部金额（amount）由后端 ChildAmountAggregator 事务内回填，
  * 前端提示已联动 —— 用户不必再手改头表金额（业界标准：头表=明细合计，服务端计算为准）。
  */
-/** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
+  /** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
   const handleChildrenSave = async () => {
     const { record, field } = childModal;
     if (!record || !field || !entityCode) return;
@@ -1383,37 +1383,37 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
               },
               ...(stateChain.length > 0
                 ? stateChain.map((code) => {
-                    // 下钻态判定：生效条件恰为「单条 status=code」（用户可能另有多条件，
-                    // 那时步骤条不算激活——避免「看着高亮但其实还叠着别的筛选」的误判）。
-                    const active =
+                  // 下钻态判定：生效条件恰为「单条 status=code」（用户可能另有多条件，
+                  // 那时步骤条不算激活——避免「看着高亮但其实还叠着别的筛选」的误判）。
+                  const active =
                       appliedConditions.length === 1 &&
                       appliedConditions[0].field === 'status' &&
                       appliedConditions[0].value === code;
-                    return {
-                      title: (
-                        <a
-                          onClick={() => {
-                            // 再次点击已选中的状态 = 取消筛选（幂等下钻，符合 Ant Design Pro 筛选标签行为）
-                            const nextActive = !active;
-                            const next: { field?: string; op: string; value: string }[] =
+                  return {
+                    title: (
+                      <a
+                        onClick={() => {
+                          // 再次点击已选中的状态 = 取消筛选（幂等下钻，符合 Ant Design Pro 筛选标签行为）
+                          const nextActive = !active;
+                          const next: { field?: string; op: string; value: string }[] =
                               nextActive
                                 ? [{ field: 'status', value: code, op: 'eq' }]
                                 : [];
-                            setConditions(next);
-                            setAppliedConditions(next);
-                            setSelectedFilterNote(
-                              nextActive ? `已按状态「${statusLabelOf(code)}」筛选` : null,
-                            );
-                            setPage(1);
-                          }}
-                          style={active ? { fontWeight: 600 } : undefined}
-                        >
-                          {statusLabelOf(code)}
-                        </a>
-                      ),
-                      status: active ? ('process' as const) : ('wait' as const),
-                      description: active ? '已筛选' : undefined,                    };
-                  })
+                          setConditions(next);
+                          setAppliedConditions(next);
+                          setSelectedFilterNote(
+                            nextActive ? `已按状态「${statusLabelOf(code)}」筛选` : null,
+                          );
+                          setPage(1);
+                        }}
+                        style={active ? { fontWeight: 600 } : undefined}
+                      >
+                        {statusLabelOf(code)}
+                      </a>
+                    ),
+                    status: active ? ('process' as const) : ('wait' as const),
+                    description: active ? '已筛选' : undefined,                    };
+                })
                 : []),
             ]}
           />
@@ -1749,48 +1749,48 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
             />
           </>
         ) : (
-        <>
-        {/* 抽屉内状态进度：只在该实体**确有状态机**且记录状态在链上时显示。
+          <>
+            {/* 抽屉内状态进度：只在该实体**确有状态机**且记录状态在链上时显示。
             标签取自 status 字段的 ENUM 码表（makeStatusLabelOf），不硬编码业务状态。 */}
-        {editing && stateChain.length > 0 && editingStateIdx >= 0 && (
-          <Steps
-            size="small"
-            current={editingStateIdx}
-            items={stateChain.map((code) => ({ title: statusLabelOf(code) }))}
-            style={{ marginBottom: 16 }}
-          />
-        )}
-        <Form form={form} layout="vertical">
-          {conflict && (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 12 }}
-              message={
-                conflictDiff.length > 0
-                  ? `记录已被他人修改（${conflictDiff.length} 个字段与你的提交不同）`
-                  : '记录已被他人修改'
-              }
-              description="下方表单已重新加载最新数据，请确认后再次提交。"
-              action={
-                conflictDiff.length > 0 ? (
-                  <Button size="small" onClick={() => setDiffOpen(true)}>
+            {editing && stateChain.length > 0 && editingStateIdx >= 0 && (
+              <Steps
+                size="small"
+                current={editingStateIdx}
+                items={stateChain.map((code) => ({ title: statusLabelOf(code) }))}
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            <Form form={form} layout="vertical">
+              {conflict && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  message={
+                    conflictDiff.length > 0
+                      ? `记录已被他人修改（${conflictDiff.length} 个字段与你的提交不同）`
+                      : '记录已被他人修改'
+                  }
+                  description="下方表单已重新加载最新数据，请确认后再次提交。"
+                  action={
+                    conflictDiff.length > 0 ? (
+                      <Button size="small" onClick={() => setDiffOpen(true)}>
                     查看差异
-                  </Button>
-                ) : undefined
-              }
-            />
-          )}
-          {formFields.length === 0 ? (
-            <Alert
-              type="warning"
-              message="该模型尚未配置建模字段，请先在模型详情的「结构」页签中维护"
-            />
-          ) : (
-            formFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
-          )}
-        </Form>
-        </>
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              )}
+              {formFields.length === 0 ? (
+                <Alert
+                  type="warning"
+                  message="该模型尚未配置建模字段，请先在模型详情的「结构」页签中维护"
+                />
+              ) : (
+                formFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
+              )}
+            </Form>
+          </>
         )}
       </Modal>
 

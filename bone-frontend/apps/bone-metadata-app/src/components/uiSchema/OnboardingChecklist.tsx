@@ -100,9 +100,9 @@ export default function OnboardingChecklist({ milestones, onNavigate, onGoPublis
             {m.done
               ? <CheckCircleFilled style={{ color: '#52c41a', marginTop: 2 }} />
               : <span style={{
-                  width: 14, height: 14, marginTop: 2, borderRadius: '50%',
-                  border: '1.5px solid #d9d9d9', display: 'inline-block', flex: '0 0 auto',
-                }} />}
+                width: 14, height: 14, marginTop: 2, borderRadius: '50%',
+                border: '1.5px solid #d9d9d9', display: 'inline-block', flex: '0 0 auto',
+              }} />}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: m.done ? 400 : 600, textDecoration: m.done ? 'line-through' : undefined, color: m.done ? '#00000073' : undefined }}>
                 {m.label}

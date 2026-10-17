@@ -26,9 +26,11 @@ vi.mock('../services/metadataApi', () => ({
   },
 }));
 
-// node 环境无 localStorage：注入最小内存实现，使单测可执行（不引入 jsdom 依赖）
+// vitest environment=jsdom（jsdom ≥ 26 起 window.localStorage 为只读 getter，直接赋值抛
+// TypeError）。用 defineProperty 覆盖：node 环境原本无此属性、jsdom 环境替换原生实现，
+// 两种环境下本测试都可执行（与 tests/setup.ts 的 window.localStorage mock 同思路）。
 const store = new Map<string, string>();
-(globalThis as unknown as { localStorage: Storage }).localStorage = {
+const localStorageMock = {
   get length() {
     return store.size;
   },
@@ -38,6 +40,11 @@ const store = new Map<string, string>();
   removeItem: (k: string) => store.delete(k),
   setItem: (k: string, v: string) => store.set(k, String(v)),
 } as Storage;
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+  writable: true,
+});
 
 const ENTITY = 'exp_claim';
 
