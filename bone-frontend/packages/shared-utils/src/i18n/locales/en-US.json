@@ -100,6 +100,7 @@
     "SYS_DICT_VALUE_INVALID": "Value does not match the dictionary value type or format",
     "SYS_LOG_LEVEL_INVALID": "Invalid log level",
     "SYS_LOG_NOT_FOUND": "Log entry not found",
+    "SYS_SCHEDULE_TASK_CRON_INVALID": "Invalid cron expression for scheduled task",
     "SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND": "Task handler not found or not registered",
     "SYS_SCHEDULE_TASK_NOT_FOUND": "Scheduled task not found",
     "SYS_SCHEDULE_TASK_RUN_FAILED": "Task execution failed",

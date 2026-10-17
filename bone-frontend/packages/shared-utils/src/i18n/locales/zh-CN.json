@@ -100,6 +100,7 @@
     "SYS_DICT_VALUE_INVALID": "值不符合该值域的类型或格式要求",
     "SYS_LOG_LEVEL_INVALID": "日志级别非法",
     "SYS_LOG_NOT_FOUND": "日志不存在",
+    "SYS_SCHEDULE_TASK_CRON_INVALID": "定时任务 Cron 表达式非法",
     "SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND": "任务处理器不存在或未注册",
     "SYS_SCHEDULE_TASK_NOT_FOUND": "定时任务不存在",
     "SYS_SCHEDULE_TASK_RUN_FAILED": "任务执行失败",

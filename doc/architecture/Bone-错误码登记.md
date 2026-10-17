@@ -393,6 +393,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SYS_CONFIG_TYPE_INVALID` | 400 | sys config type invalid |
 | `SYS_LOG_LEVEL_INVALID` | 400 | sys log level invalid |
 | `SYS_LOG_NOT_FOUND` | 404 | sys log not found |
+| `SYS_SCHEDULE_TASK_CRON_INVALID` | 400 | sys schedule task cron invalid |
 | `SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND` | 404 | sys schedule task handler not found |
 | `SYS_SCHEDULE_TASK_NOT_FOUND` | 404 | sys schedule task not found |
 | `SYS_SCHEDULE_TASK_RUN_FAILED` | 500 | sys schedule task run failed |
