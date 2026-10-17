@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Docling sidecar 解析器（详设 §2.5 / 总案 §4.4「默认 Docling」；第二批 sidecar 接入）。
@@ -81,15 +82,17 @@ public class DoclingSidecarAdapter implements DocumentParser {
   /** 默认传输：JDK HttpClient 发 multipart/form-data（对齐 Docling /v1/convert/source）。 */
   static final class HttpClientTransport implements DoclingTransport {
     private final HttpClient client;
+    private final long timeoutMs;
 
     HttpClientTransport(long timeoutMs) {
+      this.timeoutMs = timeoutMs;
       this.client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(timeoutMs)).build();
     }
 
     @Override
     public String post(String url, String filename, byte[] body)
         throws IOException, InterruptedException {
-      String boundary = "----BoneDoclingBoundary";
+      String boundary = "----BoneDocling" + UUID.randomUUID().toString().replace("-", "");
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       bos.write(("--" + boundary + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
       bos.write(
@@ -104,7 +107,7 @@ public class DoclingSidecarAdapter implements DocumentParser {
               .uri(URI.create(url))
               .header("Content-Type", "multipart/form-data; boundary=" + boundary)
               .POST(HttpRequest.BodyPublishers.ofByteArray(bos.toByteArray()))
-              .timeout(Duration.ofSeconds(30))
+              .timeout(Duration.ofMillis(timeoutMs))
               .build();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() / 100 != 2) {
