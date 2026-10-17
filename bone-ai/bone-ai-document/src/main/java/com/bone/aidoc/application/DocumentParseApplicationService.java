@@ -58,6 +58,11 @@ public class DocumentParseApplicationService {
 
   /** 解析模式由解析器标识派生（pdfbox→PDFBOX_TEXT / docling→DOCLING / tika→TIKA_TEXT）。 */
   private static String parseModeOf(String provider) {
+    // provider 理论非空（解析器自报），但 SPI 实现可返回 null —— 显式兜底，
+    // 否则 provider.toUpperCase() 直接 NPE，把「解析器标识缺失」报成 NPE 这类无信息异常
+    if (provider == null || provider.isBlank()) {
+      return "UNKNOWN";
+    }
     return switch (provider) {
       case "pdfbox" -> "PDFBOX_TEXT";
       case "docling" -> "DOCLING";

@@ -26,7 +26,13 @@ public class DocumentAutoConfiguration {
   @Primary
   public DocumentParser doclingDocumentParser(DocumentProperties props) {
     DocumentProperties.Docling d = props.getDocling();
-    return new DoclingSidecarAdapter(d.getBaseUrl(), d.getTimeoutMs());
+    return new DoclingSidecarAdapter(
+        d.getBaseUrl(),
+        new DoclingSidecarAdapter.HttpClientTransport(d.getTimeoutMs()),
+        d.getMaxBytes(),
+        d.getMaxPages(),
+        d.getMaxRetries(),
+        100);
   }
 
   @Bean

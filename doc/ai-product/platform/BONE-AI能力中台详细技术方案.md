@@ -132,15 +132,27 @@ public record Confirmed<T>(T value, ConfirmedBy by, Instant at) {}              
 `reason_type` 字典：`RULE_MISS`/`CONTEXT_MISS`/`SUGGESTION_WRONG`/`POLICY_CONFLICT`（唯一回流入口，自由文本不进管道）。五态（PENDING / CONFIRMED / REJECTED / MODIFIED / ESCALATED）与回流口径见总案 §3.3（含与产品侧业务状态机的分层说明），不重复。
 
 ```sql
--- 拟定，随第一批补报 L3（总案 §7 新 DDL 清单增补 hitl_item）
+-- 已落地（bone-init.sql，2026-10-17 随 HITL 闭环实现入库）；实现以 bone-init.sql 为准，此处为口径摘录：
+-- ① item_id 实现为 UUID（36 字符），建表须 VARCHAR(64)——原拟 32 会截断；
+-- ② tenant_id 为 BIGINT（平台租户口径，非本段原拟的 VARCHAR——非数值租户编码 fail-closed）；
+-- ③ 处置链独立为 hitl_disposition 子表（逐条裁决留痕，跨重启可回放），不复用 item 行上的最后裁决列。
 CREATE TABLE hitl_item (
-  item_id VARCHAR(32) PRIMARY KEY, trace_id VARCHAR(64) NOT NULL, tenant_id VARCHAR(32) NOT NULL,
+  item_id VARCHAR(64) PRIMARY KEY, trace_id VARCHAR(64) NOT NULL, tenant_id BIGINT NOT NULL,
   scene VARCHAR(64), suggestion JSON NOT NULL,          -- AiSuggestion 序列化（含 evidence_ref）
   status VARCHAR(16) NOT NULL,                          -- PENDING/CONFIRMED/REJECTED/MODIFIED/ESCALATED
   risk_level VARCHAR(8), assignee VARCHAR(64),
   decision_value JSON, reason_type VARCHAR(32), comment VARCHAR(512),
   decided_by VARCHAR(64), decided_at DATETIME,
   KEY idx_status (tenant_id, status, risk_level)
+);
+
+CREATE TABLE hitl_disposition (
+  id BIGINT PRIMARY KEY, tenant_id BIGINT NOT NULL,
+  item_id VARCHAR(64) NOT NULL,
+  action VARCHAR(16) NOT NULL,                          -- confirm/reject/modify/escalate
+  reason_type VARCHAR(32), value JSON, comment VARCHAR(512),
+  acted_by VARCHAR(64) NOT NULL, acted_at DATETIME NOT NULL,
+  KEY idx_item (tenant_id, item_id)
 );
 ```
 

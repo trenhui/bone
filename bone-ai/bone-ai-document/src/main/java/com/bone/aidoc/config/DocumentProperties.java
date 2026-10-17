@@ -22,6 +22,15 @@ public class DocumentProperties {
     private String baseUrl = "http://localhost:5001";
     private long timeoutMs = 30000;
 
+    /** 上传大小上限（字节，默认 50MB）——防内存耗尽型 DoS。 */
+    private long maxBytes = 50L * 1024 * 1024;
+
+    /** 页数上限（默认 1000）——防超大文档拖垮下游切片与判定。 */
+    private int maxPages = 1000;
+
+    /** 瞬时故障重试次数（默认 2，详设「重试 ≤2 次」）。 */
+    private int maxRetries = 2;
+
     public boolean isEnabled() {
       return enabled;
     }
@@ -44,6 +53,30 @@ public class DocumentProperties {
 
     public void setTimeoutMs(long timeoutMs) {
       this.timeoutMs = timeoutMs;
+    }
+
+    public long getMaxBytes() {
+      return maxBytes;
+    }
+
+    public void setMaxBytes(long maxBytes) {
+      this.maxBytes = maxBytes;
+    }
+
+    public int getMaxPages() {
+      return maxPages;
+    }
+
+    public void setMaxPages(int maxPages) {
+      this.maxPages = maxPages;
+    }
+
+    public int getMaxRetries() {
+      return maxRetries;
+    }
+
+    public void setMaxRetries(int maxRetries) {
+      this.maxRetries = maxRetries;
     }
   }
 }
