@@ -25,7 +25,23 @@ fi
 exit_code=0
 
 echo -e "${YELLOW}[1/35] 代码风格校验 (Spotless)...${RESET}"
-mvn spotless:check --batch-mode -q || exit_code=$?
+# 2026-10-17 解除"全树连坐"：spotless 原扫全仓，他人在途/未提交（甚至未跟踪）的脏模块
+# 会让所有人的提交失败（本次巡检前已因此被卡两次）。改为只校验本次提交涉及的模块
+# （与 [3/35] 就近 ArchUnit 同一套"变更模块"口径，逐模块 -f 跑，避开 reactor 路径不稳）；
+# CI 仍跑全量兜底，故未放松格式约束，只是把"谁脏谁负责"落到责任人。
+SPOTLESS_FILES=$(git diff --cached --name-only --diff-filter=ACD 2>/dev/null | grep -E '\.java$|\.properties$' || true)
+SPOTLESS_MODULES=$(echo "$SPOTLESS_FILES" | grep -E '/src/' | sed -E 's|/src/.*||' | sort -u || true)
+if [ -n "$SPOTLESS_MODULES" ]; then
+  while IFS= read -r MODULE_PATH; do
+    [ -z "$MODULE_PATH" ] && continue
+    POM="$MODULE_PATH/pom.xml"
+    [ -f "$POM" ] || continue
+    echo "  Spotless: $MODULE_PATH"
+    mvn -f "$POM" spotless:check --batch-mode -q || exit_code=$?
+  done <<< "$SPOTLESS_MODULES"
+else
+  echo "  无已 stage 的 .java/.properties 变更，[1/35] Spotless 跳过（非违规）；CI 全量兜底。"
+fi
 
 echo -e "${YELLOW}[2/35] 检测变更模块...${RESET}"
 # 2026-10-04 修复 P1-6：原判据 `--diff-filter=ACM` + `grep '\.java$'` 有两个静默盲区：
