@@ -1,5 +1,5 @@
 {
-  "description": "HC-003 控制器门禁基线（只可收缩，新增端点不得加入；口径见 scripts/check-controller-response-envelope.py）。两档：①信封违规——端点未返回 ApiResponse/PageResult（见 endpoints 与 methodExemptions 豁免）；②端口契约载荷违规（payloadViolations，阻断级）——响应载荷为 ..domain.gateway.. 端口契约类型（如 ActionDefSpec），把 domain↔infrastructure 内部协作契约固化成对外 API。其余 ..domain.. 载荷（贫血持久化实体 / 数据对象）按业界共识不阻断、不入基线，仅由门禁『报告级』盘点——DTO 只在契约确需与模型分化（合并投影 / 裁剪 / 更名）时逐个建，避免 1:1 同构 View 的仪式化维护（曾据此做过 8 个 1:1 View 已回退）。",
+  "description": "HC-003 控制器门禁基线（只可收缩，新增端点不得加入；口径见 scripts/check-controller-response-envelope.py）。两档：①信封违规——端点未返回 ApiResponse/PageResult（见 endpoints 与 methodExemptions 豁免）；②端口契约载荷违规（payloadViolations，阻断级）——响应载荷为 ..domain.gateway.. 端口契约类型（如 ActionDefSpec），把 domain↔infrastructure 内部协作契约固化成对外 API。其余 ..domain.. 载荷（贫血持久化实体 / 数据对象）按业界共识不阻断、不入基线，仅由门禁『报告级』盘点——DTO 只在契约确需与模型分化（合并投影 / 裁剪 / 更名）时逐个建，避免 1:1 同构 View 的仪式化维护（曾据此做过 8 个 1:1 View 已回退）。2026-10-17：ActionDefSpec 两处存量已补 application.query.dto.ActionDefView（含 permissionCode 派生字段）整改，payloadViolations 清零。",
   "allowedBareReturnTypes": {
     "byte[]": "文件下载流（Content-Disposition），非业务数据",
     "ByteArrayResource": "文件下载流（Spring Resource），非业务数据",
@@ -11,22 +11,5 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/JwksController.java::jwks": "RFC 7517 / OIDC Discovery 规定的 JWKS 端点：响应体必须是标准 JWK Set（kty/use/kid/alg/n/e），包一层 ApiResponse 会让所有消费方（网关、各微服务）解析失败。ADR-0005 已确认协议归属。"
   },
   "endpoints": [],
-  "payloadViolations": [
-    {
-      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
-      "method": "listActionDefs",
-      "returnType": "ApiResponse<List<ActionDefSpec>>",
-      "payload": "ActionDefSpec",
-      "line": 189,
-      "reason": "ActionDefSpec 是 ..domain.gateway.. 端口契约类型（元数据动作定义的对外协议），直出 web 边界等于把 domain↔infrastructure 内部协作契约固化成 API。整改：补 application.query.dto.ActionDefView（合并/裁剪对外字段，非 1:1 拷贝）后移除。"
-    },
-    {
-      "file": "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
-      "method": "upsertActionDef",
-      "returnType": "ResponseEntity<ApiResponse<ActionDefSpec>>",
-      "payload": "ActionDefSpec",
-      "line": 201,
-      "reason": "同上（upsert 写端点），ActionDefSpec 端口契约类型直出。"
-    }
-  ]
+  "payloadViolations": []
 }

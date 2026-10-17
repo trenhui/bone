@@ -85,7 +85,7 @@ bone/
 | gateway | `bone-security`（脱敏）、`bone-core`（租户） | 模型调用唯一入站；成本红线、PII 出口脱敏、租户配额、路由降级、审计平台强制 |
 | orchestration | `WorkflowMetadata` 模型 | 补缺失的执行器；经 Port 依赖网关 / 规则 / trace，不直连实现（防上帝模块） |
 | trace | `TenantAbstractEntity`、`ExtensionDecisionRecorder`（升级） | 三元组快照 + 版本链 + 回放 API；留存时长与分区策略集中配置，framework 只供基类与常量 |
-| rules | `RuleEngine` 执行、`MetadataVersionController` 版本机制、expression SPI | 只做治理面，不造执行引擎 |
+| rules | `RuleEngine` 执行、expression SPI；版本机制**自建**（`MetadataVersionController` 零消费方、规则级兼容检查为空实现，bone-ai-rules 亦无 engine 依赖，「复用存量版本机制」不成立） | 只做治理面，不造执行引擎 |
 | document | bone-file 存取规范 | 解析管线空白；OCR / GPU 重依赖与业务隔离部署 |
 | rag | trace（溯源）、bone-core（租户隔离） | 语料归领域，检索与生成控制归平台 |
 
@@ -213,7 +213,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 3. 批准"pgvector 独立实例推迟至 rag 实测"（批推迟本身，非具体实例）；
 4. 模型锁型：Qwen3.5 / 3.8 系 27B 二选一（POC 评测定）+ SBOM 复核；是否仍要 Spring AI（若要：修复版来源与授权，1.1.8 已否决不在列）。
 
-技术债（另案，不阻塞）：`MetadataVersionController` 关系 / 规则两级兼容为空、字段级反射实现需收敛，rules 优先补齐。
+技术债（另案，不阻塞）：`MetadataVersionController` 关系 / 规则两级兼容为空、字段级反射实现需收敛，rules 优先补齐。该类当前 Java 侧零消费方，bone-ai-rules 无 bone-metadata-engine 依赖——规则版本 / 兼容性机制由 bone-ai-rules 自建，不按「复用存量底座」排期。
 
 ---
 

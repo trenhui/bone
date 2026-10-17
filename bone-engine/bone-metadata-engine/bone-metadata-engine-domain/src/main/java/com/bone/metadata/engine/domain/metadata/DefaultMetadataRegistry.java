@@ -8,7 +8,12 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 元数据注册表默认实现类 提供实体元数据的完整管理功能 */
+/**
+ * 元数据注册表默认实现类 提供实体元数据的完整管理功能。
+ *
+ * <p><b>并发边界</b>：本注册表是<b>进程内</b>元数据缓存——{@code synchronized} 与 {@code ConcurrentHashMap} 只在单 JVM
+ * 内互斥；多副本部署下各实例各持一份、无跨实例一致性保证。 适用于「发布后最终一致」的元数据读取，不适用于要求跨实例强一致的视图。
+ */
 public class DefaultMetadataRegistry implements MetadataRegistry {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultMetadataRegistry.class);

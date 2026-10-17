@@ -13,6 +13,7 @@ import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTab
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpsertActionDefCommand;
+import com.bone.metadata.catalog.application.query.dto.ActionDefView;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
@@ -347,9 +348,12 @@ public class MetaEntityApplicationService {
    * <p>不限定 RUNTIME：动作定义也可先在主数据实体上备好，切 {@code deliveryMode=RUNTIME} 即生效。 但
    * GENERATIVE（无物理表）实体配状态机无意义——引擎无表可流转。
    */
-  public List<ActionDefSpec> listActionDefs(Long entityId) {
+  public List<ActionDefView> listActionDefs(Long entityId) {
     MetaEntity entity = requireEntity(entityId);
-    return actionDefMaterializePort.listByEntity(entity.getTenantId(), entity.getCode());
+    // 端口契约不出 web 边界（HC-003）：在此映射为对外视图并补齐 permissionCode 派生字段
+    return actionDefMaterializePort.listByEntity(entity.getTenantId(), entity.getCode()).stream()
+        .map(spec -> ActionDefView.of(spec, entity.getCode()))
+        .toList();
   }
 
   /**
@@ -366,7 +370,7 @@ public class MetaEntityApplicationService {
    * 空源态的入口标记只会让运行期静默回退图推导，建模者却以为已声明（0041）。
    */
   @Transactional
-  public void upsertActionDef(Long entityId, UpsertActionDefCommand cmd) {
+  public ActionDefView upsertActionDef(Long entityId, UpsertActionDefCommand cmd) {
     MetaEntity entity = requireEntity(entityId);
     boolean escape = Boolean.TRUE.equals(cmd.getEscape());
     if (escape && (cmd.getHandlerBean() == null || cmd.getHandlerBean().isBlank())) {
@@ -385,9 +389,7 @@ public class MetaEntityApplicationService {
           CatalogErrorCodes.ACTION_DEF_INVALID,
           "入口动作「" + cmd.getActionCode() + "」必须声明 fromStatus（其源状态即新记录初始状态，0041）");
     }
-    actionDefMaterializePort.upsert(
-        entity.getTenantId(),
-        entity.getCode(),
+    ActionDefSpec spec =
         new ActionDefSpec(
             cmd.getActionCode(),
             cmd.getLabel(),
@@ -399,9 +401,11 @@ public class MetaEntityApplicationService {
             cmd.getParamsSchema(),
             cmd.getRequiresIdempotency(),
             cmd.getSortOrder(),
-            Boolean.TRUE.equals(cmd.getEntry())));
+            Boolean.TRUE.equals(cmd.getEntry()));
+    actionDefMaterializePort.upsert(entity.getTenantId(), entity.getCode(), spec);
     runtimeEntityCacheEvictor.ifPresent(
         evictor -> evictor.evict(entity.getCode(), entity.getTenantId()));
+    return ActionDefView.of(spec, entity.getCode());
   }
 
   /**

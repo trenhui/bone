@@ -113,7 +113,9 @@ class MetaEntityActionDefTest {
   @Test
   @DisplayName("非逃逸动作：写入后必须 evict runtime 缓存（stateField 由动作定义推导，不 evict 则 TTL 内不生效）")
   void upsert_shouldWriteAndEvictCache() {
-    service.upsertActionDef(9L, cmd("submit", false, null, false));
+    com.bone.metadata.catalog.application.query.dto.ActionDefView view =
+        service.upsertActionDef(9L, cmd("submit", false, null, false));
+    assertEquals("runtime:expense_claim:submit", view.permissionCode());
 
     ArgumentCaptor<com.bone.metadata.catalog.domain.gateway.ActionDefSpec> captor =
         ArgumentCaptor.forClass(com.bone.metadata.catalog.domain.gateway.ActionDefSpec.class);
@@ -133,8 +135,25 @@ class MetaEntityActionDefTest {
   @Test
   @DisplayName("列出动作定义：按实体 code + 租户委派端口")
   void list_shouldDelegate() {
-    when(actionDefMaterializePort.listByEntity(1L, "expense_claim")).thenReturn(List.of());
-    assertEquals(0, service.listActionDefs(9L).size());
+    when(actionDefMaterializePort.listByEntity(1L, "expense_claim"))
+        .thenReturn(
+            List.of(
+                new com.bone.metadata.catalog.domain.gateway.ActionDefSpec(
+                    "submit",
+                    "提交",
+                    "DRAFT",
+                    "SUBMITTED",
+                    "status",
+                    false,
+                    null,
+                    null,
+                    false,
+                    1,
+                    false)));
+    List<com.bone.metadata.catalog.application.query.dto.ActionDefView> views =
+        service.listActionDefs(9L);
+    assertEquals(1, views.size());
+    assertEquals("runtime:expense_claim:submit", views.get(0).permissionCode());
     verify(actionDefMaterializePort).listByEntity(1L, "expense_claim");
   }
 

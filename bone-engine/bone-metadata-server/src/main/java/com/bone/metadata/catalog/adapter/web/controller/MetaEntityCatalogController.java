@@ -13,6 +13,7 @@ import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand
 import com.bone.metadata.catalog.application.command.cmd.ImportMetaEntityFromTableCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpsertActionDefCommand;
+import com.bone.metadata.catalog.application.query.dto.ActionDefView;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.application.query.dto.MergePreview;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
@@ -24,7 +25,6 @@ import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
 import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.bone.metadata.catalog.common.ImportMetaEntityResult;
-import com.bone.metadata.catalog.domain.gateway.ActionDefSpec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -186,7 +186,7 @@ public class MetaEntityCatalogController {
    */
   @GetMapping("/{id}/action-defs")
   @PreAuthorize("hasAnyAuthority('metadata:model:read', 'metadata:read')")
-  public ApiResponse<List<ActionDefSpec>> listActionDefs(@PathVariable Long id) {
+  public ApiResponse<List<ActionDefView>> listActionDefs(@PathVariable Long id) {
     return ApiResponse.success(metaEntityApplicationService.listActionDefs(id));
   }
 
@@ -198,10 +198,10 @@ public class MetaEntityCatalogController {
    */
   @PostMapping("/{id}/action-defs")
   @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
-  public ResponseEntity<ApiResponse<ActionDefSpec>> upsertActionDef(
+  public ResponseEntity<ApiResponse<ActionDefView>> upsertActionDef(
       @PathVariable Long id, @Valid @RequestBody UpsertActionDefCommand cmd) {
-    metaEntityApplicationService.upsertActionDef(id, cmd);
-    return ResponseEntity.ok(ApiResponse.success(toSpec(cmd)));
+    return ResponseEntity.ok(
+        ApiResponse.success(metaEntityApplicationService.upsertActionDef(id, cmd)));
   }
 
   /** 软删单条动作定义；不存在（含已软删）返回 404 {@code META_ACTION_DEF_NOT_FOUND}。 */
@@ -210,22 +210,6 @@ public class MetaEntityCatalogController {
   public ApiResponse<Void> deleteActionDef(@PathVariable Long id, @PathVariable String actionCode) {
     metaEntityApplicationService.deleteActionDef(id, actionCode);
     return ApiResponse.success();
-  }
-
-  /** 回显写入结果（权限码由服务端推导，见 {@code ActionDefSpec#permissionCodeOf}）。 */
-  private static ActionDefSpec toSpec(UpsertActionDefCommand cmd) {
-    return new ActionDefSpec(
-        cmd.getActionCode(),
-        cmd.getLabel(),
-        cmd.getFromStatus(),
-        cmd.getToStatus(),
-        cmd.getStatusField(),
-        Boolean.TRUE.equals(cmd.getEscape()),
-        cmd.getHandlerBean(),
-        cmd.getParamsSchema(),
-        Boolean.TRUE.equals(cmd.getRequiresIdempotency()),
-        cmd.getSortOrder(),
-        Boolean.TRUE.equals(cmd.getEntry()));
   }
 
   /** 建模期静态校验（UC-W5）：问题分级列表，ERROR 阻断发布。 */
