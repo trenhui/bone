@@ -2496,6 +2496,67 @@ CREATE TABLE rule_asset (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI规则资产';
 
 -- ------------------------------------------------------------
+-- 12.1 RAG 切片（bone-ai-rag）：受控检索最小存储单元（引用强制锚点 clause_ref / span_start~span_end）
+-- ------------------------------------------------------------
+CREATE TABLE ai_rag_chunk (
+    id             BIGINT       NOT NULL COMMENT '切片主键（分布式ID）',
+    tenant_id      BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    doc_id         VARCHAR(128) DEFAULT NULL COMMENT '归属文档ID',
+    section_path   VARCHAR(512) DEFAULT NULL COMMENT '章节/条款面包屑路径',
+    chunk_text     MEDIUMTEXT   DEFAULT NULL COMMENT '切片正文（受控检索文本）',
+    embedding      TEXT         DEFAULT NULL COMMENT '过渡：CSV float 嵌入；终局改 MySQL JSON 列',
+    clause_ref     VARCHAR(128) DEFAULT NULL COMMENT '引用强制锚点（clause_id）',
+    span_start     INT          NOT NULL DEFAULT 0 COMMENT '条款内 span 起（字符偏移）',
+    span_end       INT          NOT NULL DEFAULT 0 COMMENT '条款内 span 止',
+    deleted        TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_ai_rag_chunk_tenant_doc (tenant_id, doc_id),
+    KEY idx_ai_rag_chunk_clause (clause_ref)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI RAG 切片（受控检索最小存储单元，引用强制锚点）';
+
+-- ------------------------------------------------------------
+-- 12.2 评测集 / 评测运行（bone-ai 评测门禁资产：总案 §7 明列新 DDL；挂发布流水线，judge 走网关计量）
+-- ------------------------------------------------------------
+CREATE TABLE eval_case (
+    id             BIGINT       NOT NULL COMMENT '评测用例主键（Snowflake）',
+    tenant_id      BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    scene          VARCHAR(64)  DEFAULT NULL COMMENT '场景',
+    case_type      VARCHAR(32)  DEFAULT NULL COMMENT '用例类型（RAG/CLASSIFY/...）',
+    input          MEDIUMTEXT   DEFAULT NULL COMMENT '输入（query/文档片段）',
+    expected       MEDIUMTEXT   DEFAULT NULL COMMENT '期望输出/标注',
+    expected_hit   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否应被命中（正样本标记）',
+    difficulty     INT          DEFAULT NULL COMMENT '难度（标注）',
+    kappa          DECIMAL(4,3) DEFAULT NULL COMMENT '双人标注一致性（Kappa）',
+    deleted        TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_eval_case_scene (tenant_id, scene, case_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI评测用例';
+
+CREATE TABLE eval_run (
+    id             BIGINT       NOT NULL COMMENT '评测运行主键（Snowflake）',
+    tenant_id      BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    gate           VARCHAR(32)  NOT NULL COMMENT '门禁名',
+    case_id        BIGINT       DEFAULT NULL COMMENT '关联用例ID',
+    predicted      MEDIUMTEXT   DEFAULT NULL COMMENT '模型/系统输出',
+    expected       MEDIUMTEXT   DEFAULT NULL COMMENT '期望输出（从用例快照）',
+    expected_hit   TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否应被命中',
+    predicted_hit  TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '系统实际是否命中',
+    cited_clause   VARCHAR(128) DEFAULT NULL COMMENT '引用条款（引用正确率计量；null=未引用）',
+    judge_score    DECIMAL(5,4) DEFAULT NULL COMMENT 'LLM-as-Judge 评分（gateway 计量）',
+    passed         TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '门禁是否通过',
+    finished_at    DATETIME(3)  DEFAULT NULL COMMENT '完成时间',
+    deleted        TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_eval_run_gate (tenant_id, gate, finished_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI评测运行';
+
+-- ------------------------------------------------------------
 -- 9.1 应用 / 模块演示种子数据（MVP-08：元数据建模 UI 的「应用 → 模块」导航开箱即有内容）
 --
 -- 背景：bone_application / bone_module 此前零数据，前端「元数据 / 应用管理」空列表，

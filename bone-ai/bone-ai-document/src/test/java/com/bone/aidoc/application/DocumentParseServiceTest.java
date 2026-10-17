@@ -57,4 +57,17 @@ class DocumentParseServiceTest {
     DocumentIR ir = service.parse(new ByteArrayInputStream(new byte[0]), "t1", "a.pdf", null);
     assertThat(ir.docId()).isNotBlank();
   }
+
+  @Test
+  void derives_docling_parse_mode_from_provider() {
+    when(parser.provider()).thenReturn("docling");
+    when(parser.parse(any(InputStream.class), any()))
+        .thenReturn(ParsedDocument.of(1, List.of("p1"), "docling"));
+
+    DocumentIR ir =
+        service.parse(
+            new ByteArrayInputStream("x".getBytes(StandardCharsets.UTF_8)), "t1", "d.pdf", "doc-2");
+    assertThat(ir.parseMode()).isEqualTo("DOCLING");
+    assertThat(ir.provider()).isEqualTo("docling");
+  }
 }

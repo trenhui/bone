@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: bone-ai-app
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: ${BONE_AI_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/bone?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${BONE_AI_DB_USERNAME:root}
+    password: ${BONE_AI_DB_PASSWORD:}
+
+server:
+  shutdown: graceful
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,readiness,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+bone:
+  ai:
+    rag-top-k: 5
+    default-integration-mode: AUTOMATED
+    notification-webhook-url: ${BONE_AI_WEBHOOK_URL:}

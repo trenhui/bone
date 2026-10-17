@@ -47,6 +47,22 @@ public class DocumentParseService {
         clauses.size(),
         parsed.provider());
     return DocumentIR.of(
-        id, tenantId, sourceRef, parsed.pageCount(), "PDFBOX_TEXT", parsed.provider(), clauses);
+        id,
+        tenantId,
+        sourceRef,
+        parsed.pageCount(),
+        parseModeOf(parsed.provider()),
+        parsed.provider(),
+        clauses);
+  }
+
+  /** 解析模式由解析器标识派生（pdfbox→PDFBOX_TEXT / docling→DOCLING / tika→TIKA_TEXT）。 */
+  private static String parseModeOf(String provider) {
+    return switch (provider) {
+      case "pdfbox" -> "PDFBOX_TEXT";
+      case "docling" -> "DOCLING";
+      case "tika" -> "TIKA_TEXT";
+      default -> provider.toUpperCase() + "_TEXT";
+    };
   }
 }
