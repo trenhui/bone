@@ -5,8 +5,12 @@
 #     「违规=0 的防新增型冻结」（空 store 文件）属于门禁机制本身，不是债务，不入台账。
 #   * `violations` = 该规则冻结的真实违规出现次数（规则判定口径见 stores 内文本）。
 #   * 防新增语义不变：基线只允许收缩；本台账是治理视角的显式登记，不改变 CI 判定。
-#   * CI 消费（到期硬失败）尚未实装前的口径：人工治理（方案 G-2「到期机制未被 CI 消费前，
-#     只能称人工治理，不得为满足台账数字而重写 freeze 基线」）。
+#   * 到期机制（2026-10-17 由 CI 实装，G-2「到期机制未被 CI 消费前只能称人工治理」到此落地）：
+#     exception 类条目必须带 `expires`（ISO 日期）且未过期，到期由 [36/37] check-freeze-ledger.py
+#     R4 硬失败，须 owner 续期（更新 lastRenewalDate 与 expires）或移除该例外——例外不得沦为永久；
+#     debt/planned-adjustment 的 `expires` 为复审提醒（过期仅告警，不阻断）。
+#   * 字段：rule/module/store/classification/violations/items/owner/removalCondition/
+#     lastRenewal/lastRenewalDate/expires（expires 仅 exception 强制，其余选填）。
 #
 # 数据来源：各模块 archunit_store/<uuid> 现场统计（不含 stored.rules；2026-10-16 复核，9 模块 94 个 store 文件）：
 #   * 非空（真实债务）3 处 → 即下方 3 个条目；

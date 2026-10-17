@@ -129,6 +129,27 @@ def main() -> int:
         lr_date = e.get("lastRenewalDate")
         if lr_date is not None and not iso_date.match(str(lr_date)):
             errors.append(f"{label} lastRenewalDate 不是 ISO 日期：{lr_date!r}")
+        # ── R4 到期 + 复审（G-2 到期机制落地：例外不得沦为永久）──
+        # exception 必须带 expires 且未过期：例外是有界的临时豁免，到期 CI 硬失败，
+        # 须由 owner 续期（更新 lastRenewalDate 与 expires）或移除该条目；
+        # debt/planned-adjustment 的 expires 为复审提醒（过期仅告警，不阻断）。
+        exp = e.get("expires")
+        if exp is not None and not iso_date.match(str(exp)):
+            errors.append(f"{label} expires 不是 ISO 日期：{exp!r}")
+        today = dt.date.today().isoformat()
+        if str(e.get("classification")) == "exception":
+            if exp is None:
+                errors.append(
+                    f"{label} classification=exception 必须带 expires"
+                    "（例外须有界，到期 CI 硬失败，须续期或移除）"
+                )
+            elif iso_date.match(str(exp)) and str(exp) < today:
+                errors.append(
+                    f"{label} 例外已到期（expires={exp}）：须续期"
+                    "（更新 lastRenewalDate 与 expires）或移除该例外"
+                )
+        elif exp is not None and iso_date.match(str(exp)) and str(exp) < today:
+            warns.append(f"{label} 已逾复审日期（expires={exp}），请复审/续期或移除")
         seen = seen_rules.get(str(e.get("rule")), 0)
         seen_rules[str(e.get("rule"))] = seen + 1
 
