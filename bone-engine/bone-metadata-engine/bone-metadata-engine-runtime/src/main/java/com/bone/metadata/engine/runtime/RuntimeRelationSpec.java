@@ -11,10 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * 三种字段类型各占一个顶层键，互不干扰：
  *
  * <pre>
- *   REFERENCE    {"reference":    {"targetEntityCode":"t_expense_category","labelField":"name","filterField":"enabled","filterValue":"Y"}}
- *   CHILD_TABLE  {"childTable":   {"childEntityCode":"t_expense_claim_item","foreignKey":"claim_id","orderColumn":"sort_order","cascadeDelete":true,"minRows":0,"maxRows":200}}
+ *   REFERENCE    {"reference":    {"targetEntityCode":"expense_category","labelField":"name","filterField":"enabled","filterValue":"Y"}}
+ *   CHILD_TABLE  {"childTable":   {"childEntityCode":"expense_claim_item","foreignKey":"claim_id","orderColumn":"sort_order","cascadeDelete":true,"minRows":0,"maxRows":200}}
  *   ATTACHMENT   {"attachment":   {"maxCount":10,"maxSizeMB":10,"accept":["image/*","application/pdf"]}}
  * </pre>
+ *
+ * <p><b>实体编码 ≠ 物理表名</b>：示例中的 {@code *EntityCode} 一律填**发布实体编码**（无前缀）； {@code t_} 是运行时物理表名前缀（见 {@code
+ * PublishedRuntimeEntity#physicalTableName}），不是编码的一部分。 示例曾误带 {@code t_}
+ * 前缀，误导出的配置会让子表金额聚合静默失配（2026-10-17 已修）。
  *
  * <p><b>为什么不放 {@code enum_values}</b>：该列语义是「枚举取值白名单」，写入路径 {@code
  * JdbcRuntimeRecordService#validateRules} 会消费它做ENUM 越界校验；关系配置放进去会被误当作枚举候选。

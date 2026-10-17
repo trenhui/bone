@@ -46,7 +46,7 @@ class ChildAmountAggregatorTest {
                 false,
                 null,
                 null,
-                "{\"childTable\":{\"childEntityCode\":\"t_expense_claim_item\","
+                "{\"childTable\":{\"childEntityCode\":\"expense_claim_item\","
                     + "\"foreignKey\":\"claim_id\",\"orderColumn\":\"sort_order\"}}"));
 
     when(jdbc.queryForObject(any(String.class), any(MapSqlParameterSource.class), eq(String.class)))
@@ -66,5 +66,37 @@ class ChildAmountAggregatorTest {
     String sumSql = sqlCaptor.getValue();
     assertThat(sumSql).contains("claim_id").contains("t_expense_claim_item");
     assertThat(sumSql).doesNotContain("expense_claim_id");
+  }
+
+  @Test
+  void prefixedChildEntityCodeStillAggregates() {
+    // 回归（2026-10-17 诊断修复）：RuntimeRelationSpec javadoc 示例曾带 t_ 前缀，按旧示例配置的
+    // 关系声明传入时 equals 失配 ⇒ 聚合器静默返回 null，G10 头表金额回填无报错失效。
+    ChildAmountAggregator aggregator = new ChildAmountAggregator(jdbc, recordService);
+    PublishedRuntimeEntity parent =
+        new PublishedRuntimeEntity("expense_claim", "t_expense_claim", "id", 1L, List.of());
+    RuntimeRelationSpec spec =
+        RuntimeRelationSpec.of(
+            new RuntimeFieldColumn(
+                "items",
+                "CHILD_TABLE",
+                false,
+                false,
+                false,
+                null,
+                null,
+                "{\"childTable\":{\"childEntityCode\":\"expense_claim_item\","
+                    + "\"foreignKey\":\"claim_id\",\"orderColumn\":\"sort_order\"}}"));
+
+    when(jdbc.queryForObject(any(String.class), any(MapSqlParameterSource.class), eq(String.class)))
+        .thenReturn("DRAFT");
+    when(jdbc.queryForObject(
+            any(String.class), any(MapSqlParameterSource.class), eq(BigDecimal.class)))
+        .thenReturn(new BigDecimal("100"));
+
+    BigDecimal result =
+        aggregator.aggregateAndBackfill(parent, 1L, "9", "t_expense_claim_item", spec);
+
+    assertThat(result).isEqualByComparingTo("100");
   }
 }

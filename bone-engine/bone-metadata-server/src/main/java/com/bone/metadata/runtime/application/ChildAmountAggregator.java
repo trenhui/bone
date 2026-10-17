@@ -64,7 +64,7 @@ public class ChildAmountAggregator {
       String childEntityCode,
       RuntimeRelationSpec relationSpec) {
     AggSpec agg = SPECS.get(parent.entityCode());
-    if (agg == null || !agg.childEntityCode().equals(childEntityCode)) {
+    if (agg == null || !agg.childEntityCode().equals(normalizeEntityCode(childEntityCode))) {
       return null;
     }
     String parentTable = parent.physicalTableName();
@@ -115,6 +115,20 @@ public class ChildAmountAggregator {
     payload.put(agg.parentAmountColumn(), sum);
     recordService.update(parent.entityCode(), tenantId, parentId, payload, null, null);
     return sum;
+  }
+
+  /**
+   * 实体编码归一：剥离开头的 {@code t_} 物理表前缀。
+   *
+   * <p>实体编码（{@code expense_claim_item}）与物理表名（{@code t_expense_claim_item}）是两套口径， 而 {@code
+   * RuntimeRelationSpec} 的 javadoc 示例曾带 {@code t_} 前缀。按旧示例配置的关系声明传入时， {@code equals} 失配令 {@link
+   * #aggregateAndBackfill} 静默返回 null——G10「头表金额 = 明细合计」
+   * 契约在无任何报错的情况下失效。此处兜底：无论配置写哪种形态都能匹配上（2026-10-17 诊断修复）。
+   */
+  private static String normalizeEntityCode(String entityCode) {
+    return entityCode != null && entityCode.startsWith("t_")
+        ? entityCode.substring("t_".length())
+        : entityCode;
   }
 
   private String childTableOf(PublishedRuntimeEntity parent, AggSpec spec) {
