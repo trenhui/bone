@@ -63,7 +63,7 @@ function RuleCard({
   const off = !enabled;
 
   return (
-    <div style={{
+    <div data-tour="rule-card" style={{
       border: `1px solid ${focusRing ? '#ffa940' : off ? '#f0f0f0' : '#e6eaf0'}`,
       borderRadius: 10, marginBottom: 10, overflow: 'hidden',
       background: off ? '#fafafa' : '#fff',
@@ -150,6 +150,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
           onDown={() => onChange(moveLinkage(schema, ri, ri + 1))}
           canUp={ri > 0}
           canDown={ri < linkages.length - 1}
+          defaultOpen={ri === linkages.length - 1}
         >
           <Space direction="vertical" size={8} style={{ width: '100%' }}>
             <Space wrap>
@@ -248,6 +249,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
             onDown={() => onChange(moveSubmit(schema, ri, ri + 1))}
             canUp={ri > 0}
             canDown={ri < submits.length - 1}
+            defaultOpen={ri === submits.length - 1}
           >
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Space wrap>

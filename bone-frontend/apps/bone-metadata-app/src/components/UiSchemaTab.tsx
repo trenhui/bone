@@ -12,10 +12,15 @@ interface Props {
   entityId: string;
   entityCode: string;
   fields: MetaField[];
+  /**
+   * 前往实体详情「发布」页签（0-1 闭环：设计器内「去发布」按钮直达）。
+   * 由 EntityDetail 注入 setOuterTab('publish')；缺省时设计器不渲染该按钮。
+   */
+  onGoPublish?: () => void;
 }
 
-const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields }) => (
-  <UiSchemaDesigner entityId={entityId} entityCode={entityCode} fields={fields ?? []} />
+const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublish }) => (
+  <UiSchemaDesigner entityId={entityId} entityCode={entityCode} fields={fields ?? []} onGoPublish={onGoPublish} />
 );
 
 export default UiSchemaTab;

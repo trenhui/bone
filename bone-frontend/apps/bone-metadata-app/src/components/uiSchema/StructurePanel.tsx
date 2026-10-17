@@ -149,6 +149,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         return (
         <div
           key={sec.id ?? si}
+          data-tour="section"
           style={{
             border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
             borderRadius: 10, marginBottom: 10, background: '#fff',
@@ -233,6 +234,10 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               return (
                 <div key={`${c.fieldCode}-${ci}`}>
                   <div
+                    // 控件行锚点：分区头的「删除分区」按钮与控件行的「移出分区」图标同为
+                    // .anticon-delete，探针/引导无法用样式类区分二者（无脑 .first() 会删掉整个分区）。
+                    // 给出稳定锚点，行级操作才能被精确定位。
+                    data-tour="control-row"
                     {...dragSort2(si, ci, (fs, fc, ts, tc) => {
                       onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
                     }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}

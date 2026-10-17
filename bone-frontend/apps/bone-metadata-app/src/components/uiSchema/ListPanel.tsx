@@ -41,6 +41,7 @@ export default function ListPanel({ schema, onChange, fields, focus }: Props): R
       {cols.map((c, i) => (
         <div
           key={`${c.fieldCode}-${i}`}
+          data-tour="list-row"
           style={{
             display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
             padding: '7px 9px', border: `1px solid ${focus?.idx === i ? '#ffa940' : '#f0f0f0'}`,

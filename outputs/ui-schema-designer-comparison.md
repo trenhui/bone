@@ -297,3 +297,63 @@
 - **HTML5 DnD 合成事件**：Playwright `evaluateHandle(() => new DataTransfer())` + `dispatchEvent(el,'dragstart'/'dragover'/'dragend', {dataTransfer})` 可在 Chromium 完整驱动 React 的 DnD 处理器；但合成 dragend **不触发**目标元素的 dragleave，拖拽高亮的清理必须挂 window 级兜底。
 - **行选择器取字段 code**：字段库 Tag 的 innerText 无分隔符（「理算金额calc_amount」），split 取不到 code——用 `lastElementChild.textContent` 拿 code span。
 - **合并丢功能的检出方式**：以「上一轮验收探针」为回归基线复跑，比读 diff 可靠——本轮两道守卫丢失正是探针负向报出（代码 diff 里看不出「曾经有过」）。
+
+## 13. 第六轮：新手指引体系（Spotlight + 0-1 进度卡）+ 三实体 0-1 人工串测（2026-10-17）
+
+### 13.1 0-1 手工设计一个业务页面：五步法（本文档的可复用操作口径）
+
+| 步 | 做什么 | 设计器哪里 | 完成判据（进度卡里程碑） |
+|---|---|---|---|
+| 1 建模 | 建实体 + 字段，先把模型发布 | 实体详情「字段」 | 实体状态 = 已发布 |
+| 2 组织表单 | 默认结构把全字段堆在一个分区；按业务语义拆分（报销= 基本信息/金额/凭证，理赔= 报案信息/赔付信息/核赔轨迹），把放错位置的控件移出、再从字段库点选加回目标分区 | 「结构」+ 右下 FAB 字段库 | 分区 ≥ 2 |
+| 3 精选列表 | 隐藏噪音列、调列宽、固定首列（审批人 80% 时间在列表页） | 「列表」 | 列集合 / 列宽 / 固定列有任一改动 |
+| 4 配业务规则 | 提交校验（金额须 > 0）、动作条（提交/作废，选项取自实体动作定义真源）、变体（按角色换界面）——至少一条 | 「规则」/「动作条」/「变体」 | 规则类配置数 > 0 |
+| 5 自检 → 保存 → 发布 | 自检零错误 → 保存草稿 → 「去发布」→ 确认发布 | 「自检」+ 工具栏「保存」「去发布」 | 自检零错误 + 已发布 |
+
+**里程碑不是「点了几下」，而是由 schema 真状态推定**（`utils/onboarding.ts` 纯函数，进度卡与探针同源）：
+- 默认 schema（全字段平铺）首开显示 **0/5 是特性不是 bug**——它恰好是最需要引导的状态；
+- 「自检零错误」额外要求**先有过真实配置**（分区/列表/规则任一），否则默认 schema 本身零错误会把「什么都没配」显示成「自检通过」（假绿）；
+- 「发布上线」只认后端 `published_schema_json`（never/pending/published 三态），不认前端近似。
+
+### 13.2 业界最佳实践 → 本设计器落地（三件套）
+
+| 业界范式 | 代表 | 本实现 | 关键取舍 |
+|---|---|---|---|
+| Spotlight 交互式引导 | driver.js / Figma onboarding | `DesignerTour.tsx` | 聚光灯四分区遮罩挖洞 + 呼吸高亮环；**action 步真点才过**（点字段库 / 点列表 tab / 点规则 tab——看过 ≠ 会做）；不卡死（保留「继续」兜底 + 工具栏「帮助」随时重开）；锚点解析**限定左栏内**（页面外层也有「列表显示」同名 tab）；Esc 哲学统一（弹层开着时 Esc 归弹层，不关引导） |
+| Guided Setup 清单 | Notion / Linear / Salesforce | `OnboardingChecklist.tsx` | 收起态 `x/5` 细进度条 ↔ 展开五行（完成态图标 + 「为什么要做」+ 「去做」直达面板），五项全亮自动收成庆祝条；按实体记忆可关闭 |
+| 最后一跳就地可达 | 各类低代码「设计即发布」 | 工具栏「去发布」按钮 | 原来发布入口在设计器**之外**，是 0-1 流最大断点；现直达实体详情「发布」页签，且**脏态先保存再跳**（保存失败不跳，避免对着旧配置发布） |
+
+**触发纪律**：按实体首访自动弹出（localStorage 记忆，键按实体隔离）+ 仅当 0-1 未走完才弹（已完全部发布的实体再弹是噪音）；标题不带「第 N 步」（卡片右上角 `x/6` 是唯一编号源，双编号会漂移）。
+
+### 13.3 实现清单（新增/改动）
+
+| 文件 | 角色 |
+|---|---|
+| `src/utils/onboarding.ts`（新增） | 纯函数层：`onboardingMilestones(schema, publishState, errCount, fieldCount)` 五里程碑 + `TOUR_STEPS` 六步定义 + 按实体隔离的存储键 |
+| `src/components/uiSchema/DesignerTour.tsx`（新增） | Spotlight 组件：四分区遮罩挖洞、脉冲环、placement 智能翻转 + 视口钳制、action 步 capture 阶段监听、250ms 轮询 + resize/scroll 重算 |
+| `src/components/uiSchema/OnboardingChecklist.tsx`（新增） | 0-1 进度卡（细进度条 ↔ 五行明细 ↔ 庆祝条） |
+| `UiSchemaDesigner.tsx` | 接线：`tourOpen/tourIdx/checklistHidden`、`autoOpenRef`（每实体每挂载只评估一次）、`save()` 改返回 `Promise<boolean>` 供「去发布」判脏、`data-tour` 锚点（left-panel/preview/save/publish-state）、命令面板增引导与进度卡入口 |
+| `UiSchemaTab.tsx` / `pages/EntityDetail.tsx` | `onGoPublish` → 外层 tab `publish`（外层 tab 由 URL `?tab=` 驱动） |
+| `StructurePanel.tsx` | 补 `data-tour="control-row"`（见 §13.5 同名图标坑） |
+
+### 13.4 验证（四重 + 负向探针）
+
+1. **单测**：`onboarding.test.ts` 9/9 —— 含负向：默认态 0/5、全配 5/5、**pending 不得亮 publish**、有错误阻 lint、列表三信号（删列/调宽/固定）、规则计数含变体与动作条、零字段边界、TOUR_STEPS 六步唯一且 action 步均带 `doneText`。
+2. **tsc**：`apps/bone-metadata-app` `--noEmit` EXIT=0；**vitest** metadata-app 全量（含存量失败为环境问题：`overlaySync` 的 localStorage 只读注入，未改动该文件）。
+3. **主探针** `scripts/_probe_p6_onboarding.js`：**HARD 66/66 + SOFT 12/12，RESULT: ALL PASS**（零 console error + 零 page error）。五阶段：
+   - Phase 0 API 建模三实体（报销单 / 采购订单 / 理赔案件，含采购的动作定义）+ 建模发布；
+   - Phase 1 新手引导走查：首访自动弹出 → 六步（3 个 action 步真点）→ 完成后写完成标记 → 重进不弹 → 工具栏「帮助」可重开 → 进度卡可见；
+   - Phase 2 三实体 0-1 人工设计：移出控件 → 加分区 → 字段库加回（控件数复原且落在新分区）→ 列表隐藏列 + 固定列 → 提交校验 / 动作条（Select 真源分支）/ 变体 → 自检零错误 → 保存（未发布 + 首发内容）；
+   - Phase 3 发布闭环：「去发布」跳发布页 → 确认发布 → 回设计器「已发布」+ 「去发布」消失 + 进度卡庆祝条；
+   - Phase 4 串起来证明：运行时表头 = 契约可见列（隐藏列不泄漏）+ 固定列渲染为 `fix-left` + 列序 = 契约序。
+4. **负向探针** `scripts/_probe_p6_negative.js`：**8/8，TEETH CONFIRMED**。用 API 直写一份**含悬空字段引用**（`ghost_field`）的 ui-schema，证明：工具栏出现「1 错误」Tag、「自检通过」Tag 消失、面板列出错误明细、带错保存弹二次确认「本地自检仍有 1 个错误，确定保存？」；并**反证**旧口径为何恒 0——自检 tab 角标实为「自检 1」（只是数字），故 `/^\d+ 错误$/` 永不命中。
+
+### 13.5 探针方法论踩坑（复用价值，本轮新增 6 条）
+
+- **同名图标类**（本轮最贵的一条）：分区头「删除分区」与控件行「移出分区」同为 `.anticon-delete`，`locator(...).first()` 删的是**整个分区**；而 `removeSection` 无护栏，删完再点「添加分区」只会补出一个空的 `sec_1`，分区数恒为 1 —— 表现为「添加分区按钮时好时坏」，实为**选择器自伤**而非时序问题。修法不是加 sleep，而是**给行级操作补稳定锚点**（`data-tour="control-row"`）。教训：断言失败先问「点到的真是我以为的元素吗」。
+- **假绿三连**：① 自检零错误原在左栏匹配 `/^\d+ 错误$/`，而角标只是数字 → 恒 0；修正为「工具栏零错误 Tag + 自检通过 Tag + 面板零问题态」三重口径。② 页面级 `getByText('已发布')` 会被实体详情头部标签满足 → 本轮改用 `[data-tour="publish-state"]` 精确锚点。③ 变体名在 `<Input value>` 里，`innerText` 永远不含它 → 断言恒失败（这一条是**假红**，同样致命）。
+- **antd 两字按钮插空格**：`autoInsertSpace` 会把纯文本两字按钮渲染成「完 成」「保 存」，`hasText:'完成'` 永不匹配（30s 超时的经典来源）；带 icon 或三字以上不受影响。引导的「继续/完成」一律用 `.ant-btn-primary` 定位。
+- **showSearch/tags Select 的 search input 拦截点击**：点 `.ant-select-selection-placeholder` 会被覆盖其上的 `ant-select-selection-search-input` 判为 pointer 事件被拦截 → 点其 `.ant-select-selector` 外框（动作码、变体角色两处都踩）。
+- **按钮文案漂移**：变体面板是「**新增**变体」不是「添加变体」；动作条是「添加动作」、规则是「添加提交校验」。hasText 文案一旦漂移就是 30s 超时而非快速失败，探针应优先用 aria-label / data-tour。
+- **首存发布态语义**：Phase 0 的建模发布时还没有 ui-schema 行，`UiSchemaApplicationService.snapshotOnPublish` 对 `row.isEmpty()` 是 no-op → published 快照仍为 null → 设计器首存后是「**未发布**」、预告按钮是「**首发内容**」；断言写「待发布/变更预告」必假失败（源码判定见 `UiSchemaDesigner` 的 publishState 三态 memo）。
+- **pin ≠ 首位**：契约 `pinned` 在运行时渲染成 antd `fix-left`（固定列），不等于「必须排在第一列」；而默认契约列序来自 `buildDefaultSchema` 对字段 API 返回序（按 code 字典序）的直传，故列序断言应比对字典序、并容忍非契约的「操作」列。

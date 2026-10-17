@@ -18,12 +18,13 @@ import {
 import {
   CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, EyeOutlined, FileTextOutlined, FullscreenExitOutlined,
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
-  ReloadOutlined, SaveOutlined, UndoOutlined,
+  ReloadOutlined, SaveOutlined, ThunderboltOutlined, UndoOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { normJson } from '../../utils/normJson';
 import { previewChanges, type ChangePreview } from '../../utils/uiSchemaChangePreview';
+import { TOUR_STEPS, checklistDismissKey, onboardingMilestones, tourStorageKey } from '../../utils/onboarding';
 import { metadataActionDefApi, metadataUiSchemaApi, type ActionDefSpec, type UiSchemaIssue } from '../../services/metadataApi';
 import { buildDefaultSchema, type ViewKey } from './schemaOps';
 import { enumFieldsOf, lintSchema, type LintIssue, type LintLocate } from './lint';
@@ -39,6 +40,8 @@ import JsonPanel from './JsonPanel';
 import VariantsPanel from './VariantsPanel';
 import SchemaPreview from './SchemaPreview';
 import ChangePreviewPanel from './ChangePreview';
+import DesignerTour from './DesignerTour';
+import OnboardingChecklist from './OnboardingChecklist';
 import { fmtSnapTime, loadSnaps, removeSnap, saveSnap, type DesignerSnapshot } from './snapshots';
 
 /**
@@ -54,6 +57,12 @@ interface Props {
   entityId: string;
   entityCode: string;
   fields: MetaField[];
+  /**
+   * 前往实体详情「发布」页签（由 EntityDetail 提供 setOuterTab('publish')）。
+   * 0-1 闭环的关键一跳：设计器内保存后不用手动找发布入口——
+   * 没有该回调时按钮不渲染（设计器被其他宿主复用时不假设外部结构）。
+   */
+  onGoPublish?: () => void;
 }
 
 type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'variants' | 'lint' | 'json';
@@ -69,24 +78,15 @@ const TAB_LABEL: Record<TabKey, string> = {
   json: 'JSON',
 };
 
-/** 首次进入设计器的 3 步上手引导（localStorage 记忆；对标原型 showGuide 首访自动弹出） */
-const GUIDE_KEY = 'bone-designer-guide-v1';
-const GUIDE_STEPS: { title: string; body: string }[] = [
-  {
-    title: '① 左侧配置，右侧实时预览',
-    body: '结构 / 规则 / 动作条 / 列表 / 变体在左侧面板配置，点左下角「＋」调出字段库；右侧预览跑的是运行时同一套引擎——左改右见，不用保存发布才能看到效果。',
-  },
-  {
-    title: '② 用「身份模拟」验证差异化',
-    body: '预览区顶部可切换角色 / 档位 / 渠道 / 设备，实时裁决变体与联动规则；「规则追踪」显示哪些联动命中。配好变体后在这里确认各身份看到的画面。',
-  },
-  {
-    title: '③ 自检 + 后端校验全绿后再发布',
-    body: '「自检」查协议一致性，「后端校验」核对字段/动作码是否真实存在。发布链路有硬门禁：存在协议错误会被阻止发布。',
-  },
-];
+/**
+ * 新手引导（第六轮）：静态 3 步 Modal 已升级为 Spotlight 交互式引导 + 0-1 进度卡。
+ * - 步骤定义 / 里程碑判定：utils/onboarding.ts（纯函数，UI 与探针同源）；
+ * - 交互组件：DesignerTour.tsx（聚光灯）+ OnboardingChecklist.tsx（进度卡）；
+ * - 触发纪律：按实体首访自动弹出（localStorage 记忆），且仅当 0-1 尚未走完时——
+ *   已完全部发布的实体再弹 0-1 引导是噪音；用户随时可从工具栏「帮助」重开。
+ */
 
-export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props): React.ReactElement {
+export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
   const [baseline, setBaseline] = useState<string>(''); // 已保存快照，用于判脏
@@ -208,8 +208,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
 
   /* ---------- 全屏（禅模式） ---------- */
   const [zen, setZen] = useState(false);
-  /* ---------- 3 步上手引导（首访自动，可从工具栏重显） ---------- */
-  const [guideOpen, setGuideOpen] = useState(false);
+  /* ---------- Spotlight 新手引导（按实体首访自动，可从工具栏「帮助」重开） ---------- */
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourIdx, setTourIdx] = useState(0);
+  /* ---------- 0-1 进度卡（按实体可关闭；加载完成 / 切实体时重读 localStorage） ---------- */
+  const [checklistHidden, setChecklistHidden] = useState(false);
   /* ---------- 版本快照（P2 · 本地 30 份上限，恢复前协议 Gate） ---------- */
   const [snaps, setSnaps] = useState<DesignerSnapshot[]>([]);
   const [snapModalOpen, setSnapModalOpen] = useState(false);
@@ -222,11 +225,6 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   const [histOpen, setHistOpen] = useState(false);
   /* 命令面板键盘导航：当前高亮项 ref（用于滚入视口） */
   const cmdActiveRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(GUIDE_KEY)) setGuideOpen(true);
-    } catch { /* localStorage 不可用（隐私模式）时静默跳过引导 */ }
-  }, []);
 
   // 命令面板每次打开或筛选变化，键盘游标归零（避免残留旧游标越界）
   useEffect(() => { if (cmdOpen) setCmdActive(0); }, [cmdOpen]);
@@ -234,9 +232,15 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   // 键盘游标移动时把高亮项滚入视口（长命令列表不丢焦点）
   useEffect(() => { cmdActiveRef.current?.scrollIntoView({ block: 'nearest' }); }, [cmdActive, cmdOpen]);
 
-  const closeGuide = () => {
-    setGuideOpen(false);
-    try { localStorage.setItem(GUIDE_KEY, '1'); } catch { /* 忽略 */ }
+  const closeTour = () => {
+    setTourOpen(false);
+    setTourIdx(0);
+    try { localStorage.setItem(tourStorageKey(entityId), '1'); } catch { /* 隐私模式：忽略，下次再引导 */ }
+  };
+
+  const dismissChecklist = () => {
+    setChecklistHidden(true);
+    try { localStorage.setItem(checklistDismissKey(entityId), '1'); } catch { /* 隐私模式：忽略 */ }
   };
 
   /**
@@ -370,7 +374,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     { key: 'redo', group: '编辑', label: '重做（Ctrl+Shift+Z）', run: redo, disabled: !future.length },
     { key: 'zen-on', group: '视图', label: '进入全屏设计器', run: () => setZen(true) },
     { key: 'zen-off', group: '视图', label: '退出全屏', run: () => setZen(false) },
-    { key: 'guide', group: '帮助', label: '显示 3 步上手引导', run: () => setGuideOpen(true) },
+    { key: 'guide', group: '帮助', label: '新手指引（6 步走完 0-1）', run: () => { setTourIdx(0); setTourOpen(true); } },
+    { key: 'checklist', group: '帮助', label: '展开 0-1 上手指引进度卡', run: () => { setChecklistHidden(false); setTab('structure'); } },
     { key: 'go-structure', group: '跳转面板', label: '跳到：结构', run: () => setTab('structure') },
     { key: 'go-rules', group: '跳转面板', label: '跳到：规则', run: () => setTab('rules') },
     { key: 'go-actions', group: '跳转面板', label: '跳到：动作条', run: () => setTab('actions') },
@@ -465,6 +470,45 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   const errCount = issues.filter((i) => i.level === 'error').length;
   const warnCount = issues.filter((i) => i.level === 'warning').length;
 
+  /**
+   * 0-1 里程碑（进度卡与引导自动弹出共用同一判定：utils/onboarding 纯函数）。
+   * fields.length 参与「列表精选」判定（平铺全字段 = 没精选过）。
+   */
+  const milestones = useMemo(
+    () => onboardingMilestones(schema, publishState, errCount, fields.length),
+    [schema, publishState, errCount, fields.length],
+  );
+
+  /**
+   * 引导自动弹出（按实体首访 + 0-1 未完成双条件）：
+   * - 每次 load() 完成（loading 翻 false）评估一次——此刻 published/schema 状态已就绪，
+   *   不会在加载中对空 schema 误判；
+   * - autoOpenRef 保证「每个实体每次挂载只评估一次」：milestones 随每次编辑变化，
+   *   若无守卫会把用户进行到一半的引导重置回第 0 步；
+   * - 已走完 0-1（五项全亮，典型：历史实体 / 别人配好我只是来看看）不自动弹——
+   *   0-1 引导对已完成者是噪音；需要时工具栏「帮助」随时重开；
+   * - localStorage 键按实体隔离：同一浏览器换实体设计，各自首次都会引导。
+   */
+  const autoOpenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    if (autoOpenRef.current === entityId) return;
+    autoOpenRef.current = entityId;
+    let seen: string | null = null;
+    try { seen = localStorage.getItem(tourStorageKey(entityId)); } catch { /* 隐私模式 */ }
+    if (!seen && milestones.some((m) => !m.done)) {
+      setTourIdx(0);
+      setTourOpen(true);
+    }
+  }, [loading, entityId, milestones]);
+
+  // 进度卡关闭态按实体记忆（切实体 / 重新加载时重读，避免串味）
+  useEffect(() => {
+    let v: string | null = null;
+    try { v = localStorage.getItem(checklistDismissKey(entityId)); } catch { /* 隐私模式 */ }
+    setChecklistHidden(v === '1');
+  }, [entityId]);
+
   const onLocate = (l: LintLocate | undefined) => {
     if (!l) return;
     setTab(l.tab as TabKey);
@@ -472,8 +516,12 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   };
 
   /* ---------- 保存 / 校验 ---------- */
-  const save = async () => {
-    if (!schema) return;
+  /**
+   * 保存（返回是否成功）。返回值供「去发布」链路判断：脏态时先保存再跳转，
+   * 保存失败（含乐观锁冲突）不跳转——避免用户跳到发布页面对一份旧配置点发布。
+   */
+  const save = async (): Promise<boolean> => {
+    if (!schema) return false;
     setSaving(true);
     try {
       const res = await metadataUiSchemaApi.save(entityId, JSON.stringify(schema), lock);
@@ -482,17 +530,30 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         setBaseline(JSON.stringify(schema));
         setLock(Number(res.data?.lockVersion ?? lock + 1));
         setServerIssues(null);
-      } else if (res.code === 409 || res.code === 412) {
+        return true;
+      }
+      if (res.code === 409 || res.code === 412) {
         message.warning('配置已被其他人修改（乐观锁冲突），已重新加载最新内容');
         void load();
-      } else {
-        message.error(res.message ?? '保存失败');
+        return false;
       }
+      message.error(res.message ?? '保存失败');
+      return false;
     } catch {
       message.error('保存失败');
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  /**
+   * 0-1 闭环的最后一跳（第六轮新增）：设计器内直接前往实体详情「发布」页签。
+   * 脏态时先保存——「跳到发布页发现配置还是旧的」是 0-1 流最常见的断点感来源。
+   */
+  const handleGoPublish = async () => {
+    if (dirty && !(await save())) return; // 保存失败：message 已提示，停在设计器
+    onGoPublish?.();
   };
 
   const revalidate = async () => {
@@ -578,6 +639,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
             icon={publishState === 'published' ? <CheckCircleOutlined /> : publishState === 'pending' ? <CloudUploadOutlined /> : <ExclamationCircleOutlined />}
             color={publishState === 'published' ? 'green' : publishState === 'pending' ? 'gold' : 'default'}
             style={{ margin: 0, fontWeight: 600 }}
+            data-tour="publish-state"
           >
             {publishState === 'published' ? '已发布' : publishState === 'pending' ? '待发布' : '未发布'}
           </Tag>
@@ -684,8 +746,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           )}
         </Tooltip>
 
-        <Tooltip title="3 步上手引导">
-          <Button size="small" icon={<QuestionCircleOutlined />} onClick={() => setGuideOpen(true)}>
+        <Tooltip title="新手指引（6 步走完 0-1：字段库 → 分区 → 列表 → 规则 → 发布）">
+          <Button size="small" icon={<QuestionCircleOutlined />} onClick={() => { setTourIdx(0); setTourOpen(true); }}>
             帮助
           </Button>
         </Tooltip>
@@ -728,8 +790,17 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           <Button size="small" icon={<MacCommandOutlined />} onClick={() => setCmdOpen(true)}>命令</Button>
         </Tooltip>
 
+        {/* 0-1 闭环：设计器内直达发布（脏态先保存）；未提供回调（其他宿主复用）时不渲染 */}
+        {onGoPublish && publishState !== 'published' && (
+          <Tooltip title={dirty ? '有未保存改动——点击将先保存再前往「发布」' : '前往「发布」页签；发布后才对终端用户生效'}>
+            <Button size="small" icon={<ThunderboltOutlined />} loading={saving} onClick={() => void handleGoPublish()}>
+              去发布
+            </Button>
+          </Tooltip>
+        )}
+
         <Tooltip title="保存（Ctrl+S）。保存后需发布才对运行时生效">
-          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={requestSave}>
+          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={requestSave} data-tour="save">
             保存
           </Button>
         </Tooltip>
@@ -769,7 +840,18 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
           width, flex: '0 0 auto', display: 'flex', flexDirection: 'column',
           background: '#fff', border: '1px solid #e6eaf0', borderRadius: 10, overflow: 'hidden',
           position: 'relative',
-        }}>
+        }} data-tour="left-panel">
+          {/* 0-1 新手指引进度卡（加载中不渲染，避免对未就绪 schema 虚亮） */}
+          {!loading && !checklistHidden && (
+            <div style={{ padding: '10px 10px 0' }}>
+              <OnboardingChecklist
+                milestones={milestones}
+                onNavigate={(t) => setTab(t)}
+                onGoPublish={onGoPublish ? () => void handleGoPublish() : undefined}
+                onDismiss={dismissChecklist}
+              />
+            </div>
+          )}
           <Tabs
             size="small" activeKey={tab}
             onChange={(k) => {
@@ -888,7 +970,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         <div style={{
           flex: 1, minWidth: 0, overflow: 'auto', padding: 16,
           background: '#f5f7fa', border: '1px solid #e6eaf0', borderRadius: 10,
-        }}>
+        }} data-tour="preview">
           <MemoSchemaPreview
             schema={schema} fields={fields} entityCode={entityCode} editView={view}
             publishedSchema={publishedSchema}
@@ -899,36 +981,9 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
     </div>
   );
 
-  /* 3 步上手引导 Modal（首访自动弹出；antd Modal 走 portal，全屏/常态挂载点无关） */
-  const guideModal = (
-    <Modal
-      title="BONE 界面设计器 · 3 步上手"
-      open={guideOpen}
-      onOk={closeGuide}
-      onCancel={closeGuide}
-      okText="开始使用"
-      cancelText="稍后再说"
-      width={560}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {GUIDE_STEPS.map((s) => (
-          <div key={s.title}>
-            <Text strong style={{ fontSize: 13 }}>{s.title}</Text>
-            <div><Text type="secondary" style={{ fontSize: 12 }}>{s.body}</Text></div>
-          </div>
-        ))}
-        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 10 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            快捷键：<Text code style={{ fontSize: 11 }}>Ctrl/⌘+Z</Text> 撤销 ·
-            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+Shift+Z</Text> 重做 ·
-            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+S</Text> 保存 ·
-            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Ctrl/⌘+K</Text> 命令面板 ·
-            <Text code style={{ fontSize: 11, marginLeft: 4 }}>Esc</Text> 退出全屏。工具栏「历史」可一键跳回任意历史步骤；
-            有未保存改动时离开或刷新页面会提示确认，避免误操作丢失配置。随时点工具栏「帮助」重看本引导。
-          </Text>
-        </div>
-      </div>
-    </Modal>
+  /* Spotlight 新手引导（portal 到 body，全屏/常态挂载点无关；z-index 高于 Modal/message） */
+  const tour = (
+    <DesignerTour open={tourOpen} steps={TOUR_STEPS} index={tourIdx} onIndex={setTourIdx} onClose={closeTour} />
   );
 
   /* 版本历史 Modal（本地快照；恢复前跑协议 Gate） */
@@ -1038,7 +1093,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12 }}>
           {content}
-          {guideModal}
+          {tour}
           {snapModal}
           {cmdModal}
         </div>
@@ -1048,7 +1103,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields }: Props
   return (
     <>
       {content}
-      {guideModal}
+      {tour}
       {snapModal}
       {cmdModal}
     </>

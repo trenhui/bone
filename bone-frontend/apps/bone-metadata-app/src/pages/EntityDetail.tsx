@@ -696,6 +696,7 @@ const EntityDetail: React.FC = () => {
                   entityId={id ?? ''}
                   entityCode={entity.code}
                   fields={fields}
+                  onGoPublish={() => setOuterTab('publish')}
                 />
               ) : (
                 <Alert type="info" showIcon message="该实体使用「手写界面」，不提供协议化界面设计" />
