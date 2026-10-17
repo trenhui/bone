@@ -17,9 +17,9 @@ bone-ai 各模块是**进程内 starter（库形态，零额外跳）**，**不�
 |---|---|---|
 | `bone-ai-gateway` | `LlmClient` 门面 + 成本红线 + OpenAI 兼容 / Mock 双实现 + `LlmCallRecorded` 事件发布 | 自动配置；默认 Mock，配 `base-url` 切真实 provider |
 | `bone-ai-rules` | 规则资产治理（CRUD / 版本 / 灰度 / 命中标记）+ QLExpress 唯一 DSL | `RuleAssetRepository`（SDK 动态代理，无需手写实现） |
-| `bone-ai-orchestration` | 编排执行器：规则预检 → 命中短路｜LLM | `OrchestrationService` |
+| `bone-ai-orchestration` | 编排执行器：规则预检 → 命中短路｜LLM | `OrchestrationApplicationService` |
 | `bone-ai-trace` | 证据三元组（输入哈希 + IR + 引擎版本）落库 + 回放 | `EvidenceTraceListener` 订阅 `LlmCallRecorded` |
-| `bone-ai-document` | 条款切分 + 统一 IR（PDFBox 起步，批二接 sidecar） | `DocumentParseService` |
+| `bone-ai-document` | 条款切分 + 统一 IR（PDFBox 起步，批二接 sidecar） | `DocumentParseApplicationService` |
 
 ---
 
@@ -58,8 +58,8 @@ bone-ai 各模块是**进程内 starter（库形态，零额外跳）**，**不�
 
 ### 2.5 成本红线 + 证据链（默认自动装配，产品零额外代码）
 
-- **成本红线**：`OrchestrationService` 强制"规则命中（`RULE_HIT_BLOCK`）⇒ 跳过 LLM、不发请求、不发事件"——不依赖调用方自觉。
-- **证据链**：每次真实 LLM 调用，`bone-ai-gateway` 发布 `LlmCallRecorded` → `bone-ai-trace` 监听落证据快照（输入 SHA-256 + IR + 引擎版本）；业务代码无直接写快照的旁路。回放经 `EvidenceQueryService.replayByTraceId`。
+- **成本红线**：`OrchestrationApplicationService` 强制"规则命中（`RULE_HIT_BLOCK`）⇒ 跳过 LLM、不发请求、不发事件"——不依赖调用方自觉。
+- **证据链**：每次真实 LLM 调用，`bone-ai-gateway` 发布 `LlmCallRecorded` → `bone-ai-trace` 监听落证据快照（输入 SHA-256 + IR + 引擎版本）；业务代码无直接写快照的旁路。回放经 `EvidenceQueryApplicationService.replayByTraceId`。
 
 接入编排即同时获得两者。
 

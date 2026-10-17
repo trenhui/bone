@@ -232,6 +232,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 > 不需要一个错误码；留着只会让人以为还有第二套机制。
 
 
+### AI_GATEWAY_
+
+| `AI_GATEWAY_REDLINE_BLOCKED` | 400 | 成本红线命中，请求在触达模型前被短路拒绝（未发起 LLM 调用、未产生用量） |
+
 ### AI_HITL_
 
 | `AI_HITL_NOT_FOUND` | 404 | 人工终审项不存在或已终审 |
@@ -261,6 +265,13 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ### AI_TRACE_
 
 | `AI_TRACE_TENANT_CONTEXT_MISSING` | 500 | 证据链落盘拒绝：租户上下文缺失或非数值（不落租户不明的合规快照，fail-closed） |
+
+### AI_DOC_
+
+| `AI_DOC_TOO_LARGE` | 413 | 文档超过上传大小上限（默认 50MB），边读边拒，防内存耗尽型 DoS |
+| `AI_DOC_TOO_MANY_PAGES` | 413 | 文档页数超过上限（默认 1000 页），拒收以防下游切片与判定失控 |
+| `AI_DOC_SIDECAR_UNAVAILABLE` | 502 | Docling sidecar 不可用：重试耗尽 / 非 2xx / 响应契约不符 / 调用被中断 |
+| `AI_DOC_READ_FAILED` | 400 | 文档输入流为空或读取失败 |
 
 ### META_
 

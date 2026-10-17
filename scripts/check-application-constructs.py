@@ -57,7 +57,8 @@ ALLOWED_SUBPACKAGES = {
 # 显式点名的禁用包（除白名单外，这些名字历史上出现过，最可能复发）
 BANNED_SUBPACKAGE_HINTS = {"service", "binding", "policy", "common"}
 
-SCAN_ROOTS = ("bone-platform", "bone-engine", "bone-framework", "bone-blueprint")
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+SCAN_ROOTS = ("bone-ai", "bone-platform", "bone-engine", "bone-framework", "bone-blueprint")
 SKIP_DIRS = {"target", "node_modules", ".git", "build", "dist"}
 CLASS_DECL = re.compile(r"^public\s+(?:final\s+|abstract\s+)?(?:class|interface|record|enum)\s+(\w+)")
 SERVICE_SUFFIX = re.compile(r"Service$")

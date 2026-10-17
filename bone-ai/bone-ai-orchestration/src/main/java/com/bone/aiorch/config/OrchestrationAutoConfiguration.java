@@ -1,6 +1,6 @@
 package com.bone.aiorch.config;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.aiorch.application.HitlApplicationService;
 import com.bone.aiorch.application.OrchestrationApplicationService;
 import com.bone.aiorch.domain.hitl.HitlDispositionRepository;
@@ -20,13 +20,13 @@ public class OrchestrationAutoConfiguration {
   @ConditionalOnBean({
     RuleApplicationService.class,
     RuleQueryApplicationService.class,
-    LlmGatewayService.class
+    LlmGatewayApplicationService.class
   })
   @ConditionalOnMissingBean
   public OrchestrationApplicationService orchestrationService(
       RuleApplicationService ruleService,
       RuleQueryApplicationService ruleQueryService,
-      LlmGatewayService llmGatewayService) {
+      LlmGatewayApplicationService llmGatewayService) {
     return new OrchestrationApplicationService(ruleService, ruleQueryService, llmGatewayService);
   }
 

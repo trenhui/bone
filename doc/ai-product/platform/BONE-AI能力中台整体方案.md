@@ -233,7 +233,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 | 5–7 | 规则运行时 / 工作流建模 / 版本检查现状 | `.../runtime/RuleEngine.java` 及同目录 `BusinessRule*`；`.../domain/metadata/WorkflowMetadata.java`；`.../runtime/version/MetadataVersionController.java` |
 | 8 | `bone-file` 单 jar 实现 | `bone-platform/bone-file/` |
 | 9–11 | Aviator 移除（类 + pom 依赖）/ Boot 基线 / 许可 CVE 外部来源 | `bone-extension-sdk/pom.xml`（aviator 依赖移除）、`.../support/expression/AviatorExpressionEvaluator.java`（删除）；endoflife.date + Central + spring.io 公告；ParadeDB / Dify LICENSE 原文；Qwen 官方模型卡 |
-| 12–13 | gateway / trace 最小版已落地 | `bone-ai/bone-ai-gateway/.../application/LlmGatewayService.java`、`infrastructure/OpenAiCompatibleClient.java`；`bone-ai-trace/.../domain/model/EvidenceSnapshot.java`、`infrastructure/event/EvidenceTraceListener.java` |
+| 12–13 | gateway / trace 最小版已落地 | `bone-ai/bone-ai-gateway/.../application/LlmGatewayApplicationService.java`、`infrastructure/OpenAiCompatibleClient.java`；`bone-ai-trace/.../domain/model/EvidenceSnapshot.java`、`infrastructure/event/EvidenceTraceListener.java` |
 
 ## 附录 B：业界对位
 

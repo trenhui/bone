@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
 import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
@@ -123,8 +123,8 @@ class ClaimSettlementScenarioTest {
         };
 
     LlmClient llmClient = new MockLlmClient();
-    LlmGatewayService gateway =
-        new LlmGatewayService(
+    LlmGatewayApplicationService gateway =
+        new LlmGatewayApplicationService(
             llmClient, bus, (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
     OrchestrationApplicationService orchestration =
         new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);
@@ -250,8 +250,8 @@ class ClaimSettlementScenarioTest {
           @Override
           public void publishAll(Collection<? extends DomainEvent> events) {}
         };
-    LlmGatewayService gateway =
-        new LlmGatewayService(
+    LlmGatewayApplicationService gateway =
+        new LlmGatewayApplicationService(
             lowConfidence, bus, (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
     OrchestrationApplicationService orch =
         new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);

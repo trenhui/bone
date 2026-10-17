@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
@@ -29,7 +29,7 @@ class OrchestrationServiceTest {
 
   private RuleApplicationService ruleService;
   private RuleQueryApplicationService ruleQueryService;
-  private LlmGatewayService llmGatewayService;
+  private LlmGatewayApplicationService llmGatewayService;
   private OrchestrationApplicationService service;
 
   private static final LlmRequest LLM_REQUEST =
@@ -39,7 +39,7 @@ class OrchestrationServiceTest {
   void setUp() {
     ruleService = mock(RuleApplicationService.class);
     ruleQueryService = mock(RuleQueryApplicationService.class);
-    llmGatewayService = mock(LlmGatewayService.class);
+    llmGatewayService = mock(LlmGatewayApplicationService.class);
     service = new OrchestrationApplicationService(ruleService, ruleQueryService, llmGatewayService);
   }
 

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
@@ -144,8 +144,8 @@ class ClaimRealisticDatasetTest {
           }
         };
 
-    LlmGatewayService gateway =
-        new LlmGatewayService(
+    LlmGatewayApplicationService gateway =
+        new LlmGatewayApplicationService(
             new StubLlmClient(0.92),
             bus,
             (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
@@ -346,8 +346,8 @@ class ClaimRealisticDatasetTest {
             events.forEach(this::publish);
           }
         };
-    LlmGatewayService gateway =
-        new LlmGatewayService(
+    LlmGatewayApplicationService gateway =
+        new LlmGatewayApplicationService(
             new StubLlmClient(confidence),
             bus,
             (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");

@@ -28,7 +28,7 @@
 
 ### 2.1 bone-ai-gateway（模型调用唯一入站）
 
-**包结构**：`api`（门面/DTO）· `application`（`LlmGatewayService`）· `infrastructure`（`OpenAiCompatibleClient`/`MockLlmClient`）· `config`（`LlmGatewayProperties`）。
+**包结构**：`api`（门面/DTO）· `application`（`LlmGatewayApplicationService`）· `infrastructure`（`OpenAiCompatibleClient`/`MockLlmClient`）· `config`（`LlmGatewayProperties`）。
 
 **门面契约（冻结，替换 provider 不改业务）**：
 
@@ -301,7 +301,7 @@ CREATE TABLE eval_run (
 
 ### 3.5 主流程时序与异常流（fail-closed）
 
-**主流程（一次 AI 建议）**：① 产品调 `LlmGatewayService.chat()`（带 traceId）→ ② 红线/脱敏/路由/调用 → ③ 发布 `LlmCallRecorded`、trace 同步落快照 → ④ 响应对快照校验通过返回 `AiSuggestion` → ⑤ 编排停 `HITL_NODE`（置信度 <0.7 或策略要求）→ ⑥ 确认台裁决 → ⑦ `Confirmed` 回业务、`reason_type` 回流评测。
+**主流程（一次 AI 建议）**：① 产品调 `LlmGatewayApplicationService.chat()`（带 traceId）→ ② 红线/脱敏/路由/调用 → ③ 发布 `LlmCallRecorded`、trace 同步落快照 → ④ 响应对快照校验通过返回 `AiSuggestion` → ⑤ 编排停 `HITL_NODE`（置信度 <0.7 或策略要求）→ ⑥ 确认台裁决 → ⑦ `Confirmed` 回业务、`reason_type` 回流评测。
 
 | 异常 | 判定 | 处置 |
 |---|---|---|
@@ -406,7 +406,7 @@ CREATE TABLE eval_run (
 
 | 面 | 接口 | 部署形态 | 消费方 |
 |---|---|---|---|
-| 模型调用 | `LlmGatewayService.chat()` | 进程内 starter | 产品服务 |
+| 模型调用 | `LlmGatewayApplicationService.chat()` | 进程内 starter | 产品服务 |
 | 解析 | `POST /api/ai/v1/documents/parse`（异步 task） | REST | document/编排 |
 | HITL | `GET/POST /api/ai/v1/hitl/...` | REST | bone-ai-app |
 | RAG | `POST /api/ai/v1/rag/query` | REST | 产品服务/编排 |
@@ -416,7 +416,7 @@ CREATE TABLE eval_run (
 
 > 进程内门面优先（零额外跳）；跨语言调用方出现时经 MCP/HTTP 暴露（网关演进触发条件见总案 §4.7），契约不变。
 >
-> **门面分层**：产品 → `LlmGatewayService`（红线/脱敏/路由/证据编排）→ `LlmClient`（provider SPI，仅 gateway 内部依赖）；产品只依赖门面，禁 import `LlmClient` 实现（ArchUnit #3）。
+> **门面分层**：产品 → `LlmGatewayApplicationService`（红线/脱敏/路由/证据编排）→ `LlmClient`（provider SPI，仅 gateway 内部依赖）；产品只依赖门面，禁 import `LlmClient` 实现（ArchUnit #3）。
 
 ## 附录 B：与既有资产的衔接
 

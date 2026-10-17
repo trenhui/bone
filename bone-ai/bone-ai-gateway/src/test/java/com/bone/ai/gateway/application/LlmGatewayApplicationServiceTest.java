@@ -22,13 +22,13 @@ import com.bone.core.exception.BizException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class LlmGatewayServiceTest {
+class LlmGatewayApplicationServiceTest {
 
   private final LlmClient client = mock(LlmClient.class);
   private final DomainEventPublisher publisher = mock(DomainEventPublisher.class);
   private final TenantProvider tenantProvider = mock(TenantProvider.class);
-  private final LlmGatewayService service =
-      new LlmGatewayService(client, publisher, tenantProvider);
+  private final LlmGatewayApplicationService service =
+      new LlmGatewayApplicationService(client, publisher, tenantProvider);
 
   @Test
   void invoke_delegates_to_client_and_publishes_event_when_no_redline() {

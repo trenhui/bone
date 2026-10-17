@@ -1,6 +1,6 @@
 package com.bone.aiorch.application;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.airules.application.RuleApplicationService;
 import com.bone.airules.application.RuleQueryApplicationService;
@@ -30,12 +30,12 @@ public class OrchestrationApplicationService {
 
   private final RuleApplicationService ruleService;
   private final RuleQueryApplicationService ruleQueryService;
-  private final LlmGatewayService llmGatewayService;
+  private final LlmGatewayApplicationService llmGatewayService;
 
   public OrchestrationApplicationService(
       RuleApplicationService ruleService,
       RuleQueryApplicationService ruleQueryService,
-      LlmGatewayService llmGatewayService) {
+      LlmGatewayApplicationService llmGatewayService) {
     this.ruleService = ruleService;
     this.ruleQueryService = ruleQueryService;
     this.llmGatewayService = llmGatewayService;

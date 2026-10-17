@@ -1,7 +1,8 @@
 package com.bone.ai.gateway.config;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
+import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
@@ -10,6 +11,7 @@ import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
 import com.bone.ai.gateway.infrastructure.gateway.TenantContextProviderAdapter;
+import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.net.URI;
@@ -18,6 +20,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,6 +33,9 @@ import org.springframework.context.annotation.Bean;
  * <p>双实现可替换（Phase 0 出口判据）：配置了 {@code bone.ai.gateway.base-url} 即走 OpenAI 兼容真实客户端，否则回落确定性 Mock；门面契约
  * {@link LlmClient} 不变，换 provider 不改业务代码。默认提供 Spring 事件总线版 {@link DomainEventPublisher}（供
  * bone-ai-trace 订阅）。
+ *
+ * <p>出站 PII 脱敏（{@code bone.ai.gateway.pii-redaction-enabled}，OWASP LLM02）<b>默认开启</b>——
+ * 私有化交付的合规叙事要求「个人信息不出域」是默认行为而非可选项；确需透传明文（如内部自建模型、无出域风险）时显式关闭。
  */
 @AutoConfiguration
 @EnableConfigurationProperties(LlmGatewayProperties.class)
@@ -37,11 +43,21 @@ public class LlmGatewayAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public LlmGatewayService llmGatewayService(
+  public LlmGatewayApplicationService llmGatewayService(
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
-      TenantProvider tenantProvider) {
-    return new LlmGatewayService(llmClient, domainEventPublisher, tenantProvider);
+      TenantProvider tenantProvider,
+      PiiRedactor piiRedactor) {
+    return new LlmGatewayApplicationService(
+        llmClient, domainEventPublisher, tenantProvider, piiRedactor);
+  }
+
+  /** 出站 PII 脱敏器（默认启用正则规则实现；可 {@code @Bean} 覆盖接云端 Presidio / DLP）。 */
+  @Bean
+  @ConditionalOnMissingBean
+  public PiiRedactor piiRedactor(
+      @Value("${bone.ai.gateway.pii-redaction-enabled:true}") boolean enabled) {
+    return new RegexPiiRedactor(enabled);
   }
 
   @Bean

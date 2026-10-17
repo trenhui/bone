@@ -1,6 +1,6 @@
 package com.bone.aiapp.eval.gateway;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
- * LLM-as-Judge 适配器：经 {@link LlmGatewayService}（网关门面）发起评判，使 judge 调用被网关统一计量（成本/审计/配额）并落入证据链。
+ * LLM-as-Judge 适配器：经 {@link LlmGatewayApplicationService}（网关门面）发起评判，使 judge
+ * 调用被网关统一计量（成本/审计/配额）并落入证据链。
  *
  * <p><b>为何必须走门面而非直连 {@code LlmClient}（2026-10-17 复核修复）</b>：judge 也是模型调用，直连 SPI 会绕过成本红线、 不发 {@code
  * LlmCallRecorded}、不进 trace 落盘——等于在「模型调用唯一入站」的不变式上开了一道自身侧门。评测调用量在大规模回归时 同样可观，绕过计量即绕过成本治理。
@@ -27,10 +28,11 @@ public class GatewayJudgeAdapter implements JudgePort {
   private static final Pattern SCORE = Pattern.compile("\"score\"\\s*:\\s*([0-9.]+)");
   private static final Pattern PASSED = Pattern.compile("\"passed\"\\s*:\\s*(true|false)");
 
-  private final LlmGatewayService gatewayService;
+  private final LlmGatewayApplicationService gatewayService;
   private final BoneAiProperties properties;
 
-  public GatewayJudgeAdapter(LlmGatewayService gatewayService, BoneAiProperties properties) {
+  public GatewayJudgeAdapter(
+      LlmGatewayApplicationService gatewayService, BoneAiProperties properties) {
     this.gatewayService = gatewayService;
     this.properties = properties;
   }

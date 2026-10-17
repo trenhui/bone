@@ -62,7 +62,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 BASELINE_PATH = REPO / "doc/architecture/error-code-landing-baseline.json"
 
-SCAN_ROOTS = ["bone-platform", "bone-engine", "bone-blueprint", "bone-framework"]
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+SCAN_ROOTS = ["bone-ai", "bone-platform", "bone-engine", "bone-blueprint", "bone-framework"]
 
 # 分层：只有这两层对外承诺业务语义，必须带码（阻断）；其余层只报存量
 STRICT_MARKERS = ("/application/", "/adapter/web/")

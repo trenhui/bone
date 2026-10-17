@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.ai.gateway.application.LlmGatewayService;
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
@@ -92,8 +92,8 @@ class AiPipelineIntegrationTest {
         };
 
     LlmClient llmClient = new MockLlmClient();
-    LlmGatewayService gateway =
-        new LlmGatewayService(
+    LlmGatewayApplicationService gateway =
+        new LlmGatewayApplicationService(
             llmClient, bus, (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
     orchestration = new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);
   }

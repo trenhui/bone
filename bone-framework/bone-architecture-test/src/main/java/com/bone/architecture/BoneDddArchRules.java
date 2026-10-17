@@ -1023,7 +1023,7 @@ public final class BoneDddArchRules {
 
   /**
    * AI 治理门禁（bone-ai 生产拓扑）：业务/应用层不得直连模型 HTTP 客户端实现（{@code ..ai.gateway.infrastructure..}）， 必须统一经
-   * {@code LlmGatewayService} 门面（计量 / 成本红线 / 证据落盘 / 韧性）。网关基础设施包内的 HTTP 客户端是受控出口，
+   * {@code LlmGatewayApplicationService} 门面（计量 / 成本红线 / 证据落盘 / 韧性）。网关基础设施包内的 HTTP 客户端是受控出口，
    * 越过门面直连会让调用脱离审计与红线管控。
    */
   public static ArchRule aiModelCallsMustGoThroughGateway() {
@@ -1034,7 +1034,7 @@ public final class BoneDddArchRules {
         .dependOnClassesThat()
         .resideInAPackage("..ai.gateway.infrastructure..")
         .allowEmptyShould(true)
-        .because("AI 出口必须统一经 LlmGatewayService 门面（计量/红线/证据），业务不得直连模型 HTTP 客户端实现");
+        .because("AI 出口必须统一经 LlmGatewayApplicationService 门面（计量/红线/证据），业务不得直连模型 HTTP 客户端实现");
   }
 
   /**

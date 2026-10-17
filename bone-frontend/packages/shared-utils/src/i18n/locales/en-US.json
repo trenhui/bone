@@ -6,6 +6,7 @@
     "empty": "No data"
   },
   "errors": {
+    "AI_GATEWAY_REDLINE_BLOCKED": "Request blocked by cost redline before reaching the model",
     "AI_HITL_NOT_FOUND": "HITL item not found or already finalized",
     "AI_HITL_ALREADY_DECIDED": "HITL item already decided; duplicate action rejected",
     "AI_HITL_REASON_REQUIRED": "This decision type requires a reason type (reasonType)",
@@ -21,6 +22,10 @@
     "AI_RAG_TENANT_CONTEXT_MISSING": "Retrieval tenant context missing; execution refused",
     "AI_APP_TENANT_CONTEXT_MISSING": "Tenant context missing; please access via the authenticated chain",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "Evidence persistence refused: tenant context missing",
+    "AI_DOC_TOO_LARGE": "Document exceeds the size limit (50MB by default); please split and retry",
+    "AI_DOC_TOO_MANY_PAGES": "Document exceeds the page limit (1000 by default); please split and retry",
+    "AI_DOC_SIDECAR_UNAVAILABLE": "Document parsing service unavailable; routed to manual handling",
+    "AI_DOC_READ_FAILED": "Failed to read the document; please verify the file is intact",
     "GEN_GENERATION_FAILED": "Code generation failed",
     "GEN_TEMPLATE_NOT_FOUND": "Code template not found",
     "GEN_TENANT_CONTEXT_MISSING": "Tenant context missing",
