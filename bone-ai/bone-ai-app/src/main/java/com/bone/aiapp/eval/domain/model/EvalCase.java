@@ -51,4 +51,29 @@ public class EvalCase extends TenantAggregateRoot<Long> {
 
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
+  /** 领域工厂：落一条评测用例（租户取数值上下文）。 */
+  public static EvalCase of(
+      Long tenantId,
+      String scene,
+      String caseType,
+      String input,
+      String expected,
+      boolean expectedHit,
+      Integer difficulty,
+      BigDecimal kappa) {
+    EvalCase evalCase = new EvalCase();
+    evalCase.setTenantId(tenantId);
+    evalCase.scene = scene;
+    evalCase.caseType = caseType;
+    evalCase.input = input;
+    evalCase.expected = expected;
+    evalCase.expectedHit = expectedHit;
+    evalCase.difficulty = difficulty;
+    evalCase.kappa = kappa;
+    LocalDateTime now = LocalDateTime.now();
+    evalCase.createdAt = now;
+    evalCase.updatedAt = now;
+    return evalCase;
+  }
 }

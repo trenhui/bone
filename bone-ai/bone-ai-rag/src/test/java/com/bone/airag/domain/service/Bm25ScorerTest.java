@@ -10,14 +10,16 @@ class Bm25ScorerTest {
   @Test
   void more_term_hits_scores_higher() {
     String query = "risk clause";
-    double a =
-        Bm25Scorer.score(query, "risk risk clause", List.of("risk risk clause", "other text"));
-    double b = Bm25Scorer.score(query, "other text", List.of("risk risk clause", "other text"));
+    List<String> corpus = List.of("risk risk clause", "other text");
+    Bm25Scorer.CorpusStats stats = Bm25Scorer.CorpusStats.of(corpus);
+    double a = Bm25Scorer.score(query, "risk risk clause", stats);
+    double b = Bm25Scorer.score(query, "other text", stats);
     assertThat(a).isGreaterThan(b);
   }
 
   @Test
   void no_overlap_scores_zero() {
-    assertThat(Bm25Scorer.score("zzz", "aaa bbb", List.of("aaa bbb"))).isEqualTo(0.0);
+    Bm25Scorer.CorpusStats stats = Bm25Scorer.CorpusStats.of(List.of("aaa bbb"));
+    assertThat(Bm25Scorer.score("zzz", "aaa bbb", stats)).isEqualTo(0.0);
   }
 }

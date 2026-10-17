@@ -5,11 +5,11 @@ import com.bone.aitrace.domain.repository.EvidenceSnapshotRepository;
 import java.util.List;
 
 /** 证据回放查询（读侧；批一：按 traceId 批量回放 / 按 ID 单取）。 */
-public class EvidenceQueryService {
+public class EvidenceQueryApplicationService {
 
   private final EvidenceSnapshotRepository repository;
 
-  public EvidenceQueryService(EvidenceSnapshotRepository repository) {
+  public EvidenceQueryApplicationService(EvidenceSnapshotRepository repository) {
     this.repository = repository;
   }
 

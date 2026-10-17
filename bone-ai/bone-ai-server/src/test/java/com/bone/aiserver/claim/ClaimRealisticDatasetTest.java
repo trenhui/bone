@@ -15,19 +15,22 @@ import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
 import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
 import com.bone.aidoc.infrastructure.parser.PdfBoxDocumentParser;
-import com.bone.aiorch.application.HitlService;
-import com.bone.aiorch.application.OrchestrationService;
+import com.bone.aiorch.application.HitlApplicationService;
+import com.bone.aiorch.application.OrchestrationApplicationService;
+import com.bone.aiorch.domain.hitl.HitlDisposition;
+import com.bone.aiorch.domain.hitl.HitlDispositionRepository;
 import com.bone.aiorch.domain.hitl.HitlItem;
 import com.bone.aiorch.domain.hitl.HitlItemRepository;
 import com.bone.aiorch.domain.hitl.HitlStatus;
 import com.bone.aiorch.domain.hitl.ReasonType;
-import com.bone.airules.application.RuleQueryService;
-import com.bone.airules.application.RuleService;
+import com.bone.airules.application.RuleApplicationService;
+import com.bone.airules.application.RuleQueryApplicationService;
 import com.bone.airules.domain.gateway.RuleEngine;
 import com.bone.airules.domain.model.RuleAsset;
 import com.bone.airules.domain.repository.RuleAssetRepository;
+import com.bone.airules.domain.repository.RuleAssetVersionRepository;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
-import com.bone.aitrace.application.EvidenceQueryService;
+import com.bone.aitrace.application.EvidenceQueryApplicationService;
 import com.bone.aitrace.domain.gateway.TenantProvider;
 import com.bone.aitrace.domain.model.EvidenceSnapshot;
 import com.bone.aitrace.domain.model.EvidenceType;
@@ -78,33 +81,52 @@ class ClaimRealisticDatasetTest {
   private RuleAsset r03_fastTrackSmall;
 
   private RuleAssetRepository ruleRepo;
+  private RuleAssetVersionRepository ruleVersionRepo;
   private EvidenceSnapshotRepository evidenceRepo;
   private HitlItemRepository hitlRepo;
+  private HitlDispositionRepository dispositionRepo;
+  private final List<HitlDisposition> dispositions = new ArrayList<>();
   private final List<DomainEvent> published = new ArrayList<>();
-  private RuleService ruleService;
-  private RuleQueryService ruleQueryService;
+  private RuleApplicationService ruleService;
+  private RuleQueryApplicationService ruleQueryService;
   private ClaimService claimService;
 
   @BeforeEach
   void setUp() throws IOException {
     ruleRepo = mock(RuleAssetRepository.class);
+    ruleVersionRepo = mock(RuleAssetVersionRepository.class);
     evidenceRepo = mock(EvidenceSnapshotRepository.class);
     hitlRepo = mock(HitlItemRepository.class);
+    dispositionRepo = mock(HitlDispositionRepository.class);
+    // 进程内假存储：insert 累积、findByItemId 按项过滤（模拟 hitl_disposition 表）
+    when(dispositionRepo.insert(any()))
+        .thenAnswer(
+            inv -> {
+              dispositions.add(inv.getArgument(0));
+              return 1L;
+            });
+    when(dispositionRepo.findByItemId(org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(
+            inv ->
+                dispositions.stream()
+                    .filter(d -> d.getItemId().equals(inv.<String>getArgument(0)))
+                    .toList());
 
     RuleEngine ruleEngine = new QlExpressRuleEngine();
-    ruleService = new RuleService(ruleRepo, ruleEngine);
-    ruleQueryService = new RuleQueryService(ruleRepo);
+    ruleService = new RuleApplicationService(ruleRepo, ruleVersionRepo, ruleEngine);
+    ruleQueryService = new RuleQueryApplicationService(ruleRepo, ruleVersionRepo);
 
     // 规则集：R01 大额免责短路 / R02 风控命中不短路 / R03 小额速赔
     r01_exclusionLargeAmount = rule("R01", "EXCLUDE", "大额免责", "amount >= 50000", true);
     r02_riskReview = rule("R02", "RISK", "大额风控复核", "amount >= 30000", false);
     r03_fastTrackSmall = rule("R03", "FAST", "小额速赔", "amount <= 2000", false);
-    when(ruleRepo.findActive("t1"))
+    when(ruleRepo.findActive("1"))
         .thenReturn(List.of(r01_exclusionLargeAmount, r02_riskReview, r03_fastTrackSmall));
 
     final EvidenceTraceListener listener =
         new EvidenceTraceListener(evidenceRepo, (TenantProvider) () -> 42L);
-    EvidenceQueryService evidenceQuery = new EvidenceQueryService(evidenceRepo);
+    EvidenceQueryApplicationService evidenceQuery =
+        new EvidenceQueryApplicationService(evidenceRepo);
 
     DomainEventPublisher bus =
         new DomainEventPublisher() {
@@ -122,16 +144,20 @@ class ClaimRealisticDatasetTest {
           }
         };
 
-    LlmGatewayService gateway = new LlmGatewayService(new StubLlmClient(0.92), bus);
-    OrchestrationService orchestration =
-        new OrchestrationService(ruleService, ruleQueryService, gateway);
-    HitlService hitlService = new HitlService(hitlRepo);
+    LlmGatewayService gateway =
+        new LlmGatewayService(
+            new StubLlmClient(0.92),
+            bus,
+            (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
+    OrchestrationApplicationService orchestration =
+        new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);
+    HitlApplicationService hitlService = new HitlApplicationService(hitlRepo, dispositionRepo);
     claimService = new ClaimService(orchestration, new PdfBoxDocumentParser(), hitlService);
   }
 
   private static RuleAsset rule(
       String code, String type, String name, String expr, boolean hitBlock) {
-    RuleAsset asset = RuleAsset.create("t1", type, name, name);
+    RuleAsset asset = RuleAsset.create("1", type, name, name);
     asset.setId(code.toLowerCase());
     asset.publishFirst(expr, hitBlock, 0, "ops");
     return asset;
@@ -234,7 +260,7 @@ class ClaimRealisticDatasetTest {
     HitlItem confirmItem = pendingItem("CLAIM-006", "手术报销", 30000.0);
     HitlItem.Disposition confirm =
         claimService.act(
-            "t1", confirmItem.getId(), "ops-1", "confirm", null, ReasonType.CONTEXT_MISS, "核赔一致");
+            "1", confirmItem.getId(), "ops-1", "confirm", null, ReasonType.CONTEXT_MISS, "核赔一致");
     assertThat(confirm.action()).isEqualTo("confirm");
     assertThat(confirmItem.getStatus()).isEqualTo(HitlStatus.CONFIRMED);
 
@@ -242,7 +268,7 @@ class ClaimRealisticDatasetTest {
     HitlItem rejectItem = pendingItem("CLAIM-007", "手术报销", 30000.0);
     HitlItem.Disposition reject =
         claimService.act(
-            "t1", rejectItem.getId(), "ops-2", "reject", null, ReasonType.RULE_MISS, "既往症漏判");
+            "1", rejectItem.getId(), "ops-2", "reject", null, ReasonType.RULE_MISS, "既往症漏判");
     assertThat(reject.action()).isEqualTo("reject");
     assertThat(reject.reasonType()).isEqualTo("RULE_MISS");
     assertThat(rejectItem.getStatus()).isEqualTo(HitlStatus.REJECTED);
@@ -251,7 +277,7 @@ class ClaimRealisticDatasetTest {
     HitlItem modifyItem = pendingItem("CLAIM-008", "手术报销", 30000.0);
     HitlItem.Disposition modify =
         claimService.act(
-            "t1", modifyItem.getId(), "ops-3", "modify", 26000.0, ReasonType.CONTEXT_MISS, "免赔额调整");
+            "1", modifyItem.getId(), "ops-3", "modify", 26000.0, ReasonType.CONTEXT_MISS, "免赔额调整");
     assertThat(modify.action()).isEqualTo("modify");
     assertThat(modify.reasonType()).isEqualTo("CONTEXT_MISS");
     assertThat(modifyItem.getStatus()).isEqualTo(HitlStatus.MODIFIED);
@@ -259,12 +285,12 @@ class ClaimRealisticDatasetTest {
     // escalate：人工无法判断，升级上级复核
     HitlItem escalateItem = pendingItem("CLAIM-009", "手术报销", 30000.0);
     HitlItem.Disposition escalate =
-        claimService.act("t1", escalateItem.getId(), "ops-4", "escalate", null, null, "证据不足，升级复核");
+        claimService.act("1", escalateItem.getId(), "ops-4", "escalate", null, null, "证据不足，升级复核");
     assertThat(escalate.action()).isEqualTo("escalate");
     assertThat(escalateItem.getStatus()).isEqualTo(HitlStatus.ESCALATED);
 
     // 处置链回放（以 reject 项为例）：谁在何时做了什么裁决、带什么原因
-    var history = claimService.dispositionHistory("t1", rejectItem.getId());
+    var history = claimService.dispositionHistory("1", rejectItem.getId());
     assertThat(history).hasSize(1);
     assertThat(history.get(0).actor()).isEqualTo("ops-2");
     assertThat(history.get(0).reasonType()).isEqualTo("RULE_MISS");
@@ -279,7 +305,7 @@ class ClaimRealisticDatasetTest {
     verify(hitlRepo, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
     // 捕获累积的 save 中最后一项（当次 underwrite 新产出）
     HitlItem item = captor.getAllValues().get(captor.getAllValues().size() - 1);
-    when(hitlRepo.findPendingById("t1", itemId)).thenReturn(java.util.Optional.of(item));
+    when(hitlRepo.findPendingById("1", itemId)).thenReturn(java.util.Optional.of(item));
     when(hitlRepo.findById(itemId)).thenReturn(item);
     return item;
   }
@@ -298,7 +324,7 @@ class ClaimRealisticDatasetTest {
         Math.abs(confidence - 0.92) < 1e-9 ? claimService : buildWithConfidence(confidence);
     return local.underwrite(
         new ClaimService.ClaimRequest(
-            "t1",
+            "1",
             claimId,
             desc,
             amount,
@@ -320,9 +346,14 @@ class ClaimRealisticDatasetTest {
             events.forEach(this::publish);
           }
         };
-    LlmGatewayService gateway = new LlmGatewayService(new StubLlmClient(confidence), bus);
-    OrchestrationService orch = new OrchestrationService(ruleService, ruleQueryService, gateway);
-    HitlService hitlService = new HitlService(hitlRepo);
+    LlmGatewayService gateway =
+        new LlmGatewayService(
+            new StubLlmClient(confidence),
+            bus,
+            (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
+    OrchestrationApplicationService orch =
+        new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);
+    HitlApplicationService hitlService = new HitlApplicationService(hitlRepo, dispositionRepo);
     return new ClaimService(orch, new PdfBoxDocumentParser(), hitlService);
   }
 

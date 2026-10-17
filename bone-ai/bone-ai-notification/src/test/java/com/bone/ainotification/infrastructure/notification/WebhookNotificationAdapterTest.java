@@ -13,12 +13,14 @@ import org.junit.jupiter.api.Test;
 class WebhookNotificationAdapterTest {
 
   private final WebhookNotificationAdapter adapter =
-      new WebhookNotificationAdapter(HttpClient.newHttpClient(), "https://default");
+      new WebhookNotificationAdapter(
+          HttpClient.newHttpClient(), "https://default", "", java.util.List.of());
 
   @Test
   void builds_post_request_to_target() {
     AlertEvent event = new AlertEvent("A1", 42L, "HIGH", "t", "b", "m", Instant.now());
-    HttpRequest req = adapter.buildRequest(event, NotificationChannel.WEBHOOK, "https://hook");
+    HttpRequest req =
+        adapter.buildRequest(event, NotificationChannel.WEBHOOK, "https://hook", "{}", "");
 
     assertThat(req.method()).isEqualTo("POST");
     assertThat(req.uri().toString()).isEqualTo("https://hook");
@@ -49,7 +51,7 @@ class WebhookNotificationAdapterTest {
   @Test
   void missing_url_returns_undelivered() {
     WebhookNotificationAdapter noUrl =
-        new WebhookNotificationAdapter(HttpClient.newHttpClient(), "");
+        new WebhookNotificationAdapter(HttpClient.newHttpClient(), "", "", java.util.List.of());
     NotificationResult r =
         noUrl.dispatch(
             new AlertEvent("A1", 42L, "HIGH", "t", "b", "m", Instant.now()),

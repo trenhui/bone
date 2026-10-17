@@ -17,13 +17,13 @@ import org.slf4j.LoggerFactory;
  * <p>解析器经 SPI 注入（默认 PDFBox；Tika/Docling 就绪即可互换）。sidecar 超时降级 （{@code partial=true} → 编排转
  * HITL）为后续批次，本服务不伪造降级语义。
  */
-public class DocumentParseService {
+public class DocumentParseApplicationService {
 
-  private static final Logger log = LoggerFactory.getLogger(DocumentParseService.class);
+  private static final Logger log = LoggerFactory.getLogger(DocumentParseApplicationService.class);
 
   private final DocumentParser parser;
 
-  public DocumentParseService(DocumentParser parser) {
+  public DocumentParseApplicationService(DocumentParser parser) {
     this.parser = parser;
   }
 

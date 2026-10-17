@@ -92,13 +92,28 @@ public class RuleAsset extends TenantAggregateRoot<String> {
       String expression, boolean hitBlock, int grayPercent, String operator) {
     currentVersionNo++;
     RuleAssetVersion v =
-        RuleAssetVersion.of(getId(), currentVersionNo, expression, hitBlock, grayPercent, operator);
+        RuleAssetVersion.of(
+            getTenantId(), getId(), currentVersionNo, expression, hitBlock, grayPercent, operator);
     versions.add(v);
     this.expression = expression;
     this.hitBlock = hitBlock;
     this.grayPercent = grayPercent;
     this.status = RuleStatus.ACTIVE;
     return v;
+  }
+
+  /**
+   * 灰度分桶判定：grayPercent=0 全量执行；否则按 code(+traceId) 稳定分桶。
+   *
+   * <p>用 {@code Math.floorMod} 而非 {@code Math.abs(hashCode()) % 100}——后者遇 {@code Integer.MIN_VALUE}
+   * 得负桶值， 该 code 会恒入灰度桶（2026-10-17 复核修复的边界缺陷）。
+   */
+  public boolean inGrayBucket(String traceId) {
+    if (grayPercent <= 0 || grayPercent >= 100) {
+      return true;
+    }
+    String salt = (traceId == null || traceId.isBlank()) ? code : code + ":" + traceId;
+    return Math.floorMod(salt.hashCode(), 100) < grayPercent;
   }
 
   public RuleAssetVersion latestVersion() {
@@ -123,16 +138,6 @@ public class RuleAsset extends TenantAggregateRoot<String> {
   /** 命中标记开关：RULE_HIT_BLOCK——命中时网关短路不调 LLM。 */
   public void toggleHitBlock(boolean hitBlock) {
     this.hitBlock = hitBlock;
-  }
-
-  /** 灰度分桶判定：grayPercent=0 全量执行；否则按 code(+traceId) 稳定分桶。 */
-  public boolean inGrayBucket(String traceId) {
-    if (grayPercent <= 0 || grayPercent >= 100) {
-      return true;
-    }
-    String salt = (traceId == null || traceId.isBlank()) ? code : code + ":" + traceId;
-    int bucket = Math.abs(salt.hashCode()) % 100;
-    return bucket < grayPercent;
   }
 
   /** 停用：表达式不再执行，版本链保留供回放。 */

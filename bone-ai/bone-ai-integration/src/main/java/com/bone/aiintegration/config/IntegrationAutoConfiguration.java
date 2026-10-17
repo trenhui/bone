@@ -1,8 +1,10 @@
 package com.bone.aiintegration.config;
 
-import com.bone.aiintegration.application.IntegrationService;
+import com.bone.aiintegration.application.IntegrationApplicationService;
 import com.bone.aiintegration.domain.gateway.ExternalSystemPort;
+import com.bone.aiintegration.domain.gateway.IntegrationAuditPort;
 import com.bone.aiintegration.infrastructure.integration.HttpExternalSystemAdapter;
+import com.bone.aiintegration.infrastructure.integration.NoOpIntegrationAuditAdapter;
 import java.net.http.HttpClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,7 +22,14 @@ public class IntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public IntegrationService integrationService(ExternalSystemPort externalSystemPort) {
-    return new IntegrationService(externalSystemPort);
+  public IntegrationAuditPort integrationAuditPort() {
+    return new NoOpIntegrationAuditAdapter();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public IntegrationApplicationService integrationService(
+      ExternalSystemPort externalSystemPort, IntegrationAuditPort auditPort) {
+    return new IntegrationApplicationService(externalSystemPort, auditPort);
   }
 }

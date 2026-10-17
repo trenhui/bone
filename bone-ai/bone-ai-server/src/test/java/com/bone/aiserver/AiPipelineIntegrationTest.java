@@ -13,16 +13,17 @@ import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
+import com.bone.aiorch.application.OrchestrationApplicationService;
 import com.bone.aiorch.application.OrchestrationRequest;
 import com.bone.aiorch.application.OrchestrationResult;
-import com.bone.aiorch.application.OrchestrationService;
-import com.bone.airules.application.RuleQueryService;
-import com.bone.airules.application.RuleService;
+import com.bone.airules.application.RuleApplicationService;
+import com.bone.airules.application.RuleQueryApplicationService;
 import com.bone.airules.domain.gateway.RuleEngine;
 import com.bone.airules.domain.model.RuleAsset;
 import com.bone.airules.domain.repository.RuleAssetRepository;
+import com.bone.airules.domain.repository.RuleAssetVersionRepository;
 import com.bone.airules.infrastructure.engine.QlExpressRuleEngine;
-import com.bone.aitrace.application.EvidenceQueryService;
+import com.bone.aitrace.application.EvidenceQueryApplicationService;
 import com.bone.aitrace.domain.gateway.TenantProvider;
 import com.bone.aitrace.domain.model.EvidenceSnapshot;
 import com.bone.aitrace.domain.model.EvidenceType;
@@ -51,25 +52,27 @@ import org.mockito.ArgumentCaptor;
 class AiPipelineIntegrationTest {
 
   private RuleAssetRepository ruleRepo;
+  private RuleAssetVersionRepository ruleVersionRepo;
   private EvidenceSnapshotRepository evidenceRepo;
-  private RuleService ruleService;
-  private RuleQueryService ruleQueryService;
-  private EvidenceQueryService evidenceQuery;
-  private OrchestrationService orchestration;
+  private RuleApplicationService ruleService;
+  private RuleQueryApplicationService ruleQueryService;
+  private EvidenceQueryApplicationService evidenceQuery;
+  private OrchestrationApplicationService orchestration;
   private final List<DomainEvent> published = new ArrayList<>();
 
   @BeforeEach
   void setUp() {
     ruleRepo = mock(RuleAssetRepository.class);
+    ruleVersionRepo = mock(RuleAssetVersionRepository.class);
     evidenceRepo = mock(EvidenceSnapshotRepository.class);
 
     RuleEngine ruleEngine = new QlExpressRuleEngine();
-    ruleService = new RuleService(ruleRepo, ruleEngine);
-    ruleQueryService = new RuleQueryService(ruleRepo);
+    ruleService = new RuleApplicationService(ruleRepo, ruleVersionRepo, ruleEngine);
+    ruleQueryService = new RuleQueryApplicationService(ruleRepo, ruleVersionRepo);
 
     final EvidenceTraceListener listener =
         new EvidenceTraceListener(evidenceRepo, (TenantProvider) () -> 42L);
-    evidenceQuery = new EvidenceQueryService(evidenceRepo);
+    evidenceQuery = new EvidenceQueryApplicationService(evidenceRepo);
 
     // 进程内事件总线：gateway 发布 LlmCallRecorded → 直接派发给 trace 监听（等价 Spring @EventListener 的多播）
     DomainEventPublisher bus =
@@ -89,8 +92,10 @@ class AiPipelineIntegrationTest {
         };
 
     LlmClient llmClient = new MockLlmClient();
-    LlmGatewayService gateway = new LlmGatewayService(llmClient, bus);
-    orchestration = new OrchestrationService(ruleService, ruleQueryService, gateway);
+    LlmGatewayService gateway =
+        new LlmGatewayService(
+            llmClient, bus, (com.bone.ai.gateway.domain.gateway.TenantProvider) () -> "42");
+    orchestration = new OrchestrationApplicationService(ruleService, ruleQueryService, gateway);
   }
 
   @Test

@@ -5,9 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.aiorch.application.OrchestrationApplicationService;
 import com.bone.aiorch.application.OrchestrationRequest;
 import com.bone.aiorch.application.OrchestrationResult;
-import com.bone.aiorch.application.OrchestrationService;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
  */
 class AiPipelineControllerTest {
 
-  private final OrchestrationService orchestration = mock(OrchestrationService.class);
+  private final OrchestrationApplicationService orchestration =
+      mock(OrchestrationApplicationService.class);
   private final AiPipelineController controller = new AiPipelineController(orchestration);
 
   @Test

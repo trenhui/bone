@@ -28,12 +28,15 @@ class LlmValueObjectsTest {
   @Test
   void request_defensively_copies_messages_and_marks_short_circuit() {
     List<LlmMessage> src = new ArrayList<>(List.of(LlmMessage.user("y")));
-    LlmRequest req = new LlmRequest("m", src, null, null, false, false);
+    LlmRequest req = new LlmRequest("m", src, null, null, false, false, "trace-1");
     src.add(LlmMessage.user("z"));
     assertThat(req.messages()).containsExactly(LlmMessage.user("y"));
+    assertThat(req.traceId()).isEqualTo("trace-1");
 
     LlmRequest base = LlmRequest.of("m", List.of(LlmMessage.user("x")));
     assertThat(base.shortCircuited()).isFalse();
     assertThat(base.withRuleShortCircuit().shortCircuited()).isTrue();
+    assertThat(base.effectiveTraceId()).isNotBlank(); // 缺省生成，保证单次调用最低可追溯
+    assertThat(base.withTraceId("t-9").traceId()).isEqualTo("t-9");
   }
 }

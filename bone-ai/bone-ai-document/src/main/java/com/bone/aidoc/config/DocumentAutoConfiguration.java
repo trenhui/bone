@@ -1,6 +1,6 @@
 package com.bone.aidoc.config;
 
-import com.bone.aidoc.application.DocumentParseService;
+import com.bone.aidoc.application.DocumentParseApplicationService;
 import com.bone.aidoc.domain.gateway.DocumentParser;
 import com.bone.aidoc.infrastructure.parser.DoclingSidecarAdapter;
 import com.bone.aidoc.infrastructure.parser.PdfBoxDocumentParser;
@@ -37,7 +37,7 @@ public class DocumentAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public DocumentParseService documentParseService(DocumentParser documentParser) {
-    return new DocumentParseService(documentParser);
+  public DocumentParseApplicationService documentParseService(DocumentParser documentParser) {
+    return new DocumentParseApplicationService(documentParser);
   }
 }

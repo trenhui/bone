@@ -13,6 +13,9 @@ public final class RrfFuser {
 
   private RrfFuser() {}
 
+  /** 末位/缺失位的上限：远小于 {@code Integer.MAX_VALUE}，避免 {@code k + rank} 整数溢出变负分（2026-10-17 复核修复）。 */
+  private static final int MAX_RANK = 1_000_000;
+
   public static Map<String, Double> fuse(
       Map<String, Double> vectorScores,
       Map<String, Double> bm25Scores,
@@ -29,9 +32,15 @@ public final class RrfFuser {
 
     Map<String, Double> fused = new LinkedHashMap<>();
     for (String key : keys) {
-      // 某路无数据（空列表）时该路贡献 0；非空列表里缺失的键按“末位之后”计（最弱）
-      int rv = vectorScores.isEmpty() ? Integer.MAX_VALUE : vPos.getOrDefault(key, vRank.size());
-      int rb = bm25Scores.isEmpty() ? Integer.MAX_VALUE : bPos.getOrDefault(key, bRank.size());
+      // 某路无数据（空列表）时该路贡献 0；非空列表里缺失的键按“末位之后”计（最弱），并钳制上限防溢出
+      int rv =
+          vectorScores.isEmpty()
+              ? MAX_RANK
+              : Math.min(vPos.getOrDefault(key, vRank.size()), MAX_RANK);
+      int rb =
+          bm25Scores.isEmpty()
+              ? MAX_RANK
+              : Math.min(bPos.getOrDefault(key, bRank.size()), MAX_RANK);
       double s = wVector / (k + rv) + wBm25 / (k + rb);
       fused.put(key, s);
     }

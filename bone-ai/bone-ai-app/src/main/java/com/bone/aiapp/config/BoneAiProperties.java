@@ -21,4 +21,7 @@ public class BoneAiProperties {
 
   /** 消警外发默认 webhook 地址（生产由配置中心注入；为空则外发失败并降级日志）。 */
   private String notificationWebhookUrl = "";
+
+  /** 评测裁判（LLM-as-Judge）模型档位（经网关门面调用，计量 / 证据链同普通 LLM 调用）。 */
+  private String judgeModel = "qwen-judge";
 }

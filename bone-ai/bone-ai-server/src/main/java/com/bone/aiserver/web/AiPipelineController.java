@@ -1,8 +1,8 @@
 package com.bone.aiserver.web;
 
+import com.bone.aiorch.application.OrchestrationApplicationService;
 import com.bone.aiorch.application.OrchestrationRequest;
 import com.bone.aiorch.application.OrchestrationResult;
-import com.bone.aiorch.application.OrchestrationService;
 import com.bone.core.model.ApiResponse;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/ai/v1/pipeline")
 public class AiPipelineController {
 
-  private final OrchestrationService orchestration;
+  private final OrchestrationApplicationService orchestration;
 
-  public AiPipelineController(OrchestrationService orchestration) {
+  public AiPipelineController(OrchestrationApplicationService orchestration) {
     this.orchestration = orchestration;
   }
 

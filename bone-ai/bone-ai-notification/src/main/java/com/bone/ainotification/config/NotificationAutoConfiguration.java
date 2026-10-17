@@ -1,15 +1,18 @@
 package com.bone.ainotification.config;
 
-import com.bone.ainotification.application.AlertNotificationService;
+import com.bone.ainotification.application.AlertNotificationApplicationService;
 import com.bone.ainotification.domain.gateway.NotificationAckSink;
 import com.bone.ainotification.domain.gateway.NotificationPort;
 import com.bone.ainotification.infrastructure.notification.LoggingNotificationAckSink;
 import com.bone.ainotification.infrastructure.notification.WebhookNotificationAdapter;
 import java.net.http.HttpClient;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.StringUtils;
 
 /**
  * bone-ai-notification 自动配置（Boot 3 {@code .imports} 机制）。
@@ -23,8 +26,16 @@ public class NotificationAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public NotificationPort notificationPort(
-      @Value("${bone.ai.notification.webhook-url:}") String webhookUrl) {
-    return new WebhookNotificationAdapter(HttpClient.newHttpClient(), webhookUrl);
+      @Value("${bone.ai.notification.webhook-url:}") String webhookUrl,
+      @Value("${bone.ai.notification.webhook-signing-secret:}") String signingSecret,
+      @Value("${bone.ai.notification.webhook-allowed-hosts:}") String allowedHosts) {
+    List<String> hosts =
+        Arrays.stream(StringUtils.commaDelimitedListToStringArray(allowedHosts))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .toList();
+    return new WebhookNotificationAdapter(
+        HttpClient.newHttpClient(), webhookUrl, signingSecret, hosts);
   }
 
   @Bean
@@ -35,8 +46,8 @@ public class NotificationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public AlertNotificationService alertNotificationService(
+  public AlertNotificationApplicationService alertNotificationService(
       NotificationPort notificationPort, NotificationAckSink ackSink) {
-    return new AlertNotificationService(notificationPort, ackSink);
+    return new AlertNotificationApplicationService(notificationPort, ackSink);
   }
 }

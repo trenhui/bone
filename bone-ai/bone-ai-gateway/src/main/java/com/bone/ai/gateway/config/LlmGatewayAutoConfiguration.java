@@ -2,12 +2,14 @@ package com.bone.ai.gateway.config;
 
 import com.bone.ai.gateway.application.LlmGatewayService;
 import com.bone.ai.gateway.domain.LlmClient;
+import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
+import com.bone.ai.gateway.infrastructure.gateway.TenantContextProviderAdapter;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.net.URI;
@@ -36,8 +38,10 @@ public class LlmGatewayAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public LlmGatewayService llmGatewayService(
-      LlmClient llmClient, DomainEventPublisher domainEventPublisher) {
-    return new LlmGatewayService(llmClient, domainEventPublisher);
+      LlmClient llmClient,
+      DomainEventPublisher domainEventPublisher,
+      TenantProvider tenantProvider) {
+    return new LlmGatewayService(llmClient, domainEventPublisher, tenantProvider);
   }
 
   @Bean
@@ -45,6 +49,13 @@ public class LlmGatewayAutoConfiguration {
   public DomainEventPublisher domainEventPublisher(
       ApplicationEventPublisher applicationEventPublisher) {
     return new SpringDomainEventPublisher(applicationEventPublisher);
+  }
+
+  /** 租户解析（计量事件用；application 层经端口取租户，不直连 TenantContext）。 */
+  @Bean
+  @ConditionalOnMissingBean
+  public TenantProvider tenantProvider() {
+    return new TenantContextProviderAdapter();
   }
 
   @Bean
@@ -90,9 +101,12 @@ public class LlmGatewayAutoConfiguration {
           throw new IllegalStateException("LLM 调用失败: HTTP " + resp.statusCode());
         }
         return resp.body();
-      } catch (java.io.IOException | InterruptedException e) {
-        Thread.currentThread().interrupt();
+      } catch (java.io.IOException e) {
+        // 仅 InterruptedException 需要恢复中断标记；IOException 误设中断位会污染调用方线程状态
         throw new RetriableHttpException("LLM 调用异常: " + e.getMessage(), e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RetriableHttpException("LLM 调用被中断: " + e.getMessage(), e);
       }
     };
   }

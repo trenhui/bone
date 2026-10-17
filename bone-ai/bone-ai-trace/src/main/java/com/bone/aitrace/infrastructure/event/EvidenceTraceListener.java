@@ -8,6 +8,7 @@ import com.bone.aitrace.domain.gateway.TenantProvider;
 import com.bone.aitrace.domain.model.EvidenceSnapshot;
 import com.bone.aitrace.domain.model.EvidenceType;
 import com.bone.aitrace.domain.repository.EvidenceSnapshotRepository;
+import com.bone.core.exception.BizException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -22,8 +23,15 @@ import org.springframework.context.event.EventListener;
  *
  * <p>证据三元组在落库前就地计算：输入 SHA-256（防篡改）、请求/响应 IR（JSON）、引擎版本（模型）。租户由 {@link TenantProvider} 在
  * infrastructure 侧解析，网关本身保持租户无关。
+ *
+ * <p><b>租户缺失显式拒绝（2026-10-17 复核修复，详设 P4 定案）</b>：上下文无租户（或非数值编码）时抛 {@link
+ * #ERROR_TENANT_MISSING}——「落一条租户不明的合规证据」比「拒返」更危险（审计链上出现无法归属的快照即失真），故 fail-closed； 网关门面照常拒返，调用方转
+ * HITL / 确定性路径。
  */
 public class EvidenceTraceListener {
+
+  /** 租户上下文缺失稳定业务码（fail-closed：不落租户不明的证据；trace 模块自有码，不跨模块借码）。 */
+  public static final String ERROR_TENANT_MISSING = "AI_TRACE_TENANT_CONTEXT_MISSING";
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -38,7 +46,15 @@ public class EvidenceTraceListener {
 
   @EventListener
   public void onLlmCallRecorded(LlmCallRecorded event) {
-    repository.insert(toSnapshot(event, tenantProvider.currentTenantId()));
+    repository.insert(toSnapshot(event, requireTenantId()));
+  }
+
+  private Long requireTenantId() {
+    Long tenantId = tenantProvider.currentTenantId();
+    if (tenantId == null) {
+      throw new BizException(500, "证据链落盘拒绝：租户上下文缺失或非数值编码（不得落租户不明的合规快照）", ERROR_TENANT_MISSING);
+    }
+    return tenantId;
   }
 
   static EvidenceSnapshot toSnapshot(LlmCallRecorded event, Long tenantId) {
@@ -55,6 +71,9 @@ public class EvidenceTraceListener {
     ir.put("engineVersion", engineVersion);
     ir.put("input", input);
     ir.put("output", outputMap(event.response()));
+    if (event.errorMessage() != null) {
+      ir.put("error", event.errorMessage()); // 失败调用留证（事故复盘直接证据）
+    }
 
     return EvidenceSnapshot.record(
         null,

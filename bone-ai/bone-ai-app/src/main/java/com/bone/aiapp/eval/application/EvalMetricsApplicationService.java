@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * citedClause} 的占比；采纳率以整体正确率（TP+TN）/total 作代理指标（阈值详设 §2.7 可校准）。
  */
 @Component
-public class EvalMetricsService {
+public class EvalMetricsApplicationService {
 
   public EvalMetrics compute(List<EvalRecord> records) {
     long tp = 0, fp = 0, tn = 0, fn = 0;

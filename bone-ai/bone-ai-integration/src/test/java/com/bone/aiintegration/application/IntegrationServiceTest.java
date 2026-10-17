@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.aiintegration.domain.gateway.ExternalSystemPort;
+import com.bone.aiintegration.domain.gateway.IntegrationAuditPort;
 import com.bone.aiintegration.domain.model.ExternalCall;
 import com.bone.aiintegration.domain.model.ExternalCallOutcome;
 import com.bone.aiintegration.domain.model.ExternalCallResult;
@@ -16,7 +17,9 @@ import org.junit.jupiter.api.Test;
 class IntegrationServiceTest {
 
   private final ExternalSystemPort port = mock(ExternalSystemPort.class);
-  private final IntegrationService service = new IntegrationService(port);
+  private final IntegrationAuditPort audit = mock(IntegrationAuditPort.class);
+  private final IntegrationApplicationService service =
+      new IntegrationApplicationService(port, audit);
 
   private ExternalCall call(IntegrationMode mode) {
     return new ExternalCall("c1", 42L, "SYS", "https://ext/api", "{}", mode, "corr-1");

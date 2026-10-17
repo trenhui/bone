@@ -1,11 +1,12 @@
 package com.bone.aiorch.config;
 
 import com.bone.ai.gateway.application.LlmGatewayService;
-import com.bone.aiorch.application.HitlService;
-import com.bone.aiorch.application.OrchestrationService;
+import com.bone.aiorch.application.HitlApplicationService;
+import com.bone.aiorch.application.OrchestrationApplicationService;
+import com.bone.aiorch.domain.hitl.HitlDispositionRepository;
 import com.bone.aiorch.domain.hitl.HitlItemRepository;
-import com.bone.airules.application.RuleQueryService;
-import com.bone.airules.application.RuleService;
+import com.bone.airules.application.RuleApplicationService;
+import com.bone.airules.application.RuleQueryApplicationService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -16,20 +17,27 @@ import org.springframework.context.annotation.Bean;
 public class OrchestrationAutoConfiguration {
 
   @Bean
-  @ConditionalOnBean({RuleService.class, RuleQueryService.class, LlmGatewayService.class})
+  @ConditionalOnBean({
+    RuleApplicationService.class,
+    RuleQueryApplicationService.class,
+    LlmGatewayService.class
+  })
   @ConditionalOnMissingBean
-  public OrchestrationService orchestrationService(
-      RuleService ruleService,
-      RuleQueryService ruleQueryService,
+  public OrchestrationApplicationService orchestrationService(
+      RuleApplicationService ruleService,
+      RuleQueryApplicationService ruleQueryService,
       LlmGatewayService llmGatewayService) {
-    return new OrchestrationService(ruleService, ruleQueryService, llmGatewayService);
+    return new OrchestrationApplicationService(ruleService, ruleQueryService, llmGatewayService);
   }
 
-  /** HITL 人工终审子域（§4.2；依赖 SDK 生成的 HitlItemRepository，未启用持久化时缺 Bean 自动跳过）。 */
+  /**
+   * HITL 人工终审子域（§4.2；依赖 SDK 生成的 HitlItemRepository + HitlDispositionRepository，未启用持久化时缺 Bean 自动跳过）。
+   */
   @Bean
-  @ConditionalOnBean(HitlItemRepository.class)
+  @ConditionalOnBean({HitlItemRepository.class, HitlDispositionRepository.class})
   @ConditionalOnMissingBean
-  public HitlService hitlService(HitlItemRepository hitlItemRepository) {
-    return new HitlService(hitlItemRepository);
+  public HitlApplicationService hitlService(
+      HitlItemRepository hitlItemRepository, HitlDispositionRepository hitlDispositionRepository) {
+    return new HitlApplicationService(hitlItemRepository, hitlDispositionRepository);
   }
 }

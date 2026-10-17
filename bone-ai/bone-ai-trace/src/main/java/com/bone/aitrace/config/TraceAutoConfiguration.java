@@ -1,6 +1,6 @@
 package com.bone.aitrace.config;
 
-import com.bone.aitrace.application.EvidenceQueryService;
+import com.bone.aitrace.application.EvidenceQueryApplicationService;
 import com.bone.aitrace.domain.gateway.TenantProvider;
 import com.bone.aitrace.domain.repository.EvidenceSnapshotRepository;
 import com.bone.aitrace.infrastructure.event.EvidenceTraceListener;
@@ -37,7 +37,8 @@ public class TraceAutoConfiguration {
   @Bean
   @ConditionalOnBean(EvidenceSnapshotRepository.class)
   @ConditionalOnMissingBean
-  public EvidenceQueryService evidenceQueryService(EvidenceSnapshotRepository repository) {
-    return new EvidenceQueryService(repository);
+  public EvidenceQueryApplicationService evidenceQueryService(
+      EvidenceSnapshotRepository repository) {
+    return new EvidenceQueryApplicationService(repository);
   }
 }

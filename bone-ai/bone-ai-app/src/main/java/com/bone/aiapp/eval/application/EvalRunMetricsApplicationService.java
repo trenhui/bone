@@ -12,12 +12,13 @@ import org.springframework.stereotype.Component;
  * {@code JudgePort}，租户/分页等横切关注点后续也只改这一处。
  */
 @Component
-public class EvalRunMetricsService {
+public class EvalRunMetricsApplicationService {
 
   private final EvalRunRepository runRepository;
-  private final EvalMetricsService metricsService;
+  private final EvalMetricsApplicationService metricsService;
 
-  public EvalRunMetricsService(EvalRunRepository runRepository, EvalMetricsService metricsService) {
+  public EvalRunMetricsApplicationService(
+      EvalRunRepository runRepository, EvalMetricsApplicationService metricsService) {
     this.runRepository = runRepository;
     this.metricsService = metricsService;
   }

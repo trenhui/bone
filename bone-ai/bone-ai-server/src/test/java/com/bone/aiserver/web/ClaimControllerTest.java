@@ -34,7 +34,8 @@ class ClaimControllerTest {
             null,
             null,
             0.9,
-            null);
+            null,
+            "trace-1");
     when(claimService.underwrite(org.mockito.ArgumentMatchers.any(ClaimRequest.class)))
         .thenReturn(decision);
     MockMultipartFile pdf =

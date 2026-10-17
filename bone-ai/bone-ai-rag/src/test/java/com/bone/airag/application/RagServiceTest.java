@@ -26,7 +26,16 @@ class RagServiceTest {
     // a 与查询向量同向（余弦 1）；b 正交；c 无 clauseRef（引用强制应丢弃）
     RagChunk a =
         RagChunk.of(
-            1L, 42L, "doc1", "Clause 1", "alpha beta", new float[] {1f, 0f, 0f}, "clause-1", 0, 10);
+            1L,
+            42L,
+            "doc1",
+            "Clause 1",
+            "alpha beta",
+            new float[] {1f, 0f, 0f},
+            "hash-64",
+            "clause-1",
+            0,
+            10);
     RagChunk b =
         RagChunk.of(
             2L,
@@ -35,17 +44,29 @@ class RagServiceTest {
             "Clause 2",
             "gamma delta",
             new float[] {0f, 1f, 0f},
+            "hash-64",
             "clause-2",
             11,
             20);
     RagChunk c =
-        RagChunk.of(3L, 42L, "doc1", "Clause 3", "epsilon", new float[] {0f, 0f, 1f}, null, 21, 30);
+        RagChunk.of(
+            3L,
+            42L,
+            "doc1",
+            "Clause 3",
+            "epsilon",
+            new float[] {0f, 0f, 1f},
+            "hash-64",
+            null,
+            21,
+            30);
 
     when(tenant.currentTenantId()).thenReturn(42L);
     when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b, c));
+    when(embed.version()).thenReturn("hash-64");
     when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
 
-    RagService service = new RagService(repo, embed, tenant);
+    RagApplicationService service = new RagApplicationService(repo, embed, tenant);
     List<RagResult> results = service.retrieve(new RagQuery("query", null, 10));
 
     // c 因引用强制被丢弃；a 因余弦匹配排第一

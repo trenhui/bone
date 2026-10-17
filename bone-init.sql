@@ -2502,6 +2502,8 @@ CREATE TABLE ai_rag_chunk (
     id             BIGINT       NOT NULL COMMENT '切片主键（分布式ID）',
     tenant_id      BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
     doc_id         VARCHAR(128) DEFAULT NULL COMMENT '归属文档ID',
+    doc_version    VARCHAR(64)  DEFAULT NULL COMMENT '文档版本（增量更新幂等批键：同版本不重复入库）',
+    embedding_ver  VARCHAR(32)  DEFAULT NULL COMMENT '嵌入模型版本（换模型后按此灰度重建）',
     section_path   VARCHAR(512) DEFAULT NULL COMMENT '章节/条款面包屑路径',
     chunk_text     MEDIUMTEXT   DEFAULT NULL COMMENT '切片正文（受控检索文本）',
     embedding      TEXT         DEFAULT NULL COMMENT '过渡：CSV float 嵌入；终局改 MySQL JSON 列',
@@ -2555,6 +2557,69 @@ CREATE TABLE eval_run (
     PRIMARY KEY (id),
     KEY idx_eval_run_gate (tenant_id, gate, finished_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI评测运行';
+
+-- ------------------------------------------------------------
+-- 12.3 HITL 待裁决项 / 处置链（bone-ai-orchestration §3.3 五态人工终审）
+--   hitl_item         待裁决项（AI 建议 + 置信度 + 五态）
+--   hitl_disposition  处置链（谁在何时做了什么裁决——跨请求/重启可回放，合规留痕）
+-- ------------------------------------------------------------
+CREATE TABLE hitl_item (
+    id              VARCHAR(64)  NOT NULL COMMENT '待裁决项ID（应用UUID）',
+    tenant_id       BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    trace_id        VARCHAR(64)  DEFAULT NULL COMMENT '关联证据链traceId（回放关联键）',
+    scene           VARCHAR(64)  DEFAULT NULL COMMENT '场景（如 claim-<claimId>）',
+    suggestion      VARCHAR(1024) DEFAULT NULL COMMENT 'AI建议内容（裁决人可见原文）',
+    suggested_value TEXT         DEFAULT NULL COMMENT '建议值（JSON/文本；类型化约定由调用方）',
+    risk_level      VARCHAR(16)  DEFAULT NULL COMMENT '风险等级 HIGH/MEDIUM/LOW',
+    confidence      DECIMAL(4,3) NOT NULL DEFAULT 0 COMMENT '模型置信度0-1；<0.7强制人工',
+    status          VARCHAR(16)  NOT NULL DEFAULT 'PENDING' COMMENT '五态 PENDING/CONFIRMED/REJECTED/MODIFIED/ESCALATED',
+    reason_type     VARCHAR(32)  DEFAULT NULL COMMENT '裁决原因（reject/modify必带，受控字典）',
+    acted_by        VARCHAR(64)  DEFAULT NULL COMMENT '最后裁决人',
+    acted_at        DATETIME(3)  DEFAULT NULL COMMENT '最后裁决时刻',
+    deleted         TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_hitl_item_tenant_status (tenant_id, status, risk_level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI HITL待裁决项（五态人工终审）';
+
+CREATE TABLE hitl_disposition (
+    id          BIGINT       NOT NULL COMMENT '处置记录主键（分布式ID）',
+    tenant_id   BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    item_id     VARCHAR(64)  NOT NULL COMMENT '所属待裁决项ID',
+    action      VARCHAR(16)  NOT NULL COMMENT '裁决动作 confirm/reject/modify/escalate',
+    reason_type VARCHAR(32)  DEFAULT NULL COMMENT '回流原因（RULE_MISS/CONTEXT_MISS/SUGGESTION_WRONG/POLICY_CONFLICT）',
+    value       TEXT         DEFAULT NULL COMMENT '改判值（modify 时携带）',
+    comment     VARCHAR(512) DEFAULT NULL COMMENT '备注',
+    acted_by    VARCHAR(64)  DEFAULT NULL COMMENT '裁决人',
+    acted_at    DATETIME(3)  NOT NULL COMMENT '裁决时刻',
+    deleted     TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_hitl_disposition_item (item_id, acted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI HITL处置链（可回放：谁在何时做了什么裁决、带什么原因）';
+
+-- ------------------------------------------------------------
+-- 12.4 规则资产版本链（bone-ai-rules §2.4：版本/灰度/命中标记的版本化记录）
+--   不可变版本链：回放"当时生效的是哪条表达式、谁发布的"（合规审计）；回滚=发布新版本（不历史篡改）
+-- ------------------------------------------------------------
+CREATE TABLE rule_asset_version (
+    id           VARCHAR(64)  NOT NULL COMMENT '版本ID（应用UUID，与 rule_asset 同款影子主键）',
+    tenant_id    BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    rule_id      VARCHAR(64)  NOT NULL COMMENT '规则资产ID',
+    version_no   INT          NOT NULL COMMENT '版本号（从1递增）',
+    expression   TEXT         DEFAULT NULL COMMENT '该版本QLExpress表达式',
+    hit_block    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'RULE_HIT_BLOCK 命中短路',
+    gray_percent INT          NOT NULL DEFAULT 0 COMMENT '灰度0-100',
+    status       VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/ROLLED_BACK',
+    created_by   VARCHAR(64)  DEFAULT NULL COMMENT '发布人',
+    deleted      TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    created_at   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_rule_asset_version_rule (rule_id, version_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI规则资产版本链（回放：当时生效表达式）';
 
 -- ------------------------------------------------------------
 -- 9.1 应用 / 模块演示种子数据（MVP-08：元数据建模 UI 的「应用 → 模块」导航开箱即有内容）

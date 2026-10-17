@@ -53,4 +53,8 @@ public class ArchitectureTest {
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 
   @ArchTest static final ArchRule no_aviator_dependency = BoneDddArchRules.noAviatorDependency();
+
+  @ArchTest
+  static final ArchRule ai_model_calls_through_gateway =
+      BoneDddArchRules.aiModelCallsMustGoThroughGateway();
 }

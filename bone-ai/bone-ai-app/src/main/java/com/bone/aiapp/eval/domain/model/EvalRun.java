@@ -60,4 +60,35 @@ public class EvalRun extends TenantAggregateRoot<Long> {
 
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
+  /** 领域工厂：落一条评测运行（CI 门禁 / 管理面写入；租户取数值上下文）。 */
+  public static EvalRun of(
+      Long tenantId,
+      String gate,
+      Long caseId,
+      String predicted,
+      String expected,
+      boolean expectedHit,
+      boolean predictedHit,
+      String citedClause,
+      BigDecimal judgeScore,
+      boolean passed,
+      LocalDateTime finishedAt) {
+    EvalRun run = new EvalRun();
+    run.setTenantId(tenantId);
+    run.gate = gate;
+    run.caseId = caseId;
+    run.predicted = predicted;
+    run.expected = expected;
+    run.expectedHit = expectedHit;
+    run.predictedHit = predictedHit;
+    run.citedClause = citedClause;
+    run.judgeScore = judgeScore;
+    run.passed = passed;
+    run.finishedAt = finishedAt;
+    LocalDateTime now = LocalDateTime.now();
+    run.createdAt = now;
+    run.updatedAt = now;
+    return run;
+  }
 }

@@ -21,7 +21,8 @@ class AlertNotificationServiceTest {
   void dispatch_delegates_to_port() {
     NotificationPort port = mock(NotificationPort.class);
     NotificationAckSink sink = mock(NotificationAckSink.class);
-    AlertNotificationService service = new AlertNotificationService(port, sink);
+    AlertNotificationApplicationService service =
+        new AlertNotificationApplicationService(port, sink);
 
     AlertEvent event = new AlertEvent("A1", 42L, "HIGH", "t", "b", "bone-ai-rules", Instant.now());
     NotificationResult result =
@@ -37,7 +38,8 @@ class AlertNotificationServiceTest {
   void acknowledge_writes_back_via_sink() {
     NotificationPort port = mock(NotificationPort.class);
     NotificationAckSink sink = mock(NotificationAckSink.class);
-    AlertNotificationService service = new AlertNotificationService(port, sink);
+    AlertNotificationApplicationService service =
+        new AlertNotificationApplicationService(port, sink);
 
     NotificationAck ack = new NotificationAck("A1", 42L, "u1", Instant.now(), "handled");
     service.acknowledge(ack);

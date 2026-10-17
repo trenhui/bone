@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 class EvalMetricsServiceTest {
 
-  private final EvalMetricsService service = new EvalMetricsService();
+  private final EvalMetricsApplicationService service = new EvalMetricsApplicationService();
 
   @Test
   void perfect_run_yields_full_scores() {

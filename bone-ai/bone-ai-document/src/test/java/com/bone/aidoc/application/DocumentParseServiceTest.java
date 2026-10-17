@@ -16,16 +16,16 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** DocumentParseService：解析 → 条款切片 → 最小 IR（doc_id/租户/页码/span）。 */
+/** DocumentParseApplicationService：解析 → 条款切片 → 最小 IR（doc_id/租户/页码/span）。 */
 class DocumentParseServiceTest {
 
   private DocumentParser parser;
-  private DocumentParseService service;
+  private DocumentParseApplicationService service;
 
   @BeforeEach
   void setUp() {
     parser = mock(DocumentParser.class);
-    service = new DocumentParseService(parser);
+    service = new DocumentParseApplicationService(parser);
   }
 
   @Test

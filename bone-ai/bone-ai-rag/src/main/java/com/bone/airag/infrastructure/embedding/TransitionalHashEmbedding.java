@@ -11,6 +11,14 @@ public class TransitionalHashEmbedding implements EmbeddingPort {
 
   private static final int DIM = 64;
 
+  /** 过渡版本标识（真实模型接入时变更为语义模型版本，如 bge-m3@v1）。 */
+  private static final String VER = "hash-64";
+
+  @Override
+  public String version() {
+    return VER;
+  }
+
   @Override
   public float[] embed(String text) {
     float[] v = new float[DIM];

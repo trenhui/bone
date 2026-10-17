@@ -1,7 +1,8 @@
 package com.bone.aiapp.web;
 
+import com.bone.aiapp.config.AiTenantContext;
 import com.bone.aiapp.config.BoneAiProperties;
-import com.bone.ainotification.application.AlertNotificationService;
+import com.bone.ainotification.application.AlertNotificationApplicationService;
 import com.bone.ainotification.domain.model.AlertEvent;
 import com.bone.ainotification.domain.model.NotificationAck;
 import com.bone.ainotification.domain.model.NotificationResult;
@@ -12,17 +13,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 生产拓扑：消警闭环（触发→外发→ack 回写）HTTP 能力。 */
+/**
+ * 生产拓扑：消警闭环（触发→外发→ack 回写）HTTP 能力。
+ *
+ * <p>租户一律从上下文取（详设 §3.1：禁止入参传租户）。
+ */
 @RestController
 @RequestMapping("/api/ai/v1/notify")
 public class NotificationController {
 
-  private final AlertNotificationService notificationService;
+  private final AlertNotificationApplicationService notificationService;
+  private final AiTenantContext tenantContext;
   private final BoneAiProperties props;
 
   public NotificationController(
-      AlertNotificationService notificationService, BoneAiProperties props) {
+      AlertNotificationApplicationService notificationService,
+      AiTenantContext tenantContext,
+      BoneAiProperties props) {
     this.notificationService = notificationService;
+    this.tenantContext = tenantContext;
     this.props = props;
   }
 
@@ -31,7 +40,7 @@ public class NotificationController {
     AlertEvent event =
         new AlertEvent(
             req.alertId(),
-            req.tenantId(),
+            tenantContext.requireNumericTenantId(),
             req.severity(),
             req.title(),
             req.body(),
@@ -45,7 +54,11 @@ public class NotificationController {
   public ApiResponse<Void> ack(@RequestBody NotifyAckRequest req) {
     notificationService.acknowledge(
         new NotificationAck(
-            req.alertId(), req.tenantId(), req.ackedBy(), Instant.now(), req.note()));
+            req.alertId(),
+            tenantContext.requireNumericTenantId(),
+            req.ackedBy(),
+            Instant.now(),
+            req.note()));
     return ApiResponse.success();
   }
 }

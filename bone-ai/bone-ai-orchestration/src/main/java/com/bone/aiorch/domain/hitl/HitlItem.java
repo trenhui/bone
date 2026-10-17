@@ -6,6 +6,7 @@ import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,8 +19,8 @@ import lombok.Setter;
 /**
  * HITL 待裁决项（租户聚合根，bone-metadata-sdk 持久化，表 {@code hitl_item}）。
  *
- * <p>AI 编排产出建议后停等人工裁决：五态流转由领域方法强制（不允许非法跳转），处置链 {@code dispositions} 暂
- * {@code @Transient}（批次内进程内记录；批二以 {@code @Cascade} 落 {@code hitl_disposition} 子表供回放）。
+ * <p>AI 编排产出建议后停等人工裁决：五态流转由领域方法强制（不允许非法跳转）。处置链本体落 {@code hitl_disposition} 子表 （应用服务在裁决成功后写库），本类的
+ * {@code dispositions} 仅为**当次请求内**的回显视图——跨请求回放走仓储，不依赖它。
  *
  * <p>业界对位：AI Agent 人工终审（Anthropic Effective Agents）——AI 只产出建议，人工裁决后才流入业务状态机；置信度 {@code confidence}
  * 低于阈值（<0.7）强制进 PENDING，杜绝自主执行不可回放。
@@ -29,17 +30,22 @@ import lombok.Setter;
 @Table("hitl_item")
 public class HitlItem extends TenantAggregateRoot<String> {
 
-  /** 影子主键：应用生成 UUID（去雪花生成，见 RuleAsset 同款说明）。 */
+  /** 影子主键：应用生成 UUID（去雪花生成，与 RuleAsset 同款）。 */
   @Id
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
   private String id;
 
-  private String scene; // 场景（如 procuraAI-approval）
+  @Column(name = "trace_id")
+  private String traceId; // 关联证据链 traceId（LLM 调用回放关联键）
+
+  private String scene; // 场景（如 claim-<claimId>）
   private String suggestion; // AI 建议内容（裁决人可见原文）
-  private Object suggestedValue; // 建议值（类型化，裁决人可 confirm/modify）
+  private String suggestedValue; // 建议值（JSON/文本；类型化约定由调用方，禁存 Object 防 SDK 映射歧义）
   private String riskLevel; // HIGH/MEDIUM/LOW
-  private double confidence; // 模型置信度 0-1；<0.7 强制进 PENDING
+
+  @Column(name = "confidence")
+  private BigDecimal confidence; // 模型置信度 0-1；<0.7 强制进 PENDING
 
   private HitlStatus status = HitlStatus.PENDING;
 
@@ -54,6 +60,12 @@ public class HitlItem extends TenantAggregateRoot<String> {
 
   @Deleted private Boolean deleted = false;
 
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
+
   @Transient private final List<Disposition> dispositions = new ArrayList<>();
 
   public HitlItem() {}
@@ -63,18 +75,23 @@ public class HitlItem extends TenantAggregateRoot<String> {
       String tenantId,
       String scene,
       String suggestion,
-      Object suggestedValue,
+      String suggestedValue,
       String riskLevel,
-      double confidence) {
+      double confidence,
+      String traceId) {
     HitlItem item = new HitlItem();
     item.setId(UUID.randomUUID().toString());
     item.setTenantId(tenantId);
+    item.traceId = traceId;
     item.scene = scene;
     item.suggestion = suggestion;
     item.suggestedValue = suggestedValue;
     item.riskLevel = riskLevel;
-    item.confidence = confidence;
+    item.confidence = BigDecimal.valueOf(confidence);
     item.status = HitlStatus.PENDING;
+    LocalDateTime now = LocalDateTime.now();
+    item.createdAt = now;
+    item.updatedAt = now;
     return item;
   }
 
@@ -89,9 +106,7 @@ public class HitlItem extends TenantAggregateRoot<String> {
   /** 人工驳回（必带回流原因）。 */
   public Disposition reject(String actor, ReasonType reasonType, String comment) {
     requirePending();
-    if (reasonType == null) {
-      throw new IllegalArgumentException("reject must carry reason_type (AI 中台 §4)");
-    }
+    requireReason(reasonType, "reject");
     this.status = HitlStatus.REJECTED;
     this.reasonType = reasonType.name();
     return record(actor, "reject", reasonType, null, comment);
@@ -99,11 +114,9 @@ public class HitlItem extends TenantAggregateRoot<String> {
 
   /** 人工修正后采纳（改值 + 必带回流原因）。 */
   public Disposition modify(
-      String actor, Object correctedValue, ReasonType reasonType, String comment) {
+      String actor, String correctedValue, ReasonType reasonType, String comment) {
     requirePending();
-    if (reasonType == null) {
-      throw new IllegalArgumentException("modify must carry reason_type (AI 中台 §4)");
-    }
+    requireReason(reasonType, "modify");
     this.status = HitlStatus.MODIFIED;
     this.suggestedValue = correctedValue;
     this.reasonType = reasonType.name();
@@ -125,8 +138,14 @@ public class HitlItem extends TenantAggregateRoot<String> {
     }
   }
 
+  private void requireReason(ReasonType reasonType, String action) {
+    if (reasonType == null) {
+      throw new IllegalArgumentException(action + " must carry reason_type (AI 中台 §4)");
+    }
+  }
+
   private Disposition record(
-      String actor, String action, ReasonType reason, Object value, String comment) {
+      String actor, String action, ReasonType reason, String value, String comment) {
     this.actedBy = actor;
     this.actedAt = LocalDateTime.now();
     Disposition d =
@@ -140,12 +159,12 @@ public class HitlItem extends TenantAggregateRoot<String> {
   public record Disposition(
       String action,
       String reasonType,
-      Object value,
+      String value,
       String comment,
       String actor,
       LocalDateTime actedAt) {}
 
-  /** 处置链只读视图。 */
+  /** 当次请求内的处置链只读视图（持久化真相以 hitl_disposition 表为准）。 */
   public List<Disposition> dispositionHistory() {
     return Collections.unmodifiableList(dispositions);
   }

@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 class EvidenceQueryServiceTest {
 
   private final EvidenceSnapshotRepository repository = mock(EvidenceSnapshotRepository.class);
-  private final EvidenceQueryService service = new EvidenceQueryService(repository);
+  private final EvidenceQueryApplicationService service =
+      new EvidenceQueryApplicationService(repository);
 
   @Test
   void replayByTraceId_delegates_to_repository() {

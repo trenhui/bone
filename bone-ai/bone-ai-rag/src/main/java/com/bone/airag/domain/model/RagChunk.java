@@ -41,6 +41,9 @@ public class RagChunk extends TenantAggregateRoot<Long> {
   @Column(name = "embedding")
   private String embedding; // 过渡：CSV float；终局 MySQL JSON 列
 
+  @Column(name = "embedding_ver")
+  private String embeddingVer; // 嵌入模型版本（换模型维度不符时 fail-closed 告警，不静默 0 分）
+
   @Column(name = "clause_ref")
   private String clauseRef; // 引用强制锚点（clause_id）
 
@@ -65,6 +68,7 @@ public class RagChunk extends TenantAggregateRoot<Long> {
       String sectionPath,
       String text,
       float[] embedding,
+      String embeddingVer,
       String clauseRef,
       int spanStart,
       int spanEnd) {
@@ -75,6 +79,7 @@ public class RagChunk extends TenantAggregateRoot<Long> {
     chunk.sectionPath = sectionPath;
     chunk.text = text;
     chunk.embedding = encode(embedding);
+    chunk.embeddingVer = embeddingVer;
     chunk.clauseRef = clauseRef;
     chunk.spanStart = spanStart;
     chunk.spanEnd = spanEnd;

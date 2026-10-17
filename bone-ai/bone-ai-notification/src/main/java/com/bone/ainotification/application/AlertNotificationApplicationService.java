@@ -12,12 +12,13 @@ import com.bone.ainotification.domain.model.NotificationResult;
  *
  * <p>本服务只编排端口，不含外部系统耦合；具体通道与回写目标由基础设施/消费方提供。
  */
-public class AlertNotificationService {
+public class AlertNotificationApplicationService {
 
   private final NotificationPort notificationPort;
   private final NotificationAckSink ackSink;
 
-  public AlertNotificationService(NotificationPort notificationPort, NotificationAckSink ackSink) {
+  public AlertNotificationApplicationService(
+      NotificationPort notificationPort, NotificationAckSink ackSink) {
     this.notificationPort = notificationPort;
     this.ackSink = ackSink;
   }
