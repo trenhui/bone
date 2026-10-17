@@ -2,6 +2,7 @@ package com.bone.ai.gateway.domain;
 
 import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
+import com.bone.ai.gateway.domain.gateway.PromptInjectionGuard;
 import com.bone.ai.gateway.domain.gateway.StructuredOutputValidator;
 import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
 
@@ -16,15 +17,17 @@ import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
  * @param outputValidator 结构化输出校验（{@code jsonResponse=true} 时生效）
  * @param responseCache 精确响应缓存（仅 temperature=0）
  * @param quotaGuard 租户配额闸门
+ * @param injectionGuard 提示注入防护（OWASP LLM01，仅 user 消息，默认关闭）
  */
 public record LlmGatewayPolicies(
     PiiRedactor piiRedactor,
     StructuredOutputValidator outputValidator,
     LlmResponseCache responseCache,
-    TenantQuotaGuard quotaGuard) {
+    TenantQuotaGuard quotaGuard,
+    PromptInjectionGuard injectionGuard) {
 
   /** 全直通（无任何治理策略；POC / 单测默认）。 */
   public static LlmGatewayPolicies permissive() {
-    return new LlmGatewayPolicies(null, null, null, null);
+    return new LlmGatewayPolicies(null, null, null, null, null);
   }
 }

@@ -28,6 +28,7 @@
     "AI_GATEWAY_REDLINE_BLOCKED": "请求已按成本红线拦截，未发起模型调用",
     "AI_GATEWAY_QUOTA_EXCEEDED": "租户调用配额已用尽，请稍后重试",
     "AI_GATEWAY_OUTPUT_INVALID": "模型返回内容不是合法 JSON，已转人工复核",
+    "AI_GATEWAY_INJECTION_SUSPECTED": "输入疑似提示注入，请求已被拦截",
     "GEN_GENERATION_FAILED": "代码生成执行失败",
     "GEN_TEMPLATE_NOT_FOUND": "代码模板不存在",
     "GEN_TENANT_CONTEXT_MISSING": "租户上下文缺失",

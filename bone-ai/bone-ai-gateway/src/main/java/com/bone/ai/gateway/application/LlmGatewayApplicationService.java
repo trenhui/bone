@@ -69,7 +69,7 @@ public class LlmGatewayApplicationService {
         llmClient,
         domainEventPublisher,
         tenantProvider,
-        new LlmGatewayPolicies(piiRedactor, null, null, null));
+        new LlmGatewayPolicies(piiRedactor, null, null, null, null));
   }
 
   public LlmGatewayApplicationService(
@@ -84,11 +84,12 @@ public class LlmGatewayApplicationService {
   }
 
   /**
-   * 发起一次受治理的 LLM 调用，执行链： 红线短路 → 租户配额 → 出口脱敏 → 精确缓存查询 → 委派 client → 结构化输出校验 → 落证 + 计量 → 写缓存。
+   * 发起一次受治理的 LLM 调用，执行链： 红线短路 → 租户配额 → 提示注入检测（user 原文）→ 出口脱敏 → 精确缓存查询 → 委派 client → 结构化输出校验 → 落证 +
+   * 计量 → 写缓存。
    *
    * @param request 模型请求
    * @return 模型响应（原文；仅出站与落证内容脱敏）
-   * @throws BizException 红线命中（400）/ 配额超限（429）/ 结构化输出不合规（502）
+   * @throws BizException 红线命中（400）/ 配额超限（429）/ 提示注入（400）/ 结构化输出不合规（502）
    */
   public LlmResponse invoke(LlmRequest request) {
     if (request.shortCircuited()) {
@@ -98,6 +99,15 @@ public class LlmGatewayApplicationService {
     // 配额在脱敏与调用之前：超限租户不该消耗任何后续算力
     if (policies.quotaGuard() != null) {
       policies.quotaGuard().acquire(tenantId);
+    }
+    // 提示注入检测基于 user 原文（脱敏不改指令词，但检测原文最稳）：OWASP LLM01 第一关
+    if (policies.injectionGuard() != null) {
+      String traceId = request.effectiveTraceId();
+      for (LlmMessage message : request.messages()) {
+        if ("user".equalsIgnoreCase(message.role())) {
+          policies.injectionGuard().check(message.content(), traceId);
+        }
+      }
     }
     LlmRequest outbound = redactRequest(request);
     String cacheKey = cacheKeyOf(outbound);

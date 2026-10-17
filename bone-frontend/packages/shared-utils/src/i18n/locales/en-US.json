@@ -9,6 +9,7 @@
     "AI_GATEWAY_REDLINE_BLOCKED": "Request blocked by cost redline before reaching the model",
     "AI_GATEWAY_QUOTA_EXCEEDED": "Tenant call quota exhausted; please retry later",
     "AI_GATEWAY_OUTPUT_INVALID": "Model output is not valid JSON; routed to manual review",
+    "AI_GATEWAY_INJECTION_SUSPECTED": "Input looks like a prompt injection attempt; request blocked",
     "AI_HITL_NOT_FOUND": "HITL item not found or already finalized",
     "AI_HITL_ALREADY_DECIDED": "HITL item already decided; duplicate action rejected",
     "AI_HITL_REASON_REQUIRED": "This decision type requires a reason type (reasonType)",

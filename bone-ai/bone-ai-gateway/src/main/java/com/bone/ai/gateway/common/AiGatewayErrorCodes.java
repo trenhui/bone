@@ -18,4 +18,7 @@ public final class AiGatewayErrorCodes {
 
   /** 结构化输出不合规（502）：非合法 JSON / 空响应 / 被 markdown 围栏包裹（可能截断于 max_tokens）。 */
   public static final String OUTPUT_INVALID = "AI_GATEWAY_OUTPUT_INVALID";
+
+  /** 提示注入嫌疑（400）：user 输入命中注入特征（OWASP LLM01）；默认关闭，启用方自担误伤。 */
+  public static final String INJECTION_SUSPECTED = "AI_GATEWAY_INJECTION_SUSPECTED";
 }

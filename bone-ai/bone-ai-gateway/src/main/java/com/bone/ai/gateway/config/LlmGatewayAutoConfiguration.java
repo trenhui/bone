@@ -5,6 +5,7 @@ import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmGatewayPolicies;
 import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
+import com.bone.ai.gateway.domain.gateway.PromptInjectionGuard;
 import com.bone.ai.gateway.domain.gateway.StructuredOutputValidator;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
@@ -17,6 +18,7 @@ import com.bone.ai.gateway.infrastructure.cache.InMemoryLlmResponseCache;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
 import com.bone.ai.gateway.infrastructure.gateway.TenantContextProviderAdapter;
 import com.bone.ai.gateway.infrastructure.quota.InMemoryTenantQuotaGuard;
+import com.bone.ai.gateway.infrastructure.security.HeuristicInjectionGuard;
 import com.bone.ai.gateway.infrastructure.security.JsonOutputValidator;
 import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -71,7 +73,8 @@ public class LlmGatewayAutoConfiguration {
       ObjectProvider<PiiRedactor> piiRedactor,
       ObjectProvider<StructuredOutputValidator> validator,
       ObjectProvider<LlmResponseCache> cache,
-      ObjectProvider<TenantQuotaGuard> quota) {
+      ObjectProvider<TenantQuotaGuard> quota,
+      ObjectProvider<PromptInjectionGuard> injectionGuard) {
     PiiRedactor redactor =
         piiRedactor.getIfAvailable(() -> new RegexPiiRedactor(props.isPiiRedactionEnabled()));
     StructuredOutputValidator outputValidator =
@@ -91,7 +94,11 @@ public class LlmGatewayAutoConfiguration {
                     ? new InMemoryTenantQuotaGuard(
                         props.getQuotaMaxRequestsPerWindow(), props.getQuotaWindowSeconds() * 1000L)
                     : null);
-    return new LlmGatewayPolicies(redactor, outputValidator, responseCache, quotaGuard);
+    // 提示注入防护默认关闭（启发式误伤风险），启用方以 @Bean 覆盖为语义级护栏亦可
+    PromptInjectionGuard guard =
+        injectionGuard.getIfAvailable(
+            () -> props.isPromptInjectionGuardEnabled() ? new HeuristicInjectionGuard() : null);
+    return new LlmGatewayPolicies(redactor, outputValidator, responseCache, quotaGuard, guard);
   }
 
   @Bean

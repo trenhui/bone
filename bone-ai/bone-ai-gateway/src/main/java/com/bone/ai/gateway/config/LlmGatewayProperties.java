@@ -30,6 +30,14 @@ public class LlmGatewayProperties {
   private boolean outputValidationEnabled = true;
 
   /**
+   * 提示注入防护开关（OWASP LLM01，默认关闭）。
+   *
+   * <p>默认关闭是刻意：默认实现为关键词启发式，保险条款等业务文本里偶含「忽略 / 系统提示」等词会误伤；需要语义级检测时 以 {@code @Bean
+   * PromptInjectionGuard} 覆盖为模型分类器 / 云端护栏（属外部依赖，AGENTS L3）。
+   */
+  private boolean promptInjectionGuardEnabled;
+
+  /**
    * 精确响应缓存：条数上限（0 = 关闭缓存，默认关闭）。
    *
    * <p>默认关闭是保守选择：开启后同一确定性请求会复用上次模型输出，不产生新的证据/计量事件—— 对「每次调用都要留痕」的审计口径是可见的行为变化，应由部署方显式开启并同步调整审计预期。
