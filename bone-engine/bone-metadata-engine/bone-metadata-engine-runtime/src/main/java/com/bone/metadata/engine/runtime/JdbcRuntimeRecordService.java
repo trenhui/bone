@@ -565,7 +565,7 @@ public class JdbcRuntimeRecordService {
    * <strong>状态机唯一合法推进入口</strong>（RC-008）：更新受保护的状态字段，并落记录级审计。
    *
    * <p>与 {@link #update} 的区别：{@code update} 对 {@code state_field} 一律 422； 本方法只被 {@code
-   * RuntimeActionService} 在校验过转移矩阵后调用，跳过保护并记录 {@code from -> to}。
+   * RuntimeActionApplicationService} 在校验过转移矩阵后调用，跳过保护并记录 {@code from -> to}。
    * 这样「能改状态字段的代码路径」在全局只有一处，审计与转移校验无法被绕过。
    *
    * @param expectedVersion 可选；资金类动作建议带（端到端 If-Match）

@@ -36,6 +36,7 @@ SLICE_ALLOWLIST = {
     os.path.join("pages", "RuntimeDataManagement.tsx"),  # recentForRuntime＝listRecent() 近期访问列表最多 5 条，UI 展示截断，非列投影
     os.path.join("components", "uiSchema", "UiSchemaDesigner.tsx"),  # undo/redo future 历史栈缓冲（保留最近 50 个状态），UI 历史缓冲截断，非字段/列投影
     os.path.join("components", "uiSchema", "snapshots.ts"),  # saveSnap 本地快照环形缓冲（保留最近 30 版，防 localStorage 配额耗尽），存储缓冲截断，非字段/列投影
+    os.path.join("components", "uiSchema", "BasePanel.tsx"),  # 合并预览摘要：autoMerged/conflicts 最多列 20 个（"N 项：a、b、… 等"），UI 展示截断，非字段/列投影
     os.path.join("utils", "uiSchemaChangePreview.ts"),  # 变更预告摘要：新增分区字段名最多列 4 个（"N 个字段：a、b、c、d 等"），UI 展示截断，非字段/列投影
     os.path.join("components", "InterfaceTab.tsx"),  # 契约外字段提示摘要：最多列 5 个字段名（"当前有 N 个：… 等"），UI 展示截断，非字段/列投影
     os.path.join("utils", "onboarding.test.ts"),  # 测试夹具：精选列裁剪（6 列取 3/4）构造里程碑场景，测试数据构造，非生产字段/列投影

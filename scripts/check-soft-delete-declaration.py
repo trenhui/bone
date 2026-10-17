@@ -43,7 +43,8 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = "doc/architecture/soft-delete-declaration-baseline.json"
 INIT_SQL = "bone-init.sql"
-JAVA_ROOTS = ["bone-platform", "bone-engine", "bone-framework", "bone-tool"]
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+JAVA_ROOTS = ["bone-ai", "bone-platform", "bone-engine", "bone-framework", "bone-tool"]
 
 # 这些基类（及其子类）自带 @Deleted deleted 字段 ⇒ deleteById 走软删
 SOFT_DELETE_BASES = {"AbstractEntity", "TenantAbstractEntity", "SoftDeletable"}

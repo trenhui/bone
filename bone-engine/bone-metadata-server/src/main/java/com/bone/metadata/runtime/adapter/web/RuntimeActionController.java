@@ -4,8 +4,8 @@ import com.bone.core.model.ApiResponse;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.runtime.application.RuntimeAccessGuard;
-import com.bone.metadata.runtime.application.RuntimeActionMetaService;
-import com.bone.metadata.runtime.application.RuntimeActionService;
+import com.bone.metadata.runtime.application.RuntimeActionApplicationService;
+import com.bone.metadata.runtime.application.RuntimeActionMetaApplicationService;
 import com.bone.metadata.runtime.domain.RuntimeActionDef;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RuntimeActionController {
 
-  private final RuntimeActionService actionService;
-  private final RuntimeActionMetaService metaService;
+  private final RuntimeActionApplicationService actionService;
+  private final RuntimeActionMetaApplicationService metaService;
   private final RuntimeAccessGuard accessGuard;
   private final TenantProvider tenantProvider;
 
@@ -46,8 +46,8 @@ public class RuntimeActionController {
    * <p><b>注解层为何保持粗码 {@code metadata:runtime:write}</b>（其余运行时端点均用
    * {@code @runtimeAccessGuard.canXxx(#entityCode)} 动态判据）：动作级授权判据是 {@code canInvoke(def)}，其形状（逃逸要细码
    * / 非逃逸要实体写或细码）<strong>没有单一布尔简化形式</strong>；在注解层用 {@code canRead}/{@code canWrite}
-   * 预判都会误伤「仅持有动作细码的独立资金授权面」（无实体读写的审批人）。故注解只表达「能进运行时写域」，动作级判定全部下沉 {@code RuntimeActionService}（def
-   * 感知）。ArchitectureTest 注解口径门禁对本方法登记豁免。
+   * 预判都会误伤「仅持有动作细码的独立资金授权面」（无实体读写的审批人）。故注解只表达「能进运行时写域」，动作级判定全部下沉 {@code
+   * RuntimeActionApplicationService}（def 感知）。ArchitectureTest 注解口径门禁对本方法登记豁免。
    */
   @PostMapping("/records/{id}/actions/{actionCode}")
   @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
@@ -59,7 +59,7 @@ public class RuntimeActionController {
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestBody(required = false) Map<String, Object> body) {
     long tenantId = tenantProvider.currentTenantId();
-    // 动作授权统一在 RuntimeActionService 内做（def 感知，Runtime §4.6 门禁）：
+    // 动作授权统一在 RuntimeActionApplicationService 内做（def 感知，Runtime §4.6 门禁）：
     // 控制器不解析 def，无法区分逃逸/非逃逸——在控制器按「实体级写」预判会让
     // 逃逸动作的细码持有者（无实体写时的独立资金授权面）先被 403，判定顺序冲突。
     Map<String, Object> params =

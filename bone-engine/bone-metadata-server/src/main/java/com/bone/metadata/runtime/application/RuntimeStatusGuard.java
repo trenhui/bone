@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
  *       流转。
  * </ul>
  *
- * <p>动作执行链路（{@link RuntimeActionService}）在 application 层直接调用 {@code
+ * <p>动作执行链路（{@link RuntimeActionApplicationService}）在 application 层直接调用 {@code
  * JdbcRuntimeRecordService.update} 流转状态，不经过本守卫（守卫挂在 adapter 的 HTTP 入口）， 因此合法流转不受影响 ——
  * 这正是「只有动作端点能改状态」的边界。
  */

@@ -24,7 +24,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 BASELINE = REPO / "doc/architecture/controller-response-baseline.json"
 
-SCAN_ROOTS = ["bone-platform", "bone-engine", "bone-blueprint", "bone-framework"]
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+SCAN_ROOTS = ["bone-ai", "bone-platform", "bone-engine", "bone-blueprint", "bone-framework"]
 
 # Controller 端点方法：public + 返回类型 + 方法名 + (
 METHOD_RE = re.compile(r"public\s+(?!class\b)([\w<>,\[\]\.\s]+?)\s+(\w+)\s*\(", re.S)

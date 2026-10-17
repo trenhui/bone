@@ -156,7 +156,7 @@ public class ArchitectureTest {
   // 粗码放行会让「注解层已授权」的假象掩盖 Guard 的实体级判定，两套口径必漂移
   // （RuntimeAccessGuard javadoc §通配论述）。豁免清单仅 RuntimeActionController.invoke——
   // 动作级判据 canInvoke(def) 无单一布尔简化形式，注解预判会误伤仅持细码的独立资金授权面，
-  // 判定全部下沉 RuntimeActionService（该方法 javadoc 有完整论证）。
+  // 判定全部下沉 RuntimeActionApplicationService（该方法 javadoc 有完整论证）。
   private static final Set<String> RUNTIME_PREAUTHORIZE_EXEMPT =
       Set.of("RuntimeActionController.invoke");
 
@@ -206,7 +206,7 @@ public class ArchitectureTest {
   // archunit_store 中该规则冻结文件为空（从未冻结任何违规），谓词只查 ..application.. 包，
   // Jdbc 服务因位于 engine.runtime 包而根本不在谓词范围内——门禁不是「例外登记」而是「视而不见」。
   // 收敛后横切判定（currentOperator/rowOwnerId/状态机守卫/ID 生成）唯一真源在
-  // RuntimeRecordApplicationService（与 RuntimeActionService 同构）。
+  // RuntimeRecordApplicationService（与 RuntimeActionApplicationService 同构）。
   // 谓词边界：RuntimeEntityCatalog（实体目录查询接口）不中招——它是无副作用查询端口，
   // 非持久化编排服务；未来若其长出写能力，应一并收敛并收紧本规则。
   @ArchTest

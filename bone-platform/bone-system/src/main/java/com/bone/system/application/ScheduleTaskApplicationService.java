@@ -19,6 +19,7 @@ import com.bone.system.domain.repository.ScheduleTaskRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,7 @@ public class ScheduleTaskApplicationService {
   @Transactional
   public Long create(CreateScheduleTaskCommand command) {
     TaskStatus status = parseTaskStatus(command.getStatus());
+    validateCron(command.getCron());
     ScheduleTask task =
         ScheduleTask.create(
             DistributedIdGenerator.generateLongId(),
@@ -74,6 +76,7 @@ public class ScheduleTaskApplicationService {
 
   @Transactional
   public void update(UpdateScheduleTaskCommand command) {
+    validateCron(command.getCron());
     ScheduleTask task = requireTask(command.getId());
     task.update(command.getName(), command.getCron(), command.getHandler());
     scheduleTaskRepository.save(task);
@@ -159,6 +162,17 @@ public class ScheduleTaskApplicationService {
       throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_NOT_FOUND, id);
     }
     return task;
+  }
+
+  private static void validateCron(String cron) {
+    if (cron == null || cron.isBlank()) {
+      throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_CRON_INVALID, "CRON 表达式不能为空");
+    }
+    try {
+      CronExpression.parse(cron);
+    } catch (IllegalArgumentException ex) {
+      throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_CRON_INVALID, cron);
+    }
   }
 
   private static TaskStatus parseTaskStatus(String value) {

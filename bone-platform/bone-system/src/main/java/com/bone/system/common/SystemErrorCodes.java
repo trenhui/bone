@@ -125,6 +125,9 @@ public final class SystemErrorCodes {
   /** 任务状态非法（不是合法的 TaskStatus 取值）。 */
   public static final String SCHEDULE_TASK_STATUS_INVALID = "SYS_SCHEDULE_TASK_STATUS_INVALID";
 
+  /** CRON 表达式语法无效（注册调度器前校验）。 */
+  public static final String SCHEDULE_TASK_CRON_INVALID = "SYS_SCHEDULE_TASK_CRON_INVALID";
+
   /** 任务处理器 bean 不存在或未实现 {@code TaskHandler}（手动执行时发现）。 */
   public static final String SCHEDULE_TASK_HANDLER_NOT_FOUND =
       "SYS_SCHEDULE_TASK_HANDLER_NOT_FOUND";

@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 
 /** 动作元数据查询：供前端按实体 / 按当前状态列出可用动作，渲染操作按钮。 */
 @Service
-public class RuntimeActionMetaService {
+public class RuntimeActionMetaApplicationService {
 
   private final RuntimeActionDefRepository actionDefRepository;
 
-  public RuntimeActionMetaService(RuntimeActionDefRepository actionDefRepository) {
+  public RuntimeActionMetaApplicationService(RuntimeActionDefRepository actionDefRepository) {
     this.actionDefRepository = actionDefRepository;
   }
 

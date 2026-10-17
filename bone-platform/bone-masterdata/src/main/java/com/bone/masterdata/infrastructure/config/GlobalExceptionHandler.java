@@ -8,6 +8,8 @@ import com.bone.core.exception.SystemException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.core.model.ProblemDetails;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -103,13 +105,67 @@ public class GlobalExceptionHandler {
   }
 
   /**
+   * Bean Validation 失败（{@code @Valid} 未过）→ 400，且只说「哪个字段不合规」。
+   *
+   * <p><b>为什么必须单独声明</b>：此前它与缺参/类型不匹配共用一个 {@code "请求参数不合法: " + e.getMessage()} 分支。 {@code
+   * MethodArgumentNotValidException#getMessage()} 是 Spring 的内部诊断文本，形如：
+   *
+   * <pre>
+   * Validation failed for argument [1] in public com.bone.core.model.ApiResponse&lt;java.lang.Long&gt;
+   * com.bone.masterdata.adapter.web.controller.MasterDataFieldController.create(java.lang.Long,
+   * com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq) with 2 errors: [...]
+   * </pre>
+   *
+   * <p>把它直接拼进 {@code message} 有两个后果（2026-10-16 全模块联调实证，POST
+   * /api/v1/masterdata/entities/{id}/fields、POST /api/v1/masterdata/records/entity/{id}）：
+   *
+   * <ol>
+   *   <li><b>泄漏实现细节</b>：控制器全限定名、方法签名、参数索引被原样返回给调用方（API 规范 §2 要求 message 面向人、字段错误走结构化 {@code
+   *       errors[]}）；
+   *   <li><b>对用户无用</b>：真正有用的「字段 X 不能为空」被埋在这段几百字符的 Java 签名之后， 前端 toast 截断后用户只看到一串包名。
+   * </ol>
+   *
+   * <p>这里改为取 BindingResult 的首个字段错误作为 message，并把全部字段错误放进 {@code errors[]}， 与 bone-web 全局处理器 {@code
+   * methodArgumentNotValidExceptionExceptionHandler} 同口径。
+   */
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException e) {
+    log.warn("请求参数校验失败: {}", e.getMessage());
+    org.springframework.validation.FieldError fe = e.getBindingResult().getFieldError();
+    String detail = fe != null ? fe.getDefaultMessage() : "参数校验未通过";
+    List<ProblemDetail.FieldError> fieldErrors = toFieldErrors(e.getBindingResult());
+    ProblemDetail pd = ProblemDetails.of(CommonErrorCodes.VALIDATION_FAILED, 400, detail);
+    pd.setErrors(fieldErrors);
+    return ResponseEntity.status(400).body(ApiResponse.error(400, "请求参数不正确:" + detail, pd));
+  }
+
+  private static List<ProblemDetail.FieldError> toFieldErrors(
+      org.springframework.validation.BindingResult bindingResult) {
+    if (bindingResult == null) {
+      return List.of();
+    }
+    List<ProblemDetail.FieldError> errors = new ArrayList<>();
+    for (org.springframework.validation.FieldError fe : bindingResult.getFieldErrors()) {
+      ProblemDetail.FieldError item = new ProblemDetail.FieldError();
+      item.setField(fe.getField());
+      item.setMessage(fe.getDefaultMessage());
+      item.setRejectedValue(fe.getRejectedValue());
+      errors.add(item);
+    }
+    return errors;
+  }
+
+  /**
    * 请求入参不合法 → 400。
    *
-   * <p>Bean Validation 失败、缺参、类型不匹配、非法参数都属于客户端错误； 若缺失这些分支，会被
-   * {@code @ExceptionHandler(Exception.class)} 兜底成 500，使客户端错误与服务端故障无法区分。
+   * <p>缺参、类型不匹配、非法参数都属于客户端错误； 若缺失这些分支，会被 {@code @ExceptionHandler(Exception.class)} 兜底成
+   * 500，使客户端错误与服务端故障无法区分。
+   *
+   * <p>注：Bean Validation 失败已由 {@link #handleMethodArgumentNotValid} 单独接管， 不再走本分支（否则会吐出 Spring
+   * 内部方法签名，见该方法注释）。
    */
   @ExceptionHandler({
-    MethodArgumentNotValidException.class,
     MissingServletRequestParameterException.class,
     MethodArgumentTypeMismatchException.class,
     IllegalArgumentException.class

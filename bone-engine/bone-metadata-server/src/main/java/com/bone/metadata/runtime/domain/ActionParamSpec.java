@@ -6,8 +6,8 @@ import java.util.List;
  * 动作入参声明（由 {@code meta_entity_action_def.params_schema} 的数组元素映射）。
  *
  * <p>前端据 {@code type}/{@code required}/{@code values} 渲染控件并校验必填； 后端 {@code
- * RuntimeActionService.validateParams} 据 {@code type}/{@code min}/{@code max}/{@code pattern}/
- * {@code values} 做类型与约束校验（Hasura Actions inputSchema 语义：平台统一校验入参， Handler 不再各自校验）。
+ * RuntimeActionApplicationService.validateParams} 据 {@code type}/{@code min}/{@code max}/{@code
+ * pattern}/ {@code values} 做类型与约束校验（Hasura Actions inputSchema 语义：平台统一校验入参， Handler 不再各自校验）。
  *
  * <p>支持类型：{@code string} / {@code number} / {@code integer} / {@code boolean} / {@code enum}；
  * 约束：{@code min}（number/integer 最小值）、{@code max}（number/integer 最大值）、 {@code pattern}（string

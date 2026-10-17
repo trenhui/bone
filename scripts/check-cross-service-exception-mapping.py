@@ -116,7 +116,8 @@ def strip_comments(src: str) -> str:
     """剥掉块注释与行注释，**保留行数**（用等量空行替换，便于行号仍可读）。"""
     src = _BLOCK_COMMENT_RE.sub(lambda m: "\n" * m.group(0).count("\n"), src)
     return _LINE_COMMENT_RE.sub("", src)
-SCAN_ROOTS = ["bone-framework", "bone-platform", "bone-engine", "bone-blueprint"]
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+SCAN_ROOTS = ["bone-ai", "bone-framework", "bone-platform", "bone-engine", "bone-blueprint"]
 
 
 def module_of(path: Path) -> str:

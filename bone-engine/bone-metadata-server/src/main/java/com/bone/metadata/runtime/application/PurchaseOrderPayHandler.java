@@ -20,7 +20,8 @@ import org.springframework.stereotype.Service;
  *
  * <ol>
  *   <li><b>入参契约由平台管</b>：{@code channel}/{@code payAmount} 的必填与取值域由动作定义 {@code params_schema}
- *       声明、{@code RuntimeActionService#validateParams} 统一校验（Hasura Actions inputSchema 语义）；
+ *       声明、{@code RuntimeActionApplicationService#validateParams} 统一校验（Hasura Actions inputSchema
+ *       语义）；
  *   <li><b>此处只补一道守卫</b>：建模者漏声明 {@code params_schema} 时，直接读空值会 NPE→500（内部错误，
  *       调用方看不出是自己漏传），故显式把「漏传必填入参」表述成可诊断的 400；
  *   <li><b>业务语义</b>：模拟调用外部付款网关，生成付款流水号与会计凭证号，<b>不真正出金</b>。
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Service;
  * {@code when: status eq RECEIVED} 门控），由 {@link UiSchemaRuleEnforcer} 在动作前强制——
  * 处理器<b>不重复校验</b>，避免「配置改了、代码没改」的双真源漂移。
  *
- * <p><b>幂等</b>：由 {@code RuntimeActionService} 按 {@code Idempotency-Key} 去重 + 执行日志孤儿态保障，
+ * <p><b>幂等</b>：由 {@code RuntimeActionApplicationService} 按 {@code Idempotency-Key} 去重 + 执行日志孤儿态保障，
  * 故本方法可放心假设「被调用即代表需要执行一次付款」。
  */
 @Service("purchaseOrderPayHandler")

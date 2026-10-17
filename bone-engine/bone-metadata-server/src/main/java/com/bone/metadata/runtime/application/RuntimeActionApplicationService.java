@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
-public class RuntimeActionService {
+public class RuntimeActionApplicationService {
 
   private final JdbcRuntimeRecordService runtimeRecordService;
   private final RuntimeActionDefRepository actionDefRepository;
@@ -43,7 +43,7 @@ public class RuntimeActionService {
   private final RuntimeAccessGuard accessGuard;
   private final UiSchemaRuleEnforcer uiSchemaRuleEnforcer;
 
-  public RuntimeActionService(
+  public RuntimeActionApplicationService(
       JdbcRuntimeRecordService runtimeRecordService,
       RuntimeActionDefRepository actionDefRepository,
       RuntimeActionExecutionRepository executionRepository,

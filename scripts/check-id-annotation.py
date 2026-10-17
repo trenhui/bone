@@ -54,7 +54,8 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-JAVA_ROOTS = ["bone-platform", "bone-engine", "bone-framework", "bone-tool"]
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
+JAVA_ROOTS = ["bone-ai", "bone-platform", "bone-engine", "bone-framework", "bone-tool"]
 SKIP_DIRS = {"target", "node_modules", "build", "generated-code", ".git", "__pycache__"}
 
 # 只认 bone-core 的 @Id（本仓无 jakarta/javax.persistence.Id，来源唯一）。

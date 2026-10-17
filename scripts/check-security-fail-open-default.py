@@ -95,7 +95,9 @@ SCAN_GLOBS = (
 
 # R4：Java 侧的放行开关兜底默认值。范围是全部业务模块的 main/java ——
 # 刻意不只扫 extension-studio：新模块引入同类开关时应当自动纳入判据。
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
 JAVA_ROOTS = (
+    "bone-ai",
     "bone-platform",
     "bone-engine",
     "bone-framework",

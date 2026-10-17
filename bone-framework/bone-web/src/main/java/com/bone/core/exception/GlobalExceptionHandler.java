@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -132,6 +133,9 @@ public class GlobalExceptionHandler {
       return methodArgumentTypeMismatchExceptionHandler((MethodArgumentTypeMismatchException) ex)
           .getBody();
     }
+    if (ex instanceof HttpMessageNotReadableException) {
+      return httpMessageNotReadableExceptionHandler((HttpMessageNotReadableException) ex).getBody();
+    }
     if (ex instanceof MethodArgumentNotValidException) {
       return methodArgumentNotValidExceptionExceptionHandler((MethodArgumentNotValidException) ex)
           .getBody();
@@ -230,6 +234,55 @@ public class GlobalExceptionHandler {
         CommonErrorCodes.VALIDATION_FAILED,
         String.format("请求参数不正确:%s", fieldError.getDefaultMessage()),
         toFieldErrors(ex.getBindingResult()));
+  }
+
+  /**
+   * 处理请求体反序列化失败（Jackson 解析错误 / 类型不匹配）。
+   *
+   * <p><b>为什么必须显式接</b>：{@code @RequestBody} 的 JSON 里某个字段类型对不上（如 Long 字段收到 {@code "E2E436362"}）会抛
+   * {@code HttpMessageNotReadableException}，此前没有任何分支接管 ⇒ 冒泡到
+   * {@code @ExceptionHandler(Exception.class)} 兜底，被翻译成 <b>HTTP 500 COMMON_INTERNAL_ERROR</b>。
+   *
+   * <p>后果（2026-10-16 全模块联调实证，POST /api/v1/orders、POST /api/v1/shipments）：
+   *
+   * <ol>
+   *   <li>纯客户端笔误被报成「系统异常」，前端 toast 只显示「系统异常（COMMON_INTERNAL_ERROR）」， 用户无从知道是自己填错了哪个字段；
+   *   <li>5xx 会被监控计入服务端 SLI 并触发重试/告警，而重试永远无用（请求体没变）；
+   *   <li>真实的服务端故障被淹没在大量「假 500」里，失真。
+   * </ol>
+   *
+   * <p>与 {@link #methodArgumentTypeMismatchExceptionHandler} 同语义：入参形态错误一律 400 + {@code
+   * VALIDATION_FAILED}，并把 Jackson 的字段路径尽量点出来（不脱敏——这是用户自己发的报文，非系统内部信息）。
+   */
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiResponse<?>> httpMessageNotReadableExceptionHandler(
+      HttpMessageNotReadableException ex) {
+    log.warn("[httpMessageNotReadableExceptionHandler] 请求体反序列化失败: {}", ex.getMessage());
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求体格式不正确:%s", rootCauseMessage(ex)));
+  }
+
+  /**
+   * 取最深一条 Jackson 根因消息，剥掉 {@code JSON parse error:} 之前的多层包装。
+   *
+   * <p>Jackson 的原始消息形如 {@code Cannot deserialize value of type `java.lang.Long` from String
+   * "E2E436362": not a valid `java.lang.Long` value}，已经足够定位字段与期望类型；而 Spring 的外层包装会再叠 {@code JSON
+   * parse error: ...; nested exception is ...}，重复且长。
+   */
+  private static String rootCauseMessage(Throwable ex) {
+    Throwable cur = ex;
+    while (cur.getCause() != null && cur.getCause() != cur) {
+      cur = cur.getCause();
+    }
+    String msg = cur.getMessage();
+    if (msg == null || msg.isBlank()) {
+      msg = ex.getMessage();
+    }
+    // 尾部常带 " at [Source: ...]" 之类的行号噪音，截断到首个换行
+    int nl = msg.indexOf('\n');
+    return (nl > 0 ? msg.substring(0, nl) : msg).trim();
   }
 
   /** 处理 Validator 校验不通过产生的异常 */

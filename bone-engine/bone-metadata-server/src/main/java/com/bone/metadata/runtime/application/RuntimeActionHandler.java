@@ -6,9 +6,9 @@ import java.util.Map;
 /**
  * 逃逸动作处理器（SPI）。
  *
- * <p>状态机边的「状态流转」由平台统一负责（{@code RuntimeActionService} 调 {@code JdbcRuntimeRecordService.update} 写
- * {@code to_status}），本接口只负责<strong>副作用</strong> （如调外部支付网关、发消息）。平台据此把「普通状态推进」与「有副作用的外部调用」彻底分离，
- * 逃逸动作可独立做半事务/补偿/幂等治理（Runtime 数据面设计 §4.8.1）。
+ * <p>状态机边的「状态流转」由平台统一负责（{@code RuntimeActionApplicationService} 调 {@code
+ * JdbcRuntimeRecordService.update} 写 {@code to_status}），本接口只负责<strong>副作用</strong>
+ * （如调外部支付网关、发消息）。平台据此把「普通状态推进」与「有副作用的外部调用」彻底分离， 逃逸动作可独立做半事务/补偿/幂等治理（Runtime 数据面设计 §4.8.1）。
  */
 public interface RuntimeActionHandler {
 

@@ -19,11 +19,12 @@ import org.springframework.stereotype.Service;
  * <p><b>为什么存在</b>：原 {@code RuntimeRecordController} / {@code RuntimeRelationController} 各自直注 {@link
  * JdbcRuntimeRecordService} 并内联横切（{@code currentOperator} 在两个控制器各复制一份、行级 ACL owner 判定、状态机守卫调用、ID
  * 生成）。横切复制的归宿是漂移——两份 {@code currentOperator} 改其一即静默改变 另一处的审计写入口径。本类把「记录编排 + 横切判定」收敛为 application
- * 层唯一入口，控制器只留 HTTP 适配 （参数绑定、ETag/If-Match 头、幂等重放、ResponseEntity 组装），与 {@link RuntimeActionService}
- * 同构。
+ * 层唯一入口，控制器只留 HTTP 适配 （参数绑定、ETag/If-Match 头、幂等重放、ResponseEntity 组装），与 {@link
+ * RuntimeActionApplicationService} 同构。
  *
- * <p><b>与 RuntimeActionService 的分工</b>：本类管「单表记录 CRUD + 横切判定」；动作（状态机流转）在 {@code
- * RuntimeActionService}。两者共享同一个 {@code JdbcRuntimeRecordService} 实例（Spring 单例）， 不引入第二份持久化路径。
+ * <p><b>与 RuntimeActionApplicationService 的分工</b>：本类管「单表记录 CRUD + 横切判定」；动作（状态机流转）在 {@code
+ * RuntimeActionApplicationService}。两者共享同一个 {@code JdbcRuntimeRecordService} 实例（Spring 单例），
+ * 不引入第二份持久化路径。
  */
 @Service
 @RequiredArgsConstructor

@@ -87,7 +87,9 @@ def git_grep(pattern: str, pathspec: str) -> tuple[list[str], bool]:
 
 
 # 源码扫描根目录
+# 2026-10-17：纳入 bone-ai（模块已随 6d4169e3 入库；此前所有门禁漏扫该模块）。
 SOURCE_ROOTS = [
+    "bone-ai",
     "bone-platform",
     "bone-engine",
     "bone-blueprint",
