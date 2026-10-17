@@ -70,6 +70,10 @@ public class OrchestrationApplicationService {
       try {
         llmResponse = llmGatewayService.invoke(request.llmRequest().withTraceId(traceId));
       } catch (RuntimeException e) {
+        // 编程错误（空指针 / 参数非法）不降级：吞掉只会把「真 bug」伪装成「模型不可用」，掩盖故障根因
+        if (e instanceof NullPointerException || e instanceof IllegalArgumentException) {
+          throw e;
+        }
         // 架构红线：AI 推理失败不得阻断业务流程——记录降级事实，交由闸门转人工 / 确定性路径
         aiError = e.getClass().getSimpleName() + ": " + e.getMessage();
         log.warn(
