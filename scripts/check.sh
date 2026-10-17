@@ -503,6 +503,17 @@ if ! python3 scripts/check-three-entry-boundaries.py; then
   exit_code=1
 fi
 
+# 2026-10-17 接入：门禁脚本自身单元测试（防门禁回归）。此前 check-archunit-freeze-baseline.py
+# 与 check-freeze-ledger.py 零单测，其判据一旦回归无人知晓；scripts/tests/ 下表征测试用
+# importlib 加载真实门禁脚本、monkeypatch 模块级 REPO/LEDGER 到临时目录，锁定 R1/R2/R3 与
+# R4 判据。接进 pre-commit 后，任何门禁脚本回归都会在提交时被本地自检拦截——门禁本身不再是
+# "无人看护的守卫"。
+echo -e "${YELLOW}[38/38] 门禁脚本自身单元测试（防门禁回归 · scripts/tests）...${RESET}"
+if ! python3 -m unittest discover -s scripts/tests -p 'test_*.py' --verbose 2>&1; then
+  echo -e "${RED}❌ 门禁自身单元测试失败（门禁脚本可能已回归，详见上方 traceback）${RESET}"
+  exit_code=1
+fi
+
 # 结果处理 + 熔断计数
 if [ "$exit_code" -ne 0 ]; then
   count=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo 0)
