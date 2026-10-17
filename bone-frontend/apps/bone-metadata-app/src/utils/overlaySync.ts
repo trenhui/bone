@@ -1,28 +1,30 @@
 import { metadataUiOverlayApi } from '../services/metadataApi';
-import { UI_OVERLAY_VERSION, loadOverlay, saveOverlay, clearOverlay, type UiOverlay } from './columnProjection';
+import { loadOverlay, saveOverlay, clearOverlay, toBundle, type UiOverlayBundle } from './columnProjection';
 
 /**
- * 界面列投影覆盖的「服务端优先」同步层（0042 · P2-④ 服务端化）。
+ * 界面列投影覆盖的「服务端优先」同步层（0042 · P2-④ 服务端化；v3 多视图 bundle）。
  *
  * <p><b>为什么不是直接替换 localStorage</b>：PRD v0.32 §12.2 D2 的 localStorage 键仍有价值——
  * ① 服务端未配置时它就是唯一真源（升级过渡期）；② 服务端请求失败（弱网/未登录直连）时它是兜底，
  * 保证「界面 Tab 打不开也不白屏」。hydrate 三级降级：
  *
  * <pre>
- *   服务端覆盖（version 校验通过） → 本地缓存 → null（调用方再 defaultOverlay）
+ *   服务端覆盖（toBundle 归一通过） → 本地缓存 → null（调用方再 defaultBundle）
  * </pre>
  *
  * <p>写路径对称：先写本地缓存（UI 不等待网络），再异步推服务端（失败静默 —— 偏好丢失的代价
  * 远小于阻塞一次列设置交互；下次 hydrate 时服务端旧值会覆盖本地新值，属可接受最终一致）。
  */
 
-/** 把服务端返回的 JSON 字符串解析为 UiOverlay；版本不符/解析失败按「无覆盖」处理 */
-function parseServerOverlay(json: string | null | undefined): UiOverlay | null {
+/**
+ * 把服务端返回的 JSON 字符串解析为 bundle。
+ * v2 扁平存量（{version:2, overrides, density}）由 toBundle 无损迁移为单视图 bundle——
+ * 升级到多视图不丢任何人已有的偏好；v1/未知结构按「无覆盖」处理。
+ */
+function parseServerOverlay(json: string | null | undefined): UiOverlayBundle | null {
   if (!json) return null;
   try {
-    const parsed = JSON.parse(json) as UiOverlay;
-    if (parsed.version !== UI_OVERLAY_VERSION) return null;
-    return parsed;
+    return toBundle(JSON.parse(json));
   } catch {
     return null;
   }
@@ -32,9 +34,9 @@ function parseServerOverlay(json: string | null | undefined): UiOverlay | null {
  * 读覆盖：服务端优先 → 本地缓存兜底 → null。
  *
  * @param entityCode 实体编码
- * @returns 生效覆盖；无任何配置时 null（调用方按 defaultOverlay 渲染）
+ * @returns 生效 bundle；无任何配置时 null（调用方按 defaultBundle 渲染）
  */
-export async function fetchOverlay(entityCode: string): Promise<UiOverlay | null> {
+export async function fetchOverlay(entityCode: string): Promise<UiOverlayBundle | null> {
   try {
     const res = await metadataUiOverlayApi.get(entityCode);
     if (res.code === 200) {
@@ -53,13 +55,13 @@ export async function fetchOverlay(entityCode: string): Promise<UiOverlay | null
 /**
  * 保存覆盖：本地缓存立即写（乐观 UI），服务端异步推。
  *
- * <p>不 await 服务端结果：列设置是高频微交互（切换可见性/改名/排序），
+ * <p>不 await 服务端结果：列设置是高频微交互（切换可见性/改名/排序/切视图），
  * 每次等一轮往返会让 UI 发涩。失败时本地缓存仍在，用户无感知；
  * 极端情况（服务端持久化失败且用户换设备）才丢偏好，可接受。
  */
-export function persistOverlay(entityCode: string, overlay: UiOverlay): void {
-  saveOverlay(entityCode, overlay);
-  void metadataUiOverlayApi.save(entityCode, overlay).catch(() => {
+export function persistOverlay(entityCode: string, bundle: UiOverlayBundle): void {
+  saveOverlay(entityCode, bundle);
+  void metadataUiOverlayApi.save(entityCode, bundle).catch(() => {
     /* 离线容错：本地缓存已写，下次 hydrate 时以服务端为准 */
   });
 }

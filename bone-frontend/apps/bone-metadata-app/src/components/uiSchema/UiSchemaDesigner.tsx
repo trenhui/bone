@@ -18,7 +18,7 @@ import {
 import {
   CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, EyeOutlined, FileTextOutlined, FullscreenExitOutlined,
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
-  ReloadOutlined, SaveOutlined, ThunderboltOutlined, UndoOutlined,
+  ReloadOutlined, SaveOutlined, ThunderboltOutlined, UndoOutlined, UserOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -66,6 +66,13 @@ interface Props {
    */
   onGoPublish?: () => void;
   /**
+   * 前往实体详情「列表显示」页签（由 EntityDetail 提供 setOuterTab('ui')）。
+   * 两层闭环的反向一跳：偏好层→设计器早有引导（「去加入」），设计器→偏好层
+   * 此前缺失——日常改契约的用户想顺手调个人显隐/密度/命名视图时没有入口。
+   * 没有该回调时按钮不渲染（设计器被其他宿主复用时不假设外部结构）。
+   */
+  onGoPersonal?: () => void;
+  /**
    * 实体行策略声明的 rule name 集合（来自 entity.rowPolicies.rules[].name）。
    * 列表视图 dataScope.policyCode 下拉的真源——只引用不新造（协议 §3.2）。
    */
@@ -95,7 +102,7 @@ const TAB_LABEL: Record<TabKey, string> = {
  *   已完全部发布的实体再弹 0-1 引导是噪音；用户随时可从工具栏「帮助」重开。
  */
 
-export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, policyCodes = [] }: Props): React.ReactElement {
+export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, onGoPersonal, policyCodes = [] }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
   const [baseline, setBaseline] = useState<string>(''); // 已保存快照，用于判脏
@@ -800,6 +807,15 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
         <Tooltip title="命令面板（Cmd/Ctrl + K）">
           <Button size="small" icon={<MacCommandOutlined />} onClick={() => setCmdOpen(true)}>命令</Button>
         </Tooltip>
+
+        {/* 两层闭环反向入口：契约层 → 个人偏好层（仅自己可见的显隐/密度/命名视图） */}
+        {onGoPersonal && (
+          <Tooltip title="打开「列表显示」：调整仅自己可见的个人偏好（列显隐/密度/改名/个人视图）">
+            <Button size="small" icon={<UserOutlined />} onClick={onGoPersonal}>
+              个人偏好
+            </Button>
+          </Tooltip>
+        )}
 
         {/* 0-1 闭环：设计器内直达发布（脏态先保存）；未提供回调（其他宿主复用）时不渲染 */}
         {onGoPublish && publishState !== 'published' && (

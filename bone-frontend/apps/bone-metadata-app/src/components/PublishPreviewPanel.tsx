@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Button, Collapse, Modal, Space, Spin, Table, Tag, Typography, message,
+  Alert, Button, Collapse, Modal, Space, Spin, Table, Tag, Tooltip, Typography, message,
 } from 'antd';
-import { CopyOutlined, ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined, SafetyCertificateOutlined, SettingOutlined } from '@ant-design/icons';
+import { CopyOutlined, ExclamationCircleOutlined, CheckCircleOutlined, TableOutlined, PlusOutlined, SafetyCertificateOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { errorMessage, metadataEntityApi, metadataUiSchemaApi, type UiSchemaIssue } from '../services/metadataApi';
 import type { EntityValidationIssue, MetaField, PublishPreview, PendingAuthorization } from '../types';
@@ -55,6 +55,8 @@ interface Props {
   onOpenData?: () => void;
   /** 发布成功后「查看界面预览」回调（跳界面 Tab） */
   onViewInterface?: () => void;
+  /** 发布成功后「调个人偏好」回调（跳列表显示 Tab——契约生效后顺手配个人视图） */
+  onGoPersonal?: () => void;
   /** 发布成功后「继续加字段」回调（跳结构 Tab 并唤起字段向导） */
   onAddField?: () => void;
   /** 界面协议存在阻断错误时「去修复」回调（跳界面设计器 Tab） */
@@ -67,6 +69,7 @@ const PublishPreviewPanel: React.FC<Props> = ({
   onPublished,
   onOpenData,
   onViewInterface,
+  onGoPersonal,
   onAddField,
   onFixUiSchema,
 }) => {
@@ -234,6 +237,13 @@ const PublishPreviewPanel: React.FC<Props> = ({
                 <Button size="small" icon={<SettingOutlined />} onClick={onViewInterface}>
                   查看界面预览
                 </Button>
+              )}
+              {onGoPersonal && (
+                <Tooltip title="打开「列表显示」：调整仅自己可见的个人偏好（列显隐/密度/改名/个人视图）">
+                  <Button size="small" icon={<UserOutlined />} onClick={onGoPersonal}>
+                    调个人偏好
+                  </Button>
+                </Tooltip>
               )}
               {onOpenData && (
                 <Button size="small" type="primary" icon={<TableOutlined />} onClick={onOpenData}>

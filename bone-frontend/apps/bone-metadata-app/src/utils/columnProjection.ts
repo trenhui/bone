@@ -31,12 +31,53 @@ export interface UiOverlay {
   density?: 'comfortable' | 'compact';
 }
 
+/* ===================== 个人视图（多视图 bundle） ===================== */
+
+/**
+ * 命名个人视图（对标 Airtable / Notion personal views）：一套独立的
+ * 显隐/列序/改名/密度偏好。id 由前端生成（`v_` 前缀），name 用户可改。
+ */
+export interface PersonalView {
+  id: string;
+  name: string;
+  overrides: Record<string, ColumnOverride>;
+  density?: 'comfortable' | 'compact';
+}
+
+/**
+ * 个人偏好存储包（blob 级真源，v3）。
+ *
+ * <p>演进决策（无需后端迁移）：ui-overlay 后端存的是**不透明 JSON blob**
+ * （PUT 收 JsonNode、键由 JWT 推导 tenant/user），因此「单套偏好 → 多套命名视图」
+ * 完全在 blob 内完成：v2 扁平存量 `{version:2, overrides, density}` 由
+ * {@link toBundle} 无损包一层为单视图 bundle，用户偏好不丢。
+ *
+ * <p>投影层（projectColumns/projectRuntimeColumns）仍只认扁平 {@link UiOverlay}——
+ * 由 {@link activeOverlay} 解析生效视图，两处消费方（界面 Tab 预览 / 运行时数据表）
+ * 各自解析，避免把多视图复杂度渗进投影纯函数。
+ */
+export interface UiOverlayBundle {
+  /** 存储格式版本（bundle 结构）；与扁平 UiOverlay.version 是两代口径 */
+  version: number;
+  /** 生效视图 id；缺失/非法时按首个视图兜底（不抛异常） */
+  activeViewId: string;
+  views: PersonalView[];
+}
+
 /** 密度 → antd Table size（界面预览与数据表共用，避免两处口径漂移） */
 export function tableSizeOf(density?: 'comfortable' | 'compact'): 'middle' | 'small' {
   return density === 'compact' ? 'small' : 'middle';
 }
 
+/** 扁平覆盖结构版本（v2 存量口径；bundle 内的视图不再重复携带） */
 export const UI_OVERLAY_VERSION = 2;
+
+/** bundle 存储结构版本（v3：多视图） */
+export const UI_OVERLAY_BUNDLE_VERSION = 3;
+
+/** 默认视图 id / 名称（v2 存量迁移与新建实体的占位视图） */
+export const DEFAULT_VIEW_ID = 'default';
+export const DEFAULT_VIEW_NAME = '默认视图';
 
 /** UI 渲染契约（PRD §5.5）支持的字段类型；其余一律显式降级，禁静默渲染空控件 */
 export const SUPPORTED_RENDER_TYPES = new Set([
@@ -182,16 +223,143 @@ export function fieldsOutsideContract(fields: MetaField[], listView?: ListView |
   return fields.filter((f) => !inContract.has(f.code));
 }
 
+/** 新建实体的默认 bundle：单个「默认视图」，覆盖表 = 默认投影 */
+export function defaultBundle(fields: MetaField[]): UiOverlayBundle {
+  return {
+    version: UI_OVERLAY_BUNDLE_VERSION,
+    activeViewId: DEFAULT_VIEW_ID,
+    views: [{ id: DEFAULT_VIEW_ID, name: DEFAULT_VIEW_NAME, overrides: defaultOverlay(fields).overrides }],
+  };
+}
+
+/**
+ * 生效视图 → 扁平覆盖（投影层单一入口）。
+ * activeViewId 缺失/悬空/views 为空时按首个视图兜底——偏好数据损坏不应白屏。
+ */
+export function activeOverlay(bundle?: UiOverlayBundle | null): UiOverlay {
+  if (!bundle?.views?.length) return { version: UI_OVERLAY_VERSION, overrides: {} };
+  const v = bundle.views.find((x) => x.id === bundle.activeViewId) ?? bundle.views[0];
+  return { version: UI_OVERLAY_VERSION, overrides: v.overrides ?? {}, density: v.density };
+}
+
+/** 生效视图对象（UI 层管理当前视图用；无 views 时返回 null） */
+export function activeViewOf(bundle?: UiOverlayBundle | null): PersonalView | null {
+  if (!bundle?.views?.length) return null;
+  return bundle.views.find((x) => x.id === bundle.activeViewId) ?? bundle.views[0];
+}
+
+/**
+ * 存储形态归一（服务端 blob / 本地缓存共用）：
+ * - bundle v3：校验后原样采用（views 至少 1 个合法视图，activeViewId 悬空则纠偏）
+ * - v2 扁平存量 `{version:2, overrides, density}`：包一层为单视图 bundle（偏好无损迁移）
+ * - 其余（v1/未知结构/垃圾）：null（调用方按默认投影渲染）
+ */
+export function toBundle(parsed: unknown): UiOverlayBundle | null {
+  if (!parsed || typeof parsed !== 'object') return null;
+  const p = parsed as Record<string, unknown>;
+  if (Array.isArray(p.views)) {
+    const views = p.views.filter(
+      (v): v is PersonalView =>
+        !!v && typeof v === 'object'
+        && typeof (v as PersonalView).id === 'string'
+        && typeof (v as PersonalView).name === 'string'
+        && !!(v as PersonalView).overrides && typeof (v as PersonalView).overrides === 'object',
+    );
+    if (!views.length) return null;
+    const activeId =
+      typeof p.activeViewId === 'string' && views.some((v) => v.id === p.activeViewId)
+        ? (p.activeViewId as string)
+        : views[0].id;
+    return { version: UI_OVERLAY_BUNDLE_VERSION, activeViewId: activeId, views };
+  }
+  if (p.version === UI_OVERLAY_VERSION && p.overrides && typeof p.overrides === 'object') {
+    return {
+      version: UI_OVERLAY_BUNDLE_VERSION,
+      activeViewId: DEFAULT_VIEW_ID,
+      views: [
+        {
+          id: DEFAULT_VIEW_ID,
+          name: DEFAULT_VIEW_NAME,
+          overrides: p.overrides as Record<string, ColumnOverride>,
+          density: p.density as PersonalView['density'],
+        },
+      ],
+    };
+  }
+  return null;
+}
+
+/** 在生效视图上应用补丁（显隐/改名/密度/列序的唯一写口，避免多视图状态漂移） */
+export function updateActiveView(
+  bundle: UiOverlayBundle,
+  patch: (v: PersonalView) => PersonalView,
+): UiOverlayBundle {
+  const idx = bundle.views.findIndex((v) => v.id === bundle.activeViewId);
+  const at = idx < 0 ? 0 : idx;
+  const views = [...bundle.views];
+  views[at] = patch(views[at]);
+  return { ...bundle, views };
+}
+
+/** 切换生效视图（id 不存在时原样返回，不静默跳走） */
+export function switchView(bundle: UiOverlayBundle, id: string): UiOverlayBundle {
+  return bundle.views.some((v) => v.id === id) ? { ...bundle, activeViewId: id } : bundle;
+}
+
+/**
+ * 新建个人视图并设为生效。
+ * @param mode blank=默认投影（干净起点）；copy=深拷贝当前视图偏好（改差异）
+ */
+export function createView(
+  bundle: UiOverlayBundle,
+  name: string,
+  fields: MetaField[],
+  mode: 'blank' | 'copy',
+): UiOverlayBundle {
+  const cur = activeViewOf(bundle);
+  const id = `v_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+  const view: PersonalView =
+    mode === 'copy' && cur
+      ? { id, name: name.trim() || '未命名视图', overrides: JSON.parse(JSON.stringify(cur.overrides)), density: cur.density }
+      : { id, name: name.trim() || '未命名视图', overrides: defaultOverlay(fields).overrides };
+  return { ...bundle, activeViewId: id, views: [...bundle.views, view] };
+}
+
+/** 重命名视图（空名拒绝：无名视图在切换器里不可识别） */
+export function renameView(bundle: UiOverlayBundle, id: string, name: string): UiOverlayBundle {
+  const n = name.trim();
+  if (!n) return bundle;
+  return { ...bundle, views: bundle.views.map((v) => (v.id === id ? { ...v, name: n } : v)) };
+}
+
+/** 删除视图；最后一个是底线（无视图 = 无偏好载体，切换器会空转），原样返回 */
+export function deleteView(bundle: UiOverlayBundle, id: string): UiOverlayBundle {
+  if (bundle.views.length <= 1) return bundle;
+  const views = bundle.views.filter((v) => v.id !== id);
+  if (views.length === bundle.views.length) return bundle;
+  return {
+    ...bundle,
+    views,
+    activeViewId: bundle.activeViewId === id ? views[0].id : bundle.activeViewId,
+  };
+}
+
+/** 把生效视图恢复为默认投影（保留视图本身与其他视图；全量重置走 resetOverlay 删 blob） */
+export function resetActiveViewToDefault(bundle: UiOverlayBundle, fields: MetaField[]): UiOverlayBundle {
+  return updateActiveView(bundle, (v) => ({ ...v, overrides: defaultOverlay(fields).overrides, density: undefined }));
+}
+
 /**
  * 在覆盖表内交换两个相邻可见列的顺序（↑ / ↓）。
- * 返回新的覆盖表（不修改入参），顺序号重新紧凑化为 0..n-1。
+ * 泛型：扁平 {@link UiOverlay} 与 {@link PersonalView} 都可直接入参，
+ * 返回值携带入参的全部字段（多视图写口经 updateActiveView 拼回 bundle）。
  */
-export function reorderOverlay(
-  overlay: UiOverlay,
+export function reorderOverlay<T extends { overrides: Record<string, ColumnOverride> }>(
+  overlay: T,
   orderedCodes: string[],
   code: string,
   direction: 'up' | 'down',
-): UiOverlay {
+): T {
   const idx = orderedCodes.indexOf(code);
   const swapWith = direction === 'up' ? idx - 1 : idx + 1;
   if (idx < 0 || swapWith < 0 || swapWith >= orderedCodes.length) return overlay;
@@ -231,20 +399,19 @@ export function overlayKey(entityCode: string): string {
   return `bone.meta.overlay.${sessionScope()}.${entityCode}`;
 }
 
-export function loadOverlay(entityCode: string): UiOverlay | null {
+export function loadOverlay(entityCode: string): UiOverlayBundle | null {
   try {
     const raw = localStorage.getItem(overlayKey(entityCode));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as UiOverlay;
-    if (parsed.version !== UI_OVERLAY_VERSION) return null;
-    return parsed;
+    // toBundle 兼容两类存量：v3 bundle 原样采用；v2 扁平包一层迁移（偏好不丢）
+    return toBundle(JSON.parse(raw));
   } catch {
     return null;
   }
 }
 
-export function saveOverlay(entityCode: string, overlay: UiOverlay): void {
-  localStorage.setItem(overlayKey(entityCode), JSON.stringify(overlay));
+export function saveOverlay(entityCode: string, bundle: UiOverlayBundle): void {
+  localStorage.setItem(overlayKey(entityCode), JSON.stringify(bundle));
 }
 
 export function clearOverlay(entityCode: string): void {

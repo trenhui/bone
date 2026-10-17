@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert, Button, Empty, Form, Input, InputNumber, Segmented, Select, Space, Switch,
+  Alert, Button, Checkbox, Dropdown, Empty, Form, Input, InputNumber, Modal, Segmented, Select, Space, Switch,
   Table, Tag, Tooltip, Typography, DatePicker, message,
 } from 'antd';
+import type { MenuProps } from 'antd';
 import {
-  AimOutlined, ArrowDownOutlined, ArrowUpOutlined, EyeOutlined,
-  PlusOutlined, ReloadOutlined, SettingOutlined,
+  AimOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, EyeOutlined,
+  PlusOutlined, QuestionCircleOutlined, ReloadOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { MetaField } from '../types';
 import { FIELD_TYPE_MAP, parseEnumValues, RUNTIME_READONLY_FIELDS } from '../types';
 import {
-  defaultOverlay, fieldsOutsideContract, isEnumField, isRenderSupported,
-  projectRuntimeColumns, reorderOverlay, tableSizeOf, type UiOverlay,
+  activeOverlay, activeViewOf, createView, defaultBundle, defaultOverlay, deleteView,
+  fieldsOutsideContract, isEnumField, isRenderSupported, projectRuntimeColumns, renameView,
+  reorderOverlay, resetActiveViewToDefault, switchView, tableSizeOf, updateActiveView,
+  type PersonalView, type UiOverlayBundle,
 } from '../utils/columnProjection';
 import { fetchOverlay, persistOverlay, resetOverlay } from '../utils/overlaySync';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
@@ -20,16 +23,20 @@ import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
 const { Text } = Typography;
 
 /**
- * 列表显示 Tab（个人偏好层 · P0 定位修正 + P1 真源收敛）。
+ * 列表显示 Tab（个人偏好层 · P0 定位修正 + P1 真源收敛 + v3 多个人视图）。
  *
  * 关键：预览列与运行时数据列都由同一个 `projectRuntimeColumns(fields, overlay, 契约)` 投影得到，
  * 因此「界面预览列 ≡ 发布后数据列」在结构上成立（PRD v0.32 §0.6.3）。
  *
  * 与「界面设计器」的分层（对标 Salesforce Search Layouts 组织级 + List View 个人偏好）：
  * - 契约层（设计器 ui-schema views.list，发布后生效）：列集合/列序/列宽/固定列/列标题；
- * - 偏好层（本页 overlay，即时生效）：个人显隐/密度/个人改名。
+ * - 偏好层（本页 overlay，即时生效）：个人显隐/密度/个人改名/个人列序。
  * 任一维度可隐藏列（展示需两层都放行）；契约存在时列序/列宽/固定列以契约为准，
  * 本页的 ↑↓ 置灰并引导去设计器——避免「两处都能配、用户不知谁生效」的认知重叠。
+ *
+ * 多个人视图（v3 bundle，对标 Airtable / Notion personal views）：偏好按「命名视图」
+ * 组织（如「我的待审」「大额专项」），各自保存显隐/列序/密度/改名，切换即生效；
+ * 存储为服务端不透明 blob（键含 userId，前端传不了他人键），v2 单套存量无损迁移。
  *
  * 覆盖存储：服务端优先 + localStorage 离线缓存（0042 · P2-④，hydrate 策略见 utils/overlaySync.ts）。
  */
@@ -75,18 +82,23 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
 
   const [mode, setMode] = useState<'config' | 'preview'>('config');
   const [view, setView] = useState<ViewMode>('list');
-  const [overlay, setOverlay] = useState<UiOverlay | null>(null);
+  /** 个人偏好 bundle（v3 多视图）；null 仅在 hydrate 前瞬间存在 */
+  const [bundle, setBundle] = useState<UiOverlayBundle | null>(null);
+  /** 视图管理弹窗（create/rename/delete 三态复用） */
+  const [viewModal, setViewModal] = useState<{ mode: 'create' | 'rename' | 'delete'; id?: string } | null>(null);
+  const [viewName, setViewName] = useState('');
+  const [viewCopy, setViewCopy] = useState(true);
 
   const defaultOv = useMemo(() => defaultOverlay(baseFields), [baseFields]);
 
   useEffect(() => {
-    // 服务端优先 hydrate（0042）：请求期间用默认投影占位，回来后静默替换 ——
+    // 服务端优先 hydrate（0042）：请求期间用默认 bundle 占位，回来后静默替换 ——
     // 不用全屏 loading：列配置是次要信息，骨架/占位比阻塞主内容更轻。
     // cancelled 标志防竞态：快速切换实体时旧实体的覆盖晚到，会把新实体的列投影带偏。
     let cancelled = false;
-    setOverlay(defaultOverlay(baseFields));
-    fetchOverlay(entityCode).then((ov) => {
-      if (!cancelled) setOverlay(ov ?? defaultOverlay(baseFields));
+    setBundle(defaultBundle(baseFields));
+    fetchOverlay(entityCode).then((b) => {
+      if (!cancelled) setBundle(b ?? defaultBundle(baseFields));
     });
     return () => {
       cancelled = true;
@@ -94,45 +106,99 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityCode]);
 
+  /** 生效视图 → 扁平覆盖（投影层单一入口；预览列与运行时数据列共用） */
+  const activeOv = useMemo(() => activeOverlay(bundle), [bundle]);
+  const activeView = useMemo(() => activeViewOf(bundle), [bundle]);
+
   // 预览列与运行时数据列共用同一投影（契约优先 + 个人偏好叠加）——结构上保证两处一致
   const projectedColumns = useMemo(
-    () => projectRuntimeColumns(baseFields, overlay, contractListView),
-    [baseFields, overlay, contractListView],
+    () => projectRuntimeColumns(baseFields, activeOv, contractListView),
+    [baseFields, activeOv, contractListView],
   );
   const projected = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
   const projectedCodes = useMemo(() => projected.map((f) => f.code), [projected]);
 
+  /** 契约 viewKind=kanban 时表格密度无意义（P2.6 联动置灰，而非静默失效） */
+  const kanbanContract = contractListView?.viewKind === 'kanban';
+
   const dirty = useMemo(() => {
-    if (!overlay) return false;
-    return JSON.stringify(overlay.overrides) !== JSON.stringify(defaultOv.overrides)
-      || (overlay.density ?? 'comfortable') !== 'comfortable';
-  }, [overlay, defaultOv]);
+    if (!activeView) return false;
+    return JSON.stringify(activeView.overrides) !== JSON.stringify(defaultOv.overrides)
+      || (activeView.density ?? 'comfortable') !== 'comfortable';
+  }, [activeView, defaultOv]);
 
   const unsupported = useMemo(() => baseFields.filter((f) => !isRenderSupported(f)), [baseFields]);
 
-  const persist = (next: UiOverlay) => {
-    setOverlay(next);
+  /** 唯一写口：本地状态 + 服务端/本地缓存（视图增删改与偏好编辑都经这里） */
+  const persist = (next: UiOverlayBundle) => {
+    setBundle(next);
     persistOverlay(entityCode, next);
   };
 
-  const toggleVisible = (code: string, visible: boolean) => {
-    if (!overlay) return;
-    persist({ ...overlay, overrides: { ...overlay.overrides, [code]: { ...overlay.overrides[code], visible } } });
+  /** 生效视图补丁写口（显隐/改名/密度/列序） */
+  const patchActive = (patch: (v: PersonalView) => PersonalView) => {
+    if (!bundle) return;
+    persist(updateActiveView(bundle, patch));
   };
 
-  const rename = (code: string, displayName: string) => {
-    if (!overlay) return;
-    persist({ ...overlay, overrides: { ...overlay.overrides, [code]: { ...overlay.overrides[code], displayName } } });
-  };
+  const toggleVisible = (code: string, visible: boolean) =>
+    patchActive((v) => ({ ...v, overrides: { ...v.overrides, [code]: { ...v.overrides[code], visible } } }));
 
-  const move = (code: string, direction: 'up' | 'down') => {
-    if (!overlay) return;
-    persist(reorderOverlay(overlay, projectedCodes, code, direction));
+  const rename = (code: string, displayName: string) =>
+    patchActive((v) => ({ ...v, overrides: { ...v.overrides, [code]: { ...v.overrides[code], displayName } } }));
+
+  const move = (code: string, direction: 'up' | 'down') =>
+    patchActive((v) => ({ ...v, overrides: reorderOverlay(v, projectedCodes, code, direction).overrides }));
+
+  const setDensity = (density: 'comfortable' | 'compact') => patchActive((v) => ({ ...v, density }));
+
+  /* ---------------- 视图管理（新建/重命名/删除/恢复该视图默认） ---------------- */
+  const openCreateView = () => { setViewModal({ mode: 'create' }); setViewName(''); setViewCopy(true); };
+  const openRenameView = () => {
+    if (!activeView) return;
+    setViewModal({ mode: 'rename', id: activeView.id });
+    setViewName(activeView.name);
   };
+  const openDeleteView = () => {
+    if (!activeView) return;
+    setViewModal({ mode: 'delete', id: activeView.id });
+  };
+  const confirmViewModal = () => {
+    if (!bundle || !viewModal) return;
+    if (viewModal.mode === 'create') {
+      persist(createView(bundle, viewName, baseFields, viewCopy ? 'copy' : 'blank'));
+      message.success(`已新建并切换到个人视图「${viewName.trim() || '未命名视图'}」`);
+    } else if (viewModal.mode === 'rename' && viewModal.id) {
+      persist(renameView(bundle, viewModal.id, viewName));
+    } else if (viewModal.mode === 'delete' && viewModal.id) {
+      persist(deleteView(bundle, viewModal.id));
+      message.success('已删除个人视图');
+    }
+    setViewModal(null);
+  };
+  const viewMenuItems: MenuProps['items'] = [
+    { key: 'new', icon: <PlusOutlined />, label: '新建视图…', onClick: openCreateView },
+    { key: 'rename', icon: <EditOutlined />, label: '重命名当前视图…', onClick: openRenameView },
+    {
+      key: 'reset',
+      icon: <ReloadOutlined />,
+      label: '恢复该视图默认列',
+      onClick: () => bundle && persist(resetActiveViewToDefault(bundle, baseFields)),
+    },
+    { type: 'divider' },
+    {
+      key: 'delete',
+      icon: <DeleteOutlined />,
+      label: '删除当前视图',
+      danger: true,
+      disabled: (bundle?.views.length ?? 0) <= 1,
+      onClick: openDeleteView,
+    },
+  ];
 
   const restoreDefault = async () => {
     await resetOverlay(entityCode);
-    setOverlay(defaultOverlay(baseFields));
+    setBundle(defaultBundle(baseFields));
     message.success('已恢复默认显示');
   };
 
@@ -197,7 +263,7 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
             </Tooltip>
           );
         }
-        const personalHidden = overlay?.overrides[f.code]?.visible === false;
+        const personalHidden = activeView?.overrides[f.code]?.visible === false;
         return (
           <Space size={2}>
             <Switch size="small" checked={!personalHidden} onChange={(v) => toggleVisible(f.code, v)} />
@@ -212,7 +278,7 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
       render: (_, f) => (
         <Input
           size="small"
-          defaultValue={overlay?.overrides[f.code]?.displayName ?? f.displayName}
+          defaultValue={activeView?.overrides[f.code]?.displayName ?? f.displayName}
           placeholder={f.displayName}
           onChange={(e) => rename(f.code, e.target.value)}
         />
@@ -236,11 +302,15 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
           );
         }
         const idx = projectedCodes.indexOf(f.code);
+        // 无契约：纯偏好模式。↑↓ 可点但必须说清「这是你的个人列序」——
+        // 与契约模式的置灰形态统一解释口径，避免用户误以为在调团队列序
         return (
-          <Space size={2}>
-            <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={idx <= 0} onClick={() => move(f.code, 'up')} />
-            <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={idx < 0 || idx >= projectedCodes.length - 1} onClick={() => move(f.code, 'down')} />
-          </Space>
+          <Tooltip title="仅调整你的个人列序（仅自己可见）；团队列序请到「界面设计器」配置契约并发布">
+            <Space size={2}>
+              <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={idx <= 0} onClick={() => move(f.code, 'up')} />
+              <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={idx < 0 || idx >= projectedCodes.length - 1} onClick={() => move(f.code, 'down')} />
+            </Space>
+          </Tooltip>
         );
       },
     },
@@ -297,22 +367,50 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
             onChange={(v) => setView(v as ViewMode)}
             options={[{ value: 'list', label: '列表' }, { value: 'form', label: '表单' }]}
           />
-          <Tag color="blue">自动生成 · 可微调</Tag>
+          {/* P0.1：常驻身份徽标——从命名上断绝「这是第二个设计器」的误读（对标 Airtable personal view） */}
+          <Tooltip title="个人偏好层：仅调整你本人的列显隐/密度/改名/列序，按用户存于服务端（仅自己可见）；团队级列集合/列序/列宽由「界面设计器」契约定义，发布后生效">
+            <Tag color="blue">个人偏好 · 仅自己可见</Tag>
+          </Tooltip>
           {mode === 'preview' && projected.length === 0 && <Tag color="orange">当前没有可见列</Tag>}
         </Space>
         <Space wrap>
-          <Text type="secondary" style={{ fontSize: 12 }}>密度</Text>
-          <Segmented
-            size="small"
-            value={overlay?.density ?? 'comfortable'}
-            onChange={(v) => persist({ ...overlay!, density: v as 'comfortable' | 'compact' })}
-            options={[{ value: 'comfortable', label: '标准' }, { value: 'compact', label: '紧凑' }]}
-          />
-          <Button icon={<ReloadOutlined />} size="small" onClick={restoreDefault} disabled={!dirty}>
-            恢复默认显示
-          </Button>
+          <Tooltip title={kanbanContract ? '契约 viewKind=kanban：看板视图不使用表格密度' : '切换表格行高（紧凑模式一屏看更多行）'}>
+            <span>
+              <Text type="secondary" style={{ fontSize: 12, marginRight: 4 }}>密度</Text>
+              <Segmented
+                size="small"
+                disabled={kanbanContract || !activeView}
+                value={activeView?.density ?? 'comfortable'}
+                onChange={(v) => setDensity(v as 'comfortable' | 'compact')}
+                options={[{ value: 'comfortable', label: '标准' }, { value: 'compact', label: '紧凑' }]}
+              />
+            </span>
+          </Tooltip>
+          {/* P0.3：明示重置口径——只清个人偏好，不碰团队契约 */}
+          <Tooltip title="清除全部个人视图与偏好（显隐/列序/密度/改名），恢复默认投影；不影响团队契约与其他成员">
+            <Button icon={<ReloadOutlined />} size="small" onClick={restoreDefault} disabled={!dirty}>
+              恢复默认显示
+            </Button>
+          </Tooltip>
           {dirty ? <Tag color="orange">界面配置已调整</Tag> : <Tag color="green">与默认一致</Tag>}
         </Space>
+      </Space>
+
+      {/* 个人视图切换器（P1.4 多视图）：命名视图各自保存偏好，切换即生效 */}
+      <Space style={{ marginBottom: 12 }} wrap>
+        <Text type="secondary" style={{ fontSize: 12 }}>个人视图</Text>
+        <Segmented
+          size="small"
+          value={activeView?.id}
+          onChange={(v) => { if (bundle) persist(switchView(bundle, String(v))); }}
+          options={(bundle?.views ?? []).map((v) => ({ value: v.id, label: v.name }))}
+        />
+        <Dropdown menu={{ items: viewMenuItems }} trigger={['click']}>
+          <Button size="small" icon={<SettingOutlined />}>管理</Button>
+        </Dropdown>
+        <Tooltip title="个人视图按用户存于服务端，仅自己可见；与「界面设计器」契约叠加生效——契约定列集合/列序，视图定你的显隐/密度/改名">
+          <QuestionCircleOutlined style={{ color: '#bfbfbf' }} />
+        </Tooltip>
       </Space>
 
       {contractListView && (
@@ -358,23 +456,30 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
             columns={configColumns}
             dataSource={baseFields}
             scroll={{ x: 'max-content' }}
-            /* UID-11：整行可点，等价于右侧「定位」按钮（大目标更好点） */
+            /* UID-11：整行可点，等价于右侧「定位」按钮（大目标更好点）。
+               ⚠ 交互控件（开关/输入框/按钮）必须自己处理点击：行 onClick 不设防时，
+               点「显示」开关会顺手把用户弹到「结构」页（开关态变了、人也走了）——
+               生产探针实测踩中过这个真 bug，用 closest 守卫把控件点击让给控件自己。 */
             onRow={(f) => ({
-              onClick: () => onLocateField?.(f.code),
+              onClick: (e: React.MouseEvent) => {
+                if ((e.target as HTMLElement).closest('button, input, textarea, .ant-switch, .ant-btn, .ant-input, .ant-select, .ant-segmented')) return;
+                onLocateField?.(f.code);
+              },
               style: { cursor: onLocateField ? 'pointer' : 'default' },
             })}
           />
           <div style={{ margin: '12px 0 8px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              个人调整（显隐 / 密度 / 改名）即时生效于「预览」与运行时数据列表（两者共用同一套投影）；
-              覆盖按用户保存于服务端（离线时回落本机缓存）。契约列（列序 / 列宽 / 固定列）以「界面设计器」发布版为准。
+              个人调整（显隐 / 密度 / 改名 / 列序）即时生效于「预览」与运行时数据列表（两者共用同一套投影）；
+              可保存多套「个人视图」按场景切换（如我的待审 / 大额专项）。覆盖按用户保存于服务端（离线时回落本机缓存）。
+              契约列（列序 / 列宽 / 固定列）以「界面设计器」发布版为准。
             </Text>
           </div>
         </>
       ) : view === 'list' ? (
         <Table
           rowKey="code"
-          size={tableSizeOf(overlay?.density)}
+          size={tableSizeOf(activeOv.density)}
           pagination={false}
           columns={listPreviewColumns}
           dataSource={projected}
@@ -406,6 +511,46 @@ const InterfaceTab: React.FC<Props> = ({ entityId = null, entityCode, fields, on
           </Form>
         </div>
       )}
+      {/* 视图管理弹窗：新建（可复制当前偏好）/ 重命名 / 删除（最后一个是底线） */}
+      <Modal
+        title={viewModal?.mode === 'create' ? '新建个人视图' : viewModal?.mode === 'rename' ? '重命名个人视图' : '删除个人视图'}
+        open={!!viewModal}
+        onOk={confirmViewModal}
+        onCancel={() => setViewModal(null)}
+        okText={viewModal?.mode === 'delete' ? '删除' : '确定'}
+        okButtonProps={viewModal?.mode === 'delete' ? { danger: true } : undefined}
+        confirmLoading={false}
+        destroyOnHidden
+      >
+        {viewModal?.mode === 'delete' ? (
+          <div style={{ lineHeight: 1.8 }}>
+            确定删除个人视图「{bundle?.views.find((v) => v.id === viewModal.id)?.name}」？
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              删除后该视图保存的显隐 / 列序 / 密度 / 改名偏好一并清除，其他视图不受影响；个人视图至少保留一个。
+            </Text>
+          </div>
+        ) : (
+          <Form layout="vertical">
+            <Form.Item label="视图名称" required extra="切换器里显示的名字，建议按使用场景命名">
+              <Input
+                value={viewName}
+                maxLength={20}
+                showCount
+                placeholder="如：我的待审、大额专项"
+                onChange={(e) => setViewName(e.target.value)}
+              />
+            </Form.Item>
+            {viewModal?.mode === 'create' && (
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Checkbox checked={viewCopy} onChange={(e) => setViewCopy(e.target.checked)}>
+                  复制当前视图的列偏好（显隐 / 列序 / 密度 / 改名）
+                </Checkbox>
+              </Form.Item>
+            )}
+          </Form>
+        )}
+      </Modal>
     </div>
   );
 };

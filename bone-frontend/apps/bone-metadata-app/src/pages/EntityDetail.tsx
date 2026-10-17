@@ -713,6 +713,7 @@ const EntityDetail: React.FC = () => {
                   entityCode={entity.code}
                   fields={fields}
                   onGoPublish={() => setOuterTab('publish')}
+                  onGoPersonal={() => setOuterTab('ui')}
                   policyCodes={policyCodes}
                 />
               ) : (
@@ -727,7 +728,7 @@ const EntityDetail: React.FC = () => {
             {
               key: 'publish',
               label: (<Space size={4}><ThunderboltOutlined /><span>发布</span></Space>),
-              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />,
+              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onGoPersonal={() => setOuterTab('ui')} onOpenData={goData} onAddField={goAddField} />,
             },
           ]}
         />

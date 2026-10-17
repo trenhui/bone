@@ -1,9 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MetaField } from '../types';
 import {
+  DEFAULT_VIEW_ID,
+  DEFAULT_VIEW_NAME,
+  UI_OVERLAY_BUNDLE_VERSION,
   UI_OVERLAY_VERSION,
+  activeOverlay,
+  activeViewOf,
   clearOverlay,
+  createView,
+  defaultBundle,
   defaultOverlay,
+  deleteView,
   enumOptionsOf,
   fieldsOutsideContract,
   isEnumField,
@@ -12,9 +20,15 @@ import {
   overlayKey,
   projectColumns,
   projectRuntimeColumns,
+  renameView,
   reorderOverlay,
+  resetActiveViewToDefault,
   saveOverlay,
+  switchView,
   tableSizeOf,
+  toBundle,
+  updateActiveView,
+  type UiOverlayBundle,
 } from './columnProjection';
 import type { ListView } from './uiSchemaEngine';
 
@@ -254,12 +268,29 @@ describe('overlayKey / 存储（D2 键格式）', () => {
     expect(loadOverlay('bp_order')).toBeNull();
   });
 
-  it('save/load/clear 往返一致', () => {
-    const ov = defaultOverlay(FIELDS);
-    saveOverlay('bp_order', ov);
-    expect(loadOverlay('bp_order')).toEqual(ov);
+  it('save/load/clear 往返一致（v3 bundle 口径）', () => {
+    const b = defaultBundle(FIELDS);
+    saveOverlay('bp_order', b);
+    expect(loadOverlay('bp_order')).toEqual(b);
     clearOverlay('bp_order');
     expect(loadOverlay('bp_order')).toBeNull();
+  });
+
+  it('loadOverlay：v2 扁平存量缓存迁移为单视图 bundle（升级多视图不丢偏好）', () => {
+    const store: Record<string, string> = {};
+    mockLocalStorage(store);
+    const legacy = { version: UI_OVERLAY_VERSION, overrides: { name: { visible: false, displayName: '旧名' } }, density: 'compact' };
+    store[overlayKey('bp_order')] = JSON.stringify(legacy);
+
+    const b = loadOverlay('bp_order');
+
+    expect(b).not.toBeNull();
+    expect(b!.views).toHaveLength(1);
+    expect(b!.views[0].name).toBe(DEFAULT_VIEW_NAME);
+    expect(b!.views[0].overrides).toEqual(legacy.overrides);
+    expect(b!.views[0].density).toBe('compact');
+    // 迁移不是走过场：投影层必须仍能消费存量偏好
+    expect(activeOverlay(b!).overrides.name.displayName).toBe('旧名');
   });
 });
 
@@ -290,5 +321,196 @@ describe('渲染支持与类型判定', () => {
     expect(tableSizeOf('compact')).toBe('small');
     expect(tableSizeOf('comfortable')).toBe('middle');
     expect(tableSizeOf(undefined)).toBe('middle');
+  });
+});
+
+/* ===================== 个人视图 bundle（v3 多视图） ===================== */
+
+describe('defaultBundle / activeOverlay', () => {
+  it('默认 bundle：单视图「默认视图」，覆盖表 = 默认投影', () => {
+    const b = defaultBundle(FIELDS);
+    expect(b.version).toBe(UI_OVERLAY_BUNDLE_VERSION);
+    expect(b.activeViewId).toBe(DEFAULT_VIEW_ID);
+    expect(b.views).toHaveLength(1);
+    expect(b.views[0]).toMatchObject({ id: DEFAULT_VIEW_ID, name: DEFAULT_VIEW_NAME });
+    expect(b.views[0].overrides).toEqual(defaultOverlay(FIELDS).overrides);
+  });
+
+  it('activeOverlay：解析生效视图为扁平覆盖（投影层口径）', () => {
+    const b = defaultBundle(FIELDS);
+    const ov = activeOverlay(b);
+    expect(ov.version).toBe(UI_OVERLAY_VERSION);
+    expect(Object.keys(ov.overrides)).toEqual(['code', 'name', 'qty']);
+  });
+
+  it('activeOverlay：null/空 views 不抛异常，回落空覆盖', () => {
+    expect(activeOverlay(null)).toEqual({ version: UI_OVERLAY_VERSION, overrides: {} });
+    expect(activeOverlay({ version: 3, activeViewId: 'x', views: [] })).toEqual({ version: UI_OVERLAY_VERSION, overrides: {} });
+  });
+
+  it('负向探针：activeViewId 悬空时按首个视图兜底，不静默跳走也不崩', () => {
+    const b = defaultBundle(FIELDS);
+    const dangling: UiOverlayBundle = { ...b, activeViewId: 'not-exist' };
+    expect(activeViewOf(dangling)?.id).toBe(DEFAULT_VIEW_ID);
+    expect(Object.keys(activeOverlay(dangling).overrides)).toEqual(['code', 'name', 'qty']);
+  });
+});
+
+describe('toBundle：存储形态归一（v3 原样 / v2 迁移 / 垃圾拒绝）', () => {
+  it('v3 bundle 原样采用（views 合法）', () => {
+    const b = defaultBundle(FIELDS);
+    expect(toBundle(JSON.parse(JSON.stringify(b)))).toEqual(b);
+  });
+
+  it('v2 扁平存量：包一层为单视图 bundle，overrides/density 无损', () => {
+    const legacy = { version: 2, overrides: { qty: { visible: false } }, density: 'compact' };
+    const b = toBundle(legacy);
+    expect(b?.views).toHaveLength(1);
+    expect(b?.views[0].overrides).toEqual(legacy.overrides);
+    expect(b?.views[0].density).toBe('compact');
+    expect(b?.activeViewId).toBe(DEFAULT_VIEW_ID);
+  });
+
+  it('v3 bundle 的 activeViewId 悬空：纠偏到首个视图', () => {
+    const b = defaultBundle(FIELDS);
+    const fixed = toBundle({ ...b, activeViewId: 'ghost' });
+    expect(fixed?.activeViewId).toBe(DEFAULT_VIEW_ID);
+  });
+
+  it('负向探针：v1/未知结构/views 为空/非对象一律 null（坏数据不蒙混过关）', () => {
+    expect(toBundle({ version: 1, overrides: {} })).toBeNull();
+    expect(toBundle({ version: 99, overrides: {} })).toBeNull();
+    expect(toBundle({ version: 3, activeViewId: 'a', views: [] })).toBeNull();
+    expect(toBundle({ version: 3, activeViewId: 'a', views: [{ id: 'a' }] })).toBeNull(); // 缺 name/overrides
+    expect(toBundle(null)).toBeNull();
+    expect(toBundle('garbage')).toBeNull();
+    expect(toBundle(42)).toBeNull();
+  });
+});
+
+describe('视图增删改与切换', () => {
+  it('switchView：切换生效视图；未知 id 原样返回（负向）', () => {
+    let b = defaultBundle(FIELDS);
+    b = createView(b, '我的待审', FIELDS, 'blank');
+    const newId = b.activeViewId;
+    expect(switchView(b, DEFAULT_VIEW_ID).activeViewId).toBe(DEFAULT_VIEW_ID);
+    expect(switchView(b, newId).activeViewId).toBe(newId);
+    expect(switchView(b, 'nope')).toBe(b); // 未知 id：不改状态
+  });
+
+  it('createView(blank)：新视图带默认投影；createView(copy)：深拷贝当前偏好', () => {
+    let b = defaultBundle(FIELDS);
+    b = updateActiveView(b, (v) => ({ ...v, overrides: { ...v.overrides, qty: { ...v.overrides.qty, visible: false } }, density: 'compact' }));
+
+    const blank = createView(b, '空白视图', FIELDS, 'blank');
+    expect(blank.views).toHaveLength(2);
+    expect(blank.activeViewId).not.toBe(DEFAULT_VIEW_ID);
+    expect(activeOverlay(blank).overrides.qty.visible).toBe(true); // blank = 默认投影，不受当前视图隐藏影响
+
+    const copied = createView(b, '复制视图', FIELDS, 'copy');
+    const copiedActive = activeViewOf(copied)!;
+    expect(copiedActive.overrides.qty.visible).toBe(false); // copy 带上当前隐藏
+    expect(copiedActive.density).toBe('compact');
+
+    // 深拷贝探针：改新视图不得污染源视图（JSON 往返失败的浅拷贝会在这里现形）
+    const mutated = updateActiveView(copied, (v) => ({ ...v, overrides: { ...v.overrides, qty: { visible: true } } }));
+    expect(activeViewOf(mutated)!.overrides.qty.visible).toBe(true);
+    expect(b.views[0].overrides.qty.visible).toBe(false); // 源视图仍隐藏
+  });
+
+  it('renameView：重命名生效；空名拒绝（无名视图在切换器里不可识别）', () => {
+    const b = defaultBundle(FIELDS);
+    expect(renameView(b, DEFAULT_VIEW_ID, '大额专项').views[0].name).toBe('大额专项');
+    expect(renameView(b, DEFAULT_VIEW_ID, '   ')).toBe(b); // 负向：纯空白拒绝
+  });
+
+  it('deleteView：删非生效视图不动 activeViewId；删生效视图落到首个', () => {
+    let b = defaultBundle(FIELDS);
+    b = createView(b, 'V2', FIELDS, 'blank'); // active=V2
+    const kept = deleteView(b, DEFAULT_VIEW_ID);
+    expect(kept.views.map((v) => v.id)).toEqual([b.activeViewId]);
+    expect(kept.activeViewId).toBe(b.activeViewId);
+    const dropped = deleteView(b, b.activeViewId);
+    expect(dropped.views).toHaveLength(1);
+    expect(dropped.activeViewId).toBe(DEFAULT_VIEW_ID);
+  });
+
+  it('负向探针：最后一个是底线——单视图 bundle 拒绝删除', () => {
+    const b = defaultBundle(FIELDS);
+    expect(deleteView(b, DEFAULT_VIEW_ID)).toBe(b);
+    expect(deleteView(b, 'whatever')).toBe(b);
+  });
+
+  it('updateActiveView：只改生效视图，其他视图原样（隔离性）', () => {
+    let b = defaultBundle(FIELDS);
+    b = createView(b, 'V2', FIELDS, 'blank');
+    const patched = updateActiveView(b, (v) => ({ ...v, overrides: { ...v.overrides, name: { ...v.overrides.name, visible: false } } }));
+    expect(activeViewOf(patched)!.overrides.name.visible).toBe(false);
+    expect(patched.views.find((v) => v.id === DEFAULT_VIEW_ID)!.overrides.name.visible).toBe(true);
+  });
+
+  it('resetActiveViewToDefault：生效视图回默认投影并清密度；其他视图不动', () => {
+    let b = defaultBundle(FIELDS);
+    b = updateActiveView(b, (v) => ({ ...v, density: 'compact', overrides: { ...v.overrides, qty: { ...v.overrides.qty, visible: false } } }));
+    b = createView(b, 'V2', FIELDS, 'copy'); // active=V2（compact + qty 隐藏）
+    const reset = resetActiveViewToDefault(b, FIELDS);
+    const active = activeViewOf(reset)!;
+    expect(active.overrides).toEqual(defaultOverlay(FIELDS).overrides);
+    expect(active.density).toBeUndefined();
+    expect(reset.views.find((v) => v.id === DEFAULT_VIEW_ID)!.overrides.qty.visible).toBe(false); // 旧视图保留
+  });
+});
+
+describe('reorderOverlay 泛型化（PersonalView 直接入参）', () => {
+  it(' PersonalView 入参：返回带 id/name 的完整视图（多视图写口拼回 bundle）', () => {
+    const b = defaultBundle(FIELDS);
+    const v = b.views[0];
+    const next = reorderOverlay(v, ['code', 'name', 'qty'], 'qty', 'up');
+    expect(next.id).toBe(DEFAULT_VIEW_ID);
+    expect(next.name).toBe(DEFAULT_VIEW_NAME);
+    expect(Object.keys(next.overrides).map((c) => next.overrides[c].order)).toEqual([0, 2, 1]);
+    // 纯函数：入参不被修改
+    expect(Object.keys(v.overrides).map((c) => v.overrides[c].order)).toEqual([0, 1, 2]);
+  });
+
+  it('边界：首列上移/末列下移返回同一引用（不制造新对象）', () => {
+    const v = defaultBundle(FIELDS).views[0];
+    expect(reorderOverlay(v, ['code', 'name', 'qty'], 'code', 'up')).toBe(v);
+    expect(reorderOverlay(v, ['code', 'name', 'qty'], 'qty', 'down')).toBe(v);
+  });
+});
+
+describe('端到端：bundle → activeOverlay → projectRuntimeColumns（视图隔离）', () => {
+  const listView = (columns: ListView['columns']): ListView => ({ columns });
+
+  it('切换视图改变运行时投影（A 视图隐藏 qty，B 视图显示）', () => {
+    let b = defaultBundle(FIELDS);
+    b = updateActiveView(b, (v) => ({ ...v, overrides: { ...v.overrides, qty: { ...v.overrides.qty, visible: false } } }));
+    b = createView(b, '全列视图', FIELDS, 'blank');
+
+    const colsA = projectRuntimeColumns(FIELDS, activeOverlay(switchView(b, DEFAULT_VIEW_ID)), listView([{ fieldCode: 'code' }, { fieldCode: 'qty' }]));
+    expect(colsA.map((c) => c.field.code)).toEqual(['code']); // A：个人隐藏 qty
+
+    const colsB = projectRuntimeColumns(FIELDS, activeOverlay(switchView(b, b.activeViewId)), listView([{ fieldCode: 'code' }, { fieldCode: 'qty' }]));
+    expect(colsB.map((c) => c.field.code)).toEqual(['code', 'qty']); // B：默认全显
+  });
+
+  it('负向探针：A 视图的个人隐藏不得漏进 B 视图（偏好串台是多视图最常见 bug）', () => {
+    let b = defaultBundle(FIELDS);
+    b = updateActiveView(b, (v) => ({ ...v, overrides: { ...v.overrides, name: { ...v.overrides.name, visible: false } } }));
+    b = createView(b, 'B', FIELDS, 'blank');
+    const ovB = activeOverlay(switchView(b, b.activeViewId));
+    expect(ovB.overrides.name.visible).toBe(true);
+    // 回到 A：隐藏仍在（两个方向都验证，防「切换即丢失」）
+    const ovA = activeOverlay(switchView(b, DEFAULT_VIEW_ID));
+    expect(ovA.overrides.name.visible).toBe(false);
+  });
+
+  it('密度按视图独立保存（A 紧凑 / B 标准）', () => {
+    let b = defaultBundle(FIELDS);
+    b = updateActiveView(b, (v) => ({ ...v, density: 'compact' }));
+    b = createView(b, 'B', FIELDS, 'blank');
+    expect(activeOverlay(b).density).toBeUndefined();
+    expect(activeOverlay(switchView(b, DEFAULT_VIEW_ID)).density).toBe('compact');
   });
 });

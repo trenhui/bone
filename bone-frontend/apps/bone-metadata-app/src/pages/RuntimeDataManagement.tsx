@@ -57,12 +57,13 @@ import {
 import { Auth, AuthButton, usePermission } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import {
+  activeOverlay,
   enumOptionsOf,
   isEnumField,
   isRenderSupported,
   projectRuntimeColumns,
   tableSizeOf,
-  type UiOverlay,
+  type UiOverlayBundle,
 } from '../utils/columnProjection';
 import { fetchOverlay } from '../utils/overlaySync';
 import { listRecent } from '../utils/recent';
@@ -367,7 +368,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * <p>{@link #hydratedEntityRef} 防重复请求：fields 重载（结构 Tab 加字段后返回）
    * 不重新 hydrate —— 投影随 fields 重算，新字段按「无覆盖排末尾」规则处理即可。
    */
-  const [overlay, setOverlay] = useState<UiOverlay | null>(null);
+  const [overlay, setOverlay] = useState<UiOverlayBundle | null>(null);
   const hydratedEntityRef = useRef<string | null>(null);
   useEffect(() => {
     if (!entityCode) {
@@ -385,9 +386,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       cancelled = true;
     };
   }, [entityCode, fields]);
+  // 多视图 bundle → 生效视图的扁平覆盖（投影层只认扁平口径；与界面 Tab 预览同源）
+  const activeOv = useMemo(() => activeOverlay(overlay), [overlay]);
   const projectedColumns = useMemo(
-    () => projectRuntimeColumns(writableFields, overlay, uiSchemaPipe.executionSchema?.views.list),
-    [writableFields, overlay, uiSchemaPipe.executionSchema],
+    () => projectRuntimeColumns(writableFields, activeOv, uiSchemaPipe.executionSchema?.views.list),
+    [writableFields, activeOv, uiSchemaPipe.executionSchema],
   );
   /** 字段视图（列查询 fieldsParam / 筛选选项 / 列渲染共用）——由投影列去契约元数据得到 */
   const projectedFields = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
@@ -1640,7 +1643,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                 loading={loading}
                 columns={tableColumns}
                 dataSource={data}
-                size={tableSizeOf(overlay?.density)}
+                size={tableSizeOf(activeOv.density)}
                 scroll={{ x: true }}
                 /* 排序交给后端：列排序变化 → 受控状态 → sort 契约（- 前缀降序） */
                 onChange={(_pagination, _filters, sorter) => {
