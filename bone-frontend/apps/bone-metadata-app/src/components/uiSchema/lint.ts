@@ -25,6 +25,8 @@ export interface LintLocate {
   ti?: number;
   /** 列下标 / 动作下标 */
   idx?: number;
+  /** 页头条目下标（pageHeader） */
+  pi?: number;
   /** 字典键 */
   key?: string;
 }
@@ -182,14 +184,96 @@ export function lintSchema(
         issues.push({ level: 'warning', message: `动作 ${a.actionCode || i + 1} 的门控引用了不存在的字段 ${fc}`, locate: at });
       }
     });
+    // HITL 人工决策配置完整性（v1.2 §13.3）：decisionKind=hitl 必须有理由类型，否则工作台无理由可填
+    if (a.decisionKind === 'hitl') {
+      if (!a.reasonTypes?.length) {
+        issues.push({ level: 'warning', message: `HITL 动作 ${a.actionCode || i + 1} 未配置 reasonTypes，人工决策时无理由类型可选`, locate: at });
+      }
+      if (a.maxRounds !== undefined && a.maxRounds < 1) {
+        issues.push({ level: 'warning', message: `HITL 动作 ${a.actionCode || i + 1} 的 maxRounds 应 ≥ 1（当前 ${a.maxRounds}）`, locate: at });
+      }
+    }
   });
 
-  /* ---------- 列表列 ---------- */
-  (s.views.list?.columns ?? []).forEach((col, idx) => {
+  /* ---------- 页头关键信息条（v1.2 §13.2：引用必须存在于该视图的某个分区控件） ---------- */
+  const lintPageHeader = (view: { sections?: { controls?: { fieldCode: string }[] }[]; pageHeader?: string[] } | undefined, viewName: string): void => {
+    const inSections = new Set((view?.sections ?? []).flatMap((sec) => (sec.controls ?? []).map((c) => c.fieldCode)));
+    const used = new Set<string>();
+    (view?.pageHeader ?? []).forEach((code, pi) => {
+      const at = { tab: 'structure' as const, pi };
+      if (!code) {
+        issues.push({ level: 'error', message: `${viewName}页头第 ${pi + 1} 项为空字段码`, locate: at });
+        return;
+      }
+      if (used.has(code)) {
+        issues.push({ level: 'warning', message: `${viewName}页头重复引用字段 ${code}`, locate: at });
+      }
+      used.add(code);
+      if (!inSections.has(code)) {
+        issues.push({
+          level: 'error',
+          message: `${viewName}页头引用了不在任何分区控件中的字段 ${code}（悬空引用：协议 v1.2 §13.2 要求页头字段必须同时存在于 sections）`,
+          locate: at,
+        });
+      }
+    });
+  };
+  lintPageHeader(form, '表单');
+  if (s.views.detail) lintPageHeader(s.views.detail, '详情');
+
+  /* ---------- 列表视图引用面（协议 v1.1/v1.2：columns/tabs/searchFields/quickFilters/stats/dataScope/batchActions/viewKind/degradedBanner） ---------- */
+  const list = s.views.list;
+  (list?.columns ?? []).forEach((col, idx) => {
     if (col.fieldCode && !knownFields.has(col.fieldCode)) {
       issues.push({ level: 'info', message: `列表列 ${col.fieldCode} 不在实体字段中（聚合/关联列属正常）`, locate: { tab: 'list', idx } });
     }
   });
+  (list?.searchFields ?? []).forEach((fc, idx) => {
+    if (!fc) {
+      issues.push({ level: 'error', message: `搜索栏第 ${idx + 1} 项为空字段码`, locate: { tab: 'list', idx } });
+    } else if (!knownFields.has(fc)) {
+      issues.push({ level: 'info', message: `搜索字段 ${fc} 不在实体字段中（关联搜索属正常）`, locate: { tab: 'list', idx } });
+    }
+  });
+  (list?.tabs ?? []).forEach((t, idx) => {
+    const at = { tab: 'list' as const, idx };
+    if (!t.fieldCode) {
+      issues.push({ level: 'error', message: `列表页签第 ${idx + 1} 个未绑定字段`, locate: at });
+    } else if (!knownFields.has(t.fieldCode)) {
+      issues.push({ level: 'warning', message: `列表页签「${t.title ?? t.titleKey ?? idx + 1}」绑定了实体中不存在的字段 ${t.fieldCode}`, locate: at });
+    }
+    if (t.title == null && t.titleKey == null) {
+      issues.push({ level: 'warning', message: `列表页签第 ${idx + 1} 个既无 title 也无 titleKey，运行时将显示空页签`, locate: at });
+    }
+  });
+  (list?.quickFilters ?? []).forEach((code, idx) => {
+    if (!code) {
+      issues.push({ level: 'error', message: `快捷筛选第 ${idx + 1} 项为空`, locate: { tab: 'list', idx } });
+    }
+  });
+  (list?.batchActions ?? []).forEach((code, idx) => {
+    if (!code) {
+      issues.push({ level: 'error', message: `批量动作第 ${idx + 1} 项为空 actionCode`, locate: { tab: 'list', idx } });
+    }
+  });
+  (list?.stats ?? []).forEach((st, idx) => {
+    const at = { tab: 'list' as const, idx };
+    if (!st.valueRef) {
+      issues.push({ level: 'warning', message: `统计卡「${st.title ?? st.titleKey ?? idx + 1}」未引用聚合口径 valueRef（UI 不自算，后端聚合端点提供）`, locate: at });
+    }
+    if (st.title == null && st.titleKey == null) {
+      issues.push({ level: 'warning', message: `统计卡第 ${idx + 1} 个既无 title 也无 titleKey`, locate: at });
+    }
+  });
+  if (list?.dataScope && !list.dataScope.policyCode) {
+    issues.push({ level: 'error', message: '数据范围声明了但 policyCode 为空（后端 WHERE 强制需要明确的 row_policies code）', locate: { tab: 'list' } });
+  }
+  if (list?.degradedBanner && !list.degradedBanner.text.trim()) {
+    issues.push({ level: 'warning', message: '降级横幅 text 为空，依赖不可用时用户看不到任何提示', locate: { tab: 'list' } });
+  }
+  if (list?.viewKind && list.viewKind !== 'table' && list.viewKind !== 'kanban' && list.viewKind !== 'calendar') {
+    issues.push({ level: 'warning', message: `视图形态 ${list.viewKind} 不在协议 enum（table/kanban/calendar），运行时前向忽略并按表格渲染`, locate: { tab: 'list' } });
+  }
 
   /* ---------- 字典覆写（协议 §3.1：只引用，不新造） ---------- */
   Object.keys(s.dictionaries ?? {}).forEach((key) => {

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { resolveVariant } from '../../utils/uiSchemaEngine';
 import {
   addVariant, buildDefaultSchema, mergeVariantIntoBase, removeVariant, updateVariant,
+  setDegradedBanner, setPageHeader, updateFooter, setI18nNamespace, updateBase,
+  setBatchActions, toggleQuickFilters, addStat, updateStat, removeStat, setViewKind, setDataScope,
+  toggleSearchFields,
 } from './schemaOps';
 
 const base = () => buildDefaultSchema('expense', [
@@ -92,5 +95,93 @@ describe('variant ops（变体创作纯函数）', () => {
     expect(mains).toHaveLength(1);
     expect(mains[0]?.title).toBe('覆盖标题');
     expect((merged.views.form?.sections ?? []).some((x) => x.title === '基本信息')).toBe(false);
+  });
+});
+
+describe('v1.1/v1.2 新能力 ops（页头 / 合规条 / i18n / 模板 / list 全量）', () => {
+  it('setPageHeader：空数组清空（不留空数组脏键）；非空按序写入', () => {
+    const s = base();
+    const next = setPageHeader(s, 'form', ['amount', 'status']);
+    expect(next.views.form?.pageHeader).toEqual(['amount', 'status']);
+    expect(setPageHeader(next, 'form', []).views.form?.pageHeader).toBeUndefined();
+    // detail 与 form 独立配置，互不影响
+    const d = setPageHeader(next, 'detail', ['status']);
+    expect(d.views.detail?.pageHeader).toEqual(['status']);
+    expect(d.views.form?.pageHeader).toEqual(['amount', 'status']);
+  });
+
+  it('setDegradedBanner：协议对象 {when,text}；空 text 清除而非留空壳（曾踩坑：string 漂移）', () => {
+    const s = base();
+    const withBanner = setDegradedBanner(s, { when: 'llm_unavailable', text: 'AI 服务不可用，已切换规则审查模式' });
+    expect(withBanner.views.list?.degradedBanner).toEqual({ when: 'llm_unavailable', text: 'AI 服务不可用，已切换规则审查模式' });
+    // 空 text ⇒ 整体清除（不给协议留 {when, text:''} 的半吊子形态）
+    expect(setDegradedBanner(withBanner, { when: 'llm_unavailable', text: '   ' }).views.list?.degradedBanner).toBeUndefined();
+    // when 缺省补 llm_unavailable（协议命名条件），不允许空 when 落库
+    expect(setDegradedBanner(s, { when: '', text: '降级提示' }).views.list?.degradedBanner).toEqual({ when: 'llm_unavailable', text: '降级提示' });
+  });
+
+  it('负向探针：degradedBanner 若退回 string 写入，本测试必须变红（防协议漂移回归）', () => {
+    const s = setDegradedBanner(base(), { when: 'llm_unavailable', text: 'x' });
+    expect(typeof s.views.list?.degradedBanner).toBe('object');
+  });
+
+  it('updateFooter：三键增量合并（disclaimer/aiBadge/mockDataMark 各自独立）', () => {
+    let s = updateFooter(base(), { disclaimer: '本界面由 AI 辅助生成，仅供参考' });
+    expect(s.footer).toMatchObject({ disclaimer: '本界面由 AI 辅助生成，仅供参考' });
+    s = updateFooter(s, { aiBadge: true });
+    expect(s.footer).toMatchObject({ disclaimer: '本界面由 AI 辅助生成，仅供参考', aiBadge: true });
+    s = updateFooter(s, { mockDataMark: true });
+    expect(s.footer).toMatchObject({ aiBadge: true, mockDataMark: true });
+  });
+
+  it('setI18nNamespace：空串清除（不留空命名空间）；updateBase 增量合并 followMode', () => {
+    const s = setI18nNamespace(base(), 'bone.ui.expense');
+    expect(s.i18n).toEqual({ namespace: 'bone.ui.expense' });
+    expect(setI18nNamespace(s, '').i18n).toBeUndefined();
+    const b = updateBase(s, { followMode: 'notify' });
+    expect(b.base).toMatchObject({ followMode: 'notify' });
+    expect(updateBase(b, { followMode: 'pinned' }).base?.followMode).toBe('pinned');
+  });
+
+  it('list ops：quickFilters/batchActions 整表替换、空数组清除；stats 增改删', () => {
+    let s = toggleQuickFilters(base(), ['mine', 'high_amount']);
+    expect(s.views.list?.quickFilters).toEqual(['mine', 'high_amount']);
+    expect(toggleQuickFilters(s, []).views.list?.quickFilters).toBeUndefined();
+
+    s = setBatchActions(s, ['approve', 'reject']);
+    expect(s.views.list?.batchActions).toEqual(['approve', 'reject']);
+    expect(setBatchActions(s, []).views.list?.batchActions).toBeUndefined();
+
+    s = addStat(s);
+    expect(s.views.list?.stats).toHaveLength(1);
+    expect(s.views.list?.stats?.[0]).toMatchObject({ title: '新指标', valueRef: '' });
+    s = updateStat(s, 0, { title: '待审量', valueRef: 'agg.pending' });
+    expect(s.views.list?.stats?.[0]).toMatchObject({ title: '待审量', valueRef: 'agg.pending' });
+    s = removeStat(s, 0);
+    expect(s.views.list?.stats).toHaveLength(0);
+  });
+
+  it('list ops：setViewKind/setDataScope/toggleSearchFields 空值清除语义', () => {
+    let s = setViewKind(base(), 'kanban');
+    expect(s.views.list?.viewKind).toBe('kanban');
+    expect(setViewKind(s, '').views.list?.viewKind).toBeUndefined();
+
+    s = setDataScope(base(), 'dept_only');
+    expect(s.views.list?.dataScope).toEqual({ policyCode: 'dept_only' });
+    expect(setDataScope(s, '').views.list?.dataScope).toBeUndefined();
+
+    s = toggleSearchFields(base(), ['amount', 'status']);
+    expect(s.views.list?.searchFields).toEqual(['amount', 'status']);
+    expect(toggleSearchFields(s, []).views.list?.searchFields).toBeUndefined();
+  });
+
+  it('负向探针：list 写操作不得 mutate 原 schema（不可变纪律）', () => {
+    const s = base();
+    const snap = JSON.stringify(s);
+    setPageHeader(s, 'form', ['amount']);
+    setDegradedBanner(s, { when: 'llm_unavailable', text: 'x' });
+    addStat(s);
+    toggleQuickFilters(s, ['mine']);
+    expect(JSON.stringify(s)).toBe(snap);
   });
 });

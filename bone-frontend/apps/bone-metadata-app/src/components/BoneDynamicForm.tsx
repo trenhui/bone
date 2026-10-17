@@ -275,22 +275,51 @@ export const BoneDynamicForm: React.FC<Props> = ({
 
   return (
     <div style={{ maxWidth: 720 }}>
-      {form.sections.map((sec) => (
-        <CardSection key={sec.id} title={sec.title ?? sec.id}>
-          {sec.controls.map((c) => {
-            const f = fieldMap[c.fieldCode];
-            if (!f && !c.virtual) {
-              return <Alert key={c.fieldCode} type="warning" showIcon style={{ marginBottom: 8 }}
-                message={`控件引用的字段 ${c.fieldCode} 在结构里不存在（UI-REF-01）`} />;
-            }
-            if (f && !isRenderSupported(f) && c.controlKind === undefined) {
-              return <Alert key={c.fieldCode} type="warning" showIcon style={{ marginBottom: 8 }}
-                message={`字段「${f.displayName}」的类型 ${f.type} 暂不支持自动生成控件`} />;
-            }
-            return <div key={c.fieldCode}>{renderControl(c)}</div>;
-          })}
-        </CardSection>
-      ))}
+      {/* 页头关键信息条（v1.2 §13.2；引用字段必须存在于某分区控件，悬空由 lint ERROR） */}
+      <PageHeaderBar codes={form.pageHeader ?? []} data={data} fields={fields} />
+
+      {form.sections.map((sec) => {
+        // split-left-40/60：按当前可见控件顺序对半切分（与预览同口径：顺序即分栏）
+        const layout = sec.layout ?? 'single';
+        const split = layout === 'split-left-40' || layout === 'split-left-60';
+        const visibleCtrls = sec.controls.filter((c) => fieldVisible(state[c.fieldCode], ctx));
+        const body = (ctrl: Control) => {
+          const f = fieldMap[ctrl.fieldCode];
+          if (!f && !ctrl.virtual) {
+            return <Alert type="warning" showIcon style={{ marginBottom: 8 }}
+              message={`控件引用的字段 ${ctrl.fieldCode} 在结构里不存在（UI-REF-01）`} />;
+          }
+          if (f && !isRenderSupported(f) && ctrl.controlKind === undefined) {
+            return <Alert type="warning" showIcon style={{ marginBottom: 8 }}
+              message={`字段「${f.displayName}」的类型 ${f.type} 暂不支持自动生成控件`} />;
+          }
+          return <div>{renderControl(ctrl)}</div>;
+        };
+        const title = sec.title ?? sec.id;
+        if (split && visibleCtrls.length >= 2) {
+          const mid = Math.ceil(visibleCtrls.length / 2);
+          const lPct = layout === 'split-left-40' ? '38%' : '58%';
+          const rPct = layout === 'split-left-40' ? '58%' : '38%';
+          return (
+            <div key={sec.id} style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Text strong>{title}</Text>
+                {sec.kind && <span style={{ fontSize: 11, color: '#6b7280', border: '1px solid #eef0f5', borderRadius: 6, padding: '0 6px' }}>{sec.kind}</span>}
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>左右分栏 {layout === 'split-left-40' ? '40/60' : '60/40'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `${lPct} ${rPct}`, gap: 16, alignItems: 'start' }}>
+                <div>{visibleCtrls.slice(0, mid).map((c, i) => <div key={`${c.fieldCode}-${i}`}>{body(c)}</div>)}</div>
+                <div>{visibleCtrls.slice(mid).map((c, i) => <div key={`${c.fieldCode}-${i}`}>{body(c)}</div>)}</div>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <CardSection key={sec.id} title={title} kind={sec.kind}>
+            {visibleCtrls.map((c, i) => <div key={`${c.fieldCode}-${i}`}>{body(c)}</div>)}
+          </CardSection>
+        );
+      })}
 
       {submitMsg && (submitMsg.errors.length > 0 || submitMsg.warnings.length > 0) && (
         <div style={{ margin: '12px 0' }}>
@@ -307,6 +336,9 @@ export const BoneDynamicForm: React.FC<Props> = ({
           ))}
         </Space>
       )}
+
+      {/* 常驻合规条（footer 配置了才渲染；AI 标识/免责声明/模拟数据标注） */}
+      {schema.footer && <SchemaFooterBar footer={schema.footer} />}
     </div>
   );
 };
