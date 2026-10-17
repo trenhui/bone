@@ -2,6 +2,7 @@ package com.bone.ai.gateway.application;
 
 import com.bone.ai.gateway.common.AiGatewayErrorCodes;
 import com.bone.ai.gateway.domain.LlmClient;
+import com.bone.ai.gateway.domain.LlmGatewayPolicies;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
@@ -11,7 +12,12 @@ import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,39 +49,66 @@ public class LlmGatewayApplicationService {
 
   private final DomainEventPublisher domainEventPublisher;
   private final TenantProvider tenantProvider;
-  private final PiiRedactor piiRedactor;
+  private final LlmGatewayPolicies policies;
 
   public LlmGatewayApplicationService(
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
       TenantProvider tenantProvider) {
-    // 无脱敏器即直通（脱敏器由装配层注入，application 不 new infrastructure 实现——DDD 分层）
-    this(llmClient, domainEventPublisher, tenantProvider, null);
+    // 无策略即直通（策略由装配层注入，application 不 new infrastructure 实现——DDD 分层）
+    this(llmClient, domainEventPublisher, tenantProvider, LlmGatewayPolicies.permissive());
+  }
+
+  /** 兼容旧装配：只配脱敏器，其余策略直通。 */
+  public LlmGatewayApplicationService(
+      LlmClient llmClient,
+      DomainEventPublisher domainEventPublisher,
+      TenantProvider tenantProvider,
+      PiiRedactor piiRedactor) {
+    this(
+        llmClient,
+        domainEventPublisher,
+        tenantProvider,
+        new LlmGatewayPolicies(piiRedactor, null, null, null));
   }
 
   public LlmGatewayApplicationService(
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
       TenantProvider tenantProvider,
-      PiiRedactor piiRedactor) {
+      LlmGatewayPolicies policies) {
     this.llmClient = llmClient;
     this.domainEventPublisher = domainEventPublisher;
     this.tenantProvider = tenantProvider;
-    this.piiRedactor = piiRedactor;
+    this.policies = policies == null ? LlmGatewayPolicies.permissive() : policies;
   }
 
   /**
-   * 发起一次受治理的 LLM 调用（成本红线 + 出口脱敏）。
+   * 发起一次受治理的 LLM 调用，执行链： 红线短路 → 租户配额 → 出口脱敏 → 精确缓存查询 → 委派 client → 结构化输出校验 → 落证 + 计量 → 写缓存。
    *
    * @param request 模型请求
    * @return 模型响应（原文；仅出站与落证内容脱敏）
-   * @throws BizException 当请求带成本红线信号（规则已命中）时抛出，且不会调用 {@link LlmClient}、不发布事件
+   * @throws BizException 红线命中（400）/ 配额超限（429）/ 结构化输出不合规（502）
    */
   public LlmResponse invoke(LlmRequest request) {
     if (request.shortCircuited()) {
       throw new BizException(400, "规则已命中，按成本红线跳过 LLM 调用", AiGatewayErrorCodes.REDLINE_BLOCKED);
     }
+    String tenantId = tenantProvider.currentTenantId();
+    // 配额在脱敏与调用之前：超限租户不该消耗任何后续算力
+    if (policies.quotaGuard() != null) {
+      policies.quotaGuard().acquire(tenantId);
+    }
     LlmRequest outbound = redactRequest(request);
+    String cacheKey = cacheKeyOf(outbound);
+    if (cacheKey != null && policies.responseCache() != null) {
+      Optional<LlmResponse> cached = policies.responseCache().get(cacheKey);
+      if (cached.isPresent()) {
+        // 命中未触达模型：不发证据 / 计量（证据链只记真实发生的调用），只留可观测日志
+        log.info("LLM 精确缓存命中: traceId={}, model={}", outbound.effectiveTraceId(), outbound.model());
+        return cached.get();
+      }
+    }
     LlmResponse response;
     try {
       response = llmClient.chat(outbound);
@@ -83,25 +116,58 @@ public class LlmGatewayApplicationService {
       publishFailureEvidence(outbound, e);
       throw e;
     }
+    // 结构化输出校验：下游按 JSON 解析，格式坏了就是无归因故障，在网关挡住并给稳定码
+    if (request.jsonResponse() && policies.outputValidator() != null) {
+      try {
+        policies.outputValidator().validate(response.content(), outbound.effectiveTraceId());
+      } catch (RuntimeException invalid) {
+        publishFailureEvidence(outbound, invalid);
+        throw invalid;
+      }
+    }
+    if (cacheKey != null && policies.responseCache() != null) {
+      policies.responseCache().put(cacheKey, response);
+    }
     // 证据链（发生了什么）与计量（花了多少）分离发布：spend tracking 消费者订阅 LlmUsageRecorded
     domainEventPublisher.publish(LlmCallRecorded.of(outbound, redactResponse(response)));
     domainEventPublisher.publish(
         LlmUsageRecorded.of(
-            tenantProvider.currentTenantId(),
-            request.model(),
-            response.usage(),
-            outbound.effectiveTraceId()));
+            tenantId, request.model(), response.usage(), outbound.effectiveTraceId()));
     return response;
+  }
+
+  /**
+   * 缓存键：仅确定性请求（temperature 为 0 或未指定）参与缓存。
+   *
+   * <p>temperature &gt; 0 的输出本就随机，缓存会改变业务语义（同一请求两次判定不同才是预期）——故返回 null 表示不缓存。
+   */
+  private String cacheKeyOf(LlmRequest request) {
+    if (request.temperature() != null && request.temperature() > 0) {
+      return null;
+    }
+    try {
+      Map<String, Object> canonical = new LinkedHashMap<>();
+      canonical.put("model", request.model());
+      canonical.put("messages", request.messages());
+      canonical.put("temperature", request.temperature());
+      canonical.put("maxTokens", request.maxTokens());
+      canonical.put("jsonResponse", request.jsonResponse());
+      return sha256(new ObjectMapper().writeValueAsString(canonical));
+    } catch (JsonProcessingException e) {
+      log.warn("缓存键计算失败，跳过缓存: {}", e.getMessage());
+      return null;
+    }
   }
 
   /** 出站请求脱敏（逐条消息文本；开关关闭时返回原请求，零拷贝语义）。 */
   private LlmRequest redactRequest(LlmRequest request) {
-    if (piiRedactor == null || !piiRedactor.enabled()) {
+    PiiRedactor redactor = policies.piiRedactor();
+    if (redactor == null || !redactor.enabled()) {
       return request;
     }
     List<LlmMessage> messages =
         request.messages().stream()
-            .map(m -> new LlmMessage(m.role(), piiRedactor.redact(m.content())))
+            .map(m -> new LlmMessage(m.role(), redactor.redact(m.content())))
             .toList();
     return new LlmRequest(
         request.model(),
@@ -115,14 +181,26 @@ public class LlmGatewayApplicationService {
 
   /** 落证响应脱敏（模型可能回显输入里的 PII，证据表不得成为未脱敏副本）。 */
   private LlmResponse redactResponse(LlmResponse response) {
-    if (piiRedactor == null || !piiRedactor.enabled() || response == null) {
+    PiiRedactor redactor = policies.piiRedactor();
+    if (redactor == null || !redactor.enabled() || response == null) {
       return response;
     }
     return new LlmResponse(
-        piiRedactor.redact(response.content()),
+        redactor.redact(response.content()),
         response.model(),
         response.finishReason(),
         response.usage());
+  }
+
+  private static String sha256(String input) {
+    try {
+      byte[] digest =
+          java.security.MessageDigest.getInstance("SHA-256")
+              .digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      return java.util.HexFormat.of().formatHex(digest);
+    } catch (java.security.NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 不可用", e);
+    }
   }
 
   /** 失败调用补发证据（自身失败只告警，不覆盖原始故障——留证是尽力而为，拒返才是硬承诺）。 */

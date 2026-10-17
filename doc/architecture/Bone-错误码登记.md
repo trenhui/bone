@@ -235,6 +235,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ### AI_GATEWAY_
 
 | `AI_GATEWAY_REDLINE_BLOCKED` | 400 | 成本红线命中，请求在触达模型前被短路拒绝（未发起 LLM 调用、未产生用量） |
+| `AI_GATEWAY_QUOTA_EXCEEDED` | 429 | 租户配额超限，窗口内请求数达上限（未发起 LLM 调用） |
+| `AI_GATEWAY_OUTPUT_INVALID` | 502 | 结构化输出不合规（非合法 JSON / 空响应 / 被 markdown 围栏包裹） |
 
 ### AI_HITL_
 

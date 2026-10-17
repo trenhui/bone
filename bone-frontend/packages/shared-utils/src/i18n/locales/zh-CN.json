@@ -26,6 +26,8 @@
     "AI_DOC_SIDECAR_UNAVAILABLE": "文档解析服务暂不可用，已转人工处理",
     "AI_DOC_READ_FAILED": "文档读取失败，请确认文件完整可读",
     "AI_GATEWAY_REDLINE_BLOCKED": "请求已按成本红线拦截，未发起模型调用",
+    "AI_GATEWAY_QUOTA_EXCEEDED": "租户调用配额已用尽，请稍后重试",
+    "AI_GATEWAY_OUTPUT_INVALID": "模型返回内容不是合法 JSON，已转人工复核",
     "GEN_GENERATION_FAILED": "代码生成执行失败",
     "GEN_TEMPLATE_NOT_FOUND": "代码模板不存在",
     "GEN_TENANT_CONTEXT_MISSING": "租户上下文缺失",

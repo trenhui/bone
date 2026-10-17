@@ -12,4 +12,10 @@ public final class AiGatewayErrorCodes {
 
   /** 成本红线命中，请求在触达模型前被短路拒绝（400）：未发起 LLM 调用、未产生任何用量。 */
   public static final String REDLINE_BLOCKED = "AI_GATEWAY_REDLINE_BLOCKED";
+
+  /** 租户配额超限（429）：窗口内请求数已达上限，未发起 LLM 调用。 */
+  public static final String QUOTA_EXCEEDED = "AI_GATEWAY_QUOTA_EXCEEDED";
+
+  /** 结构化输出不合规（502）：非合法 JSON / 空响应 / 被 markdown 围栏包裹（可能截断于 max_tokens）。 */
+  public static final String OUTPUT_INVALID = "AI_GATEWAY_OUTPUT_INVALID";
 }

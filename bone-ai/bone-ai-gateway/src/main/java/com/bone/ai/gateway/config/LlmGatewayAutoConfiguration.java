@@ -2,15 +2,22 @@ package com.bone.ai.gateway.config;
 
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
+import com.bone.ai.gateway.domain.LlmGatewayPolicies;
+import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
+import com.bone.ai.gateway.domain.gateway.StructuredOutputValidator;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
+import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
+import com.bone.ai.gateway.infrastructure.cache.InMemoryLlmResponseCache;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
 import com.bone.ai.gateway.infrastructure.gateway.TenantContextProviderAdapter;
+import com.bone.ai.gateway.infrastructure.quota.InMemoryTenantQuotaGuard;
+import com.bone.ai.gateway.infrastructure.security.JsonOutputValidator;
 import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -20,7 +27,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -47,17 +54,44 @@ public class LlmGatewayAutoConfiguration {
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
       TenantProvider tenantProvider,
-      PiiRedactor piiRedactor) {
+      LlmGatewayPolicies policies) {
     return new LlmGatewayApplicationService(
-        llmClient, domainEventPublisher, tenantProvider, piiRedactor);
+        llmClient, domainEventPublisher, tenantProvider, policies);
   }
 
-  /** 出站 PII 脱敏器（默认启用正则规则实现；可 {@code @Bean} 覆盖接云端 Presidio / DLP）。 */
+  /**
+   * 治理策略组（脱敏 / 输出校验 / 缓存 / 配额）。
+   *
+   * <p>各项均可按配置关闭；默认开启脱敏与输出校验（合规默认），缓存与配额默认关闭（需按部署容量显式开启）。
+   */
   @Bean
   @ConditionalOnMissingBean
-  public PiiRedactor piiRedactor(
-      @Value("${bone.ai.gateway.pii-redaction-enabled:true}") boolean enabled) {
-    return new RegexPiiRedactor(enabled);
+  public LlmGatewayPolicies gatewayPolicies(
+      LlmGatewayProperties props,
+      ObjectProvider<PiiRedactor> piiRedactor,
+      ObjectProvider<StructuredOutputValidator> validator,
+      ObjectProvider<LlmResponseCache> cache,
+      ObjectProvider<TenantQuotaGuard> quota) {
+    PiiRedactor redactor =
+        piiRedactor.getIfAvailable(() -> new RegexPiiRedactor(props.isPiiRedactionEnabled()));
+    StructuredOutputValidator outputValidator =
+        validator.getIfAvailable(
+            () -> props.isOutputValidationEnabled() ? new JsonOutputValidator() : null);
+    LlmResponseCache responseCache =
+        cache.getIfAvailable(
+            () ->
+                props.getCacheMaxEntries() > 0
+                    ? new InMemoryLlmResponseCache(
+                        props.getCacheMaxEntries(), props.getCacheTtlSeconds() * 1000L)
+                    : null);
+    TenantQuotaGuard quotaGuard =
+        quota.getIfAvailable(
+            () ->
+                props.getQuotaMaxRequestsPerWindow() > 0
+                    ? new InMemoryTenantQuotaGuard(
+                        props.getQuotaMaxRequestsPerWindow(), props.getQuotaWindowSeconds() * 1000L)
+                    : null);
+    return new LlmGatewayPolicies(redactor, outputValidator, responseCache, quotaGuard);
   }
 
   @Bean
