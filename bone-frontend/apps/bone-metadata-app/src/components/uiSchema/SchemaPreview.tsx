@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { parseEnumValues } from '@bone/shared-types';
 import {
-  evalCond, linkageState, resolveVariant, resolveVisibleActions, runSubmit,
+  evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit,
   type BoneUiSchema, type Control, type FieldUiState, type UiContext, type VariantMatch,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -241,6 +241,8 @@ function ListViewPreview({ schema, fields, scenarioData }: {
 }) {
   const list = schema.views.list;
   const [tab, setTab] = useState(0);
+  const [quick, setQuick] = useState<string[]>([]);
+  const [checked, setChecked] = useState<number[]>([]);
 
   if (!list) return <div className="uis-empty">该 schema 未定义列表视图（views.list）</div>;
 
@@ -248,6 +250,10 @@ function ListViewPreview({ schema, fields, scenarioData }: {
   const tabs = list.tabs ?? [];
   const stats = list.stats ?? [];
   const searchFields = list.searchFields ?? [];
+  const quickFilters = list.quickFilters ?? [];
+  const batchActions = list.batchActions ?? [];
+  const viewKind = list.viewKind ?? 'table';
+  const degraded = list.degradedBanner;
 
   // 合成演示行（设计预览，非真实数据）：以场景数据为基，派生 3 种状态
   const demoRows = [
@@ -263,8 +269,28 @@ function ListViewPreview({ schema, fields, scenarioData }: {
     return String(v);
   };
 
+  const allChecked = checked.length === demoRows.length && demoRows.length > 0;
+
   return (
     <div>
+      {/* 视图形态徽标（table=首版完整形态；kanban/calendar=P1，运行时降级） */}
+      {viewKind !== 'table' && (
+        <div style={{ marginBottom: 10 }}>
+          <span className="uis-vk-badge">视图形态：{viewKind}（P1 · 运行时按表格降级）</span>
+        </div>
+      )}
+
+      {/* 降级横幅（协议对象 when+text；预览直接展示，注明触发条件） */}
+      {degraded?.text && (
+        <div className="uis-degraded">
+          <span>⚠️</span>
+          <span>
+            <Text strong>{degraded.text}</Text>
+            <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>触发条件：{degraded.when}（后端降级开关，UI 不判断）</Text>
+          </span>
+        </div>
+      )}
+
       {stats.length > 0 && (
         <div className="uis-stat-grid" style={{ marginBottom: 16 }}>
           {stats.map((s, i) => (
@@ -297,6 +323,22 @@ function ListViewPreview({ schema, fields, scenarioData }: {
         </div>
       )}
 
+      {/* 快捷筛选（协议 quickFilters：code 数组，运行时翻译为具名筛选入口） */}
+      {quickFilters.length > 0 && (
+        <div className="uis-quick-filters">
+          <span className="uis-qf-lbl">快捷筛选</span>
+          {quickFilters.map((code) => {
+            const on = quick.includes(code);
+            return (
+              <span key={code} className={`uis-qf ${on ? 'active' : ''}`}
+                onClick={() => setQuick(on ? quick.filter((c) => c !== code) : [...quick, code])}>
+                {code}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {list.dataScope && (
         <div style={{ marginBottom: 12 }}>
           <span className="uis-scope-chip">
@@ -305,22 +347,90 @@ function ListViewPreview({ schema, fields, scenarioData }: {
         </div>
       )}
 
+      {/* 批量动作工具条（勾选演示行后激活；预览不真调动作） */}
+      {batchActions.length > 0 && (
+        <div className="uis-batch-bar">
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={allChecked}
+              onChange={(e) => setChecked(e.target.checked ? demoRows.map((_, i) => i) : [])} />
+            <span className="cnt">{checked.length ? `已选 ${checked.length} 项` : '全选'}</span>
+          </label>
+          <span style={{ flex: 1 }} />
+          {batchActions.map((a) => (
+            <button key={a} className="uis-batch-btn"
+              onClick={() => message.info(`将对 ${checked.length || '所选'} 项执行：${a}`)}>
+              {a}
+            </button>
+          ))}
+        </div>
+      )}
+
       {columns.length === 0 ? (
         <div className="uis-empty">列表未配置可见列</div>
       ) : (
         <table className="uis-grid">
           <thead>
-            <tr>{columns.map((c) => <th key={c.fieldCode}>{fields.find((f) => f.code === c.fieldCode)?.displayName ?? c.fieldCode}</th>)}</tr>
+            <tr>
+              {batchActions.length > 0 && <th className="sel">✓</th>}
+              {columns.map((c) => (
+                <th key={c.fieldCode} className={c.pinned ? `pin-${c.pinned}` : undefined}>
+                  {fields.find((f) => f.code === c.fieldCode)?.displayName ?? c.fieldCode}
+                  {c.pinned && <span title={`固定${c.pinned === 'right' ? '右侧' : '左侧'}`} style={{ marginLeft: 4, fontSize: 10 }}>📌</span>}
+                </th>
+              ))}
+            </tr>
           </thead>
           <tbody>
             {demoRows.map((r, i) => (
-              <tr key={i}>
-                {columns.map((c) => <td key={c.fieldCode}>{fmt(c.fieldCode, r[c.fieldCode])}</td>)}
+              <tr key={i} className={checked.includes(i) ? 'row-checked' : undefined}>
+                {batchActions.length > 0 && (
+                  <td className="sel">
+                    <input type="checkbox" checked={checked.includes(i)}
+                      onChange={(e) => setChecked(e.target.checked ? [...checked, i] : checked.filter((k) => k !== i))} />
+                  </td>
+                )}
+                {columns.map((c) => (
+                  <td key={c.fieldCode} className={c.pinned ? `pin-${c.pinned}` : undefined}>{fmt(c.fieldCode, r[c.fieldCode])}</td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+/* ---------------- 字段行（单栏网格 / 分栏共用） ---------------- */
+function FieldRow({ control, states, fields, schema, data, onSet, inSplit = false }: {
+  control: Control;
+  states: Record<string, FieldUiState>;
+  fields: MetaField[];
+  schema: BoneUiSchema;
+  data: Record<string, unknown>;
+  onSet: (code: string, v: unknown) => void;
+  /** 分栏模式下为单列堆叠，full 宽类无意义（不传） */
+  inSplit?: boolean;
+}) {
+  const st = states[control.fieldCode] ?? { visible: true, required: false, readonly: false, disabled: false, notice: '' };
+  const span = (control.props?.span as number | undefined) ?? 12;
+  const f = fields.find((x) => x.code === control.fieldCode);
+  const full = !inSplit && (span >= 24 || control.controlKind === 'CHILD_TABLE' || control.controlKind === 'ATTACHMENT' || control.controlKind === 'TIMELINE');
+  return (
+    <div className={full ? 'uis-full' : undefined}>
+      <div className="uis-fld">
+        <label>
+          {control.labelOverride || f?.displayName || control.fieldCode}
+          {st.required && <span className="req">*</span>}
+          {st.readonly && <span className="ro">只读</span>}
+          {control.virtual && <span className="ro">虚拟</span>}
+        </label>
+        <FieldControl
+          control={control} st={st} fields={fields} schema={schema}
+          value={data[control.fieldCode]} onChange={(v) => onSet(control.fieldCode, v)}
+        />
+        {st.notice && <div className="uis-notice">{st.notice}</div>}
+      </div>
     </div>
   );
 }
@@ -381,6 +491,12 @@ export default function SchemaPreview({
   const previewSections = previewMode === 'list'
     ? []
     : (previewMode === 'detail' ? (activeSchema.views.detail?.sections ?? []) : formOf(activeSchema).sections ?? []);
+  // 页头关键信息条（v1.2 §13.2）：与分区互斥，随预览视图切换取各自配置
+  const pageHeaderCodes = previewMode === 'list'
+    ? []
+    : (previewMode === 'detail'
+      ? (activeSchema.views.detail?.pageHeader ?? [])
+      : (formOf(activeSchema).pageHeader ?? []));
   const listCodes = (activeSchema.views.list?.columns ?? []).map((c) => c.fieldCode);
   const allCodes = previewMode === 'list'
     ? listCodes
@@ -534,6 +650,23 @@ export default function SchemaPreview({
           </div>
         ) : (
           <>
+            {/* 页头关键信息条（v1.2 §13.2：引用字段渲染于分区之外，如 案件号/申请人/状态） */}
+            {pageHeaderCodes.length > 0 && (
+              <div className="uis-page-header">
+                {pageHeaderCodes.map((code) => {
+                  const f = fields.find((x) => x.code === code);
+                  const v = data[code];
+                  const empty = v === undefined || v === null || v === '';
+                  return (
+                    <div key={code} className="uis-ph-item">
+                      <span className="k">{f?.displayName ?? code}</span>
+                      <span className={`v ${empty ? 'empty' : ''}`}>{empty ? '—' : String(v)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 动作条 */}
             {visibleActions.length > 0 && (
               <div className="uis-actionbar" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0, marginBottom: 16 }}>
@@ -557,38 +690,46 @@ export default function SchemaPreview({
             {previewSections.length === 0 && <div className="uis-empty">{previewMode === 'detail' ? '详情视图还没有配置任何分区' : '还没有配置任何分区'}</div>}
 
             {previewSections.map((sec, si) => {
-              const ctrls = (sec.controls ?? []).filter((c) => states[c.fieldCode]?.visible !== false);
+              // 可见性走同源 fieldVisible：联动 then.tier 档位门控在此生效（不声明=不限制）
+              const ctrls = (sec.controls ?? []).filter((c) => fieldVisible(states[c.fieldCode], ctx));
               if (!ctrls.length) return null;
+              const layout = sec.layout ?? 'single';
+              // split-left-40/60：按当前可见控件顺序对半切分（顺序即分栏，与拖拽排序同源）。
+              // 控件数 <2 时无分栏意义，退化为单栏。
+              const split = layout === 'split-left-40' || layout === 'split-left-60';
+              if (split && ctrls.length >= 2) {
+                const mid = Math.ceil(ctrls.length / 2);
+                const pct = layout === 'split-left-40' ? '40%' : '60%';
+                return (
+                  <div key={sec.id ?? si} className={`uis-split ${layout === 'split-left-40' ? 's40' : 's60'}`}>
+                    <div className="uis-split-col">
+                      <span className="uis-split-tag">◀ 左栏（{pct}）</span>
+                      {ctrls.slice(0, mid).map((c, ci) => (
+                        <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                          states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
+                      ))}
+                    </div>
+                    <div className="uis-split-col">
+                      <span className="uis-split-tag">右栏 ▶</span>
+                      {ctrls.slice(mid).map((c, ci) => (
+                        <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                          states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={sec.id ?? si} className={`uis-seccard ${sec.kind === 'dashboard' ? 'uis-dash' : ''}`}>
                   <div className="uis-sec-title">
                     {sec.title ?? sec.id}
-                    {sec.kind && <span className="kind">{sec.kind}</span>}
+                    {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
                   </div>
                   <div className="uis-grid2">
-                    {ctrls.map((c, ci) => {
-                      const st = states[c.fieldCode] ?? { visible: true, required: false, readonly: false, disabled: false, notice: '' };
-                      const span = (c.props?.span as number | undefined) ?? 12;
-                      const f = fields.find((x) => x.code === c.fieldCode);
-                      const full = span >= 24 || c.controlKind === 'CHILD_TABLE' || c.controlKind === 'ATTACHMENT' || c.controlKind === 'TIMELINE';
-                      return (
-                        <div key={`${c.fieldCode}-${ci}`} className={full ? 'uis-full' : ''}>
-                          <div className="uis-fld">
-                            <label>
-                              {c.labelOverride || f?.displayName || c.fieldCode}
-                              {st.required && <span className="req">*</span>}
-                              {st.readonly && <span className="ro">只读</span>}
-                              {c.virtual && <span className="ro">虚拟</span>}
-                            </label>
-                            <FieldControl
-                              control={c} st={st} fields={fields} schema={resolved}
-                              value={data[c.fieldCode]} onChange={(v) => setField(c.fieldCode, v)}
-                            />
-                            {st.notice && <div className="uis-notice">{st.notice}</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {ctrls.map((c, ci) => (
+                      <FieldRow key={`${c.fieldCode}-${ci}`} control={c}
+                        states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
+                    ))}
                   </div>
                 </div>
               );
@@ -624,6 +765,7 @@ export default function SchemaPreview({
               <div className="uis-footer">
                 {resolved.footer.aiBadge && <span className="ai-badge">AI</span>}
                 <span>{resolved.footer.disclaimer ?? '本界面由配置生成'}</span>
+                {resolved.footer.mockDataMark && <span className="mock-mark">演示数据</span>}
               </div>
             )}
           </>

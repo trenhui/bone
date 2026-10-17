@@ -1,10 +1,12 @@
 /**
- * 结构配置面板：分区 / 控件 / 字段调色板 / 控件属性。
+ * 结构配置面板：分区 / 控件 / 字段调色板 / 控件属性 / 视图设置（页头·合规条·显示模式）。
  *
  * 交互范式（对标 Salesforce Lightning App Builder、Retool）：
  * - 左侧画布式的分区卡片列表，控件以行呈现，可直接拖拽重排（分区内 + 跨分区）；
  * - 未使用的实体字段在底部「字段库」待选，点一下即落到当前分区（避免手填 code 打错字）；
- * - 点选控件就地展开属性卡，不弹窗（减少一次上下文切换）。
+ * - 点选控件就地展开属性卡，不弹窗（减少一次上下文切换）；
+ * - 分区支持 kind/layout（v1.1：dashboard/timeline/compare/report/tasks + 左右分栏），
+ *   采购审查「左 40% 风险面板 + 右 60% 原文」即 split-left-40。
  */
 import { useEffect, useState } from 'react';
 import {
@@ -16,10 +18,10 @@ import {
 } from '@ant-design/icons';
 import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
-import { CONTROL_KINDS, KIND_GROUPS, KIND_MAP } from './constants';
+import { CONTROL_KINDS, KIND_GROUPS, KIND_MAP, SECTION_KINDS, SECTION_LAYOUTS, DISPLAY_MODES } from './constants';
 import {
   addControl, addSection, moveControl, moveControlAcross, moveSection,
-  removeControl, removeSection, unusedFields, updateControl, updateSection, viewOf,
+  removeControl, removeSection, setPageHeader, unusedFields, updateControl, updateFooter, updateSection, usedFieldCodes, viewOf,
 } from './schemaOps';
 import { dragSort2 } from './drag';
 import type { ViewKey } from './schemaOps';
@@ -35,6 +37,104 @@ interface Props {
   onViewChange: (v: 'form' | 'detail') => void;
   /** 高亮定位（来自自检点击） */
   focus?: { si?: number; ci?: number };
+}
+
+/**
+ * 视图设置卡：页头字段条 + 显示模式 + 常驻合规条。
+ *
+ * - pageHeader（v1.2 §13.2）：独立于 sections 渲染在顶部（案件号/申请人/状态），
+ *   引用必须存在于某分区控件（lint/后端 validate 双查悬空）；
+ * - footer（v1.1 §10.2-8）：投研/理赔合规条（免责 + AI 标识 + 模拟数据标注）；
+ * - displayModes：create/edit/view 三态（协议 §3.1 子集）。
+ */
+function ViewSettings({ schema, onChange, view, fields }: {
+  schema: BoneUiSchema;
+  onChange: (next: BoneUiSchema) => void;
+  view: ViewKey;
+  fields: MetaField[];
+}): React.ReactElement {
+  const cur = viewOf(schema, view);
+  const pageHeader = cur.pageHeader ?? [];
+  const usedCodes = usedFieldCodes(schema, view);
+  const headerOptions = fields.filter((f) => usedCodes.has(f.code)).map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）` }));
+  const modes = schema.displayModes ?? ['create', 'edit', 'view'];
+  const footer = schema.footer ?? {};
+  const dangling = pageHeader.filter((c) => !usedCodes.has(c));
+
+  return (
+    <div style={{
+      border: '1px solid #e6eaf0', borderRadius: 10, marginBottom: 12, background: '#fff',
+      boxShadow: '0 1px 2px rgba(16,24,40,.04)',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+        borderBottom: '1px solid #f5f5f5', background: '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
+      }}>
+        <SettingOutlined style={{ color: '#1677ff' }} />
+        <Text strong style={{ fontSize: 13 }}>视图设置</Text>
+        <Text type="secondary" style={{ fontSize: 11 }}>页头 · 显示模式 · 合规条</Text>
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>页头关键信息条（pageHeader）</Text>
+          <Select
+            size="small" mode="multiple" allowClear style={{ width: '100%', marginTop: 4 }}
+            placeholder="选择渲染在表单顶部的关键字段（须同时存在于某个分区）"
+            value={pageHeader}
+            onChange={(v) => onChange(setPageHeader(schema, view, v as string[]))}
+            options={headerOptions}
+          />
+          {dangling.length > 0 ? (
+            <Text type="danger" style={{ fontSize: 11 }}>
+              悬空引用：{dangling.join('、')} 未出现在任何分区控件（发布校验 ERROR）
+            </Text>
+          ) : (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              渲染在分区之上的关键信息条（如案件号 / 申请人 / 状态），与分区互斥。
+            </Text>
+          )}
+        </div>
+
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>显示模式（displayModes）</Text>
+          <div style={{ marginTop: 4 }}>
+            <Select
+              size="small" mode="multiple" style={{ width: 260 }}
+              value={modes}
+              onChange={(v) => onChange({ ...schema, displayModes: v as string[] })}
+              options={DISPLAY_MODES.map((m) => ({ value: m.value, label: m.label }))}
+            />
+            <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
+              按 create/edit/view 渲染同一 schema（config/preview 是建模态，不进运行时）
+            </Text>
+          </div>
+        </div>
+
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>常驻合规条（footer）</Text>
+          <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Input
+              size="small" placeholder="免责声明 / 合规文案（留空不渲染）"
+              value={footer.disclaimer ?? ''}
+              onChange={(e) => onChange(updateFooter(schema, { disclaimer: e.target.value || undefined }))}
+            />
+            <Space size={16}>
+              <Space size={4}>
+                <Switch size="small" checked={!!footer.aiBadge}
+                  onChange={(v) => onChange(updateFooter(schema, { aiBadge: v || undefined }))} />
+                <Text style={{ fontSize: 12 }}>AI 生成标识</Text>
+              </Space>
+              <Space size={4}>
+                <Switch size="small" checked={!!footer.mockDataMark}
+                  onChange={(v) => onChange(updateFooter(schema, { mockDataMark: v || undefined }))} />
+                <Text style={{ fontSize: 12 }}>模拟数据标注</Text>
+              </Space>
+            </Space>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** 单个控件的属性展开卡 */
@@ -135,6 +235,9 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         </Text>
       </Space>
 
+      {/* ---------- 视图设置：页头 / 合规条 / 显示模式（协议 v1.2 §13.2 + v1.1 §10.2-8） ---------- */}
+      <ViewSettings schema={schema} onChange={onChange} view={view} fields={fields} />
+
       {sections.length === 0 && (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -187,6 +290,22 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               value={sec.title ?? ''}
               onChange={(e) => onChange(updateSection(schema, view, si, { title: e.target.value }))}
             />
+            <Tooltip title="分区类型（v1.1：表单区/统计卡区/时间轴/对照区/报告区/待办区）">
+              <Select
+                size="small" style={{ width: 104 }} value={sec.kind ?? 'form'}
+                onChange={(v) => onChange(updateSection(schema, view, si, { kind: v }))}
+                options={SECTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Tooltip>
+            <Tooltip title="分区布局（split 用于审查分栏：左 40% 风险面板 + 右 60% 原文）">
+              <Select
+                size="small" style={{ width: 96 }} value={sec.layout ?? 'single'}
+                onChange={(v) => onChange(updateSection(schema, view, si, { layout: v }))}
+                options={SECTION_LAYOUTS.map((l) => ({ value: l.value, label: l.label }))}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Tooltip>
             <Tag style={{ fontSize: 11 }}>{sec.controls?.length ?? 0} 控件</Tag>
             <Space size={2}>
               <Tooltip title="上移">

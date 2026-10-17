@@ -305,9 +305,17 @@ const AccountManagement: React.FC = () => {
         }
       }
     } catch (err: unknown) {
-      const msg = (err as { displayMessage?: string })?.displayMessage
-        || (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        || '操作失败';
+      // ★ 区分「表单校验未过」与「服务端拒绝」：antd 的 validateFields() 失败时抛的是
+      //   带 errorFields 的对象（无 message），此前会落进兜底分支弹「操作失败」——
+      //   用户看到的是一个与填写内容无关的通用文案，且页面上明明有标红字段却不说。
+      //   （2026-10-16 全模块联调实证：邮箱填非邮箱格式 ⇒ 只弹「操作失败」，请求根本没发出。）
+      const e = err as { errorFields?: unknown[]; displayMessage?: string; response?: { data?: { message?: string } } };
+      if (Array.isArray(e?.errorFields) && e.errorFields.length > 0) {
+        antMessage.error('请先修正表单中标红的字段后再提交');
+        return;
+      }
+      const msg =
+        e?.displayMessage || e?.response?.data?.message || '操作失败';
       antMessage.error(msg);
     } finally {
       setSubmitting(false);

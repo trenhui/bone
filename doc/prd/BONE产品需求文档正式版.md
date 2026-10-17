@@ -1484,7 +1484,7 @@ flowchart TD
         MetadataService[元数据服务]
         MasterDataService[主数据服务]
         ExtensionService[扩展服务]
-        IntegrationService[集成服务]
+        IntegrationApplicationService[集成服务]
         IAMService[IAM服务]
     end
     
@@ -1516,13 +1516,13 @@ flowchart TD
     AdminService --> MetadataService
     AdminService --> MasterDataService
     AdminService --> ExtensionService
-    AdminService --> IntegrationService
+    AdminService --> IntegrationApplicationService
     AdminService --> IAMService
     
     MetadataService --> MetadataEngine
     MasterDataService --> MasterDataEngine
     ExtensionService --> ExtensionEngine
-    IntegrationService --> IntegrationEngine
+    IntegrationApplicationService --> IntegrationEngine
     IAMService --> IAMEngine
     
     MetadataEngine --> DB
@@ -1540,17 +1540,17 @@ flowchart TD
     MetadataService --> Registry
     MasterDataService --> Registry
     ExtensionService --> Registry
-    IntegrationService --> Registry
+    IntegrationApplicationService --> Registry
     IAMService --> Registry
     
-    IntegrationService --> Config
+    IntegrationApplicationService --> Config
     IAMService --> Config
     
     AdminService --> Monitor
     MetadataService --> Monitor
     MasterDataService --> Monitor
     ExtensionService --> Monitor
-    IntegrationService --> Monitor
+    IntegrationApplicationService --> Monitor
     IAMService --> Monitor
 ```
 

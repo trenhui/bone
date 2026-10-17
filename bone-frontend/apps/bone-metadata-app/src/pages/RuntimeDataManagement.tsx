@@ -963,8 +963,9 @@ const childSumOf = (rows: RuntimeChildRow[]): number =>
       ellipsis: true,
       sorter: true,
       // 契约列宽/固定列（P1）：设计器 views.list 配的 width/pinned 在此真正生效
+      // （pinned 为协议 enum：left=钉左侧主键侧，right=钉右侧操作列侧；历史 boolean true 兼容为 left）
       width,
-      fixed: pinned ? ('left' as const) : undefined,
+      fixed: pinned === 'right' ? ('right' as const) : pinned ? ('left' as const) : undefined,
       sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
       render: (_: unknown, row) => {
         if (isEnumField(f)) return renderEnumCell(row[f.code], f);

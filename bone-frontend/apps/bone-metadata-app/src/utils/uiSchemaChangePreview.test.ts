@@ -147,11 +147,11 @@ describe('previewChanges', () => {
     draft.views.list!.columns = [
       { fieldCode: 'amount', width: 120 },
       { fieldCode: 'claim_no', width: 150 },
-      { fieldCode: 'approver', width: 110, pinned: true },
+      { fieldCode: 'approver', width: 110, pinned: 'right' },
     ];
     const p = previewChanges(draft, schema(), fields);
     expect(find(p, 'list', 'approver')?.kind).toBe('add');
-    expect(find(p, 'list', 'approver')?.text).toContain('固定左侧');
+    expect(find(p, 'list', 'approver')?.text).toContain('固定右侧');
     // claim_no 150→150、amount 120→120 列宽未变 ⇒ 存量列无 modify 项
     const listItems = p.groups.find((g) => g.key === 'list')!.items;
     expect(listItems.some((i) => i.kind === 'modify')).toBe(false);

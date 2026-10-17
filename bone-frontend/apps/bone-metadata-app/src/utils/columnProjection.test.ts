@@ -113,15 +113,24 @@ describe('projectRuntimeColumns（P1 · 契约优先 + 个人偏好叠加）', (
 
   it('契约列序/列宽/固定列/列标题生效（设计器配的终于有人消费）', () => {
     const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), listView([
-      { fieldCode: 'qty', width: 220, pinned: true },
+      { fieldCode: 'qty', width: 220, pinned: 'left' },
       { fieldCode: 'name', format: { title: '商品名称' } },
       { fieldCode: 'code', width: 80 },
     ]));
     expect(out.map((c) => c.field.code)).toEqual(['qty', 'name', 'code']);
-    expect(out[0]).toMatchObject({ width: 220, pinned: true });
+    expect(out[0]).toMatchObject({ width: 220, pinned: 'left' });
     expect(out[2]).toMatchObject({ width: 80, pinned: undefined });
     // 契约列标题覆盖字段 displayName
     expect(out[1].field.displayName).toBe('商品名称');
+  });
+
+  it('契约固定列方向区分：left 钉主键侧、right 钉操作列侧（协议 enum）', () => {
+    const out = projectRuntimeColumns(FIELDS, defaultOverlay(FIELDS), listView([
+      { fieldCode: 'code', pinned: 'left' },
+      { fieldCode: 'name', pinned: 'right' },
+    ]));
+    expect(out[0].pinned).toBe('left');
+    expect(out[1].pinned).toBe('right');
   });
 
   it('个人改名优先于契约列标题', () => {

@@ -8,6 +8,7 @@ import type { MetaField } from '../types';
 import { isRenderSupported } from '../utils/columnProjection';
 import { parseEnumValues } from '@bone/shared-types';
 import {
+  fieldVisible,
   linkageState,
   resolveVisibleActions,
   runSubmit,
@@ -26,12 +27,54 @@ const { Text } = Typography;
 
 export type DisplayMode = 'create' | 'edit' | 'view';
 
-/** 分区卡片（轻量，无画布） */
-function CardSection({ title, children }: { title: string; children: React.ReactNode }) {
+/** 分区卡片（轻量，无画布）；kind 徽标让 dashboard/timeline/compare/report/tasks 分区在运行时肉眼可辨 */
+function CardSection({ title, kind, children }: { title: string; kind?: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 16, border: '1px solid #f0f0f0', borderRadius: 8, padding: '12px 16px' }}>
-      <Text strong style={{ display: 'block', marginBottom: 8 }}>{title}</Text>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <Text strong>{title}</Text>
+        {kind && kind !== 'form' && (
+          <span style={{ fontSize: 11, color: '#6b7280', border: '1px solid #eef0f5', borderRadius: 6, padding: '0 6px' }}>{kind}</span>
+        )}
+      </div>
       {children}
+    </div>
+  );
+}
+
+/** 页头关键信息条（v1.2 §13.2：与分区互斥，引用字段渲染于分区之前，如 案件号/申请人/状态） */
+function PageHeaderBar({ codes, data, fields }: { codes: string[]; data: Record<string, unknown>; fields: MetaField[] }) {
+  if (!codes.length) return null;
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', gap: '10px 26px', padding: '12px 16px', marginBottom: 16,
+      background: 'linear-gradient(135deg, #eef3ff, #ffffff)', border: '1px solid #dfe9ff', borderRadius: 8,
+    }}>
+      {codes.map((code) => {
+        const f = fields.find((x) => x.code === code);
+        const v = data[code];
+        const empty = v === undefined || v === null || v === '';
+        return (
+          <div key={code} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>{f?.displayName ?? code}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: empty ? '#c0c4cc' : '#131720' }}>{empty ? '—' : String(v)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 常驻合规条（协议 footer 四键白名单：免责声明 + AI 标识 + 模拟数据标注） */
+function SchemaFooterBar({ footer }: { footer: NonNullable<BoneUiSchema['footer']> }) {
+  return (
+    <div style={{
+      marginTop: 16, padding: '10px 14px', border: '1px solid #eef0f5', borderRadius: 10,
+      background: '#fafbfd', fontSize: 11, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+    }}>
+      {footer.aiBadge && <span style={{ fontSize: 10, color: '#2f6bff', background: '#eef3ff', borderRadius: 20, padding: '1px 8px', fontWeight: 600 }}>AI</span>}
+      <span>{footer.disclaimer ?? '本界面由配置生成'}</span>
+      {footer.mockDataMark && <span style={{ fontSize: 10, color: '#b08d3a', background: '#fdf3e0', border: '1px solid #ffe1a8', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>演示数据</span>}
     </div>
   );
 }
@@ -124,13 +167,15 @@ export const BoneDynamicForm: React.FC<Props> = ({
   const setValue = (code: string, value: unknown) => setData((prev) => ({ ...prev, [code]: value }));
 
   const renderControl = (c: Control) => {
-    const s: FieldUiState = state[c.fieldCode] ?? { visible: true, required: !!fieldMap[c.fieldCode]?.required, readonly: false, disabled: false, notice: '' };
-    if (!s.visible) return null;
+    const s: FieldUiState = state[c.fieldCode] ?? { visible: true, required: !!fieldMap[c.fieldCode]?.required, readonly: false, disabled: false, notice: '', noticeKey: '' };
+    // 可见性走同源 fieldVisible：联动 then.tier 档位门控在运行时同样生效（预览同函数）
+    if (!fieldVisible(s, ctx)) return null;
     const f = fieldMap[c.fieldCode];
     const ro = readOnly || s.readonly || !!c.readonly;
     const label = c.labelOverride ?? f?.displayName ?? c.fieldCode;
     const required = s.required;
-    const notice = s.notice;
+    // 内联 notice 优先于 noticeKey（协议口径；key 无运行时词表时至少可见 key 本体，不静默丢弃）
+    const notice = s.notice || s.noticeKey || '';
     const type = (c.controlKind ?? f?.type ?? 'STRING').toUpperCase();
     const control = (() => {
       if (type === 'CHILD_TABLE') {

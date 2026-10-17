@@ -84,9 +84,9 @@ describe('onboardingMilestones · 0-1 五里程碑', () => {
     const resized = defaultSchema(FIELDS);
     cols(resized)[1] = { ...cols(resized)[1], width: 200 };
     expect(onboardingMilestones(resized, 'never', 0, FIELDS.length).find((m) => m.key === 'list')!.done).toBe(true);
-    // 固定列
+    // 固定列（协议 enum：left=钉主键侧）
     const pinned = defaultSchema(FIELDS);
-    cols(pinned)[0] = { ...cols(pinned)[0], pinned: true };
+    cols(pinned)[0] = { ...cols(pinned)[0], pinned: 'left' };
     expect(onboardingMilestones(pinned, 'never', 0, FIELDS.length).find((m) => m.key === 'list')!.done).toBe(true);
     // 负向：原样不动（含 width 恰好 120）不算精选
     expect(onboardingMilestones(defaultSchema(FIELDS), 'never', 0, FIELDS.length).find((m) => m.key === 'list')!.done).toBe(false);

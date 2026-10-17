@@ -178,6 +178,10 @@ const TenantManagement: React.FC = () => {
           message.success('更新租户成功');
           setIsModalVisible(false);
           reload();
+        } else {
+          // ★ 服务端拒绝必须出声：此前非 200 分支完全静默（无成功提示也无失败提示），
+          //   用户点了「保存」像没反应一样，只能反复点。（联调实证：租户等级/邮箱被服务端拒时。）
+          message.error(response.message || '更新租户失败');
         }
       } else {
         const createData: CreateTenantRequest = {
@@ -212,10 +216,28 @@ const TenantManagement: React.FC = () => {
           });
           setIsModalVisible(false);
           reload();
+        } else {
+          // 同上：非 200 必须出声，不能静默。
+          message.error(response.message || '创建租户失败');
         }
       }
-    } catch {
-      message.error('操作失败');
+    } catch (err: unknown) {
+      // ★ 区分「表单校验未过」与「服务端拒绝」（与 AccountManagement 同口径）。
+      //   此前是裸 `catch { message.error('操作失败') }`：validateFields() 失败（邮箱格式、
+      //   必填缺失）与接口报错共用一个文案，用户既看不到标红字段也看不到服务端原因，
+      //   只能干瞪眼重试。（2026-10-16 全模块联调实证：租户「管理员邮箱」填 E2E002777
+      //   ⇒ 请求根本没发出，只弹「操作失败」。）
+      const e = err as {
+        errorFields?: unknown[];
+        displayMessage?: string;
+        message?: string;
+        response?: { data?: { message?: string } };
+      };
+      if (Array.isArray(e?.errorFields) && e.errorFields.length > 0) {
+        message.error('请先修正表单中标红的字段后再提交');
+        return;
+      }
+      message.error(e?.displayMessage || e?.response?.data?.message || e?.message || '操作失败');
     } finally {
       setSubmitting(false);
     }

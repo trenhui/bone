@@ -206,9 +206,18 @@ def main() -> int:
         # 幂等：同号重推应返回同一订单
         st2, j2 = http("POST", "/api/v1/channel-orders/pull", payload, token=tok)
         check(f"{ch} 重复推送幂等", st2 == 200 and data_of(j2) == oid, f"status={st2} 原={oid} 新={data_of(j2)}")
-        # 状态回传
-        st3, _ = http("POST", f"/api/v1/channel-orders/{ch}/{no}/ack", token=tok)
-        check(f"{ch} 订单状态回传", st3 == 200 and (data_of(j2) is not None or True) and st3 == 200, f"status={st3}")
+        # 状态回传（发货信息回传渠道）
+        # ★ 必须带 logisticsCompany + trackingNo：ChannelOrderController.AckShipmentReq 两个字段都是
+        #   @NotBlank。早期本端点只收渠道订单号、运单号由服务端写死，回传给渠道的永远是同一串假单号
+        #   （渠道展示物流与实际不符却返回成功），故改为由调用方传承运商与真实运单号。
+        #   此前脚本不带 body 调用 ⇒ 恒 400 COMMON_VALIDATION_FAILED，四个渠道一起假红。
+        st3, j3 = http(
+            "POST",
+            f"/api/v1/channel-orders/{ch}/{no}/ack",
+            body={"logisticsCompany": "SF", "trackingNo": f"SF{no}"},
+            token=tok,
+        )
+        check(f"{ch} 订单状态回传", st3 == 200, f"status={st3} body={str(j3)[:160]}")
 
     # 负向：非法渠道码
     st, _ = http("POST", "/api/v1/channel-orders/pull", {

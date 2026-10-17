@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, createContext, useContext } from 'react';
+import { useCallback, useEffect, useMemo, useState, createContext, useContext } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert, Button, Card, Descriptions, Empty, Form, Input, InputNumber, List, Modal,
@@ -152,6 +152,22 @@ const EntityDetail: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  /**
+   * 行策略 rule name 集合（界面设计器 dataScope 下拉真源）。
+   * rowPolicies 是实体 JSON 列（{"owner_field":..., "rules":[{"name":"owner_or_approver",...}]}），
+   * 解析失败按空集合处理（下拉降级为「未声明行策略」提示，不阻断设计器其余能力）。
+   */
+  const policyCodes = useMemo<string[]>(() => {
+    const raw = (entity as unknown as { rowPolicies?: string } | null)?.rowPolicies;
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as { rules?: { name?: string }[] };
+      return (parsed.rules ?? []).map((r) => r.name).filter((n): n is string => !!n);
+    } catch {
+      return [];
+    }
+  }, [entity]);
 
   // 关系
   const [relations, setRelations] = useState<MetaRelation[]>([]);
@@ -697,6 +713,7 @@ const EntityDetail: React.FC = () => {
                   entityCode={entity.code}
                   fields={fields}
                   onGoPublish={() => setOuterTab('publish')}
+                  policyCodes={policyCodes}
                 />
               ) : (
                 <Alert type="info" showIcon message="该实体使用「手写界面」，不提供协议化界面设计" />

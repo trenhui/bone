@@ -37,7 +37,7 @@
   .btn { border: 1px solid #d9d9d9; background: #fff; color: var(--ink); }
   .btn:hover { border-color: #91caff; color: var(--pri); }
   .btn.pri { background: var(--pri); border-color: var(--pri); color: #fff; }
-  .btn.pri:hover { color: #fff; }
+  .btn.coach { box-shadow: 0 0 0 3px rgba(22,119,255,.28); }
   .split { display: flex; min-height: 700px; }
   .left { width: 420px; min-width: 320px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; position: relative; background: #fff; }
   .modes { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 2; }
@@ -65,8 +65,11 @@
   .insp span, .opt span { display: block; color: var(--sub); font-size: 11px; margin-bottom: 2px; }
   .insp input, .insp select, .opt input { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 4px 8px; }
   .suggest { margin: 8px; padding: 10px; border-radius: 8px; background: #f0f5ff; border: 1px solid #d6e4ff; }
-  .fab { position: absolute; right: 14px; bottom: 14px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--pri); color: #fff; font-size: 22px; box-shadow: 0 6px 16px rgba(22,119,255,.35); }
-  .pop { position: absolute; right: 14px; bottom: 66px; width: 260px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 10px; }
+  .dock { border-top: 1px solid var(--line); background: #fff; padding: 8px; max-height: 320px; overflow: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chips .chip { width: auto; margin: 0; }
+  .drop { margin: 6px 8px 8px; padding: 8px; border: 1px dashed #91caff; border-radius: 8px; color: #595959; text-align: center; background: #f8fbff; }
+  .drop.over, .hd.over, .row.over { background: #e6f4ff; }
   .chip { display: flex; width: 100%; text-align: left; gap: 8px; border: 1px solid #d6e4ff; background: #fff; border-radius: 8px; padding: 7px 8px; margin-top: 6px; }
   .chip:hover { border-color: var(--pri); }
   .idbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
@@ -120,8 +123,7 @@
           <aside class="left">
             <div class="modes" id="modes"></div>
             <div class="body" id="outline"></div>
-            <button class="fab" id="fab" type="button" title="添加字段">+</button>
-            <div class="pop" id="pop" hidden></div>
+            <div class="dock" id="dock" hidden></div>
           </aside>
           <div class="grip" id="grip"></div>
           <main class="right" id="stage"></main>
@@ -456,6 +458,12 @@ function fresh(id) {
     dictReject: "",
     jsonText: "",
     ruleFocus: "",
+    openRule: "",
+    openVariant: "",
+    openAction: "",
+    dockMore: false,
+    fieldQuery: "",
+    starter: null,
     actions: defaultActions(spec),
     variants: spec.roles.map((r) => ({ roleId: r.id, readonly: r.readonly ? r.readonly.slice() : [], hidden: [], openList: !!r.openList })),
     submit: { on: true, tolerance: 0.01, message: `明细合计要和${spec.lines.sumName}一致` },
@@ -463,6 +471,7 @@ function fresh(id) {
     listCols: Object.fromEntries(spec.list.cols.map((c) => [c.key, true])),
     listTabs: spec.list.tabs.map((t) => ({ id: t.id, label: t.label }))
   };
+  next.starter = clone(next.form);
   next.server = packOf(next);
   next.published = packOf(next);
   return next;
@@ -546,10 +555,10 @@ function issues() {
     });
   });
   if (state.submit.on && !(Number(state.submit.tolerance) >= 0)) out.push({ level: "err", mode: "rules", text: "明细合计的容差必须是不小于 0 的数字" });
-  if (state.dictReject) out.push({ level: "err", mode: "dict", text: state.dictReject });
+  if (state.dictReject) out.push({ level: "err", mode: "layout", text: state.dictReject });
   Object.entries(state.dictHidden || {}).forEach(([field, flags]) => {
     const opts = state.labels[field] || {};
-    if (Object.keys(opts).length && Object.keys(opts).every((k) => flags[k])) out.push({ level: "warn", mode: "dict", text: `「${state.names[field] || field}」的选项全被隐藏了` });
+    if (Object.keys(opts).length && Object.keys(opts).every((k) => flags[k])) out.push({ level: "warn", mode: "layout", text: `「${state.names[field] || field}」的选项全被隐藏了` });
   });
   return out;
 }
@@ -597,6 +606,34 @@ function applySample(sample, quiet) {
 }
 function blankLine() { return Object.fromEntries(state.lines.cols.map((c) => [c.k, ""])); }
 
+const ORDER = ["expense", "purchase", "claim"];
+const GUIDE_NAME = { expense: "费用报销", purchase: "采购申请", claim: "理赔报案" };
+const guide = { on: true, phase: "hello", i: 0, built: { expense: false, purchase: false, claim: false } };
+function fieldCount() { return state.form.fill.reduce((n, s) => n + s.controls.length, 0); }
+function syncGuideBuilt() {
+  if (!guide.on || guide.phase !== "work" || state.id !== ORDER[guide.i]) return;
+  if (fieldCount() >= 3) guide.built[state.id] = true;
+}
+function guideHtml() {
+  if (guide.phase === "hello") {
+    return `<div><b>三张单用同一套搭法</b><span class="muted">费用报销、采购申请、理赔报案。每张都从空白分区开始：点字段放进去，或一次生成常见结构。右侧马上是填写页。</span></div>
+      <div style="display:flex;gap:8px"><button class="btn pri" type="button" data-act="guide-begin">从报销空白页开始</button><button class="btn" type="button" data-act="guide-skip">自己看</button></div>`;
+  }
+  const id = ORDER[guide.i];
+  const name = GUIDE_NAME[id];
+  const dots = ORDER.map((k, i) => `<span class="${i === guide.i ? "on" : ""}">${i + 1} ${GUIDE_NAME[k]}</span>`).join("");
+  const here = state.id === id;
+  const built = !!guide.built[id];
+  let text = "点下方「从空白开始」。字段会回到底部，方便一个个放。";
+  if (!here) text = `这一步还在搭${name}。`;
+  else if (fieldCount() === 0) text = "点底部字段放进高亮分区。想一次铺开，点「按常见结构生成」。";
+  else if (!built) text = "再放几个字段，或点「按常见结构生成」。放满 3 个就能去下一张。";
+  else text = "右侧已是这张填写页。分区可以拖动。这张可以了就去下一张。";
+  const nextName = guide.i < 2 ? GUIDE_NAME[ORDER[guide.i + 1]] : "";
+  const cta = guide.i < 2 ? `下一张：${nextName}` : "三张都搭好了";
+  return `<div><b>${guide.i + 1}/3 ${name}</b><span class="muted">${text}</span><div class="tabs">${dots}</div></div>
+    <div style="display:flex;gap:8px"><button class="btn pri" type="button" data-act="guide-next" ${built && here ? "" : "disabled"}>${cta}</button><button class="btn" type="button" data-act="guide-skip">退出指引</button></div>`;
+}
 function renderObjects() {
   $("#objects").innerHTML = Object.keys(CATALOG).map((id) => {
     const name = id === state.id ? state.objectName : CATALOG[id]().objectName;
@@ -604,59 +641,77 @@ function renderObjects() {
   }).join("");
 }
 function renderGoal() {
+  if (guide.on) { $("#goal").innerHTML = guideHtml(); return; }
+  if (guide.done) {
+    $("#goal").innerHTML = `<div><b>三张单的布局都搭过了。</b><span class="muted">报销、采购、理赔用的是同一套分区和字段。规则、按钮、谁看到什么可以接着配。</span></div>`;
+    return;
+  }
   const g = goals();
   const p = state.policy;
-  $("#goal").innerHTML = g.every((x) => x[0])
-    ? `<div><b>${esc(p.done)}</b><span class="muted">${esc(p.doneHint)}</span></div>`
-    : `<div><b>${esc(p.title)}</b><span class="muted">${esc(p.hint)}</span></div><ol>${g.map(([ok, t]) => `<li class="${ok ? "ok" : ""}">${ok ? "✓" : "○"} ${esc(t)}</li>`).join("")}</ol>`;
+  if (g.every((x) => x[0])) {
+    $("#goal").innerHTML = `<div><b>${esc(p.done)}</b><span class="muted">${esc(p.doneHint)}</span></div>`;
+    return;
+  }
+  const next = g.find((x) => !x[0]);
+  const doneN = g.filter((x) => x[0]).length;
+  $("#goal").innerHTML = `<div><b>${esc(p.title)}</b><span class="muted">下一步：${esc(next[1])}（${doneN}/${g.length}）</span></div>`;
 }
 function renderBar() {
   const d = dirty(), p = pending();
-  const text = d ? "还没保存。线上用的仍是已发布的那一版。" : p ? "已保存。要等发布，线上页面才会变。" : "现在和线上页面是同一版。";
   const errN = issues().filter((i) => i.level === "err").length;
   $("#bar").innerHTML = `
     <span class="tag ${d ? "warn" : "ok"}">${d ? "未保存" : "已保存"}</span>
     <span class="tag ${p ? "gold" : "ok"}">${p ? "待发布" : "已发布"}</span>
-    <button class="btn" type="button" data-mode="lint">${errN ? `自检 ${errN}` : "自检通过"}</button>
-    <span class="muted">${text}</span><span class="spacer"></span>
+    ${errN ? `<button class="btn" type="button" data-mode="lint">先看 ${errN} 个问题</button>` : `<button class="btn" type="button" data-mode="lint">检查</button>`}
+    <span class="spacer"></span>
     <div class="seg">${[["fill", "填写"], ["view", "查看"], ["list", "列表"]].map(([k, l]) => `<button type="button" data-view="${k}" class="${state.view === k ? "on" : ""}">${l}</button>`).join("")}</div>
-    <button class="btn" type="button" data-act="validate">校验已保存草稿</button>
     <button class="btn" type="button" data-act="undo" ${state.past.length ? "" : "disabled"}>撤销</button>
     <button class="btn pri" type="button" data-act="save" ${d ? "" : "disabled"}>保存</button>`;
 }
 function insp(c) {
   const opts = state.labels[c.fieldCode];
   const related = state.rules.filter((r) => r.effects[c.fieldCode]);
+  const optOpen = state.openOpts === c.fieldCode;
+  const optBlock = !opts ? "" : optOpen
+    ? `<div class="wide opt">${Object.entries(opts).map(([k, lab]) => `<div style="margin-top:6px"><span>${esc(lab)}</span><input data-bind="opt" data-code="${esc(k)}" value="${esc(lab)}" /><label><input type="checkbox" data-bind="dict-hide" data-field="${esc(c.fieldCode)}" data-code="${esc(k)}" ${state.dictHidden[c.fieldCode]?.[k] ? "checked" : ""}/> 页面上不出现</label></div>`).join("")}<div class="muted" style="margin-top:6px">新选项要先加在字段上。这里只能改叫法和是否出现。</div></div>`
+    : `<div class="wide"><button class="btn" type="button" data-act="toggle-opts" data-field="${esc(c.fieldCode)}">${Object.keys(opts).length} 个选项，点开改叫法</button></div>`;
+  const ruleLine = related.length
+    ? related.map((r) => `<button class="btn" type="button" data-act="focus-rule" data-id="${esc(r.id)}">${esc(r.when)}</button>`).join(" ")
+    : "这个字段一直显示。";
   return `<div class="insp">
     <div><span>页面上的名称</span><input data-bind="label" value="${esc(c.label || "")}" placeholder="${esc(state.names[c.fieldCode] || "")}" /></div>
     <div><span>填写提示</span><input data-bind="ph" value="${esc(c.placeholder || "")}" /></div>
     ${state.money.includes(c.fieldCode) ? `<div><span>小数位</span><input data-bind="precision" value="${esc(c.props?.precision ?? 2)}" /></div>` : ""}
-    ${opts ? `<div class="wide opt">${Object.entries(opts).map(([k, lab]) => `<div style="margin-top:6px"><span>选项 ${esc(k)}</span><input data-bind="opt" data-code="${esc(k)}" value="${esc(lab)}" /></div>`).join("")}</div>` : ""}
-    <div class="wide muted">${related.length ? related.map((r) => `显示条件：${esc(r.when)}。`).join("") : "这个字段一直显示。"} ${c.hidden ? "没满足条件时先藏起来。" : ""}<div style="margin-top:6px"><button class="btn" type="button" data-act="remove">从这里移出</button></div></div>
+    ${optBlock}
+    <div class="wide muted">${ruleLine} ${c.hidden ? "没满足条件时先藏起来。" : ""}<div style="margin-top:6px"><button class="btn" type="button" data-act="remove">从这里移出</button></div></div>
   </div>`;
 }
 function outlineFill() {
-  return secs().map((secItem, si) => {
-    const onSec = state.sel?.sec === si && state.sel.ci == null;
+  const total = secs().reduce((n, s) => n + s.controls.length, 0);
+  const empty = total === 0 ? `<div class="suggest"><b>从零搭这张界面</b><div class="muted">点下面的字段，放进高亮分区。想一次铺开，用「按常见结构生成」。</div><button class="btn pri" type="button" data-act="scaffold" style="margin-top:8px">按常见结构生成</button></div>` : "";
+  const body = secs().map((secItem, si) => {
+    const onSec = state.sel?.sec === si;
     const rows = secItem.controls.map((c, ci) => {
       const on = state.sel?.sec === si && state.sel.ci === ci;
-      return `<div class="row ${on ? "on" : ""}" draggable="true" data-si="${si}" data-ci="${ci}"><b>${esc(nameOf(c))}</b>${c.hidden ? `<span class="pill">先隐藏</span>` : ""}</div>${on ? insp(c) : ""}`;
+      return `<div class="row ${on ? "on" : ""}" draggable="true" data-si="${si}" data-ci="${ci}"><b>${esc(nameOf(c))}</b>${c.hidden ? `<span class="pill">先隐藏</span>` : ""}${on ? `<button class="btn" type="button" data-act="toggle-insp">${state.inspect ? "收起" : "设置"}</button>` : ""}</div>${on && state.inspect ? insp(c) : ""}`;
     }).join("");
-    const suggest = state.view === "fill" && secItem.id === state.policy.sectionId && !hasField(state.form, state.policy.field)
+    const drop = `<div class="drop" data-sec="${si}">把字段放到这个分区</div>`;
+    const suggest = state.view === "fill" && secItem.id === state.policy.sectionId && !hasField(state.form, state.policy.field) && secItem.controls.length
       ? `<div class="suggest"><b>${esc(state.policy.suggestTitle)}</b><div class="muted">${esc(state.policy.suggestBody)}</div><button class="btn pri" type="button" data-act="add-policy" style="margin-top:8px">按制度添加</button></div>` : "";
-    return `<div class="sec ${onSec ? "on" : ""}"><div class="hd" data-sec="${si}"><input data-bind="sec" data-si="${si}" value="${esc(secItem.title)}" /><span class="pill">${secItem.controls.length}</span></div>${rows}${suggest}</div>`;
+    const del = state.view === "fill" && secs().length > 1 && !secItem.controls.length ? `<button class="btn" type="button" data-act="del-sec" data-si="${si}">删除</button>` : "";
+    return `<div class="sec ${onSec ? "on" : ""} ${secItem.controls.length ? "" : "empty"}"><div class="hd" data-sec="${si}"><input data-bind="sec" data-si="${si}" value="${esc(secItem.title)}" /><span class="pill">${secItem.controls.length}</span>${del}</div>${rows}${drop}${suggest}</div>`;
   }).join("");
+  return empty + body;
 }
 function outlineList() {
   return `<div class="muted" style="margin-bottom:8px">列表只决定台账里看到哪些列。页签按当前人过滤，已经接在数据范围上。</div>`
     + state.list.cols.map((c) => `<label class="row" style="cursor:default"><input type="checkbox" data-bind="col" data-col="${c.key}" ${state.listCols[c.key] ? "checked" : ""}/> ${esc(c.label)}</label>`).join("");
 }
 function renderOutline() {
-  const modes = [["layout", "布局"], ["rules", "规则"], ["actions", "动作"], ["variants", "变体"], ["dict", "字典"], ["list", "列表"], ["lint", "自检"], ["json", "JSON"]];
-  const errN = issues().filter((i) => i.level === "err").length;
-  $("#modes").innerHTML = modes.map(([k, l]) => `<button type="button" data-mode="${k}" class="${state.mode === k ? "on" : ""}">${l}${k === "lint" && errN ? ` ${errN}` : ""}</button>`).join("");
+  const modes = [["layout", "布局"], ["rules", "规则"], ["actions", "动作"], ["variants", "谁看到什么"]];
+  $("#modes").innerHTML = modes.map(([k, l]) => `<button type="button" data-mode="${k}" class="${state.mode === k ? "on" : ""}">${l}</button>`).join("");
   if (state.mode === "json" && document.activeElement?.id === "jsonbox") {
-    $("#fab").style.display = "none";
+    renderDock();
     return;
   }
   const active = document.activeElement;
@@ -664,23 +719,34 @@ function renderOutline() {
   $("#outline").innerHTML = panel();
   if (keep && state.mode === "layout") { const n = $(`#outline input[data-bind=sec][data-si="${keep.si}"]`); if (n) { n.focus(); n.setSelectionRange(keep.pos, keep.pos); } }
   $("#outline .row.on")?.scrollIntoView({ block: "nearest" });
-  $("#fab").style.display = state.mode === "layout" && state.view === "fill" ? "block" : "none";
+  renderDock();
 }
 function panel() {
   if (state.mode === "rules") return panelRules();
   if (state.mode === "actions") return panelActions();
   if (state.mode === "variants") return panelVariants();
-  if (state.mode === "dict") return panelDict();
-  if (state.mode === "list") return panelList();
   if (state.mode === "lint") return panelLint();
   if (state.mode === "json") return panelJson();
-  return state.view === "list" ? outlineList() : outlineFill();
+  return state.view === "list" ? panelList() : outlineFill();
 }
 function selectFields(selected) {
   return fieldChoices().map((c) => `<option value="${esc(c)}" ${selected === c ? "selected" : ""}>${esc(state.names[c])}</option>`).join("");
 }
+function effectLine(rule) {
+  const bits = Object.entries(rule.effects || {}).map(([code, e]) => {
+    const name = state.names[code] || code;
+    if (e.show && e.required) return `${name}出现并必填`;
+    if (e.show) return `${name}出现`;
+    if (e.required) return `${name}必填`;
+    return name;
+  });
+  return bits.join("，") || "还没指定字段";
+}
 function panelRules() {
   const cards = state.rules.map((rule, i) => {
+    const open = state.openRule === rule.id;
+    const sentence = `${rule.on ? "" : "已停用 · "}${rule.name}：${describeRule(rule)}，则${effectLine(rule)}`;
+    if (!open) return `<button class="cardlet" type="button" data-act="toggle-rule" data-id="${esc(rule.id)}" style="display:block;width:calc(100% - 16px);text-align:left">${esc(sentence)}</button>`;
     const effects = Object.entries(rule.effects || {}).map(([code, e]) => `<div style="margin-top:6px">
       <span>作用字段</span>
       <select data-bind="fx-field" data-i="${i}" data-from="${esc(code)}">${selectFields(code)}</select>
@@ -691,10 +757,9 @@ function panelRules() {
     const valueBox = state.labels[rule.test.field]
       ? `<select data-bind="rule-value" data-i="${i}">${Object.entries(state.labels[rule.test.field]).map(([k, lab]) => `<option value="${esc(k)}" ${rule.test.value === k ? "selected" : ""}>${esc(lab)}</option>`).join("")}</select>`
       : `<input data-bind="rule-value" data-i="${i}" value="${esc(rule.test.value)}" />`;
-    return `<div class="cardlet ${state.ruleFocus === rule.id ? "on" : ""}">
-      <input data-bind="rule-name" data-i="${i}" value="${esc(rule.name)}" />
-      <label><input type="checkbox" data-bind="rule-on" data-i="${i}" ${rule.on ? "checked" : ""}/> 启用</label>
-      <div class="muted" style="margin:6px 0">${esc(describeRule(rule))}</div>
+    return `<div class="cardlet on">
+      <button class="btn" type="button" data-act="toggle-rule" data-id="${esc(rule.id)}">${esc(sentence)}</button>
+      <div style="margin-top:8px"><input data-bind="rule-name" data-i="${i}" value="${esc(rule.name)}" /><label><input type="checkbox" data-bind="rule-on" data-i="${i}" ${rule.on ? "checked" : ""}/> 启用</label></div>
       <div class="insp">
         <div><span>当</span><select data-bind="rule-field" data-i="${i}">${selectFields(rule.test.field)}</select></div>
         <div><span>比较</span><select data-bind="rule-op" data-i="${i}"><option value="eq" ${rule.test.op === "eq" ? "selected" : ""}>等于</option><option value="gt" ${rule.test.op === "gt" ? "selected" : ""}>大于</option></select></div>
@@ -703,39 +768,59 @@ function panelRules() {
       ${effects}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn" type="button" data-act="add-effect" data-i="${i}">再加一个字段</button>
-        <button class="btn" type="button" data-act="drill" data-i="${i}">按条件演练</button>
+        <button class="btn" type="button" data-act="drill" data-i="${i}">用当前条件看右侧</button>
         <button class="btn" type="button" data-act="del-rule" data-i="${i}">删除</button>
       </div>
     </div>`;
   }).join("");
-  return `<div class="muted" style="margin:8px">显隐和必填写在这里。右侧用当前单据实时命中。提交时的明细合计单独一条，容差给金额四舍五入留余量。</div>
-    ${cards}
-    <div class="cardlet"><b>提交校验 · 明细合计</b>
-      <label><input type="checkbox" data-bind="sum-on" ${state.submit.on ? "checked" : ""}/> 启用</label>
-      <div class="insp"><div><span>容差</span><input data-bind="sum-tol" value="${esc(state.submit.tolerance)}" /></div>
-      <div><span>不通过时的提示</span><input data-bind="sum-msg" value="${esc(state.submit.message)}" /></div></div>
-    </div>
-    <button class="btn pri" type="button" data-act="add-rule" style="margin:0 8px 8px">添加显隐规则</button>`;
+  const sumOpen = state.openSum;
+  const sumLine = state.submit.on ? `明细合计须和${state.lines.sumName}一致，容差 ${state.submit.tolerance}` : "明细合计校验已关闭";
+  const sumBody = sumOpen ? `<div class="insp"><div><span>容差</span><input data-bind="sum-tol" value="${esc(state.submit.tolerance)}" /></div>
+      <div><span>不通过时的提示</span><input data-bind="sum-msg" value="${esc(state.submit.message)}" /></div>
+      <label><input type="checkbox" data-bind="sum-on" ${state.submit.on ? "checked" : ""}/> 启用</label></div>` : "";
+  return `<div class="muted" style="margin:8px">点一条再改。右侧会标出当前单据命中了哪条。</div>${cards}
+    <button class="cardlet" type="button" data-act="toggle-sum" style="display:block;width:calc(100% - 16px);text-align:left">${esc(sumLine)}</button>
+    ${sumOpen ? `<div class="cardlet">${sumBody}</div>` : ""}
+    <button class="btn pri" type="button" data-act="add-rule" style="margin:0 8px 8px">添加一条规则</button>`;
+}
+function actionLine(a) {
+  const who = (a.roles || []).map((id) => shortName(state.roles.find((r) => r.id === id) || { label: id })).join("、");
+  return `${a.label} · ${who || "还没指定谁"} · ${a.view === "view" ? "查看" : "填写"}`;
 }
 function panelActions() {
-  const cards = state.actions.map((a, i) => `<div class="cardlet">
-    <div class="insp">
-      <div><span>按钮文字</span><input data-bind="act-label" data-i="${i}" value="${esc(a.label)}" /></div>
-      <div><span>出现在</span><select data-bind="act-view" data-i="${i}"><option value="fill" ${a.view === "fill" ? "selected" : ""}>填写</option><option value="view" ${a.view === "view" ? "selected" : ""}>查看</option></select></div>
-      <div class="wide"><span>二次确认，留空则直接执行</span><input data-bind="act-confirm" data-i="${i}" value="${esc(a.confirm || "")}" /></div>
-      <div class="wide">${state.roles.map((r) => `<label style="margin-right:8px"><input type="checkbox" data-bind="act-role" data-i="${i}" data-role="${esc(r.id)}" ${a.roles.includes(r.id) ? "checked" : ""}/> ${esc(r.label)}</label>`).join("")}</div>
-    </div>
-    <button class="btn" type="button" data-act="del-action" data-i="${i}">删除</button>
-  </div>`).join("");
-  return `<div class="muted" style="margin:8px">动作只决定谁看见哪个按钮。演示里的提交会跑必填和明细合计，不会进入真实流程。</div>${cards}
-    <button class="btn pri" type="button" data-act="add-action" style="margin:0 8px 8px">添加动作</button>`;
+  const cards = state.actions.map((a, i) => {
+    if (state.openAction !== a.id) return `<button class="cardlet" type="button" data-act="toggle-action" data-id="${esc(a.id)}" style="display:block;width:calc(100% - 16px);text-align:left">${esc(actionLine(a))}</button>`;
+    return `<div class="cardlet on">
+      <button class="btn" type="button" data-act="toggle-action" data-id="${esc(a.id)}">${esc(actionLine(a))}</button>
+      <div class="insp">
+        <div><span>按钮文字</span><input data-bind="act-label" data-i="${i}" value="${esc(a.label)}" /></div>
+        <div><span>出现在</span><select data-bind="act-view" data-i="${i}"><option value="fill" ${a.view === "fill" ? "selected" : ""}>填写</option><option value="view" ${a.view === "view" ? "selected" : ""}>查看</option></select></div>
+        <div class="wide"><span>点下去前提醒一句，留空则直接执行</span><input data-bind="act-confirm" data-i="${i}" value="${esc(a.confirm || "")}" /></div>
+        <div class="wide">${state.roles.map((r) => `<label style="margin-right:8px"><input type="checkbox" data-bind="act-role" data-i="${i}" data-role="${esc(r.id)}" ${a.roles.includes(r.id) ? "checked" : ""}/> ${esc(r.label)}</label>`).join("")}</div>
+      </div>
+      <button class="btn" type="button" data-act="del-action" data-i="${i}">删除</button>
+    </div>`;
+  }).join("");
+  return `<div class="muted" style="margin:8px">这些就是右侧的按钮。点一条再改谁能看见。</div>${cards}
+    <button class="btn pri" type="button" data-act="add-action" style="margin:0 8px 8px">添加按钮</button>`;
+}
+function variantLine(v) {
+  const ro = (v.readonly || []).map((c) => state.names[c] || c);
+  const hid = (v.hidden || []).map((c) => state.names[c] || c);
+  const parts = [];
+  if (ro.length) parts.push(`${ro.join("、")}只读`);
+  if (hid.length) parts.push(`${hid.join("、")}隐藏`);
+  if (v.openList) parts.push("打开时先看列表");
+  return parts.join("，") || "和填写人看到的一样";
 }
 function panelVariants() {
   const fields = [...new Set(state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode)))];
-  return `<div class="muted" style="margin:8px">变体是同一张界面按身份看到的差别。勾上的只读或隐藏会叠在字段本身和规则之上，规则仍可以把隐藏字段重新显示出来。</div>`
+  return `<div class="muted" style="margin:8px">先看差异。需要改时再点开，不必逐个字段扫一遍。</div>`
     + state.variants.map((v, i) => {
       const role = state.roles.find((r) => r.id === v.roleId);
-      return `<div class="cardlet"><b>${esc(role?.label || v.roleId)}</b>
+      const title = `${role?.label || v.roleId}：${variantLine(v)}`;
+      if (state.openVariant !== v.roleId) return `<button class="cardlet" type="button" data-act="toggle-variant" data-id="${esc(v.roleId)}" style="display:block;width:calc(100% - 16px);text-align:left">${esc(title)}</button>`;
+      return `<div class="cardlet on"><button class="btn" type="button" data-act="toggle-variant" data-id="${esc(v.roleId)}">${esc(title)}</button>
         <label><input type="checkbox" data-bind="var-list" data-i="${i}" ${v.openList ? "checked" : ""}/> 切换到这个人时先看列表</label>
         ${fields.map((c) => `<div class="row" style="cursor:default"><b>${esc(state.names[c] || c)}</b>
           <label><input type="checkbox" data-bind="var-ro" data-i="${i}" data-code="${esc(c)}" ${v.readonly.includes(c) ? "checked" : ""}/> 只读</label>
@@ -762,12 +847,15 @@ function panelList() {
 }
 function panelLint() {
   const rows = issues();
-  if (!rows.length) return `<div class="cardlet"><b>自检通过</b><div class="muted">没有重复字段、悬空引用或空动作。发布前还会再查一次已保存草稿。</div></div>`;
-  return rows.map((i) => `<button class="cardlet" type="button" data-mode="${i.mode}" style="display:block;width:calc(100% - 16px);text-align:left"><b>${i.level === "err" ? "错误" : "提醒"}</b><div>${esc(i.text)}</div></button>`).join("");
+  const list = rows.length
+    ? rows.map((i) => `<button class="cardlet" type="button" data-mode="${i.mode}" style="display:block;width:calc(100% - 16px);text-align:left"><b>${i.level === "err" ? "错误" : "提醒"}</b><div>${esc(i.text)}</div></button>`).join("")
+    : `<div class="cardlet"><b>自检通过</b><div class="muted">没有重复字段、悬空引用或空动作。有错误时可以保存，不能发布。</div></div>`;
+  return `<div style="margin:0 8px 8px"><button class="btn" type="button" data-mode="layout">返回布局</button></div>${list}<div style="margin:0 8px 8px;display:flex;gap:6px"><button class="btn" type="button" data-act="validate">核对已保存的草稿</button><button class="btn" type="button" data-mode="json">高级</button></div>`;
 }
 function panelJson() {
-  return `<div class="muted" style="margin:8px">给需要对照协议的人。改完要点「应用到草稿」，预览才会变。</div>
-    <div style="margin:0 8px 8px"><textarea class="json" id="jsonbox">${esc(JSON.stringify(pack(), null, 2))}</textarea>
+  return `<div class="muted" style="margin:8px">给要对照协议的人。改完要点「应用到草稿」，预览才会变。</div>
+    <div style="margin:0 8px 8px"><button class="btn" type="button" data-mode="lint">返回自检</button>
+    <textarea class="json" id="jsonbox">${esc(JSON.stringify(pack(), null, 2))}</textarea>
     <button class="btn pri" type="button" data-act="apply-json" style="margin-top:8px">应用到草稿</button></div>`;
 }
 function controlBox(c, values, live) {
@@ -823,21 +911,76 @@ function renderStage() {
       || `<span class="muted">${state.view === "view" ? "查看页没有给当前人配置动作。" : "当前人没有可见动作。到「动作」里指定。"}</span>`;
     const trace = rules.map((r) => `<button class="btn" type="button" data-act="focus-rule" data-id="${esc(r.id)}">命中 ${esc(r.name)}</button>`).join("");
     body = `<div class="sheet"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(state.view === "view" ? state.viewTitle : state.fillTitle)}</b><span class="spacer"></span>${actions}</div>${state.msg ? `<div class="callout ${state.msg.ok ? "ok" : "bad"}">${esc(state.msg.text)}</div>` : ""}${trace ? `<div class="trace">${trace}</div>` : ""}</div>
-      ${sheet(state.form, rules, state.values, true, state.view === "view" ? "view" : "fill")}`;
+      ${sheet(state.form, rules, state.values, true, state.view === "view" ? "view" : "fill") || `<div class="sheet"><div class="muted">左侧点一个字段，填写页会出现在这里。</div></div>`}`;
   }
   const samples = state.samples.map((s) => `<button class="btn" type="button" data-act="scene" data-scene="${esc(s.id)}">${esc(s.label)}</button>`).join("");
   $("#stage").innerHTML = `<div class="idbar"><span>我是</span><select id="who">${state.roles.map((r) => `<option value="${esc(r.id)}" ${state.who === r.id ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select>
     <div class="seg">${[["desktop", "电脑"], ["mobile", "手机"]].map(([k, l]) => `<button type="button" data-device="${k}" class="${state.device === k ? "on" : ""}">${l}</button>`).join("")}</div>
     ${samples}</div><div class="${state.device === "mobile" ? "mobile" : ""}">${body}</div>`;
 }
-function renderPop() {
-  const pop = $("#pop");
-  pop.hidden = !state.pop;
-  if (!state.pop) return;
-  const used = new Set(state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode)));
-  const items = state.palette.filter((c) => !used.has(c));
-  const where = state.sel?.ci != null ? "放在选中字段后面" : "放在当前分区末尾";
-  pop.innerHTML = `<b>添加字段</b><div class="muted">${esc(where)}。只列出这个对象上还没放进去的字段。</div>` + (items.map((c) => `<button class="chip" type="button" data-add="${esc(c)}"><b>${esc(state.names[c])}</b></button>`).join("") || `<div class="muted" style="margin-top:8px">能加的字段都已经在表单上了。</div>`);
+function usedCodes() {
+  return new Set(state.form.fill.flatMap((s) => s.controls.map((c) => c.fieldCode)));
+}
+function unusedFields() {
+  const q = (state.fieldQuery || "").trim();
+  return Object.keys(state.names).filter((c) => !usedCodes().has(c) && (!q || state.names[c].includes(q) || c.includes(q)));
+}
+function fieldBucket(code) {
+  if (code === state.lines.field) return "明细";
+  if (code === state.files.field) return "附件";
+  if (state.money.includes(code)) return "金额";
+  if (state.labels[code]) return "选项";
+  return "文本";
+}
+function renderDock() {
+  const dock = $("#dock");
+  const show = state.page === "design" && state.mode === "layout" && state.view === "fill";
+  dock.hidden = !show;
+  if (!show) return;
+  const focused = document.activeElement?.id === "q";
+  const pos = focused ? document.activeElement.selectionStart : null;
+  const sec = state.form.fill[state.sel?.sec] || state.form.fill[0];
+  const items = unusedFields();
+  const mark = (!guide.on || guide.phase !== "work" || state.id !== ORDER[guide.i] || guide.built[state.id])
+    ? ""
+    : (fieldCount() === 0 || fieldCount() < 3 ? "scaffold" : "blank");
+  const buckets = ["文本", "选项", "金额", "明细", "附件"];
+  const chips = buckets.map((name) => {
+    const list = items.filter((c) => fieldBucket(c) === name);
+    if (!list.length) return "";
+    return `<div class="muted" style="margin-top:6px">${name}</div><div class="chips">${list.map((c) => `<button class="chip" type="button" draggable="true" data-add="${esc(c)}"><b>${esc(state.names[c])}</b></button>`).join("")}</div>`;
+  }).join("");
+  dock.innerHTML = `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn ${mark === "blank" ? "pri coach" : ""}" type="button" data-act="blank">从空白开始</button>
+      <button class="btn ${mark === "scaffold" ? "pri coach" : ""}" type="button" data-act="scaffold">按常见结构生成</button>
+      <button class="btn" type="button" data-act="restore-layout">恢复示例</button>
+      <button class="btn" type="button" data-act="add-sec">新分区</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+      <b>放入「${esc(sec?.title || "新分区")}」</b>
+      <input id="q" data-bind="q" value="${esc(state.fieldQuery || "")}" placeholder="搜索字段" style="width:120px;border:1px solid #d9d9d9;border-radius:6px;padding:3px 6px" />
+    </div>
+    ${chips || `<div class="muted" style="margin-top:6px">字段都已经放上了。要重搭，点「从空白开始」。</div>`}`;
+  if (focused) { const n = $("#q"); if (n) { n.focus(); if (pos != null) n.setSelectionRange(pos, pos); } }
+}
+function controlSeed(code) {
+  for (const s of state.starter?.fill || []) {
+    const found = s.controls.find((c) => c.fieldCode === code);
+    if (found) return clone(found);
+  }
+  return { fieldCode: code, label: state.names[code], hidden: code === state.policy.field };
+}
+function place(code, hidden, at) {
+  const c = controlSeed(code);
+  if (hidden) c.hidden = true;
+  const list = state.form.fill;
+  if (!list.length) list.push({ id: "s" + Date.now(), title: "新分区", controls: [] });
+  let si = state.sel?.sec ?? 0;
+  if (!list[si]) si = list.length - 1;
+  if (at != null) list[si].controls.splice(at, 0, c);
+  else list[si].controls.push(c);
+  state.sel = { sec: si, ci: list[si].controls.findIndex((x) => x.fieldCode === code) };
+  state.inspect = false;
 }
 function previewValues() {
   const sample = state.samples.find((s) => s.id === state.policySample);
@@ -874,43 +1017,99 @@ function render() {
   $("#etabs").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.page === state.page));
   renderObjects();
   renderGoal();
-  if (!design) { renderOther(); return; }
-  renderBar(); renderOutline(); renderStage(); renderPop();
-}
-function place(code, hidden) {
-  const c = { fieldCode: code, label: state.names[code], hidden: !!hidden };
-  const list = state.form.fill;
-  let si = state.sel?.sec ?? list.length - 1;
-  if (!list[si]) si = list.length - 1;
-  if (state.sel?.ci != null && state.sel.sec === si) list[si].controls.splice(state.sel.ci + 1, 0, c);
-  else list[si].controls.push(c);
-  state.sel = { sec: si, ci: list[si].controls.findIndex((x) => x.fieldCode === code) };
+  if (!design) { $("#dock").hidden = true; renderOther(); return; }
+  renderBar(); renderOutline(); renderStage();
 }
 function addControl(code) {
+  if (usedCodes().has(code)) return;
   push();
   const hidden = code === state.policy.field;
   place(code, hidden);
-  state.pop = false;
-  toast(`${state.names[code]}已放入。${hidden ? "满足条件时才会出现。" : ""}`);
+  toast(`${state.names[code]}已放入「${state.form.fill[state.sel.sec].title}」。${hidden ? "满足条件时才会出现。" : ""}`);
+  syncGuideBuilt();
+  render();
+}
+function fillViewSummary(sections) {
+  const summary = [];
+  sections.forEach((s) => s.controls.forEach((c) => {
+    if (summary.length >= 5) return;
+    if (c.fieldCode === state.lines.field || c.fieldCode === state.files.field) return;
+    summary.push({ ...clone(c), readonly: true });
+  }));
+  state.form.view = [{ id: "sum", title: "摘要", controls: summary }];
+}
+function addSection() {
+  push();
+  state.form.fill.push({ id: "s" + Date.now(), title: "新分区", controls: [] });
+  state.sel = { sec: state.form.fill.length - 1 };
+  state.view = "fill";
+  state.mode = "layout";
+  render();
+}
+function blankLayout() {
+  push();
+  state.form.fill = [{ id: "s" + Date.now(), title: "新分区", controls: [] }];
+  state.form.view = [{ id: "sum", title: "摘要", controls: [] }];
+  state.sel = { sec: 0 };
+  state.inspect = false;
+  state.view = "fill";
+  state.mode = "layout";
+  if (guide.on && guide.phase === "work" && state.id === ORDER[guide.i]) guide.built[state.id] = false;
+  toast(guide.on ? "空白页准备好了。点字段，或按常见结构生成。" : "已清空。点下方字段，放进当前这个分区。");
+  render();
+}
+function scaffoldLayout() {
+  push();
+  const codes = Object.keys(state.names);
+  const used = new Set();
+  const take = (pred) => {
+    const list = codes.filter((c) => !used.has(c) && pred(c));
+    list.forEach((c) => used.add(c));
+    return list;
+  };
+  const lines = take((c) => c === state.lines.field);
+  const files = take((c) => c === state.files.field);
+  const tail = take((c) => c === state.policy.field || c === "remark");
+  const money = take((c) => state.money.includes(c) || !!state.labels[c]);
+  const basic = take(() => true);
+  const bucket = (title, list) => ({ id: "s" + title, title, controls: list.map((c) => controlSeed(c)) });
+  state.form.fill = [bucket("基本信息", basic), bucket("分类与金额", money), bucket("明细", lines), bucket("附件", files), bucket("处理", tail)].filter((s) => s.controls.length);
+  if (!state.form.fill.length) state.form.fill = [{ id: "s1", title: "新分区", controls: [] }];
+  fillViewSummary(state.form.fill);
+  state.sel = { sec: 0 };
+  state.inspect = false;
+  state.view = "fill";
+  state.mode = "layout";
+  syncGuideBuilt();
+  toast("已按常见单据分成基本信息、金额、明细、附件和处理。可以再拖动调整。");
+  render();
+}
+function restoreLayout() {
+  push();
+  state.form = clone(state.starter);
+  state.sel = state.sel && state.form.fill[0] ? { sec: 0, ci: 0 } : { sec: 0 };
+  state.view = "fill";
+  toast("已恢复这张对象自带的示例布局。");
   render();
 }
 function addPolicy() {
   push();
   const code = state.policy.field;
   if (!hasField(state.form, code)) {
-    const si = state.form.fill.findIndex((s) => s.id === state.policy.sectionId);
+    let si = state.form.fill.findIndex((s) => s.id === state.policy.sectionId);
+    if (si < 0) si = Math.max(0, state.form.fill.length - 1);
     state.sel = { sec: si };
     place(code, true);
   }
   if (!state.rules.some((r) => r.id === state.policyRule.id)) state.rules.push(clone(state.policyRule));
-  const view = state.form.view[0];
+  const view = state.form.view[0] || (state.form.view[0] = { id: "sum", title: "摘要", controls: [] });
   if (!view.controls.some((c) => c.fieldCode === code)) view.controls.push({ fieldCode: code, label: state.names[code], readonly: true, hidden: true });
   applySample(state.samples.find((s) => s.id === state.policySample), true);
   state.view = "fill";
   state.msg = null;
-  const si = state.form.fill.findIndex((s) => s.id === state.policy.sectionId);
-  const ci = state.form.fill[si].controls.findIndex((c) => c.fieldCode === code);
-  state.sel = { sec: si, ci };
+  const si = state.form.fill.findIndex((s) => s.controls.some((c) => c.fieldCode === code));
+  const ci = si < 0 ? 0 : state.form.fill[si].controls.findIndex((c) => c.fieldCode === code);
+  state.sel = { sec: Math.max(0, si), ci };
   toast(state.policy.tryToast);
   render();
 }
@@ -962,11 +1161,42 @@ document.body.addEventListener("click", (e) => {
   if (t.dataset.device) { state.device = t.dataset.device; renderStage(); return; }
   if (t.dataset.ltab) { state.listTab = t.dataset.ltab; renderStage(); return; }
   if (t.dataset.add) { addControl(t.dataset.add); return; }
-  if (t.dataset.psi != null && state.view !== "list") { state.sel = { sec: +t.dataset.psi, ci: +t.dataset.pci }; renderOutline(); renderStage(); return; }
-  if (t.dataset.ci != null) { state.sel = { sec: +t.dataset.si, ci: +t.dataset.ci }; renderOutline(); renderStage(); return; }
+  if (t.dataset.psi != null && state.view !== "list") { state.mode = "layout"; state.sel = { sec: +t.dataset.psi, ci: +t.dataset.pci }; state.inspect = true; render(); return; }
+  if (t.dataset.ci != null) {
+    const sec = +t.dataset.si, ci = +t.dataset.ci;
+    if (state.sel?.sec !== sec || state.sel?.ci !== ci) state.inspect = false;
+    state.sel = { sec, ci };
+    renderOutline(); renderStage();
+    return;
+  }
   if (t.dataset.sec != null) { state.sel = { sec: +t.dataset.sec }; renderOutline(); return; }
   const act = t.dataset.act;
-  if (act === "undo") undo();
+  if (act === "guide-skip") { guide.on = false; render(); return; }
+  if (act === "guide-begin") {
+    guide.on = true;
+    guide.phase = "work";
+    guide.i = 0;
+    guide.built = { expense: false, purchase: false, claim: false };
+    if (state.id !== "expense") openObject("expense");
+    blankLayout();
+    return;
+  }
+  if (act === "guide-next") {
+    const id = ORDER[guide.i];
+    if (state.id !== id || !guide.built[id]) { toast("先在这张空白页放上字段，或按常见结构生成"); return; }
+    guide.i += 1;
+    if (guide.i >= ORDER.length) {
+      guide.on = false;
+      guide.done = true;
+      toast("三张单的布局都搭过了");
+      render();
+      return;
+    }
+    openObject(ORDER[guide.i]);
+    blankLayout();
+    return;
+  }
+  if (act === "toggle-insp") { state.inspect = !state.inspect; renderOutline(); return; }
   if (act === "save") save();
   if (act === "validate") {
     if (dirty()) { toast("先保存。校验看的是已保存草稿，不是正在改的内容。"); return; }
@@ -977,7 +1207,26 @@ document.body.addEventListener("click", (e) => {
   }
   if (act === "publish") publish();
   if (act === "add-policy") addPolicy();
-  if (act === "focus-rule") { state.mode = "rules"; state.ruleFocus = t.dataset.id; state.view = "fill"; render(); }
+  if (act === "add-sec") addSection();
+  if (act === "blank") blankLayout();
+  if (act === "scaffold") scaffoldLayout();
+  if (act === "restore-layout") restoreLayout();
+  if (act === "del-sec") {
+    const si = +t.dataset.si;
+    if (state.form.fill[si]?.controls.length) return;
+    if (state.form.fill.length < 2) return;
+    push();
+    state.form.fill.splice(si, 1);
+    state.sel = { sec: Math.max(0, si - 1) };
+    render();
+  }
+  if (act === "focus-rule") { state.mode = "rules"; state.openRule = t.dataset.id; state.ruleFocus = t.dataset.id; state.view = "fill"; render(); }
+  if (act === "toggle-rule") { state.openRule = state.openRule === t.dataset.id ? "" : t.dataset.id; render(); }
+  if (act === "toggle-sum") { state.openSum = !state.openSum; render(); }
+  if (act === "toggle-action") { state.openAction = state.openAction === t.dataset.id ? "" : t.dataset.id; render(); }
+  if (act === "toggle-variant") { state.openVariant = state.openVariant === t.dataset.id ? "" : t.dataset.id; render(); }
+  if (act === "dock-more") { state.dockMore = !state.dockMore; renderDock(); }
+  if (act === "toggle-opts") { state.openOpts = state.openOpts === t.dataset.field ? "" : t.dataset.field; render(); }
   if (act === "add-rule") {
     push();
     const field = fieldChoices()[0];
@@ -985,7 +1234,8 @@ document.body.addEventListener("click", (e) => {
     const rule = { id: "r" + Date.now(), name: "新规则", on: true, test: { field, op: "eq", value }, effects: {} };
     rule.when = describeRule(rule);
     state.rules.push(rule);
-    state.ruleFocus = rule.id;
+    state.openRule = rule.id;
+    state.mode = "rules";
     render();
   }
   if (act === "del-rule") { push(); state.rules.splice(+t.dataset.i, 1); render(); }
@@ -1006,7 +1256,9 @@ document.body.addEventListener("click", (e) => {
   }
   if (act === "add-action") {
     push();
-    state.actions.push({ id: "a" + Date.now(), label: "新动作", roles: [state.roles[0].id], kind: "decide", confirm: "", view: "fill" });
+    const id = "a" + Date.now();
+    state.actions.push({ id, label: "新动作", roles: [state.roles[0].id], kind: "decide", confirm: "", view: "fill" });
+    state.openAction = id;
     render();
   }
   if (act === "del-action") { push(); state.actions.splice(+t.dataset.i, 1); render(); }
@@ -1077,6 +1329,14 @@ document.body.addEventListener("input", (e) => {
     return;
   }
   if (!t.dataset.bind || t.dataset.bind === "newcode") return;
+  if (t.dataset.bind === "q") {
+    const pos = t.selectionStart;
+    state.fieldQuery = t.value;
+    renderDock();
+    const n = $("#q");
+    if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+    return;
+  }
   if (t.dataset.bind === "json") { state.jsonText = t.value; return; }
   if (t.dataset.once !== "1" && t.dataset.bind !== "col") { push(); t.dataset.once = "1"; t.addEventListener("blur", () => { t.dataset.once = ""; }, { once: true }); }
   const c = cur();
@@ -1137,20 +1397,56 @@ document.body.addEventListener("change", (e) => {
   if (t.id === "who") {
     state.who = t.value;
     const variant = state.variants.find((v) => v.roleId === t.value);
-    if (variant?.openList) { state.view = "list"; state.listTab = state.list.tabs[0].id; }
+    if (variant?.openList) {
+      state.view = "list";
+      state.listTab = state.list.tabs[0].id;
+      const who = state.roles.find((r) => r.id === t.value);
+      toast(`${shortName(who)}先看待办。要改填写页，再点「填写」。`);
+    }
     render();
   }
 });
-$("#fab").onclick = () => { state.pop = !state.pop; renderPop(); };
 let drag = null;
-$("#outline").addEventListener("dragstart", (e) => { const row = e.target.closest(".row"); if (!row || row.dataset.ci == null) return; drag = { si: +row.dataset.si, ci: +row.dataset.ci }; });
-$("#outline").addEventListener("dragover", (e) => { const row = e.target.closest(".row"); if (!row || !drag || row.dataset.ci == null) return; e.preventDefault(); row.classList.add("over"); });
-$("#outline").addEventListener("dragleave", (e) => e.target.closest(".row")?.classList.remove("over"));
-$("#outline").addEventListener("drop", (e) => {
-  const row = e.target.closest(".row"); if (!row || !drag || row.dataset.ci == null) return; e.preventDefault();
-  if (drag.si !== +row.dataset.si || drag.ci === +row.dataset.ci) { drag = null; return; }
-  push(); const arr = secs()[drag.si].controls; const [it] = arr.splice(drag.ci, 1); arr.splice(+row.dataset.ci, 0, it);
-  state.sel = { sec: drag.si, ci: +row.dataset.ci }; drag = null; render();
+document.body.addEventListener("dragstart", (e) => {
+  const chip = e.target.closest("[data-add]");
+  const row = e.target.closest("#outline .row");
+  if (chip) { drag = { code: chip.dataset.add }; document.body.classList.add("dragging"); return; }
+  if (row && row.dataset.ci != null) { drag = { si: +row.dataset.si, ci: +row.dataset.ci }; document.body.classList.add("dragging"); }
+});
+document.body.addEventListener("dragend", () => { document.body.classList.remove("dragging"); });
+document.body.addEventListener("dragover", (e) => {
+  const zone = e.target.closest("#outline [data-sec], #outline .row");
+  if (!zone || !drag) return;
+  e.preventDefault();
+  zone.classList.add("over");
+});
+document.body.addEventListener("dragleave", (e) => e.target.closest("#outline [data-sec], #outline .row")?.classList.remove("over"));
+document.body.addEventListener("drop", (e) => {
+  const zone = e.target.closest("#outline [data-sec], #outline .row");
+  if (!zone || !drag) return;
+  e.preventDefault();
+  const si = zone.dataset.ci != null ? +zone.dataset.si : +zone.dataset.sec;
+  const ci = zone.dataset.ci != null ? +zone.dataset.ci : null;
+  if (Number.isNaN(si)) { drag = null; return; }
+  if (drag.code) {
+    if (usedCodes().has(drag.code)) { drag = null; return; }
+    push();
+    state.sel = { sec: si };
+    place(drag.code, drag.code === state.policy.field, ci);
+  } else if (drag.si != null) {
+    const from = state.form.fill[drag.si]?.controls;
+    const to = state.form.fill[si]?.controls;
+    if (!from || !to) { drag = null; return; }
+    let at = ci == null ? to.length : ci;
+    if (drag.si === si && (ci == null || drag.ci === at)) { drag = null; render(); return; }
+    push();
+    const [it] = from.splice(drag.ci, 1);
+    if (from === to && drag.ci < at) at -= 1;
+    to.splice(at, 0, it);
+    state.sel = { sec: si, ci: Math.max(0, Math.min(at, to.length - 1)) };
+  }
+  drag = null;
+  render();
 });
 let resizing = false;
 $("#grip").onmousedown = () => { resizing = true; };
@@ -1164,7 +1460,7 @@ window.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
   const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); undo(); }
-  if (e.key === "Escape") { state.pop = false; renderPop(); }
+  if (e.key === "Escape") { state.pop = false; renderDock(); }
 });
 window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
 openObject("expense");

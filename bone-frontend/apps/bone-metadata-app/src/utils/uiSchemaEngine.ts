@@ -54,7 +54,16 @@ export interface Section {
   id: string;
   title?: string;
   titleKey?: string;
-  kind?: string;
+  /**
+   * 分区类型（协议 v1.1 §10.2）：form=常规字段分区（默认）；dashboard=统计卡区；
+   * timeline=版本链/决策轨迹；compare=三一致对照/对账；report=数字注入报告；tasks=待办区。
+   */
+  kind?: 'form' | 'dashboard' | 'timeline' | 'compare' | 'report' | 'tasks';
+  /**
+   * 分区布局（协议 v1.1 §10.2）：single=单栏（默认）；split-left-40/split-left-60=
+   * 左右分栏（采购审查「左 40% 风险面板 + 右 60% 原文」即 split-left-40）。
+   */
+  layout?: 'single' | 'split-left-40' | 'split-left-60';
   controls: Control[];
 }
 
@@ -141,7 +150,8 @@ export interface ListColumn {
   fieldCode: string;
   visible?: boolean;
   width?: number;
-  pinned?: boolean;
+  /** 固定列方向（协议 enum）：left=横向滚动钉左侧（如主键/案件号）；right=钉右侧（如操作列） */
+  pinned?: 'left' | 'right';
   format?: Record<string, unknown>;
 }
 
@@ -170,11 +180,21 @@ export interface ListView {
   dataScope?: { policyCode: string };
   batchActions?: string[];
   viewKind?: string;
-  degradedBanner?: string;
+  /**
+   * 降级横幅（协议对象，非字符串）：when=命名条件（如 llm_unavailable），
+   * text=横幅文案。LLM 不可用时提示规则审查模式（procuraAI 约束）。
+   */
+  degradedBanner?: { when: string; text: string };
 }
 
 export interface FormView {
   sections: Section[];
+  /**
+   * 表单页头关键信息条（协议 v1.2 §13.2）：独立于 sections 渲染在视图顶部
+   * （如案件号/申请人/状态），与分区互斥。引用的字段必须同时存在于某个
+   * section.controls，否则悬空引用（lint/后端 validate 均报 ERROR）。
+   */
+  pageHeader?: string[];
 }
 
 export interface VariantMatch {
@@ -409,6 +429,21 @@ export function linkageState(
     }
   }
   return st;
+}
+
+/**
+ * 字段可见性总判定（预览与运行时同源）：
+ * - 控件/联动静态 visible=false ⇒ 隐藏；
+ * - 联动 then.tier 声明后 ⇒ 仅 ctx.tier 命中才可见（不声明=不限制）。
+ *
+ * 曾踩坑：RulesPanel 早可配 tier 显隐，但两个渲染器都只读 visible ⇒ 「配了不生效」
+ * 的假能力。所有渲染器判可见性必须走本函数，不得各写各的。
+ */
+export function fieldVisible(st: FieldUiState | undefined, ctx: UiContext = {}): boolean {
+  if (!st) return true;
+  if (st.visible === false) return false;
+  if (st.tier && st.tier.length && (!ctx.tier || !st.tier.includes(ctx.tier))) return false;
+  return true;
 }
 
 /* ============================== submit ============================== */

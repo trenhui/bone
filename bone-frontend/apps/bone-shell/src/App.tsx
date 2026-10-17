@@ -425,8 +425,36 @@ function AppContent({
   /** 当前登录账号的角色 code（新增 GET /api/v1/iam/me/roles）。 */
   const [roleCodes, setRoleCodes] = useState<string[]>([]);
   /** 平台管理员代操作时选定的租户（仅 JWT tenantId=0 且持 iam:tenants:read 可用）。 */
-  const [actingTenantId, setActingTenantId] = useState<string | null>(null);
+  const [actingTenantId, setActingTenantId] = useState<string | null>(() => {
+    const saved = sessionStorage.getItem('bone-acting-tenant-id');
+    return saved ?? null;
+  });
   const [tenantOptions, setTenantOptions] = useState<{ id: string; name: string }[]>([]);
+  // 后端/历史数据可能产生同名同 id 重复项；前端兜底去重，避免下拉框出现重复条目。
+  const uniqueTenantOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return tenantOptions.filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      return true;
+    });
+  }, [tenantOptions]);
+  // 租户视角变更后，强制微应用容器 remount，使 qiankun 子应用拿到新的 tenantId props。
+  const [tenantRevision, setTenantRevision] = useState(0);
+  const handleTenantChange = (tenantId: string | null) => {
+    setActingTenantId(tenantId);
+    if (tenantId != null) {
+      sessionStorage.setItem('bone-acting-tenant-id', tenantId);
+    } else {
+      sessionStorage.removeItem('bone-acting-tenant-id');
+    }
+    setTenantRevision((n) => n + 1);
+    // 广播租户变更，已挂载微应用可订阅后重算权限/重拉数据
+    globalEventBus.emit('bone:tenant:change', {
+      tenantId: tenantId ?? user?.tenantId ?? '0',
+      previousTenantId: actingTenantId ?? user?.tenantId ?? '0',
+    });
+  };
 
   useEffect(() => {
     applyTheme(theme);
@@ -847,9 +875,10 @@ function AppContent({
                 menuLoading={menuLoading}
                 menuError={menuError}
                 canSwitchTenant={canSwitchTenant}
-                tenantOptions={tenantOptions}
+                tenantOptions={uniqueTenantOptions}
                 actingTenantId={actingTenantId}
-                onTenantChange={setActingTenantId}
+                onTenantChange={handleTenantChange}
+                tenantRevision={tenantRevision}
                 handleMenuClick={handleMenuClick}
                 handleLogout={handleLogout}
                 user={user}
@@ -883,6 +912,8 @@ interface MainLayoutProps {
   tenantOptions: { id: string; name: string }[];
   actingTenantId: string | null;
   onTenantChange: (tenantId: string | null) => void;
+  /** 租户视角 revision，变更时强制微应用容器 remount。 */
+  tenantRevision: number;
   handleMenuClick: (info: { key: string }, navigate: (path: string) => void) => void;
   handleLogout: () => void;
   user: { id?: string; name: string } | null;
@@ -897,11 +928,13 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const {
     collapsed, setCollapsed, resolvedTheme, layoutMode,
     menuConfig, menuLoading, menuError, canSwitchTenant,
-    tenantOptions, actingTenantId, onTenantChange,
+    tenantOptions, actingTenantId, onTenantChange, tenantRevision,
     handleMenuClick,
     handleLogout, user, theme, toggleTheme,
     locale, onLocaleChange,
   } = props;
+  // 租户视角变更后 remount 微应用容器，确保 qiankun 子应用拿到最新 tenantId。
+  const microAppMountKey = String(tenantRevision);
   const navigate = useNavigate();
   const location = useLocation();
   const [openKeys, setOpenKeys] = useState<string[]>([]);
@@ -1167,8 +1200,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                   className="tenant-switcher"
                   placeholder="平台视角"
                   value={actingTenantId ?? undefined}
-                  allowClear
-                  clearIcon={<span />}
+                  allowClear={{ clearIcon: <span /> }}
                   onClear={() => onTenantChange(null)}
                   onChange={(v) => onTenantChange(v == null ? null : String(v))}
                   popupMatchSelectWidth={false}
@@ -1215,35 +1247,35 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 登录态由 App 级 user 判空保证；真实授权 = 后端 @PreAuthorize + 子应用内路由守卫。 */}
             <Route
               path="/iam/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/metadata/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/masterdata/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/commerce/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/integration/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/system/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/extension/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route
               path="/generator/*"
-              element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -207,7 +207,7 @@ function diffList(
     const nm = `「${ctrlLabel(c.fieldCode, fields)}」`;
     const px = pByCode.get(c.fieldCode);
     if (!px) {
-      const attrs = [c.width ? `宽 ${c.width}px` : '', c.pinned ? '固定左侧' : ''].filter(Boolean).join('，');
+      const attrs = [c.width ? `宽 ${c.width}px` : '', c.pinned ? `固定${c.pinned === 'right' ? '右侧' : '左侧'}` : ''].filter(Boolean).join('，');
       items.push({
         group: 'list', kind: 'add', key: c.fieldCode,
         text: `新增列${nm}${attrs ? `（${attrs}）` : ''}`,
@@ -218,7 +218,13 @@ function diffList(
     if ((c.width ?? 0) !== (px.width ?? 0)) {
       diffs.push(`列宽 ${px.width ?? '默认'}→${c.width ?? '默认'}`);
     }
-    if (!!c.pinned !== !!px.pinned) diffs.push(c.pinned ? '固定左侧' : '取消固定');
+    // pinned 历史形态为 boolean（true=钉左），归一化后再比，避免存量数据误报 diff
+    const pinOf = (p: unknown): 'left' | 'right' | undefined =>
+      p === true ? 'left' : p === 'left' || p === 'right' ? p : undefined;
+    if (pinOf(c.pinned) !== pinOf(px.pinned)) {
+      const p = pinOf(c.pinned);
+      diffs.push(p ? `固定${p === 'right' ? '右侧' : '左侧'}` : '取消固定');
+    }
     if ((c.visible !== false) !== (px.visible !== false)) {
       diffs.push(c.visible === false ? '隐藏' : '取消隐藏');
     }

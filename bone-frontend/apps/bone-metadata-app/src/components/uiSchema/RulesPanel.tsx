@@ -210,6 +210,26 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
                   })}
                   <Input size="small" style={{ width: 160 }} placeholder="提示文案（可选）" value={t.notice ?? ''}
                     onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { notice: e.target.value || undefined }))} />
+                  {/* 档位显隐（v1.1 §10.2-4：订阅档上下文命中才显示；缺 tier 的上下文不命中） */}
+                  <Tooltip title="档位显隐：仅当前上下文 tier 命中列表时该字段可见（投研 free/pro 即此维度）">
+                    <Select
+                      size="small" mode="tags" style={{ width: 130 }} placeholder="档位（可选）"
+                      value={t.tier ?? []}
+                      onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, { tier: v.length ? v : undefined }))}
+                      options={[
+                        { value: 'free', label: 'free' },
+                        { value: 'pro', label: 'pro' },
+                        { value: 'team', label: 'team' },
+                        { value: 'enterprise', label: 'enterprise' },
+                      ]}
+                    />
+                  </Tooltip>
+                  {/* 赋值（协议 §3.5：仅 eq/null 两算子的保守口径，防联动写爆） */}
+                  <Tooltip title="赋值：条件命中时把固定值写入该字段（保守口径，联动不做表达式）">
+                    <Input size="small" style={{ width: 120 }} placeholder="赋值（可选）"
+                      value={t.value === undefined || t.value === null ? '' : String(t.value)}
+                      onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { value: e.target.value === '' ? undefined : e.target.value }))} />
+                  </Tooltip>
                   <Button size="small" type="text" danger icon={<DeleteOutlined />}
                     onClick={() => onChange(removeLinkageThen(schema, ri, ti))} />
                 </div>

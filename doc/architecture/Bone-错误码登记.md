@@ -232,6 +232,36 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 > 不需要一个错误码；留着只会让人以为还有第二套机制。
 
 
+### AI_HITL_
+
+| `AI_HITL_NOT_FOUND` | 404 | 人工终审项不存在或已终审 |
+| `AI_HITL_ALREADY_DECIDED` | 409 | 人工终审项已裁决（重复裁决拒绝） |
+| `AI_HITL_REASON_REQUIRED` | 422 | 裁决原因类型缺失（reject/modify 必带 reasonType，受控字典回流） |
+| `AI_HITL_TENANT_NOT_NUMERIC` | 500 | 终审记录租户标识非数值（合规留痕 fail-closed，拒绝落租户不明的处置记录） |
+| `AI_HITL_INVALID_TRANSITION` | 422 | 裁决动作不在受控集合（confirm/reject/modify/escalate） |
+
+### AI_RULE_
+
+| `AI_RULE_NOT_FOUND` | 404 | 规则资产不存在 |
+| `AI_RULE_CODE_DUPLICATED` | 409 | 规则编码租户内重复 |
+| `AI_RULE_EXPRESSION_INVALID` | 422 | 表达式编译预检失败（语法错误 / 为空） |
+| `AI_RULE_REGRESSION_FAILED` | 422 | 发布回归门禁未过（正/负例任一不符，逐条回显） |
+| `AI_RULE_GRAY_OUT_OF_RANGE` | 422 | 灰度比例越界（0-100） |
+| `AI_RULE_VERSION_NOT_FOUND` | 404 | 回滚目标版本不存在 |
+| `AI_RULE_ALREADY_CURRENT_VERSION` | 409 | 回滚目标即当前版本，无需回滚 |
+
+### AI_RAG_
+
+| `AI_RAG_TENANT_CONTEXT_MISSING` | 500 | 检索租户上下文缺失（fail-closed：不做无租户边情的全库检索） |
+
+### AI_APP_
+
+| `AI_APP_TENANT_CONTEXT_MISSING` | 400 | 生产拓扑租户上下文缺失（禁入参传租户，须经鉴权链路注入 TenantContext） |
+
+### AI_TRACE_
+
+| `AI_TRACE_TENANT_CONTEXT_MISSING` | 500 | 证据链落盘拒绝：租户上下文缺失或非数值（不落租户不明的合规快照，fail-closed） |
+
 ### META_
 
 | errorCode | HTTP | 说明 |

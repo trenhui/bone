@@ -29,7 +29,7 @@
 | 建模 CRUD + 发布事务 | `catalog/application/MetaEntityApplicationService`（`publishEntity(id, expectedVersion)`：`CatalogVersionSupport.assertExpected` → `publish()` → 缓存失效 → 预留列分配 → `align` → 二次失效 → 发领域事件） | 发布快照挂载点（§4）；`validate` 扩展挂载点 |
 | 模板实例化 | `catalog/application/MetaTemplateApplicationService.instantiate`（字段复制 + `ActionDefMaterializePort.materialize` 动作展开，迁移 0040） | `uiSchema` 拷贝 + `base` 指针写入挂载点（§5） |
 | 列覆盖服务端化 | `catalog/application/UiOverlayApplicationService` + `domain/gateway/UiOverlayStore` + `meta_ui_overlay` 表（迁移 0042，唯一键 `(tenant,user,entity)`） | 模式复刻（port + service + 表），但键改为团队级（§2） |
-| 动作运行时 | `runtime/adapter/web/RuntimeActionController`（list/invoke，`Idempotency-Key` + `If-Match`）+ `RuntimeActionService.validateParams` + `RuntimeActionDefRepository` | 渲染器只调现成通道，**运行时零改动**（§6.3） |
+| 动作运行时 | `runtime/adapter/web/RuntimeActionController`（list/invoke，`Idempotency-Key` + `If-Match`）+ `RuntimeActionApplicationService.validateParams` + `RuntimeActionDefRepository` | 渲染器只调现成通道，**运行时零改动**（§6.3） |
 | 写校验 + 行策略 | `RuntimeWriteValidator`、`ExpenseClaimWriteHook`、`row_policies`、`RuntimeAccessGuard` | 安全底线，UiSchema 不碰（§6.3） |
 | SDK | `@Table/@Column/@Version`、`BaseRepository`，雪花 Long→String | 唯一持久化（HC-001/HC-006） |
 | 迁移 | `scripts/migration/00xx_*.sql`（最新 0045） | 新表 0046 + 模板表变更同批（L3 审批） |

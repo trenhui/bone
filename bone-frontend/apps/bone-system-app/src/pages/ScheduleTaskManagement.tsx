@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination } from 'antd';
+import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination, Select } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { ScheduleTask } from '@/types';
@@ -247,7 +247,19 @@ const ScheduleTaskManagement: React.FC = () => {
             </Form.Item>
             {!editing && (
               <Form.Item name="status" label={t('system.scheduleTaskManagement.initialStatusLabel')}>
-                <Input placeholder="ENABLED / DISABLED" />
+                {/*
+                  ★ 枚举必须走 Select，不能用自由文本 Input。
+                  原写法 `<Input placeholder="ENABLED / DISABLED" />` 把「初始状态」交给用户手打：
+                  打错一个字符（或大小写不符）服务端就回 400 SYS_SCHEDULE_TASK_STATUS_INVALID，
+                  而用户在填表时完全无从知道合法取值只有两个。（2026-10-16 全模块联调实证：
+                  新建定时任务填任意文本 ⇒ 400，弹窗卡住不关，用户只能靠猜。）
+                */}
+                <Select
+                  options={[
+                    { value: 'ENABLED', label: t('system.scheduleTaskManagement.statusEnabled') },
+                    { value: 'DISABLED', label: t('system.scheduleTaskManagement.statusDisabled') },
+                  ]}
+                />
               </Form.Item>
             )}
           </Form>

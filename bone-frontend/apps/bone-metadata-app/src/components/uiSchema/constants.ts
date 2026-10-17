@@ -87,6 +87,32 @@ export const FIELD_TYPE_TO_KIND: Record<string, ControlKind> = {
   ATTACHMENT: 'ATTACHMENT',
 };
 
+/* ============================== 分区形态（协议 v1.1 §10.2） ============================== */
+
+/** 分区类型（section.kind）：默认 form；其余为展示型区块 */
+export const SECTION_KINDS = [
+  { value: 'form', label: '表单区', hint: '常规字段分区（默认）' },
+  { value: 'dashboard', label: '统计卡区', hint: '关键指标卡片（STAT 控件）' },
+  { value: 'timeline', label: '时间轴', hint: '版本链 / 决策轨迹' },
+  { value: 'compare', label: '对照区', hint: '三一致三栏对照 / 对账' },
+  { value: 'report', label: '报告区', hint: '数字注入报告（CHART/COMPUTED）' },
+  { value: 'tasks', label: '待办区', hint: '任务卡片列表' },
+] as const;
+
+/** 分区布局（section.layout）：默认 single；split 用于审查分栏 */
+export const SECTION_LAYOUTS = [
+  { value: 'single', label: '单栏', hint: '常规纵向堆叠（默认）' },
+  { value: 'split-left-40', label: '左 40% 分栏', hint: '左窄右宽：风险面板 + 原文' },
+  { value: 'split-left-60', label: '左 60% 分栏', hint: '左宽右窄：原文 + 处置面板' },
+] as const;
+
+/** 显示模式（displayModes：create/edit/view 子集，config/preview 不进运行时渲染） */
+export const DISPLAY_MODES = [
+  { value: 'create', label: '新建' },
+  { value: 'edit', label: '编辑' },
+  { value: 'view', label: '查看' },
+] as const;
+
 /* ============================== 操作符 ============================== */
 
 export interface OperatorMeta {

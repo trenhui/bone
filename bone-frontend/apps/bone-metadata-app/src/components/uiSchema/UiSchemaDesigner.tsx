@@ -35,6 +35,8 @@ import RulesPanel from './RulesPanel';
 import ActionBarPanel from './ActionBarPanel';
 import ListPanel from './ListPanel';
 import DictionaryPanel from './DictionaryPanel';
+import I18nPanel from './I18nPanel';
+import BasePanel from './BasePanel';
 import LintPanel from './LintPanel';
 import JsonPanel from './JsonPanel';
 import VariantsPanel from './VariantsPanel';
@@ -63,9 +65,14 @@ interface Props {
    * 没有该回调时按钮不渲染（设计器被其他宿主复用时不假设外部结构）。
    */
   onGoPublish?: () => void;
+  /**
+   * 实体行策略声明的 rule name 集合（来自 entity.rowPolicies.rules[].name）。
+   * 列表视图 dataScope.policyCode 下拉的真源——只引用不新造（协议 §3.2）。
+   */
+  policyCodes?: string[];
 }
 
-type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'variants' | 'lint' | 'json';
+type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'i18n' | 'base' | 'variants' | 'lint' | 'json';
 
 const TAB_LABEL: Record<TabKey, string> = {
   structure: '结构',
@@ -73,6 +80,8 @@ const TAB_LABEL: Record<TabKey, string> = {
   actions: '动作条',
   list: '列表',
   dict: '字典',
+  i18n: '多语言',
+  base: '模板',
   variants: '变体',
   lint: '自检',
   json: 'JSON',
@@ -86,7 +95,7 @@ const TAB_LABEL: Record<TabKey, string> = {
  *   已完全部发布的实体再弹 0-1 引导是噪音；用户随时可从工具栏「帮助」重开。
  */
 
-export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish }: Props): React.ReactElement {
+export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, policyCodes = [] }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
   const [baseline, setBaseline] = useState<string>(''); // 已保存快照，用于判脏
@@ -381,6 +390,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     { key: 'go-actions', group: '跳转面板', label: '跳到：动作条', run: () => setTab('actions') },
     { key: 'go-list', group: '跳转面板', label: '跳到：列表', run: () => setTab('list') },
     { key: 'go-dict', group: '跳转面板', label: '跳到：字典', run: () => setTab('dict') },
+    { key: 'go-i18n', group: '跳转面板', label: '跳到：多语言', run: () => setTab('i18n') },
+    { key: 'go-base', group: '跳转面板', label: '跳到：模板', run: () => setTab('base') },
     { key: 'go-variants', group: '跳转面板', label: '跳到：变体', run: () => setTab('variants') },
     { key: 'go-lint', group: '跳转面板', label: '跳到：自检', run: () => setTab('lint') },
     { key: 'go-json', group: '跳转面板', label: '跳到：JSON', run: () => setTab('json') },
@@ -867,6 +878,24 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
               { key: 'list', label: TAB_LABEL.list },
               { key: 'dict', label: TAB_LABEL.dict },
               {
+                key: 'i18n',
+                label: (
+                  <Space size={4}>
+                    {TAB_LABEL.i18n}
+                    {schema.i18n?.namespace && <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>ns</Tag>}
+                  </Space>
+                ),
+              },
+              {
+                key: 'base',
+                label: (
+                  <Space size={4}>
+                    {TAB_LABEL.base}
+                    {schema.base?.templateCode && <Tag color="purple" style={{ fontSize: 10, margin: 0 }}>跟随</Tag>}
+                  </Space>
+                ),
+              },
+              {
                 key: 'variants',
                 label: (
                   <Space size={4}>
@@ -912,6 +941,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
             {tab === 'list' && (
               <ListPanel
                 schema={schema} onChange={commit} fields={fields}
+                policyCodes={policyCodes} actionDefs={actionDefs}
                 focus={focus?.tab === 'list' ? focus : undefined}
               />
             )}
@@ -919,6 +949,17 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
               <DictionaryPanel
                 schema={schema} onChange={commit} fields={fields}
                 focus={focus?.tab === 'dict' ? focus : undefined}
+              />
+            )}
+            {tab === 'i18n' && (
+              <I18nPanel
+                schema={schema} onChange={commit} entityCode={entityCode}
+              />
+            )}
+            {tab === 'base' && (
+              <BasePanel
+                entityId={entityId} schema={schema} onChange={commit}
+                lockVersion={lock} onMerged={() => void load()}
               />
             )}
             {tab === 'variants' && (

@@ -117,8 +117,8 @@ export interface ProjectedColumn {
   field: MetaField;
   /** 契约列宽（px）；无契约列时 undefined，由表格自适应 */
   width?: number;
-  /** 契约固定列（横向滚动时钉住） */
-  pinned?: boolean;
+  /** 契约固定列方向（横向滚动时钉住；left=主键侧，right=操作列侧） */
+  pinned?: 'left' | 'right';
 }
 
 /**

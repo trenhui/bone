@@ -506,7 +506,16 @@ const toolbar = () => page.locator('button[aria-label="撤销"]').locator('xpath
   if (softFail.length) console.log('SOFT FAILED:\n' + softFail.map((s) => `  × ${s.name} :: ${s.detail || ''}`).join('\n'));
   H('零 console error', results.consoleErrors.length === 0, results.consoleErrors.slice(0, 3).join(' | '));
   H('零 page error', results.pageErrors.length === 0, results.pageErrors.slice(0, 3).join(' | '));
-  console.log(`RESULT: ${hardFail.length === 0 && results.consoleErrors.length === 0 && results.pageErrors.length === 0 ? 'ALL PASS' : 'HAS FAILURES'}`);
+  // 汇总行须在最后两条断言之后重算：否则日志会显示 66/66 而实际 PASS 68 条
+  // （「零 console/page error」两条assertion 在上面汇总之后才追加），读日志的人
+  // 极易误判为"漏了两条断言"或"数字漂移"。教训：汇总数字的口径必须覆盖全部已记录断言。
+  const hardAll = results.steps.filter((s) => s.hard);
+  const softAll = results.steps.filter((s) => !s.hard);
+  const hardFailAll = hardAll.filter((s) => !s.ok);
+  const softFailAll = softAll.filter((s) => !s.ok);
+  console.log(`\n---- 最终汇总（含收尾断言）----`);
+  console.log(`HARD: ${hardAll.length - hardFailAll.length}/${hardAll.length}  SOFT: ${softAll.length - softFailAll.length}/${softAll.length}`);
+  console.log(`RESULT: ${hardFailAll.length === 0 && results.consoleErrors.length === 0 && results.pageErrors.length === 0 ? 'ALL PASS' : 'HAS FAILURES'}`);
 
   await browser.close();
 })().catch((e) => {

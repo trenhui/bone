@@ -5,7 +5,7 @@
  * 这样所有编辑天然可撤销（保留上一份引用即可），且不出现"改 A 影响 B"的隐式共享。
  */
 import type {
-  ActionBarItem, BoneUiSchema, Control, LinkageRule, LinkageThen, ListColumn, Section, SubmitRule, Variant,
+  ActionBarItem, BoneUiSchema, Control, FormView, LinkageRule, LinkageThen, ListColumn, ListStat, ListTab, ListView, SchemaBase, SchemaFooter, Section, SubmitRule, Variant,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { FIELD_TYPE_TO_KIND } from './constants';
@@ -14,19 +14,19 @@ import { FIELD_TYPE_TO_KIND } from './constants';
 export type ViewKey = 'form' | 'detail';
 
 /** 取指定视图（缺省补空分区列表，避免到处判空） */
-export function viewOf(s: BoneUiSchema, view: ViewKey = 'form'): { sections: Section[] } {
+export function viewOf(s: BoneUiSchema, view: ViewKey = 'form'): FormView {
   return (view === 'detail' ? s.views.detail : s.views.form) ?? { sections: [] };
 }
 
-/** 写回指定视图 */
-export function withView(s: BoneUiSchema, v: { sections: Section[] }, view: ViewKey = 'form'): BoneUiSchema {
+/** 写回指定视图（保留 pageHeader 等其余键） */
+export function withView(s: BoneUiSchema, v: FormView, view: ViewKey = 'form'): BoneUiSchema {
   return view === 'detail'
     ? { ...s, views: { ...s.views, detail: v } }
     : { ...s, views: { ...s.views, form: v } };
 }
 
-/** 兼容旧调用：表单视图 */
-export const formOf = (s: BoneUiSchema): { sections: Section[] } => viewOf(s, 'form');
+/** 兼容旧调用：表单视图（FormView 含 sections/pageHeader，预览按 pageHeader 渲染页头条） */
+export const formOf = (s: BoneUiSchema): FormView => viewOf(s, 'form');
 
 /* ============================== 分区 ============================== */
 
@@ -222,6 +222,101 @@ export const moveColumn = (s: BoneUiSchema, from: number, to: number): BoneUiSch
   return { ...s, views: { ...s.views, list: { ...s.views.list, columns: arr } } };
 };
 
+/* ============================== 列表视图全配置（协议 §3.2 / v1.1） ============================== */
+
+/** 列表视图补默认值（views.list 可整块缺省，编辑前先补空壳） */
+const listOf = (s: BoneUiSchema): ListView => s.views.list ?? {};
+
+const withList = (s: BoneUiSchema, l: ListView): BoneUiSchema => ({ ...s, views: { ...s.views, list: l } });
+
+/** 列表视图局部补丁（tabs/searchFields/dataScope/stats/… 共用的单一入口） */
+export const updateList = (s: BoneUiSchema, patch: Partial<ListView>): BoneUiSchema =>
+  withList(s, { ...listOf(s), ...patch });
+
+export const addTab = (s: BoneUiSchema): BoneUiSchema =>
+  updateList(s, { tabs: [...(listOf(s).tabs ?? []), { title: '新页签', fieldCode: 'status', value: '' }] });
+
+export const updateTab = (s: BoneUiSchema, idx: number, patch: Partial<ListTab>): BoneUiSchema =>
+  updateList(s, { tabs: (listOf(s).tabs ?? []).map((t, i) => (i === idx ? { ...t, ...patch } : t)) });
+
+export const removeTab = (s: BoneUiSchema, idx: number): BoneUiSchema =>
+  updateList(s, { tabs: (listOf(s).tabs ?? []).filter((_, i) => i !== idx) });
+
+export const moveTab = (s: BoneUiSchema, from: number, to: number): BoneUiSchema => {
+  const arr = [...(listOf(s).tabs ?? [])];
+  if (to < 0 || to >= arr.length) return s;
+  const [it] = arr.splice(from, 1);
+  arr.splice(to, 0, it);
+  return updateList(s, { tabs: arr });
+};
+
+/** 搜索栏字段开关（searchFields 为 code 数组；空数组=不渲染搜索栏） */
+export const toggleSearchField = (s: BoneUiSchema, code: string, on: boolean): BoneUiSchema => {
+  const cur = listOf(s).searchFields ?? [];
+  return updateList(s, { searchFields: on ? [...cur, code] : cur.filter((c) => c !== code) });
+};
+
+/** 搜索栏字段整表替换（多选组件直接给全量数组，免逐项 toggle 的中间态） */
+export const toggleSearchFields = (s: BoneUiSchema, codes: string[]): BoneUiSchema =>
+  updateList(s, { searchFields: codes.length ? codes : undefined });
+
+/** 数据范围（引用 row_policies 的 rule name；空串=清除引用） */
+export const setDataScope = (s: BoneUiSchema, policyCode: string): BoneUiSchema =>
+  updateList(s, { dataScope: policyCode ? { policyCode } : undefined });
+
+/** 快捷筛选开关（quickFilters 为 code 数组） */
+export const toggleQuickFilter = (s: BoneUiSchema, code: string, on: boolean): BoneUiSchema => {
+  const cur = listOf(s).quickFilters ?? [];
+  return updateList(s, { quickFilters: on ? [...cur, code] : cur.filter((c) => c !== code) });
+};
+
+/** 快捷筛选整表替换（多选组件直接给全量数组） */
+export const toggleQuickFilters = (s: BoneUiSchema, codes: string[]): BoneUiSchema =>
+  updateList(s, { quickFilters: codes.length ? codes : undefined });
+
+export const addStat = (s: BoneUiSchema): BoneUiSchema =>
+  updateList(s, { stats: [...(listOf(s).stats ?? []), { title: '新指标', valueRef: '' }] });
+
+export const updateStat = (s: BoneUiSchema, idx: number, patch: Partial<ListStat>): BoneUiSchema =>
+  updateList(s, { stats: (listOf(s).stats ?? []).map((t, i) => (i === idx ? { ...t, ...patch } : t)) });
+
+export const removeStat = (s: BoneUiSchema, idx: number): BoneUiSchema =>
+  updateList(s, { stats: (listOf(s).stats ?? []).filter((_, i) => i !== idx) });
+
+export const setViewKind = (s: BoneUiSchema, viewKind: string): BoneUiSchema =>
+  updateList(s, { viewKind: viewKind || undefined });
+
+export const setDegradedBanner = (s: BoneUiSchema, banner: { when: string; text: string } | undefined): BoneUiSchema =>
+  updateList(s, { degradedBanner: banner && banner.text.trim() ? { when: banner.when.trim() || 'llm_unavailable', text: banner.text.trim() } : undefined });
+
+/** 批量动作引用整表替换（batchActions 为 actionCode 数组） */
+export const setBatchActions = (s: BoneUiSchema, codes: string[]): BoneUiSchema =>
+  updateList(s, { batchActions: codes.length ? codes : undefined });
+
+/** 批量动作引用开关（batchActions 为 actionCode 数组） */
+export const toggleBatchAction = (s: BoneUiSchema, code: string, on: boolean): BoneUiSchema => {
+  const cur = listOf(s).batchActions ?? [];
+  return updateList(s, { batchActions: on ? [...cur, code] : cur.filter((c) => c !== code) });
+};
+
+/* ============================== 页头 / 合规条 / i18n / 模板指针 ============================== */
+
+/** 表单页头字段条（v1.2 §13.2：与 sections 互斥，引用必须存在于某分区控件） */
+export const setPageHeader = (s: BoneUiSchema, view: ViewKey, codes: string[]): BoneUiSchema =>
+  withView(s, { ...viewOf(s, view), pageHeader: codes.length ? codes : undefined }, view);
+
+/** 常驻合规条（v1.1 §10.2-8：免责声明 + AI 标识 + 模拟数据标注） */
+export const updateFooter = (s: BoneUiSchema, patch: Partial<SchemaFooter>): BoneUiSchema =>
+  ({ ...s, footer: { ...(s.footer ?? {}), ...patch } });
+
+/** i18n 命名空间（实例化时服务端重写为 bone.ui.<entityCode>，防多实例词条串味） */
+export const setI18nNamespace = (s: BoneUiSchema, namespace: string): BoneUiSchema =>
+  ({ ...s, i18n: namespace ? { namespace } : undefined });
+
+/** 模板跟随指针（pinned 默认不提示；notify 有新版时建模 Tab 出横幅，仍须租户确认） */
+export const updateBase = (s: BoneUiSchema, patch: Partial<SchemaBase>): BoneUiSchema =>
+  ({ ...s, base: { ...(s.base ?? {}), ...patch } });
+
 /* ============================== 字典覆写 ============================== */
 
 export interface DictOverride {
@@ -352,9 +447,9 @@ export const mergeVariantIntoBase = (s: BoneUiSchema, idx: number): BoneUiSchema
   const v = (s.variants ?? [])[idx];
   if (!v) return s;
   const views = { ...s.views };
-  if (v.views?.form) views.form = { sections: mergeSections(views.form?.sections, v.views.form.sections) };
-  if (v.views?.detail) views.detail = { sections: mergeSections(views.detail?.sections, v.views.detail.sections) };
-  if (v.views?.list) views.list = v.views.list;
+  if (v.views?.form) views.form = { ...views.form, sections: mergeSections(views.form?.sections, v.views.form.sections) };
+  if (v.views?.detail) views.detail = { ...views.detail, sections: mergeSections(views.detail?.sections, v.views.detail.sections) };
+  if (v.views?.list) views.list = { ...views.list, ...v.views.list };
   return {
     ...s,
     views,

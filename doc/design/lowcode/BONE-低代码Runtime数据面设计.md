@@ -45,10 +45,10 @@
 | POST `Idempotency-Key`（创建） | ✅ **As-Is** | 但**不强制**（缺失即执行）；scope/TTL 有缺陷（§4.5） |
 | **`state_field` 直写保护 + `422 FIELD_PROTECTED`** | ✅ **已实现** | `RuntimeStatusGuard`（create/update 守卫 → 422），已接入 `RuntimeRecordController`；关闭「`PUT {status:PAID}` 冒充打款」后门（§4.5.1） |
 | **实体级权限 `runtime:{entityCode}:{read\|write}`** | ✅ **已实现** | `RuntimeAccessGuard`（实体级 read/write + 通配 `runtime:*` + 动作细码），接入 CRUD 与动作端点（§4.6） |
-| **记录级变更审计（who changed status X→Y）** | 🟡 **已实现（动作链路）** | 0033 `meta_runtime_record_audit` append-only，`RuntimeActionService` 生命周期已落审计；**普通 CRUD 写路径记录级审计待接全（v1.0.5）**（§7） |
+| **记录级变更审计（who changed status X→Y）** | 🟡 **已实现（动作链路）** | 0033 `meta_runtime_record_audit` append-only，`RuntimeActionApplicationService` 生命周期已落审计；**普通 CRUD 写路径记录级审计待接全（v1.0.5）**（§7） |
 | **`kind=state_transition` 内置引擎** | ✅ **已实现** | 读转移矩阵→校验→改 ENUM；纯声明式，与 escape 解耦 |
 | **软删可恢复（回收站视图 + 恢复动作）** | ✅ **已实现** | `GET /records/deleted` + `POST /{id}/restore` + DELETE If-Match 生效；**v0.44：无 `deleted` 列实体删除已改为拒绝 + 明示不可恢复**（不再静默物理删） |
-| `POST …/actions/{actionCode}`（Invoke · `kind=escape`） | ✅ **已实现** | `RuntimeActionController` + `RuntimeActionService`（幂等去重/状态机校验/执行生命周期/孤儿收口）+ SPI Handler（§4.7）；唯一形态 = 短码列表/结构对象按 §4.3.1 |
+| `POST …/actions/{actionCode}`（Invoke · `kind=escape`） | ✅ **已实现** | `RuntimeActionController` + `RuntimeActionApplicationService`（幂等去重/状态机校验/执行生命周期/孤儿收口）+ SPI Handler（§4.7）；唯一形态 = 短码列表/结构对象按 §4.3.1 |
 | page 级 `meta.allowedActionsByStatus`（Describe） | ✅ **已实现** | `RuntimeActionDescribeSupport`（按 status 分组一次算全量，天然防 N+1，§4.3） |
 | `RuntimeActionHandler` SPI + 注册表 | ✅ **已实现** | `ExpenseClaimConfirmPayoutHandler`（报销打款）+ `ReplenishmentReceiveHandler` 类注册，同键双注册 fail-fast（§4.8） |
 | 权限码 `runtime:{entity}:{action}`（动作级） | ✅ **已实现** | `RuntimeAccessGuard` 动作细码（§4.6）；逃逸上线门禁（§4.5） |
@@ -586,7 +586,7 @@ POST …/t_expense_claim/records/123/actions/confirmPayout
 | `pattern` | string 正则 | 不匹配 → 422 |
 | `values` | enum 允许值 | 取值不在内 → 422 |
 
-全部收敛到 `META_RUNTIME_ACTION_INVALID_PARAMS`（已登记，OpenAPI v1.2.3+）。`RuntimeActionService.validateParams` 在 `execute` 前统一执行——**Handler 不再各自校验入参**（Hasura Actions 的 inputSchema 语义：契约平台管，Handler 只写业务）。
+全部收敛到 `META_RUNTIME_ACTION_INVALID_PARAMS`（已登记，OpenAPI v1.2.3+）。`RuntimeActionApplicationService.validateParams` 在 `execute` 前统一执行——**Handler 不再各自校验入参**（Hasura Actions 的 inputSchema 语义：契约平台管，Handler 只写业务）。
 
 **与前端关系**：Describe 返回的 `params_schema` 即表单渲染源（UIF-008），前后端同一份声明，不存在「前端收什么、后端验什么」两套。
 
@@ -707,7 +707,7 @@ MetaList：Describe → 按钮；`confirm: true` → 二次确认（原型已演
 |-----------|------|------|------|
 | `META_RUNTIME_FIELD_PROTECTED` | 422 | 直写 `state_field`（§4.5） | ✅ **已实现**（`RuntimeStatusGuard`） |
 | `META_RUNTIME_ENTITY_FORBIDDEN` | 403 | 无 `runtime:{entityCode}:{read\|write}` 或动作细码（§4.7）；**同时覆盖原 `FORBIDDEN_ACTION` 场景**（v0.44 收敛） | ✅ **已实现** + **已入 spec v1.2.3** |
-| `META_RUNTIME_ACTION_NOT_FOUND` | 404 | 未声明或未注册 Handler | ✅ **已实现**（`RuntimeActionService`） |
+| `META_RUNTIME_ACTION_NOT_FOUND` | 404 | 未声明或未注册 Handler | ✅ **已实现**（`RuntimeActionApplicationService`） |
 | `META_RUNTIME_ACTION_ILLEGAL_TRANSITION` | 409 | from 不匹配 / 终态再推（代码真源 `MetadataErrorCodes.RUNTIME_ACTION_ILLEGAL_TRANSITION`） | ✅ **已落地** |
 | `META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED` | 400 | 逃逸缺 Key（强制模式） | ✅ **已实现**（资金类动作强制幂等） |
 | `META_RUNTIME_ACTION_INVALID_PARAMS` | 422 | 动作入参校验失败（必填缺失/类型不符，`ActionParamSpec`） | ✅ **已实现** + 已入 spec |
@@ -925,7 +925,7 @@ MetaList：Describe → 按钮；`confirm: true` → 二次确认（原型已演
 | # | 建议（对标） | 落点 | 内容 |
 |---|---|---|---|
 | 1 | ① 幂等重放返回首响（Stripe） | §4.6 核验 | 代码核验：动作幂等命中即复用首次响应，重试非 409（孤儿态除外）；CRUD 幂等 TTL 配置化——**已实现，无需再改**，本节仅核验确认 |
-| 2 | ② 动作入参契约化（Hasura Actions inputSchema） | §4.8.2 + 代码 | `ActionParamSpec` 扩展 `min/max/pattern`；`RuntimeActionService.validateParams` 统一类型（string/number/integer/boolean/enum）+ 约束校验 → `META_RUNTIME_ACTION_INVALID_PARAMS`；Handler 不再各自校验；Describe 返回 params_schema 即前端表单源 |
+| 2 | ② 动作入参契约化（Hasura Actions inputSchema） | §4.8.2 + 代码 | `ActionParamSpec` 扩展 `min/max/pattern`；`RuntimeActionApplicationService.validateParams` 统一类型（string/number/integer/boolean/enum）+ 约束校验 → `META_RUNTIME_ACTION_INVALID_PARAMS`；Handler 不再各自校验；Describe 返回 params_schema 即前端表单源 |
 | 3 | ③ 写前置钩子（Directus Filter） | §4.8.3 + 代码 | `RuntimeWriteHook` SPI（beforeCreate/beforeUpdate，可阻断 422 / 可改写载荷）；`RuntimeEngineConfiguration` 自动收集；报销演示 `ExpenseClaimWriteHook`（审批后禁改金额）；新增 `RuntimeWriteHookTest` 4 例 |
 | 4 | ④ 行级 ACL 默认拒绝（Supabase RLS） | §4.7.1 设计 | v1.1 设计：owner_field + 行策略声明 + 默认拒绝（无策略 → 仅管理员可见）+ 查询 WHERE 注入 + 写路径同判（404）；不实现只设计，避免 P2 承诺 |
 | 5 | 文档同步 | 版本头 / §0.1 矩阵 / 基线 | 版本 v0.45→v0.46；矩阵「动作入参契约」「写前置钩子」转已实现；`RuntimeActionHandler` SPI / 动作级权限码行同步为已实现（滞后修正）；行级 ACL 行标注设计就绪 |
@@ -937,7 +937,7 @@ MetaList：Describe → 按钮；`confirm: true` → 二次确认（原型已演
 | 1 | **行级 ACL owner 维度实现**：`page/getById` 注入 `AND created_by = :rowOwner`（无 created_by 列实体自动豁免）+ `update/delete/restore` 入口 `assertRowOwner` 同判 404 | `JdbcRuntimeRecordService`（`applyRowOwnerFilter` / `assertRowOwner`，owner 校验与 deleted 状态解耦，不用 `buildTenantWhere`） | `RuntimeRowAclTest` 6 例（owner 可见 / 非 owner 404 / 管理员豁免 / system 豁免 / 恢复场景 / 级联豁免） |
 | 2 | **系统操作者 `system`**：服务/渠道回调身份豁免行级 ACL 但审计留痕（`stampAuditColumns` 写字符串常量） | `JdbcRuntimeRecordService` + Controller 既有 `currentOperator` 透传 | 支付渠道回调 / 订单确认用例改为 system 身份 |
 | 3 | **既有测试语义适配**：并发乐观锁用例改为 owner 自身 stale（412 语义保留）；支付回调改 system 身份（updated_by=system） | `OrderPaymentRuntimeSimulationTest` | runtime 81 全绿 |
-| 4 | **并行会话遗留修复**（v0.46 交付时被阻塞项）：`RuntimeActionService` 缺 `List` import / `replayedResult` 声明、`RuntimeActionController` 缺 `accessGuard` 字段、`RuntimeRelationController` 缺 `getErrorCode`/`MetadataErrorCodes` import，共 5 处 | 对应文件 | server 125 全绿 |
+| 4 | **并行会话遗留修复**（v0.46 交付时被阻塞项）：`RuntimeActionApplicationService` 缺 `List` import / `replayedResult` 声明、`RuntimeActionController` 缺 `accessGuard` 字段、`RuntimeRelationController` 缺 `getErrorCode`/`MetadataErrorCodes` import，共 5 处 | 对应文件 | server 125 全绿 |
 | 5 | 文档同步 | 版本头 / §0.1 矩阵 / §4.7.1 / 基线 | 版本 v0.46→v0.47；矩阵行级 ACL 转已实现 + 行策略行标注 v1.1；§4.7.1 拆分「已实现（owner 维度）」与「v1.1 剩余（行策略）」 |
 
 ### 9.6 v0.48 变更记录（2026-10-11 · 行策略落地 · approver 维度）

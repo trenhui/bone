@@ -6,7 +6,7 @@
  * 真源缺失时降级为自由输入，并给出提示，不静默放行。
  */
 import {
-  Alert, Button, Empty, Input, Select, Space, Switch, Tag, Tooltip, Typography,
+  Alert, Button, Empty, Input, InputNumber, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined, ThunderboltOutlined,
@@ -158,6 +158,64 @@ export default function ActionBarPanel({ schema, onChange, fields, actionDefs, f
                     </>
                   )}
                 </Space>
+
+                {/* HITL 决策配置（v1.1 §10.2-6：审查/核赔的采纳-驳回-改判三态） */}
+                <Space wrap>
+                  <Text type="secondary" style={{ fontSize: 12, width: 60 }}>决策类型</Text>
+                  <Select
+                    size="small" style={{ width: 200 }} value={a.decisionKind ?? 'open'}
+                    onChange={(v) => onChange(updateAction(schema, i, { decisionKind: v as 'open' | 'hitl' }))}
+                    options={[
+                      { value: 'open', label: '开放式（普通动作）' },
+                      { value: 'hitl', label: '人机协同（采纳/驳回/改判）' },
+                    ]}
+                  />
+                  {a.decisionKind === 'hitl' && (
+                    <Tooltip title="hitl 动作在运行时应弹理由选择（reasonTypes），处置理由随审计留痕">
+                      <Tag color="purple" style={{ fontSize: 11 }}>运行时报理由入审计</Tag>
+                    </Tooltip>
+                  )}
+                </Space>
+
+                {a.decisionKind === 'hitl' && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      理由分类（reasonTypes · 如 理赔六类拒赔理由 / 采购审查六类）
+                    </Text>
+                    <Select
+                      size="small" mode="tags" style={{ width: '100%', marginTop: 4 }}
+                      placeholder="输入后回车，如 资料不齐 / 超保险责任 / 既往症"
+                      value={a.reasonTypes ?? []}
+                      onChange={(v) => onChange(updateAction(schema, i, { reasonTypes: v as string[] }))}
+                    />
+                  </div>
+                )}
+
+                <Space wrap>
+                  <Text type="secondary" style={{ fontSize: 12, width: 60 }}>处置轮次</Text>
+                  <InputNumber
+                    size="small" style={{ width: 90 }} min={1} placeholder="不限"
+                    value={a.maxRounds ?? undefined}
+                    onChange={(v: number | null) => onChange(updateAction(schema, i, { maxRounds: v ?? undefined }))}
+                  />                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    最多 N 轮，超限转人工（采购审查 3 轮即此）
+                  </Text>
+                </Space>
+
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    双人复核条件（requireDualApproveWhen · 满足时需第二人确认，如 金额≥1 万且高风险）
+                  </Text>
+                  <div style={{ marginTop: 4 }}>
+                    <ConditionEditor
+                      value={a.requireDualApproveWhen}
+                      fieldOptions={fieldOptions}
+                      onChange={(w) => onChange(updateAction(schema, i, {
+                        requireDualApproveWhen: Object.keys(w).length ? w : undefined,
+                      }))}
+                    />
+                  </div>
+                </div>
               </Space>
             </div>
           </div>

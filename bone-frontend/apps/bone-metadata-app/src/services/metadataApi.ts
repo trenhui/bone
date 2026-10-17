@@ -449,6 +449,32 @@ export interface UiSchemaIssue {
   fieldCode?: string;
 }
 
+/** 模板更新检查（base-update：digest 只含计数，不返全量） */
+export interface TemplateUpdateCheck {
+  hasUpdate: boolean;
+  reason?: string;
+  baseVersion?: string;
+  currentVersion?: string;
+  /** 变更规模摘要（sections/rules/actions 增减数） */
+  digest?: { sections?: number; rules?: number; actions?: number };
+}
+
+/** 三路归并预览项（base.old → base.new → instance.exclusive） */
+export interface MergePreviewItem {
+  path: string;
+  kind: string;
+  /** autoMerged=租户未改过自动取新版；conflict=租户改过保留实例值 + WARNING */
+  outcome: 'autoMerged' | 'conflict';
+  baseNew?: unknown;
+  instance?: unknown;
+}
+
+export interface MergePreview {
+  autoMerged: MergePreviewItem[];
+  conflicts: MergePreviewItem[];
+  templateVersion: string;
+}
+
 /**
  * 业务对象界面 schema（团队级，P0 协议驱动界面）。
  *
@@ -458,6 +484,9 @@ export interface UiSchemaIssue {
  *            （锁版本走标准头不进 body，与 runtime invokeAction 的 If-Match/ETag/412 同语义，技术方案 §3.2）
  *   DELETE /entities/{id}/ui-schema            → 删草稿行（已发布快照保留）
  *   POST   /entities/{id}/ui-schema/validate   → UiSchemaIssue[]
+ *   GET    /entities/{id}/ui-schema/base-update → TemplateUpdateCheck（模板跟随三步之一直查口）
+ *   POST   /entities/{id}/ui-schema/merge-preview → MergePreview（三路归并预览，服务端算前端只确认）
+ *   POST   /entities/{id}/ui-schema/merge-confirm → 头 If-Match + {acceptConflicts, templateVersion}
  * 运行时零新增端点：渲染数据继续走 runtime records/children/lookup/actions 通道。
  */
 export const metadataUiSchemaApi = {
@@ -481,6 +510,25 @@ export const metadataUiSchemaApi = {
   validate: (id: SnowflakeId): Promise<ApiResponse<UiSchemaIssue[]>> =>
     api.post<never, ApiResponse<UiSchemaIssue[]>>(
       `${META}/entities/${encodeURIComponent(String(id))}/ui-schema/validate`,
+    ),
+
+  baseUpdate: (id: SnowflakeId): Promise<ApiResponse<TemplateUpdateCheck>> =>
+    api.get<never, ApiResponse<TemplateUpdateCheck>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema/base-update`,
+    ),
+
+  mergePreview: (id: SnowflakeId): Promise<ApiResponse<MergePreview>> =>
+    api.post<never, ApiResponse<MergePreview>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema/merge-preview`,
+    ),
+
+  mergeConfirm: (
+    id: SnowflakeId, acceptConflicts: boolean, templateVersion: string, lockVersion: number,
+  ): Promise<ApiResponse<UiSchemaResp>> =>
+    api.post<unknown, ApiResponse<UiSchemaResp>>(
+      `${META}/entities/${encodeURIComponent(String(id))}/ui-schema/merge-confirm`,
+      { acceptConflicts, templateVersion },
+      { headers: { 'If-Match': String(lockVersion) } },
     ),
 };
 
