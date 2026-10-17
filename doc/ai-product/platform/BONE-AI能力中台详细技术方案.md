@@ -44,7 +44,7 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 
 > **已落地基线 vs 目标态（2026-10-17 更新）**：上为**目标态**契约。已落地为**渐进版**——`LlmRequest(model, messages, temperature, maxTokens, jsonResponse, shortCircuited, traceId)`、消息 `LlmMessage(role, content)`、包结构 `domain/application/infrastructure/config`；出站传输用 **JDK `HttpClient`**（零新依赖）；`traceId` **已改为调用方提供以贯穿全链**（缺省才生成，与证据链/计量共用同一键）；成本红线仍**抛 `BizException(AI_GATEWAY_REDLINE_BLOCKED)`**。
 >
-> **治理面落地状态（2026-10-17）**：① 出口 PII 脱敏 ✅（`PiiRedactor` 端口 + 正则默认实现，身份证 ISO 7064 / 银行卡 Luhn 校验位闸门防误伤，出站与落证双向掩码）；② 结构化输出校验 ✅（`jsonResponse=true` 时校验合法 JSON，失败发失败证据并抛 `AI_GATEWAY_OUTPUT_INVALID`；JSON Schema 强校验待 L3 依赖审批）；③ 精确缓存 ✅（`LlmResponseCache` 有界 LRU+TTL，仅 `temperature=0` 参与，命中不发事件；**默认关闭**需显式开启）；④ 租户配额 ✅（`TenantQuotaGuard` 进程内固定窗口，超限 429 `AI_GATEWAY_QUOTA_EXCEEDED`；**多副本需换 Redis**）；⑤ 计量消费 ✅（`LlmUsageSink` 默认结构化日志）。**仍待**：`scenario → 模型档位` 路由与级联升档（⑥）、OTel `gen_ai.*` 打点（需 Micrometer 依赖，L3）、红线演进为结果型短路。
+> **治理面落地状态（2026-10-18）**：① 出口 PII 脱敏 ✅（`PiiRedactor` 端口 + 正则默认实现，身份证 ISO 7064 / 银行卡 Luhn 校验位闸门防误伤，出站与落证双向掩码）；② 结构化输出校验 ✅（`jsonResponse=true` 时校验合法 JSON，失败发失败证据并抛 `AI_GATEWAY_OUTPUT_INVALID`；JSON Schema 强校验待 L3 依赖审批）；③ 精确缓存 ✅（`LlmResponseCache` 有界 LRU+TTL，仅 `temperature=0` 参与，命中不发事件；**默认关闭**需显式开启）；④ 租户配额 ✅（`TenantQuotaGuard` 进程内固定窗口，超限 429 `AI_GATEWAY_QUOTA_EXCEEDED`；**多副本需换 Redis**）；⑤ 计量消费 ✅（`LlmUsageSink` 默认结构化日志）；⑥ 提示注入防护 ✅（`PromptInjectionGuard` 端口 + `HeuristicInjectionGuard` 关键词默认实现，仅检 user 消息、在脱敏前检测，超限 400 `AI_GATEWAY_INJECTION_SUSPECTED`；**默认关闭**——启发式误伤风险，语义级检测需以 `@Bean` 覆盖为模型分类器/云端护栏，属 L3）。**仍待**：`scenario → 模型档位` 路由与级联升档、OTel `gen_ai.*` 打点（需 Micrometer 依赖，L3）、红线演进为结果型短路。
 
 **执行链（顺序固定，任一步短路即返回）**：
 1. **成本红线**：该场景 `RULE_HIT_BLOCK=true`（规则已命中不调 LLM）→ 短路返回 `RULE_HIT_NO_LLM`；
@@ -114,6 +114,10 @@ CREATE TABLE ai_trace_snapshot (
 ### 2.3 bone-ai-orchestration（状态机执行器 + HITL 子域）
 
 **执行器**：复用 `WorkflowMetadata`（状态/转换建模已有），补执行器——节点类型 `RULE_NODE` / `AI_NODE` / `HITL_NODE`（收敛）/ `FALLBACK_NODE`（降级）。执行循环：取激活节点 → 求值（规则优先）→ AI 节点产出 `AiSuggestion<T>` → 需人工则停 `HITL_NODE` → 裁决后进入下一转换。**超时/超轮**：单节点超时与轮次上限（初值：单节点 120s、编排轮次上限 8 轮，均可在 WorkflowMetadata 按流程声明覆盖）触发 `ESCALATED` → 转人工全程处理（状态名与产品侧 FR-205 口径一致）。
+
+**已落地最小执行器 vs 目标态（2026-10-18）**：当前实现为顺序流水线——**规则预检 → 短路判定 → LLM 步骤 → 确定性闸门裁决**，多节点状态机与 `FALLBACK_NODE` 仍属目标态。已落地的关键规则：
+- **AI 故障不阻断业务**（架构红线）：LLM 超时 / 熔断 / 5xx / 红线命中不再向上抛，而是记为 `aiError` 并由闸门转人工，`OrchestrationResult` 同时返回 `aiError` 供审计；
+- **确定性闸门 `DecisionGate`**：AI 只出建议，能否自动放行由确定性策略裁决——置信度 < 0.85 或金额 > 5000 元（均可配）→ `verdict.requiresHuman()`；纯规则决策（无 LLM 步骤）直接放行。转人工原因用受控码（`CONFIDENCE_LOW` / `AMOUNT_HIGH` / `AI_UNAVAILABLE`）便于监控聚合。
 
 **类型护栏落地**：
 
@@ -342,7 +346,7 @@ CREATE TABLE eval_run (
 |---|---|---|---|---|
 | 1 | sidecar 超时 | 30s + 2s/页，cap 300s | document | 第二批压测 |
 | 2 | LLM 同步调用超时 | 30s（结构化）/ 90s（长文）；重试 ≤1 | gateway | POC |
-| 3 | 置信度分档 | ≥0.85 直出 / 0.7–0.85 复核 / <0.7 强制人工（POC 后按评测校准） | HITL | POC 评测 |
+| 3 | 置信度分档 | ≥0.85 直出 / 0.7–0.85 复核 / <0.7 强制人工（POC 后按评测校准）；**0.85 已由 orchestration `DecisionGate` 落地**（自动放行线），0.7 为 HITL 待裁决列表展示线，两者语义不同 | HITL / orchestration | POC 评测 |
 | 4 | 切片 | 条款级优先；>2000 字二次切分，overlap 200 | rag | 检索评测 |
 | 5 | RRF | k=60，向量/BM25 = 0.5/0.5 | rag | 引用正确率回归 |
 | 6 | rerank 窗口 | top-30 → top-5 | rag | 同上 |
@@ -356,6 +360,8 @@ CREATE TABLE eval_run (
 | 14 | HITL 裁决超时 | 分派后 48h 未决 → 升级改派 | HITL | 试点场景 |
 | 15 | 网关延时增量（库形态） | P99 <10ms | gateway | POC |
 | 16 | trace 落盘成功率 | ≥99.9%（低于即告警，拒返面放大） | trace | 线上观测 |
+| 17 | 决策闸门金额阈值 | 5000 元（超过强制人工，可按险种覆盖 `bone.ai.orchestration.amount-threshold`） | orchestration | 试点场景 |
+| 18 | AI 失败策略 | **不阻断业务**：超时/熔断/5xx 记为 `aiError` → 闸门转人工（`AI_UNAVAILABLE`），不向上抛 | orchestration | 架构红线 |
 
 ---
 
