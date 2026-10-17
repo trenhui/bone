@@ -42,7 +42,9 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
                          AiContext ctx) {}          // tenantId + traceId + 成本上限
 ```
 
-> **已落地基线 vs 目标态（2026-10-15 对齐记录，P1）**：上为**目标态**契约。已落地（2026-10-14，批一 POC）为**最小版**——`LlmRequest(model, messages, temperature, maxTokens, jsonResponse, shortCircuited)`、消息 `LlmMessage(role, content)`、包结构 `domain/application/infrastructure/config`（门面与值对象在 `domain`，非 `api`）；出站传输用 **JDK `HttpClient`**（零新依赖，对齐 bone-integration `RestClientImpl`）；`traceId` 当前由网关**每次调用新生成 UUID**；成本红线当前**抛 `BizException(AI_GATEWAY_REDLINE_BLOCKED)`**。演进项（批一 rules/orchestration 落地时）：① `AiContext` 外供 `tenantId+traceId+成本上限`，**traceId 改调用方提供以贯穿全链**（缺省才生成）；② `scenario → 模型档位` 路由；③ `outputSchema` 结构化输出强制；④ 红线演进为**短路返回 `RULE_HIT_NO_LLM` 结果型**（编排据此拿规则结果继续，不靠捕获异常）。
+> **已落地基线 vs 目标态（2026-10-17 更新）**：上为**目标态**契约。已落地为**渐进版**——`LlmRequest(model, messages, temperature, maxTokens, jsonResponse, shortCircuited, traceId)`、消息 `LlmMessage(role, content)`、包结构 `domain/application/infrastructure/config`；出站传输用 **JDK `HttpClient`**（零新依赖）；`traceId` **已改为调用方提供以贯穿全链**（缺省才生成，与证据链/计量共用同一键）；成本红线仍**抛 `BizException(AI_GATEWAY_REDLINE_BLOCKED)`**。
+>
+> **治理面落地状态（2026-10-17）**：① 出口 PII 脱敏 ✅（`PiiRedactor` 端口 + 正则默认实现，身份证 ISO 7064 / 银行卡 Luhn 校验位闸门防误伤，出站与落证双向掩码）；② 结构化输出校验 ✅（`jsonResponse=true` 时校验合法 JSON，失败发失败证据并抛 `AI_GATEWAY_OUTPUT_INVALID`；JSON Schema 强校验待 L3 依赖审批）；③ 精确缓存 ✅（`LlmResponseCache` 有界 LRU+TTL，仅 `temperature=0` 参与，命中不发事件；**默认关闭**需显式开启）；④ 租户配额 ✅（`TenantQuotaGuard` 进程内固定窗口，超限 429 `AI_GATEWAY_QUOTA_EXCEEDED`；**多副本需换 Redis**）；⑤ 计量消费 ✅（`LlmUsageSink` 默认结构化日志）。**仍待**：`scenario → 模型档位` 路由与级联升档（⑥）、OTel `gen_ai.*` 打点（需 Micrometer 依赖，L3）、红线演进为结果型短路。
 
 **执行链（顺序固定，任一步短路即返回）**：
 1. **成本红线**：该场景 `RULE_HIT_BLOCK=true`（规则已命中不调 LLM）→ 短路返回 `RULE_HIT_NO_LLM`；
