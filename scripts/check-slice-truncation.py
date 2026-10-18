@@ -45,6 +45,12 @@ SLICE_ALLOWLIST = {
     # 注：2026-10-18 登记时为他人未跟踪的新文件（ContractScopeCard.tsx），已按摘要用途核实后登记；
     # 若后续该组件把 preview 用于表格实际渲染（只显示 6 列而丢数据），应移出本列表并按真投影修。
     os.path.join("components", "ContractScopeCard.tsx"),
+    # JSON 面板协议自检错误摘要：Alert description 内最多列 5 条 + "…等 N 处"，
+    # 纯错误文案展示截断；完整清单在保存前自检链路可达，与字段/列投影无关。
+    os.path.join("components", "uiSchema", "JsonPanel.tsx"),
+    # 测试夹具：分区 id 唯一性用例对 id 数组取前 2 个比对（"原有分区不被顶改"），
+    # 是断言构造而非投影渲染，同onboarding.test.ts 性质。
+    os.path.join("components", "uiSchema", "schemaOps.test.ts"),
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")
