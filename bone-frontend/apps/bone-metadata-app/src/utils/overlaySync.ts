@@ -55,10 +55,10 @@ export async function fetchOverlay(entityCode: string): Promise<UiOverlayBundle 
 /**
  * 个人覆盖变更广播（同一文档内多 surface 同步用）。
  *
- * <p><b>为什么需要</b>：个人覆盖有两个 surface——建模台「交付预览」Tab（只读）与
+ * <p><b>为什么需要</b>：个人覆盖有两个 surface——建模台界面设计器（契约层）与
  * 运行时数据页工具栏（唯一编辑器）。antd Tabs 默认 {@code destroyInactiveTabPane=false}，
  * 两个 Tab 会**同时挂在同一棵 React 树**上；而 {@code useOverlayBundle} 的 hydrate effect
- * 只依赖 entityCode，实体不变就不重拉 ⇒ 数据页改完个人列显隐后，交付预览仍持有
+ * 只依赖 entityCode，实体不变就不重拉 ⇒ 数据页改完个人列显隐后，另一 surface 仍持有
  * 页面加载时的过期快照：「我的所见」列集与运行时漂移、自伤遮蔽告警也不触发。
  *
  * <p><b>为什么读本地缓存而不是重新请求服务端</b>：{@link persistOverlay} 已先写本地

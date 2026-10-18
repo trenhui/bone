@@ -8,16 +8,16 @@ import {
   PlusOutlined, ArrowLeftOutlined, EditOutlined, DeleteOutlined, FieldStringOutlined,
   ReloadOutlined, FieldNumberOutlined, CalendarOutlined, ThunderboltOutlined,
   ApartmentOutlined, CheckCircleOutlined, WarningOutlined, InfoCircleOutlined, AimOutlined, TableOutlined,
-  SettingOutlined, LayoutOutlined,
+  LayoutOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormInstance } from 'antd';
 import { errorMessage, metadataEntityApi, metadataFieldApi, metadataRelationApi } from '../services/metadataApi';
 import { getLastPublish, setLastPublish, isDirtySincePublish } from '../utils/publishState';
+import { parseRowPolicyCodes } from '../utils/rowPolicies';
 import PublishPreviewModal from '../components/PublishPreviewModal';
 import PublishPreviewPanel from '../components/PublishPreviewPanel';
 import FieldWizardModal from '../components/FieldWizardModal';
-import InterfaceTab from '../components/InterfaceTab';
 import UiSchemaTab from '../components/UiSchemaTab';
 import RuntimeDataManagement from './RuntimeDataManagement';
 import { touchRecent } from '../utils/recent';
@@ -122,7 +122,25 @@ const EntityDetail: React.FC = () => {
   const [form] = Form.useForm();
 
   // 顶/内 Tab 状态（与 URL ?tab= 同步，刷新/深链不丢上下文）
-  const outerTab = searchParams.get('tab') || 'structure';
+  const rawOuterTab = searchParams.get('tab') || 'structure';
+
+  /**
+   * 「交付预览」已归位到「界面设计器」（IA 收敛，见 ContractScopeCard / ListPanel）。
+   *
+   * <p><b>为什么保留 ?tab=ui 兼容而不是直接删</b>：该深链是 PRD §0.6.6 定案的黄金路径落点
+   * （模板起盘 → 落界面「立刻见结果」），被建模工作台、实体列表、发布成功回调与低代码闭环
+   * 探针多处引用。删Tab 会让这些入口全部落进 `<Route path="*">` 静默回首页——正是「点了没反应」。
+   * 故把旧 key 映射到新落点：URL 同步 rewrite（replace，不堆历史记录），深链语义变成
+   * 「去真正的交付预览所在处」，用户点模板起盘仍立刻看到界面效果（设计器右侧即实时预览）。
+   */
+  const outerTab = rawOuterTab === 'ui' ? 'uischema' : rawOuterTab;
+  useEffect(() => {
+    if (rawOuterTab !== 'ui') return;
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'uischema');
+    setSearchParams(next, { replace: true });
+  }, [rawOuterTab, searchParams, setSearchParams]);
+
   const setOuterTab = (t: string) => {
     const next = new URLSearchParams(searchParams);
     next.set('tab', t);
@@ -157,17 +175,9 @@ const EntityDetail: React.FC = () => {
    * 行策略 rule name 集合（界面设计器 dataScope 下拉真源）。
    * rowPolicies 是实体 JSON 列（{"owner_field":..., "rules":[{"name":"owner_or_approver",...}]}），
    * 解析失败按空集合处理（下拉降级为「未声明行策略」提示，不阻断设计器其余能力）。
+   * 解析逻辑与设计器自拉兜底共用 utils/rowPolicies 同一真源，避免双实现漂移。
    */
-  const policyCodes = useMemo<string[]>(() => {
-    const raw = (entity as unknown as { rowPolicies?: string } | null)?.rowPolicies;
-    if (!raw) return [];
-    try {
-      const parsed = JSON.parse(raw) as { rules?: { name?: string }[] };
-      return (parsed.rules ?? []).map((r) => r.name).filter((n): n is string => !!n);
-    } catch {
-      return [];
-    }
-  }, [entity]);
+  const rowPolicyCodes = useMemo<string[]>(() => parseRowPolicyCodes(entity), [entity]);
 
   // 关系
   const [relations, setRelations] = useState<MetaRelation[]>([]);
@@ -661,50 +671,6 @@ const EntityDetail: React.FC = () => {
               ),
             },
             {
-              key: 'ui',
-              label: (<Space size={4}><SettingOutlined /><span>列表显示</span></Space>),
-              children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
-                <InterfaceTab
-                  entityId={id ?? null}
-                  entityCode={entity.code}
-                  fields={fields}
-                  onAddField={() => {
-                    setOuterTab('structure');
-                    setInnerTab('fields');
-                    setWizardOpen(true);
-                  }}
-                  onLocateField={(code) => {
-                    setOuterTab('structure');
-                    setInnerTab('fields');
-                    setHighlightFieldCode(code);
-                  }}
-                  onOpenDesigner={() => setOuterTab('uischema')}
-                />
-              ) : (
-                /* 手写界面模式（PRD §0.7）：说明卡 + 组件契约，不做 Meta* 覆盖编辑 */
-                <Alert
-                  type="info"
-                  showIcon
-                  style={{ margin: 8 }}
-                  message="该实体使用「手写界面」"
-                  description={
-                    <div style={{ fontSize: 13 }}>
-                      <div>页面由代码生成或业务仓手写，不提供自动渲染与列覆盖编辑（PRD §0.7）。</div>
-                      <div style={{ marginTop: 8 }}>手写页面组件契约（v1.1）：</div>
-                      <div style={{ marginTop: 4 }}>
-                        <Tag>实体 code</Tag><Text code style={{ fontSize: 12 }}>{entity.code}</Text>
-                        <Tag style={{ marginLeft: 8 }}>catalog 快照</Tag><Text code style={{ fontSize: 12 }}>meta_entity 已发布元数据</Text>
-                        <Tag style={{ marginLeft: 8 }}>records API</Tag><Text code style={{ fontSize: 12 }}>runtime records 接口</Text>
-                      </div>
-                      <div style={{ marginTop: 8, color: '#86909c' }}>
-                        若标准增删改查够用，可在实体编辑中改为「自动生成界面」（运行时交付）后获得 Meta* 自动列表/表单。
-                      </div>
-                    </div>
-                  }
-                />
-              ),
-            },
-            {
               key: 'uischema',
               label: (<Space size={4}><LayoutOutlined /><span>界面设计器</span></Space>),
               children: entity.deliveryMode === META_DELIVERY_RUNTIME ? (
@@ -713,8 +679,8 @@ const EntityDetail: React.FC = () => {
                   entityCode={entity.code}
                   fields={fields}
                   onGoPublish={() => setOuterTab('publish')}
-                  onGoPersonal={() => setOuterTab('ui')}
-                  policyCodes={policyCodes}
+                  onGoRuntime={() => setOuterTab('data')}
+                  rowPolicyCodes={rowPolicyCodes}
                 />
               ) : (
                 <Alert type="info" showIcon message="该实体使用「手写界面」，不提供协议化界面设计" />
@@ -728,7 +694,7 @@ const EntityDetail: React.FC = () => {
             {
               key: 'publish',
               label: (<Space size={4}><ThunderboltOutlined /><span>发布</span></Space>),
-              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onGoPersonal={() => setOuterTab('ui')} onOpenData={goData} onAddField={goAddField} />,
+              children: <PublishPreviewPanel entityId={id ?? ''} entityName={entity.displayName} onPublished={handlePublished} onViewInterface={goInterface} onOpenData={goData} onAddField={goAddField} />,
             },
           ]}
         />

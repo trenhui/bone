@@ -23,6 +23,7 @@ import {
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -57,19 +58,20 @@ import {
 import { Auth, AuthButton, usePermission } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import {
-  activeOverlay,
   enumOptionsOf,
+  fieldsOutsideContract,
   isEnumField,
   isRenderSupported,
   projectRuntimeColumns,
   tableSizeOf,
-  type UiOverlayBundle,
 } from '../utils/columnProjection';
-import { fetchOverlay } from '../utils/overlaySync';
 import { listRecent } from '../utils/recent';
 import CommandPalette from '../components/CommandPalette';
 import { BoneDynamicForm } from '../components/BoneDynamicForm';
+import PersonalViewBar from '../components/PersonalViewBar';
+import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
+import { useOverlayBundle } from '../hooks/useOverlayBundle';
 
 const { Text } = Typography;
 
@@ -190,6 +192,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const { has } = usePermission();
   /** 数据 Tab 空态 CTA：由 /…/data 回溯到实体详情并定位「结构」Tab（B1） */
   const structurePath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=structure`;
+  /** 「交付口径对照」的去团队契约入口：定位「界面设计器」Tab（契约列的唯一编辑器） */
+  const designerPath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=uischema`;
 
   const [form] = Form.useForm();
   const [actionForm] = Form.useForm();
@@ -294,6 +298,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   }>({ open: false, record: null, field: null });
   /** 明细编辑中的行（键驱动渲染，不依赖子实体 schema） */
   const [childRows, setChildRows] = useState<RuntimeChildRow[]>([]);
+  /**
+   * 新增明细行的行键序列：antd 5 已废弃 `rowKey` 的第二个 index 参数（控制台告警
+   * "index parameter of rowKey function is deprecated"），而新增行尚无后端 id，
+   * 故用自增序列给每行一个稳定的临时行键（保存前剔除，不进后端载荷）。
+   */
+  const childRowSeq = useRef(0);
   /** 明细行编辑小 Form 状态（-1 = 新增行） */
   const [childRowEditor, setChildRowEditor] = useState<{
     open: boolean;
@@ -365,35 +375,43 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 快照却没人读，运行时表格仍按 overlay 投影，"配了不生效"。此处把执行期 schema
    * 的 views.list 接为列真源；未配契约列的实体整体回落旧行为（零回归）。
    *
-   * <p>{@link #hydratedEntityRef} 防重复请求：fields 重载（结构 Tab 加字段后返回）
-   * 不重新 hydrate —— 投影随 fields 重算，新字段按「无覆盖排末尾」规则处理即可。
+   * <p>个人覆盖的唯一编辑器就在本页工具栏（PersonalViewBar → 列设置 / 我的视图）：
+   * 覆盖是运行期状态，编辑入口跟着生命周期走；建模台「界面设计器」只核对契约口径
+   * 同一投影（双轨收敛，两个 surface 共用 useOverlayBundle 一份状态实现）。
    */
-  const [overlay, setOverlay] = useState<UiOverlayBundle | null>(null);
-  const hydratedEntityRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!entityCode) {
-      setOverlay(null);
-      hydratedEntityRef.current = null;
-      return;
-    }
-    if (hydratedEntityRef.current === entityCode) return;
-    hydratedEntityRef.current = entityCode;
-    let cancelled = false;
-    fetchOverlay(entityCode).then((ov) => {
-      if (!cancelled) setOverlay(ov);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [entityCode, fields]);
-  // 多视图 bundle → 生效视图的扁平覆盖（投影层只认扁平口径；与界面 Tab 预览同源）
-  const activeOv = useMemo(() => activeOverlay(overlay), [overlay]);
+  const contractListView = uiSchemaPipe.executionSchema?.views.list ?? null;
+  const overlay = useOverlayBundle(entityCode, writableFields, contractListView);
   const projectedColumns = useMemo(
-    () => projectRuntimeColumns(writableFields, activeOv, uiSchemaPipe.executionSchema?.views.list),
-    [writableFields, activeOv, uiSchemaPipe.executionSchema],
+    () => projectRuntimeColumns(writableFields, overlay.activeOv, contractListView),
+    [writableFields, overlay.activeOv, contractListView],
   );
   /** 字段视图（列查询 fieldsParam / 筛选选项 / 列渲染共用）——由投影列去契约元数据得到 */
   const projectedFields = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
+
+  /**
+   * 筛选字段下拉真源 = 全部可写字段（排除 CHILD_TABLE）。
+   *
+   * <p>为什么不复用 projectedFields（当前可见列）：列可见性是**展示**维度
+   * （契约/个人双层显隐），筛选是**查询**维度——后端 q 的接受域本就是
+   * 「全部已建模字段」（{@code RuntimeQuerySupport.allowedDataColumns}，仅排除
+   * 无物理列的 CHILD_TABLE，实测 {@code q=items:eq:x} 精确 400）。用可见列当真源
+   * 会让「隐藏一列 ⇒ 失去对它的筛选能力」：企业场景按内部字段/已隐藏列过滤直接失能，
+   * 且用户看不到因果（下拉里就是没有该项）。
+   */
+  const filterableFields = useMemo(
+    () => writableFields.filter((f) => (f.type || '').toUpperCase() !== 'CHILD_TABLE'),
+    [writableFields],
+  );
+
+  /**
+   * strict 契约集合下「已建模但未列入契约」的字段——运行时列表不显示它们。
+   * 同源提示（fieldsOutsideContract）在本页「交付口径对照」卡片，运行时视角必须可观测：
+   * 交付工程师最常见困惑「我建的字段呢」就发生在这里（建了字段、发布了，列表里没有）。
+   */
+  const outsideContractFields = useMemo(
+    () => (contractListView ? fieldsOutsideContract(writableFields, contractListView) : []),
+    [writableFields, contractListView],
+  );
 
   /**
    * 独立全局路由（/runtime、无 id）：加载 RUNTIME 已发布实体供选择器（W0-2：size 50→500，避免第 51 个后不可选）
@@ -467,13 +485,20 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 请求参数由列投影产出（W0a2 + §0.6.3）：
    * `fields` = 当前可见列的 code ⇒ 界面 Tab 关掉的列不会出现在响应里，
    * 与「预览列 ≡ 数据列」同源，杜绝两边各算一遍导致的漂移。
+   *
+   * <p>CHILD_TABLE 列除外：该类型无物理列（明细子表独立存储），code 进 fields 会让
+   * 后端 SELECT 一个不存在的列 ⇒ 500（实测 t_expense_claim_e2e_* 报销单）。
+   * 明细的交互是行内「明细」入口（按行 listChildren 拉子行），不占数据列。
    */
   const load = useCallback(async () => {
     if (!entityCode) return;
     setLoading(true);
     try {
-      const fieldsParam = projectedFields.length
-        ? projectedFields.map((f) => f.code).join(',')
+      const listableFields = projectedFields.filter(
+        (f) => (f.type || '').toUpperCase() !== 'CHILD_TABLE',
+      );
+      const fieldsParam = listableFields.length
+        ? listableFields.map((f) => f.code).join(',')
         : undefined;
       const query = {
         page,
@@ -536,7 +561,6 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     setTotal(0);
     setSelectedFilterNote(null);
     // 首挂载时这几个值本就是初始值，setState 为同值 no-op，不产生额外请求
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityCode]);
 
   const openCreate = () => {
@@ -757,11 +781,14 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     const spec = childSpecOf(field);
     if (!spec) return;
     try {
+      // 剔除新增行的前端临时行键 __rowKey：它是 UI 记账（antd 行键），不是子实体业务列，
+      // 进载荷会被当成未知字段（后端 filterChildColumns 虽会过滤，但前端先清更干净）。
+      const payload = childRows.map(stripChildRowKey);
       const res = await runtimeRecordApi.replaceChildren(
         entityCode,
         rid,
         spec.childEntityCode,
-        childRows,
+        payload,
       );
       if (res.code === 200) {
         message.success(`明细已保存（${res.data?.count ?? childRows.length} 行），头表金额已按合计自动回填`);
@@ -789,10 +816,22 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   /**
    * 打开记录详情抽屉：全字段只读 + 动作执行时间线（P2-②）。
    * 时间线单独拉取（不在 page 里带）：多数用户不进详情，避免每次列表请求都付全量审计行的带宽。
+   *
+   * 全字段按需拉取：列表行数据是列投影（只含契约 columns），直接用会让「未进列表投影的字段」
+   * 在详情里恒显示「—」——界面设计师没配列的字段（如 异常描述/巡检工时）就再也看不到值。
+   * 与 openEdit 同源：先按 id 拉全量记录，失败才兜底用行数据（降级不空白）。
    */
   const openDetail = async (record: RuntimeRecord) => {
     if (!entityCode) return;
-    setDetailDrawer({ open: true, record });
+    const rid = recordId(record);
+    let full: RuntimeRecord = record;
+    if (rid) {
+      try {
+        const res = await runtimeRecordApi.get(entityCode, rid);
+        if (res.code === 200 && res.data) full = res.data;
+      } catch { /* 拉取失败用行数据兜底，不阻断详情打开 */ }
+    }
+    setDetailDrawer({ open: true, record: full });
     setExecutionsLoading(true);
     try {
       const res = await runtimeRecordApi.actionExecutions(entityCode, String(record.id));
@@ -891,7 +930,15 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
 
   const handleSubmit = async () => {
     if (!entityCode) return;
-    const values = await form.validateFields();
+    // 校验未通过时 antd 会在字段下方展示错误并 reject；必须捕获，否则未处理的
+    // rejection 会被 qiankun 当作「微应用加载异常」上报并中断整个运行时页面，
+    // 真实用户漏填必填项提交时同样会崩。捕获后直接返回即可（错误已内联展示）。
+    let values: Record<string, unknown>;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
     await saveBody(buildBody(values));
   };
 
@@ -959,58 +1006,82 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   };
 
   const tableColumns: ColumnsType<RuntimeRecord> = useMemo(() => {
-    const cols: ColumnsType<RuntimeRecord> = projectedColumns.map(({ field: f, width, pinned }) => ({
-      title: f.displayName || f.code,
-      dataIndex: f.code,
-      key: f.code,
-      ellipsis: true,
-      sorter: true,
-      // 契约列宽/固定列（P1）：设计器 views.list 配的 width/pinned 在此真正生效
-      // （pinned 为协议 enum：left=钉左侧主键侧，right=钉右侧操作列侧；历史 boolean true 兼容为 left）
-      width,
-      fixed: pinned === 'right' ? ('right' as const) : pinned ? ('left' as const) : undefined,
-      sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
-      render: (_: unknown, row) => {
-        if (isEnumField(f)) return renderEnumCell(row[f.code], f);
-        const ftype = (f.type || '').toUpperCase();
-        if (ftype === 'REFERENCE') {
-          // G10：主行查询已 enrich code__label（JdbcRuntimeRecordService），label 兜底 id
-          const label = row[`${f.code}__label`];
-          const v = row[f.code];
-          if (v == null) return '—';
-          return label != null && label !== '' ? `${String(label)}` : String(v);
-        }
-        if (ftype === 'ATTACHMENT') {
-          // 附件列：JSON 数组串 → 数量徽标
-          const v = row[f.code];
-          if (v == null || v === '') return '—';
-          try {
-            const arr = typeof v === 'string' ? JSON.parse(v) : v;
-            if (Array.isArray(arr) && arr.length) {
-              return <Tag color="cyan">{arr.length} 个附件</Tag>;
+    const cols: ColumnsType<RuntimeRecord> = projectedColumns.map(({ field: f, width, pinned }) => {
+      const ftype = (f.type || '').toUpperCase();
+      return {
+        title: f.displayName || f.code,
+        dataIndex: f.code,
+        key: f.code,
+        ellipsis: true,
+        // CHILD_TABLE 无物理列（与 DDL 建表跳列同款判据）⇒ 行数据里没有它、
+        // 后端对 sort=<child> 精确 400。关闭表头排序入口，把「点了就报错」
+        // 变成「不可点」（业界通例：不可排序的列不渲染排序箭头）。
+        sorter: ftype !== 'CHILD_TABLE',
+        // 契约列宽/固定列（P1）：设计器 views.list 配的 width/pinned 在此真正生效
+        // （pinned 为协议 enum：left=钉左侧主键侧，right=钉右侧操作列侧；历史 boolean true 兼容为 left）
+        width,
+        fixed: pinned === 'right' ? ('right' as const) : pinned ? ('left' as const) : undefined,
+        sortOrder: sortField === f.code ? (sortDesc ? 'descend' : 'ascend') : null,
+        render: (_: unknown, row) => {
+          if (ftype === 'CHILD_TABLE') {
+            /* 明细列（复杂企业场景：头行/明细 1—N）。契约把 CHILD_TABLE 配成列表列时，
+               渲染为行内「查看明细」入口（与「操作」列明细下拉同源 openChildren）——
+               而不是空列（无物理列可取）或表头排序 400。业界对标：Airtable 的
+               linked-record 字段渲染为可点开的链接、Salesforce 用 related list 承载 1—N。 */
+            const spec = childSpecOf(f);
+            if (!spec) {
+              return (
+                <Tooltip title="明细声明缺少 childEntityCode/foreignKey（字段 validationRules.childTable）">
+                  <Tag color="orange">明细声明不完整</Tag>
+                </Tooltip>
+              );
             }
-          } catch {
-            /* 非 JSON（历史脏数据）按原样展示 */
+            return (
+              <Button type="link" size="small" onClick={() => openChildren(row, f)}>
+                查看明细
+              </Button>
+            );
           }
-          return formatCell(v);
-        }
-        /* §0.3 G20：DECIMAL 物理存储硬编码 DECIMAL(20,6)（如 128.500000），
-           设计口径「界面按 scale=2 渲染」。此处按 2 位标度格式化，避免金额列
-           显示成 128.500000 这类对业务用户无意义的长尾零（FLOAT/DOUBLE 同处理）。 */
-        if (ftype === 'DECIMAL' || ftype === 'FLOAT' || ftype === 'DOUBLE') {
-          const v = row[f.code];
-          if (v == null || v === '') return '—';
-          const n = typeof v === 'string' ? Number(v) : (v as number);
-          if (!Number.isFinite(n)) return formatCell(v);
-          return (
-            <span style={{ fontFamily: 'ui-monospace, monospace' }}>
-              {formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          );
-        }
-        return formatCell(row[f.code]);
-      },
-    }));
+          if (isEnumField(f)) return renderEnumCell(row[f.code], f);
+          if (ftype === 'REFERENCE') {
+            // G10：主行查询已 enrich code__label（JdbcRuntimeRecordService），label 兜底 id
+            const label = row[`${f.code}__label`];
+            const v = row[f.code];
+            if (v == null) return '—';
+            return label != null && label !== '' ? `${String(label)}` : String(v);
+          }
+          if (ftype === 'ATTACHMENT') {
+            // 附件列：JSON 数组串 → 数量徽标
+            const v = row[f.code];
+            if (v == null || v === '') return '—';
+            try {
+              const arr = typeof v === 'string' ? JSON.parse(v) : v;
+              if (Array.isArray(arr) && arr.length) {
+                return <Tag color="cyan">{arr.length} 个附件</Tag>;
+              }
+            } catch {
+              /* 非 JSON（历史脏数据）按原样展示 */
+            }
+            return formatCell(v);
+          }
+          /* §0.3 G20：DECIMAL 物理存储硬编码 DECIMAL(20,6)（如 128.500000），
+             设计口径「界面按 scale=2 渲染」。此处按 2 位标度格式化，避免金额列
+             显示成 128.500000 这类对业务用户无意义的长尾零（FLOAT/DOUBLE 同处理）。 */
+          if (ftype === 'DECIMAL' || ftype === 'FLOAT' || ftype === 'DOUBLE') {
+            const v = row[f.code];
+            if (v == null || v === '') return '—';
+            const n = typeof v === 'string' ? Number(v) : (v as number);
+            if (!Number.isFinite(n)) return formatCell(v);
+            return (
+              <span style={{ fontFamily: 'ui-monospace, monospace' }}>
+                {formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            );
+          }
+          return formatCell(row[f.code]);
+        },
+      };
+    });
     if (cols.length === 0) {
       cols.push({
         title: 'id',
@@ -1358,7 +1429,22 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
             新建记录
           </AuthButton>
+          {/* 个人显示组：视图切换 / 列设置 / 自伤遮蔽自救（个人覆盖的唯一编辑器）。
+              契约列（列集合/列序/列宽）在建模台「界面设计器」配，发布后全员生效。 */}
+          <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} />
         </Space>
+      )}
+
+      {/* 交付口径对照：契约应显示什么 vs 我实际看到什么 + 自伤遮蔽告警与一键自救。
+          放在数据页而非建模台——个人覆盖的编辑器就在本页工具栏，对照必须与被对照对象同处；
+          团队契约那一侧由「界面设计器」的实时预览承担（跑运行时同一套引擎，信息更强）。 */}
+      {!embeddedBlocked && selectedEntity && contractListView && (
+        <ContractScopeCard
+          overlay={overlay}
+          fields={writableFields}
+          listView={contractListView}
+          onOpenDesigner={() => navigate(designerPath)}
+        />
       )}
 
       {/* 数据生命周期步骤条：建模侧 2 步（实测状态）+ 状态机真实状态链。
@@ -1455,6 +1541,20 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         </Text>
       )}
 
+      {/* strict 契约集合的可观测面：已建模但未列入团队契约的字段不出现在数据列表。
+          本页「交付口径对照」给出同源提示——交付工程师「我建的字段呢」
+          类困惑就发生在此（字段建了、发布了，但列表里没有，且无任何迹象）。
+          低噪音单行提示（不占 Alert 横幅）：列名前 5 个进 Tooltip，全文去「界面设计器」看。 */}
+      {contractListView && outsideContractFields.length > 0 && (
+        <Tooltip
+          title={`${outsideContractFields.map((f) => f.displayName || f.code).join('、')}——已建模但未列入团队列契约，不出现在数据列表；在「界面设计器 → 列表」加入并发布后生效`}
+        >
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12, cursor: 'help' }}>
+            有 {outsideContractFields.length} 个字段未列入团队契约（不在列表显示，悬停查看）
+          </Text>
+        </Tooltip>
+      )}
+
       {embeddedBlocked && (
         <Alert
           type="warning"
@@ -1508,6 +1608,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                     <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
                   </>
                 )}
+                {/* 个人显示组（独立/嵌入两种形态都可用）：个人覆盖编辑器 + 自伤遮蔽自救 */}
+                <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} />
                 {/* 回收站：软删必须可观测、可恢复。没有这个入口，「归档」就等同于「永久删除」。 */}
                 <Segmented
                   value={trashMode ? 'trash' : 'active'}
@@ -1537,7 +1639,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                           // 手工改条件即视为用户接管筛选，撤掉步骤条留下的说明
                           setSelectedFilterNote(null);
                         }}
-                        options={projectedFields.map((f) => ({
+                        options={filterableFields.map((f) => ({
                           value: f.code,
                           label: f.displayName || f.code,
                         }))}
@@ -1643,7 +1745,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                 loading={loading}
                 columns={tableColumns}
                 dataSource={data}
-                size={tableSizeOf(activeOv.density)}
+                size={tableSizeOf(overlay.activeOv.density)}
                 scroll={{ x: true }}
                 /* 排序交给后端：列排序变化 → 受控状态 → sort 契约（- 前缀降序） */
                 onChange={(_pagination, _filters, sorter) => {
@@ -1680,7 +1782,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                             {appliedConditions
                               .filter((c) => c.field && c.value.trim())
                               .map((c) => {
-                                const f = projectedFields.find((pf) => pf.code === c.field);
+                                const f = filterableFields.find((pf) => pf.code === c.field);
                                 return `${f?.displayName || c.field} = ${c.value.trim()}`;
                               })
                               .join(' 且 ')}
@@ -1729,6 +1831,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         footer={useSchemaForm ? null : undefined}
         width={useSchemaForm ? 880 : 560}
         destroyOnHidden
+        /* 长表单防溢出：协议表单字段多（如 8 字段两分区），不限高时弹窗底部
+           「提交」按钮被挤出视口且 fixed 弹窗不随页面滚动 ⇒ 真实用户点不到。
+           body 限高 + 内部滚动是 antd 长表单 Modal 的标准做法。 */
+        styles={{ body: { maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' } }}
       >
         {useSchemaForm && uiSchemaPipe.schema && entityCode ? (
           <>
@@ -1904,18 +2010,28 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               size="small"
               column={1}
               bordered
-              labelStyle={{ width: 132 }}
+              styles={{ label: { width: 132 } }}
               items={(fields.length > 0 ? fields : [])
                 .filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code))
-                .map((f) => ({
-                  key: f.code,
-                  label: f.displayName || f.code,
-                  children:
-                    detailDrawer.record?.[f.code] == null ||
-                    detailDrawer.record[f.code] === ''
-                      ? '—'
-                      : String(detailDrawer.record[f.code]),
-                }))}
+                .map((f) => {
+                  const raw = detailDrawer.record?.[f.code];
+                  // ENUM 回显 label 而非裸 code（cnc → 数控机床）：列表/表单都显示 label，
+                  // 详情只显示 code 会让用户以为录错了值。enumValues 多形态由 parseEnumValues 归一。
+                  let display: string;
+                  if (raw == null || raw === '') {
+                    display = '—';
+                  } else if ((f.type || '').toUpperCase() === 'ENUM') {
+                    const hit = parseEnumValues(f.enumValues).find((v) => String(v.code) === String(raw));
+                    display = hit?.label ?? String(raw);
+                  } else {
+                    display = String(raw);
+                  }
+                  return {
+                    key: f.code,
+                    label: f.displayName || f.code,
+                    children: display,
+                  };
+                })}
             />
             <div>
               <Typography.Title level={5} style={{ marginTop: 0 }}>
@@ -1995,7 +2111,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           }
         />
         <Space style={{ marginBottom: 12 }} wrap>
-          <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={() => setChildRows((r) => [...r, {}])}>
+          <Button
+            size="small"
+            type="dashed"
+            icon={<PlusOutlined />}
+            /* 新增行带稳定临时行键 __rowKey（保存前剔除），替代 rowKey 的废弃 index 参数 */
+            onClick={() => setChildRows((r) => [...r, { __rowKey: `new-${++childRowSeq.current}` }])}
+          >
             添加明细行
           </Button>
           <Text type="secondary" style={{ fontSize: 12 }}>
@@ -2011,7 +2133,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           </Text>
         </Space>
         <Table<RuntimeChildRow>
-          rowKey={(row, i) => String(row.id ?? `new-${i}`)}
+          /* 行键：既有行用后端 id，新增行用临时 __rowKey —— 不再取用已废弃的 index 参数 */
+          rowKey={(row) => String(row.__rowKey ?? row.id ?? '')}
           size="small"
           pagination={false}
           scroll={{ x: true }}
@@ -2073,9 +2196,13 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         onSave={(next) => {
           const idx = childRowEditor.idx;
           if (idx >= 0) {
-            setChildRows((r) => r.map((row, i) => (i === idx ? next : row)));
+            // 替换时保留该行的 __rowKey（新增行编辑一次后仍需稳定行键）
+            setChildRows((r) =>
+              r.map((row, i) => (i === idx ? { ...next, __rowKey: row.__rowKey ?? next.__rowKey } : row)),
+            );
           } else {
-            setChildRows((r) => [...r, next]);
+            // 走编辑器直接新增的行同样补一个临时行键（与「添加明细行」同款）
+            setChildRows((r) => [...r, { ...next, __rowKey: next.__rowKey ?? `new-${++childRowSeq.current}` }]);
           }
           setChildRowEditor({ open: false, idx: -1, row: null });
         }}
@@ -2174,8 +2301,26 @@ export function stripLabelKeys(row: Record<string, unknown>): RuntimeChildRow {
   return out;
 }
 
-/** 明细行可编辑列 = union 行键，排除外键/主键/审计列/标签键 */
+/**
+ * 剔除新增明细行的前端临时行键 `__rowKey`。
+ *
+ * <p>`__rowKey` 是 UI 记账（antd 5 已废弃 rowKey 的 index 参数，新增行尚无后端 id
+ * 故需稳定行键），不是子实体业务列，提交前必须清掉。
+ */
+export function stripChildRowKey(row: RuntimeChildRow): RuntimeChildRow {
+  const { __rowKey, ...rest } = row;
+  void __rowKey; // 显式消费，避免 no-unused-vars 误报（解构剔除语义）
+  return rest;
+}
+
+/**
+ * 明细行可编辑列 = union 行键，排除外键/主键/审计列/标签键。
+ *
+ * <p>`__rowKey` 是新增行的前端临时行键（antd rowKey 去 index 参数后的替代方案），
+ * 属于 UI 记账而非业务字段 —— 必须在此排除，否则会作为「可编辑列」渲染并进保存载荷。
+ */
 const CHILD_SKIP_KEYS = new Set([
+  '__rowKey',
   'id',
   'tenant_id',
   'claim_id',
@@ -2310,6 +2455,9 @@ const ChildRowEditorModal: React.FC<{
             }
             // 新增行由后端补主键/外键；若 initial 存在则保留其 id（替换更新）
             if (initial && initial.id != null) row.id = initial.id;
+            // 保留新增行的前端临时行键：否则编辑一次后行键退化为空，编辑态行会与
+            // 新增行撞 React key（antd rowKey 已无 index 兜底）。
+            if (initial?.__rowKey != null) row.__rowKey = initial.__rowKey;
             onSave(row);
           })
           .catch(() => {

@@ -26,7 +26,7 @@ import { fetchOverlay, persistOverlay, resetOverlay, OVERLAY_CHANGED_EVENT } fro
  * 个人覆盖（overlay）唯一状态源（双轨收敛 · P2）。
  *
  * <p><b>为什么是一个 hook 而不是各页面各写一份</b>：个人覆盖有两个 surface——
- * 建模台「交付预览」Tab（只读预览）与运行时数据页工具栏「列设置 / 我的视图」
+ * 建模台「界面设计器 → 列表」的契约口径核对与运行时数据页「交付口径对照 / 列设置」
  * （唯一编辑器）。此前 InterfaceTab 与 RuntimeDataManagement 各自持有一份
  * hydrate/persist/view CRUD 实现，是双轨收敛前「两个编辑器」的残留；投影层
  * （projectRuntimeColumns）早已单一真源，状态层也必须如此，否则任一侧漂移
@@ -111,9 +111,9 @@ export function useOverlayBundle(
   /**
    * 外部变更感知：让同一文档内的另一个 surface 改动立刻反映到本surface。
    *
-   * <p><b>修的是真实漂移而非探针假象</b>：antd Tabs 默认不销毁 Tab 内容，「交付预览」
+   * <p><b>修的是真实漂移而非探针假象</b>：antd Tabs 默认不销毁 Tab 内容，交付预览类 surface
    * 与「运行时数据页」会同时挂在同一棵 React 树上；上面的 hydrate effect 只依赖
-   * entityCode，实体不变就不重拉 ⇒ 用户在数据页改完个人列显隐后切回交付预览，
+   * entityCode，实体不变就不重拉 ⇒ 用户在数据页改完个人列显隐后切回另一个 surface，
    * 看到的仍是页面加载时的过期快照：「我的所见」列集与运行时不一致，且
    * 「你的个人偏好正在隐藏 N 个契约列」告警永远不触发（shadowedColumns 恒为空），
    * 而这恰是双轨设计要杜绝的「预览 ≡ 运行时」失效。

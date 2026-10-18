@@ -24,6 +24,7 @@ import {
   setBatchActions, setDataScope, setDegradedBanner, setViewKind, toggleQuickFilters, toggleSearchFields,
   updateColumn, updateStat, updateTab,
 } from './schemaOps';
+import { defaultOverlay, projectRuntimeColumns } from '../../utils/columnProjection';
 
 const { Text } = Typography;
 
@@ -44,8 +45,11 @@ interface Props {
   schema: BoneUiSchema;
   onChange: (next: BoneUiSchema) => void;
   fields: MetaField[];
-  /** 实体行策略声明的 rule name 集合（dataScope 下拉真源；来自 entity.rowPolicies） */
-  policyCodes?: string[];
+  /**
+   * 实体行策略声明的 rule name 集合（dataScope 下拉真源；来自 entity.rowPolicies）。
+   * 注意：policy 指行级数据策略（RLS），与保险业务域的「保单」无关。
+   */
+  rowPolicyCodes?: string[];
   /** 实体已定义动作（批量动作下拉真源） */
   actionDefs?: ActionDefSpec[] | null;
   focus?: { idx?: number };
@@ -61,7 +65,7 @@ function GroupTitle({ no, title, proto }: { no: string; title: string; proto?: s
   );
 }
 
-export default function ListPanel({ schema, onChange, fields, policyCodes = [], actionDefs = null, focus }: Props): React.ReactElement {
+export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [], actionDefs = null, focus }: Props): React.ReactElement {
   const list = schema.views.list ?? {};
   const cols = list.columns ?? [];
   const tabs = list.tabs ?? [];
@@ -69,19 +73,37 @@ export default function ListPanel({ schema, onChange, fields, policyCodes = [], 
   const searchFields = list.searchFields ?? [];
   const quickFilters = list.quickFilters ?? [];
   const batchActions = list.batchActions ?? [];
-  const fieldOptions = fields.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）` }));
-
   const unused = fields.filter((f) => !cols.some((c) => c.fieldCode === f.code));
+  // 与 fieldOptions 同源标注（含 CHILD_TABLE「明细列」后缀）：添加列下拉是
+  // 建模者接触该语义的第一现场，两处 label 口径必须一致
+  const optionLabel = (f: MetaField) =>
+    `${f.displayName}（${f.code}）${(f.type || '').toUpperCase() === 'CHILD_TABLE' ? ' · 明细列' : ''}`;
+  const fieldOptions = fields.map((f) => ({ value: f.code, label: optionLabel(f) }));
+
   const actionOptions = useMemo(
     () => (actionDefs ?? []).map((a) => ({ value: a.actionCode, label: a.label ? `${a.label}（${a.actionCode}）` : a.actionCode })),
     [actionDefs],
   );
+
+  /**
+   * 最终列序核对（契约口径 · 默认覆盖 = 无人为干预的团队视角）。
+   *
+   * <p>用**运行时同一个** {@code projectRuntimeColumns} 投影，而不是就地数 columns：
+   * 契约引用了已删字段会被跳过、visible=false 被剔除，落库后运行时就是这样渲染——
+   * 这里必须显示"运行时最终会看到的 N 列"，否则建模者数出来的列数与上线不符。
+   * 个人覆盖不参与（个人语义归运行时数据页，建模台不夹带个人噪声）。
+   */
+  const finalCols = useMemo(() => {
+    const listView = cols.length > 0 ? { columns: cols } : null;
+    return projectRuntimeColumns(fields, defaultOverlay(fields), listView).map((c) => c.field);
+  }, [cols, fields]);
 
   return (
     <div>
       <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
         列表列按顺序渲染；宽度单位为像素，建议合计不超过 1600（超出横向滚动）。
         以下配置随实体发布生效，数据范围由后端强制（前端声明、不拼 WHERE）。
+        CHILD_TABLE（子表）字段可作为「明细」列：运行时渲染为行内「查看明细」入口，不占数据列、不可筛选/排序。
       </Text>
 
       {/* ---------- 1. 列投影 ---------- */}
@@ -146,7 +168,7 @@ export default function ListPanel({ schema, onChange, fields, policyCodes = [], 
         <Select
           size="small" showSearch optionFilterProp="label" style={{ minWidth: 180 }}
           placeholder={unused.length ? '添加列…' : '字段已全部加入'} value={undefined}
-          options={unused.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）` }))}
+          options={unused.map((f) => ({ value: f.code, label: optionLabel(f) }))}
           onChange={(v) => { if (v) onChange(addColumn(schema, v)); }}
           suffixIcon={<PlusOutlined />}
         />
@@ -154,6 +176,27 @@ export default function ListPanel({ schema, onChange, fields, policyCodes = [], 
           共 {cols.length} 列 · 可见 {cols.filter((c) => c.visible !== false).length} 列
         </Text>
       </Space>
+
+      {/* 最终列序核对：与运行时列表同源投影，改列即时看到「上线后实际看到的列」 */}
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginTop: 8 }}
+        message={<span style={{ fontSize: 13 }}>运行时最终显示 {finalCols.length} 列（发布后全员一致）</span>}
+        description={
+          <div style={{ fontSize: 12 }}>
+            <div>
+              {finalCols.length === 0
+                ? '当前无可见列，运行时列表为空。'
+                : finalCols.map((f) => f.displayName || f.code).join(' → ')}
+            </div>
+            <div style={{ marginTop: 4 }}>
+              口径：与运行时数据列同一投影函数（已剔除隐藏列与已删字段的失效引用）。个人显隐不在此生效——
+              团队契约定 everyone 看到什么，终端用户的个人偏好在运行时数据页调整。
+            </div>
+          </div>
+        }
+      />
 
       <Divider style={{ margin: '16px 0 0' }} />
 
@@ -242,13 +285,13 @@ export default function ListPanel({ schema, onChange, fields, policyCodes = [], 
 
       {/* ---------- 5. 数据范围 ---------- */}
       <GroupTitle no="5" title="数据范围" proto="dataScope.policyCode · 只引用 row_policies，WHERE 由后端强制" />
-      {policyCodes.length > 0 ? (
+      {rowPolicyCodes.length > 0 ? (
         <Select
           size="small" allowClear style={{ width: '100%', maxWidth: 320 }}
           placeholder="选择行策略（后端按策略加 WHERE，前端不拼条件）"
           value={list.dataScope?.policyCode}
           onChange={(v) => onChange(setDataScope(schema, v ?? ''))}
-          options={policyCodes.map((p) => ({ value: p, label: p }))}
+          options={rowPolicyCodes.map((p) => ({ value: p, label: p }))}
         />
       ) : (
         <Alert

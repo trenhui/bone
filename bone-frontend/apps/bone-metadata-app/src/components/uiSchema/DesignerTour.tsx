@@ -6,7 +6,7 @@
  * 2. **动作步（action）**：要求用户真点高亮元素（点字段库 / 点列表 tab / 点规则 tab）才算完成——
  *    看过 ≠ 会做，肌肉记忆要在第一次就建立；
  * 3. **不卡死**：每个动作步都保留「继续」兜底按钮，用户不想照做也能走完全程；
- * 4. **锚点解析限定在设计器左栏内**：实体详情页外层也有「列表显示」等 ant-tabs，
+ * 4. **锚点解析限定在设计器左栏内**：实体详情页外层也有「交付预览」等 ant-tabs，
  *    全局 querySelector 会指到页面别处的 tab（探针假绿式错误，见 §13.5 踩坑）。
  *
  * 交互：→/← 切换、Esc 退出、resize/内部滚动自动重算聚光灯位置。
@@ -36,7 +36,7 @@ function resolveAnchor(anchor: TourAnchor): HTMLElement | null {
   if (anchor === 'section') return document.querySelector<HTMLElement>('[data-tour="section"]');
   if (anchor === 'save') return document.querySelector<HTMLElement>('[data-tour="save"]');
   if (anchor === 'publish-state') return document.querySelector<HTMLElement>('[data-tour="publish-state"]');
-  // tab-list / tab-rules：只认设计器左栏 tab 条里的（页面外层 ant-tabs 有「列表显示」等同名文本）
+  // tab-list / tab-rules：只认设计器左栏 tab 条里的（页面外层 ant-tabs 是实体级 Tab：结构/界面设计器/数据/发布）
   const tabText = anchor === 'tab-list' ? '列表' : '规则';
   const tabs = panel?.querySelectorAll<HTMLElement>('.ant-tabs-tab') ?? [];
   return [...tabs].find((el) => (el.textContent ?? '').trim() === tabText) ?? null;

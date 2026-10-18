@@ -171,7 +171,7 @@ export interface ProjectedColumn {
  * 语义（strict 集合，对齐 Salesforce Search Layouts / Notion 视图属性）：
  * - 列集合：**契约即完整列集合**——未列入契约的字段不出现在运行时列表
  *   （策划 6 列的实体不该被 20 个字段淹没；新字段由建模者在设计器显式加入，
- *   「列表显示」页以「未在契约」提示 + 跳转设计器引导，不静默追加）；
+ *   数据页「交付口径对照」以「未在契约」提示 + 跳转设计器引导，不静默追加）；
  * - 可见性：契约 `visible===false` 或个人 `visible===false` 任一为真即隐藏；
  * - 列标题：个人改名（仅确实改过名时）> 契约 `format.title` > 字段 displayName；
  * - 契约引用已删字段：跳过（防幽灵列）。
@@ -213,8 +213,8 @@ export function projectRuntimeColumns(
 
 /**
  * 未列入契约的字段（strict 集合下运行时不可见）。
- * 供「列表显示」页显式提示 + 跳转设计器加入——把「新字段不见了」从静默事故
- * 变为可见引导。无契约列时返回空（整页回落纯偏好模式）。
+ * 供数据页「交付口径对照」与「列设置」显式提示 + 跳转设计器加入——把「新字段不见了」
+ * 从静默事故变为可见引导。无契约列时返回空（整页回落纯偏好模式）。
  */
 export function fieldsOutsideContract(fields: MetaField[], listView?: ListView | null): MetaField[] {
   const contractCols = (listView?.columns ?? []).filter((c) => !!c.fieldCode);
@@ -347,6 +347,105 @@ export function deleteView(bundle: UiOverlayBundle, id: string): UiOverlayBundle
 /** 把生效视图恢复为默认投影（保留视图本身与其他视图；全量重置走 resetOverlay 删 blob） */
 export function resetActiveViewToDefault(bundle: UiOverlayBundle, fields: MetaField[]): UiOverlayBundle {
   return updateActiveView(bundle, (v) => ({ ...v, overrides: defaultOverlay(fields).overrides, density: undefined }));
+}
+
+/**
+ * 被个人偏好隐藏、但团队契约默认显示的契约列（自伤遮蔽判据 · 双轨收敛）。
+ *
+ * <p>为什么需要：投影规则「任一层隐藏即隐藏」是有意的双轨语义，但它带来一个
+ * 不可观测状态——交付工程师在运行时数据页把自己某列隐藏后，再去建模台发布
+ * 新契约（或契约本来就让该列可见），他的历史隐藏偏好会**盖住**契约，
+ * 呈现为「配了不生效」。用户看不到「是我的偏好挡住了契约」，就无法自救。
+ *
+ * <p>本函数把该状态变成可计算的纯判据：**实时比对、无存储、无版本号依赖、
+ * 无存量盲区**（契约发布时间戳不可得——BoneUiSchema 不带该字段——故不用
+ * 「指纹快照」方案，那会对从未编辑过 overlay 的用户漏报）。
+ * 判据：契约列 visible!==false 且个人 overlay visible===false ⇒ 命中。
+ * 契约自己隐藏的列不算（那是契约语义，不是遮蔽）；无契约列时返回空（纯偏好模式）。
+ */
+export function overlayHiddenContractColumns(
+  fields: MetaField[],
+  overlay?: UiOverlay | null,
+  listView?: ListView | null,
+): MetaField[] {
+  const contractCols = (listView?.columns ?? []).filter((c) => !!c.fieldCode && c.visible !== false);
+  if (contractCols.length === 0) return [];
+  const byCode = new Map(fields.map((f) => [f.code, f]));
+  const out: MetaField[] = [];
+  for (const c of contractCols) {
+    if (overlay?.overrides[c.fieldCode]?.visible !== false) continue;
+    const f = byCode.get(c.fieldCode);
+    if (f) out.push(f);
+  }
+  return out;
+}
+
+/**
+ * 生效覆盖是否偏离默认投影（dirty 判据）：「恢复默认显示」的启用条件。
+ *
+ * <p><b>判脏口径 = 「重置能否改变用户看得见的投影」</b>：逐字段比对显隐/改名/列序
+ * + 密度；但**够不着投影的条目不算脏**——
+ * ① 字段已删（不在 fields 里）：两条投影路径都不遍历它（契约路径按
+ *    {@link projectRuntimeColumns} 的契约列 ∩ fields，无契约路径按 fields 全量）；
+ * ② 契约外字段（strict 集合下运行时不可见）：同理 inert。
+ * 否则契约发布/字段删除后，用户够不着的陈旧 `visible:false` 条目会把
+ * 「恢复默认显示」永久置亮、徽标常亮，误导「还有未调整完的偏好」。
+ *
+ * <p>空覆盖表不脏（hydrate 时 fields 晚到的占位态与默认等价）。
+ *
+ * @param listView 执行期契约列表视图；缺省/无契约列时按全量字段口径（纯个人模式）
+ */
+export function isOverlayDirty(
+  overlay: UiOverlay,
+  fields: MetaField[],
+  listView?: ListView | null,
+): boolean {
+  const def = defaultOverlay(fields).overrides;
+  // 「能影响投影的字段」：无契约 ⇒ 全部字段；有契约 ⇒ 仅契约列（strict 集合）。
+  const contractCols = (listView?.columns ?? []).filter((c) => !!c.fieldCode);
+  const inPlay = contractCols.length > 0 ? new Set(contractCols.map((c) => c.fieldCode)) : null;
+  for (const [code, ov] of Object.entries(overlay.overrides ?? {})) {
+    const d = def[code];
+    if (!d) continue; // 字段已删：投影不遍历它，偏好 inert
+    if (inPlay && !inPlay.has(code)) continue; // 契约外字段：strict 集合下运行时不可见，inert
+    if (!!ov.visible !== !!d.visible) return true;
+    if (ov.displayName != null && ov.displayName !== d.displayName) return true;
+    if ((ov.order ?? d.order) !== (d.order ?? ov.order)) return true;
+  }
+  return overlay.density != null && overlay.density !== 'comfortable';
+}
+
+/**
+ * 个人列改名（S1 双轨之「个人改名」维度的唯一写口）。
+ *
+ * <p>为什么投影层早就能读 {@link ColumnOverride.displayName}（个人改名优先于契约标题）
+ * 却没有编辑器：v1 双轨收敛把 overlay 编辑器搬到运行时工具栏时只接了显隐/密度，
+ * 改名维度留在模型里没有入口——「契约标题团队统一、个人叫法自助」正是复杂企业场景的
+ * 高频诉求（财务叫「客户」、销售叫「甲方」；巡检组叫「工单」、机组叫「单号」），
+ * 本函数补上该写口，与 {@link reorderOverlay} 同族（纯函数、返回新表不改入参）。
+ *
+ * <p>语义：
+ * - name 为空 / 与字段 displayName 相同 ⇒ **删除**个人改名条目（回落契约标题/字段名），
+ *   绝不写一个「等于默认值的改名」——那会把 {@link isOverlayDirty} 永久置亮；
+ * - 其余 ⇒ 写 displayName，保留该字段既有覆盖条目的其他键（visible/order 不丢）；
+ * - 字段无覆盖条目时新建（visible: true，与「缺省即可见」同口径）。
+ */
+export function renameColumnOverride(
+  overrides: Record<string, ColumnOverride>,
+  code: string,
+  name: string | null,
+  fields: MetaField[],
+): Record<string, ColumnOverride> {
+  const fieldName = fields.find((f) => f.code === code)?.displayName;
+  const next = name?.trim();
+  const cur = overrides[code];
+  if (!next || next === fieldName) {
+    if (!cur || cur.displayName === undefined) return overrides;
+    const rest = { ...cur };
+    delete rest.displayName;
+    return { ...overrides, [code]: rest };
+  }
+  return { ...overrides, [code]: { ...(cur ?? { visible: true }), displayName: next } };
 }
 
 /**
