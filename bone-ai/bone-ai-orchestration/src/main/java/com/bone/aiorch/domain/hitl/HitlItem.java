@@ -7,6 +7,7 @@ import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -130,6 +131,22 @@ public class HitlItem extends TenantAggregateRoot<String> {
     }
     this.status = HitlStatus.ESCALATED;
     return record(actor, "escalate", null, null, comment);
+  }
+
+  /**
+   * 是否已超时未决（SLA 熔断判据，纯函数：时刻由调用方注入，便于单测穷举）。
+   *
+   * <p><b>为什么用 {@code createdAt} 起算而不加 {@code deadline_at} 列</b>：SLA 是可调策略（不同险种 / 风险等级时限不同）， 把「创建时刻
+   * + 策略时长」存成列会让策略变更后面临历史行口径不一致；反过来只存创建时刻、比较时再叠加当前 SLA， 策略调整对全部存量项一致生效。零 DDL 也是库形态模块的硬约束。
+   *
+   * <p><b>只对 PENDING 判定</b>：已终态项不升级（升级一个已裁决项是无意义的状态倒流）。 {@code createdAt} 缺失（历史数据 /
+   * 测试构造）时保守判「未超时」——宁可漏升级，不可误升级。
+   */
+  public boolean isOverdue(LocalDateTime now, Duration sla) {
+    if (this.status != HitlStatus.PENDING || this.createdAt == null || sla == null) {
+      return false;
+    }
+    return this.createdAt.plus(sla).isBefore(now);
   }
 
   private void requirePending() {

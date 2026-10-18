@@ -357,7 +357,7 @@ CREATE TABLE eval_run (
 | 11 | 精确缓存 TTL | 24h（命中不发 LLM） | gateway | 成本口径 |
 | 12 | 留存 | 审计 ≥7 年 / 运行日志 ≥6 个月 | trace | 合规 |
 | 13 | 编排轮次 / 节点超时 | 8 轮 / 120s（流程可声明覆盖） | orchestration | 试点场景 |
-| 14 | HITL 裁决超时 | 分派后 48h 未决 → 升级改派 | HITL | 试点场景 |
+| 14 | HITL 裁决超时 | 分派后 48h 未决 → 升级改派（**已落地**：`HitlItem.isOverdue` 以 `createdAt` 起算 + `HitlApplicationService.escalateOverdue` 批量升级，`GET/POST /api/ai/v1/hitl/items/{overdue,escalate-overdue}` 供上层显式触发；不加 `deadline_at` 列——SLA 策略调整须对存量项一致生效） | HITL | 试点场景 |
 | 15 | 网关延时增量（库形态） | P99 <10ms | gateway | POC |
 | 16 | trace 落盘成功率 | ≥99.9%（低于即告警，拒返面放大） | trace | 线上观测 |
 | 17 | 决策闸门金额阈值 | 5000 元（超过强制人工，可按险种覆盖 `bone.ai.orchestration.amount-threshold`） | orchestration | 试点场景 |

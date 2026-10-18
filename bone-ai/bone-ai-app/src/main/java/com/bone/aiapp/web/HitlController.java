@@ -81,6 +81,37 @@ public class HitlController {
     return ApiResponse.success(hitlService.findById(tenantContext.requireTenantId(), itemId));
   }
 
+  /**
+   * 已超时未决列表（SLA 观察面：确认台据此高亮「已超时」，并按 SLA 分派优先级）。
+   *
+   * <p>SLA 时长由调用方按险种 / 风险等级显式传入；缺省用 {@link HitlApplicationService#DEFAULT_SLA}（48h）。
+   */
+  @GetMapping("/items/overdue")
+  public ApiResponse<List<HitlItem>> overdue(@RequestParam(required = false) Long slaHours) {
+    java.time.Duration sla =
+        slaHours == null || slaHours <= 0
+            ? HitlApplicationService.DEFAULT_SLA
+            : java.time.Duration.ofHours(slaHours);
+    return ApiResponse.success(hitlService.findOverdue(tenantContext.requireTenantId(), sla));
+  }
+
+  /**
+   * 触发 SLA 熔断：批量升级超时未决项为 {@code ESCALATED}（人工全程处理）。
+   *
+   * <p>供工作台轮询 / 运维任务显式调用——不在库内跑定时任务（多副本会各跑一遍，且库形态无调度上下文）。 单项并发竞争（已被他人升级）不中断整批，返回本次实际升级的项。
+   */
+  @PostMapping("/items/escalate-overdue")
+  public ApiResponse<List<HitlItem>> escalateOverdue(
+      @RequestParam(required = false) Long slaHours) {
+    String tenantId = tenantContext.requireTenantId();
+    java.time.Duration sla =
+        slaHours == null || slaHours <= 0
+            ? HitlApplicationService.DEFAULT_SLA
+            : java.time.Duration.ofHours(slaHours);
+    // 显式走带 sla 的重载：无参重载只是默认值便捷入口，经它转一手会让调用链多一层无信息量的跳转
+    return ApiResponse.success(hitlService.escalateOverdue(tenantId, sla));
+  }
+
   /** 裁决请求（action 受控：confirm / reject / modify / escalate）。 */
   public record HitlActRequest(
       String action, String actor, String value, String reasonType, String comment) {}

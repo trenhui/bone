@@ -9,6 +9,7 @@ import com.bone.aiorch.domain.hitl.HitlItemRepository;
 import com.bone.aiorch.domain.hitl.HitlStatus;
 import com.bone.aiorch.domain.hitl.ReasonType;
 import com.bone.core.exception.BizException;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,17 @@ public class HitlApplicationService {
 
   /** 置信度阈值：低于此值强制进 PENDING 待人工（详设 §4 阈值基线）。 */
   public static final double CONFIRMATION_THRESHOLD = 0.7;
+
+  /**
+   * HITL SLA 默认时长：分派后 48h 未决 → 升级改派（详设 §4 阈值表第 14 项）。
+   *
+   * <p>做成常量而非配置项：SLA 是策略，由调用方按险种 / 风险等级显式传入（见带 {@code sla} 参数的重载），
+   * 默认值只服务「没想好策略」的场景。库形态模块不自建配置类，避免为一个默认值引入整套 Properties。
+   */
+  public static final java.time.Duration DEFAULT_SLA = java.time.Duration.ofHours(48);
+
+  /** SLA 熔断的系统执行者标识（非人工裁决，处置链须能区分「系统升级」与「人升级」）。 */
+  public static final String SYSTEM_ACTOR_SLA = "system:sla-escalation";
 
   private final HitlItemRepository repository;
   private final HitlDispositionRepository dispositionRepository;
@@ -92,6 +104,51 @@ public class HitlApplicationService {
   /** 待裁决列表（PENDING，按场景/风险过滤）。 */
   public List<HitlItem> findPending(String tenantId, String scene, String riskLevel) {
     return repository.findPending(tenantId, scene, riskLevel);
+  }
+
+  /**
+   * 已超时未决列表（SLA 熔断的观察面：工作台可据此高亮「即将/已超时」）。
+   *
+   * <p>时刻取服务端当前时间——SLA 判据必须是服务端权威时钟，不能用调用方传来的时间（否则客户端可伪造未超时）。
+   */
+  public List<HitlItem> findOverdue(String tenantId, java.time.Duration sla) {
+    return repository.findPending(tenantId, null, null).stream()
+        .filter(item -> item.isOverdue(LocalDateTime.now(), sla))
+        .toList();
+  }
+
+  /**
+   * 批量升级超时未决项为 {@code ESCALATED}（人工全程处理），返回本次实际升级的项。
+   *
+   * <p><b>为什么不内置 {@code @Scheduled}</b>：库形态模块没有调度上下文，且多副本部署下定时任务会每副本各跑一遍—— 升级虽由状态机幂等保护（只有 PENDING 可
+   * escalate，第二个副本撞 409），但把触发权交给上层（工作台轮询 / 运维定时任务）更可控：上层能按租户分批、能观测扫描结果、能决定升级后是否改派。
+   *
+   * <p><b>并发安全</b>：单项升级失败（并发已被他人升级 → 409）只记告警不中断整批——一个项的竞争不该让其余项留在超时态。
+   */
+  public List<HitlItem> escalateOverdue(String tenantId, java.time.Duration sla) {
+    List<HitlItem> escalated = new java.util.ArrayList<>();
+    for (HitlItem item : findOverdue(tenantId, sla)) {
+      try {
+        escalated.add(
+            escalate(
+                tenantId,
+                item.getId(),
+                SYSTEM_ACTOR_SLA,
+                "SLA 超时未决自动升级（sla=" + sla + ", createdAt=" + item.getCreatedAt() + "）"));
+      } catch (BizException e) {
+        // 并发已被升级 / 已裁决：视为已处理，不中断整批扫描
+        log.warn("SLA 升级跳过（并发或状态竞争）: itemId={}, code={}", item.getId(), e.getErrorCode());
+      }
+    }
+    if (!escalated.isEmpty()) {
+      log.info("SLA 超时升级完成: tenant={}, escalated={}", tenantId, escalated.size());
+    }
+    return escalated;
+  }
+
+  /** 使用默认 SLA（48h）的批量升级重载。 */
+  public List<HitlItem> escalateOverdue(String tenantId) {
+    return escalateOverdue(tenantId, DEFAULT_SLA);
   }
 
   /**

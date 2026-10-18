@@ -112,4 +112,50 @@ class HitlControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value(HitlStatus.CONFIRMED.name()));
   }
+
+  @Test
+  void overdue_lists_items_with_default_sla() throws Exception {
+    TenantContext.setTenantId("1");
+    HitlItem item = pendingItem();
+    item.setId("hitl-1");
+    when(hitlService.findOverdue(eq("1"), eq(HitlApplicationService.DEFAULT_SLA)))
+        .thenReturn(List.of(item));
+
+    mockMvc
+        .perform(get("/api/ai/v1/hitl/items/overdue"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value("hitl-1"));
+
+    verify(hitlService).findOverdue("1", HitlApplicationService.DEFAULT_SLA);
+  }
+
+  @Test
+  void overdue_honours_custom_sla_hours() throws Exception {
+    TenantContext.setTenantId("1");
+    when(hitlService.findOverdue(eq("1"), eq(java.time.Duration.ofHours(24))))
+        .thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/api/ai/v1/hitl/items/overdue").param("slaHours", "24"))
+        .andExpect(status().isOk());
+
+    verify(hitlService).findOverdue("1", java.time.Duration.ofHours(24));
+  }
+
+  @Test
+  void escalate_overdue_triggers_batch_and_returns_escalated() throws Exception {
+    TenantContext.setTenantId("1");
+    HitlItem item = pendingItem();
+    item.setId("hitl-1");
+    item.setStatus(HitlStatus.ESCALATED);
+    when(hitlService.escalateOverdue("1", HitlApplicationService.DEFAULT_SLA))
+        .thenReturn(List.of(item));
+
+    mockMvc
+        .perform(post("/api/ai/v1/hitl/items/escalate-overdue"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].status").value(HitlStatus.ESCALATED.name()));
+
+    verify(hitlService).escalateOverdue("1", HitlApplicationService.DEFAULT_SLA);
+  }
 }
