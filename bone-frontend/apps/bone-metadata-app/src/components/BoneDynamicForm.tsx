@@ -21,6 +21,8 @@ import {
   type LinkageRule,
   type UiContext,
 } from '../utils/uiSchemaEngine';
+import { gridItemStyle } from '../utils/uiGrid';
+import './uiSchema/uiSchemaTheme.css';
 import { runtimeRecordApi } from '../services/metadataApi';
 
 const { Text } = Typography;
@@ -318,7 +320,14 @@ export const BoneDynamicForm: React.FC<Props> = ({
         }
         return (
           <CardSection key={sec.id} title={title} kind={sec.kind}>
-            {visibleCtrls.map((c, i) => <div key={`${c.fieldCode}-${i}`}>{body(c)}</div>)}
+            {/* 栅格宽度（props.span）走共享真源 utils/uiGrid，与设计器预览同口径：
+                24=整行、缺省半行（历史竖排 → 双栏）；表格/附件/时间线恒整行；
+                窄屏由 uiSchemaTheme.css 媒体查询复位单列 */}
+            <div className="uis-grid2">
+              {visibleCtrls.map((c, i) => (
+                <div key={`${c.fieldCode}-${i}`} style={gridItemStyle(c)}>{body(c)}</div>
+              ))}
+            </div>
           </CardSection>
         );
       })}

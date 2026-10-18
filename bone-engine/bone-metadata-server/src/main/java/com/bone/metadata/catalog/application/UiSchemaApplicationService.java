@@ -680,32 +680,16 @@ public class UiSchemaApplicationService {
       }
     }
 
-    // linkage / submit（含变体块复用同一套 walker）
+    // linkage / submit / actionBar（含变体块复用同一套 walker）
     checkRules(root.path("linkageRules"), refs, controlCodes, issues, "");
     checkSubmits(root.path("submitRules"), refs, issues, "");
     checkActionBar(root.path("actionBar"), refs, issues, "");
 
-    // tabs $ 变量（UI-REF-07）与 dataScope.policyCode（UI-REF-03）
-    JsonNode list = root.path("views").path("list");
-    JsonNode tabs = list.path("tabs");
-    if (tabs.isArray()) {
-      for (JsonNode tab : tabs) {
-        String value = textOf(tab, "value");
-        if (value != null && value.startsWith("$") && !DOLLAR_VARS.contains(value)) {
-          issues.add(
-              EntityValidationIssue.error(
-                  UiSchemaRefCodes.UI_REF_07, "tabs.value 未知上下文变量：" + value));
-        }
-      }
-    }
-    String policyCode = textOf(list.path("dataScope"), "policyCode");
-    if (policyCode != null && !refs.policyCodes().contains(policyCode)) {
-      issues.add(
-          EntityValidationIssue.error(
-              UiSchemaRefCodes.UI_REF_03, "dataScope.policyCode 未在 row_policies 声明：" + policyCode));
-    }
+    // tabs.fieldCode 存在性（UI-REF-01）、tabs $ 变量（UI-REF-07）与 dataScope.policyCode（UI-REF-03）：base
+    // 与变体同口径
+    checkListView(root.path("views").path("list"), refs, issues, "");
 
-    // 变体：key 必填唯一（UI-REF-09 ERROR）；变体规则块复用 walker
+    // 变体：key 必填唯一（UI-REF-09 ERROR）；变体各块复用同一套 walker（base 查的变体也要查）
     JsonNode variants = root.path("variants");
     if (variants.isArray()) {
       Set<String> keys = new HashSet<>();
@@ -718,6 +702,8 @@ public class UiSchemaApplicationService {
         if (!keys.add(key)) {
           issues.add(EntityValidationIssue.error(UiSchemaRefCodes.UI_REF_09, "变体 key 重复：" + key));
         }
+        String prefix = "变体 " + key + " ";
+        checkListView(variant.path("views").path("list"), refs, issues, prefix);
         JsonNode views = variant.path("views");
         for (String view : List.of("form", "detail")) {
           JsonNode sections = views.path(view).path("sections");
@@ -727,26 +713,80 @@ public class UiSchemaApplicationService {
               if (controls.isArray()) {
                 for (JsonNode control : controls) {
                   String fieldCode = textOf(control, "fieldCode");
-                  if (fieldCode != null
-                      && !control.path("virtual").asBoolean(false)
+                  if (fieldCode == null) {
+                    issues.add(
+                        EntityValidationIssue.error(
+                            UiSchemaRefCodes.UI_REF_01, "变体 " + key + " 控件缺 fieldCode"));
+                    continue;
+                  }
+                  boolean virtual = control.path("virtual").asBoolean(false);
+                  if (!virtual
                       && !refs.fieldCodes().contains(fieldCode)
                       && !controlCodes.contains(fieldCode)) {
                     issues.add(
                         EntityValidationIssue.error(
                             UiSchemaRefCodes.UI_REF_01, "变体 " + key + " 控件引用的字段不存在：" + fieldCode));
                   }
+                  // 虚拟控件禁与真实字段码碰撞：与 base 视图（上方 UI_REF-04）同口径。
+                  // 前端 lint 对 base/变体两个作用域均报 error；此处曾漏变体作用域，
+                  // 导致「碰撞型」schema 过后端发布闸门直通上线（2026-10-18 诊断实证）。
+                  if (virtual && refs.fieldCodes().contains(fieldCode)) {
+                    issues.add(
+                        EntityValidationIssue.error(
+                            UiSchemaRefCodes.UI_REF_04, "变体 " + key + " 控件与真实字段码碰撞：" + fieldCode));
+                  }
                 }
               }
             }
           }
         }
-        String prefix = "变体 " + key + " ";
         checkRules(variant.path("linkageRules"), refs, controlCodes, issues, prefix);
         checkSubmits(variant.path("submitRules"), refs, issues, prefix);
         checkActionBar(variant.path("actionBar"), refs, issues, prefix);
       }
     }
     return issues;
+  }
+
+  /**
+   * 列表视图检查：tabs.fieldCode 存在性（UI-REF-01）、tabs.value 的 $ 上下文变量（UI-REF-07）与 dataScope.policyCode
+   * 声明（UI-REF-03）。
+   *
+   * <p>base 与变体共用：前端 lint 对变体 views.list 同样报 error，后端只查 base 曾造成同款作用域缺口 （与 virtual
+   * 碰撞同源：发布闸门漏变体作用域）。prefix 用于问题文案区分作用域。
+   *
+   * <p>tabs.fieldCode 为何是 error 而非 warning：页签是运行时硬过滤（fieldCode=value ⇒ WHERE 条件）， 绑不存在的字段 ⇒
+   * 该页签恒空、用户"点了没数据"——与「控件引用不存在字段」同为字段引用类硬错误； 区别于列表列/搜索字段的悬空（聚合列/关联搜索属正常，前端 lint 保持 info 级、后端不拦）。
+   */
+  private void checkListView(
+      JsonNode list, RefContext refs, List<EntityValidationIssue> issues, String prefix) {
+    if (list == null || !list.isObject()) {
+      return;
+    }
+    JsonNode tabs = list.path("tabs");
+    if (tabs.isArray()) {
+      for (JsonNode tab : tabs) {
+        String value = textOf(tab, "value");
+        if (value != null && value.startsWith("$") && !DOLLAR_VARS.contains(value)) {
+          issues.add(
+              EntityValidationIssue.error(
+                  UiSchemaRefCodes.UI_REF_07, prefix + "tabs.value 未知上下文变量：" + value));
+        }
+        String fieldCode = textOf(tab, "fieldCode");
+        if (fieldCode != null && !refs.fieldCodes().contains(fieldCode)) {
+          issues.add(
+              EntityValidationIssue.error(
+                  UiSchemaRefCodes.UI_REF_01, prefix + "tabs.fieldCode 引用未知字段：" + fieldCode));
+        }
+      }
+    }
+    String policyCode = textOf(list.path("dataScope"), "policyCode");
+    if (policyCode != null && !refs.policyCodes().contains(policyCode)) {
+      issues.add(
+          EntityValidationIssue.error(
+              UiSchemaRefCodes.UI_REF_03,
+              prefix + "dataScope.policyCode 未在 row_policies 声明：" + policyCode));
+    }
   }
 
   private void checkRules(

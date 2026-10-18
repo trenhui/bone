@@ -30,10 +30,27 @@ export const formOf = (s: BoneUiSchema): FormView => viewOf(s, 'form');
 
 /* ============================== 分区 ============================== */
 
+/**
+ * 分区 id 生成器：模块级自增 + 与现存 id 去重。
+ *
+ * 为什么不能 `sec_${sections.length + 1}`：删掉中间分区后 length 会缩，
+ * 新 id 直接撞名（[sec_1,sec_2] 删 sec_1 → 再添加得 sec_2）。section.id 是
+ * 变更预告的 diff 稳定键（uiSchemaChangePreview 按 id 匹配分区）与变体
+ * 按 id 覆盖 base 分区的键——撞名后 diff 把两个分区当同一个、变体覆盖会
+ * 静默顶掉 base 分区（对标 Figma/Notion：生成 id 用单调递增，绝不依赖长度）。
+ */
+let secSeq = 0;
+const nextSectionId = (existing: { id: string }[]): string => {
+  let n: number;
+  do { n = ++secSeq; } while (existing.some((s) => s.id === `sec_${n}`));
+  return `sec_${n}`;
+};
+
 export const addSection = (s: BoneUiSchema, view: ViewKey = 'form'): BoneUiSchema => {
-  const n = viewOf(s, view).sections.length + 1;
+  const sections = viewOf(s, view).sections;
+  const n = sections.length + 1;
   return withView(s, {
-    sections: [...viewOf(s, view).sections, { id: `sec_${n}`, title: `分区 ${n}`, controls: [] }],
+    sections: [...sections, { id: nextSectionId(sections), title: `分区 ${n}`, controls: [] }],
   }, view);
 };
 
@@ -194,12 +211,21 @@ export const addAction = (s: BoneUiSchema): BoneUiSchema =>
 export const removeAction = (s: BoneUiSchema, idx: number): BoneUiSchema =>
   ({ ...s, actionBar: (s.actionBar ?? []).filter((_, i) => i !== idx) });
 
+/**
+ * 移动动作条项（按数组下标 from → to）。
+ *
+ * 排序真源是 `sortOrder`（引擎 resolveVisibleActions 只按它排）。若只位移数组
+ * 不动 sortOrder，「面板上移后的顺序 ≠ 运行时顺序」——双真源漂移（曾实测：
+ * 把第 1 项下移后运行期排序把顺序还原）。这里位移后按新位置重排 sortOrder（1..N），
+ * 使数组序恒等于 sortOrder 序；ActionBarPanel 亦按 sortOrder 展示，
+ * 面板顺序 = 运行期顺序，从根上只有一处真源。
+ */
 export const moveAction = (s: BoneUiSchema, from: number, to: number): BoneUiSchema => {
   const arr = [...(s.actionBar ?? [])];
   if (to < 0 || to >= arr.length) return s;
   const [it] = arr.splice(from, 1);
   arr.splice(to, 0, it);
-  return { ...s, actionBar: arr };
+  return { ...s, actionBar: arr.map((a, i) => ({ ...a, sortOrder: i + 1 })) };
 };
 
 /* ============================== 列表列 ============================== */
@@ -221,6 +247,35 @@ export const moveColumn = (s: BoneUiSchema, from: number, to: number): BoneUiSch
   arr.splice(to, 0, it);
   return { ...s, views: { ...s.views, list: { ...s.views.list, columns: arr } } };
 };
+
+/**
+ * 批量设置所有列显隐（对标 Salesforce List View 批量操作）。
+ * 逐列 Switch 在 200 列时操作成本随列数平方增长；批量是一等公民。
+ */
+export const setColumnsVisible = (s: BoneUiSchema, visible: boolean): BoneUiSchema =>
+  ({
+    ...s,
+    views: {
+      ...s.views,
+      list: {
+        ...s.views.list,
+        columns: (s.views.list?.columns ?? []).map((c) => ({ ...c, visible: visible ? undefined : false })),
+      },
+    },
+  });
+
+/** 批量设置所有列列宽（px；统一栅格时免逐列输入） */
+export const setColumnsWidth = (s: BoneUiSchema, width: number): BoneUiSchema =>
+  ({
+    ...s,
+    views: {
+      ...s.views,
+      list: {
+        ...s.views.list,
+        columns: (s.views.list?.columns ?? []).map((c) => ({ ...c, width })),
+      },
+    },
+  });
 
 /* ============================== 列表视图全配置（协议 §3.2 / v1.1） ============================== */
 

@@ -5,6 +5,7 @@
  * 而不是手填文本 —— 手填必然与状态机真源漂移（填了个不存在的码，运行时按钮点了没反应）。
  * 真源缺失时降级为自由输入，并给出提示，不静默放行。
  */
+import { useMemo } from 'react';
 import {
   Alert, Button, Empty, Input, InputNumber, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
@@ -32,6 +33,18 @@ interface Props {
 
 export default function ActionBarPanel({ schema, onChange, fields, actionDefs, focus }: Props): React.ReactElement {
   const items = schema.actionBar ?? [];
+  /**
+   * 展示序 = sortOrder 序（引擎 resolveVisibleActions 的唯一排序真源）。
+   * 编辑操作全部按**原始下标**寻址（order[].i）——展示第 2 项对应的存储下标
+   * 未必是 2（用户可直接编辑 sortOrder）。不映射就会「看见的第 2 项改的是
+   * 存储的第 2 项」错位；这也从根上消除了此前的双真源（数组序 vs sortOrder）。
+   */
+  const order = useMemo(
+    () => (schema.actionBar ?? [])
+      .map((a, i) => ({ a, i }))
+      .sort((x, y) => (x.a.sortOrder ?? x.i + 1) - (y.a.sortOrder ?? y.i + 1)),
+    [schema.actionBar],
+  );
   const fieldOptions = fields.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）` }));
 
   const actionsFromDefs = (actionDefs ?? []).map((a) => ({
@@ -59,7 +72,7 @@ export default function ActionBarPanel({ schema, onChange, fields, actionDefs, f
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="动作条为空，运行时不显示任何操作按钮" style={{ padding: '18px 0' }} />
       )}
 
-      {items.map((a, i) => {
+      {order.map(({ a, i }, di) => {
         const def = (actionDefs ?? []).find((d) => d.actionCode === a.actionCode);
         const unknown = !!a.actionCode && actionDefs !== null && !def;
         return (
@@ -86,15 +99,15 @@ export default function ActionBarPanel({ schema, onChange, fields, actionDefs, f
               {def?.escape && <Tag color="red" style={{ fontSize: 11 }}>逃逸动作</Tag>}
               {unknown && <Tag color="orange" style={{ fontSize: 11 }}>实体中未定义此动作</Tag>}
               <span style={{ flex: 1 }} />
-              <Tooltip title="上移（动作条从左到右按此顺序）">
-                <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={i === 0}
-                  onClick={() => onChange(moveAction(schema, i, i - 1))} />
+              <Tooltip title="上移（与 sortOrder 同步交换，运行期即此顺序）">
+                <Button size="small" type="text" aria-label="上移动作" icon={<ArrowUpOutlined />} disabled={di === 0}
+                  onClick={() => onChange(moveAction(schema, i, order[di - 1].i))} />
               </Tooltip>
-              <Tooltip title="下移">
-                <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={i === items.length - 1}
-                  onClick={() => onChange(moveAction(schema, i, i + 1))} />
+              <Tooltip title="下移（与 sortOrder 同步交换，运行期即此顺序）">
+                <Button size="small" type="text" aria-label="下移动作" icon={<ArrowDownOutlined />} disabled={di === order.length - 1}
+                  onClick={() => onChange(moveAction(schema, i, order[di + 1].i))} />
               </Tooltip>
-              <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onChange(removeAction(schema, i))} />
+              <Button size="small" type="text" danger aria-label="删除动作" icon={<DeleteOutlined />} onClick={() => onChange(removeAction(schema, i))} />
             </div>
 
             <div style={{ padding: '10px 12px' }}>
@@ -140,7 +153,7 @@ export default function ActionBarPanel({ schema, onChange, fields, actionDefs, f
                 <Space wrap>
                   <Text type="secondary" style={{ fontSize: 12, width: 60 }}>二次确认</Text>
                   <Switch
-                    size="small" checked={!!a.confirm}
+                    size="small" aria-label="二次确认" checked={!!a.confirm}
                     onChange={(v) => onChange(updateAction(schema, i, { confirm: v ? { title: '' } : undefined }))}
                   />
                   {a.confirm && (

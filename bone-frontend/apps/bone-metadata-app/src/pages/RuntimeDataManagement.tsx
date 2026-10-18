@@ -67,10 +67,12 @@ import {
 } from '../utils/columnProjection';
 import { listRecent } from '../utils/recent';
 import CommandPalette from '../components/CommandPalette';
-import { BoneDynamicForm } from '../components/BoneDynamicForm';
+import { BoneDynamicForm, type DisplayMode } from '../components/BoneDynamicForm';
+import { RuntimeDetailView, detailValueOf } from '../components/RuntimeDetailView';
 import PersonalViewBar from '../components/PersonalViewBar';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
+import type { UiContext } from '../utils/uiSchemaEngine';
 import { useOverlayBundle } from '../hooks/useOverlayBundle';
 
 const { Text } = Typography;
@@ -189,7 +191,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const navigate = useNavigate();
   const location = useLocation();
   /** 权限快照（与 AuthButton 同源）：用于「更多」下拉里逃逸动作的置灰判定 */
-  const { has } = usePermission();
+  const { has, roles } = usePermission();
   /** 数据 Tab 空态 CTA：由 /…/data 回溯到实体详情并定位「结构」Tab（B1） */
   const structurePath = `${location.pathname.replace(/\/data\/?$/, '')}?tab=structure`;
   /** 「交付口径对照」的去团队契约入口：定位「界面设计器」Tab（契约列的唯一编辑器） */
@@ -324,13 +326,43 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   /**
    * 协议表单开关（P0-1 · 技术方案 §6.1/§6.8）：
    * 实体配了团队 schema 且版本校验过（绿 ok/黄 warn-unknown-minor）→ 录入弹窗走 BoneDynamicForm；
-   * 无 schema/红 error → 老表单零变化。ctx 暂空（$me/roles/tier 身份源待定：
-   * 待 shell 广播用户上下文后接入，技术方案 §12.2 待定①；缺席时规则凡涉身份一律不命中）。
+   * 无 schema/红 error → 老表单零变化。
+   *
+   * ctx（P0-4 运行时身份）：roles 取 Shell 下发的 `GET /iam/me/roles`（usePermission 订阅
+   * permissions:change，切角色/租户即时刷新）——此前恒空对象 ⇒ resolveVariant 永不命中
+   * 带角色条件的变体（「核赔工作台」线上不生效），身份模拟只在预览里看得见。
+   * useMemo 稳定引用：ctx 每渲染换新会让 useBoneUiSchema 的 useMemo 链条全失效。
    */
-  const uiSchemaPipe = useBoneUiSchema(selectedEntity?.id != null ? String(selectedEntity.id) : null);
+  const uiCtx = useMemo<UiContext>(() => ({ roles }), [roles]);
+  const uiSchemaPipe = useBoneUiSchema(selectedEntity?.id != null ? String(selectedEntity.id) : null, uiCtx);
   const useSchemaForm =
     (uiSchemaPipe.status === 'ok' || uiSchemaPipe.status === 'warn-unknown-minor') &&
     !!uiSchemaPipe.schema?.views.form?.sections?.length;
+
+  /**
+   * displayModes 接线（Tier3 · 协议 §3.1 顶层三态门控运行时表单弹窗）：
+   * - 缺 'create' ⇒ 不渲染「新建记录」入口——协议不支持录入，不给点了才报错的死按钮；
+   * - 缺 'edit'   ⇒ 编辑弹窗回落只读（displayMode='view'，BoneDynamicForm 只读态已存在），
+   *   行级「编辑」入口保留（点了进只读弹窗，语义是"可看不可改"而非消失）；
+   * - 'view'      ⇒ 表单弹窗的只读态本身；详情抽屉是独立视图面（views.detail 驱动，P0-3），不在此门控。
+   * 缺省 ['create','edit','view']（schema.json default）⇒ 存量 schema 无此字段时全放开，行为零变化。
+   * 口径与弹窗渲染同源（uiSchemaPipe.schema）：门控必须与被渲染的表单是同一份 schema。
+   */
+  const schemaDisplayModes = useMemo<string[]>(() => {
+    const m = uiSchemaPipe.schema?.displayModes;
+    return Array.isArray(m) && m.length > 0 ? m : ['create', 'edit', 'view'];
+  }, [uiSchemaPipe.schema]);
+  const canCreate = schemaDisplayModes.includes('create');
+  const canEdit = schemaDisplayModes.includes('edit');
+  /** 弹窗表单有效显示模式：被门掉的模式回落 'view'（只读），与标题「· 只读」后缀同源 */
+  const formMode: DisplayMode = editing ? (canEdit ? 'edit' : 'view') : canCreate ? 'create' : 'view';
+
+  /**
+   * 详情视图（P0-3）：发布快照 executionSchema 的 views.detail，已随 ctx 做变体裁决
+   * （reviewer 看到的是变体里的详情布局）。配了 → 抽屉按协议投影（页头条 + 分区）；
+   * 没配（存量实体绝大多数）→ 回落全字段平铺 Descriptions，行为零变化。
+   */
+  const execDetail = uiSchemaPipe.executionSchema?.views.detail;
 
   /**
    * 最近操作实体（跨实体运营台快捷入口）：复用 localStorage 的「最近编辑」记录，
@@ -1426,9 +1458,12 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           <Button icon={<ReloadOutlined />} onClick={load} disabled={!entityCode}>
             刷新
           </Button>
-          <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
-            新建记录
-          </AuthButton>
+          {/* displayModes 门控：schema 未声明 'create' ⇒ 不提供录入入口（见 schemaDisplayModes 注释） */}
+          {canCreate && (
+            <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityCode}>
+              新建记录
+            </AuthButton>
+          )}
           {/* 个人显示组：视图切换 / 列设置 / 自伤遮蔽自救（个人覆盖的唯一编辑器）。
               契约列（列集合/列序/列宽）在建模台「界面设计器」配，发布后全员生效。 */}
           <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} />
@@ -1602,7 +1637,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               <Space style={{ marginBottom: 16 }} wrap>
                 {resolvedId && (
                   <>
-                    {!trashMode && (
+                    {!trashMode && canCreate && (
                       <AuthButton code={BonePermissionCodes.METADATA_RUNTIME_WRITE} type="primary" icon={<PlusOutlined />} onClick={openCreate}>
                       新建记录
                       </AuthButton>
@@ -1826,7 +1861,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       )}
 
       <Modal
-        title={`${editing ? '编辑记录' : '新建记录'}${useSchemaForm ? ' · 协议表单' : ''}`}
+        title={`${editing ? '编辑记录' : '新建记录'}${useSchemaForm ? ' · 协议表单' : ''}${useSchemaForm && formMode === 'view' ? ' · 只读' : ''}`}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={useSchemaForm ? undefined : handleSubmit}
@@ -1854,7 +1889,8 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
               record={(editing ?? undefined) as Record<string, unknown> | undefined}
               recordId={editing ? recordId(editing) : undefined}
               entityCode={entityCode}
-              displayMode={editing ? 'edit' : 'create'}
+              displayMode={formMode}
+              ctx={uiCtx}
               onSubmit={handleSchemaSubmit}
               quiet
             />
@@ -2008,33 +2044,26 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
       >
         {detailDrawer.record && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Descriptions
-              size="small"
-              column={1}
-              bordered
-              styles={{ label: { width: 132 } }}
-              items={(fields.length > 0 ? fields : [])
-                .filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code))
-                .map((f) => {
-                  const raw = detailDrawer.record?.[f.code];
-                  // ENUM 回显 label 而非裸 code（cnc → 数控机床）：列表/表单都显示 label，
-                  // 详情只显示 code 会让用户以为录错了值。enumValues 多形态由 parseEnumValues 归一。
-                  let display: string;
-                  if (raw == null || raw === '') {
-                    display = '—';
-                  } else if ((f.type || '').toUpperCase() === 'ENUM') {
-                    const hit = parseEnumValues(f.enumValues).find((v) => String(v.code) === String(raw));
-                    display = hit?.label ?? String(raw);
-                  } else {
-                    display = String(raw);
-                  }
-                  return {
+            {execDetail ? (
+              /* 协议详情视图（views.detail 投影）：页头关键信息条 + 分区逐控件 */
+              <RuntimeDetailView detail={execDetail} fields={fields} record={detailDrawer.record} />
+            ) : (
+              /* 回落：全字段平铺（未配置 views.detail 的存量实体） */
+              <Descriptions
+                size="small"
+                column={1}
+                bordered
+                styles={{ label: { width: 132 } }}
+                items={fields
+                  .filter((f) => !RUNTIME_READONLY_FIELDS.has(f.code))
+                  .map((f) => ({
                     key: f.code,
                     label: f.displayName || f.code,
-                    children: display,
-                  };
-                })}
-            />
+                    // ENUM 回显 label 而非裸 code（cnc → 数控机床）：与协议投影同口径
+                    children: detailValueOf(f, detailDrawer.record?.[f.code]),
+                  }))}
+              />
+            )}
             <div>
               <Typography.Title level={5} style={{ marginTop: 0 }}>
                 动作执行时间线

@@ -12,7 +12,7 @@
  * - 列表视图预览：columns / tabs / stats / search / dataScope 整屏还原。
  * - 预览不落库：动作按钮只提示「将触发 XX」，不真调 runtime。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import {
   Alert, Button, Empty, Input, InputNumber, Segmented, Select, Space, Switch, Tooltip, Typography, message,
 } from 'antd';
@@ -22,9 +22,10 @@ import {
 import { parseEnumValues } from '@bone/shared-types';
 import {
   evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit,
-  type BoneUiSchema, type Control, type FieldUiState, type UiContext, type VariantMatch,
+  type BoneUiSchema, type Control, type FieldUiState, type Section, type UiContext, type VariantMatch,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
+import { gridItemStyle, isFullWidthControl } from '../../utils/uiGrid';
 import { dictOf, formOf } from './schemaOps';
 import { SCENARIOS, applyScenario, scenarioApplies } from './scenarios';
 import './uiSchemaTheme.css';
@@ -413,11 +414,12 @@ function FieldRow({ control, states, fields, schema, data, onSet, inSplit = fals
   inSplit?: boolean;
 }) {
   const st = states[control.fieldCode] ?? { visible: true, required: false, readonly: false, disabled: false, notice: '' };
-  const span = (control.props?.span as number | undefined) ?? 12;
   const f = fields.find((x) => x.code === control.fieldCode);
-  const full = !inSplit && (span >= 24 || control.controlKind === 'CHILD_TABLE' || control.controlKind === 'ATTACHMENT' || control.controlKind === 'TIMELINE');
+  // 栅格宽度走共享真源 utils/uiGrid（span=24 或表格/附件/时间线 → 整行；缺省半行）：
+  // 预览与运行时（BoneDynamicForm）同一计算，双渲染器不漂移
+  const full = !inSplit && isFullWidthControl(control);
   return (
-    <div className={full ? 'uis-full' : undefined}>
+    <div className={full ? 'uis-full' : undefined} style={inSplit ? undefined : gridItemStyle(control)}>
       <div className="uis-fld">
         <label>
           {control.labelOverride || f?.displayName || control.fieldCode}
@@ -434,6 +436,80 @@ function FieldRow({ control, states, fields, schema, data, onSet, inSplit = fals
     </div>
   );
 }
+
+/* ---------------- 分区（Section 级 memo） ---------------- */
+
+/**
+ * 单个分区的预览渲染，memo 到分区粒度。
+ * 大 schema（50 分区/200 控件）下，预览内某字段的编辑/联动重算只应波及
+ * 相关分区，而不是整张表单重渲染。props 全部按引用/原值传递：
+ * sec 引用随 schema 不可变更新保持稳定，states/data 仅在联动重算时换新。
+ */
+const PreviewSection = memo(function PreviewSection({
+  sec, states, fields, schema, data, onSet, ctx,
+}: {
+  sec: Section;
+  states: Record<string, FieldUiState>;
+  fields: MetaField[];
+  schema: BoneUiSchema;
+  data: Record<string, unknown>;
+  onSet: (code: string, v: unknown) => void;
+  ctx: UiContext;
+}) {
+  // 可见性走同源 fieldVisible：联动 then.tier 档位门控在此生效（不声明=不限制）
+  const ctrls = (sec.controls ?? []).filter((c) => fieldVisible(states[c.fieldCode], ctx));
+  if (!ctrls.length) return null;
+  const layout = sec.layout ?? 'single';
+  // split-left-40/60：按当前可见控件顺序对半切分（顺序即分栏，与拖拽排序同源）。
+  // 控件数 <2 时无分栏意义，退化为单栏。
+  const split = layout === 'split-left-40' || layout === 'split-left-60';
+  if (split && ctrls.length >= 2) {
+    const mid = Math.ceil(ctrls.length / 2);
+    const pct = layout === 'split-left-40' ? '40%' : '60%';
+    return (
+      <div>
+        {/* 分栏分区同样要渲染标题 + kind 徽标（探针实测：漏渲染会让
+            「split + dashboard」分区的身份不可见——采购审查左风险面板
+            右原文时，用户分不清哪栏是什么） */}
+        <div className="uis-sec-title" style={{ marginBottom: 10 }}>
+          {sec.title ?? sec.id}
+          {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
+          <span className="kind">分栏 {pct}/{layout === 'split-left-40' ? '60%' : '40%'}</span>
+        </div>
+        <div className={`uis-split ${layout === 'split-left-40' ? 's40' : 's60'}`}>
+          <div className="uis-split-col">
+            <span className="uis-split-tag">◀ 左栏（{pct}）</span>
+            {ctrls.slice(0, mid).map((c, ci) => (
+              <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                states={states} fields={fields} schema={schema} data={data} onSet={onSet} />
+            ))}
+          </div>
+          <div className="uis-split-col">
+            <span className="uis-split-tag">右栏 ▶</span>
+            {ctrls.slice(mid).map((c, ci) => (
+              <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
+                states={states} fields={fields} schema={schema} data={data} onSet={onSet} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={`uis-seccard ${sec.kind === 'dashboard' ? 'uis-dash' : ''}`}>
+      <div className="uis-sec-title">
+        {sec.title ?? sec.id}
+        {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
+      </div>
+      <div className="uis-grid2">
+        {ctrls.map((c, ci) => (
+          <FieldRow key={`${c.fieldCode}-${ci}`} control={c}
+            states={states} fields={fields} schema={schema} data={data} onSet={onSet} />
+        ))}
+      </div>
+    </div>
+  );
+});
 
 /* ---------------- 主组件 ---------------- */
 export default function SchemaPreview({
@@ -692,61 +768,13 @@ export default function SchemaPreview({
 
             {previewSections.length === 0 && <div className="uis-empty">{previewMode === 'detail' ? '详情视图还没有配置任何分区' : '还没有配置任何分区'}</div>}
 
-            {previewSections.map((sec, si) => {
-              // 可见性走同源 fieldVisible：联动 then.tier 档位门控在此生效（不声明=不限制）
-              const ctrls = (sec.controls ?? []).filter((c) => fieldVisible(states[c.fieldCode], ctx));
-              if (!ctrls.length) return null;
-              const layout = sec.layout ?? 'single';
-              // split-left-40/60：按当前可见控件顺序对半切分（顺序即分栏，与拖拽排序同源）。
-              // 控件数 <2 时无分栏意义，退化为单栏。
-              const split = layout === 'split-left-40' || layout === 'split-left-60';
-              if (split && ctrls.length >= 2) {
-                const mid = Math.ceil(ctrls.length / 2);
-                const pct = layout === 'split-left-40' ? '40%' : '60%';
-                return (
-                  <div key={sec.id ?? si}>
-                    {/* 分栏分区同样要渲染标题 + kind 徽标（探针实测：漏渲染会让
-                        「split + dashboard」分区的身份不可见——采购审查左风险面板
-                        右原文时，用户分不清哪栏是什么） */}
-                    <div className="uis-sec-title" style={{ marginBottom: 10 }}>
-                      {sec.title ?? sec.id}
-                      {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
-                      <span className="kind">分栏 {pct}/{layout === 'split-left-40' ? '60%' : '40%'}</span>
-                    </div>
-                    <div className={`uis-split ${layout === 'split-left-40' ? 's40' : 's60'}`}>
-                      <div className="uis-split-col">
-                        <span className="uis-split-tag">◀ 左栏（{pct}）</span>
-                        {ctrls.slice(0, mid).map((c, ci) => (
-                          <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
-                            states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
-                        ))}
-                      </div>
-                      <div className="uis-split-col">
-                        <span className="uis-split-tag">右栏 ▶</span>
-                        {ctrls.slice(mid).map((c, ci) => (
-                          <FieldRow key={`${c.fieldCode}-${ci}`} control={c} inSplit
-                            states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div key={sec.id ?? si} className={`uis-seccard ${sec.kind === 'dashboard' ? 'uis-dash' : ''}`}>
-                  <div className="uis-sec-title">
-                    {sec.title ?? sec.id}
-                    {sec.kind && <span className={`kind k-${sec.kind}`}>{sec.kind}</span>}
-                  </div>
-                  <div className="uis-grid2">
-                    {ctrls.map((c, ci) => (
-                      <FieldRow key={`${c.fieldCode}-${ci}`} control={c}
-                        states={states} fields={fields} schema={resolved} data={data} onSet={setField} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            {previewSections.map((sec, si) => (
+              <PreviewSection
+                key={sec.id ?? si}
+                sec={sec}
+                states={states} fields={fields} schema={resolved} data={data} onSet={setField} ctx={ctx}
+              />
+            ))}
 
             {/* 提交区 */}
             <div className="uis-seccard">

@@ -10,12 +10,13 @@
  */
 import { useState } from 'react';
 import {
-  Button, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
+  Button, Empty, Input, Modal, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined,
-  DownOutlined, UpOutlined, PauseCircleOutlined,
+  DownOutlined, UpOutlined, PauseCircleOutlined, PlayCircleOutlined,
 } from '@ant-design/icons';
+import { evalCond, runSubmit } from '../../utils/uiSchemaEngine';
 import type { BoneUiSchema, Operator, SubmitFunction } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { FUNCTIONS, OPERATORS, VERIFY_TYPES } from './constants';
@@ -41,7 +42,7 @@ interface Props {
 /** 规则卡外壳：统一处理停用视觉、标题区、展开收起 */
 function RuleCard({
   title, code, enabled, onToggleEnabled, level, levelHint,
-  sentence, children, onRemove, onUp, onDown, canUp, canDown, defaultOpen, focusRing,
+  sentence, children, onRemove, onUp, onDown, canUp, canDown, defaultOpen, focusRing, onDryRun,
 }: {
   title: string;
   code?: string;
@@ -58,6 +59,8 @@ function RuleCard({
   canDown: boolean;
   defaultOpen?: boolean;
   focusRing?: boolean;
+  /** 单条试运行（贴样例数据看条件是否命中；不配完也能验） */
+  onDryRun?: () => void;
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
   const off = !enabled;
@@ -90,10 +93,15 @@ function RuleCard({
         <span style={{ flex: 1 }} />
         <Tooltip title="停用后前端渲染与后端强制都整条跳过（不是隐藏提示，是不执行）">
           <Space size={4}>
-            <Switch size="small" checked={enabled} onChange={onToggleEnabled} />
+            <Switch size="small" aria-label="启用规则" checked={enabled} onChange={onToggleEnabled} />
             <Text type="secondary" style={{ fontSize: 11 }}>启用</Text>
           </Space>
         </Tooltip>
+        {onDryRun && (
+          <Tooltip title="试运行：贴一段样例数据，看这条规则的条件是否命中（不用先配完）">
+            <Button size="small" type="text" aria-label="试运行规则" icon={<PlayCircleOutlined />} onClick={onDryRun} />
+          </Tooltip>
+        )}
         <Tooltip title="上移（规则按顺序执行，后者覆盖前者）">
           <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={canUp ? !canUp : true} onClick={onUp} />
         </Tooltip>
@@ -125,7 +133,23 @@ function RuleCard({
 
 export default function RulesPanel({ schema, onChange, fields, defaultKind = 'linkage', focus }: Props): React.ReactElement {
   const [kind, setKind] = useState<'linkage' | 'submit'>(defaultKind);
-  const fieldOptions = fields.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）` }));
+  // type 随选项下传：ConditionEditor 按字段类型收窄运算符（文本不出现 between/gt）
+  const fieldOptions = fields.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）`, type: f.type }));
+
+  /**
+   * 单条试运行（dry-run）：贴样例数据 → 与运行时同源的 evalCond / linkageState /
+   * runSubmit 求值，回显「条件是否命中 / 校验是否拦截」。
+   * 为什么需要：此前只能配完整条规则 → 切右侧预览 → 选场景 → 逐字段手填样例值，
+   * 配到一半的规则无法验证（对标 Zapier/n8n 的 Test step）。
+   */
+  const [dryRun, setDryRun] = useState<{ kind: 'linkage' | 'submit'; ri: number } | null>(null);
+  const [dryText, setDryText] = useState('{}');
+  const openDryRun = (k: 'linkage' | 'submit', ri: number) => {
+    // 预填全部字段的空值骨架：用户只改关心的几个键即可试
+    const skeleton = Object.fromEntries(fields.map((f) => [f.code, (f.type ?? '').toUpperCase() === 'BOOLEAN' ? false : '']));
+    setDryText(JSON.stringify(skeleton, null, 2));
+    setDryRun({ kind: k, ri });
+  };
 
   const linkages = schema.linkageRules ?? [];
   const submits = schema.submitRules ?? [];
@@ -151,6 +175,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
           canUp={ri > 0}
           canDown={ri < linkages.length - 1}
           defaultOpen={ri === linkages.length - 1}
+          onDryRun={() => openDryRun('linkage', ri)}
         >
           <Space direction="vertical" size={8} style={{ width: '100%' }}>
             <Space wrap>
@@ -270,6 +295,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
             canUp={ri > 0}
             canDown={ri < submits.length - 1}
             defaultOpen={ri === submits.length - 1}
+            onDryRun={() => openDryRun('submit', ri)}
           >
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Space wrap>
@@ -397,6 +423,83 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
     </>
   );
 
+  /* ---------- 试运行 Modal（引擎同源求值） ---------- */
+  let dryData: Record<string, unknown> | null = null;
+  let dryParseErr: string | null = null;
+  try {
+    dryData = dryText.trim() ? (JSON.parse(dryText) as Record<string, unknown>) : {};
+  } catch (e) {
+    dryParseErr = e instanceof Error ? e.message : String(e);
+  }
+
+  const dryModal = (
+    <Modal
+      title={dryRun?.kind === 'linkage' ? '试运行 · 联动规则' : '试运行 · 提交校验'}
+      open={!!dryRun}
+      onCancel={() => setDryRun(null)}
+      footer={null}
+      width={560}
+    >
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        粘贴一段样例数据（JSON），用与运行时同源的引擎求值这一条规则。
+      </Text>
+      <Input.TextArea
+        style={{ marginTop: 8, fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 12 }}
+        rows={6} value={dryText} spellCheck={false}
+        status={dryParseErr ? 'error' : undefined}
+        onChange={(e) => setDryText(e.target.value)}
+      />
+      {dryParseErr && <Text type="danger" style={{ fontSize: 12 }}>JSON 非法：{dryParseErr}</Text>}
+      {dryData && dryRun?.kind === 'linkage' && (() => {
+        const rule = linkages[dryRun.ri];
+        if (!rule) return null;
+        const hit = evalCond(rule.when, dryData as Record<string, unknown>, {});
+        return (
+          <div style={{ marginTop: 10 }}>
+            <Tag color={hit ? 'green' : 'default'} style={{ fontSize: 12 }}>
+              {hit ? '● 条件命中，then 动作已生效' : '○ 条件未命中，规则不生效'}
+            </Tag>
+            {hit && (
+              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.8 }}>
+                {(rule.then ?? []).map((t, ti) => {
+                  const eff = [
+                    t.visible !== undefined ? `可见=${t.visible}` : '',
+                    t.required !== undefined ? `必填=${t.required}` : '',
+                    t.readonly !== undefined ? `只读=${t.readonly}` : '',
+                    t.disabled !== undefined ? `禁用=${t.disabled}` : '',
+                    t.notice ? `提示「${t.notice}」` : '',
+                    t.value !== undefined && t.value !== null ? `赋值=${String(t.value)}` : '',
+                  ].filter(Boolean).join('，');
+                  return <div key={ti}>· {t.fieldCode || '（未指定字段）'}：{eff || '（无实际动作）'}</div>;
+                })}
+                {(rule.then ?? []).length === 0 && <Text type="danger" style={{ fontSize: 12 }}>该规则没有 then 动作（自检报 error）</Text>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      {dryData && dryRun?.kind === 'submit' && (() => {
+        const rule = submits[dryRun.ri];
+        if (!rule) return null;
+        const baseRequired: Record<string, boolean> = {};
+        fields.forEach((f) => { if (f.required) baseRequired[f.code] = true; });
+        const res = runSubmit(JSON.parse(JSON.stringify(dryData)), [rule], [], {}, baseRequired);
+        return (
+          <div style={{ marginTop: 10 }}>
+            {res.errors.length === 0 && res.warnings.length === 0 ? (
+              <Tag color="green" style={{ fontSize: 12 }}>✓ 校验通过（该条不拦截）</Tag>
+            ) : (
+              <>
+                {res.errors.map((m, i) => <div key={`e${i}`} style={{ color: '#ff4d4f', fontSize: 12 }}>· {m}</div>)}
+                {res.warnings.map((m, i) => <div key={`w${i}`} style={{ color: '#faad14', fontSize: 12 }}>· {m}</div>)}
+              </>
+            )}
+          </div>
+        );
+      })()}
+    </Modal>
+  );
+
   return (
     <div>
       <Segmented
@@ -413,6 +516,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
           : '前端先拦（体验），后端同 code 强制（安全底线不后移）。停用规则前后端都会跳过。'}
       </Paragraph>
       {kind === 'linkage' ? renderLinkage() : renderSubmit()}
+      {dryModal}
     </div>
   );
 }

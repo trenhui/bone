@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { resolveVariant } from '../../utils/uiSchemaEngine';
 import {
-  addVariant, buildDefaultSchema, mergeVariantIntoBase, removeVariant, updateVariant,
+  addAction, addSection, addVariant, buildDefaultSchema, mergeVariantIntoBase, moveAction, moveColumn,
+  removeSection, removeVariant, setColumnsVisible, setColumnsWidth, updateAction, updateVariant,
   setDegradedBanner, setPageHeader, updateFooter, setI18nNamespace, updateBase,
   setBatchActions, toggleQuickFilters, addStat, updateStat, removeStat, setViewKind, setDataScope,
   toggleSearchFields,
@@ -183,5 +184,100 @@ describe('v1.1/v1.2 新能力 ops（页头 / 合规条 / i18n / 模板 / list �
     addStat(s);
     toggleQuickFilters(s, ['mine']);
     expect(JSON.stringify(s)).toBe(snap);
+  });
+});
+
+describe('分区 id 生成（v1.2 修复：length+1 会撞名）', () => {
+  it('删中间分区后再添加：新 id 不与现存分区碰撞', () => {
+    let s = addSection(addSection(base())); // [sec_main, sec_1, sec_2]
+    s = removeSection(s, 'form', 1); // 删 sec_1 → [sec_main, sec_2]
+    const before = (s.views.form?.sections ?? []).map((x) => x.id);
+    expect(before).toEqual(['sec_main', 'sec_2']); // 防删错下标假绿
+    s = addSection(s); // length+1 旧实现会再生成 sec_2 → 撞名
+    const ids = (s.views.form?.sections ?? []).map((x) => x.id);
+    expect(new Set(ids).size).toBe(ids.length); // 全局唯一
+    expect(ids.slice(0, 2)).toEqual(before); // 原有分区不被顶改
+  });
+
+  it('反复增删不产生重复 id（压力 20 轮）', () => {
+    let s = base();
+    for (let i = 0; i < 20; i++) {
+      s = addSection(s);
+      if (i % 3 === 0 && (s.views.form?.sections?.length ?? 0) > 1) s = removeSection(s, 'form', 1);
+    }
+    const ids = (s.views.form?.sections ?? []).map((x) => x.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('动作条排序单一真源（v1.2 修复：数组位移不同步 sortOrder = 运行期顺序还原）', () => {
+  const withActions = () => {
+    let s = base();
+    for (let i = 0; i < 3; i++) s = addAction(s);
+    return s;
+  };
+
+  it('addAction：sortOrder 按 1..N 递增（引擎 resolveVisibleActions 的排序真源）', () => {
+    const s = withActions();
+    expect(s.actionBar?.map((a) => a.sortOrder)).toEqual([1, 2, 3]);
+  });
+
+  it('moveAction 相邻位移：数组序重排为 sortOrder 1..N，面板顺序 = 引擎顺序', () => {
+    const s = withActions();
+    const moved = moveAction(s, 0, 1); // 第 1 项下移
+    expect(moved.actionBar?.map((a) => a.sortOrder)).toEqual([1, 2, 3]);
+    // 引擎按 sortOrder 稳定排序后的顺序必须与数组序一致（单一真源）
+    const engineOrder = [...(moved.actionBar ?? [])]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((a) => a.actionCode);
+    expect(engineOrder).toEqual((moved.actionBar ?? []).map((a) => a.actionCode));
+  });
+
+  it('moveAction 跨位位移（0→2）：落到末尾，sortOrder 随位置整体重排', () => {
+    const s = withActions();
+    const moved = moveAction(s, 0, 2);
+    // 原首项移到了数组末尾；sortOrder 按新位置 1..N（非相邻交换会错序，必须整体重排）
+    expect(moved.actionBar?.[2]?.actionCode).toBe(s.actionBar?.[0]?.actionCode);
+    expect(moved.actionBar?.map((a) => a.sortOrder)).toEqual([1, 2, 3]);
+  });
+
+  it('负向探针：moveAction 若只位移数组不重排 sortOrder，本测试必须变红', () => {
+    const s = withActions();
+    const moved = moveAction(s, 0, 2);
+    // 旧实现：数组变了、sortOrder 没变 ⇒ 引擎排序把顺序还原（与面板展示不一致）
+    const engineOrder = [...(moved.actionBar ?? [])]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((a) => a.actionCode);
+    expect(engineOrder).toEqual((moved.actionBar ?? []).map((a) => a.actionCode));
+  });
+
+  it('updateAction 可直接改 sortOrder（面板「排序」输入框即改真源）', () => {
+    const s = updateAction(withActions(), 2, { sortOrder: 0 });
+    expect(s.actionBar?.[2]?.sortOrder).toBe(0);
+  });
+});
+
+describe('列表列批量操作（v1.2 新增：对标 Salesforce List View）', () => {
+  it('setColumnsVisible(false)：全部列 visible=false（语义清除，不留空数组）', () => {
+    const s = setColumnsVisible(base(), false);
+    expect((s.views.list?.columns ?? []).every((c) => c.visible === false)).toBe(true);
+  });
+
+  it('setColumnsVisible(true)：清除 visible 键（回落协议缺省=可见）', () => {
+    const s = setColumnsVisible(setColumnsVisible(base(), false), true);
+    expect((s.views.list?.columns ?? []).every((c) => c.visible === undefined)).toBe(true);
+  });
+
+  it('setColumnsWidth：统一列宽且保留其余列属性', () => {
+    const s = setColumnsWidth(base(), 160);
+    expect((s.views.list?.columns ?? []).every((c) => c.width === 160)).toBe(true);
+    expect(s.views.list?.columns?.[0]?.fieldCode).toBe('amount');
+  });
+
+  it('moveColumn：位移后原数组不被 mutate', () => {
+    const s = base();
+    const before = s.views.list?.columns?.map((c) => c.fieldCode);
+    moveColumn(s, 0, 1);
+    expect(s.views.list?.columns?.map((c) => c.fieldCode)).toEqual(before);
   });
 });

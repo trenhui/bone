@@ -175,14 +175,17 @@ export default function BasePanel({ entityId, schema, onChange, lockVersion, onM
           ))}
 
           <Space style={{ marginTop: 10 }}>
+            {/* acceptConflicts=false = 冲突保留我的版本（默认推荐，与按钮文案一致）。
+                此前后者传 conflicts.length>0，有冲突时与「冲突也取新版」同为 true，
+                两个按钮执行同一语义——Git 式 merge 选项必须互斥。 */}
             <Button
               type="primary" icon={<CloudDownloadOutlined />} loading={confirming}
-              onClick={() => runConfirm(preview.conflicts.length > 0)}
+              onClick={() => runConfirm(false)}
             >
               {preview.conflicts.length > 0 ? '确认合入（冲突保留我的版本）' : '确认合入'}
             </Button>
             {preview.conflicts.length > 0 && (
-              <Tooltip title="冲突项改用模板新版（你的修改将被覆盖，请谨慎）">
+              <Tooltip title="acceptConflicts=true：冲突项改用模板新版（你的修改将被覆盖，请谨慎）">
                 <Button danger loading={confirming} onClick={() => runConfirm(true)}>
                   冲突也取新版
                 </Button>

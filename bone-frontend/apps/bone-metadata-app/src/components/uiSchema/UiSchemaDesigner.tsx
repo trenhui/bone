@@ -13,19 +13,20 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Button, Dropdown, Empty, Input, List, message, Modal, Popconfirm, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
+  Alert, Button, Dropdown, Empty, Grid, Input, List, message, Modal, Popconfirm, Popover, Space, Spin, Tabs, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   CameraOutlined, CheckCircleOutlined, CloudUploadOutlined, ExclamationCircleOutlined, EyeOutlined, FileTextOutlined, FullscreenExitOutlined,
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
-  ReloadOutlined, SaveOutlined, ThunderboltOutlined, UndoOutlined, UserOutlined,
+  ReloadOutlined, SaveOutlined, SettingOutlined, ThunderboltOutlined, UndoOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { normJson } from '../../utils/normJson';
+import { parseRowPolicyCodes } from '../../utils/rowPolicies';
 import { previewChanges, type ChangePreview } from '../../utils/uiSchemaChangePreview';
 import { TOUR_STEPS, checklistDismissKey, onboardingMilestones, tourStorageKey } from '../../utils/onboarding';
-import { metadataActionDefApi, metadataUiSchemaApi, type ActionDefSpec, type UiSchemaIssue } from '../../services/metadataApi';
+import { metadataActionDefApi, metadataEntityApi, metadataUiSchemaApi, type ActionDefSpec, type UiSchemaIssue } from '../../services/metadataApi';
 import { buildDefaultSchema, type ViewKey } from './schemaOps';
 import { enumFieldsOf, lintSchema, type LintIssue, type LintLocate } from './lint';
 import { UI_SCHEMA_SAMPLES } from './samples';
@@ -55,6 +56,28 @@ const MemoSchemaPreview = memo(SchemaPreview);
 
 const { Text } = Typography;
 
+/**
+ * 两个 schema 的首个差异路径（撤销合并的 coalesce 键）。
+ * 同一路径 + 300ms 内的连续编辑合并为一个历史条目（对标 Figma/VS Code 的
+ * 文本编辑 coalesce）——否则改一次规则名产生 5-8 个历史步，Ctrl+Z 要按同样次数。
+ * 返回 null = 无差异。
+ */
+function firstDiffPath(a: unknown, b: unknown, path = '', depth = 0): string | null {
+  if (a === b) return null;
+  if (depth > 8 || a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return path || '(root)';
+  const aArr = Array.isArray(a);
+  if (aArr !== Array.isArray(b)) return path || '(root)';
+  const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
+  for (const k of keys) {
+    const p = firstDiffPath((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], path ? `${path}.${k}` : k, depth + 1);
+    if (p) return p;
+  }
+  return null;
+}
+
+/** 编辑合并时间窗（ms）：同目标连续快编视为一次「编辑意图」 */
+const COALESCE_MS = 300;
+
 interface Props {
   entityId: string;
   entityCode: string;
@@ -66,17 +89,23 @@ interface Props {
    */
   onGoPublish?: () => void;
   /**
-   * 前往实体详情「列表显示」页签（由 EntityDetail 提供 setOuterTab('ui')）。
-   * 两层闭环的反向一跳：偏好层→设计器早有引导（「去加入」），设计器→偏好层
-   * 此前缺失——日常改契约的用户想顺手调个人显隐/密度/命名视图时没有入口。
+   * 前往实体详情「数据」页签（由 EntityDetail 提供 setOuterTab('data')）。
+   * 两层闭环的反向一跳：运行时→设计器早有引导（「团队列/契约 → 界面设计器」），
+   * 设计器→运行时此前缺失——日常改契约的用户想顺手核对发布效果、或调个人
+   * 显隐/密度/命名视图时没有入口。个人覆盖编辑器在运行时数据页工具栏
+   * （列设置 / 个人显示组），建模台只读预览（双轨收敛）。
    * 没有该回调时按钮不渲染（设计器被其他宿主复用时不假设外部结构）。
    */
-  onGoPersonal?: () => void;
+  onGoRuntime?: () => void;
   /**
    * 实体行策略声明的 rule name 集合（来自 entity.rowPolicies.rules[].name）。
    * 列表视图 dataScope.policyCode 下拉的真源——只引用不新造（协议 §3.2）。
+   * 注意：policy 指行级数据策略（RLS），与保险业务域的「保单」无关。
+   * 语义为「可选覆盖」：宿主（EntityDetail）预置可省一次实体详情请求；
+   * 未传时设计器自行按 entityId 拉详情解析兜底——与 actionDefs 同路径
+   * 自包含，新宿主复用漏传 prop 时不会静默降级为「未声明行策略」假象。
    */
-  policyCodes?: string[];
+  rowPolicyCodes?: string[];
 }
 
 type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'i18n' | 'base' | 'variants' | 'lint' | 'json';
@@ -102,10 +131,17 @@ const TAB_LABEL: Record<TabKey, string> = {
  *   已完全部发布的实体再弹 0-1 引导是噪音；用户随时可从工具栏「帮助」重开。
  */
 
-export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, onGoPersonal, policyCodes = [] }: Props): React.ReactElement {
+export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
-  const [baseline, setBaseline] = useState<string>(''); // 已保存快照，用于判脏
+  const [baseline, setBaseline] = useState<string>(''); // 已保存快照（发布对照/变更预告用）
+  /**
+   * 已保存快照的对象引用（判脏用）。
+   * 判脏从「每次按键全量 JSON.stringify 对比」改为**引用对比**：编辑全部走
+   * 不可变更新（新对象），保存/加载时把同一引用记为 baseline——O(1) 且精确，
+   * 大 schema（50 分区/200 控件）下每次按键省一次全量深序列化。
+   */
+  const [baselineSchema, setBaselineSchema] = useState<BoneUiSchema | null>(null);
   const [lock, setLock] = useState(0);
   /** 已发布快照真源（后端 published_schema_json/version；null=从未发布）。三态徽标与待发布改动规模的同源基线。 */
   const [published, setPublished] = useState<{ json: string | null; version: number | null }>({ json: null, version: null });
@@ -113,6 +149,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   const [validating, setValidating] = useState(false);
   const [serverIssues, setServerIssues] = useState<UiSchemaIssue[] | null>(null);
   const [actionDefs, setActionDefs] = useState<ActionDefSpec[] | null>(null);
+  /**
+   * 行策略 rule name 自拉兜底：宿主未预置 rowPolicyCodes 时，按 entityId 拉实体详情
+   * 解析 rowPolicies（null = 未拉取/进行中）。与 actionDefs 同一自包含模式。
+   */
+  const [selfRowPolicyCodes, setSelfRowPolicyCodes] = useState<string[] | null>(null);
 
   const [tab, setTab] = useState<TabKey>('structure');
   const [view, setView] = useState<ViewKey>('form');
@@ -120,6 +161,10 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   const [jsonResetKey, setJsonResetKey] = useState(0);
   const [width, setWidth] = useState(560);
   const dragging = useRef(false);
+  /** 窄屏（<md）：左配置栏收进 Drawer，预览独占（对标 Figma/Retool 窄屏属性面板抽屉化） */
+  const screens = Grid.useBreakpoint();
+  const narrow = !screens.md;
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
 
   // 撤销/重做
   const [past, setPast] = useState<BoneUiSchema[]>([]);
@@ -134,6 +179,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
    */
   const schemaRef = useRef<BoneUiSchema | null>(null);
   schemaRef.current = schema;
+  /** 上次编辑的差异路径 + 时间戳（撤销合并用；load/undo/redo 时清零） */
+  const lastEditRef = useRef<{ path: string; ts: number } | null>(null);
 
   /* ---------- 加载 ---------- */
   const load = useCallback(async () => {
@@ -160,9 +207,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
       }
       setSchema(next);
       setBaseline(JSON.stringify(next));
+      setBaselineSchema(next);
       setPast([]);
       setFuture([]);
       setServerIssues(null);
+      lastEditRef.current = null;
     } catch {
       message.error('界面 schema 加载失败');
     } finally {
@@ -179,10 +228,33 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
       .catch(() => setActionDefs([]));
   }, [entityId]);
 
+  // 行策略 rule name 兜底取数（与动作定义同路径自包含）：宿主未预置 rowPolicyCodes 时，
+  // 自行按 entityId 拉实体详情解析 rowPolicies。prop 语义为「可选覆盖」——传了（含空
+  // 数组 = 查过没有）就用宿主的、不重复请求；没传才自拉，保证设计器被任何宿主复用
+  // （工作台直达 / 其他详情页 / 新业务对象）时 dataScope 下拉真源都可达，不会把
+  // 「漏传 prop」演绎成「该实体尚未声明行策略」的误导性假象。
+  useEffect(() => {
+    if (rowPolicyCodes) return;
+    let alive = true;
+    metadataEntityApi.detail(entityId)
+      .then((r) => { if (alive) setSelfRowPolicyCodes(r.code === 200 ? parseRowPolicyCodes(r.data) : []); })
+      .catch(() => { if (alive) setSelfRowPolicyCodes([]); });
+    return () => { alive = false; };
+  }, [entityId, rowPolicyCodes]);
+
+  /** 行策略 rule name 生效真源：宿主预置优先，否则自拉兜底，再否则空（下拉降级为提示） */
+  const effectiveRowPolicyCodes = rowPolicyCodes ?? selfRowPolicyCodes ?? [];
+
   /* ---------- 编辑 ---------- */
   const commit = useCallback((next: BoneUiSchema) => {
     const cur = schemaRef.current;
-    if (cur) setPast((p) => [...p.slice(-49), cur]);
+    // 同目标连续快编合并为一个历史条目（300ms 窗）：否则逐字入栈，
+    // Ctrl+Z 次数与按键次数绑定，50 步上限也被快速挤掉（对标 Figma/VS Code）。
+    const path = cur ? firstDiffPath(cur, next) : null;
+    const now = Date.now();
+    const coalesce = !!path && lastEditRef.current?.path === path && now - lastEditRef.current.ts < COALESCE_MS;
+    if (cur && !coalesce) setPast((p) => [...p.slice(-49), cur]);
+    lastEditRef.current = path ? { path, ts: now } : null;
     setSchema(next);
     setFuture([]);
   }, []);
@@ -191,6 +263,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     if (!past.length) return;
     const prev = past[past.length - 1];
     const cur = schemaRef.current;
+    lastEditRef.current = null;
     setPast((p) => p.slice(0, -1));
     if (cur) setFuture((f) => [cur, ...f].slice(0, 50));
     setSchema(prev);
@@ -199,6 +272,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     if (!future.length) return;
     const nxt = future[0];
     const cur = schemaRef.current;
+    lastEditRef.current = null;
     setFuture((f) => f.slice(1));
     if (cur) setPast((p) => [...p, cur]);
     setSchema(nxt);
@@ -216,6 +290,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     const target = past[pastIndex];
     const dropped = past.slice(pastIndex + 1); // target 之后、当前态之前的若干中间态
     const cur = schemaRef.current;
+    lastEditRef.current = null;
     setPast(past.slice(0, pastIndex));
     if (cur) setFuture((f) => [...dropped, cur, ...f].slice(0, 50));
     setSchema(target);
@@ -260,18 +335,17 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   };
 
   /**
-   * 保存请求（鼠标与键盘共用同一路径）：有本地自检错误时先确认，
-   * 避免「点了保存 → 静默存进一份带错配置」。存草稿本身允许（不阻断），
-   * 真正的硬门禁在发布链路（PublishPreviewPanel 调后端 validate）。
+   * 保存请求（鼠标与键盘共用同一路径）：本地自检有 error 时**硬禁用**主保存通道（P1-2）。
+   * 「点了保存 → 静默存进一份带错配置」正是发布态带伤上线的事故形态（2026-10-18 诊断：
+   * 变体 virtual 碰撞错误随发布快照直通上线）。修复后即可保存；确有 WIP 需要存草稿时，
+   * 走工具栏显式「仍要保存」通道（点击即确认，不再弹模态——模态会被习惯性点掉）。
    */
   const requestSave = () => {
     if (!schema) return;
     if (errCount > 0) {
-      Modal.confirm({
-        title: '保存界面配置',
-        content: `本地自检仍有 ${errCount} 个错误，确定保存？（发布前必须修复）`,
-        okText: '保存', cancelText: '取消',
-        onOk: save,
+      message.warning({
+        content: `存在 ${errCount} 个协议错误，保存已禁用：请修复后保存，或点击「仍要保存」强制保存（发布前必须修复）`,
+        duration: 5,
       });
       return;
     }
@@ -367,6 +441,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     }
     commit(s.schema);
     setBaseline(JSON.stringify(s.schema));
+    setBaselineSchema(s.schema);
+    lastEditRef.current = null;
     setPast([]);
     setFuture([]);
     setSnapModalOpen(false);
@@ -410,8 +486,10 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   });
 
   const dirty = useMemo(
-    () => !!schema && JSON.stringify(schema) !== baseline,
-    [schema, baseline],
+    // 引用判脏（不可变更新）：保存/加载时记录同一引用为 baseline。
+    // 取代此前的 JSON.stringify 全量对比——大 schema 下每次按键省一次深序列化。
+    () => !!schema && schema !== baselineSchema,
+    [schema, baselineSchema],
   );
 
   // dirty 的 ref 镜像（Esc 退出全屏守卫用；声明晚于键盘 effect 无妨——
@@ -487,6 +565,8 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   );
   const errCount = issues.filter((i) => i.level === 'error').length;
   const warnCount = issues.filter((i) => i.level === 'warning').length;
+  /** 后端校验（发布闸门口径）的 ERROR 数：null=未校验（不参与任何计数，不制造假象） */
+  const serverErrCount = (serverIssues ?? []).filter((i) => i.level === 'ERROR').length;
 
   /**
    * 0-1 里程碑（进度卡与引导自动弹出共用同一判定：utils/onboarding 纯函数）。
@@ -546,8 +626,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
       if (res.code === 200) {
         message.success('界面配置已保存');
         setBaseline(JSON.stringify(schema));
+        setBaselineSchema(schema);
         setLock(Number(res.data?.lockVersion ?? lock + 1));
-        setServerIssues(null);
+        // 保存后立即重跑后端校验（静默）：serverIssues 是「发布闸门口径」的真值，
+        // 置 null 会让用户以为校验通过；重跑保持自检面板与最新草稿同步。
+        void revalidate(true);
         return true;
       }
       if (res.code === 409 || res.code === 412) {
@@ -574,24 +657,42 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     onGoPublish?.();
   };
 
-  const revalidate = async () => {
+  /**
+   * 后端校验（发布闸门口径）。silent=true 用于自动触发（挂载/保存后）：
+   * 不弹 toast——无 schema 实体或瞬时网络问题不该在每次进设计器时制造噪音，
+   * 结果照常进自检面板「后端校验」区。
+   */
+  const revalidate = async (silent = false) => {
     setValidating(true);
     try {
       const res = await metadataUiSchemaApi.validate(entityId);
       if (res.code === 200) {
-        setServerIssues(res.data ?? []);
-        message[(res.data ?? []).length ? 'warning' : 'success'](
-          (res.data ?? []).length ? `后端校验发现 ${res.data?.length} 个问题` : '后端校验通过',
-        );
-      } else {
+        const list = res.data ?? [];
+        setServerIssues(list);
+        if (!silent) {
+          message[list.length ? 'warning' : 'success'](
+            list.length ? `后端校验发现 ${list.length} 个问题` : '后端校验通过',
+          );
+        }
+      } else if (!silent) {
         message.error(res.message ?? '校验失败');
       }
     } catch {
-      message.error('校验失败');
+      if (!silent) message.error('校验失败');
     } finally {
       setValidating(false);
     }
   };
+
+  /**
+   * 挂载/切实体即跑一次后端校验（静默）：前端 lint 只覆盖本地可判规则（引用悬空、
+   * props 越界），跨真源规则（动作码是否注册、行策略是否声明、controlKind 合法性、
+   * 变体 key 唯一、字段存在性）此前只有点到发布页才暴露——「自检全绿却发布被拦」
+   * 的断点感来源。revalidateRef 规避 effect 依赖每次渲染换新的闭包。
+   */
+  const revalidateRef = useRef(revalidate);
+  revalidateRef.current = revalidate;
+  useEffect(() => { void revalidateRef.current(true); }, [entityId]);
 
   /* ---------- 左栏宽度拖拽 ---------- */
   useEffect(() => {
@@ -622,6 +723,25 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
 
   const isEmptyConfig = (schema.views.form?.sections?.length ?? 0) === 0;
 
+  /**
+   * 左配置栏样式：宽屏=可拖拽宽度的固定栏；窄屏=底部抽屉（bottom sheet，
+   * 对标 Figma/Retool 窄屏把属性面板抽屉化）。同一份面板 JSX 两种呈现，
+   * 不复制编辑逻辑；拖拽分隔条在窄屏隐藏（无意义）。
+   */
+  const leftPanelStyle: React.CSSProperties = narrow
+    ? {
+      position: 'fixed', left: 0, right: 0, bottom: 0, height: '86vh', zIndex: 1050,
+      background: '#fff', border: '1px solid #e6eaf0', borderRadius: '12px 12px 0 0',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      transform: leftDrawerOpen ? 'translateY(0)' : 'translateY(calc(100% + 24px))',
+      transition: 'transform .25s ease', boxShadow: '0 -6px 24px rgba(0,0,0,.12)',
+    }
+    : {
+      width, flex: '0 0 auto', display: 'flex', flexDirection: 'column',
+      background: '#fff', border: '1px solid #e6eaf0', borderRadius: 10, overflow: 'hidden',
+      position: 'relative',
+    };
+
   const content = (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: zen ? '100%' : 680 }}>
       {/* ---------- 工具条 ---------- */}
@@ -641,8 +761,13 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
         </Tooltip>
 
         {errCount > 0 && <Tag color="red" style={{ margin: 0 }}>{errCount} 错误</Tag>}
+        {serverErrCount > 0 && (
+          <Tooltip title="后端校验（发布闸门）发现的错误：涉及跨真源一致性，详见「自检」面板后端校验区">
+            <Tag color="red" style={{ margin: 0 }}>{serverErrCount} 后端错误</Tag>
+          </Tooltip>
+        )}
         {warnCount > 0 && <Tag color="orange" style={{ margin: 0 }}>{warnCount} 警告</Tag>}
-        {errCount === 0 && warnCount === 0 && <Tag color="blue" style={{ margin: 0 }}>自检通过</Tag>}
+        {errCount === 0 && warnCount === 0 && serverErrCount === 0 && <Tag color="blue" style={{ margin: 0 }}>自检通过</Tag>}
 
         <Tooltip
           title={
@@ -670,7 +795,10 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
             placement="bottomLeft"
             title={publishState === 'never' ? '首次发布内容预告' : '发布变更预告（已存草稿 vs 线上发布版）'}
             content={
-              <ChangePreviewPanel preview={changePreview} mode={publishState === 'never' ? 'first' : 'pending'} />
+              <ChangePreviewPanel
+                preview={changePreview} mode={publishState === 'never' ? 'first' : 'pending'}
+                onLocate={onLocate}
+              />
             }
           >
             <Button size="small" icon={<EyeOutlined />}>
@@ -791,7 +919,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
           <Button size="small" icon={<FileTextOutlined />}>载入场景样例</Button>
         </Dropdown>
 
-        <Button size="small" loading={validating} onClick={revalidate}>后端校验</Button>
+        <Button size="small" loading={validating} onClick={() => void revalidate()}>后端校验</Button>
 
         <Dropdown
           menu={{
@@ -808,11 +936,12 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
           <Button size="small" icon={<MacCommandOutlined />} onClick={() => setCmdOpen(true)}>命令</Button>
         </Tooltip>
 
-        {/* 两层闭环反向入口：契约层 → 个人偏好层（仅自己可见的显隐/密度/命名视图） */}
-        {onGoPersonal && (
-          <Tooltip title="打开「列表显示」：调整仅自己可见的个人偏好（列显隐/密度/改名/个人视图）">
-            <Button size="small" icon={<UserOutlined />} onClick={onGoPersonal}>
-              个人偏好
+        {/* 两层闭环反向入口：契约层（本设计器）→ 运行时（数据页核对发布效果 +
+            个人覆盖编辑器「列设置 / 个人显示组」） */}
+        {onGoRuntime && (
+          <Tooltip title="打开数据页：核对契约发布效果，并调整仅自己可见的个人列偏好（列设置 / 我的视图）">
+            <Button size="small" icon={<EyeOutlined />} onClick={onGoRuntime}>
+              运行时列表
             </Button>
           </Tooltip>
         )}
@@ -826,11 +955,36 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
           </Tooltip>
         )}
 
-        <Tooltip title="保存（Ctrl+S）。保存后需发布才对运行时生效">
-          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} disabled={!dirty} onClick={requestSave} data-tour="save">
-            保存
-          </Button>
-        </Tooltip>
+        <Space size={8}>
+          <Tooltip
+            title={
+              errCount > 0
+                ? `存在 ${errCount} 个协议错误，保存已禁用——修复后即可保存，或点「仍要保存」强制保存`
+                : '保存（Ctrl+S）。保存后需发布才对运行时生效'
+            }
+          >
+            <Button
+              size="small"
+              type="primary"
+              icon={<SaveOutlined />}
+              loading={saving}
+              disabled={!dirty || errCount > 0}
+              onClick={requestSave}
+              data-tour="save"
+            >
+              保存
+            </Button>
+          </Tooltip>
+          {/* 强制保存通道：错误态下主按钮禁用，显式出口只为「不丢工作进度」——
+              点击即确认（替代会被习惯性点掉的确认模态）；发布前仍必须修复。 */}
+          {dirty && errCount > 0 && (
+            <Tooltip title="强制保存：明知有协议错误仍存草稿。发布前必须修复——此通道只为不丢工作进度。">
+              <Button size="small" danger type="text" loading={saving} onClick={() => void save()} data-tour="force-save">
+                仍要保存
+              </Button>
+            </Tooltip>
+          )}
+        </Space>
       </div>
 
       {isEmptyConfig && (
@@ -841,11 +995,12 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
         />
       )}
 
-      {/* 协议错误阻断式横幅（对标原型 Gate：错误不藏在 Tab 里，顶出来 + 给修复捷径） */}
-      {errCount > 0 && (
+      {/* 协议错误阻断式横幅（对标原型 Gate：错误不藏在 Tab 里，顶出来 + 给修复捷径）。
+          本地 lint 错误 + 后端校验（发布闸门）错误合并计数——后者是「自检全绿却发布被拦」的断点来源。 */}
+      {(errCount > 0 || serverErrCount > 0) && (
         <Alert
           type="error" showIcon style={{ marginBottom: 10 }}
-          message={`界面协议存在 ${errCount} 处错误，保存前建议修复`}
+          message={`界面协议存在 ${errCount + serverErrCount} 处错误，保存前建议修复`}
           description={
             <div>
               <div style={{ marginBottom: 6 }}>
@@ -853,6 +1008,12 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
                   <div key={idx}>· {i.message}</div>
                 ))}
                 {errCount > 3 && <div>…等 {errCount} 处</div>}
+                {serverErrCount > 0 && (
+                  <div>
+                    · 后端校验（发布闸门）另有 {serverErrCount} 处跨真源错误（字段/动作码/行策略是否真实存在），
+                    详见「自检」面板后端校验区
+                  </div>
+                )}
               </div>
               <Button size="small" danger onClick={() => setTab('lint')}>前往「自检」面板修复</Button>
             </div>
@@ -860,14 +1021,26 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
         />
       )}
 
-      {/* ---------- 主体两栏 ---------- */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 0, position: 'relative' }}>
+      {/* 窄屏：配置面板抽屉开关 + 背景遮罩（宽屏不渲染） */}
+      {narrow && (
+        <Button
+          block type="primary" ghost icon={<SettingOutlined />} style={{ marginBottom: 10 }}
+          onClick={() => setLeftDrawerOpen((v) => !v)}
+        >
+          {leftDrawerOpen ? '收起配置面板' : `打开配置面板（${TAB_LABEL[tab]}）`}
+        </Button>
+      )}
+      {narrow && leftDrawerOpen && (
+        <div
+          onClick={() => setLeftDrawerOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1040, background: 'rgba(0,0,0,.45)' }}
+        />
+      )}
+
+      {/* ---------- 主体两栏（窄屏：左栏为底部抽屉，预览独占） ---------- */}
+      <div style={{ display: 'flex', flexDirection: narrow ? 'column' : 'row', flex: 1, minHeight: 0, gap: narrow ? 10 : 0, position: 'relative' }}>
         {/* 左：配置面板 */}
-        <div style={{
-          width, flex: '0 0 auto', display: 'flex', flexDirection: 'column',
-          background: '#fff', border: '1px solid #e6eaf0', borderRadius: 10, overflow: 'hidden',
-          position: 'relative',
-        }} data-tour="left-panel">
+        <div style={leftPanelStyle} data-tour="left-panel">
           {/* 0-1 新手指引进度卡（加载中不渲染，避免对未就绪 schema 虚亮） */}
           {!loading && !checklistHidden && (
             <div style={{ padding: '10px 10px 0' }}>
@@ -957,7 +1130,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
             {tab === 'list' && (
               <ListPanel
                 schema={schema} onChange={commit} fields={fields}
-                policyCodes={policyCodes} actionDefs={actionDefs}
+                rowPolicyCodes={effectiveRowPolicyCodes} actionDefs={actionDefs}
                 focus={focus?.tab === 'list' ? focus : undefined}
               />
             )}
@@ -979,7 +1152,11 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
               />
             )}
             {tab === 'variants' && (
-              <VariantsPanel schema={schema} onChange={commit} fields={fields} actionDefs={actionDefs} />
+              <VariantsPanel
+                schema={schema} onChange={commit} fields={fields} actionDefs={actionDefs}
+                rowPolicyCodes={effectiveRowPolicyCodes}
+                focus={focus?.tab === 'variants' ? focus : undefined}
+              />
             )}
             {tab === 'lint' && (
               <LintPanel
@@ -992,6 +1169,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
                 schema={schema}
                 onApply={(next) => { commit(next); message.success('已应用到配置'); }}
                 resetKey={jsonResetKey}
+                fields={fields}
               />
             )}
           </div>
@@ -1012,12 +1190,13 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
           </Popover>
         </div>
 
-        {/* 拖拽分隔条 */}
+        {/* 拖拽分隔条（窄屏隐藏：底部抽屉无可分栏） */}
         <div
           onMouseDown={() => { dragging.current = true; document.body.style.cursor = 'col-resize'; }}
           style={{
             width: 8, cursor: 'col-resize', flex: '0 0 auto',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: narrow ? 'none' : 'flex',
+            alignItems: 'center', justifyContent: 'center',
           }}
         >
           <div style={{ width: 2, height: 40, background: '#e6eaf0', borderRadius: 2 }} />

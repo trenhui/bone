@@ -9,21 +9,22 @@
  * 引用纪律：dataScope.policyCode 只引用 row_policies 声明的 rule name（后端 WHERE 强制，
  * 前端不拼）；batchActions 只引用已发布 actionCode；stats.valueRef 只引用后端聚合口径。
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Button, Divider, Dropdown, Empty, Input, InputNumber, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  ArrowDownOutlined, ArrowUpOutlined, EyeInvisibleOutlined, PlusOutlined,
+  ArrowDownOutlined, ArrowUpOutlined, DragOutlined, EyeInvisibleOutlined, PlusOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import type { ActionDefSpec } from '../../services/metadataApi';
 import {
   addColumn, addStat, addTab, moveColumn, moveTab, removeStat, removeTab,
-  setBatchActions, setDataScope, setDegradedBanner, setViewKind, toggleQuickFilters, toggleSearchFields,
+  setBatchActions, setColumnsVisible, setColumnsWidth, setDataScope, setDegradedBanner, setViewKind, toggleQuickFilters, toggleSearchFields,
   updateColumn, updateStat, updateTab,
 } from './schemaOps';
+import { dragSort2 } from './drag';
 import { defaultOverlay, projectRuntimeColumns } from '../../utils/columnProjection';
 
 const { Text } = Typography;
@@ -67,13 +68,24 @@ function GroupTitle({ no, title, proto }: { no: string; title: string; proto?: s
 
 export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [], actionDefs = null, focus }: Props): React.ReactElement {
   const list = schema.views.list ?? {};
-  const cols = list.columns ?? [];
+  // cols 走 useMemo：list.columns 引用随 schema 不可变更新保持稳定，
+  // 避免「逻辑表达式每渲染新数组」触发下方 useMemo 依赖抖动（exhaustive-deps）
+  const cols = useMemo(() => schema.views.list?.columns ?? [], [schema.views.list?.columns]);
   const tabs = list.tabs ?? [];
   const stats = list.stats ?? [];
   const searchFields = list.searchFields ?? [];
   const quickFilters = list.quickFilters ?? [];
   const batchActions = list.batchActions ?? [];
   const unused = fields.filter((f) => !cols.some((c) => c.fieldCode === f.code));
+  /** 列拖拽排序（对标 Salesforce List View 拖拽列序；200 列时上下按钮要点 199 次） */
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [batchWidth, setBatchWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const clear = () => setDragOver(null);
+    window.addEventListener('dragend', clear);
+    window.addEventListener('drop', clear);
+    return () => { window.removeEventListener('dragend', clear); window.removeEventListener('drop', clear); };
+  }, []);
   // 与 fieldOptions 同源标注（含 CHILD_TABLE「明细列」后缀）：添加列下拉是
   // 建模者接触该语义的第一现场，两处 label 口径必须一致
   const optionLabel = (f: MetaField) =>
@@ -112,17 +124,44 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="未配置列投影，运行时按实体字段默认渲染" style={{ padding: '18px 0' }} />
       )}
 
+      {/* 批量操作（对标 Salesforce List View：全选/批量设宽；逐列操作成本随列数平方增长） */}
+      {cols.length > 1 && (
+        <Space wrap style={{ marginBottom: 8 }}>
+          <Button size="small" onClick={() => onChange(setColumnsVisible(schema, true))}>全部显示</Button>
+          <Button size="small" onClick={() => onChange(setColumnsVisible(schema, false))}>全部隐藏</Button>
+          <Space.Compact>
+            <InputNumber size="small" style={{ width: 90 }} min={0} placeholder="列宽 px"
+              value={batchWidth ?? undefined} onChange={(v) => setBatchWidth(v)} />
+            <Button size="small" disabled={!batchWidth}
+              onClick={() => { if (batchWidth) onChange(setColumnsWidth(schema, batchWidth)); }}>
+              应用到所有列
+            </Button>
+          </Space.Compact>
+          <Text type="secondary" style={{ fontSize: 11 }}>支持拖拽行首手柄调整列序</Text>
+        </Space>
+      )}
+
       {cols.map((c, i) => (
         <div
           key={`${c.fieldCode}-${i}`}
           data-tour="list-row"
           style={{
             display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-            padding: '7px 9px', border: `1px solid ${focus?.idx === i ? '#ffa940' : '#f0f0f0'}`,
-            borderRadius: 8, marginBottom: 6, background: c.visible === false ? '#fafafa' : '#fff',
+            padding: '7px 9px', border: `1px solid ${focus?.idx === i ? '#ffa940' : dragOver === `col-${i}` ? '#1677ff' : '#f0f0f0'}`,
+            borderRadius: 8, marginBottom: 6, background: c.visible === false ? '#fafafa' : dragOver === `col-${i}` ? '#e6f4ff' : '#fff',
             opacity: c.visible === false ? 0.7 : 1,
           }}
         >
+          <Tooltip title="拖拽调整列序">
+            <span
+              draggable
+              {...dragSort2(i, i, (from, _fc, _ts, to) => onChange(moveColumn(schema, from, to)),
+                (over) => setDragOver((cur) => (over ? `col-${i}` : cur === `col-${i}` ? null : cur)))}
+              style={{ cursor: 'grab', color: dragOver === `col-${i}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
+            >
+              <DragOutlined />
+            </span>
+          </Tooltip>
           <Text type="secondary" style={{ fontSize: 11, width: 20 }}>{i + 1}</Text>
           <Select size="small" showSearch optionFilterProp="label" style={{ minWidth: 160 }}
             options={fieldOptions} value={c.fieldCode || undefined}
@@ -148,17 +187,17 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
             />
           </Tooltip>
           <Tooltip title="显示">
-            <Switch size="small" checked={c.visible !== false}
+            <Switch size="small" aria-label={`显示列 ${c.fieldCode}`} checked={c.visible !== false}
               onChange={(v) => onChange(updateColumn(schema, i, { visible: v ? undefined : false }))} />
           </Tooltip>
           {c.visible === false && <Tag style={{ fontSize: 11 }}>已隐藏</Tag>}
           <span style={{ flex: 1 }} />
-          <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={i === 0}
+          <Button size="small" type="text" aria-label="列上移" icon={<ArrowUpOutlined />} disabled={i === 0}
             onClick={() => onChange(moveColumn(schema, i, i - 1))} />
-          <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={i === cols.length - 1}
+          <Button size="small" type="text" aria-label="列下移" icon={<ArrowDownOutlined />} disabled={i === cols.length - 1}
             onClick={() => onChange(moveColumn(schema, i, i + 1))} />
           <Tooltip title="从列表移除（保留契约记录，可再开启；彻底删条目会让该列在运行时重新追加到末尾）">
-            <Button size="small" type="text" danger icon={<EyeInvisibleOutlined />}
+            <Button size="small" type="text" danger aria-label="移除列" icon={<EyeInvisibleOutlined />}
               onClick={() => onChange(updateColumn(schema, i, { visible: false }))} />
           </Tooltip>
         </div>
@@ -237,11 +276,11 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
           </Space.Compact>
           {t.value === '$myteam' && <Tag color="blue" style={{ fontSize: 11 }}>需后端团队口径</Tag>}
           <span style={{ flex: 1 }} />
-          <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={i === 0}
+          <Button size="small" type="text" aria-label="页签上移" icon={<ArrowUpOutlined />} disabled={i === 0}
             onClick={() => onChange(moveTab(schema, i, i - 1))} />
-          <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={i === tabs.length - 1}
+          <Button size="small" type="text" aria-label="页签下移" icon={<ArrowDownOutlined />} disabled={i === tabs.length - 1}
             onClick={() => onChange(moveTab(schema, i, i + 1))} />
-          <Button size="small" type="text" danger onClick={() => onChange(removeTab(schema, i))}>删</Button>
+          <Button size="small" type="text" danger aria-label="删除页签" onClick={() => onChange(removeTab(schema, i))}>删</Button>
         </div>
       ))}
       <Button size="small" icon={<PlusOutlined />} onClick={() => onChange(addTab(schema))}>添加页签</Button>
@@ -329,7 +368,7 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
           <Input size="small" style={{ width: 120 }} placeholder="趋势说明（可选）" value={t.trend ?? ''}
             onChange={(e) => onChange(updateStat(schema, i, { trend: e.target.value || undefined }))} />
           <span style={{ flex: 1 }} />
-          <Button size="small" type="text" danger onClick={() => onChange(removeStat(schema, i))}>删</Button>
+          <Button size="small" type="text" danger aria-label="删除统计卡" onClick={() => onChange(removeStat(schema, i))}>删</Button>
         </div>
       ))}
       <Button size="small" icon={<PlusOutlined />} onClick={() => onChange(addStat(schema))}>添加统计卡</Button>

@@ -144,6 +144,47 @@ export const OPERATOR_MAP: Record<string, OperatorMeta> = Object.fromEntries(
 
 export const opLabel = (op?: Operator): string => OPERATOR_MAP[op ?? '']?.label ?? String(op ?? '?');
 
+/* ============================== 运算符 × 字段类型收窄 ============================== */
+
+/**
+ * 按元数据字段类型收窄可用运算符（对标 Salesforce 筛选器 / 宜搭条件）：
+ * 文本字段不该出现 between/gt（字符串比较「看起来生效」实则误配），
+ * 数值/日期才有序比较意义。类型未知（虚拟控件/关联列）时不限制——禁猜。
+ */
+const OPS_TEXT: Operator[] = ['eq', 'neq', 'in', 'notIn', 'isNull', 'isNotNull'];
+const OPS_NUMBER: Operator[] = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'isNull', 'isNotNull'];
+const OPS_DATE: Operator[] = ['eq', 'neq', 'between', 'earlierThan', 'laterThan', 'isNull', 'isNotNull'];
+const OPS_BOOL: Operator[] = ['eq', 'neq', 'isNull', 'isNotNull'];
+
+/** 字段类型 → 运算符白名单（大小写不敏感；未列出类型返回 null=不限制） */
+const OPERATORS_BY_TYPE: Record<string, Operator[]> = {
+  VARCHAR: OPS_TEXT, CHAR: OPS_TEXT, TEXT: OPS_TEXT, ENUM: OPS_TEXT, REFERENCE: OPS_TEXT,
+  UUID: OPS_TEXT, JSON: OPS_TEXT,
+  INT: OPS_NUMBER, BIGINT: OPS_NUMBER, DECIMAL: OPS_NUMBER, FLOAT: OPS_NUMBER, DOUBLE: OPS_NUMBER,
+  MONEY: OPS_NUMBER, NUMBER: OPS_NUMBER,
+  DATE: OPS_DATE, DATETIME: OPS_DATE, TIMESTAMP: OPS_DATE, TIME: OPS_DATE,
+  BOOLEAN: OPS_BOOL, BOOL: OPS_BOOL,
+};
+
+/**
+ * 该字段类型可用的运算符列表（保持 OPERATORS 声明序）。
+ * @param fieldType 元数据字段 type（如 'VARCHAR'）；undefined/未知 = 全量不限制
+ */
+export function operatorsForType(fieldType?: string): OperatorMeta[] {
+  if (!fieldType) return OPERATORS;
+  const allowed = OPERATORS_BY_TYPE[fieldType.toUpperCase()];
+  if (!allowed) return OPERATORS;
+  return OPERATORS.filter((o) => allowed.includes(o.value));
+}
+
+/** 当前运算符是否适用于该字段类型（类型未知恒 true） */
+export function operatorAllowedFor(op: Operator | undefined, fieldType?: string): boolean {
+  if (!op || !fieldType) return true;
+  const allowed = OPERATORS_BY_TYPE[fieldType.toUpperCase()];
+  if (!allowed) return true;
+  return allowed.includes(op);
+}
+
 /* ============================== 聚合函数 ============================== */
 
 export interface FnMeta {
@@ -204,7 +245,7 @@ export const THEN_ACTIONS = [
 export const PROP_WHITELIST = [
   'ai', 'anchorRef', 'chartType', 'childEntity', 'columns', 'computedFn', 'computedFrom',
   'currencyField', 'dataRef', 'labelField', 'lineage', 'mask', 'max', 'maxCount', 'maxLength',
-  'maxSizeMB', 'min', 'precision', 'quoteText', 'roles', 'rows', 'step', 'targetEntity',
+  'maxSizeMB', 'min', 'precision', 'quoteText', 'roles', 'rows', 'span', 'step', 'targetEntity',
   'tier', 'valueField', 'warningText',
 ] as const;
 

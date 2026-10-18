@@ -10,10 +10,14 @@
  *
  * 口径对齐（engine `resolveVariant`）：命中 priority 最小且维度全匹配的变体按块整体替换 base；
  * 空 match = 全匹配兜底；同 priority 取声明顺序。面板文案必须让用户按这个心智配。
+ *
+ * v1.2 补齐：①维度值受控（角色/渠道/设备禁自由文本——打错的 role 永远不命中且无提示）；
+ * ②内嵌 ListPanel 透传 actionDefs/rowPolicyCodes（否则显示「未定义动作/未声明行策略」假信息）；
+ * ③同优先级重叠告警（并列时谁生效完全不可见是高危误配）。
  */
 import { useState } from 'react';
 import {
-  Alert, Button, Empty, Input, InputNumber, Popconfirm, Segmented, Select, Tag, Tooltip, Typography,
+  Alert, Button, Empty, Input, InputNumber, Popconfirm, Segmented, Select, Table, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   DeleteOutlined, PlusOutlined, ThunderboltOutlined,
@@ -26,6 +30,8 @@ import RulesPanel from './RulesPanel';
 import ActionBarPanel from './ActionBarPanel';
 import ListPanel from './ListPanel';
 import { describeVariant } from './describe';
+import { matchText, variantOverrideText } from '../../utils/uiSchemaChangePreview';
+import type { LintLocate } from './lint';
 import { addVariant, removeVariant, updateVariant, mergeVariantIntoBase, type ViewKey } from './schemaOps';
 
 const { Text, Paragraph } = Typography;
@@ -46,27 +52,51 @@ const DEVICE_OPTIONS = [
   { value: 'mobile', label: '手机' },
 ];
 
+/** 变体裁决顺序预览表行（静态口径：priority 升序即裁决顺序） */
+interface VariantRankRow {
+  key: string;
+  label: string;
+  priority: number;
+  match: string;
+  override: string;
+}
+/** 档位是开放维度（业务自定义 tier 串），给建议值但允许自由输入 */
+const TIER_OPTIONS = [
+  { value: 'free', label: 'free' },
+  { value: 'pro', label: 'pro' },
+  { value: 'team', label: 'team' },
+  { value: 'enterprise', label: 'enterprise' },
+];
+
 interface Props {
   schema: BoneUiSchema;
   onChange: (next: BoneUiSchema) => void;
   fields: MetaField[];
   /** 实体已定义的动作（建模期真源） */
   actionDefs: ActionDefSpec[] | null;
+  /** 实体行策略 rule name（dataScope 下拉真源；不透传会让内嵌 ListPanel 显示假信息） */
+  rowPolicyCodes?: string[];
+  /** 高亮定位（来自自检点击；vi 命中本卡片时下传给对应子面板） */
+  focus?: LintLocate;
 }
 
 function VariantCard({
-  schema, variant, index, fields, actionDefs, onChange,
+  schema, variant, index, fields, actionDefs, rowPolicyCodes, priorityClash, focus, onChange,
 }: {
   schema: BoneUiSchema;
   variant: Variant;
   index: number;
   fields: MetaField[];
   actionDefs: ActionDefSpec[] | null;
+  rowPolicyCodes: string[];
+  priorityClash: boolean;
+  focus?: LintLocate;
   onChange: (next: BoneUiSchema) => void;
 }): React.ReactElement {
   const [override, setOverride] = useState(false);
   const [sub, setSub] = useState<'structure' | 'rules' | 'actions' | 'list'>('structure');
   const [view, setView] = useState<ViewKey>('form');
+  const here = focus?.vi === index ? focus : undefined;
 
   const patch = (p: Partial<Variant>) => onChange(updateVariant(schema, index, p));
   const setMatch = (p: Partial<VariantMatch>) => patch({ match: { ...(variant.match ?? {}), ...p } });
@@ -103,7 +133,8 @@ function VariantCard({
 
   return (
     <div style={{
-      border: '1px solid #e6eaf0', borderRadius: 10, marginBottom: 12, background: '#fff', overflow: 'hidden',
+      border: `1px solid ${here ? '#ffa940' : '#e6eaf0'}`, borderRadius: 10, marginBottom: 12, background: '#fff', overflow: 'hidden',
+      boxShadow: here ? '0 0 0 3px rgba(255,169,64,.18)' : undefined,
     }}>
       {/* 变体头：标识 + 命中条件 + 操作 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 10px', background: '#fafbfd', borderBottom: '1px solid #f0f0f0' }}>
@@ -126,6 +157,11 @@ function VariantCard({
             onChange={(v) => patch({ priority: v ?? 100 })}
           />
         </Tooltip>
+        {priorityClash && (
+          <Tooltip title={`优先级 ${variant.priority ?? 100} 有多个变体并列：命中条件重叠时按声明顺序取第一个，建议调开优先级`}>
+            <Tag color="orange" style={{ fontSize: 11, margin: 0 }}>同优先级并列</Tag>
+          </Tooltip>
+        )}
         <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>{secCount} 分区</Tag>
         <Tag color="purple" style={{ fontSize: 11, margin: 0 }}>{ruleCount} 规则</Tag>
         <span style={{ flex: 1 }} />
@@ -143,7 +179,7 @@ function VariantCard({
           okText="删除" okButtonProps={{ danger: true }} cancelText="取消"
           onConfirm={() => onChange(removeVariant(schema, index))}
         >
-          <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+          <Button size="small" type="text" danger aria-label="删除变体" icon={<DeleteOutlined />} />
         </Popconfirm>
       </div>
 
@@ -151,8 +187,10 @@ function VariantCard({
       <div style={{ padding: '10px 12px', borderBottom: '1px solid #f5f5f5' }}>
         <Text type="secondary" style={{ fontSize: 11 }}>命中条件（留空 = 该维度不限制）</Text>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+          {/* 受控多选：禁自由文本。打错的 role（如 reviwer）永远不命中且无提示——
+              维度值必须来自已知集合，对标 Figma variant 属性受控枚举 */}
           <Select
-            mode="tags" size="small" allowClear placeholder="角色" style={{ minWidth: 180 }}
+            mode="multiple" size="small" allowClear placeholder="角色" style={{ minWidth: 180 }}
             value={variant.match?.roles ?? []}
             onChange={(v) => setMatch({ roles: v })}
             options={ROLE_OPTIONS}
@@ -161,6 +199,7 @@ function VariantCard({
             mode="tags" size="small" allowClear placeholder="档位 tier" style={{ minWidth: 140 }}
             value={variant.match?.tiers ?? []}
             onChange={(v) => setMatch({ tiers: v })}
+            options={TIER_OPTIONS}
           />
           <Select
             mode="multiple" size="small" allowClear placeholder="渠道" style={{ minWidth: 150 }}
@@ -209,16 +248,27 @@ function VariantCard({
                 <StructurePanel
                   schema={overrideSchema} onChange={onOverrideChange} fields={fields}
                   view={view} onViewChange={setView}
+                  focus={here?.tab === 'structure' ? { si: here.si, ci: here.ci } : undefined}
                 />
               )}
               {sub === 'rules' && (
-                <RulesPanel schema={overrideSchema} onChange={onOverrideChange} fields={fields} />
+                <RulesPanel
+                  schema={overrideSchema} onChange={onOverrideChange} fields={fields}
+                  focus={here?.tab === 'rules' ? { ri: here.ri, tab: 'rules' } : undefined}
+                />
               )}
               {sub === 'actions' && (
-                <ActionBarPanel schema={overrideSchema} onChange={onOverrideChange} fields={fields} actionDefs={actionDefs} />
+                <ActionBarPanel
+                  schema={overrideSchema} onChange={onOverrideChange} fields={fields} actionDefs={actionDefs}
+                  focus={here?.tab === 'actions' ? { idx: here.idx } : undefined}
+                />
               )}
               {sub === 'list' && (
-                <ListPanel schema={overrideSchema} onChange={onOverrideChange} fields={fields} />
+                <ListPanel
+                  schema={overrideSchema} onChange={onOverrideChange} fields={fields}
+                  rowPolicyCodes={rowPolicyCodes} actionDefs={actionDefs}
+                  focus={here?.tab === 'list' ? { idx: here.idx } : undefined}
+                />
               )}
             </div>
           </div>
@@ -228,8 +278,17 @@ function VariantCard({
   );
 }
 
-export default function VariantsPanel({ schema, onChange, fields, actionDefs }: Props): React.ReactElement {
+export default function VariantsPanel({ schema, onChange, fields, actionDefs, rowPolicyCodes = [], focus }: Props): React.ReactElement {
   const variants = schema.variants ?? [];
+
+  // 同优先级重叠检测：并列且命中条件可能重叠时，谁生效完全不可见（高危误配）
+  const byPriority = new Map<number, number>();
+  variants.forEach((v) => byPriority.set(v.priority ?? 100, (byPriority.get(v.priority ?? 100) ?? 0) + 1));
+
+  // 命中优先级预览（静态口径：按 priority 升序 = 裁决顺序，标出当前会生效的第一个）
+  const ranked = variants
+    .map((v, i) => ({ v, i }))
+    .sort((a, b) => (a.v.priority ?? 100) - (b.v.priority ?? 100));
 
   return (
     <div>
@@ -239,10 +298,29 @@ export default function VariantsPanel({ schema, onChange, fields, actionDefs }: 
         description={
           <div style={{ fontSize: 12 }}>
             <div>命中优先级数字最小、四维全匹配的变体，其结构/规则/动作条/列表<b>按块整体替换</b>基础模板；未声明的块回落基础模板。命中结果在右侧预览「身份模拟」栏实时可见。</div>
-            <div style={{ marginTop: 4, color: '#86909c' }}>已知边界：自检（Lint）暂只扫基础模板，变体内引用的字段错误不会被标出——保存前请用预览确认。</div>
+            <div style={{ marginTop: 4, color: '#86909c' }}>自检（Lint）已覆盖变体：变体内引用错字段、空 then、重复编码都会在「自检」面板报出，点击可定位到对应变体。</div>
           </div>
         }
       />
+
+      {variants.length > 1 && (
+        <Table<VariantRankRow>
+          size="small" rowKey="key" pagination={false} style={{ marginBottom: 12 }}
+          dataSource={ranked.map(({ v, i }): VariantRankRow => ({
+            key: `${v.key}-${i}`,
+            label: v.label ?? v.key,
+            priority: v.priority ?? 100,
+            match: matchText(v.match),
+            override: variantOverrideText(v),
+          }))}
+          columns={[
+            { title: '裁决顺序', width: 90, render: (_: unknown, r: VariantRankRow) => <Tag color="blue" style={{ margin: 0 }}>{r.priority}</Tag> },
+            { title: '变体', dataIndex: 'label', width: 130 },
+            { title: '命中条件', dataIndex: 'match' },
+            { title: '覆盖块', dataIndex: 'override' },
+          ]}
+        />
+      )}
 
       {variants.length === 0 ? (
         <Empty
@@ -264,6 +342,9 @@ export default function VariantsPanel({ schema, onChange, fields, actionDefs }: 
               index={i}
               fields={fields}
               actionDefs={actionDefs}
+              rowPolicyCodes={rowPolicyCodes}
+              priorityClash={(byPriority.get(v.priority ?? 100) ?? 0) > 1}
+              focus={focus}
               onChange={onChange}
             />
           ))}

@@ -79,9 +79,12 @@
   font-size: 11px; color: var(--sub); font-weight: 400;
   border: 1px solid var(--line2); border-radius: 6px; padding: 1px 6px;
 }
-.uis-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+/* 24 栏栅格（协议 props.span）：控件按 span 占栏（12=半行缺省、24=整行）；
+   单项 gridColumn 由 utils/uiGrid 的 gridItemStyle 内联给出（与运行时同源）。
+   窄屏复位为单列（!important 压过内联 span，防止 span N 撑出隐式列） */
+.uis-grid2 { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 14px 18px; }
 .uis-grid2 .uis-full { grid-column: 1 / -1; }
-@media (max-width: 560px) { .uis-grid2 { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .uis-grid2 { grid-template-columns: 1fr; } .uis-grid2 > * { grid-column: 1 / -1 !important; } }
 .uis-dash {
   background: linear-gradient(135deg, var(--pri-weak), var(--panel));
   border: 1px solid var(--pri-soft);

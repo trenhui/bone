@@ -371,6 +371,11 @@
               "minimum": 1,
               "maximum": 20
             },
+            "span": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24
+            },
             "currencyField": {
               "type": "string"
             },
@@ -1045,5 +1050,5 @@
       }
     }
   },
-  "minor": 2
+  "minor": 3
 }

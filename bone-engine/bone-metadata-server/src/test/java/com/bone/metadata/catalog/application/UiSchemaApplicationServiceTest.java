@@ -279,6 +279,102 @@ class UiSchemaApplicationServiceTest {
     assertThat(service.validateSchema(9001L)).isEmpty();
   }
 
+  @Test
+  @DisplayName("UI-REF-04：变体虚拟控件与真实字段码碰撞 → ERROR（复刻线上实证：payable_amount 既真字段又 COMPUTED 虚拟控件）")
+  void validateSchema_shouldFlagVirtualCollision_whenVariantControlShadowsRealField() {
+    // 与 2026-10-18 诊断实证同构：变体「核赔工作台」的 COMPUTED 虚拟控件 fieldCode=amount
+    // （真实字段），base 视图正常引用 title。修复前此后端循环不查碰撞 ⇒ 直通发布闸门。
+    String bad =
+        "{\"schemaVersion\":1,\"entityCode\":\"exp\","
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"s\",\"controls\":[{\"fieldCode\":\"title\"}]}]}},"
+            + "\"variants\":[{\"key\":\"reviewer_console\",\"label\":\"核赔工作台\","
+            + "\"match\":{\"roles\":[\"reviewer\",\"admin\"]},\"priority\":1,"
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"v\",\"controls\":["
+            + "{\"fieldCode\":\"amount\",\"controlKind\":\"COMPUTED\",\"virtual\":true,"
+            + "\"props\":{\"computedFn\":\"payableAmount\",\"computedFrom\":[\"title\"]}}]}]}}}]}";
+    when(uiSchemaDefRepository.findByTenantAndEntity(7L, 9001L))
+        .thenReturn(Optional.of(row(bad, 0L)));
+
+    var issues = service.validateSchema(9001L);
+
+    assertThat(issues)
+        .anyMatch(
+            i ->
+                UiSchemaRefCodes.UI_REF_04.equals(i.getCode())
+                    && "ERROR".equals(i.getLevel())
+                    && i.getMessage().contains("amount")
+                    && i.getMessage().contains("reviewer_console"));
+  }
+
+  @Test
+  @DisplayName("变体虚拟控件用非字段码（decision_trace）→ 零误报（回归：防校验过宽误杀合法 TIMELINE）")
+  void validateSchema_shouldNotFlagVirtual_whenCodeNotRealField() {
+    String ok =
+        "{\"schemaVersion\":1,\"entityCode\":\"exp\","
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"s\",\"controls\":[{\"fieldCode\":\"title\"}]}]}},"
+            + "\"variants\":[{\"key\":\"reviewer_console\",\"label\":\"核赔工作台\","
+            + "\"match\":{\"roles\":[\"reviewer\"]},"
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"v\",\"controls\":["
+            + "{\"fieldCode\":\"decision_trace\",\"controlKind\":\"TIMELINE\",\"virtual\":true},"
+            + "{\"fieldCode\":\"amount\"}]}]}}}]}";
+    when(uiSchemaDefRepository.findByTenantAndEntity(7L, 9001L))
+        .thenReturn(Optional.of(row(ok, 0L)));
+
+    assertThat(service.validateSchema(9001L)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("UI-REF-01：变体控件缺 fieldCode → ERROR（与 base 视图同口径）")
+  void validateSchema_shouldFlagMissingFieldCode_whenVariantControlUnbound() {
+    String bad =
+        "{\"schemaVersion\":1,\"entityCode\":\"exp\","
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"s\",\"controls\":[{\"fieldCode\":\"title\"}]}]}},"
+            + "\"variants\":[{\"key\":\"v1\",\"match\":{},\"views\":{\"form\":{\"sections\":["
+            + "{\"id\":\"v\",\"controls\":[{\"controlKind\":\"TEXT\"}]}]}}}]}";
+    when(uiSchemaDefRepository.findByTenantAndEntity(7L, 9001L))
+        .thenReturn(Optional.of(row(bad, 0L)));
+
+    assertThat(service.validateSchema(9001L))
+        .anyMatch(
+            i ->
+                UiSchemaRefCodes.UI_REF_01.equals(i.getCode())
+                    && i.getMessage().contains("缺 fieldCode"));
+  }
+
+  @Test
+  @DisplayName("UI-REF-01：列表页签绑定不存在字段 → ERROR（页签是硬过滤，悬空即恒空；与前端 lint 同口径）")
+  void validateSchema_shouldFlagUnknownField_whenListTabDangling() {
+    // 复刻线上 fixture 形态：待我审核页签绑 reviewer_id（实体无此字段）。修复前该形态前端仅
+    // warning、后端不查 ⇒ 保存/发布都不拦，用户线上点到该页签恒空。
+    String bad =
+        "{\"schemaVersion\":1,\"entityCode\":\"exp\","
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"s\",\"controls\":[{\"fieldCode\":\"title\"}]}]},"
+            + "\"list\":{\"tabs\":[{\"title\":\"待我审核\",\"fieldCode\":\"reviewer_id\",\"value\":\"$me\"}]}}}";
+    when(uiSchemaDefRepository.findByTenantAndEntity(7L, 9001L))
+        .thenReturn(Optional.of(row(bad, 0L)));
+
+    assertThat(service.validateSchema(9001L))
+        .anyMatch(
+            i ->
+                UiSchemaRefCodes.UI_REF_01.equals(i.getCode())
+                    && "ERROR".equals(i.getLevel())
+                    && i.getMessage().contains("tabs.fieldCode 引用未知字段")
+                    && i.getMessage().contains("reviewer_id"));
+  }
+
+  @Test
+  @DisplayName("列表页签绑真实字段 + $me 变量 ⇒ 零误报（回归：防把合法页签当悬空）")
+  void validateSchema_shouldNotFlag_whenListTabBoundToRealField() {
+    String ok =
+        "{\"schemaVersion\":1,\"entityCode\":\"exp\","
+            + "\"views\":{\"form\":{\"sections\":[{\"id\":\"s\",\"controls\":[{\"fieldCode\":\"title\"}]}]},"
+            + "\"list\":{\"tabs\":[{\"title\":\"待我审批\",\"fieldCode\":\"amount\",\"value\":\"$me\"}]}}}";
+    when(uiSchemaDefRepository.findByTenantAndEntity(7L, 9001L))
+        .thenReturn(Optional.of(row(ok, 0L)));
+
+    assertThat(service.validateSchema(9001L)).isEmpty();
+  }
+
   private static BadSqlGrammarException missingTable() {
     return new BadSqlGrammarException(
         "find", "SELECT * FROM meta_entity_ui_schema", new SQLException("Table doesn't exist"));
