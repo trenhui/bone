@@ -40,6 +40,11 @@ SLICE_ALLOWLIST = {
     os.path.join("utils", "uiSchemaChangePreview.ts"),  # 变更预告摘要：新增分区字段名最多列 4 个（"N 个字段：a、b、c、d 等"），UI 展示截断，非字段/列投影
     os.path.join("components", "InterfaceTab.tsx"),  # 契约外字段提示摘要：最多列 5 个字段名（"当前有 N 个：… 等"），UI 展示截断，非字段/列投影
     os.path.join("utils", "onboarding.test.ts"),  # 测试夹具：精选列裁剪（6 列取 3/4）构造里程碑场景，测试数据构造，非生产字段/列投影
+    # 契约范围卡片：分组标签字段名摘要预览（preview）+ 契约外字段提示摘要（"… 等 N 个"），
+    # 与 InterfaceTab.tsx 同性质；完整字段列表由 designer 呈现，此处仅标签摘要，非字段/列投影。
+    # 注：2026-10-18 登记时为他人未跟踪的新文件（ContractScopeCard.tsx），已按摘要用途核实后登记；
+    # 若后续该组件把 preview 用于表格实际渲染（只显示 6 列而丢数据），应移出本列表并按真投影修。
+    os.path.join("components", "ContractScopeCard.tsx"),
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")

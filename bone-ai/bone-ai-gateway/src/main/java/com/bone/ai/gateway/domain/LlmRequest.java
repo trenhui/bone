@@ -23,6 +23,13 @@ public record LlmRequest(
 
   public LlmRequest {
     messages = (messages == null) ? List.of() : List.copyOf(messages);
+    // fail-fast：参数不变量在边界校验，而非带到 provider 才拿回语义模糊的 400
+    if (temperature != null && (temperature < 0 || temperature > 2)) {
+      throw new IllegalArgumentException("temperature 须在 [0,2]（OpenAI 兼容协议范围）: " + temperature);
+    }
+    if (maxTokens != null && maxTokens <= 0) {
+      throw new IllegalArgumentException("maxTokens 须为正整数: " + maxTokens);
+    }
   }
 
   public static LlmRequest of(String model, List<LlmMessage> messages) {

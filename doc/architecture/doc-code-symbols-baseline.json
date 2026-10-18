@@ -122,6 +122,11 @@
       "doc": "architecture/adr/0037-integration-engine-single-module.md",
       "reason": "decision-snapshot",
       "note": "ADR 为决策时点快照，类名与路径刻意不随后续收敛更新"
+    },
+    {
+      "doc": "ai-product/synapClaim/智能理赔系统详细设计（工程落地版）.md",
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台工程落地版设计稿，目录树/分层示意类名（ClaimCaseRepository/AdjLiabilityRepository/PersonalQuotaRepository 等）均为目标态构件、实现尚未落地；改文档会丢失方案示意信息。2026-10-18 由符号级登记升级为整篇豁免：该文档由他人持续增补（移动靶），逐个追登记不可持续，且全文性质单一（方案稿示意名）"
     }
   ],
   "symbols": [
