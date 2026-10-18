@@ -286,6 +286,8 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   const consoleErrors = [];
   mp.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   mp.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message));
+  // IA 收敛后：?tab=ui（PRD §0.6.6 模板起盘黄金路径深链）rewrite 到界面设计器——
+  // 团队契约的交付预览职责由设计器承接；个人覆盖口径对照在运行时数据页。
   await mp.goto(`${SHELL}/metadata#/entities/${inspId}?tab=ui`, { waitUntil: 'domcontentloaded' });
   await sleep(6000);
   const uiState = await mp.evaluate(() => {
@@ -293,19 +295,43 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
     return {
       tabs,
       url: location.hash,
-      hasInterface: document.body.innerText.includes('配置') && document.body.innerText.includes('预览'),
       hasAutoBadge: document.body.innerText.includes('自动生成'),
-      hasEnumTag: document.body.innerText.includes('ENUM'),
     };
   });
-  assert('五 Tab = 结构/显示设置/界面设计器/数据/发布', ['结构', '显示设置', '界面设计器', '数据', '发布'].every((t) => uiState.tabs.some((x) => x.includes(t))), { tabs: uiState.tabs });
-  assert('?tab=ui 深链选中显示设置 Tab（URL 同步）', uiState.url.includes('tab=ui'), { hash: uiState.url });
-  assert('显示设置 Tab 含「配置|预览」与「自动生成」角标', uiState.hasInterface && uiState.hasAutoBadge, uiState);
-  assert('界面 Tab 展示 ENUM 字段（T3 渲染）', uiState.hasEnumTag, {});
+  // 对齐当前产品：四 Tab 结构/界面设计器/数据/发布（字段/关系/校验 是「结构」内嵌子 Tab，仅结构激活时入 DOM）
+  assert('四 Tab = 结构/界面设计器/数据/发布', ['结构', '界面设计器', '数据', '发布'].every((t) => uiState.tabs.some((x) => x.includes(t))), { tabs: uiState.tabs });
+  assert('「交付预览」已归位（顶层 Tab 不再单列，个人语义不入建模台）', !uiState.tabs.some((x) => x.includes('交付预览')), { tabs: uiState.tabs });
+  assert('旧「显示设置」/「个人显示偏好」/「界面（协议）」tab 已不存在', !uiState.tabs.some((x) => x.includes('显示设置') || x.includes('个人显示偏好') || x.includes('界面（协议）')), { tabs: uiState.tabs });
+  // 深链兼容：旧 ?tab=ui 必须 rewrite 到 ?tab=uischema，不能落进 <Route path="*"> 静默回首页。
+  // ⚠️ 判「仍是旧 key」不能用 includes('tab=ui') —— 'tab=uischema' 含该子串会自我否定；
+  // 必须用「tab=ui 后面紧跟分隔符或结尾」的精确匹配。
+  const stillOldTab = /[?&]tab=ui(&|$)/.test(uiState.url);
+  assert('?tab=ui 深链rewrite 到界面设计器（URL 同步，PRD 黄金路径不失效）',
+    uiState.url.includes('tab=uischema') && !stillOldTab, { hash: uiState.url });
 
-  // 数据 Tab（嵌入模式）：断言绑定的是本实体
+  // 数据页「交付口径对照」卡片呈现双口径（全员所见 / 我的所见）
   await mp.goto(`${SHELL}/metadata#/entities/${inspId}/data`, { waitUntil: 'domcontentloaded' });
-  await sleep(5000);
+  await sleep(6000);
+  const scopeState = await mp.evaluate(() => {
+    const t = document.body.innerText;
+    return {
+      hasScopeCard: t.includes('交付口径对照'),
+      hasContractScope: t.includes('全员所见（契约）'),
+      hasMineScope: t.includes('我的所见（含个人覆盖）'),
+    };
+  });
+  assert('数据页「交付口径对照」卡片呈现双口径（全员所见 / 我的所见）',
+    scopeState.hasScopeCard && scopeState.hasContractScope && scopeState.hasMineScope, scopeState);
+
+  // ENUM 渲染（T3）：ENUM 是**字段结构**的展示，与契约无关 ⇒ 断言落「结构 → 字段」，
+  // 不能放在设计器/交付预览（那里渲染的是 ui-schema 契约，未配契约的实体看不到 ENUM）。
+  await mp.goto(`${SHELL}/metadata#/entities/${inspId}?tab=structure`, { waitUntil: 'domcontentloaded' });
+  await sleep(4000);
+  const enumState = await mp.evaluate(() => document.body.innerText.includes('ENUM'));
+  assert('结构 Tab 展示 ENUM 字段（T3 渲染）', enumState, {});
+
+  // 数据 Tab（嵌入模式）：断言绑定的是本实体。
+  // 上一步已在数据页（对照卡片断言），复用当前 DOM，不再重复导航。
   const dataState = await mp.evaluate(() => document.body.innerText.slice(0, 2500));
   assert('数据 Tab 显示本实体物理表（md_insp_*）', /md_insp_/.test(dataState), { snippet: dataState.replace(/\s+/g, ' ').slice(0, 120) });
 

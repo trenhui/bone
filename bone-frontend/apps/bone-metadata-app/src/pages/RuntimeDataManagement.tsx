@@ -1437,8 +1437,10 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
 
       {/* 交付口径对照：契约应显示什么 vs 我实际看到什么 + 自伤遮蔽告警与一键自救。
           放在数据页而非建模台——个人覆盖的编辑器就在本页工具栏，对照必须与被对照对象同处；
-          团队契约那一侧由「界面设计器」的实时预览承担（跑运行时同一套引擎，信息更强）。 */}
-      {!embeddedBlocked && selectedEntity && contractListView && (
+          团队契约那一侧由「界面设计器」的实时预览承担（跑运行时同一套引擎，信息更强）。
+          无契约时也渲染（卡片内有「团队契约 · 未配置」+ 去设计器入口）：尚未配契约的实体
+          恰恰最需要被引导去配置，不能因为没有契约就什么都不显示。 */}
+      {!embeddedBlocked && selectedEntity && (
         <ContractScopeCard
           overlay={overlay}
           fields={writableFields}

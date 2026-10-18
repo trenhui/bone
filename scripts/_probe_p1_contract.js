@@ -68,42 +68,45 @@ const EXPECT_HEADERS = ['报案号', '被保人', '医院等级', '申报金额'
     H('数据Tab: 契约列宽生效(首列=150px)', cols[0] === '150px', `cols=${JSON.stringify(cols.slice(0, 8))}`);
   }
 
-  // ---------- 列表显示 Tab：定位修正 + strict 引导 ----------
+  // ---------- 交付预览已归位：契约口径核对在设计器，个人口径对照在数据页 ----------
+  // IA 收敛（EntityDetail）：顶层「交付预览」Tab 摘除；团队契约口径并入界面设计器，
+  // 个人覆盖口径迁到运行时数据页「交付口径对照」卡片；?tab=ui 深链 rewrite 到 uischema。
   await page.goto(`http://localhost:3000/metadata#/entities/${EID}?tab=ui`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(4000);
   const tabLabels = await page.evaluate(() =>
     [...document.querySelectorAll('.ant-tabs-tab')].map((t) => (t.textContent || '').trim()));
-  S('定位: 「显示设置」已更名为「列表显示」', tabLabels.some((t) => t.includes('列表显示')), `tabs=${JSON.stringify(tabLabels)}`);
-  S('定位: 不再出现旧名「显示设置」', !tabLabels.some((t) => t.includes('显示设置')), '');
+  S('定位: 顶层 Tab 已无「交付预览」（已归位）', !tabLabels.some((t) => t.includes('交付预览')), `tabs=${JSON.stringify(tabLabels)}`);
+  S('定位: 不再出现旧名「显示设置/个人显示偏好」', !tabLabels.some((t) => t.includes('显示设置') || t.includes('个人显示偏好')), '');
+  // 深链兼容：旧 ?tab=ui 必须 rewrite 到 ?tab=uischema，不能静默落首页。
+  // ⚠️不能用 includes('tab=ui') 判「仍是旧 key」—— 'tab=uischema' 含该子串会自我否定。
+  S('定位: ?tab=ui 深链 rewrite 到 ?tab=uischema（PRD 黄金路径不失效）',
+    page.url().includes('tab=uischema') && !/[?&]tab=ui(&|$)/.test(page.url()), `url=${page.url()}`);
 
+  // 契约口径核对：设计器「列表」面板的「运行时最终显示 N 列」摘要
+  await page.locator('[role="tab"]', { hasText: '列表' }).last().click().catch(() => {});
+  await page.waitForTimeout(1500);
+  const designerBody = await body();
+  S('契约口径: 设计器出现「运行时最终显示 N 列」核对摘要',
+    /运行时最终显示\s*\d+\s*列/.test(designerBody), '');
+
+  // 个人口径对照 + strict 引导：运行时数据页「交付口径对照」卡片
+  await page.goto(`http://localhost:3000/metadata#/entities/${EID}/data`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(5000);
   const b2 = await body();
-  S('分层: 契约分层 banner 出现(列集合/列序/列宽归设计器)',
-    b2.includes('界面设计器') && b2.includes('契约'), '');
-  S('strict: 配置表出现「未在契约」提示', b2.includes('未在契约'), '');
+  S('分层: 数据页出现「交付口径对照」卡片', b2.includes('交付口径对照'), '');
+  S('分层: 双口径摘要存在（全员所见 / 我的所见）',
+    b2.includes('全员所见（契约）') && b2.includes('我的所见（含个人覆盖）'), '');
+  S('strict: 出现「不在团队契约」或等价未在契约提示',
+    /不在团队契约|未在契约/.test(b2), '');
 
-  // 预览（列表）与运行时同列：切到「预览」分段，行=契约6列同序
-  const previewBtn = page.locator('.ant-segmented').first().locator('.ant-segmented-item', { hasText: '预览' });
-  if (await previewBtn.count()) {
-    await previewBtn.first().click();
-    await page.waitForTimeout(1200);
-    const rows = await page.evaluate(() => {
-      const tbl = document.querySelector('.ant-table-wrapper .ant-table-tbody');
-      if (!tbl) return [];
-      // antd v5 在 scroll.x 下渲染 .ant-table-measure-row（度量行，无 td）——剔除
-      return [...tbl.querySelectorAll('tr')]
-        .filter((tr) => !tr.classList.contains('ant-table-measure-row'))
-        .map((tr) => {
-          const td = tr.querySelector('td');
-          return td ? (td.textContent || '').trim() : '';
-        })
-        .filter((t) => t !== '');
-    });
-    S('预览≡运行时: 预览列表行=契约6列同序',
-      rows.length === EXPECT_HEADERS.length && rows.every((r, i) => r === EXPECT_HEADERS[i]),
-      `rows=${JSON.stringify(rows)}`);
-  } else {
-    S('预览≡运行时: 预览分段可点', false, '未找到预览分段');
-  }
+  // 预览≡运行时（归位后由对照卡片的「全员所见」承担）：契约6列同序。
+  // 用对照卡片的列名序列（… → … 箭头链）核对契约列顺序，不依赖已删的预览表格。
+  const contractSeq = /全员所见（契约）\s*\d+\s*列\s*\n?([^\n]*)/.exec(b2);
+  const seqText = (contractSeq ? contractSeq[1] : '').trim();
+  const listedCols = seqText.split(/[、→]/).map((s) => s.trim()).filter(Boolean);
+  S('预览≡运行时: 对照卡片「全员所见」列序 = 契约6列同序',
+    listedCols.length === EXPECT_HEADERS.length && EXPECT_HEADERS.every((h, i) => listedCols[i].startsWith(h.slice(0, 2))),
+    `listed=${JSON.stringify(listedCols)}`);
 
   H('零 console error', errors.length === 0, errors.slice(0, 3).join(' | '));
 

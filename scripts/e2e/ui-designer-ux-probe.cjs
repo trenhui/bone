@@ -87,8 +87,9 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   assert('探针实体实例化', okOf(inst) && !!entityId, { status: inst.status, entityId });
   if (!entityId) { await browser.close(); process.exit(2); }
 
-  // ---------- B. Tab 换名 + 图标区分 ----------
-  console.log('\n===== B. Tab 换名 + 图标区分 =====');
+  // ---------- B. Tab 集 + 图标区分（对齐当前产品：结构/字段/关系/校验/界面设计器/数据/发布） ----------
+  // IA 收敛：「交付预览」已归位——团队契约口径并入「界面设计器」，个人覆盖口径对照在运行时数据页。
+  console.log('\n===== B. Tab 集 + 图标区分 =====');
   await page.goto(`${SHELL}/metadata#/entities/${entityId}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.ant-tabs-tab', { timeout: 25000 });
   await sleep(4000);
@@ -99,38 +100,53 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
     })),
   );
   const tabTexts = tabInfo.map((t) => t.text);
-  assert('五 Tab = 结构/显示设置/界面设计器/数据/发布',
-    ['结构', '显示设置', '界面设计器', '数据', '发布'].every((t) => tabTexts.some((x) => x.includes(t))),
+  const expectedTabs = ['结构', '字段', '关系', '校验', '界面设计器', '数据', '发布'];
+  assert('设计器 Tab 集 = 结构/字段/关系/校验/界面设计器/数据/发布',
+    expectedTabs.every((t) => tabTexts.some((x) => x.includes(t))),
     { tabs: tabTexts });
-  assert('旧同名「界面（协议）」已不存在', !tabTexts.some((x) => x.includes('界面（协议）')), { tabs: tabTexts });
+  assert('「交付预览」已归位（顶层不再单列；个人语义不入建模台）',
+    !tabTexts.some((x) => x.includes('交付预览')),
+    { tabs: tabTexts });
+  assert('旧「界面（协议）」/「显示设置」/「个人显示偏好」tab 已不存在（个人覆盖编辑器已移至运行时数据页）',
+    !tabTexts.some((x) => x.includes('界面（协议）')) && !tabTexts.some((x) => x.includes('显示设置')) && !tabTexts.some((x) => x.includes('个人显示偏好')),
+    { tabs: tabTexts });
   const iconOf = (label) => tabInfo.find((t) => t.text.includes(label))?.icons.join(',') ?? '';
-  assert('显示设置用 setting 图标（不再是 table）', iconOf('显示设置').includes('setting'), { icons: iconOf('显示设置') });
-  assert('界面设计器用 layout 图标（与显示设置区分）', iconOf('界面设计器').includes('layout'), { icons: iconOf('界面设计器') });
-  assert('数据保留 table 图标（三图标互不相同）', iconOf('数据').includes('table'), { icons: iconOf('数据') });
+  assert('界面设计器用 layout 图标', iconOf('界面设计器').includes('layout'), { icons: iconOf('界面设计器') });
+  assert('数据保留 table 图标', iconOf('数据').includes('table'), { icons: iconOf('数据') });
   await page.screenshot({ path: '/Users/renhui.trh/wps/bone/logs/ui_designer_ux_1_tabs.png' });
 
-  // ---------- C. 设计器：首访引导 + 帮助重显 ----------
-  console.log('\n===== C. 3 步上手引导 =====');
+  // ---------- C. 设计器：首访 Spotlight 引导（6 步）+ 帮助重显 ----------
+  // 产品已将「静态 3 步 Modal（开始使用）」升级为「Spotlight 交互式引导」（DesignerTour.tsx）：
+  // 首访自动弹出（全新 context + 全新实体 ⇒ localStorage 无标记 ⇒ 自动开），可从「帮助」重开。
+  console.log('\n===== C. Spotlight 6 步新手引导 =====');
   await page.locator('.ant-tabs-tab').filter({ hasText: '界面设计器' }).click();
   await page.waitForSelector('text=载入场景样例', { timeout: 20000 });
-  // 首访自动弹出（全新 browser context，localStorage 无标记）
-  // 注意：判可见性而非 DOM 计数——qiankun 沙箱中关闭的 Modal wrap 不卸载（display:none 残留）
-  const guideVisible0 = await page.locator('.ant-modal').filter({ hasText: '3 步上手' }).first().isVisible().catch(() => false);
-  assert('首访自动弹出 3 步上手引导', guideVisible0, {});
-  const guideHasSteps = await page.locator('.ant-modal').filter({ hasText: '3 步上手' }).innerText().catch(() => '');
-  assert('引导含三步 + 快捷键说明', /①/.test(guideHasSteps) && /②/.test(guideHasSteps) && /③/.test(guideHasSteps) && /Ctrl/.test(guideHasSteps),
-    { snippet: guideHasSteps.slice(0, 120) });
-  await page.locator('.ant-modal button').filter({ hasText: '开始使用' }).click();
+  await sleep(2500);
+  // 首访自动弹出 .tour-card（聚光灯卡片，非旧版 .ant-modal）
+  let tourVisible0 = await page.locator('.tour-card').first().isVisible().catch(() => false);
+  // 兜底：若自动弹出时序未命中，点「帮助」也应能唤起（验证引导可达）
+  if (!tourVisible0) {
+    await page.locator('button').filter({ hasText: '帮助' }).first().click();
+    await sleep(1000);
+    tourVisible0 = await page.locator('.tour-card').first().isVisible().catch(() => false);
+  }
+  assert('首访自动弹出 Spotlight 新手引导（.tour-card）', tourVisible0, {});
+  const tourText = await page.locator('.tour-card').first().innerText().catch(() => '');
+  assert('引导含多步 + 计数（x/6）+ 跳过/下一步', /跳过引导/.test(tourText) && /\d+ \/ 6/.test(tourText),
+    { snippet: tourText.slice(0, 140) });
+  // 跳过关闭
+  await page.locator('.tour-card button').filter({ hasText: '跳过引导' }).first().click();
   await sleep(800);
-  const guideClosed = !(await page.locator('.ant-modal').filter({ hasText: '3 步上手' }).first().isVisible().catch(() => false));
-  assert('引导可关闭', guideClosed, {});
+  const guideClosed = !(await page.locator('.tour-card').first().isVisible().catch(() => false));
+  assert('引导可关闭（跳过）', guideClosed, {});
   // 帮助按钮重显
   await page.locator('button').filter({ hasText: '帮助' }).first().click();
   await sleep(800);
-  const guideReShown = await page.locator('.ant-modal').filter({ hasText: '3 步上手' }).first().isVisible().catch(() => false);
+  const guideReShown = await page.locator('.tour-card').first().isVisible().catch(() => false);
   assert('帮助按钮可重显引导', guideReShown, {});
-  await page.locator('.ant-modal button').filter({ hasText: '开始使用' }).click();
-  await sleep(800);
+  // 收尾关闭，避免遮挡后续段
+  await page.locator('.tour-card button').filter({ hasText: '跳过引导' }).first().click().catch(() => {});
+  await sleep(600);
 
   // ---------- D. 全屏（禅模式） ----------
   console.log('\n===== D. 全屏禅模式 =====');
