@@ -16,8 +16,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class AiTenantContext {
 
-  /** 租户上下文缺失稳定业务码（fail-closed：不接受入参传租户）。 */
-  public static final String ERROR_TENANT_MISSING = "AI_APP_TENANT_CONTEXT_MISSING";
+  /**
+   * 租户上下文缺失稳定业务码（fail-closed：不接受入参传租户）。
+   *
+   * <p>2026-10-18：真源已收敛至 {@link AiAppErrorCodes}——i18n 一致性门禁只扫 {@code *ErrorCodes.java}，
+   * 码定义在工具类里时台账与代码字符串的一致性实际未被校验（假安全）。此处保留同名字段作委托，调用点零改动。
+   */
+  @Deprecated
+  public static final String ERROR_TENANT_MISSING = AiAppErrorCodes.TENANT_CONTEXT_MISSING;
 
   /** 取当前租户；上下文未注入时抛稳定码业务异常（拒绝以匿名 / 伪租户身份调用）。 */
   public String requireTenantId() {

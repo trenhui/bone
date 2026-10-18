@@ -2,6 +2,7 @@ package com.bone.aiapp.web;
 
 import com.bone.aiapp.config.AiTenantContext;
 import com.bone.aiorch.application.HitlApplicationService;
+import com.bone.aiorch.common.AiOrchErrorCodes;
 import com.bone.aiorch.domain.hitl.HitlItem;
 import com.bone.aiorch.domain.hitl.HitlItem.Disposition;
 import com.bone.aiorch.domain.hitl.ReasonType;
@@ -63,7 +64,7 @@ public class HitlController {
       case "escalate" -> item =
           hitlService.escalate(tenantId, itemId, request.actor(), request.comment());
       default -> throw new BizException(
-          422, "unknown action: " + request.action(), "AI_HITL_INVALID_TRANSITION");
+          422, "unknown action: " + request.action(), AiOrchErrorCodes.INVALID_TRANSITION);
     }
     return ApiResponse.success(item);
   }

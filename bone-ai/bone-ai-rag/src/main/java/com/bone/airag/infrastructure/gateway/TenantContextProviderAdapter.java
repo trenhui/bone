@@ -1,5 +1,6 @@
 package com.bone.airag.infrastructure.gateway;
 
+import com.bone.airag.common.AiRagErrorCodes;
 import com.bone.airag.domain.gateway.TenantProvider;
 import com.bone.core.exception.BizException;
 import com.bone.core.tenant.context.TenantContext;
@@ -12,8 +13,14 @@ import com.bone.core.tenant.context.TenantContext;
  */
 public class TenantContextProviderAdapter implements TenantProvider {
 
-  /** 检索租户上下文缺失稳定业务码（fail-closed）。 */
-  public static final String ERROR_TENANT_MISSING = "AI_RAG_TENANT_CONTEXT_MISSING";
+  /**
+   * 检索租户上下文缺失稳定业务码（fail-closed）。
+   *
+   * <p>2026-10-18：真源已收敛至 {@link AiRagErrorCodes}——i18n 一致性门禁只扫 {@code *ErrorCodes.java}，
+   * 码散落在适配器里时台账与代码字符串的一致性实际未被校验（假安全）。此处保留同名字段作委托，调用点零改动。
+   */
+  @Deprecated
+  public static final String ERROR_TENANT_MISSING = AiRagErrorCodes.TENANT_CONTEXT_MISSING;
 
   @Override
   public Long currentTenantId() {

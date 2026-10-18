@@ -4,6 +4,7 @@ import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
+import com.bone.aitrace.common.AiTraceErrorCodes;
 import com.bone.aitrace.domain.gateway.TenantProvider;
 import com.bone.aitrace.domain.model.EvidenceSnapshot;
 import com.bone.aitrace.domain.model.EvidenceType;
@@ -32,8 +33,14 @@ import org.springframework.context.event.EventListener;
  */
 public class EvidenceTraceListener {
 
-  /** 租户上下文缺失稳定业务码（fail-closed：不落租户不明的证据；trace 模块自有码，不跨模块借码）。 */
-  public static final String ERROR_TENANT_MISSING = "AI_TRACE_TENANT_CONTEXT_MISSING";
+  /**
+   * 租户上下文缺失稳定业务码（fail-closed：不落租户不明的证据；trace 模块自有码，不跨模块借码）。
+   *
+   * <p>2026-10-18：真源已收敛至 {@link AiTraceErrorCodes}——i18n 一致性门禁只扫 {@code *ErrorCodes.java}，
+   * 码散落在监听器里时台账与代码字符串的一致性实际未被校验（假安全）。此处保留同名字段作委托，调用点零改动。
+   */
+  @Deprecated
+  public static final String ERROR_TENANT_MISSING = AiTraceErrorCodes.TENANT_CONTEXT_MISSING;
 
   private static final Logger log = LoggerFactory.getLogger(EvidenceTraceListener.class);
 

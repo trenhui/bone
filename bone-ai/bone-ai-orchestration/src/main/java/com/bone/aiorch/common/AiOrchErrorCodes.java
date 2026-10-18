@@ -21,4 +21,12 @@ public final class AiOrchErrorCodes {
 
   /** 终审记录租户标识非数值（500）：合规留痕不允许租户不明的处置记录，fail-closed。 */
   public static final String TENANT_NOT_NUMERIC = "AI_HITL_TENANT_NOT_NUMERIC";
+
+  /**
+   * HITL 裁决动作非法（422）：action 不在 confirm / reject / modify / escalate 受控集合内。
+   *
+   * <p>2026-10-18 从 {@code HitlController} 的字符串字面量收敛至此——散落字面量时 i18n 一致性门禁（只扫 {@code
+   * *ErrorCodes.java}）校验不到，台账与代码字符串可能悄悄漂移。
+   */
+  public static final String INVALID_TRANSITION = "AI_HITL_INVALID_TRANSITION";
 }

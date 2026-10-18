@@ -1,5 +1,6 @@
 package com.bone.aidoc.infrastructure.parser;
 
+import com.bone.aidoc.common.AiDocErrorCodes;
 import com.bone.aidoc.domain.gateway.DocumentParser;
 import com.bone.aidoc.domain.gateway.ParsedDocument;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -41,18 +42,23 @@ import java.util.UUID;
  */
 public class DoclingSidecarAdapter implements DocumentParser {
 
-  // ---- 稳定错误码（详设 §3.1；application 层据此映射 BizException，禁止裸消息串出网）----
+  // ---- 稳定错误码 ----
+  /**
+   * 真源已收敛至 {@link AiDocErrorCodes}（2026-10-18）：i18n 一致性门禁只扫 {@code *ErrorCodes.java}，
+   * 码散落在适配器里时台账与代码字符串的一致性从未被校验（假安全）。此处保留同名字段作委托，调用点零改动； 新引用请直接用 {@code AiDocErrorCodes.*}。
+   */
   /** 文档超过大小上限（拒收，防内存耗尽）。 */
-  public static final String ERROR_TOO_LARGE = "AI_DOC_TOO_LARGE";
+  @Deprecated public static final String ERROR_TOO_LARGE = AiDocErrorCodes.TOO_LARGE;
 
   /** 页数超过上限（拒收，防下游失控）。 */
-  public static final String ERROR_TOO_MANY_PAGES = "AI_DOC_TOO_MANY_PAGES";
+  @Deprecated public static final String ERROR_TOO_MANY_PAGES = AiDocErrorCodes.TOO_MANY_PAGES;
 
   /** sidecar 不可用 / 重试耗尽 / 非 2xx / 响应契约不符。 */
-  public static final String ERROR_SIDECAR_UNAVAILABLE = "AI_DOC_SIDECAR_UNAVAILABLE";
+  @Deprecated
+  public static final String ERROR_SIDECAR_UNAVAILABLE = AiDocErrorCodes.SIDECAR_UNAVAILABLE;
 
   /** 输入流读取失败或为空。 */
-  public static final String ERROR_READ_FAILED = "AI_DOC_READ_FAILED";
+  @Deprecated public static final String ERROR_READ_FAILED = AiDocErrorCodes.READ_FAILED;
 
   /** 默认上传大小上限 50MB（详设 §2.5）。 */
   public static final long DEFAULT_MAX_BYTES = 50L * 1024 * 1024;
