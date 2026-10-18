@@ -49,6 +49,7 @@
 | [0039](./0039-release-package-with-approval-and-rollback.md) | 发布包 — 以模块为单元的变更集、审批与回滚（**已接受 · 分批落地**，2a §G4） |
 | [0040](./0040-external-client-sdk-generated-from-openapi.md) | 对外客户端 SDK — 以 OpenAPI 规范为唯一真源生成，不手写占位模块（**已接受**，2026-10-03 架构组裁定；生成与烟测已落地，空壳 `bone-sdk` 整棵移除，门禁 #16/#18/#19/#21 以其为依据） |
 | [0041](./0041-bone-ai-unified-authentication.md) | bone-ai 接入统一鉴权层 — 依赖 `bone-security` + `ai:*` 权限码 + 14 写端点 `@PreAuthorize`（**提议**，L3 待审批；实测 bone-ai 零认证、14 POST 无授权声明，且刻意不扩 `check-controller-authorization` 扫描根——无 security starter 时 `@PreAuthorize` 是安全剧场） |
+| [0042](./0042-evidence-idempotency-unique-index.md) | 证据链消费幂等兜底 — `ai_trace_snapshot` 建 `(trace_id, input_hash, deleted)` 唯一索引，把"查重幂等"升级为存储保证（**提议**，L3 待审批；查重已落地但并发窗口未兜，MQ 化前必须补） |
 
 **非编号附录**
 

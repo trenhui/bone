@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 
 /**
@@ -33,6 +35,8 @@ public class EvidenceTraceListener {
   /** 租户上下文缺失稳定业务码（fail-closed：不落租户不明的证据；trace 模块自有码，不跨模块借码）。 */
   public static final String ERROR_TENANT_MISSING = "AI_TRACE_TENANT_CONTEXT_MISSING";
 
+  private static final Logger log = LoggerFactory.getLogger(EvidenceTraceListener.class);
+
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final EvidenceSnapshotRepository repository;
@@ -46,7 +50,32 @@ public class EvidenceTraceListener {
 
   @EventListener
   public void onLlmCallRecorded(LlmCallRecorded event) {
-    repository.insert(toSnapshot(event, requireTenantId()));
+    EvidenceSnapshot snapshot = toSnapshot(event, requireTenantId());
+    if (alreadyRecorded(snapshot)) {
+      // 幂等消费（ClaimSphere §10.2 / 业界事件可靠性实践）：同一事件重复投递不重复留证——
+      // 重复快照会让审计链出现同一次调用的多条记录，回放与成本对账口径失真
+      log.info(
+          "证据事件重复投递，跳过落库（幂等）: traceId={}, inputHash={}",
+          snapshot.getTraceId(),
+          snapshot.getInputHash());
+      return;
+    }
+    repository.insert(snapshot);
+  }
+
+  /**
+   * 幂等判重：同一 traceId 下已存在相同输入哈希的快照即视为重复事件重放。
+   *
+   * <p>用 {@code traceId + inputHash} 而非仅 traceId：一次业务动作可能包含多次 LLM 调用（多轮编排共用 traceId），
+   * 输入哈希相同才说明是同一次调用重放；不同输入（不同轮次）仍各自留证。
+   *
+   * <p><b>局限（已知，不假装已解决）</b>：查重与插入之间存在并发窗口——两个相同事件同时进入时可能都查不到而双写。 彻底兜底需给 {@code
+   * ai_trace_snapshot(trace_id, input_hash)} 加唯一索引（DDL 属 AGENTS L3，待审批）； 当前 Spring
+   * 进程内同步事件下单线程投递，窗口实际不可达，此判重先挡住重试 / 补偿队列重放这一类真实重复。
+   */
+  private boolean alreadyRecorded(EvidenceSnapshot snapshot) {
+    return repository.findByTraceId(snapshot.getTraceId()).stream()
+        .anyMatch(existing -> snapshot.getInputHash().equals(existing.getInputHash()));
   }
 
   private Long requireTenantId() {

@@ -1,8 +1,10 @@
 package com.bone.aitrace.infrastructure.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +47,8 @@ class EvidenceTraceListenerTest {
   @Test
   void onLlmCallRecorded_inserts_snapshot_with_current_tenant() {
     when(tenantProvider.currentTenantId()).thenReturn(7L);
+    // 无历史快照 → 非重复，正常落库
+    when(repository.findByTraceId(event.traceId())).thenReturn(List.of());
 
     listener.onLlmCallRecorded(event);
 
@@ -55,5 +59,34 @@ class EvidenceTraceListenerTest {
                     s.getTenantId().equals(7L)
                         && event.traceId().equals(s.getTraceId())
                         && s.type() == EvidenceType.LLM_CALL));
+  }
+
+  @Test
+  void duplicate_event_does_not_insert_twice() {
+    when(tenantProvider.currentTenantId()).thenReturn(7L);
+    EvidenceSnapshot existing = EvidenceTraceListener.toSnapshot(event, 7L);
+    // 同 traceId + 同输入哈希 → 同一事件重放
+    when(repository.findByTraceId(event.traceId())).thenReturn(List.of(existing));
+
+    listener.onLlmCallRecorded(event);
+
+    verify(repository, never()).insert(any());
+  }
+
+  @Test
+  void same_trace_id_but_different_input_still_inserts() {
+    when(tenantProvider.currentTenantId()).thenReturn(7L);
+    // 一次业务动作多轮编排共用 traceId：不同输入的调用必须各自留证，不能被幂等误吞
+    EvidenceSnapshot otherTurn =
+        EvidenceTraceListener.toSnapshot(
+            LlmCallRecorded.of(
+                LlmRequest.of("gpt-4o-mini", List.of(LlmMessage.user("different turn"))),
+                new LlmResponse("ans2", "gpt-4o-mini", "stop", new LlmUsage(1, 2, 3))),
+            7L);
+    when(repository.findByTraceId(event.traceId())).thenReturn(List.of(otherTurn));
+
+    listener.onLlmCallRecorded(event);
+
+    verify(repository).insert(any());
   }
 }

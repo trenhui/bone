@@ -678,10 +678,11 @@
     {
       "symbol": "ClaimCaseRepository",
       "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
+        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md",
+        "doc/ai-product/synapClaim/智能理赔系统详细设计（工程落地版）.md"
       ],
       "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息。2026-10-18 补充登记《智能理赔系统详细设计（工程落地版）》§目录树中的同名示意名（该文档为他人新增，与设计方案同属方案稿示意构件）"
     },
     {
       "symbol": "EvidenceRepository",
