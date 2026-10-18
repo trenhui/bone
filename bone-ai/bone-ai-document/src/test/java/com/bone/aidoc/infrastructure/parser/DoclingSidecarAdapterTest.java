@@ -3,13 +3,22 @@ package com.bone.aidoc.infrastructure.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.aidoc.common.AiDocErrorCodes;
 import com.bone.aidoc.domain.gateway.ParsedDocument;
 import com.bone.aidoc.infrastructure.parser.DoclingSidecarAdapter.DoclingTransport;
+import com.bone.core.exception.BizException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Docling sidecar 适配器：成功映射 + 边界拒收 + 重试。
+ *
+ * <p><b>错误码断言用 {@code getErrorCode()} 而非消息包含（2026-10-18 起）</b>：此前错误码只作为文本拼进异常消息， 前端拿不到 i18n
+ * 键、监控只能按中文消息聚合（消息一变体聚合即失效）。改为结构化 {@link BizException} 后， 断言跟着改为校验 {@code errorCode}
+ * 字段——这才是调用方真正消费的东西。
+ */
 class DoclingSidecarAdapterTest {
 
   @Test
@@ -39,7 +48,7 @@ class DoclingSidecarAdapterTest {
   }
 
   @Test
-  void throws_when_sidecar_errors() {
+  void throws_with_structured_code_when_sidecar_errors() {
     DoclingTransport stub =
         (url, filename, body) -> {
           throw new IOException("boom");
@@ -50,7 +59,11 @@ class DoclingSidecarAdapterTest {
             () ->
                 adapter.parse(
                     new ByteArrayInputStream("x".getBytes(StandardCharsets.UTF_8)), "doc.pdf"))
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiDocErrorCodes.SIDECAR_UNAVAILABLE));
   }
 
   @Test
@@ -64,8 +77,13 @@ class DoclingSidecarAdapterTest {
         new DoclingSidecarAdapter("http://sidecar:5001", stub, 8L, 1000, 0, 0);
 
     assertThatThrownBy(() -> adapter.parse(new ByteArrayInputStream(new byte[64]), "big.pdf"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(DoclingSidecarAdapter.ERROR_TOO_LARGE);
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e -> {
+              BizException biz = (BizException) e;
+              assertThat(biz.getErrorCode()).isEqualTo(AiDocErrorCodes.TOO_LARGE);
+              assertThat(biz.getMessage()).contains("大小上限"); // 人读信息仍在
+            });
   }
 
   @Test
@@ -79,8 +97,11 @@ class DoclingSidecarAdapterTest {
             () ->
                 adapter.parse(
                     new ByteArrayInputStream("x".getBytes(StandardCharsets.UTF_8)), "doc.pdf"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(DoclingSidecarAdapter.ERROR_TOO_MANY_PAGES);
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiDocErrorCodes.TOO_MANY_PAGES));
   }
 
   @Test
@@ -119,8 +140,11 @@ class DoclingSidecarAdapterTest {
             () ->
                 adapter.parse(
                     new ByteArrayInputStream("x".getBytes(StandardCharsets.UTF_8)), "doc.pdf"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(DoclingSidecarAdapter.ERROR_SIDECAR_UNAVAILABLE);
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiDocErrorCodes.SIDECAR_UNAVAILABLE));
     assertThat(calls[0]).isEqualTo(3); // 首次 + 2 次重试
   }
 
@@ -130,7 +154,10 @@ class DoclingSidecarAdapterTest {
     DoclingSidecarAdapter adapter = new DoclingSidecarAdapter("http://sidecar:5001", stub);
 
     assertThatThrownBy(() -> adapter.parse(null, "doc.pdf"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(DoclingSidecarAdapter.ERROR_READ_FAILED);
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiDocErrorCodes.READ_FAILED));
   }
 }

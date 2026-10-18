@@ -3,6 +3,7 @@ package com.bone.aidoc.infrastructure.parser;
 import com.bone.aidoc.common.AiDocErrorCodes;
 import com.bone.aidoc.domain.gateway.DocumentParser;
 import com.bone.aidoc.domain.gateway.ParsedDocument;
+import com.bone.core.exception.BizException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -118,22 +119,16 @@ public class DoclingSidecarAdapter implements DocumentParser {
     try {
       resp = objectMapper.readValue(json, DoclingResponse.class);
     } catch (IOException e) {
-      throw new IllegalStateException(
-          "Docling sidecar 响应契约不符 [" + ERROR_SIDECAR_UNAVAILABLE + "]: " + e.getMessage(), e);
+      throw new BizException(
+          502, "Docling sidecar 响应契约不符: " + e.getMessage(), AiDocErrorCodes.SIDECAR_UNAVAILABLE);
     }
     List<String> pages = resp.pages() == null ? List.of() : resp.pages();
     int pageCount = resp.pageCount() > 0 ? resp.pageCount() : pages.size();
     if (pageCount > maxPages || pages.size() > maxPages) {
-      throw new IllegalStateException(
-          "文档页数超上限 "
-              + maxPages
-              + "（pageCount="
-              + pageCount
-              + ", pages="
-              + pages.size()
-              + "）["
-              + ERROR_TOO_MANY_PAGES
-              + "]");
+      throw new BizException(
+          413,
+          "文档页数超上限 " + maxPages + "（pageCount=" + pageCount + ", pages=" + pages.size() + "）",
+          AiDocErrorCodes.TOO_MANY_PAGES);
     }
     return ParsedDocument.of(pageCount, pages, "docling");
   }
@@ -150,7 +145,7 @@ public class DoclingSidecarAdapter implements DocumentParser {
    */
   private byte[] readBounded(InputStream input, String sourceRef) {
     if (input == null) {
-      throw new IllegalStateException("文档输入流为空 [" + ERROR_READ_FAILED + "]");
+      throw new BizException(400, "文档输入流为空", AiDocErrorCodes.READ_FAILED);
     }
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     byte[] buf = new byte[8192];
@@ -160,20 +155,15 @@ public class DoclingSidecarAdapter implements DocumentParser {
       while ((n = input.read(buf)) != -1) {
         total += n;
         if (total > maxBytes) {
-          throw new IllegalStateException(
-              "文档超过大小上限 "
-                  + maxBytes
-                  + " 字节（已读 "
-                  + total
-                  + "）["
-                  + ERROR_TOO_LARGE
-                  + "]: "
-                  + sourceRef);
+          throw new BizException(
+              413,
+              "文档超过大小上限 " + maxBytes + " 字节（已读 " + total + "）: " + sourceRef,
+              AiDocErrorCodes.TOO_LARGE);
         }
         bos.write(buf, 0, n);
       }
     } catch (IOException e) {
-      throw new IllegalStateException("读取文档失败 [" + ERROR_READ_FAILED + "]: " + sourceRef, e);
+      throw new BizException(400, "读取文档失败: " + sourceRef, AiDocErrorCodes.READ_FAILED);
     }
     return bos.toByteArray();
   }
@@ -186,24 +176,23 @@ public class DoclingSidecarAdapter implements DocumentParser {
         return transport.post(baseUrl + "/v1/convert/source", filename, bytes);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new IllegalStateException(
-            "Docling sidecar 调用被中断 [" + ERROR_SIDECAR_UNAVAILABLE + "]: " + sourceRef, e);
+        throw new BizException(
+            502, "Docling sidecar 调用被中断: " + sourceRef, AiDocErrorCodes.SIDECAR_UNAVAILABLE);
       } catch (IOException e) {
         last = e;
         if (attempt < maxRetries && !sleepBackoff(attempt)) {
-          throw new IllegalStateException(
-              "Docling sidecar 重试等待被中断 [" + ERROR_SIDECAR_UNAVAILABLE + "]: " + sourceRef, e);
+          throw new BizException(
+              502, "Docling sidecar 重试等待被中断: " + sourceRef, AiDocErrorCodes.SIDECAR_UNAVAILABLE);
         }
       }
     }
-    throw new IllegalStateException(
+    throw new BizException(
+        502,
         "Docling sidecar 调用失败(重试 "
             + maxRetries
-            + " 次耗尽) ["
-            + ERROR_SIDECAR_UNAVAILABLE
-            + "]: "
+            + " 次耗尽): "
             + (last == null ? "unknown" : last.getMessage()),
-        last);
+        AiDocErrorCodes.SIDECAR_UNAVAILABLE);
   }
 
   private boolean sleepBackoff(int attempt) {
