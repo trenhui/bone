@@ -53,6 +53,26 @@ export async function fetchOverlay(entityCode: string): Promise<UiOverlayBundle 
 }
 
 /**
+ * 个人覆盖变更广播（同一文档内多 surface 同步用）。
+ *
+ * <p><b>为什么需要</b>：个人覆盖有两个 surface——建模台「交付预览」Tab（只读）与
+ * 运行时数据页工具栏（唯一编辑器）。antd Tabs 默认 {@code destroyInactiveTabPane=false}，
+ * 两个 Tab 会**同时挂在同一棵 React 树**上；而 {@code useOverlayBundle} 的 hydrate effect
+ * 只依赖 entityCode，实体不变就不重拉 ⇒ 数据页改完个人列显隐后，交付预览仍持有
+ * 页面加载时的过期快照：「我的所见」列集与运行时漂移、自伤遮蔽告警也不触发。
+ *
+ * <p><b>为什么读本地缓存而不是重新请求服务端</b>：{@link persistOverlay} 已先写本地
+ * 缓存再异步推服务端，此刻本地就是最新真源——直接重放可让切换即时同步，且不被
+ * 网络往返阻塞（PUT 尚未落库时重新 GET 会读回旧值）。跨浏览器标签由 storage 事件兜底。
+ */
+export const OVERLAY_CHANGED_EVENT = 'bone:ui-overlay-changed';
+
+function emitOverlayChanged(entityCode: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(OVERLAY_CHANGED_EVENT, { detail: { entityCode } }));
+}
+
+/**
  * 保存覆盖：本地缓存立即写（乐观 UI），服务端异步推。
  *
  * <p>不 await 服务端结果：列设置是高频微交互（切换可见性/改名/排序/切视图），
@@ -61,6 +81,7 @@ export async function fetchOverlay(entityCode: string): Promise<UiOverlayBundle 
  */
 export function persistOverlay(entityCode: string, bundle: UiOverlayBundle): void {
   saveOverlay(entityCode, bundle);
+  emitOverlayChanged(entityCode);
   void metadataUiOverlayApi.save(entityCode, bundle).catch(() => {
     /* 离线容错：本地缓存已写，下次 hydrate 时以服务端为准 */
   });
@@ -74,4 +95,5 @@ export async function resetOverlay(entityCode: string): Promise<void> {
   } catch {
     /* 服务端不可用时仅清本地：用户本机已恢复默认，服务端旧值不影响其渲染 */
   }
+  emitOverlayChanged(entityCode);
 }
