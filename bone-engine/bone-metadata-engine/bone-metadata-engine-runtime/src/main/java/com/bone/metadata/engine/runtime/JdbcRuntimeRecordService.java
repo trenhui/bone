@@ -190,13 +190,6 @@ public class JdbcRuntimeRecordService {
     MapSqlParameterSource params = tenantParams(entity, tenantId);
     params.addValue("pk", parsePkValue(recordId));
     applyRowOwnerFilter(entity, entity.physicalTableName(), sql, params, rowOwnerId);
-    System.out.println(
-        "ACL_DBG getById#"
-            + Thread.currentThread().getStackTrace()[2].getLineNumber()
-            + " sql="
-            + sql
-            + " params="
-            + params.getValues());
     List<Map<String, Object>> rows = jdbc.queryForList(sql.toString(), params);
     if (rows.isEmpty()) {
       throw new RuntimeRecordException(
