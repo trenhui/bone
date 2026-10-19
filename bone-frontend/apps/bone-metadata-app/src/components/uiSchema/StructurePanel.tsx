@@ -10,21 +10,23 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Badge, Button, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
+  Badge, Button, Checkbox, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, DragOutlined,
-  EyeInvisibleOutlined, PlusOutlined, SearchOutlined, SettingOutlined,
+  ArrowDownOutlined, ArrowUpOutlined, CopyOutlined, DeleteOutlined, DownOutlined, DragOutlined,
+  EyeInvisibleOutlined, PlusOutlined, SearchOutlined, SettingOutlined, UpOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { CONTROL_KINDS, KIND_GROUPS, KIND_MAP, SECTION_KINDS, SECTION_LAYOUTS, DISPLAY_MODES } from './constants';
 import {
-  addControl, addSection, moveControl, moveControlAcross, moveSection,
+  addControl, addSection, batchDuplicateControls, batchHideControls, batchRemoveControls,
+  duplicateControl, moveControl, moveControlAcross, moveSection,
   removeControl, removeSection, setPageHeader, unusedFields, updateControl, updateFooter, updateSection, usedFieldCodes, viewOf,
 } from './schemaOps';
 import { dragSort2 } from './drag';
 import type { ViewKey } from './schemaOps';
+import { useScrollToFocus } from './useScrollToFocus';
 
 const { Text } = Typography;
 
@@ -199,6 +201,20 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [kindFilter, setKindFilter] = useState<string>('all');
+  /** N6：折叠/展开全部分区（纯 UI 态，不进 schema）。折叠后仅留分区头，便于长表单快速总览。 */
+  const [collapsedAll, setCollapsedAll] = useState(false);
+  /** N1：多选批量态。开启后控件行改为「勾选」语义，禁用拖拽/单移以免下标漂移。 */
+  const [multiMode, setMultiMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  const toggleSel = (key: string) => {
+    setSelectedKeys((prev) => {
+      const nxt = new Set(prev);
+      if (nxt.has(key)) nxt.delete(key); else nxt.add(key);
+      return nxt;
+    });
+  };
+  const exitMulti = () => { setMultiMode(false); setSelectedKeys(new Set()); };
 
   /**
    * P1-3 结构面板搜索 / 类型过滤（对标 Appsmith / 阿里宜搭在宽表实体里的控件定位）。
@@ -246,6 +262,10 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
 
   const sections = viewOf(schema, view).sections ?? [];
 
+  // 定位滚动锚点键：focus 命中本面板的哪个元素，就滚哪个（ci 缺省=分区级）
+  const locateKey = focus ? (focus.ci != null ? `s${focus.si}:c${focus.ci}` : `s${focus.si}`) : undefined;
+  useScrollToFocus(locateKey);
+
   const isFocused = (si: number, ci?: number) =>
     focus?.si === si && (ci === undefined || focus.ci === ci);
 
@@ -261,6 +281,37 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         <Text type="secondary" style={{ fontSize: 12 }}>
           {view === 'form' ? '新增/编辑时的布局' : '查看详情时的布局（与表单独立配置）'}
         </Text>
+      </Space>
+
+      {/* ---------- N6 折叠/展开全部 · N1 多选批量 ---------- */}
+      <Space style={{ marginBottom: 10 }} wrap>
+        <Tooltip title="折叠/展开所有分区的控件列表（仅隐藏展示，不改动 schema）">
+          <Button
+            size="small" aria-label={collapsedAll ? '展开全部' : '折叠全部'}
+            icon={collapsedAll ? <DownOutlined /> : <UpOutlined />}
+            onClick={() => setCollapsedAll((v) => !v)}
+          >
+            {collapsedAll ? '展开全部' : '折叠全部'}
+          </Button>
+        </Tooltip>
+        <Tooltip title="开启后控件行改为勾选，可跨分区批量隐藏/复制/删除">
+          <Button
+            size="small" aria-label={multiMode ? '退出多选' : '多选'}
+            type={multiMode ? 'primary' : 'default'}
+            onClick={() => (multiMode ? exitMulti() : setMultiMode(true))}
+          >
+            {multiMode ? '退出多选' : '多选'}
+          </Button>
+        </Tooltip>
+        {multiMode && selectedKeys.size > 0 && (
+          <Space size={4} style={{ background: '#f0f7ff', padding: '2px 8px', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>已选 {selectedKeys.size}</Text>
+            <Button size="small" aria-label="批量隐藏" onClick={() => { onChange(batchHideControls(schema, view, [...selectedKeys])); setSelectedKeys(new Set()); }}>隐藏</Button>
+            <Button size="small" aria-label="批量复制" onClick={() => { onChange(batchDuplicateControls(schema, view, [...selectedKeys])); setSelectedKeys(new Set()); }}>复制</Button>
+            <Button size="small" danger aria-label="批量删除" onClick={() => { onChange(batchRemoveControls(schema, view, [...selectedKeys])); setSelectedKeys(new Set()); }}>删除</Button>
+            <Button size="small" onClick={() => setSelectedKeys(new Set())}>取消</Button>
+          </Space>
+        )}
       </Space>
 
       {/* ---------- P1-3 搜索 / 类型过滤：宽表实体（100+ 字段）定位控件 ---------- */}
@@ -296,6 +347,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
           <div
             key={sec.id ?? si}
             data-tour="section"
+            data-locate={focus && focus.ci === undefined && focus.si === si ? locateKey : undefined}
             style={{
               border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
               borderRadius: 10, marginBottom: 10, background: '#fff',
@@ -388,12 +440,22 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                 </Text>
               )}
 
+              {/* N6：折叠全部时仅留分区头，纯展示态不进 schema（用 display:none 隐藏而非卸载，避免重排下标） */}
+              {collapsedAll && (
+                <div style={{ padding: '6px 10px', color: '#8c8c8c', fontSize: 12 }}>
+                  已折叠 · 含 {sec.controls?.length ?? 0} 个控件
+                </div>
+              )}
+
               {(sec.controls ?? []).map((c, ci) => {
                 const kind = KIND_MAP[c.controlKind ?? ''] ?? KIND_MAP.INPUT;
                 const Icon = kind.icon;
-                const selected = sel?.si === si && sel?.ci === ci;
-                // 行级落点高亮（拖拽悬停本行=重排落点）；functional 守卫防迟滞 leave 误清
-                const rowOver = dragOver === `R${si}:${ci}`;
+                const key = `${si}:${ci}`;
+                // N1 多选态：行变为「勾选」语义；inspectorOpen 仅在非多选态生效
+                const inspectorOpen = sel?.si === si && sel?.ci === ci && !multiMode;
+                const rowSelected = multiMode ? selectedKeys.has(key) : (sel?.si === si && sel?.ci === ci);
+                // 行级落点高亮（拖拽悬停本行=重排落点）；仅非多选态启用拖拽（多选态禁用拖拽/单移，避免下标漂移）
+                const rowOver = !multiMode && dragOver === `R${si}:${ci}`;
                 return (
                   <div key={`${c.fieldCode}-${ci}`}>
                     <div
@@ -401,28 +463,42 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                     // .anticon-delete，探针/引导无法用样式类区分二者（无脑 .first() 会删掉整个分区）。
                     // 给出稳定锚点，行级操作才能被精确定位。
                       data-tour="control-row"
-                      {...dragSort2(si, ci, (fs, fc, ts, tc) => {
+                      data-locate={focus && focus.ci !== undefined && focus.si === si && focus.ci === ci ? locateKey : undefined}
+                      data-code={c.fieldCode}
+                      {...(multiMode ? {} : dragSort2(si, ci, (fs, fc, ts, tc) => {
                         onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
-                      }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}
-                      onClick={() => setSel(selected ? null : { si, ci })}
+                      }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur))))}
+                      onClick={() => (multiMode ? toggleSel(key) : setSel(inspectorOpen ? null : { si, ci }))}
                       tabIndex={0}
                       onKeyDown={(e) => {
-                        // 仅在行本身聚焦时响应方向键，避免与行内 Select/输入框的方向键冲突（WCAG 2.1.1 键盘可操作）
                         if (e.target !== e.currentTarget) return;
+                        if (multiMode) {
+                          if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSel(key); }
+                          return;
+                        }
+                        // 仅在行本身聚焦时响应方向键，避免与行内 Select/输入框的方向键冲突（WCAG 2.1.1 键盘可操作）
                         const last = (sec.controls?.length ?? 0) - 1;
                         if (e.key === 'ArrowUp') { e.preventDefault(); if (ci > 0) onChange(moveControl(schema, view, si, ci, ci - 1)); }
                         else if (e.key === 'ArrowDown') { e.preventDefault(); if (ci < last) onChange(moveControl(schema, view, si, ci, ci + 1)); }
                       }}
                       style={{
-                        display: active && !matchControl(c) ? 'none' : 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
-                        border: `1px solid ${selected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
+                        display: (active && !matchControl(c)) || collapsedAll ? 'none' : 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
+                        border: `1px solid ${rowSelected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
                         borderRadius: 8, marginBottom: 5,
-                        background: selected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
+                        background: rowSelected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
                         boxShadow: rowOver ? '0 0 0 2px rgba(22,119,255,.15)' : undefined,
-                        cursor: 'pointer', transition: 'all .15s',
+                        cursor: multiMode ? 'pointer' : 'grab', transition: 'all .15s',
                       }}
                     >
-                      <span style={{ color: '#bfbfbf', cursor: 'grab', display: 'inline-flex' }}><DragOutlined /></span>
+                      {multiMode && (
+                        <Checkbox
+                          checked={selectedKeys.has(key)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => toggleSel(key)}
+                          aria-label={`选择控件 ${c.fieldCode}`}
+                        />
+                      )}
+                      {!multiMode && <span style={{ color: '#bfbfbf', cursor: 'grab', display: 'inline-flex' }}><DragOutlined /></span>}
                       <Icon />
                       <Text code style={{ fontSize: 12 }}>{c.fieldCode || '（未绑定）'}</Text>
                       <Select
@@ -440,33 +516,45 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                       {c.readonly && <Tag style={{ fontSize: 11 }}>只读</Tag>}
                       {rowOver && <Text type="secondary" style={{ fontSize: 10 }}>松开落到此处</Text>}
                       <span style={{ flex: 1 }} />
-                      <Tooltip title="上移控件">
-                        <Button size="small" type="text" aria-label="控件上移" icon={<ArrowUpOutlined />} disabled={ci === 0}
-                          onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci - 1)); }} />
-                      </Tooltip>
-                      <Tooltip title="下移控件">
-                        <Button size="small" type="text" aria-label="控件下移" icon={<ArrowDownOutlined />} disabled={ci >= (sec.controls?.length ?? 0) - 1}
-                          onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci + 1)); }} />
-                      </Tooltip>
-                      <Tooltip title="控件属性">
-                        <SettingOutlined
-                          role="button" tabIndex={0} aria-label={`控件属性 ${c.fieldCode}`}
-                          style={{ color: selected ? '#1677ff' : '#bfbfbf', cursor: 'pointer' }}
-                          onClick={(e) => { e.stopPropagation(); setSel(selected ? null : { si, ci }); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSel(selected ? null : { si, ci }); } }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="移出分区">
-                        <DeleteOutlined
-                          role="button" tabIndex={0} aria-label={`移出分区 ${c.fieldCode}`}
-                          style={{ color: '#ff7875', cursor: 'pointer' }}
-                          onClick={(e) => { e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); } }}
-                        />
-                      </Tooltip>
+                      {!multiMode && (
+                        <>
+                          <Tooltip title="上移控件">
+                            <Button size="small" type="text" aria-label="控件上移" icon={<ArrowUpOutlined />} disabled={ci === 0}
+                              onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci - 1)); }} />
+                          </Tooltip>
+                          <Tooltip title="下移控件">
+                            <Button size="small" type="text" aria-label="控件下移" icon={<ArrowDownOutlined />} disabled={ci >= (sec.controls?.length ?? 0) - 1}
+                              onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci + 1)); }} />
+                          </Tooltip>
+                          <Tooltip title="控件属性">
+                            <SettingOutlined
+                              role="button" tabIndex={0} aria-label={`控件属性 ${c.fieldCode}`}
+                              style={{ color: inspectorOpen ? '#1677ff' : '#bfbfbf', cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); setSel(inspectorOpen ? null : { si, ci }); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSel(inspectorOpen ? null : { si, ci }); } }}
+                            />
+                          </Tooltip>
+                          <Tooltip title={`复制控件（克隆 ${c.fieldCode}）`}>
+                            <CopyOutlined
+                              role="button" tabIndex={0} aria-label={`复制控件 ${c.fieldCode}`}
+                              style={{ color: '#1677ff', cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); onChange(duplicateControl(schema, view, si, ci)); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onChange(duplicateControl(schema, view, si, ci)); } }}
+                            />
+                          </Tooltip>
+                          <Tooltip title="移出分区">
+                            <DeleteOutlined
+                              role="button" tabIndex={0} aria-label={`移出分区 ${c.fieldCode}`}
+                              style={{ color: '#ff7875', cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); } }}
+                            />
+                          </Tooltip>
+                        </>
+                      )}
                     </div>
 
-                    {selected && (
+                    {inspectorOpen && (
                       <ControlInspector
                         control={c}
                         fields={fields}

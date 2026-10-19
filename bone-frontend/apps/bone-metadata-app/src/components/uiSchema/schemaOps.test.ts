@@ -6,6 +6,7 @@ import {
   setDegradedBanner, setPageHeader, updateFooter, setI18nNamespace, updateBase,
   setBatchActions, toggleQuickFilters, addStat, updateStat, removeStat, setViewKind, setDataScope,
   toggleSearchFields,
+  duplicateControl, batchRemoveControls, batchHideControls, batchDuplicateControls, updateControl,
 } from './schemaOps';
 
 const base = () => buildDefaultSchema('expense', [
@@ -279,5 +280,59 @@ describe('列表列批量操作（v1.2 新增：对标 Salesforce List View）',
     const before = s.views.list?.columns?.map((c) => c.fieldCode);
     moveColumn(s, 0, 1);
     expect(s.views.list?.columns?.map((c) => c.fieldCode)).toEqual(before);
+  });
+});
+
+describe('控件复制 / 多选批量（N2 复制控件 · N1 多选批量）', () => {
+  it('duplicateControl：插入到源之后、数量 +1，且不可变（原 schema 不动）', () => {
+    const s = base(); // [amount, status]
+    expect(s.views.form?.sections?.[0]?.controls).toHaveLength(2);
+    const next = duplicateControl(s, 'form', 0, 0);
+    const ctrls = next.views.form?.sections?.[0]?.controls ?? [];
+    expect(ctrls).toHaveLength(3);
+    expect(ctrls[1]?.fieldCode).toBe('amount_copy1'); // 紧邻源之后，且带 _copy 后缀
+    expect(s.views.form?.sections?.[0]?.controls).toHaveLength(2); // 原对象未变
+  });
+
+  it('duplicateControl：克隆体 fieldCode 始终带 _copyN 后缀（保证视图内唯一，避免双绑定）', () => {
+    const s = base();
+    const d1 = duplicateControl(s, 'form', 0, 0); // amount → amount_copy1
+    expect(d1.views.form?.sections?.[0]?.controls?.[1]?.fieldCode).toBe('amount_copy1');
+    const d2 = duplicateControl(d1, 'form', 0, 1); // 再克隆 → amount_copy2（剥离已有后缀再编号）
+    expect(d2.views.form?.sections?.[0]?.controls?.[2]?.fieldCode).toBe('amount_copy2');
+  });
+
+  it('duplicateControl：props 深拷贝（改克隆 props 不影响源）', () => {
+    let s = base();
+    s = updateControl(s, 'form', 0, 0, { props: { span: 12 } });
+    const d = duplicateControl(s, 'form', 0, 0);
+    const ctrls = d.views.form?.sections?.[0]?.controls ?? [];
+    (ctrls[1]!.props as { span?: number }).span = 6; // 改克隆
+    expect((s.views.form?.sections?.[0]?.controls?.[0]?.props as { span?: number } | undefined)?.span).toBe(12); // 源不变
+  });
+
+  it('batchRemoveControls：按下标集合删除，其余顺序不变', () => {
+    const s = duplicateControl(base(), 'form', 0, 0); // [amount, amount_copy1, status]
+    const next = batchRemoveControls(s, 'form', ['0:0', '0:2']); // 删第 1、第 3
+    const codes = (next.views.form?.sections?.[0]?.controls ?? []).map((c) => c.fieldCode);
+    expect(codes).toEqual(['amount_copy1']); // 中间那个保留
+  });
+
+  it('batchHideControls：仅目标置 visible:false，其余不动', () => {
+    const next = batchHideControls(base(), 'form', ['0:1']); // 隐藏 status
+    const ctrls = next.views.form?.sections?.[0]?.controls ?? [];
+    expect(ctrls[0]?.visible).toBeUndefined();
+    expect(ctrls[1]?.visible).toBe(false);
+  });
+
+  it('batchDuplicateControls：ci 降序插入，数量按勾选数增加且下标不漂移', () => {
+    const next = batchDuplicateControls(base(), 'form', ['0:0', '0:1']); // [amount, status] → 各克隆一次
+    const codes = (next.views.form?.sections?.[0]?.controls ?? []).map((c) => c.fieldCode);
+    expect(codes).toEqual(['amount', 'amount_copy1', 'status', 'status_copy1']);
+  });
+
+  it('负向探针：删掉 duplicateControl 的插入分支（退回只返回原对象），本测试必须变红', () => {
+    const next = duplicateControl(base(), 'form', 0, 0);
+    expect((next.views.form?.sections?.[0]?.controls ?? []).length).toBe(3);
   });
 });

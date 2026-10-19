@@ -129,6 +129,69 @@ export const moveControlAcross = (
   return withView(s, { sections }, view);
 };
 
+/**
+ * 复制控件（N2，对标 Retool / Appsmith 的「克隆组件」）。
+ *
+ * 克隆整条控件配置（kind / label / span / props / visible …），插入到原位置之后，
+ * 让「做一个相似控件」从「手填一遍」变成「克隆后改两处」。
+ *
+ * fieldCode 始终追加 `_copyN` 后缀（剥离已有的 `_copyN` 再编号，避免
+ * `amount_copy1_copy1` 这种丑名）：克隆出的控件与源是「同一配置的备份」，必须改绑到
+ * 目标字段才能成为独立控件；强制唯一可避免「两个控件绑同一字段」的双绑定歧义 +
+ * lint 重复码告警。克隆体 props 深拷贝，避免与原控件共享同一 props 引用
+ * （曾实测：浅拷贝导致改一个另一个跟着变）。
+ */
+export const duplicateControl = (
+  s: BoneUiSchema, view: ViewKey, si: number, ci: number,
+): BoneUiSchema => {
+  const sections = viewOf(s, view).sections.map((sec) => ({ ...sec, controls: [...sec.controls] }));
+  const sec = sections[si];
+  if (!sec) return s;
+  const src = sec.controls[ci];
+  if (!src) return s;
+  const clone: Control = { ...src, props: { ...(src.props ?? {}) } };
+  const baseCode = (clone.fieldCode || '').replace(/_copy\d+$/, '');
+  const allCodes = new Set(sections.flatMap((x) => x.controls.map((c) => c.fieldCode)));
+  let n = 1;
+  while (allCodes.has(`${baseCode}_copy${n}`)) n++;
+  clone.fieldCode = `${baseCode}_copy${n}`;
+  sec.controls.splice(ci + 1, 0, clone);
+  return withView(s, { sections }, view);
+};
+
+/** 批量删除控件（N1 多选批量，跨分区）。keys 为 `si:ci` 字符串。 */
+export const batchRemoveControls = (s: BoneUiSchema, view: ViewKey, keys: string[]): BoneUiSchema => {
+  const rm = new Set(keys);
+  const sections = viewOf(s, view).sections.map((sec, si) => ({
+    ...sec,
+    controls: sec.controls.filter((_, ci) => !rm.has(`${si}:${ci}`)),
+  }));
+  return withView(s, { sections }, view);
+};
+
+/** 批量隐藏控件（N1 多选批量，置 visible:false，保留可恢复）。keys 为 `si:ci`。 */
+export const batchHideControls = (s: BoneUiSchema, view: ViewKey, keys: string[]): BoneUiSchema => {
+  const set = new Set(keys);
+  const sections = viewOf(s, view).sections.map((sec, si) => ({
+    ...sec,
+    controls: sec.controls.map((c, ci) => (set.has(`${si}:${ci}`) ? { ...c, visible: false } : c)),
+  }));
+  return withView(s, { sections }, view);
+};
+
+/**
+ * 批量复制控件（N1 多选批量）。
+ * 同分区内按 ci 降序插入，避免「先插低位导致高位下标漂移」：
+ * ci=5 先插（落到 6），再处理 ci=3（插到 4）时不影响已处理的 5→6。
+ */
+export const batchDuplicateControls = (s: BoneUiSchema, view: ViewKey, keys: string[]): BoneUiSchema => {
+  const sorted = [...keys].map((k) => k.split(':').map(Number))
+    .sort((a, b) => (a[0] - b[0]) || (b[1] - a[1]));
+  let out = s;
+  for (const [si, ci] of sorted) out = duplicateControl(out, view, si, ci);
+  return out;
+};
+
 /* ============================== 联动规则 ============================== */
 
 export const updateLinkage = (s: BoneUiSchema, idx: number, patch: Partial<LinkageRule>): BoneUiSchema =>
