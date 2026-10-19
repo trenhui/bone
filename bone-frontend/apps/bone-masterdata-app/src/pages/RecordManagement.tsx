@@ -757,6 +757,10 @@ const RecordManagement: React.FC = () => {
           options={false}
           columns={generateTableColumns() as ProColumns<MasterDataRecord>[]}
           dataSource={records}
+          // ★ 必须显式 rowKey：MasterDataRecord 没有 `key` 字段，不指定则每行 key 恒为 undefined，
+          //   React 每次渲染都打「Each child in a list should have a unique key prop」，
+          //   且列表变化时行级状态（勾选/展开）会串到错行上。
+          rowKey={(r: MasterDataRecord) => String(r.id)}
           loading={loading}
           // 记录列随模型字段动态增长，列宽合计可能超过容器；
           // 不设 scroll 会让整页横向滚动，这里改为表格内部横向滚动。

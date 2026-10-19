@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Breadcrumb, Card, Col, Form, Input, Modal,
@@ -30,7 +30,7 @@ const ModuleManagement: React.FC = () => {
 
   const appName = appInfo?.name || '未知应用';
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!appId) return;
     setLoading(true);
     try {
@@ -47,9 +47,9 @@ const ModuleManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [appId]);
 
-  useEffect(() => { loadData(); }, [appId]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const stats = {
     total: modules.length,

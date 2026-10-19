@@ -248,6 +248,13 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
   /* ---------- 编辑 ---------- */
   const commit = useCallback((next: BoneUiSchema) => {
     const cur = schemaRef.current;
+    // 无效操作的可见反馈：schemaOps 对越界下标「原样返回同一引用」——此前静默
+    // no-op，用户点了「上移/删除」什么都没发生且无任何提示（对标编辑器对无效
+    // 操作给出反馈，不静默吞掉）。引用相同 ⇒ 内容必然相同，无误伤。
+    if (cur && next === cur) {
+      message.info('操作未生效：目标位置越界或状态无变化');
+      return;
+    }
     // 同目标连续快编合并为一个历史条目（300ms 窗）：否则逐字入栈，
     // Ctrl+Z 次数与按键次数绑定，50 步上限也被快速挤掉（对标 Figma/VS Code）。
     const path = cur ? firstDiffPath(cur, next) : null;
@@ -258,6 +265,21 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
     setSchema(next);
     setFuture([]);
   }, []);
+
+  /**
+   * 规则追踪 chip → 定位到规则：chip 只持有「规则码/名」，由 designer 用 schemaRef
+   * 反查索引（联动 + 规则两个分组合并查找），再切到规则面板并定位。用 ref 反查而非闭包
+   * 持有 schema，callback 引用稳定，不会击穿 SchemaPreview 的 memo（高频编辑下不重建预览）。
+   */
+  const handleLocateRule = useCallback((key: string) => {
+    const s = schemaRef.current;
+    if (!s) return;
+    const all = [...(s.linkageRules ?? []), ...(s.submitRules ?? [])];
+    const ri = all.findIndex((r) => (r.code ?? r.name ?? '') === key);
+    if (ri < 0) return;
+    setTab('rules');
+    setFocus({ tab: 'rules', ri });
+  }, [setTab, setFocus]);
 
   const undo = () => {
     if (!past.length) return;
@@ -1211,6 +1233,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
             schema={schema} fields={fields} entityCode={entityCode} editView={view}
             publishedSchema={publishedSchema}
             draftDiffers={publishState === 'pending'}
+            onLocateRule={handleLocateRule}
           />
         </div>
       </div>

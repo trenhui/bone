@@ -8,24 +8,25 @@
  *    删了就丢失"曾经配过什么"的审计轨迹（协议 v1.2 待评审）。
  * 3. **停用要有视觉共识**：置灰 + 删除线 + 「已停用」角标，避免"看起来关了其实还在跑"。
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button, Empty, Input, Modal, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined,
-  DownOutlined, UpOutlined, PauseCircleOutlined, PlayCircleOutlined,
+  DownOutlined, UpOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined,
 } from '@ant-design/icons';
-import { evalCond, runSubmit } from '../../utils/uiSchemaEngine';
+import { evalCond, pathVal, runSubmit } from '../../utils/uiSchemaEngine';
 import type { BoneUiSchema, Operator, SubmitFunction } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
-import { FUNCTIONS, OPERATORS, VERIFY_TYPES } from './constants';
+import { FUNCTIONS, FUNCTION_OPTIONS, OPERATOR_OPTIONS, VERIFY_TYPES, VERIFY_TYPE_OPTIONS } from './constants';
 import { describeLinkage, describeSubmit } from './describe';
 import ConditionEditor from './ConditionEditor';
 import {
   addLinkage, addLinkageThen, addSubmit, moveLinkage, moveSubmit,
   removeLinkage, removeLinkageThen, removeSubmit, updateLinkage, updateLinkageThen, updateSubmit,
 } from './schemaOps';
+import { useScrollToFocus } from './useScrollToFocus';
 
 const { Text, Paragraph } = Typography;
 
@@ -42,7 +43,7 @@ interface Props {
 /** 规则卡外壳：统一处理停用视觉、标题区、展开收起 */
 function RuleCard({
   title, code, enabled, onToggleEnabled, level, levelHint,
-  sentence, children, onRemove, onUp, onDown, canUp, canDown, defaultOpen, focusRing, onDryRun,
+  sentence, children, onRemove, onUp, onDown, canUp, canDown, defaultOpen, focusRing, onDryRun, locateKey,
 }: {
   title: string;
   code?: string;
@@ -61,12 +62,14 @@ function RuleCard({
   focusRing?: boolean;
   /** 单条试运行（贴样例数据看条件是否命中；不配完也能验） */
   onDryRun?: () => void;
+  /** 定位滚动锚点键（命中 focus 时才传，见 useScrollToFocus） */
+  locateKey?: string;
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
   const off = !enabled;
 
   return (
-    <div data-tour="rule-card" style={{
+    <div data-tour="rule-card" data-locate={locateKey} style={{
       border: `1px solid ${focusRing ? '#ffa940' : off ? '#f0f0f0' : '#e6eaf0'}`,
       borderRadius: 10, marginBottom: 10, overflow: 'hidden',
       background: off ? '#fafafa' : '#fff',
@@ -103,16 +106,17 @@ function RuleCard({
           </Tooltip>
         )}
         <Tooltip title="上移（规则按顺序执行，后者覆盖前者）">
-          <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={canUp ? !canUp : true} onClick={onUp} />
+          <Button size="small" type="text" aria-label="规则上移" icon={<ArrowUpOutlined />} disabled={canUp ? !canUp : true} onClick={onUp} />
         </Tooltip>
         <Tooltip title="下移">
-          <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={canDown ? !canDown : true} onClick={onDown} />
+          <Button size="small" type="text" aria-label="规则下移" icon={<ArrowDownOutlined />} disabled={canDown ? !canDown : true} onClick={onDown} />
         </Tooltip>
         <Tooltip title="删除规则">
-          <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={onRemove} />
+          <Button size="small" type="text" danger aria-label="删除规则" icon={<DeleteOutlined />} onClick={onRemove} />
         </Tooltip>
         <Button
           size="small" type="text"
+          aria-label={open ? '收起规则详情' : '展开规则详情'}
           icon={open ? <UpOutlined /> : <DownOutlined />}
           onClick={() => setOpen(!open)}
         />
@@ -135,6 +139,8 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
   const [kind, setKind] = useState<'linkage' | 'submit'>(defaultKind);
   // type 随选项下传：ConditionEditor 按字段类型收窄运算符（文本不出现 between/gt）
   const fieldOptions = fields.map((f) => ({ value: f.code, label: `${f.displayName}（${f.code}）`, type: f.type }));
+  // 定位滚动：focus.ri 命中哪个分组（当前 kind）的第几条，滚哪张卡
+  useScrollToFocus(focus?.ri != null ? `r${kind}:${focus.ri}` : undefined);
 
   /**
    * 单条试运行（dry-run）：贴样例数据 → 与运行时同源的 evalCond / linkageState /
@@ -153,6 +159,27 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
 
   const linkages = schema.linkageRules ?? [];
   const submits = schema.submitRules ?? [];
+  /** 规则搜索（码 / 名称 / 条件字段）：长列表（几十上百条规则）下避免盲找，对标 IDE 文件搜索 */
+  const [ruleQuery, setRuleQuery] = useState('');
+  const rq = ruleQuery.trim().toLowerCase();
+  const matchRule = (r: { code?: string; name?: string; when?: unknown }) =>
+    !rq || (r.code ?? '').toLowerCase().includes(rq) || (r.name ?? '').toLowerCase().includes(rq) ||
+    (r.when && typeof r.when === 'object' && 'fieldCode' in r.when
+      ? (((r.when as { fieldCode?: string }).fieldCode) ?? '').toLowerCase().includes(rq)
+      : false);
+
+  /**
+   * 定位时自动切分组：lint 的规则 issue 只带 ri（联动/校验共用 rules 面板），
+   * 若 ri 对当前分组越界而对另一分组合法，说明定位目标是另一分组——自动切过去，
+   * 否则用户看到「面板没变」（自检点击了却没反应）。
+   */
+  useEffect(() => {
+    if (focus?.ri == null) return;
+    const inLinkage = focus.ri < linkages.length;
+    const inSubmit = focus.ri < submits.length;
+    if (kind === 'linkage' && !inLinkage && inSubmit) setKind('submit');
+    else if (kind === 'submit' && !inSubmit && inLinkage) setKind('linkage');
+  }, [focus?.ri, linkages.length, submits.length, kind]);
 
   /* ---------- 联动 ---------- */
   const renderLinkage = () => (
@@ -160,109 +187,113 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
       {linkages.length === 0 && (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有联动规则" style={{ padding: '18px 0' }} />
       )}
-      {linkages.map((r, ri) => (
-        <RuleCard
-          key={ri}
-          title={r.name ?? ''}
-          code={r.code}
-          enabled={r.enabled !== false}
-          onToggleEnabled={(v) => onChange(updateLinkage(schema, ri, { enabled: v ? undefined : false }))}
-          sentence={describeLinkage(r)}
-          focusRing={kind === 'linkage' && focus?.ri === ri}
-          onRemove={() => onChange(removeLinkage(schema, ri))}
-          onUp={() => onChange(moveLinkage(schema, ri, ri - 1))}
-          onDown={() => onChange(moveLinkage(schema, ri, ri + 1))}
-          canUp={ri > 0}
-          canDown={ri < linkages.length - 1}
-          defaultOpen={ri === linkages.length - 1}
-          onDryRun={() => openDryRun('linkage', ri)}
-        >
-          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-            <Space wrap>
-              <Text type="secondary" style={{ fontSize: 12, width: 46 }}>名称</Text>
-              <Input size="small" style={{ width: 180 }} value={r.name ?? ''}
-                onChange={(e) => onChange(updateLinkage(schema, ri, { name: e.target.value }))} />
-              <Text type="secondary" style={{ fontSize: 12, width: 46 }}>编码</Text>
-              <Input size="small" style={{ width: 150 }} placeholder="前后端对账用" value={r.code ?? ''}
-                onChange={(e) => onChange(updateLinkage(schema, ri, { code: e.target.value }))} />
-            </Space>
-
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>当（when）</Text>
-              <div style={{ marginTop: 4 }}>
-                <ConditionEditor
-                  value={r.when}
-                  fieldOptions={fieldOptions}
-                  onChange={(w) => onChange(updateLinkage(schema, ri, { when: w }))}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Space style={{ marginBottom: 4 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>则（then）</Text>
-                <Button
-                  size="small" type="link" icon={<PlusOutlined />}
-                  onClick={() => onChange(addLinkageThen(schema, ri, fields[0]?.code ?? ''))}
-                >
-                  添加动作
-                </Button>
+      {linkages.map((r, ri) => {
+        if (!matchRule(r)) return null;
+        return (
+          <RuleCard
+            key={ri}
+            title={r.name ?? ''}
+            code={r.code}
+            enabled={r.enabled !== false}
+            onToggleEnabled={(v) => onChange(updateLinkage(schema, ri, { enabled: v ? undefined : false }))}
+            sentence={describeLinkage(r)}
+            focusRing={kind === 'linkage' && focus?.ri === ri}
+            onRemove={() => onChange(removeLinkage(schema, ri))}
+            onUp={() => onChange(moveLinkage(schema, ri, ri - 1))}
+            onDown={() => onChange(moveLinkage(schema, ri, ri + 1))}
+            canUp={ri > 0}
+            canDown={ri < linkages.length - 1}
+            defaultOpen={ri === linkages.length - 1}
+            onDryRun={() => openDryRun('linkage', ri)}
+            locateKey={focus?.ri === ri ? `r${kind}:${ri}` : undefined}
+          >
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space wrap>
+                <Text type="secondary" style={{ fontSize: 12, width: 46 }}>名称</Text>
+                <Input size="small" style={{ width: 180 }} value={r.name ?? ''}
+                  onChange={(e) => onChange(updateLinkage(schema, ri, { name: e.target.value }))} />
+                <Text type="secondary" style={{ fontSize: 12, width: 46 }}>编码</Text>
+                <Input size="small" style={{ width: 150 }} placeholder="前后端对账用" value={r.code ?? ''}
+                  onChange={(e) => onChange(updateLinkage(schema, ri, { code: e.target.value }))} />
               </Space>
-              {(r.then ?? []).map((t, ti) => (
-                <div key={ti} style={{
-                  display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-                  padding: '6px 8px', border: '1px solid #f0f0f0', borderRadius: 8, marginBottom: 6, background: '#fafbfd',
-                }}>
-                  <Select size="small" style={{ minWidth: 150 }} showSearch optionFilterProp="label"
-                    options={fieldOptions} value={t.fieldCode || undefined}
-                    onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, { fieldCode: v }))} />
-                  {(['visible', 'required', 'readonly', 'disabled'] as const).map((act) => {
-                    const cur = t[act];
-                    return (
+
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>当（when）</Text>
+                <div style={{ marginTop: 4 }}>
+                  <ConditionEditor
+                    value={r.when}
+                    fieldOptions={fieldOptions}
+                    onChange={(w) => onChange(updateLinkage(schema, ri, { when: w }))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Space style={{ marginBottom: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>则（then）</Text>
+                  <Button
+                    size="small" type="link" icon={<PlusOutlined />}
+                    onClick={() => onChange(addLinkageThen(schema, ri, fields[0]?.code ?? ''))}
+                  >
+                  添加动作
+                  </Button>
+                </Space>
+                {(r.then ?? []).map((t, ti) => (
+                  <div key={ti} style={{
+                    display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+                    padding: '6px 8px', border: '1px solid #f0f0f0', borderRadius: 8, marginBottom: 6, background: '#fafbfd',
+                  }}>
+                    <Select size="small" style={{ minWidth: 150 }} showSearch optionFilterProp="label"
+                      options={fieldOptions} value={t.fieldCode || undefined}
+                      onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, { fieldCode: v }))} />
+                    {(['visible', 'required', 'readonly', 'disabled'] as const).map((act) => {
+                      const cur = t[act];
+                      return (
+                        <Select
+                          key={act} size="small" style={{ width: 92 }}
+                          value={cur === undefined ? 'skip' : cur ? 'on' : 'off'}
+                          onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, {
+                            [act]: v === 'skip' ? undefined : v === 'on',
+                          } as never))}
+                          options={[
+                            { value: 'skip', label: `不改${act === 'visible' ? '可见性' : act === 'required' ? '必填' : act === 'readonly' ? '只读' : '禁用'}` },
+                            { value: 'on', label: act === 'visible' ? '显示' : act === 'required' ? '必填' : act === 'readonly' ? '只读' : '禁用' },
+                            { value: 'off', label: act === 'visible' ? '隐藏' : act === 'required' ? '非必填' : act === 'readonly' ? '可编辑' : '启用' },
+                          ]}
+                        />
+                      );
+                    })}
+                    <Input size="small" style={{ width: 160 }} placeholder="提示文案（可选）" value={t.notice ?? ''}
+                      onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { notice: e.target.value || undefined }))} />
+                    {/* 档位显隐（v1.1 §10.2-4：订阅档上下文命中才显示；缺 tier 的上下文不命中） */}
+                    <Tooltip title="档位显隐：仅当前上下文 tier 命中列表时该字段可见（投研 free/pro 即此维度）">
                       <Select
-                        key={act} size="small" style={{ width: 92 }}
-                        value={cur === undefined ? 'skip' : cur ? 'on' : 'off'}
-                        onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, {
-                          [act]: v === 'skip' ? undefined : v === 'on',
-                        } as never))}
+                        size="small" mode="tags" style={{ width: 130 }} placeholder="档位（可选）"
+                        value={t.tier ?? []}
+                        onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, { tier: v.length ? v : undefined }))}
                         options={[
-                          { value: 'skip', label: `不改${act === 'visible' ? '可见性' : act === 'required' ? '必填' : act === 'readonly' ? '只读' : '禁用'}` },
-                          { value: 'on', label: act === 'visible' ? '显示' : act === 'required' ? '必填' : act === 'readonly' ? '只读' : '禁用' },
-                          { value: 'off', label: act === 'visible' ? '隐藏' : act === 'required' ? '非必填' : act === 'readonly' ? '可编辑' : '启用' },
+                          { value: 'free', label: 'free' },
+                          { value: 'pro', label: 'pro' },
+                          { value: 'team', label: 'team' },
+                          { value: 'enterprise', label: 'enterprise' },
                         ]}
                       />
-                    );
-                  })}
-                  <Input size="small" style={{ width: 160 }} placeholder="提示文案（可选）" value={t.notice ?? ''}
-                    onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { notice: e.target.value || undefined }))} />
-                  {/* 档位显隐（v1.1 §10.2-4：订阅档上下文命中才显示；缺 tier 的上下文不命中） */}
-                  <Tooltip title="档位显隐：仅当前上下文 tier 命中列表时该字段可见（投研 free/pro 即此维度）">
-                    <Select
-                      size="small" mode="tags" style={{ width: 130 }} placeholder="档位（可选）"
-                      value={t.tier ?? []}
-                      onChange={(v) => onChange(updateLinkageThen(schema, ri, ti, { tier: v.length ? v : undefined }))}
-                      options={[
-                        { value: 'free', label: 'free' },
-                        { value: 'pro', label: 'pro' },
-                        { value: 'team', label: 'team' },
-                        { value: 'enterprise', label: 'enterprise' },
-                      ]}
-                    />
-                  </Tooltip>
-                  {/* 赋值（协议 §3.5：仅 eq/null 两算子的保守口径，防联动写爆） */}
-                  <Tooltip title="赋值：条件命中时把固定值写入该字段（保守口径，联动不做表达式）">
-                    <Input size="small" style={{ width: 120 }} placeholder="赋值（可选）"
-                      value={t.value === undefined || t.value === null ? '' : String(t.value)}
-                      onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { value: e.target.value === '' ? undefined : e.target.value }))} />
-                  </Tooltip>
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />}
-                    onClick={() => onChange(removeLinkageThen(schema, ri, ti))} />
-                </div>
-              ))}
-            </div>
-          </Space>
-        </RuleCard>
-      ))}
+                    </Tooltip>
+                    {/* 赋值（协议 §3.5：仅 eq/null 两算子的保守口径，防联动写爆） */}
+                    <Tooltip title="赋值：条件命中时把固定值写入该字段（保守口径，联动不做表达式）">
+                      <Input size="small" style={{ width: 120 }} placeholder="赋值（可选）"
+                        value={t.value === undefined || t.value === null ? '' : String(t.value)}
+                        onChange={(e) => onChange(updateLinkageThen(schema, ri, ti, { value: e.target.value === '' ? undefined : e.target.value }))} />
+                    </Tooltip>
+                    <Button size="small" type="text" danger aria-label="删除该联动动作" icon={<DeleteOutlined />}
+                      onClick={() => onChange(removeLinkageThen(schema, ri, ti))} />
+                  </div>
+                ))}
+              </div>
+            </Space>
+          </RuleCard>
+        );
+      })}
       <Button block size="small" icon={<PlusOutlined />}
         onClick={() => onChange(addLinkage(schema, fields[0]?.code ?? ''))}>
         添加联动规则
@@ -279,6 +310,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
       {submits.map((r, ri) => {
         const vt = VERIFY_TYPES.find((v) => v.value === (r.verifyType ?? 'ERROR'))!;
         const fnMeta = FUNCTIONS.find((f) => f.value === r.function);
+        if (!matchRule(r)) return null;
         return (
           <RuleCard
             key={ri}
@@ -296,6 +328,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
             canDown={ri < submits.length - 1}
             defaultOpen={ri === submits.length - 1}
             onDryRun={() => openDryRun('submit', ri)}
+            locateKey={focus?.ri === ri ? `r${kind}:${ri}` : undefined}
           >
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Space wrap>
@@ -311,7 +344,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
                 <Text type="secondary" style={{ fontSize: 12, width: 46 }}>函数</Text>
                 <Select size="small" style={{ width: 130 }} value={r.function}
                   onChange={(v) => onChange(updateSubmit(schema, ri, { function: v as SubmitFunction }))}
-                  options={FUNCTIONS.map((f) => ({ value: f.value, label: f.label }))} />
+                  options={FUNCTION_OPTIONS} />
                 <Tooltip title={fnMeta?.hint}>
                   <Text type="secondary" style={{ fontSize: 11 }}>
                     左值={fnMeta?.left} · 右值={fnMeta?.right ?? '由字段/参数决定'}
@@ -334,7 +367,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
                 <Text type="secondary" style={{ fontSize: 12, width: 46 }}>比较</Text>
                 <Select size="small" style={{ width: 110 }} value={r.operator}
                   onChange={(v) => onChange(updateSubmit(schema, ri, { operator: v as Operator }))}
-                  options={OPERATORS.map((o) => ({ value: o.value, label: o.label }))} />
+                  options={OPERATOR_OPTIONS} />
                 {fnMeta?.right && (
                   <>
                     <Select size="small" style={{ width: 80 }}
@@ -400,7 +433,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
                 <Segmented
                   size="small" value={r.verifyType ?? 'ERROR'}
                   onChange={(v) => onChange(updateSubmit(schema, ri, { verifyType: v as 'ERROR' | 'WARNING' }))}
-                  options={VERIFY_TYPES.map((v) => ({ value: v.value, label: v.label }))}
+                  options={VERIFY_TYPE_OPTIONS}
                 />
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {r.verifyType === 'WARNING' ? '弹确认后可继续提交' : '阻断提交'}
@@ -454,8 +487,21 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
         const rule = linkages[dryRun.ri];
         if (!rule) return null;
         const hit = evalCond(rule.when, dryData as Record<string, unknown>, {});
+        // 调试回显（对标 Zapier Test step 展示左/右值）：简单条件（叶子）把比较两翼的实际
+        // 值摊开，避免「条件未命中却不知差在哪」——尤其在样例数据填错字段时。
+        const w = rule.when as Record<string, unknown>;
+        const isSimple = !!w && typeof w === 'object' && 'fieldCode' in w;
+        const fmtVal = (v: unknown) => v === undefined ? '（空）' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+        const left = isSimple ? pathVal(dryData as Record<string, unknown>, w.fieldCode as string) : undefined;
+        const right = isSimple ? (w.valueType === 'field' ? pathVal(dryData as Record<string, unknown>, w.compareField as string) : w.value) : undefined;
         return (
           <div style={{ marginTop: 10 }}>
+            {isSimple && (
+              <div style={{ marginBottom: 6, fontSize: 12, color: '#666' }}>
+                左值 <code>{String(w.fieldCode)}</code> = <b>{fmtVal(left)}</b>
+                {' '}｜ 右值 = <b>{fmtVal(right)}</b>
+              </div>
+            )}
             <Tag color={hit ? 'green' : 'default'} style={{ fontSize: 12 }}>
               {hit ? '● 条件命中，then 动作已生效' : '○ 条件未命中，规则不生效'}
             </Tag>
@@ -483,7 +529,7 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
         if (!rule) return null;
         const baseRequired: Record<string, boolean> = {};
         fields.forEach((f) => { if (f.required) baseRequired[f.code] = true; });
-        const res = runSubmit(JSON.parse(JSON.stringify(dryData)), [rule], [], {}, baseRequired);
+        const res = runSubmit(structuredClone(dryData), [rule], [], {}, baseRequired);
         return (
           <div style={{ marginTop: 10 }}>
             {res.errors.length === 0 && res.warnings.length === 0 ? (
@@ -515,6 +561,13 @@ export default function RulesPanel({ schema, onChange, fields, defaultKind = 'li
           ? '联动只在前端跑（体验拦截），按顺序执行、后者覆盖前者；安全底线仍在后端。'
           : '前端先拦（体验），后端同 code 强制（安全底线不后移）。停用规则前后端都会跳过。'}
       </Paragraph>
+      <Input
+        size="small" allowClear placeholder="搜索规则（码 / 名称 / 条件字段）"
+        value={ruleQuery} onChange={(e) => setRuleQuery(e.target.value)}
+        style={{ marginBottom: 12 }}
+        prefix={<SearchOutlined />}
+        aria-label="搜索规则"
+      />
       {kind === 'linkage' ? renderLinkage() : renderSubmit()}
       {dryModal}
     </div>

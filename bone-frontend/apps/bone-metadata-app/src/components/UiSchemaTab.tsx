@@ -18,25 +18,30 @@ interface Props {
    */
   onGoPublish?: () => void;
   /**
-   * 前往实体详情「列表显示」页签（两层闭环反向入口：设计器工具栏「个人偏好」按钮）。
-   * 由 EntityDetail 注入 setOuterTab('ui')；缺省时设计器不渲染该按钮。
+   * 前往实体详情「数据」页签（两层闭环反向入口：设计器工具栏「运行时列表」按钮）。
+   * 个人覆盖（列显隐/密度/个人视图）的唯一编辑器在运行时数据页工具栏——
+   * 编辑入口跟着被编辑对象的生命周期走（业界双轨：组织级契约在 maker 工具配，
+   * 个人视图由 end user 在看数据的页面自助）。由 EntityDetail 注入
+   * setOuterTab('data')；缺省时设计器不渲染该按钮。
    */
-  onGoPersonal?: () => void;
+  onGoRuntime?: () => void;
   /**
    * 实体行策略声明的 rule name 集合（entity.rowPolicies.rules[].name）。
    * 列表视图 dataScope.policyCode 下拉真源（协议 §3.2：只引用 row_policies，前端不拼 WHERE）。
+   * 注意：policy 指行级数据策略（RLS），与保险业务域的「保单」无关。
+   * 宿主可预置以省一次实体详情请求；未传时设计器自行按 entityId 拉取兜底。
    */
-  policyCodes?: string[];
+  rowPolicyCodes?: string[];
 }
 
-const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublish, onGoPersonal, policyCodes }) => (
+const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes }) => (
   <UiSchemaDesigner
     entityId={entityId}
     entityCode={entityCode}
     fields={fields ?? []}
     onGoPublish={onGoPublish}
-    onGoPersonal={onGoPersonal}
-    policyCodes={policyCodes}
+    onGoRuntime={onGoRuntime}
+    rowPolicyCodes={rowPolicyCodes}
   />
 );
 

@@ -19,6 +19,7 @@ import type { MetaField } from '../types';
 import type {
   ActionBarItem, BoneUiSchema, LinkageRule, Section, SubmitRule, Variant, VariantMatch,
 } from './uiSchemaEngine';
+import type { LintLocate } from '../components/uiSchema/lint';
 import { normJson } from './normJson';
 
 export type ChangeGroupKey = 'form' | 'detail' | 'list' | 'linkage' | 'submit' | 'action' | 'variant';
@@ -33,6 +34,8 @@ export interface ChangeItem {
   text?: string;
   /** 规则类载荷（联动/提交校验/动作条），供 UI 渲染自然语言句子 */
   rule?: LinkageRule | SubmitRule | ActionBarItem;
+  /** 定位信息（点击跳到配置面板对应位置；对标 Figma 版本对比逐条可定位） */
+  locate?: LintLocate;
 }
 
 export interface ChangeGroup {
@@ -64,6 +67,10 @@ const EMPTY: ChangePreview = { groups: [], total: 0, summary: '' };
 
 interface FlatControl {
   sectionId: string;
+  /** 分区下标（视图内） */
+  si: number;
+  /** 控件下标（分区内） */
+  ci: number;
   control: Section['controls'][number];
 }
 
@@ -73,7 +80,7 @@ function secTitle(s: Section | undefined): string {
 
 function flattenControls(secs: Section[]): FlatControl[] {
   const out: FlatControl[] = [];
-  for (const s of secs) for (const c of s.controls ?? []) out.push({ sectionId: s.id, control: c });
+  secs.forEach((s, si) => (s.controls ?? []).forEach((c, ci) => out.push({ sectionId: s.id, si, ci, control: c })));
   return out;
 }
 
@@ -98,35 +105,38 @@ function diffView(
   const folded = new Set<string>();
 
   // 分区新建 / 移除（按 id 匹配；id 是结构稳定键）
-  for (const s of dSecs) {
-    if (pById.has(s.id)) continue;
+  dSecs.forEach((s, si) => {
+    if (pById.has(s.id)) return;
     const n = (s.controls ?? []).length;
     const names = (s.controls ?? []).map((c) => ctrlLabel(c.fieldCode, fields)).slice(0, 4).join('、');
     items.push({
       group: viewKey, kind: 'add', key: `section:${s.id}`,
       text: `新增分区「${secTitle(s)}」（${n} 个字段${names ? `：${names}${n > 4 ? ' 等' : ''}` : ''}）`,
+      locate: { tab: 'structure', si },
     });
     for (const c of s.controls ?? []) folded.add(c.fieldCode);
-  }
-  for (const s of pSecs) {
-    if (dById.has(s.id)) continue;
+  });
+  pSecs.forEach((s, si) => {
+    if (dById.has(s.id)) return;
     const n = (s.controls ?? []).length;
     items.push({
       group: viewKey, kind: 'remove', key: `section:${s.id}`,
       text: `移除分区「${secTitle(s)}」（${n} 个字段）`,
+      locate: { tab: 'structure', si },
     });
     for (const c of s.controls ?? []) folded.add(c.fieldCode);
-  }
+  });
   // 分区标题修改
-  for (const s of dSecs) {
+  dSecs.forEach((s, si) => {
     const ps = pById.get(s.id);
     if (ps && secTitle(s) !== secTitle(ps)) {
       items.push({
         group: viewKey, kind: 'modify', key: `section:${s.id}`,
         text: `分区「${secTitle(ps)}」标题改为「${secTitle(s)}」`,
+        locate: { tab: 'structure', si },
       });
     }
-  }
+  });
 
   // 控件全局 diff（按 fieldCode 匹配；跨分区移动 = modify，不是 删+增）
   const dCtrls = flattenControls(dSecs);
@@ -141,13 +151,17 @@ function diffView(
     const px = pByCode.get(code);
     if (!px) {
       const where = `到分区「${secTitle(dById.get(x.sectionId))}」`;
-      items.push({ group: viewKey, kind: 'add', key: code, text: `新增字段${nm}${where}` });
+      items.push({
+        group: viewKey, kind: 'add', key: code, text: `新增字段${nm}${where}`,
+        locate: { tab: 'structure', si: x.si, ci: x.ci },
+      });
       continue;
     }
     if (px.sectionId !== x.sectionId) {
       items.push({
         group: viewKey, kind: 'modify', key: code,
         text: `${nm}从分区「${secTitle(pById.get(px.sectionId))}」移到「${secTitle(dById.get(x.sectionId))}」`,
+        locate: { tab: 'structure', si: x.si, ci: x.ci },
       });
       continue;
     }
@@ -165,19 +179,25 @@ function diffView(
     const pKind = px.control.controlKind ?? 'INPUT';
     if (dKind !== pKind) diffs.push(`控件类型 ${pKind}→${dKind}`);
     if (diffs.length) {
-      items.push({ group: viewKey, kind: 'modify', key: code, text: `${nm}${diffs.join('、')}` });
+      items.push({
+        group: viewKey, kind: 'modify', key: code, text: `${nm}${diffs.join('、')}`,
+        locate: { tab: 'structure', si: x.si, ci: x.ci },
+      });
     }
   }
   for (const px of pCtrls) {
     const code = px.control.fieldCode;
     if (folded.has(code) || dByCode.has(code)) continue;
-    items.push({ group: viewKey, kind: 'remove', key: code, text: `移除字段「${ctrlLabel(code, fields)}」` });
+    items.push({
+      group: viewKey, kind: 'remove', key: code, text: `移除字段「${ctrlLabel(code, fields)}」`,
+      locate: { tab: 'structure', si: px.si, ci: px.ci },
+    });
   }
 
   // 同分区内列序调整（集合相同、顺序不同 → 一条 modify，不拆成逐字段移动）
-  for (const s of dSecs) {
+  dSecs.forEach((s, si) => {
     const ps = pById.get(s.id);
-    if (!ps) continue;
+    if (!ps) return;
     const dc = (s.controls ?? []).map((c) => c.fieldCode);
     const pc = (ps.controls ?? []).map((c) => c.fieldCode);
     const sameSet = dc.length === pc.length && [...dc].sort().join('|') === [...pc].sort().join('|');
@@ -185,9 +205,10 @@ function diffView(
       items.push({
         group: viewKey, kind: 'modify', key: `order:${s.id}`,
         text: `分区「${secTitle(s)}」内字段顺序调整`,
+        locate: { tab: 'structure', si },
       });
     }
-  }
+  });
 }
 
 /* ============================== 列表 diff ============================== */
@@ -204,6 +225,7 @@ function diffList(
   const dByCode = new Map(dc.map((c) => [c.fieldCode, c]));
 
   for (const c of dc) {
+    const idx = dc.indexOf(c);
     const nm = `「${ctrlLabel(c.fieldCode, fields)}」`;
     const px = pByCode.get(c.fieldCode);
     if (!px) {
@@ -211,6 +233,7 @@ function diffList(
       items.push({
         group: 'list', kind: 'add', key: c.fieldCode,
         text: `新增列${nm}${attrs ? `（${attrs}）` : ''}`,
+        locate: { tab: 'list', idx },
       });
       continue;
     }
@@ -229,19 +252,22 @@ function diffList(
       diffs.push(c.visible === false ? '隐藏' : '取消隐藏');
     }
     if (diffs.length) {
-      items.push({ group: 'list', kind: 'modify', key: c.fieldCode, text: `列${nm}${diffs.join('、')}` });
+      items.push({ group: 'list', kind: 'modify', key: c.fieldCode, text: `列${nm}${diffs.join('、')}`, locate: { tab: 'list', idx } });
     }
   }
   for (const c of pc) {
     if (dByCode.has(c.fieldCode)) continue;
-    items.push({ group: 'list', kind: 'remove', key: c.fieldCode, text: `移除列「${ctrlLabel(c.fieldCode, fields)}」` });
+    items.push({
+      group: 'list', kind: 'remove', key: c.fieldCode, text: `移除列「${ctrlLabel(c.fieldCode, fields)}」`,
+      locate: { tab: 'list', idx: pc.indexOf(c) },
+    });
   }
 
   // 列序调整（集合相同、顺序不同）
   const dk = dc.map((c) => c.fieldCode);
   const pk = pc.map((c) => c.fieldCode);
   if (dk.length && dk.length === pk.length && [...dk].sort().join('|') === [...pk].sort().join('|') && dk.join('|') !== pk.join('|')) {
-    items.push({ group: 'list', kind: 'modify', key: 'order', text: '列表列序调整' });
+    items.push({ group: 'list', kind: 'modify', key: 'order', text: '列表列序调整', locate: { tab: 'list' } });
   }
 
   // 数据范围策略
@@ -251,6 +277,7 @@ function diffList(
     items.push({
       group: 'list', kind: 'modify', key: 'dataScope',
       text: ds ? `数据范围策略改为「${ds}」` : '移除数据范围策略',
+      locate: { tab: 'list' },
     });
   }
 
@@ -259,23 +286,17 @@ function diffList(
   const psf = published?.views?.list?.searchFields ?? [];
   for (const f of dsf) {
     if (psf.includes(f)) continue;
-    items.push({ group: 'list', kind: 'add', key: `search:${f}`, text: `搜索字段新增「${ctrlLabel(f, fields)}」` });
+    items.push({ group: 'list', kind: 'add', key: `search:${f}`, text: `搜索字段新增「${ctrlLabel(f, fields)}」`, locate: { tab: 'list' } });
   }
   for (const f of psf) {
     if (dsf.includes(f)) continue;
-    items.push({ group: 'list', kind: 'remove', key: `search:${f}`, text: `搜索字段移除「${ctrlLabel(f, fields)}」` });
+    items.push({ group: 'list', kind: 'remove', key: `search:${f}`, text: `搜索字段移除「${ctrlLabel(f, fields)}」`, locate: { tab: 'list' } });
   }
 }
 
 /* ============================== 规则 / 动作 / 变体 diff ============================== */
 
 type RuleLike = LinkageRule | SubmitRule | ActionBarItem;
-
-/** 规则稳定键：动作条按 actionCode、联动/校验按 code → name → 位置（协议建议规则带 code） */
-function ruleKey(r: RuleLike, i: number): string {
-  const anyR = r as { actionCode?: string; code?: string; name?: string };
-  return anyR.actionCode || anyR.code || anyR.name || `#${i}`;
-}
 
 function ruleLabel(r: RuleLike): string {
   const anyR = r as { actionCode?: string; code?: string; name?: string };
@@ -284,7 +305,8 @@ function ruleLabel(r: RuleLike): string {
 
 /**
  * 规则数组 diff（联动/提交校验/动作条共用）。
- * 键 = code → name → 位置。无 code/name 的规则按位置匹配：位置之前有增删会错位，
+ * 键 = code → name → 位置；同键重复出现时按位置加 #i 后缀（见 diffRules 内 keyOf），
+ * 避免 Map 折叠多条规则。无 code/name 的规则按位置匹配：位置之前有增删会错位，
  * MVP 容忍（协议建议规则带 code；UI 层对 modify 只提示「已修改」不虚构细节）。
  */
 function diffRules(
@@ -295,22 +317,86 @@ function diffRules(
 ): void {
   const d = dArr ?? [];
   const p = pArr ?? [];
-  const pByKey = new Map(p.map((x, i) => [ruleKey(x, i), x]));
-  const dByKey = new Map(d.map((x, i) => [ruleKey(x, i), x]));
+  // 稳定键：同一侧数组内出现重复 code/name 时按位置加 #i 后缀，避免 Map 把多条规则折叠成
+  // 一条（此前两规则同 code 会静默漏报）。注意判重是「单侧重复」而非「双侧都出现」——正常的
+  // 修改场景（草稿/发布各一条同 code）不算重复，仍用代码本身作键，保证「按 code 定位」语义不变
+  // （对标 diff 以稳定 id 比对，而非首值命中即短路）。
+  const baseKey = (r: RuleLike, i: number) => {
+    const a = r as { actionCode?: string; code?: string; name?: string };
+    return a.actionCode || a.code || a.name || `#${i}`;
+  };
+  const countIn = (arr: RuleLike[]) => {
+    const m = new Map<string, number>();
+    arr.forEach((r, i) => { const b = baseKey(r, i); m.set(b, (m.get(b) ?? 0) + 1); });
+    return m;
+  };
+  const cd = countIn(d);
+  const cp = countIn(p);
+  const needSuffix = (b: string) => (cd.get(b) ?? 0) > 1 || (cp.get(b) ?? 0) > 1;
+  const keyOf = (r: RuleLike, i: number) => {
+    const b = baseKey(r, i);
+    return needSuffix(b) ? `${b}#${i}` : b;
+  };
+  const pByKey = new Map(p.map((x, i) => [keyOf(x, i), x]));
+  const dByKey = new Map(d.map((x, i) => [keyOf(x, i), x]));
+  // 定位口径：联动/校验 → 规则面板第 ri 条；动作条 → 动作条面板第 idx 项
+  const locateOf = (i: number): LintLocate =>
+    group === 'action' ? { tab: 'actions', idx: i } : { tab: 'rules', ri: i };
   d.forEach((x, i) => {
-    const k = ruleKey(x, i);
+    const k = keyOf(x, i);
     const px = pByKey.get(k);
     if (!px) {
-      items.push({ group, kind: 'add', key: k, rule: x });
+      items.push({ group, kind: 'add', key: k, rule: x, locate: locateOf(i) });
     } else if (normJson(x) !== normJson(px)) {
-      items.push({ group, kind: 'modify', key: k, text: `规则「${ruleLabel(x)}」已修改` });
+      // 字段级明细：说清「改了哪」而不是只说「已修改」——上线前评审要能定位到
+      // 具体条件/动作（对标 PR diff 精确到文件行，不是 "1 file changed"）。
+      const paths = ruleDiffPaths(px, x);
+      const detail = paths.length
+        ? `（${paths.slice(0, RULE_DIFF_PATH_SHOW).join('、')}${paths.length > RULE_DIFF_PATH_SHOW ? ` 等 ${paths.length} 处` : ''}）`
+        : '';
+      items.push({ group, kind: 'modify', key: k, text: `规则「${ruleLabel(x)}」已修改${detail}`, locate: locateOf(i) });
     }
   });
   p.forEach((x, i) => {
-    const k = ruleKey(x, i);
+    const k = keyOf(x, i);
     if (dByKey.has(k)) return;
-    items.push({ group, kind: 'remove', key: k, rule: x });
+    items.push({ group, kind: 'remove', key: k, rule: x, locate: locateOf(i) });
   });
+}
+
+/** 字段级 diff 路径上限（预告清单里超过 3 处折叠为「等 N 处」，避免刷屏） */
+/** 字段级 diff 的展示路径数（预告清单里超过 3 处折叠为「等 N 处」，避免刷屏） */
+const RULE_DIFF_PATH_SHOW = 3;
+
+/**
+ * 规则的全部变化路径（如 `when.operator`、`then[0].required`、`enabled`）。
+ * 规则对象规模有界（十余个键），全量收集无性能顾虑；展示截断由调用方做
+ * （保留总数才能说「等 N 处」——内部提前截断会丢总数，曾因此返工）。
+ * 深度截到 2 层：再深的路径对评审无信息量（数组整体算一处，then 增删行
+ * 报 `then` 而不是每行细节——行级细节交给设计器内的 lint/预览）。
+ */
+function ruleDiffPaths(a: RuleLike, b: RuleLike, path = '', depth = 0, out: string[] = []): string[] {
+  if (a === b) return out;
+  const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+  if (!isObj(a) || !isObj(b) || depth > 2) {
+    if (path) out.push(path);
+    return out;
+  }
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    const p = path ? `${path}.${k}` : k;
+    const av = a[k];
+    const bv = b[k];
+    if (Array.isArray(av) || Array.isArray(bv)) {
+      const al = Array.isArray(av) ? av : [];
+      const bl = Array.isArray(bv) ? bv : [];
+      const changed = al.length !== bl.length || al.some((x, idx) => normJson(x) !== normJson(bl[idx]));
+      if (changed) out.push(p);
+      continue;
+    }
+    ruleDiffPaths(av as RuleLike, bv as RuleLike, p, depth + 1, out);
+  }
+  return out;
 }
 
 /** 变体命中条件 → 人类可读（单一真源：describe.tsx 的 describeVariant 与 UI 摘要都走这里） */
@@ -345,22 +431,29 @@ function diffVariants(
   const pv = published?.variants ?? [];
   const pByKey = new Map(pv.map((v) => [v.key, v]));
   const dByKey = new Map(dv.map((v) => [v.key, v]));
-  for (const v of dv) {
+  dv.forEach((v, vi) => {
     const label = v.label ?? v.key;
     const px = pByKey.get(v.key);
     if (!px) {
       items.push({
         group: 'variant', kind: 'add', key: v.key,
         text: `新增变体「${label}」（${matchText(v.match)}；${variantOverrideText(v)}）`,
+        locate: { tab: 'variants', vi },
       });
     } else if (normJson(v) !== normJson(px)) {
-      items.push({ group: 'variant', kind: 'modify', key: v.key, text: `变体「${label}」的覆盖内容已修改` });
+      items.push({
+        group: 'variant', kind: 'modify', key: v.key, text: `变体「${label}」的覆盖内容已修改`,
+        locate: { tab: 'variants', vi },
+      });
     }
-  }
-  for (const v of pv) {
-    if (dByKey.has(v.key)) continue;
-    items.push({ group: 'variant', kind: 'remove', key: v.key, text: `移除变体「${v.label ?? v.key}」` });
-  }
+  });
+  pv.forEach((v, vi) => {
+    if (dByKey.has(v.key)) return;
+    items.push({
+      group: 'variant', kind: 'remove', key: v.key, text: `移除变体「${v.label ?? v.key}」`,
+      locate: { tab: 'variants', vi },
+    });
+  });
 }
 
 /* ============================== 汇总 ============================== */

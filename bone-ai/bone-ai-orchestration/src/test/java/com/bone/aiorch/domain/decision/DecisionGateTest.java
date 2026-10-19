@@ -60,9 +60,12 @@ class DecisionGateTest {
   }
 
   @Test
-  void null_confidence_skips_confidence_gate() {
-    // 模型未回填置信度时不误伤（仅金额兜底）
-    assertThat(gate.evaluate(null, new BigDecimal("1000"), true, true).autoApproved()).isTrue();
+  void null_confidence_requires_human_when_llm_step() {
+    // 声明 LLM 步骤却无模型置信度：合规 fail-closed 强制人工，禁止静默自动放行
+    DecisionVerdict lowAmount = gate.evaluate(null, new BigDecimal("1000"), true, true);
+    assertThat(lowAmount.requiresHuman()).isTrue();
+    assertThat(lowAmount.reasons()).containsExactly(DecisionVerdict.REASON_CONFIDENCE_MISSING);
+    // 金额高时仍转人工（叠加金额原因由金额分支处理，此处仅验证不自动放行）
     assertThat(gate.evaluate(null, new BigDecimal("8000"), true, true).requiresHuman()).isTrue();
   }
 

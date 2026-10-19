@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MetaField } from '../types';
-import type { BoneUiSchema } from './uiSchemaEngine';
+import type { BoneUiSchema, LinkageRule } from './uiSchemaEngine';
 import { matchText, previewChanges, variantOverrideText } from './uiSchemaChangePreview';
 import { normJson } from './normJson';
 
@@ -41,6 +41,130 @@ function schema(patch: Partial<BoneUiSchema> = {}): BoneUiSchema {
 
 const find = (p: ReturnType<typeof previewChanges>, group: string, key: string) =>
   p.groups.find((g) => g.key === group)?.items.find((i) => i.key === key);
+
+describe('previewChanges：locate 定位（v1.2：条目可点击跳到配置面板）', () => {
+  it('新增分区 ⇒ locate 到 structure/si', () => {
+    const draft = schema({
+      views: {
+        form: { sections: [
+          { id: 'base', title: '基本信息', controls: [{ fieldCode: 'claim_no' }, { fieldCode: 'amount' }] },
+          { id: 'extra', title: '复核', controls: [{ fieldCode: 'approver' }] },
+        ] },
+        detail: { sections: [{ id: 'base', title: '基本信息', controls: [{ fieldCode: 'claim_no' }] }] },
+        list: { columns: [{ fieldCode: 'claim_no', width: 150 }, { fieldCode: 'amount', width: 120 }] },
+      },
+    });
+    const item = find(previewChanges(draft, schema(), fields), 'form', 'section:extra');
+    expect(item?.locate).toEqual({ tab: 'structure', si: 1 });
+  });
+
+  it('列宽修改 ⇒ locate 到 list/idx', () => {
+    const draft = schema({ views: { ...schema().views, list: { columns: [{ fieldCode: 'claim_no', width: 200 }, { fieldCode: 'amount', width: 120 }] } } });
+    const item = find(previewChanges(draft, schema(), fields), 'list', 'claim_no');
+    expect(item?.locate).toEqual({ tab: 'list', idx: 0 });
+  });
+
+  it('联动规则新增/修改 ⇒ locate 到 rules/ri', () => {
+    const draft = schema({ linkageRules: [{ code: 'r1', when: { fieldCode: 'amount', operator: 'gt', value: '0' }, then: [{ fieldCode: 'approver', required: true }] }] });
+    const p1 = previewChanges(draft, schema(), fields);
+    expect(find(p1, 'linkage', 'r1')?.locate).toEqual({ tab: 'rules', ri: 0 });
+    const p2 = previewChanges(draft, { ...schema(), linkageRules: [{ code: 'r1', when: { fieldCode: 'amount', operator: 'gte', value: '0' }, then: [{ fieldCode: 'approver', required: true }] }] }, fields);
+    expect(find(p2, 'linkage', 'r1')?.locate).toEqual({ tab: 'rules', ri: 0 });
+  });
+
+  it('动作条新增 ⇒ locate 到 actions/idx', () => {
+    const draft = schema({ actionBar: [{ actionCode: 'approve', sortOrder: 1 }] });
+    expect(find(previewChanges(draft, schema(), fields), 'action', 'approve')?.locate).toEqual({ tab: 'actions', idx: 0 });
+  });
+
+  describe('previewChanges：同 code 重复规则 diff 键稳健化（v1.2：不静默漏报）', () => {
+    const rule = (code: string, extra: Partial<LinkageRule> = {}): LinkageRule =>
+      ({ code, name: code, when: 'always', then: [], ...extra } as LinkageRule);
+
+    it('两条同 code 规则在草稿新增 ⇒ 各自独立 add（不折叠成一条）', () => {
+      const draft = schema({ linkageRules: [rule('R'), rule('R')] });
+      const g = previewChanges(draft, schema(), fields).groups.find((x) => x.key === 'linkage')!;
+      const adds = g.items.filter((i) => i.kind === 'add');
+      expect(adds).toHaveLength(2);
+      expect(adds.map((i) => i.key).sort()).toEqual(['R#0', 'R#1']);
+    });
+
+    it('两条同 code 但内容不同 ⇒ 各自独立 modify（不互相覆盖）', () => {
+      const draft = schema({ linkageRules: [rule('R', { name: '甲' }), rule('R', { name: '乙' })] });
+      const pub = schema({ linkageRules: [rule('R'), rule('R')] });
+      const g = previewChanges(draft, pub, fields).groups.find((x) => x.key === 'linkage')!;
+      expect(g.items.filter((i) => i.kind === 'modify')).toHaveLength(2);
+    });
+
+    it('负向探针：唯一 code 仍用 code 本身作键（定位语义不变）', () => {
+      const item = find(previewChanges(schema({ linkageRules: [rule('R1')] }), schema(), fields), 'linkage', 'R1');
+      expect(item?.kind).toBe('add');
+    });
+
+    it('同 code 重复 + 其中一条新增 ⇒ 命中那条判 add、其余判 modify（不漏报）', () => {
+    // 发布态有 2 条 R；草稿在末尾新增第 3 条 R ⇒ 第 3 条 add，前两条按位置 modify
+      const pub = schema({ linkageRules: [rule('R'), rule('R')] });
+      const draft = schema({ linkageRules: [rule('R'), rule('R'), rule('R', { name: '丙' })] });
+      const g = previewChanges(draft, pub, fields).groups.find((x) => x.key === 'linkage')!;
+      expect(g.items.filter((i) => i.kind === 'add')).toHaveLength(1);
+      expect(g.items.find((i) => i.kind === 'add')?.key).toBe('R#2');
+    });
+  });
+
+  it('变体新增 ⇒ locate 到 variants/vi', () => {
+    const draft = schema({ variants: [{ key: 'v1', label: '移动端', priority: 10, match: { devices: ['mobile'] } }] });
+    expect(find(previewChanges(draft, schema(), fields), 'variant', 'v1')?.locate).toEqual({ tab: 'variants', vi: 0 });
+  });
+});
+
+describe('previewChanges：规则 modify 字段级明细（v1.2：说清「改了哪」）', () => {
+  const baseRule: LinkageRule = { code: 'r1', name: '大额提示', when: { fieldCode: 'amount', operator: 'gt', value: '1000' }, then: [{ fieldCode: 'approver', required: true }] };
+
+  it('算子修改 ⇒ 明细含 when.operator', () => {
+    const draft = schema({ linkageRules: [{ ...baseRule, when: { fieldCode: 'amount', operator: 'gte', value: '1000' } }] });
+    const pub = schema({ linkageRules: [baseRule] });
+    const item = find(previewChanges(draft, pub, fields), 'linkage', 'r1');
+    expect(item?.kind).toBe('modify');
+    expect(item?.text).toContain('when.operator');
+    expect(item?.text).toContain('规则「大额提示」');
+  });
+
+  it('then 动作修改 ⇒ 明细含 then（数组整体算一处，不逐行刷屏）', () => {
+    const draft = schema({ linkageRules: [{ ...baseRule, then: [{ fieldCode: 'approver', required: true, readonly: true }] }] });
+    const pub = schema({ linkageRules: [baseRule] });
+    const item = find(previewChanges(draft, pub, fields), 'linkage', 'r1');
+    expect(item?.text).toContain('then');
+  });
+
+  it('停用/启用 ⇒ 明细含 enabled', () => {
+    const draft = schema({ linkageRules: [{ ...baseRule, enabled: false }] });
+    const pub = schema({ linkageRules: [baseRule] });
+    expect(find(previewChanges(draft, pub, fields), 'linkage', 'r1')?.text).toContain('enabled');
+  });
+
+  it('多处变化 ⇒ 折叠为「等 N 处」且不超过 3 条路径', () => {
+    const draft = schema({
+      linkageRules: [{
+        code: 'r1', name: '大额提示',
+        when: { fieldCode: 'amount', operator: 'gte', value: '2000' },
+        then: [{ fieldCode: 'approver', required: true, readonly: true, notice: 'x' }],
+        enabled: false,
+      }],
+    });
+    const pub = schema({ linkageRules: [baseRule] });
+    const item = find(previewChanges(draft, pub, fields), 'linkage', 'r1');
+    expect(item?.text).toContain('等');
+    // 路径最多 3 个（when.operator/when.value/then/enabled 里取前 3）
+    const paths = (item?.text ?? '').match(/when\.operator|when\.value|then|enabled/g) ?? [];
+    expect(paths.length).toBeLessThanOrEqual(3);
+  });
+
+  it('负向探针：仅文案差异（name 相同、结构等价）不得判 modify（normJson 兜底）', () => {
+    const draft = schema({ linkageRules: [baseRule] });
+    const pub = schema({ linkageRules: [{ ...baseRule }] });
+    expect(find(previewChanges(draft, pub, fields), 'linkage', 'r1')).toBeUndefined();
+  });
+});
 
 describe('previewChanges', () => {
   it('草稿与发布快照一致 ⇒ 零项（待发布判定不得误报）', () => {

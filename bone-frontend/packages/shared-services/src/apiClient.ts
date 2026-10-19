@@ -11,7 +11,7 @@ import type { ApiResponse } from '@bone/shared-types';
  */
 let _qiankunToken: string | null = null;
 
-export function setQiankunToken(token: string | null) {
+export function setQiankunToken(token: string | null): void {
   _qiankunToken = token;
   if (token) {
     localStorage.setItem('token', token);
@@ -31,7 +31,7 @@ export function getToken(): string | null {
 }
 
 /** 获取全局上下文（Shell 通过 props / window 下发） */
-export function getGlobalContext() {
+export function getGlobalContext(): Record<string, unknown> | undefined {
   return (window as unknown as { __BONE_GLOBAL_CONTEXT__?: Record<string, unknown> }).__BONE_GLOBAL_CONTEXT__;
 }
 

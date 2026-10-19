@@ -18,6 +18,7 @@ import type { ActionDefSpec } from '../../services/metadataApi';
 import { describeAction } from './describe';
 import ConditionEditor from './ConditionEditor';
 import { addAction, moveAction, removeAction, updateAction } from './schemaOps';
+import { useScrollToFocus } from './useScrollToFocus';
 
 const { Text } = Typography;
 
@@ -32,6 +33,8 @@ interface Props {
 }
 
 export default function ActionBarPanel({ schema, onChange, fields, actionDefs, focus }: Props): React.ReactElement {
+  // 定位滚动：focus.idx 命中第几个动作，滚到那张卡
+  useScrollToFocus(focus?.idx != null ? `a${focus.idx}` : undefined);
   const items = schema.actionBar ?? [];
   /**
    * 展示序 = sortOrder 序（引擎 resolveVisibleActions 的唯一排序真源）。
@@ -78,6 +81,7 @@ export default function ActionBarPanel({ schema, onChange, fields, actionDefs, f
         return (
           <div
             key={i}
+            data-locate={focus?.idx === i ? `a${i}` : undefined}
             style={{
               border: `1px solid ${unknown ? '#ffa940' : '#e6eaf0'}`,
               borderRadius: 10, marginBottom: 10, background: '#fff',

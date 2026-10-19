@@ -294,10 +294,15 @@ export const FlowDesign: React.FC = () => {
     try {
       const values = await form.validateFields();
 
-      if (!graph) return;
+      // ★ 画布未就绪不能静默 return：用户点「确定」后既没有成功提示也没有失败提示、
+      //   弹窗还不关，表现为最难的那种「点了没反应」。这里按「空画布」继续建流程
+      //   （先落名称/描述，节点留到编辑时补画），并出声告知画布状态。
+      if (!graph) {
+        message.warning('流程画布尚未就绪，本次将创建空流程；节点可在创建后编辑补画');
+      }
 
-      // 从画布中获取节点和连接
-      const cells = graph.getCells();
+      // 从画布中获取节点和连接（画布未就绪时视为空图）
+      const cells = graph ? graph.getCells() : [];
       const nodes = cells
         .filter((cell) => cell.isNode())
         .map((cell) => {
@@ -321,6 +326,8 @@ export const FlowDesign: React.FC = () => {
       const connections = cells
         .filter((cell) => cell.isEdge())
         .map((edge) => {
+          // cells 为空时此 map 不执行；非空则 graph 必然已就绪，这里兜底避免 TS 判空
+          if (!graph) return { id: edge.data.id, sourceNodeId: '', targetNodeId: '', condition: '' };
           const sourceNode = graph.getCellById(edge.getSourceCellId());
           const targetNode = graph.getCellById(edge.getTargetCellId());
           return {

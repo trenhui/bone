@@ -6,19 +6,30 @@ import {
   getGlobalContext,
 } from './apiClient';
 
+/** 请求拦截器可见的最小形状（测试替身，非 axios 真实类型） */
+type ReqLike = { headers: Record<string, string> };
+/** 响应拦截器解包前的最小形状 */
+type ResLike = { data: unknown };
+
+/** window 扩展属性：与 apiClient.ts 生产代码同一套 cast 口径 */
+const w = window as unknown as {
+  __BONE_TOKEN__?: string;
+  __BONE_GLOBAL_CONTEXT__?: Record<string, unknown>;
+};
+
 const store = vi.hoisted(() => ({
-  reqHandlers: [] as Array<(c: any) => any>,
-  resHandlers: [] as Array<{ onFulfilled: (r: any) => any; onRejected: (e: any) => any }>,
-  instance: null as any,
+  reqHandlers: [] as Array<(c: ReqLike) => ReqLike>,
+  resHandlers: [] as Array<{ onFulfilled: (r: ResLike) => unknown; onRejected: (e: unknown) => unknown }>,
+  instance: null as unknown,
 }));
 
 vi.mock('axios', () => {
   store.instance = {
     defaults: {},
     interceptors: {
-      request: { use: (h: (c: any) => any) => store.reqHandlers.push(h) },
+      request: { use: (h: (c: ReqLike) => ReqLike) => store.reqHandlers.push(h) },
       response: {
-        use: (onFulfilled: (r: any) => any, onRejected: (e: any) => any) =>
+        use: (onFulfilled: (r: ResLike) => unknown, onRejected: (e: unknown) => unknown) =>
           store.resHandlers.push({ onFulfilled, onRejected }),
       },
     },
@@ -33,8 +44,8 @@ vi.mock('axios', () => {
 describe('token 来源链路', () => {
   beforeEach(() => {
     localStorage.clear();
-    (window as any).__BONE_TOKEN__ = undefined;
-    (window as any).__BONE_GLOBAL_CONTEXT__ = undefined;
+    w.__BONE_TOKEN__ = undefined;
+    w.__BONE_GLOBAL_CONTEXT__ = undefined;
     setQiankunToken(null);
   });
 
@@ -49,7 +60,7 @@ describe('token 来源链路', () => {
   });
 
   it('getGlobalContext 读取全局上下文', () => {
-    (window as any).__BONE_GLOBAL_CONTEXT__ = { token: 'ctx-token' };
+    w.__BONE_GLOBAL_CONTEXT__ = { token: 'ctx-token' };
     expect(getGlobalContext()?.token).toBe('ctx-token');
   });
 });
@@ -57,19 +68,19 @@ describe('token 来源链路', () => {
 describe('createApiClient 拦截器', () => {
   beforeEach(() => {
     localStorage.clear();
-    (window as any).__BONE_TOKEN__ = undefined;
-    (window as any).__BONE_GLOBAL_CONTEXT__ = undefined;
+    w.__BONE_TOKEN__ = undefined;
+    w.__BONE_GLOBAL_CONTEXT__ = undefined;
   });
 
   it('请求拦截器注入 Authorization', async () => {
     createApiClient('/api/v1/iam');
     const reqHandler = store.reqHandlers[0];
-    const cfg: any = { headers: {} };
+    const cfg: ReqLike = { headers: {} };
     const out = await reqHandler(cfg);
     expect(out.headers.Authorization).toBeUndefined();
 
     setQiankunToken('abc');
-    const cfg2: any = { headers: {} };
+    const cfg2: ReqLike = { headers: {} };
     const out2 = await reqHandler(cfg2);
     expect(out2.headers.Authorization).toBe('Bearer abc');
   });
@@ -85,9 +96,12 @@ describe('createApiClient 拦截器', () => {
   it('401 响应派发 bone:auth:expired 事件', async () => {
     createApiClient('/api/v1/iam');
     const h = store.resHandlers[0];
-    const events: any[] = [];
-    window.addEventListener('bone:auth:expired', (e: any) => events.push(e.detail));
-    const err: any = { response: { status: 401, data: { message: 'unauthorized' } } };
+    const events: Array<{ status: number }> = [];
+    window.addEventListener('bone:auth:expired', (e) =>
+      events.push((e as CustomEvent<{ status: number }>).detail));
+    const err: { response: { status: number; data: { message: string } }; displayMessage?: string } = {
+      response: { status: 401, data: { message: 'unauthorized' } },
+    };
     await expect(h.onRejected(err)).rejects.toBe(err);
     expect(events.length).toBe(1);
     expect(events[0].status).toBe(401);

@@ -12,7 +12,8 @@ interface ImportMeta {
 declare module 'vite-plugin-qiankun/helper' {
   export interface QiankunProps {
     container: HTMLElement;
-    [key: string]: any;
+    // 任意扩展属性（如 token）由 vite-plugin-qiankun 自带的索引签名提供，
+    // 见 node_modules/vite-plugin-qiankun/dist/helper.d.ts，此处不重复声明。
   }
   export interface QiankunLifeCycle {
     bootstrap(): Promise<void>;

@@ -13,6 +13,7 @@ import { parseEnumValues } from '@bone/shared-types';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { clearDict, dictOf, setDictHidden, setDictLabel } from './schemaOps';
+import { useScrollToFocus } from './useScrollToFocus';
 
 const { Text } = Typography;
 
@@ -24,6 +25,8 @@ interface Props {
 }
 
 export default function DictionaryPanel({ schema, onChange, fields, focus }: Props): React.ReactElement {
+  // 定位滚动：focus.key 命中哪个字段的字典，滚到那张卡（钩子须无条件调用，置于早返回之前）
+  useScrollToFocus(focus?.key != null ? `d${focus.key}` : undefined);
   const enumFields = fields.filter((f) => parseEnumValues(f.enumValues).length > 0);
 
   if (!enumFields.length) {
@@ -53,6 +56,7 @@ export default function DictionaryPanel({ schema, onChange, fields, focus }: Pro
         return (
           <div
             key={f.code}
+            data-locate={focus?.key === f.code ? `d${f.code}` : undefined}
             style={{
               border: `1px solid ${focus?.key === f.code ? '#ffa940' : '#f0f0f0'}`,
               borderRadius: 10, marginBottom: 10, overflow: 'hidden', background: '#fff',
@@ -71,8 +75,9 @@ export default function DictionaryPanel({ schema, onChange, fields, focus }: Pro
                 共 {opts.length} 项 · 引用自元数据域（只读）
               </Text>
               {ovCount > 0 && (
-                <Tooltip title="清除该字段的全部覆写">
+                <Tooltip title={`清除「${f.displayName}」的全部覆写`}>
                   <Button size="small" type="text" icon={<RollbackOutlined />}
+                    aria-label={`还原 ${f.code} 的字典覆写`}
                     onClick={() => onChange(clearDict(schema, f.code))}>
                     还原
                   </Button>
@@ -106,7 +111,7 @@ export default function DictionaryPanel({ schema, onChange, fields, focus }: Pro
                     />
                     <Tooltip title="隐藏后该选项不在下拉中出现；历史数据中的旧值不受影响">
                       <Switch
-                        size="small" checked={hidden}
+                        size="small" aria-label={`隐藏选项 ${f.code}.${o.code}`} checked={hidden}
                         onChange={(v) => onChange(setDictHidden(schema, f.code, o.code, v))}
                       />
                     </Tooltip>

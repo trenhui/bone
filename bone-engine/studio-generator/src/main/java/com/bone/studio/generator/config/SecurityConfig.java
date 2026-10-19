@@ -64,6 +64,11 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
+                    // 只读、非敏感的健康/元信息端点放行，供 k8s/Docker 探针与监控采集。
+                    // 仅暴露 health / info（不暴露 env/beans/heapdump 等敏感端点），
+                    // 与 bone-masterdata / bone-file / bone-system / bone-integration 的既有口径一致。
+                    .requestMatchers("/actuator/health", "/actuator/info")
+                    .permitAll()
                     // Spring Boot 的错误转发端点。**必须放行**：
                     // 认证通过 → 业务抛异常 → FORWARD /error → 不在白名单则被 Security 拦下
                     // → AuthorizationDeniedException → 表现为 401，把真实的

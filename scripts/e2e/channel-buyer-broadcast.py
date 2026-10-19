@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 
 BASE = os.environ.get("BONE_E2E_BASE", "http://127.0.0.1:8888")
@@ -32,7 +33,11 @@ FAIL: list[str] = []
 def http(method: str, path: str, body=None, token=None, params=None):
     url = BASE + path
     if params:
-        url += "?" + "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
+        # 必须 urlencode：customerName/reason 含中文与空格，裸拼会触发
+        # "URL can't contain control characters"，把产品正常行为误报成失败。
+        url += "?" + urllib.parse.urlencode(
+            {k: v for k, v in params.items() if v is not None}, encoding="utf-8"
+        )
     data = json.dumps(body, ensure_ascii=False).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Content-Type", "application/json")
@@ -65,7 +70,14 @@ def data_of(resp):
 
 
 def err_of(resp):
-    return (resp.get("errorCode") or "") if isinstance(resp, dict) else ""
+    # 统一响应信封把业务码放在 data.errorCode（ApiResponse.data = ProblemDetail），
+    # 顶层只有 HTTP 语义的 code。只查顶层会恒为空 → 误报。
+    if not isinstance(resp, dict):
+        return ""
+    d = resp.get("data")
+    if isinstance(d, dict) and d.get("errorCode"):
+        return d["errorCode"]
+    return resp.get("errorCode") or ""
 
 
 def login() -> str | None:
@@ -234,6 +246,13 @@ def main() -> int:
     }, token=tok)
     check("二次入库成功（触发广播入队）", st == 200, f"status={st}")
 
+    # 入队时的可售量快照：广播是「覆盖式库存」，targetStock 应等于此刻的绝对可售量，
+    # 而不是本次入库的增量 50。原断言硬编码 300/350 只在干净库成立（库存会跨轮次累积），
+    # 改为与真实库存对账 —— 既保留原判据（非增量），又不会因历史数据假红。
+    st, j = http("GET", f"/api/v1/inventories/{PRODUCT}", token=tok,
+                 params={"warehouseCode": "DEFAULT"})
+    stock_at_enqueue = (data_of(j) or {}).get("availableQty")
+
     st, j = http("GET", "/api/v1/channel-broadcasts", token=tok,
                  params={"status": "PENDING", "page": 1, "size": 50})
     pending = (data_of(j) or {}).get("records") or []
@@ -253,10 +272,11 @@ def main() -> int:
     check("广播任务已投递成功（SENT）", st == 200 and len(sent_mine) >= 1,
           f"status={st} sent={len(sent_rows)} 属于本商品的={len(sent_mine)}")
     if sent_mine:
-        # 覆盖式库存：任务的目标库存应等于入队时的可售量
+        # 覆盖式库存：任务的目标库存应等于入队时的可售量，且明显不是本次入库的增量 50
+        ts = sent_mine[0].get("targetStock")
         check("已投递任务的库存值与入队一致（非增量）",
-              sent_mine[0].get("targetStock") in (300, 350, 50, 350),
-              f"targetStock={sent_mine[0].get('targetStock')}")
+              stock_at_enqueue is not None and ts == stock_at_enqueue and ts != 50,
+              f"targetStock={ts} 入队时可售量={stock_at_enqueue}")
 
     # B5：SENT 任务不可重试（避免重复投递掩盖真实结果）
     if task_id:

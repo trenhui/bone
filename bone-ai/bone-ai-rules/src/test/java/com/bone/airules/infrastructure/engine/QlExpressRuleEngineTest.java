@@ -46,4 +46,14 @@ class QlExpressRuleEngineTest {
     assertThat(ev.hit()).isTrue();
     assertThat(ev.errorMessage()).isNull();
   }
+
+  @Test
+  void sandbox_blocks_external_class_access() {
+    // 沙箱（isolation）必须阻断 import / 反射 / 外部类静态调用：否则规则表达式即成 RCE 面。
+    // 若隔离失效，下方会真的执行 System.getProperty 并返回非空串→命中；断言其被拒（miss + 错误）。
+    RuleEngine.RuleEvaluation ev =
+        engine.evaluate("java.lang.System.getProperty('java.version') != null", Map.of(), false);
+    assertThat(ev.hit()).isFalse();
+    assertThat(ev.errorMessage()).isNotNull();
+  }
 }

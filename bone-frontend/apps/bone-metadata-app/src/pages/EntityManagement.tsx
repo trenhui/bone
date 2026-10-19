@@ -217,7 +217,10 @@ const EntityManagement: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(COLUMN_SETTINGS_KEY, JSON.stringify(visibleCols));
   }, [visibleCols]);
-  const [selectedModule, setSelectedModule] = useState<string>(isScoped ? moduleId! : 'all');
+  // scoped 路由（/apps/:appId/modules/:moduleId/entities）必须带上 'mod-' 前缀初始化：
+  // selectedIsModule 靠前缀识别模块选中态，缺前缀 ⇒ 判不出模块作用域 ⇒ load() 不发 moduleId
+  // ⇒ 后端返回全局列表，页面却标着「（当前模块）」（E2E ④ 实测：221 vs 18）。
+  const [selectedModule, setSelectedModule] = useState<string>(isScoped ? `mod-${moduleId!}` : 'all');
   // 树选中语义（提前声明，供 load 依赖）：all=全部分组视图；app-<id>=该应用下模块；mod-<id>=该模块平铺列表
   const selectedIsModule = selectedModule.startsWith('mod-');
   const selectedIsApp = selectedModule.startsWith('app-');

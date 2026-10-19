@@ -8,6 +8,7 @@ import type { MetaField } from '../types';
 import { isRenderSupported } from '../utils/columnProjection';
 import { parseEnumValues } from '@bone/shared-types';
 import {
+  controlBaseStates,
   fieldVisible,
   linkageState,
   resolveVisibleActions,
@@ -99,13 +100,7 @@ interface Props {
 
 /** 字段基线态：从控件声明派生（如 tax_no 默认隐藏） */
 function baseStatesOf(form: FormView | undefined): Record<string, Partial<FieldUiState>> {
-  const out: Record<string, Partial<FieldUiState>> = {};
-  form?.sections.forEach((s) => s.controls.forEach((c) => {
-    if (c.visible === false || c.readonly) {
-      out[c.fieldCode] = { ...(out[c.fieldCode] ?? {}), visible: c.visible !== false, readonly: c.readonly || out[c.fieldCode]?.readonly };
-    }
-  }));
-  return out;
+  return controlBaseStates(form?.sections);
 }
 
 /** 字段静态必填基线（来自 meta_field.required） */

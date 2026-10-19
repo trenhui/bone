@@ -294,3 +294,4 @@ doc/ai-product/synapEquity/
 # =========================
 data/
 qlcheck/
+.run-jars/

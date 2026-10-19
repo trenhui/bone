@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>界面设计器功能诊断报告 — 理赔案件实体 UI Schema</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --ink: #1f2733;
+    --ink-2: #4a5568;
+    --ink-3: #8492a6;
+    --line: #e6eaf0;
+    --red: #d4380d;
+    --red-bg: #fff2e8;
+    --orange: #d46b08;
+    --orange-bg: #fff7e6;
+    --blue: #0958d9;
+    --blue-bg: #e6f4ff;
+    --green: #237804;
+    --green-bg: #f6ffed;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.75;
+    padding: 40px 20px 80px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    background: linear-gradient(135deg, #10239e 0%, #1d39c4 45%, #2f6bd8 100%);
+    border-radius: 16px;
+    padding: 36px 40px 30px;
+    color: #fff;
+    box-shadow: 0 12px 32px rgba(16, 35, 158, .22);
+    margin-bottom: 28px;
+  }
+  .hero .kicker { font-size: 12px; letter-spacing: .18em; opacity: .75; text-transform: uppercase; margin-bottom: 10px; }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: .01em; margin-bottom: 14px; }
+  .hero .sub { font-size: 13.5px; opacity: .92; max-width: 860px; }
+  .hero .meta { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 20px; font-size: 12.5px; opacity: .85; }
+  .hero .meta b { font-weight: 600; opacity: 1; }
+
+  /* ---------- 卡片与分节 ---------- */
+  section { margin-bottom: 34px; }
+  .sec-title {
+    display: flex; align-items: baseline; gap: 12px;
+    font-size: 19px; font-weight: 700; margin-bottom: 6px;
+  }
+  .sec-title .no {
+    font-family: var(--mono); font-size: 13px; color: var(--blue);
+    background: var(--blue-bg); border-radius: 6px; padding: 1px 8px; font-weight: 600;
+  }
+  .sec-desc { color: var(--ink-2); font-size: 13px; margin-bottom: 16px; max-width: 900px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 10px rgba(31, 39, 51, .04);
+  }
+  .card h3 { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; font-weight: 700; border-radius: 20px; padding: 1px 10px; white-space: nowrap;
+    font-family: var(--mono);
+  }
+  .chip.p0 { color: var(--red); background: var(--red-bg); border: 1px solid #ffbb96; }
+  .chip.p1 { color: var(--orange); background: var(--orange-bg); border: 1px solid #ffd591; }
+  .chip.p2 { color: var(--blue); background: var(--blue-bg); border: 1px solid #91caff; }
+  .chip.ok { color: var(--green); background: var(--green-bg); border: 1px solid #b7eb8f; }
+
+  .kv { margin-top: 12px; }
+  .kv .row { display: flex; gap: 14px; padding: 7px 0; border-top: 1px dashed var(--line); }
+  .kv .row:first-child { border-top: none; }
+  .kv .k { flex: 0 0 76px; font-weight: 700; color: var(--ink-2); font-size: 13px; padding-top: 1px; }
+  .kv .v { flex: 1; min-width: 0; }
+  .kv .v p { margin: 2px 0; }
+
+  code, .mono { font-family: var(--mono); font-size: 12.5px; }
+  code {
+    background: #f0f3f8; border: 1px solid var(--line); border-radius: 5px;
+    padding: 0 5px; color: #c41d7f; word-break: break-all;
+  }
+  code.path { color: #0958d9; }
+  pre {
+    background: #f8fafc; border: 1px solid var(--line); border-left: 3px solid var(--blue);
+    border-radius: 8px; padding: 12px 16px; margin: 10px 0;
+    font-family: var(--mono); font-size: 12px; line-height: 1.7;
+    overflow-x: auto; color: #303a4d;
+  }
+  pre .cm { color: #8492a6; }
+  pre .hl { color: var(--red); font-weight: 700; }
+
+  /* ---------- 表格 ---------- */
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(31,39,51,.04); }
+  th, td { padding: 10px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: linear-gradient(180deg, #f0f5ff, #e8eefb); font-weight: 700; color: #1d39c4; font-size: 12.5px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td .mono { color: var(--ink-2); }
+
+  /* ---------- 截图 ---------- */
+  .shot { margin: 14px 0 4px; }
+  .shot img {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px; display: block;
+    box-shadow: 0 3px 14px rgba(31,39,51,.08);
+  }
+  .shot .cap { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .shots { grid-template-columns: 1fr; } }
+
+  /* ---------- TL;DR ---------- */
+  .tldr {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    border: 1px solid #bae0ff; border-radius: 12px; padding: 22px 26px;
+    box-shadow: 0 4px 16px rgba(9, 88, 217, .08);
+  }
+  .tldr h2 { font-size: 16px; margin-bottom: 10px; color: #10239e; }
+  .tldr ul { padding-left: 20px; }
+  .tldr li { margin: 5px 0; }
+  .tldr .verdict {
+    margin-top: 14px; padding: 12px 16px; background: #fff; border-radius: 8px;
+    border-left: 3px solid var(--red); font-size: 13.5px;
+  }
+
+  .footer { margin-top: 40px; color: var(--ink-3); font-size: 12px; text-align: center; }
+  .tag-strong { font-weight: 700; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= 头部 ================= -->
+  <div class="hero">
+    <div class="kicker">UI Schema Designer · Diagnostic Report</div>
+    <h1>界面设计器功能诊断与优化建议</h1>
+    <div class="sub">
+      以业界最佳实践为标尺，对 metadata 应用的 UI Schema 界面设计器做五端交叉验证：协议真源（schema.json）、
+      后端校验（UiSchemaApplicationService）、前端自检（lint.ts）、预览渲染器（SchemaPreview）、运行时渲染器（BoneDynamicForm），
+      辅以 Playwright 活体探针实测交互链路。
+    </div>
+    <div class="meta">
+      <span><b>诊断对象：</b>理赔案件实体（claim_case_chain_792325123）</span>
+      <span><b>页面：</b>/metadata#/entities/766995286772940800?tab=uischema</span>
+      <span><b>日期：</b>2026-10-18</span>
+      <span><b>结论：</b>4 个 P0 + 5 个 P1/P2</span>
+    </div>
+  </div>
+
+  <!-- ================= TL;DR ================= -->
+  <section>
+    <div class="tldr">
+      <h2>结论摘要</h2>
+      <ul>
+        <li><b>协议底层比创作侧成熟。</b>schema.json、前端 lint、后端 validateNodes、变体裁决引擎、命令面板、快照、undo/redo 都已就绪；问题集中在「设计器让用户配了运行时不兑现的能力」。</li>
+        <li><b>P0-1「栅格宽度」是死控件：</b>写进去即报协议错误，预览固定双栏不读它，运行时不读它，后端也不校验 props——四端全部无视，只有 lint 报错。</li>
+        <li><b>P0-2 发布闸门有缺口且已被穿透：</b>后端对「变体虚拟控件与真实字段碰撞」只查 base 不查变体，该实体<strong>已发布态正带着这条 lint 错误在跑</strong>（活体零交互加载实测「1 错误」红横幅）。</li>
+        <li><b>P0-3「详情视图」整条通道是死配置：</b>创作侧（编辑入口、预览、自检、变体合并、后端校验）全线支持，运行时详情抽屉却是全字段平铺，零消费方。</li>
+        <li><b>P0-4 身份/变体/档位在运行时空转：</b>预览有「身份模拟」实时裁决变体，运行时 <code>useBoneUiSchema(entityId)</code> 不传 ctx，带条件的变体永不命中——本实体「核赔工作台」变体线上永不生效。</li>
+      </ul>
+      <div class="verdict">
+        <b>一句话总评：</b>这个设计器的真正风险不是「功能少」，而是<span class="tag-strong">「预览骗人」</span>——
+        预览渲染器与运行时渲染器是同一协议的两套独立实现，已经出现实证漂移（span）。不收敛双轨，
+        每加一个协议能力，就等于给「配了不生效」的坑多挖一格。
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 总览表 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">01</span>问题总览</div>
+    <div class="sec-desc">按严重度排序。证据强度分两档：<b>实测</b>（Playwright 活体探针跑出的界面行为）、<b>静态</b>（源码/协议真源交叉比对）。</div>
+    <table>
+      <thead>
+        <tr><th style="width:52px">编号</th><th>问题</th><th style="width:64px">严重度</th><th style="width:150px">影响面</th><th style="width:76px">证据</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">P0-1</td><td>「栅格宽度」写入 <code>props.span</code>，越界协议白名单；预览、运行时、后端四端全部无视，纯报错入口</td><td><span class="chip p0">P0</span></td><td>所有实体的表单布局配置</td><td>实测 + 静态</td></tr>
+        <tr><td class="mono">P0-2</td><td>后端变体校验漏「虚拟控件与真实字段码碰撞」规则，前端 lint 错误可绕过发布闸门上线</td><td><span class="chip p0">P0</span></td><td>发布链路 / 协议一致性</td><td>实测 + 静态</td></tr>
+        <tr><td class="mono">P0-3</td><td>「详情视图」（views.detail）运行时零消费，创作侧全链路皆死配置</td><td><span class="chip p0">P0</span></td><td>所有实体的详情展示</td><td>静态</td></tr>
+        <tr><td class="mono">P0-4</td><td>运行时 ctx 未接，身份模拟/变体/档位在设计器预览之外全部空转</td><td><span class="chip p0">P0</span></td><td>变体/联动/显隐全线</td><td>静态</td></tr>
+        <tr><td class="mono">P1-1</td><td>预览与运行时为两套渲染器，「双轨漂移」无任何机器防线（span 是第一个实证，不是最后一个）</td><td><span class="chip p1">P1</span></td><td>架构 / 长期维护</td><td>静态</td></tr>
+        <tr><td class="mono">P1-2</td><td>后端校验默认不跑，需手点；保存软门禁可强行越过 error</td><td><span class="chip p1">P1</span></td><td>发布前质量闸</td><td>实测 + 静态</td></tr>
+        <tr><td class="mono">P1-3</td><td>结构面板无控件搜索/过滤，宽表实体定位困难</td><td><span class="chip p1">P1</span></td><td>大数据量实体建模效率</td><td>实测</td></tr>
+        <tr><td class="mono">P1-4</td><td>拖拽排序无键盘替代方案，不满足 WCAG 2.1.1 键盘可操作</td><td><span class="chip p1">P1</span></td><td>可达性 / 触屏体验</td><td>静态</td></tr>
+        <tr><td class="mono">P1-5</td><td>大 schema（100+ 控件）下结构树/预览无虚拟滚动，性能未治理未度量</td><td><span class="chip p1">P1</span></td><td>大实体建模体验</td><td>静态</td></tr>
+        <tr><td class="mono">P2-1</td><td>列表页签绑定不存在字段（reviewer_id）仅警告；displayModes 的 view 态运行时未接线</td><td><span class="chip p2">P2</span></td><td>本实体数据 / 展示态完整性</td><td>实测</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= P0 详情 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">02</span>P0 级问题详情</div>
+    <div class="sec-desc">四个 P0 都不是「体验不好」，而是「配置了不生效 / 错误能上线」的正确性问题，建议排在最前面修。</div>
+
+    <!-- P0-1 -->
+    <div class="card">
+      <h3><span class="chip p0">P0-1</span>「栅格宽度」死控件：四端无视，只剩报错</h3>
+      <div class="kv">
+        <div class="row"><div class="k">现象</div><div class="v">
+          <p>结构面板选中控件后，「栅格宽度」下拉可选 1/2、1/3 等。选择后：工具栏立刻出现红色「N 错误」徽标 + 顶部红色横幅；自检面板报
+          <code>props.span 不在协议白名单（schema.json additionalProperties=false，越界属性运行时不做保证）</code>；保存被确认弹窗拦下。
+          而就算强行保存，界面也不会有任何可见变化——预览和运行时都不读这个属性。</p>
+        </div></div>
+        <div class="row"><div class="k">证据链</div><div class="v">
+          <p><b>写入端</b>（设计器唯一写点）：</p>
+          <pre><span class="cm">// StructurePanel.tsx:174-176 —— 「栅格宽度」编辑器把 span 写进 control.props</span>
+value={(control.props?.span as number | undefined) ?? undefined}
+onChange={(v) =&gt; onPatch({ props: { ...control.props, ...(v ? { span: v } : { span: undefined }) } })}</pre>
+          <p><b>协议端</b>：<code class="path">bone-ui-schema.schema.json</code> 的 <code>definitions/control/properties/props</code>
+          白名单共 24 项（ai/anchorRef/chartType/childEntity/columns/computedFn/computedFrom/currencyField/dataRef/labelField/lineage/mask/max/maxCount/maxLength/maxSizeMB/min/precision/quoteText/roles/rows/step/targetEntity/tier/valueField/warningText），
+          <b>无 span</b>，且 <code>additionalProperties:false</code>。前端 <code>constants.ts:245</code> 的 PROP_WHITELIST 与 schema.json 逐项对应，同样无 span。</p>
+          <p><b>预览端</b>：<code>SchemaPreview.tsx:502</code> 表单/详情分区一律渲染进固定双栏容器 <code>.uis-grid2</code>，全文无 <code>props.span</code> 读取——改栅格宽度，预览纹丝不动。</p>
+          <p><b>运行端</b>：<code>BoneDynamicForm.tsx</code> 零 <code>span</code> 引用；后端 Java 零 <code>span</code> 引用，且对 <code>props</code> 整体无校验。</p>
+          <p><b>活体实测</b>（设置栅格宽度=1/2 后的真实界面）：</p>
+          <div class="shot"><img src="11-span-live.png" alt="设置栅格宽度后工具栏 2 错误与红色横幅" /><div class="cap">实测：选 1/2 后工具栏错误徽标 + 红横幅 + 保存确认弹窗，界面布局无任何变化</div></div>
+        </div></div>
+        <div class="row"><div class="k">根因</div><div class="v">
+          <p>典型的「半成品能力上线」：栅格宽度的交互做了，但协议 ratified（span 进 schema.json + PROP_WHITELIST + 后端白名单）、
+          预览渲染、运行时渲染四步都没做。更深的病根是<b>双渲染器架构</b>——预览与运行时各写一套布局逻辑，任何一侧漏接就静默失效。</p>
+        </div></div>
+        <div class="row"><div class="k">业界对标</div><div class="v">
+          <p>Retool / Appsmith / 阿里宜搭这类低代码平台的第一信任是「所见即所得」：画布上调的每个属性，发布后必须 1:1 兑现。
+          「能选、必错、无效」三件事同时成立的控件，比没有这个控件更糟——它同时浪费用户时间、污染 schema、训练用户忽视 lint 报错。</p>
+        </div></div>
+        <div class="row"><div class="k">建议</div><div class="v">
+          <p><b>短期止血（1 人日）：</b>从 UI 下线「栅格宽度」入口，或置灰 + tooltip「协议评审中，下个版本开放」。绝不留一个写了必错的入口。</p>
+          <p><b>中期正道（3-5 人日）：</b>把栅格提升为一等协议能力：① schema.json 的 props 增加 <code>span</code>（integer，1-12 或枚举 1/2/3/4/6/12）；② PROP_WHITELIST 同步（constants.ts 注释已要求两边同改）；③ 预览 <code>.uis-grid2</code> 与 BoneDynamicForm 都按 span 渲染（antd Row/Col）；④ 后端若将来做 props 白名单校验一并同步。</p>
+          <p><b>长期更优解：</b>布局不该挂在每个控件的 props 上（改一行布局要逐控件刷 span）。可演进为 section 级 <code>layout: { rows: [{ span, fields }] }</code>，控件与布局解耦。此改动较大，建议 v1.3 评估，v1.2 先用 props.span 过渡。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- P0-2 -->
+    <div class="card">
+      <h3><span class="chip p0">P0-2</span>发布闸门缺口：变体 virtual 碰撞后端不查，错误已实际上线</h3>
+      <div class="kv">
+        <div class="row"><div class="k">现象</div><div class="v">
+          <p>对该实体做<span class="tag-strong">零交互加载</span>（不点任何东西），工具栏即显示「已保存 · <b>1 错误</b> · 3 警告 · 已发布」，
+          红色横幅明示：<code>变体「核赔工作台」：虚拟控件 payable_amount 与实体真实字段码碰撞（协议禁止）</code>。
+          即：<b>发布态 schema 本身就带着协议错误在线上跑</b>。</p>
+        </div></div>
+        <div class="row"><div class="k">证据链</div><div class="v">
+          <p><b>前端 lint 两个作用域都查</b>（<code>lint.ts:93-97</code>）：</p>
+          <pre>} else if (c.virtual) {
+  <span class="cm">// fieldCode 禁与真实字段码碰撞（否则联动/字典会误命中）</span>
+  if (...) issues.push({ level: 'error', message: `虚拟控件 ${c.fieldCode} 与实体真实字段码碰撞（协议禁止）` ...})</pre>
+          <p><b>后端只查 base、不查变体</b>（<code>UiSchemaApplicationService.java</code>）：base 循环有碰撞检查，变体循环只有「非 virtual 字段不存在」检查：</p>
+          <pre><span class="cm">// 行 673-677 —— base 视图：virtual 控件撞真实字段 → UI_REF_04 ERROR</span>
+if (control.path("virtual").asBoolean(false) &amp;&amp; refs.fieldCodes().contains(fieldCode)) {
+  issues.add(EntityValidationIssue.error(UiSchemaRefCodes.<span class="hl">UI_REF_04</span>, "virtual 控件与真实字段码碰撞：" + fieldCode));
+}
+
+<span class="cm">// 行 721-740 —— 变体视图：只查 !virtual &amp;&amp; 字段不存在，</span>
+<span class="cm">// 没有 virtual 碰撞分支 ⇒ payable_amount(virtual=true, 真实字段) 静默通过</span></pre>
+          <p><b>数据侧实锤</b>：该实体 22 个真实字段中包含 <code>payable_amount</code>；发布快照的变体「核赔工作台」form 分区第 1 个控件正是
+          <code>{"fieldCode":"payable_amount","controlKind":"COMPUTED","virtual":true}</code>。draft == published（20:05 发布），错误随发布上线。</p>
+          <p><b>保存是软门禁</b>（<code>UiSchemaDesigner.tsx:347</code>）：<code>本地自检仍有 N 个错误，确定保存？（发布前必须修复）</code>——确认即可越过。</p>
+          <div class="shot"><img src="20-current-lint.png" alt="零交互加载即见 1 错误 3 警告" /><div class="cap">实测：零交互加载，已发布态携带 1 个协议错误（红横幅）+ 3 个警告</div></div>
+        </div></div>
+        <div class="row"><div class="k">根因</div><div class="v">
+          <p>前后端两套校验规则各自演化，没有「规则清单对账」机制。前端加了变体作用域的碰撞检查，后端没跟上；
+          发布链路调后端 validate，于是前端的 error 在后端眼里不存在——软确认 + 后端漏检 = 错误直通上线。</p>
+        </div></div>
+        <div class="row"><div class="k">业界对标</div><div class="v">
+          <p>数据库迁移工具（Flyway/Liquibase）的发布闸门是硬的：dry-run 有 error 就不让 apply，要过必须显式 <code>--force</code> 且留审计。
+          表单协议是线上渲染行为的唯一真源，理应同规格——error 直通等于把「渲染错乱/联动误命中」的风险直接部署给终端用户。</p>
+        </div></div>
+        <div class="row"><div class="k">建议</div><div class="v">
+          <p><b>立即（0.5 人日）：</b>后端变体循环补 virtual 碰撞检查，与 base 同口径（UI_REF_04）。</p>
+          <p><b>本周（1 人日）：</b>建立「lint 规则 ↔ 后端 UI_REF 码」对账清单（可入 UiSchemaContractTest 的断言范围——该测试已经在做 schema.json 与白名单常量的一致性断言，天然是放对账清单的地方）；漏一项 CI 红。</p>
+          <p><b>本周（1 人日）：</b>保存/发布链路把 error 从「软确认」升级为「禁用按钮 + 豁免需填理由并记录」，消灭无意识直通。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- P0-3 -->
+    <div class="card">
+      <h3><span class="chip p0">P0-3</span>「详情视图」死通道：创作侧全线支持，运行时零消费</h3>
+      <div class="kv">
+        <div class="row"><div class="k">现象</div><div class="v">
+          <p>设计器可以为「详情视图」配置分区、页头关键信息条，预览也能切到详情态查看；但终端用户打开记录详情时，
+          看到的是<span class="tag-strong">全字段平铺的 Descriptions 列表</span>——views.detail 的任何配置都不参与渲染。</p>
+        </div></div>
+        <div class="row"><div class="k">证据链</div><div class="v">
+          <p><b>创作侧全家桶</b>：视图切换命令「切换：详情视图」（<code>UiSchemaDesigner.tsx:462</code>）、
+          <code>SchemaPreview.tsx:570</code> 预览读 <code>views.detail.sections</code>、<code>lint.ts:409-410/430-431</code> 校验详情分区与页头、
+          <code>VariantsPanel.tsx:123</code> 变体合并 detail、<code>schemaOps.ts:18/506</code> 详情读写与合并、后端 <code>validateNodes</code> 也校验 detail 分区。</p>
+          <p><b>运行时零消费</b>：全仓 grep <code>views.detail</code> 命中全部落在设计器侧与测试；<code>RuntimeDataManagement.tsx</code> 的详情抽屉是平铺 Descriptions；
+          全前端无第二个 ui-schema 消费应用；后端 Java 零引用。</p>
+          <p><b>本实体实例</b>：变体「核赔工作台」甚至专门配了 detail 视图（decision_trace 时间轴控件）——纯死配置，永不渲染。</p>
+        </div></div>
+        <div class="row"><div class="k">根因</div><div class="v">
+          <p>协议与创作侧先行，运行时渲染器没跟上（又是双轨）。反过来说，这也是四个 P0 里<b>最好修的一个</b>：协议、校验、预览都齐了，只差运行时渲染器把详情抽屉从「平铺」改为「投影 views.detail」。</p>
+        </div></div>
+        <div class="row"><div class="k">业界对标</div><div class="v">
+          <p>详情视图是表单类平台的刚需（钉钉宜搭/阿里宜搭均支持「表单布局」与「详情布局」分离，因为录入要紧凑、查阅要突出关键字段）。
+          让用户花时间配一个不渲染的视图，是低代码平台差评的常见来源。</p>
+        </div></div>
+        <div class="row"><div class="k">建议</div><div class="v">
+          <p><b>推荐方案（2-3 人日）：</b>运行时详情抽屉改为消费 <code>views.detail</code>：pageHeader 渲染关键信息条，sections 按分区渲染。
+          可抄近路——<code>ListPanel.tsx:224</code> 已有「列投影」的运行时消费先例（执行期 schema 取 published 快照），同一模式搬到详情即可。</p>
+          <p><b>兜底方案（0.5 人日）：</b>若本迭代排不进，设计器隐藏「详情视图」入口 + lint 对 views.detail 降级为 info「运行时未消费，暂不生效」——至少停止制造新的死配置。</p>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- P0-4 -->
+    <div class="card">
+      <h3><span class="chip p0">P0-4</span>身份/变体/档位运行时空转：预览能模拟，线上不生效</h3>
+      <div class="kv">
+        <div class="row"><div class="k">现象</div><div class="v">
+          <p>设计器预览面板提供「身份模拟」（角色/档位/渠道/设备），切到 reviewer 角色能实时看到变体「核赔工作台」的布局。
+          但终端用户（哪怕真是 reviewer 登录）打开录入表单时，永远看到 base 布局——变体的 match 条件在运行时永不命中。</p>
+        </div></div>
+        <div class="row"><div class="k">证据链</div><div class="v">
+          <pre><span class="cm">// useBoneUiSchema.ts:41 —— ctx 是签名支持的</span>
+export function useBoneUiSchema(entityId: string | null, ctx: UiContext = {}): UseBoneUiSchema {
+  ...
+  const schema = useMemo(() =&gt; (raw ? resolveVariant(raw, ctx) : null), [raw, ctx]);
+
+<span class="cm">// RuntimeDataManagement.tsx:330 —— 唯一调用点，不传 ctx ⇒ resolveVariant(raw, {})</span>
+const uiSchemaPipe = useBoneUiSchema(selectedEntity?.id != null ? String(selectedEntity.id) : null);
+
+<span class="cm">// RuntimeDataManagement.tsx:1852 —— BoneDynamicForm 拿到的就是 base 裁决结果</span>
+&lt;BoneDynamicForm schema={uiSchemaPipe.schema} ... /&gt;</pre>
+          <p>BoneDynamicForm 内无 <code>UiContext</code>/<code>resolveVisibleActions</code>/<code>linkageState</code> 引用；
+          metadata 应用也不读 shell 下发的 <code>__BONE_GLOBAL_CONTEXT__</code>——身份信息在运行时根本没有进入协议管线。</p>
+        </div></div>
+        <div class="row"><div class="k">根因</div><div class="v">
+          <p>引擎层（resolveVariant/evalCond/linkageState/fieldVisible/resolveVisibleActions）是按 ctx 设计的，预览侧把 ctx 接上了，
+          运行时侧没接——又是「预览-运行时双轨」的同一病根，只是这次漂移的是整个变体特性。</p>
+        </div></div>
+        <div class="row"><div class="k">业界对标</div><div class="v">
+          <p>角色差异化表单（审核台 vs 录入台）是 B 端表单平台的核心卖点。设计器提供身份模拟却不接运行时，
+          等于卖了一个「演示时可看」的功能——验收时建模者按预览验收，上线后用户按 base 使用，预期差极大。</p>
+        </div></div>
+        <div class="row"><div class="k">建议</div><div class="v">
+          <p><b>接线（1-2 人日）：</b>运行时组装 UiContext：roles 取自 <code>/api/v1/iam/me</code> 的 scopes 或 shell 全局上下文；tier/channel/device 按页面可知信息填；
+          传入 <code>useBoneUiSchema(entityId, ctx)</code>；BoneDynamicForm 透传 ctx 给联动/显隐计算。</p>
+          <p><b>防回归（0.5 人日）：</b>加一条「预览-运行时一致性」探针：同一 ctx 下，SchemaPreview 与 BoneDynamicForm 对同一 schema 的渲染结构（分区/控件集合）必须一致——这正是能早期抓住 span 类漂移的机器防线。</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= P1/P2 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">03</span>P1 / P2 级问题详情</div>
+    <div class="sec-desc">不影响正确性，但影响效率、可达性与长期维护成本。</div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-1</span>双渲染器漂移：没有机器防线的架构风险</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>SchemaPreview 与 BoneDynamicForm 是同一协议的两套独立实现。span 案例证明漂移已经发生；每新增一个协议能力（如未来的 span、详情视图、变体动作），都要靠人记得「两边都改」。目前没有任何测试/探针约束两边一致。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>两条路：① 抽共享控件渲染库，预览与运行时同源（彻底，工作量大）；② 用现有基础设施做「渲染结构快照」契约测试——samples.ts（场景样例）+ snapshots.ts（快照）已就绪，扩展为同一 schema 下两个渲染器的结构快照对跑，CI 断言一致（务实，1-2 人日起步）。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-2</span>后端校验默认不跑；保存软门禁可直通 error</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>LintPanel 初始状态是「未校验」，<code>revalidate()</code> 只能通过工具栏按钮或命令面板手动触发，进设计器不会自动跑；保存时 lint error 仅弹确认框，可强行越过（与 P0-2 叠加成直通链路）。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>挂载后自动跑一次后端校验（便宜，一次请求）；发布前强制刷新校验结果并作为硬闸；保存有 error 时按钮禁用，豁免走「填理由 + 记录」通道。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-3</span>结构面板缺搜索/过滤</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>22 个字段时结构树尚可接受；主数据类宽表实体（100+ 字段、十几个分区）里找一个控件只能靠滚。面板无搜索框、无按控件类型过滤、无分区折叠状态记忆。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>加控件搜索框（匹配 displayName/code，命中即定位滚动）；分区折叠状态按实体持久化；支持按 controlKind 过滤。属纯前端增量，2 人日左右。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-4</span>拖拽排序无键盘替代</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p><code>drag.ts</code> 为纯鼠标拖拽实现，无 keydown/tabIndex/role 等键盘可达性支撑。WCAG 2.1.1 要求功能键盘可操作；触屏板用户做长距离拖拽也痛苦。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>每个可拖拽行提供「上移/下移」按钮 + 快捷键（如 Alt+↑/↓），拖拽降级为增强通道。1 人日。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-5</span>大 schema 性能未治理也未度量</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>结构树与预览均无虚拟滚动；undo/redo 是全量 schema 快照式历史栈。22 控件流畅，但 100+ 控件、深嵌套分区的实体未测过，「卡」会以「建模者不愿用」的形式出现，难以归因。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>先用 Performance 面板记录一次 100 控件实体的编辑帧耗时（0.5 人日拿到数据），再决定是否上虚拟滚动/历史栈差量化。先度量后优化，别凭感觉。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p2">P2-1</span>两处小缺口</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v">
+          <p>① 本实体列表页签「待我审核」绑定 <code>reviewer_id</code>——实体无此字段（真实字段是 second_reviewer），lint 仅报 warning；该页签在运行时的筛选实际是空跑。</p>
+          <p>② <code>displayModes</code> 配了 create/edit/view 三态，运行时只传 create/edit（<code>RuntimeDataManagement.tsx:1857</code>），view 态未接线——查看态复用 edit 渲染。</p>
+        </div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>① 列表页签绑定字段建议从 warning 升为 error（筛选条件引用不存在字段 = 功能坏死），并修正本实体数据；② view 态补传（0.5 人日），或先在协议文档标注查看态回落规则。</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 做得好的地方 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">04</span>已经做对的（保持，别改坏）</div>
+    <div class="sec-desc">诊断不止挑刺。以下设计符合业界最佳实践，是后续改动的「不许破坏」清单：</div>
+    <table>
+      <thead><tr><th style="width:180px">能力</th><th>为什么是对的</th></tr></thead>
+      <tbody>
+        <tr><td><b>lint 分层（error/warning/info）</b></td><td>协议违规（error）与待评审扩展（warning，如 optionsRef 走 PROPS_PENDING_REVIEW）分开处置，给协议演进留了缓冲带，避免「要么全要么无」。</td></tr>
+        <tr><td><b>published 快照优先的执行期 schema</b></td><td><code>useBoneUiSchema</code> 的 executionSchema 取 published 优先、未发布回落 draft——建模者改草稿不会让线上行为漂移，发布闸门语义清晰。</td></tr>
+        <tr><td><b>乐观锁 + beforeunload 双向防丢稿</b></td><td>保存带 lockVersion（UiSchemaDesigner 传参），刷新有 beforeunload 确认（行 554 已接），工具提示与行为一致，没有「承诺了没做」。</td></tr>
+        <tr><td><b>命令面板 / 快照 / undo-redo / 新手指引</b></td><td>设计器生产力设施齐全，命令面板把「跳到某面板/运行校验」这类高频操作路径缩到一键。</td></tr>
+        <tr><td><b>后端 UI_REF 错误码体系</b></td><td>前后端日志可对账（错误码而非中文文案），发布闸门有机器判据——缺的只是规则覆盖面（见 P0-2）。</td></tr>
+        <tr><td><b>场景样例按实体领域过滤</b></td><td>SchemaPreview 的 visibleScenarios 过滤跨领域演示场景，避免「门诊快赔」出现在报销单上的误导——细节考虑到位。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 路线图 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">05</span>优化路线图</div>
+    <div class="sec-desc">按「先止血、再收敛契约、后打磨」排序。工作量为本地方评估，供排期参考。</div>
+    <table>
+      <thead><tr><th style="width:110px">阶段</th><th>事项</th><th style="width:90px">工作量</th><th style="width:70px">对应问题</th><th>验收判据</th></tr></thead>
+      <tbody>
+        <tr>
+          <td rowspan="3"><b>Phase 1<br />止血</b><br /><span class="mono" style="font-size:12px;color:var(--ink-3)">本周</span></td>
+          <td>后端变体循环补 virtual 碰撞校验（UI_REF_04 同口径）</td><td>0.5 人日</td><td class="mono">P0-2</td><td>用当前实体 draft 打后端 validate，必须报 UI_REF-04</td>
+        </tr>
+        <tr>
+          <td>下线/置灰「栅格宽度」编辑器（协议 ratified 前不可写）</td><td>0.5 人日</td><td class="mono">P0-1</td><td>结构面板无 span 写入口；lint 不再因 span 报错</td>
+        </tr>
+        <tr>
+          <td>保存/发布 error 硬闸：禁用保存按钮，豁免需填理由</td><td>1 人日</td><td class="mono">P0-2 / P1-2</td><td>有 error 时保存按钮 disabled；豁免记录可查</td>
+        </tr>
+        <tr>
+          <td rowspan="4"><b>Phase 2<br />契约收敛</b><br /><span class="mono" style="font-size:12px;color:var(--ink-3)">1-2 周</span></td>
+          <td>运行时详情抽屉消费 views.detail（pageHeader + sections 投影）</td><td>2-3 人日</td><td class="mono">P0-3</td><td>配置详情视图后，终端详情页按分区/页头渲染</td>
+        </tr>
+        <tr>
+          <td>运行时 ctx 接线（me/scopes → UiContext → useBoneUiSchema → BoneDynamicForm）</td><td>1-2 人日</td><td class="mono">P0-4</td><td>reviewer 登录线上看到「核赔工作台」变体布局</td>
+        </tr>
+        <tr>
+          <td>「预览-运行时一致性」契约探针（同 schema 双渲染器结构快照对跑）</td><td>1-2 人日</td><td class="mono">P1-1</td><td>CI 可跑；人为制造一处预览/运行时分歧必须变红</td>
+        </tr>
+        <tr>
+          <td>lint 规则 ↔ UI_REF 码对账清单入 UiSchemaContractTest</td><td>1 人日</td><td class="mono">P0-2</td><td>删掉任一侧规则，契约测试红</td>
+        </tr>
+        <tr>
+          <td rowspan="4"><b>Phase 3<br />体验与协议演进</b><br /><span class="mono" style="font-size:12px;color:var(--ink-3)">2-4 周</span></td>
+          <td>span 进协议（schema.json + 双渲染器渲染 + PROP_WHITELIST 同步），栅格编辑器回归</td><td>3-5 人日</td><td class="mono">P0-1</td><td>设 1/2 后预览与运行时布局同步变化；协议测试绿</td>
+        </tr>
+        <tr>
+          <td>结构面板搜索/过滤/折叠记忆；拖拽行加键盘上下移</td><td>3 人日</td><td class="mono">P1-3 / P1-4</td><td>100 字段实体 10 秒内定位任意控件；键盘可完成排序</td>
+        </tr>
+        <tr>
+          <td>后端校验自动触发（挂载即跑）+ 100 控件实体性能度量</td><td>1 人日</td><td class="mono">P1-2 / P1-5</td><td>进设计器即有校验结果；有帧耗时基线数据</td>
+        </tr>
+        <tr>
+          <td>列表页签字段绑定升 error；displayModes view 态接线；修本实体 reviewer_id 数据</td><td>1 人日</td><td class="mono">P2-1</td><td>本实体 lint 全绿；查看态按协议渲染</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 附录 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">06</span>附录：验证方法与证据</div>
+    <div class="card">
+      <h3 style="margin-bottom:10px">验证方法（可复现）</h3>
+      <div class="kv">
+        <div class="row"><div class="k">五端交叉</div><div class="v"><p>协议真源 <code class="path">bone-engine/bone-metadata-server/src/main/resources/ui/bone-ui-schema.schema.json</code> ↔ 后端校验 <code class="path">UiSchemaApplicationService.java</code> ↔ 前端自检 <code class="path">lint.ts / constants.ts</code> ↔ 预览 <code class="path">SchemaPreview.tsx</code> ↔ 运行时 <code class="path">BoneDynamicForm.tsx / RuntimeDataManagement.tsx</code>，逐条能力比对消费关系。</p></div></div>
+        <div class="row"><div class="k">活体探针</div><div class="v"><p>Playwright（注入 token/bone-user 免登录）打开设计器，做两类实验：① 零交互加载，抓工具栏徽标 + 自检面板全量条目；② 交互实验：设置栅格宽度=1/2，对比操作前后 lint/保存行为/界面变化。实体草稿经 API 复核零污染（探针从未保存成功）。</p></div></div>
+        <div class="row"><div class="k">数据侧复核</div><div class="v"><p>直接 GET <code>/api/v1/metadata/entities/{id}/ui-schema</code> 与 <code>/fields</code>，解析 draft/published JSON 比对，确认错误随发布上线、span 零残留。</p></div></div>
+      </div>
+      <h3 style="margin:18px 0 10px">自检面板实测全貌（该实体当前态）</h3>
+      <div class="shot"><img src="21-lint-panel.png" alt="自检面板 1 错误 3 警告全量条目" /><div class="cap">实测：1 错误（变体 virtual 碰撞）+ 3 警告（列表页签 reviewer_id、两处 HITL reasonTypes 缺失）</div></div>
+      <h3 style="margin:18px 0 10px">设计器初始态</h3>
+      <div class="shot"><img src="01-designer-initial.png" alt="设计器初始加载界面" /><div class="cap">设计器整体：左创作面板（结构/规则/动作条/列表/字典/多语言/模板/变体/自检/JSON）+ 右预览（表单/详情/列表、身份模拟、场景样例）</div></div>
+      <p style="margin-top:14px;color:var(--ink-2);font-size:12.5px">备注：本诊断未改动任何业务代码。过程中仅为恢复 dev server 编译，修复过一处并行编辑会话遗留的语法笔误（lint.ts，当前文件已由该会话继续演进，编译正常）。</p>
+    </div>
+  </section>
+
+  <div class="footer">Bone · UI Schema Designer Diagnostic · 2026-10-18 · 证据文件随报告同目录交付</div>
+</div>
+</body>
+</html>

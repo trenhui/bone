@@ -18,6 +18,7 @@ import com.bone.iam.domain.model.app.valueobject.AppRole;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AppPermissionRepository;
 import com.bone.iam.domain.repository.BoneApplicationRepository;
+import com.bone.iam.domain.repository.BoneModuleRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,6 +52,7 @@ public class AppApplicationService {
   private final BoneApplicationRepository boneApplicationRepository;
   private final AppPermissionRepository appPermissionRepository;
   private final AccountRepository accountRepository;
+  private final BoneModuleRepository boneModuleRepository;
 
   @Transactional
   public Long createApplication(CreateApplicationCommand cmd) {
@@ -84,8 +86,23 @@ public class AppApplicationService {
             qry.getPage() != null ? qry.getPage() : 1,
             qry.getSize() != null ? qry.getSize() : 10);
     List<ApplicationDTO> list =
-        result.getRecords().stream().map(AppApplicationService::toDto).collect(Collectors.toList());
+        result.getRecords().stream()
+            .map(app -> toDto(app, countModulesOf(app.getId())))
+            .collect(Collectors.toList());
     return PageResult.of(list, result.getTotal(), result.getPage(), result.getSize());
+  }
+
+  /**
+   * 应用下模块数（本上下文真源：bone_module 按 app_id 计数）。
+   *
+   * <p>历史缺陷：{@code moduleCount} 恒填 0，前端「N 模块」对每个应用都显示 0 —— 声明了字段却从不 落值的假能力（2026-10-17 全链路 E2E
+   * 探针抓出：新建含 1 模块的应用仍显示「0 模块」）。
+   */
+  private long countModulesOf(Long appId) {
+    if (appId == null) {
+      return 0L;
+    }
+    return boneModuleRepository.findModulePage(appId, 1, 1).getTotal();
   }
 
   /**
@@ -122,7 +139,7 @@ public class AppApplicationService {
             .filter(app -> qry.getStatus() == null || qry.getStatus().equals(app.getStatus()))
             .map(
                 app -> {
-                  ApplicationDTO dto = toDto(app);
+                  ApplicationDTO dto = toDto(app, countModulesOf(app.getId()));
                   dto.setMyRole(roleByApp.get(app.getId()));
                   return dto;
                 })
@@ -157,7 +174,7 @@ public class AppApplicationService {
     if (entity == null) {
       throw IamErrors.of(IamErrorCodes.APPLICATION_NOT_FOUND, "应用不存在");
     }
-    return toDto(entity);
+    return toDto(entity, countModulesOf(entity.getId()));
   }
 
   /** 某应用的权限绑定列表（批量回填用户名，避免逐行查账号的 N+1）。 */
@@ -217,7 +234,7 @@ public class AppApplicationService {
         .ifPresent(permission -> appPermissionRepository.deleteById(permission.getId()));
   }
 
-  private static ApplicationDTO toDto(BoneApplication entity) {
+  private static ApplicationDTO toDto(BoneApplication entity, long moduleCount) {
     ApplicationDTO dto = new ApplicationDTO();
     dto.setId(entity.getId());
     dto.setName(entity.getName());
@@ -225,7 +242,7 @@ public class AppApplicationService {
     dto.setDescription(entity.getDescription());
     dto.setIcon(entity.getIcon());
     dto.setStatus(entity.getStatus());
-    dto.setModuleCount(0);
+    dto.setModuleCount(Math.toIntExact(moduleCount));
     dto.setEntityCount(0);
     dto.setMyRole(null);
     dto.setCreatedAt(entity.getCreatedAt());

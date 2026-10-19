@@ -344,6 +344,7 @@ const QualityRuleManagement: React.FC = () => {
         <ProTable
           columns={columns as ProColumns<DataQualityRule>[]}
           dataSource={rules}
+          rowKey={(r: DataQualityRule) => String(r.id)}
           loading={loading}
           pagination={{ pageSize: 10 }}
           options={{ reload: false, density: false, setting: false }}
@@ -404,6 +405,7 @@ const QualityRuleManagement: React.FC = () => {
               }
             ]}
             dataSource={qualityChecks}
+            rowKey={(r: QualityCheck) => String(r.id)}
             pagination={{ pageSize: 10 }}
             locale={{ emptyText: '暂无检查历史' }}
           />

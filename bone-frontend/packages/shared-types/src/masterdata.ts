@@ -145,6 +145,8 @@ export interface UpdateMasterDataEntityReq {
 export interface CreateMasterDataFieldReq {
   masterDataEntityId: string;
   name: string;
+  /** 字段编码。md_field.code 为 NOT NULL 且后端 @NotBlank，缺了会被 400 COMMON_VALIDATION_FAILED 拦下。 */
+  code: string;
   type: string;
   length?: number;
   required: boolean;

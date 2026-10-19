@@ -14,7 +14,7 @@ import {
   Alert, Button, Divider, Dropdown, Empty, Input, InputNumber, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
-  ArrowDownOutlined, ArrowUpOutlined, DragOutlined, EyeInvisibleOutlined, PlusOutlined,
+  ArrowDownOutlined, ArrowUpOutlined, DragOutlined, EyeInvisibleOutlined, PlusOutlined, SearchOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -26,6 +26,7 @@ import {
 } from './schemaOps';
 import { dragSort2 } from './drag';
 import { defaultOverlay, projectRuntimeColumns } from '../../utils/columnProjection';
+import { useScrollToFocus } from './useScrollToFocus';
 
 const { Text } = Typography;
 
@@ -78,10 +79,17 @@ function GroupTitle({ no, title, proto }: { no: string; title: string; proto?: s
 }
 
 export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [], actionDefs = null, focus }: Props): React.ReactElement {
+  // 定位滚动：focus.idx 命中第几列，滚到那一行（长列表点击定位必滚动，见 useScrollToFocus）
+  useScrollToFocus(focus?.idx != null ? `l${focus.idx}` : undefined);
   const list = schema.views.list ?? {};
   // cols 走 useMemo：list.columns 引用随 schema 不可变更新保持稳定，
   // 避免「逻辑表达式每渲染新数组」触发下方 useMemo 依赖抖动（exhaustive-deps）
   const cols = useMemo(() => schema.views.list?.columns ?? [], [schema.views.list?.columns]);
+  /** 列搜索（码 / 显示名）：列表可上百列，过滤避免盲找，对标 IDE 文件搜索 */
+  const [colQuery, setColQuery] = useState('');
+  const cq = colQuery.trim().toLowerCase();
+  const matchCol = (c: { fieldCode: string; label?: string; width?: unknown }) =>
+    !cq || c.fieldCode.toLowerCase().includes(cq) || (c.label ?? '').toLowerCase().includes(cq);
   const tabs = list.tabs ?? [];
   const stats = list.stats ?? [];
   const searchFields = list.searchFields ?? [];
@@ -91,6 +99,14 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
   /** 列拖拽排序（对标 Salesforce List View 拖拽列序；200 列时上下按钮要点 199 次） */
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [batchWidth, setBatchWidth] = useState<number | null>(null);
+  /** 键盘重排焦点跟随：列顺序变化后把焦点还给被移动列（见 StructurePanel 同款注释） */
+  const [focusCode, setFocusCode] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focusCode) return;
+    const el = document.querySelector(`[data-code="${CSS.escape(focusCode)}"]`) as HTMLElement | null;
+    el?.focus();
+    setFocusCode(null);
+  }, [focusCode, cols]);
   useEffect(() => {
     const clear = () => setDragOver(null);
     window.addEventListener('dragend', clear);
@@ -152,63 +168,84 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
         </Space>
       )}
 
-      {cols.map((c, i) => (
-        <div
-          key={`${c.fieldCode}-${i}`}
-          data-tour="list-row"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
-            padding: '7px 9px', border: `1px solid ${focus?.idx === i ? '#ffa940' : dragOver === `col-${i}` ? '#1677ff' : '#f0f0f0'}`,
-            borderRadius: 8, marginBottom: 6, background: c.visible === false ? '#fafafa' : dragOver === `col-${i}` ? '#e6f4ff' : '#fff',
-            opacity: c.visible === false ? 0.7 : 1,
-          }}
-        >
-          <Tooltip title="拖拽调整列序">
-            <span
-              draggable
-              {...dragSort2(i, i, (from, _fc, _ts, to) => onChange(moveColumn(schema, from, to)),
-                (over) => setDragOver((cur) => (over ? `col-${i}` : cur === `col-${i}` ? null : cur)))}
-              style={{ cursor: 'grab', color: dragOver === `col-${i}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
-            >
-              <DragOutlined />
-            </span>
-          </Tooltip>
-          <Text type="secondary" style={{ fontSize: 11, width: 20 }}>{i + 1}</Text>
-          <Select size="small" showSearch optionFilterProp="label" style={{ minWidth: 160 }}
-            options={fieldOptions} value={c.fieldCode || undefined}
-            onChange={(v) => onChange(updateColumn(schema, i, { fieldCode: v }))} />
-          <Input size="small" style={{ width: 130 }} placeholder="列标题覆盖"
-            value={(c.format?.title as string | undefined) ?? ''}
-            onChange={(e) => onChange(updateColumn(schema, i, {
-              format: { ...c.format, title: e.target.value || undefined },
-            }))} />
-          <Tooltip title="列宽（px）">
-            <InputNumber size="small" style={{ width: 76 }} min={0} value={c.width ?? undefined}
-              onChange={(v) => onChange(updateColumn(schema, i, { width: v ?? undefined }))} />
-          </Tooltip>
-          <Tooltip title="固定列方向（横向滚动时钉住）：左=主键/案件号，右=操作列">
-            <Segmented
-              size="small" value={c.pinned ?? 'none'}
-              onChange={(v) => onChange(updateColumn(schema, i, { pinned: v === 'none' ? undefined : (v as 'left' | 'right') }))}
-              options={COLUMN_PIN_OPTIONS}
-            />
-          </Tooltip>
-          <Tooltip title="显示">
-            <Switch size="small" aria-label={`显示列 ${c.fieldCode}`} checked={c.visible !== false}
-              onChange={(v) => onChange(updateColumn(schema, i, { visible: v ? undefined : false }))} />
-          </Tooltip>
-          {c.visible === false && <Tag style={{ fontSize: 11 }}>已隐藏</Tag>}
-          <span style={{ flex: 1 }} />
-          <Button size="small" type="text" aria-label="列上移" icon={<ArrowUpOutlined />} disabled={i === 0}
-            onClick={() => onChange(moveColumn(schema, i, i - 1))} />
-          <Button size="small" type="text" aria-label="列下移" icon={<ArrowDownOutlined />} disabled={i === cols.length - 1}
-            onClick={() => onChange(moveColumn(schema, i, i + 1))} />
-          <Tooltip title="从列表移除（保留契约记录，可再开启；彻底删条目会让该列在运行时重新追加到末尾）">
-            <Button size="small" type="text" danger aria-label="移除列" icon={<EyeInvisibleOutlined />}
-              onClick={() => onChange(updateColumn(schema, i, { visible: false }))} />
-          </Tooltip>
-        </div>
-      ))}
+      <Input
+        size="small" allowClear placeholder="搜索列（字段码 / 显示名）"
+        value={colQuery} onChange={(e) => setColQuery(e.target.value)}
+        style={{ marginBottom: 8 }}
+        prefix={<SearchOutlined />}
+        aria-label="搜索列"
+      />
+
+      {cols.map((c, i) => {
+        if (!matchCol(c)) return null;
+        return (
+          <div
+            key={`${c.fieldCode}-${i}`}
+            data-tour="list-row"
+            data-code={c.fieldCode}
+            data-locate={focus?.idx === i ? `l${i}` : undefined}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+              padding: '7px 9px', border: `1px solid ${focus?.idx === i ? '#ffa940' : dragOver === `col-${i}` ? '#1677ff' : '#f0f0f0'}`,
+              borderRadius: 8, marginBottom: 6, background: c.visible === false ? '#fafafa' : dragOver === `col-${i}` ? '#e6f4ff' : '#fff',
+              opacity: c.visible === false ? 0.7 : 1,
+            }}
+          >
+            <Tooltip title="拖拽调整列序（或聚焦后按 Alt+↑/↓）">
+              <span
+                draggable
+                tabIndex={0}
+                role="button"
+                aria-label={`列 ${c.fieldCode}：拖拽或 Alt+↑/↓ 调整顺序`}
+                {...dragSort2(i, i, (from, _fc, _ts, to) => onChange(moveColumn(schema, from, to)),
+                  (over) => setDragOver((cur) => (over ? `col-${i}` : cur === `col-${i}` ? null : cur)))}
+                onKeyDown={(e) => {
+                  if (!e.altKey) return;
+                  if (i > 0 && e.key === 'ArrowUp') { e.preventDefault(); onChange(moveColumn(schema, i, i - 1)); setFocusCode(c.fieldCode); }
+                  else if (i < cols.length - 1 && e.key === 'ArrowDown') { e.preventDefault(); onChange(moveColumn(schema, i, i + 1)); setFocusCode(c.fieldCode); }
+                }}
+                style={{ cursor: 'grab', color: dragOver === `col-${i}` ? '#1677ff' : '#bfbfbf', display: 'inline-flex' }}
+              >
+                <DragOutlined />
+              </span>
+            </Tooltip>
+            <Text type="secondary" style={{ fontSize: 11, width: 20 }}>{i + 1}</Text>
+            <Select size="small" showSearch optionFilterProp="label" style={{ minWidth: 160 }}
+              options={fieldOptions} value={c.fieldCode || undefined}
+              onChange={(v) => onChange(updateColumn(schema, i, { fieldCode: v }))} />
+            <Input size="small" style={{ width: 130 }} placeholder="列标题覆盖"
+              value={(c.format?.title as string | undefined) ?? ''}
+              onChange={(e) => onChange(updateColumn(schema, i, {
+                format: { ...c.format, title: e.target.value || undefined },
+              }))} />
+            <Tooltip title="列宽（px）">
+              <InputNumber size="small" style={{ width: 76 }} min={0} value={c.width ?? undefined}
+                onChange={(v) => onChange(updateColumn(schema, i, { width: v ?? undefined }))} />
+            </Tooltip>
+            <Tooltip title="固定列方向（横向滚动时钉住）：左=主键/案件号，右=操作列">
+              <Segmented
+                size="small" value={c.pinned ?? 'none'}
+                onChange={(v) => onChange(updateColumn(schema, i, { pinned: v === 'none' ? undefined : (v as 'left' | 'right') }))}
+                options={COLUMN_PIN_OPTIONS}
+              />
+            </Tooltip>
+            <Tooltip title="显示">
+              <Switch size="small" aria-label={`显示列 ${c.fieldCode}`} checked={c.visible !== false}
+                onChange={(v) => onChange(updateColumn(schema, i, { visible: v ? undefined : false }))} />
+            </Tooltip>
+            {c.visible === false && <Tag style={{ fontSize: 11 }}>已隐藏</Tag>}
+            <span style={{ flex: 1 }} />
+            <Button size="small" type="text" aria-label="列上移" icon={<ArrowUpOutlined />} disabled={i === 0}
+              onClick={() => onChange(moveColumn(schema, i, i - 1))} />
+            <Button size="small" type="text" aria-label="列下移" icon={<ArrowDownOutlined />} disabled={i === cols.length - 1}
+              onClick={() => onChange(moveColumn(schema, i, i + 1))} />
+            <Tooltip title="从列表移除（保留契约记录，可再开启；彻底删条目会让该列在运行时重新追加到末尾）">
+              <Button size="small" type="text" danger aria-label="移除列" icon={<EyeInvisibleOutlined />}
+                onClick={() => onChange(updateColumn(schema, i, { visible: false }))} />
+            </Tooltip>
+          </div>
+        );
+      })}
 
       <Space wrap style={{ marginTop: 6 }}>
         <Select

@@ -41,7 +41,7 @@ export function createQueryClient(): QueryClient {
  * // keys.accountsDetail -> ['iam', 'accounts', 'detail']
  * ```
  */
-export function createQueryKeys(scope: string, domains: string[]) {
+export function createQueryKeys(scope: string, domains: string[]): Record<string, readonly string[]> {
   const keys: Record<string, readonly string[]> = {};
   for (const domain of domains) {
     keys[domain] = [scope, domain] as const;

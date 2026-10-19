@@ -15,11 +15,14 @@ import {
   enumOptionsOf,
   fieldsOutsideContract,
   isEnumField,
+  isOverlayDirty,
   isRenderSupported,
   loadOverlay,
+  overlayHiddenContractColumns,
   overlayKey,
   projectColumns,
   projectRuntimeColumns,
+  renameColumnOverride,
   renameView,
   reorderOverlay,
   resetActiveViewToDefault,
@@ -243,6 +246,70 @@ describe('reorderOverlay', () => {
     const snapshot = JSON.stringify(ov);
     reorderOverlay(ov, ['code', 'name', 'qty'], 'name', 'up');
     expect(JSON.stringify(ov)).toBe(snapshot);
+  });
+});
+
+describe('renameColumnOverride（个人列改名写口）', () => {
+  it('写个人改名：保留该字段既有覆盖条目的其他键（visible/order 不丢）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { visible: false, displayName: '数量', order: 2 };
+    const next = renameColumnOverride(ov.overrides, 'qty', '出货数', FIELDS);
+    expect(next.qty).toEqual({ visible: false, displayName: '出货数', order: 2 });
+  });
+
+  it('无覆盖条目时新建条目（visible: true，与「缺省即可见」同口径）', () => {
+    const next = renameColumnOverride({}, 'name', '商品名', FIELDS);
+    expect(next.name).toEqual({ visible: true, displayName: '商品名' });
+  });
+
+  it('空名 ⇒ 恢复默认：删除 displayName 键而非写空串', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.name = { ...ov.overrides.name, displayName: '旧改名' };
+    const next = renameColumnOverride(ov.overrides, 'name', '   ', FIELDS);
+    expect(next.name.displayName).toBeUndefined();
+    expect('displayName' in next.name).toBe(false);
+  });
+
+  it('与字段 displayName 相同 ⇒ 恢复默认（负向探针：不写「等于默认值的改名」）', () => {
+    // 为什么必须是负向探针：写一个等值改名会把 isOverlayDirty 永久置亮——
+    // 「恢复默认显示」按钮从此再也不会灭，用户以为还有未调整完的偏好。
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.name = { ...ov.overrides.name, displayName: '旧改名' };
+    const next = renameColumnOverride(ov.overrides, 'name', '名称', FIELDS); // '名称' = 字段 displayName
+    expect('displayName' in next.name).toBe(false);
+  });
+
+  it('恢复默认不清掉同字段的其他键（隐藏偏好不与改名共存亡）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { visible: false, displayName: '出货数', order: 2 };
+    const next = renameColumnOverride(ov.overrides, 'qty', null, FIELDS);
+    expect(next.qty).toEqual({ visible: false, order: 2 });
+  });
+
+  it('不修改入参（纯函数）', () => {
+    const ov = defaultOverlay(FIELDS);
+    const snapshot = JSON.stringify(ov);
+    renameColumnOverride(ov.overrides, 'name', '新名', FIELDS);
+    renameColumnOverride(ov.overrides, 'code', null, FIELDS);
+    expect(JSON.stringify(ov)).toBe(snapshot);
+  });
+
+  it('闭环：改名后投影用个人名且 dirty；恢复默认后回落字段名且不脏', () => {
+    const lv: ListView = { columns: [{ fieldCode: 'name', format: { title: '契约标题' } }] };
+    const ov = defaultOverlay(FIELDS);
+    const renamed = renameColumnOverride(ov.overrides, 'name', '甲方', FIELDS);
+    const base = defaultBundle(FIELDS);
+    const bundle: UiOverlayBundle = { ...base, views: [{ ...base.views[0], overrides: renamed }] };
+    const active = activeOverlay(bundle);
+    // 投影：个人改名优先于契约标题（projectRuntimeColumns 既有语义，此处闭环验证）
+    expect(projectRuntimeColumns(FIELDS, active, lv)[0].field.displayName).toBe('甲方');
+    // dirty：改名 = 偏离默认投影 ⇒「恢复默认显示」可用
+    expect(isOverlayDirty(active, FIELDS, lv)).toBe(true);
+    // 恢复默认：displayName 键删除 ⇒ 投影回落契约标题、dirty 熄灭
+    const restored = renameColumnOverride(renamed, 'name', '名称', FIELDS);
+    const active2 = activeOverlay({ ...bundle, views: [{ ...bundle.views[0], overrides: restored }] });
+    expect(projectRuntimeColumns(FIELDS, active2, lv)[0].field.displayName).toBe('契约标题');
+    expect(isOverlayDirty(active2, FIELDS, lv)).toBe(false);
   });
 });
 
@@ -512,5 +579,111 @@ describe('端到端：bundle → activeOverlay → projectRuntimeColumns（视�
     b = createView(b, 'B', FIELDS, 'blank');
     expect(activeOverlay(b).density).toBeUndefined();
     expect(activeOverlay(switchView(b, DEFAULT_VIEW_ID)).density).toBe('compact');
+  });
+});
+
+describe('overlayHiddenContractColumns（自伤遮蔽判据 · 双轨收敛）', () => {
+  const listView = (columns: ListView['columns']): ListView => ({ columns });
+
+  it('个人隐藏 + 契约显示 ⇒ 命中（「配了不生效」的精确状态）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    const hit = overlayHiddenContractColumns(FIELDS, ov, listView([{ fieldCode: 'code' }, { fieldCode: 'qty' }]));
+    expect(hit.map((f) => f.code)).toEqual(['qty']);
+  });
+
+  it('契约自己隐藏的列不算遮蔽（那是契约语义，不是偏好盖契约）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    const hit = overlayHiddenContractColumns(FIELDS, ov, listView([{ fieldCode: 'qty', visible: false }]));
+    expect(hit).toEqual([]);
+  });
+
+  it('无契约列 ⇒ 空（纯偏好模式，没有契约可遮蔽）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    expect(overlayHiddenContractColumns(FIELDS, ov, null)).toEqual([]);
+    expect(overlayHiddenContractColumns(FIELDS, ov, listView([]))).toEqual([]);
+    expect(overlayHiddenContractColumns(FIELDS, ov, listView(undefined))).toEqual([]);
+  });
+
+  it('overlay 为 null/缺项 ⇒ 空（hydrate 前、新字段未入覆盖表都不误报）', () => {
+    expect(overlayHiddenContractColumns(FIELDS, null, listView([{ fieldCode: 'qty' }]))).toEqual([]);
+    expect(overlayHiddenContractColumns(FIELDS, undefined, listView([{ fieldCode: 'qty' }]))).toEqual([]);
+    expect(overlayHiddenContractColumns(FIELDS, { version: 2, overrides: {} }, listView([{ fieldCode: 'qty' }]))).toEqual([]);
+  });
+
+  it('负向探针：只隐藏一个契约列时不得把其他列一并报出', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.name = { ...ov.overrides.name, visible: false };
+    const hit = overlayHiddenContractColumns(FIELDS, ov, listView([{ fieldCode: 'code' }, { fieldCode: 'name' }, { fieldCode: 'qty' }]));
+    expect(hit.map((f) => f.code)).toEqual(['name']);
+  });
+
+  it('契约引用已删字段 ⇒ 跳过（防幽灵列误报）', () => {
+    const ov = defaultOverlay(FIELDS);
+    const hit = overlayHiddenContractColumns([FIELDS[0]], ov, listView([{ fieldCode: 'gone' }, { fieldCode: 'code' }]));
+    expect(hit).toEqual([]);
+  });
+});
+
+describe('isOverlayDirty（恢复默认显示的启用判据 = 重置能否改变可见投影）', () => {
+  const listView = (columns: ListView['columns']): ListView => ({ columns });
+
+  it('默认投影 ⇒ 不脏', () => {
+    expect(isOverlayDirty(defaultOverlay(FIELDS), FIELDS)).toBe(false);
+  });
+
+  it('隐藏/改名/密度任一偏离 ⇒ 脏', () => {
+    const hidden = defaultOverlay(FIELDS);
+    hidden.overrides.qty = { ...hidden.overrides.qty, visible: false };
+    expect(isOverlayDirty(hidden, FIELDS)).toBe(true);
+
+    const renamed = defaultOverlay(FIELDS);
+    renamed.overrides.name = { ...renamed.overrides.name, displayName: '商品名称' };
+    expect(isOverlayDirty(renamed, FIELDS)).toBe(true);
+
+    expect(isOverlayDirty({ ...defaultOverlay(FIELDS), density: 'compact' }, FIELDS)).toBe(true);
+  });
+
+  it('空覆盖表 ⇒ 不脏（hydrate 时 fields 晚到的占位态，不是用户调整）', () => {
+    expect(isOverlayDirty({ version: UI_OVERLAY_VERSION, overrides: {} }, FIELDS)).toBe(false);
+  });
+
+  it('负向探针：缺条目 ≠ 偏离；显隐条目才算', () => {
+    const ov = defaultOverlay(FIELDS);
+    delete ov.overrides.qty;
+    expect(isOverlayDirty(ov, FIELDS)).toBe(false);
+    ov.overrides.qty = { visible: false };
+    expect(isOverlayDirty(ov, FIELDS)).toBe(true);
+  });
+
+  it('字段已删的陈旧条目 ⇒ inert（投影不遍历它，不得把重置键永久置亮）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.gone_field = { visible: false, displayName: '幽灵列', order: 99 };
+    expect(isOverlayDirty(ov, FIELDS)).toBe(false);
+    // 与真实偏离并存时仍要报脏（inert 跳过不得掩盖真差异）
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    expect(isOverlayDirty(ov, FIELDS)).toBe(true);
+  });
+
+  it('有契约时契约外字段的偏好 ⇒ inert（strict 集合下运行时不可见）', () => {
+    const lv = listView([{ fieldCode: 'code' }, { fieldCode: 'name' }]);
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false }; // qty 不在契约里
+    expect(isOverlayDirty(ov, FIELDS, lv)).toBe(false);
+    ov.overrides.name = { ...ov.overrides.name, visible: false }; // name 在契约里
+    expect(isOverlayDirty(ov, FIELDS, lv)).toBe(true);
+  });
+
+  it('自洽性：同一偏好随契约有无切换脏态（契约撤下后旧隐藏重新算数）', () => {
+    const ov = defaultOverlay(FIELDS);
+    ov.overrides.qty = { ...ov.overrides.qty, visible: false };
+    // 无契约（纯个人模式）：qty 参与投影 ⇒ 脏
+    expect(isOverlayDirty(ov, FIELDS, null)).toBe(true);
+    // 契约只含 code/name：qty 不可见 ⇒ 不脏
+    expect(isOverlayDirty(ov, FIELDS, listView([{ fieldCode: 'code' }, { fieldCode: 'name' }]))).toBe(false);
+    // 契约重新包含 qty：又脏了
+    expect(isOverlayDirty(ov, FIELDS, listView([{ fieldCode: 'qty' }]))).toBe(true);
   });
 });

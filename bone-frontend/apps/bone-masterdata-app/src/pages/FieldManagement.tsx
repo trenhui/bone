@@ -82,6 +82,7 @@ const FieldManagement: React.FC = () => {
     setCurrentField(record);
     form.setFieldsValue({
       name: record.name,
+      code: record.code,
       type: record.type,
       length: record.length,
       required: record.required,
@@ -159,6 +160,12 @@ const FieldManagement: React.FC = () => {
       render: (text: string, record: MasterDataField) => (
         <a onClick={() => handleView(record)}>{text}</a>
       )
+    },
+    {
+      title: '字段编码',
+      dataIndex: 'code',
+      key: 'code',
+      render: (text?: string) => text || <span style={{ color: '#bfbfbf' }}>-</span>
     },
     {
       title: '字段类型',
@@ -265,6 +272,9 @@ const FieldManagement: React.FC = () => {
           options={false}
           columns={columns as ProColumns<MasterDataField>[]}
           dataSource={fields}
+          // ★ 必须显式 rowKey：MasterDataField 没有 `key` 字段，不指定则每行 React key 恒为
+          //   undefined，每次渲染都打「Each child in a list should have a unique key prop」。
+          rowKey={(r: MasterDataField) => String(r.id)}
           loading={loading}
           pagination={{ pageSize: 10 }}
           locale={{ emptyText: '请先选择一个模型' }}
@@ -299,6 +309,23 @@ const FieldManagement: React.FC = () => {
             rules={[{ required: true, message: '请输入字段名称' }]}
           >
             <Input placeholder="请输入字段名称" />
+          </Form.Item>
+          {/* 字段编码：md_field.code 为 NOT NULL，后端 CreateMasterDataFieldReq 上还有 @NotBlank。
+              缺了这一项时创建必然 400「code: 字段编码不能为空」——整个「建字段」功能在 UI 上不可用，
+              且下游「记录管理」因模型零字段也无法建记录。 */}
+          <Form.Item
+            name="code"
+            label="字段编码"
+            extra="记录数据 JSON 的键，创建后不建议修改"
+            rules={[
+              { required: true, message: '请输入字段编码' },
+              {
+                pattern: /^[A-Za-z_][A-Za-z0-9_]*$/,
+                message: '只能由字母、数字、下划线组成，且不能以数字开头',
+              },
+            ]}
+          >
+            <Input placeholder="如 customer_name" />
           </Form.Item>
           <Form.Item
             name="type"

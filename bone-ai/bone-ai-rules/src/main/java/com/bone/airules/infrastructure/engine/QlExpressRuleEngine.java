@@ -6,6 +6,7 @@ import com.alibaba.qlexpress4.QLOptions;
 import com.alibaba.qlexpress4.QLResult;
 import com.alibaba.qlexpress4.exception.QLException;
 import com.alibaba.qlexpress4.runtime.trace.ExpressionTrace;
+import com.alibaba.qlexpress4.security.QLSecurityStrategy;
 import com.bone.airules.domain.gateway.RuleEngine;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,8 @@ import org.slf4j.LoggerFactory;
  *   <li>指令集缓存（{@code QLOptions.cache(true)}），规则热更走版本链，不重建 runner；
  *   <li>{@code traceExpression(true)} 采集表达式追踪树——「判定路径可回放」的采集点；
  *   <li>执行超时（{@code timeoutMillis}）为沙箱防线之一：脚本超时强制失败按未命中处理；
- *   <li>保持默认安全策略：不开放任意类 / 函数调用，禁止脚本与应用代码交互；
+ *   <li><b>沙箱强制</b>（{@code QLSecurityStrategy.isolation()}）：禁用 {@code import} / {@code new} / 反射 /
+ *       外部类静态调用，规则 DSL 仅允许运算符与上下文基本类型比较——阻断「规则表达式 RCE」面（方案 §4.3 硬要求）；
  *   <li>求值异常按未命中处理（与 SpEL 求值器一致：异常回 false），错误信息保留供回放。
  * </ul>
  */
@@ -35,9 +37,12 @@ public class QlExpressRuleEngine implements RuleEngine {
   private final Express4Runner runner;
 
   public QlExpressRuleEngine() {
-    // InitOptions.DEFAULT_OPTIONS：默认安全策略（不开放任意类 / 函数调用）
-    this.runner = new Express4Runner(InitOptions.DEFAULT_OPTIONS);
-    log.info("QlExpressRuleEngine initialized (qlexpress4 unique DSL engine)");
+    // 沙箱隔离：禁用 import / new / 反射 / 外部类静态调用，阻断规则表达式 RCE 面。
+    // 规则 DSL 仅需运算符与上下文基本类型比较，隔离策略不影响声明式求值（方案 §4.3）。
+    InitOptions options =
+        InitOptions.builder().securityStrategy(QLSecurityStrategy.isolation()).build();
+    this.runner = new Express4Runner(options);
+    log.info("QlExpressRuleEngine initialized (qlexpress4 unique DSL engine, sandbox=isolation)");
   }
 
   @Override

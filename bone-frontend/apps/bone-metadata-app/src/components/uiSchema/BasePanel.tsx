@@ -103,7 +103,8 @@ export default function BasePanel({ entityId, schema, onChange, lockVersion, onM
         <Descriptions.Item label="跟随模式">
           <Space size={4}>
             <Switch
-              size="small" checked={base.followMode === 'notify'}
+              size="small" aria-label="模板跟随模式（notify=有新版本时提醒）"
+              checked={base.followMode === 'notify'}
               onChange={(v) => onChange(updateBase(schema, { followMode: v ? 'notify' : 'pinned' }))}
             />
             <Text style={{ fontSize: 12 }}>{base.followMode === 'notify' ? 'notify · 有新版本时提醒' : 'pinned · 不提醒'}</Text>

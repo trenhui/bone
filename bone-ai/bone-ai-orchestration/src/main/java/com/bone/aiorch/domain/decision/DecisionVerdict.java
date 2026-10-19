@@ -23,6 +23,9 @@ public record DecisionVerdict(boolean autoApproved, List<String> reasons) {
   /** AI 不可用（超时 / 熔断 / 调用失败）——转确定性路径或人工，绝不阻断业务。 */
   public static final String REASON_AI_UNAVAILABLE = "AI_UNAVAILABLE";
 
+  /** 声明了 LLM 步骤但模型未回填置信度——合规 fail-closed 强制人工（拿不出证据就转人工）。 */
+  public static final String REASON_CONFIDENCE_MISSING = "CONFIDENCE_MISSING";
+
   public DecisionVerdict {
     reasons = reasons == null ? List.of() : List.copyOf(reasons);
   }

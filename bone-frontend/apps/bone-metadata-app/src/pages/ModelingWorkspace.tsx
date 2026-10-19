@@ -299,7 +299,6 @@ const ModelingWorkspace: React.FC = () => {
     loadWorkspace().catch(() => { /* 增强信息，失败静默 */ });
     setRecent(listRecent().slice(0, 5));
     // loadApps 为组件内定义的一次性加载器，故意不入依赖（避免无限触发）
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadWorkspace]);
 
   const openTargetPicker = (intent: 'new' | 'import') => {

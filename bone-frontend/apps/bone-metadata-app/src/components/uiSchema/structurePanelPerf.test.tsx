@@ -14,7 +14,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { StrictMode } from 'react';
-import type { BoneUiSchema, Control } from '../../../utils/uiSchemaEngine';
+import type { BoneUiSchema, Control } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '@bone/shared-types';
 
 /**

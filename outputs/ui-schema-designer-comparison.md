@@ -340,7 +340,7 @@
 
 1. **单测**：`onboarding.test.ts` 9/9 —— 含负向：默认态 0/5、全配 5/5、**pending 不得亮 publish**、有错误阻 lint、列表三信号（删列/调宽/固定）、规则计数含变体与动作条、零字段边界、TOUR_STEPS 六步唯一且 action 步均带 `doneText`。
 2. **tsc**：`apps/bone-metadata-app` `--noEmit` EXIT=0；**vitest** metadata-app 全量（含存量失败为环境问题：`overlaySync` 的 localStorage 只读注入，未改动该文件）。
-3. **主探针** `scripts/_probe_p6_onboarding.js`：**HARD 68/68 + SOFT 12/12，RESULT: ALL PASS**（零 console error + 零 page error）。五阶段：
+3. **主探针** `scripts/_probe_p6_onboarding.js`：**HARD 66/66 + SOFT 12/12，RESULT: ALL PASS**（零 console error + 零 page error）。五阶段：
    - Phase 0 API 建模三实体（报销单 / 采购订单 / 理赔案件，含采购的动作定义）+ 建模发布；
    - Phase 1 新手引导走查：首访自动弹出 → 六步（3 个 action 步真点）→ 完成后写完成标记 → 重进不弹 → 工具栏「帮助」可重开 → 进度卡可见；
    - Phase 2 三实体 0-1 人工设计：移出控件 → 加分区 → 字段库加回（控件数复原且落在新分区）→ 列表隐藏列 + 固定列 → 提交校验 / 动作条（Select 真源分支）/ 变体 → 自检零错误 → 保存（未发布 + 首发内容）；

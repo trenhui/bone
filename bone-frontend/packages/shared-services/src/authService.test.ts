@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authService } from './authService';
 
-const store = vi.hoisted(() => ({ instance: null as any }));
+/** axios 实例测试替身：只声明被测代码路径真正触达的成员 */
+type MockInstance = {
+  defaults: Record<string, unknown>;
+  interceptors: { request: { use: unknown }; response: { use: unknown } };
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+  put: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+};
+
+const store = vi.hoisted(() => ({ instance: null as unknown as MockInstance }));
 
 vi.mock('axios', () => {
   store.instance = {
@@ -20,7 +30,7 @@ vi.mock('axios', () => {
 
 beforeEach(() => {
   localStorage.clear();
-  (window as any).__BONE_TOKEN__ = undefined;
+  (window as unknown as { __BONE_TOKEN__?: string }).__BONE_TOKEN__ = undefined;
   store.instance.post.mockReset();
 });
 

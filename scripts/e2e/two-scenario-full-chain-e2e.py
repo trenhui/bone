@@ -115,10 +115,18 @@ def note(t):
 
 # ---------------------------------------------------------------- 建模助手
 def find_entity_id_by_code(code):
-    s, d = call("GET", "/metadata/entities?page=1&size=500")
-    for r in ((d.get("data") or {}).get("records") or []):
-        if r.get("code") == code:
-            return r.get("id")
+    # 全量翻页扫描：写死单页 size 会在实体数超过容量后漏掉落在后续页的老实体
+    # ⇒「编码冲突」分支拿不到 id，脚本假失败（探针缺陷，非产品缺陷）。
+    page, size = 1, 100
+    while page <= 50:
+        s, d = call("GET", f"/metadata/entities?page={page}&size={size}")
+        recs = (d.get("data") or {}).get("records") or []
+        for r in recs:
+            if r.get("code") == code:
+                return r.get("id")
+        if len(recs) < size:
+            return None
+        page += 1
     return None
 
 

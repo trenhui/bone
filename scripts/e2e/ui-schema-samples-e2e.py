@@ -101,12 +101,19 @@ def create_entity(name, code, table, row_policies=None, fields=(), delivery=1):
 
 
 def find_entity_id_by_code(code):
-    # 全量拉取后本地精确匹配 code（keyword 模糊搜索对下划线编码不稳定，且要避免分页漏项）
-    s, d, _ = call("GET", "/metadata/entities?page=1&size=200")
-    recs = (d.get("data") or {}).get("records") or []
-    for r in recs:
-        if r.get("code") == code:
-            return r.get("id")
+    # 全量翻页扫描后本地精确匹配 code。
+    # 曾经写死 size=200/500 → 库里实体数超过单页容量后，老实体落在第 2 页之外，
+    # 「编码冲突」分支定位不到 id，脚本以「冲突且无法定位」假失败（探针缺陷，非产品缺陷）。
+    page, size = 1, 100
+    while page <= 50:
+        s, d, _ = call("GET", f"/metadata/entities?page={page}&size={size}")
+        recs = (d.get("data") or {}).get("records") or []
+        for r in recs:
+            if r.get("code") == code:
+                return r.get("id")
+        if len(recs) < size:
+            return None
+        page += 1
     return None
 
 

@@ -16,8 +16,9 @@ import java.math.BigDecimal;
  *
  * <p><b>纯函数</b>：不依赖 Spring、不读时钟、不做 IO——阈值可配，判定可单测穷举，这是「确定性」的前提。
  *
- * <p>未声明 LLM 步骤时（纯规则决策）直接放行：规则本身是确定性结论，不需要 AI 闸门。置信度为 {@code null} 时跳过置信度判定，
- * 仅由金额与可用性兜底（很多模型输出不含自评置信度，强制要求会把全部请求推给人工）。
+ * <p>未声明 LLM 步骤时（纯规则决策）直接放行：规则本身是确定性结论，不需要 AI 闸门。置信度为 {@code null} 时<b>强制转人工</b> （合规
+ * fail-closed：拿不出证据就转人工，禁止静默自动放行绕过确定性闸门——与 ClaimService 缺置信度默认 0.0 强制人工对齐）。
+ * 若某模型确实不产出自评置信度，调用方应改用纯规则决策路径（{@code hasLlmStep=false}）而非假借 null 走自动放行。
  */
 public class DecisionGate {
 
@@ -48,7 +49,7 @@ public class DecisionGate {
   /**
    * 判定能否自动放行。
    *
-   * @param confidence 模型自评置信度（0-1，可为 null = 不可得）
+   * @param confidence 模型自评置信度（0-1，可为 null = 不可得；声明 LLM 步骤时 null 强制转人工）
    * @param amount 本次赔付金额（可为 null = 非金额场景）
    * @param aiAvailable AI 是否可用（调用失败 / 熔断传 false）
    * @param hasLlmStep 本次编排是否包含 LLM 步骤（false = 纯规则决策，直接放行）
@@ -63,7 +64,12 @@ public class DecisionGate {
     if (!aiAvailable) {
       return DecisionVerdict.requireHuman(DecisionVerdict.REASON_AI_UNAVAILABLE);
     }
-    boolean confidenceLow = confidence != null && confidence < confidenceThreshold;
+    // 声明了 LLM 步骤却拿不到模型自评置信度：合规 fail-closed 强制人工。
+    // 静默自动放行会让 AI 建议越过确定性闸门，与「拿不出证据就转人工」原则相悖。
+    if (confidence == null) {
+      return DecisionVerdict.requireHuman(DecisionVerdict.REASON_CONFIDENCE_MISSING);
+    }
+    boolean confidenceLow = confidence < confidenceThreshold;
     boolean amountHigh = amount != null && amount.compareTo(amountThreshold) > 0;
     if (confidenceLow && amountHigh) {
       return DecisionVerdict.requireHuman(
