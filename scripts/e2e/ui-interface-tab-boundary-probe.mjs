@@ -1,17 +1,16 @@
 /**
- * 交付预览（列表显示）· 两层边界显式化探针。
+ * 两层边界显式化探针（IA 收敛后版本）。
  *
- * 目标（适配重写后的「交付预览 Tab（建模期 · 只读）」设计）：验证两层边界在只读预览里
- * 依然清晰、且跨层 CTA 不是死按钮：
- *   1. 双口径预览切换「全员所见（契约）」/「我的所见（含个人覆盖）」可用；
- *   2. 团队契约层状态徽标「团队契约 · 已发布 / 未配置」渲染；
- *   3. 切到「我的所见」后个人层徽标「个人偏好 · 仅自己可见」出现（仅自己可见语义）；
- *   4. 跨层 CTA「团队列 / 契约 → 界面设计器」渲染且点击跳到 uischema 契约层；
- *   5. 跨层 CTA「去数据页配个人显示」渲染且点击跳到 data 页（个人覆盖编辑器所在）。
+ * 目标不变：验证「团队契约层 vs 个人偏好层」的边界在 UI 上依然清晰、且跨层入口不是死按钮。
+ * 只是断言落点随 IA 收敛迁移（原断言对象「交付预览 Tab」已按决策摘除）：
+ *   - 团队契约口径 → 界面设计器：契约层状态徽标在数据页对照卡片的 extra 区；
+ *   - 个人覆盖口径 → 运行时数据页「交付口径对照」卡片：双口径摘要 + 个人层语义；
+ *   - 跨层入口    → 卡片内「去界面设计器配团队列」必须真的跳 uischema（非死按钮）。
+ *
+ * 为什么保留本探针而不删：它守的是"两层边界不得静默混淆"这条产品不变量，
+ * 与承载组件是谁无关——归位后换落点继续守。直接删掉等于丢掉这条回归。
  *
  * 复刻 ui-two-scenario-probe.mjs 的登录流程（必须用 localhost，网关 CORS 只放行 localhost 源）。
- * 进用户原始 URL 的实体（766546550728949760，已知 runtime 交付、能渲染交付预览）。
- *
  * 用法：node scripts/e2e/ui-interface-tab-boundary-probe.mjs
  */
 import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
@@ -37,15 +36,11 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message.slice(0, 200)));
 
 const shot = async (n) => {
-  const p = `${SHOT_DIR}/ui_iface_tab_${n}.png`;
-  await page.screenshot({ path: p, fullPage: false });
+  const p = `${SHOT_DIR}/ui_boundary_${n}.png`;
+  await page.screenshot({ path: p, fullPage: false }).catch(() => {});
   return p;
 };
 const bodyText = () => page.locator('body').innerText();
-const clickSeg = async (text) => {
-  await page.locator('.ant-segmented-item', { hasText: text }).first().click();
-  await page.waitForTimeout(400);
-};
 
 try {
   // 1. 登录
@@ -70,84 +65,75 @@ try {
   } catch { loggedIn = false; }
   check('UI 登录成功（壳层菜单渲染）', loggedIn, `url=${page.url()}`);
 
-  // 2. 进实体详情 ?tab=ui（交付预览）
-  await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=ui`, { waitUntil: 'domcontentloaded' });
-  // 以「团队列 / 契约 → 界面设计器」CTA 出现为可靠挂载信号
+  // 2. 进运行时数据页（个人覆盖层归属地）
+  await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=data`, { waitUntil: 'domcontentloaded' });
   let mounted = false;
   try {
-    await page.locator('button').filter({ hasText: /团队列|界面设计器/ }).first()
-      .waitFor({ state: 'visible', timeout: 40000 });
+    await page.waitForFunction(() => /交付口径对照/.test(document.body.innerText), { timeout: 40000 });
     mounted = true;
   } catch { mounted = false; }
-  check('交付预览层挂载（跨层 CTA 可见）', mounted, `url=${page.url()}`);
+  check('个人覆盖层挂载（「交付口径对照」卡片可见）', mounted, `url=${page.url()}`);
   await page.waitForTimeout(1500);
-  await shot('1_iface_tab');
+  await shot('1_scope_card');
 
   let body = await bodyText();
 
-  // 3. 双口径预览切换可用
-  const segItems = await page.locator('.ant-segmented-item').allInnerTexts();
-  check('双口径预览：含「全员所见（契约）」', segItems.some((t) => t.includes('全员所见')), segItems.join(' | '));
-  check('双口径预览：含「我的所见（含个人覆盖）」', segItems.some((t) => t.includes('我的所见')), segItems.join(' | '));
+  // 3. 双口径摘要存在（契约层 vs 个人层同屏对照）
+  check('双口径摘要：含「全员所见（契约）」', /全员所见（契约）/.test(body), body.slice(0, 120));
+  check('双口径摘要：含「我的所见（含个人覆盖）」', /我的所见（含个人覆盖）/.test(body), body.slice(0, 120));
+  // 两侧列数都必须显式给出（否则"对照"无从谈起）
+  const cN = Number(/全员所见（契约）\s*(\d+)\s*列/.exec(body)?.[1] ?? 'NaN');
+  const mN = Number(/我的所见（含个人覆盖）\s*(\d+)\s*列/.exec(body)?.[1] ?? 'NaN');
+  check('双口径各自给出显式列数（可差分）', Number.isFinite(cN) && Number.isFinite(mN), `contract=${cN} mine=${mN}`);
 
-  // 4. 团队契约层状态徽标
+  // 4. 团队契约层状态徽标（已发布 / 未配置 任一）
   check('团队契约层状态徽标渲染（已发布 / 未配置 任一）', /团队契约/.test(body), body.slice(0, 120));
   const contractState = /团队契约[\s\S]*已发布/.test(body) ? '已发布'
     : (/团队契约[\s\S]*未配置/.test(body) ? '未配置' : '未知');
+  check('团队契约状态可判读（非"未知"）', contractState !== '未知', `state=${contractState}`);
   console.log(`  · 团队契约状态 = ${contractState}`);
 
-  // 5. 切到「我的所见」→ 个人层徽标出现
-  await clickSeg('我的所见');
-  let personalShown = false;
-  try {
-    await page.waitForFunction(() => document.body.innerText.includes('个人偏好'), { timeout: 10000 });
-    personalShown = true;
-  } catch { personalShown = false; }
-  body = await bodyText();
-  check('切「我的所见」后个人层徽标「个人偏好 · 仅自己可见」出现', personalShown, body.slice(0, 120));
-  await shot('2_mine_scope');
+  // 5. 个人层语义标识（仅自己可见）——用 PersonalViewBar 的常驻徽标
+  const personalTag = page.locator('.ant-tag', { hasText: '个人偏好' }).first();
+  const personalShown = (await personalTag.count()) > 0
+    && /仅自己可见/.test(await personalTag.innerText().catch(() => ''));
+  check('个人层徽标「个人偏好 · 仅自己可见」出现（仅自己可见语义）', personalShown, body.slice(0, 120));
+  await shot('2_two_layers');
 
-  // 6. 跨层 CTA：去数据页配个人显示（个人覆盖编辑器所在）
-  const dataCta = page.locator('button').filter({ hasText: '去数据页' }).first();
-  const dataCtaCount = await dataCta.count();
-  check('跨层 CTA「去数据页配个人显示」渲染', dataCtaCount === 1, `匹配数=${dataCtaCount}`);
-  if (dataCtaCount === 1) {
-    await dataCta.click();
-    let toData = false;
-    try {
-      await page.waitForFunction(() => /[?&]tab=data/.test(location.hash + location.search) || location.href.includes('tab=data'), { timeout: 12000 });
-      toData = true;
-    } catch { toData = false; }
-    check('点 CTA 跳转到数据页（个人覆盖编辑器所在，tab=data）', toData, `url=${page.url()}`);
-    await page.waitForTimeout(2000);
-    await shot('3_data_jump');
-  }
-
-  // 7. 跨层 CTA：团队列 / 契约 → 界面设计器（需先回交付预览）
-  await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=ui`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2500);
-  const designerCta = page.locator('button').filter({ hasText: /团队列|界面设计器/ }).first();
-  const designerCtaCount = await designerCta.count();
-  check('跨层 CTA「团队列 / 契约 → 界面设计器」渲染', designerCtaCount === 1, `匹配数=${designerCtaCount}`);
-  if (designerCtaCount === 1) {
+  // 6. 跨层入口：卡片内「去界面设计器配团队列」必须真的跳转（非死按钮）
+  const designerCta = page.locator('button', { hasText: '去界面设计器配团队列' }).first();
+  const ctaCount = await designerCta.count();
+  check('跨层入口「去界面设计器配团队列」渲染', ctaCount === 1, `匹配数=${ctaCount}`);
+  if (ctaCount === 1) {
     await designerCta.click();
     let toSchema = false;
     try {
-      await page.waitForFunction(() => /[?&]tab=uischema/.test(location.hash + location.search) || location.href.includes('uischema'), { timeout: 12000 });
+      await page.waitForFunction(
+        () => /[?&]tab=uischema/.test(location.hash + location.search) || location.href.includes('uischema'),
+        { timeout: 12000 },
+      );
       toSchema = true;
     } catch { toSchema = false; }
-    check('点 CTA 跳转到界面设计器契约层（tab=uischema）', toSchema, `url=${page.url()}`);
+    check('点跨层入口跳转到界面设计器契约层（tab=uischema）', toSchema, `url=${page.url()}`);
     await page.waitForTimeout(2500);
     const designerBody = await bodyText();
     check('界面设计器契约层正常渲染', /界面设计器/.test(designerBody), designerBody.slice(0, 120));
-    await shot('4_designer_jump');
+    // 契约口径核对摘要在设计器内的「列表」面板；注意「列表」有两个同名入口
+    // （外层视图切换器是 .ant-segmented-item，内层面板是 .ant-tabs-tab），
+    // 必须用 role=tab 精确定位，否则点错到外层、面板根本没切过去。
+    await page.locator('[role="tab"]', { hasText: '列表' }).last().click().catch(() => {});
+    await page.waitForTimeout(1500);
+    const listPanelBody = await bodyText();
+    check('设计器承接契约口径核对「运行时最终显示 N 列」',
+      /运行时最终显示\s*\d+\s*列/.test(listPanelBody), listPanelBody.slice(0, 120));
+    await shot('3_designer_jump');
   }
 
-  // 8. 无 console / page 异常
+  // 7. 无 console / page 异常
   check('全流程无 console / page 异常', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
 
   const pass = results.filter((r) => r.ok).length;
-  console.log(`\n交付预览边界探针汇总：通过 ${pass} / ${results.length}`);
+  console.log(`\n两层边界探针汇总：通过 ${pass} / ${results.length}`);
   await browser.close();
   process.exit(results.every((r) => r.ok) ? 0 : 1);
 } catch (e) {

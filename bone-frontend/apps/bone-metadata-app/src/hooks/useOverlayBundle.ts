@@ -27,7 +27,7 @@ import { fetchOverlay, persistOverlay, resetOverlay, OVERLAY_CHANGED_EVENT } fro
  *
  * <p><b>为什么是一个 hook 而不是各页面各写一份</b>：个人覆盖有两个 surface——
  * 建模台「界面设计器 → 列表」的契约口径核对与运行时数据页「交付口径对照 / 列设置」
- * （唯一编辑器）。此前 InterfaceTab 与 RuntimeDataManagement 各自持有一份
+ * （唯一编辑器）。历史上交付预览 Tab 与 RuntimeDataManagement 各自持有一份
  * hydrate/persist/view CRUD 实现，是双轨收敛前「两个编辑器」的残留；投影层
  * （projectRuntimeColumns）早已单一真源，状态层也必须如此，否则任一侧漂移
  * 都会让「预览 ≡ 运行时」的结构性保证失效。
