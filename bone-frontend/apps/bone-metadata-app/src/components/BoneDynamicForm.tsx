@@ -12,6 +12,7 @@ import {
   linkageState,
   resolveVisibleActions,
   runSubmit,
+  validateControlValues,
   type ActionBarItem,
   type BoneUiSchema,
   type Control,
@@ -177,7 +178,8 @@ export const BoneDynamicForm: React.FC<Props> = ({
     const f = fieldMap[c.fieldCode];
     const ro = readOnly || s.readonly || !!c.readonly;
     const label = c.labelOverride ?? f?.displayName ?? c.fieldCode;
-    const required = s.required;
+    // 必填 = 联动态必填 ∪ 控件级必填覆盖（协议 v1.2 §4.3，与 validateControlValues 同源）
+    const required = s.required || !!c.required;
     // 内联 notice 优先于 noticeKey（协议口径；key 无运行时词表时至少可见 key 本体，不静默丢弃）
     const notice = s.notice || s.noticeKey || '';
     const type = (c.controlKind ?? f?.type ?? 'STRING').toUpperCase();
@@ -245,10 +247,14 @@ export const BoneDynamicForm: React.FC<Props> = ({
 
   const handleSubmit = async () => {
     const r = runSubmit(data, submitRules, linkageRules, ctx, baseRequiredOf(fields));
-    setSubmitMsg(r);
-    if (r.errors.length) return;
-    if (r.warnings.length) {
-      const ok = window.confirm(`有 ${r.warnings.length} 条警告，仍要保存？\n${r.warnings.join('\n')}`);
+    // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，与预览同源
+    const formControls = (form?.sections ?? []).flatMap((s) => s.controls ?? []);
+    const cv = validateControlValues(data, formControls, baseRequiredOf(fields));
+    const merged = { errors: [...r.errors, ...cv.errors], warnings: [...r.warnings, ...cv.warnings] };
+    setSubmitMsg(merged);
+    if (merged.errors.length) return;
+    if (merged.warnings.length) {
+      const ok = window.confirm(`有 ${merged.warnings.length} 条警告，仍要保存？\n${merged.warnings.join('\n')}`);
       if (!ok) return;
     }
     setSaving(true);

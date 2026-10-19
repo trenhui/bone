@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Badge, Button, Checkbox, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
+  Badge, Button, Checkbox, Empty, Input, InputNumber, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, CopyOutlined, DeleteOutlined, DownOutlined, DragOutlined,
@@ -148,6 +148,16 @@ function ControlInspector({
   onPatch: (p: Partial<Control>) => void;
 }) {
   const field = fields.find((f) => f.code === control.fieldCode);
+  const vKind = (control.controlKind ?? 'INPUT').toUpperCase();
+  const isNumeric = vKind === 'NUMBER' || vKind === 'MONEY' || vKind === 'SLIDER';
+  const isText = vKind === 'INPUT' || vKind === 'TEXTAREA';
+  /** 写入控件级 props 的辅助：剔除 undefined 键，避免脏数据残留在 schema */
+  const patchProp = (k: string, v: unknown) => {
+    const next = { ...(control.props ?? {}) };
+    if (v === undefined || v === null || v === '') delete next[k];
+    else next[k] = v;
+    onPatch({ props: next });
+  };
   return (
     <div style={{
       background: '#fafbfd', border: '1px solid #f0f0f0', borderRadius: 8,
@@ -192,6 +202,59 @@ function ControlInspector({
         </Space>
         {field?.required && <Tag color="red" style={{ fontSize: 11 }}>元数据必填</Tag>}
       </Space>
+      {/* N4：控件级校验规则编辑器（对标宜搭/PowerApps 字段级必填/最值/正则） */}
+      <div style={{ gridColumn: '1 / -1', borderTop: '1px dashed #eee', marginTop: 4, paddingTop: 8 }}>
+        <Text type="secondary" style={{ fontSize: 11 }}>校验规则</Text>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
+          <Space size={4}>
+            <Switch
+              size="small" aria-label="控件级必填覆盖" checked={!!control.required}
+              onChange={(v) => onPatch({ required: v || undefined })}
+            />
+            <Text style={{ fontSize: 12 }}>必填覆盖</Text>
+          </Space>
+          {isNumeric && (
+            <>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11 }}>最小值</Text>
+                <InputNumber
+                  size="small" style={{ width: 110 }} placeholder="min"
+                  value={control.props?.min as number | undefined}
+                  onChange={(v) => patchProp('min', v)}
+                />
+              </div>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11 }}>最大值</Text>
+                <InputNumber
+                  size="small" style={{ width: 110 }} placeholder="max"
+                  value={control.props?.max as number | undefined}
+                  onChange={(v) => patchProp('max', v)}
+                />
+              </div>
+            </>
+          )}
+          {isText && (
+            <>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11 }}>最大长度</Text>
+                <InputNumber
+                  size="small" style={{ width: 110 }} min={1} placeholder="maxLength"
+                  value={control.props?.maxLength as number | undefined}
+                  onChange={(v) => patchProp('maxLength', v)}
+                />
+              </div>
+              <div style={{ flex: '1 0 200px' }}>
+                <Text type="secondary" style={{ fontSize: 11 }}>正则（pattern）</Text>
+                <Input
+                  size="small" placeholder="如 ^1[3-9]\d{9}$"
+                  value={(control.props?.pattern as string | undefined) ?? ''}
+                  onChange={(e) => patchProp('pattern', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

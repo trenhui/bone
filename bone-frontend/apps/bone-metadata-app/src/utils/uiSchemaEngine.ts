@@ -46,6 +46,12 @@ export interface Control {
   /** 控件基线态（如专票的税号默认隐藏）；linkage 可覆盖 */
   visible?: boolean;
   readonly?: boolean;
+  /**
+   * 控件级必填覆盖（协议 v1.2 §4.3）：true 时即便元数据字段非必填，该控件也强制必填
+   * （对标宜搭/PowerApps 字段必填）。与元数据必填、联动 then[].required 取并集；
+   * 渲染器据此显示 * 并将空值判为错误（validateControlValues）。
+   */
+  required?: boolean;
   virtual?: boolean;
   props?: Record<string, unknown>;
 }
@@ -612,6 +618,68 @@ export function runSubmit(
       const v = data[f];
       if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) {
         errors.push(`【必填】${f} 不能为空`);
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
+
+/* ============================== 控件级校验（对标宜搭/PowerApps 字段级约束） ============================== */
+
+/**
+ * 控件级单字段校验（协议 v1.2 §4.3）：配置即控件 props，创作侧 ControlInspector 暴露 UI。
+ * 与 runSubmit（跨字段提交规则 + 元数据必填）互补，互不重复报必填：
+ * - 必填覆盖：仅当 `control.required===true` 且**元数据未要求**时才报（元数据必填由 runSubmit 负责，避免双报）；
+ * - 数值型（NUMBER/MONEY/SLIDER）的 min/max 越界；
+ * - 文本型（INPUT/TEXTAREA）的 maxLength 超长、pattern 正则不匹配；
+ * - 非法 pattern（编译失败）视为配置错误 fail-closed，不静默放行（与 runSubmit 的 fail-closed 口径一致）。
+ *
+ * 注意：前端先拦（体验），后端 RuntimeWriteValidator 仍是安全底线，不后移。
+ */
+const NUMERIC_KINDS = new Set<ControlKind>(['NUMBER', 'MONEY', 'SLIDER']);
+const TEXT_KINDS = new Set<ControlKind>(['INPUT', 'TEXTAREA']);
+
+export function validateControlValues(
+  data: Record<string, unknown>,
+  controls: Control[] = [],
+  baseRequired: Record<string, boolean> = {},
+): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const c of controls) {
+    if (c.virtual || !c.fieldCode) continue;
+    const code = c.fieldCode;
+    const kind = c.controlKind ?? 'INPUT';
+    const v = data[code];
+    const empty = v == null || v === '' || (Array.isArray(v) && v.length === 0);
+
+    // 必填覆盖：仅控件显式要求且元数据未要求时由本函数报（避免与 runSubmit 的元数据必填双报）
+    if (c.required === true && !baseRequired[code]) {
+      if (empty) { errors.push(`【必填】${code} 不能为空`); continue; }
+    }
+    if (empty) continue;
+
+    const props = c.props ?? {};
+    if (NUMERIC_KINDS.has(kind)) {
+      const n = Number(v);
+      if (!Number.isNaN(n)) {
+        if (props.min !== undefined && n < Number(props.min)) errors.push(`【范围】${code} 不能小于 ${props.min}`);
+        if (props.max !== undefined && n > Number(props.max)) errors.push(`【范围】${code} 不能大于 ${props.max}`);
+      }
+    } else if (TEXT_KINDS.has(kind)) {
+      const s = String(v);
+      if (props.maxLength !== undefined && s.length > Number(props.maxLength)) {
+        errors.push(`【长度】${code} 长度不能超过 ${props.maxLength} 个字符`);
+      }
+      if (typeof props.pattern === 'string' && props.pattern.trim()) {
+        try {
+          if (!new RegExp(props.pattern).test(s)) errors.push(`【格式】${code} 不符合格式要求（${props.pattern}）`);
+        } catch {
+          // 非法正则：配置错误，fail-closed（不静默放行，提示建模者修正）
+          errors.push(`【配置错误】${code} 的 pattern 不是合法正则：${props.pattern}`);
+        }
       }
     }
   }

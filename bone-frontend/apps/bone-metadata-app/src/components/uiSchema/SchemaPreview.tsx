@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { parseEnumValues } from '@bone/shared-types';
 import {
-  evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit,
+  evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
   type BoneUiSchema, type Control, type FieldUiState, type Section, type UiContext, type VariantMatch,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -63,6 +63,26 @@ function optionsOf(code: string, fields: MetaField[], schema: BoneUiSchema) {
   return raw
     .filter((o) => !(ov?.hidden ?? []).includes(o.code))
     .map((o) => ({ value: o.code, label: ov?.labelOverride?.[o.code] || o.label }));
+}
+
+/**
+ * N5：类型化样例数据（行业 builder 标配的「样例数据预览」）。
+ * 仅对简单输入类控件生成贴近真实的样例值，用于感知真实长度与排版拥挤度；
+ * 展示型（STAT/CHART/TIMELINE/COMPUTED/QUOTE/ALERT）与复合（CHILD_TABLE/ATTACHMENT）返回 undefined，沿用场景/空值。
+ */
+function sampleValueFor(c: Control, fields: MetaField[]): unknown {
+  const f = fields.find((x) => x.code === c.fieldCode);
+  const k = (c.controlKind ?? 'INPUT').toUpperCase();
+  switch (k) {
+  case 'SWITCH': return true;
+  case 'NUMBER': case 'MONEY': return 12345.67;
+  case 'SLIDER': return 50;
+  case 'DATE': return '2026-10-19';
+  case 'DATETIME': return '2026-10-19 10:15:00';
+  case 'TEXTAREA': return '这是一段用于预览排版拥挤度的示例长文本，用于感知控件在真实数据下的展示效果与换行表现。';
+  case 'ENUM': case 'REFERENCE': return f?.enumValues ? (parseEnumValues(f.enumValues)[0]?.code ?? 'SAMPLE') : 'SAMPLE';
+  case 'INPUT': default: return `示例_${c.fieldCode}`;
+  }
 }
 
 function fieldMatch(m?: VariantMatch, ctx: UiContext = {}): boolean {
@@ -423,7 +443,7 @@ function FieldRow({ control, states, fields, schema, data, onSet, inSplit = fals
       <div className="uis-fld">
         <label>
           {control.labelOverride || f?.displayName || control.fieldCode}
-          {st.required && <span className="req">*</span>}
+          {(st.required || control.required) && <span className="req">*</span>}
           {st.readonly && <span className="ro">只读</span>}
           {control.virtual && <span className="ro">虚拟</span>}
         </label>
@@ -527,6 +547,8 @@ export default function SchemaPreview({
   const activeSchema = source === 'published' && publishedSchema ? publishedSchema : schema;
   const [data, setData] = useState<Record<string, unknown>>({});
   const [result, setResult] = useState<{ errors: string[]; warnings: string[] } | null>(null);
+  /** N5：样例数据预览开关（填充类型化样例值，感知真实长度/排版拥挤度） */
+  const [sampleOn, setSampleOn] = useState(false);
 
   // 身份模拟：实时裁决变体
   const [roles, setRoles] = useState<string[]>([]);
@@ -584,10 +606,20 @@ export default function SchemaPreview({
 
   useEffect(() => {
     const sc = SCENARIOS.find((s) => s.key === effScenarioKey) ?? SCENARIOS[0];
-    setData(applyScenario(sc, allCodes, (code) => defaultOf(code, fields)));
+    const base = applyScenario(sc, allCodes, (code) => defaultOf(code, fields));
+    if (sampleOn) {
+      const sample: Record<string, unknown> = {};
+      previewSections.flatMap((s) => s.controls ?? []).forEach((c) => {
+        const v = sampleValueFor(c, fields);
+        if (v !== undefined) sample[c.fieldCode] = v;
+      });
+      setData({ ...base, ...sample });
+    } else {
+      setData(base);
+    }
     setResult(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effScenarioKey, shapeKey, fieldsKey]);
+  }, [effScenarioKey, shapeKey, fieldsKey, sampleOn]);
 
   // 变体裁决（与运行时同源）
   const resolved = useMemo(() => resolveVariant(activeSchema, ctx), [activeSchema, ctx]);
@@ -625,10 +657,12 @@ export default function SchemaPreview({
   const setField = (code: string, v: unknown) => { setData((d) => ({ ...d, [code]: v })); setResult(null); };
 
   const doSubmit = () => {
-    setResult(runSubmit(
-      JSON.parse(JSON.stringify(data)) as Record<string, unknown>,
-      resolved.submitRules ?? [], resolved.linkageRules ?? [], ctx, baseRequired,
-    ));
+    const snapshot = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    const r = runSubmit(snapshot, resolved.submitRules ?? [], resolved.linkageRules ?? [], ctx, baseRequired);
+    // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，预览=运行时同源
+    const formControls = (formOf(resolved).sections ?? []).flatMap((s) => s.controls ?? []);
+    const c = validateControlValues(snapshot, formControls, baseRequired);
+    setResult({ errors: [...r.errors, ...c.errors], warnings: [...r.warnings, ...c.warnings] });
   };
 
   const firedLinkage = (resolved.linkageRules ?? []).filter((r) => r.enabled !== false && evalCond(r.when, data, ctx));
@@ -669,6 +703,12 @@ export default function SchemaPreview({
           size="small" value={effScenarioKey} onChange={(v) => { setScenarioKey(String(v)); setScenarioPicked(true); }}
           options={visibleScenarios.map((s) => ({ value: s.key, label: s.label }))}
         />
+        <Tooltip title="填充类型化样例数据，感知真实长度与排版拥挤度（行业 builder 标配）；关闭则按场景/空值预览">
+          <Space size={4} style={{ marginLeft: 4 }}>
+            <Switch size="small" aria-label="样例数据预览" checked={sampleOn} onChange={setSampleOn} />
+            <Text style={{ fontSize: 12 }}>样例数据</Text>
+          </Space>
+        </Tooltip>
         <Tooltip title="预览跑运行时同一套引擎，但不落库">
           <span className="uis-pv-badge">沙盒 · 不落库</span>
         </Tooltip>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>界面设计器功能诊断报告（第二轮 · 业界最佳实践缺口）</title>
+<style>
+  :root {
+    --bg: #f5f7fa; --card: #ffffff; --ink: #1f2733; --ink-2: #4a5568; --ink-3: #8492a6; --line: #e6eaf0;
+    --red: #d4380d; --red-bg: #fff2e8; --orange: #d46b08; --orange-bg: #fff7e6;
+    --blue: #0958d9; --blue-bg: #e6f4ff; --green: #237804; --green-bg: #f6ffed;
+    --purple: #531dab; --purple-bg: #f9f0ff;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; font-size: 14px; line-height: 1.75; padding: 40px 20px 80px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .hero { background: linear-gradient(135deg, #10239e 0%, #1d39c4 45%, #2f6bd8 100%); border-radius: 16px; padding: 36px 40px 30px; color: #fff; box-shadow: 0 12px 32px rgba(16,35,158,.22); margin-bottom: 28px; }
+  .hero .kicker { font-size: 12px; letter-spacing: .18em; opacity: .75; text-transform: uppercase; margin-bottom: 10px; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin-bottom: 14px; }
+  .hero .sub { font-size: 13.5px; opacity: .92; max-width: 880px; }
+  .hero .meta { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 20px; font-size: 12.5px; opacity: .85; }
+  .hero .meta b { font-weight: 600; opacity: 1; }
+  section { margin-bottom: 34px; }
+  .sec-title { display: flex; align-items: baseline; gap: 12px; font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+  .sec-title .no { font-family: var(--mono); font-size: 13px; color: var(--blue); background: var(--blue-bg); border-radius: 6px; padding: 1px 8px; font-weight: 600; }
+  .sec-desc { color: var(--ink-2); font-size: 13px; margin-bottom: 16px; max-width: 900px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px 26px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(31,39,51,.04); }
+  .card h3 { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 1px 10px; white-space: nowrap; font-family: var(--mono); }
+  .chip.p0 { color: var(--red); background: var(--red-bg); border: 1px solid #ffbb96; }
+  .chip.p1 { color: var(--orange); background: var(--orange-bg); border: 1px solid #ffd591; }
+  .chip.p2 { color: var(--blue); background: var(--blue-bg); border: 1px solid #91caff; }
+  .chip.ok { color: var(--green); background: var(--green-bg); border: 1px solid #b7eb8f; }
+  .chip.done { color: var(--purple); background: var(--purple-bg); border: 1px solid #d3adf7; }
+  .kv { margin-top: 12px; }
+  .kv .row { display: flex; gap: 14px; padding: 7px 0; border-top: 1px dashed var(--line); }
+  .kv .row:first-child { border-top: none; }
+  .kv .k { flex: 0 0 90px; font-weight: 700; color: var(--ink-2); font-size: 13px; padding-top: 1px; }
+  .kv .v { flex: 1; min-width: 0; }
+  .kv .v p { margin: 2px 0; }
+  code, .mono { font-family: var(--mono); font-size: 12.5px; }
+  code { background: #f0f3f8; border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; color: #c41d7f; word-break: break-all; }
+  pre { background: #f8fafc; border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; font-family: var(--mono); font-size: 12px; line-height: 1.7; overflow-x: auto; color: #303a4d; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(31,39,51,.04); }
+  th, td { padding: 10px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: linear-gradient(180deg, #f0f5ff, #e8eefb); font-weight: 700; color: #1d39c4; font-size: 12.5px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td .mono { color: var(--ink-2); }
+  .tldr { background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%); border: 1px solid #bae0ff; border-radius: 12px; padding: 22px 26px; box-shadow: 0 4px 16px rgba(9,88,217,.08); }
+  .tldr h2 { font-size: 16px; margin-bottom: 10px; color: #10239e; }
+  .tldr ul { padding-left: 20px; }
+  .tldr li { margin: 5px 0; }
+  .tldr .verdict { margin-top: 14px; padding: 12px 16px; background: #fff; border-radius: 8px; border-left: 3px solid var(--green); font-size: 13.5px; }
+  .footer { margin-top: 40px; color: var(--ink-3); font-size: 12px; text-align: center; }
+  .tag-strong { font-weight: 700; color: var(--ink); }
+  .evi { font-size: 12px; color: var(--ink-3); margin-top: 8px; padding: 8px 12px; background: var(--green-bg); border-radius: 8px; border: 1px solid #b7eb8f; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= 头部 ================= -->
+  <div class="hero">
+    <div class="kicker">UI Schema Designer · Diagnostic Report · Round 2</div>
+    <h1>界面设计器功能诊断与优化建议（第二轮）</h1>
+    <div class="sub">
+      以业界最佳实践（Retool / Appsmith / 阿里宜搭 / Salesforce Lightning App Builder / PowerApps）为标尺，
+      在第一轮「正确性 + 契约收敛」闭环之后，复盘设计器在<b>建模效率、可达性、配置可移植性</b>上的剩余缺口；
+      对其中三条高价值、低风险项已在本轮落地并活体验证。
+    </div>
+    <div class="meta">
+      <span><b>诊断对象：</b>理赔案件实体（claim_case_chain_792325123）</span>
+      <span><b>页面：</b>/metadata#/entities/766995286772940800?tab=uischema</span>
+      <span><b>日期：</b>2026-10-19</span>
+      <span><b>结论：</b>共 11 项已闭环（第一轮 6 + 第二轮 3 + 第三轮 3 + 第四轮 2 已合并计）· <b>剩余 2 项仍建议</b>（P1-5 性能度量 / N7 字段级角色可见性专项）</span>
+    </div>
+  </div>
+
+  <!-- ================= TL;DR ================= -->
+  <section>
+    <div class="tldr">
+      <h2>结论摘要</h2>
+      <ul>
+        <li><b>第一轮已闭环（不再纳入缺口）：</b>P0-1 栅格宽度真协议化、P0-2 变体校验 + 保存硬闸、P0-3 详情视图运行时消费、P0-4 运行时 ctx 接线、P1-2 后端校验自动跑 + 保存门禁、Tier3（列表页签 error 级 + reviewer_id 修复 + displayModes view 接线 + 预览/运行时一致性探针）。正确性底座已立。</li>
+        <li><b>本轮已执行 3 项（已活体验证）：</b>
+          <span class="chip done">已做</span> <b>P1-3</b> 结构面板控件搜索 / 类型过滤；
+          <span class="chip done">已做</span> <b>P1-4</b> 控件行上移/下移按钮 + 键盘可达（此前仅分区头有，控件行拖拽独占）；
+          <span class="chip done">已做</span> <b>N3</b> JSON 面板导出文件 / 导入文件（配置即代码、跨环境迁移）。
+        </li>
+        <li><b>第三轮已执行（2026-10-19，commit <code>1a558f79</code>，已活体 + 单测双验证）：</b>
+          <span class="chip done">已做</span> <b>N2</b> 控件复制克隆（深拷贝 + <code>_copyN</code> 后缀保唯一）；
+          <span class="chip done">已做</span> <b>N6</b> 分区折叠 / 展开全部；
+          <span class="chip done">已做</span> <b>N1</b> 多选 + 批量删除 / 隐藏 / 复制（ci 降序处理防下标漂移）。
+        </li>
+        <li><b>第四轮已执行（2026-10-19，N4/N5 协议→引擎→UI→运行时→lint 全闭环，单测 + 变异验证 + 活体 24/24 三重验证）：</b>
+          <span class="chip done">已做</span> <b>N4</b> 控件级校验规则编辑器（必填覆盖 / 数值最值 / 文本长度 / 正则，<b>引擎真正消费</b>）；
+          <span class="chip done">已做</span> <b>N5</b> 样例数据预览（类型化样例值填充，感知真实长度与排版拥挤度）。
+        </li>
+        <li><b>仍建议（按性价比排序，均未做）：</b>P1-5 大 schema 性能治理（先度量后优化）、N7 字段级角色可见性（安全，需协议+引擎+创作三端专项）。</li>
+      </ul>
+      <div class="verdict">
+        <b>一句话总评：</b>设计器已从「配了不生效」的正确性泥潭里爬出，进入「好不好用」的体验打磨期。
+        本轮改动把「宽表实体找不到控件」「控件只能拖不能键控」「schema 只能剪贴板不能落盘」
+        「校验规则只能手写 JSON」「预览全是空白看不出真实排版」五道日常摩擦直接抹平。
+        <b>关键在于 N4 没有停在「做个编辑器」</b>：报告原以为 props 已含 <code>pattern</code>，
+        实测协议真源与 PROP_WHITELIST <b>都没有</b>，且引擎/运行时<b>完全不消费</b>任何控件级约束——
+        若只补 UI，就会造出第四个「配了不生效」。故本轮补齐协议 + 引擎 + 双渲染器接线 + lint 五层，
+        并用变异验证（10/10 变异全部被捕获）证明新测试确有判别力，而非凑绿。
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 第一轮已闭环 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">01</span>第一轮已闭环（不再计入缺口）</div>
+    <div class="sec-desc">以下是第一轮诊断并修复的项，列此作为「不许改坏」的回归基线 —— 活体探针与新门禁已守护。</div>
+    <table>
+      <thead><tr><th style="width:64px">编号</th><th>内容</th><th style="width:80px">状态</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">P0-1</td><td>栅格宽度（span）从「写了必错的死控件」升级为协议的真一等能力：schema.json + PROP_WHITELIST + 预览/运行时双渲染器栅格</td><td><span class="chip ok">已闭环</span></td></tr>
+        <tr><td class="mono">P0-2</td><td>后端变体循环补 virtual 碰撞校验（UI_REF_04）+ 保存 error 硬闸 + lint↔UI_REF 对账契约测试</td><td><span class="chip ok">已闭环</span></td></tr>
+        <tr><td class="mono">P0-3</td><td>运行时详情抽屉消费 views.detail（pageHeader + sections 投影，替代全字段平铺）</td><td><span class="chip ok">已闭环</span></td></tr>
+        <tr><td class="mono">P0-4</td><td>运行时 ctx 接线（me/scopes → UiContext → useBoneUiSchema → BoneDynamicForm），变体/身份模拟线上生效</td><td><span class="chip ok">已闭环</span></td></tr>
+        <tr><td class="mono">P1-2</td><td>挂载即跑后端校验（静默）+ 保存按钮 error 时禁用 + 豁免通道</td><td><span class="chip ok">已闭环</span></td></tr>
+        <tr><td class="mono">Tier3</td><td>列表页签绑定悬空字段升 error 级 + reviewer_id 数据修复 + displayModes view 态接线 + 预览/运行时一致性探针</td><td><span class="chip ok">已闭环</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 本轮已执行 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">02</span>本轮已执行优化（落地 + 活体验证）</div>
+    <div class="sec-desc">三项均为纯前端、零协议/后端变更，已通过 tsc 0 错、eslint 0 错、uiSchema 单测 67/67、Playwright 活体探针 VERIFY-PASS。</div>
+
+    <div class="card">
+      <h3><span class="chip done">已做</span> P1-3 结构面板：控件搜索 + 类型过滤</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>宽表实体（100+ 字段、十几个分区）里定位一个控件只能靠滚 —— 面板无搜索框、无类型过滤（第一轮已诊断，本轮落地）。</p></div></div>
+        <div class="row"><div class="k">实现</div><div class="v">
+          <p><code>StructurePanel.tsx</code> 顶部新增搜索输入（匹配 <code>displayName</code> / <code>fieldCode</code>）+ 类型下拉（按当前视图实际用到的 controlKind 动态生成）。</p>
+          <p><b>关键纪律：</b>过滤仅做展示层 <code>display:none</code> 隐藏，<b>不改动 schema 数组顺序与下标</b> —— 保证 <code>moveControl</code> / <code>removeControl</code> 的 <code>si/ci</code> 始终指向真实位置，过滤态下移动/删除仍精确（避免引出新的索引错乱 bug）。</p>
+        </div></div>
+        <div class="row"><div class="k">证据</div><div class="v"><p>活体探针：输入无匹配词 ⇒ 可见控件 6→0、计数「匹配 0 个控件」出现；清空 ⇒ 恢复 6 个。</p></div></div>
+      </div>
+      <div class="evi">VERIFY-PASS · G1：搜索框存在 ✓ · 过滤生效 ✓（total=6 → 0）</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip done">已做</span> P1-4 控件行：上移/下移按钮 + 键盘可达</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>第一轮诊断：拖拽排序无键盘替代，不满足 WCAG 2.1.1。第一轮只给<b>分区头</b>加了上/下移按钮，<b>控件行仍是拖拽独占</b>（活体实测：5 个分区有移动按钮、0 个控件有 —— 本轮补齐）。</p></div></div>
+        <div class="row"><div class="k">实现</div><div class="v">
+          <p>每个控件行新增 <code>控件上移 / 控件下移</code> 按钮（<code>aria-label</code> 标注，与分区头同口径）；行本身 <code>tabIndex=0</code> 可聚焦，聚焦态按 <code>↑/↓</code> 即移动（仅当 <code>e.target === e.currentTarget</code> 时响应，避免与行内 Select/输入框方向键冲突）。</p>
+        </div></div>
+        <div class="row"><div class="k">证据</div><div class="v"><p>活体探针：点首控件「下移」⇒ 顺序 <code>[policy_no, insured_id_hash, claim_type] → [insured_id_hash, policy_no, claim_type]</code> 正确交换；按钮存在性断言通过。</p></div></div>
+      </div>
+      <div class="evi">VERIFY-PASS · G2：按钮存在 ✓ · 功能生效 ✓</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip done">已做</span> N3 JSON 面板：导出文件 / 导入文件</h3>
+      <div class="kv">
+        <div class="row"><div class="k">问题</div><div class="v"><p>JSON 面板只有「复制」到剪贴板，<b>没有落盘导出 / 文件导入</b>。低代码平台的 schema 即代码，需要：版本库归档、跨环境迁移（测试→生产）、灾难备份。剪贴板无法承载这些（活体实测：仅 复制 存在）。</p></div></div>
+        <div class="row"><div class="k">实现</div><div class="v">
+          <p><code>JsonPanel.tsx</code> 新增「导出文件」（<code>Blob</code> 下载 <code>{entityCode}.json</code>）+「导入文件」（隐藏 <code>input[type=file]</code> → <code>FileReader</code> 读入文本框）。导入后沿用既有「应用到配置」门禁（版本协商 + 协议自检），不绕过校验。</p>
+        </div></div>
+        <div class="row"><div class="k">证据</div><div class="v"><p>活体探针：切换到 JSON 页签，<code>导出文件</code> / <code>导入文件</code> 按钮均存在（此前缺失）。</p></div></div>
+      </div>
+      <div class="evi">VERIFY-PASS · G3：文件导入导出按钮存在 ✓</div>
+    </div>
+  </section>
+
+  <!-- ================= 仍存在的问题 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">03</span>问题清单（含已闭环标记）</div>
+    <div class="sec-desc">按「影响面 × 落地成本」排序。P1 = 正确性/可达性/安全相关；P2 = 效率/体验增强。带「已闭环」标记的行为本报告周期内已修复并验证，列出仅为保留可追溯的诊断基线。</div>
+    <table>
+      <thead><tr><th style="width:54px">编号</th><th>问题</th><th style="width:60px">级别</th><th style="width:130px">影响 / 对标</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">P1-5</td><td>大 schema（100+ 控件）性能未治理：结构树与预览无虚拟滚动，undo/redo 是全量快照栈。22 控件流畅，宽表实体未度量过「卡」。</td><td><span class="chip p1">P1</span></td><td>大实体建模体验</td></tr>
+        <tr><td class="mono">N7</td><td>字段级<b>角色</b>可见性缺失：只有行级 RLS（rowPolicies）+ 变体「布局差异」。若需「字段 X 仅角色 A 可见、角色 B 不可见」，当前无一等概念（只能靠 per-role 变体或静态 visible=false 近似）。</td><td><span class="chip p1">P1</span></td><td>数据安全 / 最小权限</td></tr>
+        <tr><td class="mono">N1</td><td>结构面板无多选 / 批量操作：一次只能选中单个控件，删 5 个控件要点 5 次；Figma / Appsmith 均支持框选/多选后批量删除、批量隐藏。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>宽表实体效率</td></tr>
+        <tr><td class="mono">N2</td><td>控件无「复制 / 克隆」：只有删除。相同控件（同字段不同 props，或同布局不同字段）只能重建。行业 builder 标配。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>建模效率</td></tr>
+        <tr><td class="mono">N4</td><td><b>已闭环（第四轮）</b>：控件级校验规则编辑器 + 引擎真正消费。范围比原估更大——除 <code>ControlInspector</code> 的校验卡外，还须补协议真源/runtime 副本的 <code>control.required</code> 与 <code>props.pattern</code>、<code>PROP_WHITELIST</code>、引擎 <code>validateControlValues</code>、预览与运行时双渲染器接线、lint 格式校验。</td><td><span class="chip ok">已闭环</span></td><td>校验规则 / 建模效率</td></tr>
+        <tr><td class="mono">N5</td><td><b>已闭环（第四轮）</b>：预览可切「样例数据 / 真实数据」。按控件类型生成样例值（文本→<code>示例_字段码</code>、数值→12345.67、开关→true、日期→今天），用于感知真实长度与排版拥挤度；展示型/复合型控件不生成样例。</td><td><span class="chip ok">已闭环</span></td><td>预览保真度</td></tr>
+        <tr><td class="mono">N6</td><td>分区无「折叠 / 展开全部」：配合搜索在宽表里快速收拢视图。低成本增强。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>宽表实体效率</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 仍存在的问题详情 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">04</span>重点项说明（为何建议、对标、工作量）</div>
+
+    <div class="card">
+      <h3><span class="chip p1">P1-5</span>大 schema 性能治理：先度量，后优化</h3>
+      <div class="kv">
+        <div class="row"><div class="k">为何</div><div class="v"><p>结构树与预览均为一次性渲染全部控件；undo/redo 栈存整份 schema 快照。20~50 控件无感，但主数据类宽表（100+ 字段、深嵌套分区）下，首次渲染与每次编辑的不可变重建可能掉帧，且难以归因。</p></div></div>
+        <div class="row"><div class="k">对标</div><div class="v"><p>Retool / Appsmith 对大查询面板与组件树均做虚拟滚动；历史栈用差量化而非全量快照。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>先用 Performance 面板记录一次 100 控件实体的编辑帧耗时（0.5 人日拿到数据），再决定是否上虚拟滚动 / 历史栈差量化。<b>先度量后优化，别凭感觉</b>。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip p1">N7</span>字段级角色可见性</h3>
+      <div class="kv">
+        <div class="row"><div class="k">为何</div><div class="v"><p>当前权限模型是「行级 RLS（数据谁能看哪些行）」+「变体（按角色换布局）」。但「同一布局里某个字段仅对特定角色可见」是一等需求（如薪酬字段仅 HR 可见）。目前只能：①为每个受限角色建一个变体（维护爆炸）；②用静态 <code>visible=false</code>（对所有角色隐藏，非按角色）。缺少字段级 ACL 概念。</p></div></div>
+        <div class="row"><div class="k">对标</div><div class="v"><p>Salesforce FLS（Field-Level Security）、钉钉宜搭的「字段权限」均为角色 × 字段的可见/可编辑矩阵。</p></div></div>
+        <div class="row"><div class="k">建议</div><div class="v"><p>在 schema 增加 <code>control.roles</code>（可见角色白名单）或复用变体的 match.roles 做字段级裁决；运行时 <code>fieldVisible</code> 接入。属协议 + 引擎 + 创作侧三端改动，工作量 2-3 人日，建议作为独立专项评估，勿与前轮变体特性混淆。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip ok">已闭环</span>N4 控件级校验规则编辑器 —— <span style="font-size:13px;color:var(--ink-3)">原诊断不实，已修正并扩大范围</span></h3>
+      <div class="kv">
+        <div class="row"><div class="k">原诊断纠正</div><div class="v"><p>原报告称「协议 props 已支持 max/min/maxLength/pattern」，<b>实测不成立</b>：<code>pattern</code> 在协议真源与 <code>PROP_WHITELIST</code> <b>均不存在</b>；而已有的 min/max/maxLength <b>只被 Java 侧当元数据字段级约束</b>，UI 引擎与运行时<b>一行都不消费</b>。若照原文只做编辑器，会造出第 4 个「配了不生效」。</p></div></div>
+        <div class="row"><div class="k">实际范围</div><div class="v"><p>五层同补：①协议（真源 + runtime 副本加 <code>control.required</code>、<code>props.pattern</code>）；②白名单（<code>PROP_WHITELIST</code> 加 <code>pattern</code>，否则 lint/后端拒越界键）；③引擎（新增 <code>validateControlValues</code>：必填覆盖 / 数值 min·max / 文本 maxLength·pattern，非法正则 <b>fail-closed</b>）；④双渲染器接线（<code>SchemaPreview</code> 与 <code>BoneDynamicForm</code> 同源消费，避免双轨漂移）；⑤创作侧（<code>ControlInspector</code> 按控件类型显示校验卡：数值型出 min/max，文本型出 maxLength/pattern）。</p></div></div>
+        <div class="row"><div class="k">关键设计</div><div class="v"><p><b>必填不双报</b>：<code>control.required</code> 仅在「控件要求必填 <b>且</b> 元数据未要求」时才由 <code>validateControlValues</code> 报；元数据必填仍归 <code>runSubmit</code>，避免同一字段弹两条错。非法正则按配置错误 fail-closed，不静默放行（与 <code>runSubmit</code> 同口径）。</p></div></div>
+        <div class="row"><div class="k">验证</div><div class="v"><p>单测 <code>validateControlValues</code> 12 例 + lint props 格式 13 例；<b>变异验证 10/10 全部被捕获</b>（逐条删实现行，对应用例必红）；活体探针 <code>ui-designer-n4-n5-probe.mjs</code> 24/24（注入 → 预览拦截 → 恢复草稿的完整闭环）。</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="chip ok">已闭环</span>N5 样例数据预览</h3>
+      <div class="kv">
+        <div class="row"><div class="k">为何</div><div class="v"><p>预览渲染空字段，建模者看不出「这个字段实际填了会多长、会不会挤爆排版」，只能等上线才发现。对标 Retool / Appsmith / 宜搭的「样例数据」开关。</p></div></div>
+        <div class="row"><div class="k">实现口径</div><div class="v"><p><code>sampleValueFor</code> 按控件类型生成：SWITCH→true、NUMBER/MONEY→12345.67、SLIDER→50、DATE/DATETIME→今天、TEXTAREA→长文本、ENUM/REFERENCE→首个枚举值、INPUT→<code>示例_字段码</code>。展示型（STAT/CHART/TIMELINE/COMPUTED/QUOTE/ALERT）与复合型（CHILD_TABLE/ATTACHMENT）<b>不生成</b>，沿用场景/空值——避免给聚合值编造假数据。</p></div></div>
+        <div class="row"><div class="k">验证</div><div class="v"><p>活体探针验证「开→值改变、关→<b>精确回到基线</b>」双向闭环（非单向残留）。注意：预览默认自带场景种子数据，故判据是「与基线不同 / 与基线相同」，<b>不是</b>「空/非空」。</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 保持 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">05</span>继续做对的（保持，别改坏）</div>
+    <table>
+      <thead><tr><th style="width:180px">能力</th><th>为什么是对的</th></tr></thead>
+      <tbody>
+        <tr><td><b>lint 分层（error/warning/info）+ 后端 UI_REF 码体系</b></td><td>协议违规与待评审扩展分开处置，发布闸门有机器判据；两轮诊断均已守护，勿破坏对账测试。</td></tr>
+        <tr><td><b>published 快照优先的执行期 schema</b></td><td>草稿改动不漂线上，发布语义清晰。</td></tr>
+        <tr><td><b>乐观锁 + beforeunload + 快照 + undo/redo + 命令面板 + 新手指引</b></td><td>生产力设施齐全，第一轮未动。</td></tr>
+        <tr><td><b>预览/运行时一致性契约探针</b></td><td>第一轮新增，是防止「双轨漂移」复发的机器防线。</td></tr>
+        <tr><td><b>设备框（桌面/平板/手机）预览</b></td><td>本轮复核确认 SchemaPreview 已具备，响应式就绪，无需补。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 路线图 ================= -->
+  <section>
+    <div class="sec-title"><span class="no">06</span>优化路线图（剩余项）</div>
+    <table>
+      <thead><tr><th style="width:120px">阶段</th><th>事项</th><th style="width:90px">工作量</th><th>验收判据</th></tr></thead>
+      <tbody>
+        <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">本轮</span></td><td>P1-3 搜索/过滤 · P1-4 控件移动键盘化 · N3 导出/导入文件</td><td>已完成</td><td>探针 VERIFY-PASS；tsc/eslint/vitest 全绿</td></tr>
+        <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第三轮 1a558f79</span></td><td>N2 控件复制克隆 · N6 分区折叠/展开全部 · N1 多选批量（删/隐/克隆）</td><td>已完成</td><td>probe19c VERIFY-PASS；schemaOps 单测 +7；tsc/eslint/vitest 全绿</td></tr>
+        <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第四轮</span></td><td>N4 控件级校验规则编辑器（协议+引擎+双渲染器+lint 全闭环） · N5 样例数据预览</td><td>已完成</td><td>单测 +25 例；<b>变异验证 10/10</b>；活体探针 <code>ui-designer-n4-n5-probe.mjs</code> 24/24；tsc/eslint 零错</td></tr>
+        <tr><td rowspan="1"><b>建议下一轮</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">1-2 周</span></td><td>P1-5 大 schema 性能度量 → 虚拟滚动 / 历史栈差量化</td><td>0.5+ 人日</td><td>100 控件实体编辑帧耗时有数据，掉帧则优化</td></tr>
+        <tr><td><b>专项评估</b></td><td>N7 字段级角色可见性（协议 + 引擎 + 创作三端）</td><td>2-3 人日</td><td>某字段仅指定角色可见，其余角色运行时不渲染</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="footer">UI Schema Designer 诊断报告 · 第二轮 · 2026-10-19 · 证据含 Playwright 活体探针（probe19 baseline / probe19b verify / ui-designer-n4-n5-probe 24 项）、变异验证（10/10）与 tsc/eslint/vitest 单测</div>
+</div>
+</body>
+</html>

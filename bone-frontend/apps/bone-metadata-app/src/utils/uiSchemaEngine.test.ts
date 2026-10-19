@@ -8,9 +8,11 @@ import {
   resolveVariant,
   resolveVisibleActions,
   runSubmit,
+  validateControlValues,
   type ActionBarItem,
   type BoneUiSchema,
   type UiCondition,
+  type Control,
   type LinkageRule,
   type SubmitRule,
 } from './uiSchemaEngine';
@@ -362,3 +364,94 @@ describe('fieldVisible 档位门控（预览/运行时同源；曾踩坑：Rules
     expect(fieldVisible(st, { tier: 'pro' })).toBe(false);
   });
 });
+
+/* ==================================================================
+ * N4：控件级校验 validateControlValues（对标宜搭/PowerApps 字段级约束）
+ *
+ * 判别力自证（每个 it 都问「删掉实现哪一行会红」）：
+ * - 必填覆盖：删 `c.required === true && !baseRequired[code]` 的 baseRequired 守卫 → 双报用例红
+ * - min/max：删任一 if → 对应越界用例红
+ * - maxLength/pattern：删任一 if → 对应用例红
+ * - 非法正则 fail-closed：删 catch 分支 → 该用例红（错误信息从「配置错误」变「静默放行」）
+ * ================================================================== */
+describe('validateControlValues 控件级校验（N4）', () => {
+  it('控件必填覆盖：元数据非必填 + control.required=true + 空值 → ERROR', () => {
+    const ctrls: Control[] = [{ fieldCode: 'tax_no', controlKind: 'INPUT', required: true }];
+    const r = validateControlValues({ tax_no: '' }, ctrls, {});
+    expect(r.errors.some((e) => e.includes('tax_no') && e.includes('不能为空'))).toBe(true);
+  });
+
+  it('必填覆盖不与 runSubmit 双报：元数据已 required 时本函数让位（baseRequired 命中）', () => {
+    // 关键语义：同一字段元数据已必填 ⇒ 必填由 runSubmit 报；本函数不得再报一次
+    const ctrls: Control[] = [{ fieldCode: 'tax_no', controlKind: 'INPUT', required: true }];
+    const r = validateControlValues({ tax_no: '' }, ctrls, { tax_no: true });
+    expect(r.errors.some((e) => e.includes('不能为空'))).toBe(false);
+  });
+
+  it('必填覆盖：有值时通过', () => {
+    const ctrls: Control[] = [{ fieldCode: 'tax_no', controlKind: 'INPUT', required: true }];
+    expect(validateControlValues({ tax_no: '91310000X' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('未声明 required 且空值 → 不报（不制造噪音）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'remark', controlKind: 'INPUT' }];
+    expect(validateControlValues({ remark: '' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('数值型 min 越界 → ERROR；界内 → 通过（MONEY/NUMBER/SLIDER 同口径）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'amount', controlKind: 'MONEY', props: { min: 0, max: 5000 } }];
+    expect(validateControlValues({ amount: -1 }, ctrls, {}).errors.some((e) => e.includes('不能小于'))).toBe(true);
+    expect(validateControlValues({ amount: 5001 }, ctrls, {}).errors.some((e) => e.includes('不能大于'))).toBe(true);
+    expect(validateControlValues({ amount: 100 }, ctrls, {}).errors).toHaveLength(0);
+    // 边界值（=min / =max）算通过
+    expect(validateControlValues({ amount: 0 }, ctrls, {}).errors).toHaveLength(0);
+    expect(validateControlValues({ amount: 5000 }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('非数值型不因 min/max 报范围错（min/max 只对数值型生效）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'remark', controlKind: 'INPUT', props: { min: 0, max: 5 } }];
+    expect(validateControlValues({ remark: '很长的一段文字' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('文本型 maxLength 超长 → ERROR；未超长 → 通过', () => {
+    const ctrls: Control[] = [{ fieldCode: 'title', controlKind: 'INPUT', props: { maxLength: 5 } }];
+    expect(validateControlValues({ title: '一二三四五六' }, ctrls, {}).errors.some((e) => e.includes('长度'))).toBe(true);
+    expect(validateControlValues({ title: '一二三四五' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('文本型 pattern 不匹配 → ERROR；匹配 → 通过', () => {
+    const ctrls: Control[] = [{ fieldCode: 'invoice_no', controlKind: 'INPUT', props: { pattern: '^[A-Z]{2}\\d+$' } }];
+    expect(validateControlValues({ invoice_no: 'ab123' }, ctrls, {}).errors.some((e) => e.includes('不符合格式'))).toBe(true);
+    expect(validateControlValues({ invoice_no: 'AB123' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('非法正则 → fail-closed 报配置错误（不静默放行，与 runSubmit 同口径）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'invoice_no', controlKind: 'INPUT', props: { pattern: '([' } }];
+    const r = validateControlValues({ invoice_no: 'AB123' }, ctrls, {});
+    expect(r.errors.some((e) => e.includes('配置错误') && e.includes('pattern'))).toBe(true);
+  });
+
+  it('虚拟控件跳过（STAT/CHART 等非字段控件不做值校验）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'total_stat', controlKind: 'STAT', virtual: true, required: true, props: { maxLength: 1 } }];
+    expect(validateControlValues({ total_stat: '任意长文本' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('空值不触发最值/长度/正则（非必填空值直接跳过，避免「空值报格式错」）', () => {
+    const ctrls: Control[] = [{ fieldCode: 'invoice_no', controlKind: 'INPUT', props: { pattern: '^[A-Z]+$' } }];
+    expect(validateControlValues({ invoice_no: '' }, ctrls, {}).errors).toHaveLength(0);
+  });
+
+  it('与 runSubmit 叠加互不覆盖（控件级越界 + 提交规则错 同时可见）', () => {
+    // amount=500：控件级 max:100 越界（报「不能大于」）；提交规则 min>=600 也越界（报「不得低于」）
+    const ctrls: Control[] = [{ fieldCode: 'amount', controlKind: 'MONEY', props: { max: 100 } }];
+    const rules: SubmitRule[] = [{
+      name: '下限', function: 'min', fields: ['amount'], operator: 'gte',
+      compare: { valueType: 'fixed', value: 600 }, verifyType: 'ERROR', message: '不得低于600',
+    }];
+    const cv = validateControlValues({ amount: 500 }, ctrls, {});
+    const sub = runSubmit({ amount: 500 }, rules);
+    expect(cv.errors.some((e) => e.includes('不能大于'))).toBe(true);
+    expect(sub.errors.some((e) => e.includes('不得低于600'))).toBe(true);
+  });
+});
+

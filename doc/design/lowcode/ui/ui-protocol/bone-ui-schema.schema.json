@@ -344,6 +344,10 @@
           "type": "boolean",
           "description": "控件静态默认可见性；缺省 = true。false 表示默认隐藏，由联动规则 then[].visible 动态揭示（与 then[].visible 配合，先隐后显）"
         },
+        "required": {
+          "type": "boolean",
+          "description": "控件级必填覆盖：true 时即便元数据字段非必填，该控件也强制必填（对标宜搭/PowerApps 字段必填）；与元数据必填、联动 then[].required 取并集"
+        },
         "props": {
           "type": "object",
           "additionalProperties": false,
@@ -365,6 +369,10 @@
             "maxLength": {
               "type": "integer",
               "minimum": 1
+            },
+            "pattern": {
+              "type": "string",
+              "description": "文本控件（INPUT/TEXTAREA）正则约束（如手机号 ^1[3-9]\\d{9}$）；运行期/预览按 control.props.pattern 校验值格式；非法正则视同配置错误 fail-closed"
             },
             "rows": {
               "type": "integer",

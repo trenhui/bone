@@ -245,7 +245,7 @@ export const THEN_ACTIONS = [
 export const PROP_WHITELIST = [
   'ai', 'anchorRef', 'chartType', 'childEntity', 'columns', 'computedFn', 'computedFrom',
   'currencyField', 'dataRef', 'labelField', 'lineage', 'mask', 'max', 'maxCount', 'maxLength',
-  'maxSizeMB', 'min', 'precision', 'quoteText', 'roles', 'rows', 'span', 'step', 'targetEntity',
+  'maxSizeMB', 'min', 'pattern', 'precision', 'quoteText', 'roles', 'rows', 'span', 'step', 'targetEntity',
   'tier', 'valueField', 'warningText',
 ] as const;
 

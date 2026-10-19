@@ -114,6 +114,42 @@ function lintSections(
           issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.${k} 不在协议白名单（schema.json additionalProperties=false，越界属性运行时不做保证）`), locate: at });
         }
       });
+
+      /* ---------- N4：控件级校验规则 props 格式（创作侧编辑器配套，写入前即时反馈） ---------- */
+      const kindN = (c.controlKind ?? 'INPUT').toUpperCase();
+      const isNumeric = kindN === 'NUMBER' || kindN === 'MONEY' || kindN === 'SLIDER';
+      const isText = kindN === 'INPUT' || kindN === 'TEXTAREA';
+      const cp = c.props ?? {};
+      if (cp.maxLength !== undefined) {
+        const ml = Number(cp.maxLength);
+        if (!Number.isInteger(ml) || ml < 1) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.maxLength 必须为 ≥1 的整数`), locate: at });
+        } else if (!isText) {
+          issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 是 ${c.controlKind ?? 'INPUT'}，maxLength 仅对文本型（INPUT/TEXTAREA）生效`), locate: at });
+        }
+      }
+      if (cp.min !== undefined || cp.max !== undefined) {
+        if (!isNumeric) {
+          issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 是 ${c.controlKind ?? 'INPUT'}，min/max 仅对数值型（NUMBER/MONEY/SLIDER）生效`), locate: at });
+        } else {
+          const mn = Number(cp.min);
+          const mx = Number(cp.max);
+          if (cp.min !== undefined && Number.isNaN(mn)) issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.min 必须为数字`), locate: at });
+          if (cp.max !== undefined && Number.isNaN(mx)) issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.max 必须为数字`), locate: at });
+          if (!Number.isNaN(mn) && !Number.isNaN(mx) && mn > mx) issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.min(${mn}) 不能大于 max(${mx})`), locate: at });
+        }
+      }
+      if (typeof cp.pattern === 'string' && cp.pattern.trim()) {
+        if (!isText) {
+          issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 是 ${c.controlKind ?? 'INPUT'}，pattern 仅对文本型（INPUT/TEXTAREA）生效`), locate: at });
+        }
+        try {
+          // 仅做编译校验（不消费结果）；编译失败 = 建模者正则写错，报 error 而非静默放行
+          new RegExp(cp.pattern);
+        } catch {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.pattern 不是合法正则：${cp.pattern}`), locate: at });
+        }
+      }
     });
   });
   return seen;

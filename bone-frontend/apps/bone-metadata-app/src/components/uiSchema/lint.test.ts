@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { enumFieldsOf, lintSchema, type LintIssue } from './lint';
-import { buildDefaultSchema, setDegradedBanner, setPageHeader, addStat } from './schemaOps';
+import { buildDefaultSchema, setDegradedBanner, setPageHeader, addStat, updateControl } from './schemaOps';
 import type { MetaField } from '../../types';
 
 const FIELDS = [
@@ -232,3 +232,93 @@ describe('lintSchema：变体覆盖（v1.2 补齐：此前只扫 base）', () =>
     expect(lintSchema(s, known, enumFieldsOf(FIELDS)).filter((i) => i.level !== 'info' && i.message.includes('变体'))).toEqual([]);
   });
 });
+
+/* ==================================================================
+ * N4：控件级校验规则的 props 格式自检
+ *
+ * 这些检查的价值是「配错当下就看见」——若只等到运行时才发现，
+ * 建模者会以为规则已生效（配了不生效＝正确性谎言）。
+ * 判别力自证：删掉 lintSections 里任一 if 分支 → 对应用例红。
+ * ================================================================== */
+describe('lintSchema：N4 控件级校验 props 格式', () => {
+  /** 给第 si/ci 个控件打 props 补丁（buildDefaultSchema 只有一个分区 sec_main） */
+  function withProps(p: Record<string, unknown>, si = 0, ci = 0) {
+    return updateControl(base(), 'form', si, ci, { props: p });
+  }
+  const run = (s: ReturnType<typeof base>) => lintSchema(s, known, enumFieldsOf(FIELDS));
+
+  it('maxLength 非 ≥1 整数（0 / -1 / 1.5）⇒ error 且定位到该控件', () => {
+    for (const bad of [0, -1, 1.5]) {
+      const issue = at(run(withProps({ maxLength: bad })), 'error', 'props.maxLength 必须为 ≥1 的整数');
+      expect(issue).toBeDefined();
+      expect(issue?.locate).toMatchObject({ tab: 'structure', si: 0, ci: 0 });
+    }
+  });
+
+  it('合法 maxLength（文本型 approver_id）⇒ 不报（防误报回归）', () => {
+    expect(run(withProps({ maxLength: 20 }, 0, 2)).filter((i) => i.message.includes('maxLength'))).toEqual([]);
+  });
+
+  it('maxLength 配在非文本型 ⇒ warning（配了不生效的提示，不是阻断）', () => {
+    // amount 默认 MONEY（数值型）；ci=0 即 amount
+    expect(at(run(withProps({ maxLength: 10 })), 'warning', 'maxLength 仅对文本型')).toBeDefined();
+  });
+
+  it('min/max 配在非数值型 ⇒ warning（approver_id 兜底为 INPUT 文本型）', () => {
+    expect(at(run(withProps({ min: 1, max: 9 }, 0, 2)), 'warning', 'min/max 仅对数值型')).toBeDefined();
+  });
+
+  it('min > max ⇒ error（区间自相矛盾，运行时必越界）', () => {
+    expect(at(run(withProps({ min: 100, max: 10 })), 'error', 'props.min(100) 不能大于 max(10)')).toBeDefined();
+  });
+
+  it('min 非数字（NaN）⇒ error（配置错误 fail-closed）', () => {
+    expect(at(run(withProps({ min: 'abc' })), 'error', 'props.min 必须为数字')).toBeDefined();
+  });
+
+  it('max 非数字 ⇒ error', () => {
+    expect(at(run(withProps({ max: 'x' })), 'error', 'props.max 必须为数字')).toBeDefined();
+  });
+
+  it('合法数值 min/max（数值型）⇒ 不报（防误报回归）', () => {
+    expect(run(withProps({ min: 0, max: 10000 })).filter((i) => i.message.includes('props.m'))).toEqual([]);
+  });
+
+  it('非法正则 pattern ⇒ error（含原文，便于建模者定位）', () => {
+    const issue = at(run(withProps({ pattern: '([' })), 'error', 'props.pattern 不是合法正则：([');
+    expect(issue).toBeDefined();
+    expect(issue?.locate).toMatchObject({ tab: 'structure', ci: 0 });
+  });
+
+  it('合法 pattern（文本型 approver_id）⇒ 不报', () => {
+    expect(run(withProps({ pattern: '^[A-Z]{2}\\d+$' }, 0, 2)).filter((i) => i.message.includes('pattern'))).toEqual([]);
+  });
+
+  it('pattern 配在非文本型 ⇒ warning（用 amount/MONEY，避免 STRING 兜底成 INPUT 的歧义）', () => {
+    expect(at(run(withProps({ pattern: '^A$' }, 0, 0)), 'warning', 'pattern 仅对文本型')).toBeDefined();
+  });
+
+  it('越界键（如 props.foo）仍按协议白名单报 error（与 N4 检查正交，不互相掩盖）', () => {
+    expect(at(run(withProps({ notAProp: 1 })), 'error', '不在协议白名单')).toBeDefined();
+  });
+
+  it('变体内控件的 N4 问题同样被扫到且 locate 带 vi（配置型校验须覆盖所有生效分支）', () => {
+    const s = base();
+    s.variants = [{
+      key: 'reviewer', label: '核赔台', priority: 10, match: { roles: ['reviewer'] },
+      views: {
+        form: {
+          sections: [{
+            id: 'sec_x', title: '台',
+            controls: [{ fieldCode: 'amount', controlKind: 'MONEY', props: { min: 100, max: 10 } }],
+          }],
+        },
+      },
+    }];
+    const issue = at(run(s), 'error', '不能大于 max(10)');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('变体「核赔台」');
+    expect(issue?.locate).toMatchObject({ tab: 'variants', vi: 0 });
+  });
+});
+
