@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Tag, Tooltip, message } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, ReloadOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, ReloadOutlined, SaveOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { MetaField } from '../types';
 import type { ListView } from '../utils/uiSchemaEngine';
@@ -22,9 +22,14 @@ interface Props {
   overlay: UseOverlayBundle;
   fields: MetaField[];
   listView: ListView | null;
+  /**
+   * 「把当前筛选/排序保存到本视图」（由数据页注入 —— 筛选态住在页面里，
+   * 只有页面知道当前值）。缺省时该菜单项不出现（不提供假按钮）。
+   */
+  onSaveFilterToView?: () => void;
 }
 
-const PersonalViewBar: React.FC<Props> = ({ overlay, fields, listView }) => {
+const PersonalViewBar: React.FC<Props> = ({ overlay, fields, listView, onSaveFilterToView }) => {
   const [viewModal, setViewModal] = useState<{ mode: 'create' | 'rename' | 'delete'; id?: string } | null>(null);
   const [viewName, setViewName] = useState('');
   const [viewCopy, setViewCopy] = useState(true);
@@ -55,6 +60,16 @@ const PersonalViewBar: React.FC<Props> = ({ overlay, fields, listView }) => {
   };
 
   const menuItems: MenuProps['items'] = [
+    {
+      key: 'save-filter',
+      icon: <SaveOutlined />,
+      label: '把当前筛选/排序保存到本视图…',
+      title: '把此刻的筛选条件与排序沉淀进当前个人视图（切视图时随视图恢复）',
+      onClick: () => {
+        onSaveFilterToView?.();
+        message.success(`已把当前筛选/排序保存到视图「${overlay.activeView?.name ?? ''}」`);
+      },
+    },
     { key: 'new', icon: <PlusOutlined />, label: '新建视图…', onClick: openCreate },
     { key: 'rename', icon: <EditOutlined />, label: '重命名当前视图…', onClick: openRename },
     {

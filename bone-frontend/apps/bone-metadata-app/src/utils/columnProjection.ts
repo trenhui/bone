@@ -34,14 +34,43 @@ export interface UiOverlay {
 /* ===================== 个人视图（多视图 bundle） ===================== */
 
 /**
+ * 视图筛选条件（与运行时 q 串同构：`{field}:{value}` 或 `{field}:{op}:{value}`）。
+ *
+ * <p>刻意用**可序列化标量**而非 React 状态对象：个人视图要落服务端 blob
+ * （不透明 JSON），复杂引用无法 JSON 化/跨版本比对。
+ */
+export interface ViewFilter {
+  /** 字段 code；空表示"无字段限定"（与运行时 appliedConditions 同口径） */
+  field?: string;
+  /** 运算符（eq/ne/gt/lt/ge/le/like/in…，空串按 eq 处理） */
+  op: string;
+  value: string;
+}
+
+/**
  * 命名个人视图（对标 Airtable / Notion personal views）：一套独立的
  * 显隐/列序/改名/密度偏好。id 由前端生成（`v_` 前缀），name 用户可改。
+ *
+ * <p><b>为什么视图还要存筛选/排序</b>：业界把「视图 = 列 + 筛选 + 排序」的完整快照
+ * 当作保存视图的单位（Airtable view / Notion database view / Salesforce List View
+ * 的 saved filter）。此前本仓视图只存显隐+密度，导致切视图后筛选与排序被静默清空——
+ * 用户配好「我的待审：只看待我审批 + 按金额倒序」，切去别的视图再切回来，条件消失，
+ * 表现为"视图不好用"。补齐后视图才是可复用的工作台面。
+ *
+ * <p>这两个字段是**可选的**（老 blob 无此键 ⇒undefined ⇒ 页面不应用筛选），
+ * 因此扩展不需要版本迁移，也不会让存量用户的视图突然多出条件。
  */
 export interface PersonalView {
   id: string;
   name: string;
   overrides: Record<string, ColumnOverride>;
   density?: 'comfortable' | 'compact';
+  /** 该视图保存的筛选条件（空/缺省 = 不应用筛选） */
+  filters?: ViewFilter[];
+  /** 排序字段 code（缺省 = 不排序） */
+  sortField?: string;
+  /** 是否降序（仅 sortField 存在时有意义） */
+  sortDesc?: boolean;
 }
 
 /**

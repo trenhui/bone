@@ -421,6 +421,43 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
   const projectedFields = useMemo(() => projectedColumns.map((c) => c.field), [projectedColumns]);
 
   /**
+   * 视图 → 页面筛选/排序态的单向同步（业界 saved view 语义：Airtable/Notion/Salesforce
+   * 的视图 = 列 + 筛选 + 排序 的完整快照）。
+   *
+   * <p><b>为什么必须同步而不是各管各的</b>：筛选/排序原先只活在页面 useState 里，
+   * 切个人视图时被静默清空——用户配好「我的待审：只看待我审批 + 按金额倒序」，
+   * 切去别的视图再切回来条件消失，视图就不可复用了。
+   *
+   * <p><b>单向的依据</b>：只做「视图变了 ⇒ 页面跟随」。
+   * 反向（用户改筛选 ⇒ 写回当前视图）刻意不做——那会让每次筛选都产生一次 blob 写入，
+   * 且与"筛选是临时的探索、视图是沉淀的资产"这一业界分工相悖。沉淀动作交由
+   * 工具栏的「保存到视图」显式触发（见下方 saveCurrentToView）。
+   *
+   * <p>依赖 activeView.id（视图身份）而非整个 view 对象：同一视图内用户自己调筛选时，
+   * 不该被回滚覆盖——否则刚点一下筛选就跳回去。
+   */
+  const activeViewId = overlay.activeView?.id;
+  useEffect(() => {
+    const v = overlay.activeView;
+    if (!v) return;
+    setAppliedConditions(
+      (v.filters ?? []).map((f) => ({ field: f.field, op: f.op, value: f.value })),
+    );
+    setSortField(v.sortField);
+    setSortDesc(!!v.sortDesc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeViewId]);
+
+  /**
+   * 「保存当前筛选/排序到视图」——把临时的探索动作沉淀为可复用视图资产（业界惯例）。
+   * 只写筛选/排序，不碰列显隐/密度（那些由列设置直接编辑生效）。
+   */
+  const saveCurrentFilterToView = useCallback(() => {
+    overlay.setViewFilters(appliedConditions);
+    overlay.setViewSort(sortField, sortDesc);
+  }, [overlay, appliedConditions, sortField, sortDesc]);
+
+  /**
    * 筛选字段下拉真源 = 全部可写字段（排除 CHILD_TABLE）。
    *
    * <p>为什么不复用 projectedFields（当前可见列）：列可见性是**展示**维度
@@ -1466,7 +1503,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
           )}
           {/* 个人显示组：视图切换 / 列设置 / 自伤遮蔽自救（个人覆盖的唯一编辑器）。
               契约列（列集合/列序/列宽）在建模台「界面设计器」配，发布后全员生效。 */}
-          <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} />
+          <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
         </Space>
       )}
 
@@ -1646,7 +1683,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
                   </>
                 )}
                 {/* 个人显示组（独立/嵌入两种形态都可用）：个人覆盖编辑器 + 自伤遮蔽自救 */}
-                <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} />
+                <PersonalViewBar overlay={overlay} fields={writableFields} listView={contractListView} onSaveFilterToView={saveCurrentFilterToView} />
                 {/* 回收站：软删必须可观测、可恢复。没有这个入口，「归档」就等同于「永久删除」。 */}
                 <Segmented
                   value={trashMode ? 'trash' : 'active'}
@@ -2045,8 +2082,11 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         {detailDrawer.record && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             {execDetail ? (
-              /* 协议详情视图（views.detail 投影）：页头关键信息条 + 分区逐控件 */
-              <RuntimeDetailView detail={execDetail} fields={fields} record={detailDrawer.record} />
+              /* 协议详情视图（views.detail 投影）：页头关键信息条 + 分区逐控件。
+                 * ctx 必须透传：字段级角色可见性（props.roles）在此生效——否则表单里
+                 * 按角色隐藏的字段会在详情抽屉全量泄露（本组件曾不接 ctx，是唯一绕过
+                 * fieldVisible 的渲染面）。 */
+              <RuntimeDetailView detail={execDetail} fields={fields} record={detailDrawer.record} ctx={uiCtx} />
             ) : (
               /* 回落：全字段平铺（未配置 views.detail 的存量实体） */
               <Descriptions

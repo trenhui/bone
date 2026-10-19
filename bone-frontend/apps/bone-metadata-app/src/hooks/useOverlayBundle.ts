@@ -21,6 +21,7 @@ import {
   type UiOverlayBundle,
 } from '../utils/columnProjection';
 import { fetchOverlay, persistOverlay, resetOverlay, OVERLAY_CHANGED_EVENT } from '../utils/overlaySync';
+import type { ViewFilter } from '../utils/columnProjection';
 
 /**
  * 个人覆盖（overlay）唯一状态源（双轨收敛 · P2）。
@@ -66,6 +67,15 @@ export interface UseOverlayBundle {
    * personalRename 优先于契约标题消费它（纯函数 renameColumnOverride 保证语义）。
    */
   renameColumn: (code: string, name: string | null) => void;
+  /**
+   * 视图筛选条件（随个人视图保存/恢复 —— 对标 Airtable/Notion 的 saved view）。
+   *
+   * <p>此前筛选只在页面 useState 里，切视图即丢；补齐后「视图 = 列 + 筛选 + 排序」
+   * 才是一份可复用的工作台面。
+   */
+  setViewFilters: (filters: ViewFilter[]) => void;
+  /** 视图排序（sortField 缺省= 不排序；sortDesc 仅在有 sortField 时有意义） */
+  setViewSort: (sortField?: string, sortDesc?: boolean) => void;
   /** 把被遮蔽的契约列全部恢复显示（自伤遮蔽的一键自救） */
   unhideShadowed: () => void;
   /** 恢复生效视图为默认投影（保留视图本身与其他视图） */
@@ -214,6 +224,14 @@ export function useOverlayBundle(
     }, [patchActive]),
     setDensity: useCallback((density: 'comfortable' | 'compact') => {
       patchActive((v) => ({ ...v, density }));
+    }, [patchActive]),
+    setViewFilters: useCallback((filters: ViewFilter[]) => {
+      // 空数组归一为 undefined：避免"视图存了空筛选"与"从未设过筛选"两种状态混淆
+      // （前者会让 UI 显示"该视图已配置筛选但无条目"的诡异态）。
+      patchActive((v) => ({ ...v, filters: filters.length ? filters : undefined }));
+    }, [patchActive]),
+    setViewSort: useCallback((sortField?: string, sortDesc?: boolean) => {
+      patchActive((v) => ({ ...v, sortField, sortDesc: sortField ? !!sortDesc : undefined }));
     }, [patchActive]),
     renameColumn: useCallback((code: string, name: string | null) => {
       patchActive((v) => ({
