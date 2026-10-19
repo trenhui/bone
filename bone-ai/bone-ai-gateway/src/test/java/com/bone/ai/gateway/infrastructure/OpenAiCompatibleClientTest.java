@@ -1,10 +1,13 @@
 package com.bone.ai.gateway.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.bone.ai.gateway.common.AiGatewayErrorCodes;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.core.exception.BizException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,5 +69,33 @@ class OpenAiCompatibleClientTest {
     assertThat(resp.content()).isEqualTo("x");
     assertThat(resp.usage().totalTokens()).isZero();
     assertThat(captured).doesNotContainKey("Authorization");
+  }
+
+  @Test
+  void empty_choices_is_rejected_not_silently_empty() {
+    // provider 限流 / 错误页 / 截断都会返回无 choices 的 body——
+    // 不能靠 asText("")+finish 默认值把它伪装成「正常的空响应」（静默坏数据）
+    LlmHttpTransport stub = (url, headers, body) -> "{\"model\":\"m\",\"choices\":[]}";
+    OpenAiCompatibleClient client = new OpenAiCompatibleClient(stub, "http://llm", "k", "m");
+
+    assertThatThrownBy(() -> client.chat(LlmRequest.of("m", List.of(LlmMessage.user("q")))))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID));
+  }
+
+  @Test
+  void malformed_json_is_rejected_with_stable_code() {
+    LlmHttpTransport stub = (url, headers, body) -> "<html>502 Bad Gateway</html>";
+    OpenAiCompatibleClient client = new OpenAiCompatibleClient(stub, "http://llm", "k", "m");
+
+    assertThatThrownBy(() -> client.chat(LlmRequest.of("m", List.of(LlmMessage.user("q")))))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID));
   }
 }

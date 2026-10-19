@@ -1,10 +1,12 @@
 package com.bone.ai.gateway.infrastructure;
 
+import com.bone.ai.gateway.common.AiGatewayErrorCodes;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.LlmUsage;
+import com.bone.core.exception.BizException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -80,22 +82,33 @@ public class OpenAiCompatibleClient implements LlmClient {
   }
 
   private LlmResponse parse(String raw, LlmRequest request) {
+    JsonNode root;
     try {
-      JsonNode root = MAPPER.readTree(raw);
-      JsonNode choice = root.path("choices").path(0);
-      String content = choice.path("message").path("content").asText("");
-      String model = root.path("model").asText(request.model());
-      String finish = choice.path("finish_reason").asText("stop");
-      JsonNode usage = root.path("usage");
-      LlmUsage u =
-          new LlmUsage(
-              usage.path("prompt_tokens").asInt(0),
-              usage.path("completion_tokens").asInt(0),
-              usage.path("total_tokens").asInt(0));
-      return new LlmResponse(content, model, finish, u);
+      root = MAPPER.readTree(raw);
     } catch (Exception e) {
-      throw new IllegalStateException("解析 LLM 响应失败: " + e.getMessage(), e);
+      throw new BizException(
+          502, "解析 LLM 响应失败: " + e.getMessage(), AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID);
     }
+    JsonNode choices = root.path("choices");
+    if (!choices.isArray() || choices.isEmpty()) {
+      // 空 choices 不能静默当成「正常的空响应」：asText("") + finish 默认值会把坏数据伪装成成功，
+      // 下游拿到空 content 还以为是模型真的没话说——显式失败才可定位（provider 限流/错误页/截断都会走到这）
+      throw new BizException(
+          502,
+          "provider 响应无 choices（疑似限流 / 错误页 / 截断）: " + raw.substring(0, Math.min(200, raw.length())),
+          AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID);
+    }
+    JsonNode choice = choices.path(0);
+    String content = choice.path("message").path("content").asText("");
+    String model = root.path("model").asText(request.model());
+    String finish = choice.path("finish_reason").asText("stop");
+    JsonNode usage = root.path("usage");
+    LlmUsage u =
+        new LlmUsage(
+            usage.path("prompt_tokens").asInt(0),
+            usage.path("completion_tokens").asInt(0),
+            usage.path("total_tokens").asInt(0));
+    return new LlmResponse(content, model, finish, u);
   }
 
   private static String trimTrailingSlash(String url) {

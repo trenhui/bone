@@ -110,7 +110,7 @@ public class LlmGatewayApplicationService {
       }
     }
     LlmRequest outbound = redactRequest(request);
-    String cacheKey = cacheKeyOf(outbound);
+    String cacheKey = cacheKeyOf(outbound, tenantId);
     if (cacheKey != null && policies.responseCache() != null) {
       Optional<LlmResponse> cached = policies.responseCache().get(cacheKey);
       if (cached.isPresent()) {
@@ -151,12 +151,22 @@ public class LlmGatewayApplicationService {
    *
    * <p>temperature &gt; 0 的输出本就随机，缓存会改变业务语义（同一请求两次判定不同才是预期）——故返回 null 表示不缓存。
    */
-  private String cacheKeyOf(LlmRequest request) {
+  /**
+   * 缓存键：仅确定性请求（temperature 为 0 或未指定）参与缓存。
+   *
+   * <p><b>租户必须进键（2026-10-19 修复）</b>：此前键只由模型参数构成，两个租户的相同提问（脱敏后必然相同， 因为 PII 已被掩码）会命中同一条缓存——等于把 A
+   * 租户的模型响应返给 B 租户。即便模型只见掩码值、 响应理论上只含掩码内容，业务语义仍是租户私有的（保单结论、额度、理赔意见），跨租户共享即数据隔离失守。
+   * 这是多租户系统对缓存的基本要求，与「缓存是否默认开启」无关。
+   *
+   * <p>temperature &gt; 0 的输出本就随机，缓存会改变业务语义（同一请求两次判定不同才是预期）——故返回 null 表示不缓存。
+   */
+  private String cacheKeyOf(LlmRequest request, String tenantId) {
     if (request.temperature() != null && request.temperature() > 0) {
       return null;
     }
     try {
       Map<String, Object> canonical = new LinkedHashMap<>();
+      canonical.put("tenantId", tenantId);
       canonical.put("model", request.model());
       canonical.put("messages", request.messages());
       canonical.put("temperature", request.temperature());

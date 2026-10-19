@@ -238,6 +238,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `AI_GATEWAY_QUOTA_EXCEEDED` | 429 | 租户配额超限，窗口内请求数达上限（未发起 LLM 调用） |
 | `AI_GATEWAY_OUTPUT_INVALID` | 502 | 结构化输出不合规（非合法 JSON / 空响应 / 被 markdown 围栏包裹） |
 | `AI_GATEWAY_INJECTION_SUSPECTED` | 400 | 用户提示疑似注入（OWASP LLM01，默认关闭，启用方自担误伤） |
+| `AI_GATEWAY_PROVIDER_RESPONSE_INVALID` | 502 | provider 响应不可用（无法解析 / 无 choices / 结构不符；限流、错误页、截断） |
 
 ### AI_HITL_
 

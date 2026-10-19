@@ -21,4 +21,12 @@ public final class AiGatewayErrorCodes {
 
   /** 提示注入嫌疑（400）：user 输入命中注入特征（OWASP LLM01）；默认关闭，启用方自担误伤。 */
   public static final String INJECTION_SUSPECTED = "AI_GATEWAY_INJECTION_SUSPECTED";
+
+  /**
+   * provider 响应不可用（502）：无法解析 / 结构不符 / choices 为空。
+   *
+   * <p>2026-10-19 新增：此前这类故障只抛裸 IllegalStateException，且 provider 返回空 choices 时会被 asText("") + finish
+   * 默认值伪装成「正常的空响应」——静默坏数据比显式故障更难排查。
+   */
+  public static final String PROVIDER_RESPONSE_INVALID = "AI_GATEWAY_PROVIDER_RESPONSE_INVALID";
 }

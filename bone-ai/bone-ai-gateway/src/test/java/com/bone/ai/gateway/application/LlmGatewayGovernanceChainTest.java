@@ -99,6 +99,37 @@ class LlmGatewayGovernanceChainTest {
   }
 
   @Test
+  void cache_key_includes_tenant_to_prevent_cross_tenant_leak() {
+    // 数据隔离：脱敏后两个租户的提问必然相同，缓存键必须带租户，否则 A 的响应会返给 B
+    LlmResponseCache cache = new InMemoryLlmResponseCache(10, 60_000);
+    when(client.chat(any())).thenReturn(new LlmResponse("v", "m", "stop", new LlmUsage(1, 1, 2)));
+    LlmGatewayApplicationService svc =
+        service(new LlmGatewayPolicies(null, null, cache, null, null));
+
+    when(tenantProvider.currentTenantId()).thenReturn("1");
+    svc.invoke(request(0));
+    when(tenantProvider.currentTenantId()).thenReturn("2");
+    svc.invoke(request(0));
+
+    // 不同租户不得共享缓存条目 → 各自真实调用一次
+    verify(client, times(2)).chat(any());
+  }
+
+  @Test
+  void same_tenant_same_request_still_hits_cache() {
+    LlmResponseCache cache = new InMemoryLlmResponseCache(10, 60_000);
+    when(tenantProvider.currentTenantId()).thenReturn("1");
+    when(client.chat(any())).thenReturn(new LlmResponse("v", "m", "stop", new LlmUsage(1, 1, 2)));
+    LlmGatewayApplicationService svc =
+        service(new LlmGatewayPolicies(null, null, cache, null, null));
+
+    svc.invoke(request(0));
+    svc.invoke(request(0));
+
+    verify(client, times(1)).chat(any());
+  }
+
+  @Test
   void output_validation_failure_is_recorded_and_thrown() {
     StructuredOutputValidator validator = mock(StructuredOutputValidator.class);
     org.mockito.Mockito.doThrow(new BizException(502, "bad json", "AI_GATEWAY_OUTPUT_INVALID"))
