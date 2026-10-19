@@ -74,8 +74,18 @@ export interface UseOverlayBundle {
    * 才是一份可复用的工作台面。
    */
   setViewFilters: (filters: ViewFilter[]) => void;
-  /** 视图排序（sortField 缺省= 不排序；sortDesc 仅在有 sortField 时有意义） */
+  /**
+   * 排序（sortField 缺省= 不排序；sortDesc 仅在有 sortField 时有意义）。
+   */
   setViewSort: (sortField?: string, sortDesc?: boolean) => void;
+  /**
+   * 筛选+排序**一次性**落库（推荐入口）。
+   *
+   * <p>为什么不能分别调用 setViewFilters/setViewSort：每次写都基于 {@link bundleRef.current}
+   * 读-改-写，两次连写在同一事件里第二次可能读到旧 bundle ⇒ **后写覆盖先写，filters 被吃掉**。
+   * 合并为一次 patch 即可保证原子性。
+   */
+  setViewQuery?: (q: { filters: ViewFilter[]; sortField?: string; sortDesc?: boolean }) => void;
   /** 把被遮蔽的契约列全部恢复显示（自伤遮蔽的一键自救） */
   unhideShadowed: () => void;
   /** 恢复生效视图为默认投影（保留视图本身与其他视图） */
@@ -232,6 +242,15 @@ export function useOverlayBundle(
     }, [patchActive]),
     setViewSort: useCallback((sortField?: string, sortDesc?: boolean) => {
       patchActive((v) => ({ ...v, sortField, sortDesc: sortField ? !!sortDesc : undefined }));
+    }, [patchActive]),
+    setViewQuery: useCallback((q: { filters: ViewFilter[]; sortField?: string; sortDesc?: boolean }) => {
+      patchActive((v) => ({
+        ...v,
+        // 空数组归一为 undefined：避免"视图存了空筛选"与"从未设过筛选"两种状态混淆
+        filters: q.filters.length ? q.filters : undefined,
+        sortField: q.sortField,
+        sortDesc: q.sortField ? !!q.sortDesc : undefined,
+      }));
     }, [patchActive]),
     renameColumn: useCallback((code: string, name: string | null) => {
       patchActive((v) => ({

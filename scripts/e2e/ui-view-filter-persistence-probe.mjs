@@ -62,9 +62,18 @@ page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message.slice(0
 const shot = async (n) => { await page.screenshot({ path: `${SHOT_DIR}/ui_viewfilter_${n}.png` }).catch(() => {}); };
 const bodyText = () => page.locator('body').innerText();
 
-/** 当前生效筛选条数（页面把已应用筛选显示为可清除的 chips） */
-const appliedFilterCount = async () =>
-  page.evaluate(() => (document.body.innerText.match(/已按\s*[^\n]*筛选/g) || []).length);
+/**
+ * 当前生效筛选的判定。
+ * ⚠️ 不能用「已按…筛选」文案：那只是**状态机步骤下钻**的提示（L1568），普通条件筛选不渲染它。
+ * 也不能用 `/LI/.test(body)`：报案号等列数据天然含 LI ⇒ 假绿。
+ * 可靠口径 = **列表行数**：施加筛选必然把结果集变小；恢复则变大。
+ */
+const listRowCount = async () =>
+  page.locator('.ant-table-tbody tr.ant-table-row').count();
+
+/** 条件行是否仍在（筛选编辑态存在） */
+const condRowCount = async () =>
+  page.locator('.ant-space-compact:visible').filter({ has: page.locator('button', { hasText: /查\s*询/ }) }).count();
 
 /**
  * 直读服务端 overlay blob —— 本探针的核心判据。
@@ -145,6 +154,9 @@ const visibleModal = () => page.locator('.ant-modal-content:visible').first();
 const goDataPage = async () => {
   await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=data`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => /交付口径对照/.test(document.body.innerText), { timeout: 40000 }).catch(() => {});
+  // 必须等到工具栏真实可点：页面渲染完成 ≠ 元素可交互（布局/动画未完成时 click 会超时）
+  await page.locator('button', { hasText: '管理' }).first()
+    .waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(2500);
 };
 
@@ -184,8 +196,9 @@ try {
   } catch { loggedIn = false; }
   check('UI 登录成功', loggedIn, `url=${page.url()}`);
 
-  // 2. 进数据页 + 新建视图「我的待审」
+  // 2. 进数据页 + 记录基线行数（筛选效果判据的基准）+ 新建视图
   await goDataPage();
+  const baselineRows = await listRowCount();
   const VIEW_NAME = `我的待审${Date.now() % 100000}`;
   await openManageMenu();
   await page.locator('.ant-dropdown-menu-item', { hasText: '新建视图' }).first().click().catch(() => {});
@@ -234,12 +247,18 @@ try {
   await page.waitForTimeout(2200);
 
   const bodyAfterFilter = await bodyText();
-  const filterApplied = /LI/.test(bodyAfterFilter) || (await appliedFilterCount()) > 0;
-  check('筛选已施加到列表（页面出现已应用筛选痕迹）', filterApplied,
-    bodyAfterFilter.replace(/\s+/g, ' ').slice(0, 140));
+  const postRows = await listRowCount();
+  check('筛选已施加到列表（结果集行数发生变化）', postRows !== baselineRows,
+    `施加前=${baselineRows} 施加后=${postRows}`);
   await shot('2_filter_applied');
 
   // 4. 保存当前筛选/排序到视图 → 直读 blob 断言真的存进去了
+  // 前置判据：页面必须**真的有**已应用筛选。若筛选没生效，保存必然存成空——
+  // 这时 blob 里没有 filters 是正确行为，不能算功能失败（否则会把探针缺陷当产品缺陷）。
+  const preRows = await listRowCount();
+  check('保存前置：筛选仍处于生效状态（行数与施加后一致）', preRows === postRows,
+    `施加后=${postRows} 保存前=${preRows}`);
+
   await openManageMenu();
   const saveItem = page.locator('.ant-dropdown-menu-item', { hasText: '把当前筛选/排序保存到本视图' });
   const saveExists = (await saveItem.count()) > 0;
@@ -265,9 +284,13 @@ try {
   const otherName = names.find((n) => !n.includes(VIEW_NAME.slice(0, 5)));
   if (otherName) {
     await clickView(otherName);
-    const bodyOther = await bodyText();
+    // ⚠️ 不能用「行数不同」判独立性：两个视图的行数可能恰好相同（都为空集/同一批数据），
+    // 那时 != 不成立但功能其实正常。精确判据 = blob 里 filters 只属于目标视图。
+    const blobOther = await readOverlay(TOKEN);
+    const otherView = blobOther?.views?.find((v) => (v.name || '') === otherName);
     check('切到其他视图后筛选不再生效（视图各自独立）',
-      (await appliedFilterCount()) === 0, bodyOther.replace(/\s+/g, ' ').slice(0, 140));
+      !Array.isArray(otherView?.filters) || otherView.filters.length === 0,
+      `其他视图=${otherName} 其filters=${JSON.stringify(otherView?.filters)}`);
     await shot('3_other_view');
   } else {
     check('存在可切换的其他视图（独立性判据的前提）', false, `views=${JSON.stringify(names)}`);
@@ -276,23 +299,26 @@ try {
   // 6. 切回目标视图 → 断言筛选被恢复（核心判据）
   const clickedBack = await clickView(VIEW_NAME.slice(0, 5));
   check('切回目标视图（切换器可命中）', clickedBack, '');
-  const bodyBack = await bodyText();
-  check('切回目标视图后筛选被恢复（页面层生效）',
-    (await appliedFilterCount()) > 0,
-    bodyBack.replace(/\s+/g, ' ').slice(0, 140));
+  const backRows = await listRowCount();
+  check('切回目标视图后筛选被恢复（行数回到筛选后口径）', backRows === postRows,
+    `切回后行数=${backRows} 应= 筛选后行数=${postRows}`);
   await shot('4_back_to_view');
 
   // 7. 刷新后仍恢复（证明落 blob，不是内存态）
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => /交付口径对照/.test(document.body.innerText), { timeout: 40000 }).catch(() => {});
   await page.waitForTimeout(3000);
-  const afterReload = await bodyText();
+  const afterReloadRows = await listRowCount();
   const segAfter = await viewNames();
   check('刷新后视图仍在（blob 已持久化）',
     segAfter.some((t) => t.includes(VIEW_NAME.slice(0, 5))), `views=${JSON.stringify(segAfter)}`);
+  check('刷新后筛选仍生效（行数与保存时一致，证明落 blob）', afterReloadRows === postRows,
+    `刷新后行数=${afterReloadRows} 应= ${postRows}`);
+  const blob2 = await readOverlay(TOKEN);
+  const view2 = blob2?.views?.find((v) => (v.name || '').includes(VIEW_NAME.slice(0, 5)));
   check('刷新后该视图的 filters 仍在 blob 中',
-    (await appliedFilterCount()) > 0,
-    afterReload.replace(/\s+/g, ' ').slice(0, 140));
+    Array.isArray(view2?.filters) && view2.filters.length > 0,
+    `filters=${JSON.stringify(view2?.filters)}`);
 
   // 8. 无 console / page 异常
   check('全流程无 console / page 异常', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));

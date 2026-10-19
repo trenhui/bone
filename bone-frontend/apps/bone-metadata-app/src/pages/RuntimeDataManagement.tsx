@@ -437,9 +437,18 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 不该被回滚覆盖——否则刚点一下筛选就跳回去。
    */
   const activeViewId = overlay.activeView?.id;
+  /** 首次挂载跳过视图回灌（ref 而非 state：渲染期同步的旗标，不引额外渲染） */
+  const firstViewSyncRef = useRef(false);
   useEffect(() => {
     const v = overlay.activeView;
     if (!v) return;
+    // ① 跳过首次挂载：首屏的用户筛选不该被"默认视图（无 filters）"清空——
+    //    实测症状：新建视图后施加筛选，行数变 0 但 appliedConditions 被抹掉，保存存成空。
+    //    首次挂载时页面本就是干净口径，无需回灌。
+    if (!firstViewSyncRef.current) {
+      firstViewSyncRef.current = true;
+      return;
+    }
     setAppliedConditions(
       (v.filters ?? []).map((f) => ({ field: f.field, op: f.op, value: f.value })),
     );
@@ -453,8 +462,14 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 只写筛选/排序，不碰列显隐/密度（那些由列设置直接编辑生效）。
    */
   const saveCurrentFilterToView = useCallback(() => {
-    overlay.setViewFilters(appliedConditions);
-    overlay.setViewSort(sortField, sortDesc);
+    // 必须走**一次性**写口：分别调 setViewFilters + setViewSort 是两次读-改-写，
+    // 第二次可能基于旧 bundle ⇒ 后写覆盖先写，filters 静默丢失（实测踩过）。
+    if (overlay.setViewQuery) {
+      overlay.setViewQuery({ filters: appliedConditions, sortField, sortDesc });
+    } else {
+      overlay.setViewFilters(appliedConditions);
+      overlay.setViewSort(sortField, sortDesc);
+    }
   }, [overlay, appliedConditions, sortField, sortDesc]);
 
   /**
