@@ -18,7 +18,7 @@ import {
 } from '@ant-design/icons';
 import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
-import { CONTROL_KINDS, KIND_GROUPS, KIND_MAP, SECTION_KINDS, SECTION_LAYOUTS, DISPLAY_MODES } from './constants';
+import { CONTROL_KIND_OPTIONS, DISPLAY_MODE_OPTIONS, KIND_MAP, SECTION_KIND_OPTIONS, SECTION_LAYOUT_OPTIONS } from './constants';
 import {
   addControl, addSection, batchDuplicateControls, batchHideControls, batchRemoveControls,
   duplicateControl, moveControl, moveControlAcross, moveSection,
@@ -104,7 +104,7 @@ function ViewSettings({ schema, onChange, view, fields }: {
               size="small" mode="multiple" style={{ width: 260 }}
               value={modes}
               onChange={(v) => onChange({ ...schema, displayModes: v as string[] })}
-              options={DISPLAY_MODES.map((m) => ({ value: m.value, label: m.label }))}
+              options={DISPLAY_MODE_OPTIONS}
             />
             <Text type="secondary" style={{ fontSize: 11, marginLeft: 8 }}>
               按 create/edit/view 渲染同一 schema（config/preview 是建模态，不进运行时）
@@ -159,10 +159,17 @@ function ControlInspector({
     onPatch({ props: next });
   };
   return (
-    <div style={{
-      background: '#fafbfd', border: '1px solid #f0f0f0', borderRadius: 8,
-      padding: 10, marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
-    }}>
+    <div
+    // 检视器根节点锚点（与控件行 data-tour="control-row" 同口径）：
+    // 该面板此前只有内联样式、无任何稳定选择器，导致 e2e 探针只能用
+    // 「扫全文找『显示名覆盖』文字」这种脆弱办法定位（实测 placeholder 是动态的
+    // 字段显示名，无法按属性定位）。补锚点让探针与引导可精确定位。
+      data-tour="control-inspector"
+      style={{
+        background: '#fafbfd', border: '1px solid #f0f0f0', borderRadius: 8,
+        padding: 10, marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+      }}
+    >
       <div>
         <Text type="secondary" style={{ fontSize: 11 }}>显示名覆盖</Text>
         <Input
@@ -453,7 +460,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                 <Select
                   size="small" style={{ width: 104 }} value={sec.kind ?? 'form'}
                   onChange={(v) => onChange(updateSection(schema, view, si, { kind: v }))}
-                  options={SECTION_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                  options={SECTION_KIND_OPTIONS}
                   onClick={(e) => e.stopPropagation()}
                 />
               </Tooltip>
@@ -461,7 +468,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                 <Select
                   size="small" style={{ width: 96 }} value={sec.layout ?? 'single'}
                   onChange={(v) => onChange(updateSection(schema, view, si, { layout: v }))}
-                  options={SECTION_LAYOUTS.map((l) => ({ value: l.value, label: l.label }))}
+                  options={SECTION_LAYOUT_OPTIONS}
                   onClick={(e) => e.stopPropagation()}
                 />
               </Tooltip>
@@ -567,11 +574,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                       <Select
                         size="small" style={{ width: 118 }} value={c.controlKind}
                         onChange={(v) => onChange(updateControl(schema, view, si, ci, { controlKind: v as ControlKind }))}
-                        options={KIND_GROUPS.map((g) => ({
-                          label: g,
-                          options: CONTROL_KINDS.filter((k) => k.group === g)
-                            .map((k) => ({ value: k.value, label: k.label })),
-                        }))}
+                        options={CONTROL_KIND_OPTIONS}
                         onClick={(e) => e.stopPropagation()}
                       />
                       {c.labelOverride && <Tag color="blue" style={{ fontSize: 11 }}>{c.labelOverride}</Tag>}

@@ -29,6 +29,17 @@ import { defaultOverlay, projectRuntimeColumns } from '../../utils/columnProject
 
 const { Text } = Typography;
 
+/**
+ * 固定列方向的 Segmented options（每个列表列一个 ⇒ 提升为模块单例，P1-5）。
+ * 同constants.ts「下拉 options 单例」纪律：antd Segmented/Select 对 options
+ * 做内部 flatten，引用一变即失效；写在 JSX 里等于「列数 × 每帧」重建。
+ */
+const COLUMN_PIN_OPTIONS = [
+  { value: 'none', label: '不固定' },
+  { value: 'left', label: '钉左' },
+  { value: 'right', label: '钉右' },
+];
+
 /** tabs.value 可用的上下文变量（协议 §11.1-3：统一 $me/$myteam/$all，禁方言） */
 const DOLLAR_VARS = [
   { value: '$me', label: '$me · 我提交的' },
@@ -179,11 +190,7 @@ export default function ListPanel({ schema, onChange, fields, rowPolicyCodes = [
             <Segmented
               size="small" value={c.pinned ?? 'none'}
               onChange={(v) => onChange(updateColumn(schema, i, { pinned: v === 'none' ? undefined : (v as 'left' | 'right') }))}
-              options={[
-                { value: 'none', label: '不固定' },
-                { value: 'left', label: '钉左' },
-                { value: 'right', label: '钉右' },
-              ]}
+              options={COLUMN_PIN_OPTIONS}
             />
           </Tooltip>
           <Tooltip title="显示">

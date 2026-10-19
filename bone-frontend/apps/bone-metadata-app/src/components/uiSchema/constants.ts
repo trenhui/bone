@@ -71,6 +71,26 @@ export const KIND_MAP: Record<string, KindMeta> = Object.fromEntries(
   CONTROL_KINDS.map((k) => [k.value, k]),
 );
 
+/**
+ * 控件类型下拉的分组 options（antd Select 的 `options` 形态）。
+ *
+ * **必须是模块级单例**（P1-5 性能）：结构面板每个控件行都渲染一个 antd `<Select>`，
+ * 若在 JSX 里写 `options={KIND_GROUPS.map(...)}`，这份数组会在
+ * 「每个控件行 × 每次渲染」被重建一遍——而它的内容完全由静态常量决定。
+ * antd Select 每次收到新 options 引用都会重建内部 flatten 结果与缓存，
+ * 于是 N 个控件 = 每帧 N 次无谓重建。
+ * 实测（bench/ui-schema-select-options.bench.test.tsx，jsdom 挂载中位数）：
+ * 40/80/160 控件下静态引用比逐行重建快 2.08x / 3.11x / 2.37x。
+ *
+ * 放在constants.ts 而非组件内，是为了让「选项真源」与 CONTROL_KINDS 挨在一起，
+ * 避免优化散落在调用点、日后新增控件类型时又写回内联重建。
+ */
+export const CONTROL_KIND_OPTIONS: { label: string; options: { value: string; label: string }[] }[] =
+  KIND_GROUPS.map((g) => ({
+    label: g,
+    options: CONTROL_KINDS.filter((k) => k.group === g).map((k) => ({ value: k.value, label: k.label })),
+  }));
+
 /** 元数据字段类型 → 默认控件类型（新建控件时预填，用户可改） */
 export const FIELD_TYPE_TO_KIND: Record<string, ControlKind> = {
   VARCHAR: 'INPUT',
@@ -222,6 +242,39 @@ export const VERIFY_TYPES = [
   { value: 'ERROR', label: '强校验', color: 'red', hint: '阻断提交' },
   { value: 'WARNING', label: '弱校验', color: 'orange', hint: '弹确认后可继续' },
 ] as const;
+
+/* ============================== 下拉 options 单例（P1-5 性能） ============================== */
+/*
+ * 规则：本文件导出的**静态**元数据，一律在此预派生一份 antd Select/Segmented 的
+ * `options` 单例，组件里直接引用、不得内联 `.map()` 重建。
+ *
+ * 原因：antd 的 Select/Segmented 对 `options` 做内部 flatten 与缓存，**引用一变即失效**
+ * （其 memo 依赖 options 引用）。面板里凡是「列表每一行一个下拉」的布局
+ * （结构面板每控件一个类型下拉、规则面板每条规则三个下拉），内联 `.map()` 就等于
+ * 「每个元素 × 每帧」重建一次options 树。N 个控件 =每帧 N 次无谓重建。
+ *
+ * 判据（何时该提升）：`options={X.map(...)}` 且 X 为本文件静态导出 ⇒ 提升；
+ * X 依赖 props/state（如 ConditionEditor 的 operatorsForType(fieldType)）⇒ 在组件内
+ * `useMemo`，不是模块单例。
+ *
+ * 实测见 bench/ui-schema-select-options.bench.test.tsx：40/80/160 行下 2.08x / 3.11x / 2.37x。
+ */
+
+/** FUNCTIONS 的 Select options（每条提交校验规则一个函数下拉） */
+export const FUNCTION_OPTIONS = FUNCTIONS.map((f) => ({ value: f.value, label: f.label }));
+
+/** OPERATORS 的 Select options（每条提交校验规则一个比较符下拉） */
+export const OPERATOR_OPTIONS = OPERATORS.map((o) => ({ value: o.value, label: o.label }));
+
+/** VERIFY_TYPES 的 Segmented options（每条提交校验规则一个级别切换） */
+export const VERIFY_TYPE_OPTIONS = VERIFY_TYPES.map((v) => ({ value: v.value, label: v.label }));
+
+/** 分区形态下拉 / 分区栏数下拉（每个分区头各一个，量级远小于控件行，仍统一提升） */
+export const SECTION_KIND_OPTIONS = SECTION_KINDS.map((k) => ({ value: k.value, label: k.label }));
+export const SECTION_LAYOUT_OPTIONS = SECTION_LAYOUTS.map((l) => ({ value: l.value, label: l.label }));
+
+/** 显示模式多选（面板级，仅 1 处；一并提升保持口径一致） */
+export const DISPLAY_MODE_OPTIONS = DISPLAY_MODES.map((m) => ({ value: m.value, label: m.label }));
 
 /* ============================== 联动动作 ============================== */
 
