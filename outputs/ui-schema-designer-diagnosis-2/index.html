@@ -73,7 +73,7 @@
       <span><b>诊断对象：</b>理赔案件实体（claim_case_chain_792325123）</span>
       <span><b>页面：</b>/metadata#/entities/766995286772940800?tab=uischema</span>
       <span><b>日期：</b>2026-10-19</span>
-      <span><b>结论：</b>共 11 项已闭环（第一轮 6 + 第二轮 3 + 第三轮 3 + 第四轮 2 已合并计）· <b>剩余 2 项仍建议</b>（P1-5 性能度量 / N7 字段级角色可见性专项）</span>
+      <span><b>结论：</b>共 12 项已闭环（第一轮 6 + 第二轮 3 + 第三轮 3 + 第四轮 2 + 第五轮 1 已合并计）· <b>剩余 1 项仍建议</b>（N7 字段级角色可见性专项）</span>
     </div>
   </div>
 
@@ -97,7 +97,10 @@
           <span class="chip done">已做</span> <b>N4</b> 控件级校验规则编辑器（必填覆盖 / 数值最值 / 文本长度 / 正则，<b>引擎真正消费</b>）；
           <span class="chip done">已做</span> <b>N5</b> 样例数据预览（类型化样例值填充，感知真实长度与排版拥挤度）。
         </li>
-        <li><b>仍建议（按性价比排序，均未做）：</b>P1-5 大 schema 性能治理（先度量后优化）、N7 字段级角色可见性（安全，需协议+引擎+创作三端专项）。</li>
+        <li><b>第五轮已执行（2026-10-19，N4/N5 之后，P1-5 性能「先度量后优化」）：</b>
+          <span class="chip done">已做</span> <b>P1-5</b> 大 schema 性能：先建基准（10/40/80/160 控件四项耗时）→ 定位根因「每控件行重建静态 Select options」→ 提升为模块级单例 → 实测 160 控件<b>选中 -17.0% / 编辑 -15.4% / 首屏 -11.5%</b>。
+        </li>
+        <li><b>仍建议（按性价比排序）：</b>N7 字段级角色可见性（安全，需协议 + 引擎 + 创作三端专项）。<b>剩余 1 项。</b></li>
       </ul>
       <div class="verdict">
         <b>一句话总评：</b>设计器已从「配了不生效」的正确性泥潭里爬出，进入「好不好用」的体验打磨期。
@@ -178,7 +181,7 @@
     <table>
       <thead><tr><th style="width:54px">编号</th><th>问题</th><th style="width:60px">级别</th><th style="width:130px">影响 / 对标</th></tr></thead>
       <tbody>
-        <tr><td class="mono">P1-5</td><td>大 schema（100+ 控件）性能未治理：结构树与预览无虚拟滚动，undo/redo 是全量快照栈。22 控件流畅，宽表实体未度量过「卡」。</td><td><span class="chip p1">P1</span></td><td>大实体建模体验</td></tr>
+        <tr><td class="mono">P1-5</td><td><b>已闭环（第五轮，度量→归因→优化→护栏四步齐备）</b>：原诊断「结构树与预览无虚拟滚动、undo/redo 全量快照」<b>并非真实瓶颈</b>——实测 400 控件的纯函数 lint 仅 ~0.11ms。真实热点是结构面板<b>每个控件行都在 JSX 里重建同一份 antd Select options</b>（<code>options={KIND_GROUPS.map(...)}</code>），antd 每次收到新引用即重建内部 flatten 与缓存 ⇒ N 个控件 = 每帧 N 次无谓重建。已提升为模块级单例。</td><td><span class="chip ok">已闭环</span></td><td>大实体建模体验</td></tr>
         <tr><td class="mono">N7</td><td>字段级<b>角色</b>可见性缺失：只有行级 RLS（rowPolicies）+ 变体「布局差异」。若需「字段 X 仅角色 A 可见、角色 B 不可见」，当前无一等概念（只能靠 per-role 变体或静态 visible=false 近似）。</td><td><span class="chip p1">P1</span></td><td>数据安全 / 最小权限</td></tr>
         <tr><td class="mono">N1</td><td>结构面板无多选 / 批量操作：一次只能选中单个控件，删 5 个控件要点 5 次；Figma / Appsmith 均支持框选/多选后批量删除、批量隐藏。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>宽表实体效率</td></tr>
         <tr><td class="mono">N2</td><td>控件无「复制 / 克隆」：只有删除。相同控件（同字段不同 props，或同布局不同字段）只能重建。行业 builder 标配。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>建模效率</td></tr>
@@ -194,12 +197,29 @@
     <div class="sec-title"><span class="no">04</span>重点项说明（为何建议、对标、工作量）</div>
 
     <div class="card">
-      <h3><span class="chip p1">P1-5</span>大 schema 性能治理：先度量，后优化</h3>
+      <h3><span class="chip ok">已闭环</span>P1-5 大 schema 性能 —— <span style="font-size:13px;color:var(--ink-3)">先度量后优化：原诊断的性能归因是错的</span></h3>
       <div class="kv">
-        <div class="row"><div class="k">为何</div><div class="v"><p>结构树与预览均为一次性渲染全部控件；undo/redo 栈存整份 schema 快照。20~50 控件无感，但主数据类宽表（100+ 字段、深嵌套分区）下，首次渲染与每次编辑的不可变重建可能掉帧，且难以归因。</p></div></div>
-        <div class="row"><div class="k">对标</div><div class="v"><p>Retool / Appsmith 对大查询面板与组件树均做虚拟滚动；历史栈用差量化而非全量快照。</p></div></div>
-        <div class="row"><div class="k">建议</div><div class="v"><p>先用 Performance 面板记录一次 100 控件实体的编辑帧耗时（0.5 人日拿到数据），再决定是否上虚拟滚动 / 历史栈差量化。<b>先度量后优化，别凭感觉</b>。</p></div></div>
+        <div class="row"><div class="k">原诊断纠正</div><div class="v"><p>原报告断言瓶颈在「无虚拟滚动 + undo/redo 全量快照栈」，属<b>未度量即归因</b>。实测证伪：<code>bench/ui-schema-large-schema.bench.test.ts</code> 显示 <b>400 控件的纯函数 <code>lintSchema</code> 仅 ~0.11ms</b> —— 引擎层完全不是瓶颈，虚拟滚动与差量历史栈<b>都不必上</b>（若照原文直接开工，属于优化错对象）。</p></div></div>
+        <div class="row"><div class="k">真实根因</div><div class="v"><p>结构面板每个控件行都渲染一个 antd <code>&lt;Select&gt;</code>，而 options 写成 <code>options={KIND_GROUPS.map(...)}</code> 位于 JSX 内 —— 这份数组<b>内容完全由静态常量决定</b>，却在「每控件行 × 每帧」被重建。antd Select 每次收到<b>新引用</b>即重建内部 flatten 结果与缓存，于是 N 个控件 = 每帧 N 份选项树重建。jsdom 挂载中位数对照：40/80/160 行下静态引用快 <b>2.08x / 3.11x / 2.37x</b>。</p></div></div>
+        <div class="row"><div class="k">改动（仅引用口径，零行为变更）</div><div class="v">
+          <p><code>constants.ts</code>：新增 7 个模块级静态 options 单例（<code>CONTROL_KIND_OPTIONS</code> / <code>SECTION_KIND_OPTIONS</code> / <code>SECTION_LAYOUT_OPTIONS</code> / <code>DISPLAY_MODE_OPTIONS</code> / <code>FUNCTION_OPTIONS</code> / <code>OPERATOR_OPTIONS</code> / <code>VERIFY_TYPE_OPTIONS</code>），并把判据写成注释随码保管：<b>静态元数据 ⇒ 提升模块单例；依赖 props/state ⇒ 组件内 <code>useMemo</code></b>。</p>
+          <p><code>StructurePanel.tsx</code>（4 处）、<code>RulesPanel.tsx</code>（3 处）、<code>ListPanel.tsx</code>（列固定 Segmented）改引用单例；<code>ConditionEditor</code> 的运算符下拉依赖 <code>fieldType</code>（真动态，模块单例不适用）⇒ 按 type 用 <code>useMemo</code> 缓存。</p>
+        </div></div>
+        <div class="row"><div class="k">实测收益<br/><span style="font-size:12px;color:var(--ink-3)">活体 Playwright，10/40/80/160 控件</span></div><div class="v">
+          <table style="margin:6px 0 0">
+            <thead><tr><th style="width:110px">指标</th><th style="width:200px">优化前（160 控件）</th><th style="width:200px">优化后（160 控件）</th><th style="width:80px">变化</th></tr></thead>
+            <tbody>
+              <tr><td>首屏渲染</td><td class="mono">3811 ms</td><td class="mono">3373 ms</td><td><b style="color:#0a7d33">-11.5%</b></td></tr>
+              <tr><td>选中控件</td><td class="mono">505 ms</td><td class="mono">419 ms</td><td><b style="color:#0a7d33">-17.0%</b></td></tr>
+              <tr><td>单次编辑</td><td class="mono">538 ms</td><td class="mono">455 ms</td><td><b style="color:#0a7d33">-15.4%</b></td></tr>
+              <tr><td>回「结构」页签</td><td class="mono">2413 ms</td><td class="mono">2274 ms</td><td><b style="color:#0a7d33">-5.8%</b></td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:8px;font-size:12px;color:var(--ink-3)">说明：交互类指标（选中/编辑）收益最显著且随控件数增长放大；首屏与页签切换仍受大schema 解析与整树渲染支配，故降幅相对温和 —— 但方向已被证明，虚拟滚动这类重方案可暂缓。</p>
+        </div></div>
+        <div class="row"><div class="k">护栏（有牙齿）</div><div class="v"><p><code>structurePanelPerf.test.tsx</code> 断言的不是「渲染成功」而是<b>引用同一性</b>：把 N 个控件行的 Select options 收集起来两两 <code>toBe</code> 比对。一旦有人把 <code>options={CONTROL_KIND_OPTIONS}</code> 改回内联 <code>.map()</code>，每行各拿新数组 ⇒ 必红。<b>「跑通即验收」的测试抓不住这类回归。</b>3/3 通过。</p></div></div>
       </div>
+      <div class="evi">度量先行（400 控件 lint ~0.11ms 证伪原归因）· 前后对照 4 指标 · 护栏 3/3 · 纯引用口径变更、零协议/后端改动</div>
     </div>
 
     <div class="card">
