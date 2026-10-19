@@ -10,9 +10,9 @@
  * - lintSchema：error 级问题禁止写入并在 Alert 列出（此前只 JSON.parse，
  *   粘一份 schemaVersion:2 或结构错乱的 schema 能直接落库，全靠底部小字兜底）。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Space, Tag, Typography } from 'antd';
-import { CheckOutlined, CopyOutlined, FormatPainterOutlined } from '@ant-design/icons';
+import { CheckOutlined, CopyOutlined, DownloadOutlined, FormatPainterOutlined, UploadOutlined } from '@ant-design/icons';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
 import { checkSchemaVersion } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -35,6 +35,33 @@ export default function JsonPanel({ schema, onApply, resetKey, fields }: Props):
   /** apply 被门禁拦下的问题清单（版本/协议 error） */
   const [gateIssues, setGateIssues] = useState<LintIssue[]>([]);
   const [minorWarn, setMinorWarn] = useState(false);
+
+  /** N3 文件导出/导入（配置即代码）：剪贴板复制之外，提供落盘备份 / 跨环境迁移 / 版本库归档。 */
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const exportFile = () => {
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${schema.entityCode ?? 'ui-schema'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+  const importFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setText(String(reader.result ?? ''));
+      setErr(null);
+      setGateIssues([]);
+      setMinorWarn(false);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   useEffect(() => {
     setText(JSON.stringify(schema, null, 2));
@@ -88,6 +115,9 @@ export default function JsonPanel({ schema, onApply, resetKey, fields }: Props):
         <Button size="small" icon={<CopyOutlined />} onClick={() => { void navigator.clipboard?.writeText(text); }}>
           复制
         </Button>
+        <Button size="small" icon={<DownloadOutlined />} onClick={exportFile}>导出文件</Button>
+        <Button size="small" icon={<UploadOutlined />} onClick={() => fileRef.current?.click()}>导入文件</Button>
+        <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={importFile} />
         <Button
           size="small" type="primary" icon={<CheckOutlined />}
           onClick={tryApply}

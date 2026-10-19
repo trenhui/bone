@@ -8,13 +8,13 @@
  * - 分区支持 kind/layout（v1.1：dashboard/timeline/compare/report/tasks + 左右分栏），
  *   采购审查「左 40% 风险面板 + 右 60% 原文」即 split-left-40。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Badge, Button, Empty, Input, Segmented, Select, Space, Switch, Tag, Tooltip, Typography,
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, DragOutlined,
-  EyeInvisibleOutlined, PlusOutlined, SettingOutlined,
+  EyeInvisibleOutlined, PlusOutlined, SearchOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
@@ -120,12 +120,12 @@ function ViewSettings({ schema, onChange, view, fields }: {
             />
             <Space size={16}>
               <Space size={4}>
-                <Switch size="small" checked={!!footer.aiBadge}
+                <Switch size="small" aria-label="AI 生成标识" checked={!!footer.aiBadge}
                   onChange={(v) => onChange(updateFooter(schema, { aiBadge: v || undefined }))} />
                 <Text style={{ fontSize: 12 }}>AI 生成标识</Text>
               </Space>
               <Space size={4}>
-                <Switch size="small" checked={!!footer.mockDataMark}
+                <Switch size="small" aria-label="模拟数据标注" checked={!!footer.mockDataMark}
                   onChange={(v) => onChange(updateFooter(schema, { mockDataMark: v || undefined }))} />
                 <Text style={{ fontSize: 12 }}>模拟数据标注</Text>
               </Space>
@@ -179,13 +179,13 @@ function ControlInspector({
       <Space size={12} style={{ gridColumn: '1 / -1' }}>
         <Space size={4}>
           <Switch
-            size="small" checked={control.visible === false}
+            size="small" aria-label="默认隐藏该控件" checked={control.visible === false}
             onChange={(v) => onPatch({ visible: v ? false : undefined })}
           />
           <Text style={{ fontSize: 12 }}>默认隐藏</Text>
         </Space>
         <Space size={4}>
-          <Switch size="small" checked={!!control.readonly} onChange={(v) => onPatch({ readonly: v || undefined })} />
+          <Switch size="small" aria-label="只读控件" checked={!!control.readonly} onChange={(v) => onPatch({ readonly: v || undefined })} />
           <Text style={{ fontSize: 12 }}>只读</Text>
         </Space>
         {field?.required && <Tag color="red" style={{ fontSize: 11 }}>元数据必填</Tag>}
@@ -197,6 +197,34 @@ function ControlInspector({
 export default function StructurePanel({ schema, onChange, fields, view, onViewChange, focus }: Props): React.ReactElement {
   const [sel, setSel] = useState<{ si: number; ci: number } | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [kindFilter, setKindFilter] = useState<string>('all');
+
+  /**
+   * P1-3 结构面板搜索 / 类型过滤（对标 Appsmith / 阿里宜搭在宽表实体里的控件定位）。
+   * 仅做展示层隐藏（display:none），不改动 schema 数组顺序与下标 —— 保证 moveControl /
+   * removeControl 的 si/ci 始终指向真实位置（过滤态下移动/删除仍精确）。
+   */
+  const active = query.trim() !== '' || kindFilter !== 'all';
+  const ql = query.trim().toLowerCase();
+  const matchControl = (c: Control): boolean => {
+    if (kindFilter !== 'all' && c.controlKind !== kindFilter) return false;
+    if (!ql) return true;
+    const f = fields.find((x) => x.code === c.fieldCode);
+    const name = (c.labelOverride || f?.displayName || c.fieldCode || '').toLowerCase();
+    const code = (c.fieldCode || '').toLowerCase();
+    return name.includes(ql) || code.includes(ql);
+  };
+  const usedKinds = useMemo(
+    () => [...new Set((viewOf(schema, view).sections ?? []).flatMap((sec) => (sec.controls ?? []).map((c) => c.controlKind)))],
+    [schema, view],
+  );
+  const matchCount = useMemo(
+    () => (viewOf(schema, view).sections ?? []).reduce((n, sec) => n + (sec.controls ?? []).filter(matchControl).length, 0),
+    // matchControl 依赖 ql/kindFilter/fields，显式列出避免过期闭包
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schema, view, ql, kindFilter, fields],
+  );
 
   /**
    * 拖拽强制收尾：dragend/drop 冒泡到 window 时无条件清高亮。
@@ -235,6 +263,21 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
         </Text>
       </Space>
 
+      {/* ---------- P1-3 搜索 / 类型过滤：宽表实体（100+ 字段）定位控件 ---------- */}
+      <Space style={{ marginBottom: 10, width: '100%' }} wrap>
+        <Input
+          size="small" allowClear placeholder="搜索控件（显示名 / 字段码）"
+          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          value={query} onChange={(e) => setQuery(e.target.value)}
+          style={{ width: 210 }}
+        />
+        <Select
+          size="small" style={{ width: 140 }} value={kindFilter} onChange={(v) => setKindFilter(v)}
+          options={[{ value: 'all', label: '全部类型' }, ...usedKinds.map((k) => ({ value: k ?? '', label: KIND_MAP[k ?? '']?.label ?? (k ?? '') }))]}
+        />
+        {active && <Text type="secondary" style={{ fontSize: 12 }}>匹配 {matchCount} 个控件</Text>}
+      </Space>
+
       {/* ---------- 视图设置：页头 / 合规条 / 显示模式（协议 v1.2 §13.2 + v1.1 §10.2-8） ---------- */}
       <ViewSettings schema={schema} onChange={onChange} view={view} fields={fields} />
 
@@ -258,6 +301,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               borderRadius: 10, marginBottom: 10, background: '#fff',
               boxShadow: isFocused(si) ? '0 0 0 3px rgba(22,119,255,.12)' : secOver ? '0 0 0 3px rgba(105,192,255,.18)' : '0 1px 2px rgba(16,24,40,.04)',
               transition: 'box-shadow .18s, border-color .18s',
+              display: active && !(sec.controls ?? []).some(matchControl) ? 'none' : undefined,
             }}
           >
             {/* 分区头 */}
@@ -309,15 +353,15 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               <Tag style={{ fontSize: 11 }}>{sec.controls?.length ?? 0} 控件</Tag>
               <Space size={2}>
                 <Tooltip title="上移">
-                  <Button size="small" type="text" icon={<ArrowUpOutlined />} disabled={si === 0}
+                  <Button size="small" type="text" aria-label="分区上移" icon={<ArrowUpOutlined />} disabled={si === 0}
                     onClick={() => onChange(moveSection(schema, view, si, si - 1))} />
                 </Tooltip>
                 <Tooltip title="下移">
-                  <Button size="small" type="text" icon={<ArrowDownOutlined />} disabled={si === sections.length - 1}
+                  <Button size="small" type="text" aria-label="分区下移" icon={<ArrowDownOutlined />} disabled={si === sections.length - 1}
                     onClick={() => onChange(moveSection(schema, view, si, si + 1))} />
                 </Tooltip>
-                <Tooltip title="删除分区">
-                  <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => onChange(removeSection(schema, view, si))} />
+                <Tooltip title={`删除分区「${sec.title || sec.id}」`}>
+                  <Button size="small" type="text" danger aria-label="删除分区" icon={<DeleteOutlined />} onClick={() => onChange(removeSection(schema, view, si))} />
                 </Tooltip>
               </Space>
             </div>
@@ -361,8 +405,16 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                         onChange(fs === ts ? moveControl(schema, view, fs, fc, tc) : moveControlAcross(schema, view, fs, fc, ts, tc));
                       }, (over) => setDragOver((cur) => (over ? `R${si}:${ci}` : cur === `R${si}:${ci}` ? null : cur)))}
                       onClick={() => setSel(selected ? null : { si, ci })}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        // 仅在行本身聚焦时响应方向键，避免与行内 Select/输入框的方向键冲突（WCAG 2.1.1 键盘可操作）
+                        if (e.target !== e.currentTarget) return;
+                        const last = (sec.controls?.length ?? 0) - 1;
+                        if (e.key === 'ArrowUp') { e.preventDefault(); if (ci > 0) onChange(moveControl(schema, view, si, ci, ci - 1)); }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); if (ci < last) onChange(moveControl(schema, view, si, ci, ci + 1)); }
+                      }}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
+                        display: active && !matchControl(c) ? 'none' : 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
                         border: `1px solid ${selected ? '#1677ff' : rowOver ? '#1677ff' : isFocused(si, ci) ? '#ffa940' : '#f0f0f0'}`,
                         borderRadius: 8, marginBottom: 5,
                         background: selected ? '#f0f7ff' : rowOver ? '#e6f4ff' : '#fff',
@@ -388,16 +440,28 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                       {c.readonly && <Tag style={{ fontSize: 11 }}>只读</Tag>}
                       {rowOver && <Text type="secondary" style={{ fontSize: 10 }}>松开落到此处</Text>}
                       <span style={{ flex: 1 }} />
+                      <Tooltip title="上移控件">
+                        <Button size="small" type="text" aria-label="控件上移" icon={<ArrowUpOutlined />} disabled={ci === 0}
+                          onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci - 1)); }} />
+                      </Tooltip>
+                      <Tooltip title="下移控件">
+                        <Button size="small" type="text" aria-label="控件下移" icon={<ArrowDownOutlined />} disabled={ci >= (sec.controls?.length ?? 0) - 1}
+                          onClick={(e) => { e.stopPropagation(); onChange(moveControl(schema, view, si, ci, ci + 1)); }} />
+                      </Tooltip>
                       <Tooltip title="控件属性">
                         <SettingOutlined
-                          style={{ color: selected ? '#1677ff' : '#bfbfbf' }}
+                          role="button" tabIndex={0} aria-label={`控件属性 ${c.fieldCode}`}
+                          style={{ color: selected ? '#1677ff' : '#bfbfbf', cursor: 'pointer' }}
                           onClick={(e) => { e.stopPropagation(); setSel(selected ? null : { si, ci }); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSel(selected ? null : { si, ci }); } }}
                         />
                       </Tooltip>
                       <Tooltip title="移出分区">
                         <DeleteOutlined
-                          style={{ color: '#ff7875' }}
+                          role="button" tabIndex={0} aria-label={`移出分区 ${c.fieldCode}`}
+                          style={{ color: '#ff7875', cursor: 'pointer' }}
                           onClick={(e) => { e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onChange(removeControl(schema, view, si, ci)); } }}
                         />
                       </Tooltip>
                     </div>
