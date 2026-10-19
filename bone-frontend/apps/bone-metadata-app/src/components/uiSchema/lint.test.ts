@@ -322,3 +322,82 @@ describe('lintSchema：N4 控件级校验 props 格式', () => {
   });
 });
 
+
+/**
+ * N7：字段级角色 / 档位可见性（props.roles / props.tier）。
+ *
+ * 为什么这组规则值得写死：这两个键**协议早已声明、白名单早已收录**，
+ * 但引擎此前零消费（配了不生效且无任何提示）。引擎接通后，最大的风险从
+ * 「不生效」变成了「**配法写错导致静默失效**」——其中最隐蔽的是空数组：
+ * 引擎口径 fail-open（`rolesVisible([])` = true = 人人可见），建模者却以为
+ * 「设了 = 谁都不能看」。故空数组必须是 error 而非 warning。
+ */
+describe('lintSchema：N7 字段级角色 / 档位可见性', () => {
+  const withProps = (p: Record<string, unknown>, si = 0, ci = 0) =>
+    updateControl(base(), 'form', si, ci, { props: p });
+  const run = (s: ReturnType<typeof base>) => lintSchema(s, known, enumFieldsOf(FIELDS));
+
+  it('合法非空角色数组 ⇒ 不报error（正向基线，防规则过度拦截）', () => {
+    expect(run(withProps({ roles: ['hr', 'legal'] })).filter((i) => i.level === 'error')).toEqual([]);
+  });
+
+  it('未声明 roles/tier ⇒ 不报（默认不限制是合法配置）', () => {
+    expect(at(run(base()), 'error', 'props.roles')).toBeUndefined();
+    expect(at(run(base()), 'error', 'props.tier')).toBeUndefined();
+  });
+
+  it('空数组 ⇒ error 且提示「等于不限制」（静默失效的假能力必须拦）', () => {
+    const issue = at(run(withProps({ roles: [] })), 'error', '空数组');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('等于「不限制」');
+    expect(issue?.message).toContain('visible:false');
+  });
+
+  it('props.tier 空数组同口径 ⇒ error', () => {
+    expect(at(run(withProps({ tier: [] })), 'error', '空数组')).toBeDefined();
+  });
+
+  it('非数组（字符串/数字/null）⇒ error 且说明期望类型', () => {
+    expect(at(run(withProps({ roles: 'hr' })), 'error', '必须是字符串数组')).toBeDefined();
+    expect(at(run(withProps({ roles: 123 })), 'error', '必须是字符串数组')).toBeDefined();
+    expect(at(run(withProps({ roles: null })), 'error', '必须是字符串数组')).toBeDefined();
+  });
+
+  it('数组含非字符串元素 ⇒ error（引擎会静默丢弃 ⇒ 看着配了其实失效）', () => {
+    const issue = at(run(withProps({ roles: ['hr', 42] })), 'error', '含非字符串元素');
+    expect(issue).toBeDefined();
+  });
+
+  it('数组含空字符串 ⇒ error（永远命中不了的角色码）', () => {
+    expect(at(run(withProps({ roles: ['hr', ''] })), 'error', '含空字符串')).toBeDefined();
+  });
+
+  it('首尾空格的角色码 ⇒ warning（比 error 轻：可能是有意的分隔习惯）', () => {
+    expect(at(run(withProps({ roles: [' hr'] })), 'warning', '首尾空格')).toBeDefined();
+  });
+
+  it('与 visible:false 并存 ⇒ warning（死配置：默认隐藏时 roles 不会生效）', () => {
+    const s = updateControl(base(), 'form', 0, 0, { visible: false, props: { roles: ['hr'] } });
+    const issue = at(run(s), 'warning', '死配置');
+    expect(issue).toBeDefined();
+  });
+
+  it('变体里的 roles 同样被扫到且 locate 带 vi（角色限制常写在变体里）', () => {
+    const s = base();
+    s.variants = [{
+      key: 'hr', label: 'HR 台', match: { roles: ['hr'] },
+      views: {
+        form: {
+          sections: [{
+            id: 'sec_hr', title: '薪酬',
+            controls: [{ fieldCode: 'amount', controlKind: 'MONEY', props: { roles: [] } }],
+          }],
+        },
+      },
+    }];
+    const issue = at(run(s), 'error', '空数组');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('变体「HR 台」');
+    expect(issue?.locate).toMatchObject({ tab: 'variants', vi: 0 });
+  });
+});

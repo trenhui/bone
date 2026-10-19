@@ -278,6 +278,12 @@ export interface FieldUiState {
   notice: string;
   noticeKey?: string;
   tier?: string[];
+  /**
+   * 控件级 `props.roles`（协议已声明）：可见性判定需要 ctx.roles，故必须随状态流转到
+   * `fieldVisible`（无法像 visible 那样预先折叠成布尔值）。由 `controlPropsBaseState` 注入，
+   * linkage 的七动作**不改写**它（角色约束是控件静态属性，不可被联动规则放宽）。
+   */
+  roleRequired?: string[];
 }
 
 export interface SubmitResult {
@@ -412,7 +418,7 @@ export function linkageState(
   const ensure = (f: string): FieldUiState =>
     st[f] || (st[f] = { visible: true, required: !!baseRequired[f], readonly: false, disabled: false, notice: '', noticeKey: '' });
 
-  // 字段基线态（如 tax_no 默认隐藏）：先于规则落地
+  // 字段基线态（如 tax_no 默认隐藏、props.roles 角色约束）：先于规则落地
   for (const [f, partial] of Object.entries(baseStates)) {
     Object.assign(ensure(f), partial);
   }
@@ -440,17 +446,117 @@ export function linkageState(
 /**
  * 字段可见性总判定（预览与运行时同源）：
  * - 控件/联动静态 visible=false ⇒ 隐藏；
- * - 联动 then.tier 声明后 ⇒ 仅 ctx.tier 命中才可见（不声明=不限制）。
+ * - 联动 then.tier 声明后 ⇒ 仅 ctx.tier 命中才可见（不声明=不限制）；
+ * - 控件 props.roles 声明后⇒ 仅 ctx.roles 命中才可见（不声明=不限制；ctx.roles 缺失=隐藏）。
  *
  * 曾踩坑：RulesPanel 早可配 tier 显隐，但两个渲染器都只读 visible ⇒ 「配了不生效」
- * 的假能力。所有渲染器判可见性必须走本函数，不得各写各的。
+ * 的假能力。**同类坑已发生两次**（联动 tier、控件 roles），故本函数是唯一判定入口，
+ * 所有渲染器判可见性必须走它，不得各写各的。
  */
 export function fieldVisible(st: FieldUiState | undefined, ctx: UiContext = {}): boolean {
   if (!st) return true;
   if (st.visible === false) return false;
   if (st.tier && st.tier.length && (!ctx.tier || !st.tier.includes(ctx.tier))) return false;
+  // 角色约束放在最后：即便联动把 visible 又置回 true，也不得越过角色门禁
+  // （角色是安全约束，联动规则不得放宽——与"必填不被联动取消"同取向）。
+  if (!rolesVisible(st.roleRequired, ctx)) return false;
   return true;
 }
+
+/* ======================= 字段级角色/档位可见性（协议 control.props） ======================= */
+
+/**
+ * 控件级 `props.roles` / `props.tier` 解析成 `linkageState` 的基线态（协议已声明、引擎此前零消费）。
+ *
+ * 背景（取证结论）：`bone-ui-schema.schema.json` 的 `control.props` 白名单里
+ * `roles`（四角色可见性）与 `tier`（订阅档）**早就有定义**，`PROP_WHITELIST` 也已收录，
+ * 但引擎从不对它们求值——典型的「配了不生效」假能力：模型里配了 `roles:['legal']`，
+ * 界面照样人人可见，且没有任何报错提示。本函数把这两个键接进既有`fieldVisible` 判定，
+ * 不新造旁路（两个渲染器统一经`baseStates` → `linkageState` → `fieldVisible`）。
+ *
+ * 口径（与 `resolveVariant` 的 `match.roles` 判定严格同口径，避免两处规则漂移）：
+ * - 未声明 / 空数组 ⇒ 不限制（fail-open，与 `resolveVariant` 一致：空集合不构成限制）；
+ * - 声明了非空角色且 `ctx.roles` 未命中 ⇒ 隐藏；
+ * - **`ctx.roles` 缺失时按"无角色"处理**（未命中 ⇒ 隐藏）：权限类判定的默认方向必须是
+ *   fail-closed，否则「配了 roles 却没登录态」会静默全量放开。
+ *   这与 `evalCond` 深度超限 fail-closed、`pattern` 非法 fail-closed 是同一安全取向。
+ *
+ * 注意本函数只负责「读」，渲染器仍必须走 `fieldVisible` 判可见——与该函数注释里的
+ * 「不得各写各的」纪律同源。
+ */
+export function controlPropsBaseState(c: Control): Partial<FieldUiState> | undefined {
+  // 同时 trim：创作侧 Select 的 tags 输入允许带空格，若不归一化，
+  // ' legal ' 将永远匹配不上 ctx.roles 里的 'legal'（配了等于没配）。
+  const roles = Array.isArray(c.props?.roles)
+    ? c.props.roles.filter((r): r is string => typeof r === 'string' && r.trim() !== '').map((r) => r.trim())
+    : [];
+  const tier = Array.isArray(c.props?.tier)
+    ? c.props.tier.filter((t): t is string => typeof t === 'string' && t.trim() !== '').map((t) => t.trim())
+    : [];
+  if (!roles.length && !tier.length) return undefined;
+  const st: Partial<FieldUiState> = {};
+  if (tier.length) st.tier = tier;
+  // roles 不写入 FieldUiState（无对应动作字段），而是直接折叠成 visible 基线；
+  // 但**仅在确实要隐藏时**才写，避免把默认可见的控件塞进 baseStates 造成无谓 diff。
+  if (roles.length) st.roleRequired = roles;
+  return st;
+}
+
+/** 角色可见性判定（`fieldVisible` 唯一实现；两个渲染器不得各写各的）。 */
+export function rolesVisible(roles: string[] | undefined, ctx: UiContext = {}): boolean {
+  if (!roles || !roles.length) return true;
+  const mine = ctx.roles ?? [];
+  return roles.some((r) => mine.includes(r));
+}
+
+/**
+ * 由视图分区构建 `linkageState` 的基线态（**预览与运行时唯一同源实现**）。
+ *
+ * 此前两个渲染器各写一份`baseStates`，且口径已经漂移：BoneDynamicForm 会把多条规则的
+ * readonly 做合并，SchemaPreview 直接整键覆盖 —— 同协议在预览与运行时表现不一致。
+ * 收敛到本函数后，两端强制同口径（对标联动 `tier` 假能力的教训：分头写就是分头错）。
+ *
+ * 合并语义：同一 fieldCode 出现在多个控件时，各动作取"更严格者"
+ * （visible: 任一false 即 false；readonly: 任一 true 即 true），
+ * roleRequired 取交集（更严的角色集）——安全类约束只能加严不能放宽。
+ */
+export function controlBaseStates(sections: Section[] = []): Record<string, Partial<FieldUiState>> {
+  const out: Record<string, Partial<FieldUiState>> = {};
+  for (const s of sections) {
+    for (const c of s.controls ?? []) {
+      if (!c.fieldCode) continue;
+      const prev = out[c.fieldCode] ?? {};
+      const propsSt = controlPropsBaseState(c);
+      const next: Partial<FieldUiState> = { ...prev };
+
+      // visible：只有 false 才产生约束。写 `c.visible !== undefined` 会让显式写了
+      // `visible: true` 的控件产出 `{visible:true}` —— 无约束力却仍要每轮参与 merge。
+      // 多个控件同fieldCode 时只要有一个 false 即 false（安全类约束取更严者）。
+      if (c.visible === false) next.visible = false;
+      if (c.readonly) next.readonly = true;
+
+      // props.roles / props.tier：交集合并
+      if (propsSt?.roleRequired) {
+        const prevRoles = prev.roleRequired;
+        next.roleRequired = prevRoles ? prevRoles.filter((r) => propsSt.roleRequired!.includes(r)) : propsSt.roleRequired;
+        // 交集为空 = 无任何角色可见 ⇒ 保持空数组，rolesVisible([]) 返回 true（不限制），
+        // 与 resolveVariant「空集合不构成限制」一致；若需要"人人不可见"请用 visible:false。
+      }
+      if (propsSt?.tier) next.tier = prev.tier ? prev.tier.filter((t) => propsSt.tier!.includes(t)) : propsSt.tier;
+
+      out[c.fieldCode] = next;
+    }
+  }
+  // 只保留**真正产生约束**的键，避免把上百个默认可见控件塞进 baseStates
+  // （联动每轮都要重算与 merge；实测无约束控件会产出等量的空对象条目）。
+  //
+  // 判据列举「有约束力」的键：hidden / readonly / 角色 / 档位。不能用
+  // `Object.keys(v).length > 0` 之类——进了这道 filter 的 v 必然非空，判据恒真、
+  // 过滤形同虚设（第一版就踩了这个坑）。
+  return Object.fromEntries(Object.entries(out).filter(([, v]) =>
+    v.visible === false || v.readonly === true || !!v.roleRequired?.length || !!v.tier?.length));
+}
+
 
 /* ============================== submit ============================== */
 

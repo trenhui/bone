@@ -382,7 +382,8 @@
             "span": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 24
+              "maximum": 24,
+              "description": "栅格占位（P0-1 协议一等能力）：以 antd24 栅格为口径，缺省 =24（整行）。同一 section 内各控件 span 之和超过 24 时按行折叠换行。"
             },
             "currencyField": {
               "type": "string"
@@ -475,18 +476,18 @@
                 "hash",
                 "last4"
               ],
-              "description": "PII 脱敏显示（理赔假名化 ID）"
+              "description": "PII 脱敏显示标注（hash/last4）。⚠ 当前仅作建模标注：运行时数据仍返回明文、服务端尚无消费方，不可当作安全控制。"
             },
             "tier": {
               "type": "array",
-              "description": "订阅档可见性 free/pro（投研跟踪提醒付费）",
+              "description": "字段级订阅档可见性：仅 ctx.tier 命中才可见；未声明或空数组 = 不限制。ctx.tier 缺失按 fail-closed 隐藏。前端由 fieldVisible 统一裁决。",
               "items": {
                 "type": "string"
               }
             },
             "roles": {
               "type": "array",
-              "description": "四角色可见性（法务/采购/管理员/IT；销售/经理）",
+              "description": "字段级角色可见性白名单：仅ctx.roles 命中其中任一 role code 的用户可见该控件（OR 语义）；未声明或空数组 = 不限制（所有人可见）；ctx.roles 缺失按 fail-closed 隐藏。与行级权限 rowPolicies 独立、可叠加。前端由 fieldVisible 统一裁决（预览/运行时同源）。",
               "items": {
                 "type": "string"
               }

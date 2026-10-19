@@ -73,7 +73,7 @@
       <span><b>诊断对象：</b>理赔案件实体（claim_case_chain_792325123）</span>
       <span><b>页面：</b>/metadata#/entities/766995286772940800?tab=uischema</span>
       <span><b>日期：</b>2026-10-19</span>
-      <span><b>结论：</b>共 12 项已闭环（第一轮 6 + 第二轮 3 + 第三轮 3 + 第四轮 2 + 第五轮 1 已合并计）· <b>剩余 1 项仍建议</b>（N7 字段级角色可见性专项）</span>
+      <span><b>结论：</b>共 13 项已闭环（第一轮 6 + 第二轮 3 + 第三轮 3 + 第四轮 2 + 第五轮 1 + 第六轮 1）· <b>问题清单已全部闭环（剩余 0 项）</b></span>
     </div>
   </div>
 
@@ -100,16 +100,34 @@
         <li><b>第五轮已执行（2026-10-19，N4/N5 之后，P1-5 性能「先度量后优化」）：</b>
           <span class="chip done">已做</span> <b>P1-5</b> 大 schema 性能：先建基准（10/40/80/160 控件四项耗时）→ 定位根因「每控件行重建静态 Select options」→ 提升为模块级单例 → 实测 160 控件<b>选中 -17.0% / 编辑 -15.4% / 首屏 -11.5%</b>。
         </li>
-        <li><b>仍建议（按性价比排序）：</b>N7 字段级角色可见性（安全，需协议 + 引擎 + 创作三端专项）。<b>剩余 1 项。</b></li>
+        <li><b>第六轮已执行（2026-10-19，N7 字段级角色可见性 —— 全链路闭环，含一处数据泄露修复）：</b>
+          <span class="chip done">已做</span> <b>N7</b> 字段级角色可见性：<code>control.props.roles</code> <b>协议早已声明、白名单早已收录，却零消费</b>（典型「配了不生效」）。本轮把引擎、双渲染器、<b>详情抽屉</b>、创作 UI、lint 五层接通，并修掉一处<b>数据泄露</b>。
+        </li>
+        <li><b>剩余：0 项</b>——本轮结束后问题清单全部闭环。</li>
       </ul>
       <div class="verdict">
-        <b>一句话总评：</b>设计器已从「配了不生效」的正确性泥潭里爬出，进入「好不好用」的体验打磨期。
+        <b>一句话总评：</b>设计器已从「配了不生效」的正确性泥潭里爬出，进入「好不好用」的体验打磨期；
+        本轮（第六轮）把这个清单<b>彻底清零</b>，并且<b>顺手挖出并修掉一处真实的数据泄露</b>。
+        <br/><br/>
         本轮改动把「宽表实体找不到控件」「控件只能拖不能键控」「schema 只能剪贴板不能落盘」
-        「校验规则只能手写 JSON」「预览全是空白看不出真实排版」五道日常摩擦直接抹平。
-        <b>关键在于 N4 没有停在「做个编辑器」</b>：报告原以为 props 已含 <code>pattern</code>，
-        实测协议真源与 PROP_WHITELIST <b>都没有</b>，且引擎/运行时<b>完全不消费</b>任何控件级约束——
-        若只补 UI，就会造出第四个「配了不生效」。故本轮补齐协议 + 引擎 + 双渲染器接线 + lint 五层，
-        并用变异验证（10/10 变异全部被捕获）证明新测试确有判别力，而非凑绿。
+        「校验规则只能手写 JSON」「预览全是空白看不出真实排版」「大 schema 编辑卡顿」
+        「薪酬字段按角色隐藏」六道问题直接抹平。
+        <br/><br/>
+        <b>最关键的收获不是 N7 本身，而是 N7 暴露出的取证纪律价值</b>：两次「先查证再动手」都直接改变了结论——
+        <b>其一</b>，报告原以为「缺少字段级 ACL、需新增协议字段」，实测 <code>props.roles</code>/<code>props.tier</code>
+        <b>协议早已声明、白名单早已收录</b>，只是引擎零消费。若照原文新增 <code>control.roles</code>，
+        就会造出<b>两个语义重叠的字段</b>（旧的没人消费、新的照旧不生效），比不做更糟。
+        <b>其二</b>，P1-5 原诊断「瓶颈=无虚拟滚动+全量快照栈」被实测证伪（400 控件 lint 仅 0.11ms），
+        照原文开工就是<b>优化错对象</b>。
+        <br/><br/>
+        <b>另一件值得记住的事</b>：N7 的引擎层接线不是我做的，而是并行会话已在工作树上完成；
+        我接手时发现 <code>RuntimeDetailView</code> 仍是<b>唯一绕过 <code>fieldVisible</code> 的渲染面</b>——
+        结果是「表单里按角色隐藏了、详情抽屉却把值显示给所有人」。<b>界面看起来做了权限，数据仍在泄露</b>，
+        这是渲染型权限最危险的失效形态，也是「同源纪律」最容易被绕过的地方：
+        <b>判定逻辑只有一份不够，每个渲染面都必须真的走它</b>。
+        <br/><br/>
+        诚实边界：前端隐藏是<b>体验层不是安全边界</b>。真要防「看到就截获」，仍需服务端做列级裁剪
+        （<code>RowPolicySpec</code> 目前只做行级 WHERE），本报告<b>不谎称已做到数据层隔离</b>。
       </div>
     </div>
   </section>
@@ -182,7 +200,7 @@
       <thead><tr><th style="width:54px">编号</th><th>问题</th><th style="width:60px">级别</th><th style="width:130px">影响 / 对标</th></tr></thead>
       <tbody>
         <tr><td class="mono">P1-5</td><td><b>已闭环（第五轮，度量→归因→优化→护栏四步齐备）</b>：原诊断「结构树与预览无虚拟滚动、undo/redo 全量快照」<b>并非真实瓶颈</b>——实测 400 控件的纯函数 lint 仅 ~0.11ms。真实热点是结构面板<b>每个控件行都在 JSX 里重建同一份 antd Select options</b>（<code>options={KIND_GROUPS.map(...)}</code>），antd 每次收到新引用即重建内部 flatten 与缓存 ⇒ N 个控件 = 每帧 N 次无谓重建。已提升为模块级单例。</td><td><span class="chip ok">已闭环</span></td><td>大实体建模体验</td></tr>
-        <tr><td class="mono">N7</td><td>字段级<b>角色</b>可见性缺失：只有行级 RLS（rowPolicies）+ 变体「布局差异」。若需「字段 X 仅角色 A 可见、角色 B 不可见」，当前无一等概念（只能靠 per-role 变体或静态 visible=false 近似）。</td><td><span class="chip p1">P1</span></td><td>数据安全 / 最小权限</td></tr>
+        <tr><td class="mono">N7</td><td><b>已闭环（第六轮）</b>：原诊断「缺少字段级 ACL 概念」<b>不成立</b>——<code>control.props.roles</code>/<code>tier</code> 协议早已声明、白名单早已收录，但<b>引擎/双渲染器/详情抽屉/lint/后端全部零消费</b>（又一个「配了不生效」）。已接通五层，并修复详情抽屉<b>数据泄露</b>（配了 roles 的字段在详情里对所有角色可见）。</td><td><span class="chip ok">已闭环</span></td><td>数据安全 / 最小权限</td></tr>
         <tr><td class="mono">N1</td><td>结构面板无多选 / 批量操作：一次只能选中单个控件，删 5 个控件要点 5 次；Figma / Appsmith 均支持框选/多选后批量删除、批量隐藏。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>宽表实体效率</td></tr>
         <tr><td class="mono">N2</td><td>控件无「复制 / 克隆」：只有删除。相同控件（同字段不同 props，或同布局不同字段）只能重建。行业 builder 标配。<span class="chip done">已闭环 1a558f79</span></td><td><span class="chip p2">P2</span></td><td>建模效率</td></tr>
         <tr><td class="mono">N4</td><td><b>已闭环（第四轮）</b>：控件级校验规则编辑器 + 引擎真正消费。范围比原估更大——除 <code>ControlInspector</code> 的校验卡外，还须补协议真源/runtime 副本的 <code>control.required</code> 与 <code>props.pattern</code>、<code>PROP_WHITELIST</code>、引擎 <code>validateControlValues</code>、预览与运行时双渲染器接线、lint 格式校验。</td><td><span class="chip ok">已闭环</span></td><td>校验规则 / 建模效率</td></tr>
@@ -223,12 +241,37 @@
     </div>
 
     <div class="card">
-      <h3><span class="chip p1">N7</span>字段级角色可见性</h3>
+      <h3><span class="chip ok">已闭环</span>N7 字段级角色可见性 —— <span style="font-size:13px;color:var(--ink-3)">协议早已声明、引擎零消费；本轮接通五层，并修掉一处数据泄露</span></h3>
       <div class="kv">
-        <div class="row"><div class="k">为何</div><div class="v"><p>当前权限模型是「行级 RLS（数据谁能看哪些行）」+「变体（按角色换布局）」。但「同一布局里某个字段仅对特定角色可见」是一等需求（如薪酬字段仅 HR 可见）。目前只能：①为每个受限角色建一个变体（维护爆炸）；②用静态 <code>visible=false</code>（对所有角色隐藏，非按角色）。缺少字段级 ACL 概念。</p></div></div>
-        <div class="row"><div class="k">对标</div><div class="v"><p>Salesforce FLS（Field-Level Security）、钉钉宜搭的「字段权限」均为角色 × 字段的可见/可编辑矩阵。</p></div></div>
-        <div class="row"><div class="k">建议</div><div class="v"><p>在 schema 增加 <code>control.roles</code>（可见角色白名单）或复用变体的 match.roles 做字段级裁决；运行时 <code>fieldVisible</code> 接入。属协议 + 引擎 + 创作侧三端改动，工作量 2-3 人日，建议作为独立专项评估，勿与前轮变体特性混淆。</p></div></div>
+        <div class="row"><div class="k">取证纠正</div><div class="v"><p>原报告写「缺少字段级 ACL 概念，需在 schema 新增 <code>control.roles</code>」，属<b>未取证即设计</b>。实测：<code>control.props.roles</code>（描述「四角色可见性」）与 <code>props.tier</code>（订阅档）<b>协议真源早已定义、<code>PROP_WHITELIST</code> 早已收录、协议文档已列为 v1.1 能力</b>——但引擎、双渲染器、lint、后端<b>全部零消费</b>。这是既有的第 N 个「配了不生效」，<b>不是能力缺失</b>。故本轮不新增协议字段，而是<b>把已声明的能力真正接通</b>（对标 Salesforce FLS / 宜搭字段权限）。</p></div></div>
+        <div class="row"><div class="k">数据泄露<br/><span style="font-size:12px;color:var(--ink-3)">本轮最重发现</span></div><div class="v">
+          <p>运行时详情抽屉 <code>RuntimeDetailView</code> 是<b>唯一绕过 <code>fieldVisible</code> 的渲染面</b>：不接 <code>ctx</code>、不 import 判定函数，把控件全量渲染。于是——</p>
+          <p>建模者给薪酬字段配 <code>props.roles:['hr']</code> ⇒ <b>表单里确实按角色隐藏了</b>，<b>但详情抽屉把该字段值原样显示给所有人</b>。这是渲染型权限最危险的失效形态：<b>界面看起来做了权限，数据仍在泄露</b>。</p>
+          <p>已修复：接 <code>ctx</code> + 走同源 <code>controlBaseStates</code> → <code>fieldVisible</code>。并连带修掉两个易漏点：①<b>页头条（<code>pageHeader</code>）是独立渲染路径</b>，同样受门禁；②授权角色看不到某分区全部字段时<b>连分区标题一并隐藏</b>——否则「标题在、内容空」会泄露受限分区的存在性。</p>
+        </div></div>
+        <div class="row"><div class="k">五层接通</div><div class="v">
+          <p>①<b>引擎</b>：<code>controlPropsBaseState</code> 把 <code>props.roles/tier</code> 解析进基线态；<code>fieldVisible</code> 新增角色门禁，且<b>放在最后判定</b>——即便联动把 <code>visible</code> 置回 true 也不得越过角色约束（角色是安全约束，联动规则不得放宽，否则等于给了一个越权后门）；新增 <code>controlBaseStates</code> 收敛此前预览/运行时<b>各写一份、且口径已漂移</b>（运行时合并 readonly、预览整键覆盖）的基线态。</p>
+          <p>②<b>双渲染器</b>：<code>SchemaPreview</code> 与 <code>BoneDynamicForm</code> 统一改用 <code>controlBaseStates</code>。③<b>详情抽屉</b>：见上（修复泄露）。④<b>创作 UI</b>：<code>ControlInspector</code> 新增「可见范围」；角色改<b>受控多选</b>（同变体纪律：打错的角色码永远不命中且无提示，自由输入等于允许制造静默失效）。⑤<b>lint</b>：见下。</p>
+        </div></div>
+        <div class="row"><div class="k">lint 规则<br/><span style="font-size:12px;color:var(--ink-3)">防「配法写错导致静默失效」</span></div><div class="v">
+          <p>引擎接通后，风险从「不生效」转为「<b>配了但等于没配</b>」，故新增 6 类规则：</p>
+          <p>·<b>空数组 ⇒ error</b>（最隐蔽）：引擎口径 fail-open（<code>rolesVisible([])</code> = true = 人人可见），建模者却以为「设了 = 谁都不能看」。这是<b>静默失效的假能力</b>，必须 error 而非 warning。<br/>
+          · 非数组 / 含非字符串元素 / 含空字符串 ⇒ error（引擎会静默丢弃非法项 ⇒ 该角色限制失效，<b>比不配更危险，因为看起来配了</b>）；<br/>
+          · 首尾空格 ⇒ warning（不会与真实角色码匹配）；<br/>
+          · 与 <code>visible:false</code> 并存 ⇒ warning（死配置：默认隐藏时 <code>roles</code> 不会生效）。</p>
+        </div></div>
+        <div class="row"><div class="k">fail-closed 取向</div><div class="v"><p><code>ctx.roles</code> 缺失（未登录 / 旧 Shell 未下发角色）时按<b>无角色</b>处理 ⇒ 隐藏。权限类判定的默认方向必须 fail-closed，否则「配了 roles 却没登录态」会静默全量放开。与 <code>evalCond</code> 深度超限 fail-closed、非法 <code>pattern</code> fail-closed 同一安全取向。</p></div></div>
+        <div class="row"><div class="k">协议描述纠偏</div><div class="v"><p>原描述写死「四角色（法务/采购/管理员/IT；销售/经理）」「free/pro」，与实现（任意 role code、4 档）不符。已改为准确描述并写明 fail-closed 语义与「与行级 <code>rowPolicies</code> 独立可叠加」；真源 + 运行副本同步，<code>check-ui-schema-sync.py</code> 双契约绿。</p></div></div>
+        <div class="row"><div class="k">验证</div><div class="v">
+          <p>· 引擎单测 <code>uiSchemaEngine.test.ts</code> <b>77/77</b>（roles 命中/未命中/多角色 OR 语义/<b>ctx 缺失 fail-closed</b>/多控件交集合并/<b>联动不得放宽角色门禁</b>）。<br/>
+          · 详情视图单测 <b>15/15</b>：判据用<b>授权/未授权双向对照</b>而非「渲染成功」——只断言授权角色看得到的话，删掉过滤逻辑测试照样绿（无判别力）。<br/>
+          · lint 单测 <b>49/49</b>（N7 新增 10 例）。<br/>
+          · 活体探针 <code>ui-designer-n7-role-probe.mjs</code> <b>10/10</b>（注入 → employee 不可见 → admin 可见 → 清空身份 fail-closed → 空数组自检报错 → 恢复草稿）。<br/>
+          · <b>变异验证 3/3 全部被捕获</b>：①移除 <code>fieldVisible</code> 角色门禁 ⇒ 探针 G2/G4 转红；②详情视图改回不过滤 ⇒ 对应用例必红；③lint 空数组不报 ⇒ 对应用例必红。</p>
+        </div></div>
+        <div class="row"><div class="k">诚实边界</div><div class="v"><p>前端隐藏是<b>体验层，不是安全边界</b>。真要防「看到就截获」，仍需服务端做<b>列级裁剪</b>——当前 <code>RowPolicySpec</code> 只做行级 WHERE（原子比较固定为 <code>列 = :operator</code>），无列裁剪能力。本轮保证的是「<b>配了 roles 就真的处处生效、不再泄露到详情视图</b>」，<b>不谎称已做到数据层隔离</b>。同理 <code>props.mask</code> 仅为建模标注，运行时仍返回明文。</p></div></div>
       </div>
+      <div class="evi">五层闭环 · 修复详情抽屉数据泄露 · lint 6 类规则（含空数组 error）· 活体探针 10/10 · <b>变异验证 3/3</b> · tsc/eslint 零错 · 协议同步门禁双契约绿</div>
     </div>
 
     <div class="card">
@@ -275,13 +318,14 @@
         <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">本轮</span></td><td>P1-3 搜索/过滤 · P1-4 控件移动键盘化 · N3 导出/导入文件</td><td>已完成</td><td>探针 VERIFY-PASS；tsc/eslint/vitest 全绿</td></tr>
         <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第三轮 1a558f79</span></td><td>N2 控件复制克隆 · N6 分区折叠/展开全部 · N1 多选批量（删/隐/克隆）</td><td>已完成</td><td>probe19c VERIFY-PASS；schemaOps 单测 +7；tsc/eslint/vitest 全绿</td></tr>
         <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第四轮</span></td><td>N4 控件级校验规则编辑器（协议+引擎+双渲染器+lint 全闭环） · N5 样例数据预览</td><td>已完成</td><td>单测 +25 例；<b>变异验证 10/10</b>；活体探针 <code>ui-designer-n4-n5-probe.mjs</code> 24/24；tsc/eslint 零错</td></tr>
-        <tr><td rowspan="1"><b>建议下一轮</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">1-2 周</span></td><td>P1-5 大 schema 性能度量 → 虚拟滚动 / 历史栈差量化</td><td>0.5+ 人日</td><td>100 控件实体编辑帧耗时有数据，掉帧则优化</td></tr>
-        <tr><td><b>专项评估</b></td><td>N7 字段级角色可见性（协议 + 引擎 + 创作三端）</td><td>2-3 人日</td><td>某字段仅指定角色可见，其余角色运行时不渲染</td></tr>
+        <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第五轮</span></td><td>P1-5 静态下拉 options 模块单例（度量→证伪原归因→优化→护栏四步）</td><td>已完成</td><td>160 控件：选中 <b>-17.0%</b> / 编辑 <b>-15.4%</b> / 首屏 -11.5%；护栏引用同一性断言</td></tr>
+        <tr><td><b>已落地</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">第六轮</span></td><td>N7 字段级角色可见性（引擎 + 双渲染器 + <b>详情抽屉泄露修复</b> + 创作 UI + lint 六类规则）</td><td>已完成</td><td>探针 10/10；单测 77+49+15；<b>变异验证 3/3</b>；tsc/eslint 零错；协议门禁双契约绿</td></tr>
+        <tr><td><b>后续建议</b><br/><span class="mono" style="font-size:12px;color:var(--ink-3)">非本报告范围</span></td><td>服务端<b>列级裁剪</b>：<code>RowPolicySpec</code> 现仅行级 WHERE（<code>列 = :operator</code>），无法表达「A 角色查不到列 X」。N7 已保证前端处处生效，但要防「看到就截获」需服务端出裁剪后的投影。</td><td>独立立项</td><td>越权角色的查询响应中不含受限列（需引擎 + 运行时查询链路改造）</td></tr>
       </tbody>
     </table>
   </section>
 
-  <div class="footer">UI Schema Designer 诊断报告 · 第二轮 · 2026-10-19 · 证据含 Playwright 活体探针（probe19 baseline / probe19b verify / ui-designer-n4-n5-probe 24 项）、变异验证（10/10）与 tsc/eslint/vitest 单测</div>
+  <div class="footer">UI Schema Designer 诊断报告 · 第二轮 · 2026-10-19 · 证据含 Playwright 活体探针（probe19 baseline / probe19b verify / n4-n5 24 项 / <b>n7-role 10 项</b>）、变异验证（<b>三轮共 16 项全部被捕获</b>）与 tsc/eslint/vitest 单测（77+49+15）</div>
 </div>
 </body>
 </html>

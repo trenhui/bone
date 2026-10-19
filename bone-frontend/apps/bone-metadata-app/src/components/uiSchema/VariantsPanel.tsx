@@ -33,14 +33,11 @@ import { describeVariant } from './describe';
 import { matchText, variantOverrideText } from '../../utils/uiSchemaChangePreview';
 import type { LintLocate } from './lint';
 import { addVariant, removeVariant, updateVariant, mergeVariantIntoBase, type ViewKey } from './schemaOps';
+import { useScrollToFocus } from './useScrollToFocus';
+import { ROLE_OPTIONS, TIER_OPTIONS } from './constants';
 
 const { Text, Paragraph } = Typography;
 
-const ROLE_OPTIONS = [
-  { value: 'employee', label: '员工 employee' },
-  { value: 'reviewer', label: '核赔 reviewer' },
-  { value: 'admin', label: '管理员 admin' },
-];
 const CHANNEL_OPTIONS = [
   { value: 'web', label: 'Web' },
   { value: 'mobile', label: 'Mobile' },
@@ -61,12 +58,6 @@ interface VariantRankRow {
   override: string;
 }
 /** 档位是开放维度（业务自定义 tier 串），给建议值但允许自由输入 */
-const TIER_OPTIONS = [
-  { value: 'free', label: 'free' },
-  { value: 'pro', label: 'pro' },
-  { value: 'team', label: 'team' },
-  { value: 'enterprise', label: 'enterprise' },
-];
 
 interface Props {
   schema: BoneUiSchema;
@@ -132,10 +123,12 @@ function VariantCard({
   const ruleCount = (variant.linkageRules ?? []).length + (variant.submitRules ?? []).length;
 
   return (
-    <div style={{
-      border: `1px solid ${here ? '#ffa940' : '#e6eaf0'}`, borderRadius: 10, marginBottom: 12, background: '#fff', overflow: 'hidden',
-      boxShadow: here ? '0 0 0 3px rgba(255,169,64,.18)' : undefined,
-    }}>
+    <div
+      data-locate={here ? `v${index}` : undefined}
+      style={{
+        border: `1px solid ${here ? '#ffa940' : '#e6eaf0'}`, borderRadius: 10, marginBottom: 12, background: '#fff', overflow: 'hidden',
+        boxShadow: here ? '0 0 0 3px rgba(255,169,64,.18)' : undefined,
+      }}>
       {/* 变体头：标识 + 命中条件 + 操作 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 10px', background: '#fafbfd', borderBottom: '1px solid #f0f0f0' }}>
         <Input
@@ -279,6 +272,8 @@ function VariantCard({
 }
 
 export default function VariantsPanel({ schema, onChange, fields, actionDefs, rowPolicyCodes = [], focus }: Props): React.ReactElement {
+  // 定位滚动：focus.vi 命中第几个变体，滚到那张卡
+  useScrollToFocus(focus?.vi != null ? `v${focus.vi}` : undefined);
   const variants = schema.variants ?? [];
 
   // 同优先级重叠检测：并列且命中条件可能重叠时，谁生效完全不可见（高危误配）

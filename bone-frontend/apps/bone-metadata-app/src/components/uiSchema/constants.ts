@@ -276,6 +276,34 @@ export const SECTION_LAYOUT_OPTIONS = SECTION_LAYOUTS.map((l) => ({ value: l.val
 /** 显示模式多选（面板级，仅 1 处；一并提升保持口径一致） */
 export const DISPLAY_MODE_OPTIONS = DISPLAY_MODES.map((m) => ({ value: m.value, label: m.label }));
 
+/* ============================== 角色 / 档位维度（N7 字段级可见性 + 变体 match 共用） ============================== */
+
+/**
+ * 角色码候选（**受控多选，禁自由文本**）。
+ *
+ * 为何受控而非 `mode="tags"`：角色码打错（如 `reviwer`）在运行时永远不命中，
+ * 且**没有任何提示**——变体不生效、字段对所有人隐藏，用户看不出是打错了。
+ * 自由输入等于允许制造这种静默失效（同 VariantsPanel 既有判据）。
+ *
+ * 已知局限（勿当bug 修）：本列表是**演示角色集**，与 IAM 实际角色无关联。
+ * 接IAM 角色目录前，变体/字段级可见性只能在 demo 角色上验证；真实接入点见
+ * `readRoleCodes()`（packages/shared-utils/src/authority）——ctx.roles 来自
+ * `GET /iam/me/roles` 的 role code。接入时只需把本常量换成接口数据。
+ */
+export const ROLE_OPTIONS = [
+  { value: 'employee', label: '员工 employee' },
+  { value: 'reviewer', label: '核赔 reviewer' },
+  { value: 'admin', label: '管理员 admin' },
+];
+
+/** 订阅档候选（自由文本 tags：档位是商业套餐码，无封闭枚举，故允许输入） */
+export const TIER_OPTIONS = [
+  { value: 'free', label: 'free' },
+  { value: 'pro', label: 'pro' },
+  { value: 'team', label: 'team' },
+  { value: 'enterprise', label: 'enterprise' },
+];
+
 /* ============================== 联动动作 ============================== */
 
 export const THEN_ACTIONS = [
@@ -304,3 +332,17 @@ export const PROP_WHITELIST = [
 
 /** 尚未进协议白名单的候选 props（§13.4 已知豁免）：lint 按 WARNING 报出而非 ERROR */
 export const PROPS_PENDING_REVIEW = ['optionsRef'];
+
+/* ======================= N7：字段级角色/档位可见性 ======================= */
+
+/**
+ * `control.props.mask` 协议枚举（hash/last4）。
+ *
+ * ⚠ **当前仅作建模标注**：运行时实体快照（`PublishedRuntimeEntity`）不携带 ui-schema，
+ * 服务端无消费方，接口仍返回明文 —— 在服务端脱敏落地前，本选项**不构成安全控制**。
+ * 创作侧 Tooltip 与 lint warning 均已明写，避免被误当作已生效的合规能力。
+ */
+export const MASK_OPTIONS = [
+  { value: 'hash', label: 'hash（哈希）' },
+  { value: 'last4', label: 'last4（后四位）' },
+];

@@ -21,12 +21,13 @@ import {
 } from '@ant-design/icons';
 import { parseEnumValues } from '@bone/shared-types';
 import {
-  evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
+  controlBaseStates, evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
   type BoneUiSchema, type Control, type FieldUiState, type Section, type UiContext, type VariantMatch,
 } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
 import { gridItemStyle, isFullWidthControl } from '../../utils/uiGrid';
 import { dictOf, formOf } from './schemaOps';
+import { ROLE_OPTIONS } from './constants';
 import { SCENARIOS, applyScenario, scenarioApplies } from './scenarios';
 import './uiSchemaTheme.css';
 
@@ -46,6 +47,8 @@ interface Props {
   publishedSchema?: BoneUiSchema | null;
   /** 已存草稿与线上快照存在差异（设计器 publishState==='pending'）；线上视图下给出提示 */
   draftDiffers?: boolean;
+  /** 点击规则追踪 chip 跳到对应规则（designer 用 schemaRef 反查索引，保持引用稳定） */
+  onLocateRule?: (ruleKey: string) => void;
 }
 
 function defaultOf(code: string, fields: MetaField[]): unknown {
@@ -533,7 +536,7 @@ const PreviewSection = memo(function PreviewSection({
 
 /* ---------------- 主组件 ---------------- */
 export default function SchemaPreview({
-  schema, fields, entityCode, editView = 'form', publishedSchema = null, draftDiffers = false,
+  schema, fields, entityCode, editView = 'form', publishedSchema = null, draftDiffers = false, onLocateRule,
 }: Props): React.ReactElement {
   const [scenarioKey, setScenarioKey] = useState('blank');
   const [scenarioPicked, setScenarioPicked] = useState(false);
@@ -630,13 +633,7 @@ export default function SchemaPreview({
     return hit ? (hit.label ?? hit.key) : 'base（默认）';
   }, [activeSchema.variants, ctx]);
 
-  const baseStates = useMemo(() => {
-    const out: Record<string, Partial<FieldUiState>> = {};
-    (formOf(resolved).sections ?? []).forEach((s) => (s.controls ?? []).forEach((c) => {
-      if (c.visible === false || c.readonly) out[c.fieldCode] = { visible: c.visible !== false, readonly: !!c.readonly };
-    }));
-    return out;
-  }, [resolved]);
+  const baseStates = useMemo(() => controlBaseStates(formOf(resolved).sections ?? []), [resolved]);
 
   const baseRequired = useMemo(() => {
     const out: Record<string, boolean> = {};
@@ -645,7 +642,9 @@ export default function SchemaPreview({
   }, [fields]);
 
   const states = useMemo(() => {
-    const snapshot = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    // structuredClone 取代 JSON 深拷贝：原型链/undefined 保真，且避免大表单（200 控件）下
+    // 每次联动重算都走一次序列化（热路径；对标不可变更新里的结构性克隆用原生 API）。
+    const snapshot = structuredClone(data);
     return linkageState(snapshot, resolved.linkageRules ?? [], ctx, baseRequired, baseStates);
   }, [data, resolved.linkageRules, baseRequired, baseStates, ctx]);
 
@@ -657,7 +656,7 @@ export default function SchemaPreview({
   const setField = (code: string, v: unknown) => { setData((d) => ({ ...d, [code]: v })); setResult(null); };
 
   const doSubmit = () => {
-    const snapshot = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    const snapshot = structuredClone(data);
     const r = runSubmit(snapshot, resolved.submitRules ?? [], resolved.linkageRules ?? [], ctx, baseRequired);
     // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，预览=运行时同源
     const formControls = (formOf(resolved).sections ?? []).flatMap((s) => s.controls ?? []);
@@ -731,11 +730,7 @@ export default function SchemaPreview({
           mode="multiple" size="small" allowClear placeholder="角色"
           style={{ minWidth: 160 }} value={roles}
           onChange={(v) => setRoles(v)}
-          options={[
-            { value: 'employee', label: '员工 employee' },
-            { value: 'reviewer', label: '核赔 reviewer' },
-            { value: 'admin', label: '管理员 admin' },
-          ]}
+          options={ROLE_OPTIONS}
         />
         <Select
           size="small" allowClear placeholder="渠道" style={{ width: 110 }} value={channel || undefined}
@@ -756,7 +751,19 @@ export default function SchemaPreview({
         <div className="chips">
           {(resolved.linkageRules ?? []).map((r) => {
             const on = firedLinkage.includes(r);
-            return <span key={r.code ?? r.name} className={`uis-chip ${on ? '' : 'warn'}`}>{on ? '●' : '○'} {r.code ?? r.name ?? '规则'}</span>;
+            const key = r.code ?? r.name ?? '';
+            return (
+              <span
+                key={key}
+                role="button"
+                tabIndex={0}
+                aria-label={`定位规则 ${key}`}
+                onClick={() => onLocateRule?.(key)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLocateRule?.(key); } }}
+                className={`uis-chip ${on ? '' : 'warn'}`}
+                style={{ cursor: onLocateRule ? 'pointer' : 'default' }}
+              >{on ? '●' : '○'} {key || '规则'}</span>
+            );
           })}
           {(resolved.linkageRules ?? []).length === 0 && <span className="uis-chip warn">无联动规则</span>}
         </div>

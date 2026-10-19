@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   checkSchemaVersion,
+  controlBaseStates,
   evalCond,
   fieldVisible,
   linkageState,
   pathVal,
   resolveVariant,
   resolveVisibleActions,
+  rolesVisible,
   runSubmit,
   validateControlValues,
   type ActionBarItem,
@@ -14,8 +16,10 @@ import {
   type UiCondition,
   type Control,
   type LinkageRule,
+  type Section,
   type SubmitRule,
 } from './uiSchemaEngine';
+import { lintSchema, type LintIssue } from '../components/uiSchema/lint';
 
 /* 报销实例（与 expense-claim-ui-schema.example.json 同源，内联避免 JSON 模块配置依赖） */
 const linkageRules: LinkageRule[] = [
@@ -455,3 +459,187 @@ describe('validateControlValues 控件级校验（N4）', () => {
   });
 });
 
+
+/* ============================================================================
+ * N7：字段级角色/档位可见性（control.props.roles / props.tier）
+ *
+ * 取证起点：这两个键协议与 PROP_WHITELIST 早已收录，但引擎零求值 ⇒「配了不生效」。
+ * 本组用例锁死接通后的行为契约，并覆盖**权限类判定的 fail-closed 取向**。
+ * ========================================================================== */
+describe('N7 字段级角色可见性（props.roles）', () => {
+  const sections = (roles?: string[]): Section[] => [
+    { id: 's1', title: '基本信息', controls: [{ fieldCode: 'amount', controlKind: 'MONEY', props: roles ? { roles } : undefined }] },
+  ];
+
+  it('未声明 roles ⇒ 所有人可见（不限制）', () => {
+    const st = controlBaseStates(sections());
+    expect(st.amount).toBeUndefined();
+    expect(fieldVisible(linkageState({}, [], {}, {}, st)['amount'], { roles: ['anyone'] })).toBe(true);
+  });
+
+  it('声明 roles 且 ctx.roles 命中 ⇒ 可见', () => {
+    const st = controlBaseStates(sections(['legal', 'admin']));
+    const s = linkageState({}, [], {}, {}, st)['amount'];
+    expect(s.roleRequired).toEqual(['legal', 'admin']);
+    expect(fieldVisible(s, { roles: ['legal'] })).toBe(true);
+  });
+
+  it('声明 roles 但 ctx.roles 未命中 ⇒ 隐藏', () => {
+    const st = controlBaseStates(sections(['legal']));
+    expect(fieldVisible(linkageState({}, [], {}, {}, st)['amount'], { roles: ['sales'] })).toBe(false);
+  });
+
+  it('多角色是「或」语义（命中任一即可见）', () => {
+    const st = controlBaseStates(sections(['legal', 'admin']));
+    const s = linkageState({}, [], {}, {}, st)['amount'];
+    expect(fieldVisible(s, { roles: ['admin', 'sales'] })).toBe(true);
+  });
+
+  it('ctx.roles 缺失 ⇒ 隐藏（fail-closed：权限判定默认不放行）', () => {
+    const st = controlBaseStates(sections(['legal']));
+    expect(fieldVisible(linkageState({}, [], {}, {}, st)['amount'], {})).toBe(false);
+    expect(fieldVisible(linkageState({}, [], {}, {}, st)['amount'], { roles: [] })).toBe(false);
+  });
+
+  it('空数组 roles ≡ 未声明（不限制），与 resolveVariant 口径一致', () => {
+    expect(rolesVisible([], { roles: ['x'] })).toBe(true);
+    expect(rolesVisible(undefined, {})).toBe(true);
+    // 与变体判定的同口径校验：空集合**不构成限制**——matchVariant 的判据是
+    // `if (m.roles && m.roles.length)`，空数组为 falsy ⇒ 该维度不参与匹配 ⇒ 变体命中。
+    // 这与 rolesVisible([]) = true（不限制）同向；两个判定都遵循「空 = 不限制」。
+    //
+    // 注意原断言期望回落 base（认为空数组不应命中任何变体），与引擎实际相反 ——
+    // 且与 resolveVariant 既有的空 match 兜底语义冲突。若改成「空数组不命中」，
+    // 则 `match: { roles: [] }` 的变体永远不可达，而「缺省 match」又能命中，
+    // 两者语义割裂。故按引擎既有语义锁定：空集合 = 不限制 = 该维度通配。
+    const s: BoneUiSchema = {
+      schemaVersion: '1.0', entityCode: 'e', displayModes: ['create'],
+      views: { form: { sections: [{ id: 'base', title: '基本信息', controls: [] }] } },
+      variants: [{ key: 'v', label: 'v', priority: 1, match: { roles: [] }, views: { form: { sections: [{ id: 'vsec', title: '变体区', controls: [] }] } } }],
+    } as unknown as BoneUiSchema;
+    // 断言性质「空 roles 不构成限制 ⇒ 命中该变体」而非引用同一性
+    expect(resolveVariant(s, { roles: ['nobody'] }).views.form?.sections?.[0]?.id).toBe('vsec');
+  });
+
+  it('联动不得放宽角色门禁（then.visible=true也 不能让越权角色看见）', () => {
+    // 这是本组最关键的不变量：角色是安全约束，联动规则只负责业务显隐，
+    // 若可被 then.visible 覆盖 ⇒ 等于给了一个越权后门。
+    const st = controlBaseStates(sections(['legal']));
+    const rules: LinkageRule[] = [{ name: '强行显示', when: { fieldCode: 'x' }, then: [{ fieldCode: 'amount', visible: true }] }];
+    const s = linkageState({}, rules, { roles: ['sales'] }, {}, st)['amount'];
+    expect(s.visible).toBe(true);          // 联动确实把 visible 置回了 true
+    expect(fieldVisible(s, { roles: ['sales'] })).toBe(false); // 但角色门禁仍拦住
+  });
+
+  it('与联动 tier 可叠加（角色命中 + 档位命中 才可见）', () => {
+    const secs: Section[] = [{ id: 's1', title: '', controls: [
+      { fieldCode: 'vip_note', props: { roles: ['legal'], tier: ['pro'] } },
+    ] }];
+    const s = linkageState({}, [], {}, {}, controlBaseStates(secs))['vip_note'];
+    expect(fieldVisible(s, { roles: ['legal'], tier: 'free' })).toBe(false);
+    expect(fieldVisible(s, { roles: ['legal'], tier: 'pro' })).toBe(true);
+    expect(fieldVisible(s, { roles: ['sales'], tier: 'pro' })).toBe(false);
+  });
+
+  it('同fieldCode 多控件：roleRequired 取交集（更严者胜）', () => {
+    const secs: Section[] = [{ id: 's1', title: '', controls: [
+      { fieldCode: 'x', props: { roles: ['legal', 'admin'] } },
+      { fieldCode: 'x', props: { roles: ['admin', 'it'] } },
+    ] }];
+    expect(controlBaseStates(secs).x.roleRequired).toEqual(['admin']);
+  });
+
+  it('visible:false 与 roles 叠加时两者都不可绕过', () => {
+    const secs: Section[] = [{ id: 's1', title: '', controls: [
+      { fieldCode: 'x', visible: false, props: { roles: ['legal'] } },
+    ] }];
+    const s = linkageState({}, [], { roles: ['legal'] }, {}, controlBaseStates(secs))['x'];
+    expect(fieldVisible(s, { roles: ['legal'] })).toBe(false);
+  });
+
+  it('baseStates 只保留有内容的键（避免上百默认控件污染联动热路径）', () => {
+    const many: Section[] = [{ id: 's1', title: '', controls: Array.from({ length: 50 }, (_, i) => ({ fieldCode: `f${i}` })) }];
+    expect(Object.keys(controlBaseStates(many))).toHaveLength(0);
+  });
+
+  it('显式 visible:true 不产生约束条目（写了 true 与不写等价，不得进baseStates）', () => {
+    // 回归护栏：`visible: true` 是**无约束力**的显式声明。若基线态把它收成
+    // {visible:true}，这些控件会白白进入联动每轮的重算与 merge（100 个控件 = 100 条），
+    // 正好违背 controlBaseStates 的初衷。
+    // 变异验证：把实现改回 `if (c.visible !== undefined) next.visible = c.visible !== false`
+    // 会让本例变红——此断言是专门为守住该性质而存在。
+    const secs: Section[] = [
+      { id: 's1', title: '', controls: [{ fieldCode: 'a', visible: true }, { fieldCode: 'b' }] },
+    ];
+    expect(controlBaseStates(secs)).toEqual({});
+    // 行为等价性：显式 true 与不写，可见性判定结果必须一致（都是可见）
+    const stA = controlBaseStates([{ id: 's', title: '', controls: [{ fieldCode: 'x', visible: true }] }]);
+    expect(fieldVisible(linkageState({}, [], {}, {}, stA)['x'], {})).toBe(true);
+  });
+
+  it('含空串/空格的 roles 被清洗掉 ⇒ 退化为不限制（脏数据不导致全量隐藏）', () => {
+    // 协议要求非空 string[]；DB 里若存了脏形态，加载时不得把控件整体藏掉。
+    // 清洗后为空集合 ⇒ 与"未声明"同义（不限制），这是 fail-open 的**数据健壮性**取向，
+    // 与"已声明合法角色但 ctx 无角色"时的 fail-closed 是两件不同的事，勿混淆。
+    const bad = controlBaseStates([{ id: 's', title: '', controls: [
+      { fieldCode: 'x', props: { roles: ['', '  '] as unknown as string[] } },
+    ] }]);
+    expect(bad.x).toBeUndefined();
+    expect(rolesVisible(bad.x?.roleRequired, { roles: ['x'] })).toBe(true);
+  });
+
+  it('部分有效角色时保留有效项（脏数据只剔除无效项，不整条丢弃）', () => {
+    const mixed = controlBaseStates([{ id: 's', title: '', controls: [
+      { fieldCode: 'x', props: { roles: ['legal', ''] as unknown as string[] } },
+    ] }]);
+    expect(mixed.x?.roleRequired).toEqual(['legal']);
+    expect(rolesVisible(mixed.x?.roleRequired, { roles: ['sales'] })).toBe(false);
+    expect(rolesVisible(mixed.x?.roleRequired, { roles: ['legal'] })).toBe(true);
+  });
+
+  it('角色名带空格时归一化 trim（否则配了等于没配）', () => {
+    // Select mode="tags" 很容易留下 ' legal ' 这种形态；不归一化则永远匹配不上。
+    const spaced = controlBaseStates([{ id: 's', title: '', controls: [
+      { fieldCode: 'x', props: { roles: [' legal '] } },
+    ] }]);
+    expect(spaced.x?.roleRequired).toEqual(['legal']);
+    expect(rolesVisible(spaced.x?.roleRequired, { roles: ['legal'] })).toBe(true);
+  });
+});
+
+describe('N7 mask 的定性：仅建模标注，不构成安全控制', () => {
+  const lintOf = (props: Record<string, unknown>, code = 'id_card'): LintIssue[] =>
+    lintSchema({
+      schemaVersion: '1.3', entityCode: 'e', displayModes: ['create'],
+      views: { form: { sections: [{ id: 's', title: '', controls: [{ fieldCode: code, props }] }] } },
+    } as unknown as BoneUiSchema, new Set([code]), {});
+
+  it('props.mask 存在时 lint 必须报 warning 提醒"运行时未脱敏"', () => {
+    const warn = lintOf({ mask: 'last4' }).filter((i) => i.level === 'warning' && i.message.includes('mask'));
+    expect(warn.length).toBeGreaterThan(0);
+    expect(warn[0].message).toMatch(/仍返回明文|未脱敏/);
+    expect(warn[0].message).toMatch(/不可当作安全控制|切勿当作安全控制/);
+  });
+
+  it('mask 非法值报 error（hash/last4 之外直接拒绝）', () => {
+    expect(lintOf({ mask: 'xxx' }).some((i) => i.level === 'error' && i.message.includes('mask'))).toBe(true);
+  });
+
+  it('mask 合法值不报 error（只报那条"未脱敏"warning）', () => {
+    const errs = lintOf({ mask: 'hash' }).filter((i) => i.level === 'error' && i.message.includes('mask'));
+    expect(errs).toHaveLength(0);
+  });
+
+  it('roles 传错类型报 error（避免"配了全隐藏"无从排查）', () => {
+    expect(lintOf({ roles: 'legal' }, 'a').some((i) => i.level === 'error' && i.message.includes('roles'))).toBe(true);
+  });
+
+  it('roles 空数组报 warning 引导删键（语义等价不限制，留着只让人误以为配过）', () => {
+    expect(lintOf({ roles: [] }).some((i) => i.level === 'warning' && i.message.includes('roles'))).toBe(true);
+  });
+
+  it('合法 roles 不报任何 roles 相关 error', () => {
+    const issues = lintOf({ roles: ['legal'] });
+    expect(issues.some((i) => i.message.includes('roles'))).toBe(false);
+  });
+});

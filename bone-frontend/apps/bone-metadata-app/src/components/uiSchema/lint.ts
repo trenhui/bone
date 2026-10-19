@@ -150,6 +150,86 @@ function lintSections(
           issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.pattern 不是合法正则：${cp.pattern}`), locate: at });
         }
       }
+
+      /* ---------- N7：字段级角色 / 档位可见性 props 校验 ---------- */
+      /**
+       * 背景：`props.roles`（四角色可见性）与 `props.tier`（订阅档）**协议早已声明、
+       * 白名单早已收录**，但引擎此前零消费——配了不生效、也无任何提示。
+       * 引擎接通后（controlPropsBaseState → fieldVisible），本组规则的作用是
+       * 把「配法写错导致静默失效」提前在自检阶段暴露，尤其是下面三种：
+       *
+       * 1. **空数组**：`roles: []` 在引擎里 fail-open（rolesVisible([]) = true = 人人可见）。
+       *    建模者以为自己设了限制、实际等于没设 ⇒ 必须 error 而非 warning。
+       *    （这与 `resolveVariant` 的 match.roles 口径一致：空集合不构成限制。）
+       * 2. **类型错误**：非数组 / 混入非字符串 ⇒ 引擎会静默过滤掉非法项，
+       *    结果是「配了 hr 但因为数组里混了个数字，hr 之外的角色反而可见」——
+       *    比不配更危险，因为看起来配了。
+       * 3. **与 visible:false 叠加**：控件已经默认隐藏时，roles 不可能把它显示出来
+       *    （fieldVisible 先判 visible=false 直接返回 false）⇒ 死配置，warning。
+       */
+      for (const key of ['roles', 'tier'] as const) {
+        const raw = cp[key];
+        if (raw === undefined) continue;
+        const dim = key === 'roles' ? '角色' : '订阅档';
+        if (!Array.isArray(raw)) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.${key} 必须是字符串数组（如 ["hr","legal"]），当前是${raw === null ? 'null' : typeof raw}`), locate: at });
+          continue;
+        }
+        if (raw.length === 0) {
+          // 引擎口径 fail-open：空数组 = 不限制。此处必须 error——否则建模者
+          // 以为「设了 = 谁都不能看」，实际是「谁都能看」，属静默失效的假能力。
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.${key} 是空数组，等于「不限制」（所有人可见）；要限制请至少给一个${dim}，要全员隐藏请用 visible:false`), locate: at });
+          continue;
+        }
+        const bad = raw.filter((r) => typeof r !== 'string');
+        if (bad.length) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.${key} 含非字符串元素（${bad.length} 个），引擎会静默丢弃它们，导致该${dim}限制失效`), locate: at });
+        }
+        const blank = raw.filter((r) => typeof r === 'string' && r.trim() === '');
+        if (blank.length) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.${key} 含空字符串${dim}码，匹配时永远命中不了`), locate: at });
+        }
+        const spaced = raw.filter((r) => typeof r === 'string' && r !== r.trim());
+        if (spaced.length) {
+          issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 的 props.${key} 含首尾空格的${dim}码（如 "${String(spaced[0])}"），不会与实际角色码匹配`), locate: at });
+        }
+      }
+      const hasRoleGate = Array.isArray(cp.roles) && cp.roles.length > 0;
+      if (hasRoleGate && c.visible === false) {
+        issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 同时配了 visible:false 与 props.roles：默认隐藏时 roles 不会生效（联动 then[].visible 揭示后才按角色裁决），二者至少有一个当前是死配置，建议只配其一`), locate: at });
+      }
+      /* ---------- N7：控件级角色/档位可见性 props.roles / props.tier 值域 ---------- */
+      // 取证结论：这两个键协议与 PROP_WHITELIST 早已收录，但引擎此前零求值（假能力）。
+      // 本轮接通后，若值域写错仍会静默失效（如 roles 传字符串而非数组 ⇒ 无角色命中 ⇒ 全隐藏），
+      // 故必须在创作侧写入前报错，而不是让人对着"字段不见了"猜原因。
+      if (cp.roles !== undefined) {
+        if (!Array.isArray(cp.roles)) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.roles 必须是字符串数组（写错类型会导致该控件对所有角色隐藏）`), locate: at });
+        } else if ((cp.roles as unknown[]).some((r) => typeof r !== 'string' || (r as string).trim() === '')) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.roles 含空值或非字符串元素`), locate: at });
+        } else if ((cp.roles as string[]).length === 0) {
+          issues.push({ level: 'warning', message: pre(scope, `控件 ${c.fieldCode} 的 props.roles 是空数组 = 不限制任何角色（等价于不配）；如需所有人可见请删除该键，如需所有人不可见请用 visible:false`), locate: at });
+        }
+      }
+      if (cp.tier !== undefined) {
+        if (!Array.isArray(cp.tier)) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.tier 必须是字符串数组`), locate: at });
+        } else if ((cp.tier as unknown[]).some((t) => typeof t !== 'string' || (t as string).trim() === '')) {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.tier 含空值或非字符串元素`), locate: at });
+        }
+      }
+      /* ---------- mask：协议已声明但运行时未接线，必须显式告知而非静默失效 ---------- */
+      if (cp.mask !== undefined) {
+        if (cp.mask !== 'hash' && cp.mask !== 'last4') {
+          issues.push({ level: 'error', message: pre(scope, `控件 ${c.fieldCode} 的 props.mask 只能是 hash 或 last4`), locate: at });
+        } else {
+          issues.push({
+            level: 'warning',
+            message: pre(scope, `控件 ${c.fieldCode} 声明了 props.mask=${cp.mask}，但**运行时数据仍未脱敏**（该键在服务端无消费方，接口仍返回明文）。当前仅可当建模标注，切勿当作安全控制使用。`),
+            locate: at,
+          });
+        }
+      }
     });
   });
   return seen;

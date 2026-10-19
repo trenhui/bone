@@ -14,11 +14,11 @@ import {
 } from 'antd';
 import {
   ArrowDownOutlined, ArrowUpOutlined, CopyOutlined, DeleteOutlined, DownOutlined, DragOutlined,
-  EyeInvisibleOutlined, PlusOutlined, SearchOutlined, SettingOutlined, UpOutlined,
+  EyeInvisibleOutlined, PlusOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UpOutlined,
 } from '@ant-design/icons';
 import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
 import type { MetaField } from '../../types';
-import { CONTROL_KIND_OPTIONS, DISPLAY_MODE_OPTIONS, KIND_MAP, SECTION_KIND_OPTIONS, SECTION_LAYOUT_OPTIONS } from './constants';
+import { CONTROL_KIND_OPTIONS, DISPLAY_MODE_OPTIONS, KIND_MAP, MASK_OPTIONS, ROLE_OPTIONS, SECTION_KIND_OPTIONS, SECTION_LAYOUT_OPTIONS, TIER_OPTIONS } from './constants';
 import {
   addControl, addSection, batchDuplicateControls, batchHideControls, batchRemoveControls,
   duplicateControl, moveControl, moveControlAcross, moveSection,
@@ -154,7 +154,9 @@ function ControlInspector({
   /** 写入控件级 props 的辅助：剔除 undefined 键，避免脏数据残留在 schema */
   const patchProp = (k: string, v: unknown) => {
     const next = { ...(control.props ?? {}) };
-    if (v === undefined || v === null || v === '') delete next[k];
+    // 空数组同样视作"未配置"删键：空 roles/tier 语义上=不限制，留着会让建模者
+    // 以为配过（且 lint 会对空数组报 warning），删掉才是真·未配置。
+    if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) delete next[k];
     else next[k] = v;
     onPatch({ props: next });
   };
@@ -262,6 +264,52 @@ function ControlInspector({
           )}
         </div>
       </div>
+      {/* N7：字段级角色/档位可见性（协议 control.props.roles / tier已声明，此前引擎零消费） */}
+      <div style={{ gridColumn: '1 / -1', borderTop: '1px dashed #eee', marginTop: 4, paddingTop: 8 }}>
+        <Space size={4}>
+          <Text type="secondary" style={{ fontSize: 11 }}>可见范围</Text>
+          <Tooltip title="限定后，仅命中这些角色的用户能看到该控件；未配置=所有人可见。与行级权限（rowPolicies）独立，可叠加。">
+            <QuestionCircleOutlined style={{ fontSize: 11, color: '#86909c' }} />
+          </Tooltip>
+        </Space>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
+          <div style={{ flex: '1 0 240px' }}>
+            <Text type="secondary" style={{ fontSize: 11 }}>限定角色（roles）</Text>
+            {/* 受控多选（禁自由文本），与 VariantsPanel 的 match.roles 同一纪律：
+                角色码打错（如 reviwer）在运行时永远不命中且无提示 —— 字段对所有人隐藏，
+                用户看不出是打错了。自由输入等于允许制造这种静默失效。
+                已知局限：ROLE_OPTIONS 是演示角色集，接IAM 角色目录后替换即可。 */}
+            <Select
+              mode="multiple" allowClear size="small" style={{ width: '100%' }} placeholder="留空=所有人可见"
+              options={ROLE_OPTIONS}
+              value={(control.props?.roles as string[] | undefined) ?? []}
+              onChange={(v) => patchProp('roles', v)}
+            />
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: 11 }}>订阅档（tier）</Text>
+            {/* 档位是商业套餐码、无封闭枚举 ⇒ 允许自由输入（同VariantsPanel） */}
+            <Select
+              mode="tags" allowClear size="small" style={{ width: 200 }}
+              options={TIER_OPTIONS}
+              value={(control.props?.tier as string[] | undefined) ?? []}
+              onChange={(v) => patchProp('tier', v)}
+            />
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: 11 }}>脱敏标注（mask）</Text>
+            <Tooltip title="⚠ 当前仅作建模标注：运行时数据仍返回明文，服务端尚无消费方，不可当作安全控制。">
+              <Select
+                allowClear size="small" style={{ width: 130 }}
+                aria-label="脱敏标注"
+                options={MASK_OPTIONS}
+                value={(control.props?.mask as string | undefined)}
+                onChange={(v) => patchProp('mask', v)}
+              />
+            </Tooltip>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -276,6 +324,12 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
   /** N1：多选批量态。开启后控件行改为「勾选」语义，禁用拖拽/单移以免下标漂移。 */
   const [multiMode, setMultiMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  /**
+   * 键盘重排的焦点跟随（WCAG 2.1.1 键盘可达）：拖拽有鼠标态，但键盘移动后该行/分区的
+   * 下标会变、React 按 key 卸载重挂，焦点随之丢失。移动后置 focusCode，渲染后由 effect
+   * 把对应 data-code 元素重新聚焦（控件行的 data-code=字段码、分区头的 data-code=sec-<id>）。
+   */
+  const [focusCode, setFocusCode] = useState<string | null>(null);
 
   const toggleSel = (key: string) => {
     setSelectedKeys((prev) => {
@@ -329,6 +383,14 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
       window.removeEventListener('drop', clearAll);
     };
   }, []);
+
+  // 键盘重排后把焦点还给被移动的元素（见 focusCode 注释；schema 变化即重渲染后再聚焦）
+  useEffect(() => {
+    if (!focusCode) return;
+    const el = document.querySelector(`[data-code="${CSS.escape(focusCode)}"]`) as HTMLElement | null;
+    el?.focus();
+    setFocusCode(null);
+  }, [focusCode, schema]);
 
   const sections = viewOf(schema, view).sections ?? [];
 
@@ -417,6 +479,7 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
           <div
             key={sec.id ?? si}
             data-tour="section"
+            data-code={`sec-${sec.id ?? si}`}
             data-locate={focus && focus.ci === undefined && focus.si === si ? locateKey : undefined}
             style={{
               border: `1px solid ${isFocused(si) ? '#1677ff' : secOver ? '#69c0ff' : '#f0f0f0'}`,
@@ -426,11 +489,28 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
               display: active && !(sec.controls ?? []).some(matchControl) ? 'none' : undefined,
             }}
           >
-            {/* 分区头 */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
-              borderBottom: '1px solid #f5f5f5', background: dragOver === `S${si}` ? '#f0f7ff' : '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
-            }}>
+            {/* 分区头（可聚焦 + Alt+↑/↓ 重排：拖拽有鼠标态，键盘态需等价可达，WCAG 2.1.1） */}
+            <div
+              tabIndex={0}
+              role="group"
+              aria-label={`分区 ${sec.title || sec.id || si}${si > 0 ? '，按 Alt+↑ 上移' : ''}${si < sections.length - 1 ? '，按 Alt+↓ 下移' : ''}`}
+              onKeyDown={(e) => {
+                if (!e.altKey) return;
+                if (si > 0 && e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  onChange(moveSection(schema, view, si, si - 1));
+                  setFocusCode(`sec-${sections[si - 1]?.id ?? si - 1}`);
+                } else if (si < sections.length - 1 && e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  onChange(moveSection(schema, view, si, si + 1));
+                  setFocusCode(`sec-${sections[si + 1]?.id ?? si + 1}`);
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
+                borderBottom: '1px solid #f5f5f5', background: dragOver === `S${si}` ? '#f0f7ff' : '#fafbfd', borderTopLeftRadius: 10, borderTopRightRadius: 10,
+                outline: undefined,
+              }}>
               <Tooltip title="拖拽调整分区顺序">
                 <span
                   draggable
@@ -548,8 +628,8 @@ export default function StructurePanel({ schema, onChange, fields, view, onViewC
                         }
                         // 仅在行本身聚焦时响应方向键，避免与行内 Select/输入框的方向键冲突（WCAG 2.1.1 键盘可操作）
                         const last = (sec.controls?.length ?? 0) - 1;
-                        if (e.key === 'ArrowUp') { e.preventDefault(); if (ci > 0) onChange(moveControl(schema, view, si, ci, ci - 1)); }
-                        else if (e.key === 'ArrowDown') { e.preventDefault(); if (ci < last) onChange(moveControl(schema, view, si, ci, ci + 1)); }
+                        if (e.key === 'ArrowUp') { e.preventDefault(); if (ci > 0) { onChange(moveControl(schema, view, si, ci, ci - 1)); setFocusCode(c.fieldCode); } }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); if (ci < last) { onChange(moveControl(schema, view, si, ci, ci + 1)); setFocusCode(c.fieldCode); } }
                       }}
                       style={{
                         display: (active && !matchControl(c)) || collapsedAll ? 'none' : 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
