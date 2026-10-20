@@ -112,6 +112,45 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
+  void roleCodesClaim_becomesRolePrefixedAuthorities() throws Exception {
+    // 字段级角色裁剪的身份来源：IAM 的 roleCodes claim 必须变成 ROLE_ 前缀 authority
+    String token =
+        jwtUtil.generateToken(
+            "alice",
+            Map.of(
+                "userId",
+                "42",
+                "tenantId",
+                "1",
+                "scopes",
+                List.of("runtime:exp:read"),
+                "roleCodes",
+                List.of("hr", "employee")));
+    AtomicBoolean reached = new AtomicBoolean(false);
+    assertTrue(runFilter(token, reached));
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    // 权限码 1 + 角色码 2；权限码无前缀、角色码 ROLE_ 前缀，命名空间不重叠
+    assertEquals(3, auth.getAuthorities().size());
+    assertTrue(auth.getAuthorities().contains(new SimpleGrantedAuthority("runtime:exp:read")));
+    assertTrue(
+        auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_hr")),
+        "角色码必须以 ROLE_ 前缀进入 authorities（hasRole 惯例）");
+    assertTrue(auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_employee")));
+  }
+
+  @Test
+  void roleCodesClaimAbsent_noRoleAuthorities_notThrow() throws Exception {
+    // 无 roleCodes claim（无角色账号 / 老形状 token）：不产生 ROLE_ authority，也不得抛
+    AtomicBoolean reached = new AtomicBoolean(false);
+    assertTrue(runFilter(scopesOnlyToken(List.of("runtime:exp:read")), reached));
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    assertEquals(1, auth.getAuthorities().size(), "只有权限码，不得凭空多出角色 authority");
+    assertTrue(
+        auth.getAuthorities().stream().noneMatch(a -> a.getAuthority().startsWith("ROLE_")),
+        "无 roleCodes claim ⇒ 无 ROLE_ authority");
+  }
+
+  @Test
   void neitherRolesNorScopes_emptyAuthorities_notThrow() throws Exception {
     String token = jwtUtil.generateToken("bare", Map.of("tenantId", "0"));
     AtomicBoolean reached = new AtomicBoolean(false);

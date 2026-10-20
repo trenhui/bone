@@ -18,17 +18,18 @@ public class AccessTokenIssuerGatewayAdapter implements AccessTokenIssuer {
   }
 
   /** HS256/RS256 双模签发：开启 {@code rsaIssuanceEnabled} 后改发 RS256（ADR-0005 双轨过渡）。 */
-  private String issue(Long accountId, String username, Long tenantId, List<String> scopes) {
+  private String issue(
+      Long accountId, String username, Long tenantId, List<String> scopes, List<String> roleCodes) {
     if (jwtConfig.isRsaIssuanceEnabled()) {
-      return delegate.generateRsaToken(accountId, username, tenantId, scopes);
+      return delegate.generateRsaToken(accountId, username, tenantId, scopes, roleCodes);
     }
-    return delegate.generateToken(accountId, username, tenantId, scopes);
+    return delegate.generateToken(accountId, username, tenantId, scopes, roleCodes);
   }
 
   @Override
   public String issueAccessToken(
-      Long accountId, String username, Long tenantId, List<String> scopes) {
-    return issue(accountId, username, tenantId, scopes);
+      Long accountId, String username, Long tenantId, List<String> scopes, List<String> roleCodes) {
+    return issue(accountId, username, tenantId, scopes, roleCodes);
   }
 
   public java.util.Optional<JwtPrincipal> parse(String rawToken) {

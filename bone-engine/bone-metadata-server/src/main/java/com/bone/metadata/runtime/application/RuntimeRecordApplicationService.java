@@ -34,10 +34,22 @@ public class RuntimeRecordApplicationService {
   private final TenantProvider tenantProvider;
   private final RuntimeStatusGuard statusGuard;
   private final RuntimeAccessGuard accessGuard;
+  private final com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider;
 
   /** 当前租户（控制器原 {@code tenantProvider.currentTenantId()} 直呼的收敛点）。 */
   public long currentTenantId() {
     return tenantProvider.currentTenantId();
+  }
+
+  /**
+   * 当前角色码（字段级角色裁剪的身份来源，透传给 engine）。
+   *
+   * <p>三态与 engine 契约对齐：无认证主体 → {@code null}（内部/受信，不裁剪）；已认证无角色 → 空集合（fail-closed）。
+   * 不在本方法做「平台管理员豁免」——管理员该不该看受限字段是产品决策， 当前口径与普通用户一致（角色码命中才可见）； 行级 ACL 的管理员豁免（{@link
+   * #rowOwnerId()}）是另一维度，互不影响。
+   */
+  public java.util.List<String> currentRoleCodes() {
+    return currentRoleProvider.currentRoleCodesOrNull();
   }
 
   /**
@@ -91,18 +103,20 @@ public class RuntimeRecordApplicationService {
   public PageResult<Map<String, Object>> page(
       String entityCode, int page, int size, RuntimePageQuery query) {
     long tenantId = tenantProvider.currentTenantId();
-    return runtimeRecordService.page(entityCode, tenantId, page, size, query, rowOwnerId());
+    return runtimeRecordService.page(
+        entityCode, tenantId, page, size, query, rowOwnerId(), currentRoleCodes());
   }
 
   public PageResult<Map<String, Object>> pageDeleted(
       String entityCode, int page, int size, RuntimePageQuery query) {
     long tenantId = tenantProvider.currentTenantId();
-    return runtimeRecordService.pageDeleted(entityCode, tenantId, page, size, query);
+    return runtimeRecordService.pageDeleted(
+        entityCode, tenantId, page, size, query, currentRoleCodes());
   }
 
   public Map<String, Object> getById(String entityCode, String id) {
     long tenantId = tenantProvider.currentTenantId();
-    return runtimeRecordService.getById(entityCode, tenantId, id, rowOwnerId());
+    return runtimeRecordService.getById(entityCode, tenantId, id, rowOwnerId(), currentRoleCodes());
   }
 
   /**
@@ -114,7 +128,7 @@ public class RuntimeRecordApplicationService {
     long tenantId = tenantProvider.currentTenantId();
     statusGuard.applyCreateGuard(tenantId, entityCode, body);
     return runtimeRecordService.create(
-        entityCode, tenantId, body, newRecordId(), currentOperator());
+        entityCode, tenantId, body, newRecordId(), currentOperator(), currentRoleCodes());
   }
 
   /** 更新记录（含状态机守卫：状态字段只允许经动作端点流转，客户端携带即 422）。 */
@@ -123,7 +137,7 @@ public class RuntimeRecordApplicationService {
     long tenantId = tenantProvider.currentTenantId();
     statusGuard.applyUpdateGuard(tenantId, entityCode, body);
     return runtimeRecordService.update(
-        entityCode, tenantId, id, body, expectedVersion, currentOperator());
+        entityCode, tenantId, id, body, expectedVersion, currentOperator(), currentRoleCodes());
   }
 
   /** 归档（软删）。If-Match 版本由控制器解析后传入（HTTP 头语义留在适配层）。 */
@@ -135,7 +149,8 @@ public class RuntimeRecordApplicationService {
   /** 恢复归档记录（回收站 → 在用）。 */
   public Map<String, Object> restore(String entityCode, String id) {
     long tenantId = tenantProvider.currentTenantId();
-    return runtimeRecordService.restore(entityCode, tenantId, id, currentOperator());
+    return runtimeRecordService.restore(
+        entityCode, tenantId, id, currentOperator(), currentRoleCodes());
   }
 
   /**

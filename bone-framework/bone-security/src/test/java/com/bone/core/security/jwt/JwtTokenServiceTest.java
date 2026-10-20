@@ -35,6 +35,37 @@ class JwtTokenServiceTest {
   }
 
   @Test
+  void generateToken_withRoleCodes_writesClaim_roundTrippable() {
+    String token =
+        jwtTokenService.generateToken(
+            42L, "alice", 7L, java.util.List.of("read"), java.util.List.of("admin", "reviewer"));
+    io.jsonwebtoken.Claims claims = jwtTokenService.parseClaims(token).orElseThrow();
+    assertThat(claims.get("roleCodes", java.util.List.class)).containsExactly("admin", "reviewer");
+    // scopes 与 roleCodes 必须分键存放：权限码命名空间不被角色码污染
+    assertThat(claims.get("scopes", java.util.List.class)).containsExactly("read");
+  }
+
+  @Test
+  void generateToken_withoutRoleCodes_omitsClaim() {
+    // 无角色账号（服务账号/历史形状）：不写 roleCodes claim，token 与历史形状一致
+    String token = jwtTokenService.generateToken(1L, "bob", null, null);
+    io.jsonwebtoken.Claims claims = jwtTokenService.parseClaims(token).orElseThrow();
+    assertThat(claims.containsKey("roleCodes")).isFalse();
+    // 显式空列表同样不写（避免为空集合浪费 token 体积）
+    String empty = jwtTokenService.generateToken(1L, "bob", null, null, java.util.List.of());
+    assertThat(jwtTokenService.parseClaims(empty).orElseThrow().containsKey("roleCodes")).isFalse();
+  }
+
+  @Test
+  void generateToken_legacyFourArg_delegatesWithoutRoleCodes() {
+    // 兼容重载不得静默丢 scopes（防回归：委托链写错会把安全声明丢掉）
+    String token = jwtTokenService.generateToken(9L, "carol", 3L, java.util.List.of("a", "b"));
+    io.jsonwebtoken.Claims claims = jwtTokenService.parseClaims(token).orElseThrow();
+    assertThat(claims.get("scopes", java.util.List.class)).containsExactly("a", "b");
+    assertThat(claims.getSubject()).isEqualTo("carol");
+  }
+
+  @Test
   void parse_acceptsBearerPrefix() {
     String token = jwtTokenService.generateToken(1L, "bob", null, null);
     JwtPrincipal principal = jwtTokenService.parse("Bearer " + token).orElseThrow();

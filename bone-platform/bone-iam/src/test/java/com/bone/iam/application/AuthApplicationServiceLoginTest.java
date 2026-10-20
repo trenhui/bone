@@ -21,17 +21,21 @@ import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import com.bone.iam.domain.model.account.Account;
+import com.bone.iam.domain.model.account.AccountRole;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.account.valueobject.Email;
 import com.bone.iam.domain.model.account.valueobject.Username;
+import com.bone.iam.domain.model.role.Role;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
+import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +52,8 @@ class AuthApplicationServiceLoginTest {
   @Mock AccountRepository accountRepository;
 
   @Mock AccountRoleRepository accountRoleRepository;
+
+  @Mock RoleRepository roleRepository;
 
   @Mock RolePermissionRepository rolePermissionRepository;
 
@@ -86,6 +92,7 @@ class AuthApplicationServiceLoginTest {
         new AuthApplicationService(
             accountRepository,
             accountRoleRepository,
+            roleRepository,
             rolePermissionRepository,
             permissionRepository,
             accessTokenIssuer,
@@ -110,7 +117,8 @@ class AuthApplicationServiceLoginTest {
     when(passwordEncoderPort.matches("good-pass", account.getPasswordHash())).thenReturn(true);
     when(accountAuthorityCache.get(anyLong()))
         .thenReturn(Optional.of(List.of("iam:accounts:read")));
-    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
+    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any(), any()))
+        .thenReturn("ACCESS");
     when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
     when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
 
@@ -250,7 +258,8 @@ class AuthApplicationServiceLoginTest {
         .thenReturn(Optional.of(account));
     when(passwordEncoderPort.matches("good-pass", account.getPasswordHash())).thenReturn(true);
     when(accountAuthorityCache.get(anyLong())).thenReturn(Optional.of(List.of()));
-    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
+    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any(), any()))
+        .thenReturn("ACCESS");
     when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
     when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
 
@@ -290,5 +299,49 @@ class AuthApplicationServiceLoginTest {
       }
     }
     throw new NoSuchFieldException(name);
+  }
+
+  /**
+   * 登录令牌必须带上<b>继承闭包</b>解析出的角色码（字段级角色裁剪的身份来源）。
+   *
+   * <p>判据性质而非结果：断言的是「issueAccessToken 的第 5 参 = 含继承角色的码集合」——若实现退化成「只查直接角色」或「忘传 roleCodes」，本用例转红。
+   */
+  @Test
+  void successfulLogin_issuesTokenWithInheritedRoleCodes() {
+    Account account = mkAccount();
+    when(accountRepository.findByUsernameForLoginAllTenants("alice"))
+        .thenReturn(Optional.of(account));
+    when(passwordEncoderPort.matches("good-pass", account.getPasswordHash())).thenReturn(true);
+    when(accountAuthorityCache.get(anyLong()))
+        .thenReturn(Optional.of(List.of("iam:accounts:read")));
+    // 直接角色 10（reviewer）+ 经 parent_role_id 继承的 11（employee）
+    when(accountRoleRepository.findByAccount(10L))
+        .thenReturn(List.of(AccountRole.of(900L, 1L, 10L, 10L)));
+    // 用 LinkedHashSet 镜像 resolveClosure 的返回类型契约（插入序确定）——
+    // Set.of 迭代序未定义，会让下游 findByIds 实参顺序随机、strict stubbing 假红
+    when(roleHierarchyResolver.resolveClosure(List.of(10L)))
+        .thenReturn(new LinkedHashSet<>(List.of(10L, 11L)));
+    when(roleRepository.findByIds(List.of(10L, 11L)))
+        .thenReturn(
+            List.of(
+                Role.create("核赔", "reviewer", null, 1, 1L, null),
+                Role.create("员工", "employee", null, 1, 1L, null)));
+    when(accessTokenIssuer.issueAccessToken(
+            10L, "alice", 1L, List.of("iam:accounts:read"), List.of("reviewer", "employee")))
+        .thenReturn("ACCESS");
+    when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
+    when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("good-pass");
+    cmd.setClientIp("10.0.0.1");
+
+    Map<String, Object> result = authApplicationService.login(cmd);
+
+    assertThat(result.get("token")).isEqualTo("ACCESS");
+    verify(accessTokenIssuer)
+        .issueAccessToken(
+            10L, "alice", 1L, List.of("iam:accounts:read"), List.of("reviewer", "employee"));
   }
 }

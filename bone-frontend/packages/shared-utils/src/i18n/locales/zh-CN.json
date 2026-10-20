@@ -207,6 +207,7 @@
     "META_RUNTIME_FIELD_PROTECTED": "状态字段不可直接修改，请使用动作接口推进状态",
     "META_RUNTIME_ENTITY_FORBIDDEN": "无该实体的运行时访问权限，请申请 runtime:{entityCode}:read|write 或通配授权",
     "META_RUNTIME_FORBIDDEN_ACTION": "无该动作的执行权限，请申请动作级权限码授权",
+    "META_RUNTIME_FIELD_NOT_VISIBLE": "包含当前角色不可见的字段，已被拒绝修改；如需修改请联系管理员调整字段的角色可见范围",
     "AI_GATEWAY_PROVIDER_RESPONSE_INVALID": "模型服务响应异常，已转人工复核"},
   "enums": {
     "ORDER_STATUS": {

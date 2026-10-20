@@ -30,7 +30,8 @@ public class JdbcRuntimeRecordService {
   private static final DateTimeFormatter DAY_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
   /** Jackson 单例：用于解析字段级校验规则（validation_rules JSON）与枚举取值。 */
-  private static final Set<String> SYSTEM_COLUMNS =
+  /** 系统列（物理名即逻辑名）。包级可见：{@link RuntimeFieldVisibilityPolicy} 需要它做「系统列永不因角色裁剪」的防御。 */
+  static final Set<String> SYSTEM_COLUMNS =
       Set.of(
           "id",
           "tenant_id",
@@ -107,15 +108,10 @@ public class JdbcRuntimeRecordService {
 
   public PageResult<Map<String, Object>> page(
       String entityCode, long tenantId, int page, int size, RuntimePageQuery query) {
-    return page(entityCode, tenantId, page, size, query, null);
+    return page(entityCode, tenantId, page, size, query, null, null);
   }
 
-  /**
-   * 分页查询（行级 ACL 版本）：{@code rowOwnerId} 非 null 且实体表存在 {@code created_by} 列时， 追加 {@code AND
-   * created_by = :rowOwner} 过滤（数据面行级 ACL，Runtime §4.7.1）。
-   *
-   * <p>内部调用（动作执行、级联等）必须走无参版（不传 {@code rowOwnerId}），避免被数据面 ACL 拦截； 平台管理员豁免由 Controller 层传 null 实现。
-   */
+  /** 无角色码重载：内部/受信调用（不做字段级裁剪），保持既有调用方行为不变。 */
   public PageResult<Map<String, Object>> page(
       String entityCode,
       long tenantId,
@@ -123,6 +119,25 @@ public class JdbcRuntimeRecordService {
       int size,
       RuntimePageQuery query,
       Long rowOwnerId) {
+    return page(entityCode, tenantId, page, size, query, rowOwnerId, null);
+  }
+
+  /**
+   * 分页查询（行级 ACL 版本）：{@code rowOwnerId} 非 null 且实体表存在 {@code created_by} 列时， 追加 {@code AND
+   * created_by = :rowOwner} 过滤（数据面行级 ACL，Runtime §4.7.1）。
+   *
+   * <p>内部调用（动作执行、级联等）必须走无参版（不传 {@code rowOwnerId}），避免被数据面 ACL 拦截； 平台管理员豁免由 Controller 层传 null 实现。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不按角色裁剪，见 {@link RuntimeFieldVisibilityPolicy} 契约）
+   */
+  public PageResult<Map<String, Object>> page(
+      String entityCode,
+      long tenantId,
+      int page,
+      int size,
+      RuntimePageQuery query,
+      Long rowOwnerId,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     // 防御：实体已删且物理表已 DROP 时，缓存 TTL 内仍可能命中旧快照并对缺失表查询 → 500。
     // 显式判表存在，缺失则统一返回 404（实体不存在），避免把底层 SQL 错误暴露给用户。
@@ -164,19 +179,35 @@ public class JdbcRuntimeRecordService {
         rows.stream().map(r -> toLogical(entity, r)).collect(Collectors.toList());
     // G10：引用字段显示值批量补全（每「目标实体+label字段」组合至多一次 IN 查询，与行数无关）
     enrichLabels(entity, tenantId, translated);
+    // 字段级角色裁剪（N7 服务端闭环）：label 补全之后再裁，受限字段的显示值一并剔除
+    if (roleCodes != null) {
+      RuntimeFieldVisibilityPolicy policy = RuntimeFieldVisibilityPolicy.of(entity);
+      if (policy.hasRestrictions()) {
+        translated =
+            translated.stream().map(r -> policy.trimRow(r, roleCodes)).collect(Collectors.toList());
+      }
+    }
     return PageResult.of(translated, total != null ? total : 0L, safePage, safeSize);
   }
 
   public Map<String, Object> getById(String entityCode, long tenantId, String recordId) {
-    return getById(entityCode, tenantId, recordId, null);
+    return getById(entityCode, tenantId, recordId, null, null);
+  }
+
+  /** 无角色码重载：内部/受信调用（不做字段级裁剪），保持既有调用方行为不变。 */
+  public Map<String, Object> getById(
+      String entityCode, long tenantId, String recordId, Long rowOwnerId) {
+    return getById(entityCode, tenantId, recordId, rowOwnerId, null);
   }
 
   /**
    * 详情查询（行级 ACL 版本）：{@code rowOwnerId} 非 null 且实体表存在 {@code created_by} 列时追加 {@code AND created_by
    * = :rowOwner}，非本人记录自然查不到（404，不暴露行存在性）。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不按角色裁剪，含审计取数等需要全量字段的路径）
    */
   public Map<String, Object> getById(
-      String entityCode, long tenantId, String recordId, Long rowOwnerId) {
+      String entityCode, long tenantId, String recordId, Long rowOwnerId, List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertPhysicalTableExists(entity);
     String pk = sanitizeIdentifier(entity.primaryKeyColumn());
@@ -199,18 +230,45 @@ public class JdbcRuntimeRecordService {
     Map<String, Object> logicalRow = toLogical(entity, rows.get(0));
     // G10：引用字段显示值补全（详情路径单行）
     enrichLabels(entity, tenantId, logicalRow);
+    // 字段级角色裁剪：label 之后裁，受限字段的显示值一并剔除
+    if (roleCodes != null) {
+      RuntimeFieldVisibilityPolicy policy = RuntimeFieldVisibilityPolicy.of(entity);
+      if (policy.hasRestrictions()) {
+        logicalRow = policy.trimRow(logicalRow, roleCodes);
+      }
+    }
     return logicalRow;
   }
 
   public Map<String, Object> create(
       String entityCode, long tenantId, Map<String, Object> body, long newId) {
-    return create(entityCode, tenantId, body, newId, null);
+    return create(entityCode, tenantId, body, newId, null, null);
   }
 
+  /** 无角色码重载：内部/受信调用（不守卫、不裁剪），保持既有调用方行为不变。 */
   public Map<String, Object> create(
       String entityCode, long tenantId, Map<String, Object> body, long newId, String operatorId) {
+    return create(entityCode, tenantId, body, newId, operatorId, null);
+  }
+
+  /**
+   * 创建记录。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不守卫、不裁剪）
+   */
+  public Map<String, Object> create(
+      String entityCode,
+      long tenantId,
+      Map<String, Object> body,
+      long newId,
+      String operatorId,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertStateFieldNotWritable(entity, body, "POST");
+    // 字段级角色写守卫：请求体含角色不可见字段 → 403 拒绝（读写双侧闭环，见 RuntimeFieldVisibilityPolicy）
+    if (roleCodes != null) {
+      RuntimeFieldVisibilityPolicy.of(entity).assertWritable(entity, body, roleCodes);
+    }
     Map<String, Object> payload = filterWritable(entity, body);
     injectEntryState(entity, entityCode, tenantId, payload);
     injectAutoNumber(entity, tenantId, payload);
@@ -259,12 +317,13 @@ public class JdbcRuntimeRecordService {
             null,
             "create",
             null));
-    return getById(entityCode, tenantId, String.valueOf(payload.get(pk)));
+    // 响应同样按角色裁剪：创建者也不应收到自己不可见的字段回显
+    return getById(entityCode, tenantId, String.valueOf(payload.get(pk)), null, roleCodes);
   }
 
   public Map<String, Object> update(
       String entityCode, long tenantId, String recordId, Map<String, Object> body) {
-    return update(entityCode, tenantId, recordId, body, null);
+    return update(entityCode, tenantId, recordId, body, null, null, null);
   }
 
   public Map<String, Object> update(
@@ -273,9 +332,10 @@ public class JdbcRuntimeRecordService {
       String recordId,
       Map<String, Object> body,
       Integer expectedVersion) {
-    return update(entityCode, tenantId, recordId, body, expectedVersion, null);
+    return update(entityCode, tenantId, recordId, body, expectedVersion, null, null);
   }
 
+  /** 无角色码重载：内部/受信调用（不守卫、不裁剪），保持既有调用方行为不变。 */
   public Map<String, Object> update(
       String entityCode,
       long tenantId,
@@ -283,15 +343,37 @@ public class JdbcRuntimeRecordService {
       Map<String, Object> body,
       Integer expectedVersion,
       String operatorId) {
+    return update(entityCode, tenantId, recordId, body, expectedVersion, operatorId, null);
+  }
+
+  /**
+   * 更新记录。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不守卫、不裁剪）
+   */
+  public Map<String, Object> update(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      Map<String, Object> body,
+      Integer expectedVersion,
+      String operatorId,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertStateFieldNotWritable(entity, body, "PUT");
+    // 字段级角色写守卫：请求体含角色不可见字段 → 403 拒绝
+    if (roleCodes != null) {
+      RuntimeFieldVisibilityPolicy.of(entity).assertWritable(entity, body, roleCodes);
+    }
     assertRowOwner(entity, tenantId, recordId, operatorId);
     // 审计：逐字段记录数据面 UPDATE 的 from→to（source=update）；
     // 状态机流转由 updateState/adminFixState 单独审计（source=action/admin-fix），避免重复。
+    // 注意：before 取全量（不裁剪）——审计轨迹必须完整，「谁改了什么」不能因字段对操作者不可见而丢失。
     Map<String, Object> before = getById(entityCode, tenantId, recordId);
     Map<String, Object> writable = filterWritable(entity, body);
     Map<String, Object> result =
-        updateInternal(entityCode, tenantId, recordId, body, expectedVersion, operatorId);
+        updateInternal(
+            entityCode, tenantId, recordId, body, expectedVersion, operatorId, roleCodes);
     if (!writable.isEmpty()) {
       for (Map.Entry<String, Object> e : writable.entrySet()) {
         String f = e.getKey();
@@ -318,6 +400,8 @@ public class JdbcRuntimeRecordService {
   /**
    * 写路径内部实现（<strong>不做</strong> {@code state_field} 保护）——仅被 {@link #update}（已保护） 与 {@link
    * #updateState} / {@link #adminFixState}（状态机合法入口）调用。
+   *
+   * @param roleCodes 透传给响应侧 getById 的裁剪；null = 内部/受信调用
    */
   private Map<String, Object> updateInternal(
       String entityCode,
@@ -325,7 +409,8 @@ public class JdbcRuntimeRecordService {
       String recordId,
       Map<String, Object> body,
       Integer expectedVersion,
-      String operatorId) {
+      String operatorId,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     Map<String, Object> payload = filterWritable(entity, body);
     payload.remove(entity.primaryKeyColumn());
@@ -340,7 +425,7 @@ public class JdbcRuntimeRecordService {
     }
 
     if (payload.isEmpty() && !(versioned && expectedVersion != null)) {
-      return getById(entityCode, tenantId, recordId);
+      return getById(entityCode, tenantId, recordId, null, roleCodes);
     }
     stampAuditColumns(entity, payload, operatorId, false);
 
@@ -383,7 +468,7 @@ public class JdbcRuntimeRecordService {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_RECORD_NOT_FOUND, "记录不存在: " + recordId);
     }
-    return getById(entityCode, tenantId, recordId);
+    return getById(entityCode, tenantId, recordId, null, roleCodes);
   }
 
   public void delete(String entityCode, long tenantId, String recordId) {
@@ -469,6 +554,20 @@ public class JdbcRuntimeRecordService {
    */
   public Map<String, Object> restore(
       String entityCode, long tenantId, String recordId, String operatorId) {
+    return restore(entityCode, tenantId, recordId, operatorId, null);
+  }
+
+  /**
+   * 恢复已归档记录（回收站 → 在用）。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（响应不裁剪）
+   */
+  public Map<String, Object> restore(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      String operatorId,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertRowOwner(entity, tenantId, recordId, operatorId);
     if (!entityHasColumn(entity, "deleted")) {
@@ -504,7 +603,7 @@ public class JdbcRuntimeRecordService {
             null,
             "restore",
             null));
-    return getById(entityCode, tenantId, recordId);
+    return getById(entityCode, tenantId, recordId, null, roleCodes);
   }
 
   /**
@@ -514,6 +613,23 @@ public class JdbcRuntimeRecordService {
    */
   public PageResult<Map<String, Object>> pageDeleted(
       String entityCode, long tenantId, int page, int size, RuntimePageQuery query) {
+    return pageDeleted(entityCode, tenantId, page, size, query, null);
+  }
+
+  /**
+   * 回收站视图：只查 {@code deleted = 1} 的行。
+   *
+   * <p>与 {@link #page} 的唯一差别是租户谓词里的 deleted 取值；复用同一套列投影 / 过滤 / 排序， 避免「回收站和数据列表两套查询逻辑」的漂移。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不裁剪）
+   */
+  public PageResult<Map<String, Object>> pageDeleted(
+      String entityCode,
+      long tenantId,
+      int page,
+      int size,
+      RuntimePageQuery query,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     assertPhysicalTableExists(entity);
     if (!entityHasColumn(entity, "deleted")) {
@@ -551,6 +667,14 @@ public class JdbcRuntimeRecordService {
     List<Map<String, Object>> rows = jdbc.queryForList(listSql, params);
     List<Map<String, Object>> translated =
         rows.stream().map(r -> toLogical(entity, r)).collect(Collectors.toList());
+    // 字段级角色裁剪：回收站与数据列表同一套约束，不能一个漏一个
+    if (roleCodes != null) {
+      RuntimeFieldVisibilityPolicy policy = RuntimeFieldVisibilityPolicy.of(entity);
+      if (policy.hasRestrictions()) {
+        translated =
+            translated.stream().map(r -> policy.trimRow(r, roleCodes)).collect(Collectors.toList());
+      }
+    }
     return PageResult.of(translated, total != null ? total : 0L, safePage, safeSize);
   }
 
@@ -573,6 +697,35 @@ public class JdbcRuntimeRecordService {
       String operatorId,
       String actionCode,
       String reason) {
+    return updateState(
+        entityCode,
+        tenantId,
+        recordId,
+        stateField,
+        toStatus,
+        expectedVersion,
+        operatorId,
+        actionCode,
+        reason,
+        null);
+  }
+
+  /**
+   * 状态机推进入口（带角色码）：动作端点是用户面路径，响应同样按角色裁剪。
+   *
+   * @param roleCodes 当前用户角色码；null = 内部/受信调用（不裁剪）
+   */
+  public Map<String, Object> updateState(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      String stateField,
+      String toStatus,
+      Integer expectedVersion,
+      String operatorId,
+      String actionCode,
+      String reason,
+      List<String> roleCodes) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     Map<String, Object> current = getById(entityCode, tenantId, recordId);
     Object before = current.get(stateField);
@@ -580,7 +733,8 @@ public class JdbcRuntimeRecordService {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put(stateField, toStatus);
     Map<String, Object> updated =
-        updateInternal(entityCode, tenantId, recordId, payload, expectedVersion, operatorId);
+        updateInternal(
+            entityCode, tenantId, recordId, payload, expectedVersion, operatorId, roleCodes);
     auditSink.record(
         RuntimeAuditEntry.of(
             tenantId,
@@ -610,6 +764,20 @@ public class JdbcRuntimeRecordService {
       String toStatus,
       String operatorId,
       String reason) {
+    return adminFixState(
+        entityCode, tenantId, recordId, stateField, toStatus, operatorId, reason, null);
+  }
+
+  /** 管理员修复直写（带角色码）：响应按调用者角色裁剪。 */
+  public Map<String, Object> adminFixState(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      String stateField,
+      String toStatus,
+      String operatorId,
+      String reason,
+      List<String> roleCodes) {
     if (reason == null || reason.isBlank()) {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "管理员修复直写状态字段必须填写 reason（审计要求）");
@@ -620,7 +788,7 @@ public class JdbcRuntimeRecordService {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put(stateField, toStatus);
     Map<String, Object> updated =
-        updateInternal(entityCode, tenantId, recordId, payload, null, operatorId);
+        updateInternal(entityCode, tenantId, recordId, payload, null, operatorId, roleCodes);
     auditSink.record(
         RuntimeAuditEntry.of(
             tenantId,

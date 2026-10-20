@@ -294,6 +294,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_RUNTIME_FIELD_PROTECTED` | 422 | 直写实体的 `state_field` 受保护字段（状态推进唯一合法入口是动作端点，§4.5） |
 | `META_RUNTIME_ENTITY_FORBIDDEN` | 403 | 无实体级权限：需要 `runtime:{entityCode}:read` / `runtime:{entityCode}:write`（或通配 / platform.admin，§4.7） |
 | `META_RUNTIME_FORBIDDEN_ACTION` | 403 | 无动作级权限：需要 `runtime:{entityCode}:{actionCode}` 或动作定义声明的 `permission_code`（逃逸动作门禁，§4.6） |
+| `META_RUNTIME_FIELD_NOT_VISIBLE` | 403 | 字段级角色不可见：写请求体含当前用户角色不可见的字段（UI 协议 `control.props.roles` 的服务端强制，读写双侧闭环，N7） |
 | `META_RUNTIME_ACTION_ORPHANED` | 409 | 动作执行孤儿态：副作用已发出、状态流转未完成，幂等重放被拒，须对账作业或人工确认后续转（§4.8.1） |
 | `META_RUNTIME_REFERENCE_NOT_FOUND` | 422 | 引用/关联指向的目标记录不存在（含跨租户不可见/软删除过滤，G10） |
 | `META_RUNTIME_RELATION_CONFIG_INVALID` | 500 | 关联关系声明配置非法（缺 targetEntityCode / 子表实体无 deleted 列等建模侧错误，需修正 validation_rules） |

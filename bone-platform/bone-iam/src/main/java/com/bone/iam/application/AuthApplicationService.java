@@ -20,11 +20,13 @@ import com.bone.iam.domain.model.account.AccountRole;
 import com.bone.iam.domain.model.account.valueobject.AccountStatus;
 import com.bone.iam.domain.model.permission.DefaultPermissionCodes;
 import com.bone.iam.domain.model.permission.Permission;
+import com.bone.iam.domain.model.role.Role;
 import com.bone.iam.domain.model.role.RolePermission;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.AccountRoleRepository;
 import com.bone.iam.domain.repository.PermissionRepository;
 import com.bone.iam.domain.repository.RolePermissionRepository;
+import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -70,6 +73,7 @@ public class AuthApplicationService {
 
   private final AccountRepository accountRepository;
   private final AccountRoleRepository accountRoleRepository;
+  private final RoleRepository roleRepository;
   private final RolePermissionRepository rolePermissionRepository;
   private final PermissionRepository permissionRepository;
   private final AccessTokenIssuer accessTokenIssuer;
@@ -202,9 +206,14 @@ public class AuthApplicationService {
             accountRepository.update(account);
 
             List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
+            List<String> roleCodes = resolveRoleCodes(account.getId());
             String token =
                 accessTokenIssuer.issueAccessToken(
-                    account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
+                    account.getId(),
+                    account.getUsername().value(),
+                    account.getTenantId(),
+                    scopes,
+                    roleCodes);
             String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
 
             boolean weak = passwordPolicyValidator.requiresPasswordChange(cmd.getPassword());
@@ -273,9 +282,16 @@ public class AuthApplicationService {
               throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在或已禁用");
             }
             List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
+            // 刷新与登录同口径重解析角色码：角色在会话期内被调整时，刷新令牌即带回新角色
+            // （不等旧 access token 自然过期），压缩「角色已收回但 token 仍放行」的窗口。
+            List<String> roleCodes = resolveRoleCodes(account.getId());
             String accessToken =
                 accessTokenIssuer.issueAccessToken(
-                    account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
+                    account.getId(),
+                    account.getUsername().value(),
+                    account.getTenantId(),
+                    scopes,
+                    roleCodes);
             String newRefreshToken = rotated.get("refreshToken");
             if (newRefreshToken == null) {
               throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_ROTATE_FAILED, "未返回新的刷新令牌");
@@ -316,6 +332,53 @@ public class AuthApplicationService {
               accountAuthorityCache.put(accountId, resolved);
               return resolved;
             });
+  }
+
+  /**
+   * 按账号解析<b>角色码</b>（含 {@code parent_role_id} 继承闭包）——字段级角色裁剪的身份来源。
+   *
+   * <p><b>为什么与权限码分两条解析路径</b>：权限码经 {@link AccountAuthorityCache} 缓存（Redis，多实例共享，
+   * 授权变更要即时生效）；角色码只在<b>登录/刷新</b>时解析一次（低频），为其单独扩大缓存端口的值类型会把
+   * 「权限撤销」的失效语义拖到角色码上（角色变更应随下次登录生效，与权限撤销的即时性需求不同）。 代价是缓存未命中时 {@code findByAccount} 与 {@code
+   * resolveClosure} 各多跑一次——登录路径可接受。
+   *
+   * <p><b>fail-closed 口径与权限码一致</b>（C-2）：解析异常直接抛 {@code AUTHORITY_RESOLVE_FAILED}，
+   * 绝不退化为「无角色令牌」——那会让字段级裁剪对故障窗口内的登录静默失效（fail-open）。 角色码进 token 后直至过期/刷新保持快照（与 scopes 同口径的 JWT
+   * 固有延迟）。
+   */
+  @Transactional(readOnly = true)
+  public List<String> resolveRoleCodes(Long accountId) {
+    if (accountId == null) {
+      return List.of();
+    }
+    try {
+      List<AccountRole> accountRoles = accountRoleRepository.findByAccount(accountId);
+      if (accountRoles.isEmpty()) {
+        return List.of();
+      }
+      List<Long> directRoleIds =
+          accountRoles.stream()
+              .map(AccountRole::getRoleId)
+              .filter(Objects::nonNull)
+              .distinct()
+              .toList();
+      if (directRoleIds.isEmpty()) {
+        return List.of();
+      }
+      // 展开 parent_role_id 闭包：继承角色的码一并生效（与权限码解析同源，避免「有继承权限无继承角色」的割裂）
+      Set<Long> closure = roleHierarchyResolver.resolveClosure(directRoleIds);
+      if (closure.isEmpty()) {
+        return List.of();
+      }
+      return roleRepository.findByIds(List.copyOf(closure)).stream()
+          .map(Role::getCode)
+          .filter(c -> c != null && !c.isBlank())
+          .map(String::trim)
+          .distinct()
+          .toList();
+    } catch (Exception e) {
+      throw IamErrors.of(IamErrorCodes.AUTHORITY_RESOLVE_FAILED, "账号 " + accountId + " 角色解析失败", e);
+    }
   }
 
   private List<String> resolveFromDatabase(Long accountId, boolean adminAccount) {

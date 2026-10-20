@@ -7,8 +7,10 @@ import com.bone.metadata.catalog.domain.model.meta.MetaEntityStatus;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
+import com.bone.metadata.catalog.domain.repository.UiSchemaDefRepository;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;
 import com.bone.metadata.engine.runtime.RuntimeFieldColumn;
+import com.bone.metadata.engine.runtime.RuntimeFieldVisibility;
 import com.bone.metadata.runtime.application.RuntimeActionDefRepository;
 import com.bone.metadata.runtime.domain.RuntimeActionDef;
 import java.util.ArrayList;
@@ -27,6 +29,8 @@ public class CatalogRuntimeEntityProvider {
   private final MetaFieldRepository metaFieldRepository;
   private final TenantProvider tenantProvider;
   private final RuntimeActionDefRepository actionDefRepository;
+  private final UiSchemaDefRepository uiSchemaDefRepository;
+  private final RuntimeFieldVisibilityProjector fieldVisibilityProjector;
 
   public Optional<PublishedRuntimeEntity> findPublishedRuntime(String entityCode, long tenantId) {
     List<MetaEntity> found =
@@ -82,6 +86,10 @@ public class CatalogRuntimeEntityProvider {
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null);
+    // 字段级角色可见性：从发布态 ui-schema 投影（N7 服务端闭环）。
+    // 与 schemaForExecution 同口径——publishedSchemaJson 优先，缺失回落 schemaJson。
+    List<RuntimeFieldVisibility> fieldVisibilities =
+        fieldVisibilityProjector.project(publishedUiSchemaJson(entity));
     return Optional.of(
         new PublishedRuntimeEntity(
             entity.getCode(),
@@ -91,7 +99,21 @@ public class CatalogRuntimeEntityProvider {
             columns,
             stateField,
             entity.getRowPolicies(),
-            entity.getAutoNumber()));
+            entity.getAutoNumber(),
+            fieldVisibilities));
+  }
+
+  /** 实体的界面 schema JSON（发布态优先，草稿态回落）；未配置返回 null（= 无字段级限制）。 */
+  private String publishedUiSchemaJson(MetaEntity entity) {
+    return uiSchemaDefRepository
+        .findByTenantAndEntity(entity.getTenantId(), entity.getId())
+        .map(
+            def -> {
+              String json = def.getPublishedSchemaJson();
+              return json == null || json.isBlank() ? def.getSchemaJson() : json;
+            })
+        .filter(json -> json != null && !json.isBlank())
+        .orElse(null);
   }
 
   /** 供 Controller 默认租户 */

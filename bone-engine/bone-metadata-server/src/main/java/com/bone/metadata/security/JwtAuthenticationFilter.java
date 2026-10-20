@@ -48,8 +48,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
         List<String> roles = readAuthorityClaims(claims);
-        var authorities =
+        List<SimpleGrantedAuthority> authorities =
             roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        // 角色码 claim（IAM 2026-10 起签发，字段级角色裁剪的身份来源）以 ROLE_ 前缀并入 authorities——
+        // Spring hasRole 惯例；与权限码（无前缀、runtime:x:read 形状）命名空间不重叠，
+        // hasAuthority 判权限码的消费方（RuntimeAccessGuard 等）不会误中。
+        readRoleCodes(claims).stream()
+            .map(
+                code ->
+                    new SimpleGrantedAuthority(
+                        SecurityContextCurrentRoleAdapter.ROLE_PREFIX + code))
+            .forEach(authorities::add);
         var auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
         // G1②：把 userId claim 传入 details，供 CurrentUserProvider 解析（应用角色校验需要账号 ID）。
         // currentOperator() 取 getName()=subject（用户名），不受影响。
@@ -81,5 +90,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     List<String> scopes = (List<String>) claims.get("scopes");
     return scopes != null ? scopes : List.of();
+  }
+
+  /**
+   * 读角色码 claim（{@code roleCodes}，IAM {@code JwtTokenService#generateToken} 五参重载写入）。
+   *
+   * <p>缺失/空数组/形状不符均返空集合——「无角色账号」（如纯服务账号）与「老形状 token」都不产生 ROLE_ authority， 由 {@link
+   * SecurityContextCurrentRoleAdapter} 把空集合解读为「已认证无角色 ⇒ 受限字段对其不可见」（fail-closed）。
+   */
+  @SuppressWarnings("unchecked")
+  private static List<String> readRoleCodes(Claims claims) {
+    Object raw = claims.get("roleCodes");
+    if (raw instanceof List<?> list) {
+      return list.stream()
+          .filter(String.class::isInstance)
+          .map(String::valueOf)
+          .filter(c -> !c.isBlank())
+          .toList();
+    }
+    return List.of();
   }
 }

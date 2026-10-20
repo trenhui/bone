@@ -12,7 +12,14 @@ import java.util.Optional;
  */
 public interface AccessTokenIssuer {
 
-  String issueAccessToken(Long accountId, String username, Long tenantId, List<String> scopes);
+  /**
+   * 签发访问令牌。
+   *
+   * @param scopes 权限码（资源服务器实体级授权的依据，{@code runtime:{entity}:read} 形状）
+   * @param roleCodes 角色码（身份属性，下游字段级角色裁剪的依据；空 = 无角色，与「不传」等价）
+   */
+  String issueAccessToken(
+      Long accountId, String username, Long tenantId, List<String> scopes, List<String> roleCodes);
 
   /** 解析令牌（可含 {@code Bearer } 前缀）；非法 / 过期返回 {@code Optional.empty()}。 */
   Optional<JwtPrincipal> parse(String rawToken);

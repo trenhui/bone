@@ -52,7 +52,7 @@ class NotificationApplicationServiceTest {
   }
 
   private void loginAs(String userId) {
-    JwtPrincipal principal = new JwtPrincipal(userId, "tester", "100", List.of());
+    JwtPrincipal principal = new JwtPrincipal(userId, "tester", "100", List.of(), List.of());
     SecurityContextHolder.getContext()
         .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
   }

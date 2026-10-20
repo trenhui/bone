@@ -60,6 +60,14 @@ public final class MetadataErrorCodes {
   /** 无动作级权限 {@code runtime:{entityCode}:{actionCode}} → 403。 */
   public static final String RUNTIME_FORBIDDEN_ACTION = "META_RUNTIME_FORBIDDEN_ACTION";
 
+  /**
+   * 字段级角色不可见：写入请求体含当前用户角色不可见的字段 → 403。
+   *
+   * <p><b>为什么写侧也要拦</b>：读侧按角色裁剪只是「看不到」，若写侧不拦，绕过前端直接 PUT 受限字段即可改数据—— 可见性约束必须读写双侧闭环，否则「隐藏字段」只是视觉效果。判定见
+   * {@link RuntimeFieldVisibilityPolicy}。
+   */
+  public static final String RUNTIME_FIELD_NOT_VISIBLE = "META_RUNTIME_FIELD_NOT_VISIBLE";
+
   // ===== 运行时关系（G10 · 关联/子表/附件）=====
 
   /**

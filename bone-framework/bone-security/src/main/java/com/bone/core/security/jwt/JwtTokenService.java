@@ -58,17 +58,38 @@ public class JwtTokenService {
     }
   }
 
-  /** 生成 JWT token（含 scopes）。HS256 对称签发，现有默认行为，保持不变。 */
-  public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {
+  /**
+   * 生成 JWT token（含 scopes 与角色码）。HS256 对称签发，现有默认行为，保持不变。
+   *
+   * <p><b>为什么把角色码单独放 {@code roleCodes} claim 而不是复用 {@code scopes}/{@code roles}</b>：{@code scopes}
+   * 装的是<b>权限码</b>（{@code runtime:{entity}:read} 形状，资源服务器据此做实体级授权），角色码（{@code admin}/{@code
+   * reviewer} 等身份属性）是另一命名空间——混放会让「按权限码判定」的消费方（如各模块 JwtAuthenticationFilter 的 authorities 装配）
+   * 把角色码当权限码用，或反之。二者语义正交，必须分键存放。
+   *
+   * <p><b>空角色码不写 claim</b>：无角色的账号（如纯服务账号）签出的 token 与历史形状一致，不为空集合浪费 token 体积； 消费侧「claim
+   * 缺失」与「空集合」同样解读为无角色（见下游写守卫的 null/空集合语义）。
+   */
+  public String generateToken(
+      Long accountId, String username, Long tenantId, List<String> scopes, List<String> roleCodes) {
     List<String> safeScopes = scopes == null ? List.of() : scopes;
-    return Jwts.builder()
-        .subject(username)
-        .claim("userId", String.valueOf(accountId))
-        .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
-        .claim("scopes", safeScopes)
+    var builder =
+        Jwts.builder()
+            .subject(username)
+            .claim("userId", String.valueOf(accountId))
+            .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
+            .claim("scopes", safeScopes);
+    if (roleCodes != null && !roleCodes.isEmpty()) {
+      builder.claim("roleCodes", roleCodes);
+    }
+    return builder
         .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpirationMs()))
         .signWith(signingKey)
         .compact();
+  }
+
+  /** 生成 JWT token（不含角色码，兼容既有调用方）。 */
+  public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {
+    return generateToken(accountId, username, tenantId, scopes, null);
   }
 
   /**
@@ -76,23 +97,34 @@ public class JwtTokenService {
    * rsaIssuanceEnabled} 后调用。
    */
   public String generateRsaToken(
-      Long accountId, String username, Long tenantId, List<String> scopes) {
+      Long accountId, String username, Long tenantId, List<String> scopes, List<String> roleCodes) {
     if (rsaPrivateKey == null) {
       throw new IllegalStateException(
           "RS256 签发未配置（bone.iam.jwt.rsa-private-key-pem 缺失），无法签发 RS256 token");
     }
     List<String> safeScopes = scopes == null ? List.of() : scopes;
-    return Jwts.builder()
-        .header()
-        .add("kid", jwtConfig.getRsaKeyId())
-        .and()
-        .subject(username)
-        .claim("userId", String.valueOf(accountId))
-        .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
-        .claim("scopes", safeScopes)
+    var builder =
+        Jwts.builder()
+            .header()
+            .add("kid", jwtConfig.getRsaKeyId())
+            .and()
+            .subject(username)
+            .claim("userId", String.valueOf(accountId))
+            .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
+            .claim("scopes", safeScopes);
+    if (roleCodes != null && !roleCodes.isEmpty()) {
+      builder.claim("roleCodes", roleCodes);
+    }
+    return builder
         .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpirationMs()))
         .signWith(rsaPrivateKey)
         .compact();
+  }
+
+  /** 生成 RS256 非对称 token（不含角色码，兼容既有调用方）。 */
+  public String generateRsaToken(
+      Long accountId, String username, Long tenantId, List<String> scopes) {
+    return generateRsaToken(accountId, username, tenantId, scopes, null);
   }
 
   /** 解析 JWT 返回 JwtPrincipal。 */
@@ -148,12 +180,23 @@ public class JwtTokenService {
         payload.get("userId", String.class),
         payload.getSubject(),
         payload.get("tenantId", String.class),
-        readScopes(payload));
+        readScopes(payload),
+        readRoleCodes(payload));
   }
 
   @SuppressWarnings("unchecked")
   private static List<String> readScopes(Claims payload) {
     Object raw = payload.get("scopes");
+    if (raw instanceof List<?> list) {
+      return list.stream().map(String::valueOf).toList();
+    }
+    return Collections.emptyList();
+  }
+
+  /** 读角色码 claim；缺失（无角色账号/历史 token）返回空集合——与「空集合」同义，消费侧无需分支。 */
+  @SuppressWarnings("unchecked")
+  private static List<String> readRoleCodes(Claims payload) {
+    Object raw = payload.get("roleCodes");
     if (raw instanceof List<?> list) {
       return list.stream().map(String::valueOf).toList();
     }

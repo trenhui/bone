@@ -70,7 +70,8 @@ public class RedisCachedRuntimeEntityCatalog
       String stateField,
       String rowPolicies,
       String autoNumber,
-      List<ColumnPayload> columns) {
+      List<ColumnPayload> columns,
+      List<VisibilityPayload> fieldVisibilities) {
 
     static CachedPayload from(PublishedRuntimeEntity entity) {
       return new CachedPayload(
@@ -89,7 +90,12 @@ public class RedisCachedRuntimeEntityCatalog
                           c.unique(),
                           c.primaryKey(),
                           c.physicalColumn()))
-              .toList());
+              .toList(),
+          entity.fieldVisibilities() == null
+              ? List.of()
+              : entity.fieldVisibilities().stream()
+                  .map(v -> new VisibilityPayload(v.fieldCode(), v.roles(), v.denyAll()))
+                  .toList());
     }
 
     PublishedRuntimeEntity toEntity(String entityCode, long tenantId) {
@@ -105,6 +111,18 @@ public class RedisCachedRuntimeEntityCatalog
                           c.primaryKey(),
                           c.physicalColumn()))
               .toList();
+      List<com.bone.metadata.engine.runtime.RuntimeFieldVisibility> visibilities =
+          fieldVisibilities == null
+              ? null
+              : fieldVisibilities.stream()
+                  .map(
+                      v ->
+                          v.denyAll()
+                              ? com.bone.metadata.engine.runtime.RuntimeFieldVisibility.denyAll(
+                                  v.fieldCode())
+                              : new com.bone.metadata.engine.runtime.RuntimeFieldVisibility(
+                                  v.fieldCode(), v.roles()))
+                  .toList();
       return new PublishedRuntimeEntity(
           entityCode,
           physicalTableName,
@@ -113,7 +131,8 @@ public class RedisCachedRuntimeEntityCatalog
           cols,
           stateField,
           rowPolicies,
-          autoNumber);
+          autoNumber,
+          visibilities);
     }
 
     record ColumnPayload(
@@ -123,5 +142,8 @@ public class RedisCachedRuntimeEntityCatalog
         boolean unique,
         boolean primaryKey,
         String physicalColumn) {}
+
+    /** 字段级角色可见性缓存载荷（与 {@link RuntimeFieldVisibility} 同形，供 Jackson 序列化）。 */
+    record VisibilityPayload(String fieldCode, List<String> roles, boolean denyAll) {}
   }
 }

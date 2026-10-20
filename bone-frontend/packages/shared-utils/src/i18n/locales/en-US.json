@@ -206,6 +206,7 @@
     "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED": "Idempotency-Key header is required for this action",
     "META_RUNTIME_ENTITY_FORBIDDEN": "Entity-level permission required: runtime:{entity}:read or runtime:{entity}:write",
     "META_RUNTIME_FORBIDDEN_ACTION": "Action permission required: runtime:{entity}:{action} or the declared permission code",
+    "META_RUNTIME_FIELD_NOT_VISIBLE": "Request contains fields not visible to your current role and was rejected; contact an administrator to adjust field role visibility",
     "META_RUNTIME_FIELD_PROTECTED": "Field protected by state machine; direct writes are forbidden, use action endpoint",
     "AI_GATEWAY_PROVIDER_RESPONSE_INVALID": "Model provider returned an unusable response; routed to manual review"},
   "enums": {

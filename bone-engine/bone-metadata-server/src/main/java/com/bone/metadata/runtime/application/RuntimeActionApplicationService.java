@@ -42,6 +42,7 @@ public class RuntimeActionApplicationService {
   private final ObjectMapper objectMapper;
   private final RuntimeAccessGuard accessGuard;
   private final UiSchemaRuleEnforcer uiSchemaRuleEnforcer;
+  private final com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider;
 
   public RuntimeActionApplicationService(
       JdbcRuntimeRecordService runtimeRecordService,
@@ -50,7 +51,8 @@ public class RuntimeActionApplicationService {
       RuntimeActionDispatcher dispatcher,
       ObjectMapper objectMapper,
       RuntimeAccessGuard accessGuard,
-      UiSchemaRuleEnforcer uiSchemaRuleEnforcer) {
+      UiSchemaRuleEnforcer uiSchemaRuleEnforcer,
+      com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider) {
     this.runtimeRecordService = runtimeRecordService;
     this.actionDefRepository = actionDefRepository;
     this.executionRepository = executionRepository;
@@ -58,6 +60,7 @@ public class RuntimeActionApplicationService {
     this.objectMapper = objectMapper;
     this.accessGuard = accessGuard;
     this.uiSchemaRuleEnforcer = uiSchemaRuleEnforcer;
+    this.currentRoleProvider = currentRoleProvider;
   }
 
   /**
@@ -201,7 +204,9 @@ public class RuntimeActionApplicationService {
               expectedVersion,
               operatorId,
               actionCode,
-              null);
+              null,
+              // 动作响应同样按角色裁剪：动作端点是用户面路径，与 CRUD 同一套字段级约束
+              currentRoleProvider.currentRoleCodesOrNull());
 
       if (executionId != null) {
         executionRepository.markSucceeded(executionId, encode(sideEffect));

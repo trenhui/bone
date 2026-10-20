@@ -107,6 +107,9 @@ public class GlobalExceptionHandler {
             // RC-004：实体级 / 动作级授权拒绝 → 403。
           case MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN,
               MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION -> HttpStatus.FORBIDDEN;
+            // 字段级角色不可见（写请求体含当前角色不可见的字段）→ 403，与实体级授权拒绝同档：
+            // 都是「身份/角色不够」，与 422（请求合法但业务规则不满足）区分开。
+          case MetadataErrorCodes.RUNTIME_FIELD_NOT_VISIBLE -> HttpStatus.FORBIDDEN;
           default -> HttpStatus.BAD_REQUEST;
         };
     return problem(status, ex.getErrorCode(), ex.getMessage());

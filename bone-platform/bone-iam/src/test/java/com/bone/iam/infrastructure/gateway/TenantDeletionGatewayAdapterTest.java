@@ -1,7 +1,9 @@
 package com.bone.iam.infrastructure.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,6 +56,13 @@ class TenantDeletionGatewayAdapterTest {
    */
   private void wireUnderlyingJdbcTemplate() {
     when(jdbcTemplate.getJdbcTemplate()).thenReturn(rawJdbcTemplate);
+    // 登记表都有 tenant_id 列（稳态）：purgeTenantData 在 DELETE 前会点查 information_schema
+    // 探测列存在性（8da26285 引入的韧性守卫），Mockito 深桩默认返回 null 会被判为「无列」
+    // 而跳过全部表——本用例要断言的正是「登记了就会真的删」，必须显式给出计数。
+    // 缺列跳过路径由 TenantDeletionGatewayDriftTest#skipsTableWithoutTenantIdColumn 覆盖。
+    when(jdbcTemplate.queryForObject(
+            anyString(), ArgumentMatchers.any(MapSqlParameterSource.class), eq(Integer.class)))
+        .thenReturn(1);
   }
 
   /**
