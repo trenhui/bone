@@ -1,0 +1,92 @@
+{
+  "loginOk": true,
+  "results": [
+    {
+      "route": "/iam",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/metadata",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/masterdata",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/commerce",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [
+          "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        ],
+        "pageErrors": []
+      },
+      "network": [
+        {
+          "url": "http://localhost:3000/api/v1/console/overview",
+          "status": 503
+        }
+      ],
+      "create": null
+    },
+    {
+      "route": "/integration",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/system",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/extension",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    },
+    {
+      "route": "/generator",
+      "rendered": false,
+      "errors": {
+        "consoleErrors": [],
+        "pageErrors": []
+      },
+      "network": [],
+      "create": null
+    }
+  ]
+}

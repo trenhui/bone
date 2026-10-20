@@ -1,0 +1,28 @@
+{
+  "results": {
+    "generator": {
+      "create": {
+        "status": 200,
+        "code": 200,
+        "msg": "创建成功"
+      },
+      "readBackFound": false
+    },
+    "integration": {
+      "create": {
+        "status": 200,
+        "code": 200,
+        "msg": "操作成功"
+      },
+      "readBackFound": true
+    },
+    "system": {
+      "create": {
+        "status": 200,
+        "code": 200,
+        "msg": "操作成功"
+      },
+      "readBackFound": false
+    }
+  }
+}
