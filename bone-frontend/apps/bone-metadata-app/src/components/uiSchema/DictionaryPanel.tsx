@@ -28,9 +28,15 @@ interface Props {
   onChange: (next: BoneUiSchema) => void;
   fields: MetaField[];
   focus?: { key?: string };
+  /**
+   * 快照刷新成功后回调（v1.1 联调实证修复）：选项列表与物化时间取自 fields prop，
+   * 不通知宿主重取则面板停留在旧快照——漂移徽标消失了，弃用项却仍显示为生效态，
+   * 「刷新」只兑现了一半语义。宿主（EntityDetail）注入 loadFields。
+   */
+  onFieldsRefetch?: () => void;
 }
 
-export default function DictionaryPanel({ schema, onChange, fields, focus }: Props): React.ReactElement {
+export default function DictionaryPanel({ schema, onChange, fields, focus, onFieldsRefetch }: Props): React.ReactElement {
   // 定位滚动：focus.key 命中哪个字段的字典，滚到那张卡（钩子须无条件调用，置于早返回之前）
   useScrollToFocus(focus?.key != null ? `d${focus.key}` : undefined);
   const enumFields = fields.filter((f) => parseEnumValues(f.enumValues).length > 0);
@@ -69,6 +75,9 @@ export default function DictionaryPanel({ schema, onChange, fields, focus }: Pro
         message.success(`已刷新快照：${res.data.beforeCount} → ${res.data.afterCount} 项`);
         const diffRes = await metadataFieldOptionsApi.diff(f.id);
         if (diffRes.code === 200) setDiffs((prev) => ({ ...prev, [f.code]: diffRes.data }));
+        // 选项与物化时间来自宿主 fields，必须重取才是「刷新」的完整语义——
+        // 仅更新 diffs 会让徽标说「已最新」而列表仍展示旧快照（联调实证）。
+        onFieldsRefetch?.();
       } else {
         message.error(`刷新失败（已保留旧快照）：${errorText(res)}`);
       }

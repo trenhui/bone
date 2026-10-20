@@ -717,6 +717,7 @@ const EntityDetail: React.FC = () => {
                   onGoPublish={() => setOuterTab('publish')}
                   onGoRuntime={() => setOuterTab('data')}
                   rowPolicyCodes={rowPolicyCodes}
+                  onFieldsRefetch={loadFields}
                 />
               ) : (
                 <Alert type="info" showIcon message="该实体使用「手写界面」，不提供协议化界面设计" />

@@ -106,6 +106,13 @@ interface Props {
    * 自包含，新宿主复用漏传 prop 时不会静默降级为「未声明行策略」假象。
    */
   rowPolicyCodes?: string[];
+  /**
+   * 字典快照刷新后重取字段（v1.1 联调实证修复，由 EntityDetail 提供 loadFields）。
+   * DictionaryPanel 的选项列表与物化时间取自 fields prop——仅面板内部更新 diffs
+   * 会让「已漂移」徽标消失而列表仍展示旧快照（弃用项不显示「废弃中」）。
+   * 缺省时刷新只兑现一半语义，故宿主应尽量注入。
+   */
+  onFieldsRefetch?: () => void;
 }
 
 type TabKey = 'structure' | 'rules' | 'actions' | 'list' | 'dict' | 'i18n' | 'base' | 'variants' | 'lint' | 'json';
@@ -131,7 +138,7 @@ const TAB_LABEL: Record<TabKey, string> = {
  *   已完全部发布的实体再弹 0-1 引导是噪音；用户随时可从工具栏「帮助」重开。
  */
 
-export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes }: Props): React.ReactElement {
+export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes, onFieldsRefetch }: Props): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState<BoneUiSchema | null>(null);
   const [baseline, setBaseline] = useState<string>(''); // 已保存快照（发布对照/变更预告用）
@@ -1160,6 +1167,7 @@ export default function UiSchemaDesigner({ entityId, entityCode, fields, onGoPub
               <DictionaryPanel
                 schema={schema} onChange={commit} fields={fields}
                 focus={focus?.tab === 'dict' ? focus : undefined}
+                onFieldsRefetch={onFieldsRefetch}
               />
             )}
             {tab === 'i18n' && (

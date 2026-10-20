@@ -32,9 +32,15 @@ interface Props {
    * 宿主可预置以省一次实体详情请求；未传时设计器自行按 entityId 拉取兜底。
    */
   rowPolicyCodes?: string[];
+  /**
+   * 字典快照刷新后重取字段（v1.1 联调实证修复）：字典面板的「刷新快照」只更新
+   * 漂移徽标，选项列表与物化时间来自 EntityDetail 的 fields——不重取则面板
+   * 停留在旧快照。由 EntityDetail 注入 loadFields。
+   */
+  onFieldsRefetch?: () => void;
 }
 
-const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes }) => (
+const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublish, onGoRuntime, rowPolicyCodes, onFieldsRefetch }) => (
   <UiSchemaDesigner
     entityId={entityId}
     entityCode={entityCode}
@@ -42,6 +48,7 @@ const UiSchemaTab: React.FC<Props> = ({ entityId, entityCode, fields, onGoPublis
     onGoPublish={onGoPublish}
     onGoRuntime={onGoRuntime}
     rowPolicyCodes={rowPolicyCodes}
+    onFieldsRefetch={onFieldsRefetch}
   />
 );
 
