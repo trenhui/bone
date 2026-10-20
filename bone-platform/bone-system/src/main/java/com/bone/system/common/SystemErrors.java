@@ -41,6 +41,8 @@ public final class SystemErrors {
           Map.entry(SystemErrorCodes.DICT_ITEM_NOT_FOUND, 404),
           Map.entry(SystemErrorCodes.DICT_ITEM_CODE_CONFLICT, 409),
           Map.entry(SystemErrorCodes.DICT_ITEM_HAS_CHILDREN, 409),
+          Map.entry(SystemErrorCodes.DICT_ITEM_DELETE_REQUIRES_DISABLED, 409),
+          Map.entry(SystemErrorCodes.DICT_ITEM_STATE_TRANSITION_INVALID, 409),
           Map.entry(SystemErrorCodes.DICT_PARENT_NOT_FOUND, 400),
           Map.entry(SystemErrorCodes.DICT_PARENT_NOT_ALLOWED, 400),
           Map.entry(SystemErrorCodes.DICT_CYCLE_DETECTED, 409),

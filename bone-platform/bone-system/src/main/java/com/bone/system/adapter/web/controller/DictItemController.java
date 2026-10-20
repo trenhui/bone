@@ -83,6 +83,28 @@ public class DictItemController {
     return ApiResponse.success();
   }
 
+  /**
+   * 弃用字典项（ACTIVE → DEPRECATED）：新表单不再出现，存量写仍放行。
+   *
+   * <p>三态生命周期的过渡态入口（doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.5）： 删除是 breaking
+   * 变更，必须先经弃用过渡、观察期后再停用，从产品上堵住「删了再说」。
+   */
+  @Operation(summary = "弃用字典项（新表单不可见、存量写放行）")
+  @PutMapping("/{id}/deprecate")
+  @PreAuthorize("hasAuthority('sys:dict:write')")
+  public ApiResponse<Void> deprecate(@PathVariable Long id) {
+    dictApplicationService.deprecateItem(id);
+    return ApiResponse.success();
+  }
+
+  @Operation(summary = "恢复弃用的字典项（DEPRECATED → ACTIVE）")
+  @PutMapping("/{id}/restore")
+  @PreAuthorize("hasAuthority('sys:dict:write')")
+  public ApiResponse<Void> restore(@PathVariable Long id) {
+    dictApplicationService.restoreItem(id);
+    return ApiResponse.success();
+  }
+
   @Operation(summary = "按值域 + 编码读取字典项")
   @GetMapping("/{typeCode}/{code}")
   public ApiResponse<DictItemResp> get(@PathVariable String typeCode, @PathVariable String code) {
@@ -130,11 +152,14 @@ public class DictItemController {
   }
 
   /**
-   * 下拉数据源：平台 + 租户覆盖合并 → 生效过滤 → 只返启用项 → 可选本地化，走进程内缓存。
+   * 下拉数据源：平台 + 租户覆盖合并 → 生效过滤 → 排除停用终态 → 可选本地化，走进程内缓存。
    *
    * <p>这是全平台消费字典的唯一入口——前端 {@code useDict} 与后端其它模块都只认它， 避免 v1「每个页面自己拼字典请求」的重复实现。
+   *
+   * <p><b>三态口径</b>（v1.1）：返回 ACTIVE + DEPRECATED（每项带 {@code state}），DISABLED 不返回。 渲染侧按 {@code
+   * state==ACTIVE} 过滤（新表单不出现弃用项）；写校验侧（元数据选项源物化）接受两态（存量写放行）。
    */
-  @Operation(summary = "下拉数据源（合并平台与租户覆盖，只含启用且生效中的项）")
+  @Operation(summary = "下拉数据源（合并平台与租户覆盖，ACTIVE+DEPRECATED，每项带 state）")
   @GetMapping("/options")
   public ApiResponse<List<DictOptionResp>> options(
       @RequestParam String type,

@@ -67,6 +67,18 @@ public final class SystemErrorCodes {
   /** 字典项仍有子项，不允许删除（级联树需先删叶子）。 */
   public static final String DICT_ITEM_HAS_CHILDREN = "SYS_DICT_ITEM_HAS_CHILDREN";
 
+  /**
+   * 字典项删除被拒：仅停用（DISABLED）终态可删——删除是 breaking 变更，必须先弃用（DEPRECATED）过渡再停用。
+   *
+   * <p>兼容性矩阵的管理面强制点（doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.4）。
+   */
+  public static final String DICT_ITEM_DELETE_REQUIRES_DISABLED =
+      "SYS_DICT_ITEM_DELETE_REQUIRES_DISABLED";
+
+  /** 字典项生命周期状态迁移非法（如对非生效项执行弃用、未弃用直接停用）。 */
+  public static final String DICT_ITEM_STATE_TRANSITION_INVALID =
+      "SYS_DICT_ITEM_STATE_TRANSITION_INVALID";
+
   /** 父项编码在同类型下不存在。 */
   public static final String DICT_PARENT_NOT_FOUND = "SYS_DICT_PARENT_NOT_FOUND";
 

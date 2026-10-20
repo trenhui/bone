@@ -17,6 +17,9 @@ import java.util.Map;
  *
  * <p><b>降级口径</b>（与既有 {@code JdbcRuntimeRecordService} 一致）：ENUM 声明 / 规则 JSON 无法解析时
  * 按「未配置」处理，不阻断写入——建模层保证合法性，运行期不因脏配置拒全表。
+ *
+ * <p><b>ENUM 三态口径</b>（字典打通 v1.1）：dict 物化快照携带 {@code state}， {@code DISABLED} 选项写路径拒绝、{@code
+ * DEPRECATED} 放行（存量数据与 API 直写仍可保存）， 无 {@code state} 的存量手写快照按放行处理。
  */
 public final class RuntimeWriteValidator {
 
@@ -101,6 +104,14 @@ public final class RuntimeWriteValidator {
     }
   }
 
+  /**
+   * ENUM 取值放行判定（snapshot 模式 · 三态口径）。
+   *
+   * <p>dict 物化快照的每个选项可携带 {@code state}：{@code ACTIVE}/{@code DEPRECATED} 放行， {@code DISABLED}
+   * 拒绝（停用是终态，不再接受新写入）；无 {@code state} 字段的存量快照 （建模者手写 enumValues）按放行处理，不因物化升级改变存量契约。
+   *
+   * <p>DEPRECATED 放行是「双口径」的写侧：新表单下拉不再展示（前端按 state 过滤）， 但历史数据与 API 直写仍可保存——真源下线一个选项不应让存量写路径瞬间全红。
+   */
   private static boolean isEnumValueAllowed(String enumValuesJson, Object value) {
     try {
       String raw = enumValuesJson.trim();
@@ -109,14 +120,18 @@ public final class RuntimeWriteValidator {
         Object parsed = MAPPER.readValue(normalized, Object.class);
         if (parsed instanceof java.util.List<?> list) {
           for (Object item : list) {
-            String candidate = null;
             if (item instanceof Map<?, ?> map && map.containsKey("code")) {
-              candidate = String.valueOf(map.get("code"));
+              if (isDisabledOption(map)) {
+                continue;
+              }
+              String candidate = String.valueOf(map.get("code"));
+              if (candidate.equals(String.valueOf(value))) {
+                return true;
+              }
             } else if (item != null) {
-              candidate = String.valueOf(item);
-            }
-            if (candidate != null && candidate.equals(String.valueOf(value))) {
-              return true;
+              if (String.valueOf(item).equals(String.valueOf(value))) {
+                return true;
+              }
             }
           }
         }
@@ -131,6 +146,12 @@ public final class RuntimeWriteValidator {
     } catch (Exception e) {
       return true; // 枚举声明无法解析时按未配置处理（不阻断写入）
     }
+  }
+
+  /** 物化快照选项的 state 为 DISABLED（停用终态）时写路径拒绝。 */
+  private static boolean isDisabledOption(Map<?, ?> map) {
+    Object state = map.get("state");
+    return state != null && "DISABLED".equals(String.valueOf(state));
   }
 
   private static void applyNumericBounds(RuntimeFieldColumn col, Object value) {

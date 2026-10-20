@@ -169,7 +169,8 @@ class DictApplicationServiceTest {
   void deleteItemRejectedWhenAnyHierarchyHasChildren() {
     SysDictType type = cascadeType(3, null);
     stubType(type);
-    SysDictItem gd = item("GD");
+    // 已走完弃用→停用过渡（DISABLED）才有资格删；子节点守卫对终态仍然有效
+    SysDictItem gd = plainItem("GD", "GD", 0);
     when(dictItemRepository.findById(5L)).thenReturn(gd);
     when(dictHierarchyRepository.listAllViewsAllTenants("biz_region", 0L))
         .thenReturn(
@@ -181,6 +182,74 @@ class DictApplicationServiceTest {
         .isInstanceOf(BizException.class)
         .hasMessageContaining("SYS_DICT_ITEM_HAS_CHILDREN");
     verify(dictItemRepository, never()).deleteById(anyLong());
+  }
+
+  @Test
+  void deleteItemRejectedWhenActiveOrDeprecated() {
+    // 兼容性矩阵（v1.1 §4.4）：删除是 breaking 变更，仅 DISABLED 终态可删
+    stubType(cascadeType(3, null));
+    when(dictItemRepository.findById(5L)).thenReturn(item("GD")); // ACTIVE
+    when(dictHierarchyRepository.listAllViewsAllTenants("biz_region", 0L)).thenReturn(List.of());
+
+    assertThatThrownBy(() -> service.deleteItem(5L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining("SYS_DICT_ITEM_DELETE_REQUIRES_DISABLED");
+    verify(dictItemRepository, never()).deleteById(anyLong());
+
+    when(dictItemRepository.findById(6L)).thenReturn(plainItem("GZ", "GZ", 2)); // DEPRECATED
+    assertThatThrownBy(() -> service.deleteItem(6L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining("SYS_DICT_ITEM_DELETE_REQUIRES_DISABLED");
+    verify(dictItemRepository, never()).deleteById(anyLong());
+  }
+
+  @Test
+  void deleteItemSucceedsWhenDisabled() {
+    stubType(cascadeType(3, null));
+    when(dictItemRepository.findById(7L)).thenReturn(plainItem("SZ", "SZ", 0));
+    when(dictHierarchyRepository.listAllViewsAllTenants("biz_region", 0L)).thenReturn(List.of());
+
+    service.deleteItem(7L);
+
+    verify(dictItemRepository).deleteById(7L);
+  }
+
+  // ---------- 三态生命周期（v1.1 §4.5） ----------
+
+  @Test
+  void deprecateAndRestoreTransitionLifecycle() {
+    stubType(listType());
+    // plainItem 造出的项归属 biz_region，deprecateItem 会经 requireTypeByCode 校验归属
+    when(dictTypeRepository.findByCodeAllTenants("biz_region", 0L))
+        .thenReturn(Optional.of(listType()));
+    SysDictItem a = plainItem("A", "标签A", 1);
+    when(dictItemRepository.findById(10L)).thenReturn(a);
+
+    service.deprecateItem(10L);
+    assertThat(a.isDeprecated()).isTrue();
+    assertThat(a.stateName()).isEqualTo("DEPRECATED");
+
+    service.restoreItem(10L);
+    assertThat(a.isActive()).isTrue();
+    assertThat(a.stateName()).isEqualTo("ACTIVE");
+  }
+
+  @Test
+  void lifecycleTransitionsRejectIllegalStates() {
+    stubType(listType());
+    when(dictTypeRepository.findByCodeAllTenants("biz_region", 0L))
+        .thenReturn(Optional.of(listType()));
+    // 停用（DISABLED）项不可再弃用
+    when(dictItemRepository.findById(10L)).thenReturn(plainItem("A", "标签A", 0));
+    assertThatThrownBy(() -> service.deprecateItem(10L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining("SYS_DICT_ITEM_STATE_TRANSITION_INVALID");
+
+    // 生效（ACTIVE）项不可「恢复」
+    when(dictItemRepository.findById(11L)).thenReturn(plainItem("B", "标签B", 1));
+    assertThatThrownBy(() -> service.restoreItem(11L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining("SYS_DICT_ITEM_STATE_TRANSITION_INVALID");
   }
 
   // ---------- 下拉数据源 ----------
@@ -202,6 +271,20 @@ class DictApplicationServiceTest {
     List<DictOptionDto> options = service.options("sys_status", null, null);
 
     assertThat(options).extracting(DictOptionDto::getCode).containsExactly("A");
+  }
+
+  @Test
+  void optionsIncludesDeprecatedWithStateButExcludesDisabled() {
+    // v1.1 双口径：/options 返回 ACTIVE+DEPRECATED（带 state），DISABLED 不返回——
+    // 渲染侧按 ACTIVE 过滤（新表单不出现弃用项），写校验侧接受两态（存量写放行）
+    SysDictType type = listType();
+    stubType(type);
+    stubItems(List.of(plainItem("A", "生效", 1), plainItem("B", "已废弃", 2), plainItem("C", "已停用", 0)));
+
+    List<DictOptionDto> options = service.options("sys_status", null, null);
+
+    assertThat(options).extracting(DictOptionDto::getCode).containsExactly("A", "B");
+    assertThat(options).extracting(DictOptionDto::getState).containsExactly("ACTIVE", "DEPRECATED");
   }
 
   @Test

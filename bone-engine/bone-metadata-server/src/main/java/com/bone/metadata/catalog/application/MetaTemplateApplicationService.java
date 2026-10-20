@@ -109,7 +109,7 @@ public class MetaTemplateApplicationService {
               tf.getComment(),
               tf.getSortOrder(),
               cmd.getModuleId(),
-              // 以下 7 项为数据治理列（MetaField 于 aa2e77d0 扩展为 23 参工厂）。模板字段
+              // 以下为数据治理列 + 选项源列（MetaField 工厂 23 参）。模板字段
               // MetaModelTemplateField 本身不含这些列，实例化时无值可透传，故显式置 null
               // （与 8 参工厂 create(...) 内部填 null 的口径一致）。
               null, // dataClassification
@@ -119,6 +119,7 @@ public class MetaTemplateApplicationService {
               null, // businessTerm
               null, // sourceSystem
               tf.getEnumValues(), // enumValues（W1a T2：模板码表透传）
+              null, // enumSource：模板不携带真源绑定，实例化后由建模者在字段向导配置
               tf.getValidationRules()); // validationRules（W1a T2：模板质量规则透传）
       metaFieldRepository.insert(field);
     }

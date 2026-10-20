@@ -51,6 +51,13 @@ SLICE_ALLOWLIST = {
     # 测试夹具：分区 id 唯一性用例对 id 数组取前 2 个比对（"原有分区不被顶改"），
     # 是断言构造而非投影渲染，同onboarding.test.ts 性质。
     os.path.join("components", "uiSchema", "schemaOps.test.ts"),
+    # 字段向导 dict 模式选项预览：后端 /options 对字典值域全量返回（无上限），
+    # 预览盒最多渲染前 20 个 Tag 并明示「共 N 项」——UI 展示限流，非字段/列投影
+    # （与 BasePanel/ContractScopeCard 的摘要预览同性质；完整值域以发布快照为准）。
+    os.path.join("components", "FieldWizardModal.tsx"),
+    # 实体详情字段编辑的 dict 预览：同 FieldWizardModal，前 20 项 Tag 预览
+    # （maxHeight 140 滚动容器），UI 展示截断，非字段/列投影。
+    os.path.join("pages", "EntityDetail.tsx"),
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")

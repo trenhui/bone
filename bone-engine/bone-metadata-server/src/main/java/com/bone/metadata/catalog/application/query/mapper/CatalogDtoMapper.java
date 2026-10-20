@@ -54,6 +54,7 @@ public final class CatalogDtoMapper {
     dto.setBusinessTerm(f.getBusinessTerm());
     dto.setSourceSystem(f.getSourceSystem());
     dto.setEnumValues(f.getEnumValues());
+    dto.setEnumSource(f.getEnumSource());
     dto.setValidationRules(f.getValidationRules());
     dto.setCreatedAt(f.getCreatedAt());
     dto.setVersion(f.getVersion());

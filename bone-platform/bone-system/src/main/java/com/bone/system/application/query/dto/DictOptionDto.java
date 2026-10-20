@@ -23,6 +23,14 @@ public class DictOptionDto {
   private boolean isDefault;
   private Integer sort;
 
+  /**
+   * 生命周期状态（v1.1 三态）：ACTIVE / DEPRECATED；DISABLED 不进 /options。
+   *
+   * <p>一个端点两种口径的载体：渲染消费方按 {@code ACTIVE} 过滤（新表单不出现 DEPRECATED）， 写校验消费方（选项源物化）接受 ACTIVE +
+   * DEPRECATED（存量写放行）。见 doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.2/§4.5。
+   */
+  private String state;
+
   public static DictOptionDto from(SysDictItem item) {
     return DictOptionDto.builder()
         .code(item.getCode())
@@ -31,6 +39,7 @@ public class DictOptionDto {
         .tagType(item.getTagType())
         .isDefault(item.isDefaultItem())
         .sort(item.getSort())
+        .state(item.stateName())
         .build();
   }
 }

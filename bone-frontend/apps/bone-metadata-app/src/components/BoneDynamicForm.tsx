@@ -214,7 +214,14 @@ export const BoneDynamicForm: React.FC<Props> = ({
           onChange={(v) => setValue(c.fieldCode, v)} placeholder={opts.length ? '请选择' : '候选加载中…'} />;
       }
       if (type === 'ENUM') {
-        const opts = parseEnumValues(f?.enumValues).map((o) => ({ value: o.code, label: `${o.label}（${o.code}）` }));
+        // 三态口径（界面设计器字典打通 v1.1 §4.5）：下拉只出现 ACTIVE——新表单不再产生弃用值；
+        // 存量值若为 DEPRECATED，补回该选项并置灰（Salesforce restricted picklist 惯例：
+        // 历史值可回显、不可再选），写校验按快照口径放行（存量单据仍可保存）。
+        const all = parseEnumValues(f?.enumValues);
+        const cur = data[c.fieldCode] == null ? '' : String(data[c.fieldCode]);
+        const opts = all
+          .filter((o) => (o.state ?? 'ACTIVE') === 'ACTIVE' || o.code === cur)
+          .map((o) => ({ value: o.code, label: `${o.label}（${o.code}）`, disabled: o.state === 'DEPRECATED' }));
         return <Select disabled={ro} style={{ width: '100%' }} options={opts} value={data[c.fieldCode] as string} onChange={(v) => setValue(c.fieldCode, v)} placeholder={opts.length ? '请选择' : '该枚举未配置码表'} />;
       }
       if (type === 'DATE') return <DatePicker disabled={ro} style={{ width: '100%' }} value={data[c.fieldCode] ? dayjs(data[c.fieldCode] as string) : null} onChange={(d) => setValue(c.fieldCode, d ? d.format('YYYY-MM-DD') : '')} />;

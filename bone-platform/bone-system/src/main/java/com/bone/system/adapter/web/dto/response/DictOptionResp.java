@@ -13,4 +13,7 @@ public class DictOptionResp {
   private String tagType;
   private boolean isDefault;
   private Integer sort;
+
+  /** 生命周期状态（v1.1 三态）：ACTIVE / DEPRECATED；DISABLED 不返回。渲染按 ACTIVE 过滤，写校验接受两种。 */
+  private String state;
 }

@@ -49,6 +49,22 @@ public final class CatalogErrorCodes {
   /** 字段编码在同实体下已存在。 */
   public static final String FIELD_CODE_CONFLICT = "META_FIELD_CODE_CONFLICT";
 
+  /**
+   * 枚举选项源声明非法（非 JSON / type 越界 / ref 缺失 / external 缺 connectorId）。
+   *
+   * <p>写入口守卫：与 {@link #ROW_POLICIES_INVALID} 同姿态——声明非法必须在保存时挡住， 不能等发布物化时才炸（doc/design/modules/11
+   * §4.2/§9）。
+   */
+  public static final String ENUM_SOURCE_INVALID = "META_ENUM_SOURCE_INVALID";
+
+  /**
+   * 枚举选项源解析失败（发布物化 / 手动刷新时 dict/reference 真源不可达，发布阻断）。
+   *
+   * <p>fail-closed：写路径不接受「静默用旧快照」——运营以为改了字典生效，实际跑的是上个月的码表 （doc/design/modules/11 §4.3）。读路径（预览/漂移）由
+   * ENUM_SOURCE_UNRESOLVED 问题项表达，不走异常。
+   */
+  public static final String ENUM_SOURCE_RESOLVE_FAILED = "META_ENUM_SOURCE_RESOLVE_FAILED";
+
   // ===== 关系（catalog META_RELATION_*）=====
 
   /** 关系不存在（含跨租户不可见）。 */

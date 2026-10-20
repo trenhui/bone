@@ -68,7 +68,8 @@ class MetaEntityImportServiceTest {
             mock(ActionDefMaterializePort.class),
             domainEventPublisher,
             mock(PlatformTransactionManager.class),
-            mock(UiSchemaApplicationService.class));
+            mock(UiSchemaApplicationService.class),
+            mock(EnumSourceApplicationService.class));
   }
 
   /** bone-blueprint t_order 的真实物理结构（含保留列与 DECIMAL 精度）。 */

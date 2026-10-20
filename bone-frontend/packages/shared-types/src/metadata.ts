@@ -63,6 +63,8 @@ export interface MetaField {
   sourceSystem?: string;
   /** 枚举值/标准码表（JSON 文本） */
   enumValues?: string;
+  /** 枚举选项源声明 JSON（空 = inline 本地枚举；dict 时 enumValues 为物化快照） */
+  enumSource?: string;
   /** 校验规则/质量规则（JSON 文本） */
   validationRules?: string;
 }
@@ -136,6 +138,12 @@ export interface CreateMetaFieldReq {
   businessTerm?: string;
   sourceSystem?: string;
   enumValues?: string;
+  /**
+   * 枚举选项源声明 JSON（doc/design/modules/11 §4.2）。
+   * P0 形态：{"type":"dict","mode":"snapshot","ref":{"typeCode":"xxx"}}；空 = inline 本地枚举。
+   * resolvedAt/resolvedCount/resolvedBy 为服务端物化元数据，建模者只填 type/mode/ref。
+   */
+  enumSource?: string;
   validationRules?: string;
 }
 
@@ -157,6 +165,8 @@ export interface UpdateMetaFieldReq {
   businessTerm?: string;
   sourceSystem?: string;
   enumValues?: string;
+  /** 枚举选项源声明 JSON（空 = inline；形态见 CreateMetaFieldReq.enumSource） */
+  enumSource?: string;
   validationRules?: string;
 }
 
@@ -209,15 +219,73 @@ export const FIELD_TYPE_MAP: Record<
   ENUM: { icon: '◉', desc: '枚举/码表', color: 'gold' },
 };
 
-/** 枚举选项（ENUM 控件：标准码表） */
+/**
+ * 枚举选项（ENUM 控件：标准码表）。
+ *
+ * <p>{@link state} 为三态生命周期标记（界面设计器字典打通 v1.1 §4.5）：仅 dict 物化快照对 DEPRECATED
+ * 项携带；缺省 = ACTIVE（inline 本地枚举与存量快照）。渲染（新表单下拉）只出现 ACTIVE； 写校验放行
+ * ACTIVE + DEPRECATED；DISABLED 不进快照（拒绝）。
+ */
 export interface EnumOption {
   code: string;
   label: string;
+  state?: 'ACTIVE' | 'DEPRECATED' | 'DISABLED';
+}
+
+/**
+ * 枚举选项源声明（doc/design/modules/11 §4.2，meta_field.enum_source 的 JSON 文本）。
+ * P0 仅 dict 一种非 inline 类型；reference/external 为分期预留。
+ */
+export interface EnumSource {
+  /** inline（缺省，兼容存量）/ dict（P0）/ reference（P1）/ external（P2） */
+  type: 'inline' | 'dict' | 'reference' | 'external';
+  /** snapshot（默认）/ live；external 强制 live */
+  mode?: 'snapshot' | 'live';
+  /** 真源定位：dict={typeCode} / reference={setCode} / external={connectorId,path,...} */
+  ref?: Record<string, unknown>;
+  /** 服务端物化元数据（建模者只读不改） */
+  resolvedAt?: string;
+  resolvedCount?: number;
+  resolvedBy?: string;
+}
+
+/** 选项源物化结果（手动刷新返回值） */
+export interface EnumSourceRefreshResult {
+  fieldId: string;
+  beforeCount: number;
+  afterCount: number;
+}
+
+/** 快照 vs 真源差异（option-diff 端点） */
+export interface EnumSourceDiff {
+  added: string[];
+  removed: string[];
+  labelChanged: string[];
+  /** 状态变迁（如 ACTIVE→DEPRECATED 的 code 列表；v1.1 三态：让设计者提前感知选项正在下线） */
+  stateChanged: string[];
+  /** false = 真源不可达（前端按 ENUM_SOURCE_UNRESOLVED 语义展示） */
+  resolved: boolean;
+}
+
+/**
+ * 解析 enum_source JSON 文本为声明对象；空/非法返回 null（inline 语义，调用方按无绑定处理）。
+ * 与 parseEnumValues 同姿态：不抛异常，脏数据静默按 inline 兼容存量。
+ */
+export function parseEnumSource(raw?: string | null): EnumSource | null {
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw) as EnumSource;
+    if (obj && typeof obj === 'object' && typeof obj.type === 'string') return obj;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * 解析 ENUM 字段的 enumValues（JSON 文本）为选项数组。
- * 兼容 [{code,label}] 与 [{value,label}] 两种形态；非法输入返回 []，不抛异常。
+ * 兼容 [{code,label}] 与 [{value,label}] 两种形态；可选携带 state（三态生命周期，仅 DEPRECATED 会写出）；
+ * 非法输入返回 []，不抛异常。
  */
 export function parseEnumValues(raw?: string | null): EnumOption[] {
   if (!raw) return [];
@@ -230,7 +298,13 @@ export function parseEnumValues(raw?: string | null): EnumOption[] {
           const o = it as Record<string, unknown>;
           const code = o.code ?? o.value;
           const label = o.label ?? code;
-          return code != null ? { code: String(code), label: String(label) } : null;
+          if (code == null) return null;
+          const option: EnumOption = { code: String(code), label: String(label) };
+          const state = o.state;
+          if (state === 'DEPRECATED' || state === 'DISABLED') {
+            option.state = state;
+          }
+          return option;
         }
         return null;
       })

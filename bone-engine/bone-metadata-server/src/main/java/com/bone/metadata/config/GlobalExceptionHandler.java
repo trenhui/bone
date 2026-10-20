@@ -21,6 +21,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -216,6 +217,29 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST,
         CommonErrorCodes.MALFORMED_REQUEST,
         String.format("参数 %s 格式不正确", ex.getName()));
+  }
+
+  /**
+   * 必填查询参数缺失 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p><b>为何必须显式接管</b>：{@code @RequestParam String typeCode} 之类的必填查询参数未传时， Spring 抛 {@link
+   * MissingServletRequestParameterException}；它既非 {@link BizException} 也非 Bean Validation 异常， 且与
+   * {@link MethodArgumentTypeMismatchException}（本类已接管）不是同一类型 —— 参数「传错类型」已归 400， 参数「根本没传」却仍是
+   * 500，同一类客户端笔误两种口径。
+   *
+   * <p>实测（2026-10-20 全模块联调）：{@code GET /api/v1/metadata/fields/dict-bindings} 不传 {@code typeCode}
+   * 返回 <b>500 COMMON_INTERNAL_ERROR</b>，而 bone-system / bone-masterdata / bone-file 三个模块 对同一类缺参统一返回
+   * 400 —— 跨模块 5xx 口径不一致会把纯客户端笔误计入服务端错误预算，并误导调用方重试。 此处对齐为 400 + {@code
+   * CommonErrorCodes.MALFORMED_REQUEST}。
+   */
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMissingServletRequestParameter(
+      MissingServletRequestParameterException ex) {
+    log.warn("必填参数缺失: name={}, type={}", ex.getParameterName(), ex.getParameterType());
+    return problem(
+        HttpStatus.BAD_REQUEST,
+        CommonErrorCodes.MALFORMED_REQUEST,
+        String.format("缺少必填参数 %s", ex.getParameterName()));
   }
 
   /**

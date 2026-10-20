@@ -23,11 +23,26 @@ import lombok.NoArgsConstructor;
  *
  * <p><b>code 与 value 为什么要分开</b>：{@code code} 是稳定业务键（枚举名、区域码）， {@code value} 是对外序列化值。再叠加 {@code
  * externalCode} 承载外部标准码（GB/T 2260、 ISO 4217）——内部码是平台契约、外部码是对接契约，两者混用正是 v1 的坑。
+ *
+ * <p><b>三态生命周期</b>（v1.1 · {@code status} 列语义扩展，零 DDL）：{@value #STATUS_ACTIVE} = ACTIVE（生效）、 {@value
+ * #STATUS_DEPRECATED} = DEPRECATED（已废弃：新表单不渲染、写校验放行——存量单据仍可保存/回显）、{@value #STATUS_DISABLED} =
+ * DISABLED（停用终态：不渲染、写校验拒绝、存量只读展示）。业界来源：OpenAPI enum 演进（下线走 deprecate 过渡期）与 Confluent Schema
+ * Registry 兼容性分级——删除是 breaking 变更，必须先过渡再终态，从产品上堵住「删了再说」。 见 doc/design/lowcode/ui/界面设计器字典打通设计方案.md
+ * §4.4/§4.5。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("sys_dict_item")
 public class SysDictItem extends TenantAggregateRoot<Long> {
+
+  /** 生效（正常态）。 */
+  public static final int STATUS_ACTIVE = 1;
+
+  /** 已废弃（过渡态：新表单不渲染、写校验放行——存量单据仍可保存/回显）。 */
+  public static final int STATUS_DEPRECATED = 2;
+
+  /** 停用（终态：不渲染、写校验拒绝、存量数据只读展示）。 */
+  public static final int STATUS_DISABLED = 0;
 
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
@@ -186,7 +201,67 @@ public class SysDictItem extends TenantAggregateRoot<Long> {
   }
 
   public boolean isEnabled() {
-    return status != null && status == 1;
+    return status != null && status == STATUS_ACTIVE;
+  }
+
+  // ===== 三态生命周期（v1.1 §4.5：渲染只看 ACTIVE，写校验放行 ACTIVE+DEPRECATED，只有 DISABLED 拦写） =====
+
+  public boolean isActive() {
+    return status != null && status == STATUS_ACTIVE;
+  }
+
+  public boolean isDeprecated() {
+    return status != null && status == STATUS_DEPRECATED;
+  }
+
+  public boolean isDisabled() {
+    return status != null && status == STATUS_DISABLED;
+  }
+
+  /** 状态名（/options 响应与跨服务契约的稳定口径；null/越界值按 ACTIVE 兼容存量）。 */
+  public String stateName() {
+    if (isDeprecated()) {
+      return "DEPRECATED";
+    }
+    if (isDisabled()) {
+      return "DISABLED";
+    }
+    return "ACTIVE";
+  }
+
+  /**
+   * 停用请求（ACTIVE → DEPRECATED）：新表单不再出现，存量写仍放行。
+   *
+   * <p>迁移期窗口由 steward 定；配合 {@code effectiveTo} 可做「下季度起停用」的计划式切换。
+   */
+  public void deprecate() {
+    if (!isActive()) {
+      throw new DomainException("仅生效中的字典项可弃用（当前状态：" + stateName() + "）");
+    }
+    this.status = STATUS_DEPRECATED;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /** 撤销弃用（DEPRECATED → ACTIVE）。 */
+  public void restore() {
+    if (!isDeprecated()) {
+      throw new DomainException("仅已废弃的字典项可恢复（当前状态：" + stateName() + "）");
+    }
+    this.status = STATUS_ACTIVE;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  /**
+   * 强制停用（DEPRECATED → DISABLED）：过渡期满的终态，存量数据只读展示。
+   *
+   * <p>兼容性矩阵（v1.1 §4.4）的管理面强制点之一：删除前必须先走完本过渡，见 {@code DictApplicationService#deleteItem}。
+   */
+  public void disable() {
+    if (!isDeprecated()) {
+      throw new DomainException("停用前须先弃用（breaking 变更必须先过渡，当前状态：" + stateName() + "）");
+    }
+    this.status = STATUS_DISABLED;
+    this.updatedAt = LocalDateTime.now();
   }
 
   public DictTagType tagType() {

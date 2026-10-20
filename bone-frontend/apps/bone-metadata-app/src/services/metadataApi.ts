@@ -31,6 +31,9 @@ import type {
   RuntimeReferenceOption,
   RuntimeChildRow,
   RuntimeChildrenReplaceResult,
+  EnumOption,
+  EnumSourceDiff,
+  EnumSourceRefreshResult,
 } from '../types';
 
 export { setQiankunToken };
@@ -184,6 +187,36 @@ export const metadataFieldApi = {
   delete: (entityId: SnowflakeId, fieldId: SnowflakeId) =>
     api.delete<never, ApiResponse<void>>(`${META}/entities/${entityId}/fields/${fieldId}`),
 };
+
+/**
+ * 枚举选项源端点（doc/design/modules/11 §9，字段级平级路径——设计器持 fieldId 调用）。
+ * 读端点后端不挂 @PreAuthorize（同字典 /options 姿态）；refresh 需 metadata:model:write。
+ */
+export const metadataFieldOptionsApi = {
+  /** 实时解析选项：dict 来源返实时选项，inline 返已物化快照 */
+  options: (fieldId: SnowflakeId) =>
+    api.get<never, ApiResponse<EnumOption[]>>(`${META}/fields/${fieldId}/options`),
+
+  /** 快照 vs 真源差异（added/removed/labelChanged；resolved=false 表示真源不可达） */
+  diff: (fieldId: SnowflakeId) =>
+    api.get<never, ApiResponse<EnumSourceDiff>>(`${META}/fields/${fieldId}/option-diff`),
+
+  /** 重新物化快照（失败时后端保留旧快照并报错） */
+  refresh: (fieldId: SnowflakeId) =>
+    api.post<never, ApiResponse<EnumSourceRefreshResult>>(`${META}/fields/${fieldId}/options/refresh`),
+};
+
+/**
+ * 系统字典值域预览（字段向导 dict 模式）：经同一网关打 bone-system 的「全平台唯一取数契约」
+ * {@code /api/v1/system/dict/items/options}。与 bone-system-app 的 dictApi 同端点——跨应用复用
+ * 契约而非各起调用，正是 doc 11「UI 只引用不复制」纪律的前端侧体现。
+ */
+export function previewDictOptions(typeCode: string) {
+  return api.get<never, ApiResponse<EnumOption[]>>(
+    '/api/v1/system/dict/items/options',
+    { params: { type: typeCode } },
+  );
+}
 
 export const metadataRelationApi = {
   page: (params: {

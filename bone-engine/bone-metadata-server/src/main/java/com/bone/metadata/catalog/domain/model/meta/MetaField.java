@@ -98,6 +98,17 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "enum_values")
   private String enumValues;
 
+  /**
+   * 枚举选项源声明（JSON 文本，复用 meta_field.enum_source；为空 = inline 本地枚举，行为与存量逐字一致）。
+   *
+   * <p>设计见 doc/design/modules/11《枚举选项源统一设计方案》§4.2：{@code type} ∈ inline（缺省）/ dict（P0 已接线）/
+   * reference（P1）/ external（P2）；{@code ref} 按类型定位真源；{@code resolvedAt/resolvedCount/resolvedBy}
+   * 为服务端物化元数据（建模者不改）。物化动作把真源选项覆写进 {@link #enumValues}，发布即冻结——
+   * 运行时写校验（RuntimeWriteValidator）与前端渲染（parseEnumValues）消费口径不变。
+   */
+  @Column(name = "enum_source")
+  private String enumSource;
+
   /** 校验规则/质量规则（JSON 文本，复用 meta_field.validation_rules） */
   @Column(name = "validation_rules")
   private String validationRules;
@@ -132,6 +143,7 @@ public class MetaField extends AbstractEntity<Long> {
         null, // businessTerm
         null, // sourceSystem
         null, // enumValues
+        null, // enumSource
         null); // validationRules
   }
 
@@ -157,6 +169,7 @@ public class MetaField extends AbstractEntity<Long> {
       String businessTerm,
       String sourceSystem,
       String enumValues,
+      String enumSource,
       String validationRules) {
     MetaField f = new MetaField();
     f.setId(id);
@@ -182,6 +195,7 @@ public class MetaField extends AbstractEntity<Long> {
     f.businessTerm = businessTerm;
     f.sourceSystem = sourceSystem;
     f.enumValues = enumValues;
+    f.enumSource = enumSource;
     f.validationRules = validationRules;
     f.version = 0;
     Date now = new Date();
@@ -233,6 +247,7 @@ public class MetaField extends AbstractEntity<Long> {
             null, // businessTerm
             null, // sourceSystem
             null, // enumValues
+            null, // enumSource
             null); // validationRules
     f.precision = precision;
     return f;
@@ -245,6 +260,20 @@ public class MetaField extends AbstractEntity<Long> {
    */
   public void assignPhysicalColumn(String physicalColumn) {
     this.physicalColumn = physicalColumn;
+  }
+
+  /**
+   * 选项源物化覆写（doc/design/modules/11 §4.3）：把真源解析结果覆写进 {@link #enumValues}， 并回写 {@link #enumSource} 的
+   * {@code resolvedAt/resolvedCount/resolvedBy} 元数据。
+   *
+   * <p>领域行为方法（非贫血 setter）：物化是「发布即冻结」语义的领域事件级变更，与 {@link #update} 同样
+   * 推进版本并刷新更新时间；调用方（EnumSourceApplicationService）不得直接触碰这两个字段。
+   */
+  public void applyEnumMaterialization(String enumValues, String enumSource) {
+    this.enumValues = enumValues;
+    this.enumSource = enumSource;
+    bumpVersion();
+    this.setUpdatedAt(new Date());
   }
 
   public void update(
@@ -263,6 +292,7 @@ public class MetaField extends AbstractEntity<Long> {
       String businessTerm,
       String sourceSystem,
       String enumValues,
+      String enumSource,
       String validationRules) {
     this.displayName = displayName;
     this.type = fieldType;
@@ -281,6 +311,7 @@ public class MetaField extends AbstractEntity<Long> {
     this.businessTerm = businessTerm;
     this.sourceSystem = sourceSystem;
     this.enumValues = enumValues;
+    this.enumSource = enumSource;
     this.validationRules = validationRules;
     bumpVersion();
     this.setUpdatedAt(new Date());

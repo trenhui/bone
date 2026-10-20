@@ -40,6 +40,15 @@ public class CreateMetaFieldCommand {
   /** 枚举值/标准码表（JSON 文本，复用 meta_field.enum_values） */
   private String enumValues;
 
+  /**
+   * 枚举选项源声明（JSON 文本，复用 meta_field.enum_source；为空 = inline 本地枚举）。
+   *
+   * <p>形态见 doc/design/modules/11 §4.2：{@code
+   * {"type":"dict","mode":"snapshot","ref":{"typeCode":"..."}}}。 P0 仅支持 dict；reference/external
+   * 暂未接线（保存即拒，见 EnumSource 校验）。
+   */
+  private String enumSource;
+
   /** 校验规则/质量规则（JSON 文本，复用 meta_field.validation_rules） */
   private String validationRules;
 

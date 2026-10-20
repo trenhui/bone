@@ -94,7 +94,8 @@ class MetaEntityPublishEventTest {
             mock(ActionDefMaterializePort.class),
             domainEventPublisher,
             mock(PlatformTransactionManager.class),
-            uiSchemaApplicationService);
+            uiSchemaApplicationService,
+            mock(EnumSourceApplicationService.class));
   }
 
   @Test

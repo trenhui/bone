@@ -114,6 +114,12 @@ public class MetaEntityApplicationService {
   /** 界面 schema 服务（发布快照 / 校验混入 / 删除联动 / 列表 hasUiSchema；同界应用服务互调）。 */
   private final UiSchemaApplicationService uiSchemaApplicationService;
 
+  /**
+   * 枚举选项源服务（doc/design/modules/11）：字段保存/发布时把 dict 真源物化进 enum_values， 并向 collectIssues 贡献
+   * ENUM_SOURCE_* 问题项。
+   */
+  private final EnumSourceApplicationService enumSourceApplicationService;
+
   // ===================== 实体写操作 =====================
 
   @Transactional
@@ -249,6 +255,10 @@ public class MetaEntityApplicationService {
         collectIssues(entity).stream()
             .filter(i -> EntityValidationIssue.LEVEL_ERROR.equals(i.getLevel()))
             .filter(i -> !"PHYSICAL_DRIFT".equals(i.getCode()))
+            // ENUM_SOURCE_UNRESOLVED 同样从通用闸门排除：由下方 materializeForPublish 抛更精确的
+            // META_ENUM_SOURCE_RESOLVE_FAILED（502，指向具体字段与 typeCode），避免被
+            // META_PUBLISH_BLOCKED 的聚合文案吞掉「哪个码表不可达」（doc 11 §4.3/§6.3）
+            .filter(i -> !"ENUM_SOURCE_UNRESOLVED".equals(i.getCode()))
             .toList();
     if (!blocking.isEmpty()) {
       String codes =
@@ -266,6 +276,10 @@ public class MetaEntityApplicationService {
               + (blocking.size() > 8 ? ", ..." : "")
               + "），请先修复后再发布");
     }
+    // 选项源物化（doc 11 §4.3「实体发布（闸门之后、落库之前）」）：把此刻真源「编译」进 enum_values，
+    // 发布即冻结。任一绑定字段解析失败抛 META_ENUM_SOURCE_RESOLVE_FAILED（502）整体回滚——
+    // 预览已用 ENUM_SOURCE_UNRESOLVED 告知不可发布，此处是服务端兜底的精确报错。
+    enumSourceApplicationService.materializeForPublish(entity);
     entity.publish();
     metaEntityRepository.update(entity);
     if (runtimeEntityCacheEvictor.isEmpty()) {
@@ -597,6 +611,9 @@ public class MetaEntityApplicationService {
       throw CatalogErrors.of(CatalogErrorCodes.ENTITY_NOT_FOUND, entityId);
     }
     assertFieldCodeUnique(entityId, cmd.getCode());
+    // 选项源声明写入口守卫（与 assertAutoNumberConfigValid/assertRowPoliciesValid 同姿态）：
+    // 非法声明在保存时挡为 400，不等发布物化时才炸（doc 11 §4.2/§9）
+    enumSourceApplicationService.parseDeclaration(cmd.getEnumSource());
     MetaField field =
         MetaField.create(
             null,
@@ -620,8 +637,12 @@ public class MetaEntityApplicationService {
             cmd.getBusinessTerm(),
             cmd.getSourceSystem(),
             cmd.getEnumValues(),
+            cmd.getEnumSource(),
             cmd.getValidationRules());
     metaFieldRepository.insert(field);
+    // 绑定 non-inline 真源时立即物化（doc 11 §4.3「字段保存（enum_source 变更时）」）：
+    // 解析失败抛 META_ENUM_SOURCE_RESOLVE_FAILED，本事务回滚——不接受「绑定成功但选项为空」
+    enumSourceApplicationService.materializeOnSave(field);
     return field.getId();
   }
 
@@ -632,6 +653,8 @@ public class MetaEntityApplicationService {
       throw CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, fieldId);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, field.getVersion());
+    // 选项源声明写入口守卫：同 createField（doc 11 §9 META_ENUM_SOURCE_INVALID）
+    enumSourceApplicationService.parseDeclaration(cmd.getEnumSource());
     field.update(
         cmd.getDisplayName(),
         cmd.getType(),
@@ -648,7 +671,10 @@ public class MetaEntityApplicationService {
         cmd.getBusinessTerm(),
         cmd.getSourceSystem(),
         cmd.getEnumValues(),
+        cmd.getEnumSource(),
         cmd.getValidationRules());
+    // 绑定真源时物化覆写 enum_values（doc 11 §4.3）；inline 为 no-op，由下一行落库
+    enumSourceApplicationService.materializeOnSave(field);
     metaFieldRepository.update(field);
     return field.getVersion();
   }
@@ -788,7 +814,7 @@ public class MetaEntityApplicationService {
     Long newId = createEntity(createCmd);
     List<MetaField> fields = loadAllFields(sourceId);
     for (MetaField f : fields) {
-      metaFieldRepository.insert(
+      MetaField copy =
           MetaField.create(
               null,
               tenantId,
@@ -811,7 +837,12 @@ public class MetaEntityApplicationService {
               f.getBusinessTerm(),
               f.getSourceSystem(),
               f.getEnumValues(),
-              f.getValidationRules()));
+              // 选项源绑定随副本走（doc 11 §4.2：绑定是字段属性，复制的是定义不是数据）；
+              // 随后按新字段重新物化，resolved* 元数据归位
+              f.getEnumSource(),
+              f.getValidationRules());
+      metaFieldRepository.insert(copy);
+      enumSourceApplicationService.materializeOnSave(copy);
     }
     return newId;
   }
@@ -1178,6 +1209,8 @@ public class MetaEntityApplicationService {
       }
       // ===== 业界元数据 / 数据治理校验 =====
       validateFieldGovernance(f, issues);
+      // ===== 枚举选项源（doc 11 §6.3：ENUM_SOURCE_UNRESOLVED ERROR / ENUM_SOURCE_DRIFT WARNING）=====
+      enumSourceApplicationService.collectFieldIssues(f, issues);
     }
   }
 

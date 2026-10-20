@@ -2,6 +2,7 @@ package com.bone.system.application;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateDictItemCommand;
@@ -270,6 +271,14 @@ public class DictApplicationService {
     long tenantId = currentTenant();
     SysDictType type = requireTypeByCode(item.getTypeCode());
     assertItemsEditable(type, tenantId);
+    // 兼容性矩阵的管理面强制点（doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.4）：
+    // 删除 value 是 breaking 变更——直接删会让存量单据的旧值瞬间失去参照且无过渡期。
+    // 产品上堵住「删了再说」：仅停用（DISABLED）终态可删，ACTIVE/DEPRECATED 必须先走弃用过渡。
+    if (!item.isDisabled()) {
+      throw SystemErrors.of(
+          SystemErrorCodes.DICT_ITEM_DELETE_REQUIRES_DISABLED,
+          item.getCode() + "（当前状态 " + item.stateName() + "，须先弃用并停用后方可删除——删除是 breaking 变更，必须先过渡）");
+    }
     long children =
         dictHierarchyRepository.listAllViewsAllTenants(item.getTypeCode(), tenantId).stream()
             .filter(n -> item.getCode().equals(n.getParentCode()))
@@ -280,6 +289,44 @@ public class DictApplicationService {
     }
     detachItemRelations(item.getTypeCode(), item.getCode(), tenantId);
     dictItemRepository.deleteById(id);
+    dictOptionsCache.evictType(item.getTypeCode());
+  }
+
+  // ==================== 三态生命周期（v1.1 §4.5） ====================
+
+  /**
+   * 弃用字典项（ACTIVE → DEPRECATED）：新表单不再出现，存量写仍放行。
+   *
+   * <p>停用从「运营人员手动点」变成「可计划的变更」：配合 {@code effectiveTo} 到期由定时任务转 DISABLED （change window 的轻量落地）。
+   */
+  @Transactional
+  public void deprecateItem(Long id) {
+    SysDictItem item = requireItem(id);
+    SysDictType type = requireTypeByCode(item.getTypeCode());
+    assertItemsEditable(type, currentTenant());
+    try {
+      item.deprecate();
+    } catch (DomainException ex) {
+      throw SystemErrors.of(SystemErrorCodes.DICT_ITEM_STATE_TRANSITION_INVALID, ex.getMessage());
+    }
+    dictItemRepository.save(item);
+    domainEventPublisher.publishFrom(item);
+    dictOptionsCache.evictType(item.getTypeCode());
+  }
+
+  /** 撤销弃用（DEPRECATED → ACTIVE）。 */
+  @Transactional
+  public void restoreItem(Long id) {
+    SysDictItem item = requireItem(id);
+    SysDictType type = requireTypeByCode(item.getTypeCode());
+    assertItemsEditable(type, currentTenant());
+    try {
+      item.restore();
+    } catch (DomainException ex) {
+      throw SystemErrors.of(SystemErrorCodes.DICT_ITEM_STATE_TRANSITION_INVALID, ex.getMessage());
+    }
+    dictItemRepository.save(item);
+    domainEventPublisher.publishFrom(item);
     dictOptionsCache.evictType(item.getTypeCode());
   }
 
@@ -428,7 +475,11 @@ public class DictApplicationService {
   }
 
   /**
-   * 下拉数据源：全平台消费字典的唯一入口（平台+租户覆盖合并 → 生效过滤 → 只返启用项 → 可选本地化，走缓存）。
+   * 下拉数据源：全平台消费字典的唯一入口（平台+租户覆盖合并 → 生效过滤 → 排除停用终态 → 可选本地化，走缓存）。
+   *
+   * <p><b>三态口径</b>（v1.1 §4.2/§4.5）：返回 ACTIVE + DEPRECATED（每项带 {@code state}），DISABLED 不进——
+   * 渲染消费方（{@code useDict} / {@code DictSelect}）按 {@code state==ACTIVE} 过滤即「新表单不出现弃用项」；
+   * 写校验消费方（元数据选项源物化）接受两态即「存量写放行」。同一端点两种口径，不裂变出第二个契约。
    *
    * @param parentCode 顶层传 {@code null}；非空时按层级视图取该父节点的直接子节点
    * @param language 为空表示不本地化，用默认 {@code label}
@@ -442,7 +493,7 @@ public class DictApplicationService {
                 () -> {
                   List<SysDictItem> loaded =
                       mergedItems(typeCode, tenantId).stream()
-                          .filter(SysDictItem::isEnabled)
+                          .filter(i -> i.isActive() || i.isDeprecated())
                           .filter(SysDictItem::isEffectiveNow)
                           .filter(i -> inHierarchy(typeCode, parentCode, i.getCode(), tenantId))
                           .sorted(ITEM_ORDER)

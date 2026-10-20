@@ -38,8 +38,8 @@ class MetaEntityPoColumnContractTest {
    *
    * <ul>
    *   <li>module_id——同实体，建模组织维度；
-   *   <li>physical_column / enum_values / validation_rules——运行时真正要用的列，PO 路径成为运行时入口前必须补齐 （现行入口
-   *       {@code CatalogRuntimeEntityProvider} 直接读聚合，不受影响）；
+   *   <li>physical_column / enum_values / enum_source / validation_rules——运行时真正要用的列，PO
+   *       路径成为运行时入口前必须补齐 （现行入口 {@code CatalogRuntimeEntityProvider} 直接读聚合，不受影响）；
    *   <li>data_classification / is_pii / sensitivity_level / data_steward / business_term /
    *       source_system——治理属性，引擎读路径暂不消费。
    * </ul>
@@ -49,6 +49,7 @@ class MetaEntityPoColumnContractTest {
           "module_id",
           "physical_column",
           "enum_values",
+          "enum_source",
           "validation_rules",
           "data_classification",
           "is_pii",

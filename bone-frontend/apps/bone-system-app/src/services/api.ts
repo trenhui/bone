@@ -11,6 +11,7 @@ import type {
   DictType,
   DictItem,
   DictOption,
+  DictBinding,
   DictEnumDiff,
   DictExport,
   DictItemText,
@@ -247,12 +248,34 @@ export const dictApi = {
     return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/default`);
   },
   /**
+   * 弃用字典项（ACTIVE → DEPRECATED）：新表单不再出现，存量写仍放行。
+   * 三态生命周期（界面设计器字典打通 v1.1 §4.5）的过渡态入口。
+   */
+  deprecateItem: async (id: string | string) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/deprecate`);
+  },
+  /** 恢复弃用的字典项（DEPRECATED → ACTIVE）。 */
+  restoreItem: async (id: string | string) => {
+    return api.put<never, ApiResponse<void>>(`/system/dict/items/${id}/restore`);
+  },
+  /**
    * 下拉数据源：全平台消费字典的唯一入口。
    * 合并平台与租户覆盖 → 过滤停用与未生效 → 按 lang 本地化标签。
    */
   getOptions: async (type: string, parent?: string, lang?: string) => {
     return api.get<never, ApiResponse<DictOption[]>>('/system/dict/items/options', {
       params: { type, parent, lang },
+    });
+  },
+  /**
+   * 字典引用方清单（界面设计器字典打通 v1.1 §5.4）：该值域被哪些实体/字段绑定。
+   *
+   * <p>跨服务调用 metadata-server（经网关路由）——绑定关系存在元数据域，字典域只发问。
+   * 用于字典管理页的「被引用情况 + 漂移告警入口」：改值域前先看谁会受影响。
+   */
+  getBindings: async (typeCode: string) => {
+    return api.get<never, ApiResponse<DictBinding[]>>('/metadata/fields/dict-bindings', {
+      params: { typeCode },
     });
   },
 };

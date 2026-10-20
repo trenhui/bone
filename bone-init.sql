@@ -1255,6 +1255,7 @@ CREATE TABLE meta_field (
     is_indexed          TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否建索引',
     default_value       VARCHAR(500)    DEFAULT NULL COMMENT '默认值',
     enum_values         JSON            DEFAULT NULL COMMENT '枚举值/标准码表',
+    enum_source         JSON            DEFAULT NULL COMMENT '枚举选项源声明(inline缺省/dict;空=inline本地枚举,行为与存量一致)。设计doc/design/modules/11',
     validation_rules    JSON            DEFAULT NULL COMMENT '校验规则/质量规则',
     comment             VARCHAR(500)    DEFAULT NULL COMMENT '字段注释',
     data_classification VARCHAR(50)     DEFAULT NULL COMMENT '数据分级(PUBLIC/INTERNAL/CONFIDENTIAL/SECRET/TOP_SECRET)',

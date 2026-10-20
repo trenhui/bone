@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Select, Space, Steps, Tag, Typography, message } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Segmented, Select, Space, Steps, Tag, Typography, message } from 'antd';
 import { LeftOutlined, PlusOutlined, RightOutlined, DeleteOutlined } from '@ant-design/icons';
-import type { CreateMetaFieldReq } from '../types';
+import type { CreateMetaFieldReq, EnumOption } from '../types';
+import { previewDictOptions, errorMessage as errorMessageOf } from '../services/metadataApi';
 import {
   FIELD_TYPE_MAP,
   DATA_CLASSIFICATIONS,
@@ -15,6 +16,9 @@ interface EnumOptionRow {
   code: string;
   label: string;
 }
+
+/** 选项源类型（doc/design/modules/11 §4.1；P0 仅 inline/dict 两种可建） */
+type EnumSourceType = 'inline' | 'dict';
 
 /**
  * 字段向导（2b F10，对标 Salesforce New Field 类型面板）：
@@ -48,12 +52,20 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
   const [submitting, setSubmitting] = useState(false);
   /** T3：ENUM 字段的选项编辑器（替代手敲 JSON，避免码表格式写错导致运行时控件降级） */
   const [enumRows, setEnumRows] = useState<EnumOptionRow[]>([]);
+  /** 选项源（doc 11 §6.2）：inline 本地枚举 / dict 系统字典绑定（P0） */
+  const [enumSourceType, setEnumSourceType] = useState<EnumSourceType>('inline');
+  const [dictTypeCode, setDictTypeCode] = useState('');
+  const [dictPreview, setDictPreview] = useState<EnumOption[] | null>(null);
+  const [dictPreviewLoading, setDictPreviewLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       setStep(0);
       setSelectedType(null);
       setEnumRows([]);
+      setEnumSourceType('inline');
+      setDictTypeCode('');
+      setDictPreview(null);
       form.resetFields();
     }
   }, [open, form]);
@@ -94,6 +106,75 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
     );
   };
 
+  /**
+   * 选项行/绑定 → enumSource JSON 文本（doc 11 §4.2）。
+   * inline 返 undefined（缺省即兼容存量）；dict 返 {"type":"dict","mode":"snapshot","ref":{"typeCode":X}}。
+   * resolved* 元数据由服务端物化时回写，建模者不填。
+   *
+   * @return null = dict 模式缺 typeCode（已提示，调用方阻断提交）
+   */
+  const serializeEnumSource = (): string | undefined | null => {
+    if (!isEnum || enumSourceType === 'inline') return undefined;
+    const typeCode = dictTypeCode.trim();
+    if (!typeCode) {
+      message.error('请填写系统字典的值域编码（typeCode）');
+      return null;
+    }
+    return JSON.stringify({ type: 'dict', mode: 'snapshot', ref: { typeCode } });
+  };
+
+  /**
+   * 切换选项源（doc 11 §6.2）：已有手编内容时二次确认后清空，由物化接管——
+   * 否则旧 enumValues 会作为「看起来像 inline 快照」的残留误导后续判断。
+   */
+  const switchEnumSource = (next: EnumSourceType) => {
+    if (next === enumSourceType) return;
+    if (next === 'dict' && enumRows.length > 0) {
+      Modal.confirm({
+        title: '切换为系统字典绑定',
+        content: '当前已手编的枚举选项将被清空，保存后由字典真源物化生成。确认切换？',
+        okText: '确认清空并切换', okButtonProps: { danger: true }, cancelText: '取消',
+        onOk: () => { setEnumRows([]); setEnumSourceType(next); },
+      });
+      return;
+    }
+    if (next === 'inline' && dictTypeCode.trim()) {
+      Modal.confirm({
+        title: '切换为本地枚举',
+        content: '将解除与系统字典的绑定，码表改由本字段私有维护。确认切换？',
+        okText: '确认解除绑定', okButtonProps: { danger: true }, cancelText: '取消',
+        onOk: () => { setDictTypeCode(''); setDictPreview(null); setEnumSourceType(next); },
+      });
+      return;
+    }
+    setEnumSourceType(next);
+  };
+
+  /** 预览字典值域前 N 项（同一网关打 bone-system /options；绑定前先看清真源） */
+  const previewDict = async () => {
+    const typeCode = dictTypeCode.trim();
+    if (!typeCode) {
+      message.error('请先填写值域编码（typeCode）');
+      return;
+    }
+    setDictPreviewLoading(true);
+    try {
+      const res = await previewDictOptions(typeCode);
+      if (res.code === 200) {
+        setDictPreview(res.data ?? []);
+        if ((res.data ?? []).length === 0) {
+          message.warning(`字典 ${typeCode} 无生效选项（不存在或全部停用）`);
+        }
+      } else {
+        message.error(errorMessageOf(res));
+      }
+    } catch {
+      message.error('字典预览失败（服务不可达）');
+    } finally {
+      setDictPreviewLoading(false);
+    }
+  };
+
   const needsLength = (t: string | null) => t === 'STRING' || t === 'TEXT' || t === 'DECIMAL';
 
   const handleFinish = async () => {
@@ -102,6 +183,8 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
     // ENUM 走结构化选项编辑器；码表非法时 serializeEnumValues 已提示并阻断
     const enumValues = serializeEnumValues();
     if (isEnum && enumValues === undefined && enumRows.length > 0) return;
+    const enumSource = serializeEnumSource();
+    if (enumSource === null) return; // dict 模式缺 typeCode，已提示
     setSubmitting(true);
     try {
       await onSubmit({
@@ -120,7 +203,9 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
         dataSteward: values.dataSteward || undefined,
         businessTerm: values.businessTerm || undefined,
         sourceSystem: values.sourceSystem || undefined,
-        enumValues,
+        // dict 绑定时 enumValues 由服务端物化覆写，此处不手传（传了也会被覆盖）
+        enumValues: enumSourceType === 'dict' ? undefined : enumValues,
+        enumSource,
         validationRules: values.validationRules || undefined,
       });
     } finally {
@@ -128,10 +213,10 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
     }
   };
 
-  /** 「下一步」守卫：ENUM 至少一项，避免建出无码表的空枚举（运行时会渲染成不可用的空 Select） */
+  /** 「下一步」守卫：ENUM 至少一项（inline）或已填 typeCode（dict），避免建出无码表的空枚举 */
   const goStep1 = () => {
     if (!selectedType) return;
-    if (selectedType === 'ENUM' && enumRows.length === 0) {
+    if (selectedType === 'ENUM' && enumSourceType === 'inline' && enumRows.length === 0) {
       setEnumRows([{ code: '', label: '' }]);
     }
     setStep(1);
@@ -233,37 +318,81 @@ const FieldWizardModal: React.FC<FieldWizardProps> = ({ open, onCancel, onSubmit
               <Text type="secondary" style={{ fontSize: 12 }}>
                 落库存为标准码表；数据 Tab 会渲染为下拉选择，列表 Tab 渲染为徽标。
               </Text>
-              {enumRows.length === 0 ? (
-                <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
-                  添加第一个选项
-                </Button>
+              {/* 选项源（doc 11 §6.2）：inline 本地枚举 / dict 系统字典绑定 */}
+              <div style={{ marginTop: 8 }}>
+                <Segmented
+                  value={enumSourceType}
+                  onChange={(v) => switchEnumSource(v as EnumSourceType)}
+                  options={[
+                    { value: 'inline', label: '本地枚举' },
+                    { value: 'dict', label: '系统字典' },
+                  ]}
+                />
+              </div>
+              {enumSourceType === 'dict' ? (
+                <div style={{ marginTop: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    绑定 bone-system 的系统字典值域：运营改字典 → 重新发布本实体即生效（快照模式）。
+                  </Text>
+                  <Space style={{ marginTop: 8, display: 'flex' }} align="baseline">
+                    <Input
+                      style={{ width: 240 }}
+                      placeholder="值域编码 typeCode，如 invoice_type"
+                      value={dictTypeCode}
+                      onChange={(e) => setDictTypeCode(e.target.value)}
+                    />
+                    <Button loading={dictPreviewLoading} onClick={previewDict}>预览</Button>
+                  </Space>
+                  {dictPreview && (
+                    <div style={{ marginTop: 8, maxHeight: 160, overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 6, padding: 8 }}>
+                      {dictPreview.length === 0 ? (
+                        <Text type="secondary" style={{ fontSize: 12 }}>无生效选项</Text>
+                      ) : (
+                        dictPreview.slice(0, 20).map((o) => (
+                          <Tag key={o.code} style={{ marginBottom: 4 }}>{o.code} · {o.label}</Tag>
+                        ))
+                      )}
+                      {dictPreview.length > 20 && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>（仅预览前 20 项，共 {dictPreview.length} 项）</Text>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
-                  {enumRows.map((row, idx) => (
-                    <Space key={idx} style={{ display: 'flex', marginTop: 8 }} align="baseline">
-                      <Input
-                        style={{ width: 160 }}
-                        placeholder="选项值，如 OPEN"
-                        value={row.code}
-                        onChange={(e) => updateEnumRow(idx, 'code', e.target.value)}
-                      />
-                      <Input
-                        style={{ width: 160 }}
-                        placeholder="显示名，如 待处理"
-                        value={row.label}
-                        onChange={(e) => updateEnumRow(idx, 'label', e.target.value)}
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeEnumRow(idx)}
-                      />
-                    </Space>
-                  ))}
-                  <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
-                    添加选项
-                  </Button>
+                  {enumRows.length === 0 ? (
+                    <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
+                      添加第一个选项
+                    </Button>
+                  ) : (
+                    <>
+                      {enumRows.map((row, idx) => (
+                        <Space key={idx} style={{ display: 'flex', marginTop: 8 }} align="baseline">
+                          <Input
+                            style={{ width: 160 }}
+                            placeholder="选项值，如 OPEN"
+                            value={row.code}
+                            onChange={(e) => updateEnumRow(idx, 'code', e.target.value)}
+                          />
+                          <Input
+                            style={{ width: 160 }}
+                            placeholder="显示名，如 待处理"
+                            value={row.label}
+                            onChange={(e) => updateEnumRow(idx, 'label', e.target.value)}
+                          />
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => removeEnumRow(idx)}
+                          />
+                        </Space>
+                      ))}
+                      <Button type="dashed" block icon={<PlusOutlined />} style={{ marginTop: 8 }} onClick={addEnumRow}>
+                        添加选项
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </div>

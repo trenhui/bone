@@ -165,7 +165,12 @@ export interface DictHierarchy {
   sort?: number;
 }
 
-/** 下拉数据源（平台 + 租户覆盖合并，只含启用项） */
+/**
+ * 下拉数据源（平台 + 租户覆盖合并，ACTIVE + DEPRECATED，DISABLED 不返回）。
+ *
+ * <p>三态口径（界面设计器字典打通 v1.1 §4.2/§4.5）：渲染侧按 {@link state} 过滤 ACTIVE，
+ * 写校验侧接受两态。state 缺省按 ACTIVE 兼容存量响应。
+ */
 export interface DictOption {
   code: string;
   label: string;
@@ -173,6 +178,7 @@ export interface DictOption {
   tagType?: DictTagType;
   isDefault?: boolean;
   sort?: number;
+  state?: 'ACTIVE' | 'DEPRECATED' | 'DISABLED';
 }
 
 /** 枚举与字典的漂移报告 */
@@ -186,6 +192,29 @@ export interface DictEnumDiff {
   /** value 与 ordinal 不一致 */
   valueDrift: string[];
   consistent: boolean;
+}
+
+/**
+ * 字典引用方清单项（界面设计器字典打通 v1.1 §5.4，对齐 metadata-server DictBinding）。
+ *
+ * <p>回答「这个值域被哪些实体/字段绑定」——改值域前的变更影响预览；
+ * {@link drift} = 该字段的物化快照已落后于真源（待刷新）。
+ */
+export interface DictBinding {
+  fieldId: string;
+  fieldCode: string;
+  fieldName: string;
+  entityId: string;
+  entityCode?: string;
+  entityName?: string;
+  /** 物化快照的选项数 */
+  snapshotCount: number;
+  /** 真源是否可达（false = 字典服务不可达，漂移状态无从判定） */
+  resolved: boolean;
+  /** 快照与真源是否有差异（新增/移除/改标签/状态变迁任一非空） */
+  drift: boolean;
+  /** 人类可读摘要：「新增 1 项」/「无差异」/「真源不可达」 */
+  driftSummary: string;
 }
 
 /** 值域快照（导出结果 / 导入载荷同构）：类型定义 + 项 + 层级关系 + 译文 */

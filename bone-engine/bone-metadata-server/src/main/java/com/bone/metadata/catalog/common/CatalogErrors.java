@@ -44,6 +44,9 @@ public final class CatalogErrors {
           // 字段
           Map.entry(CatalogErrorCodes.FIELD_NOT_FOUND, 404),
           Map.entry(CatalogErrorCodes.FIELD_CODE_CONFLICT, 409),
+          // 枚举选项源（doc/design/modules/11 §9）
+          Map.entry(CatalogErrorCodes.ENUM_SOURCE_INVALID, 400),
+          Map.entry(CatalogErrorCodes.ENUM_SOURCE_RESOLVE_FAILED, 502),
           // 关系
           Map.entry(CatalogErrorCodes.RELATION_NOT_FOUND, 404),
           // 状态机动作定义

@@ -69,7 +69,8 @@ class MetaEntityDeleteCascadeTest {
             actionDefMaterializePort,
             domainEventPublisher,
             org.mockito.Mockito.mock(PlatformTransactionManager.class),
-            mock(UiSchemaApplicationService.class));
+            mock(UiSchemaApplicationService.class),
+            mock(EnumSourceApplicationService.class));
   }
 
   /** DRAFT 实体：create 默认 status=0（DRAFT），会触发唯一键改写路径。 */

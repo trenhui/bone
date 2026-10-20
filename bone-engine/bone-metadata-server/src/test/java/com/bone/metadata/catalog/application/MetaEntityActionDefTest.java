@@ -63,6 +63,7 @@ class MetaEntityActionDefTest {
   @Mock private ActionDefMaterializePort actionDefMaterializePort;
   @Mock private DomainEventPublisher domainEventPublisher;
   @Mock private UiSchemaApplicationService uiSchemaApplicationService;
+  @Mock private EnumSourceApplicationService enumSourceApplicationService;
 
   private MetaEntityApplicationService service;
 
@@ -82,7 +83,8 @@ class MetaEntityActionDefTest {
             actionDefMaterializePort,
             domainEventPublisher,
             null,
-            uiSchemaApplicationService);
+            uiSchemaApplicationService,
+            enumSourceApplicationService);
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(metaEntityRepository.findById(9L)).thenReturn(entity());
   }

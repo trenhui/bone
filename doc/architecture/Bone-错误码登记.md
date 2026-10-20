@@ -452,6 +452,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SYS_DICT_ITEM_NOT_FOUND` | 404 | 字典项不存在（含跨租户不可见） |
 | `SYS_DICT_ITEM_CODE_CONFLICT` | 409 | 同一类型下该 code 已存在（uk_dict_item） |
 | `SYS_DICT_ITEM_HAS_CHILDREN` | 409 | 字典项仍有子项，不允许删除 |
+| `SYS_DICT_ITEM_DELETE_REQUIRES_DISABLED` | 409 | 删除被拒：仅停用（DISABLED）终态可删——删除是 breaking 变更，必须先弃用过渡（界面设计器字典打通 v1.1 §4.4） |
+| `SYS_DICT_ITEM_STATE_TRANSITION_INVALID` | 409 | 生命周期状态迁移非法（生效→弃用→停用，见界面设计器字典打通 v1.1 §4.5） |
 | `SYS_DICT_PARENT_NOT_FOUND` | 400 | 父项编码在同类型下不存在 |
 | `SYS_DICT_HIERARCHY_NOT_FOUND` | 404 | 层级关系不存在（该项尚未挂到指定层级视图） |
 | `SYS_DICT_PARENT_NOT_ALLOWED` | 400 | 非 CASCADE 类值域不允许设置父项 |
@@ -561,6 +563,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_UI_SCHEMA_STORE_UNAVAILABLE` | 503 | 界面 schema 存储不可用（迁移 0046 未执行；写路径 503，读路径静默降级） |
 | `META_UI_SCHEMA_PRECONDITION_REQUIRED` | 412 | 缺 If-Match 前置条件（行已存在时防误覆盖，刷新后重试） |
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移拦截：模型类型与物理列类型不兼容（doc2a §328） |
+| `META_ENUM_SOURCE_INVALID` | 400 | 选项源（enum_source）声明非法：非 JSON / 缺 ref.typeCode / mode 越界（doc 11 §9） |
+| `META_ENUM_SOURCE_RESOLVE_FAILED` | 502 | 选项源解析失败：字典服务不可达或返回空值域，保存/发布整体回滚——不接受「绑定成功但选项为空」（doc 11 §9） |
 
 > `META_ENTITY_CODE_CONFLICT` / `META_ENTITY_TABLE_NAME_CONFLICT` 两处收口前经 `of(String)`
 > 兜底成 **500**，现为 **409**——属**有意的状态纠正**，不是回归。

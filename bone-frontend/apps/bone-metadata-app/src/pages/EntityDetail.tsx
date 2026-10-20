@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, createContext, useContext } 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert, Button, Card, Descriptions, Empty, Form, Input, InputNumber, List, Modal,
-  Popconfirm, Row, Col, Select, Space, Table, Tabs, Tag, Typography, message, Badge, Tooltip, Switch,
+  Popconfirm, Row, Col, Segmented, Select, Space, Table, Tabs, Tag, Typography, message, Badge, Tooltip, Switch,
 } from 'antd';
 import {
   PlusOutlined, ArrowLeftOutlined, EditOutlined, DeleteOutlined, FieldStringOutlined,
@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { FormInstance } from 'antd';
-import { errorMessage, metadataEntityApi, metadataFieldApi, metadataRelationApi } from '../services/metadataApi';
+import { errorMessage, metadataEntityApi, metadataFieldApi, metadataRelationApi, previewDictOptions } from '../services/metadataApi';
 import { getLastPublish, setLastPublish, isDirtySincePublish } from '../utils/publishState';
 import { parseRowPolicyCodes } from '../utils/rowPolicies';
 import PublishPreviewModal from '../components/PublishPreviewModal';
@@ -24,8 +24,9 @@ import { touchRecent } from '../utils/recent';
 import type {
   EntityValidationIssue, MetaEntity, MetaField, MetaRelation,
   CreateMetaFieldReq, CreateMetaRelationReq, UpdateMetaFieldReq, UpdateMetaRelationReq,
+  EnumOption,
 } from '../types';
-import { ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES, DATA_CLASSIFICATION_MAP, SENSITIVITY_LEVEL_MAP, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
+import { ENTITY_STATUS, FIELD_TYPE_MAP, RELATION_TYPES, DATA_CLASSIFICATION_MAP, SENSITIVITY_LEVEL_MAP, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED, parseEnumSource } from '../types';
 
 const { Text, Title } = Typography;
 
@@ -170,6 +171,11 @@ const EntityDetail: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  /** 编辑字段弹窗的选项源状态（doc 11 §6.2；ENUM 字段专属） */
+  const [editEnumSourceType, setEditEnumSourceType] = useState<'inline' | 'dict'>('inline');
+  const [editDictTypeCode, setEditDictTypeCode] = useState('');
+  const [editDictPreview, setEditDictPreview] = useState<EnumOption[] | null>(null);
+  const [editDictPreviewLoading, setEditDictPreviewLoading] = useState(false);
 
   /**
    * 行策略 rule name 集合（界面设计器 dataScope 下拉真源）。
@@ -378,6 +384,17 @@ const EntityDetail: React.FC = () => {
 
   const openEdit = (field: MetaField) => {
     setEditingField(field);
+    // 选项源绑定解析（doc 11 §4.2）：dict 绑定回填 Segmented + typeCode；inline/空维持本地枚举
+    const decl = parseEnumSource(field.enumSource);
+    if (decl?.type === 'dict') {
+      setEditEnumSourceType('dict');
+      setEditDictTypeCode(String(decl.ref?.typeCode ?? ''));
+      setEditDictPreview(null);
+    } else {
+      setEditEnumSourceType('inline');
+      setEditDictTypeCode('');
+      setEditDictPreview(null);
+    }
     form.setFieldsValue({
       displayName: field.displayName, description: field.comment, length: field.length,
       required: field.required, sortOrder: field.sortOrder ?? 9999,
@@ -399,6 +416,16 @@ const EntityDetail: React.FC = () => {
     const values = await form.validateFields();
     try {
       if (editingField) {
+        // 选项源声明（doc 11 §4.2）：dict 绑定时序列化 type/mode/ref；inline 显式置空解除绑定
+        let enumSource: string | undefined;
+        if (editingField.type === 'ENUM' && editEnumSourceType === 'dict') {
+          const typeCode = editDictTypeCode.trim();
+          if (!typeCode) {
+            message.error('请填写系统字典的值域编码（typeCode）');
+            return;
+          }
+          enumSource = JSON.stringify({ type: 'dict', mode: 'snapshot', ref: { typeCode } });
+        }
         const body: UpdateMetaFieldReq = {
           displayName: values.displayName, type: editingField.type, comment: values.description,
           length: values.length, required: values.required, sortOrder: values.sortOrder,
@@ -408,13 +435,20 @@ const EntityDetail: React.FC = () => {
           dataSteward: values.dataSteward ?? editingField.dataSteward ?? null,
           businessTerm: values.businessTerm ?? editingField.businessTerm ?? null,
           sourceSystem: values.sourceSystem ?? editingField.sourceSystem ?? null,
-          enumValues: values.enumValues ?? editingField.enumValues ?? null,
+          // dict 绑定态：enumValues 是服务端物化快照，禁止手改（改了也会被下次物化覆盖），原样回传
+          enumValues: editEnumSourceType === 'dict' && editingField.type === 'ENUM'
+            ? (editingField.enumValues ?? null)
+            : (values.enumValues ?? editingField.enumValues ?? null),
+          enumSource,
           validationRules: values.validationRules ?? editingField.validationRules ?? null,
         };
         const res = await metadataFieldApi.update(id!, editingField.id, body);
         if (res.code === 200) { message.success('更新成功'); setModalOpen(false); loadFields(); }
         else message.error(errorMessage(res));
       } else {
+        const enumSource = values.type === 'ENUM' && editEnumSourceType === 'dict'
+          ? JSON.stringify({ type: 'dict', mode: 'snapshot', ref: { typeCode: editDictTypeCode.trim() } })
+          : undefined;
         const body: CreateMetaFieldReq = {
           name: values.name, code: values.code, displayName: values.displayName, type: values.type,
           length: values.length, required: values.required, comment: values.description,
@@ -422,7 +456,9 @@ const EntityDetail: React.FC = () => {
           dataClassification: values.dataClassification ?? null, pii: values.pii ?? false,
           sensitivityLevel: values.sensitivityLevel ?? null, dataSteward: values.dataSteward ?? null,
           businessTerm: values.businessTerm ?? null, sourceSystem: values.sourceSystem ?? null,
-          enumValues: values.enumValues ?? null, validationRules: values.validationRules ?? null,
+          enumValues: values.type === 'ENUM' && editEnumSourceType === 'dict' ? null : (values.enumValues ?? null),
+          enumSource,
+          validationRules: values.validationRules ?? null,
         };
         const res = await metadataFieldApi.create(id!, body);
         if (res.code === 200) { message.success('创建成功'); setModalOpen(false); loadFields(); }
@@ -715,7 +751,76 @@ const EntityDetail: React.FC = () => {
           <Form.Item name="dataSteward" label="数据管家/责任人"><Input placeholder="如：数据治理组-张三" /></Form.Item>
           <Form.Item name="businessTerm" label="业务术语/数据标准"><Input placeholder="如：客户唯一标识" /></Form.Item>
           <Form.Item name="sourceSystem" label="来源系统（血缘）"><Input placeholder="如：交易系统" /></Form.Item>
-          <Form.Item name="enumValues" label="枚举值/标准码表（JSON）"><Input.TextArea rows={2} placeholder='可选，如 [{"code":"M","label":"男"}]' /></Form.Item>
+          {editingField?.type === 'ENUM' && (
+            <div style={{ marginBottom: 12 }}>
+              <Title level={5} style={{ marginTop: 8 }}>选项源</Title>
+              <Segmented
+                value={editEnumSourceType}
+                onChange={(v) => {
+                  setEditEnumSourceType(v as 'inline' | 'dict');
+                  setEditDictPreview(null);
+                }}
+                options={[
+                  { value: 'inline', label: '本地枚举' },
+                  { value: 'dict', label: '系统字典' },
+                ]}
+              />
+              {editEnumSourceType === 'dict' && (
+                <div style={{ marginTop: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    绑定后码表由字典真源物化生成（保存即刷新）；运营改字典 → 重新发布本实体生效。
+                  </Text>
+                  <Space style={{ marginTop: 8, display: 'flex' }} align="baseline">
+                    <Input
+                      style={{ width: 240 }}
+                      placeholder="值域编码 typeCode，如 invoice_type"
+                      value={editDictTypeCode}
+                      onChange={(e) => setEditDictTypeCode(e.target.value)}
+                    />
+                    <Button
+                      loading={editDictPreviewLoading}
+                      onClick={async () => {
+                        const typeCode = editDictTypeCode.trim();
+                        if (!typeCode) { message.error('请先填写值域编码（typeCode）'); return; }
+                        setEditDictPreviewLoading(true);
+                        try {
+                          const res = await previewDictOptions(typeCode);
+                          if (res.code === 200) setEditDictPreview(res.data ?? []);
+                          else message.error(errorMessage(res));
+                        } catch {
+                          message.error('字典预览失败（服务不可达）');
+                        } finally {
+                          setEditDictPreviewLoading(false);
+                        }
+                      }}
+                    >
+                      预览
+                    </Button>
+                  </Space>
+                  {editDictPreview && (
+                    <div style={{ marginTop: 8, maxHeight: 140, overflow: 'auto', border: '1px solid #f0f0f0', borderRadius: 6, padding: 8 }}>
+                      {editDictPreview.length === 0
+                        ? <Text type="secondary" style={{ fontSize: 12 }}>无生效选项</Text>
+                        : editDictPreview.slice(0, 20).map((o) => <Tag key={o.code} style={{ marginBottom: 4 }}>{o.code} · {o.label}</Tag>)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <Form.Item
+            name="enumValues"
+            label="枚举值/标准码表（JSON）"
+            tooltip={editingField?.type === 'ENUM' && editEnumSourceType === 'dict'
+              ? '该字段已绑定系统字典：码表为物化快照（只读），请维护字典或切回本地枚举'
+              : undefined}
+          >
+            <Input.TextArea
+              rows={2}
+              placeholder='可选，如 [{"code":"M","label":"男"}]'
+              disabled={editingField?.type === 'ENUM' && editEnumSourceType === 'dict'}
+            />
+          </Form.Item>
           <Form.Item name="validationRules" label="校验规则/质量规则（JSON）"><Input.TextArea rows={2} placeholder='可选，如 {"min":0,"max":120}' /></Form.Item>
         </Form>
       </Modal>

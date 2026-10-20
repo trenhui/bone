@@ -22,6 +22,7 @@ import {
   Empty,
   Alert,
   DatePicker,
+  Tooltip,
   message,
 } from 'antd';
 import {
@@ -31,12 +32,14 @@ import {
   UploadOutlined,
   DownloadOutlined,
   SyncOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type {
   DictType,
   DictItem,
   DictItemText,
+  DictBinding,
   DictEnumDiff,
   DictExport,
   DictCategory,
@@ -134,6 +137,11 @@ const DictManagement: React.FC = () => {
   // ---------- 枚举同步 ----------
   const [enumDrawerOpen, setEnumDrawerOpen] = useState(false);
   const [enumDiff, setEnumDiff] = useState<DictEnumDiff | null>(null);
+
+  // ---------- 引用方清单（字典打通 v1.1 §5.4） ----------
+  const [bindings, setBindings] = useState<DictBinding[]>([]);
+  const [bindingLoading, setBindingLoading] = useState(false);
+  const [bindingDrawerOpen, setBindingDrawerOpen] = useState(false);
 
   const isCascade = selectedType?.category === 'CASCADE';
   const isEnum = selectedType?.category === 'ENUM';
@@ -352,6 +360,30 @@ const DictManagement: React.FC = () => {
     fetchItems();
   };
 
+  /** 弃用（ACTIVE → DEPRECATED）：三态生命周期过渡态入口，v1.1 §4.5。 */
+  const deprecateItem = async (record: DictItem) => {
+    try {
+      await dictApi.deprecateItem(record.id!);
+      message.success(t('system.dictManagement.itemDeprecated'));
+      invalidateDictCache(selectedType?.code);
+      fetchItems();
+    } catch {
+      message.error(t('system.dictManagement.deprecateFailed'));
+    }
+  };
+
+  /** 撤销弃用（DEPRECATED → ACTIVE）。 */
+  const restoreItem = async (record: DictItem) => {
+    try {
+      await dictApi.restoreItem(record.id!);
+      message.success(t('system.dictManagement.itemRestored'));
+      invalidateDictCache(selectedType?.code);
+      fetchItems();
+    } catch {
+      message.error(t('system.dictManagement.restoreFailed'));
+    }
+  };
+
   const markDefault = async (record: DictItem) => {
     await dictApi.markDefault(record.id!);
     message.success(t('system.dictManagement.markedDefault'));
@@ -379,6 +411,80 @@ const DictManagement: React.FC = () => {
     invalidateDictCache(selectedType.code);
     fetchItems();
   };
+
+  /**
+   * 引用方清单（界面设计器字典打通 v1.1 §5.4）：改值域前的变更影响预览。
+   *
+   * <p>跨服务读 metadata-server（经网关路由）——绑定关系存在元数据域，字典域只发问；
+   * 「被哪些实体/字段绑定 + 各自快照是否已漂移」一屏可见，把「改完才发现炸了」前置。
+   */
+  const openBindings = async () => {
+    if (!selectedType) return;
+    setBindingDrawerOpen(true);
+    setBindingLoading(true);
+    try {
+      const res = await dictApi.getBindings(selectedType.code);
+      setBindings(res.data ?? []);
+    } catch {
+      message.error(t('system.dictManagement.bindingsFetchFailed'));
+    } finally {
+      setBindingLoading(false);
+    }
+  };
+
+  /** 漂移徽标：真源不可达（红）/ 已漂移待刷新（金，tooltip 带摘要）/ 快照为最新（绿）。 */
+  const bindingStateTag = (r: DictBinding) => {
+    if (!r.resolved) {
+      return <Tag color="red">{t('system.dictManagement.bindingUnresolved')}</Tag>;
+    }
+    if (r.drift) {
+      return (
+        <Tooltip title={r.driftSummary}>
+          <Tag color="gold">{t('system.dictManagement.bindingDrift')}</Tag>
+        </Tooltip>
+      );
+    }
+    return <Tag color="green">{t('system.dictManagement.bindingFresh')}</Tag>;
+  };
+
+  const bindingColumns = [
+    {
+      title: t('system.dictManagement.bindingEntity'),
+      key: 'entity',
+      ellipsis: true,
+      render: (_: unknown, r: DictBinding) => r.entityName ?? r.entityCode ?? r.entityId,
+    },
+    {
+      title: t('system.dictManagement.bindingField'),
+      key: 'field',
+      ellipsis: true,
+      render: (_: unknown, r: DictBinding) => `${r.fieldName}（${r.fieldCode}）`,
+    },
+    { title: t('system.dictManagement.bindingSnapshotCount'), dataIndex: 'snapshotCount', width: 100 },
+    {
+      title: t('system.dictManagement.bindingState'),
+      key: 'state',
+      width: 130,
+      render: (_: unknown, r: DictBinding) => bindingStateTag(r),
+    },
+    {
+      title: t('system.dictManagement.colAction'),
+      key: 'action',
+      width: 90,
+      render: (_: unknown, r: DictBinding) => (
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            // qiankun 子应用间唯一可靠的跨应用导航 = 整页指派，token 同源随行（同 PublishPreviewPanel 先例）
+            window.location.assign(`/metadata#/entities/${r.entityId}`);
+          }}
+        >
+          {t('system.dictManagement.bindingOpenEntity')}
+        </Button>
+      ),
+    },
+  ];
 
   // ---------- 导入导出 ----------
   const exportType = async () => {
@@ -470,16 +576,38 @@ const DictManagement: React.FC = () => {
     },
     { title: t('system.dictManagement.colSort'), dataIndex: 'sort', width: 70 },
     {
-      title: t('system.dictManagement.colStatus'),
+      title: (
+        <Tooltip title={t('system.dictManagement.stateTransitionTip')}>
+          <span style={{ borderBottom: '1px dashed #999', cursor: 'help' }}>
+            {t('system.dictManagement.colStatus')}
+          </span>
+        </Tooltip>
+      ),
       dataIndex: 'status',
-      width: 90,
-      render: (v: number, r: DictItem) =>
+      width: 100,
+      render: (v: number, r: DictItem) => {
+        // 三态生命周期（v1.1 §4.5）：1=生效 / 2=已废弃（新表单不可见、存量写放行）/ 0=已停用（终态，仅此项可删）
+        if (v === 2) {
+          return (
+            <Space size={4}>
+              <Tag color="volcano">{t('system.dictManagement.deprecatedTag')}</Tag>
+              {canWrite && (
+                <Button type="link" size="small" onClick={() => restoreItem(r)}>
+                  {t('system.dictManagement.restore')}
+                </Button>
+              )}
+            </Space>
+          );
+        }
         // 启停开关会调updateItem 改状态，属写操作，需门禁。
-        canWrite ? (
+        return canWrite ? (
           <Switch size="small" checked={v === 1} onChange={(c) => toggleItemStatus(r, c)} />
         ) : (
-          <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? '1' : '0'}</Tag>
-        ),
+          <Tag color={v === 1 ? 'green' : 'default'}>
+            {v === 1 ? t('system.dictManagement.stateActive') : t('system.dictManagement.stateDisabled')}
+          </Tag>
+        );
+      },
     },
     {
       title: t('system.dictManagement.colAction'),
@@ -514,17 +642,46 @@ const DictManagement: React.FC = () => {
               {t('system.dictManagement.default')}
             </AuthButton>
           )}
-          {/* 删除被 Popconfirm 包住，只能用<Auth> 包外层：AuthButton 无权限时返回 null，
-              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。 */}
-          <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
-            <Popconfirm
-              title={t('system.dictManagement.deleteItemConfirm', { label: r.label })}
-              onConfirm={() => removeItem(r)}
+          {/* 弃用（ACTIVE → DEPRECATED）：三态生命周期过渡态，v1.1 §4.5 */}
+          {r.status === 1 && (
+            <AuthButton
+              code={BonePermissionCodes.SYS_DICT_WRITE}
+              type="link"
+              size="small"
+              onClick={() =>
+                Modal.confirm({
+                  title: t('system.dictManagement.deprecateConfirm', { label: r.label }),
+                  content: t('system.dictManagement.deprecateEffect'),
+                  okText: t('system.dictManagement.deprecate'),
+                  cancelText: t('common.cancel'),
+                  onOk: () => deprecateItem(r),
+                })
+              }
             >
-              <Button type="link" size="small" danger>
-                {t('system.dictManagement.delete')}
-              </Button>
-            </Popconfirm>
+              {t('system.dictManagement.deprecate')}
+            </AuthButton>
+          )}
+          {/* 删除被 Popconfirm 包住，只能用<Auth> 包外层：AuthButton 无权限时返回 null，
+              会成为 Popconfirm 的 children，antd 对其 cloneElement 会抛异常。
+              兼容性矩阵（v1.1 §4.4）：仅停用（status=0）终态可删——非终态时按钮置灰并说明原因，
+              服务端同样强制（409 SYS_DICT_ITEM_DELETE_REQUIRES_DISABLED），双保险防「删了再说」。 */}
+          <Auth code={BonePermissionCodes.SYS_DICT_WRITE}>
+            {r.status === 0 ? (
+              <Popconfirm
+                title={t('system.dictManagement.deleteItemConfirm', { label: r.label })}
+                onConfirm={() => removeItem(r)}
+              >
+                <Button type="link" size="small" danger>
+                  {t('system.dictManagement.delete')}
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Tooltip title={t('system.dictManagement.deleteDisabledTip')}>
+                <Button type="link" size="small" danger disabled>
+                  {t('system.dictManagement.delete')}
+                </Button>
+              </Tooltip>
+            )}
           </Auth>
         </Space>
       ),
@@ -590,6 +747,10 @@ const DictManagement: React.FC = () => {
             <Space wrap>
               <Button icon={<ReloadOutlined />} onClick={() => fetchItems()} disabled={!selectedType}>
                 {t('system.dictManagement.refresh')}
+              </Button>
+              {/* 引用方清单是只读影响预览（不改服务端状态），按只读处理不加门禁。 */}
+              <Button icon={<LinkOutlined />} onClick={openBindings} disabled={!selectedType}>
+                {t('system.dictManagement.bindings')}
               </Button>
               {isEnum && (
                 /* 打开枚举漂移抽屉只是查看差异（只读），真正的写操作是抽屉内的
@@ -1022,6 +1183,30 @@ const DictManagement: React.FC = () => {
             </Typography.Text>
           </Space>
         )}
+      </Drawer>
+
+      {/* 引用方清单（v1.1 §5.4）：Salesforce 式「改前先看影响」 */}
+      <Drawer
+        title={t('system.dictManagement.bindingsTitle')}
+        width={720}
+        open={bindingDrawerOpen}
+        onClose={() => setBindingDrawerOpen(false)}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('system.dictManagement.bindingsDesc')}
+        />
+        <Table
+          rowKey="fieldId"
+          loading={bindingLoading}
+          columns={bindingColumns}
+          dataSource={bindings}
+          pagination={false}
+          size="small"
+          locale={{ emptyText: t('system.dictManagement.bindingsEmpty') }}
+        />
       </Drawer>
     </Row>
   );

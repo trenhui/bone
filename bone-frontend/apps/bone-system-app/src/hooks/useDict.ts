@@ -8,7 +8,11 @@ const optionCache = new Map<string, DictOption[]>();
 const treeCache = new Map<string, DictItem[]>();
 
 /**
- * 读取字典下拉数据（平台 + 租户覆盖合并，只含启用且生效中的项）。
+ * 读取字典下拉数据（平台 + 租户覆盖合并，ACTIVE + DEPRECATED，每项带 state）。
+ *
+ * <p>双口径（doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.2/§4.5）：
+ * {@link options} 只含 ACTIVE——下拉渲染口径，新表单不出现弃用项；{@link allOptions} 含 DEPRECATED——
+ * 标签解析口径，存量数据的旧值仍能回显正确标签。DISABLED 服务端不返回。
  *
  * @param typeCode 值域编码；为空时不发请求（避免条件渲染场景下的无意义请求）
  * @param parentCode 取某父节点的直接子节点，顶层不传
@@ -16,17 +20,24 @@ const treeCache = new Map<string, DictItem[]>();
  */
 export function useDict(typeCode?: string, parentCode?: string, lang?: string) {
   const [options, setOptions] = useState<DictOption[]>([]);
+  const [allOptions, setAllOptions] = useState<DictOption[]>([]);
   const [loading, setLoading] = useState(false);
   const cacheKey = typeCode ? `${typeCode}::${parentCode ?? ''}::${lang ?? ''}` : '';
+
+  const apply = useCallback((list: DictOption[]) => {
+    setAllOptions(list);
+    setOptions(list.filter((o) => (o.state ?? 'ACTIVE') === 'ACTIVE'));
+  }, []);
 
   const load = useCallback(
     async (force = false) => {
       if (!typeCode) {
         setOptions([]);
+        setAllOptions([]);
         return;
       }
       if (!force && optionCache.has(cacheKey)) {
-        setOptions(optionCache.get(cacheKey) as DictOption[]);
+        apply(optionCache.get(cacheKey) as DictOption[]);
         return;
       }
       setLoading(true);
@@ -34,14 +45,15 @@ export function useDict(typeCode?: string, parentCode?: string, lang?: string) {
         const res = await dictApi.getOptions(typeCode, parentCode, lang);
         const list = res.data ?? [];
         optionCache.set(cacheKey, list);
-        setOptions(list);
+        apply(list);
       } catch {
         setOptions([]);
+        setAllOptions([]);
       } finally {
         setLoading(false);
       }
     },
-    [typeCode, parentCode, lang, cacheKey],
+    [typeCode, parentCode, lang, cacheKey, apply],
   );
 
   useEffect(() => {
@@ -50,11 +62,11 @@ export function useDict(typeCode?: string, parentCode?: string, lang?: string) {
 
   const labelOf = useCallback(
     (code?: string | null) =>
-      code == null || code === '' ? '' : options.find((o) => o.code === code)?.label ?? code,
-    [options],
+      code == null || code === '' ? '' : allOptions.find((o) => o.code === code)?.label ?? code,
+    [allOptions],
   );
 
-  return { options, loading, refresh: () => load(true), labelOf };
+  return { options, allOptions, loading, refresh: () => load(true), labelOf };
 }
 
 /** 读指定层级视图的树（CASCADE 值域用）。 */

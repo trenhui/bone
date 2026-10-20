@@ -40,6 +40,15 @@ public class MetaFieldDTO {
   /** 枚举值/标准码表（JSON 文本） */
   private String enumValues;
 
+  /**
+   * 枚举选项源声明（JSON 文本；为空 = inline 本地枚举）。
+   *
+   * <p>形如 {@code
+   * {"type":"dict","ref":"gender","resolvedAt":...,"resolvedCount":...,"resolvedBy":...}}； {@code
+   * resolved*} 为服务端物化元数据（建模者只填 type/ref）。设计见 doc/design/modules/11 §4.2。
+   */
+  private String enumSource;
+
   /** 校验规则/质量规则（JSON 文本） */
   private String validationRules;
 
