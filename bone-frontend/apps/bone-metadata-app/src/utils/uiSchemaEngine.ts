@@ -312,7 +312,9 @@ export function pathVal(obj: unknown, path: string): unknown {
             next.push((it as Record<string, unknown>)[k]);
           }
         }
-      } else if (k in (o as Record<string, unknown>)) {
+      // 中间节点可能是原始值（如子表字段留空时 items=''），`k in 原始值` 会抛
+      // TypeError: Cannot use 'in' operator —— 表达式求值必须容错跳过，视为无命中。
+      } else if (typeof o === 'object' && k in (o as Record<string, unknown>)) {
         next.push((o as Record<string, unknown>)[k]);
       }
     }

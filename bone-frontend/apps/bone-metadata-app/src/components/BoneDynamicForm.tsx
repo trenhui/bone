@@ -241,11 +241,20 @@ export const BoneDynamicForm: React.FC<Props> = ({
     setChildRows((prev) => ({ ...prev, [pk]: (prev[pk] ?? []).filter((r) => r.__rowKey !== rowKey) }));
 
   const handleSubmit = async () => {
-    const r = runSubmit(data, submitRules, linkageRules, ctx, baseRequiredOf(fields));
-    // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，与预览同源
-    const formControls = (form?.sections ?? []).flatMap((s) => s.controls ?? []);
-    const cv = validateControlValues(data, formControls, baseRequiredOf(fields));
-    const merged = { errors: [...r.errors, ...cv.errors], warnings: [...r.warnings, ...cv.warnings] };
+    // 防御性边界（业界 fail-soft 实践）：求值/校验引擎任何意外异常都不得让提交点击事件
+    // 崩溃、导致弹窗卡死（此前 pathVal 在原始值中间节点抛 TypeError 即此症状）。
+    // 异常降级为可见校验错误，而非静默崩溃。
+    let merged: { errors: string[]; warnings: string[] };
+    try {
+      const r = runSubmit(data, submitRules, linkageRules, ctx, baseRequiredOf(fields));
+      // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，与预览同源
+      const formControls = (form?.sections ?? []).flatMap((s) => s.controls ?? []);
+      const cv = validateControlValues(data, formControls, baseRequiredOf(fields));
+      merged = { errors: [...r.errors, ...cv.errors], warnings: [...r.warnings, ...cv.warnings] };
+    } catch (err) {
+      console.error('[BoneDynamicForm] 提交前校验异常，已降级为可见错误', err);
+      merged = { errors: ['表单校验异常，请检查界面配置或联系管理员'], warnings: [] };
+    }
     setSubmitMsg(merged);
     if (merged.errors.length) return;
     if (merged.warnings.length) {
