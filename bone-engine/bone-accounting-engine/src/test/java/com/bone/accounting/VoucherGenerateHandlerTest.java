@@ -153,7 +153,7 @@ class VoucherGenerateHandlerTest {
 
   private void stubTemplate() {
     Map<String, Object> template = new LinkedHashMap<>();
-    template.put("template_code", "TPL_EXPENSE_CLAIM_PAYOUT");
+    template.put("template_code", "TPL_EXPENSE_REIMBURSEMENT_PAYOUT");
     template.put("template_version", "1.0.0");
     template.put("line_rules", LINE_RULES);
     template.put("rounding_diff_account", null);
@@ -238,7 +238,7 @@ class VoucherGenerateHandlerTest {
     Map<String, Object> voucher = createdVouchers.get(0);
     assertThat(voucher)
         .containsEntry("voucher_type", "BUSINESS")
-        .containsEntry("template_code", "TPL_EXPENSE_CLAIM_PAYOUT")
+        .containsEntry("template_code", "TPL_EXPENSE_REIMBURSEMENT_PAYOUT")
         .containsEntry("template_version", "1.0.0")
         .containsEntry("ledger_code", "MAIN")
         .containsEntry("coa_code", "*")

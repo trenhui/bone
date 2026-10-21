@@ -434,7 +434,7 @@ class UiSchemaRuleEngineTest {
   // ==================== expense_reimbursement 字段锁（迁移自 ExpenseReimbursementWriteHook
   // 规则一）====================
 
-  private static final String EXP_CLAIM_LOCK =
+  private static final String EXP_REIMBURSEMENT_LOCK =
       """
       {"schemaVersion":1,"entityCode":"expense_reimbursement",
        "fieldLockRules":[
@@ -446,17 +446,17 @@ class UiSchemaRuleEngineTest {
 
   @Test
   @DisplayName("expense_reimbursement 字段锁：status∈审批链 → amount 锁定；DRAFT 不锁（与迁移前 Hook 规则一语义一致）")
-  void expClaim_lockBlocksApprovalChainAmount() {
+  void expReimbursement_lockBlocksApprovalChainAmount() {
     List<String> frozen =
         engine.lockedFields(
-            schema(EXP_CLAIM_LOCK),
+            schema(EXP_REIMBURSEMENT_LOCK),
             map("status", "SUBMITTED", "amount", 100.0),
             UiSchemaRuleEngine.Ctx.of("1", Map.of()));
     assertTrue(frozen.contains("amount"), "审批链态 amount 应被锁定");
 
     List<String> draft =
         engine.lockedFields(
-            schema(EXP_CLAIM_LOCK),
+            schema(EXP_REIMBURSEMENT_LOCK),
             map("status", "DRAFT", "amount", 100.0),
             UiSchemaRuleEngine.Ctx.of("1", Map.of()));
     assertTrue(draft.isEmpty(), "DRAFT 态 amount 不应被锁定");
