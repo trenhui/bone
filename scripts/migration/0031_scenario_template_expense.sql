@@ -31,7 +31,7 @@ SELECT enum_values FROM meta_model_template_field LIMIT 0;
 INSERT INTO meta_model_template
     (id, tenant_id, code, name, description, category, current_version, status, created_by, created_at, updated_at, deleted, version)
 VALUES
-    (9150, 0, 'tpl_expense_claim', '费用报销', '办公域费用报销场景模板：报销单/金额(DECIMAL)/类目(ENUM)/5 态状态机(ENUM)，开箱即用，实例化后按需扩展字段（如 cost_center）', '行政财务', 'v1.0.0', 1, 1, NOW(3), NOW(3), 0, 0)
+    (9150, 0, 'tpl_expense_reimbursement', '费用报销', '办公域费用报销场景模板：报销单/金额(DECIMAL)/类目(ENUM)/5 态状态机(ENUM)，开箱即用，实例化后按需扩展字段（如 cost_center）', '行政财务', 'v1.0.0', 1, 1, NOW(3), NOW(3), 0, 0)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name), description = VALUES(description),
     current_version = VALUES(current_version), status = VALUES(status);
@@ -65,10 +65,10 @@ ON DUPLICATE KEY UPDATE
 
 -- ── 3. 校验 ─────────────────────────────────────────────────────────────
 SELECT
-    (SELECT COUNT(*) FROM meta_model_template WHERE deleted = 0 AND code = 'tpl_expense_claim') AS template_count,
+    (SELECT COUNT(*) FROM meta_model_template WHERE deleted = 0 AND code = 'tpl_expense_reimbursement') AS template_count,
     (SELECT COUNT(*) FROM meta_model_template_field f
         JOIN meta_model_template t ON t.id = f.template_id AND t.deleted = 0
-       WHERE f.deleted = 0 AND t.code = 'tpl_expense_claim') AS field_count,
+       WHERE f.deleted = 0 AND t.code = 'tpl_expense_reimbursement') AS field_count,
     (SELECT COUNT(*) FROM meta_model_template_field f
         JOIN meta_model_template t ON t.id = f.template_id AND t.deleted = 0
-       WHERE f.deleted = 0 AND t.code = 'tpl_expense_claim' AND f.field_type = 'ENUM') AS enum_field_count;
+       WHERE f.deleted = 0 AND t.code = 'tpl_expense_reimbursement' AND f.field_type = 'ENUM') AS enum_field_count;

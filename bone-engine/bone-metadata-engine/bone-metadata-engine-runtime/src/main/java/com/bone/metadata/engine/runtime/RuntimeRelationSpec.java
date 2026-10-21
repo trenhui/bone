@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <pre>
  *   REFERENCE    {"reference":    {"targetEntityCode":"expense_category","labelField":"name","filterField":"enabled","filterValue":"Y"}}
- *   CHILD_TABLE  {"childTable":   {"childEntityCode":"expense_claim_item","foreignKey":"claim_id","orderColumn":"sort_order","cascadeDelete":true,"minRows":0,"maxRows":200}}
+ *   CHILD_TABLE  {"childTable":   {"childEntityCode":"expense_reimbursement_item","foreignKey":"claim_id","orderColumn":"sort_order","cascadeDelete":true,"minRows":0,"maxRows":200}}
  *   ATTACHMENT   {"attachment":   {"maxCount":10,"maxSizeMB":10,"accept":["image/*","application/pdf"]}}
  * </pre>
  *

@@ -65,9 +65,9 @@ CREATE TABLE IF NOT EXISTS meta_model_template_action (
   KEY idx_tpl_action_from (tenant_id, template_id, from_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模型模板状态机动作定义（实例化时展开为 meta_entity_action_def）';
 
--- ── 2. 费用报销（tpl_expense_claim，id=9150） ──────────────────────────────
+-- ── 2. 费用报销（tpl_expense_reimbursement，id=9150） ──────────────────────────────
 -- 状态机：DRAFT → SUBMITTED → APPROVED / REJECTED →（APPROVED）→ PAID
--- 与 0032 给 expense_claim 的参考运转同构；确认打款为逃逸动作（handler + 幂等）。
+-- 与 0032 给 expense_reimbursement 的参考运转同构；确认打款为逃逸动作（handler + 幂等）。
 INSERT INTO meta_model_template_action
   (tenant_id, template_id, action_code, label, from_status, to_status, status_field,
    is_escape, handler_bean, params_schema, requires_idempotency, sort_order,
@@ -77,7 +77,7 @@ VALUES
   (0, 9150, 'approve',       '审批通过', 'SUBMITTED', 'APPROVED',  'status', 0, NULL, NULL, 0, 20, NOW(3), NOW(3), 0, 0),
   (0, 9150, 'reject',        '驳回',     'SUBMITTED', 'REJECTED',  'status', 0, NULL, NULL, 0, 21, NOW(3), NOW(3), 0, 0),
   (0, 9150, 'confirmPayout', '确认打款', 'APPROVED',  'PAID',      'status', 1,
-   'expenseClaimConfirmPayoutHandler',
+   'expenseReimbursementConfirmPayoutHandler',
    '[{"name":"channel","type":"enum","required":true,"values":["PAYROLL","BANK_TRANSFER"],"label":"打款渠道"},{"name":"note","type":"string","required":false,"label":"备注"}]',
    1, 30, NOW(3), NOW(3), 0, 0)
 ON DUPLICATE KEY UPDATE

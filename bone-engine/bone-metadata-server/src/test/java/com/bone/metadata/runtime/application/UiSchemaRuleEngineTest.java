@@ -386,4 +386,79 @@ class UiSchemaRuleEngineTest {
         """;
     assertTrue(run(schema(empty), map("anything", 1)).isEmpty());
   }
+
+  // ==================== fieldLockRules：服务端字段锁（数据完整性）====================
+
+  private static final String LOCK_RULE =
+      """
+      {"schemaVersion":1,"entityCode":"t_x",
+       "fieldLockRules":[
+         {"name":"审批后金额冻结","code":"LOCK-AMT-01","when":{"fieldCode":"status","operator":"neq","value":"DRAFT"},
+          "fields":["amount"],"message":"审批后金额不可改"}
+       ]}
+      """;
+
+  @Test
+  @DisplayName("fieldLockRules：非 DRAFT 态下 amount 被锁定（冻结语义）")
+  void lockedFields_blocksWhenFrozen() {
+    List<String> locked =
+        engine.lockedFields(
+            schema(LOCK_RULE),
+            map("status", "APPROVED", "amount", 100.0),
+            UiSchemaRuleEngine.Ctx.of("1", Map.of()));
+    assertTrue(locked.contains("amount"), "非 DRAFT 态 amount 应被锁定");
+  }
+
+  @Test
+  @DisplayName("fieldLockRules：DRAFT 态下 amount 不锁定（草稿可编辑）")
+  void lockedFields_allowsDraftEdit() {
+    List<String> locked =
+        engine.lockedFields(
+            schema(LOCK_RULE),
+            map("status", "DRAFT", "amount", 100.0),
+            UiSchemaRuleEngine.Ctx.of("1", Map.of()));
+    assertTrue(locked.isEmpty(), "DRAFT 态 amount 不应被锁定");
+  }
+
+  @Test
+  @DisplayName("fieldLockRules：缺失时返回空集（向后兼容、零强制）")
+  void lockedFields_emptyWhenAbsent() {
+    List<String> locked =
+        engine.lockedFields(
+            schema("{\"schemaVersion\":1}"),
+            map("status", "X"),
+            UiSchemaRuleEngine.Ctx.of("1", Map.of()));
+    assertTrue(locked.isEmpty());
+  }
+
+  // ==================== expense_reimbursement 字段锁（迁移自 ExpenseReimbursementWriteHook
+  // 规则一）====================
+
+  private static final String EXP_CLAIM_LOCK =
+      """
+      {"schemaVersion":1,"entityCode":"expense_reimbursement",
+       "fieldLockRules":[
+         {"name":"审批链上金额冻结","code":"LOCK-AMT-01",
+          "when":{"fieldCode":"status","operator":"in","value":["SUBMITTED","APPROVED","AUDITED","PAID","REJECTED","CANCELLED"]},
+          "fields":["amount"],"message":"已进入审批/支付/结算流程，金额不可修改"}
+       ]}
+      """;
+
+  @Test
+  @DisplayName("expense_reimbursement 字段锁：status∈审批链 → amount 锁定；DRAFT 不锁（与迁移前 Hook 规则一语义一致）")
+  void expClaim_lockBlocksApprovalChainAmount() {
+    List<String> frozen =
+        engine.lockedFields(
+            schema(EXP_CLAIM_LOCK),
+            map("status", "SUBMITTED", "amount", 100.0),
+            UiSchemaRuleEngine.Ctx.of("1", Map.of()));
+    assertTrue(frozen.contains("amount"), "审批链态 amount 应被锁定");
+
+    List<String> draft =
+        engine.lockedFields(
+            schema(EXP_CLAIM_LOCK),
+            map("status", "DRAFT", "amount", 100.0),
+            UiSchemaRuleEngine.Ctx.of("1", Map.of()));
+    assertTrue(draft.isEmpty(), "DRAFT 态 amount 不应被锁定");
+  }
 }

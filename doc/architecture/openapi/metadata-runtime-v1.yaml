@@ -571,7 +571,7 @@ components:
       schema:
         type: string
         pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
-      description: 元数据实体编码（meta_entity.code），如 t_expense_claim
+      description: 元数据实体编码（meta_entity.code），如 t_expense_reimbursement
     RecordId:
       name: id
       in: path
@@ -595,7 +595,7 @@ components:
       schema:
         type: string
         pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
-      description: 子实体编码（CHILD_TABLE 声明 childEntityCode），如 expense_claim_item
+      description: 子实体编码（CHILD_TABLE 声明 childEntityCode），如 expense_reimbursement_item
       example: confirmPayout
 
   schemas:
@@ -642,7 +642,7 @@ components:
           type: string
           enum: [state_transition, escape]
         enabled: { type: boolean }
-        permission: { type: string, example: runtime:t_expense_claim:confirmPayout }
+        permission: { type: string, example: runtime:t_expense_reimbursement:confirmPayout }
         requiresIdempotencyKey: { type: boolean }
         confirm:
           type: object

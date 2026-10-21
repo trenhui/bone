@@ -183,7 +183,7 @@ describe('resolveVisibleActions 状态机门控', () => {
 describe('resolveVariant 变体裁决（v1.1）', () => {
   const schema: BoneUiSchema = {
     schemaVersion: 1,
-    entityCode: 't_expense_claim',
+    entityCode: 't_expense_reimbursement',
     views: { form: { sections: [{ id: 'base', controls: [{ fieldCode: 'title' }] }] } },
     actionBar,
     variants: [

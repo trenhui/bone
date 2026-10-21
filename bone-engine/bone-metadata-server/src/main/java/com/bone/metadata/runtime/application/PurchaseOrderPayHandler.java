@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  * 付款对象是<b>供应商</b>（对公、需三单匹配与应付核销），报销打款对象是<b>员工</b>（对私、核销借款）。 复用同一 bean
  * 会让两条链路的失败语义、对账口径与审计线索互相污染（报销命名纪律亦禁止复用 blueprint 订单域语义）。
  *
- * <p><b>职责边界（与 {@code ExpenseClaimConfirmPayoutHandler} 同构）</b>：
+ * <p><b>职责边界（与 {@code ExpenseReimbursementConfirmPayoutHandler} 同构）</b>：
  *
  * <ol>
  *   <li><b>入参契约由平台管</b>：{@code channel}/{@code payAmount} 的必填与取值域由动作定义 {@code params_schema}

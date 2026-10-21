@@ -54,7 +54,7 @@
 <body>
 <header>
   <strong>费用报销 · 协议驱动渲染 Demo</strong>
-  <code id="hdr-entity">t_expense_claim</code>
+  <code id="hdr-entity">t_expense_reimbursement</code>
   <span>状态 <span class="badge" id="hdr-status">DRAFT</span></span>
   <span class="muted" style="color:#aaa">Schema 渲染 · 数据行内模拟 · 后端强制不在此演示</span>
   <span style="flex:1"></span>
@@ -97,10 +97,10 @@
   <section id="tab-mapping" style="display:none">
     <div class="card"><h3>协议映射（引用不复制：真源仍在后端）</h3>
       <div class="log">
-        <div><span class="pill">entityCode</span><code>t_expense_claim</code> → meta_entity（结构真源）</div>
+        <div><span class="pill">entityCode</span><code>t_expense_reimbursement</code> → meta_entity（结构真源）</div>
         <div><span class="pill">actionBar</span><code>submit / approve / reject / confirmPayout</code> → meta_entity_action_def（流转/权限码/幂等/params_schema 后端强制）</div>
         <div><span class="pill">dataScope</span><code>owner_or_approver</code> → row_policies（本人+审批人可见，WHERE 后端强制）</div>
-        <div><span class="pill">submit</span>明细合计/单行下限/日期顺序 → 前端先拦，后端 <code>RuntimeWriteValidator(min:0.01)</code> + <code>ExpenseClaimWriteHook</code> 再强制</div>
+        <div><span class="pill">submit</span>明细合计/单行下限/日期顺序 → 前端先拦，后端 <code>RuntimeWriteValidator(min:0.01)</code> + <code>ExpenseReimbursementWriteHook</code> 再强制</div>
       </div>
     </div>
     <div class="card"><h3>走查剧本（5 步）</h3>
@@ -118,7 +118,7 @@
 <script id="bone-ui-schema" type="application/json">
 {
   "schemaVersion": 1,
-  "entityCode": "t_expense_claim",
+  "entityCode": "t_expense_reimbursement",
   "displayModes": ["create", "edit", "view"],
   "views": {
     "list": {
@@ -165,7 +165,7 @@
         {
           "id": "sec_items", "title": "费用明细",
           "controls": [
-            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_claim_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
+            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_reimbursement_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
           ]
         },
         {

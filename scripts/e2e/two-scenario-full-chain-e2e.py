@@ -260,8 +260,8 @@ def rec_status(d):
 # ==================================================================
 section("场景一：费用报销（expense-claim）— 建模 → 发布 → 业务全链路")
 
-EXP = "expense_claim_chain_" + SUFFIX
-EXP_ITEM = "expense_claim_item"  # 协议样例 props.childEntity 引用此名
+EXP = "expense_reimbursement_chain_" + SUFFIX
+EXP_ITEM = "expense_reimbursement_item"  # 协议样例 props.childEntity 引用此名
 exp_fields = [
     {"code": "claim_no", "label": "单号"},
     {"code": "title", "label": "标题", "required": True},
@@ -315,7 +315,7 @@ for code, label, frm, to, esc, hdl, idem, order in [
     ("submit", "提交", "DRAFT", "SUBMITTED", False, None, False, 1),
     ("approve", "审批通过", "SUBMITTED", "APPROVED", False, None, False, 2),
     ("reject", "驳回", "SUBMITTED", "REJECTED", False, None, False, 3),
-    ("confirmPayout", "确认打款", "APPROVED", "PAID", True, "expenseClaimConfirmPayoutHandler", True, 4),
+    ("confirmPayout", "确认打款", "APPROVED", "PAID", True, "expenseReimbursementConfirmPayoutHandler", True, 4),
 ]:
     s, d = add_action(exp_id, code, label, frm, to, esc, hdl, idem, order)
     added.append((code, s))
@@ -514,7 +514,7 @@ for code, label, frm, to, esc, hdl, idem, order in [
     ("approve", "核赔通过", "REVIEWING", "APPROVED", False, None, False, 2),
     ("reject", "拒赔", "REVIEWING", "REJECTED", False, None, False, 3),
     ("requestMoreEvidence", "补充材料", "REVIEWING", "PENDING_EVIDENCE", False, None, False, 4),
-    ("pay", "支付", "APPROVED", "PAID", True, "expenseClaimConfirmPayoutHandler", True, 5),
+    ("pay", "支付", "APPROVED", "PAID", True, "expenseReimbursementConfirmPayoutHandler", True, 5),
     ("appeal", "申诉", "REJECTED", "APPEALING", False, None, False, 6),
 ]:
     s, d = add_action(clm_id, code, label, frm, to, esc, hdl, idem, order)

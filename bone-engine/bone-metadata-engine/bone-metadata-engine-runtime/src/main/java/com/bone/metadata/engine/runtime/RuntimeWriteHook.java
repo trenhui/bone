@@ -22,7 +22,7 @@ package com.bone.metadata.engine.runtime;
  */
 public interface RuntimeWriteHook {
 
-  /** 本钩子作用的运行时实体 code（如 {@code expense_claim}）。 */
+  /** 本钩子作用的运行时实体 code（如 {@code expense_reimbursement}）。 */
   String entityCode();
 
   /**

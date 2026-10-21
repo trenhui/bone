@@ -14,7 +14,7 @@
   3) 若 parent 存在名为 `amount` 的数值列，按子行 `amount` 求和 → service.update(entityCode, tenantId, id, {amount: sum}, null, operatorId)（走完整校验+审计链）；
   4) 兜底容错：子实体无 amount 列 / 头表无 amount 列 / update 抛 422（如头表状态冻结）→ 记 INFO 日志并跳过，不阻断子表保存（子表保存是用户显式操作，合计回填是增值动作，失败不应回滚明细）。
 - 注册：无 SPI 变更，直接在 controller 注入 aggregator 调用（事务内）。
-- 验证：E2E——创建 expense_claim 头 + 2 行明细（553.00/727.50）→ GET 金额=1280.50；SUBMITTED 后 replaceChildren 不回填（422 容错路径）。
+- 验证：E2E——创建 expense_reimbursement 头 + 2 行明细（553.00/727.50）→ GET 金额=1280.50；SUBMITTED 后 replaceChildren 不回填（422 容错路径）。
 
 ## 前端（3 项）
 
@@ -38,7 +38,7 @@
 
 ## 不做（防过度设计，说明理由）
 
-1. `SpelBusinessRuleEngine` 化聚合规则：现有 ExpressionEngine 是 Smart 扩展、未接 JDBC 运行时，为一处求和引入表达式引擎=过度设计（Chesterton fence：现有 hook 模式已够用，且 ExpenseClaimWriteHook 同层先例）。
+1. `SpelBusinessRuleEngine` 化聚合规则：现有 ExpressionEngine 是 Smart 扩展、未接 JDBC 运行时，为一处求和引入表达式引擎=过度设计（Chesterton fence：现有 hook 模式已够用，且 ExpenseReimbursementWriteHook 同层先例）。
 2. 迁移脚本：amount/子表/状态机全部已由 0031/0032/0037 落库，无需新迁移。
 3. ⌘K 全平台搜索真源/看板视图：设计稿本身标注 v1.1/P2（未排期），不做。
 4. 三页 lazy 加载：性能优化与本次「交互串联」目标正交，独立小任务不混入。

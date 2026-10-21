@@ -24,7 +24,7 @@ class RuntimeWriteHookTest {
   private JdbcRuntimeRecordService service;
   private NamedParameterJdbcTemplate jdbc;
 
-  /** 演示钩子：报销单在 APPROVED（含）之后不允许改 amount（与 ExpenseClaimWriteHook 同规则）。 */
+  /** 演示钩子：报销单在 APPROVED（含）之后不允许改 amount（与 ExpenseReimbursementWriteHook 同规则）。 */
   static class FrozenAmountHook implements RuntimeWriteHook {
     final Map<String, Object> observed = new java.util.HashMap<>();
     private final NamedParameterJdbcTemplate jdbc;
@@ -35,7 +35,7 @@ class RuntimeWriteHookTest {
 
     @Override
     public String entityCode() {
-      return "expense_claim";
+      return "expense_reimbursement";
     }
 
     @Override
@@ -79,22 +79,22 @@ class RuntimeWriteHookTest {
     var url = "jdbc:h2:mem:write_hook;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
     var ds = new SimpleDriverDataSource(new Driver(), url);
     jdbc = new NamedParameterJdbcTemplate(ds);
-    jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS expense_claim");
+    jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS expense_reimbursement");
     jdbc.getJdbcTemplate()
         .execute(
-            "CREATE TABLE expense_claim ("
+            "CREATE TABLE expense_reimbursement ("
                 + "`id` BIGINT PRIMARY KEY, `tenant_id` BIGINT NOT NULL, "
                 + "`title` VARCHAR(64), `amount` DOUBLE, `status` VARCHAR(16), `memo` VARCHAR(64), "
                 + "`version` INT NOT NULL DEFAULT 0, `deleted` SMALLINT NOT NULL DEFAULT 0)");
     RuntimeEntityCatalog catalog =
         (code, tenantId) -> {
-          if (!"expense_claim".equals(code)) {
+          if (!"expense_reimbursement".equals(code)) {
             return Optional.empty();
           }
           return Optional.of(
               new PublishedRuntimeEntity(
-                  "expense_claim",
-                  "expense_claim",
+                  "expense_reimbursement",
+                  "expense_reimbursement",
                   "id",
                   tenantId,
                   List.of(
@@ -119,7 +119,10 @@ class RuntimeWriteHookTest {
   void beforeCreateCanMutatePayload() {
     Map<String, Object> created =
         service.create(
-            "expense_claim", 1L, Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"), 1L);
+            "expense_reimbursement",
+            1L,
+            Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"),
+            1L);
     assertEquals("default-memo", created.get("memo"), "钩子应补全 memo 缺省值");
   }
 
@@ -127,13 +130,14 @@ class RuntimeWriteHookTest {
   @DisplayName("beforeUpdate 钩子阻断：APPROVED 后改 amount 抛 422")
   void beforeUpdateBlocksFrozenAmount() {
     service.create(
-        "expense_claim", 1L, Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"), 1L);
-    jdbc.getJdbcTemplate().update("UPDATE expense_claim SET `status` = 'APPROVED' WHERE `id` = 1");
+        "expense_reimbursement", 1L, Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"), 1L);
+    jdbc.getJdbcTemplate()
+        .update("UPDATE expense_reimbursement SET `status` = 'APPROVED' WHERE `id` = 1");
 
     RuntimeRecordException ex =
         assertThrows(
             RuntimeRecordException.class,
-            () -> service.update("expense_claim", 1L, "1", Map.of("amount", 999.0)));
+            () -> service.update("expense_reimbursement", 1L, "1", Map.of("amount", 999.0)));
     assertEquals(
         MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, ex.getErrorCode(), "审批链上改金额必须收敛到校验失败码");
     assertEquals("1", ((FrozenAmountHook) serviceWriteHooks().get(0)).observed.get("recordId"));
@@ -143,8 +147,9 @@ class RuntimeWriteHookTest {
   @DisplayName("beforeUpdate 钩子放行：DRAFT 改金额不阻断")
   void beforeUpdateAllowsDraft() {
     service.create(
-        "expense_claim", 1L, Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"), 1L);
-    Map<String, Object> updated = service.update("expense_claim", 1L, "1", Map.of("amount", 120.0));
+        "expense_reimbursement", 1L, Map.of("title", "打车", "amount", 80.0, "status", "DRAFT"), 1L);
+    Map<String, Object> updated =
+        service.update("expense_reimbursement", 1L, "1", Map.of("amount", 120.0));
     assertEquals(120.0, ((Number) updated.get("amount")).doubleValue(), 0.0001);
   }
 

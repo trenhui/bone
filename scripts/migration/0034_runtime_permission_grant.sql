@@ -3,7 +3,7 @@
 --
 -- 目的（低代码 Runtime 数据面设计 §4.6 / §4.7 · Must）：
 --   0032 把报销动作的 permission_code 清一色写成旧的粗粒度 metadata:runtime:write，
---   0033 才注册了细码 runtime:expense_claim:{submit|approve|reject|confirmPayout}。
+--   0033 才注册了细码 runtime:expense_reimbursement:{submit|approve|reject|confirmPayout}。
 --   若维持旧码，会出现两个"看起来实现了、实际是空转"的洞：
 --
 --   ① 后端 §4.6 逃逸动作门禁失效。RuntimeAccessGuard#requireAction 的判定是
@@ -43,62 +43,62 @@ USE bone;
 
 -- ── 1. 动作 permission_code 换成细码（§4.6 门禁生效的前提） ─────────────────
 UPDATE meta_entity_action_def
-   SET permission_code = 'runtime:expense_claim:submit',
+   SET permission_code = 'runtime:expense_reimbursement:submit',
        updated_at      = NOW(3),
        version         = version + 1
- WHERE entity_code = 'expense_claim' AND action_code = 'submit' AND deleted = 0;
+ WHERE entity_code = 'expense_reimbursement' AND action_code = 'submit' AND deleted = 0;
 
 UPDATE meta_entity_action_def
-   SET permission_code = 'runtime:expense_claim:approve',
+   SET permission_code = 'runtime:expense_reimbursement:approve',
        updated_at      = NOW(3),
        version         = version + 1
- WHERE entity_code = 'expense_claim' AND action_code = 'approve' AND deleted = 0;
+ WHERE entity_code = 'expense_reimbursement' AND action_code = 'approve' AND deleted = 0;
 
 UPDATE meta_entity_action_def
-   SET permission_code = 'runtime:expense_claim:reject',
+   SET permission_code = 'runtime:expense_reimbursement:reject',
        updated_at      = NOW(3),
        version         = version + 1
- WHERE entity_code = 'expense_claim' AND action_code = 'reject' AND deleted = 0;
+ WHERE entity_code = 'expense_reimbursement' AND action_code = 'reject' AND deleted = 0;
 
 UPDATE meta_entity_action_def
-   SET permission_code = 'runtime:expense_claim:confirmPayout',
+   SET permission_code = 'runtime:expense_reimbursement:confirmPayout',
        updated_at      = NOW(3),
        version         = version + 1
- WHERE entity_code = 'expense_claim' AND action_code = 'confirmPayout' AND deleted = 0;
+ WHERE entity_code = 'expense_reimbursement' AND action_code = 'confirmPayout' AND deleted = 0;
 
 -- ── 2. 授予 SUPER_ADMIN（id=1，tenant 0）：通配 + 报销实体 + 四个动作 ────────
 INSERT INTO iam_role_permission (id, role_id, permission_id, created_at)
 SELECT v.id, 1, p.id, NOW(3)
   FROM (SELECT 9201 AS id, 'runtime:*:read' AS code
         UNION ALL SELECT 9202, 'runtime:*:write'
-        UNION ALL SELECT 9203, 'runtime:expense_claim:read'
-        UNION ALL SELECT 9204, 'runtime:expense_claim:write'
-        UNION ALL SELECT 9205, 'runtime:expense_claim:submit'
-        UNION ALL SELECT 9206, 'runtime:expense_claim:approve'
-        UNION ALL SELECT 9207, 'runtime:expense_claim:reject'
-        UNION ALL SELECT 9208, 'runtime:expense_claim:confirmPayout') v
+        UNION ALL SELECT 9203, 'runtime:expense_reimbursement:read'
+        UNION ALL SELECT 9204, 'runtime:expense_reimbursement:write'
+        UNION ALL SELECT 9205, 'runtime:expense_reimbursement:submit'
+        UNION ALL SELECT 9206, 'runtime:expense_reimbursement:approve'
+        UNION ALL SELECT 9207, 'runtime:expense_reimbursement:reject'
+        UNION ALL SELECT 9208, 'runtime:expense_reimbursement:confirmPayout') v
   JOIN iam_permission p ON p.code = v.code AND p.deleted = 0
  WHERE NOT EXISTS (SELECT 1 FROM iam_role_permission rp WHERE rp.role_id = 1 AND rp.permission_id = p.id);
 
 -- ── 3. 授予 demo 租户管理员（id=3，tenant 1001）：仅报销实体，不给通配 ───────
---    这条是"实体级授权可按实体收回"的演示不动点：该角色只能动 expense_claim。
+--    这条是"实体级授权可按实体收回"的演示不动点：该角色只能动 expense_reimbursement。
 INSERT INTO iam_role_permission (id, role_id, permission_id, created_at)
 SELECT v.id, 3, p.id, NOW(3)
-  FROM (SELECT 9211 AS id, 'runtime:expense_claim:read' AS code
-        UNION ALL SELECT 9212, 'runtime:expense_claim:write'
-        UNION ALL SELECT 9213, 'runtime:expense_claim:submit'
-        UNION ALL SELECT 9214, 'runtime:expense_claim:approve'
-        UNION ALL SELECT 9215, 'runtime:expense_claim:reject') v
+  FROM (SELECT 9211 AS id, 'runtime:expense_reimbursement:read' AS code
+        UNION ALL SELECT 9212, 'runtime:expense_reimbursement:write'
+        UNION ALL SELECT 9213, 'runtime:expense_reimbursement:submit'
+        UNION ALL SELECT 9214, 'runtime:expense_reimbursement:approve'
+        UNION ALL SELECT 9215, 'runtime:expense_reimbursement:reject') v
   JOIN iam_permission p ON p.code = v.code AND p.deleted = 0
  WHERE NOT EXISTS (SELECT 1 FROM iam_role_permission rp WHERE rp.role_id = 3 AND rp.permission_id = p.id);
 
 -- ── 4. 校验 ────────────────────────────────────────────────────────────────
 SELECT
   (SELECT COUNT(*) FROM meta_entity_action_def
-     WHERE deleted = 0 AND entity_code = 'expense_claim'
-       AND permission_code LIKE 'runtime:expense_claim:%')            AS fine_grained_action_count,
+     WHERE deleted = 0 AND entity_code = 'expense_reimbursement'
+       AND permission_code LIKE 'runtime:expense_reimbursement:%')            AS fine_grained_action_count,
   (SELECT COUNT(*) FROM meta_entity_action_def
-     WHERE deleted = 0 AND entity_code = 'expense_claim'
+     WHERE deleted = 0 AND entity_code = 'expense_reimbursement'
        AND permission_code = 'metadata:runtime:write')                AS legacy_coarse_remaining,
   (SELECT COUNT(*) FROM iam_role_permission rp
      JOIN iam_permission p ON p.id = rp.permission_id

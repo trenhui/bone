@@ -1,10 +1,10 @@
 -- 0047_ui_schema_demo_seed.sql
 -- P0-3 建模页两套 schema 种子【DEMO/DEV 联调专用，禁上生产】。
 -- 前置：迁移 0001~0046（含 0046 meta_entity_ui_schema + 模板 ui 列）已执行；
---       0037 报销实体（expense_claim@租户按实体归属，默认 1001）已存在。
+--       0037 报销实体（expense_reimbursement@租户按实体归属，默认 1001）已存在。
 -- 内容：
 --   §1 报销：entity 归属租户查 entity 动态取值（不假设 1001）；tenant0 4 动作复制到实体租户；
---       upsert meta_entity_ui_schema（entityCode=expense_claim，12 真实字段对齐版）。
+--       upsert meta_entity_ui_schema（entityCode=expense_reimbursement，12 真实字段对齐版）。
 --   §2 理赔：新建 claim_case@tenant0（9240）+ 19 字段 + 子实体 claim_case_item（9245）+ 5 字段；
 --       物理表 t_claim_case / t_claim_case_item；6 动作；模板 outpatient_fasttrack（1.1.0 现行）；
 --       历史快照 1.0.0；实例 base 指针（outpatient_fasttrack:1.0.0, notify）。
@@ -14,11 +14,11 @@
 -- ── 0. 备份（与 0016 同模式） ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bak_0047_uischema AS SELECT * FROM meta_entity_ui_schema WHERE 1 = 0;
 INSERT INTO bak_0047_uischema SELECT * FROM meta_entity_ui_schema
-WHERE (tenant_id, entity_id) IN ((0, 9240)) OR entity_id IN (SELECT id FROM meta_entity WHERE code = 'expense_claim');
+WHERE (tenant_id, entity_id) IN ((0, 9240)) OR entity_id IN (SELECT id FROM meta_entity WHERE code = 'expense_reimbursement');
 
--- ── 1. 报销（expense_claim）：实体归属租户动态取值 ────────────────────────
-SET @exp_entity_id = (SELECT id FROM meta_entity WHERE code = 'expense_claim' AND deleted = 0 LIMIT 1);
-SET @exp_tenant_id = (SELECT tenant_id FROM meta_entity WHERE code = 'expense_claim' AND deleted = 0 LIMIT 1);
+-- ── 1. 报销（expense_reimbursement）：实体归属租户动态取值 ────────────────────────
+SET @exp_entity_id = (SELECT id FROM meta_entity WHERE code = 'expense_reimbursement' AND deleted = 0 LIMIT 1);
+SET @exp_tenant_id = (SELECT tenant_id FROM meta_entity WHERE code = 'expense_reimbursement' AND deleted = 0 LIMIT 1);
 
 -- 1.1 动作定义：tenant0 → 实体租户复制（缺啥补啥；ui-schema UI-REF-02 要求同租户可见）。
 INSERT INTO meta_entity_action_def
@@ -29,10 +29,10 @@ SELECT @exp_tenant_id, d.entity_code, d.action_code, d.label, d.from_status, d.t
    d.is_escape, d.handler_bean, d.params_schema, d.permission_code, d.requires_idempotency, d.sort_order,
    NOW(3), NOW(3), 0, 0
 FROM meta_entity_action_def d
-WHERE d.tenant_id = 0 AND d.entity_code = 'expense_claim' AND d.deleted = 0
+WHERE d.tenant_id = 0 AND d.entity_code = 'expense_reimbursement' AND d.deleted = 0
   AND @exp_tenant_id IS NOT NULL AND @exp_tenant_id <> 0
   AND NOT EXISTS (SELECT 1 FROM meta_entity_action_def x
-    WHERE x.tenant_id = @exp_tenant_id AND x.entity_code = 'expense_claim'
+    WHERE x.tenant_id = @exp_tenant_id AND x.entity_code = 'expense_reimbursement'
       AND x.action_code = d.action_code AND x.deleted = 0);
 
 -- 1.2 报销界面 schema（草稿；无 base 指针 → base-update 诚实 NO_BASE_POINTER）。
@@ -40,11 +40,22 @@ INSERT INTO meta_entity_ui_schema
   (tenant_id, entity_id, schema_json, schema_version, schema_minor,
    published_schema_json, published_version, base_template_code, base_version, follow_mode,
    lock_version, created_at, updated_at, deleted)
-SELECT @exp_tenant_id, @exp_entity_id, '{"actionBar":[{"actionCode":"submit","sortOrder":1,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"DRAFT"}},{"actionCode":"approve","sortOrder":2,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"SUBMITTED"}},{"actionCode":"reject","sortOrder":3,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"SUBMITTED"}},{"actionCode":"confirmPayout","sortOrder":4,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"APPROVED"}}],"displayModes":["create","edit","view"],"entityCode":"expense_claim","linkageRules":[{"code":"LINK-COST-01","name":"大额报销必须填写成本中心","then":[{"fieldCode":"cost_center","notice":"金额≥5000 元须填写成本中心（部门/项目归集）","required":true,"visible":true}],"when":{"fieldCode":"amount","operator":"gte","value":5000}},{"code":"LINK-APPR-01","name":"大额报销必须指定审批人","then":[{"fieldCode":"approver_id","required":true,"visible":true}],"when":{"fieldCode":"amount","operator":"gte","value":5000}}],"schemaVersion":1,"submitRules":[{"code":"SUB-SUM-01","compare":{"fieldCode":"amount","valueType":"field"},"fields":["items.amount"],"function":"sum","message":"费用明细合计必须等于申报金额","name":"明细合计一致","operator":"eq","verifyType":"ERROR"},{"code":"SUB-MIN-01","compare":{"value":0.01,"valueType":"fixed"},"fields":["items.amount"],"function":"min","message":"费用明细单行金额不得小于 0.01（与服务端 min:0.01 同值）","name":"单行金额下限","operator":"gte","verifyType":"ERROR"},{"code":"SUB-CNT-01","compare":{"value":1,"valueType":"fixed"},"fields":["items"],"function":"count","message":"费用明细至少保留一行","name":"明细至少一行","operator":"gte","verifyType":"ERROR"}],"views":{"detail":{"sections":[{"controls":[{"fieldCode":"title"},{"fieldCode":"category_id"},{"fieldCode":"amount"},{"fieldCode":"status"}],"id":"sec_base","title":"基本信息"},{"controls":[{"controlKind":"CHILD_TABLE","fieldCode":"items"}],"id":"sec_items","title":"费用明细"}]},"form":{"sections":[{"controls":[{"controlKind":"INPUT","fieldCode":"title","placeholder":"如：10 月差旅报销"},{"controlKind":"REFERENCE","fieldCode":"category_id","props":{"labelField":"name","targetEntity":"expense_category","valueField":"id"}},{"controlKind":"INPUT","fieldCode":"applicant","readonly":true},{"controlKind":"DATE","fieldCode":"expense_date"}],"id":"sec_base","title":"基本信息"},{"controls":[{"controlKind":"NUMBER","fieldCode":"amount","props":{"min":0.01,"precision":2}},{"controlKind":"INPUT","fieldCode":"cost_center","placeholder":"如：研发部 / PROJECT-2026"},{"controlKind":"TEXTAREA","fieldCode":"remark","placeholder":"补充说明（选填）"},{"controlKind":"REFERENCE","fieldCode":"approver_id","props":{"labelField":"name","targetEntity":"sys_user","valueField":"id"}}],"id":"sec_amount","title":"金额与归属"},{"controls":[{"controlKind":"CHILD_TABLE","fieldCode":"items","props":{"childEntity":"expense_claim_item","columns":["note","amount","category_id"]}}],"id":"sec_items","title":"费用明细"},{"controls":[{"controlKind":"ATTACHMENT","fieldCode":"attachment","props":{"maxCount":10,"maxSizeMB":10}}],"id":"sec_files","title":"发票影像"},{"controls":[{"controlKind":"ENUM","fieldCode":"status","readonly":true}],"id":"sec_status","title":"状态"}]},"list":{"batchActions":["submit"],"columns":[{"fieldCode":"claim_no","visible":true,"width":140},{"fieldCode":"title","visible":true,"width":220},{"fieldCode":"amount","visible":true,"width":130},{"fieldCode":"category_id","visible":true,"width":120},{"fieldCode":"status","visible":true,"width":100},{"fieldCode":"applicant","visible":true,"width":100},{"fieldCode":"expense_date","visible":true,"width":120}],"dataScope":{"policyCode":"owner_or_approver"},"searchFields":["status","amount"],"tabs":[{"fieldCode":"approver_id","title":"待我审批","value":"$me"},{"fieldCode":"applicant","title":"我提交的","value":"$me"},{"fieldCode":"status","title":"全部","value":"$all"}]}}}', 1, 1,
+SELECT @exp_tenant_id, @exp_entity_id, '{"actionBar":[{"actionCode":"submit","sortOrder":1,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"DRAFT"}},{"actionCode":"approve","sortOrder":2,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"SUBMITTED"}},{"actionCode":"reject","sortOrder":3,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"SUBMITTED"}},{"actionCode":"confirmPayout","sortOrder":4,"visibleWhen":{"fieldCode":"status","operator":"eq","value":"APPROVED"}}],"displayModes":["create","edit","view"],"entityCode":"expense_reimbursement","linkageRules":[{"code":"LINK-COST-01","name":"大额报销必须填写成本中心","then":[{"fieldCode":"cost_center","notice":"金额≥5000 元须填写成本中心（部门/项目归集）","required":true,"visible":true}],"when":{"fieldCode":"amount","operator":"gte","value":5000}},{"code":"LINK-APPR-01","name":"大额报销必须指定审批人","then":[{"fieldCode":"approver_id","required":true,"visible":true}],"when":{"fieldCode":"amount","operator":"gte","value":5000}}],"schemaVersion":1,"submitRules":[{"code":"SUB-SUM-01","compare":{"fieldCode":"amount","valueType":"field"},"fields":["items.amount"],"function":"sum","message":"费用明细合计必须等于申报金额","name":"明细合计一致","operator":"eq","verifyType":"ERROR"},{"code":"SUB-MIN-01","compare":{"value":0.01,"valueType":"fixed"},"fields":["items.amount"],"function":"min","message":"费用明细单行金额不得小于 0.01（与服务端 min:0.01 同值）","name":"单行金额下限","operator":"gte","verifyType":"ERROR"},{"code":"SUB-CNT-01","compare":{"value":1,"valueType":"fixed"},"fields":["items"],"function":"count","message":"费用明细至少保留一行","name":"明细至少一行","operator":"gte","verifyType":"ERROR"}],"views":{"detail":{"sections":[{"controls":[{"fieldCode":"title"},{"fieldCode":"category_id"},{"fieldCode":"amount"},{"fieldCode":"status"}],"id":"sec_base","title":"基本信息"},{"controls":[{"controlKind":"CHILD_TABLE","fieldCode":"items"}],"id":"sec_items","title":"费用明细"}]},"form":{"sections":[{"controls":[{"controlKind":"INPUT","fieldCode":"title","placeholder":"如：10 月差旅报销"},{"controlKind":"REFERENCE","fieldCode":"category_id","props":{"labelField":"name","targetEntity":"expense_category","valueField":"id"}},{"controlKind":"INPUT","fieldCode":"applicant","readonly":true},{"controlKind":"DATE","fieldCode":"expense_date"}],"id":"sec_base","title":"基本信息"},{"controls":[{"controlKind":"NUMBER","fieldCode":"amount","props":{"min":0.01,"precision":2}},{"controlKind":"INPUT","fieldCode":"cost_center","placeholder":"如：研发部 / PROJECT-2026"},{"controlKind":"TEXTAREA","fieldCode":"remark","placeholder":"补充说明（选填）"},{"controlKind":"REFERENCE","fieldCode":"approver_id","props":{"labelField":"name","targetEntity":"sys_user","valueField":"id"}}],"id":"sec_amount","title":"金额与归属"},{"controls":[{"controlKind":"CHILD_TABLE","fieldCode":"items","props":{"childEntity":"expense_reimbursement_item","columns":["note","amount","category_id"]}}],"id":"sec_items","title":"费用明细"},{"controls":[{"controlKind":"ATTACHMENT","fieldCode":"attachment","props":{"maxCount":10,"maxSizeMB":10}}],"id":"sec_files","title":"发票影像"},{"controls":[{"controlKind":"ENUM","fieldCode":"status","readonly":true}],"id":"sec_status","title":"状态"}]},"list":{"batchActions":["submit"],"columns":[{"fieldCode":"claim_no","visible":true,"width":140},{"fieldCode":"title","visible":true,"width":220},{"fieldCode":"amount","visible":true,"width":130},{"fieldCode":"category_id","visible":true,"width":120},{"fieldCode":"status","visible":true,"width":100},{"fieldCode":"applicant","visible":true,"width":100},{"fieldCode":"expense_date","visible":true,"width":120}],"dataScope":{"policyCode":"owner_or_approver"},"searchFields":["status","amount"],"tabs":[{"fieldCode":"approver_id","title":"待我审批","value":"$me"},{"fieldCode":"applicant","title":"我提交的","value":"$me"},{"fieldCode":"status","title":"全部","value":"$all"}]}}}', 1, 1,
    NULL, NULL, NULL, NULL, 'pinned',
    0, NOW(3), NOW(3), 0
 WHERE @exp_entity_id IS NOT NULL
 ON DUPLICATE KEY UPDATE schema_json = VALUES(schema_json), schema_minor = 1, updated_at = NOW(3);
+
+-- 1.3 金额冻结下沉为平台字段锁（fieldLockRules，数据完整性语义，区别于 UI readonly 渲染提示）：
+--     status∈审批链（SUBMITTED/APPROVED/AUDITED/PAID/REJECTED/CANCELLED）时 amount 不可变。
+--     原逻辑位于 ExpenseReimbursementWriteHook 规则一，现由 UiSchemaRuleEnforcer.enforceFieldLock
+--     在记录更新路径（RuntimeRecordApplicationService.update 写库前）统一强制。
+UPDATE meta_entity_ui_schema
+SET schema_json = JSON_SET(
+    schema_json,
+    '$.fieldLockRules',
+    CAST('[{"name":"审批链上金额冻结","code":"LOCK-AMT-01","when":{"fieldCode":"status","operator":"in","value":["SUBMITTED","APPROVED","AUDITED","PAID","REJECTED","CANCELLED"]},"fields":["amount"],"message":"已进入审批/支付/结算流程，金额不可修改"}]' AS JSON))
+WHERE entity_id = @exp_entity_id;
 
 -- ── 2. 理赔（claim_case@tenant0）：实体 + 字段 + 子表 + 物理表 ─────────────
 INSERT INTO meta_entity
@@ -222,11 +233,11 @@ SELECT
 
 -- 回滚（手工执行，顺序注意外键逻辑）：
 -- DELETE FROM meta_entity_ui_schema WHERE tenant_id = 0 AND entity_id = 9240;
--- DELETE FROM meta_entity_ui_schema WHERE entity_id IN (SELECT id FROM meta_entity WHERE code = 'expense_claim');
+-- DELETE FROM meta_entity_ui_schema WHERE entity_id IN (SELECT id FROM meta_entity WHERE code = 'expense_reimbursement');
 -- DELETE FROM meta_field WHERE tenant_id = 0 AND entity_id IN (9240, 9245);
 -- DELETE FROM meta_entity WHERE tenant_id = 0 AND id IN (9240, 9245);
 -- DELETE FROM meta_entity_action_def WHERE tenant_id = 0 AND entity_code = 'claim_case';
--- DELETE FROM meta_entity_action_def WHERE tenant_id <> 0 AND entity_code = 'expense_claim';
+-- DELETE FROM meta_entity_action_def WHERE tenant_id <> 0 AND entity_code = 'expense_reimbursement';
 -- DELETE FROM meta_model_template WHERE tenant_id = 0 AND code = 'outpatient_fasttrack';
 -- DELETE FROM meta_model_template_ui_history WHERE tenant_id = 0 AND template_code = 'outpatient_fasttrack';
 -- DROP TABLE IF EXISTS t_claim_case_item; DROP TABLE IF EXISTS t_claim_case;

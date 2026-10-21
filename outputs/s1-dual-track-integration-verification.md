@@ -83,7 +83,7 @@ eslint-disable 指令（1 error）；AppAntdProvider / main.tsx / ModuleManageme
 ### 6.2 联调中抓到的真 bug：CHILD_TABLE 字段进运行时查询 ⇒ 500
 
 **现象**：个人视图探针末条「零 console 错误」抓到两个 500。日志定位：
-`SELECT ..., items, ... FROM t_expense_claim_e2e_*` → `Unknown column 'items'`。
+`SELECT ..., items, ... FROM t_expense_reimbursement_e2e_*` → `Unknown column 'items'`。
 
 **根因**：`items` 是 CHILD_TABLE（明细子表）字段——DDL 侧（`JdbcPhysicalStructureGatewayAdapter`）
 明确「CHILD_TABLE 无物理列」（建表/加列跳列），但运行时查询层把它当数据列：

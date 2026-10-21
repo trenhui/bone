@@ -114,7 +114,7 @@ if (api.CHILD_COL_META) {
     if (!/150\.00/.test(txt)) throw new Error("金额合计未正确汇总（期望 150.00）");
   });
   check("CHILD_COL_META 元数据驱动映射正确", () => {
-    const m = api.CHILD_COL_META("t_expense_claim", "items", "amount");
+    const m = api.CHILD_COL_META("t_expense_reimbursement", "items", "amount");
     if (!m || m.t !== "money" || !m.sum) throw new Error("amount 应映射为 money+sum，实际 " + JSON.stringify(m));
   });
 } else {

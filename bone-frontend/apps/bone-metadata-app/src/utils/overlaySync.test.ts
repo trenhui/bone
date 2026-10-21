@@ -47,7 +47,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
 });
 
-const ENTITY = 'exp_claim';
+const ENTITY = 'expense_reimbursement';
 
 /** 单视图 bundle（等价于旧扁平口径的一套装法） */
 function bundleOf(extra: Partial<UiOverlayBundle> = {}): UiOverlayBundle {

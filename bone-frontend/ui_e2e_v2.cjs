@@ -34,10 +34,10 @@ const shot = (page, name) => page.screenshot({ path: `${OUT}/${name}.png`, fullP
   // 2. 直接进入元数据子应用的报销页面（qiankun 微前端路由）
   const routes = [
     '/metadata/expense',
-    '/metadata/expense_claim',
-    '/metadata/runtime/expense_claim',
-    '/metadata/app/metadata/expense_claim',
-    '/metadata-app/expense_claim',
+    '/metadata/expense_reimbursement',
+    '/metadata/runtime/expense_reimbursement',
+    '/metadata/app/metadata/expense_reimbursement',
+    '/metadata-app/expense_reimbursement',
   ];
   let landed = null;
   for (const r of routes) {

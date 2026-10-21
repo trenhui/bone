@@ -77,7 +77,8 @@ class ModelingWorkspaceApplicationServiceTest {
         .thenReturn(PageResult.of(List.of(), 22L, 1, 1));
     when(metaEntityRepository.pageEntities(TENANT, null, 0, null, null, null, 1, 6))
         .thenReturn(
-            PageResult.of(List.of(draft(1L, "exp_claim"), draft(2L, "ec_order")), 5L, 1, 6));
+            PageResult.of(
+                List.of(draft(1L, "expense_reimbursement"), draft(2L, "ec_order")), 5L, 1, 6));
     when(iamApplicationRepository.listByTenant(TENANT))
         .thenReturn(List.of(appRef(10L, "费用报销"), appRef(20L, "电商")));
     when(iamModuleRepository.listByTenant(TENANT))
@@ -94,7 +95,7 @@ class ModelingWorkspaceApplicationServiceTest {
     assertThat(dto.publishedTotal()).isEqualTo(22L);
     assertThat(dto.recentDrafts())
         .extracting(MetaEntityDTO::getCode)
-        .containsExactly("exp_claim", "ec_order");
+        .containsExactly("expense_reimbursement", "ec_order");
     assertThat(dto.appModules()).hasSize(2);
     assertThat(dto.appModules().get(0).appName()).isEqualTo("费用报销");
     assertThat(dto.appModules().get(0).modules())

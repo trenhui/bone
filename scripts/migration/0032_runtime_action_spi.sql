@@ -17,7 +17,7 @@
 --
 -- 执行（L3 审批项；由 DBA / CI 在目标库运行）：
 --       mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0032_runtime_action_spi.sql
--- 前置：t_expense_claim 已存在（0031 模板实例化产物）；本脚本只增表 + 种子，不删不改旧数据。
+-- 前置：t_expense_reimbursement 已存在（0031 模板实例化产物）；本脚本只增表 + 种子，不删不改旧数据。
 -- =============================================================================
 
 USE bone;
@@ -64,17 +64,17 @@ CREATE TABLE IF NOT EXISTS meta_runtime_action_execution (
   KEY idx_exec_tenant_entity_record (tenant_id, entity_code, record_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RUNTIME 动作执行日志（幂等去重 + 记录级变更审计）';
 
--- ── 3. 报销场景种子（expense_claim，tenant_id=0 平台/演示租户） ──────────────
+-- ── 3. 报销场景种子（expense_reimbursement，tenant_id=0 平台/演示租户） ──────────────
 -- 状态机：DRAFT → SUBMITTED → APPROVED / REJECTED →（APPROVED）→ PAID
 INSERT INTO meta_entity_action_def
   (tenant_id, entity_code, action_code, label, from_status, to_status, status_field,
    is_escape, handler_bean, params_schema, permission_code, requires_idempotency, sort_order,
    created_at, updated_at, deleted, version)
 VALUES
-  (0, 'expense_claim', 'submit',        '提交',     'DRAFT',     'SUBMITTED', 'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 10, NOW(3), NOW(3), 0, 0),
-  (0, 'expense_claim', 'approve',       '审批通过', 'SUBMITTED', 'APPROVED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 20, NOW(3), NOW(3), 0, 0),
-  (0, 'expense_claim', 'reject',        '驳回',     'SUBMITTED', 'REJECTED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 21, NOW(3), NOW(3), 0, 0),
-  (0, 'expense_claim', 'confirmPayout', '确认打款', 'APPROVED',  'PAID',      'status', 1, 'expenseClaimConfirmPayoutHandler',
+  (0, 'expense_reimbursement', 'submit',        '提交',     'DRAFT',     'SUBMITTED', 'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 10, NOW(3), NOW(3), 0, 0),
+  (0, 'expense_reimbursement', 'approve',       '审批通过', 'SUBMITTED', 'APPROVED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 20, NOW(3), NOW(3), 0, 0),
+  (0, 'expense_reimbursement', 'reject',        '驳回',     'SUBMITTED', 'REJECTED',  'status', 0, NULL, NULL, 'metadata:runtime:write', 0, 21, NOW(3), NOW(3), 0, 0),
+  (0, 'expense_reimbursement', 'confirmPayout', '确认打款', 'APPROVED',  'PAID',      'status', 1, 'expenseReimbursementConfirmPayoutHandler',
    '[{"name":"channel","type":"enum","required":true,"values":["PAYROLL","BANK_TRANSFER"],"label":"打款渠道"},{"name":"note","type":"string","required":false,"label":"备注"}]',
    'metadata:runtime:write', 1, 30, NOW(3), NOW(3), 0, 0)
 ON DUPLICATE KEY UPDATE
@@ -86,5 +86,5 @@ ON DUPLICATE KEY UPDATE
 
 -- ── 4. 校验 ────────────────────────────────────────────────────────────────
 SELECT
-  (SELECT COUNT(*) FROM meta_entity_action_def WHERE deleted = 0 AND entity_code = 'expense_claim') AS action_def_count,
-  (SELECT COUNT(*) FROM meta_entity_action_def WHERE deleted = 0 AND entity_code = 'expense_claim' AND is_escape = 1) AS escape_action_count;
+  (SELECT COUNT(*) FROM meta_entity_action_def WHERE deleted = 0 AND entity_code = 'expense_reimbursement') AS action_def_count,
+  (SELECT COUNT(*) FROM meta_entity_action_def WHERE deleted = 0 AND entity_code = 'expense_reimbursement' AND is_escape = 1) AS escape_action_count;

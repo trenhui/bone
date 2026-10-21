@@ -62,7 +62,7 @@ class RuntimeActionDescribeSupportTest {
   void escapeAction_wildcardWrite_isInvisible() {
     // 核心负向（漂移修复回归防线）：通配写持有者不得看到逃逸动作按钮
     authenticate("runtime:*:write");
-    Map<String, Object> meta = support.describe(1001L, "expense_claim");
+    Map<String, Object> meta = support.describe(1001L, "expense_reimbursement");
     assertNotNull(meta);
     @SuppressWarnings("unchecked")
     Map<String, List<Map<String, Object>>> grouped =
@@ -78,8 +78,9 @@ class RuntimeActionDescribeSupportTest {
 
   @Test
   void escapeAction_fineCode_isVisible() {
-    authenticate("runtime:expense_claim:confirmPayout", "runtime:expense_claim:read");
-    Map<String, Object> meta = support.describe(1001L, "expense_claim");
+    authenticate(
+        "runtime:expense_reimbursement:confirmPayout", "runtime:expense_reimbursement:read");
+    Map<String, Object> meta = support.describe(1001L, "expense_reimbursement");
     assertNotNull(meta);
     @SuppressWarnings("unchecked")
     Map<String, List<Map<String, Object>>> grouped =
@@ -94,8 +95,8 @@ class RuntimeActionDescribeSupportTest {
 
   @Test
   void nonEscapeAction_entityWrite_isVisible() {
-    authenticate("runtime:expense_claim:write");
-    Map<String, Object> meta = support.describe(1001L, "expense_claim");
+    authenticate("runtime:expense_reimbursement:write");
+    Map<String, Object> meta = support.describe(1001L, "expense_reimbursement");
     assertNotNull(meta);
     @SuppressWarnings("unchecked")
     Map<String, List<Map<String, Object>>> grouped =
@@ -109,7 +110,7 @@ class RuntimeActionDescribeSupportTest {
   @Test
   void noAuthority_actionsInvisible() {
     authenticate();
-    Map<String, Object> meta = support.describe(1001L, "expense_claim");
+    Map<String, Object> meta = support.describe(1001L, "expense_reimbursement");
     assertNotNull(meta);
     @SuppressWarnings("unchecked")
     Map<String, List<Map<String, Object>>> grouped =
@@ -120,7 +121,7 @@ class RuntimeActionDescribeSupportTest {
   @Test
   void platformAdmin_seesAll() {
     authenticate("platform.admin");
-    Map<String, Object> meta = support.describe(1001L, "expense_claim");
+    Map<String, Object> meta = support.describe(1001L, "expense_reimbursement");
     assertNotNull(meta);
     @SuppressWarnings("unchecked")
     Map<String, List<Map<String, Object>>> grouped =

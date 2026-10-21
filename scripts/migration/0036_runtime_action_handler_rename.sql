@@ -3,7 +3,7 @@
 --
 -- 目的（费用报销建模方案 §0.1 命名纪律 · 代码整改）：
 --   报销「确认打款」逃逸处理器 bean 名由 paymentApplicationService 改名为
---   expenseClaimConfirmPayoutHandler（类 ExpenseClaimConfirmPayoutHandler）。
+--   expenseReimbursementConfirmPayoutHandler（类 ExpenseReimbursementConfirmPayoutHandler）。
 --   理由：paymentApplicationService 与 blueprint 订单域 PaymentApplicationService
 --   同名同 bean 名——语义上报销打款 ≠ 订单支付，命名纪律被实现破坏，且将来业务
 --   模块以 starter 装配进宿主时同名 bean 会 fail-fast 冲突（Spring 容器按名唯一）。
@@ -19,7 +19,7 @@
 USE bone;
 
 UPDATE meta_entity_action_def
-   SET handler_bean    = 'expenseClaimConfirmPayoutHandler',
+   SET handler_bean    = 'expenseReimbursementConfirmPayoutHandler',
        updated_at      = NOW(3),
        version         = version + 1
  WHERE handler_bean    = 'paymentApplicationService'

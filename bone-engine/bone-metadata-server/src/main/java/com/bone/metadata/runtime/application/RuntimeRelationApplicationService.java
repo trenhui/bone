@@ -33,7 +33,7 @@ public class RuntimeRelationApplicationService {
   private final RuntimeEntityCatalog runtimeEntityCatalog;
   private final RuntimeRelationSupport relationSupport;
   private final RuntimeRecordApplicationService recordService;
-  private final ChildAmountAggregator childAmountAggregator;
+  private final ReimbursementChildAmountAggregator childAmountAggregator;
   private final TransactionTemplate transactionTemplate;
   private final TenantProvider tenantProvider;
 
@@ -68,8 +68,8 @@ public class RuntimeRelationApplicationService {
   /**
    * 批量替换子表行（父记录表单一次性提交明细）+ 同事务金额聚合回填。
    *
-   * <p>回填发生在事务内（头表金额字段由 {@link ChildAmountAggregator} 直接写库）；响应保持 {@code List} 契约不变——前端保存明细成功后
-   * re-fetch 主记录对齐头表金额展示（避免为带一个标量破坏 GET /records/{id} 的既有缓存与 ETag 语义）。回填失败抛异常 →
+   * <p>回填发生在事务内（头表金额字段由 {@link ReimbursementChildAmountAggregator} 直接写库）；响应保持 {@code List}
+   * 契约不变——前端保存明细成功后 re-fetch 主记录对齐头表金额展示（避免为带一个标量破坏 GET /records/{id} 的既有缓存与 ETag 语义）。回填失败抛异常 →
    * 明细替换一并回滚，杜绝「明细已替换、头表未更新」。
    */
   public List<Map<String, Object>> replaceChildren(

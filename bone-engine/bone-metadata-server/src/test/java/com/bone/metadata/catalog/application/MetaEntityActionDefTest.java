@@ -92,7 +92,18 @@ class MetaEntityActionDefTest {
   private MetaEntity entity() {
     MetaEntity e =
         MetaEntity.create(
-            9L, 1L, "报销单", "expense_claim", "报销单", null, "t_expense_claim", 1, 1, null, 58L, null);
+            9L,
+            1L,
+            "报销单",
+            "expense_reimbursement",
+            "报销单",
+            null,
+            "t_expense_reimbursement",
+            1,
+            1,
+            null,
+            58L,
+            null);
     return e;
   }
 
@@ -117,27 +128,27 @@ class MetaEntityActionDefTest {
   void upsert_shouldWriteAndEvictCache() {
     com.bone.metadata.catalog.application.query.dto.ActionDefView view =
         service.upsertActionDef(9L, cmd("submit", false, null, false));
-    assertEquals("runtime:expense_claim:submit", view.permissionCode());
+    assertEquals("runtime:expense_reimbursement:submit", view.permissionCode());
 
     ArgumentCaptor<com.bone.metadata.catalog.domain.gateway.ActionDefSpec> captor =
         ArgumentCaptor.forClass(com.bone.metadata.catalog.domain.gateway.ActionDefSpec.class);
-    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_claim"), captor.capture());
+    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_reimbursement"), captor.capture());
     assertEquals("submit", captor.getValue().actionCode());
-    verify(cacheEvictor).evict("expense_claim", 1L);
+    verify(cacheEvictor).evict("expense_reimbursement", 1L);
   }
 
   @Test
   @DisplayName("逃逸动作齐全（handlerBean + 幂等）→ 放行")
   void upsert_escapeActionWithHandlerAndIdempotency_shouldPass() {
     service.upsertActionDef(
-        9L, cmd("confirmPayout", true, "expenseClaimConfirmPayoutHandler", true));
-    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_claim"), any());
+        9L, cmd("confirmPayout", true, "expenseReimbursementConfirmPayoutHandler", true));
+    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_reimbursement"), any());
   }
 
   @Test
   @DisplayName("列出动作定义：按实体 code + 租户委派端口")
   void list_shouldDelegate() {
-    when(actionDefMaterializePort.listByEntity(1L, "expense_claim"))
+    when(actionDefMaterializePort.listByEntity(1L, "expense_reimbursement"))
         .thenReturn(
             List.of(
                 new com.bone.metadata.catalog.domain.gateway.ActionDefSpec(
@@ -155,16 +166,17 @@ class MetaEntityActionDefTest {
     List<com.bone.metadata.catalog.application.query.dto.ActionDefView> views =
         service.listActionDefs(9L);
     assertEquals(1, views.size());
-    assertEquals("runtime:expense_claim:submit", views.get(0).permissionCode());
-    verify(actionDefMaterializePort).listByEntity(1L, "expense_claim");
+    assertEquals("runtime:expense_reimbursement:submit", views.get(0).permissionCode());
+    verify(actionDefMaterializePort).listByEntity(1L, "expense_reimbursement");
   }
 
   @Test
   @DisplayName("软删存在的动作 → evict 缓存（删掉最后一条会让 stateField 退化为 null，绕过状态机）")
   void delete_shouldEvictCache() {
-    when(actionDefMaterializePort.softDeleteOne(1L, "expense_claim", "submit")).thenReturn(1);
+    when(actionDefMaterializePort.softDeleteOne(1L, "expense_reimbursement", "submit"))
+        .thenReturn(1);
     service.deleteActionDef(9L, "submit");
-    verify(cacheEvictor).evict("expense_claim", 1L);
+    verify(cacheEvictor).evict("expense_reimbursement", 1L);
   }
 
   @Test
@@ -177,7 +189,7 @@ class MetaEntityActionDefTest {
 
     ArgumentCaptor<com.bone.metadata.catalog.domain.gateway.ActionDefSpec> captor =
         ArgumentCaptor.forClass(com.bone.metadata.catalog.domain.gateway.ActionDefSpec.class);
-    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_claim"), captor.capture());
+    verify(actionDefMaterializePort).upsert(eq(1L), eq("expense_reimbursement"), captor.capture());
     assertEquals(Boolean.TRUE, captor.getValue().entry(), "entry 不得在服务层被吞");
   }
 
@@ -220,7 +232,8 @@ class MetaEntityActionDefTest {
   @Test
   @DisplayName("软删不存在的动作 → 404 ACTION_DEF_NOT_FOUND")
   void delete_nonExisting_shouldReturn404() {
-    when(actionDefMaterializePort.softDeleteOne(1L, "expense_claim", "ghost")).thenReturn(0);
+    when(actionDefMaterializePort.softDeleteOne(1L, "expense_reimbursement", "ghost"))
+        .thenReturn(0);
     BizException e = assertThrows(BizException.class, () -> service.deleteActionDef(9L, "ghost"));
     assertEquals(CatalogErrorCodes.ACTION_DEF_NOT_FOUND, e.getErrorCode());
     assertEquals(404, e.getCode());

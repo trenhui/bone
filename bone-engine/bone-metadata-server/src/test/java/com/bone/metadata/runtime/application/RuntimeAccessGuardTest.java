@@ -56,23 +56,23 @@ class RuntimeAccessGuardTest {
 
   @Test
   void entityScopedReadCode_passes() {
-    authenticate("runtime:expense_claim:read");
-    assertTrue(guard.canRead("expense_claim"), "实体级读码必须放行读");
-    guard.requireRead("expense_claim"); // 不抛即通过
+    authenticate("runtime:expense_reimbursement:read");
+    assertTrue(guard.canRead("expense_reimbursement"), "实体级读码必须放行读");
+    guard.requireRead("expense_reimbursement"); // 不抛即通过
   }
 
   @Test
   void wildcardReadCode_passes() {
     authenticate("runtime:*:read");
-    assertTrue(guard.canRead("expense_claim"), "通配读码对任意实体放行");
+    assertTrue(guard.canRead("expense_reimbursement"), "通配读码对任意实体放行");
     assertTrue(guard.canRead("any_other_entity"), "通配语义与实体编码无关");
   }
 
   @Test
   void platformAdmin_passes() {
     authenticate("platform.admin");
-    assertTrue(guard.canRead("expense_claim"), "平台管理员是数据修复通道（§4.5）");
-    assertTrue(guard.canWrite("expense_claim"));
+    assertTrue(guard.canRead("expense_reimbursement"), "平台管理员是数据修复通道（§4.5）");
+    assertTrue(guard.canWrite("expense_reimbursement"));
     assertTrue(guard.isPlatformAdmin());
   }
 
@@ -80,26 +80,28 @@ class RuntimeAccessGuardTest {
   void coarseOnlyCode_denied() {
     // 核心负向：旧粗码 metadata:runtime:read 单独持有 → 实体级判据不认
     authenticate("metadata:runtime:read");
-    assertFalse(guard.canRead("expense_claim"), "旧粗码不得回退放行（否则实体级授权形同虚设）");
+    assertFalse(guard.canRead("expense_reimbursement"), "旧粗码不得回退放行（否则实体级授权形同虚设）");
     RuntimeRecordException ex =
-        assertThrows(RuntimeRecordException.class, () -> guard.requireRead("expense_claim"));
+        assertThrows(
+            RuntimeRecordException.class, () -> guard.requireRead("expense_reimbursement"));
     assertEquals(MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN, ex.getErrorCode());
   }
 
   @Test
   void noAuthorities_denied() {
     authenticate(); // 空权限集
-    assertFalse(guard.canRead("expense_claim"));
+    assertFalse(guard.canRead("expense_reimbursement"));
     RuntimeRecordException ex =
-        assertThrows(RuntimeRecordException.class, () -> guard.requireRead("expense_claim"));
+        assertThrows(
+            RuntimeRecordException.class, () -> guard.requireRead("expense_reimbursement"));
     assertEquals(MetadataErrorCodes.RUNTIME_ENTITY_FORBIDDEN, ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("runtime:expense_claim:read"), "拒绝消息须点名缺的码");
+    assertTrue(ex.getMessage().contains("runtime:expense_reimbursement:read"), "拒绝消息须点名缺的码");
   }
 
   @Test
   void otherEntityCode_doesNotLeak() {
     authenticate("runtime:other_entity:read");
-    assertFalse(guard.canRead("expense_claim"), "A 实体的读码不得放行 B 实体");
+    assertFalse(guard.canRead("expense_reimbursement"), "A 实体的读码不得放行 B 实体");
     assertTrue(guard.canRead("other_entity"));
   }
 
@@ -107,22 +109,22 @@ class RuntimeAccessGuardTest {
 
   @Test
   void entityScopedWriteCode_passes() {
-    authenticate("runtime:expense_claim:write");
-    assertTrue(guard.canWrite("expense_claim"));
-    guard.requireWrite("expense_claim");
+    authenticate("runtime:expense_reimbursement:write");
+    assertTrue(guard.canWrite("expense_reimbursement"));
+    guard.requireWrite("expense_reimbursement");
   }
 
   @Test
   void coarseWriteOnlyCode_denied() {
     authenticate("metadata:runtime:write");
-    assertFalse(guard.canWrite("expense_claim"), "旧粗写码不得回退放行");
+    assertFalse(guard.canWrite("expense_reimbursement"), "旧粗写码不得回退放行");
   }
 
   @Test
   void readCodeDoesNotGrantWrite() {
-    authenticate("runtime:expense_claim:read");
-    assertFalse(guard.canWrite("expense_claim"), "读码不隐含写码");
-    assertThrows(RuntimeRecordException.class, () -> guard.requireWrite("expense_claim"));
+    authenticate("runtime:expense_reimbursement:read");
+    assertFalse(guard.canWrite("expense_reimbursement"), "读码不隐含写码");
+    assertThrows(RuntimeRecordException.class, () -> guard.requireWrite("expense_reimbursement"));
   }
 
   // ── canInvoke / requireAction（逃逸动作必须细码，§4.6） ─────────────────
@@ -141,13 +143,13 @@ class RuntimeAccessGuardTest {
 
   @Test
   void escapeAction_entityWrite_stillDenied() {
-    authenticate("runtime:expense_claim:write");
+    authenticate("runtime:expense_reimbursement:write");
     assertFalse(guard.canInvoke(escapeDef()), "逃逸动作：实体级写也不覆盖资金授权面");
   }
 
   @Test
   void escapeAction_fineCode_passes() {
-    authenticate("runtime:expense_claim:confirmPayout");
+    authenticate("runtime:expense_reimbursement:confirmPayout");
     RuntimeActionDef escape = escapeDef();
     assertTrue(guard.canInvoke(escape), "逃逸动作：动作级细码放行");
     guard.requireAction(escape);
@@ -169,7 +171,7 @@ class RuntimeAccessGuardTest {
 
   @Test
   void nonEscapeAction_entityWrite_passes() {
-    authenticate("runtime:expense_claim:write");
+    authenticate("runtime:expense_reimbursement:write");
     RuntimeActionDef submit = nonEscapeDef();
     assertTrue(guard.canInvoke(submit), "非逃逸动作：实体级写即授权（状态流转与 CRUD 共用授权面）");
   }
@@ -182,7 +184,7 @@ class RuntimeAccessGuardTest {
 
   @Test
   void nonEscapeAction_fineCode_passes() {
-    authenticate("runtime:expense_claim:submit");
+    authenticate("runtime:expense_reimbursement:submit");
     assertTrue(guard.canInvoke(nonEscapeDef()), "非逃逸动作：细码即授权");
   }
 
@@ -192,7 +194,7 @@ class RuntimeAccessGuardTest {
     RuntimeRecordException ex =
         assertThrows(RuntimeRecordException.class, () -> guard.requireAction(nonEscapeDef()));
     assertEquals(MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION, ex.getErrorCode());
-    assertTrue(ex.getMessage().contains("runtime:expense_claim:submit"));
+    assertTrue(ex.getMessage().contains("runtime:expense_reimbursement:submit"));
   }
 
   @Test
@@ -206,8 +208,8 @@ class RuntimeAccessGuardTest {
   @Test
   void booleanAndThrowingAreConsistent() {
     for (String codes :
-        List.of("", "runtime:expense_claim:read", "runtime:*:write", "platform.admin")) {
-      for (String entity : Set.of("expense_claim", "other")) {
+        List.of("", "runtime:expense_reimbursement:read", "runtime:*:write", "platform.admin")) {
+      for (String entity : Set.of("expense_reimbursement", "other")) {
         authenticate(codes.isEmpty() ? new String[0] : new String[] {codes});
         boolean can = guard.canRead(entity);
         if (can) {
@@ -222,13 +224,13 @@ class RuntimeAccessGuardTest {
   // ── 测试夹具 ───────────────────────────────────────────────────────────
 
   private static RuntimeActionDef escapeDef() {
-    return escapeDef("runtime:expense_claim:confirmPayout");
+    return escapeDef("runtime:expense_reimbursement:confirmPayout");
   }
 
   private static RuntimeActionDef escapeDef(String permissionCode) {
     return new RuntimeActionDef(
         1L,
-        "expense_claim",
+        "expense_reimbursement",
         "confirmPayout",
         "确认打款",
         "APPROVED",
@@ -244,13 +246,13 @@ class RuntimeAccessGuardTest {
   }
 
   private static RuntimeActionDef nonEscapeDef() {
-    return nonEscapeDef("runtime:expense_claim:submit");
+    return nonEscapeDef("runtime:expense_reimbursement:submit");
   }
 
   private static RuntimeActionDef nonEscapeDef(String permissionCode) {
     return new RuntimeActionDef(
         2L,
-        "expense_claim",
+        "expense_reimbursement",
         "submit",
         "提交",
         "DRAFT",

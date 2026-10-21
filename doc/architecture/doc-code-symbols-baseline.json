@@ -633,7 +633,7 @@
       "note": "PRD 补货能力设计稿描述的目标态 ApplicationService 边界（到货入库 receive 跨聚合事务），实现尚未落地；改文档会把目标态设计降格为 As-Is 描述"
     },
     {
-      "symbol": "ExpenseClaimApplicationService",
+      "symbol": "ExpenseReimbursementApplicationService",
       "docs": [
         "doc/design/lowcode/BONE-低代码最小闭环PRD.md",
         "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",

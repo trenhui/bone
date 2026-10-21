@@ -41,7 +41,7 @@ const SPECS = [
   {
     key: 'expense',
     name: '报销单',
-    code: `expense_claim_${SUFFIX}`,
+    code: `expense_reimbursement_${SUFFIX}`,
     fields: [
       ['expense_no', '报销单号', 'STRING', true],
       ['expense_type', '费用类型', 'STRING', false],

@@ -24,8 +24,8 @@ class RuntimeQuerySupportTest {
 
   private static final PublishedRuntimeEntity ENTITY =
       new PublishedRuntimeEntity(
-          "expense_claim",
-          "t_expense_claim",
+          "expense_reimbursement",
+          "t_expense_reimbursement",
           "id",
           0L,
           List.of(

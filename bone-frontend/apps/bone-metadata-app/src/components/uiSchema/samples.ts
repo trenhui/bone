@@ -20,7 +20,7 @@ export interface UiSchemaSample {
 
 export const SAMPLE_EXPENSE: BoneUiSchema = {
   "schemaVersion": 1,
-  "entityCode": "t_expense_claim",
+  "entityCode": "t_expense_reimbursement",
   "displayModes": [
     "create",
     "edit",
@@ -172,7 +172,7 @@ export const SAMPLE_EXPENSE: BoneUiSchema = {
               "fieldCode": "items",
               "controlKind": "CHILD_TABLE",
               "props": {
-                "childEntity": "expense_claim_item",
+                "childEntity": "expense_reimbursement_item",
                 "columns": [
                   "expense_date",
                   "category_id",

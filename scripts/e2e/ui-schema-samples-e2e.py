@@ -220,8 +220,8 @@ def act(entity_code, rid, action, params=None, idem=None):
 # ==================================================================
 section("场景一：费用报销（expense-claim）")
 
-EXP = "expense_claim_e2e_" + SUFFIX
-EXP_ITEM = "expense_claim_item"  # 协议样例 props.childEntity 引用此名
+EXP = "expense_reimbursement_e2e_" + SUFFIX
+EXP_ITEM = "expense_reimbursement_item"  # 协议样例 props.childEntity 引用此名
 exp_fields = [
     {"code": "claim_no", "label": "单号"},
     {"code": "title", "label": "标题", "required": True},
@@ -279,7 +279,7 @@ for code, label, frm, to, esc, hdl, idem, order in [
         "APPROVED",
         "PAID",
         True,
-        "expenseClaimConfirmPayoutHandler",
+        "expenseReimbursementConfirmPayoutHandler",
         True,
         4,
     ),
@@ -434,7 +434,7 @@ for code, label, frm, to, esc, hdl, idem, order in [
     ("approve", "核赔通过", "REVIEWING", "APPROVED", False, None, False, 2),
     ("reject", "拒赔", "REVIEWING", "REJECTED", False, None, False, 3),
     ("requestMoreEvidence", "补充材料", "REVIEWING", "PENDING_EVIDENCE", False, None, False, 4),
-    ("pay", "支付", "APPROVED", "PAID", True, "expenseClaimConfirmPayoutHandler", True, 5),
+    ("pay", "支付", "APPROVED", "PAID", True, "expenseReimbursementConfirmPayoutHandler", True, 5),
     ("appeal", "申诉", "REJECTED", "APPEALING", False, None, False, 6),
 ]:
     add_action(clm_id, code, label, frm, to, esc, hdl, idem, order)

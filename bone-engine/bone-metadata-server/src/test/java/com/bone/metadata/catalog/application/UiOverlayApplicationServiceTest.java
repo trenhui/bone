@@ -34,12 +34,13 @@ class UiOverlayApplicationServiceTest {
   void getOverlayJson_shouldQueryByTenantUserEntityKey() {
     when(tenantProvider.currentTenantId()).thenReturn(7L);
     when(currentUserProvider.currentUserIdOrNull()).thenReturn(42L);
-    when(store.findOverlayJson(7L, 42L, "exp_claim")).thenReturn(Optional.of("{\"version\":2}"));
+    when(store.findOverlayJson(7L, 42L, "expense_reimbursement"))
+        .thenReturn(Optional.of("{\"version\":2}"));
 
-    assertThat(service.getOverlayJson("exp_claim")).isEqualTo("{\"version\":2}");
+    assertThat(service.getOverlayJson("expense_reimbursement")).isEqualTo("{\"version\":2}");
 
-    when(store.findOverlayJson(7L, 42L, "exp_claim")).thenReturn(Optional.empty());
-    assertThat(service.getOverlayJson("exp_claim")).isNull();
+    when(store.findOverlayJson(7L, 42L, "expense_reimbursement")).thenReturn(Optional.empty());
+    assertThat(service.getOverlayJson("expense_reimbursement")).isNull();
   }
 
   @Test
@@ -47,10 +48,11 @@ class UiOverlayApplicationServiceTest {
   void anonymousPrincipal_shouldFallToUserIdZero() {
     when(tenantProvider.currentTenantId()).thenReturn(0L);
     when(currentUserProvider.currentUserIdOrNull()).thenReturn(null);
-    when(store.findOverlayJson(0L, 0L, "exp_claim")).thenReturn(Optional.of("{\"version\":2}"));
+    when(store.findOverlayJson(0L, 0L, "expense_reimbursement"))
+        .thenReturn(Optional.of("{\"version\":2}"));
 
-    assertThat(service.getOverlayJson("exp_claim")).isEqualTo("{\"version\":2}");
-    verify(store).findOverlayJson(eq(0L), eq(0L), eq("exp_claim"));
+    assertThat(service.getOverlayJson("expense_reimbursement")).isEqualTo("{\"version\":2}");
+    verify(store).findOverlayJson(eq(0L), eq(0L), eq("expense_reimbursement"));
   }
 
   @Test

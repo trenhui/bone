@@ -11,7 +11,7 @@
 |------|------|
 | v0.32 | C1/C2/C3 实测前置；ENUM 建模门；落地路线 Tab |
 | v0.37 | 双界面分叉；发布成功三动作；B1–B4 |
-| **v0.39** | 第四场景包 **费用报销 L0**（`t_expense_claim`）；打款逃逸对称补货入库；与 case L0/L1 分层 |
+| **v0.39** | 第四场景包 **费用报销 L0**（`t_expense_reimbursement`）；打款逃逸对称补货入库；与 case L0/L1 分层 |
 
 ### 实测三处推翻（仍有效）
 
@@ -25,7 +25,7 @@
 
 | 闭环步骤 | 设备巡检（够用） | 供应链补货（边界） | 访客登记（换皮） | **费用报销 L0（办公）** |
 |---|---|---|---|---|
-| ① 新建 RUNTIME | `t_device_inspect` | `t_replenishment` | `t_visitor_pass` | `t_expense_claim` |
+| ① 新建 RUNTIME | `t_device_inspect` | `t_replenishment` | `t_visitor_pass` | `t_expense_reimbursement` |
 | ② 结构 | 6 字段 | 9 字段 + writeOnce | 7 字段 | 8 字段 · **DECIMAL** + 双 ENUM |
 | ③ 界面 | Meta* 同源预览 | 同左 | 同左 | 同左 · 金额右对齐 |
 | ④ 发布 | L1 热加载 | + 跨实体逃逸标注 | 同巡检 | 同巡检 |

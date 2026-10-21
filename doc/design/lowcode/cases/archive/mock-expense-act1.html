@@ -135,7 +135,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
             <div class="titem"><div class="ti" style="background:#13c2c2">🏢</div><div><div class="tn">访客登记</div><div class="td">轻量登记 · 状态通知</div></div></div>
           </div>
           <div class="tdetail">
-            <div class="td-title">费用报销 <span class="code">expense_claim → t_expense_claim</span></div>
+            <div class="td-title">费用报销 <span class="code">expense_reimbursement → t_expense_reimbursement</span></div>
             <div class="td-sub">员工填单 → 提交审批 → 确认打款。自动生成界面（交付后可随时调整）；状态机 5 态轻流程，打款经专用动作完成（防直改状态冒充）。</div>
             <div class="sect">字段清单（9）<span class="hint">实例化即可再调整</span></div>
             <div class="fields">
@@ -151,14 +151,14 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
             </div>
             <div class="sect">真实形态（L1）<span class="hint">模板已包含，无需手工建模</span></div>
             <div class="rel">
-              <div class="relcard"><b>明细子表 <span style="color:#722ed1">CHILD_TABLE</span></b><span>expense_claim_item：行程明细多行，金额服务端强制 ≥0.01，整组替换保事务一致</span></div>
+              <div class="relcard"><b>明细子表 <span style="color:#722ed1">CHILD_TABLE</span></b><span>expense_reimbursement_item：行程明细多行，金额服务端强制 ≥0.01，整组替换保事务一致</span></div>
               <div class="relcard"><b>费用类别 <span style="color:#d46b08">REFERENCE</span></b><span>t_expense_category 主数据：差旅 / 餐饮 / 交通 / 办公 / 其他；候选带可见性过滤</span></div>
               <div class="relcard"><b>状态机 <span style="color:#1677ff">5 态</span></b><span>草稿 → 已提交 → 已审批｜已驳回 → 已打款；打款动作入参契约化（通道必选）</span></div>
             </div>
           </div>
         </div>
         <div class="mfoot">
-          <div class="l">实例化后生成 <b>t_expense_claim</b> 草稿并自动授权你为建模者 · 归属下方可选「个人草稿箱」先设计后归属</div>
+          <div class="l">实例化后生成 <b>t_expense_reimbursement</b> 草稿并自动授权你为建模者 · 归属下方可选「个人草稿箱」先设计后归属</div>
           <div style="display:flex;gap:10px">
             <button class="btn">个人草稿箱暂存</button>
             <button class="btn">选择归属应用 ▾</button>
@@ -168,7 +168,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
       </div>
     </div>
 
-    <div class="toast"><b>✓ 模板已实例化（示意）</b><p>生成草稿 <b>t_expense_claim</b>（9 字段 + 明细子表 + 类别引用）。下一步：进结构页签微调金额校验或增列。</p><a>去完善 →</a></div>
+    <div class="toast"><b>✓ 模板已实例化（示意）</b><p>生成草稿 <b>t_expense_reimbursement</b>（9 字段 + 明细子表 + 类别引用）。下一步：进结构页签微调金额校验或增列。</p><a>去完善 →</a></div>
 
     <div class="cap"><b>幕一 · 模板起盘（角色：行政王琳）</b>——冷启动零前置：无应用也能起盘（个人草稿箱暂存，发布前再补归属，绿色横幅已预告）。模板卡即模型全貌：9 字段 + L1 真实形态（明细子表 / 类别引用 / 5 态状态机）直接亮出来，「实例化并进入结构」一步落位。对标 Airtable「+Create 起个名就进表」的 First-Value 分钟级动线。</div>
   </main>

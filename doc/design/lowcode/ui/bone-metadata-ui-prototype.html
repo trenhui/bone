@@ -706,7 +706,7 @@
         <div class="card">
           <h4>费用报销 · L0 串联 <span class="pill green">v0.40</span></h4>
           <div class="alert info" style="margin-bottom:12px">
-            <span>原型 = PRD §2.5.9 = case <b>L0</b>：实体 <code>t_expense_claim</code> · 模板 <code>expense_claim</code> · 打款逃逸拟议 <code>ExpenseClaimApplicationService.confirmPayout</code>
+            <span>原型 = PRD §2.5.9 = case <b>L0</b>：实体 <code>t_expense_reimbursement</code> · 模板 <code>expense_reimbursement</code> · 打款逃逸拟议 <code>ExpenseReimbursementApplicationService.confirmPayout</code>
            （<b>禁</b>复用订单 <code>PaymentApplicationService</code>）。串联序：巡检→报销→补货→访客。
             <b>L1</b> 不进原型。详见 case / <code>doc/design/lowcode/ui/README.md</code>。</span>
           </div>
@@ -752,7 +752,7 @@
             <div><span class="pill red">T1</span> <code>0028_meta_template_enum.sql</code>：增 <code>enum_values</code> / <code>validation_rules</code>　<span class="pill red">L3 · DDL 需架构师审批</span></div>
             <div><span class="pill orange">T2</span> <code>MetaTemplateApplicationService.instantiate</code> 透传两列（替换两处 <code>null</code>）</div>
             <div><span class="pill orange">T3</span> <code>FIELD_TYPES</code> 增 ENUM + 枚举值编辑器 + <code>Select</code>/<code>Tag</code> 渲染；未支持类型<b>显式降级提示</b>（禁静默渲染空）</div>
-            <div><span class="pill green">T4</span> 四套模板：巡检 / 补货 / 访客 / <b>expense_claim</b>（对齐侧栏报销 L0）</div>
+            <div><span class="pill green">T4</span> 四套模板：巡检 / 补货 / 访客 / <b>expense_reimbursement</b>（对齐侧栏报销 L0）</div>
           </div>
           <div class="foot-bar">
             <button class="btn" onclick="switchEntity('repl');goTab('t-fields')">看补货 5 态字段表</button>
@@ -787,7 +787,7 @@
               </tr>
               <tr>
                 <td><span class="pill green">W1</span></td>
-                <td><b>T1–T4 ENUM + 四场景模板</b>（含 <code>expense_claim</code>）· <code>projectColumns()</code> · 从零 Meta* · localStorage 覆盖</td>
+                <td><b>T1–T4 ENUM + 四场景模板</b>（含 <code>expense_reimbursement</code>）· <code>projectColumns()</code> · 从零 Meta* · localStorage 覆盖</td>
                 <td><b>四场景字段表可在生产逐字敲出</b>；预览列 ≡ 数据列</td>
               </tr>
               <tr>
@@ -1148,12 +1148,12 @@
       enumCol:4
     },
     expense: {
-      id:'expense', name:'费用报销', code:'t_expense_claim', domain:'行政财务域',
+      id:'expense', name:'费用报销', code:'t_expense_reimbursement', domain:'行政财务域',
       role:'办公', tagline:'DECIMAL + 轻状态 · 黄金路径',
       banner:'L0 黄金路径（= case 费用报销 §1）：单实体 CRUD = Mode B；打款 = UC-05 逃逸。L1 头+明细不进原型。',
       hint:'对齐 doc/design/lowcode/cases/费用报销系统-元数据建模方案.md L0 · 验 DECIMAL + 双 ENUM；真打款不在 Mode B。',
       modeB:['报销单 CRUD 壳','amount DECIMAL','status/category ENUM','filter / 热加载'],
-      escape:['确认打款 ExpenseClaimApplicationService.confirmPayout（拟议）','多级审批 BPM（后置）','FILE/OCR（L1·G1）'],
+      escape:['确认打款 ExpenseReimbursementApplicationService.confirmPayout（拟议）','多级审批 BPM（后置）','FILE/OCR（L1·G1）'],
       asIs:'case L0；禁复用订单 PaymentApplicationService；L1 仅文档探针',
       listCols:['claim_no','title','amount','category','expense_date','status'],
       formSample:{claim_no:'EXP-DEMO-003',title:'客户拜访差旅',amount:'128.50',category:'差旅',expense_date:'2026-10-09',status:'DRAFT',applicant:'张三',remark:'高铁往返'},
@@ -1415,7 +1415,7 @@
       if(sc.id==='repl'){
         tip.innerHTML='<span><b>状态动作推导（v1.1）</b>：DRAFT→提交 · SUBMITTED→审批 · APPROVED→到货入库（<span class="cross-ent"><span class="warn-ico">⚠</span>跨实体：Inventory.receive</span>）· RECEIVED/CANCELLED→终态</span>';
       } else if(sc.id==='expense'){
-        tip.innerHTML='<span><b>状态动作（L0）</b>：DRAFT→提交 · SUBMITTED→审批/驳回 · APPROVED→确认打款（<span class="cross-ent"><span class="warn-ico">⚠</span>逃逸：ExpenseClaimApplicationService.confirmPayout</span>）· PAID/REJECTED→终态 · case L0</span>';
+        tip.innerHTML='<span><b>状态动作（L0）</b>：DRAFT→提交 · SUBMITTED→审批/驳回 · APPROVED→确认打款（<span class="cross-ent"><span class="warn-ico">⚠</span>逃逸：ExpenseReimbursementApplicationService.confirmPayout</span>）· PAID/REJECTED→终态 · case L0</span>';
       } else {
         tip.innerHTML='<span><b>状态 / 枚举</b>：本场景以 Tag 展示为主；无跨实体逃逸（见边界卡）</span>';
       }
@@ -1616,8 +1616,8 @@
         '<div class="alert warn" style="margin-bottom:12px"><span>报销单 <b>'+no+'</b>（金额 <b>'+qtyOrAmt+'</b>）当前 <b>APPROVED</b>。这一步<b>不能只把 status 改成 PAID</b>——还必须走付款记账。</span></div>'+
         '<div style="margin-bottom:10px"><b>MVP 怎么落地（拟议 · 非订单支付）</b></div>'+
         '<div style="background:var(--gray-bg);border-radius:6px;padding:10px 12px;margin-bottom:12px">'+
-        '<div>① 手写 Handler：<code>ExpenseClaimApplicationService.confirmPayout</code>（<b>勿</b>复用订单域 <code>PaymentApplicationService</code>）</div>'+
-        '<div>② <b>Invoke</b>：<code>POST …/entities/t_expense_claim/records/{id}/actions/confirmPayout</code> + <code>Idempotency-Key</code> / <code>If-Match</code></div>'+
+        '<div>① 手写 Handler：<code>ExpenseReimbursementApplicationService.confirmPayout</code>（<b>勿</b>复用订单域 <code>PaymentApplicationService</code>）</div>'+
+        '<div>② <b>Invoke</b>：<code>POST …/entities/t_expense_reimbursement/records/{id}/actions/confirmPayout</code> + <code>Idempotency-Key</code> / <code>If-Match</code></div>'+
         '<div>③ 按钮真源：<b>Describe</b> <code>GET …/records/{id}/actions</code>（勿前端写死；勿 <code>/expense-claims</code>）</div></div>'+
         '<div style="color:var(--text-2)">对标 SF Actions describe/invoke · NocoBase resource:action；对称补货换 code 即可（Runtime 数据面 §0.1/§4）。</div>';
     } else {
@@ -1653,7 +1653,7 @@
       r.cells[sc.enumCol]='PAID';
       closeModal('escape'); renderRecords();
       markLoop('escape');
-      toast('打款完成：'+r.cells[0]+' → PAID；付款凭证已记账（ExpenseClaimApplicationService.confirmPayout · 非 Mode B）','success');
+      toast('打款完成：'+r.cells[0]+' → PAID；付款凭证已记账（ExpenseReimbursementApplicationService.confirmPayout · 非 Mode B）','success');
       return;
     }
     var qty=r.cells[3];

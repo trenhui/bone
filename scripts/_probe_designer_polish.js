@@ -69,7 +69,7 @@ const { chromium } = require('playwright');
   // ---------- 报销单 ----------
   await page.goto('http://localhost:3000/metadata#/entities/765601783912333312?tab=uischema', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
-    () => (document.querySelector('.uis-pv-entity')?.textContent ?? '').includes('expense_claim_chain'),
+    () => (document.querySelector('.uis-pv-entity')?.textContent ?? '').includes('expense_reimbursement_chain'),
     { timeout: 45000 },
   ).catch(() => console.log('WARN: 报销单 entityCode 未出现'));
   await dismissOnboard();

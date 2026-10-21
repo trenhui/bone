@@ -111,10 +111,10 @@ public class RuntimeAccessGuard {
   /**
    * 动作授权（def 感知，P0-1 修复）：<strong>逃逸动作（有副作用，如确认打款）必须命中「声明码或动作级细码」之一</strong>； 实体级写 / 通配写只覆盖非逃逸动作。
    *
-   * <p><b>为什么实体级写不能覆盖逃逸动作</b>：{@code runtime:expense_claim:write} 管的是「这笔报销单的数据」， 而 {@code
-   * runtime:expense_claim:confirmPayout} 管的是「允许把钱从公司账户放出去」——后者是资金授权面， 前者不隐含后者。 0034 迁移特意不给 demo
-   * 租户管理员发 {@code confirmPayout} 细码，就是为了让「按动作收回授权」 有真实的不动点；若实体级写可以短路掉这层判定， 0034 的整张角色-权限表退化为摆设，§4.6
-   * 门禁空转。
+   * <p><b>为什么实体级写不能覆盖逃逸动作</b>：{@code runtime:expense_reimbursement:write} 管的是「这笔报销单的数据」， 而 {@code
+   * runtime:expense_reimbursement:confirmPayout} 管的是「允许把钱从公司账户放出去」——后者是资金授权面， 前者不隐含后者。 0034 迁移特意不给
+   * demo 租户管理员发 {@code confirmPayout} 细码，就是为了让「按动作收回授权」 有真实的不动点；若实体级写可以短路掉这层判定， 0034
+   * 的整张角色-权限表退化为摆设，§4.6 门禁空转。
    *
    * <p>非逃逸动作（状态流转如提交 / 审批）保持「实体级写 OR 通配 OR 细码」——它们不产生资金/外部副作用， 与 CRUD 共用授权面是 {@code
    * meta_entity_action_def.permission_code} 的本意（种子 0032 即按粗码登记）。

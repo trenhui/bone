@@ -6,7 +6,7 @@
 --      APPROVED 改成 PAID」必须可回溯；
 --   ② RC-004 实体级权限码 runtime:{entityCode}:{read|write} + 通配 runtime:*:{read|write}
 --      ——现状 metadata:runtime:write = 租户内全库 CRUD，必须可按实体收回；
---   ③ 动作级权限码 runtime:expense_claim:{action}（逃逸动作上线门禁 §4.6）。
+--   ③ 动作级权限码 runtime:expense_reimbursement:{action}（逃逸动作上线门禁 §4.6）。
 --
 -- 设计
 -- ----------------------
@@ -51,14 +51,14 @@ VALUES
     -- 通配（等价旧粗粒度码，形状统一到实体级命名空间）
     (9101, 'runtime:*:read',  '运行时-全实体读',   'OPERATION', 'metadata', '/api/v1/runtime/**', 'read',  '通配：全部低代码实体的读权限（等价旧 metadata:runtime:read）', 58, 101, 1, NOW(3), NOW(3), 0),
     (9102, 'runtime:*:write', '运行时-全实体写',   'OPERATION', 'metadata', '/api/v1/runtime/**', 'write', '通配：全部低代码实体的写权限（等价旧 metadata:runtime:write）', 58, 102, 1, NOW(3), NOW(3), 0),
-    -- 报销实体（expense_claim）实体级
-    (9111, 'runtime:expense_claim:read',  '运行时-费用报销-读', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/**', 'read',  '费用报销实体的运行时读权限', 58, 111, 1, NOW(3), NOW(3), 0),
-    (9112, 'runtime:expense_claim:write', '运行时-费用报销-写', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/**', 'write', '费用报销实体的运行时写权限', 58, 112, 1, NOW(3), NOW(3), 0),
+    -- 报销实体（expense_reimbursement）实体级
+    (9111, 'runtime:expense_reimbursement:read',  '运行时-费用报销-读', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/**', 'read',  '费用报销实体的运行时读权限', 58, 111, 1, NOW(3), NOW(3), 0),
+    (9112, 'runtime:expense_reimbursement:write', '运行时-费用报销-写', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/**', 'write', '费用报销实体的运行时写权限', 58, 112, 1, NOW(3), NOW(3), 0),
     -- 动作级（逃逸 confirmPayout 上线门禁：不得仅靠实体级 write）
-    (9121, 'runtime:expense_claim:submit',        '运行时-报销-提交',     'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/records/*/actions/submit',        'execute', '费用报销：提交（DRAFT→SUBMITTED）', 58, 121, 1, NOW(3), NOW(3), 0),
-    (9122, 'runtime:expense_claim:approve',       '运行时-报销-审批通过', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/records/*/actions/approve',       'execute', '费用报销：审批通过（SUBMITTED→APPROVED）', 58, 122, 1, NOW(3), NOW(3), 0),
-    (9123, 'runtime:expense_claim:reject',        '运行时-报销-驳回',     'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/records/*/actions/reject',        'execute', '费用报销：驳回（SUBMITTED→REJECTED）', 58, 123, 1, NOW(3), NOW(3), 0),
-    (9124, 'runtime:expense_claim:confirmPayout', '运行时-报销-确认打款', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_claim/records/*/actions/confirmPayout', 'execute', '费用报销：确认打款（APPROVED→PAID，资金类需 Idempotency-Key）', 58, 124, 1, NOW(3), NOW(3), 0)
+    (9121, 'runtime:expense_reimbursement:submit',        '运行时-报销-提交',     'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/records/*/actions/submit',        'execute', '费用报销：提交（DRAFT→SUBMITTED）', 58, 121, 1, NOW(3), NOW(3), 0),
+    (9122, 'runtime:expense_reimbursement:approve',       '运行时-报销-审批通过', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/records/*/actions/approve',       'execute', '费用报销：审批通过（SUBMITTED→APPROVED）', 58, 122, 1, NOW(3), NOW(3), 0),
+    (9123, 'runtime:expense_reimbursement:reject',        '运行时-报销-驳回',     'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/records/*/actions/reject',        'execute', '费用报销：驳回（SUBMITTED→REJECTED）', 58, 123, 1, NOW(3), NOW(3), 0),
+    (9124, 'runtime:expense_reimbursement:confirmPayout', '运行时-报销-确认打款', 'OPERATION', 'metadata', '/api/v1/runtime/entities/expense_reimbursement/records/*/actions/confirmPayout', 'execute', '费用报销：确认打款（APPROVED→PAID，资金类需 Idempotency-Key）', 58, 124, 1, NOW(3), NOW(3), 0)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name), resource_path = VALUES(resource_path), action = VALUES(action),
     description = VALUES(description), sort_order = VALUES(sort_order), updated_at = NOW(3);
@@ -68,4 +68,4 @@ SELECT
   (SELECT COUNT(*) FROM information_schema.tables
      WHERE table_schema = 'bone' AND table_name = 'meta_runtime_record_audit') AS audit_table_created,
   (SELECT COUNT(*) FROM iam_permission WHERE deleted = 0 AND code LIKE 'runtime:%') AS runtime_permission_count,
-  (SELECT COUNT(*) FROM iam_permission WHERE deleted = 0 AND code LIKE 'runtime:expense_claim:%') AS expense_permission_count;
+  (SELECT COUNT(*) FROM iam_permission WHERE deleted = 0 AND code LIKE 'runtime:expense_reimbursement:%') AS expense_permission_count;

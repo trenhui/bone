@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "entityCode": "t_expense_claim",
+  "entityCode": "t_expense_reimbursement",
   "displayModes": ["create", "edit", "view"],
   "views": {
     "list": {
@@ -50,7 +50,7 @@
           "id": "sec_items",
           "title": "费用明细",
           "controls": [
-            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_claim_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
+            { "fieldCode": "items", "controlKind": "CHILD_TABLE", "props": { "childEntity": "expense_reimbursement_item", "columns": ["expense_date", "category_id", "amount", "remark"] } }
           ]
         },
         {

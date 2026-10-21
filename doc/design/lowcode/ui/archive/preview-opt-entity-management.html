@@ -142,8 +142,8 @@
           </tr></thead>
           <tbody>
             <tr>
-              <td><span class="link">费用报销</span> <code style="font-size:11px;color:var(--text-3)">expense_claim</code></td>
-              <td>expense_claim</td><td>t_expense_claim</td>
+              <td><span class="link">费用报销</span> <code style="font-size:11px;color:var(--text-3)">expense_reimbursement</code></td>
+              <td>expense_reimbursement</td><td>t_expense_reimbursement</td>
               <td><span class="pill blue">普通业务</span></td><td><span class="pill purple">自动界面</span></td>
               <td><span class="pill green">已发布</span></td>
               <td>12</td><td>1,284</td><td>10-11 09:20</td>
@@ -176,9 +176,9 @@
       <!-- ===== 对象工作区（优化后） ===== -->
       <div class="ws-head">
         <div>
-          <div style="font-size:16px;font-weight:600">费用报销 <code style="font-size:12px;color:var(--text-3)">expense_claim</code></div>
+          <div style="font-size:16px;font-weight:600">费用报销 <code style="font-size:12px;color:var(--text-3)">expense_reimbursement</code></div>
           <div class="kv" style="margin-top:8px">
-            <span>表 <b>t_expense_claim</b></span><span>交付 <b>自动生成界面</b></span>
+            <span>表 <b>t_expense_reimbursement</b></span><span>交付 <b>自动生成界面</b></span>
             <span>状态 <span class="pill green">已发布</span></span><span>字段 <b>12</b></span>
             <span>发布态 <span class="pill orange">未发布 · 2 项</span></span>
           </div>
@@ -233,7 +233,7 @@
           <div class="side">
             <div style="margin-bottom:16px">
               <b style="font-size:13px">关系 <span class="pill purple">2</span></b>
-              <div class="rel-row"><span class="badge-r">1—N</span><span>报销单 <b>拥有</b> 明细行（expense_claim_item）</span></div>
+              <div class="rel-row"><span class="badge-r">1—N</span><span>报销单 <b>拥有</b> 明细行（expense_reimbursement_item）</span></div>
               <div class="rel-row"><span class="badge-r">N—1</span><span>报销单 <b>归属</b> 类别（expense_category）</span></div>
               <div class="optnote"><span class="tag-opt">M</span>原版关系显示"作为源/作为目标"对普通用户晦涩；优化为业务语义名（拥有/归属），并标注基数（1—N / N—1）。</div>
             </div>

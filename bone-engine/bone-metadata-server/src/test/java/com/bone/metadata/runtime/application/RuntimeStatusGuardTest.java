@@ -71,7 +71,7 @@ class RuntimeStatusGuardTest {
       String code, String from, String to, int sortOrder, String statusField, boolean entry) {
     return new RuntimeActionDef(
         1L,
-        "expense_claim",
+        "expense_reimbursement",
         code,
         code,
         from,
@@ -86,7 +86,7 @@ class RuntimeStatusGuardTest {
         entry);
   }
 
-  /** expense_claim 形态：DRAFT→SUBMITTED→APPROVED→PAID（+ SUBMITTED→REJECTED）。 */
+  /** expense_reimbursement 形态：DRAFT→SUBMITTED→APPROVED→PAID（+ SUBMITTED→REJECTED）。 */
   private static final List<RuntimeActionDef> CLAIM_DEFS =
       List.of(
           def("submit", "DRAFT", "SUBMITTED", 10, "status"),
@@ -102,7 +102,8 @@ class RuntimeStatusGuardTest {
     body.put("status", "PAID");
     RuntimeRecordException ex =
         assertThrows(
-            RuntimeRecordException.class, () -> guard.applyCreateGuard(0L, "expense_claim", body));
+            RuntimeRecordException.class,
+            () -> guard.applyCreateGuard(0L, "expense_reimbursement", body));
     assertEquals(
         MetadataErrorCodes.RUNTIME_FIELD_PROTECTED,
         ex.getErrorCode(),
@@ -118,7 +119,8 @@ class RuntimeStatusGuardTest {
     body.put("status", "PAID");
     RuntimeRecordException ex =
         assertThrows(
-            RuntimeRecordException.class, () -> guard.applyUpdateGuard(0L, "expense_claim", body));
+            RuntimeRecordException.class,
+            () -> guard.applyUpdateGuard(0L, "expense_reimbursement", body));
     assertEquals(
         MetadataErrorCodes.RUNTIME_FIELD_PROTECTED,
         ex.getErrorCode(),
@@ -132,7 +134,7 @@ class RuntimeStatusGuardTest {
     RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(CLAIM_DEFS));
     Map<String, Object> body = new HashMap<>();
     body.put("title", "x");
-    guard.applyCreateGuard(0L, "expense_claim", body);
+    guard.applyCreateGuard(0L, "expense_reimbursement", body);
     assertFalse(body.containsKey("status"), "合法创建不携带 status，守卫放行且不注入（注入属 engine 写路径职责）");
   }
 
@@ -172,7 +174,7 @@ class RuntimeStatusGuardTest {
   void entryStatus_derivedFromSetMinusToSet() {
     RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(CLAIM_DEFS));
     // from={DRAFT,SUBMITTED,APPROVED}, to={SUBMITTED,APPROVED,REJECTED,PAID} ⇒ 入口=DRAFT
-    assertEquals("DRAFT", guard.entryStatus(0L, "expense_claim"));
+    assertEquals("DRAFT", guard.entryStatus(0L, "expense_reimbursement"));
   }
 
   @Test
@@ -195,7 +197,7 @@ class RuntimeStatusGuardTest {
             def("submit", "DRAFT", "SUBMITTED", 10, "status"),
             def("approve", "SUBMITTED", "APPROVED", 20, "status", true));
     RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(marked));
-    assertEquals("SUBMITTED", guard.entryStatus(0L, "expense_claim"), "显式入口动作覆盖图推导结果");
+    assertEquals("SUBMITTED", guard.entryStatus(0L, "expense_reimbursement"), "显式入口动作覆盖图推导结果");
   }
 
   @Test
@@ -236,7 +238,9 @@ class RuntimeStatusGuardTest {
   @Test
   void entryStatus_isDeterministic_onRepeatedInvocation() {
     RuntimeStatusGuard guard = new RuntimeStatusGuard(new FakeActionDefRepository(CLAIM_DEFS));
-    assertEquals(guard.entryStatus(0L, "expense_claim"), guard.entryStatus(0L, "expense_claim"));
+    assertEquals(
+        guard.entryStatus(0L, "expense_reimbursement"),
+        guard.entryStatus(0L, "expense_reimbursement"));
   }
 
   /** 接线契约：adapter 把 resolver 的 (entityCode, tenantId) 换序后委托 guard，防参数序写反。 */
@@ -246,7 +250,7 @@ class RuntimeStatusGuardTest {
     var resolver = new RuntimeEngineConfiguration().runtimeStateEntryResolver(guard);
     assertEquals(
         "DRAFT",
-        resolver.entryState("expense_claim", 77L),
+        resolver.entryState("expense_reimbursement", 77L),
         "resolver(entityCode, tenantId) → guard.entryStatus(tenantId, entityCode)：租户/实体不可换错位");
     assertTrue(
         resolver.entryState("unknown_entity", 77L) == null

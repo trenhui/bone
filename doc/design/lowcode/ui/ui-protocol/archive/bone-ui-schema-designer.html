@@ -1792,7 +1792,7 @@ const MOCK={
   agg:{ pending_count:"12", month_total:"¥86,400", reject_rate:"8%", review_total:"36", hit_rate:"64%", adopt_rate:"71%",
     po_total:"¥1,284,600", pending_pay:"¥386,200", match_rate:"96.2%" },
   rows:{
-    t_expense_claim:[
+    t_expense_reimbursement:[
       {title:"北京出差报销",amount:"3200",status:"SUBMITTED",applicant:"王五",expense_date:"2026-09-12"},
       {title:"团队聚餐",amount:"880",status:"DRAFT",applicant:"王五",expense_date:"2026-09-20"},
       {title:"采购办公用品",amount:"1540",status:"APPROVED",applicant:"赵六",expense_date:"2026-09-05"},
@@ -1855,7 +1855,7 @@ const SAMPLES={
       attachments:{attachment:[{name:"增值税专票_0912.pdf",size:428},{name:"行程单.pdf",size:186}]}
     },
     schema:{
-      schemaVersion:1, minor:1, entityCode:"t_expense_claim",
+      schemaVersion:1, minor:1, entityCode:"t_expense_reimbursement",
       displayModes:["create","edit","view"],
       dictionaries:{
         invoice_type:{labelOverride:{NORMAL:"增值税普通发票"}}
@@ -2757,7 +2757,7 @@ function computeFn(c){
  * （text / number / money / pct / date / enum / ref）。未登记的列按 text 兜底，向后兼容所有样板。
  * sum:true 的列进合计行（金额/数量类），t:"money" 自动挂 ¥ 前缀与两位小数。            */
 const CHILD_COLS={
-  t_expense_claim:{items:{
+  t_expense_reimbursement:{items:{
     expense_date:{t:"date"},category_id:{t:"text"},amount:{t:"money",sum:true},remark:{t:"text"}
   }},
   t_claim_case:{items:{
@@ -4055,7 +4055,7 @@ function renderInspector(box){
 }
 /* ---------- 实体目录绑定（元数据驱动：从实体字段一键生成 / 绑定控件，扩展性强） ---------- */
 const ENTITY_CATALOG={
-  t_expense_claim:{label:"费用报销单",fields:[
+  t_expense_reimbursement:{label:"费用报销单",fields:[
     {code:"apply_no",label:"报销单号",type:"VARCHAR"},
     {code:"applicant_id",label:"申请人",type:"REF",ref:"t_user"},
     {code:"dept_id",label:"部门",type:"ENUM"},

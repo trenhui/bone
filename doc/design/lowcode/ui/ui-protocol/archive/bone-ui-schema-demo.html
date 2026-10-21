@@ -1750,7 +1750,7 @@ const MOCK={
   },
   agg:{ pending_count:"12", month_total:"¥86,400", reject_rate:"8%", review_total:"36", hit_rate:"64%", adopt_rate:"71%" },
   rows:{
-    t_expense_claim:[
+    t_expense_reimbursement:[
       {title:"北京出差报销",amount:"3200",status:"SUBMITTED",applicant:"王五",expense_date:"2026-09-12"},
       {title:"团队聚餐",amount:"880",status:"DRAFT",applicant:"王五",expense_date:"2026-09-20"},
       {title:"采购办公用品",amount:"1540",status:"APPROVED",applicant:"赵六",expense_date:"2026-09-05"},
@@ -1801,7 +1801,7 @@ const SAMPLES={
       attachments:{attachment:[{name:"增值税专票_0912.pdf",size:428},{name:"行程单.pdf",size:186}]}
     },
     schema:{
-      schemaVersion:1, minor:1, entityCode:"t_expense_claim",
+      schemaVersion:1, minor:1, entityCode:"t_expense_reimbursement",
       displayModes:["create","edit","view"],
       dictionaries:{
         invoice_type:{labelOverride:{NORMAL:"增值税普通发票"}}

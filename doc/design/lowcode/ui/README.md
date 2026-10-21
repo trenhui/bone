@@ -39,7 +39,7 @@
 | 设备巡检 | `t_device_inspect` | 够用 | `device_inspection` | — |
 | 供应链补货 | `t_replenishment` | 边界+入库逃逸 | `replenishment` | — |
 | 访客登记 | `t_visitor_pass` | 换皮 | `visitor_pass` | — |
-| **费用报销** | `t_expense_claim` | 办公域 DECIMAL + 打款逃逸 | `expense_claim` | **L0**（L1 仅文档） |
+| **费用报销** | `t_expense_reimbursement` | 办公域 DECIMAL + 打款逃逸 | `expense_reimbursement` | **L0**（L1 仅文档） |
 
 ## 推荐评审路径（约 5 分钟）
 

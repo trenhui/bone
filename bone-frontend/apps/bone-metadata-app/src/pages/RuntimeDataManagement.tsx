@@ -571,7 +571,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
    * 与「预览列 ≡ 数据列」同源，杜绝两边各算一遍导致的漂移。
    *
    * <p>CHILD_TABLE 列除外：该类型无物理列（明细子表独立存储），code 进 fields 会让
-   * 后端 SELECT 一个不存在的列 ⇒ 500（实测 t_expense_claim_e2e_* 报销单）。
+   * 后端 SELECT 一个不存在的列 ⇒ 500（实测 t_expense_reimbursement_e2e_* 报销单）。
    * 明细的交互是行内「明细」入口（按行 listChildren 拉子行），不占数据列。
    */
   const load = useCallback(async () => {
@@ -853,7 +853,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
     }, 0);
 
   /**
- * C3 交互细节：保存明细后，头部金额（amount）由后端 ChildAmountAggregator 事务内回填，
+ * C3 交互细节：保存明细后，头部金额（amount）由后端 ReimbursementChildAmountAggregator 事务内回填，
  * 前端提示已联动 —— 用户不必再手改头表金额（业界标准：头表=明细合计，服务端计算为准）。
  */
   /** 保存明细：整组替换（先删后插同一事务），空数组即清空 */
@@ -2213,7 +2213,7 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
             合计：
             <Text strong style={{ fontFamily: 'ui-monospace, monospace' }}>
               ¥{formatNumber(childSumOf(childRows), { minimumFractionDigits: 2 })}
-              {/* C3：保存后由后端 ChildAmountAggregator 事务内回填头表 amount，前端实时预览 */}
+              {/* C3：保存后由后端 ReimbursementChildAmountAggregator 事务内回填头表 amount，前端实时预览 */}
             </Text>
             <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>（保存后自动回填头表金额）</Text>
           </Text>
