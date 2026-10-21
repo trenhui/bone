@@ -99,6 +99,33 @@ public class UiSchemaRuleEngine {
     return enforce(schema, data, childRows, ctx, null);
   }
 
+  /**
+   * 服务端<b>字段锁</b>（数据完整性语义，与 UI {@code readonly} 渲染提示严格区分）。
+   *
+   * <p>返回在当前数据态下<b>不可变</b>的字段码集合：遍历 {@code fieldLockRules}，{@code when} 命中（或无 {@code when}）则把其
+   * {@code fields} 纳入锁定集。与 {@link #enforce} 的关系：{@code enforce} 管「必填 / 聚合断言」（可缺失、可不完整），
+   * 本方法管「已设值字段的不可变性」（冻结 / 对账锁），二者正交——锁的是「不可变」，不是「必填」。
+   *
+   * <p>纯函数，无 IO；{@code when} 求值复用 {@link #evalCond}（与前端同源纪律）。
+   */
+  public List<String> lockedFields(JsonNode schema, Map<String, Object> data, Ctx ctx) {
+    List<String> locked = new ArrayList<>();
+    JsonNode rules = schema == null ? null : schema.path("fieldLockRules");
+    if (rules == null || !rules.isArray()) {
+      return locked;
+    }
+    for (JsonNode r : rules) {
+      if (r.path("enabled").isBoolean() && !r.path("enabled").asBoolean()) {
+        continue;
+      }
+      if (r.has("when") && !evalCond(r.path("when"), data, ctx, 0)) {
+        continue;
+      }
+      locked.addAll(textList(r.path("fields")));
+    }
+    return locked;
+  }
+
   // ============================== submitRules ==============================
 
   private void runSubmits(JsonNode rules, Map<String, Object> data, Ctx ctx, List<Violation> out) {

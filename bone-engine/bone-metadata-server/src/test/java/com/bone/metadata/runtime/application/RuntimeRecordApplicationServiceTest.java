@@ -3,12 +3,14 @@ package com.bone.metadata.runtime.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -17,6 +19,8 @@ import static org.mockito.Mockito.when;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
+import com.bone.metadata.engine.runtime.MetadataErrorCodes;
+import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +52,7 @@ class RuntimeRecordApplicationServiceTest {
   private RuntimeStatusGuard statusGuard;
   private RuntimeAccessGuard accessGuard;
   private com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider;
+  private UiSchemaRuleEnforcer uiSchemaRuleEnforcer;
   private RuntimeRecordApplicationService service;
 
   @BeforeEach
@@ -58,10 +63,16 @@ class RuntimeRecordApplicationServiceTest {
     accessGuard = new RuntimeAccessGuard(); // 无参 @Component，真实判据（读 SecurityContext）
     // 字段级角色裁剪的身份来源：默认「已认证无角色」（空集合 = fail-closed 口径）
     currentRoleProvider = () -> List.of();
+    uiSchemaRuleEnforcer = mock(UiSchemaRuleEnforcer.class);
     TenantProvider tenantProvider = () -> 42L;
     service =
         new RuntimeRecordApplicationService(
-            recordService, tenantProvider, statusGuard, accessGuard, currentRoleProvider);
+            recordService,
+            tenantProvider,
+            statusGuard,
+            accessGuard,
+            currentRoleProvider,
+            uiSchemaRuleEnforcer);
   }
 
   @AfterEach
@@ -180,9 +191,15 @@ class RuntimeRecordApplicationServiceTest {
         .setDetails(777L);
     // provider 在 service 构造时被捕获——必须重建 service 才能换角色码来源
     currentRoleProvider = () -> List.of("hr", "employee");
+    uiSchemaRuleEnforcer = mock(UiSchemaRuleEnforcer.class);
     service =
         new RuntimeRecordApplicationService(
-            recordService, () -> 42L, statusGuard, accessGuard, currentRoleProvider);
+            recordService,
+            () -> 42L,
+            statusGuard,
+            accessGuard,
+            currentRoleProvider,
+            uiSchemaRuleEnforcer);
     when(recordService.page(eq("exp"), eq(42L), anyInt(), anyInt(), any(), any(), any()))
         .thenReturn(PageResult.of(List.<Map<String, Object>>of(), 0L, 1, 20));
 
@@ -225,6 +242,8 @@ class RuntimeRecordApplicationServiceTest {
   @Test
   void update_appliesStatusGuardAndPassesVersion() {
     authenticate("user", null);
+    when(recordService.getById(eq("exp"), eq(42L), eq("1"), any(), eq(List.of())))
+        .thenReturn(new LinkedHashMap<>(Map.of("id", "1", "version", 3)));
     when(recordService.update(
             anyString(), eq(42L), eq("1"), any(), eq(3), eq("user"), eq(List.of())))
         .thenReturn(new LinkedHashMap<>(Map.of("id", "1", "version", 4)));
@@ -235,6 +254,33 @@ class RuntimeRecordApplicationServiceTest {
     order
         .verify(recordService)
         .update("exp", 42L, "1", Map.of("title", "t2"), 3, "user", List.of());
+  }
+
+  @Test
+  void update_invokesFieldLockEnforcerBeforeService() {
+    authenticate("user", null);
+    when(recordService.getById(eq("exp"), eq(42L), eq("1"), any(), eq(List.of())))
+        .thenReturn(new LinkedHashMap<>(Map.of("id", "1", "status", "DRAFT", "amount", 100.0)));
+    when(recordService.update(
+            anyString(), eq(42L), eq("1"), any(), any(), eq("user"), eq(List.of())))
+        .thenReturn(new LinkedHashMap<>(Map.of("id", "1")));
+    Map<String, Object> row = service.update("exp", "1", Map.of("title", "t2"), 3);
+    assertNotNull(row.get("id"));
+    // 字段锁强制必须在写库前触发（守卫顺序同 statusGuard：先拦后写）
+    verify(uiSchemaRuleEnforcer)
+        .enforceFieldLock(eq("exp"), eq("1"), any(), eq(Map.of("title", "t2")), eq("user"));
+  }
+
+  @Test
+  void update_fieldLockBlocksFrozenFieldChange() {
+    authenticate("user", null);
+    when(recordService.getById(eq("exp"), eq(42L), eq("1"), any(), eq(List.of())))
+        .thenReturn(new LinkedHashMap<>(Map.of("id", "1", "status", "APPROVED", "amount", 100.0)));
+    doThrow(new RuntimeRecordException(MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "locked"))
+        .when(uiSchemaRuleEnforcer)
+        .enforceFieldLock(eq("exp"), eq("1"), any(), any(), any());
+    assertThrows(
+        RuntimeRecordException.class, () -> service.update("exp", "1", Map.of("amount", 200.0), 3));
   }
 
   @Test

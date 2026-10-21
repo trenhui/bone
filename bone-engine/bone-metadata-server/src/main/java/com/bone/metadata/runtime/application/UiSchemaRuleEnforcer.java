@@ -9,10 +9,12 @@ import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.engine.runtime.RuntimeFieldColumn;
 import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -100,6 +102,130 @@ public class UiSchemaRuleEnforcer {
         UiSchemaRuleEngine.Ctx.of(
             operatorId, uiSchemaApplicationService.baseRequiredOf(entity.getId())),
         physicallyBackedFields(tenantId, entityCode));
+  }
+
+  /**
+   * 更新前<b>字段锁</b>强制（数据完整性，区别于 UI {@code readonly} 渲染提示）。
+   *
+   * <p><b>为何在「记录 CRUD 更新」路径</b>：冻结 / 对账锁是<b>状态相关的不可变性</b>——只要记录处于某状态，特定字段就不可改，与是否走动作无关。 因此在 {@code
+   * RuntimeRecordApplicationService#update} 每次保存前触发，而非仅动作端点（动作端点另有 {@link #enforceBeforeAction}
+   * 守聚合断言）。草稿编辑态允许数据不完整，但已设值字段的锁仍生效——锁的是「不可变」，不是「必填」。
+   *
+   * <p><b>性能</b>：先判 uiSchema 是否声明 {@code
+   * fieldLockRules}（通常已被缓存），<b>未声明则直接放行、绝不额外读当前记录</b>——避免对未声明锁的实体造成 每次更新多发一次 SELECT 的回退；仅当确有锁规则，才经
+   * {@code currentRecordSupplier} 惰性取当前存储记录。
+   *
+   * <p>行为：基于<b>当前存储记录</b>（{@code currentRecordSupplier}）计算锁定集，再比对 {@code payload}；若 payload
+   * 改写了被锁字段（值不等）即抛 {@code META_RUNTIME_VALIDATION_FAILED}（422），异常携带命中规则的 {@code code}/{@code
+   * message} 便于前端精确提示。 payload 未含该字段 → 视为未改，放行。无 uiSchema / 无锁定规则 → 空操作。
+   *
+   * @param currentRecordSupplier 惰性提供更新前当前记录（用于判定 {@code when} 与比对旧值）；仅在确有锁规则时被调用，可为 null（null
+   *     时直接放行）
+   * @param payload 本次待写入的载荷（仅比对其中出现的字段）
+   */
+  public void enforceFieldLock(
+      String entityCode,
+      String recordId,
+      Supplier<Map<String, Object>> currentRecordSupplier,
+      Map<String, Object> payload,
+      String operatorId) {
+    long tenantId = tenantProvider.currentTenantId();
+    MetaEntity entity = metaEntityRepository.findByTenantAndCode(tenantId, entityCode).orElse(null);
+    if (entity == null) {
+      return;
+    }
+    JsonNode schema = uiSchemaApplicationService.schemaForExecution(entity.getId()).orElse(null);
+    if (schema == null) {
+      return;
+    }
+    JsonNode rules = schema.path("fieldLockRules");
+    if (!rules.isArray() || rules.isEmpty()) {
+      return; // 未声明锁 → 零额外 IO，直接放行
+    }
+    // 确有锁规则，才惰性取当前记录（避免对无锁实体多发 SELECT）
+    Map<String, Object> currentRecord =
+        currentRecordSupplier == null ? null : currentRecordSupplier.get();
+    if (currentRecord == null) {
+      return;
+    }
+    List<String> locked =
+        engine.lockedFields(
+            schema,
+            currentRecord,
+            UiSchemaRuleEngine.Ctx.of(
+                operatorId, uiSchemaApplicationService.baseRequiredOf(entity.getId())));
+    if (locked.isEmpty()) {
+      return;
+    }
+    List<String> violated = new ArrayList<>();
+    for (String field : locked) {
+      if (!payload.containsKey(field)) {
+        continue;
+      }
+      if (!valuesEqual(currentRecord.get(field), payload.get(field))) {
+        violated.add(field);
+      }
+    }
+    if (!violated.isEmpty()) {
+      String ruleTail = resolveRuleMessage(schema, violated);
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_VALIDATION_FAILED,
+          "以下字段在当前状态下已锁定、不可修改：" + String.join(", ", violated) + ruleTail);
+    }
+  }
+
+  /** 从 fieldLockRules 解析命中字段所属规则的 code/message，拼接进异常文案（未命中则返回空串）。 */
+  private static String resolveRuleMessage(JsonNode schema, List<String> violated) {
+    JsonNode rules = schema.path("fieldLockRules");
+    for (JsonNode r : rules) {
+      if (ruleCoversAnyField(r, violated)) {
+        String code = r.path("code").asText("");
+        String msg = r.path("message").asText("");
+        return (code.isEmpty() ? "" : "（" + code + "）") + (msg.isEmpty() ? "" : " —— " + msg);
+      }
+    }
+    return "";
+  }
+
+  /** 规则 fields 是否覆盖 violated 中的任一字段（避免依赖引擎私有辅助）。 */
+  private static boolean ruleCoversAnyField(JsonNode rule, List<String> violated) {
+    JsonNode fields = rule.path("fields");
+    if (!fields.isArray()) {
+      return false;
+    }
+    for (JsonNode f : fields) {
+      if (violated.contains(f.asText())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 值等价判定：数值走容差（防 DECIMAL(20,6) vs double 误判），否则 {@code Objects.equals}。 */
+  private static boolean valuesEqual(Object cur, Object next) {
+    Double c = toDoubleOrNull(cur);
+    Double n = toDoubleOrNull(next);
+    if (c != null && n != null) {
+      return Math.abs(c - n) <= UiSchemaRuleEngine.MONEY_TOLERANCE.doubleValue();
+    }
+    return java.util.Objects.equals(cur, next);
+  }
+
+  private static Double toDoubleOrNull(Object o) {
+    if (o == null) {
+      return null;
+    }
+    if (o instanceof Number n) {
+      return n.doubleValue();
+    }
+    if (o instanceof Boolean) {
+      return null;
+    }
+    try {
+      return Double.valueOf(String.valueOf(o));
+    } catch (NumberFormatException e) {
+      return null;
+    }
   }
 
   /**

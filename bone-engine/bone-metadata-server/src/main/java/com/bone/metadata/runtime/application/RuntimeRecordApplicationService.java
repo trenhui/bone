@@ -7,7 +7,7 @@ import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;
 import com.bone.metadata.engine.runtime.RuntimePageQuery;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
  * 不引入第二份持久化路径。
  */
 @Service
-@RequiredArgsConstructor
 public class RuntimeRecordApplicationService {
 
   private final JdbcRuntimeRecordService runtimeRecordService;
@@ -35,6 +34,27 @@ public class RuntimeRecordApplicationService {
   private final RuntimeStatusGuard statusGuard;
   private final RuntimeAccessGuard accessGuard;
   private final com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider;
+  private final UiSchemaRuleEnforcer uiSchemaRuleEnforcer;
+
+  /**
+   * 显式构造器：{@code uiSchemaRuleEnforcer} 标 {@link Lazy}，打破与 {@code RuntimeRelationApplicationService}
+   * 的构造器三角循环（recordService → enforcer → relationService → recordService）。enforcer
+   * 仅在动作执行期做界面协议强制，延迟解析不影响语义，也避免 Spring 构造期无法解析的循环依赖。
+   */
+  public RuntimeRecordApplicationService(
+      JdbcRuntimeRecordService runtimeRecordService,
+      TenantProvider tenantProvider,
+      RuntimeStatusGuard statusGuard,
+      RuntimeAccessGuard accessGuard,
+      com.bone.metadata.runtime.domain.CurrentRoleProvider currentRoleProvider,
+      @Lazy UiSchemaRuleEnforcer uiSchemaRuleEnforcer) {
+    this.runtimeRecordService = runtimeRecordService;
+    this.tenantProvider = tenantProvider;
+    this.statusGuard = statusGuard;
+    this.accessGuard = accessGuard;
+    this.currentRoleProvider = currentRoleProvider;
+    this.uiSchemaRuleEnforcer = uiSchemaRuleEnforcer;
+  }
 
   /** 当前租户（控制器原 {@code tenantProvider.currentTenantId()} 直呼的收敛点）。 */
   public long currentTenantId() {
@@ -136,6 +156,10 @@ public class RuntimeRecordApplicationService {
       String entityCode, String id, Map<String, Object> body, Integer expectedVersion) {
     long tenantId = tenantProvider.currentTenantId();
     statusGuard.applyUpdateGuard(tenantId, entityCode, body);
+    // 字段锁（数据完整性）：当前状态下被锁字段不可在更新中被改写（区别于 UI readonly 渲染提示）。
+    // 仅对声明了 fieldLockRules 的实体生效；enforceFieldLock 内部先判 schema 有无锁规则，无则零额外 IO。
+    uiSchemaRuleEnforcer.enforceFieldLock(
+        entityCode, id, () -> getById(entityCode, id), body, currentOperator());
     return runtimeRecordService.update(
         entityCode, tenantId, id, body, expectedVersion, currentOperator(), currentRoleCodes());
   }
