@@ -239,6 +239,23 @@ describe('runSubmit v1.1 四函数（样板语义）', () => {
     expect(r.errors.some((e) => e.includes('发票与清单一致'))).toBe(true);
   });
 
+  // 缺值不扰（与 unique 同口径）：左值未录入时不做一致性判定——「没填」不是「填错」。
+  // 实测（2026-10-21 全模块联调）：理赔单 invoice_amount 未录入（也不在表单控件里）时
+  // cmp('eq','',0) 恒 false ⇒ 恒定报「发票金额与清单合计不一致」，用户无论怎么填都提交不了。
+  it('consistency：左值未录入 → 跳过（不把「没填」误报成「金额不一致」）', () => {
+    expect(runSubmit({ ...baseDoc(), invoice_amount: '' }, cons).errors).toHaveLength(0);
+    expect(runSubmit({ ...baseDoc() }, cons).errors).toHaveLength(0);
+  });
+  it('consistency：左值已录入仍照常校验（0 元是合法金额，不得被当成未录入）', () => {
+    const zero: SubmitRule[] = [cons[0]];
+    const noItems = { ...baseDoc(), invoice_amount: 0, items: [] };
+    // invoice_amount=0 且清单合计 0 → 一致，通过
+    expect(runSubmit(noItems, zero).errors).toHaveLength(0);
+    // invoice_amount=0 但清单合计 100 → 差 100 > 容差 1 → 必须拦下（证明 0 不是「跳过」）
+    const mismatch = { ...baseDoc(), invoice_amount: 0, items: [{ amount: 100 }] };
+    expect(runSubmit(mismatch, zero).errors.some((e) => e.includes('发票与清单一致'))).toBe(true);
+  });
+
   const comp: SubmitRule[] = [{
     name: '拒赔理由完整性', code: 'SUB-COMP-01', function: 'completeness', fields: ['reject_reasons'],
     operator: 'gte', params: { minReasons: 3 }, verifyType: 'ERROR', message: '拒赔必须≥3 条理由',

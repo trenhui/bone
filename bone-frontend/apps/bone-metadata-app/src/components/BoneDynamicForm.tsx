@@ -222,6 +222,22 @@ export const BoneDynamicForm: React.FC<Props> = ({
         const opts = all
           .filter((o) => (o.state ?? 'ACTIVE') === 'ACTIVE' || o.code === cur)
           .map((o) => ({ value: o.code, label: `${o.label}（${o.code}）`, disabled: o.state === 'DEPRECATED' }));
+        // ★ 空码表必须降级为文本框，不能渲染「点不开、也输不进」的空 Select：
+        //   建模时 controlKind=ENUM 但字段没配 enumValues 是常见中间态（先摆控件、后补码表），
+        //   此时空下拉会让「必填的枚举字段永远填不上」→ 整个单据建不出来，
+        //   而用户完全无从下手（下拉点开只有「暂无数据」）。降级为输入框 + 明示原因，
+        //   既保住可提交性，又把「码表缺失」这件事暴露在界面上（fail-soft，不是静默）。
+        if (opts.length === 0) {
+          const fallback = c.placeholder ?? '未配置码表，可直接填写码值';
+          return (
+            <Input
+              disabled={ro}
+              value={data[c.fieldCode] as string}
+              onChange={(e) => setValue(c.fieldCode, e.target.value)}
+              placeholder={fallback}
+            />
+          );
+        }
         return <Select disabled={ro} style={{ width: '100%' }} options={opts} value={data[c.fieldCode] as string} onChange={(v) => setValue(c.fieldCode, v)} placeholder={opts.length ? '请选择' : '该枚举未配置码表'} />;
       }
       if (type === 'DATE') return <DatePicker disabled={ro} style={{ width: '100%' }} value={data[c.fieldCode] ? dayjs(data[c.fieldCode] as string) : null} onChange={(d) => setValue(c.fieldCode, d ? d.format('YYYY-MM-DD') : '')} />;
@@ -229,6 +245,16 @@ export const BoneDynamicForm: React.FC<Props> = ({
       if (type === 'INTEGER' || type === 'LONG') return <InputNumber disabled={ro} style={{ width: '100%' }} value={data[c.fieldCode] as number} onChange={(v) => setValue(c.fieldCode, v)} />;
       if (type === 'DECIMAL' || type === 'NUMBER' || type === 'MONEY') return <InputNumber disabled={ro} step={0.01} style={{ width: '100%' }} value={data[c.fieldCode] as number} onChange={(v) => setValue(c.fieldCode, v)} />;
       if (type === 'TEXT') return <Input.TextArea disabled={ro} rows={3} value={data[c.fieldCode] as string} onChange={(e) => setValue(c.fieldCode, e.target.value)} placeholder={c.placeholder} />;
+      // ★ controlKind 未命中专门分支（COMPUTED/STAT/ALERT/TIMELINE 等展示型控件）时，
+      //   必须按**字段类型**兜底选控件：数值列（如 payable_amount controlKind=COMPUTED）
+      //   落到这里若是普通 <Input>，用户/探针就会把任意文本填进 DECIMAL 列
+      //   → 后端 400「字段「X」应为数值类型」（2026-10-21 全模块联调实测）。
+      const ftype = (f?.type ?? 'STRING').toUpperCase();
+      if (ftype === 'INTEGER' || ftype === 'LONG' || /^(BIGINT|INT)$/.test(ftype))
+        return <InputNumber disabled={ro} style={{ width: '100%' }} value={data[c.fieldCode] as number} onChange={(v) => setValue(c.fieldCode, v)} />;
+      if (ftype === 'DECIMAL' || ftype === 'NUMBER' || ftype === 'MONEY' || ftype === 'DOUBLE' || ftype === 'FLOAT')
+        return <InputNumber disabled={ro} step={0.01} style={{ width: '100%' }} value={data[c.fieldCode] as number} onChange={(v) => setValue(c.fieldCode, v)} />;
+      if (ftype === 'BOOLEAN' || ftype === 'BOOL') return <Switch disabled={ro} checked={!!data[c.fieldCode]} onChange={(v) => setValue(c.fieldCode, v)} />;
       return <Input disabled={ro} value={data[c.fieldCode] as string} onChange={(e) => setValue(c.fieldCode, e.target.value)} placeholder={c.placeholder} />;
     })();
 

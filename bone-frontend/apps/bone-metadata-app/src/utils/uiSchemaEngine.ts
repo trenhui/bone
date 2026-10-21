@@ -595,6 +595,11 @@ function scalarOrSum(data: Record<string, unknown>, field: string): unknown {
   return v;
 }
 
+/** 未录入判定：null/空串/undefined/NaN（不把 0 当未录入——0 元是合法金额） */
+function isBlank(v: unknown): boolean {
+  return v == null || v === '' || (typeof v === 'number' && Number.isNaN(v));
+}
+
 /**
  * 本单判重（unique 前端诚实口径：前端无跨单查库能力）。
  * - 数组列：按最长行逐行取组合键判重；
@@ -692,7 +697,14 @@ export function runSubmit(
     }
     case 'consistency': {
       // claim 发票一致：fields[0] 标量 vs 其余列聚合和
-      left = scalarOrSum(data, r.fields[0]);
+      const rawLeft = scalarOrSum(data, r.fields[0]);
+      // 缺值不扰（与 unique 同口径，见上）：一致性规则的目的是抓「两个**已录入**金额对不上」，
+      // 不是催填——催填由必填校验负责。左值尚未录入时 cmp('eq','',0) 恒 false，
+      // 会**恒定**报「发票金额与清单合计不一致」：实测（2026-10-21 全模块联调）理赔单
+      // invoice_amount 未录入（且不在表单控件里）⇒ 用户无论怎么填都提交不了，
+      // 而错误文案指的却是「金额对不上」，把「没填」伪装成「填错」。此处跳过即止。
+      if (isBlank(rawLeft)) continue;
+      left = rawLeft;
       right = numVals(data, r.fields.slice(1)).reduce((a, b) => a + b, 0);
       break;
     }
