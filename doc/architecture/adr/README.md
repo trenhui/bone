@@ -50,6 +50,7 @@
 | [0040](./0040-external-client-sdk-generated-from-openapi.md) | 对外客户端 SDK — 以 OpenAPI 规范为唯一真源生成，不手写占位模块（**已接受**，2026-10-03 架构组裁定；生成与烟测已落地，空壳 `bone-sdk` 整棵移除，门禁 #16/#18/#19/#21 以其为依据） |
 | [0041](./0041-bone-ai-unified-authentication.md) | bone-ai 接入统一鉴权层 — 依赖 `bone-security` + `ai:*` 权限码 + 14 写端点 `@PreAuthorize`（**提议**，L3 待审批；实测 bone-ai 零认证、14 POST 无授权声明，且刻意不扩 `check-controller-authorization` 扫描根——无 security starter 时 `@PreAuthorize` 是安全剧场） |
 | [0042](./0042-evidence-idempotency-unique-index.md) | 证据链消费幂等兜底 — `ai_trace_snapshot` 建 `(trace_id, input_hash, deleted)` 唯一索引，把"查重幂等"升级为存储保证（**提议**，L3 待审批；查重已落地但并发窗口未兜，MQ 化前必须补） |
+| [0043](./0043-enum-option-source-layered-truth.md) | 枚举选项源选型 — 四层真源分层 + 字段单向引用（`meta_field.enum_source`）+ 发布物化 + 版本协商 SWR（**已接受 / 已实现**，2026-10-21 终验归档；否决「三方合并 / UI 层自建 / live 直连 / 物理外键」四路备选） |
 
 **非编号附录**
 
