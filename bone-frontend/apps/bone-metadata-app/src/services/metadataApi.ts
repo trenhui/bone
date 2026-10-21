@@ -204,6 +204,15 @@ export const metadataFieldOptionsApi = {
   /** 重新物化快照（失败时后端保留旧快照并报错） */
   refresh: (fieldId: SnowflakeId) =>
     api.post<never, ApiResponse<EnumSourceRefreshResult>>(`${META}/fields/${fieldId}/options/refresh`),
+
+  /**
+   * 绑定值域版本协商（v1.1 §4.3）：返回真源当前版本与字段快照版本。
+   * 前端据此判定「快照是否落后于真源」——版本不一致即自动触发刷新，字典变更分钟级自动到达绑定字段。
+   */
+  version: (fieldId: SnowflakeId) =>
+    api.get<never, ApiResponse<{ sourceVersion: number | null; snapshotVersion: number | null }>>(
+      `${META}/fields/${fieldId}/options/version`,
+    ),
 };
 
 /**

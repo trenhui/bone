@@ -101,6 +101,16 @@ public class DictTypeController {
             .build());
   }
 
+  /**
+   * 值域业务版本号（v1.1 版本协商 / SWR，§4.3）：该值域内容任一变更即递增（epoch millis）。 轻量只读端点，供元数据侧 resolver
+   * 做「版本比对」与前端做「漂移自动刷新」判定， 避免为比对而拉全量选项。读接口不设 @PreAuthorize（同本类其它读端点：字典是基础数据）。
+   */
+  @Operation(summary = "值域业务版本号（版本协商 / SWR 用）")
+  @GetMapping("/{code}/version")
+  public ApiResponse<Long> version(@PathVariable String code) {
+    return ApiResponse.success(dictApplicationService.dictVersion(code));
+  }
+
   @Operation(summary = "按绑定枚举同步字典项（幂等，不覆盖人工文案）")
   @PostMapping("/{code}/enum-sync")
   @PreAuthorize("hasAuthority('sys:dict:write')")

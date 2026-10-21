@@ -257,6 +257,22 @@ public class EnumSourceApplicationService {
         .orElseGet(() -> parseSnapshot(field));
   }
 
+  /**
+   * 绑定值域版本协商（v1.1 §4.3）：返回真源当前版本与字段快照版本，供前端判定「快照是否落后于真源、是否需要刷新」。
+   *
+   * <p>未绑定真源（inline / 无 enum_source）两版本均返回 null；真源不可达时 sourceVersion 为 null（前端按「未知」处理，不误判）。
+   */
+  public OptionsVersion optionsVersion(Long fieldId) {
+    MetaField field = requireField(fieldId);
+    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    if (decl.isEmpty()) {
+      return new OptionsVersion(null, null);
+    }
+    Long snapshotVersion = parseSnapshotVersion(field);
+    Long sourceVersion = enumSourceResolver.resolveDictVersion(decl.get().typeCode()).orElse(null);
+    return new OptionsVersion(sourceVersion, snapshotVersion);
+  }
+
   /** 快照 vs 真源差异（doc 11 §9：{@code GET /fields/{fieldId}/option-diff}）。 */
   public DriftDiff diff(Long fieldId) {
     MetaField field = requireField(fieldId);
@@ -362,17 +378,20 @@ public class EnumSourceApplicationService {
       throw CatalogErrors.of(
           CatalogErrorCodes.ENUM_SOURCE_RESOLVE_FAILED, "选项序列化失败: " + e.getMessage());
     }
+    // 记录物化时刻的真源版本号（v1.1 §4.3 版本协商）：供前端比对「快照是否落后于真源」。
+    long version = enumSourceResolver.resolveDictVersion(decl.typeCode()).orElse(0L);
     // 经领域行为方法变更（MetaField 无 setter，与 assignPhysicalColumn 同纪律）
     field.applyEnumMaterialization(
-        enumValuesJson, withResolvedMeta(decl, options.size(), resolvedBy));
+        enumValuesJson, withResolvedMeta(decl, options.size(), resolvedBy, version));
   }
 
   /** 在声明 JSON 上回写 resolved* 元数据（建模者只填 type/mode/ref，服务端写 resolved*）。 */
-  private String withResolvedMeta(Declaration decl, int count, String resolvedBy) {
+  private String withResolvedMeta(Declaration decl, int count, String resolvedBy, long version) {
     ObjectNode root = decl.root().deepCopy();
     root.put("resolvedAt", Instant.now().toString());
     root.put("resolvedCount", count);
     root.put("resolvedBy", resolvedBy);
+    root.put("resolvedVersion", version);
     try {
       return objectMapper.writeValueAsString(root);
     } catch (Exception e) {
@@ -405,6 +424,19 @@ public class EnumSourceApplicationService {
       log.warn("enum_values 快照解析失败（按空快照处理）: fieldId={}", field.getId(), e);
     }
     return result;
+  }
+
+  /** 从 enum_source 声明的 resolvedVersion 读取上次物化的真源版本号（前端版本协商比对用）。 */
+  private Long parseSnapshotVersion(MetaField field) {
+    try {
+      JsonNode root =
+          objectMapper.readTree(field.getEnumSource() == null ? "{}" : field.getEnumSource());
+      JsonNode v = root.path("resolvedVersion");
+      return v != null && v.isNumber() ? v.asLong() : null;
+    } catch (Exception e) {
+      log.warn("enum_source.resolvedVersion 解析失败（按 null 处理）: fieldId={}", field.getId(), e);
+      return null;
+    }
   }
 
   private DriftDiff diffAgainst(MetaField field, List<OptionItem> live) {
@@ -459,6 +491,14 @@ public class EnumSourceApplicationService {
 
   /** 物化结果（手动刷新的返回值：刷新前后项数）。 */
   public record MaterializeResult(Long fieldId, int beforeCount, int afterCount) {}
+
+  /**
+   * 绑定值域版本协商（v1.1 §4.3）：真源当前版本 vs 字段快照版本。
+   *
+   * @param sourceVersion 真源（bone-system）值域业务版本号；未绑定/不可达为 null
+   * @param snapshotVersion 字段上次物化时记录的真源版本号（enum_source.resolvedVersion）；从未物化为 null
+   */
+  public record OptionsVersion(Long sourceVersion, Long snapshotVersion) {}
 
   /**
    * 字典引用方清单项（v1.1 §5.4）：某字段绑定了该值域 + 快照新鲜度。

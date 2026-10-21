@@ -505,17 +505,36 @@ public class DictApplicationService {
         language == null || language.isBlank()
             ? Map.of()
             : localizedLabels(typeCode, language, tenantId);
-    return items.stream()
-        .map(
-            item -> {
-              DictOptionDto dto = DictOptionDto.from(item);
-              String translated = texts.get(item.getCode());
-              if (translated != null && !translated.isBlank()) {
-                dto.setLabel(translated);
-              }
-              return dto;
-            })
-        .toList();
+    List<DictOptionDto> result =
+        items.stream()
+            .map(
+                item -> {
+                  DictOptionDto dto = DictOptionDto.from(item);
+                  String translated = texts.get(item.getCode());
+                  if (translated != null && !translated.isBlank()) {
+                    dto.setLabel(translated);
+                  }
+                  return dto;
+                })
+            .toList();
+    // v1.1 版本协商（§4.3）：把值域业务版本号（内容任一变更即递增）挂到每个选项，
+    // 消费方无需二次请求即可拿到版本，用于 SWR / 漂移自动刷新判定。
+    long version = dictVersion(typeCode);
+    result.forEach(d -> d.setVersion(version));
+    return result;
+  }
+
+  /**
+   * 值域业务版本号（v1.1 版本协商/SWR）：取该值域全部项的最大 updatedAt（epoch millis）。 任一变更都使其单调递增，作为「内容是否变更」的廉价判据；空值域返回 0。
+   */
+  public long dictVersion(String typeCode) {
+    long tenantId = currentTenant();
+    return mergedItems(typeCode, tenantId).stream()
+        .map(SysDictItem::getUpdatedAt)
+        .filter(Objects::nonNull)
+        .mapToLong(t -> t.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+        .max()
+        .orElse(0L);
   }
 
   // ==================== 层级视图 ====================

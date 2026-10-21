@@ -67,6 +67,35 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载时按字段集合查一次
   }, [fields.map((f) => f.id + ':' + (f.enumSource ?? '')).join(',')]);
 
+  // v1.1 §4.3 版本协商：定时比对「真源版本 vs 快照版本」，不一致则自动刷新——
+  // 字典变更分钟级自动到达绑定字段，无需人工点「刷新快照」（手动按钮保留）。挂载即查一次，之后每 30s 轮询。
+  useEffect(() => {
+    const bound = enumFields.filter((f) => parseEnumSource(f.enumSource)?.type === 'dict');
+    if (!bound.length) return;
+    let cancelled = false;
+    const check = async () => {
+      for (const f of bound) {
+        try {
+          const res = await metadataFieldOptionsApi.version(f.id);
+          if (cancelled || res.code !== 200) continue;
+          const { sourceVersion, snapshotVersion } = res.data;
+          if (sourceVersion != null && snapshotVersion != null && sourceVersion !== snapshotVersion) {
+            await refreshSnapshot(f);
+          }
+        } catch {
+          // 读路径 fail-soft：版本比对失败不阻断面板（手动刷新仍是兜底）
+        }
+      }
+    };
+    const timer = setInterval(check, 30000);
+    check();
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 绑定集合变化才重启轮询；refreshSnapshot 经闭包捕获最新值
+  }, [fields.map((f) => f.id + ':' + (f.enumSource ?? '')).join(',')]);
+
   const refreshSnapshot = async (f: MetaField) => {
     setRefreshing(f.code);
     try {

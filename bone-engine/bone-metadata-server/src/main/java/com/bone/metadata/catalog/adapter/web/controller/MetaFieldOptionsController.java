@@ -43,6 +43,19 @@ public class MetaFieldOptionsController {
     return ApiResponse.success(enumSourceApplicationService.liveOptions(fieldId));
   }
 
+  /**
+   * 绑定值域版本协商（界面设计器字典打通 v1.1 §4.3）：返回真源当前版本与字段快照版本。
+   *
+   * <p>前端据此判定「快照是否落后于真源」——版本不一致即自动触发刷新（无需人工点「刷新快照」），
+   * 实现字典变更分钟级自动到达绑定字段。读端点不挂 @PreAuthorize（同本类其它读端点）。
+   */
+  @GetMapping("/{fieldId}/options/version")
+  @Operation(summary = "绑定值域版本协商", description = "返回真源版本与快照版本，前端判定是否需要刷新")
+  public ApiResponse<EnumSourceApplicationService.OptionsVersion> optionsVersion(
+      @PathVariable("fieldId") Long fieldId) {
+    return ApiResponse.success(enumSourceApplicationService.optionsVersion(fieldId));
+  }
+
   @GetMapping("/{fieldId}/option-diff")
   @Operation(
       summary = "快照 vs 真源差异",

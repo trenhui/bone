@@ -45,6 +45,17 @@ public interface EnumSourceResolver {
   Optional<List<OptionItem>> resolveDictOptionsFresh(String typeCode, String language);
 
   /**
+   * 值域业务版本号（v1.1 版本协商 / SWR，doc/design/lowcode/ui/界面设计器字典打通设计方案.md §4.3）。
+   *
+   * <p>真源（bone-system）任何内容变更都会使该版本号单调递增（epoch millis）。resolver 用它在读路径做
+   * 「版本比对」：版本未变直接返缓存（分钟内零字典服务调用），版本变了才实时重取—— 既把字典服务调用量降下来，又保证漂移在变更后立即可见，不回归 T8b/T8c 漂移实时可见的实证。
+   *
+   * @param typeCode 值域编码
+   * @return 版本号；值域不存在或真源不可达返回 {@link Optional#empty()}
+   */
+  Optional<Long> resolveDictVersion(String typeCode);
+
+  /**
    * 选项视图（领域层只认业务字段 code/label/state，不感知 bone-system 的存储与传输形态）。
    *
    * <p><b>三态生命周期</b>（界面设计器字典打通 v1.1 §4.5）：{@code state} ∈ ACTIVE / DEPRECATED（DISABLED 不进 {@code

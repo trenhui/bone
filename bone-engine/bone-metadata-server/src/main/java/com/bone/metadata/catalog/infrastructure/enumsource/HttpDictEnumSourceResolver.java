@@ -69,8 +69,18 @@ public class HttpDictEnumSourceResolver implements EnumSourceResolver {
 
   @Override
   public Optional<List<OptionItem>> resolveDictOptions(String typeCode, String language) {
-    // 被动读路径：实时优先 + 宕机兜底（cache-aside + stale-on-error）。漂移必须立即可见，
-    // 因此常态不再走 TTL 短路；缓存只在本服务不可达时兜底返回上一次成功结果（且不超过陈旧上限）。
+    // 被动读路径：SWR（stale-while-revalidate，v1.1 §4.3）。
+    // 命中缓存且版本未变 ⇒ 直接返缓存（分钟内零字典服务调用，降负载）；
+    // 版本变了 ⇒ 实时重取（漂移立即可见，不回归 T8b/T8c 漂移实时可见的实证）；
+    // 真源不可达 / 版本未知 ⇒ 走下方 resolve 的实时优先 + 宕机兜底。
+    String cacheKey = typeCode + "::" + (language == null ? "" : language);
+    CacheEntry cached = optionsCache.get(cacheKey);
+    if (cached != null && cached.version() != null) {
+      Optional<Long> liveVersion = resolveDictVersion(typeCode);
+      if (liveVersion.isPresent() && liveVersion.get().equals(cached.version())) {
+        return Optional.of(cached.options());
+      }
+    }
     return resolve(typeCode, language, true);
   }
 
@@ -79,6 +89,31 @@ public class HttpDictEnumSourceResolver implements EnumSourceResolver {
     // 写路径（保存/发布物化/手动刷新）：实时优先 + fail-closed，绝不回退 stale 缓存——
     // 回退会让「发布即冻结」冻结成旧口径，制造安静的正确性债务。不可达即 empty，由调用方抛 502。
     return resolve(typeCode, language, false);
+  }
+
+  @Override
+  public Optional<Long> resolveDictVersion(String typeCode) {
+    if (typeCode == null || typeCode.isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      JsonNode resp =
+          systemRestClient
+              .get()
+              .uri("/api/v1/system/dict/types/{code}/version", typeCode)
+              .header(HttpHeaders.AUTHORIZATION, "Bearer " + token())
+              .accept(MediaType.APPLICATION_JSON)
+              .retrieve()
+              .body(JsonNode.class);
+      JsonNode data = resp == null ? null : resp.path("data");
+      if (data == null || data.isNull()) {
+        return Optional.empty();
+      }
+      return Optional.of(data.asLong());
+    } catch (Exception e) {
+      log.warn("字典 version 查询失败（版本比对退化为实时解析）: typeCode={}", typeCode, e);
+      return Optional.empty();
+    }
   }
 
   /**
@@ -95,8 +130,10 @@ public class HttpDictEnumSourceResolver implements EnumSourceResolver {
     String cacheKey = typeCode + "::" + (language == null ? "" : language);
     try {
       List<OptionItem> options = fetchOptions(typeCode, language);
-      // cache-aside：成功即回填缓存，缓存永远是「上一次成功」的副本，TTL 不再挡读路径
-      optionsCache.put(cacheKey, new CacheEntry(System.currentTimeMillis(), options));
+      // cache-aside：成功即回填缓存（含值域版本号），缓存永远是「上一次成功」的副本，
+      // TTL 不再挡读路径；版本号供 SWR 比对（版本未变直接返缓存，版本变了才重取）。
+      Long version = resolveDictVersion(typeCode).orElse(null);
+      optionsCache.put(cacheKey, new CacheEntry(System.currentTimeMillis(), options, version));
       return Optional.of(options);
     } catch (Exception e) {
       log.warn(
@@ -215,5 +252,5 @@ public class HttpDictEnumSourceResolver implements EnumSourceResolver {
     return v == null || v.isBlank() ? null : v;
   }
 
-  private record CacheEntry(long fetchedAtMillis, List<OptionItem> options) {}
+  private record CacheEntry(long fetchedAtMillis, List<OptionItem> options, Long version) {}
 }

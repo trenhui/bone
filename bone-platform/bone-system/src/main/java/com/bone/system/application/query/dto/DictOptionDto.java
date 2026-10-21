@@ -31,6 +31,9 @@ public class DictOptionDto {
    */
   private String state;
 
+  /** 值域业务版本号（v1.1 版本协商/SWR）：该值域内容任一变更都使其递增（epoch millis），挂在每个选项上供消费方免二次请求取版本。 */
+  private Long version;
+
   public static DictOptionDto from(SysDictItem item) {
     return DictOptionDto.builder()
         .code(item.getCode())
