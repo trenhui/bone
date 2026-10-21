@@ -238,6 +238,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `AI_GATEWAY_QUOTA_EXCEEDED` | 429 | 租户配额超限，窗口内请求数达上限（未发起 LLM 调用） |
 | `AI_GATEWAY_OUTPUT_INVALID` | 502 | 结构化输出不合规（非合法 JSON / 空响应 / 被 markdown 围栏包裹） |
 | `AI_GATEWAY_INJECTION_SUSPECTED` | 400 | 用户提示疑似注入（OWASP LLM01，默认关闭，启用方自担误伤） |
+| `AI_GATEWAY_CONTENT_UNSAFE` | 400 | 模型产出含不可接受内容（OWASP LLM05/09，默认关闭，启用方自担误伤） |
 | `AI_GATEWAY_PROVIDER_RESPONSE_INVALID` | 502 | provider 响应不可用（无法解析 / 无 choices / 结构不符；限流、错误页、截断） |
 
 ### AI_HITL_
@@ -261,6 +262,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ### AI_RAG_
 
 | `AI_RAG_TENANT_CONTEXT_MISSING` | 500 | 检索租户上下文缺失（fail-closed：不做无租户边情的全库检索） |
+| `AI_RAG_EMBEDDING_PROVIDER_FAIL` | 502 | 嵌入推理服务调用/响应异常（共享 bge-m3 provider 故障，不静默回落零向量） |
+| `AI_RAG_RERANK_PROVIDER_FAIL` | 502 | 重排序推理服务调用/响应异常（共享 bge-reranker provider 故障，不静默回落 RRF 序） |
 
 ### AI_APP_
 
@@ -275,6 +278,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `AI_DOC_TOO_LARGE` | 413 | 文档超过上传大小上限（默认 50MB），边读边拒，防内存耗尽型 DoS |
 | `AI_DOC_TOO_MANY_PAGES` | 413 | 文档页数超过上限（默认 1000 页），拒收以防下游切片与判定失控 |
 | `AI_DOC_SIDECAR_UNAVAILABLE` | 502 | Docling sidecar 不可用：重试耗尽 / 非 2xx / 响应契约不符 / 调用被中断 |
+| `AI_DOC_OCR_PROVIDER_FAIL` | 502 | OCR/视觉识别服务不可用：重试耗尽 / 非 2xx / 响应契约不符 / 调用被中断 |
 | `AI_DOC_READ_FAILED` | 400 | 文档输入流为空或读取失败 |
 
 ### META_
@@ -361,6 +365,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_RECORD_CODE_DUPLICATE` | 409 | 同一租户+实体下 record_code 重复 |
 | `MD_RECORD_EFFECTIVE_WINDOW_INVALID` | 400 | 记录生效期窗口非法（开始晚于结束） |
 | `MD_RECORD_IMMUTABLE_DATA` | 400 | 已发布记录的 data 变更须走变更审批（导入 UPDATE 策略命中时拦截） |
+| `MD_REJECT_REASON_REQUIRED` | 422 | 实体评审驳回未填原因（驳回须可追溯：谁驳回、为什么） |
 | `MD_FIELD_RANGE_INVALID` | 400 | 字段数值值域定义非法（下限大于上限） |
 | `MD_TEMPLATE_DOMAIN_DUPLICATE` | 409 | 领域模板编码已存在 |
 | `MD_TEMPLATE_FIELD_SCHEMA_INVALID` | 400 | 模板字段结构非法 |
