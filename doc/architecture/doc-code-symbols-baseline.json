@@ -710,7 +710,8 @@
     {
       "symbol": "SettlementOrderRepository",
       "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
+        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
       ],
       "reason": "tobe-named",
       "note": "结算单仓储的目标态名（§156 仓储清单），实现尚未落地"
@@ -786,6 +787,14 @@
       ],
       "reason": "tobe-named",
       "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "SettlementApplicationService",
+      "docs": [
+        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
+      ],
+      "reason": "tobe-named",
+      "note": "A7 Settlement 聚合的目标态应用服务名（工程落地版 §4.1 定义聚合与实体，服务名尚未落地）"
     }
   ]
 }
