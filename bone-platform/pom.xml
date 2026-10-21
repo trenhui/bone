@@ -26,6 +26,31 @@
         ⚙️平台服务层 - 企业级共享服务
     </description>
 
+    <properties>
+        <!--
+          resilience4j 版本必须**跟随 spring-cloud BOM（2025.0.3 → 2.2.0）**，不能沿用 bone-parent
+          为 AI 网关压回的 1.7.0。
+
+          背景：bone-parent 的 dependencyManagement 把 resilience4j-core/circuitbreaker/retry 统一
+          压到 1.7.0（AI 中台的「编程式 API」依赖 vavr 时代的签名）。而本平台层的
+          bone-gateway（spring-cloud-starter-circuitbreaker-reactor-resilience4j）与
+          bone-integration（spring-cloud-starter-circuitbreaker-resilience4j）都会带入
+          **resilience4j-spring6-2.2.0**，它是按 2.x 签名编译的：
+
+            CircuitBreakerConfiguration.createCircuitBreakerRegistry 调用
+            CircuitBreakerRegistry.of(Map, RegistryEventConsumer, Map)
+
+          1.7.0 里根本没有这个重载 ⇒ 启动期 NoSuchMethodError，
+          「APPLICATION FAILED TO START / An attempt was made to call a method that does not exist」。
+          实测 gateway(8888) 与 integration(8085) 双双起不来，前端整站 503/404。
+
+          因此在 bone-platform 这一层把属性覆盖回 2.2.0，与 spring6 封装对齐；
+          bone-ai/* 不受影响（不在本 parent 下，仍走 1.7.0 编程式 API）。
+          后续若 AI 网关迁入 2.x，应把该属性收回到 bone-parent 一处，而不是各层各自覆盖。
+        -->
+        <resilience4j.version>2.2.0</resilience4j.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin><groupId>org.apache.maven.plugins</groupId>

@@ -212,7 +212,7 @@ export const InventoryManagement: React.FC = () => {
         open={modalAction !== null}
         onCancel={() => setModalAction(null)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={(v) => void submitAction(v)}>
           <Form.Item

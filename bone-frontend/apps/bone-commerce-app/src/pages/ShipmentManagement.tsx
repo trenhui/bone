@@ -316,7 +316,7 @@ export const ShipmentManagement: React.FC = () => {
         open={createOpen}
         onCancel={() => setCreateOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={createForm} layout="vertical" onFinish={(v) => void submitCreate(v)}>
           <Form.Item
@@ -365,7 +365,7 @@ export const ShipmentManagement: React.FC = () => {
         open={shipTarget !== null}
         onCancel={() => setShipTarget(null)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={shipForm} layout="vertical" onFinish={(v) => void submitShip(v)}>
           <Form.Item name="logisticsCompany" label="物流公司" initialValue="顺丰速运">

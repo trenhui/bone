@@ -249,7 +249,7 @@ export const ChannelManagement: React.FC = () => {
         open={pullOpen}
         onCancel={() => setPullOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={(v) => void submitPull(v)}>
           <Form.Item

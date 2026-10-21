@@ -157,6 +157,20 @@
             <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <!--
+                      classifier=exec：把「可执行 fat jar」挂到 -exec 分类器上，主 artifact
+                      （bone-metadata-server-1.0.0-SNAPSHOT.jar）保持为**普通 classes jar**。
+
+                      为什么必须如此：spring-boot:repackage 默认会用 fat jar **替换**主 artifact，
+                      类被搬进 BOOT-INF/classes/，javac 在 classpath 上根本看不到它们。本模块同时是
+                      bone-accounting-engine / bone-app-expense / bone-app-purchase / bone-boot 的
+                      编译依赖，增量构建时 maven-compiler-plugin 因「无变更」跳过编译所以从不报错；
+                      一旦 `mvn clean package`（CI 全新构建）就会在 bone-accounting-engine 爆发
+                      「程序包 com.bone.metadata.catalog.domain.gateway 不存在 / 找不到符号
+                      RuntimeActionHandler」——即「本地能过、clean 就炸」的假通过。
+                      加 classifier 后下游编译拿到普通 jar，启动脚本改用 *-exec.jar 运行，两者各司其职。
+                    -->
+                    <classifier>exec</classifier>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

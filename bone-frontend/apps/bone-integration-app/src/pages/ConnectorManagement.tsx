@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { connectorApi } from '../services/api';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, resolveErrorMessage } from '@bone/shared-utils';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import type { Connector, CreateConnectorReq, UpdateConnectorReq } from '../types';
@@ -124,10 +124,20 @@ export const ConnectorManagement: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // 校验失败时 antd 已标红字段，不再弹一条与真实原因无关的「操作失败」（联调实测复现）。
+    const values = await form.validateFields().catch(() => null);
+    if (!values) {
+      return;
+    }
+    // config 是 JSON 文本域：解析失败要让用户知道「哪里错了」，而不是笼统的「操作失败」。
+    let config: Record<string, unknown>;
     try {
-      const values = await form.validateFields();
-      const config = JSON.parse(values.config);
-      
+      config = JSON.parse(values.config || '{}');
+    } catch {
+      message.error('连接配置不是合法 JSON，请检查后重试');
+      return;
+    }
+    try {
       if (isEdit && currentConnector) {
         const updateData: UpdateConnectorReq = {
           name: values.name,
@@ -145,11 +155,11 @@ export const ConnectorManagement: React.FC = () => {
         await connectorApi.createConnector(createData);
         message.success('创建成功');
       }
-      
+
       setModalVisible(false);
       fetchConnectors();
     } catch (error) {
-      message.error('操作失败');
+      message.error(resolveErrorMessage(error, '保存连接器失败'));
     }
   };
 

@@ -25,6 +25,7 @@ import {
 import { StatisticCard } from '@ant-design/pro-components';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
+import { resolveErrorMessage } from '@bone/shared-utils';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
 import ModulePage from '../components/ModulePage';
@@ -153,9 +154,15 @@ const PermissionManagement: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // 表单校验失败时 antd 已在对应字段下标红，此处直接 return——
+    // 原实现把 validateFields() 放在同一个 try 里，校验不通过也会弹「操作失败」，
+    // 用户只看到一句与真实原因无关的提示、且不知道该改哪个字段（联调实测复现）。
+    const values = await form.validateFields().catch(() => null);
+    if (!values) {
+      return;
+    }
+    setSubmitting(true);
     try {
-      const values = await form.validateFields();
-      setSubmitting(true);
       if (isEditMode && currentPermission) {
         const updateData: UpdatePermissionRequest = {
           name: values.name,
@@ -184,8 +191,9 @@ const PermissionManagement: React.FC = () => {
           reload();
         }
       }
-    } catch {
-      message.error('操作失败');
+    } catch (error) {
+      // 透出后端业务码对应的可读文案（如权限码重复），而不是一律「操作失败」
+      message.error(resolveErrorMessage(error, '保存权限失败'));
     } finally {
       setSubmitting(false);
     }

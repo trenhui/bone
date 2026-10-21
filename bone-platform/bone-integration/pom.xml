@@ -15,6 +15,9 @@
     <name>bone-platform-integration</name>
     <description>Platform integration service (connectors, flows, execution, events)</description>
 
+    <!-- resilience4j 版本由 bone-platform 统一覆盖为 2.2.0（与 spring-cloud BOM 对齐），
+         此处不再重复声明——原因见 bone-platform/pom.xml 的 <properties> 说明。 -->
+
     <dependencies>
         <!-- bone-core -->
         <dependency><groupId>com.bone</groupId>

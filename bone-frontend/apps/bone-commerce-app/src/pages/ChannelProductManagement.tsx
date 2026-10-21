@@ -289,7 +289,7 @@ export const ChannelProductManagement: React.FC = () => {
         open={listOpen}
         onCancel={() => setListOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={(v) => void submitList(v)}>
           <Form.Item

@@ -326,7 +326,7 @@ export const ReplenishmentManagement: React.FC = () => {
         onCancel={() => setCreateOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={submitCreate}>
           <Form.Item name="productId" label="商品 ID" rules={[{ required: true }]}>

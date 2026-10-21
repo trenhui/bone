@@ -66,7 +66,7 @@ up_mvn bone-platform/bone-file        file        8107
 
 echo "=== 阶段4：无 Nacos（jar 即可）==="
 up_jar bone-blueprint/target/bone-blueprint-1.0.0.jar blueprint 8082 448
-up_jar bone-engine/bone-metadata-server/target/bone-metadata-server-1.0.0-SNAPSHOT.jar metadata 9001 512
+up_jar bone-engine/bone-metadata-server/target/bone-metadata-server-1.0.0-SNAPSHOT-exec.jar metadata 9001 512
 up_jar bone-engine/studio-generator/target/bone-studio-generator-1.0.0.jar generator 8086 448
 up_jar bone-engine/bone-extension-engine/bone-extension-studio/target/bone-extension-studio-1.0.0.jar extension 8088 512
 

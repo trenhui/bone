@@ -309,7 +309,7 @@ export const ChannelBuyerManagement: React.FC = () => {
         open={modal !== null}
         onCancel={() => setModal(null)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={(v) => void submit(v)}>
           <Form.Item
