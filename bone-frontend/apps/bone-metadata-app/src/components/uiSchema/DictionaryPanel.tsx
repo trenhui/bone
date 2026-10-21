@@ -10,14 +10,18 @@
  * 选项源三态（doc/design/modules/11 §6.1）：卡片表头展示来源 Tag（本地枚举/系统字典）+ 真源定位
  * （typeCode）+ 物化元数据（项数/解析时间/触发方）+ 状态徽标（正常/已漂移/解析失败）+ 操作
  * （刷新快照）。覆写（labelOverride/hidden）作用于解析后的选项集合，与来源类型正交（§4.5）。
+ *
+ * 灰度与迁移（v1.1 §6.5 / §5.3）：挂载即查本租户的 dictBinding 开关，关闭时绑定/迁移入口禁用并说明原因
+ * （只在后端拒绝会让用户填完表单才吃 400）；本地枚举卡片提供「升级为平台字典」向导——
+ * 先预览 match/merge 计划（哪些一致、哪些真源多出、哪些本地多出、哪些同码不同义），再确认执行。
  */
 import { useEffect, useState } from 'react';
-import { Alert, Button, Empty, Input, Switch, Tag, Tooltip, Typography, message } from 'antd';
-import { RollbackOutlined, SyncOutlined } from '@ant-design/icons';
+import { Alert, Button, Checkbox, Empty, Input, Modal, Radio, Space, Switch, Tag, Tooltip, Typography, message } from 'antd';
+import { ArrowUpOutlined, RollbackOutlined, SyncOutlined } from '@ant-design/icons';
 import { parseEnumValues, parseEnumSource } from '@bone/shared-types';
 import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
-import type { MetaField, EnumSourceDiff } from '../../types';
-import { metadataFieldOptionsApi } from '../../services/metadataApi';
+import type { MetaField, EnumSourceDiff, DictMigrationPlan } from '../../types';
+import { dictBindingToggleApi, metadataFieldOptionsApi } from '../../services/metadataApi';
 import { clearDict, dictOf, setDictHidden, setDictLabel } from './schemaOps';
 import { useScrollToFocus } from './useScrollToFocus';
 
@@ -43,6 +47,17 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
   /** fieldCode → 快照 vs 真源差异（仅 dict 绑定字段按需拉取；null=未加载/加载中） */
   const [diffs, setDiffs] = useState<Record<string, EnumSourceDiff | null>>({});
   const [refreshing, setRefreshing] = useState<string | null>(null);
+
+  /** 本租户字典绑定灰度（v1.1 §6.5）；null = 未知（查询失败不阻断面板，后端仍会兜底拒绝） */
+  const [bindingToggle, setBindingToggle] = useState<{ enabled: boolean; source: string } | null>(null);
+  /** 迁移向导（v1.1 §5.3）：migrateField 非空即弹窗打开 */
+  const [migrateField, setMigrateField] = useState<MetaField | null>(null);
+  const [migrateType, setMigrateType] = useState('');
+  const [migratePlan, setMigratePlan] = useState<DictMigrationPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [strategy, setStrategy] = useState<'KEEP_LOCAL_OVERRIDE' | 'MERGE_INTO_DICT'>('KEEP_LOCAL_OVERRIDE');
+  const [conflictConfirmed, setConflictConfirmed] = useState(false);
+  const [migrating, setMigrating] = useState(false);
 
   // dict 绑定字段挂载即查一次漂移（doc 11 §6.1 徽标）；端点带 TTL 缓存，重复进入不放大压力
   useEffect(() => {
@@ -96,6 +111,85 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 绑定集合变化才重启轮询；refreshSnapshot 经闭包捕获最新值
   }, [fields.map((f) => f.id + ':' + (f.enumSource ?? '')).join(',')]);
 
+  // 灰度开关挂载即查：关闭时禁用绑定/迁移入口并说明原因（UI 必须真消费后端约束，不能等提交才 400）
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await dictBindingToggleApi.state();
+        if (!cancelled && res.code === 200) {
+          setBindingToggle({ enabled: res.data.enabled, source: res.data.source });
+        }
+      } catch {
+        // 查询失败按「未知」处理：不禁用入口（后端仍会拒绝），避免因监控端点抖动误锁建模
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openMigration = (f: MetaField) => {
+    setMigrateField(f);
+    setMigrateType('');
+    setMigratePlan(null);
+    setStrategy('KEEP_LOCAL_OVERRIDE');
+    setConflictConfirmed(false);
+  };
+
+  /** 比对：拿 match/merge 计划（不产生变更）。计划由后端给出，前端不自行推算分类。 */
+  const loadMigrationPlan = async () => {
+    if (!migrateField) return;
+    const typeCode = migrateType.trim();
+    if (!typeCode) {
+      message.warning('请先填写目标值域编码');
+      return;
+    }
+    setPlanLoading(true);
+    try {
+      const res = await metadataFieldOptionsApi.migrationPreview(migrateField.id, typeCode);
+      if (res.code === 200) {
+        setMigratePlan(res.data);
+        setConflictConfirmed(false);
+      } else {
+        setMigratePlan(null);
+        message.error(`比对失败：${errorText(res)}`);
+      }
+    } catch {
+      setMigratePlan(null);
+      message.error('比对失败（字典服务不可达）');
+    } finally {
+      setPlanLoading(false);
+    }
+  };
+
+  const submitMigration = async () => {
+    if (!migrateField || !migratePlan) return;
+    setMigrating(true);
+    try {
+      const res = await metadataFieldOptionsApi.migrateToDict(migrateField.id, {
+        typeCode: migratePlan.typeCode,
+        localOnlyStrategy: strategy,
+        confirmConflicts: conflictConfirmed,
+      });
+      if (res.code === 200) {
+        const parts = [`快照 ${res.data.snapshotCount} 项`];
+        if (res.data.mergedIntoDict > 0) parts.push(`并入字典 ${res.data.mergedIntoDict} 项`);
+        if (res.data.keptLocalOverrides > 0) parts.push(`保留本地 ${res.data.keptLocalOverrides} 项`);
+        message.success(`已升级为平台字典：${parts.join('，')}`);
+        setMigrateField(null);
+        setMigratePlan(null);
+        onFieldsRefetch?.();
+      } else {
+        message.error(`升级失败：${errorText(res)}`);
+      }
+    } catch {
+      message.error('升级失败（网络或服务不可达）');
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   const refreshSnapshot = async (f: MetaField) => {
     setRefreshing(f.code);
     try {
@@ -134,6 +228,14 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
         message="码表真源在元数据域"
         description="这里只能做协议允许的覆写：改显示名、隐藏选项。本地枚举的新增/删除请到字段的 enumValues 修改；绑定系统字典的字段请到「系统管理 → 字典配置」维护（真源变更会在此处显示漂移）。需要按角色差异化请用「变体」而非在一份 schema 内做覆盖。"
       />
+
+      {bindingToggle && !bindingToggle.enabled && (
+        <Alert
+          type="warning" showIcon style={{ marginBottom: 12 }}
+          message="当前租户未开放「平台字典绑定」（灰度关闭）"
+          description="绑定与升级入口已禁用：字段仍按本地枚举渲染与校验，行为与开放前完全一致。需要开放请联系管理员按租户灰度开通。"
+        />
+      )}
 
       {enumFields.map((f) => {
         const opts = parseEnumValues(f.enumValues);
@@ -177,6 +279,24 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
               {decl?.type === 'dict' && diff?.resolved && (diff.added.length || diff.removed.length || diff.labelChanged.length || (diff.stateChanged?.length ?? 0)) > 0 && (
                 <Tooltip title={`真源已变更：新增 ${diff.added.length} / 移除 ${diff.removed.length} / 改标签 ${diff.labelChanged.length} / 状态变迁 ${diff.stateChanged?.length ?? 0}；removed 的历史数据旧值不受影响，重新发布后生效`}>
                   <Tag color="gold" style={{ fontSize: 11 }}>已漂移</Tag>
+                </Tooltip>
+              )}
+              {decl?.type !== 'dict' && (
+                <Tooltip
+                  title={
+                    bindingToggle?.enabled === false
+                      ? '当前租户未开放平台字典绑定（灰度关闭）'
+                      : '把本地枚举升级为平台字典：先比对本地与真源的差异，再确认绑定'
+                  }
+                >
+                  <Button
+                    size="small" type="text" icon={<ArrowUpOutlined />}
+                    disabled={bindingToggle?.enabled === false}
+                    aria-label={`升级 ${f.code} 为平台字典`}
+                    onClick={() => openMigration(f)}
+                  >
+                    升级为平台字典
+                  </Button>
                 </Tooltip>
               )}
               <span style={{ flex: 1 }} />
@@ -251,6 +371,110 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
           </div>
         );
       })}
+
+      <Modal
+        open={migrateField != null}
+        title={`升级为平台字典 · ${migrateField?.displayName ?? ''}`}
+        onCancel={() => { setMigrateField(null); setMigratePlan(null); }}
+        onOk={submitMigration}
+        okText="确认迁移"
+        cancelText="取消"
+        confirmLoading={migrating}
+        okButtonProps={{
+          disabled: migratePlan == null || (migratePlan.requiresConfirmation && !conflictConfirmed),
+        }}
+        destroyOnClose
+        width={640}
+      >
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              目标值域编码（平台字典）。先「比对」查看计划，确认后才会真正绑定并物化快照。
+            </Text>
+            <Space.Compact style={{ width: '100%', marginTop: 6 }}>
+              <Input
+                placeholder="如 SYS_STATUS"
+                value={migrateType}
+                aria-label="迁移目标值域编码"
+                onChange={(e) => { setMigrateType(e.target.value); setMigratePlan(null); }}
+                onPressEnter={loadMigrationPlan}
+              />
+              <Button onClick={loadMigrationPlan} loading={planLoading}>比对</Button>
+            </Space.Compact>
+          </div>
+
+          {migratePlan && (
+            <>
+              <div data-testid="migration-plan">
+                <Tag color="green">完全一致 {migratePlan.matched.length}</Tag>
+                <Tag color="blue">真源多出 {migratePlan.dictOnly.length}</Tag>
+                <Tag color="orange">本地多出 {migratePlan.localOnly.length}</Tag>
+                <Tag color={migratePlan.labelConflicts.length ? 'gold' : undefined}>
+                  同码不同义 {migratePlan.labelConflicts.length}
+                </Tag>
+                <Tag color={migratePlan.codeConflicts.length ? 'gold' : undefined}>
+                  同义不同码 {migratePlan.codeConflicts.length}
+                </Tag>
+              </div>
+
+              {migratePlan.localOnly.length > 0 && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  本地多出：{migratePlan.localOnly.join('、')}
+                </Text>
+              )}
+
+              {migratePlan.labelConflicts.length > 0 && (
+                <div>
+                  <Text strong style={{ fontSize: 12 }}>同码不同义（告警不阻断，需确认）</Text>
+                  {migratePlan.labelConflicts.map((c) => (
+                    <div key={c.code} style={{ fontSize: 12 }}>
+                      <Text code>{c.code}</Text>：本地「{c.localLabel}」→ 真源「{c.dictLabel}」
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {migratePlan.codeConflicts.length > 0 && (
+                <div>
+                  <Text strong style={{ fontSize: 12 }}>同义不同码（告警不阻断，需确认编码口径）</Text>
+                  {migratePlan.codeConflicts.map((c) => (
+                    <div key={c.localCode} style={{ fontSize: 12 }}>
+                      「{c.label}」：本地 <Text code>{c.localCode}</Text> ↔ 真源 <Text code>{c.dictCode}</Text>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {migratePlan.localOnly.length > 0 && (
+                <div>
+                  <Text strong style={{ fontSize: 12 }}>本地多出项怎么处理</Text>
+                  <Radio.Group
+                    value={strategy}
+                    onChange={(e) => setStrategy(e.target.value)}
+                    style={{ display: 'block' }}
+                  >
+                    <Radio value="KEEP_LOCAL_OVERRIDE">
+                      保留为本地追加项（不写共享值域；会持续显示为与真源的差异）
+                    </Radio>
+                    <Radio value="MERGE_INTO_DICT">
+                      并入字典（向真源新增这些项，需要字典写权限）
+                    </Radio>
+                  </Radio.Group>
+                </div>
+              )}
+
+              {migratePlan.requiresConfirmation && (
+                <Checkbox
+                  checked={conflictConfirmed}
+                  onChange={(e) => setConflictConfirmed(e.target.checked)}
+                >
+                  我已确认上述冲突的语义（存量数据按这些 code 存储，改绑后渲染口径会变化）
+                </Checkbox>
+              )}
+            </>
+          )}
+        </Space>
+      </Modal>
     </div>
   );
 }

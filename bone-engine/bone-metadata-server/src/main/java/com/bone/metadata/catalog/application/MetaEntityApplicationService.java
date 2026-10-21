@@ -612,8 +612,9 @@ public class MetaEntityApplicationService {
     }
     assertFieldCodeUnique(entityId, cmd.getCode());
     // 选项源声明写入口守卫（与 assertAutoNumberConfigValid/assertRowPoliciesValid 同姿态）：
-    // 非法声明在保存时挡为 400，不等发布物化时才炸（doc 11 §4.2/§9）
-    enumSourceApplicationService.parseDeclaration(cmd.getEnumSource());
+    // 非法声明在保存时挡为 400，不等发布物化时才炸（doc 11 §4.2/§9）；
+    // 灰度关闭的租户在此同样被拒（v1.1 §6.5：不接受「配了不生效」的绑定）
+    enumSourceApplicationService.validateDeclarationForWrite(cmd.getEnumSource());
     MetaField field =
         MetaField.create(
             null,
@@ -653,8 +654,8 @@ public class MetaEntityApplicationService {
       throw CatalogErrors.of(CatalogErrorCodes.FIELD_NOT_FOUND, fieldId);
     }
     CatalogVersionSupport.assertExpected(expectedVersion, field.getVersion());
-    // 选项源声明写入口守卫：同 createField（doc 11 §9 META_ENUM_SOURCE_INVALID）
-    enumSourceApplicationService.parseDeclaration(cmd.getEnumSource());
+    // 选项源声明写入口守卫：同 createField（doc 11 §9 META_ENUM_SOURCE_INVALID / v1.1 §6.5 灰度）
+    enumSourceApplicationService.validateDeclarationForWrite(cmd.getEnumSource());
     field.update(
         cmd.getDisplayName(),
         cmd.getType(),

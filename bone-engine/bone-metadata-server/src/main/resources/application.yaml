@@ -42,6 +42,13 @@ security:
 # catalog / runtime 横切（缓存、幂等）；集群部署可改为 redis
 bone:
   metadata:
+    # 字典绑定灰度开关（界面设计器字典打通 v1.1 §6.5）。
+    # 默认关 = 生产上线不改变任何存量租户行为（字段全按 L0 enumValues 渲染与校验）；
+    # 逐租户开放走 enabled-tenants（逗号分隔，* = 全部），运行时还可用
+    # PUT /api/v1/metadata/dict-binding/toggle?enabled=true 临时拉闸/放开。
+    dict-binding:
+      enabled: ${BONE_DICT_BINDING_ENABLED:false}
+      enabled-tenants: ${BONE_DICT_BINDING_TENANTS:}
     catalog:
       runtime-entity-cache-ttl: 60s
       runtime-entity-cache:

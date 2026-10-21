@@ -108,6 +108,18 @@ const fatal = (msg, extra) => {
   }, token);
   if (![200, 201].includes(r.status)) fatal('创建字段失败', r.payload);
   const fieldId = extractId(r.payload);
+  // P4 需要「尚未绑定」的本地枚举字段：A 命中、C 同码不同义（本地C vs 标签C）、X 本地多出
+  // ⇒ 迁移预览必然同时产出「完全一致 / 真源多出 / 本地多出 / 同码不同义」，可验证确认闸门。
+  const LOCAL_CODE = 'localEnum';
+  r = await api('POST', `/api/v1/metadata/entities/${entityId}/fields`, {
+    name: '本地枚举', code: LOCAL_CODE, displayName: '本地枚举', type: 'ENUM',
+    enumValues: JSON.stringify([
+      { code: 'A', label: '标签A' },
+      { code: 'C', label: '本地C' },
+      { code: 'X', label: '本地X' },
+    ]),
+  }, token);
+  if (![200, 201].includes(r.status)) fatal('创建本地枚举字段失败', r.payload);
   r = await api('PUT', `/api/v1/system/dict/items/${itemIds.A}/deprecate`, {}, token);
   if (r.status !== 200) fatal('弃用 A 失败', r.payload);
   console.log(`[setup] 就绪：entityId=${entityId} fieldId=${fieldId}（A 已弃用，快照未刷新 ⇒ 漂移待验证）`);
@@ -294,6 +306,95 @@ const fatal = (msg, extra) => {
       }
     }
   }
+
+  // ---------- P4 灰度开关禁用态 + L0→L1 迁移向导（v1.1 #9 / #7 UI 侧） ----------
+  console.log('\n=== P4 灰度禁用态 + 升级为平台字典向导 ===');
+  const toggleOff = async (enabled) => api('PUT', `/api/v1/metadata/dict-binding/toggle?enabled=${enabled}`, {}, token);
+  const reloadPanel = async () => {
+    // 同 URL（含 hash）goto 不触发真 reload ⇒ 经 about:blank 中转，保证以已登录态全新拉灰度状态
+    await page.goto('about:blank');
+    await page.goto(`${UI}/metadata#/entities/${entityId}?tab=uischema`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3500);
+    const t = page.locator('.ant-tabs-tab', { hasText: '字典' });
+    if ((await t.count()) > 0) { await t.first().click(); await page.waitForTimeout(2500); }
+  };
+
+  // 4.1 入口存在（本地枚举字段）
+  const migrateBtn = page.locator(`button[aria-label="升级 ${LOCAL_CODE} 为平台字典"]`);
+  check('P4.0 本地枚举字段提供「升级为平台字典」入口', (await migrateBtn.count()) > 0);
+  if ((await migrateBtn.count()) > 0) {
+    check('P4.1 灰度开放时入口可点（disabled=false）', await migrateBtn.first().isEnabled());
+    await migrateBtn.first().click();
+    try {
+      await page.locator('.ant-modal-content', { hasText: '升级为平台字典 ·' }).first().waitFor({ state: 'visible', timeout: 8000 });
+      check('P4.2 迁移向导打开（Modal）', true);
+    } catch { check('P4.2 迁移向导打开（Modal）', false, 'timeout'); }
+
+    const typeInput = page.locator('input[aria-label="迁移目标值域编码"]');
+    await typeInput.fill(TYPE_CODE);
+    await typeInput.press('Enter');
+    const plan = page.locator('[data-testid="migration-plan"]');
+    try {
+      await plan.waitFor({ state: 'visible', timeout: 12000 });
+      check('P4.3 比对产出迁移计划（后端分类，前端不自行推算）', true);
+    } catch { check('P4.3 比对产出迁移计划（后端分类，前端不自行推算）', false, 'timeout'); }
+
+    const planText = await plan.innerText().catch(() => '');
+    check('P4.4 计划含「完全一致」计数', /完全一致\s*[1-9]/.test(planText), planText.replace(/\s+/g, ' ').slice(0, 120));
+    check('P4.5 计划含「本地多出」（X 仅本地有）', /本地多出\s*[1-9]/.test(planText), planText.replace(/\s+/g, ' ').slice(0, 120));
+    check('P4.6 计划含「同码不同义」（本地C ↔ 标签C）', /同码不同义\s*[1-9]/.test(planText), planText.replace(/\s+/g, ' ').slice(0, 120));
+
+    const okBtn = page.locator('.ant-modal-content .ant-btn-primary', { hasText: /确认迁移/ }).first();
+    check('P4.7 存在冲突时「确认迁移」置灰（机器报疑、人做裁决）', await okBtn.isDisabled());
+    const confirmCb = page.locator('.ant-modal-content input[type="checkbox"]').first();
+    check('P4.8 冲突需显式勾选确认', (await confirmCb.count()) > 0);
+    if ((await confirmCb.count()) > 0) {
+      await confirmCb.check();
+      await page.waitForTimeout(300);
+      check('P4.9 勾选确认后「确认迁移」可点', await okBtn.isEnabled());
+      await okBtn.click();
+      try {
+        await page.locator('.ant-message-success, .ant-message-notice', { hasText: '已升级为平台字典' }).first().waitFor({ state: 'visible', timeout: 20000 });
+        check('P4.10 迁移成功提示（含快照/合并项数）', true);
+      } catch { check('P4.10 迁移成功提示（含快照/合并项数）', false, 'timeout'); }
+      try {
+        await page.locator('.ant-modal-content').first().waitFor({ state: 'hidden', timeout: 10000 });
+      } catch { /* 落入下方断言 */ }
+      // 迁移后宿主重取字段 ⇒ 来源 Tag 从「本地枚举」翻为「系统字典 · TYPE_CODE」
+      try {
+        await page.locator('.ant-tag', { hasText: `系统字典 · ${TYPE_CODE}` }).nth(1).waitFor({ state: 'visible', timeout: 15000 });
+        check('P4.11 迁移后字段来源变为「系统字典 · typeCode」（真绑定，非仅前端态）', true);
+      } catch {
+        const txt = await page.locator('body').innerText();
+        const cnt = (txt.match(new RegExp(`系统字典 · ${TYPE_CODE}`, 'g')) || []).length;
+        check('P4.11 迁移后字段来源变为「系统字典 · typeCode」（真绑定，非仅前端态）', cnt >= 2, `count=${cnt}`);
+      }
+      await shot('07-migrated');
+    }
+  }
+
+  // 4.2 灰度关闭 → UI 必须真消费（不能只在后端拒）
+  const off = await toggleOff(false);
+  check('P4.12 灰度运行时可关（PUT toggle?enabled=false）', off.status === 200 && off.payload?.data?.enabled === false, JSON.stringify(off.payload).slice(0, 160));
+  await reloadPanel();
+  const offText = await page.locator('body').innerText();
+  check('P4.13 灰度关闭时面板出现「灰度关闭」说明（不静默失效）', offText.includes('灰度关闭') || offText.includes('未开放「平台字典绑定」'));
+  const btnAfterOff = page.locator(`button[aria-label="升级 ${LOCAL_CODE} 为平台字典"]`);
+  if ((await btnAfterOff.count()) > 0) {
+    check('P4.14 灰度关闭时升级入口置灰', await btnAfterOff.first().isDisabled());
+    await shot('08-gray-off');
+  } else {
+    check('P4.14 灰度关闭时升级入口置灰', false, 'entry-missing');
+  }
+
+  // 4.3 恢复 → 回到开放态（删除运行时覆盖，回落配置判定）
+  const restored = await api('DELETE', '/api/v1/metadata/dict-binding/toggle', undefined, token);
+  check('P4.15 撤销运行时覆盖生效（回落配置判定）', restored.status === 200 && restored.payload?.data?.enabled === true, JSON.stringify(restored.payload).slice(0, 160));
+  await reloadPanel();
+  const onText = await page.locator('body').innerText();
+  check('P4.16 恢复后「灰度关闭」说明消失', !onText.includes('未开放「平台字典绑定」'));
+  const btnRestored = page.locator(`button[aria-label="升级 ${LOCAL_CODE} 为平台字典"]`);
+  check('P4.17 恢复后入口重新可点', (await btnRestored.count()) > 0 && await btnRestored.first().isEnabled());
 
   // ---------- 汇总 ----------
   const benign = consoleErrors.filter((e) => /favicon|Failed to load resource/i.test(e));

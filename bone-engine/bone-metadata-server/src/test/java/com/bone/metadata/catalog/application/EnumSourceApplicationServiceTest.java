@@ -8,10 +8,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
+import com.bone.metadata.catalog.domain.gateway.DictRenderMetricsPort;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.meta.OptionItem;
@@ -43,11 +45,43 @@ class EnumSourceApplicationServiceTest {
 
   private EnumSourceApplicationService service;
 
+  /** 本类聚焦选项源语义（非灰度），开关恒开：灰度判定由 DictBindingToggleTest 单独覆盖。 */
+  private DictBindingToggle alwaysOnToggle;
+
+  /** 记录型指标端口：不依赖 Micrometer，断言「计了什么」而不是「Micrometer 能不能注册」。 */
+  private RecordingMetrics metrics;
+
   @BeforeEach
   void setUp() {
+    alwaysOnToggle = new DictBindingToggle(true, "", () -> 0L);
+    metrics = new RecordingMetrics();
     service =
         new EnumSourceApplicationService(
-            metaFieldRepository, metaEntityRepository, enumSourceResolver);
+            metaFieldRepository, metaEntityRepository, enumSourceResolver, alwaysOnToggle, metrics);
+  }
+
+  /** 测试用指标端口（进程内计数）。 */
+  private static final class RecordingMetrics implements DictRenderMetricsPort {
+    private long total;
+    private long fallback;
+
+    @Override
+    public void recordResolve(boolean fallbackToSnapshot) {
+      total++;
+      if (fallbackToSnapshot) {
+        fallback++;
+      }
+    }
+
+    @Override
+    public long totalResolves() {
+      return total;
+    }
+
+    @Override
+    public long fallbackResolves() {
+      return fallback;
+    }
   }
 
   // ---------- 构造辅助 ----------
@@ -377,6 +411,195 @@ class EnumSourceApplicationServiceTest {
     assertThat(bindings.get(0).resolved()).isFalse();
     assertThat(bindings.get(0).drift()).isFalse();
     assertThat(bindings.get(0).driftSummary()).isEqualTo("真源不可达");
+  }
+
+  // ---------- 灰度开关接线（v1.1 §6.5）----------
+
+  @Test
+  @DisplayName("灰度关闭：绑定视为不存在且不发起真源解析（逐字节回到 L0，非部分降级）")
+  void toggleOff_treatsBindingAsAbsentWithoutResolving() {
+    EnumSourceApplicationService offService =
+        new EnumSourceApplicationService(
+            metaFieldRepository,
+            metaEntityRepository,
+            enumSourceResolver,
+            new DictBindingToggle(false, "", () -> 0L),
+            metrics);
+    MetaField field = dictField(1L, "[{\"code\":\"M\",\"label\":\"男\"}]");
+
+    assertThat(offService.isBound(field)).isFalse();
+    assertThat(offService.activeDeclaration(field)).isEmpty();
+    // 关键判别：连解析都不发起——「关了还偷偷请求字典服务」会让租户误以为能力仍在线
+    verifyNoInteractions(enumSourceResolver);
+  }
+
+  @Test
+  @DisplayName("灰度关闭：写入口拒绝 dict 声明（META_ENUM_SOURCE_INVALID），不做「配了不生效」")
+  void toggleOff_rejectsDictDeclarationOnWrite() {
+    EnumSourceApplicationService offService =
+        new EnumSourceApplicationService(
+            metaFieldRepository,
+            metaEntityRepository,
+            enumSourceResolver,
+            new DictBindingToggle(false, "", () -> 0L),
+            metrics);
+    String decl = "{\"type\":\"dict\",\"mode\":\"snapshot\",\"ref\":{\"typeCode\":\"GENDER\"}}";
+
+    assertThatThrownBy(() -> offService.validateDeclarationForWrite(decl))
+        .isInstanceOf(BizException.class)
+        .extracting(e -> ((BizException) e).getErrorCode())
+        .isEqualTo("META_ENUM_SOURCE_INVALID");
+  }
+
+  @Test
+  @DisplayName("灰度为开时同一份声明可通过写入口（正对照：拒绝确由开关驱动）")
+  void toggleOn_acceptsSameDeclaration() {
+    String decl = "{\"type\":\"dict\",\"mode\":\"snapshot\",\"ref\":{\"typeCode\":\"GENDER\"}}";
+
+    MetaField bound = dictField(1L, "[]");
+    assertThat(service.activeDeclaration(bound)).isPresent(); // 开关开 → 绑定生效
+    service.validateDeclarationForWrite(decl); // 不抛即通过（与关闭态形成对照）
+  }
+
+  // ---------- 三个可观测指标（v1.1 §8）----------
+
+  @Test
+  @DisplayName("覆盖率分母含 L0 长尾（否则恒 100% 无判别力），从未物化的绑定计入漂移")
+  void statsCoverageIncludesL0AndCountsNeverMaterializedAsDrift() {
+    MetaField bound = dictField(1L, "[{\"code\":\"M\",\"label\":\"男\"}]");
+    when(metaFieldRepository.listEnumFields())
+        .thenReturn(List.of(bound, inlineEnumField(2L), inlineEnumField(3L)));
+    when(enumSourceResolver.resolveDictVersion("GENDER")).thenReturn(Optional.of(200L));
+
+    EnumSourceApplicationService.DictBindingStats stats = service.dictBindingStats();
+
+    assertThat(stats.totalEnumFields()).isEqualTo(3);
+    assertThat(stats.boundEnumFields()).isEqualTo(1);
+    assertThat(stats.bindingCoverage()).isEqualTo(0.3333);
+    // enum_source 无 resolvedVersion ⇒ 从未物化 ⇒ 必须计入待刷新，而不是当成「无漂移」
+    assertThat(stats.driftPending()).isEqualTo(1);
+    assertThat(stats.unresolvedBindings()).isZero();
+    // N 个绑定字段共享一份真源版本：只查一次（否则指标端点自己就是放大器的来源）
+    verify(enumSourceResolver, times(1)).resolveDictVersion("GENDER");
+  }
+
+  @Test
+  @DisplayName("快照版本等于真源版本 → 不计漂移（正对照，避免「一律计漂移」的恒真断言）")
+  void statsNoDriftWhenVersionsMatch() {
+    when(metaFieldRepository.listEnumFields()).thenReturn(List.of(boundFieldWithVersion(4L, 200L)));
+    when(enumSourceResolver.resolveDictVersion("GENDER")).thenReturn(Optional.of(200L));
+
+    EnumSourceApplicationService.DictBindingStats stats = service.dictBindingStats();
+
+    assertThat(stats.bindingCoverage()).isEqualTo(1.0);
+    assertThat(stats.driftPending()).isZero();
+  }
+
+  @Test
+  @DisplayName("真源不可达 → 单列 unresolved，不混入漂移数（两个信号不能互相污染）")
+  void statsUnresolvedNotCountedAsDrift() {
+    when(metaFieldRepository.listEnumFields()).thenReturn(List.of(dictField(1L, "[]")));
+    when(enumSourceResolver.resolveDictVersion("GENDER")).thenReturn(Optional.empty());
+
+    EnumSourceApplicationService.DictBindingStats stats = service.dictBindingStats();
+
+    assertThat(stats.unresolvedBindings()).isEqualTo(1);
+    assertThat(stats.driftPending()).isZero();
+  }
+
+  @Test
+  @DisplayName("解析失败回退快照 → 降级率 1.0；解析成功 → 0.0；L0 渲染不计入分母")
+  void statsFallbackRateCountsOnlyRealResolveAttempts() {
+    MetaField bound = dictField(1L, "[{\"code\":\"M\",\"label\":\"男\"}]");
+    when(metaFieldRepository.findById(1L)).thenReturn(bound);
+    when(metaFieldRepository.findById(2L)).thenReturn(inlineEnumField(2L));
+    when(enumSourceResolver.resolveDictOptions("GENDER", null)).thenReturn(Optional.empty());
+
+    // L0：未绑定 ⇒ 不是「降级」，不计入分母
+    service.liveOptions(2L);
+    assertThat(metrics.totalResolves()).isZero();
+
+    // 绑定但真源不可达 ⇒ 回退快照 = 一次降级
+    service.liveOptions(1L);
+    assertThat(metrics.totalResolves()).isEqualTo(1);
+    assertThat(metrics.fallbackResolves()).isEqualTo(1);
+
+    when(metaFieldRepository.listEnumFields()).thenReturn(List.of(bound));
+    when(enumSourceResolver.resolveDictVersion("GENDER")).thenReturn(Optional.of(200L));
+    assertThat(service.dictBindingStats().fallbackRate()).isEqualTo(1.0);
+  }
+
+  @Test
+  @DisplayName("解析成功不计降级（正对照：避免把每次解析都记成 fallback）")
+  void statsSuccessfulResolveNotCountedAsFallback() {
+    when(metaFieldRepository.findById(1L))
+        .thenReturn(dictField(1L, "[{\"code\":\"M\",\"label\":\"男\"}]"));
+    when(enumSourceResolver.resolveDictOptions("GENDER", null))
+        .thenReturn(Optional.of(List.of(new OptionItem("M", "男", "ACTIVE"))));
+
+    service.liveOptions(1L);
+
+    assertThat(metrics.totalResolves()).isEqualTo(1);
+    assertThat(metrics.fallbackResolves()).isZero();
+  }
+
+  /** 带指定快照版本号的 dict 绑定字段（漂移判定正/负对照用）。 */
+  private static MetaField boundFieldWithVersion(Long id, long resolvedVersion) {
+    return MetaField.create(
+        id,
+        0L,
+        100L,
+        "性别",
+        "gender_" + id,
+        "性别",
+        "ENUM",
+        null,
+        false,
+        false,
+        null,
+        null,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "[{\"code\":\"M\",\"label\":\"男\"}]",
+        "{\"type\":\"dict\",\"mode\":\"snapshot\",\"ref\":{\"typeCode\":\"GENDER\"},"
+            + "\"resolvedVersion\":"
+            + resolvedVersion
+            + "}",
+        null);
+  }
+
+  /** L0（inline）ENUM 字段：覆盖率分母里的长尾。 */
+  private static MetaField inlineEnumField(Long id) {
+    return MetaField.create(
+        id,
+        0L,
+        100L,
+        "状态",
+        "status_" + id,
+        "状态",
+        "ENUM",
+        null,
+        false,
+        false,
+        null,
+        null,
+        1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "[{\"code\":\"A\",\"label\":\"a\"}]",
+        null,
+        null);
   }
 
   private static MetaEntity entityOf(String name, String code) {

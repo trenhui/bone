@@ -5,15 +5,18 @@ import com.bone.metadata.catalog.application.EnumSourceApplicationService;
 import com.bone.metadata.catalog.application.EnumSourceApplicationService.DictBinding;
 import com.bone.metadata.catalog.application.EnumSourceApplicationService.DriftDiff;
 import com.bone.metadata.catalog.application.EnumSourceApplicationService.MaterializeResult;
+import com.bone.metadata.catalog.application.command.cmd.MigrateToDictCommand;
 import com.bone.metadata.catalog.domain.model.meta.OptionItem;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -93,5 +96,41 @@ public class MetaFieldOptionsController {
       description = "按值域编码返回绑定字段（实体/字段名 + 快照项数 + 漂移状态）；真源不可达时 resolved=false")
   public ApiResponse<List<DictBinding>> dictBindings(@RequestParam("typeCode") String typeCode) {
     return ApiResponse.success(enumSourceApplicationService.listBindings(typeCode));
+  }
+
+  /**
+   * L0→L1 迁移预览（v1.1 §5.3）：本地枚举 vs 目标值域的双向 diff，**不落任何变更**。
+   *
+   * <p>预览与执行共用同一套比对（{@code previewMigration} 被 {@code migrateToDict} 复用）， 避免「确认的是 A、系统做的是 B」。读端点不挂
+   * {@code @PreAuthorize}（同本类其它读端点）。
+   */
+  @GetMapping("/{fieldId}/migrate-to-dict/preview")
+  @Operation(
+      summary = "迁移到平台字典预览",
+      description = "返回 matched/dictOnly/localOnly 与两类冲突（同码不同义、同义不同码），不产生变更")
+  public ApiResponse<EnumSourceApplicationService.MigrationPlan> migrationPreview(
+      @PathVariable("fieldId") Long fieldId, @RequestParam("typeCode") String typeCode) {
+    return ApiResponse.success(enumSourceApplicationService.previewMigration(fieldId, typeCode));
+  }
+
+  /**
+   * 执行 L0→L1 迁移。
+   *
+   * <p><b>权限</b>：同 {@code refresh}（{@code metadata:model:write}）——迁移会改写字段绑定并可能向真源写项，
+   * 是建模写动作；并入字典分支对真源的写由服务账号权限兜底（失败即 {@code META_MIGRATE_MERGE_FAILED}，字段不绑定）。
+   */
+  @PostMapping("/{fieldId}/migrate-to-dict")
+  @Operation(
+      summary = "迁移到平台字典",
+      description = "按策略绑定真源并物化快照；存在冲突未确认时返回 409 META_MIGRATE_CONFLICT_UNCONFIRMED")
+  @PreAuthorize("hasAnyAuthority('metadata:model:write', 'metadata:write')")
+  public ApiResponse<EnumSourceApplicationService.MigrationResult> migrateToDict(
+      @PathVariable("fieldId") Long fieldId, @Valid @RequestBody MigrateToDictCommand command) {
+    return ApiResponse.success(
+        enumSourceApplicationService.migrateToDict(
+            fieldId,
+            command.getTypeCode(),
+            command.getLocalOnlyStrategy(),
+            command.isConfirmConflicts()));
   }
 }

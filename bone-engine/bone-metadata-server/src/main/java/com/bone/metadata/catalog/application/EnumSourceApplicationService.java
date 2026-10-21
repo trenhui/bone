@@ -3,6 +3,7 @@ package com.bone.metadata.catalog.application;
 import com.bone.metadata.catalog.application.query.dto.EntityValidationIssue;
 import com.bone.metadata.catalog.common.CatalogErrorCodes;
 import com.bone.metadata.catalog.common.CatalogErrors;
+import com.bone.metadata.catalog.domain.gateway.DictRenderMetricsPort;
 import com.bone.metadata.catalog.domain.model.meta.MetaEntity;
 import com.bone.metadata.catalog.domain.model.meta.MetaField;
 import com.bone.metadata.catalog.domain.model.meta.OptionItem;
@@ -54,15 +55,21 @@ public class EnumSourceApplicationService {
   private final MetaFieldRepository metaFieldRepository;
   private final MetaEntityRepository metaEntityRepository;
   private final EnumSourceResolver enumSourceResolver;
+  private final DictBindingToggle bindingToggle;
+  private final DictRenderMetricsPort renderMetrics;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public EnumSourceApplicationService(
       MetaFieldRepository metaFieldRepository,
       MetaEntityRepository metaEntityRepository,
-      EnumSourceResolver enumSourceResolver) {
+      EnumSourceResolver enumSourceResolver,
+      DictBindingToggle bindingToggle,
+      DictRenderMetricsPort renderMetrics) {
     this.metaFieldRepository = metaFieldRepository;
     this.metaEntityRepository = metaEntityRepository;
     this.enumSourceResolver = enumSourceResolver;
+    this.bindingToggle = bindingToggle;
+    this.renderMetrics = renderMetrics;
   }
 
   // ===================== 声明解析与校验（写入口守卫） =====================
@@ -111,10 +118,38 @@ public class EnumSourceApplicationService {
     return Optional.empty();
   }
 
+  /**
+   * 写入口守卫（v1.1 §6.5 灰度）：租户未开放字典绑定时，拒绝本次 dict 声明（400）。
+   *
+   * <p><b>为什么写入就拒绝，而不是「接受但不生效」</b>：UI 暴露的约束必须被真消费——允许建模者配一个永不生效的绑定，
+   * 等于制造「配了不生效」这类最贵的正确性债务（界面能选、运行时不认），故在保存时就给出明确原因。
+   */
+  public void validateDeclarationForWrite(String raw) {
+    Optional<Declaration> decl = parseDeclaration(raw);
+    if (decl.isPresent() && !bindingToggle.isEnabledForCurrentTenant()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ENUM_SOURCE_INVALID,
+          "当前租户未开放「平台字典绑定」（灰度开关关闭）：请清空 enum_source 使用本地枚举，或联系管理员开放灰度");
+    }
+  }
+
+  /**
+   * 生效的选项源声明（读路径与物化路径的唯一入口，v1.1 §6.5）：灰度开关关闭的租户一律视为「未绑定」。
+   *
+   * <p><b>关闭 = 逐字节回到 L0</b>：不发起解析、不覆写 enum_values，字段里已物化的快照即 L0 口径，
+   * 运行时读到的与开启前完全一致；不做「半套降级」（那会让关闭态与开启态都难以推理）。
+   */
+  public Optional<Declaration> activeDeclaration(MetaField field) {
+    if (!bindingToggle.isEnabledForCurrentTenant()) {
+      return Optional.empty();
+    }
+    return parseDeclaration(field.getEnumSource());
+  }
+
   /** 字段是否绑定了非 inline 真源（决定是否走物化链路）。 */
   public boolean isBound(MetaField field) {
     try {
-      return parseDeclaration(field.getEnumSource()).isPresent();
+      return activeDeclaration(field).isPresent();
     } catch (RuntimeException e) {
       // 非法声明在写入口已被拦；这里（读路径）不重复抛，按「未绑定」跳过，
       // 由发布预览的 ENUM_SOURCE_* 问题项与保存入口各自表达。
@@ -132,7 +167,7 @@ public class EnumSourceApplicationService {
    */
   @Transactional
   public void materializeOnSave(MetaField field) {
-    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    Optional<Declaration> decl = activeDeclaration(field);
     if (decl.isEmpty()) {
       return;
     }
@@ -151,7 +186,7 @@ public class EnumSourceApplicationService {
   public void materializeForPublish(MetaEntity entity) {
     List<MetaField> fields = metaFieldRepository.findByEntityId(entity.getId());
     for (MetaField field : fields) {
-      Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+      Optional<Declaration> decl = activeDeclaration(field);
       if (decl.isEmpty()) {
         continue;
       }
@@ -169,7 +204,11 @@ public class EnumSourceApplicationService {
   @Transactional
   public MaterializeResult refresh(Long fieldId) {
     MetaField field = requireField(fieldId);
-    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    if (!bindingToggle.isEnabledForCurrentTenant()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ENUM_SOURCE_INVALID, "当前租户未开放「平台字典绑定」（灰度开关关闭）：无需刷新快照");
+    }
+    Optional<Declaration> decl = activeDeclaration(field);
     if (decl.isEmpty()) {
       throw CatalogErrors.of(
           CatalogErrorCodes.ENUM_SOURCE_INVALID,
@@ -198,7 +237,7 @@ public class EnumSourceApplicationService {
   public void collectFieldIssues(MetaField field, List<EntityValidationIssue> issues) {
     Optional<Declaration> decl;
     try {
-      decl = parseDeclaration(field.getEnumSource());
+      decl = activeDeclaration(field);
     } catch (RuntimeException e) {
       issues.add(
           EntityValidationIssue.fieldError(
@@ -248,13 +287,15 @@ public class EnumSourceApplicationService {
   /** 实时解析选项（doc 11 §9：{@code GET /fields/{fieldId}/options}，设计器预览用）。 */
   public List<OptionItem> liveOptions(Long fieldId) {
     MetaField field = requireField(fieldId);
-    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    Optional<Declaration> decl = activeDeclaration(field);
     if (decl.isEmpty()) {
+      // L0（未绑定）不算一次「解析」：它不是降级，是本来就没有真源——计入分母会把降级率稀释成噪声
       return parseSnapshot(field);
     }
-    return enumSourceResolver
-        .resolveDictOptions(decl.get().typeCode(), null)
-        .orElseGet(() -> parseSnapshot(field));
+    Optional<List<OptionItem>> live =
+        enumSourceResolver.resolveDictOptions(decl.get().typeCode(), null);
+    renderMetrics.recordResolve(live.isEmpty());
+    return live.orElseGet(() -> parseSnapshot(field));
   }
 
   /**
@@ -264,7 +305,7 @@ public class EnumSourceApplicationService {
    */
   public OptionsVersion optionsVersion(Long fieldId) {
     MetaField field = requireField(fieldId);
-    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    Optional<Declaration> decl = activeDeclaration(field);
     if (decl.isEmpty()) {
       return new OptionsVersion(null, null);
     }
@@ -276,7 +317,7 @@ public class EnumSourceApplicationService {
   /** 快照 vs 真源差异（doc 11 §9：{@code GET /fields/{fieldId}/option-diff}）。 */
   public DriftDiff diff(Long fieldId) {
     MetaField field = requireField(fieldId);
-    Optional<Declaration> decl = parseDeclaration(field.getEnumSource());
+    Optional<Declaration> decl = activeDeclaration(field);
     if (decl.isEmpty()) {
       return DriftDiff.empty();
     }
@@ -300,7 +341,7 @@ public class EnumSourceApplicationService {
     for (MetaField field : metaFieldRepository.listDictBoundFields()) {
       Optional<Declaration> decl;
       try {
-        decl = parseDeclaration(field.getEnumSource());
+        decl = activeDeclaration(field);
       } catch (RuntimeException e) {
         continue; // 非法声明在读路径按未绑定跳过（与 isBound 同姿态）
       }
@@ -326,6 +367,286 @@ public class EnumSourceApplicationService {
               drift.summary()));
     }
     return result;
+  }
+
+  // ===================== 可观测指标（v1.1 §8） =====================
+
+  /**
+   * 三个可观测指标快照：绑定覆盖率 / 降级率 / 漂移待刷新数。
+   *
+   * <p><b>为什么按需计算而不是常驻 Gauge</b>：漂移数需要对每个 distinct typeCode 查一次真源版本， 挂成 Gauge 会让每次 Prometheus
+   * 抓取都变成一轮字典服务调用（监控反过来压垮被监控对象）。故这里是「运维/探针显式取数」的口径； 高频趋势看 {@code bone.dict.resolve} 计数器（抓取零成本）。
+   *
+   * <p><b>指标的判别力</b>：
+   *
+   * <ul>
+   *   <li>覆盖率分母是全量 ENUM（含 L0 长尾），否则恒 100% 无信息量
+   *   <li>降级率只统计「发起了真源解析」的调用（L0 渲染不计入），突增 = 字典服务故障信号
+   *   <li>漂移待刷新数按 typeCode 去重查版本（N 个字段一次查），持续走高 = SWR 刷新链路坏
+   *   <li>真源不可达的绑定单列 {@code unresolvedBindings}，<b>不混进漂移数</b>（不可达 ≠ 落后，混一起会让两个信号互相污染）
+   * </ul>
+   */
+  public DictBindingStats dictBindingStats() {
+    List<MetaField> enumFields = metaFieldRepository.listEnumFields();
+    long total = enumFields.size();
+    long bound = 0;
+    long driftPending = 0;
+    long unresolved = 0;
+    Map<String, Optional<Long>> versionByCode = new java.util.HashMap<>();
+    for (MetaField field : enumFields) {
+      Optional<Declaration> decl;
+      try {
+        decl = activeDeclaration(field);
+      } catch (RuntimeException e) {
+        continue; // 非法声明不计入覆盖率分子（与 isBound 同姿态：读路径不因脏数据中断）
+      }
+      if (decl.isEmpty()) {
+        continue;
+      }
+      bound++;
+      String typeCode = decl.get().typeCode();
+      Optional<Long> sourceVersion =
+          versionByCode.computeIfAbsent(
+              typeCode,
+              code -> {
+                Optional<Long> v = enumSourceResolver.resolveDictVersion(code);
+                return v == null ? Optional.empty() : v;
+              });
+      if (sourceVersion.isEmpty()) {
+        unresolved++;
+        continue;
+      }
+      Long snapshotVersion = parseSnapshotVersion(field);
+      if (!sourceVersion.get().equals(snapshotVersion)) {
+        driftPending++;
+      }
+    }
+    long totalResolves = renderMetrics.totalResolves();
+    long fallbackResolves = renderMetrics.fallbackResolves();
+    return new DictBindingStats(
+        total,
+        bound,
+        ratio(bound, total),
+        totalResolves,
+        fallbackResolves,
+        ratio(fallbackResolves, totalResolves),
+        driftPending,
+        unresolved);
+  }
+
+  /** 比例值统一保留 4 位小数（0.1250），避免端点返回 0.12499999999 这类难读浮点。 */
+  private static double ratio(long numerator, long denominator) {
+    if (denominator <= 0) {
+      return 0d;
+    }
+    return Math.round(numerator * 10000d / denominator) / 10000d;
+  }
+
+  // ===================== L0→L1 迁移向导（v1.1 §5.3） =====================
+
+  /** 「本地多出项」策略：把缺失项创建进真源值域。 */
+  public static final String STRATEGY_MERGE_INTO_DICT = "MERGE_INTO_DICT";
+
+  /** 「本地多出项」策略：保留在字段快照里作为本地追加项（会持续显示为与真源的差异）。 */
+  public static final String STRATEGY_KEEP_LOCAL_OVERRIDE = "KEEP_LOCAL_OVERRIDE";
+
+  /**
+   * 迁移预览（dry-run）：本地枚举 vs 目标值域按 code/label 双向比对。
+   *
+   * <p><b>为什么预览必须与执行同源</b>：如果预览用一套比对、执行用另一套，用户确认的是 A、系统做的是 B—— 这正是「配了不生效」的近亲。故 {@link
+   * #migrateToDict} 直接调用本方法取计划，不重复实现 diff。
+   *
+   * <p><b>冲突不阻断</b>（MDM 标准姿态）：同 code 不同 label / 同 label 不同 code 只置 {@code
+   * requiresConfirmation}，由建模者裁决后再执行——机器负责报疑，人负责语义判断。
+   */
+  public MigrationPlan previewMigration(Long fieldId, String typeCode) {
+    MetaField field = requireFieldForMigration(fieldId);
+    if (typeCode == null || typeCode.isBlank()) {
+      throw CatalogErrors.of(CatalogErrorCodes.ENUM_SOURCE_INVALID, "迁移目标值域编码不能为空");
+    }
+    // 用强制档取真源：迁移是写动作（随后要落绑定 + 快照），读到旧口径会让 diff 与实际绑定结果不一致
+    Optional<List<OptionItem>> target = enumSourceResolver.resolveDictOptionsFresh(typeCode, null);
+    if (target.isEmpty()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.MIGRATE_TARGET_UNRESOLVED, "目标值域 " + typeCode + " 不可达或不存在，无法比对（迁移已拒绝）");
+    }
+    Map<String, String> local = new LinkedHashMap<>();
+    for (OptionItem item : parseSnapshot(field)) {
+      local.put(item.code(), item.label());
+    }
+    Map<String, String> dict = new LinkedHashMap<>();
+    for (OptionItem item : target.get()) {
+      dict.put(item.code(), item.label());
+    }
+
+    List<String> matched = new ArrayList<>();
+    List<String> dictOnly = new ArrayList<>();
+    List<String> localOnly = new ArrayList<>();
+    List<LabelConflict> labelConflicts = new ArrayList<>();
+    for (Map.Entry<String, String> e : local.entrySet()) {
+      String dictLabel = dict.get(e.getKey());
+      if (dictLabel == null) {
+        localOnly.add(e.getKey());
+      } else if (!dictLabel.equals(e.getValue())) {
+        labelConflicts.add(new LabelConflict(e.getKey(), e.getValue(), dictLabel));
+      } else {
+        matched.add(e.getKey());
+      }
+    }
+    for (String code : dict.keySet()) {
+      if (!local.containsKey(code)) {
+        dictOnly.add(code);
+      }
+    }
+    // 同 label 不同 code：本地这个码在真源不存在，但真源里已有同名的另一个码
+    List<CodeConflict> codeConflicts = new ArrayList<>();
+    for (String localCode : localOnly) {
+      String localLabel = local.get(localCode);
+      for (Map.Entry<String, String> d : dict.entrySet()) {
+        if (localLabel.equals(d.getValue())) {
+          codeConflicts.add(new CodeConflict(localCode, d.getKey(), localLabel));
+        }
+      }
+    }
+    return new MigrationPlan(
+        field.getId(),
+        field.getCode(),
+        field.getDisplayName(),
+        typeCode,
+        matched,
+        dictOnly,
+        localOnly,
+        labelConflicts,
+        codeConflicts,
+        !labelConflicts.isEmpty() || !codeConflicts.isEmpty());
+  }
+
+  /**
+   * 执行迁移（L0 → L1）：把字段绑定到目标值域并按策略处理「本地多出项」。
+   *
+   * <p><b>顺序即安全边界</b>：先取计划 → 冲突未确认则拒（409）→ 需要并入则先写真源（失败即拒，绝不绑定）→
+   * 最后才落绑定与快照。任何一步失败都不会留下「绑定成功但数据语义错位」的中间态。
+   *
+   * <p><b>labelOverride / hidden 覆写为何不用显式迁移</b>：ui-schema 的覆写以 <b>code</b> 为键 （{@code
+   * dictionaries[code]}），迁移不改 code（同 code 保持、缺失项新增），故覆写天然继续命中。 唯一会失配的是「同 label 不同 code」被人工裁决为采用真源
+   * code 的情形——该情形本次不自动改码， 由告警提示建模者自行处理，避免悄悄改写存量数据含义。
+   */
+  @Transactional
+  public MigrationResult migrateToDict(
+      Long fieldId, String typeCode, String localOnlyStrategy, boolean confirmConflicts) {
+    MigrationPlan plan = previewMigration(fieldId, typeCode);
+    if (plan.requiresConfirmation() && !confirmConflicts) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.MIGRATE_CONFLICT_UNCONFIRMED,
+          "存在"
+              + plan.labelConflicts().size()
+              + " 处同码不同义、"
+              + plan.codeConflicts().size()
+              + " 处同义不同码，需显式确认后才能绑定");
+    }
+    String strategy =
+        STRATEGY_MERGE_INTO_DICT.equalsIgnoreCase(localOnlyStrategy)
+            ? STRATEGY_MERGE_INTO_DICT
+            : STRATEGY_KEEP_LOCAL_OVERRIDE;
+
+    MetaField field = requireFieldForMigration(fieldId);
+    List<OptionItem> freshTarget =
+        enumSourceResolver
+            .resolveDictOptionsFresh(typeCode, null)
+            .orElseThrow(
+                () ->
+                    CatalogErrors.of(
+                        CatalogErrorCodes.MIGRATE_TARGET_UNRESOLVED,
+                        "目标值域 " + typeCode + " 在迁移执行时不可达（未做任何变更）"));
+
+    List<OptionItem> localExtras = new ArrayList<>();
+    Map<String, String> targetIndex = new LinkedHashMap<>();
+    for (OptionItem item : freshTarget) {
+      targetIndex.put(item.code(), item.label());
+    }
+    for (String code : plan.localOnly()) {
+      String label = localLabelOf(field, code);
+      localExtras.add(new OptionItem(code, label, "ACTIVE"));
+    }
+
+    int merged = 0;
+    if (STRATEGY_MERGE_INTO_DICT.equals(strategy) && !localExtras.isEmpty()) {
+      try {
+        merged = enumSourceResolver.createDictItems(typeCode, localExtras);
+      } catch (RuntimeException e) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.MIGRATE_MERGE_FAILED, "并入字典失败，字段未绑定：" + e.getMessage());
+      }
+      // 并入成功后重取真源：快照必须是「真正源此刻的样子」，否则刚建的项不会出现在选项里
+      freshTarget =
+          enumSourceResolver
+              .resolveDictOptionsFresh(typeCode, null)
+              .orElseThrow(
+                  () ->
+                      CatalogErrors.of(
+                          CatalogErrorCodes.MIGRATE_MERGE_FAILED, "并入字典后重取真源失败（字段未绑定）"));
+      targetIndex.clear();
+      for (OptionItem item : freshTarget) {
+        targetIndex.put(item.code(), item.label());
+      }
+    }
+
+    List<OptionItem> snapshot = new ArrayList<>(freshTarget);
+    int keptLocal = 0;
+    if (STRATEGY_KEEP_LOCAL_OVERRIDE.equals(strategy)) {
+      for (OptionItem extra : localExtras) {
+        if (!targetIndex.containsKey(extra.code())) {
+          snapshot.add(extra);
+          keptLocal++;
+        }
+      }
+    }
+
+    Declaration decl = new Declaration("dict", MODE_SNAPSHOT, typeCode, declarationJson(typeCode));
+    applyMaterialization(field, decl, snapshot, "migrate");
+    metaFieldRepository.update(field);
+    log.info(
+        "L0→L1 迁移完成: fieldId={}, typeCode={}, strategy={}, snapshot={}, merged={}, keptLocal={}",
+        fieldId,
+        typeCode,
+        strategy,
+        snapshot.size(),
+        merged,
+        keptLocal);
+    return new MigrationResult(fieldId, typeCode, snapshot.size(), merged, keptLocal);
+  }
+
+  /** 迁移前置校验：灰度开放 + 字段存在 + 尚未绑定（重复迁移会冲掉既有快照语义）。 */
+  private MetaField requireFieldForMigration(Long fieldId) {
+    if (!bindingToggle.isEnabledForCurrentTenant()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.ENUM_SOURCE_INVALID, "当前租户未开放「平台字典绑定」（灰度开关关闭）：迁移不可用");
+    }
+    MetaField field = requireField(fieldId);
+    if (activeDeclaration(field).isPresent()) {
+      throw CatalogErrors.of(
+          CatalogErrorCodes.MIGRATE_ALREADY_BOUND,
+          "字段「" + field.getDisplayName() + "」已绑定真源，无需再迁移（如需换绑请直接编辑选项源）");
+    }
+    return field;
+  }
+
+  private String localLabelOf(MetaField field, String code) {
+    for (OptionItem item : parseSnapshot(field)) {
+      if (item.code().equals(code)) {
+        return item.label();
+      }
+    }
+    return code;
+  }
+
+  /** 迁移写入的 enum_source 声明（不含 resolved* 元数据，由 applyMaterialization 回写）。 */
+  private JsonNode declarationJson(String typeCode) {
+    ObjectNode root = objectMapper.createObjectNode();
+    root.put("type", "dict");
+    root.put("mode", MODE_SNAPSHOT);
+    root.putObject("ref").put("typeCode", typeCode);
+    return root;
   }
 
   // ===================== 内部实现 =====================
@@ -518,6 +839,80 @@ public class EnumSourceApplicationService {
       boolean resolved,
       boolean drift,
       String driftSummary) {}
+
+  /**
+   * 迁移计划（v1.1 §5.3，预览与执行同源）。
+   *
+   * @param matched code 与 label 都一致的项（零冲突绑定）
+   * @param dictOnly 真源多出的项（additive，绑定后自然进入选项）
+   * @param localOnly 本地多出的项（需选策略：并入字典 / 保留为本地追加项）
+   * @param labelConflicts 同 code 不同 label（告警不阻断，须确认）
+   * @param codeConflicts 同 label 不同 code（告警不阻断，须确认编码口径）
+   * @param requiresConfirmation 存在任一冲突即需显式确认
+   */
+  public record MigrationPlan(
+      Long fieldId,
+      String fieldCode,
+      String fieldName,
+      String typeCode,
+      List<String> matched,
+      List<String> dictOnly,
+      List<String> localOnly,
+      List<LabelConflict> labelConflicts,
+      List<CodeConflict> codeConflicts,
+      boolean requiresConfirmation) {}
+
+  /**
+   * 同 code 不同 label（v1.1 §5.3「同码不同义」告警）。
+   *
+   * @param localLabel 本地枚举里的显示名（存量数据回显正在用）
+   * @param dictLabel 真源里的显示名（改绑后新渲染会变成这个）
+   */
+  public record LabelConflict(String code, String localLabel, String dictLabel) {}
+
+  /**
+   * 同 label 不同 code（v1.1 §5.3「同义不同码」告警）。
+   *
+   * @param localCode 本地枚举的码（存量数据里存的就是它）
+   * @param dictCode 真源里同名的另一个码
+   */
+  public record CodeConflict(String localCode, String dictCode, String label) {}
+
+  /**
+   * 迁移结果。
+   *
+   * @param snapshotCount 绑定后的快照项数
+   * @param mergedIntoDict 本次写入真源的项数（KEEP_LOCAL_OVERRIDE 恒 0）
+   * @param keptLocalOverrides 保留在快照里的本地追加项数（会持续显示为与真源的差异）
+   */
+  public record MigrationResult(
+      Long fieldId,
+      String typeCode,
+      int snapshotCount,
+      int mergedIntoDict,
+      int keptLocalOverrides) {}
+
+  /**
+   * 三个可观测指标快照（v1.1 §8）。
+   *
+   * @param totalEnumFields 全部未删 ENUM 字段数（覆盖率分母）
+   * @param boundEnumFields 生效绑定真源的 ENUM 字段数（灰度关闭的租户按未绑定计）
+   * @param bindingCoverage 绑定覆盖率 = boundEnumFields / totalEnumFields（4 位小数）
+   * @param totalResolves 进程内累计真源解析次数（不含 L0 渲染）
+   * @param fallbackResolves 其中回退快照的次数
+   * @param fallbackRate 降级率 = fallbackResolves / totalResolves（4 位小数）
+   * @param driftPending 快照版本落后于真源版本的绑定数（含从未物化）
+   * @param unresolvedBindings 真源不可达、无法判定漂移的绑定数
+   */
+  public record DictBindingStats(
+      long totalEnumFields,
+      long boundEnumFields,
+      double bindingCoverage,
+      long totalResolves,
+      long fallbackResolves,
+      double fallbackRate,
+      long driftPending,
+      long unresolvedBindings) {}
 
   /**
    * 快照 vs 真源差异（doc 11 §6.3 ENUM_SOURCE_DRIFT 的结构化载荷）。

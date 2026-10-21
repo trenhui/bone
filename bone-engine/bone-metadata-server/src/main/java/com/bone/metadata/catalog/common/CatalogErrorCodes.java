@@ -65,6 +65,23 @@ public final class CatalogErrorCodes {
    */
   public static final String ENUM_SOURCE_RESOLVE_FAILED = "META_ENUM_SOURCE_RESOLVE_FAILED";
 
+  /**
+   * L0→L1 迁移：目标值与本地枚举存在「同码不同义 / 同义不同码」告警，需建模者确认后才可绑定。
+   *
+   * <p>MDM match/merge 的标准姿态：机器报疑、人做裁决——<b>告警不阻断</b>，但必须显式确认， 避免「静默把 1=男 的旧数据挂到 1=未知
+   * 的新值域上」这类不可逆语义错位。
+   */
+  public static final String MIGRATE_CONFLICT_UNCONFIRMED = "META_MIGRATE_CONFLICT_UNCONFIRMED";
+
+  /** L0→L1 迁移：字段已绑定真源（重复迁移会把既有快照与覆写关系冲掉）。 */
+  public static final String MIGRATE_ALREADY_BOUND = "META_MIGRATE_ALREADY_BOUND";
+
+  /** L0→L1 迁移：目标值域不可达 / 不存在（无法做 diff，迁移无从判定）。 */
+  public static final String MIGRATE_TARGET_UNRESOLVED = "META_MIGRATE_TARGET_UNRESOLVED";
+
+  /** L0→L1 迁移：「并入字典」分支写入真源失败（fail-closed：字典侧没建成就绝不绑定）。 */
+  public static final String MIGRATE_MERGE_FAILED = "META_MIGRATE_MERGE_FAILED";
+
   // ===== 关系（catalog META_RELATION_*）=====
 
   /** 关系不存在（含跨租户不可见）。 */

@@ -267,6 +267,57 @@ export interface EnumSourceDiff {
   resolved: boolean;
 }
 
+/** 同码不同义（本地 label 与真源 label 不一致；告警不阻断，需人工确认） */
+export interface DictMigrationLabelConflict {
+  code: string;
+  localLabel: string;
+  dictLabel: string;
+}
+
+/** 同义不同码（同 label 在真源对应另一个 code；告警不阻断，需人工确认编码口径） */
+export interface DictMigrationCodeConflict {
+  localCode: string;
+  dictCode: string;
+  label: string;
+}
+
+/**
+ * L0→L1 迁移计划（preview 端点返回，v1.1 §5.3）。
+ *
+ * 分类语义：matched 零冲突；dictOnly = 真源多出（additive 直接可用）；
+ * localOnly = 本地多出（需选策略）；两类 conflicts 只告警不阻断。
+ */
+export interface DictMigrationPlan {
+  fieldId: string;
+  fieldCode: string;
+  fieldName: string;
+  typeCode: string;
+  matched: string[];
+  dictOnly: string[];
+  localOnly: string[];
+  labelConflicts: DictMigrationLabelConflict[];
+  codeConflicts: DictMigrationCodeConflict[];
+  /** 存在任一冲突 → 执行时必须显式确认，否则后端 409 */
+  requiresConfirmation: boolean;
+}
+
+/** 迁移执行请求 */
+export interface DictMigrationReq {
+  typeCode: string;
+  /** MERGE_INTO_DICT = 缺失项写入真源；KEEP_LOCAL_OVERRIDE = 保留为本地追加项（默认） */
+  localOnlyStrategy?: 'MERGE_INTO_DICT' | 'KEEP_LOCAL_OVERRIDE';
+  confirmConflicts?: boolean;
+}
+
+/** 迁移执行结果 */
+export interface DictMigrationResult {
+  fieldId: string;
+  typeCode: string;
+  snapshotCount: number;
+  mergedIntoDict: number;
+  keptLocalOverrides: number;
+}
+
 /**
  * 解析 enum_source JSON 文本为声明对象；空/非法返回 null（inline 语义，调用方按无绑定处理）。
  * 与 parseEnumValues 同姿态：不抛异常，脏数据静默按 inline 兼容存量。

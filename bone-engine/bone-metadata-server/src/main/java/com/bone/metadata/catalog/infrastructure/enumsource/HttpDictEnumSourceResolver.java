@@ -161,6 +161,44 @@ public class HttpDictEnumSourceResolver implements EnumSourceResolver {
     }
   }
 
+  /**
+   * L0→L1 迁移「并入字典」：把本地枚举里真源没有的项逐条创建到目标值域（v1.1 §5.3）。
+   *
+   * <p><b>逐条创建而非批量端点</b>：bone-system 目前只提供单条 {@code POST /dict/items}，没有批量契约； 在 catalog
+   * 侧伪批量（并发/事务补偿）会把「部分成功」的中间态泄漏给调用方，而迁移只需要「全成或全败」。 故逐条建、任一条失败即抛，由应用层转成 {@code
+   * META_MIGRATE_MERGE_FAILED} 且<b>不绑定</b>（fail-closed）。
+   *
+   * <p><b>已存在同 code 的并发情形</b>：上游唯一性冲突会拒绝创建，此时直接抛错——迁移是低频人工动作， 让建模者看到「有人刚加过这个码」比自动忽略更安全。
+   */
+  @Override
+  public int createDictItems(String typeCode, List<OptionItem> items) {
+    if (typeCode == null || typeCode.isBlank() || items == null || items.isEmpty()) {
+      return 0;
+    }
+    int created = 0;
+    for (OptionItem item : items) {
+      Map<String, Object> body = new HashMap<>();
+      body.put("typeCode", typeCode);
+      body.put("code", item.code());
+      body.put("label", item.label());
+      try {
+        systemRestClient
+            .post()
+            .uri("/api/v1/system/dict/items")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .retrieve()
+            .body(JsonNode.class);
+        created++;
+      } catch (Exception e) {
+        throw new IllegalStateException(
+            "写入真源字典项失败（已建 " + created + "/" + items.size() + "）: code=" + item.code(), e);
+      }
+    }
+    return created;
+  }
+
   private List<OptionItem> fetchOptions(String typeCode, String language) throws Exception {
     List<OptionItem> options = fetchOptionsRaw(typeCode, language);
     // 空结果二义性消解（S8 悬空绑定拒绝的执行点）：

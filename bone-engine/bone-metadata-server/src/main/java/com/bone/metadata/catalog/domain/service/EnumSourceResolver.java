@@ -56,6 +56,19 @@ public interface EnumSourceResolver {
   Optional<Long> resolveDictVersion(String typeCode);
 
   /**
+   * 在真源中创建缺失的字典项（L0→L1 迁移的「并入字典」分支，v1.1 §5.3）。
+   *
+   * <p><b>为什么放在端口而不是让应用层拼 HTTP</b>：应用层不该知道 bone-system 的端点形态与鉴权； 且写入失败必须能被应用层转成 fail-closed 的
+   * {@code META_MIGRATE_MERGE_FAILED}——「字典侧没建成就绝不绑定」。
+   *
+   * @param typeCode 目标值域编码
+   * @param items 待创建的项（code/label 来自本地枚举）
+   * @return 实际创建的项数
+   * @throws IllegalStateException 真源写入失败（权限不足 / 值域不存在 / 上游 5xx）
+   */
+  int createDictItems(String typeCode, List<OptionItem> items);
+
+  /**
    * 选项视图（领域层只认业务字段 code/label/state，不感知 bone-system 的存储与传输形态）。
    *
    * <p><b>三态生命周期</b>（界面设计器字典打通 v1.1 §4.5）：{@code state} ∈ ACTIVE / DEPRECATED（DISABLED 不进 {@code

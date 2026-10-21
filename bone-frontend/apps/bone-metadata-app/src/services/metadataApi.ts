@@ -34,6 +34,9 @@ import type {
   EnumOption,
   EnumSourceDiff,
   EnumSourceRefreshResult,
+  DictMigrationPlan,
+  DictMigrationReq,
+  DictMigrationResult,
 } from '../types';
 
 export { setQiankunToken };
@@ -212,6 +215,38 @@ export const metadataFieldOptionsApi = {
   version: (fieldId: SnowflakeId) =>
     api.get<never, ApiResponse<{ sourceVersion: number | null; snapshotVersion: number | null }>>(
       `${META}/fields/${fieldId}/options/version`,
+    ),
+
+  /**
+   * L0→L1 迁移预览（v1.1 §5.3）：本地枚举 vs 目标值域的匹配/合并计划，**不产生任何变更**。
+   *
+   * 必须由用户先看到计划再确认——预览与执行在后端共用同一套比对，前端不能自行推算分类，
+   * 否则「确认的是 A、系统做的是 B」。
+   */
+  migrationPreview: (fieldId: SnowflakeId, typeCode: string) =>
+    api.get<never, ApiResponse<DictMigrationPlan>>(
+      `${META}/fields/${fieldId}/migrate-to-dict/preview`,
+      { params: { typeCode } },
+    ),
+
+  /** 执行 L0→L1 迁移（存在冲突时必须 confirmConflicts=true，否则后端 409）。 */
+  migrateToDict: (fieldId: SnowflakeId, body: DictMigrationReq) =>
+    api.post<never, ApiResponse<DictMigrationResult>>(
+      `${META}/fields/${fieldId}/migrate-to-dict`,
+      body,
+    ),
+};
+
+/**
+ * 字典绑定灰度开关状态（v1.1 §6.5）。
+ *
+ * 前端消费点：灰度关闭时「绑定平台字典 / 升级为平台字典」入口必须禁用并说明原因——
+ * 只在后端拒绝会让用户填完表单才吃 400（UI 暴露的约束必须真消费）。
+ */
+export const dictBindingToggleApi = {
+  state: () =>
+    api.get<never, ApiResponse<{ tenantId: string; enabled: boolean; source: string }>>(
+      `${META}/dict-binding/toggle`,
     ),
 };
 

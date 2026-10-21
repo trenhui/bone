@@ -2,6 +2,7 @@ package com.bone.metadata.config;
 
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
 import com.bone.metadata.catalog.domain.gateway.CurrentUserProvider;
+import com.bone.metadata.catalog.domain.gateway.DictRenderMetricsPort;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.repository.IamAppRoleRepository;
@@ -15,6 +16,7 @@ import com.bone.metadata.catalog.infrastructure.gateway.JdbcPhysicalStructureGat
 import com.bone.metadata.catalog.infrastructure.gateway.SecurityContextCurrentUserAdapter;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
+import com.bone.metadata.catalog.infrastructure.observability.MicrometerDictRenderMetrics;
 import com.bone.metadata.catalog.infrastructure.tenant.TenantProviderAdapter;
 import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.runtime.CaffeineCachedRuntimeEntityCatalog;
@@ -22,6 +24,7 @@ import com.bone.metadata.runtime.CatalogRuntimeEntityProvider;
 import com.bone.metadata.runtime.RedisCachedRuntimeEntityCatalog;
 import com.bone.metadata.runtime.RuntimeEntityCacheEvictor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -61,6 +64,12 @@ public class CatalogInfrastructureConfiguration {
   @Bean
   public TenantProvider tenantProviderAdapter() {
     return new TenantProviderAdapter();
+  }
+
+  /** 字典绑定渲染指标端口（v1.1 §8 三个可观测指标：降级率），Micrometer 计数。 */
+  @Bean
+  public DictRenderMetricsPort dictRenderMetricsPort(MeterRegistry meterRegistry) {
+    return new MicrometerDictRenderMetrics(meterRegistry);
   }
 
   /** MVP-11 物理结构对齐网关：按已发布 RUNTIME 实体模型建表/加列（幂等非破坏 DDL）。 */

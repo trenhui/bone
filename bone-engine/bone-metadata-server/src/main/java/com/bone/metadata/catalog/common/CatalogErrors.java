@@ -47,6 +47,11 @@ public final class CatalogErrors {
           // 枚举选项源（doc/design/modules/11 §9）
           Map.entry(CatalogErrorCodes.ENUM_SOURCE_INVALID, 400),
           Map.entry(CatalogErrorCodes.ENUM_SOURCE_RESOLVE_FAILED, 502),
+          // L0→L1 迁移向导（界面设计器字典打通 v1.1 §5.3）
+          Map.entry(CatalogErrorCodes.MIGRATE_CONFLICT_UNCONFIRMED, 409),
+          Map.entry(CatalogErrorCodes.MIGRATE_ALREADY_BOUND, 409),
+          Map.entry(CatalogErrorCodes.MIGRATE_TARGET_UNRESOLVED, 502),
+          Map.entry(CatalogErrorCodes.MIGRATE_MERGE_FAILED, 502),
           // 关系
           Map.entry(CatalogErrorCodes.RELATION_NOT_FOUND, 404),
           // 状态机动作定义

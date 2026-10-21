@@ -565,6 +565,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_DOMAIN_ERROR` | 409 | 发布期物理结构漂移拦截：模型类型与物理列类型不兼容（doc2a §328） |
 | `META_ENUM_SOURCE_INVALID` | 400 | 选项源（enum_source）声明非法：非 JSON / 缺 ref.typeCode / mode 越界（doc 11 §9） |
 | `META_ENUM_SOURCE_RESOLVE_FAILED` | 502 | 选项源解析失败：字典服务不可达或返回空值域，保存/发布整体回滚——不接受「绑定成功但选项为空」（doc 11 §9） |
+| `META_MIGRATE_CONFLICT_UNCONFIRMED` | 409 | L0→L1 迁移存在「同码不同义/同义不同码」告警但未确认（MDM match/merge：机器报疑、人做裁决，需 `confirmConflicts=true`；界面设计器字典打通 v1.1 §5.3） |
+| `META_MIGRATE_ALREADY_BOUND` | 409 | 字段已绑定真源，不可重复迁移（会冲掉既有快照与覆写关系；v1.1 §5.3） |
+| `META_MIGRATE_TARGET_UNRESOLVED` | 502 | 迁移目标值域不可达或不存在，无法做 diff ⇒ 迁移无从判定（v1.1 §5.3） |
+| `META_MIGRATE_MERGE_FAILED` | 502 | 「并入字典」分支写入真源失败——fail-closed：字典侧没建成就绝不绑定（v1.1 §5.3） |
 
 > `META_ENTITY_CODE_CONFLICT` / `META_ENTITY_TABLE_NAME_CONFLICT` 两处收口前经 `of(String)`
 > 兜底成 **500**，现为 **409**——属**有意的状态纠正**，不是回归。

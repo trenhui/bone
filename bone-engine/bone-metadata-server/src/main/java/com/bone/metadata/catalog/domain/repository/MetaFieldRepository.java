@@ -54,4 +54,14 @@ public interface MetaFieldRepository extends Repository<MetaField, Long> {
         .eq(false)
         .list();
   }
+
+  /**
+   * 全部未删 ENUM 字段（绑定覆盖率的分母，界面设计器字典打通 v1.1 §8 可观测指标）。
+   *
+   * <p>覆盖率 = 已绑定真源的 ENUM 字段 / 全部 ENUM 字段：分母必须是「全量 ENUM」而不是「已绑定」， 否则指标恒为 100%，长期看不到 L0
+   * 长尾——指标失去判别力比没有指标更糟。
+   */
+  default List<MetaField> listEnumFields() {
+    return query().where(MetaField::getType).eq("ENUM").and(MetaField::getDeleted).eq(false).list();
+  }
 }
