@@ -24,6 +24,10 @@
         <module>bone-metadata-server</module>
         <module>bone-metadata-engine</module>
         <module>studio-generator</module>
+        <module>bone-accounting-engine</module>
+        <module>bone-app-expense</module>
+        <module>bone-app-purchase</module>
+        <module>bone-boot</module>
     </modules>
     <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>

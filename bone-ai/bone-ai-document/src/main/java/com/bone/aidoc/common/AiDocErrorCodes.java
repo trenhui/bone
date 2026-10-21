@@ -22,4 +22,11 @@ public final class AiDocErrorCodes {
 
   /** 文档读取失败（400）：输入流为空 / 读取异常。 */
   public static final String READ_FAILED = "AI_DOC_READ_FAILED";
+
+  /**
+   * OCR / 视觉识别服务不可用（502）：重试耗尽 / 非 2xx / 响应契约不符 / 调用被中断。
+   *
+   * <p>2026-10-21 补齐：HttpOcrClient 的抛出点与台账（Bone-错误码登记.md §6）均已就位，仅缺本常量定义——缺此常量则该模块无法编译。
+   */
+  public static final String OCR_PROVIDER_FAIL = "AI_DOC_OCR_PROVIDER_FAIL";
 }

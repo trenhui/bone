@@ -26,4 +26,11 @@ public class MasterDataEntityDTO {
   private String governanceTier;
   private Boolean isVersioning;
   private Boolean workflowEnabled;
+
+  // 审批流审计字段（UC-MD-T7，前端溯源展示）
+  private Long submittedBy;
+  private LocalDateTime submittedAt;
+  private Long approvedBy;
+  private LocalDateTime approvedAt;
+  private String rejectReason;
 }

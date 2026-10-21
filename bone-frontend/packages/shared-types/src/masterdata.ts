@@ -7,9 +7,17 @@ export interface MasterDataEntity {
   name: string;
   description?: string;
   category?: string;
-  status: 'DRAFT' | 'PUBLISHED';
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'DISABLED' | 'RETIRED';
   createdAt: string;
   updatedAt: string;
+  governanceTier?: string;
+  workflowEnabled?: boolean;
+  // 审批流审计字段（UC-MD-T7）
+  submittedBy?: string | number;
+  submittedAt?: string;
+  approvedBy?: string | number;
+  approvedAt?: string;
+  rejectReason?: string;
 }
 
 export interface MasterDataField {

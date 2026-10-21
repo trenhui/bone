@@ -3,12 +3,16 @@ package com.bone.ai.gateway.config;
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmGatewayPolicies;
+import com.bone.ai.gateway.domain.gateway.ContentSafetyGuard;
+import com.bone.ai.gateway.domain.gateway.LlmMetrics;
 import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
+import com.bone.ai.gateway.domain.gateway.ModelRouter;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.PromptInjectionGuard;
 import com.bone.ai.gateway.domain.gateway.StructuredOutputValidator;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
+import com.bone.ai.gateway.domain.service.NoopLlmMetrics;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
@@ -56,15 +60,23 @@ public class LlmGatewayAutoConfiguration {
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
       TenantProvider tenantProvider,
-      LlmGatewayPolicies policies) {
+      LlmGatewayPolicies policies,
+      ObjectProvider<ModelRouter> modelRouter) {
     return new LlmGatewayApplicationService(
-        llmClient, domainEventPublisher, tenantProvider, policies);
+        llmClient,
+        domainEventPublisher,
+        tenantProvider,
+        policies,
+        modelRouter.getIfAvailable()); // 缺省 = 透传（按请求模型原样调用）
   }
 
   /**
-   * 治理策略组（脱敏 / 输出校验 / 缓存 / 配额）。
+   * 治理策略组（脱敏 / 输出校验 / 缓存 / 配额 / 注入防护 / 度量 / 内容安全）。
    *
    * <p>各项均可按配置关闭；默认开启脱敏与输出校验（合规默认），缓存与配额默认关闭（需按部署容量显式开启）。
+   *
+   * <p>2026-10-21 补齐：{@code LlmMetrics} 与 {@code ContentSafetyGuard} 两个端口此前已就位却无消费方—— 接入方以
+   * {@code @Bean} 覆盖即被忽略 （配了不生效）。此处按「有则用、无则不启用」消费：度量缺省 Noop，内容安全默认关闭（启发式误伤风险，启用方自担）。
    */
   @Bean
   @ConditionalOnMissingBean
@@ -74,7 +86,9 @@ public class LlmGatewayAutoConfiguration {
       ObjectProvider<StructuredOutputValidator> validator,
       ObjectProvider<LlmResponseCache> cache,
       ObjectProvider<TenantQuotaGuard> quota,
-      ObjectProvider<PromptInjectionGuard> injectionGuard) {
+      ObjectProvider<PromptInjectionGuard> injectionGuard,
+      ObjectProvider<LlmMetrics> metrics,
+      ObjectProvider<ContentSafetyGuard> contentSafetyGuard) {
     PiiRedactor redactor =
         piiRedactor.getIfAvailable(() -> new RegexPiiRedactor(props.isPiiRedactionEnabled()));
     StructuredOutputValidator outputValidator =
@@ -98,7 +112,12 @@ public class LlmGatewayAutoConfiguration {
     PromptInjectionGuard guard =
         injectionGuard.getIfAvailable(
             () -> props.isPromptInjectionGuardEnabled() ? new HeuristicInjectionGuard() : null);
-    return new LlmGatewayPolicies(redactor, outputValidator, responseCache, quotaGuard, guard);
+    // 度量：缺省 Noop（零依赖）；接入 Micrometer / Prometheus 者以 @Bean 覆盖即生效
+    LlmMetrics metricsPort = metrics.getIfAvailable(() -> NoopLlmMetrics.INSTANCE);
+    // 输出内容安全：默认不启用（启发式误伤风险）；接入语义级 / 云端内容安全者以 @Bean 覆盖即生效
+    ContentSafetyGuard safetyGuard = contentSafetyGuard.getIfAvailable(() -> null);
+    return new LlmGatewayPolicies(
+        redactor, outputValidator, responseCache, quotaGuard, guard, metricsPort, safetyGuard);
   }
 
   @Bean
@@ -108,10 +127,17 @@ public class LlmGatewayAutoConfiguration {
     return new SpringDomainEventPublisher(applicationEventPublisher);
   }
 
-  /** 租户解析（计量事件用；application 层经端口取租户，不直连 TenantContext）。 */
+  /**
+   * 租户解析（网关侧端口）。
+   *
+   * <p>2026-10-21 更名（原 {@code tenantProvider}）：bone-ai 的 trace / gateway / rag 三个自动配置都注册了名为 {@code
+   * tenantProvider} 的 Bean， 而 Spring Boot 3 默认禁止 Bean 定义覆盖（{@code
+   * allow-bean-definition-overriding=false}）—— 三者同在一个 classpath（如 bone-ai-app 聚合）即抛 {@code
+   * BeanDefinitionOverrideException}，整个上下文起不来。三者端口类型本就互不相同（按类型注入不受影响），此处按模块前缀唯一化。
+   */
   @Bean
   @ConditionalOnMissingBean
-  public TenantProvider tenantProvider() {
+  public TenantProvider gatewayTenantProvider() {
     return new TenantContextProviderAdapter();
   }
 

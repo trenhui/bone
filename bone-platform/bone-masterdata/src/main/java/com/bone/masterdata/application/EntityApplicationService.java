@@ -13,6 +13,7 @@ import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import com.bone.masterdata.common.MasterDataErrorCodes;
 import com.bone.masterdata.common.MasterDataErrors;
+import com.bone.masterdata.domain.gateway.CurrentUserPort;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort.MetaEntityRow;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
@@ -43,6 +44,7 @@ public class EntityApplicationService {
   private final MasterDataFieldRepository fieldRepository;
   private final MetaEntityCatalogPort metaEntityCatalogPort;
   private final MasterdataDomainEventPublisher domainEventPublisher;
+  private final CurrentUserPort currentUser;
 
   @Capability(
       name = "CreateMasterDataEntity",
@@ -124,7 +126,109 @@ public class EntityApplicationService {
     if (entity == null) {
       throw NotFoundException.of("主数据实体不存在");
     }
+    // 工作流实体（L2/L3）须审批通过后方可发布；L1 轻量实体直发（workflowEnabled=false）。
+    if (Boolean.TRUE.equals(entity.getWorkflowEnabled())
+        && entity.getStatus() != MasterDataEntityStatus.APPROVED) {
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED,
+          "工作流实体需审批通过后方可发布（当前状态：" + entity.getStatus().name() + "）");
+    }
     entity.publish();
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
+  }
+
+  /**
+   * 提交评审（DRAFT → PENDING_REVIEW）。属实体起草动作，与 create/update 同权（write）。
+   *
+   * <p>提交人回填审计字段；审批流后续由 {@link #approve} / {@link #reject} 驱动。
+   */
+  @Capability(
+      name = "SubmitMasterDataEntityReview",
+      description = "提交主数据实体评审",
+      inputSchema = "{\"id\": \"long\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = false,
+      timeout = 15)
+  @Transactional
+  public void submitForReview(Long id) {
+    MasterDataEntity entity = entityRepository.findById(id);
+    if (entity == null) {
+      throw NotFoundException.of("主数据实体不存在");
+    }
+    entity.submitForReview();
+    entity.markSubmittedBy(currentUser.requireUserId());
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
+  }
+
+  /**
+   * 审批通过（PENDING_REVIEW → APPROVED）。审批是独立治理动作（approve 权限码）。
+   *
+   * <p><b>SoD 硬校验</b>：审批人不得为提交人，否则评审流只是摆设。
+   */
+  @Capability(
+      name = "ApproveMasterDataEntity",
+      description = "审批通过主数据实体",
+      inputSchema = "{\"id\": \"long\", \"comment\": \"string\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = true,
+      cost = 1,
+      retryable = false,
+      timeout = 15)
+  @Transactional
+  public void approve(Long id, String comment) {
+    MasterDataEntity entity = entityRepository.findById(id);
+    if (entity == null) {
+      throw NotFoundException.of("主数据实体不存在");
+    }
+    if (entity.getStatus() != MasterDataEntityStatus.PENDING_REVIEW) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED, "实体未处于待评审态");
+    }
+    Long uid = currentUser.requireUserId();
+    if (uid.equals(entity.getSubmittedBy())) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.SOD_VIOLATION, "审批人不得为提交人");
+    }
+    entity.markApprovedBy(uid);
+    entity.approve();
+    entityRepository.update(entity);
+    domainEventPublisher.publishFrom(entity);
+  }
+
+  /**
+   * 驳回（PENDING_REVIEW → DRAFT，退回起草人）。原因必填，否则起草人无从改起。
+   *
+   * <p>同样受 SoD 约束（只拦通过不拦驳回等于半个门禁）。
+   */
+  @Capability(
+      name = "RejectMasterDataEntity",
+      description = "驳回主数据实体",
+      inputSchema = "{\"id\": \"long\", \"reason\": \"string\"}",
+      outputSchema = "{\"success\": \"boolean\"}",
+      idempotent = false,
+      cost = 1,
+      retryable = false,
+      timeout = 15)
+  @Transactional
+  public void reject(Long id, String reason) {
+    MasterDataEntity entity = entityRepository.findById(id);
+    if (entity == null) {
+      throw NotFoundException.of("主数据实体不存在");
+    }
+    if (entity.getStatus() != MasterDataEntityStatus.PENDING_REVIEW) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED, "实体未处于待评审态");
+    }
+    if (reason == null || reason.isBlank()) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.REJECT_REASON_REQUIRED, "驳回必须填写原因");
+    }
+    Long uid = currentUser.requireUserId();
+    if (uid.equals(entity.getSubmittedBy())) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.SOD_VIOLATION, "审批人不得为提交人");
+    }
+    entity.markRejectedBy(uid);
+    entity.reject(reason);
     entityRepository.update(entity);
     domainEventPublisher.publishFrom(entity);
   }
@@ -294,6 +398,11 @@ public class EntityApplicationService {
         .governanceTier(entity.getGovernanceTier())
         .isVersioning(entity.getIsVersioning())
         .workflowEnabled(entity.getWorkflowEnabled())
+        .submittedBy(entity.getSubmittedBy())
+        .submittedAt(entity.getSubmittedAt())
+        .approvedBy(entity.getApprovedBy())
+        .approvedAt(entity.getApprovedAt())
+        .rejectReason(entity.getRejectReason())
         .build();
   }
 }

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="boneChip" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4096ff" />
+      <stop offset="0.55" stop-color="#1677ff" />
+      <stop offset="1" stop-color="#0958d9" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#boneChip)" />
+  <!-- 人字梁标记：与 src/components/BrandMark.tsx 的 32视框几何一致（scale 1.5 → 45px 宽，边距约 9.5px）
+       图形占芯片约 70%，保证 16px favicon 下笔画仍有 2px 以上 -->
+  <g transform="translate(8, 8) scale(1.5)" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 24.5 L16 7.5 L26 24.5" stroke-width="6" />
+  </g>
+</svg>

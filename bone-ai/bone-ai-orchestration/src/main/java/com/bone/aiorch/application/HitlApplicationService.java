@@ -11,6 +11,7 @@ import com.bone.aiorch.domain.hitl.ReasonType;
 import com.bone.core.exception.BizException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,6 +163,18 @@ public class HitlApplicationService {
       throw new BizException(404, "hitl item not found: " + itemId, AiOrchErrorCodes.NOT_FOUND);
     }
     return item;
+  }
+
+  /**
+   * 按 ID 取<b>待裁决</b>项（不含终态；查无则空 Optional，不抛）。
+   *
+   * <p>2026-10-21 补齐：产品域的额度收尾（确认提交 / 否决释放 / 改额重占）需要在裁决<b>之前</b>读到该待决项的场景与建议金额，才能定位对应的额度占位—— 而
+   * {@link #findById} 是主键直查（读终态）且查无即抛 404，不适合作为裁决前的可选读取口。
+   *
+   * <p>租户口径与仓储一致（{@code findPendingById(tenantId, id)} 本身按租户过滤），故无需再次校验。
+   */
+  public Optional<HitlItem> findPendingById(String tenantId, String itemId) {
+    return repository.findPendingById(tenantId, itemId);
   }
 
   /**

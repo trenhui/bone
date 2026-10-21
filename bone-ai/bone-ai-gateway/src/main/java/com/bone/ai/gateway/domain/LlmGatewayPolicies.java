@@ -1,5 +1,7 @@
 package com.bone.ai.gateway.domain;
 
+import com.bone.ai.gateway.domain.gateway.ContentSafetyGuard;
+import com.bone.ai.gateway.domain.gateway.LlmMetrics;
 import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.PromptInjectionGuard;
@@ -18,16 +20,45 @@ import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
  * @param responseCache 精确响应缓存（仅 temperature=0）
  * @param quotaGuard 租户配额闸门
  * @param injectionGuard 提示注入防护（OWASP LLM01，仅 user 消息，默认关闭）
+ * @param metrics 可观测性发射点（成本 / 延迟 / 错误 / 熔断；缺省 = Noop，该维度不观测）
+ * @param contentSafetyGuard 输出内容安全（OWASP LLM05/09，默认关闭，启用方自担误伤）
  */
 public record LlmGatewayPolicies(
     PiiRedactor piiRedactor,
     StructuredOutputValidator outputValidator,
     LlmResponseCache responseCache,
     TenantQuotaGuard quotaGuard,
-    PromptInjectionGuard injectionGuard) {
+    PromptInjectionGuard injectionGuard,
+    LlmMetrics metrics,
+    ContentSafetyGuard contentSafetyGuard) {
+
+  /**
+   * 兼容旧调用点：仅 5 项基础策略（不含量化发射点 / 内容安全）。
+   *
+   * <p>2026-10-21 补齐：策略组按设计继续长（度量 / 内容安全两个端口已就位），用重载承接旧形态—— 新增治理维度不再波及既有装配点与测试。
+   */
+  public LlmGatewayPolicies(
+      PiiRedactor piiRedactor,
+      StructuredOutputValidator outputValidator,
+      LlmResponseCache responseCache,
+      TenantQuotaGuard quotaGuard,
+      PromptInjectionGuard injectionGuard) {
+    this(piiRedactor, outputValidator, responseCache, quotaGuard, injectionGuard, null, null);
+  }
+
+  /** 兼容旧调用点：含量化发射点，无内容安全。 */
+  public LlmGatewayPolicies(
+      PiiRedactor piiRedactor,
+      StructuredOutputValidator outputValidator,
+      LlmResponseCache responseCache,
+      TenantQuotaGuard quotaGuard,
+      PromptInjectionGuard injectionGuard,
+      LlmMetrics metrics) {
+    this(piiRedactor, outputValidator, responseCache, quotaGuard, injectionGuard, metrics, null);
+  }
 
   /** 全直通（无任何治理策略；POC / 单测默认）。 */
   public static LlmGatewayPolicies permissive() {
-    return new LlmGatewayPolicies(null, null, null, null, null);
+    return new LlmGatewayPolicies(null, null, null, null, null, null, null);
   }
 }

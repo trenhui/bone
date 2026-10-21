@@ -20,9 +20,17 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class RagAutoConfiguration {
 
+  /**
+   * 租户解析（rag 侧端口）。
+   *
+   * <p>2026-10-21 更名（原 {@code tenantProvider}）：bone-ai 的 trace / gateway / rag 三个自动配置都注册了名为 {@code
+   * tenantProvider} 的 Bean， 而 Spring Boot 3 默认禁止 Bean 定义覆盖（{@code
+   * allow-bean-definition-overriding=false}）—— 三者同在一个 classpath（如 bone-ai-app 聚合）即抛 {@code
+   * BeanDefinitionOverrideException}，整个上下文起不来。三者端口类型本就互不相同（按类型注入不受影响），此处按模块前缀唯一化。
+   */
   @Bean
   @ConditionalOnMissingBean
-  public TenantProvider tenantProvider() {
+  public TenantProvider ragTenantProvider() {
     return new TenantContextProviderAdapter();
   }
 
@@ -33,7 +41,7 @@ public class RagAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean(ChunkRepository.class)
+  @ConditionalOnBean(name = "chunkRepository") // 按名而非按类型：SDK 仓储是 FactoryBean 代理，类型不可静态推断
   @ConditionalOnMissingBean
   public RagApplicationService ragService(
       ChunkRepository chunkRepository, EmbeddingPort embeddingPort, TenantProvider tenantProvider) {

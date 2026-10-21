@@ -89,11 +89,26 @@ const LogManagementPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const buildFilters = (values: LogSearchFormValues): Record<string, unknown> => {
+  // 分页契约：后端 LogPageReq 用 logLevel / serviceName（+ keyword / startTime / endTime）
+  const buildPageFilters = (values: LogSearchFormValues): Record<string, unknown> => {
     const filters: Record<string, unknown> = {
+      keyword: values.keyword,
+      logLevel: values.level,
+      serviceName: values.service,
+    };
+    if (values.dateRange) {
+      filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
+      filters.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
+    }
+    return filters;
+  };
+
+  // 导出契约：后端 LogExportReq 用 level / service / startTime / endTime（assemble 时映射为 logLevel/serviceName）
+  const buildExportFilters = (values: LogSearchFormValues): Record<string, unknown> => {
+    const filters: Record<string, unknown> = {
+      keyword: values.keyword,
       level: values.level,
       service: values.service,
-      keyword: values.keyword,
     };
     if (values.dateRange) {
       filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
@@ -104,7 +119,7 @@ const LogManagementPage: React.FC = () => {
 
   const handleSearch = async (): Promise<void> => {
     const values = await form.validateFields();
-    fetchLogs(1, pagination.pageSize, buildFilters(values));
+    fetchLogs(1, pagination.pageSize, buildPageFilters(values));
   };
 
   const handleReset = (): void => {
@@ -120,7 +135,7 @@ const LogManagementPage: React.FC = () => {
   const handleExport = async (): Promise<void> => {
     try {
       const values = form.getFieldsValue();
-      const response = await logApi.exportLogs(buildFilters(values));
+      const response = await logApi.exportLogs(buildExportFilters(values));
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -136,7 +151,7 @@ const LogManagementPage: React.FC = () => {
   const handleAnalyze = async (): Promise<void> => {
     try {
       const values = form.getFieldsValue();
-      const response = await logApi.analyzeLogs(buildFilters(values));
+      const response = await logApi.analyzeLogs(buildPageFilters(values));
       if (response.code === 200) {
         setAnalyzeResult(response.data as LogAnalyzeResult);
         setAnalyzeModalVisible(true);
@@ -166,15 +181,15 @@ const LogManagementPage: React.FC = () => {
     },
     {
       title: t('system.logManagement.colLevel'),
-      dataIndex: 'level',
-      key: 'level',
+      dataIndex: 'logLevel',
+      key: 'logLevel',
       width: 100,
       render: getLevelTag,
     },
     {
       title: t('system.logManagement.colService'),
-      dataIndex: 'service',
-      key: 'service',
+      dataIndex: 'serviceName',
+      key: 'serviceName',
       width: 150,
     },
     {
@@ -261,7 +276,7 @@ const LogManagementPage: React.FC = () => {
             showTotal: (total) => t('system.logManagement.totalItems', { total }),
             onChange: (page, pageSize) => {
               const values = form.getFieldsValue();
-              fetchLogs(page, pageSize, buildFilters(values));
+              fetchLogs(page, pageSize, buildPageFilters(values));
             },
           }}
           scroll={{ x: 1200 }}
@@ -279,8 +294,8 @@ const LogManagementPage: React.FC = () => {
         {selectedLog && (
           <div>
             <p><strong>{t('system.logManagement.fieldTime')}</strong>{selectedLog.createdAt}</p>
-            <p><strong>{t('system.logManagement.fieldLevel')}</strong>{getLevelTag(selectedLog.level)}</p>
-            <p><strong>{t('system.logManagement.fieldService')}</strong>{selectedLog.service}</p>
+            <p><strong>{t('system.logManagement.fieldLevel')}</strong>{getLevelTag(selectedLog.logLevel)}</p>
+            <p><strong>{t('system.logManagement.fieldService')}</strong>{selectedLog.serviceName}</p>
             <p><strong>{t('system.logManagement.fieldTraceId')}</strong>{selectedLog.traceId || '-'}</p>
             <p><strong>{t('system.logManagement.fieldContent')}</strong></p>
             <pre style={{

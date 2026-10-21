@@ -116,14 +116,23 @@ export const logApi = {
   getLogs: async (params: {
     page: number;
     size: number;
-    level?: string;
-    service?: string;
+    logLevel?: string;
+    serviceName?: string;
     keyword?: string;
     startTime?: string;
     endTime?: string;
   }) => {
     return api.get<never, ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
-      params: { page: params.page, size: params.size, keyword: params.keyword },
+      // 必须透传全部过滤条件：否则界面上的级别/服务/时间筛选是「配了不生效」
+      params: {
+        page: params.page,
+        size: params.size,
+        keyword: params.keyword,
+        logLevel: params.logLevel,
+        serviceName: params.serviceName,
+        startTime: params.startTime,
+        endTime: params.endTime,
+      },
     });
   },
 

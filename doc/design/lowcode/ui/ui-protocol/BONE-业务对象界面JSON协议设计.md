@@ -50,7 +50,7 @@ BoneUiSchema（新增，有版本，可发布快照）
 ```
 
 - **存量升级路径**：当前 `UiOverlay`（显隐/改名/列序/密度，`UI_OVERLAY_VERSION=2`，localStorage）是 `BoneUiSchema.views.list.columns` 的子集。v1 前端先做"读新写新、读旧兼容"：有 `uiSchema` 用新协议，无则回落 `projectColumns(fields, overlay)`，行为不变。
-- **后端首版职责**：只存（CRUD + 版本校验 + 发布时打快照），**不在后端跑 linkage/submit**（前端跑；提交时后端仍跑已有 `RuntimeWriteValidator` + `ExpenseClaimWriteHook` + 行策略强制，安全底线不后移）。
+- **后端首版职责**：只存（CRUD + 版本校验 + 发布时打快照），**不在后端跑 linkage/submit**（前端跑；提交时后端仍跑已有 `RuntimeWriteValidator` + `ExpenseReimbursementWriteHook` + 行策略强制，安全底线不后移）。
 
 ---
 
@@ -61,7 +61,7 @@ BoneUiSchema（新增，有版本，可发布快照）
 ```json
 {
   "schemaVersion": 1,
-  "entityCode": "t_expense_claim",
+  "entityCode": "t_expense_reimbursement",
   "displayModes": ["create", "edit", "view"],
   "views": { "list": {}, "form": {}, "detail": {} },
   "dictionaries": {}
@@ -146,7 +146,7 @@ BoneUiSchema（新增，有版本，可发布快照）
 - `operator` 同 §3.5 比较符子集；`compare` 固定值/字段引用二选一。
 - `verifyType` 沿用 TPA 思想：`ERROR` 阻断提交 / `WARNING` 弹确认后可提交；`message` 必填（无裸"校验失败"）。
 - 可选 `when` 生效前置（与 linkage 的 `when` 同形状；如拒赔完整性仅 `status=REJECTING` 时跑，缺省全量跑——串联验证实证：无 `when` 则条件型规则误伤正常提交）。
-- 与后端关系：前端先拦（体验），后端 `RuntimeWriteValidator` 的 min/max + `ExpenseClaimWriteHook` 照旧强制（安全），两者文案对齐但**以后端为准**。
+- 与后端关系：前端先拦（体验），后端 `RuntimeWriteValidator` 的 min/max + `ExpenseReimbursementWriteHook` 照旧强制（安全），两者文案对齐但**以后端为准**。
 
 ### 3.7 `actionBar[]`（状态机动作挂载；只引用不定义）
 
@@ -191,7 +191,7 @@ BoneUiSchema（新增，有版本，可发布快照）
 - 接口（Modeling 侧，与 Runtime 侧 `listActions` 只读对称补齐）：
   `GET/PUT /api/v1/metadata/entities/{id}/ui-schema`（幂等全量替换 + `schemaVersion` 乐观锁，`@Version`，禁 `FOR UPDATE`，遵 ADR-0031）+ `POST .../ui-schema/validate`（引用完整性：fieldCode/actionCode/policyCode 存在性）。
 - 模板资产：`meta_template` 实例化时把模板 `baseUiSchema` 拷贝为实体的 `exclusiveUiSchema`（TPA Base→Exclusive 思想的轻量版：只拷一份快照，之后各自演进，不做持续继承链，防"改模板惊动全租户"）。
-- 并发：汇总字段（父单总额）仍服务端在明细事务内单点重算（`ChildAmountAggregator` 雏形转正），`uiSchema.summary` 只声明"显示哪"，不声明"怎么算"——汇总值是单写者，不是并发争用点（ADR-0031 口径）。
+- 并发：汇总字段（父单总额）仍服务端在明细事务内单点重算（`ReimbursementChildAmountAggregator` 雏形转正），`uiSchema.summary` 只声明"显示哪"，不声明"怎么算"——汇总值是单写者，不是并发争用点（ADR-0031 口径）。
 
 ---
 

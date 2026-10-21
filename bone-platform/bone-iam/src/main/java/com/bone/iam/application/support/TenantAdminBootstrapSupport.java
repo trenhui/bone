@@ -71,6 +71,7 @@ public class TenantAdminBootstrapSupport {
           "iam:audit:write",
           "masterdata:entities:read",
           "masterdata:entities:write",
+          "masterdata:entities:approve",
           "masterdata:records:read",
           "masterdata:records:write",
           "masterdata:records:approve",

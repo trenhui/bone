@@ -102,6 +102,7 @@ export const BonePermissionCodes = {
   // 主数据（G6 落地：种子 iam_permission + DefaultPermissionCodes + @PreAuthorize 三处同步）
   MASTERDATA_ENTITIES_READ: 'masterdata:entities:read',
   MASTERDATA_ENTITIES_WRITE: 'masterdata:entities:write',
+  MASTERDATA_ENTITIES_APPROVE: 'masterdata:entities:approve',
   MASTERDATA_RECORDS_READ: 'masterdata:records:read',
   MASTERDATA_RECORDS_WRITE: 'masterdata:records:write',
   MASTERDATA_RECORDS_APPROVE: 'masterdata:records:approve',
@@ -195,6 +196,7 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.EXTENSION_MARKETPLACE_MANAGE, name: '市场-管理', domain: 'extension', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_ENTITIES_READ, name: '主数据-实体查看', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_ENTITIES_WRITE, name: '主数据-实体维护', domain: 'masterdata', maturity: 'As-Is' },
+  { code: BonePermissionCodes.MASTERDATA_ENTITIES_APPROVE, name: '主数据-实体审批', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_RECORDS_READ, name: '主数据-记录查看', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_RECORDS_WRITE, name: '主数据-记录维护', domain: 'masterdata', maturity: 'As-Is' },
   { code: BonePermissionCodes.MASTERDATA_RECORDS_APPROVE, name: '主数据-记录审批', domain: 'masterdata', maturity: 'As-Is' },

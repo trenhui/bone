@@ -49,6 +49,40 @@ public class MasterDataEntityController {
     return ApiResponse.success();
   }
 
+  /** 提交评审（DRAFT → PENDING_REVIEW）。属实体起草动作，与 create/update 同权（write）。 */
+  @PreAuthorize("hasAuthority('masterdata:entities:write')")
+  @PostMapping("/{id}/submit-review")
+  public ApiResponse<Void> submitReview(@PathVariable Long id) {
+    entityService.submitForReview(id);
+    return ApiResponse.success();
+  }
+
+  /**
+   * 审批通过（PENDING_REVIEW → APPROVED）。独立治理动作，需 {@code masterdata:entities:approve}。
+   *
+   * <p>body 可选：{@code {"comment": "..."}}。
+   */
+  @PreAuthorize("hasAuthority('masterdata:entities:approve')")
+  @PostMapping("/{id}/approve")
+  public ApiResponse<Void> approve(
+      @PathVariable Long id, @RequestBody(required = false) java.util.Map<String, String> body) {
+    entityService.approve(id, body == null ? null : body.get("comment"));
+    return ApiResponse.success();
+  }
+
+  /**
+   * 驳回（PENDING_REVIEW → DRAFT，退回起草人）。需 {@code masterdata:entities:approve}。
+   *
+   * <p>body 必填：{@code {"reason": "..."}}（原因必填，否则起草人无从改起）。
+   */
+  @PreAuthorize("hasAuthority('masterdata:entities:approve')")
+  @PostMapping("/{id}/reject")
+  public ApiResponse<Void> reject(
+      @PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+    entityService.reject(id, body == null ? null : body.get("reason"));
+    return ApiResponse.success();
+  }
+
   @PreAuthorize("hasAuthority('masterdata:entities:write')")
   @PostMapping("/{id}/disable")
   public ApiResponse<Void> disable(

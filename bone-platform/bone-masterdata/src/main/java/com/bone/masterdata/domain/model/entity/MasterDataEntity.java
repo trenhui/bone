@@ -72,6 +72,15 @@ public class MasterDataEntity extends TenantAggregateRoot<Long> {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
+  // 审批流审计字段（UC-MD-T7 发布审批流：DRAFT→PENDING_REVIEW→APPROVED→PUBLISHED）。
+  private Long submittedBy;
+  private LocalDateTime submittedAt;
+  private Long approvedBy;
+  private LocalDateTime approvedAt;
+  private Long rejectedBy;
+  private String rejectReason;
+  private LocalDateTime rejectAt;
+
   /** 兼容既有调用方：getName() 等价于 getEntityName()。 */
   public MasterDataEntityName getName() {
     return this.entityName;
@@ -161,6 +170,52 @@ public class MasterDataEntity extends TenantAggregateRoot<Long> {
     this.status = MasterDataEntityStatus.PUBLISHED;
     this.updatedAt = LocalDateTime.now();
     this.addDomainEvent(new MasterDataEntityPublishedEvent(this));
+  }
+
+  // ---- 发布审批流状态机（UC-MD-T7） ----
+  // 守卫全部落在领域层，应用层只负责回填审计字段（提交人/审批人/驳回人来自 CurrentUserPort）。
+
+  /** 提交评审（DRAFT → PENDING_REVIEW）。 */
+  public void submitForReview() {
+    if (this.status != MasterDataEntityStatus.DRAFT) {
+      throw new DomainException("仅草稿态实体可提交评审");
+    }
+    this.status = MasterDataEntityStatus.PENDING_REVIEW;
+    this.submittedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  public void markSubmittedBy(Long userId) {
+    this.submittedBy = userId;
+  }
+
+  /** 审批通过（PENDING_REVIEW → APPROVED）。审批人/时间由应用层回填。 */
+  public void approve() {
+    if (this.status != MasterDataEntityStatus.PENDING_REVIEW) {
+      throw new DomainException("仅待评审态实体可审批通过");
+    }
+    this.status = MasterDataEntityStatus.APPROVED;
+    this.approvedAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  public void markApprovedBy(Long userId) {
+    this.approvedBy = userId;
+  }
+
+  /** 驳回（PENDING_REVIEW → DRAFT，退回起草人）。原因由应用层校验必填后传入。 */
+  public void reject(String reason) {
+    if (this.status != MasterDataEntityStatus.PENDING_REVIEW) {
+      throw new DomainException("仅待评审态实体可驳回");
+    }
+    this.status = MasterDataEntityStatus.DRAFT;
+    this.rejectReason = reason;
+    this.rejectAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  public void markRejectedBy(Long userId) {
+    this.rejectedBy = userId;
   }
 
   public void update(MasterDataEntityName name, String description, String category) {

@@ -28,6 +28,7 @@
         <module>bone-ai-rag</module>
         <module>bone-ai-notification</module>
         <module>bone-ai-integration</module>
+        <module>bone-ai-ledger</module>
         <module>bone-ai-app</module>
         <module>bone-ai-server</module>
     </modules>

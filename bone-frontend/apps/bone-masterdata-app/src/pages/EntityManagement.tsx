@@ -14,7 +14,7 @@ import {
   Tag,
   Descriptions,
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, CloseCircleOutlined, SendOutlined, CheckCircleOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import { ProTable } from '@ant-design/pro-components';
@@ -44,7 +44,10 @@ const EntityManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchParams, setSearchParams] = useState<MasterDataEntityPageRequest>({});
-  const [stats, setStats] = useState({ total: 0, published: 0, draft: 0 });
+  const [stats, setStats] = useState({ total: 0, published: 0, draft: 0, pending: 0 });
+  // 驳回弹窗：待驳回实体 + 原因
+  const [rejectTarget, setRejectTarget] = useState<MasterDataEntity | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     // 统计卡片：独立拉取（不受列表筛选/分页影响）
@@ -56,7 +59,8 @@ const EntityManagement: React.FC = () => {
           // 归一为 number 才能安全进 antd Statistic 的数值展示
           total: normalizeTotal(res.data.total),
           published: list.filter((e) => e.status === 'PUBLISHED').length,
-          draft: list.filter((e) => e.status === 'DRAFT').length
+          draft: list.filter((e) => e.status === 'DRAFT').length,
+          pending: list.filter((e) => e.status === 'PENDING_REVIEW').length
         });
       }
     });
@@ -158,6 +162,63 @@ const EntityManagement: React.FC = () => {
     }
   };
 
+  // 提交评审（DRAFT → PENDING_REVIEW）
+  const handleSubmitReview = async (id: string) => {
+    try {
+      const response = await masterDataEntityApi.submitReview(id);
+      if (response.code === 200) {
+        message.success('已提交评审');
+        fetchEntities();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('提交评审失败');
+    }
+  };
+
+  // 审批通过（PENDING_REVIEW → APPROVED）
+  const handleApprove = async (id: string) => {
+    try {
+      const response = await masterDataEntityApi.approve(id);
+      if (response.code === 200) {
+        message.success('审批通过');
+        fetchEntities();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('审批失败');
+    }
+  };
+
+  // 打开驳回弹窗（原因必填）
+  const openReject = (record: MasterDataEntity) => {
+    setRejectTarget(record);
+    setRejectReason('');
+  };
+
+  // 确认驳回（PENDING_REVIEW → DRAFT）
+  const handleRejectConfirm = async () => {
+    if (!rejectTarget) return;
+    if (!rejectReason || !rejectReason.trim()) {
+      message.error('驳回必须填写原因');
+      return;
+    }
+    try {
+      const response = await masterDataEntityApi.reject(rejectTarget.id, rejectReason.trim());
+      if (response.code === 200) {
+        message.success('已驳回退回起草人');
+        setRejectTarget(null);
+        fetchEntities();
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('驳回失败');
+    }
+  };
+
   // 提交表单
   const handleSubmit = async () => {
     try {
@@ -185,8 +246,16 @@ const EntityManagement: React.FC = () => {
     switch (status) {
     case 'DRAFT':
       return <Tag color="blue">草稿</Tag>;
+    case 'PENDING_REVIEW':
+      return <Tag color="orange">待评审</Tag>;
+    case 'APPROVED':
+      return <Tag color="cyan">已审批</Tag>;
     case 'PUBLISHED':
       return <Tag color="green">已发布</Tag>;
+    case 'DISABLED':
+      return <Tag color="volcano">已停用</Tag>;
+    case 'RETIRED':
+      return <Tag>已退役</Tag>;
     default:
       return <Tag>{status}</Tag>;
     }
@@ -252,6 +321,43 @@ const EntityManagement: React.FC = () => {
           {record.status === 'DRAFT' && (
             <AuthButton
               code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
+              icon={<SendOutlined />}
+              onClick={() => handleSubmitReview(record.id)}
+            >
+              提交评审
+            </AuthButton>
+          )}
+          {record.status === 'DRAFT' && !record.workflowEnabled && (
+            <AuthButton
+              code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
+              icon={<RocketOutlined />}
+              onClick={() => handlePublish(record.id)}
+            >
+              发布
+            </AuthButton>
+          )}
+          {record.status === 'PENDING_REVIEW' && (
+            <>
+              <AuthButton
+                code={BonePermissionCodes.MASTERDATA_ENTITIES_APPROVE}
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleApprove(record.id)}
+              >
+                通过
+              </AuthButton>
+              <AuthButton
+                code={BonePermissionCodes.MASTERDATA_ENTITIES_APPROVE}
+                icon={<RollbackOutlined />}
+                danger
+                onClick={() => openReject(record)}
+              >
+                驳回
+              </AuthButton>
+            </>
+          )}
+          {record.status === 'APPROVED' && (
+            <AuthButton
+              code={BonePermissionCodes.MASTERDATA_ENTITIES_WRITE}
               icon={<RocketOutlined />}
               onClick={() => handlePublish(record.id)}
             >
@@ -304,6 +410,11 @@ const EntityManagement: React.FC = () => {
             <Statistic title="草稿" value={stats.draft} valueStyle={{ fontSize: 24, color: '#854F0B' }} />
           </Card>
         </Col>
+        <Col xs={8} sm={8} lg={4}>
+          <Card styles={{ body: { padding: '16px 20px' } }}>
+            <Statistic title="待评审" value={stats.pending} valueStyle={{ fontSize: 24, color: '#AD4E00' }} />
+          </Card>
+        </Col>
       </Row>
 
       <Card>
@@ -325,7 +436,11 @@ const EntityManagement: React.FC = () => {
           <Form.Item name="status" label="状态">
             <Select placeholder="请选择状态">
               <Option value="DRAFT">草稿</Option>
+              <Option value="PENDING_REVIEW">待评审</Option>
+              <Option value="APPROVED">已审批</Option>
               <Option value="PUBLISHED">已发布</Option>
+              <Option value="DISABLED">已停用</Option>
+              <Option value="RETIRED">已退役</Option>
             </Select>
           </Form.Item>
           <Form.Item>
@@ -376,6 +491,38 @@ const EntityManagement: React.FC = () => {
           </Form.Item>
           <Form.Item name="category" label="分类">
             <Input placeholder="请输入分类" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 驳回原因模态框（原因必填，否则起草人无从改起） */}
+      <Modal
+        title="驳回实体"
+        open={rejectTarget !== null}
+        onOk={handleRejectConfirm}
+        onCancel={() => setRejectTarget(null)}
+        okText="确认驳回"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+      >
+        {rejectTarget && (
+          <p style={{ color: 'rgba(0,0,0,0.55)', marginBottom: 12 }}>
+            即将驳回「{rejectTarget.name}」并退回起草人，请填写驳回原因。
+          </p>
+        )}
+        <Form layout="vertical">
+          <Form.Item
+            label="驳回原因"
+            required
+            validateStatus={rejectReason.trim() ? '' : 'error'}
+            help={rejectReason.trim() ? '' : '请填写驳回原因'}
+          >
+            <TextArea
+              rows={4}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="如：字段命名不符合数据标准 / 缺责任归口应用"
+            />
           </Form.Item>
         </Form>
       </Modal>

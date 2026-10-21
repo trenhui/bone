@@ -17,6 +17,7 @@ import {
   Col,
   Statistic,
   Descriptions,
+  Alert,
 } from 'antd';
 import {
   CloudUploadOutlined,
@@ -74,27 +75,9 @@ const SystemDeploymentPage: React.FC = () => {
   };
 
   const fetchDeploymentRecords = () => {
-    // 模拟数据（当前后端未提供部署历史端点，页面先用占位数据保持可交互）
-    setDeploymentRecords([
-      {
-        id: '1',
-        version: 'v1.2.3',
-        status: 'success',
-        startTime: '2024-04-20 10:00:00',
-        endTime: '2024-04-20 10:05:30',
-        operator: 'admin',
-        description: '例行升级',
-      },
-      {
-        id: '2',
-        version: 'v1.2.2',
-        status: 'failed',
-        startTime: '2024-04-19 15:00:00',
-        endTime: '2024-04-19 15:10:00',
-        operator: 'admin',
-        description: '配置错误回滚',
-      },
-    ]);
+    // 后端尚未提供部署历史端点（/system/deploy-history 等），此处不再伪造记录——
+    // 假数据会被当成真实历史，误导值班判断。待后端端点就绪后再接入。
+    setDeploymentRecords([]);
   };
 
   useEffect(() => {
@@ -212,6 +195,12 @@ const SystemDeploymentPage: React.FC = () => {
 
   return (
     <div>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message={t('system.systemDeployment.placeholderNotice')}
+      />
       {/* 系统概览 */}
       {systemInfo && (
         <Card title={t('system.systemDeployment.overview')} style={{ marginBottom: 16 }}>
@@ -232,6 +221,7 @@ const SystemDeploymentPage: React.FC = () => {
                 code={BonePermissionCodes.SYS_OPS_EXECUTE}
                 type="primary"
                 icon={<CloudUploadOutlined />}
+                disabled
                 onClick={() => setDeployModalVisible(true)}
               >
                 {t('system.systemDeployment.deploySystem')}
@@ -239,6 +229,7 @@ const SystemDeploymentPage: React.FC = () => {
               <AuthButton
                 code={BonePermissionCodes.SYS_OPS_EXECUTE}
                 icon={<CloudUploadOutlined />}
+                disabled
                 onClick={() => setUpgradeModalVisible(true)}
               >
                 {t('system.systemDeployment.upgradeVersion')}
@@ -246,6 +237,7 @@ const SystemDeploymentPage: React.FC = () => {
               <AuthButton
                 code={BonePermissionCodes.SYS_OPS_EXECUTE}
                 icon={<PlayCircleOutlined />}
+                disabled
                 onClick={handleRestart}
               >
                 {t('system.systemDeployment.restartSystem')}
@@ -254,6 +246,7 @@ const SystemDeploymentPage: React.FC = () => {
                 code={BonePermissionCodes.SYS_OPS_EXECUTE}
                 danger
                 icon={<StopOutlined />}
+                disabled
                 onClick={handleShutdown}
               >
                 {t('system.systemDeployment.shutdownSystem')}
@@ -274,17 +267,17 @@ const SystemDeploymentPage: React.FC = () => {
         <Row gutter={16}>
           <Col span={8}>
             <Card>
-              <Statistic title={t('system.systemDeployment.podReplicas')} value={3} />
+              <Statistic title={t('system.systemDeployment.podReplicas')} value={'-'} />
             </Card>
           </Col>
           <Col span={8}>
             <Card>
-              <Statistic title={t('system.systemDeployment.autoScaling')} value={t('system.systemDeployment.autoScalingEnabled')} />
+              <Statistic title={t('system.systemDeployment.autoScaling')} value={'-'} />
             </Card>
           </Col>
           <Col span={8}>
             <Card>
-              <Statistic title={t('system.systemDeployment.rollingUpdate')} value={t('system.systemDeployment.rollingUpdateConfigured')} />
+              <Statistic title={t('system.systemDeployment.rollingUpdate')} value={'-'} />
             </Card>
           </Col>
         </Row>
@@ -293,10 +286,10 @@ const SystemDeploymentPage: React.FC = () => {
       {/* Helm Chart 信息 */}
       <Card title={t('system.systemDeployment.helmChartInfo')}>
         <Descriptions column={2}>
-          <Descriptions.Item label={t('system.systemDeployment.chartName')}>bone-platform</Descriptions.Item>
-          <Descriptions.Item label={t('system.systemDeployment.chartVersion')}>v1.2.3</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.chartName')}>-</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.chartVersion')}>-</Descriptions.Item>
           <Descriptions.Item label={t('system.systemDeployment.appVersion')}>{systemInfo?.version || '-'}</Descriptions.Item>
-          <Descriptions.Item label={t('system.systemDeployment.releaseName')}>bone-production</Descriptions.Item>
+          <Descriptions.Item label={t('system.systemDeployment.releaseName')}>-</Descriptions.Item>
         </Descriptions>
       </Card>
 

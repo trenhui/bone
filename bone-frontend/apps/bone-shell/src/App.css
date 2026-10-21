@@ -4,45 +4,223 @@
    支持亮/暗双主题自动切换，无需 .dark 选择器硬编码
    ============================================================ */
 
-/* ── Sider Logo ───────────────────────────────────────────── */
+/* ── Sider Logo（与顶栏同高 64px，底部发丝线对齐）────────────── */
 .logo {
-  height: 56px;
+  height: 64px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--bone-color-border);
-  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--bone-color-border-secondary);
+  gap: 12px;
+  overflow: hidden;
 }
 
-.logo-icon {
-  width: 32px;
-  height: 32px;
+/* ── 侧栏常驻（fixed）─────────────────────────────────────────
+   侧栏随内容滚走会让长菜单的入口消失；业界（Linear / GitHub / Notion）均为固定侧栏。 */
+.shell-sider.ant-layout-sider {
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  z-index: 100;
+  height: 100vh;
+  overflow: hidden;
+  border-right: 1px solid var(--bone-color-border-secondary);
+}
+
+/* 暗色下统一表面色：antd 默认侧栏是海军蓝 #001529，与中性灰顶栏割裂 */
+[data-bone-theme='dark'] .shell-sider.ant-layout-sider {
+  background: var(--bone-color-bg-container) !important;
+}
+
+/* 内容区让出侧栏宽度（与 Sider 的 200 / 80 保持一致） */
+.site-layout {
+  margin-left: 200px;
+  min-height: 100vh;
+  transition: margin-left 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.site-layout.sider-collapsed {
+  margin-left: 80px;
+}
+
+/* 侧栏内部：品牌区固定，菜单区独立滚动（长菜单不把 Logo 顶走） */
+.shell-sider .ant-layout-sider-children {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shell-sider .ant-menu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  border-inline-end: none;
+  scrollbar-width: thin;
+}
+
+/* ── 菜单设计语言：药丸内缩 + 选中淡染 + 左缘指示条 ────────────── */
+.shell-sider .ant-menu-inline .ant-menu-item,
+.shell-sider .ant-menu-inline .ant-menu-submenu-title {
+  margin-inline: 8px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  transition:
+    background-color 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+    color 0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.shell-sider .ant-menu-inline .ant-menu-sub .ant-menu-item {
+  font-size: 13px;
+}
+
+/* 分组标题降权：与可点击条目区分，形成「概览 / 业务」两段结构 */
+.shell-sider .ant-menu-item-group-title {
+  padding-inline: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--bone-color-text-tertiary);
+}
+
+/* 图标统一尺寸 */
+.shell-sider .ant-menu-item .anticon,
+.shell-sider .ant-menu-submenu-title .anticon {
+  font-size: 15px;
+}
+
+/* 亮色 hover：主色 7% 淡染 */
+.shell-sider .ant-menu-light .ant-menu-item:hover,
+.shell-sider .ant-menu-light .ant-menu-submenu-title:hover {
+  background: color-mix(in srgb, var(--bone-color-primary) 7%, transparent);
+}
+
+/* 亮色选中：主色 12% 淡染 + 主色文字 */
+.shell-sider .ant-menu-light .ant-menu-item-selected {
+  background: color-mix(in srgb, var(--bone-color-primary) 12%, transparent);
+  color: var(--bone-color-primary);
+  font-weight: 500;
+}
+
+/* 选中项被悬停时必须**更深**而不是更浅
+   ——antd 的 hover 规则会盖住 selected，导致"选中态在鼠标经过时反而变淡"（视觉权重丢失）。 */
+.shell-sider .ant-menu-light .ant-menu-item-selected:hover {
+  background: color-mix(in srgb, var(--bone-color-primary) 20%, transparent);
+}
+
+/* 选中态左缘指示条：**必须放在盒内 left:0**
+   ——antd 菜单条目自带 overflow:hidden（为文字省略号），盒外伪元素会被裁剪，computed 存在但不可见。 */
+.shell-sider .ant-menu .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 16px;
+  border-radius: 999px;
+  transform: translateY(-50%);
   background: var(--bone-color-primary);
-  border-radius: 6px;
+}
+
+/* 暗色选中：用亮主色（primary-hover），底色 24% */
+.shell-sider .ant-menu-dark .ant-menu-item-selected {
+  background: color-mix(in srgb, var(--bone-color-primary-hover) 24%, transparent);
+  color: #fff;
+}
+
+.shell-sider .ant-menu-dark .ant-menu-item-selected:hover {
+  background: color-mix(in srgb, var(--bone-color-primary-hover) 32%, transparent);
+}
+
+.shell-sider .ant-menu-dark .ant-menu-item-selected::before {
+  background: var(--bone-color-primary-hover);
+}
+
+/* 焦点可达性 */
+.shell-sider .ant-menu-item:focus-visible {
+  outline: 2px solid var(--bone-color-primary);
+  outline-offset: -2px;
+}
+
+/* 顶层叶子（首页）与业务分组之间的留白分层 */
+.shell-sider .ant-menu-inline > .ant-menu-item:first-child {
+  margin-bottom: 10px;
+}
+
+/* 折叠态：条目居中，不保留药丸内缩 */
+.shell-sider.ant-layout-sider-collapsed .ant-menu-inline .ant-menu-item,
+.shell-sider.ant-layout-sider-collapsed .ant-menu-inline .ant-menu-submenu-title {
+  margin-inline: 0;
+  padding-inline: 0 !important;
+  text-align: center;
+}
+
+/* 折叠态 hover 弹层（portal 到 body，不在 .shell-sider 作用域）
+   ⇒ 挂 shell-menu-popup 类名以复用同一设计语言（antd 运行期注入的暗色饱和蓝需更高特异性覆盖）*/
+.shell-menu-popup .ant-menu-item,
+.shell-menu-popup .ant-menu-submenu-title {
+  border-radius: 8px;
+  margin-inline: 4px;
+}
+
+/* ── 品牌芯片 · 人字梁 ──────────────────────────────────────
+   与 favicon（public/bone-mark.svg）同源：渐变 + 顶部内高光 + 品牌色投影。
+   图形本体在 src/components/BrandMark.tsx（描边继承 currentColor）。
+   侧栏 Logo 与登录页品牌块复用同一芯片类，保证两处视觉完全一致。 */
+.brand-chip {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 15px;
   flex-shrink: 0;
+  border-radius: 9px;
+  background: linear-gradient(
+    140deg,
+    var(--bone-color-primary-hover) 0%,
+    var(--bone-color-primary) 55%,
+    var(--bone-color-primary-active) 100%
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(22, 119, 255, 0.24),
+    0 6px 16px -8px rgba(22, 119, 255, 0.45);
+}
+
+/* 侧栏品牌位：与 .brand-chip 叠加使用（className="brand-chip logo-icon"） */
+.logo-icon {
+  width: 34px;
+  height: 34px;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
 }
 
+/* 品牌字标：全大写加重 + 疏字距（拉丁品牌锁定惯例），副标降权 */
 .logo-text .main {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
   color: var(--bone-color-text);
+  white-space: nowrap;
 }
 
 .logo-text .sub {
-  font-size: 10px;
-  color: var(--bone-color-text-tertiary);
+  font-size: 10.5px;
   font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  color: var(--bone-color-text-tertiary);
+  white-space: nowrap;
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -58,9 +236,32 @@
   background: var(--bone-color-bg-layout) !important;
 }
 
+/* ── 顶栏：吸顶 + 玻璃模糊（业界标准：滚动时保持导航可见）─────────
+   高度与侧栏品牌区同为 64px ⇒ 两者之间的发丝线严丝合缝对齐。 */
+.shell-header.ant-layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  height: 64px;
+  line-height: normal;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: var(--bone-color-bg-container);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--bone-color-border-secondary);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+[data-bone-theme='dark'] .shell-header.ant-layout-header {
+  background: rgba(31, 31, 31, 0.86);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.38);
+  background-image: radial-gradient(110% 180% at 0% 0%, rgba(64, 150, 255, 0.08), transparent 52%);
+}
+
 .header-right {
-  float: right;
-  margin-right: 24px;
+  margin-right: 20px;
   display: flex;
   align-items: center;
   height: 100%;
@@ -68,17 +269,41 @@
 }
 
 .header-left {
-  float: left;
-  margin-left: 24px;
+  margin-left: 20px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   height: 100%;
 }
 
+/* 页标题：短标识条 + 主色（暗色下用亮主色） */
 .page-title {
-  font-size: 16px;
+  position: relative;
+  padding-left: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--bone-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 15px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, var(--bone-color-primary-hover), var(--bone-color-primary));
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--bone-color-primary) 45%, transparent);
+}
+
+[data-bone-theme='dark'] .page-title::before {
+  background: linear-gradient(180deg, var(--bone-color-primary-hover), var(--bone-color-primary));
 }
 
 .header-button,
@@ -95,8 +320,9 @@
 .user-button {
   display: flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 
 .user-button:hover {
@@ -104,8 +330,17 @@
 }
 
 .user-name {
-  margin-left: 8px;
   color: var(--bone-color-text);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 下拉指示：与用户名拉开距离，暗示可点开菜单 */
+.user-caret {
+  font-size: 10px;
+  color: var(--bone-color-text-tertiary);
 }
 
 /* ── 通知按钮 Badge ────────────────────────────────────────── */
@@ -132,6 +367,7 @@
 .login-container {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px;
@@ -153,6 +389,43 @@
   font-size: 12px;
   color: var(--bone-color-text-tertiary);
   text-align: center;
+}
+
+/* ── 登录页品牌块（与侧栏 Logo 同源：同一芯片类 + 同一字标层次）── */
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.login-brand .brand-chip {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.login-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.login-brand-text .main {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.15;
+  color: var(--bone-color-text);
+}
+
+.login-brand-text .sub {
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  color: var(--bone-color-text-tertiary);
 }
 
 /* ── 菜单加载 / 空态 / 错误态（动态菜单接管后新增）──────────
@@ -190,11 +463,23 @@
   color: var(--bone-color-text-tertiary);
 }
 
+/* 租户视角前缀图标：提示这是「切换视角」而非普通下拉 */
+.tenant-switcher-prefix {
+  color: var(--bone-color-text-tertiary);
+  font-size: 13px;
+}
+
 /* ============================================================
-   BONE 仪表盘 · 高端重构（2026-10-08）
-   渐变 Hero + 玻璃拟态 + 微交互 + 双主题
+   BONE 仪表盘 · Refined Aurora（2026-10-21 重做）
+   极光 Hero + 分层柔和阴影 + 竖向 KPI + 克制色板 + 双主题
    ============================================================ */
 .dashboard {
+  /* 分层柔和阴影：单层生硬阴影 → 远/近双层叠加，深度更真实 */
+  --db-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --db-radius: 16px;
+  --db-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --db-shadow-2: 0 2px 4px rgba(16, 24, 40, 0.04), 0 10px 28px -12px rgba(16, 24, 40, 0.14);
+  --db-shadow-3: 0 4px 10px rgba(16, 24, 40, 0.05), 0 22px 46px -18px rgba(16, 24, 40, 0.2);
   padding: 0;
   color: var(--bone-color-text);
   display: flex;
@@ -202,15 +487,26 @@
   gap: 24px;
 }
 
-/* ── Hero 横幅 ── */
+[data-bone-theme='dark'] .dashboard {
+  --db-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --db-shadow-2: 0 2px 4px rgba(0, 0, 0, 0.36), 0 10px 28px -12px rgba(0, 0, 0, 0.55);
+  --db-shadow-3: 0 4px 10px rgba(0, 0, 0, 0.4), 0 22px 46px -18px rgba(0, 0, 0, 0.66);
+}
+
+/* ── Hero 横幅：深色极光网格 ──
+   多层径向渐变（蓝/紫/青）叠加深蓝底 + 点阵纹理 + 缓慢漂移光斑。 */
 .db-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  padding: 32px 36px;
-  background: linear-gradient(135deg, #0b1437 0%, #1e3a8a 52%, #1677ff 100%);
+  border-radius: var(--db-radius);
+  padding: 34px 38px;
   color: #fff;
-  box-shadow: 0 18px 40px -18px rgba(22, 119, 255, 0.55);
+  background:
+    radial-gradient(120% 140% at 8% 0%, rgba(64, 150, 255, 0.5), transparent 52%),
+    radial-gradient(90% 120% at 92% 8%, rgba(114, 46, 209, 0.4), transparent 55%),
+    radial-gradient(130% 150% at 50% 125%, rgba(19, 194, 194, 0.26), transparent 60%),
+    linear-gradient(140deg, #0a1230 0%, #131f4d 48%, #0a1230 100%);
+  box-shadow: var(--db-shadow-3);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -218,32 +514,31 @@
   gap: 24px;
 }
 
-.db-hero::before,
-.db-hero::after {
+/* 点阵纹理：给大面积渐变加"材质"，避免塑料感 */
+.db-hero::before {
   content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(8px);
-  opacity: 0.5;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.45;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 80%);
   pointer-events: none;
 }
 
-.db-hero::before {
-  width: 300px;
-  height: 300px;
-  top: -140px;
-  right: -60px;
-  background: radial-gradient(circle, rgba(105, 177, 255, 0.55), transparent 70%);
-  animation: db-float 9s ease-in-out infinite;
-}
-
+/* 漂移光斑 */
 .db-hero::after {
-  width: 240px;
-  height: 240px;
-  bottom: -130px;
-  left: 8%;
-  background: radial-gradient(circle, rgba(114, 46, 209, 0.45), transparent 70%);
-  animation: db-float 11s ease-in-out infinite reverse;
+  content: '';
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  top: -230px;
+  right: -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(105, 177, 255, 0.4), transparent 68%);
+  filter: blur(24px);
+  animation: db-float 12s var(--db-ease) infinite;
+  pointer-events: none;
 }
 
 @keyframes db-float {
@@ -252,7 +547,7 @@
     transform: translate(0, 0);
   }
   50% {
-    transform: translate(22px, -18px);
+    transform: translate(26px, -20px);
   }
 }
 
@@ -265,19 +560,20 @@
 }
 
 .db-hero-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
-  font-weight: 800;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 12px 26px -14px rgba(0, 0, 0, 0.65);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .db-hero-title {
@@ -371,9 +667,17 @@
 .db-section {
   background: var(--bone-color-bg-container);
   border: 1px solid var(--bone-color-border-secondary);
-  border-radius: 14px;
-  padding: 22px 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -16px rgba(0, 0, 0, 0.18);
+  border-radius: var(--db-radius);
+  padding: 22px 24px 24px;
+  box-shadow: var(--db-shadow-2);
+  transition:
+    box-shadow 0.32s var(--db-ease),
+    border-color 0.32s var(--db-ease);
+}
+
+.db-section:hover {
+  box-shadow: var(--db-shadow-3);
+  border-color: color-mix(in srgb, var(--bone-color-primary) 22%, var(--bone-color-border-secondary));
 }
 
 .db-section-head {
@@ -384,7 +688,9 @@
 }
 
 .db-section-title {
-  font-size: 16px;
+  position: relative;
+  padding-left: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--bone-color-text);
   display: flex;
@@ -393,18 +699,31 @@
   margin: 0;
 }
 
+/* 标题前的品牌色短标识条（圆角胶囊，非生硬方块） */
 .db-section-title::before {
   content: '';
-  width: 4px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--bone-color-primary);
-  flex-shrink: 0;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 15px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, var(--bone-color-primary-hover), var(--bone-color-primary));
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--bone-color-primary) 45%, transparent);
 }
 
+/* 标题图标：着色玻璃芯片 */
 .db-section-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   color: var(--bone-color-primary);
-  font-size: 15px;
+  background: color-mix(in srgb, var(--bone-color-primary) 12%, transparent);
 }
 
 .db-badge-count {
@@ -433,32 +752,55 @@
   }
 }
 
-/* ── KPI 指标 ── */
+/* ── KPI 指标：6 等分 + 竖向卡片 ──
+   6 个指标固定一行等分（6→3→2→1），避免 auto-fit 造成的「5+1 孤行」。 */
 .db-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 1400px) {
+  .db-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 880px) {
+  .db-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .db-kpis {
+    grid-template-columns: 1fr;
+  }
 }
 
 .db-kpi {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   background: var(--bone-color-bg-container);
   border: 1px solid var(--bone-color-border-secondary);
-  border-radius: 14px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
-  animation: db-rise 0.5s ease both;
+  border-radius: var(--db-radius);
+  padding: 20px 20px 22px;
+  box-shadow: var(--db-shadow-2);
+  transition:
+    transform 0.32s var(--db-ease),
+    box-shadow 0.32s var(--db-ease),
+    border-color 0.32s var(--db-ease);
+  animation: db-rise 0.55s var(--db-ease) both;
 }
 
 .db-kpi:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 28px -14px rgba(22, 119, 255, 0.4);
-  border-color: var(--bone-color-primary);
+  transform: translateY(-3px);
+  box-shadow: var(--db-shadow-3);
+  border-color: color-mix(in srgb, var(--kpi-color, var(--bone-color-primary)) 34%, var(--bone-color-border-secondary));
 }
 
 @keyframes db-rise {
@@ -472,17 +814,25 @@
   }
 }
 
+/* 图标芯片：颜色由每张卡的 --kpi-color 驱动，柔和渐变 + 同色投影 */
 .db-kpi-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 19px;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--kpi-color, #1677ff) 80%, #ffffff),
+    var(--kpi-color, #1677ff)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 16px -8px color-mix(in srgb, var(--kpi-color, #1677ff) 65%, transparent);
 }
 
 .db-kpi-body {
@@ -491,40 +841,26 @@
   min-width: 0;
 }
 
+/* 数字：等宽对齐（tabular-nums），避免多卡片数字跳动时错位 */
 .db-kpi-value {
   font-size: 26px;
   font-weight: 700;
   line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
   color: var(--bone-color-text);
-  letter-spacing: 0.3px;
 }
 
 .db-kpi-title {
   font-size: 13.5px;
   color: var(--bone-color-text-secondary);
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .db-kpi-desc {
   font-size: 11.5px;
   color: var(--bone-color-text-tertiary);
   margin-top: 2px;
-}
-
-.db-kpi::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  width: 100%;
-  background: linear-gradient(90deg, transparent, var(--bone-color-primary), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.db-kpi:hover::after {
-  opacity: 0.8;
 }
 
 /* ── 系统资源环形仪表 ── */
@@ -839,4 +1175,126 @@
   .user-name {
     display: none;
   }
+}
+
+/* ── 微应用加载失败：归因面板 ────────────────────────────────
+   qiankun 加载失败是全局 uncaught error ⇒ 容器为空 ⇒ 「点菜单后白屏」。
+   容器 div 必须保留（否则 qiankun 报 container not existed 直接挂载失败），
+   故失败提示以**覆盖层**形式呈现：哪个应用 / 哪个入口 / 为什么 / 怎么修。 */
+.subapp-host {
+  position: relative;
+  min-height: 320px;
+}
+
+.subapp-error {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--bone-color-bg-layout);
+}
+
+.subapp-error-card {
+  width: 100%;
+  max-width: 580px;
+  text-align: center;
+  background: var(--bone-color-bg-container);
+  border: 1px solid var(--bone-color-border-secondary);
+  border-radius: 16px;
+  padding: 32px 36px 36px;
+  box-shadow:
+    0 4px 10px rgba(16, 24, 40, 0.05),
+    0 22px 46px -18px rgba(16, 24, 40, 0.2);
+}
+
+[data-bone-theme='dark'] .subapp-error-card {
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 22px 46px -18px rgba(0, 0, 0, 0.66);
+}
+
+.subapp-error-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--bone-color-error);
+  background: var(--bone-color-error-bg);
+}
+
+.subapp-error-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bone-color-text);
+}
+
+.subapp-error-desc {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--bone-color-text-secondary);
+}
+
+.subapp-error-app {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bone-color-bg-secondary);
+  color: var(--bone-color-text);
+  font-family: var(--bone-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12.5px;
+}
+
+.subapp-error-entry {
+  color: var(--bone-color-text-tertiary);
+}
+
+.subapp-error-reason,
+.subapp-error-fix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--bone-color-text-secondary);
+  background: var(--bone-color-bg-layout);
+  border: 1px solid var(--bone-color-border-secondary);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.subapp-error-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--bone-color-text-tertiary);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--bone-color-bg-container);
+  border: 1px solid var(--bone-color-border-secondary);
+}
+
+.subapp-error-cmd {
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bone-color-bg-container);
+  border: 1px solid var(--bone-color-border-secondary);
+  color: var(--bone-color-text);
+  font-family: var(--bone-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12.5px;
+  overflow-x: auto;
+  white-space: pre;
 }

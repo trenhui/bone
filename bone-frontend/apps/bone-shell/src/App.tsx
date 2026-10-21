@@ -18,7 +18,7 @@ import {
   CoffeeOutlined, ProfileOutlined,
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
   BellOutlined, ApartmentOutlined, MenuOutlined, ClockCircleOutlined,
-  ShoppingOutlined, TransactionOutlined,
+  ShoppingOutlined, TransactionOutlined, DownOutlined,
   DeploymentUnitOutlined, CloudUploadOutlined, InboxOutlined, CarOutlined,
 } from '@ant-design/icons';
 import {
@@ -40,6 +40,8 @@ import './App.css';
 
 const { Header, Sider, Content } = Layout;
 
+import BrandMark from './components/BrandMark';
+import MicroAppLoadError, { type MicroAppLoadErrorInfo } from './components/MicroAppLoadError';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/Profile';
 import {
@@ -415,6 +417,8 @@ function AppContent({
   const [layoutMode, setLayoutMode] = useState<'side' | 'top' | 'mix'>('side');
 
   const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([]);
+  /** 微应用加载失败的归因信息（qiankun 全局错误 → UI 呈现，避免白屏无解） */
+  const [subappError, setSubappError] = useState<MicroAppLoadErrorInfo | null>(null);
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuError, setMenuError] = useState<string | null>(null);
   /**
@@ -711,6 +715,17 @@ function AppContent({
 
     addGlobalUncaughtErrorHandler((event: Event | string) => {
       console.error('[qiankun] 微应用加载异常:', event);
+      // qiankun 的加载失败是全局 uncaught error（不进入 React 树），容器此时是空的
+      // ⇒ 表现为「点菜单后白屏」。这里把它归因后交给 UI 呈现，避免用户无从下手。
+      const raw =
+        typeof event === 'string' ? event : ((event as ErrorEvent)?.message ?? String(event));
+      if (!/application '|died in status|Loading chunk/i.test(raw)) return;
+      const app = raw.match(/application '([^']+)'/)?.[1] ?? '';
+      const entry = microApps.find((m) => m.name === app)?.entry ?? '';
+      const cause =
+        raw.match(/(Failed to fetch|NetworkError[^,)]*|Loading chunk \d+ failed[^,)]*|Unexpected token[^,)]*)/)?.[1] ??
+        raw.slice(0, 120);
+      setSubappError({ app, entry, reason: cause });
     });
 
     startQiankun({
@@ -887,6 +902,8 @@ function AppContent({
                 toggleLayoutMode={toggleLayoutMode}
                 locale={locale}
                 onLocaleChange={handleLocaleChange}
+                subappError={subappError}
+                onSubappErrorClear={() => setSubappError(null)}
               />
             )}
           </Router>
@@ -922,6 +939,10 @@ interface MainLayoutProps {
   toggleLayoutMode: () => void;
   locale: SupportedLanguage;
   onLocaleChange: (next: SupportedLanguage) => void;
+  /** 微应用加载失败的归因信息（非空时内容区展示归因面板，而非白屏）。 */
+  subappError: MicroAppLoadErrorInfo | null;
+  /** 清除上一轮的加载失败态（切换微应用路由时调用）。 */
+  onSubappErrorClear: () => void;
 }
 
 function MainLayout(props: MainLayoutProps): JSX.Element {
@@ -932,6 +953,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     handleMenuClick,
     handleLogout, user, theme, toggleTheme,
     locale, onLocaleChange,
+    subappError, onSubappErrorClear,
   } = props;
   // 租户视角变更后 remount 微应用容器，确保 qiankun 子应用拿到最新 tenantId。
   const microAppMountKey = String(tenantRevision);
@@ -941,6 +963,12 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifSeq, setNotifSeq] = useState(0);
+
+  // 切换微应用路由后清空上一次的加载失败态（避免错误提示跨页面残留）
+  useEffect(() => {
+    onSubappErrorClear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // 点击铃铛标已读后刷新红点计数（归属由后端从 JWT 解析，前端不传 userId）
   const refreshUnread = () => {
@@ -1009,34 +1037,42 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   };
 
   // 基于当前 pathname + hash 计算 selectedKey 和 openKey
+  //
+  // 两个必须递归整棵树的��由：
+  //  1. 菜单 key 是**后端节点 id**（如 910000000000000001），不是前端字面量；
+  //  2. 「首页仪表盘」是**顶层叶子**（path=/），不在任何分组的 children 里。
+  // 旧实现把首页硬编码成字面量 'dashboard'，且只遍历 group.children
+  // ⇒ 选中态永远匹配不到，菜单高亮从不亮起（已修复，勿回退）。
   const { selectedKey, parentKey } = useMemo(() => {
     const { pathname, hash } = location;
-    const currentPath = pathname;
     // '#/audit-logs'.replace('#','') = '/audit-logs'（'#' 后本就带 '/'），直接与 child.hash 比较
     const currentHash = hash.replace('#', '');
-    let sKey = 'dashboard';
+    let sKey = '';
     let pKey = '';
 
-    if (currentPath === '/' || currentPath === '') {
-      sKey = 'dashboard';
-    } else {
-      for (const group of menuConfig) {
-        if (!group.children) continue;
-        for (const child of group.children) {
-          if (child.path === currentPath && child.hash === currentHash) {
-            sKey = child.key;
-            pKey = group.key;
-            return { selectedKey: sKey, parentKey: pKey };
-          }
+    // ancestorKey：叶子所属的最外层分组 key（用于自动展开）；顶层叶子为空串
+    const walk = (items: ShellMenuItem[], ancestorKey: string): boolean => {
+      for (const item of items) {
+        if (item.children && item.children.length > 0) {
+          if (walk(item.children, ancestorKey || item.key)) return true;
+          continue;
         }
-        // 未精确匹配 hash 时，回退到该分组的第一个子菜单
-        const firstChild = group.children.find(c => c.path === currentPath);
-        if (firstChild) {
-          sKey = firstChild.key;
-          pKey = group.key;
+        if (item.path !== pathname) continue;
+        if (item.hash) {
+          if (item.hash === currentHash) {
+            sKey = item.key;
+            pKey = ancestorKey;
+            return true;
+          }
+        } else if (!sKey) {
+          // 同 path 但无 hash：取第一个命中作为回退（动态路由 / 无 hash 叶子）
+          sKey = item.key;
+          pKey = ancestorKey;
         }
       }
-    }
+      return false;
+    };
+    walk(menuConfig, '');
     return { selectedKey: sKey, parentKey: pKey };
   }, [location, menuConfig]);
 
@@ -1084,6 +1120,8 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
           icon: item.icon,
           label: item.label,
           children: buildMenuItems(item.children),
+          // 折叠态 hover 弹层 portal 到 body，不在 .shell-sider 作用域内 ⇒ 挂类名以复用同一设计语言
+          popupClassName: 'shell-menu-popup',
         };
       }
       return {
@@ -1109,31 +1147,48 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
     }
   };
 
+  // 微应用容器 + 加载失败归因层。
+  // ⚠ 容器 div 必须**始终存在**：qiankun 找不到 #subapp-viewport 会直接报
+  // 「container not existed」而挂载失败，故失败提示只能作为覆盖层，不能替代容器。
+  const microAppViewport = (
+    <MicroAppErrorBoundary key={microAppMountKey}>
+      <div className="subapp-host">
+        <div id="subapp-viewport" />
+        {subappError && (
+          <MicroAppLoadError info={subappError} onRetry={() => window.location.reload()} />
+        )}
+      </div>
+    </MicroAppErrorBoundary>
+  );
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       {layoutMode !== 'top' && (
         <Sider
+          className="shell-sider"
           collapsible
           collapsed={collapsed}
           onCollapse={(value) => setCollapsed(value)}
           theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
         >
           <div className="logo">
-            <div className="logo-icon">B</div>
+            <div className="brand-chip logo-icon">
+              <BrandMark />
+            </div>
             {!collapsed && (
               <div className="logo-text">
-                <span className="main">Bone Admin</span>
-                <span className="sub">企业级快速开发平台</span>
+                <span className="main">BONE</span>
+                <span className="sub">一次构建，处处原生</span>
               </div>
             )}
           </div>
           {renderMenuBody()}
         </Sider>
       )}
-      <Layout className="site-layout">
+      <Layout className={`site-layout ${collapsed ? 'sider-collapsed' : ''}`}>
         <Header
-          className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`}
-          style={{ padding: 0, height: '56px', lineHeight: '56px' }}
+          className={`site-layout-background shell-header ${resolvedTheme === 'dark' ? 'dark-header' : ''}`}
+          style={{ padding: 0 }}
         >
           <div className="header-left">
             {layoutMode === 'top' ? (
@@ -1198,6 +1253,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 <Select
                   size="small"
                   className="tenant-switcher"
+                  prefix={<ApartmentOutlined className="tenant-switcher-prefix" />}
                   placeholder="平台视角"
                   value={actingTenantId ?? undefined}
                   allowClear={{ clearIcon: <span /> }}
@@ -1212,6 +1268,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
               <Button type="text" className="user-button">
                 <Avatar size="small" icon={<UserOutlined />} />
                 <span className="user-name">{user?.name}</span>
+                <DownOutlined className="user-caret" />
               </Button>
             </Dropdown>
           </div>
@@ -1247,35 +1304,35 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 登录态由 App 级 user 判空保证；真实授权 = 后端 @PreAuthorize + 子应用内路由守卫。 */}
             <Route
               path="/iam/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/metadata/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/masterdata/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/commerce/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/integration/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/system/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/extension/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route
               path="/generator/*"
-              element={<MicroAppErrorBoundary key={microAppMountKey}><div id="subapp-viewport" /></MicroAppErrorBoundary>}
+              element={microAppViewport}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -1314,7 +1371,16 @@ function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: LoginPa
 
   return (
     <div className={`login-container ${resolvedTheme}`}>
-      <Card className="login-card" title="BONE 平台登录">
+      <div className="login-brand">
+        <div className="brand-chip">
+          <BrandMark size={26} />
+        </div>
+        <div className="login-brand-text">
+          <span className="main">BONE</span>
+          <span className="sub">一次构建，处处原生</span>
+        </div>
+      </div>
+      <Card className="login-card" title="登录">
         <Form
           form={form}
           onFinish={handleSubmit}

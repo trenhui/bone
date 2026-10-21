@@ -164,6 +164,7 @@ INSERT INTO tmp_menu_seed_0024
 ( 120, 'b_meta_rel',     'm_meta_rel', '业务建模-关系管理-维护',          NULL, NULL, 1, 'metadata:model:write',             2),
 ( 121, 'b_meta_rt',      'm_meta_rt',  '业务建模-运行时数据-写入',        NULL, NULL, 1, 'metadata:runtime:write',           2),
 ( 122, 'b_mdm_ent',      'm_mdm_ent',  '主数据管理-主数据模型-新增',      NULL, NULL, 1, 'masterdata:entities:write',        2),
+( 146, 'b_mdm_ent_appr', 'm_mdm_ent',  '主数据管理-主数据模型-审批',      NULL, NULL, 2, 'masterdata:entities:approve',      2),
 ( 123, 'b_mdm_fld',      'm_mdm_fld',  '主数据管理-字段管理-新增',        NULL, NULL, 1, 'masterdata:entities:write',        2),
 ( 124, 'b_mdm_cat',      'm_mdm_cat',  '主数据管理-分类管理-新增',        NULL, NULL, 1, 'masterdata:categories:write',      2),
 ( 125, 'b_mdm_tpl',      'm_mdm_tpl',  '主数据管理-模板管理-新增',        NULL, NULL, 1, 'masterdata:templates:write',       2),

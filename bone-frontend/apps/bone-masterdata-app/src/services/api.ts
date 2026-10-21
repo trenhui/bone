@@ -87,6 +87,18 @@ export const masterDataEntityApi = {
   publish: (id: string): Promise<ApiResponse<void>> => {
     return apiClient.post(`${MD}/entities/${id}/publish`);
   },
+  /** 提交评审（DRAFT → PENDING_REVIEW）。 */
+  submitReview: (id: string): Promise<ApiResponse<void>> => {
+    return apiClient.post(`${MD}/entities/${id}/submit-review`);
+  },
+  /** 审批通过（PENDING_REVIEW → APPROVED）。body 可选 {"comment": "..."}。 */
+  approve: (id: string, comment?: string): Promise<ApiResponse<void>> => {
+    return apiClient.post(`${MD}/entities/${id}/approve`, comment ? { comment } : undefined);
+  },
+  /** 驳回（PENDING_REVIEW → DRAFT）。body 必填 {"reason": "..."}。 */
+  reject: (id: string, reason: string): Promise<ApiResponse<void>> => {
+    return apiClient.post(`${MD}/entities/${id}/reject`, { reason });
+  },
   /** 停用实体：后端 DisableMasterDataEntityCommand 默认 disabled=true，须带 JSON body（空对象即可），
    *  否则 Spring @RequestBody(required=false) 缺 Content-Type 会 400。 */
   disable: (id: string): Promise<ApiResponse<void>> => {

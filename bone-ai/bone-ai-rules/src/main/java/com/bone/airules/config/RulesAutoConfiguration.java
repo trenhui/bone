@@ -19,6 +19,10 @@ import org.springframework.context.annotation.Bean;
  * RuleQueryApplicationService} 依赖 {@link RuleAssetRepository} + {@link RuleAssetVersionRepository}
  * （端口，实现由使用方以 {@code @EnableSqlRepositories} 提供），故以 {@code @ConditionalOnBean}
  * 守卫：未接入持久化的上下文不装配治理服务，引擎仍可用。
+ *
+ * <p><b>为何按 Bean 名而非类型守卫（2026-10-21 补齐）</b>：SDK 仓储是 {@code RepositoryFactoryBean} 代理，接口类型只能由 {@code
+ * getObjectType()} 在<b>实例化之后</b>给出（接口是构造参数，Spring 无法静态推断）——按类型判定时 {@code @ConditionalOnBean}
+ * 在自动配置解析期拿不到类型，条件恒假 ⇒ 治理服务永不装配（装配级冒烟测试曾因此红）。按名判定只依赖 Bean 定义名 （SDK 注册名 = 接口名首字母小写），不依赖类型可解析性。
  */
 @AutoConfiguration
 @EnableConfigurationProperties(RulesProperties.class)
@@ -31,7 +35,9 @@ public class RulesAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean({RuleAssetRepository.class, RuleAssetVersionRepository.class})
+  @ConditionalOnBean(
+      name = {"ruleAssetRepository", "ruleAssetVersionRepository"} // 按名而非按类型：见类注释
+      )
   @ConditionalOnMissingBean
   public RuleApplicationService ruleService(
       RuleAssetRepository repository,
@@ -41,7 +47,9 @@ public class RulesAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean({RuleAssetRepository.class, RuleAssetVersionRepository.class})
+  @ConditionalOnBean(
+      name = {"ruleAssetRepository", "ruleAssetVersionRepository"} // 按名而非按类型：见类注释
+      )
   @ConditionalOnMissingBean
   public RuleQueryApplicationService ruleQueryService(
       RuleAssetRepository repository, RuleAssetVersionRepository versionRepository) {

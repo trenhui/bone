@@ -6,10 +6,15 @@ import com.bone.ai.gateway.domain.LlmGatewayPolicies;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
 import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
+import com.bone.ai.gateway.domain.gateway.LlmMetrics;
+import com.bone.ai.gateway.domain.gateway.ModelRouter;
 import com.bone.ai.gateway.domain.gateway.PiiRedactor;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
+import com.bone.ai.gateway.domain.service.NoopLlmMetrics;
+import com.bone.ai.gateway.domain.service.PassthroughModelRouter;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,6 +56,8 @@ public class LlmGatewayApplicationService {
   private final TenantProvider tenantProvider;
   private final LlmGatewayPolicies policies;
 
+  private final ModelRouter modelRouter;
+
   public LlmGatewayApplicationService(
       LlmClient llmClient,
       DomainEventPublisher domainEventPublisher,
@@ -77,57 +84,103 @@ public class LlmGatewayApplicationService {
       DomainEventPublisher domainEventPublisher,
       TenantProvider tenantProvider,
       LlmGatewayPolicies policies) {
+    this(
+        llmClient,
+        domainEventPublisher,
+        tenantProvider,
+        policies,
+        PassthroughModelRouter.INSTANCE); // 无路由配置时的安全默认（按请求模型原样调用）
+  }
+
+  /**
+   * 完整装配：显式指定模型档位路由（场景 → 模型）。
+   *
+   * <p>2026-10-21 补齐：{@link ModelRouter} 端口与 {@code ConfigDrivenModelRouter} 实现已就位，此前仅缺调用侧接线——
+   * 端口配了却不消费＝「配了不生效」，配置驱动的档位路由（简单场景走廉价模型）形同虚设。
+   */
+  public LlmGatewayApplicationService(
+      LlmClient llmClient,
+      DomainEventPublisher domainEventPublisher,
+      TenantProvider tenantProvider,
+      LlmGatewayPolicies policies,
+      ModelRouter modelRouter) {
     this.llmClient = llmClient;
     this.domainEventPublisher = domainEventPublisher;
     this.tenantProvider = tenantProvider;
     this.policies = policies == null ? LlmGatewayPolicies.permissive() : policies;
+    this.modelRouter = modelRouter == null ? PassthroughModelRouter.INSTANCE : modelRouter;
   }
 
   /**
-   * 发起一次受治理的 LLM 调用，执行链： 红线短路 → 租户配额 → 提示注入检测（user 原文）→ 出口脱敏 → 精确缓存查询 → 委派 client → 结构化输出校验 → 落证 +
-   * 计量 → 写缓存。
+   * 发起一次受治理的 LLM 调用，执行链： 红线短路 → 租户配额 → 提示注入检测（user 原文）→ 场景模型档位路由 → 出口脱敏 → 精确缓存查询 → 委派 client →
+   * 输出内容安全 → 结构化输出校验 → 落证 + 计量 → 写缓存。
+   *
+   * <p>2026-10-21 补齐三处装配点（端口与策略组字段均已就位，此前仅缺调用侧接线）：场景路由（{@link ModelRouter}，成本红线 / 降档）、输出内容安全（{@code
+   * ContentSafetyGuard}，OWASP LLM05/09）、可观测性发射（{@code LlmMetrics}，成本 / 延迟 / 错误率）。
    *
    * @param request 模型请求
    * @return 模型响应（原文；仅出站与落证内容脱敏）
-   * @throws BizException 红线命中（400）/ 配额超限（429）/ 提示注入（400）/ 结构化输出不合规（502）
+   * @throws BizException 红线命中（400）/ 配额超限（429）/ 提示注入（400）/ 输出内容不安全（400）/ 结构化输出不合规（502）
    */
   public LlmResponse invoke(LlmRequest request) {
+    // 租户先解析：短线路径也要记量化发射点（成本口径按租户聚合），故租户取在所有分支之前
+    String tenantId = tenantProvider.currentTenantId();
     if (request.shortCircuited()) {
+      metrics().recordShortCircuited(tenantId, request.model());
       throw new BizException(400, "规则已命中，按成本红线跳过 LLM 调用", AiGatewayErrorCodes.REDLINE_BLOCKED);
     }
-    String tenantId = tenantProvider.currentTenantId();
+    // 场景 → 模型档位路由（配置驱动；未声明场景 / 无映射即按请求模型原样调用）
+    LlmRequest routed = routeByScenario(request);
     // 配额在脱敏与调用之前：超限租户不该消耗任何后续算力
     if (policies.quotaGuard() != null) {
-      policies.quotaGuard().acquire(tenantId);
+      try {
+        policies.quotaGuard().acquire(tenantId);
+      } catch (BizException quotaExceeded) {
+        metrics().recordQuotaExceeded(tenantId, routed.model());
+        throw quotaExceeded;
+      }
     }
     // 提示注入检测基于 user 原文（脱敏不改指令词，但检测原文最稳）：OWASP LLM01 第一关
     if (policies.injectionGuard() != null) {
-      String traceId = request.effectiveTraceId();
-      for (LlmMessage message : request.messages()) {
+      String traceId = routed.effectiveTraceId();
+      for (LlmMessage message : routed.messages()) {
         if ("user".equalsIgnoreCase(message.role())) {
           policies.injectionGuard().check(message.content(), traceId);
         }
       }
     }
-    LlmRequest outbound = redactRequest(request);
+    LlmRequest outbound = redactRequest(routed);
     String cacheKey = cacheKeyOf(outbound, tenantId);
     if (cacheKey != null && policies.responseCache() != null) {
       Optional<LlmResponse> cached = policies.responseCache().get(cacheKey);
       if (cached.isPresent()) {
+        metrics().recordCacheHit(tenantId, outbound.model());
         // 命中未触达模型：不发证据 / 计量（证据链只记真实发生的调用），只留可观测日志
         log.info("LLM 精确缓存命中: traceId={}, model={}", outbound.effectiveTraceId(), outbound.model());
         return cached.get();
       }
     }
     LlmResponse response;
+    long callStartNanos = System.nanoTime();
     try {
       response = llmClient.chat(outbound);
     } catch (RuntimeException e) {
+      metrics().recordProviderCall(tenantId, outbound.model(), false, elapsedMs(callStartNanos));
       publishFailureEvidence(outbound, e);
       throw e;
     }
+    metrics().recordProviderCall(tenantId, outbound.model(), true, elapsedMs(callStartNanos));
+    // 输出内容安全（OWASP LLM05/09）：模型产出不可接受即拒绝——命中也留证，便于事后复盘越狱尝试
+    if (policies.contentSafetyGuard() != null) {
+      try {
+        policies.contentSafetyGuard().check(response.content(), outbound.effectiveTraceId());
+      } catch (RuntimeException unsafe) {
+        publishFailureEvidence(outbound, unsafe);
+        throw unsafe;
+      }
+    }
     // 结构化输出校验：下游按 JSON 解析，格式坏了就是无归因故障，在网关挡住并给稳定码
-    if (request.jsonResponse() && policies.outputValidator() != null) {
+    if (outbound.jsonResponse() && policies.outputValidator() != null) {
       try {
         policies.outputValidator().validate(response.content(), outbound.effectiveTraceId());
       } catch (RuntimeException invalid) {
@@ -138,12 +191,51 @@ public class LlmGatewayApplicationService {
     if (cacheKey != null && policies.responseCache() != null) {
       policies.responseCache().put(cacheKey, response);
     }
+    LlmUsage usage = response.usage();
+    if (usage != null) {
+      metrics()
+          .recordTokens(
+              tenantId,
+              outbound.model(),
+              usage.promptTokens(),
+              usage.completionTokens(),
+              usage.totalTokens());
+    }
     // 证据链（发生了什么）与计量（花了多少）分离发布：spend tracking 消费者订阅 LlmUsageRecorded
     domainEventPublisher.publish(LlmCallRecorded.of(outbound, redactResponse(response)));
     domainEventPublisher.publish(
         LlmUsageRecorded.of(
-            tenantId, request.model(), response.usage(), outbound.effectiveTraceId()));
+            tenantId, outbound.model(), response.usage(), outbound.effectiveTraceId()));
     return response;
+  }
+
+  /**
+   * 场景 → 模型档位路由：命中映射用档位模型，否则按请求模型原样调用。
+   *
+   * <p>「该用多贵的模型」从调用方硬编码收敛为平台可配置策略——调用方只声明业务场景，具体档位由 {@link ModelRouter} 解析。
+   */
+  private LlmRequest routeByScenario(LlmRequest request) {
+    String scenario = request.scenario();
+    if (scenario == null || scenario.isBlank()) {
+      return request;
+    }
+    String resolved = modelRouter.resolveModel(scenario, request.model());
+    if (resolved == null || resolved.equals(request.model())) {
+      return request;
+    }
+    log.info("模型档位路由: scenario={}, {} → {}", scenario, request.model(), resolved);
+    return request.withModel(resolved);
+  }
+
+  /** 量化发射点（缺省 Noop：零依赖，不观测该维度）。 */
+  private LlmMetrics metrics() {
+    LlmMetrics metrics = policies.metrics();
+    return metrics == null ? NoopLlmMetrics.INSTANCE : metrics;
+  }
+
+  /** 毫秒级耗时（provider 延迟口径）。 */
+  private static long elapsedMs(long startNanos) {
+    return (System.nanoTime() - startNanos) / 1_000_000L;
   }
 
   /**
@@ -196,7 +288,8 @@ public class LlmGatewayApplicationService {
         request.maxTokens(),
         request.jsonResponse(),
         request.shortCircuited(),
-        request.traceId());
+        request.traceId(),
+        request.scenario());
   }
 
   /** 落证响应脱敏（模型可能回显输入里的 PII，证据表不得成为未脱敏副本）。 */

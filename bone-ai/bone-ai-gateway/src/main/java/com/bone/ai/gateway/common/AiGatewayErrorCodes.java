@@ -23,6 +23,14 @@ public final class AiGatewayErrorCodes {
   public static final String INJECTION_SUSPECTED = "AI_GATEWAY_INJECTION_SUSPECTED";
 
   /**
+   * 模型产出含不可接受内容（400）：命中内容安全特征（OWASP LLM05/09）；默认关闭，启用方自担误伤。
+   *
+   * <p>2026-10-21 补齐：HeuristicContentSafetyGuard 的抛出点与错误码登记台账（Bone-错误码登记.md §6）均已就位， 仅缺本常量定义——i18n
+   * 门禁此前报「台账有、代码无」，该模块也因此无法编译。
+   */
+  public static final String CONTENT_UNSAFE = "AI_GATEWAY_CONTENT_UNSAFE";
+
+  /**
    * provider 响应不可用（502）：无法解析 / 结构不符 / choices 为空。
    *
    * <p>2026-10-19 新增：此前这类故障只抛裸 IllegalStateException，且 provider 返回空 choices 时会被 asText("") + finish

@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS mdm_field (
     deleted                 BOOLEAN      DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS mdm_entity (
+DROP TABLE IF EXISTS mdm_entity;
+CREATE TABLE mdm_entity (
     id                  BIGINT       NOT NULL PRIMARY KEY,
     tenant_id           BIGINT       NOT NULL DEFAULT 0,
     meta_entity_id      BIGINT,
@@ -36,6 +37,13 @@ CREATE TABLE IF NOT EXISTS mdm_entity (
     is_versioning       BOOLEAN      DEFAULT FALSE,
     workflow_enabled    BOOLEAN      DEFAULT FALSE,
     status              VARCHAR(32)  NOT NULL DEFAULT 'DRAFT',
+    submitted_by        BIGINT,
+    submitted_at        TIMESTAMP,
+    approved_by         BIGINT,
+    approved_at         TIMESTAMP,
+    rejected_by         BIGINT,
+    reject_reason       VARCHAR(512),
+    reject_at           TIMESTAMP,
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

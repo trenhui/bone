@@ -263,9 +263,9 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | v0.50   | 2026-10-11 | —   | **行级 ACL 旁路封堵（子表/引用候选全链路）**：① **子表端点旁路封堵**：`listChildren`/`replaceChildren` 前置主行行级 ACL 断言（`assertRowOwner` private→public 复用）——非本人/非审批人/非管理员枚举或替换他人单据明细 → 404（防「知道主行 id 即可旁路枚举子表」）（Runtime §4.7.1 + §9.7）；② **REFERENCE 候选旁路封堵**：`lookup-options` 内部行级过滤（目标实体有行策略含默认 owner 时仅返回操作者可见候选；无 created_by 主数据豁免；管理员 null/非数值主体豁免）——防「引用字段指向他人私有单据时候选列表泄露全部行」；③ 新增 `RuntimeLookupAclTest` 5 例；④ runtime 96 / server 125 全绿 | Draft |
 | v0.49   | 2026-10-11 | —   | **行策略落地（approver 维度，RLS「策略即 WHERE」完整落地）**：① `meta_entity.row_policies` JSON 声明（owner_field + rules 多规则 OR），报销 `owner_or_approver` = `created_by = :operator OR approver_id = :operator`——本人 + 单据指定审批人可见，其余 404（不泄露行存在性）（Runtime §4.7.1）；② 解析安全：when 仅支持「列 = :operator」+ AND/OR、列白名单 = 物理列集合（审计列可用）、`:operator` 参数化、未知列保守回退；③ Redis 缓存透传 rowPolicies/stateField（修复缓存命中丢 G14 状态保护 bug）；④ 0038 迁移（row_policies 列 + approver_id 列 + **approver_id 字段声明**防死规则）+ bone-init.sql 真源同步；⑤ runtime 87 全绿（新增 `RuntimeRowPolicyTest` 6 例）、server 125 全绿 | Draft |
 | v0.48   | 2026-10-11 | —   | **行级 ACL 落地（owner 维度，RLS 默认拒绝首层）**：① `page/getById` 注入 `AND created_by = :rowOwner` + 写路径（update/delete/restore）同判 404（不泄露行存在性），无 created_by 列实体自动豁免（Runtime §4.7.1）；② 身份三层：平台管理员（null）豁免 + **系统操作者 `system`**（服务/渠道回调身份豁免但审计留痕）+ 数值用户按本人过滤；③ 状态机不冲突：updateState/adminFixState 走 updateInternal 不经行级断言，动作面由动作级权限独立管控；④ 既有测试语义适配（并发 412 改 owner stale、回调改 system 身份），runtime 81 / server 125 全绿；⑤ 行策略（approver 等自定义）仍 v1.1 | Draft |
-| v0.47   | 2026-10-11 | —   | **业界对标落地（动作/写路径加固）**：① **动作入参契约化**（对标 Hasura Actions inputSchema）：`ActionParamSpec` 扩展 `min/max/pattern`，`RuntimeActionApplicationService.validateParams` 统一类型（string/number/integer/boolean/enum）+ 约束校验 → `META_RUNTIME_ACTION_INVALID_PARAMS`，Handler 不再各自校验（Runtime §4.8.2）；② **写路径前置钩子 `RuntimeWriteHook`**（对标 Directus Filter 分层）：实体级业务规则 SPI（可阻断 422 / 可改写载荷），与平台级 `RuntimeWriteValidator` 分离，报销演示 `ExpenseClaimWriteHook`（审批后禁改金额，防绕过审批改单）（Runtime §4.8.3）；③ **幂等重放语义核验确认**：动作幂等走执行记录表命中即复用首响（Stripe 语义已实现），CRUD 幂等 TTL 配置化（Runtime §4.6）；④ **行级 ACL v1.1 设计就绪**（对标 Supabase RLS 默认拒绝）：owner_field + 行策略声明 + 无策略默认仅管理员可见 + 查询 WHERE 注入 + 写路径同判 404（Runtime §4.7.1），D6 引用；⑤ runtime 模块测试 75 全绿（新增 `RuntimeWriteHookTest` 4 例） | Draft |
-| v0.46   | 2026-10-11 | —   | **G10 关联/子表落地（L1 报销真实形态）**：① **运行时关系引擎三类型已实现**（`RuntimeRelationSupport`，零 DDL）：`REFERENCE`（lookup-options 候选 + label 翻译）、`CHILD_TABLE`（listChildren/replaceChildren 整组替换事务）、`ATTACHMENT`（TEXT JSON 清单）；② **公共写校验器** `RuntimeWriteValidator`（required/type/rules/enum，主行与子行同一门禁）+ DDL 适配器三类型映射（REFERENCE→BIGINT、ATTACHMENT→TEXT、CHILD_TABLE→跳列）+ align/verify 对齐豁免；③ **报销场景 L1 实例化（0037 迁移）**：`t_expense_claim_item` 明细子表 + `t_expense_category` 类别主数据（初始 5 类）+ 主实体补建，`category_id` 由 ENUM 码表演进为 REFERENCE（case §3），明细/类别实体权限细码；④ **前端三控件**（`RuntimeDataManagement.tsx`）：REFERENCE 下拉（预取选项）、ATTACHMENT 文件清单（JSON 数组）、CHILD_TABLE 明细弹窗（行编辑/删除/批替换）；⑤ **OpenAPI v1.2.4**：补 lookup-options / children 三端点 + ChildEntityCode 参数；⑥ §0 诚实性纪律同步（关联/子表已支持，多条件过滤/复合唯一/深分页仍不支持）；⑦ G10 由「P2 另立项」转为**已实现**，L1 进 case 落地注记；⑧ 修 PRD 元信息版本号滞后（v0.42 → v0.46） | Draft |
-| v0.45   | 2026-10-11 | —   | **生产就绪补漏（诊断落地 · 契约/代码/文档三方刷新）**：① OpenAPI **v1.2.3**：错误码枚举补 `META_RUNTIME_ENTITY_FORBIDDEN`（403，代码 `GlobalExceptionHandler` 已处理）、`META_RUNTIME_VALIDATION_FAILED`（422，写路径规则校验新码）、`META_RUNTIME_ACTION_INVALID_PARAMS`（422，对齐 Runtime §4.10/§10.3 Playbook），清理残留 `META_RUNTIME_FORBIDDEN_ACTION`；② **RC-007 规则引擎接线（轻量子集）**：`meta_field.validation_rules`（min/max）+ `enum_values`（ENUM 越界）由「死数据」变为写路径强制（`JdbcRuntimeRecordService.validateRules`，422 `META_RUNTIME_VALIDATION_FAILED`；种子 `amount` 的 `min:0.01` 服务端生效），完整业务规则管线仍 v1.1；③ **软删物理降级明示（R13 强化）**：无 `deleted` 列实体的删除由「静默物理 DELETE」改为**拒绝 + 明示不可恢复**（`RuntimeRecordException`，防误删永久丢数据）；④ **命名纪律整改**：报销打款 Handler 由 `PaymentApplicationService`（与 blueprint 订单域同名同 bean 名）改为 **`ExpenseClaimConfirmPayoutHandler`**（0032 种子 + 新增 **0036 存量迁移**改名）；⑤ §0.5.5 契约「v0.42 待补」更新为已入 spec；⑥ 审计触发面现状核实：RC-009 动作链路已落（`meta_runtime_record_audit` 0033），**普通 CRUD 写路径记录级审计待接全**（v1.0.5）；⑦ 待决策 D2/D10/D11/D12/D13 状态刷新（均 W0 前必须定，未关闭） | Draft |
+| v0.47   | 2026-10-11 | —   | **业界对标落地（动作/写路径加固）**：① **动作入参契约化**（对标 Hasura Actions inputSchema）：`ActionParamSpec` 扩展 `min/max/pattern`，`RuntimeActionApplicationService.validateParams` 统一类型（string/number/integer/boolean/enum）+ 约束校验 → `META_RUNTIME_ACTION_INVALID_PARAMS`，Handler 不再各自校验（Runtime §4.8.2）；② **写路径前置钩子 `RuntimeWriteHook`**（对标 Directus Filter 分层）：实体级业务规则 SPI（可阻断 422 / 可改写载荷），与平台级 `RuntimeWriteValidator` 分离，报销演示 `ExpenseReimbursementWriteHook`（审批后禁改金额，防绕过审批改单）（Runtime §4.8.3）；③ **幂等重放语义核验确认**：动作幂等走执行记录表命中即复用首响（Stripe 语义已实现），CRUD 幂等 TTL 配置化（Runtime §4.6）；④ **行级 ACL v1.1 设计就绪**（对标 Supabase RLS 默认拒绝）：owner_field + 行策略声明 + 无策略默认仅管理员可见 + 查询 WHERE 注入 + 写路径同判 404（Runtime §4.7.1），D6 引用；⑤ runtime 模块测试 75 全绿（新增 `RuntimeWriteHookTest` 4 例） | Draft |
+| v0.46   | 2026-10-11 | —   | **G10 关联/子表落地（L1 报销真实形态）**：① **运行时关系引擎三类型已实现**（`RuntimeRelationSupport`，零 DDL）：`REFERENCE`（lookup-options 候选 + label 翻译）、`CHILD_TABLE`（listChildren/replaceChildren 整组替换事务）、`ATTACHMENT`（TEXT JSON 清单）；② **公共写校验器** `RuntimeWriteValidator`（required/type/rules/enum，主行与子行同一门禁）+ DDL 适配器三类型映射（REFERENCE→BIGINT、ATTACHMENT→TEXT、CHILD_TABLE→跳列）+ align/verify 对齐豁免；③ **报销场景 L1 实例化（0037 迁移）**：`t_expense_reimbursement_item` 明细子表 + `t_expense_category` 类别主数据（初始 5 类）+ 主实体补建，`category_id` 由 ENUM 码表演进为 REFERENCE（case §3），明细/类别实体权限细码；④ **前端三控件**（`RuntimeDataManagement.tsx`）：REFERENCE 下拉（预取选项）、ATTACHMENT 文件清单（JSON 数组）、CHILD_TABLE 明细弹窗（行编辑/删除/批替换）；⑤ **OpenAPI v1.2.4**：补 lookup-options / children 三端点 + ChildEntityCode 参数；⑥ §0 诚实性纪律同步（关联/子表已支持，多条件过滤/复合唯一/深分页仍不支持）；⑦ G10 由「P2 另立项」转为**已实现**，L1 进 case 落地注记；⑧ 修 PRD 元信息版本号滞后（v0.42 → v0.46） | Draft |
+| v0.45   | 2026-10-11 | —   | **生产就绪补漏（诊断落地 · 契约/代码/文档三方刷新）**：① OpenAPI **v1.2.3**：错误码枚举补 `META_RUNTIME_ENTITY_FORBIDDEN`（403，代码 `GlobalExceptionHandler` 已处理）、`META_RUNTIME_VALIDATION_FAILED`（422，写路径规则校验新码）、`META_RUNTIME_ACTION_INVALID_PARAMS`（422，对齐 Runtime §4.10/§10.3 Playbook），清理残留 `META_RUNTIME_FORBIDDEN_ACTION`；② **RC-007 规则引擎接线（轻量子集）**：`meta_field.validation_rules`（min/max）+ `enum_values`（ENUM 越界）由「死数据」变为写路径强制（`JdbcRuntimeRecordService.validateRules`，422 `META_RUNTIME_VALIDATION_FAILED`；种子 `amount` 的 `min:0.01` 服务端生效），完整业务规则管线仍 v1.1；③ **软删物理降级明示（R13 强化）**：无 `deleted` 列实体的删除由「静默物理 DELETE」改为**拒绝 + 明示不可恢复**（`RuntimeRecordException`，防误删永久丢数据）；④ **命名纪律整改**：报销打款 Handler 由 `PaymentApplicationService`（与 blueprint 订单域同名同 bean 名）改为 **`ExpenseReimbursementConfirmPayoutHandler`**（0032 种子 + 新增 **0036 存量迁移**改名）；⑤ §0.5.5 契约「v0.42 待补」更新为已入 spec；⑥ 审计触发面现状核实：RC-009 动作链路已落（`meta_runtime_record_audit` 0033），**普通 CRUD 写路径记录级审计待接全**（v1.0.5）；⑦ 待决策 D2/D10/D11/D12/D13 状态刷新（均 W0 前必须定，未关闭） | Draft |
 | v0.44   | 2026-10-10 | —   | **契约/文档-实现对齐**（D5「以代码为准」执行）：① OpenAPI v1.2.2：`RuntimeRecordPage.list` → **`records`**（`@Deprecated getList` 从未序列化，`list` 系文档遗产）+ `pageNum/pageSize` → **`page`/`size`**；② 错误码命名对齐代码真源：`META_RUNTIME_ILLEGAL_TRANSITION` → **`META_RUNTIME_ACTION_ILLEGAL_TRANSITION`**、`META_RUNTIME_IDEMPOTENCY_REQUIRED` → **`META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED`**、`META_RUNTIME_FORBIDDEN_ACTION` → **`META_RUNTIME_ACTION_NOT_FOUND` 之外的细权限码留 P1**；台账 §6 + zh/en 语言包登记 4 个 `META_RUNTIME_ACTION_*`（i18n 门禁回绿）、清孤儿旧键；③ 示例金额 `128.50` + 补 `precision/scale` 语义示例；④ §1.1.1 新增 **G20 DECIMAL 精度未实接**（MyBatis-Plus 写读均按 DECIMAL(20,6) 四舍五入，`meta_field` 无 scale 列，接线为跨 5 层改造，与 Runtime v0.43 范围锁一致）；⑤ §2.5.9/§9 演示口径诚实化（`128.50 → 128.500000` 内部精度差异）；⑥ Runtime 设计 §2.3/§2.4 信封 + §4.5/§4.6/§4.9 错误码命名同步（其版本线 v0.43 不动，v0.43 变更表 #10/#11 已含本项）；⑦ 修订记录 v0.32 重复条目拆分 v0.32a/v0.32 | Draft |
 | v0.42   | 2026-10-10 | —| **数据面安全补漏 + 范围重切**（代码级实测驱动）：① 新增 §1.1.1 G10–G19 运行时能力缺口表（**关联/子表/多条件过滤/复合唯一/深分页实测均不存在**）；② **G14 状态字段可直写** → 新增 **RC-008**（`state_field` → 422 + 声明式 `state_transition`，**替代「手工改 ENUM」**）；③ **G15 权限=租户内全库 CRUD** → RC-004 增补实体级 `runtime:{entity}:{read\|write}`；④ **G18 记录级审计缺失** → 新增 **RC-009**；⑤ 幂等三缺陷（scope 绑 user / TTL 硬编码 / 软删不可恢复）+ DELETE 补 If-Match 列入 Must-1；⑥ §0.2 硬口径重写 + §11.1 按风险重切为 **Must-1 数据安全 / Must-2 可交付闭环 / Should**；⑦ 修正三条超纲 BDD（UIF-002 的 FK 下拉、UIF-001 的查询区、§2.2 的复合唯一 409）；⑧ **D2 覆盖配置重开**（localStorage 与三处条款矛盾）→ 推荐 `meta_entity.ui_overlay JSON`；⑨ **D5 关闭**（假决策项）；**D3 关闭**（新建 API 无需宽限期）；新增 **D13/D14**；⑩ 门禁表述修正：G31–G35 **已由并发提交者落地**（`86a5e696` 补 G33/G34），§0.6.5 改为「已落地 + 维护要求」（G32 判据待补、G33 `SLICE_ALLOWLIST` 需 owner）；⑪ §0.6.3 修正「共用函数使漂移在结构上不可能」过强论证 → 改用跨端 golden fixtures；⑫ §9.1 验收场景主推改访客/巡检（补货的入库动作落在 MVP 边界外）；⑬ `filter` JSON 从 P2 提前 v1.0.5；⑭ STRIDE 三行状态由 ✅ 改回 🟡/❌ | Draft |
 | v0.41   | 2026-10-10 | —   | **范围纪律 + 数据面收口**：薄读本；§0.2 硬口径（Actions/Describe/Invoke=Should，MVP=CRUD）；UC-C/§2.5.9 动态 actions；UIF-008 错误码 `META_RUNTIME_ACTION_ILLEGAL_TRANSITION`；§1.1.1 契约对齐说明；Runtime 设计 As-Is 矩阵/列表 allowedActions/Handler 部署 | Draft                                                                        |       |
@@ -589,7 +589,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 场景                  | 用户操作                                                        | 系统行为                                               | 结果                                                    |
 | ------------------- | ----------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
 | 供应链补货单上线（旗舰 · §2.5） | 建模 `ReplenishmentOrder` → 界面预览 → 发布 → 数据 Tab 开单/改状态枚举       | Meta* 自动列表/表单；热加载加「预计到货日」                          | 业务仓 **0** 手写 CRUD 页（对照今日手写 `ReplenishmentManagement`） |
-| 费用报销单上线（办公域 · §2.5.9） | 模板起盘 `expense_claim` → 实体 `t_expense_claim` → 界面 → 发布 → 录首条 | Meta*；DECIMAL+ENUM；打款逃逸口述 | 业务仓 **0** 手写报销页 |
+| 费用报销单上线（办公域 · §2.5.9） | 模板起盘 `expense_reimbursement` → 实体 `t_expense_reimbursement` → 界面 → 发布 → 录首条 | Meta*；DECIMAL+ENUM；打款逃逸口述 | 业务仓 **0** 手写报销页 |
 | 配置型实体快速上线           | 在 `bone-metadata-app` 表单建模 → 发布 RUNTIME → **点「打开运行时页」自动入口** | engine 动态 CRUD；MetaList/MetaForm 按快照渲染；**无需改业务仓库** | 壳内可用页（UIF-007）                                        |
 | 列表精准查询              | 设置排序 / 列裁剪 / 单条件等值（如 `q=status:APPROVED`）                     | runtime 解析 `sort`/`fields`/`q`                      | 裁剪后分页数据（**多条件组合 → v1.0.5**，§1.1.1 G11）                                               |
 | 发布即生效               | 发布新增可空字段（如 `expected_arrival_date`）                         | 实体级缓存失效（RC-002）                                    | **P95 ≤ 5s** 出现新字段（告警上限 60s）                          |
@@ -749,7 +749,7 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | **设备巡检**  | `t_device_inspect`                           | 纯配置型       | MVP **够用**（无状态机、无跨实体）        | ✅      |
 | **供应链补货** | `bp_replenishment_order` / `t_replenishment` | 配置型 + 轻状态机 | MVP **边界**（ENUM 展示；入库/建议量逃逸） | ✅ 旗舰样例 |
 | **访客登记**  | `t_visitor_pass`                             | 纯配置型（另一垂直） | **通用性**（换行业字段，闭环步骤相同）        | ✅      |
-| **费用报销**  | `t_expense_claim`                            | 配置型 + DECIMAL + 轻状态 | **办公域黄金路径**（金额/类目；打款逃逸）   | ✅ §2.5.9 |
+| **费用报销**  | `t_expense_reimbursement`                            | 配置型 + DECIMAL + 轻状态 | **办公域黄金路径**（金额/类目；打款逃逸）   | ✅ §2.5.9 |
 
 > 正式验收：**任选一场景包**走通 §9.1.1 即可；评审建议：巡检（够用）→ 报销（DECIMAL）→ 补货（边界）→ 访客（换皮）。
 
@@ -968,10 +968,10 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | 层 | 标识 | 说明 |
 |----|------|------|
 | 显示名 | 费用报销 | 工作台 / 侧栏 |
-| 模板 code（T4） | `expense_claim` | `meta_model_template` |
-| 实体 code（RUNTIME） | `t_expense_claim` | 发布后物理表/路由 |
+| 模板 code（T4） | `expense_reimbursement` | `meta_model_template` |
+| 实体 code（RUNTIME） | `t_expense_reimbursement` | 发布后物理表/路由 |
 | 原型场景 id | `expense` | `#scene=expense` |
-| 打款逃逸（已实现 v0.45） | `ExpenseClaimConfirmPayoutHandler`（bean 名同，`RuntimeActionDispatcher` 装配） | 对称 `ReplenishmentApplicationService.receive`；**禁止**复用 blueprint 订单域 `PaymentApplicationService`（已遵行——原 `PaymentApplicationService` 类已改名，见 0036 迁移） |
+| 打款逃逸（已实现 v0.45） | `ExpenseReimbursementConfirmPayoutHandler`（bean 名同，`RuntimeActionDispatcher` 装配） | 对称 `ReplenishmentApplicationService.receive`；**禁止**复用 blueprint 订单域 `PaymentApplicationService`（已遵行——原 `PaymentApplicationService` 类已改名，见 0036 迁移） |
 
 | 状态（ENUM） | 含义 | Mode B 数据 Tab |
 |---|---|---|
@@ -995,13 +995,13 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 | `remark` | TEXT | 可空 | 说明 |
 | `cost_center` | STRING | 可空 | **不进初建模板**；UC-02 再加 |
 | `attachment` | **ATTACHMENT** | 可空 | **L1（v0.46）**：附件清单（TEXT JSON 数组串，maxCount=10/maxSizeMB=10） |
-| `items` | **CHILD_TABLE** | 可空 | **L1（v0.46）**：明细行声明字段（无物理列）→ `expense_claim_item`，1—N（maxRows=200） |
+| `items` | **CHILD_TABLE** | 可空 | **L1（v0.46）**：明细行声明字段（无物理列）→ `expense_reimbursement_item`，1—N（maxRows=200） |
 
 | 能力 | 落点 | 说明 |
 |---|---|---|
 | 建模 / 列表表单 / 单条件等值 `q` / 热加载 | **Mode B · Must** | 与巡检同路径；额外验 DECIMAL |
 | **REFERENCE 候选下拉 + label 翻译** | **Mode B · 已实现（v0.46）** | lookup-options 端点 + 列表 `{code}__label`；类别主数据 `expense_category`（0037 初始 5 类） |
-| **CHILD_TABLE 明细行（1—N 批替换）** | **Mode B · 已实现（v0.46）** | `expense_claim_item` 明细弹窗；整组替换同一事务（listChildren/replaceChildren）；明细 `amount` 服务端强制 min:0.01（RC-007） |
+| **CHILD_TABLE 明细行（1—N 批替换）** | **Mode B · 已实现（v0.46）** | `expense_reimbursement_item` 明细弹窗；整组替换同一事务（listChildren/replaceChildren）；明细 `amount` 服务端强制 min:0.01（RC-007） |
 | **ATTACHMENT 附件清单** | **Mode B · 已实现（v0.46）** | JSON 数组串（name/url/size），前端清单式渲染 |
 | 状态徽标 + **声明式状态推进**（`POST …/actions/{code}`） | **Mode B · Must**（v0.42 提级，见RC-008） | 🔺 原「MVP 手工改 ENUM」**已废止**——该路径绕过状态机/审批/幂等/审计。**打款（escape）仍属 P1** |
 | 多级审批 BPM | **逃逸 · VF-001** | MVP 不承诺 |
@@ -1018,13 +1018,13 @@ PRD §5.3.0a 要求「界面预览列 ≡ 发布后数据列」。若两边各�
 |------|--------|------|
 | W0～W0b | 共用工作区壳 /data 绑 id / 发布常驻 | 融合方案 §3.1–3.2 |
 | W1a T1–T3 | ENUM DDL + 透传 + 控件 | §0.6.2 |
-| W1a T4 | 种子 `expense_claim`（上表 8 字段 + enum_values） | 与巡检/补货/访客并列（**已落库**：`scripts/migration/0031_scenario_template_expense.sql`，模板 id `9150`） |
+| W1a T4 | 种子 `expense_reimbursement`（上表 8 字段 + enum_values） | 与巡检/补货/访客并列（**已落库**：`scripts/migration/0031_scenario_template_expense.sql`，模板 id `9150`） |
 | W2 | Meta* + `projectColumns` | 预览列 ≡ 数据列 |
 | 逃逸（另任务） | UIF-004 挂 `confirmPayout` | **非**本迭代 Must |
 
 **数据面**：**Must** = Runtime CRUD（`sort`/`fields`/单条件等值 `q` + 412）+ **RC-008 状态字段保护**（422，`state_transition` 为唯一合法状态入口）+ **实体级权限** + **记录级审计** + **G10 关系三类型**（v0.46：REFERENCE / CHILD_TABLE / ATTACHMENT，端点见 OpenAPI）。**Should/P1** = escape `POST …/actions/confirmPayout`（Handler）+ page 级 `meta.allowedActionsByStatus`。MVP 打款仅原型口述——见 [Runtime §0.1 矩阵](./BONE-低代码Runtime数据面设计.md) + OpenAPI **v1.2.4**（关系端点 + 错误码已同步，v0.45/46 收敛）。
 
-**L1 扩展（已实现 v0.46）**：[`费用报销系统-元数据建模方案.md`](./cases/费用报销系统-元数据建模方案.md) case **L1**——0037 迁移：`t_expense_claim_item` 明细子表 + `t_expense_category` 类别主数据 + 主实体补建；前端明细弹窗/REFERENCE 下拉/附件清单在 `RuntimeDataManagement.tsx`；工程改法见[融合方案](./ui/元数据工作区前端融合方案.md)；UI 索引见 [`doc/design/lowcode/ui/README.md`](./ui/README.md)。
+**L1 扩展（已实现 v0.46）**：[`费用报销系统-元数据建模方案.md`](./cases/费用报销系统-元数据建模方案.md) case **L1**——0037 迁移：`t_expense_reimbursement_item` 明细子表 + `t_expense_category` 类别主数据 + 主实体补建；前端明细弹窗/REFERENCE 下拉/附件清单在 `RuntimeDataManagement.tsx`；工程改法见[融合方案](./ui/元数据工作区前端融合方案.md)；UI 索引见 [`doc/design/lowcode/ui/README.md`](./ui/README.md)。
 
 ### 2.5.10 采购订单（第三验收场景 · v0.51 · 业界黄金路径）
 
@@ -2203,7 +2203,7 @@ flowchart LR
 
 > **`doc/design/lowcode/ui/bone-metadata-ui-prototype.html`** — **v0.46 · 双界面 + 报销 L1（明细/类别/附件）**：  
 > - 场景序：巡检 → **报销** → 补货 → 访客；`#scene=expense` = §2.5.9 = case **L1**（v0.46：明细+类别+附件）。  
-> - 打款弹层：**已实现 v0.45** `ExpenseClaimConfirmPayoutHandler`（原拟议 `ExpenseClaimApplicationService.confirmPayout`，0036 改名）。  
+> - 打款弹层：**已实现 v0.45** `ExpenseReimbursementConfirmPayoutHandler`（原拟议 `ExpenseReimbursementApplicationService.confirmPayout`，0036 改名）。  
 > - 索引：[`doc/design/lowcode/ui/README.md`](./ui/README.md) · [`walkthrough`](./ui/walkthrough-2026-10-09.md)。  
 >
 > 历史截图（对照，已归档 `ui/archive/`）：`preview-1-canvas.png` … `preview-14-notify.png`；补货场景截图见 `ui/preview-scene-replenishment.png`。

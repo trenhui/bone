@@ -69,6 +69,9 @@ public final class MasterDataErrorCodes {
   public static final String SOD_VIOLATION = "MD_SOD_VIOLATION";
   public static final String WORKFLOW_APPROVAL_REQUIRED = "MD_WORKFLOW_APPROVAL_REQUIRED";
 
+  /** 驳回必须填写原因——否则起草人无从改起，评审流于形式。 */
+  public static final String REJECT_REASON_REQUIRED = "MD_REJECT_REASON_REQUIRED";
+
   // 分类体系（G4）
   public static final String CATEGORY_NOT_FOUND = "MD_CATEGORY_NOT_FOUND";
   public static final String CATEGORY_CODE_DUPLICATE = "MD_CATEGORY_CODE_DUPLICATE";

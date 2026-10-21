@@ -4,10 +4,12 @@
 
 export interface SystemConfig {
   id?: string;
-  key: string;
-  value: string;
+  /** 与后端 ConfigResp 一致：wire 字段为 configKey/configValue/configType */
+  configKey: string;
+  configValue: string;
   description?: string;
-  type: 'SYSTEM' | 'SERVICE' | 'FEATURE';
+  configType: 'SYSTEM' | 'SERVICE' | 'FEATURE';
+  encrypted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -48,8 +50,9 @@ export interface AlertRecord {
 
 export interface SystemLog {
   id?: string;
-  level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'TRACE';
-  service: string;
+  /** 与后端 LogResp 一致：wire 字段为 logLevel/serviceName（非 level/service） */
+  logLevel: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'TRACE';
+  serviceName: string;
   content: string;
   traceId?: string;
   createdAt?: string;

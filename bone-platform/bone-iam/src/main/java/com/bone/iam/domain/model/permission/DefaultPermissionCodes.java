@@ -99,6 +99,7 @@ public final class DefaultPermissionCodes {
         // 主数据（G6 落地：3a 设计 §4.4 权限码全集）
         "masterdata:entities:read",
         "masterdata:entities:write",
+        "masterdata:entities:approve",
         "masterdata:records:read",
         "masterdata:records:write",
         "masterdata:records:approve",

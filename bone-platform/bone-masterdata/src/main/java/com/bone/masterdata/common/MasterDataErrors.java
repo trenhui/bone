@@ -75,6 +75,7 @@ public final class MasterDataErrors {
           Map.entry(MasterDataErrorCodes.USER_CONTEXT_REQUIRED, 401),
           Map.entry(MasterDataErrorCodes.SOD_VIOLATION, 403),
           Map.entry(MasterDataErrorCodes.WORKFLOW_APPROVAL_REQUIRED, 422),
+          Map.entry(MasterDataErrorCodes.REJECT_REASON_REQUIRED, 400),
           // 分类体系（G4）
           Map.entry(MasterDataErrorCodes.CATEGORY_NOT_FOUND, 404),
           Map.entry(MasterDataErrorCodes.CATEGORY_CODE_DUPLICATE, 409),

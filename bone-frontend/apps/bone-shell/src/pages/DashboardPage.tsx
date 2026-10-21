@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Progress, Spin } from 'antd';
 import {
@@ -28,6 +28,7 @@ import {
   type QuickAction,
 } from '../services/consoleApi';
 import { formatDate, formatNumber } from '@bone/shared-utils';
+import BrandMark from '../components/BrandMark';
 import { ThemeContext } from '../shellContext';
 
 const OVERVIEW_REFRESH_MS = 30_000;
@@ -211,48 +212,49 @@ export default function DashboardPage(): JSX.Element {
 
   const stats = useMemo(() => {
     const km = overview?.keyMetrics ?? {};
+    // color 驱动每张卡的图标芯片与 hover 描边（CSS 变量 --kpi-color），一色一卡、克制不花
     return [
       {
         title: '用户数量',
         desc: '注册账户',
         value: fmtNum(km.userCount),
         icon: <UserOutlined />,
-        accent: 'linear-gradient(135deg,#1677ff,#69b1ff)',
+        color: '#1677ff',
       },
       {
         title: '实体数量',
         desc: '建模实体',
         value: fmtNum(km.entityCount),
         icon: <DatabaseOutlined />,
-        accent: 'linear-gradient(135deg,#52c41a,#95de64)',
+        color: '#52c41a',
       },
       {
         title: '集成流程',
         desc: '活动集成',
         value: fmtNum(km.integrationFlowCount),
         icon: <LinkOutlined />,
-        accent: 'linear-gradient(135deg,#fa8c16,#ffc069)',
+        color: '#fa8c16',
       },
       {
         title: '扩展插件',
         desc: '已安装',
         value: fmtNum(km.extensionPluginCount),
         icon: <AppstoreOutlined />,
-        accent: 'linear-gradient(135deg,#722ed1,#b37feb)',
+        color: '#722ed1',
       },
       {
         title: '订单数量',
         desc: '累计订单',
         value: fmtNum(km.orderCount),
         icon: <ShoppingOutlined />,
-        accent: 'linear-gradient(135deg,#13c2c2,#5cdbd3)',
+        color: '#13c2c2',
       },
       {
         title: '交易总额',
         desc: '累计成交',
         value: fmtMoney(km.transactionAmount),
         icon: <DollarOutlined />,
-        accent: 'linear-gradient(135deg,#faad14,#ffd666)',
+        color: '#faad14',
       },
     ];
   }, [overview]);
@@ -292,7 +294,9 @@ export default function DashboardPage(): JSX.Element {
       {/* ── Hero 横幅 ── */}
       <section className="db-hero">
         <div className="db-hero-left">
-          <div className="db-hero-logo">B</div>
+          <div className="db-hero-logo">
+            <BrandMark size={30} />
+          </div>
           <div>
             <h1 className="db-hero-title">BONE 平台控制台</h1>
             <p className="db-hero-sub">企业级元数据驱动 · DDD + CQRS · 微前端开发平台</p>
@@ -318,10 +322,12 @@ export default function DashboardPage(): JSX.Element {
       {/* ── KPI 指标 ── */}
       <section className="db-kpis">
         {stats.map((stat, i) => (
-          <div className="db-kpi" style={{ animationDelay: `${i * 70}ms` }} key={stat.title}>
-            <div className="db-kpi-icon" style={{ background: stat.accent }}>
-              {stat.icon}
-            </div>
+          <div
+            className="db-kpi"
+            style={{ animationDelay: `${i * 70}ms`, '--kpi-color': stat.color } as CSSProperties}
+            key={stat.title}
+          >
+            <div className="db-kpi-icon">{stat.icon}</div>
             <div className="db-kpi-body">
               <div className="db-kpi-value">{stat.value}</div>
               <div className="db-kpi-title">{stat.title}</div>
