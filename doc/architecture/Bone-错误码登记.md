@@ -365,7 +365,6 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_RECORD_CODE_DUPLICATE` | 409 | 同一租户+实体下 record_code 重复 |
 | `MD_RECORD_EFFECTIVE_WINDOW_INVALID` | 400 | 记录生效期窗口非法（开始晚于结束） |
 | `MD_RECORD_IMMUTABLE_DATA` | 400 | 已发布记录的 data 变更须走变更审批（导入 UPDATE 策略命中时拦截） |
-| `MD_REJECT_REASON_REQUIRED` | 422 | 实体评审驳回未填原因（驳回须可追溯：谁驳回、为什么） |
 | `MD_FIELD_RANGE_INVALID` | 400 | 字段数值值域定义非法（下限大于上限） |
 | `MD_TEMPLATE_DOMAIN_DUPLICATE` | 409 | 领域模板编码已存在 |
 | `MD_TEMPLATE_FIELD_SCHEMA_INVALID` | 400 | 模板字段结构非法 |

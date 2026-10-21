@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import os
 import sys
 import tempfile
 import unittest
@@ -95,6 +96,26 @@ class FreezeBaselineGateTest(unittest.TestCase):
         f.write_text("freeze.store.default.allowStoreUpdate=true\n", encoding="utf-8")
         d = gate.read_props(f)
         self.assertEqual(d.get("freeze.store.default.allowStoreUpdate"), "true")
+
+    # ---- _git_env：局部提交不得污染 R2 ----
+
+    def test_git_env_strips_index_file(self) -> None:
+        """`git commit -- <path>` 会设 GIT_INDEX_FILE 指向临时 index（只含本次路径）。
+
+        若不清除，`git ls-files` 看不到仓库其余已跟踪文件，R2 会把已跟踪的
+        archunit.properties 判成未跟踪 —— 假阳性阻断一切局部提交。
+        """
+        saved = os.environ.get("GIT_INDEX_FILE")
+        os.environ["GIT_INDEX_FILE"] = "/tmp/some-partial-commit-index"
+        try:
+            env = gate._git_env()
+        finally:
+            if saved is None:
+                os.environ.pop("GIT_INDEX_FILE", None)
+            else:
+                os.environ["GIT_INDEX_FILE"] = saved
+        self.assertNotIn("GIT_INDEX_FILE", env)
+        self.assertIn("PATH", env)  # 其余环境原样保留
 
     # ---- main() 端到端判据 ----
 

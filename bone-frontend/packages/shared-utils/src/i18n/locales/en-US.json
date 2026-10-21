@@ -90,7 +90,6 @@
     "INT_FLOW_START_NODE_MISSING": "Flow must contain a start node",
     "MD_REF_PLATFORM_SET_IMMUTABLE": "Platform reference set is immutable (tenant read-only)",
     "MD_REF_PLATFORM_VALUE_IMMUTABLE": "Platform reference value is immutable (tenant read-only)",
-    "MD_REJECT_REASON_REQUIRED": "Rejection reason is required",
     "MD_TEMPLATE_DOMAIN_DUPLICATE": "Domain template code already exists",
     "MD_TEMPLATE_FIELD_SCHEMA_INVALID": "Template field schema is invalid",
     "MD_TEMPLATE_NOT_FOUND": "Domain template not found",

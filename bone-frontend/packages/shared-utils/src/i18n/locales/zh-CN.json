@@ -90,7 +90,6 @@
     "INT_FLOW_START_NODE_MISSING": "流程必须包含结束节点",
     "MD_REF_PLATFORM_SET_IMMUTABLE": "平台值域不可变（租户只读）",
     "MD_REF_PLATFORM_VALUE_IMMUTABLE": "平台参考值不可变（租户只读）",
-    "MD_REJECT_REASON_REQUIRED": "驳回必须填写原因",
     "MD_TEMPLATE_DOMAIN_DUPLICATE": "领域模板编码已存在",
     "MD_TEMPLATE_FIELD_SCHEMA_INVALID": "模板字段结构非法",
     "MD_TEMPLATE_NOT_FOUND": "领域模板不存在",

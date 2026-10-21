@@ -27,6 +27,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -40,6 +41,20 @@ ALLOW_CREATION_KEY = "freeze.store.default.allowStoreCreation"
 KV_RE = re.compile(r"^\s*(?P<key>[^#=\s][^=]*?)\s*=\s*(?P<val>[^#\s]+)\s*$")
 
 
+def _git_env() -> dict[str, str]:
+    """调 git 前的环境：剥离 `GIT_INDEX_FILE`。
+
+    `git commit -- <path>`（局部提交）会让 Git 把 `GIT_INDEX_FILE` 指向一个**临时
+    index**，其中只含本次提交的路径。若不清除，`git ls-files` 便只看到那几个文件，
+    仓库里已跟踪的 `archunit.properties` 会被 R2 判成「未被跟踪」——纯假阳性，
+    与提交内容无关，却会阻断任何局部提交。R2 的语义是「文件是否被版本控制跟踪」，
+    必须以仓库真实 index 为准。
+    """
+    env = dict(os.environ)
+    env.pop("GIT_INDEX_FILE", None)
+    return env
+
+
 def tracked_files() -> set[str]:
     """git 已跟踪的文件清单（相对仓库根，posix 风格）。"""
     try:
@@ -49,6 +64,7 @@ def tracked_files() -> set[str]:
             capture_output=True,
             text=True,
             timeout=30,
+            env=_git_env(),
         )
     except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover
         print(f"⚠ 无法执行 git ls-files：{exc}（R2 无法判定）")
