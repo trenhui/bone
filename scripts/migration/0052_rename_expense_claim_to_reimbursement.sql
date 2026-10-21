@@ -87,21 +87,30 @@ UPDATE meta_model_template
  WHERE ui_schema_json LIKE '%expense_claim%';
 
 -- ── 7. 权限码 + 资源路径（细粒度读写码） ───────────────────────────────
+-- 注意：实际权限码是基名形态 runtime:expense_claim:*（非 _item），故须做基名 REPLACE；
+--       "expense_claim_item" 含 "expense_claim" 子串，基名替换可同时覆盖两种形态。
 UPDATE iam_permission
-   SET code = REPLACE(code, 'expense_claim_item', 'expense_reimbursement_item'),
-       resource_path = REPLACE(resource_path, 'expense_claim_item', 'expense_reimbursement_item')
+   SET code = REPLACE(REPLACE(code, 'expense_claim_item', 'expense_reimbursement_item'),
+                      'expense_claim', 'expense_reimbursement'),
+       resource_path = REPLACE(REPLACE(resource_path, 'expense_claim_item', 'expense_reimbursement_item'),
+                               'expense_claim', 'expense_reimbursement')
  WHERE code LIKE '%expense_claim%' OR resource_path LIKE '%expense_claim%';
 
--- ── 8. 校验 ─────────────────────────────────────────────────────────────
+-- ── 8. 校验（new_* 应为目标值；leftover_old_* 应为 0） ───────────────────
 SELECT
   (SELECT COUNT(*) FROM information_schema.tables
      WHERE table_schema = DATABASE()
        AND table_name IN ('t_expense_reimbursement','t_expense_reimbursement_item')) AS new_tables,
+  (SELECT COUNT(*) FROM information_schema.tables
+     WHERE table_schema = DATABASE()
+       AND table_name IN ('t_expense_claim','t_expense_claim_item')) AS leftover_old_tables,
   (SELECT COUNT(*) FROM meta_entity WHERE deleted = 0
-     AND code IN ('expense_reimbursement','expense_reimbursement_item')) AS renamed_entities,
-  (SELECT COUNT(*) FROM meta_entity_action_def WHERE deleted = 0
+     AND code IN ('expense_reimbursement','expense_reimbursement_item')) AS renamed_entities_active,
+  (SELECT COUNT(*) FROM meta_entity_action_def
      AND entity_code = 'expense_reimbursement') AS renamed_actions,
-  (SELECT COUNT(*) FROM iam_permission WHERE deleted = 0
-     AND code LIKE 'runtime:expense_reimbursement_item:%') AS renamed_perms,
-  (SELECT COUNT(*) FROM meta_entity WHERE deleted = 0
-     AND code IN ('expense_claim','expense_claim_item')) AS leftover_old_code;
+  (SELECT COUNT(*) FROM iam_permission
+     AND code LIKE 'runtime:expense_reimbursement:%') AS renamed_perms,
+  (SELECT COUNT(*) FROM iam_permission
+     WHERE code LIKE '%expense_claim%' OR resource_path LIKE '%expense_claim%') AS leftover_old_perms,
+  (SELECT COUNT(*) FROM meta_entity
+     WHERE code IN ('expense_claim','expense_claim_item')) AS leftover_old_code;
