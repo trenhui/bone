@@ -383,7 +383,7 @@ export default function DictionaryPanel({ schema, onChange, fields, focus, onFie
         okButtonProps={{
           disabled: migratePlan == null || (migratePlan.requiresConfirmation && !conflictConfirmed),
         }}
-        destroyOnClose
+        destroyOnHidden
         width={640}
       >
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
