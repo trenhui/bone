@@ -88,4 +88,14 @@ public class ScheduleTask extends TenantAggregateRoot<Long> {
     this.nextRunAt = nextAt;
     this.updatedAt = LocalDateTime.now();
   }
+
+  /**
+   * 仅预排下次执行时间（注册阶段），不改写 {@code lastRunAt}——预排不得冒充已执行。
+   *
+   * @param nextAt 由 {@code TaskSchedulerRegistry.nextRunAtOf} 按 cron 实算的下一次触发时间
+   */
+  public void planNextRun(LocalDateTime nextAt) {
+    this.nextRunAt = nextAt;
+    this.updatedAt = LocalDateTime.now();
+  }
 }

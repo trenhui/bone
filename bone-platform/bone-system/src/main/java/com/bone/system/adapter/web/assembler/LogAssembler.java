@@ -21,7 +21,26 @@ public interface LogAssembler {
 
   CreateLogCommand toCommand(CreateLogReq req);
 
-  LogPageQuery toQuery(LogPageReq req);
+  /**
+   * 分页请求 → 分页查询。
+   *
+   * <p>与 {@link #toExportQuery} 同理不交给 MapStruct：startTime/endTime 是字符串 → {@link LocalDateTime}
+   * 的解析，复用 {@link #parse(String)} 兼容两种格式，避免格式不匹配时抛转换异常。
+   */
+  default LogPageQuery toQuery(LogPageReq req) {
+    LogPageQuery qry = new LogPageQuery();
+    if (req == null) {
+      return qry;
+    }
+    qry.setKeyword(req.getKeyword());
+    qry.setLogLevel(req.getLogLevel());
+    qry.setServiceName(req.getServiceName());
+    qry.setPage(req.getPage());
+    qry.setSize(req.getSize());
+    qry.setStartTime(parse(req.getStartTime()));
+    qry.setEndTime(parse(req.getEndTime()));
+    return qry;
+  }
 
   LogResp toResp(LogDto dto);
 

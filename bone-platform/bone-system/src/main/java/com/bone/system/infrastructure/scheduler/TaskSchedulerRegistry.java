@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
@@ -72,11 +73,56 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
   @Override
   public void register(ScheduleTask task) {
     cancel(task.getId());
+    // 注册即预排：启用任务后「下次执行时间」在第一次执行前就有值（界面不再空白）。
+    // lastRunAt 保持 null——预排不得冒充已执行。
+    planNextRun(task);
     Runnable runnable = buildRunnable(task);
     ScheduledFuture<?> future =
         threadPoolTaskScheduler.schedule(runnable, new CronTrigger(task.getCron()));
     futures.put(task.getId(), future);
     log.info("[ScheduleTask] 已注册任务 {} (cron={})", task.getName(), task.getCron());
+  }
+
+  /**
+   * 预排下次执行时间并落库。
+   *
+   * <p>调度线程无租户会话，而 {@code sys_schedule_task} 是租户作用域表（save 必须显式声明租户，见 {@link
+   * #recordRun}）；故以任务自身租户进入上下文。找不到持久化实例时回退到入参实例，保证至少把预排结果写回自己。
+   */
+  private void planNextRun(ScheduleTask task) {
+    LocalDateTime next = nextRunAtOf(task.getCron(), LocalDateTime.now());
+    TenantContextRunner.runAs(
+        task.getTenantId(),
+        () -> {
+          ScheduleTask latest = scheduleTaskRepository.findById(task.getId());
+          ScheduleTask target = latest != null ? latest : task;
+          target.planNextRun(next);
+          scheduleTaskRepository.save(target);
+        });
+  }
+
+  /**
+   * 按 cron 表达式实算 {@code from} 之后的首次触发时间（本地时间视角）。
+   *
+   * <p>用 {@link CronExpression#next(LocalDateTime)} 而非 {@link
+   * CronTrigger#nextExecutionTime}：后者内置「绝不排到过去」 的守卫——会以「当前时刻」为下界持续后推，无法算出任意 {@code from}
+   * 之后的下一次；本方法只严格求 {@code from} 之后的首个匹配。
+   *
+   * <p>非法 / 空 cron 返回 {@code null}（调用方据此决定不预排，而不是抛异常中断整批装载）。
+   *
+   * @param cron 标准 6 段 Spring cron 表达式
+   * @param from 参考时间（通常为当前时间），返回严格晚于该时间的下一次触发
+   */
+  public static LocalDateTime nextRunAtOf(String cron, LocalDateTime from) {
+    if (cron == null || cron.isBlank()) {
+      return null;
+    }
+    try {
+      CronExpression expr = CronExpression.parse(cron);
+      return expr.next(from);
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
   }
 
   /** 注销一个任务；未注册时静默返回（幂等）。 */
@@ -139,10 +185,11 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
         task.getTenantId(),
         () -> {
           ScheduleTask latest = scheduleTaskRepository.findById(task.getId());
-          if (latest != null) {
-            latest.markRun(LocalDateTime.now(), null);
-            scheduleTaskRepository.save(latest);
-          }
+          ScheduleTask target = latest != null ? latest : task;
+          // 实算下一次触发并落库：lastRunAt=刚跑完，nextRunAt=按 cron 的下一次（不再写死 null）。
+          LocalDateTime next = nextRunAtOf(task.getCron(), LocalDateTime.now());
+          target.markRun(LocalDateTime.now(), next);
+          scheduleTaskRepository.save(target);
         });
   }
 

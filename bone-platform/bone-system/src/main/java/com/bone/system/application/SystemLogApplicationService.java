@@ -73,6 +73,8 @@ public class SystemLogApplicationService {
             query.getKeyword(),
             parseLogLevelOrNull(query.getLogLevel()),
             query.getServiceName(),
+            query.getStartTime(),
+            query.getEndTime(),
             query.getPage(),
             query.getSize());
     return PageResult.of(

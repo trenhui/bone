@@ -20,14 +20,28 @@ import java.util.List;
 public interface SystemLogRepository extends Repository<SystemLog, Long> {
 
   /**
-   * 日志分页：内容模糊 + 级别 / 服务名精确过滤，按 {@code createdAt} 倒序。
+   * 日志分页：内容模糊 + 级别 / 服务名精确过滤 + 可选时间范围，按 {@code createdAt} 倒序。
    *
    * @param keyword 为空或空白时不加内容过滤
+   * @param from 起始时间（可选），为 {@code null} 时不加下界
+   * @param to 结束时间（可选），为 {@code null} 时不加下界
    */
   default PageResult<SystemLog> pageByCondition(
-      String keyword, LogLevel level, String service, int page, int size) {
+      String keyword,
+      LogLevel level,
+      String service,
+      LocalDateTime from,
+      LocalDateTime to,
+      int page,
+      int size) {
     var query = QueryBuilder.from(SystemLog.class);
     appendFilters(query, keyword, level, service);
+    if (from != null) {
+      query.and(SystemLog::getCreatedAt).gte(from);
+    }
+    if (to != null) {
+      query.and(SystemLog::getCreatedAt).lte(to);
+    }
     return query.orderByDesc(SystemLog::getCreatedAt).page(page, size);
   }
 

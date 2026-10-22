@@ -463,6 +463,7 @@
       "upgradeDescriptionPlaceholder": "Upgrade notes",
       "totalRecords": "Total {{total}} records",
       "opsNotImplemented": "Ops actions (deploy/upgrade/restart/shutdown) are not implemented: they belong to CI/CD and the orchestration platform",
+      "placeholderNotice": "Ops endpoints (deploy/upgrade/restart/shutdown) are not implemented yet (currently always return 501); the related buttons are disabled. K8s/Helm configuration requires a cluster data source before real values can be shown.",
       "noDeployHistory": "No deployment history (backend does not provide a deployment record endpoint yet)",
       "runtimeInfo": "Runtime Info"
     },
