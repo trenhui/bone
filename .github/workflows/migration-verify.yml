@@ -1,0 +1,43 @@
+name: Migration Verify
+
+# 仅当迁移目录有改动时触发，避免对普通提交造成额外 CI 成本。
+on:
+  push:
+    paths:
+      - 'scripts/migration/**'
+  pull_request:
+    paths:
+      - 'scripts/migration/**'
+
+jobs:
+  verify-0052:
+    name: Verify 0052 rename migration
+    runs-on: ubuntu-latest
+    # 复用与 ci.yml 一致的 mysql:8.0 service（真机 MySQL 才能验证 DDL / information_schema 行为）。
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: bone_ci_only
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pbone_ci_only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pymysql
+        run: pip install pymysql
+      - name: Verify 0052 migration against MySQL 8
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: '3306'
+          MYSQL_USER: root
+          MYSQL_PASSWORD: bone_ci_only
+          PYTHONSAFEPATH: '1'
+        run: python3 scripts/migration/verify_0052.py
