@@ -32,6 +32,10 @@ mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_rename_
 1. **执行前必须对目标库做全量备份 / 快照**（硬性前置）。
 2. 跑完核对第 8 步自校验 7 项是否达标；三项 `leftover` 必须为 0。
 3. 全绿即可；若 `leftover ≠ 0`，先排查再放过，不可带旧码上线。
+4. （可选复核）另跑独立校验脚本，纯 SELECT 重复确认结果（与主脚本第 8 步自校验同源）：
+   ```bash
+   mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_verify.sql
+   ```
 
 ## 六、回滚预案
 - 本脚本为「改名」型一次性迁移，且应用代码已同步改名；**生产不可反向执行本脚本**（会使库名与已上线代码失配）。

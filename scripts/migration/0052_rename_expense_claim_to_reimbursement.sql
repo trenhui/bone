@@ -46,8 +46,15 @@
 
 USE bone;
 
--- ── 0. 依赖护栏：前置迁移未执行则直接报错 ──────────────────────────────
-SELECT id FROM meta_entity WHERE code IN ('expense_claim', 'expense_claim_item') LIMIT 0;
+-- ── 0. 前置自检（信息性，不报错；本脚本幂等，可安全重跑 / 全新库空转） ──
+-- 报告当前库「待改名旧码」与「已改名新码」的实体行数，供 DBA 确认起点：
+--   · old_entity_rows > 0 → 有存量待迁移数据，本脚本将实际改名
+--   · old_entity_rows = 0 → 已无旧码（全新库或已跑过），各步将空转，属预期
+SELECT
+  (SELECT COUNT(*) FROM meta_entity
+     WHERE code IN ('expense_claim', 'expense_claim_item')) AS old_entity_rows,
+  (SELECT COUNT(*) FROM meta_entity
+     WHERE code IN ('expense_reimbursement', 'expense_reimbursement_item')) AS new_entity_rows;
 
 -- ── 1. 物理表改名（保留数据；无外键约束，RENAME 安全） ───────────────────
 SET @rename_sql = (
