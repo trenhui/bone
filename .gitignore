@@ -206,6 +206,8 @@ Thumbs.db
 # AI 工具本地目录与技能（不入库；已入库的仓库资产不受影响）
 .codebuddy/
 .specstory/
+.scratch/
+.superpowers/
 .trae/
 .agents/
 .comet/
