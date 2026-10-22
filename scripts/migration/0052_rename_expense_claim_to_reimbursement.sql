@@ -109,7 +109,7 @@ SELECT
   (SELECT COUNT(*) FROM meta_entity_action_def
      WHERE deleted = 0 AND entity_code = 'expense_reimbursement') AS renamed_actions,
   (SELECT COUNT(*) FROM iam_permission
-     WHERE deleted = 0 AND code LIKE 'runtime:expense_reimbursement:%') AS renamed_perms,
+     WHERE deleted = 0 AND code LIKE 'runtime:expense_reimbursement%') AS renamed_perms,
   (SELECT COUNT(*) FROM iam_permission
      WHERE code LIKE '%expense_claim%' OR resource_path LIKE '%expense_claim%') AS leftover_old_perms,
   (SELECT COUNT(*) FROM meta_entity
