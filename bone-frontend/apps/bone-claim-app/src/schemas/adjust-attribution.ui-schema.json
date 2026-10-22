@@ -6,7 +6,7 @@
     "list": {
       "columns": [
         { "fieldCode": "calculation_id", "visible": true, "width": 120 },
-        { "fieldCode": "total_amount", "visible": true, "width": 140 },
+        { "fieldCode": "total_amount", "visible": true, "width": 140, "controlKind": "MONEY" },
         { "fieldCode": "formula_hash", "visible": true, "width": 280 }
       ],
       "searchFields": ["calculation_id"]
@@ -34,17 +34,17 @@
               "props": {
                 "childEntity": "adjustment_line",
                 "columns": [
-                  "line_type",
-                  "liability_uuid",
-                  "fee_calculate",
-                  "fee_deduct",
-                  "ratio_payout",
-                  "fee_occupied",
-                  "fee_payout",
-                  "fee_remain",
-                  "zero_reason",
-                  "reject_type",
-                  "formula_hash"
+                  { "fieldCode": "line_type", "controlKind": "ENUM" },
+                  { "fieldCode": "liability_uuid" },
+                  { "fieldCode": "fee_calculate", "controlKind": "MONEY" },
+                  { "fieldCode": "fee_deduct", "controlKind": "MONEY" },
+                  { "fieldCode": "ratio_payout", "controlKind": "MONEY" },
+                  { "fieldCode": "fee_occupied", "controlKind": "MONEY" },
+                  { "fieldCode": "fee_payout", "controlKind": "MONEY" },
+                  { "fieldCode": "fee_remain", "controlKind": "MONEY" },
+                  { "fieldCode": "zero_reason" },
+                  { "fieldCode": "reject_type", "controlKind": "ENUM" },
+                  { "fieldCode": "formula_hash" }
                 ]
               }
             }
@@ -62,9 +62,9 @@
     }
   },
   "actionBar": [
-    { "actionCode": "execute", "sortOrder": 1 },
-    { "actionCode": "recalculate", "sortOrder": 2 },
-    { "actionCode": "confirm", "sortOrder": 3, "confirm": { "title": "确认核赔", "content": "确认后理算结果锁定，是否继续？" } }
+    { "actionCode": "execute", "sortOrder": 1, "label": "执行理算" },
+    { "actionCode": "recalculate", "sortOrder": 2, "label": "重算" },
+    { "actionCode": "confirm", "sortOrder": 3, "label": "核赔确认", "confirm": { "title": "确认核赔", "content": "确认后理算结果锁定，是否继续？" } }
   ],
   "footer": {
     "disclaimer": "理算金额由确定性规则引擎计算，AI 不参与；结果以复核确认为准。",

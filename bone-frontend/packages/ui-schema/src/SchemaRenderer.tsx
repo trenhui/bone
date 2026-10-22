@@ -14,13 +14,15 @@ import {
   Button,
   Card,
   Descriptions,
+  Empty,
+  Spin,
   Statistic,
   Table,
   Tag,
   Timeline,
   Typography,
 } from 'antd';
-import { useMemo, type ReactElement } from 'react';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import {
   fieldVisible,
   linkageState,
@@ -28,6 +30,7 @@ import {
   resolveVisibleActions,
   type BoneUiSchema,
   type Control,
+  type ControlKind,
   type FieldUiState,
   type Section,
   type UiContext,
@@ -46,19 +49,21 @@ function labelOf(c: Control): string {
   return c.labelOverride ?? c.labelKey ?? prettify(c.fieldCode);
 }
 
-function isMoneyKey(key: string): boolean {
-  return /^(fee|total|amount|ratio|price)/i.test(key) || key.endsWith('_amount');
-}
-
 type Row = Record<string, unknown>;
 
-function formatCell(key: string, v: unknown): ReactElement {
+/**
+ * 单元格只读格式化。金额/枚举由 controlKind 驱动（不再按字段名嗅探业务命名），
+ * 其余默认：长值可复制、空值占位「-」。
+ */
+function formatCell(v: unknown, controlKind?: ControlKind): ReactElement {
   if (v == null || v === '') return <Text type="secondary">-</Text>;
-  if (isMoneyKey(key) && typeof v === 'number') return <Text>{`¥${v.toFixed(2)}`}</Text>;
-  if (key === 'line_type') return <Tag color="blue">{String(v)}</Tag>;
-  if (key === 'reject_type' && String(v) !== 'NONE') return <Tag color="red">{String(v)}</Tag>;
-  if (key === 'formula_hash') return <Text copyable ellipsis>{String(v)}</Text>;
-  return <Text>{String(v)}</Text>;
+  if (controlKind === 'MONEY' && typeof v === 'number') {
+    return <Text>{`¥${v.toFixed(2)}`}</Text>;
+  }
+  if (controlKind === 'ENUM') return <Tag color="blue">{String(v)}</Tag>;
+  const text = String(v);
+  if (text.length > 24) return <Text copyable ellipsis>{text}</Text>;
+  return <Text>{text}</Text>;
 }
 
 /** 单控件渲染（只读展示形态）。 */
@@ -67,7 +72,12 @@ function FieldControl({ control, value }: { control: Control; value: unknown }):
   const readonly = control.readonly;
 
   if (kind === 'CHILD_TABLE') {
-    const cols = Array.isArray(control.props?.columns) ? (control.props!.columns as string[]) : [];
+    const rawCols = Array.isArray(control.props?.columns)
+      ? (control.props!.columns as Array<string | { fieldCode: string; controlKind?: ControlKind }>)
+      : [];
+    const cols = rawCols.map((c) =>
+      typeof c === 'string' ? { fieldCode: c, controlKind: undefined as ControlKind | undefined } : c,
+    );
     const rows = Array.isArray(value) ? (value as Row[]) : [];
     return (
       <Table<Row>
@@ -77,10 +87,10 @@ function FieldControl({ control, value }: { control: Control; value: unknown }):
         scroll={{ x: 1100 }}
         dataSource={rows}
         columns={cols.map((col) => ({
-          title: prettify(col),
-          dataIndex: col,
-          key: col,
-          render: (v: unknown) => formatCell(col, v),
+          title: prettify(col.fieldCode),
+          dataIndex: col.fieldCode,
+          key: col.fieldCode,
+          render: (v: unknown) => formatCell(v, col.controlKind),
         }))}
       />
     );
@@ -205,6 +215,8 @@ export interface SchemaRendererProps {
   /** actionBar 命中后回调（无则不渲染动作条）。 */
   onAction?: (actionCode: string) => void;
   actionsDisabled?: boolean;
+  /** 归一化/校验告警回调（加载期非法 schema 上抛，便于宿主 fail-fast / 上报）。 */
+  onError?: (errors: string[]) => void;
 }
 
 export function SchemaRenderer({
@@ -215,6 +227,7 @@ export function SchemaRenderer({
   loading,
   onAction,
   actionsDisabled,
+  onError,
 }: SchemaRendererProps): ReactElement {
   if (viewMode === 'list') {
     const rows = Array.isArray(data) ? data : [];
@@ -231,7 +244,7 @@ export function SchemaRenderer({
           key: c.fieldCode,
           width: c.width,
           fixed: c.pinned,
-          render: (v: unknown) => formatCell(c.fieldCode, v),
+          render: (v: unknown) => formatCell(v, c.controlKind),
         }))}
       />
     );
@@ -240,10 +253,13 @@ export function SchemaRenderer({
   // 边界归一化：views.*.sections 的分区 code 引用 → 内联对象（单一规范形态，fail-fast 暴露非法 ref）
   const normalized = useMemo(() => normalizeUiSchema(schema), [schema]);
   const normSchema = normalized.schema;
-  if (normalized.errors.length) {
-    // 仅告警不抛：合法 schema 不产生 errors；畸形 schema 在加载期即暴露，而非渲染成空白
-    console.warn('[SchemaRenderer] schema 归一化告警:', normalized.errors);
-  }
+  // 告警移出 render 体（render 应纯函数）：开发期暴露畸形 schema，并上抛宿主处理
+  useEffect(() => {
+    if (normalized.errors.length) {
+      console.warn('[SchemaRenderer] schema 归一化告警:', normalized.errors);
+      onError?.(normalized.errors);
+    }
+  }, [normalized, onError]);
 
   const view = viewMode === 'detail' ? normSchema.views.detail : normSchema.views.form;
   const sections = view?.sections ?? [];
@@ -259,6 +275,21 @@ export function SchemaRenderer({
 
   const visibleActions = resolveVisibleActions(record, normSchema.actionBar ?? [], ctx);
 
+  if (loading) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Spin />
+      </div>
+    );
+  }
+  if (!loading && sections.length === 0 && visibleActions.length === 0) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Empty description="暂无数据" />
+      </div>
+    );
+  }
+
   return (
     <div>
       {visibleActions.length > 0 && onAction && (
@@ -270,7 +301,7 @@ export function SchemaRenderer({
               disabled={actionsDisabled}
               onClick={() => !actionsDisabled && onAction(a.actionCode)}
             >
-              {a.actionCode}
+              {a.label ?? a.labelKey ?? a.actionCode}
             </Button>
           ))}
         </div>
