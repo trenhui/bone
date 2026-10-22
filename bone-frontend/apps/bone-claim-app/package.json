@@ -16,6 +16,7 @@
     "@bone/shared-types": "1.0.0",
     "@bone/shared-utils": "^1.0.0",
     "@bone/ui": "1.0.0",
+    "@bone/ui-schema": "1.0.0",
     "antd": "^5.12.8",
     "axios": "^1.7.9",
     "dayjs": "^1.11.10",

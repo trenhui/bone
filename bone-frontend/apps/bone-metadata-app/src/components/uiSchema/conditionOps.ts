@@ -13,7 +13,7 @@
  * 深度纪律：MAX_GROUP_DEPTH 与引擎 `MAX_COND_DEPTH`(=3) 对齐——
  * 超限的嵌套在引擎里 fail-closed 不命中（防误配出「永远不生效的规则」）。
  */
-import type { UiCondition } from '../../utils/uiSchemaEngine';
+import type { UiCondition } from '@bone/ui-schema';
 
 /** 组嵌套深度上限（root 组 = 1）。与引擎 MAX_COND_DEPTH 对齐，超限分支引擎 fail-closed */
 export const MAX_GROUP_DEPTH = 3;

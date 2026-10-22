@@ -72,7 +72,7 @@ import { RuntimeDetailView, detailValueOf } from '../components/RuntimeDetailVie
 import PersonalViewBar from '../components/PersonalViewBar';
 import ContractScopeCard from '../components/ContractScopeCard';
 import { useBoneUiSchema } from '../hooks/useBoneUiSchema';
-import type { UiContext } from '../utils/uiSchemaEngine';
+import type { UiContext } from '@bone/ui-schema';
 import { useOverlayBundle } from '../hooks/useOverlayBundle';
 
 const { Text } = Typography;

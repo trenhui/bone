@@ -13,8 +13,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Space, Tag, Typography } from 'antd';
 import { CheckOutlined, CopyOutlined, DownloadOutlined, FormatPainterOutlined, UploadOutlined } from '@ant-design/icons';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
-import { checkSchemaVersion } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
+import { checkSchemaVersion } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { enumFieldsOf, lintSchema, type LintIssue } from './lint';
 

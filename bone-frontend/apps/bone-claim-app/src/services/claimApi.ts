@@ -10,6 +10,9 @@ import type { ApiResponse } from '@bone/shared-types';
 
 const client = createApiClient('/api/v1/claims');
 
+/** 平台文件服务（bone-file，端口 8107；`PlatformApiPaths.FILE_V1 = /api/v1/file`）。 */
+const fileClient = createApiClient('/api/v1/file');
+
 /** 费用类别（与后端 ItemCategory 枚举对齐）。 */
 export type ItemCategory = 'DRUG' | 'SERVICE' | 'EXAM' | 'MATERIAL';
 
@@ -127,6 +130,120 @@ export interface PageResult<T> {
   size: number;
 }
 
+/* ===================== A6 理算归因（只读展示；§7.4 六归因成分） ===================== */
+
+export type AdjustmentLineType = 'INPUT' | 'RULE' | 'OUTPUT';
+
+export interface AdjustmentLine {
+  lineType: AdjustmentLineType;
+  /** 责任 UUID（OUTPUT 行为空）。 */
+  liabilityUuid?: string;
+  /** 输入快照 JSON（仅 INPUT 行有）。 */
+  inputSnapshot?: string;
+  /** 六归因成分金额（DECIMAL(20,6) 序列化为 number）。 */
+  feeCalculate?: number;
+  feeDeduct?: number;
+  ratioPayout?: number;
+  feeOccupied?: number;
+  feePayout?: number;
+  feeRemain?: number;
+  /** 零赔付归因（受控枚举）。 */
+  zeroReason?: string;
+  /** 拒赔/零赔付原因码（§8.3 受控字典 01-13 + 20/30/40）。 */
+  rejectType?: string;
+  /** 逐行公式哈希（复算校验）。 */
+  formulaHash?: string;
+}
+
+export interface AdjustmentResult {
+  calculationId: string;
+  totalAmount: number;
+  /** 公式哈希（可复算锚点）。 */
+  formulaHash: string;
+  /** 公式快照（人类可读的归因链描述）。 */
+  snapshot: string;
+  lines: AdjustmentLine[];
+}
+
+/* ===================== A2 证据材料 ===================== */
+
+export type DocType = string;
+export type OcrStatus = string;
+
+export interface EvidenceResp {
+  id: string;
+  claimId: string;
+  docType?: string;
+  fileRef?: string;
+  contentHash?: string;
+  ocrStatus?: string;
+  ocrConfidence?: number;
+  verifyValid?: string;
+  locked?: boolean;
+}
+
+export interface RegisterEvidenceReq {
+  fileRef: string;
+  contentHash: string;
+  docType?: string;
+  verifyValid?: string;
+}
+
+/* ===================== A7 资金结算 ===================== */
+
+export type AccountType = 'NO_ACCOUNT' | 'PUBLIC' | 'PERSONAL';
+
+export interface SettlementResult {
+  settlementNo: string;
+  claimId: string;
+  amount: number;
+  fundingStage: string;
+  attempt: number;
+}
+
+export interface QuotaTxn {
+  direction: string;
+  txnType: string;
+  amount: number;
+  beforeAmount: number;
+  afterAmount: number;
+  idempotencyKey: string;
+  occurredAt?: string;
+}
+
+/** A5 额度账户快照（三值：initial/claimed/frozen；可用 = initial − claimed − frozen）+ 流水。 */
+export interface QuotaSummary {
+  initial: number;
+  claimed: number;
+  frozen: number;
+  available: number;
+  transactions: QuotaTxn[];
+}
+
+/* ===================== A3 决策执行（AI 编排 DAG：轨迹回放） ===================== */
+
+export interface DecisionExecutionResult {
+  traceId: string;
+  claimId: string;
+  decisionResult: string;
+  decisionTier: string;
+  status: string;
+  traceCount: number;
+}
+
+export interface DecisionTraceNode {
+  traceId: string;
+  claimId: string;
+  executionId: string;
+  nodeSeq: number;
+  nodeType: string;
+  nodeName: string;
+  inputSummary: string;
+  output?: string;
+  actionResult: string;
+  durationMs: number;
+}
+
 function uuid(): string {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -189,9 +306,216 @@ export const claimApi = {
     return client.post<never, ApiResponse<void>>(`/${claimId}/auto-approve`);
   },
 
-  hangUp(claimId: string, type?: 'EVIDENCE' | 'INVESTIGATION' | 'TIMEOUT' | 'FRAUD'): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/hangup`, undefined, {
-      headers: type ? { 'X-Hangup-Action': 'HANG_UP', 'X-Hangup-Type': type } : { 'X-Hangup-Action': 'RESUME' },
+  hangUp(claimId: string, type?: HangUpType, operatorId?: string): Promise<ApiResponse<void>> {
+    const headers: Record<string, string> = type
+      ? { 'X-Hangup-Action': 'HANG_UP', 'X-Hangup-Type': type }
+      : { 'X-Hangup-Action': 'RESUME' };
+    if (operatorId) headers['X-Operator-Id'] = operatorId;
+    return client.post<never, ApiResponse<void>>(`/${claimId}/hangup`, undefined, { headers });
+  },
+};
+
+/* ===================== A6 理算（金额计算唯一入口，AI 不参与） ===================== */
+
+export const adjustApi = {
+  /** 查询最新理算结果（未理算 data 为 null）。 */
+  latest(claimId: string): Promise<ApiResponse<AdjustmentResult | null>> {
+    return client.get<never, ApiResponse<AdjustmentResult | null>>(`/${claimId}/adjust`);
+  },
+  /** 执行理算（前置：证据已锁定 + 生效责任；产出 FROZEN）。 */
+  calculate(claimId: string, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<AdjustmentResult>> {
+    return client.post<never, ApiResponse<AdjustmentResult>>(`/${claimId}/adjust`, undefined, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+  },
+  /** 重算（规则/责任版本变更后；已确认拒绝）。 */
+  recalculate(claimId: string, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<AdjustmentResult>> {
+    return client.post<never, ApiResponse<AdjustmentResult>>(`/${claimId}/adjust/recalculate`, undefined, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+  },
+  /** 理算确认（核赔通过：结果锁定）。 */
+  confirm(claimId: string, reviewerId: string): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/adjust/confirm`, undefined, {
+      headers: { 'X-Operator-Id': reviewerId },
+    });
+  },
+};
+
+/* ===================== A2 证据材料（影像本体走附件服务 STS 直传，本接口只登记 fileRef） ===================== */
+
+export const evidenceApi = {
+  list(claimId: string): Promise<ApiResponse<EvidenceResp[]>> {
+    return client.get<never, ApiResponse<EvidenceResp[]>>(`/${claimId}/evidences`);
+  },
+  register(claimId: string, req: RegisterEvidenceReq, idempotencyKey = newIdempotencyKey()): Promise<ApiResponse<number>> {
+    return client.post<RegisterEvidenceReq, ApiResponse<number>>(`/${claimId}/evidences`, req, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+  },
+  /** 锁定证据集（理算前置）。 */
+  lock(claimId: string, operatorId: string): Promise<ApiResponse<number>> {
+    return client.post<never, ApiResponse<number>>(`/${claimId}/evidences/lock`, undefined, {
+      headers: { 'X-Operator-Id': operatorId },
+    });
+  },
+  /** 回填解析结果（OCR/LLM 回调或人工补录）。 */
+  markParsed(
+    claimId: string,
+    evidenceId: string,
+    req: { ocrStatus?: string; ocrConfidence?: number; extractedJson?: string; verifyValid?: string },
+  ): Promise<ApiResponse<void>> {
+    return client.post<unknown, ApiResponse<void>>(`/${claimId}/evidences/${evidenceId}/parse-result`, req);
+  },
+};
+
+/* ===================== A7 资金结算（两段式：软占 → 硬预占/复核 → 支付） ===================== */
+
+export const settlementApi = {
+  /** 查询最新结算单（无则 data 为 null）。 */
+  latest(claimId: string): Promise<ApiResponse<SettlementResult | null>> {
+    return client.get<never, ApiResponse<SettlementResult | null>>(`/${claimId}/settlement`);
+  },
+  /** 建结算单（软占额度；幂等同 claim+attempt）。 */
+  create(
+    claimId: string,
+    req: { attempt: number; accountType: AccountType },
+    operatorId: string,
+    idempotencyKey = newIdempotencyKey(),
+  ): Promise<ApiResponse<SettlementResult>> {
+    return client.post<{ attempt: number; accountType: AccountType }, ApiResponse<SettlementResult>>(
+      `/${claimId}/settlement`,
+      req,
+      { headers: { 'X-Operator-Id': operatorId, 'Idempotency-Key': idempotencyKey } },
+    );
+  },
+  /** 审核通过（硬预占 / ≥1 万双人复核）。 */
+  auditPass(
+    claimId: string,
+    req: { reviewerIds: string[]; firstReviewerId: string },
+    operatorId: string,
+  ): Promise<ApiResponse<SettlementResult>> {
+    return client.post<{ reviewerIds: string[]; firstReviewerId: string }, ApiResponse<SettlementResult>>(
+      `/${claimId}/settlement/audit-pass`,
+      req,
+      { headers: { 'X-Operator-Id': operatorId } },
+    );
+  },
+  pay(claimId: string, operatorId: string): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/pay`, undefined, {
+      headers: { 'X-Operator-Id': operatorId },
+    });
+  },
+  cancel(claimId: string, req: { payFailed?: boolean }, operatorId: string): Promise<ApiResponse<SettlementResult>> {
+    return client.post<{ payFailed?: boolean }, ApiResponse<SettlementResult>>(`/${claimId}/settlement/cancel`, req, {
+      headers: { 'X-Operator-Id': operatorId },
+    });
+  },
+  refund(claimId: string, operatorId: string): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/refund`, undefined, {
+      headers: { 'X-Operator-Id': operatorId },
+    });
+  },
+};
+
+/* ===================== A5 额度查询（只读；资金工作台展示额度三值与流水） ===================== */
+
+export const quotaApi = {
+  /** 查询案件额度账户快照 + 流水（无则 data 为 null 语义由后端 404 CLAIM_QUOTA_NOT_FOUND 表达）。 */
+  get(claimId: string): Promise<ApiResponse<QuotaSummary>> {
+    return client.get<never, ApiResponse<QuotaSummary>>(`/${claimId}/quota`);
+  },
+};
+
+/* ===================== A3 决策执行（执行一次决策图并回放轨迹） ===================== */
+
+export const decisionApi = {
+  /** 执行决策图（同案仅一个活跃执行；结论由确定性分诊计算，AI 只产建议与置信度）。 */
+  execute(
+    claimId: string,
+    req?: {
+      graphVersion?: string;
+      ruleVersion?: string;
+      modelVersion?: string;
+      promptVersion?: string;
+      catalogVersion?: string;
+    },
+  ): Promise<ApiResponse<DecisionExecutionResult>> {
+    return client.post<unknown, ApiResponse<DecisionExecutionResult>>(
+      `/${claimId}/decision/execute`,
+      req ?? {},
+    );
+  },
+  /** 轨迹回放（按 traceId 取全链节点序列：证据 → 解析 → 核责 → 理算 → 决策）。 */
+  trace(claimId: string, traceId: string): Promise<ApiResponse<DecisionTraceNode[]>> {
+    return client.get<never, ApiResponse<DecisionTraceNode[]>>(`/${claimId}/decision/trace`, {
+      params: { traceId },
+    });
+  },
+};
+
+/* ===================== A8 申诉复议 ===================== */
+
+export type AppealReviewResult = 'UPHELD' | 'REOPEN';
+
+export interface AppealResult {
+  appealNo: string;
+  claimId: string;
+  originalStatus: string;
+  status: string;
+  reviewResult?: string;
+}
+
+export const appealApi = {
+  /** 发起申诉（受理）：须已终态且未超 48h；幂等。 */
+  submit(claimId: string, req: { reason: string }, operatorId: string): Promise<ApiResponse<AppealResult>> {
+    return client.post<{ reason: string }, ApiResponse<AppealResult>>(`/${claimId}/appeal`, req, {
+      headers: { 'X-Operator-Id': operatorId },
+    });
+  },
+  /** 复议结论：UPHELD 维持 / REOPEN 推翻重启审核。 */
+  review(
+    claimId: string,
+    req: { result: AppealReviewResult; reason: string },
+    operatorId: string,
+  ): Promise<ApiResponse<AppealResult>> {
+    return client.post<{ result: AppealReviewResult; reason: string }, ApiResponse<AppealResult>>(
+      `/${claimId}/appeal/review`,
+      req,
+      { headers: { 'X-Operator-Id': operatorId } },
+    );
+  },
+  /** 查询最新申诉（无则 data 为 null）。 */
+  latest(claimId: string): Promise<ApiResponse<AppealResult | null>> {
+    return client.get<never, ApiResponse<AppealResult | null>>(`/${claimId}/appeal`);
+  },
+};
+
+/** 挂起类型（正交机制，不改状态码；FRAUD 仅风控岗可恢复）。 */
+export type HangUpType = 'EVIDENCE' | 'INVESTIGATION' | 'TIMEOUT' | 'FRAUD';
+
+/* ===================== 平台文件服务（bone-file：影像本体直传，返回 objectName 即 fileRef） ===================== */
+
+export interface FileObjectResp {
+  objectName: string;
+  originalName: string;
+  bucket: string;
+  contentType: string;
+  size: number;
+  tenantId: string;
+}
+
+export const attachmentApi = {
+  /**
+   * 上传影像本体到平台附件服务（multipart）。返回 {@link FileObjectResp.objectName} 即证据材料登记的 `fileRef`。
+   * 证据登记只需 fileRef + 内容哈希，影像本体不经 synap-claim 应用线程池（§7.2）。
+   */
+  upload(file: File, bucket?: string): Promise<ApiResponse<FileObjectResp>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (bucket) formData.append('bucket', bucket);
+    return fileClient.post<FormData, ApiResponse<FileObjectResp>>('/files', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 };

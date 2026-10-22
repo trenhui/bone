@@ -22,7 +22,7 @@ import {
   type SubmitRule,
   type LinkageRule,
   type UiContext,
-} from '../utils/uiSchemaEngine';
+} from '@bone/ui-schema';
 import { gridItemStyle } from '../utils/uiGrid';
 import './uiSchema/uiSchemaTheme.css';
 import { runtimeRecordApi } from '../services/metadataApi';

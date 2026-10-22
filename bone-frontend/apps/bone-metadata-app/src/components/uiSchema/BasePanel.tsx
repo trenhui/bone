@@ -17,7 +17,7 @@
 import { useState } from 'react';
 import { Alert, Button, Descriptions, Empty, Space, Switch, Tag, Tooltip, Typography } from 'antd';
 import { CloudDownloadOutlined, CloudUploadOutlined, MergeOutlined, SyncOutlined } from '@ant-design/icons';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import type { MergePreview, TemplateUpdateCheck } from '../../services/metadataApi';
 import { metadataUiSchemaApi } from '../../services/metadataApi';
 import { updateBase } from './schemaOps';

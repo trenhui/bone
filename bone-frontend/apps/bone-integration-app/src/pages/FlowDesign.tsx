@@ -4,7 +4,7 @@ import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '
 import { Graph, Shape, type Node } from '@antv/x6';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { flowApi, connectorApi } from '../services/api';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, resolveErrorMessage } from '@bone/shared-utils';
 import { AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq, Connector } from '../types';
@@ -51,6 +51,11 @@ export const FlowDesign: React.FC = () => {
   const [nodeConfigVisible, setNodeConfigVisible] = useState(false);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [nodeForm] = Form.useForm();
+  // 流程名称/描述位于「流程信息」页签。antd Tabs 默认懒渲染未激活页签，
+  // 若不强制渲染，form 实例永远连不上 Form 元素：validateFields() 会静默返回 {}，
+  // 提交报文丢失 name → 后端 400「流程名称不能为空」，前端却只提示「操作失败」。
+  // 这里改为受控 Tabs + 强制渲染，保证表单始终参与校验与取值。
+  const [activeTab, setActiveTab] = useState('design');
 
   // 加载连接器列表（供节点配置面板绑定）
   useEffect(() => {
@@ -127,6 +132,7 @@ export const FlowDesign: React.FC = () => {
     setIsEdit(false);
     setCurrentFlow(null);
     form.resetFields();
+    setActiveTab('design');
     setModalVisible(true);
   };
 
@@ -244,6 +250,7 @@ export const FlowDesign: React.FC = () => {
       });
     }
 
+    setActiveTab('design');
     setModalVisible(true);
   };
 
@@ -291,9 +298,16 @@ export const FlowDesign: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    let values: { name?: string; description?: string };
     try {
-      const values = await form.validateFields();
+      values = await form.validateFields();
+    } catch (error) {
+      // 校验失败：切到「流程信息」页签让用户看到标红字段，不要吞成「操作失败」
+      setActiveTab('info');
+      return;
+    }
 
+    try {
       // ★ 画布未就绪不能静默 return：用户点「确定」后既没有成功提示也没有失败提示、
       //   弹窗还不关，表现为最难的那种「点了没反应」。这里按「空画布」继续建流程
       //   （先落名称/描述，节点留到编辑时补画），并出声告知画布状态。
@@ -378,7 +392,7 @@ export const FlowDesign: React.FC = () => {
       setModalVisible(false);
       fetchFlows();
     } catch (error) {
-      message.error('操作失败');
+      message.error(resolveErrorMessage(error, '操作失败'));
     }
   };
 
@@ -520,7 +534,8 @@ export const FlowDesign: React.FC = () => {
         ]}
       >
         <Tabs
-          defaultActiveKey="design"
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={[
             {
               key: 'design',
@@ -568,6 +583,7 @@ export const FlowDesign: React.FC = () => {
             {
               key: 'info',
               label: '流程信息',
+              forceRender: true,
               children: (
                 <Form form={form} layout="vertical">
                   <Form.Item

@@ -18,7 +18,7 @@
 import type { MetaField } from '../types';
 import type {
   ActionBarItem, BoneUiSchema, LinkageRule, Section, SubmitRule, Variant, VariantMatch,
-} from './uiSchemaEngine';
+} from '@bone/ui-schema';
 import type { LintLocate } from '../components/uiSchema/lint';
 import { normJson } from './normJson';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UiCondition } from '../../utils/uiSchemaEngine';
+import type { UiCondition } from '@bone/ui-schema';
 import {
   MAX_GROUP_DEPTH, addChild, childrenOf, depthOf, emptyGroup, emptyLeaf, groupKindOf, isGroup,
   removeChildAt, setGroupKind, unwrapGroup, updateChildAt, wrapAsGroup,

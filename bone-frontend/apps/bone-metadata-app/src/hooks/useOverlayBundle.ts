@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MetaField } from '../types';
-import type { ListView } from '../utils/uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 import {
   activeOverlay,
   activeViewOf,

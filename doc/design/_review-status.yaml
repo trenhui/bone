@@ -178,6 +178,21 @@ modules:
     has_active_comet_change: false
     note: "参考样板（reference-sample），不进产品轮换；事件信封/租户负向测试以其为基准"
 
+  - name: "bone-workflow-engine"
+    design_doc: "doc/design/modules/12. 工作流引擎-平台桥接与跨系统复用设计.md"
+    design_docs: ["doc/design/modules/12. 工作流引擎-平台桥接与跨系统复用设计.md"]
+    port: null
+    status: "design_ready"
+    last_reviewed_at: "2026-10-22T00:00:00+08:00"
+    implemented_at: null
+    report_path: null
+    has_active_comet_change: false
+    stages_done: ["A", "A'"]
+    pending_approvals:
+      - "L3 wf_* 实体 DDL：新增 wf_process_def / wf_instance / wf_task（含 tenant_id + 审计列 + version 乐观锁）"
+      - "L3 桥接层模块 bone-workflow-platform 新建（依赖 bone-workflow-engine + bone-metadata-server，实现 7 端口 → BONE 实体/IAM/RuntimeActionService）"
+    note: "A+A' 完成（2026-10-22）：轻量审批流专用引擎，对标宜搭/AppBuilder（审批流是平台亲兄弟，共用实体/权限/审计，不引 Camunda/BPMN）。阶段 0 引擎内核已实现并测试通过（domain/ports/runtime/starter 四段式，平台零依赖，50 单测全绿），含 4 个 P0 修复（会签原子推进 / 终态不可回写 / 重复发起幂等 / 挂起可撤回+恢复）。复用模型：报销/采购/理赔/HR/财务共用引擎 jar + 共享 wf_* 持久化，各自仅实现 ApproverResolver（组织目录）+ WorkflowStatusPort（自身状态机）+ WorkflowRecordPort（读单据）2–3 个薄端口。阶段 1 的 wf_* DDL 与桥接模块属 L3，待架构师审批。"
+
   - name: "bone-frontend/bone-iam-app"
     design_doc: null
     design_docs: []

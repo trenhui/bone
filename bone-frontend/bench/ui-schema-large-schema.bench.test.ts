@@ -13,7 +13,7 @@
 import { describe, it } from 'vitest';
 import type { MetaField } from '@bone/shared-types';
 import { lintSchema } from '../apps/bone-metadata-app/src/components/uiSchema/lint';
-import type { BoneUiSchema } from '../apps/bone-metadata-app/src/utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 
 /** 复刻 UiSchemaDesigner 的 firstDiffPath（同一实现，避免度量到不同代码） */
 function firstDiffPath(a: unknown, b: unknown, path = '', depth = 0): string | null {

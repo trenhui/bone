@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { useMemo } from 'react';
 import SchemaPreview from '../apps/bone-metadata-app/src/components/uiSchema/SchemaPreview';
-import type { BoneUiSchema, Control } from '../apps/bone-metadata-app/src/utils/uiSchemaEngine';
+import type { BoneUiSchema, Control } from '@bone/ui-schema';
 import type { MetaField } from '@bone/shared-types';
 
 const KINDS: Control['controlKind'][] = [

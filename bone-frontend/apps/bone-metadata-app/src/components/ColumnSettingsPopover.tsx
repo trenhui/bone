@@ -3,7 +3,7 @@ import { Alert, Badge, Button, Divider, Empty, Input, Popconfirm, Popover, Segme
 import type { InputRef } from 'antd';
 import { EditOutlined, ReloadOutlined, SettingOutlined, UndoOutlined } from '@ant-design/icons';
 import type { MetaField } from '../types';
-import type { ListView } from '../utils/uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 import type { UseOverlayBundle } from '../hooks/useOverlayBundle';
 
 const { Text } = Typography;

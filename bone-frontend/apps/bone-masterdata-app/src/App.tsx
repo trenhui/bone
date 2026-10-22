@@ -12,6 +12,8 @@ import CategoryManagement from './pages/CategoryManagement';
 import GovernanceBoard from './pages/GovernanceBoard';
 import QualityIssueBoard from './pages/QualityIssueBoard';
 import ReferenceDataManagement from './pages/ReferenceDataManagement';
+import DataStandardManagement from './pages/DataStandardManagement';
+import DataLineage from './pages/DataLineage';
 import DomainWorkbench from './pages/DomainWorkbench';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
@@ -51,6 +53,9 @@ const AppContent: React.FC = () => {
           <Route path="/quality-issues" element={<QualityIssueBoard />} />
           <Route path="/categories" element={<CategoryManagement />} />
           <Route path="/governance" element={<GovernanceBoard />} />
+          {/* 数据标准与血缘 */}
+          <Route path="/data-standards" element={<DataStandardManagement />} />
+          <Route path="/lineage" element={<DataLineage />} />
           {/* 平台能力 */}
           <Route path="/templates" element={<TemplateManagement />} />
           <Route path="/reference-sets" element={<ReferenceDataManagement />} />

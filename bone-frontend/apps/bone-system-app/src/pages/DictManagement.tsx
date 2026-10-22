@@ -244,8 +244,10 @@ const DictManagement: React.FC = () => {
   };
 
   const submitType = async () => {
-    const values = await typeForm.validateFields();
     try {
+      // ★ validateFields 必须放进 try：放在外面时校验失败会变成未捕获的 Promise rejection
+      //   （控制台 PAGEERROR），用户既看不到标红原因也看不到任何提示。
+      const values = await typeForm.validateFields();
       if (editingType?.id) {
         await dictApi.updateType(editingType.id, values);
         message.success(t('system.dictManagement.typeUpdated'));
@@ -256,8 +258,9 @@ const DictManagement: React.FC = () => {
       setTypeModalOpen(false);
       invalidateDictCache(values.code);
       fetchTypes();
-    } catch {
-      message.error(t('system.dictManagement.saveFailed'));
+    } catch (err) {
+      const detail = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(detail || t('system.dictManagement.saveFailed'));
     }
   };
 

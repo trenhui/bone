@@ -12,7 +12,7 @@
  * 以场景/样例引用的字段与实体字段的重合率为判据，不绑定 entityCode（用户可自取 code，不可靠）。
  */
 
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 
 export interface Scenario {
   key: string;

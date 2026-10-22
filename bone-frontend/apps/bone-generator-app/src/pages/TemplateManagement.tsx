@@ -4,6 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined
 import { pageRecords, templateApi } from '../services/api';
 import { Auth, AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
+import { resolveErrorMessage } from '@bone/shared-utils';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -92,8 +93,12 @@ const TemplateManagement: React.FC = () => {
       setModalVisible(false);
       void loadTemplates();
     } catch (error) {
-      message.error('保存模板失败');
-      console.error('保存模板失败:', error);
+      // 校验失败由 antd 标红字段承载，不要把后端明确原因也吞成一句「保存模板失败」
+      if (error && typeof error === 'object' && 'errorFields' in error) {
+        message.error('请先修正表单中标红的字段后再提交');
+        return;
+      }
+      message.error(resolveErrorMessage(error, '保存模板失败'));
     }
   };
 

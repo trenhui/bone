@@ -123,6 +123,8 @@ const DomainWorkbench: React.FC = () => {
       setRoles(role.data ?? []);
       setDrifts(drf.data ?? []);
       setFeedbacks(fb.data ?? []);
+    } catch {
+      message.error('加载域数据失败');
     } finally {
       setLoading(false);
     }
@@ -218,8 +220,13 @@ const DomainWorkbench: React.FC = () => {
           <Popconfirm
             title="移除该角色？"
             onConfirm={async () => {
-              await governanceRoleApi.unassign(r.id);
-              if (entityId) void loadDomain(entityId);
+              try {
+                await governanceRoleApi.unassign(r.id);
+                message.success('已移除');
+                if (entityId) void loadDomain(entityId);
+              } catch {
+                message.error('移除角色失败');
+              }
             }}
           >
             <Button size="small" danger>移除</Button>
@@ -249,9 +256,13 @@ const DomainWorkbench: React.FC = () => {
               type="primary"
               code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}
               onClick={async () => {
-                await subscriptionApi.approve(r.id);
-                message.success('已批准订阅');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await subscriptionApi.approve(r.id);
+                  message.success('已批准订阅');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('批准订阅失败');
+                }
               }}
             >
               批准
@@ -262,10 +273,15 @@ const DomainWorkbench: React.FC = () => {
             <Auth code={BonePermissionCodes.MASTERDATA_SUBSCRIPTIONS_WRITE}>
               <Popconfirm
                 title="确认撤销订阅？"
-                onConfirm={async () => {
-                  await subscriptionApi.revoke(r.id);
-                  if (entityId) void loadDomain(entityId);
-                }}
+            onConfirm={async () => {
+              try {
+                await subscriptionApi.revoke(r.id);
+                message.success('已撤销');
+                if (entityId) void loadDomain(entityId);
+              } catch {
+                message.error('撤销订阅失败');
+              }
+            }}
               >
                 <Button size="small" danger>撤销</Button>
               </Popconfirm>
@@ -323,9 +339,13 @@ const DomainWorkbench: React.FC = () => {
               size="small"
               code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
-                await qualityIssueApi.fix(r.id);
-                message.success('已标记整改');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await qualityIssueApi.fix(r.id);
+                  message.success('已标记整改');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('标记整改失败');
+                }
               }}
             >
               整改
@@ -337,9 +357,13 @@ const DomainWorkbench: React.FC = () => {
               type="primary"
               code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
-                await qualityIssueApi.close(r.id);
-                message.success('复检通过已关闭');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await qualityIssueApi.close(r.id);
+                  message.success('复检通过已关闭');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('关闭工单失败');
+                }
               }}
             >
               关闭
@@ -351,8 +375,12 @@ const DomainWorkbench: React.FC = () => {
               danger
               code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE}
               onClick={async () => {
-                await qualityIssueApi.ignore(r.id);
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await qualityIssueApi.ignore(r.id);
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('忽略工单失败');
+                }
               }}
             >
               忽略
@@ -385,8 +413,13 @@ const DomainWorkbench: React.FC = () => {
               size="small"
               code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
-                await driftApi.handle(r.id, 'SYNCED');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await driftApi.handle(r.id, 'SYNCED');
+                  message.success('已标记同步');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('标记同步失败');
+                }
               }}
             >
               同步
@@ -395,8 +428,13 @@ const DomainWorkbench: React.FC = () => {
               size="small"
               code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
-                await driftApi.handle(r.id, 'IGNORED');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await driftApi.handle(r.id, 'IGNORED');
+                  message.success('已忽略');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('忽略漂移失败');
+                }
               }}
             >
               忽略
@@ -421,8 +459,13 @@ const DomainWorkbench: React.FC = () => {
               type="primary"
               code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
-                await feedbackApi.accept(r.id);
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await feedbackApi.accept(r.id);
+                  message.success('已受理');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('受理反馈失败');
+                }
               }}
             >
               受理
@@ -433,9 +476,13 @@ const DomainWorkbench: React.FC = () => {
               size="small"
               code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
-                await feedbackApi.complete(r.id, '已修正');
-                message.success('反馈已完成');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await feedbackApi.complete(r.id, '已修正');
+                  message.success('反馈已完成');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('完成反馈失败');
+                }
               }}
             >
               完成
@@ -447,8 +494,13 @@ const DomainWorkbench: React.FC = () => {
               danger
               code={BonePermissionCodes.MASTERDATA_GOVERNANCE_WRITE}
               onClick={async () => {
-                await feedbackApi.reject(r.id, '不成立');
-                if (entityId) void loadDomain(entityId);
+                try {
+                  await feedbackApi.reject(r.id, '不成立');
+                  message.success('已驳回');
+                  if (entityId) void loadDomain(entityId);
+                } catch {
+                  message.error('驳回反馈失败');
+                }
               }}
             >
               驳回
@@ -625,12 +677,26 @@ const DomainWorkbench: React.FC = () => {
         onCancel={() => setRoleOpen(false)}
         destroyOnHidden
         onOk={async () => {
-          const v = await roleForm.validateFields();
-          await governanceRoleApi.assign({ ...v, masterDataEntityId: entityId, accountId: Number(v.accountId) });
-          message.success('已指派');
-          setRoleOpen(false);
-          roleForm.resetFields();
-          if (entityId) void loadDomain(entityId);
+          let v: Record<string, unknown>;
+          try {
+            v = await roleForm.validateFields();
+          } catch {
+            return; // 字段级校验错误由 Form.Item 就地展示
+          }
+          try {
+            // entityId 必非空：入口按钮 disabled={!entityId}；accountId 经 Number() 与后端 Long 对齐
+            await governanceRoleApi.assign({
+              roleType: v.roleType as string,
+              masterDataEntityId: entityId!,
+              accountId: Number(v.accountId)
+            });
+            message.success('已指派');
+            setRoleOpen(false);
+            roleForm.resetFields();
+            if (entityId) void loadDomain(entityId);
+          } catch {
+            message.error('指派治理角色失败');
+          }
         }}
       >
         <Form form={roleForm} layout="vertical">

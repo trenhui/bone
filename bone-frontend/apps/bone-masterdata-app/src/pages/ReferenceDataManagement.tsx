@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Form, Input, Modal, Table, Tag, message } from 'antd';
+import { Button, Card, Form, Input, Modal, Table, Tag } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 import { referenceApi } from '../services/api';
 import type { ReferenceSet, ReferenceValue } from '../types/governance';
+import { useMessage } from '../App';
 
 /** 参考数据管理（G15 / §2.3）：币种/地区/行业等值域，与主数据分离治理、不走审批流。 */
 const ReferenceDataManagement: React.FC = () => {
+  // 动态 message API（替代静态 import）：跟随 ConfigProvider 主题，且避免静态调用丢失上下文
+  const message = useMessage();
   const [sets, setSets] = useState<ReferenceSet[]>([]);
   const [selected, setSelected] = useState<ReferenceSet | null>(null);
   const [values, setValues] = useState<ReferenceValue[]>([]);
@@ -17,14 +20,22 @@ const ReferenceDataManagement: React.FC = () => {
   const [valueForm] = Form.useForm();
 
   const loadSets = useCallback(async () => {
-    const res = await referenceApi.sets();
-    setSets(res.data ?? []);
-  }, []);
+    try {
+      const res = await referenceApi.sets();
+      setSets(res.data ?? []);
+    } catch {
+      message.error('加载参考数据值域失败');
+    }
+  }, [message]);
 
   const loadValues = useCallback(async (s: ReferenceSet) => {
-    const res = await referenceApi.values(s.id);
-    setValues(res.data ?? []);
-  }, []);
+    try {
+      const res = await referenceApi.values(s.id);
+      setValues(res.data ?? []);
+    } catch {
+      message.error('加载值列表失败');
+    }
+  }, [message]);
 
   useEffect(() => {
     void loadSets();
@@ -69,9 +80,13 @@ const ReferenceDataManagement: React.FC = () => {
             size="small"
             danger
             onClick={async () => {
-              await referenceApi.disableValue(r.id);
-              message.success('已停用');
-              if (selected) void loadValues(selected);
+              try {
+                await referenceApi.disableValue(r.id);
+                message.success('已停用');
+                if (selected) void loadValues(selected);
+              } catch {
+                message.error('停用失败');
+              }
             }}
           >
             停用
@@ -119,12 +134,21 @@ const ReferenceDataManagement: React.FC = () => {
         onCancel={() => setSetOpen(false)}
         destroyOnHidden
         onOk={async () => {
-          const v = await setForm.validateFields();
-          await referenceApi.createSet(v);
-          message.success('值域已创建');
-          setSetOpen(false);
-          setForm.resetFields();
-          void loadSets();
+          let v: Record<string, unknown>;
+          try {
+            v = await setForm.validateFields();
+          } catch {
+            return; // 字段级校验错误由 Form.Item 就地展示
+          }
+          try {
+            await referenceApi.createSet(v);
+            message.success('值域已创建');
+            setSetOpen(false);
+            setForm.resetFields();
+            void loadSets();
+          } catch {
+            message.error('创建值域失败');
+          }
         }}
       >
         <Form form={setForm} layout="vertical">
@@ -149,12 +173,21 @@ const ReferenceDataManagement: React.FC = () => {
         onCancel={() => setValueOpen(false)}
         destroyOnHidden
         onOk={async () => {
-          const v = await valueForm.validateFields();
-          await referenceApi.createValue(selected!.id, v);
-          message.success('值已新增');
-          setValueOpen(false);
-          valueForm.resetFields();
-          if (selected) void loadValues(selected);
+          let v: Record<string, unknown>;
+          try {
+            v = await valueForm.validateFields();
+          } catch {
+            return; // 字段级校验错误由 Form.Item 就地展示
+          }
+          try {
+            await referenceApi.createValue(selected!.id, v);
+            message.success('值已新增');
+            setValueOpen(false);
+            valueForm.resetFields();
+            if (selected) void loadValues(selected);
+          } catch {
+            message.error('新增值失败');
+          }
         }}
       >
         <Form form={valueForm} layout="vertical">

@@ -34,7 +34,7 @@ import type {
   ImportDuplicateStrategy,
 } from '../types';
 import { masterDataRecordApi, masterDataFieldApi, approvalApi, referenceApi } from '../services/api';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, resolveErrorMessage } from '@bone/shared-utils';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
 import { useMessage } from '../App';
@@ -322,7 +322,13 @@ const RecordManagement: React.FC = () => {
         message.error(response.message);
       }
     } catch (error) {
-      console.error('提交失败:', error);
+      // ★ 不能只 console.error：后端已给出「记录数据不能为空」这类明确原因，
+      //   静默吞掉会表现为「点了确定没反应」，是最难排查的一类问题。
+      if (error && typeof error === 'object' && 'errorFields' in error) {
+        message.error('请先修正表单中标红的字段后再提交');
+        return;
+      }
+      message.error(resolveErrorMessage(error, isEditMode ? '更新失败' : '创建失败'));
     }
   };
 

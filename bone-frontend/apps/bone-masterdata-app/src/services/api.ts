@@ -25,6 +25,13 @@ import type {
   ImportDuplicateStrategy,
   ImportResult
 } from '../types';
+import type {
+  DataStandard,
+  CreateDataStandardReq,
+  UpdateDataStandardReq,
+  LineageRecord,
+  RecordLineageReq
+} from '../types/governance';
 
 export { setQiankunToken };
 
@@ -305,6 +312,8 @@ export const categoryApi = {
 };
 
 // 治理角色（G3 / UC-T2）
+// accountId 后端为 Long（AssignGovernanceRoleCommand），全平台 Long→JSON string；
+// 前端按门禁须声明为 string（雪花 ID 超 JS Number 上限，以 number 返回会被静默截断）。
 export const governanceRoleApi = {
   byEntity: (masterDataEntityId: string): Promise<ApiResponse<any[]>> =>
     apiClient.get(`${MD}/governance-roles`, { params: { masterDataEntityId } }),
@@ -385,11 +394,48 @@ export const approvalApi = {
     apiClient.post(`${MD}/entities/${id}/owning-app`, { owningAppId }),
 };
 
+// ============================================================
+// 数据标准（StandardRuleType：1=编码规则 / 2=引用值域）
+// 契约注意：GET /data-standards/page 返回 PageResult；GET /data-standards/entity/{entityCode}
+// 返回 List，entityCode 是业务编码（非雪花 ID）。写操作门禁 masterdata:standards:write，读开放。
+// create 返回 ApiResponse<Long>（雪花 ID）⇒ 按 string 接收，防 Number() 截断。
+// ============================================================
+export const dataStandardApi = {
+  page: async (params: {
+    entityCode?: string;
+    keyword?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<NormalizedPageResult<DataStandard>>> =>
+    normalizePage(await apiClient.get(`${MD}/data-standards/page`, { params })),
+  byEntity: (entityCode: string): Promise<ApiResponse<DataStandard[]>> =>
+    apiClient.get(`${MD}/data-standards/entity/${entityCode}`),
+  create: (data: CreateDataStandardReq): Promise<ApiResponse<string>> =>
+    apiClient.post(`${MD}/data-standards`, data),
+  update: (id: string, data: UpdateDataStandardReq): Promise<ApiResponse<void>> =>
+    apiClient.put(`${MD}/data-standards/${id}`, data),
+  delete: (id: string): Promise<ApiResponse<void>> => apiClient.delete(`${MD}/data-standards/${id}`)
+};
+
+// ============================================================
+// 数据血缘（治理面数据：写门禁 masterdata:governance:write，读开放）
+// 查询语义：targetEntity=查上游（谁生成了我）；sourceEntity=查下游（我影响了谁）。
+// 后端只返回直接边（一跳），多层血缘由前端有界 BFS 逐跳展开。
+// ============================================================
+export const lineageApi = {
+  list: (params: { targetEntity?: string; sourceEntity?: string }): Promise<ApiResponse<LineageRecord[]>> =>
+    apiClient.get(`${MD}/lineage`, { params }),
+  record: (data: RecordLineageReq): Promise<ApiResponse<void>> =>
+    apiClient.post(`${MD}/lineage`, data)
+};
+
 export default {
   masterDataEntity: masterDataEntityApi,
   masterDataField: masterDataFieldApi,
   dataQualityRule: dataQualityRuleApi,
   masterDataRecord: masterDataRecordApi,
   qualityCheck: qualityCheckApi,
-  qualityResult: qualityResultApi
+  qualityResult: qualityResultApi,
+  dataStandard: dataStandardApi,
+  lineage: lineageApi
 };

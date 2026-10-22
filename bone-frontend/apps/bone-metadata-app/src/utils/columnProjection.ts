@@ -1,6 +1,6 @@
 import type { MetaField } from '../types';
 import { parseEnumValues, type EnumOption } from '@bone/shared-types';
-import type { ListView } from './uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 
 /**
  * 界面列投影（预览 ≡ 数据 的单一真源）。

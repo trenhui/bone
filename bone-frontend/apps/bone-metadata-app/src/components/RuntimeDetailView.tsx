@@ -25,8 +25,8 @@
 import { Descriptions, Empty, Space, Tag, Typography } from 'antd';
 import { parseEnumValues } from '@bone/shared-types';
 import type { MetaField } from '../types';
-import type { Control, FormView, UiContext } from '../utils/uiSchemaEngine';
-import { controlBaseStates, fieldVisible } from '../utils/uiSchemaEngine';
+import type { Control, FormView, UiContext } from '@bone/ui-schema';
+import { controlBaseStates, fieldVisible } from '@bone/ui-schema';
 
 const { Text } = Typography;
 

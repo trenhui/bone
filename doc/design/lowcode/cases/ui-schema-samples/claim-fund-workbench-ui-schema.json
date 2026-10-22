@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_settlement_order",
+  "displayModes": ["view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "settlement_no", "visible": true, "width": 200 },
+        { "fieldCode": "amount", "visible": true, "width": 140 },
+        { "fieldCode": "funding_stage", "visible": true, "width": 140 },
+        { "fieldCode": "attempt", "visible": true, "width": 80 }
+      ],
+      "searchFields": ["funding_stage"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_quota",
+          "title": "额度账户（A5 三值模型）",
+          "titleKey": "fund.sec_quota",
+          "kind": "dashboard",
+          "controls": [
+            { "fieldCode": "quota_initial", "controlKind": "MONEY", "virtual": true },
+            { "fieldCode": "quota_claimed", "controlKind": "MONEY", "virtual": true },
+            { "fieldCode": "quota_frozen", "controlKind": "MONEY", "virtual": true },
+            { "fieldCode": "quota_available", "controlKind": "MONEY", "virtual": true }
+          ]
+        },
+        {
+          "id": "sec_transactions",
+          "title": "额度流水（append-only）",
+          "titleKey": "fund.sec_transactions",
+          "kind": "timeline",
+          "controls": [
+            { "fieldCode": "quota_transactions", "virtual": true, "controlKind": "TIMELINE" }
+          ]
+        }
+      ]
+    }
+  },
+  "actionBar": [
+    {
+      "actionCode": "create",
+      "visibleWhen": { "fieldCode": "funding_stage", "operator": "isNull" },
+      "sortOrder": 1,
+      "requireDualApproveWhen": { "fieldCode": "amount", "operator": "gte", "value": 10000 }
+    },
+    {
+      "actionCode": "auditPass",
+      "visibleWhen": { "fieldCode": "funding_stage", "operator": "eq", "value": "SOFT_RESERVED" },
+      "sortOrder": 2,
+      "requireDualApproveWhen": { "fieldCode": "amount", "operator": "gte", "value": 10000 }
+    },
+    {
+      "actionCode": "pay",
+      "visibleWhen": { "fieldCode": "funding_stage", "operator": "in", "value": ["HARD_RESERVED", "REVIEW_FREEZE"] },
+      "sortOrder": 3,
+      "confirm": {
+        "title": "确认支付",
+        "content": "支付经资金两段式（硬预占→已支付），额度 frozen→claimed。",
+        "titleKey": "fund.confirm.pay.title",
+        "contentKey": "fund.confirm.pay.content"
+      }
+    },
+    {
+      "actionCode": "cancel",
+      "visibleWhen": { "fieldCode": "funding_stage", "operator": "in", "value": ["SOFT_RESERVED", "HARD_RESERVED", "REVIEW_FREEZE"] },
+      "sortOrder": 4
+    },
+    {
+      "actionCode": "refund",
+      "visibleWhen": { "fieldCode": "funding_stage", "operator": "eq", "value": "PAID" },
+      "sortOrder": 5,
+      "confirm": {
+        "title": "确认退票退款",
+        "content": "已付退票将红冲并回冲额度。",
+        "titleKey": "fund.confirm.refund.title",
+        "contentKey": "fund.confirm.refund.content"
+      }
+    }
+  ],
+  "footer": {
+    "disclaimer": "支付为真实出金；当前为 stub 通道，未接真实银行/支付网关（P0-3 未闭环前不低代码化）。",
+    "aiBadge": false,
+    "disclaimerKey": "fund.footer.disclaimer"
+  },
+  "i18n": {
+    "namespace": "bone.ui.t_settlement_order"
+  },
+  "base": {
+    "templateCode": "fund_workbench",
+    "baseVersion": "1.0.0",
+    "followMode": "notify"
+  }
+}

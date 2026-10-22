@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { MetaField } from '../types';
-import type { FormView } from '../utils/uiSchemaEngine';
+import type { FormView } from '@bone/ui-schema';
 import { RuntimeDetailView, detailValueOf } from './RuntimeDetailView';
 
 const field = (code: string, displayName?: string, type = 'STRING', enumValues?: string): MetaField =>

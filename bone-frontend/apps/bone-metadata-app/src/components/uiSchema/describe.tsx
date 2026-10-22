@@ -9,7 +9,7 @@
 import { Typography } from 'antd';
 import type {
   ActionBarItem, LinkageRule, SubmitRule, UiCondition, Variant,
-} from '../../utils/uiSchemaEngine';
+} from '@bone/ui-schema';
 import { matchText, variantOverrideText } from '../../utils/uiSchemaChangePreview';
 import { FUNCTION_MAP, opLabel } from './constants';
 

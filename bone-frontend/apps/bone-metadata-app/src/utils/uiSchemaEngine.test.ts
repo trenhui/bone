@@ -18,7 +18,7 @@ import {
   type LinkageRule,
   type Section,
   type SubmitRule,
-} from './uiSchemaEngine';
+} from '@bone/ui-schema';
 import { lintSchema, type LintIssue } from '../components/uiSchema/lint';
 
 /* 报销实例（与 expense-claim-ui-schema.example.json 同源，内联避免 JSON 模块配置依赖） */

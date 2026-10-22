@@ -110,6 +110,11 @@
         <plugins>
             <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- synap-claim 是领域库模块（无 @SpringBootApplication 主类），
+                         不参与可执行 fat jar 打包；repackage 在无主类时会直接失败。 -->
+                    <skip>true</skip>
+                </configuration>
             </plugin>
             <plugin><groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

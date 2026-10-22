@@ -20,7 +20,7 @@
 import { useMemo } from 'react';
 import { Alert, Button, Empty, Input, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import {
   setDegradedBanner, setDictLabel, setI18nNamespace, updateAction, updateColumn, updateFooter,
   updateLinkageThen, updateStat, updateSubmit, updateTab, viewOf, withView,

@@ -23,6 +23,12 @@
         <module>bone-extension-engine/bone-extension-studio</module>
         <module>bone-metadata-server</module>
         <module>bone-metadata-engine</module>
+        <!--
+            轻量审批流引擎：独立于 bone-metadata-engine（对平台零依赖，经 ports 契约对话），
+            供报销 / 采购 / 其它审批场景复用。形状对齐 bone-metadata-engine 的
+            domain / ports / runtime / starter 四段式。
+        -->
+        <module>bone-workflow-engine</module>
         <module>studio-generator</module>
         <module>bone-accounting-engine</module>
         <module>synap-claim</module>

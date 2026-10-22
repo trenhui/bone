@@ -16,7 +16,7 @@ import {
   ArrowDownOutlined, ArrowUpOutlined, CopyOutlined, DeleteOutlined, DownOutlined, DragOutlined,
   EyeInvisibleOutlined, PlusOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined, UpOutlined,
 } from '@ant-design/icons';
-import type { BoneUiSchema, Control, ControlKind } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema, Control, ControlKind } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { CONTROL_KIND_OPTIONS, DISPLAY_MODE_OPTIONS, KIND_MAP, MASK_OPTIONS, ROLE_OPTIONS, SECTION_KIND_OPTIONS, SECTION_LAYOUT_OPTIONS, TIER_OPTIONS } from './constants';
 import {

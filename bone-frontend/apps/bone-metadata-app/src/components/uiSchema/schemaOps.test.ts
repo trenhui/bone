@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveVariant } from '../../utils/uiSchemaEngine';
+import { resolveVariant } from '@bone/ui-schema';
 import {
   addAction, addSection, addVariant, buildDefaultSchema, mergeVariantIntoBase, moveAction, moveColumn,
   removeSection, removeVariant, setColumnsVisible, setColumnsWidth, updateAction, updateVariant,

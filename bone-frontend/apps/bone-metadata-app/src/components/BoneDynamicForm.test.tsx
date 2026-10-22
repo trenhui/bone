@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { MetaField } from '../types';
-import type { BoneUiSchema } from '../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import { BoneDynamicForm } from './BoneDynamicForm';
 
 /**

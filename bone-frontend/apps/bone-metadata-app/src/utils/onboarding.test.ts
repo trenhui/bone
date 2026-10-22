@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { onboardingMilestones, TOUR_STEPS } from './onboarding';
-import type { BoneUiSchema, ListColumn } from './uiSchemaEngine';
+import type { BoneUiSchema, ListColumn } from '@bone/ui-schema';
 
 /** 默认态：全字段平铺进单一「基本信息」分区 + 列表全列 120px（buildDefaultSchema 的产物形态） */
 function defaultSchema(codes: string[]): BoneUiSchema {

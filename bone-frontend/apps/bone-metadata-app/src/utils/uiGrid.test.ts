@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Control } from './uiSchemaEngine';
+import type { Control } from '@bone/ui-schema';
 import { GRID_COLUMNS, gridItemStyle, isFullWidthControl, spanOf } from './uiGrid';
 
 const ctrl = (props?: Record<string, unknown>, controlKind?: Control['controlKind']): Control => ({

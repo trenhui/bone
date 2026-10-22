@@ -6,7 +6,7 @@ import {
   type BoneUiSchema,
   type SchemaVersionCheck,
   type UiContext,
-} from '../utils/uiSchemaEngine';
+} from '@bone/ui-schema';
 
 export type UiSchemaStatus =
   | 'loading'

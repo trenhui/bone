@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "t_claim_evidence",
+  "displayModes": ["view", "create"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "doc_type", "visible": true, "width": 160 },
+        { "fieldCode": "file_ref", "visible": true, "width": 220 },
+        { "fieldCode": "content_hash", "visible": true, "width": 220 },
+        { "fieldCode": "ocr_status", "visible": true, "width": 120 },
+        { "fieldCode": "ocr_confidence", "visible": true, "width": 120 },
+        { "fieldCode": "verify_valid", "visible": true, "width": 140 },
+        { "fieldCode": "locked", "visible": true, "width": 80 }
+      ],
+      "searchFields": ["doc_type", "ocr_status"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_register",
+          "title": "登记材料",
+          "titleKey": "evidence.sec_register",
+          "controls": [
+            { "fieldCode": "doc_type", "controlKind": "ENUM" },
+            { "fieldCode": "file_ref", "controlKind": "ATTACHMENT", "props": { "maxCount": 1, "maxSizeMB": 10 } },
+            { "fieldCode": "content_hash", "controlKind": "INPUT", "readonly": true },
+            { "fieldCode": "verify_valid", "controlKind": "DATE" }
+          ]
+        }
+      ]
+    }
+  },
+  "actionBar": [
+    {
+      "actionCode": "register",
+      "sortOrder": 1
+    },
+    {
+      "actionCode": "lock",
+      "visibleWhen": { "fieldCode": "locked", "operator": "eq", "value": false },
+      "sortOrder": 2
+    }
+  ],
+  "linkageRules": [
+    {
+      "code": "LINK-EVID-LIMIT",
+      "name": "材料份数上限 20",
+      "when": { "fieldCode": "count", "operator": "gte", "value": 20 },
+      "then": [
+        { "fieldCode": "register", "visible": false, "notice": "已达材料上限 20 份", "noticeKey": "evidence.limit.notice" }
+      ]
+    }
+  ],
+  "footer": {
+    "disclaimer": "材料登记与影像本体分离；内容哈希用于去重与完整性校验。",
+    "disclaimerKey": "evidence.footer.disclaimer"
+  },
+  "i18n": {
+    "namespace": "bone.ui.t_claim_evidence"
+  },
+  "base": {
+    "templateCode": "evidence_upload",
+    "baseVersion": "1.0.0",
+    "followMode": "notify"
+  }
+}

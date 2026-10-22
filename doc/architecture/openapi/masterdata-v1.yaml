@@ -5,9 +5,21 @@ info:
   description: |
     企业主数据（As-Is）。规范：[Bone-API-规范.md](../Bone-API-规范.md)；
     详设：[主数据管理模块](../../design/modules/3.%20主数据管理模块详细设计方案.md) §5；
+    核心场景与用例：[3a 设计方案](../../design/modules/3a.%20主数据管理模块核心场景及用例设计方案.md)；
     同步决策：[ADR-0017](../adr/0017-masterdata-catalog-sync.md)。
 
     网关前缀：`/api/v1/masterdata` → bone-masterdata :8080。
+
+    > 契约维护约定：本文件与 bone-masterdata 的 16 个 Controller 一一对齐（2026-10-22 全量核对）。
+    > 新增/变更端点时同本文件一并更新，避免「代码先行、文档漂移」。
+
+    统一约定：
+    - 信封 `ApiResponse<T>`（code/message/data）；分页为 `PageResult<T>`（records/total/page/size）。
+    - 雪花 ID（19 位）由骨核全局 Long→String 序列化器输出为字符串，客户端按字符串处理，禁 Number()。
+    - 权限码：`masterdata:entities:read|write|approve`、`masterdata:records:read|write|approve`、
+      `masterdata:categories:read|write`、`masterdata:templates:read|write|instantiate`、
+      `masterdata:subscriptions:write`、`masterdata:quality:write`、`masterdata:reference:read|write`、
+      `masterdata:governance:write`、`masterdata:standards:write`。
 
 servers:
   - url: /api/v1/masterdata
@@ -16,6 +28,7 @@ security:
   - bearerAuth: []
 
 paths:
+  # ==================== Entity 主数据模型 ====================
   /entities:
     get:
       summary: 分页查询主数据实体
@@ -34,7 +47,7 @@ paths:
         '201': { description: Created }
   /entities/convert:
     post:
-      summary: 从已发布业务元数据实体转换
+      summary: 从已发布业务元数据实体转换（幂等：同源重复转换返回既有实体）
       operationId: convertFromBusinessEntity
       tags: [Entity]
       parameters:
@@ -62,6 +75,14 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
+    delete:
+      summary: 删除实体
+      operationId: deleteMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
   /entities/{id}/publish:
     post:
       summary: 发布实体
@@ -71,68 +92,249 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
-  /fields:
+  /entities/{id}/submit-review:
+    post:
+      summary: 提交评审（DRAFT → PENDING_REVIEW）
+      operationId: submitMasterDataEntityReview
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '409': { description: 状态不允许流转 }
+  /entities/{id}/approve:
+    post:
+      summary: 审批通过（PENDING_REVIEW → APPROVED，SoD：审批人不得为提交人）
+      operationId: approveMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '403': { description: SoD 冲突（审批人=提交人） }
+        '409': { description: 状态不允许流转 }
+  /entities/{id}/reject:
+    post:
+      summary: 驳回（PENDING_REVIEW → DRAFT，body 必填 reason）
+      operationId: rejectMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /entities/{id}/disable:
+    post:
+      summary: 停用实体（须带 JSON body，空对象即可）
+      operationId: disableMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /entities/{id}/governance-tier:
+    post:
+      summary: 变更治理等级（L1/L2/L3，影响审批与版本化策略）
+      operationId: changeEntityGovernanceTier
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /entities/{id}/owning-app:
+    post:
+      summary: 绑定/解绑归属应用（owningAppId 传 null 解绑）
+      operationId: bindEntityOwningApp
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Field 字段 ====================
+  /entities/{entityId}/fields:
     get:
-      summary: 按 masterDataEntityId 列出字段
-      operationId: listMasterDataFields
+      summary: 按实体列出字段
+      operationId: listMasterDataFieldsByEntity
       tags: [Field]
       parameters:
-        - name: masterDataEntityId
-          in: query
-          required: true
-          schema: { type: string }
+        - { name: entityId, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
     post:
       summary: 创建字段
       operationId: createMasterDataField
       tags: [Field]
+      parameters:
+        - { name: entityId, in: path, required: true, schema: { type: string } }
       responses:
         '201': { description: Created }
+  /fields/{id}:
+    get:
+      summary: 字段详情
+      operationId: getMasterDataField
+      tags: [Field]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新字段
+      operationId: updateMasterDataField
+      tags: [Field]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除字段
+      operationId: deleteMasterDataField
+      tags: [Field]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Record 记录 ====================
   /records:
     get:
       summary: 记录分页列表
       operationId: listMasterDataRecords
       tags: [Record]
+      parameters:
+        - { name: masterDataEntityId, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
       responses:
         '200': { description: OK }
     post:
-      summary: 导入记录（multipart）
+      summary: 导入记录（multipart；duplicateStrategy=FAIL|UPDATE，UPDATE 按业务编码幂等更新）
       operationId: importMasterDataRecords
       tags: [Record]
       parameters:
-        - name: masterDataEntityId
-          in: query
-          required: true
-          schema: { type: string }
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+        - { name: duplicateStrategy, in: query, schema: { type: string, enum: [FAIL, UPDATE], default: FAIL } }
       responses:
-        '200': { description: OK（id 列表） }
-  /records/export:
-    get:
-      summary: 导出记录
-      operationId: exportMasterDataRecords
+        '200': { description: OK（ImportResult：总数/成功/更新/失败行明细） }
+  /records/entity/{masterDataEntityId}:
+    post:
+      summary: 创建记录（body：data + recordCode + displayName + 生效期）
+      operationId: createMasterDataRecord
       tags: [Record]
       parameters:
-        - name: masterDataEntityId
-          in: query
-          required: true
-          schema: { type: string }
+        - { name: masterDataEntityId, in: path, required: true, schema: { type: string } }
       responses:
-        '200': { description: OK（导出内容或 URL） }
+        '201': { description: Created }
+  /records/by-code:
+    get:
+      summary: 按业务编码查询记录
+      operationId: getMasterDataRecordByCode
+      tags: [Record]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+        - { name: recordCode, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '404': { description: 记录不存在 }
+  /records/{id}:
+    get:
+      summary: 记录详情
+      operationId: getMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新记录
+      operationId: updateMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除记录
+      operationId: deleteMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
   /records/{id}/publish:
     post:
-      summary: 发布记录
+      summary: 发布记录（软门禁：存在未关闭质量工单时禁止）
       operationId: publishMasterDataRecord
       tags: [Record]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
+        '409': { description: 存在未关闭质量工单（发布软门禁） }
+  /records/{id}/submit:
+    post:
+      summary: 提交记录审批（DRAFT → PENDING_REVIEW）
+      operationId: submitMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /records/{id}/approve:
+    post:
+      summary: 审批通过记录（SoD：审批人不得为提交人）
+      operationId: approveMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '403': { description: SoD 冲突 }
+  /records/{id}/reject:
+    post:
+      summary: 驳回记录
+      operationId: rejectMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /records/{id}/archive:
+    post:
+      summary: 归档记录
+      operationId: archiveMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /records/{id}/versions:
+    get:
+      summary: 记录版本历史
+      operationId: listMasterDataRecordVersions
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /records/export:
+    get:
+      summary: 导出记录（返回纯文本 id=.., data=..，非文件流）
+      operationId: exportMasterDataRecords
+      tags: [Record]
+      parameters:
+        - { name: masterDataEntityId, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK（导出文本） }
+
+  # ==================== Quality 数据质量 ====================
   /quality/rules:
     get:
-      summary: 质量规则列表
+      summary: 质量规则列表（返回 List，非分页）
       operationId: listDataQualityRules
       tags: [Quality]
+      parameters:
+        - { name: masterDataEntityId, in: query, schema: { type: string } }
       responses:
         '200': { description: OK }
     post:
@@ -141,23 +343,535 @@ paths:
       tags: [Quality]
       responses:
         '201': { description: Created }
+  /quality/rules/{id}:
+    get:
+      summary: 质量规则详情
+      operationId: getDataQualityRule
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新质量规则
+      operationId: updateDataQualityRule
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除质量规则
+      operationId: deleteDataQualityRule
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
   /quality/check:
     post:
-      summary: 执行质量检查
+      summary: 执行质量检查（同步执行，返回检查任务 ID）
       operationId: performDataQualityCheck
       tags: [Quality]
       parameters:
-        - name: masterDataEntityId
-          in: query
-          required: true
-          schema: { type: string }
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
       responses:
-        '200': { description: OK（report id） }
+        '200': { description: OK（check id） }
+  /quality/checks:
+    get:
+      summary: 检查任务列表（返回 List，非分页）
+      operationId: listQualityChecks
+      tags: [Quality]
+      parameters:
+        - { name: masterDataEntityId, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality/checks/{id}:
+    get:
+      summary: 检查任务详情
+      operationId: getQualityCheck
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality/checks/{id}/report:
+    get:
+      summary: 按检查任务 ID 取报告
+      operationId: getQualityReportByCheckId
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality/reports:
+    get:
+      summary: 报告列表（按 qualityCheckId 过滤）
+      operationId: listQualityReports
+      tags: [Quality]
+      parameters:
+        - { name: qualityCheckId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
   /quality/reports/{id}:
     get:
-      summary: 质量报告详情
+      summary: 报告详情（id 为报告主键，非检查 ID）
       operationId: getQualityReport
       tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality-results:
+    get:
+      summary: 质检结果（不传 recordId=SUMMARY 任务级结论；传 recordId=DETAIL 规则×记录级判定）
+      operationId: listQualityResults
+      tags: [Quality]
+      parameters:
+        - { name: masterDataEntityId, in: query, schema: { type: string } }
+        - { name: recordId, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== QualityIssue 整改工单 ====================
+  /quality-issues:
+    get:
+      summary: 工单列表（按实体 + 状态过滤）
+      operationId: listQualityIssues
+      tags: [QualityIssue]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建整改工单
+      operationId: createQualityIssue
+      tags: [QualityIssue]
+      responses:
+        '201': { description: Created }
+  /quality-issues/open-count:
+    get:
+      summary: 未关闭工单数（发布软门禁判据）
+      operationId: countOpenQualityIssues
+      tags: [QualityIssue]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality-issues/{id}/fix:
+    post:
+      summary: 标记整改（OPEN → FIXED）
+      operationId: fixQualityIssue
+      tags: [QualityIssue]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality-issues/{id}/close:
+    post:
+      summary: 复检关闭（FIXED → CLOSED）
+      operationId: closeQualityIssue
+      tags: [QualityIssue]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /quality-issues/{id}/ignore:
+    post:
+      summary: 忽略工单（OPEN → IGNORED）
+      operationId: ignoreQualityIssue
+      tags: [QualityIssue]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Category 分类体系 ====================
+  /categories:
+    get:
+      summary: 分类树（按实体）
+      operationId: listMasterDataCategories
+      tags: [Category]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建分类
+      operationId: createMasterDataCategory
+      tags: [Category]
+      responses:
+        '201': { description: Created }
+  /categories/{id}:
+    put:
+      summary: 更新分类（仅 name/description/sortOrder）
+      operationId: updateMasterDataCategory
+      tags: [Category]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除分类
+      operationId: deleteMasterDataCategory
+      tags: [Category]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /categories/assign:
+    post:
+      summary: 记录挂接分类
+      operationId: assignRecordCategory
+      tags: [Category]
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 记录解除分类
+      operationId: unassignRecordCategory
+      tags: [Category]
+      parameters:
+        - { name: recordId, in: query, required: true, schema: { type: string } }
+        - { name: categoryId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /categories/record/{recordId}:
+    get:
+      summary: 记录已挂接的分类
+      operationId: listRecordCategories
+      tags: [Category]
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Template 域模板 ====================
+  /templates:
+    get:
+      summary: 模板分页列表
+      operationId: listDomainTemplates
+      tags: [Template]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建模板
+      operationId: createDomainTemplate
+      tags: [Template]
+      responses:
+        '201': { description: Created }
+  /templates/{id}:
+    get:
+      summary: 模板详情
+      operationId: getDomainTemplate
+      tags: [Template]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新模板
+      operationId: updateDomainTemplate
+      tags: [Template]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /templates/{id}/versions:
+    get:
+      summary: 模板版本列表
+      operationId: listDomainTemplateVersions
+      tags: [Template]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 发布模板新版本
+      operationId: publishDomainTemplateVersion
+      tags: [Template]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Created }
+  /templates/{id}/archive:
+    post:
+      summary: 归档模板
+      operationId: archiveDomainTemplate
+      tags: [Template]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /templates/instantiate:
+    post:
+      summary: 模板实例化为主数据模型（可携字段）
+      operationId: instantiateDomainTemplate
+      tags: [Template]
+      responses:
+        '201': { description: Created（entity id） }
+
+  # ==================== Standard 数据标准 ====================
+  /data-standards/page:
+    get:
+      summary: 分页查询数据标准（entityCode + keyword）
+      operationId: pageDataStandards
+      tags: [Standard]
+      parameters:
+        - { name: entityCode, in: query, schema: { type: string } }
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 10 } }
+      responses:
+        '200': { description: OK（PageResult.records） }
+  /data-standards/entity/{entityCode}:
+    get:
+      summary: 按实体编码查询数据标准（返回 List）
+      operationId: listDataStandardsByEntity
+      tags: [Standard]
+      parameters:
+        - { name: entityCode, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /data-standards:
+    post:
+      summary: 创建数据标准（ruleType：1=编码规则 pattern / 2=引用值域 refCode）
+      operationId: createDataStandard
+      tags: [Standard]
+      responses:
+        '201': { description: Created }
+  /data-standards/{id}:
+    put:
+      summary: 更新数据标准（entityCode/fieldCode 创建后不可改）
+      operationId: updateDataStandard
+      tags: [Standard]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除数据标准
+      operationId: deleteDataStandard
+      tags: [Standard]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Lineage 数据血缘 ====================
+  /lineage:
+    get:
+      summary: 查询血缘边（targetEntity=查上游 / sourceEntity=查下游，仅直接边）
+      operationId: listLineageRecords
+      tags: [Lineage]
+      parameters:
+        - { name: targetEntity, in: query, schema: { type: string } }
+        - { name: sourceEntity, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 记录血缘边（sourceEntity → targetEntity）
+      operationId: recordLineage
+      tags: [Lineage]
+      responses:
+        '201': { description: Created }
+
+  # ==================== Reference 参考数据 ====================
+  /reference-sets:
+    get:
+      summary: 值域集合列表
+      operationId: listReferenceSets
+      tags: [Reference]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建值域集合
+      operationId: createReferenceSet
+      tags: [Reference]
+      responses:
+        '201': { description: Created }
+  /reference-sets/{id}:
+    put:
+      summary: 更新值域集合
+      operationId: updateReferenceSet
+      tags: [Reference]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /reference-sets/{id}/archive:
+    post:
+      summary: 归档值域集合
+      operationId: archiveReferenceSet
+      tags: [Reference]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /reference-sets/{id}/values:
+    get:
+      summary: 值域下的值列表
+      operationId: listReferenceValues
+      tags: [Reference]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 新增值域值
+      operationId: createReferenceValue
+      tags: [Reference]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '201': { description: Created }
+  /reference-sets/values/{valueId}:
+    put:
+      summary: 更新值域值
+      operationId: updateReferenceValue
+      tags: [Reference]
+      parameters:
+        - { name: valueId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /reference-sets/values/{valueId}/disable:
+    post:
+      summary: 停用值域值（软删，不物理删除）
+      operationId: disableReferenceValue
+      tags: [Reference]
+      parameters:
+        - { name: valueId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+
+  # ==================== Governance 治理 ====================
+  /governance-roles:
+    get:
+      summary: 治理角色列表（按实体）
+      operationId: listGovernanceRoles
+      tags: [Governance]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 指派治理角色（roleType：OWNER/STEWARD/APPROVER）
+      operationId: assignGovernanceRole
+      tags: [Governance]
+      responses:
+        '201': { description: Created }
+  /governance-roles/{id}:
+    delete:
+      summary: 移除治理角色
+      operationId: unassignGovernanceRole
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /subscriptions:
+    get:
+      summary: 消费订阅列表（按实体）
+      operationId: listEntitySubscriptions
+      tags: [Governance]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 申请消费订阅
+      operationId: requestEntitySubscription
+      tags: [Governance]
+      responses:
+        '201': { description: Created }
+  /subscriptions/{id}/approve:
+    post:
+      summary: 批准订阅
+      operationId: approveEntitySubscription
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /subscriptions/{id}/revoke:
+    post:
+      summary: 撤销订阅
+      operationId: revokeEntitySubscription
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /model-drifts:
+    get:
+      summary: 模型漂移列表（按实体）
+      operationId: listModelDrifts
+      tags: [Governance]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /model-drifts/reconcile:
+    post:
+      summary: 元数据↔主数据结构对账（只检测不自动同步）
+      operationId: reconcileModelDrift
+      tags: [Governance]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK（漂移列表） }
+  /model-drifts/{id}/handle:
+    post:
+      summary: 处置漂移（SYNCED/IGNORED/BLOCKED）
+      operationId: handleModelDrift
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /feedbacks:
+    get:
+      summary: 下游反馈列表（按实体 + 状态）
+      operationId: listDataFeedbacks
+      tags: [Governance]
+      parameters:
+        - { name: masterDataEntityId, in: query, required: true, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 提交下游反馈
+      operationId: createDataFeedback
+      tags: [Governance]
+      responses:
+        '201': { description: Created }
+  /feedbacks/{id}/accept:
+    post:
+      summary: 受理反馈（PENDING → ACCEPTED）
+      operationId: acceptDataFeedback
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /feedbacks/{id}/reject:
+    post:
+      summary: 驳回反馈（PENDING → REJECTED）
+      operationId: rejectDataFeedback
+      tags: [Governance]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /feedbacks/{id}/complete:
+    post:
+      summary: 完成反馈处理（→ DONE）
+      operationId: completeDataFeedback
+      tags: [Governance]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:

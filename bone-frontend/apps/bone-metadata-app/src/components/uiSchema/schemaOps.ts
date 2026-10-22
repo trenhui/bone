@@ -6,7 +6,7 @@
  */
 import type {
   ActionBarItem, BoneUiSchema, Control, FormView, LinkageRule, LinkageThen, ListColumn, ListStat, ListTab, ListView, SchemaBase, SchemaFooter, Section, SubmitRule, Variant,
-} from '../../utils/uiSchemaEngine';
+} from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { FIELD_TYPE_TO_KIND } from './constants';
 

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "entityCode": "v_adjustment_result",
+  "displayModes": ["view"],
+  "views": {
+    "list": {
+      "columns": [
+        { "fieldCode": "calculation_id", "visible": true, "width": 120 },
+        { "fieldCode": "total_amount", "visible": true, "width": 140 },
+        { "fieldCode": "formula_hash", "visible": true, "width": 280 }
+      ],
+      "searchFields": ["calculation_id"]
+    },
+    "form": {
+      "sections": [
+        {
+          "id": "sec_summary",
+          "title": "理算结论",
+          "titleKey": "adjust.sec_summary",
+          "controls": [
+            { "fieldCode": "total_amount", "controlKind": "MONEY" },
+            { "fieldCode": "formula_hash", "controlKind": "INPUT", "readonly": true, "labelOverride": "公式哈希（复算锚）" }
+          ]
+        },
+        {
+          "id": "sec_attribution",
+          "title": "六归因成分",
+          "titleKey": "adjust.sec_attribution",
+          "controls": [
+            {
+              "fieldCode": "lines",
+              "controlKind": "CHILD_TABLE",
+              "virtual": true,
+              "props": {
+                "childEntity": "adjustment_line",
+                "columns": [
+                  "line_type",
+                  "liability_uuid",
+                  "fee_calculate",
+                  "fee_deduct",
+                  "ratio_payout",
+                  "fee_occupied",
+                  "fee_payout",
+                  "fee_remain",
+                  "zero_reason",
+                  "reject_type",
+                  "formula_hash"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "sec_snapshot",
+          "title": "公式快照（人类可读归因链）",
+          "titleKey": "adjust.sec_snapshot",
+          "controls": [
+            { "fieldCode": "snapshot", "controlKind": "TEXTAREA", "props": { "rows": 6 } }
+          ]
+        }
+      ]
+    }
+  },
+  "actionBar": [
+    { "actionCode": "execute", "sortOrder": 1 },
+    { "actionCode": "recalculate", "sortOrder": 2 },
+    { "actionCode": "confirm", "sortOrder": 3, "confirm": { "title": "确认核赔", "content": "确认后理算结果锁定，是否继续？" } }
+  ],
+  "footer": {
+    "disclaimer": "理算金额由确定性规则引擎计算，AI 不参与；结果以复核确认为准。",
+    "aiBadge": true,
+    "disclaimerKey": "adjust.footer.disclaimer"
+  },
+  "i18n": {
+    "namespace": "bone.ui.v_adjustment_result"
+  },
+  "base": {
+    "templateCode": "adjust_attribution",
+    "baseVersion": "1.0.0",
+    "followMode": "notify"
+  }
+}

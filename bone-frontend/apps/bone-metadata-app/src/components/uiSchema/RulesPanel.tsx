@@ -16,8 +16,8 @@ import {
   ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, PlusOutlined,
   DownOutlined, UpOutlined, PauseCircleOutlined, PlayCircleOutlined, SearchOutlined,
 } from '@ant-design/icons';
-import { evalCond, pathVal, runSubmit } from '../../utils/uiSchemaEngine';
-import type { BoneUiSchema, Operator, SubmitFunction } from '../../utils/uiSchemaEngine';
+import { evalCond, pathVal, runSubmit } from '@bone/ui-schema';
+import type { BoneUiSchema, Operator, SubmitFunction } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { FUNCTIONS, FUNCTION_OPTIONS, OPERATOR_OPTIONS, VERIFY_TYPES, VERIFY_TYPE_OPTIONS } from './constants';
 import { describeLinkage, describeSubmit } from './describe';

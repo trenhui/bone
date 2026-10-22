@@ -44,6 +44,11 @@ CREATE TABLE mdm_entity (
     rejected_by         BIGINT,
     reject_reason       VARCHAR(512),
     reject_at           TIMESTAMP,
+    -- 与 canonical DDL（bone-init.sql §8 mdm_entity）对齐：逻辑删除 / 乐观锁 / 审计列
+    deleted             BOOLEAN      DEFAULT FALSE,
+    version             INT          DEFAULT 0,
+    created_by          BIGINT,
+    updated_by          BIGINT,
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -144,6 +149,11 @@ CREATE TABLE IF NOT EXISTS mdm_record (
     parent_record_id    BIGINT,
     submitted_by        BIGINT,
     publish_time        TIMESTAMP,
+    -- 与 canonical DDL（bone-init.sql §8 mdm_record）对齐：逻辑删除 / 乐观锁 / 审计列
+    created_by          BIGINT,
+    updated_by          BIGINT,
+    deleted             BOOLEAN      DEFAULT FALSE,
+    version             INT          DEFAULT 0,
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

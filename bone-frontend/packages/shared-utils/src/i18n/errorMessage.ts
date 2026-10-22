@@ -31,6 +31,40 @@ function extractErrorCode(error: unknown): string | undefined {
 }
 
 /**
+ * 从后端 ProblemDetail 里拼出「给用户看」的校验明细。
+ *
+ * <p>{@code errors.COMMON_VALIDATION_FAILED} 等译文带 {@code {{errors}}} 占位符；
+ * 若调用 {@code i18n.t} 时不传插值变量，i18next 会原样保留 {@code {{errors}}}，
+ * 用户就会看到「参数校验失败：{{errors}}」这种没渲染的模板串——比不提示更糟。
+ */
+function extractErrorDetail(error: unknown): string {
+  const err = error as {
+    response?: { data?: { data?: { detail?: unknown; errors?: unknown }; message?: unknown } };
+  } | null;
+  const data = err?.response?.data?.data as
+    | { detail?: unknown; errors?: unknown }
+    | undefined;
+  const raw = data?.errors;
+  if (Array.isArray(raw) && raw.length > 0) {
+    const parts = raw
+      .map((e) => {
+        const item = e as { field?: unknown; message?: unknown };
+        const field = typeof item?.field === 'string' ? item.field : '';
+        const message = typeof item?.message === 'string' ? item.message : '';
+        if (field && message) return `${field}: ${message}`;
+        return field || message;
+      })
+      .filter((s): s is string => Boolean(s));
+    if (parts.length > 0) return parts.join('；');
+  }
+  if (typeof data?.detail === 'string' && data.detail.length > 0) {
+    return data.detail;
+  }
+  const topMessage = err?.response?.data?.message;
+  return typeof topMessage === 'string' ? topMessage : '';
+}
+
+/**
  * 解析错误提示文案。
  *
  * @param error 任意捕获到的错误（通常是 axios 错误）
@@ -42,7 +76,10 @@ export function resolveErrorMessage(error: unknown, fallback: string): string {
     return fallback;
   }
   // defaultValue 给空串：i18next 在键缺失时会回传 key 本身（'errors.XXX'），不能直接展示
-  const translated = i18n.t(`errors.${errorCode}`, { defaultValue: '' });
+  const translated = i18n.t(`errors.${errorCode}`, {
+    defaultValue: '',
+    errors: extractErrorDetail(error),
+  });
   return typeof translated === 'string' && translated.length > 0 ? translated : fallback;
 }
 

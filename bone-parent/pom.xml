@@ -668,7 +668,11 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.3.0</version>
+                    <!-- 4.7.3.0 内置 SpotBugs 4.7.3，其 ASM 无法解析 Java 21 的 class 文件
+                         （Unsupported class file major version 65），导致所有开启 spotbugs 的模块
+                         在 verify/install 阶段直接失败（"No classes found to analyze"）。
+                         升级到 4.10.4.1（SpotBugs 4.10.x，支持 Java 21/22 字节码）。 -->
+                    <version>4.10.4.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.owasp</groupId>

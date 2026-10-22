@@ -121,6 +121,63 @@ export interface DataFeedback {
   createdAt?: string;
 }
 
+/**
+ * 数据标准（对齐后端 DataStandardResp / StandardRuleType）。
+ *
+ * id 是雪花 ID，后端 Long→String 序列化，声明为 string；ruleType 是 Integer 保持 number：
+ * 1=ENCODING 编码规则（pattern 为正则）· 2=REFERENCE 引用值域（refCode 为参考数据值域编码）。
+ * entityCode / fieldCode 是业务编码（非雪花 ID），创建后不可改（UpdateDataStandardReq 只接受
+ * ruleType/pattern/refCode/description）。
+ */
+export interface DataStandard {
+  id: string;
+  entityCode: string;
+  fieldCode: string;
+  ruleType: number;
+  pattern?: string;
+  refCode?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateDataStandardReq {
+  entityCode: string;
+  fieldCode: string;
+  ruleType?: number;
+  pattern?: string;
+  refCode?: string;
+  description?: string;
+}
+
+export interface UpdateDataStandardReq {
+  ruleType?: number;
+  pattern?: string;
+  refCode?: string;
+  description?: string;
+}
+
+/** 数据血缘边（对齐后端 LineageRecordDTO）：sourceEntity.field →[transformType]→ targetEntity.field。 */
+export interface LineageRecord {
+  id: string;
+  sourceEntity: string;
+  sourceField?: string;
+  transformType?: string;
+  targetEntity: string;
+  targetField?: string;
+  schemaName?: string;
+  createdAt?: string;
+}
+
+export interface RecordLineageReq {
+  sourceEntity: string;
+  sourceField?: string;
+  transformType?: string;
+  targetEntity: string;
+  targetField?: string;
+  schemaName?: string;
+}
+
 export interface RecordVersion {
   id: string;
   recordId: string;

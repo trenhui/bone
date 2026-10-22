@@ -1,8 +1,9 @@
 /**
- * 协议驱动界面引擎（BoneUiSchema 渲染内核）。
+ * 协议驱动界面引擎（BoneUiSchema 渲染内核）—— 单一真源。
  *
- * 移植自 `doc/design/lowcode/cases/ui-schema-samples/mock-expense-dynamic-v1.html` 的已跑测逻辑，
- * 去 DOM 依赖、补 TS 类型、补上下文变量（$me/$myteam/$all）与变体裁决。
+ * 本文件是 design/app 两端共用的协议引擎，原为 `apps/bone-metadata-app/src/utils/uiSchemaEngine.ts`
+ * 与根目录 `bone-frontend/uiSchemaEngine.ts` 两份历史副本，现已收敛为 npm workspace 包
+ * `@bone/ui-schema`，由设计器（metadata-app）与运行时（claim-app）共同消费，消除重复。
  *
  * 设计纪律（与协议 §0/§11 一致）：
  * - 纯函数 + 无远程拉取、无缓存写；数据读写统一走 runtime 通道（渲染器负责）。
@@ -39,6 +40,8 @@ export interface UiCondition {
 
 export interface Control {
   fieldCode: string;
+  /** 控件自身编码（与 fieldCode 区分：fieldCode 绑定数据字段，controlCode 是控件实例标识） */
+  controlCode?: string;
   controlKind?: ControlKind;
   labelOverride?: string;
   labelKey?: string;
@@ -58,6 +61,8 @@ export interface Control {
 
 export interface Section {
   id: string;
+  /** 分区编码（可选标识；部分 schema 以 sectionCode 引用分区，渲染器按 id/sectionCode 解析）。 */
+  sectionCode?: string;
   title?: string;
   titleKey?: string;
   /**
@@ -244,7 +249,14 @@ export interface BoneUiSchema {
   /** @deprecated 历史别名，`minor` 优先 */
   schemaMinor?: number;
   entityCode: string;
+  /** 命名空间（i18n / 字典查找前缀；也作为 schema 身份标识参与校验） */
+  namespace?: string;
   displayModes?: string[];
+  /**
+   * 分区对象池（可选）。`views.*.sections` 既可内联分区对象（设计器/样例的规范写法），
+   * 也可填分区 code（引用本池）——渲染器两者皆兼容，按 `sectionCode`/`id` 解析。
+   */
+  sections?: Section[];
   views: { list?: ListView; form?: FormView; detail?: FormView };
   linkageRules?: LinkageRule[];
   submitRules?: SubmitRule[];
@@ -874,4 +886,108 @@ function matchVariant(m?: VariantMatch, ctx: UiContext = {}): boolean {
   if (m.channels && m.channels.length && (!ctx.channel || !m.channels.includes(ctx.channel))) return false;
   if (m.devices && m.devices.length && (!ctx.device || !m.devices.includes(ctx.device))) return false;
   return true;
+}
+
+/* ============================== 归一化 / 校验（ingest 边界） ============================== */
+
+/**
+ * 协议归一化：把 `views.form/detail.sections` 中的「分区 code 引用」解析为内联分区对象，
+ * 产出「规范形态」的 BoneUiSchema（`views.*.sections` 恒为 `Section[]`）。
+ *
+ * 为什么在 ingest 边界做（schema-driven UI 的通行做法）：
+ * - 渲染器只认规范形态，不必每轮渲染都做 `typeof string` 分支判断；
+ * - 缺失 ref 在**加载期**就暴露（fail-fast），而非渲染成空白页——
+ *   我们曾因 code 未被解析而渲染出空壳且毫无报错；
+ * - 设计器 / 运行时共用同一归一化，避免两套解析逻辑漂移。
+ *
+ * 入参可含两种写法（都接受，归一化后统一为内联对象）：
+ * - 内联分区对象（设计器 / 样例规范写法）：`views.form.sections = [ { id, controls }, ... ]`
+ * - 分区 code 引用（顶部 sections 池）：`views.form.sections = [ "s1", ... ]` + 顶层 `sections` 池
+ *
+ * 无法解析的 ref 进入 `errors`（**不抛异常**）——交由调用方决定 fail-fast 还是降级渲染。
+ */
+export interface NormalizeResult {
+  schema: BoneUiSchema;
+  errors: string[];
+}
+
+export function normalizeUiSchema(input: BoneUiSchema): NormalizeResult {
+  const errors: string[] = [];
+  const pool = input.sections ?? [];
+  const views = input.views ?? {};
+  const rawForm = (views.form?.sections ?? []) as Array<Section | string>;
+  const rawDetail = (views.detail?.sections ?? []) as Array<Section | string>;
+
+  const resolve = (ref: Section | string, where: string): Section | null => {
+    if (typeof ref !== 'string') return ref;
+    const found = pool.find((s) => s.id === ref || s.sectionCode === ref);
+    if (!found) {
+      errors.push(`分区引用 "${ref}"（${where}）在顶部 sections 池中未找到（按 id/sectionCode 匹配）`);
+      return null;
+    }
+    return found;
+  };
+  const normOne = (src: Array<Section | string>, where: string): Section[] =>
+    src.map((s) => resolve(s, where)).filter((s): s is Section => s != null);
+
+  const schema: BoneUiSchema = {
+    ...input,
+    views: {
+      list: views.list,
+      form: views.form
+        ? { ...views.form, sections: normOne(rawForm, 'views.form.sections') }
+        : undefined,
+      detail: views.detail
+        ? { ...views.detail, sections: normOne(rawDetail, 'views.detail.sections') }
+        : undefined,
+    },
+  };
+  return { schema, errors };
+}
+
+export interface SchemaValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/**
+ * 协议校验（ingest 边界 fail-fast）。在归一化之上叠加业务完整性检查，返回结构化错误便于 UI 展示：
+ * - 必备字段：`schemaVersion` / `namespace`；
+ * - 分区引用完整性（委托 `normalizeUiSchema` 的 errors）；
+ * - 控件必备字段：`fieldCode` / `controlCode` 至少其一；
+ * - `actionBar` 动作码唯一性。
+ */
+export function validateUiSchema(input: BoneUiSchema): SchemaValidationResult {
+  const errors: string[] = [];
+  if (!input || typeof input !== 'object') {
+    return { valid: false, errors: ['schema 不是对象'] };
+  }
+  if (input.schemaVersion == null) errors.push('缺少 schemaVersion');
+  if (!input.namespace) errors.push('缺少 namespace');
+
+  const { errors: normErrors } = normalizeUiSchema(input);
+  errors.push(...normErrors);
+
+  const pool = input.sections ?? [];
+  const resolve = (ref: Section | string): Section | null =>
+    typeof ref === 'string' ? (pool.find((s) => s.id === ref || s.sectionCode === ref) ?? null) : ref;
+  const v = input.views ?? {};
+  const allSections = [
+    ...((v.form?.sections ?? []) as Array<Section | string>),
+    ...((v.detail?.sections ?? []) as Array<Section | string>),
+  ];
+  for (const ref of allSections) {
+    const sec = resolve(ref);
+    if (!sec) continue; // 缺失已在 normErrors 报错
+    for (const c of sec.controls ?? []) {
+      if (!c.fieldCode && !c.controlCode) {
+        errors.push(`分区 ${sec.id ?? sec.sectionCode ?? '?'} 存在缺少 fieldCode/controlCode 的控件`);
+      }
+    }
+  }
+
+  const codes = (input.actionBar ?? []).map((a) => a.actionCode);
+  if (new Set(codes).size !== codes.length) errors.push('actionBar 存在重复 actionCode');
+
+  return { valid: errors.length === 0, errors };
 }

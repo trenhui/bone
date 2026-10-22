@@ -9,7 +9,7 @@ import {
   resolveVisibleActions,
   runSubmit,
   type BoneUiSchema,
-} from './uiSchemaEngine';
+} from '@bone/ui-schema';
 
 /**
  * 双场景串联验证（技术方案 P0-1 验收）：

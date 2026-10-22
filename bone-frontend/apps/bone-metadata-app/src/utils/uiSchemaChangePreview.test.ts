@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MetaField } from '../types';
-import type { BoneUiSchema, LinkageRule } from './uiSchemaEngine';
+import type { BoneUiSchema, LinkageRule } from '@bone/ui-schema';
 import { matchText, previewChanges, variantOverrideText } from './uiSchemaChangePreview';
 import { normJson } from './normJson';
 

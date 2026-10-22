@@ -3,7 +3,7 @@ import { Button, Checkbox, Dropdown, Form, Input, Modal, Segmented, Space, Tag, 
 import { DeleteOutlined, EditOutlined, PlusOutlined, QuestionCircleOutlined, ReloadOutlined, SaveOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import type { MetaField } from '../types';
-import type { ListView } from '../utils/uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 import type { UseOverlayBundle } from '../hooks/useOverlayBundle';
 import ColumnSettingsPopover from './ColumnSettingsPopover';
 

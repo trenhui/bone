@@ -18,7 +18,7 @@ import { useMemo } from 'react';
 import { Alert, Button, Card, Space, Tag, Tooltip, Typography } from 'antd';
 import { EyeOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import type { MetaField } from '../types';
-import type { ListView } from '../utils/uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 import {
   defaultOverlay,
   fieldsOutsideContract,

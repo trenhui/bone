@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Empty, Input, Modal, Radio, Space, Switch, Tag, Tooltip, Typography, message } from 'antd';
 import { ArrowUpOutlined, RollbackOutlined, SyncOutlined } from '@ant-design/icons';
 import { parseEnumValues, parseEnumSource } from '@bone/shared-types';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import type { MetaField, EnumSourceDiff, DictMigrationPlan } from '../../types';
 import { dictBindingToggleApi, metadataFieldOptionsApi } from '../../services/metadataApi';
 import { clearDict, dictOf, setDictHidden, setDictLabel } from './schemaOps';

@@ -9,7 +9,7 @@
  * - 上限 30 份，超出丢弃最旧；
  * - 恢复前跑协议 Gate（error 级自检问题则阻断恢复），避免把一份坏 schema 顶上来。
  */
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 
 const KEY_PREFIX = 'bone-designer-snapshots-';
 

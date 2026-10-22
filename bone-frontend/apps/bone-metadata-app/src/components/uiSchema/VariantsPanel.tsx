@@ -22,7 +22,7 @@ import {
 import {
   DeleteOutlined, PlusOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
-import type { BoneUiSchema, Variant, VariantMatch } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema, Variant, VariantMatch } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import type { ActionDefSpec } from '../../services/metadataApi';
 import StructurePanel from './StructurePanel';

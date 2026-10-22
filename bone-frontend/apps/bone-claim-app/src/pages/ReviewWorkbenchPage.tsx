@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Card,
+  Drawer,
   Form,
   Input,
   InputNumber,
@@ -13,15 +14,19 @@ import {
   Statistic,
   Table,
   Tag,
+  Timeline,
   Typography,
   message,
 } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import {
   claimApi,
+  decisionApi,
   type ClaimHeadProjection,
   type ClaimStatusName,
   type Decision,
+  type DecisionExecutionResult,
+  type DecisionTraceNode,
 } from '../services/claimApi';
 
 /**
@@ -67,6 +72,33 @@ export function ReviewWorkbenchPage(): ReactElement {
   const [decisionTarget, setDecisionTarget] = useState<ClaimHeadProjection | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [decisionForm] = Form.useForm<{ decision: Decision; approvedAmount: number; comment: string; rejectType: string }>();
+
+  const [traceTarget, setTraceTarget] = useState<ClaimHeadProjection | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [traceMeta, setTraceMeta] = useState<DecisionExecutionResult | null>(null);
+  const [traceNodes, setTraceNodes] = useState<DecisionTraceNode[]>([]);
+
+  const onOpenTrace = async (row: ClaimHeadProjection) => {
+    setTraceTarget(row);
+    setTraceLoading(true);
+    setTraceMeta(null);
+    setTraceNodes([]);
+    try {
+      const exec = await decisionApi.execute(String(row.claimId));
+      const traceId = exec?.data?.traceId;
+      if (!traceId) {
+        message.error('未生成决策轨迹');
+        return;
+      }
+      const nodes = await decisionApi.trace(String(row.claimId), traceId);
+      setTraceMeta(exec?.data ?? null);
+      setTraceNodes(nodes?.data ?? []);
+    } catch {
+      message.error('决策轨迹加载失败');
+    } finally {
+      setTraceLoading(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -213,6 +245,14 @@ export function ReviewWorkbenchPage(): ReactElement {
               width: 260,
               render: (_, row) => (
                 <Space size={4} wrap>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<NodeIndexOutlined />}
+                    onClick={() => void onOpenTrace(row)}
+                  >
+                    决策图
+                  </Button>
                   {row.status === 'PENDING_ADJUST' && (
                     <Button
                       type="link"
@@ -314,6 +354,48 @@ export function ReviewWorkbenchPage(): ReactElement {
           </Form.Item>
         </Form>
       </Modal>
+
+      <Drawer
+        title={`决策图轨迹回放 · ${traceTarget?.claimNo ?? ''}`}
+        width={560}
+        open={traceTarget !== null}
+        loading={traceLoading}
+        onClose={() => setTraceTarget(null)}
+      >
+        {traceMeta && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={`结论层级 ${traceMeta.decisionTier} · 结果 ${traceMeta.decisionResult} · 节点数 ${traceMeta.traceCount}`}
+            description="AI 仅出建议与置信度，最终责任/资金结论以确定性分诊规则为准（fail-safe 降级时提示规则审查模式）。"
+          />
+        )}
+        <Timeline
+          items={traceNodes.map((n) => ({
+            children: (
+              <div>
+                <Space wrap>
+                  <Tag color="blue">{n.nodeType}</Tag>
+                  <strong>{n.nodeName}</strong>
+                  <Tag color={n.actionResult === 'SUCCESS' ? 'green' : 'red'}>{n.actionResult}</Tag>
+                  <Typography.Text type="secondary">{n.durationMs}ms</Typography.Text>
+                </Space>
+                <div style={{ marginTop: 4 }}>{n.inputSummary}</div>
+                {n.output && (
+                  <Typography.Paragraph
+                    type="secondary"
+                    ellipsis={{ rows: 3, expandable: true, symbol: '展开' }}
+                    style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}
+                  >
+                    {n.output}
+                  </Typography.Paragraph>
+                )}
+              </div>
+            ),
+          }))}
+        />
+      </Drawer>
     </div>
   );
 }

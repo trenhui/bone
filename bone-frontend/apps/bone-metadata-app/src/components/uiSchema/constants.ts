@@ -3,7 +3,7 @@
  *
  * 设计纪律：
  * - 所有"用户可见文案"集中在此，避免各面板硬编码导致文案漂移（协议文档 §0 单一真源精神）。
- * - 控件类型/操作符/聚合函数的**语义说明**与 `uiSchemaEngine.ts` 保持一致；此处只补充 UI 呈现信息
+ * - 控件类型/操作符/聚合函数的**语义说明**与 `@bone/ui-schema` 引擎内核保持一致；此处只补充 UI 呈现信息
  *   （分组、图标、中文标签），不重复定义行为。
  */
 import {
@@ -25,7 +25,7 @@ import {
   HistoryOutlined,
   CalculatorOutlined,
 } from '@ant-design/icons';
-import type { ControlKind, Operator, SubmitFunction } from '../../utils/uiSchemaEngine';
+import type { ControlKind, Operator, SubmitFunction } from '@bone/ui-schema';
 
 /* ============================== 控件类型 ============================== */
 

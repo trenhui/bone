@@ -20,7 +20,7 @@ import {
   FullscreenOutlined, HistoryOutlined, MacCommandOutlined, PlusOutlined, QuestionCircleOutlined, RedoOutlined,
   ReloadOutlined, SaveOutlined, SettingOutlined, ThunderboltOutlined, UndoOutlined,
 } from '@ant-design/icons';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { normJson } from '../../utils/normJson';
 import { parseRowPolicyCodes } from '../../utils/rowPolicies';

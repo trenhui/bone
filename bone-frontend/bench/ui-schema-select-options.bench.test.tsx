@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { useState } from 'react';
-import type { BoneUiSchema, Control } from '../apps/bone-metadata-app/src/utils/uiSchemaEngine';
+import type { BoneUiSchema, Control } from '@bone/ui-schema';
 import type { MetaField } from '@bone/shared-types';
 import {
   CONTROL_KINDS, KIND_GROUPS,

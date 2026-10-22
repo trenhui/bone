@@ -12,7 +12,7 @@
  * 覆盖所有生效分支，对标 Salesforce Flow 冲突扫描 / Appsmith action 链环检测）。
  */
 import { parseEnumValues } from '@bone/shared-types';
-import type { BoneUiSchema, LinkageRule, Section, SubmitRule, ActionBarItem, UiCondition } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema, LinkageRule, Section, SubmitRule, ActionBarItem, UiCondition } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { FN_NEEDS_COMPARE, PROPS_PENDING_REVIEW, PROP_WHITELIST } from './constants';
 

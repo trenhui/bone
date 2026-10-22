@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Card, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd';
+import { Card, Form, Input, Modal, Select, Space, Table, Tag } from 'antd';
 import { CheckOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { AuthButton } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
@@ -7,6 +7,7 @@ import { qualityIssueApi } from '../services/api';
 import type { QualityIssue } from '../types/governance';
 import { useEntityScope } from '../context/EntityScopeContext';
 import EntityScopeSelect from '../components/EntityScopeSelect';
+import { useMessage } from '../App';
 
 const sevColor = (s: string) => (s === 'HIGH' ? 'red' : s === 'MEDIUM' ? 'orange' : 'blue');
 const statusColor = (s: string) =>
@@ -14,6 +15,8 @@ const statusColor = (s: string) =>
 
 /** 质量整改工单看板（G11 / UC-T9）：OPEN → FIXED → CLOSED。 */
 const QualityIssueBoard: React.FC = () => {
+  // 动态 message API（替代静态 import）：跟随 ConfigProvider 主题，且避免静态调用丢失上下文
+  const message = useMessage();
   // 模型选择已提升为全局作用域（EntityScopeContext），跨页面共享
   const { entityId } = useEntityScope();
   const [status, setStatus] = useState<string | undefined>();
@@ -24,13 +27,17 @@ const QualityIssueBoard: React.FC = () => {
 
   const load = useCallback(async (eid?: string, st?: string) => {
     if (!eid) return;
-    const [list, count] = await Promise.all([
-      qualityIssueApi.byEntity(eid, st),
-      qualityIssueApi.openCount(eid)
-    ]);
-    setRows(list.data ?? []);
-    setOpenCount(count.data ?? 0);
-  }, []);
+    try {
+      const [list, count] = await Promise.all([
+        qualityIssueApi.byEntity(eid, st),
+        qualityIssueApi.openCount(eid)
+      ]);
+      setRows(list.data ?? []);
+      setOpenCount(count.data ?? 0);
+    } catch {
+      message.error('加载质量工单失败');
+    }
+  }, [message]);
 
   useEffect(() => {
     if (entityId) void load(entityId, status);
@@ -48,17 +55,40 @@ const QualityIssueBoard: React.FC = () => {
       render: (_: unknown, r: QualityIssue) => (
         <Space>
           {r.status === 'OPEN' && (
-            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CheckOutlined />} onClick={async () => { await qualityIssueApi.fix(r.id); message.success('已标记整改'); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CheckOutlined />} onClick={async () => {
+              try {
+                await qualityIssueApi.fix(r.id);
+                message.success('已标记整改');
+                void load(entityId, status);
+              } catch {
+                message.error('标记整改失败');
+              }
+            }}>
               整改
             </AuthButton>
           )}
           {r.status === 'FIXED' && (
-            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" type="primary" onClick={async () => { await qualityIssueApi.close(r.id); message.success('复检通过已关闭'); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" type="primary" onClick={async () => {
+              try {
+                await qualityIssueApi.close(r.id);
+                message.success('复检通过已关闭');
+                void load(entityId, status);
+              } catch {
+                message.error('关闭工单失败');
+              }
+            }}>
               关闭
             </AuthButton>
           )}
           {r.status === 'OPEN' && (
-            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CloseOutlined />} onClick={async () => { await qualityIssueApi.ignore(r.id); void load(entityId, status); }}>
+            <AuthButton code={BonePermissionCodes.MASTERDATA_QUALITY_WRITE} size="small" icon={<CloseOutlined />} onClick={async () => {
+              try {
+                await qualityIssueApi.ignore(r.id);
+                void load(entityId, status);
+              } catch {
+                message.error('忽略工单失败');
+              }
+            }}>
               忽略
             </AuthButton>
           )}
@@ -95,12 +125,21 @@ const QualityIssueBoard: React.FC = () => {
         onCancel={() => setCreateOpen(false)}
         destroyOnHidden
         onOk={async () => {
-          const v = await form.validateFields();
-          await qualityIssueApi.create({ ...v, masterDataEntityId: entityId, assigneeId: v.assigneeId ? Number(v.assigneeId) : undefined });
-          message.success('工单已创建');
-          setCreateOpen(false);
-          form.resetFields();
-          void load(entityId, status);
+          let v: Record<string, unknown>;
+          try {
+            v = await form.validateFields();
+          } catch {
+            return; // 字段级校验错误由 Form.Item 就地展示
+          }
+          try {
+            await qualityIssueApi.create({ ...v, masterDataEntityId: entityId, assigneeId: v.assigneeId ? Number(v.assigneeId) : undefined });
+            message.success('工单已创建');
+            setCreateOpen(false);
+            form.resetFields();
+            void load(entityId, status);
+          } catch {
+            message.error('创建工单失败');
+          }
         }}
       >
         <Form form={form} layout="vertical">

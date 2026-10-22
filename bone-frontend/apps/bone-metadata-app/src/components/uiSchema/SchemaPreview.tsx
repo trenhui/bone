@@ -23,7 +23,7 @@ import { parseEnumValues } from '@bone/shared-types';
 import {
   controlBaseStates, evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
   type BoneUiSchema, type Control, type FieldUiState, type Section, type UiContext, type VariantMatch,
-} from '../../utils/uiSchemaEngine';
+} from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { gridItemStyle, isFullWidthControl } from '../../utils/uiGrid';
 import { dictOf, formOf } from './schemaOps';

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DictionaryPanel from './DictionaryPanel';
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
 import { metadataFieldOptionsApi } from '../../services/metadataApi';
 

@@ -33,7 +33,7 @@ import {
   updateActiveView,
   type UiOverlayBundle,
 } from './columnProjection';
-import type { ListView } from './uiSchemaEngine';
+import type { ListView } from '@bone/ui-schema';
 
 /** 构造测试字段 */
 function field(code: string, extra: Partial<MetaField> = {}): MetaField {

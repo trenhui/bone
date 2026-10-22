@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Segmented, Select, Space, Tag, Tooltip, Typography } from 'antd';
 import { CodeOutlined, DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons';
-import type { Operator, UiCondition } from '../../utils/uiSchemaEngine';
+import type { Operator, UiCondition } from '@bone/ui-schema';
 import { OPERATOR_MAP, operatorAllowedFor, operatorsForType } from './constants';
 import {
   MAX_GROUP_DEPTH, addChild, childrenOf, emptyGroup, emptyLeaf, groupKindOf, isGroup,

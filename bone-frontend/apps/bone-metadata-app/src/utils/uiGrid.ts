@@ -13,7 +13,7 @@
  */
 
 import type { CSSProperties } from 'react';
-import type { Control } from './uiSchemaEngine';
+import type { Control } from '@bone/ui-schema';
 
 /** 协议栅格总栏数（props.span 的上界） */
 export const GRID_COLUMNS = 24;

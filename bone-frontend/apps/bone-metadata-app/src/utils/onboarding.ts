@@ -10,7 +10,7 @@
  * 未配置的默认态一律判未完成——首开进度卡显示 0/5 是特性不是 bug
  * （默认 schema 把全字段平铺进单一分区，恰好是最需要引导的状态）。
  */
-import type { BoneUiSchema } from './uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 
 export interface OnboardingMilestone {
   key: 'form' | 'list' | 'rules' | 'lint' | 'publish';

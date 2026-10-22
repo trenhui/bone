@@ -9,7 +9,7 @@
  * 用途：新建实体的界面配置时，不必从零拖控件；载入样例后按实体实际字段微调即可。
  * 载入后字段引用若与实体字段不匹配，自检面板会逐条报出（不会静默错配）。
  */
-import type { BoneUiSchema } from '../../utils/uiSchemaEngine';
+import type { BoneUiSchema } from '@bone/ui-schema';
 
 export interface UiSchemaSample {
   key: string;

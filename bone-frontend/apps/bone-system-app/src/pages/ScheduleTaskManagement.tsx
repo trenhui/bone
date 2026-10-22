@@ -54,8 +54,9 @@ const ScheduleTaskManagement: React.FC = () => {
   };
 
   const submit = async () => {
-    const values = await form.validateFields();
     try {
+      // ★ validateFields 放进 try：否则校验失败成为未捕获 rejection，用户看不到任何提示
+      const values = await form.validateFields();
       if (editing) {
         await scheduleTaskApi.updateScheduleTask(editing.id!, { name: values.name, cron: values.cron, handler: values.handler });
         message.success(t('system.scheduleTaskManagement.taskUpdated'));
@@ -65,8 +66,9 @@ const ScheduleTaskManagement: React.FC = () => {
       }
       setModalOpen(false);
       fetchData(pagination.current);
-    } catch {
-      message.error(t('system.scheduleTaskManagement.saveFailed'));
+    } catch (err) {
+      const detail = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      message.error(detail || t('system.scheduleTaskManagement.saveFailed'));
     }
   };
 
