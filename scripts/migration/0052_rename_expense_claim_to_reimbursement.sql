@@ -21,6 +21,27 @@
 -- 幂等：RENAME 前置存在性判断；其余 UPDATE 按旧码定位，无旧行即空转。可重复执行。
 -- 执行（L3，由 DBA / CI 在目标库运行）：
 --       mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_rename_expense_claim_to_reimbursement.sql
+--
+-- 自校验（脚本第 8 步 SELECT）通过判据：
+--   · new_tables = 2（物理表 t_expense_reimbursement / _item 均已存在）
+--   · renamed_entities_active ≥ 1（expense_reimbursement_item 通常 active；header 是否 active 取决于业务软删状态）
+--   · renamed_actions ≥ 1、renamed_perms ≥ 6（权限码为基名形态，runtime:expense_reimbursement%
+--     覆盖「基名 3 条 + 子实体 3 条」共 6 条；注意模式不带末尾冒号，否则会漏掉子实体权限）
+--   · leftover_old_tables / leftover_old_perms / leftover_old_code 必须全部 = 0
+--     （非 0 说明仍有旧名残留，须先排查再放过，不可带旧码上线）
+--
+-- 回滚预案：本脚本为「改名」型一次性迁移，且应用代码已同步改名；生产环境**不可反向执行本脚本**
+--   （反向执行会使库名与已上线代码失配，导致运行期找不到实体/表）。唯一安全的回滚方式是：
+--   执行前对目标库做全量备份 / 快照，异常时整库恢复至迁移前状态。
+--   若仅在「代码尚未上线」的预发环境需回退元数据改名，可按第 2~7 步反向 REPLACE 手工构造，
+--   但必须同步回退应用代码，否则不可用。
+--   ⚠ 注意：本脚本含 DDL（RENAME TABLE），MySQL 下 DDL 会隐式提交，脚本整体非原子；
+--      中途失败会留下部分改动，故执行前备份是硬性前置条件。
+--
+-- 验证记录：已在临时库（镜像真实旧码种子：主/子实体、action_def×4、iam 基名+子实体×6、
+--   ui_schema/field/template 内嵌旧码、待 RENAME 物理表）端到端跑通，自校验 7 项全部达标
+--   （new_tables=2 / renamed_perms=6 / 三项 leftover=0）；并在 dev 库实际执行验证，
+--   配套后端集成测试（ServerContextLoads / OrderPaymentMetadataE2E / MetadataManagementController）12 例全绿。
 -- =============================================================================
 
 USE bone;
@@ -96,7 +117,7 @@ UPDATE iam_permission
                                'expense_claim', 'expense_reimbursement')
  WHERE code LIKE '%expense_claim%' OR resource_path LIKE '%expense_claim%';
 
--- ── 8. 校验（new_* 应为目标值；leftover_old_* 应为 0） ───────────────────
+-- ── 8. 校验（通过判据见脚本头部「自校验」段：new_* 达目标值、leftover_old_* 全为 0） ──
 SELECT
   (SELECT COUNT(*) FROM information_schema.tables
      WHERE table_schema = DATABASE()
