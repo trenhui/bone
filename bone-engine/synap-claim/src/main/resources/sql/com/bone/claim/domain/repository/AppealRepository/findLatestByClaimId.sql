@@ -1,5 +1,5 @@
 -- 案件最新申诉记录
-SELECT appeal_id,
+SELECT id,
        appeal_no,
        claim_id,
        claim_no,

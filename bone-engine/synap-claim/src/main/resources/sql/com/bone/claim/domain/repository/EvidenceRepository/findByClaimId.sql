@@ -1,5 +1,5 @@
 -- 案件证据列表（租户锚点：SDK 自动注入 tenant_id = :__boneTenantId__）
-SELECT evidence_id,
+SELECT id,
        claim_id,
        doc_type,
        file_ref,

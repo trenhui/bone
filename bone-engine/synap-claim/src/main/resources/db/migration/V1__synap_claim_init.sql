@@ -4,7 +4,7 @@
 -- （TenantAbstractEntity 框架注入）；DDL 由部署脚本统一追加通用列，此处仅列业务列。
 
 CREATE TABLE t_claim_case (
-  claim_id          CHAR(36)      NOT NULL COMMENT '案件ID',
+  id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   claim_no          VARCHAR(64)   NOT NULL COMMENT '报案号(CL+yyyyMMdd+id, 全行唯一)',
   idempotency_key   VARCHAR(64)   NOT NULL COMMENT '写接口幂等键(Idempotency-Key 请求头值)',
   policy_no         VARCHAR(32)   NOT NULL COMMENT '保单号',
@@ -30,13 +30,14 @@ CREATE TABLE t_claim_case (
   reject_type       VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '受控拒赔原因码(01-13+20/30/40)',
   plan_version      VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '受理时锁定的计划版本(复算确定性)',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',
-  created_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
+  closed_at         DATETIME(3)   DEFAULT NULL COMMENT '进入终态时间(申诉48h时限起算点)',
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本(SDK @Version 维护)',
-  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
-  PRIMARY KEY (claim_id),
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
   -- 发票唯一性硬约束（R-FRAUD-07）：含 deleted，软删案件不永久占用发票键
@@ -48,8 +49,8 @@ CREATE TABLE t_claim_case (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '赔案主表';
 
 CREATE TABLE t_claim_item (
-  item_id          CHAR(36)      NOT NULL COMMENT '明细ID',
-  claim_id         CHAR(36)      NOT NULL COMMENT '案件ID',
+  id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  claim_id         BIGINT      NOT NULL COMMENT '案件ID',
   item_name        VARCHAR(128)  NOT NULL COMMENT '项目名称',
   item_code        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '医保项目/药品编码(目录编码匹配唯一键)',
   category         VARCHAR(32)   NOT NULL COMMENT 'DRUG/SERVICE/EXAM/MATERIAL',
@@ -67,13 +68,13 @@ CREATE TABLE t_claim_item (
   valid_amount     DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '合理费用(理算基准)',
   invalid_amount   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '不合理费用',
   tenant_id        BIGINT        NOT NULL COMMENT '租户',
-  created_by       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at       DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at       DATETIME(3)   NOT NULL COMMENT '更新时间',
   version          BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
-  PRIMARY KEY (item_id),
+  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  PRIMARY KEY (id),
   KEY idx_claim (claim_id),
   KEY idx_item_code (tenant_id, item_code)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '费用明细项';

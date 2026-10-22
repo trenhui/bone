@@ -1,5 +1,5 @@
 -- 定位额度账户（维度键与 UK 一致：tenant + 被保人 + 保单 + 计划 + 年度 + 维度 + 责任）
-SELECT quota_account_id,
+SELECT id,
        insured_id_hash,
        policy_no,
        plan_id,

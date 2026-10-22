@@ -63,6 +63,11 @@ public final class ClaimErrorCodes {
   /** 结算状态冲突（已终态不可再操作，§6.4 阶段单调）。 */
   public static final String CLAIM_SETTLEMENT_CONFLICT = "SC_CLAIM_SETTLEMENT_CONFLICT";
 
+  // ===== A3 决策执行 =====
+
+  /** 同案已有活跃决策执行（每案仅一个活跃执行，§4.3 不变量）。 */
+  public static final String CLAIM_DECISION_ACTIVE_CONFLICT = "SC_CLAIM_DECISION_ACTIVE_CONFLICT";
+
   // ===== A8 申诉 =====
 
   /** 申诉记录不存在（或已复议终态）。 */

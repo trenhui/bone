@@ -5,8 +5,8 @@
 
 -- A2 证据材料
 CREATE TABLE t_claim_evidence (
-  evidence_id     CHAR(36)      NOT NULL COMMENT '材料ID',
-  claim_id        CHAR(36)      NOT NULL COMMENT '案件ID',
+  id     BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  claim_id        BIGINT      NOT NULL COMMENT '案件ID',
   doc_type        VARCHAR(32)   NOT NULL COMMENT 'INVOICE/LIST/MEDICAL_RECORD/MEDICAL_SETTLEMENT',
   file_ref        VARCHAR(256)  NOT NULL COMMENT '附件引用(平台附件服务, STS 直传)',
   content_hash    CHAR(64)      NOT NULL COMMENT '文件内容SHA256(重复上传判定, §9.5)',
@@ -17,13 +17,13 @@ CREATE TABLE t_claim_evidence (
   locked          TINYINT       NOT NULL DEFAULT 0 COMMENT '0未锁定/1已锁定(锁定后不可改)',
   locked_at       DATETIME(3)   DEFAULT NULL COMMENT '锁定时间',
   tenant_id       BIGINT        NOT NULL COMMENT '租户',
-  created_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
-  PRIMARY KEY (evidence_id),
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  PRIMARY KEY (id),
   UNIQUE KEY uk_claim_content_hash (claim_id, content_hash),
   KEY idx_claim (claim_id),
   KEY idx_tenant_ocr (tenant_id, ocr_status)
@@ -31,7 +31,7 @@ CREATE TABLE t_claim_evidence (
 
 -- A4 保险责任（版本化：同一 liability_uuid 多版本并存，已生效版本不可改）
 CREATE TABLE t_adj_liability (
-  id                CHAR(36)      NOT NULL COMMENT '主键',
+  id                BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   liability_uuid    VARCHAR(64)   NOT NULL COMMENT '责任UUID(版本化主键)',
   liability_version VARCHAR(32)   NOT NULL COMMENT '责任版本',
   plan_id           BIGINT        NOT NULL COMMENT '计划ID',
@@ -44,11 +44,11 @@ CREATE TABLE t_adj_liability (
   waiting_period    INT           NOT NULL DEFAULT 0 COMMENT '等待期(天)',
   status            VARCHAR(16)   NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/GRAY/ACTIVE/RETIRED',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',
-  created_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
-  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
   PRIMARY KEY (id),
   UNIQUE KEY uk_uuid_ver (tenant_id, liability_uuid, liability_version),
   KEY idx_plan_status (tenant_id, plan_id, status)
@@ -56,8 +56,8 @@ CREATE TABLE t_adj_liability (
 
 -- A6 理算记录
 CREATE TABLE t_adj_calculation (
-  calculation_id    CHAR(36)      NOT NULL COMMENT '理算ID',
-  claim_id          CHAR(36)      NOT NULL COMMENT '案件ID',
+  id    BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  claim_id          BIGINT      NOT NULL COMMENT '案件ID',
   liability_uuid    VARCHAR(64)   NOT NULL COMMENT '命中责任UUID',
   liability_version VARCHAR(32)   NOT NULL COMMENT '责任版本(复算锁定)',
   rule_version      VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '规则版本',
@@ -66,20 +66,21 @@ CREATE TABLE t_adj_calculation (
   total_amount      DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '理算合计',
   result_status     VARCHAR(16)   NOT NULL DEFAULT 'FROZEN' COMMENT 'FROZEN/CONFIRMED/UNFROZEN/ROLLBACKED',
   tenant_id         BIGINT        NOT NULL COMMENT '租户',
-  created_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  PRIMARY KEY (calculation_id),
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  PRIMARY KEY (id),
   KEY idx_claim (claim_id, created_at),
   KEY idx_tenant_status (tenant_id, result_status)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '理算记录';
 
 -- A6 理算明细（归因成分链，拒赔五要素「事实认定」的数据基础）
 CREATE TABLE t_adj_calculation_line (
-  line_id         CHAR(36)      NOT NULL COMMENT '明细ID',
-  calculation_id  CHAR(36)      NOT NULL COMMENT '理算ID',
+  id         BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  calculation_id  BIGINT      NOT NULL COMMENT '理算ID',
   liability_uuid  VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '责任UUID',
   line_type       VARCHAR(16)   NOT NULL DEFAULT 'OUTPUT' COMMENT 'INPUT/RULE/OUTPUT',
   input_snapshot  VARCHAR(2000) NOT NULL DEFAULT '' COMMENT '输入快照(明细与三段拆分)',
@@ -93,19 +94,19 @@ CREATE TABLE t_adj_calculation_line (
   reject_type     VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '受控拒赔原因码(§8.3)',
   formula_hash    CHAR(64)      NOT NULL DEFAULT '' COMMENT '逐行公式哈希',
   tenant_id       BIGINT        NOT NULL COMMENT '租户',
-  created_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by      VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
-  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
-  PRIMARY KEY (line_id),
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  PRIMARY KEY (id),
   KEY idx_calculation (calculation_id),
   KEY idx_zero_reason (tenant_id, zero_reason)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '理算明细(归因成分链)';
 
 -- A5 额度账户（三值模型）
 CREATE TABLE t_quota_account (
-  quota_account_id CHAR(36)      NOT NULL COMMENT '账户ID',
+  id BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   insured_id_hash  CHAR(64)      NOT NULL COMMENT '假名化被保人',
   policy_no        VARCHAR(32)   NOT NULL COMMENT '保单号',
   plan_id          BIGINT        NOT NULL COMMENT '计划ID',
@@ -119,22 +120,22 @@ CREATE TABLE t_quota_account (
   cap_used         DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '年封顶已用(R-CAP)',
   insured_state    TINYINT       NOT NULL DEFAULT 0 COMMENT '0正常/1减人',
   tenant_id        BIGINT        NOT NULL COMMENT '租户',
-  created_by       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at       DATETIME(3)   NOT NULL COMMENT '创建时间',
-  updated_by       VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at       DATETIME(3)   NOT NULL COMMENT '更新时间',
   version          BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
-  PRIMARY KEY (quota_account_id),
+  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  PRIMARY KEY (id),
   UNIQUE KEY uk_quota (tenant_id, insured_id_hash, policy_no, plan_id, quota_year, quota_type, liability_uuid),
   KEY idx_insured (tenant_id, insured_id_hash)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '额度账户(三值模型)';
 
 -- A5 额度流水（append-only：账户是投影，流水是事实，守恒校验依赖它）
 CREATE TABLE t_quota_transaction (
-  txn_id           CHAR(36)      NOT NULL COMMENT '流水ID',
-  quota_account_id CHAR(36)      NOT NULL COMMENT '账户ID',
-  claim_id         CHAR(36)      NOT NULL COMMENT '案件ID',
+  id           BIGINT      NOT NULL COMMENT '主键(分布式ID)',
+  quota_account_id BIGINT      NOT NULL COMMENT '账户ID',
+  claim_id         BIGINT      NOT NULL COMMENT '案件ID',
   settlement_no    VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '结算单号',
   direction        VARCHAR(16)   NOT NULL COMMENT 'OCCUPY/ROLLBACK',
   txn_type         VARCHAR(16)   NOT NULL COMMENT 'SOFT/HARD/PAID/RELEASE',
@@ -145,7 +146,11 @@ CREATE TABLE t_quota_transaction (
   occurred_at      DATETIME(3)   NOT NULL COMMENT '发生时间',
   tenant_id        BIGINT        NOT NULL COMMENT '租户',
   created_at       DATETIME(3)   NOT NULL COMMENT '落库时间',
-  PRIMARY KEY (txn_id),
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  updated_at    DATETIME(3)  NOT NULL          COMMENT '更新时间',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
   KEY idx_account (quota_account_id, txn_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '额度流水(append-only)';

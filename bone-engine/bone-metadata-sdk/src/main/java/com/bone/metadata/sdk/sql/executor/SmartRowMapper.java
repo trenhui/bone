@@ -78,6 +78,27 @@ public class SmartRowMapper<T> implements RowMapper<T> {
       if (targetType.isEnum() && value instanceof String str) {
         @SuppressWarnings({"unchecked", "rawtypes"})
         Class<? extends Enum> enumType = (Class<? extends Enum>) targetType;
+        // 与写路径 SqlUtil.toJdbcParameter 对称：带 getCode() 的枚举按 code 落库，varchar 列里
+        // 存的是 "1"/"2" 这类数字串。若只按枚举名 valueOf，则「写 code、读按名」不对称——任何
+        // code 型枚举 + varchar 列都会「建得进、读不出」（md_standard.rule_type 实测复现）。
+        // 数字串先试 of(int)/byCode(int) 工厂；枚举常量名不可能是纯数字（非法 Java 标识符），
+        // 故数字串走工厂、其余按名 valueOf，两类存量数据都能读。
+        String trimmed = str.trim();
+        if (isNumeric(trimmed)) {
+          int code = Integer.parseInt(trimmed);
+          try {
+            Object byOf = enumType.getMethod("of", int.class).invoke(null, code);
+            if (byOf != null) return byOf;
+          } catch (ReflectiveOperationException ignored) {
+            // fall through
+          }
+          try {
+            Object byCode = enumType.getMethod("byCode", int.class).invoke(null, code);
+            if (byCode != null) return byCode;
+          } catch (ReflectiveOperationException ignored) {
+            // fall through
+          }
+        }
         return Enum.valueOf(enumType, str);
       }
       // 支持 Integer/Long → Enum 转换（通过 of(int) 工厂方法或 ordinal）
@@ -175,6 +196,22 @@ public class SmartRowMapper<T> implements RowMapper<T> {
       return nclob.getSubString(1, (int) Math.min(length, Integer.MAX_VALUE));
     }
     return value;
+  }
+
+  /** 纯数字串判定（含符号位）：用于区分「枚举 code 串」与「枚举名」。 */
+  private static boolean isNumeric(String s) {
+    if (s == null || s.isEmpty()) {
+      return false;
+    }
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      boolean digit = c >= '0' && c <= '9';
+      boolean sign = (c == '-' || c == '+') && i == 0 && s.length() > 1;
+      if (!digit && !sign) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private T createInstance() throws SQLException {

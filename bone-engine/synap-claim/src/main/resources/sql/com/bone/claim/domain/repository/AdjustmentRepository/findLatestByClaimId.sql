@@ -1,5 +1,5 @@
 -- 案件最新一次理算（按创建时间倒序取第一条）
-SELECT calculation_id,
+SELECT id,
        claim_id,
        liability_uuid,
        liability_version,

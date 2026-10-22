@@ -1,6 +1,6 @@
 -- 赔案头 + 明细扁平投影（每明细一行，头字段逐行重复；无明细时头字段单独一行、明细列为 NULL）
 -- 租户锚点：SDK 自动注入 c.tenant_id = :__boneTenantId__（@TenantScope AUTO）
-SELECT c.claim_id,
+SELECT c.id,
        c.claim_no,
        c.policy_no,
        c.plan_id,
@@ -38,7 +38,7 @@ SELECT c.claim_id,
        i.valid_amount   AS item_valid_amount,
        i.invalid_amount AS item_invalid_amount
 FROM t_claim_case c
-       LEFT JOIN t_claim_item i ON i.claim_id = c.claim_id AND i.deleted = 0
-WHERE c.claim_id = :claimId
+       LEFT JOIN t_claim_item i ON i.claim_id = c.id AND i.deleted = 0
+WHERE c.id = :claimId
   /*bone:tenant*/
-ORDER BY i.item_id
+ORDER BY i.id

@@ -1,5 +1,5 @@
 -- 按结算单号查（幂等去重入口）
-SELECT settlement_id,
+SELECT id,
        settlement_no,
        claim_id,
        claim_no,

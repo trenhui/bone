@@ -3,9 +3,9 @@
 
 -- A8 申诉记录（拒赔生效45/结案50 → 申诉中60 → 维持45/重启审核41）
 CREATE TABLE appeal_record (
-  appeal_id       CHAR(36)      NOT NULL COMMENT '申诉ID',
+  id       BIGINT      NOT NULL COMMENT '主键(分布式ID)',
   appeal_no       VARCHAR(64)   NOT NULL COMMENT '申诉号',
-  claim_id        CHAR(36)      NOT NULL COMMENT '案件ID',
+  claim_id        BIGINT      NOT NULL COMMENT '案件ID',
   claim_no        VARCHAR(64)   NOT NULL COMMENT '案件号',
   original_status VARCHAR(4)    NOT NULL COMMENT '被申诉原终态: 45拒赔生效/50结案',
   status          VARCHAR(16)   NOT NULL DEFAULT 'SUBMITTED' COMMENT 'SUBMITTED/DECIDED',
@@ -20,7 +20,10 @@ CREATE TABLE appeal_record (
   created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  PRIMARY KEY (appeal_id),
+  created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
+  updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  PRIMARY KEY (id),
   UNIQUE KEY uk_appeal_no (tenant_id, appeal_no),
   KEY idx_claim (claim_id, created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '申诉记录';
