@@ -31,7 +31,6 @@
         <module>bone-workflow-engine</module>
         <module>studio-generator</module>
         <module>bone-accounting-engine</module>
-        <module>synap-claim</module>
     </modules>
     <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>

@@ -14,11 +14,12 @@
     <name>${project.artifactId}</name>
     <description>
         业务应用层：跑在元数据引擎上的业务应用
-        （bone-app-expense / bone-app-purchase；synap-claim 随后从 bone-engine 迁入）。
+        （bone-app-expense / bone-app-purchase / synap-claim；2026-10-23 从 bone-engine 迁入）。
     </description>
 
     <modules>
         <module>bone-app-expense</module>
         <module>bone-app-purchase</module>
+        <module>synap-claim</module>
     </modules>
 </project>
