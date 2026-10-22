@@ -27,6 +27,7 @@
         <module>bone-accounting-engine</module>
         <module>bone-app-expense</module>
         <module>bone-app-purchase</module>
+        <module>synap-claim</module>
         <module>bone-boot</module>
     </modules>
     <artifactId>bone-engine</artifactId>

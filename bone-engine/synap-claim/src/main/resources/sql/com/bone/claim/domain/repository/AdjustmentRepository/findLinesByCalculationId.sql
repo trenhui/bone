@@ -1,0 +1,23 @@
+-- 理算明细行（归因成分链，拒赔五要素事实认定的数据基础）
+SELECT line_id,
+       calculation_id,
+       liability_uuid,
+       line_type,
+       input_snapshot,
+       fee_calculate,
+       fee_deduct,
+       ratio_payout,
+       fee_occupied,
+       fee_payout,
+       fee_remain,
+       zero_reason,
+       reject_type,
+       formula_hash,
+       tenant_id,
+       created_at,
+       updated_at
+FROM t_adj_calculation_line
+WHERE calculation_id = :calculationId
+  AND deleted = 0
+  /*bone:tenant*/
+ORDER BY line_id

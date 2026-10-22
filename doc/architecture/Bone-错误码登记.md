@@ -579,6 +579,34 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 
 ---
 
+### SC_ (synap-claim 智能理赔平台)
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `SC_CLAIM_NOT_FOUND` | 404 | 案件不存在或不可见（租户隔离下的统一 404 语义，防枚举） |
+| `SC_CLAIM_STATUS_CONFLICT` | 409 | 状态冲突（当前状态不允许该动作） |
+| `SC_CLAIM_CONCURRENT_CONFLICT` | 409 | 乐观锁冲突（版本竞争重试后仍失败） |
+| `SC_CLAIM_POLICY_NOT_ACTIVE` | 400 | 保单不存在/未生效（报案前置校验） |
+| `SC_CLAIM_OUT_OF_POLICY_PERIOD` | 400 | 出险时间不在保单有效期内 |
+| `SC_CLAIM_INSURED_MISMATCH` | 400 | 被保人不匹配（假名化 ID 比对失败） |
+| `SC_CLAIM_REJECT_REASON_REQUIRED` | 400 | 拒赔五要素缺失（REJECTED 必填） |
+| `SC_CLAIM_REVIEWER_CONFLICT` | 409 | 双人复核人必须为非第一审核人（职责分离） |
+| `SC_CLAIM_EVIDENCE_NOT_FOUND` | 404 | 材料不存在或不可见 |
+| `SC_CLAIM_EVIDENCE_DUPLICATED` | 409 | 重复材料（同案件同内容哈希） |
+| `SC_CLAIM_EVIDENCE_LIMIT_EXCEEDED` | 400 | 材料份数超限（单案件 ≤20 份） |
+| `SC_CLAIM_EVIDENCE_LOCKED` | 409 | 证据已锁定（锁定后禁止回填/补录） |
+| `SC_CLAIM_LIABILITY_NOT_FOUND` | 400 | 未找到有效责任配置（计划未配置或已失效） |
+| `SC_CLAIM_ADJUST_NOT_FOUND` | 404 | 理算记录不存在 |
+| `SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED` | 409 | 证据未锁定即发起理算（理算前置不满足） |
+| `SC_CLAIM_QUOTA_NOT_FOUND` | 404 | 额度账户不存在 |
+| `SC_CLAIM_QUOTA_INSUFFICIENT` | 400 | 可用额度不足（占额被拒） |
+| `SC_CLAIM_QUOTA_STATE_CONFLICT` | 409 | 额度状态冲突（已确认禁止清除/重算） |
+| `SC_CLAIM_SETTLEMENT_NOT_FOUND` | 404 | 结算单不存在 |
+| `SC_CLAIM_SETTLEMENT_CONFLICT` | 409 | 结算状态冲突（已终态不可操作） |
+| `SC_CLAIM_APPEAL_NOT_FOUND` | 404 | 申诉记录不存在 |
+
+---
+
 ## 7. HTTP 与业务码对照（速查）
 
 | 场景 | HTTP | 推荐 errorCode |

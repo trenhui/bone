@@ -682,6 +682,14 @@ function AppContent({
         props: globalContext,
       },
       {
+        // synapClaim 智能理赔（员工端 /submit、核赔工作台 /review）
+        name: 'bone-claim-app',
+        entry: import.meta.env.VITE_CLAIM_APP_ENTRY || '//localhost:3013',
+        container: '#subapp-viewport',
+        activeRule: '/claim',
+        props: globalContext,
+      },
+      {
         name: 'bone-integration-app',
         entry: import.meta.env.VITE_INTEGRATION_APP_ENTRY || '//localhost:3006',
         container: '#subapp-viewport',

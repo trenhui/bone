@@ -1,0 +1,44 @@
+-- 赔案头 + 明细扁平投影（每明细一行，头字段逐行重复；无明细时头字段单独一行、明细列为 NULL）
+-- 租户锚点：SDK 自动注入 c.tenant_id = :__boneTenantId__（@TenantScope AUTO）
+SELECT c.claim_id,
+       c.claim_no,
+       c.policy_no,
+       c.plan_id,
+       c.insured_id_hash,
+       c.claim_type,
+       c.status,
+       c.stage,
+       c.hang_up_status,
+       c.invoice_code,
+       c.invoice_no,
+       c.out_insure_time,
+       c.source_channel,
+       c.source_system,
+       c.claim_amount,
+       c.approved_amount,
+       c.first_reviewer_id,
+       c.second_reviewer_id,
+       c.reject_comment,
+       c.reject_type,
+       c.plan_version,
+       c.created_at,
+       i.item_id,
+       i.item_name,
+       i.item_code,
+       i.category       AS item_category,
+       i.quantity       AS item_quantity,
+       i.unit_price     AS item_unit_price,
+       i.amount         AS item_amount,
+       i.social_flag    AS item_social_flag,
+       i.medical_type   AS item_medical_type,
+       i.pooling_amount AS item_pooling_amount,
+       i.self_pay_1     AS item_self_pay_1,
+       i.self_pay_2     AS item_self_pay_2,
+       i.self_pay_c     AS item_self_pay_c,
+       i.valid_amount   AS item_valid_amount,
+       i.invalid_amount AS item_invalid_amount
+FROM t_claim_case c
+       LEFT JOIN t_claim_item i ON i.claim_id = c.claim_id AND i.deleted = 0
+WHERE c.claim_id = :claimId
+  /*bone:tenant*/
+ORDER BY i.item_id

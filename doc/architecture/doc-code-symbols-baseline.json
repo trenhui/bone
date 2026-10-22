@@ -676,22 +676,6 @@
       "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
     },
     {
-      "symbol": "ClaimCaseRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息。2026-10-21 更新引用：原登记指向《ClaimSphere 智能理赔平台设计方案.md》，该文档已改名/归档，当前载体为《工程详细设计（落地版）》§137/§156"
-    },
-    {
-      "symbol": "EvidenceRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息。2026-10-21 更新引用：当前载体为《工程详细设计（落地版）》§156"
-    },
-    {
       "symbol": "AdjLiabilityRepository",
       "docs": [
         "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
@@ -749,14 +733,6 @@
       "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
     },
     {
-      "symbol": "SettlementRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
       "symbol": "PolicyRepository",
       "docs": [
         "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
@@ -787,14 +763,6 @@
       ],
       "reason": "tobe-named",
       "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
-    },
-    {
-      "symbol": "SettlementApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "A7 Settlement 聚合的目标态应用服务名（工程落地版 §4.1 定义聚合与实体，服务名尚未落地）"
     }
   ]
 }
