@@ -4,6 +4,7 @@ import { normalizeUiSchema, validateUiSchema, type BoneUiSchema } from '@bone/ui
 // 复刻 claim-app 形态：views.form.sections 用分区 code 引用顶部 sections 池
 const codeRefSchema = {
   schemaVersion: 1,
+  entityCode: 'test',
   namespace: 'test',
   i18n: { namespace: 'test', fallbackLocale: 'zh-CN' },
   sections: [
@@ -16,6 +17,7 @@ const codeRefSchema = {
 // 规范形态：内联分区对象
 const inlineSchema = {
   schemaVersion: 1,
+  entityCode: 'test',
   namespace: 'test',
   i18n: { namespace: 'test', fallbackLocale: 'zh-CN' },
   views: {
@@ -67,6 +69,7 @@ describe('validateUiSchema', () => {
   it('控件缺 fieldCode/controlCode 报错', () => {
     const bad = {
       schemaVersion: 1,
+      entityCode: 't',
       namespace: 't',
       views: { form: { sections: [{ id: 's1', controls: [{ controlKind: 'TEXT' }] }] } },
     } as unknown as BoneUiSchema;

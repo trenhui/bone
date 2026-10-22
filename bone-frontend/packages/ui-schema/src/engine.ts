@@ -148,6 +148,9 @@ export interface ActionConfirm {
 
 export interface ActionBarItem {
   actionCode: string;
+  /** 展示文案（按钮/动作条显示）；缺省时回退 labelKey，再回退 actionCode */
+  label?: string;
+  labelKey?: string;
   visibleWhen?: UiCondition;
   sortOrder?: number;
   confirm?: ActionConfirm;
@@ -164,6 +167,8 @@ export interface ListColumn {
   /** 固定列方向（协议 enum）：left=横向滚动钉左侧（如主键/案件号）；right=钉右侧（如操作列） */
   pinned?: 'left' | 'right';
   format?: Record<string, unknown>;
+  /** 单元格渲染形态（驱动金额/枚举等格式化，避免按字段名嗅探） */
+  controlKind?: ControlKind;
 }
 
 export interface ListTab {
@@ -952,7 +957,7 @@ export interface SchemaValidationResult {
 
 /**
  * 协议校验（ingest 边界 fail-fast）。在归一化之上叠加业务完整性检查，返回结构化错误便于 UI 展示：
- * - 必备字段：`schemaVersion` / `namespace`；
+ * - 必备字段：`schemaVersion` / `entityCode`（与 `BoneUiSchema` 类型的必填口径一致；`namespace` 在类型中是可选，不能作为必备项校验）；
  * - 分区引用完整性（委托 `normalizeUiSchema` 的 errors）；
  * - 控件必备字段：`fieldCode` / `controlCode` 至少其一；
  * - `actionBar` 动作码唯一性。
@@ -963,7 +968,7 @@ export function validateUiSchema(input: BoneUiSchema): SchemaValidationResult {
     return { valid: false, errors: ['schema 不是对象'] };
   }
   if (input.schemaVersion == null) errors.push('缺少 schemaVersion');
-  if (!input.namespace) errors.push('缺少 namespace');
+  if (!input.entityCode) errors.push('缺少 entityCode');
 
   const { errors: normErrors } = normalizeUiSchema(input);
   errors.push(...normErrors);
