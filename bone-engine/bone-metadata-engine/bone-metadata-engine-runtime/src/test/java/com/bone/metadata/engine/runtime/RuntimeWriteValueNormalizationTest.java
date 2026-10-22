@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +38,12 @@ class RuntimeWriteValueNormalizationTest {
   @Test
   @DisplayName("嵌套 Map / 多选数组 → JSON 文本")
   void nestedStructuresBecomeJson() {
-    Object m = JdbcRuntimeRecordService.toDbBindable(Map.of("a", List.of(1, 2), "b", true));
+    // 用 LinkedHashMap 而非 Map.of：Map.of 的迭代顺序由 JVM 随机 SALT 决定，
+    // 断言精确 JSON 文本会随机失败（b=a 与 a=b 顺序不固定）——这是测试自身的 flaky，不是实现问题。
+    Map<String, Object> nested = new LinkedHashMap<>();
+    nested.put("a", List.of(1, 2));
+    nested.put("b", true);
+    Object m = JdbcRuntimeRecordService.toDbBindable(nested);
     assertEquals("{\"a\":[1,2],\"b\":true}", String.valueOf(m));
 
     Object arr = JdbcRuntimeRecordService.toDbBindable(List.of("OUTPATIENT", "DENTAL"));

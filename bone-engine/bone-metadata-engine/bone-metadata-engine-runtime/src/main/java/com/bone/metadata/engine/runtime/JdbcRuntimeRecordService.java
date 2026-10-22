@@ -1,12 +1,14 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.core.model.PageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -240,6 +242,53 @@ public class JdbcRuntimeRecordService {
     return logicalRow;
   }
 
+  /**
+   * 写库前的<b>值形态归一化</b>：多值（ATTACHMENT 对象数组 / 多选 ENUM / JSON 配置）落库必须转成 JSON 文本。
+   *
+   * <p><b>为什么必须做（真实缺陷，2026-10-21 全模块联调实测）</b>：UI 的 ATTACHMENT 控件产出 {@code [{name:"xxx.pdf"}]}
+   * （对象数组）。它若原样进 {@link MapSqlParameterSource}，MySQL 驱动会走 {@code setObject} 做 <b>Java 原生序列化</b>， 写入
+   * {@code text} 列时报 {@code Incorrect string value: '\xAC\xED\x00\x05sr...' for column
+   * 'evidences'}， 再被catch-all 兜成 <b>500 COMMON_INTERNAL_ERROR</b>——一个纯数据形态问题被当成服务端故障，用户无从下手。
+   *
+   * <p><b>判据是「值形态」而非「不抛异常」</b>：
+   *
+   * <ul>
+   *   <li>多值（{@link Collection} / {@link Map} / 数组，{@code byte[]} 除外）→ 合法 JSON <b>文本</b>；
+   *   <li>标量（String / Number / Boolean / 日期时间 / 枚举）→ <b>原样透传同一实例</b>，绝不被污染成 JSON 文本
+   *       （否则数字列、日期列会被写成字符串，排序与比较随之失效）。
+   * </ul>
+   *
+   * <p>{@code byte[]} 是 BLOB 二进制而非「多值」，必须透传，否则附件二进制会被毁成Base64 文本。
+   *
+   * @param value 原始值
+   * @return 可安全交给 JDBC 的值
+   */
+  static Object toDbBindable(Object value) {
+    if (value == null) {
+      return null;
+    }
+    boolean multi =
+        value instanceof Collection<?> || value instanceof Map<?, ?> || value.getClass().isArray();
+    if (multi && !(value instanceof byte[])) {
+      try {
+        return AUTO_NUMBER_MAPPER.writeValueAsString(value);
+      } catch (JsonProcessingException ex) {
+        // 归一化失败必须显式报出「值不合法」，不能退化成 setObject 让驱动抛晦涩的 SQL 错误、更不能被兜成 500。
+        throw new RuntimeRecordException(
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED,
+            "字段值无法序列化为 JSON: " + ex.getOriginalMessage());
+      }
+    }
+    return value;
+  }
+
+  /** 对整行payload 的每个值做 {@link #toDbBindable(Object)} 归一化（保持列顺序）。 */
+  private static Map<String, Object> normalizeValues(Map<String, Object> payload) {
+    Map<String, Object> bound = new LinkedHashMap<>();
+    payload.forEach((column, value) -> bound.put(column, toDbBindable(value)));
+    return bound;
+  }
+
   public Map<String, Object> create(
       String entityCode, long tenantId, Map<String, Object> body, long newId) {
     return create(entityCode, tenantId, body, newId, null, null);
@@ -302,7 +351,7 @@ public class JdbcRuntimeRecordService {
             + valList
             + ")";
 
-    MapSqlParameterSource params = new MapSqlParameterSource(sqlPayload);
+    MapSqlParameterSource params = new MapSqlParameterSource(normalizeValues(sqlPayload));
     jdbc.update(sql, params);
     // 审计：创建整行（source=create，字段 "*" 表示整行新建，to_value=新主键）
     auditSink.record(
@@ -452,7 +501,7 @@ public class JdbcRuntimeRecordService {
 
     String sql = "UPDATE " + quoteTable(entity.physicalTableName()) + " SET " + setClause + where;
 
-    MapSqlParameterSource params = new MapSqlParameterSource(sqlPayload);
+    MapSqlParameterSource params = new MapSqlParameterSource(normalizeValues(sqlPayload));
     params.addValue("pk", parsePkValue(recordId));
     addTenantParam(entity, tenantId, params);
     if (versioned && expectedVersion != null) {
@@ -1411,16 +1460,41 @@ public class JdbcRuntimeRecordService {
         });
   }
 
-  private static Map<String, Object> filterWritable(
+  /**
+   * 过滤出「可直接写主行」的列，并<b>显式拒绝 CHILD_TABLE 声明字段</b>（G10 写侧对齐）。
+   *
+   * <p><b>为什么必须显式拒绝而不是静默丢弃</b>：CHILD_TABLE 是<b>伪列</b>（无物理列）。若随主行载荷直写，它会原样进 INSERT → MySQL {@code
+   * Unknown column 'items' in 'field list'} → 被catch-all 兜成 <b>500
+   * COMMON_INTERNAL_ERROR</b>（纯数据形态问题被当成服务端故障）。而静默丢弃同样不可接受——那等于调用方提交的明细数据
+   * <b>无声丢失</b>，比报错更危险。故口径是：400 + 指引改走子表端点。
+   *
+   * <p>UI 主表单本就不提交 CHILD_TABLE（明细走子表端点整组替换），本守卫拦的是 API 直写与第三方集成。
+   *
+   * <p><b>可见性为包内可见</b>：同包回归测试直接调用本方法锁死上述语义（见 {@code RuntimeWriteChildTableGuardTest}）。
+   */
+  static Map<String, Object> filterWritable(
       PublishedRuntimeEntity entity, Map<String, Object> body) {
     if (body == null || body.isEmpty()) {
       return new LinkedHashMap<>();
     }
+    Set<String> childTables =
+        entity.columns().stream()
+            .filter(column -> RuntimeRelationSpec.TYPE_CHILD_TABLE.equals(column.type()))
+            .map(RuntimeFieldColumn::code)
+            .collect(Collectors.toSet());
     Set<String> allowed =
         entity.columns().stream().map(RuntimeFieldColumn::code).collect(Collectors.toSet());
     Map<String, Object> out = new LinkedHashMap<>();
     for (Map.Entry<String, Object> e : body.entrySet()) {
       String key = e.getKey();
+      if (childTables.contains(key)) {
+        throw new RuntimeRecordException(
+            MetadataErrorCodes.RUNTIME_VALIDATION_FAILED,
+            "字段 "
+                + key
+                + " 是 CHILD_TABLE 子表字段（无物理列），不能随主行载荷写入；"
+                + "明细请改走子表端点整组替换：POST /api/v1/runtime/entities/{entityCode}/records/{id}/children/{childEntityCode}");
+      }
       if (allowed.contains(key) && !SYSTEM_COLUMNS.contains(key)) {
         out.put(key, e.getValue());
       }
