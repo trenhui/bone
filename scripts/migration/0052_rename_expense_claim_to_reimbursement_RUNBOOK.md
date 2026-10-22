@@ -32,6 +32,10 @@ mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_rename_
 1. **执行前必须对目标库做全量备份 / 快照**（硬性前置）。
 2. 跑完核对第 8 步自校验 7 项是否达标；三项 `leftover` 必须为 0。
 3. 全绿即可；若 `leftover ≠ 0`，先排查再放过，不可带旧码上线。
+4. （可选复核）另跑独立校验脚本，纯 SELECT 重复确认结果（与主脚本第 8 步自校验同源）：
+   ```bash
+   mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_verify.sql
+   ```
 
 ## 六、回滚预案
 - 本脚本为「改名」型一次性迁移，且应用代码已同步改名；**生产不可反向执行本脚本**（会使库名与已上线代码失配）。
@@ -49,8 +53,11 @@ mysql --default-character-set=utf8mb4 -h <host> -u <user> -p bone < 0052_rename_
 - `b585cda3` 0052 补 iam 基名替换 + 自检 `WHERE` 修复
 - `69554e84` 0052 自检 `renamed_perms` 模式覆盖基名与子实体
 - `4b1401dd` i18n 豁免并发提交者未登记码 `SC_CLAIM_DECISION_ACTIVE_CONFLICT`（清门禁，与本次无关）
-- `710d4ac0` 本脚本头部可运维文档（自校验判据 / 回滚 / 验证记录）
+- `710d4ac0` 0052 头部可运维文档（自校验判据 / 回滚 / 验证记录）
+- `7de8de11` 0052 修正误导性第 0 步护栏为信息性前置自检，并新增独立事后校验脚本 `0052_verify.sql`
+- `2f118dac` 新增 CI 可重复校验（`scripts/migration/verify_0052.py` + `.github/workflows/migration-verify.yml`，path-filtered 复用 mysql:8.0 service）
 
 ## 九、待办 / 注意
 - 生产库（`tpa-saas`）由 DBA 执行本脚本（L4 红线，AI 不连生产）。
+- CI 新增 `.github/workflows/migration-verify.yml`（path-filtered，仅 `scripts/migration/**` 变更触发）自动跑 `verify_0052.py`；该工作流属 L3（CI 脚本需架构师审批），合入前请走审批。
 - dev 实例遗留一个无害的 MySQL 数据字典幽灵条目 `bone_0052_scratch`（验证过程 DROP 被中断所致，数据目录已不存在、零数据、零功能影响）；如需清除需 DBA/运维 `sudo mkdir` 缺失目录后 DROP，或重启 MySQL 实例自愈，非必要。
