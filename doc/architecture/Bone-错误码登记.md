@@ -436,6 +436,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `SYS_ALERT_STATUS_INVALID` | 400 | sys alert status invalid |
 | `SYS_CONFIG_KEY_CONFLICT` | 409 | sys config key conflict |
 | `SYS_CONFIG_KEY_INVALID` | 400 | sys config key invalid |
+| `SYS_CONFIG_ENCRYPT_KEY_MISSING` | 500 | 标记敏感（encrypted=true）但未配置加密密钥（BONE_CONFIG_ENCRYPT_KEY），拒绝以明文落库（fail-closed） |
 | `SYS_CONFIG_SNAPSHOT_EMPTY` | 400 | sys config snapshot empty |
 | `SYS_CONFIG_SNAPSHOT_INVALID` | 400 | sys config snapshot invalid |
 | `SYS_CONFIG_SNAPSHOT_READ_FAILED` | 400 | sys config snapshot read failed |

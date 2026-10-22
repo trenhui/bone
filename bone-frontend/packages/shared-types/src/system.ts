@@ -41,7 +41,12 @@ export interface AlertRule {
 export interface AlertRecord {
   id?: string;
   alertRuleId: string;
-  value: number;
+  /** 与后端 AlertRecordResp 一致：wire 字段为 ruleName/metricName/actualValue/threshold/alertLevel */
+  ruleName?: string;
+  metricName?: string;
+  actualValue: number;
+  threshold?: number;
+  alertLevel?: 'CRITICAL' | 'WARNING' | 'INFO';
   message: string;
   status: 'TRIGGERED' | 'RESOLVED';
   createdAt?: string;
@@ -239,4 +244,19 @@ export interface ScheduleTask {
   nextRunAt?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** 定时任务单次执行记录（后端 sys_schedule_task_log，append-only 流水）。 */
+export interface ScheduleTaskLog {
+  id?: string;
+  taskId: string;
+  taskName?: string;
+  handler?: string;
+  triggerType: 'CRON' | 'MANUAL';
+  runStatus: 'SUCCESS' | 'FAILED';
+  startedAt?: string;
+  finishedAt?: string;
+  durationMs?: number;
+  message?: string;
+  createdAt?: string;
 }

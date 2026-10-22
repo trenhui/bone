@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination, Select } from 'antd';
+import { Table, Button, Space, Form, Input, Modal, message, Card, Switch, Tag, Pagination, Select, Drawer } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { ScheduleTask } from '@/types';
+import type { ScheduleTask, ScheduleTaskLog } from '@/types';
 import { scheduleTaskApi } from '@/services/api';
-import { normalizeTotal } from '@bone/shared-utils';
+import { normalizeTotal, formatDate } from '@bone/shared-utils';
 import { Auth, AuthButton, usePermission } from '@bone/ui';
 import { BonePermissionCodes } from '@bone/shared-types';
 
@@ -21,10 +21,10 @@ const ScheduleTaskManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [keyword, setKeyword] = useState('');
 
-  const fetchData = async (page = 1, pageSize = 20) => {
+  const fetchData = async (page = 1, pageSize = 20, kw = keyword) => {
     setLoading(true);
     try {
-      const res = await scheduleTaskApi.getScheduleTaskPage({ page: page, size: pageSize });
+      const res = await scheduleTaskApi.getScheduleTaskPage({ page: page, size: pageSize, keyword: kw.trim() || undefined });
       // 权威字段是 records；list 是后端 PageResult 的 @Deprecated 兼容 getter，
       // 将在 @JsonIgnore 收敛后消失（Bone-API-规范 §5.3）。此处刻意只读 records。
       setData(res.data.records);
@@ -95,6 +95,32 @@ const ScheduleTaskManagement: React.FC = () => {
 
   const [runningIds, setRunningIds] = useState<Set<string>>(new Set());
 
+  // ---- 执行记录抽屉（sys_schedule_task_log 流水，按任务倒序分页）----
+  const [execVisible, setExecVisible] = useState(false);
+  const [execTask, setExecTask] = useState<ScheduleTask | null>(null);
+  const [execData, setExecData] = useState<ScheduleTaskLog[]>([]);
+  const [execLoading, setExecLoading] = useState(false);
+  const [execPagination, setExecPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+
+  const fetchExecutions = async (task: ScheduleTask, page = 1, pageSize = 10) => {
+    setExecLoading(true);
+    try {
+      const res = await scheduleTaskApi.getScheduleTaskExecutions(task.id!, { page, size: pageSize });
+      setExecData(res.data.records);
+      setExecPagination({ current: page, pageSize, total: normalizeTotal(res.data.total) });
+    } catch {
+      message.error(t('system.scheduleTaskManagement.fetchExecutionsFailed'));
+    } finally {
+      setExecLoading(false);
+    }
+  };
+
+  const openExecutions = (record: ScheduleTask) => {
+    setExecTask(record);
+    setExecVisible(true);
+    fetchExecutions(record);
+  };
+
   const runNow = async (record: ScheduleTask) => {
     setRunningIds((prev) => new Set(prev).add(record.id!));
     try {
@@ -142,11 +168,16 @@ const ScheduleTaskManagement: React.FC = () => {
         ),
     },
     { title: t('system.scheduleTaskManagement.columnLastRun'), dataIndex: 'lastRunAt', width: 170, render: (v?: string) => v || '-' },
+    { title: t('system.scheduleTaskManagement.columnNextRun'), dataIndex: 'nextRunAt', width: 170, render: (v?: string) => v || '-' },
     {
       title: t('system.scheduleTaskManagement.columnAction'),
-      width: 190,
+      width: 260,
       render: (_: unknown, record: ScheduleTask) => (
         <Space>
+          {/* 执行记录是只读查询，无写权限也可看（与任务读同权，后端 /executions 无写入门禁）。 */}
+          <Button type="link" size="small" onClick={() => openExecutions(record)}>
+            {t('system.scheduleTaskManagement.executions')}
+          </Button>
           {/* 立即执行会真实触发任务处理器，属写操作（副作用），与增删改同码。 */}
           <AuthButton
             code={BonePermissionCodes.SYS_SCHEDULE_WRITE}
@@ -189,9 +220,14 @@ const ScheduleTaskManagement: React.FC = () => {
           allowClear
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
+          onPressEnter={() => fetchData(1, pagination.pageSize)}
+          onClear={() => {
+            setKeyword('');
+            fetchData(1, pagination.pageSize, '');
+          }}
           style={{ width: 240 }}
         />
-        <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current)}>
+        <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current, pagination.pageSize)}>
           {t('system.scheduleTaskManagement.refresh')}
         </Button>
         <AuthButton
@@ -206,13 +242,9 @@ const ScheduleTaskManagement: React.FC = () => {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={data.filter((item) => {
-          const kw = keyword.trim().toLowerCase();
-          if (!kw) return true;
-          return [item.name, item.handler].some((v) => (v ?? '').toLowerCase().includes(kw));
-        })}
+        dataSource={data}
         loading={loading}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1300 }}
         pagination={false}
       />
       <Pagination
@@ -265,6 +297,76 @@ const ScheduleTaskManagement: React.FC = () => {
           </Form>
         </Modal>
       </Auth>
+
+      {/* 执行记录抽屉：某任务的执行流水（append-only），失败可追溯。 */}
+      <Drawer
+        title={
+          execTask
+            ? t('system.scheduleTaskManagement.executionsTitle', { name: execTask.name })
+            : t('system.scheduleTaskManagement.executions')
+        }
+        width={720}
+        open={execVisible}
+        onClose={() => setExecVisible(false)}
+      >
+        <Table<ScheduleTaskLog>
+          rowKey="id"
+          columns={[
+            {
+              title: t('system.scheduleTaskManagement.columnStartedAt'),
+              dataIndex: 'startedAt',
+              width: 180,
+              render: (v?: string) => (v ? formatDate(v) : '-'),
+            },
+            {
+              title: t('system.scheduleTaskManagement.columnTriggerType'),
+              dataIndex: 'triggerType',
+              width: 100,
+              render: (v: string) =>
+                v === 'MANUAL' ? (
+                  <Tag color="blue">{t('system.scheduleTaskManagement.triggerManual')}</Tag>
+                ) : (
+                  <Tag>{t('system.scheduleTaskManagement.triggerCron')}</Tag>
+                ),
+            },
+            {
+              title: t('system.scheduleTaskManagement.columnRunStatus'),
+              dataIndex: 'runStatus',
+              width: 90,
+              render: (v: string) =>
+                v === 'SUCCESS' ? (
+                  <Tag color="green">{t('system.scheduleTaskManagement.runStatusSuccess')}</Tag>
+                ) : (
+                  <Tag color="red">{t('system.scheduleTaskManagement.runStatusFailed')}</Tag>
+                ),
+            },
+            {
+              title: t('system.scheduleTaskManagement.columnDuration'),
+              dataIndex: 'durationMs',
+              width: 100,
+              render: (v?: number) => (v == null ? '-' : `${v} ms`),
+            },
+            {
+              title: t('system.scheduleTaskManagement.columnMessage'),
+              dataIndex: 'message',
+              ellipsis: true,
+              render: (v?: string) => v || '-',
+            },
+          ]}
+          dataSource={execData}
+          loading={execLoading}
+          pagination={false}
+          locale={{ emptyText: t('system.scheduleTaskManagement.executionsEmpty') }}
+        />
+        <Pagination
+          style={{ marginTop: 16, textAlign: 'right' }}
+          current={execPagination.current}
+          pageSize={execPagination.pageSize}
+          total={execPagination.total}
+          showSizeChanger
+          onChange={(page, pageSize) => execTask && fetchExecutions(execTask, page, pageSize)}
+        />
+      </Drawer>
     </Card>
   );
 };

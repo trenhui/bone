@@ -479,7 +479,8 @@ CREATE TABLE sys_log (
     KEY idx_sys_log_level (level),
     KEY idx_sys_log_service (service),
     KEY idx_sys_log_trace (trace_id),
-    KEY idx_sys_log_time (created_at)
+    KEY idx_sys_log_time (created_at),
+    KEY idx_sys_log_tenant_time (tenant_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统日志';
 
 CREATE TABLE sys_dict (
@@ -613,6 +614,24 @@ CREATE TABLE sys_schedule_task (
     KEY idx_sys_schedule_status (status),
     KEY idx_sys_schedule_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统定时任务';
+
+CREATE TABLE sys_schedule_task_log (
+    id                  BIGINT          NOT NULL COMMENT '记录主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    task_id             BIGINT          NOT NULL COMMENT '定时任务ID',
+    task_name           VARCHAR(100)    NOT NULL COMMENT '执行时任务名称快照',
+    handler             VARCHAR(255)    DEFAULT NULL COMMENT '执行时处理器bean名快照',
+    trigger_type        VARCHAR(20)     NOT NULL DEFAULT 'CRON' COMMENT '触发方式（CRON/MANUAL）',
+    run_status          VARCHAR(20)     NOT NULL COMMENT '执行结果（SUCCESS/FAILED）',
+    started_at          DATETIME(3)     NOT NULL COMMENT '开始时间',
+    finished_at         DATETIME(3)     DEFAULT NULL COMMENT '结束时间',
+    duration_ms         BIGINT          DEFAULT NULL COMMENT '耗时（毫秒）',
+    message             VARCHAR(1000)   DEFAULT NULL COMMENT '失败异常摘要（成功为空）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_sched_log_task (task_id, created_at),
+    KEY idx_sched_log_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务执行记录';
 
 CREATE TABLE sys_alert_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',

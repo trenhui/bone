@@ -117,6 +117,7 @@ class ConfigApplicationServiceTest {
   @Test
   void encryptedConfigStoredThroughCipherPort() {
     when(systemConfigRepository.findByConfigKey(any(ConfigKey.class))).thenReturn(Optional.empty());
+    when(configCipherPort.encryptionEnabled()).thenReturn(true);
     when(configCipherPort.encrypt("s3cret")).thenReturn("enc:v1:iv:ct");
 
     CreateConfigCommand command = createCommand("db.password", "SYSTEM");
@@ -128,6 +129,29 @@ class ConfigApplicationServiceTest {
         .save(
             org.mockito.ArgumentMatchers.argThat(
                 saved -> "enc:v1:iv:ct".equals(saved.getConfigValue().value())));
+  }
+
+  /**
+   * 无密钥时禁止创建「敏感配置」——fail-closed。
+   *
+   * <p>判别力：删掉 {@code storeValue} 里的 {@code encryptionEnabled} 检查，本测试转红； 那时 {@code encrypted=true}
+   * 的配置会以明文落库，界面却显示已加密（脱敏表演）。
+   */
+  @Test
+  void encryptedConfigWithoutKeyIsRejected() {
+    when(systemConfigRepository.findByConfigKey(any(ConfigKey.class))).thenReturn(Optional.empty());
+    when(configCipherPort.encryptionEnabled()).thenReturn(false);
+
+    CreateConfigCommand command = createCommand("db.password", "SYSTEM");
+    command.setConfigValue("s3cret");
+    command.setEncrypted(true);
+
+    assertThatThrownBy(() -> service.create(command))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining("SYS_CONFIG_ENCRYPT_KEY_MISSING");
+    // 一个字节都不能落库：宁可创建失败，也不要留下「标了加密实为明文」的行
+    verify(systemConfigRepository, never()).save(any());
+    verify(configCipherPort, never()).encrypt(any());
   }
 
   /** 非敏感配置不经过加密端口：避免一切配置值都被无差别改写。 */

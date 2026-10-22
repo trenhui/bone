@@ -16,4 +16,13 @@ public interface ConfigCipherPort {
    * @return 解密失败（密钥不匹配 / 数据损坏）返回 {@code null}，由调用方决定脱敏或报错
    */
   String decrypt(String ciphertext);
+
+  /**
+   * 加密能力是否真正可用（密钥已配置）。
+   *
+   * <p><b>为什么写路径必须先问这一句</b>：未配置密钥时 {@link #encrypt} 按历史行为降级为原样返回（明文存储）， 若调用方不察觉，{@code
+   * encrypted=true} 的配置就会以明文落库而界面仍显示「已加密」—— 比不加密更糟的「脱敏表演」。写路径据此 fail-closed 拒绝落库，
+   * 而不是把「标了加密却没加密」的数据写进库里。
+   */
+  boolean encryptionEnabled();
 }

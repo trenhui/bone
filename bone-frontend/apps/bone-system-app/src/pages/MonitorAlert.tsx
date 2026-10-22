@@ -275,14 +275,19 @@ const MonitorAlertPage: React.FC = () => {
 
   const eventColumns = [
     {
+      title: t('system.monitorAlert.ruleName'),
+      dataIndex: 'ruleName',
+      key: 'ruleName',
+    },
+    {
       title: t('system.monitorAlert.alertMessage'),
       dataIndex: 'message',
       key: 'message',
     },
     {
       title: t('system.monitorAlert.actualValue'),
-      dataIndex: 'value',
-      key: 'value',
+      dataIndex: 'actualValue',
+      key: 'actualValue',
     },
     {
       title: t('system.monitorAlert.status'),
@@ -344,25 +349,25 @@ const MonitorAlertPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Card>
-                <Statistic title={t('system.monitorAlert.cpuUsage')} value={metrics.cpu} suffix="%" />
+                <Statistic title={t('system.monitorAlert.cpuUsage')} value={metrics.cpu} precision={1} suffix="%" />
                 <Progress percent={metrics.cpu} status={metrics.cpu > 80 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title={t('system.monitorAlert.memoryUsage')} value={metrics.memory} suffix="%" />
+                <Statistic title={t('system.monitorAlert.memoryUsage')} value={metrics.memory} precision={1} suffix="%" />
                 <Progress percent={metrics.memory} status={metrics.memory > 85 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title={t('system.monitorAlert.diskUsage')} value={metrics.disk} suffix="%" />
+                <Statistic title={t('system.monitorAlert.diskUsage')} value={metrics.disk} precision={1} suffix="%" />
                 <Progress percent={metrics.disk} status={metrics.disk > 90 ? 'exception' : 'normal'} />
               </Card>
             </Col>
             <Col span={6}>
               <Card>
-                <Statistic title={t('system.monitorAlert.apiErrorRate')} value={metrics.errorRate} suffix="%" />
+                <Statistic title={t('system.monitorAlert.apiErrorRate')} value={metrics.errorRate} precision={2} suffix="%" />
                 <Progress percent={metrics.errorRate} status={metrics.errorRate > 5 ? 'exception' : 'normal'} />
               </Card>
             </Col>
@@ -370,17 +375,17 @@ const MonitorAlertPage: React.FC = () => {
           <Row gutter={16} style={{ marginTop: 16 }}>
             <Col span={8}>
               <Card>
-                <Statistic title={t('system.monitorAlert.apiResponseTime')} value={metrics.apiResponseTime} suffix="ms" />
+                <Statistic title={t('system.monitorAlert.apiResponseTime')} value={metrics.apiResponseTime} precision={1} suffix="ms" />
               </Card>
             </Col>
             <Col span={8}>
               <Card>
-                <Statistic title={t('system.monitorAlert.qps')} value={metrics.qps} />
+                <Statistic title={t('system.monitorAlert.qps')} value={metrics.qps} precision={2} />
               </Card>
             </Col>
             <Col span={8}>
               <Card>
-                <Statistic title={t('system.monitorAlert.dbConnections')} value={metrics.dbConnections} />
+                <Statistic title={t('system.monitorAlert.dbConnections')} value={metrics.dbConnections} precision={0} />
               </Card>
             </Col>
           </Row>

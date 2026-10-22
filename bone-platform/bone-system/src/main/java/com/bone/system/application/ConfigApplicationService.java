@@ -109,10 +109,22 @@ public class ConfigApplicationService {
 
   /**
    * 敏感配置在落库前加密（详设 §7.2）：此前 {@code encrypted} 只是读取侧脱敏开关， {@code config_value}
-   * 列存的是明文——任何有库表读权限的人都能拿到「密码」。 未配置密钥时端口实现降级原样返回（明文存储 + 启动告警），行为与历史一致。
+   * 列存的是明文——任何有库表读权限的人都能拿到「密码」。
+   *
+   * <p><b>fail-closed</b>：未配置加密密钥时端口会降级为明文原样返回，此时必须<b>拒绝落库</b>而不是把明文写进标记为 {@code encrypted}
+   * 的列——界面显示「已加密」而库里是明文，是比不加密更糟的脱敏表演。错误信息指引注入 {@code BONE_CONFIG_ENCRYPT_KEY}；prod 环境缺密钥根本起不来（见
+   * {@code AesConfigCipherAdapter} 构造守卫）。
    */
   private String storeValue(String rawValue, boolean encrypted) {
-    return encrypted ? configCipherPort.encrypt(rawValue) : rawValue;
+    if (!encrypted) {
+      return rawValue;
+    }
+    if (!configCipherPort.encryptionEnabled()) {
+      throw SystemErrors.of(
+          SystemErrorCodes.CONFIG_ENCRYPT_KEY_MISSING,
+          "未配置加密密钥（BONE_CONFIG_ENCRYPT_KEY），拒绝以明文存储敏感配置");
+    }
+    return configCipherPort.encrypt(rawValue);
   }
 
   /**

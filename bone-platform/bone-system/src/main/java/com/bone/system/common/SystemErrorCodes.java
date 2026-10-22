@@ -30,6 +30,13 @@ public final class SystemErrorCodes {
   /** 配置键非法（空值或超出 {@code ConfigKey} 允许的长度）。 */
   public static final String CONFIG_KEY_INVALID = "SYS_CONFIG_KEY_INVALID";
 
+  /**
+   * 标记为敏感（{@code encrypted=true}）但加密密钥未配置，拒绝落库。
+   *
+   * <p>fail-closed：无密钥时 {@code encrypt} 会降级为明文原样返回， 若不禁用，「已加密」的配置实际以明文存储——比不加密更糟的脱敏表演。
+   */
+  public static final String CONFIG_ENCRYPT_KEY_MISSING = "SYS_CONFIG_ENCRYPT_KEY_MISSING";
+
   // ===== 配置快照（SYS_CONFIG_SNAPSHOT_*）=====
 
   /** 快照内容为空。 */

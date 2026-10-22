@@ -180,6 +180,21 @@ CREATE TABLE IF NOT EXISTS sys_schedule_task (
     version     INT          NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS sys_schedule_task_log (
+    id           BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id    BIGINT        NOT NULL DEFAULT 0,
+    task_id      BIGINT        NOT NULL,
+    task_name    VARCHAR(100)  NOT NULL,
+    handler      VARCHAR(255),
+    trigger_type VARCHAR(20)   NOT NULL DEFAULT 'CRON',
+    run_status   VARCHAR(20)   NOT NULL,
+    started_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at  TIMESTAMP,
+    duration_ms  BIGINT,
+    message      VARCHAR(1000),
+    created_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS sys_alert_rule (
     id                    BIGINT        NOT NULL PRIMARY KEY,
     tenant_id             BIGINT        NOT NULL DEFAULT 0,

@@ -7,6 +7,7 @@ import com.bone.system.adapter.web.assembler.ScheduleTaskAssembler;
 import com.bone.system.adapter.web.dto.request.CreateScheduleTaskReq;
 import com.bone.system.adapter.web.dto.request.ScheduleTaskPageReq;
 import com.bone.system.adapter.web.dto.request.UpdateScheduleTaskReq;
+import com.bone.system.adapter.web.dto.response.ScheduleTaskLogResp;
 import com.bone.system.adapter.web.dto.response.ScheduleTaskResp;
 import com.bone.system.application.ScheduleTaskApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -80,5 +81,17 @@ public class ScheduleTaskController {
         scheduleTaskApplicationService
             .page(scheduleTaskAssembler.toQuery(req))
             .map(scheduleTaskAssembler::toResp));
+  }
+
+  @Operation(summary = "分页查询定时任务执行记录", description = "按任务ID分页返回执行历史（最新在前），含触发方式、成败、耗时与失败消息")
+  @GetMapping("/{id}/executions")
+  public ApiResponse<PageResult<ScheduleTaskLogResp>> executions(
+      @PathVariable Long id,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    return ApiResponse.success(
+        scheduleTaskApplicationService
+            .pageExecutions(id, page, size)
+            .map(scheduleTaskAssembler::toLogResp));
   }
 }

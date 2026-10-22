@@ -30,6 +30,7 @@ public final class SystemErrors {
           Map.entry(SystemErrorCodes.CONFIG_KEY_CONFLICT, 409),
           Map.entry(SystemErrorCodes.CONFIG_TYPE_INVALID, 400),
           Map.entry(SystemErrorCodes.CONFIG_KEY_INVALID, 400),
+          Map.entry(SystemErrorCodes.CONFIG_ENCRYPT_KEY_MISSING, 500),
           Map.entry(SystemErrorCodes.CONFIG_SNAPSHOT_EMPTY, 400),
           Map.entry(SystemErrorCodes.CONFIG_SNAPSHOT_INVALID, 400),
           Map.entry(SystemErrorCodes.CONFIG_SNAPSHOT_TOO_LARGE, 400),

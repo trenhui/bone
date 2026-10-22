@@ -1,10 +1,14 @@
 package com.bone.system.infrastructure.scheduler;
 
 import com.bone.core.tenant.context.TenantContextRunner;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.model.schedule.ScheduleTask;
+import com.bone.system.domain.model.schedule.ScheduleTaskLog;
+import com.bone.system.domain.model.schedule.valueobject.TaskRunStatus;
+import com.bone.system.domain.model.schedule.valueobject.TriggerType;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -34,14 +38,17 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
   private final Map<Long, ScheduledFuture<?>> futures = new ConcurrentHashMap<>();
   private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
   private final ScheduleTaskRepository scheduleTaskRepository;
+  private final ScheduleTaskLogRecorder scheduleTaskLogRecorder;
   private final ApplicationContext applicationContext;
 
   public TaskSchedulerRegistry(
       ThreadPoolTaskScheduler threadPoolTaskScheduler,
       ScheduleTaskRepository scheduleTaskRepository,
+      ScheduleTaskLogRecorder scheduleTaskLogRecorder,
       ApplicationContext applicationContext) {
     this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     this.scheduleTaskRepository = scheduleTaskRepository;
+    this.scheduleTaskLogRecorder = scheduleTaskLogRecorder;
     this.applicationContext = applicationContext;
   }
 
@@ -137,19 +144,36 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
   /**
    * 手动立即执行一次：与 CRON 路径跑同一份 handler + 同一条 recordRun 通道，区别只在失败语义—— CRON
    * 路径吞异常只记日志（无人在线等结果），手动路径把「handler 缺失 / 执行失败」抛回调用方。
+   *
+   * <p>两条路径都落执行记录（{@link TriggerType#MANUAL}）：手动执行正是用户想立刻看到「成没成、为什么失败」的场景，
+   * 缺了记录，「点了立即执行然后失败」在系统里不留任何痕迹。
    */
   @Override
   public long triggerNow(ScheduleTask task) {
     TaskHandler handler = resolveHandler(task.getHandler());
+    LocalDateTime startedAt = LocalDateTime.now();
     if (handler == null) {
+      recordExecution(
+          task,
+          TriggerType.MANUAL,
+          TaskRunStatus.FAILED,
+          startedAt,
+          LocalDateTime.now(),
+          "任务处理器不存在: " + task.getHandler());
       throw SystemErrors.of(SystemErrorCodes.SCHEDULE_TASK_HANDLER_NOT_FOUND, task.getHandler());
     }
     long start = System.currentTimeMillis();
     try {
       handler.run(task.getName());
+    } catch (RuntimeException e) {
+      recordExecution(
+          task, TriggerType.MANUAL, TaskRunStatus.FAILED, startedAt, LocalDateTime.now(), brief(e));
+      throw e;
     } finally {
       recordRun(task);
     }
+    recordExecution(
+        task, TriggerType.MANUAL, TaskRunStatus.SUCCESS, startedAt, LocalDateTime.now(), null);
     return System.currentTimeMillis() - start;
   }
 
@@ -163,15 +187,23 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
 
   /** CRON 路径的执行体：吞异常只记日志（无人在线等结果），与手动 triggerNow 的失败语义不同。 */
   private void runGuarded(ScheduleTask task) {
+    LocalDateTime startedAt = LocalDateTime.now();
     try {
       TaskHandler handler = resolveHandler(task.getHandler());
       if (handler == null) {
-        log.warn("[ScheduleTask] 未找到任务处理器 bean: {}", task.getHandler());
+        String message = "未找到任务处理器 bean: " + task.getHandler();
+        log.warn("[ScheduleTask] {}", message);
+        recordExecution(
+            task, TriggerType.CRON, TaskRunStatus.FAILED, startedAt, LocalDateTime.now(), message);
         return;
       }
       handler.run(task.getName());
+      recordExecution(
+          task, TriggerType.CRON, TaskRunStatus.SUCCESS, startedAt, LocalDateTime.now(), null);
     } catch (Exception e) {
       log.error("[ScheduleTask] 任务 {} 执行失败", task.getName(), e);
+      recordExecution(
+          task, TriggerType.CRON, TaskRunStatus.FAILED, startedAt, LocalDateTime.now(), brief(e));
     } finally {
       recordRun(task);
     }
@@ -191,6 +223,49 @@ public class TaskSchedulerRegistry implements ScheduleTaskSchedulerPort {
           target.markRun(LocalDateTime.now(), next);
           scheduleTaskRepository.save(target);
         });
+  }
+
+  /**
+   * 落一条执行记录（成败、耗时、消息快照）。
+   *
+   * <p><b>为何整体包 try-catch</b>：执行记录是观测设施，绝不能因为它（如库瞬时不可用）影响任务生命周期—— handler 已跑完、{@code recordRun}
+   * 还要回写状态，这里抛异常会把一次成功的执行变成调用方的错误。
+   *
+   * <p><b>为何经 {@link ScheduleTaskLogRecorder} 独立事务落库</b>：手动执行失败时异常会回滚调用方事务，
+   * 流水若与调用方同事务，失败记录会连回滚一起消失——「失败可追溯」恰在最需要它的场景失灵。
+   *
+   * <p>同样以「任务自身租户」进入上下文：CRON 路径虽已在外层 {@code runAs} 内（嵌套同租户无副作用）， 手动路径没有，统一在此声明保证两条路径都对。
+   */
+  private void recordExecution(
+      ScheduleTask task,
+      TriggerType triggerType,
+      TaskRunStatus runStatus,
+      LocalDateTime startedAt,
+      LocalDateTime finishedAt,
+      String message) {
+    try {
+      ScheduleTaskLog entry =
+          ScheduleTaskLog.record(
+              DistributedIdGenerator.generateLongId(),
+              task.getTenantId(),
+              task.getId(),
+              task.getName(),
+              task.getHandler(),
+              triggerType,
+              runStatus,
+              startedAt,
+              finishedAt,
+              message);
+      TenantContextRunner.runAs(task.getTenantId(), () -> scheduleTaskLogRecorder.record(entry));
+    } catch (Exception ex) {
+      log.error("[ScheduleTask] 执行记录落库失败（不影响任务执行与状态回写）: taskId={}", task.getId(), ex);
+    }
+  }
+
+  /** 异常摘要：类名 + 消息，截断到 480 字符（列宽 1000，留余量给省略标记）。 */
+  private static String brief(Throwable e) {
+    String text = e.getClass().getSimpleName() + ": " + e.getMessage();
+    return text.length() > 480 ? text.substring(0, 480) + "..." : text;
   }
 
   private TaskHandler resolveHandler(String beanName) {

@@ -9,12 +9,15 @@ import com.bone.system.application.command.CreateScheduleTaskCommand;
 import com.bone.system.application.command.UpdateScheduleTaskCommand;
 import com.bone.system.application.port.out.ScheduleTaskSchedulerPort;
 import com.bone.system.application.query.dto.ScheduleTaskDto;
+import com.bone.system.application.query.dto.ScheduleTaskLogDto;
 import com.bone.system.application.query.qry.ScheduleTaskPageQuery;
 import com.bone.system.common.SystemErrorCodes;
 import com.bone.system.common.SystemErrors;
 import com.bone.system.domain.gateway.TenantProvider;
 import com.bone.system.domain.model.schedule.ScheduleTask;
+import com.bone.system.domain.model.schedule.ScheduleTaskLog;
 import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
+import com.bone.system.domain.repository.ScheduleTaskLogRepository;
 import com.bone.system.domain.repository.ScheduleTaskRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ScheduleTaskApplicationService {
 
   private final ScheduleTaskRepository scheduleTaskRepository;
+  private final ScheduleTaskLogRepository scheduleTaskLogRepository;
   private final ScheduleTaskSchedulerPort scheduleTaskSchedulerPort;
   private final TenantProvider tenantProvider;
   private final DomainEventPublisher domainEventPublisher;
@@ -127,6 +131,21 @@ public class ScheduleTaskApplicationService {
 
   public Optional<ScheduleTaskDto> getById(Long id) {
     return Optional.ofNullable(scheduleTaskRepository.findById(id)).map(ScheduleTaskDto::from);
+  }
+
+  /**
+   * 某任务的执行记录分页（新的在前）。
+   *
+   * <p>租户隔离由 SDK Criteria 隐式保证（ADR-0029）：传他租户的任务 id 得到的是空页而不是越权数据。 权限上沿用任务的读权限（{@code
+   * sys:schedule:read}）——执行记录是任务详情的一部分，不单独设码。
+   */
+  public PageResult<ScheduleTaskLogDto> pageExecutions(Long taskId, int page, int size) {
+    PageResult<ScheduleTaskLog> records = scheduleTaskLogRepository.pageByTask(taskId, page, size);
+    return PageResult.of(
+        records.getRecords().stream().map(ScheduleTaskLogDto::from).toList(),
+        records.getTotal(),
+        records.getPage(),
+        records.getSize());
   }
 
   public PageResult<ScheduleTaskDto> page(ScheduleTaskPageQuery query) {

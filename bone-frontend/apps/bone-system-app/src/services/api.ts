@@ -16,6 +16,7 @@ import type {
   DictExport,
   DictItemText,
   ScheduleTask,
+  ScheduleTaskLog,
   ApiResponse,
   PageResult,
 } from '@/types';
@@ -310,6 +311,11 @@ export const scheduleTaskApi = {
   },
   runScheduleTaskNow: async (id: string | string) => {
     return api.post<never, ApiResponse<number>>(`/system/schedule-tasks/${id}/run`);
+  },
+  getScheduleTaskExecutions: async (id: string | string, params: { page?: number; size?: number } = {}) => {
+    return api.get<never, ApiResponse<PageResult<ScheduleTaskLog>>>(`/system/schedule-tasks/${id}/executions`, {
+      params: { page: params.page ?? 1, size: params.size ?? 10 },
+    });
   },
 };
 
