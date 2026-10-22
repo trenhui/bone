@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.bone</groupId>
+        <artifactId>bone-metadata-engine</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../bone-engine/bone-metadata-engine/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>bone-app-purchase</artifactId>
+    <name>bone-app-purchase</name>
+    <description>采购业务应用：采购订单付款逃逸处理器（对公三单匹配由 UiSchemaRuleEnforcer 承载，处理器不重复校验）。</description>
+    <packaging>jar</packaging>
+
+    <properties>
+        <jacoco.minimum.coverage>0</jacoco.minimum.coverage>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-engine-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-core</artifactId>
+            <version>${bone-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <version>${bone-architecture-test.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
