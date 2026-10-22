@@ -17,9 +17,11 @@ import java.util.Optional;
  * domain 包（E-4.2）；application 不得再拼 DSL，否则 `readSideDslOnlyInQueryLayer` 会被绕过。 Criteria
  * 承载租户与软删自动注入，这里是**有护栏的那一层**。
  *
- * <p><b>通道选择</b>：能用 Criteria 表达的（按业务键取单个聚合）一律用 Criteria；需要跨列 OR 的分页/列表才降级到
- * `QueryBuilder`——`Criteria.or(Consumer)` 生成的条件片段会被当作等值条件拼接 （`(a LIKE :x OR b LIKE :y) = :null`），是
- * SDK 已知缺陷，在其修复前不使用。
+ * <p><b>通道选择</b>：能用 Criteria 表达的（按业务键取单个聚合、单列等值/排序分页）一律用 Criteria；需要跨列 OR 的 分页/列表用 {@link
+ * Criteria#or(Consumer)} 条件组——子条件括号包裹为原生片段，与外层 AND 安全组合 （{@code (a LIKE ? OR b LIKE ?) AND type =
+ * ?}），经 {@code RepositoryKeywordOrSearchTest} 真实执行验证。 <b>不要用 QueryBuilder 的扁平 {@code or()} 链接
+ * {@code and()}</b>：SqlBuilder 扁平拼接不加括号，SQL 优先级会退化为 {@code a OR (b AND c)}——本仓库 2026-10-22
+ * 前的两处关键词分页都踩过（见各方法 javadoc）。
  */
 public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
 
@@ -37,25 +39,30 @@ public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
   }
 
   /**
-   * 关键字分页 + 配置类型精确过滤：命中配置键或描述任一列即计入（OR）。
+   * 关键字分页 + 配置类型精确过滤：命中配置键或描述任一列即计入（OR），按创建时间倒序。
+   *
+   * <p>跨列 OR 用 {@link Criteria#or(Consumer)} 条件组（子条件括号包裹为原生片段，与外层 AND 安全组合）。 历史版本走 QueryBuilder 扁平
+   * {@code or()} 链，与后续 {@code and(configType)} 组合时被 SQL 优先级退化为 {@code configKey LIKE ? OR
+   * (description LIKE ? AND configType = ?)}——仅键命中的异类型配置会漏过类型过滤， 本轮收敛（回归见 {@code
+   * RepositoryKeywordOrSearchTest}）。
    *
    * @param keyword 为空或空白时不加过滤条件，等价于全量分页；{@code configType} 为空时不过滤类型
    */
   default PageResult<SystemConfig> pageByKeyword(
       String keyword, ConfigType configType, int page, int size) {
     boolean hasKeyword = keyword != null && !keyword.isBlank();
-    var query = QueryBuilder.from(SystemConfig.class);
+    var criteria = Criteria.<SystemConfig>create().entityClass(SystemConfig.class);
     if (hasKeyword) {
-      query
-          .where(SystemConfig::getConfigKey)
-          .contains(keyword)
-          .or(SystemConfig::getDescription)
-          .contains(keyword);
+      criteria.or(
+          sub ->
+              sub.like(SystemConfig::getConfigKey, keyword)
+                  .like(SystemConfig::getDescription, keyword));
     }
     if (configType != null) {
-      query.and(SystemConfig::getConfigType).eq(configType);
+      criteria.eq(SystemConfig::getConfigType, configType);
     }
-    return query.orderByDesc(SystemConfig::getCreatedAt).page(page, size);
+    criteria.orderByDesc(SystemConfig::getCreatedAt).page(page, size);
+    return pageByCriteria(criteria);
   }
 
   /**

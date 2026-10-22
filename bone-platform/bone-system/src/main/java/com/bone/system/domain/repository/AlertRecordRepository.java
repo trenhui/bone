@@ -20,7 +20,8 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
   /**
    * 告警记录分页：三个过滤条件均可缺省（缺省即不过滤），按 {@code createdAt} 倒序。
    *
-   * <p>单列等值过滤是 Criteria 的主场——自带租户与软删注入，不需要像跨列 OR 那样降级到 QueryBuilder。
+   * <p>单列等值过滤是 Criteria 的主场——自带租户与软删注入；跨列 OR 场景见 {@link
+   * com.bone.system.domain.repository.SystemConfigRepository} 类级 javadoc 的通道选择。
    */
   default PageResult<AlertRecord> pageByCondition(
       Long ruleId, AlertLevel level, AlertStatus status, int page, int size) {
@@ -36,8 +37,9 @@ public interface AlertRecordRepository extends Repository<AlertRecord, Long> {
   /**
    * 关键字分页（历史兼容入口）：命中规则名或消息内容，最近触发的在前。
    *
-   * <p>跨列 OR 走 QueryBuilder，原因见 {@link com.bone.system.domain.repository.SystemConfigRepository} 对
-   * {@code Criteria.or(Consumer)} 缺陷的说明。
+   * <p>OR 之后无其他过滤条件，扁平链不会产生优先级退化（{@code a OR b} 本就是目标语义）； 若将来要加状态/级别过滤，必须改用 {@link
+   * com.bone.system.domain.repository.SystemConfigRepository} 类级 javadoc 记载的 {@code
+   * Criteria.or(Consumer)} 条件组写法（见 {@code RepositoryKeywordOrSearchTest}）。
    */
   default PageResult<AlertRecord> pageByKeyword(String keyword, int page, int size) {
     var query = QueryBuilder.from(AlertRecord.class);

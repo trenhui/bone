@@ -3,7 +3,6 @@ package com.bone.system.domain.repository;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.domain.model.schedule.ScheduleTask;
 import com.bone.system.domain.model.schedule.valueobject.TaskStatus;
 import java.util.List;
@@ -52,19 +51,30 @@ public interface ScheduleTaskRepository extends Repository<ScheduleTask, Long> {
   }
 
   /**
-   * 任务分页：名称模糊 + 状态精确过滤。
+   * 任务分页：关键词模糊（<b>名称或处理器</b>任一列命中）+ 状态精确过滤，按创建时间倒序。
    *
-   * @param keyword 为空或空白时不加名称过滤；{@code status} 为空时不过滤状态
+   * <p>跨列 OR 必须用 {@link Criteria#or(Consumer)} 条件组：子条件被括号包裹为一个原生片段， 与外层 AND 安全组合为 {@code (name LIKE
+   * ? OR handler LIKE ?) AND status = ?}。 QueryBuilder 的扁平 {@code or()} 链在后续还有 {@code and()} 时会被
+   * SQL 优先级退化为 {@code a OR (b AND c)}—— 停用任务仅名称命中也会漏过状态过滤（UI placeholder 承诺「任务名称 /
+   * 处理器」两维搜索，这里必须两维都真生效）。
+   *
+   * <p>排序从「无 ORDER BY 的自然序」改为 {@code createdAt} 倒序：自然序在 OR 查询下不保证跨页稳定， 分页可能重复/丢行；与本模块其他关键词分页（{@link
+   * SystemConfigRepository#pageByKeyword}）保持一致。
+   *
+   * @param keyword 为空或空白时不加关键词过滤；{@code status} 为空时不过滤状态
    */
   default PageResult<ScheduleTask> pageByKeywordAndStatus(
       String keyword, TaskStatus status, int page, int size) {
-    var query = QueryBuilder.from(ScheduleTask.class);
-    if (keyword != null && !keyword.isBlank()) {
-      query.where(ScheduleTask::getName).contains(keyword);
+    boolean hasKeyword = keyword != null && !keyword.isBlank();
+    var criteria = Criteria.<ScheduleTask>create().entityClass(ScheduleTask.class);
+    if (hasKeyword) {
+      criteria.or(
+          sub -> sub.like(ScheduleTask::getName, keyword).like(ScheduleTask::getHandler, keyword));
     }
     if (status != null) {
-      query.and(ScheduleTask::getStatus).eq(status);
+      criteria.eq(ScheduleTask::getStatus, status);
     }
-    return query.page(page, size);
+    criteria.orderByDesc(ScheduleTask::getCreatedAt).page(page, size);
+    return pageByCriteria(criteria);
   }
 }
