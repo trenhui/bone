@@ -1,6 +1,8 @@
 # BONE AI 依赖与许可 SBOM 清单（法务送审版）
 
-> **版本**：v1.0　**日期**：2026-10-15　**归口**：平台架构组
+> **版本**：v1.2　**日期**：2026-10-23　**归口**：平台架构组
+> **v1.2 变更（生产硬依赖落地，承接详设 v1.4）**：§2 总表登记 **Redisson 3.52.0**（Apache-2.0，Redis 分布式配额，`bone-ai-gateway` optional 引入 + `@ConditionalOnClass` 守卫——平台 `bone-metadata-sdk` 同款同版本，**非新增暴露面**，未启用时零进入运行时）；「零新依赖实证」段补充 Redisson 的口径说明。待确认项维持 5 项不变。
+> **v1.1 变更（诊断后修订，见《方案诊断报告-2026-10-23》）**：§2 新增「零新依赖实证」段——11 个 `bone-ai-*` 模块（含 2026-10 新增的 notification / integration / ledger / rag）出站传输全部走 JDK `HttpClient`，第三方依赖仅仓内模块 + `spring-boot-autoconfigure` + lombok，无新增许可暴露面；待确认项维持 5 项不变。
 > **用途**：POC 签前法务 SBOM 评估的送审底稿；范围内依赖的许可证据、禁用清单与待确认点供法务一次性裁定。法务确认后**冻结选型**，与《BONE-AI能力中台整体方案》§4.5/§4.6 一并作为新增依赖准入依据。
 > **口径**：✅=官方来源已实证；⚠️=需法务确认；⛔=禁用。第三方组件以本清单 + 机器导出 SBOM（CycloneDX）为准，两者不一致时以机器导出为新证据回填本表。
 
@@ -24,6 +26,9 @@ AI 中台范围内**默认选型全部为宽松许可**（Apache-2.0 / MIT / Pos
 | bge-m3 系 ONNX 模型（embedding） | 随选型 | ⚠️ 模型许可随选型确认 | ⚠️ | bone-ai-rag embedding（1024 维起步） | 与 bge-reranker 同族不同任务（向量化 / 重排），非重复依赖；选定后回填许可与来源哈希 |
 | RAGAS（可选 sidecar） | 节奏跟进 | Apache-2.0 | ✅ | 离线评测辅助（RAG 指标） | 非主链路，可裁剪；对抗评测走 C8 对抗样本库 + CI 负向探针，不另引 promptfoo |
 | MCP Java SDK（预留） | 2.0.x 复核 | ⚠️ 随版本复核 | ⚠️（未引入） | MCP Server/Client 能力（独立 POC） | CVE-2026-59279（会话无界增长）修复于 2.0.1，锁定 ≥2.0.1 |
+| `org.redisson:redisson` | 3.52.0（平台 BOM 管版本） | Apache-2.0 | ✅ | bone-ai-gateway 多副本分布式配额（`RedisTenantQuotaGuard`，固定窗口 + 故障 fail-open） | **optional 依赖 + `@ConditionalOnClass` 守卫**：宿主未引 Redisson 时零进入运行时；平台 `bone-metadata-sdk` 同款同版本已登记（元数据缓存），**非新增许可暴露面**；CVE 随平台扫描节奏跟踪 |
+
+**零新依赖实证（2026-10-23，源码走查）**：`bone-ai-gateway` 自建 OpenAI 兼容客户端用 **JDK `HttpClient` + Jackson**（Boot 内置），不引 Spring AI / LangChain4j 等任何 AI 框架；`bone-ai-notification`（Webhook 通知）、`bone-ai-integration`（外部系统适配）、`bone-ai-rag`（HTTP bge 推理客户端）、`bone-ai-ledger` 四个模块出站传输同样走 JDK `HttpClient`。上述模块的第三方依赖仅**仓内 `com.bone:*` 模块 + `spring-boot-autoconfigure` + lombok**——AI 中台整体**零新增第三方许可暴露面**，本清单 §2 总表之外无未登记组件。**Redisson 例外说明（v1.2 补登）**：唯一 optional 引入的第三方 jar 为 Redisson 3.52.0（Apache-2.0），与平台 `bone-metadata-sdk` 既有依赖同款同版本，且经 `@ConditionalOnClass` 守卫——宿主未装配时连 classpath 都不进入，故不构成新增暴露面；启用了分布式配额的部署形态其 SBOM 以平台既有 Redisson 条目为准，不重复登记。
 
 ## 3. sidecar 与模型权重清单
 

@@ -262,8 +262,10 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ### AI_RAG_
 
 | `AI_RAG_TENANT_CONTEXT_MISSING` | 500 | 检索租户上下文缺失（fail-closed：不做无租户边情的全库检索） |
-| `AI_RAG_EMBEDDING_PROVIDER_FAIL` | 502 | 嵌入推理服务调用/响应异常（共享 bge-m3 provider 故障，不静默回落零向量） |
-| `AI_RAG_RERANK_PROVIDER_FAIL` | 502 | 重排序推理服务调用/响应异常（共享 bge-reranker provider 故障，不静默回落 RRF 序） |
+| `AI_RAG_EMBEDDING_PROVIDER_FAIL` | 502 | 嵌入推理服务调用/响应异常（共享 bge-m3 provider 故障，不静默回落零向量；检索链 catch 后降级 BM25 单路 + WARN） |
+| `AI_RAG_RERANK_PROVIDER_FAIL` | 502 | 重排序推理服务调用/响应异常（共享 bge-reranker provider 故障；检索链 catch 后降级 RRF 粗序 + WARN） |
+| `AI_RAG_SCOPE_OVER_LIMIT` | 422 | 检索作用域切片数超容量护栏 `bone.ai.rag.max-scan`（fail-closed：超限即拒、提示收窄 doc_scope 或调大阈值，绝不静默截断；2026-10-23 新增） |
+| `AI_RAG_DOC_FORBIDDEN` | 403 | 显式 doc_scope 无文档级 ACL 归属（fail-closed：接入方提供 `RagAclPort` 受限可见集合后生效，绝不静默回落全租户检索；默认无 ACL 模型时不触发；2026-10-23 新增） |
 
 ### AI_APP_
 

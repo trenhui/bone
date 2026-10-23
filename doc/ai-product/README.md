@@ -13,9 +13,12 @@
 | 路径 | 说明 |
 |------|------|
 | [platform/](./platform/) | **AI 能力中台分区**（平台能力资产的方案与设计，随批次生长） |
-| ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（正式版：能力同构论证 + 模块架构（6 模块 + 评测挂流水线）+ 框架/许可定案 + 落地计划） |
-| ├ [BONE-AI能力中台详细技术方案.md](./platform/BONE-AI能力中台详细技术方案.md) | **详设**：模块详设/契约与 DDL（拟定）/非功能阈值初值/第 0-1 批 WBS/平台 API 面 |
-| └ [BONE-AI依赖与许可SBOM清单.md](./platform/BONE-AI依赖与许可SBOM清单.md) | 法务送审版 SBOM：依赖许可总表 + 禁用负表 + 5 项待确认点（POC 签前冻结选型） |
+| ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（v1.13：能力同构论证 C1–C11 + 模块架构（11 模块 + 评测挂流水线）+ 框架/许可定案 + 落地批次） |
+| ├ [BONE-AI能力中台详细技术方案.md](./platform/BONE-AI能力中台详细技术方案.md) | **详设**（v1.6）：模块详设 / 契约与 DDL（8 张已入 `bone-init.sql`）/ 非功能阈值初值 / WBS / 平台 API 面 / **生产就绪清单** |
+| ├ [BONE-AI接入指南.md](./platform/BONE-AI接入指南.md) | **产品接入指南**（v1.4）：进程内嵌库主形态 + `bone-ai-app` 聚合宿主辅形态；可用能力表 / 接线步骤 / 双参考宿主 / RAG 配置速查 |
+| └ [BONE-AI依赖与许可SBOM清单.md](./platform/BONE-AI依赖与许可SBOM清单.md) | 法务送审版 SBOM（v1.1）：依赖许可总表 + 零新依赖实证 + 禁用负表 + 5 项待确认点（POC 签前冻结选型） |
+| [方案诊断报告-2026-10-23.md](./方案诊断报告-2026-10-23.md) | 四件套逻辑自洽 / 名实相符 / 务实 / 可落地诊断（源码走查实证）+ 优化执行记录 |
+| [RAG方案诊断与优化-2026-10-23.md](./RAG方案诊断与优化-2026-10-23.md) | bone-ai-rag 专项诊断：rerank/embedding 零接线、docVersion 幂等缺失、容量/分数护栏缺失 → P0 修复；P1 落地：文档级 ACL seam（403 fail-closed）/ MMR 多样性（默认关）/ 降级痕迹可观测；查询改写记决策（批二启动） |
 | [procuraAI/](./procuraAI/) | 采购 AI 专题包（PRD / 技术方案 / POC / 接口契约 / DEMO + assets） |
 | [synapClaim/](./synapClaim/) | ClaimSphere 智能理赔专题包（PRD / 设计 / MVP / delivery 交付包 / DEMO） |
 | [synapEquity/](./synapEquity/) | Synap Equity 估值专题包（产品方案 v0.18 / 方法学 v0.2 / 合规 v0.2 / 数据源 v0.2 / 技术 v0.2 / 评测 v0.2 / 开发 Backlog v0.2 / DEMO） |
