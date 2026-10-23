@@ -17,10 +17,8 @@
     <description>轻量审批流引擎：流程定义 / 实例 / 任务 / 指派 / 条件分支（专用于审批流，非通用 BPMN）</description>
 
     <modules>
-        <module>bone-workflow-domain</module>
-        <module>bone-workflow-ports</module>
-        <module>bone-workflow-runtime</module>
-        <module>bone-workflow-starter</module>
+        <module>bone-workflow-core</module>
+        <module>bone-workflow-spring-boot-starter</module>
     </modules>
 
     <properties>

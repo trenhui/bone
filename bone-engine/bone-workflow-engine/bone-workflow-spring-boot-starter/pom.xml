@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.bone</groupId>
+        <artifactId>bone-workflow-engine</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>bone-workflow-spring-boot-starter</artifactId>
+    <name>bone-workflow-spring-boot-starter</name>
+    <description>Spring Boot Starter：装配 bone-workflow-core（JDBC 适配器 + outbox 中继 + BONE 集成）</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-workflow-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- BONE 集成适配器（原独立桥接模块 bone-workflow-platform，按 v3 设计 D1 并入 starter）：
+             运行时读单据 / 状态机动作链路 / 平台分布式 id -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-metadata-engine-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-metadata-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-core</artifactId>
+            <version>${bone-core.version}</version>
+        </dependency>
+        <dependency><groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </dependency>
+        <dependency><groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency><groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency><groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency><groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <version>${bone-architecture-test.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency><groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

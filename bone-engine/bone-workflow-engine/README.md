@@ -10,22 +10,39 @@
 审批流是**平台级能力**：报销、采购、合同、用印……都会用。把它塞进某个应用模块，第二个场景来时就只能复制粘贴。
 独立成模块后：
 
-- 引擎**对 `bone-metadata-engine` 零依赖**（由 `bone-workflow-runtime` 的 ArchUnit 规则守护），只经 ports 契约与平台对话；
-- 任何宿主只要实现那 7 个端口就能用上引擎（不止 BONE 平台）；
-- 依赖方向严格向内：`domain`（纯逻辑）→ `ports`（契约）→ `runtime`（编排）→ `starter`（Boot 3 装配）。
+- 引擎**对 `bone-metadata-engine` 零依赖**（由 `bone-workflow-core` 的 ArchUnit 规则守护），只经 ports 契约与平台对话；
+- 任何宿主只要实现那 7 个必需端口就能用上引擎（`NotificationPort` 可选，缺 `NOOP` 兜底），不止 BONE 平台；
+- 依赖方向严格向内：`core` 内`domain`（纯逻辑）→ `ports`（契约）→ `runtime`（编排）按包分层，最外层是 `starter`（Boot 3 装配 + 平台适配器）。
 
 ## 模块形状
 
-对齐 `bone-metadata-engine` 的四段式惯例：
+对齐业界 **engine + starter 两制品**形态（Camunda `camunda-bpm-engine` + `spring-boot-starter`、Activiti / Flowable
+单核心 + starter、Spring Batch `spring-batch-core` + `spring-boot-starter-batch`）：引擎本体一个纯 Java 制品，
+平台集成一个 starter 制品。**不按 domain / ports / runtime 拆三个模块**——它们没有独立的发布与复用价值（ports 是
+domain 六边形的一部分，runtime 是唯一一个编排类），拆开只会让「改一个端口签名」变成跨模块 choreography。
 
 | 模块 | 包 | 职责 | 对外依赖 |
 |---|---|---|---|
-| `bone-workflow-domain` | `com.bone.workflow.domain` | 流程定义 / 实例 / 任务模型、条件求值、分支选择、发布期校验 | 仅 JDK + Jackson |
-| `bone-workflow-ports` | `com.bone.workflow.ports.spi` | 7 个端口：定义仓储、实例仓储、指派解析、业务数据、状态推进、审计、id 生成 | 仅 domain |
-| `bone-workflow-runtime` | `com.bone.workflow.runtime` | 引擎实现：推进 / 任务完成判定 / 指派冻结 | domain + ports + Spring |
-| `bone-workflow-starter` | `com.bone.workflow.starter` | Boot 3 自动配置（`.imports`）+ **BONE 集成适配器**（`adapter` / `spi` 包：SDK 仓储、状态投影、记录读取、指派解析、id 生成、审计——原独立桥接模块 `bone-workflow-platform` 已撤销并入，见设计稿 §2.2） | runtime + ports + `bone-metadata-sdk` + `bone-metadata-server` |
+| `bone-workflow-core` | `com.bone.workflow.domain` / `com.bone.workflow.ports.spi` / `com.bone.workflow.runtime` | **引擎内核（纯 Java，零 Spring / 零平台）**：①`domain` 流程定义 / 实例 / 任务模型、条件求值、分支选择、发布期校验；②`ports.spi` 8 个端口契约（7 必需：定义仓储、实例仓储、指派解析、业务数据、状态推进、审计、id 生成；1 可选：`NotificationPort`，`NOOP` 兜底）；③`runtime` `WorkflowEngineImpl` 用例编排（推进 / 完成判定 / CAS / 干预） | 仅 JDK + Jackson + SLF4J |
+| `bone-workflow-spring-boot-starter` | `com.bone.workflow.starter` | **平台集成（全部基础设施）**：Boot 3 自动配置（`.imports`）、JDBC 适配器（`adapter`）、状态投影发件箱与中继（`outbox`）、生产 SQL 集中地（`persistence.WfSql`）、平台外接 SPI（`spi`） | core + `bone-metadata-engine-runtime` + `bone-metadata-server` + `bone-core` + spring-jdbc |
 
-`domain` 层有独立 ArchUnit 规则守护「不得依赖 Spring / 平台 / 外层」——否则「引擎可独立复用」这条前提会被悄悄破坏。
+**边界纪律（ArchUnit 按包守护，与拆分模块时等价）**：
+
+- `domain` 不得依赖 Spring / 平台 / ports / runtime / starter；
+- `ports` 只许依赖 `domain`（SPI 契约不依赖编排层与平台）；
+- `runtime` 不得直连 `bone-metadata-engine`——引擎与平台只经 ports 契约对话。
+
+前三条由 **core 侧** `ArchitectureTest` 按包名断言。⚠️ 但 core 的测试 classpath 上没有 starter 的类（依赖方向
+starter → core），所以「引擎命名空间不得依赖框架 / 平台」这条**跨模块**纪律不能只写在 core 里——它由 **starter 侧**
+`StarterArchitectureTest` 断言（唯一能同时看到两个制品的视角）。缺这一处，「在 starter 里放一个
+`com.bone.workflow.domain` 包下的 Spring 类」可畅通无阻，引擎纯度静默失守。
+
+少了这些守护，「引擎可独立复用」会被悄悄破坏（某天有人在 domain 里 `@Autowired` 一个平台 bean，整个引擎就只能被
+平台用了——而且编译期不报错、运行期在平台外才爆炸）。
+
+> 合并前的四模块（domain / ports / runtime / starter）中，ports 与 runtime 均无独立消费者：ports 的 jar 离开 domain
+> 没有意义，runtime 只有一个编排类。业界同样形态的引擎（Camunda / Activiti / Flowable / Spring Batch）也都是
+> 「核心 + starter」，而不是按层次每层一个制品。
 
 ## 核心概念
 
@@ -108,13 +125,15 @@
 ```xml
 <dependency>
   <groupId>com.bone</groupId>
-  <artifactId>bone-workflow-starter</artifactId>
+  <artifactId>bone-workflow-spring-boot-starter</artifactId>
   <version>${project.version}</version>
 </dependency>
 ```
 
-`starter` 会在宿主提供**全部 7 个端口**时装配引擎；缺端口不是引擎的错（可能只想用纯领域规则），此时**不**装配引擎
-而不是把宿主启动打挂。条件求值器与发布期校验器可被宿主 bean 覆盖。
+`bone-workflow-spring-boot-starter` 会在宿主提供**全部 7 个必需端口**时装配引擎（`NotificationPort` 不在必配集内，缺失时由
+`NotificationPort.NOOP` 兜底）；缺必需端口不是引擎的错（可能只想用纯领域规则），此时**不**装配引擎而不是把宿主启动打挂。
+条件求值器与发布期校验器可被宿主 bean 覆盖。只想用纯领域规则（求值 / 校验 / 分支语义）的宿主可只依赖
+`bone-workflow-core`。
 
 ## 当前状态（v1）
 
@@ -124,8 +143,10 @@
 
 未实现（后续阶段）：SLA 超时提醒与自动转交、委派、转办/加签、抄送节点（v1 发布期拒绝：静默穿透即「配了不生效」，v2 落地为抄送任务 + 通知）、退回指定节点、子流程、流程版本回溯、
 可视化流程设计器、`wf_*` 实体与 BONE 集成适配器的落地（适配器在 starter 内，需 L3 DDL 审批）。
-规划中的 v1 补齐（设计稿 §2.3/§4.4）：`NotificationPort` 通知最小集、实例轨迹查询 `listInstanceHistory`、
-管理员干预最小集（改派 / 终止 / 催办）。
+`NotificationPort` 契约与 starter 侧日志兜底实现已落地，5 个通知点中 **4 个已被引擎真实调用**（任务创建 / 改派 / 催办 /
+挂起告警）；`notifyTerminated` 的唯一调用方是尚未实现的 `terminateInstance`，随 v1 管理员干预最小集（终止）一并落地——
+不是「配了不生效」的死接口。规划中的 v1 补齐（设计稿 §2.3/§4.4）：实例轨迹查询 `listInstanceHistory`、
+管理员干预剩余最小集（终止）。
 
 > 挂起实例的恢复入口（`resume`）已实现：组织架构修好后重新解析审批人并续跑，仍解析不出则保持挂起并明确报错，
 > 避免「恢复成功」的假象。

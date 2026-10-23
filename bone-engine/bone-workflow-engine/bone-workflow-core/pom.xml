@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.bone</groupId>
+        <artifactId>bone-workflow-engine</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>bone-workflow-core</artifactId>
+    <name>bone-workflow-core</name>
+    <description>审批流引擎内核（纯 Java）：domain 模型 + ports SPI + runtime 编排，零 Spring / 零平台依赖</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- domain 的流程定义 / 条件表达式以 JSON 形态流转（Jackson 仅作数据绑定，不引入 Spring） -->
+        <dependency><groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- core 合并 domain+ports+runtime 后，runtime 的引擎实现用 SLF4J 记录推进 / 挂起 / 决策轨迹 -->
+        <dependency><groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency><groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency><groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <version>${bone-architecture-test.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

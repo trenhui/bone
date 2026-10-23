@@ -1,0 +1,145 @@
+package com.bone.workflow.starter;
+
+import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
+import com.bone.metadata.runtime.application.RuntimeActionApplicationService;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.workflow.ports.spi.ApproverResolver;
+import com.bone.workflow.ports.spi.WorkflowAuditPort;
+import com.bone.workflow.ports.spi.WorkflowDefinitionRepository;
+import com.bone.workflow.ports.spi.WorkflowIdGenerator;
+import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
+import com.bone.workflow.ports.spi.WorkflowRecordPort;
+import com.bone.workflow.ports.spi.WorkflowStatusPort;
+import com.bone.workflow.starter.adapter.ActionExecutionAuditPort;
+import com.bone.workflow.starter.adapter.JdbcWorkflowDefinitionRepository;
+import com.bone.workflow.starter.adapter.JdbcWorkflowInstanceRepository;
+import com.bone.workflow.starter.adapter.PlatformWorkflowIdGenerator;
+import com.bone.workflow.starter.adapter.RecordFieldApproverResolver;
+import com.bone.workflow.starter.adapter.RuntimeRecordDataPort;
+import com.bone.workflow.starter.outbox.OutboxStatusPort;
+import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
+import com.bone.workflow.starter.outbox.StatusIntentExecutor;
+import com.bone.workflow.starter.outbox.StatusProjectionRelay;
+import com.bone.workflow.starter.outbox.WorkflowStatusOutboxRepository;
+import com.bone.workflow.starter.spi.RoleMemberProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+
+/**
+ * 审批流引擎的<b>平台桥接自动装配</b>。
+ *
+ * <p>本配置只负责把引擎的 7 个端口接到 BONE 平台上；引擎本体（{@code WorkflowEngine}）由同模块的 {@link
+ * WorkflowEngineAutoConfiguration} 装配（显式 {@code @AutoConfigureAfter} 保证端口 bean
+ * 先注册）。两侧解耦，平台耦合全部收敛在本配置类。
+ *
+ * <p><b>条件装配而非硬装配</b>：指派解析依赖 IAM 仓储、状态推进依赖运行时动作服务。宿主没引这些模块时， 对应端口 bean
+ * 不创建（引擎随之不装配或由宿主自备实现），<b>不打挂宿主启动</b>。
+ *
+ * <p><b>启用前提（L3，需架构师审批）</b>：{@code wf_instance} / {@code wf_task} / {@code wf_process_def} / {@code
+ * wf_active_instance} / {@code wf_status_outbox} 五张表必须已建（DDL 见设计文档 {@code doc/design/modules/12.
+ * 工作流引擎设计.md} §7）。表不存在时，本模块的读写会在运行期报错——这是刻意不兜底的： 审批流数据落错表比启动失败更危险。
+ */
+@AutoConfiguration
+@ConditionalOnClass(NamedParameterJdbcTemplate.class)
+public class WorkflowBoneIntegrationAutoConfiguration {
+
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowInstanceRepository workflowInstanceRepository(NamedParameterJdbcTemplate jdbc) {
+    return new JdbcWorkflowInstanceRepository(jdbc);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowDefinitionRepository workflowDefinitionRepository(
+      NamedParameterJdbcTemplate jdbc, ObjectMapper objectMapper) {
+    return new JdbcWorkflowDefinitionRepository(jdbc, objectMapper);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowAuditPort workflowAuditPort() {
+    return new ActionExecutionAuditPort();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowIdGenerator workflowIdGenerator(SqlExecutor sqlExecutor) {
+    return new PlatformWorkflowIdGenerator(sqlExecutor);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnBean(JdbcRuntimeRecordService.class)
+  public WorkflowRecordPort workflowRecordPort(JdbcRuntimeRecordService recordService) {
+    return new RuntimeRecordDataPort(recordService);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowStatusOutboxRepository workflowStatusOutboxRepository(
+      NamedParameterJdbcTemplate jdbc) {
+    return new WorkflowStatusOutboxRepository(jdbc);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
+  public WorkflowStatusPort workflowStatusPort(
+      RuntimeActionApplicationService actionService,
+      NamedParameterJdbcTemplate jdbc,
+      WorkflowIdGenerator idGenerator,
+      WorkflowStatusOutboxRepository outbox) {
+    // 默认走发件箱（最终一致 + 可重试 + 可对账）。
+    // 宿主若需强同步，可自备 WorkflowStatusPort bean 覆盖本实现（@ConditionalOnMissingBean 保证不冲突）：
+    // 在自备实现里同步调用 RuntimeActionApplicationService.invokeAction 即可。代价是平台动作失败会让这次投影
+    // 静默丢失（「引擎说批了、单据状态没动」且无迹可查）——这正是默认走发件箱要避免的。
+    return new OutboxStatusPort(outbox, idGenerator::nextId);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
+  public StatusIntentExecutor workflowStatusIntentExecutor(
+      RuntimeActionApplicationService actionService, NamedParameterJdbcTemplate jdbc) {
+    return new RuntimeActionIntentExecutor(actionService, jdbc);
+  }
+
+  /**
+   * 状态投影中继。
+   *
+   * <p>条件与 {@link #workflowStatusIntentExecutor} 一致（{@code RuntimeActionApplicationService} 在场）：
+   * 宿主没引平台动作服务（纯引擎场景）时不创建中继，<b>不打挂启动</b>。此时发件箱仍会累积意图， 由宿主的对账作业或后续接入时补投。
+   *
+   * <p>注意：{@code @Scheduled} 需宿主开启 {@code @EnableScheduling}；未开启时静默忽略， 宿主也可自行按周期调用 {@code
+   * runOnce(...)}。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
+  public StatusProjectionRelay workflowStatusProjectionRelay(
+      WorkflowStatusOutboxRepository outbox, StatusIntentExecutor executor) {
+    return new StatusProjectionRelay(outbox, executor, 100, 8);
+  }
+
+  /**
+   * 指派解析：默认实现处理 USER / FIELD / INITIATOR_SELECT，组织目录相关策略经 {@link RoleMemberProvider} 外接。
+   *
+   * <p>见 {@link RecordFieldApproverResolver} 的能力边界——平台无「直属主管 / 部门负责人」字段， {@code LINE_MANAGER}
+   * 等策略解析不出人并由引擎<b>挂起</b>（失败关闭，不是放行）。
+   *
+   * <p>宿主可自备 {@link ApproverResolver} bean 覆盖本默认实现（{@code @ConditionalOnMissingBean} 保证不冲突）。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public ApproverResolver workflowApproverResolver(
+      ObjectProvider<RoleMemberProvider> roleMemberProvider) {
+    return new RecordFieldApproverResolver(roleMemberProvider.getIfAvailable());
+  }
+}
