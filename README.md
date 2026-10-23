@@ -4,7 +4,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-BSL%201.1-blue.svg)
-![JDK](https://img.shields.io/badge/JDK-17+-orange.svg)
+![JDK](https://img.shields.io/badge/JDK-21+-orange.svg)
 
 > **个人学习免费 · 商业使用需授权 · 元数据驱动 · 四大引擎协同**
 > **「构建可复用的系统，创造可持续的价值。」** —— 梅山
@@ -15,6 +15,8 @@
 > **个人学习、研究、教学、非商业评估、开发/测试** 免费；**企业生产与商业使用需购买商业授权**。
 > 该日期之前已公开发布的版本仍按 [MIT](LICENSE-MIT) 授权（不可撤销）。
 > 详见 [License](#license) 章节。
+
+**Bone 是什么**：以统一元模型驱动的企业级全栈开发平台——一次建模，既可用生成式产出可审计源码（模式 A），也可运行时动态提供 CRUD/API（模式 B）；配套主数据、扩展点、集成三大引擎，支撑企业应用从"项目制重复建设"走向"平台化持续演进"。完整能力状态以 [P0 看板](doc/wiki/07-P0-TODO看板.md) 为准。
 
 ## 阅读指引
 
@@ -234,7 +236,7 @@ Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术
 
 ### 环境要求
 
-JDK 17+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Redis 7.x（IAM 登录必需） · Git
+JDK 21+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Redis 7.x（IAM 登录必需） · Git
 
 ### 常用环境变量
 
@@ -248,32 +250,37 @@ JDK 17+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Redis 7.x（IAM 登录必需
 git clone https://gitee.com/meishan315/bone.git
 cd bone
 
-# 统一口令：与 MySQL root 保持一致；新终端需再次执行
-export BONE_DB_PASSWORD=bone_dev_pass
+# 0. 统一 MySQL root 口令（docker compose 与各后端共用，必须一致；仅当前终端生效）
+export BONE_DB_PASSWORD=<你的MySQL-root口令>      # 与 MySQL root 一致；docker compose 不设置时回退 bone_root_pass
 
-# 数据库 + 缓存（方式一：docker compose，首次启动自动导入 bone-init.sql）
+# 1. 数据库 + 缓存（docker compose 会在启动时读取上面的 BONE_DB_PASSWORD 初始化 MySQL）
 docker compose up -d mysql redis
-# 方式二：自备 MySQL/Redis——先手动导 DDL：mysql -u root -p < bone-init.sql
+#    自备 MySQL/Redis 时：mysql -u root -p < bone-init.sql
 
-# 后端（全量；仅验集成可用下一行子集）
+# 2. 后端全量构建（仅验证集成可用则改为下一行子集）
 mvn clean install -DskipTests
 # mvn clean install -pl bone-platform/bone-integration -am -DskipTests
 
-# IAM（新终端；先重新 export BONE_DB_PASSWORD）
-export BONE_DB_PASSWORD=bone_dev_pass
+# 3. IAM（新终端；环境变量不跨终端，需重新 export 同一个值）
+export BONE_DB_PASSWORD=<你的MySQL-root口令>
 cd bone-platform/bone-iam && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
-# 网关（新终端；shell 前端代理指向 :8888，不启动则登录失败）
+# 4. 网关（新终端；Shell 前端代理指向 :8888，不启动则登录失败）
 cd bone-platform/bone-gateway && mvn spring-boot:run
 
-# 系统服务（新终端；Shell 首页概览和快捷操作依赖 :8083）
-export BONE_DB_PASSWORD=bone_dev_pass
+# 5. 系统服务（新终端；Shell 首页概览和快捷操作依赖 :8083）
+export BONE_DB_PASSWORD=<你的MySQL-root口令>
 cd bone-platform/bone-system && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
-# 集成（可选，另开终端；经网关访问见下表）
+# 6. 元数据服务（新终端；网关路由依赖 :9001，建议启动）
+export BONE_DB_PASSWORD=<你的MySQL-root口令>
+cd bone-engine/bone-metadata-server && mvn spring-boot:run
+
+# 7. 集成（可选，新终端；经网关访问见下表）
+# export BONE_DB_PASSWORD=<你的MySQL-root口令>
 # cd bone-platform/bone-integration && mvn spring-boot:run
 
-# 前端 Shell（新终端；仅启动 Shell，功能页需再启动对应微应用）
+# 8. 前端 Shell（新终端；仅启动 Shell，功能页需再启动对应微应用）
 cd bone-frontend && npm ci && npm run dev
 ```
 
@@ -285,13 +292,16 @@ cd bone-frontend && npm ci && npm run dev
 | 集成微前端 | http://localhost:3006（需单独启动 `bone-integration-app`，亦可从 Shell 菜单进入） |
 | API 网关（推荐） | http://localhost:8888/api/v1/... |
 | IAM | http://localhost:8081 |
+| 系统服务 | http://localhost:8083 |
 | 集成 API（直连） | http://localhost:8085/api/v1/integration/... |
 | 元数据服务 | http://localhost:9001 |
 | Studio 生成器 | http://localhost:8086（模式 A 代码生成） |
 
-- **端口速查**：integration `:8085` · studio-generator `:8086` · metadata-server `:9001`（默认 profile `local`；若以 `dev` profile 启动则为 `:8885`），无占用即可并行启动；各模块端口真源为各自 `application.yml` 与 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
+> 注：IAM、系统服务以 `dev` profile 启动；网关、元数据服务、集成以默认 `local` profile 启动，端口见上表。
+
+- **端口速查**：integration `:8085` · studio-generator `:8086` · metadata-server `:9001`（local/dev 均为 `:9001`；`:8885` 已弃用，会导致网关转发熔断），无占用即可并行启动；各模块端口真源为各自 `application.yml` 与 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
 - 默认账号：`admin` / `123456`（首次登录请修改；与 `bone-init.sql` 一致）
-- **口令对齐**：MySQL root 密码由 `BONE_DB_PASSWORD` 注入 docker compose 与 IAM dev profile。若数据卷已使用默认值 `bone_root_pass` 初始化，需在 IAM 所在终端设置 `BONE_DB_PASSWORD=bone_root_pass`
+- **口令对齐**：`BONE_DB_PASSWORD` 同时注入 docker compose（初始化 MySQL root）与各后端。务必在 `docker compose up` **之前**设置，且所有终端使用同一个值；若数据卷已用旧口令初始化，需先 `docker compose down -v` 重建数据卷再启动。
 - DDL 策略：改 [bone-init.sql](bone-init.sql) 后重建库，见 [数据库开发规范](doc/architecture/数据库开发规范.md)
 - 仓库中**无** `bone-admin` 模块；在线演示环境以社区公告为准
 
@@ -330,7 +340,7 @@ cd bone-frontend && npm ci && npm run dev
 A: 先看本文的“当前状态”，再以 OpenAPI、代码和测试为准；迭代范围见 [P0 看板](doc/wiki/07-P0-TODO看板.md)。
 
 **Q: 启动失败？**  
-A: 确认 JDK 17+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
+A: 确认 JDK 21+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
 
 **Q: API 路径规范？**  
 A: 统一 `/api/v1/{domain}/**`，见 [Bone-API-规范](doc/architecture/Bone-API-规范.md)。
