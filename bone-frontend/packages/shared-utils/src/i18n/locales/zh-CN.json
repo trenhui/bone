@@ -46,6 +46,8 @@
     "AI_RAG_DOC_FORBIDDEN": "文档不在当前用户可见范围内，拒绝访问",
     "AI_APP_TENANT_CONTEXT_MISSING": "租户上下文缺失，请经鉴权链路访问",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "证据链落盘被拒绝：租户上下文缺失",
+    "AI_TRACE_NOT_FOUND": "证据链快照不存在",
+    "AI_TRACE_TENANT_DENIED": "证据链快照不属于当前租户，拒绝访问",
     "AI_DOC_TOO_LARGE": "文档超过大小上限（默认 50MB），请拆分后重试",
     "AI_DOC_TOO_MANY_PAGES": "文档页数超过上限（默认 1000 页），请拆分后重试",
     "AI_DOC_SIDECAR_UNAVAILABLE": "文档解析服务暂不可用，已转人工处理",

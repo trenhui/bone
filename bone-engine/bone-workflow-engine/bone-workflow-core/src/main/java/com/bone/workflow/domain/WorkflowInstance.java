@@ -37,12 +37,22 @@ public record WorkflowInstance(
      * <p><b>刻意不算终态</b>：挂起是「暂停待人处理」，不是「流程结束」。若把它当终态，挂起单据将<b>连撤回都不行</b>
      * （发起人被锁死），且没有任何恢复入口——等于制造死单。故挂起态下仍允许发起人撤回，也允许后续恢复（v2）。
      */
-    SUSPENDED
+    SUSPENDED,
+    /**
+     * 管理员强制终止（终态）。
+     *
+     * <p>与发起人 {@code WITHDRAWN} 区分：撤回是发起人主动收回未决单据；终止是管理员对<b>已卡住 / 已无意义</b>的实例
+     * （如挂起死单、错提单据）做的不可逆干预。二者语义不同，独立审计。
+     */
+    TERMINATED
   }
 
   /** 是否已到终态（挂起不算终态）。 */
   public boolean isTerminated() {
-    return phase == Phase.APPROVED || phase == Phase.REJECTED || phase == Phase.WITHDRAWN;
+    return phase == Phase.APPROVED
+        || phase == Phase.REJECTED
+        || phase == Phase.WITHDRAWN
+        || phase == Phase.TERMINATED;
   }
 
   /** 是否处于挂起（等待人工介入）。 */

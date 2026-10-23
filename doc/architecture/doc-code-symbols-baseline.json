@@ -763,6 +763,15 @@
       ],
       "reason": "tobe-named",
       "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "EnableConfigurationProperties",
+      "docs": [
+        "doc/ai-product/RAG方案诊断与优化-2026-10-23.md",
+        "doc/ai-product/platform/BONE-AI能力中台详细技术方案.md"
+      ],
+      "reason": "false-positive",
+      "note": "Spring 框架注解 @EnableConfigurationProperties 的正当引用：RAG 诊断文档论证 RagInferenceProperties 缺此注解故配置面失效，能力中台详案 v1.5 记录修复后经此注解注册；框架注解非 Bone 工程类，与 baseline note 中 false-positive（Spring 通用词误报）同类"
     }
   ]
 }

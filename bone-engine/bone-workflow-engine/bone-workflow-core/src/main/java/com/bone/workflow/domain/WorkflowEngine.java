@@ -102,10 +102,55 @@ public interface WorkflowEngine {
   java.util.List<WorkflowTask> listPendingTasks(String instanceId);
 
   /**
+   * 读取某流程实例的<b>完整审批轨迹</b>（全部任务，含已决策 / 已取消，按创建序）。
+   *
+   * <p>审批单据详情页据此展示「谁在何时批了什么、走了哪步、当前卡在哪个节点」。与 {@link #listPendingTasks}（只取 PENDING）不同，此处还原全量时间线；节点推进
+   * / 挂起 / 终止等实例级事件目前由调用方结合 {@code phase} 与任务时间线拼装。
+   *
+   * @param instanceId 流程实例 id
+   */
+  java.util.List<WorkflowTask> listInstanceHistory(String instanceId);
+
+  /**
+   * 管理员强制指派（打破「审批人解析不出 → 挂起」死单的兜底出口）。
+   *
+   * <p><b>为什么需要</b>：当某节点审批人解析不出时，引擎会把实例置 {@code SUSPENDED} 且<b>根本不创建任务</b> （见运行期语义 §4.3）；此时 {@code
+   * reassignTask}（仅对 {@code PENDING} 任务生效）无任务可改派，实例只能等组织数据修复后 {@code resume}。
+   * 本方法为管理员提供一个<b>直接注入任务并恢复</b>的通道：在 {@code SUSPENDED} 且无任务时新建 {@code PENDING} 任务并恢复为 {@code
+   * RUNNING}； 对 {@code RUNNING} 实例也可补充注入某节点的待办（如指派规则漏解析）。
+   *
+   * <p><b>守卫</b>：实例须存在且非终态；目标办理人不能为空；无重复 {@code (node, assignee)} PENDING 时方新建。
+   *
+   * @param instanceId 流程实例 id
+   * @param nodeCode 目标节点（可空；空则取实例当前节点 {@code currentNodeCode}）
+   * @param assigneeId 被强制指派的办理人账户 id
+   * @param operatorId 操作人（管理员）
+   * @param reason 指派原因（审计用）
+   * @return 指派后的流程实例（可能因恢复而变为 {@code RUNNING}）
+   */
+  WorkflowInstance assignTask(
+      String instanceId, String nodeCode, String assigneeId, String operatorId, String reason);
+
+  /**
    * 条件求值的上下文数据来源：把业务单据数据取给引擎（由宿主提供）。
    *
    * @param entityCode 业务实体编码
    * @param recordId 业务单据 id
    */
   Map<String, Object> loadRecordData(String entityCode, String recordId);
+
+  /**
+   * 管理员强制终止流程（不可逆干预）。
+   *
+   * <p><b>与 {@code withdraw} 区分</b>：撤回是发起人收回应办、单据可重新编辑重提；终止是管理员对卡死 / 错提单据的处置， 进入 {@code TERMINATED}
+   * 终态，单据不再可重提。
+   *
+   * <p><b>守卫</b>：实例须存在且非终态；阶段 CAS 保证并发安全（与撤回 / 驳回互斥）。
+   *
+   * @param instanceId 流程实例 id
+   * @param operatorId 操作人（管理员）
+   * @param reason 终止原因（审计用）
+   * @return 终止后的流程实例
+   */
+  WorkflowInstance terminateInstance(String instanceId, String operatorId, String reason);
 }

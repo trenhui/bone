@@ -62,6 +62,20 @@ public class OutboxStatusPort implements WorkflowStatusPort {
     enqueue(instanceId, entityCode, recordId, "RESUMED", null, null);
   }
 
+  @Override
+  public void markTerminated(
+      String entityCode, String recordId, String instanceId, String operatorId, String reason) {
+    // 无对应业务动作（单据处置由宿主状态机决定）；仅记录意图供审计与对账。
+    enqueue(instanceId, entityCode, recordId, "TERMINATED", null, reason);
+    log.warn(
+        "[workflow] 流程被管理员强制终止：entity={} record={} instance={} operator={} reason={}",
+        entityCode,
+        recordId,
+        instanceId,
+        operatorId,
+        reason);
+  }
+
   private void enqueue(
       String instanceId,
       String entityCode,

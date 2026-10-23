@@ -52,6 +52,8 @@
     "AI_RAG_DOC_FORBIDDEN": "Document is outside the current user's visible scope; access denied",
     "AI_APP_TENANT_CONTEXT_MISSING": "Tenant context missing; please access via the authenticated chain",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "Evidence persistence refused: tenant context missing",
+    "AI_TRACE_NOT_FOUND": "Evidence snapshot not found",
+    "AI_TRACE_TENANT_DENIED": "Evidence snapshot does not belong to the current tenant; access denied",
     "AI_DOC_TOO_LARGE": "Document exceeds the size limit (50MB by default); please split and retry",
     "AI_DOC_TOO_MANY_PAGES": "Document exceeds the page limit (1000 by default); please split and retry",
     "AI_DOC_SIDECAR_UNAVAILABLE": "Document parsing service unavailable; routed to manual handling",

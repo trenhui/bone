@@ -1,5 +1,9 @@
 package com.bone.workflow.starter.architecture;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackages;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -85,4 +89,31 @@ class StarterArchitectureTest {
           .because(
               "引擎内核只允许依赖 JDK + Jackson（数据绑定）+ SLF4J（日志）；引入其它第三方库会同时污染两个制品的传递依赖，"
                   + "让「纯 Java 制品」这一承诺失效");
+
+  /**
+   * HC-006 持久化纪律的<b>收窄守卫</b>：审批流的裸 JDBC 实现（{@code JdbcWorkflowInstanceRepository} / {@code
+   * JdbcWorkflowDefinitionRepository} / {@code WorkflowStatusOutboxRepository} 等）是<b>已登记的技术豁免</b>
+   * （见 {@code doc/architecture/sdk-persistence-bypass-baseline.json} 的 {@code
+   * technicalExemptions}），仅允许存在于 {@code adapter} / {@code outbox} 包。本规则保证：<b>任何其它包</b>一旦引入 {@code
+   * spring-jdbc} / {@code java.sql} / {@code javax.sql}，门禁即红——杜绝「SDK 不好写就随手裸 JDBC」的滑坡，也迫使新增 JDBC
+   * 必须同步登记 baseline。
+   */
+  @ArchTest
+  static final ArchRule jdbc_must_reside_only_in_exempted_adapter_or_outbox =
+      noClasses()
+          .that(
+              resideInAPackage("com.bone.workflow.starter..")
+                  .and(
+                      resideOutsideOfPackages(
+                          "com.bone.workflow.starter.adapter..",
+                          "com.bone.workflow.starter.outbox.."))
+                  // 自动配置类仅把 NamedParameterJdbcTemplate 作为 @Bean 参数「接线」注入，不自行执行 JDBC，
+                  // 属装配层合法角色，须豁免，否则会与「adapter/outbox 才是 JDBC 持久化落点」的纪律冲突。
+                  .and(not(simpleNameEndingWith("AutoConfiguration"))))
+          .should()
+          .dependOnClassesThat()
+          .resideInAnyPackage("org.springframework.jdbc..", "java.sql..", "javax.sql..")
+          .because(
+              "审批流 JDBC 持久化仅允许在已登记的 adapter/outbox 包内（HC-006 技术豁免）；新增 JDBC 必须同步登记 "
+                  + "sdk-persistence-bypass-baseline.json，否则门禁红");
 }

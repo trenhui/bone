@@ -274,6 +274,8 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ### AI_TRACE_
 
 | `AI_TRACE_TENANT_CONTEXT_MISSING` | 500 | 证据链落盘拒绝：租户上下文缺失或非数值（不落租户不明的合规快照，fail-closed） |
+| `AI_TRACE_NOT_FOUND` | 404 | 证据回放：快照不存在（REST 回放面） |
+| `AI_TRACE_TENANT_DENIED` | 403 | 证据回放：快照不属于当前租户——跨租户命中显式拒绝而非静默返空（「查不到」与「不许查」必须可区分） |
 
 ### AI_DOC_
 

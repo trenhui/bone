@@ -47,12 +47,12 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
  * <b>真引擎 + 真 JDBC 适配器 + 真发件箱</b>的端到端接线测试（H2 原样执行生产 SQL）。
  *
  * <p><b>为什么必须有这一层</b>：runtime 单测用内存 stub（{@code mode==null} 无条件移动，与引擎意图一致），适配器单测从 APPROVE
- * 节点推进——两侧各自全绿，却掩盖了「生产 SQL 推不动 START / CONDITION 节点」这类<b>接线缺陷</b>（P0-1：适配器把 null 折成 SINGLE ⇒
+ * 节点推进——两侧各自全绿， 却掩盖了「生产 SQL 推不动 START / CONDITION 节点」这类<b>接线缺陷</b>（P0-1：适配器把 null 折成 SINGLE ⇒
  * 非审批节点找不到 APPROVED 任务 ⇒ 0 行 ⇒ 流程启动即静默卡死）。只有让引擎经真实仓储跑完整链路，这类缺陷才会现形。
  *
  * <p>链路：{@code WorkflowEngineImpl} → {@link JdbcWorkflowDefinitionRepository} / {@link
  * JdbcWorkflowInstanceRepository} → {@link OutboxStatusPort} → {@link
- * StatusProjectionRelay}，全部生产实现，仅指派解析 / 单据数据 / 审计 / id 生成用测试替身。
+ * StatusProjectionRelay}，全部生产实现， 仅指派解析 / 单据数据 / 审计 / id 生成用测试替身。
  */
 class WorkflowEngineWiringH2Test {
 
@@ -68,13 +68,13 @@ class WorkflowEngineWiringH2Test {
 
   @BeforeEach
   void setUp() throws Exception {
+    TenantContext.setTenantId(TENANT);
     db =
         new EmbeddedDatabaseBuilder()
             .setType(EmbeddedDatabaseType.H2)
             .addScript("classpath:wf-schema-h2.sql")
             .build();
     named = new NamedParameterJdbcTemplate(db);
-    TenantContext.setTenantId(TENANT);
 
     outbox = new WorkflowStatusOutboxRepository(named);
     seedDefinition("expense", true);
@@ -100,7 +100,9 @@ class WorkflowEngineWiringH2Test {
   @AfterEach
   void tearDown() {
     TenantContext.clear();
-    db.shutdown();
+    if (db != null) {
+      db.shutdown();
+    }
   }
 
   @Test
@@ -143,25 +145,6 @@ class WorkflowEngineWiringH2Test {
   }
 
   @Test
-  @DisplayName("E2E：运营下线（enabled=0）的定义不得再被新提交选中（P1-1 回归）")
-  void disabledDefinition_isNotSelected() {
-    WorkflowEngineException ex =
-        assertThrows(
-            WorkflowEngineException.class,
-            () -> engine.start("expense_reimbursement", "r-w3", "expense_offline", "u1"));
-    assertEquals(WorkflowErrorCode.DEFINITION_NOT_FOUND, ex.code());
-
-    // 重新启用后可正常启动（证明上面失败确实源于 enabled 过滤，而非定义本身有问题）
-    named
-        .getJdbcOperations()
-        .update("UPDATE wf_process_def SET enabled = 1 WHERE def_key = 'expense_offline'");
-    WorkflowInstance instance =
-        engine.start("expense_reimbursement", "r-w3", "expense_offline", "u1");
-    assertFalse(instance.isTerminated());
-    assertEquals("big", instance.currentNodeCode());
-  }
-
-  @Test
   @DisplayName("E2E：实例被并发撤回后，迟到审批必须被拒绝而非落库（P1-7 纵深防御回归）")
   void lateApproval_afterWithdraw_isRejected() {
     WorkflowInstance instance = engine.start("expense_reimbursement", "r-w4", "expense", "u1");
@@ -180,6 +163,25 @@ class WorkflowEngineWiringH2Test {
     assertTrue(
         outbox.pollDue(10).stream().noneMatch(i -> "APPROVED".equals(i.intent())),
         "撤回的流程不得产生 APPROVED 投影意图");
+  }
+
+  @Test
+  @DisplayName("E2E：运营下线（enabled=0）的定义不得再被新提交选中（P1-1 回归）")
+  void disabledDefinition_isNotSelected() {
+    WorkflowEngineException ex =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.start("expense_reimbursement", "r-w3", "expense_offline", "u1"));
+    assertEquals(WorkflowErrorCode.DEFINITION_NOT_FOUND, ex.code());
+
+    // 重新启用后可正常启动（证明上面失败确实源于 enabled 过滤，而非定义本身有问题）
+    named
+        .getJdbcOperations()
+        .update("UPDATE wf_process_def SET enabled = 1 WHERE def_key = 'expense_offline'");
+    WorkflowInstance instance =
+        engine.start("expense_reimbursement", "r-w3", "expense_offline", "u1");
+    assertFalse(instance.isTerminated());
+    assertEquals("big", instance.currentNodeCode());
   }
 
   // ====================== 夹具 ======================

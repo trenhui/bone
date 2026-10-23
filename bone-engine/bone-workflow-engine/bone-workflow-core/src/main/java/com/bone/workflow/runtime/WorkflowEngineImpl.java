@@ -559,6 +559,142 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   }
 
   @Override
+  public List<WorkflowTask> listInstanceHistory(String instanceId) {
+    if (instanceRepository.findInstance(instanceId).isEmpty()) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + instanceId);
+    }
+    return instanceRepository.listTasks(instanceId);
+  }
+
+  @Override
+  public WorkflowInstance assignTask(
+      String instanceId, String nodeCode, String assigneeId, String operatorId, String reason) {
+    if (assigneeId == null || assigneeId.isBlank()) {
+      throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "强制指派目标办理人不能为空");
+    }
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(instanceId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + instanceId));
+    if (instance.isTerminated()) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可指派：" + instance.phase());
+    }
+    String targetNode =
+        (nodeCode == null || nodeCode.isBlank()) ? instance.currentNodeCode() : nodeCode;
+    // 无重复 (node, assignee) PENDING 时方新建：幂等，避免「强制指派」重复点出多份同人待办。
+    boolean alreadyPending =
+        instanceRepository.listPendingTasks(instanceId).stream()
+            .anyMatch(t -> t.nodeCode().equals(targetNode) && t.assigneeId().equals(assigneeId));
+    WorkflowTask created = null;
+    if (!alreadyPending) {
+      WorkflowTask task =
+          new WorkflowTask(
+              idGenerator.nextId(),
+              instance.id(),
+              targetNode,
+              assigneeId,
+              WorkflowTask.Status.PENDING,
+              null,
+              null,
+              null,
+              clock.instant(),
+              null);
+      instanceRepository.saveTask(task, operatorId);
+      created = task;
+      // 派单即通知：被强制指派的办理人也应收到待办提醒，否则仍靠刷列表才知情。
+      notify(() -> notificationPort.notifyTaskCreated(task, instance));
+    }
+    // SUSPENDED 无任务场景：注入任务后恢复为 RUNNING，闭合 §4.3「强制指派兜底」缺口。
+    // 阶段 CAS 保证并发安全（与并发决策 / 撤回互斥）。
+    WorkflowInstance result = instance;
+    if (instance.phase() == WorkflowInstance.Phase.SUSPENDED) {
+      if (!instanceRepository.compareAndSetPhase(
+          instanceId,
+          WorkflowInstance.Phase.SUSPENDED,
+          WorkflowInstance.Phase.RUNNING,
+          operatorId)) {
+        WorkflowInstance latest = instanceRepository.findInstance(instanceId).orElse(instance);
+        throw new WorkflowEngineException(
+            WorkflowErrorCode.CONFLICT, "流程状态已变更，指派失败：" + latest.phase());
+      }
+      WorkflowInstance running =
+          new WorkflowInstance(
+              instance.id(),
+              instance.entityCode(),
+              instance.recordId(),
+              instance.definitionKey(),
+              instance.definitionVersion(),
+              instance.currentNodeCode(),
+              WorkflowInstance.Phase.RUNNING,
+              instance.startedBy(),
+              instance.startedAt(),
+              clock.instant());
+      instanceRepository.saveInstance(running, operatorId);
+      auditPort.recordResumption(running, operatorId);
+      statusPort.markResumed(instance.entityCode(), instance.recordId(), instance.id());
+      result = running;
+    }
+    if (created != null) {
+      // 谁把待办强制指派给了谁、为什么，必须留痕（改派是审批审计重点对象）。
+      auditPort.recordReassignment(created, assigneeId, operatorId, "管理员强制指派：" + reason);
+    }
+    LOG.info(
+        "[workflow] 强制指派：instance={} node={} assignee={} operator={} reason={}",
+        instanceId,
+        targetNode,
+        assigneeId,
+        operatorId,
+        reason);
+    return result;
+  }
+
+  @Override
+  public WorkflowInstance terminateInstance(String instanceId, String operatorId, String reason) {
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(instanceId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + instanceId));
+    if (instance.isTerminated()) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可终止：" + instance.phase());
+    }
+    // 阶段 CAS：仅当仍停在当前阶段时才改，避免与并发决策 / 撤回互相覆盖。
+    if (!instanceRepository.compareAndSetPhase(
+        instanceId, instance.phase(), WorkflowInstance.Phase.TERMINATED, operatorId)) {
+      WorkflowInstance latest = instanceRepository.findInstance(instanceId).orElse(instance);
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.CONFLICT, "流程状态已变更，终止失败：" + latest.phase());
+    }
+    instanceRepository.cancelPendingTasks(instanceId, operatorId);
+    WorkflowInstance terminated =
+        new WorkflowInstance(
+            instance.id(),
+            instance.entityCode(),
+            instance.recordId(),
+            instance.definitionKey(),
+            instance.definitionVersion(),
+            instance.currentNodeCode(),
+            WorkflowInstance.Phase.TERMINATED,
+            instance.startedBy(),
+            instance.startedAt(),
+            clock.instant());
+    instanceRepository.saveInstance(terminated, operatorId);
+    auditPort.recordTermination(terminated, operatorId, reason == null ? "管理员强制终止" : reason);
+    statusPort.markTerminated(
+        instance.entityCode(), instance.recordId(), instance.id(), operatorId, reason);
+    LOG.info("[workflow] 流程强制终止：instance={} operator={} reason={}", instanceId, operatorId, reason);
+    return terminated;
+  }
+
+  @Override
   public Map<String, Object> loadRecordData(String entityCode, String recordId) {
     return recordPort.loadRecordData(entityCode, recordId);
   }

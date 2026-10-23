@@ -104,7 +104,8 @@ public class JdbcWorkflowInstanceRepository implements WorkflowInstanceRepositor
     // 终态即释放活动槽位：否则上一次流程结束后，同一单据永久无法重新提交（陈旧指针把门焊死）。
     if (next == WorkflowInstance.Phase.APPROVED
         || next == WorkflowInstance.Phase.REJECTED
-        || next == WorkflowInstance.Phase.WITHDRAWN) {
+        || next == WorkflowInstance.Phase.WITHDRAWN
+        || next == WorkflowInstance.Phase.TERMINATED) {
       jdbc.update(
           WfSql.DELETE_ACTIVE_INSTANCE_BY_INSTANCE, params().addValue("instanceId", instanceId));
     }
@@ -233,6 +234,14 @@ public class JdbcWorkflowInstanceRepository implements WorkflowInstanceRepositor
     return jdbc.query(
         WfSql.SELECT_TASKS_BY_ASSIGNEE,
         params().addValue("assigneeId", assigneeId).addValue("status", status.name()),
+        (rs, n) -> mapTask(rs));
+  }
+
+  @Override
+  public List<WorkflowTask> listTasks(String instanceId) {
+    return jdbc.query(
+        WfSql.SELECT_TASKS_BY_INSTANCE,
+        params().addValue("instanceId", instanceId),
         (rs, n) -> mapTask(rs));
   }
 

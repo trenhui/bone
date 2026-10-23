@@ -329,6 +329,30 @@ class JdbcWorkflowInstanceRepositoryH2Test {
   }
 
   @Test
+  @DisplayName("listTasks 返回全量任务（含已决策），listPendingTasks 只取 PENDING——轨迹查询口径分野")
+  void listTasks_returnsAllIncludingDecided() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.ALL, List.of("c1", "c2"));
+    List<WorkflowTask> tasks = repository.listTasksByNode(INSTANCE, NODE);
+    String c1 =
+        tasks.stream().filter(t -> t.assigneeId().equals("c1")).findFirst().orElseThrow().id();
+    // c1 决策通过，c2 仍待办：listTasks 应两者都在，listPendingTasks 只 c2
+    assertTrue(
+        repository.compareAndSetTaskStatus(
+            c1,
+            WorkflowTask.Status.PENDING,
+            WorkflowTask.Status.APPROVED,
+            WorkflowTask.Decision.APPROVE,
+            "同意",
+            "c1"));
+
+    List<WorkflowTask> all = repository.listTasks(INSTANCE);
+    assertEquals(2, all.size(), "listTasks 必须含已决策任务，不得只取 PENDING");
+    assertTrue(all.stream().anyMatch(t -> t.status() == WorkflowTask.Status.APPROVED));
+    assertTrue(all.stream().anyMatch(t -> t.status() == WorkflowTask.Status.PENDING));
+    assertEquals(1, repository.listPendingTasks(INSTANCE).size(), "listPendingTasks 只取 PENDING");
+  }
+
+  @Test
   @DisplayName("重复启动不双建：活动槽位被占用时第二次抢占必须失败")
   void activeSlot_preventsDuplicateInstance() {
     givenInstanceAtNode(WorkflowDefinition.ApprovalMode.SINGLE, List.of("c1"));

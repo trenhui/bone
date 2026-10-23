@@ -160,6 +160,13 @@ public interface WorkflowInstanceRepository {
   List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status);
 
   /**
+   * 取某实例的<b>全部任务</b>（含已决策 / 已取消），按创建序——即该实例的审批轨迹（详情页时间线用）。
+   *
+   * <p>与 {@link #listPendingTasks}（只取 PENDING）不同，此处取全部，用以还原「谁在何时批了什么、走了哪步」 的完整历史。
+   */
+  List<WorkflowTask> listTasks(String instanceId);
+
+  /**
    * 改派待办任务（管理员干预）：仅当任务仍为 {@code PENDING} 时才改办理人。
    *
    * <p><b>为什么必须是条件更新而不是先查后改</b>：办理人可能正在点「同意」。若先读到 PENDING、改完办理人，

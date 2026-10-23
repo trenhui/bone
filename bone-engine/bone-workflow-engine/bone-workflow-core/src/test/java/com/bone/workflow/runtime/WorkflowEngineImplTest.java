@@ -287,6 +287,13 @@ class WorkflowEngineImplTest {
         }
 
         @Override
+        public List<WorkflowTask> listTasks(String instanceId) {
+          return tasks.values().stream()
+              .filter(task -> task.instanceId().equals(instanceId))
+              .toList();
+        }
+
+        @Override
         public void cancelPendingTasks(String instanceId, String operatorId) {
           tasks.values().stream()
               .filter(
@@ -386,6 +393,16 @@ class WorkflowEngineImplTest {
         @Override
         public void markResumed(String entityCode, String recordId, String instanceId) {
           statusCalls.add("RESUMED");
+        }
+
+        @Override
+        public void markTerminated(
+            String entityCode,
+            String recordId,
+            String instanceId,
+            String operatorId,
+            String reason) {
+          statusCalls.add("TERMINATED");
         }
       };
 
@@ -871,6 +888,81 @@ class WorkflowEngineImplTest {
     WorkflowEngineException error =
         assertThrows(WorkflowEngineException.class, () -> engine.resume(instance.id(), "u1"));
     assertEquals(WorkflowErrorCode.INSTANCE_TERMINATED, error.code());
+  }
+
+  @Test
+  @DisplayName("管理员干预·强制终止：进入 TERMINATED 终态、作废待办、可对账重投影")
+  void terminateInstance_movesToTerminatedAndCancelsPending() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of("mgr1"); // 默认应能解析出审批人
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance instance = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    assertEquals(1, pendingTasks().size(), "启动后应有 1 条待办");
+
+    WorkflowInstance terminated = engine.terminateInstance(instance.id(), "admin", "错提单据");
+    assertEquals(WorkflowInstance.Phase.TERMINATED, terminated.phase());
+    assertTrue(terminated.isTerminated(), "TERMINATED 必须算终态");
+    assertTrue(pendingTasks().isEmpty(), "终止必须作废余下待办，否则留下幽灵待办");
+    assertTrue(statusCalls.contains("TERMINATED"), "终止必须回调状态端口（供业务单归档/锁定）");
+
+    // 对账：被终止实例也应出现在「终态但缺投影」的扫描里（SELECT_TERMINAL_INSTANCES_MISSING_PROJECTION 已含 TERMINATED）
+    assertFalse(engine.listInstanceHistory(instance.id()).isEmpty(), "终止后历史轨迹仍需可查");
+
+    // 对已终结实例再终止：必须拒绝，不得覆盖
+    WorkflowEngineException again =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.terminateInstance(instance.id(), "admin", "重复终止"));
+    assertEquals(WorkflowErrorCode.INSTANCE_TERMINATED, again.code());
+  }
+
+  @Test
+  @DisplayName("管理员干预·强制指派：SUSPENDED 且无任务时注入待办并恢复 RUNNING，闭合强制指派兜底缺口")
+  void assignTask_onSuspendedInstance_injectsTaskAndResumes() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of(); // 审批人解析不出 ⇒ 挂起且无任务
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance suspended = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    assertEquals(WorkflowInstance.Phase.SUSPENDED, suspended.phase());
+    assertTrue(pendingTasks().isEmpty(), "挂起时根本无任务，reassignTask 也无从改派");
+
+    // 管理员直接指定办理人兜底
+    WorkflowInstance resumed =
+        engine.assignTask(suspended.id(), null, "admin1", "admin", "主管离职，手动指派");
+    assertEquals(WorkflowInstance.Phase.RUNNING, resumed.phase(), "注入任务后应恢复为 RUNNING");
+    assertEquals(1, pendingTasks().size(), "应新建 1 条待办");
+    assertEquals("admin1", pendingTasks().get(0).assigneeId());
+    assertEquals("mgr", pendingTasks().get(0).nodeCode());
+    assertTrue(statusCalls.contains("RESUMED"), "恢复必须回调状态端口");
+    assertTrue(auditCalls.stream().anyMatch(a -> a.startsWith("REASSIGN:")), "强制指派必须留痕");
+
+    // 幂等：相同 (node, assignee) 不重复建任务
+    engine.assignTask(suspended.id(), null, "admin1", "admin", "再点一次");
+    assertEquals(1, pendingTasks().size(), "同人同节点重复指派不得产生第二份待办");
+
+    // 续跑：审批通过 → 流程走完
+    WorkflowInstance done =
+        engine.completeTask(
+            pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "admin1");
+    assertEquals(WorkflowInstance.Phase.APPROVED, done.phase());
+  }
+
+  @Test
+  @DisplayName("审批轨迹：listInstanceHistory 还原全量任务（含已决策），供详情页时间线")
+  void listInstanceHistory_returnsAllTasksIncludingDecided() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of("mgr1");
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance instance = engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    List<WorkflowTask> before = engine.listInstanceHistory(instance.id());
+    assertEquals(1, before.size());
+    assertTrue(before.stream().allMatch(t -> t.status() == WorkflowTask.Status.PENDING));
+
+    engine.completeTask(before.get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "mgr1");
+    List<WorkflowTask> after = engine.listInstanceHistory(instance.id());
+    assertEquals(1, after.size());
+    assertEquals(WorkflowTask.Status.APPROVED, after.get(0).status(), "轨迹须含已决策任务");
   }
 
   @Test

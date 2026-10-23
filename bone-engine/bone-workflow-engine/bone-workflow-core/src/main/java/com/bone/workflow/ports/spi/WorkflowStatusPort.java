@@ -55,6 +55,21 @@ public interface WorkflowStatusPort {
   void markSuspended(String entityCode, String recordId, String instanceId, String reason);
 
   /**
+   * 通知宿主：流程被管理员强制终止（实例进入 {@code TERMINATED} 终态）。
+   *
+   * <p>与撤回区分：撤回是发起人收回应办、单据可重新编辑；终止是管理员对卡死 / 错提单据的不可逆处置，单据不再可重提。
+   * 宿主据此把业务单据推进到「已终止」状态（若其状态机无对应状态，至少做归档 / 锁定处理）。
+   *
+   * @param entityCode 业务实体编码
+   * @param recordId 业务单据 id
+   * @param instanceId 流程实例 id
+   * @param operatorId 操作人（管理员）
+   * @param reason 终止原因（审计用）
+   */
+  void markTerminated(
+      String entityCode, String recordId, String instanceId, String operatorId, String reason);
+
+  /**
    * 通知宿主：挂起的流程已恢复并续跑（审批人经重新解析已就位）。
    *
    * @param entityCode 业务实体编码

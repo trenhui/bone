@@ -187,7 +187,7 @@ public final class WfSql {
   public static final String SELECT_TERMINAL_INSTANCES_MISSING_PROJECTION =
       "SELECT i.id, i.tenant_id, i.entity_code, i.record_id, i.phase FROM wf_instance i"
           + " WHERE i.deleted = 0"
-          + "   AND i.phase IN ('APPROVED', 'REJECTED', 'WITHDRAWN')"
+          + "   AND i.phase IN ('APPROVED', 'REJECTED', 'WITHDRAWN', 'TERMINATED')"
           + "   AND NOT EXISTS (SELECT 1 FROM wf_status_outbox o"
           + "       WHERE o.tenant_id = i.tenant_id AND o.instance_id = i.id"
           + "         AND o.state = 'DONE' AND o.intent = i.phase)"
@@ -250,6 +250,18 @@ public final class WfSql {
           + "   AND status = :status ORDER BY id";
 
   /**
+   * 取某实例的全部任务（含已决策 / 已取消），按创建序——即该实例的审批轨迹。
+   *
+   * <p>供 {@code listInstanceHistory} 使用：审批单据详情页要展示「谁在何时批了什么、走了哪步」。与 {@code SELECT_PENDING_TASKS}（只取
+   * PENDING）不同，此处取全部，便于还原完整时间线。
+   */
+  public static final String SELECT_TASKS_BY_INSTANCE =
+      "SELECT id, tenant_id, instance_id, node_code, assignee_id, status, decision, comment,"
+          + " due_at, created_at, decided_at"
+          + " FROM wf_task"
+          + " WHERE instance_id = :instanceId AND tenant_id = :tenantId AND deleted = 0 ORDER BY id";
+
+  /**
    * 任务状态 CAS：仅当仍是 {@code :expected} 时才改。
    *
    * <p>两个审批人同时点「同意」时，只有一方能把 PENDING 改成 APPROVED，另一方拿到 0 行——避免双写与重复推进。
@@ -301,6 +313,19 @@ public final class WfSql {
       "SELECT def_key, def_name, def_version, definition_json FROM wf_process_def"
           + " WHERE def_key = :defKey AND tenant_id = :tenantId AND status = 'PUBLISHED'"
           + "   AND enabled = 1 AND deleted = 0 ORDER BY def_version DESC LIMIT 1";
+
+  /**
+   * 取当前租户下指定流程 key 的<b>全部已发布版本</b>（按版本号升序，供建模界面与版本回溯）。
+   *
+   * <p>与 {@link #SELECT_DEF_LATEST_PUBLISHED} 的分界是「全集 vs 最新」：运行期启动只要最新一版， 建模界面要历史全貌。二者曾是同一条
+   * SQL——{@code listPublished} 复用 LATEST（{@code LIMIT 1}）会把
+   * 全版本列举静默退化成单版本，而该方法没有任何仓储级测试覆盖，属「跑通≠测到」的漏网形态；现由 {@code JdbcWorkflowDefinitionRepositoryH2Test}
+   * 双向设防（列举必须全集、启动必须最新）。
+   */
+  public static final String SELECT_DEF_ALL_PUBLISHED =
+      "SELECT def_key, def_name, def_version, definition_json FROM wf_process_def"
+          + " WHERE def_key = :defKey AND tenant_id = :tenantId AND status = 'PUBLISHED'"
+          + "   AND enabled = 1 AND deleted = 0 ORDER BY def_version";
 
   public static final String SELECT_DEF_BY_VERSION =
       "SELECT def_key, def_name, def_version, definition_json FROM wf_process_def"
