@@ -142,6 +142,22 @@ public class WorkflowEngineImpl implements WorkflowEngine {
             operatorId,
             now,
             now);
+    // 并发下的原子闸门：唯一键插入抢占「一单据一活动实例」槽位。
+    // 应用层「先查再建」在两个提交请求同时到达时会双建（两个并行实例、双份审批、互相看不见）。
+    if (!instanceRepository.claimActiveInstance(instance)) {
+      Optional<WorkflowInstance> raced =
+          instanceRepository.findInstanceByRecord(entityCode, recordId);
+      if (raced.isPresent() && !raced.get().isTerminated()) {
+        LOG.info(
+            "[workflow] 并发启动被去重，复用进行中的流程实例：entity={} record={} instance={}",
+            entityCode,
+            recordId,
+            raced.get().id());
+        return raced.get();
+      }
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.ALREADY_STARTED, "该单据已存在进行中的审批流程：" + entityCode + "/" + recordId);
+    }
     instanceRepository.saveInstance(instance);
     auditPort.recordStart(instance, operatorId);
     LOG.info(
@@ -201,7 +217,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
             : WorkflowTask.Status.REJECTED;
     boolean updated =
         instanceRepository.compareAndSetTaskStatus(
-            taskId, WorkflowTask.Status.PENDING, nextStatus, decision, comment);
+            taskId, WorkflowTask.Status.PENDING, nextStatus, decision, comment, operatorId);
     if (!updated) {
       throw new WorkflowEngineException(
           WorkflowErrorCode.CONFLICT, "审批任务已被他人处理（并发冲突），请刷新后重试：" + taskId);
@@ -241,10 +257,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     // 原子推进：判据（会签是否已齐 / 是否有人驳回）与推进在同一条原子操作里完成。
     boolean advanced =
         instanceRepository.compareAndAdvanceNode(
-            current.id(), task.nodeCode(), outs.get(0).to(), node.mode());
+            current.id(), task.nodeCode(), outs.get(0).to(), node.mode(), operatorId);
     if (advanced) {
       // 节点已完成：作废该节点余下的待办（单签/或签解析出多人时，其余人的待办不得留成幽灵待办）。
-      instanceRepository.cancelPendingTasksOfNode(current.id(), task.nodeCode());
+      instanceRepository.cancelPendingTasksOfNode(current.id(), task.nodeCode(), operatorId);
       return advanceFrom(current, definition, operatorId, outs.get(0).to());
     }
     // 未推进：可能是「会签未齐，等其他人」或「节点内有人驳回」。重新读该节点任务做区分。
@@ -277,12 +293,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可撤回：" + instance.phase());
     }
     if (!instanceRepository.compareAndSetPhase(
-        instanceId, instance.phase(), WorkflowInstance.Phase.WITHDRAWN)) {
+        instanceId, instance.phase(), WorkflowInstance.Phase.WITHDRAWN, operatorId)) {
       WorkflowInstance latest = instanceRepository.findInstance(instanceId).orElse(instance);
       throw new WorkflowEngineException(
           WorkflowErrorCode.CONFLICT, "流程状态已变更，撤回失败：" + latest.phase());
     }
-    instanceRepository.cancelPendingTasks(instanceId);
+    instanceRepository.cancelPendingTasks(instanceId, operatorId);
     WorkflowInstance withdrawn =
         new WorkflowInstance(
             instance.id(),
@@ -346,7 +362,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     // 阶段 CAS：仅当仍停在 SUSPENDED 时才恢复，避免与并发决策互相覆盖。
     boolean resumed =
         instanceRepository.compareAndSetPhase(
-            instanceId, WorkflowInstance.Phase.SUSPENDED, WorkflowInstance.Phase.RUNNING);
+            instanceId,
+            WorkflowInstance.Phase.SUSPENDED,
+            WorkflowInstance.Phase.RUNNING,
+            operatorId);
     if (!resumed) {
       WorkflowInstance latest = instanceRepository.findInstance(instanceId).orElse(instance);
       throw new WorkflowEngineException(
@@ -365,7 +384,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
               null,
               null,
               now,
-              null));
+              null),
+          operatorId);
     }
     WorkflowInstance running =
         new WorkflowInstance(
@@ -431,7 +451,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       switch (node.type()) {
         case START, CC -> {
           WorkflowDefinition.Edge edge = singleOutEdge(definition, currentNodeCode);
-          if (!moveTo(instance, currentNodeCode, edge.to(), null, edge.label())) {
+          if (!moveTo(instance, currentNodeCode, edge.to(), null, edge.label(), operatorId)) {
             return latestInstance(instance);
           }
           current = edge.to();
@@ -445,7 +465,13 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                           new WorkflowBranchEvaluator.Branch(edge.to(), edge.when(), edge.label()))
                   .toList();
           WorkflowBranchEvaluator.Selection selection = branchEvaluator.select(branches, data, ctx);
-          if (!moveTo(instance, currentNodeCode, selection.to(), null, selection.matchedLabel())) {
+          if (!moveTo(
+              instance,
+              currentNodeCode,
+              selection.to(),
+              null,
+              selection.matchedLabel(),
+              operatorId)) {
             return latestInstance(instance);
           }
           current = selection.to();
@@ -469,7 +495,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                     null,
                     null,
                     now,
-                    null));
+                    null),
+                operatorId);
           }
           LOG.info(
               "[workflow] 派单：instance={} node={} assignees={}",
@@ -481,7 +508,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
         case END -> {
           boolean terminated =
               instanceRepository.compareAndSetPhase(
-                  instance.id(), WorkflowInstance.Phase.RUNNING, WorkflowInstance.Phase.APPROVED);
+                  instance.id(),
+                  WorkflowInstance.Phase.RUNNING,
+                  WorkflowInstance.Phase.APPROVED,
+                  operatorId);
           if (!terminated) {
             return latestInstance(instance);
           }
@@ -523,9 +553,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       String fromNode,
       String toNode,
       WorkflowDefinition.ApprovalMode completion,
-      String branchLabel) {
+      String branchLabel,
+      String operatorId) {
     boolean moved =
-        instanceRepository.compareAndAdvanceNode(instance.id(), fromNode, toNode, completion);
+        instanceRepository.compareAndAdvanceNode(
+            instance.id(), fromNode, toNode, completion, operatorId);
     if (moved) {
       auditPort.recordAdvance(instance, fromNode, toNode, branchLabel);
       LOG.info("[workflow] 节点推进：instance={} {} → {}", instance.id(), fromNode, toNode);
@@ -537,7 +569,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   private void suspend(WorkflowInstance instance, WorkflowDefinition.Node node, String operatorId) {
     String reason = "审批节点 " + node.code() + " 解析不出审批人";
     instanceRepository.compareAndSetPhase(
-        instance.id(), WorkflowInstance.Phase.RUNNING, WorkflowInstance.Phase.SUSPENDED);
+        instance.id(),
+        WorkflowInstance.Phase.RUNNING,
+        WorkflowInstance.Phase.SUSPENDED,
+        operatorId);
     WorkflowInstance suspended =
         new WorkflowInstance(
             instance.id(),
@@ -579,11 +614,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       WorkflowInstance instance, String operatorId, String reason) {
     boolean terminated =
         instanceRepository.compareAndSetPhase(
-            instance.id(), instance.phase(), WorkflowInstance.Phase.REJECTED);
+            instance.id(), instance.phase(), WorkflowInstance.Phase.REJECTED, operatorId);
     if (!terminated) {
       return latestInstance(instance);
     }
-    instanceRepository.cancelPendingTasks(instance.id());
+    instanceRepository.cancelPendingTasks(instance.id(), operatorId);
     WorkflowInstance rejected =
         new WorkflowInstance(
             instance.id(),

@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,11 +49,24 @@ class WorkflowEngineImplTest {
 
   private final Map<String, WorkflowDefinition> definitions = new LinkedHashMap<>();
   private final Map<String, WorkflowInstance> instances = new LinkedHashMap<>();
+  private final Map<String, String> activeSlots = new LinkedHashMap<>();
   private final Map<String, WorkflowTask> tasks = new LinkedHashMap<>();
   private final List<String> statusCalls = new ArrayList<>();
   private final Map<String, Object> recordData = new LinkedHashMap<>();
   private final AtomicInteger idSeq = new AtomicInteger();
+  private final List<String> taskCasOperators = new ArrayList<>();
   private List<String> resolvedAssignees = List.of("mgr1");
+
+  /**
+   * 已决策状态显式集——与生产 SQL（{@code WfSql.COMPARE_AND_ADVANCE_NODE}）的字面量逐字一致。
+   *
+   * <p>刻意不用「非 PENDING」近似：那正是 v1 实现里的 fail-open 口径（v2 转办/委派状态会被当成已决策而静默推进）。
+   */
+  private static final Set<WorkflowTask.Status> DECIDED =
+      Set.of(
+          WorkflowTask.Status.APPROVED,
+          WorkflowTask.Status.REJECTED,
+          WorkflowTask.Status.CANCELLED);
 
   // ============================== 端口 stub ==============================
 
@@ -86,6 +100,23 @@ class WorkflowEngineImplTest {
         }
 
         @Override
+        public boolean claimActiveInstance(WorkflowInstance instance) {
+          // 测试 stub：模拟唯一键插入语义——已有未终结实例则抢占失败
+          Optional<WorkflowInstance> existing =
+              findInstanceByRecord(instance.entityCode(), instance.recordId());
+          if (existing.isPresent() && !existing.get().isTerminated()) {
+            return false;
+          }
+          activeSlots.put(instance.entityCode() + "|" + instance.recordId(), instance.id());
+          return true;
+        }
+
+        @Override
+        public void releaseActiveInstance(String entityCode, String recordId) {
+          activeSlots.remove(entityCode + "|" + recordId);
+        }
+
+        @Override
         public Optional<WorkflowInstance> findInstance(String instanceId) {
           return Optional.ofNullable(instances.get(instanceId));
         }
@@ -101,7 +132,7 @@ class WorkflowEngineImplTest {
         }
 
         @Override
-        public void saveTask(WorkflowTask task) {
+        public void saveTask(WorkflowTask task, String operatorId) {
           tasks.put(task.id(), task);
         }
 
@@ -134,7 +165,9 @@ class WorkflowEngineImplTest {
             WorkflowTask.Status expected,
             WorkflowTask.Status next,
             WorkflowTask.Decision decision,
-            String comment) {
+            String comment,
+            String operatorId) {
+          taskCasOperators.add(operatorId);
           WorkflowTask task = tasks.get(taskId);
           if (task == null || task.status() != expected) {
             return false;
@@ -161,7 +194,8 @@ class WorkflowEngineImplTest {
             String instanceId,
             String nodeCode,
             String nextNodeCode,
-            WorkflowDefinition.ApprovalMode mode) {
+            WorkflowDefinition.ApprovalMode mode,
+            String operatorId) {
           WorkflowInstance instance = instances.get(instanceId);
           if (instance == null || instance.isTerminated()) {
             return false;
@@ -178,10 +212,10 @@ class WorkflowEngineImplTest {
                 .anyMatch(task -> task.status() == WorkflowTask.Status.REJECTED)) {
               return false;
             }
+            // 与生产 SQL 同口径：会签 = 全部任务落在已决策显式集（不是「无 PENDING」）
             boolean complete =
                 mode == WorkflowDefinition.ApprovalMode.ALL
-                    ? nodeTasks.stream()
-                        .allMatch(task -> task.status() == WorkflowTask.Status.APPROVED)
+                    ? nodeTasks.stream().allMatch(task -> DECIDED.contains(task.status()))
                     : nodeTasks.stream()
                         .anyMatch(task -> task.status() == WorkflowTask.Status.APPROVED);
             if (!complete) {
@@ -206,7 +240,10 @@ class WorkflowEngineImplTest {
 
         @Override
         public boolean compareAndSetPhase(
-            String instanceId, WorkflowInstance.Phase expected, WorkflowInstance.Phase next) {
+            String instanceId,
+            WorkflowInstance.Phase expected,
+            WorkflowInstance.Phase next,
+            String operatorId) {
           WorkflowInstance instance = instances.get(instanceId);
           if (instance == null || instance.phase() != expected) {
             return false;
@@ -239,7 +276,7 @@ class WorkflowEngineImplTest {
         }
 
         @Override
-        public void cancelPendingTasks(String instanceId) {
+        public void cancelPendingTasks(String instanceId, String operatorId) {
           tasks.values().stream()
               .filter(
                   task ->
@@ -250,7 +287,8 @@ class WorkflowEngineImplTest {
         }
 
         @Override
-        public void cancelPendingTasksOfNode(String instanceId, String nodeCode) {
+        public void cancelPendingTasksOfNode(
+            String instanceId, String nodeCode, String operatorId) {
           tasks.values().stream()
               .filter(
                   task ->
@@ -711,6 +749,19 @@ class WorkflowEngineImplTest {
     engine.completeTask(pending.get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "c1");
     engine.completeTask(pending.get(1).id(), WorkflowTask.Decision.APPROVE, "同意", "c2");
     assertEquals(WorkflowInstance.Phase.APPROVED, latestPhase());
+  }
+
+  @Test
+  @DisplayName("审计归属：任务决策 CAS 的操作人必须是审批人本人（不得退化为租户 id / system）")
+  void decisionCas_operatorIsApprover_notTenantOrSystem() {
+    givenLinearSingleApproval();
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "mgr1");
+    assertEquals(
+        List.of("mgr1"),
+        taskCasOperators,
+        "compareAndSetTaskStatus 的 operatorId 必须是审批人本人——审计列写租户 id 或 system，" + "「谁批的」这个合规问题就永远答不出");
   }
 
   private WorkflowInstance.Phase latestPhase() {
