@@ -137,6 +137,8 @@ services:
         condition: service_healthy
       bone-metadata-server:
         condition: service_healthy
+      bone-integration:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -172,6 +174,37 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9001/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  bone-integration:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE_PATH: bone-platform/bone-integration
+        ARTIFACT_ID: bone-integration
+    container_name: bone-integration
+    ports:
+      - "8085:8085"
+    environment:
+      BONE_DB_URL: jdbc:mysql://mysql:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+      BONE_DB_USERNAME: root
+      BONE_DB_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      BONE_REDIS_HOST: redis
+      BONE_REDIS_PASSWORD: ${BONE_REDIS_PASSWORD:-}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      # 注意：integration 另依赖 RocketMQ（默认 localhost:9876），compose 暂未编排；
+      # 启用消息投递时需自行提供 ROCKETMQ_NAME_SERVER 或补充 rocketmq 服务
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8085/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3

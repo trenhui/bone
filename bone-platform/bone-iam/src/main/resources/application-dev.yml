@@ -3,21 +3,21 @@
 # 或设置环境变量 SPRING_PROFILES_ACTIVE=dev
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: root
-    password: ${BONE_DB_PASSWORD:bone_dev_pass}
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true}
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
   redis:
-    host: localhost
-    port: 6379
+    host: ${BONE_REDIS_HOST:localhost}
+    port: ${BONE_REDIS_PORT:6379}
     password: ${BONE_REDIS_PASSWORD:}
 
 bone:
   metadata:
     embedded:
       datasource:
-        url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-        username: root
-        password: ${BONE_DB_PASSWORD:bone_dev_pass}
+        url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true}
+        username: ${BONE_DB_USERNAME:root}
+        password: ${BONE_DB_PASSWORD:}
   minio:
     # 开发环境默认 MinIO 凭证，生产环境必须通过环境变量注入
     access-key: ${BONE_MINIO_ACCESS_KEY:minioadmin}

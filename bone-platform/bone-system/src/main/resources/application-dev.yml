@@ -5,10 +5,10 @@ spring:
   application:
     name: bone-system
   datasource:
-    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: ${BONE_DB_PASSWORD:bone_dev_pass}
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
 
 management:
   endpoints:

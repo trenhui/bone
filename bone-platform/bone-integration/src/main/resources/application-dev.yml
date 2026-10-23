@@ -4,12 +4,14 @@ spring:
     # allowPublicKeyRetrieval=true 不可省：MySQL 8 默认 caching_sha2_password，
     # 走 SSL=false 的连接必须靠它取回公钥，否则启动即
     # 「Public Key Retrieval is not allowed」（masterdata 的 dev 配置早已带，integration 漏了）。
-    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: root
-    password: ${BONE_DB_PASSWORD:bone_dev_pass}
+    # 现改为从 BONE_DB_URL 注入（与 prod 一致，12-factor），未注入时回退本地 localhost，
+    # 故 docker compose 经 BONE_DB_URL 指向 mysql 服务、本地手动启动仍连本机。
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true}
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
   redis:
-    host: localhost
-    port: 6379
+    host: ${BONE_REDIS_HOST:localhost}
+    port: ${BONE_REDIS_PORT:6379}
 
 bone:
   iam:

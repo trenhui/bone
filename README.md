@@ -284,8 +284,8 @@ cd bone-engine/bone-metadata-server && mvn spring-boot:run
 cd bone-frontend && npm ci && npm run dev
 ```
 
-> **后端一键启动（可选）**：仓库 `docker-compose.yml` 已编排 `mysql · redis · iam · system · masterdata · gateway · metadata-server`，可一条命令拉起除前端外的核心后端——网关上游 URI 已改写为 compose 服务名（如 `BONE_IAM_URI=http://bone-iam:8081`）。前端仍需本地 `cd bone-frontend && npm run dev`。镜像经 `docker/Dockerfile` 多阶段构建，首次启动会编译各模块，耗时较长；`BONE_DB_PASSWORD` 须在 `docker compose up` 前导出（见上方步骤 0）。
-> **集成服务（bone-integration）未纳入 compose**：其 dev/默认 profile 的数据库地址为硬编码 `localhost:3306`，仅 `prod` profile 才外部化 `BONE_DB_URL`，故按上方「手动步骤」运行，或显式 `SPRING_PROFILES_ACTIVE=prod`。该不一致建议后续在代码侧将 dev profile 也改为读取 `BONE_DB_URL`。
+> **后端一键启动（可选）**：仓库 `docker-compose.yml` 已编排 `mysql · redis · iam · system · masterdata · gateway · metadata-server · integration`，镜像经 `docker/Dockerfile` 多阶段构建，首次启动会编译各模块，耗时较长；`BONE_DB_PASSWORD` 须在 `docker compose up` 前导出（见上方步骤 0）。前端仍需本地 `cd bone-frontend && npm run dev`。
+> **已知缺口（L3，待架构师确认）**：`iam · system · masterdata · integration` 均通过 `spring.config.import` 拉取 Nacos 配置（默认 `127.0.0.1:8848`），但 compose 尚未编排 Nacos 服务、也未设 `BONE_NACOS_ADDR`，故这 4 个服务在容器内启动即失败；当前能干净拉起的是 `mysql · redis · gateway · metadata-server`（二者不依赖 Nacos）。要打通全栈，二选一：① 在 compose 中补充 `nacos` 服务并设 `BONE_NACOS_ADDR`；② 将各模块 **dev** profile 的 nacos import 改为 `optional:nacos:...`（仅影响 dev，prod 仍强制）。integration 另依赖 RocketMQ（默认 `localhost:9876`），启用消息投递时需自行提供 `ROCKETMQ_NAME_SERVER` 或补充 `rocketmq` 服务。
 
 ### 默认入口（启动对应服务后）
 
