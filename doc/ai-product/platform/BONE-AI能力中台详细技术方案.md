@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 详细技术方案（详设）
 
-> **版本**：v1.6　**日期**：2026-10-23　**归口**：平台架构组
+> **版本**：v1.7　**日期**：2026-10-23　**归口**：平台架构组
+> **v1.7 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：① §2.1 密钥行补 **`ApiKeyProvider` 按调用解析**（此前端口已就位却零消费方——客户端构造期固化 `String apiKey`，密钥轮换语义落空，同 `LlmMetrics` 零消费方反模式；现补默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 装配，客户端每次请求现取，接入方以 `@Bean` 覆盖为 bone-security Virtual Key 实现即生效，热路径零改动）；② §6.1 密钥托管行状态更新——网关侧 seam 已接通（✅），剩余 L3 收敛为 bone-security Virtual Key 能力本体实现；③ §2.1 默认开关表密钥行同步；④ 验证证据：gateway 108 测试全绿（含 ArchUnit 11 条，新增密钥轮换 / 空值 / 热更新 5 例）。
 > **v1.6 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：① §2.6 检索链补**文档级 ACL seam**（`RagAclPort` 契约 + 默认 `NoDocAcl` 兜底 + 显式作用域无 ACL 归属 403 fail-closed，L3 前接入方适配为硬依赖）、**MMR 多样性选取**（`MmrSelector` 选取式，λ 默认 0 = 关闭、开启时精排 3 倍扩样，λ=0 约定为关闭而非纯多样性）、**降级可观测**（`RagEventSink` 端口 + 响应 `degradations` 痕迹码 + 默认 WARN 事件，trace 适配留 L3）；② §3.1 错误码表补 `AI_RAG_DOC_FORBIDDEN`（403），目标态语义注同步；③ §4 阈值表补 #23 MMR λ；④ §6.4 补检索权限隔离 / 降级可观测两行状态；⑤ §2.6 backlog 收敛——查询改写记**决策：暂不落地零消费方 machinery**（无 producer 先建合并机制即死代码，正是 P0 修掉的反模式；批二按评测回流启动），仅剩 trace/告警接线与 ingest ACL 两项；⑥ 验证证据：rag 43 测试全绿（RagServiceTest 13 例含 ACL/MMR/降级痕迹新场景 + ArchUnit 12 条），app 51 测试全绿（RagControllerTest 响应结构与痕迹透传断言）。
 > **v1.5 变更（RAG 诊断后修订，承接《RAG方案诊断与优化-2026-10-23》）**：① **§2.6 检索链按代码真序重写**——补容量护栏（`max-scan` fail-closed）、引用强制前置（打分前剔除无出处切片）、双路降级口径（嵌入故障 ⇒ BM25 单路 / rerank 故障 ⇒ RRF 粗序，均 WARN，严禁切云端）、`min-score` 过滤；② §2.6 实现形态订正——`EmbeddingPort`/`RerankPort` 由「恒默认」改为**按 `base-url` 条件装配**（`RagInferenceProperties` 经 `@EnableConfigurationProperties` 注册，配置面自此生效），修复 rerank/HTTP 客户端零接线与配置死代码；③ §2.6 增量幂等落地——`doc_version` 批键判定（同版本同切片数跳过 / 异版本残缺软删重建）；④ §3.1 错误码表补 `AI_RAG_SCOPE_OVER_LIMIT`（422），目标态语义注同步；⑤ §4 阈值表补 #20 容量护栏 / #21 分数阈值 / #22 topK，rerank 窗口行注明 NoOp 默认；⑥ §6.4 补检索容量护栏行；⑦ §2.6 记 P1 backlog（文档级 ACL / 查询改写 / MMR / 降级事件 trace 化）。
 > **v1.4 变更（生产硬依赖代码落地，承接诊断报告 P2 项）**：① §2.1 默认开关表补**密钥启动 fail-fast**（`api-key` 未解析 `${}` 占位符即启动失败）与**配额 Redis 分布式版**（`RedisTenantQuotaGuard`，Redisson 固定窗口 + 故障 fail-open）；② §6 生产就绪清单回写代码落地状态——探针分组（liveness/readiness）已配、Redis 配额不再是多副本硬依赖、密钥 fail-fast 已具备；③ 附录 A：trace 回放 / rules 管理 REST 由「目标态」改判**已落地**（`bone-ai-app` 的 `TraceController` / `RuleController`，租户隔离 + `ApiResponse` 信封 + 全局 BizException 翻译）；④ 验证证据：gateway 103 测试全绿（含 ArchUnit 7 条），app 控制器 13 测试全绿。
@@ -74,7 +75,8 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 | 证据链（调用留证 + 拒返断言） | **强制开** | 合规底线，不提供关闭开关 |
 | 出口 PII 脱敏 | **默认开** | `bone.ai.gateway.pii-redaction-enabled` |
 | 租户配额 | **默认开** | 进程内固定窗口（默认档见 §4 #10）；宿主存在 `RedissonClient` bean 时自动切 Redis 分布式固定窗口（`quota-redis-enabled=true` 可关），Redis 故障 fail-open + WARN |
-| 密钥启动校验 | **强制开** | `api-key` 含未解析 `${}` 占位符即启动失败（防模板配置流入生产）；https 远端空 key WARN |
+| 密钥启动校验 | **强制开** | `api-key` 含未解析 `${}` 占位符即启动失败（防模板配置流入生产）；https 远端空 key WARN（Virtual Key 部署下配置态空 key 属预期噪声，见 §2.1 密钥段） |
+| 密钥按调用解析 | **强制开** | `ApiKeyProvider` 端口每次请求现取（默认 `ConfigApiKeyProvider` 读配置；`@Bean` 覆盖即切 Virtual Key / 轮换密钥，换 key 不重启） |
 | 场景档位路由 | 配置驱动 | 无配置 = 按请求模型直通（`PassthroughModelRouter`） |
 | 结构化输出校验 | `jsonResponse=true` 时开 | JSON 合法性校验；Schema 强校验为目标态 |
 | 提示注入检测 | 默认关 | 启发式误伤风险；开启走 `HeuristicInjectionGuard` |
@@ -82,7 +84,7 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 | 精确缓存 | 默认关 | 租户入键；仅 `temperature=0` 参与 |
 | 级联升档 | 档位表配置 | `CascadeLlmClient` 包在调用链外，按需装配 |
 
-**配置模型（`LlmGatewayProperties`，Nacos/ConfigMap）**：档位路由表、租户配额（token/日、调用次数/日、超限降档→纯确定性路径）、红线开关、脱敏规则、超时/重试、灰度开关（能力级一键降级）。**密钥**：出库走 bone-security（Virtual Key 语义），配置不含明文 key。
+**配置模型（`LlmGatewayProperties`，Nacos/ConfigMap）**：档位路由表、租户配额（token/日、调用次数/日、超限降档→纯确定性路径）、红线开关、脱敏规则、超时/重试、灰度开关（能力级一键降级）。**密钥**：出库走 bone-security（Virtual Key 语义），配置不含明文 key。密钥解析经 `ApiKeyProvider` 端口**按调用**完成（2026-10-23 接线：此前端口零消费方、客户端构造期固化 key，轮换语义落空）——默认 `ConfigApiKeyProvider` 从配置现取（Nacos 热更新换 key 不重启），合规形态以 `@Bean ApiKeyProvider` 覆盖为 bone-security Virtual Key 实现即生效（短时限 key 过期刷新、provider 侧轮换，客户端与热路径零改动）；返回 null/空 = 不带 Authorization 头（本地无鉴权 provider）。
 
 **观测**：`LlmMetrics` 端口已就位（Noop 默认，成本 / 延迟 / 错误率 / 短路 / 配额超限发射点）；`gen_ai.*` 语义约定映射（表见 §3.2，映射表版本化、不硬编码常量）**待 Micrometer 依赖落地后接入（L3）**；提示词/响应内容**默认不采集**。
 
@@ -483,7 +485,7 @@ CREATE TABLE eval_run (
 | 项 | 要求 | 状态 |
 |---|---|---|
 | 配置外化 | `bone.ai.*` 全量参数（provider `base-url`/档位路由表/红线/配额/脱敏规则/缓存与注入开关）经 Nacos / ConfigMap 注入，不入镜像、不入代码 | ⏳ 随客户环境落地（app 已读 `application.yml` 骨架） |
-| 密钥托管 | api-key 走 bone-security Virtual Key 语义，配置与日志零明文（当前为直接配置项，上生产前必须替换）；**启动 fail-fast 已具备**（`LlmGatewayProperties.validateProviderSecrets`：未解析 `${}` 占位符直接启动失败；https 远端空 key WARN——见 §2.1） | ⏳ **硬依赖**（Virtual Key 接入） |
+| 密钥托管 | api-key 走 bone-security Virtual Key 语义，配置与日志零明文（当前为直接配置项，上生产前必须替换）；**网关侧 seam 已接通**（2026-10-23：`ApiKeyProvider` 按调用解析 + 默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 覆盖点，客户端每次请求现取——换 key 不重启，轮换 / 短时限 Virtual Key 语义自此成立）；**启动 fail-fast 已具备**（`LlmGatewayProperties.validateProviderSecrets`：未解析 `${}` 占位符直接启动失败；https 远端空 key WARN——见 §2.1） | ✅ seam 已接通，**⏳ L3 剩余 bone-security Virtual Key 能力本体**（密钥托管存储 + 出库接口 + `@Bean ApiKeyProvider` 适配实现；此前「零消费方死缝」已修，接入方覆盖即生效、网关零改动） |
 | 数据库 | 8 张表已入 `bone-init.sql`（HC-008 四必备列 + 软删 + Snowflake 主键）；HikariCP 连接池按 QPS 规划 | ✅ |
 | app 宿主部署 | K8s Deployment + HPA + Actuator liveness/readiness 分组探针 + 资源限额；与产品进程内嵌库的边界见总案 §3.1/§4.7 | ⏳（`spring-boot-starter-actuator` + **探针分组配置已落地** ✅——`application.yml` 已配 liveness/readiness 分组；Deployment/HPA/资源清单待补） |
 | sidecar（批二） | Docling 独立 Deployment、CPU 限额、契约版本化（§2.5） | ⏳ |
@@ -530,7 +532,7 @@ CREATE TABLE eval_run (
 
 ### 6.6 上线判据（Definition of Done——全绿方可切生产流量）
 
-1. 六域清单无未清**硬依赖**：密钥托管（Virtual Key 接入；启动 fail-fast 已具备）、健康探针、告警规则、故障演练记录、威胁模型决策（Redis 分布式配额已代码落地，多副本部署即时生效，不再列为硬依赖）；
+1. 六域清单无未清**硬依赖**：密钥托管（网关侧 seam 已接通，剩余 bone-security Virtual Key 能力本体 + `@Bean` 适配；启动 fail-fast 已具备）、健康探针、告警规则、故障演练记录、威胁模型决策（Redis 分布式配额已代码落地，多副本部署即时生效，不再列为硬依赖）；
 2. 负向探针全绿：红线短路不发事件、规则命中不调 LLM、越权检索拒绝、无证据拒返、注入/内容安全策略生效（若开启）；
 3. 端到端演练：解析 → 规则 → LLM → `DecisionGate` → HITL → 回放，在**生产配置**（真实 provider + 密钥托管 + 生产库）跑通一轮；
 4. 对应批次出口判据（总案 §6）全过；

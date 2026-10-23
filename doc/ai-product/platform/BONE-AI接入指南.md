@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 产品接入指南
 
-> **版本**：v1.4　**日期**：2026-10-23　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》
+> **版本**：v1.5　**日期**：2026-10-23　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》
+> **v1.5 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：§1 可用能力表 gateway 行补「密钥按调用解析（`ApiKeyProvider`，默认配置实现 + `@Bean` 覆盖切 Virtual Key，换 key 不重启）」；§5 红线补密钥按调用解析口径 + Virtual Key 部署下空 key WARN 的预期性说明。网关侧 seam 已接通，剩余 L3 = bone-security Virtual Key 能力本体实现（详设 §6.1）。
 > **v1.4 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行补文档级 ACL seam / MMR（默认关）/ 降级痕迹；§6 RAG 配置速查补 `bone.ai.rag.mmr-lambda`（λ 约定防误配）、降级痕迹响应结构（`{results, degradations}`）、文档级 ACL 接入方接线说明（`RagAclPort` Bean 覆盖 + 403 `AI_RAG_DOC_FORBIDDEN`，L3 前必须接入）、backlog 收敛为查询改写 / trace 接线 / ingest ACL 三项（查询改写记决策：批二启动）。
 > **v1.3 变更（RAG 接线修复，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行按代码真序重写（容量护栏 / 引用强制前置 / 双路降级 / rerank 条件装配 / `doc_version` 幂等）；§2.4 建表说明补 `doc_version` 列语义；§3 REST 面补 rag 请求字段（`min_score`/`max_scan`/`doc_version`）；新增 §6 RAG 配置速查（`bone.ai.rag.*` 条件装配与降级口径）。
 > **v1.2 变更（生产硬依赖代码落地，承接诊断报告 P2 项）**：§1 可用能力表补 trace 回放 REST / rules 管理 REST（`bone-ai-app` 的 `TraceController` / `RuleController`，租户隔离）+ Redis 分布式配额自动装配说明；§0 补 `bone-ai-app` 已含 Actuator 探针分组；§5 红线口径补密钥 fail-fast。
@@ -19,7 +20,7 @@ bone-ai 各模块是**进程内 starter（库形态，零额外跳）**，**主�
 
 | 模块 | 提供 | 接入要点 |
 |---|---|---|
-| `bone-ai-gateway` | `LlmClient` 门面 + 成本红线 + OpenAI 兼容 / Mock 双实现 + `LlmCallRecorded` 事件发布 | 自动配置；默认 Mock，配 `base-url` 切真实 provider；**默认开**：PII 脱敏、租户配额、密钥 fail-fast（`api-key` 含未解析 `${}` 即启动失败）；**默认关**：精确缓存、提示注入、输出内容安全（默认开关总表见详设 §2.1）。**多副本部署**：宿主引入 Redisson（`bone-metadata-sdk` 同款）即自动切 Redis 分布式配额，`bone.ai.gateway.quota-redis-enabled=false` 可关 |
+| `bone-ai-gateway` | `LlmClient` 门面 + 成本红线 + OpenAI 兼容 / Mock 双实现 + `LlmCallRecorded` 事件发布 | 自动配置；默认 Mock，配 `base-url` 切真实 provider；**默认开**：PII 脱敏、租户配额、密钥 fail-fast（`api-key` 含未解析 `${}` 即启动失败）、密钥按调用解析（`ApiKeyProvider` 端口每次请求现取，`@Bean` 覆盖即切 Virtual Key / 轮换密钥，换 key 不重启）；**默认关**：精确缓存、提示注入、输出内容安全（默认开关总表见详设 §2.1）。**多副本部署**：宿主引入 Redisson（`bone-metadata-sdk` 同款）即自动切 Redis 分布式配额，`bone.ai.gateway.quota-redis-enabled=false` 可关 |
 | `bone-ai-rules` | 规则资产治理（CRUD / 版本 / 灰度 / 命中标记）+ QLExpress 唯一 DSL | `RuleAssetRepository`（SDK 动态代理，无需手写实现）；`bone-ai-app` REST：`/api/ai/v1/rules/...`（CRUD / 发布 / 回滚 / 灰度 / hitBlock / 废弃 / 试算求值） |
 | `bone-ai-orchestration` | 编排执行器：规则预检 → 命中短路｜LLM → `DecisionGate` 确定性闸门 + HITL 五态 / 处置链 / 超时升级 | `OrchestrationApplicationService`；HITL REST 由 `bone-ai-app` 暴露 |
 | `bone-ai-trace` | 证据三元组（输入哈希 + IR + 引擎版本）落库 + 回放 + 计量事件 | `EvidenceTraceListener` 订阅 `LlmCallRecorded`；回放：进程内 `EvidenceQueryApplicationService.replayByTraceId`，或 `bone-ai-app` REST `GET /api/ai/v1/trace/{traceId}`（租户隔离，越权 403） |
@@ -132,7 +133,8 @@ rag 指标达标与 pgvector 终局实测、document 完整管线（Docling side
 - AI 输出落业务表前必须有 `Confirmed` 溯源（`decided_by` / `evidence_ref`）——**目标态口径**：`AiSuggestion`/`Confirmed` 类型批二补建前，由 `DecisionGate`（置信度 / 金额 / AI 可用性合取）+ HITL 处置链留痕等价保证（详设 §2.3）。
 - 证据链无旁路；模型 HTTP / key 只出现在 gateway。
 - 精确缓存开启时键必须带租户维度（防跨租户串味）；缓存默认关。
-- **密钥不得留未解析占位符**：`bone.ai.gateway.api-key` 含 `${...}` 即启动失败（fail-fast，防模板配置流入生产）；https 远端 provider 空 key 会 WARN——接 Virtual Key 前先过本地校验。
+- **密钥不得留未解析占位符**：`bone.ai.gateway.api-key` 含 `${...}` 即启动失败（fail-fast，防模板配置流入生产）；https 远端 provider 空 key 会 WARN（接 Virtual Key 后配置态空 key 属预期，可忽略该 WARN）。
+- **密钥按调用解析**：provider key 经 `ApiKeyProvider` 端口每次请求现取（默认读配置；以 `@Bean ApiKeyProvider` 覆盖即切 Virtual Key / 托管密钥——支持轮换与短时限 key，换 key 不重启，客户端零改动）；模型 HTTP / key 只出现在 gateway，业务侧不接触。
 - **多副本部署配额**：宿主引入 Redisson 即自动切 Redis 分布式配额（`quota-redis-enabled` 默认 true）；Redis 故障 fail-open + WARN（配额是成本防线不是可用性防线）。
 - **上线前**过《详设》§6 生产就绪清单（部署 / 观测 / 安全 / 容量 / 灰度 / 演练六域 + Go-Live 判据）。
 
