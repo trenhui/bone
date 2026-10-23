@@ -284,6 +284,9 @@ cd bone-engine/bone-metadata-server && mvn spring-boot:run
 cd bone-frontend && npm ci && npm run dev
 ```
 
+> **后端一键启动（可选）**：仓库 `docker-compose.yml` 已编排 `mysql · redis · iam · system · masterdata · gateway · metadata-server`，可一条命令拉起除前端外的核心后端——网关上游 URI 已改写为 compose 服务名（如 `BONE_IAM_URI=http://bone-iam:8081`）。前端仍需本地 `cd bone-frontend && npm run dev`。镜像经 `docker/Dockerfile` 多阶段构建，首次启动会编译各模块，耗时较长；`BONE_DB_PASSWORD` 须在 `docker compose up` 前导出（见上方步骤 0）。
+> **集成服务（bone-integration）未纳入 compose**：其 dev/默认 profile 的数据库地址为硬编码 `localhost:3306`，仅 `prod` profile 才外部化 `BONE_DB_URL`，故按上方「手动步骤」运行，或显式 `SPRING_PROFILES_ACTIVE=prod`。该不一致建议后续在代码侧将 dev profile 也改为读取 `BONE_DB_URL`。
+
 ### 默认入口（启动对应服务后）
 
 | 入口 | 地址 |

@@ -111,6 +111,72 @@ services:
       retries: 3
       start_period: 60s
 
+  bone-gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE_PATH: bone-platform/bone-gateway
+        ARTIFACT_ID: bone-gateway
+    container_name: bone-gateway
+    ports:
+      - "8888:8888"
+    environment:
+      BONE_GATEWAY_PORT: 8888
+      BONE_REDIS_HOST: redis
+      BONE_REDIS_PASSWORD: ${BONE_REDIS_PASSWORD:-}
+      # 网关上游改写为 compose 服务名（容器网络内可达），覆盖默认 localhost
+      BONE_IAM_URI: http://bone-iam:8081
+      BONE_SYSTEM_URI: http://bone-system:8083
+      BONE_METADATA_SERVER_URI: http://bone-metadata-server:9001
+      BONE_INTEGRATION_URI: http://bone-integration:8085
+    depends_on:
+      bone-iam:
+        condition: service_healthy
+      bone-system:
+        condition: service_healthy
+      bone-metadata-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  bone-metadata-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE_PATH: bone-engine/bone-metadata-server
+        ARTIFACT_ID: bone-metadata-server
+    container_name: bone-metadata-server
+    ports:
+      - "9001:9001"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: bone
+      MYSQL_USERNAME: root
+      BONE_DB_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      BONE_REDIS_HOST: redis
+      BONE_REDIS_PASSWORD: ${BONE_REDIS_PASSWORD:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9001/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
 volumes:
   mysql_data:
   redis_data:
