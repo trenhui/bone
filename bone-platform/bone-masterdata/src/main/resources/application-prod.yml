@@ -1,6 +1,10 @@
 spring:
   application:
     name: bone-masterdata
+  config:
+    # prod 强制拉取共享配置：Nacos 不可达则启动失败（fail-loud），与默认 profile 的 optional 不同。
+    import:
+      - nacos:bone-common.yaml?group=BONE&refreshEnabled=true
   datasource:
     url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=true&autoReconnect=true&characterEncoding=utf8}
     username: ${BONE_DB_USERNAME:root}

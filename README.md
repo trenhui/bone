@@ -285,7 +285,7 @@ cd bone-frontend && npm ci && npm run dev
 ```
 
 > **后端一键启动（可选）**：仓库 `docker-compose.yml` 已编排 `mysql · redis · iam · system · masterdata · gateway · metadata-server · integration`，镜像经 `docker/Dockerfile` 多阶段构建，首次启动会编译各模块，耗时较长；`BONE_DB_PASSWORD` 须在 `docker compose up` 前导出（见上方步骤 0）。前端仍需本地 `cd bone-frontend && npm run dev`。
-> **已知缺口（L3，待架构师确认）**：`iam · system · masterdata · integration` 均通过 `spring.config.import` 拉取 Nacos 配置（默认 `127.0.0.1:8848`），但 compose 尚未编排 Nacos 服务、也未设 `BONE_NACOS_ADDR`，故这 4 个服务在容器内启动即失败；当前能干净拉起的是 `mysql · redis · gateway · metadata-server`（二者不依赖 Nacos）。要打通全栈，二选一：① 在 compose 中补充 `nacos` 服务并设 `BONE_NACOS_ADDR`；② 将各模块 **dev** profile 的 nacos import 改为 `optional:nacos:...`（仅影响 dev，prod 仍强制）。integration 另依赖 RocketMQ（默认 `localhost:9876`），启用消息投递时需自行提供 `ROCKETMQ_NAME_SERVER` 或补充 `rocketmq` 服务。
+> **Nacos 已声明为可选依赖**：`iam · system · masterdata · integration · file` 的默认 profile 已将 `spring.config.import` 改为 `optional:nacos:...`（与 README「Nacos 不作为所有场景默认依赖」一致），因此 compose 与本地开发在**无 Nacos** 时也能以各模块 yml 默认值正常启动；仅 **prod** profile 仍强制拉取共享配置（Nacos 不可达则 fail-loud）。若需启用 Nacos 共享配置，本地可另起 Nacos 并设 `BONE_NACOS_ADDR`。<br>**RocketMQ（仅 integration）仍为外部依赖**：默认 `localhost:9876`，连接为懒加载（仅投递消息时触发），故服务可正常启动；启用消息投递时需自行提供 `ROCKETMQ_NAME_SERVER` 或在 compose 中补充 `rocketmq` 服务。
 
 ### 默认入口（启动对应服务后）
 

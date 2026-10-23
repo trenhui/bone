@@ -15,8 +15,9 @@ spring:
         group: BONE
         file-extension: yaml
   config:
+    # optional: 与 README「Nacos 不作为所有场景默认依赖」一致——无 Nacos 时以本地 yml 默认值启动。
     import:
-      - nacos:bone-common.yaml?group=BONE&refreshEnabled=true
+      - optional:nacos:bone-common.yaml?group=BONE&refreshEnabled=true
   datasource:
     url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useSSL=false&autoReconnect=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${BONE_DB_USERNAME:root}
