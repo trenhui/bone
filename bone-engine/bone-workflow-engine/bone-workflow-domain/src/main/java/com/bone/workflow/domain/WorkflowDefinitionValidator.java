@@ -106,6 +106,15 @@ public final class WorkflowDefinitionValidator {
       }
       if (node.type() == WorkflowDefinition.NodeType.APPROVE) {
         lintApprovalNode(node, definition.assignments().get(node.code()), violations);
+        lintSingleOutEdge(node, outs, violations, "WF-014", "审批节点");
+      }
+      if (node.type() == WorkflowDefinition.NodeType.START) {
+        lintSingleOutEdge(node, outs, violations, "WF-015", "发起节点");
+      }
+      if (node.type() == WorkflowDefinition.NodeType.CC) {
+        violations.add(
+            new Violation(
+                "WF-016", "抄送节点 " + node.code() + " v1 暂不支持（当前为静默穿透、配了不生效；v2 落地为抄送任务 + 通知）"));
       }
     }
 
@@ -187,6 +196,38 @@ public final class WorkflowDefinitionValidator {
                     + WorkflowDefinition.SUPPORTED_STRATEGIES
                     + "）"));
       }
+    }
+  }
+
+  /**
+   * 单出口节点（审批 / 发起）：必须恰有 1 条出边，且该边不得带条件。
+   *
+   * <p><b>为什么发布期就要拦</b>：运行期把这类节点的出边当<b>无条件单边</b>消费（{@code WorkflowEngineImpl.completeTask} 要求审批节点恰有
+   * 1 条出边，否则 {@code DEFINITION_MALFORMED}；{@code singleOutEdge} 直接取唯一出边）。把条件写在审批/发起节点上，发布期不拦 ⇒
+   * 运行期要么炸、要么<b>静默忽略条件走错分支</b>—— 后者无任何报错，是最危险的事故形态。条件分支只能经 {@code CONDITION} 节点表达。
+   */
+  private void lintSingleOutEdge(
+      WorkflowDefinition.Node node,
+      List<WorkflowDefinition.Edge> outs,
+      List<Violation> violations,
+      String code,
+      String nodeKind) {
+    if (outs.size() > 1) {
+      violations.add(
+          new Violation(
+              code,
+              nodeKind
+                  + " "
+                  + node.code()
+                  + " 应恰有 1 条出边，实有 "
+                  + outs.size()
+                  + " 条（条件分支请使用 CONDITION 节点）"));
+      return;
+    }
+    if (outs.size() == 1 && !outs.get(0).isDefault()) {
+      violations.add(
+          new Violation(
+              code, nodeKind + " " + node.code() + " 的唯一出边不应带条件（运行期会忽略该条件；条件分支请使用 CONDITION 节点）"));
     }
   }
 

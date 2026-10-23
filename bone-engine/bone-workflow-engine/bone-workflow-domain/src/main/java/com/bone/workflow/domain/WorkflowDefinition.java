@@ -9,8 +9,8 @@ import java.util.Map;
  *
  * <p>纯数据载体，不含任何 IO / Spring 依赖，便于发布期校验与运行期求值各自单测。
  *
- * <p><b>与平台元数据的关系</b>：流程定义本身也是平台实体（{@code wf_process_def} / {@code wf_node_def} / {@code
- * wf_transition_def} / {@code wf_assignment_rule}），本类只是它的<b>内存投影</b>——把一次运行所需的全部定义
+ * <p><b>与平台元数据的关系</b>：流程定义本身也是平台实体（{@code wf_process_def}，整图快照存 {@code
+ * definition_json}；节点/边/指派规则不拆物理表——拆表只增加 join 与版本一致性负担，见平台桥接设计 §4），本类只是它的<b>内存投影</b>——把一次运行所需的全部定义
  * 聚成一个不可变对象，避免运行期反复查库、也避免运行途中定义被改动导致同一单据前后走不同分支。
  */
 public record WorkflowDefinition(

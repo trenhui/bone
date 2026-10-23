@@ -269,4 +269,88 @@ class WorkflowDefinitionValidatorTest {
             Map.of("mgr", List.of(rule("LINE_MANAGER"))));
     assertTrue(hasCode(validator.validate(definition), "WF-012"));
   }
+
+  @Test
+  @DisplayName("审批节点多条出边（把条件写在审批节点上）→ WF-014")
+  void approveNodeWithMultipleOutEdges_isRejected() {
+    // 历史文档示例的错误形状：edge("mgr","finance","amount > 5000") + edge("mgr","end")
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approve("mgr"), approve("finance"), end()),
+            List.of(
+                edge("start", "mgr", null),
+                edge(
+                    "mgr",
+                    "finance",
+                    "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}"),
+                edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER")), "finance", List.of(rule("ROLE"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-014"));
+  }
+
+  @Test
+  @DisplayName("审批节点唯一出边带条件 → WF-014（运行期会静默忽略条件，必须发布期拦下）")
+  void approveNodeWithConditionalEdge_isRejected() {
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approve("mgr"), end()),
+            List.of(
+                edge("start", "mgr", null),
+                edge(
+                    "mgr", "end", "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}")),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-014"));
+  }
+
+  @Test
+  @DisplayName("发起节点多条出边 / 出边带条件 → WF-015")
+  void startNodeWithMultipleOrConditionalOutEdges_isRejected() {
+    WorkflowDefinition multiple =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approve("mgr"), end()),
+            List.of(edge("start", "mgr", null), edge("start", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    assertTrue(hasCode(validator.validate(multiple), "WF-015"));
+
+    WorkflowDefinition conditional =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approve("mgr"), end()),
+            List.of(
+                edge(
+                    "start",
+                    "mgr",
+                    "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}"),
+                edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    assertTrue(hasCode(validator.validate(conditional), "WF-015"));
+  }
+
+  @Test
+  @DisplayName("抄送节点（CC）v1 暂不支持 → WF-016（防「配了不生效」）")
+  void ccNode_isRejectedInV1() {
+    WorkflowDefinition.Node cc =
+        new WorkflowDefinition.Node("cc", WorkflowDefinition.NodeType.CC, null, "抄送");
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), cc, approve("mgr"), end()),
+            List.of(edge("start", "cc", null), edge("cc", "mgr", null), edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-016"));
+  }
+
+  @Test
+  @DisplayName("合法线性流程不受新规则影响（防过度拦截）")
+  void validDefinition_stillPassesWithNewRules() {
+    assertTrue(validator.validate(linear()).isEmpty());
+  }
 }

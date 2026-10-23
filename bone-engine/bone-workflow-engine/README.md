@@ -86,7 +86,7 @@
 
 | 端口 | 职责 | 建议实现 |
 |---|---|---|
-| `WorkflowDefinitionRepository` | 取流程定义快照 | 平台实体 `wf_process_def` / `wf_node_def` / `wf_transition_def` / `wf_assignment_rule` |
+| `WorkflowDefinitionRepository` | 取流程定义快照 | 平台实体 `wf_process_def`（`definition_json` 存整图快照；节点/边/指派规则**不拆物理表**，见平台桥接设计 §4 取舍） |
 | `WorkflowInstanceRepository` | 实例与任务持久化 | 平台实体 `wf_instance` / `wf_task`（免费获得多租户、RLS、审计、乐观锁） |
 | `ApproverResolver` | 指派策略 → 账户 id | 组织目录 / IAM |
 | `WorkflowRecordPort` | 读业务单据数据（条件求值用） | 平台运行时读接口 |
@@ -122,7 +122,7 @@
 （单签/会签/或签/条件分支/驳回/撤回）、指派冻结、任务 CAS、**节点级原子推进**、重复发起幂等、终态不可回写、
 无人可办挂起、错误分类、结构化日志、时钟注入（`Clock`，可测且为 SLA 铺路）。
 
-未实现（后续阶段）：SLA 超时提醒与自动转交、委派、抄送节点落地、退回指定节点、子流程、流程版本回溯、
+未实现（后续阶段）：SLA 超时提醒与自动转交、委派、转办/加签、抄送节点（v1 发布期拒绝：静默穿透即「配了不生效」，v2 落地为抄送任务 + 通知）、退回指定节点、子流程、流程版本回溯、
 可视化流程设计器、`wf_*` 实体与平台 bridge（需 L3 DDL 审批）。
 
 > 挂起实例的恢复入口（`resume`）已实现：组织架构修好后重新解析审批人并续跑，仍解析不出则保持挂起并明确报错，

@@ -126,4 +126,25 @@ class StructuredConditionEvaluatorTest {
     JsonNode cond = json("{\"fieldCode\":\"a\",\"operator\":\"hack\",\"value\":1}");
     assertFalse(evaluator.evaluate(cond, map("a", 1), ConditionContext.empty()));
   }
+
+  @Test
+  @DisplayName("有序比较左值缺省 → 判不成立（fail-closed：禁止字符串强转使命中）")
+  void orderedCompare_missingLeftValue_isNotSatisfied() {
+    // 字段整体缺失
+    JsonNode gt = json("{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}");
+    assertFalse(evaluator.evaluate(gt, map(), ConditionContext.empty()));
+    // 显式 null / 空串
+    assertFalse(evaluator.evaluate(gt, map("amount", null), ConditionContext.empty()));
+    assertFalse(evaluator.evaluate(gt, map("amount", ""), ConditionContext.empty()));
+    // 关键负向：缺省不得命中 lte（旧实现把 null 强转为 \"\" 后与 \"5000\" 比较会命中 → 单据静默落最低审批档）
+    JsonNode lte = json("{\"fieldCode\":\"amount\",\"operator\":\"lte\",\"value\":5000}");
+    assertFalse(evaluator.evaluate(lte, map(), ConditionContext.empty()));
+    // between：缺省不得被强转 0 后落入 [0,100] 区间
+    JsonNode between =
+        json("{\"fieldCode\":\"amount\",\"operator\":\"between\",\"value\":[0,100]}");
+    assertFalse(evaluator.evaluate(between, map(), ConditionContext.empty()));
+    // 空子表：无行数据不得因字符序偶然命中 gt
+    JsonNode itemsGt = json("{\"fieldCode\":\"items.amount\",\"operator\":\"gt\",\"value\":100}");
+    assertFalse(evaluator.evaluate(itemsGt, map("items", List.of()), ConditionContext.empty()));
+  }
 }

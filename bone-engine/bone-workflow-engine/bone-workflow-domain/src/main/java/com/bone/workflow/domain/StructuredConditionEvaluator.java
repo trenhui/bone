@@ -17,6 +17,7 @@ import java.util.Map;
  * <ul>
  *   <li>条件嵌套超深 → 判<b>不成立</b>（而不是抛错或放行）
  *   <li>原子条件缺 {@code fieldCode}/{@code operator} → 判<b>不成立</b>
+ *   <li>有序比较（gt/gte/lt/lte/between）左值缺省（字段缺失 / null / 空串 / 空子表）→ 判<b>不成立</b>
  *   <li>未知算子 → 判<b>不成立</b>，并由 {@link WorkflowBranchEvaluator} 的静态检查在发布期拦下
  * </ul>
  *
@@ -128,10 +129,7 @@ public final class StructuredConditionEvaluator implements WorkflowConditionEval
       case "gt", "gte", "lt", "lte" -> compareOrdered(operator, left, right);
       case "in" -> right instanceof List<?> list && list.contains(left);
       case "notIn" -> right instanceof List<?> list && !list.contains(left);
-      case "between" -> right instanceof List<?> list
-          && list.size() >= 2
-          && asDouble(left) >= asDouble(list.get(0))
-          && asDouble(left) <= asDouble(list.get(1));
+      case "between" -> betweenInclusive(left, right);
       case "earlierThan" -> left != null && right != null && str(left).compareTo(str(right)) < 0;
       case "laterThan" -> left != null && right != null && str(left).compareTo(str(right)) > 0;
       default -> false;
@@ -140,6 +138,13 @@ public final class StructuredConditionEvaluator implements WorkflowConditionEval
 
   /** 有序比较：双数值走数值，否则走字符串。 */
   private static boolean compareOrdered(String operator, Object left, Object right) {
+    // 左值缺省（字段缺失 / null / 空串 / 空子表）→ 判不成立（fail-closed）。
+    // 为什么不能走字符串强转：null 左值曾被强转为 "" 再与 "5000" 比较，使「金额缺省」
+    // 静默命中 lte 分支——单据落到最低审批档（fail-open，审批系统最严重的事故形态）；
+    // 空子表同理（"[]" 与数字串比较会因字符序偶然命中 gt）。
+    if (isEmpty(left)) {
+      return false;
+    }
     Double leftNumber = asDoubleOrNull(left);
     Double rightNumber = asDoubleOrNull(right);
     int result;
@@ -155,6 +160,21 @@ public final class StructuredConditionEvaluator implements WorkflowConditionEval
       case "lte" -> result <= 0;
       default -> false;
     };
+  }
+
+  /** between：含边界区间；左右任一非数值或缺省 → 判不成立（禁止把缺省强转 0 后落入区间）。 */
+  private static boolean betweenInclusive(Object left, Object right) {
+    if (!(right instanceof List<?> list) || list.size() < 2 || isEmpty(left)) {
+      return false;
+    }
+    Double leftNumber = asDoubleOrNull(left);
+    Double low = asDoubleOrNull(list.get(0));
+    Double high = asDoubleOrNull(list.get(1));
+    return leftNumber != null
+        && low != null
+        && high != null
+        && leftNumber >= low
+        && leftNumber <= high;
   }
 
   /** 等值：双数值走容差（防 DECIMAL 与 double 的精度误伤）。 */
@@ -255,11 +275,6 @@ public final class StructuredConditionEvaluator implements WorkflowConditionEval
     } catch (NumberFormatException ex) {
       return null;
     }
-  }
-
-  private static double asDouble(Object value) {
-    Double number = asDoubleOrNull(value);
-    return number == null ? 0d : number;
   }
 
   private static String text(JsonNode node, String field) {
