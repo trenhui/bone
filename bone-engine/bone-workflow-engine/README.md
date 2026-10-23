@@ -23,7 +23,7 @@
 | `bone-workflow-domain` | `com.bone.workflow.domain` | 流程定义 / 实例 / 任务模型、条件求值、分支选择、发布期校验 | 仅 JDK + Jackson |
 | `bone-workflow-ports` | `com.bone.workflow.ports.spi` | 7 个端口：定义仓储、实例仓储、指派解析、业务数据、状态推进、审计、id 生成 | 仅 domain |
 | `bone-workflow-runtime` | `com.bone.workflow.runtime` | 引擎实现：推进 / 任务完成判定 / 指派冻结 | domain + ports + Spring |
-| `bone-workflow-starter` | `com.bone.workflow.starter` | Boot 3 自动配置（`.imports`） | runtime |
+| `bone-workflow-starter` | `com.bone.workflow.starter` | Boot 3 自动配置（`.imports`）+ **BONE 集成适配器**（`adapter` / `spi` 包：SDK 仓储、状态投影、记录读取、指派解析、id 生成、审计——原独立桥接模块 `bone-workflow-platform` 已撤销并入，见设计稿 §2.2） | runtime + ports + `bone-metadata-sdk` + `bone-metadata-server` |
 
 `domain` 层有独立 ArchUnit 规则守护「不得依赖 Spring / 平台 / 外层」——否则「引擎可独立复用」这条前提会被悄悄破坏。
 
@@ -86,8 +86,8 @@
 
 | 端口 | 职责 | 建议实现 |
 |---|---|---|
-| `WorkflowDefinitionRepository` | 取流程定义快照 | 平台实体 `wf_process_def`（`definition_json` 存整图快照；节点/边/指派规则**不拆物理表**，见平台桥接设计 §4 取舍） |
-| `WorkflowInstanceRepository` | 实例与任务持久化 | 平台实体 `wf_instance` / `wf_task`（免费获得多租户、RLS、审计、乐观锁） |
+| `WorkflowDefinitionRepository` | 取流程定义快照 | 平台实体 `wf_process_def`（`definition_json` 存整图快照；节点/边/指派规则**不拆物理表**，见设计稿 §3 取舍） |
+| `WorkflowInstanceRepository` | 实例与任务持久化 | 平台实体 `wf_instance` / `wf_task`（租户隔离经 `@TenantScope` + 显式谓词、审计、乐观锁） |
 | `ApproverResolver` | 指派策略 → 账户 id | 组织目录 / IAM |
 | `WorkflowRecordPort` | 读业务单据数据（条件求值用） | 平台运行时读接口 |
 | `WorkflowStatusPort` | 推进业务单据状态 | 平台动作端点（`RuntimeActionService.invokeAction`） |
@@ -123,7 +123,9 @@
 无人可办挂起、错误分类、结构化日志、时钟注入（`Clock`，可测且为 SLA 铺路）。
 
 未实现（后续阶段）：SLA 超时提醒与自动转交、委派、转办/加签、抄送节点（v1 发布期拒绝：静默穿透即「配了不生效」，v2 落地为抄送任务 + 通知）、退回指定节点、子流程、流程版本回溯、
-可视化流程设计器、`wf_*` 实体与平台 bridge（需 L3 DDL 审批）。
+可视化流程设计器、`wf_*` 实体与 BONE 集成适配器的落地（适配器在 starter 内，需 L3 DDL 审批）。
+规划中的 v1 补齐（设计稿 §2.3/§4.4）：`NotificationPort` 通知最小集、实例轨迹查询 `listInstanceHistory`、
+管理员干预最小集（改派 / 终止 / 催办）。
 
 > 挂起实例的恢复入口（`resume`）已实现：组织架构修好后重新解析审批人并续跑，仍解析不出则保持挂起并明确报错，
 > 避免「恢复成功」的假象。
