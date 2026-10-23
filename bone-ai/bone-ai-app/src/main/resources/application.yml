@@ -20,9 +20,35 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+      probes:
+        enabled: true
+      group:
+        # K8s 探针分组（详设 §6.1 生产就绪）：liveness 只看进程活性（不查外部依赖——DB/Redis 抖动不该重启 pod）；
+        # readiness 看进程 + DB（没就绪就别进流量，但不需要因此杀进程）
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
 
 bone:
   ai:
     rag-top-k: 5
+    rag-min-score: 0        # 分数阈值（精排后过滤；0=不启用，须按评测集实测分布校准）
+    rag-max-scan: 10000     # 容量护栏：作用域切片数上限，超限 fail-closed（AI_RAG_SCOPE_OVER_LIMIT）
     default-integration-mode: AUTOMATED
     notification-webhook-url: ${BONE_AI_WEBHOOK_URL:}
+    rag:
+      # 共享推理服务（TEI / infinity 兼容，数据不出域红线；不配则回落 过渡哈希 / NoOpReranker）
+      # embedding:
+      #   base-url: ${BONE_AI_RAG_EMBEDDING_URL:http://tei:80}
+      #   model: BAAI/bge-m3
+      #   version: bge-m3@http
+      # rerank:
+      #   base-url: ${BONE_AI_RAG_RERANK_URL:http://tei:80}
+      #   model: BAAI/bge-reranker-v2-m3
+      candidate-pool: 30    # 进入 cross-encoder 精排的候选池（≥ topK；详设 §2.6 top-30 → top-5）
+      min-score: 0          # 同 bone.ai.rag-min-score（模块级配置，请求可覆盖）
+      max-scan: 10000       # 同 bone.ai.rag-max-scan（模块级配置，请求可覆盖）
+      mmr-lambda: 0         # 同 bone.ai.rag-mmr-lambda（模块级配置，请求可覆盖）
+      # 文档级 ACL：默认仅租户硬隔离；接入方提供 RagAclPort Bean（读文档中心 ACL）后
+      # 「无 ACL 归属的 doc 不可见」fail-closed 生效（AI_RAG_DOC_FORBIDDEN）

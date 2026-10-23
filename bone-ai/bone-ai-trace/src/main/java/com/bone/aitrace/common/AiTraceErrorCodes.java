@@ -16,4 +16,16 @@ public final class AiTraceErrorCodes {
    * <p>fail-closed——「落一条租户不明的合规证据」比「拒返」更危险（审计链上出现无法归属的快照即失真）。
    */
   public static final String TENANT_CONTEXT_MISSING = "AI_TRACE_TENANT_CONTEXT_MISSING";
+
+  /**
+   * 证据回放：快照不存在（404，REST 回放面，2026-10-23 随 TraceController 落地）。
+   */
+  public static final String NOT_FOUND = "AI_TRACE_NOT_FOUND";
+
+  /**
+   * 证据回放：快照不属于当前租户（403，REST 回放面，2026-10-23 随 TraceController 落地）。
+   *
+   * <p>跨租户命中显式拒绝而非静默返空——「查不到」与「不许查」必须可区分（取证与排障都依赖这个区分）。
+   */
+  public static final String TENANT_DENIED = "AI_TRACE_TENANT_DENIED";
 }

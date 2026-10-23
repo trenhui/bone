@@ -16,6 +16,12 @@ public class BoneAiProperties {
   /** 受控检索默认返回条数。 */
   private int ragTopK = 5;
 
+  /** 受控检索默认分数阈值（精排后过滤；0 = 不启用，量纲双轨见 RagQuery，须按实测分布校准）。 */
+  private double ragMinScore = 0.0;
+
+  /** 受控检索默认容量护栏（作用域切片数上限，超限 fail-closed 抛 AI_RAG_SCOPE_OVER_LIMIT）。 */
+  private int ragMaxScan = 10_000;
+
   /** 集成节点默认三态模式（AUTOMATED=全自动 / ASSISTED=待人工确认 / SHADOW=仅观测不落地）。 */
   private IntegrationMode defaultIntegrationMode = IntegrationMode.AUTOMATED;
 

@@ -1,8 +1,11 @@
 package com.bone.ai.gateway.config;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** bone-ai-gateway 配置项（{@code bone.ai.gateway.*}）。 */
@@ -10,6 +13,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "bone.ai.gateway")
 public class LlmGatewayProperties {
+
+  private static final Logger log = LoggerFactory.getLogger(LlmGatewayProperties.class);
 
   /** OpenAI 兼容服务 base url（如 {@code https://api.openai.com/v1} 或本地 vLLM）；为空则使用 Mock 实现。 */
   private String baseUrl;
@@ -52,4 +57,40 @@ public class LlmGatewayProperties {
 
   /** 租户配额：窗口长度秒。 */
   private long quotaWindowSeconds = 60;
+
+  /**
+   * 多副本部署时是否优先用 Redis 分布式配额（默认 true；仅当容器存在 {@code RedissonClient} bean 时生效）。
+   *
+   * <p>关闭 = 即使有 Redis 也用进程内计数（单副本私有化、或刻意让配额按副本独立的场景）。 分布式实现见 {@code
+   * RedisQuotaAutoConfiguration}；进程内实现在多副本下配额为副本数 N 倍，详设 §6.4。
+   */
+  private boolean quotaRedisEnabled = true;
+
+  /**
+   * 启动期密钥自检（生产就绪硬依赖「密钥托管」的可落地部分，详设 §6.1）。
+   *
+   * <p>两条规则：①{@code api-key} 里还留着未解析的 {@code ${...}} 占位符 ⇒ <b>启动即失败</b>——这几乎总是「把模板配置
+   * 原样提交、环境变量没注」的事故，与其让第一次模型调用带着字面量 {@code ${BONE_AI_GATEWAY_API_KEY}} 去鉴权失败，
+   * 不如在启动就炸；②远端 https provider 却空 key ⇒ WARN（本地 vLLM 无鉴权可空，远端空 key 大概率是漏配）。
+   *
+   * <p>真正的密钥托管（bone-security Virtual Key 出库、配置库零明文）属 L3 项；此处保证「占位符不漏到线上、空 key 有感知」。
+   */
+  @PostConstruct
+  void validateProviderSecrets() {
+    if (baseUrl == null || baseUrl.isBlank()) {
+      return; // 未配 provider：Mock 形态，无密钥可校
+    }
+    if (apiKey != null && apiKey.contains("${")) {
+      throw new IllegalStateException(
+          "bone.ai.gateway.api-key 含未解析占位符「"
+              + apiKey
+              + "」：密钥须经环境变量 / 密钥托管注入（如 ${BONE_AI_GATEWAY_API_KEY} 先在部署环境定义），"
+              + "禁止把占位符或明文密钥提交进配置库");
+    }
+    if ((apiKey == null || apiKey.isBlank()) && baseUrl.startsWith("https")) {
+      log.warn(
+          "Remote provider configured without api-key (base-url={}): local no-auth inference may leave it empty, remote https usually indicates a missing secret",
+          baseUrl);
+    }
+  }
 }

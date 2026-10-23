@@ -47,6 +47,17 @@
             <artifactId>resilience4j-retry</artifactId>
         </dependency>
 
+        <!--
+          多副本分布式配额（RedisTenantQuotaGuard）：optional = 不传递给接入方。
+          Redisson 平台已在用（bone-metadata-sdk 同款，版本由 bone-parent 托管，Apache-2.0，非新增许可暴露面）；
+          接入方 classpath 无 Redisson 时本依赖不生效，配额继续走进程内默认实现（详设 §6.4）。
+        -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
