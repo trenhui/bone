@@ -1,6 +1,7 @@
 package com.bone.integration.application;
 
 import com.bone.core.capability.Capability;
+import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.ExecuteFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
@@ -36,6 +37,14 @@ public class ExecuteFlowApplicationService {
 
   @Transactional
   public Long handle(ExecuteFlowCommand cmd) {
+    // flowId 缺失必须在这里挡掉，不能交给 flowRepository.findById(null)：
+    // SDK 的 BaseRepository.findById 对 null 抛 IllegalArgumentException("ID must not be null")，
+    // 而 Spring 与两个 advice 都没有该异常的映射 ⇒ 冒泡到 catch-all 兜底成 **500 COMMON_INTERNAL_ERROR**
+    // （2026-10-23 全模块联调实测：POST /api/v1/integration/executions 传空体即 500）。
+    // 这是 100% 由请求体缺失字段触发的客户端错误，语义必须是 400。
+    if (cmd == null || cmd.flowId() == null) {
+      throw new DomainException("flowId 不能为空");
+    }
     IntegrationFlow flow = flowRepository.findById(cmd.flowId());
     if (flow == null) {
       throw IntegrationErrors.of(IntegrationErrorCodes.FLOW_NOT_FOUND, cmd.flowId());

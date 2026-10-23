@@ -13,9 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -155,6 +157,54 @@ public class IamExceptionHandler {
         request.getRequestURI(),
         ex.getMessage());
     return problemResponse(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段", request);
+  }
+
+  /**
+   * 处理必填查询参数缺失（{@code @RequestParam} 未传）。
+   *
+   * <p><b>为何必须显式声明</b>：本 advice 与 bone-web 的 {@code GlobalExceptionHandler} <b>并存且本 advice 优先</b>
+   * （同 {@link #handleDataIntegrityViolation} 的成因），框架基类里已有的 {@code
+   * MissingServletRequestParameterException → 400} 分支对 IAM <b>不生效</b>，异常直接落进 {@code Exception} 兜底 ⇒
+   * 任何带必填参数的 IAM 端点在漏传参数时被报成 <b>500 COMMON_INTERNAL_ERROR</b>（实测 {@code GET
+   * /api/v1/iam/sso/callback} 不带 {@code code} 即 500）。后果与 405/类型不匹配同类：客户端笔误被当成服务端故障， 计入 5xx 错误预算、污染
+   * SLI 与告警。语义应为 <b>400 参数校验失败</b>。
+   */
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMissingServletRequestParameter(
+      MissingServletRequestParameterException ex, HttpServletRequest request) {
+    log.warn(
+        "[handleMissingServletRequestParameter] 缺少必填参数: uri={}, name={}",
+        request == null ? null : request.getRequestURI(),
+        ex.getParameterName());
+    // ★ 码必须取 VALIDATION_FAILED，不能取 MALFORMED_REQUEST：跨服务异常落点一致性门禁（check
+    // -cross-service-exception-mapping，[9d/35]）实测 generator / file / masterdata 三个服务与 bone-web
+    // 框架基类对该异常统一是 400+VALIDATION_FAILED。取 MALFORMED_REQUEST 会让「同一异常跨服务不同码」——
+    // 违反错误码登记 §2「同一错误语义跨服务必须同码」，前端 i18n 与监控聚合都会裂成两个口径。
+    // （同文件的 handleTypeMismatch 用 MALFORMED_REQUEST 是存量冻结项，不属本条约束，勿照抄。）
+    return problemResponse(
+        400,
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("缺少必填参数 %s", ex.getParameterName()),
+        request);
+  }
+
+  /**
+   * 处理查询参数/表单绑定失败（含「原始类型分页参数收到 null」一类）。
+   *
+   * <p>与 {@link #handleMissingServletRequestParameter} 同因：框架基类的 {@code BindException → 400} 分支被本
+   * advice 抢先命中不到 ⇒ 冒泡成 500。绑定失败的成因 100% 在请求侧，必须回 400。
+   *
+   * <p><b>脱敏</b>：{@code ex.getMessage()} 形如 {@code Failed to convert value of type 'null' to
+   * required type 'int'}，会暴露服务端形参类型 ⇒ 只入日志，响应体给常量文案。
+   */
+  @ExceptionHandler(BindException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleBindException(
+      BindException ex, HttpServletRequest request) {
+    log.warn(
+        "[handleBindException] 参数绑定失败: uri={}, message={}",
+        request == null ? null : request.getRequestURI(),
+        ex.getMessage());
+    return problemResponse(400, CommonErrorCodes.VALIDATION_FAILED, "请求参数绑定失败，请检查参数类型与取值", request);
   }
 
   /** 兜底处理所有未捕获异常 */

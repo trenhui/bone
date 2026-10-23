@@ -48,8 +48,16 @@ class IamInputExceptionMappingTest {
     return req;
   }
 
+  /**
+   * 必填查询参数缺失 → 400（不是 500：客户端笔误不该计入服务端故障预算）。
+   *
+   * <p><b>errorCode 取 {@code VALIDATION_FAILED} 而非 {@code MALFORMED_REQUEST}</b>：跨服务异常落点一致性
+   * 门禁（[9d/35]）要求同一异常类型在各服务映射到同一 (status, errorCode)——实测 generator / file / masterdata 与 bone-web
+   * 框架基类对该异常统一是 400+VALIDATION_FAILED。这是错误码登记 §2「同一错误语义跨服务 必须同码」的机器判据：取 MALFORMED_REQUEST 会让前端 i18n
+   * 与监控聚合裂成两个口径。
+   */
   @Test
-  @DisplayName("必填查询参数缺失 → 400 MALFORMED_REQUEST（不是 500：客户端笔误不该计入服务端故障预算）")
+  @DisplayName("必填查询参数缺失 → 400 VALIDATION_FAILED（不是 500；且与兄弟服务同码）")
   void missingRequestParamMapsTo400() {
     ResponseEntity<ApiResponse<ProblemDetail>> resp =
         new IamExceptionHandler()
@@ -58,7 +66,7 @@ class IamInputExceptionMappingTest {
 
     assertEquals(HttpStatus.BAD_REQUEST.value(), resp.getStatusCode().value());
     ProblemDetail problem = resp.getBody().getData();
-    assertEquals(CommonErrorCodes.MALFORMED_REQUEST, problem.getErrorCode());
+    assertEquals(CommonErrorCodes.VALIDATION_FAILED, problem.getErrorCode());
     assertTrue(
         problem.getDetail().contains("code"),
         () -> "detail 应回显缺失的参数名，便于调用方定位: " + problem.getDetail());

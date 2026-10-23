@@ -5,6 +5,7 @@ import com.bone.core.annotation.Id;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -45,6 +46,30 @@ public class Menu extends TenantAggregateRoot<Long> {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
+  /**
+   * 校验菜单路由 path。
+   *
+   * <p><b>为何必须在域内校验</b>：菜单 path 的约定是 {@code /<微应用>#/<子路由>}（见菜单与路由一致性门禁）， 前端 shell 按 {@code BASE +
+   * path} 直接导航。缺前导 {@code /} 时拼出来的 URL 形如 {@code http://localhost:3000E2Exxx-3}， 浏览器判定为非法 URL ⇒
+   * 该菜单<b>永远点不开</b>，且在菜单树里看起来与正常菜单无异 —— 是典型的「配了不生效」： 2026-10-23 全模块 UI 巡检实测，历史 E2E 数据残留的 4 条 {@code
+   * E2E<ts>-3} 菜单因此让 60 个菜单的巡检挂了 4 个， 且报错落在探针侧（{@code Cannot navigate to invalid
+   * URL}），从前端根本看不出是数据问题。
+   *
+   * <p><b>为何只校验前导斜杠、不强求 {@code #}</b>：裸 {@code /<app>} 会落到微应用默认页（重复入口，由 menu-single-entry
+   * 门禁另案拦截），属「能打开但不理想」；而缺 {@code /} 是「根本打不开」。先拦死不可用的那一类， 避免一次性收紧把既有数据全打成非法。
+   *
+   * <p><b>为何允许空</b>：目录型节点（{@code type != 1}）本身不可导航，path 留空是合法形态。
+   */
+  private static String requireReachablePath(String path) {
+    if (path == null || path.isBlank()) {
+      return path;
+    }
+    if (!path.startsWith("/")) {
+      throw new DomainException("菜单路由必须以 / 开头，当前值: " + path);
+    }
+    return path;
+  }
+
   public static Menu create(
       String name,
       Long parentId,
@@ -57,7 +82,7 @@ public class Menu extends TenantAggregateRoot<Long> {
     Menu menu = new Menu();
     menu.name = name;
     menu.parentId = parentId;
-    menu.path = path;
+    menu.path = requireReachablePath(path);
     menu.icon = icon;
     menu.orderNo = orderNo == null ? 0 : orderNo;
     menu.permission = permission;
@@ -78,7 +103,7 @@ public class Menu extends TenantAggregateRoot<Long> {
       Integer type) {
     this.name = name;
     this.parentId = parentId;
-    this.path = path;
+    this.path = requireReachablePath(path);
     this.icon = icon;
     this.orderNo = orderNo;
     this.permission = permission;
