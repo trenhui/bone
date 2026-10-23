@@ -26,4 +26,21 @@ public final class AiRagErrorCodes {
    * <p>2026-10-21 补齐：HttpBgeRerankClient 的抛出点与台账（Bone-错误码登记.md §6）均已就位，仅缺本常量定义——缺此常量则该模块无法编译。
    */
   public static final String RERANK_PROVIDER_FAIL = "AI_RAG_RERANK_PROVIDER_FAIL";
+
+  /**
+   * 检索作用域切片数超容量护栏（422，fail-closed）：过渡态全量载入内存打分，超限即拒， 提示调用方收窄 {@code doc_scope} 或调大 {@code
+   * bone.ai.rag.max-scan}——绝不静默截断（截断会使「已检索全集」的假设不成立，引用完整性失真）。
+   *
+   * <p>2026-10-23 新增：容量护栏为 RAG 诊断 P0 修复项之一（《RAG方案诊断与优化-2026-10-23》S1）。
+   */
+  public static final String SCOPE_OVER_LIMIT = "AI_RAG_SCOPE_OVER_LIMIT";
+
+  /**
+   * 文档不在当前调用方可见范围（403，fail-closed）：接入方提供了文档级 ACL（{@code RagAclPort} 返回受限集合），
+   * 而显式 {@code doc_scope} 无 ACL 归属——绝不静默回落全租户检索（那会把越权请求变成合法请求）。
+   *
+   * <p>2026-10-23 新增：RAG 诊断 P1-7（文档级 ACL seam + fail-closed）。默认无 ACL 模型时本码不会触发
+   * （仅租户硬隔离兜底）；接入方提供 ACL 实现后生效。
+   */
+  public static final String DOC_FORBIDDEN = "AI_RAG_DOC_FORBIDDEN";
 }

@@ -48,6 +48,8 @@
     "AI_RAG_TENANT_CONTEXT_MISSING": "Retrieval tenant context missing; execution refused",
     "AI_RAG_EMBEDDING_PROVIDER_FAIL": "Vector embedding service unavailable; routed to manual handling",
     "AI_RAG_RERANK_PROVIDER_FAIL": "Rerank service unavailable; routed to manual handling",
+    "AI_RAG_SCOPE_OVER_LIMIT": "Retrieval scope exceeds the size limit; please narrow the scope or raise the threshold and retry",
+    "AI_RAG_DOC_FORBIDDEN": "Document is outside the current user's visible scope; access denied",
     "AI_APP_TENANT_CONTEXT_MISSING": "Tenant context missing; please access via the authenticated chain",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "Evidence persistence refused: tenant context missing",
     "AI_DOC_TOO_LARGE": "Document exceeds the size limit (50MB by default); please split and retry",

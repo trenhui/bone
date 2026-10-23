@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * 演进项）。进程内 ONNX 作 L4 备选，经 {@link EmbeddingPort} 端口由消费方覆盖。
  *
  * <p>provider 故障（超时 / 非 2xx / 响应非法）抛 {@link #EMBEDDING_PROVIDER_FAIL}，不静默返回零向量——
- * 静默零向量会把「服务挂了」伪装成「低相似度」，污染检索排序。
+ * 静默零向量会把「服务挂了」伪装成「低相似度」，污染检索排序。检索链 catch 该异常后<b>降级为 BM25 单路并 WARN</b>（读路径可用性优先；严禁切云端辅路）。
  */
 public class HttpBgeEmbeddingClient implements EmbeddingPort {
 

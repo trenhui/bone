@@ -27,8 +27,7 @@ import org.slf4j.LoggerFactory;
  * <p>把 query 与候选文本批量 POST 到 {@code {baseUrl}/rerank}，取回每对的 relevance 分后精排。 cross-encoder 在
  * query-document 对上直接打分，比 RRF 粗融合精度高，是「引用正确率」达标的关键（详设 §2.6 top-30 → top-5）。
  *
- * <p>provider 故障抛 {@link #RERANK_PROVIDER_FAIL}；上层检索在拿到候选后调用本端口，异常由检索链路按 provider 故障处理（不静默降级成 RRF
- * 序而假装已精排）。
+ * <p>provider 故障抛 {@link #RERANK_PROVIDER_FAIL}；上层检索链 catch 后<b>降级为 NoOp 序（RRF 粗序）并 WARN</b>——读路径可用性优先，且降级可观测（WARN + 错误码），不是「假装已精排」；引用强制语义在降级下不变（2026-10-23 口径订正：原「不静默降级」表述与检索链降级决策不一致，以本处为准）。
  */
 public class HttpBgeRerankClient implements RerankPort {
 
