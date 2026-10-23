@@ -73,6 +73,10 @@ public class LlmGatewayProperties {
    * 原样提交、环境变量没注」的事故，与其让第一次模型调用带着字面量 {@code ${BONE_AI_GATEWAY_API_KEY}} 去鉴权失败，
    * 不如在启动就炸；②远端 https provider 却空 key ⇒ WARN（本地 vLLM 无鉴权可空，远端空 key 大概率是漏配）。
    *
+   * <p>注意②对 Virtual Key 部署形态的已知噪声：以 {@code @Bean ApiKeyProvider} 覆盖为 bone-security 实现时，配置态
+   * {@code api-key} 本应为空（key 走托管出库）——此 WARN 会照常触发，属预期，可按部署清单忽略；默认配置路径下该 WARN
+   * 仍是有效的漏配信号，故不做静默。
+   *
    * <p>真正的密钥托管（bone-security Virtual Key 出库、配置库零明文）属 L3 项；此处保证「占位符不漏到线上、空 key 有感知」。
    */
   @PostConstruct

@@ -3,6 +3,7 @@ package com.bone.ai.gateway.config;
 import com.bone.ai.gateway.application.LlmGatewayApplicationService;
 import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmGatewayPolicies;
+import com.bone.ai.gateway.domain.gateway.ApiKeyProvider;
 import com.bone.ai.gateway.domain.gateway.ContentSafetyGuard;
 import com.bone.ai.gateway.domain.gateway.LlmMetrics;
 import com.bone.ai.gateway.domain.gateway.LlmResponseCache;
@@ -20,6 +21,7 @@ import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import com.bone.ai.gateway.infrastructure.cache.InMemoryLlmResponseCache;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
+import com.bone.ai.gateway.infrastructure.gateway.ConfigApiKeyProvider;
 import com.bone.ai.gateway.infrastructure.gateway.TenantContextProviderAdapter;
 import com.bone.ai.gateway.infrastructure.quota.InMemoryTenantQuotaGuard;
 import com.bone.ai.gateway.infrastructure.security.HeuristicInjectionGuard;
@@ -143,12 +145,27 @@ public class LlmGatewayAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public LlmClient llmClient(LlmHttpTransport llmTransport, LlmGatewayProperties props) {
+  public LlmClient llmClient(
+      LlmHttpTransport llmTransport, LlmGatewayProperties props, ApiKeyProvider apiKeyProvider) {
     if (props.getBaseUrl() != null && !props.getBaseUrl().isBlank()) {
       return new OpenAiCompatibleClient(
-          llmTransport, props.getBaseUrl(), props.getApiKey(), props.getModel());
+          llmTransport, props.getBaseUrl(), apiKeyProvider, props.getModel());
     }
     return new MockLlmClient();
+  }
+
+  /**
+   * provider API 密钥解析（按调用，支持轮换 / 短时限 Virtual Key）。
+   *
+   * <p>2026-10-23 接线：{@link ApiKeyProvider} 端口此前已就位却无任何消费方——客户端构造期固化 {@code String
+   * apiKey}，密钥轮换语义落空，「以 {@code @Bean} 覆盖为 bone-security 实现」无从谈起（同 2026-10-21 修
+   * {@code LlmMetrics} / {@code ContentSafetyGuard} 零消费方的反模式）。此处补默认实现 + 条件装配：默认从配置
+   * 按调用解析，接入方以 {@code @Bean} 覆盖为 bone-security Virtual Key 实现即生效（详设 §6.1）。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public ApiKeyProvider gatewayApiKeyProvider(LlmGatewayProperties props) {
+    return new ConfigApiKeyProvider(props);
   }
 
   /** 出站传输：出现 Resilience4j registry 即包熔断+重试（§4.1 治理面），否则回落直连（POC 零依赖）。 */

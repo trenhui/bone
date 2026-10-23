@@ -6,6 +6,7 @@ import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.ai.gateway.domain.LlmUsage;
+import com.bone.ai.gateway.domain.gateway.ApiKeyProvider;
 import com.bone.core.exception.BizException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,6 +21,10 @@ import java.util.Map;
  * <p>vLLM / Ollama / DashScope / DeepSeek / OneAPI 均为 OpenAI chat/completions 兼容协议，本实现覆盖该协议全家桶；
  * 一期不引入 Spring AI（官方 1.1.x 已随 Boot 3.5.x 于 2026-06-30 OSS EOL 且带未修复 CVE，2.x 绑 Boot 4）。Jackson
  * 自持，与仓内 {@code RestClientImpl} 一致。
+ *
+ * <p><b>密钥按调用解析而非构造期固化</b>（{@link ApiKeyProvider}）：支持密钥轮换与短时限 Virtual Key——provider 侧
+ * 签发、过期即刷新，换 key 不重启、不重装配客户端。合规形态（bone-security Virtual Key 出库、配置零明文）以 {@code
+ * @Bean ApiKeyProvider} 覆盖即生效，本类零改动。
  */
 public class OpenAiCompatibleClient implements LlmClient {
 
@@ -27,14 +32,17 @@ public class OpenAiCompatibleClient implements LlmClient {
 
   private final LlmHttpTransport transport;
   private final String baseUrl;
-  private final String apiKey;
+  private final ApiKeyProvider apiKeyProvider;
   private final String defaultModel;
 
   public OpenAiCompatibleClient(
-      LlmHttpTransport transport, String baseUrl, String apiKey, String defaultModel) {
+      LlmHttpTransport transport,
+      String baseUrl,
+      ApiKeyProvider apiKeyProvider,
+      String defaultModel) {
     this.transport = transport;
     this.baseUrl = trimTrailingSlash(baseUrl);
-    this.apiKey = apiKey;
+    this.apiKeyProvider = apiKeyProvider;
     this.defaultModel = defaultModel;
   }
 
@@ -48,6 +56,8 @@ public class OpenAiCompatibleClient implements LlmClient {
   private Map<String, String> headers() {
     Map<String, String> headers = new LinkedHashMap<>();
     headers.put("Content-Type", "application/json");
+    // 每次请求现取：轮换中的新旧 key 交接、短时限 Virtual Key 过期刷新，对调用方透明
+    String apiKey = apiKeyProvider != null ? apiKeyProvider.resolve() : null;
     if (apiKey != null && !apiKey.isBlank()) {
       headers.put("Authorization", "Bearer " + apiKey);
     }

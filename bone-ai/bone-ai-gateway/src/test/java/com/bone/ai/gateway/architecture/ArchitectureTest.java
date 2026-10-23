@@ -1,10 +1,15 @@
 package com.bone.ai.gateway.architecture;
 
 import com.bone.architecture.BoneDddArchRules;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 
 /** bone-ai-gateway 架构守护（能力库模块，无聚合 / 持久化，DDD 分层规则无匹配类时统一空过）。 */
 @AnalyzeClasses(
@@ -55,4 +60,73 @@ public class ArchitectureTest {
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
 
   @ArchTest static final ArchRule no_aviator_dependency = BoneDddArchRules.noAviatorDependency();
+
+  /**
+   * 防「缝已设计、零消费方」反模式复发（本项目已四次踩坑：RerankPort / HttpBge*Client / LlmMetrics /
+   * ApiKeyProvider）。domain 内 {@code *Port} 接口必须由模块内类实现——杜绝「设计已就位、代码零实现」（如
+   * 修复前的 ApiKeyProvider 客户端构造期固化 key、零实现零消费）。
+   */
+  @ArchTest
+  static final ArchRule domain_ports_must_have_module_implementation =
+      ArchRuleDefinition.classes()
+          .that()
+          .resideInAPackage("..gateway.domain..")
+          .and()
+          .areInterfaces()
+          .and()
+          .haveSimpleNameEndingWith("Port")
+          .should(
+              new ArchCondition<>("have an implementation class within the module") {
+                @Override
+                public void check(JavaClass port, ConditionEvents events) {
+                  boolean implemented =
+                      port.getDirectDependenciesToSelf().stream()
+                          .anyMatch(
+                              d ->
+                                  d.getOriginClass().isAssignableTo(port.getName())
+                                      && d.getOriginClass()
+                                          .getPackageName()
+                                          .startsWith("com.bone.ai.gateway"));
+                  events.add(
+                      new SimpleConditionEvent(
+                          port,
+                          implemented,
+                          port.getName() + " has no implementation class within module"));
+                }
+              });
+
+  /**
+   * 第二道闸：domain {@code *Port} 必须被 application / infrastructure / config 层实际依赖（DI 注入属依赖而非
+   * access，故用 {@code getDirectDependenciesToSelf} 而非 {@code beAccessed}）。拦截「实现存在但从未接线」的死缝
+   * （如修复前的 RerankPort：NoOp 实现就位、应用层不注入）。
+   */
+  @ArchTest
+  static final ArchRule domain_ports_must_be_consumed =
+      ArchRuleDefinition.classes()
+          .that()
+          .resideInAPackage("..gateway.domain..")
+          .and()
+          .areInterfaces()
+          .and()
+          .haveSimpleNameEndingWith("Port")
+          .should(
+              new ArchCondition<>("be consumed by an application/infrastructure/config class") {
+                @Override
+                public void check(
+                    com.tngtech.archunit.core.domain.JavaClass port, ConditionEvents events) {
+                  boolean consumed =
+                      port.getDirectDependenciesToSelf().stream()
+                          .anyMatch(
+                              d ->
+                                  d.getOriginClass()
+                                      .getPackageName()
+                                      .matches(".*\\.gateway\\.(application|infrastructure|config).*"));
+                  events.add(
+                      new SimpleConditionEvent(
+                          port,
+                          consumed,
+                          port.getName()
+                              + " is not depended on by any application/infrastructure/config class"));
+                }
+              });
 }
