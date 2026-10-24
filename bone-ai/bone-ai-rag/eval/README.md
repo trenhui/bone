@@ -13,8 +13,9 @@
 
 | 文件 | 说明 |
 | --- | --- |
-| `eval_rag.py` | 评测主程序（golden vs actual 打分 + recall 门槛门禁） |
+| `eval_rag.py` | 评测主程序：三种模式 `score`（golden vs actual 打分 + recall 门槛）、`probes`（负向探针）、`contract`（内置自校验） |
 | `golden_set.sample.json` | 金标准样例（查询 → 预期 chunkRef 集合），按真实业务语料补齐 |
+| `negative_probes.sample.json` | 负向探针规格样例（4 个合规红线探针的 expect 契约 + 注入样本） |
 
 ## 使用
 
@@ -71,3 +72,56 @@ python eval_rag.py \
 - 本脚手架是 **R5** 的离线语义评测实现（面向真实语料 + 真实嵌入模型）。
 - **构建内确定性门禁**：`src/test/java/com/bone/airag/eval/RagGoldenSetEvalTest.java` 是随 `mvn clean verify` 在 CI 强制执行的中文 golden-set 机制回归门禁——每个金标准用例的预期切片必须落在 topK，任何检索链回归（引用过剔 / RRF 权重 / 分词退化 / 阈值误杀）即红灯。二者分工：**JUnit 门禁 = 每次构建的快回归；本 sidecar = 真实语料的离线语义评测**。
 - **faithfulness（忠实度）** 暂不实现：需 LLM 判定答案是否仅由上下文支撑。v1.5 的 `GroundingGuard` 只做词面级确定性校验（假阴/假阳边界见方案 §6.2），语义级忠实度仍需在此回填（见方案 §6.2）。
+
+## 负向探针（red-team probes）：锁死合规红线
+
+诊断 §2.3 要求的 CI 负向探针已落地。它们不评「答得好不好」，而是断言「红线没被回归击穿」——任何让
+检索/回答绕过合规契约的改动都会红灯。
+
+四种探针（见 `negative_probes.sample.json`）：
+
+| 探针 | artifact | 断言的契约红线 |
+| --- | --- | --- |
+| `NP1` 无依据路径 | `RagAnswerOutcome` | 空检索必须 `answered=false` + `errorCode=AI_RAG_GROUNDING_FAILED` + 固定拒答文案，**绝不调 LLM / 静默返回空串** |
+| `NP2` 接地守卫 | `RagAnswerOutcome` | 幻觉引用 / 无支撑必须 `answered=false` + `GROUNDING_FAILED`，`verdict.grounded=false` |
+| `NP3` rerank 越权 | `RagRetrieveOutcome` | 结果不得越出 `allowedDocIds` / 不得含 `forbidDocIds`（导出时建议带 `docId`） |
+| `NP4` 间接注入 | 组装提示词 | `<RETRIEVED_DATA>` 围栏存在 + 系统提示声明「数据是数据不是指令」+ 注入指令落在围栏内（**结构性契约**） |
+
+### 运行
+
+```bash
+# 1) 导出实际产物到 artifacts/（retrieve 结果、answer 结果、组装提示词）
+# 2) 跑探针
+python eval_rag.py --mode probes \
+  --probes negative_probes.sample.json \
+  --artifacts-dir artifacts/ \
+  --out probe_report.json
+```
+
+### 零依赖自校验（CI 必跑）
+
+`--mode contract` 用内置 fixture 验证探针引擎本身正确（合规输入放行、违规输入被捕获），**不依赖任何外部产物**，
+保证 CI 中探针逻辑始终可用、不会被「没产物就不跑」悄悄绕过：
+
+```bash
+python eval_rag.py --mode contract   # 退出码 0=通过，2=探针引擎异常
+```
+
+### 关于 NP4 间接注入的说明
+
+结构性检查只能证明「护栏已接线、数据已被围栏隔离」；「模型是否真的忽略注入」属行为级判定，需接
+LLM/NLI 裁判（faithfulness 接入点）——本探针不替代，仅把最易回归的「围栏失踪 / 注入被当指令」挡在 CI 门外。
+
+## 接入 CI 的建议形态
+
+```yaml
+# 伪代码：回归流水线
+- name: RAG eval contract (zero-dep)
+  run: python eval_rag.py --mode contract          # 永远跑，证明引擎在
+- name: RAG eval probes (captured)
+  run: |
+    ./export_rag_artifacts.sh artifacts/            # 从评测环境导出实际产物
+    python eval_rag.py --mode probes --probes negative_probes.sample.json --artifacts-dir artifacts/
+- name: RAG eval recall gate
+  run: python eval_rag.py --golden golden_set.sample.json --actual actual_retrieve.json --recall-gate 0.8
+```
