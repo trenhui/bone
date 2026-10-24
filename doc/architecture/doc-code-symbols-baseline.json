@@ -765,6 +765,14 @@
       "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
     },
     {
+      "symbol": "HitlCapacityProperties",
+      "docs": [
+        "doc/ai-product/platform/BONE-AI架构决策记录ADR包-2026-10-24.md"
+      ],
+      "reason": "tobe-named",
+      "note": "BONE-AI 架构决策记录 ADR 包 §4.1 裁决人容量配置落地清单中列出的目标态配置类名（D/C/O 可配），实现尚未落地；与同文档已登记的 VersionController（tobe-named）同口径，属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
       "symbol": "InspectionRepository",
       "docs": [
         "doc/ai-product/synapClaim/待架构评审代码整改清单.md"

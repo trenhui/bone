@@ -1,6 +1,8 @@
 # BONE AI 能力中台 · 产品接入指南
 
-> **版本**：v1.8　**日期**：2026-10-24　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》《RAG 能力方案》《架构决策记录 ADR 包》
+> **版本**：v1.11　**日期**：2026-10-24　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》《RAG 能力方案》《架构决策记录 ADR 包》
+> **v1.11 变更（B16 阶段级检索链路计时，opt-in）**：§6 RAG 配置速查补 `bone.ai.rag.stage-tracing-enabled`（**默认 false**）——开启后每次检索汇总 `acl`/`capacity`/`embed`/`score`/`rerank`/`mmr`/`assemble`/`total` 逐段墙钟 + `candidates` 计数，发一条 `RETRIEVE_STAGES` 事件（落 `RAG_EVENT` 证据快照）。定位「慢在哪一段」用它、判断「是否慢」仍看 `RETRIEVE_SLOW`；生产常态不开启（每查询多一条快照），诊断 / 压测期显式开。
+> **v1.10 变更（RAG 运行时语义接地裁判 opt-in + 检索事件落 trace）**：① §6 RAG 配置速查补 `bone.ai.rag.grounding.judge-enabled`（**默认 false = opt-in**；开启后确定性守卫过关再追加一次 NLI 语义裁判，经网关卡面使每次问答成本约翻倍，高合规场景用）；② §6 降级痕迹说明补：接入 trace 证据仓储时 `RagEventSink` 落 `RAG_EVENT` 证据快照（可检索 / 聚合 / 回放），仓储缺失时回落结构化 WARN（检索链零改动）；③ 与离线评测（answer-quality 判官）的分工：运行时裁判「挡下来」、离线评测判官「测出来」，默认不双跑。
 > **v1.8 变更（R1「接 G」落地：RAG 回答链生产可用）**：① §1 可用能力表 rag 行补「**回答链闭环已接线**——`POST /api/ai/v1/rag/answer`：同一受控检索 + 数据围栏提示词 + 网关卡面生成（组合根 `RagAnswerGenerationAdapter`，模型档位 `bone.ai.rag-answer-model`）+ 接地守卫；生成被网关治理拒绝（注入疑似/配额/红线/内容安全）或 provider 故障时收敛为可控拒答（`answered=false` + 保真 `errorCode`），不抛异常；RAG 生成自此自动继承网关全治理链（含间接注入纵深防护）」；② §3.2 REST 面 RAG 补 `/answer`；③ §6 RAG 配置速查补 `bone.ai.rag-answer-model`。④ 边界：编排层（orchestration）调用点待 workflow 引擎排期；文档中心 ACL 接入仍属接入方契约。
 > **v1.7 变更（企业复杂场景 P0 优化落地，代码已随版发布）**：① §1 可用能力表：orchestration 行补「**双类型护栏已机械强制**」——`AiSuggestion`（AI 建议）与 `Confirmed`（已确认结论）无隐式转换，ArchUnit 规则 6 禁 `AiSuggestion` 越出 `domain.decision` 包；rag 行补「**文档级 ACL 默认 fail-closed**（未适配即拒绝检索）+ **写入侧 PII 等长掩码**（先掩码后嵌入，PII 不入向量库）+ max-scan 3000 两级水位」；gateway 行补「Micrometer 指标适配器（宿主引 micrometer-core 即出指标）」。② §5 红线 `Confirmed` 口径由「目标态」升级为「已机械强制」。③ §6 RAG 配置速查补 `acl.default-deny` / `ingest.pii-mask-enabled` 两项 + `max-scan` 默认值更新为 3000。④ §5 新增红线：LLM guard 开关（输出内容安全 / 注入检测）当前默认关、**决策就绪材料见 ADR-1**，接入方上线前须确认签认状态。
 > **v1.6 变更（流式 SSE 落地，对齐 2026 业界最佳实践）**：① §1 可用能力表 gateway 行补「**流式响应（SSE）**——`streamInvoke` 复用 `invoke` 全治理链，首 token 即渲染、TTFT 可观测，零新增依赖、零改接入代码即可用（缓冲回退）」；② 新增 §2.7 流式响应——门面 `streamChat` + `LlmStreamEvent`（Token/Done/Error）用法、与 `invoke` 同脱敏口径（原文下发、脱敏只出站请求与证据）、含 PII 请求强制缓冲模式的建议；③ 验证证据：gateway 115 测试全绿（含流式 7 例）。
@@ -143,7 +145,7 @@ gateway.streamInvoke(req, events::add);
 
 - **是什么**：9 个节点库（gateway/trace/rules/orchestration/document/rag/notification/integration/ledger）聚合为**可独立部署的 Spring Boot 应用**——统一 REST 面 + Actuator 健康检查，javadoc 自称"八个 AI 节点库"为笔误（pom 实依赖 9 个）。
 - **与主形态的关系**：产品服务仍以进程内嵌库为主形态（零额外跳）；`bone-ai-app` 服务**确认台前端 / 跨语言消费方 / 运维观测面**——它不是第二编排真源（实现仍是那批库），部署演进见总案 §3.1 双形态与 §4.7。
-- **REST 面**：HITL（`/api/ai/v1/hitl/...`）、RAG（`/rag/retrieve|ingest|answer`）、评测（`/eval/...`）、预警（`/notify/...`）、集成（`/integration/invoke`）、演示（`/pipeline`）。
+- **REST 面**：HITL（`/api/ai/v1/hitl/...`）、RAG（`/rag/retrieve|ingest|answer`）、评测（`/api/ai/v1/eval/...`，含离线语义评测判官 `POST /judge/answer-quality`——opt-in、走网关计量、仅供评测管线，不计入接入方 SLA）、预警（`/notify/...`）、集成（`/integration/invoke`）、演示（`/pipeline`）。
 - **配置要点**：`metadata.sdk.deployment-mode=EMBEDDED` + 5 个仓储包（§2.2 全量清单）；生产部署资源配置（HPA / 探针 / 配额多副本）见详设 §6 生产就绪清单。
 
 ---
@@ -182,9 +184,11 @@ rag 指标达标与 pgvector 终局实测、document 完整管线（Docling side
 | `bone.ai.rag.ingest.pii-mask-enabled` | **true**（v1.7 新增） | 写入侧 PII 掩码：true = ingest 先字段级等长局部掩码（身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名）再嵌入存储，PII 语义不入向量库，命中发 `INGEST_PII_MASKED` 事件；false = 明文入库（仅限开发联调，装配时 WARN） |
 | `bone.ai.rag.mmr-lambda` | 0 | MMR 多样性权重（top-K 选取去重，防结果同质化；**0 = 关闭**，λ∈(0,1) 生效，λ=1 纯相关性等价关闭，**λ=0 约定为关闭而非数学上的纯多样性**——防误配乱序；须按评测集回流校准后启用；开启时精排候选按 3 倍扩样） |
 | `bone.ai.rag-answer-model` | `gpt-4o-mini`（v1.8 新增） | RAG 回答链生成模型档位（`POST /rag/answer` 经网关门面调用；引用接地质量对档位敏感，按评测集实测上调；与 `judge-model` 同属 app 宿主级配置） |
+| `bone.ai.rag.grounding.judge-enabled` | **false**（v1.10 新增，opt-in） | 运行时语义接地裁判：true = 确定性守卫过关后追加一次 NLI 语义裁判（经网关卡面，**另一次模型调用**，使每次问答成本约翻倍），拦「词面全对但结论上下文没给」的 paraphrase 编造；裁判明确无支撑即拒答，裁判自身故障回落确定性守卫 + `GROUNDING_JUDGE_DEGRADED` 痕迹（不因裁判故障拒答）。默认 false 只保留零成本确定性守卫，高合规场景显式开启 |
+| `bone.ai.rag.stage-tracing-enabled` | **false**（v1.11 新增，opt-in） | 阶段级检索计时（B16）：true = 每次检索发一条 `RETRIEVE_STAGES` 事件，含 `acl`/`capacity`/`embed`/`score`/`rerank`/`mmr`/`assemble`/`total` 逐段墙钟与 `candidates` 计数，经 `RagEventSink` 落 `RAG_EVENT` 证据快照。用于性能诊断 / 压测定瓶颈，默认关（不付常态开销） |
 
 **降级口径（读路径）**：嵌入 provider 故障 ⇒ WARN 事件 + BM25 单路；重排序 provider 故障 ⇒ WARN 事件 + RRF 粗序；引用强制语义在降级下不变；**严禁切云端辅路**（数据不出域红线）。写入路径（ingest）不降级：嵌入失败即上抛，重入按 `doc_version` 幂等重建。
-**降级痕迹（响应可观测）**：`POST /rag/retrieve` 响应为 `{results: [...], degradations: [...]}`——`degradations` 非空即本次发生能力档位下降（`EMBEDDING_DEGRADED` = 回落 BM25 单路 / `RERANK_DEGRADED` = 回落 RRF 粗序），结果仍全部带出处锚点；接入方 / 评测管线可据此观测，无需翻服务端日志。服务端同步经 `RagEventSink` 下沉事件（默认结构化 WARN）。
+**降级痕迹（响应可观测）**：`POST /rag/retrieve` 响应为 `{results: [...], degradations: [...]}`——`degradations` 非空即本次发生能力档位下降（`EMBEDDING_DEGRADED` = 回落 BM25 单路 / `RERANK_DEGRADED` = 回落 RRF 粗序），结果仍全部带出处锚点；接入方 / 评测管线可据此观测，无需翻服务端日志。服务端同步经 `RagEventSink` 下沉事件（**v1.10：接入 trace 证据仓储时落 `RAG_EVENT` 证据快照——可检索/聚合/回放，替换默认结构化 WARN；仓储缺失时回落默认 WARN**）。
 **文档级 ACL（接入方接线）**：**v1.7 起默认 fail-closed**——未配 `RagAclPort` 实现时拒绝检索（`DenyDocAcl` 返回空可见集 = 全员不可见），而非放行全租户；联调期显式 `bone.ai.rag.acl.default-deny=false` 回落 `NoDocAcl`（装配时 WARN 留痕）。接入方以 `@Bean` 提供 `RagAclPort` 实现（读文档中心 / bone-ai-document 可见集合，身份自行从上下文解析）后：显式 `doc_scope` 无 ACL 归属 ⇒ 403 `AI_RAG_DOC_FORBIDDEN`（不静默回落全租户检索），无作用域时按可见集过滤。**L3 私有化交付前必须接入**（默认拒绝服务期间检索不可用，属预期安全姿势）。
 **ingest 幂等**：`{doc_id, doc_version, segments}`——同版本且切片数一致 ⇒ 跳过；异版本或残缺 ⇒ 软删旧切片后重建（崩溃半截场景自愈）。
 **backlog（P1 剩余）**：查询改写（multi-query / HyDE——决策：批二按评测回流启动，暂不建零消费方 machinery）、降级事件 trace 落库 + 告警接线（端口已就位）、ingest 侧 ACL 校验（随文档中心 ACL 模型定，见详设 §2.6）。
