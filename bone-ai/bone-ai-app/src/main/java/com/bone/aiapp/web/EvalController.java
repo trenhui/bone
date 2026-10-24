@@ -11,6 +11,7 @@ import com.bone.aiapp.eval.gateway.JudgePort;
 import com.bone.aiapp.eval.gateway.JudgeVerdict;
 import com.bone.aiapp.web.EvalWriteRequests.EvalCaseRequest;
 import com.bone.aiapp.web.EvalWriteRequests.EvalRunRequest;
+import com.bone.airag.domain.service.AnswerQuality;
 import com.bone.core.model.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,5 +83,18 @@ public class EvalController {
   @PostMapping("/judge")
   public ApiResponse<JudgeVerdict> judge(@RequestBody JudgeInput input) {
     return ApiResponse.success(judgePort.judge(input));
+  }
+
+  @PostMapping("/answer-quality")
+  public ApiResponse<AnswerQualityResponse> judgeAnswerQuality(
+      @RequestBody AnswerQualityRequest request) {
+    AnswerQuality quality =
+        managementService.judgeAnswerQuality(request.query(), request.contexts(), request.answer());
+    return ApiResponse.success(
+        AnswerQualityResponse.of(
+            quality.faithfulness(),
+            quality.answerRelevance(),
+            quality.contextPrecision(),
+            quality.unsupportedClaims()));
   }
 }
