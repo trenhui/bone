@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 /** 接地提示词装配回归：数据围栏、编号引用、token 预算截断。 */
 class GroundedPromptBuilderTest {
 
-  private static final String CLAUSE_A =
-      "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
+  private static final String CLAUSE_A = "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
   private static final String CLAUSE_B = "保密期限自合同生效之日起五年";
 
   private static RagResult result(String text, String clauseRef, String path) {
@@ -21,8 +20,7 @@ class GroundedPromptBuilderTest {
   @Test
   void wraps_context_in_data_fence_and_numbers_citations() {
     GroundedPrompt prompt =
-        new GroundedPromptBuilder(0)
-            .build("逾期怎么算违约金", List.of(result(CLAUSE_A, "clause-1", "S1")));
+        new GroundedPromptBuilder(0).build("逾期怎么算违约金", List.of(result(CLAUSE_A, "clause-1", "S1")));
 
     // 围栏把「数据」与「指令」结构分离（间接注入第一道防线）
     assertThat(prompt.user()).contains(GroundedPromptBuilder.DATA_FENCE_OPEN);
@@ -73,9 +71,7 @@ class GroundedPromptBuilderTest {
     String longText = CLAUSE_A.repeat(50);
     GroundedPrompt prompt =
         new GroundedPromptBuilder(0)
-            .build(
-                "问题",
-                List.of(result(longText, "c-1", "S1"), result(CLAUSE_B, "c-2", "S2")));
+            .build("问题", List.of(result(longText, "c-1", "S1"), result(CLAUSE_B, "c-2", "S2")));
 
     assertThat(prompt.included()).hasSize(2);
     assertThat(prompt.truncated()).isFalse();

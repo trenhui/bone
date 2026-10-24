@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -128,8 +127,7 @@ class OpenAiCompatibleClientTest {
     // provider 限流 / 错误页 / 截断都会返回无 choices 的 body——
     // 不能靠 asText("")+finish 默认值把它伪装成「正常的空响应」（静默坏数据）
     LlmHttpTransport stub = (url, headers, body) -> "{\"model\":\"m\",\"choices\":[]}";
-    OpenAiCompatibleClient client =
-        new OpenAiCompatibleClient(stub, "http://llm", () -> "k", "m");
+    OpenAiCompatibleClient client = new OpenAiCompatibleClient(stub, "http://llm", () -> "k", "m");
 
     assertThatThrownBy(() -> client.chat(LlmRequest.of("m", List.of(LlmMessage.user("q")))))
         .isInstanceOf(BizException.class)
@@ -142,8 +140,7 @@ class OpenAiCompatibleClientTest {
   @Test
   void malformed_json_is_rejected_with_stable_code() {
     LlmHttpTransport stub = (url, headers, body) -> "<html>502 Bad Gateway</html>";
-    OpenAiCompatibleClient client =
-        new OpenAiCompatibleClient(stub, "http://llm", () -> "k", "m");
+    OpenAiCompatibleClient client = new OpenAiCompatibleClient(stub, "http://llm", () -> "k", "m");
 
     assertThatThrownBy(() -> client.chat(LlmRequest.of("m", List.of(LlmMessage.user("q")))))
         .isInstanceOf(BizException.class)
@@ -161,14 +158,24 @@ class OpenAiCompatibleClientTest {
             "{\"choices\":[{\"delta\":{\"content\":\"世界\"},\"finish_reason\":\"stop\"}],"
                 + "\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":2,\"total_tokens\":5}}");
     OpenAiCompatibleClient client =
-        new OpenAiCompatibleClient(new FakeStreamingTransport(payloads), "https://api.example.com/v1", () -> "sk-test", "gpt-4o-mini");
+        new OpenAiCompatibleClient(
+            new FakeStreamingTransport(payloads),
+            "https://api.example.com/v1",
+            () -> "sk-test",
+            "gpt-4o-mini");
 
     List<LlmStreamEvent> events = new ArrayList<>();
     client.streamChat(LlmRequest.of("gpt-4o-mini", List.of(LlmMessage.user("u"))), events::add);
 
     assertThat(events).hasSize(3);
-    assertThat(events.get(0)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("你好");
-    assertThat(events.get(1)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("世界");
+    assertThat(events.get(0))
+        .isInstanceOf(LlmStreamEvent.Token.class)
+        .extracting("delta")
+        .isEqualTo("你好");
+    assertThat(events.get(1))
+        .isInstanceOf(LlmStreamEvent.Token.class)
+        .extracting("delta")
+        .isEqualTo("世界");
     assertThat(events.get(2))
         .isInstanceOf(LlmStreamEvent.Done.class)
         .satisfies(
@@ -194,22 +201,32 @@ class OpenAiCompatibleClientTest {
   @Test
   void streamChat_falls_back_to_buffered_when_transport_not_streaming() {
     // 不支持真流式的传输（如测试假传输、被熔断装饰器包裹前的直连）走默认 streamPost：把整段响应当单元素流
-    LlmHttpTransport buffered = (url, headers, body) -> "{\"choices\":[{\"message\":{\"content\":\"x\"}}]}";
-    OpenAiCompatibleClient client = new OpenAiCompatibleClient(buffered, "http://llm", () -> "k", "m");
+    LlmHttpTransport buffered =
+        (url, headers, body) -> "{\"choices\":[{\"message\":{\"content\":\"x\"}}]}";
+    OpenAiCompatibleClient client =
+        new OpenAiCompatibleClient(buffered, "http://llm", () -> "k", "m");
 
     List<LlmStreamEvent> events = new ArrayList<>();
     client.streamChat(LlmRequest.of("m", List.of(LlmMessage.user("u"))), events::add);
 
     assertThat(events).hasSize(2);
-    assertThat(events.get(0)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("x");
+    assertThat(events.get(0))
+        .isInstanceOf(LlmStreamEvent.Token.class)
+        .extracting("delta")
+        .isEqualTo("x");
     assertThat(events.get(1)).isInstanceOf(LlmStreamEvent.Done.class);
   }
 
   @Test
   void streamChat_emits_error_on_provider_error_payload() {
-    List<String> payloads = List.of("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit\"}}");
+    List<String> payloads =
+        List.of("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit\"}}");
     OpenAiCompatibleClient client =
-        new OpenAiCompatibleClient(new FakeStreamingTransport(payloads), "https://api.example.com/v1", () -> "sk-test", "m");
+        new OpenAiCompatibleClient(
+            new FakeStreamingTransport(payloads),
+            "https://api.example.com/v1",
+            () -> "sk-test",
+            "m");
 
     List<LlmStreamEvent> events = new ArrayList<>();
     client.streamChat(LlmRequest.of("m", List.of(LlmMessage.user("u"))), events::add);

@@ -10,13 +10,11 @@ import org.junit.jupiter.api.Test;
 /**
  * 生成侧接地守卫回归（「无出处不得生成」红线）。
  *
- * <p>覆盖四类真实失败形态：幻觉引用、完全无引用、编造陈述、编造数字；以及 fail-closed 边界
- * （空上下文 / 空答案 / 仅有引用标记的答案）。
+ * <p>覆盖四类真实失败形态：幻觉引用、完全无引用、编造陈述、编造数字；以及 fail-closed 边界 （空上下文 / 空答案 / 仅有引用标记的答案）。
  */
 class GroundingGuardTest {
 
-  private static final String CLAUSE =
-      "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
+  private static final String CLAUSE = "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
 
   private final GroundingGuard guard = new GroundingGuard(0.6, 0.0);
 

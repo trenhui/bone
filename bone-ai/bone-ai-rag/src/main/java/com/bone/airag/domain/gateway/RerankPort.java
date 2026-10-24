@@ -24,10 +24,10 @@ public interface RerankPort {
   /**
    * 该实现是否为「无精排」兜底（不产出 cross-encoder 分）。默认 {@code false}。
    *
-   * <p>用途：检索链的最终分存在<b>量纲双轨</b>——rerank 正常时为 cross-encoder 分（0~1 / 对数）， 降级或默认 NoOp 时为 RRF 融合分（~0.01 量级）。{@code minScore} 阈值是按 rerank 量纲标的，
-   * 一旦降级/未配 rerank 仍用同一阈值过滤，会把所有结果误杀成空（事故期间质量腰斩）。
-   * 故 {@code minScore} 仅当 {@code !isNoOp() 且未降级}（即分数为 rerank 量纲）时才生效；
-   * 其余情形跳过阈值，保留 RRF 序。见 {@code RagApplicationService.retrieve} 与诊断复核 v1.2。
+   * <p>用途：检索链的最终分存在<b>量纲双轨</b>——rerank 正常时为 cross-encoder 分（0~1 / 对数）， 降级或默认 NoOp 时为 RRF 融合分（~0.01
+   * 量级）。{@code minScore} 阈值是按 rerank 量纲标的， 一旦降级/未配 rerank 仍用同一阈值过滤，会把所有结果误杀成空（事故期间质量腰斩）。 故 {@code
+   * minScore} 仅当 {@code !isNoOp() 且未降级}（即分数为 rerank 量纲）时才生效； 其余情形跳过阈值，保留 RRF 序。见 {@code
+   * RagApplicationService.retrieve} 与诊断复核 v1.2。
    */
   default boolean isNoOp() {
     return false;

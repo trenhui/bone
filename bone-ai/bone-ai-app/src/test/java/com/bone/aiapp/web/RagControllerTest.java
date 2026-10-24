@@ -74,8 +74,7 @@ class RagControllerTest {
         .perform(
             post("/api/ai/v1/rag/retrieve")
                 .contentType("application/json")
-                .content(
-                    "{\"query\":\"q\",\"topK\":3,\"minScore\":0.5,\"maxScan\":100}"))
+                .content("{\"query\":\"q\",\"topK\":3,\"minScore\":0.5,\"maxScan\":100}"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<RagQuery> captor = ArgumentCaptor.forClass(RagQuery.class);
@@ -90,8 +89,7 @@ class RagControllerTest {
     // provider 故障降级时，痕迹码必须透出到响应（接入方 / 评测管线可观测，而非只翻服务端日志）
     when(ragService.retrieve(any()))
         .thenReturn(
-            new RagRetrieveOutcome(
-                List.of(), List.of(RagApplicationService.DEGRADE_EMBEDDING)));
+            new RagRetrieveOutcome(List.of(), List.of(RagApplicationService.DEGRADE_EMBEDDING)));
 
     mockMvc
         .perform(

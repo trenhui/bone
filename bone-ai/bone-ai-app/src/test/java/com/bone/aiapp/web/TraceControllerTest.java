@@ -1,6 +1,5 @@
 package com.bone.aiapp.web;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,8 +23,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 /**
  * 证据链 REST 回放面：租户从上下文 + 跨租户显式拒绝 + 404 语义。
  *
- * <p>「跨租户命中返 403 而非空列表」是本控制器最要紧的行为：空列表会让「查不到」与「不许查」无法区分，
- * 取证场景误判成本极高——测试把它钉死。
+ * <p>「跨租户命中返 403 而非空列表」是本控制器最要紧的行为：空列表会让「查不到」与「不许查」无法区分， 取证场景误判成本极高——测试把它钉死。
  */
 class TraceControllerTest {
 
@@ -36,8 +34,7 @@ class TraceControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(
-                new TraceController(evidenceQuery, new AiTenantContext()))
+        MockMvcBuilders.standaloneSetup(new TraceController(evidenceQuery, new AiTenantContext()))
             .setControllerAdvice(new GlobalExceptionHandler()) // 与生产装配一致：BizException → HTTP 状态码
             .build();
   }

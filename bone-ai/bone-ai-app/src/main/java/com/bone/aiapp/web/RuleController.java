@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 生产拓扑：规则资产 REST 管理面（详设附录 A「规则」落地；管理员 / 规范流程消费，权限复用 bone-iam）。
  *
- * <p>此前规则治理只有进程内服务，运营改规则要发版或连库——本控制器把治理动作暴露为 HTTP：创建 / 发布（首版与新版按历史自动分流）/
- * 回滚 / 灰度 / 命中标记 / 废弃 / 试算求值。<b>发布即回归</b>的强约束留在服务层（{@code RuleApplicationService} 预检编译 +
- * 正负例断言，不因 HTTP 化而放宽）；本面只做「把治理动作送到服务」，不复制任何规则语义。
+ * <p>此前规则治理只有进程内服务，运营改规则要发版或连库——本控制器把治理动作暴露为 HTTP：创建 / 发布（首版与新版按历史自动分流）/ 回滚 / 灰度 / 命中标记 / 废弃 /
+ * 试算求值。<b>发布即回归</b>的强约束留在服务层（{@code RuleApplicationService} 预检编译 + 正负例断言，不因 HTTP
+ * 化而放宽）；本面只做「把治理动作送到服务」，不复制任何规则语义。
  *
  * <p>租户一律从上下文取（详设 §3.1）；写操作的操作人（{@code operator}）由请求体显式给出——它是审计字段不是安全边界，
  * 与「租户禁止入参传」不矛盾：租户决定数据边界，operator 只记录谁按的按钮。
@@ -77,8 +77,8 @@ public class RuleController {
   /**
    * 发布：无历史 ⇒ 首版（publishFirst）；有历史 ⇒ 新版（publishNext）。
    *
-   * <p>分流逻辑放控制器而非让调用方记两个端点——「发一条规则」是运营心智，首版/新版是实现细节。 发布强约束（编译预检 /
-   * 回归样本）在服务层，见 {@code RuleApplicationService}。
+   * <p>分流逻辑放控制器而非让调用方记两个端点——「发一条规则」是运营心智，首版/新版是实现细节。 发布强约束（编译预检 / 回归样本）在服务层，见 {@code
+   * RuleApplicationService}。
    */
   @PostMapping("/{ruleId}/publish")
   public ApiResponse<RuleAssetVersion> publish(
@@ -87,9 +87,17 @@ public class RuleController {
     RuleAssetVersion version =
         ruleService.history(ruleId).isEmpty()
             ? ruleService.publishFirst(
-                ruleId, request.expression(), request.hitBlock(), request.grayPercent(), request.operator())
+                ruleId,
+                request.expression(),
+                request.hitBlock(),
+                request.grayPercent(),
+                request.operator())
             : ruleService.publishNext(
-                ruleId, request.expression(), request.hitBlock(), request.grayPercent(), request.operator());
+                ruleId,
+                request.expression(),
+                request.hitBlock(),
+                request.grayPercent(),
+                request.operator());
     return ApiResponse.success(version);
   }
 
@@ -98,12 +106,14 @@ public class RuleController {
   public ApiResponse<RuleAssetVersion> rollback(
       @PathVariable String ruleId, @RequestBody RollbackRuleRequest request) {
     requireOwned(ruleQuery.findById(ruleId), ruleId);
-    return ApiResponse.success(ruleService.rollback(ruleId, request.targetVersionNo(), request.operator()));
+    return ApiResponse.success(
+        ruleService.rollback(ruleId, request.targetVersionNo(), request.operator()));
   }
 
   /** 调整灰度比例（0-100，越界由服务层断言 {@code AI_RULE_GRAY_OUT_OF_RANGE}）。 */
   @PostMapping("/{ruleId}/gray")
-  public ApiResponse<Void> setGray(@PathVariable String ruleId, @RequestBody GrayRuleRequest request) {
+  public ApiResponse<Void> setGray(
+      @PathVariable String ruleId, @RequestBody GrayRuleRequest request) {
     requireOwned(ruleQuery.findById(ruleId), ruleId);
     ruleService.setGrayPercent(ruleId, request.grayPercent());
     return ApiResponse.success();
@@ -131,8 +141,7 @@ public class RuleController {
   public ApiResponse<Object> evaluate(
       @PathVariable String ruleId, @RequestBody EvaluateRuleRequest request) {
     requireOwned(ruleQuery.findById(ruleId), ruleId);
-    return ApiResponse.success(
-        ruleService.evaluate(ruleId, request.context(), request.trace()));
+    return ApiResponse.success(ruleService.evaluate(ruleId, request.context(), request.trace()));
   }
 
   // ---- 租户校验：规则是租户隔离资产，跨租户读写一律显式拒绝 ----

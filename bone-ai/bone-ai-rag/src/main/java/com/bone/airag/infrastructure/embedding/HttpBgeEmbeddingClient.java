@@ -69,8 +69,8 @@ public class HttpBgeEmbeddingClient implements EmbeddingPort {
   /**
    * 批量嵌入（TEI / infinity 兼容）：{@code inputs} 传数组，响应为 {@code [[...],[...],...]}。
    *
-   * <p>相比逐条 {@code embed}，一次往返拿回全部向量，大语料 ingest 吞吐显著更高。批返回数量必须与输入数量一致，
-   * 否则调用方（{@code RagApplicationService.ingest}）fail-closed 抛错。
+   * <p>相比逐条 {@code embed}，一次往返拿回全部向量，大语料 ingest 吞吐显著更高。批返回数量必须与输入数量一致， 否则调用方（{@code
+   * RagApplicationService.ingest}）fail-closed 抛错。
    */
   @Override
   public List<float[]> embedBatch(List<String> texts) {
@@ -141,7 +141,8 @@ public class HttpBgeEmbeddingClient implements EmbeddingPort {
       List<float[]> out = new ArrayList<>(root.size());
       for (JsonNode node : root) {
         if (!node.isArray()) {
-          throw new BizException(502, "嵌入批量响应结构非法（内层非向量数组）", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+          throw new BizException(
+              502, "嵌入批量响应结构非法（内层非向量数组）", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
         }
         float[] v = new float[node.size()];
         for (int i = 0; i < node.size(); i++) {

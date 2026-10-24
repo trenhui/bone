@@ -19,7 +19,6 @@ import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
 import com.bone.ai.gateway.infrastructure.ResilientLlmTransport;
-import com.bone.ai.gateway.infrastructure.ResilientLlmTransport.RetriableHttpException;
 import com.bone.ai.gateway.infrastructure.cache.InMemoryLlmResponseCache;
 import com.bone.ai.gateway.infrastructure.event.SpringDomainEventPublisher;
 import com.bone.ai.gateway.infrastructure.gateway.ConfigApiKeyProvider;
@@ -30,7 +29,6 @@ import com.bone.ai.gateway.infrastructure.security.JsonOutputValidator;
 import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -154,9 +152,9 @@ public class LlmGatewayAutoConfiguration {
    * provider API 密钥解析（按调用，支持轮换 / 短时限 Virtual Key）。
    *
    * <p>2026-10-23 接线：{@link ApiKeyProvider} 端口此前已就位却无任何消费方——客户端构造期固化 {@code String
-   * apiKey}，密钥轮换语义落空，「以 {@code @Bean} 覆盖为 bone-security 实现」无从谈起（同 2026-10-21 修
-   * {@code LlmMetrics} / {@code ContentSafetyGuard} 零消费方的反模式）。此处补默认实现 + 条件装配：默认从配置
-   * 按调用解析，接入方以 {@code @Bean} 覆盖为 bone-security Virtual Key 实现即生效（详设 §6.1）。
+   * apiKey}，密钥轮换语义落空，「以 {@code @Bean} 覆盖为 bone-security 实现」无从谈起（同 2026-10-21 修 {@code LlmMetrics} /
+   * {@code ContentSafetyGuard} 零消费方的反模式）。此处补默认实现 + 条件装配：默认从配置 按调用解析，接入方以 {@code @Bean} 覆盖为
+   * bone-security Virtual Key 实现即生效（详设 §6.1）。
    */
   @Bean
   @ConditionalOnMissingBean

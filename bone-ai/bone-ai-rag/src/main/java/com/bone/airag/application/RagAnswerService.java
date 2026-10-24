@@ -17,29 +17,25 @@ import java.util.List;
  * <ol>
  *   <li><b>先检索、无据不调模型</b>：检索结果为空时直接拒答，<b>不发起 LLM 调用</b>——没有上下文的生成必然靠模型自身
  *       知识，正是「无出处不得生成」要禁止的情形；同时也省掉一次纯浪费的模型成本。
- *   <li><b>预算截断后只对「真进了提示词的那部分」校验</b>：{@link GroundedPrompt#included()} 而非全部检索结果。
- *       否则模型引用 {@code [3]}、而 {@code [3]} 已被预算截掉时，守卫与提示词对不上账，校验结论失去意义。
- *   <li><b>生成后必过守卫</b>：{@link RagApplicationService#verifyGrounding} 校验引用完整性与逐句支撑（含数字一致性），
- *       不通过即拒答并把 {@link GroundingVerdict} 一并返回（前端可展示原因、监控可聚合拒答率）。
+ *   <li><b>预算截断后只对「真进了提示词的那部分」校验</b>：{@link GroundedPrompt#included()} 而非全部检索结果。 否则模型引用 {@code
+ *       [3]}、而 {@code [3]} 已被预算截掉时，守卫与提示词对不上账，校验结论失去意义。
+ *   <li><b>生成后必过守卫</b>：{@link RagApplicationService#verifyGrounding} 校验引用完整性与逐句支撑（含数字一致性）， 不通过即拒答并把
+ *       {@link GroundingVerdict} 一并返回（前端可展示原因、监控可聚合拒答率）。
  *   <li><b>拒答不重试、不降级为「自由发挥」</b>：拒答是合规结果；退化成「不带出处的回答」等于把红线作废。
  * </ol>
  *
- * <p><b>职责边界</b>：本类只做编排（顺序、短路、痕迹聚合）。提示词规则在 {@link GroundedPromptBuilder}，判定规则在
- * {@code GroundingGuard}，检索在 {@link RagApplicationService}——应用层不承载领域规则（ArchUnit 约束）。
+ * <p><b>职责边界</b>：本类只做编排（顺序、短路、痕迹聚合）。提示词规则在 {@link GroundedPromptBuilder}，判定规则在 {@code
+ * GroundingGuard}，检索在 {@link RagApplicationService}——应用层不承载领域规则（ArchUnit 约束）。
  */
 public class RagAnswerService {
 
-  /**
-   * 统一拒答文案（服务端兜底）：前端应优先按 {@code errorCode} 走 i18n，本文案只用于无前端场景。
-   */
-  public static final String REFUSAL_ANSWER =
-      "未能在授权文档中找到可支撑该结论的依据，已拒绝作答。";
+  /** 统一拒答文案（服务端兜底）：前端应优先按 {@code errorCode} 走 i18n，本文案只用于无前端场景。 */
+  public static final String REFUSAL_ANSWER = "未能在授权文档中找到可支撑该结论的依据，已拒绝作答。";
 
   /**
    * 降级痕迹码（进入 {@code degradations}）：上下文因 token 预算被截断。
    *
-   * <p>必须透出而不是静默截断：截断会让「为什么这个问题答得不全」变成无法归因的悬案——是没检索到，还是检索到了
-   * 但没进上下文？这条痕迹把两种情形区分开。
+   * <p>必须透出而不是静默截断：截断会让「为什么这个问题答得不全」变成无法归因的悬案——是没检索到，还是检索到了 但没进上下文？这条痕迹把两种情形区分开。
    */
   public static final String DEGRADE_CONTEXT_TRUNCATED = "CONTEXT_TRUNCATED";
 

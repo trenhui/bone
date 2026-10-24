@@ -33,8 +33,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 /**
  * 规则资产 REST 管理面：租户从上下文 + 跨租户 403 + 发布分流（无历史⇒首版 / 有历史⇒新版）。
  *
- * <p>「发布分流」是运营心智与实现细节的边界：控制器按版本链自动选 publishFirst / publishNext，测试钉死这个分流，
- * 防止回归成「运营必须知道发过没有」。
+ * <p>「发布分流」是运营心智与实现细节的边界：控制器按版本链自动选 publishFirst / publishNext，测试钉死这个分流， 防止回归成「运营必须知道发过没有」。
  */
 class RuleControllerTest {
 
@@ -116,8 +115,7 @@ class RuleControllerTest {
         .andExpect(jsonPath("$.success").value(true));
 
     verify(ruleService).publishFirst("r1", "expr", true, 0, "ops-1");
-    verify(ruleService, never())
-        .publishNext(any(), any(), anyBoolean(), anyInt(), any());
+    verify(ruleService, never()).publishNext(any(), any(), anyBoolean(), anyInt(), any());
   }
 
   @Test
@@ -180,8 +178,7 @@ class RuleControllerTest {
   void evaluate_passes_context_through() throws Exception {
     TenantContext.setTenantId("1");
     when(ruleQuery.findById("r1")).thenReturn(Optional.of(rule("r1", "1")));
-    when(ruleService.evaluate(eq("r1"), any(), eq(true)))
-        .thenReturn(mock(RuleEvalResult.class));
+    when(ruleService.evaluate(eq("r1"), any(), eq(true))).thenReturn(mock(RuleEvalResult.class));
 
     mockMvc
         .perform(

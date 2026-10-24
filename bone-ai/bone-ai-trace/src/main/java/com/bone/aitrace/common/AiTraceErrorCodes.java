@@ -17,9 +17,7 @@ public final class AiTraceErrorCodes {
    */
   public static final String TENANT_CONTEXT_MISSING = "AI_TRACE_TENANT_CONTEXT_MISSING";
 
-  /**
-   * 证据回放：快照不存在（404，REST 回放面，2026-10-23 随 TraceController 落地）。
-   */
+  /** 证据回放：快照不存在（404，REST 回放面，2026-10-23 随 TraceController 落地）。 */
   public static final String NOT_FOUND = "AI_TRACE_NOT_FOUND";
 
   /**

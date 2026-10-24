@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -93,8 +93,7 @@ class LlmGatewayApplicationServiceTest {
     LlmGatewayPolicies policies =
         new LlmGatewayPolicies(new RegexPiiRedactor(true), null, null, null, null, metrics, null);
     FakeStreamingLlmClient fake =
-        new FakeStreamingLlmClient(
-            List.of("我的手机号是", "13800138000", "谢谢"), LlmUsage.empty());
+        new FakeStreamingLlmClient(List.of("我的手机号是", "13800138000", "谢谢"), LlmUsage.empty());
     LlmGatewayApplicationService svc =
         new LlmGatewayApplicationService(fake, publisher, tenantProvider, policies);
     when(tenantProvider.currentTenantId()).thenReturn("42");
@@ -148,11 +147,13 @@ class LlmGatewayApplicationServiceTest {
   void streamInvoke_deterministic_request_caches_and_second_call_hits_cache() {
     // 确定性请求（temperature 未指定）走精确缓存：第二次命中缓存，不触达模型客户端
     LlmResponseCache cache = new InMemoryLlmResponseCache(10, 60_000L);
-    FakeStreamingLlmClient fake =
-        new FakeStreamingLlmClient(List.of("hi"), LlmUsage.empty());
+    FakeStreamingLlmClient fake = new FakeStreamingLlmClient(List.of("hi"), LlmUsage.empty());
     LlmGatewayApplicationService svc =
         new LlmGatewayApplicationService(
-            fake, publisher, tenantProvider, new LlmGatewayPolicies(null, null, cache, null, null, null, null));
+            fake,
+            publisher,
+            tenantProvider,
+            new LlmGatewayPolicies(null, null, cache, null, null, null, null));
     when(tenantProvider.currentTenantId()).thenReturn("42");
     LlmRequest req = LlmRequest.of("m", List.of(LlmMessage.user("u")));
 

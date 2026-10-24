@@ -40,8 +40,7 @@ public class RagController {
     int maxScan = req.maxScan() != null ? req.maxScan() : props.getRagMaxScan();
     RagQuery query = new RagQuery(req.query(), req.docScope(), topK, minScore, maxScan);
     RagApplicationService.RagRetrieveOutcome outcome = ragService.retrieve(query);
-    return ApiResponse.success(
-        new RagRetrieveResponse(outcome.results(), outcome.degradations()));
+    return ApiResponse.success(new RagRetrieveResponse(outcome.results(), outcome.degradations()));
   }
 
   @PostMapping("/ingest")

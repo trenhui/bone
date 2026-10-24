@@ -10,10 +10,9 @@ import java.util.List;
  *
  * <p>仅用于本地/测试可跑通检索链路，不含语义。终局替换为 bge-m3（1024 维）等真实模型， 由消费方以 {@code @Bean EmbeddingPort} 覆盖。
  *
- * <p><b>2026-10-24 分词修正</b>：原按空白 {@code \s+} 切分，中文整句成为单 token → 向量路在中文语料上近乎失效
- * （混合检索退化 BM25 单路）。改为复用 {@link CjkTokenizer}（字母数字串 + 汉字整串 + CJK bigram），与 BM25 同口径，
- * 使 dev/test 的双路真正可跑、并让中文 golden-set 评测有意义。版本号随之升级为 {@code hash-64-cjk}（向量口径已变，
- * 旧向量 fail-closed 跳过，避免混用不可比向量）。
+ * <p><b>2026-10-24 分词修正</b>：原按空白 {@code \s+} 切分，中文整句成为单 token → 向量路在中文语料上近乎失效 （混合检索退化 BM25 单路）。改为复用
+ * {@link CjkTokenizer}（字母数字串 + 汉字整串 + CJK bigram），与 BM25 同口径， 使 dev/test 的双路真正可跑、并让中文 golden-set
+ * 评测有意义。版本号随之升级为 {@code hash-64-cjk}（向量口径已变， 旧向量 fail-closed 跳过，避免混用不可比向量）。
  */
 public class TransitionalHashEmbedding implements EmbeddingPort {
 

@@ -22,8 +22,8 @@ import java.util.stream.StreamSupport;
 /**
  * JDK 原生 HTTP 出站传输（零依赖）：同时实现 {@code post}（缓冲）与 {@code streamPost}（SSE 真流式）。
  *
- * <p>替代原 auto-config 内联 lambda——lambda 无法实现两个方法，而流式（2026 LLM 网关标配，首 token 延迟 / 长文逐步呈现 /
- * 背压）要求 {@code streamPost} 真实落地。熔断 / 重试仍由 {@link ResilientLlmTransport} 在外层包裹（其 {@code streamPost}
+ * <p>替代原 auto-config 内联 lambda——lambda 无法实现两个方法，而流式（2026 LLM 网关标配，首 token 延迟 / 长文逐步呈现 / 背压）要求
+ * {@code streamPost} 真实落地。熔断 / 重试仍由 {@link ResilientLlmTransport} 在外层包裹（其 {@code streamPost}
  * 透传本实现，断路器守卫流获取；流的持续消费不计入断路器，与业界「熔断防重试风暴、不误伤正常长流」一致）。
  */
 public class JdkLlmTransport implements LlmHttpTransport {
@@ -61,7 +61,8 @@ public class JdkLlmTransport implements LlmHttpTransport {
     HttpResponse<InputStream> resp;
     try {
       resp =
-          http.send(buildRequest(url, headers, jsonBody), HttpResponse.BodyHandlers.ofInputStream());
+          http.send(
+              buildRequest(url, headers, jsonBody), HttpResponse.BodyHandlers.ofInputStream());
     } catch (IOException e) {
       throw new RetriableHttpException("LLM 流式调用异常: " + e.getMessage(), e);
     } catch (InterruptedException e) {

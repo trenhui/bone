@@ -17,15 +17,15 @@ import com.bone.core.exception.BizException;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.mockito.ArgumentCaptor;
 
 /**
  * Redis 分布式配额：与进程内版逐条对齐的语义 + Redis 专属边界（TTL / fail-open）。
  *
- * <p>用 Mock 替身驱动（不连真实 Redis）：验证的是<b>键设计、超限判定、故障策略</b>这些本模块自身的逻辑，
- * Redisson 客户端正确性由 Redisson 自身测试与联调覆盖。
+ * <p>用 Mock 替身驱动（不连真实 Redis）：验证的是<b>键设计、超限判定、故障策略</b>这些本模块自身的逻辑， Redisson 客户端正确性由 Redisson
+ * 自身测试与联调覆盖。
  */
 class RedisTenantQuotaGuardTest {
 
@@ -118,7 +118,8 @@ class RedisTenantQuotaGuardTest {
   void quota_exceeded_not_swallowed_by_fail_open() {
     RMap<String, Long> counter = mock(RMap.class);
     when(redisson.<String, Long>getMap(anyString())).thenReturn(counter);
-    when(counter.addAndGet(eq("count"), eq(1))).thenThrow(new BizException(429, "quota", AiGatewayErrorCodes.QUOTA_EXCEEDED));
+    when(counter.addAndGet(eq("count"), eq(1)))
+        .thenThrow(new BizException(429, "quota", AiGatewayErrorCodes.QUOTA_EXCEEDED));
     RedisTenantQuotaGuard guard = new RedisTenantQuotaGuard(redisson, 1, 60_000);
 
     assertThatThrownBy(() -> guard.acquire("1")).isInstanceOf(BizException.class);
