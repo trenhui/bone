@@ -1,7 +1,8 @@
 # BONE AI 能力中台 · 产品接入指南
 
-> **版本**：v1.7　**日期**：2026-10-24　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》
-> **v1.7 变更（企业复杂场景 P0 优化落地，代码已随版发布）**：① §1 可用能力表：orchestration 行补「**双类型护栏已机械强制**」——`AiSuggestion`（AI 建议）与 `Confirmed`（已确认结论）无隐式转换，ArchUnit 规则 6 禁 `AiSuggestion` 越出 `domain.decision` 包；rag 行补「**文档级 ACL 默认 fail-closed**（未适配即拒绝检索）+ **写入侧 PII 等长掩码**（先掩码后嵌入，PII 不入向量库）+ max-scan 3000 两级水位」；gateway 行补「Micrometer 指标适配器（宿主引 micrometer-core 即出指标）」。② §5 红线 `Confirmed` 口径由「目标态」升级为「已机械强制」。③ §6 RAG 配置速查补 `acl.default-deny` / `ingest.pii-mask-enabled` 两项 + `max-scan` 默认值更新为 3000。
+> **版本**：v1.8　**日期**：2026-10-24　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》《RAG 能力方案》《架构决策记录 ADR 包》
+> **v1.8 变更（R1「接 G」落地：RAG 回答链生产可用）**：① §1 可用能力表 rag 行补「**回答链闭环已接线**——`POST /api/ai/v1/rag/answer`：同一受控检索 + 数据围栏提示词 + 网关卡面生成（组合根 `RagAnswerGenerationAdapter`，模型档位 `bone.ai.rag-answer-model`）+ 接地守卫；生成被网关治理拒绝（注入疑似/配额/红线/内容安全）或 provider 故障时收敛为可控拒答（`answered=false` + 保真 `errorCode`），不抛异常；RAG 生成自此自动继承网关全治理链（含间接注入纵深防护）」；② §3.2 REST 面 RAG 补 `/answer`；③ §6 RAG 配置速查补 `bone.ai.rag-answer-model`。④ 边界：编排层（orchestration）调用点待 workflow 引擎排期；文档中心 ACL 接入仍属接入方契约。
+> **v1.7 变更（企业复杂场景 P0 优化落地，代码已随版发布）**：① §1 可用能力表：orchestration 行补「**双类型护栏已机械强制**」——`AiSuggestion`（AI 建议）与 `Confirmed`（已确认结论）无隐式转换，ArchUnit 规则 6 禁 `AiSuggestion` 越出 `domain.decision` 包；rag 行补「**文档级 ACL 默认 fail-closed**（未适配即拒绝检索）+ **写入侧 PII 等长掩码**（先掩码后嵌入，PII 不入向量库）+ max-scan 3000 两级水位」；gateway 行补「Micrometer 指标适配器（宿主引 micrometer-core 即出指标）」。② §5 红线 `Confirmed` 口径由「目标态」升级为「已机械强制」。③ §6 RAG 配置速查补 `acl.default-deny` / `ingest.pii-mask-enabled` 两项 + `max-scan` 默认值更新为 3000。④ §5 新增红线：LLM guard 开关（输出内容安全 / 注入检测）当前默认关、**决策就绪材料见 ADR-1**，接入方上线前须确认签认状态。
 > **v1.6 变更（流式 SSE 落地，对齐 2026 业界最佳实践）**：① §1 可用能力表 gateway 行补「**流式响应（SSE）**——`streamInvoke` 复用 `invoke` 全治理链，首 token 即渲染、TTFT 可观测，零新增依赖、零改接入代码即可用（缓冲回退）」；② 新增 §2.7 流式响应——门面 `streamChat` + `LlmStreamEvent`（Token/Done/Error）用法、与 `invoke` 同脱敏口径（原文下发、脱敏只出站请求与证据）、含 PII 请求强制缓冲模式的建议；③ 验证证据：gateway 115 测试全绿（含流式 7 例）。
 > **v1.5 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：§1 可用能力表 gateway 行补「密钥按调用解析（`ApiKeyProvider`，默认配置实现 + `@Bean` 覆盖切 Virtual Key，换 key 不重启）」；§5 红线补密钥按调用解析口径 + Virtual Key 部署下空 key WARN 的预期性说明。网关侧 seam 已接通，剩余 L3 = bone-security Virtual Key 能力本体实现（详设 §6.1）。
 > **v1.4 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行补文档级 ACL seam / MMR（默认关）/ 降级痕迹；§6 RAG 配置速查补 `bone.ai.rag.mmr-lambda`（λ 约定防误配）、降级痕迹响应结构（`{results, degradations}`）、文档级 ACL 接入方接线说明（`RagAclPort` Bean 覆盖 + 403 `AI_RAG_DOC_FORBIDDEN`，L3 前必须接入）、backlog 收敛为查询改写 / trace 接线 / ingest ACL 三项（查询改写记决策：批二启动）。
@@ -27,7 +28,7 @@ bone-ai 各模块是**进程内 starter（库形态，零额外跳）**，**主�
 | `bone-ai-orchestration` | 编排执行器：规则预检 → 命中短路｜LLM → `DecisionGate` 确定性闸门 + HITL 五态 / 处置链 / 超时升级；**双类型护栏（v1.7 已机械强制）**：`AiSuggestion<T>`（AI 建议，必带 evidenceRef，置信度 ∈[0,1]）与 `Confirmed<T>`（已确认结论，必带 decidedBy/at）无隐式转换，ArchUnit 规则 6 机械强制 `AiSuggestion` 不得越出 `domain.decision` 包；`HitlItem.toConfirmed()` 仅 CONFIRMED/MODIFIED 可取确认 | `OrchestrationApplicationService`；HITL REST 由 `bone-ai-app` 暴露；业务侧只消费 `Confirmed<T>`，编译期即挡住「拿 AI 建议直接落业务决定」 |
 | `bone-ai-trace` | 证据三元组（输入哈希 + IR + 引擎版本）落库 + 回放 + 计量事件 | `EvidenceTraceListener` 订阅 `LlmCallRecorded`；回放：进程内 `EvidenceQueryApplicationService.replayByTraceId`，或 `bone-ai-app` REST `GET /api/ai/v1/trace/{traceId}`（租户隔离，越权 403） |
 | `bone-ai-document` | 条款切分 + 统一 IR（PDFBox 默认；Docling sidecar 适配器就位，`bone.ai.document.docling.enabled=true` 开启即替换，默认关） | `DocumentParseApplicationService` |
-| `bone-ai-rag` | 受控检索最小全链：租户过滤 → 文档级 ACL（**v1.7 默认 fail-closed**：未适配 `RagAclPort` 时拒绝检索而非放行全租户，`NoDocAcl` 降级为开发联调形态）→ 容量护栏（`max-scan` 3000 硬拒 + `warn-scan-threshold` 2000 预警两级水位，fail-closed）→ 引用强制前置 → 向量（配 `base-url` 走 bge-m3 HTTP 客户端，否则过渡哈希兜底；故障降级 BM25 单路）∥ BM25（**v1.7 双路并发**）→ RRF → rerank（配 `base-url` 走 cross-encoder，否则 NoOp；故障降级 RRF 粗序）→ `min-score` 过滤 → MMR 多样性（默认关）→ 引用强制 fail-closed；降级痕迹透出响应 `degradations`；**写入侧 PII 等长掩码**（v1.7：ingest 先掩码后嵌入，身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名，PII 语义不入向量库） | `RagApplicationService`；`ChunkRepository` 落 `ai_rag_chunk`（`doc_version` 幂等批键）；ACL 接入方以 `@Bean RagAclPort` 覆盖（适配就绪前默认拒绝服务）；PII 掩码开关 `bone.ai.rag.ingest.pii-mask-enabled`（默认 true，联调可关并留 WARN） |
+| `bone-ai-rag` | 受控检索最小全链：租户过滤 → 文档级 ACL（**v1.7 默认 fail-closed**：未适配 `RagAclPort` 时拒绝检索而非放行全租户，`NoDocAcl` 降级为开发联调形态）→ 容量护栏（`max-scan` 3000 硬拒 + `warn-scan-threshold` 2000 预警两级水位，fail-closed）→ 引用强制前置 → 向量（配 `base-url` 走 bge-m3 HTTP 客户端，否则过渡哈希兜底；故障降级 BM25 单路）∥ BM25（**v1.7 双路并发**）→ RRF → rerank（配 `base-url` 走 cross-encoder，否则 NoOp；故障降级 RRF 粗序）→ `min-score` 过滤 → MMR 多样性（默认关）→ 引用强制 fail-closed；降级痕迹透出响应 `degradations`；**写入侧 PII 等长掩码**（v1.7：ingest 先掩码后嵌入，身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名，PII 语义不入向量库）；**回答链闭环（v1.8 接线）**：`RagAnswerService`（检索 → `<RETRIEVED_DATA>` 围栏提示词 → `AnswerGenerationPort` → 接地守卫 → 拒答或返回），组合根 `RagAnswerGenerationAdapter` 转调网关 `invoke`（红线/配额/注入检测/脱敏/缓存/输出内容安全全治理链 + 计量/证据链同普通 LLM 调用），生成故障（治理拒绝/provider 故障）收敛为可控拒答（`answered=false` + 保真 `errorCode`，不抛异常） | `RagApplicationService` / `RagAnswerService`（REST `/rag/retrieve|ingest|answer`）；`ChunkRepository` 落 `ai_rag_chunk`（`doc_version` 幂等批键）；ACL 接入方以 `@Bean RagAclPort` 覆盖（适配就绪前默认拒绝服务）；PII 掩码开关 `bone.ai.rag.ingest.pii-mask-enabled`（默认 true，联调可关并留 WARN）；回答模型档位 `bone.ai.rag-answer-model`（缺省与网关门面同档） |
 | `bone-ai-notification` | AI 域预警：dispatch / ack / 消警守卫（Webhook + HMAC 签名） | `AlertNotificationApplicationService` |
 | `bone-ai-integration` | AI 出站适配：外部系统调用 + SSRF 守卫 + HMAC 回调校验 + Shadow/Assisted/Automated 三态 | `IntegrationApplicationService` |
 | `bone-ai-ledger` | 多维额度台账 + 两阶段预留（域中立内核，进程内 `InMemoryLimitLedger` 默认） | `LimitLedger` 端口，按需注入 |
@@ -142,7 +143,7 @@ gateway.streamInvoke(req, events::add);
 
 - **是什么**：9 个节点库（gateway/trace/rules/orchestration/document/rag/notification/integration/ledger）聚合为**可独立部署的 Spring Boot 应用**——统一 REST 面 + Actuator 健康检查，javadoc 自称"八个 AI 节点库"为笔误（pom 实依赖 9 个）。
 - **与主形态的关系**：产品服务仍以进程内嵌库为主形态（零额外跳）；`bone-ai-app` 服务**确认台前端 / 跨语言消费方 / 运维观测面**——它不是第二编排真源（实现仍是那批库），部署演进见总案 §3.1 双形态与 §4.7。
-- **REST 面**：HITL（`/api/ai/v1/hitl/...`）、RAG（`/rag/retrieve|ingest`）、评测（`/eval/...`）、预警（`/notify/...`）、集成（`/integration/invoke`）、演示（`/pipeline`）。
+- **REST 面**：HITL（`/api/ai/v1/hitl/...`）、RAG（`/rag/retrieve|ingest|answer`）、评测（`/eval/...`）、预警（`/notify/...`）、集成（`/integration/invoke`）、演示（`/pipeline`）。
 - **配置要点**：`metadata.sdk.deployment-mode=EMBEDDED` + 5 个仓储包（§2.2 全量清单）；生产部署资源配置（HPA / 探针 / 配额多副本）见详设 §6 生产就绪清单。
 
 ---
@@ -162,6 +163,7 @@ rag 指标达标与 pgvector 终局实测、document 完整管线（Docling side
 - **密钥不得留未解析占位符**：`bone.ai.gateway.api-key` 含 `${...}` 即启动失败（fail-fast，防模板配置流入生产）；https 远端 provider 空 key 会 WARN（接 Virtual Key 后配置态空 key 属预期，可忽略该 WARN）。
 - **密钥按调用解析**：provider key 经 `ApiKeyProvider` 端口每次请求现取（默认读配置；以 `@Bean ApiKeyProvider` 覆盖即切 Virtual Key / 托管密钥——支持轮换与短时限 key，换 key 不重启，客户端零改动）；模型 HTTP / key 只出现在 gateway，业务侧不接触。
 - **多副本部署配额**：宿主引入 Redisson 即自动切 Redis 分布式配额（`quota-redis-enabled` 默认 true）；Redis 故障 fail-open + WARN（配额是成本防线不是可用性防线）。
+- **LLM guard 开关须过威胁模型决策**：输出内容安全与提示注入检测当前**默认关**（宿主不提供 guard bean 即无防线——与 PII 脱敏 / 配额 / 成本红线的默认开姿态不同，属已知待决策项）。接入方上线前须知：ADR-1 已产出决策就绪材料（建议：内容安全三产品默认开、注入检测三件套），**签认前不得对外宣称内容安全已覆盖**；涉及对外 / 对客户内容的产品（SynapClaim 理赔通知书、procuraAI 供应商沟通）应主动推动 ADR-1 签认（Go-Live 硬依赖）。
 - **上线前**过《详设》§6 生产就绪清单（部署 / 观测 / 安全 / 容量 / 灰度 / 演练六域 + Go-Live 判据）。
 
 ---
@@ -179,6 +181,7 @@ rag 指标达标与 pgvector 终局实测、document 完整管线（Docling side
 | `bone.ai.rag.acl.default-deny` | **true**（v1.7 新增） | 文档级 ACL 默认姿态：true = 未配 `RagAclPort` 实现时拒绝检索（fail-closed，`DenyDocAcl` 空可见集）；false = 回落 `NoDocAcl` 放行全租户（仅限开发联调，装配时 WARN）。生产保持 true |
 | `bone.ai.rag.ingest.pii-mask-enabled` | **true**（v1.7 新增） | 写入侧 PII 掩码：true = ingest 先字段级等长局部掩码（身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名）再嵌入存储，PII 语义不入向量库，命中发 `INGEST_PII_MASKED` 事件；false = 明文入库（仅限开发联调，装配时 WARN） |
 | `bone.ai.rag.mmr-lambda` | 0 | MMR 多样性权重（top-K 选取去重，防结果同质化；**0 = 关闭**，λ∈(0,1) 生效，λ=1 纯相关性等价关闭，**λ=0 约定为关闭而非数学上的纯多样性**——防误配乱序；须按评测集回流校准后启用；开启时精排候选按 3 倍扩样） |
+| `bone.ai.rag-answer-model` | `gpt-4o-mini`（v1.8 新增） | RAG 回答链生成模型档位（`POST /rag/answer` 经网关门面调用；引用接地质量对档位敏感，按评测集实测上调；与 `judge-model` 同属 app 宿主级配置） |
 
 **降级口径（读路径）**：嵌入 provider 故障 ⇒ WARN 事件 + BM25 单路；重排序 provider 故障 ⇒ WARN 事件 + RRF 粗序；引用强制语义在降级下不变；**严禁切云端辅路**（数据不出域红线）。写入路径（ingest）不降级：嵌入失败即上抛，重入按 `doc_version` 幂等重建。
 **降级痕迹（响应可观测）**：`POST /rag/retrieve` 响应为 `{results: [...], degradations: [...]}`——`degradations` 非空即本次发生能力档位下降（`EMBEDDING_DEGRADED` = 回落 BM25 单路 / `RERANK_DEGRADED` = 回落 RRF 粗序），结果仍全部带出处锚点；接入方 / 评测管线可据此观测，无需翻服务端日志。服务端同步经 `RagEventSink` 下沉事件（默认结构化 WARN）。

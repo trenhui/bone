@@ -36,4 +36,12 @@ public class BoneAiProperties {
 
   /** 评测裁判（LLM-as-Judge）模型档位（经网关门面调用，计量 / 证据链同普通 LLM 调用）。 */
   private String judgeModel = "qwen-judge";
+
+  /**
+   * RAG 回答链生成模型档位（经网关门面调用，计量 / 证据链 / 治理链同普通 LLM 调用）。
+   *
+   * <p>R1 接线（2026-10-24）：rag 回答链的「G」经组合根 {@code RagAnswerGenerationAdapter} 转调网关，模型档位由此配置决定——
+   * 生产按实际部署的模型覆盖（{@code bone.ai.rag-answer-model}），缺省与网关门面默认档一致；引用接地质量对模型档位敏感，建议按评测集实测后上调。
+   */
+  private String ragAnswerModel = "gpt-4o-mini";
 }

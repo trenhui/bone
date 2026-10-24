@@ -13,8 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bone.aiapp.config.AiTenantContext;
 import com.bone.aiapp.config.BoneAiProperties;
+import com.bone.airag.application.RagAnswerOutcome;
+import com.bone.airag.application.RagAnswerService;
 import com.bone.airag.application.RagApplicationService;
 import com.bone.airag.application.RagApplicationService.RagRetrieveOutcome;
+import com.bone.airag.domain.model.GroundingVerdict;
 import com.bone.airag.domain.model.RagQuery;
 import com.bone.airag.domain.model.RagResult;
 import com.bone.core.tenant.context.TenantContext;
@@ -29,6 +32,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class RagControllerTest {
 
   private final RagApplicationService ragService = mock(RagApplicationService.class);
+  private final RagAnswerService ragAnswerService = mock(RagAnswerService.class);
   private final BoneAiProperties props = mock(BoneAiProperties.class);
   private final AiTenantContext tenantContext = new AiTenantContext();
   private MockMvc mockMvc;
@@ -36,7 +40,8 @@ class RagControllerTest {
   @BeforeEach
   void setUp() {
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new RagController(ragService, props, tenantContext))
+        MockMvcBuilders.standaloneSetup(
+                new RagController(ragService, ragAnswerService, props, tenantContext))
             .build();
   }
 
@@ -149,5 +154,81 @@ class RagControllerTest {
                         + "\"clauseRef\":\"clause-1\",\"spanStart\":0,\"spanEnd\":10}]}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true));
+  }
+
+  @Test
+  void answer_delegates_to_answer_service_and_wraps() throws Exception {
+    // R1 接 G：回答链闭环透传（接地答案 + 出处上下文）
+    when(ragAnswerService.answer(any()))
+        .thenReturn(
+            new RagAnswerOutcome(
+                true,
+                "逾期付款按日千分之一[1]。",
+                null,
+                new GroundingVerdict(true, "PASS", 1, 0, 1.0, List.of(), List.of()),
+                List.of(new RagResult("c1", "clause-1", 0, 10, 0.9, "ch1", "text")),
+                List.of(),
+                10,
+                false));
+
+    mockMvc
+        .perform(
+            post("/api/ai/v1/rag/answer")
+                .contentType("application/json")
+                .content("{\"query\":\"q\",\"docScope\":\"doc-1\",\"topK\":3}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.answered").value(true))
+        .andExpect(jsonPath("$.data.answer").value("逾期付款按日千分之一[1]。"))
+        .andExpect(jsonPath("$.data.contexts[0].clauseRef").value("clause-1"));
+  }
+
+  @Test
+  void answer_surfaces_refusal_with_error_code() throws Exception {
+    // 拒答是可控业务结果：answered=false + errorCode（治理拒绝保真透传）+ 统一拒答文案，不抛异常
+    when(ragAnswerService.answer(any()))
+        .thenReturn(RagAnswerOutcome.unavailable("AI_GATEWAY_INJECTION_SUSPECTED", "疑似提示注入"));
+
+    mockMvc
+        .perform(
+            post("/api/ai/v1/rag/answer")
+                .contentType("application/json")
+                .content("{\"query\":\"q\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.answered").value(false))
+        .andExpect(jsonPath("$.data.errorCode").value("AI_GATEWAY_INJECTION_SUSPECTED"))
+        .andExpect(jsonPath("$.data.answer").value(RagAnswerService.REFUSAL_ANSWER));
+  }
+
+  @Test
+  void answer_applies_score_and_scan_guards_from_request() throws Exception {
+    // 回答链与检索同口径：请求级 minScore / maxScan 覆盖配置默认值（详设 §2.6 护栏）
+    when(ragAnswerService.answer(any()))
+        .thenReturn(
+            new RagAnswerOutcome(
+                false,
+                RagAnswerService.REFUSAL_ANSWER,
+                "AI_RAG_GROUNDING_FAILED",
+                new GroundingVerdict(false, "NO_CONTEXT", 0, 0, 0.0, List.of(), List.of()),
+                List.of(),
+                List.of(),
+                0,
+                false));
+    when(props.getRagTopK()).thenReturn(3);
+    when(props.getRagMinScore()).thenReturn(0.1);
+    when(props.getRagMaxScan()).thenReturn(500);
+
+    mockMvc
+        .perform(
+            post("/api/ai/v1/rag/answer")
+                .contentType("application/json")
+                .content("{\"query\":\"q\",\"topK\":3,\"minScore\":0.5,\"maxScan\":100}"))
+        .andExpect(status().isOk());
+
+    ArgumentCaptor<RagQuery> captor = ArgumentCaptor.forClass(RagQuery.class);
+    verify(ragAnswerService).answer(captor.capture());
+    assertThat(captor.getValue().minScore()).isEqualTo(0.5);
+    assertThat(captor.getValue().maxScan()).isEqualTo(100);
+    assertThat(captor.getValue().topK()).isEqualTo(3);
   }
 }

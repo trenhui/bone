@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bone.airag.common.AiRagErrorCodes;
+import com.bone.airag.domain.gateway.AnswerGenerationException;
 import com.bone.airag.domain.gateway.AnswerGenerationPort;
 import com.bone.airag.domain.gateway.EmbeddingPort;
 import com.bone.airag.domain.gateway.RagEventSink;
@@ -43,6 +44,21 @@ class RagAnswerServiceTest {
     public String generate(String systemPrompt, String userPrompt) {
       prompts.add(userPrompt);
       return answer;
+    }
+  }
+
+  /** 生成桩（故障型）：模拟网关卡面治理拒绝 / provider 故障，用于断言失败收敛。 */
+  private static final class ThrowingAnswerPort implements AnswerGenerationPort {
+
+    private final RuntimeException failure;
+
+    private ThrowingAnswerPort(RuntimeException failure) {
+      this.failure = failure;
+    }
+
+    @Override
+    public String generate(String systemPrompt, String userPrompt) {
+      throw failure;
     }
   }
 
@@ -151,5 +167,39 @@ class RagAnswerServiceTest {
     assertThat(out.contexts()).hasSize(1);
     assertThat(out.verdict().reason()).isEqualTo(GroundingGuard.REASON_INVALID_CITATION);
     assertThat(out.verdict().invalidCitations()).containsExactly("[2]");
+  }
+
+  @Test
+  void converges_governance_rejection_into_refusal_with_original_error_code() {
+    // 网关治理拒绝（此处模拟注入疑似）：不得以异常冲出编排边界，且 errorCode 必须保真透传——
+    // 把注入拒绝归一成「服务不可用」会让安全事件从监控里消失
+    ThrowingAnswerPort port =
+        new ThrowingAnswerPort(
+            new AnswerGenerationException(400, "疑似提示注入", "AI_GATEWAY_INJECTION_SUSPECTED"));
+    RagAnswerService service = service(List.of(chunk(1L, CLAUSE_A, "clause-1")), port, 0);
+
+    RagAnswerOutcome out = service.answer(new RagQuery("逾期付款违约金", null, 5));
+
+    assertThat(out.answered()).isFalse();
+    assertThat(out.errorCode()).isEqualTo("AI_GATEWAY_INJECTION_SUSPECTED");
+    assertThat(out.answer()).isEqualTo(RagAnswerService.REFUSAL_ANSWER);
+    assertThat(out.verdict().reason()).isEqualTo(GroundingGuard.REASON_GENERATION_UNAVAILABLE);
+    // 故障明细落在审计轨迹位（unsupportedSentences），供定位
+    assertThat(out.verdict().unsupportedSentences()).containsExactly("疑似提示注入");
+  }
+
+  @Test
+  void converges_unknown_generation_failure_into_unavailable() {
+    // 端口实现的未知运行时故障（provider 超时等）：同样收敛为可控拒答，errorCode 归一为「生成不可用」
+    ThrowingAnswerPort port = new ThrowingAnswerPort(new IllegalStateException("provider timeout"));
+    RagAnswerService service = service(List.of(chunk(1L, CLAUSE_A, "clause-1")), port, 0);
+
+    RagAnswerOutcome out = service.answer(new RagQuery("逾期付款违约金", null, 5));
+
+    assertThat(out.answered()).isFalse();
+    assertThat(out.errorCode()).isEqualTo(AiRagErrorCodes.ANSWER_GENERATION_UNAVAILABLE);
+    assertThat(out.answer()).isEqualTo(RagAnswerService.REFUSAL_ANSWER);
+    assertThat(out.verdict().unsupportedSentences())
+        .anyMatch(detail -> detail.contains("provider timeout"));
   }
 }

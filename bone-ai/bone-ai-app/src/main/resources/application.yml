@@ -35,6 +35,7 @@ bone:
     rag-top-k: 5
     rag-min-score: 0        # 分数阈值（精排后过滤；0=不启用，须按评测集实测分布校准）
     rag-max-scan: 3000     # 容量护栏：作用域切片数上限，超限 fail-closed（AI_RAG_SCOPE_OVER_LIMIT）；2026-10-24 由 10000 下调（过渡态内存打分，几千条已劣化）
+    rag-answer-model: gpt-4o-mini   # RAG 回答链生成模型档位（经网关卡面调用；引用接地质量对档位敏感，按评测集实测上调）
     default-integration-mode: AUTOMATED
     notification-webhook-url: ${BONE_AI_WEBHOOK_URL:}
     rag:
