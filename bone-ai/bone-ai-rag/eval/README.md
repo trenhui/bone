@@ -16,6 +16,7 @@
 | `eval_rag.py` | 评测主程序：三种模式 `score`（golden vs actual 打分 + recall 门槛）、`probes`（负向探针）、`contract`（内置自校验） |
 | `golden_set.sample.json` | 金标准样例（查询 → 预期 chunkRef 集合），按真实业务语料补齐 |
 | `negative_probes.sample.json` | 负向探针规格样例（4 个合规红线探针的 expect 契约 + 注入样本） |
+| `otel_genai_conventions.py` | **OTel `gen_ai.*` 映射与校验器**（诊断 §3.1 收口动作）：BONE meter → OpenTelemetry GenAI 语义约定版本化映射 + 零依赖自校验 + 桥接预览 |
 
 ## 使用
 
@@ -124,4 +125,42 @@ LLM/NLI 裁判（faithfulness 接入点）——本探针不替代，仅把最�
     python eval_rag.py --mode probes --probes negative_probes.sample.json --artifacts-dir artifacts/
 - name: RAG eval recall gate
   run: python eval_rag.py --golden golden_set.sample.json --actual actual_retrieve.json --recall-gate 0.8
+- name: OTel gen_ai.* mapping self-test (zero-dep)
+  run: python otel_genai_conventions.py --self-test # 永远跑，证明映射本身正确
+```
+
+## 可观测映射：BONE meter → OpenTelemetry `gen_ai.*`（诊断 §3.1 收口动作）
+
+`MicrometerLlmMetrics` 已把网关 `LlmMetrics` 发射点落到 Micrometer，但其 Java 注释声明「与 OTel
+`gen_ai.*` 映射表版本化 v1 对齐」的**实际映射从未落地**。`otel_genai_conventions.py` 把这份映射做成
+**版本化、可校验、可预览**的单一真源，使平台指标能**零代码改动**地流入任意 OTel 后端。
+
+### 映射要点（取自实际 meter 名）
+
+| BONE meter | → OTel `gen_ai.*` | 关键变换 |
+| --- | --- | --- |
+| `bone.ai.gateway.tokens{kind=prompt\|completion\|total}` | `gen_ai.client.token.usage` | `kind` → `gen_ai.token.type` ∈ {input, output, total} |
+| `bone.ai.gateway.provider.latency` (ms) | `gen_ai.client.operation.duration` (s) | **毫秒 ÷1000 转秒**（OTel 时长单位必须为 s） |
+| `bone.ai.gateway.first_token.latency` (ms) | `gen_ai.client.time.to_first.token` (s) | 同上转秒 |
+| `bone.ai.gateway.provider.calls{success}` | 由 `operation.duration` **记录数**派生；`success=false` 附 `error.type=provider_error` | 不再单独发 calls counter |
+| `short_circuited` / `cache.hit` / `quota.exceeded` | **保留 `bone.ai.gateway.*` 命名空间** | 治理面指标，故意不进标准 `gen_ai.*`，避免与上游未来约定冲突 |
+
+公共属性：`gen_ai.operation.name=chat`、`gen_ai.request.model`← BONE `model`、`tenant` 保留为平台维度。
+采用 OpenTelemetry `gen_ai.*` Semantic Conventions（2025–2026，规格态仍为 *Development*，已被 Grafana/DataDog/Jaeger 广泛接纳）。
+
+### 为什么不在 Java 里直接改名
+
+1. 既有告警/看板引用 `bone.ai.gateway.*`，重命名会静默打断规则；
+2. 库形态纪律要求「零新增必选依赖」——Micrometer→OTel 注册表属新增依赖，应由宿主按
+   `management.otlp.metrics.export.*` 标准开关启用，而非代码强耦合。
+
+→ **正确接线方式**：保留内部名，在 OTel Collector / Actuator 桥接层做 `bone.ai.gateway.* → gen_ai.*`
+重命名（本工具的 `--emit-otel` 可预览等价结果），零代码改动、不破既有告警。
+
+### 使用
+
+```bash
+python otel_genai_conventions.py --self-test     # CI 必跑：9 探针全 PASS（合规放行 / 违规+未知捕获）
+python otel_genai_conventions.py --report        # 打印人类可读映射表
+python otel_genai_conventions.py --emit-otel bone_meters.json   # 把一个 BONE meter 样本转 OTel 等价 JSON
 ```
