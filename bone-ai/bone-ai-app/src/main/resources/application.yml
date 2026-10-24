@@ -34,7 +34,7 @@ bone:
   ai:
     rag-top-k: 5
     rag-min-score: 0        # 分数阈值（精排后过滤；0=不启用，须按评测集实测分布校准）
-    rag-max-scan: 10000     # 容量护栏：作用域切片数上限，超限 fail-closed（AI_RAG_SCOPE_OVER_LIMIT）
+    rag-max-scan: 3000     # 容量护栏：作用域切片数上限，超限 fail-closed（AI_RAG_SCOPE_OVER_LIMIT）；2026-10-24 由 10000 下调（过渡态内存打分，几千条已劣化）
     default-integration-mode: AUTOMATED
     notification-webhook-url: ${BONE_AI_WEBHOOK_URL:}
     rag:
@@ -48,7 +48,13 @@ bone:
       #   model: BAAI/bge-reranker-v2-m3
       candidate-pool: 30    # 进入 cross-encoder 精排的候选池（≥ topK；详设 §2.6 top-30 → top-5）
       min-score: 0          # 同 bone.ai.rag-min-score（模块级配置，请求可覆盖）
-      max-scan: 10000       # 同 bone.ai.rag-max-scan（模块级配置，请求可覆盖）
+      max-scan: 3000       # 同 bone.ai.rag-max-scan（模块级配置，请求可覆盖）
       mmr-lambda: 0         # 同 bone.ai.rag-mmr-lambda（模块级配置，请求可覆盖）
-      # 文档级 ACL：默认仅租户硬隔离；接入方提供 RagAclPort Bean（读文档中心 ACL）后
-      # 「无 ACL 归属的 doc 不可见」fail-closed 生效（AI_RAG_DOC_FORBIDDEN）
+      # 文档级 ACL：默认 fail-closed 拒绝检索（2026-10-24 起，DenyDocAcl 空可见集）——未接入 ACL 实现不放行全租户；
+      # 接入方提供 RagAclPort Bean（读文档中心 ACL）后「无 ACL 归属的 doc 不可见」fail-closed 生效（AI_RAG_DOC_FORBIDDEN）；
+      # 仅开发联调可 bone.ai.rag.acl.default-deny=false 回落 NoDocAcl（仅租户硬隔离，禁止带入生产）
+      acl:
+        default-deny: true
+      # 写入侧 PII 字段级掩码（2026-10-24 起默认开：身份证/手机号/银行卡/邮箱等长局部掩码，span 锚点不漂移）
+      ingest:
+        pii-mask-enabled: true

@@ -16,6 +16,7 @@ import com.bone.airag.domain.repository.ChunkRepository;
 import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
+import com.bone.airag.domain.service.SensitiveDataMasker;
 import com.bone.airag.infrastructure.embedding.TransitionalHashEmbedding;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +28,8 @@ import org.junit.jupiter.api.Test;
  * RAG 检索 golden-set 回归门禁（R5「评测前置」，随 {@code mvn clean verify} 在 CI 强制执行）。
  *
  * <p>与 Python sidecar 分工：sidecar（eval/eval_rag.py）面向真实语料 + 真模型的离线语义评测；本测试是确定性、零依赖、
- * 构建内可跑的回归门禁——用小型中文 fixture 锁死「引用强制前置 → 双路（向量+BM25）→ RRF → topK」的检索质量，
- * 任何使预期切片掉出 topK 的回归（引用过剔 / RRF 权重错乱 / 分词退化 / 阈值误杀）都会红灯。
+ * 构建内可跑的回归门禁——用小型中文 fixture 锁死「引用强制前置 → 双路（向量+BM25）→ RRF → topK」的检索质量， 任何使预期切片掉出 topK 的回归（引用过剔 /
+ * RRF 权重错乱 / 分词退化 / 阈值误杀）都会红灯。
  */
 class RagGoldenSetEvalTest {
 
@@ -59,7 +60,8 @@ class RagGoldenSetEvalTest {
             0.0,
             0,
             -1,
-            new GroundingGuard(0.6, 0.0));
+            new GroundingGuard(0.6, 0.0),
+            SensitiveDataMasker.disabled());
 
     List<GoldenCase> cases =
         List.of(

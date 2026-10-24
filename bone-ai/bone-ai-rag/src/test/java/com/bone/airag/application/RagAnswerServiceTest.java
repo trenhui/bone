@@ -18,6 +18,7 @@ import com.bone.airag.domain.service.GroundedPromptBuilder;
 import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
+import com.bone.airag.domain.service.SensitiveDataMasker;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -26,8 +27,7 @@ import org.junit.jupiter.api.Test;
 class RagAnswerServiceTest {
 
   private static final long TENANT = 42L;
-  private static final String CLAUSE_A =
-      "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
+  private static final String CLAUSE_A = "甲方逾期付款的，每逾期一日按未付金额千分之一支付违约金";
   private static final String CLAUSE_B = "保密期限自合同生效之日起五年";
 
   /** 生成桩：回放固定答案并记录提示词，用于断言「无据时根本没调模型」。 */
@@ -48,8 +48,17 @@ class RagAnswerServiceTest {
 
   private static RagChunk chunk(Long id, String text, String clauseRef) {
     return RagChunk.of(
-        id, TENANT, "doc-1", "v1", "Clause " + id, text, new float[] {1f, 0f}, "hash-64", clauseRef,
-        0, 10);
+        id,
+        TENANT,
+        "doc-1",
+        "v1",
+        "Clause " + id,
+        text,
+        new float[] {1f, 0f},
+        "hash-64",
+        clauseRef,
+        0,
+        10);
   }
 
   private static RagAnswerService service(
@@ -73,7 +82,8 @@ class RagAnswerServiceTest {
             0.0,
             0,
             -1,
-            new GroundingGuard(0.6, 0.0));
+            new GroundingGuard(0.6, 0.0),
+            SensitiveDataMasker.disabled());
     return new RagAnswerService(rag, port, new GroundedPromptBuilder(budget));
   }
 

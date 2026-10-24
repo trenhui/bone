@@ -13,10 +13,10 @@
 | 路径 | 说明 |
 |------|------|
 | [platform/](./platform/) | **AI 能力中台分区**（平台能力资产的方案与设计，随批次生长） |
-| ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（v1.13：能力同构论证 C1–C11 + 模块架构（11 模块 + 评测挂流水线）+ 框架/许可定案 + 落地批次） |
-| ├ [BONE-AI能力中台详细技术方案.md](./platform/BONE-AI能力中台详细技术方案.md) | **详设**（v1.8）：模块详设 / 契约与 DDL（8 张已入 `bone-init.sql`）/ 非功能阈值初值 / WBS / 平台 API 面 / **生产就绪清单**；v1.8 补流式 SSE（§2.1）+ TTFT（§3.2/§6.2）+ ArchUnit 口径订正（§3.3） |
+| ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（v1.15：能力同构论证 C1–C11 + 模块架构（11 模块 + 评测挂流水线）+ 框架/许可定案 + 落地批次；v1.15：类型护栏机械强制 + RAG ACL 默认 fail-closed（接入方适配升 Go-Live 硬依赖）+ 写入侧 PII 闭环 + max-scan 下调 3000 + 网关指标适配器） |
+| ├ [BONE-AI能力中台详细技术方案.md](./platform/BONE-AI能力中台详细技术方案.md) | **详设**（v1.9）：模块详设 / 契约与 DDL（8 张已入 `bone-init.sql`）/ 非功能阈值初值 / WBS / 平台 API 面 / **生产就绪清单**；v1.8 补流式 SSE（§2.1）+ TTFT（§3.2/§6.2）+ ArchUnit 口径订正（§3.3） |
 | ├ [BONE-AI接入指南.md](./platform/BONE-AI接入指南.md) | **产品接入指南**（v1.6）：进程内嵌库主形态 + `bone-ai-app` 聚合宿主辅形态；可用能力表 / 接线步骤 / 双参考宿主 / RAG 配置速查；v1.6 补流式响应 §2.7 |
-| ├ [BONE-AI-RAG能力方案.md](./platform/BONE-AI-RAG能力方案.md) | **RAG 专项独立方案**（v1.6）：以 `bone-ai-rag` 源码真源为基线，覆盖架构/数据模型/写入链/读取全链/**回答链（围栏提示词 + 生成端口 + 接地守卫）**/引用强制/隔离/降级/可观测/配置/API；对标 2026 最佳实践的对齐矩阵（B1–B20）+ 路线图（R1 接 G 闭环收尾 / R4 pgvector 优先级上提 / R5 评测前置 / R7 双路并发 / R9 语义缓存 / R10 嵌入轮换）。**v1.3：规模止血可观测 + 批量嵌入 + 评测 sidecar；v1.4：中文双路口径统一 + golden-set 门禁进 CI；v1.5：接地守卫 `GroundingGuard`；v1.6：`RagAnswerService` 回答链闭环（`GroundedPromptBuilder` 数据围栏 + 编号引用 + `context-token-budget`，`AnswerGenerationPort` 生成端口）**；取代总案 §4.5 与详设 §2.6 的散落描述 |
+| ├ [BONE-AI-RAG能力方案.md](./platform/BONE-AI-RAG能力方案.md) | **RAG 专项独立方案**（v1.7）：以 `bone-ai-rag` 源码真源为基线，覆盖架构/数据模型/写入链/读取全链/**回答链（围栏提示词 + 生成端口 + 接地守卫）**/引用强制/隔离/降级/可观测/配置/API；对标 2026 最佳实践的对齐矩阵（B1–B21）+ 路线图（R1 接 G 闭环收尾 / R4 pgvector 第二批前启动 / R5 评测前置 / R9 语义缓存 / R10 嵌入轮换）。**v1.3：规模止血可观测 + 批量嵌入 + 评测 sidecar；v1.4：中文双路口径统一 + golden-set 门禁进 CI；v1.5：接地守卫 `GroundingGuard`；v1.6：`RagAnswerService` 回答链闭环（`GroundedPromptBuilder` 数据围栏 + 编号引用 + `context-token-budget`，`AnswerGenerationPort` 生成端口）；v1.7：ACL 默认 deny（`DenyDocAcl`，接入方适配升 Go-Live 硬依赖）+ 写入侧 PII 等长掩码（`SensitiveDataMasker`，`INGEST_PII_MASKED`）+ 检索双路并发（R7，`CompletableFuture`）**；取代总案 §4.5 与详设 §2.6 的散落描述 |
 | ├ [BONE-AI依赖与许可SBOM清单.md](./platform/BONE-AI依赖与许可SBOM清单.md) | 法务送审版 SBOM（v1.2）：依赖许可总表 + 零新依赖实证 + 禁用负表 + 5 项待确认点（POC 签前冻结选型） |
 | └ [方案诊断复核-2026-10-24.md](./platform/方案诊断复核-2026-10-24.md) | RAG 方案 v1.2 的诊断复核（minScore 量纲漂移等 → v1.2 修复依据） |
 | [方案诊断报告-2026-10-23.md](./方案诊断报告-2026-10-23.md) | 四件套逻辑自洽 / 名实相符 / 务实 / 可落地诊断（源码走查实证）+ 优化执行记录 |

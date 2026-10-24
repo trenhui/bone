@@ -19,8 +19,14 @@ public class BoneAiProperties {
   /** 受控检索默认分数阈值（精排后过滤；0 = 不启用，量纲双轨见 RagQuery，须按实测分布校准）。 */
   private double ragMinScore = 0.0;
 
-  /** 受控检索默认容量护栏（作用域切片数上限，超限 fail-closed 抛 AI_RAG_SCOPE_OVER_LIMIT）。 */
-  private int ragMaxScan = 10_000;
+  /**
+   * 受控检索默认容量护栏（作用域切片数上限，超限 fail-closed 抛 AI_RAG_SCOPE_OVER_LIMIT）。
+   *
+   * <p>2026-10-24 由 10000 下调至 3000（企业复杂场景诊断 P1-1）：过渡态全量载入内存打分，几千条时延迟已悄然劣化而 10000
+   * 是「不可行点」才触发——正常水位下已慢无告警。3000 取实测安全水位 2000~5000 中偏上，与 {@code warn-scan-threshold} 2000
+   * 形成「先预警、再拒绝」两级；终局 pgvector + ANN 索引化后此阈值即迁移触发信号。
+   */
+  private int ragMaxScan = 3_000;
 
   /** 集成节点默认三态模式（AUTOMATED=全自动 / ASSISTED=待人工确认 / SHADOW=仅观测不落地）。 */
   private IntegrationMode defaultIntegrationMode = IntegrationMode.AUTOMATED;

@@ -91,4 +91,15 @@ public class DecisionGate {
   public BigDecimal amountThreshold() {
     return amountThreshold;
   }
+
+  /**
+   * 对一条 {@link AiSuggestion} 做闸门裁决（便捷重载：从建议取自评置信度）。
+   *
+   * <p>语义与 {@link #evaluate(Double, BigDecimal, boolean, boolean)} 完全一致（{@code hasLlmStep=true}），
+   * 只是免去调用方手工 {@code suggestion.confidence()} 拆包——建议类型进闸门、裁决结论出闸门， 建议本体不越过决策包边界 （ArchUnit 规则 6）。
+   */
+  public DecisionVerdict adjudicate(
+      AiSuggestion<?> suggestion, BigDecimal amount, boolean aiAvailable) {
+    return evaluate(suggestion.confidence(), amount, aiAvailable, true);
+  }
 }

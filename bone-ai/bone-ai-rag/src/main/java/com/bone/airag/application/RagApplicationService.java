@@ -20,12 +20,15 @@ import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.MmrSelector;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.domain.service.RrfFuser;
+import com.bone.airag.domain.service.SensitiveDataMasker;
 import com.bone.core.exception.BizException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,15 +36,13 @@ import org.slf4j.LoggerFactory;
 /**
  * 受控检索服务（详设 §2.6，2026-10-23 按代码真序重写；P1 项 ACL / MMR / 降级可观测同日落地）。
  *
- * <p>检索链（一次查询）：租户过滤 → <b>文档级 ACL</b>（默认仅租户硬隔离；接入方受限可见集合后 fail-closed）→
- * <b>容量护栏</b>（{@code maxScan} 超限 fail-closed）→ <b>引用强制前置</b>（无出处切片剔除，不占精排名额）→
- * 向量 + BM25 双路（<b>嵌入故障降级 BM25 单路</b>）→ RRF 融合（k=60，0.5/0.5）→ 候选池（{@code
- * candidatePool}，默认 30）→ <b>rerank</b>（cross-encoder 精排；<b>故障降级 RRF 粗序</b>）→ {@code minScore}
- * 过滤 → <b>MMR 多样性选取</b>（λ≤0 关闭）→ topK。
+ * <p>检索链（一次查询）：租户过滤 → <b>文档级 ACL</b>（默认仅租户硬隔离；接入方受限可见集合后 fail-closed）→ <b>容量护栏</b>（{@code maxScan}
+ * 超限 fail-closed）→ <b>引用强制前置</b>（无出处切片剔除，不占精排名额）→ 向量 + BM25 双路（<b>嵌入故障降级 BM25 单路</b>）→ RRF
+ * 融合（k=60，0.5/0.5）→ 候选池（{@code candidatePool}，默认 30）→ <b>rerank</b>（cross-encoder 精排；<b>故障降级 RRF
+ * 粗序</b>）→ {@code minScore} 过滤 → <b>MMR 多样性选取</b>（λ≤0 关闭）→ topK。
  *
- * <p>降级口径（读路径可用性优先，且降级可观测——{@link RagEventSink} 事件 + 响应 {@code degradations} 痕迹，
- * 非「假装已精排」）：嵌入 / 重排序 provider 故障时分别回落<b>本域内已实现路径</b>（BM25 单路 / RRF 粗序），
- * 引用强制语义不变；<b>严禁切云端辅路</b>（数据不出域红线）。
+ * <p>降级口径（读路径可用性优先，且降级可观测——{@link RagEventSink} 事件 + 响应 {@code degradations} 痕迹， 非「假装已精排」）：嵌入 / 重排序
+ * provider 故障时分别回落<b>本域内已实现路径</b>（BM25 单路 / RRF 粗序）， 引用强制语义不变；<b>严禁切云端辅路</b>（数据不出域红线）。
  *
  * <p>「引用强制」为 fail-closed：任何结果切片若缺失 {@code clauseRef} 或 span 非法，直接丢弃， 绝不以无出处内容喂给生成（详设
  * §2.6「无出处不得生成」）。
@@ -58,8 +59,8 @@ public class RagApplicationService {
   private static final int MMR_EXPANSION = 3;
 
   /**
-   * 降级痕迹码（响应 {@code degradations} + {@link RagEvent#type()}）：嵌入 provider 故障，向量路不可用，
-   * 本次检索回落 BM25 单路（引用强制语义不变）。
+   * 降级痕迹码（响应 {@code degradations} + {@link RagEvent#type()}）：嵌入 provider 故障，向量路不可用， 本次检索回落 BM25
+   * 单路（引用强制语义不变）。
    */
   public static final String DEGRADE_EMBEDDING = "EMBEDDING_DEGRADED";
 
@@ -72,26 +73,34 @@ public class RagApplicationService {
   /**
    * 事件码（容量预警，非 fail-closed）：作用域切片数已超过 {@code warnScanThreshold} 但仍未触 maxScan。
    *
-   * <p>过渡态每次检索全量载入内存打分——切片数在几千量级时延迟已悄然劣化却无信号。该事件在撞上限前先给可观测
-   * 预警，引导运维下调 {@code max-scan} 或推进 R4（pgvector + ANN 索引化），而非等 OOM/超时爆发。
+   * <p>过渡态每次检索全量载入内存打分——切片数在几千量级时延迟已悄然劣化却无信号。该事件在撞上限前先给可观测 预警，引导运维下调 {@code max-scan} 或推进
+   * R4（pgvector + ANN 索引化），而非等 OOM/超时爆发。
    */
   public static final String EVENT_SCOPE_NEAR_LIMIT = "SCOPE_NEAR_LIMIT";
 
   /**
    * 事件码（性能预警）：单次 retrieve 墙钟耗时超过 {@code slowRetrieveMs}。
    *
-   * <p> diagnosing 规模瓶颈的抓手——全量内存 BM25 + 余弦下，切片数增长会线性推高延迟；该事件直接暴露慢查询，
-   * 供接入方落 trace / 接 P99 告警（与 {@code SCOPE_NEAR_LIMIT} 联动定位「是容量还是别的」）。
+   * <p>diagnosing 规模瓶颈的抓手——全量内存 BM25 + 余弦下，切片数增长会线性推高延迟；该事件直接暴露慢查询， 供接入方落 trace / 接 P99 告警（与 {@code
+   * SCOPE_NEAR_LIMIT} 联动定位「是容量还是别的」）。
    */
   public static final String EVENT_RETRIEVE_SLOW = "RETRIEVE_SLOW";
 
   /**
    * 事件码（合规拒答，非降级）：生成答案未通过接地守卫，被拒答 / 降级为「仅返回原文片段」。
    *
-   * <p>拒答是<b>正确行为</b>而不是故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严，
-   * 与 {@code RETRIEVE_SLOW} / 降级事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。
+   * <p>拒答是<b>正确行为</b>而不是故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严， 与 {@code RETRIEVE_SLOW} /
+   * 降级事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。
    */
   public static final String EVENT_GROUNDING_REJECTED = "GROUNDING_REJECTED";
+
+  /**
+   * 事件码（写入侧数据卫生，非 fail-closed）：ingest 时高敏模式被字段级掩码的处数（2026-10-24 P0-3 落地）。
+   *
+   * <p>「入库即掩码」是合规默认（{@code chunk_text} 明文落库与数据不出域 / 最小暴露不自洽），但掩码会改变检索语义 （精确串不再命中）——掩码处数必须可观测：运维 /
+   * 审计可据此回答「这个租户的语料掩了多少敏感字段」， 而非静默改写语料。
+   */
+  public static final String EVENT_INGEST_PII_MASKED = "INGEST_PII_MASKED";
 
   private final ChunkRepository chunkRepository;
   private final EmbeddingPort embeddingPort;
@@ -105,11 +114,21 @@ public class RagApplicationService {
   /** 容量预警阈值：作用域切片数超过此值（且未触 maxScan）即发 {@link #EVENT_SCOPE_NEAR_LIMIT}。<=0 关闭。 */
   private final int warnScanThreshold;
 
-  /** 慢检索阈值（毫秒）：单次 retrieve 墙钟超过此值即发 {@link #EVENT_RETRIEVE_SLOW}。负数关闭（默认测试 -1）；0 = 任意正耗时都告警（极敏感/调试）；正数 = 生产水位（如 500）。 */
+  /**
+   * 慢检索阈值（毫秒）：单次 retrieve 墙钟超过此值即发 {@link #EVENT_RETRIEVE_SLOW}。负数关闭（默认测试 -1）；0 =
+   * 任意正耗时都告警（极敏感/调试）；正数 = 生产水位（如 500）。
+   */
   private final long slowRetrieveMs;
 
   /** 生成侧接地守卫（领域规则在 {@link GroundingGuard}，本层只做编排与事件下沉）。 */
   private final GroundingGuard groundingGuard;
+
+  /**
+   * 写入侧 PII 掩码器（Null Object：禁用时原样透传，ingest 无分支判断）。
+   *
+   * <p>领域规则在 {@link SensitiveDataMasker}（ArchUnit 禁应用服务承载领域规则），本层只做编排与事件下沉。
+   */
+  private final SensitiveDataMasker sensitiveDataMasker;
 
   public RagApplicationService(
       ChunkRepository chunkRepository,
@@ -123,6 +142,34 @@ public class RagApplicationService {
       int warnScanThreshold,
       long slowRetrieveMs,
       GroundingGuard groundingGuard) {
+    this(
+        chunkRepository,
+        embeddingPort,
+        rerankPort,
+        tenantProvider,
+        aclPort,
+        eventSink,
+        candidatePool,
+        mmrLambda,
+        warnScanThreshold,
+        slowRetrieveMs,
+        groundingGuard,
+        new SensitiveDataMasker());
+  }
+
+  public RagApplicationService(
+      ChunkRepository chunkRepository,
+      EmbeddingPort embeddingPort,
+      RerankPort rerankPort,
+      TenantProvider tenantProvider,
+      RagAclPort aclPort,
+      RagEventSink eventSink,
+      int candidatePool,
+      double mmrLambda,
+      int warnScanThreshold,
+      long slowRetrieveMs,
+      GroundingGuard groundingGuard,
+      SensitiveDataMasker sensitiveDataMasker) {
     this.chunkRepository = chunkRepository;
     this.embeddingPort = embeddingPort;
     this.rerankPort = rerankPort;
@@ -134,6 +181,8 @@ public class RagApplicationService {
     this.warnScanThreshold = warnScanThreshold;
     this.slowRetrieveMs = slowRetrieveMs;
     this.groundingGuard = groundingGuard;
+    this.sensitiveDataMasker =
+        sensitiveDataMasker == null ? SensitiveDataMasker.disabled() : sensitiveDataMasker;
   }
 
   /**
@@ -155,9 +204,7 @@ public class RagApplicationService {
       if (visibleDocs != null && !visibleDocs.contains(query.docScope())) {
         // 绝不静默回落全租户检索——那会把越权请求变成合法请求
         throw new BizException(
-            403,
-            "文档不在当前调用方可见范围（doc=" + query.docScope() + "）",
-            AiRagErrorCodes.DOC_FORBIDDEN);
+            403, "文档不在当前调用方可见范围（doc=" + query.docScope() + "）", AiRagErrorCodes.DOC_FORBIDDEN);
       }
       chunks = chunkRepository.findByTenantAndDocScope(tenantId, query.docScope());
     } else {
@@ -228,7 +275,8 @@ public class RagApplicationService {
 
     List<String> degradations = new ArrayList<>(2);
 
-    // 向量路：provider 故障 ⇒ WARN 事件 + 降级 BM25 单路（读路径可用性优先；禁切云端红线不变）
+    // 向量路与 BM25 路无数据依赖：嵌入调用（触网，耗时随 provider 波动）与 BM25 语料统计/打分（CPU，随语料线性增长）
+    // 并发执行（R7，2026-10-24）。顺序语义不变：失败降级、版本不符跳过、引用前置均留在各自原位。
     // 版本号单独取（version() 不触网）：即使 embed 失败，只要版本已知，切片自带的同版本向量仍可支撑 MMR 多样性
     float[] queryVec = null;
     String currentVer;
@@ -237,9 +285,27 @@ public class RagApplicationService {
     } catch (RuntimeException e) {
       currentVer = null;
     }
+    // 嵌入调用卸载到公共池：等待 provider 响应的线程不占用调用线程，BM25 统计同步进行
+    CompletableFuture<float[]> embedFuture =
+        CompletableFuture.supplyAsync(() -> embeddingPort.embed(query.query()));
+
+    Map<String, RagChunk> byKey =
+        valid.stream().collect(Collectors.toMap(c -> String.valueOf(c.getId()), c -> c));
+    Map<String, Double> bm25Scores = new HashMap<>();
+    // 语料统计每查询只算一次（BM25 O(N²) → O(N），2026-10-17 复核修复）
+    Bm25Scorer.CorpusStats stats =
+        Bm25Scorer.CorpusStats.of(
+            valid.stream().map(RagChunk::getText).collect(Collectors.toList()));
+    for (RagChunk c : valid) {
+      bm25Scores.put(
+          String.valueOf(c.getId()), Bm25Scorer.score(query.query(), c.getText(), stats));
+    }
+
+    // 向量路汇合：provider 故障 ⇒ WARN 事件 + 降级 BM25 单路（读路径可用性优先；禁切云端红线不变）
+    Map<String, Double> vectorScores = new HashMap<>();
     try {
-      queryVec = embeddingPort.embed(query.query());
-    } catch (RuntimeException e) {
+      queryVec = embedFuture.join();
+    } catch (CompletionException e) {
       eventSink.record(
           new RagEvent(
               DEGRADE_EMBEDDING,
@@ -247,28 +313,21 @@ public class RagApplicationService {
       degradations.add(DEGRADE_EMBEDDING);
       queryVec = null;
     }
-
-    Map<String, RagChunk> byKey =
-        valid.stream().collect(Collectors.toMap(c -> String.valueOf(c.getId()), c -> c));
-    Map<String, Double> vectorScores = new HashMap<>();
-    Map<String, Double> bm25Scores = new HashMap<>();
-    // 语料统计每查询只算一次（BM25 O(N²) → O(N)，2026-10-17 复核修复）
-    Bm25Scorer.CorpusStats stats =
-        Bm25Scorer.CorpusStats.of(valid.stream().map(RagChunk::getText).collect(Collectors.toList()));
-    for (RagChunk c : valid) {
-      String key = String.valueOf(c.getId());
-      // 嵌入版本不符（换模型后旧向量维度不一致）或向量路已降级：该切片不入向量路——
-      // RrfFuser 对「非空路里缺失的键」按末位之后计（最弱），BM25 序主导，避免静默 0 分
-      if (queryVec != null && c.getEmbeddingVer() != null && c.getEmbeddingVer().equals(currentVer)) {
-        vectorScores.put(key, CosineSimilarity.of(queryVec, c.parseEmbedding()));
-      } else if (queryVec != null) {
-        log.warn(
-            "RAG 跳过切片向量路：chunk={} embedding_ver={} 与当前 {} 不符",
-            key,
-            c.getEmbeddingVer(),
-            currentVer);
+    if (queryVec != null) {
+      for (RagChunk c : valid) {
+        String key = String.valueOf(c.getId());
+        // 嵌入版本不符（换模型后旧向量维度不一致）：该切片不入向量路——
+        // RrfFuser 对「非空路里缺失的键」按末位之后计（最弱），BM25 序主导，避免静默 0 分
+        if (c.getEmbeddingVer() != null && c.getEmbeddingVer().equals(currentVer)) {
+          vectorScores.put(key, CosineSimilarity.of(queryVec, c.parseEmbedding()));
+        } else {
+          log.warn(
+              "RAG 跳过切片向量路：chunk={} embedding_ver={} 与当前 {} 不符",
+              key,
+              c.getEmbeddingVer(),
+              currentVer);
+        }
       }
-      bm25Scores.put(key, Bm25Scorer.score(query.query(), c.getText(), stats));
     }
 
     Map<String, Double> fused = RrfFuser.fuse(vectorScores, bm25Scores, RRF_K, W_VECTOR, W_BM25);
@@ -280,7 +339,8 @@ public class RagApplicationService {
     List<RerankCandidate> candidates = new ArrayList<>(pool);
     for (int i = 0; i < pool; i++) {
       Map.Entry<String, Double> e = fusedOrdered.get(i);
-      candidates.add(new RerankCandidate(e.getKey(), byKey.get(e.getKey()).getText(), e.getValue()));
+      candidates.add(
+          new RerankCandidate(e.getKey(), byKey.get(e.getKey()).getText(), e.getValue()));
     }
 
     // 精排：provider 故障 ⇒ WARN 事件 + 回落 NoOp（RRF 粗序），引用强制语义不变
@@ -288,8 +348,7 @@ public class RagApplicationService {
     // （关闭时不多要，避免白付 cross-encoder 推理成本）
     int rerankTopK = query.topK();
     if (mmrLambda > 0) {
-      rerankTopK =
-          Math.min(candidatePool, Math.max(query.topK(), query.topK() * MMR_EXPANSION));
+      rerankTopK = Math.min(candidatePool, Math.max(query.topK(), query.topK() * MMR_EXPANSION));
     }
     List<RerankScored> ranked;
     try {
@@ -297,8 +356,7 @@ public class RagApplicationService {
     } catch (RuntimeException e) {
       eventSink.record(
           new RagEvent(
-              DEGRADE_RERANK,
-              "tenant=" + tenantId + ", reason=" + e.getMessage() + "（回落 RRF 粗序）"));
+              DEGRADE_RERANK, "tenant=" + tenantId + ", reason=" + e.getMessage() + "（回落 RRF 粗序）"));
       degradations.add(DEGRADE_RERANK);
       ranked = new NoOpReranker().rerank(query.query(), candidates, query.topK());
     }
@@ -325,10 +383,7 @@ public class RagApplicationService {
         continue;
       }
       if (!rerankScale && query.minScore() > 0) {
-        log.debug(
-            "RAG minScore 未生效（非 rerank 量纲，跳过阈值以免误杀）：chunk={}, score={}",
-            s.ref(),
-            s.score());
+        log.debug("RAG minScore 未生效（非 rerank 量纲，跳过阈值以免误杀）：chunk={}, score={}", s.ref(), s.score());
       }
       // MMR 多样性向量：仅取与当前嵌入模型同版本的切片向量（版本不符 / 向量路降级时按无向量处理，
       // MMR 自然退化为相关性原序——不拿可疑向量做多样性判断）
@@ -383,9 +438,8 @@ public class RagApplicationService {
   /**
    * 生成侧接地校验（「无出处不得生成」的运行时守卫，生成后、返回用户前调用）。
    *
-   * <p>职责边界：判定规则全部在领域服务 {@link GroundingGuard}（ArchUnit 禁止应用服务承载领域规则），本方法只做
-   * <b>编排 + 事件下沉</b>——校验不通过时发 {@link #EVENT_GROUNDING_REJECTED}，让拒答率与检索降级/慢检索同一条
-   * 告警线聚合。
+   * <p>职责边界：判定规则全部在领域服务 {@link GroundingGuard}（ArchUnit 禁止应用服务承载领域规则），本方法只做 <b>编排 +
+   * 事件下沉</b>——校验不通过时发 {@link #EVENT_GROUNDING_REJECTED}，让拒答率与检索降级/慢检索同一条 告警线聚合。
    *
    * <p>调用方语义：{@code grounded=false} 必须<b>拒答</b>或降级为「仅返回原文片段 + 出处」，不得把答案返回用户；
    * 也不要重试——重试只会再生成一段同样无支撑的内容。{@link AiRagErrorCodes#GROUNDING_FAILED} 即对应的对外错误码。
@@ -414,16 +468,21 @@ public class RagApplicationService {
   }
 
   /**
-   * 入库一个文档切片集合（RAG 写入路径：版本幂等判定 → 批量嵌入 → 失效旧切片 → 持久化）。
+   * 入库一个文档切片集合（RAG 写入路径：写入侧 PII 掩码 → 版本幂等判定 → 批量嵌入 → 失效旧切片 → 持久化）。
    *
    * <p>幂等语义（{@code doc_version} 批键）：同版本且切片数一致 ⇒ 跳过（文档版本事件语义：同版本内容不变）； 异版本或残缺（如上次崩溃半截）⇒
    * 软删该文档全部旧切片后重建。写入路径 fail-closed：<b>先批量嵌入再删旧存新</b>——嵌入失败直接上抛，旧版本切片保持完好（重入时
    * 切片数不符触发重建自愈），不会留下半截新版本。
    *
-   * <p>嵌入吞吐：切片向量经 {@link EmbeddingPort#embedBatch(List)} 一次性批量推理（TEI / infinity 数组输入），
-   * 相比逐条 {@code embed} 显著减少推理往返、提升 GPU 利用率（大语料入库关键路径）。
+   * <p><b>写入侧 PII 掩码（2026-10-24 P0-3）</b>：嵌入前对切片文本做字段级等长掩码（{@link SensitiveDataMasker}）—— {@code
+   * chunk_text} 明文落库与「数据不出域 / 最小暴露」不自洽。掩码在嵌入<b>之前</b>：存的是什么就嵌什么， 检索与生成两侧看到 的口径一致；等长掩码保证 {@code
+   * spanStart/spanEnd} 锚点不漂移。掩码处数经 {@link #EVENT_INGEST_PII_MASKED} 事件下沉 （可观测而非静默改写语料）。
+   *
+   * <p>嵌入吞吐：切片向量经 {@link EmbeddingPort#embedBatch(List)} 一次性批量推理（TEI / infinity 数组输入）， 相比逐条 {@code
+   * embed} 显著减少推理往返、提升 GPU 利用率（大语料入库关键路径）。
    */
-  public void ingest(Long tenantId, String docId, String docVersion, List<RagIngestSegment> segments) {
+  public void ingest(
+      Long tenantId, String docId, String docVersion, List<RagIngestSegment> segments) {
     List<RagChunk> existing = chunkRepository.findByTenantAndDoc(tenantId, docId);
     boolean idempotentHit =
         !existing.isEmpty()
@@ -438,9 +497,26 @@ public class RagApplicationService {
           existing.size());
       return;
     }
+    // 写入侧 PII 掩码（先于嵌入：存什么嵌什么，两侧口径一致；等长掩码不漂移 span 锚点）
+    List<String> texts =
+        segments.stream().map(seg -> sensitiveDataMasker.mask(seg.text())).toList();
+    int maskedHits =
+        segments.stream().mapToInt(seg -> sensitiveDataMasker.countHits(seg.text())).sum();
+    if (maskedHits > 0) {
+      eventSink.record(
+          new RagEvent(
+              EVENT_INGEST_PII_MASKED,
+              "tenant="
+                  + tenantId
+                  + ", doc="
+                  + docId
+                  + ", masked="
+                  + maskedHits
+                  + "（身份证/手机号/银行卡/邮箱等长局部掩码，span 锚点不漂移）"));
+    }
     // 先批量嵌入（fail-closed：失败上抛，旧版本不动）
     String ver = embeddingPort.version();
-    List<float[]> vectors = embeddingPort.embedBatch(segments.stream().map(RagIngestSegment::text).toList());
+    List<float[]> vectors = embeddingPort.embedBatch(texts);
     if (vectors.size() != segments.size()) {
       throw new BizException(
           500,
@@ -463,7 +539,7 @@ public class RagApplicationService {
               docId,
               docVersion,
               seg.sectionPath(),
-              seg.text(),
+              texts.get(i),
               vectors.get(i),
               ver,
               seg.clauseRef(),
@@ -472,7 +548,8 @@ public class RagApplicationService {
       chunkRepository.save(chunk);
       n++;
     }
-    log.info("RAG ingested: doc={}, tenant={}, version={}, chunks={}", docId, tenantId, docVersion, n);
+    log.info(
+        "RAG ingested: doc={}, tenant={}, version={}, chunks={}", docId, tenantId, docVersion, n);
   }
 
   /** 入库切片输入（单切片：章节路径 + 文本 + 引用强制锚点）。 */

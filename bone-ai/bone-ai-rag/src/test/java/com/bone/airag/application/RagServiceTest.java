@@ -28,6 +28,7 @@ import com.bone.airag.domain.repository.ChunkRepository;
 import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
+import com.bone.airag.domain.service.SensitiveDataMasker;
 import com.bone.airag.infrastructure.embedding.HttpBgeEmbeddingClient;
 import com.bone.core.exception.BizException;
 import java.util.ArrayList;
@@ -76,23 +77,23 @@ class RagServiceTest {
   private static RagChunk chunk(
       Long id, String docId, String docVersion, String text, float[] vec, String clauseRef) {
     return RagChunk.of(
-        id,
-        42L,
-        docId,
-        docVersion,
-        "Clause " + id,
-        text,
-        vec,
-        "hash-64",
-        clauseRef,
-        0,
-        10);
+        id, 42L, docId, docVersion, "Clause " + id, text, vec, "hash-64", clauseRef, 0, 10);
   }
 
-  /** 默认装配：无文档级 ACL（仅租户硬隔离）+ 记录型事件 sink + MMR 关闭 + 容量/慢检索预警关闭。 */
+  /** 默认装配：无文档级 ACL（仅租户硬隔离）+ 记录型事件 sink + MMR 关闭 + 容量/慢检索预警关闭 + 写入侧不掩码。 */
   private RagApplicationService service(
       ChunkRepository repo, EmbeddingPort embed, RerankPort rerank, TenantProvider tenant) {
-    return service(repo, embed, rerank, tenant, new NoDocAcl(), new RecordingSink(), 0.0, 0, -1);
+    return service(
+        repo,
+        embed,
+        rerank,
+        tenant,
+        new NoDocAcl(),
+        new RecordingSink(),
+        0.0,
+        0,
+        -1,
+        SensitiveDataMasker.disabled());
   }
 
   private RagApplicationService service(
@@ -103,7 +104,8 @@ class RagServiceTest {
       RagAclPort acl,
       RagEventSink sink,
       double mmrLambda) {
-    return service(repo, embed, rerank, tenant, acl, sink, mmrLambda, 0, -1);
+    return service(
+        repo, embed, rerank, tenant, acl, sink, mmrLambda, 0, -1, SensitiveDataMasker.disabled());
   }
 
   /**
@@ -111,6 +113,7 @@ class RagServiceTest {
    *
    * @param warnScanThreshold 容量预警阈值（切片数）；0/负关闭
    * @param slowRetrieveMs 慢检索阈值（毫秒）；负数关闭，0 = 任意正耗时告警，正数 = 生产水位
+   * @param masker 写入侧 PII 掩码器（ingest 用；检索无关）
    */
   private RagApplicationService service(
       ChunkRepository repo,
@@ -121,7 +124,8 @@ class RagServiceTest {
       RagEventSink sink,
       double mmrLambda,
       int warnScanThreshold,
-      long slowRetrieveMs) {
+      long slowRetrieveMs,
+      SensitiveDataMasker masker) {
     return new RagApplicationService(
         repo,
         embed,
@@ -133,7 +137,8 @@ class RagServiceTest {
         mmrLambda,
         warnScanThreshold,
         slowRetrieveMs,
-        new GroundingGuard(0.6, 0.0));
+        new GroundingGuard(0.6, 0.0),
+        masker);
   }
 
   @Test
@@ -212,7 +217,9 @@ class RagServiceTest {
     assertThat(outcome.results().get(0).score()).isGreaterThan(outcome.results().get(1).score());
     // 降级可观测：痕迹码进响应 + 事件下沉（非只躺 WARN 日志）
     assertThat(outcome.degradations()).containsExactly(RagApplicationService.DEGRADE_RERANK);
-    assertThat(sink.events).extracting(RagEvent::type).containsExactly(RagApplicationService.DEGRADE_RERANK);
+    assertThat(sink.events)
+        .extracting(RagEvent::type)
+        .containsExactly(RagApplicationService.DEGRADE_RERANK);
   }
 
   @Test
@@ -438,7 +445,14 @@ class RagServiceTest {
 
     // λ=0.5：c1 先入选；c2 因与 c1 高度相似被惩罚，c3（正交）胜出——防 top-K 同质化
     RagApplicationService service =
-        service(repo, embed, new StubReranker(scores, false), tenant, new NoDocAcl(), new RecordingSink(), 0.5);
+        service(
+            repo,
+            embed,
+            new StubReranker(scores, false),
+            tenant,
+            new NoDocAcl(),
+            new RecordingSink(),
+            0.5);
 
     RagRetrieveOutcome outcome = service.retrieve(new RagQuery("query", null, 2));
 
@@ -572,7 +586,17 @@ class RagServiceTest {
 
     // warnScanThreshold=1 < 2 切片：预警但不 fail-closed（maxScan 默认 10000）
     RagApplicationService service =
-        service(repo, embed, new NoOpReranker(), tenant, new NoDocAcl(), sink, 0.0, 1, -1);
+        service(
+            repo,
+            embed,
+            new NoOpReranker(),
+            tenant,
+            new NoDocAcl(),
+            sink,
+            0.0,
+            1,
+            -1,
+            SensitiveDataMasker.disabled());
 
     service.retrieve(new RagQuery("query", null, 5));
 
@@ -604,7 +628,17 @@ class RagServiceTest {
 
     // slowRetrieveMs=1：5ms 嵌入使墙钟超阈值 → 发 RETRIEVE_SLOW
     RagApplicationService service =
-        service(repo, embed, new NoOpReranker(), tenant, new NoDocAcl(), sink, 0.0, 0, 1);
+        service(
+            repo,
+            embed,
+            new NoOpReranker(),
+            tenant,
+            new NoDocAcl(),
+            sink,
+            0.0,
+            0,
+            1,
+            SensitiveDataMasker.disabled());
 
     service.retrieve(new RagQuery("query", null, 5));
 
@@ -634,8 +668,10 @@ class RagServiceTest {
                     "doc1",
                     "v1",
                     List.of(
-                        new RagApplicationService.RagIngestSegment("S1", "alpha", "clause-1", 0, 10),
-                        new RagApplicationService.RagIngestSegment("S2", "beta", "clause-2", 0, 10))))
+                        new RagApplicationService.RagIngestSegment(
+                            "S1", "alpha", "clause-1", 0, 10),
+                        new RagApplicationService.RagIngestSegment(
+                            "S2", "beta", "clause-2", 0, 10))))
         .isInstanceOf(BizException.class)
         .satisfies(
             e ->
@@ -672,8 +708,7 @@ class RagServiceTest {
     RagApplicationService service = groundingService(sink);
 
     GroundingVerdict v =
-        service.verifyGrounding(
-            "甲方应按时付款[1]。", List.of(result("甲方应按时付款", "clause-1")));
+        service.verifyGrounding("甲方应按时付款[1]。", List.of(result("甲方应按时付款", "clause-1")));
 
     assertThat(v.grounded()).isTrue();
     // 通过时不产生事件噪音：事件通道只承载异常/拒答，否则告警线被正常流量淹没
@@ -686,8 +721,7 @@ class RagServiceTest {
     RagApplicationService service = groundingService(sink);
 
     GroundingVerdict v =
-        service.verifyGrounding(
-            "乙方应赔偿全部损失[9]。", List.of(result("甲方应按时付款", "c-1")));
+        service.verifyGrounding("乙方应赔偿全部损失[9]。", List.of(result("甲方应按时付款", "c-1")));
 
     assertThat(v.grounded()).isFalse();
     assertThat(v.reason()).isEqualTo(GroundingGuard.REASON_INVALID_CITATION);

@@ -1,5 +1,6 @@
 package com.bone.aiorch.domain.hitl;
 
+import com.bone.aiorch.domain.decision.Confirmed;
 import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.annotation.Transient;
@@ -184,5 +185,30 @@ public class HitlItem extends TenantAggregateRoot<String> {
   /** 当次请求内的处置链只读视图（持久化真相以 hitl_disposition 表为准）。 */
   public List<Disposition> dispositionHistory() {
     return Collections.unmodifiableList(dispositions);
+  }
+
+  /**
+   * 终态项 → {@link Confirmed}（业务侧唯一允许落表的裁决产物，类型护栏的消费端）。
+   *
+   * <p>只有 CONFIRMED（采纳建议值）/ MODIFIED（改判值生效）携带确认结论——REJECTED 无值可落、ESCALATED 转人工全程、 PENDING
+   * 尚未裁决，三者调本方法即 {@link IllegalStateException}（fail-closed：拿未裁项当确认用是审计事故）。
+   *
+   * <p>{@code evidenceRef} 取 {@code traceId}：确认值必须能回放到触发它的那次 AI 调用证据链， 与 {@code hitl_disposition}
+   * 留痕共同构成「谁在何时凭什么确认」。
+   */
+  public Confirmed<String> toConfirmed() {
+    if (status != HitlStatus.CONFIRMED && status != HitlStatus.MODIFIED) {
+      throw new IllegalStateException(
+          "only CONFIRMED/MODIFIED item carries a Confirmed decision, current=" + status);
+    }
+    if (actedBy == null || traceId == null) {
+      throw new IllegalStateException(
+          "confirmed item missing audit fields (actedBy/traceId): id=" + id);
+    }
+    return new Confirmed<>(
+        suggestedValue,
+        actedBy,
+        traceId,
+        actedAt.atZone(java.time.ZoneId.systemDefault()).toInstant());
   }
 }

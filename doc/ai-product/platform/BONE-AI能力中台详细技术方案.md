@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 详细技术方案（详设）
 
-> **版本**：v1.8　**日期**：2026-10-23　**归口**：平台架构组
+> **版本**：v1.9　**日期**：2026-10-24　**归口**：平台架构组
+> **v1.9 变更（企业复杂场景诊断优化落地，承接《方案诊断复核-2026-10-24》P0/P1/P2）**：① **§2.3 类型护栏由「目标态」转「已机械强制」**——`AiSuggestion<T>(value, confidence, evidenceRef)` / `Confirmed<T>(value, decidedBy, evidenceRef, at)` 两 record 在 `domain.decision` 落地（不变量：置信度 ∈[0,1]、证据引用必填；确认必记录裁决人 + 证据 + 时刻），`HitlItem.toConfirmed()` 为业务侧唯一确认产物入口（未裁 / 驳回 / 升级项取确认即显式失败），§3.3 ArchUnit 规则 6 由「批二启用」转「已启用」（`AiSuggestion` 禁越出 `domain.decision` 包），§3.4 / 附录 C 同步；② **§2.6 RAG 文档级 ACL 默认改 fail-closed**——未接入 `RagAclPort` 实现时装配 `DenyDocAcl`（空可见集 = 拒绝检索）而非 `NoDocAcl`（放行全租户），开发联调逃生口 `bone.ai.rag.acl.default-deny=false`（WARN，禁止带入生产），接入方 ACL 适配由 L3 可选升为 **Go-Live 硬依赖**（§6.4/§6.6 同步）；③ **§2.6 写入侧 PII 闭环**——`SensitiveDataMasker` ingest 字段级等长掩码（身份证前 6 后 4 / 手机号前 3 后 4 / 银行卡后 4（Luhn 防误伤）/ 邮箱保留首字符 + 域名），`bone.ai.rag.ingest.pii-mask-enabled` 默认开，等长保证 span 锚点不漂移，掩码处数经 `INGEST_PII_MASKED` 事件下沉；④ **§2.1 观测段 + §6.2 指标化**——`MicrometerLlmMetrics` 宿主适配器落地（`bone-ai-app` 存在 `MeterRegistry` 即自动装配：provider 调用 / 延迟 P99 / TTFT / token 三维度 / 短路 / 缓存 / 配额命中），`LlmMetrics` 发射点自此有真实消费方；⑤ **§4 #20 max-scan 默认 10000→3000**（过渡态内存打分几千条已劣化，10000 是「不可行点」才触发；与 warn-scan-threshold 2000 形成两级）；⑥ **§2.2 租户标识**——字符串租户键（子域 / UUID / 组织编码）映射层方案入 L3 待拍板；⑦ **§6.3 威胁模型决策**明确为上线前硬依赖（决策记录归档）。验证证据：orchestration 类型护栏 3 组新测试（AiSuggestion / Confirmed / HitlItemConfirmed）+ ArchUnit 规则 6、rag 掩码器 8 例 + ingest 接线 4 例、app Micrometer 适配 5 例。
 > **v1.8 变更（流式 SSE 落地——对齐 2026 业界最佳实践，关闭最大能力缺口）**：① §2.1 新增**流式能力段**——`LlmClient.streamChat(req, Consumer<LlmStreamEvent>)`（默认缓冲回退，零改传输实现）+ `LlmStreamEvent` sealed 事件（Token/Done/Error）；`LlmGatewayApplicationService.streamInvoke` **复用与 `invoke` 完全相同的治理链**（红线→路由→配额→注入→脱敏→缓存命中），仅在末端逐片下发 Token、首 token 记 TTFT（`LlmMetrics.recordFirstToken`）、流末做内容安全/结构化校验/缓存写入/计量/证据（与 `invoke` 同口径）；② 传输层 `LlmHttpTransport.streamPost` 默认缓冲回退，仅 `JdkLlmTransport` 走 **JDK `HttpClient` 真 SSE**（`BodyHandlers.ofInputStream()` 行读），`ResilientLlmTransport` 透传（熔断只守卫「流获取」不守卫消耗，避免吞掉半截流）；③ 契约一致性定案——**流式与 `invoke` 同口径：面向调用方返回原文，PII 脱敏只发生在出站请求与证据落库两处**（不做逐片流式脱敏，避免跨 chunk 边界漏脱敏与证据标签泄露调用方）；④ §3.2 补 `gen_ai.time_to_first_token`（TTFT）映射；⑤ §6.2 指标化行补 TTFT 发射点已具备；⑥ 验证证据：**gateway 115 测试全绿（含 ArchUnit 12 条——订正 v1.7「11 条」口径，实际 `ArchitectureTest` 引用 12 条规则；新增流式 7 例：SSE 解析/事件顺序/stream:true+include_usage 写入/缓冲回退/错误载荷/流末内容安全拦截/TTFT 与证据脱敏口径 + 缓存命中流式）**。
 > **v1.7 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：① §2.1 密钥行补 **`ApiKeyProvider` 按调用解析**（此前端口已就位却零消费方——客户端构造期固化 `String apiKey`，密钥轮换语义落空，同 `LlmMetrics` 零消费方反模式；现补默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 装配，客户端每次请求现取，接入方以 `@Bean` 覆盖为 bone-security Virtual Key 实现即生效，热路径零改动）；② §6.1 密钥托管行状态更新——网关侧 seam 已接通（✅），剩余 L3 收敛为 bone-security Virtual Key 能力本体实现；③ §2.1 默认开关表密钥行同步；④ 验证证据：gateway 108 测试全绿（含 ArchUnit 12 条，新增密钥轮换 / 空值 / 热更新 5 例；v1.8 订正原「11 条」为 12 条）。
 > **v1.6 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：① §2.6 检索链补**文档级 ACL seam**（`RagAclPort` 契约 + 默认 `NoDocAcl` 兜底 + 显式作用域无 ACL 归属 403 fail-closed，L3 前接入方适配为硬依赖）、**MMR 多样性选取**（`MmrSelector` 选取式，λ 默认 0 = 关闭、开启时精排 3 倍扩样，λ=0 约定为关闭而非纯多样性）、**降级可观测**（`RagEventSink` 端口 + 响应 `degradations` 痕迹码 + 默认 WARN 事件，trace 适配留 L3）；② §3.1 错误码表补 `AI_RAG_DOC_FORBIDDEN`（403），目标态语义注同步；③ §4 阈值表补 #23 MMR λ；④ §6.4 补检索权限隔离 / 降级可观测两行状态；⑤ §2.6 backlog 收敛——查询改写记**决策：暂不落地零消费方 machinery**（无 producer 先建合并机制即死代码，正是 P0 修掉的反模式；批二按评测回流启动），仅剩 trace/告警接线与 ingest ACL 两项；⑥ 验证证据：rag 43 测试全绿（RagServiceTest 13 例含 ACL/MMR/降级痕迹新场景 + ArchUnit 12 条），app 51 测试全绿（RagControllerTest 响应结构与痕迹透传断言）。
@@ -80,14 +81,14 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 | 密钥按调用解析 | **强制开** | `ApiKeyProvider` 端口每次请求现取（默认 `ConfigApiKeyProvider` 读配置；`@Bean` 覆盖即切 Virtual Key / 轮换密钥，换 key 不重启） |
 | 场景档位路由 | 配置驱动 | 无配置 = 按请求模型直通（`PassthroughModelRouter`） |
 | 结构化输出校验 | `jsonResponse=true` 时开 | JSON 合法性校验；Schema 强校验为目标态 |
-| 提示注入检测 | 默认关 | 启发式误伤风险；开启走 `HeuristicInjectionGuard` |
-| 输出内容安全 | 默认关 | 同上；可 `@Bean` 覆盖为模型分类器 |
+| 提示注入检测 | 默认关 | 启发式误伤风险；开启走 `HeuristicInjectionGuard`。**v1.9**：默认关可接受，但上线前威胁模型决策须归档，且开启即配误伤监控与人工抽检（§6.3 硬依赖） |
+| 输出内容安全 | 默认关 | 同上；可 `@Bean` 覆盖为模型分类器。**v1.9**：涉及对外 / 对客户内容的产品侧，威胁模型决策应默认开（§6.3 硬依赖） |
 | 精确缓存 | 默认关 | 租户入键；仅 `temperature=0` 参与 |
 | 级联升档 | 档位表配置 | `CascadeLlmClient` 包在调用链外，按需装配 |
 
 **配置模型（`LlmGatewayProperties`，Nacos/ConfigMap）**：档位路由表、租户配额（token/日、调用次数/日、超限降档→纯确定性路径）、红线开关、脱敏规则、超时/重试、灰度开关（能力级一键降级）。**密钥**：出库走 bone-security（Virtual Key 语义），配置不含明文 key。密钥解析经 `ApiKeyProvider` 端口**按调用**完成（2026-10-23 接线：此前端口零消费方、客户端构造期固化 key，轮换语义落空）——默认 `ConfigApiKeyProvider` 从配置现取（Nacos 热更新换 key 不重启），合规形态以 `@Bean ApiKeyProvider` 覆盖为 bone-security Virtual Key 实现即生效（短时限 key 过期刷新、provider 侧轮换，客户端与热路径零改动）；返回 null/空 = 不带 Authorization 头（本地无鉴权 provider）。
 
-**观测**：`LlmMetrics` 端口已就位（Noop 默认，成本 / 延迟 / 错误率 / 短路 / 配额超限发射点）；`gen_ai.*` 语义约定映射（表见 §3.2，映射表版本化、不硬编码常量）**待 Micrometer 依赖落地后接入（L3）**；提示词/响应内容**默认不采集**。
+**观测**：`LlmMetrics` 端口已就位（Noop 默认，成本 / 延迟 / 错误率 / 短路 / 配额超限发射点）；**v1.9 接线**：`bone-ai-app` 宿主新增 `MicrometerLlmMetrics` 适配器（`@ConditionalOnBean(MeterRegistry.class)` 自动装配，库形态仍零依赖 Noop）——指标口径：`bone.ai.gateway.provider.calls`（tenant/model/success 计数）、`provider.latency`（P99 计时）、`first_token.latency`（TTFT）、`tokens`（kind=prompt/completion/total）、`short_circuited`/`cache.hit`/`quota.exceeded`（治理面命中率）；`gen_ai.*` 语义约定映射（表见 §3.2，映射表版本化、不硬编码常量）随告警规则接入；提示词/响应内容**默认不采集**。
 
 **流式能力（v1.8 落地——对齐 2026 业界最佳实践，关闭最大能力缺口）**：此前网关**全链同步**，而 SSE/流式已是 OpenAI 兼容生态与 LiteLLM/Portkey/Kong 等网关的事实标配（首 token 体验、长文逐步呈现、降级兜底）。本次补齐且不引入新依赖、不复制治理链：
 
@@ -114,6 +115,7 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 
 > **已落地基线（2026-10-14，P3 对齐）**：实体 `EvidenceSnapshot extends TenantAggregateRoot<Long>`、表 `ai_trace_snapshot` 已入 `bone-init.sql` 并登记《数据库开发规范》§2.12；上表与 DDL 以落地为准。`payload_ref`（大 IR 拆存 MinIO、内联 ≤2MB）为批二增强，届时加列。
 > **租户兜底已收敛（v1.2，原 P4 待定）**：`TenantContext` 为字符串，非数值编码（如 `system`）经 `getTenantIdAsLong()` 得 null → **fail-closed 显式拒绝**（`AI_HITL_TENANT_NOT_NUMERIC`），不静默映射平台租户 0——静默归零会把业务租户证据错标成平台资产，审计时无法区分。
+> **租户标识模型限制（v1.9 记 L3）**：企业常见字符串租户键（子域 / UUID / 组织编码）在当前 BIGINT 数值口径下会被 fail-closed 拒绝——「非数值」被等同于「非法」。缓解与终局：① 接入层维护「字符串租户键 → 数值租户 ID」映射表（平台侧转换，产品侧仍可用自然键）；② 或租户列抽象为字符串主键（DDL 影响面大，随多租户 SaaS 形态评估）。非数值租户接入前须二选一（总案 §7 待拍板 7）。
 
 **落盘时序**：网关事件 `LlmCallRecorded` → `EvidenceTraceListener`（就地哈希+写库）→ `EvidenceSnapshotRepository.findByTraceId` 回放；另 `LlmUsageRecorded` → `LlmUsageListener` → `LlmUsageSink`（默认结构化日志，spend tracking 消费方）。**结构强制**：无旁路 API——业务代码没有直接写快照的入口；网关是唯一事件发布方、监听是唯一落库方。
 
@@ -158,15 +160,15 @@ CREATE TABLE ai_trace_snapshot (
 - **确定性闸门 `DecisionGate`**：AI 只出建议，能否自动放行由确定性策略裁决——置信度 < 0.85 或金额 > 5000 元（均可配）→ `verdict.requiresHuman()`；纯规则决策（无 LLM 步骤）直接放行。转人工原因用受控码（`CONFIDENCE_LOW` / `AMOUNT_HIGH` / `AI_UNAVAILABLE`）便于监控聚合；
 - **HITL item 创建由调用方按 verdict 驱动**（当前：产品 / 参考宿主调 `HitlApplicationService.create`；编排内自动建 item 并停等在 `HITL_NODE` 为目标态）。
 
-**类型护栏（目标态契约；v1.2 修正：类型尚未落地，代码零引用）**：
+**类型护栏（v1.9 起已机械强制；v1.2 曾记「目标态、代码零引用」，2026-10-24 企业复杂场景诊断 P0-1 落地）**：
 
 ```java
-public record AiSuggestion<T>(T value, double confidence, EvidenceRef evidence) {}  // AI 唯一产出
-public record Confirmed<T>(T value, ConfirmedBy by, Instant at) {}                  // HITL 裁决或规则产出
-// 资金/责任/数值判定入口签名只收 Confirmed<T>；工厂方法是唯一构造通道，ArchUnit 禁隐式互转
+public record AiSuggestion<T>(T value, double confidence, String evidenceRef) {}  // AI 唯一产出（禁越出 domain.decision 包）
+public record Confirmed<T>(T value, String decidedBy, String evidenceRef, Instant at) {}  // HITL 裁决或规则产出
+// 资金/责任/数值判定入口签名只收 Confirmed<T>；两类型无隐式转换路径
 ```
 
-> **落地实况（2026-10-23 核验）**：上述两个 record 在 `bone-ai` 中**不存在**，ArchUnit 规则 6 暂无拦截对象。当前等价防线是**运行期闸门**：`DecisionGate`（置信度 / 金额 / AI 可用性合取）+ HITL 五态与 `hitl_disposition.decided_by` 留痕 + `OrchestrationResult.aiError` 审计。**类型级护栏列入批二补建**（与 rag 引用强制同期：先有 `AiSuggestion` 产出类型，再补 ArchUnit 互转禁令）；在类型落地前，「资金/责任/数值判定只消费 Confirmed」是**工程约定 + 评审项**，不是编译期保证——接入文档不得宣称已机械强制。
+> **落地实况（2026-10-24 核验，P0-1 闭环）**：两个 record 已存在于 `com.bone.aiorch.domain.decision`，ArchUnit 规则 6 **已启用**（`AiSuggestion` 禁越出 `domain.decision` 包——应用 / 适配 / Web 层引用即编译不过 + 架构门禁红灯）。不变量：`AiSuggestion` 置信度 ∈[0,1] 且证据引用必填（无出处的建议不得离开 AI 边界，与 rag 引用强制同源）；`Confirmed` 必须记录裁决人（`decidedBy`）+ 证据引用（`evidenceRef`）+ 时刻（`at`）——缺一项即「确认」不可审计。**消费端入口**：`HitlItem.toConfirmed()`——仅 CONFIRMED / MODIFIED 终态项可取确认结论（未裁 / 驳回 / 升级项取确认即 `IllegalStateException`，fail-closed），`evidenceRef` 取 `traceId` 保证可回放到触发它的那次 AI 调用。**生产端入口**：`DecisionGate.adjudicate(AiSuggestion, amount, aiAvailable)`（建议进闸门、裁决结论出闸门，建议本体不越界）。回归：`AiSuggestionTest` / `ConfirmedTest` / `HitlItemConfirmedTest` 锁死不变量；接入文档可宣称「编译期 + 架构门禁双重机械强制」。
 
 **HITL 子域接口（应用服务在 orchestration；REST 控制器由 `bone-ai-app` 后端聚合宿主的 `HitlController` 暴露，前端确认台 qiankun 子应用消费、权限复用 bone-iam——前端为批三目标态）**：
 
@@ -246,11 +248,11 @@ DocumentIR { doc_id, tenant_id, source_ref, page_count, parse_mode, provider, pr
 
 ### 2.6 bone-ai-rag（受控检索）
 
-**检索链（一次查询，与代码真序一致，2026-10-23 重写；P1 项 ACL / MMR / 降级可观测同日落地）**：租户过滤 → **文档级 ACL**（默认 `NoDocAcl` 仅租户硬隔离；接入方提供 `RagAclPort` 受限可见集合后：显式 `doc_scope` 无 ACL 归属 ⇒ 403 `AI_RAG_DOC_FORBIDDEN` fail-closed，无作用域时按可见集过滤）→ **容量护栏**（`maxScan` 超限 fail-closed 抛 `AI_RAG_SCOPE_OVER_LIMIT`，绝不静默截断）→ **引用强制前置**（无 `clauseRef`/span 非法切片在打分前剔除，不占精排名额）→ 向量（bge-m3，1024 维起步）+ BM25 双路（**嵌入 provider 故障 ⇒ WARN 事件 + 降级 BM25 单路**）→ **RRF 融合**（k=60，权重 0.5/0.5 起步；版本不符切片不入向量路，RRF 按「末位之后」计最弱）→ 候选池（`candidatePool`，默认 30）→ **rerank**（bge 系 cross-encoder，top-30→top-5；**provider 故障 ⇒ WARN 事件 + 降级 RRF 粗序**）→ `minScore` 过滤（宁缺毋滥，返回数可小于 topK）→ **MMR 多样性选取**（λ≤0 关闭；开启时精排按 3 倍扩样保证候选面）→ topK。降级口径：读路径可用性优先，降级仅限**本域内已实现路径**（BM25 单路 / RRF 粗序），**严禁切云端辅路**（数据不出域红线）；降级可观测（`RagEventSink` 事件 + 响应 `degradations` 痕迹码），非「假装已精排」。
+**检索链（一次查询，与代码真序一致，2026-10-23 重写；P1 项 ACL / MMR / 降级可观测同日落地；2026-10-24 ACL 默认改 fail-closed + 写入侧 PII 掩码 + max-scan 下调）**：租户过滤 → **文档级 ACL**（**默认 `DenyDocAcl` 拒绝检索**——未接入 ACL 实现不放行全租户；接入方提供 `RagAclPort` 受限可见集合后：显式 `doc_scope` 无 ACL 归属 ⇒ 403 `AI_RAG_DOC_FORBIDDEN` fail-closed，无作用域时按可见集过滤）→ **容量护栏**（`maxScan` 超限 fail-closed 抛 `AI_RAG_SCOPE_OVER_LIMIT`，绝不静默截断）→ **引用强制前置**（无 `clauseRef`/span 非法切片在打分前剔除，不占精排名额）→ 向量（bge-m3，1024 维起步）+ BM25 双路（**嵌入 provider 故障 ⇒ WARN 事件 + 降级 BM25 单路**）→ **RRF 融合**（k=60，权重 0.5/0.5 起步；版本不符切片不入向量路，RRF 按「末位之后」计最弱）→ 候选池（`candidatePool`，默认 30）→ **rerank**（bge 系 cross-encoder，top-30→top-5；**provider 故障 ⇒ WARN 事件 + 降级 RRF 粗序**）→ `minScore` 过滤（宁缺毋滥，返回数可小于 topK）→ **MMR 多样性选取**（λ≤0 关闭；开启时精排按 3 倍扩样保证候选面）→ topK。降级口径：读路径可用性优先，降级仅限**本域内已实现路径**（BM25 单路 / RRF 粗序），**严禁切云端辅路**（数据不出域红线）；降级可观测（`RagEventSink` 事件 + 响应 `degradations` 痕迹码），非「假装已精排」。
 
 **实现形态（已落地最小全链，2026-10-23 接线修复 + P1 落地）**：`EmbeddingPort` / `RerankPort` 均按 `bone.ai.rag.embedding.base-url` / `bone.ai.rag.rerank.base-url` **条件装配**——配了走 `HttpBgeEmbeddingClient` / `HttpBgeRerankClient`（共享 TEI / infinity 兼容推理服务，多副本友好、数据不出域），未配回落 `TransitionalHashEmbedding` / `NoOpReranker`（`RagInferenceProperties` 经 `@EnableConfigurationProperties` 注册，`bone.ai.rag.*` 配置面自此生效）；**引用强制为 fail-closed**：无出处切片前置剔除，绝不以无出处内容喂生成；`ChunkRepository`（SDK 动态代理）落 `ai_rag_chunk`（已入 `bone-init.sql`，`doc_version` 为增量幂等批键、`embedding_ver` 支持换模型灰度重建）。
 
-**文档级 ACL（P1-7，2026-10-23 落地 seam）**：`RagAclPort`（domain 端口，契约 = 返回调用方可见 `doc_id` 集合；`null` = 无文档级 ACL 模型、仅租户硬隔离兜底；非 `null` = 受限集合、无 ACL 归属的 doc 不可见）。默认 `NoDocAcl`，接入方以 `@Bean` 覆盖（读文档中心 / bone-ai-document ACL，调用方身份由实现自行从上下文解析，端口不接收 user 入参——防伪造身份参数绕权）。**为何是端口而非 rag 自建 ACL 表**：文档权限模型归属文档中心，rag 不重复建设权限存储；L3 私有化交付前必须接入真实 ACL（当前兜底形态存在同租户内跨文档越权面）。
+**文档级 ACL（P1-7，2026-10-23 落地 seam；P0-2，2026-10-24 默认改 fail-closed）**：`RagAclPort`（domain 端口，契约 = 返回调用方可见 `doc_id` 集合；`null` = 无文档级 ACL 模型（仅租户硬隔离，**开发联调形态**，需显式 `bone.ai.rag.acl.default-deny=false`）；空集合 = 全员不可见（**默认形态**）；非 `null` = 受限集合、无 ACL 归属的 doc 不可见）。**默认 `DenyDocAcl`（拒绝检索）**：企业单租户内多部门 / 多团队（理赔、核赔、医学共享一个租户）场景下，兜底放行全租户即跨文档越权面——业界知识库权限共识是默认 deny，未接入 ACL 模型就不放行。接入方以 `@Bean` 覆盖（读文档中心 / bone-ai-document ACL，调用方身份由实现自行从上下文解析，端口不接收 user 入参——防伪造身份参数绕权）。**为何是端口而非 rag 自建 ACL 表**：文档权限模型归属文档中心，rag 不重复建设权限存储；**接入方 ACL 适配由 L3 可选升为 Go-Live 硬依赖**（默认拒绝检索兜底了越权面，但「拒绝」不是生产形态——接入真实 ACL 才能既安全又可用）。开发联调逃生口装配时打 WARN（禁止带入生产）。
 
 **多样性 MMR（P1-9，2026-10-23 落地，默认关闭）**：`MmrSelector` 选取式（非重排）——从精排后候选迭代挑 topK，每步选 `λ·相关性 − (1−λ)·与已选的最大相似度` 最大者，防 top-K 全来自同一条款/同一章节；相似度用切片入库时写入的嵌入向量（仅同模型版本可用，否则按 0 处理、MMR 自然退化为相关性原序）。λ 约定（`bone.ai.rag.mmr-lambda`，模块级旋钮同 candidatePool、不走请求级）：默认 0 = 关闭；λ∈(0,1) 生效；λ=1 纯相关性（等价关闭）；**λ=0 按约定视为关闭而非数学上的纯多样性**（防运维误配乱序）。阈值须按评测集回流数据校准（批二），默认关闭避免误伤（与 minScore 同哲学）。开启时精排候选按 3 倍扩样（`MMR_EXPANSION`，受候选池上限约束）——选取式 MMR 需要比 topK 更大的候选面才能「换掉」同质项；关闭时不多要，避免白付 cross-encoder 推理成本。
 
@@ -258,11 +260,13 @@ DocumentIR { doc_id, tenant_id, source_ref, page_count, parse_mode, provider, pr
 
 **切片策略（总案"条款级优先、超长二次切分"的阈值化）**：条款为单位入库；单条 >2000 汉字按语义段二次切分（overlap 200 字）；标题/章节层级写入 `chunk.path` 供引用面包屑。
 
+**写入侧 PII 字段级掩码（P0-3，2026-10-24 落地）**：出口脱敏（网关）只保护「出站请求 / 证据落库」，`chunk_text` 若明文落库，DB / 备份 / 运维通道泄露即明文外泄——与「数据不出域 / 最小暴露」不自洽。ingest 链路在**嵌入前**对切片文本做字段级**等长局部掩码**（`SensitiveDataMasker`，domain/service 纯函数）：身份证保留前 6 后 4 / 手机号保留前 3 后 4 / 银行卡保留后 4（Luhn 校验防误伤订单号）/ 邮箱保留首字符 + 域名。两个设计约束：① **等长替换**——掩码字符数与被掩码段一致，`spanStart/spanEnd` 引用锚点不漂移；② **先掩码后嵌入**——存什么嵌什么，检索与生成两侧口径一致（检索语义的损失是「最小暴露」的代价：精确串不再命中，分段 / 号段检索仍可用；需彻底不可检索时改令牌化 + 映射表，属目标态）。配置 `bone.ai.rag.ingest.pii-mask-enabled` 默认 true；掩码处数经 `INGEST_PII_MASKED` 事件下沉（可观测而非静默改写语料）。回归：`SensitiveDataMaskerTest`（8 例：等长锁死 / Luhn 防误伤 / 无级联放大）+ `RagIngestPiiMaskTest`（4 例：先掩码后嵌入 / 无 PII 无事件 / 禁用逃生口 / fail-closed 顺序不变）。
+
 **增量更新（幂等，2026-10-23 落地）**：文档版本事件 → `ingest(tenantId, docId, docVersion, segments)` 按版本批键判定——**同版本且切片数一致 ⇒ 跳过**（同版本内容不变的版本事件语义）；**异版本或残缺**（如上次崩溃半截）⇒ 软删该文档全部旧切片后重切重嵌（写入路径 fail-closed：嵌入失败上抛，不留半截新版本，重入自愈）。
 
 **接口**：`POST /api/ai/v1/rag/retrieve`（`{query, doc_scope?, top_k?, min_score?, max_scan?}` → `{results: [{chunk_ref, clause_ref, span, score, path}], degradations: [痕迹码]}`；`min_score`/`max_scan` 请求级覆盖配置默认值；`degradations` 非空 = 本次发生能力档位下降，引用强制语义不随降级改变）+ `POST /api/ai/v1/rag/ingest`（`{doc_id, doc_version, segments}`，`doc_version` 幂等批键必填）；引用正确率目标 ≥98%（评测口径见 §2.7 / §4 #19）。
 
-**backlog（P1 剩余）**：① 查询改写（multi-query / HyDE）——**决策：暂不落地 machinery**。无改写 producer（LLM 改写依赖网关稳定 + 评测集回流数据标定收益，报告建议批二定）时先建合并机制 = 零消费方死代码（正是本轮 P0 修掉的反模式）；接线点：orchestration 侧生成多查询 → rag 多查询合并，批二按评测回流数据启动。② 降级事件 trace 落库 + 告警接线（端口已就位，L3 接入方适配）。③ ingest 侧 ACL 校验（写入路径当前不做文档可见性判定，属管理面语义，随文档中心 ACL 模型一并定）。
+**backlog（P1 剩余）**：① 查询改写（multi-query / HyDE）——**决策：暂不落地 machinery**。无改写 producer（LLM 改写依赖网关稳定 + 评测集回流数据标定收益，报告建议批二定）时先建合并机制 = 零消费方死代码（正是本轮 P0 修掉的反模式）；接线点：orchestration 侧生成多查询 → rag 多查询合并，批二按评测回流数据启动。② 降级事件 trace 落库 + 告警接线（端口已就位，L3 接入方适配）。③ ingest 侧 ACL 校验（写入路径当前不做文档可见性判定，属管理面语义，随文档中心 ACL 模型一并定）。④ ingest 侧 PII 令牌化（映射表 + 可逆还原，供授权场景回填——当前等长掩码不可逆，属目标态）。
 
 ### 2.7 评测（挂发布流水线，不建独立模块）
 
@@ -276,6 +280,8 @@ DocumentIR { doc_id, tenant_id, source_ref, page_count, parse_mode, provider, pr
 | 成本 | 单请求 token 上限与红线命中率 | 告警 + 超限降档 |
 
 LLM-as-Judge 经网关计量（省 60–80% 人工标注）；冷启动 = 小规模人工标注 + HITL 回流滚雪球；不做全量标注平台（总案 §5）。
+
+**v1.9 落地实况（评测前置，2026-10-24）**：诊断复核 P1-3「评测后置」已整改——RAG 检索质量门禁不止挂发布流水线，而是**前置为构建内确定性回归测试**：`bone-ai-rag` 的 `RagGoldenSetEvalTest`（`mvn clean verify` 在 CI 强制执行）用小型中文 fixture 锁死「引用强制前置 → 双路（向量 + BM25）→ RRF → topK」链路，任何使预期切片掉出 topK 的回归（引用过剔 / RRF 权重错乱 / 分词退化 / 阈值误杀）直接红灯——零依赖、无真模型、秒级完成。与 Python sidecar（`eval/eval_rag.py`，真实语料 + 真模型的离线语义评测）分工：**前者守提交级回归，后者出批次级语义报告**。`eval_case` / `eval_run` 两张表的运行时计量（引用正确率 ≥98% 等）不变，仍由发布流水线读表出报告。
 
 **DDL（评测集表——已落地 `bone-init.sql` §12.2；宿主 = 发布流水线读表出报告，写入走 bone-ai-app 评测管理 REST）**：
 
@@ -372,7 +378,7 @@ CREATE TABLE eval_run (
 3. 业务代码禁 import `LlmClient` 实现类，仅可依赖网关门面；
 4. 模型 HTTP/key 出现处收敛于 gateway 包（白名单路径）；
 5. AI 服务出口必须经 trace 落盘（调用侧断言 + 事件监听兜底）；
-6. 资金/责任/数值判定入口禁 `AiSuggestion` 参数（只收 `Confirmed`）——**目标态**：`AiSuggestion`/`Confirmed` 类型批二补建后启用；当前由 `DecisionGate` + HITL 留痕提供运行期等价防线；
+6. 资金/责任/数值判定入口禁 `AiSuggestion` 参数（只收 `Confirmed`）——**v1.9 已启用**：两类型已落地（§2.3），规则形态为「`AiSuggestion` 禁越出 `com.bone.aiorch.domain.decision` 包」——应用 / 适配 / Web 层引用即编译不过 + 架构门禁红灯；业务侧确认产物唯一入口为 `HitlItem.toConfirmed()`；
 7. 禁 Aviator 全量 GAV（`com.googlecode.aviator` / `io.github.aviatorscript`；零消费者死实现已删除）。
 
 > **口径说明（v1.8 订正，承接诊断复核 F5）**：上表为「第一批门禁」的 7 条代表性规则。`BoneDddArchRules` 共享规则库共 20+ 条，各模块 `ArchitectureTest` 按自身边界 `@ArchTest` 引用；gateway 实际引用 **12 条**（含框架共享的 god-object / 租户上下文 / 异常后缀 / 仓储包等规则），v1.7 头曾误记「11 条」，本次订正为 12。「11 模块各 7 条」指第一批门禁的 7 条在 11 模块统一落地，非各模块引用总数。
@@ -380,7 +386,7 @@ CREATE TABLE eval_run (
 ### 3.4 数据库与安全
 - 全表租户隔离 + 审计字段（`tenant_id/created_by/created_at`）对齐《数据库开发规范》；
 - 密钥：模型 key 走 bone-security 出库（Virtual Key 语义），日志/快照不得含明文 key；
-- AI 输出落业务表前必须有 `Confirmed` 溯源（`decided_by`/`evidence_ref` 二选一必填）——**目标态口径**：`Confirmed<T>` 类型批二落地前，由 HITL `hitl_disposition.decided_by` + 评审项保证。
+- AI 输出落业务表前必须有 `Confirmed` 溯源（`decided_by`/`evidence_ref` 二选一必填）——**v1.9 已机械强制**：`Confirmed<T>` 类型落地（§2.3），业务侧经 `HitlItem.toConfirmed()` 取确认结论（必带 `decidedBy` + `evidenceRef` + `at`）；此前「批二落地前由 HITL `hitl_disposition.decided_by` + 评审项保证」的口径退役。
 
 ---
 
@@ -418,7 +424,7 @@ CREATE TABLE eval_run (
 | 5 | RRF | k=60，向量/BM25 = 0.5/0.5 | rag | 引用正确率回归 |
 | 6 | rerank 窗口 | top-30 → top-5（`bone.ai.rag.candidate-pool` 默认 30；未配 rerank base-url 时 `NoOpReranker` 保持 RRF 粗序，窗口不生效） | rag | 同上 |
 | 7 | 检索 P95 | <800ms（不含大模型生成） | rag | 第二批压测 |
-| 20 | 检索容量护栏 | `bone.ai.rag.max-scan` 默认 10000（作用域切片数上限，超限 fail-closed 抛 `AI_RAG_SCOPE_OVER_LIMIT`；过渡态全量载入内存打分的兜底，终局索引化后即迁移触发信号） | rag | 第二批压测 |
+| 20 | 检索容量护栏 | `bone.ai.rag.max-scan` 默认 **3000**（v1.9 由 10000 下调：与 `warn-scan-threshold` 2000 形成两级水位，超限 fail-closed 抛 `AI_RAG_SCOPE_OVER_LIMIT`；作用域切片数上限是过渡态全量载入内存打分的兜底，终局索引化后即迁移触发信号） | rag | 第二批压测 |
 | 21 | 检索分数阈值 | `bone.ai.rag.min-score` 默认 0 = 不启用（精排后过滤，量纲双轨：rerank 分 / RRF 融合分 ~0.01；须按评测集回流分布标定，默认关闭避免误杀） | rag | 检索评测 |
 | 22 | 检索返回条数 | topK 默认 5、上限 50（`bone.ai.rag-top-k`；请求可覆盖） | rag | 试点场景 |
 | 23 | 检索多样性权重 | `bone.ai.rag.mmr-lambda` 默认 0 = 关闭（λ∈(0,1) 生效，λ=1 纯相关性等价关闭，λ=0 约定为关闭而非纯多样性；开启时精排按 3 倍扩样；须按评测集回流数据校准后启用，默认关闭避免误伤） | rag | 检索评测（批二） |
@@ -508,7 +514,7 @@ CREATE TABLE eval_run (
 |---|---|---|
 | 健康检查 | Actuator `/health`（liveness/readiness 分组）+ `/info`（parent 已配 build-info） | ✅ 依赖 + **探针分组配置均已落地**（`bone-ai-app/src/main/resources/application.yml`：`probes.enabled=true` + `group.liveness`/`group.readiness`） |
 | LLM 计量 | `LlmUsageSink` 结构化日志（token / 耗时 / 档位 / 租户 / 场景）→ 日志平台聚合看板 | ✅ 代码具备，看板 ⏳ |
-| 指标化 | `LlmMetrics` 端口 + Micrometer：网关 P99 延时（§4 #15）、配额命中率、短路率、降档率、缓存命中率、**TTFT（首 token 时延，`recordFirstToken` 发射点 v1.8 已具备）**；再接 OTel `gen_ai.*` 语义约定（映射表 v1，含 `gen_ai.time_to_first_token`，规范仍 Development，勿硬编码常量） | ⏳ L3（需 Micrometer 依赖，走 CVE/SBOM 门禁） |
+| 指标化 | `LlmMetrics` 端口 + Micrometer：网关 P99 延时（§4 #15）、配额命中率、短路率、降档率、缓存命中率、**TTFT（首 token 时延，`recordFirstToken` 发射点 v1.8 已具备）**；再接 OTel `gen_ai.*` 语义约定（映射表 v1，含 `gen_ai.time_to_first_token`，规范仍 Development，勿硬编码常量） | ✅ **宿主适配器已落地**（v1.9，2026-10-24：`MicrometerLlmMetrics` + `ObservabilityConfiguration`，`@ConditionalOnClass`/`@ConditionalOnBean(MeterRegistry.class)` 条件装配——库形态零新增必选依赖，宿主引入 micrometer-core 即出指标：`bone.ai.gateway.provider.calls`{tenant,model,success} / `provider.latency` / `first_token.latency` / `tokens`{kind} / `short_circuited` / `cache.hit` / `quota.exceeded`；5 例单测锁死口径）；OTel 语义映射 ⏳ |
 | 证据链观测 | trace 落盘成功率 ≥99.9% 告警（§4 #16；同步 insert + 拒返断言代码已具备，告警规则待配） | ⏳ |
 | 告警出口 | `bone-ai-notification` Webhook + HMAC 签名可作告警通道（多级预警 + ack + 消警闭环） | ✅ 最小版已落地 |
 
@@ -517,6 +523,7 @@ CREATE TABLE eval_run (
 | 项 | 要求 | 状态 |
 |---|---|---|
 | 默认防线（零配置保护） | 成本红线强制 ✅；出口 PII 脱敏默认开 ✅（身份证 ISO 7064 / 银行卡 Luhn 校验位闸门）；租户配额默认开 ✅；结构化校验（`jsonResponse` 时）✅——总表见 §2.1 | ✅ |
+| 写入侧 PII 保护 | **v1.9 新增**：RAG ingest 入库前字段级等长局部掩码（身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名；`bone.ai.rag.ingest.pii-mask-enabled` 默认 true，`INGEST_PII_MASKED` 事件透出命中数）——先掩码后嵌入，PII 不入向量库；逃生口 `false` 仅限开发联调（WARN） | ✅ 代码已落地（`SensitiveDataMasker` 纯函数 + 12 例回归） |
 | 威胁模型评估 | 提示注入检测（默认关，启发式误伤面）与输出内容安全（默认关）：上线前按场景威胁模型决定是否开启；开启即配误伤监控与人工抽检 | ⏳ **硬依赖**（决策记录归档） |
 | 出站安全 | SSRF 守卫（integration 出站）+ HMAC 回调校验 + Webhook 签名（notification） | ✅ |
 | 审计留存 | 证据快照 ≥7 年 / 运行日志 ≥6 个月（§4 #12）；`ai_trace_snapshot` 分区策略（按月 / 按租户）随数据量落地 | ⏳ |
@@ -529,8 +536,8 @@ CREATE TABLE eval_run (
 | 网关增量 | 库形态 P99 <10ms（§4 #15） | ✅ 设计具备，POC 实测回填 |
 | 配额多副本 | `TenantQuotaGuard` 双实现：进程内固定窗口（单副本）+ **Redis 分布式固定窗口**（`RedisTenantQuotaGuard`，Redisson `RMap` 计数 + 首键 TTL；容器存在 `RedissonClient` bean 且 `quota-redis-enabled=true`（默认）时自动启用；**Redis 故障 fail-open + WARN**——配额是成本防线不是可用性防线，不能因缓存抖动阻断业务）。多副本部署不再有硬依赖 | ✅（`bone-ai-gateway` 已落地；`spring-boot-starter-data-redis`/Redisson 由宿主按需提供，`@ConditionalOnClass` 守卫，零新增必选依赖） |
 | 检索性能 | 检索 P95 <800ms 不含生成（§4 #7，批二压测）；provider 超时/重试/降档参数按容量实测（§4 #2） | ⏳ 批二 |
-| 检索容量护栏 | `max-scan` fail-closed 已落地（§4 #20，超限即拒、不静默截断）；容量水位观测（租户切片数分布）与 pgvector 索引化排期 | ✅ 护栏代码具备，水位观测 ⏳ 批二 |
-| 检索权限隔离 | 租户硬隔离 + **文档级 ACL seam**（`RagAclPort` 契约 + fail-closed 403）已落地；**接入方 ACL 适配**（文档中心 / bone-ai-document 可见集合）为 L3 硬依赖——未接入前同租户内跨文档越权面仅由「租户硬隔离 + 网关层约定」兜底 | ✅ seam 代码具备，ACL 适配 ⏳ L3 |
+| 检索容量护栏 | `max-scan` 默认 **3000**（v1.9 由 10000 下调，与 `warn-scan-threshold` 2000 两级水位）fail-closed 已落地（§4 #20，超限即拒、不静默截断）；容量水位观测（租户切片数分布）与 pgvector 索引化排期 | ✅ 护栏代码具备，水位观测 ⏳ 批二 |
+| 检索权限隔离 | 租户硬隔离 + **文档级 ACL 默认 fail-closed**（v1.9：`bone.ai.rag.acl.default-deny=true`，未适配 ACL 时 `DenyDocAcl` 返回空可见集 = 拒绝检索，而非放行全租户；`NoDocAcl` 降级为开发联调形态需显式关闭 + WARN）已落地；**接入方 ACL 适配**（文档中心 / bone-ai-document 可见集合）为 L3 硬依赖——Go-Live 前未接入即拒绝服务而非裸奔 | ✅ 默认 deny 代码具备，ACL 适配 ⏳ L3 |
 | 降级可观测 | 降级痕迹码透出响应 `degradations` + `RagEventSink` 事件端口（默认 WARN 日志）；trace 落库 + 告警接线（落盘成功率 ≥99.9% 告警线） | ✅ 端口与痕迹具备，trace 适配 ⏳ L3 |
 | 证据容量 | 事件 payload ≤8KB、大 IR 走 MinIO（§4 #8/#9） | ✅ |
 
@@ -544,7 +551,7 @@ CREATE TABLE eval_run (
 
 ### 6.6 上线判据（Definition of Done——全绿方可切生产流量）
 
-1. 六域清单无未清**硬依赖**：密钥托管（网关侧 seam 已接通，剩余 bone-security Virtual Key 能力本体 + `@Bean` 适配；启动 fail-fast 已具备）、健康探针、告警规则、故障演练记录、威胁模型决策（Redis 分布式配额已代码落地，多副本部署即时生效，不再列为硬依赖）；
+1. 六域清单无未清**硬依赖**：密钥托管（网关侧 seam 已接通，剩余 bone-security Virtual Key 能力本体 + `@Bean` 适配；启动 fail-fast 已具备）、健康探针、告警规则、故障演练记录、威胁模型决策、**RAG 文档级 ACL 接入方适配**（v1.9 起默认 deny，未接入 = 检索拒绝服务，须在 Go-Live 前接通）、**PII 策略确认**（ingest 掩码规则集经法务/安全确认，或显式决策关闭并记录理由）（Redis 分布式配额已代码落地，多副本部署即时生效，不再列为硬依赖）；
 2. 负向探针全绿：红线短路不发事件、规则命中不调 LLM、越权检索拒绝、无证据拒返、注入/内容安全策略生效（若开启）；
 3. 端到端演练：解析 → 规则 → LLM → `DecisionGate` → HITL → 回放，在**生产配置**（真实 provider + 密钥托管 + 生产库）跑通一轮；
 4. 对应批次出口判据（总案 §6）全过；
@@ -598,11 +605,11 @@ CREATE TABLE eval_run (
 
 | 环节 | 平台侧 | 产品侧（procuraAI / SynapClaim / Equity） |
 |---|---|---|
-| 建议供给 | orchestration 产出建议（**当前形态**：`OrchestrationResult` = 规则结果 + `llmResponse` + `DecisionGate` verdict + `aiError`；**目标态**：`AiSuggestion<T>` = value + 置信度 + evidence_ref，批二补建） | 消费建议并渲染证据（条款锚点高亮），不直接落业务决定 |
-| 裁决回收 | HITL act → `Confirmed<T>` + `reason_type` 回流 | 业务状态机继续流转（如 procuraAI FR-205 修订流；ESCALATED 两端同名贯通，见总案 §3.3） |
+| 建议供给 | orchestration 产出建议（**v1.9 已落地**：`AiSuggestion<T>` = value + 置信度 + evidence_ref，双类型与 `Confirmed<T>` 无隐式转换，ArchUnit 规则 6 机械强制 `AiSuggestion` 不得越出 `domain.decision` 包——详设 §2.3） | 消费建议并渲染证据（条款锚点高亮），不直接落业务决定 |
+| 裁决回收 | HITL act → `Confirmed<T>` + `reason_type` 回流（**v1.9 已机械强制**：`HitlItem.toConfirmed()` 仅 CONFIRMED/MODIFIED 可取确认，缺审计字段显式失败） | 业务状态机继续流转（如 procuraAI FR-205 修订流；ESCALATED 两端同名贯通，见总案 §3.3） |
 | 证据引用 | `GET /api/ai/v1/trace/{traceId}` + IR span | 结论卡片引用定位原文、审计回放 |
 | 规则资产 | rules 版本 / 灰度 / 回归（机制） | 领域规则内容（R01–R25 / 决策图 / 估值校验）留产品侧（总案 §2.2） |
 | 评测回流 | `reason_type` → eval_case 滚雪球 | 产品标注 / 黄金集喂评测算（省 60–80% 人工） |
 | 消警与集成 | notification / integration 扩展点（第三批） | 履约预警、影子三态接入各自系统 |
 
-> 铁律重申：AI 模块只供"建议 + 证据"；资金 / 责任 / 数值判定只消费 `Confirmed<T>`（类型批二落地前由 `DecisionGate` + HITL 留痕等价保证）；领域资产不入平台。
+> 铁律重申：AI 模块只供"建议 + 证据"；资金 / 责任 / 数值判定只消费 `Confirmed<T>`（**v1.9 起已由双类型 + ArchUnit 规则 6 + `HitlItem.toConfirmed()` 机械强制，不再依赖留痕等价保证**）；领域资产不入平台。

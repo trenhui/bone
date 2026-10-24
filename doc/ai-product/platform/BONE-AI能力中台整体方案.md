@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 整体方案
 
-> **版本**：v1.14（2026-10-23，归口：平台架构组）｜本文是 Bone AI 能力中台**唯一方案真源**：模块边界、框架选型、许可红线、落地批次以本文为准。业界对位见附录 B。⚠️ 阈值初值、DDL、API 面与任务分解见《BONE-AI能力中台详细技术方案》（详设），总案不硬编码阈值。
+> **版本**：v1.15（2026-10-24，归口：平台架构组）｜本文是 Bone AI 能力中台**唯一方案真源**：模块边界、框架选型、许可红线、落地批次以本文为准。业界对位见附录 B。⚠️ 阈值初值、DDL、API 面与任务分解见《BONE-AI能力中台详细技术方案》（详设），总案不硬编码阈值。
+> **v1.15 变更（企业复杂场景诊断优化落地，承接《方案诊断复核-2026-10-24》P0/P1/P2）**：**类型护栏由「目标态」转「已机械强制」**——`AiSuggestion`/`Confirmed` 两类型在 `bone-ai-orchestration` 落地 + ArchUnit 规则 6 拦截「AI 建议越出决策包」，`HitlItem.toConfirmed()` 为业务侧唯一确认产物入口（§3.2/§5）；**RAG 文档级 ACL 默认改 fail-closed**——未接入 ACL 实现即拒绝检索（`DenyDocAcl` 空可见集），不再放行全租户，接入方 ACL 适配由 L3 可选**升为 Go-Live 硬依赖**（§4.5/§6）；**写入侧 PII 闭环**——ingest 字段级等长掩码（身份证/手机号/银行卡/邮箱，span 锚点不漂移）默认开（§4.5）；**RAG 规模水位下调**——`max-scan` 默认 10000→3000（实测安全水位 2000~5000 取中偏上），pgvector+ANN 由「不为想象规模预付」改判**第二批前启动**（§4.5/§6）；**集中式网关触发条件修订**——三产品共享 provider 即已满足「跨产品集中配额审计」现状，配额/密钥/成本权威态提前收口 `bone-ai-app` 宿主（§4.7）；**可观测接线**——`MicrometerLlmMetrics` 宿主适配器落地，`LlmMetrics` 发射点自此有真实消费方（§4.1/§5）；**威胁模型决策**升为上线前硬依赖并归档决策记录（§6/§7）。
 > **v1.14 变更（置信度分档对齐详设，承接《方案诊断复核-2026-10-23》F1）**：§2.1 C3 置信度分级改为与详设 §4 #3 同构——**0.85 = 自动放行线**（置信度 ≥0.85 **且** 金额 ≤ 阈值 **且** AI 可用 → 自动通过，任一不满足转人工，非纯「直出」）；**0.7 = HITL 待裁列表展示线**（<0.7 强制在列、不得直出）；删中间「0.7–0.85 复核」档（无抽样机制前不单列操作）。消除总案与详设跨文档矛盾。
 > **v1.13 变更（RAG 诊断 P1 项落地，见详设 v1.6 与《RAG方案诊断与优化-2026-10-23》）**：§4.5 新增三行——**文档级 ACL seam**（`RagAclPort` 端口 + 默认 `NoDocAcl` 兜底 + 无 ACL 归属 403 fail-closed，接入方 ACL 适配为 L3 硬依赖）、**MMR 多样性选取**（默认关闭、λ 约定防误配、按评测集校准）、**降级可观测**（`RagEventSink` 端口 + 响应 `degradations` 痕迹码，trace 适配留 L3）；§6 现状基线 rag 行同步，查询改写记决策（批二启动，暂不建零消费方 machinery）。
 > **v1.12 变更（RAG 接线修复，见详设 v1.5 与《RAG方案诊断与优化-2026-10-23》）**：§4.5 rerank / Embedding 行订正为**按 `base-url` 条件装配**（此前 `HttpBge*Client` 与 `RagInferenceProperties` 零接线 / 零注册，生产形态恒为「过渡哈希 + 无精排」而与方案描述不符）；新增「检索护栏」行（`max-scan` fail-closed + `min-score` 过滤 + `doc_version` 幂等批键）；§6 现状基线 rag 行同步。降级口径：provider 故障读路径 WARN + 本域内降级（BM25 单路 / RRF 粗序），严禁切云端辅路。
@@ -12,7 +13,7 @@
 
 1. **沉淀机制、留住资产**：跨域同构的**机制**进平台（解析 / 双引擎编排 / HITL / 留痕 / 网关 / 检索 / 评测 / 安全 / 预警 / 交付），领域**资产**留产品（规则库 / 图谱 / 估值引擎 / 快照库）。平台只做"证明与治理"，不做"判断与决策"。
 2. **怎么建**：新建 `bone-ai/` 平行聚合（**11 模块**：gateway / orchestration / trace / rules / document / rag / notification / integration / ledger + 后端聚合宿主 bone-ai-app + 参考宿主 bone-ai-server；评测能力挂发布流水线，不建模块），只补空白与治理面；一期**不引 Spring AI 与重型 Agent 框架**——自建 OpenAI 兼容客户端 + `LLMClient` 门面、显式状态机编排、规则 DSL = QLExpress 唯一（表达式追踪服务"判定路径可回放"；存量表达式执行为 SpEL，属计算域非规则引擎）。
-3. **怎么落**：治理靠结构强制（网关唯一入站 + 无证据拒返 + `AiSuggestion`/`Confirmed` 类型隔离 + ArchUnit 门禁）；POC（第 0 批）→ 三批次垂直切片，每批有出口判据与机械门禁；许可排雷前置（SBOM + CVE 扫描）。
+3. **怎么落**：治理靠结构强制（网关唯一入站 + 无证据拒返 + `AiSuggestion`/`Confirmed` 类型隔离【**v1.15 已机械强制**】+ ArchUnit 门禁）；POC（第 0 批）→ 三批次垂直切片，每批有出口判据与机械门禁；许可排雷前置（SBOM + CVE 扫描）。
 
 ---
 
@@ -120,7 +121,7 @@ app → 上述全部 bone-ai-*（装配宿主，不新增领域逻辑）
 产品域 → bone-ai-* + integration + notification
 ```
 
-**设计约束（§5 门禁实现）**：① 分层铁律——确定性内核（规则 / 计算 / 资金状态机）永远在 domain / 产品侧，AI 模块只给"建议 + 证据"，不做最终裁决；② 类型护栏——AI 结论一律 `AiSuggestion<T>`（置信度 + 证据引用），资金 / 责任 / 数值判定入口只收 `Confirmed<T>`（HITL 裁决或规则产出），ArchUnit 禁止隐式互转（**目标态**：类型批二补建；当前等价防线 = `DecisionGate` 运行期闸门 + HITL 五态留痕，详设 §2.3 落地实况）；③ 检索边界——向量库实例形态可推迟（§4.5），但切分 / 权限过滤 / 引用强制 / RRF / rerank 策略留 rag，gateway 只做调用代理、不下放检索决策。
+**设计约束（§5 门禁实现）**：① 分层铁律——确定性内核（规则 / 计算 / 资金状态机）永远在 domain / 产品侧，AI 模块只给"建议 + 证据"，不做最终裁决；② 类型护栏——AI 结论一律 `AiSuggestion<T>`（置信度 + 证据引用），资金 / 责任 / 数值判定入口只收 `Confirmed<T>`（HITL 裁决或规则产出），ArchUnit 禁止 `AiSuggestion` 越出 `domain.decision` 包（**v1.15 已机械强制**：两类型 + ArchUnit 规则 6 + `HitlItem.toConfirmed()` 落地，接入文档可宣称「编译期 + 架构门禁双重拦截」）；③ 检索边界——向量库实例形态可推迟（§4.5），但切分 / 权限过滤 / 引用强制 / RRF / rerank 策略留 rag，gateway 只做调用代理、不下放检索决策。
 
 ### 3.3 HITL 落点与状态契约
 
@@ -178,11 +179,13 @@ LangGraph / AutoGen / CrewAI / Dify 内核 / Spring AI Alibaba Agent 均不引�
 | OCR / 复杂版面 | 默认 Docling（MIT，版面 / 表格，CPU 可起步）；PaddleOCR（Apache-2.0）为扫描件候选，按需启用 | 契约冻结下的可互换实现（§4.4），不同时维护双实现；精度不达标时候选 MinerU（自定义许可，私有化内部署需法务确认）；负表（PyMuPDF / Marker / pg_search）见 SBOM §4 |
 | rerank | bge 系 cross-encoder（数据不出域）：`RerankPort` 契约，未配 `bone.ai.rag.rerank.base-url` 时 `NoOpReranker`（保持 RRF 粗序），配置后 `HttpBgeRerankClient` 接**自托管推理服务**（非云端辅路——数据不出域红线；provider 故障 ⇒ 检索链 WARN + 降级 RRF 粗序，读路径可用性优先，2026-10-23 接线） | rag 自建；实现形态为 HTTP 客户端 + 可替换 Port |
 | Embedding | bge-m3 系（兼顾中英条款，1024 维起步）：`EmbeddingPort` 契约，未配 `bone.ai.rag.embedding.base-url` 时 `TransitionalHashEmbedding`（开发 / 无推理服务兜底），配置后 `HttpBgeEmbeddingClient` 接自托管推理服务（provider 故障 ⇒ WARN + 降级 BM25 单路，2026-10-23 条件装配） | 维度变更走版本迁移（`embedding_ver` 入 chunk 元数据）；切片条款级优先、超长条款按语义段二次切分（阈值见详设） |
-| 检索护栏 | `max-scan` 容量护栏 fail-closed（超限拒答、不静默截断）+ `min-score` 分数阈值（精排后过滤，宁缺毋滥）+ `doc_version` 增量幂等批键（同版本同切片数跳过 / 异版本残缺重建） | 2026-10-23 落地，详见详设 §2.6/§4 #20-22 |
-| 检索权限隔离 | `RagAclPort` 文档级 ACL 端口（契约 = 调用方可见 `doc_id` 集合；默认 `NoDocAcl` 仅租户硬隔离兜底，接入方 `@Bean` 覆盖后无 ACL 归属的 doc fail-closed 403 `AI_RAG_DOC_FORBIDDEN`；身份上下文解析、不接收 user 入参） | 2026-10-23 落地 seam；**接入方 ACL 适配（文档中心）为 L3 硬依赖**，详见详设 §2.6 |
+| 检索护栏 | `max-scan` 容量护栏 fail-closed（超限拒答、不静默截断；**默认 3000**，2026-10-24 由 10000 下调——过渡态内存打分几千条已劣化，10000 是「不可行点」才触发）+ `min-score` 分数阈值（精排后过滤，宁缺毋滥）+ `doc_version` 增量幂等批键（同版本同切片数跳过 / 异版本残缺重建） | 2026-10-23 落地，默认值 2026-10-24 诊断后修订，详见详设 §2.6/§4 #20-22 |
+| 检索权限隔离 | `RagAclPort` 文档级 ACL 端口（契约 = 调用方可见 `doc_id` 集合；**默认 fail-closed 拒绝检索**（`DenyDocAcl` 空可见集，2026-10-24 起不再放行全租户——企业单租户内多部门 / 多团队场景下兜底放行即跨文档越权面）；接入方 `@Bean` 覆盖后无 ACL 归属的 doc fail-closed 403 `AI_RAG_DOC_FORBIDDEN`；身份上下文解析、不接收 user 入参） | 2026-10-23 落地 seam，2026-10-24 改默认 fail-closed；**接入方 ACL 适配（文档中心）由 L3 可选升为 Go-Live 硬依赖**，详见详设 §2.6 |
+| 写入侧 PII 保护 | ingest 字段级**等长局部掩码**（身份证保留前 6 后 4 / 手机号前 3 后 4 / 银行卡后 4（Luhn 防误伤）/ 邮箱保留首字符 + 域名；`bone.ai.rag.ingest.pii-mask-enabled` 默认开；等长保证 span 锚点不漂移；掩码处数经 `INGEST_PII_MASKED` 事件可观测） | 2026-10-24 落地，与网关出口脱敏形成「入库→存储→检索→生成出口」全链路 PII 闭环 |
 | 检索多样性 | MMR 选取式去重（`λ·相关性 − (1−λ)·与已选相似度`；`bone.ai.rag.mmr-lambda` 默认 0 = 关闭，λ∈(0,1) 生效、开启时精排 3 倍扩样；λ=0 约定为关闭而非纯多样性） | 2026-10-23 落地，阈值按评测集回流校准（详设 §4 #23） |
 | 降级可观测 | `RagEventSink` 事件端口（默认结构化 WARN）+ 响应 `degradations` 降级痕迹码（`EMBEDDING_DEGRADED` / `RERANK_DEGRADED`） | 2026-10-23 落地 seam；trace 落库 + 告警适配为 L3 目标态，详见详设 §2.6 |
-| 向量库 | 终局 pgvector 独立实例（实例形态 rag 启动时实测决策）；过渡用 MySQL JSON + 应用层余弦（百万级以下） | 不为想象规模预付运维税；不引入 ES 作为第三套检索栈 |
+| 向量库 | 终局 pgvector 独立实例（实例形态 rag 启动时实测决策）；过渡用 MySQL JSON + 应用层余弦（单租户切片数千级）；**pgvector + HNSW 提前至第二批前启动**（2026-10-24 改判：任一产品语料过百万切片即系统性劣化，不为想象规模拖延，但也不再等「出现才排期」） | 不为想象规模预付运维税；不引入 ES 作为第三套检索栈 |
+| 网关指标接线 | `LlmMetrics` 端口 + 宿主 `MicrometerLlmMetrics` 适配器（`bone-ai-app` 存在 `MeterRegistry` 即自动装配：provider 调用计数 / 延迟 P99 / TTFT / token 三维度 / 短路 / 缓存 / 配额命中；库形态仍零依赖 Noop） | 2026-10-24 落地；OTel `gen_ai.*` 语义映射随告警规则接入（映射表版本化） |
 | 评测离线辅助 | RAGAS（Python sidecar，可选） | 评测集 / 指标字典 / CI 门禁挂发布流水线，不建模块；judge 走网关计量；对抗评测走 C8 对抗样本库 + CI 负向探针，不引 promptfoo |
 | 模型 | **锁定 Apache-2.0 档：Qwen3.5-27B / Qwen3.8-27B**（已核定终局，二选一） | 其余档位按部署形态法务确认（多租户 SaaS 触发 MaaS 条款需审批）；随选型交 SBOM 复核 |
 | 安全 | 输入校验 / 分隔符封装 / 输出溯源 / 工具最小特权 / 对抗样本库 + 模型 SBOM + 依赖 CVE 扫描 | 无银弹工具包 |
@@ -194,6 +197,8 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 ### 4.7 网关形态：先库、后服务（与业界对齐但一处分歧）
 
 网关必要性 = "模型调用的治理强制点"，不是"大而全的服务"：调用点分散则成本 / 证据 / PII 必被绕过（Kong 定义即集中式策略强制点）；多供应商 + OpenAI 兼容协议是 2026 常态；租户配额只能平台强制；fallback / 重试 / 熔断跨产品重复。故**一期 = 库形态**（进程内门面，零额外延时、无 SPOF）；任一触发即演进为集中式网关（LiteLLM Proxy / Portkey 形态）：出现非 JVM 调用方、跨产品集中配额审计、或供应商 ≥3。演进成本可控（`LLMClient` 契约不变）。
+
+**v1.15 修订（企业复杂场景诊断 P1-2：触发条件与现状自相矛盾的消解）**：原触发条件之一是「跨产品集中配额审计」——而**现状已是 3 个产品（procuraAI / SynapClaim / Equity）共享 provider、各自进程内嵌库**，这正是该触发条件已满足的场景，却仍用纯库形态：N 份配额状态、N 套配置、N 份审计分布在不同产品进程，「跨产品集中配额审计」在库形态下无从做起。修订为**两段式收口**：① **权威态提前收口**（第一批后即启动）——`bone-ai-app` 宿主已具备集中 REST 面雏形，把**配额权威态、密钥出库、成本计量的真源**收敛到宿主（契约不变、各产品仍进程内嵌库复用同一端口实现，多副本走 Redis 共享），消除「N 份配额分散」；② **完整集中式网关**（LiteLLM / Portkey 形态）仍按原触发条件演进——非 JVM 调用方出现或供应商 ≥3 时整体切换，`LLMClient` 契约不变、业务零改。骨子里不因「想象的非 JVM 调用方」提前建重型服务，也不因「库形态惰性」放任成本 / 审计继续分散。
 
 **刻意分歧**：业界网关故障建议 fail open 直连供应商；BONE 合规场景直连即断证据链。定案 **fail 到"纯确定性 / 人工替代"路径，绝不 fail 到直连模型**，能力级灰度开关支持秒级降级。
 
@@ -208,7 +213,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 | 门禁 | 规则 | 违反后果 |
 |---|---|---|
 | 证据链 | 网关唯一入站；**每次真实触达模型的调用必发 `LlmCallRecorded`（失败也补发）、trace 同步落快照；响应对不上快照拒绝返回**。红线短路与精确缓存命中**不留证**（未触达模型，负向探针断言无事件） | 缺证据 = 拒返，可追溯由代码保证 |
-| 类型护栏 | 资金 / 责任 / 数值判定入口禁收 `AiSuggestion`，只收 `Confirmed<T>` | ArchUnit 编译期拦截（**目标态**：类型批二补建；当前由 `DecisionGate` + HITL 留痕提供运行期防线） |
+| 类型护栏 | 资金 / 责任 / 数值判定入口禁收 `AiSuggestion`，只收 `Confirmed<T>` | ArchUnit 编译期拦截（**v1.15 已机械强制**：`AiSuggestion`/`Confirmed` 两类型 + 规则 6「AI 建议禁越出 `domain.decision` 包」+ `HitlItem.toConfirmed()` 确认产物入口；记录不变量单测锁死） |
 | 依赖单向 | 产品不直连 AI 实现类（禁 import `LlmClient` 实现）；AI 不 import 产品域 | ArchUnit 编译期拦截 |
 | 密钥边界 | 模型 HTTP / key 只在 gateway | ArchUnit + 代码评审 |
 | 许可 | 禁 Aviator 全量 GAV（零消费者死实现已删）；新增依赖过 CVE / SBOM | CI 门禁 |
@@ -220,7 +225,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 
 ## 6. 落地计划
 
-**现状基线（2026-10-23 晚重基线）**：11 模块均已有最小落地（主代码 + 单测 + ArchUnit）。已落地：gateway 治理面（红线/脱敏/配额/路由/缓存/注入/内容安全端口，默认开关见详设 §2.1）、trace 三元组 + 同步落证 + 拒返断言、rules 最小版（CRUD/版本/命中标记/回归门禁）、orchestration 顺序流水线 + `DecisionGate` + HITL 五态与处置链、document 最小 IR（PDFBox + Docling sidecar 适配器就位默认关）、rag 最小全链（租户隔离 + 文档级 ACL seam + 容量护栏 + 双路 + RRF + rerank 条件装配与降级 + 引用强制 fail-closed + `doc_version` 幂等 ingest + MMR 多样性（默认关）+ 降级痕迹可观测）、notification/integration/ledger 最小版、bone-ai-app 聚合 REST 宿主、bone-ai-server 参考宿主。目标态（未落地）：多节点状态机（`FALLBACK_NODE`）、pgvector 终局、OTel `gen_ai.*` 打点、前端确认台（qiankun）、模型锁型定版、RAG 查询改写（决策：批二按评测回流启动，暂不建零消费方 machinery）、RAG ACL/trace 接入方适配（L3）。故各批工作性质从「建成」调整为「验收 + 补治理面 + 出口判据实证」。
+**现状基线（2026-10-24 晚重基线，承接企业复杂场景诊断优化）**：11 模块均已有最小落地（主代码 + 单测 + ArchUnit）。已落地：gateway 治理面（红线/脱敏/配额/路由/缓存/注入/内容安全端口，默认开关见详设 §2.1）、trace 三元组 + 同步落证 + 拒返断言、rules 最小版（CRUD/版本/命中标记/回归门禁）、orchestration 顺序流水线 + `DecisionGate` + HITL 五态与处置链 + **类型护栏（`AiSuggestion`/`Confirmed` + ArchUnit 规则 6，v1.15 转机械强制）**、document 最小 IR（PDFBox + Docling sidecar 适配器就位默认关）、rag 最小全链（租户隔离 + **文档级 ACL 默认 fail-closed（v1.15）** + 容量护栏（max-scan 默认 3000，v1.15 下调）+ 双路 + RRF + rerank 条件装配与降级 + 引用强制 fail-closed + `doc_version` 幂等 ingest + **写入侧 PII 等长掩码（v1.15）** + MMR 多样性（默认关）+ 降级痕迹可观测）、notification/integration/ledger 最小版、bone-ai-app 聚合 REST 宿主（**+ Micrometer 指标适配器，v1.15**）、bone-ai-server 参考宿主。目标态（未落地）：多节点状态机（`FALLBACK_NODE`）、pgvector + HNSW 终局（**第二批前启动**，v1.15 提前）、OTel `gen_ai.*` 打点、前端确认台（qiankun）、模型锁型定版、RAG 查询改写（决策：批二按评测回流启动，暂不建零消费方 machinery）、RAG ACL 接入方适配（**Go-Live 硬依赖**，v1.15 上提）。故各批工作性质从「建成」调整为「验收 + 补治理面 + 出口判据实证」。
 
 | 批次 | 范围 | 出口判据 |
 |---|---|---|
@@ -229,7 +234,7 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 | 第二批（解析检索） | document 完整管线（OCR / 复杂版面，默认 Docling；sidecar 适配器已就位待验收）+ rag 最小全链 ✅（待 pgvector 终局实测与指标达标）+ rules 完整面（灰度 / shadow / 回归） | RAG 引用正确率 ≥98%；rerank 越权 / 规则灰度有负向探针；pgvector 形态按实测决策 |
 | 第三批（评测交付） | 评测门禁挂 CI + notification 消警闭环 + integration AI 节点三态 + `bone-ai-app` 后端 ✅（前端确认台 / 评测看板待建） | 评测门禁挂 CI 实证；客户接入目标 ≤15 人日；三态可回退实证 |
 
-各批通用基线阈值见详设，不在总案硬编码。**上线判据（生产就绪）**：各批出口判据之外，切生产流量前须过《详设》§6 生产就绪清单六域（部署配置 / 可观测 / 安全合规 / 容量性能 / 灰度回退 / 上线判据）——硬依赖项（密钥托管、多副本 Redis 分布式配额、健康探针、告警规则、威胁模型决策、故障演练记录）未清不算可上线。**平台级风险（解耦单列）**：Boot 3.5.x 已 OSS EOL，AI 中台零框架依赖不加深该风险；建议 2026-11-30 前二选一拍板（商业订阅或 Boot 4 排期），不与 AI 项目捆绑升级。
+各批通用基线阈值见详设，不在总案硬编码。**上线判据（生产就绪）**：各批出口判据之外，切生产流量前须过《详设》§6 生产就绪清单六域（部署配置 / 可观测 / 安全合规 / 容量性能 / 灰度回退 / 上线判据）——硬依赖项（密钥托管、多副本 Redis 分布式配额、健康探针、告警规则、故障演练记录、威胁模型决策、**RAG 接入方 ACL 适配（v1.15 上提：默认 fail-closed 已兜底越权面，但「拒绝检索」不是生产形态，接入真实 ACL 才能既安全又可用）**、**写入侧 PII 策略确认（v1.15：默认等长掩码已落地，产品侧须确认掩码口径满足其检索语义或显式评估关闭）**）未清不算可上线。**平台级风险（解耦单列）**：Boot 3.5.x 已 OSS EOL，AI 中台零框架依赖不加深该风险；建议 2026-11-30 前二选一拍板（商业订阅或 Boot 4 排期），不与 AI 项目捆绑升级。
 
 ---
 
@@ -237,9 +242,11 @@ Dify 内核（多租户需书面授权）⛔不引入；Spring AI 1.1.x（EOL + 
 
 1. `bone-ai/` 聚合定位（**11 模块**：6 能力模块 + notification/integration/ledger + app 聚合宿主 + server 参考宿主；评测挂流水线不建模块）+ **8 张新 DDL 追认**（`ai_trace_snapshot` / `hitl_item` / `hitl_disposition` / `rule_asset` / `rule_asset_version` / `ai_rag_chunk` / `eval_case` / `eval_run`，均已入 `bone-init.sql`）+ QLExpress 4.1.3 依赖（规则 DSL 唯一引擎）；
 2. OCR sidecar 部署形态与契约（§4.4）；
-3. 批准"pgvector 独立实例推迟至 rag 实测"（批推迟本身，非具体实例）；
+3. 批准"pgvector 独立实例推迟至 rag 实测"（批推迟本身，非具体实例）——**v1.15 修订为「第二批前启动」**：不为想象规模拖延，亦不再等出现才排期；实例形态（独立部署 / 共享集群）仍由 rag 实测决策；
 4. 模型锁型：Qwen3.5 / 3.8 系 27B 二选一（POC 评测定）+ SBOM 复核；是否仍要 Spring AI（若要：修复版来源与授权，1.1.8 已否决不在列）；
 5. **`bone-ai-app` 聚合宿主部署形态**（资源配置 / 与产品进程内嵌库形态的边界 / 是否随首批客户交付）——v1.9 新增：实现已落地为可部署应用，需 L3 确认其定位与准入条件。
+6. **威胁模型场景化决策（v1.15 新增，上线前硬依赖）**：三产品按场景威胁模型决定提示注入检测 / 输出内容安全开关（涉及对外 / 对客户内容的产品侧建议默认开输出内容安全；注入检测默认关可接受但须配误伤监控与人工抽检），决策记录归档（详设 §6.3）；
+7. **租户标识模型（v1.15 新增，非数值租户接入前）**：`tenant_id BIGINT` 数值编码对字符串租户键（子域 / UUID / 组织编码）fail-closed 拒绝——抽象字符串主键或增加映射层，避免把「非数值」等同于「非法」（详设 §2.2 注）。
 
 技术债（另案，不阻塞）：`MetadataVersionController` 关系 / 规则两级兼容为空、字段级反射实现需收敛，rules 优先补齐。该类当前 Java 侧零消费方，bone-ai-rules 无 bone-metadata-engine 依赖——规则版本 / 兼容性机制由 bone-ai-rules 自建，不按「复用存量底座」排期。
 
