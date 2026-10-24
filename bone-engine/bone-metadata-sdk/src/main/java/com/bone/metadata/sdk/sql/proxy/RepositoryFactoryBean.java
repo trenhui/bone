@@ -36,6 +36,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -351,6 +352,13 @@ public class RepositoryFactoryBean<T, E, ID>
       SqlType sqlType = sqlTemplate.getSqlType();
       try {
         return executeQuery(sqlType, cq);
+      } catch (DataAccessException ex) {
+        // Spring 的异常分类是调用方的判据来源：DuplicateKeyException（唯一键冲突）承载着
+        // 「先查后插」的原子替代——抢占活动槽位、对账补投去重、幂等控制全靠 catch 它。
+        // 一律包装成 IllegalStateException 会把这些判据全部抹成同一类型，调用方只能解析
+        // message，与本仓「稳定错误码/异常分类不得靠 message 解析」的纪律冲突。故数据访问
+        // 异常原样抛出（现场信息由 Spring 自带），仅包装非数据访问的运行时异常。
+        throw ex;
       } catch (RuntimeException ex) {
         throw createExecutionException(sql, ex);
       }

@@ -24,13 +24,16 @@ domain 六边形的一部分，runtime 是唯一一个编排类），拆开只�
 | 模块 | 包 | 职责 | 对外依赖 |
 |---|---|---|---|
 | `bone-workflow-core` | `com.bone.workflow.domain` / `com.bone.workflow.ports.spi` / `com.bone.workflow.runtime` | **引擎内核（纯 Java，零 Spring / 零平台）**：①`domain` 流程定义 / 实例 / 任务模型、条件求值、分支选择、发布期校验；②`ports.spi` 8 个端口契约（7 必需：定义仓储、实例仓储、指派解析、业务数据、状态推进、审计、id 生成；1 可选：`NotificationPort`，`NOOP` 兜底）；③`runtime` `WorkflowEngineImpl` 用例编排（推进 / 完成判定 / CAS / 干预） | 仅 JDK + Jackson + SLF4J |
-| `bone-workflow-spring-boot-starter` | `com.bone.workflow.starter` | **平台集成（全部基础设施）**：Boot 3 自动配置（`.imports`）、JDBC 适配器（`adapter`）、状态投影发件箱与中继（`outbox`）、生产 SQL 集中地（`persistence.WfSql`）、平台外接 SPI（`spi`） | core + `bone-metadata-engine-runtime` + `bone-metadata-server` + `bone-core` + spring-jdbc |
+| `bone-workflow-spring-boot-starter` | `com.bone.workflow.starter` | **平台集成（全部基础设施）**：Boot 3 自动配置（`.imports`）、SDK `@Sql` 适配器（`adapter` + `sdk`，持久化全部走 bone-metadata-sdk，HC-001/006）、状态投影发件箱与中继（`outbox`）、实体→流程绑定（`binding`）、平台外接 SPI（`spi`） | core + `bone-metadata-sdk` + `bone-metadata-engine-runtime` + `bone-metadata-server` + `bone-core` |
 
 **边界纪律（ArchUnit 按包守护，与拆分模块时等价）**：
 
 - `domain` 不得依赖 Spring / 平台 / ports / runtime / starter；
 - `ports` 只许依赖 `domain`（SPI 契约不依赖编排层与平台）；
-- `runtime` 不得直连 `bone-metadata-engine`——引擎与平台只经 ports 契约对话。
+- `runtime` 不得直连 `bone-metadata-engine`——引擎与平台只经 ports 契约对话；
+- `starter` 任何类不得依赖 `spring-jdbc` / `java.sql` / `javax.sql`——持久化全部经 bone-metadata-sdk 的
+  `@Sql` 代理（2026-10-24 自裸 JDBC 收敛，`sdk-persistence-bypass-baseline.json` 的 workflow 豁免条目已移除，
+  该 ArchUnit 规则随之升级为**零豁免**）。
 
 前三条由 **core 侧** `ArchitectureTest` 按包名断言。⚠️ 但 core 的测试 classpath 上没有 starter 的类（依赖方向
 starter → core），所以「引擎命名空间不得依赖框架 / 平台」这条**跨模块**纪律不能只写在 core 里——它由 **starter 侧**

@@ -24,6 +24,36 @@ fi
 
 exit_code=0
 
+# 为变更模块解析「最近聚合器」目录：从模块目录逐级上跳，找第一个在 <modules> 里列出该模块的 pom。
+#
+# 背景（2026-10-24 实证，本类问题已复发三次）：[3/35]/[4/35] 原实现是 `mvn -f <模块>/pom.xml test`
+# 单模块构建——模块间依赖从 **~/.m2 已安装 jar** 解析。当提交改了 core 的公共接口、而本地仓的 core jar
+# 还是旧的（没跑过 install），starter 对 core 的依赖命中旧 jar ⇒ 编译假错
+# （"未覆盖抽象方法 saveTaskIfAbsent"），与本次提交内容无关，却拦下提交；更隐蔽的是它伪装成
+# 「代码缺陷」，排查方向被带偏。mvn 的 `-f <模块>` 语义下 `-am` 加不进任何上游（reactor 只含该模块），
+# 必须改用「聚合器 + -pl + -am」：同聚合器的上游模块从 reactor **现场编译**，不再受本地仓新鲜度影响。
+#
+# 找不到聚合器时（独立模块）退回原 `-f <模块>/pom.xml` 行为，保持兼容。
+# bash 3.2 兼容：不用 mapfile / 关联数组，纯 while + dirname。
+resolve_aggregator() {
+  local mod="$1" dir base
+  while :; do
+    dir=$(dirname "$mod")
+    if [ -f "$dir/pom.xml" ]; then
+      base=$(basename "$mod")
+      # <modules> 均为无条件书写（2026-10-24 全仓 8 处已核实无 profile 条件化）
+      if grep -q "<module>$base</module>" "$dir/pom.xml" 2>/dev/null; then
+        echo "$dir"
+        return 0
+      fi
+    fi
+    if [ "$dir" = "." ]; then
+      return 1
+    fi
+    mod="$dir"
+  done
+}
+
 echo -e "${YELLOW}[1/35] 代码风格校验 (Spotless)...${RESET}"
 # 2026-10-17 解除"全树连坐"：spotless 原扫全仓，他人在途/未提交（甚至未跟踪）的脏模块
 # 会让所有人的提交失败（本次巡检前已因此被卡两次）。改为只校验本次提交涉及的模块
@@ -61,12 +91,18 @@ if [ -n "$CHANGED_FILES" ]; then
     echo "  变更模块:"
     echo "$MODULE_PATHS" | sed 's/^/    - /'
     echo -e "${YELLOW}[3/35] 就近 ArchUnit 架构检查...${RESET}"
-    # 逐模块用 -f 指定 pom 运行（避免 -pl 在多模块/嵌套模块下 reactor 路径解析不稳）
+    # 逐模块运行：优先「最近聚合器 + -pl + -am」（同聚合器上游模块现场编译，不解析 ~/.m2 旧 jar，
+    # 2026-10-24 stale-jar 编译假错实证）；找不到聚合器时退回 -f 单模块（独立模块兼容）。
     while IFS= read -r MODULE_PATH; do
       [ -z "$MODULE_PATH" ] && continue
       POM="$MODULE_PATH/pom.xml"
-      if [ -f "$POM" ]; then
-        echo "  ArchUnit: $MODULE_PATH"
+      [ -f "$POM" ] || continue
+      echo "  ArchUnit: $MODULE_PATH"
+      AGG=$(resolve_aggregator "$MODULE_PATH" || true)
+      if [ -n "$AGG" ]; then
+        if [ "$AGG" = "." ]; then REL="$MODULE_PATH"; else REL="${MODULE_PATH#$AGG/}"; fi
+        mvn -f "$AGG/pom.xml" -pl "$REL" -am test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
+      else
         mvn -f "$POM" test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
       fi
     done <<< "$MODULE_PATHS"
@@ -97,7 +133,14 @@ if echo "$CHANGED_FILES" | grep -q 'bone-framework/bone-architecture-test/'; the
     POM="$MODULE_PATH/pom.xml"
     [ -f "$POM" ] || continue
     echo "  ArchUnit: $MODULE_PATH"
-    mvn -o -f "$POM" test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
+    # 同 [3/35]：聚合器 + -pl + -am，避免 ~/.m2 旧 jar 造成跨模块编译假错
+    AGG=$(resolve_aggregator "$MODULE_PATH" || true)
+    if [ -n "$AGG" ]; then
+      if [ "$AGG" = "." ]; then REL="$MODULE_PATH"; else REL="${MODULE_PATH#$AGG/}"; fi
+      mvn -o -f "$AGG/pom.xml" -pl "$REL" -am test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
+    else
+      mvn -o -f "$POM" test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
+    fi
   done
 fi
 

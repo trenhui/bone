@@ -8,7 +8,7 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.workflow.domain.WorkflowDefinition;
 import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
-import com.bone.workflow.starter.persistence.WfSql;
+import com.bone.workflow.starter.sdk.WorkflowSdkTestContext;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -17,14 +17,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 /**
- * 实例仓储的<b>端到端</b>测试：H2 真实执行 {@link WfSql} 里的生产 SQL。
+ * 实例仓储的<b>端到端</b>测试：H2 经 SDK {@code @Sql} 代理真实执行 {@code WfInstanceSdkRepository} 里的生产 SQL。
  *
  * <p><b>为什么必须这样测</b>：会签死锁的根因是「判据与推进被拆成两次读」。这类缺陷在内存 stub 测试里<b>永远绿</b>—— stub
  * 没有并发语义，单线程顺序调用怎么跑都对。只有让生产 SQL 在真实数据库上跑，才能证明原子性成立。
@@ -34,35 +31,32 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
  * 若实现是「读任务列表判齐再改实例」，两个并发办理人会各自读到对方未同意的旧快照，双双判「未齐」而都不推进， 流程永久卡死；且推进缺少 {@code current_node_code}
  * 守卫时会重复推进。
  */
-class JdbcWorkflowInstanceRepositoryH2Test {
+class SdkWorkflowInstanceRepositoryH2Test {
 
   private static final long TENANT = 1L;
   private static final String INSTANCE = "100";
   private static final String NODE = "committee";
 
-  private EmbeddedDatabase db;
+  private AnnotationConfigApplicationContext context;
   private JdbcTemplate jdbc;
-  private NamedParameterJdbcTemplate named;
-  private JdbcWorkflowInstanceRepository repository;
+  private SdkWorkflowInstanceRepository repository;
   private final AtomicLong taskId = new AtomicLong(1000);
 
   @BeforeEach
   void setUp() {
-    db =
-        new EmbeddedDatabaseBuilder()
-            .setType(EmbeddedDatabaseType.H2)
-            .addScript("classpath:wf-schema-h2.sql")
-            .build();
-    jdbc = new JdbcTemplate(db);
-    named = new NamedParameterJdbcTemplate(db);
-    repository = new JdbcWorkflowInstanceRepository(named);
     TenantContext.setTenantId(TENANT);
+    context = WorkflowSdkTestContext.create();
+    jdbc = context.getBean(JdbcTemplate.class);
+    // 按具体类型取生产 @Bean 方法创建的适配器：注册遗漏 / 条件恒假在此现形，而不是到宿主启动才爆炸
+    repository = context.getBean(SdkWorkflowInstanceRepository.class);
   }
 
   @AfterEach
   void tearDown() {
     TenantContext.clear();
-    db.shutdown();
+    if (context != null) {
+      context.close();
+    }
   }
 
   @Test
@@ -293,6 +287,31 @@ class JdbcWorkflowInstanceRepositoryH2Test {
 
     WorkflowTask task = repository.findTask(taskId).orElseThrow();
     assertEquals(WorkflowTask.Decision.APPROVE, task.decision());
+  }
+
+  @Test
+  @DisplayName("审批意见含 SQL 关键字/分号必须原样存取（SDK 值级扫描误禁回归）")
+  void commentContainingSqlKeywords_roundTripsThroughSdkChannel() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.SINGLE, List.of("c1"));
+    String taskId = repository.listTasksByNode(INSTANCE, NODE).get(0).id();
+    // 真实驳回理由就长这样：自由文本里出现 update/DROP TABLE/分号完全合法。
+    // 旧 JDBC 通道容忍；SDK #{} 曾因「扫参数值里的 SQL 关键字+分号」整条拒绝 ⇒ 审批意见写不进去（500）。
+    String comment = "please update the amount; DROP TABLE wf_task";
+
+    assertTrue(
+        repository.compareAndSetTaskStatus(
+            taskId,
+            WorkflowTask.Status.PENDING,
+            WorkflowTask.Status.REJECTED,
+            WorkflowTask.Decision.REJECT,
+            comment,
+            "c1"),
+        "含 SQL 关键字的合法审批意见不得被 SDK 拒写——真注入面只有 ${}，值级扫描必须已移除");
+
+    assertEquals(
+        comment,
+        repository.findTask(taskId).orElseThrow().comment(),
+        "意见必须逐字原样读回：若 SDK 对值做了任何改写/截断，审计轨迹即被污染");
   }
 
   @Test

@@ -1,5 +1,11 @@
--- wf_* 三表的 H2 测试 schema（与生产 MySQL DDL 草案同构）
--- 用途：让 JdbcWorkflowInstanceRepository 的原子 SQL 被 H2 原样执行，避免「测试另写一份 SQL → 测试绿、生产死锁」。
+-- wf_* 六表的 H2 测试 schema（与生产 MySQL DDL scripts/migration/0056_wf_workflow_tables.sql 同构）
+-- 用途：让 Wf*SdkRepository 的生产 SQL 被 H2 原样执行，避免「测试另写一份 SQL → 测试绿、生产死锁」。
+-- 同构口径：deleted/enabled 用 TINYINT（平台布尔列惯例；MySQL 侧写作 TINYINT(1)，H2 2.x 不接受宽度后缀）、
+-- 时间列 TIMESTAMP（MySQL 侧为 DATETIME(3)）、
+-- 索引集合与生产一致（含对账/轮询/绑定解析所需的二级索引）——列的**类型与索引**都镜像生产，只方言不同。
+-- 已知方言差异（有意为之）：definition_json 生产为 MySQL JSON（写入期校验），H2 用 TEXT——损坏 JSON
+-- 种子用例（SdkWorkflowDefinitionRepositoryH2Test#corruptedJsonFailsLoudly）需要能写入非法文本；
+-- params_json 生产与 H2 均为 TEXT：它实际承载自由文本原因（驳回/挂起理由），JSON 类型会拒掉合法写入。
 
 CREATE TABLE wf_instance (
   id                VARCHAR(64)       NOT NULL PRIMARY KEY,
@@ -16,9 +22,11 @@ CREATE TABLE wf_instance (
   created_by        VARCHAR(64)  NOT NULL,
   created_at        TIMESTAMP    NOT NULL,
   updated_by        VARCHAR(64),
-  deleted           INT          NOT NULL DEFAULT 0,
+  deleted           TINYINT   NOT NULL DEFAULT 0,
   version           INT       NOT NULL DEFAULT 0
 );
+-- findLatestInstanceRowByRecord / 对账窗口扫描都需要按 (租户, 实体, 记录) 定位
+CREATE INDEX idx_wf_instance_record ON wf_instance (tenant_id, entity_code, record_id);
 
 CREATE TABLE wf_task (
   id          VARCHAR(64)       NOT NULL PRIMARY KEY,
@@ -35,7 +43,7 @@ CREATE TABLE wf_task (
   decided_at  TIMESTAMP,
   created_by  VARCHAR(64)  NOT NULL,
   updated_by  VARCHAR(64),
-  deleted     INT          NOT NULL DEFAULT 0,
+  deleted     TINYINT   NOT NULL DEFAULT 0,
   version     INT       NOT NULL DEFAULT 0
 );
 
@@ -51,7 +59,7 @@ CREATE TABLE wf_active_instance (
   instance_id VARCHAR(64)       NOT NULL,
   created_at  TIMESTAMP    NOT NULL,
   updated_at  TIMESTAMP    NOT NULL,
-  deleted     INT          NOT NULL DEFAULT 0,
+  deleted     TINYINT   NOT NULL DEFAULT 0,
   PRIMARY KEY (tenant_id, entity_code, record_id)
 );
 
@@ -70,9 +78,11 @@ CREATE TABLE wf_status_outbox (
   next_retry_at TIMESTAMP   NULL,
   created_at   TIMESTAMP    NOT NULL,
   updated_at   TIMESTAMP    NOT NULL,
-  deleted      INT          NOT NULL DEFAULT 0
+  deleted      TINYINT   NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_outbox_poll ON wf_status_outbox (tenant_id, state, next_retry_at);
+-- 对账的 NOT EXISTS 子查询按 (tenant_id, instance_id) 关联；pollDue 队头守卫也按 instance_id 自关联
+CREATE INDEX idx_outbox_instance ON wf_status_outbox (tenant_id, instance_id);
 
 CREATE TABLE wf_process_def (
   id              VARCHAR(64)       NOT NULL PRIMARY KEY,
@@ -81,12 +91,33 @@ CREATE TABLE wf_process_def (
   def_name        VARCHAR(255) NOT NULL,
   def_version     INT          NOT NULL,
   status          VARCHAR(32)  NOT NULL,
-  enabled         INT          NOT NULL DEFAULT 1,
+  enabled         TINYINT   NOT NULL DEFAULT 1,
   definition_json TEXT         NOT NULL,
   created_by      VARCHAR(64)  NOT NULL,
   created_at      TIMESTAMP    NOT NULL,
   updated_by      VARCHAR(64),
   updated_at      TIMESTAMP,
-  deleted         INT          NOT NULL DEFAULT 0,
+  deleted         TINYINT   NOT NULL DEFAULT 0,
   version         INT       NOT NULL DEFAULT 0
 );
+-- findLatestPublishedRow / listPublishedRows / findByVersionRow 都按 (租户, def_key[, status]) 定位
+CREATE INDEX idx_wf_def_key ON wf_process_def (tenant_id, def_key, status);
+
+-- 业务实体 → 流程定义绑定：entity_code 运营侧解析成 def_key（换流程改配置不发版，设计文档 §5.5）
+-- v1 只读（写路径随建模界面排期）；查询以 (entity_code, tenant_id) 期望唯一命中——
+-- 同一实体配了多条生效绑定时 findBindingRow 抛 TooManyResults（fail-fast，不静默挑一条）。
+CREATE TABLE wf_binding (
+  id           VARCHAR(64)  NOT NULL PRIMARY KEY,
+  tenant_id    BIGINT       NOT NULL,
+  entity_code  VARCHAR(128) NOT NULL,
+  def_key      VARCHAR(128) NOT NULL,
+  start_action VARCHAR(64),
+  enabled      TINYINT   NOT NULL DEFAULT 1,
+  created_by   VARCHAR(64)  NOT NULL,
+  created_at   TIMESTAMP    NOT NULL,
+  updated_by   VARCHAR(64),
+  updated_at   TIMESTAMP,
+  deleted      TINYINT   NOT NULL DEFAULT 0,
+  version      INT       NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_wf_binding_entity ON wf_binding (tenant_id, entity_code);

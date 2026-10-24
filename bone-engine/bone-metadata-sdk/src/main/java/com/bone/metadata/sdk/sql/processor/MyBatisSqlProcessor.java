@@ -494,14 +494,13 @@ public class MyBatisSqlProcessor implements SqlProcessor {
     for (Map.Entry<String, Object> entry : params.entrySet()) {
       log.debug("Validating parameter: key = {}, value = {}", entry.getKey(), entry.getValue());
 
-      if (entry.getValue() instanceof String str) {
-        if (str.contains(";")
-            || str.matches("(?i).*\\b(SELECT|DROP|INSERT|UPDATE|DELETE|EXEC)\\b.*")) {
-          log.error("Invalid parameter value for key: {} with value: {}", entry.getKey(), str);
-          throw new SqlProcessingException("Invalid parameter value for key: " + entry.getKey());
-        }
-      }
-
+      // 只保留动态表名白名单：${tableName} 是唯一被原文替换进 SQL 的值（其余一律走 #{} 绑定）。
+      //
+      // 为什么删掉了「String 值含 ; 或 SELECT/DROP/INSERT/UPDATE/DELETE/EXEC 即拒绝」：
+      // #{} 值经 JDBC 参数绑定，永远不可能构成注入（载荷活不过 setString）；${} 值另有
+      // ^[a-zA-Z0-9_]+$ 字符集约束兜底。值级关键字扫描因此只剩误伤面——审批意见写「请 update
+      // 这张单」、驳回原因带分号，都会 500。真注入面（模板文本 / 叠语句 / ${} 字符集 /
+      // 表名白名单）已由其它检查覆盖，此处不再重复且有害。
       if ("tableName".equals(entry.getKey())
           && !properties
               .getSecurity()
@@ -883,7 +882,10 @@ public class MyBatisSqlProcessor implements SqlProcessor {
     }
 
     public void addParam(String name, Object value) {
-      if (value != null) params.put(name, value);
+      // 显式 put null：可空列（decision / comment / params_json …）的绑定值就是 null。
+      // 旧实现静默丢弃 null 值 ⇒ SQL 里的 :param 在参数表中缺失 ⇒ NamedParameterJdbcTemplate
+      // 报「No value supplied」，且错误信息指不回真正的原因（值被丢而不是没传）。
+      params.put(name, value);
     }
 
     public boolean evaluateSpel(String expression) {
@@ -914,6 +916,18 @@ public class MyBatisSqlProcessor implements SqlProcessor {
       ast.process(this);
     }
 
+    /**
+     * 表达式是否为「调用方显式传入的 null」。
+     *
+     * <p>SpEL 求值对「键不存在」与「值为 null」都返回 null，此处回到参数表按<b>根键</b>判定： 根键在表中出现即视为显式传 null（嵌套属性 {@code a.b}
+     * 看 {@code a} 是否在表中）。
+     */
+    private boolean isExplicitNull(String expression) {
+      int dot = expression.indexOf('.');
+      String root = dot > 0 ? expression.substring(0, dot) : expression;
+      return params.containsKey(root);
+    }
+
     // In SqlContext class, modify getSql() method
     public String getSql() {
       String rawSql = sql.toString().replaceAll("\\s+", " ").trim();
@@ -927,7 +941,10 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         if (hashParam != null) {
           // Handle nested properties using SpEL
           Object value = evaluateExpression(hashParam);
-          if (value == null) {
+          // 区分两种 null：参数缺失（契约不符，fail-fast）vs 调用方显式传 null（可空列的合法值）。
+          // MyBatis #{x} 语义下后者应绑 NULL——审批意见、驳回原因、动作参数都可能是 null，
+          // 一律抛错等于让所有可空列的写入在 SDK 通道全线失败（裸 JDBC 通道原本容忍 null）。
+          if (value == null && !isExplicitNull(hashParam)) {
             throw new SqlProcessingException("#{" + hashParam + "} is null");
           }
           // 为嵌套属性生成一个扁平化的参数名，以支持Spring JDBC的命名参数

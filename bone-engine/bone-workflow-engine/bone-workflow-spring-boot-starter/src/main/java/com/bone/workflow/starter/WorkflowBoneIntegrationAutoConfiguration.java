@@ -11,16 +11,23 @@ import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
 import com.bone.workflow.starter.adapter.ActionExecutionAuditPort;
-import com.bone.workflow.starter.adapter.JdbcWorkflowDefinitionRepository;
-import com.bone.workflow.starter.adapter.JdbcWorkflowInstanceRepository;
 import com.bone.workflow.starter.adapter.PlatformWorkflowIdGenerator;
 import com.bone.workflow.starter.adapter.RecordFieldApproverResolver;
 import com.bone.workflow.starter.adapter.RuntimeRecordDataPort;
+import com.bone.workflow.starter.adapter.SdkWorkflowDefinitionRepository;
+import com.bone.workflow.starter.adapter.SdkWorkflowInstanceRepository;
+import com.bone.workflow.starter.binding.WorkflowBindingRepository;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
 import com.bone.workflow.starter.outbox.StatusIntentExecutor;
 import com.bone.workflow.starter.outbox.StatusProjectionRelay;
 import com.bone.workflow.starter.outbox.WorkflowStatusOutboxRepository;
+import com.bone.workflow.starter.sdk.WfActiveInstanceSdkRepository;
+import com.bone.workflow.starter.sdk.WfBindingSdkRepository;
+import com.bone.workflow.starter.sdk.WfInstanceSdkRepository;
+import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
+import com.bone.workflow.starter.sdk.WfStatusOutboxSdkRepository;
+import com.bone.workflow.starter.sdk.WfTaskSdkRepository;
 import com.bone.workflow.starter.spi.RoleMemberProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
@@ -29,37 +36,47 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /**
  * 审批流引擎的<b>平台桥接自动装配</b>。
  *
- * <p>本配置只负责把引擎的 7 个端口接到 BONE 平台上；引擎本体（{@code WorkflowEngine}）由同模块的 {@link
+ * <p>本配置只负责把引擎的 7 个端口接到 BONE 平台上；引擎本体（{@link WorkflowEngine}）由同模块的 {@link
  * WorkflowEngineAutoConfiguration} 装配（显式 {@code @AutoConfigureAfter} 保证端口 bean
  * 先注册）。两侧解耦，平台耦合全部收敛在本配置类。
  *
  * <p><b>条件装配而非硬装配</b>：指派解析依赖 IAM 仓储、状态推进依赖运行时动作服务。宿主没引这些模块时， 对应端口 bean
  * 不创建（引擎随之不装配或由宿主自备实现），<b>不打挂宿主启动</b>。
  *
+ * <p><b>持久化通道</b>：{@code wf_*} 全部经 bone-metadata-sdk 的 {@code @Sql} 代理（{@link
+ * com.bone.workflow.starter.config.WorkflowSdkRepositoryConfig} 注册）——2026-10-24 收敛，HC-006 豁免已移除。
+ *
  * <p><b>启用前提（L3，需架构师审批）</b>：{@code wf_instance} / {@code wf_task} / {@code wf_process_def} / {@code
- * wf_active_instance} / {@code wf_status_outbox} 五张表必须已建（DDL 见设计文档 {@code doc/design/modules/12.
- * 工作流引擎设计.md} §7）。表不存在时，本模块的读写会在运行期报错——这是刻意不兜底的： 审批流数据落错表比启动失败更危险。
+ * wf_active_instance} / {@code wf_status_outbox} / {@code wf_binding} 六张表必须已建（DDL 见设计文档 {@code
+ * doc/design/modules/12. 工作流引擎设计.md} §7，迁移 {@code
+ * scripts/migration/0056_wf_workflow_tables.sql}）。表不存在时，本模块的读写会在运行期报错——这是刻意不兜底的： 审批流数据落错表比启动失败更危险。
+ *
+ * <p><b>类级别条件的前置变迁</b>：收敛到 SDK 前，本配置以 {@code @ConditionalOnClass(NamedParameterJdbcTemplate)} 为门禁
+ * （适配器直接持 JdbcTemplate）。持久化改走 SDK {@code @Sql} 后，真实前置是 SDK 的 SQL 执行入口 {@code SqlExecutor}——
+ * 门禁随之切换，装配层对 spring-jdbc 的最后一个引用也一并消失（ArchUnit「starter 零 JDBC」规则因此无需再给自动配置类开豁免）。
  */
 @AutoConfiguration
-@ConditionalOnClass(NamedParameterJdbcTemplate.class)
+@ConditionalOnClass(SqlExecutor.class)
 public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public WorkflowInstanceRepository workflowInstanceRepository(NamedParameterJdbcTemplate jdbc) {
-    return new JdbcWorkflowInstanceRepository(jdbc);
+  public WorkflowInstanceRepository workflowInstanceRepository(
+      WfInstanceSdkRepository instances,
+      WfTaskSdkRepository tasks,
+      WfActiveInstanceSdkRepository activePointers) {
+    return new SdkWorkflowInstanceRepository(instances, tasks, activePointers);
   }
 
   @Bean
   @ConditionalOnMissingBean
   public WorkflowDefinitionRepository workflowDefinitionRepository(
-      NamedParameterJdbcTemplate jdbc, ObjectMapper objectMapper) {
-    return new JdbcWorkflowDefinitionRepository(jdbc, objectMapper);
+      WfProcessDefSdkRepository definitions, ObjectMapper objectMapper) {
+    return new SdkWorkflowDefinitionRepository(definitions, objectMapper);
   }
 
   @Bean
@@ -84,8 +101,8 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public WorkflowStatusOutboxRepository workflowStatusOutboxRepository(
-      NamedParameterJdbcTemplate jdbc) {
-    return new WorkflowStatusOutboxRepository(jdbc);
+      WfStatusOutboxSdkRepository outbox) {
+    return new WorkflowStatusOutboxRepository(outbox);
   }
 
   @Bean
@@ -93,7 +110,6 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @ConditionalOnBean(RuntimeActionApplicationService.class)
   public WorkflowStatusPort workflowStatusPort(
       RuntimeActionApplicationService actionService,
-      NamedParameterJdbcTemplate jdbc,
       WorkflowIdGenerator idGenerator,
       WorkflowStatusOutboxRepository outbox) {
     // 默认走发件箱（最终一致 + 可重试 + 可对账）。
@@ -107,8 +123,21 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @ConditionalOnMissingBean
   @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusIntentExecutor workflowStatusIntentExecutor(
-      RuntimeActionApplicationService actionService, NamedParameterJdbcTemplate jdbc) {
-    return new RuntimeActionIntentExecutor(actionService, jdbc);
+      RuntimeActionApplicationService actionService,
+      WorkflowInstanceRepository instanceRepository) {
+    return new RuntimeActionIntentExecutor(actionService, instanceRepository);
+  }
+
+  /**
+   * 实体 → 流程绑定访问组件（{@code wf_binding}）。
+   *
+   * <p>无条件装配（只读一张配置表）：提交动作 handler 经它把 {@code entity_code} 解析成 {@code def_key}， 换流程改配置不发版。表中没有绑定 ⇒
+   * handler 侧 fail-fast，不会静默落到某个默认流程上。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowBindingRepository workflowBindingRepository(WfBindingSdkRepository bindings) {
+    return new WorkflowBindingRepository(bindings);
   }
 
   /**

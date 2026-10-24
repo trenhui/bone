@@ -1,44 +1,60 @@
 package com.bone.workflow.starter.outbox;
 
 import com.bone.core.tenant.context.TenantContext;
-import com.bone.workflow.starter.persistence.WfSql;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
+import com.bone.workflow.starter.sdk.WfStatusOutboxRow;
+import com.bone.workflow.starter.sdk.WfStatusOutboxSdkRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /**
- * 状态投影发件箱仓储（{@code wf_status_outbox}）。
+ * 状态投影发件箱仓储（SDK {@code @Sql} 通道 → {@code wf_status_outbox}）。
  *
- * <p>租户纪律同实例仓储：引擎 API 不带 tenantId，由 {@link TenantContext} 补齐，缺失即失败关闭。
+ * <p>2026-10-24 自裸 JDBC 改写为 SDK {@code @Sql}（HC-006 豁免随之移除）。SQL 与并发口径（原子 claim / 队头守卫 / 对账判据 /
+ * 保留期）随 {@link WfStatusOutboxSdkRepository} 的方法文档沉淀。
+ *
+ * <p>租户纪律同实例仓储：写路径由 {@link TenantContext} 显式取租户（缺失即失败关闭）；轮询 / 对账 / 清理三条
+ * 跑在无上下文的调度线程，<b>刻意跨租户</b>，租户由行内 {@code tenant_id} 携带，由 {@link StatusProjectionRelay} 逐条重建上下文。
  */
 public class WorkflowStatusOutboxRepository {
 
   /** 抢占超时阈值：超过该时长仍未落地的 CLAIMED 行视为抢占副本崩溃遗留，可被其它副本重新抢占补执行。 */
   private static final Duration CLAIM_TIMEOUT = Duration.ofMinutes(5);
 
-  private final NamedParameterJdbcTemplate jdbc;
+  /**
+   * 对账窗口：只对「最近终态」的实例做缺投影补投。
+   *
+   * <p>对账补救的是「崩溃在 phase CAS 与写意图之间」这类毫秒级窗口的意图丢失；更早的丢失是数据缺陷，转人工。窗口同时是 {@link #DONE_RETENTION}
+   * 的下界保护——见 {@link #purgeDone(Duration)}。
+   */
+  public static final Duration RECONCILE_WINDOW = Duration.ofHours(6);
 
-  public WorkflowStatusOutboxRepository(NamedParameterJdbcTemplate jdbc) {
-    this.jdbc = Objects.requireNonNull(jdbc, "jdbc");
+  /**
+   * DONE 行保留期：必须<b>大于</b> {@link #RECONCILE_WINDOW}。
+   *
+   * <p>DONE 行是「投影已落地」的<b>唯一证据</b>（markDone 刻意不软删）。若保留期 ≤ 对账窗口，窗口内实例的 DONE
+   * 行被清后，对账会把已投影实例重判「缺投影」并<b>重复执行业务动作</b>。
+   */
+  public static final Duration DONE_RETENTION = Duration.ofDays(7);
+
+  private final WfStatusOutboxSdkRepository outbox;
+
+  public WorkflowStatusOutboxRepository(WfStatusOutboxSdkRepository outbox) {
+    this.outbox = Objects.requireNonNull(outbox, "outbox");
   }
 
   public void insert(StatusIntent intent) {
-    jdbc.update(
-        WfSql.INSERT_STATUS_OUTBOX,
-        params()
-            .addValue("id", intent.id())
-            .addValue("instanceId", intent.instanceId())
-            .addValue("entityCode", intent.entityCode())
-            .addValue("recordId", intent.recordId())
-            .addValue("intent", intent.intent())
-            .addValue("actionCode", intent.actionCode())
-            .addValue("paramsJson", intent.paramsJson())
-            .addValue("now", Timestamp.from(Instant.now())));
+    outbox.insertStatusIntent(
+        intent.id(),
+        requireTenant(),
+        intent.instanceId(),
+        intent.entityCode(),
+        intent.recordId(),
+        intent.intent(),
+        intent.actionCode(),
+        intent.paramsJson(),
+        Instant.now());
   }
 
   /**
@@ -50,37 +66,24 @@ public class WorkflowStatusOutboxRepository {
    */
   public boolean claim(String intentId) {
     Instant now = Instant.now();
-    int updated =
-        jdbc.update(
-            WfSql.CLAIM_STATUS_INTENT,
-            params()
-                .addValue("id", intentId)
-                .addValue("now", Timestamp.from(now))
-                .addValue("staleCutoff", Timestamp.from(now.minus(CLAIM_TIMEOUT))));
-    return updated > 0;
+    return outbox.claimStatusIntent(intentId, requireTenant(), now, now.minus(CLAIM_TIMEOUT)) > 0;
   }
 
   /**
-   * 取到期意图（NEW 或已到退避时刻的 FAILED 或超时的 CLAIMED），按 id 升序。
+   * 取到期意图（NEW 或已到退避时刻的 FAILED 或超时的 CLAIMED），按 {@code created_at} 升序。
    *
    * <p><b>跨租户查询</b>：中继跑在无 TenantContext 的调度线程，租户由行内 {@code tenant_id} 携带， 由 {@code
    * StatusProjectionRelay} 逐条重建上下文后再执行/落标。本方法因此不要求租户上下文。
    */
   public List<StatusIntent> pollDue(int limit) {
     Instant now = Instant.now();
-    return jdbc.query(
-        WfSql.SELECT_DUE_STATUS_INTENTS,
-        new MapSqlParameterSource()
-            .addValue("now", Timestamp.from(now))
-            .addValue("staleCutoff", Timestamp.from(now.minus(CLAIM_TIMEOUT)))
-            .addValue("limit", limit),
-        (rs, n) -> map(rs));
+    return outbox.pollDueStatusIntents(now, now.minus(CLAIM_TIMEOUT), limit).stream()
+        .map(WorkflowStatusOutboxRepository::toIntent)
+        .toList();
   }
 
   public void markDone(String intentId) {
-    jdbc.update(
-        WfSql.MARK_STATUS_INTENT_DONE,
-        params().addValue("id", intentId).addValue("now", Timestamp.from(Instant.now())));
+    outbox.markStatusIntentDone(intentId, requireTenant(), Instant.now());
   }
 
   /**
@@ -89,70 +92,100 @@ public class WorkflowStatusOutboxRepository {
    * <p>达上限后留在 FAILED 交由对账/人工介入——不能无限重试，否则一个永久失败的动作会让中继空转。
    */
   public boolean markFailed(String intentId, int retryCount, int maxRetries, Instant nextRetryAt) {
-    return jdbc.update(
-            WfSql.MARK_STATUS_INTENT_FAILED,
-            params()
-                .addValue("id", intentId)
-                .addValue("nextRetryAt", nextRetryAt == null ? null : Timestamp.from(nextRetryAt))
-                .addValue("maxRetries", maxRetries)
-                .addValue("now", Timestamp.from(Instant.now())))
+    return outbox.markStatusIntentFailed(
+            intentId, requireTenant(), nextRetryAt, maxRetries, Instant.now())
         > 0;
   }
 
   /**
-   * 终态实例中缺少已落地投影的（意图丢失，需补投）。
+   * 对账窗口内的终态实例中，<b>完全没有任何同 intent 的意图行</b>的（意图丢失，需补投）。
+   *
+   * <p><b>判据是「一行都没有」而不是「没有 DONE 行」</b>：意图行只要存在（NEW / CLAIMED / FAILED / DONE 任一状态），
+   * 就说明投影链路已接管——在途的由中继落地，FAILED 达上限的按设计转人工。若按「没有 DONE」判定，FAILED 意图的实例会被
+   * 每轮对账重复补投，把「有上限的重试」悄悄变成「无限重试」。真正需要补投的只有一种情况：phase 已写终态、但意图行 根本没落库（崩溃在两者之间）。
+   *
+   * <p><b>窗口</b>：{@code updated_at >= :horizon}（见 {@link #RECONCILE_WINDOW}）——DONE 行按保留期物理清理，
+   * 不设窗口会把保留期外的实例永久重判缺投影。
    *
    * <p>同 {@link #pollDue(int)}：跨租户，租户由行内 {@code tenant_id} 携带。
    */
-  public List<StatusIntent> findTerminalMissingProjection(int limit) {
-    return jdbc.query(
-        WfSql.SELECT_TERMINAL_INSTANCES_MISSING_PROJECTION,
-        new MapSqlParameterSource().addValue("limit", limit),
-        (rs, n) ->
-            new StatusIntent(
-                rs.getString("id"),
-                rs.getString("id"),
-                rs.getString("entity_code"),
-                rs.getString("record_id"),
-                rs.getLong("tenant_id"),
-                rs.getString("phase"),
-                actionCodeOf(rs.getString("phase")),
-                null,
-                "NEW",
-                0,
-                null));
+  public List<StatusIntent> findTerminalMissingProjection(int limit, Duration horizon) {
+    return outbox.findTerminalMissingProjection(limit, Instant.now().minus(horizon)).stream()
+        .map(WorkflowStatusOutboxRepository::toReconcileIntent)
+        .toList();
   }
 
-  private String actionCodeOf(String phase) {
+  /**
+   * 对账补投意图的行映射——查询返回的是 {@code wf_instance} 行（<b>不是</b>发件箱行），与旧裸 JDBC 版逐字同口径：
+   *
+   * <ul>
+   *   <li>{@code instanceId} = 实例 id（{@code i.id}；该 SELECT 不产生 instance_id 列，补投意图挂在实例自身上）；
+   *   <li>{@code actionCode} 由终态 phase 经 {@link #actionCodeOf} 派生（与写入侧 {@code OutboxStatusPort} 一致，
+   *       {@code TERMINATED} 显式为 {@code null}——无对应业务动作）；
+   *   <li>state / retryCount / createdAt 硬编码 {@code NEW} / 0 / {@code null}（尚未入箱；{@code
+   *       StatusProjectionRelay#runReconcile} 补插时再赋确定性 id）。
+   * </ul>
+   */
+  private static StatusIntent toReconcileIntent(WfStatusOutboxRow row) {
+    return new StatusIntent(
+        row.getId(),
+        row.getId(),
+        row.getEntityCode(),
+        row.getRecordId(),
+        row.getTenantId(),
+        row.getIntent(),
+        actionCodeOf(row.getIntent()),
+        null,
+        "NEW",
+        0,
+        null);
+  }
+
+  /**
+   * 按保留期物理清理 DONE 行（防表无限增长）。
+   *
+   * <p>保留期必须 &gt; {@link #RECONCILE_WINDOW}（见 {@link #DONE_RETENTION}）。跨租户（调度线程无上下文）。
+   */
+  public int purgeDone(Duration retention) {
+    return outbox.purgeDoneStatusIntents(Instant.now().minus(retention));
+  }
+
+  /**
+   * 终态 → 业务动作码映射（与 {@code OutboxStatusPort} 写入侧逐字一致）。
+   *
+   * <p>{@code TERMINATED} 显式映射为 {@code null}（无对应业务动作，单据处置由宿主状态机决定）——与 {@code
+   * OutboxStatusPort.markTerminated} 的 actionCode 一致，对账补投因此不会凭空造出一个宿主没有定义的动作。
+   */
+  private static String actionCodeOf(String phase) {
     return switch (phase) {
       case "APPROVED" -> "approve";
       case "REJECTED" -> "reject";
       case "WITHDRAWN" -> "withdraw";
-      default -> null; // SUSPENDED / RESUMED 无对应业务动作
+      case "TERMINATED", "SUSPENDED", "RESUMED" -> null;
+      default -> null;
     };
   }
 
-  private MapSqlParameterSource params() {
+  private Long requireTenant() {
     Long tenantId = TenantContext.getTenantIdAsLong();
     if (tenantId == null) {
       throw new IllegalStateException("审批流发件箱缺少租户上下文（TenantContext）——拒绝在未知租户下读写 wf_status_outbox");
     }
-    return new MapSqlParameterSource("tenantId", tenantId);
+    return tenantId;
   }
 
-  private StatusIntent map(ResultSet rs) throws java.sql.SQLException {
-    Timestamp next = rs.getTimestamp("next_retry_at");
+  private static StatusIntent toIntent(WfStatusOutboxRow row) {
     return new StatusIntent(
-        rs.getString("id"),
-        rs.getString("instance_id"),
-        rs.getString("entity_code"),
-        rs.getString("record_id"),
-        rs.getLong("tenant_id"),
-        rs.getString("intent"),
-        rs.getString("action_code"),
-        rs.getString("params_json"),
-        rs.getString("state"),
-        rs.getInt("retry_count"),
-        next == null ? null : next.toInstant());
+        row.getId(),
+        row.getInstanceId(),
+        row.getEntityCode(),
+        row.getRecordId(),
+        row.getTenantId(),
+        row.getIntent(),
+        row.getActionCode(),
+        row.getParamsJson(),
+        row.getState(),
+        row.getRetryCount(),
+        row.getNextRetryAt());
   }
 }

@@ -16,17 +16,18 @@ import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
 import com.bone.workflow.ports.spi.ApproverResolver;
 import com.bone.workflow.ports.spi.WorkflowAuditPort;
+import com.bone.workflow.ports.spi.WorkflowDefinitionRepository;
 import com.bone.workflow.ports.spi.WorkflowIdGenerator;
+import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
 import com.bone.workflow.runtime.WorkflowEngineImpl;
-import com.bone.workflow.starter.adapter.JdbcWorkflowDefinitionRepository;
-import com.bone.workflow.starter.adapter.JdbcWorkflowInstanceRepository;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.StatusIntent;
 import com.bone.workflow.starter.outbox.StatusIntentExecutor;
 import com.bone.workflow.starter.outbox.StatusProjectionRelay;
 import com.bone.workflow.starter.outbox.WorkflowStatusOutboxRepository;
+import com.bone.workflow.starter.sdk.WorkflowSdkTestContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
@@ -38,28 +39,30 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * <b>真引擎 + 真 JDBC 适配器 + 真发件箱</b>的端到端接线测试（H2 原样执行生产 SQL）。
+ * <b>真引擎 + 真 SDK 适配器 + 真发件箱</b>的端到端接线测试（H2 原样执行生产 SQL）。
  *
  * <p><b>为什么必须有这一层</b>：runtime 单测用内存 stub（{@code mode==null} 无条件移动，与引擎意图一致），适配器单测从 APPROVE
  * 节点推进——两侧各自全绿， 却掩盖了「生产 SQL 推不动 START / CONDITION 节点」这类<b>接线缺陷</b>（P0-1：适配器把 null 折成 SINGLE ⇒
  * 非审批节点找不到 APPROVED 任务 ⇒ 0 行 ⇒ 流程启动即静默卡死）。只有让引擎经真实仓储跑完整链路，这类缺陷才会现形。
  *
- * <p>链路：{@code WorkflowEngineImpl} → {@link JdbcWorkflowDefinitionRepository} / {@link
- * JdbcWorkflowInstanceRepository} → {@link OutboxStatusPort} → {@link
- * StatusProjectionRelay}，全部生产实现， 仅指派解析 / 单据数据 / 审计 / id 生成用测试替身。
+ * <p>链路：{@code WorkflowEngineImpl} → {@link WorkflowDefinitionRepository} / {@link
+ * WorkflowInstanceRepository}（均由 {@link WorkflowBoneIntegrationAutoConfiguration} 经 SDK
+ * {@code @Sql} 装配）→ {@link OutboxStatusPort} → {@link StatusProjectionRelay}，全部生产实现， 仅指派解析 / 单据数据 /
+ * 审计 / id 生成用测试替身。
+ *
+ * <p><b>适配器来自生产装配而非 {@code new}</b>：2026-10-24 持久化收敛到 bone-metadata-sdk 后，适配器的正确性一半在「bean 链起得来」（五个
+ * SDK 基建 bean + 扩展仓储扫描 + 仓储代理注册）。直接从上下文按<b>端口类型</b>取用， 装配缺陷（缺 bean / 条件恒假 / 注册遗漏）会在此现形，而不是到宿主启动才爆炸。
  */
 class WorkflowEngineWiringH2Test {
 
   private static final long TENANT = 1L;
 
-  private EmbeddedDatabase db;
-  private NamedParameterJdbcTemplate named;
+  private AnnotationConfigApplicationContext context;
+  private JdbcTemplate jdbc;
   private final ObjectMapper mapper = new ObjectMapper();
   private WorkflowEngine engine;
   private WorkflowStatusOutboxRepository outbox;
@@ -69,14 +72,10 @@ class WorkflowEngineWiringH2Test {
   @BeforeEach
   void setUp() throws Exception {
     TenantContext.setTenantId(TENANT);
-    db =
-        new EmbeddedDatabaseBuilder()
-            .setType(EmbeddedDatabaseType.H2)
-            .addScript("classpath:wf-schema-h2.sql")
-            .build();
-    named = new NamedParameterJdbcTemplate(db);
+    context = WorkflowSdkTestContext.create();
+    jdbc = context.getBean(JdbcTemplate.class);
+    outbox = context.getBean(WorkflowStatusOutboxRepository.class);
 
-    outbox = new WorkflowStatusOutboxRepository(named);
     seedDefinition("expense", true);
     seedDefinition("expense_offline", false);
 
@@ -85,8 +84,8 @@ class WorkflowEngineWiringH2Test {
 
     engine =
         new WorkflowEngineImpl(
-            new JdbcWorkflowDefinitionRepository(named, mapper),
-            new JdbcWorkflowInstanceRepository(named),
+            context.getBean(WorkflowDefinitionRepository.class),
+            context.getBean(WorkflowInstanceRepository.class),
             approverResolver(),
             recordDataPort(),
             statusPort,
@@ -100,8 +99,8 @@ class WorkflowEngineWiringH2Test {
   @AfterEach
   void tearDown() {
     TenantContext.clear();
-    if (db != null) {
-      db.shutdown();
+    if (context != null) {
+      context.close();
     }
   }
 
@@ -175,9 +174,7 @@ class WorkflowEngineWiringH2Test {
     assertEquals(WorkflowErrorCode.DEFINITION_NOT_FOUND, ex.code());
 
     // 重新启用后可正常启动（证明上面失败确实源于 enabled 过滤，而非定义本身有问题）
-    named
-        .getJdbcOperations()
-        .update("UPDATE wf_process_def SET enabled = 1 WHERE def_key = 'expense_offline'");
+    jdbc.update("UPDATE wf_process_def SET enabled = 1 WHERE def_key = 'expense_offline'");
     WorkflowInstance instance =
         engine.start("expense_reimbursement", "r-w3", "expense_offline", "u1");
     assertFalse(instance.isTerminated());
@@ -227,19 +224,17 @@ class WorkflowEngineWiringH2Test {
                 "small",
                     List.of(
                         new WorkflowDefinition.AssignmentRule("USER", Map.of("userId", "mgr2")))));
-    named
-        .getJdbcOperations()
-        .update(
-            "INSERT INTO wf_process_def (id, tenant_id, def_key, def_name, def_version, status,"
-                + " enabled, definition_json, created_by, created_at, updated_by, updated_at,"
-                + " deleted, version)"
-                + " VALUES (?, ?, ?, ?, 1, 'PUBLISHED', ?, ?, 'u1', NOW(), 'u1', NOW(), 0, 0)",
-            "D-" + defKey,
-            TENANT,
-            defKey,
-            "报销审批",
-            enabled ? 1 : 0,
-            mapper.writeValueAsString(definition));
+    jdbc.update(
+        "INSERT INTO wf_process_def (id, tenant_id, def_key, def_name, def_version, status,"
+            + " enabled, definition_json, created_by, created_at, updated_by, updated_at,"
+            + " deleted, version)"
+            + " VALUES (?, ?, ?, ?, 1, 'PUBLISHED', ?, ?, 'u1', NOW(), 'u1', NOW(), 0, 0)",
+        "D-" + defKey,
+        TENANT,
+        defKey,
+        "报销审批",
+        enabled ? 1 : 0,
+        mapper.writeValueAsString(definition));
   }
 
   /** 指派解析替身：USER 策略解析出 params.userId（模拟组织目录按人指派）。 */

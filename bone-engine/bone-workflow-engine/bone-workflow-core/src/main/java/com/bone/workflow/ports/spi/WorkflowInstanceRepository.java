@@ -85,6 +85,19 @@ public interface WorkflowInstanceRepository {
    */
   void saveTask(WorkflowTask task, String operatorId);
 
+  /**
+   * <b>条件插入</b>任务：仅当同一 {@code (instanceId, nodeCode, assigneeId)} 下没有 {@code PENDING} 任务时才插入。
+   *
+   * <p><b>为什么不能「先查后插」</b>：管理员强制指派（{@code assignTask}）是可重试操作，两个管理员（或用户连点）并发对同一实例同一办理人
+   * 指派时，「先查无待办再插」会双插——同人同节点两条 PENDING。会签（ALL）节点下，多余的那条 PENDING 让节点<b>永远等不齐</b> （有人已表态，幽灵任务永
+   * PENDING）。判据必须由存储层在同一条语句里依据最新行状态计算（与 {@link #compareAndAdvanceNode} 同纪律）。
+   *
+   * @param task 任务（尚未落库）
+   * @param operatorId 操作人——写审计列
+   * @return true = 插入成功；false = 已有同人同节点待办（跳过，调用方不得再派单/通知）
+   */
+  boolean saveTaskIfAbsent(WorkflowTask task, String operatorId);
+
   /** 按 id 取任务。 */
   Optional<WorkflowTask> findTask(String taskId);
 

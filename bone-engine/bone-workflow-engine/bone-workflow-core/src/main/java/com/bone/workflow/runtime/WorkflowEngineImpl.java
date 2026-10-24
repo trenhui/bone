@@ -455,6 +455,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     instanceRepository.saveInstance(withdrawn, operatorId);
     auditPort.recordTermination(withdrawn, operatorId, "发起人撤回");
     statusPort.markWithdrawn(instance.entityCode(), instance.recordId(), instance.id(), operatorId);
+    // 终态通知：发起人要知道「我的单子被撤回了」——只改状态不通知，发起人只能靠刷单据详情感知。
+    notify(() -> notificationPort.notifyTerminated(withdrawn, operatorId, "发起人撤回"));
     LOG.info("[workflow] 流程撤回：instance={} operator={}", instanceId, operatorId);
     return withdrawn;
   }
@@ -514,7 +516,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     }
     Instant now = clock.instant();
     for (String assignee : assignees) {
-      instanceRepository.saveTask(
+      WorkflowTask task =
           new WorkflowTask(
               idGenerator.nextId(),
               instance.id(),
@@ -525,8 +527,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
               null,
               null,
               now,
-              null),
-          operatorId);
+              null);
+      instanceRepository.saveTask(task, operatorId);
+      // 派单即通知：不通知，审批流就退化成「办事人每天自己刷待办列表」，催办与超时全都失效。
+      notify(() -> notificationPort.notifyTaskCreated(task, instance));
     }
     WorkflowInstance running =
         new WorkflowInstance(
@@ -586,25 +590,22 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     }
     String targetNode =
         (nodeCode == null || nodeCode.isBlank()) ? instance.currentNodeCode() : nodeCode;
-    // 无重复 (node, assignee) PENDING 时方新建：幂等，避免「强制指派」重复点出多份同人待办。
-    boolean alreadyPending =
-        instanceRepository.listPendingTasks(instanceId).stream()
-            .anyMatch(t -> t.nodeCode().equals(targetNode) && t.assigneeId().equals(assigneeId));
+    // 条件插入去重：判据由存储层在同一条语句里算（与 compareAndAdvanceNode 同纪律）——
+    // 应用层「先查无待办再插」在并发双点下会双插，同人同节点两条 PENDING 会让会签节点永远等不齐。
+    WorkflowTask task =
+        new WorkflowTask(
+            idGenerator.nextId(),
+            instance.id(),
+            targetNode,
+            assigneeId,
+            WorkflowTask.Status.PENDING,
+            null,
+            null,
+            null,
+            clock.instant(),
+            null);
     WorkflowTask created = null;
-    if (!alreadyPending) {
-      WorkflowTask task =
-          new WorkflowTask(
-              idGenerator.nextId(),
-              instance.id(),
-              targetNode,
-              assigneeId,
-              WorkflowTask.Status.PENDING,
-              null,
-              null,
-              null,
-              clock.instant(),
-              null);
-      instanceRepository.saveTask(task, operatorId);
+    if (instanceRepository.saveTaskIfAbsent(task, operatorId)) {
       created = task;
       // 派单即通知：被强制指派的办理人也应收到待办提醒，否则仍靠刷列表才知情。
       notify(() -> notificationPort.notifyTaskCreated(task, instance));
@@ -690,6 +691,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     auditPort.recordTermination(terminated, operatorId, reason == null ? "管理员强制终止" : reason);
     statusPort.markTerminated(
         instance.entityCode(), instance.recordId(), instance.id(), operatorId, reason);
+    notify(() -> notificationPort.notifyTerminated(terminated, operatorId, reason));
     LOG.info("[workflow] 流程强制终止：instance={} operator={} reason={}", instanceId, operatorId, reason);
     return terminated;
   }
@@ -810,6 +812,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           auditPort.recordTermination(approved, operatorId, "流程通过");
           statusPort.markApproved(
               instance.entityCode(), instance.recordId(), instance.id(), operatorId);
+          notify(() -> notificationPort.notifyTerminated(approved, operatorId, "流程通过"));
           LOG.info("[workflow] 流程通过：instance={}", instance.id());
           return approved;
         }
@@ -929,6 +932,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     auditPort.recordTermination(rejected, operatorId, reason == null ? "审批驳回" : reason);
     statusPort.markRejected(
         instance.entityCode(), instance.recordId(), instance.id(), operatorId, reason);
+    notify(() -> notificationPort.notifyTerminated(rejected, operatorId, reason));
     LOG.info("[workflow] 流程驳回：instance={} reason={}", instance.id(), reason);
     return rejected;
   }

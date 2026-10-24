@@ -1,9 +1,6 @@
 package com.bone.workflow.starter.architecture;
 
-import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackages;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -91,29 +88,26 @@ class StarterArchitectureTest {
                   + "让「纯 Java 制品」这一承诺失效");
 
   /**
-   * HC-006 持久化纪律的<b>收窄守卫</b>：审批流的裸 JDBC 实现（{@code JdbcWorkflowInstanceRepository} / {@code
-   * JdbcWorkflowDefinitionRepository} / {@code WorkflowStatusOutboxRepository} 等）是<b>已登记的技术豁免</b>
+   * HC-006 持久化纪律的<b>零豁免守卫</b>：{@code com.bone.workflow.starter..} 任何类都不得依赖 {@code spring-jdbc} /
+   * {@code java.sql} / {@code javax.sql}——持久化全部经 bone-metadata-sdk 的 {@code @Sql} 代理（2026-10-24
+   * 收敛）。
+   *
+   * <p><b>为什么可以收到绝对零豁免</b>：收敛前，裸 JDBC 实现（{@code JdbcWorkflowInstanceRepository} 等）是<b>已登记的技术豁免</b>
    * （见 {@code doc/architecture/sdk-persistence-bypass-baseline.json} 的 {@code
-   * technicalExemptions}），仅允许存在于 {@code adapter} / {@code outbox} 包。本规则保证：<b>任何其它包</b>一旦引入 {@code
-   * spring-jdbc} / {@code java.sql} / {@code javax.sql}，门禁即红——杜绝「SDK 不好写就随手裸 JDBC」的滑坡，也迫使新增 JDBC
-   * 必须同步登记 baseline。
+   * technicalExemptions}），规则只能「收窄」到 adapter / outbox 两个包。收敛后豁免条目已移除，本规则随之升级为<b>全 starter
+   * 禁止</b>——包括自动配置类：装配层不再需要把 {@code NamedParameterJdbcTemplate} 当 {@code @ConditionalOnClass} 门禁（改用
+   * SDK 的 {@code SqlExecutor}），接线角色与持久化角色一并分离。
+   *
+   * <p>豁免条目若被重新加回 baseline（「SDK 不好写就随手裸 JDBC」的滑坡），本规则会先红——基线登记与代码现实因此永远互相咬合。
    */
   @ArchTest
-  static final ArchRule jdbc_must_reside_only_in_exempted_adapter_or_outbox =
+  static final ArchRule jdbc_must_not_appear_anywhere_in_starter =
       noClasses()
-          .that(
-              resideInAPackage("com.bone.workflow.starter..")
-                  .and(
-                      resideOutsideOfPackages(
-                          "com.bone.workflow.starter.adapter..",
-                          "com.bone.workflow.starter.outbox.."))
-                  // 自动配置类仅把 NamedParameterJdbcTemplate 作为 @Bean 参数「接线」注入，不自行执行 JDBC，
-                  // 属装配层合法角色，须豁免，否则会与「adapter/outbox 才是 JDBC 持久化落点」的纪律冲突。
-                  .and(not(simpleNameEndingWith("AutoConfiguration"))))
+          .that(resideInAPackage("com.bone.workflow.starter.."))
           .should()
           .dependOnClassesThat()
           .resideInAnyPackage("org.springframework.jdbc..", "java.sql..", "javax.sql..")
           .because(
-              "审批流 JDBC 持久化仅允许在已登记的 adapter/outbox 包内（HC-006 技术豁免）；新增 JDBC 必须同步登记 "
-                  + "sdk-persistence-bypass-baseline.json，否则门禁红");
+              "审批流持久化全部走 bone-metadata-sdk 的 @Sql 通道（HC-006 豁免已移除）；任何 JDBC 依赖都意味着"
+                  + "绕过了 SDK 的租户注解强制、SQL 模板安全扫描与统一异常分类，必须回到 SDK 通道重写");
 }

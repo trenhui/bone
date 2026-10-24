@@ -57,10 +57,12 @@ class WorkflowEngineImplTest {
   private final Map<String, Object> recordData = new LinkedHashMap<>();
   private final AtomicInteger idSeq = new AtomicInteger();
   private final List<String> taskCasOperators = new ArrayList<>();
+  private final List<String> notifications = new ArrayList<>();
   private List<String> resolvedAssignees = List.of("mgr1");
 
   /**
-   * 已决策状态显式集——与生产 SQL（{@code WfSql.COMPARE_AND_ADVANCE_NODE}）的字面量逐字一致。
+   * 已决策状态显式集——与生产 SQL（{@code WfInstanceSdkRepository#compareAndAdvanceNode} 的 status NOT IN
+   * 字面量）逐字一致。
    *
    * <p>刻意不用「非 PENDING」近似：那正是 v1 实现里的 fail-open 口径（v2 转办/委派状态会被当成已决策而静默推进）。
    */
@@ -145,6 +147,30 @@ class WorkflowEngineImplTest {
         @Override
         public void saveTask(WorkflowTask task, String operatorId) {
           tasks.put(task.id(), task);
+        }
+
+        /**
+         * stub 版条件插入：与生产 SQL（{@code WfTaskSdkRepository#insertTaskIfAbsent}）同口径——已有同人同节点 PENDING
+         * 即跳过。
+         *
+         * <p>stub 只证明引擎调用逻辑；「判据由数据库在同一条语句里算」的原子性由 {@code SdkWorkflowInstanceRepositoryH2Test} 真 SQL
+         * 用例证明（内存 stub 没有并发语义）。
+         */
+        @Override
+        public boolean saveTaskIfAbsent(WorkflowTask task, String operatorId) {
+          boolean alreadyPending =
+              tasks.values().stream()
+                  .anyMatch(
+                      t ->
+                          t.instanceId().equals(task.instanceId())
+                              && t.nodeCode().equals(task.nodeCode())
+                              && t.assigneeId().equals(task.assigneeId())
+                              && t.status() == WorkflowTask.Status.PENDING);
+          if (alreadyPending) {
+            return false;
+          }
+          tasks.put(task.id(), task);
+          return true;
         }
 
         @Override
@@ -443,6 +469,41 @@ class WorkflowEngineImplTest {
 
   private final WorkflowIdGenerator idGenerator = () -> "id-" + idSeq.incrementAndGet();
 
+  /** 记录型通知端口：把每次通知记入 {@link #notifications}，供终态/派单通知用例断言。 */
+  private final NotificationPort recordingNotificationPort =
+      new NotificationPort() {
+        @Override
+        public void notifyTaskCreated(WorkflowTask task, WorkflowInstance instance) {
+          notifications.add("TASK_CREATED:" + task.assigneeId() + "@" + task.nodeCode());
+        }
+
+        @Override
+        public void notifyUrged(
+            WorkflowTask task, WorkflowInstance instance, String operatorId, String comment) {
+          notifications.add("URGED:" + task.id());
+        }
+
+        @Override
+        public void notifyReassigned(
+            WorkflowTask task,
+            WorkflowInstance instance,
+            String newAssigneeId,
+            String operatorId,
+            String reason) {
+          notifications.add("REASSIGNED:" + newAssigneeId);
+        }
+
+        @Override
+        public void notifySuspended(WorkflowInstance instance, String reason) {
+          notifications.add("SUSPENDED:" + instance.id());
+        }
+
+        @Override
+        public void notifyTerminated(WorkflowInstance instance, String operatorId, String reason) {
+          notifications.add("TERMINATED:" + instance.phase());
+        }
+      };
+
   private WorkflowEngineImpl newEngine() {
     return new WorkflowEngineImpl(
         definitionRepository,
@@ -454,7 +515,8 @@ class WorkflowEngineImplTest {
         idGenerator,
         new StructuredConditionEvaluator(),
         new WorkflowDefinitionValidator(),
-        FIXED_CLOCK);
+        FIXED_CLOCK,
+        recordingNotificationPort);
   }
 
   // ============================== 定义构造 ==============================
@@ -945,6 +1007,70 @@ class WorkflowEngineImplTest {
         engine.completeTask(
             pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "admin1");
     assertEquals(WorkflowInstance.Phase.APPROVED, done.phase());
+  }
+
+  @Test
+  @DisplayName("强制指派并发双点：第二次指派被条件插入挡掉，不重复派单/通知")
+  void assignTask_doubleClick_createsSingleTaskAndNotification() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of();
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance suspended = engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    engine.assignTask(suspended.id(), null, "admin1", "admin", "指派");
+    engine.assignTask(suspended.id(), null, "admin1", "admin", "重复指派（并发双点）");
+
+    assertEquals(1, pendingTasks().size(), "同人同节点只能有一份待办");
+    assertEquals(
+        1,
+        notifications.stream().filter(n -> n.startsWith("TASK_CREATED:")).count(),
+        "第二次指派被数据库判据挡掉，不得再派单通知——否则办理人收到两份相同待办");
+  }
+
+  @Test
+  @DisplayName("终态通知：审批通过 / 驳回 / 撤回 / 强制终止都必须通知发起人")
+  void terminalPaths_notifyInitiator() {
+    givenLinearSingleApproval();
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance instance = engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "mgr1");
+    assertTrue(
+        notifications.contains("TERMINATED:APPROVED"), "审批通过必须通知发起人——只改状态不通知，发起人只能靠刷单据详情感知结果");
+
+    // 驳回路径
+    givenLinearSingleApproval();
+    engine.start("expense_reimbursement", "r2", "expense", "u1");
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.REJECT, "不同意", "mgr1");
+    assertTrue(notifications.contains("TERMINATED:REJECTED"), "驳回必须通知发起人");
+
+    // 撤回路径
+    givenLinearSingleApproval();
+    WorkflowInstance r3 = engine.start("expense_reimbursement", "r3", "expense", "u1");
+    engine.withdraw(r3.id(), "u1");
+    assertTrue(notifications.contains("TERMINATED:WITHDRAWN"), "撤回必须通知发起人");
+
+    // 强制终止路径
+    givenLinearSingleApproval();
+    WorkflowInstance r4 = engine.start("expense_reimbursement", "r4", "expense", "u1");
+    engine.terminateInstance(r4.id(), "admin", "错提单据");
+    assertTrue(notifications.contains("TERMINATED:TERMINATED"), "强制终止必须通知发起人");
+  }
+
+  @Test
+  @DisplayName("恢复派单也发通知：resume 重建待办时办理人应收到待办提醒")
+  void resume_notifiesTaskCreated() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of(); // 首次提交组织架构断链 → 挂起
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance suspended = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    notifications.clear();
+
+    resolvedAssignees = List.of("mgr1");
+    engine.resume(suspended.id(), "u1");
+
+    assertTrue(
+        notifications.contains("TASK_CREATED:mgr1@mgr"), "resume 重建待办必须通知办理人——否则挂起恢复后经办人仍靠刷列表才知情");
   }
 
   @Test

@@ -11,8 +11,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TemplateSecurityValidator {
   private final SqlConfigProperties config;
+
+  /**
+   * 模板文本的注入特征模式。
+   *
+   * <p><b>为什么不禁 {@code DELETE}</b>：DELETE 是合法 DML——仓储层「原子释放槽位」等语义必须物理删行（软删不释放
+   * 主键，会把「终态后可重提」永久焊死）。而禁它并无安全收益：① executor 层的 {@code SqlSecurityGuard} 对 INSERT/UPDATE/DELETE
+   * <b>刻意跳过</b>关键字扫描（写操作由 SDK 构建），仅对其余语句禁 DDL 关键字与 {@code ;} 叠语句； ② {@code ${}} 原文替换的取值已被 {@code
+   * MyBatisSqlProcessor} 约束为 {@code ^[a-zA-Z0-9_]+$}（标识符字符集）， 关键字载荷活不过替换。禁裸词 {@code delete}
+   * 只会把「任何需要物理删除的 SDK 仓储」一棍子打死。
+   *
+   * <p>保留 DDL 关键字（drop/truncate）与 {@code exec} / {@code union all}：数据访问模板出现 DDL 与堆叠查询即越界，
+   * 属防御性纵深（真注入面已由上述两层闭合）。
+   */
   private static final Pattern SQL_INJECTION_PATTERN =
-      Pattern.compile("(?i)(\\b(drop|delete|truncate|exec|union\\s+all)\\b)");
+      Pattern.compile("(?i)(\\b(drop|truncate|exec|union\\s+all)\\b)");
 
   // 不再使用硬编码的 ALLOWED_HOSTS
 

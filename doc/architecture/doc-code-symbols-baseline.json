@@ -805,6 +805,63 @@
       ],
       "reason": "false-positive",
       "note": "AutoConfiguration 出自 org.springframework.boot.autoconfigure.AutoConfiguration.imports 包名及 @AutoConfiguration 注解通用词，非特定类引用，属误报（覆盖 review-report 与费用报销设计文档）"
+    },
+    {
+      "symbol": "JdbcWorkflowInstanceRepository",
+      "docs": [
+        "doc/design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "history",
+      "note": "2026-10-24 审批流引擎 JDBC→SDK @Sql 全量改写已删除该类（职责由 SdkWorkflowInstanceRepository 适配器 + WfInstanceSdkRepository/WfTaskSdkRepository 承担），设计稿 §10 整改记录「落点」列与 §9.2/§10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+    },
+    {
+      "symbol": "JdbcWorkflowDefinitionRepository",
+      "docs": [
+        "doc/design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "history",
+      "note": "2026-10-24 JDBC→SDK @Sql 改写已删除（职责由 SdkWorkflowDefinitionRepository + WfProcessDefSdkRepository 承担），设计稿 §10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+    },
+    {
+      "symbol": "EnableConfigurationProperties",
+      "docs": [
+        "doc/ai-product/RAG方案诊断与优化-2026-10-23.md"
+      ],
+      "reason": "false-positive",
+      "note": "Spring 框架注解 @EnableConfigurationProperties 通用词，非项目自定义类名（同 AutoConfiguration 条目口径）"
+    },
+    {
+      "symbol": "CloseExpiredClaimJob",
+      "docs": [
+        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 理赔平台工程详设/整改清单的目标态定时任务名，实现尚未落地；与同文档已登记的 AdjLiabilityRepository 等 tobe-named 条目同口径"
+    },
+    {
+      "symbol": "InspectionRepository",
+      "docs": [
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
+    },
+    {
+      "symbol": "InspectionApplicationService",
+      "docs": [
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
+    },
+    {
+      "symbol": "InspectionController",
+      "docs": [
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
     }
   ]
 }
