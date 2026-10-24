@@ -4,6 +4,7 @@ import com.bone.airag.application.RagAnswerService;
 import com.bone.airag.application.RagApplicationService;
 import com.bone.airag.domain.gateway.AnswerGenerationPort;
 import com.bone.airag.domain.gateway.EmbeddingPort;
+import com.bone.airag.domain.gateway.GroundingJudgePort;
 import com.bone.airag.domain.gateway.RagAclPort;
 import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.gateway.RerankPort;
@@ -13,6 +14,7 @@ import com.bone.airag.domain.service.DenyDocAcl;
 import com.bone.airag.domain.service.GroundedPromptBuilder;
 import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
+import com.bone.airag.domain.service.NoOpGroundingJudge;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.domain.service.SensitiveDataMasker;
 import com.bone.airag.domain.service.UnavailableAnswerGeneration;
@@ -171,9 +173,24 @@ public class RagAutoConfiguration {
   }
 
   /**
-   * RAG 回答闭环（检索 → 接地提示词 → 生成 → 接地校验）。
+   * 语义接地裁判（默认禁用态 {@link NoOpGroundingJudge}）：接入方以 {@code @Bean} 覆盖为网关卡面适配（{@code
+   * LlmGroundingJudgeAdapter}）后，回答链在确定性守卫之上叠加 NLI 语义校验（R5）。
    *
-   * <p>依赖 {@code ragService} 存在（即已接入切片仓储）；未接入持久化的上下文不装配本闭环。
+   * <p>禁用态恒放行不是「不校验」——确定性守卫（无据拒答 / 引用强制 / 逐句词面支撑 / 数字一致性）始终在岗， 禁用的只是语义增强层；接入后 paraphrase
+   * 编造（词面全对但结论上下文没给）才有防线。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public GroundingJudgePort groundingJudge() {
+    return new NoOpGroundingJudge();
+  }
+
+  /**
+   * RAG 回答闭环（检索 → 接地提示词 → 生成 → 确定性守卫 → 语义裁判 → 拒答或返回）。
+   *
+   * <p>依赖 {@code ragService} 存在（即已接入切片仓储）；未接入持久化的上下文不装配本闭环。 语义裁判经 {@link GroundingJudgePort}
+   * 注入：组合根缺 LLM 裁判实现时为 {@link NoOpGroundingJudge}（语义层关闭， 确定性守卫独自把关），bone-ai-app
+   * 以网关卡面适配覆盖后两层串联生效（R5）。
    */
   @Bean
   @ConditionalOnBean(name = "ragService")
@@ -181,8 +198,11 @@ public class RagAutoConfiguration {
   public RagAnswerService ragAnswerService(
       RagApplicationService ragService,
       AnswerGenerationPort answerGenerationPort,
-      GroundedPromptBuilder groundedPromptBuilder) {
-    return new RagAnswerService(ragService, answerGenerationPort, groundedPromptBuilder);
+      GroundedPromptBuilder groundedPromptBuilder,
+      GroundingJudgePort groundingJudge,
+      RagEventSink ragEventSink) {
+    return new RagAnswerService(
+        ragService, answerGenerationPort, groundedPromptBuilder, groundingJudge, ragEventSink);
   }
 
   @Bean
@@ -211,6 +231,7 @@ public class RagAutoConfiguration {
         groundingGuard,
         props.getIngest().isPiiMaskEnabled()
             ? new SensitiveDataMasker()
-            : SensitiveDataMasker.disabled());
+            : SensitiveDataMasker.disabled(),
+        props.isStageTracingEnabled());
   }
 }

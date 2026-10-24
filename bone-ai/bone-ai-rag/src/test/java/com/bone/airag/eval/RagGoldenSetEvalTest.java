@@ -61,7 +61,8 @@ class RagGoldenSetEvalTest {
             0,
             -1,
             new GroundingGuard(0.6, 0.0),
-            SensitiveDataMasker.disabled());
+            SensitiveDataMasker.disabled(),
+            false);
 
     List<GoldenCase> cases =
         List.of(

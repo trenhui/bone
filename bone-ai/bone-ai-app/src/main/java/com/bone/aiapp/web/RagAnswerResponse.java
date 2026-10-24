@@ -18,9 +18,15 @@ import java.util.List;
  *     AI_RAG_ANSWER_GENERATION_UNAVAILABLE} / 网关治理码（如 {@code AI_GATEWAY_INJECTION_SUSPECTED}）
  * @param verdict 接地判定明细（含 reason / 无支撑句 / 幻觉引用；生成故障时为审计轨迹位）
  * @param contexts 实际进入提示词的上下文（编号即下标 + 1），供前端展示出处
- * @param degradations 降级痕迹（检索降级 + {@code CONTEXT_TRUNCATED}）
+ * @param degradations 降级痕迹（检索降级 + {@code CONTEXT_TRUNCATED} + {@code GROUNDING_JUDGE_DEGRADED}）
  * @param estimatedTokens 上下文 token 估算（近似口径）
  * @param truncated 是否因上下文预算发生截断（true 时「答不全」可归因）
+ * @param judgeSupported 语义接地裁判结论（R5；null = 未执行——拒答发生在裁判之前或裁判禁用）。 false + {@code
+ *     judgeReason=UNSUPPORTED} = 裁判拦截 paraphrase 编造致拒答；false + {@code
+ *     judgeReason=JUDGE_UNAVAILABLE} = 裁判故障回落确定性守卫（答案照常，{@code degradations} 含 {@code
+ *     GROUNDING_JUDGE_DEGRADED}）
+ * @param judgeReason 语义裁判原因码：{@code SUPPORTED} / {@code UNSUPPORTED} / {@code JUDGE_UNAVAILABLE} /
+ *     {@code JUDGE_DISABLED}
  */
 public record RagAnswerResponse(
     boolean answered,
@@ -30,7 +36,9 @@ public record RagAnswerResponse(
     List<RagResult> contexts,
     List<String> degradations,
     int estimatedTokens,
-    boolean truncated) {
+    boolean truncated,
+    Boolean judgeSupported,
+    String judgeReason) {
 
   public static RagAnswerResponse of(RagAnswerOutcome outcome) {
     return new RagAnswerResponse(
@@ -41,6 +49,8 @@ public record RagAnswerResponse(
         outcome.contexts(),
         outcome.degradations(),
         outcome.estimatedTokens(),
-        outcome.truncated());
+        outcome.truncated(),
+        outcome.judgeVerdict() == null ? null : outcome.judgeVerdict().supported(),
+        outcome.judgeVerdict() == null ? null : outcome.judgeVerdict().reason());
   }
 }

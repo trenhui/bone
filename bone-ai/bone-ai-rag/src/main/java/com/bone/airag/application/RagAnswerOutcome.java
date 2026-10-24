@@ -1,5 +1,6 @@
 package com.bone.airag.application;
 
+import com.bone.airag.domain.model.GroundingJudgeVerdict;
 import com.bone.airag.domain.model.GroundingVerdict;
 import com.bone.airag.domain.model.RagResult;
 import com.bone.airag.domain.service.GroundingGuard;
@@ -16,9 +17,12 @@ import java.util.List;
  * @param errorCode 拒答原因码（成功时为 null）：{@code AI_RAG_GROUNDING_FAILED}
  * @param verdict 接地判定明细（含 reason / 无支撑句 / 幻觉引用）
  * @param contexts 实际进入提示词的上下文（编号即下标 + 1），供前端展示出处
- * @param degradations 降级痕迹（检索降级 + {@code CONTEXT_TRUNCATED}）
+ * @param degradations 降级痕迹（检索降级 + {@code CONTEXT_TRUNCATED} + {@code GROUNDING_JUDGE_DEGRADED}）
  * @param estimatedTokens 上下文 token 估算（近似口径）
  * @param truncated 是否因上下文预算发生截断（true 时「答不全」可归因）
+ * @param judgeVerdict 语义接地裁判明细（R5；null = 未执行——拒答发生在裁判之前或裁判禁用）。 裁判明确判定无支撑时 {@code
+ *     errorCode=AI_RAG_GROUNDING_FAILED} 且本字段 reason={@code UNSUPPORTED}；裁判自身故障时本字段 reason={@code
+ *     JUDGE_UNAVAILABLE} 且 {@code degradations} 含 {@code GROUNDING_JUDGE_DEGRADED}（回落确定性守卫，答案照常返回）
  */
 public record RagAnswerOutcome(
     boolean answered,
@@ -28,7 +32,8 @@ public record RagAnswerOutcome(
     List<RagResult> contexts,
     List<String> degradations,
     int estimatedTokens,
-    boolean truncated) {
+    boolean truncated,
+    GroundingJudgeVerdict judgeVerdict) {
 
   /**
    * 生成链路故障时的拒答结果（编排层「AI 故障不阻断业务」的落地形态）。
@@ -53,6 +58,14 @@ public record RagAnswerOutcome(
             List.of(),
             List.of(failureDetail == null ? "" : failureDetail));
     return new RagAnswerOutcome(
-        false, RagAnswerService.REFUSAL_ANSWER, errorCode, verdict, List.of(), List.of(), 0, false);
+        false,
+        RagAnswerService.REFUSAL_ANSWER,
+        errorCode,
+        verdict,
+        List.of(),
+        List.of(),
+        0,
+        false,
+        null);
   }
 }
