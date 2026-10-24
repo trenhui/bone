@@ -248,6 +248,11 @@ public class RagApplicationService {
     }
 
     // 分数阈值（宁缺毋滥）：低于阈值不进候选——交由生成侧走「无依据」路径
+    // 量纲安全（诊断复核 v1.2 修复）：最终分有双轨——rerank 正常时为 cross-encoder 分（0~1/对数），
+    // 降级或默认 NoOp 时为 RRF 融合分（~0.01）。minScore 是按 rerank 量纲标的，
+    // 仅当「分数为 rerank 量纲」时才启用阈值；否则跳过阈值保留 RRF 序，
+    // 避免 rerank 抖动降级时阈值误杀全部结果 → 空结果 → 事故期质量腰斩。
+    boolean rerankScale = !degradations.contains(DEGRADE_RERANK) && !rerankPort.isNoOp();
     List<MmrSelector.Candidate<String>> mmrCandidates = new ArrayList<>();
     Map<String, Double> finalScore = new HashMap<>();
     for (RerankScored s : ranked) {
@@ -255,9 +260,19 @@ public class RagApplicationService {
       if (c == null) {
         continue;
       }
-      if (s.score() < query.minScore()) {
-        log.debug("RAG minScore 过滤：chunk={}, score={} < {}", s.ref(), s.score(), query.minScore());
+      if (rerankScale && s.score() < query.minScore()) {
+        log.debug(
+            "RAG minScore 过滤（rerank 量纲）：chunk={}, score={} < {}",
+            s.ref(),
+            s.score(),
+            query.minScore());
         continue;
+      }
+      if (!rerankScale && query.minScore() > 0) {
+        log.debug(
+            "RAG minScore 未生效（非 rerank 量纲，跳过阈值以免误杀）：chunk={}, score={}",
+            s.ref(),
+            s.score());
       }
       // MMR 多样性向量：仅取与当前嵌入模型同版本的切片向量（版本不符 / 向量路降级时按无向量处理，
       // MMR 自然退化为相关性原序——不拿可疑向量做多样性判断）

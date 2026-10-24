@@ -235,6 +235,82 @@ class RagServiceTest {
   }
 
   @Test
+  void min_score_skipped_when_rerank_degraded_to_avoid_empty_results() {
+    // 诊断复核 v1.2：rerank 降级时最终分为 RRF 融合分（~0.01 量级），若仍按 rerank 量纲阈值过滤
+    // 会把全部结果误杀成空 → 事故期质量腰斩。故降级时应跳过 minScore。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+    RecordingSink sink = new RecordingSink();
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+    RagChunk b = chunk(2L, "doc1", "v1", "gamma delta", new float[] {0f, 1f, 0f}, "clause-2");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b));
+    when(embed.version()).thenReturn("hash-64");
+    when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
+
+    // rerank provider 故障 + 高 minScore（0.9，按 rerank 量纲会全杀）
+    RagApplicationService service =
+        service(repo, embed, new StubReranker(Map.of(), true), tenant, new NoDocAcl(), sink, 0.0);
+
+    RagRetrieveOutcome outcome = service.retrieve(new RagQuery("query", null, 5, 0.9, 10_000));
+
+    // 降级时跳过 minScore：结果不为空（a, b 全保留），且可观测降级痕迹
+    assertThat(outcome.results()).extracting(RagResult::chunkRef).containsExactly("1", "2");
+    assertThat(outcome.degradations()).containsExactly(RagApplicationService.DEGRADE_RERANK);
+  }
+
+  @Test
+  void min_score_skipped_when_no_rerank_configured() {
+    // 默认 NoOpReranker（未配 rerank）：最终分为 RRF 融合分，minScore 同样不应误杀。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+    RagChunk b = chunk(2L, "doc1", "v1", "gamma delta", new float[] {0f, 1f, 0f}, "clause-2");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b));
+    when(embed.version()).thenReturn("hash-64");
+    when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
+
+    RagApplicationService service = service(repo, embed, new NoOpReranker(), tenant);
+
+    RagRetrieveOutcome outcome = service.retrieve(new RagQuery("query", null, 5, 0.9, 10_000));
+
+    assertThat(outcome.results()).extracting(RagResult::chunkRef).containsExactly("1", "2");
+    assertThat(outcome.degradations()).isEmpty();
+  }
+
+  @Test
+  void min_score_applied_only_on_rerank_scale() {
+    // 反向确认：rerank 正常（cross-encoder 分）时，minScore 仍按原契约生效。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+    RagChunk b = chunk(2L, "doc1", "v1", "query beta", new float[] {0.9f, 0.1f, 0f}, "clause-2");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b));
+    when(embed.version()).thenReturn("hash-64");
+    when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
+
+    Map<String, Double> scores = new HashMap<>();
+    scores.put("1", 0.9);
+    scores.put("2", 0.1);
+    RagApplicationService service = service(repo, embed, new StubReranker(scores, false), tenant);
+
+    RagRetrieveOutcome outcome = service.retrieve(new RagQuery("query", null, 5, 0.5, 10_000));
+
+    assertThat(outcome.results()).extracting(RagResult::chunkRef).containsExactly("1");
+  }
+
+  @Test
   void max_scan_exceeded_fails_closed() {
     ChunkRepository repo = mock(ChunkRepository.class);
     EmbeddingPort embed = mock(EmbeddingPort.class);

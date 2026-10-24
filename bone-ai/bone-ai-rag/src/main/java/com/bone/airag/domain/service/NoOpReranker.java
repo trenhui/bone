@@ -14,6 +14,11 @@ import java.util.List;
 public class NoOpReranker implements RerankPort {
 
   @Override
+  public boolean isNoOp() {
+    return true;
+  }
+
+  @Override
   public List<RerankScored> rerank(String query, List<RerankCandidate> candidates, int topK) {
     if (candidates == null || candidates.isEmpty()) {
       return List.of();
