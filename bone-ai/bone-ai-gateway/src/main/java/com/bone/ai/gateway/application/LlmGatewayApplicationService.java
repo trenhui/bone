@@ -6,6 +6,7 @@ import com.bone.ai.gateway.domain.LlmGatewayPolicies;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.ai.gateway.domain.LlmStreamEvent;
 import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.event.LlmCallRecorded;
 import com.bone.ai.gateway.domain.event.LlmUsageRecorded;
@@ -23,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>职责——成本红线强制 + <b>出站 PII 脱敏</b> + 委派 {@link LlmClient} + 发布 {@link
  * LlmCallRecorded}（证据链发布端）。红线命中即抛业务异常且不触碰 client、不发事件（负向探针的地基）。
+ *
+ * <p>入口有两个形态：{@link #invoke}（缓冲 / 同步，绝大多数确定性判定场景）与 {@link #streamInvoke}（流式，长文逐步呈现 / 首 token 体验）；
+ * 两者治理链一致，差异仅在末端——流式对每条增量做流式脱敏、在流末做内容安全 / 输出校验 / 缓存 / 计量 / 证据，并下发 {@link LlmStreamEvent}。
  *
  * <p><b>失败也留证（2026-10-17 复核修复）</b>：provider 超时 / 5xx / 熔断是事故复盘最需要的证据，捕获后补发失败事件再向上抛； 补发自身失败（如 trace
  * 落库失败）只记录日志，不用留证异常覆盖原始故障。
@@ -207,6 +212,137 @@ public class LlmGatewayApplicationService {
         LlmUsageRecorded.of(
             tenantId, outbound.model(), response.usage(), outbound.effectiveTraceId()));
     return response;
+  }
+
+  /**
+   * 发起一次受治理的<b>流式</b> LLM 调用，治理链与 {@link #invoke} 一致，差异在末端：
+   *
+   * <ul>
+   *   <li>每条 {@link LlmStreamEvent.Token} 以<b>原文</b>下发（与 {@code invoke} 同口径：脱敏只作用于出站请求与证据落库，不改写业务答案）；
+   *       同时累积全文，供流末治理使用。
+   *   <li>全文在流结束时落地治理：内容安全（OWASP LLM05/09）/ 结构化输出校验 / 精确缓存写入 / 计量（TTFT + token）/ 证据发布；
+   *       其中 {@link LlmCallRecorded} 证据在发布前按出站口径脱敏（PII / 提示注入不落明文证据）。
+   *   <li>首 token 到达即发射 {@code recordFirstToken}（TTFT 体验指标）；
+   *   <li>provider 错误 / 治理拦截经 {@link LlmStreamEvent.Error} 下发并留证，调用方据此停止并兜底。
+   * </ul>
+   * <p><b>为何不做逐片流式脱敏</b>：一段 PII 可能恰被 SSE 切在两 chunk 之间，逐片正则对单边都「不像完整 PII」而漏脱敏；而累积重脱敏又会在每条增量上回吐 {@code [手机号]} 这类证据标签，违背「面向调用方返回原文」的契约。
+   * 故流式与 {@code invoke} 一致——调用方拿原文，脱敏只在出站请求与证据落库两处发生；对必须零泄露的含 PII 请求，治理层可强制走缓冲（非流式）模式（详设 §2.1）。
+   *
+   * <p>与 {@code invoke} 同口径：红线短路、租户配额、提示注入检测（user 原文）、场景路由、出站脱敏、缓存命中（确定性请求）均在流开始前完成。
+   *
+   * @param request 模型请求
+   * @param sink 流式事件接收器（Token / Done / Error）
+   */
+  public void streamInvoke(LlmRequest request, Consumer<LlmStreamEvent> sink) {
+    String tenantId = tenantProvider.currentTenantId();
+    if (request.shortCircuited()) {
+      metrics().recordShortCircuited(tenantId, request.model());
+      throw new BizException(400, "规则已命中，按成本红线跳过 LLM 调用", AiGatewayErrorCodes.REDLINE_BLOCKED);
+    }
+    LlmRequest routed = routeByScenario(request);
+    if (policies.quotaGuard() != null) {
+      try {
+        policies.quotaGuard().acquire(tenantId);
+      } catch (BizException quotaExceeded) {
+        metrics().recordQuotaExceeded(tenantId, routed.model());
+        throw quotaExceeded;
+      }
+    }
+    if (policies.injectionGuard() != null) {
+      String traceId = routed.effectiveTraceId();
+      for (LlmMessage message : routed.messages()) {
+        if ("user".equalsIgnoreCase(message.role())) {
+          policies.injectionGuard().check(message.content(), traceId);
+        }
+      }
+    }
+    LlmRequest outbound = redactRequest(routed);
+    String cacheKey = cacheKeyOf(outbound, tenantId);
+    if (cacheKey != null && policies.responseCache() != null) {
+      Optional<LlmResponse> cached = policies.responseCache().get(cacheKey);
+      if (cached.isPresent()) {
+        metrics().recordCacheHit(tenantId, outbound.model());
+        LlmResponse c = cached.get();
+        sink.accept(LlmStreamEvent.token(c.content()));
+        sink.accept(LlmStreamEvent.done(c.model(), c.finishReason(), c.usage()));
+        return;
+      }
+    }
+
+    StringBuilder accumulated = new StringBuilder();
+    long callStartNanos = System.nanoTime();
+    boolean[] firstToken = {true};
+    // 流末才确定的量（模型 / 结束原因 / 用量）需跨 lambda 可变，用数组持有（lambda 捕获要求有效 final）
+    final LlmUsage[] finalUsage = {LlmUsage.empty()};
+    final String[] finalModel = {outbound.model()};
+    final String[] finalFinish = {"stop"};
+    try {
+      llmClient.streamChat(
+          outbound,
+          event -> {
+            if (event instanceof LlmStreamEvent.Token t) {
+              if (firstToken[0]) {
+                firstToken[0] = false;
+                metrics().recordFirstToken(tenantId, outbound.model(), elapsedMs(callStartNanos));
+              }
+              // 与 invoke 口径一致：返回给调用方的响应为原文（脱敏只作用于出站请求与证据落库，不改写业务答案）；
+              // 此处累计原文用于流末内容安全 / 输出校验 / 证据组装
+              accumulated.append(t.delta());
+              sink.accept(LlmStreamEvent.token(t.delta()));
+            } else if (event instanceof LlmStreamEvent.Done d) {
+              finalUsage[0] = d.usage() != null ? d.usage() : LlmUsage.empty();
+              finalModel[0] = d.model() != null ? d.model() : outbound.model();
+              finalFinish[0] = d.finishReason() != null ? d.finishReason() : "stop";
+            }
+            // Error 事件在 catch 之外无法拦截底层流异常；此处仅记录 Done 之外的终止，错误见下方 catch
+          });
+    } catch (RuntimeException e) {
+      metrics().recordProviderCall(tenantId, outbound.model(), false, elapsedMs(callStartNanos));
+      publishFailureEvidence(outbound, e);
+      sink.accept(LlmStreamEvent.error(e.getMessage(), e));
+      return;
+    }
+
+    String fullContent = accumulated.toString();
+    // 流末治理：内容安全 / 结构化输出校验（与 invoke 同口径，但作用在全文而非单条消息）
+    if (policies.contentSafetyGuard() != null) {
+      try {
+        policies.contentSafetyGuard().check(fullContent, outbound.effectiveTraceId());
+      } catch (RuntimeException unsafe) {
+        publishFailureEvidence(outbound, unsafe);
+        sink.accept(LlmStreamEvent.error(unsafe.getMessage(), unsafe));
+        return;
+      }
+    }
+    if (outbound.jsonResponse() && policies.outputValidator() != null) {
+      try {
+        policies.outputValidator().validate(fullContent, outbound.effectiveTraceId());
+      } catch (RuntimeException invalid) {
+        publishFailureEvidence(outbound, invalid);
+        sink.accept(LlmStreamEvent.error(invalid.getMessage(), invalid));
+        return;
+      }
+    }
+
+    metrics().recordProviderCall(tenantId, outbound.model(), true, elapsedMs(callStartNanos));
+    if (finalUsage[0] != null) {
+      metrics()
+          .recordTokens(
+              tenantId,
+              finalModel[0],
+              finalUsage[0].promptTokens(),
+              finalUsage[0].completionTokens(),
+              finalUsage[0].totalTokens());
+    }
+    LlmResponse assembled =
+        new LlmResponse(fullContent, finalModel[0], finalFinish[0], finalUsage[0]);
+    if (cacheKey != null && policies.responseCache() != null) {
+      policies.responseCache().put(cacheKey, assembled);
+    }
+    domainEventPublisher.publish(LlmCallRecorded.of(outbound, redactResponse(assembled)));
+    domainEventPublisher.publish(
+        LlmUsageRecorded.of(tenantId, finalModel[0], finalUsage[0], outbound.effectiveTraceId()));
+    sink.accept(LlmStreamEvent.done(finalModel[0], finalFinish[0], finalUsage[0]));
   }
 
   /**

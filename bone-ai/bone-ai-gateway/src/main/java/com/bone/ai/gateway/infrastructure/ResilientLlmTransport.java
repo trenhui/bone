@@ -9,6 +9,7 @@ import io.github.resilience4j.retry.RetryConfig;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * 出站 LLM 传输韧性装饰器（AI 中台 §4.1 网关治理面）：把「发请求」包进 熔断 + 重试。
@@ -75,6 +76,17 @@ public class ResilientLlmTransport implements LlmHttpTransport {
     Supplier<String> retried =
         Retry.decorateSupplier(retry, () -> delegate.post(url, headers, jsonBody));
     return circuitBreaker.executeSupplier(retried);
+  }
+
+  /**
+   * 流式透传：直接委派底层传输的 {@code streamPost}（底层 {@code JdkLlmTransport} 即真实 SSE）。
+   *
+   * <p>断路器只守卫<b>流的获取</b>（获取许可失败即拒绝，原样抛出 {@link CallNotPermittedException} 交上层降级），<b>流的持续消费不计入断路器</b>——
+   * 正常的长文流式若被计入滑动窗口会误开熔断。这与其 {@code post} 语义一致：熔断防「重试风暴 / 退化源」，不误伤正常长流。
+   */
+  @Override
+  public Stream<String> streamPost(String url, Map<String, String> headers, String jsonBody) {
+    return delegate.streamPost(url, headers, jsonBody);
   }
 
   private boolean isRetryable(Throwable t) {

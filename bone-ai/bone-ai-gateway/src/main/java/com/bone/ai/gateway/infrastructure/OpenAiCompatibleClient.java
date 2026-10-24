@@ -5,6 +5,7 @@ import com.bone.ai.gateway.domain.LlmClient;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.ai.gateway.domain.LlmStreamEvent;
 import com.bone.ai.gateway.domain.LlmUsage;
 import com.bone.ai.gateway.domain.gateway.ApiKeyProvider;
 import com.bone.core.exception.BizException;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * OpenAI 兼容协议的 LLM 客户端（一期自建，零框架依赖）。
@@ -53,6 +55,75 @@ public class OpenAiCompatibleClient implements LlmClient {
     return parse(raw, request);
   }
 
+  @Override
+  public void streamChat(LlmRequest request, Consumer<LlmStreamEvent> sink) {
+    String url = baseUrl + "/chat/completions";
+    // 流末才确定的量需跨 lambda 可变，用数组持有（lambda 捕获要求有效 final）
+    boolean[] errored = {false};
+    final String[] finishReason = {"stop"};
+    final String[] model = {request.model() != null ? request.model() : defaultModel};
+    final LlmUsage[] usage = {LlmUsage.empty()};
+    try {
+      transport
+          .streamPost(url, headers(), buildBody(request, true))
+          .forEach(
+              payload -> {
+                JsonNode root;
+                try {
+                  root = MAPPER.readTree(payload);
+                } catch (Exception e) {
+                  throw new BizException(
+                      502,
+                      "解析流式响应失败: " + e.getMessage(),
+                      AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID);
+                }
+                JsonNode err = root.path("error");
+                if (!err.isMissingNode()) {
+                  String msg = err.path("message").asText("provider 流式错误");
+                  errored[0] = true;
+                  sink.accept(
+                      LlmStreamEvent.error(
+                          msg, new BizException(502, msg, AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID)));
+                  return;
+                }
+                JsonNode m = root.path("model");
+                if (!m.isMissingNode() && !m.asText().isBlank()) {
+                  model[0] = m.asText();
+                }
+                // 同时兼容 SSE 的 delta.content 与缓冲兜底的 message.content（默认 streamPost 把整段响应当单元素流）
+                JsonNode choices = root.path("choices");
+                if (choices.isArray() && !choices.isEmpty()) {
+                  JsonNode choice = choices.path(0);
+                  String delta = choice.path("delta").path("content").asText("");
+                  if (delta.isEmpty()) {
+                    delta = choice.path("message").path("content").asText("");
+                  }
+                  if (!delta.isEmpty()) {
+                    sink.accept(LlmStreamEvent.token(delta));
+                  }
+                  JsonNode fr = choice.path("finish_reason");
+                  if (!fr.isMissingNode() && !fr.asText("").isEmpty()) {
+                    finishReason[0] = fr.asText();
+                  }
+                }
+                JsonNode u = root.path("usage");
+                if (!u.isMissingNode() && u.has("total_tokens")) {
+                  usage[0] =
+                      new LlmUsage(
+                          u.path("prompt_tokens").asInt(0),
+                          u.path("completion_tokens").asInt(0),
+                          u.path("total_tokens").asInt(0));
+                }
+              });
+    } catch (RuntimeException e) {
+      sink.accept(LlmStreamEvent.error(e.getMessage(), e));
+      return;
+    }
+    if (!errored[0]) {
+      sink.accept(LlmStreamEvent.done(model[0], finishReason[0], usage[0]));
+    }
+  }
+
   private Map<String, String> headers() {
     Map<String, String> headers = new LinkedHashMap<>();
     headers.put("Content-Type", "application/json");
@@ -65,6 +136,10 @@ public class OpenAiCompatibleClient implements LlmClient {
   }
 
   private String buildBody(LlmRequest request) {
+    return buildBody(request, false);
+  }
+
+  private String buildBody(LlmRequest request, boolean stream) {
     try {
       Map<String, Object> body = new LinkedHashMap<>();
       body.put("model", request.model() != null ? request.model() : defaultModel);
@@ -84,6 +159,11 @@ public class OpenAiCompatibleClient implements LlmClient {
       }
       if (request.jsonResponse()) {
         body.put("response_format", Map.of("type", "json_object"));
+      }
+      if (stream) {
+        // OpenAI 兼容协议：stream=true 开启 SSE；stream_options.include_usage=true 让末段 chunk 带回用量（计费口径完整）
+        body.put("stream", true);
+        body.put("stream_options", Map.of("include_usage", true));
       }
       return MAPPER.writeValueAsString(body);
     } catch (Exception e) {

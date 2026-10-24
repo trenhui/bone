@@ -30,4 +30,7 @@ public interface LlmMetrics {
   /** token 计量（成本核心：按租户 / 模型聚合 prompt / completion / total）。 */
   default void recordTokens(
       String tenantId, String model, long promptTokens, long completionTokens, long totalTokens) {}
+
+  /** 首 token 延迟（TTFT）——流式场景的核心体验指标，首个 Token 到达的耗时。 */
+  default void recordFirstToken(String tenantId, String model, long latencyMs) {}
 }

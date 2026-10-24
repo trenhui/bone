@@ -7,10 +7,14 @@ import com.bone.ai.gateway.common.AiGatewayErrorCodes;
 import com.bone.ai.gateway.domain.LlmMessage;
 import com.bone.ai.gateway.domain.LlmRequest;
 import com.bone.ai.gateway.domain.LlmResponse;
+import com.bone.ai.gateway.domain.LlmStreamEvent;
 import com.bone.core.exception.BizException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class OpenAiCompatibleClientTest {
@@ -147,5 +151,93 @@ class OpenAiCompatibleClientTest {
             e ->
                 assertThat(((BizException) e).getErrorCode())
                     .isEqualTo(AiGatewayErrorCodes.PROVIDER_RESPONSE_INVALID));
+  }
+
+  @Test
+  void streamChat_emits_tokens_in_order_and_done_with_usage() {
+    List<String> payloads =
+        List.of(
+            "{\"choices\":[{\"delta\":{\"content\":\"你好\"}}]}",
+            "{\"choices\":[{\"delta\":{\"content\":\"世界\"},\"finish_reason\":\"stop\"}],"
+                + "\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":2,\"total_tokens\":5}}");
+    OpenAiCompatibleClient client =
+        new OpenAiCompatibleClient(new FakeStreamingTransport(payloads), "https://api.example.com/v1", () -> "sk-test", "gpt-4o-mini");
+
+    List<LlmStreamEvent> events = new ArrayList<>();
+    client.streamChat(LlmRequest.of("gpt-4o-mini", List.of(LlmMessage.user("u"))), events::add);
+
+    assertThat(events).hasSize(3);
+    assertThat(events.get(0)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("你好");
+    assertThat(events.get(1)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("世界");
+    assertThat(events.get(2))
+        .isInstanceOf(LlmStreamEvent.Done.class)
+        .satisfies(
+            d -> {
+              LlmStreamEvent.Done done = (LlmStreamEvent.Done) d;
+              assertThat(done.usage().totalTokens()).isEqualTo(5);
+            });
+  }
+
+  @Test
+  void streamChat_uses_stream_true_and_include_usage_in_body() {
+    FakeStreamingTransport transport =
+        new FakeStreamingTransport(List.of("{\"choices\":[{\"delta\":{\"content\":\"x\"}}]}"));
+    OpenAiCompatibleClient client =
+        new OpenAiCompatibleClient(transport, "https://api.example.com/v1", () -> "sk-test", "m");
+
+    client.streamChat(LlmRequest.of("m", List.of(LlmMessage.user("u"))), e -> {});
+
+    assertThat(transport.capturedBody).contains("\"stream\":true");
+    assertThat(transport.capturedBody).contains("\"include_usage\":true");
+  }
+
+  @Test
+  void streamChat_falls_back_to_buffered_when_transport_not_streaming() {
+    // 不支持真流式的传输（如测试假传输、被熔断装饰器包裹前的直连）走默认 streamPost：把整段响应当单元素流
+    LlmHttpTransport buffered = (url, headers, body) -> "{\"choices\":[{\"message\":{\"content\":\"x\"}}]}";
+    OpenAiCompatibleClient client = new OpenAiCompatibleClient(buffered, "http://llm", () -> "k", "m");
+
+    List<LlmStreamEvent> events = new ArrayList<>();
+    client.streamChat(LlmRequest.of("m", List.of(LlmMessage.user("u"))), events::add);
+
+    assertThat(events).hasSize(2);
+    assertThat(events.get(0)).isInstanceOf(LlmStreamEvent.Token.class).extracting("delta").isEqualTo("x");
+    assertThat(events.get(1)).isInstanceOf(LlmStreamEvent.Done.class);
+  }
+
+  @Test
+  void streamChat_emits_error_on_provider_error_payload() {
+    List<String> payloads = List.of("{\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit\"}}");
+    OpenAiCompatibleClient client =
+        new OpenAiCompatibleClient(new FakeStreamingTransport(payloads), "https://api.example.com/v1", () -> "sk-test", "m");
+
+    List<LlmStreamEvent> events = new ArrayList<>();
+    client.streamChat(LlmRequest.of("m", List.of(LlmMessage.user("u"))), events::add);
+
+    assertThat(events).hasSize(1);
+    assertThat(events.get(0)).isInstanceOf(LlmStreamEvent.Error.class);
+    assertThat(events.get(0).toString()).contains("rate limited");
+  }
+
+  /** 测试假传输：post 与 streamPost 各自捕获请求体；streamPost 返回预设的 SSE 载荷流。 */
+  static final class FakeStreamingTransport implements LlmHttpTransport {
+    String capturedBody;
+    private final List<String> payloads;
+
+    FakeStreamingTransport(List<String> payloads) {
+      this.payloads = payloads;
+    }
+
+    @Override
+    public String post(String url, Map<String, String> headers, String jsonBody) {
+      capturedBody = jsonBody;
+      return "{}";
+    }
+
+    @Override
+    public Stream<String> streamPost(String url, Map<String, String> headers, String jsonBody) {
+      capturedBody = jsonBody;
+      return payloads.stream();
+    }
   }
 }

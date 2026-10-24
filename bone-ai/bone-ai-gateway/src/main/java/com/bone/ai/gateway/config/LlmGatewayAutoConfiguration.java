@@ -14,6 +14,7 @@ import com.bone.ai.gateway.domain.gateway.StructuredOutputValidator;
 import com.bone.ai.gateway.domain.gateway.TenantProvider;
 import com.bone.ai.gateway.domain.gateway.TenantQuotaGuard;
 import com.bone.ai.gateway.domain.service.NoopLlmMetrics;
+import com.bone.ai.gateway.infrastructure.JdkLlmTransport;
 import com.bone.ai.gateway.infrastructure.LlmHttpTransport;
 import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.ai.gateway.infrastructure.OpenAiCompatibleClient;
@@ -29,11 +30,6 @@ import com.bone.ai.gateway.infrastructure.security.JsonOutputValidator;
 import com.bone.ai.gateway.infrastructure.security.RegexPiiRedactor;
 import com.bone.core.domain.event.DomainEventPublisher;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -174,40 +170,11 @@ public class LlmGatewayAutoConfiguration {
   public LlmHttpTransport llmTransport(
       LlmGatewayProperties props,
       org.springframework.beans.factory.ObjectProvider<CircuitBreakerRegistry> registryProvider) {
-    LlmHttpTransport direct = jdkTransport(props);
+    LlmHttpTransport direct = new JdkLlmTransport(props);
     CircuitBreakerRegistry registry = registryProvider.getIfAvailable();
     if (registry != null) {
       return new ResilientLlmTransport(direct, registry);
     }
     return direct;
-  }
-
-  private static LlmHttpTransport jdkTransport(LlmGatewayProperties props) {
-    Duration timeout = props.getTimeout() != null ? props.getTimeout() : Duration.ofSeconds(30);
-    HttpClient http = HttpClient.newBuilder().connectTimeout(timeout).build();
-    return (url, headers, body) -> {
-      HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url)).timeout(timeout);
-      for (Map.Entry<String, String> h : headers.entrySet()) {
-        builder.header(h.getKey(), h.getValue());
-      }
-      builder.POST(HttpRequest.BodyPublishers.ofString(body));
-      try {
-        HttpResponse<String> resp =
-            http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() >= 500) {
-          throw new RetriableHttpException("LLM 服务端错误: HTTP " + resp.statusCode(), null);
-        }
-        if (resp.statusCode() < 200 || resp.statusCode() >= 300) {
-          throw new IllegalStateException("LLM 调用失败: HTTP " + resp.statusCode());
-        }
-        return resp.body();
-      } catch (java.io.IOException e) {
-        // 仅 InterruptedException 需要恢复中断标记；IOException 误设中断位会污染调用方线程状态
-        throw new RetriableHttpException("LLM 调用异常: " + e.getMessage(), e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new RetriableHttpException("LLM 调用被中断: " + e.getMessage(), e);
-      }
-    };
   }
 }
