@@ -1,11 +1,9 @@
 package com.bone.airag.domain.service;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * BM25 评分（词面检索路，与向量路 RRF 融合）。
@@ -72,24 +70,8 @@ public final class Bm25Scorer {
     return sum;
   }
 
-  /** 分词：字母数字串 + 中文整字 + CJK bigram（提升中文召回）。 */
+  /** 分词：委托 {@link CjkTokenizer}（与过渡嵌入共用同一口径，保证双路语料一致）。 */
   static List<String> tokenize(String s) {
-    if (s == null) {
-      return List.of();
-    }
-    List<String> tokens =
-        Arrays.stream(s.toLowerCase().split("[^a-z0-9\\u4e00-\\u9fa5]+"))
-            .filter(t -> !t.isEmpty())
-            .collect(Collectors.toList());
-    // 中文 bigram：把相邻汉字两两成组，缓解「整串匹配」召回过低
-    List<String> withBigram = new java.util.ArrayList<>(tokens);
-    for (String t : tokens) {
-      if (t.length() > 1 && t.chars().allMatch(c -> c >= 0x4e00 && c <= 0x9fa5)) {
-        for (int i = 0; i + 1 < t.length(); i++) {
-          withBigram.add(t.substring(i, i + 2));
-        }
-      }
-    }
-    return withBigram;
+    return CjkTokenizer.tokenize(s);
   }
 }

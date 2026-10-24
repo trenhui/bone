@@ -66,7 +66,8 @@ python eval_rag.py \
 | `context_precision` | 命中预期 ∩ 实际 / 实际返回数 | 返回里有多少是相关的（精准） |
 | `degradation_rate` | 发生降级的 case 占比 | 评测态下能力档位是否健康 |
 
-## 与方案 v1.3 的关系
+## 与方案 v1.4 的关系
 
-- 本脚手架是 **R5** 的可落地最小实现；阈值标定（minScore 等）以 `mean_context_recall` 不跌破门槛为准。
+- 本脚手架是 **R5** 的离线语义评测实现（面向真实语料 + 真实嵌入模型）。
+- **构建内确定性门禁**：`src/test/java/com/bone/airag/eval/RagGoldenSetEvalTest.java` 是随 `mvn clean verify` 在 CI 强制执行的中文 golden-set 机制回归门禁——每个金标准用例的预期切片必须落在 topK，任何检索链回归（引用过剔 / RRF 权重 / 分词退化 / 阈值误杀）即红灯。二者分工：**JUnit 门禁 = 每次构建的快回归；本 sidecar = 真实语料的离线语义评测**。
 - **faithfulness（忠实度）** 暂不实现：需 LLM 判定答案是否仅由上下文支撑，留作后续接网关 grounding 守卫的判定回填（见方案 §6.2）。
