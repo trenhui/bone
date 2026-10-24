@@ -62,9 +62,13 @@ public class ArchitectureTest {
   @ArchTest static final ArchRule no_aviator_dependency = BoneDddArchRules.noAviatorDependency();
 
   /**
-   * 防「缝已设计、零消费方」反模式复发（本项目已四次踩坑：RerankPort / HttpBge*Client / LlmMetrics /
-   * ApiKeyProvider）。domain 内 {@code *Port} 接口必须由模块内类实现——杜绝「设计已就位、代码零实现」（如
-   * 修复前的 ApiKeyProvider 客户端构造期固化 key、零实现零消费）。
+   * 防「缝已设计、零消费方」反模式复发（本项目已四次踩坑：RerankPort / HttpBge*Client / LlmMetrics / ApiKeyProvider）。domain
+   * 内接口（六边形端口，含 domain 根包与 domain.gateway 包）必须由模块内类实现——杜绝「设计已就位、代码零实现」（如 修复前的 ApiKeyProvider
+   * 客户端构造期固化 key、零实现零消费）。
+   *
+   * <p>匹配口径订正（2026-10-24）：原规则按 *Port 后缀匹配，但网关缝接口的命名惯例是 *Provider / *Guard / *Metrics / *Cache /
+   * *Router 等，本模块历史上从未存在过 *Port 接口——规则自引入（7b3f32ee）起匹配零类，ArchUnit 空集应失败默认语义使构建转红。现改为「domain
+   * 内全部接口」，与上述注释意图（LlmMetrics / ApiKeyProvider 均非 *Port 后缀）对齐； 无匹配类时按本文件头约定空过（allowEmptyShould）。
    */
   @ArchTest
   static final ArchRule domain_ports_must_have_module_implementation =
@@ -73,8 +77,6 @@ public class ArchitectureTest {
           .resideInAPackage("..gateway.domain..")
           .and()
           .areInterfaces()
-          .and()
-          .haveSimpleNameEndingWith("Port")
           .should(
               new ArchCondition<>("have an implementation class within the module") {
                 @Override
@@ -93,12 +95,15 @@ public class ArchitectureTest {
                           implemented,
                           port.getName() + " has no implementation class within module"));
                 }
-              });
+              })
+          .allowEmptyShould(true);
 
   /**
-   * 第二道闸：domain {@code *Port} 必须被 application / infrastructure / config 层实际依赖（DI 注入属依赖而非
-   * access，故用 {@code getDirectDependenciesToSelf} 而非 {@code beAccessed}）。拦截「实现存在但从未接线」的死缝
-   * （如修复前的 RerankPort：NoOp 实现就位、应用层不注入）。
+   * 第二道闸：domain 接口（六边形端口）必须被 application / infrastructure / config 层实际依赖（DI 注入属依赖而非 access，故用
+   * {@code getDirectDependenciesToSelf} 而非 {@code beAccessed}）。拦截「实现存在但从未接线」的死缝 （如修复前的
+   * RerankPort：NoOp 实现就位、应用层不注入）。
+   *
+   * <p>匹配口径同上一道闸：网关缝接口无 {@code *Port} 后缀，故按 domain 内全部接口匹配；无匹配类时按本文件头约定空过。
    */
   @ArchTest
   static final ArchRule domain_ports_must_be_consumed =
@@ -107,8 +112,6 @@ public class ArchitectureTest {
           .resideInAPackage("..gateway.domain..")
           .and()
           .areInterfaces()
-          .and()
-          .haveSimpleNameEndingWith("Port")
           .should(
               new ArchCondition<>("be consumed by an application/infrastructure/config class") {
                 @Override
@@ -120,7 +123,8 @@ public class ArchitectureTest {
                               d ->
                                   d.getOriginClass()
                                       .getPackageName()
-                                      .matches(".*\\.gateway\\.(application|infrastructure|config).*"));
+                                      .matches(
+                                          ".*\\.gateway\\.(application|infrastructure|config).*"));
                   events.add(
                       new SimpleConditionEvent(
                           port,
@@ -128,5 +132,6 @@ public class ArchitectureTest {
                           port.getName()
                               + " is not depended on by any application/infrastructure/config class"));
                 }
-              });
+              })
+          .allowEmptyShould(true);
 }
