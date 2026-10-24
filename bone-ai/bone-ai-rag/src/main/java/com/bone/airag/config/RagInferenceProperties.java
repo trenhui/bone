@@ -60,6 +60,15 @@ public class RagInferenceProperties {
    */
   private long slowRetrieveMs = 500;
 
+  /**
+   * 上下文 token 预算（{@code bone.ai.rag.context-token-budget}）：进入提示词的上下文总量上限，超出按最终分从高到低截断。
+   *
+   * <p>默认 0 = 不限制（由调用方/编排层兜底）。它与网关 LLM {@code maxTokens}、系统提示词预留共同构成端到端上下文预算
+   * ——只配那一侧，另一侧无界增长时仍会超窗。截断不是静默行为：一旦发生，回答结果里带 {@code CONTEXT_TRUNCATED}
+   * 降级痕迹，让「答不全」可归因。
+   */
+  private int contextTokenBudget = 0;
+
   @Getter
   @Setter
   public static class Embedding {

@@ -1,15 +1,19 @@
 package com.bone.airag.config;
 
+import com.bone.airag.application.RagAnswerService;
 import com.bone.airag.application.RagApplicationService;
+import com.bone.airag.domain.gateway.AnswerGenerationPort;
 import com.bone.airag.domain.gateway.EmbeddingPort;
 import com.bone.airag.domain.gateway.RagAclPort;
 import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.gateway.RerankPort;
 import com.bone.airag.domain.gateway.TenantProvider;
 import com.bone.airag.domain.repository.ChunkRepository;
+import com.bone.airag.domain.service.GroundedPromptBuilder;
 import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
+import com.bone.airag.domain.service.UnavailableAnswerGeneration;
 import com.bone.airag.infrastructure.embedding.HttpBgeEmbeddingClient;
 import com.bone.airag.infrastructure.embedding.TransitionalHashEmbedding;
 import com.bone.airag.infrastructure.event.LoggingRagEventSink;
@@ -126,6 +130,39 @@ public class RagAutoConfiguration {
     return new GroundingGuard(
         props.getGrounding().getMinSupportRatio(),
         props.getGrounding().getMaxUnsupportedRatio());
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public GroundedPromptBuilder groundedPromptBuilder(RagInferenceProperties props) {
+    return new GroundedPromptBuilder(props.getContextTokenBudget());
+  }
+
+  /**
+   * 答案生成端口（默认显式不可用）：接入方在组合根以 {@code @Bean AnswerGenerationPort} 覆盖为网关适配器。
+   *
+   * <p>默认实现抛 {@code AI_RAG_ANSWER_GENERATION_UNAVAILABLE} 而非返回空串——「忘了接生成」必须在首次调用就暴露，
+   * 不能静默变成「模型答了但没内容」。适配示例见 {@link AnswerGenerationPort} 注释。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public AnswerGenerationPort answerGenerationPort() {
+    return new UnavailableAnswerGeneration();
+  }
+
+  /**
+   * RAG 回答闭环（检索 → 接地提示词 → 生成 → 接地校验）。
+   *
+   * <p>依赖 {@code ragService} 存在（即已接入切片仓储）；未接入持久化的上下文不装配本闭环。
+   */
+  @Bean
+  @ConditionalOnBean(name = "ragService")
+  @ConditionalOnMissingBean
+  public RagAnswerService ragAnswerService(
+      RagApplicationService ragService,
+      AnswerGenerationPort answerGenerationPort,
+      GroundedPromptBuilder groundedPromptBuilder) {
+    return new RagAnswerService(ragService, answerGenerationPort, groundedPromptBuilder);
   }
 
   @Bean

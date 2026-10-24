@@ -54,4 +54,12 @@ public final class AiRagErrorCodes {
    * 不要重试——重试只会生成另一段同样无支撑的内容。
    */
   public static final String GROUNDING_FAILED = "AI_RAG_GROUNDING_FAILED";
+
+  /**
+   * 答案生成服务未接入（503；{@code UnavailableAnswerGeneration} 默认实现抛出）。
+   *
+   * <p>不是「模型报错」，而是「根本没人实现生成端口」——宁可启动后首次调用就显式失败，也不要静默返回空串让故障混进
+   * 业务结果。接入方在组合根以 {@code @Bean AnswerGenerationPort} 覆盖后本码不再出现。
+   */
+  public static final String ANSWER_GENERATION_UNAVAILABLE = "AI_RAG_ANSWER_GENERATION_UNAVAILABLE";
 }

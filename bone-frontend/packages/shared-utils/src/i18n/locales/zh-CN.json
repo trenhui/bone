@@ -45,6 +45,7 @@
     "AI_RAG_SCOPE_OVER_LIMIT": "检索作用域数据量超限，请收窄范围或调整阈值后重试",
     "AI_RAG_DOC_FORBIDDEN": "文档不在当前用户可见范围内，拒绝访问",
     "AI_RAG_GROUNDING_FAILED": "生成答案未能溯源到检索出处，已拒绝作答",
+    "AI_RAG_ANSWER_GENERATION_UNAVAILABLE": "答案生成服务未接入，请稍后重试或联系管理员",
     "AI_APP_TENANT_CONTEXT_MISSING": "租户上下文缺失，请经鉴权链路访问",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "证据链落盘被拒绝：租户上下文缺失",
     "AI_TRACE_NOT_FOUND": "证据链快照不存在",

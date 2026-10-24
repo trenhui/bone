@@ -51,6 +51,7 @@
     "AI_RAG_SCOPE_OVER_LIMIT": "Retrieval scope exceeds the size limit; please narrow the scope or raise the threshold and retry",
     "AI_RAG_DOC_FORBIDDEN": "Document is outside the current user's visible scope; access denied",
     "AI_RAG_GROUNDING_FAILED": "Generated answer could not be traced to retrieved sources; answer refused",
+    "AI_RAG_ANSWER_GENERATION_UNAVAILABLE": "Answer generation service is not connected; please retry later or contact your administrator",
     "AI_APP_TENANT_CONTEXT_MISSING": "Tenant context missing; please access via the authenticated chain",
     "AI_TRACE_TENANT_CONTEXT_MISSING": "Evidence persistence refused: tenant context missing",
     "AI_TRACE_NOT_FOUND": "Evidence snapshot not found",
