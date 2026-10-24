@@ -132,6 +132,38 @@ public class StudioWebExceptionHandler {
     return problem(HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, "请求参数不合法");
   }
 
+  /**
+   * 请求媒体类型不被支持 → 415。
+   *
+   * <p>插件上传端点声明了 {@code consumes = MULTIPART_FORM_DATA_VALUE}；调用方若发 {@code
+   * application/json}，Spring 在路由匹配阶段抛 {@code HttpMediaTypeNotSupportedException}。 它不继承 {@code
+   * HttpMessageNotReadableException}，故不会被上方 {@link #badRequest} 接管， 只能落到 {@link #internal} 兜底成 500，
+   * 还会以 Spring 默认错误体（{@code {"timestamp","status","error","path"}}）返回， 绕过本仓统一的 {@code ApiResponse}
+   * 信封（HC-003）。这里显式补齐，保证错误响应同样带 {@code errorCode}。
+   */
+  @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> mediaTypeNotSupported(
+      org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+    log.warn("[API] 不支持的请求媒体类型: {}", ex.getContentType());
+    return problem(
+        HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+        CommonErrorCodes.UNSUPPORTED_MEDIA_TYPE,
+        "请求媒体类型不被支持");
+  }
+
+  /**
+   * multipart 解析失败（请求不是 multipart，但端点声明了 {@code MultipartFile} 参数）→ 400。
+   *
+   * <p>与 415 覆盖同一类误用的两个阶段：415 在路由匹配阶段，本异常在参数绑定阶段。 均属客户端请求形态错误，不得兜底成 500。
+   */
+  @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> multipartInvalid(
+      org.springframework.web.multipart.MultipartException ex) {
+    log.warn("[API] multipart 请求解析失败: {}", ex.getMessage());
+    return problem(
+        HttpStatus.BAD_REQUEST, CommonErrorCodes.VALIDATION_FAILED, "请求不是合法的 multipart 请求");
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> internal(Exception ex) {
     log.error("[API] unhandled traceId={}", MDC.get(StudioRequestContextFilter.TRACE_ID), ex);

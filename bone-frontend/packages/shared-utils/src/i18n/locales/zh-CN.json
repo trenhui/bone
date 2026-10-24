@@ -90,6 +90,7 @@
     "COMMON_NOT_IMPLEMENTED": "能力未实现",
     "COMMON_RATE_LIMITED": "请求过于频繁，请稍后重试",
     "COMMON_UNAUTHORIZED": "未登录或登录已过期",
+    "COMMON_UNSUPPORTED_MEDIA_TYPE": "请求的 Content-Type 不被支持，上传接口请使用 multipart/form-data",
     "COMMON_VALIDATION_FAILED": "参数校验失败：{{errors}}",
     "EXT_DEPLOY_STATE_INVALID": "当前部署状态不允许该操作",
     "EXT_EXT_POINT_NOT_FOUND": "关联扩展点不存在",
