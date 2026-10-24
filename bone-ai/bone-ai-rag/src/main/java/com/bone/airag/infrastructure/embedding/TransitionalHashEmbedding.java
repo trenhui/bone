@@ -1,6 +1,8 @@
 package com.bone.airag.infrastructure.embedding;
 
 import com.bone.airag.domain.gateway.EmbeddingPort;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 过渡嵌入实现：基于词哈希的确定性伪向量（L2 归一化）。
@@ -40,5 +42,15 @@ public class TransitionalHashEmbedding implements EmbeddingPort {
       }
     }
     return v;
+  }
+
+  /** 过渡实现：逐条循环（哈希本无批量语义）；ingest 仍走批接口以统一调用面。 */
+  @Override
+  public List<float[]> embedBatch(List<String> texts) {
+    List<float[]> out = new ArrayList<>(texts.size());
+    for (String t : texts) {
+      out.add(embed(t));
+    }
+    return out;
   }
 }

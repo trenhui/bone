@@ -43,6 +43,22 @@ public class RagInferenceProperties {
    */
   private double mmrLambda = 0.0;
 
+  /**
+   * 容量预警阈值（切片数）：作用域切片数超过此值（且未触 {@code maxScan}）即发 {@code SCOPE_NEAR_LIMIT} 事件。
+   *
+   * <p>过渡态每次检索全量载入内存打分，切片数到几千量级延迟已悄然劣化却无信号。默认 2000 作为「撞上限前的可观测预警」
+   * ——引导运维下调 {@code max-scan} 或推进 R4（pgvector + ANN 向量索引化）。<=0 关闭预警。
+   */
+  private int warnScanThreshold = 2_000;
+
+  /**
+   * 慢检索阈值（毫秒）：单次 retrieve 墙钟超过此值即发 {@code RETRIEVE_SLOW} 事件，供落 trace / 接 P99 告警。
+   *
+   * <p>规模瓶颈的抓手——全量内存 BM25 + 余弦下切片数增长会线性推高延迟。默认 500ms 作首结果/单查询延迟经验水位，
+   * 运维可按实测 P99 校准。设为 0 则任意正耗时都告警（仅测试用）。
+   */
+  private long slowRetrieveMs = 500;
+
   @Getter
   @Setter
   public static class Embedding {

@@ -129,6 +129,8 @@ public class RagAutoConfiguration {
         ragDocAcl,
         ragEventSink,
         props.getCandidatePool(),
-        props.getMmrLambda());
+        props.getMmrLambda(),
+        props.getWarnScanThreshold(),
+        props.getSlowRetrieveMs());
   }
 }

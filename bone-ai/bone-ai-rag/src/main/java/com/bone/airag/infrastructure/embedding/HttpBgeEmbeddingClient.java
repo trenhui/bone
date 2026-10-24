@@ -12,7 +12,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,26 @@ public class HttpBgeEmbeddingClient implements EmbeddingPort {
     return parseFirstEmbedding(post(body));
   }
 
+  /**
+   * 批量嵌入（TEI / infinity 兼容）：{@code inputs} 传数组，响应为 {@code [[...],[...],...]}。
+   *
+   * <p>相比逐条 {@code embed}，一次往返拿回全部向量，大语料 ingest 吞吐显著更高。批返回数量必须与输入数量一致，
+   * 否则调用方（{@code RagApplicationService.ingest}）fail-closed 抛错。
+   */
+  @Override
+  public List<float[]> embedBatch(List<String> texts) {
+    String body;
+    try {
+      Map<String, Object> req = new LinkedHashMap<>();
+      req.put("inputs", texts == null ? List.of("") : texts);
+      req.put("model", model);
+      body = MAPPER.writeValueAsString(req);
+    } catch (IOException e) {
+      throw new BizException(500, "嵌入批量请求序列化失败", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+    }
+    return parseEmbeddings(post(body));
+  }
+
   private String post(String body) {
     try {
       HttpRequest request =
@@ -106,6 +128,32 @@ public class HttpBgeEmbeddingClient implements EmbeddingPort {
       throw e;
     } catch (IOException e) {
       throw new BizException(502, "嵌入响应解析失败", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+    }
+  }
+
+  /** 解析 {@code [[...],[...],...]} 批量响应为向量列表；结构非法或数量不符抛 {@link #EMBEDDING_PROVIDER_FAIL}。 */
+  public static List<float[]> parseEmbeddings(String json) {
+    try {
+      JsonNode root = MAPPER.readTree(json);
+      if (!root.isArray()) {
+        throw new BizException(502, "嵌入批量响应结构非法（缺少外层数组）", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+      }
+      List<float[]> out = new ArrayList<>(root.size());
+      for (JsonNode node : root) {
+        if (!node.isArray()) {
+          throw new BizException(502, "嵌入批量响应结构非法（内层非向量数组）", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+        }
+        float[] v = new float[node.size()];
+        for (int i = 0; i < node.size(); i++) {
+          v[i] = (float) node.get(i).asDouble();
+        }
+        out.add(v);
+      }
+      return out;
+    } catch (BizException e) {
+      throw e;
+    } catch (IOException e) {
+      throw new BizException(502, "嵌入批量响应解析失败", AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
     }
   }
 

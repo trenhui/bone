@@ -67,6 +67,22 @@ public class RagApplicationService {
   /** 事件码（非降级，数据卫生）：引用强制前置剔除无出处切片。 */
   public static final String EVENT_DROP_INVALID_CHUNKS = "DROP_INVALID_CHUNKS";
 
+  /**
+   * 事件码（容量预警，非 fail-closed）：作用域切片数已超过 {@code warnScanThreshold} 但仍未触 maxScan。
+   *
+   * <p>过渡态每次检索全量载入内存打分——切片数在几千量级时延迟已悄然劣化却无信号。该事件在撞上限前先给可观测
+   * 预警，引导运维下调 {@code max-scan} 或推进 R4（pgvector + ANN 索引化），而非等 OOM/超时爆发。
+   */
+  public static final String EVENT_SCOPE_NEAR_LIMIT = "SCOPE_NEAR_LIMIT";
+
+  /**
+   * 事件码（性能预警）：单次 retrieve 墙钟耗时超过 {@code slowRetrieveMs}。
+   *
+   * <p> diagnosing 规模瓶颈的抓手——全量内存 BM25 + 余弦下，切片数增长会线性推高延迟；该事件直接暴露慢查询，
+   * 供接入方落 trace / 接 P99 告警（与 {@code SCOPE_NEAR_LIMIT} 联动定位「是容量还是别的」）。
+   */
+  public static final String EVENT_RETRIEVE_SLOW = "RETRIEVE_SLOW";
+
   private final ChunkRepository chunkRepository;
   private final EmbeddingPort embeddingPort;
   private final RerankPort rerankPort;
@@ -76,6 +92,12 @@ public class RagApplicationService {
   private final int candidatePool;
   private final double mmrLambda;
 
+  /** 容量预警阈值：作用域切片数超过此值（且未触 maxScan）即发 {@link #EVENT_SCOPE_NEAR_LIMIT}。<=0 关闭。 */
+  private final int warnScanThreshold;
+
+  /** 慢检索阈值（毫秒）：单次 retrieve 墙钟超过此值即发 {@link #EVENT_RETRIEVE_SLOW}。负数关闭（默认测试 -1）；0 = 任意正耗时都告警（极敏感/调试）；正数 = 生产水位（如 500）。 */
+  private final long slowRetrieveMs;
+
   public RagApplicationService(
       ChunkRepository chunkRepository,
       EmbeddingPort embeddingPort,
@@ -84,7 +106,9 @@ public class RagApplicationService {
       RagAclPort aclPort,
       RagEventSink eventSink,
       int candidatePool,
-      double mmrLambda) {
+      double mmrLambda,
+      int warnScanThreshold,
+      long slowRetrieveMs) {
     this.chunkRepository = chunkRepository;
     this.embeddingPort = embeddingPort;
     this.rerankPort = rerankPort;
@@ -93,6 +117,8 @@ public class RagApplicationService {
     this.eventSink = eventSink;
     this.candidatePool = candidatePool <= 0 ? DEFAULT_CANDIDATE_POOL : candidatePool;
     this.mmrLambda = mmrLambda < 0 ? 0.0 : mmrLambda;
+    this.warnScanThreshold = warnScanThreshold;
+    this.slowRetrieveMs = slowRetrieveMs;
   }
 
   /**
@@ -104,6 +130,7 @@ public class RagApplicationService {
   public record RagRetrieveOutcome(List<RagResult> results, List<String> degradations) {}
 
   public RagRetrieveOutcome retrieve(RagQuery query) {
+    long startNanos = System.nanoTime();
     Long tenantId = tenantProvider.currentTenantId();
 
     // 文档级 ACL（fail-closed）：默认仅租户硬隔离；接入方提供受限可见集合后，无 ACL 归属的 doc 不可见
@@ -146,6 +173,20 @@ public class RagApplicationService {
               + query.maxScan()
               + "），请收窄 doc_scope 或调整 bone.ai.rag.max-scan",
           AiRagErrorCodes.SCOPE_OVER_LIMIT);
+    }
+
+    // 容量预警（非 fail-closed）：撞 maxScan 前先给可观测信号，引导下调阈值或推进 R4 索引化
+    if (warnScanThreshold > 0 && chunks.size() > warnScanThreshold) {
+      eventSink.record(
+          new RagEvent(
+              EVENT_SCOPE_NEAR_LIMIT,
+              "tenant="
+                  + tenantId
+                  + ", chunks="
+                  + chunks.size()
+                  + " > warnScanThreshold="
+                  + warnScanThreshold
+                  + "（建议下调 bone.ai.rag.max-scan 或推进 R4 向量索引化）"));
     }
 
     // 引用强制前置：无出处切片在打分前剔除（不占 rerank 名额、不污染 BM25 语料统计）
@@ -305,14 +346,34 @@ public class RagApplicationService {
               c.getSectionPath(),
               c.getText()));
     }
+    // 性能预警（非 fail-closed）：单次检索墙钟超阈值即发事件，供落 trace / 接 P99 告警
+    long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+    if (slowRetrieveMs >= 0 && elapsedMs > slowRetrieveMs) {
+      eventSink.record(
+          new RagEvent(
+              EVENT_RETRIEVE_SLOW,
+              "tenant="
+                  + tenantId
+                  + ", elapsedMs="
+                  + elapsedMs
+                  + " > slowRetrieveMs="
+                  + slowRetrieveMs
+                  + ", chunks="
+                  + chunks.size()
+                  + "（全量内存打分瓶颈，建议推进 R4 向量索引化）"));
+    }
     return new RagRetrieveOutcome(results, List.copyOf(degradations));
   }
 
   /**
-   * 入库一个文档切片集合（RAG 写入路径：版本幂等判定 → 嵌入 → 持久化）。
+   * 入库一个文档切片集合（RAG 写入路径：版本幂等判定 → 批量嵌入 → 失效旧切片 → 持久化）。
    *
    * <p>幂等语义（{@code doc_version} 批键）：同版本且切片数一致 ⇒ 跳过（文档版本事件语义：同版本内容不变）； 异版本或残缺（如上次崩溃半截）⇒
-   * 软删该文档全部旧切片后重建。写入路径 fail-closed：嵌入失败直接上抛，不留半截新版本（重入时切片数不符会触发重建自愈）。
+   * 软删该文档全部旧切片后重建。写入路径 fail-closed：<b>先批量嵌入再删旧存新</b>——嵌入失败直接上抛，旧版本切片保持完好（重入时
+   * 切片数不符触发重建自愈），不会留下半截新版本。
+   *
+   * <p>嵌入吞吐：切片向量经 {@link EmbeddingPort#embedBatch(List)} 一次性批量推理（TEI / infinity 数组输入），
+   * 相比逐条 {@code embed} 显著减少推理往返、提升 GPU 利用率（大语料入库关键路径）。
    */
   public void ingest(Long tenantId, String docId, String docVersion, List<RagIngestSegment> segments) {
     List<RagChunk> existing = chunkRepository.findByTenantAndDoc(tenantId, docId);
@@ -329,15 +390,24 @@ public class RagApplicationService {
           existing.size());
       return;
     }
+    // 先批量嵌入（fail-closed：失败上抛，旧版本不动）
+    String ver = embeddingPort.version();
+    List<float[]> vectors = embeddingPort.embedBatch(segments.stream().map(RagIngestSegment::text).toList());
+    if (vectors.size() != segments.size()) {
+      throw new BizException(
+          500,
+          "嵌入批返回数量与切片数不符（" + vectors.size() + " != " + segments.size() + "）",
+          AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL);
+    }
+    // 再失效旧切片（幂等批键不符时）
     if (!existing.isEmpty()) {
       List<Long> staleIds = existing.stream().map(RagChunk::getId).collect(Collectors.toList());
       chunkRepository.deleteByIds(staleIds);
       log.info("RAG ingest 失效旧切片：doc={}, tenant={}, stale={}", docId, tenantId, staleIds.size());
     }
-    String ver = embeddingPort.version();
     int n = 0;
-    for (RagIngestSegment seg : segments) {
-      float[] vec = embeddingPort.embed(seg.text());
+    for (int i = 0; i < segments.size(); i++) {
+      RagIngestSegment seg = segments.get(i);
       RagChunk chunk =
           RagChunk.of(
               null,
@@ -346,7 +416,7 @@ public class RagApplicationService {
               docVersion,
               seg.sectionPath(),
               seg.text(),
-              vec,
+              vectors.get(i),
               ver,
               seg.clauseRef(),
               seg.spanStart(),

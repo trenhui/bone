@@ -1,8 +1,9 @@
 # BONE-AI RAG 能力方案（独立版）
 
-> **版本**：v1.2　**日期**：2026-10-24（诊断驱动优化）　**归口**：平台架构组
+> **版本**：v1.3　**日期**：2026-10-24（诊断+规模止血落地）　**归口**：平台架构组
 > **v1.1 变更（基于 2026 业界最佳实践二次优化）**：① 修正测试口径（ArchUnit 12 条 + 单测 31 例 = 43 校验项，原「43 绿」表述不精确）；② §5.1 增补检索双路**并发**优化点（当前顺序执行）；③ §6 新增「间接提示注入防护」专节 + 锐化「无依据拒答」契约 + §6.2 RAG→生成闭环接线细化（结合已落地的网关流式 / 强制引用 / 内容安全 / PII 脱敏）；④ §9 增补**细粒度 OTel span**（每阶段时延）；⑤ §10 增补**上下文 token 预算**契约；⑥ §11 对齐矩阵补 B14–B17、路线图补 R7/R8；⑦ §12 生产就绪清单同步刷新。
 > **v1.2 变更（诊断复核驱动的优化，见《方案诊断复核》同源补充）**：① **[已落地代码]** 修复 `minScore` 量纲漂移高危项——`minScore` 仅当分数为 rerank 量纲（rerank 正常且未降级）时生效，rerank 降级/未配置时跳过阈值，杜绝事故期误杀全部结果（commit 见下）；② §6.2 明确「强制引用接地」在生成侧仍需**网关新增 grounding 校验**（当前网关无按 `RagResult` 锚点校验生成接地的能力，标注为目标态）；③ §7 补**写入侧数据保护**（入库明文 PII 风险）；④ §10 `max-scan` 行补推荐水位 + P99 延迟告警建议、优先级上提；⑤ §10 `min-score` 行补量纲安全说明；⑥ §11 矩阵 B7 重分类为「❌ 缺口/过渡」、B10 提升语义缓存优先级、新增 B18 嵌入版本轮换策略、R5 评测前置；⑦ §12 生产就绪清单刷新；⑧ §13 防回归决策补 #9（量纲安全）/#10（接地守卫+写入侧保护+评测前置）。
+> **v1.3 变更（「企业复杂场景胜任度」诊断驱动，见《RAG方案诊断-企业复杂场景胜任度-2026-10-24》）**：**聚焦落地不依赖外部服务、低风险、高信号的代码止血 + 评测前置脚手架**，真实 P0 项（pgvector R4 / 文档中心 ACL 接线 B / 网关 grounding 守卫 C）维持目标态（见 §11 路线图）。① **[已落地代码] 规模止血可观测**：新增 `SCOPE_NEAR_LIMIT`（作用域切片数超 `warn-scan-threshold` 未触 `max-scan` 即预警）+ `RETRIEVE_SLOW`（单次检索墙钟超 `slow-retrieve-ms` 即预警）两事件码，撞上限前先给信号（引导下调 `max-scan` 或推进 R4 索引化），而非等 OOM/超时爆发；② **[已落地代码] ingest 批量嵌入吞吐**：`EmbeddingPort` 新增 `embedBatch(List)`（默认逐条循环，真共享推理覆写为数组输入），`ingest` 改为「先批嵌入再失效旧切片」——fail-closed 顺序更稳（嵌入失败旧版本不动）+ 大语料入库往返与 GPU 利用率显著优化；③ **[脚手架] R5 评测前置落地为独立 sidecar**：`eval/eval_rag.py` 读 golden set + 实际检索结果 JSON，算 `context_recall`/`context_precision`/`degradation_rate`，含 `recall-gate` 门禁（CI 化说明见 `eval/README.md`），`minScore`/`MMR`/`candidate-pool` 阈值标定不再裸奔上线；④ §9 补两事件码、§10 补 `warn-scan-threshold`(2000)/`slow-retrieve-ms`(500) 两配置项、§11 矩阵补 B19（批嵌入 ✅）、§12/§13 同步刷新。
 > **配套**：《BONE-AI 能力中台整体方案》（v1.13）/《详细技术方案》（v1.8）/《接入指南》（v1.6）
 > **方法**：以 `bone-ai/bone-ai-rag` 模块源码 + `bone-ai-app` REST 面真源为基线，对标 2026 业界 RAG 最佳实践（Modular RAG / 混合检索 + RRF + cross-encoder 精排 / 强制引用接地 / 元数据隔离 / 可观测降级），沉淀为独立可评审方案。
 > **定位说明**：本文是 RAG 专项的独立方案文档（此前 RAG 散见于总案 §4.5 与详设 §2.6）。本文取代上述散落描述，作为 RAG 能力的权威基线；总案/详设相关段落保留交叉引用即可。
@@ -253,6 +254,7 @@ query
 
 - **事件下沉**：`RagEventSink` 端口 + `RagEvent(type, detail)`；默认 `LoggingRagEventSink` 结构化 WARN（保持既有可观测性不降级）。
 - **降级 / 数据卫生痕迹**：`EMBEDDING_DEGRADED` / `RERANK_DEGRADED` / `DROP_INVALID_CHUNKS`，既进事件通道，也透出到响应 `degradations`——接入方/评测管线可直接消费，不必翻服务端日志。
+- **规模止血预警（v1.3 落地）**：`SCOPE_NEAR_LIMIT`（作用域切片数 > `warn-scan-threshold` 但未触 `max-scan`）+ `RETRIEVE_SLOW`（单次检索墙钟 > `slow-retrieve-ms`），只进事件通道、不进 `degradations`（非能力降级，是容量/性能信号）。过渡态每次检索全量载入内存打分，切片数增长会线性推高延迟——两事件在撞上限/OOM 前先给可观测信号，与 P99 延迟告警联动即可定位「是容量还是别的」；接入方据以决定下调 `max-scan` 或推进 R4 索引化。
 - **目标态**：接入方以 `@Bean` 覆盖 `RagEventSink` 为 bone-ai-trace 落库 + 告警适配，检索链零改动（L3）。
 - **OTel `gen_ai.*` 打点**：仍为 L3 依赖项（需 Micrometer，走 CVE/SBOM 门禁）。
 - **细粒度检索链路 span（目标态，R6 子项）**：在 `RagEventSink` 落库基础上，建议为检索链每个阶段打**独立 span**（父 span `rag.retrieve`，子 span `rag.acl` / `rag.capacity_guard` / `rag.embed` / `rag.bm25` / `rag.rrf` / `rag.rerank` / `rag.mmr`），记录各阶段墙钟时延与候选数。价值：① 性能排查（哪段是首结果延迟瓶颈，尤指 §5.1 并发优化前的 `rag.embed`）；② RAGAS 评测时按阶段归因（召回不足在 embed/rerank，而非生成）；③ `degradations` 与 span 事件关联，告警可定位到具体降级阶段。span 命名与 `gen_ai.*` 语义约定映射表版本化，不硬编码常量。
@@ -273,6 +275,8 @@ query
 | `candidate-pool` | 30 | RRF 后送精排候选数（≥topK） |
 | `min-score` | 0.0 | 精排后分数阈值（默认不启用）。**量纲安全（v1.2 修复）**：该阈值按 rerank 量纲标定；仅当分数为 rerank 量纲（rerank 正常且未降级）时生效，rerank 降级/未配置时自动跳过阈值，避免事故期误杀全部结果。故运营配 `min-score` 时应基于 rerank 分（0~1/对数）标定，且无需为降级态另设阈值 |
 | `max-scan` | 10000 | 容量护栏（fail-closed）。**调优建议（v1.2）**：10000 是「不可行点」才触发的上限，阈值以下每次查询仍全量载入内存 + BM25 统计 + 余弦，几千条时延迟已劣化却无告警；建议下调到实测安全水位（如 2000~5000）并接 **P99 检索延迟告警**；R4（pgvector/ANN）优先级应上提，不宜等「想象规模」（见 §11） |
+| `warn-scan-threshold` | 2000 | **容量预警（v1.3）**：作用域切片数超过此值（且未触 `max-scan`）即发 `SCOPE_NEAR_LIMIT` 事件。撞上限前的可观测预警（引导下调 `max-scan` 或推进 R4），非 fail-closed。≤0 关闭 |
+| `slow-retrieve-ms` | 500 | **慢检索预警（v1.3）**：单次 retrieve 墙钟超过此值即发 `RETRIEVE_SLOW` 事件，供落 trace / 接 P99 告警。负数关闭；0 = 任意正耗时告警（调试）；按实测 P99 校准，默认 500ms 作首结果/单查询延迟经验水位 |
 | `mmr-lambda` | 0.0 | 多样性权重（λ≤0 关闭；λ∈(0,1) 生效；开启时精排 3 倍扩样） |
 | `context-token-budget` | 0（不限制） | **RAG→LLM 上下文预算**：送精排/选取后，累计切片 token 不得超过该值；超限时按最终分从高到低截断（保证高相关切片优先入上下文）。0 = 不限制（由调用方/编排层兜底）。需与网关 LLM `maxTokens` + 系统提示词预留共同构成「总上下文预算」 |
 
@@ -294,7 +298,7 @@ query
 | B5 | 切分策略（层级 / 重叠 / 调优） | 条款级 + 语义段二次切分 | ⚠️ 未层级化 | R3：parent-child / sentence-window |
 | B6 | 查询改写 / 分解（multi-query / HyDE / step-back） | **未落地**（决策：批二按评测回流启动，不建零消费方 machinery） | ❌ 缺口 | R2：编排侧多查询合并预留接线 |
 | B7 | 专用向量库 + ANN（HNSW） | 过渡 MySQL CSV + 应用层余弦（离「专用向量库 + ANN」很远） | ❌ 缺口/过渡 | R4：pgvector 终局 + ANN 索引（优先级上提，不等「想象规模」） |
-| B8 | 评测体系（RAGAS：faithfulness / context precision-recall / answer relevancy） | Python sidecar 预留，未建 CI 门禁 | ❌ 缺口 | R5：评测集 + 指标字典 + CI 负向探针 |
+| B8 | 评测体系（RAGAS：faithfulness / context precision-recall / answer relevancy） | `eval/eval_rag.py` sidecar 脚手架落地（golden vs actual → context recall/precision/degradation_rate + recall-gate），faithfulness 留 LLM 接入点；未接 CI | ⚠️ 脚手架（v1.3） | R5：接 CI 负向探针 + faithfulness 回填 |
 | B9 | RAG 接入生成编排（检索结果约束 LLM） | R 已成型，G 接线未接 gateway/orchestration | ❌ 缺口 | R1（见下）：编排检索接地闭环 |
 | B10 | 语义缓存 / 查询去重 | 未落地 | ❌ 缺口（**优先级上提**：保险条款问答重复率高，检索+rerank 是主要延迟/成本源） | R9：租户级语义缓存（embedding 相似度命中 + TTL） |
 | B11 | 多样性控制（MMR） | `MmrSelector` 选取式，默认关，按评测校准 | ✅ 达成 | — |
@@ -305,14 +309,15 @@ query
 | B16 | 细粒度检索链路 span（每阶段时延） | 仅 `RagEventSink` 事件级；无阶段级 span | ⚠️ 待 R6 子项 | R6：阶段 span + `gen_ai.*` 映射 |
 | B17 | 上下文 token 预算（RAG→LLM 上下文窗口自律） | 未落地（无界 topK×块长） | ❌ 缺口 | R8：随 R1 接线补 `context-token-budget` |
 | B18 | 嵌入模型版本轮换策略 | 换模型时旧向量静默退出向量路 → 全回落 BM25，质量断崖且无主动重建 | ❌ 缺口 | R10：轮换期双写新旧向量 + 重建作业 + 质量监控 |
+| B19 | ingest 批量嵌入吞吐（大语料入库关键路径） | `EmbeddingPort.embedBatch(List)` 落地：默认逐条循环，`HttpBgeEmbeddingClient` 覆写为 TEI/infinity 数组输入；`ingest` 先批嵌入再失效旧切片（fail-closed 顺序更稳） | ✅ 达成（v1.3） | 随 R4 可调批大小 / 背压 |
 
 ### 路线图（按依赖性排序）
 
 - **R1（接 G，最高优先）**：把 `bone-ai-rag` 接入 `bone-ai-orchestration` 生成编排 + `bone-ai-gateway` 门面（接线形态见 §6.2），形成「检索 → 数据围栏注入 → 网关流式 + 强制引用接地 + 内容安全/PII 兜底」闭环；同步完成文档中心 ACL（`RagAclPort`）接入，消除同租户跨文档越权面，并**一并闭环 B15 间接注入纵深防护**。其中「强制引用接地」须由 **gateway 新增 grounding 校验守卫**（生成后校验每结论可回溯到检索 span，否则拒答/标低置信，见 §6.2 落地态澄清），把「无出处不得生成」从检索侧延伸到生成侧。这是「RAG 真正可用」的标志。
 - **R2（召回提升）**：查询改写/分解（multi-query / HyDE / step-back），按评测集回流标定收益后启动；接线点预留于编排侧。
 - **R3（切分质量）**：层级切分（parent-child / sentence-window），兼顾小块召回与大块上下文；可结合**上下文嵌入（late chunking）**——整文档嵌入后按块池化，缓解小块脱离上下文的语义漂移（需嵌入模型支持长上下文）。
-- **R4（规模与性能，优先级上提）**：pgvector 独立实例 + ANN（HNSW）索引；过渡态 `maxScan` 护栏阈值（建议下调至实测安全水位 + P99 延迟告警）即迁移触发信号。不为想象规模预付 ES 第三套检索栈的运维税。
-- **R5（质量闭环，前置）**：**评测须前置**——在标定 `minScore`/MMR/候选池等任何阈值之前，先落地 golden set + 指标字典 + CI 负向探针（rerank 越权、无依据路径、间接注入命中、grounding 失守）。RAGAS 为 Python 生态，建议以 **eval sidecar**（独立 Python 服务/CI job）承载，Java 侧暴露 `RagRetrieveOutcome` + 生成响应供其消费，避免把 Python 评测栈塞进 Java 构建。没有评测，所有「按评测校准」都是空话。
+- **R4（规模与性能，优先级上提）**：pgvector 独立实例 + ANN（HNSW）索引；过渡态 `maxScan` 护栏阈值（建议下调至实测安全水位 + P99 延迟告警）即迁移触发信号。不为想象规模预付 ES 第三套检索栈的运维税。**（v1.3 已先落地 `SCOPE_NEAR_LIMIT` + `RETRIEVE_SLOW` 可观测止血，R4 本体——全量内存扫描 → ANN 索引化——仍待做，不可用止血替代。）**
+- **R5（质量闭环，前置）**：**评测须前置**——在标定 `minScore`/MMR/候选池等任何阈值之前，先落地 golden set + 指标字典 + CI 负向探针（rerank 越权、无依据路径、间接注入命中、grounding 失守）。RAGAS 为 Python 生态，建议以 **eval sidecar**（独立 Python 服务/CI job）承载，Java 侧暴露 `RagRetrieveOutcome` + 生成响应供其消费，避免把 Python 评测栈塞进 Java 构建。没有评测，所有「按评测校准」都是空话。**（v1.3 已落 `eval/eval_rag.py` 脚手架：golden vs actual 算 context recall/precision/degradation_rate + recall-gate 门禁，用法见 `eval/README.md`；CI 接线与 faithfulness LLM 判定待补。）**
 - **R6（可观测闭环）**：`RagEventSink` 覆盖为 bone-ai-trace 落库 + 告警；OTel `gen_ai.*` 打点接入；**阶段级 span（B16）** 一并落地。
 - **R7（性能优化）**：检索双路并发（B14）——`embed` 与 BM25 统计/打分经 `CompletableFuture` 并行，零新依赖、低风险，首结果延迟随嵌入耗时下降。
 - **R8（上下文自律）**：随 R1 补 `context-token-budget`（B17），与网关 `maxTokens`、系统提示词预留共同构成端到端上下文预算。
@@ -331,13 +336,15 @@ query
 | 容量护栏（maxScan）+ minScore 过滤（量纲安全，v1.2 修复）+ MMR | ✅ |
 | 文档级 ACL seam + 403 fail-closed | ✅ seam / ⚠️ 接入方适配待 L3 |
 | 降级可观测（事件 + 响应痕迹） | ✅ |
-| ArchUnit 门禁（12 条）+ 单测（34 例，含 3 例 minScore 量纲回归，合计 46 校验项） | ✅ |
+| 规模止血可观测（`SCOPE_NEAR_LIMIT` + `RETRIEVE_SLOW`，v1.3） | ✅ 代码落地（v1.3） |
+| ingest 批量嵌入（`embedBatch`，TEI/infinity 数组输入 + fail-closed 顺序，v1.3） | ✅ 代码落地（v1.3） |
+| ArchUnit 门禁（12 条）+ 单测（39 例，含 3 例 minScore 量纲回归 + 5 例 v1.3 新增，合计 51 校验项） | ✅ |
 | minScore 量纲安全（rerank 降级/未配时跳过阈值，杜绝事故期误杀） | ✅ 代码落地（v1.2） |
 | RAG 接入生成编排（G 接线 + 间接注入防护 + grounding 守卫） | ❌ R1 |
 | 文档中心 ACL 适配 | ❌ L3 |
 | 写入侧数据保护（入库明文 PII） | ❌ 目标态（§7.1） |
 | pgvector 终局 + ANN | ❌ R4 |
-| 评测体系（RAGAS + CI，须前置） | ❌ R5 |
+| 评测体系（eval sidecar 脚手架 + CI，须前置） | ⚠️ sidecar 落地（v1.3）/ ❌ CI 接线待补 |
 | 查询改写 | ❌ 批二决策 |
 | trace 落库适配 + 阶段级 span | ❌ R6 |
 | 检索双路并发 | ❌ R7 |
@@ -359,3 +366,5 @@ query
 8. **上下文体积自律**：RAG 送 LLM 的上下文须受 `context-token-budget` 约束（目标态），与网关 `maxTokens`、系统提示词预留共同构成端到端上下文预算；检索双路（向量+BM25）可并发以压首结果延迟，但不得改变 ACL/容量护栏/引用前置的顺序语义。
 9. **`minScore` 量纲安全（v1.2 修复，防回归）**：最终分有双轨——rerank 正常时为 cross-encoder 分（0~1/对数），降级或默认 NoOp 时为 RRF 融合分（~0.01）。`minScore` 阈值按 rerank 量纲标定，**仅当分数为 rerank 量纲（rerank 正常且未降级）时生效**；其余情形跳过阈值保留 RRF 序。绝不因 rerank 抖动降级而用同一阈值误杀全部结果（事故期质量腰斩）。回归测试 `min_score_skipped_when_rerank_degraded` / `min_score_skipped_when_no_rerank_configured` / `min_score_applied_only_on_rerank_scale` 锁死此契约。
 10. **「无出处不得生成」须延伸到生成侧**：检索侧 fail-closed 丢弃无锚点切片只是半条红线；LLM 仍可能凭自身知识编造超出上下文的内容。R1 接线时须由 gateway 新增 **grounding 校验守卫**（生成后校验每结论可回溯到检索 span，否则拒答/标低置信），把强制引用从契约升级为可验证守卫。同时补齐**写入侧数据保护**（入库明文 PII，§7.1）形成全链路 PII 闭环；并坚持**评测前置**（R5 先于任何阈值校准）——没有评测，「按评测校准」无从谈起。
+11. **容量/性能问题先给可观测信号，再谈 fail-closed（v1.3，防回归）**：过渡态全量内存扫描下，切片数到几千量级延迟已悄然劣化。`max-scan` 只在「不可行点」才 fail-closed，撞上限前的劣化无任何信号——故新增 `SCOPE_NEAR_LIMIT`（作用域切片数 > `warn-scan-threshold`）+ `RETRIEVE_SLOW`（墙钟 > `slow-retrieve-ms`）两事件，互为判据（区分「容量」还是「别的」），是 R4 索引化落地前的**可观测止血**，不替代 R4 本体。回归测试 `scope_near_limit_emits_event_when_above_threshold` / `slow_retrieve_emits_event` 锁死「超阈必发事件、且不误触 fail-closed」。
+12. **批嵌入必须先于失效旧切片（v1.3，防回归）**：`ingest` 改为「先 `embedBatch` 拿全向量 → 校验数量一致 → 再 `deleteByIds` 旧切片 → 存新」。任一环节失败（批返回数量不符 / provider 故障）直接上抛，旧版本切片完好、不会留下半截新版本（重入时切片数不符触发重建自愈）。绝不先删后嵌——那会在嵌入失败时把可用旧版本也一起抹掉。回归测试 `ingest_batch_embedding_count_mismatch_fails_closed` 锁死「数量不符即拒、旧版本不动」。

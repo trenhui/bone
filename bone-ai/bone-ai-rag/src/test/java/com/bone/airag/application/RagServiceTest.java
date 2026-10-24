@@ -26,6 +26,7 @@ import com.bone.airag.domain.model.RerankScored;
 import com.bone.airag.domain.repository.ChunkRepository;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
+import com.bone.airag.infrastructure.embedding.HttpBgeEmbeddingClient;
 import com.bone.core.exception.BizException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,10 +87,10 @@ class RagServiceTest {
         10);
   }
 
-  /** 默认装配：无文档级 ACL（仅租户硬隔离）+ 记录型事件 sink + MMR 关闭。 */
+  /** 默认装配：无文档级 ACL（仅租户硬隔离）+ 记录型事件 sink + MMR 关闭 + 容量/慢检索预警关闭。 */
   private RagApplicationService service(
       ChunkRepository repo, EmbeddingPort embed, RerankPort rerank, TenantProvider tenant) {
-    return service(repo, embed, rerank, tenant, new NoDocAcl(), new RecordingSink(), 0.0);
+    return service(repo, embed, rerank, tenant, new NoDocAcl(), new RecordingSink(), 0.0, 0, -1);
   }
 
   private RagApplicationService service(
@@ -100,7 +101,27 @@ class RagServiceTest {
       RagAclPort acl,
       RagEventSink sink,
       double mmrLambda) {
-    return new RagApplicationService(repo, embed, rerank, tenant, acl, sink, 30, mmrLambda);
+    return service(repo, embed, rerank, tenant, acl, sink, mmrLambda, 0, -1);
+  }
+
+  /**
+   * 全参装配。
+   *
+   * @param warnScanThreshold 容量预警阈值（切片数）；0/负关闭
+   * @param slowRetrieveMs 慢检索阈值（毫秒）；负数关闭，0 = 任意正耗时告警，正数 = 生产水位
+   */
+  private RagApplicationService service(
+      ChunkRepository repo,
+      EmbeddingPort embed,
+      RerankPort rerank,
+      TenantProvider tenant,
+      RagAclPort acl,
+      RagEventSink sink,
+      double mmrLambda,
+      int warnScanThreshold,
+      long slowRetrieveMs) {
+    return new RagApplicationService(
+        repo, embed, rerank, tenant, acl, sink, 30, mmrLambda, warnScanThreshold, slowRetrieveMs);
   }
 
   @Test
@@ -477,7 +498,7 @@ class RagServiceTest {
     when(repo.findByTenantAndDoc(42L, "doc1"))
         .thenReturn(List.of(chunk(10L, "doc1", "v1", "alpha", new float[] {1f}, "clause-1")));
     when(embed.version()).thenReturn("hash-64");
-    when(embed.embed(any())).thenReturn(new float[] {1f});
+    when(embed.embedBatch(anyList())).thenReturn(List.of(new float[] {1f}));
 
     RagApplicationService service = service(repo, embed, new NoOpReranker(), tenant);
 
@@ -504,7 +525,7 @@ class RagServiceTest {
     when(repo.findByTenantAndDoc(42L, "doc1"))
         .thenReturn(List.of(chunk(10L, "doc1", "v1", "alpha", new float[] {1f}, "clause-1")));
     when(embed.version()).thenReturn("hash-64");
-    when(embed.embed(any())).thenReturn(new float[] {1f});
+    when(embed.embedBatch(anyList())).thenReturn(List.of(new float[] {1f}, new float[] {1f}));
 
     RagApplicationService service = service(repo, embed, new NoOpReranker(), tenant);
 
@@ -518,5 +539,114 @@ class RagServiceTest {
 
     verify(repo).deleteByIds(List.of(10L));
     verify(repo, org.mockito.Mockito.times(2)).save(any());
+  }
+
+  @Test
+  void scope_near_limit_emits_event_when_above_threshold() {
+    // 规模止血可观测（诊断 A）：作用域切片数超过 warnScanThreshold（但未触 maxScan）即发 SCOPE_NEAR_LIMIT，
+    // 撞上限前先给信号（引导下调 max-scan / 推进 R4 索引化），而非等 OOM/超时爆发。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+    RecordingSink sink = new RecordingSink();
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+    RagChunk b = chunk(2L, "doc1", "v1", "query beta", new float[] {0.9f, 0.1f, 0f}, "clause-2");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b));
+    when(embed.version()).thenReturn("hash-64");
+    when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
+
+    // warnScanThreshold=1 < 2 切片：预警但不 fail-closed（maxScan 默认 10000）
+    RagApplicationService service =
+        service(repo, embed, new NoOpReranker(), tenant, new NoDocAcl(), sink, 0.0, 1, -1);
+
+    service.retrieve(new RagQuery("query", null, 5));
+
+    assertThat(sink.events)
+        .extracting(RagEvent::type)
+        .containsExactly(RagApplicationService.EVENT_SCOPE_NEAR_LIMIT);
+  }
+
+  @Test
+  void slow_retrieve_emits_event() throws Exception {
+    // 性能预警（诊断 A）：墙钟超 slowRetrieveMs 即发 RETRIEVE_SLOW，供落 trace / 接 P99 告警。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+    RecordingSink sink = new RecordingSink();
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a));
+    when(embed.version()).thenReturn("hash-64");
+    // 人为放慢嵌入，确保墙钟 > slowRetrieveMs
+    when(embed.embed(any()))
+        .thenAnswer(
+            inv -> {
+              Thread.sleep(5);
+              return new float[] {1f, 0f, 0f};
+            });
+
+    // slowRetrieveMs=1：5ms 嵌入使墙钟超阈值 → 发 RETRIEVE_SLOW
+    RagApplicationService service =
+        service(repo, embed, new NoOpReranker(), tenant, new NoDocAcl(), sink, 0.0, 0, 1);
+
+    service.retrieve(new RagQuery("query", null, 5));
+
+    assertThat(sink.events)
+        .extracting(RagEvent::type)
+        .containsExactly(RagApplicationService.EVENT_RETRIEVE_SLOW);
+  }
+
+  @Test
+  void ingest_batch_embedding_count_mismatch_fails_closed() {
+    // 批量嵌入 fail-closed（诊断 B19）：批返回数量与切片数不符时上抛，旧版本不动（不留下半截新版本）。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+
+    when(repo.findByTenantAndDoc(42L, "doc1")).thenReturn(List.of());
+    when(embed.version()).thenReturn("hash-64");
+    // 输入 2 切片，仅返回 1 向量：应 fail-closed
+    when(embed.embedBatch(anyList())).thenReturn(List.of(new float[] {1f}));
+
+    RagApplicationService service = service(repo, embed, new NoOpReranker(), tenant);
+
+    assertThatThrownBy(
+            () ->
+                service.ingest(
+                    42L,
+                    "doc1",
+                    "v1",
+                    List.of(
+                        new RagApplicationService.RagIngestSegment("S1", "alpha", "clause-1", 0, 10),
+                        new RagApplicationService.RagIngestSegment("S2", "beta", "clause-2", 0, 10))))
+        .isInstanceOf(BizException.class)
+        .satisfies(
+            e ->
+                assertThat(((BizException) e).getErrorCode())
+                    .isEqualTo(AiRagErrorCodes.EMBEDDING_PROVIDER_FAIL));
+    // 嵌入未成功前绝不动旧版本
+    verify(repo, never()).deleteByIds(anyList());
+    verify(repo, never()).save(any());
+  }
+
+  @Test
+  void bge_batch_parse_roundtrip() {
+    // 批量响应解析（HttpBgeEmbeddingClient.embedBatch 依赖）：[[..],[..]] → 向量列表。
+    List<float[]> parsed = HttpBgeEmbeddingClient.parseEmbeddings("[[0.1,0.2],[0.3,0.4]]");
+    assertThat(parsed).hasSize(2);
+    assertThat(parsed.get(0)).containsExactly(0.1f, 0.2f);
+    assertThat(parsed.get(1)).containsExactly(0.3f, 0.4f);
+  }
+
+  @Test
+  void bge_batch_parse_rejects_malformed() {
+    // 结构非法（非外层数组）应抛 EMBEDDING_PROVIDER_FAIL，而非静默返回空。
+    assertThatThrownBy(() -> HttpBgeEmbeddingClient.parseEmbeddings("{\"x\":1}"))
+        .isInstanceOf(com.bone.core.exception.BizException.class);
   }
 }

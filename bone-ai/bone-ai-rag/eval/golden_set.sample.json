@@ -1,0 +1,26 @@
+{
+  "dataset": "contract-clause-sample",
+  "cases": [
+    {
+      "query": "甲方逾期付款的违约金怎么算",
+      "docScope": "doc-1",
+      "expectedChunkRefs": ["1", "3"],
+      "topK": 5,
+      "minScore": 0.0
+    },
+    {
+      "query": "合同解除后已履行的怎么处理",
+      "docScope": "doc-1",
+      "expectedChunkRefs": ["2"],
+      "topK": 5,
+      "minScore": 0.0
+    },
+    {
+      "query": "保密义务期限是多久",
+      "docScope": "doc-2",
+      "expectedChunkRefs": ["4", "5"],
+      "topK": 5,
+      "minScore": 0.0
+    }
+  ]
+}
