@@ -128,740 +128,697 @@
     {
       "symbol": "AccountAuthoritiesQueryHandler",
       "docs": [
-        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "AssignPermissionCommandHandler",
-      "docs": [
-        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md",
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "AutoConfiguration",
-      "docs": [
-        "doc/design/modules/review-report-bone-system.md",
-        "doc/plans/spring-boot-3.5-upgrade.md"
-      ],
-      "reason": "false-positive",
-      "note": "Spring Boot 生态的通用词（@AutoConfiguration / AutoConfiguration.imports），非项目自定义类名。imports 是 Spring Boot 3 的自动配置注册**文件名约定**（META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports），文档里出现的是文件名而非 Java 类引用。"
-    },
-    {
-      "symbol": "AutoExtractFieldsCommandHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CatalogController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CodeGenerationCleanupJob",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CodeRepositoryGateway",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ConvertFromBusinessEntityCommandHandler",
-      "docs": [
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateAccountCommandHandler",
-      "docs": [
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateCodeGenerationTaskHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateConnectorCommandHandler",
-      "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md",
-        "doc/design/modules/review-report-bone-integration.md"
-      ],
-      "reason": "review-snapshot",
-      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
-    },
-    {
-      "symbol": "CreateDataSourceCommandHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateEntityCommandHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateFlowCommandHandler",
-      "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md",
-        "doc/design/modules/review-report-bone-integration.md"
-      ],
-      "reason": "review-snapshot",
-      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
-    },
-    {
-      "symbol": "CreateTemplateCommandHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateTenantCommandHandler",
-      "docs": [
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "CreateXxxCommandHandler",
-      "docs": [
-        "doc/wiki/05-工程规范与安全.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DataSourceAssembler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DataSourceByIdQueryHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DataSourceCommandHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DataSourcePageQueryHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DataSourceQueryHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "DeleteFileApplicationService",
-      "docs": [
-        "doc/design/modules/bone-file-设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "DownloadFileApplicationService",
-      "docs": [
-        "doc/design/modules/bone-file-设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "EntityController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExecuteFlowCommandHandler",
-      "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExecuteFlowHandler",
-      "docs": [
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExecutionLogRepository",
-      "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExtPointCommandHandler",
-      "docs": [
-        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExtensionCommandHandler",
-      "docs": [
-        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExtensionPointController",
-      "docs": [
-        "doc/architecture/Bone-API-规范.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ExtensionStudioCommandHandler",
-      "docs": [
-        "doc/design/modules/5. 扩展管理模块详细设计方案.md",
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "FieldController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "FileObjectListQueryApplicationService",
-      "docs": [
-        "doc/design/modules/bone-file-设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "FileObjectRepository",
-      "docs": [
-        "doc/design/modules/bone-file-设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "FileStorageGateway",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
-        "doc/design/modules/review-report-bone-file.md"
-      ],
-      "reason": "review-snapshot",
-      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
-    },
-    {
-      "symbol": "FlowRepository",
-      "docs": [
-        "doc/design/modules/4. 集成管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "GenTypeMappingRepository",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md",
-        "doc/design/modules/review-report-studio-generator.md"
-      ],
-      "reason": "review-snapshot",
-      "note": "夜间复核报告是带执行时间与代码快照分支的历史快照，其中类名刻意停留在复核当时；部分符号同时出现在设计稿目标态章节"
-    },
-    {
-      "symbol": "GenerateCodeApplicationService",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "GenerateCodeCommandHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "GenerationTaskCompletedEventHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "GenerationTaskController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述。本符号同时出现在元数据与 Studio Generator 两份详设的 Adapter 清单中"
-    },
-    {
-      "symbol": "GetAuditSettingsQueryHandler",
-      "docs": [
-        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "IamUserApplicationService",
-      "docs": [
-        "doc/design/AI-夜间设计复核工作流方案.md"
-      ],
-      "reason": "workflow-sample",
-      "note": "夜间复核工作流方案里的示例类名（用于演示复核流程产出什么），非模块实现真源；真实名是 AccountRepository / AccountApplicationService"
-    },
-    {
-      "symbol": "IamUserRepository",
-      "docs": [
-        "doc/design/AI-夜间设计复核工作流方案.md"
-      ],
-      "reason": "workflow-sample",
-      "note": "夜间复核工作流方案里的示例类名（用于演示复核流程产出什么），非模块实现真源；真实名是 AccountRepository / AccountApplicationService"
-    },
-    {
-      "symbol": "MasterDataRecordController",
-      "docs": [
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "MetaValidationApplicationService",
-      "docs": [
-        "doc/design/modules/2b. 建模工作台功能与用例设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "MinioStorageGateway",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "MinioStorageGatewayAdapter",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "PluginDependencyGraphQueryHandler",
-      "docs": [
-        "doc/design/modules/5. 扩展管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "PublishTemplateCommandHandler",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md",
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "RelationshipController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "SyncTableMetadataCommandHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "TemplateController",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "TemplateDetailQueryHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "TemplateRepository",
-      "docs": [
-        "doc/design/modules/2. 元数据管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "TestDataSourceConnectionCommandHandler",
-      "docs": [
-        "doc/design/modules/8.Studio Generator 详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "UpdateAccountCommandHandler",
-      "docs": [
-        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md",
-        "doc/wiki/07-P0-TODO看板.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "UpdateAuditSettingsCommandHandler",
-      "docs": [
-        "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "UploadFileApplicationService",
-      "docs": [
-        "doc/design/modules/bone-file-设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "模块详设描述的是目标态分层结构（bone-file §6.1 明写「目标态」、2b 明写「批次 3 新增」），实现尚未落地；改文档会把目标态设计稿降格为 As-Is 描述"
-    },
-    {
-      "symbol": "XxxByIdQueryHandler",
-      "docs": [
-        "doc/wiki/05-工程规范与安全.md"
-      ],
-      "reason": "handler-era-naming",
-      "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
-    },
-    {
-      "symbol": "ReplenishmentApplicationService",
-      "docs": [
-        "doc/design/lowcode/BONE-低代码最小闭环PRD.md"
-      ],
-      "reason": "tobe-named",
-      "note": "PRD 补货能力设计稿描述的目标态 ApplicationService 边界（到货入库 receive 跨聚合事务），实现尚未落地；改文档会把目标态设计降格为 As-Is 描述"
-    },
-    {
-      "symbol": "ExpenseReimbursementApplicationService",
-      "docs": [
-        "doc/design/lowcode/BONE-低代码最小闭环PRD.md",
-        "doc/design/lowcode/cases/费用报销系统-元数据建模方案.md",
-        "doc/design/lowcode/BONE-低代码Runtime数据面设计.md",
-        "doc/design/lowcode/ui/README.md"
-      ],
-      "reason": "tobe-named",
-      "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地"
-    },
-    {
-      "symbol": "ReplenishmentReceiveHandler",
-      "docs": [
-        "doc/design/lowcode/BONE-低代码Runtime数据面设计.md"
-      ],
-      "reason": "tobe-named",
-      "note": "补货到货入库 receive 动作逃逸 Handler 目标态命名，实现尚未落地"
-    },
-    {
-      "symbol": "DataSourceAdapter",
-      "docs": [
-        "doc/ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-技术方案.md"
-      ],
-      "reason": "workflow-sample",
-      "note": "采购AI 技术方案 §5.3 的示意接口（interface DataSourceAdapter {...}），定义集成适配器标准方法（pullContract/pullPayments/...），非项目实现真源类名；属设计文档示例，改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "ClaimApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿（ClaimSphere 智能理赔平台设计方案.md）的目标态构件名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "ClaimApplicationRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
+        "architecture/adr/0002-iam-rbac-jwt-authorities.md",
+        "design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "AdjLiabilityRepository",
       "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "理赔责任调整仓储的目标态名（§156 仓储清单），实现尚未落地"
-    },
-    {
-      "symbol": "PersonalQuotaRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "个人额度仓储的目标态名（§156 仓储清单），实现尚未落地"
-    },
-    {
-      "symbol": "SettlementOrderRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "结算单仓储的目标态名（§156 仓储清单），实现尚未落地"
-    },
-    {
-      "symbol": "LiabilityConverter",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "责任域 DTO↔领域模型转换器的目标态名（§838），实现尚未落地"
-    },
-    {
-      "symbol": "InvestigationRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "DecisionRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "IndemnityRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "PolicyRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/ClaimSphere 智能理赔平台设计方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台方案设计稿的目标态仓储名，实现尚未落地；改文档会丢失方案示意信息"
-    },
-    {
-      "symbol": "FundingEventRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 资金事件仓储的目标态名（§299 资金流设计），实现尚未落地；2026-10-21 更新引用：原登记指向《智能理赔详细技术方案（bone-ai落地）》，该文档已改名，当前载体为《AI 技术方案》"
-    },
-    {
-      "symbol": "DefaultMetadataVersionController",
-      "docs": [
-        "doc/design/lowcode/BONE-低代码最小闭环PRD.md"
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
       ],
       "reason": "history",
-      "note": "2026-10-15 死代码清理已删除 engine-runtime version/DefaultMetadataVersionController（AtomicLong 简单版本实现），PRD §1.1.1 仅在「快照/回滚」一行作删除说明引用；属历史类名，非现行真源"
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
-      "symbol": "VersionController",
+      "symbol": "AssignPermissionCommandHandler",
       "docs": [
-        "doc/ai-product/platform/BONE-AI能力中台整体方案.md"
+        "design/modules/6. IAM账号权限管理模块详细设计方案.md",
+        "wiki/07-P0-TODO看板.md"
       ],
-      "reason": "tobe-named",
-      "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
-    },
-    {
-      "symbol": "InspectionRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 后督抽检整改清单的目标态仓储名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
-    },
-    {
-      "symbol": "InspectionApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 后督抽检整改清单的目标态应用服务名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
-    },
-    {
-      "symbol": "InspectionController",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 后督抽检整改清单的目标态端点名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
-    },
-    {
-      "symbol": "CreateClaimApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 落地版 §应用层目录示意的目标态应用服务名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "AutoConfiguration",
       "docs": [
-        "doc/design/modules/review-report-bone-system.md",
-        "doc/design/lowcode/cases/费用报销系统-设计文档.md",
-        "doc/plans/spring-boot-3.5-upgrade.md"
+        "architecture/Bone-DDD-最终实践方案.md",
+        "archive/20261005-06-reports/bone-全模块前后端联调报告-20261005.md",
+        "archive/workflow-sdk-migration-review-dc1be80ae.md",
+        "design/lowcode/cases/费用报销系统-设计文档.md",
+        "design/modules/review-report-bone-system.md",
+        "plans/spring-boot-3.5-upgrade.md"
       ],
       "reason": "false-positive",
-      "note": "AutoConfiguration 出自 org.springframework.boot.autoconfigure.AutoConfiguration.imports 包名及 @AutoConfiguration 注解通用词，非特定类引用，属误报（覆盖 review-report 与费用报销设计文档）"
+      "note": "Spring 框架通用词 @AutoConfiguration / AutoConfiguration，非项目自定义类名，文档类名漂移门禁误报"
     },
     {
-      "symbol": "JdbcWorkflowInstanceRepository",
+      "symbol": "AutoExtractFieldsCommandHandler",
       "docs": [
-        "doc/design/modules/12. 工作流引擎设计.md"
+        "design/modules/2. 元数据管理模块详细设计方案.md"
       ],
       "reason": "history",
-      "note": "2026-10-24 审批流引擎 JDBC→SDK @Sql 全量改写已删除该类（职责由 SdkWorkflowInstanceRepository 适配器 + WfInstanceSdkRepository/WfTaskSdkRepository 承担），设计稿 §10 整改记录「落点」列与 §9.2/§10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
-      "symbol": "JdbcWorkflowDefinitionRepository",
+      "symbol": "CatalogController",
       "docs": [
-        "doc/design/modules/12. 工作流引擎设计.md"
+        "_generated/metadata/as-is-evidence.md",
+        "design/modules/2. 元数据管理模块详细设计方案.md"
       ],
       "reason": "history",
-      "note": "2026-10-24 JDBC→SDK @Sql 改写已删除（职责由 SdkWorkflowDefinitionRepository + WfProcessDefSdkRepository 承担），设计稿 §10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CloseExpiredClaimJob",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
+        "ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CodeGenerationCleanupJob",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CodeRepositoryGateway",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ConvertFromBusinessEntityCommandHandler",
+      "docs": [
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki TODO 看板引用的示意/历史类名，非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "CreateAccountCommandHandler",
+      "docs": [
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki TODO 看板引用的示意/历史类名，非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "CreateClaimApplicationService",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateCodeGenerationTaskHandler",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateConnectorCommandHandler",
+      "docs": [
+        "design/modules/4. 集成管理模块详细设计方案.md",
+        "design/modules/review-report-bone-integration.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateDataSourceCommandHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateEntityCommandHandler",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateFlowCommandHandler",
+      "docs": [
+        "design/modules/4. 集成管理模块详细设计方案.md",
+        "design/modules/review-report-bone-integration.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateTemplateCommandHandler",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "CreateTenantCommandHandler",
+      "docs": [
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki TODO 看板引用的示意/历史类名，非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "CreateXxxCommandHandler",
+      "docs": [
+        "wiki/05-工程规范与安全.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki 工程规范示例类名（Xxx 占位符），非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "DataSourceAdapter",
+      "docs": [
+        "ai-product/procuraAI/采购AI-智能风险审查与合同智能处理-技术方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DataSourceAssembler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DataSourceByIdQueryHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DataSourceCommandHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DataSourcePageQueryHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DataSourceQueryHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DecisionHandler",
+      "docs": [
+        "design/lowcode/cases/费用报销系统-设计文档.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DefaultMetadataVersionController",
+      "docs": [
+        "design/lowcode/BONE-低代码最小闭环PRD.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DeleteFileApplicationService",
+      "docs": [
+        "design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "history",
+      "note": "bone-file 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "DownloadFileApplicationService",
+      "docs": [
+        "design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "history",
+      "note": "bone-file 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "EnableConfigurationProperties",
       "docs": [
-        "doc/ai-product/RAG方案诊断与优化-2026-10-23.md"
+        "ai-product/platform/BONE-AI-RAG能力方案.md"
       ],
       "reason": "false-positive",
       "note": "Spring 框架注解 @EnableConfigurationProperties 通用词，非项目自定义类名（同 AutoConfiguration 条目口径）"
     },
     {
-      "symbol": "CloseExpiredClaimJob",
+      "symbol": "EntityController",
       "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+        "design/modules/2. 元数据管理模块详细设计方案.md"
       ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台工程详设/整改清单的目标态定时任务名，实现尚未落地；与同文档已登记的 AdjLiabilityRepository 等 tobe-named 条目同口径"
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
-      "symbol": "InspectionRepository",
+      "symbol": "ExecuteFlowCommandHandler",
       "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+        "design/modules/4. 集成管理模块详细设计方案.md"
       ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExecuteFlowHandler",
+      "docs": [
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki TODO 看板引用的示意/历史类名，非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "ExecutionLogRepository",
+      "docs": [
+        "design/modules/4. 集成管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExpenseReimbursementApplicationService",
+      "docs": [
+        "design/lowcode/BONE-低代码Runtime数据面设计.md",
+        "design/lowcode/BONE-低代码最小闭环PRD.md",
+        "design/lowcode/cases/费用报销系统-元数据建模方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExpenseWorkflowDecisionHandler",
+      "docs": [
+        "design/lowcode/cases/费用报销系统-设计文档.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExpenseWorkflowSubmitHandler",
+      "docs": [
+        "design/lowcode/cases/费用报销系统-设计文档.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExpenseWorkflowWithdrawHandler",
+      "docs": [
+        "design/lowcode/cases/费用报销系统-设计文档.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExtPointCommandHandler",
+      "docs": [
+        "design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/5 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExtensionCommandHandler",
+      "docs": [
+        "design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/5 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExtensionPointController",
+      "docs": [
+        "architecture/Bone-API-规范.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ExtensionStudioCommandHandler",
+      "docs": [
+        "design/modules/5. 扩展管理模块详细设计方案.md",
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FieldController",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FileObjectListQueryApplicationService",
+      "docs": [
+        "design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "history",
+      "note": "bone-file 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FileObjectRepository",
+      "docs": [
+        "design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "history",
+      "note": "bone-file 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FileStorageGateway",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md",
+        "design/modules/review-report-bone-file.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FlowRepository",
+      "docs": [
+        "design/modules/4. 集成管理模块详细设计方案.md",
+        "design/modules/BONE-X-Studio-详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "FundingEventRepository",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GenTypeMappingRepository",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md",
+        "design/modules/review-report-studio-generator.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GenerateCodeApplicationService",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GenerateCodeCommandHandler",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md",
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GenerationTaskCompletedEventHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GenerationTaskController",
+      "docs": [
+        "architecture/adr/0032-controlled-batch-convergence.md",
+        "design/modules/2. 元数据管理模块详细设计方案.md",
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "GetAuditSettingsQueryHandler",
+      "docs": [
+        "design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/6 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "IamUserApplicationService",
+      "docs": [
+        "design/AI-夜间设计复核工作流方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "IamUserRepository",
+      "docs": [
+        "design/AI-夜间设计复核工作流方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "InspectionApplicationService",
       "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+        "ai-product/synapClaim/待架构评审代码整改清单.md"
       ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "InspectionController",
       "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+        "ai-product/synapClaim/待架构评审代码整改清单.md"
       ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "InspectionRepository",
+      "docs": [
+        "ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "JdbcWorkflowDefinitionRepository",
+      "docs": [
+        "design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "history",
+      "note": "2026-10-24 JDBC→SDK @Sql 改写已删除（职责由 SdkWorkflowDefinitionRepository + WfProcessDefSdkRepository 承担），设计稿 §10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+    },
+    {
+      "symbol": "JdbcWorkflowInstanceRepository",
+      "docs": [
+        "design/modules/12. 工作流引擎设计.md"
+      ],
+      "reason": "history",
+      "note": "2026-10-24 审批流引擎 JDBC→SDK @Sql 全量改写已删除该类（职责由 SdkWorkflowInstanceRepository 适配器 + WfInstanceSdkRepository/WfTaskSdkRepository 承担），设计稿 §10 整改记录「落点」列与 §9.2/§10-B 闭环注记按当时形态引用；属历史类名，非现行真源"
+    },
+    {
+      "symbol": "LiabilityConverter",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "MasterDataRecordController",
+      "docs": [
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki TODO 看板引用的示意/历史类名，非真实 Java 类，文档类名漂移门禁误报"
+    },
+    {
+      "symbol": "MetaValidationApplicationService",
+      "docs": [
+        "design/modules/2b. 建模工作台功能与用例设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "MinioStorageGateway",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "MinioStorageGatewayAdapter",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "PersonalQuotaRepository",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "PluginDependencyGraphQueryHandler",
+      "docs": [
+        "design/modules/5. 扩展管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/5 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "PublishTemplateCommandHandler",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md",
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "RelationshipController",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ReplenishmentApplicationService",
+      "docs": [
+        "design/lowcode/BONE-低代码最小闭环PRD.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "ReplenishmentReceiveHandler",
+      "docs": [
+        "design/lowcode/BONE-低代码Runtime数据面设计.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "SettlementOrderRepository",
+      "docs": [
+        "ai-product/synapClaim/synapClaim 智能理赔平台-AI 技术方案.md",
+        "ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "SyncTableMetadataCommandHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "TemplateController",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "TemplateDetailQueryHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/8 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "TemplateRepository",
+      "docs": [
+        "design/modules/2. 元数据管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "TestDataSourceConnectionCommandHandler",
+      "docs": [
+        "design/modules/8.Studio Generator 详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "UpdateAccountCommandHandler",
+      "docs": [
+        "design/modules/6. IAM账号权限管理模块详细设计方案.md",
+        "wiki/07-P0-TODO看板.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "UpdateAuditSettingsCommandHandler",
+      "docs": [
+        "design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      ],
+      "reason": "history",
+      "note": "modules/6 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "UploadFileApplicationService",
+      "docs": [
+        "design/modules/bone-file-设计方案.md"
+      ],
+      "reason": "history",
+      "note": "bone-file 设计稿引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "WithdrawHandler",
+      "docs": [
+        "design/lowcode/cases/费用报销系统-设计文档.md"
+      ],
+      "reason": "history",
+      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
+    },
+    {
+      "symbol": "XxxByIdQueryHandler",
+      "docs": [
+        "wiki/05-工程规范与安全.md"
+      ],
+      "reason": "false-positive",
+      "note": "doc/wiki 工程规范示例类名（Xxx 占位符），非真实 Java 类，文档类名漂移门禁误报"
     }
   ]
 }

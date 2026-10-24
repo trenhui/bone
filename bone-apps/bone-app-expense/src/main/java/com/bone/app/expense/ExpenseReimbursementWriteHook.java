@@ -29,6 +29,10 @@ import org.springframework.stereotype.Component;
  * <p><b>规则二</b>：DRAFT 态直改头表 amount = 明细合计（G3 残留闭环的编辑态兜底，聚合断言）：子表替换路径由 {@link
  * ReimbursementChildAmountAggregator} 服务端回填、提交路径由 {@code UiSchemaRuleEnforcer} 的 Σ
  * 规则兜底；本规则补上「绕过前两者直接 PUT 头表金额」的最后一环，使 G10「头表金额 = 明细合计」在编辑态恒成立。子实体未发布（无明细可挂）时跳过，不阻断。
+ *
+ * <p><b>规则三（SoD）</b>：显式设置 {@code approver_id} 时不得等于申请人（applicant，缺省回退 {@code created_by}）——职责分离
+ * （审批人≠申请人）。ui_schema linkageRules 里这条只有 {@code notice} 提示、服务端不拦，故在此补<b>服务端底线</b>断言，绕过 前端直接调 API
+ * 同样被拦。
  */
 @Component("expenseReimbursementWriteHook")
 public class ExpenseReimbursementWriteHook implements RuntimeWriteHook {
@@ -60,6 +64,9 @@ public class ExpenseReimbursementWriteHook implements RuntimeWriteHook {
   @Override
   public void beforeUpdate(RuntimeWriteHookContext ctx) {
     Map<String, Object> payload = ctx.payload();
+    // 规则三（SoD，R3）：审批人不得为申请人本人。服务端底线——ui_schema linkageRules 的 notice 只是提示，
+    // 绕过前端直接调 API 也必须被拦（职责分离是资金域红线）。
+    assertApproverNotApplicant(ctx, payload);
     Object amount = payload.get("amount");
     if (amount == null) {
       return; // 本次修改不涉及金额，放行
@@ -84,6 +91,46 @@ public class ExpenseReimbursementWriteHook implements RuntimeWriteHook {
     MapSqlParameterSource params = new MapSqlParameterSource("pk", ctx.recordId());
     try {
       return jdbc.queryForObject(sql, params, String.class);
+    } catch (org.springframework.dao.EmptyResultDataAccessException ex) {
+      return null;
+    }
+  }
+
+  /**
+   * 规则三（SoD，R3）：本次载荷若设置 {@code approver_id}，不得等于记录申请人（applicant，缺省回退 {@code created_by}）。
+   *
+   * <p>服务端底线的理由：ui_schema linkageRules 里这条规则的 {@code then} 只有 {@code notice}（纯提示文案，前端渲染 Alert），服务端
+   * {@code runRequiredShortcuts} 只强制 {@code required}，因此**绕过界面直接调 API 可让审批人=申请人**。
+   * 职责分离是资金内控红线，故在写钩子层补断言。只拦「显式设置审批人」；不设置则放行（交 R5 大额必填与 linkage 处理）。
+   */
+  private void assertApproverNotApplicant(
+      RuntimeWriteHookContext ctx, Map<String, Object> payload) {
+    Object approverId = payload.get("approver_id");
+    if (approverId == null || approverId.toString().isBlank()) {
+      return; // 本次不设置审批人，放行
+    }
+    String applicant = queryString(ctx, "applicant");
+    if (applicant == null || applicant.isBlank()) {
+      applicant = queryString(ctx, "created_by");
+    }
+    if (applicant != null
+        && !applicant.isBlank()
+        && approverId.toString().trim().equals(applicant.trim())) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "审批人不得为申请人本人（职责分离 SoD）：approver_id 与申请人相同");
+    }
+  }
+
+  /** 直查字符串列（列名为代码字面量，非用户输入，无注入面）；记录不存在或列不存在视为 null。 */
+  private String queryString(RuntimeWriteHookContext ctx, String column) {
+    String table = ctx.entity().physicalTableName();
+    String pk = ctx.entity().primaryKeyColumn();
+    String sql =
+        "SELECT `" + column + "` FROM " + table + " WHERE `" + pk + "` = :pk AND `deleted` = 0";
+    MapSqlParameterSource params = new MapSqlParameterSource("pk", ctx.recordId());
+    try {
+      Object value = jdbc.queryForObject(sql, params, String.class);
+      return value == null ? null : value.toString();
     } catch (org.springframework.dao.EmptyResultDataAccessException ex) {
       return null;
     }

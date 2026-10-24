@@ -30,6 +30,16 @@
             <artifactId>bone-metadata-server</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 审批流引擎（平台集成 starter）：报销提交/审批/驳回/撤回四动作经逃逸 Handler 驱动引擎，
+             任务/待办/指派冻结/会签原子推进/挂起干预由引擎承担（设计文档 doc/design/modules/12. §8）。
+             引擎持久化已由 starter 收敛到 bone-metadata-sdk @Sql（2026-10-24），wf_* 六表 DDL 见
+             scripts/migration/0056_wf_workflow_tables.sql（引擎侧）与 0057_expense_workflow_seed.sql（报销种子）——
+             表缺失时读写运行期报错，刻意不兜底。 -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-workflow-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>

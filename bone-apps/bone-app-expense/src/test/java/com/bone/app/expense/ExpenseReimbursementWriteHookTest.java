@@ -192,4 +192,36 @@ class ExpenseReimbursementWriteHookTest {
     verify(jdbc).queryForObject(anyString(), paramsCaptor.capture(), eq(BigDecimal.class));
     assertThat(paramsCaptor.getValue().getValue("pk")).isEqualTo("9");
   }
+
+  @Test
+  @DisplayName("规则三SoD：显式设置 approver_id = 申请人 → 422（服务端底线，绕不过 linkageRules notice）")
+  void approverEqualsApplicant_sodBlocked() {
+    // 载荷只含 approver_id（不含 amount）：只触发 SoD 的 applicant 查询，不进冻结/Σ 分支
+    when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(String.class)))
+        .thenReturn("42"); // applicant
+
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("approver_id", "42");
+
+    assertThatThrownBy(() -> hook.beforeUpdate(ctx("expense_reimbursement", "9", payload)))
+        .isInstanceOf(RuntimeRecordException.class)
+        .satisfies(
+            ex ->
+                assertThat(((RuntimeRecordException) ex).getErrorCode())
+                    .isEqualTo(MetadataErrorCodes.RUNTIME_VALIDATION_FAILED))
+        .hasMessageContaining("SoD");
+  }
+
+  @Test
+  @DisplayName("规则三 SoD：approver_id ≠ 申请人 → 放行")
+  void approverDifferentFromApplicant_passes() {
+    when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(String.class)))
+        .thenReturn("42"); // applicant
+
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("approver_id", "99");
+
+    assertThatNoException()
+        .isThrownBy(() -> hook.beforeUpdate(ctx("expense_reimbursement", "9", payload)));
+  }
 }

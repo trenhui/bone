@@ -7,6 +7,7 @@
 | [assets/](./assets/) | 配图（如运行时拓扑 SVG） |
 | [AI-夜间设计复核工作流方案.md](./AI-夜间设计复核工作流方案.md) | 过程稿（nightly）；**勿迁入 modules** |
 | [../ai-product/](../ai-product/) | **AI 文档区**（AI 能力中台三件套 + procuraAI / synapClaim / synapEquity 产品包，2026-10-14 自本目录迁出） |
+| [费用报销系统-设计文档.md](./lowcode/cases/费用报销系统-设计文档.md) | **费用报销域独立系统设计**（双实体/7 态状态机/行级权限/出金契约；基于代码真源 2026-10-23） |
 
 **上游**：[`doc/prd/`](../prd/) · **架构**：[`doc/architecture/`](../architecture/) · **升级草案**：[`doc/plans/`](../plans/) · **端口真源**：[wiki/03](../wiki/03-本地开发与构建.md)
 

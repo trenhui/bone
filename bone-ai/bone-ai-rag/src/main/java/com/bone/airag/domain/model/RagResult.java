@@ -7,7 +7,7 @@ package com.bone.airag.domain.model;
  * @param clauseRef 条款 id（引用强制锚点）
  * @param spanStart 条款内 span 起点
  * @param spanEnd 条款内 span 终点
- * @param score 最终排序分：接入 cross-encoder 时为 rerank 分；未接入 / 降级时为 RRF 融合分（量纲双轨，仅可同次结果内比较）
+ * @param score 融合分（RRF）
  * @param path 章节面包屑
  * @param text 切片原文
  */

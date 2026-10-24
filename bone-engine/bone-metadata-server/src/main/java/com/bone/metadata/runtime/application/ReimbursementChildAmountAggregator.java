@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
  * <p><b>事务边界</b>：由调用方（{@code RuntimeRelationController#replaceChildren}）的 {@code
  * transactionTemplate} 包裹——聚合失败抛异常即整体回滚，不会出现「明细已替换、头表未更新」 的半截状态。
  *
- * <p><b>状态保护</b>：与 {@link ExpenseReimbursementWriteHook} 同口径——审批链上（SUBMITTED 及之后）
- * 不回填，避免「审批通过后靠改明细把金额改大」的绕过路径；抛 422 与主行写路径一致。
+ * <p><b>状态保护</b>：与 <code>com.bone.app.expense.ExpenseReimbursementWriteHook</code>
+ * 同口径——审批链上（SUBMITTED 及之后） 不回填，避免「审批通过后靠改明细把金额改大」的绕过路径；抛 422 与主行写路径一致。
  *
  * <p><b>审计</b>：回填经 {@code JdbcRuntimeRecordService#update} 公共写链执行——普通字段校验、 乐观锁、from→to
  * 逐字段数据面审计（source=update）全部复用，本组件只算不改。

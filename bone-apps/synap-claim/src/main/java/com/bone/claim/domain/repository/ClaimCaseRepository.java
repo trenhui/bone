@@ -2,6 +2,7 @@ package com.bone.claim.domain.repository;
 
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
+import com.bone.claim.domain.model.claim.projection.ClaimTenantRef;
 import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
 import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.core.model.PageResult;
@@ -36,8 +37,17 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
    * schedule_only_calls_all_tenants_repository_methods} 收紧）。
    */
   @TenantScope(TenantScopeMode.ALL)
-  List<ClaimHeadProjection> findStaleEvidenceClaimsAllTenants(
+  List<ClaimTenantRef> findStaleEvidenceClaimsAllTenants(
       @Param("before") java.sql.Timestamp before);
+
+  /**
+   * 后督抽样候选（全租户，定时任务专用）：{@code status = FINISHED}（已自动结案），按创建时间倒序取前 {@code limit} 条。
+   *
+   * <p>仅 {@code adapter.schedule} 可调用（ArchitectureTest {@code
+   * schedule_only_calls_all_tenants_repository_methods} 收紧）；分层抽样比例细化属后续迭代。
+   */
+  @TenantScope(TenantScopeMode.ALL)
+  List<ClaimTenantRef> findFinishedForInspectionAllTenants(@Param("limit") int limit);
 
   /** 按报案号查（对外检索键）。 */
   default ClaimCase findByClaimNo(Long tenantId, String claimNo) {

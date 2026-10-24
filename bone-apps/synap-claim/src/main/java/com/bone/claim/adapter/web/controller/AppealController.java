@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** A8 申诉接口（结案/拒赔生效后 48h 内受理；复议维持或推翻重启审核）。 */
 @Tag(name = "智能理赔-申诉复议", description = "发起申诉 / 复议结论 / 查询")
 @RestController
-@RequestMapping("/api/v1/claims/{claimId}/appeal")
+@RequestMapping(value = {"/api/v1/claims/{claimId}/appeal", "/api/v1/claims/{claimId}/appeals"})
 @RequiredArgsConstructor
 public class AppealController {
 

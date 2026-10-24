@@ -336,6 +336,19 @@ SET ui_schema_json = JSON_SET(
     CAST('[{"name":"审批链上金额冻结","code":"LOCK-AMT-01","when":{"fieldCode":"status","operator":"in","value":["SUBMITTED","APPROVED","AUDITED","PAID","REJECTED","CANCELLED"]},"fields":["amount"],"message":"已进入审批/支付/结算流程，金额不可修改"}]' AS JSON))
 WHERE tenant_id = 0 AND deleted = 0 AND code = 'tpl_expense_reimbursement_v2';
 
+-- 4.1 R5 大额必填审批人补规则码（与 0047 LINK-APPR-01 对齐，提升 422 可诊断性）
+UPDATE meta_model_template
+SET ui_schema_json = JSON_SET(ui_schema_json, '$.linkageRules[1].code', 'LINK-APPR-01')
+WHERE tenant_id = 0 AND deleted = 0 AND code = 'tpl_expense_reimbursement_v2';
+
+-- 4.2 借款单金额冻结主防线（与报销单 LOCK-AMT-01 同口径；写钩子 ExpenseAdvanceWriteHook 为兜底）
+UPDATE meta_model_template
+SET ui_schema_json = JSON_SET(
+    ui_schema_json,
+    '$.fieldLockRules',
+    CAST('[{"name":"审批链上金额冻结","code":"LOCK-AMT-01","when":{"fieldCode":"status","operator":"in","value":["SUBMITTED","APPROVED","PAID","REJECTED","CANCELLED"]},"fields":["amount"],"message":"已进入审批/支付/结算流程，金额不可修改"}]' AS JSON))
+WHERE tenant_id = 0 AND deleted = 0 AND code = 'tpl_expense_advance_v2';
+
 -- ── 5. 校验 ─────────────────────────────────────────────────────────────
 SELECT
     (SELECT COUNT(*) FROM meta_model_template WHERE deleted = 0 AND code IN

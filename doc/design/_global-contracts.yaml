@@ -60,6 +60,7 @@ design_doc_index:
   - {path: "doc/design/modules/国际化设计方案.md", kind: "cross-cutting", lines: 1565, module: null}
   - {path: "doc/design/AI-夜间设计复核工作流方案.md", kind: "process", lines: 447, module: null}
   - {path: "doc/design/README.md", kind: "index", lines: 9, module: null}
+  - {path: "doc/design/lowcode/cases/费用报销系统-设计文档.md", kind: "system-design", lines: 385, module: null}
 
 # ---------------------------------------------------------------------------
 # 模块清单（顺序 = 依赖拓扑：被依赖方在前，前端 shell 最后）

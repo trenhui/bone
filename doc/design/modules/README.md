@@ -42,6 +42,7 @@
 | [BONE-X-Studio-详细设计方案.md](./BONE-X-Studio-详细设计方案.md) | Studio 终局愿景（与 [8.Studio Generator](./8.Studio%20Generator%20详细设计方案.md) **并存不合并**） |
 | [国际化设计方案.md](./国际化设计方案.md) | 控制台/微应用 i18n 横切 |
 | [bone-blueprint-元数据字段扩展设计.md](./bone-blueprint-元数据字段扩展设计.md) | blueprint 元数据字段扩展 |
+| [费用报销系统-设计文档.md](../lowcode/cases/费用报销系统-设计文档.md) | 费用报销域独立系统设计（双实体/7 态状态机/行级权限/出金契约；跨 `bone-app-expense` + 元数据运行时，2026-10-23 代码真源） |
 
 **Mode B 专题包**（非本目录）：[`../lowcode/`](../lowcode/README.md)
 
