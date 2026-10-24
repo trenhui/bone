@@ -7,7 +7,7 @@
 > **v1.3 变更（RAG 接线修复，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行按代码真序重写（容量护栏 / 引用强制前置 / 双路降级 / rerank 条件装配 / `doc_version` 幂等）；§2.4 建表说明补 `doc_version` 列语义；§3 REST 面补 rag 请求字段（`min_score`/`max_scan`/`doc_version`）；新增 §6 RAG 配置速查（`bone.ai.rag.*` 条件装配与降级口径）。
 > **v1.2 变更（生产硬依赖代码落地，承接诊断报告 P2 项）**：§1 可用能力表补 trace 回放 REST / rules 管理 REST（`bone-ai-app` 的 `TraceController` / `RuleController`，租户隔离）+ Redis 分布式配额自动装配说明；§0 补 `bone-ai-app` 已含 Actuator 探针分组；§5 红线口径补密钥 fail-fast。
 > **v1.1 变更（诊断后修订，见《方案诊断报告-2026-10-23》）**：§0 补部署双形态（`bone-ai-app` 聚合宿主）；§1 可用能力表补 rag / notification / integration / ledger 四模块 + document 行更新；§2.2 `@EnableSqlRepositories` 包清单补全（漏 `com.bone.aiorch.domain.hitl` 会导致 HITL 仓储缺失）；§2.4 建表清单补全 8 张；§3 补 `bone-ai-app` 全量拓扑宿主；§5 `Confirmed` 溯源标注目标态口径。
-> **回答一个问题**：产品服务（procuraAI / ClaimSphere / Equity）如何把 bone-ai **嵌进自己的进程**。
+> **回答一个问题**：产品服务（procuraAI / SynapClaim / Equity）如何把 bone-ai **嵌进自己的进程**。
 
 ---
 

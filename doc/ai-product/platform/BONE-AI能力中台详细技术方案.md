@@ -17,7 +17,7 @@
 ## 1. 运行时架构与部署拓扑
 
 ```
-产品服务（procuraAI / ClaimSphere / Equity，独立部署，Spring Boot 3.5.x）
+产品服务（procuraAI / SynapClaim / Equity，独立部署，Spring Boot 3.5.x）
    │ 进程内 starter 依赖（bone-ai-gateway/trace/rules…，库形态零额外跳）
    ├─▶ bone-ai-gateway ──HTTP(OpenAI 兼容)──▶ 模型服务（vLLM/Ollama 本地；云端备援随客户形态启用）
    ├─▶ bone-ai-document ──HTTP REST──▶ 解析 sidecar（默认 Docling | PaddleOCR 候选，K8s 独立 Deployment）
@@ -596,7 +596,7 @@ CREATE TABLE eval_run (
 
 ## 附录 C：产品侧衔接契约
 
-| 环节 | 平台侧 | 产品侧（procuraAI / ClaimSphere / Equity） |
+| 环节 | 平台侧 | 产品侧（procuraAI / SynapClaim / Equity） |
 |---|---|---|
 | 建议供给 | orchestration 产出建议（**当前形态**：`OrchestrationResult` = 规则结果 + `llmResponse` + `DecisionGate` verdict + `aiError`；**目标态**：`AiSuggestion<T>` = value + 置信度 + evidence_ref，批二补建） | 消费建议并渲染证据（条款锚点高亮），不直接落业务决定 |
 | 裁决回收 | HITL act → `Confirmed<T>` + `reason_type` 回流 | 业务状态机继续流转（如 procuraAI FR-205 修订流；ESCALATED 两端同名贯通，见总案 §3.3） |
