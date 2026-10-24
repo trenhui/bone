@@ -73,6 +73,7 @@ THIRD_PARTY = {
     "TransactionTemplate",
     "PropertyValidator",
     "ConfigurationProperties",
+    "EnableConfigurationProperties",
     "TypeHandler",
 }
 
