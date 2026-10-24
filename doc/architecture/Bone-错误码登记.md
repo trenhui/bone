@@ -266,6 +266,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `AI_RAG_RERANK_PROVIDER_FAIL` | 502 | 重排序推理服务调用/响应异常（共享 bge-reranker provider 故障；检索链 catch 后降级 RRF 粗序 + WARN） |
 | `AI_RAG_SCOPE_OVER_LIMIT` | 422 | 检索作用域切片数超容量护栏 `bone.ai.rag.max-scan`（fail-closed：超限即拒、提示收窄 doc_scope 或调大阈值，绝不静默截断；2026-10-23 新增） |
 | `AI_RAG_DOC_FORBIDDEN` | 403 | 显式 doc_scope 无文档级 ACL 归属（fail-closed：接入方提供 `RagAclPort` 受限可见集合后生效，绝不静默回落全租户检索；默认无 ACL 模型时不触发；2026-10-23 新增） |
+| `AI_RAG_GROUNDING_FAILED` | 422 | 生成答案未通过接地守卫 `GroundingGuard`（无引用 / 引用序号越界即幻觉引用 / 存在无支撑句子含编造的数字）。语义是**拒答**而非服务异常：调用方应作为可控合规结果返回并透出 `GroundingVerdict`，**不要重试**（重试只会再生成一段同样无支撑的内容）；2026-10-24 新增 |
 
 ### AI_APP_
 

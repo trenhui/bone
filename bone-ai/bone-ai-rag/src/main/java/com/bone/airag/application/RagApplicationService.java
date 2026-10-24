@@ -6,6 +6,7 @@ import com.bone.airag.domain.gateway.RagAclPort;
 import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.gateway.RerankPort;
 import com.bone.airag.domain.gateway.TenantProvider;
+import com.bone.airag.domain.model.GroundingVerdict;
 import com.bone.airag.domain.model.RagChunk;
 import com.bone.airag.domain.model.RagEvent;
 import com.bone.airag.domain.model.RagQuery;
@@ -15,6 +16,7 @@ import com.bone.airag.domain.model.RerankScored;
 import com.bone.airag.domain.repository.ChunkRepository;
 import com.bone.airag.domain.service.Bm25Scorer;
 import com.bone.airag.domain.service.CosineSimilarity;
+import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.MmrSelector;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.domain.service.RrfFuser;
@@ -83,6 +85,14 @@ public class RagApplicationService {
    */
   public static final String EVENT_RETRIEVE_SLOW = "RETRIEVE_SLOW";
 
+  /**
+   * 事件码（合规拒答，非降级）：生成答案未通过接地守卫，被拒答 / 降级为「仅返回原文片段」。
+   *
+   * <p>拒答是<b>正确行为</b>而不是故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严，
+   * 与 {@code RETRIEVE_SLOW} / 降级事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。
+   */
+  public static final String EVENT_GROUNDING_REJECTED = "GROUNDING_REJECTED";
+
   private final ChunkRepository chunkRepository;
   private final EmbeddingPort embeddingPort;
   private final RerankPort rerankPort;
@@ -98,6 +108,9 @@ public class RagApplicationService {
   /** 慢检索阈值（毫秒）：单次 retrieve 墙钟超过此值即发 {@link #EVENT_RETRIEVE_SLOW}。负数关闭（默认测试 -1）；0 = 任意正耗时都告警（极敏感/调试）；正数 = 生产水位（如 500）。 */
   private final long slowRetrieveMs;
 
+  /** 生成侧接地守卫（领域规则在 {@link GroundingGuard}，本层只做编排与事件下沉）。 */
+  private final GroundingGuard groundingGuard;
+
   public RagApplicationService(
       ChunkRepository chunkRepository,
       EmbeddingPort embeddingPort,
@@ -108,7 +121,8 @@ public class RagApplicationService {
       int candidatePool,
       double mmrLambda,
       int warnScanThreshold,
-      long slowRetrieveMs) {
+      long slowRetrieveMs,
+      GroundingGuard groundingGuard) {
     this.chunkRepository = chunkRepository;
     this.embeddingPort = embeddingPort;
     this.rerankPort = rerankPort;
@@ -119,6 +133,7 @@ public class RagApplicationService {
     this.mmrLambda = mmrLambda < 0 ? 0.0 : mmrLambda;
     this.warnScanThreshold = warnScanThreshold;
     this.slowRetrieveMs = slowRetrieveMs;
+    this.groundingGuard = groundingGuard;
   }
 
   /**
@@ -363,6 +378,39 @@ public class RagApplicationService {
                   + "（全量内存打分瓶颈，建议推进 R4 向量索引化）"));
     }
     return new RagRetrieveOutcome(results, List.copyOf(degradations));
+  }
+
+  /**
+   * 生成侧接地校验（「无出处不得生成」的运行时守卫，生成后、返回用户前调用）。
+   *
+   * <p>职责边界：判定规则全部在领域服务 {@link GroundingGuard}（ArchUnit 禁止应用服务承载领域规则），本方法只做
+   * <b>编排 + 事件下沉</b>——校验不通过时发 {@link #EVENT_GROUNDING_REJECTED}，让拒答率与检索降级/慢检索同一条
+   * 告警线聚合。
+   *
+   * <p>调用方语义：{@code grounded=false} 必须<b>拒答</b>或降级为「仅返回原文片段 + 出处」，不得把答案返回用户；
+   * 也不要重试——重试只会再生成一段同样无支撑的内容。{@link AiRagErrorCodes#GROUNDING_FAILED} 即对应的对外错误码。
+   *
+   * @param answer 待校验的模型输出（尚未返回用户）
+   * @param contexts 本次检索实际喂给模型的上下文（{@code RagResult} 列表，顺序即引用序号 1..n）
+   */
+  public GroundingVerdict verifyGrounding(String answer, List<RagResult> contexts) {
+    GroundingVerdict verdict = groundingGuard.verify(answer, contexts);
+    if (!verdict.grounded()) {
+      eventSink.record(
+          new RagEvent(
+              EVENT_GROUNDING_REJECTED,
+              "reason="
+                  + verdict.reason()
+                  + ", sentences="
+                  + verdict.sentenceCount()
+                  + ", unsupported="
+                  + verdict.unsupportedCount()
+                  + ", meanSupport="
+                  + String.format(java.util.Locale.ROOT, "%.3f", verdict.meanSupport())
+                  + ", invalidCitations="
+                  + verdict.invalidCitations()));
+    }
+    return verdict;
   }
 
   /**

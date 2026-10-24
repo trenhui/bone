@@ -7,7 +7,7 @@
 
 - **独立于业务进程**：纯 Python 标准库实现（`eval_rag.py`），不依赖业务运行时 / 不引入未验证三方包。
 - **只评检索**：对「检索结果 vs 金标准」做可量化打分（context_recall / context_precision / degradation_rate）。
-- **faithfulness 留接入点**：忠实度需 LLM 判定，本脚手架不实现，后续可接网关 grounding 守卫判定结果回填。
+- **faithfulness 留接入点**：忠实度终局需 LLM/NLI 判定，本脚手架不实现。v1.5 起 Java 侧已有**确定性**接地守卫 `GroundingGuard`（引用完整性 + 逐句词面支撑比 + 数字一致性，见方案 §6.2 / B20），它拦的是「编造金额/比例/期限 + 幻觉引用」这类硬错误；本脚手架的 faithfulness 位置应回填**语义级**判定（同义改写、跨句推断），两者互补而非替代。
 
 ## 文件
 
@@ -70,4 +70,4 @@ python eval_rag.py \
 
 - 本脚手架是 **R5** 的离线语义评测实现（面向真实语料 + 真实嵌入模型）。
 - **构建内确定性门禁**：`src/test/java/com/bone/airag/eval/RagGoldenSetEvalTest.java` 是随 `mvn clean verify` 在 CI 强制执行的中文 golden-set 机制回归门禁——每个金标准用例的预期切片必须落在 topK，任何检索链回归（引用过剔 / RRF 权重 / 分词退化 / 阈值误杀）即红灯。二者分工：**JUnit 门禁 = 每次构建的快回归；本 sidecar = 真实语料的离线语义评测**。
-- **faithfulness（忠实度）** 暂不实现：需 LLM 判定答案是否仅由上下文支撑，留作后续接网关 grounding 守卫的判定回填（见方案 §6.2）。
+- **faithfulness（忠实度）** 暂不实现：需 LLM 判定答案是否仅由上下文支撑。v1.5 的 `GroundingGuard` 只做词面级确定性校验（假阴/假阳边界见方案 §6.2），语义级忠实度仍需在此回填（见方案 §6.2）。

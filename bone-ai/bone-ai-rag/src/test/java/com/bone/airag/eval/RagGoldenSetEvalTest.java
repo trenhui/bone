@@ -13,6 +13,7 @@ import com.bone.airag.domain.model.RagChunk;
 import com.bone.airag.domain.model.RagQuery;
 import com.bone.airag.domain.model.RagResult;
 import com.bone.airag.domain.repository.ChunkRepository;
+import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.infrastructure.embedding.TransitionalHashEmbedding;
@@ -57,7 +58,8 @@ class RagGoldenSetEvalTest {
             30,
             0.0,
             0,
-            -1);
+            -1,
+            new GroundingGuard(0.6, 0.0));
 
     List<GoldenCase> cases =
         List.of(

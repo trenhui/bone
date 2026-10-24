@@ -43,4 +43,15 @@ public final class AiRagErrorCodes {
    * （仅租户硬隔离兜底）；接入方提供 ACL 实现后生效。
    */
   public static final String DOC_FORBIDDEN = "AI_RAG_DOC_FORBIDDEN";
+
+  /**
+   * 生成答案接地校验未通过（422；{@code GroundingGuard} 判定 {@code grounded=false}）。
+   *
+   * <p>三种触发面：① 答案无任何引用标记（违反强制引用契约）；② 引用了不存在的序号（幻觉引用，如上下文只有 2 条却写 [9]）；
+   * ③ 存在无上下文支撑的句子（编造陈述，或句中数字在上下文里找不到）。
+   *
+   * <p>语义是「拒答」而非「服务异常」：调用方应把它当作可控合规结果返回（附 {@code GroundingVerdict} 说明原因），
+   * 不要重试——重试只会生成另一段同样无支撑的内容。
+   */
+  public static final String GROUNDING_FAILED = "AI_RAG_GROUNDING_FAILED";
 }

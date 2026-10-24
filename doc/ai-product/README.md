@@ -16,7 +16,7 @@
 | ├ [BONE-AI能力中台整体方案.md](./platform/BONE-AI能力中台整体方案.md) | **AI 能力中台唯一方案真源**（v1.13：能力同构论证 C1–C11 + 模块架构（11 模块 + 评测挂流水线）+ 框架/许可定案 + 落地批次） |
 | ├ [BONE-AI能力中台详细技术方案.md](./platform/BONE-AI能力中台详细技术方案.md) | **详设**（v1.8）：模块详设 / 契约与 DDL（8 张已入 `bone-init.sql`）/ 非功能阈值初值 / WBS / 平台 API 面 / **生产就绪清单**；v1.8 补流式 SSE（§2.1）+ TTFT（§3.2/§6.2）+ ArchUnit 口径订正（§3.3） |
 | ├ [BONE-AI接入指南.md](./platform/BONE-AI接入指南.md) | **产品接入指南**（v1.6）：进程内嵌库主形态 + `bone-ai-app` 聚合宿主辅形态；可用能力表 / 接线步骤 / 双参考宿主 / RAG 配置速查；v1.6 补流式响应 §2.7 |
-| ├ [BONE-AI-RAG能力方案.md](./platform/BONE-AI-RAG能力方案.md) | **RAG 专项独立方案**（v1.4）：以 `bone-ai-rag` 源码真源为基线，覆盖架构/数据模型/写入链/读取全链/引用强制/隔离/降级/可观测/配置/API；对标 2026 最佳实践的对齐矩阵（B1–B19）+ 路线图（R1 接 G 闭环含 grounding 守卫与间接注入防护 / R4 pgvector 优先级上提 / R5 评测前置 / R7 双路并发 / R8 上下文预算 / R9 语义缓存 / R10 嵌入轮换）。**v1.3：规模止血可观测 + 批量嵌入 + 评测 sidecar；v1.4：中文双路口径统一（`CjkTokenizer`）+ golden-set 评测门禁进 CI（`RagGoldenSetEvalTest`）**；取代总案 §4.5 与详设 §2.6 的散落描述 |
+| ├ [BONE-AI-RAG能力方案.md](./platform/BONE-AI-RAG能力方案.md) | **RAG 专项独立方案**（v1.5）：以 `bone-ai-rag` 源码真源为基线，覆盖架构/数据模型/写入链/读取全链/引用强制/隔离/降级/可观测/配置/API；对标 2026 最佳实践的对齐矩阵（B1–B20）+ 路线图（R1 接 G 闭环含 grounding 守卫调用点与间接注入防护 / R4 pgvector 优先级上提 / R5 评测前置 / R7 双路并发 / R8 上下文预算 / R9 语义缓存 / R10 嵌入轮换）。**v1.3：规模止血可观测 + 批量嵌入 + 评测 sidecar；v1.4：中文双路口径统一（`CjkTokenizer`）+ golden-set 评测门禁进 CI（`RagGoldenSetEvalTest`）；v1.5：生成侧接地守卫（`GroundingGuard`：引用完整性 + 逐句支撑比 + 数字一致性 + `GROUNDING_REJECTED` 事件）**；取代总案 §4.5 与详设 §2.6 的散落描述 |
 | ├ [BONE-AI依赖与许可SBOM清单.md](./platform/BONE-AI依赖与许可SBOM清单.md) | 法务送审版 SBOM（v1.2）：依赖许可总表 + 零新依赖实证 + 禁用负表 + 5 项待确认点（POC 签前冻结选型） |
 | └ [方案诊断复核-2026-10-24.md](./platform/方案诊断复核-2026-10-24.md) | RAG 方案 v1.2 的诊断复核（minScore 量纲漂移等 → v1.2 修复依据） |
 | [方案诊断报告-2026-10-23.md](./方案诊断报告-2026-10-23.md) | 四件套逻辑自洽 / 名实相符 / 务实 / 可落地诊断（源码走查实证）+ 优化执行记录 |

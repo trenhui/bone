@@ -7,6 +7,7 @@ import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.gateway.RerankPort;
 import com.bone.airag.domain.gateway.TenantProvider;
 import com.bone.airag.domain.repository.ChunkRepository;
+import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.infrastructure.embedding.HttpBgeEmbeddingClient;
@@ -110,6 +111,23 @@ public class RagAutoConfiguration {
     return new LoggingRagEventSink();
   }
 
+  /**
+   * 生成侧接地守卫（「无出处不得生成」的运行时校验）。
+   *
+   * <p>默认实现是确定性词面校验（{@link GroundingGuard}），零外部依赖；生成侧（bone-ai-app / 接 R1 后的 gateway）
+   * 注入后对 LLM 输出调用 {@code verify(answer, contexts)}，判定不通过即拒答或降级为「仅返回原文片段」。
+   *
+   * <p>不在此处硬接生成链：bone-ai-gateway 当前不依赖 rag（唯一消费方是 bone-ai-app 的 RagController），
+   * 生成侧接线随 R1（检索锚点传入生成）一并完成，本 Bean 就是那条接线的落点。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public GroundingGuard groundingGuard(RagInferenceProperties props) {
+    return new GroundingGuard(
+        props.getGrounding().getMinSupportRatio(),
+        props.getGrounding().getMaxUnsupportedRatio());
+  }
+
   @Bean
   @ConditionalOnBean(name = "chunkRepository") // 按名而非按类型：SDK 仓储是 FactoryBean 代理，类型不可静态推断
   @ConditionalOnMissingBean
@@ -120,6 +138,7 @@ public class RagAutoConfiguration {
       TenantProvider tenantProvider,
       RagAclPort ragDocAcl,
       RagEventSink ragEventSink,
+      GroundingGuard groundingGuard,
       RagInferenceProperties props) {
     return new RagApplicationService(
         chunkRepository,
@@ -131,6 +150,7 @@ public class RagAutoConfiguration {
         props.getCandidatePool(),
         props.getMmrLambda(),
         props.getWarnScanThreshold(),
-        props.getSlowRetrieveMs());
+        props.getSlowRetrieveMs(),
+        groundingGuard);
   }
 }

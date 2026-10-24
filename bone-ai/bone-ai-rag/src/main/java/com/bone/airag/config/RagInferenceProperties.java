@@ -19,6 +19,7 @@ public class RagInferenceProperties {
 
   private Embedding embedding = new Embedding();
   private Rerank rerank = new Rerank();
+  private Grounding grounding = new Grounding();
 
   /** 进入重排序的候选池大小（≥ topK）：RRF 融合后取前 N 名送 cross-encoder 精排，默认 30（详设 §2.6 top-30）。 */
   private int candidatePool = 30;
@@ -71,6 +72,28 @@ public class RagInferenceProperties {
     private String version = "bge-m3@http";
 
     private Duration timeout = Duration.ofSeconds(10);
+  }
+
+  /**
+   * 生成侧接地守卫阈值（{@code bone.ai.rag.grounding.*}）。
+   *
+   * <p>两个阈值都只决定「判多严」，不决定「是否校验」——守卫本身是 fail-closed 的，接入方注入即生效，
+   * 不存在「配置漏了就不校验」的静默通道。
+   */
+  @Getter
+  @Setter
+  public static class Grounding {
+
+    /**
+     * 单句支撑比下限：句内词被所选上下文覆盖的比例低于此值即判该句无支撑。
+     *
+     * <p>默认 0.6 是「改写句仍能过、编造句过不去」的经验水位；须按 golden set 与线上拒答率校准
+     * （拒答率突增说明实体词被改写或分词口径变化）。
+     */
+    private double minSupportRatio = 0.6;
+
+    /** 允许的无支撑句占比上限（默认 0 = 零容忍，任一句无支撑即整体拒答）。 */
+    private double maxUnsupportedRatio = 0.0;
   }
 
   @Getter

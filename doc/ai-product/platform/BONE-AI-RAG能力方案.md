@@ -1,10 +1,11 @@
 # BONE-AI RAG 能力方案（独立版）
 
-> **版本**：v1.4　**日期**：2026-10-24（中文双路口径 + 评测门禁 CI 化）　**归口**：平台架构组
+> **版本**：v1.5　**日期**：2026-10-24（生成侧接地守卫落地）　**归口**：平台架构组
 > **v1.1 变更（基于 2026 业界最佳实践二次优化）**：① 修正测试口径（ArchUnit 12 条 + 单测 31 例 = 43 校验项，原「43 绿」表述不精确）；② §5.1 增补检索双路**并发**优化点（当前顺序执行）；③ §6 新增「间接提示注入防护」专节 + 锐化「无依据拒答」契约 + §6.2 RAG→生成闭环接线细化（结合已落地的网关流式 / 强制引用 / 内容安全 / PII 脱敏）；④ §9 增补**细粒度 OTel span**（每阶段时延）；⑤ §10 增补**上下文 token 预算**契约；⑥ §11 对齐矩阵补 B14–B17、路线图补 R7/R8；⑦ §12 生产就绪清单同步刷新。
 > **v1.2 变更（诊断复核驱动的优化，见《方案诊断复核》同源补充）**：① **[已落地代码]** 修复 `minScore` 量纲漂移高危项——`minScore` 仅当分数为 rerank 量纲（rerank 正常且未降级）时生效，rerank 降级/未配置时跳过阈值，杜绝事故期误杀全部结果（commit 见下）；② §6.2 明确「强制引用接地」在生成侧仍需**网关新增 grounding 校验**（当前网关无按 `RagResult` 锚点校验生成接地的能力，标注为目标态）；③ §7 补**写入侧数据保护**（入库明文 PII 风险）；④ §10 `max-scan` 行补推荐水位 + P99 延迟告警建议、优先级上提；⑤ §10 `min-score` 行补量纲安全说明；⑥ §11 矩阵 B7 重分类为「❌ 缺口/过渡」、B10 提升语义缓存优先级、新增 B18 嵌入版本轮换策略、R5 评测前置；⑦ §12 生产就绪清单刷新；⑧ §13 防回归决策补 #9（量纲安全）/#10（接地守卫+写入侧保护+评测前置）。
 > **v1.3 变更（「企业复杂场景胜任度」诊断驱动，见《RAG方案诊断-企业复杂场景胜任度-2026-10-24》）**：**聚焦落地不依赖外部服务、低风险、高信号的代码止血 + 评测前置脚手架**，真实 P0 项（pgvector R4 / 文档中心 ACL 接线 B / 网关 grounding 守卫 C）维持目标态（见 §11 路线图）。① **[已落地代码] 规模止血可观测**：新增 `SCOPE_NEAR_LIMIT`（作用域切片数超 `warn-scan-threshold` 未触 `max-scan` 即预警）+ `RETRIEVE_SLOW`（单次检索墙钟超 `slow-retrieve-ms` 即预警）两事件码，撞上限前先给信号（引导下调 `max-scan` 或推进 R4 索引化），而非等 OOM/超时爆发；② **[已落地代码] ingest 批量嵌入吞吐**：`EmbeddingPort` 新增 `embedBatch(List)`（默认逐条循环，真共享推理覆写为数组输入），`ingest` 改为「先批嵌入再失效旧切片」——fail-closed 顺序更稳（嵌入失败旧版本不动）+ 大语料入库往返与 GPU 利用率显著优化；③ **[脚手架] R5 评测前置落地为独立 sidecar**：`eval/eval_rag.py` 读 golden set + 实际检索结果 JSON，算 `context_recall`/`context_precision`/`degradation_rate`，含 `recall-gate` 门禁（CI 化说明见 `eval/README.md`），`minScore`/`MMR`/`candidate-pool` 阈值标定不再裸奔上线；④ §9 补两事件码、§10 补 `warn-scan-threshold`(2000)/`slow-retrieve-ms`(500) 两配置项、§11 矩阵补 B19（批嵌入 ✅）、§12/§13 同步刷新。
 > **v1.4 变更（中文双路口径修正 + 评测门禁 CI 化）**：**聚焦「产品真实语料是中文」这一被低估的可用性缺陷 + 把评测从脚手架变成构建内强制门禁**。① **[已落地代码] 中文分词口径统一**：`TransitionalHashEmbedding` 原按空白 `\s+` 切分——中文整句成单 token，向量路在中文语料上近乎失效（混合检索退化 BM25 单路）。抽出 `CjkTokenizer`（字母数字串 + 汉字整串 + CJK bigram，与 BM25 同口径）供两路共用，过渡嵌入版本升 `hash-64-cjk`（旧向量 fail-closed 跳过，避免混用不可比向量）；② **[已落地代码] 评测门禁 CI 化（R5 闭环）**：新增确定性 JUnit 门禁 `RagGoldenSetEvalTest`（中文 golden fixture → 每例预期切片必须落 topK，任何检索链回归即红），随 `mvn clean verify` 在 CI 强制执行；Python sidecar 保留面向真实语料/真模型的语义评测；③ 回归测试 `TransitionalHashEmbeddingTest`（中文相关 > 无关相似度 + 版本断言）；④ §5.1 补分词口径一致性说明、§11 B8 升级为「CI 门禁」、§12 补门禁行、§13 补决策 #13。
+> **v1.5 变更（生成侧接地守卫落地——把「无出处不得生成」从检索侧延伸到生成侧）**：v1.2~v1.3 一直把这项列为「网关 grounding 守卫，属 R1 目标态」。本轮把它做成**可被注入、可被回归的确定性领域组件**，R1 接线时无需再设计只差调用。① **[已落地代码] `GroundingGuard`（`domain/service`）+ `GroundingVerdict`（`domain/model`）**：生成后校验四件事——上下文非空、答案至少一处引用、引用序号必须落在本次上下文条数内（拦幻觉引用如 `[9]`）、逐句词面支撑比达标且**句中数字必须能在上下文找到**（金额/比例/期限是最易被编造的字段，词面相似而数字不同正是典型幻觉形态）；任一不满足即 `grounded=false`，语义是**拒答**而非服务异常。② **[已落地代码] 应用门面 + 事件下沉**：`RagApplicationService.verifyGrounding(answer, contexts)` 一行接入（判定规则留在领域层，应用层只做编排），不通过时发 `GROUNDING_REJECTED` 事件——拒答率与 `RETRIEVE_SLOW`/降级事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。③ **[已落地代码] 装配**：`RagAutoConfiguration` 暴露 `GroundingGuard` Bean（`@ConditionalOnMissingBean`，可被更强实现覆盖），阈值走 `bone.ai.rag.grounding.*`；`AiRagErrorCodes.GROUNDING_FAILED` 为对外错误码。④ §3.2 补判定契约、§6.2 落地态澄清改为「组件就绪、待 R1 接线」、§10 补两阈值、§11 补 B20、§12/§13 同步。⑤ **边界如实标注**：词面级校验不是语义蕴含判定（同义改写可能假阴、拼接句可能假阳），终局须叠加 NLI/LLM faithfulness；中文数字暂不归一化。
 > **配套**：《BONE-AI 能力中台整体方案》（v1.13）/《详细技术方案》（v1.8）/《接入指南》（v1.6）
 > **方法**：以 `bone-ai/bone-ai-rag` 模块源码 + `bone-ai-app` REST 面真源为基线，对标 2026 业界 RAG 最佳实践（Modular RAG / 混合检索 + RRF + cross-encoder 精排 / 强制引用接地 / 元数据隔离 / 可观测降级），沉淀为独立可评审方案。
 > **定位说明**：本文是 RAG 专项的独立方案文档（此前 RAG 散见于总案 §4.5 与详设 §2.6）。本文取代上述散落描述，作为 RAG 能力的权威基线；总案/详设相关段落保留交叉引用即可。
@@ -101,6 +102,12 @@ RagResult(String chunkRef, String clauseRef, int spanStart, int spanEnd,
 // 检索信封（P1 可观测）
 RagRetrieveOutcome(List<RagResult> results, List<String> degradations)
 //   degradations ∈ {EMBEDDING_DEGRADED, RERANK_DEGRADED}；空 = 全功能档位
+
+// 生成侧接地判定（v1.5：生成后、返回用户前的运行时守卫）
+GroundingVerdict(boolean grounded, String reason, int sentenceCount, int unsupportedCount,
+                 double meanSupport, List<String> invalidCitations, List<String> unsupportedSentences)
+//   reason ∈ {PASS, NO_CONTEXT, NO_CITATION, INVALID_CITATION, UNSUPPORTED_CLAIM}
+//   grounded=false ⇒ 调用方必须拒答或降级为「仅返回原文片段 + 出处」，不得重试
 ```
 
 ---
@@ -113,8 +120,9 @@ ingest(tenantId, docId, docVersion, segments)
    ├─ 取该文档已有切片 findByTenantAndDoc（仅单文档，内存有界）
    ├─ 幂等判定：同版本 且 切片数一致  ⇒ 跳过（内容不变，不重写）
    ├─ 异版本 / 残缺（崩溃半截，切片数不符）⇒ 软删旧切片后重建
-   ├─ 逐切片：embeddingPort.embed(text) → RagChunk.of(...) → save
-   └─ 失败语义：嵌入失败直接上抛，不留半截新版本（重入时切片数不符触发重建自愈）
+   ├─ embeddingPort.embedBatch(全部切片文本) → 校验返回数量一致（不符即 fail-closed 上抛）
+   ├─ 校验通过后才失效旧切片 → RagChunk.of(...) → save               （v1.3：先嵌入后删，失败不毁旧版本）
+   └─ 失败语义：嵌入失败直接上抛，旧版本切片完好、不留半截新版本（重入时切片数不符触发重建自愈）
 ```
 
 **切分策略（写入侧契约）**：当前约定「条款级切片优先 + 超长条款按语义段二次切分」，切片须携带 `clauseRef` + `spanStart/spanEnd` 锚点（否则检索侧 fail-closed 丢弃）。终局建议引入**层级切分（parent-child / sentence-window）**以提升小块召回与大块上下文的兼顾（见 §11 R3）。
@@ -208,7 +216,9 @@ query
    │        · 生成侧强制「答案须回溯到 RagResult 出处锚」——无锚引用视为违规（与 §6 引用强制同源）
    │
    ④ 响应带回溯引用（条款 span）+ 降级痕迹 + 证据（含脱敏后的检索上下文）
-   > **落地态澄清（v1.2）**：③ 的「生成侧强制答案须回溯到 RagResult 出处锚、无锚引用视为违规」目前是**契约层要求**；网关当前并无按 `RagResult` 锚点**运行时校验生成接地**的能力（LLM 仍可能凭自身知识编造超出上下文的内容）。要把「无出处不得生成」从检索侧延伸到生成侧，gateway 需新增 **grounding 校验**守卫（生成后校验每结论是否可回溯到检索 span，否则拒答/标低置信）——属 R1 接线一并交付的**目标态能力**，详见 §11 R1 / §13 #10。
+   > **落地态（v1.5 更新）**：③ 的「生成侧强制答案须回溯到 RagResult 出处锚」已从**纯契约**升级为**可注入的确定性组件**——`GroundingGuard`（领域服务）+ `RagApplicationService.verifyGrounding(answer, contexts)`（应用门面）+ `GROUNDING_REJECTED` 事件（拒答可观测）+ `AI_RAG_GROUNDING_FAILED` 错误码，实现与回归测试均已就绪（§11 B20）。
+   > **仍待接线（R1 剩余部分）**：`bone-ai-orchestration` 当前**不依赖** `bone-ai-rag`（R 与 G 尚未在同一编排里会合），`bone-ai-gateway` 亦不依赖 rag。故守卫目前是「组件就绪、调用点待接」：R1 落地时在 ③ 之后、④ 之前插入一次 `verifyGrounding(answer, results)`，`grounded=false` 即拒答/降级，无需再改守卫本身。
+   > **判定能力边界（勿高估）**：词面级校验 ≠ 语义蕴含判定。同义改写可能被判无支撑（假阴，方向安全），大量复用上下文词汇的拼接句可能蒙混过关（假阳）；中文数字（「千分之一」）暂不归一化。终局须叠加 NLI/LLM faithfulness 判定（`eval/` sidecar），守卫负责**零成本拦掉最危险的一类**（编造金额/比例/期限 + 幻觉引用）。
 ```
 
 **接线收益**：检索结果天然带出处锚 → 网关强制引用接地；检索上下文经网关 PII 脱敏（出站请求与证据双向掩码）→ 语料中的敏感字段不裸奔；流式 → 长答案首字体验；内容安全/注入检测 → 间接注入纵深兜底。这条链路把「受控检索库」升级为「受控检索+受控生成」完整能力，是 RAG 真正可用的标志（R1）。
@@ -257,6 +267,7 @@ query
 - **事件下沉**：`RagEventSink` 端口 + `RagEvent(type, detail)`；默认 `LoggingRagEventSink` 结构化 WARN（保持既有可观测性不降级）。
 - **降级 / 数据卫生痕迹**：`EMBEDDING_DEGRADED` / `RERANK_DEGRADED` / `DROP_INVALID_CHUNKS`，既进事件通道，也透出到响应 `degradations`——接入方/评测管线可直接消费，不必翻服务端日志。
 - **规模止血预警（v1.3 落地）**：`SCOPE_NEAR_LIMIT`（作用域切片数 > `warn-scan-threshold` 但未触 `max-scan`）+ `RETRIEVE_SLOW`（单次检索墙钟 > `slow-retrieve-ms`），只进事件通道、不进 `degradations`（非能力降级，是容量/性能信号）。过渡态每次检索全量载入内存打分，切片数增长会线性推高延迟——两事件在撞上限/OOM 前先给可观测信号，与 P99 延迟告警联动即可定位「是容量还是别的」；接入方据以决定下调 `max-scan` 或推进 R4 索引化。
+- **合规拒答事件（v1.5 落地）**：`GROUNDING_REJECTED`（生成答案未过接地守卫，detail 含 `reason` / `sentences` / `unsupported` / `meanSupport` / `invalidCitations`）。拒答是**正确行为**而非故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严；与降级/慢检索事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。通过时不发事件（事件通道只承载异常，避免正常流量淹没告警）。
 - **目标态**：接入方以 `@Bean` 覆盖 `RagEventSink` 为 bone-ai-trace 落库 + 告警适配，检索链零改动（L3）。
 - **OTel `gen_ai.*` 打点**：仍为 L3 依赖项（需 Micrometer，走 CVE/SBOM 门禁）。
 - **细粒度检索链路 span（目标态，R6 子项）**：在 `RagEventSink` 落库基础上，建议为检索链每个阶段打**独立 span**（父 span `rag.retrieve`，子 span `rag.acl` / `rag.capacity_guard` / `rag.embed` / `rag.bm25` / `rag.rrf` / `rag.rerank` / `rag.mmr`），记录各阶段墙钟时延与候选数。价值：① 性能排查（哪段是首结果延迟瓶颈，尤指 §5.1 并发优化前的 `rag.embed`）；② RAGAS 评测时按阶段归因（召回不足在 embed/rerank，而非生成）；③ `degradations` 与 span 事件关联，告警可定位到具体降级阶段。span 命名与 `gen_ai.*` 语义约定映射表版本化，不硬编码常量。
@@ -279,6 +290,8 @@ query
 | `max-scan` | 10000 | 容量护栏（fail-closed）。**调优建议（v1.2）**：10000 是「不可行点」才触发的上限，阈值以下每次查询仍全量载入内存 + BM25 统计 + 余弦，几千条时延迟已劣化却无告警；建议下调到实测安全水位（如 2000~5000）并接 **P99 检索延迟告警**；R4（pgvector/ANN）优先级应上提，不宜等「想象规模」（见 §11） |
 | `warn-scan-threshold` | 2000 | **容量预警（v1.3）**：作用域切片数超过此值（且未触 `max-scan`）即发 `SCOPE_NEAR_LIMIT` 事件。撞上限前的可观测预警（引导下调 `max-scan` 或推进 R4），非 fail-closed。≤0 关闭 |
 | `slow-retrieve-ms` | 500 | **慢检索预警（v1.3）**：单次 retrieve 墙钟超过此值即发 `RETRIEVE_SLOW` 事件，供落 trace / 接 P99 告警。负数关闭；0 = 任意正耗时告警（调试）；按实测 P99 校准，默认 500ms 作首结果/单查询延迟经验水位 |
+| `grounding.min-support-ratio` | 0.6 | **接地守卫阈值（v1.5）**：单句「词被所选上下文覆盖的比例」下限，低于即判该句无支撑。默认 0.6 = 「改写句能过、编造句过不去」的经验水位；须按 golden set 与线上**拒答率**校准（拒答率突增通常是实体被改写或分词口径变化，不是语料问题） |
+| `grounding.max-unsupported-ratio` | 0.0 | **接地守卫容差（v1.5）**：允许的无支撑句占比上限，默认 0 = 零容忍（任一句无支撑即整体拒答）。强监管场景不建议放宽；放宽则必须在响应里显式透出 `unsupportedCount`，不能静默放行 |
 | `mmr-lambda` | 0.0 | 多样性权重（λ≤0 关闭；λ∈(0,1) 生效；开启时精排 3 倍扩样） |
 | `context-token-budget` | 0（不限制） | **RAG→LLM 上下文预算**：送精排/选取后，累计切片 token 不得超过该值；超限时按最终分从高到低截断（保证高相关切片优先入上下文）。0 = 不限制（由调用方/编排层兜底）。需与网关 LLM `maxTokens` + 系统提示词预留共同构成「总上下文预算」 |
 
@@ -312,10 +325,11 @@ query
 | B17 | 上下文 token 预算（RAG→LLM 上下文窗口自律） | 未落地（无界 topK×块长） | ❌ 缺口 | R8：随 R1 接线补 `context-token-budget` |
 | B18 | 嵌入模型版本轮换策略 | 换模型时旧向量静默退出向量路 → 全回落 BM25，质量断崖且无主动重建 | ❌ 缺口 | R10：轮换期双写新旧向量 + 重建作业 + 质量监控 |
 | B19 | ingest 批量嵌入吞吐（大语料入库关键路径） | `EmbeddingPort.embedBatch(List)` 落地：默认逐条循环，`HttpBgeEmbeddingClient` 覆写为 TEI/infinity 数组输入；`ingest` 先批嵌入再失效旧切片（fail-closed 顺序更稳） | ✅ 达成（v1.3） | 随 R4 可调批大小 / 背压 |
+| B20 | 生成侧接地守卫（「无出处不得生成」的运行时可验证性） | `GroundingGuard`（`domain/service`）+ `GroundingVerdict`：上下文非空 / 至少一处引用 / 引用序号有效（拦幻觉引用）/ 逐句词面支撑比 + **句中数字必须在上下文可寻**；`RagApplicationService.verifyGrounding` 门面 + `GROUNDING_REJECTED` 事件 + `AI_RAG_GROUNDING_FAILED`；`@ConditionalOnMissingBean` Bean 可被更强实现（NLI）覆盖 | ✅ 组件就绪（v1.5）/ ⚠️ 调用点待 R1 接线 | R1 插入调用；终局叠加 NLI / LLM faithfulness（词面级判定的假阴/假阳边界见 §6.2） |
 
 ### 路线图（按依赖性排序）
 
-- **R1（接 G，最高优先）**：把 `bone-ai-rag` 接入 `bone-ai-orchestration` 生成编排 + `bone-ai-gateway` 门面（接线形态见 §6.2），形成「检索 → 数据围栏注入 → 网关流式 + 强制引用接地 + 内容安全/PII 兜底」闭环；同步完成文档中心 ACL（`RagAclPort`）接入，消除同租户跨文档越权面，并**一并闭环 B15 间接注入纵深防护**。其中「强制引用接地」须由 **gateway 新增 grounding 校验守卫**（生成后校验每结论可回溯到检索 span，否则拒答/标低置信，见 §6.2 落地态澄清），把「无出处不得生成」从检索侧延伸到生成侧。这是「RAG 真正可用」的标志。
+- **R1（接 G，最高优先）**：把 `bone-ai-rag` 接入 `bone-ai-orchestration` 生成编排 + `bone-ai-gateway` 门面（接线形态见 §6.2），形成「检索 → 数据围栏注入 → 网关流式 + 强制引用接地 + 内容安全/PII 兜底」闭环；同步完成文档中心 ACL（`RagAclPort`）接入，消除同租户跨文档越权面，并**一并闭环 B15 间接注入纵深防护**。其中「强制引用接地」的**运行时代码已就绪（v1.5 `GroundingGuard`，B20）**：R1 只需在生成完成、响应返回之前插入一次 `verifyGrounding(answer, results)`，`grounded=false` 即拒答/降级——不必再设计守卫本体。这是「RAG 真正可用」的标志。
 - **R2（召回提升）**：查询改写/分解（multi-query / HyDE / step-back），按评测集回流标定收益后启动；接线点预留于编排侧。
 - **R3（切分质量）**：层级切分（parent-child / sentence-window），兼顾小块召回与大块上下文；可结合**上下文嵌入（late chunking）**——整文档嵌入后按块池化，缓解小块脱离上下文的语义漂移（需嵌入模型支持长上下文）。
 - **R4（规模与性能，优先级上提）**：pgvector 独立实例 + ANN（HNSW）索引；过渡态 `maxScan` 护栏阈值（建议下调至实测安全水位 + P99 延迟告警）即迁移触发信号。不为想象规模预付 ES 第三套检索栈的运维税。**（v1.3 已先落地 `SCOPE_NEAR_LIMIT` + `RETRIEVE_SLOW` 可观测止血，R4 本体——全量内存扫描 → ANN 索引化——仍待做，不可用止血替代。）**
@@ -342,9 +356,10 @@ query
 | ingest 批量嵌入（`embedBatch`，TEI/infinity 数组输入 + fail-closed 顺序，v1.3） | ✅ 代码落地（v1.3） |
 | 中文双路口径一致（`CjkTokenizer` 共用，CJK bigram，v1.4） | ✅ 代码落地（v1.4） |
 | 评测门禁（中文 golden-set 机制回归，`mvn clean verify` CI 强制，v1.4） | ✅ 代码落地（v1.4） |
-| ArchUnit 门禁（12 条）+ 单测（42 例，含 3 例 minScore 量纲回归 + 5 例 v1.3 + 3 例 v1.4，合计 54 校验项） | ✅ |
+| 生成侧接地守卫（`GroundingGuard`：引用完整性 + 逐句支撑比 + 数字一致性，v1.5） | ✅ 组件就绪（v1.5）/ ⚠️ 调用点待 R1 |
+| ArchUnit 门禁（12 条）+ 单测（54 例，含 3 例 minScore 量纲回归 + 5 例 v1.3 + 3 例 v1.4 + 12 例 v1.5，合计 66 校验项） | ✅ |
 | minScore 量纲安全（rerank 降级/未配时跳过阈值，杜绝事故期误杀） | ✅ 代码落地（v1.2） |
-| RAG 接入生成编排（G 接线 + 间接注入防护 + grounding 守卫） | ❌ R1 |
+| RAG 接入生成编排（G 接线 + 间接注入防护 + grounding 守卫调用点） | ❌ R1（grounding 守卫本体已就绪，v1.5） |
 | 文档中心 ACL 适配 | ❌ L3 |
 | 写入侧数据保护（入库明文 PII） | ❌ 目标态（§7.1） |
 | pgvector 终局 + ANN | ❌ R4 |
@@ -373,3 +388,4 @@ query
 11. **容量/性能问题先给可观测信号，再谈 fail-closed（v1.3，防回归）**：过渡态全量内存扫描下，切片数到几千量级延迟已悄然劣化。`max-scan` 只在「不可行点」才 fail-closed，撞上限前的劣化无任何信号——故新增 `SCOPE_NEAR_LIMIT`（作用域切片数 > `warn-scan-threshold`）+ `RETRIEVE_SLOW`（墙钟 > `slow-retrieve-ms`）两事件，互为判据（区分「容量」还是「别的」），是 R4 索引化落地前的**可观测止血**，不替代 R4 本体。回归测试 `scope_near_limit_emits_event_when_above_threshold` / `slow_retrieve_emits_event` 锁死「超阈必发事件、且不误触 fail-closed」。
 12. **批嵌入必须先于失效旧切片（v1.3，防回归）**：`ingest` 改为「先 `embedBatch` 拿全向量 → 校验数量一致 → 再 `deleteByIds` 旧切片 → 存新」。任一环节失败（批返回数量不符 / provider 故障）直接上抛，旧版本切片完好、不会留下半截新版本（重入时切片数不符触发重建自愈）。绝不先删后嵌——那会在嵌入失败时把可用旧版本也一起抹掉。回归测试 `ingest_batch_embedding_count_mismatch_fails_closed` 锁死「数量不符即拒、旧版本不动」。
 13. **中文双路口径必须一致 + 评测门禁进构建（v1.4，防回归）**：BM25 与过渡嵌入必须共用 `CjkTokenizer`——两路分词口径不一致会让向量路在中文语料上悄然失效（混合检索退化为 BM25 单路），且**无任何报错**（最隐蔽的静默质量退化）。改分词口径须同步升 `embedding_ver`，旧向量因版本不符 fail-closed 跳过，绝不与不可比向量混用。同时把 golden-set 评测做成 `mvn clean verify` 内的 JUnit 门禁（`RagGoldenSetEvalTest`）——**评测不进构建就等于没有评测**，检索链回归（引用过剔 / RRF 权重 / 分词退化 / 阈值误杀）无从兜底。回归测试 `chinese_query_matches_related_clause_better_than_unrelated` / `golden_set_context_recall_gate` 锁死此契约。
+14. **接地守卫必须 fail-closed 且规则在领域层（v1.5，防回归）**：生成后的接地校验有四条不可妥协的语义——① 无上下文 / 空答案 ⇒ 拒；② 答案无任何引用标记 ⇒ 拒（强制引用是契约，不是加分项）；③ 引用序号越界 ⇒ 拒（幻觉引用 `[9]` 比无引用更危险，它伪装成有据）；④ 逐句支撑比不达标，**或句中数字在所选上下文里找不到** ⇒ 该句无支撑（金额/比例/期限是最易被编造的字段，词面相似而数字不同正是典型幻觉形态）。判定规则一律放 `domain/service`（ArchUnit 禁止应用服务承载领域规则），应用层只做编排与 `GROUNDING_REJECTED` 事件下沉；拒答事件必须可观测，否则「检索不到」与「检索到了但模型编造」无法区分。**不得为降低拒答率而放宽 `max-unsupported-ratio`**——宁可拒答，不可编造。回归测试 `reject_phantom_citation` / `reject_fabricated_number_even_when_wording_matches` / `fail_closed_when_no_context` / `grounding_rejection_emits_event_with_reason` 锁死此契约。

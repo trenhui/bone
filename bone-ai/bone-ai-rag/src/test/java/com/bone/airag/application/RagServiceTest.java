@@ -17,6 +17,7 @@ import com.bone.airag.domain.gateway.RagAclPort;
 import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.gateway.RerankPort;
 import com.bone.airag.domain.gateway.TenantProvider;
+import com.bone.airag.domain.model.GroundingVerdict;
 import com.bone.airag.domain.model.RagChunk;
 import com.bone.airag.domain.model.RagEvent;
 import com.bone.airag.domain.model.RagQuery;
@@ -24,6 +25,7 @@ import com.bone.airag.domain.model.RagResult;
 import com.bone.airag.domain.model.RerankCandidate;
 import com.bone.airag.domain.model.RerankScored;
 import com.bone.airag.domain.repository.ChunkRepository;
+import com.bone.airag.domain.service.GroundingGuard;
 import com.bone.airag.domain.service.NoDocAcl;
 import com.bone.airag.domain.service.NoOpReranker;
 import com.bone.airag.infrastructure.embedding.HttpBgeEmbeddingClient;
@@ -121,7 +123,17 @@ class RagServiceTest {
       int warnScanThreshold,
       long slowRetrieveMs) {
     return new RagApplicationService(
-        repo, embed, rerank, tenant, acl, sink, 30, mmrLambda, warnScanThreshold, slowRetrieveMs);
+        repo,
+        embed,
+        rerank,
+        tenant,
+        acl,
+        sink,
+        30,
+        mmrLambda,
+        warnScanThreshold,
+        slowRetrieveMs,
+        new GroundingGuard(0.6, 0.0));
   }
 
   @Test
@@ -648,5 +660,52 @@ class RagServiceTest {
     // 结构非法（非外层数组）应抛 EMBEDDING_PROVIDER_FAIL，而非静默返回空。
     assertThatThrownBy(() -> HttpBgeEmbeddingClient.parseEmbeddings("{\"x\":1}"))
         .isInstanceOf(com.bone.core.exception.BizException.class);
+  }
+
+  private static RagResult result(String text, String clauseRef) {
+    return new RagResult("1", clauseRef, 0, text.length(), 0.9, "Clause 1", text);
+  }
+
+  @Test
+  void grounding_pass_emits_no_event() {
+    RecordingSink sink = new RecordingSink();
+    RagApplicationService service = groundingService(sink);
+
+    GroundingVerdict v =
+        service.verifyGrounding(
+            "甲方应按时付款[1]。", List.of(result("甲方应按时付款", "clause-1")));
+
+    assertThat(v.grounded()).isTrue();
+    // 通过时不产生事件噪音：事件通道只承载异常/拒答，否则告警线被正常流量淹没
+    assertThat(sink.events).isEmpty();
+  }
+
+  @Test
+  void grounding_rejection_emits_event_with_reason() {
+    RecordingSink sink = new RecordingSink();
+    RagApplicationService service = groundingService(sink);
+
+    GroundingVerdict v =
+        service.verifyGrounding(
+            "乙方应赔偿全部损失[9]。", List.of(result("甲方应按时付款", "c-1")));
+
+    assertThat(v.grounded()).isFalse();
+    assertThat(v.reason()).isEqualTo(GroundingGuard.REASON_INVALID_CITATION);
+    assertThat(sink.events)
+        .extracting(RagEvent::type)
+        .containsExactly(RagApplicationService.EVENT_GROUNDING_REJECTED);
+    assertThat(sink.events.get(0).detail()).contains("INVALID_CITATION");
+  }
+
+  /** 只测接地编排的最小装配（仓储/嵌入/租户均不参与，无需 stub 行为）。 */
+  private RagApplicationService groundingService(RagEventSink sink) {
+    return service(
+        mock(ChunkRepository.class),
+        mock(EmbeddingPort.class),
+        new NoOpReranker(),
+        mock(TenantProvider.class),
+        new NoDocAcl(),
+        sink,
+        0.0);
   }
 }
