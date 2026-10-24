@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="880" viewBox="0 0 1240 880" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+  <rect x="0" y="0" width="1240" height="880" fill="#ffffff"/>
+  <defs>
+    <marker id="tMain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="tRet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0891b2"/>
+    </marker>
+    <marker id="tDb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+    <marker id="tDeg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="580" y="26" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">审查任务流水线（时序：上传 → 解析 → 规则 → LLM → HITL → 归档）</text>
+
+  <!-- ===== 参与者头部 ===== -->
+  <g>
+    <rect x="40" y="44" width="100" height="56" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="90" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">用户</text>
+    <text x="90" y="84" text-anchor="middle" font-size="10" fill="#64748b">采购 / 法务</text>
+    <rect x="240" y="44" width="160" height="56" rx="8" fill="#fefce8" stroke="#fde047"/>
+    <text x="320" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#854d0e">审查编排服务</text>
+    <text x="320" y="84" text-anchor="middle" font-size="10" fill="#64748b">LangGraph 状态机</text>
+    <rect x="428" y="44" width="144" height="56" rx="8" fill="#f0f9ff" stroke="#7dd3fc"/>
+    <text x="500" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#0369a1">L1 解析服务</text>
+    <text x="500" y="84" text-anchor="middle" font-size="10" fill="#64748b">切片 · 脱敏 · IR</text>
+    <rect x="600" y="44" width="140" height="56" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="670" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#c2410c">L2 规则引擎</text>
+    <text x="670" y="84" text-anchor="middle" font-size="10" fill="#64748b">确定性 · 毫秒级</text>
+    <rect x="776" y="44" width="148" height="56" rx="8" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="850" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#6d28d9">L3 LLM（vLLM）</text>
+    <text x="850" y="84" text-anchor="middle" font-size="10" fill="#64748b">开放推理 · 切片并行</text>
+    <rect x="986" y="44" width="128" height="56" rx="8" fill="#ecfdf5" stroke="#6ee7b7"/>
+    <text x="1050" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#047857">数据库</text>
+    <text x="1050" y="84" text-anchor="middle" font-size="10" fill="#64748b">业务 / 快照 / 向量</text>
+  </g>
+
+  <!-- ===== 生命线 ===== -->
+  <g stroke="#e2e8f0" stroke-width="1.2">
+    <line x1="90" y1="100" x2="90" y2="800" stroke-dasharray="4,4"/>
+    <line x1="320" y1="100" x2="320" y2="800" stroke-dasharray="4,4"/>
+    <line x1="500" y1="100" x2="500" y2="800" stroke-dasharray="4,4"/>
+    <line x1="670" y1="100" x2="670" y2="800" stroke-dasharray="4,4"/>
+    <line x1="850" y1="100" x2="850" y2="800" stroke-dasharray="4,4"/>
+    <line x1="1050" y1="100" x2="1050" y2="800" stroke-dasharray="4,4"/>
+  </g>
+
+  <!-- ===== 时序消息 ===== -->
+  <!-- ① 上传 -->
+  <line x1="90" y1="120" x2="318" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+  <text x="204" y="112" text-anchor="middle" font-size="10.5" fill="#1e293b">① POST /api/v1/documents/analyze（文件 + doc_type）</text>
+  <!-- ② 202 -->
+  <line x1="320" y1="138" x2="92" y2="138" stroke="#0891b2" stroke-width="1.5" marker-end="url(#tRet)"/>
+  <text x="206" y="130" text-anchor="middle" font-size="10.5" fill="#0891b2">② 202 { task_id }（异步）</text>
+  <!-- ③ 入队 -->
+  <line x1="320" y1="156" x2="1048" y2="156" stroke="#059669" stroke-width="1.5" marker-end="url(#tDb)"/>
+  <text x="685" y="148" text-anchor="middle" font-size="10.5" fill="#059669">③ 任务入队 QUEUED（优先级 + 重试计数）</text>
+  <!-- ④ 解析 -->
+  <line x1="320" y1="178" x2="498" y2="178" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+  <text x="410" y="170" text-anchor="middle" font-size="10.5" fill="#1e293b">④ PARSING：解析 + 语义切片 + 脱敏</text>
+  <!-- ⑤ IR -->
+  <line x1="500" y1="196" x2="322" y2="196" stroke="#0891b2" stroke-width="1.5" marker-end="url(#tRet)"/>
+  <text x="410" y="188" text-anchor="middle" font-size="10.5" fill="#0891b2">⑤ IR 输出（章节树 / 条款 / 表格）→ 快照</text>
+  <!-- ⑥ 规则 -->
+  <line x1="320" y1="216" x2="668" y2="216" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+  <text x="494" y="208" text-anchor="middle" font-size="10.5" fill="#1e293b">⑥ RULE_CHECK：R01–R24 命中（REGEX / QLExpress）</text>
+  <!-- ⑦ 规则命中 -->
+  <line x1="670" y1="234" x2="322" y2="234" stroke="#0891b2" stroke-width="1.5" marker-end="url(#tRet)"/>
+  <text x="496" y="226" text-anchor="middle" font-size="10.5" fill="#0891b2">⑦ L2 命中条目（必出 · 带依据条文）</text>
+  <!-- ⑧ LLM -->
+  <line x1="320" y1="254" x2="848" y2="254" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#tDeg)"/>
+  <text x="584" y="246" text-anchor="middle" font-size="10.5" fill="#7c3aed">⑧ LLM_REVIEW：切片级并行审查（脱敏后）</text>
+  <!-- ⑨ LLM 结果 -->
+  <line x1="850" y1="272" x2="322" y2="272" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#tDeg)"/>
+  <text x="586" y="264" text-anchor="middle" font-size="10.5" fill="#7c3aed">⑨ 风险判定 + 条款级引用 + 置信度 + 建议</text>
+  <!-- ⑩ 合并（折线） -->
+  <path d="M320,290 L384,290 L384,318 L322,318" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+  <text x="388" y="308" font-size="10.5" fill="#1e293b">⑩ MERGING：切片结果合并去重（同条款择优）</text>
+  <!-- ⑪ 风险清单 -->
+  <line x1="320" y1="336" x2="92" y2="336" stroke="#0891b2" stroke-width="1.5" marker-end="url(#tRet)"/>
+  <text x="206" y="328" text-anchor="middle" font-size="10.5" fill="#0891b2">⑪ PENDING_REVIEW：风险清单（按等级排序）</text>
+  <!-- ⑫ HITL -->
+  <line x1="90" y1="356" x2="318" y2="356" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+  <text x="204" y="348" text-anchor="middle" font-size="10.5" fill="#1e293b">⑫ HITL 确认：采纳 / 驳回（选原因）/ 改判</text>
+  <!-- ⑬ 结论入库 -->
+  <line x1="320" y1="376" x2="1048" y2="376" stroke="#059669" stroke-width="1.5" marker-end="url(#tDb)"/>
+  <text x="684" y="368" text-anchor="middle" font-size="10.5" fill="#059669">⑬ 结论 + 审查快照 + feedback 入库（全链路留痕）</text>
+
+  <!-- ===== 降级分支 ===== -->
+  <rect x="60" y="410" width="1120" height="156" rx="12" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1.2"/>
+  <text x="620" y="432" text-anchor="middle" font-size="13" font-weight="700" fill="#6d28d9">降级分支（ADR-05 · 对齐 PRD §6 可用性）</text>
+  <path d="M320,396 L320,414" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#tDeg)"/>
+  <text x="335" y="408" font-size="10.5" fill="#7c3aed">LLM 不可用</text>
+  <line x1="320" y1="450" x2="668" y2="450" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#tDeg)"/>
+  <text x="494" y="442" text-anchor="middle" font-size="10.5" fill="#7c3aed">降级：跳过 L3，仅 L2 规则引擎兜底出清单</text>
+  <line x1="670" y1="472" x2="322" y2="472" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#tDeg)"/>
+  <text x="496" y="464" text-anchor="middle" font-size="10.5" fill="#7c3aed">结果标记 rules_only=true · 风险条目标注"未含 AI 建议"</text>
+  <text x="620" y="500" text-anchor="middle" font-size="11" fill="#64748b">审查链路不中断（SLA ≥99.5%）；LLM 恢复后增量补充 AI 建议（可选）</text>
+  <text x="620" y="520" text-anchor="middle" font-size="10.5" fill="#94a3b8">规则引擎自身异常 → 熔断（宁可不可用不误判），任务 FAILED 保留原始输入（PRD §6）</text>
+  <text x="620" y="540" text-anchor="middle" font-size="10.5" fill="#94a3b8">失败重试：解析/LLM 超时自动重试 ≤3 次（指数退避）；仍失败 → FAILED（FR-801）</text>
+
+  <!-- ===== 底部审计条 ===== -->
+  <rect x="40" y="586" width="1080" height="54" rx="12" fill="#0f172a"/>
+  <text x="580" y="610" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">审计与可复现：review_snapshot（doc_hash + IR + 引擎版本）· 全操作留痕 · 条款级引用率 100%</text>
+  <text x="580" y="628" text-anchor="middle" font-size="10.5" fill="#94a3b8">任何审查结论可回溯复现 · 多版本一致性抽查 ≥95% · 反馈样本回流评测集（FR-802）</text>
+
+  <!-- ===== 图例 ===== -->
+  <g font-size="10.5" fill="#64748b">
+    <text x="40" y="666">图例：</text>
+    <line x1="78" y1="662" x2="108" y2="662" stroke="#334155" stroke-width="1.5" marker-end="url(#tMain)"/>
+    <text x="114" y="666">调用（实线）</text>
+    <line x1="200" y1="662" x2="230" y2="662" stroke="#0891b2" stroke-width="1.5" marker-end="url(#tRet)"/>
+    <text x="236" y="666">返回 / 结果</text>
+    <line x1="322" y1="662" x2="352" y2="662" stroke="#059669" stroke-width="1.5" marker-end="url(#tDb)"/>
+    <text x="358" y="666">持久化</text>
+    <line x1="444" y1="662" x2="474" y2="662" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#tDeg)"/>
+    <text x="480" y="666">LLM / 降级</text>
+  </g>
+</svg>

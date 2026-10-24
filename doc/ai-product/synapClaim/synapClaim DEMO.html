@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synapClaim 智能理赔 · 产品体验 Demo</title>
+<style>
+:root{
+  --primary:#1F4E79; --primary2:#2B6CB0; --accent:#4A90D9;
+  --wx-green:#07C160; --wx-green-d:#06AD56;
+  --ok:#2E7D32; --ok-bg:#E8F5E9; --bad:#C62828; --bad-bg:#FDECEA;
+  --warn:#E65100; --warn-bg:#FFF3E0; --info:#1565C0; --info-bg:#E3F2FD;
+  --text:#263238; --muted:#8A9199; --line:#EDEFF2; --line2:#E3E9F2;
+  --bg:#F5F7FA; --card:#fff;
+  --shadow:0 1px 3px rgba(31,78,121,.08),0 4px 16px rgba(31,78,121,.06);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#E8EDF2;color:var(--text);font-size:14px;line-height:1.6}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:14px}
+.hidden{display:none!important}
+
+/* ===== 顶部导航 ===== */
+.topbar{position:sticky;top:0;z-index:60;background:linear-gradient(90deg,#1F4E79,#2B6CB0);color:#fff;box-shadow:0 2px 8px rgba(31,78,121,.2)}
+.topbar-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.logo .dot{width:10px;height:10px;border-radius:50%;background:#4FC3F7;box-shadow:0 0 0 4px rgba(79,195,247,.25)}
+.topbar .spacer{flex:1}
+.role-switch{display:flex;background:rgba(255,255,255,.14);border-radius:9px;padding:3px}
+.role-switch button{padding:6px 16px;border-radius:7px;color:#E3EEFA;font-size:13px;font-weight:500;transition:.2s}
+.role-switch button.on{background:#fff;color:var(--primary);font-weight:600}
+.hint{font-size:12px;color:#BBD5EE}
+
+/* ===== 双形态容器 ===== */
+.stage{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+.side{display:none}
+.side.active{display:block;animation:fadeUp .35s ease}
+/* 入口选择页 */
+#entry{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;text-align:center;animation:fadeUp .4s ease}
+#entry .e-title{font-size:26px;font-weight:700;color:var(--primary);margin-bottom:6px}
+#entry .e-sub{font-size:13px;color:var(--muted);margin-bottom:36px}
+.entry-cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.entry-card{width:300px;background:#fff;border:1px solid var(--line2);border-radius:16px;padding:32px 26px;cursor:pointer;transition:.2s;text-align:left}
+.entry-card:hover{border-color:var(--primary);box-shadow:0 8px 28px rgba(31,78,121,.12);transform:translateY(-3px)}
+.entry-card .ic{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px}
+.entry-card.emp .ic{background:#E8F8EE}
+.entry-card.adj .ic{background:#E8F3FD}
+.entry-card .tt{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.entry-card .ds{font-size:12.5px;color:var(--muted);line-height:1.7}
+.entry-card .ent{margin-top:16px;font-size:13px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:4px}
+.back-entry{font-size:12px;color:var(--muted);cursor:pointer;border:1px solid var(--line2);border-radius:7px;padding:4px 10px;background:#fff}
+.back-entry:hover{color:var(--primary);border-color:var(--accent)}
+/* 核赔端分段 Tab + 搜索 */
+.seg-tabs{display:inline-flex;background:#EEF1F4;border-radius:9px;padding:3px;gap:2px}
+.seg{border:none;background:transparent;padding:6px 14px;border-radius:7px;font-size:13px;color:var(--muted);cursor:pointer;transition:.15s}
+.seg b{font-weight:700;margin-left:3px}
+.seg.on{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.seg-search{flex:1;min-width:180px;max-width:320px;padding:8px 12px;border:1px solid var(--line2);border-radius:9px;font-size:13px;outline:none}
+.seg-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,78,121,.1)}
+/* 空状态 */
+.empty-state{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty-state .ic{font-size:40px;margin-bottom:8px;opacity:.6}
+.empty-state .tt{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.empty-state .ds{font-size:12px;line-height:1.6}
+.empty-state .act{margin-top:12px}
+/* PC 端内嵌预览手机框 */
+.preview-wrap{display:none;margin-top:18px;padding:18px;background:#F5F7FA;border-radius:14px;border:1px solid var(--line2)}
+.preview-wrap.show{display:block;animation:fadeUp .25s ease}
+.preview-wrap .pw-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.preview-wrap .pw-title{font-size:13px;font-weight:600;color:var(--primary)}
+.preview-wrap .pw-tip{font-size:11.5px;color:var(--muted)}
+.mini-phone{width:300px;margin:0 auto;background:#1a1a1a;border-radius:28px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+.mini-phone .mp-screen{background:#EDEDED;border-radius:22px;overflow:hidden;max-height:520px;overflow-y:auto}
+.mini-phone .mp-status{height:22px;background:#EDEDED;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;color:#333}
+.mini-phone .mp-nav{background:#EDEDED;padding:6px 12px;font-size:13px;font-weight:600;color:#111;border-bottom:1px solid #E2E6EA}
+.mini-phone .mp-body{background:#EDEDED;padding:10px 10px 14px}
+.mini-phone .mp-section{font-size:11px;color:#999;margin:8px 0 4px;padding:0 2px}
+.mini-phone .mp-card{background:#fff;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.mini-phone .mp-cell{display:flex;align-items:center;padding:9px 11px;border-bottom:1px solid #F0F2F5;font-size:12px}
+.mini-phone .mp-cell:last-child{border-bottom:none}
+.mini-phone .mp-cell .l{color:#333;flex-shrink:0}
+.mini-phone .mp-cell .v{flex:1;text-align:right;color:#111;font-size:12px}
+.mini-phone .mp-cell .ph{color:#bbb}
+.mini-phone .mp-cell .req{color:#FA5151;margin-right:2px}
+.mini-phone .mp-chips{flex:1;display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap}
+.mini-phone .mp-chip{padding:3px 9px;border-radius:99px;border:1px solid #E2E6EA;font-size:11px;color:#555}
+.mini-phone .mp-up{display:block;padding:9px 11px}
+.mini-phone .mp-up .ul{font-size:12px;color:#333;margin-bottom:6px}
+.mini-phone .mp-up .slot{border:1px dashed #C7CCD1;border-radius:8px;padding:14px;text-align:center;color:#bbb;font-size:18px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ================= 微信小程序端 ================= */
+.wx-stage{display:flex;justify-content:center;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.phone{width:375px;background:#0B0B0F;border-radius:46px;padding:11px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.phone-screen{position:relative;width:100%;height:748px;background:#EDEDED;border-radius:36px;overflow:hidden;display:flex;flex-direction:column}
+.status-bar{height:26px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:600;color:#000;flex-shrink:0}
+.status-bar .icons{display:flex;gap:4px;font-size:11px}
+.nav-bar{position:relative;height:44px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-bottom:.5px solid #ECECEC}
+.nav-bar .back{position:absolute;left:6px;top:0;height:44px;display:flex;align-items:center;font-size:17px;color:#333;padding:0 8px;cursor:pointer}
+.nav-bar .ttl{font-size:16px;font-weight:600;color:#111}
+.capsule{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:88px;height:30px;border-radius:15px;border:.5px solid rgba(0,0,0,.08);background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:space-around;font-size:11px;color:#111}
+.wx-body{flex:1;overflow-y:auto;background:#F5F5F5;position:relative}
+.wx-body::-webkit-scrollbar{display:none}
+.wx-page{display:none;min-height:100%;padding:12px 12px 10px;animation:slideIn .28s ease}
+.wx-page.active{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.tabbar{height:54px;background:#fff;border-top:.5px solid #ECECEC;display:flex;align-items:stretch;flex-shrink:0}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:#999;gap:2px}
+.tab-item .ic{font-size:20px;line-height:1}
+.tab-item.on{color:var(--wx-green);font-weight:600}
+/* 小程序通用组件 */
+.wx-card{background:#fff;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.wx-cell{display:flex;align-items:center;padding:13px 14px;font-size:14px;border-bottom:.5px solid #F2F3F5}
+.wx-cell:last-child{border-bottom:none}
+.wx-cell .l{color:#111;width:72px;flex-shrink:0}
+.wx-cell .v{flex:1;color:#555;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wx-cell .v.primary{color:var(--wx-green);font-weight:600}
+.wx-cell .arrow{color:#C0C4CC;font-size:15px;margin-left:4px}
+.wx-cell .edit{color:#576B95;font-size:12px;margin-right:4px;flex-shrink:0}
+.wx-cell .conf{font-size:10px;color:#F09B3B;margin-right:2px;flex-shrink:0}
+.wx-btn{display:flex;align-items:center;justify-content:center;height:44px;border-radius:8px;font-size:16px;font-weight:500;width:100%;transition:.15s}
+.wx-btn-green{background:var(--wx-green);color:#fff}
+.wx-btn-green:active{background:var(--wx-green-d)}
+.wx-btn-gray{background:#F2F3F5;color:#111;font-size:14px}
+.wx-btn-red{background:#FA5151;color:#fff}
+.wx-btn:disabled{opacity:.5}
+.wx-section-t{font-size:13px;color:#999;padding:12px 4px 6px;font-weight:500}
+.wx-upload{display:flex;gap:10px;flex-wrap:wrap}
+.wx-upload .item{width:96px;height:96px;border-radius:10px;border:1px dashed #C8CDD4;background:#F7F8FA;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9AA0A6;font-size:11px;cursor:pointer}
+.wx-upload .item.fill{border-style:solid;border-color:#07C160;background:#F0FBF4;color:#07C160}
+.wx-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:500}
+.tg-ok{background:#E8F8EE;color:#07C160}
+.tg-bad{background:#FDECEA;color:#FA5151}
+.tg-warn{background:#FFF3E0;color:#F09B3B}
+.tg-info{background:#E8F3FD;color:#2B7CD3}
+.tg-gray{background:#F2F3F5;color:#8A9199}
+.kungfu{display:flex;padding:16px 6px}
+.kf-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:#333;cursor:pointer}
+.kf-item .ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.user-card{background:linear-gradient(135deg,#1F4E79,#2B6CB0);border-radius:14px;padding:16px;color:#fff;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.user-card .avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px}
+.user-card .nm{font-size:16px;font-weight:600}
+.user-card .sb{font-size:11.5px;opacity:.85;margin-top:2px}
+.user-card .badge{margin-left:auto;text-align:right;font-size:11px;opacity:.9}
+.wx-hero{border-radius:12px;padding:22px 16px;text-align:center;margin-bottom:10px}
+.wx-hero .big{font-size:24px;font-weight:700}
+.wx-hero .sub{font-size:12.5px;color:#666;margin-top:4px}
+.wx-hero .money{font-size:30px;font-weight:800;color:var(--primary);margin-top:8px}
+.wx-hero.ok{background:linear-gradient(135deg,#E8F8EE,#D3F0DC)}
+.wx-hero.bad{background:linear-gradient(135deg,#FDECEA,#FFE3E0)}
+.wx-hero.warn{background:linear-gradient(135deg,#FFF3E0,#FFE8CC)}
+.wx-tl{position:relative;padding-left:18px;margin:4px 0}
+.wx-tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1.5px;background:#E2E6EA}
+.wx-tl .node{position:relative;padding:6px 0 10px}
+.wx-tl .node::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:#C8CDD4;border:2px solid #fff}
+.wx-tl .node.done::before{background:#07C160}
+.wx-tl .node.cur::before{background:#F09B3B;box-shadow:0 0 0 3px rgba(240,155,59,.2)}
+.wx-tl .t{font-size:13.5px;color:#333;font-weight:500}
+.wx-tl .d{font-size:11.5px;color:#999;margin-top:1px}
+.wx-form .wx-cell textarea{border:none;outline:none;resize:none;width:100%;font-size:14px;color:#333;padding:6px 0;background:transparent}
+.wx-form textarea::placeholder{color:#C0C4CC}
+.wx-loading{display:flex;flex-direction:column;align-items:center;padding:56px 0;color:#666;gap:10px}
+.spinner{width:34px;height:34px;border:3px solid #E2E6EA;border-top-color:#07C160;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wx-steps{background:#fff;border-radius:12px;padding:6px 14px;margin-bottom:10px}
+.wx-steps .s{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:.5px solid #F2F3F5}
+.wx-steps .s:last-child{border-bottom:none}
+.wx-steps .dot{width:18px;height:18px;border-radius:50%;border:2px solid #D8DDE1;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.wx-steps .s.cur .dot{border-color:#F09B3B;animation:pulse 1.2s infinite}
+.wx-steps .s.done .dot{border-color:#07C160;background:#07C160}
+.wx-steps .s.done .dot::after{content:"✓";font-size:10px}
+.wx-steps .tt{font-size:14px;color:#333;font-weight:500}
+.wx-steps .dd{font-size:11.5px;color:#999}
+.wx-steps .s.cur .tt{color:#F09B3B}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.wx-mask{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:80;display:flex;align-items:flex-end}
+.wx-sheet{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px 16px 26px;animation:up .3s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.wx-sheet .pt{font-size:16px;font-weight:600;text-align:center;color:#111}
+.wx-sheet .pb{font-size:13px;color:#666;margin:10px 0 16px;line-height:1.7}
+.wx-sheet .link{color:#576B95}
+.wx-actionsheet{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:75;display:flex;align-items:flex-end}
+.as-body{background:#fff;width:100%;border-radius:14px 14px 0 0;overflow:hidden;padding-bottom:10px}
+.as-item{height:50px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#111;border-bottom:.5px solid #F2F3F5;background:#fff}
+.as-item:active{background:#F5F5F5}
+.as-cancel{height:50px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#999;background:#F5F5F5;margin-top:8px}
+#toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.3s;z-index:99}
+#toast.show{opacity:1}
+
+/* ================= PC 核赔端 ================= */
+.pc-stage{padding:4px 0}
+.pagehead{margin-bottom:16px}
+.pagehead h1{font-size:21px;color:var(--primary);font-weight:700}
+.pagehead p{color:var(--muted);font-size:13px;margin-top:2px}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.card h3{font-size:15px;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3 .step-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:9px;font-size:14px;font-weight:600;transition:.2s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary2)}
+.btn-ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.btn-ghost:hover{background:#F0F5FB}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-bad{background:var(--bad);color:#fff}
+.btn-warn{background:var(--warn);color:#fff}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.tag-ok{background:var(--ok-bg);color:var(--ok)}
+.tag-bad{background:var(--bad-bg);color:var(--bad)}
+.tag-warn{background:var(--warn-bg);color:var(--warn)}
+.tag-info{background:var(--info-bg);color:var(--info)}
+.tag-muted{background:#ECEFF1;color:var(--muted)}
+.workbench-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.workbench-head .stats{display:flex;gap:10px;margin-left:auto}
+.stat-pill{background:#fff;border:1px solid var(--line2);border-radius:99px;padding:4px 14px;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.stat-pill b{font-size:15px}
+.claim-row{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--line2);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:.2s;background:#fff}
+.claim-row:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.claim-row .name{font-weight:600;font-size:14px}
+.claim-row .meta{font-size:12px;color:var(--muted)}
+.claim-row .amt{font-weight:700;font-size:15px;margin-left:auto}
+.claim-row .arrow{color:var(--muted)}
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{border:1px solid var(--line2);border-radius:10px;padding:14px;background:#fff}
+.panel h4{font-size:13px;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.evidence-img{height:110px;border-radius:8px;background:linear-gradient(135deg,#F5F7FA,#E8EDF3);display:flex;align-items:center;justify-content:center;color:#90A4AE;font-size:12px;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+.kv .k{color:var(--muted)}
+.kv .v{font-weight:500}
+.kv .v.low{color:var(--warn);font-weight:600}
+.trace-node{display:flex;gap:12px;padding:10px;border:1px solid var(--line2);border-radius:10px;margin-bottom:8px;background:#FAFCFE}
+.trace-node .no{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trace-node .t{font-weight:600;font-size:13px}
+.trace-node .io{font-size:12px;color:var(--muted);margin-top:2px}
+.dual-review{border:1px dashed var(--warn);background:var(--warn-bg);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px}
+.dual-review b{color:var(--warn)}
+.callout{border-left:3px solid var(--accent);background:var(--info-bg);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12.5px;color:#1A5276;margin:10px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg);color:#1B5E20}
+.pc-view{display:none}
+.pc-view.active{display:block;animation:fadeUp .35s ease}
+/* ================= 表单配置中心（PC） ================= */
+.config-layout{display:grid;grid-template-columns:250px 1fr 290px;gap:14px;align-items:start}
+.tpl-item{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line2);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:.15s;background:#fff}
+.tpl-item.on{border-color:var(--primary);background:#F0F5FB}
+.tpl-item .tn{font-weight:600;font-size:13.5px}
+.tpl-item .tm{font-size:11.5px;color:var(--muted)}
+.tpl-item .pub{font-size:10.5px;color:#07C160;font-weight:600}
+.fg-title{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--primary);font-weight:700;margin:14px 0 6px}
+.f-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line2);border-radius:9px;margin-bottom:6px;background:#fff;transition:.15s;cursor:pointer}
+.f-row:hover{border-color:var(--accent)}
+.f-row.sel{border-color:var(--primary);background:#F0F5FB;box-shadow:0 0 0 2px rgba(31,78,121,.08)}
+.f-row.off{opacity:.55}
+.f-row .lbl{font-weight:600;font-size:13px}
+.f-row .meta{font-size:11px;color:var(--muted)}
+.f-row .sp{flex:1}
+.f-row .op{display:flex;gap:4px}
+.f-row .op button{border:1px solid var(--line2);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--muted)}
+.f-row .op button:hover{color:var(--primary);border-color:var(--accent)}
+.f-row .req-star{color:#FA5151;font-weight:700}
+.switch2{position:relative;width:34px;height:20px;border-radius:10px;background:#D8DDE1;transition:.2s;cursor:pointer;flex-shrink:0}
+.switch2.on{background:#07C160}
+.switch2::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
+.switch2.on::after{left:16px}
+.props-card{position:sticky;top:70px}
+.p-title{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:10px}
+.p-row{margin-bottom:12px}
+.p-row .pl{font-size:12px;color:var(--muted);margin-bottom:4px}
+.p-row input,.p-row select,.p-row textarea{width:100%;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:#fff}
+.p-row input:focus,.p-row select:focus{border-color:var(--primary)}
+.p-row .switch-line{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.publish-bar{display:flex;gap:10px;align-items:center;padding:12px;border:1px dashed var(--line2);border-radius:10px;background:#FAFCFE;margin-top:14px;flex-wrap:wrap}
+.dirty-tag{font-size:12px;color:var(--warn);font-weight:600}
+/* 员工端动态表单 */
+.wx-radio{flex:1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.wx-radio .chip{padding:4px 12px;border-radius:99px;border:1px solid #E2E6EA;font-size:12.5px;color:#555;background:#fff}
+.wx-radio .chip.on{border-color:var(--wx-green);background:#E8F8EE;color:var(--wx-green);font-weight:600}
+.wx-checkbox{flex:1;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.wx-checkbox .chip{padding:4px 12px;border-radius:99px;border:1px solid #E2E6EA;font-size:12.5px;color:#555}
+.wx-checkbox .chip.on{border-color:var(--wx-green);background:#E8F8EE;color:var(--wx-green)}
+.wx-err{color:#FA5151;font-size:11px;display:block;margin-top:3px}
+.field-err{border-color:#FA5151!important}
+.wx-hint{font-size:10.5px;color:#999;text-align:right;margin-top:2px}
+.tpl-banner{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.tpl-banner .ic{width:36px;height:36px;border-radius:10px;background:#E8F3FD;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tpl-banner .nm{font-size:13.5px;font-weight:600}
+.tpl-banner .sb{font-size:11px;color:#999}
+.tpl-banner .sw{margin-left:auto;font-size:11.5px;color:#576B95;flex-shrink:0}
+.add-fbtn{width:100%;padding:9px;border:1px dashed var(--accent);border-radius:9px;color:var(--primary);font-size:13px;font-weight:600;margin-bottom:8px}
+.add-fbtn:hover{background:#F0F5FB}
+/* 智能预审卡 */
+.wx-precheck{background:linear-gradient(135deg,#F0F7FF,#E8F4FD);border:1px solid #B8D8F0;border-radius:12px;padding:14px;margin-bottom:10px;animation:fadeUp .3s ease}
+.wx-precheck .pc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.wx-precheck .pc-head .ic{width:30px;height:30px;border-radius:8px;background:#1F4E79;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+.wx-precheck .pc-head .tt{font-size:14px;font-weight:600;color:#1F4E79}
+.wx-precheck .pc-head .tag{margin-left:auto;font-size:10px}
+.wx-precheck .pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.wx-precheck .pc-cell{background:#fff;border-radius:8px;padding:8px 10px;text-align:center}
+.wx-precheck .pc-cell .k{font-size:10.5px;color:#8A9199;margin-bottom:2px}
+.wx-precheck .pc-cell .v{font-size:16px;font-weight:700;color:#1F4E79}
+.wx-precheck .pc-cell .v.ok{color:#07C160}
+.wx-precheck .pc-cell .v.warn{color:#F09B3B}
+.wx-precheck .pc-bar{height:6px;background:#E8EDF2;border-radius:3px;overflow:hidden;margin:4px 0 8px}
+.wx-precheck .pc-bar .fill{height:100%;background:linear-gradient(90deg,#07C160,#1F4E79);border-radius:3px;transition:width .6s ease}
+.wx-precheck .pc-list{font-size:12px;color:#555;line-height:1.8}
+.wx-precheck .pc-list .ok{color:#07C160}
+.wx-precheck .pc-list .warn{color:#F09B3B}
+.wx-precheck .pc-list .bad{color:#FA5151}
+.wx-precheck .pc-note{font-size:10.5px;color:#8A9199;margin-top:8px;line-height:1.5}
+/* 消息通知 */
+.wx-notice-dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#FA5151;border-radius:50%;border:1.5px solid #fff}
+.wx-notice-item{display:flex;gap:10px;padding:12px 14px;border-bottom:.5px solid #F2F3F5;cursor:pointer}
+.wx-notice-item:last-child{border-bottom:none}
+.wx-notice-item.unread{background:#F0F7FF}
+.wx-notice-item .nic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.wx-notice-item .nbody{flex:1;min-width:0}
+.wx-notice-item .ntt{font-size:13.5px;color:#111;font-weight:500}
+.wx-notice-item .ndesc{font-size:12px;color:#888;margin-top:2px;line-height:1.5}
+.wx-notice-item .ntime{font-size:10.5px;color:#bbb;flex-shrink:0}
+/* PC 仪表盘 */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.dash-kpi{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.dash-kpi .dk{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.dash-kpi .dv{font-size:26px;font-weight:800;color:var(--primary);line-height:1.1}
+.dash-kpi .dv.ok{color:var(--ok)} .dash-kpi .dv.warn{color:var(--warn)} .dash-kpi .dv.bad{color:var(--bad)}
+.dash-kpi .dd{font-size:11.5px;color:var(--muted);margin-top:4px}
+.dash-kpi .dtrend{position:absolute;top:14px;right:16px;font-size:11px;font-weight:600}
+.dash-kpi .dtrend.up{color:var(--ok)} .dash-kpi .dtrend.down{color:var(--bad)}
+.dash-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.dash-chart{background:#fff;border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.dash-chart h4{font-size:14px;color:var(--primary);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.trend-svg{width:100%;height:140px}
+.risk-list .ri{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line2);font-size:12.5px}
+.risk-list .ri:last-child{border-bottom:none}
+.risk-list .ri .rl{flex:1;color:#555}
+.risk-list .ri .rc{font-weight:700;color:var(--warn)}
+.risk-list .ri .rbar{width:60px;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.risk-list .ri .rbar .rf{height:100%;background:linear-gradient(90deg,#F09B3B,#E65100)}
+/* 历史理赔参考面板 */
+.hist-panel{border:1px solid var(--line2);border-radius:10px;padding:14px;background:#FAFCFE;margin-top:12px}
+.hist-panel h4{font-size:13px;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.hist-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:12.5px;cursor:pointer;transition:.15s}
+.hist-row:hover{background:#F0F5FB}
+.hist-row .hdate{color:var(--muted);width:80px;flex-shrink:0;font-size:11.5px}
+.hist-row .hdiag{flex:1;color:#555}
+.hist-row .hamt{font-weight:600;color:var(--primary)}
+.hist-row .htag{font-size:10px}
+
+/* ===== 企业场景增强 ===== */
+/* 草稿自动保存提示条 */
+.draft-bar{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#E8F3FD,#F0F7FF);border:1px solid #B8D8F0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#1A5276;animation:fadeUp .25s ease}
+.draft-bar .ic{font-size:14px}
+.draft-bar .act{margin-left:auto;color:var(--primary);font-weight:600;cursor:pointer}
+.draft-bar .act:hover{text-decoration:underline}
+/* 多图上传 */
+.wx-upload .item.thumb{position:relative;overflow:hidden}
+.wx-upload .item.thumb .del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.wx-upload .item.thumb .del:hover{background:rgba(0,0,0,.65)}
+.wx-upload .item.thumb .ck{position:absolute;bottom:2px;left:2px;background:rgba(7,193,96,.9);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px}
+/* 材料预览弹层 */
+.wx-viewer{position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeUp .2s ease}
+.wx-viewer .vw-close{position:absolute;top:12px;right:14px;color:#fff;font-size:24px;cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+.wx-viewer .vw-img{width:88%;max-height:60vh;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#90A4AE;font-size:13px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.wx-viewer .vw-cap{color:#fff;font-size:13px;margin-top:14px;opacity:.9}
+.wx-viewer .vw-fields{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 16px;margin-top:10px;color:#fff;font-size:12px;line-height:1.8}
+.wx-viewer .vw-fields b{color:#4FC3F7}
+/* 表单完成度 */
+.form-progress{position:sticky;top:0;z-index:5;background:#F5F5F5;padding:6px 0}
+.form-progress .fp-bar{height:4px;background:#E2E6EA;border-radius:2px;overflow:hidden}
+.form-progress .fp-fill{height:100%;background:linear-gradient(90deg,#07C160,#1F4E79);border-radius:2px;transition:width .4s ease}
+.form-progress .fp-txt{font-size:10.5px;color:#999;margin-top:3px;text-align:center}
+/* OCR 识别反馈动画 */
+.ocr-pulse{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#07C160}
+.ocr-pulse .d{width:6px;height:6px;border-radius:50%;background:#07C160;animation:ocrBlink 1s infinite}
+@keyframes ocrBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.4)}}
+/* 数字滚动 */
+.count-roll{font-size:30px;font-weight:800;color:var(--primary);display:inline-block}
+/* 计算明细可展开 */
+.calc-detail{background:#fff;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.calc-detail .cd-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:13px;font-weight:600;color:var(--primary);cursor:pointer}
+.calc-detail .cd-head .arrow{transition:transform .25s}
+.calc-detail.open .cd-head .arrow{transform:rotate(90deg)}
+.calc-detail .cd-body{display:none;padding:0 14px 12px;border-top:.5px solid #F2F3F5}
+.calc-detail.open .cd-body{display:block;animation:fadeUp .2s ease}
+.calc-detail .cd-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12.5px;color:#555}
+.calc-detail .cd-row.total{border-top:1px solid #E2E6EA;margin-top:4px;padding-top:8px;font-weight:700;color:var(--primary);font-size:14px}
+/* 术语帮助浮层 */
+.wx-term{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:85;display:flex;align-items:center;justify-content:center;animation:fadeUp .2s ease}
+.wx-term .tm-box{background:#fff;width:300px;border-radius:14px;padding:20px;animation:up .25s ease}
+.wx-term .tm-tt{font-size:15px;font-weight:700;color:#111;margin-bottom:8px}
+.wx-term .tm-ds{font-size:13px;color:#666;line-height:1.7}
+.wx-term .tm-close{margin-top:16px}
+.term-help{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#E8F3FD;color:#2B7CD3;font-size:10px;cursor:pointer;margin-left:3px;flex-shrink:0}
+.term-help:hover{background:#2B7CD3;color:#fff}
+/* UI 升级：卡片阴影增强 + 毛玻璃导航 + 按钮微交互 */
+.wx-card{box-shadow:0 1px 3px rgba(0,0,0,.04),0 2px 8px rgba(0,0,0,.03)}
+.nav-bar{background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(8px);-webkit-backdrop-filter:saturate(180%) blur(8px)}
+.wx-btn{transition:transform .12s,box-shadow .2s,background .2s}
+.wx-btn-green{box-shadow:0 2px 8px rgba(7,193,96,.25)}
+.wx-btn-green:active{transform:scale(.97);box-shadow:0 1px 4px rgba(7,193,96,.2)}
+.wx-btn-red{box-shadow:0 2px 8px rgba(250,81,81,.25)}
+.wx-btn-red:active{transform:scale(.97)}
+.card{transition:box-shadow .2s}
+.claim-row{transition:transform .15s,box-shadow .2s,border-color .2s}
+.claim-row:hover{transform:translateY(-1px)}
+.entry-card{transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s,border-color .25s}
+.entry-card:hover{transform:translateY(-6px)}
+.btn{transition:transform .12s,box-shadow .2s,background .2s}
+.btn-primary{box-shadow:0 2px 8px rgba(31,78,121,.2)}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(31,78,121,.28);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-ok{box-shadow:0 2px 8px rgba(46,125,50,.18)}
+.btn-ok:hover{box-shadow:0 4px 14px rgba(46,125,50,.25)}
+.btn-bad{box-shadow:0 2px 8px rgba(198,40,40,.18)}
+.btn-bad:hover{box-shadow:0 4px 14px rgba(198,40,40,.25)}
+/* 顶部导航毛玻璃 */
+.topbar{backdrop-filter:saturate(180%) blur(6px);-webkit-backdrop-filter:saturate(180%) blur(6px)}
+/* KPI 卡片悬浮 */
+.dash-kpi{transition:transform .2s,box-shadow .2s}
+.dash-kpi:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,78,121,.1)}
+/* 面板悬浮 */
+.panel{transition:box-shadow .2s}
+.panel:hover{box-shadow:0 2px 12px rgba(31,78,121,.06)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="logo"><span class="dot"></span>synapClaim 智能理赔</div>
+    <span class="hint">演示环境 · 数据为模拟样例</span>
+    <div class="spacer"></div>
+    <button class="back-entry" id="topBack" style="display:none" onclick="backToEntry()">← 返回入口</button>
+  </div>
+</div>
+
+<div class="stage">
+<!-- 入口选择页 -->
+<div id="entry">
+  <div class="e-title">synapClaim 智能理赔</div>
+  <div class="e-sub">请选择身份进入对应端 · 两端独立、互不干扰</div>
+  <div class="entry-cards">
+    <div class="entry-card emp" onclick="switchRole('wx')">
+      <div class="ic">📱</div>
+      <div class="tt">我是员工</div>
+      <div class="ds">微信小程序 · 发起理赔申请、查询进度与结果、提起申诉、查看我的保单与隐私设置</div>
+      <div class="ent">进入员工端 ›</div>
+    </div>
+    <div class="entry-card adj" onclick="switchRole('pc')">
+      <div class="ic">🖥</div>
+      <div class="tt">我是核赔员</div>
+      <div class="ds">PC 工作台 · 案件审核与双人复核、决策回放、表单配置中心（按企业/保司配置申请表单）</div>
+      <div class="ent">进入核赔端 ›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 小程序端（员工） ================= -->
+<div class="side" id="sideWx">
+  <div class="wx-stage">
+    <div class="phone">
+      <div class="phone-screen" id="phoneScreen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="icons">📶 🔋</span>
+        </div>
+        <div class="nav-bar">
+          <span class="back hidden" id="wxBack" onclick="wxBack()">‹ 返回</span>
+          <span class="ttl" id="wxNavTitle">智能理赔</span>
+          <span class="capsule"><span>•••</span><span>◎</span></span>
+        </div>
+        <div class="wx-body" id="wxBody">
+
+          <!-- 隐私授权弹层 -->
+          <div class="wx-mask hidden" id="wxPrivacy">
+            <div class="wx-sheet">
+              <div class="pt">隐私保护提示</div>
+              <div class="pb">根据《个人信息保护法》及微信小程序隐私保护指引，当您使用<b>理赔申请</b>服务时，需要收集并处理您的<b>发票、费用清单、病历等影像信息</b>及<b>就诊信息</b>，用于理赔审核与反欺诈核验。所有数据将加密存储、分级脱敏，仅用于本服务目的。</div>
+              <button class="wx-btn wx-btn-green" onclick="agreePrivacy()">同意并继续</button>
+              <div style="height:10px"></div>
+              <button class="wx-btn wx-btn-gray" onclick="toast('您可稍后在「我的-隐私设置」中管理授权')">暂不同意</button>
+              <div style="text-align:center;margin-top:10px;font-size:11px;color:#999">《隐私保护指引》<span class="link">查看详情</span></div>
+            </div>
+          </div>
+
+          <!-- 拍照/相册 ActionSheet -->
+          <div class="wx-actionsheet hidden" id="wxActionsheet">
+            <div class="as-body">
+              <div class="as-item" onclick="pickPhoto('camera')">📷 拍照上传</div>
+              <div class="as-item" onclick="pickPhoto('album')">🖼️ 从相册选择</div>
+              <div class="as-cancel" onclick="hideActionsheet()">取消</div>
+            </div>
+          </div>
+
+          <!-- 材料预览弹层 -->
+          <div class="wx-viewer hidden" id="wxViewer">
+            <div class="vw-close" onclick="closeViewer()">✕</div>
+            <div class="vw-img" id="vwImg">发票影像（已加密存储）</div>
+            <div class="vw-cap" id="vwCap">发票影像 · IMG_20261009.jpg</div>
+            <div class="vw-fields" id="vwFields"></div>
+          </div>
+
+          <!-- 术语帮助浮层 -->
+          <div class="wx-term hidden" id="wxTerm">
+            <div class="tm-box">
+              <div class="tm-tt" id="termTt"></div>
+              <div class="tm-ds" id="termDs"></div>
+              <div class="tm-close"><button class="wx-btn wx-btn-gray" onclick="closeTerm()">知道了</button></div>
+            </div>
+          </div>
+
+          <!-- ===== 页面：首页 ===== -->
+          <div class="wx-page active" id="wx-home">
+            <div class="user-card">
+              <div class="avatar">👩</div>
+              <div>
+                <div class="nm">张女士</div>
+                <div class="sb">企业补充医疗保险 · 门诊保障</div>
+              </div>
+              <div class="badge">本年度已获赔<br><b style="font-size:16px">¥ 1,238.56</b></div>
+            </div>
+            <div class="wx-card">
+              <div class="kungfu">
+                <div class="kf-item" onclick="startApply()"><div class="ic" style="background:#E8F8EE">📄</div>发起理赔</div>
+                <div class="kf-item" onclick="switchTab('tab-progress')"><div class="ic" style="background:#E8F3FD">⏱</div>理赔进度</div>
+                <div class="kf-item" onclick="switchTab('tab-progress')"><div class="ic" style="background:#FFF3E0">🧾</div>理赔记录</div>
+                <div class="kf-item" onclick="toast('客服工作时间 9:00-18:00')"><div class="ic" style="background:#F2F3F5">💬</div>在线客服</div>
+              </div>
+            </div>
+            <div class="wx-card">
+              <div class="wx-cell" onclick="wxPush('wx-notice'); renderWxNotice()" style="position:relative"><span class="l">🔔 消息通知</span><span class="v primary">2 条未读</span><span class="wx-notice-dot"></span><span class="arrow">›</span></div>
+            </div>
+            <div class="wx-section-t">最近理赔</div>
+            <div class="wx-card">
+              <div class="wx-cell" onclick="openWxDetail('CASE-001')"><span class="l">门诊·感冒</span><span class="v">¥51.12 <span class="wx-tag tg-ok">已到账</span></span><span class="arrow">›</span></div>
+              <div class="wx-cell" onclick="openWxDetail('CASE-002')"><span class="l">门诊·药品</span><span class="v">¥0 <span class="wx-tag tg-bad">已拒赔</span></span><span class="arrow">›</span></div>
+              <div class="wx-cell" onclick="openWxDetail('CASE-003')"><span class="l">门诊·复查</span><span class="v" id="homeC3">¥170.55 <span class="wx-tag tg-warn">待复核</span></span><span class="arrow">›</span></div>
+            </div>
+            <div class="wx-card">
+              <div class="wx-cell" onclick="toast('3.2 秒完成智能审核，最快 30 秒到账')"><span class="l">⚡ 智能理赔</span><span class="v primary">AI 审核 3.2 秒</span><span class="arrow">›</span></div>
+              <div class="wx-cell" onclick="toast('全程留痕可回放，人工终审负责')"><span class="l">🛡 安全保障</span><span class="v">隐私脱敏 · 审计留痕</span><span class="arrow">›</span></div>
+            </div>
+          </div>
+
+          <!-- ===== 页面：发起理赔（动态表单） ===== -->
+          <div class="wx-page" id="wx-apply">
+            <div class="draft-bar hidden" id="draftBar">
+              <span class="ic">💾</span>
+              <span>检测到上次未提交的草稿（10-09 14:20 自动保存）</span>
+              <span class="act" onclick="restoreDraft()">恢复填写 ›</span>
+              <span style="color:#bbb;cursor:pointer;margin-left:6px" onclick="clearDraft()">✕</span>
+            </div>
+            <div class="form-progress">
+              <div class="fp-bar"><div class="fp-fill" id="fpFill" style="width:0%"></div></div>
+              <div class="fp-txt" id="fpTxt">完成度 0% · 请填写带 * 的必填项</div>
+            </div>
+            <div class="tpl-banner">
+              <div class="ic">🏢</div>
+              <div><div class="nm" id="wxTplName"></div><div class="sb" id="wxTplMeta"></div></div>
+              <span class="sw" onclick="toast('本表单由企业/保司在核赔端「表单配置中心」定制，字段与校验按合同约定生效')">按合同配置 ›</span>
+            </div>
+            <div id="wxPrecheck"></div>
+            <div id="wxApplyForm"></div>
+            <div style="margin-top:14px">
+              <button class="wx-btn wx-btn-green" onclick="wxSubmit()">提交理赔申请</button>
+            </div>
+            <p style="font-size:10.5px;color:#999;text-align:center;margin:10px 0">提交即同意《隐私保护指引》与理赔授权 · 影像加密传输</p>
+          </div>
+
+          <!-- ===== 页面：审核处理中 ===== -->
+          <div class="wx-page" id="wx-processing">
+            <div class="wx-loading" id="wxLoading"><div class="spinner"></div><div style="font-size:14px" id="wxLoadingTxt">正在解析票据影像…</div></div>
+            <div class="wx-steps" id="wxSteps">
+              <div class="s" data-i="0"><div class="dot"></div><div><div class="tt">票据解析</div><div class="dd">识别医院、日期、金额、诊疗项目</div></div></div>
+              <div class="s" data-i="1"><div class="dot"></div><div><div class="tt">规则核责</div><div class="dd">责任范围 · 药品目录 · 自费剔除</div></div></div>
+              <div class="s" data-i="2"><div class="dot"></div><div><div class="tt">赔付理算</div><div class="dd">免赔额 · 赔付比例 · 封顶线</div></div></div>
+              <div class="s" data-i="3"><div class="dot"></div><div><div class="tt">风险与决策</div><div class="dd">风险检查 · 输出审核结论</div></div></div>
+            </div>
+          </div>
+
+          <!-- ===== 页面：审核结果 ===== -->
+          <div class="wx-page" id="wx-result">
+            <div id="wxHero"></div>
+            <div id="wxResultDetail"></div>
+          </div>
+
+          <!-- ===== 页面：申诉 ===== -->
+          <div class="wx-page" id="wx-appeal">
+            <div class="wx-section-t">申诉理由</div>
+            <div class="wx-card wx-form" style="padding:12px">
+              <textarea id="wxAppealReason" rows="4" placeholder="请说明您对审核结论的异议，例如：该药品为医生处方用药，属于保障范围内…" style="border:none;outline:none;width:100%;font-size:14px;resize:none;color:#333"></textarea>
+            </div>
+            <div class="wx-card" style="padding:12px;font-size:12px;color:#666">
+              提交后案件进入「复议中」，核赔组长将在 <b style="color:#F09B3B">48 小时</b>内完成人工复议，结果通过服务通知推送给您。
+            </div>
+            <div style="margin-top:14px"><button class="wx-btn wx-btn-green" onclick="wxSubmitAppeal()">提交申诉</button></div>
+          </div>
+
+          <!-- ===== 页面：理赔进度列表 ===== -->
+          <div class="wx-page" id="wx-progress">
+            <div class="wx-section-t">全部理赔（按时间排序）</div>
+            <div id="wxClaimList"></div>
+          </div>
+
+          <!-- ===== 页面：进度详情 ===== -->
+          <div class="wx-page" id="wx-detail">
+            <div id="wxDetailHead"></div>
+            <div class="wx-card" style="padding:12px 14px">
+              <div class="wx-tl" id="wxDetailTl"></div>
+            </div>
+            <div id="wxDetailActions"></div>
+          </div>
+
+          <!-- ===== 页面：消息通知 ===== -->
+          <div class="wx-page" id="wx-notice">
+            <div class="wx-section-t">理赔进度通知</div>
+            <div class="wx-card" id="wxNoticeList"></div>
+          </div>
+
+          <!-- ===== 页面：我的 ===== -->
+          <div class="wx-page" id="wx-mine">
+            <div class="user-card">
+              <div class="avatar">👩</div>
+              <div><div class="nm">张女士</div><div class="sb">企业补充医疗保险 · 门诊保障</div></div>
+              <div class="badge"><b style="font-size:16px">有效</b><br>保障至 2027-06-30</div>
+            </div>
+            <div class="wx-section-t">我的保单</div>
+            <div class="wx-card" onclick="toast('保单详情：保障范围与条款说明')" style="cursor:pointer">
+              <div class="wx-cell"><span class="l">保单编号</span><span class="v">BXY-2026-000356</span><span class="arrow">›</span></div>
+              <div class="wx-cell"><span class="l">保障范围</span><span class="v">门诊费用 · 免赔300元</span></div>
+              <div class="wx-cell"><span class="l">赔付比例</span><span class="v">90% · 年封顶 2 万元</span></div>
+            </div>
+            <div class="wx-section-t">本年度理赔统计</div>
+            <div class="wx-card" style="padding:14px">
+              <div style="display:flex;justify-content:space-around;text-align:center">
+                <div><div style="font-size:22px;font-weight:800;color:var(--primary)">3</div><div style="font-size:11px;color:#999;margin-top:2px">理赔次数</div></div>
+                <div style="width:1px;background:#eee"></div>
+                <div><div style="font-size:22px;font-weight:800;color:#07C160">¥1,238</div><div style="font-size:11px;color:#999;margin-top:2px">已获赔金额</div></div>
+                <div style="width:1px;background:#eee"></div>
+                <div><div style="font-size:22px;font-weight:800;color:#FA5151">¥18,762</div><div style="font-size:11px;color:#999;margin-top:2px">剩余额度</div></div>
+              </div>
+              <div style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span>年度封顶进度</span><span>1,238 / 20,000 元</span></div>
+                <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden"><div style="width:6.2%;height:100%;background:linear-gradient(90deg,#07C160,#1F4E79)"></div></div>
+              </div>
+            </div>
+            <div class="wx-section-t">设置与支持</div>
+            <div class="wx-card">
+              <div class="wx-cell" onclick="toast('理赔申请全流程已在隐私指引中说明')"><span class="l">隐私与安全</span><span class="v">分级脱敏 · 审计留痕</span><span class="arrow">›</span></div>
+              <div class="wx-cell" onclick="toast('演示环境 · 数据为模拟样例')"><span class="l">关于</span><span class="v">synapClaim v1.0</span><span class="arrow">›</span></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="tabbar">
+          <div class="tab-item on" data-tab="tab-home" onclick="switchTab('tab-home')"><span class="ic">🏠</span>首页</div>
+          <div class="tab-item" data-tab="tab-apply" onclick="switchTab('tab-apply')"><span class="ic">📄</span>发起理赔</div>
+          <div class="tab-item" data-tab="tab-progress" onclick="switchTab('tab-progress')"><span class="ic">⏱</span>理赔进度</div>
+          <div class="tab-item" data-tab="tab-mine" onclick="switchTab('tab-mine')"><span class="ic">👤</span>我的</div>
+        </div>
+      </div>
+    </div>
+    <div style="max-width:340px;padding-top:10px">
+      <div class="card" style="box-shadow:none">
+        <h3>员工端 · 微信小程序</h3>
+        <p style="font-size:13px;color:var(--muted)">模拟微信小程序端理赔申请：隐私授权 → 拍照/相册上传 → AI 识别 → 30 秒出结果 → 申诉 → 进度追踪。员工端独立闭环，结果即时同步。</p>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="startApply()">▶ 开始理赔流程</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PC 核赔端 ================= -->
+<div class="side" id="sidePc">
+  <div class="pc-stage">
+    <!-- PC：工作台 -->
+    <div class="pc-view active" id="pc-workbench">
+      <div class="pagehead">
+        <h1>核赔工作台</h1>
+        <p>AI 已完成预审，请优先处理风险案件 · 与员工端小程序数据实时联动</p>
+        <div class="workbench-head" style="margin-top:10px">
+          <button class="btn btn-primary" onclick="showPcCase('CASE-003')">处理转人工案件</button>
+          <button class="btn btn-ghost" onclick="showPcConfig()">⚙ 表单配置</button>
+          <div class="stats">
+            <span class="stat-pill">待办 <b id="todoCount">1</b></span>
+            <span class="stat-pill">今日已结 <b>2</b></span>
+            <span class="stat-pill">自动化率 <b>66%</b></span>
+          </div>
+        </div>
+      </div>
+      <div id="pcDashboard"></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div class="seg-tabs" id="todoTabs">
+            <button class="seg on" data-f="manual" onclick="setTodoFilter('manual')">待办 <b id="todoCount">1</b></button>
+            <button class="seg" data-f="all" onclick="setTodoFilter('all')">全部 <b id="allCount">3</b></button>
+            <button class="seg" data-f="done" onclick="setTodoFilter('done')">已结案 <b id="doneCount">2</b></button>
+          </div>
+          <input class="seg-search" id="todoSearch" placeholder="搜索姓名/医院/案件号" oninput="renderTodoList()" />
+        </div>
+        <div id="pcTodoList"></div>
+      </div>
+    </div>
+
+    <!-- PC：案件审核 -->
+    <div class="pc-view" id="pc-review">
+      <div class="pagehead" style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div><h1 id="rvTitle">案件审核</h1><p id="rvSub"></p></div>
+        <div id="rvTags" style="margin-left:auto"></div>
+      </div>
+      <div class="review-grid">
+        <div>
+          <div class="panel"><h4>📎 原始材料</h4><div class="evidence-img">发票影像（已加密存储）</div><div class="evidence-img">费用清单影像（已加密存储）</div></div>
+          <div class="panel"><h4>🤖 AI 提取字段</h4><div id="rvFields"></div><p style="font-size:11.5px;color:var(--muted);margin-top:6px">低置信度字段以橙色标出，建议人工核对原件</p></div>
+        </div>
+        <div>
+          <div class="panel"><h4>⚖️ 规则核责与理算过程</h4><div id="rvRules"></div></div>
+          <div class="panel"><h4>🧭 决策轨迹</h4><div id="rvTrace"></div><button class="btn btn-ghost" style="margin-top:8px;width:100%" onclick="showPcTrace()">查看完整决策回放</button></div>
+          <div id="dualBox" class="hidden"></div>
+          <div class="hist-panel" id="histPanel"></div>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ok" id="btnApprove" onclick="pcDecide('APPROVED')">✓ 通过赔付</button>
+        <button class="btn btn-bad" onclick="pcDecide('REJECTED')">✕ 拒赔</button>
+        <button class="btn btn-warn" onclick="pcDecide('MORE')">补充材料</button>
+        <span style="font-size:12px;color:var(--muted);align-self:center">人工终审 · 全程留痕 · 可回放</span>
+      </div>
+      <div class="card hidden" id="rejectBox">
+        <h3>拒赔理由（必填 ≥3 条，引用条款）</h3><div id="rejectReasons"></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn btn-bad" onclick="confirmReject()">确认拒赔</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('rejectBox').classList.add('hidden')">取消</button>
+        </div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-ghost" onclick="showPcView('pc-workbench')">← 返回工作台</button></div>
+    </div>
+
+    <!-- PC：决策回放 -->
+    <div class="pc-view" id="pc-trace">
+      <div class="pagehead"><h1>决策回放</h1><p id="traceSub"></p></div>
+      <div class="card" id="traceNodes"></div>
+      <div style="margin-top:10px"><button class="btn btn-ghost" onclick="showPcView('pc-review')">← 返回案件审核</button></div>
+    </div>
+
+    <!-- PC：表单配置中心 -->
+    <div class="pc-view" id="pc-config">
+      <div class="pagehead">
+        <h1>表单配置中心</h1>
+        <p>按企业与保司的理赔要求配置员工端申请表单 · 字段/校验/联动即时编辑，发布后员工端生效</p>
+      </div>
+      <div class="config-layout">
+        <div class="card"><h3>表单模板</h3><div id="tplList"></div>
+          <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="addTemplate()">＋ 新建模板</button>
+          <div class="callout" style="margin-top:12px">模板=「企业 × 保司 × 保障方案」的申请表单约定，可独立配置与发布。</div>
+        </div>
+        <div class="card designer">
+          <div style="display:flex;align-items:center;gap:10px"><h3 style="margin:0" id="designerTitle">表单设计</h3><span id="dirtyTag"></span></div>
+          <div style="font-size:12px;color:var(--muted);margin:6px 0 4px">勾选启用字段 · ↑↓ 调整顺序 · 点击字段编辑属性 · 新增字段支持全类型</div>
+          <div id="designerBody"></div>
+          <div class="publish-bar">
+            <button class="btn btn-primary" onclick="previewDraft()">📱 实时预览</button>
+            <button class="btn btn-ok" onclick="publishForm()">发布到员工端</button>
+            <button class="btn btn-ghost" onclick="resetDraft()">重置修改</button>
+            <span id="publishInfo" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </div>
+        <div class="card props-card">
+          <h3 class="p-title">字段属性</h3>
+          <div id="propsBody"><p style="font-size:12.5px;color:var(--muted)">在左侧设计中点击字段后，可在此编辑标签、类型、必填、校验与联动规则。</p></div>
+        </div>
+      </div>
+      <div class="preview-wrap" id="pcPreview">
+        <div class="pw-head"><span class="pw-title">📱 员工端预览（未发布草稿）</span><span class="pw-tip">所见即所得 · 发布后员工端正式生效</span></div>
+        <div class="mini-phone"><div class="mp-screen"><div class="mp-status"><span>9:41</span><span>📶 🔋</span></div><div class="mp-nav" id="mpNav">发起理赔</div><div class="mp-body" id="mpBody"></div></div></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-ghost" onclick="showPcView('pc-workbench')">← 返回工作台</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= 全局数据 ================= */
+const DEMO = {
+  claims: {
+    'CASE-001': { name:'张女士 · 门诊感冒', type:'门诊费用', hospital:'XX市第二人民医院', date:'2026-10-09',
+      amount:356.80, diag:'急性上呼吸道感染', items:'阿莫西林胶囊 ×2 · 诊查费 · 血常规',
+      status:'done', statusText:'已赔付到账', result:'通过', money:51.12, time:'14:22:35', risk:null,
+      tl:['提交申请 14:21:55','票据解析 14:22:10','规则核责 14:22:18','理算完成 14:22:30','自动通过 14:22:35','赔付到账 14:23:02'] },
+    'CASE-002': { name:'李先生 · 门诊药品', type:'药品费用', hospital:'XX市中心医院', date:'2026-10-09',
+      amount:428.00, diag:'免疫力调理', items:'深海鱼油胶囊 · 维生素C片',
+      status:'rejected', statusText:'已拒赔 · 可申诉', result:'拒赔', money:0, time:'15:40:12', risk:null,
+      tl:['提交申请 15:39:40','票据解析 15:39:55','规则核责 15:40:02','自费剔除命中 15:40:08','自动拒赔 15:40:12'],
+      reasons:[
+        {t:'该商品不属于医保目录内药品', c:'深海鱼油胶囊为保健品，不在国家医保药品目录范围内', w:'依据：R-DIR-04 自费剔除规则'},
+        {t:'保健品费用不在保障范围内', c:'保单责任范围仅覆盖社保目录内药品与诊疗项目', w:'依据：保单条款 3.2 条'},
+        {t:'无法佐证该次就诊必要性', c:'该笔费用无对应门诊诊疗记录佐证', w:'依据：理赔材料清单第 5 项'} ] },
+    'CASE-003': { name:'王先生 · 门诊复查', type:'门诊费用', hospital:'XX市第一人民医院', date:'2026-10-10',
+      amount:189.50, diag:'急性肠胃炎', items:'蒙脱石散 · 复方氯化钠',
+      status:'manual', statusText:'待人工复核', result:'转人工', money:null, time:'09:15:47',
+      tl:['提交申请 09:15:20','票据解析 09:15:30','规则核责 09:15:38','风险命中 09:15:47'],
+      risk:'重复报销风险', riskType:'warn',
+      rvFields:[
+        {k:'医院', v:'XX市第一人民医院', c:1.0}, {k:'就诊日期', v:'2026-10-10', c:0.99},
+        {k:'发票金额', v:'189.50 元', c:0.98}, {k:'费用清单', v:'189.50 元', c:0.97},
+        {k:'诊断', v:'急性肠胃炎', c:0.95}, {k:'诊疗项目', v:'蒙脱石散 · 复方氯化钠', c:0.96},
+        {k:'开药日期', v:'2026-10-08', c:0.72, low:true} ],
+      rvRules:[
+        {t:'责任范围检查', s:'通过', lines:['就诊机构：二级公立医院，在保障范围内','就诊类型：门诊，在保障范围内']},
+        {t:'药品目录检查', s:'通过', lines:['蒙脱石散：医保甲类','复方氯化钠：医保甲类']},
+        {t:'理算过程', s:'通过', lines:['本年度免赔累计 300 元 · 已达起付线','赔付比例 90% → 赔付金额 170.55 元','年度封顶 2 万元 · 未达']},
+        {t:'风险检查', s:'命中', err:true, lines:['开药日期（10-08）早于就诊日期（10-10）','与 10-08 另一案件存在同院同额嫌疑']} ],
+      rvTrace:[
+        {t:'提交申请', io:'材料：发票 + 费用清单', ok:true},
+        {t:'票据解析', io:'字段提取完成，开药日期置信度 0.72（偏低）', ok:true},
+        {t:'规则核责', io:'责任范围通过 · 目录通过', ok:true},
+        {t:'理算', io:'赔付金额 170.55 元（90%）', ok:true},
+        {t:'风险检查', io:'命中「时间轴矛盾」→ 转人工', ok:false, tag:'转人工'} ] }
+  },
+  curClaimId:null, wxPageStack:['wx-home'], wxTab:'tab-home', privacyAgreed:false, uploaded:false, seq:4
+};
+
+/* ================= 工具 ================= */
+const $ = id=>document.getElementById(id);
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2400);}
+function fmtMoney(n){return n.toFixed(2);}
+
+/* ================= 角色切换（入口页驱动） ================= */
+function switchRole(r){
+  DEMO.role = r;
+  $('entry').style.display = r ? 'none' : 'flex';
+  $('sideWx').classList.toggle('active', r==='wx');
+  $('sidePc').classList.toggle('active', r==='pc');
+  $('topBack').style.display = r ? 'inline-block' : 'none';
+  if(r==='pc'){ renderTodo(); showPcView('pc-workbench'); }
+  else if(r==='wx'){ wxSwitchTab(DEMO.wxTab); }
+}
+function backToEntry(){
+  DEMO.role = null;
+  $('entry').style.display = 'flex';
+  $('sideWx').classList.remove('active');
+  $('sidePc').classList.remove('active');
+  $('topBack').style.display = 'none';
+  if(location.hash) history.replaceState(null,'',location.pathname);
+}
+
+/* ================= 小程序端：导航 ================= */
+const WX_TITLES = { 'wx-home':'智能理赔','wx-apply':'发起理赔','wx-processing':'理赔审核中','wx-result':'审核结果','wx-appeal':'提起申诉','wx-progress':'理赔进度','wx-detail':'理赔详情','wx-mine':'我的','wx-notice':'消息通知' };
+function wxShowPage(id){
+  document.querySelectorAll('.wx-page').forEach(p=>p.classList.remove('active'));
+  $(id).classList.add('active');
+  $('wxNavTitle').textContent = WX_TITLES[id]||'智能理赔';
+  const isRoot = ['wx-home','wx-apply','wx-progress','wx-mine'].includes(id);
+  $('wxBack').classList.toggle('hidden', DEMO.wxPageStack.length<=1 || isRoot);
+  $('wxBody').scrollTop = 0;
+}
+function wxSwitchTab(tab){
+  DEMO.wxTab = tab;
+  const map = {'tab-home':'wx-home','tab-apply':'wx-apply','tab-progress':'wx-progress','tab-mine':'wx-mine'};
+  DEMO.wxPageStack = [map[tab]];
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+  wxShowPage(map[tab]);
+  if(tab==='tab-progress') renderWxClaims();
+  if(tab==='tab-apply'){ checkPrivacy(); renderApplyForm(DEMO.currentTpl||'TPL-A', configState.draft && configState.selTpl===DEMO.currentTpl); }
+}
+function wxBack(){
+  if(DEMO.wxPageStack.length>1){
+    DEMO.wxPageStack.pop();
+    const prev = DEMO.wxPageStack[DEMO.wxPageStack.length-1];
+    if(prev.startsWith('wx-home')) wxSwitchTab('tab-home');
+    else wxShowPage(prev);
+  }
+}
+function wxPush(id){ DEMO.wxPageStack.push(id); wxShowPage(id); }
+
+/* ================= 小程序端：隐私授权 ================= */
+function checkPrivacy(){
+  if(!DEMO.privacyAgreed && DEMO.wxTab==='tab-apply'){ $('wxPrivacy').classList.remove('hidden'); }
+}
+function agreePrivacy(){ DEMO.privacyAgreed=true; $('wxPrivacy').classList.add('hidden'); toast('授权已确认，可开始理赔申请'); }
+function startApply(){ wxSwitchTab('tab-apply'); checkPrivacy(); }
+
+/* ================= 小程序端：上传票据（字段化） ================= */
+function showActionsheet(key){ DEMO._upKey=key||null; $('wxActionsheet').classList.remove('hidden'); }
+function hideActionsheet(){ $('wxActionsheet').classList.add('hidden'); }
+function pickPhoto(src){
+  hideActionsheet();
+  const key=DEMO._upKey;
+  if(!DEMO.privacyAgreed){ checkPrivacy(); return; }
+  if(!key){ toast('请选择上传字段'); return; }
+  const box=$('up_'+key);
+  if(!box) return;
+  box.innerHTML='';
+  const n = src==='camera' ? ('IMG_20261009.jpg') : ('票据_20261009.jpg');
+  box.insertAdjacentHTML('beforeend',`<div class="item fill">🖼<span>${n}</span></div>`);
+  const cell=box.closest('[data-f]');
+  if(cell) cell.dataset.upl='1';
+  toast('影像已上传，AI 正在识别回填…');
+  if(key==='invoice'){ setTimeout(()=>wxAiBackfill(), 1600); }
+  else { setTimeout(()=>toast('上传完成，可继续填写其他字段'), 500); }
+}
+function wxAiBackfill(){
+  const tpl = (configState.draft && configState.selTpl===DEMO.currentTpl) ? configState.draft : FORM_SCHEMAS[DEMO.currentTpl];
+  if(!tpl) return;
+  const set=(k,v)=>{ if(tpl.groups.some(g=>g.fields.some(f=>f.key===k&&f.enabled!==false))) setFieldValue(k,v); };
+  set('hospital','XX市第二人民医院'); set('visitDate','2026-10-09');
+  set('totalAmount','356.80'); set('diagnosis','急性上呼吸道感染');
+  set('items','阿莫西林胶囊 ×2 · 诊查费');
+  toast('已自动识别 5 项并回填，可点击修改');
+  setTimeout(()=>renderPrecheck(), 800);
+}
+
+/* ================= 小程序端：拍照即预估（智能预审） ================= */
+function renderPrecheck(){
+  const amt=parseFloat(getFieldValue('totalAmount'))||0;
+  const diag=getFieldValue('diagnosis')||'';
+  const hosp=getFieldValue('hospital')||'';
+  const hasInvoice=!!document.querySelector('[data-f="invoice"][data-upl="1"]');
+  const box=$('wxPrecheck');
+  if(!hasInvoice || amt<=0){ box.innerHTML=''; return; }
+  // 预估理算（与 CASE-001 一致口径）
+  const deductible=300, rate=0.90, cap=20000, ytdPaid=1238.56;
+  const afterDed=Math.max(0,amt-deductible); // 简化：假设免赔已满
+  const est=Math.round(afterDed*rate*100)/100;
+  const estClamped=Math.min(est, cap-ytdPaid);
+  // 通过概率启发式
+  let prob=85, flags=[];
+  if(/鱼油|维生素|保健|滋补|调理/.test(diag)){ prob=15; flags.push({t:'诊断含保健品/调理类，可能不在保障范围',s:'bad'}); }
+  if(amt>5000){ prob=Math.max(prob-20,30); flags.push({t:'金额较大（>5000），需人工复核',s:'warn'}); }
+  if(!diag){ prob-=10; flags.push({t:'诊断结果未填写，建议补充',s:'warn'}); }
+  if(!document.querySelector('[data-f="itemList"][data-upl="1"]')){ flags.push({t:'费用清单未上传，可能影响核责',s:'warn'}); }
+  if(flags.length===0){ flags.push({t:'责任范围初步匹配',s:'ok'},{t:'药品目录初步匹配',s:'ok'},{t:'免赔额已满（年累计）',s:'ok'}); }
+  prob=Math.max(prob,10);
+  const probCls=prob>=70?'ok':prob>=40?'warn':'bad';
+  const probColor=prob>=70?'#07C160':prob>=40?'#F09B3B':'#FA5151';
+  box.innerHTML=`<div class="wx-precheck">
+    <div class="pc-head"><div class="ic">⚡</div><div class="tt">智能预审</div><span class="tag tag-info">提交前预估</span></div>
+    <div class="pc-grid">
+      <div class="pc-cell"><div class="k">预估赔付</div><div class="v ok">¥ ${fmtMoney(estClamped>0?estClamped:0)}</div></div>
+      <div class="pc-cell"><div class="k">通过概率</div><div class="v ${probCls}" style="color:${probColor}">${prob}%</div></div>
+    </div>
+    <div class="pc-bar"><div class="fill" style="width:${prob}%"></div></div>
+    <div class="pc-list">${flags.map(f=>`<div class="${f.s}">${f.s==='ok'?'✓':f.s==='warn'?'⚠':'✕'} ${f.t}</div>`).join('')}</div>
+    <div class="pc-note">仅为提交前预估，最终以提交后智能审核为准。预估基于已识别字段与保单规则，不构成赔付承诺。</div>
+  </div>`;
+  toast('智能预审已生成，提交前可查看预估');
+}
+
+/* ================= 小程序端：动态表单引擎 ================= */
+function renderApplyForm(tplId, useDraft){
+  const tpl = (useDraft && configState.draft) ? configState.draft : FORM_SCHEMAS[tplId];
+  if(!tpl) return;
+  DEMO.currentTpl=tplId;
+  refreshTplBanner(tpl);
+  $('wxApplyForm').innerHTML = tpl.groups.map(g=>`
+    <div class="wx-section-t">${g.title}<span style="color:#999;font-weight:400;font-size:11px">（${g.fields.length} 项）</span></div>
+    <div class="wx-card wx-form">${g.fields.filter(f=>f.enabled!==false).map(f=>renderField(f)).join('')}</div>`).join('');
+  bindShowWhen(tpl);
+  // 金额/诊断变更时刷新预审
+  const amtEl=document.querySelector('[data-key="totalAmount"]');
+  if(amtEl) amtEl.addEventListener('input',()=>renderPrecheck());
+  const diagEl=document.querySelector('[data-key="diagnosis"]');
+  if(diagEl) diagEl.addEventListener('input',()=>renderPrecheck());
+}
+function refreshTplBanner(tpl){
+  $('wxTplName').textContent=tpl.name;
+  $('wxTplMeta').textContent=`${tpl.insurer} · ${tpl.version}`;
+}
+function renderField(f){
+  const id='f_'+f.key, req=f.required?'<span style="color:#FA5151">*</span>':'';
+  const hint=f.hint?`<div class="wx-hint">${f.hint}</div>`:'';
+  const sw=f.showWhen?`<span class="wx-tag tg-info" style="margin-left:6px;font-size:9.5px">条件</span>`:'';
+  const w='style="width:100%;border:none;outline:none;text-align:right;color:#333;background:transparent;font-size:14px"';
+  switch(f.type){
+    case 'text': return `<div class="wx-cell" data-f="${f.key}"><span class="l">${req}${f.label}${sw}</span><div style="flex:1;text-align:right"><input id="${id}" data-key="${f.key}" placeholder="${f.placeholder||'请输入'}" ${w}>${hint}</div></div>`;
+    case 'number': return `<div class="wx-cell" data-f="${f.key}"><span class="l">${req}${f.label}${sw}</span><div style="flex:1;text-align:right"><input id="${id}" data-key="${f.key}" type="number" step="0.01" placeholder="${f.placeholder||'0.00'}" ${w}>${hint}</div></div>`;
+    case 'textarea': return `<div class="wx-cell" data-f="${f.key}" style="display:block;padding:12px 14px"><div style="font-size:14px;color:#111">${req}${f.label}${sw}</div><textarea id="${id}" data-key="${f.key}" rows="2" placeholder="${f.placeholder||'请输入'}" style="width:100%;border:none;outline:none;font-size:14px;color:#333;margin-top:6px;resize:none;background:transparent"></textarea></div>`;
+    case 'date': return `<div class="wx-cell" data-f="${f.key}"><span class="l">${req}${f.label}${sw}</span><div style="flex:1;text-align:right"><input id="${id}" data-key="${f.key}" type="date" ${w}>${hint}</div></div>`;
+    case 'radio': return `<div class="wx-cell" data-f="${f.key}" style="flex-wrap:wrap"><span class="l">${req}${f.label}${sw}</span><div class="wx-radio" data-key="${f.key}">${f.options.map(o=>`<span class="chip" data-v="${o}" onclick="wxPick(this,'${f.key}')">${o}</span>`).join('')}</div></div>`;
+    case 'checkbox': return `<div class="wx-cell" data-f="${f.key}" style="flex-wrap:wrap"><span class="l">${req}${f.label}${sw}</span><div class="wx-checkbox" data-key="${f.key}">${f.options.map(o=>`<span class="chip" data-v="${o}" onclick="wxPickCb(this,'${f.key}')">${o}</span>`).join('')}</div></div>`;
+    case 'upload': return `<div class="wx-cell" data-f="${f.key}" style="display:block;padding:12px 14px"><div style="font-size:14px;color:#111;display:flex;align-items:center">${req}${f.label}${sw}<span style="font-size:10.5px;color:#999;margin-left:6px">（拍照/相册）</span></div><div class="wx-upload" style="margin-top:8px" id="up_${f.key}"><div class="item" onclick="showActionsheet('${f.key}')"><span style="font-size:22px">＋</span>添加</div></div></div>`;
+  }
+}
+function getFieldValue(key){
+  const el=document.querySelector(`[data-key="${key}"]`);
+  if(!el) return '';
+  if(el.classList.contains('wx-radio')||el.classList.contains('wx-checkbox')){ return [...el.querySelectorAll('.chip.on')].map(x=>x.dataset.v).join(','); }
+  if(el.tagName==='INPUT'||el.tagName==='TEXTAREA') return el.value.trim();
+  return '';
+}
+function setFieldValue(key,v){
+  const el=document.querySelector(`[data-key="${key}"]`);
+  if(!el) return;
+  if(el.classList.contains('wx-radio')){ el.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.v===v)); }
+  else if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){ el.value=v; }
+}
+function wxPick(chip,key){ chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); triggerShowWhen(key); }
+function wxPickCb(chip,key){ chip.classList.toggle('on'); triggerShowWhen(key); }
+function shouldShow(f){ if(!f.showWhen) return true; const v=getFieldValue(f.showWhen.key); return v.split(',').includes(f.showWhen.eq)||v===f.showWhen.eq; }
+function refreshShowWhen(tpl){
+  tpl.groups.forEach(g=>g.fields.forEach(f=>{ if(f.showWhen){ const cell=document.querySelector(`[data-f="${f.key}"]`); if(cell) cell.style.display=shouldShow(f)?'':'none'; } }));
+}
+function bindShowWhen(tpl){
+  tpl.groups.forEach(g=>g.fields.forEach(f=>{
+    if(f.showWhen){
+      const dep=document.querySelector(`[data-key="${f.showWhen.key}"]`);
+      if(dep && (dep.classList.contains('wx-radio')||dep.classList.contains('wx-checkbox'))) dep.addEventListener('click',()=>refreshShowWhen(tpl));
+    }
+  }));
+  refreshShowWhen(tpl);
+}
+function triggerShowWhen(key){
+  const tpl=(configState.draft && configState.selTpl===DEMO.currentTpl)?configState.draft:FORM_SCHEMAS[DEMO.currentTpl];
+  if(tpl) refreshShowWhen(tpl);
+}
+function validateForm(tpl){
+  document.querySelectorAll('[data-f]').forEach(c=>{ c.classList.remove('field-err'); const e=c.querySelector('.wx-err'); if(e) e.remove(); });
+  const errs=[];
+  tpl.groups.forEach(g=>g.fields.filter(f=>f.enabled!==false).forEach(f=>{
+    if(!shouldShow(f)) return;
+    const v=getFieldValue(f.key);
+    let msg='';
+    if(f.required && !v) msg=f.label+'（必填）';
+    else if(v && f.type==='number' && f.min!=null && Number(v)<f.min) msg=f.label+'不能小于 '+f.min;
+    else if(v && f.type==='number' && f.max!=null && Number(v)>f.max) msg=f.label+'不能超过 '+f.max;
+    else if(v && f.pattern && !new RegExp(f.pattern).test(v)) msg=f.label+'格式不正确';
+    if(msg){
+      errs.push(msg);
+      const cell=document.querySelector(`[data-f="${f.key}"]`);
+      if(cell){ cell.classList.add('field-err'); const d=document.createElement('div'); d.className='wx-err'; d.textContent=msg; cell.appendChild(d); }
+    }
+  }));
+  return errs;
+}
+
+/* ================= 小程序端：提交 → 处理 ================= */
+let wxProcTimer=null;
+function wxSubmit(){
+  const tpl = (configState.draft && configState.selTpl===DEMO.currentTpl) ? configState.draft : FORM_SCHEMAS[DEMO.currentTpl];
+  if(!tpl){ toast('请先进入发起理赔页'); return; }
+  const errs = validateForm(tpl);
+  if(errs.length){ toast('请完善表单：'+errs[0]); return; }
+  const c = DEMO.claims['CASE-001'];
+  DEMO.curClaimId='CASE-001';
+  wxPush('wx-processing');
+  $('wxLoadingTxt').textContent='正在解析票据影像…';
+  const steps=[...document.querySelectorAll('#wxSteps .s')];
+  steps.forEach(s=>s.classList.remove('cur','done'));
+  let i=0;
+  clearInterval(wxProcTimer);
+  wxProcTimer=setInterval(()=>{
+    if(i>0){ steps[i-1].classList.remove('cur'); steps[i-1].classList.add('done'); }
+    if(i>=steps.length){ clearInterval(wxProcTimer); wxFinish(); return; }
+    steps[i].classList.add('cur');
+    const txt={0:'正在解析票据影像…',1:'正在核对责任范围与目录…',2:'正在计算赔付金额…',3:'正在执行风险检查…'}[i];
+    $('wxLoadingTxt').textContent=txt;
+    i++;
+  }, 950);
+}
+function wxFinish(){
+  setTimeout(()=>wxRenderResult('CASE-001'), 500);
+}
+
+/* ================= 小程序端：结果 ================= */
+function wxRenderResult(id){
+  const c = DEMO.claims[id];
+  DEMO.curClaimId=id;
+  wxPush('wx-result');
+  const hero=$('wxHero'), det=$('wxResultDetail');
+  if(c.result==='通过'){
+    hero.className='wx-hero ok';
+    hero.innerHTML=`<div class="big">✓ 审核通过</div><div class="sub">本年度第 3 笔理赔 · 免赔已满</div><div class="money">¥ ${fmtMoney(c.money)}</div><div class="sub">预计 30 秒内到账</div>`;
+    det.innerHTML=`
+      <div class="wx-card" style="padding:12px 14px">
+        <div class="wx-cell"><span class="l">责任范围</span><span class="v primary">通过</span></div>
+        <div class="wx-cell"><span class="l">免赔额</span><span class="v">300 元已满（年累计）</span></div>
+        <div class="wx-cell"><span class="l">赔付比例</span><span class="v">90% × 356.80 = 321.12 元</span></div>
+        <div class="wx-cell"><span class="l">统筹抵扣</span><span class="v">270.00 元</span></div>
+        <div class="wx-cell"><span class="l">实付金额</span><span class="v primary" style="font-size:16px;font-weight:700">¥ 51.12</span></div>
+      </div>
+      <div class="wx-card" style="padding:12px;font-size:12px;color:#666">金额计算全程确定性执行，AI 不参与计算 · 本笔已留存审计回放</div>
+      <div style="display:flex;gap:10px">
+        <button class="wx-btn wx-btn-green" style="flex:1" onclick="wxSwitchTab('tab-progress')">查看进度</button>
+        <button class="wx-btn wx-btn-gray" style="flex:1" onclick="wxSwitchTab('tab-home')">返回首页</button>
+      </div>`;
+  } else if(c.result==='拒赔'){
+    hero.className='wx-hero bad';
+    hero.innerHTML=`<div class="big">✕ 未获赔付</div><div class="sub">本次申请不在保障范围内</div>`;
+    det.innerHTML=`
+      <div class="wx-card" style="padding:12px 14px">
+        ${c.reasons?c.reasons.map(r=>`<div class="wx-cell" style="display:block;text-align:left;padding:10px 4px"><div style="font-size:13.5px;color:#FA5151;font-weight:500">· ${r.t}</div><div style="font-size:12px;color:#666;margin-top:2px">${r.c}</div><div style="font-size:11px;color:#999;margin-top:1px">${r.w}</div></div>`).join(''):'<div class="wx-cell" style="display:block;text-align:left;padding:10px 4px"><div style="font-size:13px;color:#666">详见案件审核结论，如需了解可联系客服或提起申诉。</div></div>'}
+      </div>
+      <div class="wx-card" style="padding:12px;font-size:12px;color:#666">如对结论有异议，可提交申诉，核赔组长将在 48 小时内人工复议。</div>
+      <div style="display:flex;gap:10px">
+        <button class="wx-btn wx-btn-green" style="flex:1" onclick="wxPush('wx-appeal')">提起申诉</button>
+        <button class="wx-btn wx-btn-gray" style="flex:1" onclick="wxSwitchTab('tab-progress')">查看进度</button>
+      </div>`;
+  } else {
+    hero.className='wx-hero warn';
+    hero.innerHTML=`<div class="big">⏱ 转人工复核</div><div class="sub">命中风险规则，需核赔员人工确认</div>`;
+    det.innerHTML=`
+      <div class="wx-card" style="padding:12px 14px">
+        <div class="wx-cell" style="display:block;text-align:left;padding:10px 4px"><div style="font-size:13.5px;color:#F09B3B;font-weight:500">命中「时间轴矛盾」风险</div><div style="font-size:12px;color:#666;margin-top:2px">开药日期早于就诊日期，需人工核对原件</div></div>
+      </div>
+      <div class="wx-card" style="padding:12px;font-size:12px;color:#666">转人工案件会附完整证据与 AI 分析，核赔员处理后结果将即时同步到本页。</div>
+      <div style="display:flex;gap:10px">
+        <button class="wx-btn wx-btn-green" style="flex:1" onclick="wxSwitchTab('tab-progress')">查看进度</button>
+        <button class="wx-btn wx-btn-gray" style="flex:1" onclick="wxSwitchTab('tab-home')">返回首页</button>
+      </div>`;
+  }
+}
+
+/* ================= 小程序端：申诉 ================= */
+function wxSubmitAppeal(){
+  const r=$('wxAppealReason').value.trim();
+  if(!r){ toast('请填写申诉理由'); return; }
+  const c=DEMO.claims['CASE-002'];
+  c.status='appealing'; c.statusText='复议中（48h）';
+  c.tl.push('提交申诉 '+new Date().toLocaleTimeString('zh-CN',{hour12:false}).slice(0,8));
+  toast('申诉已提交，48 小时内人工复议');
+  setTimeout(()=>{ wxSwitchTab('tab-progress'); renderWxClaims(); },600);
+}
+
+/* ================= 小程序端：进度列表/详情 ================= */
+/* ================= 小程序端：消息通知 ================= */
+DEMO.notices=[
+  {id:'n1', ic:'✅', bg:'#E8F8EE', tt:'理赔已到账', desc:'CASE-001 门诊·感冒 ¥51.12 已到账，请查收', time:'10-09 14:23', read:false, caseId:'CASE-001'},
+  {id:'n2', ic:'⚠️', bg:'#FFF3E0', tt:'案件转人工复核', desc:'CASE-003 命中风险规则，核赔员正在处理，预计 2 小时内出结果', time:'10-10 09:16', read:false, caseId:'CASE-003'},
+  {id:'n3', ic:'📋', bg:'#E8F3FD', tt:'理赔已拒赔', desc:'CASE-002 门诊·药品未获赔付，可查看原因或提起申诉', time:'10-09 15:40', read:true, caseId:'CASE-002'}
+];
+function renderWxNotice(){
+  $('wxNoticeList').innerHTML=DEMO.notices.map(n=>`
+    <div class="wx-notice-item ${n.read?'':'unread'}" onclick="openNotice('${n.id}')">
+      <div class="nic" style="background:${n.bg}">${n.ic}</div>
+      <div class="nbody"><div class="ntt">${n.tt}</div><div class="ndesc">${n.desc}</div></div>
+      <span class="ntime">${n.time}</span>
+    </div>`).join('');
+}
+function openNotice(id){
+  const n=DEMO.notices.find(x=>x.id===id);
+  if(!n) return;
+  n.read=true;
+  renderWxNotice();
+  if(n.caseId) openWxDetail(n.caseId);
+}
+function renderWxClaims(){
+  const tagMap={done:['已到账','tg-ok'],rejected:['已拒赔','tg-bad'],manual:['待复核','tg-warn'],appealing:['复议中','tg-info']};
+  $('wxClaimList').innerHTML=Object.entries(DEMO.claims).map(([id,c])=>{
+    const t=tagMap[c.status]||['处理中','tg-gray'];
+    return `<div class="wx-card"><div class="wx-cell" onclick="openWxDetail('${id}')">
+      <span class="l">${c.name.split(' · ')[1]}</span>
+      <span class="v">¥${c.money?fmtMoney(c.money):'—'} <span class="wx-tag ${t[1]}">${t[0]}</span></span>
+      <span class="arrow">›</span></div>
+      <div style="padding:0 14px 10px;font-size:11px;color:#999">${c.hospital} · 就诊 ${c.date} · 提交 ${c.time}</div></div>`;
+  }).join('');
+  // 同步首页 CASE-003 状态
+  const c3=DEMO.claims['CASE-003'];
+  const t3=tagMap[c3.status]||['待复核','tg-warn'];
+  $('homeC3').innerHTML = (c3.money!==null?'¥'+fmtMoney(c3.money):'¥170.55')+` <span class="wx-tag ${t3[1]}">${t3[0]}</span>`;
+}
+function openWxDetail(id){
+  const c=DEMO.claims[id];
+  DEMO.curClaimId=id;
+  const tagMap={done:['已到账','tg-ok'],rejected:['已拒赔','tg-bad'],manual:['待复核','tg-warn'],appealing:['复议中','tg-info']};
+  const t=tagMap[c.status];
+  wxPush('wx-detail');
+  $('wxDetailHead').innerHTML=`
+    <div class="wx-card" style="padding:14px">
+      <div style="font-size:15px;font-weight:600">${c.name}</div>
+      <div style="font-size:12px;color:#999;margin:3px 0 8px">${c.hospital} · 就诊 ${c.date} · 提交 ${c.time}</div>
+      <span class="wx-tag ${t[1]}">${t[0]}</span>
+      ${c.money!==null?`<div style="font-size:22px;font-weight:800;color:var(--primary);margin-top:6px">¥ ${fmtMoney(c.money)}</div>`:''}
+    </div>`;
+  $('wxDetailTl').innerHTML=c.tl.map((t,i)=>{
+    const last=i===c.tl.length-1;
+    return `<div class="node ${last&&c.status!=='rejected'?'cur':''} ${i<c.tl.length-1?'done':''}"><div class="t">${t.split(' ')[0]}</div><div class="d">${t}</div></div>`;
+  }).join('');
+  $('wxDetailActions').innerHTML = c.status==='rejected'
+    ? `<div style="margin-top:10px"><button class="wx-btn wx-btn-green" onclick="wxPush('wx-appeal')">提起申诉</button></div>`
+    : c.status==='manual'
+      ? `<div style="margin-top:10px;font-size:12px;color:#999;text-align:center">核赔员处理完成后，结果将同步至此</div>`
+      : `<div style="margin-top:10px"><button class="wx-btn wx-btn-gray" onclick="wxBack()">返回</button></div>`;
+}
+</script>
+
+<script>
+/* ================= PC 核赔端 ================= */
+function showPcView(id){
+  document.querySelectorAll('.pc-view').forEach(v=>v.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+DEMO.todoFilter='manual';
+function renderDashboard(){
+  const claims=Object.values(DEMO.claims);
+  const total=claims.length;
+  const auto=claims.filter(c=>c.status==='done'||c.status==='rejected').length;
+  const manual=claims.filter(c=>c.status==='manual').length;
+  const autoRate=Math.round(auto/total*100);
+  const totalPaid=claims.filter(c=>c.money).reduce((s,c)=>s+c.money,0);
+  const avgTime=3.2; // 秒
+  // 7日趋势数据（模拟）
+  const days=['10-06','10-07','10-08','10-09','10-10','10-11','10-12'];
+  const tData=[8,12,6,15,9,11,total];
+  const max=Math.max(...tData);
+  const W=520,H=120,pad=30,padB=24;
+  const stepX=(W-pad*2)/6;
+  const pts=tData.map((v,i)=>[pad+i*stepX, H-padB-(v/max)*(H-padB-pad-10)]);
+  const linePath=pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');
+  const areaPath=linePath+` L ${pts[pts.length-1][0]} ${H-padB} L ${pts[0][0]} ${H-padB} Z`;
+  const todayIdx=6;
+  $('pcDashboard').innerHTML=`
+    <div class="dash-grid">
+      <div class="dash-kpi"><div class="dk">今日案件</div><div class="dv">${total}</div><div class="dd">待办 ${manual} · 已结 ${auto}</div><div class="dtrend up">▲ 12%</div></div>
+      <div class="dash-kpi"><div class="dk">自动化率</div><div class="dv ok">${autoRate}%</div><div class="dd">AI 预审 + 自动赔付</div><div class="dtrend up">▲ 8%</div></div>
+      <div class="dash-kpi"><div class="dk">已赔付金额</div><div class="dv">¥${totalPaid.toFixed(0)}</div><div class="dd">本日累计</div><div class="dtrend up">▲ 5%</div></div>
+      <div class="dash-kpi"><div class="dk">平均审核耗时</div><div class="dv warn">${avgTime}s</div><div class="dd">含人工复核</div><div class="dtrend down">▼ 0.8s</div></div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-chart">
+        <h4>📈 近 7 日案件趋势</h4>
+        <svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B6CB0" stop-opacity=".25"/><stop offset="100%" stop-color="#2B6CB0" stop-opacity="0"/></linearGradient></defs>
+          ${[1,2,3].map(i=>`<line x1="${pad}" y1="${padB+i*(H-padB-pad)/4}" x2="${W-pad}" y2="${padB+i*(H-padB-pad)/4}" stroke="#EDEFF2" stroke-dasharray="3 3"/>`).join('')}
+          <path d="${areaPath}" fill="url(#tg)"/>
+          <path d="${linePath}" fill="none" stroke="#2B6CB0" stroke-width="2.5" stroke-linejoin="round"/>
+          ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===todayIdx?5:3.5}" fill="${i===todayIdx?'#1F4E79':'#fff'}" stroke="#2B6CB0" stroke-width="2"/>${i===todayIdx?`<text x="${p[0]}" y="${p[1]-12}" text-anchor="middle" font-size="11" font-weight="700" fill="#1F4E79">${tData[i]}</text>`:''}`).join('')}
+          ${days.map((d,i)=>`<text x="${pad+i*stepX}" y="${H-6}" text-anchor="middle" font-size="10" fill="#8A9199">${d}</text>`).join('')}
+        </svg>
+      </div>
+      <div class="dash-chart">
+        <h4>🛡 风险类型分布</h4>
+        <div class="risk-list">
+          <div class="ri"><span class="rl">重复报销</span><span class="rc">2</span><div class="rbar"><div class="rf" style="width:100%"></div></div></div>
+          <div class="ri"><span class="rl">时间轴矛盾</span><span class="rc">1</span><div class="rbar"><div class="rf" style="width:50%"></div></div></div>
+          <div class="ri"><span class="rl">金额异常</span><span class="rc">1</span><div class="rbar"><div class="rf" style="width:50%"></div></div></div>
+          <div class="ri"><span class="rl">医院资质</span><span class="rc">0</span><div class="rbar"><div class="rf" style="width:0%"></div></div></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line2)">命中风险案件自动转人工，附完整证据链</div>
+      </div>
+    </div>`;
+}
+function renderTodo(){
+  renderDashboard();
+  const entries=Object.entries(DEMO.claims);
+  const manual=entries.filter(([id,c])=>c.status==='manual');
+  const done=entries.filter(([id,c])=>['done','rejected','appealing'].includes(c.status));
+  $('todoCount').textContent=manual.length;
+  $('allCount').textContent=entries.length;
+  $('doneCount').textContent=done.length;
+  renderTodoList();
+}
+function setTodoFilter(f){
+  DEMO.todoFilter=f;
+  document.querySelectorAll('#todoTabs .seg').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  renderTodoList();
+}
+function renderTodoList(){
+  const f=DEMO.todoFilter;
+  const q=($('todoSearch').value||'').trim().toLowerCase();
+  let list=Object.entries(DEMO.claims).filter(([id,c])=>{
+    if(f==='manual') return c.status==='manual';
+    if(f==='done') return ['done','rejected','appealing'].includes(c.status);
+    return true;
+  });
+  if(q) list=list.filter(([id,c])=>(c.name+c.hospital+c.id).toLowerCase().includes(q));
+  list.sort((a,b)=>(b[1].status==='manual'?1:0)-(a[1].status==='manual'?1:0));
+  $('pcTodoList').innerHTML=list.length?list.map(([id,c])=>{
+    const tagCls=c.status==='manual'?'tag-warn':c.status==='done'?'tag-ok':c.status==='appealing'?'tag-info':'tag-bad';
+    const clickable=c.status==='manual';
+    const clickAttr=clickable?` onclick="showPcCase('${id}')"`:'';
+    const cursorStyle=clickable?'':' style="cursor:default"';
+    return `<div class="claim-row"${cursorStyle}${clickAttr}>
+      <div><div class="name">${c.name}</div><div class="meta">${c.hospital} · 提交 ${c.time}</div></div>
+      <span class="tag ${tagCls}">${c.statusText||c.risk||''}</span>
+      <div style="margin-left:auto;text-align:right"><div class="amt">¥ ${c.amount.toFixed(2)}</div><div class="meta">${c.status==='manual'?'AI 建议：转人工核对':c.money!==null?('赔付 ¥'+fmtMoney(c.money)):'未获赔'}</div></div>
+      ${clickable?'<span class="arrow">›</span>':''}
+    </div>`;
+  }).join(''):`<div class="empty-state"><div class="ic">📋</div><div class="tt">${q?'未找到匹配案件':'暂无案件'}</div><div class="ds">${q?'试试调整搜索关键词':'待办案件处理完成后将在此显示'}</div></div>`;
+}
+let curCase=null;
+function showPcCase(id){
+  curCase=DEMO.claims[id];
+  DEMO.curClaimId=id;
+  showPcView('pc-review');
+  $('rvTitle').textContent=curCase.name;
+  $('rvSub').textContent=`${curCase.hospital} · 就诊 ${curCase.date} · 提交 ${curCase.time}`;
+  $('rvTags').innerHTML=`<span class="tag tag-warn">${curCase.risk||'人工复核'}</span> <span class="tag tag-muted">金额 ¥${curCase.amount.toFixed(2)}</span>`;
+  $('rvFields').innerHTML=(curCase.rvFields||[]).map(f=>{
+    const cls=f.low?'v low':'v';
+    return `<div class="kv"><span class="k">${f.k}</span><span class="${cls}">${f.v} ${f.low?'<span class="tag tag-warn" style="margin-left:4px">置信度 '+f.c.toFixed(2)+'</span>':'<span style="font-size:11px;color:#90A4AE">'+f.c.toFixed(2)+'</span>'}</span></div>`;
+  }).join('');
+  $('rvRules').innerHTML=(curCase.rvRules||[]).map(r=>`
+    <div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><b style="font-size:13px">${r.t}</b><span class="${r.err?'tag tag-warn':'tag tag-ok'}">${r.s}</span></div>
+    ${r.lines.map(l=>`<div style="font-size:12px;color:var(--muted);padding-left:14px">· ${l}</div>`).join('')}</div>`).join('');
+  $('rvTrace').innerHTML=(curCase.rvTrace||[]).map((n,i)=>`
+    <div class="trace-node"><div class="no">${i+1}</div><div><div class="t">${n.t}</div><div class="io">${n.io}</div></div>${n.tag?'<span class="tag tag-warn">'+n.tag+'</span>':''}</div>`).join('');
+  $('dualBox').innerHTML=`<div class="dual-review"><b>双人复核</b>：命中高风险规则，本决定需第二位核赔员确认后生效。<br>当前复核人：核赔员-陈珊（第一人）</div>`;
+  $('dualBox').classList.remove('hidden');
+  $('rejectBox').classList.add('hidden');
+  $('btnApprove').textContent='✓ 通过赔付（待第二人确认）';
+  renderHistPanel();
+}
+function renderHistPanel(){
+  const c=curCase;
+  // 同人历史理赔（反欺诈参考）
+  const hist=[
+    {date:'2026-09-15', diag:'门诊·咽炎', amt:128.50, tag:'已赔', cls:'tag-ok'},
+    {date:'2026-08-22', diag:'门诊·体检复查', amt:0, tag:'已拒', cls:'tag-bad'},
+    {date:'2026-07-08', diag:'门诊·肠胃炎', amt:95.20, tag:'已赔', cls:'tag-ok'}
+  ];
+  $('histPanel').innerHTML=`
+    <h4>📋 同人历史理赔（反欺诈参考）</h4>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">近 90 天 ${hist.length} 笔 · 累计已赔 ¥223.70 · 无高频异常</div>
+    ${hist.map(h=>`<div class="hist-row" onclick="toast('${h.diag} · ${h.tag}')">
+      <span class="hdate">${h.date}</span><span class="hdiag">${h.diag}</span><span class="hamt">¥${h.amt.toFixed(2)}</span><span class="tag ${h.cls}" style="font-size:10px">${h.tag}</span>
+    </div>`).join('')}
+    <div class="callout" style="margin-top:10px;font-size:11.5px">当前案件开药日期（10-08）与历史 10-08 案件同日，系统已标记「时间轴矛盾」供核赔员参考。</div>`;
+}
+let rejectSelected=new Set();
+function pcDecide(action){
+  if(action==='APPROVED'){
+    toast('已提交通过意见，等待第二复核人确认');
+    setTimeout(()=>{ secondApprove(); },1500);
+  } else if(action==='REJECTED'){
+    rejectSelected=new Set();
+    const opts=['该费用不属于保障范围（责任范围不符）','药品/项目不在医保目录内（自费剔除）','就诊时间在等待期内（责任期间不符）','发票与清单金额不一致（材料存疑）','缺乏对应诊疗记录佐证（材料不全）'];
+    $('rejectReasons').innerHTML=opts.map((o,i)=>`
+      <label style="display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--line2);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px">
+        <input type="checkbox" value="${i}" onchange="toggleReject(${i})"> <span>${o}</span></label>`).join('')+`
+      <p style="font-size:12px;color:var(--muted)">所选理由将自动匹配保单条款并随结果通知员工（已选 <b id="rc">0</b> / ≥3）</p>`;
+    $('rejectBox').classList.remove('hidden');
+  } else {
+    toast('已生成缺件清单，通知员工补充材料');
+    curCase.status='manual'; curCase.statusText='待补件';
+    setTimeout(()=>renderTodo(),600);
+  }
+}
+function toggleReject(i){ if(rejectSelected.has(i)) rejectSelected.delete(i); else rejectSelected.add(i); $('rc').textContent=rejectSelected.size; }
+function secondApprove(){
+  toast('第二复核人：核赔员-张涛 已确认，案件通过赔付');
+  const c=curCase;
+  c.status='done'; c.statusText='已赔付到账';
+  c.money=170.55;
+  c.tl.push('双人复核通过 '+new Date().toLocaleTimeString('zh-CN',{hour12:false}).slice(0,8));
+  c.tl.push('赔付到账 '+new Date().toLocaleTimeString('zh-CN',{hour12:false}).slice(0,8));
+  setTimeout(()=>{ toast('案件已结案'); renderTodo(); renderWxClaims(); showPcView('pc-workbench'); },800);
+}
+function confirmReject(){
+  if(rejectSelected.size<3){ toast('请至少选择 3 条拒赔理由'); return; }
+  const c=curCase;
+  c.status='rejected'; c.statusText='已拒赔 · 可申诉'; c.result='拒赔'; c.money=0;
+  c.tl.push('人工拒赔（含 3 条理由+条款依据） '+new Date().toLocaleTimeString('zh-CN',{hour12:false}).slice(0,8));
+  toast('拒赔已确认并通知员工（含理由与条款依据）');
+  setTimeout(()=>{ renderTodo(); renderWxClaims(); showPcView('pc-workbench'); },800);
+}
+function showPcTrace(){
+  showPcView('pc-trace');
+  $('traceSub').textContent=curCase.name+' · 决策全程回放（输入摘要 / 模型输出 / 动作结果）';
+  $('traceNodes').innerHTML=(curCase.rvTrace||[]).map((n,i)=>`
+    <div class="trace-node"><div class="no">${i+1}</div>
+      <div style="flex:1"><div class="t">${n.t}</div><div class="io"><b>输入摘要</b>：${n.io}</div><div class="io"><b>动作结果</b>：${n.ok?'正常返回':'命中风险，转入人工'}</div></div>
+      ${n.tag?'<span class="tag tag-warn">'+n.tag+'</span>':'<span class="tag tag-ok">正常</span>'}</div>`).join('')+`
+    <div class="callout">审计日志已记录全部输入摘要（≤200 字）、模型输出与平台动作结果，可按案件 ID 检索回放，满足监管留痕要求。</div>`;
+}
+
+/* ================= 表单模板 Schema（可配置引擎） ================= */
+const FORM_SCHEMAS = {
+  'TPL-A': { id:'TPL-A', name:'智远制造 · 门诊+住院补充医疗', company:'智远制造', insurer:'众合财险', version:'v1.2 · 2026-10-12',
+    groups:[
+      { title:'员工信息', fields:[
+        { key:'empName', label:'员工姓名', type:'text', required:true, placeholder:'请输入真实姓名' },
+        { key:'empNo', label:'工号', type:'text', required:true, pattern:'^E\\d{8}$', placeholder:'如 E20261001', hint:'格式：E + 8 位数字' },
+        { key:'relation', label:'被保人', type:'radio', required:true, options:['本人','配偶','子女'] },
+        { key:'phone', label:'联系电话', type:'text', required:false, pattern:'^1[3-9]\\d{9}$', placeholder:'选填，用于材料补充联系' }
+      ]},
+      { title:'就诊信息', fields:[
+        { key:'claimType', label:'理赔类型', type:'radio', required:true, options:['门诊','住院'] },
+        { key:'hospital', label:'就诊医院', type:'text', required:true, placeholder:'请输入医院全称' },
+        { key:'visitDate', label:'就诊日期', type:'date', required:true },
+        { key:'diagnosis', label:'诊断结果', type:'text', required:false, placeholder:'如 急性上呼吸道感染' },
+        { key:'totalAmount', label:'票据总金额（元）', type:'number', required:true, min:0.01, max:200000, placeholder:'0.00' },
+        { key:'bankTail', label:'收款银行卡（尾号4位）', type:'text', required:true, pattern:'^\\d{4}$', placeholder:'请输入尾号 4 位', hint:'仅用于到账核验，不存储完整卡号' },
+        { key:'stayDays', label:'住院天数', type:'number', required:false, min:1, showWhen:{key:'claimType',eq:'住院'} }
+      ]},
+      { title:'材料上传', fields:[
+        { key:'invoice', label:'发票影像', type:'upload', required:true },
+        { key:'itemList', label:'费用清单', type:'upload', required:false },
+        { key:'medicalRecord', label:'病历/出院小结', type:'upload', required:false, showWhen:{key:'claimType',eq:'住院'} }
+      ]}
+    ] },
+  'TPL-B': { id:'TPL-B', name:'云帆科技 · 门诊+住院津贴', company:'云帆科技', insurer:'安信健康', version:'v2.0 · 2026-10-11',
+    groups:[
+      { title:'员工信息', fields:[
+        { key:'empName', label:'员工姓名', type:'text', required:true, placeholder:'请输入真实姓名' },
+        { key:'dept', label:'所属部门', type:'text', required:false, placeholder:'如 研发中心' }
+      ]},
+      { title:'保障与就诊', fields:[
+        { key:'claimType', label:'理赔类型', type:'radio', required:true, options:['门诊','住院津贴','意外医疗'] },
+        { key:'hospital', label:'就诊医院', type:'text', required:true, placeholder:'请输入医院全称' },
+        { key:'startDate', label:'入院日期', type:'date', required:true },
+        { key:'endDate', label:'出院日期', type:'date', required:false },
+        { key:'dailyAllowance', label:'住院津贴（元/天）', type:'number', required:false, min:50, showWhen:{key:'claimType',eq:'住院津贴'}, placeholder:'如 200' },
+        { key:'stayReason', label:'住院原因', type:'textarea', required:false, placeholder:'请简述住院原因与治疗情况', showWhen:{key:'claimType',eq:'住院津贴'} }
+      ]},
+      { title:'材料上传', fields:[
+        { key:'invoice', label:'发票影像', type:'upload', required:true },
+        { key:'medicalRecord', label:'病历/出院小结', type:'upload', required:false },
+        { key:'identity', label:'身份证明（正反面）', type:'upload', required:false }
+      ]}
+    ] }
+};
+const configState = { selTpl:'TPL-A', selField:null, draft:null, dirty:false };
+const PATTERNS={'':'无','phone':'手机号 · ^1[3-9]\\d{9}$','idcard':'身份证 · ^\\d{17}[0-9Xx]$','bank4':'银行卡尾号4位 · ^\\d{4}$','numeric':'纯数字 · ^\\d+$'};
+
+/* ================= PC：表单配置中心 ================= */
+function showPcConfig(){
+  configState.selTpl='TPL-A'; configState.draft=null; configState.selField=null;
+  showPcView('pc-config'); renderTplList(); renderDesigner(); renderProps();
+}
+function getDraft(){ return configState.draft || FORM_SCHEMAS[configState.selTpl]; }
+function renderTplList(){
+  $('tplList').innerHTML=Object.values(FORM_SCHEMAS).map(t=>`
+    <div class="tpl-item ${t.id===configState.selTpl?'on':''}" onclick="selectTemplate('${t.id}')">
+      <div class="tn">${t.name}</div>
+      <div class="tm">${t.company} × ${t.insurer}</div>
+      <div class="pub">${t.version.replace(' · ',' · ')}</div>
+    </div>`).join('');
+}
+function selectTemplate(id){
+  configState.selTpl=id; configState.draft=null; configState.selField=null;
+  renderTplList(); renderDesigner(); renderProps();
+  toast('已切换模板，可编辑字段后发布');
+}
+function addTemplate(){
+  const id='TPL-C';
+  FORM_SCHEMAS[id]={ id, name:'新建模板 · 待配置', company:'新企业', insurer:'待选保司', version:'草稿未发布',
+    groups:[{ title:'基本信息', fields:[{ key:'empName', label:'员工姓名', type:'text', required:true, placeholder:'请输入姓名' }] }] };
+  configState.selTpl=id; configState.draft=null; configState.selField=null;
+  renderTplList(); renderDesigner(); renderProps();
+  toast('已创建模板，请配置字段后发布');
+}
+function renderDesigner(){
+  const t=getDraft();
+  $('designerTitle').textContent='表单设计 · '+t.name;
+  $('dirtyTag').innerHTML=configState.dirty?'<span class="dirty-tag">● 有未保存修改</span>':'<span style="font-size:12px;color:#07C160">● 已同步线上</span>';
+  $('designerBody').innerHTML=t.groups.map((g,gi)=>`
+    <div class="fg-title"><span>${g.title}</span><span style="font-size:11px;color:var(--muted);font-weight:400">${g.fields.length} 项</span></div>
+    ${g.fields.map((f,fi)=>renderFieldRow(f,gi,fi)).join('')}
+    <button class="add-fbtn" onclick="addField(${gi})">＋ 添加字段</button>`).join('');
+  $('publishInfo').textContent=configState.dirty?'':'最近发布：'+t.version;
+}
+function renderFieldRow(f,gi,fi){
+  const typeMap={text:'文本',number:'数字',date:'日期',textarea:'多行文本',radio:'单选',checkbox:'多选',upload:'影像上传'};
+  return `<div class="f-row ${f.enabled===false?'off':''} ${configState.selField===f.key?'sel':''}" onclick="selectField('${f.key}')">
+    <span class="switch2 ${f.enabled!==false?'on':''}" onclick="event.stopPropagation();toggleField('${f.key}')"></span>
+    <span class="lbl">${f.label}${f.required?'<span class="req-star">*</span>':''}${f.showWhen?' <span class="wx-tag tg-info" style="font-size:9.5px">条件</span>':''}</span>
+    <span class="meta">${typeMap[f.type]||f.type}</span>
+    <span class="sp"></span>
+    <span class="op">
+      <button onclick="event.stopPropagation();moveField('${f.key}',-1)">↑</button>
+      <button onclick="event.stopPropagation();moveField('${f.key}',1)">↓</button>
+      <button onclick="event.stopPropagation();removeField('${f.key}')">✕</button>
+    </span>
+  </div>`;
+}
+function selectField(key){ configState.selField=key; renderDesigner(); renderProps(); }
+function toggleField(key){
+  const t=getDraft();
+  t.groups.forEach(g=>g.fields.forEach(f=>{ if(f.key===key){ f.enabled=(f.enabled===false); } }));
+  markDirty(); renderDesigner();
+}
+function moveField(key,dir){
+  const t=getDraft();
+  t.groups.forEach(g=>{
+    const i=g.fields.findIndex(f=>f.key===key);
+    if(i<0) return;
+    const j=i+dir;
+    if(j>=0&&j<g.fields.length){ const tmp=g.fields[i]; g.fields[i]=g.fields[j]; g.fields[j]=tmp; }
+  });
+  markDirty(); renderDesigner();
+}
+function removeField(key){
+  const t=getDraft();
+  t.groups.forEach(g=>{ g.fields=g.fields.filter(f=>f.key!==key); });
+  if(configState.selField===key) configState.selField=null;
+  markDirty(); renderDesigner(); renderProps();
+}
+function addField(gi){
+  const t=getDraft();
+  const key='field'+(Date.now()%10000);
+  t.groups[gi].fields.push({ key, label:'新字段', type:'text', required:false, placeholder:'请输入' });
+  configState.selField=key; markDirty(); renderDesigner(); renderProps();
+  toast('已添加文本字段，可在右侧修改属性');
+}
+function markDirty(){
+  if(!configState.draft){ configState.draft=JSON.parse(JSON.stringify(FORM_SCHEMAS[configState.selTpl])); }
+  configState.dirty=true;
+  renderDesigner();
+}
+/* 属性面板 */
+function renderProps(){
+  const t=getDraft();
+  const f=t.groups.map(g=>g.fields.find(x=>x.key===configState.selField)).find(Boolean);
+  const box=$('propsBody');
+  if(!f){ box.innerHTML='<p style="font-size:12.5px;color:var(--muted)">在左侧设计中点击字段后，可在此编辑标签、类型、必填、校验与联动规则。</p>'; return; }
+  const ptnSel=Object.entries(PATTERNS).map(([v,l])=>`<option value="${v}" ${f.pattern===v?'selected':''}>${l}</option>`).join('');
+  box.innerHTML=`
+    <div class="p-row"><div class="pl">字段标签</div><input value="${f.label}" onchange="updateProp('label',this.value)"></div>
+    <div class="p-row"><div class="pl">字段类型</div><select onchange="updateProp('type',this.value)">
+      ${['text','number','date','textarea','radio','checkbox','upload'].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="p-row"><div class="pl">占位提示</div><input value="${f.placeholder||''}" placeholder="无" onchange="updateProp('placeholder',this.value)"></div>
+    <div class="p-row"><div class="pl">必填</div><div class="switch-line"><span>提交前必填</span><span class="switch2 ${f.required?'on':''}" onclick="updateProp('required',!${f.required})"></span></div></div>
+    ${['radio','checkbox'].includes(f.type)?`<div class="p-row"><div class="pl">选项（逗号分隔）</div><textarea rows="2" onchange="updateProp('options',this.value.split(/[,，]/))">${f.options?f.options.join(','):''}</textarea></div>`:''}
+    ${f.type==='number'?`<div class="p-row"><div class="pl">最小值（留空不限）</div><input type="number" value="${f.min??''}" onchange="updateProp('min',this.value===''?null:Number(this.value))"></div>
+      <div class="p-row"><div class="pl">最大值（留空不限）</div><input type="number" value="${f.max??''}" onchange="updateProp('max',this.value===''?null:Number(this.value))"></div>`:''}
+    ${f.type==='text'?`<div class="p-row"><div class="pl">格式校验</div><select onchange="updateProp('pattern',this.value)"><option value="">无</option>${ptnSel.replace('<option value="">无</option>','')}</select></div>`:''}
+    <div class="p-row"><div class="pl">提示文字（可选）</div><input value="${f.hint||''}" placeholder="无" onchange="updateProp('hint',this.value)"></div>
+    <div class="p-row"><div class="pl">条件联动（选择依赖字段后填写"等于值"）</div>
+      <div style="display:flex;gap:6px">
+        <select style="flex:1" onchange="updateShowWhen('key',this.value)"><option value="">不联动</option>
+          ${t.groups.map(g=>g.fields.map(x=>`<option value="${x.key}" ${f.showWhen&&f.showWhen.key===x.key?'selected':''}>${x.label}</option>`).join('')).join('')}</select>
+        <input style="flex:1" placeholder="等于值" value="${f.showWhen?f.showWhen.eq:''}" onchange="updateShowWhen('eq',this.value)">
+      </div></div>
+    <div class="p-row"><button class="btn btn-bad" style="width:100%" onclick="removeField('${f.key}')">删除该字段</button></div>`;
+}
+function updateProp(prop,val){
+  const t=getDraft();
+  t.groups.forEach(g=>g.fields.forEach(f=>{ if(f.key===configState.selField) f[prop]=val; }));
+  markDirty(); renderProps();
+}
+function updateShowWhen(part,val){
+  const t=getDraft();
+  t.groups.forEach(g=>g.fields.forEach(f=>{
+    if(f.key!==configState.selField) return;
+    if(part==='key' && !val){ delete f.showWhen; return; }
+    if(!f.showWhen) f.showWhen={};
+    if(part==='key') f.showWhen.key=val; else f.showWhen.eq=val;
+    if(!f.showWhen.key) delete f.showWhen;
+  }));
+  markDirty(); renderProps();
+}
+function resetDraft(){ configState.draft=null; configState.dirty=false; configState.selField=null; renderDesigner(); renderProps(); toast('已重置为线上版本'); }
+function publishForm(){
+  const t=getDraft();
+  const now=new Date();
+  const v='v'+(parseInt((t.version.match(/v(\d+)/)||[0,'0'])[1])+1)+' · '+now.toLocaleDateString('zh-CN');
+  t.version=v;
+  FORM_SCHEMAS[configState.selTpl]=JSON.parse(JSON.stringify(t));
+  configState.draft=null; configState.dirty=false; configState.selField=null;
+  renderTplList(); renderDesigner(); renderProps();
+  if(DEMO.wxTab==='tab-apply'&&DEMO.currentTpl===configState.selTpl) renderApplyForm(configState.selTpl);
+  toast('已发布：员工端「发起理赔」立即使用新表单');
+}
+function previewDraft(){
+  const t=getDraft();
+  const wrap=$('pcPreview');
+  wrap.classList.toggle('show');
+  if(!wrap.classList.contains('show')) return;
+  $('mpNav').textContent='发起理赔 · '+t.name;
+  const typeMap={text:'文本',number:'数字',date:'日期',textarea:'多行',radio:'单选',checkbox:'多选',upload:'影像'};
+  $('mpBody').innerHTML=t.groups.map(g=>`
+    <div class="mp-section">${g.title}</div>
+    <div class="mp-card">${g.fields.filter(f=>f.enabled!==false).map(f=>renderMiniField(f)).join('')}</div>`).join('')+`<div style="margin-top:10px"><button class="wx-btn wx-btn-green" style="width:100%">提交理赔申请</button></div>`;
+  toast('预览已展开：显示当前草稿效果');
+}
+function renderMiniField(f){
+  const req=f.required?'<span class="req">*</span>':'';
+  if(f.type==='upload') return `<div class="mp-up"><div class="ul">${req}${f.label}</div><div class="slot">＋</div></div>`;
+  if(f.type==='radio'||f.type==='checkbox') return `<div class="mp-cell"><span class="l">${req}${f.label}</span><div class="mp-chips">${f.options.map(o=>`<span class="mp-chip">${o}</span>`).join('')}</div></div>`;
+  if(f.type==='textarea') return `<div class="mp-up"><div class="ul">${req}${f.label}</div><div class="slot" style="padding:8px;text-align:left;color:#bbb;font-size:11px">${f.placeholder||'请输入'}</div></div>`;
+  return `<div class="mp-cell"><span class="l">${req}${f.label}</span><span class="v ph">${f.placeholder||'请输入'}</span></div>`;
+}
+
+/* ================= 初始化 & hash ================= */
+function routeFromHash(){
+  const h=location.hash.replace('#','');
+  if(h.startsWith('wx-')){ switchRole('wx'); wxShowPage(h); }
+  else if(['tab-home','tab-apply','tab-progress','tab-mine'].includes(h)){ switchRole('wx'); wxSwitchTab(h); }
+  else if(h==='pc-workbench'){ switchRole('pc'); showPcView('pc-workbench'); }
+  else if(h==='pc-review'){ switchRole('pc'); showPcCase('CASE-003'); }
+  else if(h==='pc-config'){ switchRole('pc'); showPcConfig(); }
+  else if(h==='pc-trace'){ switchRole('pc'); showPcCase('CASE-003'); showPcTrace(); }
+}
+window.addEventListener('hashchange', routeFromHash);
+renderTodo();
+renderWxClaims();
+wxShowPage('wx-home');
+routeFromHash();
+</script>
+</body>
+</html>

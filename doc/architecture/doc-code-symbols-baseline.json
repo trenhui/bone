@@ -765,13 +765,46 @@
       "note": "BONE-AI 能力中台整体方案 §附录A 断言 5–7 将 RuleEngine / WorkflowMetadata / VersionController 列为 bone-metadata-engine-runtime 规划中的目标态类名，实现尚未落地；属示意性 To-Be 命名，登记豁免以免门禁误报"
     },
     {
-      "symbol": "EnableConfigurationProperties",
+      "symbol": "InspectionRepository",
       "docs": [
-        "doc/ai-product/RAG方案诊断与优化-2026-10-23.md",
-        "doc/ai-product/platform/BONE-AI能力中台详细技术方案.md"
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 后督抽检整改清单的目标态仓储名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "InspectionApplicationService",
+      "docs": [
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 后督抽检整改清单的目标态应用服务名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "InspectionController",
+      "docs": [
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 后督抽检整改清单的目标态端点名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "CreateClaimApplicationService",
+      "docs": [
+        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md"
+      ],
+      "reason": "tobe-named",
+      "note": "synapClaim 落地版 §应用层目录示意的目标态应用服务名，实现尚未落地；属方案示意 To-Be 命名，登记豁免以免门禁误报"
+    },
+    {
+      "symbol": "AutoConfiguration",
+      "docs": [
+        "doc/design/modules/review-report-bone-system.md",
+        "doc/design/lowcode/cases/费用报销系统-设计文档.md",
+        "doc/plans/spring-boot-3.5-upgrade.md"
       ],
       "reason": "false-positive",
-      "note": "Spring 框架注解 @EnableConfigurationProperties 的正当引用：RAG 诊断文档论证 RagInferenceProperties 缺此注解故配置面失效，能力中台详案 v1.5 记录修复后经此注解注册；框架注解非 Bone 工程类，与 baseline note 中 false-positive（Spring 通用词误报）同类"
+      "note": "AutoConfiguration 出自 org.springframework.boot.autoconfigure.AutoConfiguration.imports 包名及 @AutoConfiguration 注解通用词，非特定类引用，属误报（覆盖 review-report 与费用报销设计文档）"
     }
   ]
 }

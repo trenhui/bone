@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" font-family="PingFang SC, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1E3A5F"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#DBEAFE"/>
+      <stop offset="1" stop-color="#EFF6FF"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748B"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+
+  <!-- 背景 -->
+  <rect x="0" y="0" width="1280" height="760" fill="#FFFFFF"/>
+  <rect x="0" y="0" width="1280" height="64" fill="url(#hdr)"/>
+  <text x="640" y="40" text-anchor="middle" font-size="26" font-weight="700" fill="#FFFFFF">存量系统渐进式集成路线 · procuraAI 轻量落地（FDE）</text>
+
+  <!-- 左区：五类存量源 -->
+  <text x="150" y="104" text-anchor="middle" font-size="16" font-weight="700" fill="#1E3A5F">存量系统（只读接入）</text>
+  <g>
+    <rect x="40" y="126" width="220" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="150" y="147" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">OA 流程审批</text>
+    <text x="150" y="165" text-anchor="middle" font-size="11" fill="#64748B">招标审批 / 合同归档事件</text>
+
+    <rect x="40" y="184" width="220" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="150" y="205" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">ERP 财务（U8 / SAP / Oracle / 金蝶）</text>
+    <text x="150" y="223" text-anchor="middle" font-size="11" fill="#64748B">金额 / 付款记录 / 账期（消警）</text>
+
+    <rect x="40" y="242" width="220" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="150" y="263" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">信用数据源</text>
+    <text x="150" y="281" text-anchor="middle" font-size="11" fill="#64748B">企查查 / 天眼查 / 信用中国 / 司法</text>
+
+    <rect x="40" y="300" width="220" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="150" y="321" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">工商信息源</text>
+    <text x="150" y="339" text-anchor="middle" font-size="11" fill="#64748B">营业执照 / 企业信用（逐字核对）</text>
+
+    <rect x="40" y="358" width="220" height="46" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <text x="150" y="379" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">台账 / 历史文件库</text>
+    <text x="150" y="397" text-anchor="middle" font-size="11" fill="#64748B">历史合同 / 范本（冷启动语料）</text>
+  </g>
+
+  <!-- 中区：四种集成形态通道 -->
+  <text x="440" y="104" text-anchor="middle" font-size="16" font-weight="700" fill="#1E3A5F">四种集成形态（按 IT 成熟度渐进）</text>
+  <g>
+    <line x1="266" y1="149" x2="322" y2="149" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrB)"/>
+    <rect x="328" y="130" width="216" height="38" rx="8" fill="#DBEAFE" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="436" y="148" text-anchor="middle" font-size="13" font-weight="600" fill="#1E3A5F">④ 事件订阅（webhook）</text>
+    <text x="436" y="163" text-anchor="middle" font-size="10" fill="#475569">OA 归档即审 · 签约前自动三一致校验</text>
+
+    <line x1="266" y1="207" x2="322" y2="207" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrB)"/>
+    <rect x="328" y="188" width="216" height="38" rx="8" fill="#DBEAFE" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="436" y="206" text-anchor="middle" font-size="13" font-weight="600" fill="#1E3A5F">③ REST API 对接</text>
+    <text x="436" y="221" text-anchor="middle" font-size="10" fill="#475569">信用源 / 工商源 / ERP 标准接口</text>
+
+    <line x1="266" y1="265" x2="322" y2="265" stroke="#059669" stroke-width="2.5" marker-end="url(#arrG)"/>
+    <rect x="328" y="246" width="216" height="38" rx="8" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1.5"/>
+    <text x="436" y="264" text-anchor="middle" font-size="13" font-weight="600" fill="#065F46">② 数据库只读 + 增量</text>
+    <text x="436" y="279" text-anchor="middle" font-size="10" fill="#475569">台账视图 · 供应商 / 合同号 / 金额</text>
+
+    <line x1="266" y1="323" x2="322" y2="323" stroke="#059669" stroke-width="2.5" marker-end="url(#arrG)"/>
+    <rect x="328" y="304" width="216" height="38" rx="8" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1.5"/>
+    <text x="436" y="322" text-anchor="middle" font-size="13" font-weight="600" fill="#065F46">① 文件导入 / 导出桥接</text>
+    <text x="436" y="337" text-anchor="middle" font-size="10" fill="#475569">PDF/Excel 批量 · 零改造最快落地</text>
+  </g>
+
+  <!-- 通道 → 平台汇流箭头 -->
+  <g stroke="#64748B" stroke-width="2.5" marker-end="url(#arr)">
+    <line x1="544" y1="149" x2="560" y2="149"/>
+    <line x1="544" y1="207" x2="560" y2="207"/>
+    <line x1="544" y1="265" x2="560" y2="265"/>
+    <line x1="544" y1="323" x2="560" y2="323"/>
+  </g>
+
+  <!-- 右区：procuraAI 平台 + 三阶段标注 -->
+  <rect x="560" y="120" width="680" height="300" rx="14" fill="url(#core)" stroke="#93C5FD" stroke-width="2"/>
+  <text x="900" y="150" text-anchor="middle" font-size="17" font-weight="700" fill="#1E3A5F">procuraAI 智能体（私有化部署 · 单 80G 起步）</text>
+
+  <g>
+    <rect x="590" y="172" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="685" y="194" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">审查引擎（M1/M2）</text>
+    <text x="685" y="212" text-anchor="middle" font-size="10" fill="#475569">双引擎 · 三一致校验（R25）</text>
+
+    <rect x="800" y="172" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="895" y="194" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">履约预警（M4）</text>
+    <text x="895" y="212" text-anchor="middle" font-size="10" fill="#475569">T-15 / T-0 / T+0 · ERP 消警</text>
+
+    <rect x="1010" y="172" width="200" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="1110" y="194" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">画像 / 问答 / 响应 / 起草</text>
+    <text x="1110" y="212" text-anchor="middle" font-size="10" fill="#475569">M3 / M5 / M6 / M7（P1 扩展）</text>
+
+    <rect x="590" y="250" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="685" y="272" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">规则库双源</text>
+    <text x="685" y="290" text-anchor="middle" font-size="10" fill="#475569">R01-R25 + ER01 · 热更灰度</text>
+
+    <rect x="800" y="250" width="190" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="895" y="272" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">HITL 人工确认</text>
+    <text x="895" y="290" text-anchor="middle" font-size="10" fill="#475569">高风险→法务 · 全链路留痕</text>
+
+    <rect x="1010" y="250" width="200" height="56" rx="8" fill="#FFFFFF" stroke="#60A5FA" stroke-width="1.5"/>
+    <text x="1110" y="272" text-anchor="middle" font-size="13" font-weight="600" fill="#0F172A">LLM 推理（FP8）</text>
+    <text x="1110" y="290" text-anchor="middle" font-size="10" fill="#475569">Qwen3.5-9B/27B/35B-A3B</text>
+  </g>
+
+  <!-- 右区下方：核心产出 -->
+  <g>
+    <rect x="590" y="330" width="210" height="34" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="695" y="352" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">体检报告 / 风险清单（可追溯）</text>
+    <rect x="820" y="330" width="180" height="34" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="910" y="352" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">履约预警 / 修订闭环（FR-205）</text>
+    <rect x="1020" y="330" width="190" height="34" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="1115" y="352" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">报告回写 OA 附件（零改造）</text>
+  </g>
+
+  <!-- 底部：三阶段时间轴 -->
+  <rect x="40" y="460" width="1200" height="250" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="640" y="492" text-anchor="middle" font-size="16" font-weight="700" fill="#1E3A5F">三阶段渐进式落地（与集成深度同步，交付节奏摊薄集成工作量）</text>
+
+  <!-- 阶段 I -->
+  <rect x="70" y="520" width="340" height="150" rx="10" fill="#FFFFFF" stroke="#059669" stroke-width="2"/>
+  <rect x="70" y="520" width="340" height="36" rx="10" fill="#059669"/>
+  <text x="240" y="543" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Ⅰ 文件级 · 第 1–2 周</text>
+  <text x="90" y="580" font-size="12.5" fill="#0F172A">· 集成形态 ①：上传即审、报告导出</text>
+  <text x="90" y="604" font-size="12.5" fill="#0F172A">· 范围：P0（M1 体检 + M2 审查 + M4 预警）</text>
+  <text x="90" y="628" font-size="12.5" fill="#0F172A">· 客户零改造，2 周看到审查效果</text>
+  <text x="90" y="656" font-size="12" font-weight="600" fill="#059669">▶ 验收：≥30 份试点 · 遗漏率 ≤0.5% · 法务采纳率 ≥60%</text>
+
+  <!-- 阶段 II -->
+  <rect x="470" y="520" width="340" height="150" rx="10" fill="#FFFFFF" stroke="#2563EB" stroke-width="2"/>
+  <rect x="470" y="520" width="340" height="36" rx="10" fill="#2563EB"/>
+  <text x="640" y="543" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Ⅱ 数据级 · 第 3–6 周</text>
+  <text x="490" y="580" font-size="12.5" fill="#0F172A">· 集成形态 ②③：台账同步 / 信用画像</text>
+  <text x="490" y="604" font-size="12.5" fill="#0F172A">· 范围：P1（M3 画像 + M5 问答 + M6/M7）</text>
+  <text x="490" y="628" font-size="12.5" fill="#0F172A">· 履约节点同步，预警与业务数据联动</text>
+  <text x="490" y="656" font-size="12" font-weight="600" fill="#2563EB">▶ 验收：全类型覆盖 · 企业源规则 ≥20 条沉淀</text>
+
+  <!-- 阶段 III -->
+  <rect x="870" y="520" width="340" height="150" rx="10" fill="#FFFFFF" stroke="#DC2626" stroke-width="2"/>
+  <rect x="870" y="520" width="340" height="36" rx="10" fill="#DC2626"/>
+  <text x="1040" y="543" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Ⅲ 流程级 · 第 4–8 周起</text>
+  <text x="890" y="580" font-size="12.5" fill="#0F172A">· 集成形态 ④：OA 事件触发（归档即审）</text>
+  <text x="890" y="604" font-size="12.5" fill="#0F172A">· 签约前自动三一致校验（R25）</text>
+  <text x="890" y="628" font-size="12.5" fill="#0F172A">· ERP 付款消警 · 人工仅在确认点介入</text>
+  <text x="890" y="656" font-size="12" font-weight="600" fill="#DC2626">▶ 验收：端到端自动化 · 年度 ROI 达成</text>
+
+  <!-- 阶段间箭头 -->
+  <line x1="416" y1="595" x2="462" y2="595" stroke="#94A3B8" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="816" y1="595" x2="862" y2="595" stroke="#94A3B8" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- 底部战略注 -->
+  <text x="640" y="716" text-anchor="middle" font-size="13" fill="#334155">落地策略：不做"大集成"先做"小闭环"——Ⅰ 阶段 2 周见效果，Ⅱ/Ⅲ 按业务收益逐级加集成，避免传统实施"先集成 3 个月再谈价值"</text>
+  <text x="640" y="742" text-anchor="middle" font-size="12" fill="#64748B">政策窗口：发改法规〔2026〕195号 · 2026 年底前重点场景全覆盖 · 采购部门有明确采购动机</text>
+</svg>
