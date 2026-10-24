@@ -1,7 +1,8 @@
 # BONE AI 能力中台 · 详细技术方案（详设）
 
-> **版本**：v1.7　**日期**：2026-10-23　**归口**：平台架构组
-> **v1.7 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：① §2.1 密钥行补 **`ApiKeyProvider` 按调用解析**（此前端口已就位却零消费方——客户端构造期固化 `String apiKey`，密钥轮换语义落空，同 `LlmMetrics` 零消费方反模式；现补默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 装配，客户端每次请求现取，接入方以 `@Bean` 覆盖为 bone-security Virtual Key 实现即生效，热路径零改动）；② §6.1 密钥托管行状态更新——网关侧 seam 已接通（✅），剩余 L3 收敛为 bone-security Virtual Key 能力本体实现；③ §2.1 默认开关表密钥行同步；④ 验证证据：gateway 108 测试全绿（含 ArchUnit 11 条，新增密钥轮换 / 空值 / 热更新 5 例）。
+> **版本**：v1.8　**日期**：2026-10-23　**归口**：平台架构组
+> **v1.8 变更（流式 SSE 落地——对齐 2026 业界最佳实践，关闭最大能力缺口）**：① §2.1 新增**流式能力段**——`LlmClient.streamChat(req, Consumer<LlmStreamEvent>)`（默认缓冲回退，零改传输实现）+ `LlmStreamEvent` sealed 事件（Token/Done/Error）；`LlmGatewayApplicationService.streamInvoke` **复用与 `invoke` 完全相同的治理链**（红线→路由→配额→注入→脱敏→缓存命中），仅在末端逐片下发 Token、首 token 记 TTFT（`LlmMetrics.recordFirstToken`）、流末做内容安全/结构化校验/缓存写入/计量/证据（与 `invoke` 同口径）；② 传输层 `LlmHttpTransport.streamPost` 默认缓冲回退，仅 `JdkLlmTransport` 走 **JDK `HttpClient` 真 SSE**（`BodyHandlers.ofInputStream()` 行读），`ResilientLlmTransport` 透传（熔断只守卫「流获取」不守卫消耗，避免吞掉半截流）；③ 契约一致性定案——**流式与 `invoke` 同口径：面向调用方返回原文，PII 脱敏只发生在出站请求与证据落库两处**（不做逐片流式脱敏，避免跨 chunk 边界漏脱敏与证据标签泄露调用方）；④ §3.2 补 `gen_ai.time_to_first_token`（TTFT）映射；⑤ §6.2 指标化行补 TTFT 发射点已具备；⑥ 验证证据：**gateway 115 测试全绿（含 ArchUnit 12 条——订正 v1.7「11 条」口径，实际 `ArchitectureTest` 引用 12 条规则；新增流式 7 例：SSE 解析/事件顺序/stream:true+include_usage 写入/缓冲回退/错误载荷/流末内容安全拦截/TTFT 与证据脱敏口径 + 缓存命中流式）**。
+> **v1.7 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：① §2.1 密钥行补 **`ApiKeyProvider` 按调用解析**（此前端口已就位却零消费方——客户端构造期固化 `String apiKey`，密钥轮换语义落空，同 `LlmMetrics` 零消费方反模式；现补默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 装配，客户端每次请求现取，接入方以 `@Bean` 覆盖为 bone-security Virtual Key 实现即生效，热路径零改动）；② §6.1 密钥托管行状态更新——网关侧 seam 已接通（✅），剩余 L3 收敛为 bone-security Virtual Key 能力本体实现；③ §2.1 默认开关表密钥行同步；④ 验证证据：gateway 108 测试全绿（含 ArchUnit 12 条，新增密钥轮换 / 空值 / 热更新 5 例；v1.8 订正原「11 条」为 12 条）。
 > **v1.6 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：① §2.6 检索链补**文档级 ACL seam**（`RagAclPort` 契约 + 默认 `NoDocAcl` 兜底 + 显式作用域无 ACL 归属 403 fail-closed，L3 前接入方适配为硬依赖）、**MMR 多样性选取**（`MmrSelector` 选取式，λ 默认 0 = 关闭、开启时精排 3 倍扩样，λ=0 约定为关闭而非纯多样性）、**降级可观测**（`RagEventSink` 端口 + 响应 `degradations` 痕迹码 + 默认 WARN 事件，trace 适配留 L3）；② §3.1 错误码表补 `AI_RAG_DOC_FORBIDDEN`（403），目标态语义注同步；③ §4 阈值表补 #23 MMR λ；④ §6.4 补检索权限隔离 / 降级可观测两行状态；⑤ §2.6 backlog 收敛——查询改写记**决策：暂不落地零消费方 machinery**（无 producer 先建合并机制即死代码，正是 P0 修掉的反模式；批二按评测回流启动），仅剩 trace/告警接线与 ingest ACL 两项；⑥ 验证证据：rag 43 测试全绿（RagServiceTest 13 例含 ACL/MMR/降级痕迹新场景 + ArchUnit 12 条），app 51 测试全绿（RagControllerTest 响应结构与痕迹透传断言）。
 > **v1.5 变更（RAG 诊断后修订，承接《RAG方案诊断与优化-2026-10-23》）**：① **§2.6 检索链按代码真序重写**——补容量护栏（`max-scan` fail-closed）、引用强制前置（打分前剔除无出处切片）、双路降级口径（嵌入故障 ⇒ BM25 单路 / rerank 故障 ⇒ RRF 粗序，均 WARN，严禁切云端）、`min-score` 过滤；② §2.6 实现形态订正——`EmbeddingPort`/`RerankPort` 由「恒默认」改为**按 `base-url` 条件装配**（`RagInferenceProperties` 经 `@EnableConfigurationProperties` 注册，配置面自此生效），修复 rerank/HTTP 客户端零接线与配置死代码；③ §2.6 增量幂等落地——`doc_version` 批键判定（同版本同切片数跳过 / 异版本残缺软删重建）；④ §3.1 错误码表补 `AI_RAG_SCOPE_OVER_LIMIT`（422），目标态语义注同步；⑤ §4 阈值表补 #20 容量护栏 / #21 分数阈值 / #22 topK，rerank 窗口行注明 NoOp 默认；⑥ §6.4 补检索容量护栏行；⑦ §2.6 记 P1 backlog（文档级 ACL / 查询改写 / MMR / 降级事件 trace 化）。
 > **v1.4 变更（生产硬依赖代码落地，承接诊断报告 P2 项）**：① §2.1 默认开关表补**密钥启动 fail-fast**（`api-key` 未解析 `${}` 占位符即启动失败）与**配额 Redis 分布式版**（`RedisTenantQuotaGuard`，Redisson 固定窗口 + 故障 fail-open）；② §6 生产就绪清单回写代码落地状态——探针分组（liveness/readiness）已配、Redis 配额不再是多副本硬依赖、密钥 fail-fast 已具备；③ 附录 A：trace 回放 / rules 管理 REST 由「目标态」改判**已落地**（`bone-ai-app` 的 `TraceController` / `RuleController`，租户隔离 + `ApiResponse` 信封 + 全局 BizException 翻译）；④ 验证证据：gateway 103 测试全绿（含 ArchUnit 7 条），app 控制器 13 测试全绿。
@@ -49,9 +50,9 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
                          AiContext ctx) {}          // tenantId + traceId + 成本上限
 ```
 
-> **已落地基线 vs 目标态（2026-10-23 更新）**：上为**目标态**契约。已落地为**渐进版**——`LlmRequest(model, messages, temperature, maxTokens, jsonResponse, shortCircuited, traceId, scenario)`（`scenario` 已于 2026-10-21 补入，驱动档位路由）、消息 `LlmMessage(role, content)`、包结构 `domain/application/infrastructure/config`；出站传输用 **JDK `HttpClient`**（零新依赖）；`traceId` **已改为调用方提供以贯穿全链**（缺省才生成，与证据链/计量共用同一键）；成本红线**抛 `BizException(400, AI_GATEWAY_REDLINE_BLOCKED)`**（非结果型短路——结果型短路为目标态）；租户上下文经 `TenantProvider` 取（替代目标态 `AiContext` 内嵌）。
+> **已落地基线 vs 目标态（2026-10-23 更新）**：上为**目标态**契约。已落地为**渐进版**——`LlmRequest(model, messages, temperature, maxTokens, jsonResponse, shortCircuited, traceId, scenario)`（`scenario` 已于 2026-10-21 补入，驱动档位路由）、消息 `LlmMessage(role, content)`、包结构 `domain/application/infrastructure/config`；出站传输用 **JDK `HttpClient`**（零新依赖）；`traceId` **已改为调用方提供以贯穿全链**（缺省才生成，与证据链/计量共用同一键）；成本红线**抛 `BizException(400, AI_GATEWAY_REDLINE_BLOCKED)`**（非结果型短路——结果型短路为目标态）；租户上下文经 `TenantProvider` 取（替代目标态 `AiContext` 内嵌）。**流式已于 v1.8 落地**：渐进版在门面上增补 `LlmClient.streamChat(req, Consumer<LlmStreamEvent>)`（默认缓冲回退，零改传输实现）与 `LlmStreamEvent` sealed 事件（Token/Done/Error）；`LlmGatewayApplicationService.streamInvoke` 复用 `invoke` 全治理链，首 token 记 TTFT。目标态契约将 `chat` 演进为 `stream`（统一返回 `Stream<LlmStreamEvent>` 或 `Flow<LlmStreamEvent>`）。
 >
-> **治理面落地状态（2026-10-23）**：① 出口 PII 脱敏 ✅（`PiiRedactor` 端口 + 正则默认实现，身份证 ISO 7064 / 银行卡 Luhn 校验位闸门防误伤，出站与落证双向掩码；**默认开启**）；② 结构化输出校验 ✅（`jsonResponse=true` 时校验合法 JSON，失败发失败证据并抛 `AI_GATEWAY_OUTPUT_INVALID`；JSON Schema 强校验待 L3 依赖审批）；③ 精确缓存 ✅（`LlmResponseCache` 有界 LRU+TTL，仅 `temperature=0` 参与，**租户入键**防跨租户串答，命中不发证据/计量；**默认关闭**）；④ 租户配额 ✅（`TenantQuotaGuard` 进程内固定窗口，超限 429 `AI_GATEWAY_QUOTA_EXCEEDED`；**多副本需换 Redis**）；⑤ 计量 ✅（`LlmUsageRecorded` 事件 + `LlmUsageSink` 默认结构化日志）；⑥ 提示注入防护 ✅（`PromptInjectionGuard` 端口 + `HeuristicInjectionGuard` 关键词默认实现，仅检 user 消息、在脱敏前检测，超限 400 `AI_GATEWAY_INJECTION_SUSPECTED`；**默认关闭**——启发式误伤风险，语义级检测需以 `@Bean` 覆盖为模型分类器/云端护栏，属 L3）；⑦ 场景档位路由 ✅（`ModelRouter` 端口 + `ConfigDrivenModelRouter`，2026-10-21 接入调用链；无配置直通）；⑧ 输出内容安全 ✅（`ContentSafetyGuard` 端口，OWASP LLM05/09，命中抛 `AI_GATEWAY_CONTENT_UNSAFE` 且留证；**默认关闭**）；⑨ 级联升档 ✅（`CascadeLlmClient`：小模型先行、校验失败自动升档一次）；⑩ 观测发射 ✅（`LlmMetrics` 端口，Noop 默认）。**仍待**：OTel `gen_ai.*` 打点（需 Micrometer 依赖，L3）、红线演进为结果型短路、JSON Schema 强校验、配额多副本共享存储。
+> **治理面落地状态（2026-10-23）**：① 出口 PII 脱敏 ✅（`PiiRedactor` 端口 + 正则默认实现，身份证 ISO 7064 / 银行卡 Luhn 校验位闸门防误伤，出站与落证双向掩码；**默认开启**）；② 结构化输出校验 ✅（`jsonResponse=true` 时校验合法 JSON，失败发失败证据并抛 `AI_GATEWAY_OUTPUT_INVALID`；JSON Schema 强校验待 L3 依赖审批）；③ 精确缓存 ✅（`LlmResponseCache` 有界 LRU+TTL，仅 `temperature=0` 参与，**租户入键**防跨租户串答，命中不发证据/计量；**默认关闭**）；④ 租户配额 ✅（`TenantQuotaGuard` 进程内固定窗口，超限 429 `AI_GATEWAY_QUOTA_EXCEEDED`；**多副本需换 Redis**）；⑤ 计量 ✅（`LlmUsageRecorded` 事件 + `LlmUsageSink` 默认结构化日志）；⑥ 提示注入防护 ✅（`PromptInjectionGuard` 端口 + `HeuristicInjectionGuard` 关键词默认实现，仅检 user 消息、在脱敏前检测，超限 400 `AI_GATEWAY_INJECTION_SUSPECTED`；**默认关闭**——启发式误伤风险，语义级检测需以 `@Bean` 覆盖为模型分类器/云端护栏，属 L3）；⑦ 场景档位路由 ✅（`ModelRouter` 端口 + `ConfigDrivenModelRouter`，2026-10-21 接入调用链；无配置直通）；⑧ 输出内容安全 ✅（`ContentSafetyGuard` 端口，OWASP LLM05/09，命中抛 `AI_GATEWAY_CONTENT_UNSAFE` 且留证；**默认关闭**）；⑨ 级联升档 ✅（`CascadeLlmClient`：小模型先行、校验失败自动升档一次）；⑩ 观测发射 ✅（`LlmMetrics` 端口，Noop 默认）；⑪ **流式响应 ✅**（`LlmClient.streamChat` + `LlmStreamEvent` sealed 事件，JDK `HttpClient` 真 SSE + 缓冲回退，复用 `invoke` 全部治理链、首 token 记 TTFT，v1.8 落地）。**仍待**：OTel `gen_ai.*` 打点（需 Micrometer 依赖，L3）、红线演进为结果型短路、JSON Schema 强校验、配额多副本共享存储。
 
 **执行链（顺序固定，与 `LlmGatewayApplicationService.invoke` 代码一致；任一步抛错即终止）**：
 1. **租户解析**：所有分支之前取租户（计量口径按租户聚合，短路路径也要记量化发射点）；
@@ -87,6 +88,14 @@ public record LlmRequest(String scenario,          // 场景键，驱动档位�
 **配置模型（`LlmGatewayProperties`，Nacos/ConfigMap）**：档位路由表、租户配额（token/日、调用次数/日、超限降档→纯确定性路径）、红线开关、脱敏规则、超时/重试、灰度开关（能力级一键降级）。**密钥**：出库走 bone-security（Virtual Key 语义），配置不含明文 key。密钥解析经 `ApiKeyProvider` 端口**按调用**完成（2026-10-23 接线：此前端口零消费方、客户端构造期固化 key，轮换语义落空）——默认 `ConfigApiKeyProvider` 从配置现取（Nacos 热更新换 key 不重启），合规形态以 `@Bean ApiKeyProvider` 覆盖为 bone-security Virtual Key 实现即生效（短时限 key 过期刷新、provider 侧轮换，客户端与热路径零改动）；返回 null/空 = 不带 Authorization 头（本地无鉴权 provider）。
 
 **观测**：`LlmMetrics` 端口已就位（Noop 默认，成本 / 延迟 / 错误率 / 短路 / 配额超限发射点）；`gen_ai.*` 语义约定映射（表见 §3.2，映射表版本化、不硬编码常量）**待 Micrometer 依赖落地后接入（L3）**；提示词/响应内容**默认不采集**。
+
+**流式能力（v1.8 落地——对齐 2026 业界最佳实践，关闭最大能力缺口）**：此前网关**全链同步**，而 SSE/流式已是 OpenAI 兼容生态与 LiteLLM/Portkey/Kong 等网关的事实标配（首 token 体验、长文逐步呈现、降级兜底）。本次补齐且不引入新依赖、不复制治理链：
+
+- **门面契约**：`LlmClient` 新增 `void streamChat(LlmRequest req, Consumer<LlmStreamEvent> sink)`（默认实现缓冲回退：调一次 `chat` 后发一个 `Token` + `Done`，**接入方/传输实现零改动即可用**）；`LlmStreamEvent` 为 sealed 事件——`Token(delta)` / `Done(model, finishReason, usage)` / `Error(message, cause)`。
+- **应用层 `streamInvoke`**：**复用 `invoke` 完全相同的治理链**（红线短路 → 场景路由 → 租户配额 → 提示注入检测 → 出站脱敏 → 缓存命中），仅在末端逐片下发——首 token 到达即发射 `LlmMetrics.recordFirstToken`（TTFT）；流末对全文做内容安全（OWASP LLM05/09）/ 结构化输出校验 / 精确缓存写入 / token 计量 / 证据发布（与 `invoke` 同口径）；provider 错误与治理拦截经 `Error` 事件下发并留证。
+- **传输层**：`LlmHttpTransport.streamPost` 默认缓冲回退（`Stream.of(post(...))`）；仅 `JdkLlmTransport` 走 **JDK `HttpClient` 真 SSE**（`BodyHandlers.ofInputStream()` 行读、`data:` 过滤、`[DONE]` 剥离、读毕自动关流）；`ResilientLlmTransport` 透传——**熔断只守卫「流获取」、不守卫「流消耗」**，避免熔断中途吞掉半截流（流一旦拿到就让它自然走完）。`OpenAiCompatibleClient` 发 `stream:true` + `stream_options.include_usage:true`，解析兼容 `delta.content` 与缓冲 `message.content` 两种形态、错误载荷与 `usage`。
+- **契约一致性定案（关键设计取舍）**：**流式与 `invoke` 同口径——面向调用方返回原文，PII 脱敏只发生在「出站请求」与「证据落库」两处，绝不改写业务答案**。故**不做逐片流式脱敏**：一段 PII 恰被 SSE 切在两 chunk 间，逐片正则对单边都「不像完整 PII」而漏脱敏；而累积重脱敏又会在每条增量上回吐 `[手机号]` 这类证据标签，既泄露脱敏机制又违背「原文下发」契约。对必须零泄露的含 PII 请求，治理层可强制走缓冲（非流式）模式（详见接入指南 §2.7）。
+- **错误语义**：provider 故障 / 内容安全拦截 / 输出校验失败均以 `Error` 事件终止并发布失败证据，调用方据 `Error` 停止渲染并兜底，不会拿到半截 `Done`。
 
 ### 2.2 bone-ai-trace（持久化证据链）
 
@@ -352,6 +361,7 @@ CREATE TABLE eval_run (
 | op / provider / model | `gen_ai.operation.name`(chat) / `gen_ai.provider.name` / `gen_ai.request.model` |
 | tokens_in / tokens_out | `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` |
 | latency_ms | `gen_ai.client.operation.duration` |
+| ttft_ms（首 token 时延，v1.8 流式新增） | `gen_ai.time_to_first_token` |
 | trace_id | `gen_ai.conversation.id` |
 
 提示词/响应**默认不采集**（内容采集面独立开关，默认全关）。
@@ -364,6 +374,8 @@ CREATE TABLE eval_run (
 5. AI 服务出口必须经 trace 落盘（调用侧断言 + 事件监听兜底）；
 6. 资金/责任/数值判定入口禁 `AiSuggestion` 参数（只收 `Confirmed`）——**目标态**：`AiSuggestion`/`Confirmed` 类型批二补建后启用；当前由 `DecisionGate` + HITL 留痕提供运行期等价防线；
 7. 禁 Aviator 全量 GAV（`com.googlecode.aviator` / `io.github.aviatorscript`；零消费者死实现已删除）。
+
+> **口径说明（v1.8 订正，承接诊断复核 F5）**：上表为「第一批门禁」的 7 条代表性规则。`BoneDddArchRules` 共享规则库共 20+ 条，各模块 `ArchitectureTest` 按自身边界 `@ArchTest` 引用；gateway 实际引用 **12 条**（含框架共享的 god-object / 租户上下文 / 异常后缀 / 仓储包等规则），v1.7 头曾误记「11 条」，本次订正为 12。「11 模块各 7 条」指第一批门禁的 7 条在 11 模块统一落地，非各模块引用总数。
 
 ### 3.4 数据库与安全
 - 全表租户隔离 + 审计字段（`tenant_id/created_by/created_at`）对齐《数据库开发规范》；
@@ -496,7 +508,7 @@ CREATE TABLE eval_run (
 |---|---|---|
 | 健康检查 | Actuator `/health`（liveness/readiness 分组）+ `/info`（parent 已配 build-info） | ✅ 依赖 + **探针分组配置均已落地**（`bone-ai-app/src/main/resources/application.yml`：`probes.enabled=true` + `group.liveness`/`group.readiness`） |
 | LLM 计量 | `LlmUsageSink` 结构化日志（token / 耗时 / 档位 / 租户 / 场景）→ 日志平台聚合看板 | ✅ 代码具备，看板 ⏳ |
-| 指标化 | `LlmMetrics` 端口 + Micrometer：网关 P99 延时（§4 #15）、配额命中率、短路率、降档率、缓存命中率；再接 OTel `gen_ai.*` 语义约定（映射表 v1，规范仍 Development，勿硬编码常量） | ⏳ L3（需 Micrometer 依赖，走 CVE/SBOM 门禁） |
+| 指标化 | `LlmMetrics` 端口 + Micrometer：网关 P99 延时（§4 #15）、配额命中率、短路率、降档率、缓存命中率、**TTFT（首 token 时延，`recordFirstToken` 发射点 v1.8 已具备）**；再接 OTel `gen_ai.*` 语义约定（映射表 v1，含 `gen_ai.time_to_first_token`，规范仍 Development，勿硬编码常量） | ⏳ L3（需 Micrometer 依赖，走 CVE/SBOM 门禁） |
 | 证据链观测 | trace 落盘成功率 ≥99.9% 告警（§4 #16；同步 insert + 拒返断言代码已具备，告警规则待配） | ⏳ |
 | 告警出口 | `bone-ai-notification` Webhook + HMAC 签名可作告警通道（多级预警 + ack + 消警闭环） | ✅ 最小版已落地 |
 

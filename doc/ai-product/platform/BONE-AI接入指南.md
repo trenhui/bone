@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 产品接入指南
 
-> **版本**：v1.5　**日期**：2026-10-23　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》
+> **版本**：v1.6　**日期**：2026-10-23　**配套**：《BONE-AI能力中台整体方案》《详细技术方案》
+> **v1.6 变更（流式 SSE 落地，对齐 2026 业界最佳实践）**：① §1 可用能力表 gateway 行补「**流式响应（SSE）**——`streamInvoke` 复用 `invoke` 全治理链，首 token 即渲染、TTFT 可观测，零新增依赖、零改接入代码即可用（缓冲回退）」；② 新增 §2.7 流式响应——门面 `streamChat` + `LlmStreamEvent`（Token/Done/Error）用法、与 `invoke` 同脱敏口径（原文下发、脱敏只出站请求与证据）、含 PII 请求强制缓冲模式的建议；③ 验证证据：gateway 115 测试全绿（含流式 7 例）。
 > **v1.5 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：§1 可用能力表 gateway 行补「密钥按调用解析（`ApiKeyProvider`，默认配置实现 + `@Bean` 覆盖切 Virtual Key，换 key 不重启）」；§5 红线补密钥按调用解析口径 + Virtual Key 部署下空 key WARN 的预期性说明。网关侧 seam 已接通，剩余 L3 = bone-security Virtual Key 能力本体实现（详设 §6.1）。
 > **v1.4 变更（RAG 诊断 P1 项落地，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行补文档级 ACL seam / MMR（默认关）/ 降级痕迹；§6 RAG 配置速查补 `bone.ai.rag.mmr-lambda`（λ 约定防误配）、降级痕迹响应结构（`{results, degradations}`）、文档级 ACL 接入方接线说明（`RagAclPort` Bean 覆盖 + 403 `AI_RAG_DOC_FORBIDDEN`，L3 前必须接入）、backlog 收敛为查询改写 / trace 接线 / ingest ACL 三项（查询改写记决策：批二启动）。
 > **v1.3 变更（RAG 接线修复，承接《RAG方案诊断与优化-2026-10-23》）**：§1 可用能力表 rag 行按代码真序重写（容量护栏 / 引用强制前置 / 双路降级 / rerank 条件装配 / `doc_version` 幂等）；§2.4 建表说明补 `doc_version` 列语义；§3 REST 面补 rag 请求字段（`min_score`/`max_scan`/`doc_version`）；新增 §6 RAG 配置速查（`bone.ai.rag.*` 条件装配与降级口径）。
@@ -20,7 +21,7 @@ bone-ai 各模块是**进程内 starter（库形态，零额外跳）**，**主�
 
 | 模块 | 提供 | 接入要点 |
 |---|---|---|
-| `bone-ai-gateway` | `LlmClient` 门面 + 成本红线 + OpenAI 兼容 / Mock 双实现 + `LlmCallRecorded` 事件发布 | 自动配置；默认 Mock，配 `base-url` 切真实 provider；**默认开**：PII 脱敏、租户配额、密钥 fail-fast（`api-key` 含未解析 `${}` 即启动失败）、密钥按调用解析（`ApiKeyProvider` 端口每次请求现取，`@Bean` 覆盖即切 Virtual Key / 轮换密钥，换 key 不重启）；**默认关**：精确缓存、提示注入、输出内容安全（默认开关总表见详设 §2.1）。**多副本部署**：宿主引入 Redisson（`bone-metadata-sdk` 同款）即自动切 Redis 分布式配额，`bone.ai.gateway.quota-redis-enabled=false` 可关 |
+| `bone-ai-gateway` | `LlmClient` 门面（同步 `chat` + 流式 `streamChat`）+ 成本红线 + OpenAI 兼容 / Mock 双实现 + `LlmCallRecorded` 事件发布 | 自动配置；默认 Mock，配 `base-url` 切真实 provider；**默认开**：PII 脱敏、租户配额、密钥 fail-fast（`api-key` 含未解析 `${}` 即启动失败）、密钥按调用解析（`ApiKeyProvider` 端口每次请求现取，`@Bean` 覆盖即切 Virtual Key / 轮换密钥，换 key 不重启）；**默认关**：精确缓存、提示注入、输出内容安全（默认开关总表见详设 §2.1）。**流式**：`streamInvoke` 复用 `invoke` 全治理链、首 token 即渲染、TTFT 可观测，零新增依赖、零改接入代码即可用（缓冲回退，详见 §2.7）。**多副本部署**：宿主引入 Redisson（`bone-metadata-sdk` 同款）即自动切 Redis 分布式配额，`bone.ai.gateway.quota-redis-enabled=false` 可关 |
 | `bone-ai-rules` | 规则资产治理（CRUD / 版本 / 灰度 / 命中标记）+ QLExpress 唯一 DSL | `RuleAssetRepository`（SDK 动态代理，无需手写实现）；`bone-ai-app` REST：`/api/ai/v1/rules/...`（CRUD / 发布 / 回滚 / 灰度 / hitBlock / 废弃 / 试算求值） |
 | `bone-ai-orchestration` | 编排执行器：规则预检 → 命中短路｜LLM → `DecisionGate` 确定性闸门 + HITL 五态 / 处置链 / 超时升级 | `OrchestrationApplicationService`；HITL REST 由 `bone-ai-app` 暴露 |
 | `bone-ai-trace` | 证据三元组（输入哈希 + IR + 引擎版本）落库 + 回放 + 计量事件 | `EvidenceTraceListener` 订阅 `LlmCallRecorded`；回放：进程内 `EvidenceQueryApplicationService.replayByTraceId`，或 `bone-ai-app` REST `GET /api/ai/v1/trace/{traceId}`（租户隔离，越权 403） |
@@ -98,6 +99,30 @@ AI 域 **8 张表**均已在 `bone-init.sql`（《数据库开发规范》§2.12
 ### 2.6 模型
 
 默认 `MockLlmClient`（开发 / 测试 / 成本红线探针）；切真实 OpenAI 兼容 provider 时配置 `bone-ai-gateway` 的 `base-url` / `api-key`，`LlmClient` 契约与红线 / 证据装配不变。
+
+### 2.7 流式响应（SSE，v1.6 落地）
+
+长文逐步呈现 / 首 token 体验 / 降级兜底——SSE/流式已是 OpenAI 兼容生态与主流网关（LiteLLM / Portkey / Kong）的事实标配。BONE-AI 网关在**不引入新依赖、不复制治理链**的前提下补齐：
+
+**门面用法**（与 `invoke` 对称的入口，`streamInvoke` 复用全治理链）：
+
+```java
+// 门面：LlmClient.streamChat(req, Consumer<LlmStreamEvent> sink)
+// 事件：sealed LlmStreamEvent { Token(delta) | Done(model, finishReason, usage) | Error(message, cause) }
+List<LlmStreamEvent> events = new ArrayList<>();
+gateway.streamInvoke(req, events::add);
+// 或边收边渲：gateway.streamInvoke(req, e -> {
+//     if (e instanceof LlmStreamEvent.Token t) render(t.delta());
+//     else if (e instanceof LlmStreamEvent.Done d) finish(d.usage());
+//     else if (e instanceof LlmStreamEvent.Error er) fallback(er.message());
+// });
+```
+
+- **治理同源**：红线短路 / 场景路由 / 租户配额 / 提示注入 / 出站脱敏 / 缓存命中全部前置；流末对全文做内容安全 / 结构化校验 / 缓存写入 / 计量 / 证据——与同步 `invoke` 完全相同，无第二套逻辑。
+- **零接入成本**：`LlmClient.streamChat` 默认缓冲回退（调一次 `chat` 后发 `Token` + `Done`），**不实现 SSE 也能跑**；真正逐字流式由 `JdkLlmTransport`（JDK `HttpClient` 真 SSE，零新依赖）承载，熔断只守卫「流获取」不守卫「流消耗」。
+- **脱敏口径与 `invoke` 一致（重要）**：流式面向调用方也返回**原文**，PII 脱敏只在「出站请求」与「证据落库」两处发生——**不做逐片流式脱敏**（一段 PII 恰被 SSE 切在两 chunk 间会漏脱敏；累积重脱敏又会把 `[手机号]` 这类证据标签回吐给调用方，既泄露脱敏机制又违背原文契约）。
+- **含 PII 的强零泄露场景**：若业务对含 PII 响应要求严格零泄露，治理层可对该请求强制走**缓冲（非流式）模式**——`streamInvoke` 仍可用，只是内部取全量后一次性下发（代价是失去逐字流式体验，换取确定性脱敏）。
+- **TTFT 可观测**：首 token 到达自动发射 `LlmMetrics.recordFirstToken(tenantId, model, latencyMs)`，后续接 OTel `gen_ai.time_to_first_token`（映射表见详设 §3.2）。
 
 ---
 
