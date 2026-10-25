@@ -30,8 +30,6 @@ import {
  * 列表以服务端为准（server-authoritative），避免前端自造第二数据。
  */
 
-const REVIEWER_ID = 'reviewer-001'; // 演示环境固定操作员；生产取登录态
-
 const DOC_TYPES: { value: string; label: string }[] = [
   { value: 'INVOICE', label: '发票' },
   { value: 'LIST', label: '费用清单' },
@@ -174,7 +172,7 @@ export function EvidenceUploadPage(): ReactElement {
   const onLock = async () => {
     setLocking(true);
     try {
-      await evidenceApi.lock(claimId, REVIEWER_ID);
+      await evidenceApi.lock(claimId);
       message.success('证据集已锁定（理算前置）');
       void load();
     } catch {

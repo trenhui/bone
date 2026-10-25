@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,13 +34,11 @@ public class SettlementController {
       @NotNull(message = "占额周期序号必填") Integer attempt, AccountType accountType) {}
 
   /**
-   * 审核通过请求：只保留「复核人名单」这一<b>分工指派</b>。
+   * 审核通过请求：<b>无请求体</b>。
    *
-   * <p>第一审核人（职责分离的比较基准）<b>不在请求体里</b>——由服务端从赔案聚合读取 （{@code firstReviewerId}，即实际领取核赔任务并经 token
-   * 认证的那位）。让调用方声明第一审核人， 等于允许其自行指定「谁被排除在复核之外」，SoD 校验失效。
+   * <p>两道认证的身份都不来自调用方声明：审核人 = 当前 token 持有者，复核人 = 下一笔 {@code review-confirm} 的 token
+   * 持有者；职责分离的比较基准（赔案第一审核人）由服务端从赔案聚合读取。 曾经的 {@code reviewerIds} 名单已删除——名单可自填，双人复核即退化为自我声明。
    */
-  public record AuditPassReq(List<String> reviewerIds) {}
-
   public record CancelReq(Boolean payFailed) {}
 
   @Operation(summary = "建结算单（软占额度）", description = "幂等：同 claim+attempt 重复建单返回首次结果")
@@ -57,15 +54,24 @@ public class SettlementController {
             claimId, request.attempt(), request.accountType(), CurrentOperator.requireId()));
   }
 
-  @Operation(summary = "审核通过（硬预占/≥1万双人复核）")
+  @Operation(summary = "审核通过（第一道认证）", description = "小额直接硬预占；≥1 万进入复核冻结，须另一身份调用 /review-confirm 放行")
   @PreAuthorize("hasAuthority('claim:settlement:write')")
   @PostMapping("/audit-pass")
   public ApiResponse<SettlementResult> auditPass(
-      @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Valid @RequestBody AuditPassReq request) {
+      @Parameter(description = "案件ID") @PathVariable long claimId) {
     return ApiResponse.success(
-        settlementApplicationService.auditPass(
-            claimId, CurrentOperator.requireId(), request.reviewerIds()));
+        settlementApplicationService.auditPass(claimId, CurrentOperator.requireId()));
+  }
+
+  @Operation(
+      summary = "大额复核放行（第二道认证）",
+      description = "REVIEW_FREEZE → HARD_RESERVED；复核人不得为审核发起人或该赔案的第一审核人")
+  @PreAuthorize("hasAuthority('claim:settlement:write')")
+  @PostMapping("/review-confirm")
+  public ApiResponse<SettlementResult> confirmReview(
+      @Parameter(description = "案件ID") @PathVariable long claimId) {
+    return ApiResponse.success(
+        settlementApplicationService.confirmReview(claimId, CurrentOperator.requireId()));
   }
 
   @Operation(summary = "支付成功（额度 frozen→claim）")

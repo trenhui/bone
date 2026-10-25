@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -61,6 +60,27 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
   @Column(name = "status", nullable = false)
   private String status;
 
+  /**
+   * 大额双人复核的<b>发起人</b>（token userId 落库，{@code REVIEW_FREEZE} 时写入）。
+   *
+   * <p>为什么必须落库而不是从资金流水反推：{@code findById} 不回填级联集合，复核时无法从流水判断 「刚才审核的是谁」；而这条值是 SoD
+   * 的比较基准——复核人若等于发起人，双人复核就退化为一次点击。
+   */
+  @Column(name = "review_first_approver")
+  private String reviewFirstApprover;
+
+  /**
+   * 审计时间戳。
+   *
+   * <p>必须<b>显式声明</b>并赋值：持久化层按 {@code @Column} 组装 INSERT 列，未声明的列会被整列省略， 而 DDL 里 {@code
+   * created_at/updated_at} 是 {@code NOT NULL} 且无默认值——省略即插入失败（500）， 且只会在真正走到该写路径时爆炸。
+   */
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   @Transient
   @Cascade(foreignKey = "settlementId", orphanRemoval = false)
   private List<FundingEvent> fundingEvents = new ArrayList<>();
@@ -88,6 +108,9 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
     this.attempt = attempt;
     this.fundingStage = FundingStage.SOFT_RESERVED.name();
     this.status = "OPEN";
+    Instant now = Instant.now();
+    this.createdAt = now;
+    this.updatedAt = now;
   }
 
   /** 建单（软占 SOFT_RESERVED）。幂等去重由应用层基于 {@code settlementNo} 完成。 */
@@ -110,25 +133,61 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
     return order;
   }
 
-  /** 审核通过进入硬预占（≥1 万先 REVIEW_FREEZE，须两个非第一审核人 reviewerId）。 */
-  public void auditPass(String operatorId, List<String> reviewerIds, String firstReviewerId) {
+  /**
+   * 审核通过（第一道认证）：小额直接硬预占，大额进入复核冻结等第二人放行。
+   *
+   * <p>复核人不再由请求体提名——名单一旦可自填，「双人复核」就只是把同一个人的两个马甲写进数组。 大额时这里只落 {@code reviewFirstApprover}（本次 token
+   * 身份），第二人由 {@link #confirmReview} 以另一个真实身份完成；两条 {@code FundingEvent} 合起来才是「两次认证通过」的台账。
+   */
+  public void auditPass(String operatorId, String claimFirstReviewerId) {
     requireNotTerminal("审核");
     if (fundingStageEnum() != FundingStage.SOFT_RESERVED) {
       throw new DomainException("仅 SOFT_RESERVED 可推进至硬预占");
     }
     if (amount.compareTo(REVIEW_THRESHOLD) >= 0) {
-      requireDualReview(reviewerIds, firstReviewerId);
+      requireDistinctFromClaimReviewer(operatorId, claimFirstReviewerId, "审核人");
+      this.reviewFirstApprover = operatorId;
       transition(FundingStage.REVIEW_FREEZE, operatorId);
     } else {
       transition(FundingStage.HARD_RESERVED, operatorId);
     }
   }
 
+  /**
+   * 大额复核放行（第二道认证）：{@code REVIEW_FREEZE → HARD_RESERVED}（§6.4「复核通过，解除冻结」）。
+   *
+   * <p>两条硬约束都在服务端判定，调用方无从声明：
+   *
+   * <ul>
+   *   <li>复核人 ≠ 审核发起人（两次认证须两个身份，否则等于单人放款）；
+   *   <li>复核人 ≠ 该赔案的第一审核人（核赔人既定价又放款，§10.3 职责分离失效）。
+   * </ul>
+   *
+   * <p>复核不通过时不走本方法，由 {@link #cancel} 释放预占（§6.4 分支）。
+   */
+  public void confirmReview(String operatorId, String claimFirstReviewerId) {
+    requireNotTerminal("复核");
+    if (fundingStageEnum() != FundingStage.REVIEW_FREEZE) {
+      throw new DomainException("仅复核冻结（REVIEW_FREEZE）可解除，当前: " + fundingStage);
+    }
+    if (operatorId == null || operatorId.isBlank()) {
+      throw new DomainException("复核人不能为空");
+    }
+    if (operatorId.equals(reviewFirstApprover)) {
+      throw new DomainException("复核人不得为本次审核的发起人（双人复核须两个不同身份）");
+    }
+    requireDistinctFromClaimReviewer(operatorId, claimFirstReviewerId, "复核人");
+    transition(FundingStage.HARD_RESERVED, operatorId);
+  }
+
   /** 支付成功（PAID）。 */
   public void pay(String operatorId) {
     requireNotTerminal("支付");
     if (!fundingStageEnum().isReadyToPay()) {
-      throw new DomainException("仅已硬预占/复核冻结状态可支付");
+      throw new DomainException(
+          fundingStageEnum() == FundingStage.REVIEW_FREEZE
+              ? "大额资金冻结中，须经第二人复核放行后才可支付"
+              : "仅已硬预占状态可支付");
     }
     this.fundingStage = FundingStage.PAID.name();
     this.paidAt = Instant.now();
@@ -179,6 +238,8 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
   }
 
   private void appendEvent(FundingStage stage, String operatorId, AccountType accountType) {
+    Instant now = Instant.now();
+    this.updatedAt = now;
     this.fundingEvents.add(
         FundingEvent.of(
             null,
@@ -191,7 +252,7 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
             operatorId,
             accountType == null ? this.accountTypeEnum() : accountType,
             idempotencyKey(stage),
-            Instant.now()));
+            now));
   }
 
   /** 幂等键：{@code {claimNo}:{stage}:{attempt}}（§7.5）。 */
@@ -205,18 +266,17 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
     }
   }
 
-  private void requireDualReview(List<String> reviewerIds, String firstReviewerId) {
-    if (reviewerIds == null || reviewerIds.size() < 2) {
-      throw new DomainException("金额 ≥10000 须双人复核（两个 reviewerId）");
+  /** 职责分离：资金侧审核/复核人不得是该赔案的核赔人（既定价又放款，§10.3）。 */
+  private void requireDistinctFromClaimReviewer(
+      String operatorId, String claimFirstReviewerId, String role) {
+    if (operatorId == null || operatorId.isBlank()) {
+      throw new DomainException(role + "不能为空");
     }
-    long distinct =
-        reviewerIds.stream().filter(Objects::nonNull).map(String::trim).distinct().count();
-    if (distinct < 2) {
-      throw new DomainException("双人复核须为两名不同复核人");
+    if (claimFirstReviewerId == null || claimFirstReviewerId.isBlank()) {
+      throw new DomainException("赔案未登记第一审核人，无法判定职责分离（§10.3）");
     }
-    boolean involvesFirst = reviewerIds.stream().anyMatch(r -> Objects.equals(r, firstReviewerId));
-    if (involvesFirst) {
-      throw new DomainException("双人复核人不得包含第一审核人（职责分离，§10.3）");
+    if (operatorId.equals(claimFirstReviewerId)) {
+      throw new DomainException(role + "不得为该赔案的第一审核人（职责分离，§10.3）");
     }
   }
 }

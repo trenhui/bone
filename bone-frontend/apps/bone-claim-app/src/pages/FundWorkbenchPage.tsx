@@ -35,9 +35,9 @@ import {
  * 方案明确规定：P0-3（真实出金 stub）/P0-5（无限流）未闭环前，资金页保持手写、不低代码化——
  * 结算单是状态机（软占→硬预占/复核→支付），占额是跨聚合 REQUIRES_NEW 写，不变量在领域层。
  * 本页读走 settlementApi / quotaApi（领域 controller），写/动走同一 controller（自带幂等键 + 细码权限）。
+ *
+ * 操作人身份不在前端：审核人/复核人都是各自登录账号的 token，页面只表达「谁点了哪个动作」。
  */
-
-const REVIEWER_ID = 'reviewer-001';
 
 /** 结算单状态机关键节点（用于 Steps 展示）。 */
 const STAGE_STEPS = ['建单(软占)', '硬预占/复核', '支付'];
@@ -121,30 +121,21 @@ export function FundWorkbenchPage(): ReactElement {
 
   const onCreate = () =>
     run(
-      () =>
-        settlementApi.create(
-          claimId,
-          { attempt: (settlement?.attempt ?? 0) + 1, accountType },
-          REVIEWER_ID,
-        ),
+      () => settlementApi.create(claimId, { attempt: (settlement?.attempt ?? 0) + 1, accountType }),
       '结算单已建（软占额度）',
     );
 
   const onAuditPass = () =>
-    run(
-      () =>
-        settlementApi.auditPass(
-          claimId,
-          { reviewerIds: ['reviewer-002', 'reviewer-003'], firstReviewerId: REVIEWER_ID },
-          REVIEWER_ID,
-        ),
-      '审核通过（硬预占）',
-    );
+    run(() => settlementApi.auditPass(claimId), '审核通过（小额硬预占；大额进入复核冻结）');
 
-  const onPay = () => run(() => settlementApi.pay(claimId, REVIEWER_ID), '支付成功（额度 frozen→claimed）');
+  /** 大额第二道认证：必须由另一账号登录后点击（同一 token 会被服务端拒绝）。 */
+  const onConfirmReview = () =>
+    run(() => settlementApi.confirmReview(claimId), '复核放行（硬预占）');
+
+  const onPay = () => run(() => settlementApi.pay(claimId), '支付成功（额度 frozen→claimed）');
   const onCancel = () =>
-    run(() => settlementApi.cancel(claimId, { payFailed: false }, REVIEWER_ID), '已撤销/拒赔（释放预占）');
-  const onRefund = () => run(() => settlementApi.refund(claimId, REVIEWER_ID), '已退票退款（红冲并回冲额度）');
+    run(() => settlementApi.cancel(claimId, { payFailed: false }), '已撤销/拒赔（释放预占）');
+  const onRefund = () => run(() => settlementApi.refund(claimId), '已退票退款（红冲并回冲额度）');
 
   const onSearch = () => {
     const id = input.trim();
@@ -198,10 +189,15 @@ export function FundWorkbenchPage(): ReactElement {
             )}
             {stage === 'SOFT_RESERVED' && (
               <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onAuditPass}>
-                审核通过（硬预占）
+                审核通过
               </Button>
             )}
-            {isOccupied(stage) && (
+            {stage === 'REVIEW_FREEZE' && (
+              <Button type="primary" icon={<CheckCircleOutlined />} loading={acting} onClick={onConfirmReview}>
+                复核放行（第二人）
+              </Button>
+            )}
+            {stage === 'HARD_RESERVED' && (
               <Button type="primary" icon={<BankOutlined />} loading={acting} onClick={onPay}>
                 支付
               </Button>

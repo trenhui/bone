@@ -36,8 +36,13 @@ public enum FundingStage {
     return this == SOFT_RESERVED || this == HARD_RESERVED || this == REVIEW_FREEZE;
   }
 
-  /** 可支付（已硬预占或复核冻结；SOFT 仅软占，须先审核通过）。 */
+  /**
+   * 可支付：<b>仅</b>已硬预占。
+   *
+   * <p>{@code REVIEW_FREEZE} 不可支付——它是「等第二人复核」的中间态，若允许直接出账， 双人复核就只是个装饰；放行路径只有 {@code
+   * confirmReview}（REVIEW_FREEZE → HARD_RESERVED）。
+   */
   public boolean isReadyToPay() {
-    return this == HARD_RESERVED || this == REVIEW_FREEZE;
+    return this == HARD_RESERVED;
   }
 }

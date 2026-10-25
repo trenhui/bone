@@ -322,6 +322,7 @@ CREATE TABLE IF NOT EXISTS settle_order (
   attempt         INT           NOT NULL DEFAULT 1 COMMENT '占额周期序号({claimNo}:{stage}:{attempt})',
   paid_at         DATETIME(3)   DEFAULT NULL COMMENT '支付时间',
   status          VARCHAR(16)   NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/CLOSED',
+  review_first_approver VARCHAR(64) DEFAULT NULL COMMENT '大额复核发起人(token userId)；复核须换人(§10.3)',
   tenant_id       BIGINT        NOT NULL COMMENT '租户',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',

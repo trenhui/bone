@@ -13,8 +13,6 @@ import { claimApi, type HangUpType } from '../services/claimApi';
  * 该接口只返回 Void，无状态查询出口，故本页为动作控制台（不缓存挂起态）。
  */
 
-const REVIEWER_ID = 'reviewer-001';
-
 const HANGUP_TYPES: { value: HangUpType; label: string }[] = [
   { value: 'EVIDENCE', label: 'EVIDENCE 缺件挂起' },
   { value: 'INVESTIGATION', label: 'INVESTIGATION 调查挂起（风控/金额异常）' },
@@ -51,8 +49,8 @@ export function SuspendPage(): ReactElement {
     }
   };
 
-  const onHangUp = () => run(() => claimApi.hangUp(claimId, type, REVIEWER_ID), `已挂起（${type}）`);
-  const onResume = () => run(() => claimApi.hangUp(claimId, undefined, REVIEWER_ID), '已恢复');
+  const onHangUp = () => run(() => claimApi.hangUp(claimId, type), `已挂起（${type}）`);
+  const onResume = () => run(() => claimApi.hangUp(claimId, undefined), '已恢复');
 
   return (
     <div style={{ padding: 24 }}>
