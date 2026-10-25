@@ -113,6 +113,7 @@ class ClaimCaseApplicationServiceTest {
             List.of(
                 ClaimItem.of(
                     1L,
+                    1L,
                     999L,
                     "诊查费",
                     "",
@@ -191,6 +192,7 @@ class ClaimCaseApplicationServiceTest {
             List.of(
                 ClaimItem.of(
                     2001L,
+                    1L,
                     1001L,
                     "诊查费",
                     "",
@@ -231,6 +233,7 @@ class ClaimCaseApplicationServiceTest {
             List.of(
                 ClaimItem.of(
                     2001L,
+                    1L,
                     1001L,
                     "诊查费",
                     "",

@@ -118,6 +118,14 @@ python3 scripts/check-sdk-persistence.py --check || {
   exit 1
 }
 
+echo "🔍 SQL 模板三约束（首行关键字 / 无 -- 行注释 / 租户锚点前置 AND）..."
+# 2026-10-25 理赔联调实测三类坑同时在 .sql 模板上炸：首行注释 ⇒ detectSqlType=UNKNOWN（500）；
+# 压平后 -- 注释吞掉后续 SQL（bad grammar）；锚点缺 AND ⇒ WHERE 拼接不合法。详见脚本 docstring。
+python3 scripts/check-sql-template.py || {
+  echo -e "${RED}❌ .sql 模板违反 SDK 硬约束（见 scripts/check-sql-template.py docstring）！${RESET}"
+  exit 1
+}
+
 echo "🔍 [10/17] 分页入参命名族（Bone-API-规范 §5.1：新增端点只允许 page/size）..."
 # 与 pre-commit 的 scripts/check.sh 是同一个门禁，但必须在 CI 也跑：
 # §5.2 路线 ② 的核心是「存量不扩散」，若只挂在 pre-commit，

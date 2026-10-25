@@ -22,7 +22,7 @@ CREATE TABLE t_claim_evidence (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   UNIQUE KEY uk_claim_content_hash (claim_id, content_hash),
   KEY idx_claim (claim_id),
@@ -48,7 +48,7 @@ CREATE TABLE t_adj_liability (
   created_at        DATETIME(3)   NOT NULL COMMENT '创建时间',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
-  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   UNIQUE KEY uk_uuid_ver (tenant_id, liability_uuid, liability_version),
   KEY idx_plan_status (tenant_id, plan_id, status)
@@ -71,7 +71,7 @@ CREATE TABLE t_adj_calculation (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   KEY idx_claim (claim_id, created_at),
   KEY idx_tenant_status (tenant_id, result_status)
@@ -98,7 +98,7 @@ CREATE TABLE t_adj_calculation_line (
   created_at      DATETIME(3)   NOT NULL COMMENT '创建时间',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
-  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted         TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   KEY idx_calculation (calculation_id),
   KEY idx_zero_reason (tenant_id, zero_reason)
@@ -125,7 +125,7 @@ CREATE TABLE t_quota_account (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at       DATETIME(3)   NOT NULL COMMENT '更新时间',
   version          BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   UNIQUE KEY uk_quota (tenant_id, insured_id_hash, policy_no, plan_id, quota_year, quota_type, liability_uuid),
   KEY idx_insured (tenant_id, insured_id_hash)
@@ -149,8 +149,8 @@ CREATE TABLE t_quota_transaction (
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   updated_at    DATETIME(3)  NOT NULL          COMMENT '更新时间',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
-  KEY idx_account (quota_account_id, txn_id)
+  KEY idx_account (quota_account_id, id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '额度流水(append-only)';

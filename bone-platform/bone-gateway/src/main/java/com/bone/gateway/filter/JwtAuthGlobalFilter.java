@@ -24,6 +24,14 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
   public static final int ORDER = Ordered.HIGHEST_PRECEDENCE + 10;
 
+  /**
+   * 内部身份头黑名单：入站一律剥离，只允许网关按 token claim 重新写入。
+   *
+   * <p>这些头在下游被当作「已认证身份」直接使用（租户数据源路由、MDC 用户维度、审计字段）， 若放行客户端取值，等于把身份判断交给调用方。新增同类头时<b>必须</b>登记在此。
+   */
+  private static final List<String> INTERNAL_IDENTITY_HEADERS =
+      List.of("X-Tenant-Id", "X-User-Id", "X-Roles", "X-Operator-Id");
+
   private final GatewayJwtProperties properties;
   private final GatewayJwtUtil jwtUtil;
 
@@ -70,11 +78,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
   private ServerHttpRequest mutateWithPrincipal(ServerHttpRequest request, GatewayPrincipal p) {
     ServerHttpRequest.Builder builder = request.mutate();
     // 先清除客户端自带的可信头，避免伪造 X-Tenant-Id/X-User-Id/X-Roles 被下游误读（租户伪造向量）
+    // X-Operator-Id 同理：它是「操作人」这一审计主体的旧载体，任何入站取值都等于让调用方自证身份，
+    // 进而绕过双人复核的「复核人 ≠ 第一审核人」（职责分离）。身份一律由下方 token claim 派生。
     builder.headers(
         h -> {
-          h.remove("X-Tenant-Id");
-          h.remove("X-User-Id");
-          h.remove("X-Roles");
+          for (String internal : INTERNAL_IDENTITY_HEADERS) {
+            h.remove(internal);
+          }
         });
     if (p.getTenantId() != null) {
       builder.header("X-Tenant-Id", p.getTenantId());

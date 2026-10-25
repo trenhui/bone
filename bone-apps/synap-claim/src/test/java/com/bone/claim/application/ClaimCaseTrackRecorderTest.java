@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.bone.claim.domain.model.claim.ClaimCaseTrack;
 import com.bone.claim.domain.model.claim.event.ClaimStatusChangedEvent;
+import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.repository.ClaimCaseTrackRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ class ClaimCaseTrackRecorderTest {
   void recordsTrackOnStatusChanged() {
     ClaimStatusChangedEvent event =
         new ClaimStatusChangedEvent(
-            11L, 7L, "C1", "DRAFT", "SUBMITTING", "SUBMIT", "op1", Instant.now());
+            11L, 7L, "C1", ClaimStatus.DRAFT, ClaimStatus.ACCEPTED, "SUBMIT", "op1", Instant.now());
 
     recorder.onClaimStatusChanged(event);
 
@@ -44,7 +45,7 @@ class ClaimCaseTrackRecorderTest {
     assertEquals(7L, track.getTenantId());
     assertEquals(11L, track.getClaimId());
     assertEquals("DRAFT", track.getFromStatus());
-    assertEquals("SUBMITTING", track.getToStatus());
+    assertEquals("ACCEPTED", track.getToStatus());
     assertEquals("SUBMIT", track.getStage());
   }
 }

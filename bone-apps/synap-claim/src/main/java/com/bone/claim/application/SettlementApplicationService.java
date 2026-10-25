@@ -62,7 +62,7 @@ public class SettlementApplicationService {
             tenantId,
             settlementNo,
             claimId,
-            ctx.claimNo(),
+            ctx.getClaimNo(),
             amount,
             accountType,
             attempt);
@@ -71,11 +71,11 @@ public class SettlementApplicationService {
     // 额度软占（独立事务）
     quotaApplicationService.reserve(
         tenantId,
-        ctx.insuredIdHash(),
-        ctx.policyNo(),
-        ctx.planId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
         claimId,
-        ctx.claimNo(),
+        ctx.getClaimNo(),
         amount,
         settlementNo,
         attempt);
@@ -84,11 +84,17 @@ public class SettlementApplicationService {
     return toResult(order);
   }
 
-  /** 审核通过进入硬预占（≥1 万走 REVIEW_FREEZE 双人复核）。 */
+  /**
+   * 审核通过进入硬预占（≥1 万走 REVIEW_FREEZE 双人复核）。
+   *
+   * <p>职责分离的比较基准（第一审核人）取自赔案聚合的 {@code firstReviewerId}——那是经 token 认证、
+   * 实际领取核赔任务的人。该值<b>不再接受调用方传入</b>：由客户端指定「谁被排除在复核之外」等于自我豁免。
+   */
   @Transactional
-  public SettlementResult auditPass(
-      long claimId, String operatorId, List<String> reviewerIds, String firstReviewerId) {
+  public SettlementResult auditPass(long claimId, String operatorId, List<String> reviewerIds) {
     SettlementOrder order = requireMutable(claimId);
+    String firstReviewerId =
+        claimCaseApplicationService.getClaimWithItems(claimId).get(0).getFirstReviewerId();
     order.auditPass(operatorId, reviewerIds, firstReviewerId);
     settlementRepository.save(order);
     domainEventPublisher.publishFrom(order);
@@ -107,9 +113,9 @@ public class SettlementApplicationService {
     int attempt = order.getAttempt();
     quotaApplicationService.confirmPay(
         order.getTenantId(),
-        ctx.insuredIdHash(),
-        ctx.policyNo(),
-        ctx.planId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
         claimId,
         order.getClaimNo(),
         amount,
@@ -131,9 +137,9 @@ public class SettlementApplicationService {
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
     quotaApplicationService.release(
         order.getTenantId(),
-        ctx.insuredIdHash(),
-        ctx.policyNo(),
-        ctx.planId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
         claimId,
         order.getClaimNo(),
         amount,
@@ -158,9 +164,9 @@ public class SettlementApplicationService {
     ClaimWithItemsProjection ctx = claimCaseApplicationService.getClaimWithItems(claimId).get(0);
     quotaApplicationService.refund(
         order.getTenantId(),
-        ctx.insuredIdHash(),
-        ctx.policyNo(),
-        ctx.planId(),
+        ctx.getInsuredIdHash(),
+        ctx.getPolicyNo(),
+        ctx.getPlanId(),
         claimId,
         order.getClaimNo(),
         amount,

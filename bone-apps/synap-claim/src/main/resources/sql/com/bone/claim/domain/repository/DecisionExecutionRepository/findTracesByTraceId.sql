@@ -1,5 +1,5 @@
--- 决策轨迹回放（按 trace_id 取全链节点序列）
-SELECT id,
+SELECT
+       id,
        trace_id,
        claim_id,
        execution_id,
@@ -13,6 +13,7 @@ SELECT id,
        created_at,
        tenant_id
 FROM claim_decision_trace
-WHERE trace_id = :traceId
+WHERE trace_id = :traceId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY node_seq

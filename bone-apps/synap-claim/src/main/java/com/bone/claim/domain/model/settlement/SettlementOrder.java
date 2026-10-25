@@ -62,7 +62,7 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
   private String status;
 
   @Transient
-  @Cascade(foreignKey = "settlement_id", orphanRemoval = false)
+  @Cascade(foreignKey = "settlementId", orphanRemoval = false)
   private List<FundingEvent> fundingEvents = new ArrayList<>();
 
   @Version
@@ -184,6 +184,7 @@ public class SettlementOrder extends TenantAggregateRoot<Long> {
             null,
             getTenantId(),
             settlementNo,
+            getId(),
             claimId,
             stage,
             amount,

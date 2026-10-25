@@ -1,5 +1,5 @@
--- 额度流水（守恒校验与审计；append-only，只追加不更新）
-SELECT id,
+SELECT
+       id,
        quota_account_id,
        claim_id,
        settlement_no,
@@ -13,6 +13,7 @@ SELECT id,
        tenant_id,
        created_at
 FROM t_quota_transaction
-WHERE quota_account_id = :quotaAccountId
+WHERE quota_account_id = :quotaAccountId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY id

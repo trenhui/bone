@@ -2,6 +2,7 @@ package com.bone.claim.application;
 
 import com.bone.claim.domain.model.claim.ClaimCaseTrack;
 import com.bone.claim.domain.model.claim.event.ClaimStatusChangedEvent;
+import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.repository.ClaimCaseTrackRepository;
 import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.tenant.context.TenantContextRunner;
@@ -41,30 +42,30 @@ public class ClaimCaseTrackRecorder {
                   ClaimCaseTrack.of(
                       event.tenantId(),
                       event.claimId(),
-                      event.fromStatus(),
-                      event.toStatus(),
+                      event.fromStatus().name(),
+                      event.toStatus().name(),
                       resolveStage(event.toStatus()),
                       event.actionCode(),
                       event.operatorId(),
                       null,
-                      "状态跃迁 " + event.fromStatus() + "->" + event.toStatus())));
+                      "状态跃迁 " + event.fromStatus().name() + "->" + event.toStatus().name())));
     } catch (Exception e) {
       // 流水落库失败不应回滚主流程；记录日志供人工/对账兜底。
       log.error("状态流转流水落库失败: claimId={}, tenantId={}", event.claimId(), event.tenantId(), e);
     }
   }
 
-  /** 由跃迁后的状态码粗略归类阶段（SUBMIT/REVIEW/SETTLE/CLOSE/APPEAL）。未识别码记 UNKNOWN，不影响流水主字段。 */
-  private String resolveStage(String toStatus) {
+  /** 由跃迁后的状态枚举粗略归类阶段（SUBMIT/REVIEW/SETTLE/CLOSE/APPEAL）。未识别码记 UNKNOWN，不影响流水主字段。 */
+  private String resolveStage(ClaimStatus toStatus) {
     if (toStatus == null) {
       return "UNKNOWN";
     }
     return switch (toStatus) {
-      case "DRAFT", "SUBMITTING" -> "SUBMIT";
-      case "REVIEWING", "APPROVING", "HANG_UP", "RESUMING" -> "REVIEW";
-      case "SETTLING", "SETTLED" -> "SETTLE";
-      case "CLOSED_AUTO", "CLOSED_MANUAL", "CLOSED_REJECTED" -> "CLOSE";
-      case "APPEALING" -> "APPEAL";
+      case DRAFT, ACCEPTED, EVIDENCE_SUBMITTING -> "SUBMIT";
+      case PENDING_PRE_EXAM, PRE_EXAMINING, AUTO_PRE_EXAMINING, PRE_EXAMINED, REVIEWING -> "REVIEW";
+      case PENDING_ADJUST, ADJUSTING, ADJUSTED -> "SETTLE";
+      case CLOSED_REJECTED, FINISHED -> "CLOSE";
+      case APPEALING -> "APPEAL";
       default -> "UNKNOWN";
     };
   }

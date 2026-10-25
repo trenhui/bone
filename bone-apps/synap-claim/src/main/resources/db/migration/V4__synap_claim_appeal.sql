@@ -7,7 +7,7 @@ CREATE TABLE appeal_record (
   appeal_no       VARCHAR(64)   NOT NULL COMMENT '申诉号',
   claim_id        BIGINT      NOT NULL COMMENT '案件ID',
   claim_no        VARCHAR(64)   NOT NULL COMMENT '案件号',
-  original_status VARCHAR(4)    NOT NULL COMMENT '被申诉原终态: 45拒赔生效/50结案',
+  original_status VARCHAR(32)   NOT NULL COMMENT '被申诉原终态: ClaimStatus 枚举名 CLOSED_REJECTED/FINISHED（与 t_claim_case.status 同口径）',
   status          VARCHAR(16)   NOT NULL DEFAULT 'SUBMITTED' COMMENT 'SUBMITTED/DECIDED',
   submitted_by    VARCHAR(64)   NOT NULL COMMENT '申诉人',
   submitted_at    DATETIME(3)   NOT NULL COMMENT '受理时间(48h 起算点=案件终态时间)',
@@ -22,7 +22,7 @@ CREATE TABLE appeal_record (
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   UNIQUE KEY uk_appeal_no (tenant_id, appeal_no),
   KEY idx_claim (claim_id, created_at)

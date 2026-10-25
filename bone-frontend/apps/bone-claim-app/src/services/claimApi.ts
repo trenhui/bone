@@ -66,7 +66,7 @@ export type Decision = 'APPROVED' | 'REJECTED' | 'REQUEST_MORE_EVIDENCE';
 
 export interface ClaimDecisionReq {
   decision: Decision;
-  reviewerId: string;
+  /** 审核人不在请求体里：服务端取自已验签 token（身份若可声明，双人复核就只剩自我声明）。 */
   comment?: string;
   rejectType?: string;
   approvedAmount?: number;
@@ -285,10 +285,9 @@ export const claimApi = {
     return client.post<never, ApiResponse<void>>(`/${claimId}/escalate`);
   },
 
-  claimAdjustTask(claimId: string, reviewerId: string): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/adjust/claim`, undefined, {
-      headers: { 'X-Operator-Id': reviewerId },
-    });
+  /** 领取核赔任务：领取人即当前登录用户（第一审核人），无需也不可传身份。 */
+  claimAdjustTask(claimId: string): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/adjust/claim`);
   },
 
   /** 人工核赔决策（APPROVED 必填 approvedAmount；REJECTED 必填 comment+rejectType）。 */
@@ -296,21 +295,19 @@ export const claimApi = {
     return client.post<never, ApiResponse<void>>(`/${claimId}/decision`, req);
   },
 
-  submitForSecondReview(claimId: string, reviewerId: string): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/second-review`, undefined, {
-      headers: { 'X-Operator-Id': reviewerId },
-    });
+  /** 发起双人复核：复核人 = 当前登录用户，故同一账号重复发起会被 409 拒（职责分离）。 */
+  submitForSecondReview(claimId: string): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/second-review`);
   },
 
   autoApprove(claimId: string): Promise<ApiResponse<void>> {
     return client.post<never, ApiResponse<void>>(`/${claimId}/auto-approve`);
   },
 
-  hangUp(claimId: string, type?: HangUpType, operatorId?: string): Promise<ApiResponse<void>> {
+  hangUp(claimId: string, type?: HangUpType): Promise<ApiResponse<void>> {
     const headers: Record<string, string> = type
       ? { 'X-Hangup-Action': 'HANG_UP', 'X-Hangup-Type': type }
       : { 'X-Hangup-Action': 'RESUME' };
-    if (operatorId) headers['X-Operator-Id'] = operatorId;
     return client.post<never, ApiResponse<void>>(`/${claimId}/hangup`, undefined, { headers });
   },
 };
@@ -335,10 +332,8 @@ export const adjustApi = {
     });
   },
   /** 理算确认（核赔通过：结果锁定）。 */
-  confirm(claimId: string, reviewerId: string): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/adjust/confirm`, undefined, {
-      headers: { 'X-Operator-Id': reviewerId },
-    });
+  confirm(claimId: string): Promise<ApiResponse<void>> {
+    return client.post<never, ApiResponse<void>>(`/${claimId}/adjust/confirm`);
   },
 };
 
@@ -354,10 +349,8 @@ export const evidenceApi = {
     });
   },
   /** 锁定证据集（理算前置）。 */
-  lock(claimId: string, operatorId: string): Promise<ApiResponse<number>> {
-    return client.post<never, ApiResponse<number>>(`/${claimId}/evidences/lock`, undefined, {
-      headers: { 'X-Operator-Id': operatorId },
-    });
+  lock(claimId: string): Promise<ApiResponse<number>> {
+    return client.post<never, ApiResponse<number>>(`/${claimId}/evidences/lock`);
   },
   /** 回填解析结果（OCR/LLM 回调或人工补录）。 */
   markParsed(
@@ -380,41 +373,33 @@ export const settlementApi = {
   create(
     claimId: string,
     req: { attempt: number; accountType: AccountType },
-    operatorId: string,
     idempotencyKey = newIdempotencyKey(),
   ): Promise<ApiResponse<SettlementResult>> {
     return client.post<{ attempt: number; accountType: AccountType }, ApiResponse<SettlementResult>>(
       `/${claimId}/settlement`,
       req,
-      { headers: { 'X-Operator-Id': operatorId, 'Idempotency-Key': idempotencyKey } },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
   /** 审核通过（硬预占 / ≥1 万双人复核）。 */
-  auditPass(
-    claimId: string,
-    req: { reviewerIds: string[]; firstReviewerId: string },
-    operatorId: string,
-  ): Promise<ApiResponse<SettlementResult>> {
-    return client.post<{ reviewerIds: string[]; firstReviewerId: string }, ApiResponse<SettlementResult>>(
+  /** 审核通过：只提交复核人名单；第一审核人由服务端从赔案聚合读取（不接受客户端声明）。 */
+  auditPass(claimId: string, req: { reviewerIds: string[] }): Promise<ApiResponse<SettlementResult>> {
+    return client.post<{ reviewerIds: string[] }, ApiResponse<SettlementResult>>(
       `/${claimId}/settlement/audit-pass`,
       req,
-      { headers: { 'X-Operator-Id': operatorId } },
     );
   },
-  pay(claimId: string, operatorId: string): Promise<ApiResponse<SettlementResult>> {
-    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/pay`, undefined, {
-      headers: { 'X-Operator-Id': operatorId },
-    });
+  pay(claimId: string): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/pay`);
   },
-  cancel(claimId: string, req: { payFailed?: boolean }, operatorId: string): Promise<ApiResponse<SettlementResult>> {
-    return client.post<{ payFailed?: boolean }, ApiResponse<SettlementResult>>(`/${claimId}/settlement/cancel`, req, {
-      headers: { 'X-Operator-Id': operatorId },
-    });
+  cancel(claimId: string, req: { payFailed?: boolean }): Promise<ApiResponse<SettlementResult>> {
+    return client.post<{ payFailed?: boolean }, ApiResponse<SettlementResult>>(
+      `/${claimId}/settlement/cancel`,
+      req,
+    );
   },
-  refund(claimId: string, operatorId: string): Promise<ApiResponse<SettlementResult>> {
-    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/refund`, undefined, {
-      headers: { 'X-Operator-Id': operatorId },
-    });
+  refund(claimId: string): Promise<ApiResponse<SettlementResult>> {
+    return client.post<never, ApiResponse<SettlementResult>>(`/${claimId}/settlement/refund`);
   },
 };
 
@@ -468,21 +453,17 @@ export interface AppealResult {
 
 export const appealApi = {
   /** 发起申诉（受理）：须已终态且未超 48h；幂等。 */
-  submit(claimId: string, req: { reason: string }, operatorId: string): Promise<ApiResponse<AppealResult>> {
-    return client.post<{ reason: string }, ApiResponse<AppealResult>>(`/${claimId}/appeal`, req, {
-      headers: { 'X-Operator-Id': operatorId },
-    });
+  submit(claimId: string, req: { reason: string }): Promise<ApiResponse<AppealResult>> {
+    return client.post<{ reason: string }, ApiResponse<AppealResult>>(`/${claimId}/appeal`, req);
   },
   /** 复议结论：UPHELD 维持 / REOPEN 推翻重启审核。 */
   review(
     claimId: string,
     req: { result: AppealReviewResult; reason: string },
-    operatorId: string,
   ): Promise<ApiResponse<AppealResult>> {
     return client.post<{ result: AppealReviewResult; reason: string }, ApiResponse<AppealResult>>(
       `/${claimId}/appeal/review`,
       req,
-      { headers: { 'X-Operator-Id': operatorId } },
     );
   },
   /** 查询最新申诉（无则 data 为 null）。 */

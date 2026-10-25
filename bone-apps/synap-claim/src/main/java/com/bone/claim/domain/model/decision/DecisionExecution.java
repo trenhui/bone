@@ -85,7 +85,7 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
   private Integer durationMs;
 
   @Transient
-  @Cascade(foreignKey = "execution_id", orphanRemoval = false)
+  @Cascade(foreignKey = "executionId", orphanRemoval = false)
   private List<DecisionTraceNode> traces = new ArrayList<>();
 
   @Version

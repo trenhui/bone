@@ -31,7 +31,10 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   List<ClaimWithItemsProjection> findClaimWithItems(@Param("claimId") long claimId);
 
   /**
-   * 超期未补件关单扫描（全租户，定时任务专用）：{@code status = 21} 且 {@code updated_at < before}。
+   * 超期未补件关单扫描（全租户，定时任务专用）：{@code status = EVIDENCE_SUBMITTING} 且 {@code updated_at < before}。
+   *
+   * <p>注意状态口径：{@code t_claim_case.status} 落的是枚举 <b>name</b>（{@code ClaimCase#transition} 写 {@code
+   * to.name()}），不是 {@code ClaimStatus#code()} 的数字码——模板里写 {@code '21'} 会一行都匹配不到，定时任务静默空转。
    *
    * <p>仅 {@code adapter.schedule} 可调用（ArchitectureTest {@code
    * schedule_only_calls_all_tenants_repository_methods} 收紧）。

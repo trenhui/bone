@@ -1,5 +1,5 @@
--- 按责任 UUID + 版本查（复算/回放取历史版本）
-SELECT id,
+SELECT
+       id,
        liability_uuid,
        liability_version,
        plan_id,
@@ -18,6 +18,6 @@ SELECT id,
 FROM t_adj_liability
 WHERE liability_uuid = :liabilityUuid
   AND liability_version = :liabilityVersion
-  AND deleted = 0
+  AND deleted = 0 AND
   /*bone:tenant*/
 LIMIT 1

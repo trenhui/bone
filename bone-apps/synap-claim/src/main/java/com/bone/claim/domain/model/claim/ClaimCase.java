@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,12 +59,12 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "claim_type", nullable = false)
   private String claimType;
 
-  /** 状态（DB 存枚举 name，如 {@code ACCEPTED}；pk-tpa 数字码经 {@link #status()}.code() 供存量桥接）。 */
+  /** 状态（DB 与域内一律枚举 name，如 {@code ACCEPTED}；数字码仅为对外桥接码，见 {@code ClaimStatus#code()}）。 */
   @Column(name = "status", nullable = false)
   private String status;
 
   @Column(name = "status_sub")
-  private String statusSub;
+  private String statusSub = "";
 
   /** 业务阶段（DB 存枚举 name，与 status 正交）。 */
   @Column(name = "stage", nullable = false)
@@ -90,7 +91,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   private Instant closedAt;
 
   @Column(name = "source_channel")
-  private String sourceChannel;
+  private String sourceChannel = "";
 
   @Column(name = "source_system", nullable = false)
   private String sourceSystem;
@@ -108,19 +109,19 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
 
   /** 第一审核人（核赔）。 */
   @Column(name = "first_reviewer_id")
-  private String firstReviewerId;
+  private String firstReviewerId = "";
 
   /** 第二复核人（大额 ≥1 万双人复核）。 */
   @Column(name = "second_reviewer_id")
-  private String secondReviewerId;
+  private String secondReviewerId = "";
 
   /** 拒赔五要素（REJECTED 必填，落 comment）。 */
   @Column(name = "reject_comment")
-  private String rejectComment;
+  private String rejectComment = "";
 
   /** 受控拒赔原因码（§8.3 01-13 + 20/30/40），禁自由文本。 */
   @Column(name = "reject_type")
-  private String rejectType;
+  private String rejectType = "";
 
   /** 受理时锁定的计划版本（历史案件复算确定性，§4.1）。 */
   @Column(name = "plan_version")
@@ -144,7 +145,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
    * 既有明细静默清空（blueprint Order 同款踩坑，注释保留）。
    */
   @Transient
-  @Cascade(foreignKey = "claim_id", orphanRemoval = false)
+  @Cascade(foreignKey = "claimId", orphanRemoval = false)
   private List<ClaimItem> items = new ArrayList<>();
 
   // ===================== 工厂方法 =====================
@@ -165,6 +166,44 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       String invoiceNo,
       Instant outInsureTime,
       String batchNo,
+      String planVersion,
+      List<ClaimItem> items) {
+    // 便利重载：调用方未携带幂等键（协议层 Idempotency-Key 可选）时由域内生成，见全参重载注释
+    return draft(
+        id,
+        tenantId,
+        policyNo,
+        planId,
+        insuredIdHash,
+        claimType,
+        invoiceCode,
+        invoiceNo,
+        outInsureTime,
+        batchNo,
+        null,
+        planVersion,
+        items);
+  }
+
+  /**
+   * 报案草稿（受理前）。
+   *
+   * @param idempotencyKey 写接口幂等键（{@code Idempotency-Key} 请求头值）。为 {@code null}/空时域内生成 UUID——{@code
+   *     t_claim_case.idempotency_key} 为 NOT NULL 且租户内唯一（{@code uk_tenant_idem}），
+   *     无键提交即独立案件（协议语义「不传则不启用幂等」）；携键时同租户同键重复提交由应用层查重返回首案， 并发双写由唯一键兜底。
+   */
+  public static ClaimCase draft(
+      long id,
+      Long tenantId,
+      String policyNo,
+      Long planId,
+      String insuredIdHash,
+      String claimType,
+      String invoiceCode,
+      String invoiceNo,
+      Instant outInsureTime,
+      String batchNo,
+      String idempotencyKey,
       String planVersion,
       List<ClaimItem> items) {
     if (policyNo == null || policyNo.isBlank()) {
@@ -194,15 +233,22 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     claim.planId = planId;
     claim.insuredIdHash = insuredIdHash;
     claim.claimType = claimType == null || claimType.isBlank() ? "OUTPATIENT" : claimType;
-    claim.invoiceCode = invoiceCode == null ? "" : invoiceCode;
-    claim.invoiceNo = invoiceNo == null ? "" : invoiceNo;
+    // 发票标识留空即 null（不是空串）：uk_tenant_invoice 依赖 SQL 唯一索引的 NULL 语义
+    // ——多个 NULL 互不相等，草稿态/未附发票的赔案因此可共存；真实发票号仍全租户唯一
+    // （R-FRAUD-07 防重复赔付不受影响）。见 migration 0060。
+    claim.invoiceCode = normalizeInvoicePart(invoiceCode);
+    claim.invoiceNo = normalizeInvoicePart(invoiceNo);
     claim.outInsureTime = outInsureTime;
-    claim.batchNo = batchNo;
+    claim.batchNo = batchNo == null ? "" : batchNo;
     claim.planVersion = planVersion;
     claim.claimAmount = total;
     claim.status = ClaimStatus.DRAFT.name();
     claim.stage = ClaimStage.SIGNING.name();
     claim.sourceSystem = "self";
+    claim.idempotencyKey =
+        (idempotencyKey == null || idempotencyKey.isBlank())
+            ? UUID.randomUUID().toString()
+            : idempotencyKey;
     claim.items = new ArrayList<>(items);
     claim.version = 0L;
     Instant now = Instant.now();
@@ -219,6 +265,16 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
         + id;
   }
 
+  /**
+   * 发票标识归一化：空白一律折叠为 {@code null}。
+   *
+   * <p>语义依据——"未知"不等于"空字符串发票"。{@code uk_tenant_invoice} 是普通唯一索引，SQL 标准下多个 {@code NULL}
+   * 互不相等，故草稿态/未附票赔案不会互相占用发票键；一旦写入真实发票号，防重复赔付 （R-FRAUD-07）的租户级唯一性照旧生效。
+   */
+  private static String normalizeInvoicePart(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
   // ===================== 状态机（§6.2 合法转换） =====================
 
   /**
@@ -231,7 +287,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       return false;
     }
     if (status() != ClaimStatus.DRAFT) {
-      throw new DomainException("只有草稿状态可以受理签收，当前状态: " + status().code());
+      throw new DomainException("只有草稿状态可以受理签收，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.ACCEPTED, "SIGN");
     addDomainEvent(new ClaimSubmittedEvent(getId(), getTenantId(), claimNo, Instant.now()));
@@ -253,7 +309,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     if (status() != ClaimStatus.ACCEPTED
         && status() != ClaimStatus.PRE_EXAMINED
         && status() != ClaimStatus.ADJUSTING) {
-      throw new DomainException("当前状态不支持补件流转，当前状态: " + status().code());
+      throw new DomainException("当前状态不支持补件流转，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.EVIDENCE_SUBMITTING, "REQUEST_MORE_EVIDENCE", operatorId);
   }
@@ -276,7 +332,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /** 决策图完成（11/13 → 12，产出 DecisionResult）。 */
   public void completePreExam(String operatorId) {
     if (status() != ClaimStatus.PRE_EXAMINING && status() != ClaimStatus.AUTO_PRE_EXAMINING) {
-      throw new DomainException("初审中才能完成初审，当前状态: " + status().code());
+      throw new DomainException("初审中才能完成初审，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.PRE_EXAMINED, "DECISION_AUTO", operatorId);
   }
@@ -290,7 +346,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
    */
   public void completePreExam(String operatorId, BigDecimal approvedAmount) {
     if (status() != ClaimStatus.PRE_EXAMINING && status() != ClaimStatus.AUTO_PRE_EXAMINING) {
-      throw new DomainException("初审中才能完成初审，当前状态: " + status().code());
+      throw new DomainException("初审中才能完成初审，当前状态: " + describe(status()));
     }
     if (approvedAmount != null) {
       applyApprovedAmount(approvedAmount);
@@ -326,7 +382,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       String rejectType,
       BigDecimal approvedAmount) {
     if (status() != ClaimStatus.ADJUSTING) {
-      throw new DomainException("核赔中才能提交审核决策，当前状态: " + status().code());
+      throw new DomainException("核赔中才能提交审核决策，当前状态: " + describe(status()));
     }
     if (reviewerId == null || reviewerId.isBlank()) {
       throw new DomainException("复核人不能为空");
@@ -418,8 +474,8 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
             getId(),
             getTenantId(),
             claimNo,
-            status().code(),
-            status().code(),
+            status(),
+            status(),
             "HANG_UP",
             operatorId,
             Instant.now()));
@@ -442,8 +498,8 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
             getId(),
             getTenantId(),
             claimNo,
-            status().code(),
-            status().code(),
+            status(),
+            status(),
             "RESUME",
             operatorId,
             Instant.now()));
@@ -487,7 +543,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /** 发起申诉：终态（结案/拒赔生效）→ 申诉中（60），48h 时限由应用层校验（§6.6）。 */
   public void enterAppeal(String operatorId) {
     if (!finished()) {
-      throw new DomainException("仅终态案件可发起申诉，当前状态: " + status().code());
+      throw new DomainException("仅终态案件可发起申诉，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.APPEALING, "APPEAL", operatorId);
   }
@@ -522,7 +578,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   private void transition(ClaimStatus to, String actionCode, String operatorId) {
     ClaimStatus from = status();
     if (from == to) {
-      throw new DomainException("状态未变化，禁止空跃迁: " + from.code());
+      throw new DomainException("状态未变化，禁止空跃迁: " + describe(from));
     }
     this.status = to.name();
     this.stage = stageOf(to).name();
@@ -532,14 +588,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     }
     addDomainEvent(
         new ClaimStatusChangedEvent(
-            getId(),
-            getTenantId(),
-            claimNo,
-            from.code(),
-            to.code(),
-            actionCode,
-            operatorId,
-            Instant.now()));
+            getId(), getTenantId(), claimNo, from, to, actionCode, operatorId, Instant.now()));
   }
 
   /** 无操作人的重载（系统动作）。 */
@@ -558,9 +607,14 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     };
   }
 
+  /** 状态可读描述：{@code NAME(中文名)}——机器可检索（与 DB 落库值同形）且人工可读。 */
+  private static String describe(ClaimStatus status) {
+    return status == null ? "null" : status.name() + "(" + status.displayName() + ")";
+  }
+
   private void requireStatus(ClaimStatus expected, String action) {
     if (status() != expected) {
-      throw new DomainException(action + "，当前状态: " + status().code());
+      throw new DomainException(action + "，当前状态: " + describe(status()));
     }
   }
 

@@ -33,7 +33,7 @@ CREATE TABLE claim_decision_execution (
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   updated_by        BIGINT        DEFAULT NULL COMMENT '修改人ID',
   deleted           TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本'
+  version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   PRIMARY KEY (id),
   UNIQUE KEY uk_trace (tenant_id, trace_id),
   UNIQUE KEY uk_claim_active (claim_id, active_flag),
@@ -58,7 +58,7 @@ CREATE TABLE claim_decision_trace (
   created_by        BIGINT        DEFAULT NULL COMMENT '创建人ID',
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   updated_by        BIGINT        DEFAULT NULL COMMENT '修改人ID',
-  deleted           TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted           TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   KEY idx_trace_seq (trace_id, node_seq),
   KEY idx_execution (execution_id)

@@ -1,0 +1,43 @@
+server:
+  port: ${BONE_CLAIM_PORT:8087}
+
+spring:
+  application:
+    name: synap-claim
+  datasource:
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${BONE_DB_USERNAME:root}
+    # 必填变量，不给默认值：缺失时启动即失败（配置与环境规范 §1.4 fail-fast），
+    # 避免用空密码去连库、报出难以定位的认证错误。口径与 bone-blueprint 一致。
+    password: ${BONE_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # DDL 真源：scripts/migration/0058_synap_claim_tables.sql（由模块库内迁移 V1-V5 合并生成，
+  # 与《工程详细设计（落地版）》§9.3/§9.5 对齐）。显式关掉 Spring Boot 对 schema.sql/data.sql
+  # 的自动执行，避免双轨 DDL 漂移（同 bone-blueprint 口径）。
+  sql:
+    init:
+      mode: never
+  # 时间字段 UTC 契约（i18n 方案 §6.4）：对外契约时间字段用 Instant，
+  # 此处把默认行为显式固定，避免依赖 Spring Boot 版本默认值。
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+# bone-metadata-sdk：仓储代理与 SQL 模板加载（前缀 metadata.sdk.*，勿写 bone.metadata.* 死配置）。
+metadata:
+  sdk:
+    appcode: synap-claim
+    deploymentMode: EMBEDDED
+
+bone:
+  iam:
+    jwt:
+      # 与其余模块同款声明：必须与 bone-iam 的 bone.iam.jwt.secret-key 一致，
+      # 本地开发未注入环境变量时各模块落到同一未解析占位符字面量，天然一致。
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
+  claim:
+    idempotency:
+      # 提交理赔的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）；
+      # false 时退化为「不记录快照」（同 blueprint bone.blueprint.idempotency.enabled 口径）。
+      enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}

@@ -297,5 +297,5 @@ data/
 qlcheck/
 .run-jars/
 
-# Playwright 浏览器二进制缓存（由 @playwright/test 下载，非源码，体积大，勿入库）
+# Playwright 探针浏览器缓存（575MB，可再生，勿入库）
 .pw-browsers/

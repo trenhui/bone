@@ -34,7 +34,6 @@ class AdjustmentTest {
         "h",
         "OUTPATIENT",
         "ACCEPTED",
-        "PENDING_EVIDENCE",
         "SIGNING",
         0,
         "",

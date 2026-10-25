@@ -16,8 +16,8 @@ CREATE TABLE t_claim_case (
   stage             VARCHAR(32)   NOT NULL COMMENT '业务阶段码(8段, 与status正交)',
   hang_up_status    TINYINT       NOT NULL DEFAULT 0 COMMENT '0未挂起/1已挂起(正交机制,不改状态码)',
   hang_up_type      VARCHAR(32)   DEFAULT NULL COMMENT '挂起类型(EVIDENCE/INVESTIGATION/TIMEOUT/FRAUD)',
-  invoice_code      VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '发票代码',
-  invoice_no        VARCHAR(64)   NOT NULL DEFAULT '' COMMENT '发票号码(与代码组合防重复赔付)',
+  invoice_code      VARCHAR(32)   DEFAULT NULL COMMENT '发票代码(草稿未附票为NULL，NULL不占用唯一键)',
+  invoice_no        VARCHAR(64)   DEFAULT NULL COMMENT '发票号码(与代码组合防重复赔付，NULL不占用唯一键)',
   out_insure_time   DATETIME(3)   NOT NULL COMMENT '出险时间',
   source_channel    VARCHAR(32)   NOT NULL DEFAULT '' COMMENT '渠道',
   source_system     VARCHAR(32)   NOT NULL DEFAULT 'self' COMMENT '来源系统(self/pk_tpa)',
@@ -36,11 +36,12 @@ CREATE TABLE t_claim_case (
   updated_at        DATETIME(3)   NOT NULL COMMENT '更新时间',
   closed_at         DATETIME(3)   DEFAULT NULL COMMENT '进入终态时间(申诉48h时限起算点)',
   version           BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本(SDK @Version 维护)',
-  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted           TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_claim_no (tenant_id, claim_no),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
-  -- 发票唯一性硬约束（R-FRAUD-07）：含 deleted，软删案件不永久占用发票键
+  -- 发票唯一性硬约束（R-FRAUD-07）：含 deleted，软删案件不永久占用发票键；
+  -- 发票列为 NULL（草稿未附票）时按 SQL 唯一索引语义互不相等，多条草稿可共存
   UNIQUE KEY uk_tenant_invoice (tenant_id, invoice_code, invoice_no, deleted),
   KEY idx_tenant_status (tenant_id, status, created_at),
   KEY idx_tenant_insured (tenant_id, insured_id_hash),
@@ -73,7 +74,7 @@ CREATE TABLE t_claim_item (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at       DATETIME(3)   NOT NULL COMMENT '更新时间',
   version          BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记'
+  deleted          TINYINT       NOT NULL DEFAULT 0 COMMENT '软删标记',
   PRIMARY KEY (id),
   KEY idx_claim (claim_id),
   KEY idx_item_code (tenant_id, item_code)

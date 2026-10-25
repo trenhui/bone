@@ -82,7 +82,7 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   private Integer insuredState;
 
   @Transient
-  @Cascade(foreignKey = "quota_account_id", orphanRemoval = false)
+  @Cascade(foreignKey = "quotaAccountId", orphanRemoval = false)
   private List<QuotaTransaction> transactions = new ArrayList<>();
 
   @Version

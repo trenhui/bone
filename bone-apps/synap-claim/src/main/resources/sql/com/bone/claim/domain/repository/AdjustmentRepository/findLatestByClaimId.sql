@@ -1,5 +1,5 @@
--- 案件最新一次理算（按创建时间倒序取第一条）
-SELECT id,
+SELECT
+       id,
        claim_id,
        liability_uuid,
        liability_version,
@@ -13,7 +13,8 @@ SELECT id,
        updated_at,
        version
 FROM t_adj_calculation
-WHERE claim_id = :claimId
+WHERE claim_id = :claimId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY created_at DESC
 LIMIT 1

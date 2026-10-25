@@ -1,5 +1,5 @@
--- 案件最新结算单（按创建时间倒序）
-SELECT id,
+SELECT
+       id,
        settlement_no,
        claim_id,
        claim_no,
@@ -14,7 +14,8 @@ SELECT id,
        updated_at,
        version
 FROM settle_order
-WHERE claim_id = :claimId
+WHERE claim_id = :claimId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY created_at DESC
 LIMIT 1

@@ -1,5 +1,5 @@
--- 案件当前活跃决策执行（每案至多一条，uk_claim_active 兜底）
-SELECT id,
+SELECT
+       id,
        trace_id,
        claim_id,
        graph_version,
@@ -21,6 +21,7 @@ SELECT id,
        version
 FROM claim_decision_execution
 WHERE claim_id = :claimId
-  AND active_flag = 1
+  AND active_flag = 1 AND
   /*bone:tenant*/
+  AND deleted = 0
 LIMIT 1
