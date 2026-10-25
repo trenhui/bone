@@ -34,4 +34,8 @@ public interface QuotaAccountRepository extends Repository<QuotaAccount, Long> {
   /** 账户流水（守恒校验与审计的数据源，§11.7 不变量 1）。 */
   @TenantScope(TenantScopeMode.AUTO)
   List<QuotaTransaction> findTransactions(@Param("quotaAccountId") long quotaAccountId);
+
+  /** 本租户全部额度账户（对账守恒核对用，{@code ReconciliationApplicationService} 在租户上下文内调用）。 */
+  @TenantScope(TenantScopeMode.AUTO)
+  List<QuotaAccount> findAllAccounts();
 }

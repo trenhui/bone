@@ -49,6 +49,15 @@ public interface ClaimCaseRepository extends Repository<ClaimCase, Long> {
   @TenantScope(TenantScopeMode.ALL)
   List<ClaimTenantRef> findFinishedForInspectionAllTenants(@Param("limit") int limit);
 
+  /**
+   * 未终结案件扫描（全租户，SLA 物化 {@code RefreshLimitHourJob} 专用）：{@code status} 非终态（≠ CLOSED_REJECTED /
+   * FINISHED），按 id 升序取一批。
+   *
+   * <p>仅 {@code adapter.schedule} 可调用（ArchitectureTest 收紧）；逐笔由 Job 用 {@code runAs} 显式携带租户。
+   */
+  @TenantScope(TenantScopeMode.ALL)
+  List<ClaimTenantRef> findActiveClaimsAllTenants(@Param("limit") int limit);
+
   /** 按报案号查（对外检索键）。 */
   default ClaimCase findByClaimNo(Long tenantId, String claimNo) {
     Criteria<ClaimCase> criteria =

@@ -531,7 +531,7 @@ pk-tpa-saas 通过 `policy.adjustment_order` 控制理算在流程中的插入�
 
 > 注：PRD 早期七值 `CaseStatus`（含 `APPEALING`/`CLOSED_REJECTED`）属历史命名，**已于 2026-10-21 回写对齐**（PRD §8.5 / §12.1 改为「内部状态码 + 对外两值投影」口径）；本文内部状态机保留申诉语义（内部码 `60`），不对外暴露该枚举值。
 >
-> **宣称态 vs 实现态（2026-10-23 登记）**：上表为**目标态全量 21 态**；本期已落地 14 态（`ClaimStatus` 枚举，见 §12.2.1），预留态 `17/22/23/30/31/32/75` 及其转换（后督回流 `50/42→30/31/32` 等）为 V2 启用——排期与验收以 §12.2.1 落地清单为准，勿把预留态当作已可实现能力。**例外（能力已落地、触发入口未建）**：`21→45` 超期关单的领域能力已实现（`ClaimCase.closeExpired`，§12.2.1），但其 `adapter/schedule` 扫描触发入口一期未建——勿因枚举 14 态已全而推断关单已在跑。
+> **宣称态 vs 实现态（2026-10-23 登记）**：上表为**目标态全量 21 态**；本期已落地 14 态（`ClaimStatus` 枚举，见 §12.2.1），预留态 `17/22/23/30/31/32/75` 及其转换（后督回流 `50/42→30/31/32` 等）为 V2 启用——排期与验收以 §12.2.1 落地清单为准，勿把预留态当作已可实现能力。**例外（能力已落地、触发入口未建）**：`21→45` 超期关单的领域能力已实现（`ClaimCase.closeExpired`，§12.2.1），其 `adapter/schedule` 超期关单扫描 `CloseExpiredClaimJob` 已于 2026-10-25 实机构建（§12.2.1），但 `limit_hour` 刷新 / 对账调度 / SLA 物化触发入口仍待建——勿因枚举 14 态已全而推断全部关单/调度已在跑。
 >
 > **一期后督抽检的落地边界（2026-10-23 核码登记）**：一期后督抽检（§7.6）目标 = 分层抽样执行 + 结论落 `claim_inspection` + `diff_type` 三向回流闭环（规则修正候选 / AI 误判入评测集 / 欺诈正负例）；**当前代码 0 落地**（`t_claim_inspection` 表、质检端点 §10.1 #13/#14、`adapter/schedule` 抽样调度均未建，§12.2.1）；**案件状态回流质检态 `30/31/32` 及其转换为 V2 预留态**，任何期都不以案件状态码承载质检结论——避免把 V2 预留态写进一期验收（PRD §7.3 同口径）。
 
@@ -555,7 +555,7 @@ pk-tpa-saas 通过 `policy.adjustment_order` 控制理算在流程中的插入�
 | 60 | 41 / 45 | 申诉驳回复审 / 维持结论 |
 | **50 / 42** | **30/31/32** | **后督抽检回流**（`adapter/schedule` 分层抽样 ≥5% 已自动结案案件，§7.6）——**V2 预留转换**：一期抽检结论仅落 `claim_inspection`，不回流案件状态码（§6.1 澄清） |
 | **30 → 31 → 32** | **42 / 50 / 45** | **质检完成**（V2 预留）：无差异回原终态；差异按质检结论转复审(42)/重开(50)/撤销(45)，并触发对应补偿（理算重算须先 `UNFROZEN` 释放冻结，§5.3） |
-| 21(17/22/23) | 45 | 超 30d 未补件触发 **P0 合规预警 + 人工核定结论**（按拒赔/给付出具并通知当事人，§6.6；`action_code=CLOSE`）——**关单 ≠ 作出核定**，法定核定时限（≤T0+30d，复杂 ≤40d）不可被内部 SLA 覆盖或放宽。领域能力已落地（`closeExpired`）；**`adapter/schedule` 触发入口未建**（§6.1 宣称态登记），上线前须补 |
+| 21(17/22/23) | 45 | 超 30d 未补件触发 **P0 合规预警 + 人工核定结论**（按拒赔/给付出具并通知当事人，§6.6；`action_code=CLOSE`）——**关单 ≠ 作出核定**，法定核定时限（≤T0+30d，复杂 ≤40d）不可被内部 SLA 覆盖或放宽。领域能力已落地（`closeForStale`）；**超期关单 `CloseExpiredClaimJob` 已建**（§12.2.1，待宿主 `@EnableScheduling` 装配），`limit_hour` 刷新 / 对账调度 / SLA 物化触发入口仍待建 |
 | 任意非终态 | 10 | 补件流转（NEED_MORE_EVIDENCE） |
 | 12/40/41/42（非终态） | 上一节点 | **外部退回**（保司/TPA 侧发起，pk-tpa-saas `backToStatus` 实证能力）：须校验来源角色 + 记录 `action_code=BACK_NODE` + 累计回退次数上限（默认 ≤3），防反复退回形成循环 |
 
@@ -635,8 +635,8 @@ SOFT_RESERVED → HARD_RESERVED → REVIEW_FREEZE → PAID
 | REVIEWING 双人复核 | ≤8h | 升级风控/主管 |
 | FINISH 支付 | T+1 | 超时告警 |
 
-> **时效双轨（勿混淆）**：法定时限按**自然日**计（§上表，来自《保险法》），而 `claim_case.limit_hour` 是**工作日剩余小时数**（DECIMAL）——计算式 `剩余工作日小时 = 原始工作日小时 − 挂起占用的工作日小时`，其中工作日**剔除周末整天**（`Asia/Shanghai`，scale=2、HALF_UP），起点为签收完成时间，终点为结案相关时间。二者是**并行的两套口径**：法定时限用于监管合规预警，`limit_hour` 用于工作台作业排序与超时挂起，**后者不得用于放宽前者**。
-> `limit_hour` 由 `adapter/schedule` **每 20 分钟**批量刷新（沿用 pk-tpa-saas `RefreshClaimLimitHourTask` 口径），刷新范围为未终结阶段案件；挂起/解挂时长从 `claim_case_track`（`HANG_UP`/`RESUME`）按工作日口径累计扣减，避免挂起期间无谓超时。
+> **时效双轨（勿混淆）**：法定时限按**自然日**计（§上表，来自《保险法》），而 `limit_hour` 是**工作日剩余小时数**（DECIMAL）——实现口径 `剩余工作日小时 = max(0, 当前阶段目标工时 − 阶段已耗工作日小时 − 挂起占用工作日小时)`，工作日**剔除区间内与周末（周六/周日）的实际重叠**（部分跨越按重叠扣除，`Asia/Shanghai`，scale=2、HALF_UP；见 `WorkHours`）。二者是**并行的两套口径**：法定时限用于监管合规预警，`limit_hour` 用于工作台作业排序与超时挂起，**后者不得用于放宽前者**。
+> `limit_hour` 由 `adapter/schedule` 的 **`RefreshLimitHourJob` 每 20 分钟**批量刷新（刷新范围为未终结阶段案件）；挂起/解挂时长从 `claim_case_track`（`HANG_UP`/`RESUME`）按工作日口径累计扣减，避免挂起期间无谓超时。**实现取舍**：刷新只写读模型 `t_claim_case_sla.remaining_work_hours`，**不回写** `t_claim_case.limit_hour`——每 20 分钟写 `t_claim_case.updated_at` 会让超期关单扫描（依赖 `updated_at < before`）永远命中不到滞留案件；`t_claim_case.limit_hour` 列保留列位但不作刷新目标。
 
 > **SLA 计算模型（事件溯源 + CQRS 读模型）**：`claim_case_track` 是状态流转的**事件溯源真源**（append-only，含 `HANG_UP`/`RESUME` 等 `action_code`），阶段停留时长 P50/P95 与挂起占用均由其派生；`claim_case_sla` 为**物化运营读模型**（每 20 分钟由同一 schedule 任务从 track 聚合写入，乐观锁防并发），承载 `stage_entered_at`/`legal_due_at`/`sla_due_at`/`remaining_work_hours`/`hang_accum_seconds`，供工作台排序、超时挂起（§6.5 `TIMEOUT`）与 §11 运营报表直接查询。**不在业务事件日志里反复重算 SLA**，读写分离避免大表扫描打爆作业线程池。
 
@@ -1973,7 +1973,7 @@ CREATE TABLE integration_sync_log (
 | 16 | 外部退回（保司/TPA 侧发起，§6.2 `BACK_NODE`） | POST /api/v1/integration/claims/{id}/back | API Key+HMAC |
 | 17 | 同步失败分页查询（运营） | GET /api/v1/integration/sync-failures | API Key+HMAC |
 | 18 | 推送重推（运营，§10.4 重推） | POST /api/v1/integration/claims/{id}/repush | API Key+HMAC |
-| 19 | 对账报告查询（管理后台对账中心，§11.7） | GET /api/v1/review/reconciliation | OIDC/SSO（契约规定端点；**外部端点代码未落地**，内部 `/internal/reconciliation/{bizDate}` 已存在，详见 §12.2.1 登记） |
+| 19 | 对账报告查询（管理后台对账中心，§11.7） | GET /api/v1/review/reconciliation | OIDC/SSO（契约规定端点；**外部与内部端点代码均未落地**——2026-10-25 核码：`reconciliation` 全仓 0 实现，内部端点仅为 §10.2/§10.4 `internal-api.yaml` 目标契约，§12.2.1 亦未登记其已建） |
 
 > **非本域端点登记（防契约缺口误判）**：① 动态表单 Schema（PRD §11.1「按 `formCode` 获取录入 Schema」）由平台 `BoneUiSchema` 承载（§11.10），**不在本域端点清单**，理赔域仅经 `meta_field`/`actionCode` 注册与引用；② 对账中心（PRD §7.5）的查询/导出经上表 #19 承载，契约随 I4 补入 `claim-api.yaml`（§10.5.1）；③ 员工端进度实时推送（PRD §7.2「状态更新延迟 ≤10 秒」）一期经客户端轮询实现，轮询契约见 §10.3 读己之写。
 
@@ -2982,7 +2982,7 @@ flowchart TB
 - [ ] **监管报送出口**（§11.4）：报送数据质量校验（条数/金额/完整率）跑通，报送记录与回执归档可查
 - [ ] **抽检回流闭环**（§7.6）：diff_type 三向分流（规则修正/AI 误判入评测集/欺诈正负例回流）端到端验证，闭环时延可度量（一期抽检结论落 `claim_inspection`；案件状态回流 30/31/32 为 V2，不在一期验证范围）
 - [ ] **质检三件落地**（§7.6/§12.2.1）：`t_claim_inspection` 表 + 质检端点（§10.1 #13/#14）+ `adapter/schedule` 抽样调度齐备——当前代码 0 落地
-- [ ] **schedule 触发入口**（§6.6/§11.7）：超期关单扫描 / `limit_hour` 刷新 / 对账调度 / SLA 物化的任务 Bean 上线（领域能力已备、入口未建）
+- [x] **schedule 触发入口**（§6.6/§11.7）：4 个 Job 全建——`CloseExpiredClaimJob`（超期关单）/`OutboxRelayJob`（发件箱中继）/`RefreshLimitHourJob`（SLA 物化）/`ReconciliationJob`（QUOTA+PAYMENT 对账）；均待宿主 `@ComponentScan` + `@EnableScheduling` 装配（库模块不自含调度器）
 - [ ] **申诉发起端点**（§12.2.1）：`POST /claims/{id}/appeal` 补全，员工侧申诉流程不断点
 - [ ] **端点路径收敛**（§10.6 偏离 #6）：任务中心（`/review/tasks/*`）与案件中心（`/claims/{id}/*`）二选一，联调期定案并同步 05
 - [ ] **表前缀规范整改**（§9.5 差异登记）：V3–V5 缺 `t_` 前缀的 5 张表按平台规范整改或登记豁免（DDL 变更 L3 审批）
@@ -3020,7 +3020,7 @@ flowchart TB
 | 材料登记（#2）/ 解析回填 / 证据锁定 / 理算执行·重算·确认·查询 | ✅ 已实现端点 | `/claims/{id}/evidences*`、`/claims/{id}/adjust*` |
 | 结算建单/审核通过/支付/撤销/退款 | ✅ 已实现端点 | `/claims/{id}/settlement*`；资金状态机阶段单调 + ≥1万双人复核（REVIEW_FREEZE）+ 幂等键 `{claimNo}:{stage}:{attempt}` |
 | 申诉发起/复议/查询 | ✅ 已实现端点 | `/claims/{id}/appeal*`；48h 时限由聚合守卫（拒超窗） |
-| 决策图执行 / 轨迹回放 | ✅ 已实现端点 | `/claims/{id}/decision/execute`、`/claims/{id}/decision/trace`；双阈值独立判定 + 反欺诈硬闸 + fail-safe；决策图相关单测 26 例，模块合计单测 113 例（90 例 JUnit + 23 条 ArchUnit）全绿（**2026-10-25 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test` → `Tests run: 114, Failures: 0, Errors: 0, Skipped: 0`，BUILD SUCCESS = **90 例 JUnit + 24 条 ArchUnit**；其中 `domain.security` 安全三件套 8 例、AI 决策图相关 26 例均含其中。ArchUnit 由 23 增至 24：新增 `no_direct_bone_ai_dependency_outside_infrastructure`，守护 ADR-002 / §3.2.1 端口铁律③） |
+| 决策图执行 / 轨迹回放 | ✅ 已实现端点 | `/claims/{id}/decision/execute`、`/claims/{id}/decision/trace`；双阈值独立判定 + 反欺诈硬闸 + fail-safe；决策图相关单测 26 例，模块合计单测 **136 例（112 例 JUnit + 24 条 ArchUnit）**全绿（**2026-10-25 实机复验**：`mvn -o -pl bone-apps/synap-claim spotless:apply clean test` → `Tests run: 136, Failures: 0, Errors: 0, Skipped: 0`，BUILD SUCCESS = **112 例 JUnit + 24 条 ArchUnit**；其中 `domain.security` 安全三件套 8 例、AI 决策图相关 26 例均含其中。事项 2 各批次新增 JUnit：超期关单 2 + Outbox relay/状态流水 4 + SLA/对账 16，ArchUnit 24 条不变（含 `no_direct_bone_ai_dependency_outside_infrastructure` 守护 ADR-002 / §3.2.1 端口铁律③）） |
 | **AI 安全三件套**（PII 遮蔽 / 指令数据分离 / 输出校验，§7.2） | ✅ 领域能力已实现（`domain.security`，单测 8 例全绿：`SafePromptBuilderTest` 2 + `PiiMaskerTest` 2 + `LlmOutputGuardTest` 4；ArchUnit 23 条为模块级门禁，不归属单包）；⏳ `AiAssess` 节点未启用，端到端未落地 | 纯 Java 不变量：PII 遮蔽占位符映射仅存内存不落盘；`<material>` 数据槽位 + 指令不可执行声明；字段白名单 + 与 OCR 交叉验证（不一致以 OCR 为准）。`AiAssess` 启用前须完成 §12.2 门禁项（三重校验 + 提示词回归） |
 | `t_claim_case` / `t_claim_item` DDL | ✅ 已实现 | `db/migration/V1__synap_claim_init.sql`；发票唯一约束含 `deleted` |
 | 租户过滤、幂等记录、统一错误码（`SC_*`）、ArchUnit 门禁（23 条）、单测（20 例） | ✅ 已实现 | 复用 `bone-metadata-sdk` / `IdempotencyService` / `BoneDddArchRules` |
@@ -3032,11 +3032,12 @@ flowchart TB
 | **A7 `Settlement`**（两段式资金 + 额度占额） | ◑ 部分落地 | 端点与资金状态机已实现（见上「结算建单/…/退款」行：阶段单调 + ≥1万双人复核 REVIEW_FREEZE + 幂等键 `{claimNo}:{stage}:{attempt}`）；**额度占额联动未落地**——按 §5.3 三值映射矩阵接资金事件 → `quota_transaction`（A5 领域能力已备）；请款/回款（四向对账第 4 向）为 V2 |
 | **A8 `Appeal`**（申诉 48h 复议） | ✅ 已落地 | `appeal_record` 表已建（V4）；复议/查询/发起均已实现（契约复数 `POST /claims/{id}/appeals` 已补，与存量 `POST /claims/{id}/appeal` 并存，建议下迭代收敛单一 `/appeals`）；48h 时限起算点取案件终态时间；复议维持(45)/推翻重启(41) |
 | **质检三件**（`t_claim_inspection` 表 + §10.1 #13/#14 端点 + `adapter/schedule` 抽样调度，§7.6） | ⏳ 未落地 | 无 inspection 代码与表；一期目标 = 三件齐备 + diff 回流闭环 |
-| **`adapter/schedule` 触发入口**（超期关单扫描 / `limit_hour` 刷新 / 对账调度 / SLA 物化） | ⏳ **未落地**（2026-10-25 实机核码更正） | 领域能力已备（`ClaimCase.closeForStale` 21→45）+ 应用服务方法已备（`ClaimCaseApplicationService.closeForStale`）+ 全租户仓储方法已声明（`findStaleEvidenceClaimsAllTenants` / `findFinishedForInspectionAllTenants`，其依赖的 `ClaimTenantRef` 投影已补回使模块恢复编译），但 **`adapter/schedule` 包不存在、无 `CloseExpiredClaimJob` 类、无对应 SQL 模板**。此前登记为「部分落地（Job 已建）」属**文档抢跑**，已更正：本项与 §12.2 清单「schedule 触发入口」条一致＝入口未建，相关能力当前**只能手动触发** |
+| **`adapter/schedule` 触发入口**（超期关单扫描 / 发件箱中继 / SLA 物化 / 对账调度） | ✅ **全部落地**（2026-10-25 实机验证） | 4 个 Job 全建：`CloseExpiredClaimJob`（超期关单）+ `OutboxRelayJob`（发件箱中继，事项 7）+ `RefreshLimitHourJob`（SLA 物化，每 20 分钟从 `t_claim_case_track` 物化 `t_claim_case_sla`）+ `ReconciliationJob`（每日 01:00，QUOTA 守恒 + PAYMENT 结算/流水一致性双通道）。均 ADR-0030 全租户扫描 → `TenantContextRunner.runAs` 逐租户调应用服务；`mvn clean test` **136/0/0**（112 JUnit + 24 ArchUnit）。要在宿主应用生效，还需宿主 `@ComponentScan` 覆盖 `com.bone.claim.adapter` 且开启 `@EnableScheduling`（库模块不自含调度器） |
 | **申诉发起端点已落地**（`POST /claims/{id}/appeals`，契约复数路径） | ✅ 已落地 | 代码在 `/appeal` 基础上新增契约复数 `/appeals` 路径（与 05/§10.1 对齐）；存量 `/appeal` 建议下迭代收敛移除 |
 | 前端 `bone-claim-app` | ✅ 已实现骨架 | React 18 + AntD 5 + Qiankun（端口 3013，路由 `/claim`）；员工端 `/submit`、进度 `/progress`、工作台 `/review` |
 | **bone-ai 能力端口接线**（§3.2.1 六端口：AiGateway / RuleEngine / Orchestration / DocumentParse / Trace / KnowledgeRetrieval） | ⏳ **未落地** | 代码中仅有 `PolicyQueryPort` / `TenantPort` / `DecisionNodeHandler`，其余六端口及其 `infrastructure` 实现**零实现**（2026-10-25 核码）。一期决策图与 AI 安全三件套为**域内自建**，登记为 ADR-002 一期豁免（§14 生效状态表）；`AiAssess` 节点未启用 |
-| **ADR-003 / ADR-008 依赖表**（`claim_case_track` / `domain_event_outbox`） | ⏳ **未落地** | 两表均未建；一期幂等复用框架 `IdempotencyService` + `bp_idempotency_record`（**复用而非本模块自建表**，§9.1 的 `idempotency_record` 亦未建）。结论：事件溯源 SLA（ADR-003）与「资金事件零丢失」（ADR-008）**当前不成立**，一期对外承诺不得引用 |
+| **ADR-003 / ADR-008 依赖表**（`t_claim_case_track` / `t_domain_event_outbox`） | ✅ **已落地**（2026-10-25） | V6 迁移建表 + 实体（`ClaimCaseTrack`/`DomainEventOutbox`）+ 仓储 + `OutboxApplicationService` + `OutboxRelayJob` + `ClaimCaseTrackRecorder`；`mvn clean test` **136/0/0**（112 JUnit + 24 ArchUnit）。结论：事件溯源 SLA（ADR-003）与「资金事件零丢失」（ADR-008）**在代码上成立**（Outbox 一期进程内兜底，二期换 MQ）；`idempotency_record` 仍复用框架 `IdempotencyService` + `bp_idempotency_record` |
+| **SLA 物化 + 资金对账**（`t_claim_case_sla` / `t_reconciliation_report` / `t_reconciliation_diff` + `RefreshLimitHourJob` / `ReconciliationJob`） | ✅ **已落地**（2026-10-25） | V7 迁移建三表 + `t_claim_case.limit_hour` 加列；领域 `ClaimCaseSla`/`ReconciliationReport`/`ReconciliationDiff`/`WorkHours`（工作日口径，周末重叠剔除、HALF_UP scale=2）；应用 `SlaApplicationService`（从 `t_claim_case_track` 物化，`remaining_work_hours = max(0, 阶段目标工时 − 已耗 − 挂起占用)`）+ `ReconciliationApplicationService`（QUOTA 守恒 + PAYMENT 结算/流水一致性）。**取舍**：SLA 物化只写 `t_claim_case_sla`、不回写 `t_claim_case.limit_hour`（避免污染 `updated_at` 致超期关单失效）。**边界**：外部网关/TPA 对账（`CHANNEL_TPA`）二期 |
 
 > **前端技术栈口径**：本仓库前端（`bone-frontend`）为 **React 18 + Ant Design 5 + Qiankun** 微前端，§3.8 选型表已对齐；
 > 原"Vue 3 + Formily + AntV G6"表述与仓库现状不符，已废止（决策图可视化编辑器本身也列为一期不做，PRD §7.6）。
@@ -3164,8 +3165,8 @@ flowchart TB
 | ADR | 索引状态 | 代码实现状态 | 一期处置与对外口径约束 |
 |---|---|---|---|
 | ADR-002 共享内核（禁止场景自建 AI） | Accepted | ⏳ **未接线**：§3.2.1 登记的六个能力端口零实现 | 一期决策图（自建 DAG）与 AI 安全三件套（`domain.security`）为**域内自建**，登记为 **ADR-002 一期豁免**；Phase C 前须完成 `bone-ai-orchestration`/`gateway`/`trace` 接线并提交撤销豁免评审。**当前对外不得宣称「已复用 AI 中台」** |
-| ADR-003 事件溯源流水 + CQRS 读模型 | Accepted | ⏳ **未落地**：`claim_case_track` 表未建 | 一期 SLA/挂起时长以 `claim_case.updated_at` 粗算替代（不保证精确）；`claim_case_sla` 物化读模型随表同批上线，届时 ADR-003 方可在生产成立 |
-| ADR-008 事务性发件箱保证资金事件零丢失 | Accepted | ⏳ **未落地**：`domain_event_outbox` 表未建 | 一期幂等复用框架 `IdempotencyService` + `bp_idempotency_record`（**非本模块自建**），跨聚合协作为同事务同步调用。**「资金事件零丢失 100%」的 Outbox 保障当前不成立**，§11.2 SLO 表不登记该承诺 |
+| ADR-003 事件溯源流水 + CQRS 读模型 | Accepted | ✅ **已落地**（2026-10-25）：`t_claim_case_track` 表（V6 迁移）+ `ClaimCaseTrack` 实体 + `ClaimCaseTrackRecorder`（`@TransactionalEventListener(AFTER_COMMIT)` 监听 `ClaimStatusChangedEvent` 落 append-only 流水） | 事件溯源真源成立；`claim_case_sla` 物化读模型（§6.6）随 `adapter/schedule` 的 SLA 物化 Job 一并落地（事项 2 余留三项之一），届时 CQRS 读模型闭环；一期 SLA/挂起时长可经 track 精确派生 |
+| ADR-008 事务性发件箱保证资金事件零丢失 | Accepted | ✅ **已落地**（2026-10-25）：`t_domain_event_outbox` 表（V6 迁移）+ `DomainEventOutbox` 实体 + `OutboxApplicationService.dispatchAndAck`（`@Transactional`）+ `adapter/schedule/OutboxRelayJob`（ADR-0030 全租户扫描派发） | `OutboxPort.dispatch` 为 ADR-008 铁律④唯一跨服务副作用出口，一期进程内兜底（`SpringOutboxDispatcher`：JSON→`GenericOutboxEvent`→`DomainEventPublisher.publish`，二期换 RocketMQ）；`MAX_RETRY=5`/`RETRY_BACKOFF=10min`；**「资金事件零丢失」的 Outbox 保障在一期进程内形态下成立**，§11.2 SLO 表可登记该承诺（标注进程内兜底口径）。`idempotency_record` 仍复用框架 `IdempotencyService` + `bp_idempotency_record`，不属本 ADR |
 
 ---
 

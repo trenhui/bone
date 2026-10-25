@@ -177,16 +177,6 @@
       "note": "模块详设沿用旧 Handler 命名；代码已按 ADR-0028 收敛为 ApplicationService，待按模块统一修订"
     },
     {
-      "symbol": "CloseExpiredClaimJob",
-      "docs": [
-        "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md",
-        "doc/ai-product/synapClaim/文档地图.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 理赔平台工程详设/整改清单/文档地图引用的目标态定时任务名，实现尚未落地（文档地图 P6 已将其由「已建」更正为「未落地」）；与同文档已登记的 AdjLiabilityRepository 等 tobe-named 条目同口径"
-    },
-    {
       "symbol": "CodeGenerationCleanupJob",
       "docs": [
         "doc/design/modules/2. 元数据管理模块详细设计方案.md"

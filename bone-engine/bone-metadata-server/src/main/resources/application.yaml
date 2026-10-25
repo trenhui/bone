@@ -61,3 +61,12 @@ bone:
         # 资金类动作的幂等窗口必须覆盖整个业务窗口（对账 / 退款周期常以天计），
         # 否则记录过期后重放同一 Key 会二次记账。生产建议 PT72H 起。
         ttl: ${BONE_IDEMPOTENCY_TTL:PT24H}
+
+  # JWT 验签密钥（与 IAM 共享）：声明键名以满足配置键契约（MVP-10 ②）。
+  # 值默认从环境变量注入（BONE_IAM_JWT_SECRET_KEY / BONE_JWT_SECRET），未设置则回落为空（dev / 单测自签自验）。
+  iam:
+    jwt:
+      secret:
+        key: ${BONE_IAM_JWT_SECRET_KEY:}
+  jwt:
+    secret: ${BONE_JWT_SECRET:}

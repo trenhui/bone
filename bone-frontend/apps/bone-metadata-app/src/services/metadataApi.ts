@@ -453,6 +453,86 @@ export const runtimeRecordApi = {
     ),
 };
 
+/** 审批任务行（`wf_task` 投影 + 所属单据坐标/摘要）。 */
+export interface ApprovalTaskRow {
+  taskId: string;
+  instanceId: string;
+  nodeCode: string;
+  assigneeId: string;
+  status: string;
+  decision?: string | null;
+  comment?: string | null;
+  createdAt?: string;
+  decidedAt?: string | null;
+  pending: boolean;
+  entityCode?: string;
+  recordId?: string;
+  instancePhase?: string;
+  currentNode?: string;
+  instanceMissing?: boolean;
+  /** 行级不可见时为 null（待办条目本身仍列出）。 */
+  summary?: Record<string, unknown> | null;
+}
+
+/** 单据审批概况（实例 + 待办 + 轨迹）。 */
+export interface ApprovalDescribe {
+  entityCode: string;
+  recordId: string;
+  started: boolean;
+  instance?: Record<string, unknown>;
+  pendingTasks?: ApprovalTaskRow[];
+  trail?: ApprovalTaskRow[];
+}
+
+/**
+ * 审批中心（2026-10-25，RuntimeApprovalController）。
+ *
+ * 待办真源是 `wf_task` 的指派快照，不是单据上的 `approver_id` 字段过滤——
+ * 后者在「任务已改派 / 指派快照与单据字段不一致」时必然失真。
+ */
+export const runtimeApprovalApi = {
+  pending: (page = 1, size = 20): Promise<ApiResponse<PageResult<ApprovalTaskRow>>> =>
+    api.get<never, ApiResponse<PageResult<ApprovalTaskRow>>>(
+      `${RUNTIME}/approval/tasks/pending`,
+      { params: { page, size } },
+    ),
+
+  decided: (page = 1, size = 20): Promise<ApiResponse<PageResult<ApprovalTaskRow>>> =>
+    api.get<never, ApiResponse<PageResult<ApprovalTaskRow>>>(
+      `${RUNTIME}/approval/tasks/decided`,
+      { params: { page, size } },
+    ),
+
+  describe: (entityCode: string, recordId: string): Promise<ApiResponse<ApprovalDescribe>> =>
+    api.get<never, ApiResponse<ApprovalDescribe>>(
+      `${RUNTIME}/approval/records/${encodeURIComponent(entityCode)}/${encodeURIComponent(recordId)}`,
+    ),
+
+  reassign: (taskId: string, assigneeId: string, reason?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/tasks/${encodeURIComponent(taskId)}/reassign`,
+      { assigneeId, reason },
+    ),
+
+  urge: (taskId: string, comment?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/tasks/${encodeURIComponent(taskId)}/urge`,
+      { comment },
+    ),
+
+  assign: (instanceId: string, assigneeId: string, nodeCode?: string, reason?: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/instances/${encodeURIComponent(instanceId)}/assign`,
+      { assigneeId, nodeCode, reason },
+    ),
+
+  terminate: (instanceId: string, reason: string) =>
+    api.post<unknown, ApiResponse<Record<string, unknown>>>(
+      `${RUNTIME}/approval/instances/${encodeURIComponent(instanceId)}/terminate`,
+      { reason },
+    ),
+};
+
 /**
  * 界面列投影覆盖的用户级存取（0042 · P2-④ 服务端化）。
  *

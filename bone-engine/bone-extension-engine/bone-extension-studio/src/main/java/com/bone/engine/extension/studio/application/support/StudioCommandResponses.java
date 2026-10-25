@@ -3,12 +3,11 @@ package com.bone.engine.extension.studio.application.support;
 import com.bone.core.common.CommonErrorCodes;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
+import com.bone.core.model.ProblemDetails;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
-import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.extpoint.ExtPoint;
 import java.util.Optional;
-import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,8 +76,15 @@ public final class StudioCommandResponses {
 
   public static ResponseEntity<ApiResponse<ProblemDetail>> problem(
       HttpStatus status, String errorCode, String detail) {
-    ProblemDetail body = ProblemDetail.of(errorCode, status.value(), detail);
-    body.setTraceId(MDC.get(StudioRequestContextFilter.TRACE_ID));
+    // 统一走 bone-core 工厂（i18n 方案 §6.2.1「把 problem 工厂上提到 bone-core，各模块不再各自复制」）：
+    //   type  = https://bone.wps.cn/problems/<errorCode 小写下划线转连字符>
+    //   title = HTTP 状态文本（Bad Request / Not Found …）
+    //   traceId 由工厂从 MDC("traceId") 读取——与 StudioRequestContextFilter.TRACE_ID 同一 key，
+    //     故原先那行手写 setTraceId 是冗余的，删除后行为不变。
+    // 改造前用遗留 ProblemDetail.of：type 恒 about:blank、title 直接放 errorCode，
+    // 与其余 10 处落点（bone-web/iam/system/masterdata/file/integration/metadata/generator×2）形状不一致。
+    // errorCode/status/detail 三字段不变，前端 i18n 只消费 errorCode ⇒ 对前端与监控零影响。
+    ProblemDetail body = ProblemDetails.of(errorCode, status.value(), detail);
     return ResponseEntity.status(status).body(ApiResponse.error(status.value(), detail, body));
   }
 

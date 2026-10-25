@@ -32,7 +32,6 @@ import com.bone.workflow.starter.spi.RoleMemberProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -44,8 +43,10 @@ import org.springframework.context.annotation.Bean;
  * WorkflowEngineAutoConfiguration} 装配（显式 {@code @AutoConfigureAfter} 保证端口 bean
  * 先注册）。两侧解耦，平台耦合全部收敛在本配置类。
  *
- * <p><b>条件装配而非硬装配</b>：指派解析依赖 IAM 仓储、状态推进依赖运行时动作服务。宿主没引这些模块时， 对应端口 bean
- * 不创建（引擎随之不装配或由宿主自备实现），<b>不打挂宿主启动</b>。
+ * <p><b>端口硬装配</b>：starter 反向依赖 {@code bone-metadata-server}，{@code JdbcRuntimeRecordService} 与
+ * {@code RuntimeActionApplicationService} 在合法部署里必然存在，端口 bean 直接注入这两个依赖——不再用
+ * {@code @ConditionalOnBean} 去判定组件扫描型 bean（自动配置阶段对其判定不可靠，会导致引擎静默不装配）。依赖缺失时由 Spring 在注入点
+ * fail-fast（报错信息清晰），而非静默跳过。
  *
  * <p><b>持久化通道</b>：{@code wf_*} 全部经 bone-metadata-sdk 的 {@code @Sql} 代理（{@link
  * com.bone.workflow.starter.config.WorkflowSdkRepositoryConfig} 注册）——2026-10-24 收敛，HC-006 豁免已移除。
@@ -93,7 +94,6 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  @ConditionalOnBean(JdbcRuntimeRecordService.class)
   public WorkflowRecordPort workflowRecordPort(JdbcRuntimeRecordService recordService) {
     return new RuntimeRecordDataPort(recordService);
   }
@@ -107,7 +107,6 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public WorkflowStatusPort workflowStatusPort(
       RuntimeActionApplicationService actionService,
       WorkflowIdGenerator idGenerator,
@@ -121,7 +120,6 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusIntentExecutor workflowStatusIntentExecutor(
       RuntimeActionApplicationService actionService,
       WorkflowInstanceRepository instanceRepository) {
@@ -141,17 +139,13 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   }
 
   /**
-   * 状态投影中继。
-   *
-   * <p>条件与 {@link #workflowStatusIntentExecutor} 一致（{@code RuntimeActionApplicationService} 在场）：
-   * 宿主没引平台动作服务（纯引擎场景）时不创建中继，<b>不打挂启动</b>。此时发件箱仍会累积意图， 由宿主的对账作业或后续接入时补投。
+   * 状态投影中继：把发件箱里的状态意图投递到平台动作服务，最终一致地推进单据状态。
    *
    * <p>注意：{@code @Scheduled} 需宿主开启 {@code @EnableScheduling}；未开启时静默忽略， 宿主也可自行按周期调用 {@code
    * runOnce(...)}。
    */
   @Bean
   @ConditionalOnMissingBean
-  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusProjectionRelay workflowStatusProjectionRelay(
       WorkflowStatusOutboxRepository outbox, StatusIntentExecutor executor) {
     return new StatusProjectionRelay(outbox, executor, 100, 8);

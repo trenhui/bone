@@ -17,7 +17,6 @@ import com.bone.workflow.starter.adapter.LoggingNotificationPort;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,14 +24,15 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 审批流引擎自动装配。
  *
- * <p><b>装配边界</b>：引擎本体只有在宿主提供了<b>全部端口</b>时才装配——端口（定义仓储 / 实例仓储 / 指派解析 / 业务数据 / 状态推进 / 审计 / id 生成）由平台侧
- * 集成配置（{@link WorkflowBoneIntegrationAutoConfiguration}）提供。缺端口不是引擎的错（可能是只想引入纯领域规则的
- * 场景），因此此时<b>不</b>装配引擎，而不是抛异常把宿主启动打挂。
+ * <p><b>装配边界（硬装配，fail-fast）</b>：引擎本体一律装配——7 个端口（定义仓储 / 实例仓储 / 指派解析 / 业务数据 / 状态推进 / 审计 / id
+ * 生成）由平台侧集成配置（{@link WorkflowBoneIntegrationAutoConfiguration}）在同一 starter
+ * 内无条件提供，合法部署里必然齐备。若真有端口缺失（例如 {@code SqlExecutor} 类不在 classpath 导致集成配置整体跳过），由 Spring 在 {@code
+ * workflowEngine} 注入点抛出点名缺失端口的清晰异常，<b>而不是静默不装配引擎</b>。
  *
- * <p><b>为什么必须显式 {@code @AutoConfigureAfter}</b>：{@code EngineConfiguration} 的
- * {@code @ConditionalOnBean} 按<b>类型</b> 判定 7 个端口 bean 是否在场——该条件只有在端口 bean
- * <b>定义已注册</b>后才可能成立，因此本配置必须排在集成配置<b>之后</b>。 当前类名字母序（{@code WorkflowBone... <
- * WorkflowEngine...}）碰巧满足，但那是巧合：任一类改名即复现 2026-10-21 实证过的 「引擎静默不装配、零报错」事故。顺序必须显式声明，不依赖命名。
+ * <p><b>为什么不再用 {@code @ConditionalOnBean} 判定端口</b>：此前用 {@code @ConditionalOnBean(7 端口)} 门禁引擎，
+ * 但该条件在内嵌配置类上按类型判定 7 个端口时不可靠——集成配置的 {@code @Bean} 定义尚未对条件评估可见时即被判定为「缺失」， 复现 2026-10-21 / 2026-10-25
+ * 两次实证过的「引擎静默不装配、零报错」事故（{@code /actuator/conditions} 可见：仅组件扫描的 {@code ExpenseWorkflowStatusPort}
+ * 可见，其余 6 个集成端口均报 did-not-find）。 故改为硬装配：端口齐备（常态）即装配；真缺则 fail-fast，问题当场暴露。
  */
 @AutoConfiguration
 @AutoConfigureAfter(WorkflowBoneIntegrationAutoConfiguration.class)
@@ -69,17 +69,12 @@ public class WorkflowEngineAutoConfiguration {
     return new LoggingNotificationPort();
   }
 
-  /** 引擎本体：仅在全部端口就位时装配。 */
+  /**
+   * 引擎本体：无条件装配（7 端口由集成配置保证齐备；缺失则注入点 fail-fast）。
+   *
+   * <p>见类注释「为什么不再用 {@code @ConditionalOnBean} 判定端口」——不能用类型条件门禁，否则回到静默不装配。
+   */
   @Configuration(proxyBeanMethods = false)
-  @ConditionalOnBean({
-    WorkflowDefinitionRepository.class,
-    WorkflowInstanceRepository.class,
-    ApproverResolver.class,
-    WorkflowRecordPort.class,
-    WorkflowStatusPort.class,
-    WorkflowAuditPort.class,
-    WorkflowIdGenerator.class
-  })
   static class EngineConfiguration {
 
     @Bean

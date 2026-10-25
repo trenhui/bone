@@ -67,7 +67,7 @@ FORBIDDEN = [
     ('AI 硬配额回到 2000 元默认值（会在 2.7% 用量处误降级）', 'landing',
      r'硬配额 \*\*2000 元/月/租户\*\*'),
     ('AI 配额默认值回退（AI 方案）', 'ai', r'软配额 500 元/月/租户'),
-    ('超期关单 Job 登记为已建（实机核码：包与类均不存在）', 'landing', r'CloseExpiredClaimJob` 已建'),
+    # 2026-10-25 二次核码：CloseExpiredClaimJob 已真实落地（事项2 时 mvn clean test 116/0/0，事项7 后全模块 120/0/0），旧 FORBIDDEN（禁登记"已建"）撤销；改由下方 REQUIRED 防回退至"未落地"
     ('bone-ai 端口登记为已接入（实为零实现）', 'landing', r'bone-ai 适配器随 `bone-ai-orchestration` 接入'),
     ('PRD 裸承诺 99.99% 无档位前提（超卖）', 'prd', r'\|系统可用性\|99\.99%（对外承诺）'),
 ]
@@ -98,9 +98,9 @@ REQUIRED = [
     ('一期后督抽检落地边界核码登记', 'landing', r'落地边界（2026-10-23 核码登记）'),
     ('选型表登记 Higress 待验证', 'landing', r'Higress 为候选'),
     ('存证可选口径（选型表）', 'landing', r'第三方区块链存证为\*\*可选\*\*'),
-    ('超期关单能力/入口分线登记', 'landing', r'触发入口一期未建'),
+    ('超期关单 Job 已建登记（分线：CloseExpiredClaimJob 已建 / 其余 3 Job 待建）', 'landing', r'CloseExpiredClaimJob.{0,8}已建'),
     ('端点路径分歧登记（§10.6 偏离 #6）', 'landing', r'任务中心路径'),
-    ('单测计数核码登记（114=90+24）', 'landing', r'90 例 JUnit \+ 24 条 ArchUnit'),
+    ('单测计数核码登记（136=112+24）', 'landing', r'112 例 JUnit \+ 24 条 ArchUnit'),
     ('I1 文本层子集口径（PRD 验收）', 'prd', r'数电票文本层子集'),
     ('质检三件未落地登记', 'landing', r'质检三件'),
     ('adapter/schedule 入口未建登记', 'landing', r'adapter/schedule` 触发入口'),
@@ -115,6 +115,7 @@ REQUIRED = [
     ('MVP 三段式排期（乐观/基准/保守）', 'mvp', r'基准 13 周（推荐）'),
     ('MVP 人日合计校正（145）', 'mvp', r'145 人日'),
     ('PRD 99.99% 档位前提', 'prd', r'99\.99% 自 V2 同城双活起适用'),
+    # 超期关单 Job 防回退至"未落地" 已由上方 REQUIRED（CloseExpiredClaimJob.{0,8}已建）覆盖，此处不再单列
 ]
 
 

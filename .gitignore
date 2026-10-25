@@ -296,3 +296,6 @@ ui_e2e_loginpage.cjs
 data/
 qlcheck/
 .run-jars/
+
+# Playwright 浏览器二进制缓存（由 @playwright/test 下载，非源码，体积大，勿入库）
+.pw-browsers/
