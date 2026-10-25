@@ -10,7 +10,6 @@ import com.bone.claim.domain.repository.SettlementRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.util.DistributedIdGenerator;
 import java.math.BigDecimal;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,17 +84,35 @@ public class SettlementApplicationService {
   }
 
   /**
-   * 审核通过进入硬预占（≥1 万走 REVIEW_FREEZE 双人复核）。
+   * 审核通过（第一道认证）：小额直接硬预占，≥1 万进入复核冻结。
    *
    * <p>职责分离的比较基准（第一审核人）取自赔案聚合的 {@code firstReviewerId}——那是经 token 认证、
    * 实际领取核赔任务的人。该值<b>不再接受调用方传入</b>：由客户端指定「谁被排除在复核之外」等于自我豁免。
+   *
+   * <p>复核人名单同样没有入参：大额的第二道认证由 {@link #confirmReview} 以另一个真实身份完成。
    */
   @Transactional
-  public SettlementResult auditPass(long claimId, String operatorId, List<String> reviewerIds) {
+  public SettlementResult auditPass(long claimId, String operatorId) {
     SettlementOrder order = requireMutable(claimId);
     String firstReviewerId =
         claimCaseApplicationService.getClaimWithItems(claimId).get(0).getFirstReviewerId();
-    order.auditPass(operatorId, reviewerIds, firstReviewerId);
+    order.auditPass(operatorId, firstReviewerId);
+    settlementRepository.save(order);
+    domainEventPublisher.publishFrom(order);
+    return toResult(order);
+  }
+
+  /**
+   * 大额复核放行（第二道认证）：{@code REVIEW_FREEZE → HARD_RESERVED}。
+   *
+   * <p>复核人与审核发起人的区分由聚合判定（同一个 userId 会被拒），本层不提供任何「指定复核人」参数。
+   */
+  @Transactional
+  public SettlementResult confirmReview(long claimId, String operatorId) {
+    SettlementOrder order = requireMutable(claimId);
+    String firstReviewerId =
+        claimCaseApplicationService.getClaimWithItems(claimId).get(0).getFirstReviewerId();
+    order.confirmReview(operatorId, firstReviewerId);
     settlementRepository.save(order);
     domainEventPublisher.publishFrom(order);
     return toResult(order);

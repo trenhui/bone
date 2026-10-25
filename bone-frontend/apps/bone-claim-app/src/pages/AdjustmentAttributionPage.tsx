@@ -23,8 +23,6 @@ import adjustSchema from '../schemas/adjust-attribution.ui-schema.json';
  * 展示与动作均 schema 驱动，单一真源在 `adjust-attribution.ui-schema.json`。
  */
 
-const REVIEWER_ID = 'reviewer-001'; // 演示环境固定核赔员；生产取登录态
-
 /** actionBar 动作码 → 展示标签（展示层映射，判定逻辑由 schema + 引擎单一真源负责）。 */
 const ACTION_LABELS: Record<string, string> = {
   execute: '执行理算',
@@ -101,7 +99,7 @@ export function AdjustmentAttributionPage(): ReactElement {
   const runConfirm = async () => {
     setActing(true);
     try {
-      await adjustApi.confirm(claimId, REVIEWER_ID);
+      await adjustApi.confirm(claimId);
       message.success('核赔已确认（结果锁定）');
       void load();
     } catch {

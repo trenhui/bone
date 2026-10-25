@@ -9,6 +9,7 @@ SELECT
        attempt,
        paid_at,
        status,
+       review_first_approver,
        tenant_id,
        created_at,
        updated_at,

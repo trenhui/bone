@@ -54,8 +54,6 @@ const STATUS_TAG: Record<ClaimStatusName, { color: string; label: string }> = {
   APPEALING: { color: 'volcano', label: '申诉中' },
 };
 
-const REVIEWER_ID = 'reviewer-001'; // 演示环境固定核赔员；生产取当前登录用户
-
 const REJECT_TYPES = [
   { value: '03', label: '03 就诊医院不符合责任医院规则' },
   { value: '04', label: '04 诊断不符合责任免赔规则' },
@@ -127,7 +125,6 @@ export function ReviewWorkbenchPage(): ReactElement {
     try {
       await claimApi.decide(decisionTarget.claimId, {
         decision: values.decision,
-        reviewerId: REVIEWER_ID,
         comment: values.comment,
         rejectType: values.rejectType,
         approvedAmount: values.approvedAmount,
@@ -258,7 +255,7 @@ export function ReviewWorkbenchPage(): ReactElement {
                       type="link"
                       size="small"
                       onClick={async () => {
-                        await claimApi.claimAdjustTask(row.claimId, REVIEWER_ID);
+                        await claimApi.claimAdjustTask(row.claimId);
                         message.success('已领取');
                         void load();
                       }}
@@ -284,7 +281,7 @@ export function ReviewWorkbenchPage(): ReactElement {
                       type="link"
                       size="small"
                       onClick={async () => {
-                        await claimApi.submitForSecondReview(row.claimId, 'reviewer-002');
+                        await claimApi.submitForSecondReview(row.claimId);
                         message.success('已发起双人复核');
                         void load();
                       }}

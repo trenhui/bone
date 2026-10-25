@@ -81,6 +81,13 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   @Column(name = "insured_state")
   private Integer insuredState;
 
+  /** 审计时间戳（显式声明：省略列会撞 {@code NOT NULL} 无默认值的 DDL）。 */
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   @Transient
   @Cascade(foreignKey = "quotaAccountId", orphanRemoval = false)
   private List<QuotaTransaction> transactions = new ArrayList<>();
@@ -113,6 +120,9 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
     this.deductibleUsed = ZERO;
     this.capUsed = ZERO;
     this.insuredState = 0;
+    Instant now = Instant.now();
+    this.createdAt = now;
+    this.updatedAt = now;
   }
 
   public static QuotaAccount open(
@@ -275,6 +285,8 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
       BigDecimal before,
       BigDecimal after,
       String idempotencyKey) {
+    Instant now = Instant.now();
+    this.updatedAt = now;
     QuotaTransaction txn =
         QuotaTransaction.of(
             txnId,
@@ -288,7 +300,7 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
             before,
             after,
             idempotencyKey,
-            Instant.now());
+            now);
     this.transactions.add(txn);
     return txn;
   }

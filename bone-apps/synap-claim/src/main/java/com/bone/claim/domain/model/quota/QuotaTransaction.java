@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Date;
 import lombok.Getter;
 
 /**
@@ -52,6 +53,21 @@ public class QuotaTransaction extends AbstractEntity {
   @Column(name = "occurred_at")
   private Instant occurredAt;
 
+  /**
+   * 租户与审计时间戳。
+   *
+   * <p>本类继承的是不带租户的 {@code AbstractEntity}，而 {@code t_quota_transaction.tenant_id} 是 {@code NOT
+   * NULL}；审计列同理——不显式声明即被 INSERT 省略，直接撞非空约束。
+   */
+  @Column(name = "tenant_id", nullable = false)
+  private Long tenantId;
+
+  @Column(name = "created_at", nullable = false)
+  private Date createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Date updatedAt;
+
   QuotaTransaction() {}
 
   QuotaTransaction(
@@ -68,6 +84,7 @@ public class QuotaTransaction extends AbstractEntity {
       String idempotencyKey,
       Instant occurredAt) {
     setId(id);
+    this.tenantId = tenantId;
     this.quotaAccountId = quotaAccountId;
     this.claimId = claimId;
     this.settlementNo = settlementNo;
@@ -78,6 +95,8 @@ public class QuotaTransaction extends AbstractEntity {
     this.afterAmount = afterAmount;
     this.idempotencyKey = idempotencyKey;
     this.occurredAt = occurredAt;
+    this.createdAt = Date.from(occurredAt);
+    this.updatedAt = Date.from(occurredAt);
   }
 
   static QuotaTransaction of(

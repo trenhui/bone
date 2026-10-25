@@ -23,8 +23,6 @@ import { appealApi, type AppealReviewResult, type AppealResult } from '../servic
  * 读走 `appealApi.latest`（controller），写走同 controller（自带 @PreAuthorize + 幂等）。
  */
 
-const REVIEWER_ID = 'reviewer-001';
-
 const APPEAL_STATUS: Record<string, { color: string; label: string }> = {
   SUBMITTED: { color: 'processing', label: '已受理' },
   REVIEWED: { color: 'green', label: '已复议' },
@@ -89,9 +87,9 @@ export function AppealPage(): ReactElement {
   };
 
   const onSubmit = () =>
-    run(() => appealApi.submit(claimId, { reason }, REVIEWER_ID), '申诉已受理');
+    run(() => appealApi.submit(claimId, { reason }), '申诉已受理');
   const onReview = () =>
-    run(() => appealApi.review(claimId, { result: reviewResult, reason }, REVIEWER_ID), '复议结论已生效');
+    run(() => appealApi.review(claimId, { result: reviewResult, reason }), '复议结论已生效');
 
   const statusTag = appeal ? (APPEAL_STATUS[appeal.status] ?? { color: 'default', label: appeal.status }) : null;
   const resultTag = appeal?.reviewResult

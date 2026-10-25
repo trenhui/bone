@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Date;
 import lombok.Getter;
 
 /**
@@ -46,6 +47,17 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
   @Column(name = "event_time", nullable = false)
   private Instant eventTime;
 
+  /**
+   * 审计时间戳（与 {@code event_time} 同值：追加式表只写一次）。
+   *
+   * <p>同 {@code SettlementOrder}：不显式声明就会被 INSERT 省略，而列是 {@code NOT NULL} 无默认值。
+   */
+  @Column(name = "created_at", nullable = false)
+  private Date createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Date updatedAt;
+
   FundingEvent() {}
 
   FundingEvent(
@@ -71,6 +83,8 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
     this.accountType = accountType == null ? AccountType.NO_ACCOUNT.name() : accountType.name();
     this.idempotencyKey = idempotencyKey;
     this.eventTime = eventTime;
+    this.createdAt = Date.from(eventTime);
+    this.updatedAt = Date.from(eventTime);
   }
 
   static FundingEvent of(
