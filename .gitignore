@@ -296,3 +296,6 @@ ui_e2e_loginpage.cjs
 data/
 qlcheck/
 .run-jars/
+
+# Playwright 探针浏览器缓存（575MB，可再生，勿入库）
+.pw-browsers/
