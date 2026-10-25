@@ -35,8 +35,10 @@ spring:
               - "http://127.0.0.1:3008"
               - "http://localhost:3009"
               - "http://localhost:3012"
+              - "http://localhost:3013"
               - "http://127.0.0.1:3009"
               - "http://127.0.0.1:3012"
+              - "http://127.0.0.1:3013"
             allowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
             allowedHeaders: "*"
             allowCredentials: true
@@ -103,6 +105,13 @@ spring:
           uri: ${BONE_METADATA_SERVER_URI:http://localhost:9001}
           predicates:
             - Path=/api/v1/metadata/**, /api/v1/runtime/**
+        # 智能理赔域：synap-claim（:8087，2026-10-25 联调补全启动引导后登记）。
+        # 前端 bone-claim-app(:3013) 经 claimApi.ts 收敛调用 /api/v1/claims/**（只走网关，
+        # 与其余微应用同口径）；缺此路由时理赔页全部接口 404，链路断在第一跳。
+        - id: synap-claim
+          uri: ${BONE_CLAIM_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/claims/**
 
 # 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
 bone:

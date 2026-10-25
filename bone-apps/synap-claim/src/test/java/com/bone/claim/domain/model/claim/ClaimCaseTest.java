@@ -36,6 +36,7 @@ class ClaimCaseTest {
         List.of(
             ClaimItem.of(
                 2001L,
+                1L,
                 1001L,
                 "诊查费",
                 "",
@@ -183,6 +184,7 @@ class ClaimCaseTest {
           List.of(
               ClaimItem.of(
                   2002L,
+                  1L,
                   1002L,
                   "住院治疗费",
                   "",
@@ -265,6 +267,7 @@ class ClaimCaseTest {
         List.of(
             ClaimItem.of(
                 2L,
+                1L,
                 1L,
                 "诊查费",
                 "",

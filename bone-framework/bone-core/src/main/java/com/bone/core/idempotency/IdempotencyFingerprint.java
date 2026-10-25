@@ -19,7 +19,8 @@ public final class IdempotencyFingerprint {
 
   private static final String EMPTY = "empty";
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  // 与快照序列化共用同一份配置（JSR-310 + ISO-8601），理由见 IdempotencyJson。
+  private static final ObjectMapper MAPPER = IdempotencyJson.MAPPER;
 
   private IdempotencyFingerprint() {}
 

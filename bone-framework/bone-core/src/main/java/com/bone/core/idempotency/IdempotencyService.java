@@ -4,7 +4,6 @@ import com.bone.core.exception.IdempotentException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.tenant.context.TenantContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -50,8 +49,8 @@ public class IdempotencyService {
 
   private final IdempotencyStore store;
 
-  private final ObjectMapper objectMapper =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  // 快照与指纹共用同一份 ObjectMapper 配置（JSR-310 + ISO-8601），真源见 IdempotencyJson。
+  private final ObjectMapper objectMapper = IdempotencyJson.MAPPER;
 
   public IdempotencyService(IdempotencyStore store) {
     this.store = store;

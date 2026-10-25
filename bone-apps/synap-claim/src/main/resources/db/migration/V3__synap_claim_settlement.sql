@@ -20,7 +20,7 @@ CREATE TABLE settle_order (
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
   updated_at      DATETIME(3)   NOT NULL COMMENT '更新时间',
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   UNIQUE KEY uk_settlement_no (tenant_id, settlement_no),
   KEY idx_claim (claim_id, created_at)
@@ -43,8 +43,8 @@ CREATE TABLE settle_funding_event (
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   updated_at    DATETIME(3)  NOT NULL          COMMENT '更新时间',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   UNIQUE KEY uk_tenant_idem (tenant_id, idempotency_key),
-  KEY idx_settlement (settlement_id, event_id)
+  KEY idx_settlement (settlement_id, id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '资金流水(追加式)';

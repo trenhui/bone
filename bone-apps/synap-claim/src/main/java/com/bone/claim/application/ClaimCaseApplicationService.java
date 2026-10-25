@@ -85,6 +85,7 @@ public class ClaimCaseApplicationService {
                 dto ->
                     ClaimItem.of(
                         DistributedIdGenerator.generateLongId(),
+                        tenantId,
                         claimId,
                         dto.itemName(),
                         dto.itemCode(),
@@ -106,6 +107,7 @@ public class ClaimCaseApplicationService {
             command.invoiceNo(),
             command.outInsureTime(),
             command.batchNo(),
+            command.idempotencyKey(),
             snapshot.planVersion(),
             items);
     // 报案即受理签收（员工端提交 = 已受理；缺件走后续 requestEvidence，不阻塞受理）
@@ -341,6 +343,27 @@ public class ClaimCaseApplicationService {
       java.time.Instant outInsureTime,
       String batchNo,
       List<ClaimItemDto> items) {
+
+    /**
+     * 测试/控制器辅助：注入幂等键（record wither）。
+     *
+     * <p>幂等键来自 {@code Idempotency-Key} 请求头而非请求体（MapStruct 从体映射，该字段恒为 null）， 控制器在 {@code
+     * toSubmitClaim} 后调用本方法把 header 值补进命令——域层查重 （{@code findByIdempotencyKey}）与 {@code
+     * t_claim_case.idempotency_key} NOT NULL 列都依赖它。
+     */
+    public SubmitClaim withIdempotencyKey(String idempotencyKey) {
+      return new SubmitClaim(
+          idempotencyKey,
+          policyNo,
+          planId,
+          insuredIdHash,
+          claimType,
+          invoiceCode,
+          invoiceNo,
+          outInsureTime,
+          batchNo,
+          items);
+    }
 
     /** 测试/域内辅助：替换出险时间（record wither）。 */
     public SubmitClaim withOutInsureTime(java.time.Instant outInsureTime) {

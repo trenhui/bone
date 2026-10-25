@@ -19,6 +19,7 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -26,6 +27,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -166,6 +168,12 @@ public class GlobalExceptionHandler {
     if (ex instanceof InfrastructureException) {
       return infrastructureExceptionHandler((InfrastructureException) ex).getBody();
     }
+    if (ex instanceof IdempotentException) {
+      return idempotentExceptionHandler((IdempotentException) ex).getBody();
+    }
+    if (ex instanceof MissingRequestHeaderException) {
+      return missingRequestHeaderExceptionHandler((MissingRequestHeaderException) ex).getBody();
+    }
 
     if (ex instanceof BizException) {
       return bizExceptionHandler((BizException) ex).getBody();
@@ -192,6 +200,22 @@ public class GlobalExceptionHandler {
         BAD_REQUEST.getCode(),
         CommonErrorCodes.VALIDATION_FAILED,
         String.format("请求参数缺失:%s", ex.getParameterName()));
+  }
+
+  /**
+   * 处理必填请求头缺失（{@code @RequestHeader} 未标 {@code required=false} 且调用方未传）。
+   *
+   * <p><b>必须是 400</b>：缺头是调用方契约违约，与服务端故障无关；落兜底 500 会误导客户端重试、 并污染服务端错误率 SLI。2026-10-25 理赔联调在 {@code
+   * X-Operator-Id} / {@code X-Approved-Amount} 上实测到该缺口。
+   */
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ApiResponse<?>> missingRequestHeaderExceptionHandler(
+      MissingRequestHeaderException ex) {
+    log.warn("[missingRequestHeaderExceptionHandler]", ex);
+    return problemResponse(
+        BAD_REQUEST.getCode(),
+        CommonErrorCodes.VALIDATION_FAILED,
+        String.format("请求头缺失:%s", ex.getHeaderName()));
   }
 
   /**
@@ -409,6 +433,20 @@ public class GlobalExceptionHandler {
     String errorCode =
         ex.getErrorCode() != null ? ex.getErrorCode() : CommonErrorCodes.INTERNAL_ERROR;
     return problemResponse(toHttpStatus(ex.getCode()), errorCode, ex.getMessage());
+  }
+
+  /**
+   * 处理幂等冲突：同一 {@code Idempotency-Key} 被用于不同请求体。
+   *
+   * <p><b>为什么必须是 409 而不是 500</b>：这是<strong>调用方错误</strong>（客户端复用了不该复用的键）， 语义上等同于 HTTP 409
+   * Conflict；返回 500 会让客户端重试、监控误判为服务端故障。错误码 {@link CommonErrorCodes#IDEMPOTENCY_CONFLICT} 早已定义并带
+   * i18n 文案，此前只是共享 handler 未接线，导致所有模块的幂等冲突统一落到兜底 500（2026-10-25 理赔联调确诊）。
+   */
+  @ExceptionHandler(value = IdempotentException.class)
+  public ResponseEntity<ApiResponse<?>> idempotentExceptionHandler(IdempotentException ex) {
+    log.warn("[idempotentExceptionHandler]", ex);
+    return problemResponse(
+        HttpStatus.CONFLICT.value(), CommonErrorCodes.IDEMPOTENCY_CONFLICT, ex.getMessage());
   }
 
   @ExceptionHandler(value = SystemException.class)

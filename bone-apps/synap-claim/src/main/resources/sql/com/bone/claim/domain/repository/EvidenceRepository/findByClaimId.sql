@@ -1,5 +1,5 @@
--- 案件证据列表（租户锚点：SDK 自动注入 tenant_id = :__boneTenantId__）
-SELECT id,
+SELECT
+       id,
        claim_id,
        doc_type,
        file_ref,
@@ -17,6 +17,6 @@ SELECT id,
        deleted
 FROM t_claim_evidence
 WHERE claim_id = :claimId
-  AND deleted = 0
+  AND deleted = 0 AND
   /*bone:tenant*/
 ORDER BY created_at

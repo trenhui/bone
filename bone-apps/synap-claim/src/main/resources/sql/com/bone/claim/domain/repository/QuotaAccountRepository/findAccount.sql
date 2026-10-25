@@ -1,5 +1,5 @@
--- 定位额度账户（维度键与 UK 一致：tenant + 被保人 + 保单 + 计划 + 年度 + 维度 + 责任）
-SELECT id,
+SELECT
+       id,
        insured_id_hash,
        policy_no,
        plan_id,
@@ -24,6 +24,6 @@ WHERE insured_id_hash = :insuredIdHash
   AND quota_year = :quotaYear
   AND quota_type = :quotaType
   AND liability_uuid = :liabilityUuid
-  AND deleted = 0
+  AND deleted = 0 AND
   /*bone:tenant*/
 LIMIT 1

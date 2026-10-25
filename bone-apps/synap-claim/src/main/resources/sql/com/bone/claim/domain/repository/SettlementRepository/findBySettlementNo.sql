@@ -1,5 +1,5 @@
--- 按结算单号查（幂等去重入口）
-SELECT id,
+SELECT
+       id,
        settlement_no,
        claim_id,
        claim_no,
@@ -14,6 +14,6 @@ SELECT id,
        updated_at,
        version
 FROM settle_order
-WHERE settlement_no = :settlementNo
+WHERE settlement_no = :settlementNo AND
   /*bone:tenant*/
 LIMIT 1

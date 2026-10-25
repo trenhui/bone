@@ -111,9 +111,11 @@
             <plugin><groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <!-- synap-claim 是领域库模块（无 @SpringBootApplication 主类），
-                         不参与可执行 fat jar 打包；repackage 在无主类时会直接失败。 -->
-                    <skip>true</skip>
+                    <!-- 2026-10-25 联调收尾：ClaimApplication 主类已补齐（模块从"领域库"
+                         升级为可运行服务），repackage 恢复执行，产出可执行 fat jar。
+                         端口默认 8087（application.yml，BONE_CLAIM_PORT 可覆盖）；
+                         网关路由 /api/v1/claims/** 见 bone-gateway application.yml。 -->
+                    <mainClass>com.bone.claim.ClaimApplication</mainClass>
                 </configuration>
             </plugin>
             <plugin><groupId>org.apache.maven.plugins</groupId>

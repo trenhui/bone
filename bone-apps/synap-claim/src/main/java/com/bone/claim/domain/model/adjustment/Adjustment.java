@@ -88,7 +88,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   private String resultStatus;
 
   @Transient
-  @Cascade(foreignKey = "calculation_id", orphanRemoval = false)
+  @Cascade(foreignKey = "calculationId", orphanRemoval = false)
   private List<AdjustmentLine> lines = new ArrayList<>();
 
   @Version
@@ -172,18 +172,18 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     BigDecimal selfPay1Total = ZERO;
     StringBuilder inputBuilder = new StringBuilder("[");
     for (ClaimWithItemsProjection row : rows) {
-      if (row.itemId() == null) {
+      if (row.getItemId() == null) {
         continue; // 无明细的纯头行跳过（LEFT JOIN 语义）
       }
-      boolean inSocialScope = !socialOnly || "IN".equalsIgnoreCase(row.itemSocialFlag());
-      BigDecimal valid = nz(row.itemValidAmount());
+      boolean inSocialScope = !socialOnly || "IN".equalsIgnoreCase(row.getItemSocialFlag());
+      BigDecimal valid = nz(row.getItemValidAmount());
       if (inSocialScope) {
         base = base.add(valid);
       }
-      selfPay1Total = selfPay1Total.add(nz(row.itemSelfPay1()));
+      selfPay1Total = selfPay1Total.add(nz(row.getItemSelfPay1()));
       inputBuilder
           .append("{\"item\":\"")
-          .append(row.itemName())
+          .append(row.getItemName())
           .append("\",\"valid\":")
           .append(valid)
           .append(",\"inScope\":")

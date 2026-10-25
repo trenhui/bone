@@ -1,5 +1,5 @@
--- 资金流水（追加式不可变，对账与审计事实源）
-SELECT id,
+SELECT
+       id,
        settlement_id,
        settlement_no,
        claim_id,
@@ -12,6 +12,6 @@ SELECT id,
        tenant_id,
        created_at
 FROM settle_funding_event
-WHERE settlement_id = :settlementId
+WHERE settlement_id = :settlementId AND
   /*bone:tenant*/
 ORDER BY id

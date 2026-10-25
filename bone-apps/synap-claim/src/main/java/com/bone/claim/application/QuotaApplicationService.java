@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.Year;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>幂等：{@code idempotencyKey = {claimNo}:{stage}:{attempt}}（§7.5），同键重复调用直接跳过（不二次占额）。 额度变更经 {@code
  * QuotaTransaction} 落流水，不另发领域事件（{@link NoDomainEvent}）。
  */
+@Service
 @NoDomainEvent
 @RequiredArgsConstructor
 public class QuotaApplicationService {

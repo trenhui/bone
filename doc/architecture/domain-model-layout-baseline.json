@@ -15,6 +15,11 @@
       "module": "bone-blueprint",
       "path": "domain/extension",
       "reason": "扩展点业务端口（OrderPriceCalculator 等），启动类 @EnableExtensionPoints 以字符串包名引用；同上"
+    },
+    {
+      "module": "bone-apps/synap-claim",
+      "path": "domain/security",
+      "reason": "理赔域内的 PII / 大模型输出安全策略（PiiMasker、MaskedText、SafePromptBuilder、LlmOutputGuard）。它们是纯领域规则（等长掩码、白名单提示词组装、输出护栏），不依赖 Spring 与任何适配器，故不属 infrastructure；按 ADR-0036 R3 登记为模块自有领域策略子包"
     }
   ]
 }

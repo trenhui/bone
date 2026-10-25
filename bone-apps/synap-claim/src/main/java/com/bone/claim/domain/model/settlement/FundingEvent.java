@@ -21,6 +21,10 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
   @Column(name = "settlement_no", nullable = false)
   private String settlementNo;
 
+  /** 所属结算单（级联外键，与根同事务落盘；对齐 settle_funding_event.settlement_id NOT NULL）。 */
+  @Column(name = "settlement_id", nullable = false)
+  private Long settlementId;
+
   @Column(name = "claim_id", nullable = false)
   private Long claimId;
 
@@ -48,6 +52,7 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
       Long id,
       Long tenantId,
       String settlementNo,
+      Long settlementId,
       Long claimId,
       FundingStage stage,
       BigDecimal amount,
@@ -58,6 +63,7 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
     setId(id);
     setTenantId(tenantId);
     this.settlementNo = settlementNo;
+    this.settlementId = settlementId;
     this.claimId = claimId;
     this.stage = stage.name();
     this.amount = amount;
@@ -71,6 +77,7 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
       Long id,
       Long tenantId,
       String settlementNo,
+      Long settlementId,
       Long claimId,
       FundingStage stage,
       BigDecimal amount,
@@ -82,6 +89,7 @@ public class FundingEvent extends TenantAbstractEntity<Long> {
         id,
         tenantId,
         settlementNo,
+        settlementId,
         claimId,
         stage,
         amount,

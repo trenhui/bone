@@ -22,7 +22,7 @@ CREATE TABLE appeal_record (
   version         BIGINT        NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   created_by    BIGINT       DEFAULT NULL COMMENT '创建人ID',
   updated_by    BIGINT       DEFAULT NULL COMMENT '修改人ID',
-  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除'
+  deleted       TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (id),
   UNIQUE KEY uk_appeal_no (tenant_id, appeal_no),
   KEY idx_claim (claim_id, created_at)

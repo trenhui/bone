@@ -1,5 +1,5 @@
--- 计划下生效责任（租户锚点由 SDK 注入）
-SELECT id,
+SELECT
+       id,
        liability_uuid,
        liability_version,
        plan_id,
@@ -18,6 +18,6 @@ SELECT id,
 FROM t_adj_liability
 WHERE plan_id = :planId
   AND status = 'ACTIVE'
-  AND deleted = 0
+  AND deleted = 0 AND
   /*bone:tenant*/
 ORDER BY id

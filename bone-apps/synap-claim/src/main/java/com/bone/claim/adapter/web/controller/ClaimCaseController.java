@@ -80,6 +80,10 @@ public class ClaimCaseController {
       @Parameter(description = "报案请求") @Valid @RequestBody SubmitClaimReq request,
       HttpServletRequest httpRequest) {
     SubmitClaim command = claimCaseAssembler.toSubmitClaim(request);
+    // 幂等键来自请求头（MapStruct 从体映射不到），补进命令供域层查重与 NOT NULL 列落库
+    if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+      command = command.withIdempotencyKey(idempotencyKey);
+    }
     String method = httpRequest.getMethod();
     String path = httpRequest.getRequestURI();
 

@@ -1,5 +1,5 @@
--- 理算明细行（归因成分链，拒赔五要素事实认定的数据基础）
-SELECT id,
+SELECT
+       id,
        calculation_id,
        liability_uuid,
        line_type,
@@ -18,6 +18,6 @@ SELECT id,
        updated_at
 FROM t_adj_calculation_line
 WHERE calculation_id = :calculationId
-  AND deleted = 0
+  AND deleted = 0 AND
   /*bone:tenant*/
 ORDER BY id

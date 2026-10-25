@@ -65,6 +65,7 @@ class DecisionGraphExecutorTest {
             List.of(
                 ClaimItem.of(
                     1L,
+                    1L,
                     1001L,
                     "门诊费",
                     "C1",

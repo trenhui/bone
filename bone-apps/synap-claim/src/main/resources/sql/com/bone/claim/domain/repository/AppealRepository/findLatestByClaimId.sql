@@ -1,5 +1,5 @@
--- 案件最新申诉记录
-SELECT id,
+SELECT
+       id,
        appeal_no,
        claim_id,
        claim_no,
@@ -17,7 +17,7 @@ SELECT id,
        updated_at,
        version
 FROM appeal_record
-WHERE claim_id = :claimId
+WHERE claim_id = :claimId AND
   /*bone:tenant*/
 ORDER BY created_at DESC
 LIMIT 1
