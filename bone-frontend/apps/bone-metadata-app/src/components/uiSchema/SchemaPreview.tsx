@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { parseEnumValues } from '@bone/shared-types';
 import {
-  controlBaseStates, evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
+  controlBaseStates, enforceableFieldCodes, evalCond, fieldVisible, linkageState, resolveVariant, resolveVisibleActions, runSubmit, validateControlValues,
   type BoneUiSchema, type Control, type FieldUiState, type Section, type UiContext, type VariantMatch,
 } from '@bone/ui-schema';
 import type { MetaField } from '../../types';
@@ -657,10 +657,13 @@ export default function SchemaPreview({
 
   const doSubmit = () => {
     const snapshot = structuredClone(data);
-    const r = runSubmit(snapshot, resolved.submitRules ?? [], resolved.linkageRules ?? [], ctx, baseRequired);
-    // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，预览=运行时同源
     const formControls = (formOf(resolved).sections ?? []).flatMap((s) => s.controls ?? []);
-    const c = validateControlValues(snapshot, formControls, baseRequired);
+    // 必填强制域收窄与运行时（BoneDynamicForm）严格同源：附件/明细行无物理列，
+    // 前端若比后端严会把「本应放行」的提交拦在预览里，预览即失真。
+    const enforceable = enforceableFieldCodes(formControls, fields.map((f) => f.code));
+    const r = runSubmit(snapshot, resolved.submitRules ?? [], resolved.linkageRules ?? [], ctx, baseRequired, enforceable);
+    // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，预览=运行时同源
+    const c = validateControlValues(snapshot, formControls, baseRequired, enforceable);
     setResult({ errors: [...r.errors, ...c.errors], warnings: [...r.warnings, ...c.warnings] });
   };
 

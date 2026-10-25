@@ -660,6 +660,7 @@ export function runSubmit(
   linkage: LinkageRule[] = [],
   ctx: UiContext = {},
   baseRequired: Record<string, boolean> = {},
+  enforceableFields?: ReadonlySet<string> | null,
 ): SubmitResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -752,6 +753,12 @@ export function runSubmit(
   const st = linkageState(data, linkage, ctx, baseRequired);
   for (const [f, s] of Object.entries(st)) {
     if (s.visible && s.required) {
+      // 强制域收窄：主记录无物理列的字段不参与必填强制（与后端 runRequiredShortcuts 的
+      // enforceableFields 同口径）。这类字段（ATTACHMENT/CHILD_TABLE）的值归关系端点管，
+      // 主记录里恒取不到值 ⇒ 强制必填即永久死锁。实证：理赔样例 LINK-EVID-01 是
+      // 「when evidences isNull ⇒ then required」的自引用规则，不收窄会让所有申请都提交不了，
+      // 而其后端本就因同一理由跳过（UiSchemaRuleEnforcer#physicallyBackedFields）。
+      if (enforceableFields && !enforceableFields.has(f)) continue;
       const v = data[f];
       if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) {
         errors.push(`【必填】${f} 不能为空`);
@@ -777,10 +784,47 @@ export function runSubmit(
 const NUMERIC_KINDS = new Set<ControlKind>(['NUMBER', 'MONEY', 'SLIDER']);
 const TEXT_KINDS = new Set<ControlKind>(['INPUT', 'TEXTAREA']);
 
+/**
+ * 主记录<b>没有物理列</b>的控件种类：附件与明细行的值归关系端点管，主记录里恒取不到值。
+ *
+ * <p>与后端 {@code UiSchemaRuleEnforcer#physicallyBackedFields}（以引擎 {@code hasColumn} 为权威判据）
+ * 同取向：后端靠列存在性判定，前端没有列目录，故以协议层控件种类为判据。 新增「无列」种类时必须在此补一项，
+ * 否则必填强制会对它形成永久死锁（前端比后端严，用户穷举也过不了）。
+ */
+const NO_COLUMN_KINDS: ReadonlySet<string> = new Set(['ATTACHMENT', 'CHILD_TABLE']);
+
+/**
+ * 可强制必填的字段码集合 = 全部字段码 − 无物理列控件字段码。
+ *
+ * <p>传给 {@link runSubmit} / {@link validateControlValues} 的 {@code enforceableFields}，
+ * 使前端必填强制域与后端严格同口径（后端只遍历 {@code entity.columns()} 与
+ * {@code physicallyBackedFields}，从不要求附件/明细行非空）。
+ *
+ * @param controls 表单视图全量控件（含无列种类）
+ * @param fieldCodes 实体全量字段码（{@code fields.map(f => f.code)}）
+ */
+export function enforceableFieldCodes(
+  controls: Control[] = [],
+  fieldCodes: Iterable<string> = [],
+): Set<string> {
+  const excluded = new Set<string>();
+  for (const c of controls) {
+    if (c.fieldCode && NO_COLUMN_KINDS.has(c.controlKind ?? '')) {
+      excluded.add(c.fieldCode);
+    }
+  }
+  const out = new Set<string>();
+  for (const code of fieldCodes) {
+    if (code && !excluded.has(code)) out.add(code);
+  }
+  return out;
+}
+
 export function validateControlValues(
   data: Record<string, unknown>,
   controls: Control[] = [],
   baseRequired: Record<string, boolean> = {},
+  enforceableFields?: ReadonlySet<string> | null,
 ): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -794,7 +838,14 @@ export function validateControlValues(
 
     // 必填覆盖：仅控件显式要求且元数据未要求时由本函数报（避免与 runSubmit 的元数据必填双报）
     if (c.required === true && !baseRequired[code]) {
-      if (empty) { errors.push(`【必填】${code} 不能为空`); continue; }
+      // 无物理列字段不参与必填强制（与 runSubmit 同口径，见该处说明）：只跳过必填判定，
+      // 后续最值/长度/正则校验照旧，不得因提前 continue 把整个控件的其他约束一并吞掉。
+      if (enforceableFields && !enforceableFields.has(code)) {
+        // 跳过必填
+      } else if (empty) {
+        errors.push(`【必填】${code} 不能为空`);
+        continue;
+      }
     }
     if (empty) continue;
 

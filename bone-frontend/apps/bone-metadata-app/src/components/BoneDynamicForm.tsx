@@ -9,6 +9,7 @@ import { isRenderSupported } from '../utils/columnProjection';
 import { parseEnumValues } from '@bone/shared-types';
 import {
   controlBaseStates,
+  enforceableFieldCodes,
   fieldVisible,
   linkageState,
   resolveVisibleActions,
@@ -279,10 +280,13 @@ export const BoneDynamicForm: React.FC<Props> = ({
     // 异常降级为可见校验错误，而非静默崩溃。
     let merged: { errors: string[]; warnings: string[] };
     try {
-      const r = runSubmit(data, submitRules, linkageRules, ctx, baseRequiredOf(fields));
-      // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，与预览同源
       const formControls = (form?.sections ?? []).flatMap((s) => s.controls ?? []);
-      const cv = validateControlValues(data, formControls, baseRequiredOf(fields));
+      // 必填强制域收窄：附件/明细行在主记录无物理列，恒取不到值；对它们强制必填即永久死锁
+      // （后端本就跳过，前端不同步收窄会「比后端严」拦住所有提交）。
+      const enforceable = enforceableFieldCodes(formControls, fields.map((f) => f.code));
+      const r = runSubmit(data, submitRules, linkageRules, ctx, baseRequiredOf(fields), enforceable);
+      // N4：控件级校验（必填覆盖 / 最值 / 长度 / 正则）与提交规则叠加，与预览同源
+      const cv = validateControlValues(data, formControls, baseRequiredOf(fields), enforceable);
       merged = { errors: [...r.errors, ...cv.errors], warnings: [...r.warnings, ...cv.warnings] };
     } catch (err) {
       console.error('[BoneDynamicForm] 提交前校验异常，已降级为可见错误', err);
