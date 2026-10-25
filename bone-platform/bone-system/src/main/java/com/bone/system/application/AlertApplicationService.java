@@ -6,6 +6,7 @@ import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.system.application.command.CreateAlertRuleCommand;
 import com.bone.system.application.command.UpdateAlertRuleCommand;
+import com.bone.system.application.port.out.AlertNotifierPort;
 import com.bone.system.application.port.out.MetricValuePort;
 import com.bone.system.application.query.dto.AlertRecordDto;
 import com.bone.system.application.query.dto.AlertRuleDto;
@@ -44,6 +45,7 @@ public class AlertApplicationService {
   private final AlertRecordRepository alertRecordRepository;
   private final DomainEventPublisher domainEventPublisher;
   private final MetricValuePort metricValuePort;
+  private final AlertNotifierPort alertNotifierPort;
 
   /** 一次评估的统计摘要（评估了多少、触发/更新/恢复/跳过各多少），供定时 Job 记录日志。 */
   public record EvaluationSummary(
@@ -87,6 +89,7 @@ public class AlertApplicationService {
         } else {
           AlertRecord record = createTriggeredRecord(rule, value);
           alertRecordRepository.save(record);
+          alertNotifierPort.notifyTriggered(rule, record);
           domainEventPublisher.publishFrom(record);
           triggered++;
         }
@@ -210,6 +213,7 @@ public class AlertApplicationService {
                 "指标 %s 当前值 %.2f 超过阈值 %.2f",
                 rule.getMetricName().value(), actualValue, rule.getThreshold().value()));
     alertRecordRepository.save(record);
+    alertNotifierPort.notifyTriggered(rule, record);
     domainEventPublisher.publishFrom(record);
     return Optional.of(record.getId());
   }
