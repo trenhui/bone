@@ -43,12 +43,9 @@ export function createBoneMicroAppRenderer<P extends { user?: Record<string, unk
     );
   }
 
-  async function bootstrap() {
-    console.log(`[${appName}] bootstraped`);
-  }
+  async function bootstrap() {}
 
   async function mount(props: BoneMicroAppProps) {
-    console.log(`[${appName}] mounted`, props);
     // S-4：Qiankun Shell 经 props 下发 token，统一写入 localStorage，
     // 供 apiClient 读取（dev 入口 main.tsx 已做同样处理，这里补上微应用入口的缺口，避免 401）。
     const token = (props as { token?: string })?.token;
@@ -63,7 +60,6 @@ export function createBoneMicroAppRenderer<P extends { user?: Record<string, unk
       root.unmount();
       root = null;
     }
-    console.log(`[${appName}] unmounted`);
   }
 
   return { render, bootstrap, mount, unmount };

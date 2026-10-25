@@ -17,12 +17,9 @@ interface QiankunMountProps {
 
 let root: ReactDOM.Root | null = null;
 
-export const bootstrap = async (): Promise<void> => {
-  console.log('Bone Generator App bootstraped');
-};
+export const bootstrap = async (): Promise<void> => {};
 
 export const mount = async (props: QiankunMountProps): Promise<void> => {
-  console.log('Bone Generator App mounted with props:', props);
   const container = props.container || document.getElementById('root');
   root = ReactDOM.createRoot(container!);
   root.render(
@@ -33,16 +30,13 @@ export const mount = async (props: QiankunMountProps): Promise<void> => {
 };
 
 export const unmount = async (): Promise<void> => {
-  console.log('Bone Generator App unmounted');
   if (root) {
     root.unmount();
     root = null;
   }
 };
 
-export const update = async (props: QiankunMountProps): Promise<void> => {
-  console.log('Bone Generator App updated with props:', props);
-};
+export const update = async (props: QiankunMountProps): Promise<void> => {};
 
 // 独立运行时
 if (!window.__POWERED_BY_QIANKUN__) {
