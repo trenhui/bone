@@ -90,6 +90,7 @@
     "COMMON_NOT_IMPLEMENTED": "Capability not implemented",
     "COMMON_RATE_LIMITED": "Too many requests, please retry later",
     "COMMON_UNAUTHORIZED": "Sign in required or session expired",
+    "COMMON_UNSUPPORTED_MEDIA_TYPE": "Unsupported Content-Type; upload endpoints require multipart/form-data",
     "COMMON_VALIDATION_FAILED": "Validation failed: {{errors}}",
     "EXT_DEPLOY_STATE_INVALID": "Operation not allowed in the current deployment state",
     "EXT_EXT_POINT_NOT_FOUND": "Related extension point not found",

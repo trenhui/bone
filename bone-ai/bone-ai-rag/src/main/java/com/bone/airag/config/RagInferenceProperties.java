@@ -66,6 +66,15 @@ public class RagInferenceProperties {
   private long slowRetrieveMs = 500;
 
   /**
+   * 阶段级检索链路计时（B16 / R6 子项，opt-in，默认关）：开启时每次 retrieve 末尾汇总各阶段墙钟时延事件 （{@code RETRIEVE_STAGES}，形如
+   * {@code acl=..;embed=..;score=..;rerank=..;mmr=..;assemble=..;total=..;candidates=..}）， 经
+   * RagEventSink 落 trace 证据快照，供诊断 / 压测期定位性能瓶颈（与 {@code RETRIEVE_SLOW} 同告警线）。
+   *
+   * <p>默认关闭——每查询多落一条证据快照，生产常态不付该开销；待接入 OTel 后升级为真实 gen_ai.* 子 span。
+   */
+  private boolean stageTracingEnabled = false;
+
+  /**
    * 上下文 token 预算（{@code bone.ai.rag.context-token-budget}）：进入提示词的上下文总量上限，超出按最终分从高到低截断。
    *
    * <p>默认 0 = 不限制（由调用方/编排层兜底）。它与网关 LLM {@code maxTokens}、系统提示词预留共同构成端到端上下文预算
@@ -105,6 +114,22 @@ public class RagInferenceProperties {
 
     /** 允许的无支撑句占比上限（默认 0 = 零容忍，任一句无支撑即整体拒答）。 */
     private double maxUnsupportedRatio = 0.0;
+
+    /**
+     * 语义接地裁判开关（{@code bone.ai.rag.grounding.judge-enabled}，<b>默认 false = opt-in</b>；R5）。
+     *
+     * <p>开启 = 确定性守卫过关后追加一次 NLI 语义裁判（经网关卡面，<b>另一次模型调用</b>）， paraphrase 编造（词面全对但结论上下文没给）才有运行时防线； 关闭 =
+     * 仅确定性守卫（零额外成本，默认形态）。
+     *
+     * <p><b>为何默认关而非默认开（与 ACL 默认 deny 的取向不同，是成本与收益的分野）</b>：默认 deny ACL 无额外成本、放行即越权，
+     * 故默认收紧；而语义裁判让<b>每次问答成本约翻倍</b>（生成 + 裁判两次模型调用），对成本敏感租户是硬负担。 且确定性守卫（无据拒答 / 引用强制 / 逐句词面支撑 /
+     * 数字一致性）始终在岗，默认并非「不校验」。语义级运行时防线是<b>高合规场景按需开启</b>的增强层， 与离线评测期 faithfulness 判官（{@code
+     * AnswerQualityJudge}，另一条独立度量的能力面）职责不同、不互相替代。
+     *
+     * <p>故障已设计为回落确定性守卫 + {@code GROUNDING_JUDGE_DEGRADED} 降级痕迹（不因裁判故障拒答），故开启后风险可控；
+     * 关闭时响应不再出现该痕迹，监控可据此确认回退生效。
+     */
+    private boolean judgeEnabled = false;
   }
 
   @Getter

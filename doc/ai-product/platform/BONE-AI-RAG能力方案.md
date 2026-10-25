@@ -1,15 +1,19 @@
 # BONE-AI RAG 能力方案（独立版）
 
-> **版本**：v1.8　**日期**：2026-10-24（R1「接 G」落地：回答链接入网关卡面 + /answer 端点 + 生成故障收敛 + 注入纵深防护随网关生效）　**归口**：平台架构组
+> **版本**：v1.11　**日期**：2026-10-24（B16 细粒度检索链路 span 落地，R6 子项闭环）　**归口**：平台架构组
 > **v1.1 变更（基于 2026 业界最佳实践二次优化）**：① 修正测试口径（ArchUnit 12 条 + 单测 31 例 = 43 校验项，原「43 绿」表述不精确）；② §5.1 增补检索双路**并发**优化点（当前顺序执行）；③ §6 新增「间接提示注入防护」专节 + 锐化「无依据拒答」契约 + §6.2 RAG→生成闭环接线细化（结合已落地的网关流式 / 强制引用 / 内容安全 / PII 脱敏）；④ §9 增补**细粒度 OTel span**（每阶段时延）；⑤ §10 增补**上下文 token 预算**契约；⑥ §11 对齐矩阵补 B14–B17、路线图补 R7/R8；⑦ §12 生产就绪清单同步刷新。
 > **v1.2 变更（诊断复核驱动的优化，见《方案诊断复核》同源补充）**：① **[已落地代码]** 修复 `minScore` 量纲漂移高危项——`minScore` 仅当分数为 rerank 量纲（rerank 正常且未降级）时生效，rerank 降级/未配置时跳过阈值，杜绝事故期误杀全部结果（commit 见下）；② §6.2 明确「强制引用接地」在生成侧仍需**网关新增 grounding 校验**（当前网关无按 `RagResult` 锚点校验生成接地的能力，标注为目标态）；③ §7 补**写入侧数据保护**（入库明文 PII 风险）；④ §10 `max-scan` 行补推荐水位 + P99 延迟告警建议、优先级上提；⑤ §10 `min-score` 行补量纲安全说明；⑥ §11 矩阵 B7 重分类为「❌ 缺口/过渡」、B10 提升语义缓存优先级、新增 B18 嵌入版本轮换策略、R5 评测前置；⑦ §12 生产就绪清单刷新；⑧ §13 防回归决策补 #9（量纲安全）/#10（接地守卫+写入侧保护+评测前置）。
 > **v1.3 变更（「企业复杂场景胜任度」诊断驱动，见《RAG方案诊断-企业复杂场景胜任度-2026-10-24》）**：**聚焦落地不依赖外部服务、低风险、高信号的代码止血 + 评测前置脚手架**，真实 P0 项（pgvector R4 / 文档中心 ACL 接线 B / 网关 grounding 守卫 C）维持目标态（见 §11 路线图）。① **[已落地代码] 规模止血可观测**：新增 `SCOPE_NEAR_LIMIT`（作用域切片数超 `warn-scan-threshold` 未触 `max-scan` 即预警）+ `RETRIEVE_SLOW`（单次检索墙钟超 `slow-retrieve-ms` 即预警）两事件码，撞上限前先给信号（引导下调 `max-scan` 或推进 R4 索引化），而非等 OOM/超时爆发；② **[已落地代码] ingest 批量嵌入吞吐**：`EmbeddingPort` 新增 `embedBatch(List)`（默认逐条循环，真共享推理覆写为数组输入），`ingest` 改为「先批嵌入再失效旧切片」——fail-closed 顺序更稳（嵌入失败旧版本不动）+ 大语料入库往返与 GPU 利用率显著优化；③ **[脚手架] R5 评测前置落地为独立 sidecar**：`eval/eval_rag.py` 读 golden set + 实际检索结果 JSON，算 `context_recall`/`context_precision`/`degradation_rate`，含 `recall-gate` 门禁（CI 化说明见 `eval/README.md`），`minScore`/`MMR`/`candidate-pool` 阈值标定不再裸奔上线；④ §9 补两事件码、§10 补 `warn-scan-threshold`(2000)/`slow-retrieve-ms`(500) 两配置项、§11 矩阵补 B19（批嵌入 ✅）、§12/§13 同步刷新。
 > **v1.4 变更（中文双路口径修正 + 评测门禁 CI 化）**：**聚焦「产品真实语料是中文」这一被低估的可用性缺陷 + 把评测从脚手架变成构建内强制门禁**。① **[已落地代码] 中文分词口径统一**：`TransitionalHashEmbedding` 原按空白 `\s+` 切分——中文整句成单 token，向量路在中文语料上近乎失效（混合检索退化 BM25 单路）。抽出 `CjkTokenizer`（字母数字串 + 汉字整串 + CJK bigram，与 BM25 同口径）供两路共用，过渡嵌入版本升 `hash-64-cjk`（旧向量 fail-closed 跳过，避免混用不可比向量）；② **[已落地代码] 评测门禁 CI 化（R5 闭环）**：新增确定性 JUnit 门禁 `RagGoldenSetEvalTest`（中文 golden fixture → 每例预期切片必须落 topK，任何检索链回归即红），随 `mvn clean verify` 在 CI 强制执行；Python sidecar 保留面向真实语料/真模型的语义评测；③ 回归测试 `TransitionalHashEmbeddingTest`（中文相关 > 无关相似度 + 版本断言）；④ §5.1 补分词口径一致性说明、§11 B8 升级为「CI 门禁」、§12 补门禁行、§13 补决策 #13。
 > **v1.5 变更（生成侧接地守卫落地——把「无出处不得生成」从检索侧延伸到生成侧）**：v1.2~v1.3 一直把这项列为「网关 grounding 守卫，属 R1 目标态」。本轮把它做成**可被注入、可被回归的确定性领域组件**，R1 接线时无需再设计只差调用。① **[已落地代码] `GroundingGuard`（`domain/service`）+ `GroundingVerdict`（`domain/model`）**：生成后校验四件事——上下文非空、答案至少一处引用、引用序号必须落在本次上下文条数内（拦幻觉引用如 `[9]`）、逐句词面支撑比达标且**句中数字必须能在上下文找到**（金额/比例/期限是最易被编造的字段，词面相似而数字不同正是典型幻觉形态）；任一不满足即 `grounded=false`，语义是**拒答**而非服务异常。② **[已落地代码] 应用门面 + 事件下沉**：`RagApplicationService.verifyGrounding(answer, contexts)` 一行接入（判定规则留在领域层，应用层只做编排），不通过时发 `GROUNDING_REJECTED` 事件——拒答率与 `RETRIEVE_SLOW`/降级事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。③ **[已落地代码] 装配**：`RagAutoConfiguration` 暴露 `GroundingGuard` Bean（`@ConditionalOnMissingBean`，可被更强实现覆盖），阈值走 `bone.ai.rag.grounding.*`；`AiRagErrorCodes.GROUNDING_FAILED` 为对外错误码。④ §3.2 补判定契约、§6.2 落地态澄清改为「组件就绪、待 R1 接线」、§10 补两阈值、§11 补 B20、§12/§13 同步。⑤ **边界如实标注**：词面级校验不是语义蕴含判定（同义改写可能假阴、拼接句可能假阳），终局须叠加 NLI/LLM faithfulness；中文数字暂不归一化。
 > **v1.8 变更（R1「接 G」落地：回答链接入网关卡面，形成「R → G」生产闭环）**：v1.6 把回答链在 rag 内闭环、v1.7 收口 P0 后，R1 剩余工作（① 组合根网关适配器 ② 调用点挂载 ④ 注入纵深防护）本轮全部落地，**「RAG 真正可用」的标志达成**。① **[已落地代码] 组合根网关适配器 `RagAnswerGenerationAdapter`**（bone-ai-app）：`AnswerGenerationPort` → `LlmGatewayApplicationService.invoke`（与 `GatewayJudgeAdapter` 同构——模型调用唯一入站，不直连 SPI 开侧门），模型档位走 `bone.ai.rag-answer-model`（缺省与网关门面同档，接地质量对档位敏感，按评测集实测上调）；RAG 生成自此**自动继承网关全治理链**：红线短路 → 租户配额 → **提示注入检测（user 原文 = 数据围栏包裹的检索上下文，R1 子项④ 间接注入纵深防护随本适配器接线而生效，无需另造 machinery）** → 场景档位路由 → 出口脱敏 → 缓存 → 输出内容安全；② **[已落地代码] `POST /api/ai/v1/rag/answer` 端点**（`RagController`）：与 `/retrieve` 共用同一受控检索与请求级护栏口径，返回完整闭环产出（`answered`/`answer`/`errorCode`/`verdict`/`contexts`/`degradations`/`estimatedTokens`/`truncated`）；③ **[已落地代码] 生成故障收敛为可控拒答**：新增 `AnswerGenerationException`（端口故障载体，`errorCode` 保真透传），`RagAnswerService.answer` 对生成调用 try/catch——治理拒绝（注入疑似 `AI_GATEWAY_INJECTION_SUSPECTED` / 配额 / 红线 / 内容安全）保留原 errorCode、未知运行时故障归一 `AI_RAG_ANSWER_GENERATION_UNAVAILABLE`，均收敛为 `RagAnswerOutcome.unavailable(...)`（此前该工厂已定义但无调用点，属死代码，本轮成为活路径）：**异常不再冲出编排边界**，「这次答不了」不会升级成业务流程中断；④ **R1 剩余边界如实标注**：`bone-ai-orchestration` 仍未依赖 rag（回答链当前挂载在 app REST 层而非编排层，编排侧接线随 workflow 引擎排期）；③ 文档中心 ACL 接入属接入方契约（`RagAclPort`  seam + DenyDocAcl 默认拒绝已就位，接入方提供 Bean 即放行）；⑤ §3 接线边界、§5.2、§6.2、§11 B9/B15 矩阵与 R1 路线图、§12 清单、§13 决策 #17 同步刷新。
+> **v1.9 变更（诊断复核 §7.4 剩余缺口闭环：faithfulness 语义评测落地 + pgvector 索引化设计）**：聚焦 §7.4 两个真实缺口——③ faithfulness 语义级评测、② pgvector 索引化。① **[已落地代码] faithfulness 双判官分层（RAGAS 2026 同构）**：rag 侧 `HeuristicAnswerQualityJudge`（零依赖确定性，CJK 友好 bigram 包含度，CI 门禁用，`RagAnswerGoldenSetEvalTest` 回答级 golden-set 门禁随 `mvn clean verify` 强制，含幻觉/半据半编阴性对照）+ app 侧 `LlmAnswerQualityJudge`（走 `JudgePort` 经网关计量，opt-in 离线语义校准）；两层齐备才是完整 RAG 评测形态（确定性守底线、LLM 担语义）；`AnswerQuality` 不变量校验三项 ∈[0,1] + fail-closed（空上下文/空答案/解析畸形一律 0 分并带回原因，禁静默放行）；REST `POST /api/ai/v1/eval/judge/answer-quality` 暴露语义评判。② **[已落地设计] pgvector 索引化 §14（缺口②闭环）**：`VectorSearchPort` 抽象把"向量检索"从"MySQL 全量载入 + 应用层余弦"拆出；迁移四阶段（双写 → 存量回填 → 影子评测 → 切流退役）零停机可回退；验收闸门 recall@10 ≥ 0.98 / P99 ≤ 现有内存路径 / 索引构建耗时可控；回退 fail-closed（pgvector 不可用时回落内存精确或 BM25 单路，开关 `bone.ai.rag.vector.mode` 按阶段推进可一键回退）；选型 pgvector 而非 ES/Milvus/FAISS standalone（复用 PG 运维、与关系元数据同事务边界、HNSW/IVFFlat ANN 成熟、不引第三套检索栈运维税）。③ §3.1 校正"终局 MySQL JSON 列"旧表述为 pgvector 终局、§11 B7/B8/R4/R5 + §12 清单 + §13 决策 #18(pgvector 分层)/#19(faithfulness 双判官) 同步刷新。
+> **v1.10 变更（R5 运行时语义接地裁判 opt-in + R6 检索事件落 trace 证据快照）**：v1.9 把 faithfulness 做成**离线评测**（度量），本轮补两处**运行时 / 可观测**设施，与评测面互补不重叠。① **[已落地代码] 运行时语义接地裁判（R5，opt-in）**：`GroundingJudgePort`（rag 域端口）+ `GroundingJudgeVerdict`（三态：`SUPPORTED` / `UNSUPPORTED` / `JUDGE_UNAVAILABLE`）+ `NoOpGroundingJudge`（默认禁用态）+ app 侧 `LlmGroundingJudgeAdapter`（经 `LlmGatewayApplicationService` 计量，继承网关全治理链）。`RagAnswerService` 在**确定性守卫过关后**追加一层 NLI 语义校验，拦「词面全对但结论上下文没给」的 paraphrase 编造；裁判明确无支撑即拒答（`GROUNDING_JUDGE_REJECTED`），裁判自身故障**回落确定性守卫 + `GROUNDING_JUDGE_DEGRADED` 降级痕迹**（不因裁判故障拒答，也不静默放行）。**默认关（`bone.ai.rag.grounding.judge-enabled=false`）**：裁判使每次问答成本约翻倍（生成 + 裁判两次模型调用），默认只保留零成本确定性守卫；高合规场景显式开启。**与 v1.9 评测判官的分工**：`AnswerQualityJudge` 是离线度量（faithfulness / relevance / contextPrecision 三指标，评测管线 + CI 门禁），本裁判是运行时强制（二值接地，请求内拦截）——前者「测出来」，后者「挡下来」，不互相替代、不双跑同一职责。② **[已落地代码] 检索事件落 trace 证据快照（R6）**：`EvidenceType` 增 `RAG_EVENT`；app 侧 `TraceRagEventSink`（`@ConditionalOnBean(evidenceSnapshotRepository)`，经 `RagTraceConfig` 装配）把 `RagEvent` 落为证据快照（载荷 JSON + SHA-256 输入哈希 + 逐事件 traceId），替换 rag 默认 `LoggingRagEventSink`——降级事件不再只留日志，可检索 / 聚合 / 回放，与 trace 落盘成功率同一条告警线。**姿态差异（刻意，非疏漏）**：LLM 证据（`LLM_CALL`）租户缺失 fail-closed 拒落；RAG 事件（`RAG_EVENT`）租户缺失仅 WARN 跳过、落库故障不抛出（`RagEventSink` 契约：读路径可用性优先）。③ **验证**：`LlmGroundingJudgeAdapterTest`(8) + `TraceRagEventSinkTest`(6) + `RagAnswerServiceTest`(9) 全绿（本轮定向 45 例 BUILD SUCCESS）。④ §5.2 / §9 / §11 / §12 / §13 同步刷新。
+> **v1.11 变更（B16 细粒度检索链路 span 落地，R6 子项闭环）**：在 v1.10 把 RAG 事件落 trace 证据快照（R6）的基础上，把检索链从「事件级」升级为「阶段级」可观测。① **[已落地代码] 阶段级检索链路计时（B16，opt-in）**：`RagApplicationService.retrieve` 在 acl → capacity → embed → score（BM25 语料统计 + 余弦 + RRF 融合）→ rerank → mmr → assemble 各阶段打墙钟时延，汇总为 `RETRIEVE_STAGES` 事件（形如 `acl=..;capacity=..;embed=..;score=..;rerank=..;mmr=..;assemble=..;total=..;candidates=..`），经 `RagEventSink`（R6 已落 `RAG_EVENT` 证据快照）可检索 / 聚合 / 回放，与 `RETRIEVE_SLOW` 同告警线——定位「是 embed 慢还是 rerank 慢」不再靠猜。② **默认关（`bone.ai.rag.stage-tracing-enabled=false`）**：每查询多落一条证据快照，生产常态不付该开销；诊断 / 压测期显式开启。③ **OTel 升级路径**：接入 OpenTelemetry 后，本事件的阶段名即届时 `gen_ai.*` 子 span 名锚点（父 span `rag.retrieve`），无需改检索链。④ 回归测试 `RagServiceTest.stage_tracing_emits_retrieve_stages_event_when_enabled` 锁死「开启后发出阶段计时事件且字段齐备」。⑤ §10 配置表补 `stage-tracing-enabled` 行、§11 B16 矩阵 + §12 清单 + §13 同步。
+
 > **v1.7 变更（企业复杂场景诊断 P0 收口：ACL 默认 deny + 写入侧 PII 掩码 + 检索双路并发 R7）**：① **[已落地代码] 文档级 ACL 默认改 fail-closed（P0-2）**——默认实现由 `NoDocAcl`（null = 放行全租户）换为 `DenyDocAcl`（空可见集 = 拒绝检索）。企业真实形态是单租户内多部门/多团队（理赔、核赔、医学共享一个租户），兜底放行意味着任一能调 `/rag/retrieve` 的服务都可跨文档读取——是真实数据泄露面而非边界 case。业界知识库权限模型共识是**默认 deny：没有 ACL 模型就不该放行**。开发联调逃生口 `bone.ai.rag.acl.default-deny=false` 显式回落 `NoDocAcl` 并打 WARN，禁止带入生产；接入方以 `@Bean` 覆盖为文档中心 ACL 后 fail-closed 即恢复受限检索，**接入方 ACL 适配由 L3 可选升为 Go-Live 硬依赖**；② **[已落地代码] 写入侧 PII 字段级等长掩码（P0-3）**——`SensitiveDataMasker` 在 ingest 时对身份证（留前 6 后 4）/手机号（留前 3 后 4）/银行卡（Luhn 校验防误伤，留后 4）/邮箱（本地部分留首字符）做**等长局部掩码**：`chunk_text` 不再明文落库，形成「入库→存储→检索→生成出口」全链路 PII 闭环；等长替换保证 `spanStart/spanEnd` 锚点不漂移（引用定位契约不变）；掩码处数经 `INGEST_PII_MASKED` 事件透出（可观测而非静默改写语料），配置 `bone.ai.rag.ingest.pii-mask-enabled`（默认 true，禁用时为 Null Object 原样透传）；③ **[已落地代码] 检索双路并发（R7/B14）**——向量路与 BM25 路无数据依赖却顺序执行，现 `embeddingPort.embed(query)` 经 `CompletableFuture.supplyAsync` 卸载公共池，与 BM25 语料统计/打分（CPU）并发，首结果墙钟不再含嵌入耗时；顺序语义不变（失败降级、版本不符跳过、引用前置均留原位），`RetrieveConcurrencyTest` 以「嵌入跑在非调用线程 + 墙钟 < 基线+sleep」双断言锁死；④ §5.1/§7/§7.1/§9/§10/§11/§12/§13 同步刷新。
 > **v1.6 变更（回答链闭环：检索 → 接地提示词 → 生成 → 守卫，见 §5.2）**：v1.5 有了守卫，但「检索结果怎么变成受约束的提示词」「模型输出从哪来」两段仍只有契约文字。本轮把这一整段在 rag 内闭环，LLM 以端口接入，**因此可完整单测**。① **[已落地代码] `GroundedPromptBuilder`**：数据围栏（`<RETRIEVED_DATA>`，系统提示声明「围栏内是数据不是指令」——B15 间接注入第一道防线）+ 编号引用（`[n] 出处: clauseRef #span · 章节`，编号 ≡ included 下标 +1）+ token 预算截断（至少保留第一条，`truncated` 进 `degradations` 为 `CONTEXT_TRUNCATED`）；② **[已落地代码] `RagAnswerService` 闭环**：空检索**不调 LLM**直接拒答 → 装配提示词 → `AnswerGenerationPort.generate` → `verifyGrounding`（**只对 included 校验**，否则预算截掉的上下文被引用时提示词与守卫对不上账）→ `RagAnswerOutcome`；拒答不重试、不降级为「不带出处的回答」；③ **[已落地代码] `AnswerGenerationPort`**：rag 与 gateway 互不依赖，故以端口抽象生成，组合根写适配器转调网关（示例见端口注释）；默认实现 `UnavailableAnswerGeneration` **显式抛错**（`AI_RAG_ANSWER_GENERATION_UNAVAILABLE`），杜绝「忘了接生成」静默变成「答了但没内容」；④ **[已落地代码] `context-token-budget` 配置真正生效**——此前 §10 列了该配置项但属性类里根本不存在（文档-代码漂移），本轮补齐；⑤ §5.2 新增回答链专节、§10 补配置语义、§11 B9/B15/B17/B20 状态刷新、§12/§13 同步；⑥ **剩余缺口收窄**：R1 只剩「组合根写 5 行网关适配器」+ 把调用点挂到编排/接口，rag 侧闭环与守卫调用点均已就位。
-> **配套**：《BONE-AI 能力中台整体方案》（v1.15）/《详细技术方案》（v1.9）/《接入指南》（v1.8）
+> **配套**：《BONE-AI 能力中台整体方案》（v1.16）/《详细技术方案》（v1.10）/《接入指南》（v1.8）/《方案诊断复核》（v1.3）
 > **方法**：以 `bone-ai/bone-ai-rag` 模块源码 + `bone-ai-app` REST 面真源为基线，对标 2026 业界 RAG 最佳实践（Modular RAG / 混合检索 + RRF + cross-encoder 精排 / 强制引用接地 / 元数据隔离 / 可观测降级），沉淀为独立可评审方案。
 > **定位说明**：本文是 RAG 专项的独立方案文档（此前 RAG 散见于总案 §4.5 与详设 §2.6）。本文取代上述散落描述，作为 RAG 能力的权威基线；总案/详设相关段落保留交叉引用即可。
 
@@ -84,13 +88,13 @@ bone-ai-rag/
 | `doc_version` | VARCHAR | **增量幂等批键**（同版本同切片数 ⇒ 跳过；异版本/残缺 ⇒ 软删重建） |
 | `section_path` | VARCHAR | 章节面包屑（条款/章节层级） |
 | `chunk_text` | TEXT | 切片原文 |
-| `embedding` | 过渡 CSV float（终局 MySQL JSON 列） | 向量 |
+| `embedding` | 过渡 MySQL CSV float（**终局迁 pgvector ANN，见 §14 / R4**；过渡期仍存 MySQL） | 向量 |
 | `embedding_ver` | VARCHAR | 嵌入模型版本（换模型维度不符 ⇒ fail-closed 跳过向量路） |
 | `clause_ref` | VARCHAR | **引用强制锚点**（条款 id） |
 | `span_start` / `span_end` | INT | 条款内 span（引用定位原文） |
 | `deleted` | BOOLEAN | 软删（幂等重建用） |
 
-> DDL 已入 `bone-init.sql`（`ai_rag_chunk`，§12.1）。嵌入列过渡形态为 CSV float 字符串，终局迁移为 MySQL JSON 列 + 向量检索（§11 R2）。
+> DDL 已入 `bone-init.sql`（`ai_rag_chunk`）。嵌入列过渡形态为 MySQL CSV float 字符串（应用层余弦）；**终局向量检索迁 pgvector ANN（见 §14 / R4），不再走 MySQL JSON 列**——MySQL 只保留切片元数据（text / clauseRef / span / ACL），向量与 ANN 索引由专用 pgvector 实例承载，二者以 `chunk_id` 关联。
 
 ### 3.2 检索请求与结果契约
 
@@ -215,6 +219,8 @@ answer(RagQuery)
 
 **四个不可省的顺序语义**：无据不调模型 → 截断后只校验 included → 生成后必过守卫 → 拒答不重试。**第五条：生成故障不冲出编排边界**（v1.8）——治理拒绝保真 errorCode、未知故障归一 `AI_RAG_ANSWER_GENERATION_UNAVAILABLE`，均收敛为 `unavailable()`。五条都在 `RagAnswerServiceTest` 有对应回归（`skips_llm_entirely_when_retrieval_is_empty` / `validates_against_included_contexts_only_after_budget_truncation` / `refuses_when_output_contains_fabricated_number` / `answers_when_output_is_grounded_in_context` / `converges_governance_rejection_into_refusal_with_original_error_code` / `converges_unknown_generation_failure_into_unavailable`）。
 
+**第六条（v1.10，opt-in）：确定性守卫过关后可选语义裁判**——词面全对不代表结论有据（拼接句词覆盖率高、数字也全对，却是上下文没给的结论）。`GroundingJudgePort` 以 NLI 口径补这一刀：裁判明确无支撑即拒答（`GROUNDING_JUDGE_REJECTED`），裁判自身故障**回落确定性守卫 + `GROUNDING_JUDGE_DEGRADED` 降级痕迹**（不因裁判故障拒答、也不静默放行）。**默认关**（`bone.ai.rag.grounding.judge-enabled=false`）：裁判使每次问答成本约翻倍（生成 + 裁判两次模型调用），默认只保留零成本确定性守卫；高合规场景显式开启。它与 v1.9 的 `AnswerQualityJudge`（离线评测）职责不同——前者「挡下来」，后者「测出来」。回归 `RagAnswerServiceTest` 的 `refuses_when_semantic_judge_rejects_paraphrase_fabrication` / `degrades_to_deterministic_only_when_judge_unavailable` / `semantic_judge_receives_question_answer_and_included_contexts` 锁死。
+
 > 与编排层的关系：本闭环是「一次问答」的执行体，不含多轮、工具调用与人工裁决；`bone-ai-orchestration` 负责那些流程控制并调用本闭环。二者不重复，也不合并——流程策略变化不应牵动接地语义。v1.8 起本闭环经 `POST /api/ai/v1/rag/answer` 在生产拓扑可用（编排层挂载随 workflow 引擎排期）。
 
 
@@ -312,11 +318,12 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 - **事件下沉**：`RagEventSink` 端口 + `RagEvent(type, detail)`；默认 `LoggingRagEventSink` 结构化 WARN（保持既有可观测性不降级）。
 - **降级 / 数据卫生痕迹**：`EMBEDDING_DEGRADED` / `RERANK_DEGRADED` / `DROP_INVALID_CHUNKS`，既进事件通道，也透出到响应 `degradations`——接入方/评测管线可直接消费，不必翻服务端日志。
 - **规模止血预警（v1.3 落地）**：`SCOPE_NEAR_LIMIT`（作用域切片数 > `warn-scan-threshold` 但未触 `max-scan`）+ `RETRIEVE_SLOW`（单次检索墙钟 > `slow-retrieve-ms`），只进事件通道、不进 `degradations`（非能力降级，是容量/性能信号）。过渡态每次检索全量载入内存打分，切片数增长会线性推高延迟——两事件在撞上限/OOM 前先给可观测信号，与 P99 延迟告警联动即可定位「是容量还是别的」；接入方据以决定下调 `max-scan` 或推进 R4 索引化。
+- **阶段级检索计时（v1.11 落地，B16，opt-in）**：`stage-tracing-enabled=true` 时每次 retrieve 发一条 `RETRIEVE_STAGES`（`acl=..;capacity=..;embed=..;score=..;rerank=..;mmr=..;assemble=..;total=..;candidates=..`），与 `RETRIEVE_SLOW` 构成「慢不慢 → 慢在哪」两级判据——前者只答「慢」，后者答「哪一段慢」。经 R6 的 `TraceRagEventSink` 落 `RAG_EVENT` 证据快照后可聚合 / 回放；默认关（每查询多一条快照，生产常态不付该开销）。
 - **合规拒答事件（v1.5 落地）**：`GROUNDING_REJECTED`（生成答案未过接地守卫，detail 含 `reason` / `sentences` / `unsupported` / `meanSupport` / `invalidCitations`）。拒答是**正确行为**而非故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严；与降级/慢检索事件同一条告警线聚合，才能区分「检索不到」与「检索到了但模型编造」。通过时不发事件（事件通道只承载异常，避免正常流量淹没告警）。
 - **写入侧掩码事件（v1.7 落地）**：`INGEST_PII_MASKED`（ingest 时 `SensitiveDataMasker` 命中 >0 处，detail 含 doc/tenant/掩码处数）。掩码改变检索语义（精确串不再命中），属**显式数据变换**——必须可观测而非静默改写语料：运维/审计可据此回答「这个租户的语料掩了多少敏感字段」，检索命中率异常下降也可归因到「被掩码了」而非「没检索到」。
 - **目标态**：接入方以 `@Bean` 覆盖 `RagEventSink` 为 bone-ai-trace 落库 + 告警适配，检索链零改动（L3）。
 - **OTel `gen_ai.*` 打点**：仍为 L3 依赖项（需 Micrometer，走 CVE/SBOM 门禁）。
-- **细粒度检索链路 span（目标态，R6 子项）**：在 `RagEventSink` 落库基础上，建议为检索链每个阶段打**独立 span**（父 span `rag.retrieve`，子 span `rag.acl` / `rag.capacity_guard` / `rag.embed` / `rag.bm25` / `rag.rrf` / `rag.rerank` / `rag.mmr`），记录各阶段墙钟时延与候选数。价值：① 性能排查（哪段是首结果延迟瓶颈，尤指 §5.1 并发优化前的 `rag.embed`）；② RAGAS 评测时按阶段归因（召回不足在 embed/rerank，而非生成）；③ `degradations` 与 span 事件关联，告警可定位到具体降级阶段。span 命名与 `gen_ai.*` 语义约定映射表版本化，不硬编码常量。
+- **细粒度检索链路 span（目标态，R6 子项）**：在 `RagEventSink` 落库（**v1.10 已接 `TraceRagEventSink` → `RAG_EVENT` 证据快照**）基础上，建议为检索链每个阶段打**独立 span**（父 span `rag.retrieve`，子 span `rag.acl` / `rag.capacity_guard` / `rag.embed` / `rag.bm25` / `rag.rrf` / `rag.rerank` / `rag.mmr`），记录各阶段墙钟时延与候选数。价值：① 性能排查（哪段是首结果延迟瓶颈，尤指 §5.1 并发优化前的 `rag.embed`）；② RAGAS 评测时按阶段归因（召回不足在 embed/rerank，而非生成）；③ `degradations` 与 span 事件关联，告警可定位到具体降级阶段。span 命名与 `gen_ai.*` 语义约定映射表版本化，不硬编码常量。
 
 ---
 
@@ -336,6 +343,7 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 | `max-scan` | **3000**（v1.7 由 10000 下调） | 容量护栏（fail-closed）。**调优依据（v1.2→v1.7）**：10000 是「不可行点」才触发的上限，阈值以下每次查询仍全量载入内存 + BM25 统计 + 余弦，几千条时延迟已劣化却无告警；v1.7 按两级水位原则下调至 3000——与 `warn-scan-threshold` 2000 形成「预警(2000) → 硬拒(3000)」梯度，留出约 50% 缓冲带供运维在撞限前介入；仍须接 **P99 检索延迟告警**（`slow-retrieve-ms` 事件 + 指标）并按实测校准；R4（pgvector/ANN）优先级应上提，不宜等「想象规模」（见 §11） |
 | `warn-scan-threshold` | 2000 | **容量预警（v1.3）**：作用域切片数超过此值（且未触 `max-scan`）即发 `SCOPE_NEAR_LIMIT` 事件。撞上限前的可观测预警（引导下调 `max-scan` 或推进 R4），非 fail-closed。≤0 关闭 |
 | `slow-retrieve-ms` | 500 | **慢检索预警（v1.3）**：单次 retrieve 墙钟超过此值即发 `RETRIEVE_SLOW` 事件，供落 trace / 接 P99 告警。负数关闭；0 = 任意正耗时告警（调试）；按实测 P99 校准，默认 500ms 作首结果/单查询延迟经验水位 |
+| `stage-tracing-enabled` | **false**（v1.11 新增） | **阶段级检索计时开关（B16，opt-in）**：true = 每次 retrieve 汇总 `acl`/`capacity`/`embed`/`score`/`rerank`/`mmr`/`assemble`/`total` 各阶段墙钟 + `candidates` 计数，发一条 `RETRIEVE_STAGES` 事件（经 `RagEventSink` 落 trace 证据快照）。**默认关**：每查询多落一条证据快照，生产常态不付该开销；仅在性能诊断 / 压测 / 定位「embed 慢还是 rerank 慢」时开启。开启后与 `slow-retrieve-ms` 同判据：`RETRIEVE_SLOW` 说明「慢」，本事件说明「慢在哪」 |
 | `acl.default-deny` | **true**（v1.7 新增） | **文档级 ACL 默认姿态**：true = 未配 `RagAclPort` 实现时 `DenyDocAcl` 返回空可见集（全员不可见 = 拒绝检索，fail-closed）；false = 回落 `NoDocAcl`（放行全租户，仅限开发联调，装配时打 WARN）。生产必须保持 true，接入方 ACL 适配就绪前「拒绝服务」优于「裸奔越权」 |
 | `ingest.pii-mask-enabled` | **true**（v1.7 新增） | **写入侧 PII 掩码开关**：true = ingest 先做字段级等长局部掩码再嵌入存储（§7.1）；false = 明文入库（仅限开发联调，装配时打 WARN） |
 | `grounding.min-support-ratio` | 0.6 | **接地守卫阈值（v1.5）**：单句「词被所选上下文覆盖的比例」下限，低于即判该句无支撑。默认 0.6 = 「改写句能过、编造句过不去」的经验水位；须按 golden set 与线上**拒答率**校准（拒答率突增通常是实体被改写或分词口径变化，不是语料问题） |
@@ -359,16 +367,16 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 | B4 | 元数据隔离（租户 + 文档级 ACL） | 租户硬隔离 + `RagAclPort` seam + **v1.7 默认 fail-closed**（`acl.default-deny=true`，未适配即拒绝检索，不再放行全租户） | ⚠️ 默认姿态已收紧（v1.7）；**接入方 ACL 适配为 Go-Live 硬依赖** | R1：文档中心 ACL 接入（就绪前「拒绝检索」是安全默认） |
 | B5 | 切分策略（层级 / 重叠 / 调优） | 条款级 + 语义段二次切分 | ⚠️ 未层级化 | R3：parent-child / sentence-window |
 | B6 | 查询改写 / 分解（multi-query / HyDE / step-back） | **未落地**（决策：批二按评测回流启动，不建零消费方 machinery） | ❌ 缺口 | R2：编排侧多查询合并预留接线 |
-| B7 | 专用向量库 + ANN（HNSW） | 过渡 MySQL CSV + 应用层余弦（离「专用向量库 + ANN」很远） | ❌ 缺口/过渡 | R4：pgvector 终局 + ANN 索引（**优先级上提：批二放量前置依赖**——max-scan 已收紧至 3000 两级水位，索引化前检索容量到顶即硬拒，不等「想象规模」） |
-| B8 | 评测体系（RAGAS：faithfulness / context precision-recall / answer relevancy） | **构建内强制门禁**：`RagGoldenSetEvalTest`（中文 golden fixture → 每例预期切片须落 topK）随 `mvn clean verify` 在 CI 执行；离线语义评测由 `eval/eval_rag.py` sidecar 承载（faithfulness 留 LLM 接入点） | ✅ 门禁（v1.4，机制回归）/ ⚠️ 语义评测待真模型 | R5：sidecar 接 CI 负向探针 + faithfulness 回填 |
+| B7 | 专用向量库 + ANN（HNSW） | 过渡 MySQL CSV + 应用层余弦（离「专用向量库 + ANN」很远）；**v1.9 落地 §14 设计**：`VectorSearchPort` 抽象 + 四阶段迁移（双写→回填→影子→切流）+ 验收闸门 + 回退预案 | ⚠️ 设计已闭环（v1.9）/ 实现待排期 | R4：pgvector 终局 + ANN 索引（**优先级上提：批二放量前置依赖**——max-scan 已收紧至 3000 两级水位，索引化前检索容量到顶即硬拒，不等「想象规模」；**落地步骤见 §14**） |
+| B8 | 评测体系（RAGAS：faithfulness / context precision-recall / answer relevancy） | **检索门禁**：`RagGoldenSetEvalTest`（每例预期切片须落 topK，v1.4）；**回答门禁（v1.9）**：`RagAnswerGoldenSetEvalTest`（检索→判官端到端 faithfulness/answerRelevance/contextPrecision + 幻觉/半据半编阴性对照，`mvn clean verify` 强制）；**faithfulness 双判官（v1.9）**：rag `HeuristicAnswerQualityJudge`（确定性 CI）+ app `LlmAnswerQualityJudge`（走 `JudgePort` 计量，opt-in 语义校准）；REST `POST /api/ai/v1/eval/judge/answer-quality` | ✅ 检索门禁（v1.4）+ **回答级 faithfulness 门禁（v1.9，确定性）** / ⚠️ LLM 语义判官 opt-in（需 `JudgePort` 模型通道） | R5：sidecar 接 CI 负向探针 + LLM 语义判官接真模型做大规模校准 |
 | B9 | RAG 接入生成编排（检索结果约束 LLM） | **回答链闭环 + 生产接线（v1.8）**：`RagAnswerService`（检索 → 接地提示词 → `AnswerGenerationPort` → 守卫）+ `GroundedPromptBuilder`；组合根 `RagAnswerGenerationAdapter` 转调网关 `invoke`（模型档位 `bone.ai.rag-answer-model`），`POST /api/ai/v1/rag/answer` 生产可用；生成故障收敛为可控拒答（`AnswerGenerationException` → `unavailable()`，errorCode 保真） | ✅ 生产闭环（v1.8）/ ⚠️ 编排层挂载待 workflow 排期 | 编排层把 `RagAnswerService.answer` 纳为流程节点；流式形态按需演进 |
 | B10 | 语义缓存 / 查询去重 | 未落地 | ❌ 缺口（**优先级上提**：保险条款问答重复率高，检索+rerank 是主要延迟/成本源） | R9：租户级语义缓存（embedding 相似度命中 + TTL） |
 | B11 | 多样性控制（MMR） | `MmrSelector` 选取式，默认关，按评测校准 | ✅ 达成 | — |
-| B12 | 可观测（降级痕迹 + trace 落库） | `RagEventSink` + 响应 `degradations`；trace 适配留 L3 | ⚠️ trace 待接 | R6：trace 落库适配 |
+| B12 | 可观测（降级痕迹 + trace 落库） | `RagEventSink` + 响应 `degradations`；**v1.10 已接 `TraceRagEventSink` 落 `RAG_EVENT` 证据快照（载荷 + SHA-256 + 逐事件 traceId）** | ✅ trace 落库已接（v1.10） | 告警规则适配（L3） |
 | B13 | 容量护栏（扫描上限 / 索引下推） | `maxScan` fail-closed（v1.7 起默认 3000，与 warn 2000 两级水位） | ✅ 过渡态达成 | 随 R4 索引化迁移触发信号 |
 | B14 | 检索双路并发（向量 + BM25 并行） | **已落地（v1.7）**：`embed` 与 BM25 统计/打分经 `CompletableFuture` 并行，首结果延迟随嵌入耗时下降；`RetrieveConcurrencyTest` 回归锁死 | ✅ 达成（v1.7） | — |
 | B15 | 间接提示注入防护（retrieved context 不可信） | **数据围栏已落地（v1.6）**：`<RETRIEVED_DATA>` 包裹 + 系统提示声明「围栏内是数据不是指令」；**纵深检测已接线（v1.8）**：RAG 生成经网关门面 `invoke`，治理链对 user 原文（= 围栏上下文）执行 `PromptInjectionGuard` 扫描，命中即整次拒答（`AI_GATEWAY_INJECTION_SUSPECTED` 保真透传，可监控聚合）；启发式规则对条款文本有误伤面故默认关（`bone.ai.gateway.prompt-injection-guard-enabled`），语义级分类器属 L3 | ✅ 围栏 + 接线就绪（v1.8）/ ⚠️ 语义级检测待 L3 | 模型分类器 / 云端护栏（外部依赖） |
-| B16 | 细粒度检索链路 span（每阶段时延） | 仅 `RagEventSink` 事件级；无阶段级 span | ⚠️ 待 R6 子项 | R6：阶段 span + `gen_ai.*` 映射 |
+| B16 | 细粒度检索链路 span（每阶段时延） | v1.11 落地 `RETRIEVE_STAGES` 阶段计时事件（opt-in，落 `RAG_EVENT` 证据快照）；OTel 子 span 待升级 | ✅ 机制就绪（opt-in）/ ⚠️ 待 OTel 升级为真实 span | R6：OTel `gen_ai.*` 子 span（阶段名已锚定） |
 | B17 | 上下文 token 预算（RAG→LLM 上下文窗口自律） | **已落地（v1.6）**：`context-token-budget` 生效，`GroundedPromptBuilder` 顺序截断 + `CONTEXT_TRUNCATED` 痕迹；估算为近似口径（CJK=1/字母数字串=1） | ✅ 达成（v1.6，近似估算） | 真 tokenizer 随模型替入；与网关 `maxTokens` 联合调 |
 | B18 | 嵌入模型版本轮换策略 | 换模型时旧向量静默退出向量路 → 全回落 BM25，质量断崖且无主动重建 | ❌ 缺口 | R10：轮换期双写新旧向量 + 重建作业 + 质量监控 |
 | B19 | ingest 批量嵌入吞吐（大语料入库关键路径） | `EmbeddingPort.embedBatch(List)` 落地：默认逐条循环，`HttpBgeEmbeddingClient` 覆写为 TEI/infinity 数组输入；`ingest` 先批嵌入再失效旧切片（fail-closed 顺序更稳） | ✅ 达成（v1.3） | 随 R4 可调批大小 / 背压 |
@@ -380,9 +388,9 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 - **R1（接 G，v1.8 主体落地）**：把 `bone-ai-rag` 接入 `bone-ai-gateway` 门面形成「检索 → 数据围栏注入 → 网关治理链（红线/配额/注入检测/脱敏/缓存/输出内容安全）+ 强制引用接地」闭环。**已落地（v1.8）**：① 组合根网关适配器（`RagAnswerGenerationAdapter`：`AnswerGenerationPort` → `LlmGatewayApplicationService.invoke`）；② `RagAnswerService.answer` 挂载于 `POST /api/ai/v1/rag/answer`；④ 间接注入纵深防护随网关接线生效（§6.1）；生成故障收敛为可控拒答（§5.2 第五条）。**仍待办**：③ 文档中心 ACL 接入（接入方契约——`RagAclPort` seam + DenyDocAcl 默认拒绝已就位，接入方提供 Bean 即放行）；编排层（`bone-ai-orchestration`）把回答链纳为流程节点（随 workflow 引擎排期，rag 侧无需再改）。这是「RAG 真正可用」的标志——主体已达成。
 - **R2（召回提升）**：查询改写/分解（multi-query / HyDE / step-back），按评测集回流标定收益后启动；接线点预留于编排侧。
 - **R3（切分质量）**：层级切分（parent-child / sentence-window），兼顾小块召回与大块上下文；可结合**上下文嵌入（late chunking）**——整文档嵌入后按块池化，缓解小块脱离上下文的语义漂移（需嵌入模型支持长上下文）。
-- **R4（规模与性能，批二放量前置依赖）**：pgvector 独立实例 + ANN（HNSW）索引；过渡态 `maxScan` 护栏（v1.7 起 3000 硬拒 + 2000 预警两级水位）+ P99 延迟告警即迁移触发信号。不为想象规模预付 ES 第三套检索栈的运维税。**（v1.3 已先落地 `SCOPE_NEAR_LIMIT` + `RETRIEVE_SLOW` 可观测止血，R4 本体——全量内存扫描 → ANN 索引化——仍待做，不可用止血替代；且 v1.7 收紧 max-scan 后，批二放量前须完成索引化，否则 3000 上限会成为业务瓶颈。）**
-- **R5（质量闭环，前置）**：**评测须前置**——在标定 `minScore`/MMR/候选池等任何阈值之前，先落地 golden set + 指标字典 + CI 负向探针（rerank 越权、无依据路径、间接注入命中、grounding 失守）。RAGAS 为 Python 生态，建议以 **eval sidecar**（独立 Python 服务/CI job）承载，Java 侧暴露 `RagRetrieveOutcome` + 生成响应供其消费，避免把 Python 评测栈塞进 Java 构建。没有评测，所有「按评测校准」都是空话。**（v1.3 已落 `eval/eval_rag.py` 脚手架：golden vs actual 算 context recall/precision/degradation_rate + recall-gate 门禁，用法见 `eval/README.md`；v1.4 已落构建内确定性 JUnit 门禁 `RagGoldenSetEvalTest`（`mvn clean verify` 强制，中文 golden fixture 每例须落 topK）；CI 侧负向探针与 faithfulness LLM 判定待补。）**
-- **R6（可观测闭环）**：`RagEventSink` 覆盖为 bone-ai-trace 落库 + 告警；OTel `gen_ai.*` 打点接入；**阶段级 span（B16）** 一并落地。
+- **R4（规模与性能，批二放量前置依赖）**：pgvector 独立实例 + ANN（HNSW）索引；过渡态 `maxScan` 护栏（v1.7 起 3000 硬拒 + 2000 预警两级水位）+ P99 延迟告警即迁移触发信号。不为想象规模预付 ES 第三套检索栈的运维税。**（v1.3 已先落地 `SCOPE_NEAR_LIMIT` + `RETRIEVE_SLOW` 可观测止血；v1.9 已落地 §14 设计——`VectorSearchPort` + 四阶段迁移 + 验收闸门 + 回退预案；R4 本体实现待排期，不可用止血替代；v1.7 收紧 max-scan 后，批二放量前须完成索引化，否则 3000 上限会成为业务瓶颈。）**
+- **R5（质量闭环，前置）**：**评测须前置**——在标定 `minScore`/MMR/候选池等任何阈值之前，先落地 golden set + 指标字典 + CI 负向探针（rerank 越权、无依据路径、间接注入命中、grounding 失守）。RAGAS 为 Python 生态，建议以 **eval sidecar**（独立 Python 服务/CI job）承载，Java 侧暴露 `RagRetrieveOutcome` + 生成响应供其消费，避免把 Python 评测栈塞进 Java 构建。没有评测，所有「按评测校准」都是空话。**（v1.3 已落 `eval/eval_rag.py` 脚手架：context recall/precision/degradation_rate + recall-gate；v1.4 已落检索 JUnit 门禁 `RagGoldenSetEvalTest`；**v1.9 已落回答级门禁 `RagAnswerGoldenSetEvalTest`（faithfulness/answerRelevance/contextPrecision + 阴性对照）+ faithful 双判官（确定性 `HeuristicAnswerQualityJudge` + LLM `LlmAnswerQualityJudge` 走 `JudgePort`）+ REST 评判端点**；剩余：LLM 判官接真模型做大规模语义校准、CI 侧注入/grounding 负向探针。）**
+- **R6（可观测闭环）**：`RagEventSink` 覆盖为 bone-ai-trace 落库 + 告警；OTel `gen_ai.*` 打点接入。**（v1.10 已落地 `TraceRagEventSink`：`RagEvent` → trace 证据快照，替换默认 `LoggingRagEventSink`；v1.11 已落地 B16 阶段级检索链路计时 `RETRIEVE_STAGES` 事件（opt-in），落 `RAG_EVENT` 证据快照；剩余：告警规则适配 + OTel 子 span 升级）**
 - **R7（性能优化，v1.7 已落地）**：检索双路并发（B14）——`embed` 与 BM25 统计/打分经 `CompletableFuture` 并行，零新依赖、低风险，首结果延迟随嵌入耗时下降。**（已落地：`RagApplicationService` 双路并行 + `RetrieveConcurrencyTest` 回归锁死。）**
 - **R8（上下文自律）**：`context-token-budget`（B17）**已于 v1.6 随回答链落地**（`GroundedPromptBuilder` 顺序截断 + `CONTEXT_TRUNCATED` 痕迹）；后续只需与网关 `maxTokens`、系统提示词预留联合调参，并把近似 token 估算替换为模型真 tokenizer。
 - **R9（降本提速）**：租户级语义缓存（B10）——`embedding` 相似度命中 + TTL，缓存 retrieve 结果或最终答案（后者需谨慎，语料更新即失效）；保险条款问答重复率高，收益显著。**触发条件与失效策略的决策就绪材料见 ADR-4**（P99 > 500ms 持续 7 天且重复率 > 30% 才启动；缓存键含 doc_version 指纹，语料更新即失效；命中也计量防缓存侧信道）。
@@ -410,14 +418,14 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 | 生成侧接地守卫（`GroundingGuard`：引用完整性 + 逐句支撑比 + 数字一致性，v1.5） | ✅ 组件就绪（v1.5）+ 闭环内调用点已接（v1.6，见回答链行） |
 | 回答链闭环（检索 → 围栏提示词 → 生成端口 → 守卫 → 拒答，v1.6） | ✅ 代码落地（v1.6）+ **v1.8 生产接线**：组合根 `RagAnswerGenerationAdapter` 转调网关 `invoke`，`POST /api/ai/v1/rag/answer` 可用；生成故障收敛为可控拒答（errorCode 保真）；⚠️ 编排层挂载待 workflow 排期 |
 | 上下文 token 预算（`context-token-budget` 生效 + `CONTEXT_TRUNCATED` 痕迹，v1.6） | ✅ 代码落地（v1.6，近似估算） |
-| ArchUnit 门禁（12 条）+ 单测（78 例，含 3 例 minScore 量纲回归 + 5 例 v1.3 + 3 例 v1.4 + 12 例 v1.5 + 9 例 v1.6 + 15 例 v1.7【ACL 默认 deny 1 + 掩码器 9 + ingest PII 4 + 双路并发 1】，合计 90 校验项） | ✅ |
+| ArchUnit 门禁（12 条）+ 单测（**109 例，2026-10-24 实测全绿**：含 3 例 minScore 量纲回归 + 5 例 v1.3 + 3 例 v1.4 + 12 例 v1.5 + 9 例 v1.6 + 15 例 v1.7【ACL 默认 deny 1 + 掩码器 9 + ingest PII 4 + 双路并发 1】+ **12 例 v1.9 faithfulness 判官 + 2 例 v1.9 回答级 golden-set 门禁**） | ✅ |
 | minScore 量纲安全（rerank 降级/未配时跳过阈值，杜绝事故期误杀） | ✅ 代码落地（v1.2） |
 | RAG 接入生成编排（G 接线 + 间接注入防护 + grounding 守卫调用点） | ✅ 主体落地（v1.8）：网关适配器 + `/answer` 端点 + 注入纵深防护随网关生效 + 守卫闭环内强制执行；⚠️ 编排层调用点待 workflow 排期；文档中心 ACL 接入待接入方 |
 | 文档中心 ACL 适配 | ❌ **Go-Live 硬依赖**（v1.7 上提：默认 deny 已兜底越权面，但「拒绝检索」不是生产形态，接入真实 ACL 才能既安全又可用） |
-| pgvector 终局 + ANN | ❌ R4（v1.7 改判第二批前启动） |
-| 评测体系（RAGAS + CI，须前置） | ✅ 构建内门禁（`RagGoldenSetEvalTest`，v1.4）/ ⚠️ sidecar 语义评测待真模型 |
+| pgvector 终局 + ANN | ⚠️ **设计已闭环（v1.9，§14：`VectorSearchPort` + 四阶段迁移 + 验收闸门 + 回退预案）** / 实现待 R4 排期（批二放量前置） |
+| 评测体系（RAGAS + CI，须前置） | ✅ 检索门禁（`RagGoldenSetEvalTest`，v1.4）+ **回答级 faithfulness 门禁（`RagAnswerGoldenSetEvalTest`，v1.9）** + **faithfulness 双判官（确定性 `HeuristicAnswerQualityJudge` + LLM `LlmAnswerQualityJudge`，v1.9）** / ⚠️ LLM 判官接真模型大规模校准待补 |
 | 查询改写 | ❌ 批二决策 |
-| trace 落库适配 + 阶段级 span | ❌ R6 |
+| trace 落库适配 + 阶段级 span | ✅ 落库已接（v1.10 `TraceRagEventSink`）+ 阶段计时事件（v1.11 `RETRIEVE_STAGES` opt-in）/ ⚠️ OTel 子 span 待升级 |
 | 语义缓存 | ❌ R9 |
 | 嵌入版本轮换策略 | ❌ R10 |
 
@@ -442,3 +450,143 @@ v1.2 诊断出写入侧缺口：源文档/条款语料若含 PII，`ai_rag_chunk
 15. **回答链的四条顺序语义不可重排（v1.6，防回归）**：`RagAnswerService` 的次序是硬约束——① **无据不调模型**（检索为空即拒答，省掉一次必然编造的调用）；② **截断后只对 `included` 校验**（用全部检索结果校验会让「引用了被预算截掉的上下文」蒙混过关，守卫与提示词对不上账）；③ **生成后必过守卫**；④ **拒答不重试、不降级为带自由发挥的回答**。另有一条边界纪律：**检索上下文必须经数据围栏包裹**（`<RETRIEVED_DATA>` + 系统提示声明「是数据不是指令」），裸拼原文等于把间接提示注入的入口敞开；`truncated` 必须透出 `CONTEXT_TRUNCATED`，静默截断会让「答不全」无法归因。回归测试 `skips_llm_entirely_when_retrieval_is_empty` / `validates_against_included_contexts_only_after_budget_truncation` / `wraps_context_in_data_fence_and_numbers_citations` 锁死此契约。
 16. **默认姿态三连：ACL 拒绝、PII 先掩码、容量两级水位（v1.7，防回归）**：企业复杂场景下「默认值即安全姿势」——① **ACL 未适配 = 拒绝检索**（`DenyDocAcl` 空可见集），而不是 `NoDocAcl` 放行全租户；同租户跨文档越权面在接入方适配就绪前以「拒绝服务」兜底，联调须显式关默认 deny 并留 WARN。回归测试 `visible_doc_ids_is_empty_not_null` 锁死。② **ingest 先掩码后嵌入**——`SensitiveDataMasker` 等长局部掩码（保 6+4 / Luhn 后保 4 / 3+4 / 邮箱首字符+域名），等长保证 span 锚点不漂移，顺序（身份证→银行卡→手机号→邮箱）保证掩码段不被级联再命中；PII 语义不进向量库，命中发 `INGEST_PII_MASKED` 事件。回归测试 `id_card_keeps_prefix6_and_suffix4_with_equal_length` / `bank_card_masked_only_when_luhn_passes` / `email_masks_local_part_except_first_char_and_keeps_domain` / `mixed_text_masks_all_patterns_and_preserves_length` / `plain_text_passes_through_unchanged` / `masked_output_creates_no_new_matches` / `disabled_masker_is_identity` / `count_hits_reports_per_pattern` 共 8 例 + ingest 4 例（`ingest_masks_pii_before_embedding_and_storage` 等）锁死。③ **容量两级水位**：`max-scan` 10000→3000 与 `warn-scan-threshold` 2000 形成「预警→硬拒」梯度（约 50% 缓冲带供运维介入）；双路并发（`embed` ∥ BM25）只压延迟、**不得改变 ACL/容量护栏/引用前置的顺序语义**——并发是性能优化，fail-closed 是安全语义，两者不可混淆。回归测试 `vector_path_runs_concurrently_with_bm25_scoring` 锁死并行不破坏顺序断言。
 17. **生成走门面、故障收敛、errorCode 保真（v1.8，防回归）**：RAG 生成的「G」与 judge 同构——**模型调用唯一入站**，组合根适配器（`RagAnswerGenerationAdapter`）转调网关 `invoke`，不直连 SPI（否则绕过成本红线/证据/计量，开自身侧门）；治理策略只在网关一处，适配器不重做（两套策略必漂移）。**生成故障不冲出编排边界**：治理拒绝（注入疑似/配额/红线/内容安全）与 provider 故障经 `AnswerGenerationException` 收敛为 `RagAnswerOutcome.unavailable(...)`——异常上抛会把「这次答不了」升级成业务流程中断。**errorCode 保真透传**：注入拒绝必须仍是 `AI_GATEWAY_INJECTION_SUSPECTED`，归一成「服务不可用」会让安全事件从监控里消失；未知故障才归一 `AI_RAG_ANSWER_GENERATION_UNAVAILABLE`。回归测试 `converges_governance_rejection_into_refusal_with_original_error_code` / `converges_unknown_generation_failure_into_unavailable`（rag）+ `maps_governance_rejection_to_port_failure_preserving_error_code` / `delegates_to_gateway_and_returns_raw_model_content`（app 适配器）+ `answer_surfaces_refusal_with_error_code`（控制器）共 5 例锁死。
+18. **pgvector 索引化：抽象先行、四阶段零停机、回退 fail-closed（v1.9，防误迁移）**：过渡态「MySQL 全量载入 + 应用层余弦」是 O(N) exact scan，`maxScan` 3000 封顶——批二放量前必须 ANN 索引化，否则 3000 即业务硬顶。落地纪律四条：① **抽象先行**——`VectorSearchPort` 把「向量检索」从「关系型查询 + 内存计算」拆出，元数据（text / clauseRef / span / ACL）仍归 MySQL，向量库只存 `(chunk_id, tenant_id, embedding_ver, vector)` 并以 `chunk_id` 关联；**绝不让向量库承载业务字段**（否则双写一致性面爆炸、ACL 与权限语义两处漂移）。② **四阶段零停机**——双写（ingest 同写 MySQL + pgvector，pgvector 失败仅 WARN/事件、不阻断 MySQL 主写）→ 存量回填（按 tenant 游标分批，避免一次性大事务）→ 影子评测（exact 与 ANN 并行，比 recall@10 与 P99，不切流）→ 切流退役（读路径向量路换 ANN，BM25 / ACL / 容量护栏 / 引用前置全不动）。③ **验收闸门**——recall@10 ≥ 0.98（HNSW `ef_search` / IVFFlat `probes` 调达标；距离口径 cosine 与训练一致，**禁 cosine/L2 混用**）、P99 ≤ 现有内存路径、索引构建耗时可控、`embedding_ver` 不符切片必不进 ANN（与内存路径同口径，杜绝不可比向量混用）。④ **回退 fail-closed**——pgvector 不可用时读路径回落内存精确（阶段 3 退役前）或 BM25 单路（退役后，与 rerank 降级同构），开关 `bone.ai.rag.vector.mode={dual-write|shadow|ann|fallback}` 按阶段推进、可一键回退上一阶段。详见 §14。
+19. **faithfulness 评测双判官分层：确定性守 CI 底线、LLM 担语义，两层缺一不可（v1.9，防回归）**：单层都不够——纯词法判官（`HeuristicAnswerQualityJudge` 的 bigram 包含度）不理解否定反转（「无需支付违约金」与「应支付违约金」词汇高度重叠）、同义改写与跨句归纳，会假阴/假阳；纯 LLM 判官成本高、不确定、进不了每次构建的门禁。故**分层**：① rag 侧确定性判官作 `mvn clean verify` 门禁（`RagAnswerGoldenSetEvalTest`），守住检索回归 / 话题漂移幻觉，零依赖、可复现；② app 侧 LLM 判官（`LlmAnswerQualityJudge` 走 `JudgePort`、经网关计量）作离线语义校准与大规模回归，opt-in。**不变量不可妥协**：三项指标 ∈[0,1]；**fail-closed**——空上下文 / 空答案 / 模型输出畸形一律 0 分并带回原因（`judge_output_unparseable` / 越界 clamp），**禁静默放行、禁把解析失败当成「有据」**；`contextPrecision` 委派确定性口径（两层可对账）。断言切分按句读与逗号，使 `unsupportedClaims` 归因粒度到分句（可枚举是低分归因的输入）。回归测试 `HeuristicAnswerQualityJudgeTest`（12 例）+ `LlmAnswerQualityJudgeTest`（7 例）+ `RagAnswerGoldenSetEvalTest`（2 例，含阴性对照）锁死。
+20. **运行时语义接地与离线评测分层：一个挡下来、一个测出来，默认不双跑（v1.10，防误用）**：v1.9 的 `AnswerQualityJudge` 是**离线度量**（三指标，评测管线 + CI 门禁），**刻意不接运行时链**——每次回答都判分会把评测成本计入生产时延与账单。v1.10 的 `GroundingJudgePort` 是**运行时强制**（二值接地，确定性守卫过关后追加），**默认关**（`judge-enabled=false`）——它使每次问答成本约翻倍，只在高合规场景显式开启。两者职责不同、不可互替：评测判官回答「这版系统质量多少」，运行时裁判回答「这一次能不能放出去」。**裁判故障必须回落确定性守卫 + `GROUNDING_JUDGE_DEGRADED` 痕迹**——不因裁判故障拒答（自造可用性事故），也不静默放行（放开 paraphrase 编造面）。**RAG 事件落 trace 与 LLM 证据姿态刻意分野**：`RAG_EVENT` 租户缺失仅 WARN 跳过、落库故障不抛出（`RagEventSink` 契约：读路径可用性优先）；`LLM_CALL` 租户缺失 fail-closed 拒落（合规铁证不得租户不明）。回归测试 `LlmGroundingJudgeAdapterTest`（8 例）+ `TraceRagEventSinkTest`（6 例）锁死。
+
+21. **可观测分级：事件 → 阶段计时 → 真实 span，逐级付成本（v1.11，防「为好看先上全套」）**：检索可观测存在三种粒度，成本与收益严格不同——① **事件级**（`RETRIEVE_SLOW`/降级/拒答，常开）回答「有没有问题」；② **阶段计时**（`RETRIEVE_STAGES`，opt-in）回答「问题在哪一段」（acl / capacity / embed / score / rerank / mmr / assemble）；③ **真实 span**（OTel `gen_ai.*` 子 span，待接）提供跨服务链路串联。**阶段计时默认关**：每查询多落一条 trace 证据快照，生产常态不付该开销，只在性能诊断 / 压测时开——这与运行时语义裁判默认关是同一条原则：**诊断能力不等于默认开销**。阶段名（`acl`…`assemble`）即未来 OTel 子 span 名锚点，接 OTel 时只换上报出口、不改检索链，避免「先上 span 再返工命名」。回归测试 `stage_tracing_emits_retrieve_stages_event_when_enabled` 锁死「开启后字段齐备」，且既有 `containsExactly` 事件断言全绿即为「默认关不污染事件流」的实证。
+
+---
+
+## 14. R4：pgvector 索引化落地设计（缺口②闭环，v1.9）
+
+> **一句话**：把「把所有有效切片载入内存逐条算余弦」的 O(N) 精确扫描，换成「专用向量库 + ANN 索引」，使检索成本与作用域规模脱钩；迁移零停机、质量可对账、故障可回退。
+
+### 14.1 为什么是 pgvector（而非 ES / Milvus / FAISS standalone）
+
+过渡态瓶颈不在「算余弦」本身，而在「全量载入 + 逐条遍历整个作用域」：`maxScan` 3000 是 fail-closed 硬拒线，一旦语料过线即「拒绝服务」，而线下的延迟已随规模线性劣化（v1.3 的 `SCOPE_NEAR_LIMIT` / `RETRIEVE_SLOW` 只是可观测止血）。ANN 的价值是**不扫全表即定位近邻**，必须索引化——MySQL 8.0 无原生 ANN，给不了。
+
+| 方案 | 结论 | 理由 |
+|---|---|---|
+| **pgvector（PostgreSQL 扩展）** | ✅ **选型** | 复用既有 PG 运维体系与备份/监控；HNSW / IVFFlat ANN 成熟；标量过滤（`tenant_id` / `embedding_ver`）与向量检索同 SQL 表达；不引入第三套检索栈的运维税；与 MySQL 元数据以 `chunk_id` 关联即可，无需整体迁移业务数据 |
+| Elasticsearch（kNN/dense_vector） | ❌ 不选 | 等于为向量检索再养一套分布式检索栈（分片/副本/集群调优），运维税远超收益；与本产品「不建第三套检索栈」的既有决策冲突 |
+| Milvus / Qdrant / Weaviate | ❌ 不选 | 专用向量库能力更强但引入新组件与新 SLO；当前规模与团队栈不需要为其分布式能力付运维成本 |
+| FAISS（进程内库） | ❌ 不选 | 无服务化、索引与进程生命周期绑定，多实例一致性、持久化、在线增量均需自建，运维复杂度隐性高 |
+| MySQL JSON 列 + 应用层遍历 | ❌ 已证伪 | 就是当前过渡态的放大版，O(N) 本质未变，只是换存储格式 |
+
+> **边界**：pgvector 承载**向量与 ANN**；切片原文、`clauseRef`、span、ACL、软删标记仍归 MySQL。跨库以 `chunk_id` 关联，检索先用 ANN 拿候选 `chunk_id`，再回 MySQL 取元数据做 ACL / 引用前置 / 组装 `RagResult`——**权限与业务语义只有一处真源（MySQL）**。
+
+### 14.2 抽象边界：`VectorSearchPort`
+
+当前 `ChunkRepository.findByTenantAndDocScope` 一次返回全量切片（含 embedding CSV），余弦与 BM25 都在应用层算。索引化的关键是把「向量检索」独立成端口，让存储实现可替换：
+
+```java
+// 端口：只做「向量近邻」这一件事（domain/gateway）
+public interface VectorSearchPort {
+  // 在租户 + 作用域 + 版本约束内取 topK 近邻；scope 为 null 表示不限文档
+  List<VectorHit> annSearch(float[] queryVector, long tenantId, String docScope,
+                            int topK, String embeddingVer);
+}
+
+public record VectorHit(long chunkId, double distance) {}   // distance 口径由实现声明（cosine）
+```
+
+- **为什么返回 `chunkId` 而非 `RagResult`**：端口不持有业务字段（text/clauseRef/span），避免向量库与 MySQL 双写业务数据；元数据回查由应用层用 `chunkId` 批量取（`findByIds`），既保证 ACL 与引用前置仍在 MySQL 侧单点执行，也让「向量库只存向量」这条边界不可协商。
+- **默认实现**：过渡期 `NoOpVectorSearch`（`annSearch` 返回空 ⇒ 读路径仍走内存精确），保证「端口就位但未切流」时行为与现状完全一致——**先抽象、后切流**，不给未就绪能力开半条路。
+- **版本纪律**：`embeddingVer` 作为查询参数下推——`embedding_ver` 不符的切片在 SQL 的 `WHERE` 里就被排除，与内存路径「版本不符不入向量路」同口径，杜绝不可比向量混入近邻。
+
+### 14.3 数据模型与双存储
+
+```sql
+-- pgvector 侧（PostgreSQL）
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE ai_rag_chunk_vec (
+  chunk_id     BIGINT      NOT NULL,            -- 与 MySQL ai_rag_chunk.id 一一对应
+  tenant_id    BIGINT      NOT NULL,            -- 标量过滤键（租户硬隔离）
+  embedding_ver VARCHAR(64) NOT NULL,           -- 版本过滤键（换模型即隔离）
+  embedding    vector(1024) NOT NULL,           -- 维度随嵌入模型（bge-m3=1024）
+  PRIMARY KEY (chunk_id)
+);
+-- HNSW（推荐：增量写入友好，无需定期 REINDEX）
+CREATE INDEX idx_chunk_vec_hnsw ON ai_rag_chunk_vec
+  USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
+-- IVFFlat（备选：构建快、查询需调 probes；大批量导入后再建索引）
+-- CREATE INDEX idx_chunk_vec_ivf ON ai_rag_chunk_vec
+--   USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+```
+
+- **租户隔离**：`tenant_id` 走标量过滤（`WHERE tenant_id = ?`），ANN 的近邻召回在过滤后子集内进行（pgvector 支持带 `WHERE` 的索引扫描）；不作为分区键也可，先按租户过滤再 ANN，规模上到跨租户亿级再评估分区。
+- **版本隔离**：`WHERE embedding_ver = ?`——换模型新向量与旧向量物理并存、互不可比，切流后旧版本行随软删清理。
+- **软删一致性**：MySQL `deleted=true` 的切片在 pgvector 侧同步删除（双写/回填都带删除路径），避免「已删切片仍被 ANN 召回」后回查落空；回查落空按 fail-closed 丢弃（与引用前置同语义）。
+
+### 14.4 迁移四阶段（零停机、可回退）
+
+```
+阶段 0：双写（mode=dual-write）
+  ingest ─┬─ MySQL：写切片（主路径，失败即上抛，旧版本不动）
+          └─ pgvector：upsert (chunk_id, tenant, ver, vector)
+                 · 失败仅 WARN + VECTOR_DUAL_WRITE_FAILED 事件，不阻断主写
+                 · 读路径完全不变（仍内存精确）——双写只建影子副本
+
+阶段 1：存量回填（mode=dual-write 不变）
+  按 tenant_id 游标分批扫 MySQL → 批量 INSERT pgvector（批大小 batch-backfill-size）
+  · 幂等：ON CONFLICT (chunk_id) DO UPDATE，可重跑
+  · 回填完成判据：各租户 pgvector 行数 == MySQL 有效切片数（deleted=false 且 ver 相符）
+
+阶段 2：影子评测（mode=shadow）
+  读路径：内存精确（exact）照常出结果；
+          并行调 annSearch(topK) 取候选，仅记录不返回
+  · 样本：shadow-sample-rate（默认采线上查询 10%）
+  · 指标：recall@10 = |ANN前10 ∩ exact前10| / 10；对比 P50/P99 延迟
+  · 未达 §14.5 闸门 ⇒ 停在 shadow，调 ef_search / probes / 索引参数
+
+阶段 3：切流 + 退役（mode=ann）
+  读路径向量路：内存余弦 → annSearch 候选（回 MySQL 取元数据）
+  · BM25 / RRF / ACL / 容量护栏 / 引用前置 / rerank / MMR 全部不动（只换向量路数据源）
+  · 观察期（建议 ≥ 2 周）无回归 ⇒ 移除 ChunkRepository.embedding 读取，内存精确路径退役
+  · maxScan 从「全量载入硬拒」降级为「作用域切片总数预警」（与 SCOPE_NEAR_LIMIT 协同）
+```
+
+- **顺序不可颠倒**：必须先双写+回填（有完整影子副本）才能影子评测，必须影子达标才能切流；任何阶段失败都停在上一阶段，读路径行为不变。
+- **回填与双写并存**：增量由双写覆盖、存量由回填覆盖，两者汇合即「全量在 pgvector」；回填可重跑（`ON CONFLICT` 幂等），半截失败不影响后续。
+
+### 14.5 验收闸门（切流判据，硬指标）
+
+| 指标 | 闸门 | 说明 |
+|---|---|---|
+| `recall@10` | **≥ 0.98** | ANN 前 10 ∩ exact 前 10 的比例；HNSW 调 `ef_search`、IVFFlat 调 `probes` 达标。低于此值不切流——**召回不可用性能换** |
+| `P99 检索延迟` | **≤ 现有内存精确路径** | 且切流后解除 `maxScan` 全量载入，容量随索引扩展而非硬拒 |
+| `索引构建耗时` | 单租户全量 build 在批二窗口内可接受 | HNSW 增量写入免 REINDEX；IVFFlat 大批导入后建索引 |
+| `版本正确性` | `embedding_ver` 不符切片 0 命中 | 与内存路径同口径；回归用例锁死 |
+| `一致性` | pgvector 行数 == MySQL 有效切片数（切流时点） | 回填完成判据，偏差即继续回填 |
+| `降级行为` | pgvector 故障时回落路径生效且留痕 | `VECTOR_DEGRADED` 事件 + `degradations` 透出 |
+
+### 14.6 回退预案（fail-closed 同源）
+
+- **阶段 3 之前**：pgvector 故障 ⇒ `annSearch` 抛 `VectorUnavailable` ⇒ 读路径回落**内存精确**（能力仍在，仅性能回退），发 `VECTOR_DEGRADED`；`mode` 一键置回 `shadow`/`dual-write`。
+- **阶段 3 退役内存路径之后**：pgvector 故障 ⇒ 读路径回落 **BM25 单路**（与嵌入 provider 故障降级同构：读可用性优先），`degradations` 记 `VECTOR_DEGRADED` 而非静默；**绝不切云端辅路**（数据不出域红线不变）。
+- **回退不丢数据**：MySQL 元数据与原文全程为主真源，pgvector 只是可重建的派生物——最坏情况（pgvector 全损）按阶段 1 回填流程从 MySQL 重建，无需业务侧介入。
+
+### 14.7 配置面（`bone.ai.rag.vector.*`）
+
+| 配置 | 默认 | 语义 |
+|---|---|---|
+| `mode` | `dual-write`（灰度期）/ `off`（未部署 pgvector 时） | `off`/`dual-write`/`shadow`/`ann`/`fallback`；按阶段推进，回退即改此项 |
+| `pg.endpoint` | — | pgvector 实例连接串（分环境注入，禁硬编码） |
+| `index-type` | `hnsw` | `hnsw`/`ivfflat`；IVFFlat 需配套 `probes` |
+| `ef-search` | `64` | HNSW 查询期精度/延迟旋钮（越大越准越慢） |
+| `probes` | `10` | IVFFlat 查询期扫描簇数（越大越准越慢） |
+| `batch-backfill-size` | `1000` | 回填每批行数（避免大事务） |
+| `shadow-sample-rate` | `0.1` | 影子评测采样率（控制额外开销） |
+| `top-k-candidate` | `= topK × 2` | ANN 候选数（供 rerank 前粗排，含 MMR 扩样余量） |
+
+> 与 `max-scan` 的关系：切流前 `max-scan` 仍是安全网（全量载入上限）；切流后容量由索引 + `LIMIT` 承担，`max-scan` 退居「作用域切片总数预警」职责（与 `SCOPE_NEAR_LIMIT` 同线）。
+
+### 14.8 与现有契约的衔接
+
+- **`RagResult` 不变**：仍带 `chunkRef` / `clauseRef` / `spanStart` / `spanEnd` / `text` / `score`；ANN 距离经 RRF 与 BM25 名次融合（沿用 `k=60`），**不把 ANN 原始距离暴露给用户**（量纲双轨问题延续 §5.1 的既有纪律）。
+- **RRF / rerank / MMR 不变**：只替换「向量路」的数据来源（内存余弦 → ANN 候选），下游融合与精排逻辑零改动，降低回归面。
+- **`embedding_ver` 轮换**：换嵌入模型 ⇒ 新版本向量写入新 `embedding_ver` 分区 + 重建 ANN 索引（HNSW 重建 / IVFFlat REINDEX），旧版本在影子期并存、切流后清理——与 B18/R10 轮换策略对齐。
+- **ACL / 引用前置不下推**：ACL 过滤与 `clauseRef`/span 校验仍在 MySQL 回查后执行（不塞进 pgvector 过滤），保证权限语义单点、可审计。
+
+> **落地顺序与依赖**：§14.2 端口抽象 → §14.3 建表建索引 → **阶段 0 双写**（可与端口并行）→ **阶段 1 回填** → **阶段 2 影子评测**（依赖 golden set 与 exact 基线）→ **阶段 3 切流**（依赖 §14.5 闸门达标）。任一步未达闸门即停在上一阶段，读路径与现状完全一致。

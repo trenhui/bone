@@ -189,6 +189,35 @@ public class GlobalExceptionHandler {
     return problem(403, CommonErrorCodes.FORBIDDEN, "没有该操作权限");
   }
 
+  /**
+   * 请求媒体类型不被支持 → 415。
+   *
+   * <p><b>为什么必须显式声明</b>：本模块的上传/导入端点声明了 {@code consumes = MULTIPART_FORM_DATA_VALUE}。 调用方若发 {@code
+   * application/json}，Spring 在 {@code RequestMappingInfoHandlerMapping#handleNoMatch} 找不到匹配处理器， 抛
+   * {@code HttpMediaTypeNotSupportedException}。它不继承 {@code HttpMessageNotReadableException}，
+   * 因此不会被上方任何 400 分支接管，只能落到 catch-all 兜底成 500 —— 「客户端用错 Content-Type」被伪装成「服务端内部故障」， 污染 SLI
+   * 告警（2026-10-24 全模块联调实测：{@code POST /api/v1/masterdata/records} 空 JSON 体返 500）。
+   */
+  @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMediaTypeNotSupported(
+      org.springframework.web.HttpMediaTypeNotSupportedException e) {
+    log.warn("不支持的请求媒体类型: {}", e.getContentType());
+    return problem(415, CommonErrorCodes.UNSUPPORTED_MEDIA_TYPE, "请求媒体类型不被支持");
+  }
+
+  /**
+   * multipart 解析失败（请求不是 multipart 但端点需要文件）→ 400。
+   *
+   * <p>与 415 同族但触发点不同：415 在<b>路由匹配阶段</b>（声明了 {@code consumes}）， 本异常在<b>参数绑定阶段</b>（声明了 {@code
+   * MultipartFile} 参数却没声明 {@code consumes}）。 两者都源于调用方的请求形态错误，均属客户端错误，不得兜底成 500。
+   */
+  @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMultipartException(
+      org.springframework.web.multipart.MultipartException e) {
+    log.warn("multipart 请求解析失败: {}", e.getMessage());
+    return problem(400, CommonErrorCodes.VALIDATION_FAILED, "请求不是合法的 multipart 请求");
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleException(Exception e) {
     log.error("未处理异常: {}", e.getMessage(), e);

@@ -155,6 +155,38 @@ public class GlobalExceptionHandler {
     return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, "数据违反完整性约束，请检查提交字段");
   }
 
+  /**
+   * multipart 解析失败（请求不是 multipart，但端点声明了 {@code MultipartFile} 参数）→ 400。
+   *
+   * <p><b>为什么必须显式声明</b>：{@code MultipartException} 是 {@code NestedRuntimeException} 的后代， 不继承 {@code
+   * HttpMessageNotReadableException}，因此不会被上方 {@link #handleBadRequest} 接管。 漏到 {@code Exception}
+   * 兜底分支后，「调用方忘了用 multipart/form-data」会被记成 500 {@code COMMON_INTERNAL_ERROR}，
+   * 把客户端笔误算进服务端故障预算（2026-10-24 全模块联调实测：{@code POST /api/v1/system/config/import} 空 JSON 体返
+   * 500）。根因是请求形态不对，属客户端错误。
+   */
+  @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiResponse<ProblemDetail> handleMultipartException(
+      org.springframework.web.multipart.MultipartException e) {
+    log.warn("multipart 请求解析失败: {}", e.getMessage());
+    return errorBody(400, CommonErrorCodes.VALIDATION_FAILED, "请求不是合法的 multipart 请求");
+  }
+
+  /**
+   * 请求媒体类型不被支持 → 415。
+   *
+   * <p>端点声明了 {@code consumes = MULTIPART_FORM_DATA_VALUE} 而调用方发了别的 Content-Type 时， Spring 在路由匹配阶段抛
+   * {@code HttpMediaTypeNotSupportedException}。它与 {@link #handleMultipartException}
+   * 覆盖的是同一类误用的两个阶段（路由匹配 / 参数绑定），语义上必须区别于 500。
+   */
+  @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+  @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+  public ApiResponse<ProblemDetail> handleMediaTypeNotSupported(
+      org.springframework.web.HttpMediaTypeNotSupportedException e) {
+    log.warn("不支持的请求媒体类型: {}", e.getContentType());
+    return errorBody(415, CommonErrorCodes.UNSUPPORTED_MEDIA_TYPE, "请求媒体类型不被支持");
+  }
+
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public ApiResponse<ProblemDetail> handleException(Exception e) {

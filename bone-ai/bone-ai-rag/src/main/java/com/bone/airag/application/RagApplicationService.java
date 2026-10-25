@@ -87,6 +87,19 @@ public class RagApplicationService {
   public static final String EVENT_RETRIEVE_SLOW = "RETRIEVE_SLOW";
 
   /**
+   * 事件码（B16 / R6 子项：细粒度检索链路 span，opt-in）：单次 retrieve 各阶段墙钟时延的汇总事件。
+   *
+   * <p>定位性能瓶颈的抓手——全量内存 BM25 + 余弦下，检索链由 acl → embed → score（BM25 语料统计 + 余弦 + RRF 融合）→ rerank → mmr →
+   * assemble 多阶段串联，任一阶段劣化都会推高首结果延迟。本事件把每阶段耗时（毫秒，2 位小数）汇总为 {@code
+   * acl=..;capacity=..;embed=..;score=..;rerank=..;mmr=..;assemble=..;total=..;candidates=..} 形式， 经
+   * {@code RagEventSink}（R6 已落 trace 证据快照）可检索 / 聚合 / 回放，与 {@code RETRIEVE_SLOW} 同一条告警线。
+   *
+   * <p><b>opt-in（默认关）</b>：每查询多落一条证据快照，故默认关闭，仅诊断期 / 压测期显式开启； 待接入 OTel 后升级为真实 {@code gen_ai.*} 子
+   * span（本事件的阶段名即届时 span 名锚点）。开启开关 {@code bone.ai.rag.stage-tracing-enabled}。
+   */
+  public static final String EVENT_RETRIEVE_STAGES = "RETRIEVE_STAGES";
+
+  /**
    * 事件码（合规拒答，非降级）：生成答案未通过接地守卫，被拒答 / 降级为「仅返回原文片段」。
    *
    * <p>拒答是<b>正确行为</b>而不是故障，但必须可观测：拒答率突增说明语料覆盖不足、模型漂移或阈值过严， 与 {@code RETRIEVE_SLOW} /
@@ -130,6 +143,13 @@ public class RagApplicationService {
    */
   private final SensitiveDataMasker sensitiveDataMasker;
 
+  /**
+   * 阶段级检索链路计时（B16，opt-in，默认关）：开启时 retrieve 末尾汇总各阶段墙钟时延事件。
+   *
+   * <p>默认关闭——每查询多落一条证据快照，生产常态不付该开销；仅诊断 / 压测期显式开启。
+   */
+  private final boolean stageTracingEnabled;
+
   public RagApplicationService(
       ChunkRepository chunkRepository,
       EmbeddingPort embeddingPort,
@@ -154,7 +174,8 @@ public class RagApplicationService {
         warnScanThreshold,
         slowRetrieveMs,
         groundingGuard,
-        new SensitiveDataMasker());
+        new SensitiveDataMasker(),
+        false);
   }
 
   public RagApplicationService(
@@ -170,6 +191,36 @@ public class RagApplicationService {
       long slowRetrieveMs,
       GroundingGuard groundingGuard,
       SensitiveDataMasker sensitiveDataMasker) {
+    this(
+        chunkRepository,
+        embeddingPort,
+        rerankPort,
+        tenantProvider,
+        aclPort,
+        eventSink,
+        candidatePool,
+        mmrLambda,
+        warnScanThreshold,
+        slowRetrieveMs,
+        groundingGuard,
+        sensitiveDataMasker,
+        false);
+  }
+
+  public RagApplicationService(
+      ChunkRepository chunkRepository,
+      EmbeddingPort embeddingPort,
+      RerankPort rerankPort,
+      TenantProvider tenantProvider,
+      RagAclPort aclPort,
+      RagEventSink eventSink,
+      int candidatePool,
+      double mmrLambda,
+      int warnScanThreshold,
+      long slowRetrieveMs,
+      GroundingGuard groundingGuard,
+      SensitiveDataMasker sensitiveDataMasker,
+      boolean stageTracingEnabled) {
     this.chunkRepository = chunkRepository;
     this.embeddingPort = embeddingPort;
     this.rerankPort = rerankPort;
@@ -183,6 +234,7 @@ public class RagApplicationService {
     this.groundingGuard = groundingGuard;
     this.sensitiveDataMasker =
         sensitiveDataMasker == null ? SensitiveDataMasker.disabled() : sensitiveDataMasker;
+    this.stageTracingEnabled = stageTracingEnabled;
   }
 
   /**
@@ -195,6 +247,8 @@ public class RagApplicationService {
 
   public RagRetrieveOutcome retrieve(RagQuery query) {
     long startNanos = System.nanoTime();
+    List<String> stageMarks = stageTracingEnabled ? new ArrayList<>() : null;
+    long stageStart = startNanos;
     Long tenantId = tenantProvider.currentTenantId();
 
     // 文档级 ACL（fail-closed）：默认仅租户硬隔离；接入方提供受限可见集合后，无 ACL 归属的 doc 不可见
@@ -225,6 +279,13 @@ public class RagApplicationService {
       }
     }
 
+    // B16 阶段计时：acl（文档级 ACL 解析 + 租户过滤）
+    long afterAcl = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("acl=" + ms(afterAcl - stageStart));
+      stageStart = afterAcl;
+    }
+
     // 容量护栏（fail-closed）：过渡态全量载入内存打分，超限即拒——绝不静默截断
     if (chunks.size() > query.maxScan()) {
       throw new BizException(
@@ -235,6 +296,13 @@ public class RagApplicationService {
               + query.maxScan()
               + "），请收窄 doc_scope 或调整 bone.ai.rag.max-scan",
           AiRagErrorCodes.SCOPE_OVER_LIMIT);
+    }
+
+    // B16 阶段计时：capacity（容量护栏判定，紧接 ACL 之后）
+    long afterCapacity = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("capacity=" + ms(afterCapacity - stageStart));
+      stageStart = afterCapacity;
     }
 
     // 容量预警（非 fail-closed）：撞 maxScan 前先给可观测信号，引导下调阈值或推进 R4 索引化
@@ -313,6 +381,11 @@ public class RagApplicationService {
       degradations.add(DEGRADE_EMBEDDING);
       queryVec = null;
     }
+    long afterEmbed = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("embed=" + ms(afterEmbed - stageStart));
+      stageStart = afterEmbed;
+    }
     if (queryVec != null) {
       for (RagChunk c : valid) {
         String key = String.valueOf(c.getId());
@@ -342,6 +415,11 @@ public class RagApplicationService {
       candidates.add(
           new RerankCandidate(e.getKey(), byKey.get(e.getKey()).getText(), e.getValue()));
     }
+    long afterScore = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("score=" + ms(afterScore - stageStart));
+      stageStart = afterScore;
+    }
 
     // 精排：provider 故障 ⇒ WARN 事件 + 回落 NoOp（RRF 粗序），引用强制语义不变
     // MMR 开启时按倍数扩样送精排——选取式 MMR 需要比 topK 更大的候选面才能「换掉」同质项
@@ -359,6 +437,11 @@ public class RagApplicationService {
               DEGRADE_RERANK, "tenant=" + tenantId + ", reason=" + e.getMessage() + "（回落 RRF 粗序）"));
       degradations.add(DEGRADE_RERANK);
       ranked = new NoOpReranker().rerank(query.query(), candidates, query.topK());
+    }
+    long afterRerank = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("rerank=" + ms(afterRerank - stageStart));
+      stageStart = afterRerank;
     }
 
     // 分数阈值（宁缺毋滥）：低于阈值不进候选——交由生成侧走「无依据」路径
@@ -399,6 +482,11 @@ public class RagApplicationService {
 
     // MMR 多样性选取（λ≤0 关闭：按相关性原序——与未接入行为一致）
     List<String> selected = MmrSelector.select(mmrCandidates, query.topK(), mmrLambda);
+    long afterMmr = System.nanoTime();
+    if (stageMarks != null) {
+      stageMarks.add("mmr=" + ms(afterMmr - stageStart));
+      stageStart = afterMmr;
+    }
 
     List<RagResult> results = new ArrayList<>(selected.size());
     for (String ref : selected) {
@@ -416,6 +504,11 @@ public class RagApplicationService {
               c.getSectionPath(),
               c.getText()));
     }
+    long afterAssemble = System.nanoTime();
+    if (stageMarks != null) {
+      // assemble 是最后一个阶段，其后不再有阶段计时（total 单独取整段墙钟）
+      stageMarks.add("assemble=" + ms(afterAssemble - stageStart));
+    }
     // 性能预警（非 fail-closed）：单次检索墙钟超阈值即发事件，供落 trace / 接 P99 告警
     long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
     if (slowRetrieveMs >= 0 && elapsedMs > slowRetrieveMs) {
@@ -432,7 +525,17 @@ public class RagApplicationService {
                   + chunks.size()
                   + "（全量内存打分瓶颈，建议推进 R4 向量索引化）"));
     }
+    if (stageMarks != null) {
+      stageMarks.add("total=" + elapsedMs);
+      stageMarks.add("candidates=" + pool);
+      eventSink.record(new RagEvent(EVENT_RETRIEVE_STAGES, String.join(";", stageMarks)));
+    }
     return new RagRetrieveOutcome(results, List.copyOf(degradations));
+  }
+
+  /** 纳秒差转毫秒字符串（2 位小数），用于阶段计时事件。 */
+  private static String ms(long nanos) {
+    return String.format(java.util.Locale.ROOT, "%.2f", nanos / 1_000_000.0);
   }
 
   /**

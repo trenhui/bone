@@ -32,6 +32,9 @@ public class RagChunk extends TenantAggregateRoot<Long> {
   @Column(name = "doc_id")
   private String docId;
 
+  @Column(name = "doc_version")
+  private String docVersion; // 增量幂等批键：同版本同切片数 ⇒ 跳过；异版本/残缺 ⇒ 软删重建
+
   @Column(name = "section_path")
   private String sectionPath; // chunk.path 面包屑（条款/章节层级）
 
@@ -65,6 +68,7 @@ public class RagChunk extends TenantAggregateRoot<Long> {
       Long id,
       Long tenantId,
       String docId,
+      String docVersion,
       String sectionPath,
       String text,
       float[] embedding,
@@ -76,6 +80,7 @@ public class RagChunk extends TenantAggregateRoot<Long> {
     chunk.id = id;
     chunk.setTenantId(tenantId);
     chunk.docId = docId;
+    chunk.docVersion = docVersion;
     chunk.sectionPath = sectionPath;
     chunk.text = text;
     chunk.embedding = encode(embedding);

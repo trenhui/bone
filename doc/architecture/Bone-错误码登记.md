@@ -161,6 +161,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `COMMON_NOT_FOUND` | 404 | 资源不存在 |
 | `COMMON_METHOD_NOT_ALLOWED` | 405 | HTTP 方法不被支持 |
 | `COMMON_NOT_IMPLEMENTED` | 501 | 能力未实现（连接器/适配器未实现），须与 500 区分 |
+| `COMMON_UNSUPPORTED_MEDIA_TYPE` | 415 | 请求 Content-Type 不被支持（如上传端点收到 application/json） |
 | `COMMON_CONFLICT` | 409 | 版本/状态冲突 |
 | `COMMON_IDEMPOTENCY_CONFLICT` | 409 | 幂等键冲突且 body 不一致 |
 | `COMMON_RATE_LIMITED` | 429 | 限流 |

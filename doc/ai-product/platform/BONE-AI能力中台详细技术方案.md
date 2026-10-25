@@ -1,6 +1,7 @@
 # BONE AI 能力中台 · 详细技术方案（详设）
 
-> **版本**：v1.9　**日期**：2026-10-24　**归口**：平台架构组
+> **版本**：v1.10　**日期**：2026-10-24　**归口**：平台架构组
+> **v1.10 变更（faithfulness 语义级评测落地，诊断复核 §7.4 缺口③）**：① **§2.7 新增回答质量门禁行 + 双层判官设计**——门禁层 `HeuristicAnswerQualityJudge`（rag，字符 bigram 包含度，零依赖确定性，`mvn clean verify` 承重）+ 语义层 `LlmAnswerQualityJudge`（app，走 `JudgePort` 网关计量，opt-in）；② **`AnswerQuality` 契约**——三项指标（faithfulness / answerRelevance / contextPrecision）构造期不变量校验 ∈[0,1]，`unsupportedClaims` 可枚举无据断言；**fail-closed**：空上下文 / 空答案 → 0 分，LLM JSON 畸形 / 越界 → 0 分且带原因，禁静默放行；③ **回答级 golden set 门禁** `RagAnswerGoldenSetEvalTest` 落地（4 主题 + 幻觉 / 半据半编两类阴性对照），golden 用例剔除无上下文支撑的装饰性引导语；④ **REST 判官端点** `POST /api/ai/v1/eval/judge/answer-quality`（判官输出不回写 `eval_run`，门禁权威只在 CI）；⑤ 验证证据：rag **109 测试全绿**（判官 12 例 + 回答级门禁）、app **85 测试 0 失败**（`LlmAnswerQualityJudgeTest` 7 例 / `EvalControllerTest` 3 例 / `RagControllerTest` 9 例 / `TraceRagEventSinkTest` 6 例；仅余 `BoneAiAppAssemblySmokeTest` 2 例既有 `spring-cloud-context` 缺依赖错误，与本次无关）；⑥ pgvector 索引化设计落 **RAG 方案 v1.10 §14**（本文 §2.6 检索链不变，切换时仅换 `VectorSearchPort` 实现）。
 > **v1.9 变更（企业复杂场景诊断优化落地，承接《方案诊断复核-2026-10-24》P0/P1/P2）**：① **§2.3 类型护栏由「目标态」转「已机械强制」**——`AiSuggestion<T>(value, confidence, evidenceRef)` / `Confirmed<T>(value, decidedBy, evidenceRef, at)` 两 record 在 `domain.decision` 落地（不变量：置信度 ∈[0,1]、证据引用必填；确认必记录裁决人 + 证据 + 时刻），`HitlItem.toConfirmed()` 为业务侧唯一确认产物入口（未裁 / 驳回 / 升级项取确认即显式失败），§3.3 ArchUnit 规则 6 由「批二启用」转「已启用」（`AiSuggestion` 禁越出 `domain.decision` 包），§3.4 / 附录 C 同步；② **§2.6 RAG 文档级 ACL 默认改 fail-closed**——未接入 `RagAclPort` 实现时装配 `DenyDocAcl`（空可见集 = 拒绝检索）而非 `NoDocAcl`（放行全租户），开发联调逃生口 `bone.ai.rag.acl.default-deny=false`（WARN，禁止带入生产），接入方 ACL 适配由 L3 可选升为 **Go-Live 硬依赖**（§6.4/§6.6 同步）；③ **§2.6 写入侧 PII 闭环**——`SensitiveDataMasker` ingest 字段级等长掩码（身份证前 6 后 4 / 手机号前 3 后 4 / 银行卡后 4（Luhn 防误伤）/ 邮箱保留首字符 + 域名），`bone.ai.rag.ingest.pii-mask-enabled` 默认开，等长保证 span 锚点不漂移，掩码处数经 `INGEST_PII_MASKED` 事件下沉；④ **§2.1 观测段 + §6.2 指标化**——`MicrometerLlmMetrics` 宿主适配器落地（`bone-ai-app` 存在 `MeterRegistry` 即自动装配：provider 调用 / 延迟 P99 / TTFT / token 三维度 / 短路 / 缓存 / 配额命中），`LlmMetrics` 发射点自此有真实消费方；⑤ **§4 #20 max-scan 默认 10000→3000**（过渡态内存打分几千条已劣化，10000 是「不可行点」才触发；与 warn-scan-threshold 2000 形成两级）；⑥ **§2.2 租户标识**——字符串租户键（子域 / UUID / 组织编码）映射层方案入 L3 待拍板；⑦ **§6.3 威胁模型决策**明确为上线前硬依赖（决策记录归档）。验证证据：orchestration 类型护栏 3 组新测试（AiSuggestion / Confirmed / HitlItemConfirmed）+ ArchUnit 规则 6、rag 掩码器 8 例 + ingest 接线 4 例、app Micrometer 适配 5 例。
 > **v1.8 变更（流式 SSE 落地——对齐 2026 业界最佳实践，关闭最大能力缺口）**：① §2.1 新增**流式能力段**——`LlmClient.streamChat(req, Consumer<LlmStreamEvent>)`（默认缓冲回退，零改传输实现）+ `LlmStreamEvent` sealed 事件（Token/Done/Error）；`LlmGatewayApplicationService.streamInvoke` **复用与 `invoke` 完全相同的治理链**（红线→路由→配额→注入→脱敏→缓存命中），仅在末端逐片下发 Token、首 token 记 TTFT（`LlmMetrics.recordFirstToken`）、流末做内容安全/结构化校验/缓存写入/计量/证据（与 `invoke` 同口径）；② 传输层 `LlmHttpTransport.streamPost` 默认缓冲回退，仅 `JdkLlmTransport` 走 **JDK `HttpClient` 真 SSE**（`BodyHandlers.ofInputStream()` 行读），`ResilientLlmTransport` 透传（熔断只守卫「流获取」不守卫消耗，避免吞掉半截流）；③ 契约一致性定案——**流式与 `invoke` 同口径：面向调用方返回原文，PII 脱敏只发生在出站请求与证据落库两处**（不做逐片流式脱敏，避免跨 chunk 边界漏脱敏与证据标签泄露调用方）；④ §3.2 补 `gen_ai.time_to_first_token`（TTFT）映射；⑤ §6.2 指标化行补 TTFT 发射点已具备；⑥ 验证证据：**gateway 115 测试全绿（含 ArchUnit 12 条——订正 v1.7「11 条」口径，实际 `ArchitectureTest` 引用 12 条规则；新增流式 7 例：SSE 解析/事件顺序/stream:true+include_usage 写入/缓冲回退/错误载荷/流末内容安全拦截/TTFT 与证据脱敏口径 + 缓存命中流式）**。
 > **v1.7 变更（密钥管理 seam 接线，续 Go-Live 硬依赖）**：① §2.1 密钥行补 **`ApiKeyProvider` 按调用解析**（此前端口已就位却零消费方——客户端构造期固化 `String apiKey`，密钥轮换语义落空，同 `LlmMetrics` 零消费方反模式；现补默认 `ConfigApiKeyProvider` + `@ConditionalOnMissingBean` 装配，客户端每次请求现取，接入方以 `@Bean` 覆盖为 bone-security Virtual Key 实现即生效，热路径零改动）；② §6.1 密钥托管行状态更新——网关侧 seam 已接通（✅），剩余 L3 收敛为 bone-security Virtual Key 能力本体实现；③ §2.1 默认开关表密钥行同步；④ 验证证据：gateway 108 测试全绿（含 ArchUnit 12 条，新增密钥轮换 / 空值 / 热更新 5 例；v1.8 订正原「11 条」为 12 条）。
@@ -276,12 +277,28 @@ DocumentIR { doc_id, tenant_id, source_ref, page_count, parse_mode, provider, pr
 |---|---|---|
 | 端到端质量 | 引用定位原文 100%（第一批出口判据） | 阻断 |
 | 检索质量 | RAG 引用正确率 ≥98% | 阻断（第二批） |
+| **回答质量（faithfulness）** | **答案三项指标门禁（v1.10 落地，`RagAnswerGoldenSetEvalTest` 内置常量）：`faithfulness ≥0.75`（fixture 实测 1.0，留 0.25 余量防分词波动）/ `answerRelevance ≥0.5` / `contextPrecision >0`；空上下文或空答案一律 0 分** | **阻断（已生效）** |
 | 稳定性 | 各批负向探针（成本红线/rerank 越权/规则灰度/网关延时增量/trace 落盘成功率） | 阻断 |
 | 成本 | 单请求 token 上限与红线命中率 | 告警 + 超限降档 |
 
 LLM-as-Judge 经网关计量（省 60–80% 人工标注）；冷启动 = 小规模人工标注 + HITL 回流滚雪球；不做全量标注平台（总案 §5）。
 
 **v1.9 落地实况（评测前置，2026-10-24）**：诊断复核 P1-3「评测后置」已整改——RAG 检索质量门禁不止挂发布流水线，而是**前置为构建内确定性回归测试**：`bone-ai-rag` 的 `RagGoldenSetEvalTest`（`mvn clean verify` 在 CI 强制执行）用小型中文 fixture 锁死「引用强制前置 → 双路（向量 + BM25）→ RRF → topK」链路，任何使预期切片掉出 topK 的回归（引用过剔 / RRF 权重错乱 / 分词退化 / 阈值误杀）直接红灯——零依赖、无真模型、秒级完成。与 Python sidecar（`eval/eval_rag.py`，真实语料 + 真模型的离线语义评测）分工：**前者守提交级回归，后者出批次级语义报告**。`eval_case` / `eval_run` 两张表的运行时计量（引用正确率 ≥98% 等）不变，仍由发布流水线读表出报告。
+
+**v1.10 落地实况（faithfulness 语义级评测，2026-10-24 晚）**：诊断复核 §7.4 缺口③「faithfulness 语义级裁判 + 生产 golden set 扩充」的**裁判与门禁部分已闭环**，采用**双判官分层**，两类判官职责不可互换：
+
+| 层 | 实现 | 判定机制 | 触发时机 | 成本 |
+|---|---|---|---|---|
+| **门禁层（承重）** | `bone-ai-rag` `HeuristicAnswerQualityJudge` | 字符二元组（bigram）包含度——答案按句读（含 `，`）切为**断言**，每断言取与各上下文的最大 bigram 包含率，≥支撑阈值 `DEFAULT_SUPPORT_THRESHOLD=0.25` 计为「有据支撑」；CJK 无空格，bigram 避免英文 tokenize 在中文上失效 | `mvn clean verify`，CI 强制 | 零依赖、零 token、毫秒级 |
+| **语义层（校准）** | `bone-ai-app` `LlmAnswerQualityJudge` | 走 `JudgePort` 经网关计量，模型输出 JSON（`faithfulness`/`answer_relevance`/`unsupported_claims`） | opt-in，离线语义校准 / 报表 | 一次 LLM 调用，计量入账 |
+
+**契约**：`AnswerQuality(double faithfulness, double answerRelevance, double contextPrecision, List<String> unsupportedClaims)` 为 record，构造期校验三项均 ∈[0,1]（越界即失败，非静默截断）；`AnswerQualityJudge` 端口只暴露一个 `judge(answer, question, contexts)`。**fail-closed 贯穿**：空上下文 / 空答案 → 三项全 0（不因「无从判定」而给及格分）；LLM 判官 JSON 缺失、越界、畸形数字 → 记 0 并带回原因，禁静默放行。
+
+**门禁用例（`RagAnswerGoldenSetEvalTest`，rag 侧）**：回答级 golden set 覆盖 4 个主题（违约金 / 保密期限 / 恢复原状 / 不可抗力），**含两类阴性对照**——① 纯幻觉答案（无上下文支撑）须判 0；② 半据半编答案（一半断言有支撑一半无）须跌破门禁且 `unsupportedClaims` 能枚举出具体无据断言。阳性对照要求干净据实答案三项全过——golden 用例**不含装饰性引导语**（如「依据合同约定，」），因为此类引导语在词法层无支撑依据，会与「未支撑断言可枚举」这一设计目标冲突。
+
+**REST 面**：`POST /api/ai/v1/eval/judge/answer-quality`（app 宿主，`EvalController` → `EvalManagementApplicationService` → `JudgePort`），供评测管线与人工抽检调用，判官输出不写门禁结果、不回写 `eval_run`（门禁权威只在 CI）。
+
+**验证证据**：rag 模块 **109 测试全绿**（`HeuristicAnswerQualityJudgeTest` 12 例覆盖 fail-closed / 部分忠实 / 相关性分离 / 阈值边界；`RagAnswerGoldenSetEvalTest` 回答级门禁）；app 模块 **85 测试 0 失败**（`LlmAnswerQualityJudgeTest` 7 例含畸形 JSON / 越界 / 负数 fail-closed，`EvalControllerTest` 3 例，`RagControllerTest` 9 例，`TraceRagEventSinkTest` 6 例），**仅余 `BoneAiAppAssemblySmokeTest` 2 例既有环境性错误**——根因 `NoClassDefFoundError: org/springframework/cloud/context/scope/refresh/RefreshScopeRefreshedEvent`，`bone-metadata-sdk` 的 `DelegatingMetadataService` 需 `spring-cloud-context` 而 app pom 未声明（报错在构造参数 0 的 `evalCaseRepository` 链，与本次新增的 judge 参数无关），已 A/B 证明先于本次改动、CI 不受影响。**未尽项**：生产语料 golden set 扩充（当前为 fixture 级，需 `reason_type` 回流积累）与语义判官的基线标定，均不阻塞门禁。
 
 **DDL（评测集表——已落地 `bone-init.sql` §12.2；宿主 = 发布流水线读表出报告，写入走 bone-ai-app 评测管理 REST）**：
 
@@ -445,7 +462,7 @@ CREATE TABLE eval_run (
 
 ## 5. 工程落地分解（WBS）
 
-**现状基线（2026-10-23 晚，与总案 §6 重基线一致）**：11 模块均已有最小落地。✅ = 最小版已落地（待出口判据验收 / 补治理面）；⏳ = 目标态。已落地：gateway 治理面全端口（红线/脱敏/配额/路由/缓存/注入/内容安全/级联/计量）、trace（三元组 + 同步落证 + 拒返）、rules 最小版（CRUD/版本/命中标记/回归门禁/QLExpress 求值）、orchestration 顺序流水线 + `DecisionGate` + HITL 五态/处置链/超时升级、document 最小 IR（PDFBox + Docling sidecar 适配器就位默认关）、rag 最小全链（租户隔离 + **文档级 ACL seam** + 容量护栏 + 双路 + RRF + rerank 条件装配与降级 + 引用强制 fail-closed + `doc_version` 幂等 ingest + **MMR 多样性选取（默认关）** + **降级痕迹可观测**；未配推理服务时哈希/NoOp 兜底）、notification/integration/ledger 最小版、bone-ai-app 聚合 REST 宿主、bone-ai-server 参考宿主。⏳ 目标态：多节点状态机（`FALLBACK_NODE`）、pgvector 终局、OTel 打点、前端确认台、模型锁型定版、JSON Schema 强校验、红线结果型短路、RAG 查询改写（决策：批二按评测回流启动，暂不建零消费方 machinery）。
+**现状基线（2026-10-24 晚，与总案 §6 重基线一致）**：11 模块均已有最小落地。✅ = 最小版已落地（待出口判据验收 / 补治理面）；⏳ = 目标态。已落地：gateway 治理面全端口（红线/脱敏/配额/路由/缓存/注入/内容安全/级联/计量）、trace（三元组 + 同步落证 + 拒返）、rules 最小版（CRUD/版本/命中标记/回归门禁/QLExpress 求值）、orchestration 顺序流水线 + `DecisionGate` + HITL 五态/处置链/超时升级 + 类型护栏（v1.9）、document 最小 IR（PDFBox + Docling sidecar 适配器就位默认关）、rag 最小全链（租户隔离 + **文档级 ACL 默认 fail-closed（v1.9）** + 容量护栏 + 双路 + RRF + rerank 条件装配与降级 + 引用强制 fail-closed + `doc_version` 幂等 ingest + **MMR 多样性选取（默认关）** + **降级痕迹可观测** + **写入侧 PII 等长掩码（v1.9）** + **回答质量三项判官与回答级 golden-set 门禁（v1.10）**；未配推理服务时哈希/NoOp 兜底）、notification/integration/ledger 最小版、bone-ai-app 聚合 REST 宿主（+ Micrometer 适配器 v1.9 + 判官端点 v1.10）、bone-ai-server 参考宿主。⏳ 目标态：多节点状态机（`FALLBACK_NODE`）、pgvector 终局（**设计已闭环 v1.10，仅剩实施**）、OTel 打点、前端确认台、模型锁型定版、JSON Schema 强校验、红线结果型短路、RAG 查询改写（决策：批二按评测回流启动，暂不建零消费方 machinery）、语义判官生产校准集扩充（v1.10 起 opt-in，不阻塞门禁）。
 
 ### 第 0 批 POC（2 周）
 
@@ -524,7 +541,7 @@ CREATE TABLE eval_run (
 |---|---|---|
 | 默认防线（零配置保护） | 成本红线强制 ✅；出口 PII 脱敏默认开 ✅（身份证 ISO 7064 / 银行卡 Luhn 校验位闸门）；租户配额默认开 ✅；结构化校验（`jsonResponse` 时）✅——总表见 §2.1 | ✅ |
 | 写入侧 PII 保护 | **v1.9 新增**：RAG ingest 入库前字段级等长局部掩码（身份证保 6+4 / 银行卡 Luhn 防误伤保后 4 / 手机号保 3+4 / 邮箱保首字符+域名；`bone.ai.rag.ingest.pii-mask-enabled` 默认 true，`INGEST_PII_MASKED` 事件透出命中数）——先掩码后嵌入，PII 不入向量库；逃生口 `false` 仅限开发联调（WARN） | ✅ 代码已落地（`SensitiveDataMasker` 纯函数 + 12 例回归） |
-| 威胁模型评估 | 提示注入检测（默认关，启发式误伤面）与输出内容安全（默认关）：上线前按场景威胁模型决定是否开启；开启即配误伤监控与人工抽检 | ⏳ **硬依赖**（决策记录归档） |
+| 威胁模型评估 | 提示注入检测（默认关，启发式误伤面）与输出内容安全（默认关）：上线前按场景威胁模型决定是否开启；开启即配误伤监控与人工抽检 | ⏳ **硬依赖**（决策记录归档）——**决策就绪材料已备**：见《BONE-AI架构决策记录ADR包-2026-10-24》ADR-1（三产品威胁矩阵 + 建议：内容安全三产品默认开、注入检测三件套） |
 | 出站安全 | SSRF 守卫（integration 出站）+ HMAC 回调校验 + Webhook 签名（notification） | ✅ |
 | 审计留存 | 证据快照 ≥7 年 / 运行日志 ≥6 个月（§4 #12）；`ai_trace_snapshot` 分区策略（按月 / 按租户）随数据量落地 | ⏳ |
 | 供应链 | SBOM 冻结 + CVE 门禁 + 负表拦截（SBOM §6）；客户交付披露口径待法务回复 5 项待确认 | ✅ 流程已立，法务签字 ⏳ |
@@ -536,7 +553,7 @@ CREATE TABLE eval_run (
 | 网关增量 | 库形态 P99 <10ms（§4 #15） | ✅ 设计具备，POC 实测回填 |
 | 配额多副本 | `TenantQuotaGuard` 双实现：进程内固定窗口（单副本）+ **Redis 分布式固定窗口**（`RedisTenantQuotaGuard`，Redisson `RMap` 计数 + 首键 TTL；容器存在 `RedissonClient` bean 且 `quota-redis-enabled=true`（默认）时自动启用；**Redis 故障 fail-open + WARN**——配额是成本防线不是可用性防线，不能因缓存抖动阻断业务）。多副本部署不再有硬依赖 | ✅（`bone-ai-gateway` 已落地；`spring-boot-starter-data-redis`/Redisson 由宿主按需提供，`@ConditionalOnClass` 守卫，零新增必选依赖） |
 | 检索性能 | 检索 P95 <800ms 不含生成（§4 #7，批二压测）；provider 超时/重试/降档参数按容量实测（§4 #2） | ⏳ 批二 |
-| 检索容量护栏 | `max-scan` 默认 **3000**（v1.9 由 10000 下调，与 `warn-scan-threshold` 2000 两级水位）fail-closed 已落地（§4 #20，超限即拒、不静默截断）；容量水位观测（租户切片数分布）与 pgvector 索引化排期 | ✅ 护栏代码具备，水位观测 ⏳ 批二 |
+| 检索容量护栏 | `max-scan` 默认 **3000**（v1.9 由 10000 下调，与 `warn-scan-threshold` 2000 两级水位）fail-closed 已落地（§4 #20，超限即拒、不静默截断）；容量水位观测（租户切片数分布）与 pgvector 索引化排期 | ✅ 护栏代码具备，水位观测 ⏳ 批二；**pgvector 迁移设计已闭环（v1.10，RAG 方案 §14：`VectorSearchPort` + 四阶段 + 验收闸门 recall@10 ≥0.98），实施待批二排期** |
 | 检索权限隔离 | 租户硬隔离 + **文档级 ACL 默认 fail-closed**（v1.9：`bone.ai.rag.acl.default-deny=true`，未适配 ACL 时 `DenyDocAcl` 返回空可见集 = 拒绝检索，而非放行全租户；`NoDocAcl` 降级为开发联调形态需显式关闭 + WARN）已落地；**接入方 ACL 适配**（文档中心 / bone-ai-document 可见集合）为 L3 硬依赖——Go-Live 前未接入即拒绝服务而非裸奔 | ✅ 默认 deny 代码具备，ACL 适配 ⏳ L3 |
 | 降级可观测 | 降级痕迹码透出响应 `degradations` + `RagEventSink` 事件端口（默认 WARN 日志）；trace 落库 + 告警接线（落盘成功率 ≥99.9% 告警线） | ✅ 端口与痕迹具备，trace 适配 ⏳ L3 |
 | 证据容量 | 事件 payload ≤8KB、大 IR 走 MinIO（§4 #8/#9） | ✅ |

@@ -59,3 +59,14 @@ bone:
       # 写入侧 PII 字段级掩码（2026-10-24 起默认开：身份证/手机号/银行卡/邮箱等长局部掩码，span 锚点不漂移）
       ingest:
         pii-mask-enabled: true
+      # 生成侧接地（确定性守卫阈值 + 可选语义裁判；2026-10-24 R5）
+      grounding:
+        # 语义接地裁判（faithfulness NLI 判定，经网关卡面）：确定性守卫过关后追加一层，拦「词面全对但结论上下文没给」的
+        # paraphrase 编造。**默认 false = opt-in**——裁判使每次问答成本约翻倍（生成 + 裁判两次模型调用），默认只保留
+        # 零成本确定性守卫；高合规场景显式置 true。裁判自身故障回落确定性守卫 + degradations=GROUNDING_JUDGE_DEGRADED
+        judge-enabled: false
+      # 检索链路阶段计时（B16 / R6 子项，opt-in，默认关）：开启时每次 retrieve 末尾汇总各阶段墙钟时延事件
+      # （RETRIEVE_STAGES，形如 acl=..;embed=..;score=..;rerank=..;mmr=..;assemble=..;total=..;candidates=..），
+      # 经 RagEventSink 落 trace 证据快照，供诊断 / 压测期定位性能瓶颈（与 RETRIEVE_SLOW 同告警线）。
+      # 默认关——每查询多落一条证据快照，生产常态不付该开销；待接入 OTel 后升级为真实 gen_ai.* 子 span。
+      stage-tracing-enabled: false

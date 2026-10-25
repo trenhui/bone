@@ -3,8 +3,12 @@ package com.bone.airag.application;
 import com.bone.airag.common.AiRagErrorCodes;
 import com.bone.airag.domain.gateway.AnswerGenerationException;
 import com.bone.airag.domain.gateway.AnswerGenerationPort;
+import com.bone.airag.domain.gateway.GroundingJudgePort;
+import com.bone.airag.domain.gateway.RagEventSink;
 import com.bone.airag.domain.model.GroundedPrompt;
+import com.bone.airag.domain.model.GroundingJudgeVerdict;
 import com.bone.airag.domain.model.GroundingVerdict;
+import com.bone.airag.domain.model.RagEvent;
 import com.bone.airag.domain.model.RagQuery;
 import com.bone.airag.domain.service.GroundedPromptBuilder;
 import java.util.ArrayList;
@@ -13,17 +17,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * RAG 回答编排（R1 闭环：检索 → 接地提示词 → 生成 → 接地校验 → 拒答或返回）。
+ * RAG 回答编排（R1 闭环：检索 → 接地提示词 → 生成 → 接地校验 → 拒答或返回；R5 叠加语义裁判）。
  *
- * <p><b>四个不可省的顺序语义</b>：
+ * <p><b>五个不可省的顺序语义</b>：
  *
  * <ol>
  *   <li><b>先检索、无据不调模型</b>：检索结果为空时直接拒答，<b>不发起 LLM 调用</b>——没有上下文的生成必然靠模型自身
  *       知识，正是「无出处不得生成」要禁止的情形；同时也省掉一次纯浪费的模型成本。
  *   <li><b>预算截断后只对「真进了提示词的那部分」校验</b>：{@link GroundedPrompt#included()} 而非全部检索结果。 否则模型引用 {@code
  *       [3]}、而 {@code [3]} 已被预算截掉时，守卫与提示词对不上账，校验结论失去意义。
- *   <li><b>生成后必过守卫</b>：{@link RagApplicationService#verifyGrounding} 校验引用完整性与逐句支撑（含数字一致性）， 不通过即拒答并把
- *       {@link GroundingVerdict} 一并返回（前端可展示原因、监控可聚合拒答率）。
+ *   <li><b>生成后必过确定性守卫</b>：{@link RagApplicationService#verifyGrounding} 校验引用完整性与逐句词面支撑（含数字一致性），
+ *       不通过即拒答并把 {@link GroundingVerdict} 一并返回（前端可展示原因、监控可聚合拒答率）。
+ *   <li><b>确定性过关后再过语义裁判</b>（R5）：词面守卫放行 ≠ 答案真被支撑——复用上下文词汇的拼接句词覆盖率高、数字也全对， 却是上下文并没给出的结论。{@link
+ *       GroundingJudgePort} 以 NLI 口径补这一刀；裁判明确判定无支撑即拒答（{@code JUDGE_UNSUPPORTED}），裁判自身故障（provider /
+ *       治理拒绝 / 不可解析）回落确定性结论并留 {@link #DEGRADE_GROUNDING_JUDGE} 痕迹——裁判故障既不拒答（可用性）也不放行编造（确定性守卫仍在岗）。
  *   <li><b>拒答不重试、不降级为「自由发挥」</b>：拒答是合规结果；退化成「不带出处的回答」等于把红线作废。
  * </ol>
  *
@@ -32,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * RagAnswerOutcome#unavailable} 可控拒答—— 异常上抛会把「这次答不了」升级成「业务流程中断」；errorCode 保真透传，安全事件不伪装成服务故障。
  *
  * <p><b>职责边界</b>：本类只做编排（顺序、短路、痕迹聚合）。提示词规则在 {@link GroundedPromptBuilder}，判定规则在 {@code
- * GroundingGuard}，检索在 {@link RagApplicationService}——应用层不承载领域规则（ArchUnit 约束）。
+ * GroundingGuard}（确定性）与裁判端口实现（语义），检索在 {@link RagApplicationService}——应用层不承载领域规则（ArchUnit 约束）。
  */
 public class RagAnswerService {
 
@@ -48,17 +55,39 @@ public class RagAnswerService {
    */
   public static final String DEGRADE_CONTEXT_TRUNCATED = "CONTEXT_TRUNCATED";
 
+  /**
+   * 降级痕迹码（R5，进入 {@code degradations}）：语义接地裁判自身不可用（provider 故障 / 治理拒绝 / 输出不可解析）， 本次回落确定性守卫单层校验。
+   *
+   * <p>语义裁判是增强层不是唯一防线：它故障时把可答问题变成拒答等于自造可用性事故，静默放行又等于放开 paraphrase 编造面—— 两条路都不走，回落确定性守卫 +
+   * 留痕，让「这段时间只有一层校验在岗」可观测、可追责。
+   */
+  public static final String DEGRADE_GROUNDING_JUDGE = "GROUNDING_JUDGE_DEGRADED";
+
+  /**
+   * 事件码（合规拒答，非降级）：语义裁判明确判定答案存在无支撑陈述，拒答（R5）。
+   *
+   * <p>与 {@link RagApplicationService#EVENT_GROUNDING_REJECTED}（词面守卫拒答）分码：两者都是拒答，但归因完全不同—— 前者是语料覆盖
+   * / 模型漂移 / 分词口径问题，后者是模型「词面对话术背后编结论」，监控须能分别聚合、分别校准。
+   */
+  public static final String EVENT_GROUNDING_JUDGE_REJECTED = "GROUNDING_JUDGE_REJECTED";
+
   private final RagApplicationService ragService;
   private final AnswerGenerationPort answerPort;
   private final GroundedPromptBuilder promptBuilder;
+  private final GroundingJudgePort groundingJudge;
+  private final RagEventSink eventSink;
 
   public RagAnswerService(
       RagApplicationService ragService,
       AnswerGenerationPort answerPort,
-      GroundedPromptBuilder promptBuilder) {
+      GroundedPromptBuilder promptBuilder,
+      GroundingJudgePort groundingJudge,
+      RagEventSink eventSink) {
     this.ragService = ragService;
     this.answerPort = answerPort;
     this.promptBuilder = promptBuilder;
+    this.groundingJudge = groundingJudge;
+    this.eventSink = eventSink;
   }
 
   /** 检索并回答一个问题（完整闭环）。 */
@@ -76,7 +105,8 @@ public class RagAnswerService {
           List.of(),
           retrieved.degradations(),
           0,
-          false);
+          false,
+          null);
     }
 
     GroundedPrompt prompt = promptBuilder.build(query.query(), retrieved.results());
@@ -110,7 +140,36 @@ public class RagAnswerService {
           prompt.included(),
           degradations,
           prompt.estimatedTokens(),
-          prompt.truncated());
+          prompt.truncated(),
+          null);
+    }
+    // 确定性守卫过关 ⇒ 语义裁判（R5）。词面全对不代表结论有据——拼接句专门穿透词面校验
+    GroundingJudgeVerdict judgeVerdict =
+        groundingJudge.judge(query.query(), answer, prompt.included());
+    if (judgeVerdict.rejected()) {
+      eventSink.record(
+          new RagEvent(
+              EVENT_GROUNDING_JUDGE_REJECTED,
+              "reason="
+                  + judgeVerdict.reason()
+                  + ", unsupported="
+                  + judgeVerdict.unsupportedSentences().size()
+                  + "（词面守卫已过，语义裁判拦截 paraphrase 编造）"));
+      return new RagAnswerOutcome(
+          false,
+          REFUSAL_ANSWER,
+          AiRagErrorCodes.GROUNDING_FAILED,
+          verdict,
+          prompt.included(),
+          degradations,
+          prompt.estimatedTokens(),
+          prompt.truncated(),
+          judgeVerdict);
+    }
+    if (judgeVerdict.unavailable()) {
+      // 裁判自身故障：回落确定性单层校验（可用性优先），但必须留痕——「只有一层校验在岗」可观测
+      degradations = withDegradation(degradations, DEGRADE_GROUNDING_JUDGE);
+      log.warn("RAG 语义接地裁判不可用，回落确定性守卫单层校验: detail={}", judgeVerdict.unsupportedSentences());
     }
     return new RagAnswerOutcome(
         true,
@@ -120,7 +179,8 @@ public class RagAnswerService {
         prompt.included(),
         degradations,
         prompt.estimatedTokens(),
-        prompt.truncated());
+        prompt.truncated(),
+        judgeVerdict);
   }
 
   /** 合并检索降级与本地截断痕迹（保序去重）。 */
@@ -129,6 +189,16 @@ public class RagAnswerService {
     if (truncated && !out.contains(DEGRADE_CONTEXT_TRUNCATED)) {
       out.add(DEGRADE_CONTEXT_TRUNCATED);
     }
+    return List.copyOf(out);
+  }
+
+  /** 追加减级痕迹（保序去重；裁判故障路径用，避免 merged 的截断语义被绕开）。 */
+  private static List<String> withDegradation(List<String> degradations, String code) {
+    if (degradations.contains(code)) {
+      return degradations;
+    }
+    List<String> out = new ArrayList<>(degradations);
+    out.add(code);
     return List.copyOf(out);
   }
 }

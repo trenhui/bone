@@ -138,7 +138,8 @@ class RagServiceTest {
         warnScanThreshold,
         slowRetrieveMs,
         new GroundingGuard(0.6, 0.0),
-        masker);
+        masker,
+        false);
   }
 
   @Test
@@ -645,6 +646,63 @@ class RagServiceTest {
     assertThat(sink.events)
         .extracting(RagEvent::type)
         .containsExactly(RagApplicationService.EVENT_RETRIEVE_SLOW);
+  }
+
+  @Test
+  void stage_tracing_emits_retrieve_stages_event_when_enabled() {
+    // B16 / R6 子项：阶段级检索链路计时（opt-in）。开启时 retrieve 末尾汇总各阶段墙钟时延事件，
+    // 经 RagEventSink 落 trace 证据快照，供诊断 / 压测期定位性能瓶颈（与 RETRIEVE_SLOW 同告警线）。
+    ChunkRepository repo = mock(ChunkRepository.class);
+    EmbeddingPort embed = mock(EmbeddingPort.class);
+    TenantProvider tenant = mock(TenantProvider.class);
+    RecordingSink sink = new RecordingSink();
+
+    RagChunk a = chunk(1L, "doc1", "v1", "query alpha", new float[] {1f, 0f, 0f}, "clause-1");
+    RagChunk b = chunk(2L, "doc1", "v1", "gamma delta", new float[] {0f, 1f, 0f}, "clause-2");
+
+    when(tenant.currentTenantId()).thenReturn(42L);
+    when(repo.findByTenantAndDocScope(eq(42L), any())).thenReturn(List.of(a, b));
+    when(embed.version()).thenReturn("hash-64");
+    when(embed.embed("query")).thenReturn(new float[] {1f, 0f, 0f});
+
+    // 显式开启阶段计时（构造器末位 stageTracingEnabled=true）
+    RagApplicationService service =
+        new RagApplicationService(
+            repo,
+            embed,
+            new NoOpReranker(),
+            tenant,
+            new NoDocAcl(),
+            sink,
+            30,
+            0.0,
+            0,
+            -1,
+            new GroundingGuard(0.6, 0.0),
+            SensitiveDataMasker.disabled(),
+            true);
+
+    service.retrieve(new RagQuery("query", null, 5));
+
+    // 默认关：其余测试（warnScanThreshold=0 / slowRetrieveMs=-1）下仅本事件，类型断言 + 阶段字段齐备
+    assertThat(sink.events)
+        .extracting(RagEvent::type)
+        .contains(RagApplicationService.EVENT_RETRIEVE_STAGES);
+    RagEvent stages =
+        sink.events.stream()
+            .filter(e -> e.type().equals(RagApplicationService.EVENT_RETRIEVE_STAGES))
+            .findFirst()
+            .orElseThrow();
+    assertThat(stages.detail())
+        .contains("acl=")
+        .contains("capacity=")
+        .contains("embed=")
+        .contains("score=")
+        .contains("rerank=")
+        .contains("mmr=")
+        .contains("assemble=")
+        .contains("total=")
+        .contains("candidates=");
   }
 
   @Test

@@ -47,6 +47,16 @@ public final class CommonErrorCodes {
   /** HTTP 方法不被支持（405）。 */
   public static final String METHOD_NOT_ALLOWED = "COMMON_METHOD_NOT_ALLOWED";
 
+  /**
+   * 请求 Content-Type 不被支持（415）。
+   *
+   * <p>典型触发：端点声明 {@code consumes = MULTIPART_FORM_DATA_VALUE}（上传/导入）而调用方发了 {@code
+   * application/json}，或反之。Spring 在 {@code RequestMappingInfoHandlerMapping#handleNoMatch} 抛 {@code
+   * HttpMediaTypeNotSupportedException}；若不显式处理，会被 {@code @ExceptionHandler(Exception.class)} 兜底成
+   * 500，把「调用方用错媒体类型」伪装成服务端故障。
+   */
+  public static final String UNSUPPORTED_MEDIA_TYPE = "COMMON_UNSUPPORTED_MEDIA_TYPE";
+
   /** 能力未实现（501，如连接器/适配器未实现）—— 必须显式区别于 500。 */
   public static final String NOT_IMPLEMENTED = "COMMON_NOT_IMPLEMENTED";
 

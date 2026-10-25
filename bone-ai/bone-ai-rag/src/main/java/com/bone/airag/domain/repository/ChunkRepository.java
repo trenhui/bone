@@ -18,4 +18,14 @@ public interface ChunkRepository extends Repository<RagChunk, Long> {
     }
     return all.stream().filter(c -> docScope.equals(c.getDocId())).collect(Collectors.toList());
   }
+
+  /** 租户 + 文档精确作用域（增量幂等批键：同 docVersion 同切片数 ⇒ 幂等跳过）。 */
+  default List<RagChunk> findByTenantAndDoc(Long tenantId, String docId) {
+    return QueryBuilder.from(RagChunk.class)
+        .where(RagChunk::getTenantId)
+        .eq(tenantId)
+        .and(RagChunk::getDocId)
+        .eq(docId)
+        .list();
+  }
 }

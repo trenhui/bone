@@ -169,7 +169,8 @@ class RagControllerTest {
                 List.of(new RagResult("c1", "clause-1", 0, 10, 0.9, "ch1", "text")),
                 List.of(),
                 10,
-                false));
+                false,
+                null));
 
     mockMvc
         .perform(
@@ -213,7 +214,8 @@ class RagControllerTest {
                 List.of(),
                 List.of(),
                 0,
-                false));
+                false,
+                null));
     when(props.getRagTopK()).thenReturn(3);
     when(props.getRagMinScore()).thenReturn(0.1);
     when(props.getRagMaxScan()).thenReturn(500);

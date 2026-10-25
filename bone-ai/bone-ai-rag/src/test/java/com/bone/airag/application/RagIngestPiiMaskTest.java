@@ -62,7 +62,8 @@ class RagIngestPiiMaskTest {
         0,
         -1,
         new GroundingGuard(0.6, 0.0),
-        masker);
+        masker,
+        false);
   }
 
   @Test

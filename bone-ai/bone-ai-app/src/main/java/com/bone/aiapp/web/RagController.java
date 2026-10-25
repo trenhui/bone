@@ -50,10 +50,12 @@ public class RagController {
   }
 
   /**
-   * RAG 回答闭环（R1 接 G）：同一受控检索 + 「接地提示词 → 网关卡面生成 → 接地守卫」。
+   * RAG 回答闭环（R1 接 G + R5 语义裁判）：同一受控检索 + 「接地提示词 → 网关卡面生成 → 确定性守卫 → 语义接地裁判」。
    *
    * <p>空检索不调模型（无据不生成）；生成被网关治理链拒绝（注入疑似 / 配额 / 红线 / 内容安全）或 provider 故障时收敛为可控拒答 （{@code
-   * answered=false} + 保真 {@code errorCode}），不抛异常冲出接口。
+   * answered=false} + 保真 {@code errorCode}），不抛异常冲出接口。确定性守卫（引用强制 / 逐句词面支撑 / 数字一致性） 过关后追加语义裁判（{@code
+   * bone.ai.rag.grounding.judge-enabled} 控制）：词面全对但结论上下文没给的 paraphrase 编造由裁判拦截拒答； 裁判自身故障回落确定性守卫并在
+   * {@code degradations} 留 {@code GROUNDING_JUDGE_DEGRADED} 痕迹（答案照常返回）。
    */
   @PostMapping("/answer")
   public ApiResponse<RagAnswerResponse> answer(@RequestBody RagAnswerRequest req) {
