@@ -33,7 +33,7 @@ public class SqlBuilder {
   public void init() {
     builders.put(QueryType.SELECT, new SelectBuilder(metadataService, dialect));
     builders.put(QueryType.COUNT, new CountBuilder(metadataService));
-    builders.put(QueryType.BATCH_INSERT, new BatchInsertBuilder());
+    builders.put(QueryType.BATCH_INSERT, new BatchInsertBuilder(dialect));
     builders.put(QueryType.BATCH_UPDATE, new BatchUpdateBuilder());
     builders.put(QueryType.DYNAMIC_UPDATE, new DynamicUpdateBuilder());
     builders.put(QueryType.CONDITIONAL_UPDATE, new ConditionalUpdateBuilder());

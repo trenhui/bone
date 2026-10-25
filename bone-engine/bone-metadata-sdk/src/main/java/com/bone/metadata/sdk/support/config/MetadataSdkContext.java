@@ -58,4 +58,9 @@ public class MetadataSdkContext {
     check();
     return INSTANCE.databaseType;
   }
+
+  /** 非抛错版数据库类型读取：上下文未初始化时返回 null，供可降级路径使用。 */
+  public static DatabaseType peekDatabaseType() {
+    return INIT.get() ? INSTANCE.databaseType : null;
+  }
 }
