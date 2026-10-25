@@ -21,7 +21,8 @@ bone-metadata-sdk 的 `.sql` 模板不是"原样喂给 JDBC"，它有两步会�
 三条约束（本门禁强制）
 --------------------------------------------------------------
 A. 首个非空行必须以语句关键字打头（`SELECT` / `INSERT` / `UPDATE` / `DELETE` / `WITH`）。
-B. 全文不得出现 `--` 行注释——说明性文字写进仓储接口方法的 Javadoc（那里才是给人看的）。
+B. 全文不得出现 `--` 注释——**行首与行内尾注都算**（`WHERE x = 1 -- 说明` 压平后
+   同样会吞掉其后的全部语句）。说明性文字写进仓储接口方法的 Javadoc（那里才是给人看的）。
 C. `/*bone:tenant*/` 锚点前必须是 `AND`（或紧跟 `WHERE`），保证替换后仍是合法布尔表达式。
 
 范围：运行时路径上的 `*/src/main/resources/sql/**`；`sqlFragment/` 片段（列清单、
@@ -65,9 +66,16 @@ def templates() -> list[Path]:
     return sorted(out)
 
 
+def _strip_string_literals(line: str) -> str:
+    """抹掉单引号字符串字面量，避免把 `'a--b'` 这类字面量误判成注释。"""
+    return re.sub(r"'([^']|'')*'", "''", line)
+
+
 def check(path: Path) -> list[str]:
     """返回该模板的违规说明（空列表 = 合规）。"""
     text = path.read_text(encoding="utf-8", errors="ignore")
+    # 去 BOM：否则首行会以 \ufeff 打头，正则匹配不到关键字（Windows 编辑器常见）
+    text = text.lstrip("\ufeff")
     raw_lines = text.splitlines()
     non_empty = [ln.strip() for ln in raw_lines if ln.strip()]
     problems: list[str] = []
@@ -77,10 +85,16 @@ def check(path: Path) -> list[str]:
     if not KEYWORD.match(first):
         problems.append(f"首行不是语句关键字（实际: {first[:60]!r}）——SDK 会判为 UNKNOWN")
 
-    # B. 禁止 `--` 行注释
+    # B. 禁止 `--` 行注释：行首与**行内尾注**同样致命。
+    #    只查行首是不够的——`WHERE x = 1 -- 说明` 压平成单行后，`--` 之后的所有语句
+    #    （含 ORDER BY/LIMIT 乃至后续拼接片段）一并被注释掉，报 bad SQL grammar。
     for idx, ln in enumerate(raw_lines, 1):
-        if ln.strip().startswith("--"):
-            problems.append(f"第 {idx} 行是 `--` 行注释——SDK 压平后会注释掉后续 SQL")
+        code = _strip_string_literals(ln)
+        if "--" in code:
+            where = "行首" if code.strip().startswith("--") else "行内"
+            problems.append(
+                f"第 {idx} 行含 `--` {where}注释——SDK 压平后会吞掉其后的 SQL（说明请写进接口 Javadoc）"
+            )
             break
 
     # C. 锚点前必须有 AND / WHERE

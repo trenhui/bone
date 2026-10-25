@@ -160,7 +160,7 @@ CLAIM_ID=$(echo "$CREATE_BODY" | jget data.claimId)
 CLAIM_NO=$(echo "$CREATE_BODY" | jget data.claimNo)
 echo "  → claimId=$CLAIM_ID claimNo=$CLAIM_NO"
 if [ -z "$CLAIM_ID" ]; then
-  echo "  \033[31m✗ 未取得 claimId，中止\033[0m"; echo "  响应: $(echo "$CREATE_BODY" | head -c 400)"; exit 1
+  printf "  \033[31m✗ 未取得 claimId，中止\033[0m\n"; echo "  响应: $(echo "$CREATE_BODY" | head -c 400)"; exit 1
 fi
 
 # ---------- Step 4：幂等重放（同键同体 → 原响应） ----------
@@ -173,10 +173,10 @@ REPLAY_BODY=$(body_of "$REPLAY")
 check "同键同体重放被幂等接管" "$REPLAY_CODE" "200 201"
 REPLAY_ID=$(echo "$REPLAY_BODY" | jget data.claimId)
 if [ "$REPLAY_ID" = "$CLAIM_ID" ]; then
-  PASS=$((PASS + 1)); echo "  \033[32m✓\033[0m 重放返回同一 claimId（${REPLAY_ID}）"
+  PASS=$((PASS + 1)); printf "  \033[32m✓\033[0m 重放返回同一 claimId（${REPLAY_ID}）\n"
 else
   FAIL=$((FAIL + 1)); FAILED_CASES+=("幂等重放 claimId 不一致 ($REPLAY_ID != $CLAIM_ID)")
-  echo "  \033[31m✗\033[0m 重放 claimId 不一致（${REPLAY_ID} != ${CLAIM_ID}）"
+  printf "  \033[31m✗\033[0m 重放 claimId 不一致（${REPLAY_ID} != ${CLAIM_ID}）\n"
 fi
 
 # ---------- Step 5：幂等冲突（同键异体 → 409） ----------
@@ -212,9 +212,9 @@ check "详情返回 2 条费用明细" "$ITEM_COUNT" "2"
 PAGE=$(req GET "$GW/api/v1/claims?statuses=ACCEPTED&page=1&size=10" "${AUTH[@]}")
 check "GET /api/v1/claims（分页）" "$(code_of "$PAGE")" "200"
 if echo "$(body_of "$PAGE")" | grep -q "$CLAIM_NO"; then
-  PASS=$((PASS + 1)); echo "  \033[32m✓\033[0m 分页结果包含新报案 $CLAIM_NO"
+  PASS=$((PASS + 1)); printf "  \033[32m✓\033[0m 分页结果包含新报案 $CLAIM_NO\n"
 else
-  FAIL=$((FAIL + 1)); FAILED_CASES+=("分页未包含 $CLAIM_NO"); echo "  \033[31m✗\033[0m 分页未包含 $CLAIM_NO"
+  FAIL=$((FAIL + 1)); FAILED_CASES+=("分页未包含 $CLAIM_NO"); printf "  \033[31m✗\033[0m 分页未包含 $CLAIM_NO\n"
 fi
 NOTFOUND=$(req GET "$GW/api/v1/claims/999999999999" "${AUTH[@]}")
 check "不存在 ID 返回 404（防枚举）" "$(code_of "$NOTFOUND")" "404"
@@ -266,10 +266,10 @@ CORS_ORIGIN=$(echo "$(req OPTIONS "$GW/api/v1/claims" \
   -H "Origin: http://localhost:3013" \
   -H "Access-Control-Request-Method: POST" -D - -o /dev/null)" | grep -i "access-control-allow-origin" | tr -d '\r' | awk '{print $2}')
 if echo "$CORS_ORIGIN" | grep -q "3013"; then
-  PASS=$((PASS + 1)); echo "  \033[32m✓\033[0m Allow-Origin 回显 3013（${CORS_ORIGIN}）"
+  PASS=$((PASS + 1)); printf "  \033[32m✓\033[0m Allow-Origin 回显 3013（${CORS_ORIGIN}）\n"
 else
   FAIL=$((FAIL + 1)); FAILED_CASES+=("CORS Allow-Origin 缺失/不含 3013（实际: ${CORS_ORIGIN:-空}）")
-  echo "  \033[31m✗\033[0m Allow-Origin 不含 3013（实际: ${CORS_ORIGIN:-空}）"
+  printf "  \033[31m✗\033[0m Allow-Origin 不含 3013（实际: ${CORS_ORIGIN:-空}）\n"
 fi
 
 # ---------- 汇总 ----------

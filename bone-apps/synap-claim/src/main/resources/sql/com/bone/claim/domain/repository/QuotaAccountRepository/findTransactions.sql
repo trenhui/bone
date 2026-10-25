@@ -15,4 +15,5 @@ SELECT
 FROM t_quota_transaction
 WHERE quota_account_id = :quotaAccountId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY id

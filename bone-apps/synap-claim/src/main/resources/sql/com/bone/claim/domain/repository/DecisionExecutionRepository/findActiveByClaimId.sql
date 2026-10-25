@@ -23,4 +23,5 @@ FROM claim_decision_execution
 WHERE claim_id = :claimId
   AND active_flag = 1 AND
   /*bone:tenant*/
+  AND deleted = 0
 LIMIT 1

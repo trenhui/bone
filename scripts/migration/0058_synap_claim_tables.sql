@@ -22,15 +22,16 @@
 USE bone;
 
 -- ── 0. 清理早期原型残留表（2026-10-25 联调核验后处置） ───────────────────────
---    证据：两表均 0 行；列形状已被 V1 取代且无任何现行代码引用——
---    · t_claim_case（26 列）：含已废弃的 insured_name（PII 直存，现行设计仅
---      insured_id_hash 假名化）、hospital_level、evidences、fraud_flags 等列；
---      现行 V1 形态为 37 列（findClaimWithItems.sql 等按 37 列口径读写）。
---    · t_claim_case_item（10 列）：早期原型表名，现行名为 t_claim_item。
---    · 0047_ui_schema_demo_seed.sql 仅在 meta_entity 目录登记旧 demo 实体名，
---      非物理 DDL；e2e 脚本用的是运行时动态表（t_claim_case_e2e_*），均不受影响。
---    DROP IF EXISTS 保证幂等；新装库无此二表，退化为 no-op。
-DROP TABLE IF EXISTS t_claim_case, t_claim_case_item;
+--    仅清理**废弃表名** t_claim_case_item（10 列，早期原型；现行名为 t_claim_item）：
+--    该表 0 行、无任何现行代码引用，故 DROP 可承受。
+--
+--    刻意**不** DROP t_claim_case：它是现行主表。早期原型形态（26 列，含已废弃的
+--    insured_name 明文 PII、hospital_level、evidences、fraud_flags）与现行 37 列同名，
+--    脚本无法区分二者；一旦在已有真实数据的库上执行，等于删库。改为下方 §0.2 的
+--    形状断言（fail-closed）：形状不符即中止，交人工 RENAME 备份后重建。
+--    0047_ui_schema_demo_seed.sql 仅在 meta_entity 目录登记旧 demo 实体名，非物理 DDL；
+--    e2e 脚本用的是运行时动态表（t_claim_case_e2e_*），均不受影响。
+DROP TABLE IF EXISTS t_claim_case_item;
 
 -- ── 0.1 幂等快照表（Idempotency-Key 落库；ClaimCaseController#submit 依赖） ───────────
 --   与 bp_idempotency_record 同构（SDK Instant 语义 + (tenant_id, scope_key) 唯一键）；
@@ -103,6 +104,17 @@ CREATE TABLE IF NOT EXISTS t_claim_case (
   KEY idx_policy_no (policy_no),
   KEY idx_tenant_batch (tenant_id, batch_no)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '赔案主表';
+
+-- ── 0.2 主表形状断言（fail-closed，替代原先的 DROP） ─────────────────────────
+--    为什么需要：CREATE TABLE IF NOT EXISTS 对**同名但形状不符**的存量表是静默 no-op，
+--    于是旧 26 列原型会被当作已就绪，直到运行期才以 Unknown column / 唯一键缺失炸开。
+--    这里用「零行探测」把形状问题前移到部署期：
+--      · 新装库 / 已是 37 列 → 0 行返回，no-op；
+--      · 旧 26 列原型        → MySQL 报 Unknown column 'idempotency_key'，脚本中止。
+--    中止后的人工处置（备份优先，绝不删数据）：
+--        RENAME TABLE t_claim_case TO t_claim_case_legacy_20261025;
+--    然后重跑本脚本。
+SELECT idempotency_key FROM t_claim_case LIMIT 0;
 
 CREATE TABLE IF NOT EXISTS t_claim_item (
   id          BIGINT      NOT NULL COMMENT '主键(分布式ID)',

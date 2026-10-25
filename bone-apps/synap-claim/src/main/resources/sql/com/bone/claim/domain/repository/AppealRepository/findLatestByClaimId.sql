@@ -19,5 +19,6 @@ SELECT
 FROM appeal_record
 WHERE claim_id = :claimId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY created_at DESC
 LIMIT 1

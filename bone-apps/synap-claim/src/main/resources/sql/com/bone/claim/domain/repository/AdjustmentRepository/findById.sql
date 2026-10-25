@@ -18,3 +18,4 @@ SELECT
 FROM t_adj_calculation
 WHERE id = :calculationId AND
   /*bone:tenant*/
+  AND deleted = 0

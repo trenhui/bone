@@ -40,4 +40,5 @@ FROM t_claim_case c
        LEFT JOIN t_claim_item i ON i.claim_id = c.id AND i.deleted = 0
 WHERE c.id = :claimId AND
   /*bone:tenant*/
+  AND c.deleted = 0
 ORDER BY i.id

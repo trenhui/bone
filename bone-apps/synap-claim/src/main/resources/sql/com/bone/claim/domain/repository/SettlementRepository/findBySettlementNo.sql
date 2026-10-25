@@ -16,4 +16,5 @@ SELECT
 FROM settle_order
 WHERE settlement_no = :settlementNo AND
   /*bone:tenant*/
+  AND deleted = 0
 LIMIT 1

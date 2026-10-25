@@ -22,3 +22,4 @@ SELECT
 FROM t_quota_account
 WHERE id = :quotaAccountId AND
   /*bone:tenant*/
+  AND deleted = 0

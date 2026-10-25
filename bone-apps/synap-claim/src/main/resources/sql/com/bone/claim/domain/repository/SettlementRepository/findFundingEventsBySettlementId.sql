@@ -14,4 +14,5 @@ SELECT
 FROM settle_funding_event
 WHERE settlement_id = :settlementId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY id

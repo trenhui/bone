@@ -20,3 +20,4 @@ SELECT
 FROM t_claim_evidence
 WHERE id = :evidenceId AND
   /*bone:tenant*/
+  AND deleted = 0

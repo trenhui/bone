@@ -4,5 +4,6 @@ SELECT
        claim_no,
        status
 FROM t_claim_case
-WHERE status = '21'
+WHERE status = 'EVIDENCE_SUBMITTING'
   AND updated_at < :before
+  AND deleted = 0

@@ -15,4 +15,5 @@ SELECT
 FROM claim_decision_trace
 WHERE trace_id = :traceId AND
   /*bone:tenant*/
+  AND deleted = 0
 ORDER BY node_seq
