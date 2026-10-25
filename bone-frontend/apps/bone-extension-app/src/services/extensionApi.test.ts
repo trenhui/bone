@@ -1,3 +1,8 @@
+// @vitest-environment jsdom
+// 为什么需要 jsdom：downloadPluginVersion 走 `document.createElement('a')` + `URL.createObjectURL`
+// 触发浏览器下载，node 环境下 HTMLAnchorElement/document 均不存在 ⇒ 该用例必红
+// （报 ReferenceError: HTMLAnchorElement is not defined，与业务逻辑无关）。
+// app 级 vitest.config 是 environment:'node'（workspace 根才是 jsdom），故按文件级指令覆写。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**

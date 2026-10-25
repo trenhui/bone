@@ -1,11 +1,11 @@
 package com.bone.engine.extension.studio.application.support;
 
 import com.bone.core.model.ProblemDetail;
+import com.bone.core.model.ProblemDetails;
 import com.bone.core.threadlocal.TransmittableThreadLocal;
 import com.bone.engine.extension.studio.application.ExtensionCommandApplicationService;
 import com.bone.engine.extension.studio.application.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
-import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.extension.Extension;
 import com.bone.engine.extension.studio.domain.model.operation.StudioOperation;
 import com.bone.engine.extension.studio.observability.StudioExtensionMetrics;
@@ -170,9 +170,11 @@ public class StudioLroSupport {
       studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "success");
       studioMetrics.recordDeploy("deploy", "success");
     } catch (Exception ex) {
-      ProblemDetail detail = ProblemDetail.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
-      String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
-      detail.setTraceId(traceId);
+      // 同 StudioCommandResponses#problem：bone-core 工厂统一 type/title/traceId
+      // （i18n 方案 §6.2.1）。traceId 由工厂从 MDC("traceId") 读取——本工作线程入口已
+      // setContextMap 恢复请求上下文（见 startPluginDeploy），故不必也不能在此手写 setTraceId。
+      ProblemDetail detail =
+          ProblemDetails.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
       op.setError(detail);
       op.setDone(true);
       op.setProgress(100);

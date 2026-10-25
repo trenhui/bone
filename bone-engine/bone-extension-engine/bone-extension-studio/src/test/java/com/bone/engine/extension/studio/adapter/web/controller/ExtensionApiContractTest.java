@@ -39,7 +39,7 @@ class ExtensionApiContractTest {
   }
 
   @Test
-  @DisplayName("404 返回 ProblemDetail（含 errorCode、traceId）")
+  @DisplayName("404 返回 ProblemDetail（含 errorCode、traceId、统一 type/title）")
   void notFound_returnsProblemDetail() throws Exception {
     mockMvc
         .perform(get("/api/v1/extension/points/999999"))
@@ -47,7 +47,14 @@ class ExtensionApiContractTest {
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.data.errorCode").value("EXT_RESOURCE_NOT_FOUND"))
         .andExpect(jsonPath("$.data.traceId").isString())
-        .andExpect(jsonPath("$.data.detail").isString());
+        .andExpect(jsonPath("$.data.detail").isString())
+        // 形状必须与全平台一致（ProblemDetails 工厂 + Bone-API-规范 ProblemDetail.yaml）：
+        // type 为 https://bone.wps.cn/problems/<errorCode 小写连字符>，title 为 HTTP 状态文本。
+        // 改造前本模块用遗留 ProblemDetail.of：type 恒 about:blank、title 直接放 errorCode——
+        // 这两条断言即锁定该不一致不得回归（改成遗留构造即红）。
+        .andExpect(
+            jsonPath("$.data.type").value("https://bone.wps.cn/problems/ext-resource-not-found"))
+        .andExpect(jsonPath("$.data.title").value("Not Found"));
   }
 
   @Test
