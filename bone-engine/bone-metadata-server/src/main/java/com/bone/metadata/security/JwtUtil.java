@@ -34,14 +34,28 @@ public class JwtUtil {
   @PostConstruct
   public void init() {
     // 生产 / 联调：使用与 IAM 一致的共享密钥校验令牌（HS256 需 ≥256bit / 32 字节）。
-    String secret =
-        !iamJwtSecretKey.isEmpty() ? iamJwtSecretKey : (!jwtSecret.isEmpty() ? jwtSecret : null);
+    String secret = firstNonBlank(iamJwtSecretKey, jwtSecret);
     if (secret != null && secret.getBytes(StandardCharsets.UTF_8).length >= 32) {
       this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
       return;
     }
     // 兜底（仅 dev / 单测）：每次启动生成随机密钥。
     this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+  }
+
+  /**
+   * 返回首个非空候选。
+   *
+   * <p>单测直接 {@code new JwtUtil()} 手动触发 {@link #init()}（不过 Spring），{@code @Value} 字段为 null——
+   * 此处统一兜底，避免 NPE（2026-10-25 回归：{@code JwtAuthenticationFilterTest} 10 例全因此挂）。
+   */
+  private static String firstNonBlank(String... candidates) {
+    for (String candidate : candidates) {
+      if (candidate != null && !candidate.isEmpty()) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   /**

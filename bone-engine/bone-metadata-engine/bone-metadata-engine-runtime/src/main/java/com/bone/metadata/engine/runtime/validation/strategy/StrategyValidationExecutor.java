@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** 策略验证执行器 协调执行所有注册的验证策略 */
@@ -35,8 +34,7 @@ public class StrategyValidationExecutor {
 
   @Autowired
   public StrategyValidationExecutor(
-      ValidationStrategyFactory strategyFactory,
-      @Qualifier("applicationTaskExecutor") Executor taskExecutor) {
+      ValidationStrategyFactory strategyFactory, Executor taskExecutor) {
     this.strategyFactory = strategyFactory;
     this.taskExecutor = taskExecutor;
   }
