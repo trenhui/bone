@@ -19,7 +19,11 @@ public interface ChunkRepository extends Repository<RagChunk, Long> {
     return all.stream().filter(c -> docScope.equals(c.getDocId())).collect(Collectors.toList());
   }
 
-  /** 租户 + 文档精确作用域（增量幂等批键：同 docVersion 同切片数 ⇒ 幂等跳过）。 */
+  /**
+   * 租户 + 文档维度的已有切片（ingest 幂等判定 / 异版本清理）。
+   *
+   * <p>仅按单文档取，内存有界（文档切片数），不构成容量风险。
+   */
   default List<RagChunk> findByTenantAndDoc(Long tenantId, String docId) {
     return QueryBuilder.from(RagChunk.class)
         .where(RagChunk::getTenantId)

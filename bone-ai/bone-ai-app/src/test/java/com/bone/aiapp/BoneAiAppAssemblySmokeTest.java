@@ -35,10 +35,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 /**
- * <b>生产拓扑装配级冒烟测试</b>：把 {@link BoneAiAppApplication}（八个 AI 节点库 + 内嵌 eval 的<b>全量</b> Spring
+ * <b>生产拓扑装配级冒烟测试</b>：把 {@link BoneAiAppApplication}（九个 AI 节点库 + 内嵌 eval 的<b>全量</b> Spring
  * 上下文真实装配一次）。
  *
- * <p>与 {@code bone-ai-server}（参考宿主，仅五个库）的冒烟测试互补：本测试覆盖<b>生产拓扑独有的模块</b>—— {@code rag}（含 {@code
+ * <p>与 {@code bone-ai-server}（参考宿主，仅六个库）的冒烟测试互补：本测试覆盖<b>生产拓扑独有的模块</b>—— {@code rag}（含 {@code
  * ChunkRepository} 的 {@code @ConditionalOnBean(name=...)} 修复）、内嵌 {@code eval}（{@code
  * EvalCaseRepository} / {@code EvalRunRepository} 经 {@code @EnableSqlRepositories} 注册）、{@code
  * notification} / {@code integration} 端口编排。 参考宿主绿、生产拓扑红的缝隙正是这类「只在全量聚合时才暴露」的装配故障（例如 {@code

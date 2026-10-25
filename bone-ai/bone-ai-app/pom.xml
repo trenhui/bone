@@ -32,6 +32,9 @@
         <dependency><groupId>com.bone</groupId><artifactId>bone-ai-notification</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.bone</groupId><artifactId>bone-ai-integration</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.bone</groupId><artifactId>bone-ai-ledger</artifactId><version>${project.version}</version></dependency>
+        <!-- 统一异常处理：BizException → HTTP 状态码 + ApiResponse 信封（BoneWebExceptionAutoConfiguration 自动装配；
+             缺它则 REST 面业务异常（404/409/403）裸奔成 500，监控按状态码统计的 SLI 全污染——2026-10-23 生产就绪补入） -->
+        <dependency><groupId>com.bone</groupId><artifactId>bone-web</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.bone</groupId><artifactId>bone-core</artifactId><version>${bone-core.version}</version></dependency>
         <dependency><groupId>com.bone</groupId><artifactId>bone-metadata-sdk</artifactId><version>${bone-metadata-sdk.version}</version></dependency>
 
@@ -45,12 +48,6 @@
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>com.tngtech.archunit</groupId><artifactId>archunit-junit5</artifactId><scope>test</scope></dependency>
         <dependency><groupId>com.bone</groupId><artifactId>bone-architecture-test</artifactId><version>${bone-architecture-test.version}</version><scope>test</scope></dependency>
-
-        <!-- 共享全局异常处理器（com.bone.core.exception.GlobalExceptionHandler，由 bone-web 提供）；
-             控制器测试用其作 @ControllerAdvice 装配 MockMvc，故需其参与测试编译/运行。
-             bone-web 属 bone-framework 稳定线（版本 1.0.0），本模块继承 bone-ai 的 1.0.0-SNAPSHOT，
-             若沿用继承版本会解析成 1.0.0-SNAPSHOT 而本地仓无该快照 ⇒ 编译失败；故显式锁 1.0.0。 -->
-        <dependency><groupId>com.bone</groupId><artifactId>bone-web</artifactId><version>1.0.0</version><scope>test</scope></dependency>
 
         <!-- H2（仅测试）：装配级冒烟测试的进程内数据源。
              不用 Testcontainers：它依赖 Docker 守护进程与镜像拉取，离线/CI 无网环境直接不可用；
