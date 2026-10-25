@@ -797,6 +797,14 @@ const RuntimeDataManagement: React.FC<RuntimeDataManagementProps> = ({ embeddedE
         }
         body[f.code] = s;
       } else {
+        // 空值不写，交由后端必填/类型校验（与 DATE 分支同口径）。
+        // ★ 为什么不能直接下发 ''：表单初始化把所有非 BOOLEAN 字段置为 ''
+        //   （BoneDynamicForm: init[f.code] = record?.[f.code] ?? ''），
+        //   而 COMPUTED/STAT 等展示型字段没有专属分支、会落到这里 ⇒ '' 原样进 body。
+        //   后端 RuntimeWriteValidator#validateType 对 DECIMAL/INTEGER 列见到 '' 即报
+        //   「应为数值类型」——一个「没填」被报成「填错」，用户穷举也过不了；
+        //   且 BOOLEAN 的合法值 false 是布尔而非 ''，不受此守卫影响，0 亦不受影响。
+        if (v == null || v === '') return;
         body[f.code] = v as unknown;
       }
     });
