@@ -145,11 +145,12 @@ DELETE FROM settle_funding_event WHERE claim_id=$CLAIM_ID;
 DELETE FROM settle_order WHERE claim_id=$CLAIM_ID;
 DELETE FROM t_quota_transaction WHERE claim_id=$CLAIM_ID;
 DELETE FROM t_adj_calculation WHERE claim_id=$CLAIM_ID;
+DELETE FROM t_adj_calculation WHERE id=900000091;
 INSERT INTO t_adj_calculation (id, claim_id, liability_uuid, liability_version, rule_version, formula_snapshot, formula_hash, total_amount, result_status, tenant_id, created_at, updated_at)
 VALUES (900000091, $CLAIM_ID, 'e2e-liability', 'v1', 'v1', '{\"e2e\":true}', REPEAT('a',64), 15000.00, 'CONFIRMED', $TENANT, NOW(3), NOW(3));
 INSERT INTO t_quota_account (id, insured_id_hash, policy_no, plan_id, quota_year, quota_type, liability_uuid, quota_initial, quota_claimed, quota_frozen, tenant_id, created_at, updated_at)
 VALUES (900000092, '$INSH', '$POLICY', $PLAN, YEAR(NOW()), 'PERSONAL', '', 200000.00, 0, 0, $TENANT, NOW(3), NOW(3))
-ON DUPLICATE KEY UPDATE quota_initial=200000.00, quota_claimed=0, quota_frozen=0;" 2>/dev/null
+ON DUPLICATE KEY UPDATE quota_initial=200000.00, quota_claimed=0, quota_frozen=0;" 2>&1 | grep -v "Using a password" || true
 check "夹具就绪（理算 15000 + 额度 200000）" "$(sql "SELECT COUNT(*) FROM t_adj_calculation WHERE claim_id=$CLAIM_ID;")" "1"
 
 # ---------- Step 3：建单（软占） ----------
