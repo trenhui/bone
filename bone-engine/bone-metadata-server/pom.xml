@@ -45,6 +45,14 @@
             <artifactId>bone-metadata-engine-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- ★ 2026-10-25 接线：平台工作流入站 API（我的待办/已办、审批轨迹、干预）需要引用引擎领域端口。
+             only depends on bone-workflow-core（领域契约+实现），不依赖 starter——starter 反依赖本模块
+             （bone-app-expense → starter，而本模块装配 expense），引入会造成 Maven 反应堆环。
+             core 对 metadata 零依赖（引擎独立性由 ArchUnit 守护）。 -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-workflow-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

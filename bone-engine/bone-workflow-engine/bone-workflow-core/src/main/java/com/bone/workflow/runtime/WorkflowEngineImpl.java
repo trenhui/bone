@@ -558,6 +558,19 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   }
 
   @Override
+  public Optional<WorkflowInstance> findInstanceById(String instanceId) {
+    return instanceRepository.findInstance(instanceId);
+  }
+
+  @Override
+  public List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status) {
+    if (assigneeId == null || assigneeId.isBlank()) {
+      throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "查询个人任务列表缺少办理人");
+    }
+    return instanceRepository.listTasksByAssignee(assigneeId, status);
+  }
+
+  @Override
   public List<WorkflowTask> listPendingTasks(String instanceId) {
     return instanceRepository.listPendingTasks(instanceId);
   }

@@ -146,10 +146,42 @@ public class ArchitectureTest {
   static final ArchRule save_must_pair_with_publish_or_exempt =
       BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
 
+  // ADR-002 / §3.2.1 端口铁律③：业务层（domain/application/adapter）禁止直接依赖 bone-ai 实现包。
+  // 接线时具体 client 只能落在 infrastructure.client 并经 application.port.out.*Port 注入；
+  // domain/application/adapter 一旦出现 com.bone.ai* 的直接 import，即为「绕过防腐层的偷接」。
+  // 本规则为「当日即绿、锁住未来违规」形态：新增是为了防止一期豁免接线时出现偷接，
+  // 不得改写为会立刻转红的形态（门禁收紧须与模块合规同批，见 ADR / check.sh 纪律）。
+  @ArchTest
+  static final ArchRule no_direct_bone_ai_dependency_outside_infrastructure =
+      noClasses()
+          .that()
+          .resideInAPackage("com.bone.claim..")
+          .and()
+          .resideOutsideOfPackage("..infrastructure..")
+          .should()
+          .dependOnClassesThat(boneAiImplementationPackage())
+          .allowEmptyShould(true)
+          .because(
+              "ADR-002/§3.2.1: AI 能力一律经 domain/application 定义的 port（ACL）消费；"
+                  + "bone-ai-* 实现类只允许被 infrastructure.client 引入");
+
   // E-13.0：Spring bean 名唯一（协议边界后同模块两协议 Controller 可合法同名）
   @ArchTest
   static final ArchRule spring_bean_names_unique =
       BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
+  /**
+   * bone-ai 共享内核实现包谓词。仓库内既有 {@code com.bone.ai}、{@code com.bone.airules}、{@code com.bone.aiapp}
+   * 等多种前缀，统一以 {@code com.bone.ai} 前缀判定。
+   */
+  private static DescribedPredicate<JavaClass> boneAiImplementationPackage() {
+    return new DescribedPredicate<>("reside in a bone-ai implementation package") {
+      @Override
+      public boolean test(JavaClass input) {
+        return input.getPackageName().startsWith("com.bone.ai");
+      }
+    };
+  }
 
   private static DescribedPredicate<JavaClass> applicationPortInterface() {
     return new DescribedPredicate<>("implements an application.port.out.*Port interface") {

@@ -444,7 +444,7 @@ public class SettlementApplicationService {          // A7 Settlement 聚合的�
 - **决策回放**：`decision_trace` 节点序列（证据→解析→核责→理算→决策），任意案件一键回放决策路径（对应 工程落地版 §7.3（决策图执行）/ §11.5（可观测性）决策追溯 / bone-ai trace 证据链）。
 - **全链路追踪**：OpenTelemetry 统一埋点，Grafana 看板（自动化率/复核率/赔付趋势/时延）。
 - **审计三件套**：请求摘要（≤200 字）+ 响应结果 + 耗时，错误可回放。
-- **计量**：bone-ai-gateway `LlmUsageRecorded` 按租户/模型聚合 token 与成本，供预算/配额/成本红线消费。AI 预算配额（工程落地版 §11.6/§11.12 已固化）：软配额 500 元/月/租户（超阈告警）、硬配额 2000 元/月/租户（超阈该租户 LLM→纯规则降级）、按案件成本红线 0.5 元/案，阈值经 `feature_toggle` 的 `aiBudget.soft/hard` 按租户配置。
+- **计量**：bone-ai-gateway `LlmUsageRecorded` 按租户/模型聚合 token 与成本，供预算/配额/成本红线消费。AI 预算配额（真源：工程落地版 §11.12）：**不设全局默认值**，按「月预算上限 = 月案件量 × AI 触发占比 × 0.5 元/案 × 1.5」逐租户推导后写入 `feature_toggle` 的 `aiBudget.soft`（=70%）/ `aiBudget.hard`（=100%），**未配置不得进入 Automated 态**；按案件成本红线 0.5 元/案不变。（原 500/2000 元默认值会在满负荷用量的 2.7% 处误触发「LLM→纯规则降级」，已废止，推导式见工程落地版 §11.12。）
 
 ---
 

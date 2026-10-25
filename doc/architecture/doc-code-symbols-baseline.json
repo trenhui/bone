@@ -180,10 +180,11 @@
       "symbol": "CloseExpiredClaimJob",
       "docs": [
         "doc/ai-product/synapClaim/synapClaim 智能理赔平台-工程详细设计（落地版）.md",
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
+        "doc/ai-product/synapClaim/待架构评审代码整改清单.md",
+        "doc/ai-product/synapClaim/文档地图.md"
       ],
       "reason": "tobe-named",
-      "note": "synapClaim 理赔平台工程详设/整改清单的目标态定时任务名，实现尚未落地；与同文档已登记的 AdjLiabilityRepository 等 tobe-named 条目同口径"
+      "note": "synapClaim 理赔平台工程详设/整改清单/文档地图引用的目标态定时任务名，实现尚未落地（文档地图 P6 已将其由「已建」更正为「未落地」）；与同文档已登记的 AdjLiabilityRepository 等 tobe-named 条目同口径"
     },
     {
       "symbol": "CodeGenerationCleanupJob",
@@ -421,30 +422,6 @@
       ],
       "reason": "tobe-named",
       "note": "PRD 报销场景设计稿的目标态 ApplicationService（费用报销 L0 探针），实现尚未落地"
-    },
-    {
-      "symbol": "ExpenseWorkflowDecisionHandler",
-      "docs": [
-        "design/lowcode/cases/费用报销系统-设计文档.md"
-      ],
-      "reason": "history",
-      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
-    },
-    {
-      "symbol": "ExpenseWorkflowSubmitHandler",
-      "docs": [
-        "design/lowcode/cases/费用报销系统-设计文档.md"
-      ],
-      "reason": "history",
-      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
-    },
-    {
-      "symbol": "ExpenseWorkflowWithdrawHandler",
-      "docs": [
-        "design/lowcode/cases/费用报销系统-设计文档.md"
-      ],
-      "reason": "history",
-      "note": "设计稿/技术方案引用的类名，当前代码无对应实现（设计/代码漂移），非真实类；待文档作者校订"
     },
     {
       "symbol": "ExtPointCommandHandler",

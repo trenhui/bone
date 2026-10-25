@@ -95,10 +95,28 @@ public interface WorkflowEngine {
   java.util.Optional<WorkflowInstance> findInstance(String entityCode, String recordId);
 
   /**
+   * 按实例 id 读实例（待办列表按任务反查单据时需要：任务只持有 {@code instanceId}）。
+   *
+   * @param instanceId 流程实例 id
+   */
+  java.util.Optional<WorkflowInstance> findInstanceById(String instanceId);
+
+  /**
    * 读取某流程实例的待办任务。
    *
    * @param instanceId 流程实例 id
    */
+  /**
+   * 读取某办理人的任务（跨实例：<b>企业审批最常用的「我的待办 / 我的已办」</b>）。
+   *
+   * <p><b>为什么必须引擎提供</b>：仓储层已有 {@code listTasksByAssignee}，宿主若直接绕过引擎读表，就等于把「谁是办理人」这道 唯一的授权边界放到宿主自己拼
+   * SQL 的地方——多租户谓词漏一条即跨租户串数据（{@code @Sql} 通道不经租户过滤器）。 经引擎收口后， 只有引擎的 tenant 谓词那一处需要审查。
+   *
+   * @param assigneeId 办理人账户 id
+   * @param status 任务状态：{@code PENDING} = 待办；{@code APPROVED}/{@code REJECTED} = 已办
+   */
+  java.util.List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status);
+
   java.util.List<WorkflowTask> listPendingTasks(String instanceId);
 
   /**

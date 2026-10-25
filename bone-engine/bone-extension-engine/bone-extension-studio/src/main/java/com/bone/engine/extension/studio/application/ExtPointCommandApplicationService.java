@@ -133,6 +133,12 @@ public class ExtPointCommandApplicationService {
 
   public ResponseEntity<ApiResponse<ExtPoint>> updatePoint(
       Long id, ExtPoint body, Integer expectedVersion) {
+    // PUT 为全量替换：空体或缺必填字段会把 name/interfaceName/domain 抹成 null，
+    // 且 enabled 是 primitive boolean，缺省反序列化为 false ⇒ 静默禁用扩展点。
+    // 必填约定与 createPoint 一致，缺失即 400，不得落到 updateExtPoint 写库。
+    if (body == null || !hasText(body.getName()) || !hasText(body.getInterfaceName())) {
+      return StudioCommandResponses.badRequest("扩展点名称与 interfaceName 不能为空");
+    }
     ExtPoint updated = updateExtPoint(id, body, expectedVersion);
     if (updated == null) {
       return StudioCommandResponses.notFound("扩展点不存在");

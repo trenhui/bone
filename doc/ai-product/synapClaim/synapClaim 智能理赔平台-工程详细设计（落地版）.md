@@ -2428,6 +2428,21 @@ paths:
 
 **登记的交付件待回写项**：PRD §12.1 七值 `CaseStatus` 含历史命名（05 §末注已声明以 05 为准）；05 §4.1 的 `insured_id_hash` 来源需与 05 §2.2（数据字典补录）统一。
 
+**偏离项治理纪律（owner + 到期 + 超时硬失败，2026-10-25 新增）**
+
+> 偏离登记是**债务**，不是合规凭证。上表 6 项偏离长期挂载会固化成永久双轨，故每条必须有 owner、最晚决策时点与到期动作。
+
+| # | 偏离项 | owner | 最晚决策时点 | 到期动作（超时即硬失败） |
+|---|---|---|---|---|
+| 1 | 租户身份取认证主体（05 §三.3 头部口径待回写） | 架构 | 上线前（§12.2 清单已列） | 05 未回写 → 阻断进入 Assisted |
+| 2 | `insured_id_hash` 服务端计算 | 架构 | 已回写（05 §2.2） | 再次漂移 → 触发交付件回写门禁 |
+| 3 | 盐双人分片托管 | 安全合规 | 上线前 | 未落地双人分片 → 禁止生产启用假名化盐 |
+| 4 | 金额/置信度精度升级 | 架构 | 上线前 | 05 未同步 → 联调期字段截断，阻断 Phase B |
+| 5 | 主键类型 BIGINT（05 CHAR(36) 为示意） | 架构 | 已登记（05 §四注明权威见本文） | 下游按 CHAR(36) 实现 → 契约测试拦截 |
+| 6 | 任务中心 vs 案件中心路径收敛 | 交付 + 架构 | **联调开始前** | 未定案即写代码 → 双轨维护禁止上线；推荐方案①（代码补 `/review/tasks` 门面） |
+
+> **治理机制**：本表随《MVP 可落地执行方案》§3.3 的三段式排期滚动复盘；到期未决的偏离项升级为 P1 风险，进 §11.5.1 复盘闭环。偏离项无「默认延期」动作，到期只有「已收敛」或「升级」两种结果。
+
 ---
 
 ### 10.7 领域事件目录（内部事件面）
@@ -2801,9 +2816,21 @@ sequenceDiagram
 - **弹性与削峰**：无状态应用 HPA（按 CPU/队列深度，§11.8）；OCR 解析、规则执行走队列削峰（§11.6 按租户 Redis 令牌桶限流）；`bone-ai-*` 能力侧按模型独立扩容，避免单一重负载拖垮全链路。
 - **容量指标与预警**：OCR 队列深度、决策图 P95 时长（§11.2）、LLM token 吞吐、MQ 积压为容量预警核心指标，超阈触发扩容与降级。
 
-> **AI 预算配额阈值（§11.6 降级动作的触发值）**：单租户月度 AI 预算默认值——软配额 **500 元/月/租户**（超阈 P1 告警 + 通知租户管理员）、硬配额 **2000 元/月/租户**（超阈该租户 LLM→纯规则降级，§11.6，不影响他租户）；按案件 AI 成本红线 **0.5 元/案**（超限触发 §11.12 成本看板告警，对应单案成本 ≤8 元承诺的成本结构上限）。阈值为默认值，按租户在 `feature_toggle.config_json` 覆盖（`aiBudget.soft/hard`），改阈值不发版。
+> **AI 预算配额阈值（§11.6 降级动作的触发值）**：**不设全局默认值**——配额必须按下方换算式**逐租户推导后下发**，禁止保留一个「看似合理、却会在实际用量百分之几处误触发降级」的默认数。
 >
-> **配额与容量的换算纪律（防成本开关提前降级）**：上列配额须与 §11.2 容量表联算——按「AI 评估触发案件占比 × 单案成本」推导月度预算后再定软/硬配额。若按满负荷估算（单租户日 5000 案 × 0.5 元/案 ≈ 7.5 万元/月），硬配额 2000 元将在满负荷前触发「该租户 LLM→纯规则降级」，客户侧表现为自动通过率无故下滑。默认值仅适用于 AI 触发占比 ≤5% 的业务画像；超出须按租户调阈并同步容量评审。
+> 按案件 AI 成本红线 **0.5 元/案** 保留（对应单案成本 ≤8 元承诺的成本结构上限，超限触发成本看板告警）；**缺省视为未配置：未配 `aiBudget.hard` 的租户禁止进入 Automated 态**（三态开关 §11.4 强制校验）。
+>
+> **配额下发算法（替换此前的「默认值 + 换算纪律提醒」）**：
+>
+> ```
+> 月预算上限 = 该租户预计月案件量 × AI 触发案件占比 × 单案 AI 成本(0.5 元) × 冗余系数(1.5)
+> 软配额 aiBudget.soft = 月预算上限 × 0.7   → 超阈 P1 告警 + 通知租户管理员
+> 硬配额 aiBudget.hard = 月预算上限 × 1.0   → 超阈该租户 LLM→纯规则降级（§11.6），不影响他租户
+> ```
+>
+> 算例：月 1 万案 × AI 触发占比 20% × 0.5 元 × 1.5 = **1.5 万元/月** → soft 1.05 万 / hard 1.5 万。
+>
+> **为什么删掉 500/2000 这个默认值**：与 §11.2 容量上限（单租户日 5000 案 ≈ 15 万案/月）联算，满负荷月需约 **7.5 万元**预算，而 `hard=2000` 会在实际用量的 **2.7%** 处触发纯规则降级——客户侧表现为「自动通过率无故下滑」，且排查时几乎不会想到是成本开关。此前只在文中加一段「换算纪律」予以提醒，属**用备注代替决策**，已废止。
 
 **AI 成本治理（对应 §3.3 Governance·`metering`）**
 
@@ -2898,7 +2925,9 @@ flowchart TB
 
 ## 12. 实施顺序
 
-> **两种口径，别互比**：**排期**以《synapClaim MVP 可落地执行方案》§三 为准（I0–I4 共 10 周，含缓冲）；**工程量**以本表周期列为准（合计 13 周）。差距（3 周）不是笔误，是目标排期与工程估算的差——靠并行、范围收窄（AI 技术方案 §12.1 的收窄建议）消化，不得靠压缩测试窗口。
+> **两种口径，别互比**：**排期**以《synapClaim MVP 可落地执行方案》§三 + **§3.3 迭代容量校验矩阵** 为准；**工程量**以本表周期列为准（I0 2 + I1 3 + I2 3 + I3 2 + I4 3 = **13 周**）。
+>
+> **承载能力结论（2026-10-25 核码）**：原「靠并行、范围收窄消化」的表述已废止——它既没给出并行所需的新增人力，也没真的砍掉任何任务。按 MVP §3.3 的载荷测算，在编 4 人下**底座在 I1 超载约 210%、理赔在 I2/I3 超载 130–140%、招投标在 I4 超载约 140%**，10 周不可能达成。排期一律按 MVP §3.3 的**三段式（乐观 10 / 基准 13 / 保守 16 周）**决策；本表工程量 = 基准档 13 周。**任何情况下不得靠压缩测试窗口（§12.1）凑周期**。
 
 | 迭代 | 工程量 | 内容 | 退出标准 |
 |---|---|---|---|
@@ -2991,7 +3020,7 @@ flowchart TB
 | 材料登记（#2）/ 解析回填 / 证据锁定 / 理算执行·重算·确认·查询 | ✅ 已实现端点 | `/claims/{id}/evidences*`、`/claims/{id}/adjust*` |
 | 结算建单/审核通过/支付/撤销/退款 | ✅ 已实现端点 | `/claims/{id}/settlement*`；资金状态机阶段单调 + ≥1万双人复核（REVIEW_FREEZE）+ 幂等键 `{claimNo}:{stage}:{attempt}` |
 | 申诉发起/复议/查询 | ✅ 已实现端点 | `/claims/{id}/appeal*`；48h 时限由聚合守卫（拒超窗） |
-| 决策图执行 / 轨迹回放 | ✅ 已实现端点 | `/claims/{id}/decision/execute`、`/claims/{id}/decision/trace`；双阈值独立判定 + 反欺诈硬闸 + fail-safe；决策图相关单测 26 例，模块合计单测 113 例（90 例 JUnit + 23 条 ArchUnit）全绿（**2026-10-23 实机验证**：`mvn -pl bone-apps/synap-claim test` → `Tests run: 113, Failures: 0, Errors: 0, Skipped: 0`，BUILD SUCCESS；其中 `domain.security` 安全三件套 8 例、AI 决策图相关 26 例均含其中） |
+| 决策图执行 / 轨迹回放 | ✅ 已实现端点 | `/claims/{id}/decision/execute`、`/claims/{id}/decision/trace`；双阈值独立判定 + 反欺诈硬闸 + fail-safe；决策图相关单测 26 例，模块合计单测 113 例（90 例 JUnit + 23 条 ArchUnit）全绿（**2026-10-25 实机复验**：`mvn -o -pl bone-apps/synap-claim clean test` → `Tests run: 114, Failures: 0, Errors: 0, Skipped: 0`，BUILD SUCCESS = **90 例 JUnit + 24 条 ArchUnit**；其中 `domain.security` 安全三件套 8 例、AI 决策图相关 26 例均含其中。ArchUnit 由 23 增至 24：新增 `no_direct_bone_ai_dependency_outside_infrastructure`，守护 ADR-002 / §3.2.1 端口铁律③） |
 | **AI 安全三件套**（PII 遮蔽 / 指令数据分离 / 输出校验，§7.2） | ✅ 领域能力已实现（`domain.security`，单测 8 例全绿：`SafePromptBuilderTest` 2 + `PiiMaskerTest` 2 + `LlmOutputGuardTest` 4；ArchUnit 23 条为模块级门禁，不归属单包）；⏳ `AiAssess` 节点未启用，端到端未落地 | 纯 Java 不变量：PII 遮蔽占位符映射仅存内存不落盘；`<material>` 数据槽位 + 指令不可执行声明；字段白名单 + 与 OCR 交叉验证（不一致以 OCR 为准）。`AiAssess` 启用前须完成 §12.2 门禁项（三重校验 + 提示词回归） |
 | `t_claim_case` / `t_claim_item` DDL | ✅ 已实现 | `db/migration/V1__synap_claim_init.sql`；发票唯一约束含 `deleted` |
 | 租户过滤、幂等记录、统一错误码（`SC_*`）、ArchUnit 门禁（23 条）、单测（20 例） | ✅ 已实现 | 复用 `bone-metadata-sdk` / `IdempotencyService` / `BoneDddArchRules` |
@@ -2999,13 +3028,15 @@ flowchart TB
 | **A4 责任配置读侧**（`t_adj_liability` 版本化） | ✅ 已实现（读侧） | 工厂方法建配置、**无 setter**（已生效版本不可改）；理算时随 `liabilityVersion` 物化进快照 |
 | **A6 `IndemnityCalculation`**（理算） | ✅ 已实现 | 基准→免赔→比例→限额 min 主链；零赔付归因四值 + 受控原因码；快照 SHA-256 可自包含复算；精度 6/2 HALF_UP |
 | **A5 `PersonalQuota`**（额度三值模型） | ✅ 已实现（领域层） | `t_quota_account`/`t_quota_transaction`；守恒 `available = initial−claimed−frozen` 写路径自校验；冻结/确认/释放/回冲四态 |
-| **A3 决策执行**（决策图 + trace 回放） | ✅ 已实现 | 自建轻量 DAG 执行器（5 节点主链，定义期环检测）+ `claim_decision_execution`/`claim_decision_trace`（append-only）+ 端点（执行/回放）；结论由确定性分诊算（AI 只产建议）；LLM 不可用降级纯规则路径；确定性节点失败即中止转人工；每案仅一个活跃执行（DB 唯一约束）；bone-ai 适配器随 `bone-ai-orchestration` 接入 |
+| **A3 决策执行**（决策图 + trace 回放） | ✅ 已实现 | 自建轻量 DAG 执行器（5 节点主链，定义期环检测）+ `claim_decision_execution`/`claim_decision_trace`（append-only）+ 端点（执行/回放）；结论由确定性分诊算（AI 只产建议）；LLM 不可用降级纯规则路径；确定性节点失败即中止转人工；每案仅一个活跃执行（DB 唯一约束）。**未接线**：§3.2.1 登记的六个 bone-ai 能力端口（`AiGateway` / `RuleEngine` / `Orchestration` / `DocumentParse` / `Trace` / `KnowledgeRetrieval`）零实现，一期决策图与 AI 安全三件套均为**域内自建**（`DecisionGraphExecutor` + `domain.security`），登记为 ADR-002 一期豁免，详见 §14 生效状态表 |
 | **A7 `Settlement`**（两段式资金 + 额度占额） | ◑ 部分落地 | 端点与资金状态机已实现（见上「结算建单/…/退款」行：阶段单调 + ≥1万双人复核 REVIEW_FREEZE + 幂等键 `{claimNo}:{stage}:{attempt}`）；**额度占额联动未落地**——按 §5.3 三值映射矩阵接资金事件 → `quota_transaction`（A5 领域能力已备）；请款/回款（四向对账第 4 向）为 V2 |
 | **A8 `Appeal`**（申诉 48h 复议） | ✅ 已落地 | `appeal_record` 表已建（V4）；复议/查询/发起均已实现（契约复数 `POST /claims/{id}/appeals` 已补，与存量 `POST /claims/{id}/appeal` 并存，建议下迭代收敛单一 `/appeals`）；48h 时限起算点取案件终态时间；复议维持(45)/推翻重启(41) |
 | **质检三件**（`t_claim_inspection` 表 + §10.1 #13/#14 端点 + `adapter/schedule` 抽样调度，§7.6） | ⏳ 未落地 | 无 inspection 代码与表；一期目标 = 三件齐备 + diff 回流闭环 |
-| **`adapter/schedule` 触发入口**（超期关单扫描 / `limit_hour` 刷新 / 对账调度 / SLA 物化） | ◑ 部分落地 | 领域能力已备（`ClaimCase.closeForStale` 21→45）；超期关单 `CloseExpiredClaimJob` 已建（2026-10-24，含补 `findStaleEvidenceClaimsAllTenants` 缺失 SQL 模板 + `StaleClaimProjection` 投影，`mvn` 113/0/0 + ArchUnit 23/0/0 通过）；`limit_hour` 刷新 / 对账调度 / SLA 物化触发待对应应用服务方法落地 |
+| **`adapter/schedule` 触发入口**（超期关单扫描 / `limit_hour` 刷新 / 对账调度 / SLA 物化） | ⏳ **未落地**（2026-10-25 实机核码更正） | 领域能力已备（`ClaimCase.closeForStale` 21→45）+ 应用服务方法已备（`ClaimCaseApplicationService.closeForStale`）+ 全租户仓储方法已声明（`findStaleEvidenceClaimsAllTenants` / `findFinishedForInspectionAllTenants`，其依赖的 `ClaimTenantRef` 投影已补回使模块恢复编译），但 **`adapter/schedule` 包不存在、无 `CloseExpiredClaimJob` 类、无对应 SQL 模板**。此前登记为「部分落地（Job 已建）」属**文档抢跑**，已更正：本项与 §12.2 清单「schedule 触发入口」条一致＝入口未建，相关能力当前**只能手动触发** |
 | **申诉发起端点已落地**（`POST /claims/{id}/appeals`，契约复数路径） | ✅ 已落地 | 代码在 `/appeal` 基础上新增契约复数 `/appeals` 路径（与 05/§10.1 对齐）；存量 `/appeal` 建议下迭代收敛移除 |
 | 前端 `bone-claim-app` | ✅ 已实现骨架 | React 18 + AntD 5 + Qiankun（端口 3013，路由 `/claim`）；员工端 `/submit`、进度 `/progress`、工作台 `/review` |
+| **bone-ai 能力端口接线**（§3.2.1 六端口：AiGateway / RuleEngine / Orchestration / DocumentParse / Trace / KnowledgeRetrieval） | ⏳ **未落地** | 代码中仅有 `PolicyQueryPort` / `TenantPort` / `DecisionNodeHandler`，其余六端口及其 `infrastructure` 实现**零实现**（2026-10-25 核码）。一期决策图与 AI 安全三件套为**域内自建**，登记为 ADR-002 一期豁免（§14 生效状态表）；`AiAssess` 节点未启用 |
+| **ADR-003 / ADR-008 依赖表**（`claim_case_track` / `domain_event_outbox`） | ⏳ **未落地** | 两表均未建；一期幂等复用框架 `IdempotencyService` + `bp_idempotency_record`（**复用而非本模块自建表**，§9.1 的 `idempotency_record` 亦未建）。结论：事件溯源 SLA（ADR-003）与「资金事件零丢失」（ADR-008）**当前不成立**，一期对外承诺不得引用 |
 
 > **前端技术栈口径**：本仓库前端（`bone-frontend`）为 **React 18 + Ant Design 5 + Qiankun** 微前端，§3.8 选型表已对齐；
 > 原"Vue 3 + Formily + AntV G6"表述与仓库现状不符，已废止（决策图可视化编辑器本身也列为一期不做，PRD §7.6）。
@@ -3125,5 +3156,17 @@ flowchart TB
 | ADR-0031 | 异步入口租户声明：所有调度/异步入口显式声明租户作用域（全租户 or 指定租户），禁隐式当前租户 | 多租户下调度不串租户、数据隔离可证 | 隐式 `CurrentTenant`——并发/错峰时串租户致数据越权 | §3.2 / §6.6 |
 | ADR-0034 | 全租户入口判据：遍历全租户的调度须有显式全租户判据与限流，禁无差别全表扫 | 全租户批处理可控、避免打爆 DB 与单租户风暴 | 无差别全表扫——大租户拖累全量、峰值雪崩 | §3.2 / §6.6 |
 | ADR-0035 | 应用层构件白名单：`*ApplicationService` 平铺 + `command/query/port/event/support`；**禁 `application/service/` 角色包子包**（CI 门禁 `scripts/check-application-constructs.py`） | 应用层构件形状统一、可机器校验、避免贫血 service 堆积 | 角色包子包（application/service/）——职责边界模糊、难以 CI 约束、演进分歧 | §3.1 |
+
+**ADR 生效状态（2026-10-25 核码登记，防「Accepted」被读作「已实现」）**
+
+> ADR 的 Accepted 表示**决策已成立**，不表示**代码已落地**。下表把二者差距显式登记，避免评审与客户验收把目标态当作既有能力（此前多起争议均源于此）。
+
+| ADR | 索引状态 | 代码实现状态 | 一期处置与对外口径约束 |
+|---|---|---|---|
+| ADR-002 共享内核（禁止场景自建 AI） | Accepted | ⏳ **未接线**：§3.2.1 登记的六个能力端口零实现 | 一期决策图（自建 DAG）与 AI 安全三件套（`domain.security`）为**域内自建**，登记为 **ADR-002 一期豁免**；Phase C 前须完成 `bone-ai-orchestration`/`gateway`/`trace` 接线并提交撤销豁免评审。**当前对外不得宣称「已复用 AI 中台」** |
+| ADR-003 事件溯源流水 + CQRS 读模型 | Accepted | ⏳ **未落地**：`claim_case_track` 表未建 | 一期 SLA/挂起时长以 `claim_case.updated_at` 粗算替代（不保证精确）；`claim_case_sla` 物化读模型随表同批上线，届时 ADR-003 方可在生产成立 |
+| ADR-008 事务性发件箱保证资金事件零丢失 | Accepted | ⏳ **未落地**：`domain_event_outbox` 表未建 | 一期幂等复用框架 `IdempotencyService` + `bp_idempotency_record`（**非本模块自建**），跨聚合协作为同事务同步调用。**「资金事件零丢失 100%」的 Outbox 保障当前不成立**，§11.2 SLO 表不登记该承诺 |
+
+---
 
 > ADR 维护纪律：本设计任何**结构性**变更（新增聚合、改端口契约、调整事件语义、改资金不变量）须同步新增/修订 ADR，并在 PR 说明中引用，保证决策可追溯；所有 ADR 默认状态 **Accepted（生效中）**，新增即生效；若被后续 ADR 取代，须在本表标注 `Superseded by ADR-00XX` 并保留历史行，**不得删除或静默改写**（ADR 不可变性，Nygard 治理纪律）。正文引用的任一 `ADR-XXXX` 必须在本表存在定义，否则视为悬空引用（CI 校验见 `_check_numbers.py`）。

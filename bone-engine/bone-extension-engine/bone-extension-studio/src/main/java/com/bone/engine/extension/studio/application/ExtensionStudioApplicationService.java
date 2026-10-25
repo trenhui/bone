@@ -80,6 +80,15 @@ public class ExtensionStudioApplicationService {
 
   public ResponseEntity<ApiResponse<Extension>> updatePlugin(
       Long id, Extension body, Integer expectedVersion) {
+    // 与 createPlugin 同一必填约定：PUT 为全量替换，空体或缺 extPointId/name/className
+    // 会把这些列抹成 null（enabled 字段有初值 true，不会被翻成 false——与 ExtPoint 不同）。
+    // 缺失即 400，不得落到 updateExtension 写库。
+    if (body == null
+        || body.getExtPointId() == null
+        || !hasText(body.getName())
+        || !hasText(body.getClassName())) {
+      return StudioCommandResponses.badRequest("extPointId、name、className 不能为空");
+    }
     Extension updated = extensionCommandHandler.updateExtension(id, body, expectedVersion);
     if (updated == null) {
       return StudioCommandResponses.notFound("插件不存在");

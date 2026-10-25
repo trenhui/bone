@@ -58,6 +58,10 @@ SLICE_ALLOWLIST = {
     # 实体详情字段编辑的 dict 预览：同 FieldWizardModal，前 20 项 Tag 预览
     # （maxHeight 140 滚动容器），UI 展示截断，非字段/列投影。
     os.path.join("pages", "EntityDetail.tsx"),
+    # 审批中心批量操作结果提示：warning toast 仅展示前 3 条失败项摘要
+    # （"成功 N 条，失败 M 条：a；b；c"），UI 提示文案截断，非字段/列投影；
+    # 完整失败清单以接口返回结构为准，此处只是避免 toast 过长的展示限流。
+    os.path.join("pages", "ApprovalCenterPage.tsx"),
 }
 SLICE_RE = re.compile(r"\.slice\(\s*0\s*,\s*\d+")
 DELIVERY_ZERO_RE = re.compile(r"deliveryMode\s*[:=]\s*0\b")
