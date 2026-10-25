@@ -40,14 +40,14 @@ public class QuotaQueryService {
     ClaimWithItemsProjection head = ctx.get(0);
     QuotaAccount account =
         quotaAccountRepository.findAccount(
-            head.insuredIdHash(),
-            head.policyNo(),
-            head.planId(),
+            head.getInsuredIdHash(),
+            head.getPolicyNo(),
+            head.getPlanId(),
             Year.now().getValue(),
             "PERSONAL",
             "");
     if (account == null) {
-      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, head.policyNo());
+      throw ClaimErrors.of(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, head.getPolicyNo());
     }
     List<QuotaTransaction> txns = quotaAccountRepository.findTransactions(account.getId());
     return new QuotaSummary(

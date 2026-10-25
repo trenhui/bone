@@ -4,6 +4,7 @@ import com.bone.claim.application.AppealApplicationService;
 import com.bone.claim.application.AppealApplicationService.AppealResult;
 import com.bone.claim.domain.model.appeal.AppealReviewResult;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,24 +39,23 @@ public class AppealController {
   @PostMapping
   public ApiResponse<AppealResult> submit(
       @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Valid @RequestBody SubmitAppealReq request,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
+      @Valid @RequestBody SubmitAppealReq request) {
     return ApiResponse.success(
         HttpStatus.CREATED.value(),
-        appealApplicationService.submit(claimId, operatorId, request.reason()));
+        appealApplicationService.submit(claimId, CurrentOperator.requireId(), request.reason()));
   }
 
-  @Operation(summary = "复议结论", description = "UPHELD 维持(→45) / REOPEN 推翻重启审核(→41)")
+  @Operation(
+      summary = "复议结论",
+      description = "UPHELD 维持(→CLOSED_REJECTED) / REOPEN 推翻重启审核(→ADJUSTING)")
   @PreAuthorize("hasAuthority('claim:appeal:write')")
   @PostMapping("/review")
   public ApiResponse<AppealResult> review(
       @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Valid @RequestBody ReviewAppealReq request,
-      @Parameter(description = "复议人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
+      @Valid @RequestBody ReviewAppealReq request) {
     return ApiResponse.success(
-        appealApplicationService.review(claimId, request.result(), operatorId, request.reason()));
+        appealApplicationService.review(
+            claimId, request.result(), CurrentOperator.requireId(), request.reason()));
   }
 
   @Operation(summary = "查询最新申诉")

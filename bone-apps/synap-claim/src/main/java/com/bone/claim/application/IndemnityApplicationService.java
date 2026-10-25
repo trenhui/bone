@@ -142,7 +142,7 @@ public class IndemnityApplicationService {
    * <p>取不到即 422——责任配置是理算的唯一依据，没有"默认责任"。
    */
   private AdjLiability resolveLiability(List<ClaimWithItemsProjection> rows) {
-    Long planId = rows.isEmpty() ? null : rows.get(0).planId();
+    Long planId = rows.isEmpty() ? null : rows.get(0).getPlanId();
     if (planId == null) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_LIABILITY_NOT_FOUND, "planId 缺失");
     }

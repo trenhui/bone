@@ -47,7 +47,8 @@ public class AppealApplicationService {
     if (!claim.finished()) {
       throw ClaimErrors.of(ClaimErrorCodes.CLAIM_STATUS_CONFLICT, claimId);
     }
-    String originalStatus = claim.status().code(); // 进入申诉前终态（45/50）
+    // 进入申诉前的终态，存枚举名（与 t_claim_case.status 同口径，见 ClaimStatus 类注释）
+    String originalStatus = claim.status().name();
     claim.enterAppeal(submittedBy);
     claimCaseApplicationService.saveClaim(claim);
 

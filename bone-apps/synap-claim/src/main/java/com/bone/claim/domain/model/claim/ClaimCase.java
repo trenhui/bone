@@ -59,7 +59,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   @Column(name = "claim_type", nullable = false)
   private String claimType;
 
-  /** 状态（DB 存枚举 name，如 {@code ACCEPTED}；pk-tpa 数字码经 {@link #status()}.code() 供存量桥接）。 */
+  /** 状态（DB 与域内一律枚举 name，如 {@code ACCEPTED}；数字码仅为对外桥接码，见 {@code ClaimStatus#code()}）。 */
   @Column(name = "status", nullable = false)
   private String status;
 
@@ -287,7 +287,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       return false;
     }
     if (status() != ClaimStatus.DRAFT) {
-      throw new DomainException("只有草稿状态可以受理签收，当前状态: " + status().code());
+      throw new DomainException("只有草稿状态可以受理签收，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.ACCEPTED, "SIGN");
     addDomainEvent(new ClaimSubmittedEvent(getId(), getTenantId(), claimNo, Instant.now()));
@@ -309,7 +309,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     if (status() != ClaimStatus.ACCEPTED
         && status() != ClaimStatus.PRE_EXAMINED
         && status() != ClaimStatus.ADJUSTING) {
-      throw new DomainException("当前状态不支持补件流转，当前状态: " + status().code());
+      throw new DomainException("当前状态不支持补件流转，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.EVIDENCE_SUBMITTING, "REQUEST_MORE_EVIDENCE", operatorId);
   }
@@ -332,7 +332,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /** 决策图完成（11/13 → 12，产出 DecisionResult）。 */
   public void completePreExam(String operatorId) {
     if (status() != ClaimStatus.PRE_EXAMINING && status() != ClaimStatus.AUTO_PRE_EXAMINING) {
-      throw new DomainException("初审中才能完成初审，当前状态: " + status().code());
+      throw new DomainException("初审中才能完成初审，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.PRE_EXAMINED, "DECISION_AUTO", operatorId);
   }
@@ -346,7 +346,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
    */
   public void completePreExam(String operatorId, BigDecimal approvedAmount) {
     if (status() != ClaimStatus.PRE_EXAMINING && status() != ClaimStatus.AUTO_PRE_EXAMINING) {
-      throw new DomainException("初审中才能完成初审，当前状态: " + status().code());
+      throw new DomainException("初审中才能完成初审，当前状态: " + describe(status()));
     }
     if (approvedAmount != null) {
       applyApprovedAmount(approvedAmount);
@@ -382,7 +382,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
       String rejectType,
       BigDecimal approvedAmount) {
     if (status() != ClaimStatus.ADJUSTING) {
-      throw new DomainException("核赔中才能提交审核决策，当前状态: " + status().code());
+      throw new DomainException("核赔中才能提交审核决策，当前状态: " + describe(status()));
     }
     if (reviewerId == null || reviewerId.isBlank()) {
       throw new DomainException("复核人不能为空");
@@ -474,8 +474,8 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
             getId(),
             getTenantId(),
             claimNo,
-            status().code(),
-            status().code(),
+            status(),
+            status(),
             "HANG_UP",
             operatorId,
             Instant.now()));
@@ -498,8 +498,8 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
             getId(),
             getTenantId(),
             claimNo,
-            status().code(),
-            status().code(),
+            status(),
+            status(),
             "RESUME",
             operatorId,
             Instant.now()));
@@ -543,7 +543,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /** 发起申诉：终态（结案/拒赔生效）→ 申诉中（60），48h 时限由应用层校验（§6.6）。 */
   public void enterAppeal(String operatorId) {
     if (!finished()) {
-      throw new DomainException("仅终态案件可发起申诉，当前状态: " + status().code());
+      throw new DomainException("仅终态案件可发起申诉，当前状态: " + describe(status()));
     }
     transition(ClaimStatus.APPEALING, "APPEAL", operatorId);
   }
@@ -578,7 +578,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   private void transition(ClaimStatus to, String actionCode, String operatorId) {
     ClaimStatus from = status();
     if (from == to) {
-      throw new DomainException("状态未变化，禁止空跃迁: " + from.code());
+      throw new DomainException("状态未变化，禁止空跃迁: " + describe(from));
     }
     this.status = to.name();
     this.stage = stageOf(to).name();
@@ -588,14 +588,7 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     }
     addDomainEvent(
         new ClaimStatusChangedEvent(
-            getId(),
-            getTenantId(),
-            claimNo,
-            from.code(),
-            to.code(),
-            actionCode,
-            operatorId,
-            Instant.now()));
+            getId(), getTenantId(), claimNo, from, to, actionCode, operatorId, Instant.now()));
   }
 
   /** 无操作人的重载（系统动作）。 */
@@ -614,9 +607,14 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     };
   }
 
+  /** 状态可读描述：{@code NAME(中文名)}——机器可检索（与 DB 落库值同形）且人工可读。 */
+  private static String describe(ClaimStatus status) {
+    return status == null ? "null" : status.name() + "(" + status.displayName() + ")";
+  }
+
   private void requireStatus(ClaimStatus expected, String action) {
     if (status() != expected) {
-      throw new DomainException(action + "，当前状态: " + status().code());
+      throw new DomainException(action + "，当前状态: " + describe(status()));
     }
   }
 

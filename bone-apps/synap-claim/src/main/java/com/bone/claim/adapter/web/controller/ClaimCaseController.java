@@ -14,6 +14,7 @@ import com.bone.claim.domain.model.claim.valueobject.HangUpType;
 import com.bone.core.idempotency.IdempotencyService;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -41,6 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>授权 scope：员工端 {@code claim:claims:write}（报案）、工作台 {@code claim:review:write}（审核决策）； 幂等放
  * adapter、机制在 application（E-10.1）。
+ *
+ * <p><b>操作人身份</b>：所有审核类动作的操作人一律取 {@link CurrentOperator}（已验签 token 的 userId）， <b>不接受 {@code
+ * X-Operator-Id} 之类的客户端声明</b>——双人复核的「复核人 ≠ 第一审核人」校验若可被请求头改写， 职责分离（SoD）即形同虚设。网关同时剥离入站同名头，双重收口。
  */
 @Tag(name = "智能理赔-赔案", description = "报案受理、核赔决策、待办查询")
 @RestController
@@ -141,11 +145,8 @@ public class ClaimCaseController {
   @Operation(summary = "分配初审", description = "材料完整 → 分配初审（7→10）")
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/allocate")
-  public ApiResponse<Void> allocate(
-      @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    claimCaseApplicationService.allocate(id, operatorId == null ? MDC.get("userId") : operatorId);
+  public ApiResponse<Void> allocate(@Parameter(description = "案件ID") @PathVariable long id) {
+    claimCaseApplicationService.allocate(id, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
@@ -156,11 +157,8 @@ public class ClaimCaseController {
       @Parameter(description = "案件ID") @PathVariable long id,
       @Parameter(description = "是否自动化路径")
           @RequestHeader(value = "X-Automated", defaultValue = "false")
-          boolean automated,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    claimCaseApplicationService.startPreExam(
-        id, automated, operatorId == null ? MDC.get("userId") : operatorId);
+          boolean automated) {
+    claimCaseApplicationService.startPreExam(id, automated, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
@@ -170,35 +168,25 @@ public class ClaimCaseController {
   public ApiResponse<Void> completePreExam(
       @Parameter(description = "案件ID") @PathVariable long id,
       @Parameter(description = "核定金额") @RequestHeader(value = "X-Approved-Amount")
-          java.math.BigDecimal approvedAmount,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    claimCaseApplicationService.completePreExam(
-        id, approvedAmount, operatorId == null ? MDC.get("userId") : operatorId);
+          java.math.BigDecimal approvedAmount) {
+    claimCaseApplicationService.completePreExam(id, approvedAmount, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
   @Operation(summary = "转人工核赔", description = "系统建议/强制转人工（12→40）")
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/escalate")
-  public ApiResponse<Void> escalate(
-      @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    claimCaseApplicationService.escalate(id, operatorId == null ? MDC.get("userId") : operatorId);
+  public ApiResponse<Void> escalate(@Parameter(description = "案件ID") @PathVariable long id) {
+    claimCaseApplicationService.escalate(id, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
   @Operation(summary = "领取核赔任务", description = "核赔员领取（40→41）")
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/adjust/claim")
-  public ApiResponse<Void> claimAdjustTask(
-      @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "核赔人（= 当前登录用户）")
-          @RequestHeader(value = "X-Operator-Id", required = false)
-          String reviewerId) {
-    claimCaseApplicationService.claimAdjustTask(
-        id, reviewerId == null ? MDC.get("userId") : reviewerId);
+  public ApiResponse<Void> claimAdjustTask(@Parameter(description = "案件ID") @PathVariable long id) {
+    // 领取人即当前登录核赔员（第一审核人），后续双人复核据此判「复核人 ≠ 第一审核人」
+    claimCaseApplicationService.claimAdjustTask(id, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
@@ -227,7 +215,7 @@ public class ClaimCaseController {
     claimCaseApplicationService.decide(
         id,
         request.decision(),
-        request.reviewerId(),
+        CurrentOperator.requireId(),
         request.comment(),
         request.rejectType(),
         request.approvedAmount());
@@ -238,9 +226,8 @@ public class ClaimCaseController {
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/second-review")
   public ApiResponse<Void> submitForSecondReview(
-      @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "复核人") @RequestHeader(value = "X-Operator-Id") String reviewerId) {
-    claimCaseApplicationService.submitForSecondReview(id, reviewerId);
+      @Parameter(description = "案件ID") @PathVariable long id) {
+    claimCaseApplicationService.submitForSecondReview(id, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
@@ -250,21 +237,16 @@ public class ClaimCaseController {
   public ApiResponse<Void> completeSecondReview(
       @Parameter(description = "案件ID") @PathVariable long id,
       @Parameter(description = "是否通过") @RequestHeader(value = "X-Approved", defaultValue = "true")
-          boolean approved,
-      @Parameter(description = "复核人") @RequestHeader(value = "X-Operator-Id") String reviewerId) {
-    claimCaseApplicationService.completeSecondReview(id, approved, reviewerId);
+          boolean approved) {
+    claimCaseApplicationService.completeSecondReview(id, approved, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
   @Operation(summary = "自动通过", description = "12→50（R-FAST-01 快赔路径；仍走资金 Saga）")
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/auto-approve")
-  public ApiResponse<Void> autoApprove(
-      @Parameter(description = "案件ID") @PathVariable long id,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    claimCaseApplicationService.autoApprove(
-        id, operatorId == null ? MDC.get("userId") : operatorId);
+  public ApiResponse<Void> autoApprove(@Parameter(description = "案件ID") @PathVariable long id) {
+    claimCaseApplicationService.autoApprove(id, CurrentOperator.requireId());
     return ApiResponse.success();
   }
 
@@ -277,10 +259,8 @@ public class ClaimCaseController {
           String action,
       @Parameter(description = "挂起类型（HANG_UP 必填）")
           @RequestHeader(value = "X-Hangup-Type", required = false)
-          HangUpType type,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
-    String operator = operatorId == null ? MDC.get("userId") : operatorId;
+          HangUpType type) {
+    String operator = CurrentOperator.requireId();
     if ("RESUME".equalsIgnoreCase(action)) {
       claimCaseApplicationService.resume(id, operator);
     } else {

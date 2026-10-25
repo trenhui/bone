@@ -1,5 +1,6 @@
 package com.bone.claim.domain.model.appeal;
 
+import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Column;
@@ -14,9 +15,9 @@ import lombok.NoArgsConstructor;
 /**
  * 申诉记录聚合（A8，多租户）。
  *
- * <p>拒赔生效（45）或结案（50）后 48h 内受理（§6.6 / §7.6，监管《保险法》第 23/24 条 + PRD §8.5 「拒赔不是终点」R-MAN-04）。只追加：{@code
- * SUBMITTED → DECIDED}，复议结论维持（→45）或推翻重启审核（→41）。 48h 时限起算点取自案件进入终态的 {@code closedAt}（由 {@code
- * ClaimCase} 在终态跃迁时记录）。
+ * <p>拒赔生效（{@code CLOSED_REJECTED}）或结案（{@code FINISHED}）后 48h 内受理（§6.6 / §7.6，监管《保险法》第 23/24 条 + PRD
+ * §8.5 「拒赔不是终点」R-MAN-04）。只追加：{@code SUBMITTED → DECIDED}，复议结论维持（回 {@code CLOSED_REJECTED}）
+ * 或推翻重启审核（回 {@code ADJUSTING}）。48h 时限起算点取自案件进入终态的 {@code closedAt}（由 {@code ClaimCase} 在终态跃迁时记录）。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -35,7 +36,11 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
   @Column(name = "claim_no", nullable = false)
   private String claimNo;
 
-  /** 被申诉的原始终态：45（拒赔生效）/ 50（结案）。 */
+  /**
+   * 被申诉的原始终态：{@code CLOSED_REJECTED}（拒赔生效）/{@code FINISHED}（结案）。
+   *
+   * <p>与 {@code t_claim_case.status} 同口径存枚举名——两处各存一种编码（一边 name、一边数字码）时， 跨表核对与申诉时限校验会静默对不上。
+   */
   @Column(name = "original_status", nullable = false)
   private String originalStatus;
 
@@ -99,9 +104,7 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
       String originalStatus,
       String submittedBy,
       Instant caseClosedAt) {
-    if (!"45".equals(originalStatus) && !"50".equals(originalStatus)) {
-      throw new DomainException("仅拒赔生效(45)或结案(50)案件可申诉，当前: " + originalStatus);
-    }
+    requireTerminalStatus(originalStatus);
     if (caseClosedAt == null) {
       throw new DomainException("案件终态时间缺失，无法计算申诉时限");
     }
@@ -110,6 +113,20 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
     }
     return new AppealRecord(
         id, tenantId, appealNo, claimId, claimNo, originalStatus, submittedBy, caseClosedAt);
+  }
+
+  /** 原始终态校验：必须是 {@link ClaimStatus#terminal()} 的枚举名，非法值直接拒（含历史数字码，便于定位脏数据）。 */
+  private static ClaimStatus requireTerminalStatus(String originalStatus) {
+    ClaimStatus status;
+    try {
+      status = ClaimStatus.ofName(originalStatus);
+    } catch (IllegalArgumentException ex) {
+      throw new DomainException("被申诉案件终态须为枚举名（CLOSED_REJECTED/FINISHED），实际: " + originalStatus);
+    }
+    if (!status.terminal()) {
+      throw new DomainException("仅拒赔生效(CLOSED_REJECTED)或结案(FINISHED)案件可申诉，当前: " + originalStatus);
+    }
+    return status;
   }
 
   /** 复议结论（维持/推翻）。 */

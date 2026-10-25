@@ -1,10 +1,13 @@
 package com.bone.claim.domain.model.claim.valueobject;
 
 /**
- * 案件状态码（内部细粒度，pk-tpa-saas 数字码体系移植）。
+ * 案件状态（内部细粒度状态机）。
  *
- * <p><b>对外只投影两值</b>（{@code PENDING_EVIDENCE} / {@code REVIEWING}），见 {@link #toExternal()}；
- * 数字码属内部状态机私有，落在 {@code t_claim_case.status}，仅 {@code integration_sync_log} 与存量桥接层可见（工程落地版 §6.1）。
+ * <p><b>唯一落库表示是枚举 {@code name()}</b>（{@code t_claim_case.status}、{@code
+ * appeal_record.original_status} 及一切 SQL 模板的过滤条件都按 name 写，如 {@code 'FINISHED'}）。{@link #code()} 是
+ * pk-tpa-saas 体系的<b>对外桥接码</b>，只在对外集成映射处使用；两者混用会造成「按数字码过滤、行行命中不到」的静默空转。
+ *
+ * <p><b>对外只投影两值</b>（{@code PENDING_EVIDENCE} / {@code REVIEWING}），见 {@link #toExternal()}。
  *
  * <p>合法跃迁只允许由 {@code ClaimCase} 聚合根发起（转换表 = 工程落地版 §6.2）。
  */
@@ -47,7 +50,7 @@ public enum ClaimStatus {
     this.displayName = displayName;
   }
 
-  /** 内部数字码（DB 持久化值）。 */
+  /** 对外桥接码（pk-tpa-saas 数字码体系）；<b>不是</b> DB 持久化值，落库一律用 {@link #name()}。 */
   public String code() {
     return code;
   }

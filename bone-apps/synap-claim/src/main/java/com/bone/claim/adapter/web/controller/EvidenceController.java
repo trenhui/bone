@@ -5,6 +5,7 @@ import com.bone.claim.domain.model.evidence.Evidence;
 import com.bone.claim.domain.model.evidence.valueobject.DocType;
 import com.bone.claim.domain.model.evidence.valueobject.OcrStatus;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.security.auth.CurrentOperator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -14,14 +15,12 @@ import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -98,13 +97,9 @@ public class EvidenceController {
   @Operation(summary = "锁定证据集", description = "理算前置（§4.3）：锁定后材料不可改，保证理算可复算")
   @PreAuthorize("hasAuthority('claim:claims:write')")
   @PostMapping("/lock")
-  public ApiResponse<Integer> lock(
-      @Parameter(description = "案件ID") @PathVariable long claimId,
-      @Parameter(description = "操作人") @RequestHeader(value = "X-Operator-Id", required = false)
-          String operatorId) {
+  public ApiResponse<Integer> lock(@Parameter(description = "案件ID") @PathVariable long claimId) {
     return ApiResponse.success(
-        evidenceApplicationService.lockAll(
-            claimId, operatorId == null ? MDC.get("userId") : operatorId));
+        evidenceApplicationService.lockAll(claimId, CurrentOperator.requireId()));
   }
 
   @Operation(summary = "材料列表", description = "案件下已登记材料（含解析状态与置信度）")
