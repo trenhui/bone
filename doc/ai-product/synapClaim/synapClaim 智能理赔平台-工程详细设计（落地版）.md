@@ -709,17 +709,18 @@ SOFT_RESERVED → HARD_RESERVED → REVIEW_FREEZE → PAID
 
 | 节点 | `node_type`（05 契约 §4.4） | 职责 | 失败处理 |
 |---|---|---|---|
-| `EvidenceLoad` | `OCR`（含证据装载与解析） | 装载已锁定证据、解析字段置信度与三段拆分 | 无证据 → NEED_MORE_EVIDENCE；解析失败 → MANUAL_REQUIRED |
-| `RuleCheck` | `RULE` | 核责（QLExpress 规则资产批量执行） | 规则缺失 → MANUAL_REQUIRED |
-| `AiAssess` | `LLM` | 医学合理性/风控评估 | LLM 不可用→降级为纯规则路径；置信度**三档**（<0.7 强制人工→40 / 0.7–0.85 复核档→40 并打 `review_tier=REVIEW` / ≥0.85 且无风险直出，映射见 §6.3） |
+| `EvidenceLoad` | `OCR`（含证据装载与解析） | 装载已锁定证据、解析字段置信度与三段拆分；**视觉反诈（E1）**：影像指纹/篡改/PS 检测（`VisualForensicsPort`），命中 `R-FRAUD-08` | 无证据 → NEED_MORE_EVIDENCE；解析失败 → MANUAL_REQUIRED |
+| `RuleCheck` | `RULE` | 核责（QLExpress 规则资产批量执行）；R-DIR 目录匹配经 `KnowledgeRetrievalPort`（**V1.0 Phase B 起**，含 GraphRAG 图谱遍历）；发票唯一性硬约束 | 规则缺失 → MANUAL_REQUIRED |
+| `AiAssess` | `LLM` | 多模态语义理解（E5）：病历诊断抽取、条款语义匹配、临床合理性推理（`AiGatewayPort`+`KnowledgeRetrievalPort`）；输出 `AiSuggestion`（三档置信度） | LLM 不可用→降级为纯规则路径；置信度**三档**（<0.7 强制人工→40 / 0.7–0.85 复核档→40 并打 `review_tier=REVIEW` / ≥0.85 且无风险直出，映射见 §6.3） |
+| `FraudScreen` | `FRAUD`（新增节点类型，V1.0 Phase B） | 图计算反欺诈（E2）：关系图谱+设备指纹+团伙识别（`GraphFraudPort`）+ 跨案件关联（`R-FRAUD-09/10/11`）；命中经 `NotificationPort` 发多级预警 + 挂起 `FRAUD`（§6.5） | 图库不可用→降级为单案规则路径（`R-FRAUD-01~07`）转人工；团伙命中 → `MANUAL_REQUIRED` + 升级风控岗 |
 | `Arbitrate` | `DECISION` | 确定性仲裁（R-DEC 优先级） | 冲突无法裁决 → MANUAL_REQUIRED |
-| `Adjust` | `RULE`（理算，确定性） | 触发理算（确定性，规则版本入快照） | 理算异常 → 挂起转人工 |
+| `Adjust` | `RULE`（理算，确定性） | 触发理算（确定性，规则版本入快照）；信任额度预授权经 `LedgerPort`（C11，高信任客户免单证直赔） | 理算异常 → 挂起转人工 |
 
-> 节点链路固定为 **证据 → 解析 → 核责 → 理算 → 决策**（与 05 契约 `node_seq` 语义一致）；`node_type` 取值限定为 `OCR`/`RULE`/`LLM`/`DECISION` 四类（05 契约枚举），理赔域不新增 `PAY` 等自定义类型——支付属资金域（`settle_funding_event`），不入决策 trace。
+> 节点链路固定为 **证据 → 解析 → 核责 → AI评估 → 反欺诈 → 决策 → 理算**（与 05 契约 `node_seq` 语义一致，反欺诈节点为 V1.0 Phase B 新增）；`node_type` 取值现有 `OCR`/`RULE`/`LLM`/`DECISION` 四类（05 契约枚举），`FraudScreen` 节点的 `FRAUD` 类型为 Phase B 契约扩展项（须与 05 契约 owner 协同扩枚举，对外 node_type 在扩展落地前暂以 `RULE` 承载并 `node_name=FraudScreen` 区分），理赔域不新增 `PAY` 等自定义类型——支付属资金域（`settle_funding_event`），不入决策 trace。
 >
-> **内部 5 节点 → 对外 4 类 `node_type` 映射**（上表「node_type」列即为映射结果）：`EvidenceLoad`→`OCR`、`RuleCheck`→`RULE`、`Adjust`→`RULE`、`AiAssess`→`LLM`、`Arbitrate`→`DECISION`。对外仅暴露 4 类枚举，内部节点名落 `claim_decision_trace.node_name`；DDL `node_type` 注释与 05 契约 §4.4 枚举同源。
+> **内部 6 节点 → 对外 4 类 `node_type` 映射**（上表「node_type」列即为映射结果）：`EvidenceLoad`→`OCR`、`RuleCheck`→`RULE`、`Adjust`→`RULE`、`AiAssess`→`LLM`、`Arbitrate`→`DECISION`、`FraudScreen`→`RULE`（`FRAUD` 类型 Phase B 扩展，见上注）。对外仅暴露枚举，内部节点名落 `claim_decision_trace.node_name`；DDL `node_type` 注释与 05 契约 §4.4 枚举同源。
 
-> 一期 `AiAssess` 的"医学合理性"为 LLM 通用推理（**无目录落地**），仅作合理性提示与风控信号；循证医学目录/知识库匹配（`bone-ai-rag`）为二期增强，**不进入一期自动判定**——避免误读为一期已具备循证医学匹配能力。
+> 一期 `AiAssess` 的"医学合理性"为 LLM 通用推理（**无目录落地**），仅作合理性提示与风控信号；循证医学目录/知识库匹配（`bone-ai-rag` + GraphRAG）**由二期提前至 V1.0 Phase B**（见 §3.3 能力映射表与《synapClaim 依赖 BONE-AI 能力图谱与增强方案》），经 `KnowledgeRetrievalPort` 接入——**MVP I0–I4 仍不含目录匹配**（避免击穿 §3.3 容量矩阵），Phase B 增量另行架构评审与排期；R-DIR-06 临床合理性规则在 Phase B 经 C6 图谱检索生效，不进入 MVP 自动判定。
 
 每次执行落 `DecisionExecution` 聚合 + `claim_decision_trace`（append-only），支持按 `trace_id` 回放输入/规则命中/AI 输出。
 
@@ -795,7 +796,7 @@ sequenceDiagram
 
 ### 7.6 后督抽检与申诉
 
-- 抽检：`adapter/schedule` 每日抽样 ≥5% 已自动结案案件 → 差异落 `claim_inspection` 质检报告。抽检须**分层抽样**（按金额段 × 医院等级 × 渠道分层），避免高金额集中在一层导致结论偏差。**落地边界（2026-10-23 核码登记）**：`t_claim_inspection` 表、质检端点（§10.1 #13/#14）、`adapter/schedule` 抽样调度三者均未落地（§12.2.1）——一期目标 = 三件齐备 + diff 回流闭环；**案件状态回流质检态（30/31/32）为 V2 预留转换**（§6.1/§6.2），任何期都不改案件状态码。
+- 质检：**自动通过（AUTO_APPROVE）/ 系统建议拒赔（SUGGEST_REJECT 转人工确认）结论 100% 经 AI 质检**（`bone-ai` 评测流水线 + E4 MRM），高风险全量覆盖；人工抽检（分层抽样：金额段 × 医院等级 × 渠道 × 风险标记）作补充与偏差校准，抽样率随线上分布动态校准（PSI>0.2 增量补入）。抽检须**分层抽样**避免高金额集中导致结论偏差。**落地边界（2026-10-23 核码登记）**：`t_claim_inspection` 表、质检端点（§10.1 #13/#14）、`adapter/schedule` 抽样调度三者均未落地（§12.2.1）——一期目标 = 三件齐备 + diff 回流闭环；**案件状态回流质检态（30/31/32）为 V2 预留转换**（§6.1/§6.2），任何期都不改案件状态码。
 
 **抽检差异回流闭环（后督不是终点，是规则与评测集的迭代源）**：质检差异（`claim_inspection.result=DIFF`）按 `diff_type` 分流并强制闭环——① 理算/规则类差异（规则漏命中、控额漏维度）→ 生成规则修正候选（进 `bone-ai-rules` 草稿 + 回归门禁）；② AI 误判类差异 → 进评测集失败案例库，按 §8.2 分层抽样规则增量补入基准集（防过拟合：仅入测试集侧，§12.1）；③ 反欺诈命中经人工确认的结果（确认为欺诈/误报）→ 回流为 R-FRAUD 规则的**正例/负例**，欺诈规则因此随运营迭代而非上线即冻结。所有回流须带原始案件引用（`claim_id`），回流动作入审计；**月度复盘**（§11.5.1 无指责复盘）统计"差异→回流→发布→差异下降"的闭环时延，超过一个迭代周期未闭环的差异升级 P1。
 - 申诉：拒赔生效或结案后 48h 内受理 → `Appeal` 创建 → 案件转 60 → 复议结论（维持 45 / 重启审核 41）。
