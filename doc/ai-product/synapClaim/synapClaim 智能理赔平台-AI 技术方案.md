@@ -56,7 +56,7 @@
 - **渠道**：员工自助理赔（上传发票 + 清单 + 医保结算单）
 - **决策**：自动通过（≤500 元且无风险）/ 系统建议拒赔（人工确认）/ 转人工 / 补件
 - **资金**：报销模式快赔（打款到员工账户，两段式状态机）
-- **非目标**（二期+）：住院/意外/重疾、医院端直付、多智能体风控、低代码可视化编辑器
+- **非目标**（二期+）：住院/意外/重疾、多智能体风控（C2 orchestration 状态机已覆盖编排，自主 Agent 循环仅限四条件试点）、低代码可视化编辑器。**医院端直付由二期提前至 V1.0 试点**（经保司/TPA 通道，复用 `bone-ai-integration` C10 三态灰度 Shadow→Assisted→Automated，非自建医保局/银行网关），单证 OCR 报销兜底保留。
 
 ---
 
@@ -271,19 +271,22 @@ END
 |---|---|---|
 | RULE_NODE 核责 | `bone-ai-rules` QLExpress | 规则热更、灰度、回归门禁 |
 | AI_NODE 评估 | `bone-ai-gateway` | 熔断/重试/计量；置信度三档（<0.7 强制 / 0.7-0.85 复核 / ≥0.85 直出） |
-| AI_NODE 医学 RAG（**二期**） | `bone-ai-gateway` + `bone-ai-document` | 切片→向量→RRF→rerank；权限过滤；一期无 RAG 链路（PRD §7.6） |
+| AI_NODE 医学 RAG（**V1.0 Phase B**，由二期提前） | `bone-ai-gateway` + `bone-ai-rag` | 切片→向量→RRF→rerank；**GraphRAG 图谱遍历**；权限过滤（ACL 默认 deny + 写入侧 PII 掩码）；MVP I0–I4 不含（见工程落地版 §7.3 注） |
 | DECISION_NODE 转人工 | `bone-ai-orchestration` HITL | HitlItem 五态 + ReasonType 回流 |
-| 全过程 | `bone-ai-trace` | 每个节点落 decision_trace 节点序列 |
+| FRAUD_NODE 反欺诈（**V1.0 Phase B**，新增节点类型） | `bone-ai-graph`（E2）+ `bone-ai-notification`（C9） | 关系图谱+设备指纹+团伙识别（`R-FRAUD-09/10/11`）；命中经 C9 多级预警 + 挂起 `FRAUD` |
+| VISUAL_NODE 视觉反诈（**V1.0 Phase B**，E1） | `bone-ai-visual`（C12-visual） | 影像指纹/篡改/PS 检测、跨案件重复检索（`R-FRAUD-08`） |
+| LEDGER_NODE 信任额度（C11） | `bone-ai-ledger` | 高信任客户免单证直赔的预授权/两阶段预留 |
+| 全过程 | `bone-ai-trace` | 每个节点落 decision_trace 节点序列；评测+MRM（E4）闭环 |
 
 ### 6.4 AI 超时分层与动态降级
 
 | 查询类型 | 判定 | 超时 | 降级 |
 |---|---|---|---|
 | 简单（单文档） | — | 3s | 规则兜底 |
-| 标准 RAG（2-5 文档）（二期） | — | 5s | 缓存 |
-| 复杂 RAG（>5 文档）（二期） | — | 8s | 异步转 bone-ai-orchestration |
+| 标准 RAG（2-5 文档）（**V1.0 Phase B**） | — | 5s | 缓存 |
+| 复杂 RAG（>5 文档）（**V1.0 Phase B**） | — | 8s | 异步转 bone-ai-orchestration |
 
-> 一期无 RAG 链路（PRD §7.6），RAG 两行仅作二期预算参考；一期 LLM 调用统一走 `bone-ai-gateway` 的熔断/重试/token 计量。
+> RAG 链路由二期提前至 **V1.0 Phase B**（依《synapClaim 依赖 BONE-AI 能力图谱与增强方案》）；MVP I0–I4 仍不含 RAG（避免击穿容量矩阵），Phase B 增量另行架构评审；一期 LLM 调用统一走 `bone-ai-gateway` 的熔断/重试/token 计量。
 
 ### 6.5 LLM 调用安全边界与提示词治理
 
