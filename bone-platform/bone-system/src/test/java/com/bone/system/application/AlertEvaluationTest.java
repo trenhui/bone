@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.system.application.port.out.AlertNotifierPort;
 import com.bone.system.application.port.out.MetricValuePort;
 import com.bone.system.domain.model.alert.AlertRecord;
 import com.bone.system.domain.model.alert.AlertRule;
@@ -39,13 +40,21 @@ class AlertEvaluationTest {
   @Mock DomainEventPublisher domainEventPublisher;
   @Mock MetricValuePort metricValuePort;
 
+  // 2026-10-26 补：AlertNotifierPort 接线后构造器多一个参数，本类未同步 ⇒
+  // testCompile 失败 ⇒ 整个 bone-system 模块（含 spring-boot:run）无法构建启动。
+  @Mock AlertNotifierPort alertNotifierPort;
+
   AlertApplicationService service;
 
   @BeforeEach
   void setUp() {
     service =
         new AlertApplicationService(
-            alertRuleRepository, alertRecordRepository, domainEventPublisher, metricValuePort);
+            alertRuleRepository,
+            alertRecordRepository,
+            domainEventPublisher,
+            metricValuePort,
+            alertNotifierPort);
   }
 
   private static AlertRule rule(String name, String metric, double threshold) {
