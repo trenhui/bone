@@ -75,4 +75,14 @@ public class LoggingNotificationPort implements NotificationPort {
         operatorId,
         reason);
   }
+
+  @Override
+  public void notifyCc(
+      WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {
+    log.info(
+        "[workflow][notify] 抄送知会：instance={} node={} recipients={}",
+        instance.id(),
+        nodeCode,
+        recipients);
+  }
 }

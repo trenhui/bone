@@ -132,18 +132,20 @@ public final class WorkflowBranchEvaluator {
    * @param data 业务数据
    * @param ctx 主体上下文
    * @return 唯一命中的后继节点
-   * @throws IllegalStateException 配置歧义 / 条件非法 / 无分支命中且无默认边
+   * @throws WorkflowEngineException 配置歧义（{@code BRANCH_AMBIGUOUS}）/ 条件非法（{@code BRANCH_INVALID}）/
+   *     无分支命中且无默认边（{@code BRANCH_NO_MATCH}）
    */
   public Selection select(List<Branch> branches, Map<String, Object> data, ConditionContext ctx) {
     if (branches == null || branches.isEmpty()) {
-      throw new IllegalStateException("条件节点没有任何出边");
+      throw new WorkflowEngineException(WorkflowErrorCode.BRANCH_INVALID, "条件节点没有任何出边");
     }
     List<Branch> defaults = branches.stream().filter(Branch::isDefault).toList();
     if (defaults.size() > 1) {
-      throw new IllegalStateException("条件节点存在多条默认边（else），配置歧义");
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.BRANCH_AMBIGUOUS, "条件节点存在多条默认边（else），配置歧义");
     }
     if (!defaults.isEmpty() && !defaults.get(0).equals(branches.get(branches.size() - 1))) {
-      throw new IllegalStateException("默认边（else）必须放在出边末位");
+      throw new WorkflowEngineException(WorkflowErrorCode.BRANCH_INVALID, "默认边（else）必须放在出边末位");
     }
     List<Branch> matched = new ArrayList<>();
     for (Branch branch : branches) {
@@ -152,14 +154,18 @@ public final class WorkflowBranchEvaluator {
       }
       List<String> problems = lintCondition(branch.when(), "when");
       if (!problems.isEmpty()) {
-        throw new IllegalStateException("分支条件配置非法：" + String.join("；", problems));
+        throw new WorkflowEngineException(
+            WorkflowErrorCode.BRANCH_INVALID, "分支条件配置非法：" + String.join("；", problems));
       }
       if (conditionEvaluator.evaluate(branch.when(), data, ctx)) {
         matched.add(branch);
       }
     }
     if (matched.size() > 1) {
-      throw new IllegalStateException(
+      // 运行时可达：条件重叠是<b>数据相关</b>的（如 amount>1000 与 amount>5000 在 amount=8000 时同时命中），
+      // 发布期的语法/结构检查查不出来。故这里必须给出稳定错误码，让宿主翻译成 422 而不是让它冒泡成 500。
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.BRANCH_AMBIGUOUS,
           "条件节点有多条分支同时命中（配置歧义）：" + matched.stream().map(Branch::to).toList());
     }
     if (matched.size() == 1) {
@@ -170,7 +176,8 @@ public final class WorkflowBranchEvaluator {
       Branch fallback = defaults.get(0);
       return new Selection(fallback.to(), fallback.label(), true);
     }
-    throw new IllegalStateException("条件节点无任何分支命中且无默认边（拒绝静默放行）");
+    throw new WorkflowEngineException(
+        WorkflowErrorCode.BRANCH_NO_MATCH, "条件节点无任何分支命中且无默认边（拒绝静默放行）");
   }
 
   private static String text(JsonNode node, String field) {

@@ -647,8 +647,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                         "流程定义缺少节点：" + instance.currentNodeCode()));
     Map<String, Object> data =
         recordPort.loadRecordData(instance.entityCode(), instance.recordId());
-    List<String> assignees = resolveAssignees(node, definition, instance, data);
-    if (assignees.isEmpty()) {
+    // 只有审批节点才需要「重新解析审批人」：条件节点挂起是因<b>分支不可裁决</b>（如两条分支同时命中），
+    // 恢复应直接重跑该节点；若也去解析审批人，条件节点没有指派规则 ⇒ 永远 NO_ASSIGNEE ⇒ 死单不可恢复。
+    boolean approvalNode = node.type() == WorkflowDefinition.NodeType.APPROVE;
+    List<String> assignees =
+        approvalNode ? resolveAssignees(node, definition, instance, data) : List.of();
+    if (approvalNode && assignees.isEmpty()) {
       // 组织架构仍未修复：保持挂起，明确报错，避免「恢复成功」的假象把死单变成更隐蔽的卡单。
       throw new WorkflowEngineException(
           WorkflowErrorCode.NO_ASSIGNEE, "审批人仍解析不出，无法恢复挂起：" + instance.currentNodeCode());
@@ -700,6 +704,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     statusPort.markResumed(instance.entityCode(), instance.recordId(), instance.id());
     LOG.info(
         "[workflow] 流程恢复：instance={} node={} assignees={}", instanceId, node.code(), assignees);
+    if (!approvalNode) {
+      // 非审批节点（条件分支歧义 / 抄送等）挂起：修复配置后从该节点重跑，闭合「挂起 → 恢复」通道。
+      return advanceFrom(running, definition, operatorId, instance.currentNodeCode());
+    }
     return running;
   }
 
@@ -892,7 +900,29 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                       new WorkflowEngineException(
                           WorkflowErrorCode.DEFINITION_MALFORMED, "流程定义缺少节点：" + currentNodeCode));
       switch (node.type()) {
-        case START, CC -> {
+        case START -> {
+          WorkflowDefinition.Edge edge = singleOutEdge(definition, currentNodeCode);
+          if (!moveTo(instance, currentNodeCode, edge.to(), null, edge.label(), operatorId)) {
+            return latestInstance(instance);
+          }
+          current = edge.to();
+        }
+        case CC -> {
+          // 抄送（知会）：解析抄送人 → 逐人发知会 → 立即穿透到下一节点。
+          // 抄送<b>不建任务、不阻塞</b>——它不是审批动作，收件人无需决策；若建了待办，
+          // 会签/推进判据会把抄送人算进「未决策」集合，流程反而卡死。
+          List<String> ccRecipients = resolveAssignees(node, definition, instance, data);
+          if (ccRecipients.isEmpty()) {
+            // 抄送人解析不出：不挂起（抄送不是阻塞动作），记 WARN 让配置问题可见即可。
+            LOG.warn("[workflow] 抄送节点 {} 解析不出抄送人，跳过知会：instance={}", currentNodeCode, instance.id());
+          } else {
+            notify(() -> notificationPort.notifyCc(instance, currentNodeCode, ccRecipients));
+            LOG.info(
+                "[workflow] 抄送：instance={} node={} recipients={}",
+                instance.id(),
+                currentNodeCode,
+                ccRecipients);
+          }
           WorkflowDefinition.Edge edge = singleOutEdge(definition, currentNodeCode);
           if (!moveTo(instance, currentNodeCode, edge.to(), null, edge.label(), operatorId)) {
             return latestInstance(instance);
@@ -907,7 +937,20 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                       edge ->
                           new WorkflowBranchEvaluator.Branch(edge.to(), edge.when(), edge.label()))
                   .toList();
-          WorkflowBranchEvaluator.Selection selection = branchEvaluator.select(branches, data, ctx);
+          WorkflowBranchEvaluator.Selection selection;
+          try {
+            selection = branchEvaluator.select(branches, data, ctx);
+          } catch (WorkflowEngineException branchFailure) {
+            // 分支不可裁决（多条同时命中 / 无匹配 / 条件非法）：此刻任务已决策、实例已推进到本条件节点，
+            // 直接抛出会留下「停在条件节点、无待办、无告警」的死单。故先按 fail-closed 三件套挂起告警，
+            // 再把稳定错误码抛给宿主翻译（422）——管理员修复条件配置后可 resume 续跑。
+            suspend(
+                instance,
+                node,
+                operatorId,
+                "条件节点 " + currentNodeCode + " 分支不可裁决：" + branchFailure.getMessage());
+            throw branchFailure;
+          }
           if (!moveTo(
               instance,
               currentNodeCode,
@@ -922,7 +965,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
         case APPROVE -> {
           List<String> assignees = resolveAssignees(node, definition, instance, data);
           if (assignees.isEmpty()) {
-            suspend(instance, node, operatorId);
+            suspend(instance, node, operatorId, "审批节点 " + node.code() + " 解析不出审批人");
             return latestInstance(instance);
           }
           Instant now = clock.instant();
@@ -1018,8 +1061,15 @@ public class WorkflowEngineImpl implements WorkflowEngine {
    * 会把整行（含 phase）覆写成 SUSPENDED——一个已 WITHDRAWN 且活动指针已删的实例「复活」，同一单据可再次
    * start，出现<b>双活动实例</b>（活动指针表要防的正是这个）。resume / withdraw 都检查了返回值，唯此路径遗漏。
    */
-  private void suspend(WorkflowInstance instance, WorkflowDefinition.Node node, String operatorId) {
-    String reason = "审批节点 " + node.code() + " 解析不出审批人";
+  /**
+   * 挂起（fail-closed 三件套：挂起 + 审计 + 告警）。
+   *
+   * <p><b>为什么挂起而不是抛异常了事</b>：本方法被调用时，前序状态变更（任务决策 / 节点推进）往往已经落库。
+   * 若只抛异常，实例会停在某个<b>既无待办、又无任何告警</b>的节点上—— 没人知道它卡住，管理员只能靠翻库发现。挂起 + 管理员告警把「静默死单」变成「可见待处理」， 配合 {@code
+   * resume} / {@code assignTask} / {@code terminateInstance} 三条人工介入通道形成闭环。
+   */
+  private void suspend(
+      WorkflowInstance instance, WorkflowDefinition.Node node, String operatorId, String reason) {
     boolean suspended =
         instanceRepository.compareAndSetPhase(
             instance.id(),

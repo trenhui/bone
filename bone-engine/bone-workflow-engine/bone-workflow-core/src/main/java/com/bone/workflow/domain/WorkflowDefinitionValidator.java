@@ -137,9 +137,13 @@ public final class WorkflowDefinitionValidator {
         lintSingleOutEdge(node, outs, violations, "WF-015", "发起节点");
       }
       if (node.type() == WorkflowDefinition.NodeType.CC) {
-        violations.add(
-            new Violation(
-                "WF-016", "抄送节点 " + node.code() + " v1 暂不支持（当前为静默穿透、配了不生效；v2 落地为抄送任务 + 通知）"));
+        // 抄送已落地：改为按「必须有抄送人指派规则 + 单一出边」校验，不再一律拒绝。
+        // 抄送人沿用与审批节点同一套指派规则（ROLE/USER/LINE_MANAGER/DEPT_HEAD/LEVEL_UP/FIELD），
+        // 只是解析结果用于「知会」而非「建待办」。
+        if (definition.assignments().getOrDefault(node.code(), List.of()).isEmpty()) {
+          violations.add(new Violation("WF-018", "抄送节点 " + node.code() + " 缺抄送人指派规则"));
+        }
+        lintSingleOutEdge(node, outs, violations, "WF-018", "抄送节点");
       }
     }
 

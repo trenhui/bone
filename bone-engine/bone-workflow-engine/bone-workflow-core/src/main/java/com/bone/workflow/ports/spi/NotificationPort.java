@@ -34,6 +34,18 @@ public interface NotificationPort {
   /** 终态通知：告知发起人审批结果。 */
   void notifyTerminated(WorkflowInstance instance, String operatorId, String reason);
 
+  /**
+   * 抄送知会：把单据「知会」给抄送人（{@code CC} 节点）。
+   *
+   * <p><b>与 {@link #notifyTaskCreated} 的关键区别</b>：抄送<b>不产生待办、不要求决策、不参与节点完成判据</b>——
+   * 它只是让相关人知情。若把抄送实现成「建一条待办」， 会签（ALL）节点会把抄送人算进「未决策」集合，流程将永远等不齐。
+   *
+   * @param instance 流程实例
+   * @param nodeCode 抄送节点编码
+   * @param recipients 抄送人账户 id（已去重）
+   */
+  void notifyCc(WorkflowInstance instance, String nodeCode, java.util.List<String> recipients);
+
   /** 空实现：宿主未接通知能力时使用（通知是尽力而为，缺失不应让引擎不可用）。 */
   NotificationPort NOOP =
       new NotificationPort() {
@@ -57,5 +69,9 @@ public interface NotificationPort {
 
         @Override
         public void notifyTerminated(WorkflowInstance instance, String operatorId, String reason) {}
+
+        @Override
+        public void notifyCc(
+            WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {}
       };
 }

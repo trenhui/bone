@@ -81,14 +81,22 @@ class EnterpriseApprovalScenarioTest {
             default -> List.of();
           };
 
-  /** 各单据的金额（驱动条件分支）。 */
+  /**
+   * 各单据的金额（驱动条件分支）。
+   *
+   * <p>用<b>可变</b> map 是为了验证「挂起 → 修数据 → 恢复」的闭合：分支歧义挂起后改金额再 {@code resume}， 流程应能续跑（见 {@link
+   * #branchAmbiguity_recoversAfterDataFix}）。
+   */
   private final Map<String, Integer> amountByRecord =
-      Map.of(
-          "r-reimb-small", 800,
-          "r-reimb-large", 5000,
-          "r-reimb-nomgr", 800,
-          "r-proc-small", 10000,
-          "r-proc-large", 100000);
+      new java.util.HashMap<>(
+          Map.of(
+              "r-reimb-small", 800,
+              "r-reimb-large", 5000,
+              "r-reimb-nomgr", 800,
+              "r-proc-small", 10000,
+              "r-proc-large", 100000,
+              "r-reimb-cc", 800,
+              "r-proc-overlap", 10000));
 
   @BeforeEach
   void setUp() throws Exception {
@@ -104,6 +112,8 @@ class EnterpriseApprovalScenarioTest {
 
     seedReimbursement();
     seedProcurement();
+    seedReimbursementWithCc();
+    seedOverlapProcurement();
   }
 
   @AfterEach
@@ -328,6 +338,73 @@ class EnterpriseApprovalScenarioTest {
         WorkflowEngineException.class, () -> engine.addSign(mgrTask.id(), "mgrPeer", "mgr1", "重复"));
   }
 
+  @Test
+  @DisplayName("抄送节点：知会抄送人但不建待办、不阻塞流程")
+  void cc_notifiesRecipientsWithoutCreatingTasks() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance = engine.start("expense", "r-reimb-cc", "reimb_cc", INITIATOR);
+
+    // 先停在主管节点
+    WorkflowTask mgrTask = engine.listPendingTasks(instance.id()).get(0);
+    assertEquals("mgr1", mgrTask.assigneeId());
+
+    // 主管同意 → 经过抄送节点（知会财务）→ 直接结束
+    WorkflowInstance approved = engine.completeTask(mgrTask.id(), Decision.APPROVE, "同意", "mgr1");
+    assertEquals(Phase.APPROVED, approved.phase(), "抄送不阻塞，应直接走完");
+
+    // 抄送人收到 CC 知会，但不产生任何待办
+    assertInbox("fin1", "CC", instance.id());
+    assertTrue(
+        engine.listTasksByAssignee("fin1", WorkflowTask.Status.PENDING).isEmpty(),
+        "抄送不得生成待办（否则会签判据会把抄送人算进未决策集合）");
+    assertEquals(0, engine.listPendingTasks(instance.id()).size());
+  }
+
+  @Test
+  @DisplayName("分支歧义（两条分支同时命中）：失败关闭 → 挂起 + 管理员告警 + 稳定错误码，不留静默卡单")
+  void branchAmbiguity_suspendsAndAlerts() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("purchase", "r-proc-overlap", "proc_overlap", INITIATOR);
+
+    // 部门负责人同意 → 推进到条件节点，此时两条重叠分支（amount>1000 与 amount>5000）
+    // 在 amount=10000 下同时命中 ⇒ 分支不可裁决
+    WorkflowTask deptTask = engine.listPendingTasks(instance.id()).get(0);
+    WorkflowEngineException failure =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.completeTask(deptTask.id(), Decision.APPROVE, "同意", "head1"),
+            "分支歧义必须抛引擎异常（宿主可按 code.httpStatus() 翻译），而非 IllegalStateException");
+    assertEquals(
+        com.bone.workflow.domain.WorkflowErrorCode.BRANCH_AMBIGUOUS,
+        failure.code(),
+        "错误码应为 BRANCH_AMBIGUOUS");
+
+    // 关键：不得留下「停在条件节点、无待办、无告警」的静默死单 —— 必须挂起并告警
+    WorkflowInstance latest = engine.findInstanceById(instance.id()).orElseThrow();
+    assertEquals(Phase.SUSPENDED, latest.phase(), "分支不可裁决必须挂起（fail-closed）");
+    assertInbox("workflow-admin", "SUSPENDED", instance.id());
+  }
+
+  @Test
+  @DisplayName("分支歧义修复后：发起人对条件节点挂起的实例 resume 可续跑（挂起→恢复通道闭合）")
+  void branchAmbiguity_recoversAfterDataFix() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("purchase", "r-proc-overlap", "proc_overlap", INITIATOR);
+    WorkflowTask deptTask = engine.listPendingTasks(instance.id()).get(0);
+    assertThrows(
+        WorkflowEngineException.class,
+        () -> engine.completeTask(deptTask.id(), Decision.APPROVE, "同意", "head1"));
+    assertEquals(Phase.SUSPENDED, engine.findInstanceById(instance.id()).orElseThrow().phase());
+
+    // 修复数据：金额改为 800，两条分支都不命中 ⇒ 走默认边直接结束
+    amountByRecord.put("r-proc-overlap", 800);
+    WorkflowInstance resumed = engine.resume(instance.id(), INITIATOR);
+    assertEquals(
+        Phase.APPROVED, resumed.phase(), "条件节点挂起必须可恢复（否则 resume 会去解析不存在的审批人而永远 NO_ASSIGNEE）");
+  }
+
   // ====================== 工具 ======================
 
   private WorkflowEngine engineWithOrg(OrgHierarchyProvider orgProvider) {
@@ -455,6 +532,68 @@ class EnterpriseApprovalScenarioTest {
                 List.of(
                     new AssignmentRule("ROLE", Map.of("roleCode", "finance_director")),
                     new AssignmentRule("LEVEL_UP", Map.of("level", 2)))));
+    insertDefinition(def);
+  }
+
+  // 报销（含抄送）：start → mgr(LINE_MANAGER) → cc(ROLE finance 知会) → end
+  private void seedReimbursementWithCc() throws Exception {
+    WorkflowDefinition def =
+        new WorkflowDefinition(
+            "reimb_cc",
+            "报销审批(含抄送)",
+            1,
+            List.of(
+                new Node("start", NodeType.START, null, "发起"),
+                new Node("mgr", NodeType.APPROVE, ApprovalMode.SINGLE, "直属主管审批"),
+                new Node("cc", NodeType.CC, null, "知会财务"),
+                new Node("end", NodeType.END, null, "结束")),
+            List.of(
+                new Edge("start", "mgr", null, null),
+                new Edge("mgr", "cc", null, null),
+                new Edge("cc", "end", null, null)),
+            Map.of(
+                "mgr",
+                List.of(new AssignmentRule("LINE_MANAGER", Map.of())),
+                "cc",
+                List.of(new AssignmentRule("ROLE", Map.of("roleCode", "finance")))));
+    insertDefinition(def);
+  }
+
+  // 采购（条件重叠，用于验证分支歧义）：start → dept(DEPT_HEAD)
+  //   → cond(amount>1000 → finance / amount>5000 → vp / 默认 → end)
+  //   两条分支目标不同（否则先撞「重复边 WF-011」），但在 amount>5000 时会<b>同时命中</b>
+  private void seedOverlapProcurement() throws Exception {
+    JsonNode overThousand =
+        mapper.readTree("{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":1000}");
+    JsonNode overFiveThousand =
+        mapper.readTree("{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}");
+    WorkflowDefinition def =
+        new WorkflowDefinition(
+            "proc_overlap",
+            "采购审批(条件重叠)",
+            1,
+            List.of(
+                new Node("start", NodeType.START, null, "发起"),
+                new Node("dept", NodeType.APPROVE, ApprovalMode.SINGLE, "部门负责人审批"),
+                new Node("cond", NodeType.CONDITION, null, "金额分流"),
+                new Node("finance", NodeType.APPROVE, ApprovalMode.SINGLE, "财务审批"),
+                new Node("vp", NodeType.APPROVE, ApprovalMode.SINGLE, "副总审批"),
+                new Node("end", NodeType.END, null, "结束")),
+            List.of(
+                new Edge("start", "dept", null, null),
+                new Edge("dept", "cond", null, null),
+                new Edge("cond", "finance", overThousand, "金额>1000"),
+                new Edge("cond", "vp", overFiveThousand, "金额>5000"),
+                new Edge("cond", "end", null, "默认"),
+                new Edge("finance", "end", null, null),
+                new Edge("vp", "end", null, null)),
+            Map.of(
+                "dept",
+                List.of(new AssignmentRule("DEPT_HEAD", Map.of())),
+                "finance",
+                List.of(new AssignmentRule("ROLE", Map.of("roleCode", "finance"))),
+                "vp",
+                List.of(new AssignmentRule("LEVEL_UP", Map.of("level", 2)))));
     insertDefinition(def);
   }
 

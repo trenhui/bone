@@ -1,5 +1,6 @@
 package com.bone.workflow.domain;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -334,8 +335,8 @@ class WorkflowDefinitionValidatorTest {
   }
 
   @Test
-  @DisplayName("抄送节点（CC）v1 暂不支持 → WF-016（防「配了不生效」）")
-  void ccNode_isRejectedInV1() {
+  @DisplayName("抄送节点（CC）缺抄送人指派规则 → WF-018（抄送已落地，不再一律拒绝）")
+  void ccNode_withoutAssignees_isRejected() {
     WorkflowDefinition.Node cc =
         new WorkflowDefinition.Node("cc", WorkflowDefinition.NodeType.CC, null, "抄送");
     WorkflowDefinition definition =
@@ -345,7 +346,25 @@ class WorkflowDefinitionValidatorTest {
             List.of(start(), cc, approve("mgr"), end()),
             List.of(edge("start", "cc", null), edge("cc", "mgr", null), edge("mgr", "end", null)),
             Map.of("mgr", List.of(rule("LINE_MANAGER"))));
-    assertTrue(hasCode(validator.validate(definition), "WF-016"));
+    assertTrue(hasCode(validator.validate(definition), "WF-018"));
+  }
+
+  @Test
+  @DisplayName("抄送节点（CC）配了抄送人 → 通过校验（不再被 WF-016 一律拒绝）")
+  void ccNode_withAssignees_isAccepted() {
+    WorkflowDefinition.Node cc =
+        new WorkflowDefinition.Node("cc", WorkflowDefinition.NodeType.CC, null, "抄送");
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), cc, approve("mgr"), end()),
+            List.of(edge("start", "cc", null), edge("cc", "mgr", null), edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER")), "cc", List.of(rule("ROLE"))));
+    List<WorkflowDefinitionValidator.Violation> violations = validator.validate(definition);
+    assertFalse(hasCode(violations, "WF-016"), "抄送已落地，不应再被 WF-016 拒绝");
+    assertFalse(hasCode(violations, "WF-018"), "配了抄送人指派规则即应通过");
+    assertTrue(validator.isPublishable(definition));
   }
 
   @Test

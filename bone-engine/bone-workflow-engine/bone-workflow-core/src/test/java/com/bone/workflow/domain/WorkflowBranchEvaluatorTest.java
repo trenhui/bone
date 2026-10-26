@@ -76,9 +76,14 @@ class WorkflowBranchEvaluatorTest {
     List<WorkflowBranchEvaluator.Branch> branches =
         List.of(
             branch("big", "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":5000}", "大额"));
-    assertThrows(
-        IllegalStateException.class,
-        () -> evaluator.select(branches, map("amount", 100), ConditionContext.empty()));
+    WorkflowEngineException failure =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> evaluator.select(branches, map("amount", 100), ConditionContext.empty()));
+    assertEquals(
+        WorkflowErrorCode.BRANCH_NO_MATCH,
+        failure.code(),
+        "无匹配必须给稳定错误码，宿主才能按 code.httpStatus() 翻译（而非冒泡成 500）");
   }
 
   @Test
@@ -89,11 +94,14 @@ class WorkflowBranchEvaluatorTest {
             branch("a", "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":100}", "A"),
             branch("b", "{\"fieldCode\":\"dept\",\"operator\":\"eq\",\"value\":\"RND\"}", "B"),
             branch("c", null, "默认"));
-    assertThrows(
-        IllegalStateException.class,
-        () ->
-            evaluator.select(
-                branches, map("amount", 200, "dept", "RND"), ConditionContext.empty()));
+    WorkflowEngineException failure =
+        assertThrows(
+            WorkflowEngineException.class,
+            () ->
+                evaluator.select(
+                    branches, map("amount", 200, "dept", "RND"), ConditionContext.empty()));
+    assertEquals(
+        WorkflowErrorCode.BRANCH_AMBIGUOUS, failure.code(), "多条分支同时命中是运行时可达的（条件重叠与数据相关），必须给稳定错误码");
   }
 
   @Test
@@ -104,7 +112,7 @@ class WorkflowBranchEvaluatorTest {
             branch("a", "{\"fieldCode\":\"amount\",\"operator\":\"hack\",\"value\":1}", "A"),
             branch("b", null, "默认"));
     assertThrows(
-        IllegalStateException.class,
+        WorkflowEngineException.class,
         () -> evaluator.select(branches, map("amount", 1), ConditionContext.empty()));
   }
 
@@ -114,7 +122,7 @@ class WorkflowBranchEvaluatorTest {
     List<WorkflowBranchEvaluator.Branch> branches =
         List.of(branch("a", null, "默认1"), branch("b", null, "默认2"));
     assertThrows(
-        IllegalStateException.class,
+        WorkflowEngineException.class,
         () -> evaluator.select(branches, map("amount", 1), ConditionContext.empty()));
   }
 
@@ -126,7 +134,7 @@ class WorkflowBranchEvaluatorTest {
             branch("a", null, "默认"),
             branch("b", "{\"fieldCode\":\"amount\",\"operator\":\"gt\",\"value\":1}", "B"));
     assertThrows(
-        IllegalStateException.class,
+        WorkflowEngineException.class,
         () -> evaluator.select(branches, map("amount", 5), ConditionContext.empty()));
   }
 

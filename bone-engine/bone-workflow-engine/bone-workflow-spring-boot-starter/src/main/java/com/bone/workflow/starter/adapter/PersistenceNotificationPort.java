@@ -134,6 +134,28 @@ public class PersistenceNotificationPort implements NotificationPort, WorkflowIn
   }
 
   @Override
+  public void notifyCc(
+      WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {
+    if (recipients == null || recipients.isEmpty()) {
+      return;
+    }
+    // 抄送是「知会」不是「待办」：逐人写一条 CC 站内信，不建任务、不参与节点完成判据。
+    for (String recipient : recipients) {
+      if (recipient == null || recipient.isBlank()) {
+        continue;
+      }
+      write(
+          recipient,
+          "CC",
+          instance,
+          nodeCode,
+          "单据抄送（仅知会，无需审批）",
+          "单据 " + instance.entityCode() + "/" + instance.recordId() + " 抄送给您知悉",
+          "workflow-engine");
+    }
+  }
+
+  @Override
   public List<WorkflowNotification> inbox(long tenantId, String recipientId, boolean unreadOnly) {
     List<WfNotificationRow> rows =
         unreadOnly
