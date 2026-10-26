@@ -56,6 +56,35 @@ class WorkflowDefinitionJsonRoundTripTest {
     assertTrue(readFallback.isDefault(), "读回后默认边判定漂移 ⇒ 条件不命中时无路可走");
   }
 
+  @Test
+  @DisplayName("格式版本随 JSON 往返稳定（写入 1 读回仍为 1）")
+  void engineSchemaVersionSurvivesRoundTrip() throws Exception {
+    WorkflowDefinition def = definition();
+    String stored = MAPPER.writeValueAsString(def);
+    WorkflowDefinition readBack = MAPPER.readValue(stored, WorkflowDefinition.class);
+    assertEquals(
+        WorkflowDefinition.CURRENT_ENGINE_SCHEMA_VERSION,
+        readBack.engineSchemaVersion(),
+        "格式版本在落库往返中丢失 ⇒ 引擎无法在加载期做兼容判定");
+  }
+
+  @Test
+  @DisplayName("历史定义 JSON 未带 engineSchemaVersion 时按当前版本装载（存量兼容）")
+  void missingSchemaVersionDefaultsToCurrent() throws Exception {
+    // 模拟引擎升级前落库的定义：JSON 里没有 engineSchemaVersion 字段
+    String legacyJson =
+        "{\"key\":\"expense_reimbursement\",\"name\":\"报销\",\"version\":3,"
+            + "\"nodes\":[{\"code\":\"start\",\"type\":\"START\",\"mode\":null,\"label\":\"发起\"},"
+            + "{\"code\":\"end\",\"type\":\"END\",\"mode\":null,\"label\":\"结束\"}],"
+            + "\"edges\":[{\"from\":\"start\",\"to\":\"end\",\"when\":null,\"label\":null}],"
+            + "\"assignments\":{}}";
+    WorkflowDefinition readBack = MAPPER.readValue(legacyJson, WorkflowDefinition.class);
+    assertEquals(
+        WorkflowDefinition.CURRENT_ENGINE_SCHEMA_VERSION,
+        readBack.engineSchemaVersion(),
+        "存量定义未带格式版本时不应集体失效——按当前版本装载");
+  }
+
   private static JsonNode tree(String text) {
     try {
       return MAPPER.readTree(text);

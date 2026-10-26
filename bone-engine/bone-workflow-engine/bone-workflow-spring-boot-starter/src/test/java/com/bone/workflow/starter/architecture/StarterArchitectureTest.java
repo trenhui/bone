@@ -1,12 +1,20 @@
 package com.bone.workflow.starter.architecture;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.bone.metadata.sdk.domain.annotation.Sql;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.Optional;
 
 /**
  * 审批流引擎<b>跨模块</b>架构守护（唯一能看到 core + starter 两个制品的视角）。
@@ -110,4 +118,49 @@ class StarterArchitectureTest {
           .because(
               "审批流持久化全部走 bone-metadata-sdk 的 @Sql 通道（HC-006 豁免已移除）；任何 JDBC 依赖都意味着"
                   + "绕过了 SDK 的租户注解强制、SQL 模板安全扫描与统一异常分类，必须回到 SDK 通道重写");
+
+  /**
+   * 租户隔离<b>应用层最后一道防线</b>（诊断 P1-1）：审批流横跨报销 / 采购 / 理赔 / HR / 财务多业务域， 跨租户串数据是最高危盲点——漏一个 {@code
+   * tenant_id} 谓词 = 租户 A 的审批数据对租户 B 可见，且单租户单测零感知。
+   *
+   * <p>starter 的持久化统一走 SDK 的 {@code @Sql} 代理、租户由 {@link com.bone.core.tenant.context.TenantContext}
+   * 提供，仅 {@code @TenantScope(MANUAL)} 下靠「每条 SQL 显式写 {@code tenant_id} 谓词」隔离。本规则静态扫描<b>每一条</b>
+   * {@code @Sql} 方法，缺 {@code tenant_id} 即红——把「漏谓词」从「生产事故」提前到「编译期守护」。
+   *
+   * <p>这是三道防线（静态扫描 + 多租户集成测试 + 库表约束兜底）的第一道；它能在代码合入前就抓住绝大多数漏谓词， 而不必等多租户集成测试或线上巡检。
+   */
+  @ArchTest
+  static final ArchRule sql_methods_must_carry_tenant_predicate =
+      classes()
+          .that()
+          .resideInAPackage("com.bone.workflow.starter..")
+          .should(
+              new ArchCondition<>("的 @Sql 方法必须显式携带 tenant_id 谓词（租户隔离应用层最后防线）") {
+                @Override
+                public void check(JavaClass javaClass, ConditionEvents events) {
+                  for (JavaMethod method : javaClass.getMethods()) {
+                    Optional<Sql> sqlOpt = method.tryGetAnnotationOfType(Sql.class);
+                    if (sqlOpt.isEmpty()) {
+                      continue;
+                    }
+                    Sql sql = sqlOpt.get();
+                    if (sql.value().contains("tenant_id")) {
+                      continue;
+                    }
+                    // 明确全局化的运维/清理类操作（如发件箱过期 DONE 行物理清理）刻意不按租户过滤——
+                    // 这类写操作不暴露租户数据，且设计上由调度线程逐行按行内 tenant_id 重建上下文，
+                    // 不在「租户数据隔离」的威胁模型内；白名单仅放开 purge*/cleanup*，新增同类方法须显式评估。
+                    if (method.getName().startsWith("purge")
+                        || method.getName().startsWith("cleanup")) {
+                      continue;
+                    }
+                    events.add(
+                        SimpleConditionEvent.violated(
+                            method,
+                            "方法 "
+                                + method.getFullName()
+                                + " 的 @Sql 未显式包含 tenant_id 谓词——漏谓词 = 跨租户串数据，且单租户单测零感知"));
+                  }
+                }
+              });
 }

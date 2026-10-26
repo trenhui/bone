@@ -13,7 +13,8 @@ import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
 import com.bone.workflow.runtime.WorkflowEngineImpl;
-import com.bone.workflow.starter.adapter.LoggingNotificationPort;
+import com.bone.workflow.starter.adapter.PersistenceNotificationPort;
+import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -58,15 +59,20 @@ public class WorkflowEngineAutoConfiguration {
   }
 
   /**
-   * 缺省通知端口：日志兜底 + 挂起告警。
+   * 缺省通知端口：<b>站内信持久化</b>（写入 {@code wf_notification}，办理人据此查收件箱）。
    *
-   * <p>宿主接入站内信 / IM / 邮件时，提供自己的 {@link NotificationPort} bean 即覆盖本实现。 <b>通知是尽力而为</b>：本 bean 缺失时引擎用
-   * {@link NotificationPort#NOOP}，不会因此不可用。
+   * <p>审批流若只改状态不通知，会退化成「办事人每天自己刷待办列表」——催办、超时、改派全部失效，故通知是一等能力， 默认即落库（P0-3：通知
+   * MUST）。通知失败绝不阻断审批主链路（端口内部已吞异常）。
+   *
+   * <p>宿主若把通知接到 IM / 邮件网关，提供自己的 {@link NotificationPort} bean
+   * 即覆盖本实现（{@code @ConditionalOnMissingBean} 保证不冲突）；如需保留站内信收件箱入口，可同时提供 {@code WorkflowInboxQuery}
+   * 实现。本 bean 缺失时引擎回退到 {@link NotificationPort#NOOP}，不会因此不可用。
    */
   @Bean
   @ConditionalOnMissingBean
-  public NotificationPort workflowNotificationPort() {
-    return new LoggingNotificationPort();
+  public NotificationPort workflowNotificationPort(
+      WfNotificationSdkRepository notificationRepository, WorkflowIdGenerator idGenerator) {
+    return new PersistenceNotificationPort(notificationRepository, idGenerator);
   }
 
   /**

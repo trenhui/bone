@@ -19,6 +19,7 @@ import com.bone.workflow.starter.adapter.SdkWorkflowInstanceRepository;
 import com.bone.workflow.starter.binding.WorkflowBindingRepository;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
+import com.bone.workflow.starter.outbox.RuntimeActionInvoker;
 import com.bone.workflow.starter.outbox.StatusIntentExecutor;
 import com.bone.workflow.starter.outbox.StatusProjectionRelay;
 import com.bone.workflow.starter.outbox.WorkflowStatusOutboxRepository;
@@ -28,6 +29,7 @@ import com.bone.workflow.starter.sdk.WfInstanceSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
 import com.bone.workflow.starter.sdk.WfStatusOutboxSdkRepository;
 import com.bone.workflow.starter.sdk.WfTaskSdkRepository;
+import com.bone.workflow.starter.spi.OrgHierarchyProvider;
 import com.bone.workflow.starter.spi.RoleMemberProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
@@ -127,7 +129,10 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   public StatusIntentExecutor workflowStatusIntentExecutor(
       RuntimeActionApplicationService actionService,
       WorkflowInstanceRepository instanceRepository) {
-    return new RuntimeActionIntentExecutor(actionService, instanceRepository);
+    // 经窄端口耦合：执行器只依赖 RuntimeActionInvoker，平台动作调用由方法引用收敛到此处，
+    // 既不触碰 RuntimeActionApplicationService 的框架代理 / 非公有父类（难以单测打桩），也便于单测以 mock 端口验证幂等键契约。
+    RuntimeActionInvoker invoker = actionService::invokeAction;
+    return new RuntimeActionIntentExecutor(invoker, instanceRepository);
   }
 
   /**
@@ -167,7 +172,11 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ApproverResolver workflowApproverResolver(
-      ObjectProvider<RoleMemberProvider> roleMemberProvider) {
-    return new RecordFieldApproverResolver(roleMemberProvider.getIfAvailable());
+      ObjectProvider<RoleMemberProvider> roleMemberProvider,
+      ObjectProvider<OrgHierarchyProvider> orgHierarchyProvider) {
+    // 两个 SPI 均允许缺失：缺 ROLE 数据源 → ROLE 策略挂起；缺组织层级数据源 → LINE_MANAGER/DEPT_HEAD/LEVEL_UP 挂起。
+    // 宿主接入对应 SPI 即点亮相应策略，无需改引擎（失败关闭语义不变：查不到人仍挂起，不静默放行）。
+    return new RecordFieldApproverResolver(
+        roleMemberProvider.getIfAvailable(), orgHierarchyProvider.getIfAvailable());
   }
 }

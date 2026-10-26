@@ -18,18 +18,37 @@ public record WorkflowDefinition(
     String key,
     String name,
     int version,
+    Integer engineSchemaVersion,
     List<Node> nodes,
     List<Edge> edges,
     Map<String, List<AssignmentRule>> assignments) {
+
+  /**
+   * 当前引擎能够正确解释、求值的流程定义「格式版本」。
+   *
+   * <p><b>为什么需要它（诊断 P2-3）</b>：流程定义以整图 JSON 落库，引擎随版本演进可能改变 JSON 结构语义。
+   * 若定义不携带它所能表达的「格式版本」，引擎升级后旧实例加载时结构不兼容会<b>静默炸</b>——而审批是低频关键路径， 静默炸 =
+   * 单据无法审批且无明确报错。故定义内嵌格式版本，加载/校验时做兼容判定，不支持则 {@code fail-loud}（WF-017），把「悄悄坏掉」变成「明确拒绝」。
+   * 业界做法同源：Camunda 将引擎版本与流程定义版本分离管理。
+   */
+  public static final int CURRENT_ENGINE_SCHEMA_VERSION = 1;
+
+  /** 引擎仍保证向后兼容的最低定义格式版本。 */
+  public static final int MIN_SUPPORTED_ENGINE_SCHEMA_VERSION = 1;
 
   public WorkflowDefinition {
     nodes = nodes == null ? List.of() : List.copyOf(nodes);
     edges = edges == null ? List.of() : List.copyOf(edges);
     assignments = assignments == null ? Map.of() : Map.copyOf(assignments);
+    // 缺省（历史定义 JSON 未带该字段）按当前版本处理，避免存量定义集体失效；
+    // 显式写出比依赖 Jackson 默认更稳，也保证 record 不可变分量恒非空。
+    if (engineSchemaVersion == null) {
+      engineSchemaVersion = CURRENT_ENGINE_SCHEMA_VERSION;
+    }
   }
 
   /**
-   * 便捷构造：展示名缺省与标识同值。
+   * 便捷构造：展示名缺省与标识同值，格式版本取 {@link #CURRENT_ENGINE_SCHEMA_VERSION}。
    *
    * <p>流程定义的展示名在多数场景就等于它的标识（报销、采购……），单独再传一遍是噪音；但保留该分量是因为建模界面 允许给流程起一个更友好的中文名。
    */
@@ -39,7 +58,22 @@ public record WorkflowDefinition(
       List<Node> nodes,
       List<Edge> edges,
       Map<String, List<AssignmentRule>> assignments) {
-    this(key, key, version, nodes, edges, assignments);
+    this(key, key, version, CURRENT_ENGINE_SCHEMA_VERSION, nodes, edges, assignments);
+  }
+
+  /**
+   * 便捷构造：显式展示名，格式版本取 {@link #CURRENT_ENGINE_SCHEMA_VERSION}。
+   *
+   * <p>与历史 6 参构造（{@code key,name,version,nodes,edges,assignments}）签名一致，保证既有调用方零改动。
+   */
+  public WorkflowDefinition(
+      String key,
+      String name,
+      int version,
+      List<Node> nodes,
+      List<Edge> edges,
+      Map<String, List<AssignmentRule>> assignments) {
+    this(key, name, version, CURRENT_ENGINE_SCHEMA_VERSION, nodes, edges, assignments);
   }
 
   /** 节点类型。 */

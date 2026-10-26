@@ -39,6 +39,31 @@ public final class WorkflowDefinitionValidator {
     List<WorkflowDefinition.Node> nodes = definition.nodes();
     List<WorkflowDefinition.Edge> edges = definition.edges();
 
+    // —— 引擎格式版本兼容性（诊断 P2-3）——
+    // 定义在发布期已校验过，但引擎不假设调用方一定走发布流程（v1 定义由迁移/种子落库）。
+    // 格式版本高于引擎可解释上限 ⇒ 引擎太旧，必须 fail-loud 让调用方升级引擎或回退定义；
+    // 低于引擎仍兼容下限 ⇒ 该格式已被废弃，静默加载会跑到不兼容的求值路径上。
+    int schema = definition.engineSchemaVersion();
+    if (schema > WorkflowDefinition.CURRENT_ENGINE_SCHEMA_VERSION) {
+      violations.add(
+          new Violation(
+              "WF-017",
+              "流程定义格式版本 "
+                  + schema
+                  + " 高于当前引擎可解释的最高版本 "
+                  + WorkflowDefinition.CURRENT_ENGINE_SCHEMA_VERSION
+                  + "：请升级引擎或回退定义（否则加载/求值得跑在不兼容结构上）"));
+    } else if (schema < WorkflowDefinition.MIN_SUPPORTED_ENGINE_SCHEMA_VERSION) {
+      violations.add(
+          new Violation(
+              "WF-017",
+              "流程定义格式版本 "
+                  + schema
+                  + " 低于引擎仍兼容的最低版本 "
+                  + WorkflowDefinition.MIN_SUPPORTED_ENGINE_SCHEMA_VERSION
+                  + "：该格式已废弃，引擎不再支持"));
+    }
+
     // —— 节点基本形态 ——
     Set<String> nodeCodes = new LinkedHashSet<>();
     for (WorkflowDefinition.Node node : nodes) {

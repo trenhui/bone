@@ -121,3 +121,27 @@ CREATE TABLE wf_binding (
   version      INT       NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_wf_binding_entity ON wf_binding (tenant_id, entity_code);
+
+-- 站内信收件箱：审批流通知落库（与生产 wf_notification 同构，仅方言差异）。
+-- 见 scripts/migration/0056_wf_workflow_tables.sql 的建表注释与索引口径。
+CREATE TABLE wf_notification (
+  id           VARCHAR(64)  NOT NULL PRIMARY KEY,
+  tenant_id    BIGINT       NOT NULL,
+  recipient_id VARCHAR(64)  NOT NULL,
+  type         VARCHAR(32)  NOT NULL,
+  instance_id  VARCHAR(64),
+  entity_code  VARCHAR(128),
+  record_id    VARCHAR(128),
+  node_code    VARCHAR(128),
+  title        VARCHAR(255) NOT NULL,
+  body         VARCHAR(1024),
+  read_flag    TINYINT   NOT NULL DEFAULT 0,
+  created_at   TIMESTAMP    NOT NULL,
+  updated_at   TIMESTAMP    NOT NULL,
+  created_by   VARCHAR(64)  NOT NULL,
+  updated_by   VARCHAR(64),
+  deleted      TINYINT   NOT NULL DEFAULT 0,
+  version      INT       NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_wf_notification_inbox ON wf_notification (tenant_id, recipient_id, read_flag, deleted);
+CREATE INDEX idx_wf_notification_instance ON wf_notification (tenant_id, instance_id);

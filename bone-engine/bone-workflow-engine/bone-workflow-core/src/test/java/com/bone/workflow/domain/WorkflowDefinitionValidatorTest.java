@@ -353,4 +353,40 @@ class WorkflowDefinitionValidatorTest {
   void validDefinition_stillPassesWithNewRules() {
     assertTrue(validator.validate(linear()).isEmpty());
   }
+
+  @Test
+  @DisplayName("默认格式版本（当前版本）不触发 WF-017")
+  void currentSchemaVersion_isAccepted() {
+    assertTrue(validator.validate(linear()).isEmpty());
+    assertTrue(validator.isPublishable(linear()));
+  }
+
+  @Test
+  @DisplayName("格式版本高于引擎上限 → WF-017（引擎太旧，fail-loud）")
+  void schemaVersionAboveEngineLimit_isRejected() {
+    int future = WorkflowDefinition.CURRENT_ENGINE_SCHEMA_VERSION + 1;
+    WorkflowDefinition definition = withSchema(future);
+    assertTrue(hasCode(validator.validate(definition), "WF-017"));
+    assertTrue(!validator.isPublishable(definition));
+  }
+
+  @Test
+  @DisplayName("格式版本低于引擎下限 → WF-017（格式已废弃）")
+  void schemaVersionBelowMinimum_isRejected() {
+    WorkflowDefinition definition =
+        withSchema(WorkflowDefinition.MIN_SUPPORTED_ENGINE_SCHEMA_VERSION - 1);
+    assertTrue(hasCode(validator.validate(definition), "WF-017"));
+  }
+
+  /** 带显式格式版本的合法线性流程。 */
+  private static WorkflowDefinition withSchema(int schema) {
+    return new WorkflowDefinition(
+        "expense",
+        "报销",
+        1,
+        schema,
+        List.of(start(), approve("mgr"), end()),
+        List.of(edge("start", "mgr", null), edge("mgr", "end", null)),
+        Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+  }
 }

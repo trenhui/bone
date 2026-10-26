@@ -148,6 +148,34 @@ CREATE TABLE IF NOT EXISTS wf_binding (
     KEY idx_wf_binding_entity (tenant_id, entity_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流实体-流程绑定';
 
+-- 站内信收件箱：审批流通知落库，办理人据此查「我的待办/待阅」入口。
+-- 设计文档 §5.4（通知）：审批流若只改状态不通知，会退化成「办事人每天自己刷待办列表」——
+-- 催办、超时、改派全部失效。故通知是一等能力；但「通知失败绝不阻断审批主链路」，故本表是
+-- 尽力而为的站内信投影，与 wf_task（权威待办）解耦：通知丢了可重发，task 丢了才是事故。
+-- read_flag 由办理人在收件箱前端标记，与任务决策无关（决策走 wf_task，不依赖是否读过通知）。
+CREATE TABLE IF NOT EXISTS wf_notification (
+    id           VARCHAR(64)  NOT NULL COMMENT '通知主键（平台分布式ID）',
+    tenant_id    BIGINT       NOT NULL DEFAULT 0 COMMENT '租户ID',
+    recipient_id VARCHAR(64)  NOT NULL COMMENT '接收人账户ID（办理人 / 管理员）',
+    type         VARCHAR(32)  NOT NULL COMMENT '通知类型（TASK_CREATED/URGED/REASSIGNED/SUSPENDED/TERMINATED）',
+    instance_id  VARCHAR(64)  DEFAULT NULL COMMENT '关联流程实例',
+    entity_code  VARCHAR(128) DEFAULT NULL COMMENT '业务实体编码',
+    record_id    VARCHAR(128) DEFAULT NULL COMMENT '业务单据记录ID',
+    node_code    VARCHAR(128) DEFAULT NULL COMMENT '关联节点编码',
+    title        VARCHAR(255) NOT NULL COMMENT '通知标题',
+    body         VARCHAR(1024) DEFAULT NULL COMMENT '通知正文',
+    read_flag    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '已读标记（0未读/1已读）',
+    created_at   DATETIME(3)  NOT NULL COMMENT '创建时间',
+    updated_at   DATETIME(3)  NOT NULL COMMENT '更新时间',
+    created_by   VARCHAR(64)  NOT NULL COMMENT '创建人（通知发起方账户ID）',
+    updated_by   VARCHAR(64)  DEFAULT NULL COMMENT '更新人',
+    deleted      TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '软删标记',
+    version      INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+    PRIMARY KEY (id),
+    KEY idx_wf_notification_inbox (tenant_id, recipient_id, read_flag, deleted),
+    KEY idx_wf_notification_instance (tenant_id, instance_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流站内信通知';
+
 -- ---------- 阶段 2：核对（可选，人工执行）----------
 -- SHOW CREATE TABLE wf_instance;
 -- SHOW CREATE TABLE wf_task;
@@ -155,3 +183,4 @@ CREATE TABLE IF NOT EXISTS wf_binding (
 -- SHOW CREATE TABLE wf_status_outbox;
 -- SHOW CREATE TABLE wf_process_def;
 -- SHOW CREATE TABLE wf_binding;
+-- SHOW CREATE TABLE wf_notification;

@@ -4,6 +4,7 @@ import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.workflow.starter.sdk.WfActiveInstanceSdkRepository;
 import com.bone.workflow.starter.sdk.WfBindingSdkRepository;
 import com.bone.workflow.starter.sdk.WfInstanceSdkRepository;
+import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
 import com.bone.workflow.starter.sdk.WfStatusOutboxSdkRepository;
 import com.bone.workflow.starter.sdk.WfTaskSdkRepository;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
       WfActiveInstanceSdkRepository.class,
       WfBindingSdkRepository.class,
       WfInstanceSdkRepository.class,
+      WfNotificationSdkRepository.class,
       WfProcessDefSdkRepository.class,
       WfStatusOutboxSdkRepository.class,
       WfTaskSdkRepository.class
