@@ -75,6 +75,7 @@
     "MD_RECORD_EFFECTIVE_WINDOW_INVALID": "记录生效期窗口非法",
     "MD_RECORD_IMMUTABLE_DATA": "已发布记录的 data 变更须走变更审批",
     "MD_RECORD_FIELD_VALIDATION_FAILED": "记录字段校验未通过",
+    "MD_RULE_TYPE_INVALID": "质量规则类型缺失或非法（须为 LIST/EXPRESSION）",
     "BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED": "回调来源不在白名单",
     "BP_PAYMENT_CHANNEL_PREPAY_FAILED": "支付渠道预下单失败",
     "BP_PAYMENT_NOT_FOUND": "支付单不存在",

@@ -32,6 +32,7 @@ import com.bone.workflow.starter.spi.RoleMemberProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -94,6 +95,7 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(JdbcRuntimeRecordService.class)
   public WorkflowRecordPort workflowRecordPort(JdbcRuntimeRecordService recordService) {
     return new RuntimeRecordDataPort(recordService);
   }
@@ -107,6 +109,7 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public WorkflowStatusPort workflowStatusPort(
       RuntimeActionApplicationService actionService,
       WorkflowIdGenerator idGenerator,
@@ -120,6 +123,7 @@ public class WorkflowBoneIntegrationAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusIntentExecutor workflowStatusIntentExecutor(
       RuntimeActionApplicationService actionService,
       WorkflowInstanceRepository instanceRepository) {
@@ -146,6 +150,7 @@ public class WorkflowBoneIntegrationAutoConfiguration {
    */
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusProjectionRelay workflowStatusProjectionRelay(
       WorkflowStatusOutboxRepository outbox, StatusIntentExecutor executor) {
     return new StatusProjectionRelay(outbox, executor, 100, 8);

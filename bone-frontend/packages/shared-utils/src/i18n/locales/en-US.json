@@ -75,6 +75,7 @@
     "MD_RECORD_EFFECTIVE_WINDOW_INVALID": "Invalid effective window",
     "MD_RECORD_IMMUTABLE_DATA": "Published record data change requires change approval",
     "MD_RECORD_FIELD_VALIDATION_FAILED": "Record field validation failed",
+    "MD_RULE_TYPE_INVALID": "Missing or invalid rule type (must be LIST/EXPRESSION)",
     "BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED": "Callback source is not allowed",
     "BP_PAYMENT_CHANNEL_PREPAY_FAILED": "Payment channel pre-pay failed",
     "BP_PAYMENT_NOT_FOUND": "Payment not found",

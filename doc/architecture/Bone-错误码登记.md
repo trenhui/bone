@@ -367,6 +367,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_FILE_PARSE_FAILED` | 400 | 解析Excel文件失败 |
 | `MD_RULE_SEVERITY_INVALID` | 400 | 质量规则严重级别非法（可选 LOW/MEDIUM/HIGH/CRITICAL） |
 | `MD_RULE_EXPRESSION_INVALID` | 400 | 质量规则表达式无法求值（缺 field/pattern、min-max 非数值等） |
+| `MD_RULE_TYPE_INVALID` | 400 | 质量规则类型缺失或非法（须为 LIST/EXPRESSION，2026-10-26 联调补） |
 | `MD_RECORD_DATA_PARSE_FAILED` | 500 | 主数据记录 data 不是合法 JSON |
 | `MD_RECORD_FIELD_VALIDATION_FAILED` | 400 | 主数据记录未通过字段定义校验（必填/类型/长度/值域） |
 | `MD_RECORD_CODE_DUPLICATE` | 409 | 同一租户+实体下 record_code 重复 |
