@@ -2,6 +2,7 @@
 
 > **用途**：前后端并行开发 + OA/ERP/信用源对接联调的依据；字段级契约冻结，随代码演进但变更需走接口评审。
 > **基础**：技术方案 §5（REST API 表、异步任务模型、数据模型）细化为契约级。
+> **2026-10-26 修订**：状态枚举对齐技术方案 §2.2（补齐 `MERGING/PENDING_REVIEW/REVISING/RE_REVIEWING/FINALIZED`，移除冗余 `DEGRADED` 终态，降级改以 `rules_only` 标记表达）。
 
 ---
 
@@ -36,12 +37,12 @@
 ```json
 响应：
   {code:0, data:{
-    task_id, status: QUEUED|PARSING|RULE_CHECK|LLM_REVIEW|COMPLETED|FAILED|DEGRADED,
+    task_id, status: QUEUED|PARSING|RULE_CHECK|LLM_REVIEW|MERGING|PENDING_REVIEW|REVISING|RE_REVIEWING|FINALIZED|COMPLETED|FAILED,
     progress: 0-100, stage_detail:"L1 解析中(3/10页)",
     review_id?, error? {code, message}
   }}
 ```
-> `DEGRADED` = LLM 不可用降级为纯规则，前端提示"规则审查模式"。
+> `rules_only=true`（LLM 降级为纯规则，对应技术方案 §2.2 `COMPLETED(rules_only)`）时前端提示"规则审查模式"；**不另设 `DEGRADED` 独立终态**（状态真源 = 技术方案 §2.2）。
 
 ### GET /api/v1/reviews/{review_id}/risks（风险清单分页）
 ```json
