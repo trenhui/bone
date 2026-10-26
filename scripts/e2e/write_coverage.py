@@ -119,16 +119,16 @@ def resolve():
     ctx = {}
 
     for key, paths in [
-        ("tenantId", ["/api/v1/iam/tenants/page?page=1&size=1"]),
+        ("tenantId", ["/api/v1/iam/tenants?page=1&size=1"]),
         ("appId", ["/api/v1/iam/apps/page?page=1&size=1"]),
         ("accountId", ["/api/v1/iam/accounts?page=1&size=1"]),
         ("dictTypeCode", ["/api/v1/system/dict/types/page?page=1&size=1"]),
         ("dictItemId", ["/api/v1/system/dict/items/page?page=1&size=1"]),
-        ("scheduleTaskId", ["/api/v1/system/schedule/tasks/page?page=1&size=1"]),
+        ("scheduleTaskId", ["/api/v1/system/schedule-tasks/page?page=1&size=1"]),
         ("flowId", ["/api/v1/integration/flows?page=1&size=1"]),
-        ("mdEntityId", ["/api/v1/masterdata/entities/page?page=1&size=1"]),
-        ("mdmTemplateId", ["/api/v1/masterdata/templates/page?page=1&size=1"]),
-        ("metaEntityId", ["/api/v1/metadata/entities/page?page=1&size=1"]),
+        ("mdEntityId", ["/api/v1/masterdata/entities?page=1&size=1"]),
+        ("mdmTemplateId", ["/api/v1/masterdata/templates?page=1&size=1"]),
+        ("metaEntityId", ["/api/v1/metadata/entities?page=1&size=1"]),
         ("extPointId", ["/api/v1/extension/points?page=1&size=1"]),
         ("invSku", ["/api/v1/inventories/page?page=1&size=1"]),
     ]:
@@ -145,6 +145,12 @@ def resolve():
         else:
             ctx[key] = None
     _ctx.update(ctx)
+
+    # 质量问题列表强制要求 masterDataEntityId，只能在实体解析出来后二次查
+    mid = _ctx.get("mdEntityId")
+    if mid:
+        row, _ = _rows(f"/api/v1/masterdata/quality-issues?page=1&size=1&masterDataEntityId={mid}")
+        _ctx["issueId"] = _field(row, "id") if row else None
     return ctx
 
 
@@ -185,92 +191,105 @@ def _body_reset_pwd():
 
 CASES = [
     # ---------------- IAM ----------------
-    dict(key="iam-change-password", verb="POST", path="/api/v1/iam/change-password",
+    dict(key="iam-change-password", verb="POST", path="/api/v1/iam/me/change-password",
          body=lambda: {"oldPassword": "E2ePass!76543", "newPassword": "E2ePass!23456"},
          note="自助改密（跑前自动建一次性账号）"),
-    dict(key="iam-reset-password", verb="POST", path="/api/v1/iam/{accountId}/reset-password",
+    dict(key="iam-reset-password", verb="POST", path="/api/v1/iam/accounts/{accountId}/reset-password",
          body=_body_reset_pwd, note="管理员重置密码"),
-    dict(key="iam-grant-permission", verb="POST", path="/api/v1/iam/{accountId}/permissions",
+    dict(key="iam-grant-permission", verb="PUT", path="/api/v1/iam/accounts/{accountId}",
          body=lambda: {"role": "TENANT_ADMIN"}, note="账号赋角色/权限"),
     dict(key="iam-app-grant", verb="POST", path="/api/v1/apps/{appId}/permissions",
          body=lambda: {"userId": 1, "role": "VIEWER"}, note="应用层级授权"),
     dict(key="iam-app-revoke", verb="DELETE", path="/api/v1/apps/{appId}/permissions/{userId}",
          body=None, args=(("userId", "1"),), note="应用授权回收"),
-    dict(key="iam-enroll", verb="POST", path="/api/v1/iam/enroll",
+    dict(key="iam-enroll", verb="POST", path="/api/v1/iam/mfa/enroll",
          body=lambda: {"username": "e2e_enroll_%s" % _ts(),
                        "realName": "自助开通", "password": "E2ePass!23456",
                        "source": "E2E_PROBE"}, note="自助开通账号"),
-    dict(key="iam-tenant-quota", verb="PUT", path="/api/v1/iam/{tenantId}/quota",
-         body=lambda: {"maxAccounts": 500, "maxRoles": 50}, note="租户配额调整"),
-    dict(key="iam-settings", verb="PUT", path="/api/v1/iam/settings",
+    dict(key="iam-tenant-quota", verb="PUT", path="/api/v1/iam/tenants/{tenantId}/quota",
+         body=lambda: {"maxAccounts": 500, "maxRoles": 50},
+         need=lambda: _ctx.get("tenantId"), note="租户配额调整（TenantController）"),
+    dict(key="iam-settings", verb="PUT", path="/api/v1/iam/audit/settings",
          body=lambda: {"passwordPolicy": {"minLength": 8, "expireDays": 90}}, note="IAM 设置项"),
-    dict(key="auth-refresh", verb="POST", path="/refresh",
+    dict(key="auth-refresh", verb="POST", path="/api/v1/iam/refresh",
          body=lambda: {"refreshToken": _ctx.get("refreshToken") or "dummy"},
          need=lambda: _ctx.get("refreshToken"), note="刷新令牌"),
-    dict(key="session-revoke-one", verb="DELETE", path="/sessions/{sessionId}",
+    dict(key="session-revoke-one", verb="DELETE", path="/api/v1/iam/sessions/{sessionId}",
          body=None, need=lambda: _ctx.get("sessionId"), note="单会话注销"),
 
     # ---------------- System ----------------
     dict(key="sys-dict-item-move", verb="PUT", path="/api/v1/system/dict/items/{dictItemId}/move",
          body=lambda: {"hierarchyCode": "DEFAULT", "parentCode": "", "sort": 999},
          note="字典项移动/排序"),
-    dict(key="sys-dict-texts", verb="PUT", path="/api/v1/system/{dictTypeCode}/{code}/texts",
+    dict(key="sys-dict-texts", verb="PUT", path="/api/v1/system/dict/items/{dictTypeCode}/{code}/texts",
          body=lambda: [{"typeCode": _ctx.get("dictTypeCode"), "code": "e2e_text_%s" % _ts(),
                         "language": "zh-CN", "label": "写入覆盖探针"}],
          note="字典项多语言文案"),
-    dict(key="sys-dict-enum-sync", verb="POST", path="/api/v1/system/{dictTypeCode}/enum-sync",
+    dict(key="sys-dict-enum-sync", verb="POST", path="/api/v1/system/dict/types/{dictTypeCode}/enum-sync",
          body=None, note="值域枚举同步"),
-    dict(key="sys-alert-rule-create", verb="POST", path="/api/v1/system/rules",
+    # 告警规则挂在 AlertController（/api/v1/system/alert 之下），不是 /api/v1/system/rules；
+    # 字段名是 alertLevel，CreateAlertRuleReq 里没有 level / metricSource。
+    dict(key="sys-alert-rule-create", verb="POST", path="/api/v1/system/alert/rules",
          body=lambda: {"name": "E2E写入覆盖规则_%s" % _ts(), "description": "覆盖率补测",
                        "metricName": "cpu.usage", "threshold": 88.0,
-                       "level": "WARNING", "metricSource": "SYSTEM"},
+                       "alertLevel": "WARNING"},
          capture="ruleId", note="告警规则创建"),
-    dict(key="sys-alert-rule-update", verb="PUT", path="/api/v1/system/rules/{ruleId}",
-         body=lambda: {"name": "E2E写入覆盖规则改名_%s" % _ts(), "description": "已改名",
-                       "metricName": "cpu.usage", "threshold": 92.0,
-                       "level": "WARNING", "metricSource": "SYSTEM"},
-         note="告警规则更新"),
-    dict(key="sys-alert-rule-enable", verb="POST", path="/api/v1/system/rules/{ruleId}/enable",
-         body=None, note="告警规则启用"),
-    dict(key="sys-alert-rule-disable", verb="POST", path="/api/v1/system/rules/{ruleId}/disable",
-         body=None, note="告警规则停用"),
-    dict(key="sys-alert-rule-delete", verb="DELETE", path="/api/v1/system/rules/{ruleId}",
-         body=None, note="告警规则删除"),
-    dict(key="sys-schedule-toggle", verb="PUT", path="/api/v1/system/{scheduleTaskId}/toggle",
+    dict(key="sys-alert-rule-update", verb="PUT", path="/api/v1/system/alert/rules",
+         body=lambda: {"id": _ctx.get("ruleId"), "name": "E2E写入覆盖规则改名_%s" % _ts(),
+                       "description": "已改名", "threshold": 92.0, "alertLevel": "WARNING"},
+         need=lambda: _ctx.get("ruleId"), note="告警规则更新（id 在请求体，UpdateAlertRuleReq）"),
+    dict(key="sys-alert-rule-enable", verb="POST", path="/api/v1/system/alert/rules/{ruleId}/enable",
+         body=None, need=lambda: _ctx.get("ruleId"), note="告警规则启用"),
+    dict(key="sys-alert-rule-disable", verb="POST", path="/api/v1/system/alert/rules/{ruleId}/disable",
+         body=None, need=lambda: _ctx.get("ruleId"), note="告警规则停用"),
+    dict(key="sys-alert-rule-delete", verb="DELETE", path="/api/v1/system/alert/rules/{ruleId}",
+         body=None, need=lambda: _ctx.get("ruleId"), note="告警规则删除"),
+    dict(key="sys-schedule-toggle", verb="PUT", path="/api/v1/system/schedule-tasks/{scheduleTaskId}/toggle",
          body=None, args=(("enabled", "false"),), note="调度任务开关"),
-    dict(key="sys-event-resolve", verb="POST", path="/api/v1/system/events/{eventId}/resolve",
+    dict(key="sys-event-resolve", verb="POST", path="/api/v1/system/alert/events/{eventId}/resolve",
          body=lambda: {"resolveNote": "E2E 写入覆盖闭环"}, need=lambda: _ctx.get("eventId"),
          note="告警事件闭环"),
 
     # ---------------- Masterdata ----------------
-    dict(key="mdm-rule-create", verb="POST", path="/api/v1/masterdata/rules",
-         body=lambda: {"name": "E2E质量规则_%s" % _ts(), "ruleType": "COMPLETENESS",
-                       "severity": "MEDIUM", "enabled": True},
+    # 质量规则挂在 DataQualityController（/api/v1/masterdata/quality 之下）；
+    # 字段名是 type（不是 ruleType），CreateDataQualityRuleReq 里没有 enabled。
+    dict(key="mdm-rule-create", verb="POST", path="/api/v1/masterdata/quality/rules",
+         body=lambda: {"masterDataEntityId": _ctx.get("mdEntityId"),
+                       "name": "E2E质量规则_%s" % _ts(), "type": "COMPLETENESS",
+                       "expression": "1=1", "severity": "MEDIUM"},
          capture="mdRuleId", note="质量规则创建"),
-    dict(key="mdm-rule-update", verb="PUT", path="/api/v1/masterdata/rules/{mdRuleId}",
+    dict(key="mdm-rule-update", verb="PUT", path="/api/v1/masterdata/quality/rules/{mdRuleId}",
          body=lambda: {"name": "E2E质量规则改名_%s" % _ts(), "severity": "LOW"},
-         note="质量规则更新"),
-    dict(key="mdm-rule-delete", verb="DELETE", path="/api/v1/masterdata/rules/{mdRuleId}",
-         body=None, note="质量规则删除"),
-    dict(key="mdm-archive", verb="POST", path="/api/v1/masterdata/{mdEntityId}/archive",
-         body=None, note="主数据实体归档"),
-    dict(key="mdm-convert", verb="POST", path="/api/v1/masterdata/convert",
+         need=lambda: _ctx.get("mdRuleId"), note="质量规则更新"),
+    dict(key="mdm-rule-delete", verb="DELETE", path="/api/v1/masterdata/quality/rules/{mdRuleId}",
+         body=None, need=lambda: _ctx.get("mdRuleId"), note="质量规则删除"),
+    # masterdata 侧只有 records / templates / reference-data 的归档；
+    # 「实体归档」的唯一实现在 metadata 目录侧（MetaEntityCatalogController）。
+    dict(key="mdm-archive", verb="POST", path="/api/v1/metadata/entities/{metaEntityId}/archive",
+         body=None, need=lambda: _ctx.get("metaEntityId"), note="元数据实体归档"),
+    dict(key="mdm-convert", verb="POST", path="/api/v1/masterdata/entities/convert",
          body=lambda: {"metaEntityId": 1}, note="元数据实体转主数据"),
-    dict(key="mdm-governance-tier", verb="POST", path="/api/v1/masterdata/{mdEntityId}/governance-tier",
+    dict(key="mdm-governance-tier", verb="POST", path="/api/v1/masterdata/entities/{mdEntityId}/governance-tier",
          body=lambda: {"tier": "GOLD"}, note="治理分级"),
-    dict(key="mdm-owning-app", verb="POST", path="/api/v1/masterdata/{mdEntityId}/owning-app",
+    dict(key="mdm-owning-app", verb="POST", path="/api/v1/masterdata/entities/{mdEntityId}/owning-app",
          body=lambda: {"owningApp": "E2E"}, note="归属应用设置"),
-    dict(key="mdm-ignore", verb="POST", path="/api/v1/masterdata/{mdEntityId}/ignore",
-         body=None, note="治理忽略"),
-    dict(key="mdm-instantiate", verb="POST", path="/api/v1/masterdata/instantiate",
-         body=lambda: {"templateId": 1}, note="模板实例化"),
-    dict(key="mdm-reconcile", verb="POST", path="/api/v1/masterdata/reconcile",
-         body=None, args=(("masterDataEntityId", "1"),), note="元数据对账"),
+    # 「忽略」是质量问题（QualityIssueController）的动作，不是实体动作。
+    dict(key="mdm-ignore", verb="POST", path="/api/v1/masterdata/quality-issues/{issueId}/ignore",
+         body=None, need=lambda: _ctx.get("issueId"), note="质量问题忽略"),
+    dict(key="mdm-instantiate", verb="POST", path="/api/v1/masterdata/templates/instantiate",
+         body=lambda: {"templateId": _ctx.get("mdmTemplateId"),
+                       "name": "E2E实例化_%s" % _ts(),
+                       "code": "E2EINST%s" % _ts(),
+                       "tableName": "bone_e2e_inst_%s" % _ts()},
+         need=lambda: _ctx.get("mdmTemplateId"), note="模板实例化（id 在请求体）"),
+    dict(key="mdm-reconcile", verb="POST", path="/api/v1/masterdata/model-drifts/reconcile",
+         body=None, args=(("masterDataEntityId", str(_ctx.get("mdEntityId") or 1)),),
+         note="元数据对账（ModelDriftController）"),
 
     # ---------------- Integration ----------------
-    dict(key="int-flow-activate", verb="POST", path="/api/v1/integration/{flowId}/activate",
+    dict(key="int-flow-activate", verb="POST", path="/api/v1/integration/flows/{flowId}/activate",
          body=None, note="流程上线"),
-    dict(key="int-flow-deactivate", verb="POST", path="/api/v1/integration/{flowId}/deactivate",
+    dict(key="int-flow-deactivate", verb="POST", path="/api/v1/integration/flows/{flowId}/deactivate",
          body=None, note="流程下线"),
 
     # ---------------- Extension ----------------
@@ -280,14 +299,14 @@ CASES = [
          note="扩展执行日志回传"),
 
     # ---------------- Metadata ----------------
-    dict(key="meta-fields-allocate", verb="POST", path="/fields:allocate",
+    dict(key="meta-fields-allocate", verb="POST", path="/api/v1/metadata/fields:allocate",
          body=lambda: {"tableName": "bone_e2e_alloc_%s" % _ts(), "mode": "FILL"},
          note="元数据字段分配"),
-    dict(key="meta-repair-names", verb="POST", path="/repair-entity-names",
-         body=lambda: {"entityIds": []}, note="实体名修复"),
-    dict(key="meta-table-sync", verb="POST", path="/{id}/tables:sync",
+    dict(key="meta-repair-names", verb="POST", path="/api/v1/generator/admin/repair-entity-names",
+         body=lambda: {"entityIds": []}, note="实体名修复（GeneratorApiPaths.ADMIN）"),
+    dict(key="meta-table-sync", verb="POST", path="/api/v1/generator/data-sources/{id}/tables:sync",
          body=None, note="物理表结构同步"),
-    dict(key="meta-table-repair-columns", verb="POST", path="/{id}/tables:repair-columns",
+    dict(key="meta-table-repair-columns", verb="POST", path="/api/v1/generator/data-sources/{id}/tables:repair-columns",
          body=None, note="列对齐修复"),
     dict(key="meta-entity-copy", verb="POST", path="/api/v1/metadata/entities/{metaEntityId}/copy",
          body=lambda: {"name": "E2E写入覆盖副本_%s" % _ts()}, note="实体复制"),
@@ -339,9 +358,10 @@ def _grab_refresh():
 
 def _grab_event_id():
     # 先让系统产生一条事件（规则触发），再取事件 ID
-    st, j = http("GET", "/api/v1/system/events/page?page=1&size=1", token=login())
+    page = "/api/v1/system/alert/events/page?page=1&size=1"
+    st, j = http("GET", page, token=login())
     if st == 200:
-        row, _ = _rows("/api/v1/system/events/page?page=1&size=1")
+        row, _ = _rows(page)
         if row:
             _ctx["eventId"] = _field(row, "id")
             return True
@@ -349,13 +369,14 @@ def _grab_event_id():
 
 
 def _grab_session_id():
-    st, j = http("GET", "/api/v1/iam/me/sessions", token=login())
-    if st != 200:
-        st, j = http("GET", "/api/v1/iam/sessions", token=login())
+    # 会话列表是账号维度端点：/api/v1/iam/accounts/{accountId}/sessions
+    acc = _ctx.get("accountId")
+    if not acc:
+        return False
+    page = f"/api/v1/iam/accounts/{acc}/sessions"
+    st, j = http("GET", page, token=login())
     if st == 200 and isinstance(j, dict):
-        row, _ = _rows("/api/v1/iam/me/sessions")
-        if row is None:
-            row, _ = _rows("/api/v1/iam/sessions")
+        row, _ = _rows(page)
         if row:
             _ctx["sessionId"] = _field(row, "id", "sessionId")
             return True
@@ -371,13 +392,36 @@ def _prepare_all():
 
 
 # ---------------------------------------------------------------- 执行
+def _capture_id(j):
+    """从统一信封里取创建结果的 id：data 是标量就直接用，是对象取 id 字段。"""
+    d = j.get("data") if isinstance(j, dict) else None
+    if isinstance(d, (int, str)):
+        return d
+    if isinstance(d, dict):
+        return d.get("id")
+    if isinstance(d, list) and d and isinstance(d[0], dict):
+        return d[0].get("id")
+    return None
+
+
 def ok(st, j):
+    """成功判定：HTTP 2xx + 统一信封 success=true + 无 errorCode。
+
+    <p>⚠ 此前按 {@code code not in (None, 0, "0")} 判定，而本仓 ApiResponse.code 就是
+    HTTP 状态码（成功为 200/201），结果**每一条成功用例都被判 FAIL**——实测 42 条里
+    真通过只有 2 条，连「业务码 200 操作成功」这种纯成功响应都进了 FAIL 清单，
+    探针因此完全失去信噪比。统一信封的失败标志是 success=false + data.errorCode，
+    改按这两者判定。
+    """
     if st < 200 or st >= 300:
         return False, f"HTTP {st} {str(j)[:200]}"
-    if isinstance(j, dict) and j.get("code") not in (None, 0, "0"):
-        return False, f"业务码 {j.get('code')} {str(j.get('message'))[:120]}"
-    if isinstance(j, dict) and (j.get("errorCode") or j.get("codeRaw")):
-        return False, f"errorCode={j.get('errorCode')}"
+    if isinstance(j, dict):
+        d = j.get("data") if isinstance(j.get("data"), dict) else {}
+        ec = j.get("errorCode") or d.get("errorCode")
+        if j.get("success") is False:
+            return False, f"业务失败 {str(j.get('message'))[:80]} errorCode={ec}"
+        if ec:
+            return False, f"errorCode={ec}"
     return True, ""
 
 
@@ -390,7 +434,7 @@ def run(only):
             continue
         tag = f"[{i}/{total}] {c['key']}"
         if c.get("need") and not c["need"]():
-            RESULTS.append((c["key"], "SKIP_NO_FIXTURE", True, "缺少夹具"))
+            RESULTS.append((c["key"], "SKIP_NO_FIXTURE", None, "缺少夹具"))
             print(f"  {tag} SKIP 缺少夹具")
             continue
         body = None
@@ -408,13 +452,13 @@ def run(only):
         for k in ("capture",):
             pass
         if good and c.get("capture"):
-            _ctx.setdefault(c["capture"], (st, j))
+            _ctx.setdefault(c["capture"], _capture_id(j))
         RESULTS.append((c["key"], f"{c['verb']} {url[:70]}", good,
                         why or str(j)[:90]))
         print(f"  {tag} {'PASS' if good else 'FAIL'}  {st} {why[:120]}")
     # 显式跳过的
     for k, reason in SKIP.items():
-        RESULTS.append((k, k, True, "显式不测：" + reason))
+        RESULTS.append((k, k, None, "显式不测：" + reason))
 
 
 def main():
@@ -425,12 +469,17 @@ def main():
     except KeyboardInterrupt:
         print("中断")
         return 1
-    p = sum(1 for r in RESULTS if r[2])
-    f = sum(1 for r in RESULTS if not r[2])
+    p = sum(1 for r in RESULTS if r[2] is True)
+    f = sum(1 for r in RESULTS if r[2] is False)
+    s = sum(1 for r in RESULTS if r[2] is None)
     for k, _, good, why in RESULTS:
-        if not good:
+        if good is None:
+            print(f"  SKIP {k}: {why}")
+    for k, _, good, why in RESULTS:
+        if good is False:
             print(f"  FAIL {k}: {why}")
-    print(f"PASS {p}  FAIL {f}  (PASS 含显式不测)")
+    # SKIP 不并入 PASS：缺夹具/显式不测都是「没测到」，混进 PASS 会让覆盖率虚高。
+    print(f"PASS {p}  FAIL {f}  SKIP {s}")
     return 1 if f else 0
 
 

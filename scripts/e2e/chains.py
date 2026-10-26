@@ -20,10 +20,29 @@ GW = "http://127.0.0.1:8888"
 ADMIN = ("admin", "123456")
 MOCK_SECRET = b"bone-blueprint-mock-secret"
 
-# ---- 主数据实体常量（实测存在且 PUBLISHED）----
-MD_PRODUCT = "760324212819755008"
-MD_CUSTOMER = "760325780604452864"
-MD_LEVEL = "760324310677061632"
+# ---- 主数据实体：运行时解析（禁止硬编码雪花 ID）----
+# 原实现把某次库里的雪花 ID 写成常量（MD_PRODUCT=760324212819755008 等）。
+# 库一旦重建/换环境，ID 全部失效 ⇒ 创建记录直接 404，而真正的断言（SoD、状态机）
+# 一次都没跑到。实体 ID 是**数据**不是契约，必须按业务码在运行时查。
+MD_ENTITY_CACHE = {}
+
+
+def md_entity_id(tok, *keywords):
+    """按名称关键字解析主数据实体 ID；命中即缓存。找不到返回 None。"""
+    key = "|".join(keywords)
+    if key in MD_ENTITY_CACHE:
+        return MD_ENTITY_CACHE[key]
+    MD_ENTITY_CACHE.clear()  # 避免 token 更换后残留
+    st, j = http("GET", "/api/v1/masterdata/entities?page=1&size=100", token=tok)
+    ents = (data(j) or {}).get("records") or [] if isinstance(data(j), dict) else (data(j) or [])
+    for kw in keywords:
+        for e in ents:
+            blob = f"{e.get('name') or ''}{e.get('entityCode') or ''}{e.get('code') or ''}"
+            if kw in blob:
+                MD_ENTITY_CACHE[key] = e.get("id")
+                return e.get("id")
+    print(f"  [WARN] 未找到包含 {keywords} 的主数据实体，现有={[(e.get('id'), e.get('name')) for e in ents][:6]}")
+    return None
 
 # 客户实体的必填字段集合。scripts/migration/0016_masterdata_demo_seed.sql 把
 # cust_status 建模为 required=1 后，建记录探针必须显式带上，否则后端按
@@ -241,6 +260,10 @@ def c1(tok, sub_tok=None, app_tok=None):
     # 1. 主数据：新建商品记录并走通 SoD 发布（提交人与审批人必须是不同账号）
     # recordCode 是主数据的一等业务主键字段（去重/检索/订阅分发的基础），必须在创建时显式传入；
     # 只填 data JSON 会让 record_code 为 NULL，点查主路径必然落空（只能靠 JSON 兜底）。
+    MD_PRODUCT = md_entity_id(tok, "商品", "PRODUCT")
+    if not MD_PRODUCT:
+        check("C1", "解析商品主数据实体", False, True, "未找到商品实体，先跑 scripts/e2e/seed.py 造数")
+        return
     st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_PRODUCT}", {
         "recordCode": code,
         "data": {"code": code, "name": f"链路商品{ts}", "price": 199.0, "unit": "件"}
@@ -352,6 +375,10 @@ def c2(tok, sub_tok, app_tok):
     hdr("C2 · 主数据 SoD 治理：双账号分离 + 版本 + 参照域")
     ts = int(time.time())
     code = f"C2SUP{ts}"
+    MD_CUSTOMER = md_entity_id(tok, "客户", "CUSTOMER")
+    if not MD_CUSTOMER:
+        check("C2", "解析客户主数据实体", False, True, "未找到客户实体")
+        return
     st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}",
                   customer_data(code, f"链路供应商{ts}"), token=tok)
     check("C2", "创建客户记录（提交人）", 200, st, str(j)[:160])
@@ -481,8 +508,21 @@ def c4(tok):
     # HC-003：框架级绑定异常也必须落在 ApiResponse 信封内（曾因缺 bone-web 依赖漏成裸 Spring 400）
     # 实测：bone-integration 的绑定异常统一收敛为 COMMON_VALIDATION_FAILED
     #（未像 bone-iam 那样细分到 COMMON_MALFORMED_REQUEST），故这里只断言该服务实际给出的码。
-    for path, desc in (("/api/v1/integration/executions", "缺分页参数"),
-                       ("/api/v1/integration/flows/abc", "路径变量类型错")):
+    #
+    # ⚠ 「缺分页参数」已从绑定异常用例中移出：ExecutionLogListQuery 的 page/size 是有意改成
+    # Integer 并带默认值的（源码注释即设计意图——修的正是「裸调返回 400」与同模块
+    # FlowPageQuery / ConnectorPageQuery「不传参即首页」行为不一致）。因此这里的正确契约是
+    # 200 + 首页默认分页，再拿它当 400 用例就是拿过期口径否定现行设计。
+    st, j = http("GET", "/api/v1/integration/executions", token=tok)
+    check("C4", "缺省分页参数 → 200 首页（不得退回 400）", 200, st,
+          f"msg={str((j or {}).get('message'))[:60]}")
+    d0 = data(j) or {}
+    check("C4", "缺省分页回首页(page=1)", 1, d0.get("page") if isinstance(d0, dict) else None)
+    bare_rows = (d0.get("records") if isinstance(d0, dict) else None) or []
+    check("C4", "缺省分页 size 回落默认 10", True, len(bare_rows) <= 10, f"rows={len(bare_rows)}")
+
+    for path, desc in (("/api/v1/integration/flows/abc", "路径变量类型错"),
+                       ("/api/v1/integration/executions?page=abc&size=xyz", "分页参数非数值")):
         st, j = http("GET", path, token=tok)
         # 必须是 ApiResponse 信封（有 success 键 + 顶层 code），而不是裸 Spring ProblemDetail
         check("C4", f"统一响应契约-{desc} 落 ApiResponse 信封", True,
@@ -674,7 +714,9 @@ def gate():
     hdr("G · 门禁：代码 API 路径常量 vs 网关路由登记一致性")
     import re
     import os
-    root = "/Users/renhui.trh/wps/bone"
+    # 仓库根由脚本自身位置推导：硬编码 /Users/renhui.trh/wps/bone 会随本机目录迁移而失效
+    # （实测：仓库迁到 ~/code/bone 后 G 门禁整条崩在 FileNotFoundError）。
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     yml = open(os.path.join(root, "bone-platform/bone-gateway/src/main/resources/application.yml"),
                encoding="utf-8").read()
     cov = set()
@@ -732,10 +774,31 @@ def gate():
     missing = []
     # 已知的内部 RPC 面：服务间调用，故意不暴露到网关南北向入口
     internal_rpc = {"/api/rpc/orders"}
+    # 无南北向入口的模块：Controller 存在，但所属模块**不具备可独立监听的 HTTP 入口**，
+    # 因此「登记进 bone-gateway」在当前架构下无对象可指（登记即制造 503 死路由）。
+    # 每一条都必须写明确证依据，并给出「何时该从本表移除」的判据——否则就是放水。
+    no_ingress = {
+        "/api/ai/v1": (
+            "bone-ai 是独立部署单元（bone-ai-app / bone-ai-server 各有 SpringBootApplication "
+            "与独立 application.yml），其南北向入口由 bone-ai 自身部署承担，不在 bone-gateway "
+            "application.yml 职责内；且 RAG 回答链尚未接线（RagAnswerService 无 Bean，"
+            "bone-ai-app 启动即 NoSuchBean），此刻登记只会得到 503。"
+            "移除判据：bone-ai 完成接线并纳入统一入口时，必须改走登记而不是留在本表。"
+        ),
+        "/api/v1/claims": (
+            "bone-apps/synap-claim 是库形态业务模块：无 SpringBootApplication 启动类、"
+            "无 server.port / application.yml，未接入任何部署单元，因此没有南北向入口可登记。"
+            "移除判据：该应用补上启动器并实际部署后，必须登记到网关。"
+        ),
+    }
     for p in sorted(found):
         if p in internal_rpc:
             continue
         ok = any(p == c or p.startswith(c[:-3] if c.endswith("/**") else c) for c in cov)
+        if not ok and any(p == k or p.startswith(k) for k in no_ingress):
+            # 不计入失败，但必须显式可见：静默吞掉等于把架构缺口藏起来
+            print(f"  [WARN-无入口] {p} —— {no_ingress.get(p) or next(v for k, v in no_ingress.items() if p.startswith(k))}")
+            continue
         if not ok:
             missing.append(p)
     check("G", "所有用户面 Controller 路径已登记网关", [], missing, "" if not missing else "缺失路由")

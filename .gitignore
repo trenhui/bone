@@ -155,6 +155,8 @@ tmp/
 # =========================
 # 依赖目录
 node_modules/
+# 安装中途失败的残留目录（2026-10-26 补）：同为依赖产物，不得入库（667MB 级）
+node_modules.broken/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
