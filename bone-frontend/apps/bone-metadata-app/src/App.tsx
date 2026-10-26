@@ -6,6 +6,7 @@ import ModuleManagement from './pages/ModuleManagement';
 import EntityManagement from './pages/EntityManagement';
 import EntityDetail from './pages/EntityDetail';
 import RuntimeDataManagement from './pages/RuntimeDataManagement';
+import ApprovalCenterPage from './pages/ApprovalCenterPage';
 import './App.css';
 
 /** 旧独立页（字段/关系）已并入实体详情 Tabs（2b §6-4），旧路由 302 兼容 */
@@ -38,6 +39,10 @@ function App(): JSX.Element {
           <Route path="/fields/:entityId" element={<EntityDetail />} />
           <Route path="/relations" element={<ToEntities />} />
           <Route path="/runtime" element={<RuntimeDataManagement />} />
+          {/* 审批中心（2026-10-26 联调补线）：页面 2026-10-25 已交付但从未挂路由，
+              侧边栏菜单也未播种 ⇒ 功能对用户不可达（后端 RuntimeApprovalController +
+              前端 ApprovalCenterPage 双端在位、唯缺中间一跳）。菜单种子见 0063。 */}
+          <Route path="/approval-center" element={<ApprovalCenterPage />} />
           <Route path="/" element={<Navigate to="/apps" replace />} />
         </Routes>
       </Router>

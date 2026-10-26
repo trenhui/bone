@@ -252,6 +252,10 @@ const MICRO_APP_ROUTE_PREFIXES = [
   '/system',
   '/extension',
   '/generator',
+  // 智能理赔（bone-claim-app，qiankun activeRule=/claim，2026-10-26 联调补线）：
+  // 此前漏登记 ⇒ isKnownMenuPath 把 /claim#/* 菜单（含其顶级分组）整组静默滤掉——
+  // 后端菜单种下发、接口可见，侧边栏却永远不出现（「这里没有的菜单 = 平台不可达」的隐性一跳）。
+  '/claim',
 ] as const;
 
 /** path 形态为 `pathname` 或 `pathname#/hash`（微应用内是 HashRouter）。 */
@@ -1340,6 +1344,12 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             />
             <Route
               path="/generator/*"
+              element={microAppViewport}
+            />
+            {/* 智能理赔（bone-claim-app，2026-10-26 联调补线）：与其它微应用同构——
+                缺此路由时 /claim/* 命中下方 `*` 被静默送回首页（菜单可见也点不开）。 */}
+            <Route
+              path="/claim/*"
               element={microAppViewport}
             />
             <Route path="*" element={<Navigate to="/" replace />} />
