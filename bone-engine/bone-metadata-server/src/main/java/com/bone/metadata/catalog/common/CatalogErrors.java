@@ -44,6 +44,8 @@ public final class CatalogErrors {
           // 字段
           Map.entry(CatalogErrorCodes.FIELD_NOT_FOUND, 404),
           Map.entry(CatalogErrorCodes.FIELD_CODE_CONFLICT, 409),
+          // 批量分配扩展字段：入参非法属客户端问题（400），不是服务端故障
+          Map.entry(CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, 400),
           // 枚举选项源（doc/design/modules/11 §9）
           Map.entry(CatalogErrorCodes.ENUM_SOURCE_INVALID, 400),
           Map.entry(CatalogErrorCodes.ENUM_SOURCE_RESOLVE_FAILED, 502),

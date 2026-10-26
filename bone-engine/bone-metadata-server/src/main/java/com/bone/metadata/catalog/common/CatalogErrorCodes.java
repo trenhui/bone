@@ -50,6 +50,18 @@ public final class CatalogErrorCodes {
   public static final String FIELD_CODE_CONFLICT = "META_FIELD_CODE_CONFLICT";
 
   /**
+   * 批量分配扩展字段的入参非法（列表空 / 元素空 / appCode·bizIdentityCode·entityType·tenantId 缺 / dataType 不是合法
+   * DataType 常量 / columnName 由调用方预置）。
+   *
+   * <p><b>写入口守卫</b>：这些字段最终会进 SDK 的 {@code Map.of(...)} 与 {@code DataType.valueOf(...)}——{@code
+   * Map.of} 遇 null 值抛 NPE、{@code valueOf} 遇非法枚举抛 IllegalArgumentException、预置 columnName 会触发
+   * IllegalStateException。三者<b>都不携带业务语义</b>， 落到 GlobalExceptionHandler 的 catch-all 就成了
+   * 500「系统内部错误」—— 明明是调用方传错，却污染 5xx 告警与 SLO。故在适配器边界显式校验并归位 400。
+   */
+  public static final String FIELD_ALLOCATE_METADATA_INVALID =
+      "META_FIELD_ALLOCATE_METADATA_INVALID";
+
+  /**
    * 枚举选项源声明非法（非 JSON / type 越界 / ref 缺失 / external 缺 connectorId）。
    *
    * <p>写入口守卫：与 {@link #ROW_POLICIES_INVALID} 同姿态——声明非法必须在保存时挡住， 不能等发布物化时才炸（doc/design/modules/11

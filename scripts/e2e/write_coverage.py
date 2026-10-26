@@ -130,7 +130,11 @@ def resolve():
         ("mdmTemplateId", ["/api/v1/masterdata/templates?page=1&size=1"]),
         ("metaEntityId", ["/api/v1/metadata/entities?page=1&size=1"]),
         ("extPointId", ["/api/v1/extension/points?page=1&size=1"]),
-        ("invSku", ["/api/v1/inventories/page?page=1&size=1"]),
+        # ★ StockChangeReq 的主键是 productId（Long）而非 skuCode：此前按 skuCode 解析/传参，
+        #   receive 恒返 400「商品ID不能为空」⇒ deduct/confirm 因缺夹具被 SKIP，掩盖了这两个端点
+        #   其实一直是好的（2026-10-26 实测：productId=900002 receive→deduct 全 2xx）。
+        ("invProductId", ["/api/v1/inventories?page=1&size=1",
+                          "/api/v1/inventories/page?page=1&size=1"]),
         # 2026-10-26 补：generator 的表结构同步/列修复端点路径里的 {id} 是**数据源** id，
         # 原用例直接写死 "{id}" 又没解析 ⇒ 请求打到 /data-sources/{id}/tables:sync，
         # 400 与「功能坏了」长得一样，实为路径占位符没换。
@@ -143,8 +147,8 @@ def resolve():
             if row:
                 if key == "dictTypeCode":
                     ctx[key] = _field(row, "code", "typeCode")
-                elif key in ("invSku",):
-                    ctx[key] = _field(row, "skuCode", "sku", "code", "id")
+                elif key in ("invProductId",):
+                    ctx[key] = _field(row, "productId", "id")
                 elif key == "dataSourceId":
                     ctx[key] = _field(row, "id", "dataSourceId")
                 elif key == "dictItemCode":
@@ -343,16 +347,37 @@ CASES = [
     # "Cannot deserialize value of type ArrayList ... from Object value"；
     # 数组元素的字段名也必须是 FieldMetadata 的 name/columnName/dataType
     # （写成 fieldName/displayName 会静默置空，落到 SDK 里抛 NPE "Name is null" 变 500）。
-    # 字段分配（fields:allocate）：已移出 CASES，见 SKIP_ENV。
-    # dict(key="meta-fields-allocate", verb="POST", path="/api/v1/metadata/fields:allocate",
-    # body=lambda: [{"name": "e2e_alloc_%s" % _ts(),
-    # "columnName": "e2e_alloc_col_%s" % _ts(),
-    # "dataType": "STRING", "entityCode": "E2E_ALLOC_CTX",
-    # "nullable": True}],
-    # # dataType 取的是 metadata-sdk 的 DataType 枚举（STRING/TEXT/NUMBER/...），
-    # # 写 VARCHAR 会抛 IllegalArgumentException: No enum constant ...DataType.VARCHAR，
-    # # 被兜成 500「系统内部错误」——枚举值不合法应按 400 收敛，已作为待办登记。
-    # note="元数据字段分配"),
+    # 字段分配（fields:allocate）：2026-10-26 已由 MetadataController#validateForAllocation
+    # 补上入参守卫，三类客户端错误（Map.of 遇 null 的 NPE / DataType.valueOf 的 IAE /
+    # 预置 columnName 的 ISE）不再漏成 500 ⇒ 用例从 SKIP_ENV 移回 CASES，并新增三条
+    # 「必须是 400 且 errorCode 精确匹配」的负向断言（expect/errorCode 机制见 run()）。
+    dict(key="meta-fields-allocate", verb="POST", path="/api/v1/metadata/fields:allocate",
+         body=lambda: [{"tenantId": 0, "appCode": "E2E_ALLOC_%s" % _ts(),
+                        "bizIdentityCode": "E2E_ALLOC_BIZ", "entityType": "ENTITY",
+                        "entityCode": "E2E_ALLOC_CTX",
+                        "name": "e2e_alloc_%s" % _ts(), "dataType": "STRING"}],
+         note="元数据字段分配（合法入参，真落库）"),
+    dict(key="meta-fields-allocate-bad-datatype", verb="POST",
+         path="/api/v1/metadata/fields:allocate",
+         body=lambda: [{"tenantId": 0, "appCode": "E2E", "bizIdentityCode": "E2E_BIZ",
+                        "entityType": "ENTITY", "entityCode": "E2E_ALLOC_CTX",
+                        "name": "e2e_bad_%s" % _ts(), "dataType": "VARCHAR"}],
+         expect=400, errorCode="META_FIELD_ALLOCATE_METADATA_INVALID",
+         note="★ dataType 非法必须 400（原被 IAE 兜成 500）"),
+    dict(key="meta-fields-allocate-missing-context", verb="POST",
+         path="/api/v1/metadata/fields:allocate",
+         body=lambda: [{"name": "e2e_noctx_%s" % _ts(), "dataType": "STRING",
+                        "entityCode": "E2E_ALLOC_CTX"}],
+         expect=400, errorCode="META_FIELD_ALLOCATE_METADATA_INVALID",
+         note="★ 缺 appCode/bizIdentityCode/entityType 必须 400（原被 NPE 兜成 500）"),
+    dict(key="meta-fields-allocate-preset-column", verb="POST",
+         path="/api/v1/metadata/fields:allocate",
+         body=lambda: [{"tenantId": 0, "appCode": "E2E", "bizIdentityCode": "E2E_BIZ",
+                        "entityType": "ENTITY", "entityCode": "E2E_ALLOC_CTX",
+                        "name": "e2e_preset_%s" % _ts(), "dataType": "STRING",
+                        "columnName": "pre_set_col"}],
+         expect=400, errorCode="META_FIELD_ALLOCATE_METADATA_INVALID",
+         note="★ 预置 columnName 必须 400（原被 ISE 兜成 500）"),
     dict(key="meta-repair-names", verb="POST", path="/api/v1/generator/admin/repair-entity-names",
          body=lambda: {"entityIds": []}, note="实体名修复（GeneratorApiPaths.ADMIN）"),
     dict(key="meta-table-sync", verb="POST", path="/api/v1/generator/data-sources/{dataSourceId}/tables:sync",
@@ -377,14 +402,19 @@ CASES = [
     # ---------------- Blueprint ----------------
     # 库存为空时先由 _ensure_inventory 入库一行，否则「商品ID不能为空」是没数据而非功能问题
     dict(key="bp-inventory-deduct", verb="POST", path="/api/v1/inventories/deduct",
-         body=lambda: {"skuCode": _ctx.get("invSku"), "quantity": 1,
-                       "warehouseCode": "WH-E2E", "bizType": "ORDER",
-                       "bizId": "E2E-%s" % _ts()},
-         need=lambda: _ctx.get("invSku"), note="库存扣减"),
-    dict(key="bp-inventory-confirm", verb="POST", path="/api/v1/inventories/confirm",
-         body=lambda: {"skuCode": _ctx.get("invSku"), "quantity": 1,
+         body=lambda: {"productId": _ctx.get("invProductId"), "quantity": 1,
                        "warehouseCode": "WH-E2E"},
-         need=lambda: _ctx.get("invSku"), note="库存确认"),
+         need=lambda: _ctx.get("invProductId"), note="库存扣减"),
+    # confirm 的前置是「已有预留」：直接 confirm 会返 400「预留量不足，无法确认出库」
+    # （business rule 正确拒绝，不是缺陷）⇒ 必须先 reserve 再 confirm。
+    dict(key="bp-inventory-reserve", verb="POST", path="/api/v1/inventories/reserve",
+         body=lambda: {"productId": _ctx.get("invProductId"), "quantity": 1,
+                       "warehouseCode": "WH-E2E"},
+         need=lambda: _ctx.get("invProductId"), note="库存预留（confirm 的前置）"),
+    dict(key="bp-inventory-confirm", verb="POST", path="/api/v1/inventories/confirm",
+         body=lambda: {"productId": _ctx.get("invProductId"), "quantity": 1,
+                       "warehouseCode": "WH-E2E"},
+         need=lambda: _ctx.get("invProductId"), note="库存确认出库"),
 ]
 
 # 显式不测：带真实副作用，E2E 里发出去会把服务/结构改坏
@@ -413,9 +443,6 @@ SKIP_ENV = {
         "模板实例化的前置是模板已发布（MD_TEMPLATE_NOT_PUBLISHED）；需先发布模板再实例化",
     "mdm-reconcile":
         "对账只针对「由元数据转换而来」的实体；租户自建实体按设计返回 MD_MODEL_DRIFT_NO_SOURCE（正确拒绝）",
-    "meta-fields-allocate":
-        "需完整字段上下文（appCode/bizIdentityCode/entityType/物理表绑定）；夹具不足时服务端抛 NPE 被兜成 500——"
-        "已登记为待修缺陷：入参不合法应按 400 收敛，不能落到 500",
 }
 
 # 需要额外夹具（刷新令牌 / 事件 ID / 会话 ID）的用例
@@ -485,14 +512,36 @@ def _temp_account_token():
     return ((j or {}).get("data") or {}).get("token")
 
 
+def _type_is_cascade(code):
+    """值域是否为 CASCADE（多级树形）——只有这类值域建项时才会写 sys_dict_hierarchy。"""
+    st, j = http("GET", "/api/v1/system/dict/types/%s" % code, token=login())
+    if st != 200:
+        return False
+    d = (j or {}).get("data")
+    d = d if isinstance(d, dict) else {}
+    cat = d.get("category") or (j or {}).get("category")
+    return str(cat).upper() == "CASCADE"
+
+
 def _ensure_dict_item():
     """字典项为空时自建（类型 + 项），保证「移动 / 多语言文案」有真实落点。"""
     if _ctx.get("dictItemId") and _ctx.get("dictItemCode"):
         return True
     tc = _ctx.get("dictTypeCode") or ("e2e_dict_%s" % _ts())
+    # ★ resolve() 可能预填了库里已有的**平值域**（LIST），此时绝不能复用：
+    #   attachHierarchy 对非 CASCADE 且无父级直接 return，不建 DEFAULT 层级节点
+    #   ⇒ 拿它去打 move 必 404 SYS_DICT_HIERARCHY_NOT_FOUND（是夹具选错目标，不是功能坏了）。
+    if _ctx.get("dictTypeCode") and not _type_is_cascade(tc):
+        tc = "e2e_dict_%s" % _ts()
+        _ctx["dictTypeCode"] = None
     if not _ctx.get("dictTypeCode"):
+        # ★ category=CASCADE：move 端点作用于 sys_dict_hierarchy（"换父级 / 调排序，
+        #   作用于指定层级视图"）。而 attachHierarchy 对非 CASCADE 值域且无父级时**直接 return**，
+        #   不会建 DEFAULT 层级节点 ⇒ 拿 LIST 值域去打 move 必然 404 SYS_DICT_HIERARCHY_NOT_FOUND。
+        #   那是「夹具选错了目标」不是功能坏了——平值域调序走 PUT /items/{id} 的 sort 字段。
         st, j = http("POST", "/api/v1/system/dict/types",
-                     {"code": tc, "name": "写入覆盖探针类型", "description": "E2E"},
+                     {"code": tc, "name": "写入覆盖探针类型", "category": "CASCADE",
+                      "description": "E2E"},
                      token=login())
         if st not in (200, 201):
             return False
@@ -511,16 +560,22 @@ def _ensure_dict_item():
 
 
 def _ensure_inventory():
-    """blueprint 库存表可能全空：先入库（receive）造一行，再让扣减/确认有货可动。"""
-    if _ctx.get("invSku"):
+    """blueprint 库存表可能全空：先入库（receive）造一行，再让扣减/确认有货可动。
+
+    入参是 {@code StockChangeReq(productId, productName, warehouseCode, quantity)}——
+    **没有 skuCode / bizType / bizId**（多余字段被 Jackson 忽略，但 productId 缺失会
+    触发 @NotNull「商品ID不能为空」）。此前传 skuCode ⇒ 恒 400 ⇒ deduct/confirm
+    一直被判「缺少夹具」而 SKIP，端点从未被真正执行。
+    """
+    if _ctx.get("invProductId"):
         return True
-    sku = "E2E-SKU-%s" % _ts()
+    pid = 900002  # bone-blueprint 联调种子商品（inventories 列表首行即 900001）
     st, j = http("POST", "/api/v1/inventories/receive",
-                 {"skuCode": sku, "quantity": 100, "warehouseCode": "WH-E2E",
-                  "bizType": "PURCHASE", "bizId": "E2E-%s" % _ts()},
+                 {"productId": pid, "productName": "E2E写入覆盖商品",
+                  "quantity": 100, "warehouseCode": "WH-E2E"},
                  token=login())
     if st in (200, 201):
-        _ctx["invSku"] = sku
+        _ctx["invProductId"] = pid
         return True
     return False
 
@@ -558,6 +613,14 @@ def _capture_id(j):
         return d.get("id")
     if isinstance(d, list) and d and isinstance(d[0], dict):
         return d[0].get("id")
+    return None
+
+
+def _error_code_of(j):
+    """取出统一信封里的 errorCode（ApiResponse.errorCode 或 data.errorCode）。"""
+    if isinstance(j, dict):
+        d = j.get("data") if isinstance(j.get("data"), dict) else {}
+        return j.get("errorCode") or d.get("errorCode")
     return None
 
 
@@ -615,7 +678,26 @@ def run(only):
             print(f"  {tag} SKIP 缺少身份夹具")
             continue
         st, j = http(c["verb"], url, body=body, token=tok)
-        good, why = ok(st, j)
+        expect = c.get("expect")
+        if expect is not None:
+            # ★ 负向断言：客户端错误必须精确落到 400 且带正确 errorCode。
+            # 只断言「不是 2xx」不够——500 同样不是 2xx，那样等于把「报成服务端故障」
+            # 也判成通过（实测教训：NPE/IAE/ISE 三类都被 catch-all 兜成 500）。
+            ec = _error_code_of(j)
+            good = st == expect and (c.get("errorCode") is None or ec == c["errorCode"])
+            why = (
+                ""
+                if good
+                else "期望 HTTP %s%s，实得 %s/%s"
+                % (
+                    expect,
+                    ("/errorCode=" + c["errorCode"]) if c.get("errorCode") else "",
+                    st,
+                    ec,
+                )
+            )
+        else:
+            good, why = ok(st, j)
         for k in ("capture",):
             pass
         # 必须覆盖而非 setdefault：resolve() 预填的 id（如库里第一个 flowId）若优先，

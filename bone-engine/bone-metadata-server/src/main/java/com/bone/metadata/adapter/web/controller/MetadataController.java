@@ -2,6 +2,9 @@ package com.bone.metadata.adapter.web.controller;
 
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.metadata.catalog.application.support.CatalogIdempotencySupport;
+import com.bone.metadata.catalog.common.CatalogErrorCodes;
+import com.bone.metadata.catalog.common.CatalogErrors;
+import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
@@ -136,6 +139,7 @@ public class MetadataController {
               @RequestBody
               List<FieldMetadata> toCreate)
           throws JsonProcessingException {
+    validateForAllocation(toCreate);
     String fingerprint =
         CatalogIdempotencySupport.fingerprint(objectMapper.writeValueAsString(toCreate));
     var bodyType =
@@ -159,6 +163,66 @@ public class MetadataController {
     catalogIdempotencySupport.rememberRawBody(
         idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, response);
     return response;
+  }
+
+  /**
+   * 批量分配扩展字段的<b>入参守卫</b>：把「调用方传错」挡在 400，不让它们漏进 SDK 变成 500。
+   *
+   * <p><b>为何必须有它</b>：{@link FieldMetadata} 是 SDK 的<b>零约束</b>领域模型（无
+   * {@code @NotBlank}/{@code @NotNull}），且 {@code @Valid} 标注在 {@code List<FieldMetadata>}
+   * 上<b>不会级联到元素</b>—— 加了 {@code @Valid} 也不拦。缺失字段一路流到 SDK：
+   *
+   * <ul>
+   *   <li>{@code AllocationContext} 缺项 ⇒ {@code ColumnAllocationRepository#createParams} 的 {@code
+   *       Map.of(...)} 遇 null 值抛 <b>NPE</b>；
+   *   <li>{@code dataType} 非法 ⇒ {@code DataType.valueOf(...)} 抛 <b>IllegalArgumentException</b>；
+   *   <li>{@code columnName} 由调用方预置 ⇒ {@code EmbeddedMetadataService#validateField} 抛
+   *       <b>IllegalStateException</b>（物理列名只能由服务端分配器给出）。
+   * </ul>
+   *
+   * 三者均不携带业务语义 ⇒ GlobalExceptionHandler 只能 catch-all 兜成 500，把客户端错误报成服务端故障。
+   */
+  private void validateForAllocation(List<FieldMetadata> toCreate) {
+    if (toCreate == null || toCreate.isEmpty()) {
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, "待分配字段列表不能为空");
+    }
+    for (int i = 0; i < toCreate.size(); i++) {
+      FieldMetadata field = toCreate.get(i);
+      String at = "fields[" + i + "]";
+      if (field == null) {
+        throw CatalogErrors.of(CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, at + " 为 null");
+      }
+      requireAllocationText(field.getAppCode(), at + ".appCode");
+      requireAllocationText(field.getBizIdentityCode(), at + ".bizIdentityCode");
+      requireAllocationText(field.getEntityType(), at + ".entityType");
+      requireAllocationText(field.getName(), at + ".name");
+      if (field.getTenantId() == null) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, at + ".tenantId 不能为空");
+      }
+      String dataType = field.getDataType();
+      if (dataType == null || dataType.isBlank()) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, at + ".dataType 不能为空");
+      }
+      try {
+        DataType.valueOf(dataType);
+      } catch (IllegalArgumentException ex) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID,
+            at + ".dataType 非法: " + dataType + "（合法取值见 DataType 枚举）");
+      }
+      if (field.getColumnName() != null && !field.getColumnName().isBlank()) {
+        throw CatalogErrors.of(
+            CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, at + ".columnName 由服务端分配，请勿预置");
+      }
+    }
+  }
+
+  private void requireAllocationText(String value, String label) {
+    if (value == null || value.isBlank()) {
+      throw CatalogErrors.of(CatalogErrorCodes.FIELD_ALLOCATE_METADATA_INVALID, label + " 不能为空");
+    }
   }
 
   /** GET /api/v1/metadata/health */

@@ -238,6 +238,7 @@
     "META_ENTITY_NOT_RUNTIME": "仅 RUNTIME 实体支持物理结构维护（非 RUNTIME 实体无物理表）",
     "META_FIELD_NOT_FOUND": "字段不存在（含跨租户不可见）",
     "META_FIELD_CODE_CONFLICT": "字段编码在同实体下已存在",
+    "META_FIELD_ALLOCATE_METADATA_INVALID": "批量分配扩展字段的入参非法（列表为空 / 缺 appCode、bizIdentityCode、entityType、tenantId、name / dataType 非法 / columnName 由服务端分配不可预置）",
     "META_RELATION_NOT_FOUND": "关系不存在（含跨租户不可见）",
     "META_TEMPLATE_NOT_FOUND": "模板不存在（含跨租户不可见）",
     "META_TEMPLATE_CODE_CONFLICT": "模板编码已存在",

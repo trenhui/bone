@@ -234,6 +234,7 @@
     "META_ENTITY_NOT_RUNTIME": "Only RUNTIME entities support physical structure maintenance",
     "META_FIELD_NOT_FOUND": "Field not found",
     "META_FIELD_CODE_CONFLICT": "Field code already exists in the same entity",
+    "META_FIELD_ALLOCATE_METADATA_INVALID": "Invalid payload for batch extension-field allocation (empty list / missing appCode, bizIdentityCode, entityType, tenantId or name / invalid dataType / columnName is server-assigned and must not be preset)",
     "META_RELATION_NOT_FOUND": "Relation not found",
     "META_TEMPLATE_NOT_FOUND": "Template not found",
     "META_TEMPLATE_CODE_CONFLICT": "Template code already exists",

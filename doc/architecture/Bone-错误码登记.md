@@ -563,6 +563,7 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `META_ENTITY_NOT_RUNTIME` | 409 | 仅 RUNTIME 实体支持物理结构维护（非 RUNTIME 实体无物理表） |
 | `META_FIELD_NOT_FOUND` | 404 | 字段不存在（含跨租户不可见） |
 | `META_FIELD_CODE_CONFLICT` | 409 | 字段编码在同实体下已存在 |
+| `META_FIELD_ALLOCATE_METADATA_INVALID` | 400 | 批量分配扩展字段入参非法（列表空 / 缺 `appCode`·`bizIdentityCode`·`entityType`·`tenantId`·`name` / `dataType` 非法 / `columnName` 预置）。守卫位置：`MetadataController#validateForAllocation` |
 | `META_RELATION_NOT_FOUND` | 404 | 关系不存在（含跨租户不可见） |
 | `META_TEMPLATE_NOT_FOUND` | 404 | 模板不存在（含跨租户不可见） |
 | `META_TEMPLATE_CODE_CONFLICT` | 409 | 模板编码已存在 |
