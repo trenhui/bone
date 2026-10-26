@@ -161,6 +161,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     if (task.assigneeId().equals(newAssigneeId)) {
       return task; // 幂等：改派给自己，无需落库
     }
+    // 内控红线：改派目标不得是发起人本人——「自己提单、自己审批」等于这道审批事实上不存在。
+    requireNotSelfApproval(instance, newAssigneeId);
     // 条件更新：仅当任务仍为 PENDING 时才改办理人。失败说明办理人几乎同时完成了决策——
     // 这种交错下「改派一个已办结的任务」毫无意义，必须拒绝而不是覆盖。
     if (!instanceRepository.reassignTask(taskId, newAssigneeId, operatorId)) {
@@ -265,6 +267,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     if (task.assigneeId().equals(newAssigneeId)) {
       return task; // 幂等：转办给自己，无需落库
     }
+    // 内控红线：不得转办给发起人本人（否则发起人拿到自己单据的审批权）。
+    requireNotSelfApproval(instance, newAssigneeId);
     // CAS 标记原任务为 TRANSFERRED：仅当任务仍为 PENDING 时才成功，避免与「他人同时决策 / 转办」互相覆盖。
     // TRANSFERRED 不在节点完成的决策集（APPROVED/REJECTED/CANCELLED）内，故不会静默满足单签/或签的「任一通过」判据——
     // 办理权已整体移交新任务，原任务仅作审计留痕。
@@ -337,6 +341,8 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       throw new WorkflowEngineException(
           WorkflowErrorCode.NOT_ASSIGNEE, "只有任务当前办理人本人可以加签：" + taskId);
     }
+    // 内控红线：不得把发起人本人加成审批人（自审批）。
+    requireNotSelfApproval(instance, newAssigneeId);
     // 同节点下已是待办的不重复加签（避免一个人被加两次、会签永远等不齐）。
     List<WorkflowTask> nodeTasks =
         instanceRepository.listTasksByNode(instance.id(), task.nodeCode());
@@ -507,6 +513,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
         decision == WorkflowTask.Decision.APPROVE
             ? WorkflowTask.Status.APPROVED
             : WorkflowTask.Status.REJECTED;
+    // 驳回必须写明理由：驳回的唯一价值是「告诉发起人改哪里」。不填意见的驳回对发起人是一句「不同意」，
+    // 他既不知为何被驳、也不知如何修改，只能反复重提——企业报销/采购里这是最常见的流程噪音来源。
+    if (decision == WorkflowTask.Decision.REJECT && (comment == null || comment.isBlank())) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.REJECT_COMMENT_REQUIRED, "驳回必须填写审批意见：" + taskId);
+    }
     boolean updated =
         instanceRepository.compareAndSetTaskStatus(
             taskId, WorkflowTask.Status.PENDING, nextStatus, decision, comment, operatorId);
@@ -552,7 +564,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
             current.id(), task.nodeCode(), outs.get(0).to(), node.mode(), operatorId);
     if (advanced) {
       // 节点已完成：作废该节点余下的待办（单签/或签解析出多人时，其余人的待办不得留成幽灵待办）。
-      instanceRepository.cancelPendingTasksOfNode(current.id(), task.nodeCode(), operatorId);
+      cancelNodeTasksWithNotice(current, task.nodeCode(), operatorId, "审批节点已决策完成，该待办无需再处理");
       return advanceFrom(current, definition, operatorId, outs.get(0).to());
     }
     // 未推进：可能是「会签未齐，等其他人」或「节点内有人驳回」。重新读该节点任务做区分。
@@ -590,7 +602,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       throw new WorkflowEngineException(
           WorkflowErrorCode.CONFLICT, "流程状态已变更，撤回失败：" + latest.phase());
     }
-    instanceRepository.cancelPendingTasks(instanceId, operatorId);
+    cancelPendingTasksWithNotice(instance, operatorId, "发起人已撤回该单据");
     WorkflowInstance withdrawn =
         new WorkflowInstance(
             instance.id(),
@@ -656,6 +668,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       // 组织架构仍未修复：保持挂起，明确报错，避免「恢复成功」的假象把死单变成更隐蔽的卡单。
       throw new WorkflowEngineException(
           WorkflowErrorCode.NO_ASSIGNEE, "审批人仍解析不出，无法恢复挂起：" + instance.currentNodeCode());
+    }
+    if (approvalNode && isSelfApproval(instance, assignees)) {
+      // 自审批未解除（仍解析出发起人）：保持挂起并明确报错，不得派单给发起人。
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.SELF_APPROVAL, "审批人仍为发起人本人（自审批），无法恢复挂起：" + instance.currentNodeCode());
     }
     // 阶段 CAS：仅当仍停在 SUSPENDED 时才恢复，避免与并发决策互相覆盖。
     boolean resumed =
@@ -760,6 +777,9 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       throw new WorkflowEngineException(
           WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可指派：" + instance.phase());
     }
+    // 内控红线：管理员兜底指派同样不得指派给发起人本人。
+    // 这是「自审批挂起」的唯一恢复通道——若允许指派给发起人，挂起守卫即被绕过。
+    requireNotSelfApproval(instance, assigneeId);
     String targetNode =
         (nodeCode == null || nodeCode.isBlank()) ? instance.currentNodeCode() : nodeCode;
     // 条件插入去重：判据由存储层在同一条语句里算（与 compareAndAdvanceNode 同纪律）——
@@ -846,6 +866,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       throw new WorkflowEngineException(
           WorkflowErrorCode.CONFLICT, "流程状态已变更，终止失败：" + latest.phase());
     }
+    cancelPendingTasksWithNotice(instance, operatorId, "管理员已强制终止该流程");
     instanceRepository.cancelPendingTasks(instanceId, operatorId);
     WorkflowInstance terminated =
         new WorkflowInstance(
@@ -966,6 +987,14 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           List<String> assignees = resolveAssignees(node, definition, instance, data);
           if (assignees.isEmpty()) {
             suspend(instance, node, operatorId, "审批节点 " + node.code() + " 解析不出审批人");
+            return latestInstance(instance);
+          }
+          // 内控红线（职责分离）：解析出的审批人若含发起人本人，一律挂起而不派单。
+          // 为什么不做「自动跳过发起人」：跳过 = 少一道审批，单据表面通过但内控环节缺失，比挂起更隐蔽、
+          // 审计更难发现。挂起则把问题显式暴露给管理员，经 assignTask 指派他人即可续跑。
+          if (isSelfApproval(instance, assignees)) {
+            suspend(
+                instance, node, operatorId, "审批节点 " + node.code() + " 解析出的审批人含发起人本人（自审批，违反职责分离）");
             return latestInstance(instance);
           }
           Instant now = clock.instant();
@@ -1120,6 +1149,52 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     return List.copyOf(assignees);
   }
 
+  /**
+   * 自审批判定（职责分离红线）：解析出的审批人里含发起人本人。
+   *
+   * <p>不做「自动剔除发起人继续跑」：剔除等于<b>少一道审批</b>，单据表面通过而内控环节缺失， 比挂起更隐蔽、更难被审计发现。故一律视为不可派单。
+   */
+  private boolean isSelfApproval(WorkflowInstance instance, List<String> assignees) {
+    return instance.startedBy() != null && assignees.contains(instance.startedBy());
+  }
+
+  /** 自审批守卫：指派 / 改派 / 转办 / 加签的目标人都不得是发起人本人。 */
+  private void requireNotSelfApproval(WorkflowInstance instance, String candidate) {
+    if (instance.startedBy() != null && instance.startedBy().equals(candidate)) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.SELF_APPROVAL, "审批人不得为发起人本人（自审批，违反职责分离）：" + candidate);
+    }
+  }
+
+  /**
+   * 作废实例余下待办，并<b>逐人知会</b>。
+   *
+   * <p>为什么必须先取快照再作废：{@code cancelPendingTasks} 是存储层批量更新，返回影响行数而非任务明细，
+   * 事后无从得知「谁被作废」。故先读待办快照、作废后逐人发站内信——否则办理人的视角就是<b>待办凭空消失</b>：
+   * 既不知要不要处理，也不知单据去向（还在等他？已被驳回？）。这是审批系统最典型的「静默丢失」缺口。
+   */
+  private void cancelPendingTasksWithNotice(
+      WorkflowInstance instance, String operatorId, String reason) {
+    List<WorkflowTask> pending = instanceRepository.listPendingTasks(instance.id());
+    instanceRepository.cancelPendingTasks(instance.id(), operatorId);
+    for (WorkflowTask task : pending) {
+      notify(() -> notificationPort.notifyTaskCancelled(task, instance, reason));
+    }
+  }
+
+  /** 作废某节点余下待办并逐人知会（节点已决策完成，同节点其余人的待办不得留成幽灵待办）。 */
+  private void cancelNodeTasksWithNotice(
+      WorkflowInstance instance, String nodeCode, String operatorId, String reason) {
+    List<WorkflowTask> pending =
+        instanceRepository.listTasksByNode(instance.id(), nodeCode).stream()
+            .filter(each -> each.status() == WorkflowTask.Status.PENDING)
+            .toList();
+    instanceRepository.cancelPendingTasksOfNode(instance.id(), nodeCode, operatorId);
+    for (WorkflowTask task : pending) {
+      notify(() -> notificationPort.notifyTaskCancelled(task, instance, reason));
+    }
+  }
+
   /** 驳回终止（阶段 CAS 保证不覆盖已被推进为通过的终态）。 */
   private WorkflowInstance terminateAsRejected(
       WorkflowInstance instance, String operatorId, String reason) {
@@ -1129,7 +1204,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     if (!terminated) {
       return latestInstance(instance);
     }
-    instanceRepository.cancelPendingTasks(instance.id(), operatorId);
+    cancelPendingTasksWithNotice(instance, operatorId, reason == null ? "审批驳回" : reason);
     WorkflowInstance rejected =
         new WorkflowInstance(
             instance.id(),

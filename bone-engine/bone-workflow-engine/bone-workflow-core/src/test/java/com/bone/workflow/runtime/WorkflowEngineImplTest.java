@@ -510,6 +510,18 @@ class WorkflowEngineImplTest {
         public void notifyTerminated(WorkflowInstance instance, String operatorId, String reason) {
           notifications.add("TERMINATED:" + instance.phase());
         }
+
+        @Override
+        public void notifyTaskCancelled(
+            WorkflowTask task, WorkflowInstance instance, String reason) {
+          notifications.add("TASK_CANCELLED:" + task.assigneeId() + "@" + task.nodeCode());
+        }
+
+        @Override
+        public void notifyCc(
+            WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {
+          notifications.add("CC:" + String.join(",", recipients));
+        }
       };
 
   private WorkflowEngineImpl newEngine() {
@@ -619,6 +631,14 @@ class WorkflowEngineImplTest {
               @Override
               public void notifyTerminated(
                   WorkflowInstance instance, String operatorId, String reason) {}
+
+              @Override
+              public void notifyTaskCancelled(
+                  WorkflowTask task, WorkflowInstance instance, String reason) {}
+
+              @Override
+              public void notifyCc(
+                  WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {}
             });
     engine.start("expense_reimbursement", "r1", "expense", "u1");
 
@@ -1123,6 +1143,98 @@ class WorkflowEngineImplTest {
         List.of("mgr1"),
         taskCasOperators,
         "compareAndSetTaskStatus 的 operatorId 必须是审批人本人——审计列写租户 id 或 system，" + "「谁批的」这个合规问题就永远答不出");
+  }
+
+  // ============================== 内控与可观测（2026-10-27） ==============================
+
+  @Test
+  @DisplayName("内控红线·自审批：审批人解析出发起人本人 ⇒ 挂起告警且不派单（不静默跳过审批层级）")
+  void selfApproval_suspendsInsteadOfSkipping() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of("u1"); // 发起人本人
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance suspended = engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    assertEquals(WorkflowInstance.Phase.SUSPENDED, suspended.phase());
+    assertTrue(pendingTasks().isEmpty(), "自审批不得派单给发起人——否则这道审批事实上不存在");
+    assertTrue(
+        notifications.stream().anyMatch(each -> each.startsWith("SUSPENDED:")),
+        "自审批必须告警管理员：静默放行会让「少一道审批」永远不被发现");
+  }
+
+  @Test
+  @DisplayName("自审批挂起的恢复通道：指派给发起人被拒（SELF_APPROVAL），指派他人可续跑")
+  void assignTask_toInitiator_isRejected() {
+    givenLinearSingleApproval();
+    resolvedAssignees = List.of("u1");
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance suspended = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    assertEquals(WorkflowInstance.Phase.SUSPENDED, suspended.phase());
+
+    WorkflowEngineException error =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.assignTask(suspended.id(), null, "u1", "admin", "指派给发起人本人"));
+    assertEquals(WorkflowErrorCode.SELF_APPROVAL, error.code());
+
+    // 恢复通道本身仍然可用：改派他人即可续跑（守卫不是为了把单据焊死）
+    WorkflowInstance resumed = engine.assignTask(suspended.id(), null, "admin1", "admin", "改派他人");
+    assertEquals(WorkflowInstance.Phase.RUNNING, resumed.phase());
+    assertEquals(1, pendingTasks().size());
+  }
+
+  @Test
+  @DisplayName("驳回必须填写意见：空白意见被拒（422），写明理由后可正常驳回")
+  void reject_withoutComment_isRejected() {
+    givenLinearSingleApproval();
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+    WorkflowTask task = pendingTasks().get(0);
+
+    WorkflowEngineException error =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.completeTask(task.id(), WorkflowTask.Decision.REJECT, "   ", "mgr1"));
+    assertEquals(WorkflowErrorCode.REJECT_COMMENT_REQUIRED, error.code());
+
+    WorkflowInstance rejected =
+        engine.completeTask(task.id(), WorkflowTask.Decision.REJECT, "发票不合规，请重新开票", "mgr1");
+    assertEquals(WorkflowInstance.Phase.REJECTED, rejected.phase());
+  }
+
+  @Test
+  @DisplayName("撤回时其余办理人收到「待办作废」通知——待办不得凭空消失")
+  void withdraw_notifiesCancelledApprovers() {
+    givenLinearSingleApproval();
+    WorkflowEngineImpl engine = newEngine();
+    WorkflowInstance instance = engine.start("expense_reimbursement", "r1", "expense", "u1");
+    notifications.clear();
+
+    engine.withdraw(instance.id(), "u1");
+
+    assertTrue(
+        notifications.contains("TASK_CANCELLED:mgr1@mgr"), "被作废待办的办理人必须收到知会，否则他的待办凭空消失且无从得知单据去向");
+    assertTrue(
+        notifications.stream().anyMatch(each -> each.startsWith("TERMINATED:")), "发起人仍应收到终态通知");
+  }
+
+  @Test
+  @DisplayName("或签一人决策后：其余办理人的待办被作废且收到知会（不留幽灵待办、不静默消失）")
+  void anyMode_notifiesCancelledPeers() {
+    givenApprovalWithMode(WorkflowDefinition.ApprovalMode.ANY);
+    resolvedAssignees = List.of("c1", "c2");
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+    List<WorkflowTask> pending = pendingTasks();
+    notifications.clear();
+
+    engine.completeTask(pending.get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "c1");
+
+    WorkflowTask peer = pending.get(1);
+    assertTrue(
+        notifications.contains("TASK_CANCELLED:" + peer.assigneeId() + "@" + peer.nodeCode()),
+        "或签下未决策的办理人待办被作废，必须收到知会：" + notifications);
+    assertEquals(WorkflowInstance.Phase.APPROVED, latestPhase());
   }
 
   private WorkflowInstance.Phase latestPhase() {

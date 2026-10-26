@@ -134,6 +134,19 @@ public class PersistenceNotificationPort implements NotificationPort, WorkflowIn
   }
 
   @Override
+  public void notifyTaskCancelled(WorkflowTask task, WorkflowInstance instance, String reason) {
+    // 通知「被作废的办理人」：他的待办会凭空消失，必须告知去向，否则只能靠刷待办列表猜。
+    write(
+        task.assigneeId(),
+        "TASK_CANCELLED",
+        instance,
+        task.nodeCode(),
+        "待办已取消，无需处理",
+        "单据 " + instance.entityCode() + "/" + instance.recordId() + " 的待办已取消：" + safe(reason),
+        "workflow-engine");
+  }
+
+  @Override
   public void notifyCc(
       WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {
     if (recipients == null || recipients.isEmpty()) {

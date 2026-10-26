@@ -35,6 +35,18 @@ public interface NotificationPort {
   void notifyTerminated(WorkflowInstance instance, String operatorId, String reason);
 
   /**
+   * 待办作废通知：告知原办理人「你的待办已被取消，无需再处理」。
+   *
+   * <p><b>为什么必须有</b>：撤回 / 驳回 / 终止 / 或签他人已决策时，其余办理人的待办会被作废。若只改状态不通知，
+   * 办理人视角是「待办凭空消失」——既不知道要不要处理，也不知道单据去向（可能还在等他，也可能已被驳回）。 这是审批系统里最常见的「静默丢失」类体验与可观测缺口。
+   *
+   * @param task 被作废的任务（状态已置 CANCELLED）
+   * @param instance 所属实例
+   * @param reason 作废原因
+   */
+  void notifyTaskCancelled(WorkflowTask task, WorkflowInstance instance, String reason);
+
+  /**
    * 抄送知会：把单据「知会」给抄送人（{@code CC} 节点）。
    *
    * <p><b>与 {@link #notifyTaskCreated} 的关键区别</b>：抄送<b>不产生待办、不要求决策、不参与节点完成判据</b>——
@@ -69,6 +81,10 @@ public interface NotificationPort {
 
         @Override
         public void notifyTerminated(WorkflowInstance instance, String operatorId, String reason) {}
+
+        @Override
+        public void notifyTaskCancelled(
+            WorkflowTask task, WorkflowInstance instance, String reason) {}
 
         @Override
         public void notifyCc(

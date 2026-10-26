@@ -77,6 +77,16 @@ public class LoggingNotificationPort implements NotificationPort {
   }
 
   @Override
+  public void notifyTaskCancelled(WorkflowTask task, WorkflowInstance instance, String reason) {
+    log.info(
+        "[workflow][notify] 待办作废通知：assignee={} task={} instance={} reason={}",
+        task.assigneeId(),
+        task.id(),
+        task.instanceId(),
+        reason);
+  }
+
+  @Override
   public void notifyCc(
       WorkflowInstance instance, String nodeCode, java.util.List<String> recipients) {
     log.info(

@@ -114,6 +114,7 @@ class EnterpriseApprovalScenarioTest {
     seedProcurement();
     seedReimbursementWithCc();
     seedOverlapProcurement();
+    seedSelfApproval();
   }
 
   @AfterEach
@@ -403,6 +404,51 @@ class EnterpriseApprovalScenarioTest {
     WorkflowInstance resumed = engine.resume(instance.id(), INITIATOR);
     assertEquals(
         Phase.APPROVED, resumed.phase(), "条件节点挂起必须可恢复（否则 resume 会去解析不存在的审批人而永远 NO_ASSIGNEE）");
+  }
+
+  // 自审批（内控红线）：start → mgr(USER u1=发起人本人) → end
+  private void seedSelfApproval() throws Exception {
+    WorkflowDefinition def =
+        new WorkflowDefinition(
+            "reimb_self",
+            "报销审批(自审批)",
+            1,
+            List.of(
+                new Node("start", NodeType.START, null, "发起"),
+                new Node("mgr", NodeType.APPROVE, ApprovalMode.SINGLE, "主管审批"),
+                new Node("end", NodeType.END, null, "结束")),
+            List.of(new Edge("start", "mgr", null, null), new Edge("mgr", "end", null, null)),
+            // 指派给发起人本人：建模错误或组织数据脏时会出现，内控上必须拦住
+            Map.of("mgr", List.of(new AssignmentRule("USER", Map.of("userId", INITIATOR)))));
+    insertDefinition(def);
+  }
+
+  // ====================== 内控与可观测（2026-10-27） ======================
+
+  @Test
+  @DisplayName("报销-自审批（审批人=发起人）：失败关闭 → 挂起 + 管理员告警，不派单给发起人")
+  void reimbursement_selfApproval_suspendsFailClosed() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance = engine.start("expense", "r-reimb-self", "reimb_self", INITIATOR);
+
+    assertEquals(Phase.SUSPENDED, instance.phase(), "自审批不得放行——否则这道审批事实上不存在");
+    assertTrue(engine.listPendingTasks(instance.id()).isEmpty(), "不得向发起人派发审批待办");
+    assertInbox("workflow-admin", "SUSPENDED", instance.id());
+  }
+
+  @Test
+  @DisplayName("撤回：其余办理人的待办被作废且收到站内知会（待办不得凭空消失）")
+  void withdrawal_notifiesCancelledApprover() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("expense", "r-reimb-small", "reimbursement", INITIATOR);
+    WorkflowTask mgrTask = engine.listPendingTasks(instance.id()).get(0);
+    String approver = mgrTask.assigneeId();
+
+    engine.withdraw(instance.id(), INITIATOR);
+
+    assertEquals(Phase.WITHDRAWN, engine.findInstanceById(instance.id()).orElseThrow().phase());
+    assertInbox(approver, "TASK_CANCELLED", instance.id());
   }
 
   // ====================== 工具 ======================
