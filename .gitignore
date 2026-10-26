@@ -27,9 +27,13 @@ out/
 classes/
 generated-sources/
 
-# 例外：DDD 目标态端口包 application/port/out（上面的 out/ 会连它一起忽略，
-# 导致新增端口文件被静默跳过、git add 报 "ignored by .gitignore"）
+# 例外：DDD 目标态端口包（上面的 out/ 会连它一起忽略，
+# 导致新增端口文件被静默跳过、git add 报 "ignored by .gitignore"）。
+# 2026-10-26 补 domain/port/out/：synap-claim 的 OutboxPort/OutboxRecord 正是因此
+# 一直「存在但未入库」——引用方已提交而端口本身没提交，clean checkout 编译必失败
+# （且 git status 完全看不见，是本类问题最难查的一种形态）。
 !**/application/port/out/
+!**/domain/port/out/
 
 # =========================
 # Java相关文件
@@ -155,6 +159,8 @@ tmp/
 # =========================
 # 依赖目录
 node_modules/
+# 安装中途失败的残留目录（2026-10-26 补）：同为依赖产物，不得入库（667MB 级）
+node_modules.broken/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

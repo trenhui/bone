@@ -298,7 +298,9 @@ export const FlowDesign: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    let values: { name?: string; description?: string };
+    // name 由表单 required 规则保证非空，收窄为 string 以对齐 CreateFlowReq/UpdateFlowReq 契约；
+    // description 非必填，缺省按空串下发（后端 description 可空）。
+    let values: { name: string; description?: string };
     try {
       values = await form.validateFields();
     } catch (error) {
@@ -355,7 +357,7 @@ export const FlowDesign: React.FC = () => {
       if (isEdit && currentFlow) {
         const updateData: UpdateFlowReq = {
           name: values.name,
-          description: values.description,
+          description: values.description ?? '',
           nodes: nodes.map((n) => ({
             id: n.id,
             name: n.name,
@@ -371,7 +373,7 @@ export const FlowDesign: React.FC = () => {
       } else {
         const createData: CreateFlowReq = {
           name: values.name,
-          description: values.description,
+          description: values.description ?? '',
           nodes: nodes.map(({ name, type, config, positionX, positionY }) => ({
             name,
             type,

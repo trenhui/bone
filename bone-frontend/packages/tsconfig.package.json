@@ -1,7 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true,
+    // 2026-10-26：包必须真的产出 dist（package.json 的 main/module/types 全指向 dist/*）；
+    // 打开 emit 后须同时关掉 allowImportingTsExtensions（TS5096 两者互斥）。
+    // outDir/rootDir 不能写在本文件——相对路径按**本文件**位置解析会变成 packages/dist，
+    // 故放到各包自己的 tsconfig.json 里（见 packages/*/tsconfig.json）。
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",

@@ -10,7 +10,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "vite build && tsc",
     "dev": "tsc --watch"
   },
   "dependencies": {},

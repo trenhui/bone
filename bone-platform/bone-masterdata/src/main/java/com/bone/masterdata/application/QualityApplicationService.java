@@ -140,6 +140,19 @@ public class QualityApplicationService {
     if (cmd.getSeverity() == null) {
       throw MasterDataErrors.of(MasterDataErrorCodes.RULE_SEVERITY_INVALID, "严重级别不能为空");
     }
+    // 2026-10-26 联调修复：PUT /quality/rules/{id} 只校验了 severity，name/type/expression
+    // 缺失时直接透传给聚合 update() ⇒ UPDATE 把 NOT NULL 列写成 null ⇒ 数据库抛完整性约束，
+    // 前端拿到的是一段裸 SQL（"Column 'type' cannot be null"），既不是可读的业务错误，
+    // 也把表结构泄漏到响应里。缺字段必须在进入领域前就按业务码拒绝。
+    if (cmd.getName() == null || cmd.getName().isBlank()) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.RULE_SEVERITY_INVALID, "规则名称不能为空");
+    }
+    if (cmd.getType() == null || cmd.getType().isBlank()) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.RULE_TYPE_INVALID, "规则类型不能为空");
+    }
+    if (cmd.getExpression() == null || cmd.getExpression().isBlank()) {
+      throw MasterDataErrors.of(MasterDataErrorCodes.RULE_EXPRESSION_INVALID, "规则表达式不能为空");
+    }
     assertExpressionEvaluable(cmd.getType(), cmd.getExpression());
     rule.update(
         RuleName.of(cmd.getName()),

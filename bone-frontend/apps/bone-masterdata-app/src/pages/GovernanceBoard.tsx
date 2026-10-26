@@ -299,11 +299,13 @@ const GovernanceBoard: React.FC = () => {
             return; // 字段级校验错误由 Form.Item 就地展示
           }
           try {
-            // entityId 必非空：入口按钮 disabled={!entityId}；accountId 经 Number() 与后端 Long 对齐
+            // entityId 必非空：入口按钮 disabled={!entityId}；
+            // accountId 走 string：后端为 Long，全平台 Long→JSON string（雪花 ID 超 JS Number 安全上限，
+            // 以 number 传递会被静默截断），governanceRoleApi.assign 的契约类型即为 string。
             await governanceRoleApi.assign({
               roleType: v.roleType as string,
               masterDataEntityId: entityId!,
-              accountId: Number(v.accountId)
+              accountId: String(v.accountId)
             });
             message.success('已指派');
             setRoleOpen(false);
