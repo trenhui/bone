@@ -296,6 +296,8 @@ ui_e2e_loginpage.cjs
 data/
 qlcheck/
 .run-jars/
+# Redis 本地持久化 dump（联调时 redis-server 在仓库根写出，可再生，勿入库）
+dump.rdb
 
 # Playwright 探针浏览器缓存（575MB，可再生，勿入库）
 .pw-browsers/
