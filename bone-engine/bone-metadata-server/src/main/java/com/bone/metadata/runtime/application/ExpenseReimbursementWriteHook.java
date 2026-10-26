@@ -6,6 +6,7 @@ import com.bone.metadata.engine.runtime.RuntimeWriteHook;
 import com.bone.metadata.engine.runtime.RuntimeWriteHookContext;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -25,8 +26,15 @@ import org.springframework.stereotype.Component;
  *   <li>状态流转（updateState 改 status 字段）载荷不含 {@code amount}，天然放行；只有显式改金额的 PUT 载荷才触发阻断；
  *   <li>阻断错误码复用 {@code META_RUNTIME_VALIDATION_FAILED}（422，已登记），不新增契约面。
  * </ul>
+ *
+ * <p><b>组合根让位（2026-10-26 联调修复）</b>：与 {@code com.bone.app.expense.ExpenseReimbursementWriteHook} 同名
+ * bean 双份共存会让 bone-boot 启动即崩（ConflictingBeanDefinitionException），且写钩子按 {@code
+ * List&lt;RuntimeWriteHook&gt;} 收集，双份会**重复执行**。业务副本是新版本（金额冻结已下沉为平台 字段锁
+ * UiSchemaRuleEngine.fieldLockRules，业务侧仅保留过渡兜底），故组合根下由业务副本生效， standalone bone-metadata-server
+ * 下本平台副本照常生效；字符串条件不构成平台→业务编译依赖。
  */
 @Component("expenseReimbursementWriteHook")
+@ConditionalOnMissingClass("com.bone.app.expense.ExpenseReimbursementWriteHook")
 public class ExpenseReimbursementWriteHook implements RuntimeWriteHook {
 
   /** 审批链上不允许改金额的状态（DRAFT 允许修改）。 */

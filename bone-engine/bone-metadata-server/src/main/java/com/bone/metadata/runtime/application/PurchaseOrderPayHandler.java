@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,8 +34,13 @@ import org.springframework.stereotype.Service;
  *
  * <p><b>幂等</b>：由 {@code RuntimeActionApplicationService} 按 {@code Idempotency-Key} 去重 + 执行日志孤儿态保障，
  * 故本方法可放心假设「被调用即代表需要执行一次付款」。
+ *
+ * <p><b>组合根让位（2026-10-26 联调修复）</b>：与 {@code com.bone.app.purchase.PurchaseOrderPayHandler} 同 bean 名
+ * {@code purchaseOrderPayHandler} 的双份拷贝在 bone-boot 组合根同时被扫描会 ConflictingBeanDefinitionException
+ * 启动即崩，故按业务副本是否在 classpath 让位——组合根下业务副本生效， standalone 下本平台副本照常生效；字符串条件不构成平台→业务编译依赖。
  */
 @Service("purchaseOrderPayHandler")
+@ConditionalOnMissingClass("com.bone.app.purchase.PurchaseOrderPayHandler")
 public class PurchaseOrderPayHandler implements RuntimeActionHandler {
 
   @Override

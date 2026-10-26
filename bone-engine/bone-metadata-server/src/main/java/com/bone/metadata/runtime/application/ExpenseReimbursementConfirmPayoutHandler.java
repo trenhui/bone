@@ -6,6 +6,7 @@ import com.bone.metadata.runtime.domain.RuntimeActionContext;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,9 +19,16 @@ import org.springframework.stereotype.Service;
  *
  * <p>模拟调用外部支付网关（半事务/补偿语义，Runtime 数据面设计 §4.8.1）：仅生成支付流水号，不真正出金。 真实实现应在此发起 HTTP/RPC 调用，并对失败做补偿/对账；幂等由
  * {@code RuntimeActionApplicationService} （按 Idempotency-Key 去重 + 执行日志 orphan
- * 态）保障，故本方法可放心假设「被调用即代表需要执行一次打款」。
+ * 态）保障，故本方法可以放心假设「被调用即代表需要执行一次打款」。
+ *
+ * <p><b>组合根让位（2026-10-26 联调修复）</b>：本类与 {@code
+ * com.bone.app.expense.ExpenseReimbursementConfirmPayoutHandler} 是同一处理器的两份拷贝 （平台副本供 standalone
+ * bone-metadata-server 使用，业务副本随 bone-app-expense 挂入 bone-boot 组合根）。两者同时被扫描会因同 bean 名 {@code
+ * expenseReimbursementConfirmPayoutHandler} 触发 ConflictingBeanDefinitionException， bone-boot
+ * 启动即崩。故此处按业务副本是否在 classpath 让位：组合根（含业务应用）下业务副本生效， standalone 下平台副本照常生效；字符串条件不构成平台→业务编译依赖。
  */
 @Service("expenseReimbursementConfirmPayoutHandler")
+@ConditionalOnMissingClass("com.bone.app.expense.ExpenseReimbursementConfirmPayoutHandler")
 public class ExpenseReimbursementConfirmPayoutHandler implements RuntimeActionHandler {
 
   @Override
