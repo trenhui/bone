@@ -39,6 +39,15 @@ public class SecurityConfig {
     http.csrf(csrf -> csrf.disable())
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+    // 身份解析与授权开关解耦（与本类注释里「租户上下文与 security.enabled 解耦」同一口径）：
+    // JwtAuthenticationFilter 只负责把 token 的 userId 放进 Authentication#details 与 authorities，
+    // 不做任何放行/拦截裁决。此前它只注册在 security.enabled=true 分支，导致 dev（默认 false）
+    // 下 CurrentUserProvider 永远拿不到 userId —— 前端 bone-metadata-app 的「我的待办/已办」
+    // （GET /api/v1/runtime/approval/tasks/pending|decided）无论带不带 JWT 一律 403
+    // 「匿名主体没有待办」（2026-10-26 全模块联调实测确诊）。放行策略仍完全由下面的 if/else 决定。
+    http.addFilterBefore(
+        new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+
     if (!securityEnabled) {
       // 安全关闭时：URL 全放行 + 匿名主体携带全部权限，使 @PreAuthorize 通过
       http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
@@ -86,8 +95,7 @@ public class SecurityConfig {
                       .permitAll()
                       .anyRequest()
                       .authenticated())
-          .addFilterBefore(
-              new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+          // JwtAuthenticationFilter 已在两个分支外统一注册（身份解析与授权开关解耦，见方法开头注释）
           .addFilterAfter(
               new APIKeyFilter("X-API-Key", apiKey, getApiKeyAuthorities()),
               JwtAuthenticationFilter.class);

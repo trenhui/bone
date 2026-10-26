@@ -13,7 +13,6 @@ import com.bone.metadata.catalog.domain.repository.IamModuleRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -26,7 +25,15 @@ class IamModuleValidatorTest {
   @Mock private IamModuleRepository iamModuleRepository;
   @Mock private IamAppRoleRepository iamAppRoleRepository;
   @Mock private TenantProvider tenantProvider;
-  @InjectMocks private IamModuleValidator validator;
+
+  /** 手工构造（@InjectMocks 无法解析 boolean 构造参）：显式打开 G1② 开关，等价于 prod 的 security.enabled=true。 */
+  private IamModuleValidator validator;
+
+  @org.junit.jupiter.api.BeforeEach
+  void enforceModelingGate() {
+    validator =
+        new IamModuleValidator(iamModuleRepository, iamAppRoleRepository, tenantProvider, true);
+  }
 
   private static IamModuleRef moduleRef(long tenantId, long appId) {
     IamModuleRef ref = new IamModuleRef();
@@ -129,6 +136,22 @@ class IamModuleValidatorTest {
     when(tenantProvider.currentTenantId()).thenReturn(CURRENT_TENANT);
     when(iamModuleRepository.findById(1L)).thenReturn(moduleRef(CURRENT_TENANT, 10L));
     assertDoesNotThrow(() -> validator.requireModelingAllowed(1L, null));
+    org.mockito.Mockito.verifyNoInteractions(iamAppRoleRepository);
+  }
+
+  /**
+   * 安全关闭（dev/E2E，{@code security.enabled=false}）且<b>有主体</b>：仍按平台运维通道豁免（2a §10.4）。
+   *
+   * <p>2026-10-26 联调修复的回归锚点：身份解析与授权开关解耦后，dev 下带 admin JWT 的建模请求不再无主体—— 若豁免仍只认 userId==null，这类请求会因缺
+   * bone_app_permission 授予集体 403。
+   */
+  @Test
+  void requireModelingAllowed_shouldExempt_whenSecurityDisabledEvenWithPrincipal() {
+    IamModuleValidator devValidator =
+        new IamModuleValidator(iamModuleRepository, iamAppRoleRepository, tenantProvider, false);
+    when(tenantProvider.currentTenantId()).thenReturn(CURRENT_TENANT);
+    when(iamModuleRepository.findById(1L)).thenReturn(moduleRef(CURRENT_TENANT, 10L));
+    assertDoesNotThrow(() -> devValidator.requireModelingAllowed(1L, 7L));
     org.mockito.Mockito.verifyNoInteractions(iamAppRoleRepository);
   }
 

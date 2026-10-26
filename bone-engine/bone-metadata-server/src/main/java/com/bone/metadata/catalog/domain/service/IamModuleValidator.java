@@ -35,6 +35,17 @@ public class IamModuleValidator {
   private final IamAppRoleRepository iamAppRoleRepository;
   private final TenantProvider tenantProvider;
 
+  /**
+   * 应用角色校验是否实际执行（由 {@code security.enabled} 装配）：安全关闭 = 平台运维通道，豁免 G1②（2a §10.4 裁定）。
+   *
+   * <p><b>为什么豁免键必须是安全开关而不是「有没有 userId」（2026-10-26 联调修复）</b>：早先 dev 下 JWT 过滤器未注册， E2E/UI
+   * 请求一律无主体，天然落入下方 {@code userId == null} 豁免；随后为让审批中心（{@code
+   * RuntimeApprovalApplicationService#operator}）解析登录用户，身份解析与授权开关解耦（JWT 过滤器恒注册）—— 此时若仍按「有主体即校验」，dev
+   * 里带 admin JWT 的建模请求会因缺 {@code bone_app_permission} 授予而集体 403 （应用创建流程不自动给创建者授权，实测 app-to-data
+   * 全链路首跳即 403），违背本类注释固化的 「E2E 安全关闭 → 平台运维通道豁免」裁定。安全开启（prod）时本开关为 true，校验照常 fail-closed。
+   */
+  private final boolean modelingGateEnforced;
+
   /** 若指定 moduleId 在 IAM 模块中不存在（或不属于当前租户），抛出异常。 */
   public void requireExists(Long moduleId) {
     requireModule(moduleId);
@@ -52,6 +63,15 @@ public class IamModuleValidator {
       log.warn(
           "[G1②] 无主体建模（豁免应用角色校验）：moduleId={} tenant={} —— 若非 E2E/API-Key/系统任务，请检查认证配置",
           moduleId,
+          tenantProvider.currentTenantId());
+      return;
+    }
+    if (!modelingGateEnforced) {
+      log.warn(
+          "[G1②] 安全关闭，按平台运维通道豁免应用角色校验（2a §10.4）：moduleId={} appId={} userId={} tenant={}",
+          moduleId,
+          ref.getAppId(),
+          userId,
           tenantProvider.currentTenantId());
       return;
     }

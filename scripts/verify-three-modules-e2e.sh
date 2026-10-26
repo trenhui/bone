@@ -64,8 +64,11 @@ check_auth "关键指标"    "$SYSTEM/api/v1/console/metrics"       '"code":\s*2
 check_auth "快捷操作"    "$SYSTEM/api/v1/console/quick-actions" '"code":\s*200'
 
 echo "==> 后端直连（bone-extension-studio）"
-check "扩展点列表"  "$STUDIO/api/v1/extension/points"  '"success":\s*true'
-check "插件列表"    "$STUDIO/api/v1/extension/plugins" '"success":\s*true'
+# 扩展 Studio 走 fail-closed（metadata-mysql profile 硬编码 permit-unauthenticated=false，
+# 2026-10-26 联调口径）：匿名请求不但被 403 拦截，即使放行也会因缺 JWT 租户上下文
+# 报 TENANT_CONTEXT_MISSING(500)。故与控制台一致，必须带 JWT 断言。
+check_auth "扩展点列表"  "$STUDIO/api/v1/extension/points"  '"success":\s*true'
+check_auth "插件列表"    "$STUDIO/api/v1/extension/plugins" '"success":\s*true'
 
 echo "==> 经 Shell Vite 代理 (3000)"
 if [ -n "$E2E_TOKEN" ]; then
@@ -74,7 +77,7 @@ else
   echo "  [SKIP] proxy /api/v1/console/overview — 无 JWT"
   FAIL=$((FAIL + 1))
 fi
-check "proxy /api/v1/extension/points" "$SHELL_URL/api/v1/extension/points" '"code":\s*200|"success":\s*true'
+check_auth "proxy /api/v1/extension/points" "$SHELL_URL/api/v1/extension/points" '"code":\s*200|"success":\s*true'
 
 echo "==> 前端页面可访问"
 check_page() {

@@ -25,6 +25,7 @@ import com.bone.metadata.runtime.RedisCachedRuntimeEntityCatalog;
 import com.bone.metadata.runtime.RuntimeEntityCacheEvictor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -150,8 +151,12 @@ public class CatalogInfrastructureConfiguration {
   public IamModuleValidator iamModuleValidator(
       IamModuleRepository iamModuleRepository,
       IamAppRoleRepository iamAppRoleRepository,
-      TenantProvider tenantProvider) {
-    return new IamModuleValidator(iamModuleRepository, iamAppRoleRepository, tenantProvider);
+      TenantProvider tenantProvider,
+      // G1② 执行开关：安全关闭（dev/E2E）= 平台运维通道豁免应用角色校验（2a §10.4）；
+      // 安全开启（prod）= 校验 fail-closed。裁定与理由见 IamModuleValidator#modelingGateEnforced。
+      @Value("${security.enabled:false}") boolean modelingGateEnforced) {
+    return new IamModuleValidator(
+        iamModuleRepository, iamAppRoleRepository, tenantProvider, modelingGateEnforced);
   }
 
   /** 当前用户端口（G1②）：从 SecurityContext 的 JWT userId claim 解析；无主体返回 null。 */
