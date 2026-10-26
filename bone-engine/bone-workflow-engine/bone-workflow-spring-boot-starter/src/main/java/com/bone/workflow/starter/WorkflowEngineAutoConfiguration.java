@@ -15,6 +15,8 @@ import com.bone.workflow.ports.spi.WorkflowStatusPort;
 import com.bone.workflow.runtime.WorkflowEngineImpl;
 import com.bone.workflow.starter.adapter.PersistenceNotificationPort;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -76,27 +78,43 @@ public class WorkflowEngineAutoConfiguration {
   }
 
   /**
-   * 引擎本体：无条件装配（7 端口由集成配置保证齐备；缺失则注入点 fail-fast）。
+   * 引擎本体：无条件装配（7 端口由集成配置保证齐备；缺失则 fail-fast，并点名缺失端口）。
    *
    * <p>见类注释「为什么不再用 {@code @ConditionalOnBean} 判定端口」——不能用类型条件门禁，否则回到静默不装配。
+   *
+   * <p><b>可观测性</b>：7 个端口经 {@link ObjectProvider} 取用，任一缺失即抛出点名缺失类型与排查路径的 {@link
+   * IllegalStateException}（比 Spring 泛化的 {@code NoSuchBeanDefinitionException} 更可定位）；
+   * 装配成功后打印就绪日志，声明绑定了哪个具体端口实现——杜绝「引擎是否装配 / 绑了哪个状态端口」再次沦为只能靠 {@code /actuator} 排查的静默事实。
    */
   @Configuration(proxyBeanMethods = false)
   static class EngineConfiguration {
 
+    private static final Logger log = LoggerFactory.getLogger(EngineConfiguration.class);
+
     @Bean
     @ConditionalOnMissingBean
     WorkflowEngine workflowEngine(
-        WorkflowDefinitionRepository definitionRepository,
-        WorkflowInstanceRepository instanceRepository,
-        ApproverResolver approverResolver,
-        WorkflowRecordPort recordPort,
-        WorkflowStatusPort statusPort,
-        WorkflowAuditPort auditPort,
-        WorkflowIdGenerator idGenerator,
+        ObjectProvider<WorkflowDefinitionRepository> definitionRepository,
+        ObjectProvider<WorkflowInstanceRepository> instanceRepository,
+        ObjectProvider<ApproverResolver> approverResolver,
+        ObjectProvider<WorkflowRecordPort> recordPort,
+        ObjectProvider<WorkflowStatusPort> statusPort,
+        ObjectProvider<WorkflowAuditPort> auditPort,
+        ObjectProvider<WorkflowIdGenerator> idGenerator,
         ObjectProvider<WorkflowConditionEvaluator> conditionEvaluatorProvider,
         ObjectProvider<WorkflowDefinitionValidator> validatorProvider,
         ObjectProvider<java.time.Clock> clockProvider,
         ObjectProvider<NotificationPort> notificationPortProvider) {
+      WorkflowDefinitionRepository def =
+          require(definitionRepository, WorkflowDefinitionRepository.class);
+      WorkflowInstanceRepository inst =
+          require(instanceRepository, WorkflowInstanceRepository.class);
+      ApproverResolver resolver = require(approverResolver, ApproverResolver.class);
+      WorkflowRecordPort rec = require(recordPort, WorkflowRecordPort.class);
+      WorkflowStatusPort status = require(statusPort, WorkflowStatusPort.class);
+      WorkflowAuditPort audit = require(auditPort, WorkflowAuditPort.class);
+      WorkflowIdGenerator gen = require(idGenerator, WorkflowIdGenerator.class);
+
       WorkflowConditionEvaluator conditionEvaluator =
           conditionEvaluatorProvider.getIfAvailable(StructuredConditionEvaluator::new);
       WorkflowDefinitionValidator validator =
@@ -104,18 +122,53 @@ public class WorkflowEngineAutoConfiguration {
       java.time.Clock clock = clockProvider.getIfAvailable(java.time.Clock::systemUTC);
       NotificationPort notificationPort =
           notificationPortProvider.getIfAvailable(() -> NotificationPort.NOOP);
-      return new WorkflowEngineImpl(
-          definitionRepository,
-          instanceRepository,
-          approverResolver,
-          recordPort,
-          statusPort,
-          auditPort,
-          idGenerator,
-          conditionEvaluator,
-          validator,
-          clock,
-          notificationPort);
+
+      WorkflowEngine engine =
+          new WorkflowEngineImpl(
+              def,
+              inst,
+              resolver,
+              rec,
+              status,
+              audit,
+              gen,
+              conditionEvaluator,
+              validator,
+              clock,
+              notificationPort);
+
+      log.info(
+          "WorkflowEngine 已装配：definitionRepository={}, instanceRepository={}, recordPort={}, statusPort={}, auditPort={}, idGenerator={}",
+          simpleName(def),
+          simpleName(inst),
+          simpleName(rec),
+          simpleName(status),
+          simpleName(audit),
+          simpleName(gen));
+      return engine;
+    }
+
+    /** 取端口：缺失即抛出点名缺失类型与排查路径的异常，绝不静默跳过。 */
+    private static <T> T require(ObjectProvider<T> provider, Class<T> type) {
+      T bean = provider.getIfAvailable();
+      if (bean == null) {
+        throw new IllegalStateException(
+            "工作流引擎装配失败：缺少端口实现 "
+                + type.getName()
+                + "。请确认 WorkflowBoneIntegrationAutoConfiguration 已在 classpath（其 @ConditionalOnClass(SqlExecutor.class) 需 bone-metadata-sdk 在场），"
+                + "且宿主已提供 JdbcRuntimeRecordService / RuntimeActionApplicationService 等基建（否则集成配置按 @ConditionalOnBean 跳过对应端口）。");
+      }
+      return bean;
+    }
+
+    /**
+     * 代理友好类型名：SDK 仓储等 bean 常被 Spring CGLIB 代理，直接用 {@code getClass().getSimpleName()} 会打出 {@code
+     * Xxx$$SpringCGLIB$$0} 这类代理名，误导排障，故截去 {@code $$} 之后的代理后缀。
+     */
+    private static String simpleName(Object bean) {
+      String name = bean.getClass().getSimpleName();
+      int i = name.indexOf("$$");
+      return i > 0 ? name.substring(0, i) : name;
     }
   }
 }

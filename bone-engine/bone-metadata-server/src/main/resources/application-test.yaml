@@ -26,3 +26,5 @@ metadata:
 logging:
   level:
     root: info
+    # 引擎就绪日志（INFO）：显式声明，避免将来收紧 root 级别时被静默过滤
+    com.bone.workflow: INFO

@@ -383,6 +383,13 @@ class ExpenseWorkflowDefinitionTest {
 
       @Override
       public void recordUrge(WorkflowTask task, String operatorId, String comment) {}
+
+      // 接口新增（转办 / 加签协作指令，afc8e0282 引入）：本存根只验证定义与流程，审计留痕无需断言，故 no-op。
+      @Override
+      public void recordTransfer(WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+
+      @Override
+      public void recordAddSign(WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
     };
   }
 

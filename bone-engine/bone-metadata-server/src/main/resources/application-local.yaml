@@ -93,6 +93,9 @@ logging:
   level:
     root: WARN
     com.bone.metadata: INFO
+    # 工作流引擎就绪日志（"WorkflowEngine 已装配"）是 INFO：root=WARN 会把它过滤掉，
+    # 使「引擎是否装配 / 绑定了哪个状态端口」重回只能靠 /actuator 排查的静默状态。
+    com.bone.workflow: INFO
     org.springframework.security: WARN
 
 management:

@@ -8,12 +8,17 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** JWT 工具类：生成与解析验证 */
 @Component
 public class JwtUtil {
+
+  private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
+
   /**
    * 与 IAM 共享的签名密钥：资源服务端须用它校验 IAM 签发的令牌。
    *
@@ -39,8 +44,14 @@ public class JwtUtil {
       this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
       return;
     }
-    // 兜底（仅 dev / 单测）：每次启动生成随机密钥。
+    // 兜底（仅 dev / 单测）：每次启动生成随机密钥——本实例自签自验，无法校验 IAM 令牌。
+    // 显式告警：生产/联调若走到这里，意味着 bone.iam.jwt.secret.key / bone.jwt.secret 未配置或密钥 <32 字节，
+    // 所有 IAM 签发的令牌都会被拒（请求匿名化），必须当场暴露而非静默降级。
     this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    log.warn(
+        "JwtUtil 回退为随机密钥：本实例自签自验，无法校验 IAM 签发的令牌（仅限 dev/单测）。"
+            + "生产/联调须配置 bone.iam.jwt.secret.key（env BONE_IAM_JWT_SECRET_KEY）且与 IAM 一致（≥32 字节）；"
+            + "否则所有鉴权请求将被匿名化。");
   }
 
   /**
@@ -51,7 +62,9 @@ public class JwtUtil {
    */
   private static String firstNonBlank(String... candidates) {
     for (String candidate : candidates) {
-      if (candidate != null && !candidate.isEmpty()) {
+      // 用 isBlank 而非 isEmpty：密钥若被配成空白串（如 " "），isEmpty 会判定为「已配置」，
+      // 随后 Keys.hmacShaKeyFor(1 字节) 抛 WeakKeyException 直接把启动打挂。空白串应视为未配置并正常回退告警。
+      if (candidate != null && !candidate.isBlank()) {
         return candidate;
       }
     }
