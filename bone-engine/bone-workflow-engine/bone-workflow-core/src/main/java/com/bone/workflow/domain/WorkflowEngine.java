@@ -87,6 +87,40 @@ public interface WorkflowEngine {
   WorkflowTask urgeTask(String taskId, String operatorId, String comment);
 
   /**
+   * 转办待办任务（审批人本人把待办转交他人）。
+   *
+   * <p><b>与 {@code reassignTask} 区分</b>：改派是管理员干预（不限操作人身份）；转办是审批人<b>本人</b>把属于自己的待办交出去， 原任务置 {@code
+   * TRANSFERRED} 并新建一条指向新办理人的 {@code PENDING} 任务——审计上保留「谁转给了谁」的完整链路， 而非把原任务静默改人。常用于审批人请假 / 离职前交接。
+   *
+   * <p><b>约束</b>：操作人须为该任务当前办理人；任务须为 {@code PENDING} 且实例未终结；否则拒绝（转办他人已决策的任务是无意义的）。
+   *
+   * @param taskId 任务 id
+   * @param newAssigneeId 新办理人账户 id
+   * @param operatorId 操作人（须为当前办理人本人）
+   * @param comment 转办留言（审计用）
+   * @return 新建的转办后任务
+   */
+  WorkflowTask transferTask(String taskId, String newAssigneeId, String operatorId, String comment);
+
+  /**
+   * 加签（审批人本人邀请他人共同审批同一节点）。
+   *
+   * <p><b>语义</b>：在原节点新增一条指向 {@code newAssigneeId} 的 {@code PENDING} 任务，节点完成与否仍由该节点的审批模式 （{@code
+   * SINGLE/ALL/ANY}）统一判定——会签（ALL）节点上，被加签人须一并通过；单签 / 或签节点上，加签只是多一个可决策人。 这与「管理员强制指派 {@code
+   * assignTask}」区分：加签是审批人主动邀请协同，指派是管理员兜底注入。
+   *
+   * <p><b>约束</b>：操作人须为该任务当前办理人；任务须为 {@code PENDING} 且实例未终结；同一节点下 {@code newAssigneeId}
+   * 已有待办则拒绝（避免重复加签）。
+   *
+   * @param taskId 任务 id（当前办理人本人的待办）
+   * @param newAssigneeId 被加签人账户 id
+   * @param operatorId 操作人（须为当前办理人本人）
+   * @param comment 加签留言（审计用）
+   * @return 新建的加签任务
+   */
+  WorkflowTask addSign(String taskId, String newAssigneeId, String operatorId, String comment);
+
+  /**
    * 读取某业务单据当前的流程实例（无流程时返回空）。
    *
    * @param entityCode 业务实体编码

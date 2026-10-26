@@ -100,4 +100,32 @@ public class ActionExecutionAuditPort implements WorkflowAuditPort {
         operatorId,
         comment);
   }
+
+  @Override
+  public void recordTransfer(
+      WorkflowTask task, String newAssigneeId, String operatorId, String comment) {
+    log.info(
+        "[workflow] 待办转办：task={} instance={} node={} 原办理人={} 新办理人={} operator={} comment={}",
+        task.id(),
+        task.instanceId(),
+        task.nodeCode(),
+        task.assigneeId(),
+        newAssigneeId,
+        operatorId,
+        comment);
+  }
+
+  @Override
+  public void recordAddSign(
+      WorkflowTask task, String newAssigneeId, String operatorId, String comment) {
+    log.info(
+        "[workflow] 加签：task={} instance={} node={} 发起人={} 被加签人={} operator={} comment={}",
+        task.id(),
+        task.instanceId(),
+        task.nodeCode(),
+        task.assigneeId(),
+        newAssigneeId,
+        operatorId,
+        comment);
+  }
 }

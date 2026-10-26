@@ -230,6 +230,157 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   }
 
   @Override
+  public WorkflowTask transferTask(
+      String taskId, String newAssigneeId, String operatorId, String comment) {
+    if (newAssigneeId == null || newAssigneeId.isBlank()) {
+      throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "转办目标办理人不能为空");
+    }
+    WorkflowTask task =
+        instanceRepository
+            .findTask(taskId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.TASK_NOT_FOUND, "任务不存在：" + taskId));
+    if (task.status() != WorkflowTask.Status.PENDING) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.ALREADY_DECIDED, "任务已决策或已转交，不可再转办：" + task.status());
+    }
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(task.instanceId())
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + task.instanceId()));
+    if (instance.isTerminated()) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可转办：" + instance.phase());
+    }
+    // 转办是审批人本人把待办交出去——操作人必须是当前办理人。管理员干预走 reassignTask。
+    if (!task.assigneeId().equals(operatorId)) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.NOT_ASSIGNEE, "只有任务当前办理人本人可以转办：" + taskId);
+    }
+    if (task.assigneeId().equals(newAssigneeId)) {
+      return task; // 幂等：转办给自己，无需落库
+    }
+    // CAS 标记原任务为 TRANSFERRED：仅当任务仍为 PENDING 时才成功，避免与「他人同时决策 / 转办」互相覆盖。
+    // TRANSFERRED 不在节点完成的决策集（APPROVED/REJECTED/CANCELLED）内，故不会静默满足单签/或签的「任一通过」判据——
+    // 办理权已整体移交新任务，原任务仅作审计留痕。
+    if (!instanceRepository.compareAndSetTaskStatus(
+        taskId,
+        WorkflowTask.Status.PENDING,
+        WorkflowTask.Status.TRANSFERRED,
+        null,
+        comment,
+        operatorId)) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.CONFLICT, "任务已被他人处理（并发冲突），转办失败：" + taskId);
+    }
+    Instant now = clock.instant();
+    WorkflowTask newTask =
+        new WorkflowTask(
+            idGenerator.nextId(),
+            instance.id(),
+            task.nodeCode(),
+            newAssigneeId,
+            WorkflowTask.Status.PENDING,
+            null,
+            null,
+            null,
+            now,
+            null);
+    instanceRepository.saveTask(newTask, operatorId);
+    auditPort.recordTransfer(task, newAssigneeId, operatorId, comment);
+    notify(() -> notificationPort.notifyTaskCreated(newTask, instance));
+    LOG.info(
+        "[workflow] 待办转办：task={} {} → {} operator={} comment={}",
+        taskId,
+        task.assigneeId(),
+        newAssigneeId,
+        operatorId,
+        comment);
+    return newTask;
+  }
+
+  @Override
+  public WorkflowTask addSign(
+      String taskId, String newAssigneeId, String operatorId, String comment) {
+    if (newAssigneeId == null || newAssigneeId.isBlank()) {
+      throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "加签目标办理人不能为空");
+    }
+    WorkflowTask task =
+        instanceRepository
+            .findTask(taskId)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.TASK_NOT_FOUND, "任务不存在：" + taskId));
+    if (task.status() != WorkflowTask.Status.PENDING) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.ALREADY_DECIDED, "任务已决策，不可再加签：" + task.status());
+    }
+    WorkflowInstance instance =
+        instanceRepository
+            .findInstance(task.instanceId())
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.INSTANCE_NOT_FOUND, "流程实例不存在：" + task.instanceId()));
+    if (instance.isTerminated()) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.INSTANCE_TERMINATED, "流程已终结，不可加签：" + instance.phase());
+    }
+    // 加签是审批人本人邀请协同——操作人必须是当前办理人。管理员注入走 assignTask。
+    if (!task.assigneeId().equals(operatorId)) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.NOT_ASSIGNEE, "只有任务当前办理人本人可以加签：" + taskId);
+    }
+    // 同节点下已是待办的不重复加签（避免一个人被加两次、会签永远等不齐）。
+    List<WorkflowTask> nodeTasks =
+        instanceRepository.listTasksByNode(instance.id(), task.nodeCode());
+    boolean alreadyPending =
+        nodeTasks.stream()
+            .anyMatch(
+                each ->
+                    each.status() == WorkflowTask.Status.PENDING
+                        && each.assigneeId().equals(newAssigneeId));
+    if (alreadyPending) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.CONFLICT, "该办理人已是本节点待办，不可重复加签：" + newAssigneeId);
+    }
+    Instant now = clock.instant();
+    WorkflowTask newTask =
+        new WorkflowTask(
+            idGenerator.nextId(),
+            instance.id(),
+            task.nodeCode(),
+            newAssigneeId,
+            WorkflowTask.Status.PENDING,
+            null,
+            null,
+            null,
+            now,
+            null);
+    // 并发双点下用 saveTaskIfAbsent 去重：同人同节点只留一条待办。
+    if (!instanceRepository.saveTaskIfAbsent(newTask, operatorId)) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.CONFLICT, "该办理人已是本节点待办，加签冲突：" + newAssigneeId);
+    }
+    auditPort.recordAddSign(task, newAssigneeId, operatorId, comment);
+    notify(() -> notificationPort.notifyTaskCreated(newTask, instance));
+    LOG.info(
+        "[workflow] 加签：task={} node={} 发起人={} 被加签人={} operator={}",
+        taskId,
+        task.nodeCode(),
+        task.assigneeId(),
+        newAssigneeId,
+        operatorId);
+    return newTask;
+  }
+
+  @Override
   public WorkflowInstance start(
       String entityCode, String recordId, String definitionKey, String operatorId) {
     // 幂等：同一单据已有「未终结」的实例时直接复用，不新建第二个实例。

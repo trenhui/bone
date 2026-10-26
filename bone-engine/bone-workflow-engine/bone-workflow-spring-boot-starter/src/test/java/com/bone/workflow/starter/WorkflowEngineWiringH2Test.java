@@ -277,6 +277,14 @@ class WorkflowEngineWiringH2Test {
 
       @Override
       public void recordUrge(WorkflowTask task, String operatorId, String comment) {}
+
+      @Override
+      public void recordTransfer(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+
+      @Override
+      public void recordAddSign(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
     };
   }
 

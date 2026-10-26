@@ -1,6 +1,7 @@
 package com.bone.workflow.starter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.tenant.context.TenantContext;
@@ -13,6 +14,7 @@ import com.bone.workflow.domain.WorkflowDefinition.Node;
 import com.bone.workflow.domain.WorkflowDefinition.NodeType;
 import com.bone.workflow.domain.WorkflowDefinitionValidator;
 import com.bone.workflow.domain.WorkflowEngine;
+import com.bone.workflow.domain.WorkflowEngineException;
 import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowInstance.Phase;
 import com.bone.workflow.domain.WorkflowTask;
@@ -224,6 +226,108 @@ class EnterpriseApprovalScenarioTest {
     assertEquals(0, engine.listPendingTasks(instance.id()).size());
   }
 
+  @Test
+  @DisplayName("报销-转办：主管把待办转交同级另一主管，原任务置 TRANSFERRED，后者审批后链路继续")
+  void reimbursement_transferToPeer() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("expense", "r-reimb-large", "reimbursement", INITIATOR);
+    WorkflowTask mgrTask = engine.listPendingTasks(instance.id()).get(0);
+    assertEquals("mgr1", mgrTask.assigneeId());
+
+    // 主管把待办转交同级 mgrPeer（本人视角转办，原任务留痕为 TRANSFERRED）
+    WorkflowTask transferred =
+        engine.transferTask(mgrTask.id(), "mgrPeer", "mgr1", "我休假，转给 mgrPeer");
+    assertEquals("mgrPeer", transferred.assigneeId());
+    assertEquals(WorkflowTask.Status.PENDING, transferred.status());
+    // 原任务已不在待办列表，且历史中标记为 TRANSFERRED
+    assertTrue(
+        engine.listPendingTasks(instance.id()).stream().noneMatch(t -> t.id().equals(mgrTask.id())),
+        "原任务不该再出现在待办");
+    WorkflowTask original =
+        engine.listInstanceHistory(instance.id()).stream()
+            .filter(t -> t.id().equals(mgrTask.id()))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(WorkflowTask.Status.TRANSFERRED, original.status(), "原任务应留痕为已转交");
+    assertInbox("mgrPeer", "TASK_CREATED", instance.id());
+
+    // mgrPeer 审批 → 仍走财务（转办不改变审批链）
+    instance = engine.completeTask(transferred.id(), Decision.APPROVE, "同意", "mgrPeer");
+    assertEquals("finance", instance.currentNodeCode());
+    WorkflowTask finTask = engine.listPendingTasks(instance.id()).get(0);
+    WorkflowInstance approved = engine.completeTask(finTask.id(), Decision.APPROVE, "合规", "fin1");
+    assertEquals(Phase.APPROVED, approved.phase());
+  }
+
+  @Test
+  @DisplayName("采购-加签：会签节点上财务总监加签同事，被加签人须一并通过才通过")
+  void procurement_addsignRequiresCountersign() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance = engine.start("purchase", "r-proc-large", "procurement", INITIATOR);
+    WorkflowTask deptTask = engine.listPendingTasks(instance.id()).get(0);
+    instance = engine.completeTask(deptTask.id(), Decision.APPROVE, "同意", "head1");
+    assertEquals("joint", instance.currentNodeCode());
+
+    List<WorkflowTask> countersign = engine.listPendingTasks(instance.id());
+    assertEquals(2, countersign.size());
+    WorkflowTask fdTask =
+        countersign.stream().filter(t -> t.assigneeId().equals("fd1")).findFirst().orElseThrow();
+
+    // 财务总监加签同事 fd2（同节点新增一条 PENDING，会签口径下须其一并通过）
+    WorkflowTask signed = engine.addSign(fdTask.id(), "fd2", "fd1", "请 fd2 一并审核");
+    assertEquals("fd2", signed.assigneeId());
+    assertEquals(3, engine.listPendingTasks(instance.id()).size(), "加签后本节点共 3 个待办");
+    assertInbox("fd2", "TASK_CREATED", instance.id());
+
+    // fd1 通过：会签未齐（还差 mgr2、fd2）
+    WorkflowInstance afterFd = engine.completeTask(fdTask.id(), Decision.APPROVE, "合规", "fd1");
+    assertEquals(Phase.RUNNING, afterFd.phase());
+    assertEquals(2, engine.listPendingTasks(instance.id()).size());
+
+    // fd2 通过：仍差 mgr2
+    WorkflowTask fd2Task =
+        engine.listPendingTasks(instance.id()).stream()
+            .filter(t -> t.assigneeId().equals("fd2"))
+            .findFirst()
+            .orElseThrow();
+    instance = engine.completeTask(fd2Task.id(), Decision.APPROVE, "同意", "fd2");
+    assertEquals(Phase.RUNNING, instance.phase());
+    assertEquals(1, engine.listPendingTasks(instance.id()).size());
+
+    // mgr2 通过：全员通过 → 结束
+    WorkflowTask vpTask = engine.listPendingTasks(instance.id()).get(0);
+    WorkflowInstance approved = engine.completeTask(vpTask.id(), Decision.APPROVE, "同意", "mgr2");
+    assertEquals(Phase.APPROVED, approved.phase());
+  }
+
+  @Test
+  @DisplayName("协作指令守卫：非办理人不可转办/加签；本节点已有待办不可重复加签")
+  void collaborationGuards() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("expense", "r-reimb-large", "reimbursement", INITIATOR);
+    WorkflowTask mgrTask = engine.listPendingTasks(instance.id()).get(0);
+
+    // 非办理人（fin1）试图转办 → 拒绝
+    assertThrows(
+        WorkflowEngineException.class,
+        () -> engine.transferTask(mgrTask.id(), "mgrPeer", "fin1", "越权"));
+
+    // 加签目标已是本节点待办人（mgr1 给自己加签）→ 重复被拒
+    assertThrows(
+        WorkflowEngineException.class, () -> engine.addSign(mgrTask.id(), "mgr1", "mgr1", "自加签"));
+
+    // 合法加签：mgr1 加签 mgrPeer（非待办人）→ 成功，且本节点变为 2 个待办
+    WorkflowTask signed = engine.addSign(mgrTask.id(), "mgrPeer", "mgr1", "请协同");
+    assertEquals("mgrPeer", signed.assigneeId());
+    assertEquals(2, engine.listPendingTasks(instance.id()).size());
+
+    // 重复加签同一人 → 拒绝
+    assertThrows(
+        WorkflowEngineException.class, () -> engine.addSign(mgrTask.id(), "mgrPeer", "mgr1", "重复"));
+  }
+
   // ====================== 工具 ======================
 
   private WorkflowEngine engineWithOrg(OrgHierarchyProvider orgProvider) {
@@ -282,6 +386,14 @@ class EnterpriseApprovalScenarioTest {
 
       @Override
       public void recordUrge(WorkflowTask task, String operatorId, String comment) {}
+
+      @Override
+      public void recordTransfer(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+
+      @Override
+      public void recordAddSign(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
     };
   }
 

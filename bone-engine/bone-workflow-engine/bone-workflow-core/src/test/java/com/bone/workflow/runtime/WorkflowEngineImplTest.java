@@ -465,6 +465,14 @@ class WorkflowEngineImplTest {
         public void recordUrge(WorkflowTask task, String operatorId, String comment) {
           auditCalls.add("URGE:" + task.id());
         }
+
+        @Override
+        public void recordTransfer(
+            WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+
+        @Override
+        public void recordAddSign(
+            WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
       };
 
   private final WorkflowIdGenerator idGenerator = () -> "id-" + idSeq.incrementAndGet();

@@ -39,4 +39,18 @@ public interface WorkflowAuditPort {
 
   /** 记录催办（无状态变更，但「谁催了什么」同样是审计对象）。 */
   void recordUrge(WorkflowTask task, String operatorId, String comment);
+
+  /**
+   * 记录转办（审批人本人把待办转交他人）。
+   *
+   * <p>「谁把待办转给了谁、为什么」必须留痕——转办改变了办理权归属，是审批审计重点。 与原任务被静默改人的 {@code recordReassignment}（管理员改派）区分。
+   */
+  void recordTransfer(WorkflowTask task, String newAssigneeId, String operatorId, String comment);
+
+  /**
+   * 记录加签（审批人本人邀请他人共同审批同一节点）。
+   *
+   * <p>加签在审批人视角扩展办理人集合，与「管理员强制指派」区分——前者是审批人主动邀请协同，后者是管理员兜底注入。
+   */
+  void recordAddSign(WorkflowTask task, String newAssigneeId, String operatorId, String comment);
 }
