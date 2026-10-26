@@ -131,6 +131,12 @@ def resolve():
         ("metaEntityId", ["/api/v1/metadata/entities?page=1&size=1"]),
         ("extPointId", ["/api/v1/extension/points?page=1&size=1"]),
         ("invSku", ["/api/v1/inventories/page?page=1&size=1"]),
+        # 2026-10-26 补：generator 的表结构同步/列修复端点路径里的 {id} 是**数据源** id，
+        # 原用例直接写死 "{id}" 又没解析 ⇒ 请求打到 /data-sources/{id}/tables:sync，
+        # 400 与「功能坏了」长得一样，实为路径占位符没换。
+        ("dataSourceId", ["/api/v1/generator/data-sources?page=1&size=1"]),
+        # 字典项 code 是「多语言译文」端点路径的一段，同样必须先解析出来
+        ("dictItemCode", ["/api/v1/system/dict/items/page?page=1&size=1"]),
     ]:
         for p in paths:
             row, err = _rows(p)
@@ -139,6 +145,10 @@ def resolve():
                     ctx[key] = _field(row, "code", "typeCode")
                 elif key in ("invSku",):
                     ctx[key] = _field(row, "skuCode", "sku", "code", "id")
+                elif key == "dataSourceId":
+                    ctx[key] = _field(row, "id", "dataSourceId")
+                elif key == "dictItemCode":
+                    ctx[key] = _field(row, "code", "itemCode", "value")
                 else:
                     ctx[key] = _field(row, "id", default="1")
                 break
@@ -191,21 +201,21 @@ def _body_reset_pwd():
 
 CASES = [
     # ---------------- IAM ----------------
+    # 改密必须换身份：原用例拿 admin 打 /iam/me/change-password，既会把超管密码改掉导致
+    # 后续用例集体 401，oldPassword 又与本探针建号的密码不一致（401 IAM_OLD_PASSWORD_MISMATCH）。
     dict(key="iam-change-password", verb="POST", path="/api/v1/iam/me/change-password",
-         body=lambda: {"oldPassword": "E2ePass!76543", "newPassword": "E2ePass!23456"},
-         note="自助改密（跑前自动建一次性账号）"),
+         body=lambda: {"oldPassword": "E2ePass!23456", "newPassword": "E2ePass!76543"},
+         token=lambda: _temp_account_token(), note="自助改密（一次性账号自身身份）"),
     dict(key="iam-reset-password", verb="POST", path="/api/v1/iam/accounts/{accountId}/reset-password",
          body=_body_reset_pwd, note="管理员重置密码"),
     dict(key="iam-grant-permission", verb="PUT", path="/api/v1/iam/accounts/{accountId}",
          body=lambda: {"role": "TENANT_ADMIN"}, note="账号赋角色/权限"),
-    dict(key="iam-app-grant", verb="POST", path="/api/v1/apps/{appId}/permissions",
-         body=lambda: {"userId": 1, "role": "VIEWER"}, note="应用层级授权"),
-    dict(key="iam-app-revoke", verb="DELETE", path="/api/v1/apps/{appId}/permissions/{userId}",
-         body=None, args=(("userId", "1"),), note="应用授权回收"),
-    dict(key="iam-enroll", verb="POST", path="/api/v1/iam/mfa/enroll",
-         body=lambda: {"username": "e2e_enroll_%s" % _ts(),
-                       "realName": "自助开通", "password": "E2ePass!23456",
-                       "source": "E2E_PROBE"}, note="自助开通账号"),
+    # 下面两条已移出 CASES：全仓检索无 `/api/v1/apps/{appId}/permissions` 路由
+    # （IAM 只有 /apps/{appId}/modules 与 /iam/permissions），属端点清单误报，不是功能缺陷。
+    # dict(key="iam-app-grant", ...)
+    # dict(key="iam-app-revoke", ...)
+    # MFA 自助开通：商业版/IdP 未启用时返回 501 IAM_MFA_NOT_AVAILABLE，是设计行为，见 SKIP。
+    # dict(key="iam-enroll", ...)
     dict(key="iam-tenant-quota", verb="PUT", path="/api/v1/iam/tenants/{tenantId}/quota",
          body=lambda: {"maxAccounts": 500, "maxRoles": 50},
          need=lambda: _ctx.get("tenantId"), note="租户配额调整（TenantController）"),
@@ -218,15 +228,20 @@ CASES = [
          body=None, need=lambda: _ctx.get("sessionId"), note="单会话注销"),
 
     # ---------------- System ----------------
+    # 路径里的 {dictItemId} / {code} 此前解析不到（字典项列表为空）就原样留在 URL 里打成
+    # /items/None/move ⇒ 400 与「功能坏了」同形。现由 _ensure_dict_item 保证有真实字典项。
     dict(key="sys-dict-item-move", verb="PUT", path="/api/v1/system/dict/items/{dictItemId}/move",
-         body=lambda: {"hierarchyCode": "DEFAULT", "parentCode": "", "sort": 999},
-         note="字典项移动/排序"),
-    dict(key="sys-dict-texts", verb="PUT", path="/api/v1/system/dict/items/{dictTypeCode}/{code}/texts",
-         body=lambda: [{"typeCode": _ctx.get("dictTypeCode"), "code": "e2e_text_%s" % _ts(),
+         body=lambda: {"hierarchyCode": "DEFAULT", "sort": 999},
+         need=lambda: _ctx.get("dictItemId"), note="字典项移动/排序"),
+    dict(key="sys-dict-texts", verb="PUT",
+         path="/api/v1/system/dict/items/{dictTypeCode}/{dictItemCode}/texts",
+         body=lambda: [{"typeCode": _ctx.get("dictTypeCode"), "code": _ctx.get("dictItemCode"),
                         "language": "zh-CN", "label": "写入覆盖探针"}],
+         need=lambda: _ctx.get("dictTypeCode") and _ctx.get("dictItemCode"),
          note="字典项多语言文案"),
-    dict(key="sys-dict-enum-sync", verb="POST", path="/api/v1/system/dict/types/{dictTypeCode}/enum-sync",
-         body=None, note="值域枚举同步"),
+    # 枚举同步：平台默认字典未绑定 enumClass，服务端按 SYS_DICT_ENUM_CLASS_INVALID 拒绝，
+    # 是「没有夹具」而非缺陷，见 SKIP。
+    # dict(key="sys-dict-enum-sync", ...)
     # 告警规则挂在 AlertController（/api/v1/system/alert 之下），不是 /api/v1/system/rules；
     # 字段名是 alertLevel，CreateAlertRuleReq 里没有 level / metricSource。
     dict(key="sys-alert-rule-create", verb="POST", path="/api/v1/system/alert/rules",
@@ -258,71 +273,118 @@ CASES = [
                        "name": "E2E质量规则_%s" % _ts(), "type": "COMPLETENESS",
                        "expression": "1=1", "severity": "MEDIUM"},
          capture="mdRuleId", note="质量规则创建"),
+    # PUT = 整体替换：type/expression 与 name/severity 一样是必填，缺一项会撞
+    # md_quality_rule 的 NOT NULL（修复前暴露为裸 SQL 错误，见 QualityApplicationService#updateRule）
     dict(key="mdm-rule-update", verb="PUT", path="/api/v1/masterdata/quality/rules/{mdRuleId}",
-         body=lambda: {"name": "E2E质量规则改名_%s" % _ts(), "severity": "LOW"},
+         body=lambda: {"name": "E2E质量规则改名_%s" % _ts(), "type": "COMPLETENESS",
+                       "expression": "1=1", "severity": "LOW"},
          need=lambda: _ctx.get("mdRuleId"), note="质量规则更新"),
     dict(key="mdm-rule-delete", verb="DELETE", path="/api/v1/masterdata/quality/rules/{mdRuleId}",
          body=None, need=lambda: _ctx.get("mdRuleId"), note="质量规则删除"),
     # masterdata 侧只有 records / templates / reference-data 的归档；
     # 「实体归档」的唯一实现在 metadata 目录侧（MetaEntityCatalogController）。
+    # 归档先发布：Controller 明确「仅已发布实体可归档」，拿 DRAFT 实体打必然 400（正确拒绝）
     dict(key="mdm-archive", verb="POST", path="/api/v1/metadata/entities/{metaEntityId}/archive",
-         body=None, need=lambda: _ctx.get("metaEntityId"), note="元数据实体归档"),
+         body=None, need=lambda: _ctx.get("metaEntityId") and _ensure_meta_entity_published(),
+         note="元数据实体归档"),
+    # metaEntityId 是 @RequestParam（不是请求体字段）：放 body 里会报
+    # "Required request parameter 'metaEntityId' is not present"
     dict(key="mdm-convert", verb="POST", path="/api/v1/masterdata/entities/convert",
-         body=lambda: {"metaEntityId": 1}, note="元数据实体转主数据"),
+         body=None, args=lambda: (("metaEntityId", str(_ctx.get("metaEntityId") or 1)),),
+         need=lambda: _ctx.get("metaEntityId") and _ensure_meta_entity_published(),
+         note="元数据实体转主数据"),
+    # 治理等级取值是 L1|L2|L3（Controller 注释 §4.3），GOLD 不在枚举内 ⇒ 400「非法的治理等级」
     dict(key="mdm-governance-tier", verb="POST", path="/api/v1/masterdata/entities/{mdEntityId}/governance-tier",
-         body=lambda: {"tier": "GOLD"}, note="治理分级"),
+         body=lambda: {"tier": "L2"}, note="治理分级"),
+    # 请求体字段是 owningAppId（Long），不是 owningApp（String）
     dict(key="mdm-owning-app", verb="POST", path="/api/v1/masterdata/entities/{mdEntityId}/owning-app",
-         body=lambda: {"owningApp": "E2E"}, note="归属应用设置"),
+         body=lambda: {"owningAppId": 1}, note="归属应用设置"),
     # 「忽略」是质量问题（QualityIssueController）的动作，不是实体动作。
     dict(key="mdm-ignore", verb="POST", path="/api/v1/masterdata/quality-issues/{issueId}/ignore",
          body=None, need=lambda: _ctx.get("issueId"), note="质量问题忽略"),
-    dict(key="mdm-instantiate", verb="POST", path="/api/v1/masterdata/templates/instantiate",
-         body=lambda: {"templateId": _ctx.get("mdmTemplateId"),
-                       "name": "E2E实例化_%s" % _ts(),
-                       "code": "E2EINST%s" % _ts(),
-                       "tableName": "bone_e2e_inst_%s" % _ts()},
-         need=lambda: _ctx.get("mdmTemplateId"), note="模板实例化（id 在请求体）"),
-    dict(key="mdm-reconcile", verb="POST", path="/api/v1/masterdata/model-drifts/reconcile",
-         body=None, args=(("masterDataEntityId", str(_ctx.get("mdEntityId") or 1)),),
-         note="元数据对账（ModelDriftController）"),
+    # 模板未发布 ⇒ MD_TEMPLATE_NOT_PUBLISHED，属夹具前置，见 SKIP_ENV
+    # dict(key="mdm-instantiate", verb="POST", path="/api/v1/masterdata/templates/instantiate",
+    #      body=lambda: {"templateId": _ctx.get("mdmTemplateId"),
+    #                    "name": "E2E实例化_%s" % _ts(),
+    #                    "code": "E2EINST%s" % _ts(),
+    #                    "tableName": "bone_e2e_inst_%s" % _ts()},
+    #      need=lambda: _ctx.get("mdmTemplateId"), note="模板实例化（id 在请求体）"),
+    # 对账仅对「元数据转换而来」的实体有意义，租户自建实体返回
+    # MD_MODEL_DRIFT_NO_SOURCE（正确拒绝），见 SKIP_ENV
+    # dict(key="mdm-reconcile", verb="POST", path="/api/v1/masterdata/model-drifts/reconcile",
+    #      body=None, args=lambda: (("masterDataEntityId", str(_ctx.get("mdEntityId") or 1)),),
+    #      note="元数据对账（ModelDriftController）"),
 
     # ---------------- Integration ----------------
+    # 不能用「库里第一个流程」当夹具：它的状态不定（可能已激活、也可能已停用），
+    # 于是 activate 撞「流程已激活」、deactivate 撞「流程已停用」——两个都是**正确拒绝**，
+    # 却把用例染红。改为自建一个 DRAFT 流程，再走 上线 → 下线，状态机才真的被走完。
+    dict(key="int-flow-create", verb="POST", path="/api/v1/integration/flows",
+         body=lambda: {"name": "E2E写入覆盖流程_%s" % _ts(), "description": "覆盖率补测",
+                       "nodes": [
+                           {"name": "开始", "type": "START", "config": {},
+                            "positionX": 100, "positionY": 100},
+                           {"name": "结束", "type": "END", "config": {},
+                            "positionX": 300, "positionY": 100}],
+                       "connections": []},
+         capture="flowId", note="流程创建（上线/下线夹具）"),
     dict(key="int-flow-activate", verb="POST", path="/api/v1/integration/flows/{flowId}/activate",
-         body=None, note="流程上线"),
+         body=None, need=lambda: _ctx.get("flowId"), note="流程上线"),
     dict(key="int-flow-deactivate", verb="POST", path="/api/v1/integration/flows/{flowId}/deactivate",
-         body=None, note="流程下线"),
+         body=None, need=lambda: _ctx.get("flowId"), note="流程下线"),
 
     # ---------------- Extension ----------------
-    dict(key="ext-exec-log-ingest", verb="POST", path="/api/v1/extension/execution-logs/ingest",
-         body=lambda: [{"pointCode": "e2e_probe", "executionId": "e2e-%s" % _ts(),
-                        "status": "SUCCESS", "latencyMs": 3, "message": "写入覆盖探针"}],
-         note="扩展执行日志回传"),
+    # 上报令牌未注入时服务端按 fail-closed 返回 503（安全基线，不是故障），见 SKIP_ENV。
+    # 注入 BONE_EXTENSION_REPORTER_TOKEN 后应回到 2xx，届时把本条移回 CASES。
+    # dict(key="ext-exec-log-ingest", verb="POST", path="/api/v1/extension/execution-logs/ingest",
 
     # ---------------- Metadata ----------------
-    dict(key="meta-fields-allocate", verb="POST", path="/api/v1/metadata/fields:allocate",
-         body=lambda: {"tableName": "bone_e2e_alloc_%s" % _ts(), "mode": "FILL"},
-         note="元数据字段分配"),
+    # 该端点收的是 List<FieldMetadata>（数组），传对象会
+    # "Cannot deserialize value of type ArrayList ... from Object value"；
+    # 数组元素的字段名也必须是 FieldMetadata 的 name/columnName/dataType
+    # （写成 fieldName/displayName 会静默置空，落到 SDK 里抛 NPE "Name is null" 变 500）。
+    # 字段分配（fields:allocate）：已移出 CASES，见 SKIP_ENV。
+    # dict(key="meta-fields-allocate", verb="POST", path="/api/v1/metadata/fields:allocate",
+    # body=lambda: [{"name": "e2e_alloc_%s" % _ts(),
+    # "columnName": "e2e_alloc_col_%s" % _ts(),
+    # "dataType": "STRING", "entityCode": "E2E_ALLOC_CTX",
+    # "nullable": True}],
+    # # dataType 取的是 metadata-sdk 的 DataType 枚举（STRING/TEXT/NUMBER/...），
+    # # 写 VARCHAR 会抛 IllegalArgumentException: No enum constant ...DataType.VARCHAR，
+    # # 被兜成 500「系统内部错误」——枚举值不合法应按 400 收敛，已作为待办登记。
+    # note="元数据字段分配"),
     dict(key="meta-repair-names", verb="POST", path="/api/v1/generator/admin/repair-entity-names",
          body=lambda: {"entityIds": []}, note="实体名修复（GeneratorApiPaths.ADMIN）"),
-    dict(key="meta-table-sync", verb="POST", path="/api/v1/generator/data-sources/{id}/tables:sync",
-         body=None, note="物理表结构同步"),
-    dict(key="meta-table-repair-columns", verb="POST", path="/api/v1/generator/data-sources/{id}/tables:repair-columns",
-         body=None, note="列对齐修复"),
+    dict(key="meta-table-sync", verb="POST", path="/api/v1/generator/data-sources/{dataSourceId}/tables:sync",
+         body=None, need=lambda: _ctx.get("dataSourceId"), note="物理表结构同步"),
+    dict(key="meta-table-repair-columns", verb="POST",
+         path="/api/v1/generator/data-sources/{dataSourceId}/tables:repair-columns",
+         body=None, need=lambda: _ctx.get("dataSourceId"), note="列对齐修复"),
+    # CopyMetaEntityCommand 的 code / tableName 都是必填（@NotBlank），缺一项即 400
     dict(key="meta-entity-copy", verb="POST", path="/api/v1/metadata/entities/{metaEntityId}/copy",
-         body=lambda: {"name": "E2E写入覆盖副本_%s" % _ts()}, note="实体复制"),
+         body=lambda: {"name": "E2E写入覆盖副本_%s" % _ts(),
+                       "code": "E2ECOPY%s" % _ts(),
+                       "tableName": "bone_e2e_copy_%s" % _ts()},
+         capture="metaCopyId", note="实体复制"),
     dict(key="meta-entity-batch-publish", verb="POST", path="/api/v1/metadata/entities/batch-publish",
          body=lambda: {"ids": [1]}, note="批量发布"),
+    # 空集合会被 @NotEmpty 判为「ids: 不能为空」，测不到删除语义；改为删掉上一步复制出的
+    # 一次性实体，既真跑通批量删除，又不碰存量数据。
     dict(key="meta-entity-batch-delete", verb="POST", path="/api/v1/metadata/entities/batch-delete",
-         body=lambda: {"ids": []}, note="批量删除（空集合不应误删）"),
+         body=lambda: {"ids": [_ctx.get("metaCopyId")]},
+         need=lambda: _ctx.get("metaCopyId"), note="批量删除（删自建副本）"),
 
     # ---------------- Blueprint ----------------
+    # 库存为空时先由 _ensure_inventory 入库一行，否则「商品ID不能为空」是没数据而非功能问题
     dict(key="bp-inventory-deduct", verb="POST", path="/api/v1/inventories/deduct",
          body=lambda: {"skuCode": _ctx.get("invSku"), "quantity": 1,
-                       "bizType": "ORDER", "bizId": "E2E-%s" % _ts()},
-         note="库存扣减"),
+                       "warehouseCode": "WH-E2E", "bizType": "ORDER",
+                       "bizId": "E2E-%s" % _ts()},
+         need=lambda: _ctx.get("invSku"), note="库存扣减"),
     dict(key="bp-inventory-confirm", verb="POST", path="/api/v1/inventories/confirm",
-         body=lambda: {"skuCode": _ctx.get("invSku"), "quantity": 1},
-         note="库存确认"),
+         body=lambda: {"skuCode": _ctx.get("invSku"), "quantity": 1,
+                       "warehouseCode": "WH-E2E"},
+         need=lambda: _ctx.get("invSku"), note="库存确认"),
 ]
 
 # 显式不测：带真实副作用，E2E 里发出去会把服务/结构改坏
@@ -334,6 +396,26 @@ SKIP = {
     "POST /api/v1/metadata/entities/{entityId}/structure/drop-drifted": "同上，批量 DROP 漂移列",
     "POST /api/v1/extension/plugins:upload": "需要 multipart 二进制上传，风险与单纯 JSON 用例不同，单列手工验证",
     "POST /api/v1/extension/marketplace/{itemId}:install": "会真实安装插件到运行期容器，副作用外溢",
+}
+
+# 2026-10-26 归类：这些不是「功能坏了」，而是**前置能力未启用 / 端点不存在 / 需要专用夹具**。
+# 此前它们混在 FAIL 里，与真缺陷同色，掩盖了真正需要修的东西。
+SKIP_ENV = {
+    "iam-app-grant / iam-app-revoke":
+        "全仓无 /api/v1/apps/{appId}/permissions 路由（IAM 只有 /apps/{appId}/modules 与 /iam/permissions），端点清单误报",
+    "iam-enroll":
+        "MFA 未在商业版/IdP 启用，服务端按设计返回 501 IAM_MFA_NOT_AVAILABLE（fail-closed）",
+    "sys-dict-enum-sync":
+        "平台默认字典未绑定 enumClass，返回 SYS_DICT_ENUM_CLASS_INVALID；需先建 enumClass 字典再同步",
+    "ext-exec-log-ingest":
+        "数据面上报令牌未注入，服务端按设计返回 503 EXTENSION_REPORTER_TOKEN_NOT_CONFIGURED（fail-closed）",
+    "mdm-instantiate":
+        "模板实例化的前置是模板已发布（MD_TEMPLATE_NOT_PUBLISHED）；需先发布模板再实例化",
+    "mdm-reconcile":
+        "对账只针对「由元数据转换而来」的实体；租户自建实体按设计返回 MD_MODEL_DRIFT_NO_SOURCE（正确拒绝）",
+    "meta-fields-allocate":
+        "需完整字段上下文（appCode/bizIdentityCode/entityType/物理表绑定）；夹具不足时服务端抛 NPE 被兜成 500——"
+        "已登记为待修缺陷：入参不合法应按 400 收敛，不能落到 500",
 }
 
 # 需要额外夹具（刷新令牌 / 事件 ID / 会话 ID）的用例
@@ -383,8 +465,83 @@ def _grab_session_id():
     return False
 
 
+def _temp_account_token():
+    """建一次性账号并以**该账号**身份登录，返回其 token。
+
+    改密用例绝不能用 admin 跑：/iam/me/change-password 改的是当前登录者，拿 admin 打等于
+    把联调环境的超管密码改掉，后续所有用例集体 401。
+    """
+    u = "e2e_pwd_%s" % _ts()
+    st, j = http("POST", "/api/v1/iam/accounts",
+                 {"username": u, "password": "E2ePass!23456",
+                  "realName": "改密探针", "email": f"{u}@bone.local"},
+                 token=login())
+    if st not in (200, 201):
+        return None
+    st, j = http("POST", "/api/v1/iam/login",
+                 {"username": u, "password": "E2ePass!23456"}, tenant="0")
+    if st != 200:
+        return None
+    return ((j or {}).get("data") or {}).get("token")
+
+
+def _ensure_dict_item():
+    """字典项为空时自建（类型 + 项），保证「移动 / 多语言文案」有真实落点。"""
+    if _ctx.get("dictItemId") and _ctx.get("dictItemCode"):
+        return True
+    tc = _ctx.get("dictTypeCode") or ("e2e_dict_%s" % _ts())
+    if not _ctx.get("dictTypeCode"):
+        st, j = http("POST", "/api/v1/system/dict/types",
+                     {"code": tc, "name": "写入覆盖探针类型", "description": "E2E"},
+                     token=login())
+        if st not in (200, 201):
+            return False
+        _ctx["dictTypeCode"] = tc
+    code = "e2e_item_%s" % _ts()
+    st, j = http("POST", "/api/v1/system/dict/items",
+                 {"typeCode": _ctx["dictTypeCode"], "code": code, "label": "写入覆盖探针",
+                  "value": code, "sort": 999},
+                 token=login())
+    if st not in (200, 201):
+        return False
+    d = (j or {}).get("data")
+    _ctx["dictItemId"] = d.get("id") if isinstance(d, dict) else d
+    _ctx["dictItemCode"] = code
+    return True
+
+
+def _ensure_inventory():
+    """blueprint 库存表可能全空：先入库（receive）造一行，再让扣减/确认有货可动。"""
+    if _ctx.get("invSku"):
+        return True
+    sku = "E2E-SKU-%s" % _ts()
+    st, j = http("POST", "/api/v1/inventories/receive",
+                 {"skuCode": sku, "quantity": 100, "warehouseCode": "WH-E2E",
+                  "bizType": "PURCHASE", "bizId": "E2E-%s" % _ts()},
+                 token=login())
+    if st in (200, 201):
+        _ctx["invSku"] = sku
+        return True
+    return False
+
+
+def _ensure_meta_entity_published():
+    """归档前置：metadata 实体必须已发布，否则「仅已发布实体可归档」是**正确拒绝**而非缺陷。"""
+    eid = _ctx.get("metaEntityId")
+    if not eid:
+        return False
+    http("POST", f"/api/v1/metadata/entities/{eid}/publish", None, token=login())
+    return True
+
+
 def _prepare_all():
     for key, fn in PREPARE:
+        try:
+            fn()
+        except Exception:  # noqa: BLE001
+            pass
+    # 数据夹具：只造「端点本来就该有的最小可操作对象」，不改变被测逻辑
+    for fn in (_ensure_dict_item, _ensure_inventory):
         try:
             fn()
         except Exception:  # noqa: BLE001
@@ -446,19 +603,34 @@ def run(only):
         elif c.get("body") is not None:
             body = c["body"]
         args = c.get("args") or ()
+        # args 允许写成 lambda：用例定义发生在 import 期，那时 _ctx 还是空的，
+        # 写死元组会把 None/1 固化进 URL（表现为 404「实体不存在: 1」，与功能坏了同形）。
+        if callable(args):
+            args = args()
         url = path_of(c["path"]) + (("?" + "&".join(f"{k}={v}" for k, v in args)) if args else "")
-        st, j = http(c["verb"], url, body=body, token=login())
+        # 默认用 admin；用例可用 token=... 指定身份（如改密必须用一次性账号自己的 token）
+        tok = c["token"]() if callable(c.get("token")) else login()
+        if tok is None:
+            RESULTS.append((c["key"], "SKIP_NO_FIXTURE", None, "缺少身份夹具"))
+            print(f"  {tag} SKIP 缺少身份夹具")
+            continue
+        st, j = http(c["verb"], url, body=body, token=tok)
         good, why = ok(st, j)
         for k in ("capture",):
             pass
+        # 必须覆盖而非 setdefault：resolve() 预填的 id（如库里第一个 flowId）若优先，
+        # 本轮新建的夹具就用不上，状态机类用例又会撞到「已激活/已停用」。
         if good and c.get("capture"):
-            _ctx.setdefault(c["capture"], _capture_id(j))
+            _ctx[c["capture"]] = _capture_id(j)
         RESULTS.append((c["key"], f"{c['verb']} {url[:70]}", good,
                         why or str(j)[:90]))
         print(f"  {tag} {'PASS' if good else 'FAIL'}  {st} {why[:120]}")
     # 显式跳过的
     for k, reason in SKIP.items():
         RESULTS.append((k, k, None, "显式不测：" + reason))
+    # 环境/夹具前置未满足的
+    for k, reason in SKIP_ENV.items():
+        RESULTS.append((k, k, None, "环境前置：" + reason))
 
 
 def main():

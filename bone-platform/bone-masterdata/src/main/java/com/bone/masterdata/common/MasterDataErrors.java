@@ -56,6 +56,7 @@ public final class MasterDataErrors {
           // 数据质量规则（400）
           Map.entry(MasterDataErrorCodes.RULE_SEVERITY_INVALID, 400),
           Map.entry(MasterDataErrorCodes.RULE_EXPRESSION_INVALID, 400),
+          Map.entry(MasterDataErrorCodes.RULE_TYPE_INVALID, 400),
           // 记录数据解析（500）
           Map.entry(MasterDataErrorCodes.RECORD_DATA_PARSE_FAILED, 500),
           // 记录写入时字段定义校验（400）

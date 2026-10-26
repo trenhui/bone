@@ -36,7 +36,9 @@ export const unmount = async (): Promise<void> => {
   }
 };
 
-export const update = async (props: QiankunMountProps): Promise<void> => {};
+// qiankun 要求导出 update 钩子（props 签名须保留），本应用无增量更新逻辑故为空实现；
+// 未使用参数必须以 _ 开头，否则 noUnusedParameters 下 `npm run typecheck` 直接报错。
+export const update = async (_props: QiankunMountProps): Promise<void> => {};
 
 // 独立运行时
 if (!window.__POWERED_BY_QIANKUN__) {

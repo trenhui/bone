@@ -371,6 +371,45 @@ def c1(tok, sub_tok=None, app_tok=None):
 
 
 # ============================ C2 主数据治理 ============================
+def ensure_reference_set(tok, set_code, set_name, values):
+    """幂等准备一个已发布值域（含给定值编码），返回值域 id；失败返回 None。
+
+    值域为平台目录（仅平台管理员可写），编码重复会 400；故先查后建。
+    """
+    st, j = http("GET", "/api/v1/masterdata/reference-sets", token=tok)
+    rows = data(j) or []
+    set_id = None
+    for s in rows if isinstance(rows, list) else []:
+        if (s.get("setCode") or "").upper() == set_code.upper():
+            set_id = s.get("id")
+            break
+    if set_id is None:
+        st, j = http("POST", "/api/v1/masterdata/reference-sets",
+                     {"setCode": set_code, "setName": set_name}, token=tok)
+        d = data(j)
+        set_id = d.get("id") if isinstance(d, dict) else d
+    if set_id is None:
+        return None
+    st, j = http("GET", f"/api/v1/masterdata/reference-sets/{set_id}/values", token=tok)
+    rows = data(j) or []
+    have = {(v.get("valueCode") or "") for v in rows if isinstance(v, dict)}
+    for v in values:
+        if v not in have:
+            http("POST", f"/api/v1/masterdata/reference-sets/{set_id}/values",
+                 {"valueCode": v, "valueName": v}, token=tok)
+    return set_id
+
+
+def create_entity(tok, name, description=""):
+    """创建一个主数据实体，返回 id；失败返回 None。"""
+    st, j = http("POST", "/api/v1/masterdata/entities",
+                 {"name": name, "description": description}, token=tok)
+    d = data(j)
+    if isinstance(d, dict):
+        return d.get("id")
+    return d if st in (200, 201) else None
+
+
 def c2(tok, sub_tok, app_tok):
     hdr("C2 · 主数据 SoD 治理：双账号分离 + 版本 + 参照域")
     ts = int(time.time())
@@ -412,11 +451,31 @@ def c2(tok, sub_tok, app_tok):
         http("POST", f"/api/v1/masterdata/records/{rid2}/submit", None, token=tok)
         st, j3 = http("POST", f"/api/v1/masterdata/records/{rid2}/approve", None, token=tok)
         check_err("C2", "同一人自审被拒(403+MD_SOD_VIOLATION)", st, j3, 403, "MD_SOD_VIOLATION")
-    # 参照域负向：非法 level_code 必须被拒，且业务码稳定
-    st, j = http("POST", f"/api/v1/masterdata/records/entity/{MD_CUSTOMER}",
-                  customer_data(code, "非法等级", level="NOT_A_LEVEL"), token=tok)
-    check_err("C2", "非法 level_code 被参照域拦截(400+FIELD_VALIDATION_FAILED)", st, j, 400,
-              "MD_RECORD_FIELD_VALIDATION_FAILED")
+    # 参照域负向：非法枚举值必须被拒，且业务码稳定。
+    #
+    # 2026-10-26 修（用例自足化）：原写法直接拿「库里首个名字含『客户』的实体」测 level_code。
+    # 该实体是历史联调残留（只有 contact 一个字段，也没有任何值域绑定），而
+    # validateAgainstFieldDefinitions 在「实体未建模字段」时按设计直接放行 ⇒
+    # 断言恒红，且**掩盖了参照域是否真生效**这一真问题（换任何值都是 200）。
+    # 参照域绑定约定：值域 set_code 与字段 code 同名（大写归一）即生效，故这里自建夹具：
+    # 值域 CUST_LEVEL（create 即 PUBLISHED）+ 字段 cust_level，正向/负向各打一次。
+    set_id = ensure_reference_set(tok, "CUST_LEVEL", "客户等级值域（C2 夹具）",
+                                  ["ENTERPRISE", "INDIVIDUAL"])
+    ent_id = create_entity(tok, f"联调等级校验实体{ts}", "C2 参照域夹具")
+    check("C2", "参照域夹具就绪（值域 CUST_LEVEL + 实体）", True, bool(set_id and ent_id),
+          f"set_id={set_id} ent_id={ent_id}")
+    if ent_id:
+        st, j = http("POST", f"/api/v1/masterdata/entities/{ent_id}/fields",
+                     {"name": "客户等级", "code": "cust_level", "type": "STRING",
+                      "required": False}, token=tok)
+        check("C2", "夹具字段 cust_level 建模", (200, 201), st, str(j)[:160])
+        st, j_ok = http("POST", f"/api/v1/masterdata/records/entity/{ent_id}",
+                        {"data": {"cust_level": "ENTERPRISE"}}, token=tok)
+        check("C2", "合法枚举值放行(2xx)", (200, 201), st, str(j_ok)[:160])
+        st, j = http("POST", f"/api/v1/masterdata/records/entity/{ent_id}",
+                     {"data": {"cust_level": "NOT_A_LEVEL"}}, token=tok)
+        check_err("C2", "非法枚举值被参照域拦截(400+FIELD_VALIDATION_FAILED)", st, j, 400,
+                  "MD_RECORD_FIELD_VALIDATION_FAILED")
     return {"recordId": rid, "code": code}
 
 

@@ -36,6 +36,9 @@ public final class MasterDataErrorCodes {
   public static final String RULE_SEVERITY_INVALID = "MD_RULE_SEVERITY_INVALID";
   public static final String RULE_EXPRESSION_INVALID = "MD_RULE_EXPRESSION_INVALID";
 
+  /** 规则类型缺失/非法（400）。2026-10-26 联调补：见 QualityApplicationService#updateRule 说明。 */
+  public static final String RULE_TYPE_INVALID = "MD_RULE_TYPE_INVALID";
+
   // 记录数据解析（500）
   public static final String RECORD_DATA_PARSE_FAILED = "MD_RECORD_DATA_PARSE_FAILED";
 

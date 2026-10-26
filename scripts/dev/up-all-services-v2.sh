@@ -72,11 +72,11 @@ up_mvn() { # module name port
   wait_up "$3" "$2"
 }
 
-up_jar() { # jar name port heap
+up_jar() { # jar name port heap [extra spring args...]
   if lsof -nP -iTCP:"$3" -sTCP:LISTEN -t >/dev/null 2>&1; then echo "  · $2 (:$3) 已在运行"; return 0; fi
   echo "  [start] $2 → :$3 (java -jar)"
   ( cd "$ROOT" && nohup "$JAVA" -Xms96m -Xmx"${4:-448}m" -XX:TieredStopAtLevel=1 -XX:MaxMetaspaceSize=192m \
-      -jar "$ROOT/$1" --server.port="$3" \
+      -jar "$ROOT/$1" --server.port="$3" "${@:5}" \
       --spring.cloud.nacos.discovery.enabled=false --spring.cloud.nacos.config.enabled=false \
       > "$LOG/$2.log" 2>&1 < /dev/null & ) 2>/dev/null
   wait_up "$3" "$2"
@@ -117,9 +117,19 @@ echo "=== 阶段4：无 Nacos（jar 即可）==="
 up_jar bone-blueprint/target/bone-blueprint-1.0.0.jar blueprint 8082 448
 up_jar bone-engine/bone-metadata-server/target/bone-metadata-server-1.0.0-SNAPSHOT-exec.jar metadata 9001 512
 up_jar bone-engine/studio-generator/target/bone-studio-generator-1.0.0.jar generator 8086 448
-up_jar bone-engine/bone-extension-engine/bone-extension-studio/target/bone-extension-studio-1.0.0.jar extension 8088 512
+# extension-studio：基配置 datasource 是 H2 内存库，dev profile 又把持久化切到 metadata 模式，
+# 两者叠加会去查一张空的 H2 库 ⇒ `Table "EXTS_EXTENSION_POINT" not found` 启动即退出。
+# 真联调须叠加 metadata-mysql profile（读 .env 的 BONE_DB_*，表由 bone-init.sql 提供）。
+# 另注：数据面上报共享密钥未注入时会打一条 ERROR 并按「失败关闭」拒绝上报（设计行为，非故障）。
+up_jar bone-engine/bone-extension-engine/bone-extension-studio/target/bone-extension-studio-1.0.0.jar extension 8088 512 \
+  --spring.profiles.active=dev,metadata-mysql
 up_jar bone-apps/synap-claim/target/synap-claim-1.0.0.jar claim 8087 512
-up_jar bone-ai/bone-ai-server/target/bone-ai-server-1.0.0-SNAPSHOT.jar ai-server 8091 512
+# ai-server：application.yaml 读的是 DB_URL/DB_USERNAME/DB_PASSWORD（不是 .env 的 BONE_DB_*），
+# 直接 java -jar 会因密码为空、驱动类判定失败而 APPLICATION FAILED TO START，故显式下发数据源三件套。
+up_jar bone-ai/bone-ai-server/target/bone-ai-server-1.0.0-SNAPSHOT.jar ai-server 8091 512 \
+  --spring.datasource.url="${BONE_DB_URL}" \
+  --spring.datasource.username="${BONE_DB_USERNAME}" \
+  --spring.datasource.password="${BONE_DB_PASSWORD}"
 
 echo "=== 终态 ==="
 rc=0
