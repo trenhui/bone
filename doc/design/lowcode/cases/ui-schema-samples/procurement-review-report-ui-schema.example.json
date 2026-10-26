@@ -95,5 +95,6 @@
     { "actionCode": "batchAccept", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVIEWING" }, "confirm": { "title": "批量采纳确认", "content": "全量采纳将一次性确认所有待确认条目，可撤销" }, "sortOrder": 4 },
     { "actionCode": "submitReReview", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "REVISING" }, "maxRounds": 3, "sortOrder": 5 }
   ],
-  "footer": { "disclaimer": "风险条目均附原文引用与法规依据版本快照；锚点随快照版本锁定", "aiBadge": true }
+  "footer": { "disclaimer": "风险条目均附原文引用与法规依据版本快照；锚点随快照版本锁定",
+    "disclaimerKey": "footer.disclaimer", "aiBadge": true }
 }

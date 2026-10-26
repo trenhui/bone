@@ -98,5 +98,6 @@
     { "actionCode": "lose", "visibleWhen": { "fieldCode": "stage", "operator": "eq", "value": "NEGOTIATION" }, "reasonTypes": ["价格失利", "需求变更", "竞对截胡", "项目取消", "其他"], "sortOrder": 5 },
     { "actionCode": "claimFromPool", "visibleWhen": { "fieldCode": "pool", "operator": "eq", "value": "public" }, "sortOrder": 6 }
   ],
-  "footer": { "disclaimer": "公海领取受领取上限与保护期约束，以行策略为准" }
+  "footer": { "disclaimer": "公海领取受领取上限与保护期约束，以行策略为准",
+    "disclaimerKey": "footer.disclaimer" }
 }

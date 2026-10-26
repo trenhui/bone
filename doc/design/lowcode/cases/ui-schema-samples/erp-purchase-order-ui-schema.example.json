@@ -95,5 +95,6 @@
     { "actionCode": "approve", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "PENDING" }, "sortOrder": 2 },
     { "actionCode": "post", "visibleWhen": { "fieldCode": "status", "operator": "eq", "value": "APPROVED" }, "confirm": { "title": "确认过账", "content": "过账不可逆，将锁定本单并生成凭证，请确认期间正确" }, "sortOrder": 3 }
   ],
-  "footer": { "disclaimer": "过账后不可修改，错账以红字冲销；外币按汇率折算，本位币精度 2 位" }
+  "footer": { "disclaimer": "过账后不可修改，错账以红字冲销；外币按汇率折算，本位币精度 2 位",
+    "disclaimerKey": "footer.disclaimer" }
 }

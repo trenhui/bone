@@ -421,7 +421,6 @@
                 {
                   "fieldCode": "payable_amount",
                   "controlKind": "COMPUTED",
-                  "virtual": true,
                   "props": {
                     "computedFn": "payableAmount",
                     "computedFrom": [

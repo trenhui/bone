@@ -20,7 +20,32 @@ import urllib.error
 import urllib.request
 
 BASE = "http://127.0.0.1:9001/api/v1"
-TOKEN = open("/tmp/bone_token.txt").read().strip()
+
+
+def _load_token():
+    """取 JWT：优先复用 /tmp/bone_token.txt（历史联调约定），缺失时自登录获取。
+
+    2026-10-26 修复：此前无条件 open，缺文件直接 FileNotFoundError 崩在模块导入期——
+    脚本必须能独立运行，不能依赖某个遗留进程写过该文件。
+    """
+    try:
+        tok = open("/tmp/bone_token.txt").read().strip()
+        if tok:
+            return tok
+    except OSError:
+        pass
+    req = urllib.request.Request(
+        # 登录必须走 IAM（:8081）：BASE 是 metadata 直连（:9001），不承载 /api/v1/iam/**（404）
+        "http://127.0.0.1:8081/api/v1/iam/login",
+        data=json.dumps({"username": "admin", "password": "123456"}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read().decode())["data"]["token"]
+
+
+TOKEN = _load_token()
 HDR = {
     "Authorization": "Bearer " + TOKEN,
     "X-Tenant-Id": "0",
@@ -90,6 +115,29 @@ def create_entity(name, code, table, row_policies=None, fields=(), delivery=1):
         eid = find_entity_id_by_code(code)
         print(f"    [复用] 实体 {code} 已存在 id={eid}")
         assert eid, f"实体 {code} 冲突且无法定位"
+        # 物理表纠偏（2026-10-26 全模块联调）：历史实体可能绑着别人的物理表 —— 典型是 claim_item
+        # 绑到了 bone-init.sql（DDL 真源）里 synap-claim 模块的 t_claim_item：该表列是
+        # item_name/quantity/unit_price…，明细模型却是 name/amount/sort_order ⇒ 子表写入撞列
+        # 静默失败、明细恒空，submit 永远被 SUB-CONS-01（发票≠清单合计）拦住。表名不一致时先
+        # 回草稿改 tableName（revert-draft 不删旧物理表），随后的 publish 按新表名建表对齐。
+        s0, d0, _ = call("GET", f"/metadata/entities/{eid}")
+        cur_table = ((d0 or {}).get("data") or {}).get("tableName")
+        if cur_table and cur_table != table:
+            s1, d1, _ = call("POST", f"/metadata/entities/{eid}/revert-draft")
+            assert s1 in (200, 204), f"revert-draft {s1} {str(d1)[:200]}"
+            up = {
+                "name": name,
+                "code": code,
+                "displayName": name,
+                "tableName": table,
+                "deliveryMode": delivery,
+                "description": body["description"],
+            }
+            if row_policies:
+                up["rowPolicies"] = body["rowPolicies"]
+            s2, d2, _ = call("PUT", f"/metadata/entities/{eid}", up)
+            assert s2 in (200, 204), f"rebind tableName {s2} {str(d2)[:200]}"
+            print(f"    [纠偏] {code} 物理表 {cur_table} → {table}")
         for f in fields:
             ensure_field(eid, f)
         return eid
@@ -400,6 +448,7 @@ clm_fields = [
     {"code": "cap_reached", "label": "已达封顶"},
     {"code": "coverage_clear", "label": "责任明确"},
     {"code": "second_reviewer", "label": "第二复核人", "type": "LONG"},
+    {"code": "reviewer_id", "label": "核赔人", "type": "LONG"},
     {"code": "reject_reasons", "label": "拒赔理由", "type": "TEXT"},
     {"code": "evidences", "label": "材料证据", "type": "ATTACHMENT"},
     {"code": "fraud_flags", "label": "风险标记", "type": "STRING"},
@@ -420,7 +469,9 @@ clm_policy = {
 }
 
 clm_id = create_entity("理赔案件", CLM, f"t_{CLM}", clm_policy, clm_fields)
-clm_item_id = create_entity("理赔明细", CLM_ITEM, f"t_{CLM_ITEM}", None, clm_item_fields)
+# 明细实体物理表用样例后缀隔离：t_claim_item 是 bone-init.sql（DDL 真源）里 synap-claim 模块的产品表，
+# 样例绝不能再绑它（列名不同 → 子表写入静默失败）。实体 code 仍为 claim_item（样例 props.childEntity 引用此名）。
+clm_item_id = create_entity("理赔明细", CLM_ITEM, f"t_claim_item_e2e_{SUFFIX}", None, clm_item_fields)
 print(f"  实体: 理赔={clm_id} 明细={clm_item_id}")
 
 add_child_table_field(clm_id, "items", CLM_ITEM, "claim_id")
