@@ -3,6 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    // 必须显式关掉：根 tsconfig(.base) 与 packages/tsconfig.package.json 都设了 noEmit:true，
+    // 继承下来后本包 `tsc` 只做类型检查、不产出 dist ⇒ package.json 声明的
+    // types/main/module 三个入口全部落空，消费方 tsc 报「找不到模块 @bone/core-event-bus」。
+    "noEmit": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
