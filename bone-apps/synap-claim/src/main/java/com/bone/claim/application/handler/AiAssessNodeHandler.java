@@ -48,16 +48,19 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
   public DecisionNodeOutcome execute(DecisionNodeContext context) {
     ClaimContextPort.ClaimContextView v = claimContextPort.getContext(context.claimId());
     KnowledgeRetrievalPort.KnowledgeResult k = knowledgeRetrievalPort.match(v);
+    // 临床合理性闸：仅当能力真实可用且确认合理，knowledgeConfirmed 才为真；
+    // 能力未集成（available=false）即"无法判定"，由消费方 fail-closed 转人工（与反欺诈闸同原则）。
+    boolean knowledgeConfirmed = k.available() && k.clinicallyReasonable();
 
     boolean rejectSuggested;
     BigDecimal confidence;
     try {
       AiGatewayPort.AiAssessment a = aiGatewayPort.assess(v);
-      rejectSuggested = a.rejectSuggested() || !k.clinicallyReasonable();
+      rejectSuggested = a.rejectSuggested() || !knowledgeConfirmed;
       confidence = a.confidence();
     } catch (AiGatewayUnavailableException ex) {
       // 执行器据此节点类型为 LLM → 记 FALLBACK，confidence 回退 ruleConfidence
-      rejectSuggested = !k.clinicallyReasonable();
+      rejectSuggested = !knowledgeConfirmed;
       Map<String, Object> out = new LinkedHashMap<>();
       out.put("rejectSuggested", rejectSuggested);
       if (rejectSuggested) {

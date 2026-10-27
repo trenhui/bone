@@ -14,6 +14,7 @@ import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.GraphFraudPort;
+import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.application.port.out.VisualForensicsPort;
 import com.bone.claim.domain.model.claim.ClaimCase;
@@ -102,6 +103,7 @@ class DecisionGraphFunctionalTest {
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
                 enabledAi(),
+                availableKnowledge(),
                 fraudAvailableVisual(),
                 fraudAvailableGraph())
             .execute(CLAIM_ID, versions());
@@ -141,6 +143,7 @@ class DecisionGraphFunctionalTest {
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
                 ai,
+                availableKnowledge(),
                 fraudAvailableVisual(),
                 fraudAvailableGraph())
             .execute(CLAIM_ID, versions());
@@ -161,6 +164,7 @@ class DecisionGraphFunctionalTest {
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
                 enabledAi(),
+                availableKnowledge(),
                 fraudAvailableVisual(),
                 graph)
             .execute(CLAIM_ID, versions());
@@ -190,43 +194,109 @@ class DecisionGraphFunctionalTest {
   @Test
   @DisplayName("反欺诈能力缺失（本地桩）→ 即便干净也 MANUAL_REQUIRED（fail-closed，杜绝静默放行）")
   void fraudCapabilityMissingEscalatesToManual() {
-    // executor(ctxPort, ai) 使用 LocalVisualForensicsPortAdapter /
-    // LocalGraphFraudPortAdapter（available=false）
+    // 注入"知识能力可用"以隔离变量：本场景的 MANUAL_REQUIRED 纯粹来自反欺诈闸缺失
     DecisionGraphExecutor.DecisionExecutionResult result =
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
-                enabledAi())
+                enabledAi(),
+                availableKnowledge())
             .execute(CLAIM_ID, versions());
 
     assertThat(result.decisionResult()).isEqualTo("MANUAL_REQUIRED");
   }
 
-  // ===================== 装配 =====================
+  /**
+   * 场景 G（fail-closed 加固证伪）：知识检索能力未集成（本地桩 {@code available=false}），即便反欺诈能力可用且案件干净，
+   * 也<b>不得</b>自动通过——临床合理性无法判定即 fail-closed 转人工（SUGGEST_REJECT）。
+   *
+   * <p>与此前"本地桩恒返回 clinicallyReasonable=true 让临床合理性闸形同虚设"假绿缺陷同型； 删除 {@code AiAssessNodeHandler} 中
+   * {@code knowledgeConfirmed} 的 fail-closed 判定，本场景将变回 AUTO_APPROVE，证明护栏生效。
+   */
+  @Test
+  @DisplayName("知识检索能力缺失（本地桩）→ 即便干净也 SUGGEST_REJECT（fail-closed，杜绝静默放行临床合理性）")
+  void knowledgeCapabilityMissingEscalatesToManual() {
+    // 反欺诈能力可用 + 本地知识桩（available=false）：隔离"知识缺失"单变量
+    DecisionGraphExecutor.DecisionExecutionResult result =
+        executor(
+                ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
+                enabledAi(),
+                new LocalKnowledgeRetrievalPortAdapter(),
+                fraudAvailableVisual(),
+                fraudAvailableGraph())
+            .execute(CLAIM_ID, versions());
 
-  /** 默认装配：反欺诈用本地桩（available=false），即"E1/E2 未集成"的真实运行时态。 */
-  private DecisionGraphExecutor executor(ClaimContextPort ctxPort, AiGatewayPort ai) {
-    return executor(
-        ctxPort, ai, new LocalVisualForensicsPortAdapter(), new LocalGraphFraudPortAdapter());
+    assertThat(result.decisionResult()).isEqualTo("SUGGEST_REJECT");
   }
 
+  /** 场景 H：知识检索已接入且判定临床不合理 → 系统建议拒赔（SUGGEST_REJECT，转人工）。 */
+  @Test
+  @DisplayName("知识检索判定临床不合理（能力可用）→ SUGGEST_REJECT")
+  void knowledgeClinicallyUnreasonable() {
+    KnowledgeRetrievalPort knowledge =
+        claimId ->
+            new KnowledgeRetrievalPort.KnowledgeResult(
+                false, BigDecimal.ZERO, "E3-unreasonable", true);
+
+    DecisionGraphExecutor.DecisionExecutionResult result =
+        executor(
+                ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
+                enabledAi(),
+                knowledge,
+                fraudAvailableVisual(),
+                fraudAvailableGraph())
+            .execute(CLAIM_ID, versions());
+
+    assertThat(result.decisionResult()).isEqualTo("SUGGEST_REJECT");
+  }
+
+  // ===================== 装配 =====================
+
+  /**
+   * 默认装配：知识检索 + 反欺诈均用本地桩（available=false），即"E3/E1/E2 未集成"的真实运行时态。 此时干净案件亦 fail-closed 转人工（见场景
+   * F/G），证明无能力即不自动决策。
+   */
+  private DecisionGraphExecutor executor(ClaimContextPort ctxPort, AiGatewayPort ai) {
+    return executor(
+        ctxPort,
+        ai,
+        new LocalKnowledgeRetrievalPortAdapter(),
+        new LocalVisualForensicsPortAdapter(),
+        new LocalGraphFraudPortAdapter());
+  }
+
+  /** 仅覆盖知识适配器（反欺诈仍本地桩），用于隔离"知识能力"单变量（场景 F）。 */
+  private DecisionGraphExecutor executor(
+      ClaimContextPort ctxPort, AiGatewayPort ai, KnowledgeRetrievalPort knowledge) {
+    return executor(
+        ctxPort,
+        ai,
+        knowledge,
+        new LocalVisualForensicsPortAdapter(),
+        new LocalGraphFraudPortAdapter());
+  }
+
+  /** 显式装配：可注入"能力已接入"的知识/反欺诈适配器，隔离单变量验证闸逻辑。 */
   private DecisionGraphExecutor executor(
       ClaimContextPort ctxPort,
       AiGatewayPort ai,
+      KnowledgeRetrievalPort knowledge,
       VisualForensicsPort visual,
       GraphFraudPort graph) {
     List<DecisionNodeHandler> handlers =
         List.of(
             new EvidenceLoadNodeHandler(ctxPort),
             new RuleCheckNodeHandler(ctxPort, new LocalRuleEnginePortAdapter(), visual, graph),
-            new AiAssessNodeHandler(
-                ctxPort,
-                ai,
-                new LocalKnowledgeRetrievalPortAdapter(),
-                new LocalNotificationPortAdapter()),
+            new AiAssessNodeHandler(ctxPort, ai, knowledge, new LocalNotificationPortAdapter()),
             new AdjustNodeHandler(ctxPort, new LocalRuleEnginePortAdapter()),
             new ArbitrateNodeHandler());
     TenantPort tenantPort = () -> TENANT_ID;
     return new DecisionGraphExecutor(execSvc, claimSvc, tenantPort, handlers);
+  }
+
+  /** 知识检索能力已接入（E3 GraphRAG）：临床合理、能力已执行。 */
+  private static KnowledgeRetrievalPort availableKnowledge() {
+    return claimId ->
+        new KnowledgeRetrievalPort.KnowledgeResult(true, BigDecimal.ZERO, "integrated-E3", true);
   }
 
   /** 反欺诈能力已接入（E1 视觉）：未篡改、能力已执行。 */
