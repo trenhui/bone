@@ -60,6 +60,16 @@ public class DecisionGraphExecutor {
                     DecisionNodeHandler::nodeName, h -> h, (a, b) -> a, LinkedHashMap::new));
   }
 
+  /**
+   * 诊断用访问器：返回已装配的决策节点处理器（键=节点名）。
+   *
+   * <p>供装配冒烟测试断言「Spring 真的把 N 个 handler 收进执行器」，以及运行时健康自检 （历史上曾因零实现导致 map 为空、决策图永远 {@code
+   * MANUAL_REQUIRED} 的假绿）。
+   */
+  public Map<String, DecisionNodeHandler> handlers() {
+    return handlers;
+  }
+
   /** 版本快照（复算与回放的前提）。 */
   public record DecisionVersions(
       String graphVersion,
