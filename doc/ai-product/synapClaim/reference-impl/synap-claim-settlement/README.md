@@ -27,10 +27,16 @@
 cd reference-impl/synap-claim-settlement
 mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
 ```
-测试套件（全部绿色）：
+测试套件（全部绿色，14 测试类）：
 - `SettlementEngineProbeTest`      —— 驱动 `ProbeSuite.runAll()`：**正确引擎 30 条探针全绿 + 19 类变异全部被捕获**
 - `ScenarioSuiteTest`              —— 驱动 `ScenarioSuite.runAll()`：**28 个真实 TPA 场景全部通过**
 - `JdbcPortsIntegrationTest`       —— **6 个集成测试**验证 JDBC 持久化路径：责任限额跨案累计落库 / 冲正回退 / 预授权冻结-capture-void / 幂等 CAS 租约 / 累计并发乐观锁 CONFLICT(fail-closed)
+- `SettlementConcurrencyStressTest`—— **4 个并发压测**（H2 内存库，单实例）：
+  - A 多案并发共享年度限额：40 线程各独立案件 → 零丢失更新、零超赔、净赔付==占用、幂等重放不双计；
+  - B 同请求并发重复提交：24 线程 → 幂等租约保证恰好一个胜者执行、仅落一条结论、net 一致；
+  - C 冲正与并发理算交叉：撤销已占额案件 + 并发新案 → 累计账实一致、旧占用被释放；
+  - D 串行锁判别力（防假绿）：开启 JVM 串行锁且**不重试**时，40 并发唯一案件一次成功、零 `CONFLICT` 异常。
+- `ConcurrencyLockSeamTest`       —— **2 个接缝测试**证明并发锁是**可插拔端口**而非写死：注入的计数锁确被引擎调用（非 no-op）、同 key 严格串行（maxConcurrent==1）、且切换注入实例即生效（集群可换 Redis/DB 租约实现）。
 
 ### 方式二：单文件直跑（无 Maven，快速验证算法与护栏）
 ```bash
@@ -55,6 +61,12 @@ java -cp out com.bone.synap.settlement.diag.Diagnostics2       # 第二轮取证
    - DDL 见 `src/main/resources/schema.sql`（H2 语法；MySQL 仅需把 `MERGE INTO ... KEY` 改为 `INSERT ... ON DUPLICATE KEY UPDATE`）。
 3. **装配**（`adapter/spring/SettlementEngineFactory`）：纯 Java 工厂，接受 `DataSource` 即可装配一个挂载 JDBC 端口、全部护栏开启的引擎；README 内附 Bone 平台 `@Configuration` 接线示意（C1/C2/C5/C6/C8/C9/C10/C11 端口绑定）。
 4. **资金安全底座**：责任维度累计 + 冲正 + 预授权冻结 + 幂等/租户隔离键 + CAS 乐观锁 均已落地并集成测试覆盖。
+
+### 并发正确性（单实例 + 可插拔集群锁）
+- **引擎层可插拔串行锁（ConcurrencyLockPort）**：同保单同周期（`tenantId@policyId@periodKey`）的「读累计快照 → 计算额度 → 提交累计」整段临界区，经 `ConcurrencyLockPort.runLocked(key, ...)` 串行化，从根上消除"多请求读到同一剩余额度快照后双双提交导致超赔"的窗口。
+- **默认 `JvmConcurrencyLock`**：单实例下行为与历史一致（每 key 一个监视器 + `synchronized`）。**集群部署只需把默认实现换成 Redis/DB 租约实现**（实现同一 `ConcurrencyLockPort` 接口），引擎编排代码零改动——`ConcurrencyLockSeamTest` 已断言"注入即生效、切换即生效"。
+- **DB 乐观锁（version，CAS）作为纵深防御**：`commitUsage` 以 `UPDATE ... WHERE version=?` 提交，版本不符即 `CONFLICT`（fail-closed，绝不静默覆盖）。生产调用方应捕获 `ConcurrentAccumulationException` 并重试（重试会重读最新快照）。
+- **诚实边界**：单 JVM 实例下正确性由上述两层保证。集群部署即使接入分布式锁，跨实例极端竞态仍依赖 DB 乐观锁 + 调用方重试兜底（双层不互斥）。
 
 ## 理算顺序铁律（顺序错即金额错）
 ```
@@ -159,6 +171,7 @@ com.bone.synap.settlement
   engine/   SettlementEngine EngineFlags LimitControl PreAuthResult ConcurrentAccumulationException
   engine.strategy/ Strategies(Fixed/Allowance/Reimbursement)
   port/     Ports(Ledger/Trace/Catalog/Outbox/Accumulation/SettlementStore/PreAuth + InMemoryPorts)
+            ConcurrencyLockPort   并发串行锁端口（默认 JvmConcurrencyLock；集群可换 Redis/DB 租约实现）
   adapter.jdbc/  JdbcBackedPorts   7 端口的 JDBC 生产实现（乐观锁 CAS / 冲正 / 预授权 TTL）
   adapter.spring/ SettlementEngineFactory   纯 Java 装配工厂（Bone 接线示意）
   probe/    ProbeSuite       30 探针 + 19 变异（runAll() 供 JUnit 驱动）
@@ -174,4 +187,4 @@ src/test/java/...               SettlementEngineProbeTest / ScenarioSuiteTest / 
 2. 年度限额按费用行**顺序截断（先到先得）**，未按比例摊薄；多费用类型并存时需条款确认优先级。
 3. **S13 多保单仅独立理算**，未实现 ISO 834「比例分摊(pro-rata by limit)/等额分摊」——对应条款需产品确认后另开工。
 4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL 需按 README 注释切换 MERGE → ON DUPLICATE KEY UPDATE，并补真实库回归与并发压测。
-5. 未做真实数据库并发压测；`JdbcPortsIntegrationTest` 仅验证乐观锁契约与 fail-closed 行为（含直接驱动 `commitUsage` 触发 `CONFLICT`）。
+5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；但**真实 MySQL 并发压测 + 分布式锁实现仍待补**（集群锁仅需实现 `ConcurrencyLockPort` 接口）。

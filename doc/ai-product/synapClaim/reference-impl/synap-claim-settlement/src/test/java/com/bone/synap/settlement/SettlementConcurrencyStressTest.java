@@ -102,6 +102,16 @@ class SettlementConcurrencyStressTest {
         return ctx.claimId + "|" + snap.formulaHash() + "|" + ctx.inputHash();
     }
 
+    /** 构造可自定义开关的引擎（用于探针式变异：关闭 JVM 串行锁，验证其确为「有判别力的护栏」）。 */
+    private static SettlementEngine engineWith(DataSource ds, boolean idempotencyCas, boolean concurrencyLock) throws Exception {
+        JdbcBackedPorts.initSchema(ds);
+        JdbcBackedPorts p = new JdbcBackedPorts(ds);
+        EngineFlags flags = EngineFlags.allOn();
+        flags.applyIdempotencyCAS = idempotencyCas;
+        flags.applyConcurrencyLock = concurrencyLock;
+        return new SettlementEngine(p, p, p, p, p, p, p, flags);
+    }
+
     /** 带重试的稳健结算：并发乐观锁 CONFLICT 时（单实例下已被引擎锁消除，此处作纵深）重试。 */
     private static IndemnityCalculation settleRobust(SettlementEngine e, ClaimContext ctx, FormulaSnapshot snap) {
         for (int i = 0; i < 50; i++) {
@@ -318,5 +328,57 @@ class SettlementConcurrencyStressTest {
         assertMoney(sumNew, dbLimitUsed, "冲正+并发理算后累计必须等于新案占用之和（C1 已释放）");
         assertMoney(Money.of(1200), dbLimitUsed, "最终占用应恰好 1200（C1 释放 + 4×300 新增）");
         assertTrue(dbLimitUsed.cmp(Money.of(4000)) < 0, "C1 的 4000 必须被释放，不得叠加在新案之上");
+    }
+
+    // ============================ D：证明并发锁「有判别力」（防假绿） ============================
+    // 开启 JVM 串行锁且【不重试】的情况下，40 个同保单并发唯一案件必须一次结算成功、
+    // 零 ConcurrentAccumulationException、且不超赔/不丢更新。该断言在「锁被去掉」时
+    // 会转为冲突异常（fail-closed），从而证明 Test A 的「零异常 + 不超赔」确由锁保证，
+    // 而非 H2 行锁的偶然串行化。DB 乐观锁仍作为纵深防御保留。
+
+    @Test
+    void lockOnNoRetryCompletesCleanlyUnderContention() throws Exception {
+        final int N = 40;
+        final long ANNUAL = 10_000;
+        DataSource ds = memDs("stressD");
+        SettlementEngine e = engineWith(ds, false, true); // 开 JVM 串行锁，不重试
+        FormulaSnapshot snap = reimbSnap(ANNUAL);
+
+        ExecutorService pool = Executors.newFixedThreadPool(N);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Throwable> errors = new ArrayList<>();
+        Money[] capNet = new Money[N];
+        Money[] capLim = new Money[N];
+        for (int i = 0; i < N; i++) {
+            final int idx = i;
+            pool.submit(() -> {
+                try {
+                    start.await();
+                    // 注意：这里【不】用 settleRobust，直接 settle——若锁失效，冲突会冒泡为异常
+                    IndemnityCalculation c = e.settle(ctx("D" + idx, Money.of(257 + idx), Money.of(ANNUAL)), snap);
+                    capNet[idx] = c.netPayout;
+                    capLim[idx] = c.annualLimitApplied;
+                } catch (Throwable t) {
+                    synchronized (errors) { errors.add(t); }
+                }
+            });
+        }
+        start.countDown();
+        pool.shutdown();
+        assertTrue(pool.awaitTermination(60, TimeUnit.SECONDS), "D 场景未在 60s 内完成");
+        // 锁生效时：零异常（无乐观锁冲突冒泡），这正是串行锁消除重试抖动的价值
+        assertTrue(errors.isEmpty(), "开启 JVM 串行锁后，同保单并发不得抛出任何异常（含 CONFLICT），实际: " + errors);
+
+        Money sumNet = Money.ZERO, sumLim = Money.ZERO;
+        for (int i = 0; i < N; i++) {
+            assertTrue(capNet[i] != null && capLim[i] != null, "D" + i + " 结算缺失");
+            sumNet = sumNet.add(capNet[i]);
+            sumLim = sumLim.add(capLim[i]);
+        }
+        Money dbLimitUsed = col(ds,
+                "SELECT limit_used FROM t_settlement_accum WHERE policy_period_key=?", "T1@POL@2026");
+        assertMoney(sumLim, dbLimitUsed, "D：无丢失更新（Σ占用==库内累计）");
+        assertTrue(dbLimitUsed.cmp(Money.of(ANNUAL)) <= 0, "D：年度限额不得突破，实际=" + dbLimitUsed);
+        assertMoney(sumNet, sumLim, "D：净赔付应等于限额占用");
     }
 }

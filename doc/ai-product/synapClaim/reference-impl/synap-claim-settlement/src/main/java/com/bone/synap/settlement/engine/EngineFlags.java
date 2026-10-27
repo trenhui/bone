@@ -47,6 +47,7 @@ public final class EngineFlags {
     public boolean applyIdempotencyCAS = true;        // 幂等 CAS 租约
     public boolean apportionRounding = true;          // 最大余数法配平分位
     public boolean zeroMeansUnlimited = true;         // 限额 0 = 未配置（不限制）
+    public boolean applyConcurrencyLock = true;       // 同保单同周期「读→算→提交」JVM 串行锁（防过期快照超赔）
 
     public static EngineFlags allOn() { return new EngineFlags(); }
 
@@ -72,6 +73,7 @@ public final class EngineFlags {
         f.applyIdempotencyCAS = applyIdempotencyCAS;
         f.apportionRounding = apportionRounding;
         f.zeroMeansUnlimited = zeroMeansUnlimited;
+        f.applyConcurrencyLock = applyConcurrencyLock;
         return f;
     }
 }
