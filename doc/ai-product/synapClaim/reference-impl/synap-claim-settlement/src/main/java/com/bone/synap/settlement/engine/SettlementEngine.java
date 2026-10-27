@@ -6,6 +6,7 @@ import com.bone.synap.settlement.domain.ClaimContext;
 import com.bone.synap.settlement.domain.FormulaSnapshot;
 import com.bone.synap.settlement.domain.IndemnityCalculation;
 import com.bone.synap.settlement.engine.strategy.Strategies;
+import com.bone.synap.settlement.port.ConcurrencyLockPort;
 import com.bone.synap.settlement.port.Ports;
 
 import java.util.ArrayList;
@@ -61,15 +62,21 @@ public final class SettlementEngine {
     private final Map<String, String[]> authKeys = new HashMap<>();
 
     /**
-     * 同保单同周期的理算/冲正串行化锁（单实例正确性护栏）。
+     * 同保单同周期的理算/冲正串行化锁（单实例正确性护栏，可插拔）。
      * 根因：累计的「读快照 → 计算额度 → 提交」若不在同一临界区内，并发两请求会读到同一
      * 「剩余额度」快照，各自算出额度后双双提交，导致年度/责任限额被突破（超赔）。
      * DB 乐观锁（version）只能防「丢失更新」，防不了「基于过期快照的重复占用」，
-     * 故在此用 JVM 锁把整个临界区串行化；多实例部署须升级为分布式锁 + 提交时按 live 剩余再次钳制。
+     * 故在此用锁把整个临界区串行化。默认 {@link ConcurrencyLockPort.JvmConcurrencyLock}
+     * （单实例行为与原 JVM 锁一致）；集群部署可替换为 Redis/DB 租约实现，使跨实例同
+     * 保单同周期也串行化。开关见 {@link EngineFlags#applyConcurrencyLock}。
      */
-    private final java.util.concurrent.ConcurrentHashMap<String, Object> policyLocks =
-            new java.util.concurrent.ConcurrentHashMap<>();
-    private static final Object NO_LOCK = new Object();
+    private ConcurrencyLockPort lock = new ConcurrencyLockPort.JvmConcurrencyLock();
+
+    /** 注入并发锁实现（默认 JVM；集群部署注入分布式锁）。返回 this 便于链式装配。 */
+    public SettlementEngine withLock(ConcurrencyLockPort lock) {
+        this.lock = lock;
+        return this;
+    }
 
     public SettlementEngine(Ports.LedgerPort ledger, Ports.TracePort trace,
                             Ports.CatalogPort catalog, Ports.OutboxPort outbox,
@@ -117,20 +124,62 @@ public final class SettlementEngine {
 
         // ---- 并发安全临界区：同保单同周期的「读快照→计算额度→提交累计」原子化 ----
         // 防御并发双请求读到同一剩余额度快照后双双提交导致超赔（年度/责任限额被突破）。
-        Object policyLock = (flags.applyAccumulation || flags.applyReversal)
-                ? policyLocks.computeIfAbsent(tenantScoped(ctx) + ctx.policyId + "@" + ctx.periodKey, k -> new Object())
-                : NO_LOCK;
-        // 以下变量在临界区内赋值，但在区外（buildExplain/calc 创建）仍被使用，故提升为方法级作用域
-        boolean denied;
-        Money thirdApplied;
-        List<AdjustmentLine> lines;
-        boolean anyReject;
-        Money gross, sumCalc;
-        Money net;
-        Money dedApplied;
-        Money limApplied;
-        Money liabApplied;
-        synchronized (policyLock) {
+        // 临界区经可插拔 ConcurrencyLockPort 串行（默认 JVM 锁；集群可换分布式锁）。
+        // settle 与 reverseSettlement 共用同一 lock 实例 + 同一 key 格式，保证同保单同周期
+        // 的「理算 vs 冲正」互斥，否则冲正读到的累计快照可能与理算提交交错 → 额度账实不符。
+        String lockKey = tenantScoped(ctx) + ctx.policyId + "@" + ctx.periodKey;
+        String tScope = flags.tenantScopedKeys ? ctx.tenantId + "@" : "";
+        boolean needLock = (flags.applyAccumulation || flags.applyReversal) && flags.applyConcurrencyLock;
+        CriticalSectionResult r = needLock
+                ? lock.runLocked(lockKey, () -> criticalSection(ctx, snap, tScope))
+                : criticalSection(ctx, snap, tScope);
+
+        ledger.reserve(ctx.tenantId, ctx.claimId, r.net);
+        outbox.publish(ctx.claimId, r.denied ? "REJECTED:" + ctx.denyReasons : "SETTLED:" + snap.liabilityId);
+
+        // 规则溯源
+        Map<String, List<String>> ruleTrace = new LinkedHashMap<>();
+        if (flags.recordTrace) {
+            List<String> baseRules = snap.type == FormulaSnapshot.LiabilityType.REIMBURSEMENT
+                    ? List.of("R-DED-01", "R-RAT-01", "R-CAP-01", "R-DIR-01")
+                    : (snap.type == FormulaSnapshot.LiabilityType.FIXED
+                        ? List.of("L-FIXED-01") : List.of("L-ALLOW-01"));
+            for (AdjustmentLine l : r.lines) {
+                if (l.rejectType != null) {
+                    ruleTrace.put(l.feeType, List.of(l.rejectType));
+                } else if (r.thirdApplied.isPositive()) {
+                    List<String> withIndemnity = new ArrayList<>(baseRules);
+                    withIndemnity.add("PRINCIPLE_INDEMNITY"); // 不可获利（非规则 ID，为原则标记）
+                    ruleTrace.put(l.feeType, withIndemnity);
+                } else {
+                    ruleTrace.put(l.feeType, baseRules);
+                }
+            }
+        }
+
+        IndemnityCalculation.SettlementStatus status;
+        if (r.denied) status = IndemnityCalculation.SettlementStatus.REJECT;
+        else if (r.anyReject || r.net.cmp(r.sumCalc) < 0 || r.net.isZero())
+            status = IndemnityCalculation.SettlementStatus.PARTIAL;
+        else status = IndemnityCalculation.SettlementStatus.PAY;
+
+        String explain = buildExplain(ctx, r.lines, ruleTrace, r.thirdApplied, r.dedApplied, r.limApplied, r.net, status, r.denied);
+
+        IndemnityCalculation calc = IndemnityCalculation.of(ctx.claimId, ctx.tenantId,
+                ctx.policyId, ctx.periodKey, r.lines, r.net,
+                r.dedApplied, r.limApplied, r.liabApplied, ruleTrace, explain, snap.snapshotVersion, traceId,
+                status, r.denied, ctx.denyReasons, r.thirdApplied);
+        if (flags.applyIdempotency) store.save(idemKey, calc);
+        return calc;
+    }
+
+    /**
+     * 临界区：同保单同周期的「读累计快照 → 计算额度 → 提交累计」。
+     * 必须在同一把锁内完成，否则并发双请求会读到同一剩余额度快照后双双提交（超赔）。
+     * 区内赋值的产物（denied/lines/net/...）经 {@link CriticalSectionResult} 带回区外消费。
+     */
+    private CriticalSectionResult criticalSection(ClaimContext ctx, FormulaSnapshot snap, String tScope) {
+        CriticalSectionResult r = new CriticalSectionResult();
 
         // ---- 0.5) 重算冲正（N2/N8）：同一 claimId 存在旧结论时，先回退其累计占用 ----
         if (flags.applyReversal) {
@@ -141,7 +190,7 @@ public final class SettlementEngine {
             }
         }
 
-        denied = !ctx.denyReasons.isEmpty();
+        r.denied = !ctx.denyReasons.isEmpty();
 
         // ---- 1~2) C2 求值：策略只产出「可赔基数 + 比例 + 理算层面免赔」----
         List<Strategies.RawLine> raws = select(snap.type)
@@ -151,13 +200,12 @@ public final class SettlementEngine {
         String[] reject = new String[n];
         String[] feeType = new String[n];
         for (int i = 0; i < n; i++) {
-            Strategies.RawLine r = raws.get(i);
-            feeType[i] = r.feeType; origin[i] = r.origin; base[i] = r.base;
-            ratio[i] = r.ratioPct; dedAdj[i] = r.deductAdjust; reject[i] = r.rejectType;
+            Strategies.RawLine rr = raws.get(i);
+            feeType[i] = rr.feeType; origin[i] = rr.origin; base[i] = rr.base;
+            ratio[i] = rr.ratioPct; dedAdj[i] = rr.deductAdjust; reject[i] = rr.rejectType;
         }
 
         // 租户作用域前缀（累计键/控额键全部租户隔离，ADR-4）
-        String tScope = flags.tenantScopedKeys ? ctx.tenantId + "@" : "";
         boolean needAccum = flags.applyAccumulation
                 && (ctx.annualDeductible.isPositive() || ctx.annualLimit.isPositive()
                     || snap.liabilityLimit.isPositive());
@@ -166,15 +214,15 @@ public final class SettlementEngine {
                 : Ports.AccUsage.empty();
 
         // ---- 3) 不可获利原则：第三方已付（社保统筹/其他保险）先从可赔基数扣除 ----
-        thirdApplied = flags.applyIndemnityPrinciple
+        r.thirdApplied = flags.applyIndemnityPrinciple
                 ? allocateDeduction(base, reject, ctx.thirdPartyPaid)
                 : Money.ZERO;
 
         // ---- 4) 年度免赔：作用于「费用基数」（先免赔后比例，非先比例后免赔）----
-        dedApplied = Money.ZERO;
+        r.dedApplied = Money.ZERO;
         if (needAccum && ctx.annualDeductible.isPositive() && flags.deductibleBeforeRatio) {
             Money rem = ctx.annualDeductible.subtract(usage.deductibleUsed).clampNonNegative();
-            dedApplied = allocateDeduction(base, reject, rem);
+            r.dedApplied = allocateDeduction(base, reject, rem);
         }
 
         // ---- 5) 比例 → 理算层面免赔 → 取整 → 分位配平（N9）----
@@ -216,13 +264,13 @@ public final class SettlementEngine {
             lc.put(kA, annualLimitRemaining);
         }
 
-        lines = new ArrayList<>();
-        anyReject = false;
+        r.lines = new ArrayList<>();
+        r.anyReject = false;
         for (int i = 0; i < n; i++) {
             boolean rejected = reject[i] != null;
-            if (rejected) anyReject = true;
+            if (rejected) r.anyReject = true;
             Money cap = feeCalculate[i];
-            if (rejected || denied) {
+            if (rejected || r.denied) {
                 cap = Money.ZERO;                       // 拒赔：不出金额、不占额度
             } else if (flags.enforceLimitMin) {
                 String kF = "F:" + tScope + feeType[i];
@@ -241,75 +289,37 @@ public final class SettlementEngine {
             // N6：拒赔 ≠ 免赔。拒赔行免赔额记 0，原因由 rejectType 单列，避免告知书语义误导。
             Money rawDeduct = origin[i].subtract(base[i]).add(dedAdj[i]); // 发票免赔+第三方+年免赔+理算免赔
             Money feeDeduct = (rejected && flags.rejectRowZeroDeduct) ? Money.ZERO : rawDeduct;
-            lines.add(new AdjustmentLine(feeType[i], feeCalculate[i], ratio[i], cap,
+            r.lines.add(new AdjustmentLine(feeType[i], feeCalculate[i], ratio[i], cap,
                     feeDeduct, occupy, remain, reject[i]));
         }
 
-        gross = Money.ZERO; sumCalc = Money.ZERO;
-        for (AdjustmentLine l : lines) { gross = gross.add(l.feePayout); sumCalc = sumCalc.add(l.feeCalculate); }
+        Money gross = Money.ZERO; r.sumCalc = Money.ZERO;
+        for (AdjustmentLine l : r.lines) { gross = gross.add(l.feePayout); r.sumCalc = r.sumCalc.add(l.feeCalculate); }
 
-        net = gross;
+        r.net = gross;
         // 变异分支（旧缺陷语义）：免赔额后置于赔付额 —— 仅用于回归探针证伪，生产恒为 true
         if (!flags.deductibleBeforeRatio && needAccum && ctx.annualDeductible.isPositive()) {
             Money rem = ctx.annualDeductible.subtract(usage.deductibleUsed).clampNonNegative();
-            dedApplied = gross.min(rem);
-            net = gross.subtract(dedApplied);
+            r.dedApplied = gross.min(rem);
+            r.net = gross.subtract(r.dedApplied);
         }
-        if (denied) net = Money.ZERO;
+        if (r.denied) r.net = Money.ZERO;
 
-        limApplied = (kA != null && lc.contains(kA))
+        r.limApplied = (kA != null && lc.contains(kA))
                 ? annualLimitRemaining.subtract(lc.remaining(kA)) : Money.ZERO;
-        liabApplied = lc.contains(kL)
+        r.liabApplied = lc.contains(kL)
                 ? limitValueOf(snap, usage).subtract(lc.remaining(kL)) : Money.ZERO;
 
         // ---- 7) 累计提交（乐观锁 + 按 claimId upsert）：并发冲突 fail-closed ----
-        if (!denied && needAccum
-                && (dedApplied.isPositive() || limApplied.isPositive() || liabApplied.isPositive())) {
+        if (!r.denied && needAccum
+                && (r.dedApplied.isPositive() || r.limApplied.isPositive() || r.liabApplied.isPositive())) {
             Ports.CommitResult cr = accumulation.commitUsage(tScope + ctx.policyId, ctx.periodKey,
-                    ctx.claimId, dedApplied, limApplied, liabApplied, usage.version);
+                    ctx.claimId, r.dedApplied, r.limApplied, r.liabApplied, usage.version);
             if (cr == Ports.CommitResult.CONFLICT) {
                 throw new ConcurrentAccumulationException(ctx.policyId, ctx.periodKey, ctx.claimId);
             }
         }
-        } // end synchronized(policyLock)
-
-        ledger.reserve(ctx.tenantId, ctx.claimId, net);
-        outbox.publish(ctx.claimId, denied ? "REJECTED:" + ctx.denyReasons : "SETTLED:" + snap.liabilityId);
-
-        // 规则溯源
-        Map<String, List<String>> ruleTrace = new LinkedHashMap<>();
-        if (flags.recordTrace) {
-            List<String> baseRules = snap.type == FormulaSnapshot.LiabilityType.REIMBURSEMENT
-                    ? List.of("R-DED-01", "R-RAT-01", "R-CAP-01", "R-DIR-01")
-                    : (snap.type == FormulaSnapshot.LiabilityType.FIXED
-                        ? List.of("L-FIXED-01") : List.of("L-ALLOW-01"));
-            for (AdjustmentLine l : lines) {
-                if (l.rejectType != null) {
-                    ruleTrace.put(l.feeType, List.of(l.rejectType));
-                } else if (thirdApplied.isPositive()) {
-                    List<String> withIndemnity = new ArrayList<>(baseRules);
-                    withIndemnity.add("PRINCIPLE_INDEMNITY"); // 不可获利（非规则 ID，为原则标记）
-                    ruleTrace.put(l.feeType, withIndemnity);
-                } else {
-                    ruleTrace.put(l.feeType, baseRules);
-                }
-            }
-        }
-
-        IndemnityCalculation.SettlementStatus status;
-        if (denied) status = IndemnityCalculation.SettlementStatus.REJECT;
-        else if (anyReject || net.cmp(sumCalc) < 0 || net.isZero())
-            status = IndemnityCalculation.SettlementStatus.PARTIAL;
-        else status = IndemnityCalculation.SettlementStatus.PAY;
-
-        String explain = buildExplain(ctx, lines, ruleTrace, thirdApplied, dedApplied, limApplied, net, status, denied);
-
-        IndemnityCalculation calc = IndemnityCalculation.of(ctx.claimId, ctx.tenantId,
-                ctx.policyId, ctx.periodKey, lines, net,
-                dedApplied, limApplied, liabApplied, ruleTrace, explain, snap.snapshotVersion, traceId,
-                status, denied, ctx.denyReasons, thirdApplied);
-        if (flags.applyIdempotency) store.save(idemKey, calc);
-        return calc;
+        return r;
     }
 
     /** 撤件/后督改判：回退某案件的累计占用（N8，对应 Guidewire reversal）。 */
@@ -317,11 +327,11 @@ public final class SettlementEngine {
         if (prev == null || prev.policyId == null) return;
         if (!flags.applyReversal) return;   // 变异开关：关闭即「无冲正通道」（N8）
         String key = tenantScopedOf(prev.tenantId) + prev.policyId + "@" + prev.periodKey;
-        Object lock = policyLocks.computeIfAbsent(key, k -> new Object());
-        synchronized (lock) {
-            accumulation.reverse(tenantScopedOf(prev.tenantId) + prev.policyId, prev.periodKey, prev.claimId,
-                    prev.annualDeductibleApplied, prev.annualLimitApplied, prev.liabilityApplied);
-        }
+        // 与 settle 共享同一 lock 实例 + 同一 key 格式，保证同保单同周期的「理算 vs 冲正」互斥。
+        boolean needLock = (flags.applyAccumulation || flags.applyReversal) && flags.applyConcurrencyLock;
+        Runnable body = () -> accumulation.reverse(tenantScopedOf(prev.tenantId) + prev.policyId, prev.periodKey, prev.claimId,
+                prev.annualDeductibleApplied, prev.annualLimitApplied, prev.liabilityApplied);
+        if (needLock) lock.runLocked(key, body); else body.run();
     }
 
     // ---------- 直付预授权（亿保「智慧E保即时结算」） ----------
@@ -543,6 +553,19 @@ public final class SettlementEngine {
             case REIMBURSEMENT: return new Strategies.ReimbursementStrategy();
         }
         throw new IllegalArgumentException("unknown liability type: " + t);
+    }
+
+    /** 临界区产出：在锁内计算，区外（buildExplain / of 创建）消费。 */
+    private static final class CriticalSectionResult {
+        boolean denied;
+        Money thirdApplied;
+        List<AdjustmentLine> lines;
+        boolean anyReject;
+        Money sumCalc;
+        Money net;
+        Money dedApplied;
+        Money limApplied;
+        Money liabApplied;
     }
 
     /** 直付预授权结果（默认仅计算；hold=true 时带 authId 并冻结额度）。 */
