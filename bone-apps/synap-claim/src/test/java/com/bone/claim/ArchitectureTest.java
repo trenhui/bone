@@ -4,6 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.bone.architecture.BoneDddArchRules;
+import com.bone.core.tenant.context.TenantContext;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaType;
@@ -133,6 +134,35 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule tenant_context_via_provider =
       BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly();
+
+  // P1-5：租户身份读取收敛到唯一权威 TenantPortAdapter（OWASP A01 fail-closed 结构锁）。
+  // tenant_context_via_provider 已禁 domain/application/adapter 直读 TenantContext；本规则收口「基础设施层其余类
+  // （含未来新增的 adapter/security/config）也不得读 TenantContext.get*」，仅
+  // ..infrastructure.tenant..（TenantPortAdapter）
+  // 可读——杜绝从线程本地/请求头旁路绕过租户隔离。当日即绿（全模块仅 TenantPortAdapter 读 get*），锁住未来违规。
+  @ArchTest
+  static final ArchRule tenant_context_read_only_by_tenant_port_adapter =
+      noClasses()
+          .that()
+          .resideOutsideOfPackage("..infrastructure.tenant..")
+          .should()
+          .callMethod(TenantContext.class, "getTenantId")
+          .allowEmptyShould(true)
+          .because(
+              "OWASP A01：租户身份唯一权威是 TenantPortAdapter（读 TenantContext），"
+                  + "基础设施层其余类不得直读 TenantContext.getTenantId，防止绕过租户隔离");
+
+  @ArchTest
+  static final ArchRule tenant_context_aslong_read_only_by_tenant_port_adapter =
+      noClasses()
+          .that()
+          .resideOutsideOfPackage("..infrastructure.tenant..")
+          .should()
+          .callMethod(TenantContext.class, "getTenantIdAsLong")
+          .allowEmptyShould(true)
+          .because(
+              "OWASP A01：租户身份唯一权威是 TenantPortAdapter（读 TenantContext），"
+                  + "基础设施层其余类不得直读 TenantContext.getTenantIdAsLong，防止绕过租户隔离");
 
   // E-13.3：infrastructure 实现 application.port.out.*Port 的类必须命名 *PortAdapter
   @ArchTest
