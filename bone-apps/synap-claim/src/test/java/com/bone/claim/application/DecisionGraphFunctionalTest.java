@@ -15,6 +15,7 @@ import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.GraphFraudPort;
 import com.bone.claim.application.port.out.TenantPort;
+import com.bone.claim.application.port.out.VisualForensicsPort;
 import com.bone.claim.domain.model.claim.ClaimCase;
 import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
@@ -88,14 +89,21 @@ class DecisionGraphFunctionalTest {
     when(execSvc.findActive(anyLong())).thenReturn(null);
   }
 
-  /** 场景 A：证据齐 + OCR 0.95 + 风控通过 + AI 0.93 → 自动通过。 */
+  /**
+   * 场景 A：证据齐 + OCR 0.95 + 风控通过 + AI 0.93 + 反欺诈增强能力可用且干净 → 自动通过。
+   *
+   * <p>注意：反欺诈闸自 fail-closed 加固后，{@code AUTO_APPROVE} 仅在 E1/E2 真实可用（{@code available=true}）时可达；
+   * 本场景显式注入"反欺诈可用"适配器，证明闸逻辑正确、图真能自动决策，而非永远转人工。
+   */
   @Test
-  @DisplayName("干净案件 → AUTO_APPROVE（验证图真能自动决策，非永远转人工）")
+  @DisplayName("干净案件（反欺诈能力可用）→ AUTO_APPROVE（验证闸逻辑，非永远转人工）")
   void cleanClaimAutoApproves() {
     DecisionGraphExecutor.DecisionExecutionResult result =
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
-                enabledAi())
+                enabledAi(),
+                fraudAvailableVisual(),
+                fraudAvailableGraph())
             .execute(CLAIM_ID, versions());
 
     assertThat(result.decisionResult()).isEqualTo("AUTO_APPROVE");
@@ -118,15 +126,23 @@ class DecisionGraphFunctionalTest {
     assertThat(result.decisionResult()).isEqualTo("MANUAL_REQUIRED");
   }
 
-  /** 场景 C：AI 网关故障 → 降级纯规则路径（FALLBACK），规则置信度 0.90 仍自动通过。 */
+  /**
+   * 场景 C：AI 网关故障 → 降级纯规则路径（FALLBACK），规则置信度 0.90 仍自动通过。
+   *
+   * <p>反欺诈能力可用（{@code available=true}）前提下，AI 降级不影响自动通过；fail-closed 加固只影响"反欺诈能力本身缺失"的态（见场景 F）。
+   */
   @Test
-  @DisplayName("AI 不可用 → FALLBACK 降级，仍 AUTO_APPROVE（规则路径置信度兜底）")
+  @DisplayName("AI 不可用 → FALLBACK 降级，反欺诈可用时仍 AUTO_APPROVE（规则路径置信度兜底）")
   void aiUnavailableFallsBackToRulePath() {
     LocalAiGatewayPortAdapter ai = new LocalAiGatewayPortAdapter();
     ai.setEnabled(false);
 
     DecisionGraphExecutor.DecisionExecutionResult result =
-        executor(ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")), ai)
+        executor(
+                ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
+                ai,
+                fraudAvailableVisual(),
+                fraudAvailableGraph())
             .execute(CLAIM_ID, versions());
 
     assertThat(result.status()).isEqualTo("FALLBACK");
@@ -135,16 +151,17 @@ class DecisionGraphFunctionalTest {
     assertThat(captured.getValue().getAiConfidence()).isEqualByComparingTo(new BigDecimal("0.90"));
   }
 
-  /** 场景 D：图计算反欺诈命中 → 强制转人工。 */
+  /** 场景 D：图计算反欺诈命中（能力可用且确实命中）→ 强制转人工（RISK_HIT / 闸不过）。 */
   @Test
-  @DisplayName("反欺诈命中（图计算） → MANUAL_REQUIRED（RISK_HIT）")
+  @DisplayName("反欺诈命中（图计算，能力可用） → MANUAL_REQUIRED")
   void fraudHitEscalatesToManual() {
-    GraphFraudPort graph = claimId -> new GraphFraudPort.FraudResult(true, "cluster-9");
+    GraphFraudPort graph = claimId -> new GraphFraudPort.FraudResult(true, "cluster-9", true);
 
     DecisionGraphExecutor.DecisionExecutionResult result =
         executor(
                 ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
                 enabledAi(),
+                fraudAvailableVisual(),
                 graph)
             .execute(CLAIM_ID, versions());
 
@@ -162,22 +179,45 @@ class DecisionGraphFunctionalTest {
     assertThat(result.decisionResult()).isEqualTo("NEED_MORE_EVIDENCE");
   }
 
+  /**
+   * 场景 F（fail-closed 加固证伪）：反欺诈增强能力未集成（本地桩 {@code available=false}），即便案件本身干净，
+   * 也<b>不得</b>自动通过——必须升级人工。
+   *
+   * <p>这是对此前"本地桩恒返回 tampered=false/hit=false 让反欺诈闸恒为真"假绿缺陷的针对性证伪： 删除 {@code RuleCheckNodeHandler} 中
+   * {@code (visualAvailable && graphAvailable)} 的 fail-closed 判定，本场景将从 AUTO_APPROVE 变回，
+   * 证明该判定是真实生效的护栏。
+   */
+  @Test
+  @DisplayName("反欺诈能力缺失（本地桩）→ 即便干净也 MANUAL_REQUIRED（fail-closed，杜绝静默放行）")
+  void fraudCapabilityMissingEscalatesToManual() {
+    // executor(ctxPort, ai) 使用 LocalVisualForensicsPortAdapter /
+    // LocalGraphFraudPortAdapter（available=false）
+    DecisionGraphExecutor.DecisionExecutionResult result =
+        executor(
+                ctx(true, true, new BigDecimal("0.95"), true, new BigDecimal("300.00")),
+                enabledAi())
+            .execute(CLAIM_ID, versions());
+
+    assertThat(result.decisionResult()).isEqualTo("MANUAL_REQUIRED");
+  }
+
   // ===================== 装配 =====================
 
+  /** 默认装配：反欺诈用本地桩（available=false），即"E1/E2 未集成"的真实运行时态。 */
   private DecisionGraphExecutor executor(ClaimContextPort ctxPort, AiGatewayPort ai) {
-    return executor(ctxPort, ai, new LocalGraphFraudPortAdapter());
+    return executor(
+        ctxPort, ai, new LocalVisualForensicsPortAdapter(), new LocalGraphFraudPortAdapter());
   }
 
   private DecisionGraphExecutor executor(
-      ClaimContextPort ctxPort, AiGatewayPort ai, GraphFraudPort graph) {
+      ClaimContextPort ctxPort,
+      AiGatewayPort ai,
+      VisualForensicsPort visual,
+      GraphFraudPort graph) {
     List<DecisionNodeHandler> handlers =
         List.of(
             new EvidenceLoadNodeHandler(ctxPort),
-            new RuleCheckNodeHandler(
-                ctxPort,
-                new LocalRuleEnginePortAdapter(),
-                new LocalVisualForensicsPortAdapter(),
-                graph),
+            new RuleCheckNodeHandler(ctxPort, new LocalRuleEnginePortAdapter(), visual, graph),
             new AiAssessNodeHandler(
                 ctxPort,
                 ai,
@@ -187,6 +227,16 @@ class DecisionGraphFunctionalTest {
             new ArbitrateNodeHandler());
     TenantPort tenantPort = () -> TENANT_ID;
     return new DecisionGraphExecutor(execSvc, claimSvc, tenantPort, handlers);
+  }
+
+  /** 反欺诈能力已接入（E1 视觉）：未篡改、能力已执行。 */
+  private static VisualForensicsPort fraudAvailableVisual() {
+    return claimId -> new VisualForensicsPort.ForensicsResult(false, BigDecimal.ZERO, true);
+  }
+
+  /** 反欺诈能力已接入（E2 图计算）：未命中、能力已执行。 */
+  private static GraphFraudPort fraudAvailableGraph() {
+    return claimId -> new GraphFraudPort.FraudResult(false, null, true);
   }
 
   private static AiGatewayPort enabledAi() {
