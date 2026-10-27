@@ -60,7 +60,9 @@ echo -e "${YELLOW}[1/35] 代码风格校验 (Spotless)...${RESET}"
 # （与 [3/35] 就近 ArchUnit 同一套"变更模块"口径，逐模块 -f 跑，避开 reactor 路径不稳）；
 # CI 仍跑全量兜底，故未放松格式约束，只是把"谁脏谁负责"落到责任人。
 SPOTLESS_FILES=$(git diff --cached --name-only --diff-filter=ACD 2>/dev/null | grep -E '\.java$|\.properties$' || true)
-SPOTLESS_MODULES=$(echo "$SPOTLESS_FILES" | grep -E '/src/' | sed -E 's|/src/.*||' | sort -u || true)
+# doc/ 下的独立示例工程不参与平台构建（自带 pom、自成一体），不套平台 Spotless 格式，
+# 否则会把平台格式强加给示例、并把他人的示例代码改得面目全非。见 [11/35] 同款 doc/ 豁免口径。
+SPOTLESS_MODULES=$(echo "$SPOTLESS_FILES" | grep -E '/src/' | grep -v '^doc/' | sed -E 's|/src/.*||' | sort -u || true)
 if [ -n "$SPOTLESS_MODULES" ]; then
   while IFS= read -r MODULE_PATH; do
     [ -z "$MODULE_PATH" ] && continue
@@ -85,7 +87,8 @@ if [ -n "$CHANGED_FILES" ]; then
   # 注意：`|| true` 必须放在整条管道末尾。管道优先级高于 `||`，若写成 `grep ... || true | sed ...`
   # 会被解析成 `(grep) || (true | sed)`，sed 拿不到输入，MODULE_PATHS 变成文件全路径，
   # 导致下面 $MODULE_PATH/pom.xml 恒不存在、ArchUnit 门禁被静默跳过。
-  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | sed 's|/src/main/java/.*||' | sort -u || true)
+  # 同 [1/35]：doc/ 下独立示例工程不参与平台构建，不受平台架构规则约束。
+  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | grep -v '^doc/' | sed 's|/src/main/java/.*||' | sort -u || true)
 
   if [ -n "$MODULE_PATHS" ]; then
     echo "  变更模块:"

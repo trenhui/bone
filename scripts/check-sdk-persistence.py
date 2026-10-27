@@ -32,6 +32,11 @@ ALLOW_PREFIXES = (
     "bone-engine/bone-metadata-sdk/",
     "bone-engine/bone-metadata-engine/",
 )
+# 文档树（doc/）下的独立示例工程不属平台代码：HC-006 约束的是「平台模块绕过 SDK 直连库」，
+# 而 doc/ 下的参考实现自成一体、不参与平台 reactor 构建，直连 JDBC/MyBatis 是其演示
+# 持久化路径的题中之义（改成走 bone-metadata-sdk 反而失去"可独立运行示例"的意义）。
+# 这些示例若被误判，会因基线「只可收缩」而无法登记，只能整体拒之门外。
+DOC_SAMPLE_PREFIX = "doc/"
 IMPORT_RE = re.compile(
     r"import\s+(?:"
     r"org\.springframework\.jdbc\.core\.JdbcTemplate|"
@@ -47,7 +52,7 @@ def hits() -> list[str]:
     found: list[str] = []
     for path in REPO.glob("**/src/main/java/**/*.java"):
         rel = path.relative_to(REPO).as_posix()
-        if rel.startswith(ALLOW_PREFIXES):
+        if rel.startswith(ALLOW_PREFIXES) or rel.startswith(DOC_SAMPLE_PREFIX):
             continue
         try:
             text = path.read_text(encoding="utf-8")
