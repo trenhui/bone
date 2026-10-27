@@ -32,11 +32,14 @@ ALLOW_PREFIXES = (
     "bone-engine/bone-metadata-sdk/",
     "bone-engine/bone-metadata-engine/",
 )
-# 文档树（doc/）下的独立示例工程不属平台代码：HC-006 约束的是「平台模块绕过 SDK 直连库」，
+# 文档树下的独立示例工程不属平台代码：HC-006 约束的是「平台模块绕过 SDK 直连库」，
 # 而 doc/ 下的参考实现自成一体、不参与平台 reactor 构建，直连 JDBC/MyBatis 是其演示
 # 持久化路径的题中之义（改成走 bone-metadata-sdk 反而失去"可独立运行示例"的意义）。
 # 这些示例若被误判，会因基线「只可收缩」而无法登记，只能整体拒之门外。
-DOC_SAMPLE_PREFIX = "doc/"
+# ★ 安全门禁「默认拒绝、显式放行」：豁免只给到已知的具体示例路径，而非整棵 doc/。
+#   未来若在 doc/ 下新增任何绕过 SDK 的平台式代码，门禁仍会拦下、强制走显式决策，
+#   不会因 blanket 的 doc/ 豁免而悄悄放过。
+DOC_SAMPLE_PREFIX = "doc/ai-product/synapClaim/reference-impl/"
 IMPORT_RE = re.compile(
     r"import\s+(?:"
     r"org\.springframework\.jdbc\.core\.JdbcTemplate|"
