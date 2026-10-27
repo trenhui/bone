@@ -66,7 +66,9 @@ java -cp out com.bone.synap.settlement.diag.Diagnostics2       # 第二轮取证
 - **引擎层可插拔串行锁（ConcurrencyLockPort）**：同保单同周期（`tenantId@policyId@periodKey`）的「读累计快照 → 计算额度 → 提交累计」整段临界区，经 `ConcurrencyLockPort.runLocked(key, ...)` 串行化，从根上消除"多请求读到同一剩余额度快照后双双提交导致超赔"的窗口。
 - **默认 `JvmConcurrencyLock`**：单实例下行为与历史一致（每 key 一个监视器 + `synchronized`）。**集群部署只需把默认实现换成 Redis/DB 租约实现**（实现同一 `ConcurrencyLockPort` 接口），引擎编排代码零改动——`ConcurrencyLockSeamTest` 已断言"注入即生效、切换即生效"。
 - **DB 乐观锁（version，CAS）作为纵深防御**：`commitUsage` 以 `UPDATE ... WHERE version=?` 提交，版本不符即 `CONFLICT`（fail-closed，绝不静默覆盖）。生产调用方应捕获 `ConcurrentAccumulationException` 并重试（重试会重读最新快照）。
-- **诚实边界**：单 JVM 实例下正确性由上述两层保证。集群部署即使接入分布式锁，跨实例极端竞态仍依赖 DB 乐观锁 + 调用方重试兜底（双层不互斥）。
+- **有界等待 / fail-fast**：`runLocked(key, action, timeout)` 支持获取锁超时即抛 `ConcurrencyLockTimeoutException`，绝不无限期阻塞（避免线程耗尽 / 活锁）。默认 `JvmConcurrencyLock` 用 `ReentrantLock.tryLock(timeout)` 实现；长临界区由持有方后台心跳续期。
+- **集群分布式锁参考实现 `DbLeaseConcurrencyLock`**：基于共享存储（DB 租约，INSERT 唯一约束抢锁 + 过期回收 + 看门狗续期，**不使用 SELECT ... FOR UPDATE**）实现跨实例同 key 互斥。`DbLeaseConcurrencyLockTest` 用两个共享同一 H2 库的 lock 实例（模拟集群两节点）证明跨实例串行化与超时 fail-fast。`SettlementEngineFactory.createWithDbLock(ds, flags)` 一行切换为集群锁。
+- **诚实边界**：单 JVM 实例下正确性由上述两层保证。集群部署接入 `DbLeaseConcurrencyLock` 后跨实例同 key 串行化由 DB 租约保证；跨实例极端竞态仍依赖 DB 乐观锁 + 调用方重试兜底（双层不互斥）。
 
 ## 理算顺序铁律（顺序错即金额错）
 ```
@@ -187,4 +189,4 @@ src/test/java/...               SettlementEngineProbeTest / ScenarioSuiteTest / 
 2. 年度限额按费用行**顺序截断（先到先得）**，未按比例摊薄；多费用类型并存时需条款确认优先级。
 3. **S13 多保单仅独立理算**，未实现 ISO 834「比例分摊(pro-rata by limit)/等额分摊」——对应条款需产品确认后另开工。
 4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL 需按 README 注释切换 MERGE → ON DUPLICATE KEY UPDATE，并补真实库回归与并发压测。
-5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；但**真实 MySQL 并发压测 + 分布式锁实现仍待补**（集群锁仅需实现 `ConcurrencyLockPort` 接口）。
+5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；**分布式锁参考实现 `DbLeaseConcurrencyLock` 已提供并测试通过**（跨实例同 key 互斥 + 超时 fail-fast，见 `DbLeaseConcurrencyLockTest`）。真实 MySQL 并发压测仍建议生产接入时补一轮（验证行锁 / 隔离级别与租约表并发），但核心可插拔契约已闭环。

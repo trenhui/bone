@@ -37,9 +37,17 @@ public final class JdbcBackedPorts implements Ports.LedgerPort, Ports.TracePort,
         Ports.OutboxPort, Ports.AccumulationPort, Ports.SettlementStorePort, Ports.PreAuthPort {
 
     private final DataSource ds;
+    private final SqlDialect dialect;
 
+    /** 自动识别方言（H2 / MySQL）。 */
     public JdbcBackedPorts(DataSource ds) {
+        this(ds, SqlDialect.auto(ds));
+    }
+
+    /** 显式指定方言（测试期可强制 MySql 以在 H2 MySQL 模式校验生产 SQL）。 */
+    public JdbcBackedPorts(DataSource ds, SqlDialect dialect) {
         this.ds = ds;
+        this.dialect = dialect;
     }
 
     /** 在目标库执行 schema.sql（测试/首次部署用）。 */
@@ -244,11 +252,7 @@ public final class JdbcBackedPorts implements Ports.LedgerPort, Ports.TracePort,
     @Override
     public void save(String idempotencyKey, IndemnityCalculation calc) {
         try (Connection c = ds.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "MERGE INTO t_settlement_calc (idempotency_key, claim_id, tenant_id, policy_id, period_key, " +
-                             "net_payout, status, annual_deductible_applied, annual_limit_applied, " +
-                             "liability_applied, third_party_applied, snapshot_version, trace_id, denied, deny_reasons) " +
-                             "KEY(idempotency_key) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+             PreparedStatement ps = c.prepareStatement(dialect.upsertCalc())) {
             ps.setString(1, idempotencyKey);
             ps.setString(2, calc.claimId);
             ps.setString(3, calc.tenantId);
@@ -377,8 +381,7 @@ public final class JdbcBackedPorts implements Ports.LedgerPort, Ports.TracePort,
     @Override
     public void reserve(String tenantId, String claimId, Money amount) {
         try (Connection c = ds.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "MERGE INTO t_settlement_ledger (tenant_claim, reserved) KEY(tenant_claim) VALUES (?, ?)")) {
+             PreparedStatement ps = c.prepareStatement(dialect.upsertLedger())) {
             ps.setString(1, tenantId + "#" + claimId);
             ps.setBigDecimal(2, nz(amount).raw());
             ps.executeUpdate();
@@ -444,8 +447,7 @@ public final class JdbcBackedPorts implements Ports.LedgerPort, Ports.TracePort,
 
     private void ensureAccumRow(Connection c, String pk) throws SQLException {
         // 仅当行不存在时插入（其余列取 DEFAULT 0）；已存在则不动 version，否则会破坏乐观锁。
-        try (PreparedStatement ps = c.prepareStatement(
-                "MERGE INTO t_settlement_accum (policy_period_key) KEY(policy_period_key) VALUES (?)")) {
+        try (PreparedStatement ps = c.prepareStatement(dialect.ensureAccumRow())) {
             ps.setString(1, pk);
             ps.executeUpdate();
         }

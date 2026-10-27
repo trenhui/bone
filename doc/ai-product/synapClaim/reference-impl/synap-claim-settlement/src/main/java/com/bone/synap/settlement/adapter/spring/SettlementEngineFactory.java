@@ -3,6 +3,7 @@ package com.bone.synap.settlement.adapter.spring;
 import com.bone.synap.settlement.adapter.jdbc.JdbcBackedPorts;
 import com.bone.synap.settlement.engine.EngineFlags;
 import com.bone.synap.settlement.engine.SettlementEngine;
+import com.bone.synap.settlement.port.DbLeaseConcurrencyLock;
 import com.bone.synap.settlement.port.Ports;
 
 import javax.sql.DataSource;
@@ -48,6 +49,16 @@ public final class SettlementEngineFactory {
     public static SettlementEngine create(DataSource ds, EngineFlags flags) {
         JdbcBackedPorts ports = new JdbcBackedPorts(ds);
         return new SettlementEngine(ports, ports, ports, ports, ports, ports, ports, flags);
+    }
+
+    /**
+     * 集群部署装配：用基于共享存储的分布式锁（DbLeaseConcurrencyLock）替换默认 JVM 锁，
+     * 使同一保单同周期的「理算 vs 冲正」跨实例串行化。引擎编排代码零改动（仅注入点不同）。
+     */
+    public static SettlementEngine createWithDbLock(DataSource ds, EngineFlags flags) {
+        JdbcBackedPorts ports = new JdbcBackedPorts(ds);
+        return new SettlementEngine(ports, ports, ports, ports, ports, ports, ports, flags)
+                .withLock(new DbLeaseConcurrencyLock(ds));
     }
 
     /** 用给定的端口实现装配引擎（如单测用 InMemoryPorts）。 */
