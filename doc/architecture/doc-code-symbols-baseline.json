@@ -371,6 +371,14 @@
       "note": "Spring 框架注解 @EnableConfigurationProperties 通用词，非项目自定义类名（同 AutoConfiguration 条目口径）"
     },
     {
+      "symbol": "JsonIgnoreProperties",
+      "docs": [
+        "doc/design/modules/13. 工作流设计器方案.md"
+      ],
+      "reason": "false-positive",
+      "note": "Jackson 注解 @JsonIgnoreProperties(ignoreUnknown=true) 通用词，非项目自定义类名（同 AutoConfiguration / EnableConfigurationProperties 条目口径）；工作流设计文档 §8.1 以示意形式引用，非特定类引用，属误报"
+    },
+    {
       "symbol": "EntityController",
       "docs": [
         "doc/design/modules/2. 元数据管理模块详细设计方案.md"
