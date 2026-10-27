@@ -52,6 +52,15 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   /** 单次推进的最大步数（防定义异常导致死循环；发布期校验已禁环，此为双保险）。 */
   private static final int MAX_ADVANCE_STEPS = 64;
 
+  /**
+   * 同实例「驳回退回」次数上限（循环防护）。
+   *
+   * <p>驳回退回是运行期跳转，不限制就可能 A 驳回 B、B 驳回 A 无限往返——单据永远卡在「被驳回→退回→再被驳」的拉锯里，
+   * 既无终态、也无业务进展。达上限即强制整单驳回终止，把「拉锯」变成确定性的「流程结束」。 计数口径：每发生一次驳回（整单驳回或退回节点都会留下一条 {@code REJECTED}
+   * 任务），计数 +1。
+   */
+  private static final int MAX_REJECT_TO_NODE_ROUNDS = 10;
+
   private final WorkflowDefinitionRepository definitionRepository;
   private final WorkflowInstanceRepository instanceRepository;
   private final ApproverResolver approverResolver;
@@ -471,6 +480,16 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   @Override
   public WorkflowInstance completeTask(
       String taskId, WorkflowTask.Decision decision, String comment, String operatorId) {
+    return completeTask(taskId, decision, comment, operatorId, null);
+  }
+
+  @Override
+  public WorkflowInstance completeTask(
+      String taskId,
+      WorkflowTask.Decision decision,
+      String comment,
+      String operatorId,
+      String backToNodeCode) {
     WorkflowTask task =
         instanceRepository
             .findTask(taskId)
@@ -509,6 +528,21 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       throw new WorkflowEngineException(
           WorkflowErrorCode.CONFLICT, "审批任务当前状态不允许决策：" + task.status());
     }
+    // 驳回退回指定节点：跳转前先做目标合法性与循环防护校验（fail-closed），
+    // 否则「先标记驳回、再发现目标非法」会留下「任务已 REJECTED、实例仍 RUNNING、却无新待办」的死节点。
+    if (decision == WorkflowTask.Decision.REJECT && backToNodeCode != null) {
+      validateRejectToNodeTarget(instance, task, backToNodeCode);
+      long rejectRounds =
+          instanceRepository.listTasks(instance.id()).stream()
+              .filter(each -> each.status() == WorkflowTask.Status.REJECTED)
+              .count();
+      if (rejectRounds >= MAX_REJECT_TO_NODE_ROUNDS) {
+        return terminateAsRejected(
+            instance,
+            operatorId,
+            "驳回退回次数达上限（" + MAX_REJECT_TO_NODE_ROUNDS + "），防循环，流程终止：" + comment);
+      }
+    }
     WorkflowTask.Status nextStatus =
         decision == WorkflowTask.Decision.APPROVE
             ? WorkflowTask.Status.APPROVED
@@ -545,6 +579,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       return current; // 并发下他人已终止流程：幂等收敛，不再推进
     }
     WorkflowDefinition definition = definitionOf(current);
+    // 驳回退回指定节点：审批人驳回时可选「退回上一节点 / 退回发起人」而非整单驳回，
+    // 是企业报销/采购审批最高频诉求（钉钉/飞书/宜搭标配）。运行期跳转，不改变定义模型（审批节点仍恰 1 条出边）。
+    if (decision == WorkflowTask.Decision.REJECT && backToNodeCode != null) {
+      return rejectToNode(current, definition, task, operatorId, backToNodeCode, comment);
+    }
     List<WorkflowDefinition.Edge> outs = definition.outEdges(task.nodeCode());
     if (outs.size() != 1) {
       throw new WorkflowEngineException(
@@ -1193,6 +1232,73 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     for (WorkflowTask task : pending) {
       notify(() -> notificationPort.notifyTaskCancelled(task, instance, reason));
     }
+  }
+
+  /**
+   * 校验驳回退回目标节点的合法性（fail-closed，CAS 之前调用，避免留下死节点）。
+   *
+   * <p>目标节点必须存在、且非结束节点、且非当前节点（自身循环无意义）；否则抛 {@code REJECT_TARGET_NODE_INVALID}， 绝不静默整单驳回冒充「退回」。
+   */
+  private void validateRejectToNodeTarget(
+      WorkflowInstance instance, WorkflowTask task, String backToNodeCode) {
+    WorkflowDefinition definition = definitionOf(instance);
+    WorkflowDefinition.Node target =
+        definition
+            .node(backToNodeCode)
+            .orElseThrow(
+                () ->
+                    new WorkflowEngineException(
+                        WorkflowErrorCode.REJECT_TARGET_NODE_INVALID,
+                        "驳回退回的目标节点不存在：" + backToNodeCode));
+    // 退回结束节点 = 直接「通过」，语义错误；退回自己所在节点 = 空转无意义。两者都 fail-closed 拒绝。
+    if (target.type() == WorkflowDefinition.NodeType.END) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.REJECT_TARGET_NODE_INVALID, "驳回不得退回至结束节点：" + backToNodeCode);
+    }
+    if (backToNodeCode.equals(task.nodeCode())) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.REJECT_TARGET_NODE_INVALID,
+          "驳回退回的目标节点不能是当前节点（自身循环无意义）：" + backToNodeCode);
+    }
+  }
+
+  /**
+   * 驳回退回指定节点（运行期跳转；目标合法性与循环防护已在 {@link #completeTask} 的 CAS 之前校验过）。
+   *
+   * <p>当前节点的驳回任务已落库（{@code REJECTED}），把实例的 {@code currentNodeCode} 用与推进同源的原子 CAS 从当前节点改到目标节点， 再经
+   * {@link #advanceFrom} 重新进入目标节点——审批节点重新派单、条件节点重新求值、抄送节点重新知会，复用全部 fail-closed
+   * 纪律（解析不出人⇒挂起、分支歧义⇒挂起可恢复）。当前节点余下待办（单签/或签节点上其他办理人）在跳转前逐人知会作废，不留幽灵待办。
+   *
+   * @param instance 驳回决策已落库后的最新实例
+   * @param definition 流程定义
+   * @param task 被驳回的任务（其 {@code nodeCode()} 为当前节点）
+   * @param operatorId 操作人（审批人本人）
+   * @param backToNodeCode 退回的目标节点编码（已校验合法）
+   * @param comment 驳回意见
+   */
+  private WorkflowInstance rejectToNode(
+      WorkflowInstance instance,
+      WorkflowDefinition definition,
+      WorkflowTask task,
+      String operatorId,
+      String backToNodeCode,
+      String comment) {
+    // 跳转前作废当前节点余下待办并逐人知会：否则单签/或签节点上其他办理人的待办会留成幽灵待办（见 cancelNodeTasksWithNotice）。
+    cancelNodeTasksWithNotice(instance, task.nodeCode(), operatorId, "审批被驳回退回，该节点余下待办作废");
+    // 运行期跳转：currentNodeCode 从当前节点原子改到目标节点（无条件移动，复用 moveTo 的 CAS 语义）。
+    if (!moveTo(instance, task.nodeCode(), backToNodeCode, null, "驳回退回", operatorId)) {
+      return latestInstance(instance); // 并发下他人已推进：以最新状态收敛，不覆盖
+    }
+    LOG.info(
+        "[workflow] 驳回退回：instance={} {} → {} operator={} comment={}",
+        instance.id(),
+        task.nodeCode(),
+        backToNodeCode,
+        operatorId,
+        comment);
+    // 重新进入目标节点：审批节点重新派单（退回重审）/ 条件节点重新求值 / 抄送重新知会/ 发起节点重启流程。
+    // 该路径复用 advanceFrom 的全部 fail-closed 纪律（解析不出人⇒挂起、分支歧义⇒挂起可恢复），退回通道闭环。
+    return advanceFrom(instance, definition, operatorId, backToNodeCode);
   }
 
   /** 驳回终止（阶段 CAS 保证不覆盖已被推进为通过的终态）。 */

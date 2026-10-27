@@ -172,6 +172,38 @@ class EnterpriseApprovalScenarioTest {
   }
 
   @Test
+  @DisplayName("报销-驳回退回指定节点：财务驳回退回主管，主管重新审批后续跑至通过（无需另起新单）")
+  void reimbursement_rejectToNode_resumesFlow() {
+    WorkflowEngine engine = engineWithOrg(org);
+    WorkflowInstance instance =
+        engine.start("expense", "r-reimb-large", "reimbursement", INITIATOR);
+    assertEquals("mgr", instance.currentNodeCode());
+
+    // 主管通过 → 走到财务
+    WorkflowTask mgrTask = engine.listPendingTasks(instance.id()).get(0);
+    instance = engine.completeTask(mgrTask.id(), Decision.APPROVE, "同意", "mgr1");
+    assertEquals("finance", instance.currentNodeCode());
+    WorkflowTask finTask = engine.listPendingTasks(instance.id()).get(0);
+    assertEquals("fin1", finTask.assigneeId());
+
+    // 财务驳回，退回主管节点（而非整单驳回）——发起人不需另起新单，据意见修改后继续
+    WorkflowInstance rejected =
+        engine.completeTask(finTask.id(), Decision.REJECT, "发票不合规，请重提", "fin1", "mgr");
+    assertEquals(Phase.RUNNING, rejected.phase(), "退回节点后流程仍在运行");
+    assertEquals("mgr", rejected.currentNodeCode(), "currentNodeCode 应跳回主管节点");
+    WorkflowTask reMgrTask = engine.listPendingTasks(instance.id()).get(0);
+    assertEquals("mgr1", reMgrTask.assigneeId(), "主管节点应重新派单");
+    assertInbox("mgr1", "TASK_CREATED", instance.id());
+
+    // 主管重新审批通过 → 财务再审批 → 流程通过（退回通道闭环）
+    instance = engine.completeTask(reMgrTask.id(), Decision.APPROVE, "已重提", "mgr1");
+    assertEquals("finance", instance.currentNodeCode());
+    WorkflowTask finTask2 = engine.listPendingTasks(instance.id()).get(0);
+    WorkflowInstance approved = engine.completeTask(finTask2.id(), Decision.APPROVE, "合规", "fin1");
+    assertEquals(Phase.APPROVED, approved.phase());
+  }
+
+  @Test
   @DisplayName("报销-组织数据缺失（无主管）：失败关闭 → 挂起 + 管理员告警，不放行")
   void reimbursement_noManager_suspendsFailClosed() {
     // 该 resolver 的组织目录里没有 INITIATOR 的主管 → LINE_MANAGER 解析不出人

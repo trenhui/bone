@@ -39,6 +39,36 @@ public interface WorkflowEngine {
       String taskId, WorkflowTask.Decision decision, String comment, String operatorId);
 
   /**
+   * 完成一项审批任务；驳回时可选择「退回指定节点」而非整单驳回。
+   *
+   * <p><b>驳回退回指定节点（企业报销/采购审批最高频诉求，钉钉/飞书/宜搭标配）</b>：审批人驳回时， 除「整单驳回」外，可指定 {@code backToNodeCode}
+   * 把流程运行期跳回某个上游节点（通常是上一审批节点或发起节点）， 由该节点重新派单/重新求值后继续走——发起人据驳回意见修改后无需另起新单。
+   *
+   * <p><b>为什么是运行期跳转而非定义里的「驳回边」</b>：审批节点仍须满足「恰 1 条无条件出边」（WF-014）， 否则发布期就会拦下；退回是运行期行为，不改变定义模型。
+   *
+   * <p><b>守卫（fail-closed）</b>：
+   *
+   * <ul>
+   *   <li>{@code backToNodeCode == null}（或 {@code decision == APPROVE} 时忽略该参数）⇒ 维持原语义，整单驳回；
+   *   <li>目标节点不存在 / 为结束节点 / 等于当前节点 ⇒ 拒绝并抛 {@code REJECT_TARGET_NODE_INVALID}，绝不静默整单驳回冒充「退回」；
+   *   <li>同实例累计驳回次数达上限（防 A 驳 B、B 驳 A 无限往返）⇒ 强制整单驳回终止。
+   * </ul>
+   *
+   * @param taskId 任务 id
+   * @param decision 审批结论
+   * @param comment 审批意见（驳回必填，否则 {@code REJECT_COMMENT_REQUIRED}）
+   * @param operatorId 操作人（须为该任务办理人，否则拒绝）
+   * @param backToNodeCode 驳回时退回的目标节点编码（可空；仅 {@code REJECT} 生效，{@code APPROVE} 时忽略）
+   * @return 推进后的流程实例
+   */
+  WorkflowInstance completeTask(
+      String taskId,
+      WorkflowTask.Decision decision,
+      String comment,
+      String operatorId,
+      String backToNodeCode);
+
+  /**
    * 撤回流程（仅发起人、且流程未终结时可撤回）。
    *
    * @param instanceId 流程实例 id

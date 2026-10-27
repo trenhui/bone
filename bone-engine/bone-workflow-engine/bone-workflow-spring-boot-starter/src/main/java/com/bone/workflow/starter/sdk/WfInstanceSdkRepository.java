@@ -114,8 +114,12 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
    * 节点级原子推进（会签场景的关键并发点）：完成条件的判定与推进在同一语句内依据最新行状态计算。
    *
    * <p>完成条件口径（{@code mode}）：{@code AUTO} 无条件移动（START / CONDITION / CC 等非审批节点）； {@code ALL} 会签 =
-   * 全部任务落在已决策显式集（{@code APPROVED/REJECTED/CANCELLED}，不用「无 PENDING」近似） 且无人驳回（另有存在性守卫）；其余（SINGLE /
-   * ANY）= 至少 1 人 APPROVED 且无人驳回。
+   * 全部任务落在已决策显式集（{@code APPROVED/REJECTED/CANCELLED}，不用「无 PENDING」近似） 且无人驳回；{@code ANY} 或签 = 至少 1 人
+   * APPROVED 且无人驳回；{@code SINGLE} 单签 = 至少 1 人 APPROVED（驳回由 completeTask 兜底整单终止， 此处不校验
+   * REJECTED，否则「驳回退回重入」时历史访问的陈旧 REJECTED 会误阻断本次推进）。
+   *
+   * <p><b>REJECTED 守卫的适用范围</b>：仅 {@code ALL}/{@code ANY} 多办理人同访问需要——任一驳回即整单驳回； {@code
+   * SINGLE}/{@code AUTO} 不挂此守卫（单签驳回由引擎兜底，非审批节点本就无驳回）。
    *
    * <p><b>为什么不得拆成先查后改</b>：两个会签人同时点「同意」时各自读到「对方还没通过」的旧快照 ⇒ 双方都判「未齐」 ⇒
    * 流程永远卡在待办（会签经典死锁）。判据必须由数据库在同一条语句里算。
@@ -126,9 +130,10 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
           + " WHERE id = #{instanceId} AND tenant_id = #{tenantId}"
           + "   AND current_node_code = #{nodeCode}"
           + "   AND phase = 'RUNNING'"
-          + "   AND NOT EXISTS (SELECT 1 FROM wf_task t"
-          + "       WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "         AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'REJECTED')"
+          + "   AND (#{mode} NOT IN ('ALL', 'ANY')"
+          + "     OR NOT EXISTS (SELECT 1 FROM wf_task t"
+          + "         WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
+          + "           AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'REJECTED'))"
           + "   AND ("
           + "     #{mode} = 'AUTO'"
           + "     OR (#{mode} = 'ALL'"

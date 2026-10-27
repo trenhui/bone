@@ -245,8 +245,12 @@ class WorkflowEngineImplTest {
             if (nodeTasks.isEmpty()) {
               return false;
             }
-            if (nodeTasks.stream()
-                .anyMatch(task -> task.status() == WorkflowTask.Status.REJECTED)) {
+            // 单签（SINGLE）模式：同一节点同一访问仅 1 条任务，驳回已由 completeTask 兜底整单终止，
+            // 此处再校验 REJECTED 会误伤「驳回退回重入」——历史访问留下的陈旧 REJECTED 任务不该阻断本次推进。
+            // 会签（ALL）/或签（ANY）多办理人同访问：任一驳回即整单驳回，必须保留 REJECTED 守卫。
+            if (mode != WorkflowDefinition.ApprovalMode.SINGLE
+                && nodeTasks.stream()
+                    .anyMatch(task -> task.status() == WorkflowTask.Status.REJECTED)) {
               return false;
             }
             // 与生产 SQL 同口径：会签 = 全部任务落在已决策显式集（不是「无 PENDING」）
@@ -1235,6 +1239,149 @@ class WorkflowEngineImplTest {
         notifications.contains("TASK_CANCELLED:" + peer.assigneeId() + "@" + peer.nodeCode()),
         "或签下未决策的办理人待办被作废，必须收到知会：" + notifications);
     assertEquals(WorkflowInstance.Phase.APPROVED, latestPhase());
+  }
+
+  @Test
+  @DisplayName("驳回退回指定节点：财务驳回退回主管，主管改派他人后续跑至通过")
+  void rejectToNode_returnsToPreviousNodeAndResumes() {
+    givenTwoLevelApproval();
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    // 第一级主管通过 → 推进到财务节点
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "同意", "mgr1");
+    assertEquals("finance", latestInstance().currentNodeCode(), "应推进到财务节点");
+    String financeTask = pendingTasks().get(0).id();
+
+    // 财务节点办理人（本测试 stub 对所有规则返回 mgr1，故两节点办理人均为 mgr1）驳回，退回主管节点（而非整单驳回）
+    WorkflowInstance rejected =
+        engine.completeTask(financeTask, WorkflowTask.Decision.REJECT, "金额超标，请重核", "mgr1", "mgr");
+    assertEquals(WorkflowInstance.Phase.RUNNING, rejected.phase(), "退回节点后流程仍在运行");
+    assertEquals("mgr", rejected.currentNodeCode(), "currentNodeCode 应跳回主管节点");
+    assertEquals(1, pendingTasks().size(), "主管节点应重新派单");
+    assertEquals("mgr1", pendingTasks().get(0).assigneeId());
+
+    // 主管重新审批通过 → 财务再审批 → 流程通过（退回通道闭环）
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "已重核", "mgr1");
+    assertEquals("finance", latestInstance().currentNodeCode());
+    engine.completeTask(pendingTasks().get(0).id(), WorkflowTask.Decision.APPROVE, "通过", "mgr1");
+    assertEquals(WorkflowInstance.Phase.APPROVED, latestPhase());
+  }
+
+  @Test
+  @DisplayName("驳回退回·目标非法（不存在/结束节点/当前节点）一律拒绝，绝不静默整单驳回")
+  void rejectToNode_invalidTarget_rejected() {
+    givenTwoLevelApproval();
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+    String mgrTask = pendingTasks().get(0).id();
+
+    // 目标节点不存在
+    WorkflowEngineException e1 =
+        assertThrows(
+            WorkflowEngineException.class,
+            () ->
+                engine.completeTask(mgrTask, WorkflowTask.Decision.REJECT, "原因", "mgr1", "ghost"));
+    assertEquals(WorkflowErrorCode.REJECT_TARGET_NODE_INVALID, e1.code());
+
+    // 目标为结束节点（退回即等于通过，语义错误）
+    WorkflowEngineException e2 =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.completeTask(mgrTask, WorkflowTask.Decision.REJECT, "原因", "mgr1", "end"));
+    assertEquals(WorkflowErrorCode.REJECT_TARGET_NODE_INVALID, e2.code());
+
+    // 目标为当前节点（自身循环无意义）
+    WorkflowEngineException e3 =
+        assertThrows(
+            WorkflowEngineException.class,
+            () -> engine.completeTask(mgrTask, WorkflowTask.Decision.REJECT, "原因", "mgr1", "mgr"));
+    assertEquals(WorkflowErrorCode.REJECT_TARGET_NODE_INVALID, e3.code());
+
+    // 非法退回不得改变流程状态、不得标记任务为已决策（否则留下死节点）
+    assertEquals(WorkflowInstance.Phase.RUNNING, latestPhase(), "非法退回不得改变流程状态");
+    assertEquals(WorkflowTask.Status.PENDING, pendingTasks().get(0).status(), "非法退回不得改动待办状态");
+  }
+
+  @Test
+  @DisplayName("驳回退回·次数超限强制整单驳回（防 A 驳 B / B 驳 A 无限往返）")
+  void rejectToNode_loopGuard_forcesTerminal() {
+    // 与 WorkflowEngineImpl.MAX_REJECT_TO_NODE_ROUNDS 同值；该常量为引擎内控阈值，改值时本例需同步。
+    final int REJECT_LIMIT = 10;
+    givenStartNodeEnd();
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense_reimbursement", "r1", "expense", "u1");
+
+    // 反复「审批节点驳回退回发起节点」模拟 A↔B 拉锯：每轮留下 1 条 REJECTED 任务、流程仍运行
+    for (int round = 1; round <= REJECT_LIMIT; round++) {
+      WorkflowInstance after =
+          engine.completeTask(
+              pendingTasks().get(0).id(),
+              WorkflowTask.Decision.REJECT,
+              "退回重提 " + round,
+              "mgr1",
+              "start");
+      assertEquals(
+          WorkflowInstance.Phase.RUNNING, after.phase(), "第 " + round + " 轮退回仍应在运行（次数未达上限）");
+      assertEquals(1, pendingTasks().size(), "每轮退回应重新派单");
+    }
+    // 第 (上限+1) 轮触发循环防护：强制整单驳回终止
+    WorkflowInstance terminal =
+        engine.completeTask(
+            pendingTasks().get(0).id(), WorkflowTask.Decision.REJECT, "退回重提超限", "mgr1", "start");
+    assertEquals(WorkflowInstance.Phase.REJECTED, terminal.phase(), "次数超限应强制整单驳回终止");
+  }
+
+  private WorkflowInstance latestInstance() {
+    return instances.values().iterator().next();
+  }
+
+  private void givenTwoLevelApproval() {
+    definitions.put(
+        "expense",
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(
+                new WorkflowDefinition.Node("start", WorkflowDefinition.NodeType.START, null, "发起"),
+                new WorkflowDefinition.Node(
+                    "mgr",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.SINGLE,
+                    "主管"),
+                new WorkflowDefinition.Node(
+                    "finance",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.SINGLE,
+                    "财务"),
+                new WorkflowDefinition.Node("end", WorkflowDefinition.NodeType.END, null, "结束")),
+            List.of(
+                new WorkflowDefinition.Edge("start", "mgr", null, "提交"),
+                new WorkflowDefinition.Edge("mgr", "finance", null, "主管通过"),
+                new WorkflowDefinition.Edge("finance", "end", null, "财务通过")),
+            Map.of(
+                "mgr", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())),
+                "finance", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+  }
+
+  private void givenStartNodeEnd() {
+    definitions.put(
+        "expense",
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(
+                new WorkflowDefinition.Node("start", WorkflowDefinition.NodeType.START, null, "发起"),
+                new WorkflowDefinition.Node(
+                    "node",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.SINGLE,
+                    "审批"),
+                new WorkflowDefinition.Node("end", WorkflowDefinition.NodeType.END, null, "结束")),
+            List.of(
+                new WorkflowDefinition.Edge("start", "node", null, "提交"),
+                new WorkflowDefinition.Edge("node", "end", null, "通过")),
+            Map.of("node", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
   }
 
   private WorkflowInstance.Phase latestPhase() {

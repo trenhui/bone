@@ -64,6 +64,13 @@ public enum WorkflowErrorCode {
   /** 驳回未填写意见：发起人无从得知为何被驳回、无法修改重提。 */
   REJECT_COMMENT_REQUIRED(422),
 
+  /**
+   * 驳回退回的目标节点非法：不存在 / 指向结束节点（退回即等于「通过」，语义错误）/ 指向当前节点（自身循环无意义）。
+   *
+   * <p>fail-closed：目标节点不可达时一律拒绝并明确报错，绝不允许「静默整单驳回」冒充「退回」。
+   */
+  REJECT_TARGET_NODE_INVALID(422),
+
   /** 条件分支无任何命中且无默认边。 */
   BRANCH_NO_MATCH(422),
 
