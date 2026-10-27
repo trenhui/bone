@@ -47,12 +47,25 @@ export interface WorkflowSaveDraftResult {
   violations: Violation[];
 }
 
-/** 已发布版本（{@code Published} 镜像）。 */
+/** 已发布版本（{@code Published} 镜像，含定义原文，供版本抽屉「载入」还原画布）。 */
 export interface WorkflowPublished {
   defKey: string;
   defName: string;
   version: number;
   definitionJson: string;
+  enabled: boolean;
+}
+
+/**
+ * 定义总览行（{@code Summary} 镜像，<b>不含定义原文</b>）。
+ *
+ * <p>后端刻意不让列表带 definitionJson：几十个流程 × 每份原文 KB 级 = 几百 KB 首屏无用载荷。
+ * 这里保持同口径——类型上就没有 definitionJson，用的时候只能去查版本详情，避免「列表顺手当详情用」。
+ */
+export interface WorkflowDefinitionSummary {
+  defKey: string;
+  defName: string;
+  version: number;
   enabled: boolean;
 }
 
@@ -76,7 +89,7 @@ export const workflowDesignerApi = {
    * 整体消失——左侧选不到、也就没有任何入口把它重新上线（联调实测到的死路）。{@code enabled} 字段用于区分状态。
    */
   listLatest: (includeOffline = true) =>
-    api.get<never, ApiResponse<WorkflowPublished[]>>('/workflow/definitions', {
+    api.get<never, ApiResponse<WorkflowDefinitionSummary[]>>('/workflow/definitions', {
       params: { includeOffline },
     }),
 
@@ -112,7 +125,7 @@ export const workflowDesignerApi = {
       withOperator(),
     ),
 
-  /** 某 key 的全部版本。 */
+  /** 某 key 的全部版本（按版本号<b>降序</b>：首元素即当前最新版，设计器据此在无草稿时还原画布）。 */
   listVersions: (key: string) =>
     api.get<never, ApiResponse<WorkflowPublished[]>>(`/workflow/definitions/${key}/versions`),
 

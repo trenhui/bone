@@ -65,7 +65,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * <ul>
  *   <li>传输层：路径、方法、{@code Content-Type}、{@code X-Operator-Id} 审计头、UTF-8 中文往返；
  *   <li>语义层：草稿可脏 / 发布 fail-closed / revision 乐观并发 / 版本上下线；
- *   <li>错误层：400（缺租户、超长、空 body）、403（授权拒绝）、404（版本不存在）、409（revision 过期）、422（发布违规）。
+ *   <li>错误层：400（缺租户、超长、空 body）、403（授权拒绝）、404（版本不存在）、409（revision 缺失/过期、 并发发布）、422（发布违规）。
  * </ul>
  *
  * <p><b>宿主职责的显式化</b>：生产里租户上下文由宿主的过滤器注入、授权由宿主的 {@link WorkflowDesignerAuthorizer}
@@ -263,8 +263,17 @@ class WorkflowDesignerHttpIntegrationTest {
 
     String huge = "{\"key\":\"" + "x".repeat(1 << 20) + "\"}";
     Res oversize = call("POST", "/validate", huge, tenantHeaders());
-    assertEquals(400, oversize.status(), "超过 1 Mi 字符应 400（反序列化前拒绝）：" + oversize.raw());
+    assertEquals(400, oversize.status(), "超过 1 MiB 应 400（反序列化前拒绝）：" + oversize.raw());
     assertTrue(oversize.body().path("message").asText().contains("超过上限"), oversize.raw());
+    assertTrue(
+        oversize.body().path("message").asText().contains("字节"), "上限口径应按字节表述：" + oversize.raw());
+
+    // 上限按 UTF-8 字节而不是 String#length()：40 万个汉字只有 40 万个 char（旧口径放行），
+    // 但编码后是 1.2 MB（新口径必须拒）。这条用例是「字符口径」与「字节口径」唯一能分开的地方。
+    String cjkHuge = "{\"key\":\"" + "汉".repeat(400_000) + "\"}";
+    assertTrue(cjkHuge.length() < (1 << 20), "用例前提：字符数仍在上限内，说明分歧只在字节侧");
+    Res cjkOversize = call("POST", "/validate", cjkHuge, tenantHeaders());
+    assertEquals(400, cjkOversize.status(), "40 万汉字（1.2 MB）应按字节口径拒绝：" + cjkOversize.raw());
 
     Res denied = call("POST", "/validate", valid, headers("X-Test-Deny", "1"));
     assertEquals(403, denied.status(), "授权拒绝应 403：" + denied.raw());
@@ -331,6 +340,15 @@ class WorkflowDesignerHttpIntegrationTest {
     assertEquals(200, fixed.status(), fixed.raw());
     assertEquals(3, fixed.body().path("data").path("draft").path("revision").asInt());
 
+    // 发布必须携带 revision：草稿是「一 key 一稿」的共享态，不带 revision 的发布会把没评审过的内容固化成不可变版本，
+    // 而在途实例此后就照着它走完流程。故与「覆盖保存」同口径 fail-closed。
+    Res publishNoRevision =
+        call("POST", "/" + DEF_KEY + "/publish", publishBody(null), operatorHeaders());
+    assertEquals(409, publishNoRevision.status(), "发布缺 revision 应 409：" + publishNoRevision.raw());
+    assertTrue(
+        publishNoRevision.body().path("message").asText().contains("必须携带 revision"),
+        publishNoRevision.raw());
+
     Res published = call("POST", "/" + DEF_KEY + "/publish", publishBody(3), operatorHeaders());
     assertEquals(200, published.status(), "干净草稿应发布成功：" + published.raw());
     assertEquals(1, published.body().path("data").path("version").asInt(), "首个版本 version=1");
@@ -366,6 +384,12 @@ class WorkflowDesignerHttpIntegrationTest {
     Res latest = call("GET", "", null, tenantHeaders());
     assertEquals(1, latest.body().path("data").size(), "总览应有 1 个 key：" + latest.raw());
     assertTrue(latest.body().path("data").get(0).path("enabled").asBoolean(), "新发布默认上线");
+    // 总览是首屏列表，不该带定义原文：几十个流程 × 每份原文 KB 级 = 几百 KB 无用载荷。
+    assertTrue(
+        latest.body().path("data").get(0).path("definitionJson").isMissingNode(),
+        "总览响应不得包含 definitionJson：" + latest.raw());
+    assertTrue(
+        latest.body().path("data").get(0).path("defKey").asText().equals(DEF_KEY), "总览应带 key");
 
     Res offline =
         call("POST", "/" + DEF_KEY + "/enabled", enabledBody(1, false), operatorHeaders());
@@ -422,6 +446,23 @@ class WorkflowDesignerHttpIntegrationTest {
         "丢弃草稿应 200");
     assertEquals(
         200, call("DELETE", "/" + DEF_KEY + "/draft", null, operatorHeaders()).status(), "重复丢弃应幂等");
+
+    // ---- 版本列表降序：首元素必须是当前最新版 ----
+    // 设计器「无草稿时打开流程」用 versions[0] 还原画布。若接口升序返回，还原出的是第一版，
+    // 而界面上完全看不出异常（画布照样画得出来，画的是几个月前的流程）——静默错版比报错难查得多。
+    Res draftForV2 =
+        call("POST", "/" + DEF_KEY + "/draft", draftBody(valid, null), operatorHeaders());
+    assertEquals(1, draftForV2.body().path("data").path("draft").path("revision").asInt());
+    assertEquals(
+        200, call("POST", "/" + DEF_KEY + "/publish", publishBody(1), operatorHeaders()).status());
+
+    Res twoVersions = call("GET", "/" + DEF_KEY + "/versions", null, tenantHeaders());
+    assertEquals(2, twoVersions.body().path("data").size(), twoVersions.raw());
+    assertEquals(
+        2,
+        twoVersions.body().path("data").get(0).path("version").asInt(),
+        "版本列表应按版本号降序（首元素 = 最新版）：" + twoVersions.raw());
+    assertEquals(1, twoVersions.body().path("data").get(1).path("version").asInt());
   }
 
   @Test

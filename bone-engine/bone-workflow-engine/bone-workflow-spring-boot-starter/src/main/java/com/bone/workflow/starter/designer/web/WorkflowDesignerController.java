@@ -41,13 +41,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkflowDesignerController {
 
   /**
-   * 流程定义原文的字符数上限（1 Mi 字符，UTF-8 最坏约 4 MiB）。
+   * 流程定义原文的<b>字节</b>上限（1 MiB，UTF-8 编码后）。
    *
-   * <p>为什么要卡：{@code definition_json} 落 JSON 列，正常业务定义在 10^4 字符量级；不设上限时一个超大 body 就能让 Jackson
-   * 整棵树进内存，把服务打成 OOM。这是 OWASP「约束输入长度」的直接落地——在反序列化<b>之前</b>按字符数拒绝，而不是等 OOM 之后 再查 GC
+   * <p>为什么要卡：{@code definition_json} 落 JSON 列，正常业务定义在 10^4 字节量级；不设上限时一个超大 body 就能让 Jackson
+   * 整棵树进内存，把服务打成 OOM。这是 OWASP「约束输入长度」的直接落地——在反序列化<b>之前</b>拒绝，而不是等 OOM 之后 再查 GC
    * 日志。上限留了两个数量级余量，不会误伤真实流程。
+   *
+   * <p><b>为什么按字节而不按 {@code String#length()}</b>：{@code length()} 数的是 UTF-16 code unit，与内存占用不是
+   * 同一口径——一个汉字算 1、3 字节；照字符数卡 1 Mi，实际放进来的是 3 MiB 的 body，防护效果打了三折。内存与网络都是字节口径，
+   * 限制器必须与它要保护的东西同口径，否则「上限」只是看着像有。
    */
-  private static final int MAX_DEFINITION_CHARS = 1 << 20;
+  private static final int MAX_DEFINITION_BYTES = 1 << 20;
 
   private final WorkflowDefinitionCommandService command;
   private final WorkflowSimulationService simulation;
@@ -83,7 +87,7 @@ public class WorkflowDesignerController {
    *     再没有任何入口把它重新上线）。运行期消费方用缺省的 {@code false}（只取当前生效定义）。
    */
   @GetMapping
-  public ApiResponse<List<WorkflowDefinitionCommandService.Published>> listLatest(
+  public ApiResponse<List<WorkflowDefinitionCommandService.Summary>> listLatest(
       @RequestParam(name = "includeOffline", defaultValue = "false") boolean includeOffline) {
     authorizer.authorize(WorkflowDesignerAction.READ, null, null);
     return ApiResponse.ok(command.listLatest(includeOffline));
@@ -186,15 +190,40 @@ public class WorkflowDesignerController {
     if (definitionJson == null || definitionJson.isBlank()) {
       throw new WorkflowDefinitionRequestException(scene + "失败：流程定义原文为空");
     }
-    if (definitionJson.length() > MAX_DEFINITION_CHARS) {
+    if (exceedsByteLimit(definitionJson)) {
       throw new WorkflowDefinitionRequestException(
           scene
-              + "失败：流程定义原文长度 "
-              + definitionJson.length()
-              + " 超过上限 "
-              + MAX_DEFINITION_CHARS
-              + " 字符");
+              + "失败：流程定义原文约 "
+              + definitionJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
+              + " 字节，超过上限 "
+              + MAX_DEFINITION_BYTES
+              + " 字节");
     }
     return definitionJson;
+  }
+
+  /**
+   * 是否超过字节上限。
+   *
+   * <p><b>两级判断，避免为每个正常请求都编码一次</b>：{@code getBytes} 会复制一份等长数组，而这段代码在每个写请求都要跑——正常定义只有 几
+   * KB，为了卡住罕见的大包而给 100% 的请求多分配 1 MiB 临时内存，是不划算的。
+   *
+   * <ul>
+   *   <li>{@code chars > 上限} ⇒ 必然超：UTF-8 每字符至少 1 字节；
+   *   <li>{@code chars * 3 <= 上限} ⇒ 必然不超：一个 UTF-16 code unit 最多编成 3 字节（BMP 上界；代理对是 2 个 unit 编成 4
+   *       字节，更省）；
+   *   <li>只有落在中间灰区才真正编码测量。
+   * </ul>
+   */
+  private static boolean exceedsByteLimit(String definitionJson) {
+    int chars = definitionJson.length();
+    if (chars > MAX_DEFINITION_BYTES) {
+      return true;
+    }
+    if (chars * 3L <= MAX_DEFINITION_BYTES) {
+      return false;
+    }
+    return definitionJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
+        > MAX_DEFINITION_BYTES;
   }
 }

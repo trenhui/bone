@@ -138,7 +138,7 @@ class WorkflowDefinitionCommandServiceH2Test {
   void publish_rejectsInvalidDraft_withoutTouchingVersionTable() {
     service.saveDraft(DEF_KEY, DIRTY_JSON, null, "u1");
 
-    assertThatThrownBy(() -> service.publish(DEF_KEY, null, "u1"))
+    assertThatThrownBy(() -> service.publish(DEF_KEY, 1, "u1"))
         .isInstanceOf(WorkflowDefinitionInvalidException.class)
         .hasMessageContaining("拒绝发布");
 
@@ -147,20 +147,36 @@ class WorkflowDefinitionCommandServiceH2Test {
   }
 
   @Test
+  @DisplayName("发布必须携带 revision：缺失 409（否则会把自己没看过的草稿固化成不可变版本）")
+  void publish_withoutRevision_isRejected() {
+    service.saveDraft(DEF_KEY, VALID_JSON, null, "u1");
+
+    assertThatThrownBy(() -> service.publish(DEF_KEY, null, "u1"))
+        .isInstanceOf(WorkflowDefinitionConflictException.class)
+        .hasMessageContaining("必须携带 revision");
+    assertThat(countPublished()).as("未携带 revision 不得落任何版本行").isZero();
+
+    // 带上评审过的 revision 才放行——同一次调用只差这一个参数，用来证明拒绝的是「缺 revision」而不是别的。
+    assertThat(service.publish(DEF_KEY, 1, "u1").version()).isEqualTo(1);
+  }
+
+  @Test
   @DisplayName("版本号单调占位：下线 v1 后再发布得到 v2，不会回落撞唯一键")
   void versionWatermark_survivesDisable() {
     service.saveDraft(DEF_KEY, VALID_JSON, null, "u1");
-    service.publish(DEF_KEY, null, "u1");
+    service.publish(DEF_KEY, 1, "u1");
     service.setEnabled(DEF_KEY, 1, false, "u1");
     assertThat(service.findVersion(DEF_KEY, 1).orElseThrow().enabled()).isFalse();
 
     service.saveDraft(DEF_KEY, VALID_JSON, null, "u1");
-    WorkflowDefinitionCommandService.Published second = service.publish(DEF_KEY, null, "u1");
+    WorkflowDefinitionCommandService.Published second = service.publish(DEF_KEY, 1, "u1");
 
     assertThat(second.version()).isEqualTo(2);
+    // 降序：版本列表的首元素必须是「当前最新版」，设计器据此在无草稿时还原画布。
+    // 升序会还原出第一版，且界面上看不出异常（画布照样能画，画的是老流程）。
     assertThat(service.listVersions(DEF_KEY))
         .extracting(WorkflowDefinitionCommandService.Published::version)
-        .containsExactly(1, 2);
+        .containsExactly(2, 1);
   }
 
   @Test
@@ -196,9 +212,9 @@ class WorkflowDefinitionCommandServiceH2Test {
   @DisplayName("定义总览只取每个 key 的当前生效版本（下线后不再出现在总览里）")
   void listLatest_reflectsEnabledState() {
     service.saveDraft(DEF_KEY, VALID_JSON, null, "u1");
-    service.publish(DEF_KEY, null, "u1");
+    service.publish(DEF_KEY, 1, "u1");
     assertThat(service.listLatest())
-        .extracting(WorkflowDefinitionCommandService.Published::version)
+        .extracting(WorkflowDefinitionCommandService.Summary::version)
         .containsExactly(1);
 
     service.setEnabled(DEF_KEY, 1, false, "u1");

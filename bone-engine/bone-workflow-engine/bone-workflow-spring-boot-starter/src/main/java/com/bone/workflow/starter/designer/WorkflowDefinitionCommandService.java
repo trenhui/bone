@@ -50,6 +50,15 @@ public class WorkflowDefinitionCommandService {
       String defKey, String defName, int version, String definitionJson, boolean enabled) {}
 
   /**
+   * 定义总览行（<b>不含定义原文</b>）。
+   *
+   * <p>为什么不复用 {@link Published}：总览是首屏列表，每条定义原文在 10^3–10^4 字节量级，几十个流程就是几百 KB
+   * 的无用载荷。更隐蔽的成本是类型层面——{@code Published.definitionJson} 非空，总览若沿用它，就必须真的把原文从库里读出来才「不撒谎」，
+   * 于是「列表顺手带了全文」这个反模式会被类型系统永久合法化。拆成独立投影后，接口只承诺它真正提供的四个字段。
+   */
+  public record Summary(String defKey, String defName, int version, boolean enabled) {}
+
+  /**
    * 保存结果。
    *
    * @param draft 落库后的草稿（含新 revision，前端下次提交必须带上）
@@ -186,8 +195,11 @@ public class WorkflowDefinitionCommandService {
   /**
    * 发布草稿为不可变版本。
    *
+   * @param expectedRevision 调用方评审过的草稿 revision，<b>必填</b>。语义与保存草稿的覆盖保护一致：草稿是「一 key
+   *     一稿」的共享态，别人在你之后存过稿时，不带 revision 的发布会把你<b>没看过的内容</b>固化成不可变版本；而版本一旦发出，
+   *     在途实例就照着它走完流程——事后只能再发一版纠正。
    * @throws WorkflowDefinitionInvalidException 校验不通过（401/422 由宿主映射；违规清单随异常带出）
-   * @throws WorkflowDefinitionConflictException revision 过期或版本号并发冲突（409）
+   * @throws WorkflowDefinitionConflictException revision 缺失/过期或版本号并发冲突（409）
    */
   @Transactional
   public Published publish(String defKey, Integer expectedRevision, String operatorId) {
@@ -200,7 +212,11 @@ public class WorkflowDefinitionCommandService {
             .orElseThrow(
                 () -> new WorkflowDefinitionConflictException("流程定义 " + defKey + " 没有草稿，无法发布"));
 
-    if (expectedRevision != null && expectedRevision != draft.getRevision()) {
+    if (expectedRevision == null) {
+      throw new WorkflowDefinitionConflictException(
+          "发布必须携带 revision（当前草稿为 " + draft.getRevision() + "）——否则无法确认你评审的就是这一版内容");
+    }
+    if (expectedRevision != draft.getRevision()) {
       throw new WorkflowDefinitionConflictException(
           "草稿已被他人修改（提交的 revision=" + expectedRevision + "，当前为 " + draft.getRevision() + "），请刷新后重试");
     }
@@ -258,7 +274,7 @@ public class WorkflowDefinitionCommandService {
   // ====================== 查询 ======================
 
   /** 定义总览：每个 key 的当前生效版本（<b>只含已上线</b>，运行期消费方按此取定义）。 */
-  public List<Published> listLatest() {
+  public List<Summary> listLatest() {
     return listLatest(false);
   }
 
@@ -269,13 +285,13 @@ public class WorkflowDefinitionCommandService {
    *     <b>设计器必须用这个口径</b>。否则下线一个流程后该 key 从总览消失，设计器左侧列表里再也选不到它， 也就没有任何入口把它重新上线（只能靠人工记住 key
    *     直接调接口）——这是联调时实测到的死路。 运行期取定义仍走 {@link #listLatest()}（只含上线版本），两者语义刻意分开。
    */
-  public List<Published> listLatest(boolean includeOffline) {
+  public List<Summary> listLatest(boolean includeOffline) {
     Long tenantId = requireTenant();
     List<WfProcessDefRow> rows =
         includeOffline
             ? definitions.listLatestPublishedPerKeyRows(tenantId)
             : definitions.listLatestPerKeyRows(tenantId);
-    return rows.stream().map(WorkflowDefinitionCommandService::toPublished).toList();
+    return rows.stream().map(WorkflowDefinitionCommandService::toSummary).toList();
   }
 
   /** 某 key 的全部版本（含已下线）。 */
@@ -337,6 +353,14 @@ public class WorkflowDefinitionCommandService {
         row.getDefName(),
         row.getDefVersion(),
         row.getDefinitionJson(),
+        row.getEnabled() == null || row.getEnabled() == 1);
+  }
+
+  private static Summary toSummary(WfProcessDefRow row) {
+    return new Summary(
+        row.getDefKey(),
+        row.getDefName(),
+        row.getDefVersion(),
         row.getEnabled() == null || row.getEnabled() == 1);
   }
 

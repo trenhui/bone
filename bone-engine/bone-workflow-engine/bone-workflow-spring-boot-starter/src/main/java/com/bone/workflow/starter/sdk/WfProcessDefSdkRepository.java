@@ -118,22 +118,31 @@ public interface WfProcessDefSdkRepository extends Repository<WfProcessDefRow, S
       @Param("operatorId") String operatorId,
       @Param("now") Instant now);
 
-  /** 某 key 的全部版本（含已下线，供版本列表与审计；{@code enabled} 一并取出）。 */
+  /**
+   * 某 key 的全部版本（含已下线，供版本列表与审计；{@code enabled} 一并取出）。
+   *
+   * <p><b>降序是语义的一部分，不只是显示顺序</b>：版本列表的调用方（设计器）把首元素当「当前最新版」用来还原画布
+   * ——升序返回会让「无草稿时打开流程」还原出<b>第一版</b>而不是最新版，而界面上看不出任何异常（画布照样能画出来， 只是画的是三个月前的流程）。故此处显式 {@code DESC}，与
+   * {@link #findMaxVersionRow} 同序。审计若需要升序，由调用方自行反转，别改回这里的口径。
+   */
   @Sql(
       "SELECT def_key, def_name, def_version, definition_json, enabled FROM wf_process_def"
           + " WHERE def_key = #{defKey} AND tenant_id = #{tenantId} AND status = 'PUBLISHED'"
-          + "   AND deleted = 0 ORDER BY def_version")
+          + "   AND deleted = 0 ORDER BY def_version DESC")
   List<WfProcessDefRow> listVersionRows(
       @Param("defKey") String defKey, @Param("tenantId") Long tenantId);
 
   /**
    * 定义总览：每个 key 只取「已发布且启用」的最高版本。
    *
+   * <p><b>不取 {@code definition_json}</b>：总览是首屏列表，每行定义原文在 10^3–10^4 字节量级，几十个流程就是几百 KB 的无用载荷（列表只需要
+   * key / 名称 / 版本 / 上下线状态，取某一版原文走 {@link #findVersionRow}）。写 SQL 时 顺手带上大列是「能跑就行」的典型，代价随 key 数量线性增长。
+   *
    * <p>用相关子查询而不是 {@code GROUP BY}：MySQL 与 H2 对「非聚合列 + GROUP BY」的容忍度不同（{@code
    * ONLY_FULL_GROUP_BY}），子查询在两处语义一致，且 H2 回归跑的就是生产 SQL。
    */
   @Sql(
-      "SELECT d.def_key, d.def_name, d.def_version, d.definition_json, d.enabled FROM wf_process_def d"
+      "SELECT d.def_key, d.def_name, d.def_version, d.enabled FROM wf_process_def d"
           + " WHERE d.tenant_id = #{tenantId} AND d.deleted = 0 AND d.status = 'PUBLISHED'"
           + "   AND d.enabled = 1"
           + "   AND d.def_version = (SELECT MAX(x.def_version) FROM wf_process_def x"
@@ -148,9 +157,11 @@ public interface WfProcessDefSdkRepository extends Repository<WfProcessDefRow, S
    * <p>为什么需要第二个口径：{@link #listLatestPerKeyRows} 只返回「当前生效」的定义，供运行期消费方按 key 取定义用；但设计器要管理上下线，一旦某个 key
    * 的最新版本被下线，它就从这个口径里整体消失了——设计器既看不到、 也就没有入口把它重新上线（联调实测到的死路）。故为设计态单独提供含下线的口径，返回 {@code enabled}
    * 供界面区分。
+   *
+   * <p>同样不取 {@code definition_json}，理由见 {@link #listLatestPerKeyRows}。
    */
   @Sql(
-      "SELECT d.def_key, d.def_name, d.def_version, d.definition_json, d.enabled FROM wf_process_def d"
+      "SELECT d.def_key, d.def_name, d.def_version, d.enabled FROM wf_process_def d"
           + " WHERE d.tenant_id = #{tenantId} AND d.deleted = 0 AND d.status = 'PUBLISHED'"
           + "   AND d.def_version = (SELECT MAX(x.def_version) FROM wf_process_def x"
           + "        WHERE x.tenant_id = d.tenant_id AND x.def_key = d.def_key"

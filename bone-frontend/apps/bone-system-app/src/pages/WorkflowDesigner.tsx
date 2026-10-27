@@ -18,6 +18,7 @@ import {
   Switch,
   Divider,
   Badge,
+  Modal,
 } from 'antd';
 import {
   PlusOutlined,
@@ -51,6 +52,7 @@ import {
   workflowDesignerApi,
   docFromDefinitionJson,
   toWorkflowFailure,
+  type WorkflowDefinitionSummary,
   type WorkflowPublished,
 } from '@/services/workflowApi';
 import { BonePermissionCodes, hasPermission } from '../auth/permission';
@@ -163,6 +165,41 @@ interface SimReport {
   error?: string | null;
 }
 
+/**
+ * 画布状态快照：用于判断「有没有未保存的修改」。
+ *
+ * <p>比对的是**编译产物**而不是 state 对象引用：拖动一个节点只是改 layout，流程语义没变，但版式要保存，
+ * 所以快照必须包含 layout；反过来，若拿原始 doc 比，编译选项变化（有损还原）也会被误判成「已修改」。
+ * 编译失败返回 null（有损/半成品不参与脏判定，它们本来就禁止保存）。
+ */
+function snapshotOf(doc: FlowDoc, layout: Record<string, LayoutPoint>): string | null {
+  try {
+    return JSON.stringify(compile(doc, { layout: Object.keys(layout).length ? layout : undefined }));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 二次确认（Promise 化）。
+ *
+ * <p>为什么不用 {@code Popconfirm}：需要在 async 流程中间（切换流程、载入历史版本、409 冲突）停下来问一句，
+ * 而 Popconfirm 是绑定在某个按钮上的声明式组件，塞不进「已经在执行」的异步函数。
+ */
+function confirmDiscard(title: string, content: string, okText: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title,
+      content,
+      okText,
+      cancelText: '继续编辑',
+      okButtonProps: { danger: true },
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+}
+
 const WorkflowDesigner: React.FC = () => {
   const [defKey, setDefKey] = useState('');
   const [defName, setDefName] = useState('');
@@ -171,10 +208,12 @@ const WorkflowDesigner: React.FC = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [revision, setRevision] = useState<number | null>(null);
   const [draftExists, setDraftExists] = useState(false);
+  /** 上一次「读入 / 保存」时的画布快照，与当前快照比对即得 dirty。 */
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [lossy, setLossy] = useState(false);
   const [violations, setViolations] = useState<Violation[]>([]);
   const [simReport, setSimReport] = useState<SimReport | null>(null);
-  const [defList, setDefList] = useState<WorkflowPublished[]>([]);
+  const [defList, setDefList] = useState<WorkflowDefinitionSummary[]>([]);
   const [versions, setVersions] = useState<WorkflowPublished[]>([]);
   const [versionDrawer, setVersionDrawer] = useState(false);
   const [, setLoading] = useState(false);
@@ -201,6 +240,21 @@ const WorkflowDesigner: React.FC = () => {
   }, [doc, layout]);
 
   const violationByNode = useMemo(() => groupViolationsByNode(violations), [violations]);
+
+  /**
+   * 默认坐标（只依赖文档结构，与拖拽覆盖无关）。
+   *
+   * <p>必须 memo：它此前在<b>每个节点、每条边</b>的渲染里都被调用一次，100 个节点就是 100 次全树遍历 + 100 份对象；
+   * 拖动时每次 mousemove 都重算，画布越复杂越涩，而症状表现为「节点一多就卡」，很难归因到渲染函数里的一行取值。
+   */
+  const defaultLayout = useMemo<Record<string, LayoutPoint>>(
+    () => (doc ? computeDefaultLayout(doc) : {}),
+    [doc],
+  );
+
+  /** 画布当前快照 / 未保存标记（比的是编译产物，见 {@link snapshotOf}）。 */
+  const currentSnapshot = useMemo(() => (doc ? snapshotOf(doc, layout) : null), [doc, layout]);
+  const dirty = currentSnapshot !== null && currentSnapshot !== savedSnapshot;
 
   /**
    * 失败统一呈现（联调实测：拦截器在非 2xx 时 reject，不 catch 就完全没有反馈）。
@@ -250,8 +304,44 @@ const WorkflowDesigner: React.FC = () => {
     void refreshList();
   }, [refreshList]);
 
+  /**
+   * 把服务端的定义原文装进画布，并把结果记为「已保存」基线。
+   *
+   * <p>三条载入路径（草稿 / 最新已发布版 / 空白新建）共用它：此前是三段近乎复制粘贴的代码，各自 setDoc +
+   * setLayout，基线维护一旦漏掉一处，那条路径就会永远显示「未保存」或者反过来把修改当已保存。
+   */
+  const applyLoaded = useCallback(
+    (key: string, definitionJson: string, fallbackName: string) => {
+      const parsed = docFromDefinitionJson(definitionJson);
+      let uiLayout: Record<string, LayoutPoint> | undefined;
+      try {
+        uiLayout = (JSON.parse(definitionJson) as { ui?: { layout?: Record<string, LayoutPoint> } }).ui
+          ?.layout;
+      } catch {
+        // 原文不可解析：由 parsed == null 的有损分支兜住
+      }
+      const nextDoc = parsed ?? blankDoc(key, fallbackName);
+      const nextLayout = uiLayout ?? computeDefaultLayout(nextDoc);
+      setDoc(nextDoc);
+      setLayout(nextLayout);
+      setSavedSnapshot(snapshotOf(nextDoc, nextLayout));
+      setLossy(!parsed);
+      setSelected(null);
+    },
+    [],
+  );
+
   const openKey = useCallback(
-    async (key: string, name?: string) => {
+    async (key: string, name?: string, force = false) => {
+      // force 只给「用户已在上层确认过」的调用方用（409 处置），否则会二次弹窗。
+      if (!force && dirty) {
+        const proceed = await confirmDiscard(
+          '当前画布有未保存的修改',
+          `打开「${key}」会丢弃画布上未保存的内容，确定继续？`,
+          '放弃修改并打开',
+        );
+        if (!proceed) return;
+      }
       setDefKey(key);
       if (name) setDefName(name);
       setSelected(null);
@@ -263,56 +353,99 @@ const WorkflowDesigner: React.FC = () => {
         if (draft.code === 200 && draft.data) {
           setDraftExists(true);
           setRevision(draft.data.revision);
-          const parsed = docFromDefinitionJson(draft.data.definitionJson);
-          const def = JSON.parse(draft.data.definitionJson) as { ui?: { layout?: Record<string, LayoutPoint> } };
-          if (parsed) {
-            setDoc(parsed);
-            setLayout(def.ui?.layout ?? computeDefaultLayout(parsed));
-            setLossy(false);
-          } else {
-            setDoc(blankDoc(key, draft.data.defName));
-            setLayout(computeDefaultLayout(blankDoc(key, draft.data.defName)));
-            setLossy(true);
-          }
+          applyLoaded(key, draft.data.definitionJson, draft.data.defName);
+          setDefName(draft.data.defName || name || key);
           return;
         }
-        // 无草稿：尝试取已发布最新版还原（flowDoc 在 ui 段）
+        // 无草稿：尝试取已发布最新版还原（flowDoc 在 ui 段）。后端按版本号降序返回，data[0] 即最新版。
         const vers = await workflowDesignerApi.listVersions(key);
         if (vers.code === 200 && vers.data && vers.data.length > 0) {
           const latest = vers.data[0];
-          const parsed = docFromDefinitionJson(latest.definitionJson);
-          const def = JSON.parse(latest.definitionJson) as { ui?: { layout?: Record<string, LayoutPoint> } };
-          if (parsed) {
-            setDoc(parsed);
-            setLayout(def.ui?.layout ?? computeDefaultLayout(parsed));
-            setLossy(false);
-          } else {
-            setDoc(blankDoc(key, latest.defName));
-            setLayout(computeDefaultLayout(blankDoc(key, latest.defName)));
-            setLossy(true);
-          }
+          applyLoaded(key, latest.definitionJson, latest.defName);
           setDraftExists(false);
           setRevision(null);
           return;
         }
         const fresh = blankDoc(key, name ?? key);
+        const freshLayout = computeDefaultLayout(fresh);
         setDoc(fresh);
-        setLayout(computeDefaultLayout(fresh));
+        setLayout(freshLayout);
+        setSavedSnapshot(snapshotOf(fresh, freshLayout));
+        setLossy(false);
         setDraftExists(false);
         setRevision(null);
       } catch (error) {
         // 读不到草稿/版本时不能把界面留在空白态：给出空文档让人可继续编辑，同时说明原因。
         reportFailure(error, '打开流程定义');
         const fresh = blankDoc(key, name ?? key);
+        const freshLayout = computeDefaultLayout(fresh);
         setDoc(fresh);
-        setLayout(computeDefaultLayout(fresh));
+        setLayout(freshLayout);
+        setSavedSnapshot(snapshotOf(fresh, freshLayout));
+        setLossy(false);
         setDraftExists(false);
         setRevision(null);
       } finally {
         setLoading(false);
       }
     },
+    [applyLoaded, dirty, reportFailure],
+  );
+
+  /** 只把 revision 基线对齐到服务端，**不动画布**——用户选择「保留本地修改」时用。 */
+  const syncRevision = useCallback(
+    async (key: string) => {
+      try {
+        const draft = await workflowDesignerApi.findDraft(key);
+        if (draft.code === 200 && draft.data) {
+          setDraftExists(true);
+          setRevision(draft.data.revision);
+        } else {
+          // 对方把草稿发布或丢弃了：本地内容此时没有基线，下次保存会以新建草稿落库。
+          setDraftExists(false);
+          setRevision(null);
+        }
+      } catch (error) {
+        reportFailure(error, '同步草稿版本');
+      }
+    },
     [reportFailure],
+  );
+
+  /**
+   * 409 的统一处置：必须让用户显式选，不能替他决定。
+   *
+   * <p>上一版实现是「冲突就重新拉草稿」——它解决了「revision 永远落后、每次保存都 409」，
+   * 代价是把「不再报错」换成了「悄悄丢掉用户画了半天的内容」，而这比 409 本身严重得多。现在分两种：
+   * 无本地修改时直接拉（无损）；有本地修改时二选一——载入服务器版本，或保留本地但把 revision 对齐
+   * （下次保存会覆盖对方，属于知情下的覆盖）。
+   */
+  const handleConflict = useCallback(
+    async (key: string) => {
+      if (!dirty) {
+        void openKey(key, undefined, true);
+        return;
+      }
+      const takeServer = await new Promise<boolean>((resolve) => {
+        Modal.confirm({
+          title: '草稿已被他人修改',
+          content:
+            '载入服务器上的最新草稿会丢弃你当前画布上未保存的修改；选择「保留本地修改」则只对齐版本号，下次保存会覆盖对方的内容。',
+          okText: '载入服务器版本',
+          cancelText: '保留本地修改',
+          okButtonProps: { danger: true },
+          onOk: () => resolve(true),
+          onCancel: () => resolve(false),
+        });
+      });
+      if (takeServer) {
+        void openKey(key, undefined, true);
+        return;
+      }
+      await syncRevision(key);
+      message.info('已对齐到最新 revision；再次保存将覆盖对方内容');
+    },
+    [dirty, openKey, syncRevision],
   );
 
   const onValidate = useCallback(async () => {
@@ -346,17 +479,24 @@ const WorkflowDesigner: React.FC = () => {
         setRevision(res.data.draft.revision);
         setDraftExists(true);
         setViolations(res.data.violations);
+        // 保存成功了才推进基线，否则「已保存」标记会先于落库出现，用户以为存住了其实没有。
+        setSavedSnapshot(JSON.stringify(def));
         message.success(`草稿已保存（revision=${res.data.draft.revision}）`);
       }
     } catch (error) {
-      // 409 = 别人的 revision 更新了：必须把最新草稿拉回来，否则用户手里的 revision 永远落后，
-      // 之后每次保存都会继续 409（这是「重试无效」的典型成因）。
-      reportFailure(error, '保存草稿', () => void openKey(defKey));
+      // 409 = 别人的 revision 更新了：交给 handleConflict 让用户选「载入服务器版本」还是「保留本地」。
+      reportFailure(error, '保存草稿', () => void handleConflict(defKey));
     }
-  }, [doc, defKey, lossy, layout, revision, reportFailure, openKey]);
+  }, [doc, defKey, lossy, layout, revision, reportFailure, handleConflict]);
 
   const onPublish = useCallback(async () => {
     if (!doc || !defKey) return;
+    // 发布的对象是「库里的草稿」，不是画布。没有草稿时先保存——否则后端会回 409「没有草稿，无法发布」，
+    // 而用户刚点完「发布」看到「没有草稿」只会以为是权限或系统问题。
+    if (!draftExists) {
+      message.warning('画布内容还没有存成草稿，请先点「保存草稿」再发布');
+      return;
+    }
     const def = compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
     try {
       // 前端预检只为省一次往返，最终以服务端 fail-closed 结论为准（下面 422 分支会接收后端回传的违规）。
@@ -373,12 +513,14 @@ const WorkflowDesigner: React.FC = () => {
         message.success(`已发布 v${res.data?.version}`);
         setDraftExists(false);
         setRevision(null);
+        // 草稿已被转成不可变版本，画布内容与库里一致，故推进基线（否则会一直显示「未保存」）。
+        setSavedSnapshot(JSON.stringify(def));
         void refreshList();
       }
     } catch (error) {
-      reportFailure(error, '发布', () => void openKey(defKey));
+      reportFailure(error, '发布', () => void handleConflict(defKey));
     }
-  }, [doc, defKey, layout, revision, refreshList, reportFailure, openKey]);
+  }, [doc, defKey, draftExists, layout, revision, refreshList, reportFailure, handleConflict]);
 
   const onSimulate = useCallback(async () => {
     if (!compiled) return;
@@ -401,6 +543,8 @@ const WorkflowDesigner: React.FC = () => {
       setDraftExists(false);
       setRevision(null);
       setViolations([]);
+      // 草稿已从库里删除，画布内容此刻「哪里都没存」，基线必须清空让它显示为未保存。
+      setSavedSnapshot(null);
       message.success('草稿已丢弃');
     } catch (error) {
       reportFailure(error, '丢弃草稿');
@@ -432,6 +576,29 @@ const WorkflowDesigner: React.FC = () => {
       }
     },
     [defKey, refreshList, reportFailure],
+  );
+
+  /**
+   * 把历史版本载入画布。
+   *
+   * <p>必须确认：载入是**覆盖画布**的动作，而覆盖之后只有「保存草稿」才会落库——用户很容易以为「载入了就是切过去了」，
+   * 于是接着改了别的地方再保存，把想保留的草稿冲掉。故这里明确提示「保存后将覆盖当前草稿」。
+   */
+  const loadVersion = useCallback(
+    async (v: WorkflowPublished) => {
+      if (dirty) {
+        const proceed = await confirmDiscard(
+          `载入 v${v.version} 会覆盖当前画布`,
+          '当前画布有未保存的修改，载入历史版本会丢弃它们。注意：载入后保存将覆盖现有草稿。',
+          '载入并丢弃修改',
+        );
+        if (!proceed) return;
+      }
+      applyLoaded(v.defKey, v.definitionJson, v.defName);
+      setVersionDrawer(false);
+      message.info(`已载入 v${v.version} 到画布；保存后将成为草稿内容`);
+    },
+    [applyLoaded, dirty],
   );
 
   const onAdd = (kind: 'approve' | 'cc' | 'condition') => {
@@ -469,6 +636,23 @@ const WorkflowDesigner: React.FC = () => {
     };
   }, [drag]);
 
+  /**
+   * 关闭 / 刷新页面时拦一下。
+   *
+   * <p>这是最常见的一条丢数据路径，比 409 常见得多：设计一个流程要十几分钟，误关标签、误刷新全白干。浏览器只允许
+   * 「提示」，文案由浏览器决定（不能自定义），但没有这一步就连提示都没有。
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // 部分浏览器（Chrome < 119）只认 returnValue 的赋值，两处都写才覆盖全。
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
+
   const selectedStep = doc && selected ? findStep(doc, selected) : null;
 
   return (
@@ -489,13 +673,11 @@ const WorkflowDesigner: React.FC = () => {
             onChange={(e) => setDefName(e.target.value)}
             style={{ marginBottom: 8 }}
           />
-          <Button block onClick={() => defKey && openKey(defKey, defName)}>
-            打开 / 新建
-          </Button>
+          <Button block onClick={() => void openKey(defKey, defName)}>打开 / 新建</Button>
           <Divider>已有流程</Divider>
           <Space direction="vertical" style={{ width: '100%' }}>
             {defList.map((d) => (
-              <Button key={d.defKey} block type={d.defKey === defKey ? 'primary' : 'default'} onClick={() => openKey(d.defKey, d.defName)}>
+              <Button key={d.defKey} block type={d.defKey === defKey ? 'primary' : 'default'} onClick={() => void openKey(d.defKey, d.defName)}>
                 {d.defName} <Tag color={d.enabled ? 'green' : 'default'}>v{d.version}</Tag>
               </Button>
             ))}
@@ -532,6 +714,11 @@ const WorkflowDesigner: React.FC = () => {
               版本
             </Button>
             {draftExists && <Tag color="orange">草稿 rev {revision}</Tag>}
+            {dirty && (
+              <Tooltip title="画布内容与上次保存/载入不一致，关闭页面前请先保存草稿">
+                <Tag color="red">未保存</Tag>
+              </Tooltip>
+            )}
             {lossy && <Tag color="red">有损还原</Tag>}
             {!canWrite && (
               <Tooltip title="缺少 workflow:definitions:write，仅可查看 / 校验 / 试运行">
@@ -568,8 +755,8 @@ const WorkflowDesigner: React.FC = () => {
             {doc && compiled && (
               <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
                 {compiled.edges.map((e, i) => {
-                  const a = layout[e.from] ?? computeDefaultLayout(doc)[e.from];
-                  const b = layout[e.to] ?? computeDefaultLayout(doc)[e.to];
+                  const a = layout[e.from] ?? defaultLayout[e.from];
+                  const b = layout[e.to] ?? defaultLayout[e.to];
                   if (!a || !b) return null;
                   return (
                     <line
@@ -586,7 +773,7 @@ const WorkflowDesigner: React.FC = () => {
               </svg>
             )}
             {doc && compiled && compiled.nodes.map((n) => {
-              const pos = layout[n.code] ?? computeDefaultLayout(doc)[n.code] ?? { x: 0, y: 0 };
+              const pos = layout[n.code] ?? defaultLayout[n.code] ?? { x: 0, y: 0 };
               const vs = violationByNode.get(n.code) ?? [];
               const color =
                 n.type === 'START' ? '#52c41a' : n.type === 'END' ? '#999' : n.type === 'CONDITION' ? '#722ed1' : n.type === 'CC' ? '#13c2c2' : '#1677ff';
@@ -667,7 +854,7 @@ const WorkflowDesigner: React.FC = () => {
                   v{v.version} <Tag color={v.enabled ? 'green' : 'default'}>{v.enabled ? '已上线' : '已下线'}</Tag>
                 </span>
                 <Space>
-                  <Button size="small" onClick={() => { const p = docFromDefinitionJson(v.definitionJson); if (p) { setDoc(p); setLayout(computeDefaultLayout(p)); setSelected(null); } setVersionDrawer(false); }}>载入</Button>
+                  <Button size="small" onClick={() => void loadVersion(v)}>载入</Button>
                   <Switch
                     checked={v.enabled}
                     size="small"
