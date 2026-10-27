@@ -60,6 +60,17 @@ public final class SettlementEngine {
     /** authId -> 累计键（用于 capture/void 时释放冻结额度）。 */
     private final Map<String, String[]> authKeys = new HashMap<>();
 
+    /**
+     * 同保单同周期的理算/冲正串行化锁（单实例正确性护栏）。
+     * 根因：累计的「读快照 → 计算额度 → 提交」若不在同一临界区内，并发两请求会读到同一
+     * 「剩余额度」快照，各自算出额度后双双提交，导致年度/责任限额被突破（超赔）。
+     * DB 乐观锁（version）只能防「丢失更新」，防不了「基于过期快照的重复占用」，
+     * 故在此用 JVM 锁把整个临界区串行化；多实例部署须升级为分布式锁 + 提交时按 live 剩余再次钳制。
+     */
+    private final java.util.concurrent.ConcurrentHashMap<String, Object> policyLocks =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Object NO_LOCK = new Object();
+
     public SettlementEngine(Ports.LedgerPort ledger, Ports.TracePort trace,
                             Ports.CatalogPort catalog, Ports.OutboxPort outbox,
                             Ports.AccumulationPort accumulation,
@@ -104,6 +115,23 @@ public final class SettlementEngine {
             return h;
         }
 
+        // ---- 并发安全临界区：同保单同周期的「读快照→计算额度→提交累计」原子化 ----
+        // 防御并发双请求读到同一剩余额度快照后双双提交导致超赔（年度/责任限额被突破）。
+        Object policyLock = (flags.applyAccumulation || flags.applyReversal)
+                ? policyLocks.computeIfAbsent(tenantScoped(ctx) + ctx.policyId + "@" + ctx.periodKey, k -> new Object())
+                : NO_LOCK;
+        // 以下变量在临界区内赋值，但在区外（buildExplain/calc 创建）仍被使用，故提升为方法级作用域
+        boolean denied;
+        Money thirdApplied;
+        List<AdjustmentLine> lines;
+        boolean anyReject;
+        Money gross, sumCalc;
+        Money net;
+        Money dedApplied;
+        Money limApplied;
+        Money liabApplied;
+        synchronized (policyLock) {
+
         // ---- 0.5) 重算冲正（N2/N8）：同一 claimId 存在旧结论时，先回退其累计占用 ----
         if (flags.applyReversal) {
             IndemnityCalculation prev = store.findLatestByClaim(ctx.claimId);
@@ -113,7 +141,7 @@ public final class SettlementEngine {
             }
         }
 
-        boolean denied = !ctx.denyReasons.isEmpty();
+        denied = !ctx.denyReasons.isEmpty();
 
         // ---- 1~2) C2 求值：策略只产出「可赔基数 + 比例 + 理算层面免赔」----
         List<Strategies.RawLine> raws = select(snap.type)
@@ -138,12 +166,12 @@ public final class SettlementEngine {
                 : Ports.AccUsage.empty();
 
         // ---- 3) 不可获利原则：第三方已付（社保统筹/其他保险）先从可赔基数扣除 ----
-        Money thirdApplied = flags.applyIndemnityPrinciple
+        thirdApplied = flags.applyIndemnityPrinciple
                 ? allocateDeduction(base, reject, ctx.thirdPartyPaid)
                 : Money.ZERO;
 
         // ---- 4) 年度免赔：作用于「费用基数」（先免赔后比例，非先比例后免赔）----
-        Money dedApplied = Money.ZERO;
+        dedApplied = Money.ZERO;
         if (needAccum && ctx.annualDeductible.isPositive() && flags.deductibleBeforeRatio) {
             Money rem = ctx.annualDeductible.subtract(usage.deductibleUsed).clampNonNegative();
             dedApplied = allocateDeduction(base, reject, rem);
@@ -169,7 +197,9 @@ public final class SettlementEngine {
             Money liabRem = flags.applyLiabilityAccumulation
                     ? snap.liabilityLimit.subtract(usage.liabilityUsed).clampNonNegative()  // N1 责任限额跨案累计
                     : snap.liabilityLimit;
-            putLimit(lc, kL, liabRem);
+            // 注意：kL 已是「配置限额>0」才进入（上方 if），此处传入的是「剩余值」，剩余=0 表示已用尽，
+            // 必须仍放入 lc 让 cap.min(0)=0 钳到 0，绝不能走 putLimit 的 zero-means-unlimited（会把用尽的限额误判成「未配置=不限」→ 超赔）。
+            lc.put(kL, liabRem);
         }
         putLimit(lc, kP, ctx.planRemaining);
         if (snap.type == FormulaSnapshot.LiabilityType.REIMBURSEMENT) {
@@ -181,11 +211,13 @@ public final class SettlementEngine {
         if (needAccum && ctx.annualLimit.isPositive()) {
             annualLimitRemaining = ctx.annualLimit.subtract(usage.limitUsed).clampNonNegative();
             kA = "A:" + tScope + ctx.policyId + "@" + ctx.periodKey;
-            putLimit(lc, kA, annualLimitRemaining);
+            // 同上：kA 仅「配置限额>0」才进入，传入的是剩余值；剩余=0（已用尽）必须仍放入 lc，
+            // 让 cap.min(0)=0 钳到 0。若改用 putLimit 会把剩余=0 误判成 zero-means-unlimited（不限）→ 超赔。
+            lc.put(kA, annualLimitRemaining);
         }
 
-        List<AdjustmentLine> lines = new ArrayList<>();
-        boolean anyReject = false;
+        lines = new ArrayList<>();
+        anyReject = false;
         for (int i = 0; i < n; i++) {
             boolean rejected = reject[i] != null;
             if (rejected) anyReject = true;
@@ -213,10 +245,10 @@ public final class SettlementEngine {
                     feeDeduct, occupy, remain, reject[i]));
         }
 
-        Money gross = Money.ZERO, sumCalc = Money.ZERO;
+        gross = Money.ZERO; sumCalc = Money.ZERO;
         for (AdjustmentLine l : lines) { gross = gross.add(l.feePayout); sumCalc = sumCalc.add(l.feeCalculate); }
 
-        Money net = gross;
+        net = gross;
         // 变异分支（旧缺陷语义）：免赔额后置于赔付额 —— 仅用于回归探针证伪，生产恒为 true
         if (!flags.deductibleBeforeRatio && needAccum && ctx.annualDeductible.isPositive()) {
             Money rem = ctx.annualDeductible.subtract(usage.deductibleUsed).clampNonNegative();
@@ -225,9 +257,9 @@ public final class SettlementEngine {
         }
         if (denied) net = Money.ZERO;
 
-        Money limApplied = (kA != null && lc.contains(kA))
+        limApplied = (kA != null && lc.contains(kA))
                 ? annualLimitRemaining.subtract(lc.remaining(kA)) : Money.ZERO;
-        Money liabApplied = lc.contains(kL)
+        liabApplied = lc.contains(kL)
                 ? limitValueOf(snap, usage).subtract(lc.remaining(kL)) : Money.ZERO;
 
         // ---- 7) 累计提交（乐观锁 + 按 claimId upsert）：并发冲突 fail-closed ----
@@ -239,6 +271,7 @@ public final class SettlementEngine {
                 throw new ConcurrentAccumulationException(ctx.policyId, ctx.periodKey, ctx.claimId);
             }
         }
+        } // end synchronized(policyLock)
 
         ledger.reserve(ctx.tenantId, ctx.claimId, net);
         outbox.publish(ctx.claimId, denied ? "REJECTED:" + ctx.denyReasons : "SETTLED:" + snap.liabilityId);
@@ -283,8 +316,12 @@ public final class SettlementEngine {
     public void reverseSettlement(IndemnityCalculation prev) {
         if (prev == null || prev.policyId == null) return;
         if (!flags.applyReversal) return;   // 变异开关：关闭即「无冲正通道」（N8）
-        accumulation.reverse(tenantScopedOf(prev.tenantId) + prev.policyId, prev.periodKey, prev.claimId,
-                prev.annualDeductibleApplied, prev.annualLimitApplied, prev.liabilityApplied);
+        String key = tenantScopedOf(prev.tenantId) + prev.policyId + "@" + prev.periodKey;
+        Object lock = policyLocks.computeIfAbsent(key, k -> new Object());
+        synchronized (lock) {
+            accumulation.reverse(tenantScopedOf(prev.tenantId) + prev.policyId, prev.periodKey, prev.claimId,
+                    prev.annualDeductibleApplied, prev.annualLimitApplied, prev.liabilityApplied);
+        }
     }
 
     // ---------- 直付预授权（亿保「智慧E保即时结算」） ----------
