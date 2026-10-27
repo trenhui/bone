@@ -82,6 +82,68 @@ def call(method, path, body=None, extra=None):
     return s, d
 
 
+# ---------------------------------------------------------------- 第二审批人
+# 为什么必须准备第二个账号：工作流引擎有两条**互相独立**的职责分离（SoD）守卫，
+#   ① 自审批守卫（WorkflowEngineImpl#isSelfApproval）：审批人 == 发起人 ⇒ 实例挂起，不派单；
+#   ② 任务级 SoD（PurchaseWorkflowDecisionHandler#requirePendingTaskOf）：操作人 != 任务 assignee ⇒ 403。
+# 单账号下这两条互斥：审批人要 ≠ 发起人(admin=1)，又必须 == 操作人(也是 1) ⇒ 采购链恒不可能走通。
+# 故准备一个独立审批账号：submit 用 admin，approve/reject 用该账号的 token。
+APPROVER_USER = os.environ.get("BONE_E2E_APPROVER_USER", "e2e_po_appr2")
+APPROVER_PWD = os.environ.get("BONE_E2E_APPROVER_PWD", "E2eApprover#2026")
+# 归属部门：CreateAccountReq.deptId 必填且须为本租户已存在部门（默认取种子部门，可用环境变量覆盖）
+APPROVER_DEPT_ID = int(os.environ.get("BONE_E2E_APPROVER_DEPT_ID", "758345112240521216"))
+
+
+def _login_as(user, pwd):
+    s, d, _ = raw_call(BASE, "POST", "/iam/login", {"username": user, "password": pwd})
+    return (d.get("data") or {}).get("token") if s == 200 else None
+
+
+def _jwt_user_id(tok):
+    """从 JWT payload 取 userId —— 审批人身份口径必须是账户数字 id（与 RuntimeActionContext#getOperatorId 同源）。"""
+    import base64
+    try:
+        p = tok.split(".")[1]
+        p += "=" * (-len(p) % 4)
+        uid = json.loads(base64.urlsafe_b64decode(p)).get("userId")
+        # 转 int：approver_id 字段按 LONG 建模，下发字符串会被运行时校验拒（「应为数值类型」）。
+        return int(uid) if uid is not None else None
+    except Exception:
+        return None
+
+
+def ensure_approver():
+    """幂等准备审批账号，返回 (token, userId)；失败返回 (None, None)，调用方据此跳过而非静默假绿。"""
+    tok = _login_as(APPROVER_USER, APPROVER_PWD)
+    if not tok:
+        s, d = call("POST", "/iam/accounts", {
+            "username": APPROVER_USER, "password": APPROVER_PWD,
+            "email": APPROVER_USER + "@bone.local", "realName": "采购E2E审批人",
+            "tenantId": 0, "deptId": APPROVER_DEPT_ID,
+            # roleIds：1=平台角色（runtime:* 等）、3=唯一持有 metadata:runtime:write 的角色；
+            # RuntimeActionController#invoke 的 @PreAuthorize 只认 metadata:runtime:write / metadata:write，
+            # 缺了它审批人连控制器都进不去（COMMON_FORBIDDEN），根本走不到任务级 SoD。
+            "roleIds": [1, 3],
+        })
+        if s != 200:
+            return None, None
+        tok = _login_as(APPROVER_USER, APPROVER_PWD)
+    return tok, (_jwt_user_id(tok) if tok else None)
+
+
+APPROVER_TOKEN, APPROVER_ID = ensure_approver()
+APPROVER_HDR = {"Authorization": "Bearer " + (APPROVER_TOKEN or ""),
+                "X-Tenant-Id": "0", "Content-Type": "application/json"}
+
+
+def call_as(hdr, method, path, body=None, extra=None):
+    h = dict(hdr)
+    if extra:
+        h.update(extra)
+    s, d, _ = raw_call(BASE, method, path, body, h)
+    return s, d
+
+
 def ecode(d):
     data = d.get("data")
     return data.get("errorCode") if isinstance(data, dict) else None
@@ -268,14 +330,19 @@ def child_replace(entity_code, rid, child_code, rows):
     return call("POST", f"/runtime/entities/{entity_code}/records/{rid}/children/{child_code}", rows)[:2]
 
 
-_IDEM_SEQ = [0]
 def act(entity_code, rid, action, params=None, idem=None):
+    return act_as(HDR, entity_code, rid, action, params, idem)
+
+
+_IDEM_SEQ = [0]
+def act_as(hdr, entity_code, rid, action, params=None, idem=None):
     # 采购 submit/approve/reject 已接工作流引擎（逃逸动作，平台强制要求幂等键）；
     # 此处对采购这三类动作自动补唯一幂等键，避免逐个调用处手工传 idem。
     if idem is None and str(entity_code).startswith("purchase_order") and action in ("submit", "approve", "reject"):
         _IDEM_SEQ[0] += 1
         idem = f"po-{action}-{rid}-{_IDEM_SEQ[0]}"
-    return call(
+    return call_as(
+        hdr,
         "POST",
         f"/runtime/entities/{entity_code}/records/{rid}/actions/{action}",
         {"params": params or {}},
@@ -638,7 +705,12 @@ po_fields = [
     {"code": "vendor_code", "label": "供应商编码"},
     {"code": "vendor", "label": "供应商"},
     {"code": "buyer", "label": "采购员"},
-    {"code": "approver_id", "label": "审批人（工作流 FIELD 指派，须等于操作人 admin 才能审批）"},
+    # 审批人身份口径必须与运行时操作人一致：RuntimeActionContext#getOperatorId 取的是**账户数字 id**
+    # （JWT sub 对应的 userId，本地 admin=1），不是登录名。早先此处注释写「须等于操作人 admin」并按
+    # 用户名播种 "admin"，而引擎 FIELD 指派把该值原样落 wf_task.assignee_id ⇒ 任务级 SoD 用
+    # 「操作人 id(1) == assignee_id(admin)」比对恒假 ⇒ approve 一律 403，整条采购链其余 7 步连锁失败。
+    # 报销场景播种的是 1（可过），两处口径必须同源——这是 2026-10-27 联调实测的口径漂移缺陷。
+    {"code": "approver_id", "label": "审批人（工作流 FIELD 指派，须等于审批操作人账户 id）", "type": "LONG"},
     {"code": "department", "label": "需求部门"},
     {"code": "need_date", "label": "需求日期"},
     {"code": "currency", "label": "币种"},
@@ -667,9 +739,15 @@ po_item_fields = [
     {"code": "tax_amount", "label": "税额", "type": "DECIMAL"},
     {"code": "received_qty", "label": "已收货数量", "type": "DECIMAL"},
 ]
+# 行策略必须把**审批人**也放进来（与报销场景 owner_or_approver 同口径）：
+# 只看创建人 ⇒ 审批人读不到这张单 ⇒ 引擎虽已把待办指派给他，平台仍以 COMMON_FORBIDDEN 拦下，
+# 采购审批链无人可批（2026-10-27 联调实测）。审批流实体放行进「被指派审批人」是建模必要条件。
 po_policy = {
     "owner_field": "created_by",
-    "rules": [{"name": "dept_or_buyer", "effect": "allow", "when": "created_by = :operator"}],
+    # 规则名即 policyCode，必须与 UI 协议样例 dataScope.policyCode（dept_or_buyer）一致，
+    # 改名会让校验报 UI-REF-03（引用了未声明的行策略）⇒ 发布闸门拦下。故保持原名，只放宽 when。
+    "rules": [{"name": "dept_or_buyer", "effect": "allow",
+               "when": "created_by = :operator OR approver_id = :operator"}],
 }
 
 po_id = create_entity("采购订单", PO, f"t_{PO}", po_policy, po_fields,
@@ -737,7 +815,7 @@ TAX_TOTAL = 3380.0
 
 s, d = rec_create(PO, {"title": "研发中心 Q4 办公设备采购", "vendor_code": "V-8801",
                        "vendor": "晨光办公设备有限公司", "buyer": "李四",
-                       "approver_id": "admin",
+                       "approver_id": APPROVER_ID,
                        "department": "研发中心", "need_date": "2026-11-30", "currency": "CNY",
                        "budget_subject": "6401-办公费", "budget_amount": 50000,
                        "contract_no": "CT-2026-0712", "payment_terms": "NET30",
@@ -796,16 +874,18 @@ if prid:
     check("采购：submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
           f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
 
-    s, d = act(PO, prid, "approve")
-    check("采购：approve（SUBMITTED→APPROVED）", s == 200 and rec_status(d) == "APPROVED",
-          f"{s} status={rec_status(d)}")
+    # 审批必须由**审批人本人**的会话发起：引擎任务级 SoD 比对「操作人 id == wf_task.assignee_id」，
+    # 而 assignee 由 FIELD approver_id 解析 = APPROVER_ID，故此处不能再用 admin 的 HDR。
+    s, d = act_as(APPROVER_HDR, PO, prid, "approve")
+    check("采购：approve（SUBMITTED→APPROVED，由第二审批人会话发起）",
+          s == 200 and rec_status(d) == "APPROVED", f"{s} status={rec_status(d)}")
     s, d = act(PO, prid, "submit")
     check("采购【负向】已审批再提交 → 409 非法流转",
           s == 409 and ecode(d) == "META_RUNTIME_ACTION_ILLEGAL_TRANSITION", f"{s} {ecode(d)}")
 
     s, d = act(PO, prid, "startReceive")
     check("采购：startReceive（APPROVED→RECEIVING）", s == 200 and rec_status(d) == "RECEIVING",
-          f"{s} status={rec_status(d)}")
+          f"{s} status={rec_status(d)} {d.get('message', '')[:200]}")
 
     # 收货：已收货金额 > 0 但缺发票号 → LINK-RECV-01
     call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"received_amount": PO_AMOUNT})
