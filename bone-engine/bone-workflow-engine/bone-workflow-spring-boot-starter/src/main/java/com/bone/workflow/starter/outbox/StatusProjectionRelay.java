@@ -150,6 +150,7 @@ public class StatusProjectionRelay {
                 gap.entityCode(),
                 gap.recordId(),
                 gap.tenantId(),
+                null, // 对账线程只看到终态，拿不到决策人；由执行器落成系统身份，不冒用发起人
                 gap.intent(),
                 gap.actionCode(),
                 null,

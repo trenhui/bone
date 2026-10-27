@@ -104,8 +104,34 @@ public interface WorkflowInstanceRepository {
   /** 取某实例的全部待办任务。 */
   List<WorkflowTask> listPendingTasks(String instanceId);
 
-  /** 取某实例某节点的全部任务（会签完成判定用）。 */
+  /** 取某实例某节点的全部任务（历史轨迹 / 作废待办用，<b>跨轮次</b>）。 */
   List<WorkflowTask> listTasksByNode(String instanceId, String nodeCode);
+
+  /**
+   * 取某实例某节点<b>当前轮次</b>的任务（会签完成判定的应用层复核用）。
+   *
+   * <p><b>为什么必须区分轮次</b>：驳回退回（{@code rejectToNode}）会让同一 {@code (instance, node)} 出现<b>多批</b>任务。
+   * 若判据按全量统计，上一轮遗留的 {@code APPROVED} 会让「本轮只要一个人同意」就凑满法定人数—— 比例会签（RATIO）可被直接绕过，其余 4 人从未表态。
+   *
+   * <p>存储层的原子推进（{@link #compareAndAdvanceNode}）已按轮次过滤；本方法的存在是为了让引擎在「未推进」时用<b>同一口径</b>
+   * 解释原因（是等人、还是该整单驳回），两处口径不一致会得出与推进结论矛盾的解释。
+   */
+  List<WorkflowTask> listTasksByNodeInCurrentRound(String instanceId, String nodeCode);
+
+  /**
+   * 登记一次「驳回退回」并返回<b>累计轮次</b>（循环防护计数）。
+   *
+   * <p><b>为什么不用「REJECTED 任务条数」充当轮次</b>：一个 5 人会签节点上有 3 人驳回会留下 3 条 {@code REJECTED}，按条数计就当成了 3
+   * 轮——<b>一轮驳回 3 次</b>被当成 3 次往返，上限提前触发把单据误终止；反之同一节点被驳回 10 次但只要每次只有 1 人驳回， 又恰好卡在上限边缘。
+   * 计数口径必须是「往返次数」，由存储层原子累加。
+   *
+   * <p>累加与读取必须原子（同一条 SQL 的 {@code RETURNING} 语义或同事务内的 UPDATE + SELECT），否则并发驳回会少计。
+   *
+   * @param instanceId 流程实例 id
+   * @param operatorId 发起驳回退回的操作人——写 {@code updated_by}
+   * @return 累加后的总轮次（≥1）
+   */
+  long registerRejectRound(String instanceId, String operatorId);
 
   /**
    * 任务状态 CAS 更新：仅当当前状态为 {@code expected} 时才改。

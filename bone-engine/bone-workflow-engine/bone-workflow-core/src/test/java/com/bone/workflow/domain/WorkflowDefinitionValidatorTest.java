@@ -360,11 +360,33 @@ class WorkflowDefinitionValidatorTest {
             1,
             List.of(start(), cc, approve("mgr"), end()),
             List.of(edge("start", "cc", null), edge("cc", "mgr", null), edge("mgr", "end", null)),
-            Map.of("mgr", List.of(rule("LINE_MANAGER")), "cc", List.of(rule("ROLE"))));
+            Map.of(
+                "mgr",
+                List.of(rule("LINE_MANAGER")),
+                // 原夹具用 rule("ROLE")（空参数）也算「配了抄送人」——WF-020 之后不再成立：
+                // 没有 roleCode 的 ROLE 在运行期解析不出收件人，抄送实际不会发生。
+                "cc",
+                List.of(
+                    new WorkflowDefinition.AssignmentRule("ROLE", Map.of("roleCode", "audit")))));
     List<WorkflowDefinitionValidator.Violation> violations = validator.validate(definition);
     assertFalse(hasCode(violations, "WF-016"), "抄送已落地，不应再被 WF-016 拒绝");
     assertFalse(hasCode(violations, "WF-018"), "配了抄送人指派规则即应通过");
     assertTrue(validator.isPublishable(definition));
+  }
+
+  @Test
+  @DisplayName("抄送节点 ROLE 缺 roleCode → WF-020（抄送会静默不发出）")
+  void ccNode_roleWithoutRoleCode_isRejected() {
+    WorkflowDefinition.Node cc =
+        new WorkflowDefinition.Node("cc", WorkflowDefinition.NodeType.CC, null, "抄送");
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), cc, approve("mgr"), end()),
+            List.of(edge("start", "cc", null), edge("cc", "mgr", null), edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER")), "cc", List.of(rule("ROLE"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-020"));
   }
 
   @Test
@@ -441,7 +463,13 @@ class WorkflowDefinitionValidatorTest {
             1,
             List.of(start(), approveRatio("committee", 2), end()),
             List.of(edge("start", "committee", null), edge("committee", "end", null)),
-            Map.of("committee", List.of(rule("ROLE"))));
+            // 此前该夹具用 rule("ROLE")（空参数）也能通过——正是 WF-020 要堵的洞：
+            // 运行期 resolveByRole 读到 null 的 roleCode 会返空列表，节点挂起。故补上 roleCode。
+            Map.of(
+                "committee",
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "committee")))));
     assertTrue(validator.validate(definition).isEmpty());
     assertTrue(validator.isPublishable(definition));
   }
@@ -466,5 +494,94 @@ class WorkflowDefinitionValidatorTest {
             List.of(edge("start", "mgr", null), edge("mgr", "end", null)),
             Map.of("mgr", List.of(rule("LINE_MANAGER"))));
     assertTrue(hasCode(validator.validate(definition), "WF-019"));
+  }
+
+  // ====================== WF-020：策略缺必需参数 ======================
+
+  private static WorkflowDefinition withRule(WorkflowDefinition.AssignmentRule rule) {
+    return new WorkflowDefinition(
+        "expense",
+        1,
+        List.of(start(), approve("mgr"), end()),
+        List.of(edge("start", "mgr", null), edge("mgr", "end", null)),
+        Map.of("mgr", List.of(rule)));
+  }
+
+  @Test
+  @DisplayName("ROLE 策略缺 roleCode → WF-020（否则发布成功、运行期挂起）")
+  void roleWithoutRoleCode_isRejected() {
+    WorkflowDefinition definition =
+        withRule(new WorkflowDefinition.AssignmentRule("ROLE", Map.of()));
+    List<WorkflowDefinitionValidator.Violation> violations = validator.validate(definition);
+    assertTrue(hasCode(violations, "WF-020"));
+    assertFalse(validator.isPublishable(definition));
+  }
+
+  @Test
+  @DisplayName("USER 策略写成 userIds（复数）→ WF-020：实现读的是单数 userId")
+  void userWithPluralKey_isRejected() {
+    WorkflowDefinition definition =
+        withRule(new WorkflowDefinition.AssignmentRule("USER", Map.of("userIds", List.of("u1"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-020"));
+  }
+
+  @Test
+  @DisplayName("FIELD 策略缺 fieldCode → WF-020；补齐后放行")
+  void fieldStrategy_requiresFieldCode() {
+    assertTrue(
+        hasCode(
+            validator.validate(withRule(new WorkflowDefinition.AssignmentRule("FIELD", Map.of()))),
+            "WF-020"));
+    assertTrue(
+        validator
+            .validate(
+                withRule(
+                    new WorkflowDefinition.AssignmentRule("FIELD", Map.of("fieldCode", "mgr"))))
+            .isEmpty());
+  }
+
+  @Test
+  @DisplayName("LEVEL_UP 的 level 非正数 → WF-020")
+  void levelUpWithNonPositiveLevel_isRejected() {
+    assertTrue(
+        hasCode(
+            validator.validate(
+                withRule(new WorkflowDefinition.AssignmentRule("LEVEL_UP", Map.of("level", 0)))),
+            "WF-020"));
+  }
+
+  @Test
+  @DisplayName("无参策略（LINE_MANAGER / DEPT_HEAD）不因 WF-020 误伤")
+  void parameterlessStrategies_areNotFlagged() {
+    assertTrue(
+        validator
+            .validate(withRule(new WorkflowDefinition.AssignmentRule("LINE_MANAGER", Map.of())))
+            .isEmpty());
+    assertTrue(
+        validator
+            .validate(withRule(new WorkflowDefinition.AssignmentRule("DEPT_HEAD", null)))
+            .isEmpty());
+  }
+
+  @Test
+  @DisplayName("合规节点级违规带 locator，前端可据此高亮画布节点")
+  void nodeScopedViolation_carriesLocator() {
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approve("mgr")),
+            List.of(edge("start", "mgr", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    // 缺 END → WF-003 是整图级问题，不应有 locator
+    assertTrue(
+        validator.validate(definition).stream()
+            .filter(violation -> "WF-003".equals(violation.code()))
+            .allMatch(violation -> !violation.isNodeScoped()));
+    // 断头 → WF-005 必须定位到 mgr
+    assertTrue(
+        validator.validate(definition).stream()
+            .filter(violation -> "WF-005".equals(violation.code()))
+            .anyMatch(violation -> "mgr".equals(violation.locator())));
   }
 }

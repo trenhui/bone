@@ -30,11 +30,12 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
    */
   @Sql(
       "INSERT INTO wf_instance (id, tenant_id, entity_code, record_id, def_key, def_version,"
-          + " current_node_code, phase, started_by, started_at, updated_at, created_by, created_at,"
+          + " current_node_code, phase, started_by, started_at, node_round, node_entered_at,"
+          + " reject_rounds, updated_at, created_by, created_at,"
           + " updated_by, deleted, version)"
           + " VALUES (#{id}, #{tenantId}, #{entityCode}, #{recordId}, #{defKey}, #{defVersion},"
-          + " #{currentNodeCode}, #{phase}, #{startedBy}, #{startedAt}, #{updatedAt}, #{operatorId},"
-          + " #{now}, #{operatorId}, 0, 0)")
+          + " #{currentNodeCode}, #{phase}, #{startedBy}, #{startedAt}, 0, #{startedAt}, 0,"
+          + " #{updatedAt}, #{operatorId}, #{now}, #{operatorId}, 0, 0)")
   int insertInstance(
       @Param("id") String id,
       @Param("tenantId") Long tenantId,
@@ -50,10 +51,18 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
       @Param("operatorId") String operatorId,
       @Param("now") Instant now);
 
-  /** 更新实例行（含 phase / 节点推进后的落库）；{@code version = version + 1} 供乐观锁检测同行丢失更新。 */
+  /**
+   * 更新实例行（阶段 / 元信息落库）；{@code version = version + 1} 供乐观锁检测同行丢失更新。
+   *
+   * <p><b>刻意不写 {@code current_node_code}</b>：节点只能由 {@link #compareAndAdvanceNode} 原子推进改写。本方法被「撤回 /
+   * 驳回 / 挂起 / 恢复 / 终止」等路径调用，它们传入的多是<b>推进前读到的旧快照</b>； 若把 {@code currentNodeCode} 一并写回，一次基于旧快照的
+   * {@code saveInstance} 就能把已推进的节点<b>回退</b>， 而实例版本号照常 +1、phase 也正确——事后从数据上完全看不出曾经回退过。
+   *
+   * <p>{@code currentNodeCode} 参数保留（INSERT 分支仍需要），但 UPDATE 分支不再使用。
+   */
   @Sql(
       "UPDATE wf_instance SET entity_code = #{entityCode}, record_id = #{recordId}, def_key = #{defKey},"
-          + " def_version = #{defVersion}, current_node_code = #{currentNodeCode}, phase = #{phase},"
+          + " def_version = #{defVersion}, phase = #{phase},"
           + " started_by = #{startedBy}, started_at = #{startedAt}, updated_at = #{updatedAt},"
           + " updated_by = #{operatorId}, version = version + 1"
           + " WHERE id = #{id} AND tenant_id = #{tenantId}")
@@ -124,35 +133,51 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
    *
    * <p><b>为什么不得拆成先查后改</b>：两个会签人同时点「同意」时各自读到「对方还没通过」的旧快照 ⇒ 双方都判「未齐」 ⇒
    * 流程永远卡在待办（会签经典死锁）。判据必须由数据库在同一条语句里算。
+   *
+   * <p><b>轮次过滤（{@code node_round}）</b>：所有任务子查询都带 {@code t.node_round = wf_instance.node_round}，推进时
+   * {@code node_round} 自增。这是驳回退回（同一节点出现<b>多批</b>任务）后判据不被历史污染的唯一办法： 否则上一轮遗留的 {@code APPROVED}
+   * 会让「本轮只要一人同意」即凑满 {@code quorum}——比例会签可被直接绕过。 用整数轮次而非 {@code created_at >= node_entered_at}
+   * 比较时间戳：任务与实例更新可能落在同一毫秒（H2 固定时钟下单测必然如此）， 时间戳比较会退化，整数轮次不会。
    */
   @Sql(
-      "UPDATE wf_instance SET current_node_code = #{nextNodeCode}, updated_at = #{updatedAt},"
-          + " updated_by = #{operatorId}, version = version + 1"
+      "UPDATE wf_instance SET current_node_code = #{nextNodeCode},"
+          + " node_round = node_round + 1, node_entered_at = #{updatedAt},"
+          + " updated_at = #{updatedAt}, updated_by = #{operatorId}, version = version + 1"
           + " WHERE id = #{instanceId} AND tenant_id = #{tenantId}"
           + "   AND current_node_code = #{nodeCode}"
           + "   AND phase = 'RUNNING'"
           + "   AND (#{mode} NOT IN ('ALL', 'ANY')"
           + "     OR NOT EXISTS (SELECT 1 FROM wf_task t"
           + "         WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "           AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'REJECTED'))"
+          + "           AND t.node_code = #{nodeCode}"
+          + "           AND t.node_round = wf_instance.node_round"
+          + "           AND t.deleted = 0 AND t.status = 'REJECTED'))"
           + "   AND ("
           + "     #{mode} = 'AUTO'"
           + "     OR (#{mode} = 'ALL'"
           + "       AND EXISTS (SELECT 1 FROM wf_task t"
           + "           WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "             AND t.node_code = #{nodeCode} AND t.deleted = 0)"
+          + "             AND t.node_code = #{nodeCode}"
+          + "             AND t.node_round = wf_instance.node_round"
+          + "             AND t.deleted = 0)"
           + "       AND NOT EXISTS (SELECT 1 FROM wf_task t"
           + "           WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "             AND t.node_code = #{nodeCode} AND t.deleted = 0"
+          + "             AND t.node_code = #{nodeCode}"
+          + "             AND t.node_round = wf_instance.node_round"
+          + "             AND t.deleted = 0"
           + "             AND t.status NOT IN ('APPROVED', 'REJECTED', 'CANCELLED')))"
           + "     OR (#{mode} = 'RATIO'"
           + "       AND (SELECT COUNT(*) FROM wf_task t"
           + "           WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "             AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'APPROVED')"
+          + "             AND t.node_code = #{nodeCode}"
+          + "             AND t.node_round = wf_instance.node_round"
+          + "             AND t.deleted = 0 AND t.status = 'APPROVED')"
           + "         >= #{quorum})"
           + "     OR (#{mode} NOT IN ('ALL', 'RATIO') AND EXISTS (SELECT 1 FROM wf_task t"
           + "         WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
-          + "           AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'APPROVED'))"
+          + "           AND t.node_code = #{nodeCode}"
+          + "           AND t.node_round = wf_instance.node_round"
+          + "           AND t.deleted = 0 AND t.status = 'APPROVED'))"
           + "   )")
   int compareAndAdvanceNode(
       @Param("instanceId") String instanceId,
@@ -163,4 +188,26 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
       @Param("quorum") Integer quorum,
       @Param("updatedAt") Instant updatedAt,
       @Param("operatorId") String operatorId);
+
+  /**
+   * 累加一次「驳回退回」，返回累加后的累计次数（循环防护计数）。
+   *
+   * <p>累加必须落在实例行上（{@code reject_rounds}），不能由应用层「数 REJECTED 任务条数」推导：一个会签节点上 3 人驳回 会留下 3 条 {@code
+   * REJECTED}，按条数计就把<b>一轮往返数成三轮</b>，上限提前打满、单据被误终止。
+   */
+  @Sql(
+      "UPDATE wf_instance SET reject_rounds = reject_rounds + 1, updated_at = #{updatedAt},"
+          + " updated_by = #{operatorId}, version = version + 1"
+          + " WHERE id = #{id} AND tenant_id = #{tenantId} AND deleted = 0")
+  int incrementRejectRounds(
+      @Param("id") String id,
+      @Param("tenantId") Long tenantId,
+      @Param("updatedAt") Instant updatedAt,
+      @Param("operatorId") String operatorId);
+
+  /** 读累计驳回退回次数（{@link #incrementRejectRounds} 之后同事务读取，保证读到的是自增后的值）。 */
+  @Sql(
+      "SELECT reject_rounds FROM wf_instance"
+          + " WHERE id = #{id} AND tenant_id = #{tenantId} AND deleted = 0")
+  Integer findRejectRounds(@Param("id") String id, @Param("tenantId") Long tenantId);
 }

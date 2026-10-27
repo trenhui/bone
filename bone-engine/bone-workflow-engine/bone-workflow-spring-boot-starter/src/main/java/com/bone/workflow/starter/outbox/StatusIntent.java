@@ -12,6 +12,8 @@ import java.time.Instant;
  * @param entityCode 业务实体编码
  * @param recordId 业务单据 id
  * @param tenantId 租户 id（行内携带：中继跑在无 TenantContext 的调度线程上，逐条按此重建上下文）
+ * @param operatorId <b>真实操作人</b>（做出该决策/动作的人）——不得填流程发起人：投影落到业务台账上就是这个人执行的，
+ *     填发起人会造出「发起人自己批了自己的单」这种最敏感的假审计痕迹。对账补投的行没有操作人，为 null。
  * @param intent 意图类型（APPROVED / REJECTED / WITHDRAWN / SUSPENDED / RESUMED）
  * @param actionCode 要调用的平台动作码；SUSPENDED / RESUMED 无对应动作，为 null（仅记录，不执行）
  * @param paramsJson 动作参数（驳回原因等）
@@ -25,6 +27,7 @@ public record StatusIntent(
     String entityCode,
     String recordId,
     Long tenantId,
+    String operatorId,
     String intent,
     String actionCode,
     String paramsJson,

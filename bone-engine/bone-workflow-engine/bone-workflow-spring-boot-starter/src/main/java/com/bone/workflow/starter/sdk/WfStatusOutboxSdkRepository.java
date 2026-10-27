@@ -21,16 +21,17 @@ public interface WfStatusOutboxSdkRepository extends Repository<WfStatusOutboxRo
 
   @Sql(
       "INSERT INTO wf_status_outbox (id, tenant_id, instance_id, entity_code, record_id,"
-          + " intent, action_code, params_json, state, retry_count, next_retry_at,"
+          + " operator_id, intent, action_code, params_json, state, retry_count, next_retry_at,"
           + " created_at, updated_at)"
           + " VALUES (#{id}, #{tenantId}, #{instanceId}, #{entityCode}, #{recordId},"
-          + " #{intent}, #{actionCode}, #{paramsJson}, 'NEW', 0, NULL, #{now}, #{now})")
+          + " #{operatorId}, #{intent}, #{actionCode}, #{paramsJson}, 'NEW', 0, NULL, #{now}, #{now})")
   int insertStatusIntent(
       @Param("id") String id,
       @Param("tenantId") Long tenantId,
       @Param("instanceId") String instanceId,
       @Param("entityCode") String entityCode,
       @Param("recordId") String recordId,
+      @Param("operatorId") String operatorId,
       @Param("intent") String intent,
       @Param("actionCode") String actionCode,
       @Param("paramsJson") String paramsJson,
@@ -59,8 +60,8 @@ public interface WfStatusOutboxSdkRepository extends Repository<WfStatusOutboxRo
    * <p>不按租户过滤（调度线程无上下文，租户由行内携带）。
    */
   @Sql(
-      "SELECT id, tenant_id, instance_id, entity_code, record_id, intent, action_code, params_json,"
-          + " state, retry_count, next_retry_at, created_at"
+      "SELECT id, tenant_id, instance_id, entity_code, record_id, operator_id, intent, action_code,"
+          + " params_json, state, retry_count, next_retry_at, created_at"
           + " FROM wf_status_outbox"
           + " WHERE deleted = 0"
           + "   AND (state = 'NEW'"

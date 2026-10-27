@@ -196,6 +196,26 @@ class WorkflowEngineImplTest {
               .toList();
         }
 
+        /**
+         * 内存 stub 不建模轮次：所有任务都视作「当前轮次」。
+         *
+         * <p>轮次过滤的真实语义（驳回退回后历史 APPROVED 不得计入本轮）必须由真 SQL 证明，见 H2 用例 {@code
+         * SdkWorkflowInstanceRepositoryH2Test#staleApprovalsFromPreviousRound_doNotSatisfyQuorum}。
+         */
+        @Override
+        public List<WorkflowTask> listTasksByNodeInCurrentRound(
+            String instanceId, String nodeCode) {
+          return listTasksByNode(instanceId, nodeCode);
+        }
+
+        /** 驳回往返计数（与 {@code wf_instance.reject_rounds} 同语义：一次退回 = 一轮）。 */
+        private final java.util.Map<String, Long> rejectRounds = new java.util.HashMap<>();
+
+        @Override
+        public long registerRejectRound(String instanceId, String operatorId) {
+          return rejectRounds.merge(instanceId, 1L, Long::sum);
+        }
+
         @Override
         public boolean compareAndSetTaskStatus(
             String taskId,
@@ -699,7 +719,11 @@ class WorkflowEngineImplTest {
             List.of(
                 new WorkflowDefinition.Edge("start", "committee", null, "提交"),
                 new WorkflowDefinition.Edge("committee", "end", null, "通过")),
-            Map.of("committee", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+            Map.of(
+                "committee",
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "stub-not-real"))))));
   }
 
   private void givenConditionalApproval() {
@@ -735,9 +759,13 @@ class WorkflowEngineImplTest {
                 new WorkflowDefinition.Edge("small", "end", null, "常规通过")),
             Map.of(
                 "big",
-                List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())),
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "stub-not-real"))),
                 "small",
-                List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "stub-not-real"))))));
   }
 
   private List<WorkflowTask> pendingTasks() {
@@ -1424,7 +1452,11 @@ class WorkflowEngineImplTest {
             List.of(
                 new WorkflowDefinition.Edge("start", "committee", null, "提交"),
                 new WorkflowDefinition.Edge("committee", "end", null, "通过")),
-            Map.of("committee", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+            Map.of(
+                "committee",
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "stub-not-real"))))));
   }
 
   private WorkflowInstance latestInstance() {
@@ -1455,8 +1487,14 @@ class WorkflowEngineImplTest {
                 new WorkflowDefinition.Edge("mgr", "finance", null, "主管通过"),
                 new WorkflowDefinition.Edge("finance", "end", null, "财务通过")),
             Map.of(
-                "mgr", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())),
-                "finance", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+                "mgr",
+                    List.of(
+                        new WorkflowDefinition.AssignmentRule(
+                            "ROLE", Map.of("roleCode", "stub-not-real"))),
+                "finance",
+                    List.of(
+                        new WorkflowDefinition.AssignmentRule(
+                            "ROLE", Map.of("roleCode", "stub-not-real"))))));
   }
 
   private void givenStartNodeEnd() {
@@ -1476,7 +1514,11 @@ class WorkflowEngineImplTest {
             List.of(
                 new WorkflowDefinition.Edge("start", "node", null, "提交"),
                 new WorkflowDefinition.Edge("node", "end", null, "通过")),
-            Map.of("node", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
+            Map.of(
+                "node",
+                List.of(
+                    new WorkflowDefinition.AssignmentRule(
+                        "ROLE", Map.of("roleCode", "stub-not-real"))))));
   }
 
   private WorkflowInstance.Phase latestPhase() {

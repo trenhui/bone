@@ -2,6 +2,7 @@ package com.bone.workflow.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
@@ -15,7 +16,14 @@ import java.util.Map;
  * <p><b>与平台元数据的关系</b>：流程定义本身也是平台实体（{@code wf_process_def}，整图快照存 {@code
  * definition_json}；节点/边/指派规则不拆物理表——拆表只增加 join 与版本一致性负担，见设计文档 §3），本类只是它的<b>内存投影</b>——把一次运行所需的全部定义
  * 聚成一个不可变对象，避免运行期反复查库、也避免运行途中定义被改动导致同一单据前后走不同分支。
+ *
+ * <p><b>为什么 {@code ignoreUnknown = true} 必须写在这里，而不是依赖 ObjectMapper 的默认配置</b>： 定义 JSON 除引擎字段外还承载
+ * <b>设计器专用段</b> {@code ui}（画布坐标、折叠状态；先例是 BPMN 的 {@code BPMNDiagram} 段——与语义同存一个
+ * artifact、引擎解析时忽略，二者同版本同回滚）。若不在此显式容忍，本类的可读性就取决于「容器注入了哪个 ObjectMapper」：Spring Boot 默认的 {@code
+ * FAIL_ON_UNKNOWN_PROPERTIES=false} 能读，任何人 {@code new ObjectMapper()}（严格模式）就集体读不回来——2026-10-27
+ * 在测试上下文里真实复现过（{@code Unrecognized field "ui"}），而报错会出现在「发起流程」而不是「改了配置」，极难定位。把容忍写在类型上，配置就再也改不坏它。
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record WorkflowDefinition(
     String key,
     String name,

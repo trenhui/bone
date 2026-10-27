@@ -250,6 +250,27 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
   }
 
   @Override
+  public List<WorkflowTask> listTasksByNodeInCurrentRound(String instanceId, String nodeCode) {
+    // 轮次由 SQL 侧 join 实例行取得，应用层不持有 node_round——避免「读到的轮次」与「推进时的轮次」两个真源。
+    return tasks.listTaskRowsByNodeCurrentRound(instanceId, requireTenant(), nodeCode).stream()
+        .map(this::toTask)
+        .toList();
+  }
+
+  @Override
+  public long registerRejectRound(String instanceId, String operatorId) {
+    // UPDATE + SELECT 必须同一个事务（引擎已用 WorkflowUnitOfWork 包住 completeTask），否则并发驳回会读到旧值而少计。
+    // 单条语句拿不到自增后的值（MySQL 无 RETURNING），故拆两步；两步之间的可见性由事务隔离级别保证。
+    Long tenantId = requireTenant();
+    int updated = instances.incrementRejectRounds(instanceId, tenantId, Instant.now(), operatorId);
+    if (updated == 0) {
+      throw new IllegalStateException("实例不存在，无法登记驳回轮次：" + instanceId);
+    }
+    Integer rounds = instances.findRejectRounds(instanceId, tenantId);
+    return rounds == null ? 1L : rounds.longValue();
+  }
+
+  @Override
   public List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status) {
     return tasks.listTaskRowsByAssignee(assigneeId, requireTenant(), status.name()).stream()
         .map(this::toTask)

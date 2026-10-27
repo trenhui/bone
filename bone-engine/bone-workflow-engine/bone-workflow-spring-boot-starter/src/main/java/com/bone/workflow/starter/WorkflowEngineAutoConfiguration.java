@@ -1,9 +1,11 @@
 package com.bone.workflow.starter;
 
 import com.bone.workflow.domain.StructuredConditionEvaluator;
+import com.bone.workflow.domain.WorkflowBranchEvaluator;
 import com.bone.workflow.domain.WorkflowConditionEvaluator;
 import com.bone.workflow.domain.WorkflowDefinitionValidator;
 import com.bone.workflow.domain.WorkflowEngine;
+import com.bone.workflow.domain.WorkflowSimulator;
 import com.bone.workflow.ports.spi.ApproverResolver;
 import com.bone.workflow.ports.spi.NotificationPort;
 import com.bone.workflow.ports.spi.WorkflowAuditPort;
@@ -12,9 +14,15 @@ import com.bone.workflow.ports.spi.WorkflowIdGenerator;
 import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
+import com.bone.workflow.ports.spi.WorkflowUnitOfWork;
 import com.bone.workflow.runtime.WorkflowEngineImpl;
 import com.bone.workflow.starter.adapter.PersistenceNotificationPort;
+import com.bone.workflow.starter.designer.WorkflowDefinitionCommandService;
+import com.bone.workflow.starter.designer.WorkflowSimulationService;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
+import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
+import com.bone.workflow.starter.sdk.WfProcessDraftSdkRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -60,6 +68,49 @@ public class WorkflowEngineAutoConfiguration {
   @ConditionalOnMissingBean
   public WorkflowDefinitionValidator workflowDefinitionValidator() {
     return new WorkflowDefinitionValidator();
+  }
+
+  /**
+   * 试运行器（纯函数）：与引擎共用同一个条件求值器 bean，保证「模拟说走 A」＝「实际走 A」。
+   *
+   * <p>宿主若替换了 {@link WorkflowConditionEvaluator}（例如改成与平台 UI 协议规则同源的实现），试运行自动跟着换—— 这正是把它做成注入而不是
+   * {@code new} 的理由。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowSimulator workflowSimulator(WorkflowConditionEvaluator conditionEvaluator) {
+    return new WorkflowSimulator(
+        new WorkflowBranchEvaluator(conditionEvaluator), conditionEvaluator);
+  }
+
+  /**
+   * 设计态写路径：草稿保存 / 校验 / 发布 / 上下线。
+   *
+   * <p>装配所需的两张表仓储由 {@link com.bone.workflow.starter.config.WorkflowSdkRepositoryConfig} 注册； {@code
+   * ObjectMapper} 用容器里那一份（与 {@code SdkWorkflowDefinitionRepository} 反序列化同一实例，
+   * 避免出现「保存时能解析、运行期不能解析」的双 mapper 分叉）。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowDefinitionCommandService workflowDefinitionCommandService(
+      WfProcessDraftSdkRepository drafts,
+      WfProcessDefSdkRepository definitions,
+      WorkflowDefinitionValidator validator,
+      WorkflowIdGenerator idGenerator,
+      ObjectMapper objectMapper) {
+    return new WorkflowDefinitionCommandService(
+        drafts, definitions, validator, idGenerator, objectMapper);
+  }
+
+  /** 发布前试运行：路径 + 分支判定明细 + 每节点审批人解析结果。 */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowSimulationService workflowSimulationService(
+      WorkflowSimulator simulator,
+      WorkflowDefinitionValidator validator,
+      ApproverResolver approverResolver,
+      ObjectMapper objectMapper) {
+    return new WorkflowSimulationService(simulator, validator, approverResolver, objectMapper);
   }
 
   /**
@@ -110,7 +161,9 @@ public class WorkflowEngineAutoConfiguration {
         ObjectProvider<WorkflowConditionEvaluator> conditionEvaluatorProvider,
         ObjectProvider<WorkflowDefinitionValidator> validatorProvider,
         ObjectProvider<java.time.Clock> clockProvider,
-        ObjectProvider<NotificationPort> notificationPortProvider) {
+        ObjectProvider<NotificationPort> notificationPortProvider,
+        ObjectProvider<org.springframework.transaction.PlatformTransactionManager>
+            txManagerProvider) {
       WorkflowDefinitionRepository def =
           require(definitionRepository, WorkflowDefinitionRepository.class);
       WorkflowInstanceRepository inst =
@@ -129,6 +182,21 @@ public class WorkflowEngineAutoConfiguration {
       NotificationPort notificationPort =
           notificationPortProvider.getIfAvailable(() -> NotificationPort.NOOP);
 
+      // 用例级事务边界：一次审批决策是「多次写」的用例，单条 SQL 的原子性覆盖不到中间崩溃窗口
+      // （节点 CAS 已推进、派单还没落库 ⇒ 零待办零告警）。缺事务管理器时只能退化为直通，但必须响亮告警——
+      // 静默退化等于把 P0 的崩溃窗口留着而没人知道。
+      org.springframework.transaction.PlatformTransactionManager txManager =
+          txManagerProvider.getIfAvailable();
+      WorkflowUnitOfWork unitOfWork;
+      if (txManager == null) {
+        unitOfWork = WorkflowUnitOfWork.DIRECT;
+        log.warn(
+            "[workflow] 未找到 PlatformTransactionManager：引擎写路径「无事务保护」，"
+                + "「审批决策」等多次写用例在进程中断时会留下半完成状态。生产环境请确保数据源已装配事务管理器。");
+      } else {
+        unitOfWork = new com.bone.workflow.starter.tx.TransactionalWorkflowUnitOfWork(txManager);
+      }
+
       WorkflowEngine engine =
           new WorkflowEngineImpl(
               def,
@@ -141,7 +209,8 @@ public class WorkflowEngineAutoConfiguration {
               conditionEvaluator,
               validator,
               clock,
-              notificationPort);
+              notificationPort,
+              unitOfWork);
 
       log.info(
           "WorkflowEngine 已装配：definitionRepository={}, instanceRepository={}, recordPort={}, statusPort={}, auditPort={}, idGenerator={}, notificationPort={}",

@@ -30,25 +30,25 @@ public class OutboxStatusPort implements WorkflowStatusPort {
   @Override
   public void markApproved(
       String entityCode, String recordId, String instanceId, String operatorId) {
-    enqueue(instanceId, entityCode, recordId, "APPROVED", "approve", null);
+    enqueue(instanceId, entityCode, recordId, operatorId, "APPROVED", "approve", null);
   }
 
   @Override
   public void markRejected(
       String entityCode, String recordId, String instanceId, String operatorId, String reason) {
-    enqueue(instanceId, entityCode, recordId, "REJECTED", "reject", reason);
+    enqueue(instanceId, entityCode, recordId, operatorId, "REJECTED", "reject", reason);
   }
 
   @Override
   public void markWithdrawn(
       String entityCode, String recordId, String instanceId, String operatorId) {
-    enqueue(instanceId, entityCode, recordId, "WITHDRAWN", "withdraw", null);
+    enqueue(instanceId, entityCode, recordId, operatorId, "WITHDRAWN", "withdraw", null);
   }
 
   @Override
   public void markSuspended(String entityCode, String recordId, String instanceId, String reason) {
     // 无对应业务动作（单据仍停在 SUBMITTED），仅记录意图供审计与对账。
-    enqueue(instanceId, entityCode, recordId, "SUSPENDED", null, reason);
+    enqueue(instanceId, entityCode, recordId, null, "SUSPENDED", null, reason);
     log.warn(
         "[workflow] 流程挂起需人工介入：entity={} record={} instance={} reason={}",
         entityCode,
@@ -59,14 +59,14 @@ public class OutboxStatusPort implements WorkflowStatusPort {
 
   @Override
   public void markResumed(String entityCode, String recordId, String instanceId) {
-    enqueue(instanceId, entityCode, recordId, "RESUMED", null, null);
+    enqueue(instanceId, entityCode, recordId, null, "RESUMED", null, null);
   }
 
   @Override
   public void markTerminated(
       String entityCode, String recordId, String instanceId, String operatorId, String reason) {
     // 无对应业务动作（单据处置由宿主状态机决定）；仅记录意图供审计与对账。
-    enqueue(instanceId, entityCode, recordId, "TERMINATED", null, reason);
+    enqueue(instanceId, entityCode, recordId, operatorId, "TERMINATED", null, reason);
     log.warn(
         "[workflow] 流程被管理员强制终止：entity={} record={} instance={} operator={} reason={}",
         entityCode,
@@ -76,10 +76,16 @@ public class OutboxStatusPort implements WorkflowStatusPort {
         reason);
   }
 
+  /**
+   * 入箱一条意图。
+   *
+   * @param operatorId <b>真实操作人</b>（做出该决策的人）；挂起 / 恢复没有操作人语义，传 {@code null}
+   */
   private void enqueue(
       String instanceId,
       String entityCode,
       String recordId,
+      String operatorId,
       String intent,
       String actionCode,
       String paramsJson) {
@@ -90,6 +96,7 @@ public class OutboxStatusPort implements WorkflowStatusPort {
             entityCode,
             recordId,
             com.bone.core.tenant.context.TenantContext.getTenantIdAsLong(),
+            operatorId,
             intent,
             actionCode,
             paramsJson,

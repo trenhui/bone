@@ -18,11 +18,48 @@ import java.util.Set;
  *
  * <p>纯逻辑、无 IO：定义以 {@link WorkflowDefinition} 入参，违规以 {@link Violation} 列表出参，便于发布 API
  * 直接把清单透给建模界面（指出「哪个节点缺什么」），也便于单测。
+ *
+ * <p><b>违规定位（设计器契约）</b>：{@link Violation#locator()} 携带出问题的节点编码，建模界面据此把清单项高亮到画布对应节点。 没有定位信息的违规（如
+ * WF-000/002/003）表示「问题在整张图」而非某个节点。前端<b>不得</b>靠解析 message 文本来反推 节点——那会让文案改动 变成前端故障。
  */
 public final class WorkflowDefinitionValidator {
 
-  /** 一条违规。 */
-  public record Violation(String code, String message) {}
+  /**
+   * 一条违规。
+   *
+   * @param code 稳定错误码（{@code WF-xxx}），前端据此做文案映射与分类，<b>不得</b>依赖 message 文本
+   * @param message 面向人的说明（含节点编码，便于日志与工单直接可读）
+   * @param locator 出问题的节点编码；{@code null} 表示整图级问题
+   */
+  public record Violation(String code, String message, String locator) {
+
+    /** 兼容既有调用方与测试：无定位信息的违规。 */
+    public Violation(String code, String message) {
+      this(code, message, null);
+    }
+
+    /** 是否可定位到具体节点（建模界面据此决定能否点击跳转）。 */
+    public boolean isNodeScoped() {
+      return locator != null && !locator.isBlank();
+    }
+  }
+
+  /**
+   * 指派策略的必需参数（键名与 {@code RecordFieldApproverResolver} 的读取口径逐字对应）。
+   *
+   * <p><b>为什么发布期必须查参数</b>（诊断 2026-10-27）：运行期 {@code resolve} 对参数缺失一律返回空列表 ⇒ 引擎判「解析不出人」 ⇒
+   * 节点<b>挂起</b>。此前只校验策略名在白名单内（WF-013），于是「策略写了 ROLE、忘了填 roleCode」能发布成功、 上线后单据卡死无人审批，而
+   * 发布时的校验清单全绿——这是「配置了但不生效」最阴的形态，必须在发布期 fail-closed。
+   *
+   * <p>键名易错点：{@code USER} 策略读的是<b>单数</b> {@code userId}（多条规则 = 多个人），写成 {@code userIds}
+   * 同样会静默挂起，故一并在此拦。
+   */
+  private static final Map<String, String> REQUIRED_STRATEGY_PARAMS =
+      Map.of(
+          "ROLE", "roleCode",
+          "USER", "userId",
+          "FIELD", "fieldCode",
+          "INITIATOR_SELECT", "fieldCode");
 
   /**
    * 校验流程定义。
@@ -72,31 +109,37 @@ public final class WorkflowDefinitionValidator {
         continue;
       }
       if (!nodeCodes.add(node.code())) {
-        violations.add(new Violation("WF-001", "节点编码重复：" + node.code()));
+        violations.add(new Violation("WF-001", "节点编码重复：" + node.code(), node.code()));
       }
       if (node.type() == null) {
-        violations.add(new Violation("WF-001", "节点 " + node.code() + " 缺类型"));
+        violations.add(new Violation("WF-001", "节点 " + node.code() + " 缺类型", node.code()));
         continue;
       }
       if (node.type() == WorkflowDefinition.NodeType.APPROVE && node.mode() == null) {
-        violations.add(new Violation("WF-012", "审批节点 " + node.code() + " 缺完成判定方式（单签/会签/或签/比例会签）"));
+        violations.add(
+            new Violation(
+                "WF-012", "审批节点 " + node.code() + " 缺完成判定方式（单签/会签/或签/比例会签）", node.code()));
       }
       if (node.type() == WorkflowDefinition.NodeType.APPROVE
           && node.mode() == WorkflowDefinition.ApprovalMode.RATIO) {
         if (node.quorum() == null || node.quorum() < 1) {
           violations.add(
               new Violation(
-                  "WF-019", "比例会签节点 " + node.code() + " 必须指定法定人数 quorum（≥ 1，表示「至少 N 人通过即通过」）"));
+                  "WF-019",
+                  "比例会签节点 " + node.code() + " 必须指定法定人数 quorum（≥ 1，表示「至少 N 人通过即通过」）",
+                  node.code()));
         }
       }
       if (node.quorum() != null && node.mode() != WorkflowDefinition.ApprovalMode.RATIO) {
         violations.add(
             new Violation(
                 "WF-019",
-                "节点 " + node.code() + " 设置了法定人数 quorum，但完成判定方式不是比例会签（RATIO），quorum 将被忽略"));
+                "节点 " + node.code() + " 设置了法定人数 quorum，但完成判定方式不是比例会签（RATIO），quorum 将被忽略",
+                node.code()));
       }
       if (node.type() != WorkflowDefinition.NodeType.APPROVE && node.mode() != null) {
-        violations.add(new Violation("WF-012", "非审批节点 " + node.code() + " 不应设置完成判定方式"));
+        violations.add(
+            new Violation("WF-012", "非审批节点 " + node.code() + " 不应设置完成判定方式", node.code()));
       }
     }
 
@@ -104,7 +147,8 @@ public final class WorkflowDefinitionValidator {
     List<WorkflowDefinition.Edge> validEdges = new ArrayList<>();
     for (WorkflowDefinition.Edge edge : edges) {
       if (!nodeCodes.contains(edge.from()) || !nodeCodes.contains(edge.to())) {
-        violations.add(new Violation("WF-008", "边引用了不存在的节点：" + edge.from() + " → " + edge.to()));
+        violations.add(
+            new Violation("WF-008", "边引用了不存在的节点：" + edge.from() + " → " + edge.to(), edge.from()));
         continue;
       }
       validEdges.add(edge);
@@ -133,12 +177,12 @@ public final class WorkflowDefinitionValidator {
           validEdges.stream().filter(edge -> edge.from().equals(node.code())).toList();
       if (node.type() == WorkflowDefinition.NodeType.END) {
         if (!outs.isEmpty()) {
-          violations.add(new Violation("WF-004", "结束节点 " + node.code() + " 不应有后继"));
+          violations.add(new Violation("WF-004", "结束节点 " + node.code() + " 不应有后继", node.code()));
         }
         continue;
       }
       if (outs.isEmpty()) {
-        violations.add(new Violation("WF-005", "节点 " + node.code() + " 没有后继（流程在此断头）"));
+        violations.add(new Violation("WF-005", "节点 " + node.code() + " 没有后继（流程在此断头）", node.code()));
       }
       if (node.type() == WorkflowDefinition.NodeType.CONDITION) {
         lintConditionNode(node, outs, violations);
@@ -154,8 +198,12 @@ public final class WorkflowDefinitionValidator {
         // 抄送已落地：改为按「必须有抄送人指派规则 + 单一出边」校验，不再一律拒绝。
         // 抄送人沿用与审批节点同一套指派规则（ROLE/USER/LINE_MANAGER/DEPT_HEAD/LEVEL_UP/FIELD），
         // 只是解析结果用于「知会」而非「建待办」。
-        if (definition.assignments().getOrDefault(node.code(), List.of()).isEmpty()) {
-          violations.add(new Violation("WF-018", "抄送节点 " + node.code() + " 缺抄送人指派规则"));
+        List<WorkflowDefinition.AssignmentRule> ccRules =
+            definition.assignments().getOrDefault(node.code(), List.of());
+        if (ccRules.isEmpty()) {
+          violations.add(new Violation("WF-018", "抄送节点 " + node.code() + " 缺抄送人指派规则", node.code()));
+        } else {
+          lintAssignmentParams(node, ccRules, violations);
         }
         lintSingleOutEdge(node, outs, violations, "WF-018", "抄送节点");
       }
@@ -166,7 +214,7 @@ public final class WorkflowDefinitionValidator {
     for (WorkflowDefinition.Edge edge : validEdges) {
       String key = edge.from() + "->" + edge.to();
       if (!edgeKeys.add(key)) {
-        violations.add(new Violation("WF-011", "存在重复边：" + key));
+        violations.add(new Violation("WF-011", "存在重复边：" + key, edge.from()));
       }
     }
 
@@ -176,7 +224,8 @@ public final class WorkflowDefinitionValidator {
       Set<String> reachable = reachableFrom(startCode, validEdges);
       for (WorkflowDefinition.Node node : nodes) {
         if (node.code() != null && !reachable.contains(node.code())) {
-          violations.add(new Violation("WF-009", "节点 " + node.code() + " 从发起节点不可达（孤岛节点）"));
+          violations.add(
+              new Violation("WF-009", "节点 " + node.code() + " 从发起节点不可达（孤岛节点）", node.code()));
         }
       }
       String cycle = findCycle(startCode, validEdges);
@@ -194,16 +243,19 @@ public final class WorkflowDefinitionValidator {
       List<WorkflowDefinition.Edge> outs,
       List<Violation> violations) {
     if (outs.size() < 2) {
-      violations.add(new Violation("WF-006", "条件节点 " + node.code() + " 至少需要 2 条出边（分支 + 默认）"));
+      violations.add(
+          new Violation("WF-006", "条件节点 " + node.code() + " 至少需要 2 条出边（分支 + 默认）", node.code()));
     }
     List<WorkflowDefinition.Edge> defaults =
         outs.stream().filter(WorkflowDefinition.Edge::isDefault).toList();
     if (defaults.isEmpty()) {
-      violations.add(new Violation("WF-006", "条件节点 " + node.code() + " 缺默认边（else）"));
+      violations.add(new Violation("WF-006", "条件节点 " + node.code() + " 缺默认边（else）", node.code()));
     } else if (defaults.size() > 1) {
-      violations.add(new Violation("WF-006", "条件节点 " + node.code() + " 存在多条默认边（else）"));
+      violations.add(
+          new Violation("WF-006", "条件节点 " + node.code() + " 存在多条默认边（else）", node.code()));
     } else if (!defaults.get(0).equals(outs.get(outs.size() - 1))) {
-      violations.add(new Violation("WF-006", "条件节点 " + node.code() + " 的默认边（else）必须放在末位"));
+      violations.add(
+          new Violation("WF-006", "条件节点 " + node.code() + " 的默认边（else）必须放在末位", node.code()));
     }
     for (WorkflowDefinition.Edge edge : outs) {
       if (edge.isDefault()) {
@@ -211,18 +263,21 @@ public final class WorkflowDefinitionValidator {
       }
       for (String problem : WorkflowBranchEvaluator.lintCondition(edge.when(), "条件分支")) {
         violations.add(
-            new Violation("WF-006", "条件节点 " + node.code() + " 的出边 " + edge.to() + "：" + problem));
+            new Violation(
+                "WF-006",
+                "条件节点 " + node.code() + " 的出边 " + edge.to() + "：" + problem,
+                node.code()));
       }
     }
   }
 
-  /** 审批节点：必须配指派规则，且策略须在白名单内。 */
+  /** 审批节点：必须配指派规则，策略须在白名单内，且策略必需参数不得缺失。 */
   private void lintApprovalNode(
       WorkflowDefinition.Node node,
       List<WorkflowDefinition.AssignmentRule> rules,
       List<Violation> violations) {
     if (rules == null || rules.isEmpty()) {
-      violations.add(new Violation("WF-007", "审批节点 " + node.code() + " 未配置审批人指派规则"));
+      violations.add(new Violation("WF-007", "审批节点 " + node.code() + " 未配置审批人指派规则", node.code()));
       return;
     }
     for (WorkflowDefinition.AssignmentRule rule : rules) {
@@ -237,7 +292,54 @@ public final class WorkflowDefinitionValidator {
                     + rule.strategy()
                     + "（支持 "
                     + WorkflowDefinition.SUPPORTED_STRATEGIES
-                    + "）"));
+                    + "）",
+                node.code()));
+      }
+    }
+    lintAssignmentParams(node, rules, violations);
+  }
+
+  /**
+   * 指派规则参数完整性（WF-020）。
+   *
+   * <p>校验的是<b>运行期真正会被读取的键</b>，而不是「看起来像参数」的任意键：{@link #REQUIRED_STRATEGY_PARAMS} 与 {@code
+   * RecordFieldApproverResolver} 的 switch 分支一一对应。未知策略不在此判（WF-013 已拦）。
+   */
+  private void lintAssignmentParams(
+      WorkflowDefinition.Node node,
+      List<WorkflowDefinition.AssignmentRule> rules,
+      List<Violation> violations) {
+    for (WorkflowDefinition.AssignmentRule rule : rules) {
+      if (rule == null || rule.strategy() == null) {
+        continue;
+      }
+      String required = REQUIRED_STRATEGY_PARAMS.get(rule.strategy());
+      if (required != null) {
+        Object value = rule.params() == null ? null : rule.params().get(required);
+        if (value == null || String.valueOf(value).isBlank()) {
+          violations.add(
+              new Violation(
+                  "WF-020",
+                  "节点 "
+                      + node.code()
+                      + " 的指派策略 "
+                      + rule.strategy()
+                      + " 缺必需参数 "
+                      + required
+                      + "：运行期解析不出审批人，节点会挂起（不派单、不报错）",
+                  node.code()));
+        }
+        continue;
+      }
+      if ("LEVEL_UP".equals(rule.strategy())) {
+        Object level = rule.params() == null ? null : rule.params().get("level");
+        if (level != null && (!(level instanceof Number number) || number.intValue() < 1)) {
+          violations.add(
+              new Violation(
+                  "WF-020",
+                  "节点 " + node.code() + " 的指派策略 LEVEL_UP 参数 level 必须是 ≥ 1 的整数，实为：" + level,
+                  node.code()));
+        }
       }
     }
   }
@@ -264,13 +366,16 @@ public final class WorkflowDefinitionValidator {
                   + node.code()
                   + " 应恰有 1 条出边，实有 "
                   + outs.size()
-                  + " 条（条件分支请使用 CONDITION 节点）"));
+                  + " 条（条件分支请使用 CONDITION 节点）",
+              node.code()));
       return;
     }
     if (outs.size() == 1 && !outs.get(0).isDefault()) {
       violations.add(
           new Violation(
-              code, nodeKind + " " + node.code() + " 的唯一出边不应带条件（运行期会忽略该条件；条件分支请使用 CONDITION 节点）"));
+              code,
+              nodeKind + " " + node.code() + " 的唯一出边不应带条件（运行期会忽略该条件；条件分支请使用 CONDITION 节点）",
+              node.code()));
     }
   }
 

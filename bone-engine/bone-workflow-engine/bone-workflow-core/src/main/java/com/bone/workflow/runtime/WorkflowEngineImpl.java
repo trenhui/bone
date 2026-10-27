@@ -19,6 +19,7 @@ import com.bone.workflow.ports.spi.WorkflowIdGenerator;
 import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
+import com.bone.workflow.ports.spi.WorkflowUnitOfWork;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -56,8 +57,9 @@ public class WorkflowEngineImpl implements WorkflowEngine {
    * 同实例「驳回退回」次数上限（循环防护）。
    *
    * <p>驳回退回是运行期跳转，不限制就可能 A 驳回 B、B 驳回 A 无限往返——单据永远卡在「被驳回→退回→再被驳」的拉锯里，
-   * 既无终态、也无业务进展。达上限即强制整单驳回终止，把「拉锯」变成确定性的「流程结束」。 计数口径：每发生一次驳回（整单驳回或退回节点都会留下一条 {@code REJECTED}
-   * 任务），计数 +1。
+   * 既无终态、也无业务进展。达上限即强制整单驳回终止，把「拉锯」变成确定性的「流程结束」。 计数口径：由 {@link
+   * com.bone.workflow.ports.spi.WorkflowInstanceRepository#registerRejectRound} 在实例行上原子累加， <b>一次退回
+   * = 一轮</b>——不能用「REJECTED 任务条数」代计（会签节点多人驳回会把一轮数成多轮）。
    */
   private static final int MAX_REJECT_TO_NODE_ROUNDS = 10;
 
@@ -73,6 +75,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   private final WorkflowDefinitionValidator validator;
   private final Clock clock;
   private final NotificationPort notificationPort;
+  private final WorkflowUnitOfWork unitOfWork;
 
   public WorkflowEngineImpl(
       WorkflowDefinitionRepository definitionRepository,
@@ -111,6 +114,40 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       WorkflowDefinitionValidator validator,
       Clock clock,
       NotificationPort notificationPort) {
+    this(
+        definitionRepository,
+        instanceRepository,
+        approverResolver,
+        recordPort,
+        statusPort,
+        auditPort,
+        idGenerator,
+        conditionEvaluator,
+        validator,
+        clock,
+        notificationPort,
+        WorkflowUnitOfWork.DIRECT);
+  }
+
+  /**
+   * 完整装配：额外绑定用例级事务边界。
+   *
+   * <p>生产装配<b>必须</b>走这个构造器并传入事务实现（starter 已用 {@code TransactionTemplate} 绑定）； 传 {@link
+   * WorkflowUnitOfWork#DIRECT} 等于放弃 P0-2 的修复——只允许单测与无事务宿主使用。
+   */
+  public WorkflowEngineImpl(
+      WorkflowDefinitionRepository definitionRepository,
+      WorkflowInstanceRepository instanceRepository,
+      ApproverResolver approverResolver,
+      WorkflowRecordPort recordPort,
+      WorkflowStatusPort statusPort,
+      WorkflowAuditPort auditPort,
+      WorkflowIdGenerator idGenerator,
+      WorkflowConditionEvaluator conditionEvaluator,
+      WorkflowDefinitionValidator validator,
+      Clock clock,
+      NotificationPort notificationPort,
+      WorkflowUnitOfWork unitOfWork) {
     this.definitionRepository = definitionRepository;
     this.instanceRepository = instanceRepository;
     this.approverResolver = approverResolver;
@@ -123,6 +160,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     this.validator = validator;
     this.clock = clock == null ? Clock.systemUTC() : clock;
     this.notificationPort = notificationPort == null ? NotificationPort.NOOP : notificationPort;
+    this.unitOfWork = unitOfWork == null ? WorkflowUnitOfWork.DIRECT : unitOfWork;
   }
 
   /**
@@ -141,6 +179,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowTask reassignTask(
+      String taskId, String newAssigneeId, String operatorId, String reason) {
+    return unitOfWork.execute(
+        () -> reassignTaskInTransaction(taskId, newAssigneeId, operatorId, reason));
+  }
+
+  private WorkflowTask reassignTaskInTransaction(
       String taskId, String newAssigneeId, String operatorId, String reason) {
     if (newAssigneeId == null || newAssigneeId.isBlank()) {
       throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "改派目标办理人不能为空");
@@ -243,6 +287,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   @Override
   public WorkflowTask transferTask(
       String taskId, String newAssigneeId, String operatorId, String comment) {
+    return unitOfWork.execute(
+        () -> transferTaskInTransaction(taskId, newAssigneeId, operatorId, comment));
+  }
+
+  private WorkflowTask transferTaskInTransaction(
+      String taskId, String newAssigneeId, String operatorId, String comment) {
     if (newAssigneeId == null || newAssigneeId.isBlank()) {
       throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "转办目标办理人不能为空");
     }
@@ -319,6 +369,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowTask addSign(
+      String taskId, String newAssigneeId, String operatorId, String comment) {
+    return unitOfWork.execute(
+        () -> addSignInTransaction(taskId, newAssigneeId, operatorId, comment));
+  }
+
+  private WorkflowTask addSignInTransaction(
       String taskId, String newAssigneeId, String operatorId, String comment) {
     if (newAssigneeId == null || newAssigneeId.isBlank()) {
       throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "加签目标办理人不能为空");
@@ -397,6 +453,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowInstance start(
+      String entityCode, String recordId, String definitionKey, String operatorId) {
+    return unitOfWork.execute(
+        () -> startInTransaction(entityCode, recordId, definitionKey, operatorId));
+  }
+
+  private WorkflowInstance startInTransaction(
       String entityCode, String recordId, String definitionKey, String operatorId) {
     // 幂等：同一单据已有「未终结」的实例时直接复用，不新建第二个实例。
     // 网络重试 / 用户连点两次「提交」都会走到这里——若不幂等，会得到两个并行实例（双份审批、互相看不见）。
@@ -490,6 +552,16 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       String comment,
       String operatorId,
       String backToNodeCode) {
+    return unitOfWork.execute(
+        () -> completeTaskInTransaction(taskId, decision, comment, operatorId, backToNodeCode));
+  }
+
+  private WorkflowInstance completeTaskInTransaction(
+      String taskId,
+      WorkflowTask.Decision decision,
+      String comment,
+      String operatorId,
+      String backToNodeCode) {
     WorkflowTask task =
         instanceRepository
             .findTask(taskId)
@@ -532,16 +604,6 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     // 否则「先标记驳回、再发现目标非法」会留下「任务已 REJECTED、实例仍 RUNNING、却无新待办」的死节点。
     if (decision == WorkflowTask.Decision.REJECT && backToNodeCode != null) {
       validateRejectToNodeTarget(instance, task, backToNodeCode);
-      long rejectRounds =
-          instanceRepository.listTasks(instance.id()).stream()
-              .filter(each -> each.status() == WorkflowTask.Status.REJECTED)
-              .count();
-      if (rejectRounds >= MAX_REJECT_TO_NODE_ROUNDS) {
-        return terminateAsRejected(
-            instance,
-            operatorId,
-            "驳回退回次数达上限（" + MAX_REJECT_TO_NODE_ROUNDS + "），防循环，流程终止：" + comment);
-      }
     }
     WorkflowTask.Status nextStatus =
         decision == WorkflowTask.Decision.APPROVE
@@ -611,9 +673,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       cancelNodeTasksWithNotice(current, task.nodeCode(), operatorId, "审批节点已决策完成，该待办无需再处理");
       return advanceFrom(current, definition, operatorId, outs.get(0).to());
     }
-    // 未推进：可能是「会签未齐，等其他人」「比例会签法定人数未达」或「节点内有人驳回」。重新读该节点任务做区分。
+    // 未推进：可能是「会签未齐，等其他人」「比例会签法定人数未达」或「节点内有人驳回」。
+    // 重新读该节点任务做区分——<b>只读当前轮次</b>：驳回退回会让同一节点存在多批任务，
+    // 拿全量历史来算「已通过 + 待决」会把上一轮的表态算进本轮，与存储层按轮次的推进判据得出互相矛盾的解释。
     List<WorkflowTask> freshTasks =
-        instanceRepository.listTasksByNode(current.id(), task.nodeCode());
+        instanceRepository.listTasksByNodeInCurrentRound(current.id(), task.nodeCode());
     WorkflowInstance latest = instanceRepository.findInstance(current.id()).orElse(current);
     if (!latest.isTerminated()) {
       if (node.mode() == WorkflowDefinition.ApprovalMode.RATIO) {
@@ -652,6 +716,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowInstance withdraw(String instanceId, String operatorId) {
+    return unitOfWork.execute(() -> withdrawInTransaction(instanceId, operatorId));
+  }
+
+  private WorkflowInstance withdrawInTransaction(String instanceId, String operatorId) {
     WorkflowInstance instance =
         instanceRepository
             .findInstance(instanceId)
@@ -697,6 +765,10 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowInstance resume(String instanceId, String operatorId) {
+    return unitOfWork.execute(() -> resumeInTransaction(instanceId, operatorId));
+  }
+
+  private WorkflowInstance resumeInTransaction(String instanceId, String operatorId) {
     WorkflowInstance instance =
         instanceRepository
             .findInstance(instanceId)
@@ -771,9 +843,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
               null,
               now,
               null);
-      instanceRepository.saveTask(task, operatorId);
-      // 派单即通知：不通知，审批流就退化成「办事人每天自己刷待办列表」，催办与超时全都失效。
-      notify(() -> notificationPort.notifyTaskCreated(task, instance));
+      // 必须条件插入，不能无条件 saveTask：挂起可能发生在「待办已落库、后续步骤失败」之后，
+      // 无条件插入会给出第二条同人同节点 PENDING——会签（ALL）节点上那条多余任务永远没人处理，节点永远等不齐。
+      if (instanceRepository.saveTaskIfAbsent(task, operatorId)) {
+        // 派单即通知：不通知，审批流就退化成「办事人每天自己刷待办列表」，催办与超时全都失效。
+        notify(() -> notificationPort.notifyTaskCreated(task, instance));
+      }
     }
     WorkflowInstance running =
         new WorkflowInstance(
@@ -834,6 +909,12 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   @Override
   public WorkflowInstance assignTask(
       String instanceId, String nodeCode, String assigneeId, String operatorId, String reason) {
+    return unitOfWork.execute(
+        () -> assignTaskInTransaction(instanceId, nodeCode, assigneeId, operatorId, reason));
+  }
+
+  private WorkflowInstance assignTaskInTransaction(
+      String instanceId, String nodeCode, String assigneeId, String operatorId, String reason) {
     if (assigneeId == null || assigneeId.isBlank()) {
       throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "强制指派目标办理人不能为空");
     }
@@ -853,6 +934,15 @@ public class WorkflowEngineImpl implements WorkflowEngine {
     requireNotSelfApproval(instance, assigneeId);
     String targetNode =
         (nodeCode == null || nodeCode.isBlank()) ? instance.currentNodeCode() : nodeCode;
+    // 只能在实例<b>当前</b>节点上注入待办。
+    // 放任任意 nodeCode 会造出「幽灵待办」：实例停在 A 节点，B 节点却挂着一条 PENDING；
+    // 而节点推进以 current_node_code 为守卫（compareAndAdvanceNode 的 WHERE），B 节点的任务<b>永远无法完成</b>——
+    // 办理人点同意只会得到「会签未齐」的静默返回，单据卡死且无任何报错。
+    if (!targetNode.equals(instance.currentNodeCode())) {
+      throw new WorkflowEngineException(
+          WorkflowErrorCode.CONFLICT,
+          "只能在当前节点注入待办：实例在 " + instance.currentNodeCode() + "，请求指派到 " + targetNode);
+    }
     // 条件插入去重：判据由存储层在同一条语句里算（与 compareAndAdvanceNode 同纪律）——
     // 应用层「先查无待办再插」在并发双点下会双插，同人同节点两条 PENDING 会让会签节点永远等不齐。
     WorkflowTask task =
@@ -919,6 +1009,11 @@ public class WorkflowEngineImpl implements WorkflowEngine {
 
   @Override
   public WorkflowInstance terminateInstance(String instanceId, String operatorId, String reason) {
+    return unitOfWork.execute(() -> terminateInstanceInTransaction(instanceId, operatorId, reason));
+  }
+
+  private WorkflowInstance terminateInstanceInTransaction(
+      String instanceId, String operatorId, String reason) {
     WorkflowInstance instance =
         instanceRepository
             .findInstance(instanceId)
@@ -938,7 +1033,6 @@ public class WorkflowEngineImpl implements WorkflowEngine {
           WorkflowErrorCode.CONFLICT, "流程状态已变更，终止失败：" + latest.phase());
     }
     cancelPendingTasksWithNotice(instance, operatorId, "管理员已强制终止该流程");
-    instanceRepository.cancelPendingTasks(instanceId, operatorId);
     WorkflowInstance terminated =
         new WorkflowInstance(
             instance.id(),
@@ -1315,6 +1409,14 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       String operatorId,
       String backToNodeCode,
       String comment) {
+    // 循环防护的计数口径必须是「往返次数」，由存储层原子累加。
+    // 曾用「REJECTED 任务条数」代替：一个 5 人会签节点上 3 人驳回就算成 3 轮，10 轮上限在 4 次往返内就被打满，
+    // 单据被误终止；反过来同一节点被驳回多次但每次只 1 人驳回时，计数又偏小。
+    long round = instanceRepository.registerRejectRound(instance.id(), operatorId);
+    if (round > MAX_REJECT_TO_NODE_ROUNDS) {
+      return terminateAsRejected(
+          instance, operatorId, "驳回退回次数达上限（" + MAX_REJECT_TO_NODE_ROUNDS + "），防循环，流程终止：" + comment);
+    }
     // 跳转前作废当前节点余下待办并逐人知会：否则单签/或签节点上其他办理人的待办会留成幽灵待办（见 cancelNodeTasksWithNotice）。
     cancelNodeTasksWithNotice(instance, task.nodeCode(), operatorId, "审批被驳回退回，该节点余下待办作废");
     // 运行期跳转：currentNodeCode 从当前节点原子改到目标节点（无条件移动，复用 moveTo 的 CAS 语义）。

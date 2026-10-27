@@ -1,0 +1,19 @@
+{
+  "name": "@bone/workflow-dsl",
+  "version": "1.0.0",
+  "description": "BONE workflow designer DSL: FlowDoc 文档树 ↔ 引擎定义 JSON 的双向编译",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

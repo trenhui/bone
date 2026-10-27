@@ -18,6 +18,9 @@ CREATE TABLE wf_instance (
   phase             VARCHAR(32)  NOT NULL,
   started_by        VARCHAR(64)  NOT NULL,
   started_at        TIMESTAMP    NOT NULL,
+  node_round        INT          NOT NULL DEFAULT 0,
+  node_entered_at   TIMESTAMP    NOT NULL,
+  reject_rounds     INT          NOT NULL DEFAULT 0,
   updated_at        TIMESTAMP    NOT NULL,
   created_by        VARCHAR(64)  NOT NULL,
   created_at        TIMESTAMP    NOT NULL,
@@ -38,6 +41,7 @@ CREATE TABLE wf_task (
   decision    VARCHAR(32),
   comment     VARCHAR(1024),
   due_at      TIMESTAMP,
+  node_round  INT       NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    NOT NULL,
   updated_at  TIMESTAMP    NOT NULL,
   decided_at  TIMESTAMP,
@@ -70,6 +74,7 @@ CREATE TABLE wf_status_outbox (
   instance_id  VARCHAR(64)       NOT NULL,
   entity_code  VARCHAR(128) NOT NULL,
   record_id    VARCHAR(128) NOT NULL,
+  operator_id  VARCHAR(64)  DEFAULT NULL,
   intent       VARCHAR(32)  NOT NULL,
   action_code  VARCHAR(64),
   params_json  TEXT,
@@ -102,6 +107,29 @@ CREATE TABLE wf_process_def (
 );
 -- findLatestPublishedRow / listPublishedRows / findByVersionRow 都按 (租户, def_key[, status]) 定位
 CREATE INDEX idx_wf_def_key ON wf_process_def (tenant_id, def_key, status);
+-- 版本唯一（生产 0056 缺失，设计器 M0 补上）：并发发布时靠它兜底，而不是靠 SELECT MAX+1。
+-- 缺它的后果不是「多一条脏数据」——findByVersionRow 会读出两行并在在途实例推进时抛
+-- IncorrectResultSizeDataAccessException，错误现场与根因完全脱节。
+CREATE UNIQUE INDEX uk_wf_def_ver ON wf_process_def (tenant_id, def_key, def_version);
+
+-- 流程定义草稿（设计器设计态，2026-10-27 新增）：
+-- 与 wf_process_def 分表是硬要求——findByVersionRow 只判 deleted、不判 status，
+-- 草稿若与发布版共用 (def_key, def_version)，读取侧会读出两行。一 key 一稿靠唯一键保证。
+CREATE TABLE wf_process_draft (
+  id              VARCHAR(64)  NOT NULL PRIMARY KEY,
+  tenant_id       BIGINT       NOT NULL,
+  def_key         VARCHAR(128) NOT NULL,
+  def_name        VARCHAR(255) NOT NULL,
+  definition_json TEXT         NOT NULL,
+  revision        INT          NOT NULL DEFAULT 0,
+  created_by      VARCHAR(64)  NOT NULL,
+  created_at      TIMESTAMP    NOT NULL,
+  updated_by      VARCHAR(64),
+  updated_at      TIMESTAMP,
+  deleted         TINYINT      NOT NULL DEFAULT 0,
+  version         INT          NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX uk_wf_draft_key ON wf_process_draft (tenant_id, def_key);
 
 -- 业务实体 → 流程定义绑定：entity_code 运营侧解析成 def_key（换流程改配置不发版，设计文档 §5.5）
 -- v1 只读（写路径随建模界面排期）；查询以 (entity_code, tenant_id) 期望唯一命中——

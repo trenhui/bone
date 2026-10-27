@@ -25,6 +25,10 @@ public class WfStatusOutboxRow extends Entity<String> {
   private String instanceId;
   private String entityCode;
   private String recordId;
+
+  /** 真实操作人（决策人）；对账补投的行为 null。 */
+  private String operatorId;
+
   private String intent;
   private String actionCode;
   private String paramsJson;

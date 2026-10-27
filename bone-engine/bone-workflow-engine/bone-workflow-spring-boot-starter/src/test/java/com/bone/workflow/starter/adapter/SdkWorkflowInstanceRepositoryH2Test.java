@@ -520,6 +520,123 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
   // ====================== 夹具 ======================
 
+  @Test
+  @DisplayName("驳回退回重入：上一轮已 APPROVED 不得计入本轮法定人数（否则比例会签可被 1 人绕过）")
+  void staleApprovalsFromPreviousRound_doNotSatisfyQuorum() {
+    // 5 人会签取 3 人的小型版：quorum=2。第一轮 c1、c2 通过 → 节点推进 → 后续节点驳回退回 → 三人重新派单。
+    // 若判据按 (instance, node) 全量统计，历史 2 张 APPROVED 让 COUNT >= quorum 恒真：
+    // 本轮只要 c1 一人点同意，节点立刻推进，c2/c3 从未表态。这正是本用例要挡住的静默越权。
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.RATIO, List.of("c1", "c2", "c3"));
+    approve("c1");
+    approve("c2");
+    assertTrue(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c2"),
+        "第一轮满足法定人数，应推进");
+
+    // 驳回退回：模拟 rejectToNode 的跳转（无条件移动，AUTO），轮次再次自增
+    assertTrue(
+        repository.compareAndAdvanceNode(INSTANCE, "end", NODE, null, null, "c3"),
+        "驳回退回应能把实例移回审批节点");
+
+    // 退回后重新派单：三人各一条新待办（旧任务仍是 APPROVED，构成历史污染）
+    for (String assignee : List.of("c1", "c2", "c3")) {
+      repository.saveTask(
+          new WorkflowTask(
+              String.valueOf(taskId.incrementAndGet()),
+              INSTANCE,
+              NODE,
+              assignee,
+              WorkflowTask.Status.PENDING,
+              null,
+              null,
+              null,
+              Instant.parse("2026-10-23T00:00:00Z"),
+              null),
+          "u3");
+    }
+    approve("c1");
+
+    assertFalse(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c1"),
+        "本轮只有 1 人通过，历史 APPROVED 不得凑数——否则剩余办理人从未表态流程就通过了");
+    assertEquals(NODE, currentNode(), "未达法定人数不得推进");
+
+    // 本轮第二人通过后才推进：证明不是「永远不再推进」的另一种错
+    approve("c2");
+    assertTrue(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c2"),
+        "本轮满足法定人数后应推进");
+  }
+
+  @Test
+  @DisplayName("当前轮次查询只返回本轮任务；历史查询仍保留全量（审计要看得到每一轮）")
+  void currentRoundQuery_isScopedButHistoryIsNot() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.RATIO, List.of("c1", "c2", "c3"));
+    approve("c1");
+    approve("c2");
+    repository.compareAndAdvanceNode(
+        INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c2");
+    repository.compareAndAdvanceNode(INSTANCE, "end", NODE, null, null, "c3");
+    repository.saveTask(
+        new WorkflowTask(
+            String.valueOf(taskId.incrementAndGet()),
+            INSTANCE,
+            NODE,
+            "c1",
+            WorkflowTask.Status.PENDING,
+            null,
+            null,
+            null,
+            Instant.parse("2026-10-23T00:00:00Z"),
+            null),
+        "u3");
+
+    assertEquals(
+        1, repository.listTasksByNodeInCurrentRound(INSTANCE, NODE).size(), "当前轮次只剩退回后新派的那条");
+    assertEquals(4, repository.listTasksByNode(INSTANCE, NODE).size(), "历史查询必须保留全部轮次，否则实例轨迹被抹掉");
+  }
+
+  @Test
+  @DisplayName("saveInstance 不得回退节点：节点只能由原子推进改写")
+  void saveInstance_cannotRollBackNode() {
+    // mode 传 null ⇒ 适配器映射为 AUTO（非审批节点的无条件移动）；approvalMode 参数此处不参与判据
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.SINGLE, List.of());
+    assertTrue(
+        repository.compareAndAdvanceNode(INSTANCE, NODE, "end", null, null, "u1"), "非审批节点应无条件推进");
+
+    // 用推进<前>读到的旧快照落库（撤回/挂起/终止路径都会这么干）
+    WorkflowInstance stale =
+        new WorkflowInstance(
+            INSTANCE,
+            "expense_reimbursement",
+            "r-1",
+            "expense",
+            1,
+            NODE, // 旧快照里的节点
+            WorkflowInstance.Phase.RUNNING,
+            "u1",
+            Instant.parse("2026-10-23T00:00:00Z"),
+            Instant.parse("2026-10-23T00:05:00Z"));
+    repository.saveInstance(stale, "u1");
+
+    assertEquals("end", currentNode(), "整行覆盖会把已推进的节点回退，且事后从数据上完全看不出");
+  }
+
+  @Test
+  @DisplayName("驳回往返计数按「次数」累加，与节点任务条数无关")
+  void registerRejectRound_countsRoundsNotTasks() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.ALL, List.of("c1", "c2", "c3"));
+    reject("c1");
+    reject("c2");
+    reject("c3"); // 同一节点 3 人驳回，仍只有 1 轮往返
+
+    assertEquals(1L, repository.registerRejectRound(INSTANCE, "c3"), "一次退回 = 一轮");
+    assertEquals(2L, repository.registerRejectRound(INSTANCE, "c3"), "计数必须原子累加");
+  }
+
   private void givenInstanceAtNode(WorkflowDefinition.ApprovalMode mode, List<String> assignees) {
     WorkflowInstance instance =
         new WorkflowInstance(

@@ -127,12 +127,11 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @ConditionalOnMissingBean
   @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusIntentExecutor workflowStatusIntentExecutor(
-      RuntimeActionApplicationService actionService,
-      WorkflowInstanceRepository instanceRepository) {
+      RuntimeActionApplicationService actionService) {
     // 经窄端口耦合：执行器只依赖 RuntimeActionInvoker，平台动作调用由方法引用收敛到此处，
     // 既不触碰 RuntimeActionApplicationService 的框架代理 / 非公有父类（难以单测打桩），也便于单测以 mock 端口验证幂等键契约。
     RuntimeActionInvoker invoker = actionService::invokeAction;
-    return new RuntimeActionIntentExecutor(invoker, instanceRepository);
+    return new RuntimeActionIntentExecutor(invoker);
   }
 
   /**

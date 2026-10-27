@@ -21,4 +21,12 @@ public class WfProcessDefRow extends Entity<String> {
   private String defName;
   private int defVersion;
   private String definitionJson;
+
+  /**
+   * 启用标记（1/0）。
+   *
+   * <p>只有版本列表与总览查询会取出该列；单条读取（{@code findLatestPublishedRow} 等）不取，故此处可能为 {@code null}——{@code null}
+   * 表示「本查询未选择该列」，不表示「已下线」。
+   */
+  private Integer enabled;
 }

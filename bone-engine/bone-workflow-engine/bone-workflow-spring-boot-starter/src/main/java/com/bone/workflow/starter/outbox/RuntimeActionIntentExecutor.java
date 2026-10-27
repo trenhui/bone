@@ -1,7 +1,5 @@
 package com.bone.workflow.starter.outbox;
 
-import com.bone.workflow.domain.WorkflowInstance;
-import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -25,14 +23,20 @@ import org.slf4j.LoggerFactory;
  */
 public class RuntimeActionIntentExecutor implements StatusIntentExecutor {
 
+  /** 无真实决策人可用时的系统身份（对账补投、历史行）。 */
+  public static final String SYSTEM_ACTOR = "workflow-projection";
+
   private static final Logger log = LoggerFactory.getLogger(RuntimeActionIntentExecutor.class);
   private final RuntimeActionInvoker actionInvoker;
-  private final WorkflowInstanceRepository instanceRepository;
 
-  public RuntimeActionIntentExecutor(
-      RuntimeActionInvoker actionInvoker, WorkflowInstanceRepository instanceRepository) {
+  /**
+   * 只需动作调用器。
+   *
+   * <p>曾依赖 {@code WorkflowInstanceRepository} 反查发起人当操作人——那既<b>伪造了操作人</bf>，又给每条意图多一次
+   * 数据库往返。操作人改为随意图行携带（{@code wf_status_outbox.operator_id}），该依赖随之删除。
+   */
+  public RuntimeActionIntentExecutor(RuntimeActionInvoker actionInvoker) {
     this.actionInvoker = Objects.requireNonNull(actionInvoker, "actionInvoker");
-    this.instanceRepository = Objects.requireNonNull(instanceRepository, "instanceRepository");
   }
 
   @Override
@@ -50,6 +54,10 @@ public class RuntimeActionIntentExecutor implements StatusIntentExecutor {
     Map<String, Object> params = new LinkedHashMap<>();
     params.put("workflowInstanceId", intent.instanceId());
     params.put("intent", intent.intent());
+    // 来源标记：动作码与「用户点审批按钮」完全相同（宿主动作注册表只有 approve/reject 这几个），
+    // 处理器必须能区分「用户在页面上的操作」与「引擎补投影」。不区分时，一个「onApprove 里再调工作流」的处理器
+    // 就是自调用回路——现在靠幂等碰巧收敛，不是设计安全。
+    params.put("source", "workflow-projection");
 
     // 幂等键 = 发件箱行 id（每个意图一行、全局唯一）。
     // 同一行重试（claim 超时 / 退避重试）复用同一 id ⇒ 平台去重；同一实例的<b>不同</b>意图（如 suspend→resume→suspend
@@ -72,15 +80,20 @@ public class RuntimeActionIntentExecutor implements StatusIntentExecutor {
         intent.actionCode());
   }
 
-  /** 操作人取实例发起人（审批动作的 operator 语义上应是流程发起人/系统，而非中继进程）。 */
+  /**
+   * 投影动作的操作人。<b>必须是真实决策人</b>，不得回退到发起人。
+   *
+   * <p>曾用 {@code instance.startedBy()} 兜底：业务台账上于是出现「<b>发起人</b>执行了 approve」，而 {@code wf_task} 里
+   * 记录的是另一个审批人——两处审计对不上，且错的方向恰好是最敏感的（看起来像自己批了自己的单）。
+   *
+   * <p>因此优先级是：行内真实操作人 → 系统身份 {@value #SYSTEM_ACTOR}。对账补投的行本来就没有决策人（对账线程只看到终态），
+   * 记成系统身份是<b>诚实</b>的；记成发起人是<b>伪造</b>的。宁可让台账显示「由系统补投影」，也不能让它显示一个没做过该动作的人。
+   */
   private String operatorOf(StatusIntent intent) {
-    try {
-      return instanceRepository
-          .findInstance(intent.instanceId())
-          .map(WorkflowInstance::startedBy)
-          .orElse("workflow-relay");
-    } catch (RuntimeException ex) {
-      return "workflow-relay";
+    String operator = intent.operatorId();
+    if (operator != null && !operator.isBlank()) {
+      return operator;
     }
+    return SYSTEM_ACTOR;
   }
 }

@@ -51,6 +51,7 @@ public class WorkflowStatusOutboxRepository {
         intent.instanceId(),
         intent.entityCode(),
         intent.recordId(),
+        intent.operatorId(),
         intent.intent(),
         intent.actionCode(),
         intent.paramsJson(),
@@ -133,6 +134,7 @@ public class WorkflowStatusOutboxRepository {
         row.getEntityCode(),
         row.getRecordId(),
         row.getTenantId(),
+        null, // 对账补投没有决策人；由 RuntimeActionIntentExecutor 落成系统身份，绝不冒用发起人
         row.getIntent(),
         actionCodeOf(row.getIntent()),
         null,
@@ -181,6 +183,7 @@ public class WorkflowStatusOutboxRepository {
         row.getEntityCode(),
         row.getRecordId(),
         row.getTenantId(),
+        row.getOperatorId(),
         row.getIntent(),
         row.getActionCode(),
         row.getParamsJson(),

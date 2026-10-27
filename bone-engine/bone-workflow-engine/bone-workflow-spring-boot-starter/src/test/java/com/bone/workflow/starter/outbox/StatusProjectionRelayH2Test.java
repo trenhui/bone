@@ -160,10 +160,10 @@ class StatusProjectionRelayH2Test {
     // 造一个已 APPROVED 的实例，但没有任何 APPROVED 意图行（模拟崩溃在 phase CAS 与写意图之间）
     jdbc.update(
         "INSERT INTO wf_instance (id, tenant_id, entity_code, record_id, def_key, def_version,"
-            + " current_node_code, phase, started_by, started_at, updated_at, created_by,"
-            + " created_at, updated_by, deleted, version)"
+            + " current_node_code, phase, started_by, started_at, node_round, node_entered_at,"
+            + " reject_rounds, updated_at, created_by, created_at, updated_by, deleted, version)"
             + " VALUES (700, ?, 'expense_reimbursement', 'r-9', 'expense', 1, 'end', 'APPROVED',"
-            + " 'u1', NOW(), NOW(), 'u1', NOW(), 'u1', 0, 0)",
+            + " 'u1', NOW(), 0, NOW(), 0, NOW(), 'u1', NOW(), 'u1', 0, 0)",
         TENANT);
 
     List<StatusIntent> missing =
@@ -260,10 +260,10 @@ class StatusProjectionRelayH2Test {
   private void givenTerminalInstance(String instanceId, String phase) {
     jdbc.update(
         "INSERT INTO wf_instance (id, tenant_id, entity_code, record_id, def_key, def_version,"
-            + " current_node_code, phase, started_by, started_at, updated_at, created_by,"
-            + " created_at, updated_by, deleted, version)"
+            + " current_node_code, phase, started_by, started_at, node_round, node_entered_at,"
+            + " reject_rounds, updated_at, created_by, created_at, updated_by, deleted, version)"
             + " VALUES (?, ?, 'expense_reimbursement', ?, 'expense', 1, 'end', ?,"
-            + " 'u1', NOW(), NOW(), 'u1', NOW(), 'u1', 0, 0)",
+            + " 'u1', NOW(), 0, NOW(), 0, NOW(), 'u1', NOW(), 'u1', 0, 0)",
         instanceId,
         TENANT,
         "r-" + instanceId,
@@ -293,6 +293,7 @@ class StatusProjectionRelayH2Test {
             "expense_reimbursement",
             "r-" + instanceId,
             TENANT,
+            "u-approver",
             intent,
             actionCode,
             paramsJson,

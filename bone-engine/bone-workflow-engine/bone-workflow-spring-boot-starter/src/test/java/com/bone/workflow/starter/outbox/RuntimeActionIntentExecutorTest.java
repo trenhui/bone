@@ -8,11 +8,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import java.time.Instant;
-import java.util.Optional;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,11 +28,9 @@ import org.mockito.ArgumentCaptor;
 class RuntimeActionIntentExecutorTest {
 
   private final RuntimeActionInvoker actionInvoker = mock(RuntimeActionInvoker.class);
-  private final WorkflowInstanceRepository instanceRepository =
-      mock(WorkflowInstanceRepository.class);
 
   private final RuntimeActionIntentExecutor executor =
-      new RuntimeActionIntentExecutor(actionInvoker, instanceRepository);
+      new RuntimeActionIntentExecutor(actionInvoker);
 
   /** 一条终态意图（有业务动作码，会真正调用平台）。 */
   private static StatusIntent terminal(String id, String intent, String actionCode) {
@@ -44,6 +40,7 @@ class RuntimeActionIntentExecutorTest {
         "expense_reimbursement",
         "r1",
         1L,
+        "u-approver",
         intent,
         actionCode,
         null,
@@ -55,8 +52,6 @@ class RuntimeActionIntentExecutorTest {
   @Test
   @DisplayName("幂等键 = 发件箱行 id（每行唯一），透传给平台动作调用")
   void idempotencyKey_isOutboxRowId() {
-    when(instanceRepository.findInstance("i1")).thenReturn(Optional.empty());
-
     executor.execute(terminal("1001", "APPROVED", "approve"));
 
     ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
@@ -78,8 +73,6 @@ class RuntimeActionIntentExecutorTest {
   @Test
   @DisplayName("同实例的两条不同意图（不同行 id）不被折叠——各自独立推进业务状态")
   void distinctRowsAreNotCollapsed() {
-    when(instanceRepository.findInstance("i1")).thenReturn(Optional.empty());
-
     // 模拟 suspend→resume→suspend：两次 SUSPENDED 无动作码不调用平台；但即便换成有动作码的意图，
     // 不同行 id 也必须各自落地，不能被 {instanceId}:{intent} 折叠成一次。
     executor.execute(terminal("1001", "APPROVED", "approve"));
@@ -94,6 +87,57 @@ class RuntimeActionIntentExecutorTest {
   }
 
   @Test
+  @DisplayName("投影的操作人 = 真实决策人，且带 source 标记（不得冒用发起人、不得与用户动作同形）")
+  void operator_isRealDecider_notInitiator() {
+    executor.execute(terminal("1001", "APPROVED", "approve"));
+
+    ArgumentCaptor<String> operatorCaptor = ArgumentCaptor.forClass(String.class);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(actionInvoker)
+        .invoke(
+            any(),
+            anyLong(),
+            any(),
+            any(),
+            paramsCaptor.capture(),
+            operatorCaptor.capture(),
+            any(),
+            any());
+
+    assertThat(operatorCaptor.getValue())
+        .as("曾用 startedBy 兜底 → 业务台账出现「发起人批了自己的单」，与 wf_task 的真实审批人对不上")
+        .isEqualTo("u-approver");
+    assertThat(paramsCaptor.getValue())
+        .as("动作码与用户点击完全相同，处理器必须能区分投影入口，否则是自调用回路")
+        .containsEntry("source", "workflow-projection");
+  }
+
+  @Test
+  @DisplayName("没有决策人的行（对账补投）落成系统身份，绝不冒用任何人")
+  void missingOperator_fallsBackToSystemActor() {
+    executor.execute(
+        new StatusIntent(
+            "3001",
+            "i1",
+            "expense_reimbursement",
+            "r1",
+            1L,
+            null,
+            "APPROVED",
+            "approve",
+            null,
+            "NEW",
+            0,
+            Instant.now()));
+
+    ArgumentCaptor<String> operatorCaptor = ArgumentCaptor.forClass(String.class);
+    verify(actionInvoker)
+        .invoke(any(), anyLong(), any(), any(), any(), operatorCaptor.capture(), any(), any());
+    assertThat(operatorCaptor.getValue()).isEqualTo(RuntimeActionIntentExecutor.SYSTEM_ACTOR);
+  }
+
+  @Test
   @DisplayName("缺租户上下文时拒绝推进业务状态（fail-closed）")
   void missingTenant_failsClosed() {
     StatusIntent noTenant =
@@ -103,6 +147,7 @@ class RuntimeActionIntentExecutorTest {
             "expense_reimbursement",
             "r1",
             null,
+            "u-approver",
             "APPROVED",
             "approve",
             null,
