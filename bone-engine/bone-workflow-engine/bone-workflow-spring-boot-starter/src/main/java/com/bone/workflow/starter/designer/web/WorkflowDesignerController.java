@@ -6,6 +6,7 @@ import com.bone.workflow.starter.designer.WorkflowDesignerAction;
 import com.bone.workflow.starter.designer.WorkflowDesignerAuthorizer;
 import com.bone.workflow.starter.designer.WorkflowSimulationService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,6 +58,15 @@ public class WorkflowDesignerController {
   private final WorkflowSimulationService simulation;
   private final WorkflowDesignerAuthorizer authorizer;
 
+  /**
+   * 生产装配构造。<b>必须显式 {@code @Autowired}</b>：本类另有一个包级「仅供测试」的两参构造，两个构造都非无参 ⇒ Spring 的构造推断（{@code
+   * AutowiredAnnotationBeanPostProcessor#determineCandidateConstructors}）在无 {@code @Autowired}
+   * 标注时<b>无法裁决</b>，会退化成「找无参构造」并抛 {@code No default constructor found} ——2026-10-27 联调实测：{@code
+   * bone-boot} 组合根（{@code MetadataApplication} 扫 {@code com.bone.metadata} 命中 engine starter 的
+   * {@code @SpringBootApplication(scanBasePackages="com.bone")} 兜底全扫）把本类当普通 bean
+   * 扫进来，整个应用起不来。显式标注后，无论被扫到还是被自动配置的 {@code @Bean} 注册，都锁定三参生产构造。
+   */
+  @Autowired
   public WorkflowDesignerController(
       WorkflowDefinitionCommandService command,
       WorkflowSimulationService simulation,
