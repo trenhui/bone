@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      synap-claim-settlement : 智能理算引擎（生产实现骨架）
+
+      六边形架构：domain/engine 为纯逻辑，绝不直接依赖 Spring/DB/网络；
+      一切外部能力（BONE-AI 各能力中心）经 port 防腐层消费。
+      本模块自带可运行参考实现（InMemory 端口）与 生产级 JDBC 端口（H2/MySQL）。
+      验证：ProbeSuite（30 探针 + 19 变异对照）+ ScenarioSuite（28 真实 TPA 场景）
+      + JdbcPortsIntegrationTest（JDBC 持久化路径：CAS/冲正/预授权 TTL/幂等租约）。
+      构建：mvn -o test   （离线，依赖已在本地仓库）
+    -->
+
+    <groupId>com.bone.synap</groupId>
+    <artifactId>synap-claim-settlement</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>5.9.3</junit.version>
+        <h2.version>2.2.224</h2.version>
+    </properties>
+
+    <dependencies>
+        <!-- 测试：JUnit 5 + H2（集成测试在内存库验证 JDBC 持久化路径） -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
