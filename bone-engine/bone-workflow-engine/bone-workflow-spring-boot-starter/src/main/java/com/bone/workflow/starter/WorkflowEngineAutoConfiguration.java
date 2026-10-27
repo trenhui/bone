@@ -17,10 +17,12 @@ import com.bone.workflow.starter.adapter.PersistenceNotificationPort;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -85,8 +87,12 @@ public class WorkflowEngineAutoConfiguration {
    * <p><b>可观测性</b>：7 个端口经 {@link ObjectProvider} 取用，任一缺失即抛出点名缺失类型与排查路径的 {@link
    * IllegalStateException}（比 Spring 泛化的 {@code NoSuchBeanDefinitionException} 更可定位）；
    * 装配成功后打印就绪日志，声明绑定了哪个具体端口实现——杜绝「引擎是否装配 / 绑了哪个状态端口」再次沦为只能靠 {@code /actuator} 排查的静默事实。
+   *
+   * <p><b>显式关闭开关</b>：{@code bone.workflow.engine.enabled=false} 可整体关闭引擎（默认 true）。 硬装配意味着「只要 starter
+   * 在场就必然装配」，宿主若确实只要领域规则不要引擎，用该开关显式关—— 关闭是<b>显式选择</b>而非「端口碰巧缺失就静默跳过」，后者正是此前事故的成因。
    */
   @Configuration(proxyBeanMethods = false)
+  @ConditionalOnProperty(prefix = "bone.workflow.engine", name = "enabled", matchIfMissing = true)
   static class EngineConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(EngineConfiguration.class);
@@ -138,13 +144,14 @@ public class WorkflowEngineAutoConfiguration {
               notificationPort);
 
       log.info(
-          "WorkflowEngine 已装配：definitionRepository={}, instanceRepository={}, recordPort={}, statusPort={}, auditPort={}, idGenerator={}",
+          "WorkflowEngine 已装配：definitionRepository={}, instanceRepository={}, recordPort={}, statusPort={}, auditPort={}, idGenerator={}, notificationPort={}",
           simpleName(def),
           simpleName(inst),
           simpleName(rec),
           simpleName(status),
           simpleName(audit),
-          simpleName(gen));
+          simpleName(gen),
+          simpleName(notificationPort));
       return engine;
     }
 
@@ -162,13 +169,13 @@ public class WorkflowEngineAutoConfiguration {
     }
 
     /**
-     * 代理友好类型名：SDK 仓储等 bean 常被 Spring CGLIB 代理，直接用 {@code getClass().getSimpleName()} 会打出 {@code
-     * Xxx$$SpringCGLIB$$0} 这类代理名，误导排障，故截去 {@code $$} 之后的代理后缀。
+     * 代理友好类型名：bean 常被 Spring 代理，直接用 {@code getClass().getSimpleName()} 会打出 {@code
+     * Xxx$$SpringCGLIB$$0}（CGLIB）或 {@code $Proxy123}（JDK 动态代理）这类代理名，误导排障。 用 {@code
+     * AopProxyUtils.ultimateTargetClass} 取最终目标类，两类代理都能还原为真实实现类名 （此前手截 {@code $$} 只覆盖 CGLIB，JDK
+     * 代理仍会漏成 {@code $Proxy123}）。
      */
     private static String simpleName(Object bean) {
-      String name = bean.getClass().getSimpleName();
-      int i = name.indexOf("$$");
-      return i > 0 ? name.substring(0, i) : name;
+      return AopProxyUtils.ultimateTargetClass(bean).getSimpleName();
     }
   }
 }
