@@ -688,14 +688,20 @@ const WorkflowDesigner: React.FC = () => {
       <Content style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ padding: 12, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space wrap>
-            <Button icon={<SaveOutlined />} onClick={onSaveDraft} disabled={!doc || !canWrite}>
+            <Button
+              icon={<SaveOutlined />}
+              onClick={onSaveDraft}
+              disabled={!doc || !canWrite || lossy}
+              title={lossy ? '当前为旧数据有损还原，保存已禁用，请补全节点后重新载入' : undefined}
+            >
               保存草稿
             </Button>
             <Button
               icon={<SendOutlined />}
               type="primary"
               onClick={onPublish}
-              disabled={!doc || !canWrite}
+              disabled={!doc || !canWrite || lossy}
+              title={lossy ? '有损还原的定义无法发布，请先补全节点并重新载入' : undefined}
             >
               发布
             </Button>
