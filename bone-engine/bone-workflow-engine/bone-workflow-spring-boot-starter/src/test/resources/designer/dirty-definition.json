@@ -1,0 +1,14 @@
+{
+  "key": "desig_demo",
+  "name": "费用报销（半成品）",
+  "version": 1,
+  "engineSchemaVersion": 1,
+  "nodes": [
+    { "code": "start", "type": "START", "label": "发起" },
+    { "code": "mgr", "type": "APPROVE", "mode": "SINGLE", "label": "主管" }
+  ],
+  "edges": [{ "from": "start", "to": "mgr" }],
+  "assignments": {
+    "mgr": [{ "strategy": "ROLE", "params": {} }]
+  }
+}

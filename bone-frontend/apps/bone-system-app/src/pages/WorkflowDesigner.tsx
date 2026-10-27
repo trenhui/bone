@@ -47,7 +47,12 @@ import {
   hintOf,
   isPublishable,
 } from '@bone/workflow-dsl';
-import { workflowDesignerApi, docFromDefinitionJson, type WorkflowPublished } from '@/services/workflowApi';
+import {
+  workflowDesignerApi,
+  docFromDefinitionJson,
+  toWorkflowFailure,
+  type WorkflowPublished,
+} from '@/services/workflowApi';
 import { BonePermissionCodes, hasPermission } from '../auth/permission';
 
 const { Sider, Content } = Layout;
@@ -197,10 +202,49 @@ const WorkflowDesigner: React.FC = () => {
 
   const violationByNode = useMemo(() => groupViolationsByNode(violations), [violations]);
 
+  /**
+   * 失败统一呈现（联调实测：拦截器在非 2xx 时 reject，不 catch 就完全没有反馈）。
+   *
+   * <p>三个分支各有不同处置：403 说明授权没接或没权限，只能提示；409 是并发写冲突，必须重新拉草稿
+   * 否则后续每次保存都会继续 409；422 是发布 fail-closed，要把后端回传的违规清单直接灌进画布高亮。
+   */
+  const reportFailure = useCallback(
+    (error: unknown, scene: string, onConflict?: () => void): boolean => {
+      const failure = toWorkflowFailure(error);
+      switch (failure.kind) {
+        case 'unauthenticated':
+        case 'forbidden':
+          message.error(`${scene}失败：无权限（${failure.message}）`);
+          break;
+        case 'conflict':
+          message.warning(`${scene}失败：${failure.message}`);
+          onConflict?.();
+          break;
+        case 'invalid':
+          if (failure.violations.length) setViolations(failure.violations);
+          message.error(
+            `${scene}失败：存在 ${failure.violations.length} 处违规（已在画布高亮），请修正后重试`,
+          );
+          break;
+        case 'network':
+          message.error(`${scene}失败：网络异常，请检查后端是否可达`);
+          break;
+        default:
+          message.error(`${scene}失败：${failure.message}`);
+      }
+      return false;
+    },
+    [],
+  );
+
   const refreshList = useCallback(async () => {
-    const res = await workflowDesignerApi.listLatest();
-    if (res.code === 200) setDefList(res.data ?? []);
-  }, []);
+    try {
+      const res = await workflowDesignerApi.listLatest();
+      if (res.code === 200) setDefList(res.data ?? []);
+    } catch (error) {
+      reportFailure(error, '加载流程定义列表');
+    }
+  }, [reportFailure]);
 
   useEffect(() => {
     void refreshList();
@@ -256,22 +300,35 @@ const WorkflowDesigner: React.FC = () => {
         setLayout(computeDefaultLayout(fresh));
         setDraftExists(false);
         setRevision(null);
+      } catch (error) {
+        // 读不到草稿/版本时不能把界面留在空白态：给出空文档让人可继续编辑，同时说明原因。
+        reportFailure(error, '打开流程定义');
+        const fresh = blankDoc(key, name ?? key);
+        setDoc(fresh);
+        setLayout(computeDefaultLayout(fresh));
+        setDraftExists(false);
+        setRevision(null);
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [reportFailure],
   );
 
   const onValidate = useCallback(async () => {
     if (!compiled) return;
-    const res = await workflowDesignerApi.validate(JSON.stringify(compiled));
-    if (res.code === 200) {
-      setViolations(res.data?.violations ?? []);
-      if (isPublishable(res.data?.violations)) message.success('校验通过，可发布');
-      else message.warning(`存在 ${res.data?.violations.length} 处问题`);
+    try {
+      const res = await workflowDesignerApi.validate(JSON.stringify(compiled));
+      if (res.code === 200) {
+        const list = res.data?.violations ?? [];
+        setViolations(list);
+        if (isPublishable(list)) message.success('校验通过，可发布');
+        else message.warning(`存在 ${list.length} 处问题`);
+      }
+    } catch (error) {
+      reportFailure(error, '校验');
     }
-  }, [compiled]);
+  }, [compiled, reportFailure]);
 
   const onSaveDraft = useCallback(async () => {
     if (!doc || !defKey) {
@@ -283,48 +340,99 @@ const WorkflowDesigner: React.FC = () => {
       return;
     }
     const def = compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
-    const res = await workflowDesignerApi.saveDraft(defKey, JSON.stringify(def), revision);
-    if (res.code === 200 && res.data) {
-      setRevision(res.data.draft.revision);
-      setDraftExists(true);
-      setViolations(res.data.violations);
-      message.success(`草稿已保存（revision=${res.data.draft.revision}）`);
-    } else {
-      message.error((res as { message?: string }).message ?? '保存失败');
+    try {
+      const res = await workflowDesignerApi.saveDraft(defKey, JSON.stringify(def), revision);
+      if (res.code === 200 && res.data) {
+        setRevision(res.data.draft.revision);
+        setDraftExists(true);
+        setViolations(res.data.violations);
+        message.success(`草稿已保存（revision=${res.data.draft.revision}）`);
+      }
+    } catch (error) {
+      // 409 = 别人的 revision 更新了：必须把最新草稿拉回来，否则用户手里的 revision 永远落后，
+      // 之后每次保存都会继续 409（这是「重试无效」的典型成因）。
+      reportFailure(error, '保存草稿', () => void openKey(defKey));
     }
-  }, [doc, defKey, lossy, layout, revision]);
+  }, [doc, defKey, lossy, layout, revision, reportFailure, openKey]);
 
   const onPublish = useCallback(async () => {
     if (!doc || !defKey) return;
     const def = compile(doc, { layout: Object.keys(layout).length ? layout : undefined });
-    const vRes = await workflowDesignerApi.validate(JSON.stringify(def));
-    if (vRes.code !== 200 || !isPublishable(vRes.data?.violations)) {
-      setViolations(vRes.data?.violations ?? []);
-      message.error('存在违规，拒绝发布（fail-closed）');
-      return;
+    try {
+      // 前端预检只为省一次往返，最终以服务端 fail-closed 结论为准（下面 422 分支会接收后端回传的违规）。
+      const vRes = await workflowDesignerApi.validate(JSON.stringify(def));
+      const localViolations = vRes.data?.violations ?? [];
+      if (vRes.code !== 200 || !isPublishable(localViolations)) {
+        setViolations(localViolations);
+        message.error('存在违规，拒绝发布（fail-closed）');
+        return;
+      }
+      setViolations([]);
+      const res = await workflowDesignerApi.publish(defKey, revision);
+      if (res.code === 200) {
+        message.success(`已发布 v${res.data?.version}`);
+        setDraftExists(false);
+        setRevision(null);
+        void refreshList();
+      }
+    } catch (error) {
+      reportFailure(error, '发布', () => void openKey(defKey));
     }
-    setViolations([]);
-    const res = await workflowDesignerApi.publish(defKey, revision);
-    if (res.code === 200) {
-      message.success(`已发布 v${res.data?.version}`);
-      setDraftExists(false);
-      setRevision(null);
-      void refreshList();
-    } else {
-      message.error((res as { message?: string }).message ?? '发布失败');
-    }
-  }, [doc, defKey, layout, revision, refreshList]);
+  }, [doc, defKey, layout, revision, refreshList, reportFailure, openKey]);
 
   const onSimulate = useCallback(async () => {
     if (!compiled) return;
-    const res = await workflowDesignerApi.simulate({
-      definitionJson: JSON.stringify(compiled),
-      sampleData: {},
-      initiatorId: 'sim-user',
-    });
-    if (res.code === 200) setSimReport(res.data ?? null);
-    else message.error((res as { message?: string }).message ?? '试运行失败');
-  }, [compiled]);
+    try {
+      const res = await workflowDesignerApi.simulate({
+        definitionJson: JSON.stringify(compiled),
+        sampleData: {},
+        initiatorId: 'sim-user',
+      });
+      if (res.code === 200) setSimReport(res.data ?? null);
+    } catch (error) {
+      reportFailure(error, '试运行');
+    }
+  }, [compiled, reportFailure]);
+
+  const onDiscardDraft = useCallback(async () => {
+    if (!defKey) return;
+    try {
+      await workflowDesignerApi.discardDraft(defKey);
+      setDraftExists(false);
+      setRevision(null);
+      setViolations([]);
+      message.success('草稿已丢弃');
+    } catch (error) {
+      reportFailure(error, '丢弃草稿');
+    }
+  }, [defKey, reportFailure]);
+
+  const onOpenVersions = useCallback(async () => {
+    setVersionDrawer(true);
+    if (!defKey) return;
+    try {
+      const res = await workflowDesignerApi.listVersions(defKey);
+      if (res.code === 200) setVersions(res.data ?? []);
+    } catch (error) {
+      reportFailure(error, '加载版本列表');
+    }
+  }, [defKey, reportFailure]);
+
+  const onToggleEnabled = useCallback(
+    async (version: number, enabled: boolean) => {
+      if (!defKey) return;
+      try {
+        await workflowDesignerApi.setEnabled(defKey, version, enabled);
+        const res = await workflowDesignerApi.listVersions(defKey);
+        if (res.code === 200) setVersions(res.data ?? []);
+        void refreshList();
+        message.success(enabled ? `v${version} 已上线` : `v${version} 已下线`);
+      } catch (error) {
+        reportFailure(error, enabled ? '上线版本' : '下线版本');
+      }
+    },
+    [defKey, refreshList, reportFailure],
+  );
 
   const onAdd = (kind: 'approve' | 'cc' | 'condition') => {
     if (!doc) return;
@@ -415,12 +523,12 @@ const WorkflowDesigner: React.FC = () => {
             <Button icon={<ExperimentOutlined />} onClick={onSimulate} disabled={!doc}>
               试运行
             </Button>
-            <Popconfirm title="确认丢弃草稿？" onConfirm={() => defKey && workflowDesignerApi.discardDraft(defKey).then(() => { setDraftExists(false); setRevision(null); })}>
+            <Popconfirm title="确认丢弃草稿？" onConfirm={() => void onDiscardDraft()}>
               <Button icon={<DeleteOutlined />} danger disabled={!draftExists || !canWrite}>
                 丢弃草稿
               </Button>
             </Popconfirm>
-            <Button icon={<AuditOutlined />} onClick={() => { if (defKey) workflowDesignerApi.listVersions(defKey).then((r) => { if (r.code === 200) setVersions(r.data ?? []); }); setVersionDrawer(true); }}>
+            <Button icon={<AuditOutlined />} onClick={() => void onOpenVersions()}>
               版本
             </Button>
             {draftExists && <Tag color="orange">草稿 rev {revision}</Tag>}
@@ -564,7 +672,7 @@ const WorkflowDesigner: React.FC = () => {
                     checked={v.enabled}
                     size="small"
                     disabled={!canWrite}
-                    onChange={(on) => defKey && workflowDesignerApi.setEnabled(defKey, v.version, on).then(() => workflowDesignerApi.listVersions(defKey).then((r) => r.code === 200 && setVersions(r.data ?? [])))}
+                    onChange={(on) => void onToggleEnabled(v.version, on)}
                   />
                 </Space>
               </Space>

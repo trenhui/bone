@@ -1,0 +1,79 @@
+{
+  "key": "desig_demo",
+  "name": "费用报销（设计器联调）",
+  "version": 1,
+  "engineSchemaVersion": 1,
+  "nodes": [
+    { "code": "start", "type": "START", "label": "发起" },
+    { "code": "cond", "type": "CONDITION", "label": "金额判断" },
+    { "code": "mgr", "type": "APPROVE", "mode": "SINGLE", "label": "直属主管" },
+    { "code": "cfo", "type": "APPROVE", "mode": "SINGLE", "label": "财务总监" },
+    { "code": "end", "type": "END", "label": "结束" }
+  ],
+  "edges": [
+    { "from": "start", "to": "cond" },
+    {
+      "from": "cond",
+      "to": "cfo",
+      "when": { "fieldCode": "amount", "operator": "gt", "value": 10000 },
+      "label": "大额"
+    },
+    { "from": "cond", "to": "mgr", "when": null, "label": "默认" },
+    { "from": "mgr", "to": "end" },
+    { "from": "cfo", "to": "end" }
+  ],
+  "assignments": {
+    "mgr": [{ "strategy": "LINE_MANAGER", "params": {} }],
+    "cfo": [{ "strategy": "ROLE", "params": { "roleCode": "cfo" } }]
+  },
+  "ui": {
+    "layout": {
+      "start": { "x": 0, "y": 0 },
+      "cond": { "x": 0, "y": 120 },
+      "mgr": { "x": -160, "y": 240 },
+      "cfo": { "x": 160, "y": 240 },
+      "end": { "x": 0, "y": 360 }
+    },
+    "flowDoc": {
+      "key": "desig_demo",
+      "name": "费用报销（设计器联调）",
+      "steps": [
+        {
+          "kind": "condition",
+          "code": "cond",
+          "label": "金额判断",
+          "branches": [
+            {
+              "id": "cond-b1",
+              "label": "大额",
+              "when": { "fieldCode": "amount", "operator": "gt", "value": 10000 },
+              "body": [
+                {
+                  "kind": "approve",
+                  "code": "cfo",
+                  "label": "财务总监",
+                  "mode": "SINGLE",
+                  "rules": [{ "strategy": "ROLE", "params": { "roleCode": "cfo" } }]
+                }
+              ]
+            }
+          ],
+          "defaultBranch": {
+            "id": "cond-b0",
+            "label": "默认",
+            "when": null,
+            "body": [
+              {
+                "kind": "approve",
+                "code": "mgr",
+                "label": "直属主管",
+                "mode": "SINGLE",
+                "rules": [{ "strategy": "LINE_MANAGER", "params": {} }]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

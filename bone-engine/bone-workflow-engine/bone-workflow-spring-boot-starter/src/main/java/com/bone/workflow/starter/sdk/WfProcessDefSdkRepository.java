@@ -141,4 +141,20 @@ public interface WfProcessDefSdkRepository extends Repository<WfProcessDefRow, S
           + "          AND x.deleted = 0 AND x.status = 'PUBLISHED' AND x.enabled = 1)"
           + " ORDER BY d.def_key")
   List<WfProcessDefRow> listLatestPerKeyRows(@Param("tenantId") Long tenantId);
+
+  /**
+   * 定义总览（<b>含已下线</b>）：每个 key 取「最高的已发布版本」，不按 {@code enabled} 过滤。
+   *
+   * <p>为什么需要第二个口径：{@link #listLatestPerKeyRows} 只返回「当前生效」的定义，供运行期消费方按 key 取定义用；但设计器要管理上下线，一旦某个 key
+   * 的最新版本被下线，它就从这个口径里整体消失了——设计器既看不到、 也就没有入口把它重新上线（联调实测到的死路）。故为设计态单独提供含下线的口径，返回 {@code enabled}
+   * 供界面区分。
+   */
+  @Sql(
+      "SELECT d.def_key, d.def_name, d.def_version, d.definition_json, d.enabled FROM wf_process_def d"
+          + " WHERE d.tenant_id = #{tenantId} AND d.deleted = 0 AND d.status = 'PUBLISHED'"
+          + "   AND d.def_version = (SELECT MAX(x.def_version) FROM wf_process_def x"
+          + "        WHERE x.tenant_id = d.tenant_id AND x.def_key = d.def_key"
+          + "          AND x.deleted = 0 AND x.status = 'PUBLISHED')"
+          + " ORDER BY d.def_key")
+  List<WfProcessDefRow> listLatestPublishedPerKeyRows(@Param("tenantId") Long tenantId);
 }

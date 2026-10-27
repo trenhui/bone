@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -75,11 +76,17 @@ public class WorkflowDesignerController {
     return ApiResponse.ok(command.validate(requireDefinition(definitionJson, "校验")));
   }
 
-  /** 定义总览：每个 key 的当前生效版本。 */
+  /**
+   * 定义总览。
+   *
+   * @param includeOffline {@code true} 时把已下线的 key 一并返回（设计器用：否则下线后该 key 从列表消失，
+   *     再没有任何入口把它重新上线）。运行期消费方用缺省的 {@code false}（只取当前生效定义）。
+   */
   @GetMapping
-  public ApiResponse<List<WorkflowDefinitionCommandService.Published>> listLatest() {
+  public ApiResponse<List<WorkflowDefinitionCommandService.Published>> listLatest(
+      @RequestParam(name = "includeOffline", defaultValue = "false") boolean includeOffline) {
     authorizer.authorize(WorkflowDesignerAction.READ, null, null);
-    return ApiResponse.ok(command.listLatest());
+    return ApiResponse.ok(command.listLatest(includeOffline));
   }
 
   /** 取草稿（无草稿返回 {@code data=null}，前端据此判定「新建」）。 */

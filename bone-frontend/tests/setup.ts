@@ -38,7 +38,14 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+// 本文件要能在 jsdom 与 node 两种环境里加载：用例可以按文件声明 `// @vitest-environment node`
+// （例如纯服务层契约测试，不需要 DOM）。node 环境下没有 window，直接 defineProperty 会抛
+// "ReferenceError: window is not defined"，把整个测试文件挡掉，故按环境分流。
+if (typeof window === 'undefined') {
+  (globalThis as unknown as Record<string, unknown>).localStorage = localStorageMock;
+} else {
+  Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+}
 
 // 模拟 fetch
 vi.mock('cross-fetch', () => ({
@@ -60,9 +67,11 @@ vi.mock('qiankun', () => ({
   })),
 }));
 
-// 模拟 getComputedStyle
-Object.defineProperty(window, 'getComputedStyle', {
-  value: vi.fn(() => ({
-    getPropertyValue: vi.fn(() => ''),
-  })),
-});
+// 模拟 getComputedStyle（仅 DOM 环境需要）
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'getComputedStyle', {
+    value: vi.fn(() => ({
+      getPropertyValue: vi.fn(() => ''),
+    })),
+  });
+}

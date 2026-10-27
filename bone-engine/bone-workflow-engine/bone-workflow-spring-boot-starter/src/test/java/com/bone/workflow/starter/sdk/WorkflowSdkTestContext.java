@@ -65,7 +65,7 @@ public final class WorkflowSdkTestContext {
     WorkflowSdkRepositoryConfig.class,
     WorkflowBoneIntegrationAutoConfiguration.class
   })
-  static class WorkflowSdkTestConfig {
+  public static class WorkflowSdkTestConfig {
 
     @Bean
     EmbeddedDatabase embeddedDatabase() {

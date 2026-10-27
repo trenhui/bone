@@ -69,8 +69,16 @@ export interface WorkflowSimulationReport {
 }
 
 export const workflowDesignerApi = {
-  /** 定义总览：每个 key 的当前生效版本。 */
-  listLatest: () => api.get<never, ApiResponse<WorkflowPublished[]>>('/workflow/definitions'),
+  /**
+   * 定义总览。
+   *
+   * <p>设计器固定要 {@code includeOffline=true}：缺省口径只含「已上线」的 key，一旦某流程被下线，它会从列表里
+   * 整体消失——左侧选不到、也就没有任何入口把它重新上线（联调实测到的死路）。{@code enabled} 字段用于区分状态。
+   */
+  listLatest: (includeOffline = true) =>
+    api.get<never, ApiResponse<WorkflowPublished[]>>('/workflow/definitions', {
+      params: { includeOffline },
+    }),
 
   /** 取草稿（无草稿 data=null）。 */
   findDraft: (key: string) =>
@@ -129,6 +137,77 @@ export const workflowDesignerApi = {
     recordId?: string | null;
   }) => api.post<never, ApiResponse<WorkflowSimulationReport>>('/workflow/definitions/simulate', payload, withOperator()),
 };
+
+/**
+ * 失败语义档位。
+ *
+ * <p>页面按它分流，**不要**在组件里比 HTTP 数字码：响应拦截器已把 `response` 解包成信封，
+ * 组件的 `res.status` 恒 undefined（仓库门禁 `check-frontend-response-contract` 的 R1 规则就是拦这个）。
+ * 把「HTTP 码 → 语义」的映射收在服务层，页面只表达交互意图。
+ */
+export type WorkflowApiFailureKind =
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'notFound'
+  | 'conflict'
+  | 'invalid'
+  | 'network'
+  | 'unknown';
+
+/** 把后端错误信封解析成可判定的形状（见 {@link toWorkflowFailure}）。 */
+export interface WorkflowApiFailure {
+  /** 语义档位，页面按此分流。 */
+  kind: WorkflowApiFailureKind;
+  /** HTTP 状态码，仅供日志与断言；网络层失败时为 0。 */
+  status: number;
+  message: string;
+  /** 信封里的业务码（缺省与 HTTP 状态一致）。 */
+  code?: string;
+  /** 422 时后端回传的结构化违规清单，可直接喂给画布高亮。 */
+  violations: Violation[];
+}
+
+/**
+ * 统一解析失败原因。
+ *
+ * <p><b>为什么需要这一层</b>：{@code createApiClient} 的响应拦截器在非 2xx 时 {@code reject}，
+ * 而不是把信封当成功值返回。于是「先写 {@code if (res.code === 200)} 再 else 提示」的写法在错误路径上
+ * 根本不会执行——Promise 直接未处理地 reject，界面毫无反应：409 冲突像没点、403 像卡住、422 只看到
+ * 前端自己的预检提示。联调时这三个分支全部踩到，故把解包集中在这里，页面只负责呈现。
+ */
+export function toWorkflowFailure(error: unknown): WorkflowApiFailure {
+  const e = error as {
+    response?: {
+      status?: number;
+      data?: { code?: number | string; message?: string; data?: { violations?: Violation[] } };
+    };
+    displayMessage?: string;
+    message?: string;
+  };
+  const status = e?.response?.status ?? 0;
+  const body = e?.response?.data;
+  const kind: WorkflowApiFailureKind =
+    status === 401
+      ? 'unauthenticated'
+      : status === 403
+        ? 'forbidden'
+        : status === 404
+          ? 'notFound'
+          : status === 409
+            ? 'conflict'
+            : status === 422
+              ? 'invalid'
+              : status === 0
+                ? 'network'
+                : 'unknown';
+  return {
+    kind,
+    status,
+    message: body?.message || e?.displayMessage || e?.message || '请求失败',
+    code: body?.code == null ? undefined : String(body.code),
+    violations: body?.data?.violations ?? [],
+  };
+}
 
 /** 把后端定义 JSON 里的 ui.flowDoc 解析回文档树（fast path，无损）。解析失败回退空文档。 */
 export function docFromDefinitionJson(definitionJson: string): FlowDoc | null {

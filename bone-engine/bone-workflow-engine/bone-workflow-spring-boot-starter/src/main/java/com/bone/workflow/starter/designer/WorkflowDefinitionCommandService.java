@@ -257,11 +257,25 @@ public class WorkflowDefinitionCommandService {
 
   // ====================== 查询 ======================
 
-  /** 定义总览：每个 key 的当前生效版本。 */
+  /** 定义总览：每个 key 的当前生效版本（<b>只含已上线</b>，运行期消费方按此取定义）。 */
   public List<Published> listLatest() {
-    return definitions.listLatestPerKeyRows(requireTenant()).stream()
-        .map(WorkflowDefinitionCommandService::toPublished)
-        .toList();
+    return listLatest(false);
+  }
+
+  /**
+   * 定义总览。
+   *
+   * @param includeOffline {@code true} 时把「最新已发布版本已下线」的 key 也返回（{@code enabled=false}）——
+   *     <b>设计器必须用这个口径</b>。否则下线一个流程后该 key 从总览消失，设计器左侧列表里再也选不到它， 也就没有任何入口把它重新上线（只能靠人工记住 key
+   *     直接调接口）——这是联调时实测到的死路。 运行期取定义仍走 {@link #listLatest()}（只含上线版本），两者语义刻意分开。
+   */
+  public List<Published> listLatest(boolean includeOffline) {
+    Long tenantId = requireTenant();
+    List<WfProcessDefRow> rows =
+        includeOffline
+            ? definitions.listLatestPublishedPerKeyRows(tenantId)
+            : definitions.listLatestPerKeyRows(tenantId);
+    return rows.stream().map(WorkflowDefinitionCommandService::toPublished).toList();
   }
 
   /** 某 key 的全部版本（含已下线）。 */
