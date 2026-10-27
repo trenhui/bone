@@ -489,6 +489,65 @@ class WorkflowDesignerHttpIntegrationTest {
 
   // ============================== HTTP 夹具 ==============================
 
+  @Test
+  @Order(4)
+  @DisplayName("defKey 格式闸门：白名单外的字符（如 .）/ 超长一律 400")
+  void defKeyFormatIsEnforced() throws Exception {
+    String valid = fixture("valid-definition.json");
+    // 含白名单外字符的 key（如 .）：仍能进路由，但 requireKey 必须在落 SQL 前拒绝——否则非法字符进主键会产生
+    // 「看起来一样、实际不同」的幽灵数据（同一个流程有时找得到有时找不到）。含 / 与空白的 key 由路由层在更前就挡掉
+    // （不会匹配 /{key}/draft），同样到不了 SQL，这里不重复断言。
+    assertEquals(
+        400,
+        call("POST", "/key.dot/draft", draftBody(valid, null), operatorHeaders()).status(),
+        "含白名单外字符的 key 应 400");
+    // 超长 key（>64）：撑大索引行，必须拒绝。
+    String longKey = "k".repeat(80);
+    assertEquals(
+        400,
+        call("POST", "/" + longKey + "/draft", draftBody(valid, null), operatorHeaders()).status(),
+        "超长 key 应 400");
+  }
+
+  @Test
+  @Order(5)
+  @DisplayName("定义原文契约(§10.4)：无 ui 段存量定义可发布读取；未知扩展字段被原样保留")
+  void definitionJsonContractIsBackwardAndForwardCompatible() throws Exception {
+    // 1) 存量定义（无 ui 段）必须仍能发布并被读回——任何把 mapper 调严格的动作都会让旧数据读不出来。
+    String legacy = fixture("legacy-definition.json");
+    assertEquals(
+        200,
+        call("POST", "/legacy_demo/draft", draftBody(legacy, null), operatorHeaders()).status(),
+        "无 ui 段的存量定义应能保存草稿");
+    assertEquals(
+        200,
+        call("POST", "/legacy_demo/publish", publishBody(1), operatorHeaders()).status(),
+        "无 ui 段的存量定义应能发布：" + fixture("legacy-definition.json"));
+
+    Res legacyOne = call("GET", "/legacy_demo/versions/1", null, tenantHeaders());
+    assertEquals(200, legacyOne.status());
+    String legacyJson = legacyOne.body().path("data").path("definitionJson").asText();
+    assertFalse(legacyJson.contains("\"ui\""), "无 ui 段的存量定义读回后不应凭空多出 ui 段：" + legacyJson);
+
+    // 2) 前向兼容：含未知扩展段 _ext 的定义发布后，未知字段必须原样保留（不丢、不报错）。
+    //    这条守住的是「未来版本新增字段、存量引擎不认」时不会静默吞掉扩展信息（= 数据丢而不自知）。
+    String future = fixture("future-definition.json");
+    assertEquals(
+        200,
+        call("POST", "/future_demo/draft", draftBody(future, null), operatorHeaders()).status(),
+        "含未知扩展字段的定义应能保存");
+    assertEquals(
+        200,
+        call("POST", "/future_demo/publish", publishBody(1), operatorHeaders()).status(),
+        "含未知扩展字段的定义应能发布：" + fixture("future-definition.json"));
+
+    Res futureOne = call("GET", "/future_demo/versions/1", null, tenantHeaders());
+    assertEquals(200, futureOne.status());
+    String futureJson = futureOne.body().path("data").path("definitionJson").asText();
+    assertTrue(futureJson.contains("\"_ext\""), "未知扩展字段必须原样保留，不能因 mapper 严格度被吞掉：" + futureJson);
+    assertTrue(futureJson.contains("unknown-future-tool"), "未知扩展字段内容应无损：" + futureJson);
+  }
+
   private record Res(int status, String contentType, JsonNode body, String raw) {}
 
   private static Res call(String method, String path, String body, Map<String, String> extraHeaders)

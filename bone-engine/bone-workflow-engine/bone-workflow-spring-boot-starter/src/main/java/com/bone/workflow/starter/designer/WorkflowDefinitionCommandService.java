@@ -364,9 +364,24 @@ public class WorkflowDefinitionCommandService {
         row.getEnabled() == null || row.getEnabled() == 1);
   }
 
+  /**
+   * defKey 的格式闸门。
+   *
+   * <p><b>为什么需要</b>：defKey 同时是 URL 路径段（{@code /{key}/draft}）与 {@code wf_process_def} / {@code
+   * wf_process_draft} 的复合主键成员，一旦允许任意字符，就会出现三类问题：① 含 {@code /} 的 key 在路由层被截断或 404， 调试时极难定位；② 含空白 /
+   * 控制字符 / 全角字符的 key 进库后主键「看起来一样、实际不同」，出现「同一个流程有时找得到有时找不到」的幽灵数据； ③ 超长 key
+   * 撑大索引行。这是输入校验基线（OWASP「限制字符集与长度」）在业务键上的直接落地——在进任何 SQL 之前拒绝，而不是等主键冲突再报 500。
+   */
+  private static final java.util.regex.Pattern DEF_KEY_PATTERN =
+      java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{1,64}$");
+
   private static void requireKey(String defKey) {
     if (defKey == null || defKey.isBlank()) {
       throw new WorkflowDefinitionRequestException("流程定义 key 不能为空");
+    }
+    if (!DEF_KEY_PATTERN.matcher(defKey).matches()) {
+      throw new WorkflowDefinitionRequestException(
+          "流程定义 key 格式非法：只允许字母、数字、下划线、连字符，长度 1–64（收到：" + defKey + "）");
     }
   }
 
