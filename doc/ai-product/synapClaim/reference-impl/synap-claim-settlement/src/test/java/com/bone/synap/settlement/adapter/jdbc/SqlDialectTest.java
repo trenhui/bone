@@ -32,8 +32,9 @@ public class SqlDialectTest {
         assertTrue(d.upsertCalc().contains("ON DUPLICATE KEY UPDATE"), "MySQL upsertCalc 须 ON DUPLICATE KEY UPDATE");
         assertTrue(d.upsertLedger().contains("INSERT INTO t_settlement_ledger")
                 && d.upsertLedger().contains("ON DUPLICATE KEY UPDATE"), "MySQL upsertLedger 须 ON DUPLICATE KEY UPDATE");
-        assertTrue(d.ensureAccumRow().contains("INSERT IGNORE INTO t_settlement_accum"),
-                "MySQL ensureAccumRow 须 INSERT IGNORE（已存在则不动 version，保护乐观锁）");
+        assertTrue(d.ensureAccumRow().contains("INSERT INTO t_settlement_accum")
+                        && d.ensureAccumRow().contains("ON DUPLICATE KEY UPDATE"),
+                "MySQL ensureAccumRow 须 INSERT ... ON DUPLICATE KEY UPDATE（命中主键冲突 no-op，不触碰 version，且不吞掉非重复键错误）");
     }
 
     @Test

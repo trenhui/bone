@@ -27,7 +27,7 @@
 cd reference-impl/synap-claim-settlement
 mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
 ```
-测试套件（全部绿色，14 测试类）：
+测试套件（全部绿色，15 测试类）：
 - `SettlementEngineProbeTest`      —— 驱动 `ProbeSuite.runAll()`：**正确引擎 30 条探针全绿 + 19 类变异全部被捕获**
 - `ScenarioSuiteTest`              —— 驱动 `ScenarioSuite.runAll()`：**28 个真实 TPA 场景全部通过**
 - `JdbcPortsIntegrationTest`       —— **6 个集成测试**验证 JDBC 持久化路径：责任限额跨案累计落库 / 冲正回退 / 预授权冻结-capture-void / 幂等 CAS 租约 / 累计并发乐观锁 CONFLICT(fail-closed)
@@ -37,6 +37,7 @@ mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
   - C 冲正与并发理算交叉：撤销已占额案件 + 并发新案 → 累计账实一致、旧占用被释放；
   - D 串行锁判别力（防假绿）：开启 JVM 串行锁且**不重试**时，40 并发唯一案件一次成功、零 `CONFLICT` 异常。
 - `ConcurrencyLockSeamTest`       —— **2 个接缝测试**证明并发锁是**可插拔端口**而非写死：注入的计数锁确被引擎调用（非 no-op）、同 key 严格串行（maxConcurrent==1）、且切换注入实例即生效（集群可换 Redis/DB 租约实现）。
+- `JdbcPortsMySqlCompatTest`      —— **在 H2 `MODE=MySQL` 下真实执行** `SqlDialect.mysql()` 生成的全部生产 SQL（upsertCalc / upsertLedger / ensureAccumRow 的 `ON DUPLICATE KEY UPDATE` 形式）：跨案累计落库 + 幂等重算更新 + 冲正归零。补 `SqlDialectTest` 只断言文本不执行的缺口，证明"切换方言即上线 MySQL"非空话。
 
 ### 方式二：单文件直跑（无 Maven，快速验证算法与护栏）
 ```bash
@@ -188,5 +189,5 @@ src/test/java/...               SettlementEngineProbeTest / ScenarioSuiteTest / 
 1. 第三方已付按可赔基数**比例分摊**；生产应按费用类别归因（社保内优先核销），需条款确认。
 2. 年度限额按费用行**顺序截断（先到先得）**，未按比例摊薄；多费用类型并存时需条款确认优先级。
 3. **S13 多保单仅独立理算**，未实现 ISO 834「比例分摊(pro-rata by limit)/等额分摊」——对应条款需产品确认后另开工。
-4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL **仅需切换 `SqlDialect`**（H2 `MERGE...KEY` / MySQL `ON DUPLICATE KEY UPDATE` / `INSERT IGNORE` 由 `SqlDialect.auto(ds)` 按元数据自动识别，端口代码零改动），`SqlDialectTest` 已守住两方言 SQL 正确性（含 `ensureAccumRow` 用 `INSERT IGNORE` 不动 `version`）。真实库回归仍建议生产接入时补一轮（可用 H2 `MODE=MySQL` 离线跑通生产 SQL，见 `JdbcPortsMySqlCompatTest`）。
+4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL **仅需切换 `SqlDialect`**（H2 `MERGE...KEY` / MySQL `ON DUPLICATE KEY UPDATE`，由 `SqlDialect.auto(ds)` 按元数据自动识别，端口代码零改动）。`SqlDialectTest` 守住两方言 SQL 文本正确性，`JdbcPortsMySqlCompatTest` 进一步在 H2 `MODE=MySQL` 下**真实执行** MySQL 方言 SQL（upsert / 占位 no-op / 累计更新），证明"切换方言即上线 MySQL"非空话。真实 MySQL 实例回归仍建议生产接入时补一轮。
 5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；**分布式锁参考实现 `DbLeaseConcurrencyLock` 已提供并测试通过**——`DbLeaseConcurrencyLockTest`（跨实例同 key 互斥 + 超时 fail-fast）+ `DbLeaseConcurrencyLockStressTest`（两引擎实例共享同一 H2 库、40 线程猛攻同一保单，跨实例零超赔 / 零丢失更新 / 零乐观锁冲突，锁失效即 fail-closed 转红），把分布式锁从「接缝级」证据补到「负载级」。真实 MySQL 并发压测仍建议生产接入时补一轮（验证行锁 / 隔离级别与租约表并发），但核心可插拔契约已闭环。

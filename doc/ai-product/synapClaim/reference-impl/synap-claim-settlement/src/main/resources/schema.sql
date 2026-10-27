@@ -5,7 +5,7 @@
 -- 累计采用乐观锁 version 字段，CAS 失败即 CONFLICT（fail-closed，禁静默覆盖）。
 --
 -- 并发锁：单实例用 JvmConcurrencyLock（内存）；集群部署注入 DbLeaseConcurrencyLock，
--- 其租约表为下方 t_concurrency_lock（ShedLock 风格，跨实例串行化同 key）。
+-- 其租约表为下方 lock_lease（ShedLock 风格，跨实例串行化同 key）。
 -- ============================================================================
 
 -- 保单+账期 累计用量（含版本号用于乐观锁）
@@ -90,15 +90,6 @@ CREATE TABLE t_settlement_outbox (
     claim_id  VARCHAR(255),
     event     VARCHAR(512),
     published SMALLINT DEFAULT 0
-);
-
--- 并发可插拔锁租约表（DbLeaseConcurrencyLock；ShedLock 风格，跨实例串行化同 key）
--- 仅持有租约，无业务列；owner 区分实例，expire_at 过期即自动失效（fail-safe）。
-CREATE TABLE t_concurrency_lock (
-    lock_key   VARCHAR(255) PRIMARY KEY,
-    owner      VARCHAR(255) NOT NULL,
-    expire_at  BIGINT       NOT NULL,
-    version    BIGINT       NOT NULL DEFAULT 0
 );
 
 -- 并发串行锁租约表（DbLeaseConcurrencyLock；跨实例同 key 互斥，无 SELECT ... FOR UPDATE）
