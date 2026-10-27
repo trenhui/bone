@@ -386,10 +386,12 @@ class ExpenseWorkflowDefinitionTest {
 
       // 接口新增（转办 / 加签协作指令，afc8e0282 引入）：本存根只验证定义与流程，审计留痕无需断言，故 no-op。
       @Override
-      public void recordTransfer(WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+      public void recordTransfer(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
 
       @Override
-      public void recordAddSign(WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
+      public void recordAddSign(
+          WorkflowTask task, String newAssigneeId, String operatorId, String comment) {}
     };
   }
 
@@ -545,6 +547,21 @@ class ExpenseWorkflowDefinitionTest {
     }
 
     @Override
+    public List<WorkflowTask> listTasksByNodeInCurrentRound(String instanceId, String nodeCode) {
+      // 内存简化：测试桩不区分轮次，直接返回该节点全部任务（报销定义单轮，无多轮往返场景）。
+      return listTasksByNode(instanceId, nodeCode);
+    }
+
+    private final Map<String, Long> rejectRounds = new HashMap<>();
+
+    @Override
+    public long registerRejectRound(String instanceId, String operatorId) {
+      long next = rejectRounds.getOrDefault(instanceId, 0L) + 1;
+      rejectRounds.put(instanceId, next);
+      return next;
+    }
+
+    @Override
     public boolean compareAndSetTaskStatus(
         String taskId,
         WorkflowTask.Status expected,
@@ -584,6 +601,7 @@ class ExpenseWorkflowDefinitionTest {
         String nodeCode,
         String nextNodeCode,
         WorkflowDefinition.ApprovalMode mode,
+        Integer quorum,
         String operatorId) {
       WorkflowInstance instance = instances.get(instanceId);
       if (instance == null
@@ -599,14 +617,27 @@ class ExpenseWorkflowDefinitionTest {
       if (mode == null) { // AUTO：非审批节点无条件移动
         satisfied = true;
       } else if (mode == WorkflowDefinition.ApprovalMode.ALL) {
+        // 全员完成（quorum 为 null/≤0 时，向后兼容）；quorum 给定时至少 quorum 个任务完成才推进
+        long done =
+            nodeTasks.stream()
+                .filter(
+                    t ->
+                        t.status() == WorkflowTask.Status.APPROVED
+                            || t.status() == WorkflowTask.Status.REJECTED
+                            || t.status() == WorkflowTask.Status.CANCELLED)
+                .count();
         satisfied =
             !nodeTasks.isEmpty()
-                && nodeTasks.stream()
-                    .allMatch(
-                        t ->
-                            t.status() == WorkflowTask.Status.APPROVED
-                                || t.status() == WorkflowTask.Status.REJECTED
-                                || t.status() == WorkflowTask.Status.CANCELLED);
+                && (quorum == null || quorum <= 0 ? nodeTasks.size() == done : done >= quorum);
+      } else if (mode == WorkflowDefinition.ApprovalMode.RATIO) {
+        // 比例会签：已通过占比 ≥ quorum（quorum 视作百分比阈值 0–100）
+        long approved =
+            nodeTasks.stream().filter(t -> t.status() == WorkflowTask.Status.APPROVED).count();
+        satisfied =
+            !nodeTasks.isEmpty()
+                && quorum != null
+                && quorum > 0
+                && approved * 100 >= quorum * nodeTasks.size();
       } else { // SINGLE / ANY
         satisfied = nodeTasks.stream().anyMatch(t -> t.status() == WorkflowTask.Status.APPROVED);
       }

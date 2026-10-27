@@ -45,7 +45,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
   public void markApproved(
       String entityCode, String recordId, String instanceId, String operatorId) {
     // 状态已由 approve 人工动作的平台流转落地；此处仅留痕。
-    record(entityCode, recordId, instanceId, "APPROVED", null);
+    record(entityCode, recordId, instanceId, "APPROVED", null, operatorId);
     log.info(
         "[workflow] 审批通过：instance={} record={}/{} operator={}（status 由人工动作同链路落地，本端口仅留痕）",
         instanceId,
@@ -58,7 +58,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
   public void markRejected(
       String entityCode, String recordId, String instanceId, String operatorId, String reason) {
     // 同 markApproved：reject 人工动作已落地 status；驳回原因随意图留痕。
-    record(entityCode, recordId, instanceId, "REJECTED", reason);
+    record(entityCode, recordId, instanceId, "REJECTED", reason, operatorId);
     log.info(
         "[workflow] 审批驳回：instance={} record={}/{} operator={} reason={}",
         instanceId,
@@ -72,7 +72,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
   public void markWithdrawn(
       String entityCode, String recordId, String instanceId, String operatorId) {
     // 同 markApproved：withdraw 人工动作已落地 status（SUBMITTED→DRAFT）。
-    record(entityCode, recordId, instanceId, "WITHDRAWN", null);
+    record(entityCode, recordId, instanceId, "WITHDRAWN", null, operatorId);
     log.info(
         "[workflow] 审批撤回：instance={} record={}/{} operator={}",
         instanceId,
@@ -84,7 +84,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
   @Override
   public void markSuspended(String entityCode, String recordId, String instanceId, String reason) {
     // 挂起无对应业务动作（单据停在 SUBMITTED），仅留痕 + 告警——不通知运维就会变成无人知晓的死单。
-    record(entityCode, recordId, instanceId, "SUSPENDED", reason);
+    record(entityCode, recordId, instanceId, "SUSPENDED", reason, null);
     log.warn(
         "[workflow] 流程挂起需人工介入：entity={} record={} instance={} reason={}",
         entityCode,
@@ -95,7 +95,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
 
   @Override
   public void markResumed(String entityCode, String recordId, String instanceId) {
-    record(entityCode, recordId, instanceId, "RESUMED", null);
+    record(entityCode, recordId, instanceId, "RESUMED", null, null);
     log.info("[workflow] 流程恢复续跑：instance={} record={}/{}", instanceId, entityCode, recordId);
   }
 
@@ -103,7 +103,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
   public void markTerminated(
       String entityCode, String recordId, String instanceId, String operatorId, String reason) {
     // 管理员强制终止：无对应业务动作（单据处置由宿主状态机决定），仅留痕 + 告警。
-    record(entityCode, recordId, instanceId, "TERMINATED", reason);
+    record(entityCode, recordId, instanceId, "TERMINATED", reason, operatorId);
     log.warn(
         "[workflow] 流程被管理员强制终止：entity={} record={} instance={} operator={} reason={}",
         entityCode,
@@ -115,7 +115,12 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
 
   /** 记录一条不触发业务动作的投影意图（action_code = null，中继标记 DONE 即闭环）。 */
   private void record(
-      String entityCode, String recordId, String instanceId, String intent, String paramsJson) {
+      String entityCode,
+      String recordId,
+      String instanceId,
+      String intent,
+      String paramsJson,
+      String operatorId) {
     WorkflowStatusOutboxRepository repository = outbox.getIfAvailable();
     WorkflowIdGenerator generator = idGenerator.getIfAvailable();
     if (repository == null || generator == null) {
@@ -135,6 +140,7 @@ public class ExpenseWorkflowStatusPort implements WorkflowStatusPort {
             entityCode,
             recordId,
             TenantContext.getTenantIdAsLong(),
+            operatorId,
             intent,
             null,
             paramsJson,

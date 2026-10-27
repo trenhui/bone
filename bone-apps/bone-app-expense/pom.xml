@@ -40,6 +40,16 @@
             <artifactId>bone-workflow-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 会计引擎（可复用横向能力）：凭证公式/条件求值 + 凭证生成。
+             仅依赖即自动装配 voucherGenerateHandler（AccountingEngineAutoConfiguration），
+             业务侧在动作定义声明 handler_bean=voucherGenerateHandler 即复用，差异全在配置数据
+             （fin_voucher_template / fin_account_mapping，见迁移 0067）。打款/pay 终态经
+             generateVoucher 动作触发「业务终态 → 会计凭证」（业财一体方案 doc/design/modules/12 §3/§4）。 -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-accounting-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>

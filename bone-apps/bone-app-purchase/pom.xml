@@ -30,6 +30,21 @@
             <artifactId>bone-metadata-server</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 审批流引擎（平台集成 starter）：采购提交/审批/驳回三动作经逃逸 Handler 驱动引擎，
+             任务/待办/指派冻结/原子推进/挂起干预由引擎承担（接入模式仿 bone-app-expense workflow 包）。
+             引擎持久化由 starter 收敛到 bone-metadata-sdk @Sql（wf_* 六表见 0056）。 -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-workflow-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- 会计引擎（可复用横向能力）：付款 pay 终态经 generateVoucher 动作触发凭证生成，
+             与报销同构；fin_* 元数据与凭证模板/科目映射见迁移 0067（两系统共享）。 -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-accounting-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>

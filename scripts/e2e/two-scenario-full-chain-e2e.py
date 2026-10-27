@@ -268,7 +268,13 @@ def child_replace(entity_code, rid, child_code, rows):
     return call("POST", f"/runtime/entities/{entity_code}/records/{rid}/children/{child_code}", rows)[:2]
 
 
+_IDEM_SEQ = [0]
 def act(entity_code, rid, action, params=None, idem=None):
+    # 采购 submit/approve/reject 已接工作流引擎（逃逸动作，平台强制要求幂等键）；
+    # 此处对采购这三类动作自动补唯一幂等键，避免逐个调用处手工传 idem。
+    if idem is None and str(entity_code).startswith("purchase_order") and action in ("submit", "approve", "reject"):
+        _IDEM_SEQ[0] += 1
+        idem = f"po-{action}-{rid}-{_IDEM_SEQ[0]}"
     return call(
         "POST",
         f"/runtime/entities/{entity_code}/records/{rid}/actions/{action}",
@@ -632,6 +638,7 @@ po_fields = [
     {"code": "vendor_code", "label": "供应商编码"},
     {"code": "vendor", "label": "供应商"},
     {"code": "buyer", "label": "采购员"},
+    {"code": "approver_id", "label": "审批人（工作流 FIELD 指派，须等于操作人 admin 才能审批）"},
     {"code": "department", "label": "需求部门"},
     {"code": "need_date", "label": "需求日期"},
     {"code": "currency", "label": "币种"},
@@ -678,9 +685,11 @@ s, d = publish(po_item_id)
 check("采购：行项目实体先发布", s == 200, f"{s} {d.get('message')}")
 
 for code, label, frm, to, esc, hdl, idem, order in [
-    ("submit", "提交审批", "DRAFT", "SUBMITTED", False, None, False, 1),
-    ("approve", "审批通过", "SUBMITTED", "APPROVED", False, None, False, 2),
-    ("reject", "驳回", "SUBMITTED", "REJECTED", False, None, False, 3),
+    # submit/approve/reject 接采购工作流引擎：必须 is_escape=True，RuntimeActionDispatcher 才会按 handler_bean 分发
+    # （handler 副作用：启动/推进审批流；平台状态流转仍由状态机负责）
+    ("submit", "提交审批", "DRAFT", "SUBMITTED", True, "purchaseWorkflowSubmitHandler", True, 1),
+    ("approve", "审批通过", "SUBMITTED", "APPROVED", True, "purchaseWorkflowDecisionHandler", True, 2),
+    ("reject", "驳回", "SUBMITTED", "REJECTED", True, "purchaseWorkflowDecisionHandler", True, 3),
     ("startReceive", "开始收货", "APPROVED", "RECEIVING", False, None, False, 4),
     ("confirmReceive", "确认收货", "RECEIVING", "RECEIVED", False, None, False, 5),
     ("pay", "付款", "RECEIVED", "PAID", True, "purchaseOrderPayHandler", True, 6),
@@ -728,6 +737,7 @@ TAX_TOTAL = 3380.0
 
 s, d = rec_create(PO, {"title": "研发中心 Q4 办公设备采购", "vendor_code": "V-8801",
                        "vendor": "晨光办公设备有限公司", "buyer": "李四",
+                       "approver_id": "admin",
                        "department": "研发中心", "need_date": "2026-11-30", "currency": "CNY",
                        "budget_subject": "6401-办公费", "budget_amount": 50000,
                        "contract_no": "CT-2026-0712", "payment_terms": "NET30",
