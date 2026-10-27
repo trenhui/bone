@@ -109,9 +109,15 @@ public class ArchitectureTest {
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.claim");
 
+  // E-1.3：跨上下文 domain 越界守护（synap-claim 例外白名单）
+  // bone-ai-gateway 是平台共享 AI 能力（类比 bone-core），synap-claim 经其【应用层门面】
+  // （LlmGatewayApplicationService）+【请求/响应契约值对象】（LlmRequest/LlmMessage/LlmResponse）
+  // 消费——这是 noCrossContextModelDependency 的 sharedKernelPackages 扩展参数的本意用法；
+  // 网关 infrastructure（clients / redactors 等）仍被本规则禁止触达（ACL 边界不放开）。
   @ArchTest
   static final ArchRule no_cross_context_model =
-      BoneDddArchRules.noCrossContextModelDependency("com.bone.claim");
+      BoneDddArchRules.noCrossContextModelDependency(
+          "com.bone.claim", "com.bone.ai.gateway.application", "com.bone.ai.gateway.domain");
 
   // E-6.4 / CORE-03：application 只许用例级编排，不得 new 领域对象/调 setter 改状态
   @ArchTest

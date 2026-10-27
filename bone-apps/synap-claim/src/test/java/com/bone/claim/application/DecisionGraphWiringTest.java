@@ -2,6 +2,10 @@ package com.bone.claim.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.ai.gateway.application.LlmGatewayApplicationService;
+import com.bone.ai.gateway.domain.LlmGatewayPolicies;
+import com.bone.ai.gateway.domain.gateway.TenantProvider;
+import com.bone.ai.gateway.infrastructure.MockLlmClient;
 import com.bone.claim.application.handler.AdjustNodeHandler;
 import com.bone.claim.application.handler.AiAssessNodeHandler;
 import com.bone.claim.application.handler.ArbitrateNodeHandler;
@@ -10,13 +14,14 @@ import com.bone.claim.application.handler.RuleCheckNodeHandler;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
-import com.bone.claim.infrastructure.ai.LocalAiGatewayPortAdapter;
+import com.bone.claim.infrastructure.client.AiGatewayPortAdapter;
 import com.bone.claim.infrastructure.context.LocalClaimContextPortAdapter;
 import com.bone.claim.infrastructure.forensics.LocalVisualForensicsPortAdapter;
 import com.bone.claim.infrastructure.fraud.LocalGraphFraudPortAdapter;
 import com.bone.claim.infrastructure.knowledge.LocalKnowledgeRetrievalPortAdapter;
 import com.bone.claim.infrastructure.notify.LocalNotificationPortAdapter;
 import com.bone.claim.infrastructure.rule.LocalRuleEnginePortAdapter;
+import com.bone.core.domain.event.DomainEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -49,10 +54,10 @@ class DecisionGraphWiringTest {
           assertThat(ctx).hasSingleBean(AdjustNodeHandler.class);
           assertThat(ctx).hasSingleBean(ArbitrateNodeHandler.class);
 
-          // 7 个智能化出站端口均有本地确定性桩实现（防腐层落地，二期接 bone-ai）
+          // 7 个智能化出站端口均有实现（防腐层落地，Phase B：AiGateway 接 bone-ai C5 网关）
           assertThat(ctx).hasSingleBean(LocalClaimContextPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalRuleEnginePortAdapter.class);
-          assertThat(ctx).hasSingleBean(LocalAiGatewayPortAdapter.class);
+          assertThat(ctx).hasSingleBean(AiGatewayPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalKnowledgeRetrievalPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalVisualForensicsPortAdapter.class);
           assertThat(ctx).hasSingleBean(LocalGraphFraudPortAdapter.class);
@@ -72,6 +77,7 @@ class DecisionGraphWiringTest {
         "com.bone.claim.infrastructure.context",
         "com.bone.claim.infrastructure.rule",
         "com.bone.claim.infrastructure.ai",
+        "com.bone.claim.infrastructure.client",
         "com.bone.claim.infrastructure.knowledge",
         "com.bone.claim.infrastructure.forensics",
         "com.bone.claim.infrastructure.fraud",
@@ -102,6 +108,17 @@ class DecisionGraphWiringTest {
     @Bean
     TenantPort tenantPort() {
       return Mockito.mock(TenantPort.class);
+    }
+
+    // Phase B：提供真实网关门面（默认回落内置 MockLlmClient），使 AiGatewayPortAdapter 可被装配
+    @Bean
+    LlmGatewayApplicationService llmGatewayApplicationService() {
+      return new LlmGatewayApplicationService(
+          new MockLlmClient(),
+          Mockito.mock(DomainEventPublisher.class),
+          (TenantProvider) () -> "t-1",
+          LlmGatewayPolicies.permissive(),
+          null);
     }
   }
 }

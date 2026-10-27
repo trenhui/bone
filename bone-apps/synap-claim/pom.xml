@@ -71,6 +71,14 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Bone AI Gateway（C5 LLM 网关：PII 脱敏/注入检测/内容安全/证据链/配额/成本红线统一收口；
+             ADR-002/能力图谱 §7.2：synap-claim 复用平台网关，不自研 AI 安全。
+             Phase B：AiGatewayPortAdapter 委托 LlmGatewayApplicationService，默认未配 base-url 时回落网关内置 MockLlmClient。
+             版本由 bone-parent dependencyManagement 统一托管（1.0.0-SNAPSHOT）。 -->
+        <dependency><groupId>com.bone</groupId>
+            <artifactId>bone-ai-gateway</artifactId>
+        </dependency>
+
         <!-- MySQL Driver -->
         <dependency><groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
