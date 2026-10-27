@@ -232,6 +232,7 @@ class WorkflowEngineImplTest {
             String nodeCode,
             String nextNodeCode,
             WorkflowDefinition.ApprovalMode mode,
+            Integer quorum,
             String operatorId) {
           WorkflowInstance instance = instances.get(instanceId);
           if (instance == null || instance.isTerminated()) {
@@ -248,17 +249,28 @@ class WorkflowEngineImplTest {
             // 单签（SINGLE）模式：同一节点同一访问仅 1 条任务，驳回已由 completeTask 兜底整单终止，
             // 此处再校验 REJECTED 会误伤「驳回退回重入」——历史访问留下的陈旧 REJECTED 任务不该阻断本次推进。
             // 会签（ALL）/或签（ANY）多办理人同访问：任一驳回即整单驳回，必须保留 REJECTED 守卫。
+            // 比例会签（RATIO）容忍单条驳回（只要法定人数仍可达），故也不挂此守卫。
             if (mode != WorkflowDefinition.ApprovalMode.SINGLE
+                && mode != WorkflowDefinition.ApprovalMode.RATIO
                 && nodeTasks.stream()
                     .anyMatch(task -> task.status() == WorkflowTask.Status.REJECTED)) {
               return false;
             }
             // 与生产 SQL 同口径：会签 = 全部任务落在已决策显式集（不是「无 PENDING」）
-            boolean complete =
-                mode == WorkflowDefinition.ApprovalMode.ALL
-                    ? nodeTasks.stream().allMatch(task -> DECIDED.contains(task.status()))
-                    : nodeTasks.stream()
-                        .anyMatch(task -> task.status() == WorkflowTask.Status.APPROVED);
+            boolean complete;
+            if (mode == WorkflowDefinition.ApprovalMode.ALL) {
+              complete = nodeTasks.stream().allMatch(task -> DECIDED.contains(task.status()));
+            } else if (mode == WorkflowDefinition.ApprovalMode.RATIO) {
+              long approved =
+                  nodeTasks.stream()
+                      .filter(task -> task.status() == WorkflowTask.Status.APPROVED)
+                      .count();
+              complete = quorum != null && approved >= quorum;
+            } else {
+              complete =
+                  nodeTasks.stream()
+                      .anyMatch(task -> task.status() == WorkflowTask.Status.APPROVED);
+            }
             if (!complete) {
               return false;
             }
@@ -1330,6 +1342,89 @@ class WorkflowEngineImplTest {
         engine.completeTask(
             pendingTasks().get(0).id(), WorkflowTask.Decision.REJECT, "退回重提超限", "mgr1", "start");
     assertEquals(WorkflowInstance.Phase.REJECTED, terminal.phase(), "次数超限应强制整单驳回终止");
+  }
+
+  @Test
+  @DisplayName("比例会签（RATIO）：达法定人数即通过，余下待办被作废")
+  void ratioApproval_advancesAtQuorum() {
+    givenRatioApproval(2);
+    resolvedAssignees = List.of("c1", "c2", "c3");
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense", "r1", "expense", "u1");
+    assertEquals(3, pendingTasks().size(), "比例会签节点应派 3 人");
+
+    // c1 同意 → 已通过 1 < 法定 2，仍在运行、未推进
+    engine.completeTask(pendingTaskOf("c1").id(), WorkflowTask.Decision.APPROVE, "同意", "c1");
+    assertEquals(WorkflowInstance.Phase.RUNNING, latestPhase(), "1/3 通过未达法定人数，不得推进");
+    assertEquals("committee", latestInstance().currentNodeCode());
+
+    // c2 同意 → 已通过 2 ≥ 法定 2 ⇒ 推进至 end 并整单通过，c3 的待办被作废（不留幽灵待办）
+    engine.completeTask(pendingTaskOf("c2").id(), WorkflowTask.Decision.APPROVE, "同意", "c2");
+    assertEquals(WorkflowInstance.Phase.APPROVED, latestPhase(), "达法定人数应整单通过");
+    assertEquals("end", latestInstance().currentNodeCode());
+    String instId = latestInstance().id();
+    long approved =
+        tasks.values().stream()
+            .filter(
+                t -> t.instanceId().equals(instId) && t.status() == WorkflowTask.Status.APPROVED)
+            .count();
+    long cancelled =
+        tasks.values().stream()
+            .filter(
+                t -> t.instanceId().equals(instId) && t.status() == WorkflowTask.Status.CANCELLED)
+            .count();
+    assertEquals(2, approved, "c1、c2 通过");
+    assertEquals(1, cancelled, "c3 的待办应在达额后被作废");
+  }
+
+  @Test
+  @DisplayName("比例会签（RATIO）：法定人数不可达才整单驳回，单条驳回不立即终止")
+  void ratioApproval_unreachableTerminates() {
+    givenRatioApproval(2);
+    resolvedAssignees = List.of("c1", "c2", "c3");
+    WorkflowEngineImpl engine = newEngine();
+    engine.start("expense", "r1", "expense", "u1");
+
+    // c3 同意（1/3）未达额
+    engine.completeTask(pendingTaskOf("c3").id(), WorkflowTask.Decision.APPROVE, "同意", "c3");
+    assertEquals(WorkflowInstance.Phase.RUNNING, latestPhase());
+
+    // c1 驳回 → 已通过 1 + 待决 1 = 2 ≥ 法定 2，仍可达 ⇒ 不得终止（容忍少数人反对）
+    engine.completeTask(pendingTaskOf("c1").id(), WorkflowTask.Decision.REJECT, "不同意", "c1");
+    assertEquals(WorkflowInstance.Phase.RUNNING, latestPhase(), "仍有 1 待决，凑齐 2 人仍可能，不得终止");
+
+    // c2 驳回 → 已通过 1 + 待决 0 = 1 < 法定 2 ⇒ 不可达 ⇒ 整单驳回终止
+    WorkflowInstance rejected =
+        engine.completeTask(pendingTaskOf("c2").id(), WorkflowTask.Decision.REJECT, "不同意", "c2");
+    assertEquals(WorkflowInstance.Phase.REJECTED, rejected.phase(), "法定人数不可达应整单驳回终止");
+  }
+
+  private WorkflowTask pendingTaskOf(String assigneeId) {
+    return pendingTasks().stream()
+        .filter(t -> t.assigneeId().equals(assigneeId))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("无待办办理人：" + assigneeId));
+  }
+
+  private void givenRatioApproval(int quorum) {
+    definitions.put(
+        "expense",
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(
+                new WorkflowDefinition.Node("start", WorkflowDefinition.NodeType.START, null, "发起"),
+                new WorkflowDefinition.Node(
+                    "committee",
+                    WorkflowDefinition.NodeType.APPROVE,
+                    WorkflowDefinition.ApprovalMode.RATIO,
+                    "委员会",
+                    quorum),
+                new WorkflowDefinition.Node("end", WorkflowDefinition.NodeType.END, null, "结束")),
+            List.of(
+                new WorkflowDefinition.Edge("start", "committee", null, "提交"),
+                new WorkflowDefinition.Edge("committee", "end", null, "通过")),
+            Map.of("committee", List.of(new WorkflowDefinition.AssignmentRule("ROLE", Map.of())))));
   }
 
   private WorkflowInstance latestInstance() {

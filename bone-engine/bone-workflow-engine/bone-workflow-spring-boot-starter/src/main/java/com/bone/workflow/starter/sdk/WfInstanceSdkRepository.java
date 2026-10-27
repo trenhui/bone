@@ -116,10 +116,11 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
    * <p>完成条件口径（{@code mode}）：{@code AUTO} 无条件移动（START / CONDITION / CC 等非审批节点）； {@code ALL} 会签 =
    * 全部任务落在已决策显式集（{@code APPROVED/REJECTED/CANCELLED}，不用「无 PENDING」近似） 且无人驳回；{@code ANY} 或签 = 至少 1 人
    * APPROVED 且无人驳回；{@code SINGLE} 单签 = 至少 1 人 APPROVED（驳回由 completeTask 兜底整单终止， 此处不校验
-   * REJECTED，否则「驳回退回重入」时历史访问的陈旧 REJECTED 会误阻断本次推进）。
+   * REJECTED，否则「驳回退回重入」时历史访问的陈旧 REJECTED 会误阻断本次推进）；{@code RATIO} 比例会签 = 已通过人数 ≥ {@code
+   * quorum}（容忍单条驳回，只要法定人数仍可达，由引擎兜底「不可达则整单驳回」）。
    *
    * <p><b>REJECTED 守卫的适用范围</b>：仅 {@code ALL}/{@code ANY} 多办理人同访问需要——任一驳回即整单驳回； {@code
-   * SINGLE}/{@code AUTO} 不挂此守卫（单签驳回由引擎兜底，非审批节点本就无驳回）。
+   * SINGLE}/{@code RATIO}/{@code AUTO} 不挂此守卫（单签驳回由引擎兜底；比例会签容忍驳回；非审批节点本就无驳回）。
    *
    * <p><b>为什么不得拆成先查后改</b>：两个会签人同时点「同意」时各自读到「对方还没通过」的旧快照 ⇒ 双方都判「未齐」 ⇒
    * 流程永远卡在待办（会签经典死锁）。判据必须由数据库在同一条语句里算。
@@ -144,7 +145,12 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
           + "           WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
           + "             AND t.node_code = #{nodeCode} AND t.deleted = 0"
           + "             AND t.status NOT IN ('APPROVED', 'REJECTED', 'CANCELLED')))"
-          + "     OR (#{mode} <> 'ALL' AND EXISTS (SELECT 1 FROM wf_task t"
+          + "     OR (#{mode} = 'RATIO'"
+          + "       AND (SELECT COUNT(*) FROM wf_task t"
+          + "           WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
+          + "             AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'APPROVED')"
+          + "         >= #{quorum})"
+          + "     OR (#{mode} NOT IN ('ALL', 'RATIO') AND EXISTS (SELECT 1 FROM wf_task t"
           + "         WHERE t.instance_id = wf_instance.id AND t.tenant_id = wf_instance.tenant_id"
           + "           AND t.node_code = #{nodeCode} AND t.deleted = 0 AND t.status = 'APPROVED'))"
           + "   )")
@@ -154,6 +160,7 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
       @Param("nodeCode") String nodeCode,
       @Param("nextNodeCode") String nextNodeCode,
       @Param("mode") String mode,
+      @Param("quorum") Integer quorum,
       @Param("updatedAt") Instant updatedAt,
       @Param("operatorId") String operatorId);
 }

@@ -79,7 +79,21 @@ public final class WorkflowDefinitionValidator {
         continue;
       }
       if (node.type() == WorkflowDefinition.NodeType.APPROVE && node.mode() == null) {
-        violations.add(new Violation("WF-012", "审批节点 " + node.code() + " 缺完成判定方式（单签/会签/或签）"));
+        violations.add(new Violation("WF-012", "审批节点 " + node.code() + " 缺完成判定方式（单签/会签/或签/比例会签）"));
+      }
+      if (node.type() == WorkflowDefinition.NodeType.APPROVE
+          && node.mode() == WorkflowDefinition.ApprovalMode.RATIO) {
+        if (node.quorum() == null || node.quorum() < 1) {
+          violations.add(
+              new Violation(
+                  "WF-019", "比例会签节点 " + node.code() + " 必须指定法定人数 quorum（≥ 1，表示「至少 N 人通过即通过」）"));
+        }
+      }
+      if (node.quorum() != null && node.mode() != WorkflowDefinition.ApprovalMode.RATIO) {
+        violations.add(
+            new Violation(
+                "WF-019",
+                "节点 " + node.code() + " 设置了法定人数 quorum，但完成判定方式不是比例会签（RATIO），quorum 将被忽略"));
       }
       if (node.type() != WorkflowDefinition.NodeType.APPROVE && node.mode() != null) {
         violations.add(new Violation("WF-012", "非审批节点 " + node.code() + " 不应设置完成判定方式"));

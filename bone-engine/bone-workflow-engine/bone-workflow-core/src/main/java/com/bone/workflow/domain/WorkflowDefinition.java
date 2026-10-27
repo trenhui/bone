@@ -1,6 +1,8 @@
 package com.bone.workflow.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +99,14 @@ public record WorkflowDefinition(
     /** 全部通过才通过（会签）。 */
     ALL,
     /** 任一通过即通过（或签）。 */
-    ANY
+    ANY,
+    /**
+     * 比例会签（N/M）：同一节点至少 {@code N} 人审批通过即通过，{@code N} 由节点 {@code quorum} 指定。
+     *
+     * <p>语义要点（钉钉/飞书「人数会签」同源）：推进条件 = 已通过人数 ≥ {@code quorum}；终止条件 = 即便剩余待办全部通过也凑不齐 {@code quorum}（已通过
+     * + 待决 < {@code quorum}）⇒ 整单驳回。单条驳回不立即终止（只要法定人数仍可达），容忍「少数人反对」。
+     */
+    RATIO
   }
 
   /**
@@ -107,8 +116,29 @@ public record WorkflowDefinition(
    * @param type 节点类型
    * @param mode 审批完成判定方式（仅 {@link NodeType#APPROVE} 有意义，其余类型须为 {@code null}）
    * @param label 展示名
+   * @param quorum 比例会签法定人数（仅 {@link ApprovalMode#RATIO} 有意义，其余模式为 {@code null}）：同一节点至少 {@code
+   *     quorum} 人通过即通过
    */
-  public record Node(String code, NodeType type, ApprovalMode mode, String label) {}
+  public record Node(String code, NodeType type, ApprovalMode mode, String label, Integer quorum) {
+    @JsonCreator
+    public Node(
+        @JsonProperty("code") String code,
+        @JsonProperty("type") NodeType type,
+        @JsonProperty("mode") ApprovalMode mode,
+        @JsonProperty("label") String label,
+        @JsonProperty("quorum") Integer quorum) {
+      this.code = code;
+      this.type = type;
+      this.mode = mode;
+      this.label = label;
+      this.quorum = quorum;
+    }
+
+    /** 便捷构造：不含法定人数（非比例会签节点），保证既有 4 参调用零改动、历史 JSON 缺 {@code quorum} 可反序列化。 */
+    public Node(String code, NodeType type, ApprovalMode mode, String label) {
+      this(code, type, mode, label, null);
+    }
+  }
 
   /**
    * 节点出边（transition）。

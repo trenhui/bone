@@ -597,25 +597,57 @@ public class WorkflowEngineImpl implements WorkflowEngine {
                 () ->
                     new WorkflowEngineException(
                         WorkflowErrorCode.DEFINITION_MALFORMED, "流程定义缺少节点：" + task.nodeCode()));
-    // 原子推进：判据（会签是否已齐 / 是否有人驳回）与推进在同一条原子操作里完成。
+    // 原子推进：判据（会签是否已齐 / 是否有人驳回 / 比例会签法定人数是否达标）与推进在同一条原子操作里完成。
     boolean advanced =
         instanceRepository.compareAndAdvanceNode(
-            current.id(), task.nodeCode(), outs.get(0).to(), node.mode(), operatorId);
+            current.id(),
+            task.nodeCode(),
+            outs.get(0).to(),
+            node.mode(),
+            node.quorum(),
+            operatorId);
     if (advanced) {
       // 节点已完成：作废该节点余下的待办（单签/或签解析出多人时，其余人的待办不得留成幽灵待办）。
       cancelNodeTasksWithNotice(current, task.nodeCode(), operatorId, "审批节点已决策完成，该待办无需再处理");
       return advanceFrom(current, definition, operatorId, outs.get(0).to());
     }
-    // 未推进：可能是「会签未齐，等其他人」或「节点内有人驳回」。重新读该节点任务做区分。
+    // 未推进：可能是「会签未齐，等其他人」「比例会签法定人数未达」或「节点内有人驳回」。重新读该节点任务做区分。
     List<WorkflowTask> freshTasks =
         instanceRepository.listTasksByNode(current.id(), task.nodeCode());
-    boolean anyRejected =
-        freshTasks.stream().anyMatch(each -> each.status() == WorkflowTask.Status.REJECTED);
     WorkflowInstance latest = instanceRepository.findInstance(current.id()).orElse(current);
-    if (anyRejected && !latest.isTerminated()) {
-      return terminateAsRejected(latest, operatorId, comment);
+    if (!latest.isTerminated()) {
+      if (node.mode() == WorkflowDefinition.ApprovalMode.RATIO) {
+        // 比例会签：仅当「即便剩余待办全部通过也凑不齐法定人数」才整单驳回；单条驳回不立即终止（容忍少数人反对）。
+        long approved =
+            freshTasks.stream()
+                .filter(each -> each.status() == WorkflowTask.Status.APPROVED)
+                .count();
+        long pending =
+            freshTasks.stream()
+                .filter(each -> each.status() == WorkflowTask.Status.PENDING)
+                .count();
+        if (node.quorum() != null && approved + pending < node.quorum()) {
+          return terminateAsRejected(
+              latest,
+              operatorId,
+              "比例会签法定人数不可达（已通过 "
+                  + approved
+                  + " + 待决 "
+                  + pending
+                  + " < 法定 "
+                  + node.quorum()
+                  + "），流程终止："
+                  + comment);
+        }
+      } else {
+        boolean anyRejected =
+            freshTasks.stream().anyMatch(each -> each.status() == WorkflowTask.Status.REJECTED);
+        if (anyRejected) {
+          return terminateAsRejected(latest, operatorId, comment);
+        }
+      }
     }
-    return latest; // 会签未齐：留在当前节点等待其余办理人
+    return latest; // 会签未齐 / 比例会签法定人数未达：留在当前节点等待其余办理人
   }
 
   @Override
@@ -1114,7 +1146,7 @@ public class WorkflowEngineImpl implements WorkflowEngine {
       String operatorId) {
     boolean moved =
         instanceRepository.compareAndAdvanceNode(
-            instance.id(), fromNode, toNode, completion, operatorId);
+            instance.id(), fromNode, toNode, completion, null, operatorId);
     if (moved) {
       auditPort.recordAdvance(instance, fromNode, toNode, branchLabel);
       LOG.info("[workflow] 节点推进：instance={} {} → {}", instance.id(), fromNode, toNode);

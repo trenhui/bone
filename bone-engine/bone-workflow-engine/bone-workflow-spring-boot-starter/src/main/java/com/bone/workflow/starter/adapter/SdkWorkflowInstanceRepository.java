@@ -174,6 +174,7 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
       String nodeCode,
       String nextNodeCode,
       WorkflowDefinition.ApprovalMode mode,
+      Integer quorum,
       String operatorId) {
     // 关键：判据与推进在同一条 UPDATE 内完成（见 WfInstanceSdkRepository#compareAndAdvanceNode 的说明）。
     // 此处不得拆成「先查后改」。
@@ -185,6 +186,7 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
             nodeCode,
             nextNodeCode,
             mode == null ? "AUTO" : mode.name(),
+            quorum,
             Instant.now(),
             operatorId)
         > 0;

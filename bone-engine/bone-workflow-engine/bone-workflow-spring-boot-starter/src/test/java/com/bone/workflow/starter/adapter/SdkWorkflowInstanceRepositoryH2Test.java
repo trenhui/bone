@@ -67,14 +67,14 @@ class SdkWorkflowInstanceRepositoryH2Test {
     approve("c1");
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"),
         "会签未齐（c2 仍待办）不得推进——否则等于一人拍板");
     assertEquals(NODE, currentNode(), "未推进时节点必须留在原处");
 
     approve("c2");
     assertTrue(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c2"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c2"),
         "会签已齐必须推进");
     assertEquals("end", currentNode());
   }
@@ -90,10 +90,10 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     boolean firstAdvance =
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1");
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1");
     boolean secondAdvance =
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c2");
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c2");
 
     assertTrue(firstAdvance, "会签已齐，首次推进必须成功");
     assertFalse(secondAdvance, "已推进过，重复推进必须失败（幂等）——否则节点被反复改写");
@@ -110,16 +110,16 @@ class SdkWorkflowInstanceRepositoryH2Test {
     approve("c1");
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"));
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"));
     approve("c2");
     assertTrue(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c2"));
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c2"));
 
     // 推进后实例已离开该节点，任何针对旧节点的推进都必须失败
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"),
         "实例已离开该节点，旧节点的推进必须失败");
     assertEquals("end", currentNode(), "流程必须真的走到了 end，不得卡死");
   }
@@ -133,7 +133,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
     approve("c2");
     assertTrue(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ANY, "c2"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ANY, null, "c2"),
         "或签一人通过即推进");
     repository.cancelPendingTasksOfNode(INSTANCE, NODE, "c2");
 
@@ -153,7 +153,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ANY, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ANY, null, "c1"),
         "节点内已有驳回，不得推进");
     assertEquals(NODE, currentNode());
   }
@@ -174,7 +174,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"),
         "c2 尚未表态（TRANSFERRED 不在已决策显式集）——此时推进会签节点等于越权放行");
     assertEquals(NODE, currentNode(), "fail-closed：节点必须留在原处等人，而不是静默往下走");
   }
@@ -195,7 +195,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     assertTrue(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"),
         "CANCELLED 在已决策显式集内——作废的待办不得把会签节点永久焊死");
     assertEquals("end", currentNode());
   }
@@ -221,7 +221,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
     repository.saveInstance(atStart, "u1");
 
     assertTrue(
-        repository.compareAndAdvanceNode("900", "start", "cond", null, "u1"),
+        repository.compareAndAdvanceNode("900", "start", "cond", null, null, "u1"),
         "START 节点不产生任务，必须能无条件推进（P0-1 回归：生产 SQL 推不动非审批节点）");
     assertEquals("cond", repository.findInstance("900").orElseThrow().currentNodeCode());
   }
@@ -234,7 +234,7 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     assertFalse(
         repository.compareAndAdvanceNode(
-            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, "c1"),
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.ALL, null, "c1"),
         "审批节点零任务必须 fail-closed 卡住等人，绝不不得因「无任务」而放行");
     assertEquals(NODE, currentNode(), "fail-closed：节点必须留在原处");
   }
@@ -466,9 +466,55 @@ class SdkWorkflowInstanceRepositoryH2Test {
 
     // mode 传 null（START / CC 节点没有 ApprovalMode）：必须能推进
     assertTrue(
-        repository.compareAndAdvanceNode(INSTANCE, NODE, "end", null, "u1"),
+        repository.compareAndAdvanceNode(INSTANCE, NODE, "end", null, null, "u1"),
         "START / CC 节点不产生审批任务，若 SQL 仍要求「存在 APPROVED 任务」则永远推不动——"
             + "这是只有真 SQL 才暴露、内存 stub 测试抓不到的缺陷");
+    assertEquals("end", currentNode());
+  }
+
+  @Test
+  @DisplayName("比例会签(RATIO)：已通过人数达法定人数才推进")
+  void ratio_advancesOnlyWhenQuorumMet() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.RATIO, List.of("c1", "c2", "c3"));
+
+    approve("c1");
+    assertFalse(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c1"),
+        "仅 1 人通过（< 法定 2）不得推进");
+    assertEquals(NODE, currentNode());
+
+    approve("c2");
+    assertTrue(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c2"),
+        "已通过 2 人 ≥ 法定 2 必须推进");
+    assertEquals("end", currentNode());
+  }
+
+  @Test
+  @DisplayName("比例会签(RATIO)：单条驳回不阻断推进（容忍少数人反对），达额即推进")
+  void ratio_rejectionToleratedUntilQuorum() {
+    givenInstanceAtNode(WorkflowDefinition.ApprovalMode.RATIO, List.of("c1", "c2", "c3"));
+
+    approve("c1");
+    assertFalse(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c1"),
+        "仅 1 人通过（< 法定 2）不得推进");
+    // c2 驳回：比例会签容忍单条驳回（只要法定人数仍可达），SQL 不得因存在 REJECTED 而阻断
+    reject("c2");
+    assertFalse(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c1"),
+        "比例会签不挂 REJECTED 守卫，1 通过 + 1 驳回 + 1 待决，仍未达额，不得推进");
+    assertEquals(NODE, currentNode(), "存在驳回不得误推进");
+    // c3 通过 ⇒ 已通过 2 人 ≥ 法定 2 ⇒ 推进（尽管 c2 已驳回）
+    approve("c3");
+    assertTrue(
+        repository.compareAndAdvanceNode(
+            INSTANCE, NODE, "end", WorkflowDefinition.ApprovalMode.RATIO, 2, "c1"),
+        "达额后即使有驳回记录也必须推进");
     assertEquals("end", currentNode());
   }
 

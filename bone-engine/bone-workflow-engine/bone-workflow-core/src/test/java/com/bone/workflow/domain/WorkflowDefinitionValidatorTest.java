@@ -408,4 +408,63 @@ class WorkflowDefinitionValidatorTest {
         List.of(edge("start", "mgr", null), edge("mgr", "end", null)),
         Map.of("mgr", List.of(rule("LINE_MANAGER"))));
   }
+
+  private static WorkflowDefinition.Node approveRatio(String code, int quorum) {
+    return new WorkflowDefinition.Node(
+        code,
+        WorkflowDefinition.NodeType.APPROVE,
+        WorkflowDefinition.ApprovalMode.RATIO,
+        code,
+        quorum);
+  }
+
+  @Test
+  @DisplayName("比例会签(RATIO)未配法定人数 quorum → WF-019（不许发布）")
+  void ratioWithoutQuorum_isRejected() {
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approveRatio("committee", 0), end()),
+            List.of(edge("start", "committee", null), edge("committee", "end", null)),
+            Map.of("committee", List.of(rule("ROLE"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-019"));
+    assertTrue(!validator.isPublishable(definition));
+  }
+
+  @Test
+  @DisplayName("合法比例会签(RATIO)配 quorum≥1 → 无违规（可发布）")
+  void validRatio_isPublishable() {
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), approveRatio("committee", 2), end()),
+            List.of(edge("start", "committee", null), edge("committee", "end", null)),
+            Map.of("committee", List.of(rule("ROLE"))));
+    assertTrue(validator.validate(definition).isEmpty());
+    assertTrue(validator.isPublishable(definition));
+  }
+
+  @Test
+  @DisplayName("非比例会签节点设置 quorum → WF-019（quorum 仅对 RATIO 有效）")
+  void quorumOnNonRatioNode_isRejected() {
+    // 复用 4 参便捷构造得到 quorum=null 的 SINGLE 节点；此处反过来：SINGLE 却带 quorum 必须由校验器拦下。
+    // 直接以 5 参构造一个「SINGLE + quorum=2」的非法节点。
+    WorkflowDefinition.Node bad =
+        new WorkflowDefinition.Node(
+            "mgr",
+            WorkflowDefinition.NodeType.APPROVE,
+            WorkflowDefinition.ApprovalMode.SINGLE,
+            "主管",
+            2);
+    WorkflowDefinition definition =
+        new WorkflowDefinition(
+            "expense",
+            1,
+            List.of(start(), bad, end()),
+            List.of(edge("start", "mgr", null), edge("mgr", "end", null)),
+            Map.of("mgr", List.of(rule("LINE_MANAGER"))));
+    assertTrue(hasCode(validator.validate(definition), "WF-019"));
+  }
 }

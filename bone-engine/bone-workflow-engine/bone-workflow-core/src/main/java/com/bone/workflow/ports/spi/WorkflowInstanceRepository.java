@@ -136,12 +136,14 @@ public interface WorkflowInstanceRepository {
    * <b>流程永远卡在待办</b>。这是会签最经典的死锁。判据必须由存储层在同一条语句里 依据最新行状态计算（典型实现：带 {@code COUNT} 子查询的条件 UPDATE）。
    *
    * <p>完成条件口径（由实现方在原子操作内判定）：单签/或签 = 至少 1 人通过且无人驳回；会签 = 该节点全部任务均已 决策（{@code
-   * APPROVED/REJECTED/CANCELLED} <b>显式集</b>，不得用「无 PENDING」近似——那会在 v2 转办/委派状态下静默放行）且无人驳回。
+   * APPROVED/REJECTED/CANCELLED} <b>显式集</b>，不得用「无 PENDING」近似——那会在 v2 转办/委派状态下静默放行）且无人驳回； 比例会签 =
+   * 已通过人数 ≥ {@code quorum}（且容忍单条驳回，只要法定人数仍可达）。
    *
    * @param instanceId 流程实例 id
    * @param nodeCode 当前所在审批节点
    * @param nextNodeCode 下一节点
    * @param mode 审批完成判定方式
+   * @param quorum 比例会签法定人数（仅 {@link WorkflowDefinition.ApprovalMode#RATIO} 有意义；其余模式传 {@code null}）
    * @param operatorId 操作人（触发推进的决策人）——写 {@code updated_by}
    * @return 是否推进成功
    */
@@ -150,6 +152,7 @@ public interface WorkflowInstanceRepository {
       String nodeCode,
       String nextNodeCode,
       WorkflowDefinition.ApprovalMode mode,
+      Integer quorum,
       String operatorId);
 
   /**
