@@ -188,5 +188,5 @@ src/test/java/...               SettlementEngineProbeTest / ScenarioSuiteTest / 
 1. 第三方已付按可赔基数**比例分摊**；生产应按费用类别归因（社保内优先核销），需条款确认。
 2. 年度限额按费用行**顺序截断（先到先得）**，未按比例摊薄；多费用类型并存时需条款确认优先级。
 3. **S13 多保单仅独立理算**，未实现 ISO 834「比例分摊(pro-rata by limit)/等额分摊」——对应条款需产品确认后另开工。
-4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL 需按 README 注释切换 MERGE → ON DUPLICATE KEY UPDATE，并补真实库回归与并发压测。
-5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；**分布式锁参考实现 `DbLeaseConcurrencyLock` 已提供并测试通过**（跨实例同 key 互斥 + 超时 fail-fast，见 `DbLeaseConcurrencyLockTest`）。真实 MySQL 并发压测仍建议生产接入时补一轮（验证行锁 / 隔离级别与租约表并发），但核心可插拔契约已闭环。
+4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL **仅需切换 `SqlDialect`**（H2 `MERGE...KEY` / MySQL `ON DUPLICATE KEY UPDATE` / `INSERT IGNORE` 由 `SqlDialect.auto(ds)` 按元数据自动识别，端口代码零改动），`SqlDialectTest` 已守住两方言 SQL 正确性（含 `ensureAccumRow` 用 `INSERT IGNORE` 不动 `version`）。真实库回归仍建议生产接入时补一轮（可用 H2 `MODE=MySQL` 离线跑通生产 SQL，见 `JdbcPortsMySqlCompatTest`）。
+5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；**分布式锁参考实现 `DbLeaseConcurrencyLock` 已提供并测试通过**——`DbLeaseConcurrencyLockTest`（跨实例同 key 互斥 + 超时 fail-fast）+ `DbLeaseConcurrencyLockStressTest`（两引擎实例共享同一 H2 库、40 线程猛攻同一保单，跨实例零超赔 / 零丢失更新 / 零乐观锁冲突，锁失效即 fail-closed 转红），把分布式锁从「接缝级」证据补到「负载级」。真实 MySQL 并发压测仍建议生产接入时补一轮（验证行锁 / 隔离级别与租约表并发），但核心可插拔契约已闭环。
