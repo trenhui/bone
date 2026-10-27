@@ -8,6 +8,7 @@ import LogManagement from './pages/LogManagement';
 import SystemDeployment from './pages/SystemDeployment';
 import DictManagement from './pages/DictManagement';
 import ScheduleTaskManagement from './pages/ScheduleTaskManagement';
+import WorkflowDesigner from './pages/WorkflowDesigner';
 import AppErrorBoundary from './components/AppErrorBoundary';
 import Authorized from './components/Authorized';
 import { BonePermissionCodes } from './auth/permission';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
                 <Route path="/k8s" element={<SystemDeployment />} />
                 <Route path="/dict" element={<DictManagement />} />
                 <Route path="/schedule" element={<ScheduleTaskManagement />} />
+                <Route path="/workflow-designer" element={<WorkflowDesigner />} />
                 <Route path="/" element={<Navigate to="/config" replace />} />
               </Routes>
             </Authorized>

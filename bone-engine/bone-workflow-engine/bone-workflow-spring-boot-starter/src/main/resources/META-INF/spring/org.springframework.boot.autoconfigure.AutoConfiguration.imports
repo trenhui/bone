@@ -2,3 +2,4 @@ com.bone.workflow.starter.config.MetadataSdkExtensionScanConfiguration
 com.bone.workflow.starter.config.WorkflowSdkRepositoryConfig
 com.bone.workflow.starter.WorkflowEngineAutoConfiguration
 com.bone.workflow.starter.WorkflowBoneIntegrationAutoConfiguration
+com.bone.workflow.starter.designer.web.WorkflowDesignerWebAutoConfiguration

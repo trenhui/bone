@@ -42,6 +42,12 @@
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
+        <!-- 设计器 REST 层（v1.5）：仅编排控制器，可选依赖——宿主无 web 上下文时不加载，
+             且不会向宿主传递 tomcat 传递依赖。 -->
+        <dependency><groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>

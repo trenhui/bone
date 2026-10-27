@@ -16,6 +16,7 @@
     "@ant-design/pro-components": "^2.8.10",
     "@bone/shared-services": "1.0.0",
     "@bone/shared-types": "1.0.0",
+    "@bone/workflow-dsl": "1.0.0",
     "@bone/shared-utils": "^1.0.0",
     "@bone/ui": "1.0.0",
     "antd": "^5.27.6",
