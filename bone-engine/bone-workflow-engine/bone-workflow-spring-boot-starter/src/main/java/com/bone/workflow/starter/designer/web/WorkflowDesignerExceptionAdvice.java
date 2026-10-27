@@ -3,6 +3,7 @@ package com.bone.workflow.starter.designer.web;
 import com.bone.workflow.starter.designer.WorkflowDefinitionConflictException;
 import com.bone.workflow.starter.designer.WorkflowDefinitionInvalidException;
 import com.bone.workflow.starter.designer.WorkflowDefinitionRequestException;
+import com.bone.workflow.starter.designer.WorkflowDesignerAccessDeniedException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -21,12 +22,30 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  * <ul>
  *   <li>{@link WorkflowDefinitionInvalidException} → <b>422</b>（定义本身配错，fail-closed 拒绝发布）
  *   <li>{@link WorkflowDefinitionConflictException} → <b>409</b>（revision 过期 / 并发首存 / 版本号撞车）
- *   <li>{@link WorkflowDefinitionRequestException} → <b>400</b>（请求形态问题：JSON 不可解析 / key 不一致 / 缺操作人）
+ *   <li>{@link WorkflowDesignerAccessDeniedException} → <b>403</b>（授权实现拒绝；{@code data.action}
+ *       给出被拒的动作档位， 便于前端区分「找管理员授权」与「改输入重试」）
+ *   <li>{@link WorkflowDefinitionRequestException} → <b>400</b>（请求形态问题：JSON 不可解析 / key 不一致 / 缺操作人 /
+ *       原文超长）
  *   <li>{@link IllegalStateException} → <b>400</b>（缺租户上下文等宿主装配问题）
  * </ul>
  */
 @ControllerAdvice
 public class WorkflowDesignerExceptionAdvice {
+
+  @ExceptionHandler(WorkflowDesignerAccessDeniedException.class)
+  public ResponseEntity<ApiResponse<Object>> handleAccessDenied(
+      WorkflowDesignerAccessDeniedException ex) {
+    return ResponseEntity.status(403)
+        .body(
+            ApiResponse.of(
+                403,
+                ex.getMessage(),
+                Map.of(
+                    "action",
+                    ex.action().name(),
+                    "defKey",
+                    ex.defKey() == null ? "" : ex.defKey())));
+  }
 
   @ExceptionHandler(WorkflowDefinitionInvalidException.class)
   public ResponseEntity<ApiResponse<Object>> handleInvalid(WorkflowDefinitionInvalidException ex) {

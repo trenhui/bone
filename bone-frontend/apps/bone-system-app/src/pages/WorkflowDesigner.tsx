@@ -48,6 +48,7 @@ import {
   isPublishable,
 } from '@bone/workflow-dsl';
 import { workflowDesignerApi, docFromDefinitionJson, type WorkflowPublished } from '@/services/workflowApi';
+import { BonePermissionCodes, hasPermission } from '../auth/permission';
 
 const { Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -174,6 +175,16 @@ const WorkflowDesigner: React.FC = () => {
   const [, setLoading] = useState(false);
   const [drag, setDrag] = useState<{ code: string; dx: number; dy: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * 写权限（UX 门禁）：没有 workflow:definitions:write 时，保存/发布/丢弃/上下线全部禁用，
+   * 画布仍可查看、校验与试运行——「能看不能改」比「整页 403」更接近真实分权场景（评审者、业务方）。
+   * 真正的授权在后端 WorkflowDesignerAuthorizer，这里只避免让用户点出一个必然失败的请求。
+   */
+  const canWrite = useMemo(
+    () => hasPermission(BonePermissionCodes.WORKFLOW_DEFINITIONS_WRITE),
+    [],
+  );
 
   const compiled = useMemo(() => {
     if (!doc) return null;
@@ -387,10 +398,15 @@ const WorkflowDesigner: React.FC = () => {
       <Content style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ padding: 12, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space wrap>
-            <Button icon={<SaveOutlined />} onClick={onSaveDraft} disabled={!doc}>
+            <Button icon={<SaveOutlined />} onClick={onSaveDraft} disabled={!doc || !canWrite}>
               保存草稿
             </Button>
-            <Button icon={<SendOutlined />} type="primary" onClick={onPublish} disabled={!doc}>
+            <Button
+              icon={<SendOutlined />}
+              type="primary"
+              onClick={onPublish}
+              disabled={!doc || !canWrite}
+            >
               发布
             </Button>
             <Button icon={<EyeOutlined />} onClick={onValidate} disabled={!doc}>
@@ -400,7 +416,7 @@ const WorkflowDesigner: React.FC = () => {
               试运行
             </Button>
             <Popconfirm title="确认丢弃草稿？" onConfirm={() => defKey && workflowDesignerApi.discardDraft(defKey).then(() => { setDraftExists(false); setRevision(null); })}>
-              <Button icon={<DeleteOutlined />} danger disabled={!draftExists}>
+              <Button icon={<DeleteOutlined />} danger disabled={!draftExists || !canWrite}>
                 丢弃草稿
               </Button>
             </Popconfirm>
@@ -409,17 +425,26 @@ const WorkflowDesigner: React.FC = () => {
             </Button>
             {draftExists && <Tag color="orange">草稿 rev {revision}</Tag>}
             {lossy && <Tag color="red">有损还原</Tag>}
+            {!canWrite && (
+              <Tooltip title="缺少 workflow:definitions:write，仅可查看 / 校验 / 试运行">
+                <Tag color="default">只读</Tag>
+              </Tooltip>
+            )}
           </Space>
           <Space>
             <Tooltip title="向主链或选中条件分支添加节点">
-              <Button icon={<PlusOutlined />} onClick={() => onAdd('approve')}>
+              <Button icon={<PlusOutlined />} onClick={() => onAdd('approve')} disabled={!canWrite}>
                 审批
               </Button>
             </Tooltip>
-            <Button icon={<PlusOutlined />} onClick={() => onAdd('cc')}>
+            <Button icon={<PlusOutlined />} onClick={() => onAdd('cc')} disabled={!canWrite}>
               抄送
             </Button>
-            <Button icon={<BranchesOutlined />} onClick={() => onAdd('condition')}>
+            <Button
+              icon={<BranchesOutlined />}
+              onClick={() => onAdd('condition')}
+              disabled={!canWrite}
+            >
               条件
             </Button>
           </Space>
@@ -494,6 +519,7 @@ const WorkflowDesigner: React.FC = () => {
                 onChange={(next) => setDoc((d) => (d ? updateStep(d, selectedStep.code, () => next) : d))}
                 onDelete={() => onDelete(selectedStep.code)}
                 violations={violationByNode.get(selectedStep.code) ?? []}
+                readOnly={!canWrite}
               />
             )}
             {violations.length > 0 && (
@@ -537,6 +563,7 @@ const WorkflowDesigner: React.FC = () => {
                   <Switch
                     checked={v.enabled}
                     size="small"
+                    disabled={!canWrite}
                     onChange={(on) => defKey && workflowDesignerApi.setEnabled(defKey, v.version, on).then(() => workflowDesignerApi.listVersions(defKey).then((r) => r.code === 200 && setVersions(r.data ?? [])))}
                   />
                 </Space>
@@ -599,9 +626,15 @@ const StepPropertyPanel: React.FC<{
   onChange: (next: Step) => void;
   onDelete: () => void;
   violations: Violation[];
-}> = ({ step, onChange, onDelete, violations }) => {
+  readOnly?: boolean;
+}> = ({ step, onChange, onDelete, violations, readOnly = false }) => {
   return (
-    <div>
+    // 只读模式用原生 <fieldset disabled> 一次性停用面板内全部表单控件（input / select / button），
+    // 不逐个传 disabled：属性面板里控件有二十多个，逐个传既易漏也让后续新增控件默认「忘了门禁」。
+    <fieldset
+      disabled={readOnly}
+      style={{ border: 0, padding: 0, margin: 0, minWidth: 0, opacity: readOnly ? 0.75 : 1 }}
+    >
       <Space style={{ justifyContent: 'space-between', width: '100%' }}>
         <Tag color={STEP_COLOR[step.kind]}>{step.kind}</Tag>
         <Button size="small" danger icon={<DeleteOutlined />} onClick={onDelete}>
@@ -659,7 +692,7 @@ const StepPropertyPanel: React.FC<{
           description={violations.map((v) => hintOf(v).suggestion ?? v.message).join('；')}
         />
       )}
-    </div>
+    </fieldset>
   );
 };
 

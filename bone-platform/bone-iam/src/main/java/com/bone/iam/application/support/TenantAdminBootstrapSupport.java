@@ -89,6 +89,12 @@ public class TenantAdminBootstrapSupport {
           "integration:connectors:read",
           "integration:connectors:write",
           "integration:executions:write",
+          // 工作流设计器（2026-10-27 授予）：wf_process_def 带 tenant_id ⇒ 流程定义是**租户自有资产**，
+          // 设计与发布本租户的审批流属租户日常运营（与 integration:flows:* 同类），故授予；
+          // 若某租户把「流程发布」按 SoD 拆成平台侧审批，应在宿主 WorkflowDesignerAuthorizer 里
+          // 对 PUBLISH/ENABLE 档位单独判权——码本身仍是租户域，不需要再拆平台码。
+          "workflow:definitions:read",
+          "workflow:definitions:write",
           "file:objects:write");
 
   private static final String INITIAL_PASSWORD_PREFIX = "Bone-";

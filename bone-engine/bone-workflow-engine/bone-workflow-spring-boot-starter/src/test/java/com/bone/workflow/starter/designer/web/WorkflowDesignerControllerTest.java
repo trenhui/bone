@@ -10,6 +10,9 @@ import com.bone.workflow.domain.WorkflowDefinitionValidator;
 import com.bone.workflow.domain.WorkflowSimulator;
 import com.bone.workflow.ports.spi.ApproverResolver;
 import com.bone.workflow.starter.designer.WorkflowDefinitionCommandService;
+import com.bone.workflow.starter.designer.WorkflowDesignerAccessDeniedException;
+import com.bone.workflow.starter.designer.WorkflowDesignerAction;
+import com.bone.workflow.starter.designer.WorkflowDesignerAuthorizer;
 import com.bone.workflow.starter.designer.WorkflowSimulationService;
 import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDraftSdkRepository;
@@ -46,6 +49,8 @@ class WorkflowDesignerControllerTest {
 
   private AnnotationConfigApplicationContext context;
   private MockMvc mockMvc;
+  private WorkflowDefinitionCommandService command;
+  private WorkflowSimulationService simulation;
 
   private static final String VALID_JSON =
       "{\"key\":\"expense_designer\",\"name\":\"费用报销（设计器）\",\"version\":1,\"engineSchemaVersion\":1,"
@@ -86,10 +91,17 @@ class WorkflowDesignerControllerTest {
             noopResolver,
             objectMapper);
 
-    mockMvc =
-        MockMvcBuilders.standaloneSetup(new WorkflowDesignerController(command, simulation))
-            .setControllerAdvice(new WorkflowDesignerExceptionAdvice())
-            .build();
+    this.command = command;
+    this.simulation = simulation;
+    mockMvc = buildMockMvc(WorkflowDesignerAuthorizer.allowAll());
+  }
+
+  /** 用指定授权实现装配一套 MockMvc（缺省 suite 用放行实现，鉴权用例另建一套）。 */
+  private MockMvc buildMockMvc(WorkflowDesignerAuthorizer authorizer) {
+    return MockMvcBuilders.standaloneSetup(
+            new WorkflowDesignerController(command, simulation, authorizer))
+        .setControllerAdvice(new WorkflowDesignerExceptionAdvice())
+        .build();
   }
 
   @AfterEach
@@ -296,6 +308,96 @@ class WorkflowDesignerControllerTest {
                         + ",\"sampleData\":{},\"initiatorId\":\"u1\",\"entityCode\":null,\"recordId\":null}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.path").isArray());
+  }
+
+  @Test
+  @DisplayName("授权实现拒绝发布：403 + data.action=PUBLISH（与 400/422 分开，前端据此提示找管理员）")
+  void publish_whenAuthorizerDenies_returns403() throws Exception {
+    MockMvc denying =
+        buildMockMvc(
+            (action, defKey, operatorId) -> {
+              if (action == WorkflowDesignerAction.PUBLISH) {
+                throw new WorkflowDesignerAccessDeniedException(action, defKey, operatorId);
+              }
+            });
+
+    denying
+        .perform(
+            post("/api/v1/workflow/definitions/{key}/draft", DEF_KEY)
+                .header("X-Operator-Id", "u1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(draftBody(VALID_JSON, null)))
+        .andExpect(status().isOk());
+
+    denying
+        .perform(
+            post("/api/v1/workflow/definitions/{key}/publish", DEF_KEY)
+                .header("X-Operator-Id", "u1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedRevision\":1}"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value(403))
+        .andExpect(jsonPath("$.data.action").value("PUBLISH"))
+        .andExpect(jsonPath("$.data.defKey").value(DEF_KEY));
+  }
+
+  @Test
+  @DisplayName("授权实现收到真实动作/目标 key/操作人：保存草稿对应 WRITE")
+  void saveDraft_passesActionKeyAndOperatorToAuthorizer() throws Exception {
+    java.util.concurrent.atomic.AtomicReference<String> seen =
+        new java.util.concurrent.atomic.AtomicReference<>();
+    MockMvc recording =
+        buildMockMvc(
+            (action, defKey, operatorId) -> seen.set(action + "|" + defKey + "|" + operatorId));
+
+    recording
+        .perform(
+            post("/api/v1/workflow/definitions/{key}/draft", DEF_KEY)
+                .header("X-Operator-Id", "u9")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(draftBody(VALID_JSON, null)))
+        .andExpect(status().isOk());
+
+    org.junit.jupiter.api.Assertions.assertEquals("WRITE|" + DEF_KEY + "|u9", seen.get());
+  }
+
+  @Test
+  @DisplayName("流程定义原文超长：400（在反序列化前按字符数拒绝，防 OOM）")
+  void validate_oversizedDefinition_returns400() throws Exception {
+    String oversize = "{\"key\":\"" + DEF_KEY + "\",\"pad\":\"" + "x".repeat(1 << 20) + "\"}";
+
+    mockMvc
+        .perform(
+            post("/api/v1/workflow/definitions/validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(oversize))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(400));
+  }
+
+  @Test
+  @DisplayName("流程定义原文为空：400（而不是把空串塞进校验器）")
+  void validate_blankDefinition_returns400() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/workflow/definitions/validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("   "))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(400));
+  }
+
+  @Test
+  @DisplayName("缺省授权实现 fail-closed：未接线时连读端点都 403，且文案给出接线办法")
+  void defaultAuthorizer_whenNotWired_deniesEvenRead() throws Exception {
+    MockMvc unwired = buildMockMvc(WorkflowDesignerAuthorizer.denyAll());
+
+    unwired
+        .perform(get("/api/v1/workflow/definitions"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value(403))
+        .andExpect(
+            jsonPath("$.message").value(org.hamcrest.Matchers.containsString("allow-anonymous")));
   }
 
   private static String draftBody(String definitionJson, Integer expectedRevision) {

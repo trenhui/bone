@@ -16,6 +16,7 @@ export const BonePermissionDomain = {
   GENERATOR: 'generator',
   FILE: 'file',
   ORDER: 'order',
+  WORKFLOW: 'workflow',
 } as const;
 
 /** As-Is：后端已引用或 JWT 种子已包含 */
@@ -53,6 +54,13 @@ export const BonePermissionCodes = {
   SYS_ALERT_WRITE: 'sys:alert:write',
   // 运维高危动作（部署/升级/重启/关停平台实例）。端点当前恒 501未实现，码已预登记。
   SYS_OPS_EXECUTE: 'sys:ops:execute',
+
+  // 工作流设计器（wf_process_def 带 tenant_id ⇒ 流程定义是**租户域资产**，租户管理员可设计自己的流程；
+  // 与 sys:* 平台域码不同，故用独立 workflow 域而不是挂在 system 下）。
+  // 读码覆盖 定义总览/草稿/版本/校验/试运行；写码覆盖 保存草稿/丢弃/发布/上下线，
+  // 后端由 WorkflowDesignerAuthorizer 按动作档位判权（发布与上下线可再拆，见设计文档 §11）。
+  WORKFLOW_DEFINITIONS_READ: 'workflow:definitions:read',
+  WORKFLOW_DEFINITIONS_WRITE: 'workflow:definitions:write',
 
   // 元数据（bone-metadata-server @PreAuthorize）
   METADATA_READ: 'metadata:read',
@@ -171,6 +179,8 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.SYS_ALERT_READ, name: 'SYS-告警查看', domain: 'system', maturity: 'As-Is' },
   { code: BonePermissionCodes.SYS_ALERT_WRITE, name: 'SYS-告警维护', domain: 'system', maturity: 'As-Is' },
   { code: BonePermissionCodes.SYS_OPS_EXECUTE, name: 'SYS-运维高危动作', domain: 'system', maturity: 'As-Is' },
+  { code: BonePermissionCodes.WORKFLOW_DEFINITIONS_READ, name: '工作流-定义查看（含校验/试运行）', domain: 'workflow', maturity: 'As-Is' },
+  { code: BonePermissionCodes.WORKFLOW_DEFINITIONS_WRITE, name: '工作流-定义维护（草稿/发布/上下线）', domain: 'workflow', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_READ, name: '元数据-读（deprecated 别名）', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_WRITE, name: '元数据-写（deprecated 别名）', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_MODEL_READ, name: '元数据-建模查看', domain: 'metadata', maturity: 'As-Is' },

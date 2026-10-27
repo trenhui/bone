@@ -96,6 +96,13 @@ public final class DefaultPermissionCodes {
         // 这四个动作一旦落地就直接操作运行中的实例，误调用会终止服务，爆炸半径大于其他所有写操作。
         // 门禁先在位，实现时不必再补 —— 避免"实现 PR 顺手加了端点却忘了授权"这个真实漏法。
         "sys:ops:execute",
+        // 工作流设计器（2026-10-27）：wf_process_def 带 tenant_id ⇒ 流程定义是租户域资产，
+        // 故用独立 workflow 域而不是挂在 sys: 平台域下。后端由 WorkflowDesignerAuthorizer 按
+        // 动作档位（READ/WRITE/PUBLISH/ENABLE）判权，缺省映射见设计文档 §11。
+        // 缺码后果：admin 回退路径没有这两枚码 ⇒ 侧边栏菜单按 permission 过滤时被剪掉、
+        // 设计器整体 403（与 commerce:channel-buyer:* 当年漏码同一失效模式）。
+        "workflow:definitions:read",
+        "workflow:definitions:write",
         // 主数据（G6 落地：3a 设计 §4.4 权限码全集）
         "masterdata:entities:read",
         "masterdata:entities:write",

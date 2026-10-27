@@ -18,6 +18,7 @@ import com.bone.workflow.ports.spi.WorkflowUnitOfWork;
 import com.bone.workflow.runtime.WorkflowEngineImpl;
 import com.bone.workflow.starter.adapter.PersistenceNotificationPort;
 import com.bone.workflow.starter.designer.WorkflowDefinitionCommandService;
+import com.bone.workflow.starter.designer.WorkflowDesignerAuthorizer;
 import com.bone.workflow.starter.designer.WorkflowSimulationService;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
@@ -27,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -111,6 +113,32 @@ public class WorkflowEngineAutoConfiguration {
       ApproverResolver approverResolver,
       ObjectMapper objectMapper) {
     return new WorkflowSimulationService(simulator, validator, approverResolver, objectMapper);
+  }
+
+  /**
+   * 设计器授权缺省实现：<b>fail-closed（一律拒绝，403）</b>。
+   *
+   * <p>放在这里而不是 web 自动装配里，是因为「谁能改流程定义」与「有没有 web 层」无关——纯领域库宿主也可能自己调命令服务， 端口本身应当始终可取用。
+   *
+   * <p>为什么缺省拒绝：本 starter 不掌握宿主的身份上下文（既不知道 JWT 语义，也不知道网关头的可信度），因此不知道该放谁进来。 此时「谁都不放」是唯一安全的默认——第一次调用就以
+   * 403 + 接线提示暴露「你还没接授权」，而不是安静地让任意调用方发布 / 下线 线上流程定义。这与平台既有的 ACL fail-closed 口径（{@code
+   * DenyDocAcl}）一致。
+   *
+   * <p>接线方式（任一）：
+   *
+   * <ul>
+   *   <li>提供自己的 {@link WorkflowDesignerAuthorizer} bean —— {@code @ConditionalOnMissingBean}
+   *       保证优先生效；
+   *   <li>本地联调显式认账：{@code bone.workflow.designer.allow-anonymous=true}（等价于 allowAll，<b>不要带到生产</b>）。
+   * </ul>
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowDesignerAuthorizer workflowDesignerAuthorizer(
+      @Value("${bone.workflow.designer.allow-anonymous:false}") boolean allowAnonymous) {
+    return allowAnonymous
+        ? WorkflowDesignerAuthorizer.allowAll()
+        : WorkflowDesignerAuthorizer.denyAll();
   }
 
   /**

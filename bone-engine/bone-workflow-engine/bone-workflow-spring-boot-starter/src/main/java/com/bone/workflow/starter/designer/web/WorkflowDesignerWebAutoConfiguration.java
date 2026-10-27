@@ -1,6 +1,7 @@
 package com.bone.workflow.starter.designer.web;
 
 import com.bone.workflow.starter.designer.WorkflowDefinitionCommandService;
+import com.bone.workflow.starter.designer.WorkflowDesignerAuthorizer;
 import com.bone.workflow.starter.designer.WorkflowSimulationService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -26,8 +27,10 @@ public class WorkflowDesignerWebAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public WorkflowDesignerController workflowDesignerController(
-      WorkflowDefinitionCommandService command, WorkflowSimulationService simulation) {
-    return new WorkflowDesignerController(command, simulation);
+      WorkflowDefinitionCommandService command,
+      WorkflowSimulationService simulation,
+      WorkflowDesignerAuthorizer authorizer) {
+    return new WorkflowDesignerController(command, simulation, authorizer);
   }
 
   @Bean

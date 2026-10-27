@@ -378,7 +378,14 @@ VALUES
     (88, 'sys:ops:execute', 'SYS-运维高危动作', 'system', 'ops', 'execute', 'OPERATION', 495,
      '部署/升级/重启/关停平台实例（SystemController 运维端点；当前恒501 未实现，**预挂门禁**以防实现时漏授权；'
      '误调用直接终止运行中的服务，爆炸半径最大，只授超管不授租户管理员'),
-    (84, 'sys:alert:write', 'SYS-告警维护', 'system', 'alert', 'write', 'OPERATION', 491, '告警规则维护/事件上报/标记解决');
+    (84, 'sys:alert:write', 'SYS-告警维护', 'system', 'alert', 'write', 'OPERATION', 491, '告警规则维护/事件上报/标记解决'),
+    -- ===== 2026-10-27 工作流设计器 =====
+    -- id 避开 0059 已占用的 114-119（理赔域），否则增量脚本会撞主键。
+    -- wf_process_def 带 tenant_id ⇒ 流程定义是租户域资产，故用独立 workflow 域，不挂 sys:（平台域）。
+    (120, 'workflow:definitions:read', '工作流-定义查看', 'workflow', 'definitions', 'read', 'OPERATION', 760,
+     '定义总览/草稿/版本/校验/试运行（WorkflowDesignerController 读端点；后端由 WorkflowDesignerAuthorizer 判权）'),
+    (121, 'workflow:definitions:write', '工作流-定义维护', 'workflow', 'definitions', 'write', 'OPERATION', 770,
+     '保存草稿/丢弃/发布/上下线（写路径审计列 X-Operator-Id 必填；发布 fail-closed）');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
@@ -412,6 +419,13 @@ VALUES (92, 1, 71), (93, 1, 72), (94, 1, 73), (95, 1, 74), (96, 1, 75), (97, 1, 
        -- 88 = sys:ops:execute（部署/升级/重启/关停）：爆炸半径最大，只授超管。
        -- **不绑租户管理员**（与 71/77-81 同理，理由见 TenantAdminBootstrapSupport javadoc）。
        (112, 1, 88);
+
+-- ===== 2026-10-27 工作流设计器两码的角色绑定 =====
+-- 超管（role 1）与租户管理员（role 3）都绑：流程定义是租户域资产（wf_process_def.tenant_id），
+-- 租户管理员应当能设计本租户的审批流；与 TenantAdminBootstrapSupport.TENANT_ADMIN_PERMISSION_CODES 严格一致。
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES (316, 1, 120), (317, 1, 121),
+       (318, 3, 120), (319, 3, 121);
 
 -- 租户管理员（role 3）：与 TenantAdminBootstrapSupport.TENANT_ADMIN_PERMISSION_CODES 严格一致。
 -- 授予 72-76（集成：租户自有资产，运营必需）+ 82（文件上传：附件/头像功能依赖）。

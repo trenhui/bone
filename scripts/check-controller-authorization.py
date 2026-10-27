@@ -89,6 +89,12 @@ EXEMPT: dict[str, str] = {
 #
 # 键随路径解析变化而失效（届时会以「新增/未登记」红灯暴露），这是刻意的：
 # 豁免失效必须以门禁失败的形式暴露，不能静默生效。
+_DESIGNER_AUTH_REASON = (
+    "库内控制器（bone-workflow-spring-boot-starter 不依赖 Spring Security）："
+    "每个端点方法首行调用 WorkflowDesignerAuthorizer SPI 判权（READ/WRITE/PUBLISH/ENABLE 四档），"
+    "拒绝即 403；缺省实现 fail-closed（denyAll），宿主不接线则整体 403 并提示接线方式"
+)
+
 EXEMPT_METHODS: dict[str, str] = {
     # 数据面上报通道：业务进程（bone-extension-sdk StudioExecutionLogReporter）以**进程身份**
     # 异步上报，不持有终端用户 JWT，SecurityConfig 对这两个路径显式 permitAll。
@@ -107,6 +113,26 @@ EXEMPT_METHODS: dict[str, str] = {
     "MeController.java#PUT:": "自助端点：主体取自 JWT（CurrentPrincipalPort），accountId 不可由入参指定；"
     "挂码会把「改自己的资料」变成需额外授权",
     "MeController.java#POST:/change-password": "同上：主体取自 JWT 的账号自助改密（旧密码校验在服务层）",
+    # 工作流设计器 REST 层：控制器住在 bone-workflow-spring-boot-starter 里，是**库代码**，
+    # 不能依赖 Spring Security（该 starter 的 web 层是 @ConditionalOnClass 条件装配，宿主可能
+    # 根本没有 security 栈；写死 @PreAuthorize 会让无 security 的宿主出现「注解在、判定不生效」
+    # 的假安全感）。授权改由 WorkflowDesignerAuthorizer SPI 在**每个端点方法第一行**前置执行，
+    # 拒绝即 403 —— 覆盖面与 @PreAuthorize 等价，只是拦在方法体内而不是靠 AOP。
+    # 缺省实现 fail-closed（denyAll）：宿主不接 SPI 时设计器整体 403 并给出接线提示，
+    # 本地联调需显式 bone.workflow.designer.allow-anonymous=true 才放行 —— 不存在「静默裸奔」。
+    # 逐条列出（不用 `POST:` 通配）：本门禁的空路径键表示「该 verb 无路径」，不是通配，
+    # 写成通配会被判为「豁免键失效」——这也逼着新增端点时重新确认一次它的授权档位。
+    **{
+        f"WorkflowDesignerController.java#{v}:{p}": _DESIGNER_AUTH_REASON
+        for v, p in (
+            ("POST", "/validate"),
+            ("POST", "/simulate"),
+            ("POST", "/{key}/draft"),
+            ("DELETE", "/{key}/draft"),
+            ("POST", "/{key}/publish"),
+            ("POST", "/{key}/enabled"),
+        )
+    },
 }
 
 WRITE_VERBS = {"Post", "Put", "Patch", "Delete"}
