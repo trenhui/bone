@@ -7,9 +7,11 @@ import com.bone.ai.gateway.domain.LlmResponse;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
+import com.bone.claim.domain.security.RejectReasonCodes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -52,8 +54,11 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
             List.of(
                 LlmMessage.system(
                     "你是保险理赔医学评估助手。仅依据给定案件事实判断是否需要拒赔建议，"
-                        + "并以严格 JSON 输出，字段：rejectSuggested(boolean)、confidence(number,0~1)。"
-                        + "不要输出任何解释文本。"),
+                        + "并以严格 JSON 输出，字段：rejectSuggested(boolean)、confidence(number,0~1)、"
+                        + "rejectReasons(array of string，仅当 rejectSuggested=true 时给出，最多3个，"
+                        + "取值严格限定于 [EVIDENCE_INSUFFICIENT, CLINICAL_UNREASONABLE, POLICY_EXCLUSION,"
+                        + " AMOUNT_MISMATCH, FRAUD_SUSPECTED, OTHER]；不在清单内的码一律不得输出)。"
+                        + "不要输出任何解释性自由文本；rejectReasons 只取上述枚举码，禁止臆造。"),
                 LlmMessage.user(prompt)),
             null,
             null,
@@ -80,10 +85,23 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       if (confidence.compareTo(BigDecimal.ZERO) < 0 || confidence.compareTo(BigDecimal.ONE) > 0) {
         confidence = new BigDecimal("0.5");
       }
-      return new AiAssessment(true, reject, confidence);
+      // 仅当建议拒赔时解析原因码，并经白名单归一化（未知码丢弃、空则兜底 OTHER）—— 保证"拒赔必有可解释原因"
+      List<String> reasons =
+          reject ? normalizeRejectReasons(node.path("rejectReasons")) : List.of();
+      return new AiAssessment(true, reject, confidence, reasons);
     } catch (Exception ex) {
       throw new AiGatewayUnavailableException("AI 结构化结论解析失败，降级纯规则路径: " + ex.getMessage(), ex);
     }
+  }
+
+  /** 从模型输出抽取拒赔原因码并白名单归一化（见 {@link RejectReasonCodes}）。 */
+  private List<String> normalizeRejectReasons(JsonNode raw) {
+    if (raw == null || !raw.isArray()) {
+      return RejectReasonCodes.normalize(null);
+    }
+    List<Object> values = new ArrayList<>();
+    raw.forEach(v -> values.add(v.isTextual() ? v.asText() : v.toString()));
+    return RejectReasonCodes.normalize(values);
   }
 
   private String buildPrompt(ClaimContextPort.ClaimContextView ctx) {

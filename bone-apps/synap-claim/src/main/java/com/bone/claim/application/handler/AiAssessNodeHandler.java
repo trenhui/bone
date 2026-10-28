@@ -10,6 +10,7 @@ import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -54,8 +55,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
 
     boolean rejectSuggested;
     BigDecimal confidence;
+    AiGatewayPort.AiAssessment a = null;
     try {
-      AiGatewayPort.AiAssessment a = aiGatewayPort.assess(v);
+      a = aiGatewayPort.assess(v);
       rejectSuggested = a.rejectSuggested() || !knowledgeConfirmed;
       confidence = a.confidence();
     } catch (AiGatewayUnavailableException ex) {
@@ -72,6 +74,8 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
 
     Map<String, Object> out = new LinkedHashMap<>();
     out.put("rejectSuggested", rejectSuggested);
+    // 结构化拒赔原因码随轨迹落库（可解释性 / 审计 / 申诉）：不利决定须可解释，自由文本理由已在前置层禁用
+    out.put("rejectReasons", a == null ? List.of() : a.rejectReasons());
     if (rejectSuggested) {
       notificationPort.alert("WARN", "AI_RISK", v, out);
     }

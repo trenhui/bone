@@ -92,6 +92,63 @@ class AiGatewayPortAdapterTest {
         .isInstanceOf(AiGatewayUnavailableException.class);
   }
 
+  @Test
+  void parsesWhitelistedRejectReasonsInOrder() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":true,\"confidence\":0.9,"
+                + "\"rejectReasons\":[\"FRAUD_SUSPECTED\",\"CLINICAL_UNREASONABLE\",\"EVIDENCE_INSUFFICIENT\"]}");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.rejectSuggested()).isTrue();
+    assertThat(a.rejectReasons())
+        .containsExactly("FRAUD_SUSPECTED", "CLINICAL_UNREASONABLE", "EVIDENCE_INSUFFICIENT");
+  }
+
+  @Test
+  void dropsUnknownRejectReasonsAndCapsAtMax() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":true,\"confidence\":0.9,"
+                + "\"rejectReasons\":[\"FRAUD_SUSPECTED\",\"MADE_UP_REASON\",\"POLICY_EXCLUSION\","
+                + "\"AMOUNT_MISMATCH\",\"EXTRA\"]}");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    // 未知码丢弃；保留白名单码且截断至最多 3 个
+    assertThat(a.rejectReasons())
+        .containsExactly("FRAUD_SUSPECTED", "POLICY_EXCLUSION", "AMOUNT_MISMATCH");
+  }
+
+  @Test
+  void missingRejectReasonsFallsBackToOther() {
+    RecordingLlmClient client =
+        new RecordingLlmClient("{\"rejectSuggested\":true,\"confidence\":0.9}");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.rejectSuggested()).isTrue();
+    // 建议拒赔但无原因码 → 兜底 OTHER，保证"拒赔必有可解释原因"
+    assertThat(a.rejectReasons()).containsExactly("OTHER");
+  }
+
+  @Test
+  void noRejectMeansEmptyReasons() {
+    RecordingLlmClient client =
+        new RecordingLlmClient(
+            "{\"rejectSuggested\":false,\"confidence\":0.9,\"rejectReasons\":[\"FRAUD_SUSPECTED\"]}");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.rejectSuggested()).isFalse();
+    assertThat(a.rejectReasons()).isEmpty();
+  }
+
   private static LlmGatewayApplicationService gatewayWith(
       LlmClient client, LlmGatewayPolicies policies) {
     DomainEventPublisher publisher = Mockito.mock(DomainEventPublisher.class);
