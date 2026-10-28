@@ -54,6 +54,11 @@ public final class EngineFlags {
     public boolean thirdPartyPaidByCategory = false;   // #1 第三方已付按费用类别归因（社保内优先核销）
     public boolean annualLimitProportional   = false;  // #2 年度限额按比例摊薄（替代先到先得顺序截断）
     public boolean multiPolicyIso834         = false;  // #3 多保单 ISO 834 比例/等额分摊
+    /** #3 多保单分摊方法：PROPORTIONAL=按保额比例（默认）/ EQUAL=等额。ISO 834 两种标准方法。 */
+    public MultiPolicyMode multiPolicyIso834Mode = MultiPolicyMode.PROPORTIONAL;
+
+    /** #3 多保单 ISO 834 分摊方法（行业标准的两种口径）。 */
+    public enum MultiPolicyMode { PROPORTIONAL, EQUAL }
 
     public static EngineFlags allOn() { return new EngineFlags(); }
 
@@ -83,6 +88,7 @@ public final class EngineFlags {
         f.thirdPartyPaidByCategory = thirdPartyPaidByCategory;
         f.annualLimitProportional = annualLimitProportional;
         f.multiPolicyIso834 = multiPolicyIso834;
+        f.multiPolicyIso834Mode = multiPolicyIso834Mode;
         return f;
     }
 }

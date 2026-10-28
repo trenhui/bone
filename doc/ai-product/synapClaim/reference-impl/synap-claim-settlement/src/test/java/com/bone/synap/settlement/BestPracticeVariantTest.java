@@ -122,6 +122,29 @@ public class BestPracticeVariantTest {
         assertEquals(0, Money.of(600).cmp(onC.netPayout), "变体：多保单 ISO834 折算 60% = 600");
     }
 
+    // ---- #3 多保单 ISO 834 等额分摊（方法二） ----
+    @Test
+    void multiPolicyIso834_equalMode_splitsFiftyFifty() {
+        Map<String, FormulaSnapshot.FeeConfig> m = new LinkedHashMap<>();
+        m.put("X", new FormulaSnapshot.FeeConfig("X", Money.of(100), BIG, Money.ZERO, Money.ZERO, null));
+        FormulaSnapshot snap = reimb(m);
+
+        Map<String, Money> f = new LinkedHashMap<>();
+        f.put("X", Money.of(1000));
+
+        List<ClaimContext.PolicyShare> shares = List.of(
+                new ClaimContext.PolicyShare("POL", Money.of(60000)),
+                new ClaimContext.PolicyShare("POL2", Money.of(40000)));
+
+        // 等值分摊：两保单各 50%（与保额无关），本保单 net = 500（比例模式曾为 600）
+        EngineFlags on = flags(); on.multiPolicyIso834 = true;
+        on.multiPolicyIso834Mode = EngineFlags.MultiPolicyMode.EQUAL;
+        ClaimContext ctx = new ClaimContext("C3", "T1", "P1", "POL", "2026", f, BIG, Money.ZERO, Money.ZERO,
+                List.of(), List.of(), Money.ZERO, false, shares);
+        IndemnityCalculation c = engine(on).settle(ctx, snap);
+        assertEquals(0, Money.of(500).cmp(c.netPayout), "等值分摊：两保单各 50% = 500（与保额无关）");
+    }
+
     private static Money linePayout(IndemnityCalculation c, String feeType) {
         for (var l : c.lines) if (l.feeType.equals(feeType)) return l.feePayout;
         return Money.ZERO;

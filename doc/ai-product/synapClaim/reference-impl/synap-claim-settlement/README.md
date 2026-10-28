@@ -39,7 +39,7 @@ mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
 - `ConcurrencyLockSeamTest`       —— **2 个接缝测试**证明并发锁是**可插拔端口**而非写死：注入的计数锁确被引擎调用（非 no-op）、同 key 严格串行（maxConcurrent==1）、且切换注入实例即生效（集群可换 Redis/DB 租约实现）。
 - `JdbcPortsMySqlCompatTest`      —— **在 H2 `MODE=MySQL` 下真实执行** `SqlDialect.mysql()` 生成的全部生产 SQL（upsertCalc / upsertLedger / ensureAccumRow 的 `ON DUPLICATE KEY UPDATE` 形式）：跨案累计落库 + 幂等重算更新 + 冲正归零。补 `SqlDialectTest` 只断言文本不执行的缺口，证明"切换方言即上线 MySQL"非空话。
 - `OutboxRelayTest`              —— **3 个测试**验证事务发件箱中继发件箱：健康投递置 `published=1` / 连续失败进入死信表（绝不静默丢失）/ 已投递不重投（at-least-once 幂等）。
-- `BestPracticeVariantTest`      —— **3 个测试**验证 README 已知限制 #1–#3 的行业最佳实践变体：默认关闭 = 现行语义零回归；开启 = 社保内优先核销 / 年度限额按比例摊薄 / 多保单 ISO 834 折算。每条同时断言两种结果，防假绿。
+- `BestPracticeVariantTest`      —— **4 个测试**验证 README 已知限制 #1–#3 的行业最佳实践变体：默认关闭 = 现行语义零回归；开启 = 社保内优先核销 / 年度限额按比例摊薄 / 多保单 ISO 834 折算（比例与**等额**两种标准方法）。每条同时断言两种结果，防假绿。
 
 ### 方式二：单文件直跑（无 Maven，快速验证算法与护栏）
 ```bash
@@ -191,6 +191,6 @@ src/test/java/...               SettlementEngineProbeTest / ScenarioSuiteTest / 
 ## 已知限制（诚实披露，未做）
 1. **第三方已付按费用类别归因**：已在 `EngineFlags.thirdPartyPaidByCategory` 实现**最佳实践变体**（社保内 `FeeConfig.socialInsuranceCovered` 费用优先核销第三方已付，余量溢出社保外），但**默认关闭 = 现行比例分摊语义（零回归）**。精确口径（社保内/外界定、溢出顺序）仍建议条款确认后开启。
 2. **年度限额按比例摊薄**：已在 `EngineFlags.annualLimitProportional` 实现**最佳实践变体**（年度限额池按各费用行可赔额比例摊薄，替代先到先得顺序截断），但**默认关闭 = 现行行序优先语义（零回归）**。跨案年度限额的"按比例摊薄"属年末批处理范畴，本单案引擎变体仅解决同案多费用行的公平分摊；全账期跨案比例摊薄仍建议条款确认 + 年末批处理另开。
-3. **S13 多保单 ISO 834 分摊**：已在 `EngineFlags.multiPolicyIso834` + `ClaimContext.policyShares`（保额清单）+ `Iso834`（`proportional`/`equal` 纯函数）实现**最佳实践变体**（本保单仅承担「本保单保额 / 全部涉事保额」份额），但**默认关闭 = 现行单保单独立理算语义（零回归）**。真实多保单协调（单案跨多保单拆分结算）属编排层范畴，本变体提供可复用的分摊算法与折算钩子，完整协调流程仍建议产品确认后另开。
+3. **S13 多保单 ISO 834 分摊**：已在 `EngineFlags.multiPolicyIso834` + `ClaimContext.policyShares`（保额清单）+ `Iso834`（`proportional`/`equal` 纯函数）实现**最佳实践变体**（ISO 834 两种标准方法皆支持：`multiPolicyIso834Mode=PROPORTIONAL` 默认按保额比例；`=EQUAL` 等额分摊），但**默认关闭 = 现行单保单独立理算语义（零回归）**。真实多保单协调（单案跨多保单拆分结算）属编排层范畴，本变体提供可复用的分摊算法与折算钩子，完整协调流程仍建议产品确认后另开。
 4. 本模块已用 **H2 集成测试**验证 JDBC 持久化路径（CAS/冲正/预授权/TTL/幂等），但仍为内存库；生产接入 MySQL **仅需切换 `SqlDialect`**（H2 `MERGE...KEY` / MySQL `ON DUPLICATE KEY UPDATE`，由 `SqlDialect.auto(ds)` 按元数据自动识别，端口代码零改动）。`SqlDialectTest` 守住两方言 SQL 文本正确性，`JdbcPortsMySqlCompatTest` 进一步在 H2 `MODE=MySQL` 下**真实执行** MySQL 方言 SQL（upsert / 占位 no-op / 累计更新），证明"切换方言即上线 MySQL"非空话。真实 MySQL 实例回归仍建议生产接入时补一轮。
 5. 已用 **H2 内存库**补齐并发证据：`SettlementConcurrencyStressTest`（40/24 线程共享限额、重复提交、冲正交叉）与 `ConcurrencyLockSeamTest`（锁可插拔、同 key 串行）全绿；**分布式锁参考实现 `DbLeaseConcurrencyLock` 已提供并测试通过**——`DbLeaseConcurrencyLockTest`（跨实例同 key 互斥 + 超时 fail-fast）+ `DbLeaseConcurrencyLockStressTest`（两引擎实例共享同一 H2 库、40 线程猛攻同一保单，跨实例零超赔 / 零丢失更新 / 零乐观锁冲突，锁失效即 fail-closed 转红），把分布式锁从「接缝级」证据补到「负载级」。真实 MySQL 并发压测仍建议生产接入时补一轮（验证行锁 / 隔离级别与租约表并发），但核心可插拔契约已闭环。

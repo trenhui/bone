@@ -328,7 +328,7 @@ public final class SettlementEngine {
         // #3 最佳实践变体（multiPolicyIso834）：多保单协调——总责任额算出后，本保单仅承担
         // 「本保单保额 / 全部涉事保额」的 ISO 834 比例份额（或等额分摊）。默认关闭 = 现行单保单语义（零回归）。
         if (flags.multiPolicyIso834 && ctx.policyShares != null && !ctx.policyShares.isEmpty()) {
-            Money mpShare = multiPolicyShareOf(ctx);
+            Money mpShare = multiPolicyShareOf(ctx, flags.multiPolicyIso834Mode);
             if (mpShare != null) {
                 Money f = mpShare.ratio();
                 r.net = r.net.multiply(f);
@@ -606,8 +606,9 @@ public final class SettlementEngine {
         return shares;
     }
 
-    /** #3 变体：返回本保单在「多保单涉事清单」中的 ISO 834 比例份额（百分比 Money），未命中返回 null。 */
-    private static Money multiPolicyShareOf(ClaimContext ctx) {
+    /** #3 变体：返回本保单在「多保单涉事清单」中的 ISO 834 份额（百分比 Money），未命中返回 null。
+     *  mode=PROPORTIONAL：按保额比例（默认）；mode=EQUAL：等额分摊。两者均为 ISO 834 标准方法。 */
+    private static Money multiPolicyShareOf(ClaimContext ctx, EngineFlags.MultiPolicyMode mode) {
         if (ctx.policyShares == null || ctx.policyShares.isEmpty()) return null;
         List<Money> sums = new ArrayList<>();
         int idx = -1;
@@ -616,7 +617,10 @@ public final class SettlementEngine {
             if (ctx.policyShares.get(i).policyId.equals(ctx.policyId)) idx = i;
         }
         if (idx < 0) return null;
-        return Iso834.proportional(sums).get(idx);
+        List<Money> shares = (mode == EngineFlags.MultiPolicyMode.EQUAL)
+                ? Iso834.equal(ctx.policyShares.size())
+                : Iso834.proportional(sums);
+        return shares.get(idx);
     }
 
     private String buildExplain(ClaimContext ctx, List<AdjustmentLine> lines,
