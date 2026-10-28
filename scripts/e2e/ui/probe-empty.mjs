@@ -1,8 +1,8 @@
 // 针对「UI 判 EMPTY」的页面做归因：到底是接口没数据，还是接口有数据 UI 没渲染。
 // 判据：抓该页所有 >=200 的 XHR 响应体 + 页面 .ant-empty 文案 + 首行文本。
-// 用法：NODE=... node scripts/e2e/ui/probe-empty.cjs
+// 用法：NODE=... node scripts/e2e/ui/probe-empty.mjs
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const TARGETS = [

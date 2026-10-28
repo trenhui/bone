@@ -66,8 +66,15 @@ def main():
     token = http.login()
     failures = []
 
+    def must(ok, key):
+        """判据收口：非 2xx 即记失败（key 与原 failures 取值逐字一致），返回是否通过。"""
+        if not ok:
+            failures.append(key)
+        return ok
+
     print("== 1. 建流程（带 START / LOG / END 三个节点）==")
-    payload = {
+    # 流程主体（名称/描述/节点）只定义一次：建流程与补连线共用，连线差异走 connections
+    flow_spec = {
         "name": f"E2ECHAIN{STAMP}",
         "description": f"E2E 执行链自测 {STAMP}",
         "nodes": [
@@ -75,9 +82,9 @@ def main():
             {"name": "打日志", "type": "LOG", "config": {"message": "hello"}, "positionX": 300, "positionY": 100},
             {"name": "结束", "type": "END", "config": {}, "positionX": 500, "positionY": 100},
         ],
-        "connections": [],
     }
-    code, res = req(token, "POST", "/api/v1/integration/flows", payload, label="create")
+    code, res = req(token, "POST", "/api/v1/integration/flows",
+                    dict(flow_spec, connections=[]), label="create")
     if not code.startswith("2"):
         return 2
     flow_id = res["data"]
@@ -93,33 +100,21 @@ def main():
     print(f"     节点 id: {node_ids}")
 
     print("== 3. 补连线（START→LOG→END）==")
-    upd = {
-        "name": f"E2ECHAIN{STAMP}",
-        "description": f"E2E 执行链自测 {STAMP}",
-        "nodes": [
-            {"name": "开始", "type": "START", "config": {}, "positionX": 100, "positionY": 100},
-            {"name": "打日志", "type": "LOG", "config": {"message": "hello"}, "positionX": 300, "positionY": 100},
-            {"name": "结束", "type": "END", "config": {}, "positionX": 500, "positionY": 100},
-        ],
-        "connections": [
-            {"sourceNodeId": int(node_ids[0]), "targetNodeId": int(node_ids[1]), "condition": None},
-            {"sourceNodeId": int(node_ids[1]), "targetNodeId": int(node_ids[2]), "condition": None},
-        ],
-    }
+    upd = dict(flow_spec, connections=[
+        {"sourceNodeId": int(node_ids[0]), "targetNodeId": int(node_ids[1]), "condition": None},
+        {"sourceNodeId": int(node_ids[1]), "targetNodeId": int(node_ids[2]), "condition": None},
+    ])
     code, _ = req(token, "PUT", f"/api/v1/integration/flows/{flow_id}", upd, label="connect")
-    if not code.startswith("2"):
-        failures.append("connect")
+    must(code.startswith("2"), "connect")
 
     print("== 4. 激活 ==")
     code, _ = req(token, "POST", f"/api/v1/integration/flows/{flow_id}/activate", label="activate")
-    if not code.startswith("2"):
-        failures.append("activate")
+    must(code.startswith("2"), "activate")
 
     print("== 5. 执行（test 端点，带 inputData）==")
     code, res = req(token, "POST", f"/api/v1/integration/flows/{flow_id}/test",
                     {"inputData": {"hello": "world"}}, label="execute")
-    if not code.startswith("2"):
-        failures.append("execute")
+    if not must(code.startswith("2"), "execute"):
         return dump(flow_id, failures)
     exec_id = res["data"]
     print(f"     executionId={exec_id}")
@@ -134,13 +129,11 @@ def main():
         ("流程列表", "GET", "/api/v1/integration/flows?page=1&size=3"),
     ]:
         code, res = req(token, method, path, label=label)
-        if not code.startswith("2"):
-            failures.append(path)
+        must(code.startswith("2"), path)
 
     print("== 7. 失败重试（retry）==")
     code, res = req(token, "POST", f"/api/v1/integration/executions/{exec_id}/retry", label="retry")
-    if not code.startswith("2"):
-        failures.append("retry")
+    must(code.startswith("2"), "retry")
 
     return dump(flow_id, failures)
 

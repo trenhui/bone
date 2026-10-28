@@ -2,10 +2,11 @@
 // 目的：v4 已证 44 菜单导航正常、零失败请求；但那只覆盖"读"。
 // 本轮覆盖"写"：每个带新增/编辑按钮的页面，点开弹窗→ 填表→ 提交 → 断言结果。
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+import { mkdirSync } from 'node:fs';
+import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
-require('fs').mkdirSync(OUT, { recursive: true });
+mkdirSync(OUT, { recursive: true });
 
 // 只对「有新增按钮且有后端写入接口」的模块做写操作；payment 回调是故意不做前端模拟的
 // 按钮名从运行时采集而来（bone-btns.cjs），各页命名不统一：新增账号/新增角色/创建规则/新建连接器…

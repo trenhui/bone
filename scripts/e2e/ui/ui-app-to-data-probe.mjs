@@ -15,7 +15,7 @@
  *
  * 前置：先跑 scripts/e2e/app-to-data-full-chain-e2e.py（生成 /tmp/bone_e2e_fullchain_state.json）。
  *
- * 用法：node scripts/e2e/ui-app-to-data-probe.mjs
+ * 用法：node scripts/e2e/ui/ui-app-to-data-probe.mjs
  * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
 import fs from 'node:fs';
@@ -24,18 +24,27 @@ import {
   UI_BASE as BASE,
   SHOT_DIR,
   stamp,
-  USER,
-  PWD,
   loadPlaywright,
   api,
   login,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
+/* 共享 UI 交互层：浏览器登录/截图/就绪判定（禁止在探针内重抄登录选择器，见 e2e_lib/ui.cjs） */
+import { uiLogin } from '../e2e_lib/ui.cjs';
+/* 生产化测试数据：巡检人/日期/设备名与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
+import { dataset, EQUIPMENT } from '../e2e_lib/fixtures.cjs';
 const { chromium } = loadPlaywright();
 
 const STATE = JSON.parse(fs.readFileSync('/tmp/bone_e2e_fullchain_state.json', 'utf8'));
 const STAMP = stamp(6);
 const EQ_NO = `UI-EQ-${STAMP}`;
+// 生产化测试数据（口径真源 e2e_lib/fixtures.py）：每个值只生成一次存变量，
+// 表单录入与断言比对共用同一变量（README §3 铁律——两处各抽一次 rng 必然对不上）
+const ds = dataset(STAMP);
+// 设备名称与表单「设备类型=数控机床」同源：取词表 CNC（数控加工中心）词条，+ 运行后缀可检索
+const EQ_NAME = `${EQUIPMENT.find((e) => e[1] === 'CNC')[2]} ${STAMP}`;
+const INSP_DATE = ds.days_ago(11); // 巡检日期：运行日倒推（数据老化，不再写死）
+const INSPECTOR = ds.person(); // 巡检人：受控词表人名（不用「界面测试员」随手名）
 
 const { results, check } = makeChecker();
 const shot = async (n) => {
@@ -95,29 +104,6 @@ async function gotoSubapp(hashPath, expectText) {
   return txt;
 }
 
-async function uiLogin() {
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) {
-    await page.locator(userSel).first().fill(USER);
-  }
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1200);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  try {
-    await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** 关闭新人引导遮罩（首屏 .tour-card 吞点击） */
 async function dismissTour() {
   const skip = page.locator('button, a').filter({ hasText: '跳过引导' }).first();
@@ -170,7 +156,7 @@ async function clickOuterTab(key, label) {
 
 /* ================= 主流程 ================= */
 try {
-  check('UI 登录成功', await uiLogin(), `url=${page.url()}`);
+  check('UI 登录成功', await uiLogin(page), `url=${page.url()}`);
   const token = await login();
 
   /* ① 应用管理（IAM）：API 新建的应用在管理页可见 */
@@ -262,10 +248,10 @@ try {
   await page.waitForTimeout(800);
 
   await fillFormItem(createModal, '设备编号', 'text', EQ_NO);
-  await fillFormItem(createModal, '设备名称', 'text', `界面录入测试机 ${STAMP}`);
+  await fillFormItem(createModal, '设备名称', 'text', EQ_NAME);
   await fillFormItem(createModal, '设备类型', 'select', '数控机床');
-  await fillFormItem(createModal, '巡检日期', 'date', '2026-10-17');
-  await fillFormItem(createModal, '巡检人', 'text', '界面测试员');
+  await fillFormItem(createModal, '巡检日期', 'date', INSP_DATE);
+  await fillFormItem(createModal, '巡检人', 'text', INSPECTOR);
   await fillFormItem(createModal, '巡检结果', 'select', '正常');
   await fillFormItem(createModal, '巡检工时', 'number', '45');
   await fillFormItem(createModal, '异常描述', 'textarea', '端到端验证：经界面设计器协议表单录入');
@@ -309,8 +295,8 @@ try {
   await page.waitForTimeout(1500);
   const drawerText = await page.locator('.ant-drawer:not(.ant-drawer-hidden)').last().innerText().catch(() => '');
   check('⑧ 详情抽屉回看：录入值一致（编号/名称/巡检人/结果）',
-    drawerText.includes(EQ_NO) && drawerText.includes(`界面录入测试机 ${STAMP}`)
-    && drawerText.includes('界面测试员') && drawerText.includes('正常'),
+    drawerText.includes(EQ_NO) && drawerText.includes(EQ_NAME)
+    && drawerText.includes(INSPECTOR) && drawerText.includes('正常'),
     drawerText.slice(0, 300));
   await shot('8_detail_drawer');
   await page.keyboard.press('Escape').catch(() => {});
@@ -332,8 +318,8 @@ try {
   const hit = rows.find((x) => x.equipment_no === EQ_NO);
   check('⑧ API 交叉核验：界面录入记录存在于后端', !!hit, `rows=${rows.length}`);
   check('⑧ API 交叉核验：8 个字段值与界面录入逐一一致',
-    !!hit && hit.equipment_name === `界面录入测试机 ${STAMP}` && hit.equipment_type === 'cnc'
-    && String(hit.inspection_date).slice(0, 10) === '2026-10-17' && hit.inspector === '界面测试员'
+    !!hit && hit.equipment_name === EQ_NAME && hit.equipment_type === 'cnc'
+    && String(hit.inspection_date).slice(0, 10) === INSP_DATE && hit.inspector === INSPECTOR
     && hit.inspection_result === 'normal' && hit.abnormal_desc === '端到端验证：经界面设计器协议表单录入'
     && String(hit.duration_minutes) === '45',
     hit ? JSON.stringify(hit) : 'record not found');

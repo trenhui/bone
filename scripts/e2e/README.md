@@ -17,12 +17,15 @@ scripts/e2e/
 │   ├── teardown.py     运行级残留自动回收（register/clean）
 │   ├── mysql.py        第二证据源直查（query，防「接口 200 但没落库」）
 │   ├── sign.py         渠道回调 hmac 签名
-│   └── client.cjs      Node 侧同源常量与登录（.mjs/.cjs 探针共用；含 registerCleanup/runCleanup 对称 Python teardown）
+│   ├── chain_runner.py 链路通用执行器（run_steps：步骤声明 → 发请求/取变量/落断言/传下一步；见 §8）
+│   ├── client.cjs      Node 侧同源常量与登录（Node 探针共用；含 registerCleanup/runCleanup 对称 Python teardown）
+│   ├── fixtures.cjs    Node 侧生产化测试数据（口径对齐 fixtures.py，见 §3）
+│   └── ui.cjs          共享 UI 交互层（uiLogin/shot/waitAppReady；禁止在探针内重抄登录选择器）
 ├── *-full-chain-e2e.py 全链路用例（Python，断言制）
 ├── *-sweep.py / chains.py / multichannel*.py / channel_*  联调扫描与渠道链路
 ├── cleanup-residue.py  残留定点回收执行体（teardown.register 的落点）
-├── *.mjs / *.cjs       UI 与接口探针（Playwright/直连 HTTP）
-├── ui/                 浏览器探针（写新探针前必读 ui/README.md 第 0 条）
+├── lowcode-closed-loop.cjs  低代码最小闭环端到端（非 UI 探针族，见 §4.2）
+├── ui/                 浏览器探针**单族**：20 个探针全为 `.mjs`（写新探针前必读 ui/README.md 第 0 条）
 └── run.sh / lint.sh    统一入口（lint/py/node/<脚本>）与零依赖语法门禁（各 agent / CI 可复用）
 ```
 
@@ -122,31 +125,34 @@ parts = ds.split(total, 2)           # Σ == total
 
 | 脚本 | 意图 |
 |---|---|
-| `ui/probe-buttons.cjs` | 采集各页面真实菜单项与按钮名（探针数据源） |
-| `ui/probe-routes.cjs` | 逐菜单点击导航 + 断言业务元素（DATA/EMPTY/CARDS/FORM/THIN） |
-| `ui/probe-write.cjs` | 写入口深度交互：开弹窗/填表/提交/取消 |
-| `ui/probe-empty.cjs` | EMPTY 页面归因：接口没数据 vs UI 没渲染 |
-| `ui/probe-commerce.cjs` | 多渠道交易域 UI 巡检（含写操作闭环） |
-| `ui/probe-metadata-loop.cjs` | 元数据低代码最小闭环（metadata-app 真实 UI 走通） |
-| `ui/smoke-render.cjs` | 渲染冒烟：shell 经 qiankun 挂载 metadata-app |
-| `ui/smoke-runtime-autoselect.cjs` | W0-1/D12 回归：/metadata#/runtime 无参入口自动选中 |
-| `ui-all-menu-regression.mjs` | 全菜单回归（凭据缺省值约定见 client.cjs） |
-| `ui-app-to-data-probe.mjs` | 全链路 UI 探针：shell 登录 → 应用→模块→模型→界面→数据完整旅程 |
-| `ui-full-module-crud-probe.mjs` | 全模块 CRUD 探针（`BONE_E2E_ONLY` 局部复跑） |
-| `ui-nine-module-deep-probe.mjs` | 九模块深探（按 label 显式填值；`ui-full-module-crud-probe.mjs` 通用填表失败时的兜底，覆盖其搞不定的模块） |
-| `ui-create-data-probe.mjs` | 建数据表单实测（tree-select/排序号/状态等真实控件） |
-| `ui-personal-views-probe.mjs` | 「个人显示」运行时探针（v3 bundle 双轨收敛后） |
-| `ui-runtime-evidences-regression.mjs` | 运行时证据回归（failures[] 口径汇总） |
-| `ui-interface-tab-boundary-probe.mjs` | 实体详情界面 Tab 边界探针 |
-| `ui-delivery-preview-relocation-probe.mjs` | 交付预览迁位探针 |
-| `ui-shadowed-column-alert-probe.mjs` | 影子列告警探针 |
-| `ui-view-filter-persistence-probe.mjs` | 视图筛选持久化探针 |
+| `ui/probe-buttons.mjs` | 采集各页面真实菜单项与按钮名（探针数据源） |
+| `ui/probe-routes.mjs` | 逐菜单点击导航 + 断言业务元素（DATA/EMPTY/CARDS/FORM/THIN） |
+| `ui/probe-write.mjs` | 写入口深度交互：开弹窗/填表/提交/取消 |
+| `ui/probe-empty.mjs` | EMPTY 页面归因：接口没数据 vs UI 没渲染 |
+| `ui/probe-commerce.mjs` | 多渠道交易域 UI 巡检（含写操作闭环） |
+| `ui/probe-metadata-loop.mjs` | 元数据低代码最小闭环（metadata-app 真实 UI 走通） |
+| `ui/smoke-render.mjs` | 渲染冒烟：shell 经 qiankun 挂载 metadata-app |
+| `ui/smoke-runtime-autoselect.mjs` | W0-1/D12 回归：/metadata#/runtime 无参入口自动选中 |
+| `ui/ui-all-menu-regression.mjs` | 全菜单回归（凭据缺省值约定见 client.cjs） |
+| `ui/ui-app-to-data-probe.mjs` | 全链路 UI 探针：shell 登录 → 应用→模块→模型→界面→数据完整旅程 |
+| `ui/ui-full-module-crud-probe.mjs` | 全模块 CRUD 探针（`BONE_E2E_ONLY` 局部复跑） |
+| `ui/ui-nine-module-deep-probe.mjs` | 九模块深探（按 label 显式填值；`ui/ui-full-module-crud-probe.mjs` 通用填表失败时的兜底，覆盖其搞不定的模块） |
+| `ui/ui-create-data-probe.mjs` | 建数据表单实测（tree-select/排序号/状态等真实控件） |
+| `ui/ui-personal-views-probe.mjs` | 「个人显示」运行时探针（v3 bundle 双轨收敛后） |
+| `ui/ui-runtime-evidences-regression.mjs` | 运行时证据回归（failures[] 口径汇总） |
+| `ui/ui-interface-tab-boundary-probe.mjs` | 实体详情界面 Tab 边界探针 |
+| `ui/ui-delivery-preview-relocation-probe.mjs` | 交付预览迁位探针 |
+| `ui/ui-shadowed-column-alert-probe.mjs` | 影子列告警探针 |
+| `ui/ui-view-filter-persistence-probe.mjs` | 视图筛选持久化探针 |
+
+> 2026-10-28 单族化收敛：根目录 12 个 `ui-*.mjs` 全部移入 `ui/`、存量 8 个 `ui/*.cjs` 统一转 `.mjs`，
+> 现 **UI 探针只有 `ui/` 一族、全为 `.mjs`**（见 §8 收敛记录）。
 
 ### 4.5 界面设计器探针（参数化单入口）
 
 | 脚本 | 意图 |
 |---|---|
-| `ui-designer-probe.mjs` | 6 场景合一：`--scenario three\|n4n5\|n7\|perf\|production\|ux\|all`。three=三样板切换/子表合计/协议自检，n4n5=控件校验规则+样例数据预览，n7=角色身份变体，perf=大数据量性能，production=生产 DOM 活体，ux=UX 优化批次回归 |
+| `ui/ui-designer-probe.mjs` | 6 场景合一：`--scenario three\|n4n5\|n7\|perf\|production\|ux\|all`。three=三样板切换/子表合计/协议自检，n4n5=控件校验规则+样例数据预览，n7=角色身份变体，perf=大数据量性能，production=生产 DOM 活体，ux=UX 优化批次回归 |
 | `n7-mutation-verify.sh` | n7 场景的变异验证辅助（断言牙齿核对） |
 
 ### 4.6 归档与残留治理
@@ -159,7 +165,7 @@ parts = ds.split(total, 2)           # Σ == total
 基线断言数会随用例增长而变，以脚本实际输出的 `汇总` 行为准；**重构不改基线**是提交纪律。
 
 > **目录纪律（2026-10-28 整合）**
-> - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用用例请直接放到根目录或 `ui/`。
+> - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用 UI 用例一律放进 `ui/`（2026-10-28 单族化后不再落根目录）。
 > - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh lint`（语法自检）、`./run.sh py`（全链路）、`./run.sh node`（UI 核心探针）、`./run.sh <脚本名>`（指定脚本）、`./run.sh all`（默认 = lint+py）。
 > - 环境变量唯一清单见 [`.env.example`](.env.example)；`config.py` 与 `client.cjs` 的默认值须保持同步。
 
@@ -188,7 +194,7 @@ python3 scripts/e2e/ui-schema-samples-e2e.py
 
 # 保留产物给 UI 探针消费（消费完手工补清）
 BONE_E2E_KEEP_RESIDUE=1 python3 scripts/e2e/app-to-data-full-chain-e2e.py
-node scripts/e2e/ui-app-to-data-probe.mjs
+node scripts/e2e/ui/ui-app-to-data-probe.mjs
 python3 scripts/e2e/cleanup-residue.py --suffix <SFX> --apply
 
 # 残留排查：先 dry-run 看清单，再 --apply
@@ -222,21 +228,27 @@ node --check scripts/e2e/<探针>.mjs
 | 6 个 `ui-designer-*` 探针各起炉灶（同为 Playwright + client.cjs，骨架重复），且 README 未编目过半脚本（34/59 查不到） | 合并为参数化单入口 `ui-designer-probe.mjs --scenario <three\|n4n5\|n7\|perf\|production\|ux\|all>`（断言与选择器逐字保留，three/n7 已实跑全绿）；§4 升级为**全量能力目录**，目录内每个脚本必须可查 |
 | **第二轮（2026-10-28 收口）删除冗余** | |
 | `ui-two-scenario-probe.mjs` 内联硬编码 `'admin'/'123456'` 凭据（违反 §2.1、gitleaks 风险）+ 与 `ui-app-to-data-probe.mjs` / `lowcode-closed-loop.cjs` 重叠 | 删除；功能由上述两脚本覆盖，且消除硬编码口令 |
-| `probe-metadata-loop-api.cjs` 与套件内 canonical `ui/probe-metadata-loop.cjs` 同目的最小闭环 | 删除（canonical 以 `ui/probe-metadata-loop.cjs` 为准，已接入 `run.sh node`） |
+| `probe-metadata-loop-api.cjs` 与套件内 canonical `ui/probe-metadata-loop.mjs` 同目的最小闭环 | 删除（canonical 以 `ui/probe-metadata-loop.mjs` 为准，已接入 `run.sh node`） |
 | `probe-hot-column.cjs` 仅 `console.log` JSON 无断言门禁、含 62s TTL 等待、与 `ui-create-data-probe.mjs` 重叠 | 删除（慢且无 gate，价值由 create-data 探针覆盖） |
 | `ui-nine-module-deep-probe.mjs` 与 `ui-full-module-crud-probe.mjs` 同目 | **保留**：其头注释明确是通用填表失败时的兜底，覆盖 9 个通用探针搞不定的模块，属独特价值 |
 | **第二轮（2026-10-28 收口）整合重构** | |
 | `write_coverage.py` 内联 `GW` / `ADMIN=("admin","123456")` 且自包 `http()`（与 `chains.py` 同类违反 §2.1） | 改读 `config.BASE.rsplit("/api/v1",1)[0]` 与 `(config.USER, config.PWD)`，复用 `e2e_lib.http`（零硬编码、gitleaks 友好） |
-| `ui/probe-commerce.cjs` 只取 `USER` 却内联口令猜测 `['123456','admin123','Admin@123']` | 改用 `client.cjs` 的 `PWD`（与 §2.1 一致，去猜测逻辑） |
+| `ui/probe-commerce.mjs` 只取 `USER` 却内联口令猜测 `['123456','admin123','Admin@123']` | 改用 `client.cjs` 的 `PWD`（与 §2.1 一致，去猜测逻辑） |
+
+**2026-10-28 第三轮收口：三项 L2 已落地**
+
+| 问题 | 处置 |
+|---|---|
+| Node 侧无 `fixtures` 等价物（探针手写 `inspector:'实证'`、圆整金额、裸单号） | **已抽 `e2e_lib/fixtures.cjs`**：可种子化 PRNG（FNV-1a + mulberry32），方法名与 `fixtures.py` 同名同义（`doc_no`/`amount`/`split`/`person`/产物身份 `customer`·`supplier`），跨进程同 seed 同值已实测；`amount` 非圆整、`split` 分位守恒、`break_=true` 恒差 1.01 |
+| UI 探针两族并行（root `ui-*.mjs` 12 + `ui/*.cjs` 8，模块系统不一致） | **已单族化 + 登录去重**：全部并入 `ui/` 统一 `.mjs`；登录收敛为 `e2e_lib/ui.cjs` 的 `uiLogin(page)`（另含 `shot`/`waitAppReady`），已 5 个探针改调（`ui-app-to-data` / `ui-nine-module-deep` / `probe-commerce` / `ui-personal-views` / `ui-designer` 4 份登录副本合 1）；`run.sh node` 分组同步枚举 `ui/probe-*.mjs` |
+| `chains.py` / `multichannel.py` 单体大文件，链路定义与断言内联 | **已抽 `e2e_lib/chain_runner.py`**：链路仅声明「步骤字典 + 判据数据」，`run_steps` 统一执行「发请求→取变量→落断言→传下一步」；`chains.py` C1–C9 与 `multichannel.py` 均改为数据驱动（已用 fake http 验证路径模板/`extract`/`status`·`eq`·`page` 断言行为） |
 
 **仍开放（待后续）**
 
 | 问题 | 影响 | 建议修法 |
 |---|---|---|
-| `fixtures` 词表是 `scripts/seed/uat/gen.py` 的精简镜像 | 两处词表各自演化可能漂移 | 长期抽到共享词表模块（需 UAT 侧文件所有者配合） |
-| Node 侧无 `fixtures` 等价物：`.mjs/.cjs` 探针仍手写测试数据（`inspector:'实证'` 等），与 Python `fixtures` 口径不一致 | 跨语言数据不统一，UI 探针数据不「像生产」 | 抽 `e2e_lib/fixtures.cjs`（doc_no/amount/split/串链），以 `fixtures.py` 为口径真源 |
-| UI 探针存在两族并行：`ui/*.cjs`（probe-buttons/routes/write/commerce…）与根目录 `ui-*.mjs`（designer/personal-views…），命名/格式不统一 | 新探针作者不知该加哪族，易重复造轮子 | 统一收敛到 `ui/` 单族、统一 `.mjs` 或 `.cjs`，把可复用片段（菜单点击/弹窗判定/断言收集）抽到 `e2e_lib/ui.cjs` |
-| `chains.py`(48KB) / `multichannel.py` / `integration-flow-exec-chain.py` 各为单体大文件，链路定义与断言内联 | 新增链路要改大文件、易冲突 | 抽「链路定义数据 + 通用执行器」，链路仅声明步骤与判据 |
+| `fixtures` 词表是 `scripts/seed/uat/gen.py` 的精简镜像（`fixtures.cjs` 亦为 `fixtures.py` 内嵌镜像） | 三处词表各自演化可能漂移 | 长期抽到共享词表/JSON 单源（需 UAT 侧文件所有者配合） |
+| `ui/` 内仍有 15 个探针内联浏览器登录（`probe-*`/`smoke-*`/`ui-*` 未全量改调 `uiLogin`） | 与 ui/README §0 纪律仍不一致 | 逐个触碰时迁移（**不批量盲改**：无法实跑全栈时批量替换选择器 = 假绿风险）；新增/重构一律 `import { uiLogin } from '../e2e_lib/ui.cjs'` 并传 `page` |
 
 ## 9. 整合与复用：设计原则与 Why
 

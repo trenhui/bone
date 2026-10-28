@@ -27,7 +27,7 @@ case "$MODE" in
   py)   run_py ;;
   node)
     [ -n "$NODE_BIN" ] || { echo "node 未找到"; exit 2; }
-    for f in "$DIR"/ui/probe-*.cjs; do
+    for f in "$DIR"/ui/probe-*.mjs; do
       echo ">> $f"; "$NODE_BIN" "$f" || exit 1
     done
     ;;

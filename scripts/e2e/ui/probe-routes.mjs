@@ -2,10 +2,11 @@
 // v3 报"iam 8 个菜单点击失效、hash 停在 #/accounts"，根因是探针没展开 SubMenu ——
 // "角色管理"等在折叠的"权限与角色"里，不在 DOM（候选=0），不是产品缺陷。
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+import { mkdirSync } from 'node:fs';
+import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
-require('fs').mkdirSync(OUT, { recursive: true });
+mkdirSync(OUT, { recursive: true });
 
 // 父级 → 子级（iam 是两级；其余应用是平铺的）
 // 真源：GET /api/v1/iam/menus/tree（2026-10-13 实测）。菜单结构随三入口建模 UX 与

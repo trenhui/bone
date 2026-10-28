@@ -11,9 +11,9 @@
  * 与承载组件是谁无关——归位后换落点继续守。直接删掉等于丢掉这条回归。
  *
  * 登录走共享 client.cjs 的 USER/PWD（必须用 localhost，网关 CORS 只放行 localhost 源）。
- * 用法：node scripts/e2e/ui-interface-tab-boundary-probe.mjs
+ * 用法：node scripts/e2e/ui/interface-tab-boundary-probe.mjs
  */
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from './e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';

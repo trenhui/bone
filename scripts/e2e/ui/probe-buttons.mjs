@@ -1,6 +1,6 @@
 // 取各页面真实可点击元素（按钮文字 + 图标按钮的 title/aria-label），用于确认"新增"入口的真实形态
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 const PAGES = [
   ['iam', '#/accounts'], ['iam', '#/roles'], ['iam', '#/tenants'], ['iam', '#/organizations'], ['iam', '#/apps'],

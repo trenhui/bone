@@ -6,7 +6,7 @@
  *   - 后者只验证「页面能渲染、按钮能点开」，不落数据；
  *   - 本探针验证「新增 → 落库 → 可检索」的完整闭环，是真正的前后端联调判据。
  *
- * 用法：node scripts/e2e/ui-create-data-probe.mjs
+ * 用法：node scripts/e2e/ui/ui-create-data-probe.mjs
  * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
 import {
@@ -17,7 +17,7 @@ import {
   PWD as E2E_PWD,
   loadPlaywright,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const STAMP = stamp(7); // 保持本探针历史口径（slice(-7)），影响 E2E 数据命名

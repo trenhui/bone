@@ -3,12 +3,15 @@
 // 用法：
 //   NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-6/bin/node
 //   export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
-//   $NODE scripts/e2e/ui/probe-metadata-loop.cjs > /tmp/md-loop.json
+//   $NODE scripts/e2e/ui/probe-metadata-loop.mjs > /tmp/md-loop.json
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+import { mkdirSync } from 'node:fs';
+import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+/* 生产化测试数据：人名与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
+import { dataset } from '../e2e_lib/fixtures.cjs';
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/md-loop-shots';
-require('fs').mkdirSync(OUT, { recursive: true });
+mkdirSync(OUT, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -52,6 +55,10 @@ function step(name, ok, info) {
   const stamp = Date.now();
   const entCode = `e2eloop${stamp}`;
   const entName = `E2E闭环${stamp}`;
+  // 生产化测试数据（口径真源 e2e_lib/fixtures.py）：每个值只生成一次存变量（README §3 铁律）
+  const ds = dataset(stamp);
+  const NAME_NEW = ds.person();  // 新建记录填入的姓名（受控词表人名，不用「张三」随手名）
+  const NAME_EDIT = ds.person(); // 编辑记录填入的姓名
 
   // ---- 进入实体列表 ----
   try {
@@ -141,7 +148,7 @@ function step(name, ok, info) {
     await sleep(1200);
     // 记录弹窗里的字段输入（STRING → input.ant-input）
     const input = page.locator('.ant-modal-content input.ant-input').first();
-    if (await input.count()) await input.fill('张三');
+    if (await input.count()) await input.fill(NAME_NEW);
     await sleep(300);
     await page.locator('.ant-modal-content button').filter({ hasText: '确定' }).first().click({ timeout: 5000 });
     await sleep(2500);
@@ -159,7 +166,7 @@ function step(name, ok, info) {
       await edit.click({ timeout: 5000 });
       await sleep(1200);
       const input = page.locator('.ant-modal-content input.ant-input').first();
-      if (await input.count()) await input.fill('李四');
+      if (await input.count()) await input.fill(NAME_EDIT);
       await sleep(200);
       await page.locator('.ant-modal-content button').filter({ hasText: /确定|保存|更新|提交/ }).first().click({ timeout: 5000 });
       await sleep(2200);

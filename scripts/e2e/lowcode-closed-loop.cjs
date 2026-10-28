@@ -12,6 +12,8 @@
  */
 /* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs） */
 const { loadPlaywright, CHROME, USER, PWD } = require('./e2e_lib/client.cjs');
+/* 生产化测试数据：单号/人名/日期与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
+const { dataset } = require('./e2e_lib/fixtures.cjs');
 const { chromium } = loadPlaywright();
 const SHELL = 'http://localhost:3000';
 const GATEWAY = 'http://localhost:8888';
@@ -84,6 +86,25 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
 
   console.log('\n===== B. UC-01 从场景模板起盘（0→1）=====');
   const stamp = Date.now();
+  // 生产化测试数据（口径真源 e2e_lib/fixtures.py）：每个值只生成一次存变量，
+  // 创建与断言共用同一变量（README §3 铁律）；同 seed 同数据 ⇒ 复跑可比对
+  const ds = dataset(stamp);
+  const NO_REC1 = ds.doc_no('WO');     // 首条巡检单号（PUT 全量覆写复用同一值）
+  const NO_BAD = ds.doc_no('WO-BAD');  // 负向直写 status 用单号
+  const NO_REC2 = ds.doc_no('WO2');    // 查询能力用例单号
+  const NO_REC3 = ds.doc_no('WO3');    // 新列写入用例单号
+  const NO_REPL = ds.doc_no('RO');     // 补货记录单号
+  const INSP_CREATE = ds.person();     // 首条记录巡检人
+  const INSP_UPD = ds.person();        // 更新后巡检人
+  const INSP_NEG = ds.person();        // 负向直写用巡检人
+  const INSP_STALE = ds.person();      // 陈旧 ETag 用例
+  const INSP_NOETAG = ds.person();     // 缺 If-Match 观察项用例
+  const INSP_QUERY = ds.person();      // 查询能力用例记录巡检人
+  const INSP_NEWCOL = ds.person();     // 新列写入用例记录巡检人
+  const DATE_INSP = ds.days_ago(19);   // 巡检日期（运行日倒推，数据老化）
+  const DATE_Q = ds.days_ago(18);
+  const DATE_COL = ds.days_ago(17);
+  const DATE_EXPECT = ds.days_ago(8);  // 补货期望到货日期
   const inspCode = `insp_${stamp}`;
   const inst = await api('POST', `/api/v1/metadata/templates/${byCode.tpl_device_inspection.id}/instantiate`, {
     body: { name: `Insp_${stamp}`, code: inspCode, displayName: '设备巡检（E2E）', tableName: `md_${inspCode}`, moduleId, deliveryMode: 1 },
@@ -117,7 +138,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   // 0040/0048 状态机契约：status 是受保护字段（is_entry 入口动作标记 + G14 422 保护），
   // 客户端不再直写初始状态——由状态机入口态注入（巡检全环：close.from_status=OPEN）。
   const rec1 = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '张三', insp_date: '2026-10-09', result: 'NORMAL', remark: '首次巡检' },
+    body: { insp_no: NO_REC1, device_code: 'DEV-001', inspector: INSP_CREATE, insp_date: DATE_INSP, result: 'NORMAL', remark: '首次巡检' },
   });
   const rec1Id = payload(rec1)?.id;
   assert('录首条记录（不含 status，入口态由状态机注入）', okOf(rec1) && !!rec1Id, { status: rec1.status, id: rec1Id, result: payload(rec1)?.result });
@@ -125,7 +146,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
 
   // 负向：直写受保护状态字段 → 422 META_RUNTIME_FIELD_PROTECTED（G14）
   const protectedWrite = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO-BAD-${stamp}`, device_code: 'DEV-001', inspector: '张三', insp_date: '2026-10-09', result: 'NORMAL', status: 'CLOSED' },
+    body: { insp_no: NO_BAD, device_code: 'DEV-001', inspector: INSP_CREATE, insp_date: DATE_INSP, result: 'NORMAL', status: 'CLOSED' },
   });
   assert('负向：POST 直写 status → 422 META_RUNTIME_FIELD_PROTECTED',
     protectedWrite.status === 422 && protectedWrite.data?.data?.errorCode === 'META_RUNTIME_FIELD_PROTECTED',
@@ -155,28 +176,28 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   assert('GET /{id} 返回 ETag', !!got.etag, { etag: got.etag });
 
   const upd = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { insp_no: `WO-${stamp}`, device_code: 'DEV-001', inspector: '李四', insp_date: '2026-10-09', result: 'NORMAL', remark: '已闭环' }, etag: got.etag,
+    body: { insp_no: NO_REC1, device_code: 'DEV-001', inspector: INSP_UPD, insp_date: DATE_INSP, result: 'NORMAL', remark: '已闭环' }, etag: got.etag,
   });
   assert('If-Match 正确 → 200（并发受控）', upd.status === 200, { status: upd.status });
 
   // 负向：PUT 直写受保护状态字段 → 422（状态推进只能走动作端点，G14/Runtime §4.7）
   // 不带 If-Match：ETag 宽限期允许缺省，确保唯一失败原因就是 422 字段保护本身。
   const protectedUpdate = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { inspector: '测试员', status: 'CLOSED' },
+    body: { inspector: INSP_NEG, status: 'CLOSED' },
   });
   assert('负向：PUT 直写 status → 422 META_RUNTIME_FIELD_PROTECTED',
     protectedUpdate.status === 422 && protectedUpdate.data?.data?.errorCode === 'META_RUNTIME_FIELD_PROTECTED',
     { status: protectedUpdate.status, errorCode: protectedUpdate.data?.data?.errorCode });
 
   const stale = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { insp_no: `WO-${stamp}`, inspector: '王五' }, etag: got.etag,
+    body: { insp_no: NO_REC1, inspector: INSP_STALE }, etag: got.etag,
   });
   assert('陈旧 ETag → 412（未静默覆盖）', stale.status === 412, { status: stale.status, code: stale.data?.data?.errorCode });
 
   // AMBER 观察项（非门禁）：PRD §12.2 D3 —— If-Match 处于「宽限期」，缺省不拦截，
   // 以 ifmatch_missing_count 埋点决定是否升级为强制（v1.2）。此处仅记录实际行为。
   const noEtag = await api('PUT', `/api/v1/runtime/entities/${inspCode}/records/${rec1Id}`, {
-    body: { inspector: '赵六' },
+    body: { inspector: INSP_NOETAG },
   });
   console.log(`  ⚠️ [观察项] 缺 If-Match 行为 = ${noEtag.status}（D3 宽限期：允许，待埋点决定是否强制）`);
 
@@ -186,7 +207,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
 
   console.log('\n===== E. W0a2 查询能力：fields / sort / q =====');
   await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO2-${stamp}`, device_code: 'DEV-002', inspector: '钱七', insp_date: '2026-10-10', result: 'ABNORMAL' },
+    body: { insp_no: NO_REC2, device_code: 'DEV-002', inspector: INSP_QUERY, insp_date: DATE_Q, result: 'ABNORMAL' },
   });
   // 契约口径：q = field:value（RuntimePageQuery.parseFilter）；sort = [-]field（parseSort）
   const q = await api('GET', `/api/v1/runtime/entities/${inspCode}/records?page=1&size=10&q=device_code:DEV-002`);
@@ -218,7 +239,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   assert('已发布实体再次发布（顶栏常驻发布口径）', okOf(pub2), { status: pub2.status });
 
   const rec3 = await api('POST', `/api/v1/runtime/entities/${inspCode}/records`, {
-    body: { insp_no: `WO3-${stamp}`, device_code: 'DEV-003', inspector: '孙八', insp_date: '2026-10-11', result: 'NORMAL', duration: 35 },
+    body: { insp_no: NO_REC3, device_code: 'DEV-003', inspector: INSP_NEWCOL, insp_date: DATE_COL, result: 'NORMAL', duration: 35 },
   });
   const rec3Id = payload(rec3)?.id;
   assert('新列写入（再次发布后热生效）', okOf(rec3) && !!rec3Id, { status: rec3.status, echoDuration: payload(rec3)?.duration });
@@ -246,7 +267,7 @@ const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.da
   const pub3 = await api('POST', `/api/v1/metadata/entities/${replId}/publish`);
   assert('补货实体发布', okOf(pub3), { status: pub3.status });
   const replRec = await api('POST', `/api/v1/runtime/entities/${replCode}/records`, {
-    body: { order_no: `RO-${stamp}`, sku: 'SKU-1001', warehouse: 'WH-SZ', qty: 120, priority: 'HIGH', expect_date: '2026-10-20' },
+    body: { order_no: NO_REPL, sku: 'SKU-1001', warehouse: 'WH-SZ', qty: 120, priority: 'HIGH', expect_date: DATE_EXPECT },
   });
   const replRecId = payload(replRec)?.id;
   assert('补货记录录入（不含 status，入口态注入 PENDING）', okOf(replRec) && payload(replRec)?.status === 'PENDING',

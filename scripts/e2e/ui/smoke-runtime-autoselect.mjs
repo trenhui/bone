@@ -4,9 +4,9 @@
 // 用法：
 //   NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-6/bin/node
 //   export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
-//   $NODE scripts/e2e/ui/smoke-runtime-autoselect.cjs
+//   $NODE scripts/e2e/ui/smoke-runtime-autoselect.mjs
 /* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, USER, PWD } = require('../e2e_lib/client.cjs');
+import { loadPlaywright, CHROME, USER, PWD } from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 const SHELL = 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

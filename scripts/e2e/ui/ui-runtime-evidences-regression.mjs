@@ -15,7 +15,7 @@
  *   2. 弹窗关闭或出现成功 toast（闭环真的走通）；
  *   3. 列表区文本发生变化（记录真的落库，而非静默失败）。
  *
- * 用法：node scripts/e2e/ui-runtime-evidences-regression.mjs
+ * 用法：node scripts/e2e/ui/runtime-evidences-regression.mjs
  */
 import {
   UI_BASE as BASE,
@@ -26,10 +26,18 @@ import {
   loadPlaywright,
   tryLogin,
   api,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
+/* 生产化测试数据：日期/金额/单号与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
+import { dataset } from '../e2e_lib/fixtures.cjs';
 const { chromium } = loadPlaywright();
 
 const STAMP = stamp(6); // 保持本探针历史口径（slice(-6)），影响 E2E 数据命名
+// 生产化测试数据（口径真源 e2e_lib/fixtures.py）：自动填表的日期/金额/单号统一由 fixtures 供给，
+// 每个值只生成一次存变量（README §3 铁律——两处各抽一次必然对不上）
+const ds = dataset(STAMP);
+const FILL_DATE = ds.days_ago(3); // 日期类控件填值：运行日倒推（不再写死 2026-10-25）
+const FILL_AMOUNT = String(ds.amount()); // 金额类控件填值：非圆整（替代 900.00 手写圆整数）
+const FILL_DOC_NO = ds.doc_no('P'); // 单号类控件填值：前缀-日期-序号（替代 P+后缀裸号）
 
 let API_TOKEN = null;
 const failures = [];
@@ -155,7 +163,7 @@ try {
       if (/日期|时间|date/.test(sem)) {
         const inp = item.locator('input').first();
         if (await inp.count()) {
-          await inp.fill('2026-10-25').catch(() => {});
+          await inp.fill(FILL_DATE).catch(() => {});
           filled.push(label || ph || 'date');
         }
         continue;
@@ -186,8 +194,8 @@ try {
           continue;
         }
         let v = `E2E${STAMP}`;
-        if (/保单|单号|编号|号码/.test(sem)) v = `P${STAMP}`;
-        else if (/金额|价格|额度/.test(sem)) v = '900.00';
+        if (/保单|单号|编号|号码/.test(sem)) v = FILL_DOC_NO;
+        else if (/金额|价格|额度/.test(sem)) v = FILL_AMOUNT;
         else if (/哈希|指纹/.test(sem)) v = `h${STAMP}`;
         else if (/标记|标签|tags/.test(sem)) v = `flag_${STAMP}`;
         else if (/描述|remark|说明|trace/.test(sem)) v = `E2E 回归 ${STAMP}`;

@@ -6,7 +6,7 @@
  *   3. 页面无错误边界 / 无 500 / 无致命 console 错误；
  *   4. 列表页主操作按钮（新建 / 新增 / 创建）可点开抽屉或弹窗（模拟真人建数据第一步）。
  *
- * 用法：node scripts/e2e/ui-all-menu-regression.mjs
+ * 用法：node scripts/e2e/ui/all-menu-regression.mjs
  * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
 import {
@@ -17,7 +17,7 @@ import {
   loadPlaywright,
   makeChecker,
   api,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const { results, check, report } = makeChecker();

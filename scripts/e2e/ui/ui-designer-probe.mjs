@@ -2,8 +2,8 @@
  * 界面设计器 Playwright 探针统一参数化入口（2026-10-28：原 6 个独立探针合并为单入口）。
  *
  * 用法：
- *   node scripts/e2e/ui-designer-probe.mjs --scenario <three|n4n5|n7|perf|production|ux|all>
- *   node scripts/e2e/ui-designer-probe.mjs --scenario perf [控件数]   # perf 单档控件数可选，缺省跑 10/40/80/160 四档
+ *   node scripts/e2e/ui/ui-designer-probe.mjs --scenario <three|n4n5|n7|perf|production|ux|all>
+ *   node scripts/e2e/ui/ui-designer-probe.mjs --scenario perf [控件数]   # perf 单档控件数可选，缺省跑 10/40/80/160 四档
  * 省略 --scenario、取值缺失或不在清单内：报错并打印场景清单后退出（exit 2）。
  *
  * 结构：共享骨架（公共层 SHOT_DIR / loadPlaywright / makeChecker + chromium 启动与退出 +
@@ -45,7 +45,9 @@ import {
   makeChecker,
   login,
   api,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
+/* 共享 UI 交互层：浏览器登录（禁止在探针内重抄登录选择器，见 e2e_lib/ui.cjs） */
+import { uiLogin } from '../e2e_lib/ui.cjs';
 
 const { chromium } = loadPlaywright();
 
@@ -357,24 +359,6 @@ async function scenarioN4N5() {
       return last;
     }
 
-    async function uiLogin() {
-      await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-      const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-      if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
-      const pwd = page.locator('input[type="password"]').first();
-      await pwd.fill(PWD);
-      await pwd.press('Enter');
-      await page.waitForTimeout(1200);
-      if (await page.locator('input[type="password"]').count()) {
-        await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-        await page.waitForTimeout(3000);
-      }
-      try {
-        await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-        return true;
-      } catch { return false; }
-    }
 
     async function dismissTour() {
       const skip = page.locator('button, a').filter({ hasText: '跳过引导' }).first();
@@ -474,7 +458,7 @@ async function scenarioN4N5() {
 
     let exitCode = 1; // 由 finally 汇总（原独立文件在此直接 process.exit）
     try {
-      check('UI 登录成功', await uiLogin(), `url=${page.url()}`);
+      check('UI 登录成功', await uiLogin(page), `url=${page.url()}`);
       const token = await login();
       const ent = await latestEntities(token, '报销单');
       check('找到「报销单」实体', !!ent, 'entities 未命中');
@@ -759,24 +743,6 @@ async function scenarioN7() {
       return last;
     }
 
-    async function uiLogin() {
-      await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-      const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-      if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
-      const pwd = page.locator('input[type="password"]').first();
-      await pwd.fill(PWD);
-      await pwd.press('Enter');
-      await page.waitForTimeout(1200);
-      if (await page.locator('input[type="password"]').count()) {
-        await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-        await page.waitForTimeout(3000);
-      }
-      try {
-        await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-        return true;
-      } catch { return false; }
-    }
 
     async function dismissTour() {
       const skip = page.locator('button, a').filter({ hasText: '跳过引导' }).first();
@@ -870,7 +836,7 @@ async function scenarioN7() {
       origLock = cur.lockVersion;
 
       // ---------- 1. 负向基线：注入前该 label 不存在 ----------
-      if (!(await uiLogin())) throw new Error('UI 登录失败');
+      if (!(await uiLogin(page))) throw new Error('UI 登录失败');
       await openDesigner(eid);
       check('G0 预览已加载', !!(await page.locator('.uis-root').count()));
 
@@ -1049,19 +1015,7 @@ async function scenarioPerf() {
 
     /* ---------------- UI 辅助 ---------------- */
     const shots = [];
-    const uiLogin = async () => {
-      await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-      const u = page.locator('input[placeholder*="用户名"], input[name="username"], input#username').first();
-      if (await u.count()) await u.fill(USER);
-      const p = page.locator('input[type="password"]').first();
-      await p.fill(PWD); await p.press('Enter');
-      await page.waitForTimeout(1500);
-      if (await page.locator('input[type="password"]').count()) {
-        await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-      }
-      await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    };
+;
     const dismissTour = async () => {
       const s = page.locator('button, a').filter({ hasText: '跳过引导' }).first();
       if (await s.count()) { await s.click({ timeout: 4000 }).catch(() => {}); await page.waitForTimeout(400); }
@@ -1182,7 +1136,7 @@ async function scenarioPerf() {
     const fields = await getFields(tok, eid);
     console.log(`实体 ${ent.displayName} (${eid})，真实字段 ${fields.length} 个，目标规模档 ${SIZES.join('/')}`);
 
-    await uiLogin();
+    await uiLogin(page);
     const table = [];
     let restored = false;
     try {
@@ -1332,28 +1286,6 @@ async function scenarioProduction() {
       return last;
     }
 
-    async function uiLogin() {
-      await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-      const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-      if (await page.locator(userSel).first().count()) {
-        await page.locator(userSel).first().fill(USER);
-      }
-      const pwd = page.locator('input[type="password"]').first();
-      await pwd.fill(PWD);
-      await pwd.press('Enter');
-      await page.waitForTimeout(1200);
-      if (await page.locator('input[type="password"]').count()) {
-        await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-        await page.waitForTimeout(3000);
-      }
-      try {
-        await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-        return true;
-      } catch {
-        return false;
-      }
-    }
 
     /** 关闭新人引导遮罩（首屏 .tour-card 吞点击；memory 既有教训：探针必须先跳过） */
     async function dismissTour() {
@@ -1386,7 +1318,7 @@ async function scenarioProduction() {
 
     let exitCode = 1; // 由 finally 汇总（原独立文件在此直接 process.exit）
     try {
-      check('UI 登录成功', await uiLogin(), `url=${page.url()}`);
+      check('UI 登录成功', await uiLogin(page), `url=${page.url()}`);
       const token = await login();
 
       for (const sc of SCENARIOS) {
@@ -1563,8 +1495,18 @@ async function scenarioUx() {
       const tpls = await api('GET', '/api/v1/metadata/templates');
       const tpl = (Array.isArray(payload(tpls)) ? payload(tpls) : []).find((t) => t.code === 'tpl_device_inspection');
       assert('巡检模板可用', !!tpl, { templates: (Array.isArray(payload(tpls)) ? payload(tpls) : []).map((t) => t.code) });
-      const ents = await api('GET', '/api/v1/metadata/entities?page=1&size=50');
-      const moduleId = (payload(ents)?.records || []).find((e) => e.moduleId != null)?.moduleId;
+      // moduleId 前置解析：原实现取「第一个带 moduleId 的实体」的 moduleId，但库里存在
+      // 指向已删除模块的孤儿实体（实测取到 769755574777675776 ⇒ 实例化 400「所属模块不存在」），
+      // 故改为经 IAM「应用 → 模块」链路取真实在库模块（bone_module 存在性由后端 fail-closed 校验）。
+      const moduleId = await (async () => {
+        const apps = await api('GET', '/api/v1/apps?page=1&size=500');
+        for (const a of payload(apps)?.records || []) {
+          const mods = await api('GET', `/api/v1/apps/${a.id}/modules?page=1&size=100`);
+          const m = (payload(mods)?.records || [])[0];
+          if (m && m.id != null) return m.id;
+        }
+        return undefined;
+      })();
       const stamp = Date.now();
       const code = `uidesign_${stamp}`;
       const inst = await api('POST', `/api/v1/metadata/templates/${tpl.id}/instantiate`, {
@@ -1896,8 +1838,8 @@ const SCENARIOS = [
 /** 打印报错 + 场景清单（缺省 / 未知场景时用） */
 function usage(msg) {
   if (msg) console.error('✗ ' + msg);
-  console.error('用法：node scripts/e2e/ui-designer-probe.mjs --scenario <three|n4n5|n7|perf|production|ux|all>');
-  console.error('      node scripts/e2e/ui-designer-probe.mjs --scenario perf [控件数]');
+  console.error('用法：node scripts/e2e/ui/ui-designer-probe.mjs --scenario <three|n4n5|n7|perf|production|ux|all>');
+  console.error('      node scripts/e2e/ui/ui-designer-probe.mjs --scenario perf [控件数]');
   console.error('场景清单：');
   for (const s of SCENARIOS) console.error(`  ${s.key.padEnd(11)} ${s.desc}`);
   console.error('  all         按上述顺序执行全部场景');

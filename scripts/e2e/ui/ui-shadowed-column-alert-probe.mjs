@@ -17,7 +17,7 @@
  *   - 服务端 overlay 预清理/收尾复位：fetchOverlay「服务端优先」，残留会污染下一轮。
  *   - 告警与列表同源（同一projectRuntimeColumns），故隐藏后应即时出现、无需刷新。
  *
- * 用法：node scripts/e2e/ui-shadowed-column-alert-probe.mjs
+ * 用法：node scripts/e2e/ui/ui-shadowed-column-alert-probe.mjs
  */
 /* 共享 client：playwright 加载 / SHOT_DIR / IAM 直连登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
 import {
@@ -30,7 +30,7 @@ import {
   api,
   tryLogin,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';

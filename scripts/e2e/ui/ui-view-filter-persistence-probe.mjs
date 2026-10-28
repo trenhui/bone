@@ -17,7 +17,7 @@
  *   6. 刷新页面后再次进入 → 断言仍恢复（证明落到了 blob，不是内存态）
  *   7. 无 console / page 异常
  *
- * 用法：node scripts/e2e/ui-view-filter-persistence-probe.mjs
+ * 用法：node scripts/e2e/ui/view-filter-persistence-probe.mjs
  */
 /* 共享 client：playwright 加载 / SHOT_DIR / IAM 直连登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
 import {
@@ -30,7 +30,7 @@ import {
   api,
   tryLogin,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';

@@ -13,28 +13,28 @@ bash scripts/dev/up-all-services-e2e.sh          # 10 个 Spring Boot 服务
 
 | 探针 | 作用 | 关键判据 |
 |---|---|---|
-| `probe-buttons.cjs` | 采集各页面**真实**菜单项与按钮名 | 静态 grep 拿不全路由/按钮名，一切以运行时为准 |
-| `probe-routes.cjs` | 逐菜单**点击**导航 + 断言业务元素 | `tableRows>0→DATA` / `empty→EMPTY` / `cards→CARDS` / `inputs→FORM` / 否则 `THIN`；同时收集 4xx/5xx 与 console error |
-| `probe-write.cjs` | 写入口深度交互 | 点"新增" → 断言弹窗开（**Modal 与 Drawer 都认**）→ 空提交看校验 → 取消能关 |
-| `probe-commerce.cjs` | **多渠道交易域写操作闭环** | 开弹窗→填表→提交→断言 antd message；30 项断言，见下节 |
+| `probe-buttons.mjs` | 采集各页面**真实**菜单项与按钮名 | 静态 grep 拿不全路由/按钮名，一切以运行时为准 |
+| `probe-routes.mjs` | 逐菜单**点击**导航 + 断言业务元素 | `tableRows>0→DATA` / `empty→EMPTY` / `cards→CARDS` / `inputs→FORM` / 否则 `THIN`；同时收集 4xx/5xx 与 console error |
+| `probe-write.mjs` | 写入口深度交互 | 点"新增" → 断言弹窗开（**Modal 与 Drawer 都认**）→ 空提交看校验 → 取消能关 |
+| `probe-commerce.mjs` | **多渠道交易域写操作闭环** | 开弹窗→填表→提交→断言 antd message；30 项断言，见下节 |
 
 ## 运行
 
 ```bash
 NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
 export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules   # playwright 在此
-$NODE scripts/e2e/ui/probe-routes.cjs > /tmp/ui.json
+$NODE scripts/e2e/ui/probe-routes.mjs > /tmp/ui.json
 python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']),'项')"
 ```
 
 ## 写新探针前必读（都是本轮踩过的坑）
 
 0. **样板走共享 client**：登录凭证、CHROME、UI BASE、playwright 加载等重复样板统一从
-   `scripts/e2e/e2e_lib/client.cjs` 取——`ui/` 下用 `require('../e2e_lib/client.cjs')`
-   （根目录探针用 `require('./e2e_lib/client.cjs')`，`.mjs` 用 `import { ... } from`）：
+   `scripts/e2e/e2e_lib/client.cjs` 取——本目录探针全为 `.mjs`，一律
+   `import { ... } from '../e2e_lib/client.cjs'`：
 
    ```js
-   const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+   import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
    const { chromium } = loadPlaywright();
    ```
 
@@ -42,6 +42,9 @@ python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']
    绝对路径——`NODE_PATH` 导出不再是硬前提。带 token 的 HTTP 请求优先用 client 的
    `login()/api()`，断言收集可用 `makeChecker()`；场景专属逻辑（本地 `report`/自定义汇总
    格式等）保留在探针内。
+   **浏览器登录走 `e2e_lib/ui.cjs` 的 `uiLogin(page)`（2026-10-28 单族化收敛），禁止在探针内
+   重抄登录选择器**；截图/就绪判定同理用 `shot()` / `waitAppReady()`。
+   单族化后新增 UI 探针**只放本目录**、只用 `.mjs`（根目录不再新增 `ui-*` 探针）。
 1. **路由清单唯一真源是运行时侧边栏**（`GET /api/v1/iam/menus/tree` 或读 DOM 菜单项）。
    静态 grep `path:` 拿不全 —— 9 个应用里只有 masterdata 用 `path:` 风格。
 2. **iam 是两级菜单**：点子项前先展开父 SubMenu（判断 `aria-expanded` 幂等），
@@ -65,7 +68,7 @@ python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']
 | 服务 503 `GW_UPSTREAM_UNAVAILABLE` | **网关熔断器**，不是服务挂 | 直连该服务端口复验（`curl --noproxy '*' http://127.0.0.1:<port>/actuator/health`） |
 | 登录 200 但每个页面都 503 | 该服务进程**真的死了**（`lsof -nP -iTCP:<port> -sTCP:LISTEN` 无输出） | 重起并以后台任务常驻；`shell` 的 `menus/current` 失败会静默回退 `STATIC_MENU`，**菜单可见 ≠ 服务存活** |
 
-## `probe-commerce.cjs` 专节（多渠道交易域）
+## `probe-commerce.mjs` 专节（多渠道交易域）
 
 只需 5 个进程：`gateway 8888 / iam 8081 / blueprint 8082 / shell 3000 / commerce-app 3012`
 （**不用拉起全部 19 个服务**——上一轮「内存扛不住」的结论因此被推翻）。
@@ -73,7 +76,7 @@ python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']
 ```bash
 NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
 export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
-$NODE scripts/e2e/ui/probe-commerce.cjs
+$NODE scripts/e2e/ui/probe-commerce.mjs
 ```
 
 写它时新踩的坑（都会在别处复现）：

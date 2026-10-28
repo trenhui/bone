@@ -1,7 +1,7 @@
 /**
  * 全模块「新建 → 落库 → 可见」通用联调探针（模拟人工填表）。
  *
- * 与 scripts/e2e/ui-create-data-probe.mjs 的分工：
+ * 与 scripts/e2e/ui/create-data-probe.mjs 的分工：
  *   - 后者是**手写字段白名单**（5 个高价值模块，字段 label 写死，回归稳定）；
  *   - 本探针是**通用自动填表**：从 IAM 菜单树取运行时真源菜单，逐个进列表页，
  *     找到「新建/新增/创建」按钮 → 自动识别弹窗内所有控件并填值 → 提交 →
@@ -14,7 +14,7 @@
  *   2. 提交过程中无 5xx / 无「业务异常」toast；
  *   3. 列表区文本发生变化（说明真的刷出了新数据，而非静默失败）。
  *
- * 用法：node scripts/e2e/ui-full-module-crud-probe.mjs
+ * 用法：node scripts/e2e/ui/full-module-crud-probe.mjs
  * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
 /* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
@@ -28,7 +28,7 @@ import {
   api,
   tryLogin,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const STAMP = stamp(6);

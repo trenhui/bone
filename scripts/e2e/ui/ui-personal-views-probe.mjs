@@ -29,7 +29,7 @@
  * 口径：overlay 后端是不透明 blob（键含 userId），探针用同一登录态操作，
  * 与真实用户路径完全一致（非 mock）。
  *
- * 用法：node scripts/e2e/ui-personal-views-probe.mjs
+ * 用法：node scripts/e2e/ui/personal-views-probe.mjs
  */
 /* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
 import {
@@ -41,7 +41,11 @@ import {
   api,
   login,
   makeChecker,
-} from './e2e_lib/client.cjs';
+} from '../e2e_lib/client.cjs';
+/* 生产化测试数据：单号/金额/文案与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
+import { dataset } from '../e2e_lib/fixtures.cjs';
+/* 共享 UI 交互层：浏览器登录（禁止在探针内重抄登录选择器，见 e2e_lib/ui.cjs） */
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const { results, check } = makeChecker();
@@ -113,19 +117,6 @@ const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(m.text()); });
 
-async function uiLogin() {
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) {
-    await page.locator(userSel).first().fill(USER);
-  }
-  await page.locator('input[type="password"]').first().fill(PWD);
-  await page.locator('button[type="submit"], button').filter({ hasText: /登录|登 录/ }).first().click();
-  await page.waitForTimeout(2500);
-  return !page.url().includes('login');
-}
-
 /** 打开实体详情指定 Tab（必须 reload：同 URL 含 hash 的 goto 是同文档导航，SPA 不重拉数据） */
 async function openTab(entityId, tab) {
   await page.goto(`${BASE}/metadata#/entities/${entityId}?tab=${tab}`, { waitUntil: 'domcontentloaded' });
@@ -184,7 +175,7 @@ let publishShield = null;
 let ccCode = null;
 
 try {
-  check('UI 登录成功', await uiLogin(), `url=${page.url()}`);
+  check('UI 登录成功', await uiLogin(page), `url=${page.url()}`);
 
   token = await login();
   entity = await latestPublishedEntity(token, '报销单');
@@ -538,6 +529,11 @@ try {
     const ccStamp = Date.now();
     ccCode = `childcol_${ccStamp}`;
     const ccChildCode = `childcol_item_${ccStamp}`;
+    // 生产化测试数据（口径真源 e2e_lib/fixtures.py）：造数不再手写裸单号/圆整金额/探针文案
+    const ds = dataset(ccStamp);
+    const CC_NO = ds.doc_no('CC'); // 单号：前缀-日期-序号（替代 'CC-1' 裸号）
+    const CC_TITLE = `${ds.city}客户拜访差旅报销`; // 文案：词表城市 + 真实业务事由
+    const CC_AMOUNT = ds.amount(); // 金额：非圆整带分位（替代 123.45 手写值）
     // 后端实体创建为最终一致：刚创建的实体立即可建字段会偶发 400（实体表/元数据未就绪）。
     // 故建实体后 settle 2s，且字段写入带重试（对齐 two-scenario 的慢节奏，属测试脚手架健壮性）。
     const createEntity = async (name, code, table) => {
@@ -611,7 +607,7 @@ try {
         `child=${ccChildPub} put=${ccPut.status} parent=${ccParentPub}`);
       // 造一条记录（否则空表没有行可点「查看明细」）
       await api('POST', `/runtime/entities/${ccCode}/records`,
-        { claim_no: 'CC-1', title: '明细列探针记录', amount: 123.45, status: 'DRAFT' },
+        { claim_no: CC_NO, title: CC_TITLE, amount: CC_AMOUNT, status: 'DRAFT' },
         { token }).catch(() => {});
       await openTab(ccParent, 'data');
       await waitRuntimeReady();
