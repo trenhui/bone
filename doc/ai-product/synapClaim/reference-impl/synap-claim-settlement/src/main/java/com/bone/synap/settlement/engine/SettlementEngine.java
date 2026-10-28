@@ -214,8 +214,12 @@ public final class SettlementEngine {
                 : Ports.AccUsage.empty();
 
         // ---- 3) 不可获利原则：第三方已付（社保统筹/其他保险）先从可赔基数扣除 ----
+        // #1 最佳实践变体（thirdPartyPaidByCategory）：按费用类别归因——社保内（socialInsuranceCovered）
+        // 费用优先核销第三方已付，余量再溢出到社保外；默认关闭 = 现行比例分摊（零回归）。
         r.thirdApplied = flags.applyIndemnityPrinciple
-                ? allocateDeduction(base, reject, ctx.thirdPartyPaid)
+                ? (flags.thirdPartyPaidByCategory
+                    ? allocateDeductionByCategory(base, reject, feeType, snap, ctx.thirdPartyPaid)
+                    : allocateDeduction(base, reject, ctx.thirdPartyPaid))
                 : Money.ZERO;
 
         // ---- 4) 年度免赔：作用于「费用基数」（先免赔后比例，非先比例后免赔）----
@@ -264,6 +268,13 @@ public final class SettlementEngine {
             lc.put(kA, annualLimitRemaining);
         }
 
+        // #2 最佳实践变体（annualLimitProportional）：年度限额池按各费用行「可赔额」比例摊薄，
+        // 避免行序靠前者独吞限额（先到先得）；默认关闭 = 现行「逐行顺序消耗共享池」语义（零回归）。
+        Money[] annualShare = null;
+        if (flags.annualLimitProportional && kA != null && lc.contains(kA)) {
+            annualShare = computeAnnualProportionalShares(feeCalculate, reject, annualLimitRemaining);
+        }
+
         r.lines = new ArrayList<>();
         r.anyReject = false;
         for (int i = 0; i < n; i++) {
@@ -277,7 +288,11 @@ public final class SettlementEngine {
                 if (lc.contains(kL)) cap = cap.min(lc.remaining(kL));
                 if (lc.contains(kF)) cap = cap.min(lc.remaining(kF));
                 if (lc.contains(kP)) cap = cap.min(lc.remaining(kP));
-                if (kA != null && lc.contains(kA)) cap = cap.min(lc.remaining(kA));
+                if (kA != null && lc.contains(kA)) {
+                    // #2 变体：用按比例摊薄的份额代替「当前剩余池」（默认关闭时退化为 lc.remaining(kA)）
+                    Money annualCap = annualShare != null ? annualShare[i] : lc.remaining(kA);
+                    cap = cap.min(annualCap);
+                }
                 if (lc.contains(kL)) lc.consume(kL, cap);
                 if (lc.contains(kF)) lc.consume(kF, cap);
                 if (lc.contains(kP)) lc.consume(kP, cap);
@@ -309,6 +324,19 @@ public final class SettlementEngine {
                 ? annualLimitRemaining.subtract(lc.remaining(kA)) : Money.ZERO;
         r.liabApplied = lc.contains(kL)
                 ? limitValueOf(snap, usage).subtract(lc.remaining(kL)) : Money.ZERO;
+
+        // #3 最佳实践变体（multiPolicyIso834）：多保单协调——总责任额算出后，本保单仅承担
+        // 「本保单保额 / 全部涉事保额」的 ISO 834 比例份额（或等额分摊）。默认关闭 = 现行单保单语义（零回归）。
+        if (flags.multiPolicyIso834 && ctx.policyShares != null && !ctx.policyShares.isEmpty()) {
+            Money mpShare = multiPolicyShareOf(ctx);
+            if (mpShare != null) {
+                Money f = mpShare.ratio();
+                r.net = r.net.multiply(f);
+                r.dedApplied = r.dedApplied.multiply(f);
+                r.limApplied = r.limApplied.multiply(f);
+                r.liabApplied = r.liabApplied.multiply(f);
+            }
+        }
 
         // ---- 7) 累计提交（乐观锁 + 按 claimId upsert）：并发冲突 fail-closed ----
         if (!r.denied && needAccum
@@ -513,6 +541,82 @@ public final class SettlementEngine {
             acc = acc.add(alloc);
         }
         return acc;
+    }
+
+    /**
+     * #1 变体：第三方已付按费用类别归因。优先核销到「社保内」费用行（socialInsuranceCovered=true），
+     * 余量再溢出到「社保外/未标注」行；各阶段内按比例分摊、末行取残差，保证总量守恒。
+     */
+    private static Money allocateDeductionByCategory(Money[] base, String[] reject, String[] feeType,
+                                                     FormulaSnapshot snap, Money amount) {
+        if (amount == null || amount.cmp(Money.ZERO) <= 0) return Money.ZERO;
+        boolean[] social = new boolean[base.length];
+        for (int i = 0; i < base.length; i++) {
+            FormulaSnapshot.FeeConfig fc = snap.feeConfigs.get(feeType[i]);
+            social[i] = fc != null && Boolean.TRUE.equals(fc.socialInsuranceCovered);
+        }
+        Money applied = allocateWithinSocial(base, reject, social, true, amount);
+        Money remaining = amount.subtract(applied);
+        if (remaining.cmp(Money.ZERO) > 0) applied = applied.add(allocateWithinSocial(base, reject, social, false, remaining));
+        return applied;
+    }
+
+    private static Money allocateWithinSocial(Money[] base, String[] reject, boolean[] social,
+                                              boolean target, Money amount) {
+        Money total = Money.ZERO;
+        int last = -1;
+        for (int i = 0; i < base.length; i++) {
+            if (reject[i] == null && base[i].isPositive() && social[i] == target) {
+                total = total.add(base[i]); last = i;
+            }
+        }
+        if (total.cmp(Money.ZERO) <= 0) return Money.ZERO;
+        Money apply = amount.min(total);
+        Money acc = Money.ZERO;
+        for (int i = 0; i < base.length; i++) {
+            if (reject[i] != null || !base[i].isPositive() || social[i] != target) continue;
+            Money alloc = (i == last) ? apply.subtract(acc) : apply.multiply(base[i]).divide(total);
+            alloc = alloc.min(base[i]);
+            base[i] = base[i].subtract(alloc);
+            acc = acc.add(alloc);
+        }
+        return acc;
+    }
+
+    /**
+     * #2 变体：把年度限额池按各「可赔费用行」金额比例摊薄，返回每行应得份额（末行取残差，总量守恒）。
+     */
+    private static Money[] computeAnnualProportionalShares(Money[] feeCalculate, String[] reject, Money pool) {
+        int n = feeCalculate.length;
+        Money[] shares = new Money[n];
+        Money total = Money.ZERO;
+        int last = -1;
+        for (int i = 0; i < n; i++) {
+            if (reject[i] == null) { total = total.add(feeCalculate[i]); last = i; }
+            shares[i] = Money.ZERO;
+        }
+        if (total.cmp(Money.ZERO) <= 0) return shares;
+        Money acc = Money.ZERO;
+        for (int i = 0; i < n; i++) {
+            if (reject[i] != null) continue;
+            Money s = (i == last) ? pool.subtract(acc) : pool.multiply(feeCalculate[i]).divide(total);
+            shares[i] = s;
+            acc = acc.add(s);
+        }
+        return shares;
+    }
+
+    /** #3 变体：返回本保单在「多保单涉事清单」中的 ISO 834 比例份额（百分比 Money），未命中返回 null。 */
+    private static Money multiPolicyShareOf(ClaimContext ctx) {
+        if (ctx.policyShares == null || ctx.policyShares.isEmpty()) return null;
+        List<Money> sums = new ArrayList<>();
+        int idx = -1;
+        for (int i = 0; i < ctx.policyShares.size(); i++) {
+            sums.add(ctx.policyShares.get(i).sumInsured);
+            if (ctx.policyShares.get(i).policyId.equals(ctx.policyId)) idx = i;
+        }
+        if (idx < 0) return null;
+        return Iso834.proportional(sums).get(idx);
     }
 
     private String buildExplain(ClaimContext ctx, List<AdjustmentLine> lines,

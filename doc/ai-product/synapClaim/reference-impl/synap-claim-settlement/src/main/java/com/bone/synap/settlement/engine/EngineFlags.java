@@ -49,6 +49,12 @@ public final class EngineFlags {
     public boolean zeroMeansUnlimited = true;         // 限额 0 = 未配置（不限制）
     public boolean applyConcurrencyLock = true;       // 同保单同周期「读→算→提交」JVM 串行锁（防过期快照超赔）
 
+    // ---- 第三轮：业界最佳实践变体（README 已知限制 #1–#3）。默认全部关闭 = 沿用既有语义（零回归）；
+    //      开启 = 行业最佳实践口径。精确系数/顺序仍需条款确认后再启用（见 README 已知限制）。 ----
+    public boolean thirdPartyPaidByCategory = false;   // #1 第三方已付按费用类别归因（社保内优先核销）
+    public boolean annualLimitProportional   = false;  // #2 年度限额按比例摊薄（替代先到先得顺序截断）
+    public boolean multiPolicyIso834         = false;  // #3 多保单 ISO 834 比例/等额分摊
+
     public static EngineFlags allOn() { return new EngineFlags(); }
 
     /** 不变量护栏（负赔付钳零）不设开关：属于类型层强制保障，永不关闭。 */
@@ -74,6 +80,9 @@ public final class EngineFlags {
         f.apportionRounding = apportionRounding;
         f.zeroMeansUnlimited = zeroMeansUnlimited;
         f.applyConcurrencyLock = applyConcurrencyLock;
+        f.thirdPartyPaidByCategory = thirdPartyPaidByCategory;
+        f.annualLimitProportional = annualLimitProportional;
+        f.multiPolicyIso834 = multiPolicyIso834;
         return f;
     }
 }

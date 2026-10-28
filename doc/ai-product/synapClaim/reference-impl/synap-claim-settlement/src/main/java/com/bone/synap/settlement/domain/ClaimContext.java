@@ -37,6 +37,9 @@ public final class ClaimContext {
     public final Money thirdPartyPaid;
     /** 反欺诈 P0 命中：引擎 fail-closed 挂起，不产生可支付结论。 */
     public final boolean fraudHold;
+    /** 多保单分摊涉事保单保额清单（S13 多保单协调）：非空且开启 multiPolicyIso834 时，本保单仅承担
+     *  「本保单保额 / 全部涉事保额」的 ISO 834 份额。null/空 = 单保单（现行语义）。 */
+    public final List<PolicyShare> policyShares;
 
     public ClaimContext(String claimId, String tenantId, String planId, String policyId, String periodKey,
                         Map<String, Money> invoiceFees, Money planRemaining,
@@ -59,6 +62,15 @@ public final class ClaimContext {
                         Money annualDeductible, Money annualLimit,
                         List<AiSuggestion> aiSuggestions, List<String> denyReasons,
                         Money thirdPartyPaid, boolean fraudHold) {
+        this(claimId, tenantId, planId, policyId, periodKey, invoiceFees, planRemaining,
+                annualDeductible, annualLimit, aiSuggestions, denyReasons, thirdPartyPaid, fraudHold, List.of());
+    }
+
+    public ClaimContext(String claimId, String tenantId, String planId, String policyId, String periodKey,
+                        Map<String, Money> invoiceFees, Money planRemaining,
+                        Money annualDeductible, Money annualLimit,
+                        List<AiSuggestion> aiSuggestions, List<String> denyReasons,
+                        Money thirdPartyPaid, boolean fraudHold, List<PolicyShare> policyShares) {
         this.claimId = claimId;
         this.tenantId = tenantId;
         this.planId = planId;
@@ -72,6 +84,7 @@ public final class ClaimContext {
         this.denyReasons = denyReasons;
         this.thirdPartyPaid = thirdPartyPaid == null ? Money.ZERO : thirdPartyPaid;
         this.fraudHold = fraudHold;
+        this.policyShares = policyShares == null ? List.of() : policyShares;
     }
 
     /** AI 建议：对某个费用类型提议「加成 10% 比例」。必须经人工/规则确认后方可采用。 */
@@ -105,6 +118,17 @@ public final class ClaimContext {
         return null;
     }
 
+    /** 多保单涉事保单（S13）：policyId + 保额，用于 ISO 834 分摊。 */
+    public static final class PolicyShare {
+        public final String policyId;
+        public final Money sumInsured;
+        public PolicyShare(String policyId, Money sumInsured) {
+            this.policyId = policyId;
+            this.sumInsured = sumInsured;
+        }
+        @Override public String toString() { return policyId + "=" + sumInsured; }
+    }
+
     /**
      * 输入指纹（幂等键组成部分）。包含全部会改变理算结果的输入维度——
      * 同一 claimId 但输入不同（如补交发票、AI 建议状态变化）必须算作**不同**的理算请求。
@@ -118,6 +142,8 @@ public final class ClaimContext {
           .append('|').append(thirdPartyPaid)
           .append('|').append(fraudHold).append('|').append(denyReasons)
           .append('|').append(aiSuggestions);
+        if (policyShares != null)
+            for (PolicyShare ps : policyShares) sb.append(ps.policyId).append(':').append(ps.sumInsured).append(';');
         return sb.toString();
     }
 }

@@ -86,20 +86,30 @@ public final class FormulaSnapshot {
         /** 拒赔类型（目录外/免责项目）：非空表示该费用项不赔，payout=0 并登记 rejectType。
          *  对应真实 TPA 场景：丙类自费不赔、免责条款项目（普康内置医保三大目录 + 泰康责任免除）。 */
         public final String rejectType;
+        /** 是否社保内费用（目录内/甲类乙类）：非空时用于「第三方已付按费用类别归因」变体
+         *  （socialInsuranceCovered=true 的费用优先核销第三方已付）。null = 未标注（变体退化为现行比例分摊）。 */
+        public final Boolean socialInsuranceCovered;
 
         public FeeConfig(String feeType, Money payRatioPct, Money feeSubLimit,
                          Money deductInvoice, Money deductAdjust) {
-            this(feeType, payRatioPct, feeSubLimit, deductInvoice, deductAdjust, null);
+            this(feeType, payRatioPct, feeSubLimit, deductInvoice, deductAdjust, null, null);
         }
 
         public FeeConfig(String feeType, Money payRatioPct, Money feeSubLimit,
                          Money deductInvoice, Money deductAdjust, String rejectType) {
+            this(feeType, payRatioPct, feeSubLimit, deductInvoice, deductAdjust, rejectType, null);
+        }
+
+        public FeeConfig(String feeType, Money payRatioPct, Money feeSubLimit,
+                         Money deductInvoice, Money deductAdjust, String rejectType,
+                         Boolean socialInsuranceCovered) {
             this.feeType = feeType;
             this.payRatioPct = payRatioPct;
             this.feeSubLimit = feeSubLimit;
             this.deductInvoice = deductInvoice;
             this.deductAdjust = deductAdjust;
             this.rejectType = rejectType;
+            this.socialInsuranceCovered = socialInsuranceCovered;
         }
 
         public Money ratioFraction() { return payRatioPct.ratio(); }
