@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeContext;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeOutcome;
@@ -15,6 +16,8 @@ import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.model.decision.DecisionExecution;
 import com.bone.claim.domain.model.decision.DecisionGraph;
 import com.bone.claim.domain.model.decision.DecisionNodeStatus;
+import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -108,54 +111,100 @@ class DecisionGraphExecutorTest {
   }
 
   private DecisionGraphExecutor executor(List<DecisionNodeHandler> handlers) {
+    return executor(handlers, DecisionMetricsPort.NOOP);
+  }
+
+  private DecisionGraphExecutor executor(
+      List<DecisionNodeHandler> handlers, DecisionMetricsPort decisionMetricsPort) {
     return new DecisionGraphExecutor(
-        decisionExecutionApplicationService, claimCaseApplicationService, tenantPort, handlers);
+        decisionExecutionApplicationService,
+        claimCaseApplicationService,
+        tenantPort,
+        decisionMetricsPort,
+        handlers);
   }
 
   private static DecisionGraphExecutor.DecisionVersions versions() {
     return new DecisionGraphExecutor.DecisionVersions("g1", "r1", "m1", "p1", "c1");
   }
 
+  /** 五节点全成功、闸门全过的标准链（多用例复用，避免各写一份而语义漂移）。 */
+  private static List<DecisionNodeHandler> happyHandlers() {
+    return List.of(
+        node(
+            DecisionGraph.EVIDENCE_LOAD,
+            DecisionNodeStatus.SUCCEEDED,
+            Map.of(
+                "hasEvidence",
+                true,
+                "evidenceParsed",
+                true,
+                "ocrConfidence",
+                new BigDecimal("0.95")),
+            null),
+        node(
+            DecisionGraph.RULE_CHECK,
+            DecisionNodeStatus.SUCCEEDED,
+            Map.of(
+                "ruleConflict",
+                false,
+                "fraudGatePassed",
+                true,
+                "riskHit",
+                false,
+                "ruleConfidence",
+                new BigDecimal("0.90")),
+            new BigDecimal("0.90")),
+        node(
+            DecisionGraph.AI_ASSESS,
+            DecisionNodeStatus.SUCCEEDED,
+            Map.of("rejectSuggested", false),
+            new BigDecimal("0.93")),
+        node(
+            DecisionGraph.ADJUST,
+            DecisionNodeStatus.SUCCEEDED,
+            Map.of("amount", new BigDecimal("300.00")),
+            null),
+        node(DecisionGraph.ARBITRATE, DecisionNodeStatus.SUCCEEDED, Map.of(), null));
+  }
+
+  @Test
+  @DisplayName("决策与节点指标真实上报（证明埋点在调用路径上，而非只是代码存在）")
+  void recordsDecisionAndNodeMetrics() {
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    executor(happyHandlers(), new MicrometerDecisionMetricsAdapter(registry))
+        .execute(1001L, versions());
+
+    // 终态计数：按结论 / 档位 / 降级标记三者正交定位
+    assertThat(
+            registry
+                .get("claim.decision.executions")
+                .tags("result", "AUTO_APPROVE", "tier", "AUTO", "fallback", "false")
+                .counter()
+                .count())
+        .isEqualTo(1.0d);
+    // 节点计数：证明 recordNode 也真的被调用
+    assertThat(
+            registry
+                .get("claim.decision.node.executions")
+                .tags("node", DecisionGraph.AI_ASSESS, "status", "SUCCEEDED")
+                .counter()
+                .count())
+        .isEqualTo(1.0d);
+    // 负向对照：本可"一个全局计数器打天下"蒙过去，此处要求未发生的状态不得有计数
+    assertThat(
+            registry
+                .find("claim.decision.node.executions")
+                .tag("node", DecisionGraph.AI_ASSESS)
+                .tag("status", "FAILED")
+                .counter())
+        .isNull();
+  }
+
   @Test
   @DisplayName("全节点成功 + 闸门通过 → AUTO_APPROVE，轨迹按序落 5 条")
   void happyPath() {
-    List<DecisionNodeHandler> handlers =
-        List.of(
-            node(
-                DecisionGraph.EVIDENCE_LOAD,
-                DecisionNodeStatus.SUCCEEDED,
-                Map.of(
-                    "hasEvidence",
-                    true,
-                    "evidenceParsed",
-                    true,
-                    "ocrConfidence",
-                    new BigDecimal("0.95")),
-                null),
-            node(
-                DecisionGraph.RULE_CHECK,
-                DecisionNodeStatus.SUCCEEDED,
-                Map.of(
-                    "ruleConflict",
-                    false,
-                    "fraudGatePassed",
-                    true,
-                    "riskHit",
-                    false,
-                    "ruleConfidence",
-                    new BigDecimal("0.90")),
-                new BigDecimal("0.90")),
-            node(
-                DecisionGraph.AI_ASSESS,
-                DecisionNodeStatus.SUCCEEDED,
-                Map.of("rejectSuggested", false),
-                new BigDecimal("0.93")),
-            node(
-                DecisionGraph.ADJUST,
-                DecisionNodeStatus.SUCCEEDED,
-                Map.of("amount", new BigDecimal("300.00")),
-                null),
-            node(DecisionGraph.ARBITRATE, DecisionNodeStatus.SUCCEEDED, Map.of(), null));
+    List<DecisionNodeHandler> handlers = happyHandlers();
 
     DecisionGraphExecutor.DecisionExecutionResult result =
         executor(handlers).execute(1001L, versions());

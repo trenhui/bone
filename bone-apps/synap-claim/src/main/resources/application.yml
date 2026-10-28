@@ -41,3 +41,17 @@ bone:
       # 提交理赔的 Idempotency-Key 快照落库开关（表 claim_idempotency_record）；
       # false 时退化为「不记录快照」（同 blueprint bone.blueprint.idempotency.enabled 口径）。
       enabled: ${BONE_CLAIM_IDEMPOTENCY_ENABLED:true}
+
+# 生产可观测性出口（与 bone-system / bone-iam 同口径）：
+# 缺此块时指标只留在进程内存里，Prometheus 抓不到 —— 有埋点等于没有。
+# 抓取端点 /actuator/prometheus 仅供集群内 Prometheus 拉取（Security 中 /actuator/** 已放行，
+# 故须由网关/网络策略限制外部可达，勿在公网暴露）。
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      # 多服务共用同一 Prometheus 时用于区分来源（否则同名指标会被聚合混淆）
+      application: ${spring.application.name}

@@ -79,6 +79,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("rejectSuggested", rejectSuggested);
     // 结构化拒赔原因码随轨迹落库（可解释性 / 审计 / 申诉）：不利决定须可解释，自由文本理由已在前置层禁用
     out.put("rejectReasons", a == null ? List.of() : a.rejectReasons());
+    // 溯源：AI 真实参与时自报上游模型 + 提示词契约版本，供决策复算 / 算法备案 / 投诉举证
+    out.put("aiModel", a == null ? "" : a.modelVersion());
+    out.put("aiPromptVersion", a == null ? "" : a.promptVersion());
     // 可解释性：AI 与临床知识能力是否真实参与（false=降级/未集成，核赔员须据此提高人工审查力度）
     out.put("aiAvailable", true);
     out.put("knowledgeAvailable", k.available());

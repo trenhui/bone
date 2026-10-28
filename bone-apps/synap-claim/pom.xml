@@ -26,6 +26,12 @@
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- 指标抓取出口：仅 actuator 只有内置 health/info，没有 /actuator/prometheus。
+             与 bone-system / bone-iam 同口径（版本由 Spring Boot BOM 托管），否则决策指标采了也抓不到。 -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
         <dependency><groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>

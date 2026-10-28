@@ -12,6 +12,7 @@ import com.bone.claim.application.handler.EvidenceLoadNodeHandler;
 import com.bone.claim.application.handler.RuleCheckNodeHandler;
 import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.ClaimContextPort;
+import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.GraphFraudPort;
 import com.bone.claim.application.port.out.KnowledgeRetrievalPort;
@@ -290,7 +291,8 @@ class DecisionGraphFunctionalTest {
             new AdjustNodeHandler(ctxPort, new LocalRuleEnginePortAdapter()),
             new ArbitrateNodeHandler());
     TenantPort tenantPort = () -> TENANT_ID;
-    return new DecisionGraphExecutor(execSvc, claimSvc, tenantPort, handlers);
+    return new DecisionGraphExecutor(
+        execSvc, claimSvc, tenantPort, DecisionMetricsPort.NOOP, handlers);
   }
 
   /** 知识检索能力已接入（E3 GraphRAG）：临床合理、能力已执行。 */

@@ -1,5 +1,6 @@
 package com.bone.claim.application;
 
+import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.DecisionNodeHandler;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeContext;
 import com.bone.claim.application.port.out.DecisionNodeHandler.DecisionNodeOutcome;
@@ -34,7 +35,9 @@ import org.springframework.stereotype.Service;
  *   <li><b>执行不在事务内</b>：节点可能含 LLM 调用（秒级），先在内存聚合轨迹，收敛后单次短事务落库， 避免长事务持锁（AGENTS §7 禁悲观锁）；
  *   <li><b>LLM 不可用 → 降级纯规则路径</b>（不是直接失败），执行状态记 FALLBACK；
  *   <li><b>确定性节点失败 → 中止并转人工</b>（fail-safe）；
- *   <li><b>结论由确定性分诊计算</b>，AI 只产建议与置信度（"AI 不碰钱"）。
+ *   <li><b>结论由确定性分诊计算</b>，AI 只产建议与置信度（"AI 不碰钱"）；
+ *   <li><b>可观测 + 可追溯</b>：终态分布与单节点耗时经 {@link DecisionMetricsPort} 出站埋点；调用方漏传模型/提示词 版本时，用 AI
+ *       节点自报值回填，避免"回放与复算必需"的溯源字段静默留空。
  * </ul>
  */
 @Service
@@ -43,16 +46,19 @@ public class DecisionGraphExecutor {
   private final DecisionExecutionApplicationService decisionExecutionApplicationService;
   private final ClaimCaseApplicationService claimCaseApplicationService;
   private final TenantPort tenantPort;
+  private final DecisionMetricsPort decisionMetricsPort;
   private final Map<String, DecisionNodeHandler> handlers;
 
   public DecisionGraphExecutor(
       DecisionExecutionApplicationService decisionExecutionApplicationService,
       ClaimCaseApplicationService claimCaseApplicationService,
       TenantPort tenantPort,
+      DecisionMetricsPort decisionMetricsPort,
       List<DecisionNodeHandler> handlers) {
     this.decisionExecutionApplicationService = decisionExecutionApplicationService;
     this.claimCaseApplicationService = claimCaseApplicationService;
     this.tenantPort = tenantPort;
+    this.decisionMetricsPort = decisionMetricsPort;
     this.handlers =
         handlers.stream()
             .collect(
@@ -89,6 +95,7 @@ public class DecisionGraphExecutor {
 
   /** 执行一次决策图（落库执行记录 + 全链轨迹）。 */
   public DecisionExecutionResult execute(long claimId, DecisionVersions versions) {
+    long decisionBegin = System.nanoTime();
     ClaimCase claim = claimCaseApplicationService.getClaimAggregate(claimId);
     requireDecisionSegment(claim);
 
@@ -134,12 +141,14 @@ public class DecisionGraphExecutor {
               "LLM_UNAVAILABLE",
               0);
           confidence = asDecimal(outputs.get("ruleConfidence"));
+          decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.FALLBACK.name(), 0);
           continue;
         }
         // 确定性节点能力缺失：链路不完整 → fail-safe 转人工
         capabilityMissing = true;
         execution.recordTrace(
             seq, node.type(), node.name(), "", null, DecisionNodeStatus.SKIPPED, "NO_HANDLER", 0);
+        decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.SKIPPED.name(), 0);
         continue;
       }
       long begin = System.nanoTime();
@@ -157,6 +166,7 @@ public class DecisionGraphExecutor {
             outcome.status(),
             outcome.actionResult(),
             cost);
+        decisionMetricsPort.recordNode(node.name(), outcome.status().name(), cost);
         outputs.putAll(outcome.output());
         if (outcome.confidence() != null) {
           confidence = outcome.confidence();
@@ -185,6 +195,7 @@ public class DecisionGraphExecutor {
               "LLM_UNAVAILABLE",
               cost);
           confidence = asDecimal(outputs.get("ruleConfidence"));
+          decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.FALLBACK.name(), cost);
         } else {
           // 确定性节点失败 → 中止并转人工
           execution.recordTrace(
@@ -196,8 +207,17 @@ public class DecisionGraphExecutor {
               DecisionNodeStatus.FAILED,
               ex.getClass().getSimpleName(),
               cost);
+          decisionMetricsPort.recordNode(node.name(), DecisionNodeStatus.FAILED.name(), cost);
+          execution.backfillAiVersions(
+              aiVersion(outputs, "aiModel"), aiVersion(outputs, "aiPromptVersion"));
           execution.fail();
           decisionExecutionApplicationService.persist(execution);
+          decisionMetricsPort.recordDecision(
+              new DecisionMetricsPort.DecisionMetric(
+                  execution.getDecisionResult(),
+                  execution.getDecisionTier(),
+                  false,
+                  elapsedMillis(decisionBegin)));
           return toResult(execution);
         }
       }
@@ -221,8 +241,18 @@ public class DecisionGraphExecutor {
                         asBoolean(outputs.get("riskHit")),
                         asBoolean(outputs.get("fraudGatePassed")),
                         asBoolean(outputs.get("rejectSuggested"))));
+    // AI 溯源回填：调用方漏传 model/prompt 版本时，用 AI 节点自报的真实上游模型与提示词契约版本兜底
+    // （显式传入优先，见 DecisionExecution#backfillAiVersions）——避免"回放与复算必需"的字段静默为空。
+    execution.backfillAiVersions(
+        aiVersion(outputs, "aiModel"), aiVersion(outputs, "aiPromptVersion"));
     execution.complete(outcome.result(), outcome.tier(), confidence, fallback);
     decisionExecutionApplicationService.persist(execution);
+    decisionMetricsPort.recordDecision(
+        new DecisionMetricsPort.DecisionMetric(
+            outcome.result().name(),
+            outcome.tier().name(),
+            fallback,
+            elapsedMillis(decisionBegin)));
     return toResult(execution);
   }
 
@@ -251,6 +281,16 @@ public class DecisionGraphExecutor {
 
   private static boolean asBoolean(Object v) {
     return Boolean.TRUE.equals(v);
+  }
+
+  /** 取 AI 节点自报的版本字段；缺失/空值统一返回空串，交由回填逻辑判空跳过（绝不臆造版本号）。 */
+  private static String aiVersion(Map<String, Object> outputs, String key) {
+    Object v = outputs.get(key);
+    return v == null ? "" : String.valueOf(v).trim();
+  }
+
+  private static long elapsedMillis(long beginNanos) {
+    return (System.nanoTime() - beginNanos) / 1_000_000;
   }
 
   private static BigDecimal asDecimal(Object v) {

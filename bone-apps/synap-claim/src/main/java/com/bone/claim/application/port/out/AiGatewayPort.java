@@ -19,15 +19,42 @@ public interface AiGatewayPort {
    *
    * <p>{@code rejectReasons} 为结构化拒赔原因码（白名单枚举，非自由文本）—— 用于"不利决定须可解释"的合规要求 （保险/PIPL），经 {@code
    * RejectReasonCodes} 校验后落决策轨迹供审计与申诉。 自由文本原因视为不可信，绝不允许模型臆造。
+   *
+   * <p>{@code modelVersion} / {@code promptVersion} 由<b>适配器自报</b>（真实上游模型 + 提示词契约版本），不经调用方传入：
+   * 模型版本是决策复算、算法备案与投诉举证的先决条件，若交给 HTTP 调用方填，缺省即静默留空，溯源形同虚设。
    */
   record AiAssessment(
       boolean available,
       boolean rejectSuggested,
       BigDecimal confidence,
-      List<String> rejectReasons) {
-    /** 向后兼容：无原因时复用 3 参构造。 */
+      List<String> rejectReasons,
+      String modelVersion,
+      String promptVersion) {
+
+    /** 归一化：空值不落 {@code null}，避免下游 NPE 与"null 字符串"入库。 */
+    public AiAssessment {
+      rejectReasons = rejectReasons == null ? List.of() : List.copyOf(rejectReasons);
+      modelVersion = modelVersion == null ? "" : modelVersion;
+      promptVersion = promptVersion == null ? "" : promptVersion;
+    }
+
+    /** 向后兼容：仅关心拒赔结论时复用 4 参构造（无版本溯源）。 */
+    public AiAssessment(
+        boolean available,
+        boolean rejectSuggested,
+        BigDecimal confidence,
+        List<String> rejectReasons) {
+      this(available, rejectSuggested, confidence, rejectReasons, "", "");
+    }
+
+    /** 向后兼容：无原因码时复用 3 参构造。 */
     public AiAssessment(boolean available, boolean rejectSuggested, BigDecimal confidence) {
-      this(available, rejectSuggested, confidence, List.of());
+      this(available, rejectSuggested, confidence, List.of(), "", "");
+    }
+
+    /** 是否携带真实模型溯源（空 = 适配器未自报，消费方不得假装"已可追溯"）。 */
+    public boolean hasModelTrace() {
+      return !modelVersion.isBlank();
     }
   }
 }

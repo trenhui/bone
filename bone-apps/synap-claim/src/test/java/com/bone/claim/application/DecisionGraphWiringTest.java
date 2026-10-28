@@ -11,6 +11,7 @@ import com.bone.claim.application.handler.AiAssessNodeHandler;
 import com.bone.claim.application.handler.ArbitrateNodeHandler;
 import com.bone.claim.application.handler.EvidenceLoadNodeHandler;
 import com.bone.claim.application.handler.RuleCheckNodeHandler;
+import com.bone.claim.application.port.out.DecisionMetricsPort;
 import com.bone.claim.application.port.out.TenantPort;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
 import com.bone.claim.domain.repository.EvidenceRepository;
@@ -19,9 +20,12 @@ import com.bone.claim.infrastructure.context.LocalClaimContextPortAdapter;
 import com.bone.claim.infrastructure.forensics.LocalVisualForensicsPortAdapter;
 import com.bone.claim.infrastructure.fraud.LocalGraphFraudPortAdapter;
 import com.bone.claim.infrastructure.knowledge.LocalKnowledgeRetrievalPortAdapter;
+import com.bone.claim.infrastructure.metrics.MicrometerDecisionMetricsAdapter;
 import com.bone.claim.infrastructure.notify.LocalNotificationPortAdapter;
 import com.bone.claim.infrastructure.rule.LocalRuleEnginePortAdapter;
 import com.bone.core.domain.event.DomainEventPublisher;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -67,6 +71,10 @@ class DecisionGraphWiringTest {
           DecisionGraphExecutor executor = ctx.getBean(DecisionGraphExecutor.class);
           assertThat(executor.handlers())
               .containsOnlyKeys("EvidenceLoad", "RuleCheck", "AiAssess", "Adjust", "Arbitrate");
+
+          // 可观测性：指标适配器必须真在装配图上，否则"有埋点代码但没人采集"= 生产瞎子
+          assertThat(ctx).hasSingleBean(DecisionMetricsPort.class);
+          assertThat(ctx).hasSingleBean(MicrometerDecisionMetricsAdapter.class);
         });
   }
 
@@ -81,10 +89,20 @@ class DecisionGraphWiringTest {
         "com.bone.claim.infrastructure.knowledge",
         "com.bone.claim.infrastructure.forensics",
         "com.bone.claim.infrastructure.fraud",
-        "com.bone.claim.infrastructure.notify"
+        "com.bone.claim.infrastructure.notify",
+        "com.bone.claim.infrastructure.metrics"
       })
   @Import(DecisionGraphExecutor.class)
   static class WiringConfig {
+    /**
+     * 指标注册表：生产由 spring-boot-starter-actuator 自动装配，此处显式提供一个最小注册表， 使装配测试无需拉起完整 Boot
+     * 上下文即可验证指标适配器真的进了装配图。
+     */
+    @Bean
+    MeterRegistry meterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
     @Bean
     ClaimCaseRepository claimCaseRepository() {
       return Mockito.mock(ClaimCaseRepository.class);

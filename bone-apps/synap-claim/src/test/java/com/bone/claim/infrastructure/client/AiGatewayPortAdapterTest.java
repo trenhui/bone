@@ -19,6 +19,7 @@ import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -149,6 +150,44 @@ class AiGatewayPortAdapterTest {
     assertThat(a.rejectReasons()).isEmpty();
   }
 
+  @Test
+  @DisplayName("自报真实上游模型 + 提示词契约版本（溯源不由调用方填，绝不静默留空）")
+  void reportsRealUpstreamModelAndPromptContractVersion() {
+    LlmClient client =
+        new FixedModelLlmClient("{\"rejectSuggested\":false,\"confidence\":0.9}", "hunyuan-turbo");
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    // 取网关回传的真实路由模型，而不是请求侧的逻辑别名
+    assertThat(a.modelVersion()).isEqualTo("hunyuan-turbo");
+    assertThat(a.promptVersion()).isEqualTo(AiGatewayPortAdapter.PROMPT_VERSION).isNotBlank();
+    assertThat(a.hasModelTrace()).isTrue();
+  }
+
+  @Test
+  @DisplayName("网关未回传模型 → 退回逻辑别名，绝不返回空串")
+  void fallsBackToLogicalAliasWhenGatewayOmitsModel() {
+    LlmClient client =
+        new FixedModelLlmClient("{\"rejectSuggested\":false,\"confidence\":0.9}", null);
+    AiGatewayPort port = new AiGatewayPortAdapter(gatewayWith(client, policiesWith(null)));
+
+    AiGatewayPort.AiAssessment a = port.assess(SAMPLE);
+
+    assertThat(a.modelVersion()).isEqualTo(AiGatewayPortAdapter.MODEL).isNotBlank();
+  }
+
+  @Test
+  @DisplayName("未自报版本的评估不得假装可追溯（hasModelTrace=false）")
+  void assessmentWithoutSelfReportedVersionIsNotFalselyTraceable() {
+    AiGatewayPort.AiAssessment a =
+        new AiGatewayPort.AiAssessment(true, false, new BigDecimal("0.9"));
+
+    assertThat(a.hasModelTrace()).isFalse();
+    assertThat(a.modelVersion()).isEmpty();
+    assertThat(a.promptVersion()).isEmpty();
+  }
+
   private static LlmGatewayApplicationService gatewayWith(
       LlmClient client, LlmGatewayPolicies policies) {
     DomainEventPublisher publisher = Mockito.mock(DomainEventPublisher.class);
@@ -178,6 +217,22 @@ class AiGatewayPortAdapterTest {
     public LlmResponse chat(LlmRequest request) {
       this.recorded = request;
       return new LlmResponse(responseContent, request.model(), "stop", LlmUsage.empty());
+    }
+  }
+
+  /** 返回指定 model 的网关客户端（模拟 ModelRouter 路由到具体上游模型；model=null 模拟网关不回传）。 */
+  static final class FixedModelLlmClient implements LlmClient {
+    private final String content;
+    private final String model;
+
+    FixedModelLlmClient(String content, String model) {
+      this.content = content;
+      this.model = model;
+    }
+
+    @Override
+    public LlmResponse chat(LlmRequest request) {
+      return new LlmResponse(content, model, "stop", LlmUsage.empty());
     }
   }
 }

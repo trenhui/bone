@@ -4,6 +4,7 @@ import com.bone.claim.application.port.out.AiGatewayPort;
 import com.bone.claim.application.port.out.AiGatewayUnavailableException;
 import com.bone.claim.application.port.out.ClaimContextPort;
 import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,11 @@ public class LocalAiGatewayPortAdapter implements AiGatewayPort {
 
   private static final BigDecimal AI_CONFIDENCE = new BigDecimal("0.93");
 
+  /** 本地桩自报的模型标识：显式标注"非真实模型"，避免溯源字段留空被误读为"已接入真实模型"。 */
+  private static final String LOCAL_MODEL = "local-stub";
+
+  private static final String LOCAL_PROMPT_VERSION = "local-stub-v1";
+
   private volatile boolean enabled = true;
 
   /** 测试/演练用：模拟网关可用性。 */
@@ -38,6 +44,7 @@ public class LocalAiGatewayPortAdapter implements AiGatewayPort {
     if (!enabled) {
       throw new AiGatewayUnavailableException("AI 网关不可用（本地桩关闭）");
     }
-    return new AiAssessment(true, false, AI_CONFIDENCE);
+    return new AiAssessment(
+        true, false, AI_CONFIDENCE, List.of(), LOCAL_MODEL, LOCAL_PROMPT_VERSION);
   }
 }

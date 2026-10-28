@@ -38,6 +38,14 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
 
   static final String MODEL = "synap-claim-ai";
 
+  /**
+   * 提示词契约版本：改动 system prompt 的结构化字段集（含拒赔原因码枚举）必须同步 bump。
+   *
+   * <p>决策复算要求"回到当时那套配置"——同一案件用新提示词重跑会得到不同结论，故提示词版本属审计必留字段 （V5 {@code
+   * claim_decision_execution.prompt_version} 注释即"回放与复算必需"）。
+   */
+  static final String PROMPT_VERSION = "claim-assess-v2";
+
   private final LlmGatewayApplicationService gateway;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -74,12 +82,12 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       throw new AiGatewayUnavailableException("AI 网关评估失败，降级纯规则路径: " + ex.getMessage(), ex);
     }
     // 模型未遵循结构化输出契约 → 视为不可信，fail-closed 降级
-    return parse(response.content());
+    return parse(response);
   }
 
-  private AiAssessment parse(String content) {
+  private AiAssessment parse(LlmResponse response) {
     try {
-      JsonNode node = objectMapper.readTree(content);
+      JsonNode node = objectMapper.readTree(response.content());
       boolean reject = node.path("rejectSuggested").asBoolean(false);
       BigDecimal confidence = BigDecimal.valueOf(node.path("confidence").asDouble(0.5d));
       if (confidence.compareTo(BigDecimal.ZERO) < 0 || confidence.compareTo(BigDecimal.ONE) > 0) {
@@ -88,10 +96,20 @@ public class AiGatewayPortAdapter implements AiGatewayPort {
       // 仅当建议拒赔时解析原因码，并经白名单归一化（未知码丢弃、空则兜底 OTHER）—— 保证"拒赔必有可解释原因"
       List<String> reasons =
           reject ? normalizeRejectReasons(node.path("rejectReasons")) : List.of();
-      return new AiAssessment(true, reject, confidence, reasons);
+      return new AiAssessment(
+          true, reject, confidence, reasons, resolvedModel(response), PROMPT_VERSION);
     } catch (Exception ex) {
       throw new AiGatewayUnavailableException("AI 结构化结论解析失败，降级纯规则路径: " + ex.getMessage(), ex);
     }
+  }
+
+  /**
+   * 真实上游模型标识：优先取网关回传的 {@code response.model()}（ModelRouter 实际路由到的模型）， 缺失时退回逻辑别名 {@link
+   * #MODEL}——绝不返回空串，避免"AI 真的跑过但溯源字段为空"。
+   */
+  private static String resolvedModel(LlmResponse response) {
+    String model = response.model();
+    return model == null || model.isBlank() ? MODEL : model;
   }
 
   /** 从模型输出抽取拒赔原因码并白名单归一化（见 {@link RejectReasonCodes}）。 */

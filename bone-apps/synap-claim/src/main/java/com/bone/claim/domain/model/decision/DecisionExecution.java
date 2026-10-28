@@ -167,6 +167,30 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
             durationMs));
   }
 
+  /**
+   * 回填 AI 溯源版本（执行终结前调用）。
+   *
+   * <p><b>只补空、不覆盖</b>：调用方显式传入的版本（如回归基线固定 {@code m1/p1}）优先，绝不被自报值改写； 仅在字段为空时用 AI 节点自报的真实上游模型 /
+   * 提示词契约版本兜底。这是对"V5 表注释称回放与复算必需、但接口默认值让字段恒为空"这一 配置失效债务的修正——溯源字段不得静默留空。
+   *
+   * @throws DomainException 执行已终结（版本快照属执行期事实，终结后不得改写）
+   */
+  public void backfillAiVersions(String modelVersion, String promptVersion) {
+    if (statusEnum() != Status.RUNNING) {
+      throw new DomainException("执行已终结，不可回填版本快照");
+    }
+    if (isBlank(this.modelVersion) && !isBlank(modelVersion)) {
+      this.modelVersion = modelVersion;
+    }
+    if (isBlank(this.promptVersion) && !isBlank(promptVersion)) {
+      this.promptVersion = promptVersion;
+    }
+  }
+
+  private static boolean isBlank(String v) {
+    return v == null || v.isBlank();
+  }
+
   /** 结束执行并落结论（只允许一次）。 */
   public void complete(
       DecisionResult result, DecisionTier tier, BigDecimal confidence, boolean fallback) {
