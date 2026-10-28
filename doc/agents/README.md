@@ -23,6 +23,35 @@
 | [05 数据库与安全](05-数据库与安全.md) | §8 §10 | 要动表、写 SQL、关注安全基线 |
 | [06 AI 协作与编码准则](06-AI协作与编码准则.md) | §11 §12 | **任何任务**：编码准则、自主权分级、交付流程 |
 
+## 架构规范按需加载
+
+AGENTS.md 路由只把 agent 引到本目录六份正文；横切与专项规范在 `doc/architecture/`，
+**触发才读、不整读**（判据同样是加载时机，与拆分原则一致）。架构文档全景索引见
+[`doc/architecture/README.md`](../architecture/README.md)，本表只回答「什么情况读哪份」。
+
+- **主干**（已由 AGENTS.md 路由表与 03 §5.5 / 06 §12.2 按修改路径挂载，此处不重复）：
+  `Bone-DDD-最终实践方案.md`、`Bone-API-规范.md`、`数据库开发规范.md`、`BONE-总体架构设计方案.md`、`bone-前端架构.md`、`openapi/`
+- **横切与专项**（触发才读）：
+
+| 触发场景 | 按需加载 |
+|---|---|
+| 查/登记错误码、接口报错对账 | `doc/architecture/Bone-错误码登记.md` |
+| 日志字段、脱敏、日志级别约定 | `doc/architecture/Bone-日志规范.md` |
+| 指标、链路追踪、健康检查 | `doc/architecture/Bone-可观测性规范.md` |
+| 新增配置项、环境变量、profile | `doc/architecture/Bone-配置与环境规范.md`（+ `config/env/README.md`） |
+| 安全编码：鉴权、注入、密钥、越权 | `doc/architecture/Bone-安全开发规范.md` |
+| 租户隔离、`tenant_id`、行级策略 | `doc/architecture/Bone-多租户规范.md`（方案见 `多租户数据隔离方案设计.md`、`design-single-repository-tenant-scope.md`） |
+| Redis / 本地缓存、缓存键与失效 | `doc/architecture/Bone-缓存规范.md` |
+| 领域事件、消息 envelope、outbox | `doc/architecture/Bone-消息与事件规范.md` |
+| IAM 审计日志与系统日志写哪边 | `doc/architecture/module-boundary-iam-system.md` |
+| 测试分层、测试金字塔、自动化策略 | `doc/architecture/Bone-测试策略.md` |
+| 版本号、发布与回滚流程 | `doc/architecture/Bone-版本与发布规范.md` |
+| 国际化文案、语言包 | `doc/architecture/Bone-国际化规范.md` |
+| 模块合规文档模板（Docs-as-Code） | `doc/architecture/Docs-as-Code-模块合规模板.md`（06 §11 已挂） |
+| 追溯某条约束的决策依据 | `doc/architecture/adr/`（编号索引见架构 README） |
+
+> 单一真源：本表只做**加载指针**，不复制任何规范内容；规范正文只在其所在文档维护。
+
 ## 读法与约定
 
 - **章节编号沿用拆分前**：拆分文档里的 `§5.2`、`§11.12` 就是原 `AGENTS.md` 的编号，历史引用（ADR、模块详设、技能说明）按编号仍可定位到对应文件。
