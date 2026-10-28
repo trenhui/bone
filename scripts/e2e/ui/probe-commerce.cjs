@@ -7,7 +7,7 @@
 //   ① 菜单名以运行时为准；② shell 的 commerce 是两级菜单（先展开「交易管理」）；
 //   ③ Modal 与 Drawer 都认；④ 首屏给足 Vite 编译时间。
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, UI_BASE: BASE, USER } = require('../e2e_lib/client.cjs');
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-commerce';
 require('fs').mkdirSync(OUT, { recursive: true });
@@ -21,21 +21,15 @@ const ok = (name, pass, detail = '') => {
 async function login(page) {
   await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
-  for (const pwd of ['123456', 'admin123', 'Admin@123']) {
-    const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-    if (!(await u.count()) || !(await u.isVisible().catch(() => false))) break;
+  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
+  if ((await u.count()) && (await u.isVisible().catch(() => false))) {
     await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(pwd);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);
-    if (await page.locator('.ant-layout-sider, aside').count()) {
-      const tok = await page.evaluate(() => localStorage.getItem('token'));
-      if (tok) return pwd;
-    }
-    await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2500);
   }
-  return null;
+  const tok = await page.evaluate(() => localStorage.getItem('token'));
+  return tok ? PWD : null;
 }
 
 /** 展开父级 SubMenu 并点击子菜单项（幂等展开 + 重试） */

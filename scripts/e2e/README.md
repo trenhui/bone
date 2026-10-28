@@ -17,12 +17,13 @@ scripts/e2e/
 │   ├── teardown.py     运行级残留自动回收（register/clean）
 │   ├── mysql.py        第二证据源直查（query，防「接口 200 但没落库」）
 │   ├── sign.py         渠道回调 hmac 签名
-│   └── client.cjs      Node 侧同源常量与登录（.mjs/.cjs 探针共用）
+│   └── client.cjs      Node 侧同源常量与登录（.mjs/.cjs 探针共用；含 registerCleanup/runCleanup 对称 Python teardown）
 ├── *-full-chain-e2e.py 全链路用例（Python，断言制）
 ├── *-sweep.py / chains.py / multichannel*.py / channel_*  联调扫描与渠道链路
 ├── cleanup-residue.py  残留定点回收执行体（teardown.register 的落点）
 ├── *.mjs / *.cjs       UI 与接口探针（Playwright/直连 HTTP）
-└── ui/                 浏览器探针（写新探针前必读 ui/README.md 第 0 条）
+├── ui/                 浏览器探针（写新探针前必读 ui/README.md 第 0 条）
+└── run.sh / lint.sh    统一入口（lint/py/node/<脚本>）与零依赖语法门禁（各 agent / CI 可复用）
 ```
 
 **分层铁律**：脚本只写业务断言，基础设施一律 `import e2e_lib`，禁止再在脚本内
@@ -83,20 +84,84 @@ total = ds.amount()                  # 2863.50
 parts = ds.split(total, 2)           # Σ == total
 ```
 
-## 4. 脚本清单（按用途）
+## 4. 脚本清单（全量能力目录）
 
-| 类别 | 脚本 | 说明 |
+> 编目原则：**目录里每个脚本必须能在这里查到**（查不到 = 不存在 = 会被重复造轮子）。
+> 新增 / 合并 / 归档脚本时同步维护本表。
+
+### 4.1 全链路回归套件（常驻 · 有断言基线）
+
+| 脚本 | 意图 | 基线 |
 |---|---|---|
-| 全链路 | `two-scenario-full-chain-e2e.py` | 报销/理赔/采购三样板：建模深化 + 状态机 + 回收站 + 审计（基线 87 断言） |
-| 全链路 | `app-to-data-full-chain-e2e.py` | 应用→模块→模型→界面→发布→数据全生命周期 + MySQL 落库核查（基线 54） |
-| 全链路 | `ui-schema-samples-e2e.py` | 协议样例对账：提交/联动强制（基线 31；直连 metadata :9001） |
-| 联调 | `chains.py`、`multichannel.py`、`integration-flow-exec-chain.py` | 跨模块链路与多渠道回归 |
-| 扫描 | `api-sweep.py`、`write-sweep.py`、`real-id-sweep.py`、`write_coverage.py` | 端点探活/写覆盖扫描 |
-| 渠道 | `channel_simulator.py`、`channel-buyer-broadcast.py` | 模拟渠道侧回调与广播 |
-| 回收 | `cleanup-residue.py` | `--suffix` 定点回收（默认 dry-run，`--apply` 才执行） |
-| 探针 | `*.mjs` / `*.cjs` / `ui/*` | UI 与接口探针，统一走 `e2e_lib/client.cjs` |
+| `two-scenario-full-chain-e2e.py` | 报销/理赔/采购三样板：建模深化 + 状态机 + 回收站 + 审计（经网关） | 87 |
+| `app-to-data-full-chain-e2e.py` | 设备巡检工单：应用→模块→模型→界面→发布→数据全生命周期 + MySQL 落库核查 | 54 |
+| `ui-schema-samples-e2e.py` | 界面协议样例对账：submitRules/linkage 服务端强制（直连 metadata :9001） | 31 |
+
+### 4.2 跨模块联调链（走网关）
+
+| 脚本 | 意图 |
+|---|---|
+| `chains.py` | 跨模块 8 条链路 C1..C8 + 门禁 G（网关路由 vs 代码路径一致性） |
+| `multichannel.py` | 多渠道交易域：渠道注册→库存→上架→拉单（幂等）→发货→签收 + 负向 |
+| `integration-flow-exec-chain.py` | 集成模块「建流程→激活→执行→看监控」闭环 |
+| `channel-buyer-broadcast.py` | 渠道买家映射 + 库存广播 Outbox |
+| `channel_simulator.py` | 支付渠道模拟器（被回调方，本地联调/回归用） |
+| `lowcode-closed-loop.cjs` | 低代码最小闭环端到端（PRD v0.34 W0-1~W1a + UC-01~06） |
+
+### 4.3 端点扫描（只读/空体 · 出报告不阻断）
+
+| 脚本 | 意图 / 分工 |
+|---|---|
+| `api-sweep.py` | 全模块 GET 探活，路径变量用 `1` 占位（404 多为占位假象） |
+| `real-id-sweep.py` | 带真实 ID 的 GET 扫描（与 api-sweep 分工：真 404 vs 占位 404） |
+| `write-sweep.py` | 写端点空体 `{}` 扫描：揪出 5xx（服务端把客户端错误报成故障） |
+| `write_coverage.py` | 写端点覆盖率补测：真正落库的最小写闭环（补最后一公里） |
+| `_extract_endpoints.py` | 辅助：从 Controller 源码提取端点清单（两份 sweep 的输入） |
+
+### 4.4 UI / 浏览器探针（Playwright · 需先起前端环境）
+
+| 脚本 | 意图 |
+|---|---|
+| `ui/probe-buttons.cjs` | 采集各页面真实菜单项与按钮名（探针数据源） |
+| `ui/probe-routes.cjs` | 逐菜单点击导航 + 断言业务元素（DATA/EMPTY/CARDS/FORM/THIN） |
+| `ui/probe-write.cjs` | 写入口深度交互：开弹窗/填表/提交/取消 |
+| `ui/probe-empty.cjs` | EMPTY 页面归因：接口没数据 vs UI 没渲染 |
+| `ui/probe-commerce.cjs` | 多渠道交易域 UI 巡检（含写操作闭环） |
+| `ui/probe-metadata-loop.cjs` | 元数据低代码最小闭环（metadata-app 真实 UI 走通） |
+| `ui/smoke-render.cjs` | 渲染冒烟：shell 经 qiankun 挂载 metadata-app |
+| `ui/smoke-runtime-autoselect.cjs` | W0-1/D12 回归：/metadata#/runtime 无参入口自动选中 |
+| `ui-all-menu-regression.mjs` | 全菜单回归（凭据缺省值约定见 client.cjs） |
+| `ui-app-to-data-probe.mjs` | 全链路 UI 探针：shell 登录 → 应用→模块→模型→界面→数据完整旅程 |
+| `ui-full-module-crud-probe.mjs` | 全模块 CRUD 探针（`BONE_E2E_ONLY` 局部复跑） |
+| `ui-nine-module-deep-probe.mjs` | 九模块深探（按 label 显式填值；`ui-full-module-crud-probe.mjs` 通用填表失败时的兜底，覆盖其搞不定的模块） |
+| `ui-create-data-probe.mjs` | 建数据表单实测（tree-select/排序号/状态等真实控件） |
+| `ui-personal-views-probe.mjs` | 「个人显示」运行时探针（v3 bundle 双轨收敛后） |
+| `ui-runtime-evidences-regression.mjs` | 运行时证据回归（failures[] 口径汇总） |
+| `ui-interface-tab-boundary-probe.mjs` | 实体详情界面 Tab 边界探针 |
+| `ui-delivery-preview-relocation-probe.mjs` | 交付预览迁位探针 |
+| `ui-shadowed-column-alert-probe.mjs` | 影子列告警探针 |
+| `ui-view-filter-persistence-probe.mjs` | 视图筛选持久化探针 |
+
+### 4.5 界面设计器探针（参数化单入口）
+
+| 脚本 | 意图 |
+|---|---|
+| `ui-designer-probe.mjs` | 6 场景合一：`--scenario three\|n4n5\|n7\|perf\|production\|ux\|all`。three=三样板切换/子表合计/协议自检，n4n5=控件校验规则+样例数据预览，n7=角色身份变体，perf=大数据量性能，production=生产 DOM 活体，ux=UX 优化批次回归 |
+| `n7-mutation-verify.sh` | n7 场景的变异验证辅助（断言牙齿核对） |
+
+### 4.6 归档与残留治理
+
+| 路径 | 说明 |
+|---|---|
+| `cleanup-residue.py` | `--suffix` 定点回收执行体（默认 dry-run，`--apply` 执行） |
+| `run.sh` / `lint.sh` | 统一入口与零依赖语法门禁（用法见 §8 目录纪律） |
 
 基线断言数会随用例增长而变，以脚本实际输出的 `汇总` 行为准；**重构不改基线**是提交纪律。
+
+> **目录纪律（2026-10-28 整合）**
+> - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用用例请直接放到根目录或 `ui/`。
+> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh lint`（语法自检）、`./run.sh py`（全链路）、`./run.sh node`（UI 核心探针）、`./run.sh <脚本名>`（指定脚本）、`./run.sh all`（默认 = lint+py）。
+> - 环境变量唯一清单见 [`.env.example`](.env.example)；`config.py` 与 `client.cjs` 的默认值须保持同步。
 
 ## 5. 环境变量（`e2e_lib/config.py` 是唯一真源）
 
@@ -141,10 +206,49 @@ node --check scripts/e2e/<探针>.mjs
   e2e 验**行为**，95_validate 验**数据不变量**。
 - `./scripts/check.sh`（pre-commit 38 项）是提交门禁，与 e2e 独立，两者都要过。
 
-## 8. 诊断待办（已知问题，本轮评审决定暂不修）
+## 8. 诊断与整合记录
+
+> 2026-10-28 整合分两轮：第一轮把散落脚本沉淀为「可复用库 + 临时调试区」两层并补通用能力；第二轮（收口）删除冗余/一次性脚本、把残存内联样板收口进公共层。
+
+**已修复 / 已整合**
+
+| 问题 | 处置 |
+|---|---|
+| 根目录散落 12 个一次性调试脚本（`diag-*` + `debug-form.mjs`，硬编码实体编码 `insp_1792042722480` 等），污染可复用库、README §4 未登记 | 首轮归档至 `archive/`（3 个 runtime 枚举探针合并为 `diag-runtime-enum.mjs`）；**第二轮收口确认无复用价值后整体删除 `archive/`**——非回归资产，结论以 Git 历史为准 |
+| `chains.py` 硬编码 `GW` / `ADMIN`（`"admin","123456"`），违反 §2.1「取配置只从 e2e_lib.config」 | 改读 `config.BASE.rsplit("/api/v1",1)[0]` 与 `(config.USER, config.PWD)`；文档运行路径去绝对化 |
+| Node 探针无对称 teardown：UI 探针在浏览器内创建的实体/记录/账号退出后无自动回收 | `client.cjs` 新增 `registerCleanup(fn)` / `runCleanup()`（对称 Python `teardown.py`，探针 finally 中 await） |
+| 无统一入口，各 agent 须记住每个脚本名；无 CI 可消费的语法门禁 | 新增 `run.sh`（lint/py/node/<脚本>/all）+ `lint.sh`（py_compile + node --check，零依赖） |
+| 配置项分散在 `config.py` 与 `client.cjs`，两处默认值易漂移 | 新增 `.env.example` 作为变量单一清单，并在两处注释交叉引用 |
+| 6 个 `ui-designer-*` 探针各起炉灶（同为 Playwright + client.cjs，骨架重复），且 README 未编目过半脚本（34/59 查不到） | 合并为参数化单入口 `ui-designer-probe.mjs --scenario <three\|n4n5\|n7\|perf\|production\|ux\|all>`（断言与选择器逐字保留，three/n7 已实跑全绿）；§4 升级为**全量能力目录**，目录内每个脚本必须可查 |
+| **第二轮（2026-10-28 收口）删除冗余** | |
+| `ui-two-scenario-probe.mjs` 内联硬编码 `'admin'/'123456'` 凭据（违反 §2.1、gitleaks 风险）+ 与 `ui-app-to-data-probe.mjs` / `lowcode-closed-loop.cjs` 重叠 | 删除；功能由上述两脚本覆盖，且消除硬编码口令 |
+| `probe-metadata-loop-api.cjs` 与套件内 canonical `ui/probe-metadata-loop.cjs` 同目的最小闭环 | 删除（canonical 以 `ui/probe-metadata-loop.cjs` 为准，已接入 `run.sh node`） |
+| `probe-hot-column.cjs` 仅 `console.log` JSON 无断言门禁、含 62s TTL 等待、与 `ui-create-data-probe.mjs` 重叠 | 删除（慢且无 gate，价值由 create-data 探针覆盖） |
+| `ui-nine-module-deep-probe.mjs` 与 `ui-full-module-crud-probe.mjs` 同目 | **保留**：其头注释明确是通用填表失败时的兜底，覆盖 9 个通用探针搞不定的模块，属独特价值 |
+| **第二轮（2026-10-28 收口）整合重构** | |
+| `write_coverage.py` 内联 `GW` / `ADMIN=("admin","123456")` 且自包 `http()`（与 `chains.py` 同类违反 §2.1） | 改读 `config.BASE.rsplit("/api/v1",1)[0]` 与 `(config.USER, config.PWD)`，复用 `e2e_lib.http`（零硬编码、gitleaks 友好） |
+| `ui/probe-commerce.cjs` 只取 `USER` 却内联口令猜测 `['123456','admin123','Admin@123']` | 改用 `client.cjs` 的 `PWD`（与 §2.1 一致，去猜测逻辑） |
+
+**仍开放（待后续）**
 
 | 问题 | 影响 | 建议修法 |
 |---|---|---|
-| `api-sweep.py` 探测体写共享文件 `/tmp/_sweep_body.txt` | 两份 sweep 并发跑会互相覆盖 body（误报 500 明细） | 改 `tempfile.mkstemp` 每进程独立临时文件 |
-| `ui-schema-samples-e2e.py` 无 teardown（原设计） | 每跑一次留一份后缀残留，需手工 `cleanup-residue.py --suffix` 补清 | 待定：若样例对账不再需要保留现场，补 `teardown.register` |
 | `fixtures` 词表是 `scripts/seed/uat/gen.py` 的精简镜像 | 两处词表各自演化可能漂移 | 长期抽到共享词表模块（需 UAT 侧文件所有者配合） |
+| Node 侧无 `fixtures` 等价物：`.mjs/.cjs` 探针仍手写测试数据（`inspector:'实证'` 等），与 Python `fixtures` 口径不一致 | 跨语言数据不统一，UI 探针数据不「像生产」 | 抽 `e2e_lib/fixtures.cjs`（doc_no/amount/split/串链），以 `fixtures.py` 为口径真源 |
+| UI 探针存在两族并行：`ui/*.cjs`（probe-buttons/routes/write/commerce…）与根目录 `ui-*.mjs`（designer/personal-views…），命名/格式不统一 | 新探针作者不知该加哪族，易重复造轮子 | 统一收敛到 `ui/` 单族、统一 `.mjs` 或 `.cjs`，把可复用片段（菜单点击/弹窗判定/断言收集）抽到 `e2e_lib/ui.cjs` |
+| `chains.py`(48KB) / `multichannel.py` / `integration-flow-exec-chain.py` 各为单体大文件，链路定义与断言内联 | 新增链路要改大文件、易冲突 | 抽「链路定义数据 + 通用执行器」，链路仅声明步骤与判据 |
+
+## 9. 整合与复用：设计原则与 Why
+
+> 目标：**各 agent 拿到 `scripts/e2e/` 就能直接复用，不必重新推导样板、不必猜哪个脚本是权威**。
+
+1. **测试套件是「库」不是「脚本堆」**（xUnit / Playwright 最佳实践）。基础设施（登录、HTTP、配置、teardown、断言收集）只应有一份，所有用例 import 它。
+   本目录的 `e2e_lib/`（Python）与 `e2e_lib/client.cjs`（Node）就是这份唯一真源；脚本只写**业务断言**。
+2. **关注点分离 = Page Object / Driver 模式**。把「怎么连、怎么登、怎么回收」从「测什么」里剥出来，用例才易读、易维护、易让 agent 生成。
+3. **一次性调试脚本禁止留在可复用库**。它们硬编码某次发布的实体编码、针对瞬时状态「快速实证」，既不能被复跑比对，又让 agent 误以为它们是权威入口 → 故直接删除（曾短暂归档至 `archive/`，收口时整体移除）。
+4. **配置即环境（12-Factor）**：地址/口令/租户全走环境变量，脚本零硬编码。切环境改 `.env` 而非改脚本；硬编码口令还会被 gitleaks 拦下。
+5. **可选择性执行（pytest markers / jest tags 思路）**。用 `run.sh` 的 `py`/`node`/`<脚本>` 分流，agent 可按模块只跑相关链路，不必全量；CI 用 `lint.sh` 先卡语法。
+6. **跨语言对称**：Python 有 `teardown` + `fixtures`，Node 也该有等价物，否则 UI 探针会留下无法自动回收的脏数据，且数据不「像生产」。
+7. **退出码即契约**：每个脚本 `report.finish()` / `makeChecker().report()` 都按失败数定退出码，`run.sh` 聚合，供 CI 与编排判定——没有「跑通即验收」的假绿。
+
+> 更深一层的整合（Node fixtures、UI 探针单族化、链路数据驱动）见 §8「仍开放」，属 L2 重构，需对应模块 owner 评估后推进。

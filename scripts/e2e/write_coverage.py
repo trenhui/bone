@@ -37,10 +37,12 @@ Blueprint 库存扣减与确认。
 import sys
 import time
 
+from e2e_lib import config
 from e2e_lib.http import default, login_as, raw_call
 
-GW = "http://127.0.0.1:8888"
-ADMIN = ("admin", "123456")
+# 取配置只从 e2e_lib.config（与 chains.py 同口径）：切环境改 .env，脚本零硬编码、gitleaks 友好
+GW = config.BASE.rsplit("/api/v1", 1)[0]
+ADMIN = (config.USER, config.PWD)
 RUN_START = int(time.time() * 1000)
 
 RESULTS = []

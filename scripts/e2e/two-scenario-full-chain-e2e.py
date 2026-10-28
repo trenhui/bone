@@ -794,6 +794,9 @@ if prid2:
     PO3_TITLE = f"{PO_DEPT}驳回演练采购"
     PO3_AMOUNT = ds.amount(lo=9000, hi=20000)
     PO3_PARTS = ds.split(PO3_AMOUNT, 3)
+    PO3_TAXES = [round(p * 0.13, 2) for p in PO3_PARTS]
+    PO3_TAX_TOTAL = round(sum(PO3_TAXES), 2)   # 守恒：税额合计 = Σ 行税额（与主单 TAX_TOTAL 同口径，过 SUB-TAX-01；
+                                               # 不能写 round(PO3_AMOUNT*0.13,2)，逐行取整与总额取整会漂移 1~2 分）
     PO3_ITEMS = []
     for _i, _part in enumerate(PO3_PARTS):
         _name, _spec = PO_SKUS[_i]
@@ -801,14 +804,14 @@ if prid2:
         PO3_ITEMS.append({
             "material_code": "M-%04d" % (3001 + _i), "material_name": _name, "spec": _spec,
             "qty": _qty, "unit": _unit, "unit_price": round(_part / _qty, 2), "amount": _part,
-            "tax_rate": 0.13, "tax_amount": round(_part * 0.13, 2), "received_qty": 0,
+            "tax_rate": 0.13, "tax_amount": PO3_TAXES[_i], "received_qty": 0,
         })
     s, d = rec_create(PO, {"title": PO3_TITLE, "vendor_code": PO_SUP["code"], "vendor": PO_SUP["name"],
                            "buyer": PO_BUYER, "approver_id": APPROVER_ID, "department": PO_DEPT,
                            "need_date": PO_NEED_DATE, "currency": "CNY", "budget_subject": "6401-办公费",
                            "budget_amount": ds.amount(lo=int(PO3_AMOUNT * 1.5), hi=int(PO3_AMOUNT * 2)),
                            "contract_no": PO_CONTRACT, "payment_terms": "NET30",
-                           "po_amount": PO3_AMOUNT, "tax_amount": round(PO3_AMOUNT * 0.13, 2),
+                           "po_amount": PO3_AMOUNT, "tax_amount": PO3_TAX_TOTAL,
                            "received_amount": 0, "invoiced_amount": 0})
     prid3 = (d.get("data") or {}).get("id")
     if prid3:
@@ -816,7 +819,7 @@ if prid2:
         check(f"采购：驳回演练单写入行项目（合计 {PO3_AMOUNT}）", s in (200, 201), f"{s} {d.get('message')}")
         s, d = act(PO, prid3, "submit")
         check("采购：驳回演练 submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
-              f"{s} status={rec_status(d)}")
+              f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
         s, d = act_as(APPROVER_HDR, PO, prid3, "reject", params={"reason": "供应商资质不符，驳回补正"})
         check("采购：reject（SUBMITTED→REJECTED，由审批人会话发起，purchaseWorkflowDecisionHandler REJECT 分支）",
               s == 200 and rec_status(d) == "REJECTED", f"{s} status={rec_status(d)} {d.get('message', '')[:140]}")

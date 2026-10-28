@@ -15,7 +15,7 @@
  *
  * 用法：node scripts/e2e/ui-delivery-preview-relocation-probe.mjs
  */
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from './e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from './e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
@@ -37,8 +37,8 @@ try {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="password"]', { timeout: 20000 });
   const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill('admin');
-  await page.locator('input[type="password"]').first().fill('123456');
+  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
+  await page.locator('input[type="password"]').first().fill(PWD);
   await page.locator('input[type="password"]').first().press('Enter');
   await page.waitForTimeout(1500);
   if (await page.locator('input[type="password"]').count()) {

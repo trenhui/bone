@@ -9,14 +9,22 @@
 - 输出按模块汇总的 HTTP 状态分布与非 2xx 明细。
 """
 import argparse
+import atexit
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter, defaultdict
 
 from e2e_lib import http
+
+# 探测响应体写**每进程独立**的临时文件（原共享 /tmp/_sweep_body.txt 会被
+# 并发运行的另一份 sweep 覆盖 body，误报 500 明细），进程退出自动删除
+_SWEEP_FD, SWEEP_BODY = tempfile.mkstemp(prefix="bone-api-sweep-", suffix=".txt")
+os.close(_SWEEP_FD)
+atexit.register(os.unlink, SWEEP_BODY)
 
 GW = "http://127.0.0.1:8888"
 ROUTE_PREFIXES = [
@@ -66,13 +74,13 @@ def login():
 def probe(token, path):
     full = GW + path
     cmd = [
-        "-o", "/tmp/_sweep_body.txt", "-w", "%{http_code}",
+        "-o", SWEEP_BODY, "-w", "%{http_code}",
         "-H", "Authorization: Bearer " + token, full,
     ]
     code = curl(cmd, timeout=20).strip()
     body = ""
     try:
-        body = open("/tmp/_sweep_body.txt", encoding="utf-8", errors="ignore").read()[:400]
+        body = open(SWEEP_BODY, encoding="utf-8", errors="ignore").read()[:400]
     except OSError:
         pass
     return code, body

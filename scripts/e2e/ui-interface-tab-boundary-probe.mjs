@@ -10,10 +10,10 @@
  * 为什么保留本探针而不删：它守的是"两层边界不得静默混淆"这条产品不变量，
  * 与承载组件是谁无关——归位后换落点继续守。直接删掉等于丢掉这条回归。
  *
- * 复刻 ui-two-scenario-probe.mjs 的登录流程（必须用 localhost，网关 CORS 只放行 localhost 源）。
+ * 登录走共享 client.cjs 的 USER/PWD（必须用 localhost，网关 CORS 只放行 localhost 源）。
  * 用法：node scripts/e2e/ui-interface-tab-boundary-probe.mjs
  */
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from './e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from './e2e_lib/client.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
@@ -42,10 +42,10 @@ try {
   await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
   const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
   if (await page.locator(userSel).first().count()) {
-    await page.locator(userSel).first().fill('admin');
+    await page.locator(userSel).first().fill(USER);
   }
   const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill('123456');
+  await pwd.fill(PWD);
   await pwd.press('Enter');
   await page.waitForTimeout(1200);
   if (await page.locator('input[type="password"]').count()) {

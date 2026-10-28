@@ -127,6 +127,33 @@ function loadPlaywright() {
   }
 }
 
+// ---------- 退出残留清理（与 Python e2e_lib/teardown.py 对称）----------
+/**
+ * UI 探针在浏览器里创建的业务数据（实体/记录/账号/临时文件）需要退出时回收，
+ * 否则库越跑越脏。Python 侧由 teardown.register + atexit 自动回收；Node 侧无 atexit 等价物，
+ * 故在此提供 registerCleanup / runCleanup，由探针在 finally 中显式 await 触发。
+ *
+ * 用法（探针末尾）：
+ *   registerCleanup(async () => { await api('DELETE', `/.../${id}`, { token }); });
+ *   try { ...断言... } finally { await runCleanup(); await browser.close(); process.exit(code); }
+ */
+const _cleanups = [];
+/** 注册退出清理回调；fn 可同步或返回 Promise；多个按注册逆序执行。 */
+function registerCleanup(fn) { _cleanups.push(fn); return fn; }
+/** 执行全部清理（逆序）；任一异常只告警不污染测试结果。探针应在 finally 中 await 它。 */
+async function runCleanup() {
+  while (_cleanups.length) {
+    const fn = _cleanups.pop();
+    try { await fn(); } catch (e) { console.error('[teardown] 清理异常（不影响测试结果）:', (e && e.message) || e); }
+  }
+}
+// 安全网：若探针直接 process.exit 而未 await runCleanup，exit 时提示遗漏
+process.on('exit', () => {
+  if (_cleanups.length) {
+    console.warn(`[teardown] 警告：${_cleanups.length} 个清理回调未执行（探针应在 finally 中 await runCleanup()）`);
+  }
+});
+
 // ---------- 断言收集与汇总 ----------
 /**
  * 本地 results[] + check 断言收集器（与历史探针逐字同款的 ✓/✗ 输出）。
@@ -165,3 +192,5 @@ exports.token = token;
 exports.api = api;
 exports.loadPlaywright = loadPlaywright;
 exports.makeChecker = makeChecker;
+exports.registerCleanup = registerCleanup;
+exports.runCleanup = runCleanup;

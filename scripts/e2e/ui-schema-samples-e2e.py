@@ -20,7 +20,7 @@ import os
 os.environ.setdefault("BONE_E2E_BASE", "http://127.0.0.1:9001/api/v1")
 os.environ.setdefault("BONE_E2E_LOGIN_BASE", "http://127.0.0.1:8081/api/v1")
 
-from e2e_lib import config, http, report
+from e2e_lib import config, http, report, teardown
 from e2e_lib import fixtures as fx
 from e2e_lib.http import call, ecode
 from e2e_lib.modeling import (
@@ -39,6 +39,11 @@ from e2e_lib.runtime import act, child_replace, rec_create
 http.login()
 
 SUFFIX = config.run_suffix()  # 运行级后缀：cleanup 按后缀定点回收
+
+# 运行级残留 teardown：样例对账同样会留下带后缀的实体/物理表/界面协议/动作定义，
+# 退出时（含异常/sys.exit）自动回收，不再靠手工 cleanup-residue 补清；
+# BONE_E2E_KEEP_RESIDUE=1 跳过清理、保留现场供排查
+teardown.register(SUFFIX)
 
 # 生产仿真数据集：同后缀 ⇒ 同一份数据（名称/金额/拆分恒定，复跑可比对）
 ds = fx.dataset(SUFFIX)

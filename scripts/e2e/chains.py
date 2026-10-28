@@ -6,17 +6,20 @@ Bone 跨模块端到端链路测试基座。
 覆盖 8 条跨模块链路（C1..C8）+ 门禁脚本 G（网关路由 vs 代码路径常量一致性）。
 所有请求经统一网关 8888，模拟人工操作顺序执行，断言真实响应。
 
-运行：/Users/renhui.trh/.workbuddy/binaries/python/versions/3.13.12/bin/python3 /tmp/bone/chains.py [链路号...]
+运行：python3 scripts/e2e/chains.py [链路号...]
 """
 import sys
 import time
 
+from e2e_lib import config
 from e2e_lib.http import login, raw_call
 from e2e_lib.report import section as hdr
 from e2e_lib.sign import hmac_sign as sign
 
-GW = "http://127.0.0.1:8888"
-ADMIN = ("admin", "123456")
+# 网关根址（不含 /api/v1）：配置唯一真源在 e2e_lib.config，禁止在此硬编码端口/口令
+# （硬编码口令会被 gitleaks 拦下，且切换环境须改脚本）。env 覆盖走 BONE_E2E_BASE。
+GW = config.BASE.rsplit("/api/v1", 1)[0]
+ADMIN = (config.USER, config.PWD)
 
 # ---- 主数据实体：运行时解析（禁止硬编码雪花 ID）----
 # 原实现把某次库里的雪花 ID 写成常量（MD_PRODUCT=760324212819755008 等）。
