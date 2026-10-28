@@ -7,6 +7,7 @@ import {
   type AdjustmentLine,
   type AdjustmentResult,
 } from '../services/claimApi';
+import { PageHeader } from '../components/PageHeader';
 import { SchemaRenderer, resolveVisibleActions } from '@bone/ui-schema';
 import type { BoneUiSchema } from '@bone/ui-schema';
 import adjustSchema from '../schemas/adjust-attribution.ui-schema.json';
@@ -129,8 +130,9 @@ export function AdjustmentAttributionPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
+      <PageHeader title="理算归因" />
       <Card
-        title="理算归因（A6 · schema 驱动）"
+        title="理算明细"
         extra={
           <Space wrap>
             <Input

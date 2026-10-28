@@ -17,6 +17,7 @@ import com.bone.iam.domain.model.menu.Menu;
 import com.bone.iam.domain.repository.MenuRepository;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +49,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @NoDomainEvent
 public class MenuApplicationService {
+
+  /**
+   * 菜单排序契约：<b>每一层</b>（不只顶层）按 {@code order_no} 升序，同序号按 id 升序保证稳定。
+   *
+   * <p>缺陷背景（2026-10-28 实测）：改造前只对**根节点**排序，子节点顺序完全取决于 {@code listAll()} 的返回顺序（实际 = 主键序）。于是「菜单管理」里改
+   * order_no 对子菜单毫无效果 ——同一个 path 分支下的洗牌动作看起来被保存了，侧边栏却纹丝不动（典型「配了不生效」）。 该类问题在理赔菜单上直接可见：按作业链路排好的
+   * order_no 1..9 下发后仍是 id 序 （报案申请 → 理赔进度 → 核赔工作台 …）。
+   */
+  private static final Comparator<MenuNode> MENU_NODE_ORDER =
+      Comparator.comparingInt((MenuNode n) -> n.getOrder() == null ? 0 : n.getOrder())
+          .thenComparing(MenuNode::getId, MenuApplicationService::compareSnowflakeId);
+
+  private static final Comparator<MenuTreeDTO> MENU_TREE_ORDER =
+      Comparator.comparingInt((MenuTreeDTO n) -> n.getOrderNo() == null ? 0 : n.getOrderNo())
+          .thenComparing(MenuTreeDTO::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
   private final MenuRepository menuRepository;
   private final TenantProvider tenantProvider;
@@ -114,15 +130,10 @@ public class MenuApplicationService {
             .collect(Collectors.groupingBy(MenuTreeDTO::getParentId));
 
     dtoList.forEach(d -> d.setChildren(childrenMap.getOrDefault(d.getId(), new ArrayList<>())));
+    // 每一层都排序（childrenMap 的每个 value 即一层的兄弟节点集合，原地排序即可生效）
+    childrenMap.values().forEach(list -> list.sort(MENU_TREE_ORDER));
 
-    return dtoList.stream()
-        .filter(d -> d.getParentId() == null)
-        .sorted(
-            (a, b) ->
-                Integer.compare(
-                    a.getOrderNo() == null ? 0 : a.getOrderNo(),
-                    b.getOrderNo() == null ? 0 : b.getOrderNo()))
-        .toList();
+    return dtoList.stream().filter(d -> d.getParentId() == null).sorted(MENU_TREE_ORDER).toList();
   }
 
   /** keyword 过滤（名称 / 路由路径 / 权限码包含命中）：保留命中节点、其祖先链与其子树，保持树结构完整；keyword 为空时原样保留全部节点，无命中时返回空树。 */
@@ -215,15 +226,22 @@ public class MenuApplicationService {
             .collect(Collectors.groupingBy(MenuNode::getParentId));
 
     nodes.forEach(n -> n.setChildren(childrenMap.getOrDefault(n.getId(), new ArrayList<>())));
+    // 每一层都排序——否则侧边栏子菜单顺序 = 主键序，菜单管理里的 order_no 形同虚设
+    childrenMap.values().forEach(list -> list.sort(MENU_NODE_ORDER));
 
-    return nodes.stream()
-        .filter(n -> n.getParentId() == null)
-        .sorted(
-            (a, b) ->
-                Integer.compare(
-                    a.getOrder() == null ? 0 : a.getOrder(),
-                    b.getOrder() == null ? 0 : b.getOrder()))
-        .toList();
+    return nodes.stream().filter(n -> n.getParentId() == null).sorted(MENU_NODE_ORDER).toList();
+  }
+
+  /** 雪花 id 的字符串比较：能解析就按数值比，异常则退化为字符串比较（不因单条脏数据整棵树下发失败）。 */
+  private static int compareSnowflakeId(String a, String b) {
+    if (a == null || b == null) {
+      return a == null ? (b == null ? 0 : 1) : -1;
+    }
+    try {
+      return Long.compare(Long.parseLong(a), Long.parseLong(b));
+    } catch (NumberFormatException ignore) {
+      return a.compareTo(b);
+    }
   }
 
   /**

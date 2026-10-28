@@ -24,6 +24,7 @@ import {
   type InspectionResult,
   type InspectionView,
 } from '../services/claimApi';
+import { PageHeader } from '../components/PageHeader';
 
 /**
  * 后督抽检工作台（A9 / §7.6）。
@@ -195,11 +196,12 @@ export function InspectionWorkbenchPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
+      <PageHeader title="后督抽检" />
       <Card
         title={
           <Space>
             <SafetyCertificateOutlined />
-            后督抽检（A9）
+            抽检任务
           </Space>
         }
         loading={loading}

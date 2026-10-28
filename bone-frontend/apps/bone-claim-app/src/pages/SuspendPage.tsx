@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Button, Card, Input, Select, Space, Typography, message } from 'antd';
 import { PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { PageHeader } from '../components/PageHeader';
 import { claimApi, type HangUpType } from '../services/claimApi';
 
 /**
@@ -54,7 +55,8 @@ export function SuspendPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
-      <Card title="挂起 / 恢复（正交机制）">
+      <PageHeader title="挂起/恢复" />
+      <Card title="挂起操作">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Space wrap>
             <Input

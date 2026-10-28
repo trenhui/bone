@@ -13,6 +13,15 @@ function render(props?: QiankunProps) {
   const mountNode = container ? container.querySelector('#root') : document.getElementById('root');
   if (!mountNode) return;
 
+  /**
+   * 是否在 shell 容器内运行（决定是否渲染微应用自带导航）。
+   *
+   * 判据取「mount props 带 container」或 qiankun 注入的全局标记，任一成立即为嵌入式；
+   * 两者都不成立（`:3013` 直开）才是独立调试。嵌入式的唯一后果是**不渲染侧边栏**——
+   * 全局导航由 shell 依据 IAM 菜单统一渲染，微应用不再持有第二份导航副本。
+   */
+  const embedded = Boolean(container) || Boolean(qiankunWindow.__POWERED_BY_QIANKUN__);
+
   const token = (props as { token?: string })?.token;
   if (token) {
     localStorage.setItem('token', token);
@@ -22,7 +31,7 @@ function render(props?: QiankunProps) {
   root.render(
     <React.StrictMode>
       <AppAntdProvider>
-        <App />
+        <App embedded={embedded} />
       </AppAntdProvider>
     </React.StrictMode>,
   );

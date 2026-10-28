@@ -13,6 +13,7 @@ import {
   message,
 } from 'antd';
 import { ReloadOutlined, FileProtectOutlined } from '@ant-design/icons';
+import { PageHeader } from '../components/PageHeader';
 import { appealApi, type AppealReviewResult, type AppealResult } from '../services/claimApi';
 
 /**
@@ -98,8 +99,9 @@ export function AppealPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
+      <PageHeader title="申诉复议" />
       <Card
-        title="申诉复议（A8）"
+        title="申诉记录"
         loading={loading}
         extra={
           <Space>

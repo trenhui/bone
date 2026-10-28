@@ -28,6 +28,7 @@ import {
   type DecisionExecutionResult,
   type DecisionTraceNode,
 } from '../services/claimApi';
+import { PageHeader } from '../components/PageHeader';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
 
 /**
@@ -176,7 +177,7 @@ export function ReviewWorkbenchPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
-      <Typography.Title level={3}>核赔工作台</Typography.Title>
+      <PageHeader title="核赔工作台" />
       <Space size="large" wrap style={{ marginBottom: 16 }}>
         <Card size="small">
           <Statistic title="待核赔" value={pendingCount} />

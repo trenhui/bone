@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimItemReq, type ItemCategory, type SubmitClaimReq } from '../services/claimApi';
 
 /**
@@ -69,7 +70,7 @@ export function ClaimSubmitPage(): ReactElement {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <Typography.Title level={3}>理赔申请</Typography.Title>
+      <PageHeader title="理赔申请" />
       <Alert
         type="info"
         showIcon

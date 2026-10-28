@@ -28,6 +28,7 @@ import {
   type QuotaSummary,
   type SettlementResult,
 } from '../services/claimApi';
+import { PageHeader } from '../components/PageHeader';
 
 /**
  * 资金工作台（synapClaim A7，手写不低代码化）。
@@ -76,7 +77,9 @@ function stageStep(stage?: string): { current: number; status: 'process' | 'fini
 
 export function FundWorkbenchPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
-  const claimId = searchParams.get('claimId') ?? '1';
+  // 缺省**不要**用占位 '1'：URL 未带 claimId 时会自动查一个未必存在的案件，
+  // 后端返回 404 SC_CLAIM_NOT_FOUND 被兜底成「资金数据加载失败」——把「没数据」报成「加载出错」。
+  const claimId = searchParams.get('claimId') ?? '';
   const [input, setInput] = useState(claimId);
   const [accountType, setAccountType] = useState<AccountType>('PERSONAL');
   const [settlement, setSettlement] = useState<SettlementResult | null>(null);
@@ -94,6 +97,11 @@ export function FundWorkbenchPage(): ReactElement {
       const errorCode = (err as { errorCode?: string }).errorCode;
       if (errorCode === 'SC_CLAIM_QUOTA_NOT_FOUND') {
         setQuota(null);
+      } else if (errorCode === 'SC_CLAIM_NOT_FOUND') {
+        // 查无此案 = 空态，不是故障。报成「加载失败」会让用户在没有任何错误时以为系统坏了。
+        setSettlement(null);
+        setQuota(null);
+        message.info('未查询到该案件（或不属于当前租户）');
       } else {
         message.error('资金数据加载失败');
       }
@@ -103,8 +111,11 @@ export function FundWorkbenchPage(): ReactElement {
   }, [claimId]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    // 未指定案件时不自动查（否则会用占位 ID 打后端并弹「加载失败」）。
+    if (claimId) {
+      void load();
+    }
+  }, [claimId, load]);
 
   const run = async (fn: () => Promise<unknown>, okMsg: string) => {
     setActing(true);
@@ -149,8 +160,9 @@ export function FundWorkbenchPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
+      <PageHeader title="资金工作台" />
       <Card
-        title="资金工作台（A7）"
+        title="结算单与额度"
         extra={
           <Space>
             <Input

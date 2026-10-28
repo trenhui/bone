@@ -1,108 +1,71 @@
-import {
-  HashRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
-import { App as AntdApp, Layout, Menu, type MenuProps } from 'antd';
-import {
-  AuditOutlined,
-  CalculatorOutlined,
-  FileAddOutlined,
-  BankOutlined,
-  FormOutlined,
-  HistoryOutlined,
-  FileProtectOutlined,
-  PauseCircleOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
-import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
-import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
-import { ClaimProgressPage } from './pages/ClaimProgressPage';
-import { AdjustmentAttributionPage } from './pages/AdjustmentAttributionPage';
-import { EvidenceUploadPage } from './pages/EvidenceUploadPage';
-import { FundWorkbenchPage } from './pages/FundWorkbenchPage';
-import { AppealPage } from './pages/AppealPage';
-import { SuspendPage } from './pages/SuspendPage';
-import { InspectionWorkbenchPage } from './pages/InspectionWorkbenchPage';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { App as AntdApp, Layout, Menu, Tag, Typography } from 'antd';
+import { CLAIM_DEFAULT_PATH, CLAIM_ROUTES } from './routes';
 import './App.css';
 
 /**
- * synapClaim 智能理赔微应用·工作台外壳。
+ * synapClaim 智能理赔微应用外壳。
  *
- * 导航（渐进式试点的六个页，均由领域 controller 提供读写，未提前抽低代码通用渲染器）：
- * - `/review`   核赔工作台（RQ-MVP-004~005，含 A3 决策图轨迹回放抽屉）
- * - `/adjust`   理算归因（A6 只读展示；「schema as data」试点）
- * - `/evidence` 材料上传（A2 登记 + 展示；直传 bone-file 拿 fileRef）
- * - `/fund`     资金工作台（A7 手写不低代码化；结算单状态机 + 额度三值）
- * - `/submit`   员工端报案（RQ-MVP-001~003）
- * - `/progress` 员工端进度追踪（PRD §7.2「进度追踪」）
+ * 导航架构（2026-10-28 重构，业界通行的「单一导航」微前端形态）
+ * ---------------------------------------------------------------
+ * - **嵌入式（qiankun 内）**：不渲染任何侧边栏。全局导航由 shell 依据 IAM 菜单统一渲染，
+ *   微应用只负责「hash 路由 → 页面」。此前的双 Sider 是同一批入口的第二份副本，
+ *   名字还与 IAM 菜单不一致（证据上传/材料上传、申诉处理/申诉复议、暂停案件/挂起·恢复），
+ *   必然漂移，用户看到的就是「两层菜单、子菜单还不一样」。
+ * - **独立调试（`:3013` 直开，无 shell）**：给一条仅开发可见的导航，避免「只能看到默认页」。
+ *   这条导航**不是产品导航**，不承载权限与可见性，故显式标注「独立调试」，
+ *   且数据源同为 {@link CLAIM_ROUTES} —— 路由与名称仍然只有一份真源。
  */
+function ClaimRoutes(): JSX.Element {
+  return (
+    <Routes>
+      {CLAIM_ROUTES.map((r) => (
+        <Route key={r.path} path={r.path} element={r.element} />
+      ))}
+      <Route path="/" element={<Navigate to={CLAIM_DEFAULT_PATH} replace />} />
+      {/* 未知 hash 回到默认落点，而不是空白：深链失效时用户仍有可操作界面 */}
+      <Route path="*" element={<Navigate to={CLAIM_DEFAULT_PATH} replace />} />
+    </Routes>
+  );
+}
 
-const NAV_ITEMS: MenuProps['items'] = [
-  { key: '/review', icon: <AuditOutlined />, label: '核赔工作台' },
-  { key: '/adjust', icon: <CalculatorOutlined />, label: '理算归因' },
-  { key: '/evidence', icon: <FileAddOutlined />, label: '材料上传' },
-  { key: '/fund', icon: <BankOutlined />, label: '资金工作台' },
-  { key: '/appeal', icon: <FileProtectOutlined />, label: '申诉复议' },
-  { key: '/suspend', icon: <PauseCircleOutlined />, label: '挂起/恢复' },
-  { key: '/inspection', icon: <SafetyCertificateOutlined />, label: '后督抽检' },
-  { key: '/submit', icon: <FormOutlined />, label: '员工报案' },
-  { key: '/progress', icon: <HistoryOutlined />, label: '进度追踪' },
-];
-
-const AppShell: React.FC = () => {
+/** 仅独立调试使用：极简导航（嵌入式下不渲染）。 */
+function DevNav({ collapsed }: { collapsed?: boolean }): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedKey =
-    NAV_ITEMS?.map((i) => i!.key as string).find((k) => location.pathname.startsWith(k)) ?? '/review';
+    CLAIM_ROUTES.map((r) => r.path).find((k) => location.pathname.startsWith(k)) ?? CLAIM_DEFAULT_PATH;
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Sider theme="light" breakpoint="lg" collapsedWidth={0}>
-        <div
-          style={{
-            height: 56,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 600,
-            color: '#1677ff',
-            fontSize: 16,
-          }}
-        >
+    <Layout.Sider theme="light" breakpoint="lg" collapsedWidth={0} collapsed={collapsed}>
+      <div style={{ padding: '16px 16px 8px' }}>
+        <Typography.Text strong style={{ fontSize: 16, color: '#1677ff' }}>
           智能理赔
+        </Typography.Text>
+        <div style={{ marginTop: 4 }}>
+          <Tag color="orange">独立调试 · 非产品导航</Tag>
         </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={NAV_ITEMS}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Layout.Sider>
-      <Layout>
-        <Layout.Content style={{ padding: 0 }}>
-          <Routes>
-            <Route path="/submit" element={<ClaimSubmitPage />} />
-            <Route path="/progress" element={<ClaimProgressPage />} />
-            <Route path="/review" element={<ReviewWorkbenchPage />} />
-            <Route path="/adjust" element={<AdjustmentAttributionPage />} />
-            <Route path="/evidence" element={<EvidenceUploadPage />} />
-            <Route path="/fund" element={<FundWorkbenchPage />} />
-            <Route path="/appeal" element={<AppealPage />} />
-            <Route path="/suspend" element={<SuspendPage />} />
-            <Route path="/inspection" element={<InspectionWorkbenchPage />} />
-            <Route path="/" element={<Navigate to="/review" replace />} />
-          </Routes>
-        </Layout.Content>
-      </Layout>
-    </Layout>
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        items={CLAIM_ROUTES.map((r) => ({ key: r.path, icon: r.icon, label: r.name }))}
+        onClick={({ key }) => navigate(key)}
+      />
+    </Layout.Sider>
   );
-};
+}
 
-export const App: React.FC = () => {
+export interface AppProps {
+  /**
+   * 是否运行在 shell（qiankun）容器内。
+   * 由入口 `main.tsx` 依据 qiankun mount props / `__POWERED_BY_QIANKUN__` 传入，
+   * 微应用不自行嗅探全局变量（避免 SSR / 单测环境下误判）。
+   */
+  embedded?: boolean;
+}
+
+export const App: React.FC<AppProps> = ({ embedded = false }) => {
   return (
     <AntdApp>
       {/* 必须用 HashRouter：微应用内路由挂在 URL hash 上（/claim#/review），
@@ -110,7 +73,16 @@ export const App: React.FC = () => {
           此前误用 BrowserRouter 会去读 pathname=/claim 而忽略 #/review，
           导致内部 <Routes> 永远匹配不到业务页面 ⇒ 内容区空白。 */}
       <HashRouter future={{ v7_relativeSplatPath: true }}>
-        <AppShell />
+        {embedded ? (
+          <ClaimRoutes />
+        ) : (
+          <Layout style={{ minHeight: '100vh' }}>
+            <DevNav />
+            <Layout.Content style={{ padding: 0 }}>
+              <ClaimRoutes />
+            </Layout.Content>
+          </Layout>
+        )}
       </HashRouter>
     </AntdApp>
   );

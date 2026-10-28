@@ -20,6 +20,7 @@ import {
   evidenceApi,
   type EvidenceResp,
 } from '../services/claimApi';
+import { PageHeader } from '../components/PageHeader';
 
 /**
  * 材料上传页（synapClaim A2，登记 + 展示）。
@@ -192,8 +193,9 @@ export function EvidenceUploadPage(): ReactElement {
 
   return (
     <div style={{ padding: 24 }}>
+      <PageHeader title="材料上传" />
       <Card
-        title="材料上传（A2）"
+        title="材料清单"
         extra={
           <Space>
             <Input

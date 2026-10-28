@@ -10,10 +10,10 @@ import {
   Steps,
   Table,
   Tag,
-  Typography,
   message,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import { PageHeader } from '../components/PageHeader';
 import { claimApi, type ClaimWithItemsProjection } from '../services/claimApi';
 
 /**
@@ -87,7 +87,7 @@ export function ClaimProgressPage(): ReactElement {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <Typography.Title level={3}>理赔进度查询</Typography.Title>
+      <PageHeader title="理赔进度" />
 
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space>
