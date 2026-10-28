@@ -790,6 +790,37 @@ if prid2:
     s, d = call("POST", f"/runtime/entities/{PO}/records/{prid2}/restore")
     check("采购：restore 恢复成功", s == 200, f"{s} {str(d)[:120]}")
 
+    # 驳回路径验证：另建一张采购单，提交后由审批人驳回（演练 purchaseWorkflowDecisionHandler REJECT 分支）
+    PO3_TITLE = f"{PO_DEPT}驳回演练采购"
+    PO3_AMOUNT = ds.amount(lo=9000, hi=20000)
+    PO3_PARTS = ds.split(PO3_AMOUNT, 3)
+    PO3_ITEMS = []
+    for _i, _part in enumerate(PO3_PARTS):
+        _name, _spec = PO_SKUS[_i]
+        _qty, _unit = PO_LINE_META[_i]
+        PO3_ITEMS.append({
+            "material_code": "M-%04d" % (3001 + _i), "material_name": _name, "spec": _spec,
+            "qty": _qty, "unit": _unit, "unit_price": round(_part / _qty, 2), "amount": _part,
+            "tax_rate": 0.13, "tax_amount": round(_part * 0.13, 2), "received_qty": 0,
+        })
+    s, d = rec_create(PO, {"title": PO3_TITLE, "vendor_code": PO_SUP["code"], "vendor": PO_SUP["name"],
+                           "buyer": PO_BUYER, "approver_id": APPROVER_ID, "department": PO_DEPT,
+                           "need_date": PO_NEED_DATE, "currency": "CNY", "budget_subject": "6401-办公费",
+                           "budget_amount": ds.amount(lo=int(PO3_AMOUNT * 1.5), hi=int(PO3_AMOUNT * 2)),
+                           "contract_no": PO_CONTRACT, "payment_terms": "NET30",
+                           "po_amount": PO3_AMOUNT, "tax_amount": round(PO3_AMOUNT * 0.13, 2),
+                           "received_amount": 0, "invoiced_amount": 0})
+    prid3 = (d.get("data") or {}).get("id")
+    if prid3:
+        s, d = child_replace(PO, prid3, PO_ITEM, PO3_ITEMS)
+        check(f"采购：驳回演练单写入行项目（合计 {PO3_AMOUNT}）", s in (200, 201), f"{s} {d.get('message')}")
+        s, d = act(PO, prid3, "submit")
+        check("采购：驳回演练 submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
+              f"{s} status={rec_status(d)}")
+        s, d = act_as(APPROVER_HDR, PO, prid3, "reject", params={"reason": "供应商资质不符，驳回补正"})
+        check("采购：reject（SUBMITTED→REJECTED，由审批人会话发起，purchaseWorkflowDecisionHandler REJECT 分支）",
+              s == 200 and rec_status(d) == "REJECTED", f"{s} status={rec_status(d)} {d.get('message', '')[:140]}")
+
 # ==================================================================
 # 横切能力：筛选服务化 / 发布闸门负向 / 行策略守卫 / 动作定义删除
 # ==================================================================
