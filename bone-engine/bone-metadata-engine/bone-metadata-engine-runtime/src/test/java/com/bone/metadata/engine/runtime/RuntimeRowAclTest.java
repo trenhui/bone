@@ -155,6 +155,25 @@ class RuntimeRowAclTest {
   }
 
   @Test
+  @DisplayName("归属不可被改判：他人流转/更新不得覆写 created_by（行级 ACL owner 字段）")
+  void update_neverRewritesOwnerField() {
+    String id = createOrder("1001");
+
+    // ① 数据面 update（管理员豁免，operator=null）
+    service.update("bp_order", TENANT_1, id, Map.of("total_amount", 120.0d), null, null);
+    // ② 状态机流转由审批人 2002 推进（updateInternal 路径，动作面豁免行级 ACL）
+    service.updateState(
+        "bp_order", TENANT_1, id, "status", "APPROVED", null, "2002", "approve", null);
+
+    // created_by 是行级 ACL 的 owner 字段：被覆写成审批人 ⇒ 创建人立刻对自己的单据 404，
+    // 且子表端点前置 assertRowOwner 报「记录不存在」⇒ 界面提交规则读到 0 行明细误判 SUB-COUNT-01。
+    Map<String, Object> asOwner = service.getById("bp_order", TENANT_1, id, 1001L);
+    assertEquals("1001", asOwner.get("created_by"), "更新/流转不得改判行属主");
+    assertEquals("APPROVED", asOwner.get("status"));
+    assertEquals("2002", asOwner.get("updated_by"), "操作人留痕应落在 updated_by");
+  }
+
+  @Test
   @DisplayName("管理员豁免：operatorId 为 null 时不受行级 ACL 限制")
   void adminExemption_nullOperator() {
     String id = createOrder("1001");

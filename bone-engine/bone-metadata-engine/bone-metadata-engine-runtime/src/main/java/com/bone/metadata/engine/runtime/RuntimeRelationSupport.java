@@ -345,7 +345,8 @@ public class RuntimeRelationSupport {
         insertChildRow(child, tenantId, row, operatorId);
         keptIds.add(String.valueOf(newId));
       } else {
-        updateChildRow(child, tenantId, row, String.valueOf(childId), spec.foreignKey(), operatorId);
+        updateChildRow(
+            child, tenantId, row, String.valueOf(childId), spec.foreignKey(), operatorId);
         keptIds.add(String.valueOf(childId));
       }
       result.add(row);
@@ -359,8 +360,8 @@ public class RuntimeRelationSupport {
   }
 
   /**
-   * 兼容重载：未传操作人时（如遗留调用/系统内部无主体上下文）按 {@code null} 处理——审计列留空，与改动前行为一致。
-   * 生产路径（{@link RuntimeRelationApplicationService#replaceChildren}）始终传当前操作人，确保子行落审计列。
+   * 兼容重载：未传操作人时（如遗留调用/系统内部无主体上下文）按 {@code null} 处理——审计列留空，与改动前行为一致。 生产路径（{@link
+   * RuntimeRelationApplicationService#replaceChildren}）始终传当前操作人，确保子行落审计列。
    */
   public List<Map<String, Object>> replaceChildren(
       PublishedRuntimeEntity parent,
@@ -460,9 +461,8 @@ public class RuntimeRelationSupport {
    * <p><b>为什么子表也要落操作人</b>：AGENTS.md HC-008 要求审计字段不得缺失；子行若 created_by 为 NULL，则（1）归属悬空，行级 ACL
    * 无从判定本人/审批人；（2）审计链断裂。子表写入必须与其父行同口径注入审计列。
    *
-   * <p><b>健壮性</b>：仅当操作人可解析为数值用户 ID 时才注入 BIGINT 列；未认证（dev 关闭安全）或主体名为非数值（如
-   * anonymousUser）时跳过，避免把字符串写入 BIGINT 报 "Incorrect integer value"。系统操作者（回调/渠道身份）留痕为字符串常量
-   * "system"。物理列缺失（外部子表无审计列）时容错跳过。
+   * <p><b>健壮性</b>：仅当操作人可解析为数值用户 ID 时才注入 BIGINT 列；未认证（dev 关闭安全）或主体名为非数值（如 anonymousUser）时跳过，避免把字符串写入
+   * BIGINT 报 "Incorrect integer value"。系统操作者（回调/渠道身份）留痕为字符串常量 "system"。物理列缺失（外部子表无审计列）时容错跳过。
    */
   private void stampChildAuditColumns(
       PublishedRuntimeEntity child, Map<String, Object> payload, String operatorId) {

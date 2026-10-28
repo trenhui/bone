@@ -1196,6 +1196,11 @@ public class JdbcRuntimeRecordService {
    * <p><b>操作者列（created_by / updated_by）为 BIGINT 用户 ID</b>：仅当 {@code operatorId} 可解析为数值时才注入； 未认证（dev
    * 关闭安全）或主体名为非数值（如 anonymousUser）时跳过，避免把字符串写入 BIGINT 报 "Incorrect integer value"（P0 数据面健壮性）。操作者列本身
    * nullable，跳过不影响落库。
+   *
+   * <p><b>{@code created_by} 只在创建时盖章，更新一律不得覆写</b>：该列同时是行级 ACL 的默认 owner 字段 （{@link RowPolicySpec}
+   * 默认 {@code owner_field=created_by}），被覆写即等于「单据归属被偷偷改判」——审批人 approve 一次， 创建人立刻失去对本单及子表明细的访问（子表端点前置
+   * {@link #assertRowOwner} 报 404），界面提交规则读到 0 行明细误判 SUB-COUNT-01/SUB-ITEMS-01。创建人归属与 {@code
+   * updated_by}（真正的操作人留痕）职责不同，二者不可混用。
    */
   private void stampAuditColumns(
       PublishedRuntimeEntity entity,
@@ -1210,9 +1215,10 @@ public class JdbcRuntimeRecordService {
     if (isCreate && hasPhysicalColumn(table, "created_at")) {
       payload.put("created_at", new Timestamp(System.currentTimeMillis()));
     }
-    // 系统操作者（服务/渠道回调身份）：审计留痕为字符串常量（非数值主体不落 BIGINT）
+    // created_by = 行属主：仅创建时写入；更新路径保留原值（见方法注释的归属被改判缺陷）
     if ("system".equals(operatorId)) {
-      if (hasPhysicalColumn(table, "created_by")) {
+      // 系统操作者（服务/渠道回调身份）：审计留痕为字符串常量（非数值主体不落 BIGINT）
+      if (isCreate && hasPhysicalColumn(table, "created_by")) {
         payload.put("created_by", "system");
       }
       if (hasPhysicalColumn(table, "updated_by")) {
@@ -1223,7 +1229,7 @@ public class JdbcRuntimeRecordService {
     // 操作者：仅当可解析为数值用户 ID 时注入 BIGINT 列
     Long numericOp = toNumericOperatorId(operatorId);
     if (numericOp != null) {
-      if (hasPhysicalColumn(table, "created_by")) {
+      if (isCreate && hasPhysicalColumn(table, "created_by")) {
         payload.put("created_by", numericOp);
       }
       if (hasPhysicalColumn(table, "updated_by")) {

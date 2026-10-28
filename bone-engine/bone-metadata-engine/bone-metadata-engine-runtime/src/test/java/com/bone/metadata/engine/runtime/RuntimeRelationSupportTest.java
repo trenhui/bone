@@ -302,13 +302,10 @@ class RuntimeRelationSupportTest {
     assertEquals(1, saved.size());
 
     var inserted =
-        jdbc
-            .getJdbcTemplate()
+        jdbc.getJdbcTemplate()
             .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 709");
-    assertEquals(
-        1L, ((Number) inserted.get("CREATED_BY")).longValue(), "子行 created_by 应等于操作人");
-    assertEquals(
-        1L, ((Number) inserted.get("UPDATED_BY")).longValue(), "子行 updated_by 应等于操作人");
+    assertEquals(1L, ((Number) inserted.get("CREATED_BY")).longValue(), "子行 created_by 应等于操作人");
+    assertEquals(1L, ((Number) inserted.get("UPDATED_BY")).longValue(), "子行 updated_by 应等于操作人");
 
     // 更新同一条 → updated_by 应被刷新（仍等于操作人），created_by 保持不变
     Map<String, Object> upd = new LinkedHashMap<>();
@@ -317,8 +314,7 @@ class RuntimeRelationSupportTest {
     relationSupport.replaceChildren(parent(), TENANT, "709", childSpec(), List.of(upd), "1");
 
     var after =
-        jdbc
-            .getJdbcTemplate()
+        jdbc.getJdbcTemplate()
             .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 709");
     assertEquals(1L, ((Number) after.get("CREATED_BY")).longValue(), "created_by 更新后不变");
     assertEquals(1L, ((Number) after.get("UPDATED_BY")).longValue(), "updated_by 更新后刷新");
@@ -337,8 +333,7 @@ class RuntimeRelationSupportTest {
         parent(), TENANT, "710", childSpec(), List.of(r1), "anonymousUser");
 
     var row =
-        jdbc
-            .getJdbcTemplate()
+        jdbc.getJdbcTemplate()
             .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 710");
     assertNull(row.get("CREATED_BY"), "非数值主体不落 created_by");
     assertNull(row.get("UPDATED_BY"), "非数值主体不落 updated_by");
