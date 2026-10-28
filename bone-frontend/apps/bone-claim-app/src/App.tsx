@@ -16,6 +16,7 @@ import {
   HistoryOutlined,
   FileProtectOutlined,
   PauseCircleOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { ClaimSubmitPage } from './pages/ClaimSubmitPage';
 import { ReviewWorkbenchPage } from './pages/ReviewWorkbenchPage';
@@ -25,6 +26,7 @@ import { EvidenceUploadPage } from './pages/EvidenceUploadPage';
 import { FundWorkbenchPage } from './pages/FundWorkbenchPage';
 import { AppealPage } from './pages/AppealPage';
 import { SuspendPage } from './pages/SuspendPage';
+import { InspectionWorkbenchPage } from './pages/InspectionWorkbenchPage';
 import './App.css';
 
 /**
@@ -46,6 +48,7 @@ const NAV_ITEMS: MenuProps['items'] = [
   { key: '/fund', icon: <BankOutlined />, label: '资金工作台' },
   { key: '/appeal', icon: <FileProtectOutlined />, label: '申诉复议' },
   { key: '/suspend', icon: <PauseCircleOutlined />, label: '挂起/恢复' },
+  { key: '/inspection', icon: <SafetyCertificateOutlined />, label: '后督抽检' },
   { key: '/submit', icon: <FormOutlined />, label: '员工报案' },
   { key: '/progress', icon: <HistoryOutlined />, label: '进度追踪' },
 ];
@@ -90,6 +93,7 @@ const AppShell: React.FC = () => {
             <Route path="/fund" element={<FundWorkbenchPage />} />
             <Route path="/appeal" element={<AppealPage />} />
             <Route path="/suspend" element={<SuspendPage />} />
+            <Route path="/inspection" element={<InspectionWorkbenchPage />} />
             <Route path="/" element={<Navigate to="/review" replace />} />
           </Routes>
         </Layout.Content>

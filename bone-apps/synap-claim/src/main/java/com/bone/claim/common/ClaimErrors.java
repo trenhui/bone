@@ -36,7 +36,10 @@ public final class ClaimErrors {
           Map.entry(ClaimErrorCodes.CLAIM_ADJUST_EVIDENCE_NOT_LOCKED, 422),
           Map.entry(ClaimErrorCodes.CLAIM_QUOTA_NOT_FOUND, 404),
           Map.entry(ClaimErrorCodes.CLAIM_QUOTA_INSUFFICIENT, 422),
-          Map.entry(ClaimErrorCodes.CLAIM_QUOTA_STATE_CONFLICT, 409));
+          Map.entry(ClaimErrorCodes.CLAIM_QUOTA_STATE_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.CLAIM_INSPECTION_NOT_FOUND, 404),
+          Map.entry(ClaimErrorCodes.CLAIM_INSPECTION_CONFLICT, 409),
+          Map.entry(ClaimErrorCodes.CLAIM_DECISION_NOT_FOUND, 404));
 
   static {
     checkEveryCodeRegistered();

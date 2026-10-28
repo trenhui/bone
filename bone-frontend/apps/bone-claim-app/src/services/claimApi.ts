@@ -229,6 +229,26 @@ export interface DecisionExecutionResult {
   decisionTier: string;
   status: string;
   traceCount: number;
+  /**
+   * 自动通过结论的消费结果（仅 `decisionResult=AUTO_APPROVE` 时有意义）。
+   *
+   * - `APPLIED`：已自动结案并建结算单（资金链有单）；
+   * - `AUTO_APPROVE_DISABLED`：自动放款开关未开（策略待签核，保持人工核赔）；
+   * - `CAP_EXCEEDED`：理算金额超单笔自动放款上限；
+   * - `ALREADY_SETTLED` / `NOT_AUTO_APPROVE`：无需消费。
+   *
+   * 工作台据此显示「已自动结案」或「为何没自动放款」，避免「已自动通过但资金没动」变成静默状态。
+   */
+  consumptionReason?: string;
+}
+
+/** 自动通过 + 建结算单的结果（12→50 且资金链有单）。 */
+export interface AutoApprovalOutcome {
+  applied: boolean;
+  /** APPLIED / AUTO_APPROVE_DISABLED / CAP_EXCEEDED / ALREADY_SETTLED / NOT_AUTO_APPROVE:xxx */
+  reason: string;
+  settlementNo?: string;
+  amount?: number;
 }
 
 export interface DecisionTraceNode {
@@ -300,8 +320,9 @@ export const claimApi = {
     return client.post<never, ApiResponse<void>>(`/${claimId}/second-review`);
   },
 
-  autoApprove(claimId: string): Promise<ApiResponse<void>> {
-    return client.post<never, ApiResponse<void>>(`/${claimId}/auto-approve`);
+  /** 自动通过：结案（12→50）+ 建结算单软占额度（同事务；结案必有结算单）。 */
+  autoApprove(claimId: string): Promise<ApiResponse<AutoApprovalOutcome>> {
+    return client.post<never, ApiResponse<AutoApprovalOutcome>>(`/${claimId}/auto-approve`);
   },
 
   hangUp(claimId: string, type?: HangUpType): Promise<ApiResponse<void>> {
@@ -504,5 +525,132 @@ export const attachmentApi = {
     return fileClient.post<FormData, ApiResponse<FileObjectResp>>('/files', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+  },
+};
+
+/* ===================== A9 后督抽检（管理后台命名空间 /api/v1/review） ===================== */
+
+const reviewClient = createApiClient('/api/v1/review');
+
+export type InspectionDimension = 'AMOUNT' | 'DOCUMENT' | 'MEDICAL' | 'PROCESS';
+export type InspectionResult = 'PASS' | 'DIFF';
+export type InspectionDiffType =
+  | 'ADJUST_MISMATCH'
+  | 'RULE_MISS'
+  | 'AI_MISJUDGE'
+  | 'QUOTA_ABNORMAL'
+  | 'NONE';
+export type InspectionAction = 'RECALCULATE' | 'REVIEW' | 'REFUND' | 'CLOSE' | 'NONE';
+
+/** 抽检单（任务 + 结论同表；结论即终态，不可改写）。 */
+export interface InspectionView {
+  inspectionNo: string;
+  claimId: string;
+  claimNo: string;
+  dimension: InspectionDimension;
+  sampleStratum: string;
+  inspectType: 'AUTO' | 'MANUAL';
+  status: 'PENDING' | 'IN_PROGRESS' | 'CONCLUDED';
+  inspectorId: string;
+  result: '' | InspectionResult;
+  diffType: InspectionDiffType;
+  diffDetail?: string | null;
+  actionTaken: InspectionAction;
+  targetStatus: string;
+}
+
+export interface ConcludeInspectionReq {
+  result: InspectionResult;
+  diffType?: InspectionDiffType;
+  /** 差异明细（受控字段 → 本方值/复核值）；DIFF 必填，PASS 必须为空。 */
+  diffDetail?: Record<string, string>;
+  action?: InspectionAction;
+  /** 处置目标状态（§6.2 枚举名或质检段 30/31/32；一期只登记不回流）。 */
+  targetStatus?: string;
+}
+
+export const inspectionApi = {
+  /** #13 发起抽检（MANUAL）：案件须已终态；同案重复发起幂等返回原单。 */
+  open(
+    claimId: string,
+    dimension: InspectionDimension = 'AMOUNT',
+  ): Promise<ApiResponse<InspectionView>> {
+    return reviewClient.post<{ claimId: string; dimension: InspectionDimension }, ApiResponse<InspectionView>>(
+      '/inspections',
+      { claimId, dimension },
+    );
+  },
+  /** 领取抽检任务（PENDING → IN_PROGRESS）。 */
+  claim(inspectionNo: string): Promise<ApiResponse<InspectionView>> {
+    return reviewClient.post<never, ApiResponse<InspectionView>>(
+      `/inspections/${encodeURIComponent(inspectionNo)}/claim`,
+    );
+  },
+  /** #14 抽检结论（终态）。 */
+  conclude(
+    inspectionNo: string,
+    req: ConcludeInspectionReq,
+  ): Promise<ApiResponse<InspectionView>> {
+    return reviewClient.post<ConcludeInspectionReq, ApiResponse<InspectionView>>(
+      `/inspections/${encodeURIComponent(inspectionNo)}/conclusion`,
+      req,
+    );
+  },
+  /** 按单号查询。 */
+  detail(inspectionNo: string): Promise<ApiResponse<InspectionView>> {
+    return reviewClient.get<never, ApiResponse<InspectionView>>(
+      `/inspections/${encodeURIComponent(inspectionNo)}`,
+    );
+  },
+  /** 按案件查最新抽检单（无则 data 为 null）。 */
+  latest(claimId: string): Promise<ApiResponse<InspectionView | null>> {
+    return reviewClient.get<never, ApiResponse<InspectionView | null>>('/inspections', {
+      params: { claimId },
+    });
+  },
+};
+
+/* ===================== 工作台任务中心（delivery/05 契约路径 /review/tasks） ===================== */
+
+/** 任务维 4 值（非案件状态；映射见后端 ReviewTaskStatusMapper）。 */
+export type ReviewTaskStatus = 'WAITING' | 'ASSIGNED' | 'PROCESSING' | 'DONE';
+
+export interface ReviewTaskDecisionReq {
+  decision: 'APPROVED' | 'REJECTED' | 'REQUEST_MORE_EVIDENCE';
+  comment?: string;
+  /** 拒赔结构化五要素（R-MAN-03）。 */
+  rejection?: {
+    factFindings?: string;
+    clauseBasis?: string;
+    evidenceRefs?: string[];
+    appealChannel?: string;
+    legalDeadline?: string;
+  };
+  /** 内部扩展：受控拒赔原因码（REJECTED 必填）。 */
+  rejectType?: string;
+  approvedAmount?: number;
+}
+
+export const reviewTaskApi = {
+  /** 待办列表（任务维 → 案件状态集；不传 status 取默认待办 40+41）。 */
+  tasks(params: {
+    status?: ReviewTaskStatus;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PageResult<ClaimHeadProjection>>> {
+    return reviewClient.get<never, ApiResponse<PageResult<ClaimHeadProjection>>>('/tasks', {
+      params,
+    });
+  },
+  /** 审核决策（路由到案件中心人工核赔；审核人取认证主体）。 */
+  decide(claimId: string, req: ReviewTaskDecisionReq): Promise<ApiResponse<void>> {
+    return reviewClient.post<ReviewTaskDecisionReq, ApiResponse<void>>(
+      `/tasks/${claimId}/decision`,
+      req,
+    );
+  },
+  /** 决策追溯（该案最近一次执行的全链轨迹；无执行记录 404）。 */
+  trace(claimId: string): Promise<ApiResponse<DecisionTraceNode[]>> {
+    return reviewClient.get<never, ApiResponse<DecisionTraceNode[]>>(`/tasks/${claimId}/trace`);
   },
 };

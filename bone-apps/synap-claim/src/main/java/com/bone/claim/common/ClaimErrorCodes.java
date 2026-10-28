@@ -68,6 +68,9 @@ public final class ClaimErrorCodes {
   /** 同案已有活跃决策执行（每案仅一个活跃执行，§4.3 不变量）。 */
   public static final String CLAIM_DECISION_ACTIVE_CONFLICT = "SC_CLAIM_DECISION_ACTIVE_CONFLICT";
 
+  /** 案件尚无决策执行记录（轨迹回放无对象，区别于「案件不存在」）。 */
+  public static final String CLAIM_DECISION_NOT_FOUND = "SC_CLAIM_DECISION_NOT_FOUND";
+
   // ===== A8 申诉 =====
 
   /** 申诉记录不存在（或已复议终态）。 */
@@ -76,6 +79,14 @@ public final class ClaimErrorCodes {
   /** 证据未锁定即发起理算（理算前置不满足，§4.3）。 */
   public static final String CLAIM_ADJUST_EVIDENCE_NOT_LOCKED =
       "SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED";
+
+  // ===== A9 后督抽检 =====
+
+  /** 抽检单不存在（或已逻辑删除）。 */
+  public static final String CLAIM_INSPECTION_NOT_FOUND = "SC_CLAIM_INSPECTION_NOT_FOUND";
+
+  /** 抽检单状态冲突（已结论不可改写 / 同案重复发起）。 */
+  public static final String CLAIM_INSPECTION_CONFLICT = "SC_CLAIM_INSPECTION_CONFLICT";
 
   // ===== A5 额度 =====
 

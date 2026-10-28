@@ -5,6 +5,8 @@ import com.bone.claim.adapter.web.dto.request.ClaimDecisionReq;
 import com.bone.claim.adapter.web.dto.request.ClaimPageReq;
 import com.bone.claim.adapter.web.dto.request.SubmitClaimReq;
 import com.bone.claim.adapter.web.dto.response.ClaimCaseResp;
+import com.bone.claim.application.AutoApprovalApplicationService;
+import com.bone.claim.application.AutoApprovalApplicationService.AutoApprovalOutcome;
 import com.bone.claim.application.ClaimCaseApplicationService;
 import com.bone.claim.application.ClaimCaseApplicationService.SubmitClaim;
 import com.bone.claim.domain.model.claim.projection.ClaimHeadProjection;
@@ -53,6 +55,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClaimCaseController {
 
   private final ClaimCaseApplicationService claimCaseApplicationService;
+  private final AutoApprovalApplicationService autoApprovalApplicationService;
   private final ClaimCaseAssembler claimCaseAssembler;
   private final IdempotencyService idempotencyService;
 
@@ -242,12 +245,26 @@ public class ClaimCaseController {
     return ApiResponse.success();
   }
 
-  @Operation(summary = "自动通过", description = "12→50（R-FAST-01 快赔路径；仍走资金 Saga）")
+  @Operation(
+      summary = "自动通过",
+      description = "12→50（R-FAST-01 快赔路径）+ 建结算单软占额度；结案与建单同事务，避免「已结案未出金」的静默欠账")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "已结案并建结算单（返回资金阶段与单号）"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "SC_CLAIM_ADJUST_NOT_FOUND: 尚未理算，无出金依据"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "422",
+        description = "SC_CLAIM_QUOTA_INSUFFICIENT: 可用额度不足")
+  })
   @PreAuthorize("hasAuthority('claim:review:write')")
   @PostMapping("/{id}/auto-approve")
-  public ApiResponse<Void> autoApprove(@Parameter(description = "案件ID") @PathVariable long id) {
-    claimCaseApplicationService.autoApprove(id, CurrentOperator.requireId());
-    return ApiResponse.success();
+  public ApiResponse<AutoApprovalOutcome> autoApprove(
+      @Parameter(description = "案件ID") @PathVariable long id) {
+    return ApiResponse.success(
+        autoApprovalApplicationService.approveAndSettle(id, CurrentOperator.requireId()));
   }
 
   @Operation(summary = "挂起/恢复", description = "正交挂起机制（不改状态码）；FRAUD 仅风控岗可恢复")

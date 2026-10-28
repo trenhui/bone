@@ -1,9 +1,9 @@
 package com.bone.claim.adapter.web.controller;
 
+import com.bone.claim.adapter.web.dto.response.DecisionRunResp;
 import com.bone.claim.application.DecisionExecutionApplicationService;
-import com.bone.claim.application.DecisionGraphExecutor;
-import com.bone.claim.application.DecisionGraphExecutor.DecisionExecutionResult;
 import com.bone.claim.application.DecisionGraphExecutor.DecisionVersions;
+import com.bone.claim.application.DecisionRunApplicationService;
 import com.bone.claim.domain.model.decision.DecisionTraceNode;
 import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DecisionController {
 
-  private final DecisionGraphExecutor decisionGraphExecutor;
+  private final DecisionRunApplicationService decisionRunApplicationService;
   private final DecisionExecutionApplicationService decisionExecutionApplicationService;
 
   public record ExecuteReq(
@@ -42,22 +42,23 @@ public class DecisionController {
       String promptVersion,
       String catalogVersion) {}
 
-  @Operation(summary = "执行决策图", description = "同案仅一个活跃执行；结论由确定性分诊计算")
+  @Operation(summary = "执行决策图", description = "同案仅一个活跃执行；结论由确定性分诊计算；AUTO_APPROVE 时按开关尝试自动结案并建结算单")
   @PreAuthorize("hasAuthority('claim:decision:write')")
   @PostMapping("/execute")
-  public ApiResponse<DecisionExecutionResult> execute(
+  public ApiResponse<DecisionRunResp> execute(
       @Parameter(description = "案件ID") @PathVariable long claimId,
       @RequestBody(required = false) ExecuteReq request) {
     ExecuteReq req = request == null ? new ExecuteReq("v1", "v1", "", "", "") : request;
     return ApiResponse.success(
-        decisionGraphExecutor.execute(
-            claimId,
-            new DecisionVersions(
-                req.graphVersion(),
-                req.ruleVersion(),
-                req.modelVersion(),
-                req.promptVersion(),
-                req.catalogVersion())));
+        DecisionRunResp.of(
+            decisionRunApplicationService.execute(
+                claimId,
+                new DecisionVersions(
+                    req.graphVersion(),
+                    req.ruleVersion(),
+                    req.modelVersion(),
+                    req.promptVersion(),
+                    req.catalogVersion()))));
   }
 
   @Operation(summary = "轨迹回放", description = "按 traceId 取全链节点序列")

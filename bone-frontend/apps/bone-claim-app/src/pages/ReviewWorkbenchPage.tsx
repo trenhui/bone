@@ -38,6 +38,19 @@ import { explainNode, toneColor, type ExplainFact } from '../services/decisionEx
  * AI 建议与证据链展示为后续迭代（A2/A3 聚合落地后）。
  */
 
+/**
+ * 自动通过结论消费结果的中文说明。
+ *
+ * 「已自动通过但资金没动」是最容易被当成系统故障（或更糟：被当成已放款）的状态，因此每种跳过原因
+ * 都要能说清「为什么」，而不是只显示一个英文码。
+ */
+const CONSUMPTION_LABEL: Record<string, string> = {
+  APPLIED: '已自动结案并建结算单（等待资金审核/支付）',
+  AUTO_APPROVE_DISABLED: '自动放款开关未开（策略待签核），案件保持待人工核赔',
+  CAP_EXCEEDED: '理算金额超单笔自动放款上限，转人工核赔',
+  ALREADY_SETTLED: '该案已结案，无需重复出金',
+};
+
 const STATUS_TAG: Record<ClaimStatusName, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '草稿' },
   ACCEPTED: { color: 'blue', label: '已受理' },
@@ -362,11 +375,15 @@ export function ReviewWorkbenchPage(): ReactElement {
       >
         {traceMeta && (
           <Alert
-            type="info"
+            type={traceMeta.decisionResult === 'AUTO_APPROVE' && traceMeta.consumptionReason !== 'APPLIED' ? 'warning' : 'info'}
             showIcon
             style={{ marginBottom: 16 }}
             message={`结论层级 ${traceMeta.decisionTier} · 结果 ${traceMeta.decisionResult} · 节点数 ${traceMeta.traceCount}`}
-            description="AI 仅出建议与置信度，最终责任/资金结论以确定性分诊规则为准（fail-safe 降级时提示规则审查模式）。"
+            description={
+              traceMeta.consumptionReason
+                ? `自动通过消费：${CONSUMPTION_LABEL[traceMeta.consumptionReason] ?? traceMeta.consumptionReason}`
+                : 'AI 仅出建议与置信度，最终责任/资金结论以确定性分诊规则为准（fail-safe 降级时提示规则审查模式）。'
+            }
           />
         )}
         <Timeline

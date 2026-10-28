@@ -15,6 +15,14 @@ public interface DecisionExecutionRepository extends Repository<DecisionExecutio
   /** 查活跃执行（active_flag=1）；每案至多一条（唯一约束兜底）。 */
   DecisionExecution findActiveByClaimId(@Param("claimId") long claimId);
 
+  /**
+   * 查最近一次执行（含已收敛的）。
+   *
+   * <p>为什么需要：{@code /review/tasks/{id}/trace} 的契约路径不带 traceId，工作台进详情页时执行往往<b>已收敛</b> （{@code
+   * active_flag=0}），只按 {@link #findActiveByClaimId} 查会得到 404——「刚跑完就看不了轨迹」。
+   */
+  DecisionExecution findLatestByClaimId(@Param("claimId") long claimId);
+
   /** 按 traceId 取全链轨迹（回放）。 */
   List<DecisionTraceNode> findTracesByTraceId(@Param("traceId") String traceId);
 }

@@ -35,6 +35,24 @@ public class DecisionExecutionApplicationService {
     return decisionExecutionRepository.findActiveByClaimId(claimId);
   }
 
+  /** 查最近一次执行（含已收敛的；工作台轨迹回放用）。 */
+  @Transactional(readOnly = true)
+  public DecisionExecution findLatest(long claimId) {
+    return decisionExecutionRepository.findLatestByClaimId(claimId);
+  }
+
+  /**
+   * 取案件最近一次执行的 traceId（无执行记录返回 {@code null}）。
+   *
+   * <p>对外契约 {@code GET /review/tasks/{id}/trace} 不带 traceId，由服务端解析；返回 null 时调用方须给
+   * 404/空结果，而不是回全租户轨迹或最近任意一条（那会泄漏他人案件的决策路径）。
+   */
+  @Transactional(readOnly = true)
+  public String latestTraceId(long claimId) {
+    DecisionExecution latest = decisionExecutionRepository.findLatestByClaimId(claimId);
+    return latest == null ? null : latest.getTraceId();
+  }
+
   /** 按 traceId 回放全链轨迹。 */
   @Transactional(readOnly = true)
   public List<DecisionTraceNode> replay(String traceId) {

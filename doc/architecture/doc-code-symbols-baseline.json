@@ -571,30 +571,6 @@
       "note": "夜间复核工作流方案里的示例类名（用于演示复核流程产出什么），非模块实现真源；真实名是 AccountRepository / AccountApplicationService"
     },
     {
-      "symbol": "InspectionApplicationService",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
-    },
-    {
-      "symbol": "InspectionController",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
-    },
-    {
-      "symbol": "InspectionRepository",
-      "docs": [
-        "doc/ai-product/synapClaim/待架构评审代码整改清单.md"
-      ],
-      "reason": "tobe-named",
-      "note": "synapClaim 待架构评审代码整改清单引用的目标态类名（外部理赔项目方案文档），非 Bone 仓库实现；与同目录 ClaimSphere 系列 tobe-named 条目同口径"
-    },
-    {
       "symbol": "JdbcWorkflowDefinitionRepository",
       "docs": [
         "doc/design/modules/12. 工作流引擎设计.md"
