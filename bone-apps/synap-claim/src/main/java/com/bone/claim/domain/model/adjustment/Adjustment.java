@@ -32,7 +32,7 @@ import lombok.NoArgsConstructor;
  * <ol>
  *   <li>计算基准：Σ 合理费用（{@code validAmount}），{@code socialOnly} 时仅累计社保内；
  *   <li>免赔扣减：年度免赔（R-DED-03 仅累计社保范围内自付一）；
- *   <li>赔付比例：{@code payRate}（百分数存储，此处转小数）；
+ *   <li>赔付比例：{@code payRate}（百分数存储，此处转小数，上限 100% 钳制，防配置超赔）；
  *   <li>限额截断：与责任额度取 {@code min}（§5.3 多维度控额语义，任一维度耗尽即截断）。
  * </ol>
  *
@@ -199,9 +199,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     BigDecimal deductible = liability.deduct().min(base);
     BigDecimal afterDeduct = base.subtract(deductible).max(ZERO);
 
-    // ③ 赔付比例
-    BigDecimal ratioPayout =
-        afterDeduct.multiply(liability.payRate()).setScale(CALC_SCALE, RoundingMode.HALF_UP);
+    // ③ 赔付比例（clampRatioAt100：比例上限 100%。payPercent>100 视为配置错误，钳到 1.0 防超赔；
+    //   对齐 reference-impl EngineFlags#clampRatioAt100，参考实现 D2/D3）
+    BigDecimal ratio = liability.payRate().min(BigDecimal.ONE);
+    BigDecimal ratioPayout = afterDeduct.multiply(ratio).setScale(CALC_SCALE, RoundingMode.HALF_UP);
 
     // ④ 限额截断（min 语义：任一维度耗尽即截断）
     BigDecimal limit = liability.limit();

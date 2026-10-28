@@ -5,8 +5,13 @@ import java.math.BigDecimal;
 /**
  * 规则/理算引擎端口（出站，对接 bone-ai C2 双引擎：核责规则 + 理算）。
  *
- * <p>一期由 {@code LocalRuleEnginePortAdapter} 以确定性桩应答（无冲突/风控通过/规则置信度 0.90、理算=申请金额回显）； 二期替换为 QLExpress
- * 热更 + 灰度 + 回归门禁的真实引擎。金额计算只走此端口，AI 不碰钱（§4.1）。
+ * <p><b>资金权威路径（F1，2026-10-29 修正 10-28 误判）</b>：理算金额的唯一权威实现是领域聚合 {@code Adjustment.calculate(rows,
+ * liability)}（见 {@code com.bone.claim.domain.model.adjustment.Adjustment}），含免赔/比例/限额/比例钳制 100%
+ * 等护栏；其已在生产接线：{@code IndemnityApplicationService.calculate} 调用其产出 FROZEN 理算额，{@code
+ * SettlementApplicationService.resolveAmount} 取用该 FROZEN {@code Adjustment.totalAmount}（AI
+ * 不碰钱）。本端口的 {@link #calculatePayout} 一期由 {@code LocalRuleEnginePortAdapter} 返回<b>分诊估算额</b>（=
+ * 申请金额），仅供决策图做档位判断 （大额→人工复核），<b>绝不进入资金链路、绝非最终结算赔付额</b>。二期接 bone-ai C2 真实引擎时，应装配能取数并委托 {@code
+ * Adjustment} 的真实适配器替换之。
  */
 public interface RuleEnginePort {
 
