@@ -22,6 +22,11 @@
   审计时间线：GET /{id}/action-executions 逐条留痕
   动作清单：GET /actions
 
+测试数据：全部取 e2e_lib.fixtures 数据集（同后缀恒定）——
+  单号 ds.doc_no("LP"/"POL"/"INV"/"CT")（报销 BX 语义由标题承载，采购走 PO- 自动编号），
+  金额 ds.amount() + ds.split() 守恒，人名/部门/城市/税号/客户/供应商同词表，
+  业务日期 ds.days_ago() 倒推 ⇒ 可读、像生产、能串链。
+
 用法：
   python3 scripts/e2e/two-scenario-full-chain-e2e.py            # 默认走网关 :8888（真联调）
   BONE_E2E_BASE=http://127.0.0.1:9001/api/v1 python3 ...        # 直连后端排查用
@@ -32,6 +37,7 @@ import json
 import os
 
 from e2e_lib import config, http, report, teardown
+from e2e_lib import fixtures as fx
 from e2e_lib.http import call, call_as, d_, ecode, jwt_user_id, login_as, session_headers
 from e2e_lib.modeling import (
     add_action,
@@ -45,6 +51,7 @@ from e2e_lib.report import check, note, section
 from e2e_lib.runtime import act, act_as, child_replace, rec_create, rec_status
 
 SUFFIX = config.run_suffix()  # 运行级后缀：所有产物带它，teardown 按后缀定点回收
+ds = fx.dataset(SUFFIX)       # 生产仿真数据集：同后缀恒定，单号/金额/人名/部门/日期全部取它
 
 # 主会话（admin）登录：失败即退出——没登录跑什么都是假红
 http.login()
@@ -68,7 +75,8 @@ def ensure_approver():
     if not tok:
         s, d = call("POST", "/iam/accounts", {
             "username": APPROVER_USER, "password": APPROVER_PWD,
-            "email": APPROVER_USER + "@bone.local", "realName": "采购E2E审批人",
+            # realName 用数据集固定第二人（自然中文名），与采购员等人名同词表
+            "email": APPROVER_USER + "@bone.local", "realName": ds.manager,
             "tenantId": 0, "deptId": APPROVER_DEPT_ID,
             # roleIds：1=平台角色（runtime:* 等）、3=唯一持有 metadata:runtime:write 的角色；
             # RuntimeActionController#invoke 的 @PreAuthorize 只认 metadata:runtime:write / metadata:write，
@@ -194,7 +202,29 @@ s, d = publish(exp_id)
 check("报销：publish 放行（闸门无阻断）", s == 200, f"{s} {ecode(d)} {d.get('message')}")
 
 # ---------------- 业务侧 ----------------
-s, d = rec_create(EXP, {"title": "10 月差旅报销", "amount": 140, "currency": "CNY", "approver_id": 1})
+# 生产仿真数据：标题/人名/部门/日期/税号/金额全部取数据集，主表与明细共用同一批变量（防 rng 各抽各的对不上）
+# 注意：ds.city / ds.dept 是数据集恒定属性（实例属性遮蔽同名方法），不带括号
+EXP_CITY = ds.city
+EXP_PERSON = ds.person()
+EXP_DEPT = ds.dept
+EXP_CUSTOMER = ds.customer["name"]  # 数据集共享客户：明细备注引用它，与采购/理赔串成同一条链
+EXP_DATE = ds.days_ago(6)
+EXP_START = ds.days_ago(9)
+EXP_END = ds.days_ago(4)
+EXP_TAX = ds.tax_no()
+EXP_TITLE = f"{EXP_CITY}{int(EXP_START[5:7])}月客户拜访差旅报销"
+EXP_TOTAL = ds.amount(lo=300, hi=6000)               # 主表申报金额（非圆整、带分位）
+EXP_PARTS = ds.split(EXP_TOTAL, 2)                   # 守恒明细 Σ == EXP_TOTAL（过 submitRules）
+EXP_PARTS_BAD = ds.split(EXP_TOTAL, 2, break_=True)  # 破坏版 Σ == EXP_TOTAL + 1.01（422 负向专用）
+EXP_REMARKS = [f"拜访{EXP_CUSTOMER}住宿费", f"拜访{EXP_CUSTOMER}往返高铁票"]
+EXP_ITEMS = [{"expense_date": EXP_DATE, "amount": p, "remark": r}
+             for p, r in zip(EXP_PARTS, EXP_REMARKS)]
+EXP_ITEMS_BAD = [dict(r, amount=p) for r, p in zip(EXP_ITEMS, EXP_PARTS_BAD)]
+
+s, d = rec_create(EXP, {"title": EXP_TITLE, "amount": EXP_TOTAL, "currency": "CNY",
+                        "applicant": EXP_PERSON, "department": EXP_DEPT,
+                        "expense_date": EXP_DATE, "expense_start": EXP_START,
+                        "expense_end": EXP_END, "approver_id": 1})
 check("报销：创建记录", s in (200, 201), f"{s} {d.get('message')}")
 rid = (d.get("data") or {}).get("id")
 
@@ -202,22 +232,22 @@ if rid:
     # ETag 并发保护
     s, d, hdr = http.call_full("GET", f"/runtime/entities/{EXP}/records/{rid}")
     etag = hdr.get("ETag") or hdr.get("etag")
-    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"department": "研发中心"},
+    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"department": EXP_DEPT},
                 {"If-Match": '"999999"'})
     check("ETag【负向】错版本 If-Match → 412", s == 412, f"{s} {str(d)[:120]}")
-    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"department": "研发中心"},
+    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"department": EXP_DEPT},
                 {"If-Match": etag} if etag else None)
     check("ETag 正确版本更新成功", s == 200, f"{s} {str(d)[:120]}")
 
-    s, d = child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 40}])
-    check("报销：写入明细（合计 140）", s in (200, 201), f"{s} {d.get('message')}")
+    s, d = child_replace(EXP, rid, EXP_ITEM, EXP_ITEMS)
+    check(f"报销：写入明细（合计 {EXP_TOTAL}）", s in (200, 201), f"{s} {d.get('message')}")
 
-    child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 50}])
+    child_replace(EXP, rid, EXP_ITEM, EXP_ITEMS_BAD)
     s, d = act(EXP, rid, "submit")
     check("P0-5【负向】明细合计≠申报 → 422 submitRules 强制",
           s == 422 and ecode(d) == "META_RUNTIME_UI_RULES_VIOLATED",
           f"{s} {ecode(d)} {d.get('message', '')[:160]}")
-    child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 40}])
+    child_replace(EXP, rid, EXP_ITEM, EXP_ITEMS)
 
     call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"invoice_type": "SPECIAL"})
     s, d = act(EXP, rid, "submit")
@@ -225,7 +255,7 @@ if rid:
           s == 422 and ecode(d) == "META_RUNTIME_UI_RULES_VIOLATED",
           f"{s} {ecode(d)} {d.get('message', '')[:160]}")
 
-    call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": "91310000MA1FL0"})
+    call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": EXP_TAX})
     s, d = act(EXP, rid, "submit")
     check("报销：合规后 submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
           f"{s} status={rec_status(d)} {d.get('message', '')[:120]}")
@@ -266,7 +296,9 @@ if rid:
     check("动作清单 GET /actions 可读", s == 200, f"{s} {str(d)[:120]}")
 
 # 回收站：另建一条记录走「软删 → 回收站 → 恢复」
-s, d = rec_create(EXP, {"title": "待归档测试单", "amount": 10})
+TRASH_TITLE = f"{EXP_CITY}客户答谢礼品报销"
+TRASH_AMOUNT = ds.amount(lo=50, hi=800)
+s, d = rec_create(EXP, {"title": TRASH_TITLE, "amount": TRASH_AMOUNT})
 trash_rid = (d.get("data") or {}).get("id")
 if trash_rid:
     s, d = call("DELETE", f"/runtime/entities/{EXP}/records/{trash_rid}")
@@ -369,24 +401,37 @@ s, d = publish(clm_id)
 check("理赔：publish 放行", s == 200, f"{s} {ecode(d)} {d.get('message')}")
 
 # 单1：显式报案号（自动编号不得覆盖客户端值）+ 拒赔链路
-s, d = rec_create(CLM, {"policy_no": "P-2026-0001", "claim_no": "CLM-MANUAL-001",
-                        "invoice_amount": 300, "claim_amount": 300,
-                        "coverage_clear": True, "evidences": "INV-2026-0001"})
+# 生产仿真数据：报案号/保单号/发票号走「业务前缀-日期-序号」，被保人数据集内固定（两张单串同一人）
+CLM_INSURED = ds.employee
+CLM_INVOICE_DATE = ds.days_ago(3)
+CLM_NO1 = ds.doc_no("LP")
+CLM1_POLICY = ds.doc_no("POL")
+CLM1_EVIDENCE = ds.doc_no("INV")
+CLM1_INV = ds.amount(lo=300, hi=4000)                 # 发票金额 < 1 万，避开 LINK-DUAL-01 双人复核
+CLM1_PARTS = ds.split(CLM1_INV, 1)                    # 守恒清单 Σ == 发票金额
+CLM1_PARTS_BAD = ds.split(CLM1_INV, 1, break_=True)   # 破坏版差 1.01 > tolerance(1) ⇒ SUB-CONS-01 拦下
+CLM1_ITEMS = [{"name": "门诊诊查费", "amount": p, "category": "outpatient"} for p in CLM1_PARTS]
+CLM1_ITEMS_BAD = [dict(r, amount=p) for r, p in zip(CLM1_ITEMS, CLM1_PARTS_BAD)]
+s, d = rec_create(CLM, {"policy_no": CLM1_POLICY, "claim_no": CLM_NO1,
+                        "insured_name": CLM_INSURED,
+                        "invoice_no": CLM1_EVIDENCE, "invoice_date": CLM_INVOICE_DATE,
+                        "invoice_amount": CLM1_INV, "claim_amount": CLM1_INV,
+                        "coverage_clear": True, "evidences": CLM1_EVIDENCE})
 check("理赔：创建记录", s in (200, 201), f"{s} {d.get('message')}")
 crid = (d.get("data") or {}).get("id")
 
 if crid:
     s, d = call("GET", f"/runtime/entities/{CLM}/records/{crid}")
     no1 = (d.get("data") or {}).get("claim_no")
-    check("自动编号【负向】客户端显式值不被覆盖", no1 == "CLM-MANUAL-001", f"claim_no={no1}")
+    check("自动编号【负向】客户端显式值不被覆盖", no1 == CLM_NO1, f"claim_no={no1}")
 
-    child_replace(CLM, crid, CLM_ITEM, [{"name": "门诊费", "amount": 300, "category": "outpatient"}])
-    child_replace(CLM, crid, CLM_ITEM, [{"name": "门诊费", "amount": 350, "category": "outpatient"}])
+    child_replace(CLM, crid, CLM_ITEM, CLM1_ITEMS)
+    child_replace(CLM, crid, CLM_ITEM, CLM1_ITEMS_BAD)
     s, d = act(CLM, crid, "submit")
     check("理赔【负向】发票金额≠清单合计 → SUB-CONS-01 拦截",
           s == 422 and ecode(d) == "META_RUNTIME_UI_RULES_VIOLATED" and "SUB-CONS-01" in (d.get("message") or ""),
           f"{s} {ecode(d)} {d.get('message', '')[:200]}")
-    child_replace(CLM, crid, CLM_ITEM, [{"name": "门诊费", "amount": 300, "category": "outpatient"}])
+    child_replace(CLM, crid, CLM_ITEM, CLM1_ITEMS)
     s, d = act(CLM, crid, "submit")
     check("理赔：submit（DRAFT→REVIEWING）", s == 200 and rec_status(d) == "REVIEWING",
           f"{s} status={rec_status(d)} {d.get('message', '')[:140]}")
@@ -401,15 +446,22 @@ if crid:
           f"{s} status={rec_status(d)}")
 
 # 单2：缺省报案号走自动编号 + 核赔支付全链路
-s, d = rec_create(CLM, {"policy_no": "P-2026-0002", "invoice_amount": 500, "claim_amount": 500,
-                        "coverage_clear": True, "evidences": "INV-2026-0002"})
+CLM2_POLICY = ds.doc_no("POL")
+CLM2_EVIDENCE = ds.doc_no("INV")
+CLM2_INV = ds.amount(lo=300, hi=4000)
+CLM2_PARTS = ds.split(CLM2_INV, 1)   # 守恒清单 Σ == 发票金额（过 SUB-CONS-01）
+CLM2_ITEMS = [{"name": "门诊药品费", "amount": p, "category": "outpatient"} for p in CLM2_PARTS]
+s, d = rec_create(CLM, {"policy_no": CLM2_POLICY, "insured_name": CLM_INSURED,
+                        "invoice_no": CLM2_EVIDENCE, "invoice_date": CLM_INVOICE_DATE,
+                        "invoice_amount": CLM2_INV, "claim_amount": CLM2_INV,
+                        "coverage_clear": True, "evidences": CLM2_EVIDENCE})
 rid2 = (d.get("data") or {}).get("id")
 if rid2:
     s, d = call("GET", f"/runtime/entities/{CLM}/records/{rid2}")
     no2 = (d.get("data") or {}).get("claim_no")
-    check("自动编号：缺省时注入 CLM-NNNN", isinstance(no2, str) and no2.startswith("CLM-") and no2 != "CLM-MANUAL-001",
+    check("自动编号：缺省时注入 CLM-NNNN", isinstance(no2, str) and no2.startswith("CLM-") and no2 != CLM_NO1,
           f"claim_no={no2}")
-    child_replace(CLM, rid2, CLM_ITEM, [{"name": "门诊费", "amount": 500, "category": "outpatient"}])
+    child_replace(CLM, rid2, CLM_ITEM, CLM2_ITEMS)
     s, d = act(CLM, rid2, "submit")
     check("理赔：单2 submit（DRAFT→REVIEWING）", s == 200, f"{s} {d.get('message', '')[:140]}")
     s, d = act(CLM, rid2, "approve")
@@ -423,7 +475,10 @@ if rid2:
           f"{s} idempotent={(d.get('data', {}) or {}).get('idempotent')}")
 
 # 自动编号递增：第三条缺省单号必须比第二条大
-s, d = rec_create(CLM, {"policy_no": "P-2026-0003", "invoice_amount": 1, "claim_amount": 1})
+CLM3_POLICY = ds.doc_no("POL")
+CLM3_AMOUNT = ds.amount(lo=50, hi=300)
+s, d = rec_create(CLM, {"policy_no": CLM3_POLICY, "invoice_amount": CLM3_AMOUNT,
+                        "claim_amount": CLM3_AMOUNT})
 rid3 = (d.get("data") or {}).get("id")
 if rid3 and rid2:
     s, d3 = call("GET", f"/runtime/entities/{CLM}/records/{rid3}")
@@ -432,7 +487,7 @@ if rid3 and rid2:
     check("自动编号：序号原子递增（第三条 > 第二条）", seq(no3) > seq(no2) >= 0, f"{no2} → {no3}")
 
 # ==================================================================
-# 场景三：采购订单（purchase-order）— 行项目 + 三单匹配 + 预算闸门
+# 场景三：采购订单（purchase-order）— 行项目 · 预算 · 三单匹配 · 付款
 # ==================================================================
 section("场景三：采购订单（purchase-order）— 行项目 · 预算 · 三单匹配 · 付款")
 
@@ -538,29 +593,54 @@ s, d = publish(po_id)
 check("采购：publish 放行", s == 200, f"{s} {ecode(d)} {d.get('message')}")
 
 # ---------------- 业务侧：建单 → 行项目 → 预算/合计/三单闸门 → 审批 → 收货 → 付款 ----------------
-ITEMS_OK = [
-    {"material_code": "M-1001", "material_name": "笔记本电脑", "spec": "16G/1T",
-     "qty": 2, "unit": "台", "unit_price": 6000, "amount": 12000,
-     "tax_rate": 0.13, "tax_amount": 1560, "received_qty": 0},
-    {"material_code": "M-2002", "material_name": "显示器", "spec": "27寸 2K",
-     "qty": 4, "unit": "台", "unit_price": 1500, "amount": 6000,
-     "tax_rate": 0.13, "tax_amount": 780, "received_qty": 0},
-    {"material_code": "M-3003", "material_name": "人体工学椅", "spec": "网布",
-     "qty": 10, "unit": "把", "unit_price": 800, "amount": 8000,
-     "tax_rate": 0.13, "tax_amount": 1040, "received_qty": 0},
-]
-PO_AMOUNT = 26000.0
-TAX_TOTAL = 3380.0
+# 生产仿真数据：供应商取数据集 supplier（编码+名称同源串链），主表/行项目/断言共用同一批变量
+PO_SUP = ds.supplier
+PO_DEPT = ds.dept
+PO_BUYER = ds.person()
+PO_AMOUNT = ds.amount(lo=9000, hi=24000)                   # 采购金额（非圆整、带分位）
+PO_PARTS = ds.split(PO_AMOUNT, 3)                          # 行项目金额守恒：Σ == PO_AMOUNT
+PO_PARTS_BAD = ds.split(PO_AMOUNT, 3, break_=True)         # 破坏版 Σ == PO_AMOUNT + 1.01（SUB-ITEMS-01 负向）
+PO_TAXES = [round(p * 0.13, 2) for p in PO_PARTS]
+TAX_TOTAL = round(sum(PO_TAXES), 2)                        # 税额合计 = Σ 行税额（守恒，过 SUB-TAX-01）
+TAX_TOTAL_BAD = ds.split(TAX_TOTAL, 3, break_=True)        # 破坏版行税额 Σ 差 1.01（SUB-TAX-01 负向）
+PO_BUDGET = ds.amount(lo=int(PO_AMOUNT * 1.2), hi=int(PO_AMOUNT * 2))   # 合规预算：> 采购金额
+PO_BUDGET_LOW = ds.amount(lo=500, hi=int(PO_AMOUNT * 0.6))              # 负向预算：< 采购金额
+PO_NEED_DATE = ds.days_ago(-33)                            # 需求日期：运行日后 33 天（days_ago 负值=倒推未来）
+PO_CONTRACT = ds.doc_no("CT")
+PO_CONTRACT2 = ds.doc_no("CT")
+PO_INVOICE_NO = ds.doc_no("INV")
+PO_TITLE = f"{PO_DEPT}{int(PO_NEED_DATE[5:7])}月办公设备采购"
+PO_LINE_META = [(2, "台"), (4, "件"), (5, "套")]           # 数量/单位（业务输入，行金额以 split 为准）
+PO_SKUS = []
+for _i in range(3):
+    _sku, _ref_price = ds.sku()                            # 品名规格取自词表，参考单价仅作同源参考
+    PO_SKUS.append(_sku.rsplit(" ", 1))
 
-s, d = rec_create(PO, {"title": "研发中心 Q4 办公设备采购", "vendor_code": "V-8801",
-                       "vendor": "晨光办公设备有限公司", "buyer": "李四",
+ITEMS_OK = []
+for _i, _part in enumerate(PO_PARTS):
+    _name, _spec = PO_SKUS[_i]
+    _qty, _unit = PO_LINE_META[_i]
+    ITEMS_OK.append({
+        "material_code": "M-%04d" % (1001 * (_i + 1)),
+        "material_name": _name, "spec": _spec,
+        "qty": _qty, "unit": _unit,
+        "unit_price": round(_part / _qty, 2),
+        "amount": _part,
+        "tax_rate": 0.13, "tax_amount": PO_TAXES[_i],
+        "received_qty": 0,
+    })
+ITEMS_BAD = [dict(r, amount=p) for r, p in zip(ITEMS_OK, PO_PARTS_BAD)]
+ITEMS_TAX_BAD = [dict(r, tax_amount=t) for r, t in zip(ITEMS_OK, TAX_TOTAL_BAD)]
+
+s, d = rec_create(PO, {"title": PO_TITLE, "vendor_code": PO_SUP["code"],
+                       "vendor": PO_SUP["name"], "buyer": PO_BUYER,
                        "approver_id": APPROVER_ID,
-                       "department": "研发中心", "need_date": "2026-11-30", "currency": "CNY",
-                       "budget_subject": "6401-办公费", "budget_amount": 50000,
-                       "contract_no": "CT-2026-0712", "payment_terms": "NET30",
+                       "department": PO_DEPT, "need_date": PO_NEED_DATE, "currency": "CNY",
+                       "budget_subject": "6401-办公费", "budget_amount": PO_BUDGET,
+                       "contract_no": PO_CONTRACT, "payment_terms": "NET30",
                        "po_amount": PO_AMOUNT, "tax_amount": TAX_TOTAL,
                        "received_amount": 0, "invoiced_amount": 0})
-check("采购：创建订单（预算 50000 / 采购 26000）", s in (200, 201), f"{s} {d.get('message')}")
+check(f"采购：创建订单（预算 {PO_BUDGET} / 采购 {PO_AMOUNT}）", s in (200, 201), f"{s} {d.get('message')}")
 prid = (d.get("data") or {}).get("id")
 
 if prid:
@@ -575,25 +655,21 @@ if prid:
     check("采购【负向】无行项目 → 422 SUB-COUNT-01",
           s == 422 and ecode(d) == "META_RUNTIME_UI_RULES_VIOLATED", f"{s} {ecode(d)}")
 
-    # 【负向 2】行项目合计 ≠ 采购金额 → SUB-ITEMS-01
-    bad = [dict(r) for r in ITEMS_OK]
-    bad[0]["amount"] = 12001
-    child_replace(PO, prid, PO_ITEM, bad)
+    # 【负向 2】行项目合计 ≠ 采购金额 → SUB-ITEMS-01（破坏版 split：Σ == 采购金额 + 1.01）
+    child_replace(PO, prid, PO_ITEM, ITEMS_BAD)
     s, d = act(PO, prid, "submit")
     check("采购【负向】行项目合计≠采购金额 → 422 SUB-ITEMS-01",
           s == 422 and "SUB-ITEMS-01" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
 
-    # 【负向 3】税额合计不符 → SUB-TAX-01
-    bad_tax = [dict(r) for r in ITEMS_OK]
-    bad_tax[2]["tax_amount"] = 1000
-    child_replace(PO, prid, PO_ITEM, bad_tax)
+    # 【负向 3】税额合计不符 → SUB-TAX-01（破坏版 split：Σ 行税额 == 税额合计 + 1.01）
+    child_replace(PO, prid, PO_ITEM, ITEMS_TAX_BAD)
     s, d = act(PO, prid, "submit")
     check("采购【负向】税额合计不符 → 422 SUB-TAX-01",
           s == 422 and "SUB-TAX-01" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
 
     # 【负向 4】超预算 → SUB-BUDGET-01 + LINK-BUDGET-01 必填说明
     child_replace(PO, prid, PO_ITEM, ITEMS_OK)
-    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"budget_amount": 10000})
+    call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"budget_amount": PO_BUDGET_LOW})
     s, d = act(PO, prid, "submit")
     check("采购【负向】超预算 → 422（SUB-BUDGET-01 且 remark 被 linkage 判必填）",
           s == 422 and "SUB-BUDGET-01" in (d.get("message") or "")
@@ -601,14 +677,14 @@ if prid:
 
     # 【负向 5】预付款缺合同号 → LINK-PREPAY-01
     call("PUT", f"/runtime/entities/{PO}/records/{prid}",
-         {"budget_amount": 50000, "payment_terms": "PREPAY", "contract_no": ""})
+         {"budget_amount": PO_BUDGET, "payment_terms": "PREPAY", "contract_no": ""})
     s, d = act(PO, prid, "submit")
     check("采购【负向】预付款缺合同号 → 422（contract_no 必填）",
           s == 422 and "contract_no" in (d.get("message") or ""), f"{s} {d.get('message', '')[:240]}")
 
     # 合规态：恢复 NET30 + 合同号 → submit 放行
     call("PUT", f"/runtime/entities/{PO}/records/{prid}",
-         {"payment_terms": "NET30", "contract_no": "CT-2026-0712"})
+         {"payment_terms": "NET30", "contract_no": PO_CONTRACT})
     s, d = act(PO, prid, "submit")
     check("采购：submit（DRAFT→SUBMITTED）", s == 200 and rec_status(d) == "SUBMITTED",
           f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
@@ -633,7 +709,7 @@ if prid:
           s == 422 and "invoice_no" in (d.get("message") or ""), f"{s} {d.get('message', '')[:200]}")
 
     call("PUT", f"/runtime/entities/{PO}/records/{prid}",
-         {"invoice_no": "INV-PO-2026-0091", "invoiced_amount": PO_AMOUNT})
+         {"invoice_no": PO_INVOICE_NO, "invoiced_amount": PO_AMOUNT})
     s, d = act(PO, prid, "confirmReceive")
     check("采购：confirmReceive（RECEIVING→RECEIVED）", s == 200 and rec_status(d) == "RECEIVED",
           f"{s} status={rec_status(d)} {d.get('message', '')[:160]}")
@@ -667,7 +743,7 @@ if prid:
     # 正式付款 + 幂等重放
     key = f"popay-{prid}"
     s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT,
-                                        "note": "Q4 办公设备采购"}, idem=key)
+                                        "note": PO_TITLE}, idem=key)
     se = (d.get("data") or {}).get("result") or {}
     check("采购：pay（RECEIVED→PAID）并回传付款流水号",
           s == 200 and rec_status(d) == "PAID" and str(se.get("paymentSerial", "")).startswith("POPAY-"),
@@ -684,13 +760,20 @@ if prid:
     check("采购：审计时间线留痕（5 条成功动作）", s == 200 and len(execs) >= 5, f"{s} 条数={len(execs)}")
 
 # 第二张单：超预算但已填写说明 → 不得被 remark 必填拦（说明规则本身是条件命中才强制）
-s, d = rec_create(PO, {"title": "临时追加采购", "vendor": "晨光办公", "payment_terms": "NET30",
-                       "contract_no": "CT-2026-0713", "budget_amount": 1000,
-                       "po_amount": 1200, "tax_amount": 0, "remark": "预算外紧急采购，已获分管副总口头批准"})
+PO2_BUDGET = ds.amount(lo=600, hi=2000)                                  # 追加单预算（小额）
+PO2_AMOUNT = ds.amount(lo=int(PO2_BUDGET * 1.2), hi=int(PO2_BUDGET * 3))  # 采购额 > 预算 ⇒ 超预算恒成立
+PO2_TITLE = f"{PO_DEPT}临时追加采购"
+PO2_SKU, _ref = ds.sku()
+PO2_NAME, PO2_SPEC = PO2_SKU.rsplit(" ", 1)
+s, d = rec_create(PO, {"title": PO2_TITLE, "vendor_code": PO_SUP["code"], "vendor": PO_SUP["name"],
+                       "payment_terms": "NET30", "contract_no": PO_CONTRACT2,
+                       "budget_amount": PO2_BUDGET, "po_amount": PO2_AMOUNT, "tax_amount": 0,
+                       "remark": "预算外紧急采购，已获分管副总口头批准"})
 prid2 = (d.get("data") or {}).get("id")
 if prid2:
-    child_replace(PO, prid2, PO_ITEM, [{"material_code": "M-9009", "material_name": "碎纸机",
-                                        "qty": 1, "unit": "台", "unit_price": 1200, "amount": 1200,
+    child_replace(PO, prid2, PO_ITEM, [{"material_code": "M-9009", "material_name": PO2_NAME,
+                                        "spec": PO2_SPEC, "qty": 1, "unit": "台",
+                                        "unit_price": PO2_AMOUNT, "amount": PO2_AMOUNT,
                                         "tax_rate": 0, "tax_amount": 0}])
     s, d = act(PO, prid2, "submit")
     check("采购：超预算但已填说明 → 仅 SUB-BUDGET-01 拦截（remark 不再是拦点）",

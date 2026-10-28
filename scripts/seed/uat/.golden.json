@@ -1,0 +1,83 @@
+{
+ "ceo": {
+  "id": 120001,
+  "name": "张伟",
+  "dept": 11002,
+  "dept_name": "总裁办公室",
+  "roles": [
+   "DEMO_TENANT_OWNER"
+  ],
+  "uname": "tenant_admin"
+ },
+ "steward": {
+  "id": 120002,
+  "name": "李静",
+  "dept": 11012,
+  "dept_name": "智能制造事业部 / 工艺工程科",
+  "roles": [
+   "DEMO_MDM_STEWARD"
+  ],
+  "uname": "li.jing"
+ },
+ "approver": {
+  "id": 120003,
+  "name": "王芳",
+  "dept": 11031,
+  "dept_name": "财务共享中心 / 税务管理科",
+  "roles": [
+   "DEMO_MDM_APPROVER",
+   "DEMO_WF_APPROVER"
+  ],
+  "uname": "wang.fang"
+ },
+ "sales": {
+  "id": 120004,
+  "name": "陈晨",
+  "dept": 11018,
+  "dept_name": "新零售事业部 / 小程序商城组",
+  "roles": [
+   "DEMO_SALES"
+  ],
+  "uname": "chen.chen"
+ },
+ "finance": {
+  "id": 120005,
+  "name": "赵敏",
+  "dept": 11028,
+  "dept_name": "财务共享中心 / 应收应付科",
+  "roles": [
+   "DEMO_FINANCE"
+  ],
+  "uname": "zhao.min"
+ },
+ "lowcode": {
+  "id": 120006,
+  "name": "黄磊",
+  "dept": 11043,
+  "dept_name": "信息技术中心",
+  "roles": [
+   "DEMO_LOWCODE"
+  ],
+  "uname": "huang.lei"
+ },
+ "ops": {
+  "id": 120007,
+  "name": "孙涛",
+  "dept": 11047,
+  "dept_name": "信息技术中心 / 运维安全组",
+  "roles": [
+   "DEMO_OPS"
+  ],
+  "uname": "sun.tao"
+ },
+ "auditor": {
+  "id": 120008,
+  "name": "周雅静",
+  "dept": 11056,
+  "dept_name": "客户服务与成功部 / 客户成功组",
+  "roles": [
+   "DEMO_AUDITOR"
+  ],
+  "uname": "zhou.yajing"
+ }
+}

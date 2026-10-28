@@ -19,7 +19,7 @@
 | [01 项目概览与模块结构](01-项目概览与模块结构.md) | §1 §2 §3 | 要了解项目定位、技术栈、模块与端口 |
 | [02 构建·运行·部署](02-构建运行与部署.md) | §4 §9 | 要跑构建命令、起服务、部署、查端口 |
 | [03 架构分层规范](03-架构分层规范.md) | §5 | **要改后端代码**：分层、依赖规则、基础类、设计模式 |
-| [04 测试与代码质量](04-测试与代码质量.md) | §6 §7 | 要写测试、过 Spotless / ArchUnit / 静态分析 |
+| [04 测试与代码质量](04-测试与代码质量.md) | §6 §7 | 要写测试、过 Spotless / ArchUnit / 静态分析、写或跑 E2E（`scripts/e2e`） |
 | [05 数据库与安全](05-数据库与安全.md) | §8 §10 | 要动表、写 SQL、关注安全基线 |
 | [06 AI 协作与编码准则](06-AI协作与编码准则.md) | §11 §12 | **任何任务**：编码准则、自主权分级、交付流程 |
 
@@ -51,3 +51,4 @@
 | `bone-engine/bone-metadata-sdk/` | 默认持久化 SDK（[README](../../bone-engine/bone-metadata-sdk/README.md) + [doc/](../../bone-engine/bone-metadata-sdk/doc/)） |
 | `doc/design/modules/元数据能力-实现映射与竞品对照.md` | sdk / server / engine 定义、协作、竞品 |
 | `bone-engine/README.md` | 引擎层模块索引 |
+| [`scripts/e2e/README.md`](../../scripts/e2e/README.md) | 端到端测试能力现场手册（e2e_lib 公共层 / 脚本清单 / 环境变量 / 新增规范） |

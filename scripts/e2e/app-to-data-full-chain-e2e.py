@@ -35,22 +35,29 @@ import json
 import os
 
 from e2e_lib import config, http, mysql, report, teardown
+from e2e_lib import fixtures as fx
 from e2e_lib.http import call, d_, ecode, etag_of
 from e2e_lib.modeling import put_schema, validate
 from e2e_lib.report import check, note, section
 
 SUFFIX = config.run_suffix()  # 运行级后缀：所有产物带它，teardown 按后缀定点回收
 
+# 生产仿真数据集：同后缀 ⇒ 同数据。业务值一律在此生成一次、存入变量，
+# API 创建 / 断言比对 / MySQL 落库核查三处共用同一变量（分头生成会对不上成假红）
+ds = fx.dataset(SUFFIX)
+CITY = ds.city    # 属地文案：应用名与描述用（自然中文业务文案）
+DEPT = ds.dept    # 归口部门文案：模块/实体名与描述用
+
 # 主会话（admin）登录：失败即退出——没登录跑什么都是假红
 http.login()
 
 APP_CODE = f"e2e_om_{SUFFIX}"
-APP_NAME = f"设备运维管理{SUFFIX}"
+APP_NAME = f"{CITY}设备运维管理{SUFFIX}"
 MODULE_CODE = f"e2e_insp_{SUFFIX}"
-MODULE_NAME = f"巡检管理{SUFFIX}"
+MODULE_NAME = f"{DEPT}巡检管理{SUFFIX}"
 ENTITY_CODE = f"t_insp_order_{SUFFIX}"
 TABLE_NAME = f"t_insp_order_{SUFFIX}"
-ENTITY_NAME = f"设备巡检工单{SUFFIX}"
+ENTITY_NAME = f"{DEPT}设备巡检工单{SUFFIX}"
 
 EQUIPMENT_TYPES = [
     {"code": "cnc", "label": "数控机床"},
@@ -96,7 +103,7 @@ teardown.register(SUFFIX, on_clean=_drop_state)
 section("① 应用创建（IAM 域 /api/v1/apps）")
 s, d = call("POST", "/apps", {
     "name": APP_NAME, "code": APP_CODE,
-    "description": "E2E 全链路验证：设备巡检场景（应用→模块→模型→界面→数据）",
+    "description": f"{CITY}{DEPT}设备运维：巡检业务从建模到数据全生命周期",
     "icon": "SettingOutlined",
 })
 check("应用创建 201", s == 201, f"status={s} {str(d)[:200]}")
@@ -116,7 +123,7 @@ check("应用详情回读一致",
 # ---------------------------------------------------------------- ② 模块添加
 section("② 模块添加（/api/v1/apps/{appId}/modules）")
 s, d = call("POST", f"/apps/{APP_ID}/modules", {
-    "name": MODULE_NAME, "code": MODULE_CODE, "description": "设备巡检工单建模",
+    "name": MODULE_NAME, "code": MODULE_CODE, "description": f"{CITY}{DEPT}设备巡检工单建模",
 })
 check("模块创建 201", s == 201, f"status={s} {str(d)[:200]}")
 MODULE_ID = d.get("data")
@@ -137,7 +144,7 @@ section("③ 模型设计（实体 + 8 字段，moduleId 归属模块）")
 s, d = call("POST", "/metadata/entities", {
     "name": ENTITY_NAME, "code": ENTITY_CODE, "displayName": ENTITY_NAME,
     "tableName": TABLE_NAME, "type": 1, "deliveryMode": 1, "moduleId": MODULE_ID,
-    "description": "E2E 全链路验证实体：设备巡检工单",
+    "description": f"{CITY}{DEPT}设备巡检工单：巡检计划与执行记录",
 })
 check("实体创建 201", s == 201, f"status={s} {str(d)[:200]}")
 ENTITY_ID = d.get("data")
@@ -283,9 +290,36 @@ def rec(equip_no, equip_name, etype, date, inspector, result, desc="", dur=45):
     }
 
 
-R1 = rec(f"EQ-{SUFFIX}-1", "数控机床 CNC-1000", "cnc", "2026-10-15", "张伟", "normal", "", 45)
-R2 = rec(f"EQ-{SUFFIX}-2", "蒸汽锅炉 B-07", "boiler", "2026-10-16", "李娜", "abnormal", "压力表读数偏高，需一周内复检", 60)
-R3 = rec(f"EQ-{SUFFIX}-3", "装配输送线 L2", "conveyor", "2026-10-17", "王强", "recheck", "", 30)
+# ---- 生产仿真业务值：每个值只生成一次存变量，创建 / 断言 / MySQL 核查共用 ----
+# 设备资产取 fixtures 词表（EQ-SMT-0347 式可读编号，比裸随机号可读）；
+# 编号在本数据集内去重——三台撞同一编号会把「q 精确筛选恰好 1 条」顶成假红
+_EQ_USED = set()
+
+
+def _equip():
+    """抽一台不重复的设备：(设备编号, 设备名称)。"""
+    while True:
+        _, _no, _name = ds.equipment()
+        if _no not in _EQ_USED:
+            _EQ_USED.add(_no)
+            return _no, _name
+
+
+EQ1_NO, EQ1_NAME = _equip()
+EQ2_NO, EQ2_NAME = _equip()
+EQ3_NO, EQ3_NAME = _equip()
+INSPECTOR1, INSPECTOR2, INSPECTOR3 = ds.person(), ds.person(), ds.person()
+INSP_DATE1 = ds.days_ago(7)   # 运行日倒推：读起来是最近发生过的巡检
+INSP_DATE2 = ds.days_ago(5)
+INSP_DATE3 = ds.days_ago(3)
+INSP_NO_R2 = ds.doc_no("INSP")   # 巡检单号（业务前缀-日期-序号），串进异常/复检文案
+INSP_NO_R3 = ds.doc_no("INSP")
+
+R1 = rec(EQ1_NO, EQ1_NAME, "cnc", INSP_DATE1, INSPECTOR1, "normal", "", 45)
+R2 = rec(EQ2_NO, EQ2_NAME, "boiler", INSP_DATE2, INSPECTOR2, "abnormal",
+         f"巡检单 {INSP_NO_R2}：压力表读数偏高，需一周内复检", 60)
+R3 = rec(EQ3_NO, EQ3_NAME, "conveyor", INSP_DATE3, INSPECTOR3, "recheck",
+         f"巡检单 {INSP_NO_R3}：轴承润滑不足，待复检确认", 30)
 
 s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R1)
 check("数据保存 R1 → 201", s == 201, f"status={s} {str(d)[:200]}")
@@ -305,16 +339,18 @@ R3_ID = d_(d, "id")
 s, d, hdrs = http.call_full("GET", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}")
 got = d.get("data") or {}
 check("数据查看：R1 回读值一致（保存→查看闭环）",
-      s == 200 and got.get("equipment_name") == "数控机床 CNC-1000"
-      and got.get("equipment_type") == "cnc" and got.get("inspection_result") == "normal"
-      and str(got.get("inspection_date"))[:10] == "2026-10-15",
+      s == 200 and got.get("equipment_name") == EQ1_NAME
+      and got.get("equipment_type") == R1["equipment_type"]
+      and got.get("inspection_result") == R1["inspection_result"]
+      and str(got.get("inspection_date"))[:10] == INSP_DATE1,
       f"status={s} data={str(got)[:200]}")
 rec_etag = etag_of(hdrs)
 check("详情响应带 ETag（并发令牌）", bool(rec_etag), f"etag={rec_etag}")
 
 # 更新：正确 ETag → 200；错误 ETag → 412
 s, d = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
-               {"inspection_result": "recheck", "duration_minutes": 50, "inspector": "张伟"},
+               {"inspection_result": "recheck", "duration_minutes": 50,
+                "inspector": INSPECTOR1},
                {"If-Match": rec_etag})
 check("数据更新（正确 ETag）→ 200", s == 200, f"status={s} {str(d)[:160]}")
 s, d = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
@@ -341,10 +377,10 @@ check("列投影：未请求的列不下发（abnormal_desc/duration_minutes 缺
       "abnormal_desc" not in row0 and "duration_minutes" not in row0,
       f"keys={list(row0.keys())}")
 
-s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&q=equipment_no:EQ-{SUFFIX}-2")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&q=equipment_no:{EQ2_NO}")
 rows_q = (d.get("data") or {}).get("records") or []
-check("q 精确筛选：equipment_no=EQ-…-2 恰好 1 条",
-      len(rows_q) == 1 and rows_q[0].get("equipment_name") == "蒸汽锅炉 B-07",
+check(f"q 精确筛选：equipment_no={EQ2_NO} 恰好 1 条",
+      len(rows_q) == 1 and rows_q[0].get("equipment_name") == EQ2_NAME,
       f"rows={len(rows_q)} {str(rows_q)[:120]}")
 
 # ---------------------------------------------------------------- ⑦ 回收站（软删可观测可恢复）
@@ -371,10 +407,10 @@ check(f"物理表 {TABLE_NAME} 存在且 3 行", out is not None and out.splitli
       f"out={out} err={err}")
 out, err = mysql.query(
     f"SELECT equipment_no, equipment_name, equipment_type, inspection_result, duration_minutes "
-    f"FROM {TABLE_NAME} WHERE equipment_no='EQ-{SUFFIX}-1'")
+    f"FROM {TABLE_NAME} WHERE equipment_no='{EQ1_NO}'")
 line = out.splitlines()[-1] if out else ""
 check("R1 行内容与提交值一致（含更新后 recheck/50）",
-      out is not None and line.startswith(f"EQ-{SUFFIX}-1") and "recheck" in line and line.rstrip().endswith("50"),
+      out is not None and line.startswith(EQ1_NO) and "recheck" in line and line.rstrip().endswith("50"),
       f"row={line!r} err={err}")
 
 # ---------------------------------------------------------------- 状态文件（供 UI 探针）

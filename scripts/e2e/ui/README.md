@@ -1,5 +1,7 @@
 # 前端 UI 巡检探针
 
+> 目录级约定（公共层 / 新增规范 / 环境变量）见 [scripts/e2e/README.md](../README.md)；本文件只管浏览器探针。
+
 无头 Chrome（Playwright）驱动的三个探针，覆盖"点击每一个功能"。**先起全环境**：
 
 ```bash

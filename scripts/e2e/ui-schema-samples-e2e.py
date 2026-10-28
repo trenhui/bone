@@ -21,6 +21,7 @@ os.environ.setdefault("BONE_E2E_BASE", "http://127.0.0.1:9001/api/v1")
 os.environ.setdefault("BONE_E2E_LOGIN_BASE", "http://127.0.0.1:8081/api/v1")
 
 from e2e_lib import config, http, report
+from e2e_lib import fixtures as fx
 from e2e_lib.http import call, ecode
 from e2e_lib.modeling import (
     add_action,
@@ -38,6 +39,9 @@ from e2e_lib.runtime import act, child_replace, rec_create
 http.login()
 
 SUFFIX = config.run_suffix()  # 运行级后缀：cleanup 按后缀定点回收
+
+# 生产仿真数据集：同后缀 ⇒ 同一份数据（名称/金额/拆分恒定，复跑可比对）
+ds = fx.dataset(SUFFIX)
 
 
 # ==================================================================
@@ -123,18 +127,45 @@ check(
 s, d = publish(exp_id)
 check("报销：publish 放行（闸门无阻断）", s == 200, f"{s} {ecode(d)} {d.get('message')}")
 
-# ---- 业务侧 ----
-s, d = rec_create(EXP, {"title": "10 月差旅报销", "amount": 140, "currency": "CNY", "approver_id": 1})
+# ---- 业务侧（生产仿真数据：每个值只生成一次存变量，创建/更新/断言共用同一变量）----
+claim_no = ds.doc_no("BX")  # BX-20261028-7069 式可读单号（业务前缀-日期-序号）
+claim_city = ds.city  # 数据集恒定城市（实例属性，同后缀不变）
+claim_start = ds.days_ago(7)  # 行程开始（早于结束日期，过「结束≥开始」submitRule）
+claim_end = ds.days_ago(2)  # 行程结束
+claim_date = ds.days_ago(5)  # 费用发生日（数据老化：读起来像最近的业务）
+claim_title = f"{claim_city}客户拜访差旅报销（{claim_start} 至 {claim_end}）"
+claim_amount = ds.amount()  # 主表申报金额：非圆整两位小数
+claim_items = ds.split(claim_amount, 2)  # 守恒拆分：Σ == claim_amount（明细合计过闸）
+claim_items_bad = ds.split(claim_amount, 2, break_=True)  # 负向专用：Σ == 申报 + 1.01
+claim_tax_no = ds.tax_no()  # 虚构统一社会信用代码（补税号后放行）
+claim_applicant = ds.person()
+claim_dept = ds.dept  # 数据集恒定部门（实例属性，同后缀不变）
+
+s, d = rec_create(
+    EXP,
+    {
+        "claim_no": claim_no,
+        "title": claim_title,
+        "amount": claim_amount,
+        "currency": "CNY",
+        "applicant": claim_applicant,
+        "department": claim_dept,
+        "expense_date": claim_date,
+        "expense_start": claim_start,
+        "expense_end": claim_end,
+        "approver_id": 1,
+    },
+)
 check("报销：创建记录", s in (200, 201), f"{s} {d.get('message')}")
 rid = d.get("data", {}).get("id") if s in (200, 201) else None
 
 if rid:
-    # 明细合计 140 = 申报 140 → 合规
-    s, d = child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 40}])
-    check("报销：写入明细（合计 140）", s in (200, 201), f"{s} {d.get('message')}")
+    # 明细合计 Σ(claim_items) = 申报 claim_amount → 合规
+    s, d = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items])
+    check(f"报销：写入明细（合计 {claim_amount}）", s in (200, 201), f"{s} {d.get('message')}")
 
-    # 负向①：明细合计 150 ≠ 申报 140 → SUB 规则必须拦（协议 SUB 明细合计一致）
-    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 50}])
+    # 负向①：明细合计 Σ(claim_items_bad) = 申报 + 1.01 ≠ 申报 → SUB 规则必须拦（协议 SUB 明细合计一致）
+    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items_bad])
     s, d = act(EXP, rid, "submit")
     check(
         "报销【负向】明细合计≠申报 → 动作 422 且带规则码",
@@ -142,8 +173,8 @@ if rid:
         f"期望 422/RUNTIME_UI_RULES_VIOLATED，实际 {s} {ecode(d)} {d.get('message', '')[:160]}",
     )
 
-    # 恢复合规明细
-    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 40}])
+    # 恢复合规明细（复用同一守恒拆分，Σ 仍 == 申报）
+    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items])
 
     # 负向②：专票缺税号 → linkage required 必须拦
     s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"invoice_type": "SPECIAL"})
@@ -155,7 +186,7 @@ if rid:
     )
 
     # 补税号后放行
-    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": "91310000MA1FL0"})
+    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": claim_tax_no})
     s, d = act(EXP, rid, "submit")
     check("报销：合规后 submit 成功（DRAFT→SUBMITTED）", s == 200, f"{s} {d.get('message')}")
     if s == 200:

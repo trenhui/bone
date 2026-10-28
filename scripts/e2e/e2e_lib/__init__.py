@@ -13,11 +13,13 @@
     modeling 建模侧（create_entity / ensure_field / child_table_field / add_action /
              put_schema / validate / publish）
     runtime  业务侧（rec_create / child_replace / act / act_as / rec_status）
+    fixtures 生产化测试数据（doc_no / amount / split 守恒 / person / customer 串链，
+             同 seed 同数据；规范见 scripts/e2e/README.md §3）
     teardown 运行级残留自动回收（register / clean，执行体 cleanup-residue.py）
     mysql    第二证据源直查（query -> (stdout, stderr)）
 
 脚本位于 scripts/e2e/ 下，`sys.path[0]` 即脚本目录，直接 `import e2e_lib` 无需 bootstrap。
 """
-from . import config, http, modeling, mysql, report, runtime, sign, teardown  # noqa: F401
+from . import config, fixtures, http, modeling, mysql, report, runtime, sign, teardown  # noqa: F401
 
-__all__ = ["config", "http", "modeling", "mysql", "report", "runtime", "sign", "teardown"]
+__all__ = ["config", "fixtures", "http", "modeling", "mysql", "report", "runtime", "sign", "teardown"]
