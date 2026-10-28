@@ -1,0 +1,236 @@
+package com.bone.claim.domain.model.adjustment;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.bone.claim.domain.model.claim.projection.ClaimWithItemsProjection;
+import com.bone.claim.domain.model.liability.AdjLiability;
+import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/**
+ * 理算语义覆盖清单（缺口哨兵，Go-Live 门禁 G2 的「生产引擎 = reference-impl 派生」证据面）。
+ *
+ * <p><b>为什么需要它</b>：双轨一致只覆盖**生产已支持的语义子集**。若不把「未支持的部分」显式登记，读者会把 「双轨全绿」误读成「与 reference-impl
+ * 等价」——这就是文档型缺口最危险之处：没人说谎，但结论被放大。
+ *
+ * <p><b>本类的性质</b>：把 reference-impl 理算链的 10 个环节逐项标注 {@link Status}，并给出**可执行证据**。 每个 GAP
+ * 都配一条「反证测试」，证明该能力当前确实不存在（而不是仅口头声明）。若某次实现补齐了某项能力， 对应反证会转红——**这是设计意图**：请同步把该项改为 SUPPORTED，并回填
+ * Go-Live 门禁 G2 与 《待架构评审代码整改清单》，不要直接删断言。
+ *
+ * <p>参考实现：{@code doc/ai-product/synapClaim/reference-impl/synap-claim-settlement} （30 探针 + 19 变异 +
+ * 28 个真实 TPA 场景）。
+ */
+class AdjustmentSemanticGapInventoryTest {
+
+  /** 覆盖状态。 */
+  enum Status {
+    /** 生产实现完整支持。 */
+    SUPPORTED,
+    /** 部分支持：口径比 reference-impl 粗，需业务确认是否可接受。 */
+    PARTIAL,
+    /** 未实现：reference-impl 有、生产无。 */
+    GAP
+  }
+
+  /**
+   * reference-impl 理算链环节（顺序即铁律顺序）。
+   *
+   * @param evidence 当前状态的代码依据（类/方法级），便于复核
+   * @param docAnchor 文档锚（SSOT 章节或门禁编号）
+   */
+  record Step(String label, Status status, String evidence, String docAnchor) {}
+
+  private static final List<Step> INVENTORY =
+      List.of(
+          new Step(
+              "①费用明细筛选（目录/合理必要）",
+              Status.PARTIAL,
+              "Adjustment.apply 仅按 itemSocialFlag 做社保内外粗筛，无目录编码/合理必要性判定",
+              "《理算引擎内部设计》§算法 · Go-Live G2"),
+          new Step(
+              "②发票级免赔",
+              Status.GAP,
+              "Adjustment.apply 只有责任级 liabilityDeduct 一次扣减，无发票维度免赔",
+              "Go-Live G2"),
+          new Step(
+              "③第三方已付抵扣（不可获利）",
+              Status.GAP,
+              "Adjustment.apply 完全不读 itemPoolingAmount，赔付+已付可超总费用",
+              "Go-Live G2 · reference-impl S17"),
+          new Step(
+              "④年度免赔（作用于费用基数）",
+              Status.SUPPORTED,
+              "Adjustment.apply 步骤②：deductible = min(deduct, base)，先于比例",
+              "§7.4 · reference-impl P16"),
+          new Step("⑤赔付比例", Status.SUPPORTED, "Adjustment.apply 步骤③：afterDeduct × payRate", "§7.4"),
+          new Step(
+              "⑥理算级免赔（第二个免赔）", Status.GAP, "Adjustment.apply 仅一次免赔；无「按比例后」的二次免赔", "Go-Live G2"),
+          new Step(
+              "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）",
+              Status.SUPPORTED,
+              "Adjustment CALC_SCALE=6 / RESULT_SCALE=2 / HALF_UP",
+              "§8.3"),
+          new Step(
+              "⑧多维度 min 控额",
+              Status.PARTIAL,
+              "Adjustment.apply 仅 liabilityLimit 单维截断；无「维度可用额」多路取交",
+              "§5.3 · Go-Live G2"),
+          new Step(
+              "⑨逐行分位归因（分位守恒）",
+              Status.GAP,
+              "Adjustment.apply 只落 1 条 OUTPUT 汇总行，不按费用行分位",
+              "§7.4 · reference-impl S27"),
+          new Step(
+              "⑩跨案累计（年度免赔/责任限额）",
+              Status.GAP,
+              "liabilityDeduct 为配置常量、按案各扣一次；无 AccumulationPort 跨案余额",
+              "Go-Live G2 · reference-impl S3/S21"));
+
+  @Test
+  @DisplayName("覆盖清单固定：SUPPORTED / PARTIAL / GAP 三集合与登记一致（能力变化须显式改档）")
+  void statusSetsArePinned() {
+    assertThat(labelsWith(Status.SUPPORTED))
+        .containsExactlyInAnyOrder("④年度免赔（作用于费用基数）", "⑤赔付比例", "⑦取整（中间 6 位 / 结果 2 位 HALF_UP）");
+    assertThat(labelsWith(Status.PARTIAL))
+        .containsExactlyInAnyOrder("①费用明细筛选（目录/合理必要）", "⑧多维度 min 控额");
+    assertThat(labelsWith(Status.GAP))
+        .containsExactlyInAnyOrder(
+            "②发票级免赔", "③第三方已付抵扣（不可获利）", "⑥理算级免赔（第二个免赔）", "⑨逐行分位归因（分位守恒）", "⑩跨案累计（年度免赔/责任限额）");
+  }
+
+  @Test
+  @DisplayName("每个环节都带代码依据与文档锚：缺口不得以沉默方式存在")
+  void everyStepCarriesEvidenceAndAnchor() {
+    for (Step step : INVENTORY) {
+      assertThat(step.evidence()).as("%s 缺代码依据", step.label()).isNotBlank();
+      assertThat(step.docAnchor()).as("%s 缺文档锚", step.label()).isNotBlank();
+    }
+    assertThat(INVENTORY).hasSize(10);
+  }
+
+  @Test
+  @DisplayName("GAP③ 反证：第三方已付（统筹/公账）不影响赔付额 —— 不可获利护栏缺失")
+  void gap_thirdPartyPaidIsNotOffset() {
+    BigDecimal withoutThirdParty = payout("10000.00", "0");
+    BigDecimal withThirdParty = payout("10000.00", "5000.00");
+
+    assertThat(withThirdParty)
+        .as("若本断言转红：第三方已付抵扣已实现，请把 GAP③ 改为 SUPPORTED 并回填 G2")
+        .isEqualByComparingTo(withoutThirdParty);
+  }
+
+  @Test
+  @DisplayName("GAP⑨ 反证：多费用行只落 1 条汇总行 —— 无逐行分位归因")
+  void gap_noPerLineAttribution() {
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9001L,
+            42L,
+            1001L,
+            List.of(item(2001L, "100.00"), item(2002L, "200.00"), item(2003L, "300.00")),
+            liability("100", "0", "0"),
+            "r1");
+
+    assertThat(adjustment.lines()).as("若本断言转红：逐行归因已实现，请把 GAP⑨ 改为 SUPPORTED 并回填 G2").hasSize(1);
+  }
+
+  @Test
+  @DisplayName("GAP⑩ 反证：年度免赔按案各扣一次，不跨案累计 —— 两案各 8000 均赔 0")
+  void gap_noCrossClaimAccumulation() {
+    BigDecimal first = payout("8000.00", "0");
+    BigDecimal second = payout("8000.00", "0");
+
+    assertThat(first).as("首案 8000 未达 1 万免赔 → 0").isEqualByComparingTo("0.00");
+    assertThat(second)
+        .as("若本断言转红：跨案累计已实现（reference-impl S3 次案应为 8000×90%），请把 GAP⑩ 改为 SUPPORTED")
+        .isEqualByComparingTo("0.00");
+  }
+
+  @Test
+  @DisplayName("快照键集固定：新增/删除理算参数必须显式改档（防口径静默漂移）")
+  void snapshotKeysArePinned() {
+    Adjustment adjustment =
+        Adjustment.calculate(
+            9001L, 42L, 1001L, List.of(item(2001L, "1000.00")), liability("80", "100", "0"), "r1");
+    String snapshot = adjustment.getFormulaSnapshot();
+
+    Set<String> pinned =
+        new LinkedHashSet<>(
+            List.of(
+                "liabilityUuid",
+                "liabilityVersion",
+                "payPercent",
+                "deduct",
+                "limit",
+                "socialOnly",
+                "base",
+                "selfPay1Total",
+                "afterDeduct",
+                "ratioPayout",
+                "items"));
+    for (String key : pinned) {
+      assertThat(snapshot).as("快照须含理算参数 %s（不可仅版本引用，§5.2）", key).contains("\"" + key + "\"");
+    }
+    for (String absent :
+        List.of("thirdPartyPaid", "invoiceDeduct", "adjustDeduct", "limitDimensions")) {
+      assertThat(snapshot).as("快照不应出现 %s——若出现说明对应 GAP 已补齐，请改档", absent).doesNotContain(absent);
+    }
+  }
+
+  // ===================== 夹具 =====================
+
+  private static Set<String> labelsWith(Status status) {
+    return INVENTORY.stream()
+        .filter(s -> s.status() == status)
+        .map(Step::label)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  private static ClaimWithItemsProjection item(long itemId, String valid) {
+    ClaimWithItemsProjection p = new ClaimWithItemsProjection();
+    p.setClaimId(1001L);
+    p.setItemId(itemId);
+    p.setItemName("费用" + itemId);
+    p.setItemSocialFlag("IN");
+    p.setItemValidAmount(new BigDecimal(valid));
+    p.setItemSelfPay1(new BigDecimal(valid));
+    return p;
+  }
+
+  private static AdjLiability liability(String payPercent, String deduct, String limit) {
+    return AdjLiability.of(
+        1L,
+        42L,
+        "L-GAP",
+        "v1",
+        7L,
+        "R01",
+        "REIMBURSEMENT",
+        new BigDecimal(payPercent),
+        new BigDecimal(deduct),
+        new BigDecimal(limit),
+        1,
+        0,
+        "ACTIVE");
+  }
+
+  /** 责任：90%、年免赔 1 万、不封顶。 */
+  private static BigDecimal payout(String valid, String thirdPartyPaid) {
+    ClaimWithItemsProjection p = item(2001L, valid);
+    p.setItemPoolingAmount(new BigDecimal(thirdPartyPaid));
+    return Adjustment.calculate(9001L, 42L, 1001L, List.of(p), liability("90", "10000", "0"), "r1")
+        .getTotalAmount();
+  }
+
+  @Test
+  @DisplayName("清单自身不重复：环节标签唯一（重复会让 pinned 断言漏项）")
+  void inventoryLabelsAreUnique() {
+    Set<String> labels = INVENTORY.stream().map(Step::label).collect(Collectors.toSet());
+    assertThat(labels).hasSameSizeAs(INVENTORY);
+  }
+}
