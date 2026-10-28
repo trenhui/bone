@@ -50,7 +50,12 @@ public class RuntimeActionController {
    * RuntimeActionApplicationService}（def 感知）。ArchitectureTest 注解口径门禁对本方法登记豁免。
    */
   @PostMapping("/records/{id}/actions/{actionCode}")
-  @PreAuthorize("hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
+  // 注解层只表达「能进运行时写域」：旧粗码 metadata:runtime:write、旧全库码 metadata:write、
+  // 新通配写 runtime:*:write（RuntimeAccessGuard §4.7 已明确通配写等价全库 CRUD）、平台管理员 platform.admin。
+  // 真正的实体级 / 动作级（含逃逸细码）授权全部下沉 RuntimeActionApplicationService#requireAction，
+  // 此处不得再加实体级判据（会误伤仅持动作细码的独立资金授权面）。
+  @PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:write', 'metadata:write', 'runtime:*:write', 'platform.admin')")
   public ApiResponse<Map<String, Object>> invoke(
       @PathVariable String entityCode,
       @PathVariable String id,
