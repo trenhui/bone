@@ -12,12 +12,11 @@
 import {
   UI_BASE as BASE,
   SHOT_DIR,
-  USER as E2E_USER,
-  PWD as E2E_PWD,
   loadPlaywright,
   makeChecker,
   api,
 } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const { results, check, report } = makeChecker();
@@ -40,6 +39,12 @@ async function fetchMenus() {
 }
 
 const menus = await fetchMenus();
+// 负向探针（BONE_REGRESSION_NEGCTL=1）：注入一个必然挂不上的假菜单，
+// 证明「文本长度 OR 可见控件」这条放宽后的渲染判据仍然有判别力（不会把白屏判成绿）。
+if (process.env.BONE_REGRESSION_NEGCTL === '1') {
+  menus.length = 0;
+  menus.push({ path: '/__no_such_micro_app__#/x', name: '负向探针' });
+}
 console.log(`菜单真源：共 ${menus.length} 个可导航菜单\n`);
 
 const browser = await chromium.launch({ headless: true });
@@ -116,24 +121,8 @@ const waitForStable = async (ms = 8000) => {
 };
 
 try {
-  // ---------- 登录 ----------
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(E2E_USER);
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(E2E_PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  let loggedIn = false;
-  try {
-    await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    loggedIn = true;
-  } catch {}
+  // ---------- 登录（统一走共享 uiLogin，禁止在探针内重抄登录选择器） ----------
+  const loggedIn = await uiLogin(page);
   check('UI 登录成功（登录表单消失）', loggedIn, `url=${page.url()}`);
   if (!loggedIn) throw new Error('登录失败，后续巡检无意义');
 
@@ -160,7 +149,18 @@ try {
       const body = await page.locator('body').innerText();
       // `/` 是壳层自带仪表盘，不走 qiankun，本来就没有 #subapp-viewport，改量壳层正文
       const isShellHome = !m.path.includes('#');
-      const rendered = isShellHome ? body.trim().length > 120 : bodyLen > 20;
+      let rendered = isShellHome ? body.trim().length > 120 : bodyLen > 20;
+      if (!rendered && !isShellHome) {
+        // 文本长度只是「渲染了」的弱代理：搜索型页面（标题 + 输入框 + 按钮）的 innerText
+        // 可能只有几个字（input 的 placeholder 不计入 innerText），但控件齐全、功能完好 ——
+        // 例：/claim#/progress 全文只有「理赔进度 / 查询」7 字，却是一个完全可用的页面。
+        // 故补一条「可见控件」判据。真正没挂上的微应用既无文本也无控件，仍然判红。
+        const controls = await page
+          .locator('#subapp-viewport input:visible, #subapp-viewport button:visible, #subapp-viewport table:visible')
+          .count()
+          .catch(() => 0);
+        rendered = controls > 0;
+      }
       if (!rendered) check(`${label} 微应用渲染出内容`, false, `#subapp-viewport len=${bodyLen} body=${body.slice(0, 120)}`);
       else results.push({ name: `${label} 微应用渲染出内容`, ok: true });
 

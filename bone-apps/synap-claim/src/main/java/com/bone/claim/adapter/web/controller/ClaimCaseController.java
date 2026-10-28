@@ -79,7 +79,10 @@ public class ClaimCaseController {
   })
   @PreAuthorize("hasAuthority('claim:claims:write')")
   @ResponseStatus(HttpStatus.CREATED)
-  @PostMapping
+  // 显式登记 {"", "/"}：前端 createApiClient('/api/v1/claims') + axios url '/' 会拼出**带尾斜杠**的
+  // /api/v1/claims/（combineURLs 恒补一个 '/'），而 Spring Boot 3 / PathPatternParser 默认**不做**
+  // 尾斜杠匹配 ⇒ 报案提交与待办列表全数 404「请求地址不存在」（2026-10-28 全模块联调实测确诊）。
+  @PostMapping({"", "/"})
   public ApiResponse<ClaimCaseResp> submit(
       @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
           @RequestHeader(value = IdempotencyService.IDEMPOTENCY_KEY_HEADER, required = false)
@@ -119,7 +122,8 @@ public class ClaimCaseController {
 
   @Operation(summary = "待办/列表分页", description = "工作台待办（默认待核赔 40）；支持按状态集/渠道过滤")
   @PreAuthorize("hasAuthority('claim:claims:read')")
-  @GetMapping
+  // 同上：前端 axios 会把 base + '/' 拼成 /api/v1/claims/，必须显式登记尾斜杠路径。
+  @GetMapping({"", "/"})
   public ApiResponse<PageResult<ClaimHeadProjection>> page(
       @Valid @ModelAttribute ClaimPageReq qry) {
     List<ClaimStatus> statuses = claimCaseAssembler.statusesOf(qry);

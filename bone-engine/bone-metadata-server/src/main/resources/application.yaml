@@ -63,10 +63,18 @@ bone:
         ttl: ${BONE_IDEMPOTENCY_TTL:PT24H}
 
   # JWT 验签密钥（与 IAM 共享）：声明键名以满足配置键契约（MVP-10 ②）。
-  # 值默认从环境变量注入（BONE_IAM_JWT_SECRET_KEY / BONE_JWT_SECRET），未设置则回落为空（dev / 单测自签自验）。
+  # 值优先从环境变量注入（BONE_IAM_JWT_SECRET_KEY / BONE_JWT_SECRET）；未设置时回落为与 IAM 同源的
+  # dev 默认密钥，保证「开箱即用的 dev / 联调」两端可互验。
+  #
+  # 关键：此处**不能**回落为空。JwtUtil 在两个键皆空时会生成「每次启动随机密钥」，
+  # 导致 IAM 签发的令牌一律验签失败 → 请求被匿名化 → CurrentUserProvider 拿不到 userId
+  # → 审批中心 / 我的待办等以「登录用户为办理人」检索的接口恒 403
+  # 「匿名主体没有待办」（2026-10-28 全模块联调实测确诊）。
+  # 其余服务（iam / file / masterdata / integration / extension / generator）早已使用该 dev 默认，
+  # 本服务是唯一回落为空的例外，故补齐以消除不对称。生产务必以环境变量覆盖。
   iam:
     jwt:
       secret:
-        key: ${BONE_IAM_JWT_SECRET_KEY:}
+        key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
   jwt:
-    secret: ${BONE_JWT_SECRET:}
+    secret: ${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}
