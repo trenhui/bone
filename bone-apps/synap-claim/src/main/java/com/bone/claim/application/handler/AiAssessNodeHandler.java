@@ -65,6 +65,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
       rejectSuggested = !knowledgeConfirmed;
       Map<String, Object> out = new LinkedHashMap<>();
       out.put("rejectSuggested", rejectSuggested);
+      // 可解释性：显式标注 AI 能力不可用（降级纯规则），供核赔员/审计区分"AI 未评估"与"AI 评估为无风险"
+      out.put("aiAvailable", false);
+      out.put("knowledgeAvailable", k.available());
       if (rejectSuggested) {
         notificationPort.alert("WARN", "AI_RISK", v, out);
       }
@@ -76,6 +79,9 @@ public class AiAssessNodeHandler implements DecisionNodeHandler {
     out.put("rejectSuggested", rejectSuggested);
     // 结构化拒赔原因码随轨迹落库（可解释性 / 审计 / 申诉）：不利决定须可解释，自由文本理由已在前置层禁用
     out.put("rejectReasons", a == null ? List.of() : a.rejectReasons());
+    // 可解释性：AI 与临床知识能力是否真实参与（false=降级/未集成，核赔员须据此提高人工审查力度）
+    out.put("aiAvailable", true);
+    out.put("knowledgeAvailable", k.available());
     if (rejectSuggested) {
       notificationPort.alert("WARN", "AI_RISK", v, out);
     }

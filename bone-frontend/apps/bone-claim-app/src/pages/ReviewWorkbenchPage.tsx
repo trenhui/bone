@@ -28,6 +28,7 @@ import {
   type DecisionExecutionResult,
   type DecisionTraceNode,
 } from '../services/claimApi';
+import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
 
 /**
  * 核赔工作台 · 待办审核页（synapClaim 一期）。
@@ -379,14 +380,40 @@ export function ReviewWorkbenchPage(): ReactElement {
                   <Typography.Text type="secondary">{n.durationMs}ms</Typography.Text>
                 </Space>
                 <div style={{ marginTop: 4 }}>{n.inputSummary}</div>
+                {(() => {
+                  const facts: ExplainFact[] = explainNode(n);
+                  return facts.length > 0 ? (
+                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {facts.map((f) => (
+                        <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Typography.Text type="secondary" style={{ minWidth: 104 }}>
+                            {f.label}
+                          </Typography.Text>
+                          <Tag color={toneColor(f.tone)} style={{ marginInlineEnd: 0 }}>
+                            {f.value}
+                          </Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 {n.output && (
-                  <Typography.Paragraph
-                    type="secondary"
-                    ellipsis={{ rows: 3, expandable: true, symbol: '展开' }}
-                    style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}
-                  >
-                    {n.output}
-                  </Typography.Paragraph>
+                  <details style={{ marginTop: 6 }}>
+                    <summary style={{ cursor: 'pointer', color: '#8c8c8c', fontSize: 12 }}>
+                      原始输出
+                    </summary>
+                    <pre
+                      style={{
+                        margin: '4px 0 0',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-all',
+                        fontSize: 12,
+                        color: '#8c8c8c',
+                      }}
+                    >
+                      {n.output}
+                    </pre>
+                  </details>
                 )}
               </div>
             ),

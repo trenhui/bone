@@ -83,6 +83,11 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
     out.put("riskHit", riskHit);
     out.put("fraudGatePassed", fraudGatePassed);
     out.put("ruleConfidence", r.ruleConfidence());
+    // 可解释性：把"闸为什么没过"落成受控原因码（而非只给布尔）——核赔员/审计据此区分
+    // 「增强能力未集成（无法确认安全）」与「真实命中风险」，避免把能力缺失误读为已核验无风险。
+    out.put("visualAvailable", visualAvailable);
+    out.put("graphAvailable", graphAvailable);
+    out.put("fraudGateReason", fraudGateReason(visualAvailable, graphAvailable, r, fr, gr));
     String summary =
         "conflict="
             + r.ruleConflict()
@@ -99,5 +104,28 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
             + ",graph="
             + gr.hit();
     return DecisionNodeOutcome.success(out, r.ruleConfidence(), summary, "OK");
+  }
+
+  /**
+   * 反欺诈硬闸未过的受控原因码（可解释性）：{@code ANTI_FRAUD_CAPABILITY_MISSING} 表示视觉 E1 / 图计算 E2 未集成、
+   * 无法确认安全（fail-closed）；{@code RISK_HIT} 表示真实命中风险；{@code VERIFY_NOT_PASSED} 表示验真未过；{@code PASSED}
+   * 表示三路真实执行且均通过。
+   */
+  private static String fraudGateReason(
+      boolean visualAvailable,
+      boolean graphAvailable,
+      RuleEnginePort.RuleCheckResult r,
+      VisualForensicsPort.ForensicsResult fr,
+      GraphFraudPort.FraudResult gr) {
+    if (!visualAvailable || !graphAvailable) {
+      return "ANTI_FRAUD_CAPABILITY_MISSING";
+    }
+    if (r.riskHit() || fr.tampered() || gr.hit()) {
+      return "RISK_HIT";
+    }
+    if (!r.fraudGatePassed()) {
+      return "VERIFY_NOT_PASSED";
+    }
+    return "PASSED";
   }
 }
