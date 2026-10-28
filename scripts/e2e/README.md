@@ -26,8 +26,19 @@ scripts/e2e/
 ├── cleanup-residue.py  残留定点回收执行体（teardown.register 的落点）
 ├── lowcode-closed-loop.cjs  低代码最小闭环端到端（非 UI 探针族，见 §4.2）
 ├── ui/                 浏览器探针**单族**：20 个探针全为 `.mjs`（写新探针前必读 ui/README.md 第 0 条）
-└── run.sh / lint.sh    统一入口（lint/py/node/<脚本>）与零依赖语法门禁（各 agent / CI 可复用）
+├── run.sh              统一入口（list/lint/selftest/preflight/py-core|sweep|chain/py/node/all）
+├── lint.sh             零依赖语法门禁（py_compile + node --check）
+├── selftest.py/.cjs    共享层离线自证（无需起服务；见 §4.7）
+└── preflight.py        环境快检（端口 + 可选登录探活；见 §4.7）
 ```
+
+**三层使用骨架**（按「要不要起服务」分层，是选命令的唯一依据）：
+
+| 层 | 命令 | 要服务吗 | 耗时 | 用途 |
+|---|---|---|---|---|
+| 离线层 | `./run.sh lint` / `./run.sh selftest` | 不要 | 秒级 | 改完共享层先自证，别拿业务失败当基础设施坏 |
+| 环境层 | `./run.sh preflight [--ui\|--deep\|--all]` | 只探端口 | 2 秒 | 栈没起时**立即**给出「起哪个服务」，而不是 11 个脚本各等 40s |
+| 业务层 | `py-core` / `py-sweep` / `py-chain` / `node` / `py` | 要完整栈 | 分钟级 | 真联调；默认先过 preflight（`BONE_E2E_SKIP_PREFLIGHT=1` 可跳） |
 
 **分层铁律**：脚本只写业务断言，基础设施一律 `import e2e_lib`，禁止再在脚本内
 复制 login / call / check / teardown 样板（发现即重构回公共层）。
@@ -96,7 +107,7 @@ parts = ds.split(total, 2)           # Σ == total
 
 | 脚本 | 意图 | 基线 |
 |---|---|---|
-| `two-scenario-full-chain-e2e.py` | 报销/理赔/采购三样板：建模深化 + 状态机 + 回收站 + 审计（经网关） | 87 |
+| `two-scenario-full-chain-e2e.py` | 报销/理赔/采购三样板：建模深化 + 状态机 + 回收站 + 审计（经网关） | 90 |
 | `app-to-data-full-chain-e2e.py` | 设备巡检工单：应用→模块→模型→界面→发布→数据全生命周期 + MySQL 落库核查 | 54 |
 | `ui-schema-samples-e2e.py` | 界面协议样例对账：submitRules/linkage 服务端强制（直连 metadata :9001） | 31 |
 
@@ -160,13 +171,39 @@ parts = ds.split(total, 2)           # Σ == total
 | 路径 | 说明 |
 |---|---|
 | `cleanup-residue.py` | `--suffix` 定点回收执行体（默认 dry-run，`--apply` 执行） |
-| `run.sh` / `lint.sh` | 统一入口与零依赖语法门禁（用法见 §8 目录纪律） |
+| `run.sh` / `lint.sh` | 统一入口与零依赖语法门禁（用法见 §4.7 与 §8 目录纪律） |
+
+### 4.7 诊断脚手架：先自证、再快检、最后跑业务
+
+三个脚手架解决的是同一类问题——**「红了到底是代码坏了、还是环境没起、还是基础设施本身坏了」**。
+以前这三种情况在日志里长得一模一样（都是 `Connection refused` 或一堆 ✗），只能靠人推断。
+
+| 命令 | 判什么 | 怎么判断有牙 |
+|---|---|---|
+| `./run.sh selftest` | `fixtures` 守恒、`chain_runner` 判据、`ui.cjs`/`client.cjs` 契约、JUnit 双端可解析、纪律棘轮 | 无需服务；**变异验证过**：改坏 `split` 尾条 / 去掉转义 / 去掉路径模板替换，对应断言精确转红 |
+| `./run.sh preflight [--ui\|--deep\|--all]` | 端点 TCP 可达（网关/登录/前端/MySQL），`--deep` 加真实登录探活 | 指向死端口必转红并给出「起哪个服务」 |
+| `./run.sh lint` | 只查语法（`py_compile` + `node --check`），**不查行为** | —— |
+
+**JUnit 机器可读结果（CI 用，零侵入）**：设 `BONE_E2E_JUNIT_DIR=/dir/` 后，
+Python 侧（`report.summary()` + atexit）与 Node 侧（`makeChecker()` + `process.on('exit')`）
+都会把断言写成 `<dir>/<套件名>.xml` —— **20 个 UI 探针与 11 个 Python 脚本一行都不用改**。
+失败详情作为 `<failure message>`，特殊字符已转义；不设该变量时零副作用。
+
+> 为什么是「目录 + 每套件一个文件」而不是单个固定路径：一次 CI 会跑几十个脚本，共用文件会
+> **互相覆盖**（本仓实测踩到：Node 自检的 2 条断言把 Python 侧 34 条覆盖成 2 条，CI 只看到最后
+> 一个脚本）。按套件分文件既无竞争，也让每个脚本的结果可独立定位；`selftest.py` 有专门断言锁死这个行为。
+
+**纪律棘轮（`selftest.py` 的 `INLINE_LOGIN_BASELINE`）**：把「禁止在探针内重抄登录选择器」
+从文档口号变成机器门禁——仍内联浏览器登录的探针数**只可收缩**。当前基线 **5**
+（16 个探针已迁到 `uiLogin`，剩 5 个待逐个迁移；迁移一个就下调一格）。
+另有一条硬门禁：探针内不得自定义 `uiLogin`/`login` 函数（必须 import `ui.cjs`）。
+与 `doc-code-symbols-baseline.json` 的「只可收缩」是同一条纪律。
 
 基线断言数会随用例增长而变，以脚本实际输出的 `汇总` 行为准；**重构不改基线**是提交纪律。
 
 > **目录纪律（2026-10-28 整合）**
 > - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用 UI 用例一律放进 `ui/`（2026-10-28 单族化后不再落根目录）。
-> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh lint`（语法自检）、`./run.sh py`（全链路）、`./run.sh node`（UI 核心探针）、`./run.sh <脚本名>`（指定脚本）、`./run.sh all`（默认 = lint+py）。
+> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh list`（看有什么）、`lint`、`selftest`、`preflight`、`py-core|py-sweep|py-chain|py`、`node`、`all`（默认 = lint+selftest+preflight+py）、`<脚本名>`（指定脚本）。
 > - 环境变量唯一清单见 [`.env.example`](.env.example)；`config.py` 与 `client.cjs` 的默认值须保持同步。
 
 ## 5. 环境变量（`e2e_lib/config.py` 是唯一真源）
@@ -175,9 +212,12 @@ parts = ds.split(total, 2)           # Σ == total
 |---|---|---|
 | `BONE_E2E_BASE` | `http://127.0.0.1:8888/api/v1` | API 基址（默认走网关=真联调） |
 | `BONE_E2E_LOGIN_BASE` | =BASE | 登录端点（直连 metadata :9001 时须指到 IAM :8081，9001 不承载 `/iam/**`） |
+| `BONE_UI_BASE` / `BONE_IAM_BASE` | `:3000` / `:8081` | 前端壳层 / IAM 直连（UI 探针与 `preflight --ui` 共用） |
 | `BONE_E2E_USER` / `BONE_E2E_PWD` | `admin` / `123456` | 主会话凭据（本地种子账号） |
 | `BONE_E2E_TENANT` | `0` | 租户头 `X-Tenant-Id` |
 | `BONE_E2E_KEEP_RESIDUE` | 关 | `1` = 跑完保留残留现场 |
+| `BONE_E2E_JUNIT_DIR` / `BONE_E2E_JUNIT_SUITE` | 关 / 脚本名 | JUnit 输出**目录**与套件名（CI 消费，见 §4.7） |
+| `BONE_E2E_SKIP_PREFLIGHT` | 关 | `1` = `run.sh` 业务层分组跳过快检 |
 | `BONE_E2E_MYSQL_HOST/PORT/USER/PWD/DB` | 本机 bone 库 | 第二证据源直查连接（口令走环境，不写字面量） |
 | `BONE_E2E_APPROVER_USER/PWD/DEPT_ID` | 采购审批人 | 三样板 SoD 审批账号 |
 
@@ -187,10 +227,17 @@ parts = ds.split(total, 2)           # Σ == total
 ## 6. 常用命令
 
 ```bash
+# 先看有什么（agent 第一条命令）
+./scripts/e2e/run.sh list
+
+# 改完共享层先自证（不需要起任何服务，秒级）
+./scripts/e2e/run.sh selftest
+
+# 栈没起时先快检（2 秒给出「起哪个服务」，而不是 11 个脚本各等 40s）
+./scripts/e2e/run.sh preflight --all
+
 # 全链路（默认走网关，退出即自动清残留）
-python3 scripts/e2e/two-scenario-full-chain-e2e.py
-python3 scripts/e2e/app-to-data-full-chain-e2e.py
-python3 scripts/e2e/ui-schema-samples-e2e.py
+./scripts/e2e/run.sh py-core
 
 # 保留产物给 UI 探针消费（消费完手工补清）
 BONE_E2E_KEEP_RESIDUE=1 python3 scripts/e2e/app-to-data-full-chain-e2e.py
@@ -200,7 +247,10 @@ python3 scripts/e2e/cleanup-residue.py --suffix <SFX> --apply
 # 残留排查：先 dry-run 看清单，再 --apply
 python3 scripts/e2e/cleanup-residue.py --suffix 793158068
 
-# 语法自检（提交前）
+# CI：语法门禁 + 离线自证 + 全量业务，结果按套件落 JUnit 目录
+BONE_E2E_JUNIT_DIR=/tmp/bone-junit ./scripts/e2e/run.sh all
+
+# 语法自检（提交前，等价 ./run.sh lint）
 python3 -m py_compile scripts/e2e/*.py scripts/e2e/e2e_lib/*.py
 node --check scripts/e2e/<探针>.mjs
 ```
@@ -240,15 +290,29 @@ node --check scripts/e2e/<探针>.mjs
 | 问题 | 处置 |
 |---|---|
 | Node 侧无 `fixtures` 等价物（探针手写 `inspector:'实证'`、圆整金额、裸单号） | **已抽 `e2e_lib/fixtures.cjs`**：可种子化 PRNG（FNV-1a + mulberry32），方法名与 `fixtures.py` 同名同义（`doc_no`/`amount`/`split`/`person`/产物身份 `customer`·`supplier`），跨进程同 seed 同值已实测；`amount` 非圆整、`split` 分位守恒、`break_=true` 恒差 1.01 |
-| UI 探针两族并行（root `ui-*.mjs` 12 + `ui/*.cjs` 8，模块系统不一致） | **已单族化 + 登录去重**：全部并入 `ui/` 统一 `.mjs`；登录收敛为 `e2e_lib/ui.cjs` 的 `uiLogin(page)`（另含 `shot`/`waitAppReady`），已 5 个探针改调（`ui-app-to-data` / `ui-nine-module-deep` / `probe-commerce` / `ui-personal-views` / `ui-designer` 4 份登录副本合 1）；`run.sh node` 分组同步枚举 `ui/probe-*.mjs` |
+| UI 探针两族并行（root `ui-*.mjs` 12 + `ui/*.cjs` 8，模块系统不一致） | **已单族化 + 登录去重**：全部并入 `ui/` 统一 `.mjs`；登录收敛为 `e2e_lib/ui.cjs` 的 `uiLogin(page)`（另含 `shot`/`waitAppReady`），已 5 个探针改调（`ui-app-to-data` / `ui-nine-module-deep` / `probe-commerce` / `ui-personal-views` / `ui-designer` 4 份登录副本合 1）；`run.sh node` 分组同步枚举 `ui/probe-*.mjs`。**菜单点击/弹窗判定片段有意不抽**：各探针超时口径（递增倍数不同）与弹窗判据（`:visible` vs DOM 存在）本就不同，强抽会改断言语义，故只收敛登录/截图/就绪三件套 |
 | `chains.py` / `multichannel.py` 单体大文件，链路定义与断言内联 | **已抽 `e2e_lib/chain_runner.py`**：链路仅声明「步骤字典 + 判据数据」，`run_steps` 统一执行「发请求→取变量→落断言→传下一步」；`chains.py` C1–C9 与 `multichannel.py` 均改为数据驱动（已用 fake http 验证路径模板/`extract`/`status`·`eq`·`page` 断言行为） |
+
+**2026-10-28 第四轮：可诊断性（从「能跑」到「能定位」）**
+
+> 前三轮解决「越跑越乱、重复多、配置散」；这一轮解决**故障归因**：红了到底是代码坏了、
+> 环境没起、还是测试基础设施本身坏了。三者此前在日志里长得一模一样。
+
+| 问题 | 处置 |
+|---|---|
+| 栈没起时 11 个 Python + 20 个探针**各等 40s 超时**，日志满屏 `Connection refused`，只能靠人推断 | 新增 `preflight.py`：端点 TCP 快检（2s）+ `--deep` 真实登录探活，失败直接给「起哪个服务」的可执行提示，退出码非零；`run.sh` 业务层分组默认先过它（`BONE_E2E_SKIP_PREFLIGHT=1` 可跳） |
+| `lint.sh` 只查语法，**语法通过 ≠ 行为正确**（`split` 守恒、路径模板替换、JUnit 转义坏了都照样「绿」） | 新增 `selftest.py` + `selftest.cjs`：fake http 跑 `chain_runner`、双实例验 `fixtures` 确定性、子进程验 JUnit 可解析、验 `client.cjs` 导出面与「导入期不登录」 |
+| 结果只有人读控制台，CI 无法消费；`client.cjs` 探针各自 `process.exit`，无处插入报告逻辑 | `report.py` 的 `summary()`+atexit 与 `client.cjs` 的 `makeChecker()`+`process.on('exit')` 在 `BONE_E2E_JUNIT_DIR` 下自动写标准 JUnit XML（**每套件一个文件**，避免多脚本互相覆盖）——**31 个脚本一行未改**即获得机器可读结果 |
+| 「禁止在探针内重抄登录选择器」只是文档口号，无人守 | 升级为机器门禁：`selftest.py` 的 `INLINE_LOGIN_BASELINE` 棘轮（只可收缩）+ 硬断言「探针内不得自定义 `uiLogin`/`login`」 |
+| `config.py` 缺 `UI_BASE`/`IAM_BASE`（只在 `client.cjs` 有），而 `.env.example` 标注为「仅 Node 使用」——真源声明与实际不符 | `config.py` 补齐 `UI_BASE`/`IAM_BASE`，`preflight --ui` 直接复用；`.env.example` 改为「UI 探针与 preflight 共用」 |
+| `run.sh` 的 `py` 只跑 3 个脚本，**另外 8 个 Python 脚本（chains/sweep/渠道）没有任何分组入口** | 分组补全为 `py-core`(3) / `py-sweep`(4) / `py-chain`(4) 覆盖全部 11 个，并新增 `list` 自描述；分组失败不中断其余分组、聚合退出码 |
 
 **仍开放（待后续）**
 
 | 问题 | 影响 | 建议修法 |
 |---|---|---|
-| `fixtures` 词表是 `scripts/seed/uat/gen.py` 的精简镜像（`fixtures.cjs` 亦为 `fixtures.py` 内嵌镜像） | 三处词表各自演化可能漂移 | 长期抽到共享词表/JSON 单源（需 UAT 侧文件所有者配合） |
-| `ui/` 内仍有 15 个探针内联浏览器登录（`probe-*`/`smoke-*`/`ui-*` 未全量改调 `uiLogin`） | 与 ui/README §0 纪律仍不一致 | 逐个触碰时迁移（**不批量盲改**：无法实跑全栈时批量替换选择器 = 假绿风险）；新增/重构一律 `import { uiLogin } from '../e2e_lib/ui.cjs'` 并传 `page` |
+| `fixtures` 词表三处镜像（`gen.py` 精简镜像 / `fixtures.cjs` 内嵌镜像）——**已收敛单源，本行仅存档结论** | 三处各自演化可能漂移的隐患已消除：词表唯一存放处 = 共享 JSON | **已落地**：`gen.py` / `fixtures.py` / `fixtures.cjs` 同读 **`scripts/seed/uat/wordlist.json`**（分别按 `HERE` / `__file__` / 模块相对 `require` 定位，均不依赖运行 cwd）；历史口径差异以 `*_e2e` 键在 JSON 内按原文显式保留，内容零变化断言 36 键全绿 |
+| `ui/` 内仍有 **5** 个探针内联浏览器登录（`probe-metadata-loop` / `ui-all-menu-regression` / `ui-full-module-crud-probe` / `ui-runtime-evidences-regression` / `lowcode-closed-loop.cjs`） | 与 ui/README §0 纪律仍不一致 | 逐个触碰时迁移（**不批量盲改**：无法实跑全栈时批量替换选择器 = 假绿风险）；新增/重构一律 `import { uiLogin } from '../e2e_lib/ui.cjs'` 并传 `page`。**已由 selftest 棘轮托管**：迁移一个就把 `INLINE_LOGIN_BASELINE` 下调一格（本轮已从 16 收到 5） |
 
 ## 9. 整合与复用：设计原则与 Why
 

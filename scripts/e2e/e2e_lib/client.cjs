@@ -154,6 +154,99 @@ process.on('exit', () => {
   }
 });
 
+// ---------- JUnit 机器可读出口（CI 用；未设 BONE_E2E_JUNIT_DIR 时零副作用） ----------
+/**
+ * makeChecker() 自动登记本探针的 results[]，进程退出时统一落盘标准 JUnit XML。
+ * 于是 **20 个探针一行都不用改** 就获得 CI 可消费结果；人读的 ✓/✗ 输出保持不变。
+ *
+ * 落点是**目录 + 每套件一个文件**（`<dir>/<套件名>.xml`），不是一个固定路径：
+ * 一次 CI 会跑几十个脚本，共用一个文件会互相覆盖（Python 侧实测踩过：后写的把前面的
+ * 34 条断言覆盖成 2 条）。分文件既无竞争，也让每个脚本结果可独立定位。
+ * 套件名取脚本文件名（`ui-create-data-probe`），可被 BONE_E2E_JUNIT_SUITE 覆盖。
+ */
+const fs = require('fs');
+const _junitSuites = [];
+let _junitHooked = false;
+
+function _xmlEscape(text) {
+  return String(text).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]
+  ));
+}
+
+function _junitSuiteName() {
+  const forced = process.env.BONE_E2E_JUNIT_SUITE;
+  if (forced) return forced;
+  return path.basename(process.argv[1] || 'e2e').replace(/\.(mjs|cjs|js)$/, '');
+}
+
+/** 算出本进程落点 `<dir>/<套件名>.xml`；同名已存在则加序号。未启用返回空串。 */
+function junitTarget() {
+  const dir = process.env.BONE_E2E_JUNIT_DIR;
+  if (!dir) return '';
+  const base = _junitSuiteName().replace(/[^A-Za-z0-9._-]/g, '-') || 'e2e';
+  let p = path.join(dir, base + '.xml');
+  let n = 2;
+  while (fs.existsSync(p) && n <= 50) {
+    p = path.join(dir, `${base}-${n}.xml`);
+    n += 1;
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  return p;
+}
+
+/** 把累积的 suites 写成 JUnit XML（多套合并为 <testsuites>）。 */
+function writeJUnit(file) {
+  let total = 0;
+  let fails = 0;
+  _junitSuites.forEach((s) => {
+    total += s.results.length;
+    fails += s.results.filter((r) => !r.ok).length;
+  });
+  const lines = ['<?xml version="1.0" encoding="UTF-8"?>'];
+  lines.push(`<testsuites name="bone-e2e" tests="${total}" failures="${fails}" errors="0">`);
+  _junitSuites.forEach((s) => {
+    const bad = s.results.filter((r) => !r.ok).length;
+    lines.push(
+      `  <testsuite name="${_xmlEscape(s.name)}" tests="${s.results.length}" ` +
+      `failures="${bad}" errors="0" skipped="0">`
+    );
+    s.results.forEach((r) => {
+      if (r.ok) {
+        lines.push(`    <testcase name="${_xmlEscape(r.name)}" time="0"/>`);
+      } else {
+        const detail = _xmlEscape(r.detail || '');
+        lines.push(
+          `    <testcase name="${_xmlEscape(r.name)}" time="0">` +
+          `<failure message="${detail}">${detail}</failure></testcase>`
+        );
+      }
+    });
+    lines.push('  </testsuite>');
+  });
+  lines.push('</testsuites>');
+  fs.writeFileSync(file, lines.join('\n') + '\n', 'utf8');
+}
+
+/** 登记一个 results 数组；首次调用时挂 process.on('exit') 统一落盘。 */
+function registerJUnit(results) {
+  if (!process.env.BONE_E2E_JUNIT_DIR) return;
+  let name = _junitSuiteName();
+  if (_junitSuites.some((s) => s.name === name)) name = `${name}#${_junitSuites.length + 1}`;
+  _junitSuites.push({ name, results });
+  if (_junitHooked) return;
+  _junitHooked = true;
+  process.on('exit', () => {
+    try {
+      const target = junitTarget();
+      if (target) writeJUnit(target);
+    } catch (e) {
+      // 写 JUnit 失败绝不能掩盖探针自身结果，只告警
+      console.error(`[junit] 写出失败: ${e.message}`);
+    }
+  });
+}
+
 // ---------- 断言收集与汇总 ----------
 /**
  * 本地 results[] + check 断言收集器（与历史探针逐字同款的 ✓/✗ 输出）。
@@ -162,6 +255,8 @@ process.on('exit', () => {
  */
 function makeChecker() {
   const results = [];
+  // CI 结果落盘（未设 BONE_E2E_JUNIT_DIR 时空操作；探针无需感知）
+  registerJUnit(results);
   const check = (name, cond, detail = '') => {
     results.push({ name, ok: !!cond, detail });
     console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
@@ -192,5 +287,8 @@ exports.token = token;
 exports.api = api;
 exports.loadPlaywright = loadPlaywright;
 exports.makeChecker = makeChecker;
+exports.registerJUnit = registerJUnit;
+exports.writeJUnit = writeJUnit;
+exports.junitTarget = junitTarget;
 exports.registerCleanup = registerCleanup;
 exports.runCleanup = runCleanup;

@@ -27,6 +27,11 @@ PWD = os.environ.get("BONE_E2E_PWD", "123456")
 TENANT = os.environ.get("BONE_E2E_TENANT", "0")
 TIMEOUT = int(os.environ.get("BONE_E2E_TIMEOUT", "40"))
 
+# ---- 前端壳层 / IAM 直连（UI 探针、preflight --ui 使用）----
+# 与 client.cjs 的 UI_BASE / IAM_BASE 同名同义，两处默认值必须同步（.env.example 为唯一清单）
+UI_BASE = os.environ.get("BONE_UI_BASE", "http://localhost:3000")
+IAM_BASE = os.environ.get("BONE_IAM_BASE", "http://127.0.0.1:8081")
+
 # ---- 样例协议（建模侧界面协议的样例真源）----
 SAMPLES = os.environ.get(
     "BONE_E2E_SAMPLES",
