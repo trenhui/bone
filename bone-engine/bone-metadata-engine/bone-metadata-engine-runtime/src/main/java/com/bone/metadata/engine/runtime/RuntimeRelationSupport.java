@@ -316,7 +316,8 @@ public class RuntimeRelationSupport {
       long tenantId,
       String parentId,
       RuntimeRelationSpec spec,
-      List<Map<String, Object>> rows) {
+      List<Map<String, Object>> rows,
+      String operatorId) {
     PublishedRuntimeEntity child = requireEntity(spec.childEntityCode(), tenantId);
     String fkPhysical = requireChildForeignKey(child, spec);
     Object fkValue = coercePk(parentId, parent);
@@ -341,10 +342,10 @@ public class RuntimeRelationSupport {
       if (childId == null || String.valueOf(childId).isBlank()) {
         long newId = DistributedIdGenerator.generateLongId();
         row.put(child.primaryKeyColumn(), newId);
-        insertChildRow(child, tenantId, row);
+        insertChildRow(child, tenantId, row, operatorId);
         keptIds.add(String.valueOf(newId));
       } else {
-        updateChildRow(child, tenantId, row, String.valueOf(childId), spec.foreignKey());
+        updateChildRow(child, tenantId, row, String.valueOf(childId), spec.foreignKey(), operatorId);
         keptIds.add(String.valueOf(childId));
       }
       result.add(row);
@@ -357,8 +358,21 @@ public class RuntimeRelationSupport {
     return result;
   }
 
+  /**
+   * 兼容重载：未传操作人时（如遗留调用/系统内部无主体上下文）按 {@code null} 处理——审计列留空，与改动前行为一致。
+   * 生产路径（{@link RuntimeRelationApplicationService#replaceChildren}）始终传当前操作人，确保子行落审计列。
+   */
+  public List<Map<String, Object>> replaceChildren(
+      PublishedRuntimeEntity parent,
+      long tenantId,
+      String parentId,
+      RuntimeRelationSpec spec,
+      List<Map<String, Object>> rows) {
+    return replaceChildren(parent, tenantId, parentId, spec, rows, null);
+  }
+
   private void insertChildRow(
-      PublishedRuntimeEntity child, long tenantId, Map<String, Object> row) {
+      PublishedRuntimeEntity child, long tenantId, Map<String, Object> row, String operatorId) {
     Map<String, Object> payload = filterChildColumns(child, row);
     // 主键由 replaceChildren 注入（DistributedIdGenerator），filter 剔除系统列后补回
     Object pkValue = row.get(child.primaryKeyColumn());
@@ -383,6 +397,10 @@ public class RuntimeRelationSupport {
     if (hasPhysicalColumn(child.physicalTableName(), "updated_at")) {
       payload.putIfAbsent("updated_at", now);
     }
+    // 操作者与审计列（created_by / updated_by）：与主行 stampAuditColumns 同源口径——仅当操作人可解析为数值 ID 才注入，
+    // 未认证/非数值主体跳过，避免把字符串写入 BIGINT 报 "Incorrect integer value"（P0 数据面健壮性）。
+    // 子表行同样必须落审计列（AGENTS.md HC-008：审计字段不得缺失），否则子行归属悬空、行级 ACL 无从判定。
+    stampChildAuditColumns(child, payload, operatorId);
     Map<String, Object> physical = toPhysical(child, payload);
     List<String> cols = new ArrayList<>(physical.keySet());
     String sql =
@@ -401,7 +419,8 @@ public class RuntimeRelationSupport {
       long tenantId,
       Map<String, Object> row,
       String childId,
-      String foreignKeyCode) {
+      String foreignKeyCode,
+      String operatorId) {
     Map<String, Object> payload = filterChildColumns(child, row);
     payload.remove(child.primaryKeyColumn());
     // 外键列是「挂在哪个父行」的归属，禁止被前端载荷改写（否则可把行挂到别的父记录）
@@ -412,6 +431,8 @@ public class RuntimeRelationSupport {
     if (hasPhysicalColumn(child.physicalTableName(), "updated_at")) {
       payload.putIfAbsent("updated_at", new Timestamp(System.currentTimeMillis()));
     }
+    // updated_by 与主行 update 同源口径：操作人可解析为数值 ID 才注入。
+    stampChildAuditColumns(child, payload, operatorId);
     if (payload.isEmpty()) {
       return;
     }
@@ -431,6 +452,55 @@ public class RuntimeRelationSupport {
             + sanitize(child.primaryKeyColumn())
             + "` = :__pk",
         params);
+  }
+
+  /**
+   * 子表行审计列盖章（created_by / updated_by）：与主行 {@code JdbcRuntimeRecordService#stampAuditColumns} 同源口径。
+   *
+   * <p><b>为什么子表也要落操作人</b>：AGENTS.md HC-008 要求审计字段不得缺失；子行若 created_by 为 NULL，则（1）归属悬空，行级 ACL
+   * 无从判定本人/审批人；（2）审计链断裂。子表写入必须与其父行同口径注入审计列。
+   *
+   * <p><b>健壮性</b>：仅当操作人可解析为数值用户 ID 时才注入 BIGINT 列；未认证（dev 关闭安全）或主体名为非数值（如
+   * anonymousUser）时跳过，避免把字符串写入 BIGINT 报 "Incorrect integer value"。系统操作者（回调/渠道身份）留痕为字符串常量
+   * "system"。物理列缺失（外部子表无审计列）时容错跳过。
+   */
+  private void stampChildAuditColumns(
+      PublishedRuntimeEntity child, Map<String, Object> payload, String operatorId) {
+    String table = child.physicalTableName();
+    if ("system".equals(operatorId)) {
+      if (hasPhysicalColumn(table, "created_by")) {
+        payload.putIfAbsent("created_by", "system");
+      }
+      if (hasPhysicalColumn(table, "updated_by")) {
+        payload.putIfAbsent("updated_by", "system");
+      }
+      return;
+    }
+    Long numericOp = toNumericOperatorId(operatorId);
+    if (numericOp != null) {
+      if (hasPhysicalColumn(table, "created_by")) {
+        payload.putIfAbsent("created_by", numericOp);
+      }
+      if (hasPhysicalColumn(table, "updated_by")) {
+        payload.putIfAbsent("updated_by", numericOp);
+      }
+    }
+  }
+
+  /** 与主行同口径：操作人标识可解析为数值用户 ID 才返回，否则（null / 非数值主体）返回 null。 */
+  private static Long toNumericOperatorId(String operatorId) {
+    if (operatorId == null) {
+      return null;
+    }
+    String s = operatorId.trim();
+    if (s.isEmpty()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(s);
+    } catch (NumberFormatException ignored) {
+      return null;
+    }
   }
 
   /**

@@ -83,7 +83,7 @@ public class RuntimeRelationApplicationService {
               // v0.50：子表替换同样受父行行级 ACL 约束（与 listChildren 同口径），防「伪造他人单据明细」旁路
               recordService.assertRowOwner(parent, tenantId, id);
               List<Map<String, Object>> result =
-                  relationSupport.replaceChildren(parent, tenantId, id, spec, rows);
+                  relationSupport.replaceChildren(parent, tenantId, id, spec, rows, recordService.currentOperator());
               // 同事务内聚合回填（报销等已登记场景）
               childAmountAggregator.aggregateAndBackfill(
                   parent, tenantId, id, childEntityCode, spec);

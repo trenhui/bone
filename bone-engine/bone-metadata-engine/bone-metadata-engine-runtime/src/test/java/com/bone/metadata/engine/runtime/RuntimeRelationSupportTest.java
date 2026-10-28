@@ -58,13 +58,14 @@ class RuntimeRelationSupportTest {
                 + "`claim_no` VARCHAR(64) NOT NULL, `amount` DOUBLE, "
                 + "`category_id` BIGINT, `files` VARCHAR(2000), "
                 + "`version` INT NOT NULL DEFAULT 0, `deleted` SMALLINT NOT NULL DEFAULT 0)");
-    // 费用明细（子表）：claim_id 为外键
+    // 费用明细（子表）：claim_id 为外键；created_by/updated_by 为审计列（与主行同口径，必须落库）
     jdbc.getJdbcTemplate()
         .execute(
             "CREATE TABLE rel_item ("
                 + "`id` BIGINT PRIMARY KEY, `tenant_id` BIGINT NOT NULL, "
                 + "`claim_id` BIGINT NOT NULL, `sort_order` INT, `note` VARCHAR(255), "
                 + "`amount` DOUBLE, `category_id` BIGINT, "
+                + "`created_by` BIGINT, `updated_by` BIGINT, "
                 + "`version` INT NOT NULL DEFAULT 0, `deleted` SMALLINT NOT NULL DEFAULT 0)");
 
     relationSupport = new RuntimeRelationSupport(jdbc, catalog());
@@ -285,6 +286,62 @@ class RuntimeRelationSupportTest {
     assertTrue(orders.contains(1) && orders.contains(2), "顺序列应被赋值: " + orders);
     rows.forEach(r -> assertEquals(701L, ((Number) r.get("claim_id")).longValue(), "外键回填"));
     assertEquals("差旅", rows.get(0).get("category_id__label"), "子行内引用也应补全");
+  }
+
+  @Test
+  void childRowsMustCarryOperatorAuditColumns() {
+    recordService.create("rel_claim", TENANT, Map.of("claim_no", "C-AUDIT"), 709L);
+    Map<String, Object> r1 = new LinkedHashMap<>();
+    r1.put("note", "审计行");
+    r1.put("amount", 500.0);
+    r1.put("category_id", 11L);
+
+    // 传入数值操作人 "1" —— 必须落 created_by / updated_by（AGENTS.md HC-008：审计列不得缺失）
+    var saved =
+        relationSupport.replaceChildren(parent(), TENANT, "709", childSpec(), List.of(r1), "1");
+    assertEquals(1, saved.size());
+
+    var inserted =
+        jdbc
+            .getJdbcTemplate()
+            .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 709");
+    assertEquals(
+        1L, ((Number) inserted.get("CREATED_BY")).longValue(), "子行 created_by 应等于操作人");
+    assertEquals(
+        1L, ((Number) inserted.get("UPDATED_BY")).longValue(), "子行 updated_by 应等于操作人");
+
+    // 更新同一条 → updated_by 应被刷新（仍等于操作人），created_by 保持不变
+    Map<String, Object> upd = new LinkedHashMap<>();
+    upd.put("id", saved.get(0).get("id"));
+    upd.put("note", "审计行-改");
+    relationSupport.replaceChildren(parent(), TENANT, "709", childSpec(), List.of(upd), "1");
+
+    var after =
+        jdbc
+            .getJdbcTemplate()
+            .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 709");
+    assertEquals(1L, ((Number) after.get("CREATED_BY")).longValue(), "created_by 更新后不变");
+    assertEquals(1L, ((Number) after.get("UPDATED_BY")).longValue(), "updated_by 更新后刷新");
+  }
+
+  @Test
+  void childRowsAuditColumnsSkippedForNonNumericOperator() {
+    recordService.create("rel_claim", TENANT, Map.of("claim_no", "C-AUDIT2"), 710L);
+    Map<String, Object> r1 = new LinkedHashMap<>();
+    r1.put("note", "非数值主体");
+    r1.put("amount", 500.0);
+    r1.put("category_id", 11L);
+
+    // 非数值主体（如 anonymousUser）→ 不落 BIGINT 审计列，避免 "Incorrect integer value"（P0 健壮性）
+    relationSupport.replaceChildren(
+        parent(), TENANT, "710", childSpec(), List.of(r1), "anonymousUser");
+
+    var row =
+        jdbc
+            .getJdbcTemplate()
+            .queryForMap("SELECT created_by, updated_by FROM rel_item WHERE claim_id = 710");
+    assertNull(row.get("CREATED_BY"), "非数值主体不落 created_by");
+    assertNull(row.get("UPDATED_BY"), "非数值主体不落 updated_by");
   }
 
   @Test
