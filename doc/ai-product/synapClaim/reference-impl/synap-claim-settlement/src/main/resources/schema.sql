@@ -84,12 +84,25 @@ CREATE TABLE t_settlement_trace (
     snapshot_json  VARCHAR(8192)
 );
 
--- 领域事件 Outbox（最终一致，对账/后督订阅）
+-- 领域事件 Outbox（最终一致，对账/后督订阅）：引擎经 OutboxPort 与理算结论同库同事务写入，
+-- 由 OutboxRelay 轮询 published=0 的行经 EventPublisher 投递，成功后置 published=1。
 CREATE TABLE t_settlement_outbox (
-    id        BIGINT AUTO_INCREMENT PRIMARY KEY,
-    claim_id  VARCHAR(255),
-    event     VARCHAR(512),
-    published SMALLINT DEFAULT 0
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    claim_id   VARCHAR(255),
+    event      VARCHAR(512),
+    published  SMALLINT DEFAULT 0,
+    attempts   SMALLINT DEFAULT 0,
+    last_error VARCHAR(1024)
+);
+
+-- 死信表：发布连续失败超过阈值的事件沉淀于此，供人工/对账补偿，绝不静默丢弃（防假绿）。
+CREATE TABLE t_settlement_outbox_dlq (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    claim_id   VARCHAR(255),
+    event      VARCHAR(512),
+    last_error VARCHAR(1024),
+    attempts   SMALLINT,
+    created_at BIGINT
 );
 
 -- 并发串行锁租约表（DbLeaseConcurrencyLock；跨实例同 key 互斥，无 SELECT ... FOR UPDATE）

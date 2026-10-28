@@ -129,6 +129,16 @@ public final class Ports {
         Money held(String authId);
     }
 
+    /**
+     * 事件真实投递通道（与 OutboxPort 区分：OutboxPort 仅把事件写入本地 outbox 表，
+     * 本端口负责把事件真正发往消息中间件 / 对账 / 后督订阅方）。
+     * 投递必须**幂等**：at-least-once 语义下同一 outbox 行可能被重复投递，调用方以
+     * claimId + event 作为幂等键去重（下游消费亦须幂等）。
+     */
+    public interface EventPublisher {
+        void publish(String claimId, String event);
+    }
+
     /** 探针专用内存实现：记录各端口调用次数，证明引擎确实经 port 而非内联 Feign（P6）。 */
     public static final class InMemoryPorts implements LedgerPort, TracePort, CatalogPort, OutboxPort,
             AccumulationPort, SettlementStorePort, PreAuthPort {

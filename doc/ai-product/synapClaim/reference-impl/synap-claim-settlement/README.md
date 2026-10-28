@@ -38,6 +38,7 @@ mvn -o clean test      # 离线（依赖已在本地仓库）；在线去掉 -o
   - D 串行锁判别力（防假绿）：开启 JVM 串行锁且**不重试**时，40 并发唯一案件一次成功、零 `CONFLICT` 异常。
 - `ConcurrencyLockSeamTest`       —— **2 个接缝测试**证明并发锁是**可插拔端口**而非写死：注入的计数锁确被引擎调用（非 no-op）、同 key 严格串行（maxConcurrent==1）、且切换注入实例即生效（集群可换 Redis/DB 租约实现）。
 - `JdbcPortsMySqlCompatTest`      —— **在 H2 `MODE=MySQL` 下真实执行** `SqlDialect.mysql()` 生成的全部生产 SQL（upsertCalc / upsertLedger / ensureAccumRow 的 `ON DUPLICATE KEY UPDATE` 形式）：跨案累计落库 + 幂等重算更新 + 冲正归零。补 `SqlDialectTest` 只断言文本不执行的缺口，证明"切换方言即上线 MySQL"非空话。
+- `OutboxRelayTest`              —— **3 个测试**验证事务发件箱中继发件箱：健康投递置 `published=1` / 连续失败进入死信表（绝不静默丢失）/ 已投递不重投（at-least-once 幂等）。
 
 ### 方式二：单文件直跑（无 Maven，快速验证算法与护栏）
 ```bash
@@ -62,6 +63,7 @@ java -cp out com.bone.synap.settlement.diag.Diagnostics2       # 第二轮取证
    - DDL 见 `src/main/resources/schema.sql`（H2 语法；MySQL 仅需把 `MERGE INTO ... KEY` 改为 `INSERT ... ON DUPLICATE KEY UPDATE`）。
 3. **装配**（`adapter/spring/SettlementEngineFactory`）：纯 Java 工厂，接受 `DataSource` 即可装配一个挂载 JDBC 端口、全部护栏开启的引擎；README 内附 Bone 平台 `@Configuration` 接线示意（C1/C2/C5/C6/C8/C9/C10/C11 端口绑定）。
 4. **资金安全底座**：责任维度累计 + 冲正 + 预授权冻结 + 幂等/租户隔离键 + CAS 乐观锁 均已落地并集成测试覆盖。
+5. **事件最终一致（事务发件箱，业界标准模式）**：引擎在 `settle()` 中经 `OutboxPort` 把领域事件与理算结论**同库同事务**写入 `t_settlement_outbox`（杜绝「写结论成功但事件丢失」）；`OutboxRelay` 轮询 `published=0` 的行经 `EventPublisher` 投递下游（消息中间件 / 对账 / 后督订阅），成功置 `published=1`，连续失败超阈值移入死信表 `t_settlement_outbox_dlq`（**绝不静默丢弃**，fail-closed）。投递为 at-least-once，下游须以 `claimId+event` 幂等去重。`OutboxRelayTest` 覆盖健康投递 / 死信 / 已投递不重投三路径。
 
 ### 并发正确性（单实例 + 可插拔集群锁）
 - **引擎层可插拔串行锁（ConcurrencyLockPort）**：同保单同周期（`tenantId@policyId@periodKey`）的「读累计快照 → 计算额度 → 提交累计」整段临界区，经 `ConcurrencyLockPort.runLocked(key, ...)` 串行化，从根上消除"多请求读到同一剩余额度快照后双双提交导致超赔"的窗口。
