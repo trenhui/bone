@@ -17,18 +17,23 @@
  *
  * 用法：node scripts/e2e/ui-runtime-evidences-regression.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  stamp,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  tryLogin,
+  api,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const STAMP = String(Date.now()).slice(-6);
-const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
+const STAMP = stamp(6); // 保持本探针历史口径（slice(-6)），影响 E2E 数据命名
 
 let API_TOKEN = null;
 const failures = [];
+// 本探针按 failures[]（字符串）而非 results[] 汇总，check 保持本地实现以维持既有输出口径
 const check = (name, ok, detail) => {
   console.log(`${ok ? '✓' : '✗'} ${name}${ok ? '' : `  ← ${detail || ''}`}`);
   if (!ok) failures.push(`${name}${detail ? `（${detail}）` : ''}`);
@@ -80,16 +85,10 @@ try {
   if (!logged) throw new Error('登录失败');
 
   // ---------- 取菜单真源，定位「业务数据」 ----------
-  const lr = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }),
-  });
-  API_TOKEN = (await lr.json())?.data?.token;
-  const mr = await fetch(`${API}/iam/menus/tree`, {
-    headers: { Authorization: `Bearer ${API_TOKEN}`, 'X-Tenant-Id': '0' },
-  });
-  const mj = await mr.json();
+  API_TOKEN = await tryLogin();
+  const { data: mj } = API_TOKEN
+    ? await api('GET', '/iam/menus/tree', undefined, { token: API_TOKEN })
+    : { data: null }; // 无 token 时与原逻辑同结果：空菜单 → 走「未命中」失败断言
   const menus = [];
   const walk = (ns, parent) => {
     for (const n of ns || []) {

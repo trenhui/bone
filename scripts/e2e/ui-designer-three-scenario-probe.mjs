@@ -10,7 +10,7 @@
  *   7. 列表 / 详情视图可渲染，全流程无 console / page 异常。
  *
  * 用法：node scripts/e2e/ui-designer-three-scenario-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  *
  * 维护说明（2026-10-15 重写）：旧版探针定位 `#sampleSel` / `.ctable` / `#testRunBtn` / `.ovl`，
  * 设计器重构后这些选择器**全部不存在**，导致：
@@ -19,18 +19,13 @@
  * 现按真源 DOM（#scenario / .childtable / #btnEnv+#role / #btnCheck / #viewSeg）重写，
  * 并在第 1 步加**前置负向断言**（关闭前 mask 必须带 on）保证该断言有牙齿。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import { SHOT_DIR, loadPlaywright, makeChecker } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
 const FILE =
   'file:///Users/renhui.trh/wps/bone/doc/design/lowcode/ui/ui-protocol/bone-ui-schema-designer.html';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check, report } = makeChecker();
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
@@ -183,8 +178,7 @@ try {
   check('设计器 UI 探针执行未抛异常', false, e.message.slice(0, 240));
   await shot('error').catch(() => {});
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n设计器 UI 探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('设计器 UI 探针汇总');
   await browser.close();
-  process.exit(pass === results.length ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 }

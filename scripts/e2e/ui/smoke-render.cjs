@@ -4,8 +4,9 @@
 //   NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-6/bin/node
 //   export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
 //   $NODE scripts/e2e/ui/smoke-render.cjs
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+/* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, USER, PWD } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 const SHELL = 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,8 +22,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(3500);
   const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
   if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill('admin');
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill('123456');
+    await u.fill(USER);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await sleep(4000);
   }

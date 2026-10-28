@@ -1,8 +1,6 @@
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
-
-const BASE = 'http://localhost:3000';
-const API = 'http://127.0.0.1:8888';
+/* 共享 client：playwright 加载与登录凭证（见 e2e_lib/client.cjs） */
+import { UI_BASE as BASE, USER, PWD, loadPlaywright } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
 async function main() {
   const browser = await chromium.launch();
@@ -12,8 +10,8 @@ async function main() {
 
   // login as admin
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.fill('input#username', 'admin').catch(() => {});
-  await page.fill('input#password', '123456').catch(() => {});
+  await page.fill('input#username', USER).catch(() => {});
+  await page.fill('input#password', PWD).catch(() => {});
   await page.click('button[type=submit]').catch(() => {});
   await page.waitForTimeout(3000);
 

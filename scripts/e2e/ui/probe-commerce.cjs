@@ -6,9 +6,9 @@
 // 复用 scripts/e2e/ui/README.md 里踩过的坑：
 //   ① 菜单名以运行时为准；② shell 的 commerce 是两级菜单（先展开「交易管理」）；
 //   ③ Modal 与 Drawer 都认；④ 首屏给足 Vite 编译时间。
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = 'http://localhost:3000';
+/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-commerce';
 require('fs').mkdirSync(OUT, { recursive: true });
 
@@ -24,7 +24,7 @@ async function login(page) {
   for (const pwd of ['123456', 'admin123', 'Admin@123']) {
     const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
     if (!(await u.count()) || !(await u.isVisible().catch(() => false))) break;
-    await u.fill('admin');
+    await u.fill(USER);
     await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(pwd);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);

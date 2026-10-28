@@ -4,13 +4,12 @@
  * 用于区分「前端校验拦下」还是「后端拒绝」。只诊断，不做全量巡检。
  * 用法：node scripts/e2e/diag-runtime-create-failure.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / STAMP / 登录凭证（见 e2e_lib/client.cjs） */
+import { UI_BASE as BASE, SHOT_DIR, stamp, USER, PWD, loadPlaywright } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT = '/Users/renhui.trh/wps/bone/logs/diag_runtime_create_fail.png';
-const STAMP = String(Date.now()).slice(-6);
+const SHOT = `${SHOT_DIR}/diag_runtime_create_fail.png`;
+const STAMP = stamp(6);
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -34,9 +33,9 @@ try {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="password"]', { timeout: 20000 });
   const u = page.locator('input[placeholder*="用户名"], input[name="username"], input#username').first();
-  if (await u.count()) await u.fill('admin');
+  if (await u.count()) await u.fill(USER);
   const p = page.locator('input[type="password"]').first();
-  await p.fill('123456');
+  await p.fill(PWD);
   await p.press('Enter');
   await page.waitForTimeout(2000);
   if (await page.locator('input[type="password"]').count()) {

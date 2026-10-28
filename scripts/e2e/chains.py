@@ -8,17 +8,15 @@ Bone 跨模块端到端链路测试基座。
 
 运行：/Users/renhui.trh/.workbuddy/binaries/python/versions/3.13.12/bin/python3 /tmp/bone/chains.py [链路号...]
 """
-import json
-import time
-import urllib.request
-import urllib.error
-import hmac
-import hashlib
 import sys
+import time
+
+from e2e_lib.http import login, raw_call
+from e2e_lib.report import section as hdr
+from e2e_lib.sign import hmac_sign as sign
 
 GW = "http://127.0.0.1:8888"
 ADMIN = ("admin", "123456")
-MOCK_SECRET = b"bone-blueprint-mock-secret"
 
 # ---- 主数据实体：运行时解析（禁止硬编码雪花 ID）----
 # 原实现把某次库里的雪花 ID 写成常量（MD_PRODUCT=760324212819755008 等）。
@@ -63,50 +61,19 @@ RESULTS = []
 
 
 def http(method, path, body=None, tenant="0", token=None, headers=None, timeout=25):
-    url = GW + path
-    data = None
-    h = {"Content-Type": "application/json"}
-    if headers:
-        h.update(headers)
+    """薄委托公共层 raw_call，保留本脚本的 (status, body) 2 元组口径。
+
+    为什么保留本地包装而不是逐调用点换成 http.call：本脚本约 150 个调用点全部走
+    token=/默认 tenant 语义（含 token=None=匿名回调），公共层没有对应的 2 元组入口，
+    逐点替换风险大于收益。
+    """
+    h = dict(headers or {})
     if token:
         h["Authorization"] = "Bearer " + token
     if tenant is not None:
         h["X-Tenant-Id"] = str(tenant)
-    if body is not None:
-        data = json.dumps(body, ensure_ascii=False).encode()
-    req = urllib.request.Request(url, data=data, headers=h, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw = r.read()
-            try:
-                return r.status, json.loads(raw) if raw else None
-            except Exception:
-                return r.status, {"_text": raw.decode("utf-8", "replace")}
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        try:
-            return e.code, json.loads(raw)
-        except Exception:
-            return e.code, {"_text": raw.decode("utf-8", "replace")}
-    except Exception as e:
-        return 0, {"_err": str(e)}
-
-
-def login(user, pwd, tenant="0"):
-    st, j = http("POST", "/api/v1/iam/login", {"username": user, "password": pwd}, tenant=tenant)
-    if st != 200 or not j or not j.get("data"):
-        raise SystemExit(f"login failed {st}: {json.dumps(j, ensure_ascii=False)[:200]}")
-    return j["data"]["token"]
-
-
-def sign(payment_id, trade_no, amount):
-    """复刻 MockPaymentSignaturePortAdapter#payload 口径：
-    paymentId|channelTradeNo|amount.stripTrailingZeros().toPlainString()"""
-    s = str(amount)
-    if "." in s:
-        s = s.rstrip("0").rstrip(".")
-    payload = f"{payment_id}|{trade_no}|{s}"
-    return hmac.new(MOCK_SECRET, payload.encode(), hashlib.sha256).hexdigest()
+    s, d, _ = raw_call(GW, method, path, body, h, timeout)
+    return s, d
 
 
 def check(cid, name, expect, actual, detail=""):
@@ -135,10 +102,6 @@ def rid_of(j):
     if isinstance(v, dict):
         return v.get("id")
     return None
-
-
-def hdr(title):
-    print(f"\n{'=' * 66}\n{title}\n{'=' * 66}")
 
 
 # ---- 结构化断言工具（替代「只看 200」的弱断言） ----

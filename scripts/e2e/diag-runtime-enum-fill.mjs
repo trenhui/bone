@@ -8,8 +8,9 @@
  * 做法：登录后进 /metadata#/runtime，选实体，打开新建弹窗，逐项 dump
  * 「label / 控件类型 / 下拉选项列表 / 填完后控件内的实际值」，不做提交。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载与登录凭证（BASE 保持本探针原默认口径，见下） */
+import { USER, PWD, loadPlaywright } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
 const BASE = process.env.BONE_UI_BASE || 'http://127.0.0.1:3000';
 const browser = await chromium.launch({ headless: true });
@@ -34,8 +35,8 @@ const waitReady = async (ms = 20000) => {
 try {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  await page.fill('input[placeholder*="用户名"], input[name="username"], input#username', 'admin');
-  await page.fill('input[type="password"]', process.env.BONE_E2E_PWD || '123456');
+  await page.fill('input[placeholder*="用户名"], input[name="username"], input#username', USER);
+  await page.fill('input[type="password"]', PWD);
   await page.click('button[type="submit"], .ant-btn-primary');
   await page.waitForTimeout(3000);
 

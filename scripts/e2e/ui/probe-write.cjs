@@ -1,9 +1,9 @@
 // BONE 深度交互巡检：模拟人工"点击每一个功能"—— 打开弹窗 / 填表 / 提交 / 取消
 // 目的：v4 已证 44 菜单导航正常、零失败请求；但那只覆盖"读"。
 // 本轮覆盖"写"：每个带新增/编辑按钮的页面，点开弹窗→ 填表→ 提交 → 断言结果。
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = 'http://localhost:3000';
+/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
 require('fs').mkdirSync(OUT, { recursive: true });
 
@@ -40,8 +40,8 @@ const WRITE_TARGETS = [
   await page.waitForTimeout(3500);
   const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
   if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill('admin');
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill('123456');
+    await u.fill(USER);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);
   }

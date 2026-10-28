@@ -1,7 +1,7 @@
 // 取各页面真实可点击元素（按钮文字 + 图标按钮的 title/aria-label），用于确认"新增"入口的真实形态
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = 'http://localhost:3000';
+/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 const PAGES = [
   ['iam', '#/accounts'], ['iam', '#/roles'], ['iam', '#/tenants'], ['iam', '#/organizations'], ['iam', '#/apps'],
   ['system', '#/alerts'], ['system', '#/config'], ['system', '#/dict'], ['system', '#/schedule'],
@@ -15,8 +15,8 @@ const PAGES = [
   await page.waitForTimeout(3500);
   const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
   if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill('admin');
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill('123456');
+    await u.fill(USER);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);
   }

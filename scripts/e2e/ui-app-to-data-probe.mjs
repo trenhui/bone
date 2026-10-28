@@ -16,44 +16,35 @@
  * 前置：先跑 scripts/e2e/app-to-data-full-chain-e2e.py（生成 /tmp/bone_e2e_fullchain_state.json）。
  *
  * 用法：node scripts/e2e/ui-app-to-data-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
 import fs from 'node:fs';
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  stamp,
+  USER,
+  PWD,
+  loadPlaywright,
+  api,
+  login,
+  makeChecker,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_BASE || 'http://127.0.0.1:8888/api/v1';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
 const STATE = JSON.parse(fs.readFileSync('/tmp/bone_e2e_fullchain_state.json', 'utf8'));
-const STAMP = String(Date.now()).slice(-6);
+const STAMP = stamp(6);
 const EQ_NO = `UI-EQ-${STAMP}`;
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check } = makeChecker();
 const shot = async (n) => {
   const p = `${SHOT_DIR}/ui_fullchain_${n}.png`;
   await page.screenshot({ path: p, fullPage: false }).catch(() => {});
   return p;
 };
 
-/* ---------------- API 辅助 ---------------- */
-async function login() {
-  const r = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const d = await r.json();
-  const tok = (d.data || {}).token;
-  if (!tok) throw new Error(`登录失败 ${r.status}`);
-  return tok;
-}
+/* ---------------- API 辅助（登录与带 token fetch 见 e2e_lib/client.cjs） ---------------- */
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
@@ -331,11 +322,12 @@ try {
   check('⑧ 刷新后记录仍在（数据已落库）', t7c.includes(EQ_NO), t7c.slice(0, 160));
 
   /* API 交叉核验：界面录入的记录经 API 回读，值逐项一致 */
-  const r = await fetch(
-    `${API}/runtime/entities/${STATE.entityCode}/records?page=1&size=100&fields=equipment_no,equipment_name,equipment_type,inspection_date,inspector,inspection_result,abnormal_desc,duration_minutes`,
-    { headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' } },
+  const { data: d } = await api(
+    'GET',
+    `/runtime/entities/${STATE.entityCode}/records?page=1&size=100&fields=equipment_no,equipment_name,equipment_type,inspection_date,inspector,inspection_result,abnormal_desc,duration_minutes`,
+    undefined,
+    { token },
   );
-  const d = await r.json();
   const rows = (d.data || {}).records || [];
   const hit = rows.find((x) => x.equipment_no === EQ_NO);
   check('⑧ API 交叉核验：界面录入记录存在于后端', !!hit, `rows=${rows.length}`);

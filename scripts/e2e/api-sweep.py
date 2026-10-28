@@ -16,8 +16,9 @@ import sys
 import time
 from collections import Counter, defaultdict
 
+from e2e_lib import http
+
 GW = "http://127.0.0.1:8888"
-IAM = "http://127.0.0.1:8081"
 ROUTE_PREFIXES = [
     "/api/v1/extension",
     "/api/v1/iam",
@@ -53,17 +54,12 @@ def curl(args, timeout=15):
 
 
 def login():
-    out = curl(
-        [
-            "-X", "POST", IAM + "/api/v1/iam/login",
-            "-H", "Content-Type: application/json",
-            "-d", '{"username":"admin","password":"123456"}',
-        ]
-    )
+    # 登录样板走公共层（失败需返回 None 让 main 判 2，故捕获其 SystemExit）；
+    # 后续探测仍走 curl --noproxy：状态码字符串 + 原始 body 是本扫描的测量契约
     try:
-        return json.loads(out)["data"]["token"]
-    except Exception:
-        sys.stderr.write("LOGIN FAILED: " + out[:300] + "\n")
+        return http.login()
+    except SystemExit as e:
+        sys.stderr.write("LOGIN FAILED: " + str(e) + "\n")
         return None
 
 

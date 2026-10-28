@@ -19,70 +19,46 @@
  *     8. 关闭开关后回到空值（开关真的双向生效，不是单向渲染残留）。
  *
  * 用法：node scripts/e2e/ui-designer-n4-n5-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  *
  * 口径说明（预览 ≡ 运行时同源）：本探针验证 SchemaPreview 渲染/校验层；
  * BoneDynamicForm（运行时）消费同一个 validateControlValues，由 vitest 单测 + 变异验证覆盖。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  USER,
+  PWD,
+  loadPlaywright,
+  makeChecker,
+  login,
+  api,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_BASE || 'http://127.0.0.1:8888/api/v1';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
+const { results, check, report } = makeChecker();
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
-
-/* ---------------- API 辅助 ---------------- */
-async function login() {
-  const r = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const d = await r.json();
-  const tok = (d.data || {}).token;
-  if (!tok) throw new Error(`登录失败 ${r.status} ${JSON.stringify(d).slice(0, 200)}`);
-  return tok;
-}
-
+/* ---------------- API 辅助（登录与带 token fetch 见 e2e_lib/client.cjs） ---------------- */
 async function latestEntities(token, keyword) {
-  const r = await fetch(`${API}/metadata/entities?page=1&size=500`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', '/metadata/entities?page=1&size=500', undefined, { token });
   const recs = (d.data || {}).records || [];
   const hits = recs.filter((x) => x.displayName === keyword).sort((a, b) => String(b.id).localeCompare(String(a.id)));
   return hits[0] || null;
 }
 
 async function getSchema(token, eid) {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', `/metadata/entities/${eid}/ui-schema`, undefined, { token });
   const data = d.data || {};
   if (typeof data.json === 'string') data.json = JSON.parse(data.json);
   return data;
 }
 
 async function putSchema(token, eid, schema, lock) {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0',
-      'Content-Type': 'application/json', 'If-Match': String(lock),
-    },
-    body: JSON.stringify({ json: schema }),
+  const { status, data: d } = await api('PUT', `/metadata/entities/${eid}/ui-schema`, { json: schema }, {
+    token,
+    headers: { 'If-Match': String(lock) },
   });
-  const d = await r.json().catch(() => ({}));
-  return { status: r.status, body: d };
+  return { status, body: d };
 }
 
 /**
@@ -441,8 +417,7 @@ try {
   check('N4/N5 探针执行未抛异常', false, e.message.slice(0, 240));
   await shot('error').catch(() => {});
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\nN4/N5 探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('N4/N5 探针汇总');
   await browser.close();
-  process.exit(pass === results.length ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 }

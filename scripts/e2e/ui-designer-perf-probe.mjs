@@ -14,52 +14,42 @@
  * 用法：node scripts/e2e/ui-designer-perf-probe.mjs [控件数,默认 120]
  * finally 必恢复原草稿（不留下性能实验残留）。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / API 登录与带 token fetch / 登录凭证（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  USER,
+  PWD,
+  loadPlaywright,
+  api,
+  login,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const API = process.env.BONE_E2E_BASE || 'http://127.0.0.1:8888/api/v1';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
 // SIZES 已定义（见下）
 /** 多档规模（默认 10/40/80/160），用于看增长曲线；传单个数字则只跑该档 */
 const SIZES = process.argv[2] ? [Number(process.argv[2])] : [10, 40, 80, 160];
 
-/* ---------------- API ---------------- */
-const H = (tok) => ({ Authorization: `Bearer ${tok}`, 'X-Tenant-Id': '0' });
-const jparse = async (r) => (await r.json().catch(() => ({})));
-
-async function login() {
-  const r = await fetch(`${API}/iam/login`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const d = await jparse(r);
-  const tok = (d.data || {}).token;
-  if (!tok) throw new Error(`登录失败 ${r.status}`);
-  return tok;
-}
+/* ---------------- API（登录与带 token fetch 见 e2e_lib/client.cjs） ---------------- */
 const getEntities = async (tok) => {
-  const d = await jparse(await fetch(`${API}/metadata/entities?page=1&size=500`, { headers: H(tok) }));
+  const { data: d } = await api('GET', '/metadata/entities?page=1&size=500', undefined, { token: tok });
   return ((d.data || {}).records || []).filter((x) => x.displayName === '报销单')
     .sort((a, b) => String(b.id).localeCompare(String(a.id)));
 };
 const getSchema = async (tok, eid) => {
-  const d = await jparse(await fetch(`${API}/metadata/entities/${eid}/ui-schema`, { headers: H(tok) }));
+  const { data: d } = await api('GET', `/metadata/entities/${eid}/ui-schema`, undefined, { token: tok });
   const data = d.data || {};
   if (typeof data.json === 'string') data.json = JSON.parse(data.json);
   return data;
 };
 const putSchema = async (tok, eid, schema, lock) => {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    method: 'PUT',
-    headers: { ...H(tok), 'Content-Type': 'application/json', 'If-Match': String(lock) },
-    body: JSON.stringify({ json: schema }),
+  const { status, data: body } = await api('PUT', `/metadata/entities/${eid}/ui-schema`, { json: schema }, {
+    token: tok,
+    headers: { 'If-Match': String(lock) },
   });
-  return { status: r.status, body: await jparse(r) };
+  return { status, body };
 };
 const getFields = async (tok, eid) => {
-  const d = await jparse(await fetch(`${API}/metadata/entities/${eid}/fields`, { headers: H(tok) }));
+  const { data: d } = await api('GET', `/metadata/entities/${eid}/fields`, undefined, { token: tok });
   const dd = d.data || {};
   // 端点返 PageResult（records/total/...），不是裸数组
   return Array.isArray(dd) ? dd : (dd.records || []);

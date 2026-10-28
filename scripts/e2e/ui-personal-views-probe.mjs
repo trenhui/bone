@@ -31,33 +31,22 @@
  *
  * 用法：node scripts/e2e/ui-personal-views-probe.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  USER,
+  PWD,
+  loadPlaywright,
+  api,
+  login,
+  makeChecker,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_BASE || 'http://127.0.0.1:8888/api/v1';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
+const { results, check } = makeChecker();
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
-
-/* ---------------- API 辅助 ---------------- */
-async function login() {
-  const r = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const d = await r.json();
-  const tok = (d.data || {}).token;
-  if (!tok) throw new Error(`登录失败 ${r.status} ${JSON.stringify(d).slice(0, 200)}`);
-  return tok;
-}
+/* ---------------- API 辅助（登录与带 token fetch 见 e2e_lib/client.cjs） ---------------- */
 
 /**
  * 取最新**已发布**实体（deliveryMode=1 自动生成界面 & status=1 已发布）。
@@ -65,10 +54,7 @@ async function login() {
  * （「请先发布物理建表」），运行时消费断言会假红。
  */
 async function latestPublishedEntity(token, keyword) {
-  const r = await fetch(`${API}/metadata/entities?page=1&size=500`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', '/metadata/entities?page=1&size=500', undefined, { token });
   const recs = (d.data || {}).records || [];
   const hits = recs
     .filter((x) => x.displayName === keyword && x.deliveryMode === 1 && x.status === 1)
@@ -77,18 +63,12 @@ async function latestPublishedEntity(token, keyword) {
 }
 
 async function getOverlay(token, entityCode) {
-  const r = await fetch(`${API}/metadata/entities/${encodeURIComponent(entityCode)}/ui-overlay`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json().catch(() => ({}));
+  const { data: d } = await api('GET', `/metadata/entities/${encodeURIComponent(entityCode)}/ui-overlay`, undefined, { token });
   return (d.data || {}).json ?? (d.data || null);
 }
 
 async function deleteOverlay(token, entityCode) {
-  await fetch(`${API}/metadata/entities/${encodeURIComponent(entityCode)}/ui-overlay`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
+  await api('DELETE', `/metadata/entities/${encodeURIComponent(entityCode)}/ui-overlay`, undefined, { token });
 }
 
 /**
@@ -97,10 +77,7 @@ async function deleteOverlay(token, entityCode) {
  * 否则「按 code 匹配表头」会写出恒假断言。
  */
 async function getContractColumns(token, eid) {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', `/metadata/entities/${eid}/ui-schema`, undefined, { token });
   const raw = (d.data || {}).json;
   if (!raw) return [];
   const s = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -114,20 +91,13 @@ async function getContractColumns(token, eid) {
  * 不 mutate 共享 E2E 实体（报销单/理赔案件）的已发布契约——那会打断并行探针。
  */
 async function instantiateTemplateEntity(token, stamp) {
-  const tpls = await fetch(`${API}/metadata/templates`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  }).then((r) => r.json());
+  const tpls = await api('GET', '/metadata/templates', undefined, { token }).then((r) => r.data);
   const tpl = ((tpls.data) || []).find((t) => t.code === 'tpl_device_inspection');
   if (!tpl) return null;
   const code = `shield_${stamp}`;
-  const r = await fetch(`${API}/metadata/templates/${tpl.id}/instantiate`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0', 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: `Shield_${stamp}`, code, displayName: '遮蔽探针', tableName: `md_${code}`, moduleId: null, deliveryMode: 1,
-    }),
-  });
-  const d = await r.json().catch(() => ({}));
+  const { data: d } = await api('POST', `/metadata/templates/${tpl.id}/instantiate`, {
+    name: `Shield_${stamp}`, code, displayName: '遮蔽探针', tableName: `md_${code}`, moduleId: null, deliveryMode: 1,
+  }, { token });
   return d.data || null;
 }
 
@@ -449,32 +419,23 @@ try {
     });
     // PUT 必须带当前 lockVersion（If-Match），否则 409 META_UI_SCHEMA_VERSION_CONFLICT
     putShieldSchema = async (hiddenCode, opts) => {
-      const cur = await fetch(`${API}/metadata/entities/${shieldId}/ui-schema`, {
-        headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-      }).then((r) => r.json());
+      const cur = await api('GET', `/metadata/entities/${shieldId}/ui-schema`, undefined, { token }).then((r) => r.data);
       const lock = (cur.data || {}).lockVersion ?? '0';
-      const r = await fetch(`${API}/metadata/entities/${shieldId}/ui-schema`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0', 'Content-Type': 'application/json', 'If-Match': String(lock) },
-        body: JSON.stringify({ json: JSON.stringify(buildShieldSchema(hiddenCode, opts?.addOutside)) }),
-      });
-      return r.status;
+      const { status } = await api('PUT', `/metadata/entities/${shieldId}/ui-schema`,
+        { json: JSON.stringify(buildShieldSchema(hiddenCode, opts?.addOutside)) },
+        { token, headers: { 'If-Match': String(lock) } });
+      return status;
     };
     publishShield = async () => {
-      const r = await fetch(`${API}/metadata/entities/${shieldId}/publish`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-      });
-      return r.status;
+      const { status } = await api('POST', `/metadata/entities/${shieldId}/publish`, undefined, { token });
+      return status;
     };
 
     check('自产实体契约 v1 发布（5 列全可见）',
       (await putShieldSchema(null)) === 200 && (await publishShield()) === 200);
 
     // 目标列 = 首个契约可见列 insp_no（displayName 巡检单号）
-    const shieldFields = await fetch(`${API}/metadata/entities/${shieldId}/fields?page=1&size=100`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    }).then((r) => r.json());
+    const shieldFields = await api('GET', `/metadata/entities/${shieldId}/fields?page=1&size=100`, undefined, { token }).then((r) => r.data);
     const fMap = Object.fromEntries(((shieldFields.data || {}).records || []).map((f) => [f.code, f.displayName]));
     const shieldCol = 'insp_no';
     const shieldColName = fMap[shieldCol] || shieldCol;
@@ -540,9 +501,7 @@ try {
     await openTab(shieldId, 'data');
     await waitRuntimeReady();
     // 基线前置自证：这两个字段确实已建模（否则本组断言无判别力——字段不存在也能"提示不出现"）
-    const sfRes = await fetch(`${API}/metadata/entities/${shieldId}/fields?page=1&size=100`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    }).then((r) => r.json());
+    const sfRes = await api('GET', `/metadata/entities/${shieldId}/fields?page=1&size=100`, undefined, { token }).then((r) => r.data);
     const modeled = ((sfRes.data || {}).records || []).map((f) => f.displayName || f.code);
     const outsideNames = ['状态', '备注'];
     check('契约外字段场景：前置自证——两个契约外字段确已建模（提示非虚报的前提）',
@@ -579,16 +538,14 @@ try {
     const ccStamp = Date.now();
     ccCode = `childcol_${ccStamp}`;
     const ccChildCode = `childcol_item_${ccStamp}`;
-    const ccHeaders = { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0', 'Content-Type': 'application/json' };
     // 后端实体创建为最终一致：刚创建的实体立即可建字段会偶发 400（实体表/元数据未就绪）。
     // 故建实体后 settle 2s，且字段写入带重试（对齐 two-scenario 的慢节奏，属测试脚手架健壮性）。
     const createEntity = async (name, code, table) => {
       for (let attempt = 0; attempt < 3; attempt++) {
-        const r = await fetch(`${API}/metadata/entities`, {
-          method: 'POST', headers: ccHeaders,
-          body: JSON.stringify({ name, code, displayName: name, tableName: table, type: 1, deliveryMode: 1, description: 'E2E 明细列探针' }),
-        });
-        if (r.status === 200 || r.status === 201) return (await r.json()).data;
+        const r = await api('POST', '/metadata/entities',
+          { name, code, displayName: name, tableName: table, type: 1, deliveryMode: 1, description: 'E2E 明细列探针' },
+          { token });
+        if (r.status === 200 || r.status === 201) return r.data.data;
         await new Promise((res) => setTimeout(res, 800));
       }
       return null;
@@ -597,7 +554,7 @@ try {
       const fb = { name: f.code, code: f.code, displayName: f.label, type: f.type };
       if (f.validationRules) fb.validationRules = JSON.stringify(f.validationRules);
       for (let attempt = 0; attempt < retry; attempt++) {
-        const r = await fetch(`${API}/metadata/entities/${eid}/fields`, { method: 'POST', headers: ccHeaders, body: JSON.stringify(fb) }).catch(() => ({ status: 0 }));
+        const r = await api('POST', `/metadata/entities/${eid}/fields`, fb, { token }).catch(() => ({ status: 0 }));
         if (r.status === 200 || r.status === 201) return true;
         await new Promise((res) => setTimeout(res, 800));
       }
@@ -620,7 +577,7 @@ try {
         code: 'items', label: '明细行', type: 'CHILD_TABLE',
         validationRules: { childTable: { childEntityCode: ccChildCode, foreignKey: 'claim_id', orderColumn: 'sort_order', cascadeDelete: true, minRows: 0, maxRows: 200 } },
       });
-      const ccChildPub = await fetch(`${API}/metadata/entities/${ccChild}/publish`, { method: 'POST', headers: ccHeaders }).then((r) => r.status);
+      const ccChildPub = await api('POST', `/metadata/entities/${ccChild}/publish`, undefined, { token }).then((r) => r.status);
       // 父实体契约：items 作为列表契约列（第 4 列）——被测对象
       const ccSchema = {
         schemaVersion: 1, entityCode: ccCode, displayModes: ['create', 'edit', 'view'],
@@ -639,26 +596,23 @@ try {
         },
         linkageRules: [], submitRules: [], actionBar: [],
       };
-      let ccPut = await fetch(`${API}/metadata/entities/${ccParent}/ui-schema`, {
-        method: 'PUT', headers: { ...ccHeaders, 'If-Match': '-1' },
-        body: JSON.stringify({ json: JSON.stringify(ccSchema) }),
-      });
+      let ccPut = await api('PUT', `/metadata/entities/${ccParent}/ui-schema`,
+        { json: JSON.stringify(ccSchema) },
+        { token, headers: { 'If-Match': '-1' } });
       if (ccPut.status === 412) {
-        const cur = await fetch(`${API}/metadata/entities/${ccParent}/ui-schema`, { headers: ccHeaders }).then((r) => r.json());
-        ccPut = await fetch(`${API}/metadata/entities/${ccParent}/ui-schema`, {
-          method: 'PUT', headers: { ...ccHeaders, 'If-Match': String((cur.data || {}).lockVersion ?? '0') },
-          body: JSON.stringify({ json: JSON.stringify(ccSchema) }),
-        });
+        const cur = await api('GET', `/metadata/entities/${ccParent}/ui-schema`, undefined, { token }).then((r) => r.data);
+        ccPut = await api('PUT', `/metadata/entities/${ccParent}/ui-schema`,
+          { json: JSON.stringify(ccSchema) },
+          { token, headers: { 'If-Match': String((cur.data || {}).lockVersion ?? '0') } });
       }
-      const ccParentPub = await fetch(`${API}/metadata/entities/${ccParent}/publish`, { method: 'POST', headers: ccHeaders }).then((r) => r.status);
+      const ccParentPub = await api('POST', `/metadata/entities/${ccParent}/publish`, undefined, { token }).then((r) => r.status);
       check('明细列场景：子表发布 + 父实体契约（含 items 列）写入并发布',
         ccChildPub === 200 && ccPut.status === 200 && ccParentPub === 200,
         `child=${ccChildPub} put=${ccPut.status} parent=${ccParentPub}`);
       // 造一条记录（否则空表没有行可点「查看明细」）
-      await fetch(`${API}/runtime/entities/${ccCode}/records`, {
-        method: 'POST', headers: ccHeaders,
-        body: JSON.stringify({ claim_no: 'CC-1', title: '明细列探针记录', amount: 123.45, status: 'DRAFT' }),
-      }).catch(() => {});
+      await api('POST', `/runtime/entities/${ccCode}/records`,
+        { claim_no: 'CC-1', title: '明细列探针记录', amount: 123.45, status: 'DRAFT' },
+        { token }).catch(() => {});
       await openTab(ccParent, 'data');
       await waitRuntimeReady();
       await page.waitForTimeout(1500); // 等列表数据落位

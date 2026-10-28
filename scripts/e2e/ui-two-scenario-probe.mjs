@@ -3,21 +3,15 @@
  * 验证 API 链路造出来的报销单 / 理赔案件 / 采购订单在真实界面上可见、可进、状态列有值。
  *
  * 用法：node scripts/e2e/ui-two-scenario-probe.mjs
- * 依赖：playwright（NODE_PATH 指向 ~/.workbuddy/binaries/node/workspace/node_modules）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
-// ESM 不认 NODE_PATH，直接用绝对路径导入（playwright 装在托管 workspace 里）
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
 // 网关 globalcors 只放行 localhost 系列 Origin（见 bone-gateway/application.yml），
 // 用 127.0.0.1 打开外壳时浏览器带 Origin: http://127.0.0.1:3000 → CORS 校验 403。
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+// 故 UI_BASE 缺省必须是 localhost 而非 127.0.0.1（client 内同口径）。
+const { results, check, report } = makeChecker();
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -143,8 +137,7 @@ try {
   check('UI 探针执行未抛异常', false, e.message.slice(0, 200));
   await shot('error').catch(() => {});
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\nUI 探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('UI 探针汇总');
   await browser.close();
-  process.exit(pass === results.length ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 }

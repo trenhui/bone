@@ -3,13 +3,19 @@
  *   label / 控件类型 / 探针将填入的值，提交后打印 antd 校验错误与 toast。
  * 用法：node scripts/e2e/debug-form.mjs "租户管理"
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / STAMP / API 登录与带 token fetch / 登录凭证（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  stamp,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  api,
+  tryLogin,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const STAMP = String(Date.now()).slice(-6);
-const E2E_USER = 'admin', E2E_PWD = '123456';
+const STAMP = stamp(6);
 const TARGET = process.argv[2] || '租户管理';
 
 const browser = await chromium.launch({ headless: true });
@@ -26,13 +32,12 @@ await pwd.press('Enter');
 await page.waitForTimeout(1500);
 await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
 
-// —— 菜单真源 ——
-const lr = await fetch(`${API}/iam/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }) });
-const token = (await lr.json())?.data?.token;
-const mr = await fetch(`${API}/iam/menus/tree`, { headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' } });
+// —— 菜单真源 ——（登录与带 token fetch 见 e2e_lib/client.cjs；取不到 token 时保持原口径继续）
+const token = await tryLogin();
+const { data: mj } = token ? await api('GET', '/iam/menus/tree', undefined, { token }) : { data: null };
 const out = [];
 const walk = (ns, parent) => { for (const n of ns || []) { if (n.path && n.path.includes('#')) out.push({ name: `${parent ? parent + ' · ' : ''}${n.name}`, path: n.path }); walk(n.children || [], n.name); } };
-walk((await mr.json()).data || [], '');
+walk(mj.data || [], '');
 
 const hit = out.find((m) => m.name.includes(TARGET)) || out.find((m) => TARGET.split('·').pop().trim() && m.name.endsWith(TARGET.split('·').pop().trim()));
 if (!hit) { console.log('未找到菜单匹配:', TARGET, '\n候选:', out.map((o) => o.name).join(' | ')); await browser.close(); process.exit(1); }

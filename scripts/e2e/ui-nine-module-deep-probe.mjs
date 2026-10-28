@@ -11,25 +11,26 @@
  * 判据：弹窗关闭 + 无失败类 toast +（列表变化 或 成功类 toast）。
  * 失败会打印 HTTP 非 2xx 留痕，便于区分「真产品 bug」vs「探针映射错」。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  stamp,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  makeChecker,
+  tryLogin,
+  api,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const STAMP = String(Date.now()).slice(-6);
-const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
+const STAMP = stamp(6); // 保持本探针历史口径（slice(-6)），影响 E2E 数据命名
 
 let REAL_CUSTOMER_ID = null;
 let REAL_PRODUCT_ID = null;
 let REAL_ORDER_ID = null;
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check, report } = makeChecker();
 const shot = (n) => page.screenshot({ path: `${SHOT_DIR}/deep_${n}.png` }).catch(() => {});
 const slug = (s) => s.replace(/[^a-z0-9]/gi, '_');
 
@@ -343,19 +344,17 @@ try {
   // 预取真实引用：
   //   · 订单管理建单需要「真实客户 + 真实商品」→ 取首个有 customerId 的订单及其明细里的商品；
   //   · 发货物流需要「可发货状态的订单」→ 取首个 PAID 订单（CREATED 会被 409 正确拒，这是产品做对了）。
-  const lr = await fetch(`${API}/iam/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }) });
-  const lj = await lr.json();
-  const token = lj?.data?.token;
+  const token = await tryLogin();
   if (token) {
-    const or = await fetch(`${API}/orders?page=1&size=50`, { headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' } }).catch(() => null);
+    const or = await api('GET', '/orders?page=1&size=50', undefined, { token }).catch(() => null);
     if (or && or.ok) {
-      const oj = await or.json().catch(() => null);
+      const oj = or.data;
       const recs = oj?.data?.records || [];
       const custOrder = recs.find((r) => r.customerId) || recs[0];
       if (custOrder?.customerId) REAL_CUSTOMER_ID = String(custOrder.customerId);
-      const dr = await fetch(`${API}/orders/${custOrder.id}`, { headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' } }).catch(() => null);
+      const dr = await api('GET', `/orders/${custOrder.id}`, undefined, { token }).catch(() => null);
       if (dr && dr.ok) {
-        const dj = await dr.json().catch(() => null);
+        const dj = dr.data;
         const items = dj?.data?.items || [];
         if (items.length && items[0].productId) REAL_PRODUCT_ID = String(items[0].productId);
       }
@@ -401,8 +400,7 @@ try {
 } catch (e) {
   check('探针执行未抛异常', false, String(e.message).slice(0, 240));
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n9 模块深度建数据汇总：通过 ${pass} / ${results.length}`);
+  const { pass } = report('9 模块深度建数据汇总');
   await browser.close();
   process.exit(pass === results.length ? 0 : 1);
 }

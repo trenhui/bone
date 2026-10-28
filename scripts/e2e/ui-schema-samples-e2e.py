@@ -12,257 +12,32 @@
           ⑤ linkage required 服务端强制：专票缺税号 → 动作被 422 拦下
 """
 
-import json
 import os
-import sys
-import time
-import urllib.error
-import urllib.request
 
-BASE = "http://127.0.0.1:9001/api/v1"
+# 保持原默认行为：直连 metadata（:9001）跑协议对账；登录必须打 IAM（:8081）——
+# 9001 不承载 /api/v1/iam/**（404）。必须在 import e2e_lib 之前 setdefault：
+# config 在导入期读环境变量定 BASE/LOGIN_BASE（公共层已支持两者解耦）。
+os.environ.setdefault("BONE_E2E_BASE", "http://127.0.0.1:9001/api/v1")
+os.environ.setdefault("BONE_E2E_LOGIN_BASE", "http://127.0.0.1:8081/api/v1")
 
+from e2e_lib import config, http, report
+from e2e_lib.http import call, ecode
+from e2e_lib.modeling import (
+    add_action,
+    add_child_table_field,
+    create_entity,
+    publish,
+    put_schema,
+    validate,
+)
+from e2e_lib.report import check, section
+from e2e_lib.runtime import act, child_replace, rec_create
 
-def _load_token():
-    """取 JWT：优先复用 /tmp/bone_token.txt（历史联调约定），缺失时自登录获取。
+# 登录统一走公共层（失败即退出）；不再复用 /tmp/bone_token.txt——遗留文件可能过期，
+# 且脚本必须能独立运行，不依赖某个遗留进程写过该文件。
+http.login()
 
-    2026-10-26 修复：此前无条件 open，缺文件直接 FileNotFoundError 崩在模块导入期——
-    脚本必须能独立运行，不能依赖某个遗留进程写过该文件。
-    """
-    try:
-        tok = open("/tmp/bone_token.txt").read().strip()
-        if tok:
-            return tok
-    except OSError:
-        pass
-    req = urllib.request.Request(
-        # 登录必须走 IAM（:8081）：BASE 是 metadata 直连（:9001），不承载 /api/v1/iam/**（404）
-        "http://127.0.0.1:8081/api/v1/iam/login",
-        data=json.dumps({"username": "admin", "password": "123456"}).encode(),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=15) as r:
-        return json.loads(r.read().decode())["data"]["token"]
-
-
-TOKEN = _load_token()
-HDR = {
-    "Authorization": "Bearer " + TOKEN,
-    "X-Tenant-Id": "0",
-    "Content-Type": "application/json",
-}
-SAMPLES = "/Users/renhui.trh/wps/bone/doc/design/lowcode/cases/ui-schema-samples"
-
-PASS, FAIL = [], []
-
-
-def call(method, path, body=None, extra=None):
-    h = dict(HDR)
-    if extra:
-        h.update(extra)
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(BASE + path, data=data, headers=h, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            raw = r.read().decode()
-            return r.status, (json.loads(raw) if raw else {}), dict(r.headers)
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode()
-        try:
-            return e.code, json.loads(raw), dict(e.headers)
-        except Exception:
-            return e.code, {"raw": raw}, dict(e.headers)
-
-
-def ecode(d):
-    data = d.get("data")
-    return data.get("errorCode") if isinstance(data, dict) else None
-
-
-def check(name, cond, detail=""):
-    if cond:
-        PASS.append(name)
-        print(f"  ✓ {name}")
-    else:
-        FAIL.append(f"{name} :: {detail}")
-        print(f"  ✗ {name}  ← {detail}")
-
-
-def section(t):
-    print(f"\n{'=' * 78}\n{t}\n{'=' * 78}")
-
-
-SUFFIX = str(int(time.time()))[-9:]
-
-
-def create_entity(name, code, table, row_policies=None, fields=(), delivery=1):
-    body = {
-        "name": name,
-        "code": code,
-        "displayName": name,
-        "tableName": table,
-        "type": 1,
-        "deliveryMode": delivery,
-        "description": "E2E 样板场景",
-    }
-    if row_policies:
-        body["rowPolicies"] = json.dumps(row_policies, ensure_ascii=False)
-    s, d, _ = call("POST", "/metadata/entities", body)
-    if s in (200, 201):
-        eid = d["data"]
-    elif ecode(d) == "META_ENTITY_CODE_CONFLICT":
-        # 幂等复用：编码已存在（上一轮 E2E 或既有种子建的明细实体）——重复建模不该撞车
-        eid = find_entity_id_by_code(code)
-        print(f"    [复用] 实体 {code} 已存在 id={eid}")
-        assert eid, f"实体 {code} 冲突且无法定位"
-        # 物理表纠偏（2026-10-26 全模块联调）：历史实体可能绑着别人的物理表 —— 典型是 claim_item
-        # 绑到了 bone-init.sql（DDL 真源）里 synap-claim 模块的 t_claim_item：该表列是
-        # item_name/quantity/unit_price…，明细模型却是 name/amount/sort_order ⇒ 子表写入撞列
-        # 静默失败、明细恒空，submit 永远被 SUB-CONS-01（发票≠清单合计）拦住。表名不一致时先
-        # 回草稿改 tableName（revert-draft 不删旧物理表），随后的 publish 按新表名建表对齐。
-        s0, d0, _ = call("GET", f"/metadata/entities/{eid}")
-        cur_table = ((d0 or {}).get("data") or {}).get("tableName")
-        if cur_table and cur_table != table:
-            s1, d1, _ = call("POST", f"/metadata/entities/{eid}/revert-draft")
-            assert s1 in (200, 204), f"revert-draft {s1} {str(d1)[:200]}"
-            up = {
-                "name": name,
-                "code": code,
-                "displayName": name,
-                "tableName": table,
-                "deliveryMode": delivery,
-                "description": body["description"],
-            }
-            if row_policies:
-                up["rowPolicies"] = body["rowPolicies"]
-            s2, d2, _ = call("PUT", f"/metadata/entities/{eid}", up)
-            assert s2 in (200, 204), f"rebind tableName {s2} {str(d2)[:200]}"
-            print(f"    [纠偏] {code} 物理表 {cur_table} → {table}")
-        for f in fields:
-            ensure_field(eid, f)
-        return eid
-    else:
-        raise AssertionError(f"create entity {code} failed {s} {d}")
-    for f in fields:
-        ensure_field(eid, f)
-    return eid
-
-
-def find_entity_id_by_code(code):
-    # 全量翻页扫描后本地精确匹配 code。
-    # 曾经写死 size=200/500 → 库里实体数超过单页容量后，老实体落在第 2 页之外，
-    # 「编码冲突」分支定位不到 id，脚本以「冲突且无法定位」假失败（探针缺陷，非产品缺陷）。
-    page, size = 1, 100
-    while page <= 50:
-        s, d, _ = call("GET", f"/metadata/entities?page={page}&size={size}")
-        recs = (d.get("data") or {}).get("records") or []
-        for r in recs:
-            if r.get("code") == code:
-                return r.get("id")
-        if len(recs) < size:
-            return None
-        page += 1
-    return None
-
-
-def ensure_field(eid, f):
-    """字段幂等创建：已存在（409/400 code 冲突）视为已具备。"""
-    fb = {"name": f["code"], "code": f["code"], "displayName": f["label"], "type": f.get("type", "STRING")}
-    if f.get("required"):
-        fb["required"] = True
-    if f.get("length"):
-        fb["length"] = f["length"]
-    if f.get("validationRules"):
-        fb["validationRules"] = json.dumps(f["validationRules"], ensure_ascii=False)
-    fs, fd, _ = call("POST", f"/metadata/entities/{eid}/fields", fb)
-    if fs not in (200, 201):
-        print(f"    [skip] 字段 {f['code']} 已存在或创建失败 {fs} {fd.get('message', '')[:60]}")
-
-def add_action(eid, code, label, frm, to, escape=False, handler=None, idem=False, order=0, status_field="status"):
-    body = {
-        "actionCode": code,
-        "label": label,
-        "fromStatus": frm,
-        "toStatus": to,
-        "statusField": status_field,
-        "escape": escape,
-        "requiresIdempotency": idem,
-        "sortOrder": order,
-    }
-    if handler:
-        body["handlerBean"] = handler
-    s, d, _ = call("POST", f"/metadata/entities/{eid}/action-defs", body)
-    assert s == 200, f"action-def {code} failed {s} {d}"
-    return d
-
-
-
-def add_child_table_field(entity_id, field_code, child_entity_code, fk, physical=False, type="LONG"):
-    """子表/外键字段声明（引擎方言：CHILD_TABLE 类型字段 + validation_rules.childTable）。"""
-    if physical:
-        fb = {"name": field_code, "code": field_code, "displayName": field_code, "type": type}
-    else:
-        rules = {
-            "childTable": {
-                "childEntityCode": child_entity_code,
-                "foreignKey": fk,
-                "orderColumn": "sort_order",
-                "cascadeDelete": True,
-                "minRows": 0,
-                "maxRows": 200,
-            }
-        }
-        fb = {
-            "name": field_code,
-            "code": field_code,
-            "displayName": field_code,
-            "type": "CHILD_TABLE",
-            "validationRules": json.dumps(rules, ensure_ascii=False),
-        }
-    s, d, _ = call("POST", f"/metadata/entities/{entity_id}/fields", fb)
-    print(f"    子表/外键字段 {field_code} -> {s}")
-    return s
-
-
-def put_schema(eid, sample):
-    raw = open(os.path.join(SAMPLES, sample)).read()
-    s, d, hdr = call("PUT", f"/metadata/entities/{eid}/ui-schema", {"json": raw}, {"If-Match": "-1"})
-    if s == 412:
-        s, d, hdr = call("GET", f"/metadata/entities/{eid}/ui-schema")
-        lock = d["data"].get("lockVersion")
-        s, d, hdr = call(
-            "PUT", f"/metadata/entities/{eid}/ui-schema", {"json": raw}, {"If-Match": str(lock)}
-        )
-    return s, d
-
-
-def validate(eid):
-    s, d, _ = call("POST", f"/metadata/entities/{eid}/ui-schema/validate")
-    issues = d.get("data") or []
-    return s, [i for i in issues if i.get("level") == "ERROR"], issues
-
-
-def publish(eid):
-    s, d, hdr = call("POST", f"/metadata/entities/{eid}/publish")
-    if s in (200, 409):
-        pass
-    return s, d
-
-
-def rec_create(entity_code, body):
-    s, d, _ = call("POST", f"/runtime/entities/{entity_code}/records", body)
-    return s, d
-
-
-def child_replace(entity_code, rid, child_code, rows):
-    s, d, _ = call("POST", f"/runtime/entities/{entity_code}/records/{rid}/children/{child_code}", rows)
-    return s, d
-
-
-def act(entity_code, rid, action, params=None, idem=None):
-    extra = {"Idempotency-Key": idem} if idem else None
-    s, d, _ = call("POST", f"/runtime/entities/{entity_code}/records/{rid}/actions/{action}", {"params": params or {}}, extra)
-    return s, d
+SUFFIX = config.run_suffix()  # 运行级后缀：cleanup 按后缀定点回收
 
 
 # ==================================================================
@@ -332,7 +107,8 @@ for code, label, frm, to, esc, hdl, idem, order in [
         4,
     ),
 ]:
-    add_action(exp_id, code, label, frm, to, esc, hdl, idem, order)
+    s, d = add_action(exp_id, code, label, frm, to, esc, hdl, idem, order)
+    assert s == 200, f"action-def {code} failed {s} {d}"
 
 s, d = put_schema(exp_id, "expense-claim-ui-schema.example.json")
 check("报销：UI 协议 PUT 成功", s == 200, f"{s} {d.get('message')}")
@@ -370,7 +146,7 @@ if rid:
     s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": 100}, {"amount": 40}])
 
     # 负向②：专票缺税号 → linkage required 必须拦
-    s, d, _ = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"invoice_type": "SPECIAL"})
+    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"invoice_type": "SPECIAL"})
     s, d = act(EXP, rid, "submit")
     check(
         "报销【负向】专票缺税号 → linkage 必填拦截",
@@ -379,7 +155,7 @@ if rid:
     )
 
     # 补税号后放行
-    s, d, _ = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": "91310000MA1FL0"})
+    s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"tax_no": "91310000MA1FL0"})
     s, d = act(EXP, rid, "submit")
     check("报销：合规后 submit 成功（DRAFT→SUBMITTED）", s == 200, f"{s} {d.get('message')}")
     if s == 200:
@@ -488,7 +264,8 @@ for code, label, frm, to, esc, hdl, idem, order in [
     ("pay", "支付", "APPROVED", "PAID", True, "expenseReimbursementConfirmPayoutHandler", True, 5),
     ("appeal", "申诉", "REJECTED", "APPEALING", False, None, False, 6),
 ]:
-    add_action(clm_id, code, label, frm, to, esc, hdl, idem, order)
+    s, d = add_action(clm_id, code, label, frm, to, esc, hdl, idem, order)
+    assert s == 200, f"action-def {code} failed {s} {d}"
 
 s, d = put_schema(clm_id, "claim-outpatient-fasttrack-ui-schema.example.json")
 check("理赔：UI 协议 PUT 成功", s == 200, f"{s} {d.get('message')}")
@@ -581,8 +358,4 @@ if crid:
             )
 
 # ==================================================================
-section("汇总")
-print(f"通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
-for f in FAIL:
-    print(f"  ✗ {f}")
-sys.exit(1 if FAIL else 0)
+report.finish("汇总")

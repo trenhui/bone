@@ -25,61 +25,29 @@
 用法：
   python3 scripts/e2e/two-scenario-full-chain-e2e.py            # 默认走网关 :8888（真联调）
   BONE_E2E_BASE=http://127.0.0.1:9001/api/v1 python3 ...        # 直连后端排查用
+  BONE_E2E_KEEP_RESIDUE=1 python3 ...                            # 跑完保留残留现场（默认自动清理）
 """
 
 import json
 import os
-import sys
-import time
-import urllib.error
-import urllib.request
 
-BASE = os.environ.get("BONE_E2E_BASE", "http://127.0.0.1:8888/api/v1")
-SAMPLES = "/Users/renhui.trh/wps/bone/doc/design/lowcode/cases/ui-schema-samples"
-USER, PWD = "admin", "123456"
+from e2e_lib import config, http, report, teardown
+from e2e_lib.http import call, call_as, d_, ecode, jwt_user_id, login_as, session_headers
+from e2e_lib.modeling import (
+    add_action,
+    child_table_field,
+    create_entity,
+    publish,
+    put_schema,
+    validate,
+)
+from e2e_lib.report import check, note, section
+from e2e_lib.runtime import act, act_as, child_replace, rec_create, rec_status
 
-PASS, FAIL = [], []
-SUFFIX = str(int(time.time()))[-9:]
+SUFFIX = config.run_suffix()  # 运行级后缀：所有产物带它，teardown 按后缀定点回收
 
-
-# ---------------------------------------------------------------- 基础设施
-def raw_call(base, method, path, body=None, headers=None):
-    h = {"Content-Type": "application/json"}
-    if headers:
-        h.update(headers)
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(base + path, data=data, headers=h, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            txt = r.read().decode()
-            return r.status, (json.loads(txt) if txt else {}), dict(r.headers)
-    except urllib.error.HTTPError as e:
-        txt = e.read().decode()
-        try:
-            return e.code, json.loads(txt), dict(e.headers)
-        except Exception:
-            return e.code, {"raw": txt[:400]}, dict(e.headers)
-
-
-def login():
-    s, d, _ = raw_call(BASE, "POST", "/iam/login", {"username": USER, "password": PWD})
-    tok = (d.get("data") or {}).get("token") if s == 200 else None
-    if not tok:
-        sys.exit(f"登录失败 {s} {str(d)[:200]}")
-    return tok
-
-
-TOKEN = login()
-HDR = {"Authorization": "Bearer " + TOKEN, "X-Tenant-Id": "0", "Content-Type": "application/json"}
-
-
-def call(method, path, body=None, extra=None):
-    """返回 (status, body)；需要响应头时用 raw_call。"""
-    h = dict(HDR)
-    if extra:
-        h.update(extra)
-    s, d, _ = raw_call(BASE, method, path, body, h)
-    return s, d
+# 主会话（admin）登录：失败即退出——没登录跑什么都是假红
+http.login()
 
 
 # ---------------------------------------------------------------- 第二审批人
@@ -94,27 +62,9 @@ APPROVER_PWD = os.environ.get("BONE_E2E_APPROVER_PWD", "E2eApprover#2026")
 APPROVER_DEPT_ID = int(os.environ.get("BONE_E2E_APPROVER_DEPT_ID", "758345112240521216"))
 
 
-def _login_as(user, pwd):
-    s, d, _ = raw_call(BASE, "POST", "/iam/login", {"username": user, "password": pwd})
-    return (d.get("data") or {}).get("token") if s == 200 else None
-
-
-def _jwt_user_id(tok):
-    """从 JWT payload 取 userId —— 审批人身份口径必须是账户数字 id（与 RuntimeActionContext#getOperatorId 同源）。"""
-    import base64
-    try:
-        p = tok.split(".")[1]
-        p += "=" * (-len(p) % 4)
-        uid = json.loads(base64.urlsafe_b64decode(p)).get("userId")
-        # 转 int：approver_id 字段按 LONG 建模，下发字符串会被运行时校验拒（「应为数值类型」）。
-        return int(uid) if uid is not None else None
-    except Exception:
-        return None
-
-
 def ensure_approver():
     """幂等准备审批账号，返回 (token, userId)；失败返回 (None, None)，调用方据此跳过而非静默假绿。"""
-    tok = _login_as(APPROVER_USER, APPROVER_PWD)
+    tok = login_as(APPROVER_USER, APPROVER_PWD)
     if not tok:
         s, d = call("POST", "/iam/accounts", {
             "username": APPROVER_USER, "password": APPROVER_PWD,
@@ -127,231 +77,20 @@ def ensure_approver():
         })
         if s != 200:
             return None, None
-        tok = _login_as(APPROVER_USER, APPROVER_PWD)
-    return tok, (_jwt_user_id(tok) if tok else None)
+        tok = login_as(APPROVER_USER, APPROVER_PWD)
+    # 转 int：approver_id 字段按 LONG 建模，下发字符串会被运行时校验拒（「应为数值类型」）。
+    return tok, (jwt_user_id(tok) if tok else None)
 
 
 APPROVER_TOKEN, APPROVER_ID = ensure_approver()
-APPROVER_HDR = {"Authorization": "Bearer " + (APPROVER_TOKEN or ""),
-                "X-Tenant-Id": "0", "Content-Type": "application/json"}
+APPROVER_HDR = session_headers(APPROVER_TOKEN)
 
 
-def call_as(hdr, method, path, body=None, extra=None):
-    h = dict(hdr)
-    if extra:
-        h.update(extra)
-    s, d, _ = raw_call(BASE, method, path, body, h)
-    return s, d
-
-
-def ecode(d):
-    data = d.get("data")
-    return data.get("errorCode") if isinstance(data, dict) else None
-
-
-def d_(d, *keys, default=None):
-    cur = d.get("data")
-    for k in keys:
-        if not isinstance(cur, dict):
-            return default
-        cur = cur.get(k)
-    return default if cur is None else cur
-
-
-def check(name, cond, detail=""):
-    if cond:
-        PASS.append(name)
-        print(f"  ✓ {name}")
-    else:
-        FAIL.append(f"{name} :: {detail}")
-        print(f"  ✗ {name}  ← {detail}")
-
-
-def section(t):
-    print(f"\n{'=' * 78}\n{t}\n{'=' * 78}")
-
-
-def note(t):
-    print(f"    · {t}")
-
-
-# ---------------------------------------------------------------- 建模助手
-def find_entity_id_by_code(code):
-    # 全量翻页扫描：写死单页 size 会在实体数超过容量后漏掉落在后续页的老实体
-    # ⇒「编码冲突」分支拿不到 id，脚本假失败（探针缺陷，非产品缺陷）。
-    page, size = 1, 100
-    while page <= 50:
-        s, d = call("GET", f"/metadata/entities?page={page}&size={size}")
-        recs = (d.get("data") or {}).get("records") or []
-        for r in recs:
-            if r.get("code") == code:
-                return r.get("id")
-        if len(recs) < size:
-            return None
-        page += 1
-    return None
-
-
-def create_entity(name, code, table, row_policies=None, fields=(), auto_number=None, delivery=1):
-    body = {
-        "name": name,
-        "code": code,
-        "displayName": name,
-        "tableName": table,
-        "type": 1,
-        "deliveryMode": delivery,
-        "description": "E2E 样板场景（报销/理赔串联）",
-    }
-    if row_policies:
-        body["rowPolicies"] = json.dumps(row_policies, ensure_ascii=False)
-    if auto_number:
-        body["autoNumber"] = json.dumps(auto_number, ensure_ascii=False)
-    s, d = call("POST", "/metadata/entities", body)
-    if s in (200, 201):
-        eid = d.get("data")
-    elif ecode(d) == "META_ENTITY_CODE_CONFLICT":
-        eid = find_entity_id_by_code(code)
-        note(f"[复用] 实体 {code} 已存在 id={eid}")
-        # 物理表纠偏（2026-10-26 全模块联调）：历史实体可能绑着别人的物理表 —— 典型是 claim_item
-        # 绑到了 bone-init.sql（DDL 真源）里 synap-claim 模块的 t_claim_item：该表列是
-        # item_name/quantity/unit_price…，明细模型却是 name/amount/sort_order ⇒ 子表写入撞列
-        # 静默失败、明细恒空，submit 永远被 SUB-CONS-01（发票≠清单合计）拦住。表名不一致时先
-        # 回草稿改 tableName（revert-draft 不删旧物理表），随后的 publish 按新表名建表对齐——
-        # 产品表 t_claim_item 从此与 E2E 样例解绑。
-        s0, d0 = call("GET", f"/metadata/entities/{eid}")
-        cur_table = ((d0 or {}).get("data") or {}).get("tableName")
-        if cur_table and cur_table != table:
-            s1, d1 = call("POST", f"/metadata/entities/{eid}/revert-draft")
-            assert s1 in (200, 204), f"revert-draft {s1} {str(d1)[:200]}"
-            up = {
-                "name": name,
-                "code": code,
-                "displayName": name,
-                "tableName": table,
-                "deliveryMode": delivery,
-                "description": body["description"],
-            }
-            if row_policies:
-                up["rowPolicies"] = body["rowPolicies"]
-            if auto_number:
-                up["autoNumber"] = body["autoNumber"]
-            s2, d2 = call("PUT", f"/metadata/entities/{eid}", up)
-            assert s2 in (200, 204), f"rebind tableName {s2} {str(d2)[:200]}"
-            note(f"[纠偏] {code} 物理表 {cur_table} → {table}")
-    else:
-        raise AssertionError(f"create entity {code} failed {s} {str(d)[:200]}")
-    for f in fields:
-        ensure_field(eid, f)
-    return eid
-
-
-def ensure_field(eid, f):
-    fb = {"name": f["code"], "code": f["code"], "displayName": f["label"], "type": f.get("type", "STRING")}
-    if f.get("required"):
-        fb["required"] = True
-    if f.get("length"):
-        fb["length"] = f["length"]
-    if f.get("validationRules"):
-        fb["validationRules"] = json.dumps(f["validationRules"], ensure_ascii=False)
-    s, d = call("POST", f"/metadata/entities/{eid}/fields", fb)
-    if s not in (200, 201):
-        note(f"[skip] 字段 {f['code']} 已存在（{s}）")
-    return s
-
-
-def child_table_field(entity_id, field_code, child_entity_code=None, fk=None, physical=False, type="LONG"):
-    if physical:
-        fb = {"name": field_code, "code": field_code, "displayName": field_code, "type": type}
-    else:
-        fb = {
-            "name": field_code,
-            "code": field_code,
-            "displayName": field_code,
-            "type": "CHILD_TABLE",
-            "validationRules": json.dumps(
-                {
-                    "childTable": {
-                        "childEntityCode": child_entity_code,
-                        "foreignKey": fk,
-                        "orderColumn": "sort_order",
-                        "cascadeDelete": True,
-                        "minRows": 0,
-                        "maxRows": 200,
-                    }
-                },
-                ensure_ascii=False,
-            ),
-        }
-    s, d = call("POST", f"/metadata/entities/{entity_id}/fields", fb)
-    return s
-
-
-def add_action(eid, code, label, frm, to, escape=False, handler=None, idem=False, order=0):
-    body = {
-        "actionCode": code,
-        "label": label,
-        "fromStatus": frm,
-        "toStatus": to,
-        "statusField": "status",
-        "escape": escape,
-        "requiresIdempotency": idem,
-        "sortOrder": order,
-    }
-    if handler:
-        body["handlerBean"] = handler
-    return call("POST", f"/metadata/entities/{eid}/action-defs", body)[:2]
-
-
-def put_schema(eid, sample):
-    raw = open(os.path.join(SAMPLES, sample)).read()
-    s, d = call("PUT", f"/metadata/entities/{eid}/ui-schema", {"json": raw}, {"If-Match": "-1"})
-    if s == 412:
-        s2, d2 = call("GET", f"/metadata/entities/{eid}/ui-schema")
-        lock = (d2.get("data") or {}).get("lockVersion")
-        s, d = call("PUT", f"/metadata/entities/{eid}/ui-schema", {"json": raw}, {"If-Match": str(lock)})
-    return s, d
-
-
-def validate(eid):
-    s, d = call("POST", f"/metadata/entities/{eid}/ui-schema/validate")
-    issues = d.get("data") or []
-    return s, [i for i in issues if i.get("level") == "ERROR"], issues
-
-
-def publish(eid):
-    return call("POST", f"/metadata/entities/{eid}/publish")[:2]
-
-
-def rec_create(entity_code, body):
-    return call("POST", f"/runtime/entities/{entity_code}/records", body)[:2]
-
-
-def child_replace(entity_code, rid, child_code, rows):
-    return call("POST", f"/runtime/entities/{entity_code}/records/{rid}/children/{child_code}", rows)[:2]
-
-
-def act(entity_code, rid, action, params=None, idem=None):
-    return act_as(HDR, entity_code, rid, action, params, idem)
-
-
-_IDEM_SEQ = [0]
-def act_as(hdr, entity_code, rid, action, params=None, idem=None):
-    # 采购 submit/approve/reject 已接工作流引擎（逃逸动作，平台强制要求幂等键）；
-    # 此处对采购这三类动作自动补唯一幂等键，避免逐个调用处手工传 idem。
-    if idem is None and str(entity_code).startswith("purchase_order") and action in ("submit", "approve", "reject"):
-        _IDEM_SEQ[0] += 1
-        idem = f"po-{action}-{rid}-{_IDEM_SEQ[0]}"
-    return call_as(
-        hdr,
-        "POST",
-        f"/runtime/entities/{entity_code}/records/{rid}/actions/{action}",
-        {"params": params or {}},
-        {"Idempotency-Key": idem} if idem else None,
-    )[:2]
-
-
-def rec_status(d):
-    return (d.get("data", {}) or {}).get("record", {}).get("status")
+# ---- 运行级残留 teardown ----
+# 本次运行会在库里留下：带 <SUFFIX> 的动态物理表 + meta_entity 定义及子表 + 工作流行
+# + 本脚本创建的审批账号 e2e_po_appr2。默认退出时（含异常/sys.exit）自动回收，
+# 防止 E2E 反复联调把库越堆越脏；BONE_E2E_KEEP_RESIDUE=1 跳过清理、保留现场供排查。
+teardown.register(SUFFIX, accounts=(APPROVER_USER,))
 
 
 # ==================================================================
@@ -461,7 +200,7 @@ rid = (d.get("data") or {}).get("id")
 
 if rid:
     # ETag 并发保护
-    s, d, hdr = raw_call(BASE, "GET", f"/runtime/entities/{EXP}/records/{rid}", None, HDR)
+    s, d, hdr = http.call_full("GET", f"/runtime/entities/{EXP}/records/{rid}")
     etag = hdr.get("ETag") or hdr.get("etag")
     s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"department": "研发中心"},
                 {"If-Match": '"999999"'})
@@ -1019,8 +758,4 @@ check("P0-3 动作定义 DELETE 后 GET 不再包含", s in (200, 204) and "appe
       f"del={s} codes={codes2}")
 
 # ==================================================================
-section("汇总")
-print(f"通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
-for f in FAIL:
-    print(f"  ✗ {f}")
-sys.exit(1 if FAIL else 0)
+report.finish("汇总")

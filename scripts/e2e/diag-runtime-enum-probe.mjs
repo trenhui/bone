@@ -3,14 +3,11 @@
  * 只做「诊断 + 输出 DOM 取证」，不做全量巡检。
  * 用法：node scripts/e2e/diag-runtime-enum-probe.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 登录凭证（见 e2e_lib/client.cjs） */
+import { UI_BASE as BASE, SHOT_DIR, USER, PWD, loadPlaywright, api, tryLogin } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT = '/Users/renhui.trh/wps/bone/logs/diag_runtime_enum.png';
-const USER = 'admin';
-const PWD = '123456';
+const SHOT = `${SHOT_DIR}/diag_runtime_enum.png`;
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -20,17 +17,9 @@ page.on('response', (r) => {
 });
 
 try {
-  // 取运行时菜单，定位「业务数据」
-  const lr = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const token = (await lr.json())?.data?.token;
-  const mr = await fetch(`${API}/iam/menus/tree`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const mj = await mr.json();
+  // 取运行时菜单，定位「业务数据」（取不到 token 时保持原口径：继续走 UI 流程后报错）
+  const token = await tryLogin();
+  const { data: mj } = token ? await api('GET', '/iam/menus/tree', undefined, { token }) : { data: null };
   const menus = [];
   const walk = (ns, parent) => {
     for (const n of ns || []) {

@@ -16,47 +16,32 @@
  *   5. 恢复：清掉注入后重新读预览，字段回到基线可见。
  *
  * 用法：node scripts/e2e/ui-designer-n7-role-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  *
  * 口径说明：本探针验证 **SchemaPreview（创作侧预览）** 的渲染层。
  * 运行时 BoneDynamicForm 与详情抽屉 RuntimeDetailView 消费**同一个**
  * controlBaseStates + fieldVisible，由 vitest 单测（含授权/未授权双向对照）
  * + 变异验证覆盖。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  USER,
+  PWD,
+  loadPlaywright,
+  makeChecker,
+  login,
+  api,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_BASE || 'http://127.0.0.1:8888/api/v1';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
 const ENTITY_KEYWORD = process.env.BONE_E2E_ENTITY || '理赔案件';
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'}${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check } = makeChecker();
 
-/* ---------------- API 辅助 ---------------- */
-async function login() {
-  const r = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USER, password: PWD }),
-  });
-  const d = await r.json();
-  const tok = (d.data || {}).token;
-  if (!tok) throw new Error(`登录失败 ${r.status} ${JSON.stringify(d).slice(0, 200)}`);
-  return tok;
-}
-
+/* ---------------- API 辅助（登录与带 token fetch 见 e2e_lib/client.cjs） ---------------- */
 async function latestEntities(token, keyword) {
-  const r = await fetch(`${API}/metadata/entities?page=1&size=500`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', '/metadata/entities?page=1&size=500', undefined, { token });
   const recs = (d.data || {}).records || [];
   const byId = (a, b) => String(b.id).localeCompare(String(a.id));
   // 先精确匹配 displayName；退不回去再按「包含关键字」（同名实体常有多个，取最新 id）。
@@ -68,26 +53,18 @@ async function latestEntities(token, keyword) {
 }
 
 async function getSchema(token, eid) {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
-  const d = await r.json();
+  const { data: d } = await api('GET', `/metadata/entities/${eid}/ui-schema`, undefined, { token });
   const data = d.data || {};
   if (typeof data.json === 'string') data.json = JSON.parse(data.json);
   return data;
 }
 
 async function putSchema(token, eid, schema, lock) {
-  const r = await fetch(`${API}/metadata/entities/${eid}/ui-schema`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0',
-      'Content-Type': 'application/json', 'If-Match': String(lock),
-    },
-    body: JSON.stringify({ json: schema }),
+  const { status, data: d } = await api('PUT', `/metadata/entities/${eid}/ui-schema`, { json: schema }, {
+    token,
+    headers: { 'If-Match': String(lock) },
   });
-  const d = await r.json().catch(() => ({}));
-  return { status: r.status, body: d };
+  return { status, body: d };
 }
 
 /**

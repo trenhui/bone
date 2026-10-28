@@ -8,27 +8,12 @@
  *
  * 用法：node scripts/e2e/diag-extpoint-create.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / API 登录与带 token fetch / 登录凭证（见 e2e_lib/client.cjs） */
+import { UI_BASE as BASE, USER, PWD, loadPlaywright, api } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const USER = process.env.BONE_E2E_USER || 'admin';
-const PWD = process.env.BONE_E2E_PWD || '123456';
-
-const lr = await fetch(`${API}/iam/login`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: USER, password: PWD }),
-});
-const lj = await lr.json();
-const token = lj?.data?.token;
-if (!token) throw new Error('登录失败: ' + JSON.stringify(lj).slice(0, 200));
-
-const mr = await fetch(`${API}/iam/menus/tree`, {
-  headers: { Authorization: 'Bearer ' + token, 'X-Tenant-Id': '0' },
-});
-const mj = await mr.json();
+// API 侧登录取 token 并拉菜单（登录失败由 client 抛错，口径同原 fetch 版）
+const { data: mj } = await api('GET', '/iam/menus/tree');
 const menus = [];
 const walk = (n) => {
   if (Array.isArray(n)) return n.forEach(walk);

@@ -7,41 +7,26 @@
  *   4. 列表页主操作按钮（新建 / 新增 / 创建）可点开抽屉或弹窗（模拟真人建数据第一步）。
  *
  * 用法：node scripts/e2e/ui-all-menu-regression.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  makeChecker,
+  api,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
+const { results, check, report } = makeChecker();
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
-
-// 联调用种子账号凭据通过环境变量注入：BONE_E2E_USER / BONE_E2E_PWD。
-// 本地 dev 缺省种子账号 admin/123456（与 ui-create-data-probe 同口径，字面量已在
-// .gitleaks.toml 精确豁免）；CI / 其它环境用 BONE_E2E_USER / BONE_E2E_PWD 注入真实凭据。
-// ★ 口令必须带缺省值：只留环境变量会在本地裸跑时变成 `password: undefined`，
-//   登录 401 → 整个巡检在取菜单阶段就崩，且看起来像「后端挂了」。
-const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
+// 账号凭据缺省值约定（BONE_E2E_USER / BONE_E2E_PWD 注入、口令必须带缺省值）见 e2e_lib/client.cjs。
 
 // ---------- 菜单真源：IAM menus/tree（不是硬编码，避免与运行时漂移） ----------
 async function fetchMenus() {
-  const lr = await fetch(`${API}/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }),
-  });
-  const lj = await lr.json();
-  const token = lj?.data?.token;
-  if (!token) throw new Error('登录取 token 失败: ' + JSON.stringify(lj).slice(0, 200));
-  const mr = await fetch(`${API}/iam/menus/tree`, { headers: { Authorization: 'Bearer ' + token, 'X-Tenant-Id': '0' } });
-  const mj = await mr.json();
+  const { data: mj } = await api('GET', '/iam/menus/tree');
   const root = mj?.data ?? mj;
   const out = [];
   const walk = (n) => {
@@ -266,8 +251,7 @@ try {
 } catch (e) {
   check('全菜单巡检执行未抛异常', false, e.message.slice(0, 240));
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n全模块 UI 巡检汇总：通过 ${pass} / ${results.length}`);
+  const { pass } = report('全模块 UI 巡检汇总');
   const bad = results.filter((r) => !r.ok);
   if (bad.length) {
     console.log('\n失败明细：');

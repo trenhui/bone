@@ -19,11 +19,11 @@ UI 建出来的 25 个流程全是 DRAFT、零节点，从未被激活或执行�
 """
 import json
 import subprocess
-import sys
 import time
 
+from e2e_lib import http
+
 GW = "http://127.0.0.1:8888"
-IAM = "http://127.0.0.1:8081"
 STAMP = str(int(time.time()))[-6:]
 
 
@@ -60,17 +60,10 @@ def req(token, method, path, body=None, expect=("2",), label=""):
         return code, {"_raw": raw}
 
 
-def login():
-    out = curl([
-        "-X", "POST", IAM + "/api/v1/iam/login",
-        "-H", "Content-Type: application/json",
-        "-d", '{"username":"admin","password":"123456"}',
-    ])
-    return json.loads(out)["data"]["token"]
-
-
 def main():
-    token = login()
+    # 登录样板走公共层（失败直接 SystemExit，退出码与原先未捕获异常时一致）；
+    # 后续请求仍走 curl --noproxy：状态码字符串 + 原始 body 是本链路的判据口径
+    token = http.login()
     failures = []
 
     print("== 1. 建流程（带 START / LOG / END 三个节点）==")

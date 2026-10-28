@@ -19,38 +19,35 @@
  *
  * 用法：node scripts/e2e/ui-shadowed-column-alert-probe.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / IAM 直连登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  IAM_BASE as IAM,
+  USER,
+  PWD,
+  loadPlaywright,
+  api,
+  tryLogin,
+  makeChecker,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
 const ENTITY_CODE = process.env.BONE_ENTITY_CODE || 'claim_case_chain_792218121';
-const IAM = process.env.BONE_IAM_BASE || 'http://127.0.0.1:8081';
 const META = process.env.BONE_META_BASE || 'http://127.0.0.1:9001';
 
 async function resetServerOverlay() {
   try {
-    const r = await fetch(`${IAM}/api/v1/iam/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'admin', password: '123456' }),
-    });
-    const token = (await r.json())?.data?.token;
-    await fetch(`${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    });
+    const token = await tryLogin(`${IAM}/api/v1`);
+    // 与原口径一致：拿不到 token 也照发该 DELETE（401 空操作），不阻断「返回 true」
+    await api('DELETE', `${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, undefined, { token: String(token) });
     return true;
   } catch { return false; }
 }
 
-const results = [];
+const { results, check, report } = makeChecker();
 const log = (...a) => console.log(...a);
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -70,8 +67,8 @@ try {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="password"]', { timeout: 20000 });
   const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill('admin');
-  await page.locator('input[type="password"]').first().fill('123456');
+  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
+  await page.locator('input[type="password"]').first().fill(PWD);
   await page.locator('input[type="password"]').first().press('Enter');
   await page.waitForTimeout(1500);
   if (await page.locator('input[type="password"]').count()) {
@@ -167,10 +164,9 @@ try {
   check('收尾：服务端 overlay 复位', await resetServerOverlay(), '');
   check('全流程无 console / page 异常', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
 
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n自伤遮蔽告警探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('自伤遮蔽告警探针汇总');
   await browser.close();
-  process.exit(results.every((r) => r.ok) ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 } catch (e) {
   console.error('探针异常：', e?.message || e);
   await shot('err').catch(() => {});

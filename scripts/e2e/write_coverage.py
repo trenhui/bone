@@ -34,11 +34,10 @@ Blueprint 库存扣减与确认。
 
 退出码：0 = 全部 PASS（含显式 SKIP）；1 = 有 FAIL。
 """
-import json
 import sys
 import time
-import urllib.error
-import urllib.request
+
+from e2e_lib.http import default, login_as, raw_call
 
 GW = "http://127.0.0.1:8888"
 ADMIN = ("admin", "123456")
@@ -46,49 +45,27 @@ RUN_START = int(time.time() * 1000)
 
 RESULTS = []
 _ctx = {}
-_cache = {}
 
 
 # ---------------------------------------------------------------- HTTP
 def http(method, path, body=None, tenant="0", token=None, headers=None, timeout=25):
-    url = GW + path if path.startswith("/") else path
-    data = None
-    h = {"Content-Type": "application/json"}
-    if headers:
-        h.update(headers)
+    """薄委托公共层 raw_call，保留本脚本的 (status, body) 2 元组与全 URL 透传口径。
+
+    为什么保留本地包装：全部调用点走 token=/默认 tenant 语义，公共层无对应 2 元组入口。
+    """
+    h = dict(headers or {})
     if token:
         h["Authorization"] = "Bearer " + token
     if tenant is not None:
         h["X-Tenant-Id"] = str(tenant)
-    if body is not None:
-        data = json.dumps(body, ensure_ascii=False).encode()
-    req = urllib.request.Request(url, data=data, headers=h, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw = r.read()
-            try:
-                return r.status, (json.loads(raw) if raw else None)
-            except Exception:
-                return r.status, {"_text": raw.decode("utf-8", "replace")}
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        try:
-            return e.code, json.loads(raw)
-        except Exception:
-            return e.code, {"_text": raw.decode("utf-8", "replace")}
-    except Exception as e:  # noqa: BLE001
-        return 0, {"_err": str(e)}
+    base = GW if path.startswith("/") else ""
+    s, d, _ = raw_call(base, method, path, body, h, timeout)
+    return s, d
 
 
 def login():
-    if "token" in _cache:
-        return _cache["token"]
-    st, j = http("POST", "/api/v1/iam/login",
-                 {"username": ADMIN[0], "password": ADMIN[1]}, tenant="0")
-    if st != 200 or not (j or {}).get("data"):
-        raise SystemExit(f"login failed {st}: {json.dumps(j, ensure_ascii=False)[:300]}")
-    _cache["token"] = j["data"]["token"]
-    return _cache["token"]
+    # default() 会话级缓存（等价于原 _cache），首次调用登录，失败同样 SystemExit
+    return default().token
 
 
 # ---------------------------------------------------------------- 取数据夹具
@@ -505,11 +482,8 @@ def _temp_account_token():
                  token=login())
     if st not in (200, 201):
         return None
-    st, j = http("POST", "/api/v1/iam/login",
-                 {"username": u, "password": "E2ePass!23456"}, tenant="0")
-    if st != 200:
-        return None
-    return ((j or {}).get("data") or {}).get("token")
+    # 以一次性账号自身身份登录；失败返回 None（非致命，用例自行判 NO_FIXTURE）
+    return login_as(u, "E2ePass!23456", fatal=False)
 
 
 def _type_is_cascade(code):

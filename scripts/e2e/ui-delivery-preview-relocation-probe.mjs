@@ -15,18 +15,12 @@
  *
  * 用法：node scripts/e2e/ui-delivery-preview-relocation-probe.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check, report } = makeChecker();
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -113,10 +107,9 @@ try {
   // 5. 无 console / page 异常
   check('全流程无 console / page 异常', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
 
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n交付预览归位探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('交付预览归位探针汇总');
   await browser.close();
-  process.exit(results.every((r) => r.ok) ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 } catch (e) {
   console.error('探针异常：', e?.message || e);
   await shot('err').catch(() => {});

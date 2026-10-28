@@ -7,23 +7,22 @@
  *   - 本探针验证「新增 → 落库 → 可检索」的完整闭环，是真正的前后端联调判据。
  *
  * 用法：node scripts/e2e/ui-create-data-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  stamp,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  makeChecker,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const STAMP = String(Date.now()).slice(-7);
-// 本地联调种子账号；CI / 其它环境用 BONE_E2E_USER / BONE_E2E_PWD 注入真实凭据
-const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
+const STAMP = stamp(7); // 保持本探针历史口径（slice(-7)），影响 E2E 数据命名
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { check, report } = makeChecker();
 
 /**
  * 每个用例：菜单路径 + 触发新建的按钮文案 + 弹窗里每个字段的填法。
@@ -242,8 +241,7 @@ try {
 } catch (e) {
   check('建数据探针执行未抛异常', false, e.message.slice(0, 240));
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n建数据 UI 探针汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('建数据 UI 探针汇总');
   await browser.close();
-  process.exit(pass === results.length ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 }

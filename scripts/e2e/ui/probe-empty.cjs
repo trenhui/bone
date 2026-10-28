@@ -1,9 +1,9 @@
 // 针对「UI 判 EMPTY」的页面做归因：到底是接口没数据，还是接口有数据 UI 没渲染。
 // 判据：抓该页所有 >=200 的 XHR 响应体 + 页面 .ant-empty 文案 + 首行文本。
 // 用法：NODE=... node scripts/e2e/ui/probe-empty.cjs
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = 'http://localhost:3000';
+/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 
 const TARGETS = [
   ['iam', '/iam#/organizations'],
@@ -41,8 +41,8 @@ const TARGETS = [
   await page.waitForTimeout(3500);
   const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
   if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill('admin');
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill('123456');
+    await u.fill(USER);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);
   }

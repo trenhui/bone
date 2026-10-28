@@ -13,34 +13,32 @@
  * 只做诊断，不改任何源码；结束前清理 overlay（DELETE）避免污染。
  * 用法：node scripts/e2e/diag-shadowed-mismatch.mjs
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / IAM 直连登录与带 token fetch / 登录凭证（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  IAM_BASE as IAM,
+  USER,
+  PWD,
+  loadPlaywright,
+  api,
+  tryLogin,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
 const ENTITY_CODE = process.env.BONE_ENTITY_CODE || 'claim_case_chain_792218121';
-const IAM = process.env.BONE_IAM_BASE || 'http://127.0.0.1:8081';
 const META = process.env.BONE_META_BASE || 'http://127.0.0.1:9001';
 
 const log = (...a) => console.log(...a);
 
-async function login() {
-  const r = await fetch(`${IAM}/api/v1/iam/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'admin', password: '123456' }),
-  });
-  const j = await r.json();
-  return j?.data?.token;
-}
-
 /** 服务端 overlay 真值（与浏览器同一时刻取） */
 async function serverOverlay(token, tag) {
-  const r = await fetch(
+  const { data: j } = await api(
+    'GET',
     `${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`,
-    { headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' } },
+    undefined,
+    { token },
   );
-  const j = await r.json();
   log(`  [服务端@${tag}] code=${j.code} data=${JSON.stringify(j.data)}`);
   return j.data;
 }
@@ -50,22 +48,19 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.setDefaultTimeout(25000);
 
 try {
-  const token = await login();
+  const token = await tryLogin(`${IAM}/api/v1`);
   log(`登录 token 长度=${(token || '').length}`);
 
   // 0. 起点：清干净，避免历史残留干扰
-  await fetch(`${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
+  await api('DELETE', `${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, undefined, { token });
   await serverOverlay(token, '清理后');
 
   // 1. 浏览器登录
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('input[type="password"]', { timeout: 20000 });
   const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill('admin');
-  await page.locator('input[type="password"]').first().fill('123456');
+  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
+  await page.locator('input[type="password"]').first().fill(PWD);
   await page.locator('input[type="password"]').first().press('Enter');
   await page.waitForTimeout(1500);
   if (await page.locator('input[type="password"]').count()) {
@@ -152,10 +147,7 @@ try {
 
   // 7. 清理
   await page.keyboard.press('Escape');
-  await fetch(`${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-  });
+  await api('DELETE', `${META}/api/v1/metadata/entities/${encodeURIComponent(ENTITY_CODE)}/ui-overlay`, undefined, { token });
   log('\n=== 清理后 · 服务端 overlay ===');
   await serverOverlay(token, '清理后');
   log('\n诊断结束');

@@ -1,9 +1,9 @@
 // BONE UI 巡检 v4：修正 iam 两级菜单（先展开 SubMenu 再点子项）
 // v3 报"iam 8 个菜单点击失效、hash 停在 #/accounts"，根因是探针没展开 SubMenu ——
 // "角色管理"等在折叠的"权限与角色"里，不在 DOM（候选=0），不是产品缺陷。
-const { chromium } = require('playwright');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = 'http://localhost:3000';
+/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
 require('fs').mkdirSync(OUT, { recursive: true });
 
@@ -40,8 +40,8 @@ const APP_MENUS = {
   await page.waitForTimeout(3500);
   const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
   if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill('admin');
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill('123456');
+    await u.fill(USER);
+    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
     await page.locator('button[type="submit"], button:has-text("登")').first().click();
     await page.waitForTimeout(4000);
   }

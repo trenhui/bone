@@ -18,24 +18,31 @@
 
 产物：/tmp/bone_e2e_fullchain_state.json（供 scripts/e2e/ui-app-to-data-probe.mjs 消费）。
 
+退出时默认自动清理本次运行在库里的全部残留（cleanup-residue.py，见下方 teardown.register）。
+因此：接续跑 UI 探针前请用 BONE_E2E_KEEP_RESIDUE=1 启动本脚本保留产物，
+探针消费完 state 后再手工补清理：
+  python3 scripts/e2e/cleanup-residue.py --suffix <后缀> --apply
+
 用法：python3 scripts/e2e/app-to-data-full-chain-e2e.py            # 默认走网关 :8888
       BONE_E2E_BASE=http://127.0.0.1:9001/api/v1 python3 ...       # 直连后端排查用
+      BONE_E2E_KEEP_RESIDUE=1 python3 ...                           # 保留残留（供 UI 探针消费）
+
+基础设施（登录 / HTTP / 断言 / 建模与业务助手 / teardown / MySQL 直查）统一来自
+scripts/e2e/e2e_lib/ 公共层，本脚本只保留场景专属的数据构造与断言。
 """
 
 import json
 import os
-import subprocess
-import sys
-import time
-import urllib.error
-import urllib.request
 
-BASE = os.environ.get("BONE_E2E_BASE", "http://127.0.0.1:8888/api/v1")
-STATE_PATH = "/tmp/bone_e2e_fullchain_state.json"
-MYSQL = "/usr/local/mysql-8.0.31-macos12-x86_64/bin/mysql"
-USER, PWD = "admin", "123456"
-PASS, FAIL = [], []
-SUFFIX = str(int(time.time()))[-9:]
+from e2e_lib import config, http, mysql, report, teardown
+from e2e_lib.http import call, d_, ecode, etag_of
+from e2e_lib.modeling import put_schema, validate
+from e2e_lib.report import check, note, section
+
+SUFFIX = config.run_suffix()  # 运行级后缀：所有产物带它，teardown 按后缀定点回收
+
+# 主会话（admin）登录：失败即退出——没登录跑什么都是假红
+http.login()
 
 APP_CODE = f"e2e_om_{SUFFIX}"
 APP_NAME = f"设备运维管理{SUFFIX}"
@@ -69,94 +76,25 @@ FIELDS = [
 ]
 
 
-# ---------------------------------------------------------------- 基础设施
-def raw_call(base, method, path, body=None, headers=None):
-    h = {"Content-Type": "application/json"}
-    if headers:
-        h.update(headers)
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(base + path, data=data, headers=h, method=method)
+# ---------------------------------------------------------------- 运行级残留 teardown
+# 本次运行会在库里留下：e2e_om_<SUFFIX> 应用 / e2e_insp_<SUFFIX> 模块 / t_insp_order_<SUFFIX>
+# 实体定义及字段、动态物理表与运行期记录。默认退出时（含异常/sys.exit）自动回收，
+# 防止反复联调把库越堆越脏；BONE_E2E_KEEP_RESIDUE=1 跳过清理、保留现场供 UI 探针/排查。
+def _drop_state():
+    # 残已删则 state 文件必然过期：同步作废，防 UI 探针读到陈旧状态静默跑偏
     try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            txt = r.read().decode()
-            return r.status, (json.loads(txt) if txt else {}), dict(r.headers)
-    except urllib.error.HTTPError as e:
-        txt = e.read().decode()
-        try:
-            return e.code, json.loads(txt), dict(e.headers)
-        except Exception:
-            return e.code, {"raw": txt[:400]}, dict(e.headers)
+        os.remove(config.STATE_PATH)
+    except OSError:
+        pass
 
 
-def login():
-    s, d, _ = raw_call(BASE, "POST", "/iam/login", {"username": USER, "password": PWD})
-    tok = (d.get("data") or {}).get("token") if s == 200 else None
-    if not tok:
-        sys.exit(f"登录失败 {s} {str(d)[:200]}")
-    return tok
-
-
-TOKEN = login()
-HDR = {"Authorization": "Bearer " + TOKEN, "X-Tenant-Id": "0", "Content-Type": "application/json"}
-
-
-def call(method, path, body=None, extra=None):
-    h = dict(HDR)
-    if extra:
-        h.update(extra)
-    s, d, hdrs = raw_call(BASE, method, path, body, h)
-    return s, d, hdrs
-
-
-def ecode(d):
-    data = d.get("data")
-    return data.get("errorCode") if isinstance(data, dict) else None
-
-
-def d_(d, *keys, default=None):
-    cur = d.get("data")
-    for k in keys:
-        if not isinstance(cur, dict):
-            return default
-        cur = cur.get(k)
-    return default if cur is None else cur
-
-
-def etag_of(hdrs):
-    return hdrs.get("ETag") or hdrs.get("Etag") or hdrs.get("etag")
-
-
-def check(name, cond, detail=""):
-    if cond:
-        PASS.append(name)
-        print(f"  ✓ {name}")
-    else:
-        FAIL.append(f"{name} :: {detail}")
-        print(f"  ✗ {name}  ← {detail}")
-
-
-def section(t):
-    print(f"\n{'=' * 78}\n{t}\n{'=' * 78}")
-
-
-def note(t):
-    print(f"    · {t}")
-
-
-def mysql_query(sql):
-    """第二证据源：直查 MySQL（防「接口返回 200 但没落库」的假绿）。"""
-    r = subprocess.run(
-        [MYSQL, "-uroot", "-pmysql123", "bone", "-e", sql],
-        capture_output=True, text=True, timeout=30,
-    )
-    if r.returncode != 0:
-        return None, r.stderr.strip()[:200]
-    return r.stdout.strip(), None
+# 与原实现口径一致：仅在清理成功后才作废 state 文件（on_clean 只于成功路径回调）
+teardown.register(SUFFIX, on_clean=_drop_state)
 
 
 # ---------------------------------------------------------------- ① 应用创建
 section("① 应用创建（IAM 域 /api/v1/apps）")
-s, d, hdrs = call("POST", "/apps", {
+s, d = call("POST", "/apps", {
     "name": APP_NAME, "code": APP_CODE,
     "description": "E2E 全链路验证：设备巡检场景（应用→模块→模型→界面→数据）",
     "icon": "SettingOutlined",
@@ -167,27 +105,27 @@ APP_ID = d.get("data")
 check("应用创建返回雪花 ID", str(APP_ID or "").isdigit() and int(APP_ID) > 0, f"data={APP_ID}")
 
 # 负向：缺 code（@NotBlank）→ 400
-s, d, _ = call("POST", "/apps", {"name": "缺编码应用"})
+s, d = call("POST", "/apps", {"name": "缺编码应用"})
 check("负向：应用缺 code → 400", s == 400, f"status={s}")
 
-s, d, _ = call("GET", f"/apps/{APP_ID}")
+s, d = call("GET", f"/apps/{APP_ID}")
 check("应用详情回读一致",
       s == 200 and d_(d, "code") == APP_CODE and d_(d, "name") == APP_NAME,
       f"status={s} code={d_(d, 'code')}")
 
 # ---------------------------------------------------------------- ② 模块添加
 section("② 模块添加（/api/v1/apps/{appId}/modules）")
-s, d, _ = call("POST", f"/apps/{APP_ID}/modules", {
+s, d = call("POST", f"/apps/{APP_ID}/modules", {
     "name": MODULE_NAME, "code": MODULE_CODE, "description": "设备巡检工单建模",
 })
 check("模块创建 201", s == 201, f"status={s} {str(d)[:200]}")
 MODULE_ID = d.get("data")
 check("模块创建返回雪花 ID", str(MODULE_ID or "").isdigit() and int(MODULE_ID) > 0, f"data={MODULE_ID}")
 
-s, d, _ = call("POST", f"/apps/{APP_ID}/modules", {"code": MODULE_CODE})
+s, d = call("POST", f"/apps/{APP_ID}/modules", {"code": MODULE_CODE})
 check("负向：模块缺 name → 400", s == 400, f"status={s}")
 
-s, d, _ = call("GET", f"/apps/{APP_ID}/modules?page=1&size=50")
+s, d = call("GET", f"/apps/{APP_ID}/modules?page=1&size=50")
 mods = (d.get("data") or {}).get("records") or []
 hit = [m for m in mods if m.get("id") == MODULE_ID]
 check("模块列表回读一致（归属 appId）",
@@ -196,7 +134,7 @@ check("模块列表回读一致（归属 appId）",
 
 # ---------------------------------------------------------------- ③ 模型设计
 section("③ 模型设计（实体 + 8 字段，moduleId 归属模块）")
-s, d, _ = call("POST", "/metadata/entities", {
+s, d = call("POST", "/metadata/entities", {
     "name": ENTITY_NAME, "code": ENTITY_CODE, "displayName": ENTITY_NAME,
     "tableName": TABLE_NAME, "type": 1, "deliveryMode": 1, "moduleId": MODULE_ID,
     "description": "E2E 全链路验证实体：设备巡检工单",
@@ -204,18 +142,18 @@ s, d, _ = call("POST", "/metadata/entities", {
 check("实体创建 201", s == 201, f"status={s} {str(d)[:200]}")
 ENTITY_ID = d.get("data")
 
-s, d, _ = call("POST", "/metadata/entities", {
+s, d = call("POST", "/metadata/entities", {
     "name": ENTITY_NAME, "code": ENTITY_CODE, "displayName": ENTITY_NAME,
     "tableName": TABLE_NAME + "_x", "type": 1, "deliveryMode": 1, "moduleId": MODULE_ID,
 })
 check("负向：实体编码冲突 → 409 META_ENTITY_CODE_CONFLICT",
       s == 409 and ecode(d) == "META_ENTITY_CODE_CONFLICT", f"status={s} ecode={ecode(d)}")
 
-s, d, _ = call("GET", f"/metadata/entities/{ENTITY_ID}")
+s, d, hdrs = http.call_full("GET", f"/metadata/entities/{ENTITY_ID}")
 check("实体详情：归属模块 + DRAFT 态",
       s == 200 and d_(d, "moduleId") == MODULE_ID and d_(d, "status") in (0, "DRAFT"),
       f"status={d_(d, 'status')} moduleId={d_(d, 'moduleId')}")
-ent_etag = etag_of(_)
+ent_etag = etag_of(hdrs)
 
 for f in FIELDS:
     fb = {"name": f["code"], "code": f["code"], "displayName": f["label"], "type": f["type"]}
@@ -225,18 +163,18 @@ for f in FIELDS:
         fb["length"] = f["length"]
     if f.get("enumValues"):
         fb["enumValues"] = json.dumps(f["enumValues"], ensure_ascii=False)
-    s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/fields", fb)
+    s, d = call("POST", f"/metadata/entities/{ENTITY_ID}/fields", fb)
     check(f"字段创建 {f['code']}（{f['label']}/{f['type']}）201", s == 201, f"status={s} {str(d)[:160]}")
 
-s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/fields", {"name": "x", "displayName": "缺编码字段", "type": "STRING"})
+s, d = call("POST", f"/metadata/entities/{ENTITY_ID}/fields", {"name": "x", "displayName": "缺编码字段", "type": "STRING"})
 check("负向：字段缺 code → 400", s == 400, f"status={s}")
 
-s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/fields",
+s, d = call("POST", f"/metadata/entities/{ENTITY_ID}/fields",
                {"name": "equipment_no", "code": "equipment_no", "displayName": "重复", "type": "STRING"})
 check("负向：字段编码冲突 → 409 META_FIELD_CODE_CONFLICT",
       s == 409 and ecode(d) == "META_FIELD_CODE_CONFLICT", f"status={s} ecode={ecode(d)}")
 
-s, d, _ = call("GET", f"/metadata/entities/{ENTITY_ID}/fields?page=1&size=100")
+s, d = call("GET", f"/metadata/entities/{ENTITY_ID}/fields?page=1&size=100")
 frecs = (d.get("data") or {}).get("records") or []
 by_code = {f.get("code"): f for f in frecs}
 check("字段列表：8 字段全部落库", len(frecs) == 8, f"count={len(frecs)}")
@@ -251,25 +189,15 @@ check("ENUM 码表回读（equipment_type 3 项）",
       len(json.loads(by_code.get("equipment_type", {}).get("enumValues") or "[]")) == 3,
       f"enumValues={by_code.get('equipment_type', {}).get('enumValues')}")
 
-s, d, _ = call("GET", f"/metadata/entities/{ENTITY_ID}/validate")
-issues = d.get("data") or []
-errs = [i for i in issues if i.get("level") == "ERROR"]
+s, errs, _ = validate(ENTITY_ID, kind="entity")
 check("实体结构校验无 ERROR", len(errs) == 0, f"errors={errs[:2]}")
 
 # 发布前取最新 ETag（实体版本可能被此前的写操作推进；陈旧 If-Match 会 412 假红）
-s, d, hdrs = call("GET", f"/metadata/entities/{ENTITY_ID}")
+s, d, hdrs = http.call_full("GET", f"/metadata/entities/{ENTITY_ID}")
 ent_etag = etag_of(hdrs)
 
 # ---------------------------------------------------------------- ④ 界面设计
 section("④ 界面设计（ui-schema 草稿 → 发布闸门负向 → 正式 schema → 发布）")
-
-
-def put_schema(entity_id, schema):
-    """GET 当前锁 → PUT（If-Match）。锁口径：无草稿行用 -1（我不管并发），有行用库内 lockVersion。"""
-    s0, d0, _ = call("GET", f"/metadata/entities/{entity_id}/ui-schema")
-    lock = (d0.get("data") or {}).get("lockVersion")
-    lock_hdr = str(lock) if lock is not None else "-1"
-    return call("PUT", f"/metadata/entities/{entity_id}/ui-schema", schema, {"If-Match": lock_hdr})
 
 
 def build_schema(entity_code, sections):
@@ -303,32 +231,29 @@ BAD_SECTIONS = [
     {"id": "insp", "title": "巡检情况", "controls": GOOD_SECTIONS[1]["controls"] + [{"fieldCode": "ghost_field"}]},
 ]
 
-s, d, _ = put_schema(ENTITY_ID, build_schema(ENTITY_CODE, BAD_SECTIONS))
+s, d = put_schema(ENTITY_ID, build_schema(ENTITY_CODE, BAD_SECTIONS))
 check("草稿保存（含幽灵控件引用）200 —— 草稿是工作态不拦截", s == 200, f"status={s} {str(d)[:200]}")
 
-s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/ui-schema/validate")
-uissues = d.get("data") or []
-uerrs = [i for i in uissues if i.get("level") == "ERROR"]
+s, uerrs, _ = validate(ENTITY_ID)
 check("界面校验：幽灵控件报 ERROR（UI-REF-01）",
       any(i.get("code", "").startswith("UI-REF") and "ghost_field" in str(i.get("message", "")) for i in uerrs),
       f"issues={uerrs[:2]}")
 
 # 发布前取最新实体 ETag（此前的写操作可能推进版本；陈旧 If-Match 会 412 假红）
-s, d, hdrs = call("GET", f"/metadata/entities/{ENTITY_ID}")
+s, d, hdrs = http.call_full("GET", f"/metadata/entities/{ENTITY_ID}")
 ent_etag = etag_of(hdrs)
-s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/publish", None, {"If-Match": ent_etag or "*"})
+s, d = call("POST", f"/metadata/entities/{ENTITY_ID}/publish", None, {"If-Match": ent_etag or "*"})
 check("负向：ERROR 级界面问题 → 发布 409 META_PUBLISH_BLOCKED（闸门有牙）",
       s == 409 and ecode(d) == "META_PUBLISH_BLOCKED", f"status={s} ecode={ecode(d)} {str(d)[:160]}")
 
 # 正式 schema
-s, d, _ = put_schema(ENTITY_ID, build_schema(ENTITY_CODE, GOOD_SECTIONS))
+s, d = put_schema(ENTITY_ID, build_schema(ENTITY_CODE, GOOD_SECTIONS))
 check("正式 ui-schema 草稿 PUT 200", s == 200, f"status={s} {str(d)[:200]}")
 
-s, d, _ = call("POST", f"/metadata/entities/{ENTITY_ID}/ui-schema/validate")
-uerrs2 = [i for i in (d.get("data") or []) if i.get("level") == "ERROR"]
+s, uerrs2, _ = validate(ENTITY_ID)
 check("正式 schema 校验无 ERROR", len(uerrs2) == 0, f"errors={uerrs2[:2]}")
 
-s, d, _ = call("GET", f"/metadata/entities/{ENTITY_ID}/ui-schema")
+s, d = call("GET", f"/metadata/entities/{ENTITY_ID}/ui-schema")
 saved = d_(d, "json")
 if isinstance(saved, str):
     saved = json.loads(saved)
@@ -338,12 +263,12 @@ check("ui-schema 回读：6 列 / 2 分区 / 8 控件（含 INTEGER 工时）",
       and sum(len(x["controls"]) for x in saved["views"]["form"]["sections"]) == 8,
       f"json={str(saved)[:200]}")
 
-s, d, hdrs = call("GET", f"/metadata/entities/{ENTITY_ID}")
+s, d, hdrs = http.call_full("GET", f"/metadata/entities/{ENTITY_ID}")
 ent_etag = etag_of(hdrs)
-s, d, hdrs = call("POST", f"/metadata/entities/{ENTITY_ID}/publish", None, {"If-Match": ent_etag or "*"})
+s, d = call("POST", f"/metadata/entities/{ENTITY_ID}/publish", None, {"If-Match": ent_etag or "*"})
 check("实体发布 200", s == 200, f"status={s} {str(d)[:200]}")
 
-s, d, _ = call("GET", f"/metadata/entities/{ENTITY_ID}")
+s, d = call("GET", f"/metadata/entities/{ENTITY_ID}")
 check("发布后状态 = PUBLISHED(1)", d_(d, "status") in (1, "PUBLISHED"), f"status={d_(d, 'status')}")
 
 # ---------------------------------------------------------------- ⑤ 数据保存/查看/更新
@@ -362,22 +287,22 @@ R1 = rec(f"EQ-{SUFFIX}-1", "数控机床 CNC-1000", "cnc", "2026-10-15", "张伟
 R2 = rec(f"EQ-{SUFFIX}-2", "蒸汽锅炉 B-07", "boiler", "2026-10-16", "李娜", "abnormal", "压力表读数偏高，需一周内复检", 60)
 R3 = rec(f"EQ-{SUFFIX}-3", "装配输送线 L2", "conveyor", "2026-10-17", "王强", "recheck", "", 30)
 
-s, d, hdrs = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R1)
+s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R1)
 check("数据保存 R1 → 201", s == 201, f"status={s} {str(d)[:200]}")
 R1_ID = d_(d, "id")
 check("保存返回记录 ID", bool(R1_ID), f"data={str(d)[:160]}")
 
-s, d, _ = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", {k: v for k, v in R1.items() if k != "equipment_no"})
+s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", {k: v for k, v in R1.items() if k != "equipment_no"})
 check("负向：缺必填 equipment_no → 4xx", 400 <= s < 500, f"status={s} {str(d)[:160]}")
 
-s, d, _ = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R2)
+s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R2)
 check("数据保存 R2 → 201", s == 201, f"status={s}")
 R2_ID = d_(d, "id")
-s, d, _ = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R3)
+s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records", R3)
 check("数据保存 R3 → 201", s == 201, f"status={s}")
 R3_ID = d_(d, "id")
 
-s, d, hdrs = call("GET", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}")
+s, d, hdrs = http.call_full("GET", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}")
 got = d.get("data") or {}
 check("数据查看：R1 回读值一致（保存→查看闭环）",
       s == 200 and got.get("equipment_name") == "数控机床 CNC-1000"
@@ -388,14 +313,14 @@ rec_etag = etag_of(hdrs)
 check("详情响应带 ETag（并发令牌）", bool(rec_etag), f"etag={rec_etag}")
 
 # 更新：正确 ETag → 200；错误 ETag → 412
-s, d, _ = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
+s, d = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
                {"inspection_result": "recheck", "duration_minutes": 50, "inspector": "张伟"},
                {"If-Match": rec_etag})
 check("数据更新（正确 ETag）→ 200", s == 200, f"status={s} {str(d)[:160]}")
-s, d, _ = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
+s, d = call("PUT", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}",
                {"inspection_result": "normal"}, {"If-Match": '"99999"'})
 check("负向：错误 ETag → 412（乐观锁有牙）", s == 412, f"status={s} {str(d)[:160]}")
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records/{R1_ID}")
 check("更新后回读：结果=recheck 工时=50（412 未污染数据）",
       (d.get("data") or {}).get("inspection_result") == "recheck"
       and (d.get("data") or {}).get("duration_minutes") in (50, "50"),
@@ -404,7 +329,7 @@ check("更新后回读：结果=recheck 工时=50（412 未污染数据）",
 # ---------------------------------------------------------------- ⑥ 列表展示
 section("⑥ 列表展示（列投影 fields 契约 + q 精确筛选）")
 proj = "equipment_no,equipment_name,inspection_date,inspector,inspection_result"
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&fields={proj}")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&fields={proj}")
 rows = (d.get("data") or {}).get("records") or []
 total = (d.get("data") or {}).get("total")
 check("列表：3 条记录全部可见", s == 200 and int(total) == 3 and len(rows) == 3, f"total={total} rows={len(rows)}")
@@ -416,7 +341,7 @@ check("列投影：未请求的列不下发（abnormal_desc/duration_minutes 缺
       "abnormal_desc" not in row0 and "duration_minutes" not in row0,
       f"keys={list(row0.keys())}")
 
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&q=equipment_no:EQ-{SUFFIX}-2")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50&q=equipment_no:EQ-{SUFFIX}-2")
 rows_q = (d.get("data") or {}).get("records") or []
 check("q 精确筛选：equipment_no=EQ-…-2 恰好 1 条",
       len(rows_q) == 1 and rows_q[0].get("equipment_name") == "蒸汽锅炉 B-07",
@@ -424,27 +349,27 @@ check("q 精确筛选：equipment_no=EQ-…-2 恰好 1 条",
 
 # ---------------------------------------------------------------- ⑦ 回收站（软删可观测可恢复）
 section("⑦ 回收站（软删 → 可见 → 恢复）")
-s, d, _ = call("DELETE", f"/runtime/entities/{ENTITY_CODE}/records/{R3_ID}")
+s, d = call("DELETE", f"/runtime/entities/{ENTITY_CODE}/records/{R3_ID}")
 check("软删 R3 → 200", s == 200, f"status={s} {str(d)[:160]}")
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50")
 check("软删后用列表不见 R3", int((d.get("data") or {}).get("total") or -1) == 2,
       f"total={(d.get('data') or {}).get('total')}")
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records/deleted?page=1&size=50")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records/deleted?page=1&size=50")
 drows = (d.get("data") or {}).get("records") or []
 check("回收站可见 R3（软删不=永久删除）",
       any(str(r.get("id")) == str(R3_ID) for r in drows), f"deleted={len(drows)}")
-s, d, _ = call("POST", f"/runtime/entities/{ENTITY_CODE}/records/{R3_ID}/restore")
+s, d = call("POST", f"/runtime/entities/{ENTITY_CODE}/records/{R3_ID}/restore")
 check("恢复 R3 → 200", s == 200, f"status={s} {str(d)[:160]}")
-s, d, _ = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50")
+s, d = call("GET", f"/runtime/entities/{ENTITY_CODE}/records?page=1&size=50")
 check("恢复后用列表重新可见 R3", int((d.get("data") or {}).get("total") or -1) == 3,
       f"total={(d.get('data') or {}).get('total')}")
 
 # ---------------------------------------------------------------- ⑧ MySQL 落库核查
 section("⑧ MySQL 落库核查（第二证据源）")
-out, err = mysql_query(f"SELECT COUNT(*) FROM {TABLE_NAME}")
+out, err = mysql.query(f"SELECT COUNT(*) FROM {TABLE_NAME}")
 check(f"物理表 {TABLE_NAME} 存在且 3 行", out is not None and out.splitlines()[-1].strip() == "3",
       f"out={out} err={err}")
-out, err = mysql_query(
+out, err = mysql.query(
     f"SELECT equipment_no, equipment_name, equipment_type, inspection_result, duration_minutes "
     f"FROM {TABLE_NAME} WHERE equipment_no='EQ-{SUFFIX}-1'")
 line = out.splitlines()[-1] if out else ""
@@ -466,13 +391,9 @@ state = {
     ],
     "suffix": SUFFIX,
 }
-with open(STATE_PATH, "w") as f:
+with open(config.STATE_PATH, "w") as f:
     json.dump(state, f, ensure_ascii=False, indent=2)
-note(f"状态文件 → {STATE_PATH}")
+note(f"状态文件 → {config.STATE_PATH}")
 
 # ---------------------------------------------------------------- 汇总
-print(f"\n{'=' * 78}")
-print(f"API 全链路结果：PASS={len(PASS)} FAIL={len(FAIL)}")
-for f_ in FAIL:
-    print(f"  ✗ {f_}")
-sys.exit(1 if FAIL else 0)
+report.finish("汇总")

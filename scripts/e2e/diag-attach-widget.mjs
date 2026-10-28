@@ -2,8 +2,9 @@
  * 诊断「业务数据 → 新建记录」弹窗里 ATTACHMENT（材料证据）控件的真实 DOM，
  * 确认探针能否用 input[type=file] 模拟人工添加附件。
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载与登录凭证（BASE 保持本探针原默认口径，见下） */
+import { USER, PWD, loadPlaywright } from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
 const BASE = 'http://127.0.0.1:3000';
 const browser = await chromium.launch({ headless: true });
@@ -15,8 +16,8 @@ await page.waitForTimeout(2000);
 // 走 shell 登录
 const userInput = page.locator('input[placeholder*="用户名"], input[id*=username], input[name*=username]').first();
 if (await userInput.count()) {
-  await userInput.fill('admin');
-  await page.locator('input[type=password]').first().fill('123456');
+  await userInput.fill(USER);
+  await page.locator('input[type=password]').first().fill(PWD);
   await page.locator('button:has-text("登")').first().click();
   await page.waitForTimeout(3000);
   console.log('登录后 URL:', page.url());

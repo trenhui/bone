@@ -15,17 +15,23 @@
  *   3. 列表区文本发生变化（说明真的刷出了新数据，而非静默失败）。
  *
  * 用法：node scripts/e2e/ui-full-module-crud-probe.mjs
- * 依赖：playwright（绝对路径导入托管 workspace 里的包）
+ * 依赖：playwright（经共享 client 的 loadPlaywright 加载，见 e2e_lib/client.cjs）
  */
-import pw from '/Users/renhui.trh/.workbuddy/binaries/node/workspace/node_modules/playwright/index.js';
-const { chromium } = pw;
+/* 共享 client：playwright 加载 / SHOT_DIR / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
+import {
+  UI_BASE as BASE,
+  SHOT_DIR,
+  stamp,
+  USER as E2E_USER,
+  PWD as E2E_PWD,
+  loadPlaywright,
+  api,
+  tryLogin,
+  makeChecker,
+} from './e2e_lib/client.cjs';
+const { chromium } = loadPlaywright();
 
-const BASE = process.env.BONE_UI_BASE || 'http://localhost:3000';
-const API = process.env.BONE_E2E_API || 'http://127.0.0.1:8888/api/v1';
-const SHOT_DIR = '/Users/renhui.trh/wps/bone/logs';
-const STAMP = String(Date.now()).slice(-6);
-const E2E_USER = process.env.BONE_E2E_USER || 'admin';
-const E2E_PWD = process.env.BONE_E2E_PWD || '123456';
+const STAMP = stamp(6);
 
 /** 真实存在的订单 ID（登录后在 try 里回填）。发货物流等页面要求引用已存在订单。 */
 let REAL_ORDER_ID = null;
@@ -50,16 +56,11 @@ let API_TOKEN = null;
  */
 const pickEntityWithFields = async () => {
   try {
-    const r = await fetch(`${API}/masterdata/entities?page=1&size=50`, {
-      headers: { Authorization: `Bearer ${API_TOKEN}`, 'X-Tenant-Id': '0' },
-    });
-    const j = await r.json().catch(() => null);
+    const { data: j } = await api('GET', '/masterdata/entities?page=1&size=50', undefined, { token: API_TOKEN });
     for (const e of j?.data?.records || []) {
-      const fr = await fetch(`${API}/masterdata/entities/${e.id}/fields`, {
-        headers: { Authorization: `Bearer ${API_TOKEN}`, 'X-Tenant-Id': '0' },
-      }).catch(() => null);
+      const fr = await api('GET', `/masterdata/entities/${e.id}/fields`, undefined, { token: API_TOKEN }).catch(() => null);
       if (!fr || !fr.ok) continue;
-      const fj = await fr.json().catch(() => null);
+      const fj = fr.data;
       const arr = Array.isArray(fj?.data) ? fj.data : fj?.data?.records || [];
       if (arr.length && e.name) return String(e.name);
     }
@@ -75,11 +76,7 @@ const ONLY = (process.env.BONE_E2E_ONLY || '')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const results = [];
-const check = (name, cond, detail = '') => {
-  results.push({ name, ok: !!cond, detail });
-  console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ← ' + detail}`);
-};
+const { results, check, report } = makeChecker();
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
@@ -399,21 +396,13 @@ const autoFill = async (modal) => {
  */
 const cleanupE2EMenus = async () => {
   try {
-    const lr = await fetch(`${API}/iam/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }),
-    });
-    const lj = await lr.json();
-    const token = lj?.data?.token;
+    // 取不到 token 时按原口径跳过清理（不抛错）
+    const token = await tryLogin();
     if (!token) {
       console.log('E2E 菜单清理跳过：取 token 失败');
       return;
     }
-    const mr = await fetch(`${API}/iam/menus/tree`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    });
-    const mj = await mr.json();
+    const { data: mj } = await api('GET', '/iam/menus/tree', undefined, { token });
     const junk = [];
     const walk = (ns) => {
       for (const n of ns || []) {
@@ -424,10 +413,7 @@ const cleanupE2EMenus = async () => {
     walk(mj.data || []);
     let removed = 0;
     for (const m of junk) {
-      const r = await fetch(`${API}/iam/menus/${m.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-      });
+      const r = await api('DELETE', `/iam/menus/${m.id}`, undefined, { token });
       if (r.ok) removed++;
     }
     check(`E2E 菜单自净（残留 ${junk.length} 条，删除 ${removed} 条）`, junk.length === removed,
@@ -461,18 +447,9 @@ try {
   // 菜单树：走独立 API 会话拿运行时真源（页面内 fetch 不一定带上网关要求的所有头）
   let menus = [];
   try {
-    const lr = await fetch(`${API}/iam/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: E2E_USER, password: E2E_PWD }),
-    });
-    const lj = await lr.json();
-    const token = lj?.data?.token;
+    const token = await tryLogin();
     API_TOKEN = token;
-    const mr = await fetch(`${API}/iam/menus/tree`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    });
-    const mj = await mr.json();
+    const { data: mj } = await api('GET', '/iam/menus/tree', undefined, { token });
     const out = [];
     const walk = (ns, parent) => {
       for (const n of ns || []) {
@@ -488,11 +465,9 @@ try {
     //     ★ 且必须 PAID —— Order#ship 只接受已支付态，CREATED/CANCELLED/SHIPPED 都会被
     //       409 BP_ORDER_STATUS_CONFLICT 拒。库里 CANCELLED 占比最高，直接取首条必翻车。
     //   · 客户 ID / 商品 ID：下单会同步预校验「商品已发布 + 库存充足」（随机 → 409）。
-    const or = await fetch(`${API}/orders?page=1&size=50`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-    }).catch(() => null);
+    const or = await api('GET', '/orders?page=1&size=50', undefined, { token }).catch(() => null);
     if (or && or.ok) {
-      const oj = await or.json().catch(() => null);
+      const oj = or.data;
       const recs = oj?.data?.records || [];
       const pick = recs.find((r) => r.status === 'PAID') || recs[0];
       if (recs.length) {
@@ -504,11 +479,9 @@ try {
         // 不在 MD_PRODUCT 主数据里，走普通下单会被 409 BP_ORDER_PRODUCT_NOT_PUBLISHED 拦。
         const candidates = [];
         for (const o of recs.slice(0, 8)) {
-          const dr = await fetch(`${API}/orders/${o.id}`, {
-            headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '0' },
-          }).catch(() => null);
+          const dr = await api('GET', `/orders/${o.id}`, undefined, { token }).catch(() => null);
           if (!dr || !dr.ok) continue;
-          const dj = await dr.json().catch(() => null);
+          const dj = dr.data;
           for (const it of dj?.data?.items || []) {
             if (it.productId != null) candidates.push(String(it.productId));
           }
@@ -689,8 +662,7 @@ try {
 } catch (e) {
   check('探针执行未抛异常', false, String(e.message).slice(0, 240));
 } finally {
-  const pass = results.filter((r) => r.ok).length;
-  console.log(`\n全模块建数据巡检汇总：通过 ${pass} / ${results.length}`);
+  const { ok } = report('全模块建数据巡检汇总');
   await browser.close();
-  process.exit(pass === results.length ? 0 : 1);
+  process.exit(ok ? 0 : 1);
 }

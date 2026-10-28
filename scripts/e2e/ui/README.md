@@ -27,6 +27,19 @@ python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']
 
 ## 写新探针前必读（都是本轮踩过的坑）
 
+0. **样板走共享 client**：登录凭证、CHROME、UI BASE、playwright 加载等重复样板统一从
+   `scripts/e2e/e2e_lib/client.cjs` 取——`ui/` 下用 `require('../e2e_lib/client.cjs')`
+   （根目录探针用 `require('./e2e_lib/client.cjs')`，`.mjs` 用 `import { ... } from`）：
+
+   ```js
+   const { loadPlaywright, CHROME, UI_BASE: BASE, USER, PWD } = require('../e2e_lib/client.cjs');
+   const { chromium } = loadPlaywright();
+   ```
+
+   `loadPlaywright()` 先常规解析 `playwright`（命中 NODE_PATH），失败自动退回 workspace
+   绝对路径——`NODE_PATH` 导出不再是硬前提。带 token 的 HTTP 请求优先用 client 的
+   `login()/api()`，断言收集可用 `makeChecker()`；场景专属逻辑（本地 `report`/自定义汇总
+   格式等）保留在探针内。
 1. **路由清单唯一真源是运行时侧边栏**（`GET /api/v1/iam/menus/tree` 或读 DOM 菜单项）。
    静态 grep `path:` 拿不全 —— 9 个应用里只有 masterdata 用 `path:` 风格。
 2. **iam 是两级菜单**：点子项前先展开父 SubMenu（判断 `aria-expanded` 幂等），

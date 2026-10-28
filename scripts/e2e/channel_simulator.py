@@ -38,11 +38,9 @@ import json
 import sys
 import time
 
-import lib
+from e2e_lib import config, http
+from e2e_lib.sign import hmac_sign
 
-# 与 MockPaymentSignaturePortAdapter#MOCK_SECRET 一致。
-# 注意：这是"渠道侧密钥"，模拟器持有它是合理的（真实渠道也持有自己的签名密钥）。
-# 它硬编码在源码里是 Mock 验签适配器的既有事实，本脚本只是复刻，不新增风险。
 ACTION_SUCCESS = "success"
 ACTION_FAIL = "fail"
 
@@ -57,7 +55,10 @@ def _data(resp):
 
 def fetch_payment(payment_id, token, tenant):
     """读支付单详情（读端点需凭证，故这里用管理员 token）。"""
-    st, j = lib.http("GET", f"/api/v1/payments/{payment_id}", token=token, tenant=tenant)
+    st, j, _ = http.raw_call(
+        config.BASE, "GET", f"/payments/{payment_id}",
+        headers=http.session_headers(token, tenant),
+    )
     return st, _data(j), j
 
 
@@ -91,7 +92,7 @@ def main():
 
     # 读端点需要凭证（模拟器只在"回调"这一跳扮演渠道，查询仍是普通用户行为）
     try:
-        token = lib.login("admin", "123456", tenant=args.tenant)
+        token = http.Session(config.USER, config.PWD, tenant=args.tenant).login()
     except SystemExit as e:
         print(f"[ERROR] 登录失败，无法读取支付单：{e}")
         return 1
@@ -117,8 +118,8 @@ def main():
         return 0
 
     trade_no = f"SIM{int(time.time() * 1000)}"
-    # lib.hmac_sign 要求 amount 为字符串（内部自行 stripTrailingZeros，与服务端口径一致）
-    signature = lib.hmac_sign(pid, trade_no, str(amount))
+    # hmac_sign 要求 amount 为字符串（内部自行 stripTrailingZeros，与服务端口径一致）
+    signature = hmac_sign(pid, trade_no, str(amount))
     if args.tamper_signature:
         signature = "deadbeef" * 8
 
@@ -131,9 +132,11 @@ def main():
     }
 
     print(f"\n→ 渠道回调（无凭证，直打网关）：action={args.action} tradeNo={trade_no}")
-    # 关键：token=None —— 真实渠道没有我方 JWT，必须走 permitAll 白名单
-    st, j = lib.http(
-        "POST", "/api/v1/payments/callback", body, token=None, tenant=args.tenant
+    # 关键：只带租户头、不带 Authorization —— 真实渠道没有我方 JWT，
+    # 必须走 permitAll 白名单（这同时也在回归"网关确实放通了 callback"）
+    st, j, _ = http.raw_call(
+        config.BASE, "POST", "/payments/callback", body,
+        headers={"X-Tenant-Id": args.tenant},
     )
     print(f"  HTTP {st}  {json.dumps(j, ensure_ascii=False)[:280]}")
 
