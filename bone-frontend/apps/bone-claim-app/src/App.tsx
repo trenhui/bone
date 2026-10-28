@@ -1,5 +1,5 @@
 import {
-  BrowserRouter,
+  HashRouter,
   Navigate,
   Route,
   Routes,
@@ -105,9 +105,13 @@ const AppShell: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AntdApp>
-      <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+      {/* 必须用 HashRouter：微应用内路由挂在 URL hash 上（/claim#/review），
+          与 shell 的 MICRO_APP_ROUTE_PREFIXES 约定（pathname#/hash）一致。
+          此前误用 BrowserRouter 会去读 pathname=/claim 而忽略 #/review，
+          导致内部 <Routes> 永远匹配不到业务页面 ⇒ 内容区空白。 */}
+      <HashRouter future={{ v7_relativeSplatPath: true }}>
         <AppShell />
-      </BrowserRouter>
+      </HashRouter>
     </AntdApp>
   );
 };
