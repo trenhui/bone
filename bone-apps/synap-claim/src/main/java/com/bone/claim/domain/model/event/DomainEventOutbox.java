@@ -61,6 +61,10 @@ public class DomainEventOutbox extends TenantAbstractEntity<Long> {
     this.payload = payload;
     this.status = STATUS_PENDING;
     this.retryCount = 0;
+    // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，append 时必须显式赋值
+    java.util.Date now = new java.util.Date();
+    setCreatedAt(now);
+    setUpdatedAt(now);
   }
 
   public static DomainEventOutbox of(
@@ -71,6 +75,7 @@ public class DomainEventOutbox extends TenantAbstractEntity<Long> {
   /** 派发成功：刷为 SENT。 */
   public void markSent() {
     this.status = STATUS_SENT;
+    setUpdatedAt(new java.util.Date());
   }
 
   /**
@@ -88,5 +93,6 @@ public class DomainEventOutbox extends TenantAbstractEntity<Long> {
       this.status = STATUS_PENDING;
       this.nextRetryAt = nextRetryAt;
     }
+    setUpdatedAt(new java.util.Date());
   }
 }

@@ -87,6 +87,15 @@ public class InspectionRecord extends TenantAggregateRoot<Long> {
   @Column(name = "version")
   private Long version;
 
+  // 审计列：基类（TenantAggregateRoot）不含审计字段（见其类注释「审计由子类自行声明」），
+  // SDK 只映射 @Column 字段——漏声明会让 INSERT 不带 created_at/updated_at，
+  // 而 DDL 这两列 NOT NULL 无默认值，发起抽检必然 1364。
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   private InspectionRecord(
       Long id,
       Long tenantId,
@@ -106,6 +115,9 @@ public class InspectionRecord extends TenantAggregateRoot<Long> {
     this.inspectType = inspectType.name();
     this.status = InspectionStatus.PENDING.name();
     this.version = 0L;
+    Instant now = Instant.now();
+    this.createdAt = now;
+    this.updatedAt = now;
   }
 
   /**
@@ -212,6 +224,7 @@ public class InspectionRecord extends TenantAggregateRoot<Long> {
     this.diffDetail = hasDiffDetail ? diffDetail.trim() : null;
     this.actionTaken = effectiveAction.name();
     this.targetStatus = normalizedTarget;
+    this.updatedAt = Instant.now();
 
     addDomainEvent(
         new InspectionConcludedEvent(

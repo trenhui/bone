@@ -66,6 +66,15 @@ public class Evidence extends TenantAggregateRoot<Long> {
   @Column(name = "locked_at")
   private Instant lockedAt;
 
+  // 审计列：基类（TenantAggregateRoot）按设计不含审计字段（见其类注释「审计由子类自行声明」），
+  // SDK 只映射 @Column 字段——漏声明会让 INSERT 不带 created_at/updated_at，
+  // 而 0058 DDL 这两列 NOT NULL 无默认值，登记材料必然 1364。
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   @Version
   @Column(name = "version")
   private Long version;
@@ -86,7 +95,14 @@ public class Evidence extends TenantAggregateRoot<Long> {
     this.contentHash = contentHash;
     this.ocrStatus = OcrStatus.PENDING.name();
     this.verifyValid = verifyValid;
+    // 解析结果列是 NOT NULL DEFAULT ''（见 0058 DDL）：登记时尚未解析，必须显式落 ''。
+    // 留 null 会让 SDK 的 insert 带上 NULL，DB 直接 400「数据违反完整性约束」——
+    // 表现是「材料一上传就失败」，但错误文案与根因（少初始化一个字段）毫不相干。
+    this.extractedJson = "";
     this.locked = 0;
+    Instant now = Instant.now();
+    this.createdAt = now;
+    this.updatedAt = now;
   }
 
   /**
@@ -135,13 +151,15 @@ public class Evidence extends TenantAggregateRoot<Long> {
     }
     this.ocrStatus = status.name();
     this.ocrConfidence = confidence;
-    this.extractedJson = extractedJson;
+    // 列 NOT NULL：调用方只回填状态/置信度（不传 json）时必须落 ''，否则 insert/update 触发约束 400
+    this.extractedJson = extractedJson == null ? "" : extractedJson;
     if (verifyValid != null && !verifyValid.isBlank()) {
       this.verifyValid = verifyValid;
     }
     if (confidence != null && confidence.compareTo(new java.math.BigDecimal("0.7")) < 0) {
       this.ocrStatus = OcrStatus.MANUAL.name();
     }
+    this.updatedAt = Instant.now();
   }
 
   /** 人工补录（替代解析结果，同样受锁定约束）。 */
@@ -151,7 +169,9 @@ public class Evidence extends TenantAggregateRoot<Long> {
       throw new DomainException("补录人不能为空");
     }
     this.ocrStatus = OcrStatus.MANUAL.name();
-    this.extractedJson = extractedJson;
+    // 同上：列 NOT NULL，空补录落 '' 而非 null
+    this.extractedJson = extractedJson == null ? "" : extractedJson;
+    this.updatedAt = Instant.now();
   }
 
   /** 锁定证据集（理算前置，§4.3 不变量；发 {@link EvidenceLockedEvent}）。 */
@@ -161,6 +181,7 @@ public class Evidence extends TenantAggregateRoot<Long> {
     }
     this.locked = 1;
     this.lockedAt = Instant.now();
+    this.updatedAt = Instant.now();
     addDomainEvent(
         new EvidenceLockedEvent(claimId, getTenantId(), evidenceCount, operatorId, Instant.now()));
   }

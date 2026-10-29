@@ -95,6 +95,15 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   @Column(name = "version")
   private Long version;
 
+  // 审计列：基类（TenantAggregateRoot）不含审计字段（见其类注释「审计由子类自行声明」），
+  // SDK 只映射 @Column 字段——漏声明会让 INSERT 不带 created_at/updated_at，
+  // 而 0058 DDL 这两列 NOT NULL 无默认值，执行理算必然 1364。
+  @Column(name = "created_at", nullable = false)
+  private java.time.Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private java.time.Instant updatedAt;
+
   private Adjustment(Long id, Long tenantId, Long claimId, String ruleVersion) {
     setId(id);
     setTenantId(tenantId);
@@ -102,6 +111,9 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     this.ruleVersion = ruleVersion == null ? "" : ruleVersion;
     this.resultStatus = ResultStatus.FROZEN.name();
     this.totalAmount = ZERO;
+    java.time.Instant now = java.time.Instant.now();
+    this.createdAt = now;
+    this.updatedAt = now;
   }
 
   /**
@@ -133,24 +145,28 @@ public class Adjustment extends TenantAggregateRoot<Long> {
   public void recalculate(List<ClaimWithItemsProjection> rows, AdjLiability liability) {
     requireModifiable("已确认的理算结果禁止重算");
     apply(rows, liability);
+    this.updatedAt = java.time.Instant.now();
   }
 
   /** 核赔确认（frozen → claim，同额转移不二次占用）。 */
   public void confirm() {
     requireModifiable("已确认的理算结果不可重复确认");
     this.resultStatus = ResultStatus.CONFIRMED.name();
+    this.updatedAt = java.time.Instant.now();
   }
 
   /** 解冻（释放冻结额度，回到可重算态）。 */
   public void unfreeze() {
     requireModifiable("已确认的理算结果禁止解冻（须先走冲正）");
     this.resultStatus = ResultStatus.UNFROZEN.name();
+    this.updatedAt = java.time.Instant.now();
   }
 
   /** 回滚（拒赔/撤销：释放占用）。 */
   public void rollback() {
     requireModifiable("已确认的理算结果禁止直接回滚（须先走冲正）");
     this.resultStatus = ResultStatus.ROLLBACKED.name();
+    this.updatedAt = java.time.Instant.now();
   }
 
   public ResultStatus resultStatusEnum() {
@@ -266,7 +282,7 @@ public class Adjustment extends TenantAggregateRoot<Long> {
     this.formulaHash = sha256(snapshot);
     this.totalAmount = feePayout;
     this.lines = new ArrayList<>();
-    this.lines.add(
+    AdjustmentLine outputLine =
         AdjustmentLine.of(
             null,
             getId(),
@@ -281,7 +297,10 @@ public class Adjustment extends TenantAggregateRoot<Long> {
             feeRemain.setScale(RESULT_SCALE, RoundingMode.HALF_UP),
             zeroReason,
             "".equals(zeroReason) ? "" : reasonCodeOf(zeroReason),
-            this.formulaHash));
+            this.formulaHash);
+    // 明细行随聚合落库，租户口径与聚合根一致（t_adj_calculation_line.tenant_id NOT NULL）
+    outputLine.setTenantId(getTenantId());
+    this.lines.add(outputLine);
   }
 
   /** 零赔付归因 → 受控原因码（§8.3 字典映射，禁自由文本）。 */

@@ -450,6 +450,16 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
     transition(ClaimStatus.FINISHED, "DECISION_AUTO", operatorId);
   }
 
+  /**
+   * 支付完成结案（42 → 50；小额无复核段，资金支付即终点，§6.3）。
+   *
+   * <p>幂等口径：只接受 ADJUSTED；大额案复核通过时已是 FINISHED，不重复迁移。
+   */
+  public void finishUponPaid(String operatorId) {
+    requireStatus(ClaimStatus.ADJUSTED, "已审核（未进入复核）的案件才能支付结案");
+    transition(ClaimStatus.FINISHED, "SETTLE_PAID", operatorId);
+  }
+
   /** 超期关单（21 → 45；§6.6 SUBMITTING 超 30d 未补件）。 */
   public void closeForStale(String operatorId) {
     requireStatus(ClaimStatus.EVIDENCE_SUBMITTING, "补录中才能超期关单");
@@ -659,6 +669,11 @@ public class ClaimCase extends TenantAggregateRoot<Long> {
   /** 申请金额（Money 口径由调用方按 DECIMAL(12,2) 使用）。 */
   public java.math.BigDecimal claimAmount() {
     return claimAmount;
+  }
+
+  /** 核定金额（初审/人工决策锁定；未核定为 null）。 */
+  public java.math.BigDecimal approvedAmount() {
+    return approvedAmount;
   }
 
   /** 明细类别集合（供测试与读侧校验）。 */

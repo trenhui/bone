@@ -78,6 +78,10 @@ public class ReconciliationReport extends TenantAbstractEntity<Long> {
     report.counterAmount = counterAmount == null ? BigDecimal.ZERO : counterAmount;
     report.status = diffCount == 0 ? STATUS_BALANCED : STATUS_DIFF;
     report.checkedAt = checkedAt;
+    // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，落库前必须显式赋值
+    java.util.Date now = new java.util.Date();
+    report.setCreatedAt(now);
+    report.setUpdatedAt(now);
     return report;
   }
 }

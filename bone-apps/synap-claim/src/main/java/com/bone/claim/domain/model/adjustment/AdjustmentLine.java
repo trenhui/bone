@@ -17,6 +17,15 @@ import lombok.Getter;
 @Table("t_adj_calculation_line")
 public class AdjustmentLine extends AbstractEntity {
 
+  /** 租户（列 NOT NULL）：明细行随理算聚合落库，从聚合根继承租户口径，缺列即 1364。 */
+  @Column(name = "tenant_id", nullable = false)
+  private Long tenantId;
+
+  /** 仅聚合根同包赋值（Adjustment.apply）。 */
+  void setTenantId(Long tenantId) {
+    this.tenantId = tenantId;
+  }
+
   @Column(name = "calculation_id")
   private Long calculationId;
 
@@ -98,6 +107,10 @@ public class AdjustmentLine extends AbstractEntity {
     this.zeroReason = zeroReason;
     this.rejectType = rejectType;
     this.formulaHash = formulaHash;
+    // 审计列由基类映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，缺赋值即 1364（批量插入整体失败）
+    java.util.Date now = new java.util.Date();
+    setCreatedAt(now);
+    setUpdatedAt(now);
   }
 
   static AdjustmentLine of(

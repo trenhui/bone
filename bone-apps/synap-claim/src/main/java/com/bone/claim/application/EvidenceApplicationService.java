@@ -27,6 +27,7 @@ public class EvidenceApplicationService {
   private final EvidenceRepository evidenceRepository;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
+  private final com.bone.claim.domain.repository.ClaimCaseRepository claimCaseRepository;
 
   /** 登记材料入参。 */
   public record RegisterEvidence(
@@ -106,7 +107,26 @@ public class EvidenceApplicationService {
       evidenceRepository.save(evidence);
       domainEventPublisher.publishFrom(evidence);
     }
+    reflowEvidenceSubmitting(claimId, operatorId);
     return evidences.size();
+  }
+
+  /**
+   * 补录完成回流（21 → 10）：案件处于 {@code EVIDENCE_SUBMITTING}（核赔员要求补件）且证据集被 再次锁定时，视为「补录完成」——聚合的 {@code
+   * evidenceSubmitted} 是唯一合法回流入口。
+   *
+   * <p>此前 {@code evidenceSubmitted} 只有聚合方法与应用服务方法、没有任何适配器调用它： 补件在界面上传完成后案件永远停在 21，仅能等 30
+   * 天超期关单——补件循环是条死路。 「补齐并锁定」正是补录完成的业务时点（§4.3 锁定后证据集不可改）。
+   */
+  private void reflowEvidenceSubmitting(long claimId, String operatorId) {
+    var claim = claimCaseRepository.findById(claimId);
+    if (claim != null
+        && com.bone.claim.domain.model.claim.valueobject.ClaimStatus.EVIDENCE_SUBMITTING
+            == claim.status()) {
+      claim.evidenceSubmitted(operatorId);
+      claimCaseRepository.save(claim);
+      domainEventPublisher.publishFrom(claim);
+    }
   }
 
   @Transactional(readOnly = true)

@@ -72,6 +72,10 @@ public class ReconciliationDiff extends TenantAbstractEntity<Long> {
     diff.remoteStatus = remoteStatus == null ? "" : remoteStatus;
     diff.resolution = RESOLUTION_PENDING;
     diff.resolvedBy = "";
+    // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，落库前必须显式赋值
+    java.util.Date now = new java.util.Date();
+    diff.setCreatedAt(now);
+    diff.setUpdatedAt(now);
     return diff;
   }
 }

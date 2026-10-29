@@ -62,6 +62,11 @@ public class ClaimCaseTrack extends TenantAbstractEntity<Long> {
     this.operatorId = operatorId;
     this.operatorName = operatorName;
     this.remark = remark;
+    // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，
+    // 不赋值时流水插入触发 1364（append-only 表，created_at 即「发生时间」）
+    java.util.Date now = new java.util.Date();
+    setCreatedAt(now);
+    setUpdatedAt(now);
   }
 
   public static ClaimCaseTrack of(

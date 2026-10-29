@@ -92,6 +92,15 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
   @Column(name = "version")
   private Long version;
 
+  // 审计列：基类（TenantAggregateRoot）不含审计字段（见其类注释「审计由子类自行声明」），
+  // SDK 只映射 @Column 字段——漏声明会让 INSERT 不带 created_at/updated_at，
+  // 而 DDL 这两列 NOT NULL 无默认值，执行决策图必然 1364。
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   private DecisionExecution(
       Long id,
       Long tenantId,
@@ -114,6 +123,8 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     this.status = Status.RUNNING.name();
     this.activeFlag = 1;
     this.startedAt = Instant.now();
+    this.createdAt = this.startedAt;
+    this.updatedAt = this.startedAt;
   }
 
   /** 启动一次执行（活跃唯一：同案已有活跃执行时由 DB 唯一约束拦截）。 */
@@ -152,7 +163,7 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     if (statusEnum() != Status.RUNNING) {
       throw new DomainException("执行已终结，不可追加轨迹（只追加语义）");
     }
-    this.traces.add(
+    DecisionTraceNode node =
         new DecisionTraceNode(
             traceId,
             claimId,
@@ -164,7 +175,10 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
             output,
             nodeStatus,
             actionResult,
-            durationMs));
+            durationMs);
+    // 轨迹随执行聚合落库，租户口径与聚合根一致（claim_decision_trace.tenant_id NOT NULL）
+    node.setTenantId(getTenantId());
+    this.traces.add(node);
   }
 
   /**
@@ -204,6 +218,7 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     this.finishedAt = Instant.now();
     this.durationMs = (int) (this.finishedAt.toEpochMilli() - this.startedAt.toEpochMilli());
     this.activeFlag = null;
+    this.updatedAt = this.finishedAt;
   }
 
   /** 执行失败（如确定性节点异常中止）：置失败并释放活跃位，结论强制转人工。 */
@@ -217,6 +232,7 @@ public class DecisionExecution extends TenantAggregateRoot<Long> {
     this.activeFlag = null;
     this.decisionResult = DecisionResult.MANUAL_REQUIRED.name();
     this.decisionTier = DecisionTier.MANUAL.name();
+    this.updatedAt = this.finishedAt;
   }
 
   public Status statusEnum() {

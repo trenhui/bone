@@ -139,6 +139,15 @@ public class SettlementApplicationService {
         order.getSettlementNo(),
         attempt);
 
+    // 小额直付结案（42 → 50）：大额案在双人复核通过时已终态（44→50），此处按状态幂等跳过。
+    // 没有这一步，<1 万案件支付完成后永远停在 ADJUSTED——不能结案、进不了后督抽检样本。
+    com.bone.claim.domain.model.claim.ClaimCase claim =
+        claimCaseApplicationService.getClaimAggregate(claimId);
+    if (claim.status() == com.bone.claim.domain.model.claim.valueobject.ClaimStatus.ADJUSTED) {
+      claim.finishUponPaid(operatorId);
+      claimCaseApplicationService.saveClaim(claim);
+    }
+
     domainEventPublisher.publishFrom(order);
     return toResult(order);
   }

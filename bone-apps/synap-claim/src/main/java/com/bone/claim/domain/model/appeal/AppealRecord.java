@@ -73,6 +73,15 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
   @Column(name = "version")
   private Long version;
 
+  // 审计列：基类（TenantAggregateRoot）不含审计字段（见其类注释「审计由子类自行声明」），
+  // SDK 只映射 @Column 字段——漏声明会让 INSERT 不带 created_at/updated_at，
+  // 而 DDL 这两列 NOT NULL 无默认值，发起申诉必然 1364。
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
+
   private AppealRecord(
       Long id,
       Long tenantId,
@@ -92,6 +101,8 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
     this.submittedBy = submittedBy;
     this.submittedAt = Instant.now();
     this.caseClosedAt = caseClosedAt;
+    this.createdAt = this.submittedAt;
+    this.updatedAt = this.submittedAt;
   }
 
   /** 发起申诉（受理）。超时或非终态 → 拒。 */
@@ -139,6 +150,7 @@ public class AppealRecord extends TenantAggregateRoot<Long> {
     this.reviewedAt = Instant.now();
     this.reviewResult = result.name();
     this.reviewReason = reason;
+    this.updatedAt = this.reviewedAt;
   }
 
   public AppealStatus statusEnum() {

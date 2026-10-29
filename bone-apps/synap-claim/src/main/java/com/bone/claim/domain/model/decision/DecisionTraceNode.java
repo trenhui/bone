@@ -16,6 +16,15 @@ import lombok.Getter;
 @Table("claim_decision_trace")
 public class DecisionTraceNode extends AbstractEntity {
 
+  /** 租户（列 NOT NULL）：轨迹随决策执行落库，从执行聚合继承租户口径，缺列即 1364。 */
+  @Column(name = "tenant_id", nullable = false)
+  private Long tenantId;
+
+  /** 仅聚合根同包赋值（DecisionExecution#appendTrace）。 */
+  void setTenantId(Long tenantId) {
+    this.tenantId = tenantId;
+  }
+
   @Column(name = "trace_id", nullable = false)
   private String traceId;
 
@@ -72,7 +81,10 @@ public class DecisionTraceNode extends AbstractEntity {
     this.output = output;
     this.actionResult = actionResult == null ? status.name() : actionResult;
     this.durationMs = durationMs == null ? 0 : durationMs;
-    setCreatedAt(new Date());
+    // 审计列由基类映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，缺赋值即 1364
+    Date now = new Date();
+    setCreatedAt(now);
+    setUpdatedAt(now);
   }
 
   public DecisionNodeType nodeTypeEnum() {

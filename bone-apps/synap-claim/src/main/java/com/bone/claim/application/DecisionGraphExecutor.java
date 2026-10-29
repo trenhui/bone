@@ -105,17 +105,26 @@ public class DecisionGraphExecutor {
     }
 
     DecisionGraph graph = DecisionGraph.canonical();
+    // 版本快照是 DDL NOT NULL 列（复算/回放锚点）：调用方未显式传版本时取默认 "v1"，
+    // 与 canonical() 图一一对应——绝不让 null 流到 INSERT 才炸（"数据违反完整性约束"）。
+    DecisionVersions effective =
+        new DecisionVersions(
+            isBlank(versions.graphVersion()) ? "v1" : versions.graphVersion(),
+            isBlank(versions.ruleVersion()) ? "v1" : versions.ruleVersion(),
+            versions.modelVersion(),
+            versions.promptVersion(),
+            versions.catalogVersion());
     DecisionExecution execution =
         DecisionExecution.start(
             DistributedIdGenerator.generateLongId(),
             tenantPort.currentTenantId(),
             UUID.randomUUID().toString(),
             claimId,
-            versions.graphVersion(),
-            versions.ruleVersion(),
-            versions.modelVersion(),
-            versions.promptVersion(),
-            versions.catalogVersion());
+            effective.graphVersion(),
+            effective.ruleVersion(),
+            effective.modelVersion(),
+            effective.promptVersion(),
+            effective.catalogVersion());
 
     Map<String, Object> outputs = new HashMap<>();
     BigDecimal confidence = null;
@@ -337,5 +346,9 @@ public class DecisionGraphExecutor {
 
   private static String escape(String s) {
     return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+  }
+
+  private static boolean isBlank(String s) {
+    return s == null || s.isBlank();
   }
 }

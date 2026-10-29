@@ -80,6 +80,23 @@ public class ClaimItem extends TenantAbstractEntity<Long> {
     return category == null ? ItemCategory.SERVICE : ItemCategory.ofName(category);
   }
 
+  /**
+   * 初审核定：回填合理费用（不变量 0 ≤ 合理 ≤ 明细金额），差额记为不合理费用。
+   *
+   * <p>理算基准（A6）只累计明细级 {@code valid_amount}；案件级核定金额必须先分摊到明细才有意义。
+   */
+  public void approveValidAmount(java.math.BigDecimal approvedValid) {
+    if (approvedValid == null || approvedValid.signum() < 0) {
+      throw new IllegalArgumentException("合理费用不能为负");
+    }
+    if (approvedValid.compareTo(this.amount) > 0) {
+      throw new IllegalArgumentException("合理费用不能超过明细金额");
+    }
+    this.validAmount = approvedValid;
+    this.invalidAmount = this.amount.subtract(approvedValid);
+    setUpdatedAt(new java.util.Date());
+  }
+
   public static ClaimItem of(
       long id,
       Long tenantId,

@@ -13,6 +13,7 @@ import com.bone.claim.domain.model.claim.valueobject.ClaimStatus;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.HangUpType;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ClaimCaseApplicationService {
 
   private final ClaimCaseRepository claimCaseRepository;
+  private final ClaimItemRepository claimItemRepository;
   private final PolicyQueryPort policyQueryPort;
   private final TenantPort tenantPort;
   private final DomainEventPublisher domainEventPublisher;
@@ -140,6 +142,7 @@ public class ClaimCaseApplicationService {
     ClaimCase claim = loadForUpdate(claimId);
     claim.completePreExam(operatorId, approvedAmount);
     save(claim);
+    backfillItemValidAmounts(claimId, approvedAmount);
   }
 
   /** 转人工核赔（12 → 40）。 */
@@ -174,6 +177,9 @@ public class ClaimCaseApplicationService {
     ClaimCase claim = loadForUpdate(claimId);
     claim.decide(decision, reviewerId, comment, rejectType, approvedAmount);
     save(claim);
+    if (decision == Decision.APPROVED) {
+      backfillItemValidAmounts(claimId, claim.approvedAmount());
+    }
   }
 
   /** 发起双人复核（42 → 44；≥1 万）。 */
@@ -287,6 +293,51 @@ public class ClaimCaseApplicationService {
       throw ClaimErrors.supplier(ClaimErrorCodes.CLAIM_NOT_FOUND, claimId).get();
     }
     return claim;
+  }
+
+  /**
+   * 初审核定金额按明细分摊回填 {@code valid_amount}（理算基准的数据来源）。
+   *
+   * <p>为什么在应用层而不是聚合：聚合 {@code findById} 不回填明细（读侧投影约定），聚合内拿不到明细行。 分摊用**累计比例法**：每行目标 = round(核定 ×
+   * 累计金额 / 总金额)，行份额 = 相邻累计差—— 最后一行吸收全部舍入误差，保证 Σ valid == min(核定, Σ金额) 恒成立（不丢也不超），且单行不超过明细金额。
+   */
+  private void backfillItemValidAmounts(long claimId, BigDecimal approvedAmount) {
+    if (approvedAmount == null || approvedAmount.signum() <= 0) {
+      return; // 未核定/零核定：明细保持初始 0，理算按零赔付归因，不越权替审核员定价
+    }
+    List<ClaimItem> items = claimItemRepository.findByClaimId(claimId);
+    if (items.isEmpty()) {
+      return;
+    }
+    BigDecimal total = BigDecimal.ZERO;
+    for (ClaimItem item : items) {
+      total = total.add(item.getAmount());
+    }
+    if (total.signum() <= 0) {
+      return;
+    }
+    BigDecimal approved = approvedAmount.min(total);
+    BigDecimal amountCum = BigDecimal.ZERO;
+    BigDecimal assignedCum = BigDecimal.ZERO;
+    for (int i = 0; i < items.size(); i++) {
+      ClaimItem item = items.get(i);
+      amountCum = amountCum.add(item.getAmount());
+      boolean last = i == items.size() - 1;
+      BigDecimal targetCum =
+          last
+              ? approved
+              : approved.multiply(amountCum).divide(total, 2, java.math.RoundingMode.HALF_UP);
+      BigDecimal share = targetCum.subtract(assignedCum);
+      if (share.signum() < 0) {
+        share = BigDecimal.ZERO; // 前序四舍五入超拨时兜底，最后一行吸收
+      }
+      if (share.compareTo(item.getAmount()) > 0) {
+        share = item.getAmount();
+      }
+      item.approveValidAmount(share);
+      assignedCum = assignedCum.add(share);
+      claimItemRepository.save(item);
+    }
   }
 
   /** 供其他应用服务编排案件状态流转（如申诉）加载聚合。 */

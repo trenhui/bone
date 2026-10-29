@@ -76,6 +76,10 @@ public class ClaimCaseSla extends TenantAbstractEntity<Long> {
     sla.setTenantId(tenantId);
     sla.claimId = claimId;
     sla.version = 0L;
+    // 审计列由 SDK 映射但**不会自动填充**：DDL 两列 NOT NULL 无默认值，首次物化必须显式赋值
+    java.util.Date nowDate = java.util.Date.from(now);
+    sla.setCreatedAt(nowDate);
+    sla.setUpdatedAt(nowDate);
     sla.apply(
         currentStatus,
         currentStage,
@@ -107,6 +111,7 @@ public class ClaimCaseSla extends TenantAbstractEntity<Long> {
         remainingWorkHours,
         hangAccumSeconds,
         now);
+    setUpdatedAt(java.util.Date.from(now));
   }
 
   private void apply(
