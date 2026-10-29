@@ -166,7 +166,7 @@ const toastText = (page) =>
     failCount === 1,
     `实际 ${failCount} 条：${failText.slice(0, 120)}`,
   );
-  await shot(page, 'claim_toast_hygiene_forced_failure');
+  // 不在这里补拍：toast 已 3s 自动关闭，此处再拍同名截图会把循环内的有效留证覆盖成空图。
 
   await page.unroute((url) => url.pathname === '/api/v1/claims/');
 
