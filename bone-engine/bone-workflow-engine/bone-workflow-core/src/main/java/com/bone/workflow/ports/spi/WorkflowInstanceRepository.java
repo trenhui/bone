@@ -202,6 +202,42 @@ public interface WorkflowInstanceRepository {
   List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status);
 
   /**
+   * 我的待办<b>分页</b>（{@code PENDING}，创建时间倒序，limit/offset 由存储层下推）。
+   *
+   * <p>与 {@link #listTasksByAssignee} 的区别是「按页取」而非「全量取」：审批中心的待办列表若全量载入内存再裁页，
+   * 数据量随使用时长线性膨胀，且每条还要回表取单据摘要（N+1）。排序口径由存储层统一（{@code created_at DESC, id
+   * DESC}），应用层不得再重排——两处排序不一致会让翻页出现重复/漏行。
+   *
+   * @param assigneeId 办理人账户 id
+   * @param limit 本页条数（调用方负责夹取上限）
+   * @param offset 跳过条数（{@code (page-1)*size}）
+   */
+  List<WorkflowTask> listPendingTasksByAssignee(String assigneeId, int limit, int offset);
+
+  /** 我的待办总数（与 {@link #listPendingTasksByAssignee} 同判据，供分页 count）。 */
+  long countPendingTasksByAssignee(String assigneeId);
+
+  /**
+   * 我的已办<b>分页</b>（非 {@code PENDING}，决策时间倒序，limit/offset 下推）。
+   *
+   * <p>作废任务（{@code CANCELLED}）无决策时间，排序回落创建时间——口径由存储层 SQL 统一。
+   */
+  List<WorkflowTask> listDecidedTasksByAssignee(String assigneeId, int limit, int offset);
+
+  /** 我的已办总数（与 {@link #listDecidedTasksByAssignee} 同判据）。 */
+  long countDecidedTasksByAssignee(String assigneeId);
+
+  /**
+   * 按阶段列举实例（问题单据排障入口：{@code SUSPENDED} 死单、{@code REJECTED} 驳回单），更新时间倒序。
+   *
+   * <p><b>只截断不计数</b>：排障入口不是分页浏览——相位随处置实时变化，count 与列表两次查询天然不一致； 超限由上层提示「不止这些」比维护一个立刻过期的总数更诚实。
+   *
+   * @param phase 实例阶段
+   * @param limit 最大返回条数（调用方负责夹取上限）
+   */
+  List<WorkflowInstance> listInstancesByPhase(WorkflowInstance.Phase phase, int limit);
+
+  /**
    * 取某实例的<b>全部任务</b>（含已决策 / 已取消），按创建序——即该实例的审批轨迹（详情页时间线用）。
    *
    * <p>与 {@link #listPendingTasks}（只取 PENDING）不同，此处取全部，用以还原「谁在何时批了什么、走了哪步」 的完整历史。

@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.domain.annotation.Sql;
 import com.bone.metadata.sdk.domain.annotation.TenantScope;
 import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -100,6 +101,20 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
       @Param("entityCode") String entityCode,
       @Param("recordId") String recordId,
       @Param("tenantId") Long tenantId);
+
+  /**
+   * 按阶段列举实例（问题单据入口：{@code SUSPENDED} 死单、{@code REJECTED} 驳回单），时间倒序 + {@code LIMIT} 截断。
+   *
+   * <p><b>只给 limit 不给 count</b>：问题单据是运维排障入口，不是分页浏览——超限直接截断并由上层提示「不止这些」， 比为一张排障页维护 count
+   * 口径（相位还会随处置实时变化，count 与列表两次查询天然不一致）更诚实。
+   */
+  @Sql(
+      "SELECT id, entity_code, record_id, def_key, def_version, current_node_code, phase, started_by,"
+          + " started_at, updated_at FROM wf_instance"
+          + " WHERE tenant_id = #{tenantId} AND deleted = 0 AND phase = #{phase}"
+          + " ORDER BY updated_at DESC, id DESC LIMIT #{limit}")
+  List<WfInstanceRow> listInstanceRowsByPhase(
+      @Param("tenantId") Long tenantId, @Param("phase") String phase, @Param("limit") int limit);
 
   /**
    * 实例相位 CAS：仅当当前 phase 仍为 {@code expected} 时才改。

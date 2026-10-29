@@ -278,6 +278,56 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
   }
 
   @Override
+  public List<WorkflowTask> listPendingTasksByAssignee(String assigneeId, int limit, int offset) {
+    // 分页与排序全部下推 SQL：应用层再排会让翻页出现重复/漏行（两处排序口径不可能永远一致）。
+    return tasks
+        .listPendingTaskRowsByAssigneePaged(
+            assigneeId, requireTenant(), clampLimit(limit), clampOffset(offset))
+        .stream()
+        .map(this::toTask)
+        .toList();
+  }
+
+  @Override
+  public long countPendingTasksByAssignee(String assigneeId) {
+    return tasks.countPendingTaskRowsByAssignee(assigneeId, requireTenant());
+  }
+
+  @Override
+  public List<WorkflowTask> listDecidedTasksByAssignee(String assigneeId, int limit, int offset) {
+    return tasks
+        .listDecidedTaskRowsByAssigneePaged(
+            assigneeId, requireTenant(), clampLimit(limit), clampOffset(offset))
+        .stream()
+        .map(this::toTask)
+        .toList();
+  }
+
+  @Override
+  public long countDecidedTasksByAssignee(String assigneeId) {
+    return tasks.countDecidedTaskRowsByAssignee(assigneeId, requireTenant());
+  }
+
+  @Override
+  public List<WorkflowInstance> listInstancesByPhase(WorkflowInstance.Phase phase, int limit) {
+    return instances
+        .listInstanceRowsByPhase(requireTenant(), phase.name(), clampLimit(limit))
+        .stream()
+        .map(this::toInstance)
+        .toList();
+  }
+
+  /** 单页条数夹取（1..200）：分页参数来自 HTTP，不夹上限等于允许一次拉空整张表。 */
+  private static int clampLimit(int limit) {
+    return Math.min(Math.max(limit, 1), 200);
+  }
+
+  /** 偏移夹取（≥0）：负 offset 在 MySQL/H2 是语法错误，不夹即 500。 */
+  private static int clampOffset(int offset) {
+    return Math.max(offset, 0);
+  }
+
+  @Override
   public List<WorkflowTask> listTasks(String instanceId) {
     return tasks.listTaskRows(instanceId, requireTenant()).stream().map(this::toTask).toList();
   }

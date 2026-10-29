@@ -134,6 +134,61 @@ public interface WfTaskSdkRepository extends Repository<WfTaskRow, String> {
       @Param("tenantId") Long tenantId,
       @Param("status") String status);
 
+  /**
+   * 我的待办分页（{@code PENDING}，创建时间倒序，{@code LIMIT/OFFSET} 下推）。
+   *
+   * <p><b>为什么必须下推</b>：审批中心的「我的待办」此前把该办理人的<b>全部</b>任务载入内存再裁页——数据量随使用时长 线性膨胀，且每条还要回表取单据摘要（N+1）。排序键用
+   * {@code created_at DESC, id DESC}（id 在 UUID 宿主下字典序≠时间序， 按 id 决胜会取错最新）；{@code LIMIT/OFFSET} 为
+   * H2/MySQL 通用方言，H2 测试原样执行。
+   */
+  @Sql(
+      "SELECT id, instance_id, node_code, assignee_id, status, decision, comment, due_at, created_at,"
+          + " decided_at FROM wf_task"
+          + " WHERE assignee_id = #{assigneeId} AND tenant_id = #{tenantId} AND deleted = 0"
+          + "   AND status = 'PENDING'"
+          + " ORDER BY created_at DESC, id DESC LIMIT #{limit} OFFSET #{offset}")
+  List<WfTaskRow> listPendingTaskRowsByAssigneePaged(
+      @Param("assigneeId") String assigneeId,
+      @Param("tenantId") Long tenantId,
+      @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  /** 我的待办总数（分页 count；与 {@link #listPendingTaskRowsByAssigneePaged} 同判据）。 */
+  @Sql(
+      "SELECT COUNT(*) FROM wf_task"
+          + " WHERE assignee_id = #{assigneeId} AND tenant_id = #{tenantId} AND deleted = 0"
+          + "   AND status = 'PENDING'")
+  long countPendingTaskRowsByAssignee(
+      @Param("assigneeId") String assigneeId, @Param("tenantId") Long tenantId);
+
+  /**
+   * 我的已办分页（非 {@code PENDING}，决策时间倒序，{@code LIMIT/OFFSET} 下推）。
+   *
+   * <p><b>排序键 COALESCE</b>：作废任务（{@code CANCELLED}）由批量作废语句改状态、不写 {@code decided_at}，该列为 NULL—— 直接按
+   * {@code decided_at DESC} 排会在不同数据库上得到不同 NULL 位次，且这些行可能整页消失。回落 {@code created_at} 保证 稳定全序；{@code
+   * status &lt;&gt; 'PENDING'} 是显式集合而非「已决策枚举」，转办/委派等中间态也要出现在已办里。
+   */
+  @Sql(
+      "SELECT id, instance_id, node_code, assignee_id, status, decision, comment, due_at, created_at,"
+          + " decided_at FROM wf_task"
+          + " WHERE assignee_id = #{assigneeId} AND tenant_id = #{tenantId} AND deleted = 0"
+          + "   AND status <> 'PENDING'"
+          + " ORDER BY COALESCE(decided_at, created_at) DESC, id DESC"
+          + " LIMIT #{limit} OFFSET #{offset}")
+  List<WfTaskRow> listDecidedTaskRowsByAssigneePaged(
+      @Param("assigneeId") String assigneeId,
+      @Param("tenantId") Long tenantId,
+      @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  /** 我的已办总数（与 {@link #listDecidedTaskRowsByAssigneePaged} 同判据）。 */
+  @Sql(
+      "SELECT COUNT(*) FROM wf_task"
+          + " WHERE assignee_id = #{assigneeId} AND tenant_id = #{tenantId} AND deleted = 0"
+          + "   AND status <> 'PENDING'")
+  long countDecidedTaskRowsByAssignee(
+      @Param("assigneeId") String assigneeId, @Param("tenantId") Long tenantId);
+
   /** 按实例取全部任务（历史轨迹）；排序按 {@code created_at, id}（UUID 宿主下 id 字典序≠时间序）。 */
   @Sql(
       "SELECT id, instance_id, node_code, assignee_id, status, decision, comment, due_at, created_at,"

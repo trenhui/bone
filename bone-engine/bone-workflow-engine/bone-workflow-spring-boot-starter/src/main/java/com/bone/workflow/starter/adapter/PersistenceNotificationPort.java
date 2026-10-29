@@ -5,10 +5,12 @@ import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
 import com.bone.workflow.ports.spi.NotificationPort;
 import com.bone.workflow.ports.spi.WorkflowIdGenerator;
-import com.bone.workflow.starter.domain.WorkflowInboxQuery;
-import com.bone.workflow.starter.domain.WorkflowNotification;
+import com.bone.workflow.ports.spi.WorkflowInboxQuery;
+import com.bone.workflow.ports.spi.WorkflowNotification;
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
 import com.bone.workflow.starter.sdk.WfNotificationRow;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
+import com.bone.workflow.starter.spi.RoleMemberProvider;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -32,31 +34,62 @@ import java.util.stream.Collectors;
  */
 public class PersistenceNotificationPort implements NotificationPort, WorkflowInboxQuery {
 
-  /** 挂起告警的接收人：平台管理员（运维介入）。宿主可按部署改默认，或经 {@link #setAdminRecipientId(String)} 调整。 */
+  /**
+   * 挂起告警的兜底接收人：{@code workflow-admin}。宿主可按部署改默认，或经 {@link #setAdminRecipientId(String)} 调整。
+   *
+   * <p><b>为什么只是兜底</b>：该账号在多数部署里并不存在（幽灵接收人），告警落它的收件箱等于无人看见。首选路径是 {@link #adminRoleCode} + {@link
+   * RoleMemberProvider} 解析出的<b>真实成员</b>，本兜底仅在角色未配置或解析为空时启用。
+   */
   private static final String DEFAULT_ADMIN_RECIPIENT = "workflow-admin";
 
   private final WfNotificationSdkRepository repository;
   private final WorkflowIdGenerator idGenerator;
   private final Clock clock;
+  private final WorkflowMetrics metrics;
 
   private String adminRecipientId = DEFAULT_ADMIN_RECIPIENT;
+  private String adminRoleCode;
+  private RoleMemberProvider roleMemberProvider;
 
   public PersistenceNotificationPort(
       WfNotificationSdkRepository repository, WorkflowIdGenerator idGenerator) {
-    this(repository, idGenerator, Clock.systemUTC());
+    this(repository, idGenerator, Clock.systemUTC(), WorkflowMetrics.NOOP);
   }
 
   public PersistenceNotificationPort(
       WfNotificationSdkRepository repository, WorkflowIdGenerator idGenerator, Clock clock) {
+    this(repository, idGenerator, clock, WorkflowMetrics.NOOP);
+  }
+
+  /** 完整构造：注入可观测指标（P1-1 / P0-3 告警失败计数）。 */
+  public PersistenceNotificationPort(
+      WfNotificationSdkRepository repository,
+      WorkflowIdGenerator idGenerator,
+      Clock clock,
+      WorkflowMetrics metrics) {
     this.repository = repository;
     this.idGenerator = idGenerator;
     this.clock = clock == null ? Clock.systemUTC() : clock;
+    this.metrics = metrics == null ? WorkflowMetrics.NOOP : metrics;
   }
 
-  /** 调整挂起告警接收人（默认为 {@code workflow-admin}）。 */
+  /** 调整挂起告警的<b>兜底</b>接收人（默认为 {@code workflow-admin}）。 */
   public void setAdminRecipientId(String adminRecipientId) {
     if (adminRecipientId != null && !adminRecipientId.isBlank()) {
       this.adminRecipientId = adminRecipientId;
+    }
+  }
+
+  /**
+   * 配置挂起告警的角色接收人：告警优先发给该角色的<b>真实成员</b>（经 {@link RoleMemberProvider} 解析）。
+   *
+   * <p>由自动装配按 {@code bone.workflow.notify.admin-role} 属性注入；未配置或 SPI 未接入时回落 {@link
+   * #setAdminRecipientId(String)} 的兜底接收人，并打 WARN（告警不静默丢，但接收人质量降级要可诊断）。
+   */
+  public void setAdminRole(String adminRoleCode, RoleMemberProvider roleMemberProvider) {
+    if (adminRoleCode != null && !adminRoleCode.isBlank()) {
+      this.adminRoleCode = adminRoleCode;
+      this.roleMemberProvider = roleMemberProvider;
     }
   }
 
@@ -111,14 +144,46 @@ public class PersistenceNotificationPort implements NotificationPort, WorkflowIn
 
   @Override
   public void notifySuspended(WorkflowInstance instance, String reason) {
-    write(
-        adminRecipientId,
-        "SUSPENDED",
-        instance,
-        instance.currentNodeCode(),
-        "审批流程挂起，需人工介入",
-        "单据 " + instance.entityCode() + "/" + instance.recordId() + " 挂起：" + safe(reason),
-        "workflow-engine");
+    // 挂起 = 引擎已停下等人工介入，告警是唯一把人叫回来的手段——发给真实成员，而不是没人认领的幽灵账号。
+    for (String recipient : resolveAdminRecipients()) {
+      write(
+          recipient,
+          "SUSPENDED",
+          instance,
+          instance.currentNodeCode(),
+          "审批流程挂起，需人工介入",
+          "单据 " + instance.entityCode() + "/" + instance.recordId() + " 挂起：" + safe(reason),
+          "workflow-engine");
+    }
+  }
+
+  /**
+   * 挂起告警接收人解析：首选 {@code bone.workflow.notify.admin-role} 配置的角色成员（真实账户），回落兜底接收人。
+   *
+   * <p>回落必打 WARN——告警落进无人认领的兜底收件箱等于「挂起无人发现、流程静默死掉」，降级必须可诊断， 但告警本身绝不丢（仍落库，运维可对账）。
+   */
+  private List<String> resolveAdminRecipients() {
+    if (adminRoleCode == null || roleMemberProvider == null) {
+      org.slf4j.LoggerFactory.getLogger(PersistenceNotificationPort.class)
+          .warn(
+              "[workflow][notify] 挂起告警未配置角色接收人（bone.workflow.notify.admin-role）或 RoleMemberProvider 未接入，"
+                  + "回落兜底接收人 {}——请配置角色，否则挂起单据无人认领",
+              adminRecipientId);
+      return List.of(adminRecipientId);
+    }
+    List<String> members = roleMemberProvider.accountIdsByRoleCode(adminRoleCode);
+    if (members == null || members.isEmpty()) {
+      org.slf4j.LoggerFactory.getLogger(PersistenceNotificationPort.class)
+          .warn(
+              "[workflow][notify] 挂起告警角色 {} 解析不出成员（角色不存在或未分配人员），回落兜底接收人 {}",
+              adminRoleCode,
+              adminRecipientId);
+      return List.of(adminRecipientId);
+    }
+    return members.stream()
+        .filter(m -> m != null && !m.isBlank())
+        .distinct()
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -177,6 +242,30 @@ public class PersistenceNotificationPort implements NotificationPort, WorkflowIn
     return rows.stream().map(PersistenceNotificationPort::toDomain).collect(Collectors.toList());
   }
 
+  /**
+   * 挂起原因（诊断）：读回引擎挂起时写入的告警正文。
+   *
+   * <p>读取失败一律降级为 {@link Optional#empty()}——诊断信息属于「锦上添花」，绝不能因为它查不到就让单据详情 500。
+   */
+  @Override
+  public java.util.Optional<String> latestSuspensionNotice(long tenantId, String instanceId) {
+    if (instanceId == null || instanceId.isBlank()) {
+      return java.util.Optional.empty();
+    }
+    try {
+      WfNotificationRow row =
+          repository.selectLatestByInstanceAndType(tenantId, instanceId, "SUSPENDED");
+      if (row == null || row.getBody() == null || row.getBody().isBlank()) {
+        return java.util.Optional.empty();
+      }
+      return java.util.Optional.of(row.getBody());
+    } catch (RuntimeException ex) {
+      org.slf4j.LoggerFactory.getLogger(PersistenceNotificationPort.class)
+          .warn("[workflow] 读取挂起原因失败（降级为通用指引）：instance={} err={}", instanceId, ex.toString());
+      return java.util.Optional.empty();
+    }
+  }
+
   // ====================== 内部 ======================
 
   private void write(
@@ -203,8 +292,17 @@ public class PersistenceNotificationPort implements NotificationPort, WorkflowIn
           body,
           now,
           operatorId == null ? "workflow-engine" : operatorId);
+      metrics.notificationSent(type);
+      // P0-3：挂起告警是 fail-closed 闭环的唯一召回手段，专项计数，失败绝不只 WARN 看不见。
+      if ("SUSPENDED".equals(type)) {
+        metrics.suspendedAlertSent();
+      }
     } catch (RuntimeException ex) {
       // 通知失败绝不阻断审批主链路（双保险；引擎侧也已包 try-catch）。
+      metrics.notificationFailed();
+      if ("SUSPENDED".equals(type)) {
+        metrics.suspendedAlertFailed();
+      }
       org.slf4j.LoggerFactory.getLogger(PersistenceNotificationPort.class)
           .warn("[workflow][notify] 站内信写入失败（不影响审批主链路）：type={} recipient={}", type, recipientId, ex);
     }

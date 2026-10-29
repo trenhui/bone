@@ -17,6 +17,7 @@ import com.bone.workflow.starter.adapter.RuntimeRecordDataPort;
 import com.bone.workflow.starter.adapter.SdkWorkflowDefinitionRepository;
 import com.bone.workflow.starter.adapter.SdkWorkflowInstanceRepository;
 import com.bone.workflow.starter.binding.WorkflowBindingRepository;
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
 import com.bone.workflow.starter.outbox.OutboxStatusPort;
 import com.bone.workflow.starter.outbox.RuntimeActionIntentExecutor;
 import com.bone.workflow.starter.outbox.RuntimeActionInvoker;
@@ -31,6 +32,7 @@ import com.bone.workflow.starter.sdk.WfStatusOutboxSdkRepository;
 import com.bone.workflow.starter.sdk.WfTaskSdkRepository;
 import com.bone.workflow.starter.spi.OrgHierarchyProvider;
 import com.bone.workflow.starter.spi.RoleMemberProvider;
+import com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -123,15 +125,30 @@ public class WorkflowBoneIntegrationAutoConfiguration {
     return new OutboxStatusPort(outbox, idGenerator::nextId);
   }
 
+  /**
+   * 可观测指标（P1-1）：惰性绑定宿主 {@link io.micrometer.core.instrument.MeterRegistry}（需宿主启用 actuator）； 无则全部
+   * no-op，不强依赖。
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public WorkflowMetrics workflowMetrics(
+      ObjectProvider<io.micrometer.core.instrument.MeterRegistry> meterRegistry) {
+    return new WorkflowMetrics(meterRegistry);
+  }
+
   @Bean
   @ConditionalOnMissingBean
   @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusIntentExecutor workflowStatusIntentExecutor(
-      RuntimeActionApplicationService actionService) {
+      RuntimeActionApplicationService actionService,
+      ObjectProvider<WorkflowActionIdempotencyPolicy> idempotencyPolicyProvider,
+      WorkflowMetrics metrics) {
     // 经窄端口耦合：执行器只依赖 RuntimeActionInvoker，平台动作调用由方法引用收敛到此处，
     // 既不触碰 RuntimeActionApplicationService 的框架代理 / 非公有父类（难以单测打桩），也便于单测以 mock 端口验证幂等键契约。
+    // 注入幂等策略（P0-2 硬约束）与指标（P1-1）。
     RuntimeActionInvoker invoker = actionService::invokeAction;
-    return new RuntimeActionIntentExecutor(invoker);
+    return new RuntimeActionIntentExecutor(
+        invoker, idempotencyPolicyProvider.getIfAvailable(), metrics);
   }
 
   /**
@@ -156,8 +173,10 @@ public class WorkflowBoneIntegrationAutoConfiguration {
   @ConditionalOnMissingBean
   @ConditionalOnBean(RuntimeActionApplicationService.class)
   public StatusProjectionRelay workflowStatusProjectionRelay(
-      WorkflowStatusOutboxRepository outbox, StatusIntentExecutor executor) {
-    return new StatusProjectionRelay(outbox, executor, 100, 8);
+      WorkflowStatusOutboxRepository outbox,
+      StatusIntentExecutor executor,
+      WorkflowMetrics metrics) {
+    return new StatusProjectionRelay(outbox, executor, 100, 8, metrics);
   }
 
   /**

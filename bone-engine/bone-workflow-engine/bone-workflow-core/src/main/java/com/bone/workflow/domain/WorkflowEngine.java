@@ -181,6 +181,37 @@ public interface WorkflowEngine {
    */
   java.util.List<WorkflowTask> listTasksByAssignee(String assigneeId, WorkflowTask.Status status);
 
+  /**
+   * 我的待办<b>分页</b>（{@code PENDING}，创建时间倒序，limit/offset 由存储层下推）。
+   *
+   * <p>与 {@link #listTasksByAssignee} 的分工：列表页走本方法（按页取，杜绝全量载入 + 内存裁页），按状态的全量检索保留给对账 / 批量处置场景。
+   *
+   * @param assigneeId 办理人账户 id
+   * @param limit 本页条数
+   * @param offset 跳过条数（{@code (page-1)*size}）
+   */
+  java.util.List<WorkflowTask> listPendingTasksByAssignee(String assigneeId, int limit, int offset);
+
+  /** 我的待办总数（与 {@link #listPendingTasksByAssignee} 同判据，供分页 count）。 */
+  long countPendingTasksByAssignee(String assigneeId);
+
+  /** 我的已办<b>分页</b>（非 {@code PENDING}，决策时间倒序；作废任务无决策时间则回落创建时间）。 */
+  java.util.List<WorkflowTask> listDecidedTasksByAssignee(String assigneeId, int limit, int offset);
+
+  /** 我的已办总数（与 {@link #listDecidedTasksByAssignee} 同判据）。 */
+  long countDecidedTasksByAssignee(String assigneeId);
+
+  /**
+   * 按阶段列举实例（问题单据排障入口：{@code SUSPENDED} 死单、{@code REJECTED} 驳回单），更新时间倒序。
+   *
+   * <p><b>为什么经引擎收口</b>：同 {@link #listTasksByAssignee}——租户谓词只在引擎的仓储那一处需要审查， 宿主不得绕过引擎自己拼 {@code
+   * wf_instance} 查询。只截断不计数（排障入口不是分页浏览，count 与列表两次查询天然不一致）。
+   *
+   * @param phase 实例阶段
+   * @param limit 最大返回条数（调用方负责夹取上限）
+   */
+  java.util.List<WorkflowInstance> listInstancesByPhase(WorkflowInstance.Phase phase, int limit);
+
   java.util.List<WorkflowTask> listPendingTasks(String instanceId);
 
   /**

@@ -1,5 +1,7 @@
 package com.bone.workflow.starter.outbox;
 
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
+import com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -29,14 +31,37 @@ public class RuntimeActionIntentExecutor implements StatusIntentExecutor {
   private static final Logger log = LoggerFactory.getLogger(RuntimeActionIntentExecutor.class);
   private final RuntimeActionInvoker actionInvoker;
 
+  /** 幂等策略端口：{@code null} 表示宿主未装配（老部署 / 尚未接入），此时 P0-2 硬约束不生效，仅打 WARN 放行（见 {@link #execute}）。 */
+  private final WorkflowActionIdempotencyPolicy idempotencyPolicy;
+
+  /** 可观测指标（{@code null} → 静默 no-op）。 */
+  private final WorkflowMetrics metrics;
+
   /**
-   * 只需动作调用器。
+   * 只需动作调用器（向后兼容测试 / 旧装配）。P0-2 硬约束与指标默认关闭。
    *
    * <p>曾依赖 {@code WorkflowInstanceRepository} 反查发起人当操作人——那既<b>伪造了操作人</bf>，又给每条意图多一次
    * 数据库往返。操作人改为随意图行携带（{@code wf_status_outbox.operator_id}），该依赖随之删除。
    */
   public RuntimeActionIntentExecutor(RuntimeActionInvoker actionInvoker) {
+    this(actionInvoker, null, WorkflowMetrics.NOOP);
+  }
+
+  /**
+   * 完整构造：注入幂等策略与指标。宿主装配（{@link
+   * com.bone.workflow.starter.WorkflowBoneIntegrationAutoConfiguration}）走此路径。
+   *
+   * @param actionInvoker 平台动作调用器（窄端口）
+   * @param idempotencyPolicy 幂等策略端口（可空；空则 P0-2 硬约束不生效、仅 WARN 放行）
+   * @param metrics 可观测指标（可空；空则 no-op）
+   */
+  public RuntimeActionIntentExecutor(
+      RuntimeActionInvoker actionInvoker,
+      WorkflowActionIdempotencyPolicy idempotencyPolicy,
+      WorkflowMetrics metrics) {
     this.actionInvoker = Objects.requireNonNull(actionInvoker, "actionInvoker");
+    this.idempotencyPolicy = idempotencyPolicy;
+    this.metrics = metrics == null ? WorkflowMetrics.NOOP : metrics;
   }
 
   @Override
@@ -50,6 +75,19 @@ public class RuntimeActionIntentExecutor implements StatusIntentExecutor {
     Long tenantId = intent.tenantId();
     if (tenantId == null) {
       throw new IllegalStateException("审批流状态推进缺少租户上下文——拒绝推进业务单据状态");
+    }
+    // P0-2 幂等硬约束：中继是 at-least-once 投递，崩溃窗口内同一意图会被重投执行。目标动作若未声明幂等，
+    // 重投 = 业务状态被推进两次（重复批单 / 重复驳回）。因此非幂等动作一律拒绝执行、由中继落终态 FAILED 转人工，
+    // 而不是「赌平台侧恰好去重」。宿主未装配策略端口时不做此拦截（opt-in，放行 + 仅 WARN）。
+    if (intent.actionCode() != null
+        && idempotencyPolicy != null
+        && !idempotencyPolicy.requiresIdempotency(
+            intent.entityCode(), tenantId, intent.actionCode())) {
+      throw new NonIdempotentActionRefusedException(
+          String.format(
+              "动作 %s（实体 %s）未声明幂等，at-least-once 中继下重投会双推进业务状态，已拒绝执行；"
+                  + "请在该动作定义置 requires_idempotency=1 后重试（意图 %s 已落终态 FAILED）",
+              intent.actionCode(), intent.entityCode(), intent.id()));
     }
     Map<String, Object> params = new LinkedHashMap<>();
     params.put("workflowInstanceId", intent.instanceId());

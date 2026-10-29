@@ -1,6 +1,7 @@
 package com.bone.workflow.starter.outbox;
 
 import com.bone.core.tenant.context.TenantContext;
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -47,16 +48,29 @@ public class StatusProjectionRelay {
   private final StatusIntentExecutor executor;
   private final int batchSize;
   private final int maxRetries;
+  private final WorkflowMetrics metrics;
 
+  /** 向后兼容（测试 / 旧装配）：不接指标。 */
   public StatusProjectionRelay(
       WorkflowStatusOutboxRepository outbox,
       StatusIntentExecutor executor,
       int batchSize,
       int maxRetries) {
+    this(outbox, executor, batchSize, maxRetries, WorkflowMetrics.NOOP);
+  }
+
+  /** 完整构造：注入可观测指标（P1-1）。 */
+  public StatusProjectionRelay(
+      WorkflowStatusOutboxRepository outbox,
+      StatusIntentExecutor executor,
+      int batchSize,
+      int maxRetries,
+      WorkflowMetrics metrics) {
     this.outbox = outbox;
     this.executor = executor;
     this.batchSize = Math.max(1, batchSize);
     this.maxRetries = Math.max(1, maxRetries);
+    this.metrics = metrics == null ? WorkflowMetrics.NOOP : metrics;
   }
 
   /** 跑一轮：取一批到期意图，按序执行。返回本轮成功落地条数。 */
@@ -65,6 +79,7 @@ public class StatusProjectionRelay {
     if (due.isEmpty()) {
       return 0;
     }
+    long start = System.currentTimeMillis();
     // 本批次内已失败的实例：其后续意图必须延后，否则落地顺序被颠倒
     Set<String> blockedInstances = new HashSet<>();
     int done = 0;
@@ -84,10 +99,23 @@ public class StatusProjectionRelay {
         executor.execute(intent);
         outbox.markDone(intent.id());
         done++;
+        metrics.relayIntentExecuted();
+      } catch (NonIdempotentActionRefusedException refused) {
+        // P0-2 硬约束命中：动作未声明幂等，重投会双推进——拒绝执行并落终态 FAILED 转人工。
+        // 不走退避重试（重试正是危险源）。
+        outbox.markTerminallyFailed(intent.id(), refused.getMessage());
+        blockedInstances.add(intent.instanceId());
+        metrics.relayIntentTerminallyFailed();
+        log.error(
+            "[workflow] 状态投影因动作未声明幂等被拒绝，已落终态 FAILED 待人工接入幂等：intent={} instance={} action={}",
+            intent.id(),
+            intent.instanceId(),
+            intent.actionCode());
       } catch (RuntimeException ex) {
         boolean rescheduled =
             outbox.markFailed(intent.id(), intent.retryCount(), maxRetries, backoffOf(intent));
         blockedInstances.add(intent.instanceId());
+        metrics.relayIntentFailed();
         if (rescheduled) {
           log.warn(
               "[workflow] 状态投影失败，将按退避重试：intent={} instance={} attempt={}",
@@ -110,6 +138,7 @@ public class StatusProjectionRelay {
         }
       }
     }
+    metrics.relayRound(System.currentTimeMillis() - start);
     return done;
   }
 

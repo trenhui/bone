@@ -9,6 +9,8 @@ import com.bone.workflow.domain.WorkflowEngineException;
 import com.bone.workflow.domain.WorkflowErrorCode;
 import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
+import com.bone.workflow.ports.spi.WorkflowInboxQuery;
+import com.bone.workflow.ports.spi.WorkflowNotification;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,16 +44,19 @@ public class RuntimeApprovalApplicationService {
       List.of("claim_no", "advance_no", "title", "amount", "currency", "status", "applicant");
 
   private final ObjectProvider<WorkflowEngine> engineProvider;
+  private final ObjectProvider<WorkflowInboxQuery> inboxProvider;
   private final RuntimeRecordApplicationService records;
   private final RuntimeAccessGuard accessGuard;
   private final CurrentUserProvider currentUser;
 
   public RuntimeApprovalApplicationService(
       ObjectProvider<WorkflowEngine> engineProvider,
+      ObjectProvider<WorkflowInboxQuery> inboxProvider,
       RuntimeRecordApplicationService records,
       RuntimeAccessGuard accessGuard,
       CurrentUserProvider currentUser) {
     this.engineProvider = Objects.requireNonNull(engineProvider, "engineProvider");
+    this.inboxProvider = Objects.requireNonNull(inboxProvider, "inboxProvider");
     this.records = Objects.requireNonNull(records, "records");
     this.accessGuard = Objects.requireNonNull(accessGuard, "accessGuard");
     this.currentUser = Objects.requireNonNull(currentUser, "currentUser");
@@ -60,24 +65,35 @@ public class RuntimeApprovalApplicationService {
   /**
    * 我的待办（跨单据 / 跨实体）。
    *
+   * <p><b>分页下推</b>：limit/offset 与排序由存储层完成（{@code ORDER BY created_at DESC}），count 走同判据的
+   * COUNT——此前「全量载入 + 内存裁页」把数据量做成随使用时长线性膨胀的热点；单据摘要只对<b>本页</b> ≤size 条回表， N+1 从「全部任务」降为「一页任务」。
+   *
    * @param page 页码（1 起）
    * @param size 每页条数
    */
   public PageResult<Map<String, Object>> listPendingTasks(int page, int size) {
-    return paginate(queryTasks(WorkflowTask.Status.PENDING), page, size);
+    int[] bounds = clampPaging(page, size);
+    String current = requireOperatorForTasks();
+    WorkflowEngine engine = requireEngine();
+    long total = call(() -> engine.countPendingTasksByAssignee(current));
+    List<WorkflowTask> tasks =
+        call(() -> engine.listPendingTasksByAssignee(current, bounds[0], bounds[1]));
+    return PageResult.of(summarizePage(engine, tasks), total, bounds[2], bounds[0]);
   }
 
-  /** 我的已办（已表态任务，含通过 / 驳回 / 已转交 / 已作废，按决策时间倒序）。 */
+  /**
+   * 我的已办（已表态任务，含通过 / 驳回 / 已转交 / 已作废，按决策时间倒序）。
+   *
+   * <p>分页同样下推：此前按状态逐个全量加载再内存排序裁页（状态数 × 全量），现一次 count + 一页 SQL 完成。
+   */
   public PageResult<Map<String, Object>> listDecidedTasks(int page, int size) {
-    List<Map<String, Object>> rows = new ArrayList<>();
-    for (WorkflowTask.Status status : WorkflowTask.Status.values()) {
-      if (status != WorkflowTask.Status.PENDING) {
-        rows.addAll(queryTasks(status));
-      }
-    }
-    rows.sort(
-        (a, b) -> String.valueOf(b.get("decidedAt")).compareTo(String.valueOf(a.get("decidedAt"))));
-    return paginate(rows, page, size);
+    int[] bounds = clampPaging(page, size);
+    String current = requireOperatorForTasks();
+    WorkflowEngine engine = requireEngine();
+    long total = call(() -> engine.countDecidedTasksByAssignee(current));
+    List<WorkflowTask> tasks =
+        call(() -> engine.listDecidedTasksByAssignee(current, bounds[0], bounds[1]));
+    return PageResult.of(summarizePage(engine, tasks), total, bounds[2], bounds[0]);
   }
 
   /**
@@ -104,7 +120,25 @@ public class RuntimeApprovalApplicationService {
         engine.listPendingTasks(instance.id()).stream().map(this::snapshot).toList());
     result.put(
         "trail", engine.listInstanceHistory(instance.id()).stream().map(this::snapshot).toList());
+    // 挂起原因（诊断）：挂起时引擎不派单，详情页只看到「挂起 + 零待办」时，发起人/审批人无法判断
+    // 是「审批人解析不出」「审批人就是发起人本人」还是「组织信息缺失」。原因真源是挂起告警正文，
+    // 读回来一并返回；查不到就不返回该字段（前端降级为通用指引），不让诊断信息缺失影响整个详情。
+    if (instance.isSuspended()) {
+      suspendReason(instance).ifPresent(reason -> result.put("suspendReason", reason));
+    }
     return result;
+  }
+
+  /** 挂起原因：来自通知端口（缺省实现 = 空，宿主把通知接 IM/邮件时不落本地表）。 */
+  private Optional<String> suspendReason(WorkflowInstance instance) {
+    Long tenantId = com.bone.core.tenant.context.TenantContext.getTenantIdAsLong();
+    if (tenantId == null) {
+      return Optional.empty();
+    }
+    // getIfUnique 而非 getIfAvailable：默认通知端口写读一体，容器里按读端口类型看有多个候选。
+    // 诊断信息取不到只是少一句话，绝不能让它抛 Bean 歧义异常把整个单据详情打成 500。
+    return Optional.ofNullable(inboxProvider.getIfUnique())
+        .flatMap(query -> query.latestSuspensionNotice(tenantId, instance.id()));
   }
 
   /** 改派：把待办转给他人（请假 / 离职 / 指派错人）；引擎侧按 PENDING 条件更新，已被他人处理则失败。 */
@@ -143,17 +177,163 @@ public class RuntimeApprovalApplicationService {
     return snapshot(instance);
   }
 
+  /**
+   * 转办：办理人把<b>自己的</b>待办转给他人（出差 / 请假 / 越权发现），{"assigneeId":"...","comment":"..."}。
+   *
+   * <p>与 {@link #reassign} 的语义分工：转办是<b>办理人自助</b>（引擎校验操作人 == 当前办理人），改派是<b>管理员干预</b>
+   * （写权限即可，不要求是办理人）。两者都走 PENDING 条件更新——办理人可能正在点同意，先查后改会改出「已办结却被转」的幽灵任务。
+   */
+  public Map<String, Object> transfer(String taskId, Map<String, Object> body) {
+    String assigneeId = requireText(body, "assigneeId");
+    String comment = text(body.get("comment"));
+    WorkflowTask task =
+        call(() -> requireEngine().transferTask(taskId, assigneeId, operator(), comment));
+    return Map.of(
+        "taskId", task.id(), "assigneeId", task.assigneeId(), "status", task.status().name());
+  }
+
+  /**
+   * 加签：办理人拉人会办当前节点，{"assigneeId":"...","comment":"..."}——被加签人拿到同节点 PENDING， 节点完成判定（会签 /
+   * 单签）自动把它计入，不改流程拓扑。
+   */
+  public Map<String, Object> addSign(String taskId, Map<String, Object> body) {
+    String assigneeId = requireText(body, "assigneeId");
+    String comment = text(body.get("comment"));
+    WorkflowTask task =
+        call(() -> requireEngine().addSign(taskId, assigneeId, operator(), comment));
+    return Map.of(
+        "taskId", task.id(), "assigneeId", task.assigneeId(), "status", task.status().name());
+  }
+
+  /**
+   * 恢复挂起实例：组织数据修复后让 {@code SUSPENDED} 死单回到 {@code RUNNING}。
+   *
+   * <p>与 {@link #assign} 的分工：assign 是「直接注入办理人」（人已知），resume 是「重跑解析」（指派规则数据已修好，
+   * 让引擎按原规则重新解析）。解析仍不出人时引擎保持挂起并报错——失败关闭不放行。
+   */
+  public Map<String, Object> resume(String instanceId, Map<String, Object> body) {
+    // reason 仅审计留痕：恢复动作本身由引擎 CAS 防并发，body 无必填项（与 terminate 的不可逆语义不同）。
+    WorkflowInstance instance = call(() -> requireEngine().resume(instanceId, operator()));
+    Map<String, Object> row = snapshot(instance);
+    if (body != null && body.get("reason") != null) {
+      row.put("reason", text(body.get("reason")));
+    }
+    return row;
+  }
+
+  /**
+   * 我的站内信（收件箱）：待办派单 / 催办 / 转办 / 挂起 / 抄送的投影，{@code unreadOnly=true} 只看未读。
+   *
+   * <p>接收人即当前操作人（与待办同一身份口径），不接受入参指定他人——收件箱是「我的」，允许指定 recipientId 等于开任意他人信箱的口子。
+   */
+  public List<Map<String, Object>> inbox(boolean unreadOnly) {
+    String current = operator();
+    if (current == null) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION, "匿名主体没有收件箱（按登录用户检索）");
+    }
+    WorkflowInboxQuery inbox = requireInboxQuery();
+    long tenantId = currentTenantId();
+    return inbox.inbox(tenantId, current, unreadOnly).stream()
+        .map(RuntimeApprovalApplicationService::toInboxRow)
+        .toList();
+  }
+
+  /**
+   * 问题单据列表：按阶段列举实例（{@code SUSPENDED} 挂起死单 / {@code REJECTED} 驳回单等），更新时间倒序，超限截断。
+   *
+   * <p><b>只截断不计数</b>：排障入口不是分页浏览——相位随处置实时变化，count 与列表两次查询天然不一致； {@code truncated=true} 即提示「不止这些」。上限
+   * 200，防止排障页一次拉空整张表。
+   */
+  public Map<String, Object> instancesByPhase(String phase, int limit) {
+    WorkflowInstance.Phase parsed = requirePhase(phase);
+    WorkflowEngine engine = requireEngine();
+    int capped = Math.min(Math.max(limit, 1), 200);
+    List<WorkflowInstance> found = call(() -> engine.listInstancesByPhase(parsed, capped));
+    List<Map<String, Object>> rows = found.stream().map(this::snapshot).toList();
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("phase", parsed.name());
+    result.put("truncated", rows.size() >= capped);
+    result.put("instances", rows);
+    return result;
+  }
+
+  private static WorkflowInstance.Phase requirePhase(String phase) {
+    if (phase == null || phase.isBlank()) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_VALIDATION_FAILED, "缺少必填参数：phase");
+    }
+    try {
+      return WorkflowInstance.Phase.valueOf(phase.trim().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_VALIDATION_FAILED,
+          "未知的流程阶段：" + phase + "（可选：RUNNING/SUSPENDED/APPROVED/REJECTED/WITHDRAWN/TERMINATED）");
+    }
+  }
+
+  /** 收件箱端口：缺失即 422（宿主没装 starter 或覆盖成无读端口的实现），不让 Spring 上下文启动失败。 */
+  private WorkflowInboxQuery requireInboxQuery() {
+    WorkflowInboxQuery inbox = inboxProvider.getIfAvailable();
+    if (inbox == null) {
+      throw new RuntimeRecordException(
+          MetadataErrorCodes.RUNTIME_VALIDATION_FAILED,
+          "站内信收件箱端口未装配（WorkflowInboxQuery 缺失），通知类端点不可用");
+    }
+    return inbox;
+  }
+
+  private long currentTenantId() {
+    try {
+      Long tenant = com.bone.core.tenant.context.TenantContext.getTenantIdAsLong();
+      return tenant == null ? 0L : tenant;
+    } catch (RuntimeException | Error ignored) {
+      return 0L;
+    }
+  }
+
+  private static Map<String, Object> toInboxRow(WorkflowNotification n) {
+    Map<String, Object> row = new LinkedHashMap<>();
+    row.put("id", n.id());
+    row.put("type", n.type());
+    row.put("instanceId", n.instanceId());
+    row.put("entityCode", n.entityCode());
+    row.put("recordId", n.recordId());
+    row.put("nodeCode", n.nodeCode());
+    row.put("title", n.title());
+    row.put("body", n.body());
+    row.put("read", n.read());
+    row.put("createdAt", n.createdAt());
+    return row;
+  }
+
   // ── 内部 ────────────────────────────────────────────────────────────────
 
-  private List<Map<String, Object>> queryTasks(WorkflowTask.Status status) {
+  /**
+   * 分页参数夹取：{@code [size, offset, page]}。
+   *
+   * <p>size 夹 1..200（HTTP 参数不夹上限等于允许一次拉空整张表），page 夹 ≥1（负页在下推 offset 时会算出负 OFFSET → SQL 语法错误 500）。
+   */
+  private static int[] clampPaging(int page, int size) {
+    int clampedSize = Math.min(Math.max(size, 1), 200);
+    int clampedPage = Math.max(page, 1);
+    return new int[] {clampedSize, (clampedPage - 1) * clampedSize, clampedPage};
+  }
+
+  /** 待办 / 已办检索的操作人：匿名主体没有「我的」任何东西，明确 403 而非返回空列表误导。 */
+  private String requireOperatorForTasks() {
     String current = operator();
     if (current == null) {
       throw new RuntimeRecordException(
           MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION, "匿名主体没有待办（待办以登录用户为办理人检索）");
     }
-    WorkflowEngine engine = requireEngine();
-    List<Map<String, Object>> rows = new ArrayList<>();
-    for (WorkflowTask task : call(() -> engine.listTasksByAssignee(current, status))) {
+    return current;
+  }
+
+  /** 本页任务 → 行投影（附单据摘要）。实例反查与摘要回表只发生在<b>页内</b> ≤size 条上——全量时代的每任务一查（N+1）由此封顶。 */
+  private List<Map<String, Object>> summarizePage(WorkflowEngine engine, List<WorkflowTask> tasks) {
+    List<Map<String, Object>> rows = new ArrayList<>(tasks.size());
+    for (WorkflowTask task : tasks) {
       Map<String, Object> row = new LinkedHashMap<>(snapshot(task));
       Optional<WorkflowInstance> found = call(() -> engine.findInstanceById(task.instanceId()));
       if (found.isPresent()) {
@@ -196,15 +376,6 @@ public class RuntimeApprovalApplicationService {
           ex.getMessage());
       return null;
     }
-  }
-
-  private PageResult<Map<String, Object>> paginate(
-      List<Map<String, Object>> rows, int page, int size) {
-    // 分页在内存裁剪：仓储侧暂未下推 limit/offset。数据量为「一个办理人的在办任务」，可控；
-    // 单个办理人待办超过数千条时需先在下沉 SQL 加 limit，否则全量载入成为热点。
-    int from = Math.min(Math.max(page - 1, 0) * size, rows.size());
-    int to = Math.min(from + size, rows.size());
-    return PageResult.of(rows.subList(from, to), (long) rows.size(), page, size);
   }
 
   private WorkflowEngine requireEngine() {

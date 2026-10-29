@@ -94,13 +94,13 @@ class ExpenseWorkflowDecisionHandlerTest {
   void approve_completesTaskOfOperator() {
     stubRunningWithTask("u-manager");
     when(engine.completeTask(
-            eq("task-1"), eq(WorkflowTask.Decision.APPROVE), eq("同意"), eq("u-manager")))
+            eq("task-1"), eq(WorkflowTask.Decision.APPROVE), eq("同意"), eq("u-manager"), any()))
         .thenReturn(instance("APPROVED"));
 
     Map<String, Object> result =
         handler.execute(ctx("approve", "u-manager", Map.of("comment", "同意")));
 
-    verify(engine).completeTask("task-1", WorkflowTask.Decision.APPROVE, "同意", "u-manager");
+    verify(engine).completeTask("task-1", WorkflowTask.Decision.APPROVE, "同意", "u-manager", null);
     assertThat(result)
         .containsEntry("decision", "APPROVE")
         .containsEntry("workflowPhase", "APPROVED");
@@ -111,13 +111,13 @@ class ExpenseWorkflowDecisionHandlerTest {
   void reject_completesTaskOfOperator() {
     stubRunningWithTask("u-manager");
     when(engine.completeTask(
-            eq("task-1"), eq(WorkflowTask.Decision.REJECT), eq("缺发票"), eq("u-manager")))
+            eq("task-1"), eq(WorkflowTask.Decision.REJECT), eq("缺发票"), eq("u-manager"), any()))
         .thenReturn(instance("REJECTED"));
 
     Map<String, Object> result =
         handler.execute(ctx("reject", "u-manager", Map.of("reason", "缺发票")));
 
-    verify(engine).completeTask("task-1", WorkflowTask.Decision.REJECT, "缺发票", "u-manager");
+    verify(engine).completeTask("task-1", WorkflowTask.Decision.REJECT, "缺发票", "u-manager", null);
     assertThat(result)
         .containsEntry("decision", "REJECT")
         .containsEntry("workflowPhase", "REJECTED");
@@ -181,7 +181,7 @@ class ExpenseWorkflowDecisionHandlerTest {
   @DisplayName("引擎 NOT_ASSIGNEE（CAS 抢先/改判）→ 403")
   void engineNotAssignee_mapsTo403() {
     stubRunningWithTask("u-manager");
-    when(engine.completeTask(any(), any(), any(), any()))
+    when(engine.completeTask(any(), any(), any(), any(), any()))
         .thenThrow(new WorkflowEngineException(WorkflowErrorCode.NOT_ASSIGNEE, "非办理人"));
 
     assertThatThrownBy(() -> handler.execute(ctx("approve", "u-manager", Map.of())))
@@ -196,7 +196,7 @@ class ExpenseWorkflowDecisionHandlerTest {
   @DisplayName("引擎 ALREADY_DECIDED（异结论改判）→ 409")
   void engineAlreadyDecided_mapsTo409() {
     stubRunningWithTask("u-manager");
-    when(engine.completeTask(any(), any(), any(), any()))
+    when(engine.completeTask(any(), any(), any(), any(), any()))
         .thenThrow(new WorkflowEngineException(WorkflowErrorCode.ALREADY_DECIDED, "已决策"));
 
     assertThatThrownBy(() -> handler.execute(ctx("approve", "u-manager", Map.of())))

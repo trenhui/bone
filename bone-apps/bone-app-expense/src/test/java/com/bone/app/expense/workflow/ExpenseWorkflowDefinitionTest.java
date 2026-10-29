@@ -696,6 +696,65 @@ class ExpenseWorkflowDefinitionTest {
           .toList();
     }
 
+    // 分页桩：排序口径与生产 SQL（WfTaskSdkRepository 的 Paged 方法）一致——
+    // 待办 created_at DESC；已办 COALESCE(decided_at, created_at) DESC；均 id DESC 决胜。
+    @Override
+    public List<WorkflowTask> listPendingTasksByAssignee(String assigneeId, int limit, int offset) {
+      return tasks.stream()
+          .filter(
+              t -> t.assigneeId().equals(assigneeId) && t.status() == WorkflowTask.Status.PENDING)
+          .sorted(
+              java.util.Comparator.comparing(WorkflowTask::createdAt)
+                  .reversed()
+                  .thenComparing(WorkflowTask::id, java.util.Comparator.reverseOrder()))
+          .skip(offset)
+          .limit(limit)
+          .toList();
+    }
+
+    @Override
+    public long countPendingTasksByAssignee(String assigneeId) {
+      return tasks.stream()
+          .filter(
+              t -> t.assigneeId().equals(assigneeId) && t.status() == WorkflowTask.Status.PENDING)
+          .count();
+    }
+
+    @Override
+    public List<WorkflowTask> listDecidedTasksByAssignee(String assigneeId, int limit, int offset) {
+      return tasks.stream()
+          .filter(
+              t -> t.assigneeId().equals(assigneeId) && t.status() != WorkflowTask.Status.PENDING)
+          .sorted(
+              java.util.Comparator.<WorkflowTask, java.time.Instant>comparing(
+                      t -> t.decidedAt() == null ? t.createdAt() : t.decidedAt())
+                  .reversed()
+                  .thenComparing(WorkflowTask::id, java.util.Comparator.reverseOrder()))
+          .skip(offset)
+          .limit(limit)
+          .toList();
+    }
+
+    @Override
+    public long countDecidedTasksByAssignee(String assigneeId) {
+      return tasks.stream()
+          .filter(
+              t -> t.assigneeId().equals(assigneeId) && t.status() != WorkflowTask.Status.PENDING)
+          .count();
+    }
+
+    @Override
+    public List<WorkflowInstance> listInstancesByPhase(WorkflowInstance.Phase phase, int limit) {
+      return instances.values().stream()
+          .filter(i -> i.phase() == phase)
+          .sorted(
+              java.util.Comparator.comparing(WorkflowInstance::updatedAt)
+                  .reversed()
+                  .thenComparing(WorkflowInstance::id, java.util.Comparator.reverseOrder()))
+          .limit(limit)
+          .toList();
+    }
+
     @Override
     public List<WorkflowTask> listTasks(String instanceId) {
       return tasks.stream().filter(t -> t.instanceId().equals(instanceId)).toList();

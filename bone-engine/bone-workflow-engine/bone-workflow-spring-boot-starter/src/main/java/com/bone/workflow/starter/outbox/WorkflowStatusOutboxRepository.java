@@ -99,6 +99,16 @@ public class WorkflowStatusOutboxRepository {
   }
 
   /**
+   * 终态失败（P0-2）：不可重试根因（如动作未声明幂等）。落 FAILED 且把 {@code next_retry_at} 推到远未来， 使其永不被 {@link
+   * #pollDue(int)} 重新抢占执行，停留在 FAILED 仅作人工可见的死信。返回是否真的落了终态。
+   */
+  public boolean markTerminallyFailed(String intentId, String reason) {
+    return outbox.markStatusIntentTerminallyFailed(
+            intentId, requireTenant(), Instant.now().plus(Duration.ofDays(36500)), Instant.now())
+        > 0;
+  }
+
+  /**
    * 对账窗口内的终态实例中，<b>完全没有任何同 intent 的意图行</b>的（意图丢失，需补投）。
    *
    * <p><b>判据是「一行都没有」而不是「没有 DONE 行」</b>：意图行只要存在（NEW / CLAIMED / FAILED / DONE 任一状态），

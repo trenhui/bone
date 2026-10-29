@@ -43,6 +43,9 @@ public class ExpenseWorkflowDecisionHandler implements RuntimeActionHandler {
     WorkflowInstance instance = requireActiveInstance(ctx);
     WorkflowTask task = requirePendingTaskOf(ctx, instance);
     String comment = text(ctx.getParams().get(approve ? "comment" : "reason"));
+    // 驳回退回指定节点：审批人可选上游节点让单据原地返工（不整单驳回、不另起新单）。
+    // APPROVE 时引擎忽略该参数；节点不合法时引擎抛 REJECT_TARGET_NODE_INVALID，绝不静默降级成整单驳回。
+    String backToNodeCode = text(ctx.getParams().get("backToNodeCode"));
     WorkflowInstance after;
     try {
       after =
@@ -51,7 +54,8 @@ public class ExpenseWorkflowDecisionHandler implements RuntimeActionHandler {
                   task.id(),
                   approve ? WorkflowTask.Decision.APPROVE : WorkflowTask.Decision.REJECT,
                   comment,
-                  ctx.getOperatorId());
+                  ctx.getOperatorId(),
+                  backToNodeCode);
     } catch (WorkflowEngineException ex) {
       throw ExpenseWorkflowExceptionMapper.translate(ex);
     }
@@ -60,6 +64,9 @@ public class ExpenseWorkflowDecisionHandler implements RuntimeActionHandler {
     result.put("decision", approve ? "APPROVE" : "REJECT");
     result.put("workflowPhase", after.phase().name());
     result.put("currentNode", after.currentNodeCode());
+    if (!approve && backToNodeCode != null && !backToNodeCode.isBlank()) {
+      result.put("backToNode", backToNodeCode);
+    }
     return result;
   }
 

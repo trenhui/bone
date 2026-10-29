@@ -11,7 +11,7 @@ import com.bone.workflow.domain.WorkflowInstance.Phase;
 import com.bone.workflow.domain.WorkflowTask;
 import com.bone.workflow.domain.WorkflowTask.Status;
 import com.bone.workflow.ports.spi.WorkflowIdGenerator;
-import com.bone.workflow.starter.domain.WorkflowNotification;
+import com.bone.workflow.ports.spi.WorkflowNotification;
 import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import com.bone.workflow.starter.sdk.WorkflowSdkTestContext;
 import java.time.Instant;
@@ -112,6 +112,36 @@ class PersistenceNotificationPortTest {
 
     assertTrue(port.inbox(TENANT, "mgr1", true).isEmpty(), "仅未读查询应排除已读项");
     assertEquals(1, port.inbox(TENANT, "mgr1", false).size(), "全部查询仍含已读项");
+  }
+
+  @Test
+  @DisplayName("挂起原因可取回：详情页据此展示「为什么卡住」，而不是只显示「已挂起」")
+  void latestSuspensionNotice_returnsReason() {
+    port.notifySuspended(instance(), "审批节点 approve 解析出的审批人含发起人本人（自审批，违反职责分离）");
+
+    java.util.Optional<String> reason = port.latestSuspensionNotice(TENANT, "i1");
+
+    assertTrue(reason.isPresent(), "挂起告警正文必须能读回");
+    assertTrue(reason.get().contains("自审批"), "原因文案要能直接面向用户解释：" + reason.get());
+  }
+
+  @Test
+  @DisplayName("无挂起记录时返回空（调用方降级为通用指引，不伪造原因）")
+  void latestSuspensionNotice_emptyWhenNeverSuspended() {
+    port.notifyTaskCreated(task("mgr1"), instance());
+
+    assertTrue(port.latestSuspensionNotice(TENANT, "i1").isEmpty());
+  }
+
+  @Test
+  @DisplayName("多次挂起取最新一条：指派后又挂起时不能展示上一次的旧原因")
+  void latestSuspensionNotice_picksNewest() {
+    port.notifySuspended(instance(), "第一次挂起：解析不出审批人");
+    port.notifySuspended(instance(), "第二次挂起：审批人为发起人本人");
+
+    String reason = port.latestSuspensionNotice(TENANT, "i1").orElse("");
+
+    assertTrue(reason.contains("第二次"), "必须取最新一条，实际：" + reason);
   }
 
   @Test

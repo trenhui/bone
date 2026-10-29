@@ -101,6 +101,20 @@ public interface WfStatusOutboxSdkRepository extends Repository<WfStatusOutboxRo
       @Param("now") Instant now);
 
   /**
+   * 终态失败（P0-2）：推理据「动作未声明幂等」等不可重试根因——落 FAILED 但把 {@code next_retry_at} 推到远未来， 使其永不在 {@code pollDue}
+   * 的「FAILED 且到期」判据内被重新抢占执行（重投正是危险源）。停留在 FAILED 仅作人工可见的死信。
+   */
+  @Sql(
+      "UPDATE wf_status_outbox SET state = 'FAILED', next_retry_at = #{never}, updated_at = #{now}"
+          + " WHERE id = #{id} AND tenant_id = #{tenantId} AND deleted = 0"
+          + "   AND state IN ('NEW', 'CLAIMED', 'FAILED')")
+  int markStatusIntentTerminallyFailed(
+      @Param("id") String id,
+      @Param("tenantId") Long tenantId,
+      @Param("never") Instant never,
+      @Param("now") Instant now);
+
+  /**
    * 对账：窗口内的终态实例里，<b>完全没有任何同 intent 的意图行</b>的（意图丢失，需补投）。
    *
    * <p>{@code i.phase AS intent}——把实例终态投影为意图语义，与写入侧 {@code OutboxStatusPort} 的 intent 逐字一致。

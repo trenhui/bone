@@ -5,10 +5,16 @@
 
   * 全部返回 `(status, body)`，断言自己判状态码与 errorCode；
   * `act` 用主会话，`act_as` 用**指定身份头**（职责分离 SoD 场景：submit=admin、approve=审批人）；
-  * 采购工作流动作（submit/approve/reject）平台强制幂等键，`act_as` 自动补唯一键，
-    避免每个调用点手工传 `idem`。
+  * `act_as` 未显式传 `idem` 时**一律**自动补唯一幂等键——逃逸动作（工作流 submit/approve/reject/
+    withdraw/confirm 等）平台强制 `requires_idempotency=1`，缺键直接 400；非幂等动作的键
+    在执行日志里落 NULL，不会占用幂等槽，补键无副作用；
+  * 负向测试要断言「缺幂等键 → 400」时显式传 `idem=NO_IDEM`（哨兵，表示本次故意不带键）。
 """
 from . import http
+
+# 哨兵：显式声明「本次调用不带 Idempotency-Key」（负向测试专用）。
+# 与默认值 None（自动补唯一键）区分开，避免负向断言被自动补键意外救活。
+NO_IDEM = ""
 
 
 def rec_create(entity_code, body):
@@ -34,16 +40,16 @@ def act(entity_code, rid, action, params=None, idem=None):
 
 
 def act_as(hdr, entity_code, rid, action, params=None, idem=None):
-    """用指定身份头触发状态机动作，返回 `(status, body)`。"""
-    # 采购 submit/approve/reject 已接工作流引擎（逃逸动作，平台强制要求幂等键）；
-    # 此处对采购这三类动作自动补唯一幂等键，避免逐个调用处手工传 idem。
-    if (
-        idem is None
-        and str(entity_code).startswith("purchase_order")
-        and action in ("submit", "approve", "reject")
-    ):
+    """用指定身份头触发状态机动作，返回 `(status, body)`。
+
+    `idem=None` 自动补唯一键；`idem=NO_IDEM`（空串）表示故意不带键（负向断言）。
+    """
+    # 逃逸动作（已接工作流引擎的 submit/approve/reject/withdraw 等）平台强制幂等键，
+    # 缺键直接 400。此处统一补唯一键，避免逐个调用点手工传 idem；
+    # 非幂等动作的键在执行日志落 NULL，不占幂等槽，故无条件补是安全的。
+    if idem is None:
         _IDEM_SEQ[0] += 1
-        idem = f"po-{action}-{rid}-{_IDEM_SEQ[0]}"
+        idem = f"e2e-{entity_code}-{action}-{rid}-{_IDEM_SEQ[0]}"
     return http.call_as(
         hdr,
         "POST",

@@ -9,6 +9,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
+import com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -160,6 +162,47 @@ class RuntimeActionIntentExecutorTest {
         .hasMessageContaining("租户上下文");
 
     verify(actionInvoker, times(0))
+        .invoke(any(), anyLong(), any(), any(), any(), any(), any(), any());
+  }
+
+  // ── P0-2 幂等硬约束（中继层 fail-closed）───────────────────────────────
+
+  @Test
+  @DisplayName("P0-2：动作未声明幂等时执行器拒绝执行（绝不调平台动作），抛 NonIdempotentActionRefusedException")
+  void nonIdempotentAction_isRefused() {
+    WorkflowActionIdempotencyPolicy policy = (entity, tenant, action) -> false;
+    RuntimeActionIntentExecutor guarded =
+        new RuntimeActionIntentExecutor(actionInvoker, policy, WorkflowMetrics.NOOP);
+
+    assertThatThrownBy(() -> guarded.execute(terminal("1001", "APPROVED", "approve")))
+        .isInstanceOf(NonIdempotentActionRefusedException.class);
+
+    verify(actionInvoker, times(0))
+        .invoke(any(), anyLong(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("P0-2：策略返回 true（已声明幂等）时照常执行平台动作")
+  void idempotentAction_executesNormally() {
+    WorkflowActionIdempotencyPolicy policy = (entity, tenant, action) -> true;
+    RuntimeActionIntentExecutor guarded =
+        new RuntimeActionIntentExecutor(actionInvoker, policy, WorkflowMetrics.NOOP);
+
+    guarded.execute(terminal("1001", "APPROVED", "approve"));
+
+    verify(actionInvoker, times(1))
+        .invoke(any(), anyLong(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("P0-2：宿主未装配策略端口时放行（opt-in 默认），不抛异常、照常执行")
+  void noPolicy_present_permissive() {
+    RuntimeActionIntentExecutor guarded =
+        new RuntimeActionIntentExecutor(actionInvoker, null, WorkflowMetrics.NOOP);
+
+    guarded.execute(terminal("1001", "APPROVED", "approve"));
+
+    verify(actionInvoker, times(1))
         .invoke(any(), anyLong(), any(), any(), any(), any(), any(), any());
   }
 }

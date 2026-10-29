@@ -108,4 +108,61 @@ public class RuntimeApprovalController {
       @PathVariable String instanceId, @RequestBody(required = false) Map<String, Object> body) {
     return ApiResponse.success(approvalService.terminate(instanceId, body));
   }
+
+  /**
+   * 转办：办理人把<b>自己的</b>待办转给他人（{"assigneeId":"...","comment":"..."}）。
+   *
+   * <p>写权限粗筛 + 引擎侧「操作人 == 当前办理人」细判（与改派的管理员语义区分：转办是自助，改派是干预）。
+   */
+  @PostMapping("/tasks/{taskId}/transfer")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
+  public ApiResponse<Map<String, Object>> transfer(
+      @PathVariable String taskId, @RequestBody(required = false) Map<String, Object> body) {
+    return ApiResponse.success(approvalService.transfer(taskId, body));
+  }
+
+  /** 加签：拉人会办当前节点（{"assigneeId":"...","comment":"..."}），被加签人拿到同节点 PENDING。 */
+  @PostMapping("/tasks/{taskId}/addSign")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
+  public ApiResponse<Map<String, Object>> addSign(
+      @PathVariable String taskId, @RequestBody(required = false) Map<String, Object> body) {
+    return ApiResponse.success(approvalService.addSign(taskId, body));
+  }
+
+  /**
+   * 恢复挂起实例：组织数据修复后重跑审批人解析（{"reason":"..."} 可选，审计留痕用）。
+   *
+   * <p>与 {@code assign} 的分工：assign = 直接注入办理人（人已知），resume = 按原指派规则重解析（数据已修）。解析仍不出人时引擎保持挂起。
+   */
+  @PostMapping("/instances/{instanceId}/resume")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:write', 'metadata:write')")
+  public ApiResponse<Map<String, Object>> resume(
+      @PathVariable String instanceId, @RequestBody(required = false) Map<String, Object> body) {
+    return ApiResponse.success(approvalService.resume(instanceId, body));
+  }
+
+  /** 我的站内信（收件箱）：{@code unreadOnly=true} 只看未读。接收人恒为当前操作人，不接受入参指定他人。 */
+  @GetMapping("/inbox")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  public ApiResponse<java.util.List<Map<String, Object>>> inbox(
+      @RequestParam(defaultValue = "false") boolean unreadOnly) {
+    return ApiResponse.success(approvalService.inbox(unreadOnly));
+  }
+
+  /**
+   * 问题单据列表：按阶段列举实例（{@code phase=SUSPENDED} 挂起死单 / {@code REJECTED} 驳回单），更新时间倒序。
+   *
+   * <p>只截断不计数：返回体 {@code truncated=true} 表示该阶段问题单不止这些（上限 200）——排障入口不是分页浏览。
+   */
+  @GetMapping("/instances")
+  @org.springframework.security.access.prepost.PreAuthorize(
+      "hasAnyAuthority('metadata:runtime:read', 'metadata:read')")
+  public ApiResponse<Map<String, Object>> instances(
+      @RequestParam String phase, @RequestParam(defaultValue = "50") int limit) {
+    return ApiResponse.success(approvalService.instancesByPhase(phase, limit));
+  }
 }

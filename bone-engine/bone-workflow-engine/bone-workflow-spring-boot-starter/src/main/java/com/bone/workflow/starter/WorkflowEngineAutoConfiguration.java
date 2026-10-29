@@ -11,6 +11,7 @@ import com.bone.workflow.ports.spi.NotificationPort;
 import com.bone.workflow.ports.spi.WorkflowAuditPort;
 import com.bone.workflow.ports.spi.WorkflowDefinitionRepository;
 import com.bone.workflow.ports.spi.WorkflowIdGenerator;
+import com.bone.workflow.ports.spi.WorkflowInboxQuery;
 import com.bone.workflow.ports.spi.WorkflowInstanceRepository;
 import com.bone.workflow.ports.spi.WorkflowRecordPort;
 import com.bone.workflow.ports.spi.WorkflowStatusPort;
@@ -24,6 +25,7 @@ import com.bone.workflow.starter.sdk.WfNotificationSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDefSdkRepository;
 import com.bone.workflow.starter.sdk.WfProcessDraftSdkRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -35,6 +37,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * 审批流引擎自动装配。
@@ -147,6 +150,10 @@ public class WorkflowEngineAutoConfiguration {
    * <p>审批流若只改状态不通知，会退化成「办事人每天自己刷待办列表」——催办、超时、改派全部失效，故通知是一等能力， 默认即落库（P0-3：通知
    * MUST）。通知失败绝不阻断审批主链路（端口内部已吞异常）。
    *
+   * <p><b>挂起告警接收人</b>：{@code bone.workflow.notify.admin-role} 配置角色码后，告警经 {@link
+   * com.bone.workflow.starter.spi.RoleMemberProvider} 解析成真实成员逐人投递；未配置 / SPI 未接入 / 角色解析为空时回落兜底接收人并打
+   * WARN （告警绝不静默丢，但接收人质量降级必须可诊断）。
+   *
    * <p>宿主若把通知接到 IM / 邮件网关，提供自己的 {@link NotificationPort} bean
    * 即覆盖本实现（{@code @ConditionalOnMissingBean} 保证不冲突）；如需保留站内信收件箱入口，可同时提供 {@code WorkflowInboxQuery}
    * 实现。本 bean 缺失时引擎回退到 {@link NotificationPort#NOOP}，不会因此不可用。
@@ -154,8 +161,53 @@ public class WorkflowEngineAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public NotificationPort workflowNotificationPort(
-      WfNotificationSdkRepository notificationRepository, WorkflowIdGenerator idGenerator) {
-    return new PersistenceNotificationPort(notificationRepository, idGenerator);
+      WfNotificationSdkRepository notificationRepository,
+      WorkflowIdGenerator idGenerator,
+      ObjectProvider<com.bone.workflow.starter.spi.RoleMemberProvider> roleMemberProvider,
+      ObjectProvider<com.bone.workflow.starter.metrics.WorkflowMetrics> metricsProvider,
+      @Value("${bone.workflow.notify.admin-role:}") String adminRole) {
+    PersistenceNotificationPort port =
+        new PersistenceNotificationPort(
+            notificationRepository, idGenerator, null, metricsProvider.getIfAvailable());
+    port.setAdminRole(adminRole, roleMemberProvider.getIfAvailable());
+    return port;
+  }
+
+  /**
+   * 缺省收件箱查询端口（读能力）：复用默认通知端口——{@link PersistenceNotificationPort} 写读一体， 既「发得出」也「查得到」。
+   *
+   * <p><b>为什么单独一个 bean</b>：{@link NotificationPort} 的注入点类型是写端口，宿主入站面按 {@link WorkflowInboxQuery}
+   * 类型注入时拿不到它（接口与实现类型不同）。若宿主的 NotificationPort 同时实现本接口（例如自己的持久化通知），直接复用； 若宿主接到
+   * IM/邮件网关（写不落本地表），收件箱无数据源——给<b>空实现 + WARN</b>，让「站内信 Tab 是空的」可诊断，而不是启动失败。
+   *
+   * <p>宿主可自备 {@link WorkflowInboxQuery} bean 覆盖（{@code @ConditionalOnMissingBean} 保证不冲突）。
+   *
+   * <p><b>为什么必须 {@code @Primary}</b>：默认通知端口 {@link PersistenceNotificationPort} 同时实现了写端口与读端口， 故容器里按
+   * {@link WorkflowInboxQuery} 类型看会有<b>两个</b>候选（本 bean + {@code workflowNotificationPort}，指向同一实例）。
+   * 缺 {@code @Primary} 时，入站面用 {@code ObjectProvider#getIfAvailable()} 取端口会抛 {@code
+   * NoUniqueBeanDefinitionException}——实测把单据详情页打成 500（挂起原因读不到还连累整个详情）。 读端口语义上就该是这一个（本 bean
+   * 是唯一承诺「按读类型可注入」的定义）。
+   */
+  @Bean
+  @Primary
+  @ConditionalOnMissingBean
+  public WorkflowInboxQuery workflowInboxQuery(
+      ObjectProvider<NotificationPort> notificationPortProvider) {
+    NotificationPort notificationPort = notificationPortProvider.getIfAvailable();
+    if (notificationPort instanceof WorkflowInboxQuery inbox) {
+      return inbox;
+    }
+    logInboxFallback(notificationPort);
+    return (tenantId, recipientId, unreadOnly) -> List.of();
+  }
+
+  /** 收件箱空实现的降级告警：宿主自备 NotificationPort 但没提供读端口，站内信 Tab 将永远为空。 */
+  private static void logInboxFallback(NotificationPort notificationPort) {
+    LoggerFactory.getLogger(WorkflowEngineAutoConfiguration.class)
+        .warn(
+            "[workflow] 宿主 NotificationPort（{}）未实现 WorkflowInboxQuery，站内信收件箱降级为空实现——"
+                + "审批通知仍会写入宿主通道，但「我的通知」页无数据。如需站内信入口，请提供 WorkflowInboxQuery bean。",
+            notificationPort == null ? "缺失" : notificationPort.getClass().getSimpleName());
   }
 
   /**

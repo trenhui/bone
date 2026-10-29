@@ -32,7 +32,7 @@ from e2e_lib.modeling import (
     validate,
 )
 from e2e_lib.report import check, section
-from e2e_lib.runtime import act, child_replace, rec_create
+from e2e_lib.runtime import NO_IDEM, act, child_replace, rec_create
 
 # 登录统一走公共层（失败即退出）；不再复用 /tmp/bone_token.txt——遗留文件可能过期，
 # 且脚本必须能独立运行，不依赖某个遗留进程写过该文件。
@@ -211,7 +211,7 @@ if rid:
         check("报销：approve 流转到 APPROVED", s == 200 and st == "APPROVED", f"{s} status={st}")
 
         # 负向③：逃逸动作缺幂等键 → 必须拒（防重复打款）
-        s, d = act(EXP, rid, "confirmPayout", params={"channel": "BANK"})
+        s, d = act(EXP, rid, "confirmPayout", params={"channel": "BANK"}, idem=NO_IDEM)
         check(
             "报销【负向】打款缺幂等键 → 拒绝",
             s == 400 and ecode(d) == "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED",

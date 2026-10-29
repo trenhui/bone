@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -18,6 +19,7 @@ import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import com.bone.workflow.domain.WorkflowEngine;
 import com.bone.workflow.domain.WorkflowInstance;
 import com.bone.workflow.domain.WorkflowTask;
+import com.bone.workflow.ports.spi.WorkflowInboxQuery;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ class RuntimeApprovalApplicationServiceTest {
   @Mock private RuntimeAccessGuard accessGuard;
   @Mock private CurrentUserProvider currentUser;
   @Mock private ObjectProvider<WorkflowEngine> engineProvider;
+  @Mock private ObjectProvider<WorkflowInboxQuery> inboxProvider;
 
   private RuntimeApprovalApplicationService service;
 
@@ -51,7 +54,8 @@ class RuntimeApprovalApplicationServiceTest {
     when(currentUser.currentUserIdOrNull()).thenReturn(Long.valueOf(OPERATOR));
     when(engineProvider.getIfAvailable()).thenReturn(engine);
     service =
-        new RuntimeApprovalApplicationService(engineProvider, records, accessGuard, currentUser);
+        new RuntimeApprovalApplicationService(
+            engineProvider, inboxProvider, records, accessGuard, currentUser);
   }
 
   private WorkflowTask task(String id, String assignee, WorkflowTask.Status status) {
@@ -73,9 +77,24 @@ class RuntimeApprovalApplicationServiceTest {
         Instant.EPOCH);
   }
 
+  private WorkflowInstance suspendedInstance() {
+    return new WorkflowInstance(
+        "inst-1",
+        "expense_reimbursement",
+        "9001",
+        "expense_reimbursement",
+        1,
+        "mgr",
+        WorkflowInstance.Phase.SUSPENDED,
+        "2002",
+        Instant.EPOCH,
+        Instant.EPOCH);
+  }
+
   @Test
   void pendingTasks_returnEnginesTaskListWithRecordSummary() {
-    when(engine.listTasksByAssignee(OPERATOR, WorkflowTask.Status.PENDING))
+    when(engine.countPendingTasksByAssignee(OPERATOR)).thenReturn(1L);
+    when(engine.listPendingTasksByAssignee(OPERATOR, 20, 0))
         .thenReturn(List.of(task("t-1", OPERATOR, WorkflowTask.Status.PENDING)));
     when(engine.findInstanceById("inst-1")).thenReturn(Optional.of(instance()));
     when(records.getById("expense_reimbursement", "9001"))
@@ -96,7 +115,8 @@ class RuntimeApprovalApplicationServiceTest {
 
   @Test
   void pendingTasks_summaryDegradesToNullWhenRowNotVisible() {
-    when(engine.listTasksByAssignee(OPERATOR, WorkflowTask.Status.PENDING))
+    when(engine.countPendingTasksByAssignee(OPERATOR)).thenReturn(1L);
+    when(engine.listPendingTasksByAssignee(OPERATOR, 20, 0))
         .thenReturn(List.of(task("t-1", OPERATOR, WorkflowTask.Status.PENDING)));
     when(engine.findInstanceById("inst-1")).thenReturn(Optional.of(instance()));
     when(records.getById("expense_reimbursement", "9001"))
@@ -116,7 +136,8 @@ class RuntimeApprovalApplicationServiceTest {
         assertThrows(RuntimeRecordException.class, () -> service.listPendingTasks(1, 20));
 
     assertEquals(MetadataErrorCodes.RUNTIME_FORBIDDEN_ACTION, ex.getErrorCode());
-    verify(engine, never()).listTasksByAssignee(anyString(), any());
+    verify(engine, never()).countPendingTasksByAssignee(anyString());
+    verify(engine, never()).listPendingTasksByAssignee(anyString(), anyInt(), anyInt());
   }
 
   @Test
@@ -143,6 +164,57 @@ class RuntimeApprovalApplicationServiceTest {
     assertEquals("RUNNING", ((Map<?, ?>) result.get("instance")).get("phase"));
     assertEquals(1, ((List<?>) result.get("pendingTasks")).size());
     assertEquals(1, ((List<?>) result.get("trail")).size());
+  }
+
+  /** 挂起原因必须随 describe 返回：挂起态没有待办，前端只看到「挂起」时无从判断该改哪个字段。 */
+  @Test
+  void describe_exposesSuspendReasonWhenInstanceSuspended() {
+    com.bone.core.tenant.context.TenantContext.setTenantId(0L);
+    try {
+      when(engine.findInstance("expense_reimbursement", "9001"))
+          .thenReturn(Optional.of(suspendedInstance()));
+      when(engine.listPendingTasks("inst-1")).thenReturn(List.of());
+      when(engine.listInstanceHistory("inst-1")).thenReturn(List.of());
+      WorkflowInboxQuery inbox = org.mockito.Mockito.mock(WorkflowInboxQuery.class);
+      when(inboxProvider.getIfUnique()).thenReturn(inbox);
+      when(inbox.latestSuspensionNotice(0L, "inst-1"))
+          .thenReturn(Optional.of("审批节点 mgr 解析出的审批人含发起人本人（自审批，违反职责分离）"));
+
+      Map<String, Object> result = service.describe("expense_reimbursement", "9001");
+
+      assertEquals("审批节点 mgr 解析出的审批人含发起人本人（自审批，违反职责分离）", result.get("suspendReason"));
+      assertEquals("SUSPENDED", ((Map<?, ?>) result.get("instance")).get("phase"));
+    } finally {
+      com.bone.core.tenant.context.TenantContext.clear();
+    }
+  }
+
+  /** 通知走 IM/邮件（不落本地表）时端口缺省返回空：describe 必须照常返回，只是没有原因字段。 */
+  @Test
+  void describe_omitsSuspendReasonWhenInboxCannotTell() {
+    com.bone.core.tenant.context.TenantContext.setTenantId(0L);
+    try {
+      when(engine.findInstance("expense_reimbursement", "9001"))
+          .thenReturn(Optional.of(suspendedInstance()));
+      when(engine.listPendingTasks("inst-1")).thenReturn(List.of());
+      when(engine.listInstanceHistory("inst-1")).thenReturn(List.of());
+      when(inboxProvider.getIfUnique())
+          .thenReturn(
+              new WorkflowInboxQuery() {
+                @Override
+                public List<com.bone.workflow.ports.spi.WorkflowNotification> inbox(
+                    long tenantId, String recipientId, boolean unreadOnly) {
+                  return List.of();
+                }
+              });
+
+      Map<String, Object> result = service.describe("expense_reimbursement", "9001");
+
+      assertEquals(Boolean.TRUE, result.get("started"));
+      assertNull(result.get("suspendReason"), "原因不可得时不得伪造，也不得让详情失败");
+    } finally {
+      com.bone.core.tenant.context.TenantContext.clear();
+    }
   }
 
   @Test

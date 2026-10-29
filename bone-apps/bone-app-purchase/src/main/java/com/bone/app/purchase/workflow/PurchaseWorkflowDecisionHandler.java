@@ -43,6 +43,8 @@ public class PurchaseWorkflowDecisionHandler implements RuntimeActionHandler {
     WorkflowInstance instance = requireActiveInstance(ctx);
     WorkflowTask task = requirePendingTaskOf(ctx, instance);
     String comment = text(ctx.getParams().get(approve ? "comment" : "reason"));
+    // 驳回可选「退回指定节点」：透传给引擎，空则维持整单驳回原语义（引擎守卫 fail-closed）
+    String backToNodeCode = text(ctx.getParams().get("backToNodeCode"));
     WorkflowInstance after;
     try {
       after =
@@ -51,7 +53,8 @@ public class PurchaseWorkflowDecisionHandler implements RuntimeActionHandler {
                   task.id(),
                   approve ? WorkflowTask.Decision.APPROVE : WorkflowTask.Decision.REJECT,
                   comment,
-                  ctx.getOperatorId());
+                  ctx.getOperatorId(),
+                  backToNodeCode);
     } catch (WorkflowEngineException ex) {
       throw PurchaseWorkflowExceptionMapper.translate(ex);
     }
@@ -60,6 +63,9 @@ public class PurchaseWorkflowDecisionHandler implements RuntimeActionHandler {
     result.put("decision", approve ? "APPROVE" : "REJECT");
     result.put("workflowPhase", after.phase().name());
     result.put("currentNode", after.currentNodeCode());
+    if (!approve && backToNodeCode != null && !backToNodeCode.isBlank()) {
+      result.put("backToNode", backToNodeCode);
+    }
     return result;
   }
 

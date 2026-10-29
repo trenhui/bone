@@ -66,6 +66,24 @@ public interface WfNotificationSdkRepository extends Repository<WfNotificationRo
   List<WfNotificationRow> selectInboxUnread(
       @Param("tenantId") Long tenantId, @Param("recipientId") String recipientId);
 
+  /**
+   * 某实例最近一条指定类型的通知（挂起告警诊断用）。
+   *
+   * <p>{@code type} 取 {@code SUSPENDED} 即「为什么被挂起」的真源文案：引擎挂起时把具体原因（解析不出审批人 / 审批人含发起人本人 / 分支不可裁决…）写进
+   * {@code body}，单据详情页读回来展示，现场无需翻日志。
+   *
+   * <p>排序 {@code created_at DESC, id DESC}：同一实例可能因「挂起 → 指派 → 再挂起」留下多条，必须取最新一条而非任意一条。
+   */
+  @Sql(
+      "SELECT id, tenant_id, recipient_id, type, instance_id, entity_code, record_id, node_code,"
+          + " title, body, read_flag, created_at, updated_at FROM wf_notification"
+          + " WHERE tenant_id = #{tenantId} AND instance_id = #{instanceId} AND type = #{type}"
+          + " AND deleted = 0 ORDER BY created_at DESC, id DESC LIMIT 1")
+  WfNotificationRow selectLatestByInstanceAndType(
+      @Param("tenantId") Long tenantId,
+      @Param("instanceId") String instanceId,
+      @Param("type") String type);
+
   /** 标记已读（收件箱前端动作；与任务决策无关）。 */
   @Sql(
       "UPDATE wf_notification SET read_flag = 1, updated_at = #{now}, updated_by = #{operatorId},"

@@ -21,5 +21,8 @@ final class PurchaseWorkflowConstants {
 
   static final String ACTION_REJECT = "reject";
 
+  /** 撤回：发起人在审批人动手前自助纠错（作废待办、实例 WITHDRAWN、释放活动槽位）。 */
+  static final String ACTION_WITHDRAW = "withdraw";
+
   private PurchaseWorkflowConstants() {}
 }

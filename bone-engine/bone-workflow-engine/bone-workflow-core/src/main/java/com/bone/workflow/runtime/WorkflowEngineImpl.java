@@ -893,6 +893,47 @@ public class WorkflowEngineImpl implements WorkflowEngine {
   }
 
   @Override
+  public List<WorkflowTask> listPendingTasksByAssignee(String assigneeId, int limit, int offset) {
+    requireAssignee(assigneeId);
+    return instanceRepository.listPendingTasksByAssignee(assigneeId, limit, offset);
+  }
+
+  @Override
+  public long countPendingTasksByAssignee(String assigneeId) {
+    requireAssignee(assigneeId);
+    return instanceRepository.countPendingTasksByAssignee(assigneeId);
+  }
+
+  @Override
+  public List<WorkflowTask> listDecidedTasksByAssignee(String assigneeId, int limit, int offset) {
+    requireAssignee(assigneeId);
+    return instanceRepository.listDecidedTasksByAssignee(assigneeId, limit, offset);
+  }
+
+  @Override
+  public long countDecidedTasksByAssignee(String assigneeId) {
+    requireAssignee(assigneeId);
+    return instanceRepository.countDecidedTasksByAssignee(assigneeId);
+  }
+
+  @Override
+  public List<WorkflowInstance> listInstancesByPhase(WorkflowInstance.Phase phase, int limit) {
+    if (phase == null) {
+      // 422 语义：入参缺失，调用方（应用服务）应在到达引擎前就拦——此处 fail-fast 只是防御，
+      // 不能让 null 渗进 SQL 变成「phase = NULL 恒假」的静默空列表（排障页会误以为没有问题单据）。
+      throw new WorkflowEngineException(WorkflowErrorCode.INSTANCE_NOT_FOUND, "按阶段列举实例缺少 phase");
+    }
+    return instanceRepository.listInstancesByPhase(phase, Math.max(limit, 1));
+  }
+
+  /** 办理人判据：空办理人没有「我的」任何东西——统一在引擎入口拒，别让空串落到 SQL 变成全表。 */
+  private static void requireAssignee(String assigneeId) {
+    if (assigneeId == null || assigneeId.isBlank()) {
+      throw new WorkflowEngineException(WorkflowErrorCode.NO_ASSIGNEE, "查询个人任务列表缺少办理人");
+    }
+  }
+
+  @Override
   public List<WorkflowTask> listPendingTasks(String instanceId) {
     return instanceRepository.listPendingTasks(instanceId);
   }

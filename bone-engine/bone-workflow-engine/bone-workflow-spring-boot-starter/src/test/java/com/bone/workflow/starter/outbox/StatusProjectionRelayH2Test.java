@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.tenant.context.TenantContext;
+import com.bone.workflow.starter.metrics.WorkflowMetrics;
 import com.bone.workflow.starter.sdk.WorkflowSdkTestContext;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -283,6 +284,102 @@ class StatusProjectionRelayH2Test {
     assertEquals(2, relay.runOnce(10), "无上下文线程也必须能把全部租户的意图落地");
     assertEquals(2, countByState("DONE"));
     assertNull(TenantContext.getTenantIdAsLong(), "跑完后必须恢复现场（clear），不得把租户上下文泄漏给后续任务");
+  }
+
+  // ── P0-2 幂等硬约束（中继层 fail-closed）───────────────────────────────
+
+  @Test
+  @DisplayName("P0-2 硬约束：未声明幂等的动作被中继拒绝执行并落终态 FAILED，且不重投、绝不重执")
+  void nonIdempotentAction_refusedAndTerminallyFailed() {
+    java.util.concurrent.atomic.AtomicInteger invoked =
+        new java.util.concurrent.atomic.AtomicInteger();
+    com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy policy =
+        (entity, tenant, action) -> false; // 该动作未声明幂等
+    RuntimeActionIntentExecutor guardedExecutor =
+        new RuntimeActionIntentExecutor(
+            (e, t, r, a, p, o, k, v) -> invoked.incrementAndGet(), policy, WorkflowMetrics.NOOP);
+    StatusProjectionRelay guardedRelay = new StatusProjectionRelay(outbox, guardedExecutor, 100, 3);
+
+    enqueue("i1", "APPROVED", "approve", null);
+
+    assertEquals(0, guardedRelay.runOnce(10), "拒绝执行的意图不得计入成功数");
+    assertEquals(0, invoked.get(), "动作绝不应被调用——at-least-once 重投会双推进业务状态");
+    assertEquals(1, countByState("FAILED"), "必须落终态 FAILED 转人工介入");
+
+    // 终态 FAILED 的 next_retry_at 被推到远未来，pollDue 永不应再取到 ⇒ 不会重投执行
+    assertEquals(0, outbox.pollDue(10).size(), "终态失败不得被重新抢占执行（重投是危险源）");
+
+    // 即便有人手工把 next_retry_at 拨回过去，执行器层仍会拒绝（双保险，不依赖调度不重取）
+    jdbc.update(
+        "UPDATE wf_status_outbox SET next_retry_at = ? WHERE tenant_id = ? AND instance_id = ?",
+        java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(60)),
+        TENANT,
+        "i1");
+    guardedRelay.runOnce(10);
+    assertEquals(0, invoked.get(), "终态失败即便被重取，执行器仍拒绝执行——双保险，杜绝双推进");
+  }
+
+  @Test
+  @DisplayName("P0-2：动作已声明幂等时中继照常执行（硬约束不影响合法动作）")
+  void idempotentAction_executesThroughRelay() {
+    java.util.concurrent.atomic.AtomicInteger invoked =
+        new java.util.concurrent.atomic.AtomicInteger();
+    com.bone.workflow.starter.spi.WorkflowActionIdempotencyPolicy policy =
+        (entity, tenant, action) -> true; // 已声明幂等
+    RuntimeActionIntentExecutor guardedExecutor =
+        new RuntimeActionIntentExecutor(
+            (e, t, r, a, p, o, k, v) -> invoked.incrementAndGet(), policy, WorkflowMetrics.NOOP);
+    StatusProjectionRelay guardedRelay = new StatusProjectionRelay(outbox, guardedExecutor, 100, 3);
+
+    enqueue("i2", "APPROVED", "approve", null);
+    assertEquals(1, guardedRelay.runOnce(10));
+    assertEquals(1, invoked.get(), "已声明幂等的动作必须正常推进业务状态");
+    assertEquals(1, countByState("DONE"));
+  }
+
+  // ── P1-1 可观测指标 ──────────────────────────────────────────────
+
+  @Test
+  @DisplayName("P1-1：有 MeterRegistry 时，终态失败与成功落地均被计数")
+  void metrics_countExecutedAndTerminallyFailed() {
+    io.micrometer.core.instrument.simple.SimpleMeterRegistry registry =
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    WorkflowMetrics metrics = new WorkflowMetrics(registry);
+
+    RuntimeActionIntentExecutor refused =
+        new RuntimeActionIntentExecutor(
+            (e, t, r, a, p, o, k, v) -> {}, (e, t, a) -> false, metrics);
+    StatusProjectionRelay relayRefused =
+        new StatusProjectionRelay(outbox, refused, 100, 3, metrics);
+    enqueue("m1", "APPROVED", "approve", null);
+    relayRefused.runOnce(10);
+
+    RuntimeActionIntentExecutor ok =
+        new RuntimeActionIntentExecutor((e, t, r, a, p, o, k, v) -> {}, (e, t, a) -> true, metrics);
+    StatusProjectionRelay relayOk = new StatusProjectionRelay(outbox, ok, 100, 3, metrics);
+    enqueue("m2", "APPROVED", "approve", null);
+    relayOk.runOnce(10);
+
+    assertEquals(
+        1.0,
+        counterValue(registry, "bone.workflow.relay.intents", "result", "terminally_failed"),
+        0.001,
+        "非幂等动作拒绝须计入 terminally_failed");
+    assertEquals(
+        1.0,
+        counterValue(registry, "bone.workflow.relay.intents", "result", "executed"),
+        0.001,
+        "正常落地须计入 executed");
+  }
+
+  private double counterValue(
+      io.micrometer.core.instrument.simple.SimpleMeterRegistry registry,
+      String name,
+      String tagKey,
+      String tagValue) {
+    io.micrometer.core.instrument.Counter counter =
+        registry.find(name).tag(tagKey, tagValue).counter();
+    return counter == null ? 0.0 : counter.count();
   }
 
   private void enqueue(String instanceId, String intent, String actionCode, String paramsJson) {

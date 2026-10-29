@@ -48,7 +48,7 @@ from e2e_lib.modeling import (
     validate,
 )
 from e2e_lib.report import check, note, section
-from e2e_lib.runtime import act, act_as, child_replace, rec_create, rec_status
+from e2e_lib.runtime import NO_IDEM, act, act_as, child_replace, rec_create, rec_status
 
 SUFFIX = config.run_suffix()  # 运行级后缀：所有产物带它，teardown 按后缀定点回收
 ds = fx.dataset(SUFFIX)       # 生产仿真数据集：同后缀恒定，单号/金额/人名/部门/日期全部取它
@@ -271,7 +271,7 @@ if rid:
     check("报销：approve（SUBMITTED→APPROVED）", s == 200 and rec_status(d) == "APPROVED",
           f"{s} status={rec_status(d)}")
 
-    s, d = act(EXP, rid, "confirmPayout", params={"channel": "BANK"})
+    s, d = act(EXP, rid, "confirmPayout", params={"channel": "BANK"}, idem=NO_IDEM)
     check("报销【负向】逃逸动作缺幂等键 → 400",
           s == 400 and ecode(d) == "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED", f"{s} {ecode(d)}")
 
@@ -730,7 +730,7 @@ if prid:
     call("PUT", f"/runtime/entities/{PO}/records/{prid}", {"invoiced_amount": PO_AMOUNT})
 
     # 【负向 7】逃逸动作缺幂等键 → 400
-    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT})
+    s, d = act(PO, prid, "pay", params={"channel": "BANK", "payAmount": PO_AMOUNT}, idem=NO_IDEM)
     check("采购【负向】付款缺幂等键 → 400",
           s == 400 and ecode(d) == "META_RUNTIME_ACTION_IDEMPOTENCY_REQUIRED", f"{s} {ecode(d)}")
 
