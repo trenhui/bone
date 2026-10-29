@@ -11,6 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { SchemaRenderer, resolveVisibleActions } from '@bone/ui-schema';
 import type { BoneUiSchema } from '@bone/ui-schema';
 import adjustSchema from '../schemas/adjust-attribution.ui-schema.json';
+import { resolveErrorMessage } from '@bone/shared-utils';
 
 /**
  * 理算归因页（synapClaim A6，只读展示）—— **由 UI Schema JSON 真正驱动**。
@@ -30,6 +31,13 @@ const ACTION_LABELS: Record<string, string> = {
   recalculate: '重算',
   confirm: '核赔确认',
 };
+
+/**
+ * 同类失败共用 message key：重复触发时 antd **替换**而非堆叠 toast。
+ * 开发态 StrictMode 双挂载会并发触发两次加载，此前失败会并列成两条。
+ */
+const MSG_KEY_LOAD = 'claim-adjust-load';
+const MSG_KEY_ACTION = 'claim-adjust-action';
 
 /** 后端 DTO（camelCase）→ schema fieldCode（snake_case）适配层。 */
 function toSchemaData(r: AdjustmentResult): Record<string, unknown> {
@@ -55,19 +63,35 @@ function toSchemaData(r: AdjustmentResult): Record<string, unknown> {
 
 export function AdjustmentAttributionPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams();
-  const claimId = searchParams.get('claimId') ?? '1';
-  const [input, setInput] = useState(claimId);
+  /**
+   * 未指定案件时**不再回落到占位 '1'**。
+   *
+   * 占位自动查会对一个并不存在的案件发请求：未命中时后端报 404/未找到，被 catch 一律
+   * 兜底成「理算结果加载失败」——把「还没选案件」这种正常空态说成了系统故障，
+   * 且每次进页面都白跑一次请求（StrictMode 下两次）。
+   * 未指定案件时保持 `result == null`，由页面既有空态 Alert（尚未理算）承接。
+   */
+  const claimId = searchParams.get('claimId');
+  const [input, setInput] = useState(claimId ?? '');
   const [result, setResult] = useState<AdjustmentResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
 
   const load = useCallback(async () => {
+    // 未指定案件：保持空态（既有的「尚未理算」Alert），不发请求、不报「加载失败」。
+    if (!claimId) {
+      setResult(null);
+      return;
+    }
     setLoading(true);
     try {
       const resp = await adjustApi.latest(claimId);
       setResult(resp?.data ?? null);
-    } catch {
-      message.error('理算结果加载失败');
+    } catch (err) {
+      message.error({
+        content: resolveErrorMessage(err, '理算结果加载失败'),
+        key: MSG_KEY_LOAD,
+      });
     } finally {
       setLoading(false);
     }
@@ -78,6 +102,10 @@ export function AdjustmentAttributionPage(): ReactElement {
   }, [load]);
 
   const runCalculate = async (mode: 'calculate' | 'recalculate') => {
+    if (!claimId) {
+      message.warning({ content: '请先查询并选择一个案件', key: MSG_KEY_ACTION });
+      return;
+    }
     setActing(true);
     try {
       const resp = await (mode === 'calculate' ? adjustApi.calculate(claimId) : adjustApi.recalculate(claimId));
@@ -86,11 +114,11 @@ export function AdjustmentAttributionPage(): ReactElement {
     } catch (err) {
       const errorCode = (err as { errorCode?: string }).errorCode;
       if (errorCode === 'SC_CLAIM_ADJUST_EVIDENCE_NOT_LOCKED') {
-        message.error('证据集未锁定，无法理算（请先锁定证据）');
+        message.error({ content: '证据集未锁定，无法理算（请先锁定证据）', key: MSG_KEY_ACTION });
       } else if (errorCode === 'SC_CLAIM_LIABILITY_NOT_FOUND') {
-        message.error('无生效责任配置，无法理算（绝不默认 90%）');
+        message.error({ content: '无生效责任配置，无法理算（绝不默认 90%）', key: MSG_KEY_ACTION });
       } else {
-        message.error('理算失败');
+        message.error({ content: resolveErrorMessage(err, '理算失败'), key: MSG_KEY_ACTION });
       }
     } finally {
       setActing(false);
@@ -98,13 +126,17 @@ export function AdjustmentAttributionPage(): ReactElement {
   };
 
   const runConfirm = async () => {
+    if (!claimId) {
+      message.warning({ content: '请先查询并选择一个案件', key: MSG_KEY_ACTION });
+      return;
+    }
     setActing(true);
     try {
       await adjustApi.confirm(claimId);
       message.success('核赔已确认（结果锁定）');
       void load();
-    } catch {
-      message.error('确认失败');
+    } catch (err) {
+      message.error({ content: resolveErrorMessage(err, '确认失败'), key: MSG_KEY_ACTION });
     } finally {
       setActing(false);
     }
@@ -150,7 +182,8 @@ export function AdjustmentAttributionPage(): ReactElement {
                 key={a.actionCode}
                 type={i === 0 ? 'primary' : 'default'}
                 loading={acting && a.actionCode === 'execute'}
-                disabled={acting}
+                // 未选案件时禁用：理算/确认都针对具体案件，点了只会白跑一次请求再报错。
+                disabled={acting || !claimId}
                 onClick={() => void handleAction(a.actionCode)}
               >
                 {ACTION_LABELS[a.actionCode] ?? a.actionCode}

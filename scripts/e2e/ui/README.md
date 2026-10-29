@@ -19,6 +19,7 @@ bash scripts/dev/up-all-services-e2e.sh          # 10 个 Spring Boot 服务
 | `probe-commerce.mjs` | **多渠道交易域写操作闭环** | 开弹窗→填表→提交→断言 antd message；30 项断言，见下节 |
 | `claim-single-nav-probe.mjs` | **微前端单导航 + 菜单↔路由双向一致**（智能理赔域，74 项断言） | `.shell-sider` 恰 1 个且微应用内 0 个 `.ant-layout-sider`（双层菜单复发即红）；IAM 菜单 vs `routes.tsx` 的路径/名称/**顺序**全等（幽灵菜单、功能不可达、命名漂移三类各判一条）；逐个**点击**菜单后断言 hash 落地 + 顶栏标题 + 页面标题 + 结构块渲染 + 无 5xx/console error |
 | `micro-app-matrix-probe.mjs` | **9 个微应用是否都被 shell 真的挂载出来**（31 项断言） | 逐个域断言 `.subapp-error`（MicroAppLoadError 面板）为 0 + 挂载点内容非空 + 无 5xx；注册/前缀/菜单入口三张表全部从 `bone-shell/src/App.tsx` 与 IAM 菜单解析（不写死端口表）。**停掉任一 dev server 即转红并精确指名**（变异实测：kill :3012 → 2 项红、exit 1） |
+| `claim-toast-hygiene-probe.mjs` | **理赔错误提示卫生**：失败能不能自助定位 + 会不会成倍刷屏（10 项断言） | ①未指定案件时**不发起**理算查询（`claimId` 不再回落占位 `'1'`）且保持「尚未理算」空态；②指定真实案件仍正常查询（防误伤）；③**注入 404 + `SC_CLAIM_NOT_FOUND`** 断言 toast 显示语言包译文「案件不存在或不可见」而非笼统「待办加载失败」；④同一失败**只出现 1 条** toast（antd message `key` 去重）。注意：antd toast 默认 3s 消失，**必须轮询采样**，固定等待会整段错过而误报「没报错」。变异实测：恢复占位 `'1'` → 抓到 2 次 `/claims/1/adjust` 即红；恢复硬编码 catch → 复现原症状「待办加载失败」×2 且无原因 |
 
 ## 运行
 

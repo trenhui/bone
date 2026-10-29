@@ -30,6 +30,7 @@ import {
 } from '../services/claimApi';
 import { PageHeader } from '../components/PageHeader';
 import { explainNode, toneColor, type ExplainFact } from '../services/decisionExplain';
+import { resolveErrorMessage } from '@bone/shared-utils';
 
 /**
  * 核赔工作台 · 待办审核页（synapClaim 一期）。
@@ -78,6 +79,14 @@ const REJECT_TYPES = [
   { value: '40', label: '40 风险标记（转人工核实）' },
 ];
 
+/**
+ * 同一类加载失败共用 message key：重复触发时 antd 会**替换**而非堆叠多条 toast。
+ *
+ * 开发态 React StrictMode 会双挂载、并发触发两次 load()，此前失败会并列两条
+ * 「待办加载失败」（用户侧表现为成倍刷屏）。
+ */
+const MSG_KEY_LOAD = 'claim-review-load';
+
 export function ReviewWorkbenchPage(): ReactElement {
   const [rows, setRows] = useState<ClaimHeadProjection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,8 +131,10 @@ export function ReviewWorkbenchPage(): ReactElement {
         size: 50,
       });
       setRows(resp?.data?.records ?? []);
-    } catch {
-      message.error('待办加载失败');
+    } catch (err) {
+      // 展示后端真实原因：createApiClient 已把 errorCode / message 挂到错误对象上，
+      // 先前这里把它一律概括成「待办加载失败」，用户只能截图求助、无法自助判断。
+      message.error({ content: resolveErrorMessage(err, '待办加载失败'), key: MSG_KEY_LOAD });
     } finally {
       setLoading(false);
     }
