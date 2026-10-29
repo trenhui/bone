@@ -13,6 +13,7 @@ import com.bone.core.exception.BizException;
 import com.bone.masterdata.application.command.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.event.MasterdataDomainEventPublisher;
+import com.bone.masterdata.application.query.dto.QualityReportDTO;
 import com.bone.masterdata.application.query.dto.QualityResultDTO;
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.quality.DataQualityRule;
@@ -276,5 +277,40 @@ class QualityApplicationServiceTest {
     org.junit.jupiter.api.Assertions.assertNull(dto.getDataQualityRuleId());
     org.junit.jupiter.api.Assertions.assertNull(dto.getMasterDataRecordId());
     assertEquals("发现 3 个质量问题", dto.getMessage());
+  }
+
+  /**
+   * 不传 qualityCheckId 时必须走「查全部」出口，而不是把 null 喂给 {@code findByQualityCheckId}。
+   *
+   * <p>后者会生成 {@code quality_check_id = NULL}，SQL 三值逻辑下永不命中 ⇒ {@code GET /quality/reports}
+   * 恒返回空数组（库里确实有报告、且按 checkId 单查能取到）。本用例直接锚定该症状。
+   */
+  @Test
+  void listReportsWithoutCheckIdReturnsAllReports() {
+    when(qualityReportRepository.findAllReports())
+        .thenReturn(
+            List.of(
+                QualityReport.create(50L, 7L, "{}", 3), QualityReport.create(51L, 8L, "{}", 0)));
+
+    List<QualityReportDTO> reports = service.listReports(null);
+
+    assertEquals(2, reports.size(), "不传筛选条件应返回全部报告，而非恒定空列表");
+    assertEquals(List.of(50L, 51L), reports.stream().map(QualityReportDTO::id).toList());
+    verify(qualityReportRepository).findAllReports();
+    verify(qualityReportRepository, never()).findByQualityCheckId(any());
+  }
+
+  /** 传了 qualityCheckId 时仍应精确按该次检查过滤，不得退化成查全部。 */
+  @Test
+  void listReportsWithCheckIdFiltersByThatCheck() {
+    when(qualityReportRepository.findByQualityCheckId(7L))
+        .thenReturn(List.of(QualityReport.create(50L, 7L, "{}", 3)));
+
+    List<QualityReportDTO> reports = service.listReports(7L);
+
+    assertEquals(1, reports.size());
+    assertEquals(7L, reports.get(0).qualityCheckId());
+    verify(qualityReportRepository).findByQualityCheckId(7L);
+    verify(qualityReportRepository, never()).findAllReports();
   }
 }

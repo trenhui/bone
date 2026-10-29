@@ -109,27 +109,66 @@ class StatusProjectionRelayH2Test {
   }
 
   @Test
-  @DisplayName("重试达上限后不再排期（留在 FAILED），中继不得无限空转")
+  @DisplayName("重试达上限后必须落终态死信：不得被超时 CLAIMED 抢占路径每 5 分钟反复执行，且对死信存量可见")
   void exhaustedRetriesStopBeingScheduled() {
+    // 计数型 executor：统计「永久失败的动作」被真正执行了几次 —— 这是「中继是否空转」的直接判据。
+    AtomicInteger execCount = new AtomicInteger();
+    io.micrometer.core.instrument.simple.SimpleMeterRegistry registry =
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    WorkflowMetrics metrics = new WorkflowMetrics(registry);
+    StatusIntentExecutor alwaysFails =
+        intent -> {
+          execCount.incrementAndGet();
+          throw new IllegalStateException("模拟动作定义缺失（永久失败）");
+        };
+    StatusProjectionRelay counted = new StatusProjectionRelay(outbox, alwaysFails, 100, 3, metrics);
+
     enqueue("i1", "REJECTED", "reject", "FAIL_ME");
-    // maxRetries=3：前 3 次排期，第 4 次起不再排期
+    // maxRetries=3：前 3 次失败后排期重试，第 4 次达上限
     for (int round = 0; round < 3; round++) {
-      relay.runOnce(10);
+      counted.runOnce(10);
       jdbc.update("UPDATE wf_status_outbox SET next_retry_at = NULL WHERE tenant_id = ?", TENANT);
     }
-    relay.runOnce(10);
+    counted.runOnce(10); // 第 4 次：达上限，必须落终态
 
     Integer retryCount =
         jdbc.queryForObject(
             "SELECT retry_count FROM wf_status_outbox WHERE tenant_id = ?", Integer.class, TENANT);
     assertEquals(3, retryCount, "应重试满 3 次");
-    assertTrue(
+    assertEquals(4, execCount.get(), "前置条件：3 次排期尝试 + 1 次达上限尝试，共执行 4 次");
+
+    // 判据 1：必须落 state=FAILED。（原实现停在 claim() 写入的 CLAIMED）
+    String state =
         jdbc.queryForObject(
-                "SELECT next_retry_at FROM wf_status_outbox WHERE tenant_id = ?",
-                java.sql.Timestamp.class,
-                TENANT)
-            == null,
-        "达上限后 next_retry_at 必须为 NULL（不再排期）");
+            "SELECT state FROM wf_status_outbox WHERE tenant_id = ?", String.class, TENANT);
+    assertEquals("FAILED", state, "达上限后必须是终态 FAILED，而不是停留在 claim() 写入的 CLAIMED");
+
+    // 判据 2：终态必须对死信存量可见。（原实现该行是 CLAIMED ⇒ countTerminallyFailed 恒为 0）
+    assertEquals(1, outbox.countTerminallyFailed(), "终态死信必须对死信存量监控可见，否则「转人工」无人知晓");
+
+    // 判据 3（真实事故直接复现）：把 updated_at 拨到 6 分钟前，模拟 CLAIM_TIMEOUT（5 分钟）已过。
+    //   原实现：该行是 CLAIMED 且已超时 ⇒ 被「超时 CLAIMED 抢占」重新取回、再次执行永久失败的动作，
+    //   表现为 ERROR 每 5 分钟刷一次且永不收敛。
+    jdbc.update(
+        "UPDATE wf_status_outbox SET updated_at = ? WHERE tenant_id = ?",
+        java.sql.Timestamp.from(Instant.now().minusSeconds(6 * 60)),
+        TENANT);
+    assertEquals(0, outbox.pollDue(10).size(), "终态死信不得被超时 CLAIMED 抢占路径重新取回");
+    counted.runOnce(10);
+    assertEquals(4, execCount.get(), "终态死信不得再被执行（原实现每 5 分钟重复执行一次永久失败的动作）");
+
+    // 判据 4：达上限必须计入 terminally_failed（与 P0-2 终态口径一致）；
+    //   前 3 次「会重试」的失败各计一次 failed，第 4 次转终态只计 terminally_failed
+    assertEquals(
+        1.0,
+        counterValue(registry, "bone.workflow.relay.intents", "result", "terminally_failed"),
+        0.001,
+        "达上限应计入 terminally_failed");
+    assertEquals(
+        3.0,
+        counterValue(registry, "bone.workflow.relay.intents", "result", "failed"),
+        0.001,
+        "前 3 次排期重试的失败各计一次 failed，第 4 次转终态不得重复计入 failed");
   }
 
   @Test
