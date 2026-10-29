@@ -17,11 +17,13 @@ bash scripts/dev/up-all-services-e2e.sh          # 10 个 Spring Boot 服务
 | `probe-routes.mjs` | 逐菜单**点击**导航 + 断言业务元素 | `tableRows>0→DATA` / `empty→EMPTY` / `cards→CARDS` / `inputs→FORM` / 否则 `THIN`；同时收集 4xx/5xx 与 console error |
 | `probe-write.mjs` | 写入口深度交互 | 点"新增" → 断言弹窗开（**Modal 与 Drawer 都认**）→ 空提交看校验 → 取消能关 |
 | `probe-commerce.mjs` | **多渠道交易域写操作闭环** | 开弹窗→填表→提交→断言 antd message；30 项断言，见下节 |
+| `claim-single-nav-probe.mjs` | **微前端单导航 + 菜单↔路由双向一致**（智能理赔域，74 项断言） | `.shell-sider` 恰 1 个且微应用内 0 个 `.ant-layout-sider`（双层菜单复发即红）；IAM 菜单 vs `routes.tsx` 的路径/名称/**顺序**全等（幽灵菜单、功能不可达、命名漂移三类各判一条）；逐个**点击**菜单后断言 hash 落地 + 顶栏标题 + 页面标题 + 结构块渲染 + 无 5xx/console error |
+| `micro-app-matrix-probe.mjs` | **9 个微应用是否都被 shell 真的挂载出来**（31 项断言） | 逐个域断言 `.subapp-error`（MicroAppLoadError 面板）为 0 + 挂载点内容非空 + 无 5xx；注册/前缀/菜单入口三张表全部从 `bone-shell/src/App.tsx` 与 IAM 菜单解析（不写死端口表）。**停掉任一 dev server 即转红并精确指名**（变异实测：kill :3012 → 2 项红、exit 1） |
 
 ## 运行
 
 ```bash
-NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
+NODE=$(command -v node)   # 实测版本随环境变化，勿写死路径（原写死 22.22.2-3 已失效）
 export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules   # playwright 在此
 $NODE scripts/e2e/ui/probe-routes.mjs > /tmp/ui.json
 python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']),'项')"
@@ -74,7 +76,7 @@ python3 -c "import json;d=json.load(open('/tmp/ui.json'));print(len(d['results']
 （**不用拉起全部 19 个服务**——上一轮「内存扛不住」的结论因此被推翻）。
 
 ```bash
-NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
+NODE=$(command -v node)   # 实测版本随环境变化，勿写死路径（原写死 22.22.2-3 已失效）
 export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
 $NODE scripts/e2e/ui/probe-commerce.mjs
 ```
