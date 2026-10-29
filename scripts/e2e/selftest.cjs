@@ -36,7 +36,7 @@ const expectedExports = {
   BASE: 'string', UI_BASE: 'string', IAM_BASE: 'string',
   USER: 'string', PWD: 'string', TENANT: 'string',
   SHOT_DIR: 'string', CHROME: 'string', STAMP: 'string',
-  api: 'function', login: 'function', tryLogin: 'function', token: 'function',
+  api: 'function', login: 'function', tryLogin: 'function', loginAs: 'function', token: 'function',
   loadPlaywright: 'function', makeChecker: 'function',
   registerCleanup: 'function', runCleanup: 'function',
   registerJUnit: 'function', writeJUnit: 'function',
@@ -127,8 +127,13 @@ section('5. ui.cjs 契约');
 check('导出 uiLogin/shot/waitAppReady 三个助手',
   ['uiLogin', 'shot', 'waitAppReady'].every((k) => typeof ui[k] === 'function'),
   Object.keys(ui).join(','));
-check('选择器常量与 client 凭据同源（非硬编码字面量）',
-  typeof ui.USER_SEL === 'string' && ui.USER_SEL.includes('用户名'),
+// USER_SEL 是「用户名/用户/账号」并集口径（见 ui.cjs 头注释：单字面量会在另一种
+// 登录页静默漏填）；判据锁并集形状——回退成单一占位或砍掉 name/id 兜底即转红。
+check('USER_SEL 并集口径（用户/账号占位 + name/id 兜底，防回退单字面量）',
+  typeof ui.USER_SEL === 'string'
+    && ui.USER_SEL.includes('placeholder*="用户"')
+    && ui.USER_SEL.includes('placeholder*="账号"')
+    && ui.USER_SEL.includes('name="username"'),
   ui.USER_SEL);
 check('require(ui.cjs) 不需要 playwright（未装也能加载）', true, '');
 

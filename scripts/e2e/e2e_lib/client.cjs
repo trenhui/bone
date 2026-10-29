@@ -85,6 +85,25 @@ async function tryLogin(base = BASE) {
 const token = (base) => login(base);
 
 /**
+ * 指定账号登录（多身份 SoD 场景；与 Python e2e_lib.http.login_as 同义）。
+ * 不走 _loginRaw 缓存（那是种子账号 USER/PWD 专属），每次真实登录；缺 token 抛错。
+ * @param {string} username
+ * @param {string} password
+ * @param {string} [base] API 根，默认网关 BASE
+ */
+async function loginAs(username, password, base = BASE) {
+  const r = await fetch(`${String(base).replace(/\/$/, '')}/iam/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const j = await r.json();
+  const tok = j?.data?.token;
+  if (!tok) throw new Error(`登录取 token 失败 ${username}: ${r.status} ${JSON.stringify(j).slice(0, 200)}`);
+  return tok;
+}
+
+/**
  * 带 token 的 fetch。返回 {status, data, ok, headers, etag}：
  *   - data   ：响应体 JSON.parse 结果（非 JSON 时为原文），等价于原探针的 res.json()；
  *   - headers：原生 Headers（可 .get('etag') 等）；
@@ -283,6 +302,7 @@ exports.STAMP = STAMP;
 exports.stamp = stamp;
 exports.login = login;
 exports.tryLogin = tryLogin;
+exports.loginAs = loginAs;
 exports.token = token;
 exports.api = api;
 exports.loadPlaywright = loadPlaywright;

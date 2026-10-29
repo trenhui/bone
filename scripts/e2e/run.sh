@@ -19,6 +19,7 @@
 #   ./run.sh py-chain             # 链路类（chains / multichannel / channel-buyer / integration-flow）
 #   ./run.sh py                   # 全部 Python（core + sweep + chain，共 11 个）
 #   ./run.sh node                 # ui/probe-*.mjs 核心 UI 探针
+#   ./run.sh node-api             # Node API 全链（claim-full-chain-e2e.mjs，仅需网关）
 #   ./run.sh all                  # lint + selftest + py（默认；CI 口径）
 #   ./run.sh <脚本相对路径或裸名>  # 跑指定脚本，如 ./run.sh two-scenario-full-chain-e2e.py
 #
@@ -39,6 +40,8 @@ NODE_BIN="$(command -v node || ls /Users/renhui.trh/.workbuddy/binaries/node/ver
 PY_CORE=(two-scenario-full-chain-e2e.py app-to-data-full-chain-e2e.py ui-schema-samples-e2e.py)
 PY_SWEEP=(api-sweep.py real-id-sweep.py write-sweep.py write_coverage.py)
 PY_CHAIN=(chains.py multichannel.py channel-buyer-broadcast.py integration-flow-exec-chain.py)
+# Node API 全链（走网关、无需前端）；与 UI 探针分组分开，API 环境也能独立跑
+NODE_API=(claim-full-chain-e2e.mjs)
 
 usage() {
   # 取文件头注释块（到第一行非注释实现为止），去掉 '#' 前缀；按行号切会随编辑错位
@@ -99,6 +102,7 @@ case "$MODE" in
     echo "  py-chain    ${PY_CHAIN[*]}"
     echo "  py          上述三组全部"
     echo "  node        ui/probe-*.mjs 核心 UI 探针（需前端 :3000）"
+    echo "  node-api    ${NODE_API[*]}（智能理赔 A1-A9 全链，仅需网关）"
     echo
     echo "辅助（不进分组）"
     echo "  new <kind> <name> [--desc ..] [--register]  新用例骨架（见上；UI 探针自动进 node 分组）"
@@ -146,6 +150,17 @@ case "$MODE" in
     for f in "$DIR"/ui/probe-*.mjs; do
       echo ">> $(basename "$f")"
       "$NODE_BIN" "$f" || { rc=1; echo "!! 失败: $(basename "$f")"; }
+    done
+    report_card
+    exit "$rc"
+    ;;
+  node-api)
+    [ -n "$NODE_BIN" ] || { echo "node 未找到"; exit 2; }
+    preflight || exit $?
+    rc=0
+    for f in "${NODE_API[@]}"; do
+      echo ">> $f"
+      "$NODE_BIN" "$DIR/$f" || { rc=1; echo "!! 失败: $f"; }
     done
     report_card
     exit "$rc"

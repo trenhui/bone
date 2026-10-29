@@ -112,13 +112,14 @@ doc/agents/04 §6（agent 认知入口：何时需要 E2E）
 
 ### 7.5 基线与执行入口
 
-| 回归套件 | 断言基线（2026-10-28） | 说明 |
+| 回归套件 | 断言基线（最近更新 2026-10-29） | 说明 |
 |---|---|---|
 | `two-scenario-full-chain-e2e.py` | 90 | 三样板：建模深化 + 状态机 + 回收站 + 审计 |
 | `app-to-data-full-chain-e2e.py` | 54 | 应用→数据全生命周期 + MySQL 落库核查 |
 | `ui-schema-samples-e2e.py` | 31 | submitRules/linkage 服务端强制 |
+| `claim-full-chain-e2e.mjs` | 59 | 智能理赔 A1-A9：7 分支 + SoD + 负向 + MySQL 落库对账 + 额度夹具跨轮整备（2026-10-29 接入公共层与 fixtures 造数） |
 
-基线数以脚本实际输出的「汇总」行为准（**重构不改基线**是提交纪律）；执行统一走 `scripts/e2e/run.sh`（`lint` 语法门禁 / `py` / `node` / 指定脚本 / `all`），CI 与编排只看退出码。
+基线数以脚本实际输出的「汇总」行为准（**重构不改基线**是提交纪律）；执行统一走 `scripts/e2e/run.sh`（`lint` 语法门禁 / `py` / `node-api` / `node` / 指定脚本 / `all`），CI 与编排只看退出码。
 
 ---
 

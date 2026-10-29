@@ -22,12 +22,12 @@ scripts/e2e/
 │   ├── client.cjs      Node 侧同源常量与登录（Node 探针共用；含 registerCleanup/runCleanup 对称 Python teardown）
 │   ├── fixtures.cjs    Node 侧生产化测试数据（口径对齐 fixtures.py，见 §3）
 │   └── ui.cjs          共享 UI 交互层（uiLogin/shot/waitAppReady；禁止在探针内重抄登录选择器）
-├── *-full-chain-e2e.py 全链路用例（Python，断言制）
+├── *-full-chain-e2e.py / claim-full-chain-e2e.mjs 全链路用例（断言制；理赔为 Node 侧，造数走 fixtures）
 ├── *-sweep.py / chains.py / multichannel*.py / channel_*  联调扫描与渠道链路
 ├── cleanup-residue.py  残留定点回收执行体（teardown.register 的落点）
 ├── lowcode-closed-loop.cjs  低代码最小闭环端到端（非 UI 探针族，见 §4.2）
-├── ui/                 浏览器探针**单族**：20 个探针全为 `.mjs`（写新探针前必读 ui/README.md 第 0 条）
-├── run.sh              统一入口（list/lint/selftest/preflight/py-core|sweep|chain/py/node/all）
+├── ui/                 浏览器探针**单族**：27 个探针全为 `.mjs`（写新探针前必读 ui/README.md 第 0 条）
+├── run.sh              统一入口（list/lint/selftest/preflight/py-core|sweep|chain/py/node-api|node/all）
 ├── lint.sh             零依赖语法门禁（py_compile + node --check）
 ├── selftest.py/.cjs    共享层离线自证（无需起服务；见 §4.7）
 └── preflight.py        环境快检（端口 + 可选登录探活；见 §4.7）
@@ -39,7 +39,7 @@ scripts/e2e/
 |---|---|---|---|---|
 | 离线层 | `./run.sh lint` / `./run.sh selftest` | 不要 | 秒级 | 改完共享层先自证，别拿业务失败当基础设施坏 |
 | 环境层 | `./run.sh preflight [--ui\|--deep\|--all]` | 只探端口 | 2 秒 | 栈没起时**立即**给出「起哪个服务」，而不是 11 个脚本各等 40s |
-| 业务层 | `py-core` / `py-sweep` / `py-chain` / `node` / `py` | 要完整栈 | 分钟级 | 真联调；默认先过 preflight（`BONE_E2E_SKIP_PREFLIGHT=1` 可跳） |
+| 业务层 | `py-core` / `py-sweep` / `py-chain` / `node-api` / `node` / `py` | 要完整栈 | 分钟级 | 真联调；默认先过 preflight（`BONE_E2E_SKIP_PREFLIGHT=1` 可跳） |
 
 **分层铁律**：脚本只写业务断言，基础设施一律 `import e2e_lib`，禁止再在脚本内
 复制 login / call / check / teardown 样板（发现即重构回公共层）。
@@ -111,6 +111,7 @@ parts = ds.split(total, 2)           # Σ == total
 | `two-scenario-full-chain-e2e.py` | 报销/理赔/采购三样板：建模深化 + 状态机 + 回收站 + 审计（经网关） | 90 |
 | `app-to-data-full-chain-e2e.py` | 设备巡检工单：应用→模块→模型→界面→发布→数据全生命周期 + MySQL 落库核查 | 54 |
 | `ui-schema-samples-e2e.py` | 界面协议样例对账：submitRules/linkage 服务端强制（直连 metadata :9001） | 31 |
+| `claim-full-chain-e2e.mjs` | 智能理赔 A1-A9 全链：7 分支（小额直付/大额双人复核/拒赔申诉维持·推翻/补件/挂起/决策图/后督抽检）+ SoD + 负向 + MySQL 落库对账 + 额度夹具跨轮整备（可用额度回种子水位，保证复跑可绿）；造数全走 `fixtures`（同 STAMP 同数据） | 59 |
 
 ### 4.2 跨模块联调链（走网关）
 
@@ -156,6 +157,13 @@ parts = ds.split(total, 2)           # Σ == total
 | `ui/ui-delivery-preview-relocation-probe.mjs` | 交付预览迁位探针 |
 | `ui/ui-shadowed-column-alert-probe.mjs` | 影子列告警探针 |
 | `ui/ui-view-filter-persistence-probe.mjs` | 视图筛选持久化探针 |
+| `ui/claim-single-nav-probe.mjs` | 智能理赔单导航回归：同域双层菜单/子项漂移（shell 与微应用菜单对账） |
+| `ui/claim-functional-probe.mjs` | 理赔 9 页功能级实操：表单真实提交→附件上传→锁定→核赔工作台/进度页出现该单 |
+| `ui/claim-toast-hygiene-probe.mjs` | 核赔工作台错误提示卫生：失败文案带后端真实原因、无案件不发占位查询 |
+| `ui/claim-diag.mjs` | 理赔页 4xx/5xx 定向诊断（打印 URL+响应体，按菜单路径参数化） |
+| `ui/micro-app-matrix-probe.mjs` | 微应用矩阵加载巡检：逐入口实证「微应用加载失败」类故障 |
+| `ui/ui-approval-sendback-probe.mjs` | 审批「驳回退回指定节点」真实点击回归（原地返工、不产生 409 死单） |
+| `ui/ui-approval-suspend-reason-probe.mjs` | 挂起原因可诊断：describe suspendReason 渲染进详情告警 |
 
 > 2026-10-28 单族化收敛：根目录 12 个 `ui-*.mjs` 全部移入 `ui/`、存量 8 个 `ui/*.cjs` 统一转 `.mjs`，
 > 现 **UI 探针只有 `ui/` 一族、全为 `.mjs`**（见 §8 收敛记录）。
@@ -205,7 +213,7 @@ Python 侧（`report.summary()` + atexit）与 Node 侧（`makeChecker()` + `pro
 
 > **目录纪律（2026-10-28 整合）**
 > - 一次性诊断探针（`diag-*` / `debug-form.mjs`，硬编码特定实体编码、针对某次发布的「快速实证」）：首轮整合归档至 `archive/`，**第二轮（2026-10-28 收口）确认无复用价值后整体删除**——它们不是回归资产、不进任何套件，结论以 Git 历史为准。新增可复用 UI 用例一律放进 `ui/`（2026-10-28 单族化后不再落根目录）。
-> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh list`（看有什么）、`lint`、`selftest`、`preflight`、`py-core|py-sweep|py-chain|py`、`node`、`all`（默认 = lint+selftest+preflight+py）、`<脚本名>`（指定脚本）。
+> - `run.sh` / `lint.sh`：统一入口与零依赖语法门禁。各 agent / CI 无需记住每个脚本名——`./run.sh list`（看有什么）、`lint`、`selftest`、`preflight`、`py-core|py-sweep|py-chain|py`、`node-api|node`、`all`（默认 = lint+selftest+preflight+py）、`<脚本名>`（指定脚本）。
 > - 环境变量唯一清单见 [`.env.example`](.env.example)；`config.py` 与 `client.cjs` 的默认值须保持同步。
 
 ## 5. 环境变量（`e2e_lib/config.py` 是唯一真源）
@@ -240,6 +248,9 @@ Python 侧（`report.summary()` + atexit）与 Node 侧（`makeChecker()` + `pro
 
 # 全链路（默认走网关，退出即自动清残留）
 ./scripts/e2e/run.sh py-core
+
+# 智能理赔全链（Node API 侧，仅需网关；造数走 fixtures，退出即自动落 JUnit/汇总）
+./scripts/e2e/run.sh node-api
 
 # 保留产物给 UI 探针消费（消费完手工补清）
 BONE_E2E_KEEP_RESIDUE=1 python3 scripts/e2e/app-to-data-full-chain-e2e.py
