@@ -335,8 +335,8 @@ public class SdkWorkflowInstanceRepository implements WorkflowInstanceRepository
   @Override
   public List<String> findStuckInstances(Instant cutoff) {
     // 跨租户只读检测（看门狗）：不补 tenant_id 谓词，与中继的跨租户查询同口径（调度线程无 TenantContext）。
-    // 仅返回 id 列表，不触达任何业务动作。
-    return instances.findStuckInstanceIds(cutoff);
+    // 仅返回 id 列表，不触达任何业务动作。SDK 行映射要求返回 Row 类，故在此抽取 id。
+    return instances.findStuckInstanceIds(cutoff).stream().map(WfInstanceRow::getId).toList();
   }
 
   @Override

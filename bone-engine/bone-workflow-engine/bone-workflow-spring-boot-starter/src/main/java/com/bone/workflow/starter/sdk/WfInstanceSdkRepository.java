@@ -236,11 +236,12 @@ public interface WfInstanceSdkRepository extends Repository<WfInstanceRow, Strin
    * <p>判据排除「有 PENDING 任务」的实例——那是人迟迟不审的正常等待，不是死实例。
    */
   @Sql(
-      "SELECT i.id FROM wf_instance i"
+      "SELECT i.id, i.entity_code, i.record_id, i.def_key, i.def_version, i.current_node_code,"
+          + " i.phase, i.started_by, i.started_at, i.updated_at FROM wf_instance i"
           + " WHERE i.deleted = 0 AND i.phase = 'RUNNING'"
           + "   AND i.node_entered_at <= #{cutoff}"
           + "   AND NOT EXISTS (SELECT 1 FROM wf_task t"
           + "       WHERE t.instance_id = i.id AND t.tenant_id = i.tenant_id"
           + "         AND t.deleted = 0 AND t.status = 'PENDING')")
-  List<String> findStuckInstanceIds(@Param("cutoff") Instant cutoff);
+  List<WfInstanceRow> findStuckInstanceIds(@Param("cutoff") Instant cutoff);
 }
