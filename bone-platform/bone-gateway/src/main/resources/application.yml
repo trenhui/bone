@@ -20,23 +20,40 @@ spring:
             # 浏览器同源 POST 仍带 Origin: http://127.0.0.1:3000，Spring CORS 拒绝 → 全站 403
             # （实测：登录接口 403、界面停留在登录页，无任何提示）。vite/qiankun 的 allowedHosts
             # 两种写法都放行，故此处必须两套 host 都登记，否则「能打开页面但一个接口都调不通」。
+            # 【为什么把 3000-3013 全段登记，而不是逐个补】历史上这份清单靠「发现一个漏一个」维护
+            # （3003-3006 漏过一次、3009 漏过一次、3012/3013 各漏过一次），每次的症状都一样：
+            # 页面能开、接口全 403，且报错落在浏览器控制台而非后端日志，排查成本极高。
+            # 3007（bone-system-app）就是最新一例：工作流设计器所在子应用直连网关被拒。
+            # 端口真源是各 app 的 vite.config.ts `createQiankunViteConfig(name, port)`；
+            # 本清单是「全部子应用 + shell」的超集，新增子应用只要落在这个区间内即自动放行，
+            # 不再需要改网关。越界端口（>3013）仍须显式登记——放行面不无限扩大。
             allowedOrigins:
               - "http://localhost:3000"
+              - "http://localhost:3001"
+              - "http://localhost:3002"
               - "http://localhost:3003"
               - "http://localhost:3004"
               - "http://localhost:3005"
               - "http://localhost:3006"
+              - "http://localhost:3007"
               - "http://localhost:3008"
+              - "http://localhost:3009"
+              - "http://localhost:3010"
+              - "http://localhost:3011"
+              - "http://localhost:3012"
+              - "http://localhost:3013"
               - "http://127.0.0.1:3000"
+              - "http://127.0.0.1:3001"
+              - "http://127.0.0.1:3002"
               - "http://127.0.0.1:3003"
               - "http://127.0.0.1:3004"
               - "http://127.0.0.1:3005"
               - "http://127.0.0.1:3006"
+              - "http://127.0.0.1:3007"
               - "http://127.0.0.1:3008"
-              - "http://localhost:3009"
-              - "http://localhost:3012"
-              - "http://localhost:3013"
               - "http://127.0.0.1:3009"
+              - "http://127.0.0.1:3010"
+              - "http://127.0.0.1:3011"
               - "http://127.0.0.1:3012"
               - "http://127.0.0.1:3013"
             allowedMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
@@ -105,6 +122,22 @@ spring:
           uri: ${BONE_METADATA_SERVER_URI:http://localhost:9001}
           predicates:
             - Path=/api/v1/metadata/**, /api/v1/runtime/**
+        # 工作流设计器（bone-system-app「系统管理 → 工作流设计器」）。
+        # 端点由 bone-workflow-spring-boot-starter 的 WorkflowDesignerController 暴露，
+        # 宿主角落是 bone-boot（:9001，组合根 = metadata-server + 报销/采购业务模块）——
+        # 与上一条 bone-metadata-server 同一上游，但路径前缀 /api/v1/workflow 完全不同。
+        #
+        # 【为什么必须单独登记】前端只经网关调用（各子应用 vite proxy /api → :8888），
+        # 网关是「按前缀白名单转发」的：未登记的路径不会落到任何上游，直接 404 且**不产生后端日志**
+        # （请求根本没进 DispatcherServlet）——症状就是设计器页面「接口全 404、后端日志一片安静」。
+        # 这与菜单/权限都无关，是本条路由缺失。
+        #
+        # 【为什么上游也走 BONE_METADATA_SERVER_URI】设计器与运行时共用同一宿主进程；
+        # 若将来把设计器宿主拆出去，只需给这条路由单独配 BONE_WORKFLOW_URI，不动另一条。
+        - id: bone-workflow-designer
+          uri: ${BONE_WORKFLOW_URI:${BONE_METADATA_SERVER_URI:http://localhost:9001}}
+          predicates:
+            - Path=/api/v1/workflow/**
         # 智能理赔域：synap-claim（:8087，2026-10-25 联调补全启动引导后登记）。
         # 前端 bone-claim-app(:3013) 经 claimApi.ts 收敛调用 /api/v1/claims/**（只走网关，
         # 与其余微应用同口径）；缺此路由时理赔页全部接口 404，链路断在第一跳。
@@ -112,6 +145,18 @@ spring:
           uri: ${BONE_CLAIM_URI:http://localhost:8087}
           predicates:
             - Path=/api/v1/claims/**
+        # 智能理赔 · 管理后台命名空间：`/api/v1/review/**`（同属 synap-claim）。
+        # 归属两个页面：
+        #   · 后督抽检（InspectionController#/api/v1/review/inspections）——发起/领取/结论；
+        #   · 核赔工作台任务中心（ReviewTaskController#/api/v1/review/tasks）。
+        # 【为什么必须单独登记】网关是按前缀白名单转发的，`/api/v1/claims/**` 只覆盖赔案主干，
+        # review 前缀一条不匹配就整体 404，且**不产生后端日志**（请求没进上游 DispatcherServlet）。
+        # 实证：直连 :8087 `/api/v1/review/inspections` 命中「请求地址不存在」是上游自身的 404，
+        # 而经网关时连上游都到不了——两者错误体不同，据此可区分「路由缺」与「服务缺」。
+        - id: synap-claim-review
+          uri: ${BONE_CLAIM_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/review/**
 
 # 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
 bone:
