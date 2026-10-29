@@ -14,6 +14,10 @@ import java.util.Map;
  * evidenceParsed} / {@code ruleConflict} / {@code amount} / {@code ocrConfidence} / {@code riskHit}
  * / {@code fraudGatePassed} / {@code rejectSuggested}； 置信度由 {@link
  * DecisionNodeOutcome#confidence()} 单独给出。
+ *
+ * <p><b>能力三态（{@code capabilityMissing} + {@code capabilityReason}）</b>：节点无法判定（依赖能力未接入）时置 {@code
+ * capabilityMissing=true} 并给受控原因码；执行器据此只会把"本会 AUTO_APPROVE"的结论降级为 {@code
+ * MANUAL_REQUIRED}。<b>严禁</b>把"无法判定"写进 {@code rejectSuggested}——那会把"没接线"落成对客户的不利决定。
  */
 public interface DecisionNodeHandler {
 

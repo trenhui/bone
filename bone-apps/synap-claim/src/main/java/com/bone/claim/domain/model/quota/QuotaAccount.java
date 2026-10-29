@@ -159,12 +159,16 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
   }
 
   /**
-   * 冻结（理算完成后占额，计入 frozen 不扣 claimed）。
+   * 软占（SOFT，§5.3：{@code SettlementOrder} 创建即冻结，计入 {@code frozen} 不扣 {@code claimed}）。
+   *
+   * <p>流水 {@code direction=OCCUPY / txn_type=SOFT}——<b>软占与硬冻必须是两种 txn_type</b>：流水是 append-only 的
+   * 事实表（账户只是投影），若软占也记 {@code HARD}，下游按 txn_type 统计软/硬占用、以及对账"SOFT→HARD 阶段单调"
+   * 都会失真，同一笔钱会在两个阶段各被计一次占用（双冻结）。
    *
    * @param amount 冻结金额
    * @return 本次流水（append-only）
    */
-  public QuotaTransaction freeze(
+  public QuotaTransaction reserveSoft(
       long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
     requirePositive(amount, "冻结金额");
     if (available().compareTo(amount) < 0) {
@@ -178,9 +182,36 @@ public class QuotaAccount extends TenantAggregateRoot<Long> {
         claimId,
         settlementNo,
         "OCCUPY",
-        "HARD",
+        "SOFT",
         amount,
         before,
+        quotaFrozen,
+        idempotencyKey);
+  }
+
+  /**
+   * 硬冻升级（HARD，§5.3：{@code HARD_RESERVED} 沿用软占已记的 {@code frozen}，<b>不新增占用</b>，仅记录硬预占状态）。
+   *
+   * <p>流水 {@code direction=OCCUPY / txn_type=HARD}，{@code before == after}（额度未变动）。<b>禁止</b>在此再
+   * {@code frozen += amount}：那会让同一笔钱被软占与硬冻各计一次，直接造成"可用额度凭空蒸发"。
+   *
+   * @param amount 本次升级为硬冻的金额（不得超过已冻结额）
+   * @return 本次流水（append-only）
+   */
+  public QuotaTransaction upgradeToHard(
+      long txnId, BigDecimal amount, Long claimId, String settlementNo, String idempotencyKey) {
+    requirePositive(amount, "硬冻金额");
+    if (quotaFrozen.compareTo(amount) < 0) {
+      throw new DomainException("已冻结额度小于硬冻金额，硬冻升级不得新增占用");
+    }
+    return append(
+        txnId,
+        claimId,
+        settlementNo,
+        "OCCUPY",
+        "HARD",
+        amount,
+        quotaFrozen,
         quotaFrozen,
         idempotencyKey);
   }

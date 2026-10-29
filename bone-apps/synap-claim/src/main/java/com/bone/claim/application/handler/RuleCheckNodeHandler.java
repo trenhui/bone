@@ -68,16 +68,17 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
             || (visualAvailable && fr.tampered())
             || (graphAvailable && gr.hit());
 
-    // 反欺诈硬闸（逻辑与）：视觉 E1 / 图计算 E2 缺失 ⇒ 无法确认通过 ⇒ fail-closed（绝不放行）
+    // 硬闸（逻辑与）：规则核责 + 视觉 E1 + 图计算 E2 三路任一缺失 ⇒ 无法确认通过 ⇒ fail-closed（绝不放行）。
+    // 规则这一路与 E1/E2 同权：核责规则没跑过时，"无冲突/验真通过"只是默认值，据此自动放款等于"没查就付"。
+    boolean capabilitiesPresent = ruleAvailable && visualAvailable && graphAvailable;
     boolean fraudGatePassed =
-        (visualAvailable && graphAvailable)
-            ? (r.fraudGatePassed() && !fr.tampered() && !gr.hit())
-            : false;
+        capabilitiesPresent ? (r.fraudGatePassed() && !fr.tampered() && !gr.hit()) : false;
 
-    if (!visualAvailable || !graphAvailable) {
+    if (!capabilitiesPresent) {
       log.warn(
-          "反欺诈增强能力缺失 → 决策图 fail-closed 升级人工（visualAvailable={}, graphAvailable={}）；"
-              + "自动通过在此状态下被禁用，直至 E1/E2 接入",
+          "核责/反欺诈能力缺失 → 决策图 fail-closed 升级人工（ruleAvailable={}, visualAvailable={}, "
+              + "graphAvailable={}）；自动通过在此状态下被禁用，直至 C2/E1/E2 接入",
+          ruleAvailable,
           visualAvailable,
           graphAvailable);
     }
@@ -94,7 +95,16 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
     out.put("graphAvailable", graphAvailable);
     // 规则未真实执行时，禁止把默认值当结论：显式标注原因，供审计/核赔员识别"该结论未经核责"
     out.put("ruleUnavailableReason", ruleAvailable ? "" : "RULE_ENGINE_STUB");
-    out.put("fraudGateReason", fraudGateReason(visualAvailable, graphAvailable, r, fr, gr));
+    out.put(
+        "fraudGateReason",
+        fraudGateReason(
+            ruleAvailable, visualAvailable, graphAvailable, r.fraudGatePassed(), fr, gr));
+    // 能力缺失（无法判定）与"真实命中风险"分属两种安全态：前者转人工，后者转人工 + 风控复核。
+    // 用受控原因码区分，禁止把"没查"写成"查出了问题"。
+    out.put("capabilityMissing", !capabilitiesPresent);
+    if (!capabilitiesPresent) {
+      out.put("capabilityReason", capabilityReason(ruleAvailable, visualAvailable, graphAvailable));
+    }
     String summary =
         "conflict="
             + r.ruleConflict()
@@ -116,29 +126,52 @@ public class RuleCheckNodeHandler implements DecisionNodeHandler {
   }
 
   /**
-   * 反欺诈硬闸未过的受控原因码（可解释性）：{@code ANTI_FRAUD_CAPABILITY_MISSING} 表示视觉 E1 / 图计算 E2 未集成、
-   * 无法确认安全（fail-closed）；{@code RISK_HIT} 表示真实命中风险；{@code VERIFY_NOT_PASSED} 表示验真未过；{@code PASSED}
-   * 表示三路真实执行且均通过。
+   * 硬闸未过的受控原因码（可解释性）：{@code RULE_ENGINE_UNAVAILABLE} 表示核责规则未真实执行；{@code
+   * ANTI_FRAUD_CAPABILITY_MISSING} 表示视觉 E1 / 图计算 E2 未集成；{@code RISK_HIT} 表示真实命中风险；{@code
+   * VERIFY_NOT_PASSED} 表示验真未过；{@code PASSED} 表示三路真实执行且均通过。
    *
-   * <p><b>口径边界（待评审）</b>：规则路的可用性（{@code ruleAvailable}）当前<b>只做标注、不参与本硬闸</b>——ADR-002 一期豁免允许规则引擎为桩（C2
-   * 未交付），若强行并入会把当前 AUTO_APPROVE 策略整体翻转为人工，属资金路径策略变更， 须经产品/架构签核后再改。届时同时调整 {@code fraudGatePassed}
-   * 条件与本方法即可，调用方无需变动。
+   * <p><b>口径说明</b>：规则路的可用性（{@code ruleAvailable}）<b>已并入</b>本硬闸（2026-10-29）。此前按 ADR-002 一期豁免只做标注，
+   * 前提是"E1/E2 未接入 ⇒ 闸本就恒不通过"，故并入不改变任何可达结论；但一旦 E1/E2 先于 C2 接入，不带规则路的闸就会放行"没核责"的案件—— 豁免的前提届时自动失效。
+   * 现按"不可用绝不等同于无冲突"原则一次收敛，代价是 {@code AUTO_APPROVE} 以 C2 真实交付为前置。
    */
   private static String fraudGateReason(
+      boolean ruleAvailable,
       boolean visualAvailable,
       boolean graphAvailable,
-      RuleEnginePort.RuleCheckResult r,
+      boolean ruleVerifyPassed,
       VisualForensicsPort.ForensicsResult fr,
       GraphFraudPort.FraudResult gr) {
+    if (!ruleAvailable) {
+      return "RULE_ENGINE_UNAVAILABLE";
+    }
     if (!visualAvailable || !graphAvailable) {
       return "ANTI_FRAUD_CAPABILITY_MISSING";
     }
-    if (r.riskHit() || fr.tampered() || gr.hit()) {
+    if (fr.tampered() || gr.hit()) {
       return "RISK_HIT";
     }
-    if (!r.fraudGatePassed()) {
+    if (!ruleVerifyPassed) {
       return "VERIFY_NOT_PASSED";
     }
     return "PASSED";
+  }
+
+  /**
+   * 能力缺失（无法判定）的受控原因码——与 {@code fraudGateReason} 的 {@code RISK_HIT} 严格区分：
+   * 前者是"没查"，后者是"查出了问题"，两者的人工处置路径不同（补能力 vs 风控复核）。
+   */
+  private static String capabilityReason(
+      boolean ruleAvailable, boolean visualAvailable, boolean graphAvailable) {
+    StringBuilder sb = new StringBuilder("CAPABILITY_MISSING");
+    if (!ruleAvailable) {
+      sb.append(":RULE_ENGINE");
+    }
+    if (!visualAvailable) {
+      sb.append(":VISUAL_E1");
+    }
+    if (!graphAvailable) {
+      sb.append(":GRAPH_E2");
+    }
+    return sb.toString();
   }
 }

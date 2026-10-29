@@ -48,7 +48,8 @@ public class QuotaApplicationService {
     if (alreadyOccupied(account, key)) {
       return;
     }
-    account.freeze(DistributedIdGenerator.generateLongId(), amount, claimId, settlementNo, key);
+    account.reserveSoft(
+        DistributedIdGenerator.generateLongId(), amount, claimId, settlementNo, key);
     quotaAccountRepository.save(account);
   }
 

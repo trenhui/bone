@@ -17,6 +17,7 @@ import com.bone.claim.domain.model.claim.ClaimItem;
 import com.bone.claim.domain.model.claim.valueobject.Decision;
 import com.bone.claim.domain.model.claim.valueobject.ItemCategory;
 import com.bone.claim.domain.repository.ClaimCaseRepository;
+import com.bone.claim.domain.repository.ClaimItemRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ class ClaimCaseApplicationServiceTest {
   private static final Instant OUT_INSURE = Instant.parse("2026-03-12T10:00:00Z");
 
   @Mock private ClaimCaseRepository claimCaseRepository;
+  @Mock private ClaimItemRepository claimItemRepository;
   @Mock private PolicyQueryPort policyQueryPort;
   @Mock private TenantPort tenantPort;
   @Mock private DomainEventPublisher domainEventPublisher;
