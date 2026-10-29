@@ -50,6 +50,11 @@ APPROVER_USER = os.environ.get("BONE_E2E_APPROVER_USER", "mdapprover2")
 APPROVER_PWD = os.environ.get("BONE_E2E_APPROVER_PWD", "Approver#2026")
 APPROVER_DEPT_ID = int(os.environ.get("BONE_E2E_APPROVER_DEPT_ID", "758345112240521216"))
 
+# 第二会签人（大额会签场景：财务负责人 + 分管副总 的 demo 映射）。
+# 由迁移 0070 预置（id 9105，复制 mdapprover2 密码哈希），缺失则按 IAM 契约补建。
+APPROVER2_USER = os.environ.get("BONE_E2E_APPROVER2_USER", "mdapprover3")
+APPROVER2_PWD = os.environ.get("BONE_E2E_APPROVER2_PWD", "Approver#2026")
+
 SUFFIX = str(int(time.time() * 1000))[-9:]
 
 http.login()
@@ -71,30 +76,31 @@ def _find_account_id(username):
     return None
 
 
-def ensure_approver():
+def ensure_approver(user=APPROVER_USER, pwd=APPROVER_PWD):
     """返回 (identity_headers, user_id)；无法准备时返回 (None, None)，调用方跳过而非假绿。"""
-    tok = login_as(APPROVER_USER, APPROVER_PWD)
+    tok = login_as(user, pwd)
     if not tok:
-        aid = _find_account_id(APPROVER_USER)
+        aid = _find_account_id(user)
         if aid is None:
             s, d = call("POST", "/iam/accounts", {
-                "username": APPROVER_USER, "password": APPROVER_PWD,
-                "email": APPROVER_USER + "@bone.local", "realName": "联调审批人",
+                "username": user, "password": pwd,
+                "email": user + "@bone.local", "realName": "联调审批人",
                 "tenantId": 0, "deptId": APPROVER_DEPT_ID,
                 # 角色 1=平台角色、3=持有 metadata:runtime:write：缺写入域权限连动作控制器都进不去
                 "roleIds": [1, 3],
             })
-            note(f"补建审批账号 {APPROVER_USER} → {s} {ecode(d) or ''}")
+            note(f"补建审批账号 {user} → {s} {ecode(d) or ''}")
             aid = d_(d)
         if aid is not None:
-            call("POST", f"/iam/accounts/{aid}/reset-password", {"newPassword": APPROVER_PWD})
-            tok = login_as(APPROVER_USER, APPROVER_PWD)
+            call("POST", f"/iam/accounts/{aid}/reset-password", {"newPassword": pwd})
+            tok = login_as(user, pwd)
     if not tok:
         return None, None
     return session_headers(tok), jwt_user_id(tok)
 
 
 APPROVER_HDR, APPROVER_ID = ensure_approver()
+APPROVER2_HDR, APPROVER2_ID = ensure_approver(APPROVER2_USER, APPROVER2_PWD)
 
 
 # ------------------------------------------------------------------ 助手
@@ -181,6 +187,11 @@ if APPROVER_ID is None:
     finish("审批集成（凭据未就绪）")
 check("审批账号可用且非发起人", APPROVER_ID is not None and str(APPROVER_ID) != "1",
       f"approver_id={APPROVER_ID}")
+if APPROVER2_ID is None:
+    check("第二会签人账号可用", False, "无法准备第二会签人，S10 大额会签不可判")
+check("第二会签人账号可用且非发起人/非首位审批人",
+      APPROVER2_ID is not None and str(APPROVER2_ID) != "1" and str(APPROVER2_ID) != str(APPROVER_ID),
+      f"approver2_id={APPROVER2_ID}")
 
 # ---------------------------------------------------------------- S1 审批通过
 section("S1 报销：提交 → 派单 → 我的待办 → 审批通过")
@@ -350,8 +361,12 @@ if po2:
 # 种子定义（0057）口径：≤1000 → mgr；1000<x≤5000 → dept；>5000 → finance；金额缺失 → finance（fail-safe）。
 # 这一段的判别力在于：只断言「审批通过」会漏掉「路由到错的人」——必须断言**当前节点编码**，
 # 因为三档的审批人字段可能相同（FIELD approver_id），只有节点能证明分支真的生效了。
-section("S9 报销：金额分级路由（≤1000→主管 / 中额→部门 / 大额→财务）")
-for amount, want_node, tag in ((300, "mgr", "低额"), (2000, "dept", "中额"), (6000, "finance", "大额")):
+section("S9 报销：金额分级路由（≤1000→主管 / 中额→部门 / 大额→会签）")
+for amount, want_node, tag, cosign in (
+    (300, "mgr", "低额", False),
+    (2000, "dept", "中额", False),
+    (6000, "finance_cosign", "大额会签", True),
+):
     s, d = make_expense(f"联调-报销-{tag}", amount, APPROVER_ID)
     rid = d_(d, "id")
     if not rid:
@@ -360,10 +375,60 @@ for amount, want_node, tag in ((300, "mgr", "低额"), (2000, "dept", "中额"),
     act_as(http.default().headers(), EXP, rid, "submit")
     desc, _ = describe(EXP, rid)
     nodes = [t.get("nodeCode") for t in pending(desc)]
-    check(f"{tag}（{amount}）路由到 {want_node} 节点", nodes == [want_node], f"nodes={nodes}")
-    s, d = act_as(APPROVER_HDR, EXP, rid, "approve", {"comment": "分级审批同意"})
-    check(f"{tag}（{amount}）审批通过", s == 200, f"{s} {ecode(d)} {d.get('message')}")
-    check(f"{tag}（{amount}）单据 APPROVED", wait_status(EXP, rid, "APPROVED") == "APPROVED",
-          f"status={rec(EXP, rid).get('status')}")
+    if cosign:
+        # 会签节点 fan-out 出两条待办（同一节点、两个审批人），两人都批才推进
+        check(f"{tag}（{amount}）路由到 {want_node} 且生成两条会签待办",
+              nodes == [want_node, want_node], f"nodes={nodes}")
+        s, d = act_as(APPROVER_HDR, EXP, rid, "approve", {"comment": "会签-财务负责人同意"})
+        check(f"{tag}（{amount}）首位会签人通过后仍待另一人（不假通过）",
+              s == 200 and rec(EXP, rid).get("status") == "SUBMITTED",
+              f"status={rec(EXP, rid).get('status')}")
+        s, d = act_as(APPROVER2_HDR, EXP, rid, "approve", {"comment": "会签-分管副总同意"})
+        check(f"{tag}（{amount}）次位会签人通过后单据 APPROVED",
+              s == 200 and wait_status(EXP, rid, "APPROVED") == "APPROVED",
+              f"status={rec(EXP, rid).get('status')}")
+    else:
+        check(f"{tag}（{amount}）路由到 {want_node} 节点", nodes == [want_node], f"nodes={nodes}")
+        s, d = act_as(APPROVER_HDR, EXP, rid, "approve", {"comment": "分级审批同意"})
+        check(f"{tag}（{amount}）审批通过", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+        check(f"{tag}（{amount}）单据 APPROVED", wait_status(EXP, rid, "APPROVED") == "APPROVED",
+              f"status={rec(EXP, rid).get('status')}")
+
+# ---------------------------------------------------------------- S10 大额会签（端到端）
+# 企业复杂审批的核心形态：大额报销需「财务负责人 + 分管副总」双人会签（node.mode=ALL）。
+# 判别力要点：只断言「审批通过」会漏掉「会签未齐就假通过」——必须同时断言
+#   ① 路由到会签节点且 fan-out 出两条待办（两个不同审批人）；
+#   ② 首位通过后单据仍为 SUBMITTED、实例 RUNNING、仍剩一条待办（会签未齐不推进）；
+#   ③ 两人均通过后单据 APPROVED、实例终态、无遗留待办、轨迹含两位意见。
+section("S10 报销：大额会签（财务负责人 + 分管副总，ALL 模式）—— 两人都批才通过")
+s, d = make_expense("联调-报销-大额会签", 8000, APPROVER_ID)
+exp10 = d_(d, "id")
+if exp10:
+    act_as(http.default().headers(), EXP, exp10, "submit")
+    desc, _ = describe(EXP, exp10)
+    check("大额单路由到会签节点 finance_cosign 且 fan-out 出两条待办",
+          len(pending(desc)) == 2 and all(t.get("nodeCode") == "finance_cosign" for t in pending(desc)),
+          f"pending={pending(desc)}")
+    assignees = sorted(str(t.get("assigneeId")) for t in pending(desc))
+    check("会签待办派给两位不同审批人（9104/9105）", assignees == ["9104", "9105"], f"assignees={assignees}")
+    # 第一位会签人通过：会签未齐 ⇒ 不推进
+    s, d = act_as(APPROVER_HDR, EXP, exp10, "approve", {"comment": "财务负责人同意"})
+    check("首位会签人审批成功", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    desc, _ = describe(EXP, exp10)
+    check("首位通过后单据仍为 SUBMITTED（未假通过）", rec(EXP, exp10).get("status") == "SUBMITTED",
+          f"status={rec(EXP, exp10).get('status')}")
+    check("首位通过后仍剩一条会签待办", len(pending(desc)) == 1, f"pending={pending(desc)}")
+    check("实例仍在 RUNNING（会签未齐）", phase(desc) == "RUNNING", f"phase={phase(desc)}")
+    # 第二位会签人通过：两人齐 ⇒ 推进
+    s, d = act_as(APPROVER2_HDR, EXP, exp10, "approve", {"comment": "分管副总同意"})
+    check("次位会签人审批成功", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check("两人均通过后单据 APPROVED", wait_status(EXP, exp10, "APPROVED") == "APPROVED",
+          f"status={rec(EXP, exp10).get('status')}")
+    desc, _ = describe(EXP, exp10)
+    check("实例终态 APPROVED 且无遗留待办", phase(desc) == "APPROVED" and not pending(desc),
+          f"phase={phase(desc)} pending={pending(desc)}")
+    check("审批轨迹含两位会签人意见",
+          sum(1 for t in (desc.get("trail") or []) if t.get("decision") == "APPROVE") >= 2,
+          f"trail={desc.get('trail')}")
 
 finish("报销/采购审批集成")
