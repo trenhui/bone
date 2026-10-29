@@ -65,8 +65,11 @@ public class PurchaseWorkflowDecisionHandler implements RuntimeActionHandler {
     result.put("currentNode", after.currentNodeCode());
     if (!approve && backToNodeCode != null && !backToNodeCode.isBlank()) {
       result.put("backToNode", backToNodeCode);
-      // 退回节点 = 原地返工：实例已退回上游节点并重新派单，单据仍在审批中。
-      // 若平台照常把 status 推到 REJECTED（终态），审批人再点「通过」恒 409、待办永远清不掉 —— 死单。
+    }
+    // 单据 status 只能由**实例终态**驱动：一次决策 ≠ 流程结束。
+    // 会签未齐 / 驳回退回指定节点时实例仍 RUNNING；此时照旧把 status 推到 to_status 会让单据
+    // 离开 from_status（SUBMITTED），余下会签人的 approve 恒 409、待办永远清不掉（实测死单）。
+    if (!after.isTerminated()) {
       result.put(
           RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP);
     }

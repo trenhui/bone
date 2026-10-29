@@ -66,8 +66,15 @@ public class ExpenseWorkflowDecisionHandler implements RuntimeActionHandler {
     result.put("currentNode", after.currentNodeCode());
     if (!approve && backToNodeCode != null && !backToNodeCode.isBlank()) {
       result.put("backToNode", backToNodeCode);
-      // 退回节点 = 原地返工：实例已退回上游节点并重新派单，单据仍在审批中。
-      // 若平台照常把 status 推到 REJECTED（终态），审批人再点「通过」恒 409、待办永远清不掉 —— 死单。
+    }
+    // 单据 status 只能由**实例终态**驱动：一次决策 ≠ 流程结束。
+    // 两种典型场景都会在「实例仍在流转」时被单次决策误判为结束：
+    //   · 会签（ALL / 比例会签）：首位审批人通过后节点还差人，实例仍 RUNNING；
+    //   · 驳回退回指定节点：实例退回上游节点原地返工，实例仍 RUNNING。
+    // 若此处照旧把 status 推到动作定义的 to_status（APPROVED / REJECTED），单据就离开了
+    // from_status（SUBMITTED）：余下会签人的 approve 恒 409 ILLEGAL_TRANSITION、待办永远清不掉（实测死单）。
+    // 故只在实例已终态时才声明「按定义推进」，否则声明 KEEP（status 原地不动）。
+    if (!after.isTerminated()) {
       result.put(
           RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP);
     }

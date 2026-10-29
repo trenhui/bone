@@ -35,7 +35,11 @@ USE bone;
 --   （RoleMemberProvider 未接入时该规则解析不出、不阻塞——union 语义，FIELD 命中即可派单；
 --    两条都解析不出 ⇒ 引擎挂起 SUSPENDED + 告警，fail-closed 不放行）。
 -- v1 全部 APPROVE 节点为 SINGLE（单签）：会签（ALL）与平台状态机「approve 边 SUBMITTED→APPROVED」
---   存在语义冲突（首个会签人通过后单据即离 SUBMITTED，余人无法再审批），留待 v2 设计分叉。
+--   存在语义冲突（首个会签人通过后单据即离 SUBMITTED，余人无法再审批），故 v1 不启用会签。
+--   ★ 2026-10-29 更新：该冲突已在**处理器侧**闭合——决策 Handler 改为「实例终态驱动」：实例已终结才声明按
+--   to_status 推进，否则声明 platformStatus=KEEP（单据 status 原地不动）。理由：一次决策 ≠ 流程结束，
+--   会签未齐、驳回退回指定节点时实例仍 RUNNING，此刻推进 status 会让余下办理人的动作恒 409（实测死单）。
+--   于是 v2 起可安全启用会签（ALL / 比例会签），无需再改平台状态机语义。
 --
 -- 种子的结构回归：bone-app-expense 的 ExpenseWorkflowDefinitionTest 直接解析本段 JSON 驱动
 -- WorkflowDefinitionValidator + 真引擎领域行为（同源零漂移）——改种子前先跑该测试。

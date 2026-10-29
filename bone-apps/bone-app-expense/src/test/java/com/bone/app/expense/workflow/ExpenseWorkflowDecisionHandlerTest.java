@@ -165,6 +165,38 @@ class ExpenseWorkflowDecisionHandlerTest {
   }
 
   @Test
+  @DisplayName("会签未齐时通过：实例仍 RUNNING ⇒ 声明 KEEP，否则余下会签人恒 409 死单")
+  void approveWhileNodeStillPending_keepsStatus() {
+    stubRunningWithTask("u-manager");
+    // 会签节点：首位审批人通过后节点还差人，引擎不推进到下一节点，实例仍 RUNNING。
+    when(engine.completeTask(
+            eq("task-1"), eq(WorkflowTask.Decision.APPROVE), any(), eq("u-manager"), any()))
+        .thenReturn(instance("RUNNING"));
+
+    Map<String, Object> result =
+        handler.execute(ctx("approve", "u-manager", Map.of("comment", "同意（会签之一）")));
+
+    assertThat(result)
+        .containsEntry(
+            RuntimeActionContext.OUTCOME_PLATFORM_STATUS, RuntimeActionContext.PLATFORM_STATUS_KEEP)
+        .containsEntry("workflowPhase", "RUNNING");
+  }
+
+  @Test
+  @DisplayName("单签节点通过：实例 APPROVED 终态 ⇒ 不声明 KEEP，状态照常推进")
+  void approveTerminal_doesNotKeepStatus() {
+    stubRunningWithTask("u-manager");
+    when(engine.completeTask(
+            eq("task-1"), eq(WorkflowTask.Decision.APPROVE), any(), eq("u-manager"), any()))
+        .thenReturn(instance("APPROVED"));
+
+    Map<String, Object> result =
+        handler.execute(ctx("approve", "u-manager", Map.of("comment", "同意")));
+
+    assertThat(result).doesNotContainKey(RuntimeActionContext.OUTCOME_PLATFORM_STATUS);
+  }
+
+  @Test
   @DisplayName("非当前审批人调 approve → 403（任务级 SoD：决策权收敛到指派冻结时的审批人）")
   void nonAssignee_forbidden() {
     stubRunningWithTask("u-manager");

@@ -127,9 +127,14 @@ def pending(desc):
     return desc.get("pendingTasks") or []
 
 
+_EXP_SEQ = [0]
+
+
 def make_expense(title, amount, approver_id):
+    # 单号必须每次唯一：仅用时间戳后 4 位会在同一毫秒内连开多单时撞号（S9 循环建三张就踩到）
+    _EXP_SEQ[0] += 1
     return rec_create(EXP, {
-        "claim_no": "BX-" + SUFFIX + "-" + str(int(time.time() * 1000))[-4:],
+        "claim_no": "BX-" + SUFFIX + "-" + str(_EXP_SEQ[0]),
         "title": title,
         "amount": amount,
         "expense_date": "2026-10-29",
@@ -339,5 +344,26 @@ if po2:
     check("采购退回后仍可审批通过（不死单）", s == 200, f"{s} {ecode(d)} {d.get('message')}")
     check("采购单最终 APPROVED", wait_status(PO, po2, "APPROVED") == "APPROVED",
           f"status={rec(PO, po2).get('status')}")
+
+# ---------------------------------------------------------------- S9 金额分级（条件分支）
+# 企业报销的核心是**分级授权**：不同金额走不同审批档位，而不是人人都一样。
+# 种子定义（0057）口径：≤1000 → mgr；1000<x≤5000 → dept；>5000 → finance；金额缺失 → finance（fail-safe）。
+# 这一段的判别力在于：只断言「审批通过」会漏掉「路由到错的人」——必须断言**当前节点编码**，
+# 因为三档的审批人字段可能相同（FIELD approver_id），只有节点能证明分支真的生效了。
+section("S9 报销：金额分级路由（≤1000→主管 / 中额→部门 / 大额→财务）")
+for amount, want_node, tag in ((300, "mgr", "低额"), (2000, "dept", "中额"), (6000, "finance", "大额")):
+    s, d = make_expense(f"联调-报销-{tag}", amount, APPROVER_ID)
+    rid = d_(d, "id")
+    if not rid:
+        check(f"{tag}（{amount}）建单成功", False, f"{s} {ecode(d)} {d.get('message')}")
+        continue
+    act_as(http.default().headers(), EXP, rid, "submit")
+    desc, _ = describe(EXP, rid)
+    nodes = [t.get("nodeCode") for t in pending(desc)]
+    check(f"{tag}（{amount}）路由到 {want_node} 节点", nodes == [want_node], f"nodes={nodes}")
+    s, d = act_as(APPROVER_HDR, EXP, rid, "approve", {"comment": "分级审批同意"})
+    check(f"{tag}（{amount}）审批通过", s == 200, f"{s} {ecode(d)} {d.get('message')}")
+    check(f"{tag}（{amount}）单据 APPROVED", wait_status(EXP, rid, "APPROVED") == "APPROVED",
+          f"status={rec(EXP, rid).get('status')}")
 
 finish("报销/采购审批集成")
