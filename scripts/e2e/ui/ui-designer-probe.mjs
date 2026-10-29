@@ -37,6 +37,7 @@
 /* 共享 client：配置常量 / playwright 加载 / API 登录与带 token fetch / 断言收集（见 e2e_lib/client.cjs） */
 import {
   UI_BASE as BASE,
+  BASE as GW_API,
   SHOT_DIR,
   CHROME,
   USER,
@@ -46,8 +47,8 @@ import {
   login,
   api,
 } from '../e2e_lib/client.cjs';
-/* 共享 UI 交互层：浏览器登录（禁止在探针内重抄登录选择器，见 e2e_lib/ui.cjs） */
-import { uiLogin } from '../e2e_lib/ui.cjs';
+/* 共享 UI 交互层：浏览器登录与取本地 token（禁止在探针内重抄登录选择器，见 e2e_lib/ui.cjs） */
+import { uiLogin, localToken } from '../e2e_lib/ui.cjs';
 
 const { chromium } = loadPlaywright();
 
@@ -1139,6 +1140,7 @@ async function scenarioPerf() {
     await uiLogin(page);
     const table = [];
     let restored = false;
+    let failed = false; // 度量中断标记：退出码即契约，部分产出 ≠ 通过
     try {
       const cur0 = await getSchema(tok, eid);
       let lock = cur0.lockVersion;
@@ -1165,6 +1167,7 @@ async function scenarioPerf() {
         await page.screenshot({ path: `/Users/renhui.trh/wps/bone/logs/ui_designer_perf_${n}.png` }).catch(() => {});
       }
     } catch (e) {
+      failed = true;
       console.error('✗ 度量失败：', e.message);
     } finally {
       if (!restored) {
@@ -1178,7 +1181,8 @@ async function scenarioPerf() {
     console.log('\n===== P1-5 渲染层性能基线（浏览器实测）=====');
     console.table(table);
     console.log('JSON:' + JSON.stringify(table));
-    return table.length ? 0 : 1;
+    // 任一档度量中断、或档位产出不全（SIZES 跑满才叫通过）都算失败，不再「有产出即 0」
+    return (failed || table.length < SIZES.length) ? 1 : 0;
   });
 }
 
@@ -1434,8 +1438,9 @@ async function scenarioProduction() {
  */
 async function scenarioUx() {
   /* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs，已在文件头统一 import） */
-  const SHELL = 'http://localhost:3000';
-  const GATEWAY = 'http://localhost:8888';
+  // 地址改取共享 config（README §2.1：禁止在脚本内重抄 host:port）
+  const SHELL = BASE;                                           // shell :3000
+  const GATEWAY = String(GW_API).replace(/\/api\/v1\/?$/, '');  // 网关根 :8888
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const steps = [];
@@ -1446,18 +1451,14 @@ async function scenarioUx() {
     console.log(`  ${ok ? '✅' : '❌'} ${name}${info ? '  ' + JSON.stringify(info) : ''}`);
   }
 
-  /** 原 login()：UI 登录取 JWT。浏览器改为骨架持有，本函数只负责页面操作与取 token */
+  /**
+   * 原 login()：UI 登录取 JWT。浏览器改为骨架持有，本函数只负责页面操作与取 token。
+   * 填表动作改走共享层 uiLogin（route 保持原口径 /iam#/accounts），token 改走 localToken
+   * —— 与其余 20 个探针同源，避免此处再留一份会漂移的登录副本。
+   */
   async function uxLogin(page) {
-    await page.goto(`${SHELL}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-    await sleep(3500);
-    const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-    if ((await u.count()) && (await u.isVisible().catch(() => false))) {
-      await u.fill(USER);
-      await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-      await page.locator('button[type="submit"], button:has-text("登")').first().click();
-      await sleep(4000);
-    }
-    const token = await page.evaluate(() => localStorage.getItem('token'));
+    const ok = await uiLogin(page, { route: `${SHELL}/iam#/accounts` });
+    const token = ok ? await localToken(page) : null;
     if (!token) throw new Error('login failed: no token');
     return token;
   }

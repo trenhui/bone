@@ -1,6 +1,8 @@
 // 取各页面真实可点击元素（按钮文字 + 图标按钮的 title/aria-label），用于确认"新增"入口的真实形态
-/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+/* 共享 client：playwright 加载 / CHROME / UI BASE（见 e2e_lib/client.cjs）
+ * 共享 UI 登录：uiLogin（凭据由 client.cjs 供给，登录选择器唯一真源见 e2e_lib/ui.cjs） */
+import { loadPlaywright, CHROME, UI_BASE as BASE } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 const PAGES = [
   ['iam', '#/accounts'], ['iam', '#/roles'], ['iam', '#/tenants'], ['iam', '#/organizations'], ['iam', '#/apps'],
@@ -11,15 +13,8 @@ const PAGES = [
 (async () => {
   const browser = await chromium.launch({ headless: true, executablePath: CHROME });
   const page = await (await browser.newContext({ viewport: { width: 1600, height: 950 } })).newPage();
-  await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await page.waitForTimeout(4000);
-  }
+  // 登录：统一走共享 uiLogin，直达 iam 登录路由（禁止在探针内重抄登录选择器）
+  await uiLogin(page, { route: `${BASE}/iam#/accounts` });
   const out = {};
   for (const [app, hash] of PAGES) {
     await page.goto(`${BASE}/${app}${hash}`, { waitUntil: 'domcontentloaded' });

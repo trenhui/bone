@@ -1,8 +1,10 @@
 // 针对「UI 判 EMPTY」的页面做归因：到底是接口没数据，还是接口有数据 UI 没渲染。
 // 判据：抓该页所有 >=200 的 XHR 响应体 + 页面 .ant-empty 文案 + 首行文本。
 // 用法：NODE=... node scripts/e2e/ui/probe-empty.mjs
-/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
-import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+/* 共享 client：playwright 加载 / CHROME / UI BASE（见 e2e_lib/client.cjs）
+ * 共享 UI 登录：uiLogin（凭据由 client.cjs 供给，登录选择器唯一真源见 e2e_lib/ui.cjs） */
+import { loadPlaywright, CHROME, UI_BASE as BASE } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const TARGETS = [
@@ -37,15 +39,8 @@ const TARGETS = [
     } catch (e) {}
   });
 
-  await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await page.waitForTimeout(4000);
-  }
+  // 登录：统一走共享 uiLogin，直达 iam 登录路由（禁止在探针内重抄登录选择器）
+  await uiLogin(page, { route: `${BASE}/iam#/accounts` });
 
   for (const [app, route] of TARGETS) {
     out.length = 0;

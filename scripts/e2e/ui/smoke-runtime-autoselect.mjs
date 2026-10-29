@@ -5,8 +5,10 @@
 //   NODE=/Users/renhui.trh/.workbuddy/binaries/node/versions/22.22.2-6/bin/node
 //   export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
 //   $NODE scripts/e2e/ui/smoke-runtime-autoselect.mjs
-/* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs） */
-import { loadPlaywright, CHROME, USER, PWD } from '../e2e_lib/client.cjs';
+/* 共享 client：playwright 加载 / CHROME（见 e2e_lib/client.cjs）
+ * 共享 UI 登录：uiLogin（凭据由 client.cjs 供给，登录选择器唯一真源见 e2e_lib/ui.cjs） */
+import { loadPlaywright, CHROME } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 const SHELL = 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -16,15 +18,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
 
-  await page.goto(`${SHELL}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await sleep(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await sleep(4000);
-  }
+  // 登录：统一走共享 uiLogin，直达 iam 登录路由（禁止在探针内重抄登录选择器）
+  await uiLogin(page, { route: `${SHELL}/iam#/accounts` });
 
   await page.goto(`${SHELL}/metadata#/runtime`, { waitUntil: 'domcontentloaded' });
   await sleep(8000);

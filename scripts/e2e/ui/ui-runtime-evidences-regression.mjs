@@ -21,12 +21,12 @@ import {
   UI_BASE as BASE,
   SHOT_DIR,
   stamp,
-  USER as E2E_USER,
-  PWD as E2E_PWD,
   loadPlaywright,
   tryLogin,
   api,
 } from '../e2e_lib/client.cjs';
+/* 浏览器登录走共享层（README/ui README §0 纪律：禁止在探针内重抄登录选择器） */
+import { uiLogin } from '../e2e_lib/ui.cjs';
 /* 生产化测试数据：日期/金额/单号与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
 import { dataset } from '../e2e_lib/fixtures.cjs';
 const { chromium } = loadPlaywright();
@@ -73,22 +73,9 @@ page.on('response', async (r) => {
 
 try {
   // ---------- 登录 ----------
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(E2E_USER);
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(E2E_PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  const logged = await page
-    .waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 })
-    .then(() => true)
-    .catch(() => false);
+  // 与其余 18 个探针同源：e2e_lib/ui.cjs 的 uiLogin（填账号→填密码→回车→
+  // 兜底点提交→等密码框消失）。此前此处是逐字复制的内联副本。
+  const logged = await uiLogin(page, { route: `${BASE}/` });
   check('UI 登录成功', logged, '登录表单未消失');
   if (!logged) throw new Error('登录失败');
 

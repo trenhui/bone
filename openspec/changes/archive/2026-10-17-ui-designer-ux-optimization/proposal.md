@@ -49,7 +49,7 @@
 
 - **前端代码**：`bone-frontend/apps/bone-metadata-app/src/components/uiSchema/UiSchemaDesigner.tsx`（主落点）、
   `StructurePanel.tsx`、`EntityDetail.tsx`（Tab 命名/图标）；`SchemaPreview` memo 化。
-- **测试资产**：`scripts/e2e/ui-designer-ux-probe.cjs`（41 断言，A–G 段；经 shell:3000 真实登录 → 网关 8888 自产自销实体）。
+- **测试资产**：`node scripts/e2e/ui/ui-designer-probe.mjs --scenario ux`（41 断言，A–G 段；经 shell:3000 真实登录 → 网关 8888 自产自销实体）。
 - **门禁基线**：`doc/architecture/doc-code-symbols-baseline.json`（登记 `VersionController` 示意名豁免）。
 - **文档**：`doc/design/lowcode/ui/ui-protocol/` 对比文档 §10/§11（探针对照）。
 - **无后端契约变更**：纯前端 + 测试资产 + 门禁登记；不新增/修改任何 API。

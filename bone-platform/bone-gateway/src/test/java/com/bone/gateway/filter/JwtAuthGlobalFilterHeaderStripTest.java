@@ -81,12 +81,15 @@ class JwtAuthGlobalFilterHeaderStripTest {
     assertThat(headers.getFirst("X-User-Id")).isEqualTo("42");
     assertThat(headers.getFirst("X-Tenant-Id")).isEqualTo("0");
     assertThat(headers.getFirst("X-Roles")).isEqualTo("claim:claims:read");
-    assertThat(headers.containsKey("X-Operator-Id")).isFalse();
+    // X-Operator-Id：入站值被丢弃，但必须由网关按 token claim **重新写入** —— 只剥不补会让
+    // 依赖该头取审计操作人的下游（工作流设计器写路径）恒失败。断言「等于 token userId 且不等于伪造值」，
+    // 把「不可自证」和「必须可用」两件事同时钉住。
+    assertThat(headers.getFirst("X-Operator-Id")).isEqualTo("42");
   }
 
   @Test
-  @DisplayName("X-Operator-Id 无论是否携带 token 都不会透传到下游")
-  void operatorHeaderNeverPassesThrough() {
+  @DisplayName("X-Operator-Id 客户端取值不生效，下游只可能读到 token 派生的操作人")
+  void operatorHeaderIsAlwaysDerivedFromToken() {
     MockServerHttpRequest request =
         MockServerHttpRequest.post("/api/v1/claims")
             .header("Authorization", token("7", "0", List.of("claim:review:write")))
@@ -95,7 +98,7 @@ class JwtAuthGlobalFilterHeaderStripTest {
 
     HttpHeaders headers = downstreamHeaders(request);
 
-    assertThat(headers.containsKey("X-Operator-Id")).isFalse();
+    assertThat(headers.getFirst("X-Operator-Id")).isEqualTo("7");
     // 身份只可能来自 token
     assertThat(headers.getFirst("X-User-Id")).isEqualTo("7");
   }

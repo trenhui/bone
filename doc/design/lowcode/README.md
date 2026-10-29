@@ -23,7 +23,7 @@
 | `ui/业务建模三入口页最佳方案综述.md` | **决策综述**：取各家之长的取舍与关键交互决策（"为什么这样改"） | 结论载体 `cases/mock-best-scheme.html`（外部引用，勿移动） |
 | `cases/ui-schema-samples/` | **界面协议样板**：7 个场景 Schema 样例（**三验收场景**：`expense-claim` / `claim-outpatient-fasttrack` / `purchase-order`）+ 协议驱动渲染 Demo | 2026-10-14 |
 | `cases/ui-schema-samples/purchase-order-ui-schema.example.json` | **采购订单协议样例**：10 列行项目 + 预算闸门 + 三单匹配 `SUB-MATCH-01/02`（与 PRD §2.5.10 同构） | 2026-10-14 |
-| `../../scripts/e2e/ui-designer-three-scenario-probe.mjs` | **设计器 UI 探针**（19 断言）：三场景切换 + 企业子表合计/增删 + 试运行负向点名规则 | 2026-10-14 |
+| `../../scripts/e2e/ui/ui-designer-probe.mjs --scenario three` | **设计器 UI 探针**（19 断言）：三场景切换 + 企业子表合计/增删 + 试运行负向点名规则 | 2026-10-14 |
 | `reviews/生产就绪诊断-2026-10-11.md` | **生产就绪诊断**：P0/P1/P2 + 修复追踪（**已闭环**） | 2026-10-11 |
 
 ## 推荐阅读顺序

@@ -6,7 +6,9 @@
 //   $NODE scripts/e2e/ui/probe-metadata-loop.mjs > /tmp/md-loop.json
 /* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
 import { mkdirSync } from 'node:fs';
-import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+import { loadPlaywright, CHROME, UI_BASE as BASE } from '../e2e_lib/client.cjs';
+/* 浏览器登录走共享层（README/ui README §0 纪律：禁止在探针内重抄登录选择器） */
+import { uiLogin } from '../e2e_lib/ui.cjs';
 /* 生产化测试数据：人名与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
 import { dataset } from '../e2e_lib/fixtures.cjs';
 const { chromium } = loadPlaywright();
@@ -41,16 +43,9 @@ function step(name, ok, info) {
   page.on('console', (m) => { if (m.type() === 'error') report.errors.push({ kind: 'console', text: m.text().slice(0, 300) }); });
   page.on('response', (r) => { if (r.status() >= 400) report.failedReq.push({ url: r.url().replace(BASE, '').slice(0, 140), status: r.status() }); });
 
-  // ---- 登录 ----
-  await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await sleep(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await sleep(4000);
-  }
+  // ---- 登录 ----（共享层 uiLogin；route 保持本探针历史口径：直达 /iam#/accounts）
+  const logged = await uiLogin(page, { route: `${BASE}/iam#/accounts` });
+  step('UI 登录成功', logged, { detail: logged ? undefined : '登录表单未消失' });
 
   const stamp = Date.now();
   const entCode = `e2eloop${stamp}`;

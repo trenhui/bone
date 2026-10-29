@@ -10,10 +10,11 @@
  * 为什么保留本探针而不删：它守的是"两层边界不得静默混淆"这条产品不变量，
  * 与承载组件是谁无关——归位后换落点继续守。直接删掉等于丢掉这条回归。
  *
- * 登录走共享 client.cjs 的 USER/PWD（必须用 localhost，网关 CORS 只放行 localhost 源）。
+ * 登录走共享 uiLogin（e2e_lib/ui.cjs，凭据见 client.cjs；必须用 localhost，网关 CORS 只放行 localhost 源）。
  * 用法：node scripts/e2e/ui/interface-tab-boundary-probe.mjs
  */
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from '../e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
@@ -37,27 +38,8 @@ const shot = async (n) => {
 const bodyText = () => page.locator('body').innerText();
 
 try {
-  // 1. 登录
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"], input[placeholder*="密码"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) {
-    await page.locator(userSel).first().fill(USER);
-  }
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1200);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  let loggedIn = false;
-  try {
-    await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    loggedIn = true;
-  } catch { loggedIn = false; }
-  check('UI 登录成功（壳层菜单渲染）', loggedIn, `url=${page.url()}`);
+  // 1. 登录（统一走共享 uiLogin，禁止在探针内重抄登录选择器）
+  check('UI 登录成功（壳层菜单渲染）', await uiLogin(page), `url=${page.url()}`);
 
   // 2. 进运行时数据页（个人覆盖层归属地）
   await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=data`, { waitUntil: 'domcontentloaded' });

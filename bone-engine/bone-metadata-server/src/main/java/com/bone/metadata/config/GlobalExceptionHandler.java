@@ -21,6 +21,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -240,6 +241,30 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST,
         CommonErrorCodes.MALFORMED_REQUEST,
         String.format("缺少必填参数 %s", ex.getParameterName()));
+  }
+
+  /**
+   * 必填请求头缺失 → 400（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p><b>为何必须显式接管</b>：与上面 {@link MissingServletRequestParameterException} 完全同构——「参数根本没传」是调用方
+   * 可纠正的笔误，不是服务端故障。{@code @RequestHeader("X-Operator-Id")}（工作流设计器写路径的审计操作人）缺失时 Spring 抛 {@link
+   * MissingRequestHeaderException}，此前落到 catch-all 变成 500 COMMON_INTERNAL_ERROR，而控制器的契约文档写的是 400
+   * ——文档与实现两个口径。
+   *
+   * <p><b>实测（2026-10-28 工作流设计器联调）</b>：网关此前只剥离入站 {@code X-Operator-Id} 却不按 token
+   * 重新写入，于是"经网关保存草稿"稳定返回 500，且后端堆栈只有一句 MissingRequestHeaderException——既掩盖了真正的根因（网关侧 接线缺失），又把纯接线问题计入
+   * 5xx 预算。网关已修；本分支保证同类问题再发生时以 400 + 明确文案暴露，而不是 500。
+   *
+   * <p>文案只回显头名，不回显取值，避免把内部身份头的内容写进响应体。
+   */
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMissingRequestHeader(
+      MissingRequestHeaderException ex) {
+    log.warn("必填请求头缺失: name={}", ex.getHeaderName());
+    return problem(
+        HttpStatus.BAD_REQUEST,
+        CommonErrorCodes.MALFORMED_REQUEST,
+        String.format("缺少必填请求头 %s", ex.getHeaderName()));
   }
 
   /**

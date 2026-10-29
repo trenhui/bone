@@ -13,11 +13,10 @@ import {
   UI_BASE as BASE,
   SHOT_DIR,
   stamp,
-  USER as E2E_USER,
-  PWD as E2E_PWD,
   loadPlaywright,
   makeChecker,
 } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const STAMP = stamp(7); // 保持本探针历史口径（slice(-7)），影响 E2E 数据命名
@@ -118,24 +117,8 @@ const controlInItem = (root, label) =>
   root.locator('.ant-form-item').filter({ hasText: label }).first().locator('input, textarea, .ant-select').first();
 
 try {
-  // ---------- 登录 ----------
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(E2E_USER);
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(E2E_PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  let ok = false;
-  try {
-    await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    ok = true;
-  } catch {}
+  // ---------- 登录（统一走共享 uiLogin，禁止在探针内重抄登录选择器） ----------
+  const ok = await uiLogin(page);
   check('UI 登录成功', ok, '登录表单未消失');
   if (!ok) throw new Error('登录失败');
 

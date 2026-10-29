@@ -10,14 +10,16 @@
  *   export NODE_PATH=~/.workbuddy/binaries/node/workspace/node_modules
  *   $NODE scripts/e2e/lowcode-closed-loop.cjs
  */
-/* 共享 client：playwright 加载 / CHROME / 登录凭证（见 e2e_lib/client.cjs） */
-const { loadPlaywright, CHROME, USER, PWD } = require('./e2e_lib/client.cjs');
+/* 共享 client：playwright 加载 / CHROME / 地址与登录凭证（见 e2e_lib/client.cjs）。
+   地址一律取自 config，禁止在脚本内重抄 host:port（README §2.1）。 */
+const { loadPlaywright, CHROME, UI_BASE, BASE } = require('./e2e_lib/client.cjs');
+/* 浏览器登录走共享层：uiLogin 填表 + localToken 取 JWT（README/ui README §0 纪律） */
+const { uiLogin, localToken } = require('./e2e_lib/ui.cjs');
 /* 生产化测试数据：单号/人名/日期与 Python fixtures 同口径（见 e2e_lib/fixtures.cjs） */
 const { dataset } = require('./e2e_lib/fixtures.cjs');
 const { chromium } = loadPlaywright();
-const SHELL = 'http://localhost:3000';
-const GATEWAY = 'http://localhost:8888';
-const META_APP = 'http://localhost:3004';
+const SHELL = UI_BASE;                                  // shell（qiankun 宿主）:3000
+const GATEWAY = String(BASE).replace(/\/api\/v1\/?$/, ''); // 网关根:8888（BASE 含 /api/v1）
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const steps = [];
@@ -28,20 +30,13 @@ function assert(name, ok, info) {
   console.log(`  ${ok ? '✅' : '❌'} ${name}${info ? '  ' + JSON.stringify(info) : ''}`);
 }
 
-async function login() {
+async function openSession() {
   const browser = await chromium.launch({ headless: true, executablePath: CHROME });
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
-  await page.goto(`${SHELL}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await sleep(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if ((await u.count()) && (await u.isVisible().catch(() => false))) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await sleep(4000);
-  }
-  const token = await page.evaluate(() => localStorage.getItem('token'));
+  // UI 登录：与其余探针同源的 e2e_lib/ui.cjs（route 保持本脚本历史口径：直达 /iam#/accounts）
+  const okLogin = await uiLogin(page, { route: `${SHELL}/iam#/accounts` });
+  const token = okLogin ? await localToken(page) : null;
   if (!token) { await browser.close(); throw new Error('login failed: no token'); }
   return { browser, ctx, page, token };
 }
@@ -67,7 +62,7 @@ const payload = (r) => (r && r.data && typeof r.data === 'object' && 'data' in r
 const okOf = (r) => r.status >= 200 && r.status < 300 && (r.data == null || r.data.code === undefined || r.data.code === 200 || r.data.code === 201);
 
 (async () => {
-  const { browser, ctx, token } = await login();
+  const { browser, ctx, token } = await openSession();
   const api = makeApi(token);
 
   console.log('\n===== A. 前置：模块上下文 & 平台模板（T4） =====');

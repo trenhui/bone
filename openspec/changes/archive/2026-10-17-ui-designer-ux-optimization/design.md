@@ -51,7 +51,7 @@ Ctrl+Z / Ctrl+Shift+Z / Ctrl+S 挂全局 keydown。**输入框聚焦时 Ctrl+Z �
 
 ## D8. 回归探针架构与验证纪律
 
-`scripts/e2e/ui-designer-ux-probe.cjs`：Playwright + Chrome，经 shell:3000 真实登录取 JWT → 网关 8888 →
+`node scripts/e2e/ui/ui-designer-probe.mjs --scenario ux`：Playwright + Chrome，经 shell:3000 真实登录取 JWT → 网关 8888 →
 实例化 `tpl_device_inspection` 模板实体自产自销，A–G 段共 **41 断言**（B 换名/图标、C 引导、D 禅模式、
 E 快捷键、**E2 历史栈**、F 变体、F2 FAB/快照/命令面板、G 发布硬门禁负向+正向），末段断言零 console error。
 

@@ -21,10 +21,17 @@ import org.springframework.context.annotation.Primary;
 public class BoneBootApplication {
 
   public static void main(String[] args) {
-    // 两个主配置源：MetadataApplication 承载平台扫描/注解，本类承载组合根专属装配。
-    // 本类不在 MetadataApplication 的扫描根（com.bone.metadata）内，必须作为主源显式传入。
+    // 三个主配置源：MetadataApplication 承载平台扫描/注解，本类承载组合根专属装配，
+    // WorkflowDesignerAuthorizationConfiguration 承载「工作流设计器 → 平台权限码」的接线。
+    // 后两者都不在 MetadataApplication 的扫描根（com.bone.metadata）内，必须作为主源显式传入——
+    // 漏传不会报错，只会静默退化成 starter 的 fail-closed 403（设计器整页"无权访问"）。
     SpringApplication.run(
-        new Class<?>[] {MetadataApplication.class, BoneBootApplication.class}, args);
+        new Class<?>[] {
+          MetadataApplication.class,
+          BoneBootApplication.class,
+          WorkflowDesignerAuthorizationConfiguration.class
+        },
+        args);
   }
 
   /**

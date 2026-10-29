@@ -12,7 +12,7 @@
 
 | 项 | 状态 | 证据 |
 |----|------|------|
-| V1 主探针 41 断言全绿 | ✅ | 2026-10-16 对提交态跑 `scripts/e2e/ui-designer-ux-probe.cjs`：41/41、exit=0、零 console error。覆盖 B 换名/图标、C 引导、D 禅模式、E 快捷键（含输入框负向）、E2 历史栈（精确计数）、F 变体、F2 FAB/快照/命令面板、G 发布硬门禁（负向+正向） |
+| V1 主探针 41 断言全绿 | ✅ | 2026-10-16 对提交态跑 ux 主探针：41/41、exit=0、零 console error（命令已随 2026-10-28 入口合并更新为 `node scripts/e2e/ui/ui-designer-probe.mjs --scenario ux`）。覆盖 B 换名/图标、C 引导、D 禅模式、E 快捷键（含输入框负向）、E2 历史栈（精确计数）、F 变体、F2 FAB/快照/命令面板、G 发布硬门禁（负向+正向） |
 | V2 历史栈缺陷修复实证 | ✅ | 取证探针 7 组受控序列 8/8 绿：修复前 undo/jump future=2、E 序列 past=4；修复后 commit +1 / undo −1 / jump −1、future 每次恰 +1 |
 | V3 变异验证（断言有牙齿） | ✅ | 退回修复前代码重跑主探针：2 条强化计数断言精确变红（pastCount=4；jump 后 past=3/future=2），其余 39 条不受影响；恢复后复绿 |
 | V4 静态检查 | ✅ | `tsc --noEmit` 通过；eslint（`--max-warnings 0`）干净；`check.sh` 37 门禁 exit=0（提交前预跑 + pre-commit 钩子复跑） |

@@ -24,7 +24,11 @@ const path = require('path');
 const { UI_BASE, USER, PWD, SHOT_DIR } = require('./client.cjs');
 
 // 登录页字段选择器（跨探针统一的单一口径；改一处即全量生效）
-const USER_SEL = 'input[placeholder*="用户名"], input[name="username"], input#username';
+// 用户名口径是各历史探针的**并集**：shell 登录框文案出现过「用户名/用户/账号」三种，
+// 只认其中一种会在另一种页面上静默漏填（填了密码没填账号 ⇒ 登录失败却报「选择器超时」，
+// 归因成本极高）。并集不会误伤：uiLogin 先等密码框出现才动作，登录页外不会被调用。
+const USER_SEL =
+  'input[placeholder*="用户"], input[placeholder*="账号"], input[name="username"], input#username';
 const PASS_SEL = 'input[type="password"]';
 const PWD_PH_SEL = 'input[placeholder*="密码"]';
 
@@ -53,15 +57,37 @@ async function uiLogin(page, opts = {}) {
   await p.fill(PWD);
   await p.press('Enter');
   await page.waitForTimeout(1200);
-  // 回车未触发跳转提交时，兜底点「登录」按钮（按钮文案含「登」字）
+  // 回车未触发提交（部分登录表单只在按钮 click 上挂 handler）时兜底点提交按钮：
+  // 优先原生 submit，其次文案含「登」的按钮（覆盖「登录 / 登 录 / 登」三种历史文案）。
   if (await page.locator(PASS_SEL).count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
+    const submit = page.locator('button[type="submit"]').first();
+    await submit
+      .click({ timeout: 3000 })
+      .catch(() =>
+        page.locator('button').filter({ hasText: /登/ }).first().click({ timeout: 3000 }).catch(() => {}),
+      );
     await page.waitForTimeout(3000);
   }
   return page
     .waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout })
     .then(() => true)
     .catch(() => false);
+}
+
+/**
+ * 取浏览器本地的 JWT（UI 登录后供 api({token}) 复用，避免探针为拿 token 再走一遍 HTTP 登录）。
+ * 兼容两种存放键名：token / bone_token（不同子应用历史口径不一致，都取一遍）。
+ * @param {import('playwright').Page} page
+ * @returns {Promise<string|null>}
+ */
+async function localToken(page) {
+  try {
+    return await page.evaluate(
+      () => localStorage.getItem('token') || localStorage.getItem('bone_token') || null,
+    );
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -94,6 +120,7 @@ async function waitAppReady(page, opts = {}) {
 
 // 统一用 `exports.x =` 导出：.cjs 可直接解构，.mjs 命名导入可被 cjs-module-lexer 静态识别
 exports.uiLogin = uiLogin;
+exports.localToken = localToken;
 exports.shot = shot;
 exports.waitAppReady = waitAppReady;
 exports.USER_SEL = USER_SEL;

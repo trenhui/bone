@@ -210,7 +210,7 @@ bp_channel_broadcast_task (PENDING)
 
 ### 6.2 未完成：E2E 与 UI 巡检（本机环境阻塞）
 
-本机 **MySQL 未运行**（`lsof -iTCP:3306` 空、`docker ps` 空、无 `mysql` 客户端），因此无法执行迁移、无法起服务，E2E（`scripts/e2e/multichannel.py` 47 项）与 UI 探针（`scripts/e2e/ui/probe-commerce.cjs` 30 项）**本轮未跑**。
+本机 **MySQL 未运行**（`lsof -iTCP:3306` 空、`docker ps` 空、无 `mysql` 客户端），因此无法执行迁移、无法起服务，E2E（`scripts/e2e/multichannel.py` 47 项）与 UI 探针（`scripts/e2e/ui/probe-commerce.mjs` 30 项）**本轮未跑**。
 
 环境就绪后的验证清单：
 
@@ -219,6 +219,6 @@ bp_channel_broadcast_task (PENDING)
 3. `POST /api/v1/channel-products/sync-inventory` 返回 4 条入队 → `POST /api/v1/channel-broadcasts/relay-now` → 任务转 SENT、渠道商品 `listing_stock` 回写；
 4. 失败路径：临时把某渠道凭证清空并切 `HTTP` → 任务应退避重试后转 FAILED（死信）→ 人工 `retry` 可恢复；
 5. UI：`/channel-buyers` 与 `/broadcast-tasks` 两页渲染、绑定弹窗校验、重试按钮；
-6. `scripts/e2e/multichannel.py` 与 `probe-commerce.cjs` 全量回归。
+6. `scripts/e2e/multichannel.py` 与 `probe-commerce.mjs` 全量回归。
 
 > 建议同时把 `multichannel.py` 扩展到覆盖新链路（买家映射绑定流程 + 广播任务投递/死信/重试），否则这三项新能力仍缺自动化守护。

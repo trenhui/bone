@@ -38,13 +38,19 @@ from e2e_lib import chain_runner, config, fixtures  # noqa: E402
 from e2e_lib.report import check, section, summary  # noqa: E402
 
 # 内联浏览器登录的**棘轮基线**：只可收缩、不可增长。
-# 现状：5 个探针仍在各自流程内联登录（迁移需逐个人工核对流程，盲改=假绿风险）：
-#   ui/probe-metadata-loop.mjs、ui/ui-all-menu-regression.mjs、
-#   ui/ui-full-module-crud-probe.mjs、ui/ui-runtime-evidences-regression.mjs、
-#   lowcode-closed-loop.cjs
-# 每迁移一个改用 e2e_lib/ui.cjs 的 uiLogin，就把这个数字下调 —— 与
+# 已归零（2026-10-29）：最后 3 个（ui/probe-metadata-loop、ui/ui-runtime-evidences-regression、
+# lowcode-closed-loop）已迁到 e2e_lib/ui.cjs 的 uiLogin，并在真实栈上实跑验证仍绿。
+# 归零后棘轮升级为**硬门禁**：任何探针（ui/*.mjs、*/*.cjs）再出现登录密码选择器即红，
+# 唯一允许持有该选择器的是共享层 e2e_lib/ui.cjs —— 与
 # doc-code-symbols-baseline.json「只可收缩」同一条纪律。
-INLINE_LOGIN_BASELINE = 5
+INLINE_LOGIN_BASELINE = 0
+
+# 「run.sh 分组内仍未接入 JUnit」的棘轮基线，同样只可收缩。
+# 现状 5 个：api-sweep / real-id-sweep / write-sweep / write_coverage /
+# integration-flow-exec-chain —— 它们各自打印 PASS/FAIL 汇总，不走 e2e_lib.report，
+# 因此 CI 只能看到「这个脚本红了」，看不到「哪条断言红了」。
+# 迁移一个（把局部 check 换成 e2e_lib.report 的 check），就把这个数字下调。
+NO_JUNIT_BASELINE = 5
 
 _PWD_SELECTOR = re.compile(r'input\[type="password"\]|placeholder\*="密码"')
 _USES_SHARED_UI = re.compile(r"e2e_lib/ui\.cjs")
@@ -324,15 +330,97 @@ def test_discipline_ratchet():
         print(f"    · 已降到 {len(inline)} 个 —— 请把 selftest.py 的 INLINE_LOGIN_BASELINE 下调，"
               f"让棘轮只进不退")
 
+    # 归零后的硬门禁：登录选择器只允许留在共享层。
+    # 与「≤ 基线」的区别：基线允许"用了共享 ui.cjs 就顺带内联一份"的擦边球，
+    # 而擦边球正是口径漂移的入口（改共享层不生效，探针仍跑旧副本 ⇒ 假绿）。
+    holders = []
+    for pattern in ("ui/*.mjs", "*.mjs", "*.cjs", "ui/*.cjs"):
+        for path in sorted(glob.glob(os.path.join(HERE, pattern))):
+            if os.path.basename(path) == "ui.cjs":
+                continue  # 共享层是唯一合法持有者
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                src = fh.read()
+            if _PWD_SELECTOR.search(src):
+                holders.append(os.path.relpath(path, HERE))
+    check("登录选择器只允许存在于 e2e_lib/ui.cjs（其余一律 import uiLogin）",
+          not holders, f"违规持有：{holders}")
+
     # 自定义 uiLogin/login 函数是最严重形态：重复实现共享层，一处改口径就分裂
     offenders = []
-    for path in sorted(glob.glob(os.path.join(HERE, "ui/*.mjs"))):
+    for path in sorted(glob.glob(os.path.join(HERE, "ui/*.mjs")) + glob.glob(os.path.join(HERE, "*.cjs"))):
         with open(path, encoding="utf-8", errors="replace") as fh:
             src = fh.read()
         if re.search(r"(async function|const)\s+(uiLogin|login)\s*(=\s*async)?\s*\(", src):
             offenders.append(os.path.relpath(path, HERE))
     check("探针内不得自定义 uiLogin/login 函数（应 import ui.cjs）",
           not offenders, f"违规：{offenders}")
+
+
+# ==================== 7. JUnit 汇总卡 ====================
+def test_junit_report():
+    """汇总卡是值班时第一个要看的东西，必须自证：总数对、红条能定位、坏 XML 不静默。"""
+    section("7. JUnit 汇总卡（目录 → 一张表）")
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        with open(os.path.join(td, "a.xml"), "w", encoding="utf-8") as fh:
+            fh.write(
+                '<?xml version="1.0" encoding="UTF-8"?><testsuites tests="2" failures="1">'
+                '<testsuite name="suite-a" tests="2" failures="1">'
+                '<testcase name="ok-one" time="0"/>'
+                '<testcase name="bad-one" time="0">'
+                '<failure message="422 &amp; &lt;x&gt;">422 &amp; &lt;x&gt;</failure></testcase>'
+                "</testsuite></testsuites>"
+            )
+        with open(os.path.join(td, "b.xml"), "w", encoding="utf-8") as fh:
+            fh.write(
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<testsuite name="suite-b" tests="3" failures="0">'
+                '<testcase name="b1" time="0"/><testcase name="b2" time="0"/>'
+                '<testcase name="b3" time="0"/></testsuite>'
+            )
+        # 坏 XML 必须显式算一条红：静默跳过会把「解析失败」伪装成「这轮没跑」
+        with open(os.path.join(td, "broken.xml"), "w", encoding="utf-8") as fh:
+            fh.write("<testsuite name='broken' tests='1'")
+
+        r = _run([sys.executable, os.path.join(HERE, "junit_report.py"), "--dir", td],
+                 )
+        check("汇总卡可执行", r.returncode == 0, f"rc={r.returncode} {r.stderr[:200]}")
+        # 断言总数：a 2 + b 3 = 5（broken 无有效断言，只贡献一条红）
+        check("总断言数正确（跨套件累加）", "断言 5 条" in r.stdout, r.stdout[:300])
+        check("坏 XML 计为失败而非静默跳过", "失败 2 条" in r.stdout, r.stdout[:300])
+        check("失败明细含套件归属", "[suite-a] bad-one" in r.stdout, r.stdout[:300])
+        check("特殊字符已还原（&amp;/&lt;）", "422 & <x>" in r.stdout, r.stdout[:300])
+
+        r2 = _run([sys.executable, os.path.join(HERE, "junit_report.py"), "--dir", td, "--strict"],
+                  )
+        check("--strict 有失败即退出 1", r2.returncode == 1, f"rc={r2.returncode}")
+
+        r3 = _run([sys.executable, os.path.join(HERE, "junit_report.py"),
+                   "--dir", os.path.join(td, "nope")])
+        check("目录不存在不崩（给出提示、退出 0）", r3.returncode == 0 and "目录不存在" in r3.stdout,
+              f"rc={r3.returncode} {r3.stdout[:200]}")
+
+    # 接入率棘轮：run.sh 分组里的脚本若不用 e2e_lib.report，就产不出 JUnit，
+    # CI 只能看到「这个脚本红了」而看不到「哪条断言红了」——归因成本回到人工翻日志。
+    # 真源直接读 run.sh 的数组（与 list / 执行共用同一份声明，不会各说各话）。
+    runsh = os.path.join(HERE, "run.sh")
+    src = open(runsh, encoding="utf-8").read()
+    listed = []
+    for m in re.finditer(r"^PY_(?:CORE|SWEEP|CHAIN)=\((.*)\)$", src, re.M):
+        listed += [f for f in m.group(1).split() if f.endswith(".py")]
+    no_junit = []
+    for f in sorted(set(listed)):
+        body = open(os.path.join(HERE, f), encoding="utf-8", errors="replace").read()
+        if not re.search(r"e2e_lib(?:\.|/)?\s*report|from e2e_lib import .*report", body):
+            no_junit.append(f)
+    check(f"run.sh 分组内未接入 JUnit 的脚本 ≤ 基线 {NO_JUNIT_BASELINE}（只可收缩）",
+          len(no_junit) <= NO_JUNIT_BASELINE,
+          f"当前 {len(no_junit)} 个（基线 {NO_JUNIT_BASELINE}）：{no_junit}")
+    if len(no_junit) < NO_JUNIT_BASELINE:
+        print(f"    · 已降到 {len(no_junit)} 个 —— 请把 selftest.py 的 NO_JUNIT_BASELINE 下调，"
+              f"让棘轮只进不退")
 
 
 def main():
@@ -343,6 +431,7 @@ def main():
     test_junit_node()
     test_junit_isolation()
     test_discipline_ratchet()
+    test_junit_report()
     sys.exit(summary("selftest 汇总"))
 
 

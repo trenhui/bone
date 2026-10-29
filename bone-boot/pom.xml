@@ -38,6 +38,14 @@
             <artifactId>bone-app-purchase</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 审批流引擎 starter：组合根直接用其 designer 扩展点（WorkflowDesignerAuthorizer）做鉴权接线。
+             虽是 bone-app-expense 的传递依赖，但「直接使用」就该「直接声明」——否则哪天业务模块换了 starter
+             版本/去掉依赖，本模块编译期看不出来，只在启动时退化成 fail-closed 403。 -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-workflow-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>

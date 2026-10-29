@@ -667,7 +667,7 @@ public interface RuntimeWriteHook {
 | 设计器预览 | `getVal()` | ❌ 只走到倒数第二段 | ✅ **本轮修复**（改为与两侧同源：无命中 `undefined` / 单值返标量 / 多值返数组） |
 
 **门禁要求（新增，纳入回归）**：任何改动规则求值语义的 PR，必须同时过三端 golden fixtures（同一 schema + 同一数据 ⇒ 同一结论）。本轮已落地：
-`validate-designer-gates.js`（4 样板 × 3 门禁 + 20 条运行时探针，含正负向）、`ui-designer-three-scenario-probe.mjs`（19 断言，含「改单元格→合计重算」「试运行负向点名规则」）、`scripts/e2e/two-scenario-full-chain-e2e.py`（三场景 87 项，含 9 条采购负向）。
+`validate-designer-gates.js`（4 样板 × 3 门禁 + 20 条运行时探针，含正负向）、`ui-designer-probe.mjs --scenario three`（19 断言，含「改单元格→合计重算」「试运行负向点名规则」）、`scripts/e2e/two-scenario-full-chain-e2e.py`（三场景 87 项，含 9 条采购负向）。
 
 ### 4.9 Catalog 动作声明（驱动 UI）
 

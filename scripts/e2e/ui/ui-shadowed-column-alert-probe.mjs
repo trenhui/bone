@@ -24,13 +24,12 @@ import {
   UI_BASE as BASE,
   SHOT_DIR,
   IAM_BASE as IAM,
-  USER,
-  PWD,
   loadPlaywright,
   api,
   tryLogin,
   makeChecker,
 } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
@@ -63,23 +62,8 @@ try {
   // 0. 干净起点
   check('服务端 overlay 预清理（干净起点）', await resetServerOverlay(), `entityCode=${ENTITY_CODE}`);
 
-  // 1. 登录
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
-  await page.locator('input[type="password"]').first().fill(PWD);
-  await page.locator('input[type="password"]').first().press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-  }
-  let loggedIn = false;
-  try {
-    await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
-    loggedIn = true;
-  } catch { loggedIn = false; }
-  check('UI 登录成功', loggedIn, `url=${page.url()}`);
+  // 1. 登录（统一走共享 uiLogin，禁止在探针内重抄登录选择器）
+  check('UI 登录成功', await uiLogin(page), `url=${page.url()}`);
 
   // 2. 进数据页，确认「交付口径对照」卡片在
   await page.goto(`${BASE}/metadata#/entities/${ENTITY_ID}?tab=data`, { waitUntil: 'domcontentloaded' });

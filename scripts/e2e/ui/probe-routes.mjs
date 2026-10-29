@@ -1,9 +1,11 @@
 // BONE UI 巡检 v4：修正 iam 两级菜单（先展开 SubMenu 再点子项）
 // v3 报"iam 8 个菜单点击失效、hash 停在 #/accounts"，根因是探针没展开 SubMenu ——
 // "角色管理"等在折叠的"权限与角色"里，不在 DOM（候选=0），不是产品缺陷。
-/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+/* 共享 client：playwright 加载 / CHROME / UI BASE（见 e2e_lib/client.cjs）
+ * 共享 UI 登录：uiLogin（凭据由 client.cjs 供给，登录选择器唯一真源见 e2e_lib/ui.cjs） */
 import { mkdirSync } from 'node:fs';
-import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+import { loadPlaywright, CHROME, UI_BASE as BASE } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
 mkdirSync(OUT, { recursive: true });
@@ -37,15 +39,8 @@ const APP_MENUS = {
   page.on('console', m => { if (m.type() === 'error') errors.push({ route: cur, kind: 'console', text: m.text().slice(0, 250) }); });
   page.on('response', r => { if (r.status() >= 400) failedReq.push({ route: cur, url: r.url().replace(BASE, ''), status: r.status() }); });
 
-  await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await page.waitForTimeout(4000);
-  }
+  // 登录：统一走共享 uiLogin，直达 iam 登录路由（禁止在探针内重抄登录选择器）
+  await uiLogin(page, { route: `${BASE}/iam#/accounts` });
 
   const results = [];
   for (const [app, groups] of Object.entries(APP_MENUS)) {

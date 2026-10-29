@@ -9,6 +9,8 @@
 #
 # 用法：
 #   ./run.sh list                 # 列出全部分组与成员（agent 先跑这个了解有什么）
+#   ./run.sh new <kind> <name>    # 生成新用例骨架（kind：py-sweep / py-chain / ui-probe）
+#   ./run.sh new --help           # 看骨架说明与选择指引（等价 scaffold.py list）
 #   ./run.sh lint                 # 语法门禁（py_compile + node --check，零依赖）
 #   ./run.sh selftest             # 共享层离线自证（fixtures/chain_runner/ui.cjs/JUnit）
 #   ./run.sh preflight [--ui|--deep|--all]   # 环境快检（端口 + 可选登录探活）
@@ -22,7 +24,8 @@
 #
 # 环境变量：
 #   BONE_E2E_SKIP_PREFLIGHT=1     # 跳过快检（明知栈已备好 / 快速重跑时用）
-#   BONE_E2E_JUNIT_DIR=/dir/      # 各脚本把断言写成 <dir>/<套件名>.xml（每套件一个文件，互不覆盖）
+#   BONE_E2E_JUNIT_DIR=/dir/      # 各脚本把断言写成 <dir>/<套件名>.xml（每套件一个文件，互不覆盖）；
+#                                   设了它，收尾会自动播报一张汇总卡（junit_report.py）
 #   PYTHON=/path/to/python3       # 指定解释器
 #
 # 退出码：任一子项失败即非零（供 CI / 编排使用）。
@@ -62,6 +65,15 @@ run_py_group() {
   return "$failed"
 }
 
+# JUnit 汇总卡：只在显式设了 BONE_E2E_JUNIT_DIR 时播报。
+# 汇总器**不制造失败**（退出码恒 0），失败由各用例自己的退出码表达 —— 所以它永远
+# 放在最后当「收尾播报」，不改变 run.sh 的聚合退出码语义。
+report_card() {
+  [ -n "${BONE_E2E_JUNIT_DIR:-}" ] || return 0
+  echo
+  "$PY" "$DIR/junit_report.py" --dir "$BONE_E2E_JUNIT_DIR" || true
+}
+
 run_selftest() {
   "$PY" "$DIR/selftest.py" || return 1
   [ -n "$NODE_BIN" ] || { echo "node 未找到，跳过 Node 侧自证"; return 0; }
@@ -73,6 +85,8 @@ MODE="${1:-all}"
 case "$MODE" in
   list)
     echo "离线层（无需服务，秒级）"
+    echo "  new         ./run.sh new <py-sweep|py-chain|ui-probe> <name> [--desc ...] [--register]"
+    echo "              —— 新用例骨架（自带配置/fixtures/断言/清理四件套），生成即语法校验"
     echo "  lint        py_compile + node --check 全量语法门禁"
     echo "  selftest    共享层契约自证（selftest.py + selftest.cjs）"
     echo
@@ -87,9 +101,16 @@ case "$MODE" in
     echo "  node        ui/probe-*.mjs 核心 UI 探针（需前端 :3000）"
     echo
     echo "辅助（不进分组）"
+    echo "  new <kind> <name> [--desc ..] [--register]  新用例骨架（见上；UI 探针自动进 node 分组）"
+    echo "  junit_report.py [--dir D] [--md F] [--strict]  JUnit 目录 → 汇总卡（run.sh 收尾自动播报）"
     echo "  cleanup-residue.py --suffix <s> [--apply]   定点回收残留"
     echo "  channel_simulator.py                        渠道回调模拟器"
     echo "  n7-mutation-verify.sh                       变异验证（证明断言有牙）"
+    ;;
+  new)
+    shift
+    [ $# -gt 0 ] || { "$PY" "$DIR/scaffold.py" list; exit 0; }
+    "$PY" "$DIR/scaffold.py" new "$@"
     ;;
   lint)     "$DIR/lint.sh" ;;
   selftest) run_selftest ;;
@@ -97,14 +118,17 @@ case "$MODE" in
   py-core)
     preflight || exit $?
     run_py_group py-core "${PY_CORE[@]}"
+    report_card
     ;;
   py-sweep)
     preflight || exit $?
     run_py_group py-sweep "${PY_SWEEP[@]}"
+    report_card
     ;;
   py-chain)
     preflight || exit $?
     run_py_group py-chain "${PY_CHAIN[@]}"
+    report_card
     ;;
   py)
     preflight || exit $?
@@ -112,6 +136,7 @@ case "$MODE" in
     run_py_group py-core  "${PY_CORE[@]}"  || rc=1
     run_py_group py-sweep "${PY_SWEEP[@]}" || rc=1
     run_py_group py-chain "${PY_CHAIN[@]}" || rc=1
+    report_card
     exit "$rc"
     ;;
   node)
@@ -122,6 +147,7 @@ case "$MODE" in
       echo ">> $(basename "$f")"
       "$NODE_BIN" "$f" || { rc=1; echo "!! 失败: $(basename "$f")"; }
     done
+    report_card
     exit "$rc"
     ;;
   all)
@@ -133,6 +159,7 @@ case "$MODE" in
     run_py_group py-core  "${PY_CORE[@]}"  || rc=1
     run_py_group py-sweep "${PY_SWEEP[@]}" || rc=1
     run_py_group py-chain "${PY_CHAIN[@]}" || rc=1
+    report_card
     exit "$rc"
     ;;
   -h|--help|help) usage ;;

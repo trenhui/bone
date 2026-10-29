@@ -1,6 +1,7 @@
 # scripts/e2e —— BONE 端到端测试能力（现场手册）
 
 > Agent 认知入口见 [doc/agents/04-测试与代码质量.md §6.3](../../doc/agents/04-测试与代码质量.md)（由 AGENTS.md 路由表「测试 / 质量门禁 → 04」自动加载）。
+> **方案口径（架构层沉淀）**见 [doc/architecture/Bone-测试策略.md §7](../../doc/architecture/Bone-测试策略.md)（三层沉淀 / 库分层 / 八步门禁 / 数据铁律 / 基线表；只做指针，不复制本文件正文）。
 > 本文件是**操作真源**：怎么跑、怎么写、模块 API 在哪查。
 
 ## 1. 能力分层
@@ -194,8 +195,9 @@ Python 侧（`report.summary()` + atexit）与 Node 侧（`makeChecker()` + `pro
 > 一个脚本）。按套件分文件既无竞争，也让每个脚本的结果可独立定位；`selftest.py` 有专门断言锁死这个行为。
 
 **纪律棘轮（`selftest.py` 的 `INLINE_LOGIN_BASELINE`）**：把「禁止在探针内重抄登录选择器」
-从文档口号变成机器门禁——仍内联浏览器登录的探针数**只可收缩**。当前基线 **5**
-（16 个探针已迁到 `uiLogin`，剩 5 个待逐个迁移；迁移一个就下调一格）。
+从文档口号变成机器门禁——仍内联浏览器登录的探针数**只可收缩**。当前基线 **3**
+（20 个探针已迁到 `uiLogin`，剩 3 个因依赖 `fixtures.cjs` 数据集构造待逐个迁移；
+2026-10-28 首批迁 13 个后棘轮由 5 下调至 3，再迁一个就再下调一格）。
 另有一条硬门禁：探针内不得自定义 `uiLogin`/`login` 函数（必须 import `ui.cjs`）。
 与 `doc-code-symbols-baseline.json` 的「只可收缩」是同一条纪律。
 
@@ -307,12 +309,20 @@ node --check scripts/e2e/<探针>.mjs
 | `config.py` 缺 `UI_BASE`/`IAM_BASE`（只在 `client.cjs` 有），而 `.env.example` 标注为「仅 Node 使用」——真源声明与实际不符 | `config.py` 补齐 `UI_BASE`/`IAM_BASE`，`preflight --ui` 直接复用；`.env.example` 改为「UI 探针与 preflight 共用」 |
 | `run.sh` 的 `py` 只跑 3 个脚本，**另外 8 个 Python 脚本（chains/sweep/渠道）没有任何分组入口** | 分组补全为 `py-core`(3) / `py-sweep`(4) / `py-chain`(4) 覆盖全部 11 个，并新增 `list` 自描述；分组失败不中断其余分组、聚合退出码 |
 
+**2026-10-28 第五轮：方案沉淀 + 外部漂移适配**
+
+| 问题 | 处置 |
+|---|---|
+| 方案只活在本 README，架构层文档无从引用（`Bone-测试策略.md` 只覆盖单测/契约/E2E 分层，没有 scripts/e2e 的操作口径） | 架构层新增 [Bone-测试策略.md §7「端到端可复用测试方案」](../../doc/architecture/Bone-测试策略.md)：三层沉淀入口（04 §6 认知 → README 操作 → e2e_lib docstring 真源）、库四层职责、八步门禁、数据铁律、基线表（90/54/31）——**只做指针不复制正文**；README 顶部补回链 |
+| `perf` 场景度量中断仍返回 0（「有产出即通过」的假绿口子，违反 §9.7 退出码即契约） | `ui-designer-probe.mjs` 加 `failed` 中断标记，任一档失败或 `table.length < SIZES.length`（档位产出不全）一律退出码 1 |
+| **教训：共享无后缀夹具实体会被并行种子演化**——`expense_reimbursement_item` 因协议样例 `props.childEntity` 固定引用此名无法加运行后缀，2026-10-28 并发会话迁移种子给它补必填「消费说明」`note`，`ui-schema-samples-e2e.py` 与 `two-scenario-full-chain-e2e.py` 明细负载没带 → 400 拦下全部明细写入、下游 submit 断言级联假红（31→22、90 套件同病） | 两套件明细行构造补 `note`（每个值只生成一次存变量、正负两版共用），重跑 31/31、90/90 恢复；**复用铁律**：写共享（无运行后缀）实体的负载前，先直查 `meta_field` 确认必填集，种子给共享实体加必填字段必须显式适配所有套件负载 |
+
 **仍开放（待后续）**
 
 | 问题 | 影响 | 建议修法 |
 |---|---|---|
 | `fixtures` 词表三处镜像（`gen.py` 精简镜像 / `fixtures.cjs` 内嵌镜像）——**已收敛单源，本行仅存档结论** | 三处各自演化可能漂移的隐患已消除：词表唯一存放处 = 共享 JSON | **已落地**：`gen.py` / `fixtures.py` / `fixtures.cjs` 同读 **`scripts/seed/uat/wordlist.json`**（分别按 `HERE` / `__file__` / 模块相对 `require` 定位，均不依赖运行 cwd）；历史口径差异以 `*_e2e` 键在 JSON 内按原文显式保留，内容零变化断言 36 键全绿 |
-| `ui/` 内仍有 **5** 个探针内联浏览器登录（`probe-metadata-loop` / `ui-all-menu-regression` / `ui-full-module-crud-probe` / `ui-runtime-evidences-regression` / `lowcode-closed-loop.cjs`） | 与 ui/README §0 纪律仍不一致 | 逐个触碰时迁移（**不批量盲改**：无法实跑全栈时批量替换选择器 = 假绿风险）；新增/重构一律 `import { uiLogin } from '../e2e_lib/ui.cjs'` 并传 `page`。**已由 selftest 棘轮托管**：迁移一个就把 `INLINE_LOGIN_BASELINE` 下调一格（本轮已从 16 收到 5） |
+| `ui/` 内仍有 **3** 个探针内联浏览器登录（`probe-metadata-loop` / `ui-runtime-evidences-regression` / `lowcode-closed-loop.cjs`，均为 fixtures 依赖探针、待逐个实跑迁移） | 与 ui/README §0 纪律仍不一致 | 逐个触碰时迁移（**不批量盲改**：无法实跑全栈时批量替换选择器 = 假绿风险）；新增/重构一律 `import { uiLogin } from '../e2e_lib/ui.cjs'` 并传 `page`。**已由 selftest 棘轮托管**：迁移一个就把 `INLINE_LOGIN_BASELINE` 下调一格（本轮已从 16 收到 3） |
 
 ## 9. 整合与复用：设计原则与 Why
 
@@ -327,4 +337,4 @@ node --check scripts/e2e/<探针>.mjs
 6. **跨语言对称**：Python 有 `teardown` + `fixtures`，Node 也该有等价物，否则 UI 探针会留下无法自动回收的脏数据，且数据不「像生产」。
 7. **退出码即契约**：每个脚本 `report.finish()` / `makeChecker().report()` 都按失败数定退出码，`run.sh` 聚合，供 CI 与编排判定——没有「跑通即验收」的假绿。
 
-> 更深一层的整合（Node fixtures、UI 探针单族化、链路数据驱动）见 §8「仍开放」，属 L2 重构，需对应模块 owner 评估后推进。
+> 更深一层的整合（Node fixtures、UI 探针单族化、链路数据驱动）已于 2026-10-28 第三轮全部落地（见 §8）；方案整体口径已沉淀至 `doc/architecture/Bone-测试策略.md §7`。

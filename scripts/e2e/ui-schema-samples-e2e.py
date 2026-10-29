@@ -145,6 +145,14 @@ claim_items_bad = ds.split(claim_amount, 2, break_=True)  # 负向专用：Σ ==
 claim_tax_no = ds.tax_no()  # 虚构统一社会信用代码（补税号后放行）
 claim_applicant = ds.person()
 claim_dept = ds.dept  # 数据集恒定部门（实例属性，同后缀不变）
+# 共享明细实体 expense_reimbursement_item（协议样例 props.childEntity 固定引用此名，无法加运行后缀）
+# 于 2026-10-28 被迁移种子补了必填「消费说明」note——明细负载必须带 note，否则 400 拦下
+# 全部明细写入、下游 submit 断言级联假红（每个值只生成一次存变量，三处 child_replace 共用）
+claim_item_note1 = f"{claim_city}客户拜访交通与住宿费用（{claim_date}）"
+claim_item_note2 = f"{claim_city}客户拜访餐饮与市内交通费用（{claim_date}）"
+_claim_notes = [claim_item_note1, claim_item_note2]
+ITEMS_ROWS = [{"amount": v, "note": n} for v, n in zip(claim_items, _claim_notes)]
+ITEMS_BAD_ROWS = [{"amount": v, "note": n} for v, n in zip(claim_items_bad, _claim_notes)]
 
 s, d = rec_create(
     EXP,
@@ -166,11 +174,11 @@ rid = d.get("data", {}).get("id") if s in (200, 201) else None
 
 if rid:
     # 明细合计 Σ(claim_items) = 申报 claim_amount → 合规
-    s, d = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items])
+    s, d = child_replace(EXP, rid, EXP_ITEM, ITEMS_ROWS)
     check(f"报销：写入明细（合计 {claim_amount}）", s in (200, 201), f"{s} {d.get('message')}")
 
     # 负向①：明细合计 Σ(claim_items_bad) = 申报 + 1.01 ≠ 申报 → SUB 规则必须拦（协议 SUB 明细合计一致）
-    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items_bad])
+    s2, d2 = child_replace(EXP, rid, EXP_ITEM, ITEMS_BAD_ROWS)
     s, d = act(EXP, rid, "submit")
     check(
         "报销【负向】明细合计≠申报 → 动作 422 且带规则码",
@@ -178,8 +186,8 @@ if rid:
         f"期望 422/RUNTIME_UI_RULES_VIOLATED，实际 {s} {ecode(d)} {d.get('message', '')[:160]}",
     )
 
-    # 恢复合规明细（复用同一守恒拆分，Σ 仍 == 申报）
-    s2, d2 = child_replace(EXP, rid, EXP_ITEM, [{"amount": v} for v in claim_items])
+    # 恢复合规明细（复用同一守恒拆分与同一批行负载，Σ 仍 == 申报）
+    s2, d2 = child_replace(EXP, rid, EXP_ITEM, ITEMS_ROWS)
 
     # 负向②：专票缺税号 → linkage required 必须拦
     s, d = call("PUT", f"/runtime/entities/{EXP}/records/{rid}", {"invoice_type": "SPECIAL"})

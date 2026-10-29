@@ -22,13 +22,12 @@ import {
   UI_BASE as BASE,
   SHOT_DIR,
   stamp,
-  USER as E2E_USER,
-  PWD as E2E_PWD,
   loadPlaywright,
   api,
   tryLogin,
   makeChecker,
 } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const STAMP = stamp(6);
@@ -425,22 +424,8 @@ const cleanupE2EMenus = async () => {
 
 try {
   // ---------- 登录取菜单真源 ----------
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(E2E_USER);
-  const pwd = page.locator('input[type="password"]').first();
-  await pwd.fill(E2E_PWD);
-  await pwd.press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-    await page.waitForTimeout(3000);
-  }
-  const logged = await page
-    .waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 })
-    .then(() => true)
-    .catch(() => false);
+  // 登录：统一走共享 uiLogin（禁止在探针内重抄登录选择器；凭据见 client.cjs）
+  const logged = await uiLogin(page);
   check('UI 登录成功', logged, '登录表单未消失');
   if (!logged) throw new Error('登录失败，后续用例无意义');
 

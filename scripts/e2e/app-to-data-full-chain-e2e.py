@@ -16,7 +16,7 @@
 每一步都带负向探针（断言有牙）：缺参 400、编码冲突 409、发布闸门 409、
 坏 ETag 412、缺必填 4xx —— 删掉对应实现，这些断言必须变红。
 
-产物：/tmp/bone_e2e_fullchain_state.json（供 scripts/e2e/ui-app-to-data-probe.mjs 消费）。
+产物：/tmp/bone_e2e_fullchain_state.json（供 scripts/e2e/ui/ui-app-to-data-probe.mjs 消费）。
 
 退出时默认自动清理本次运行在库里的全部残留（cleanup-residue.py，见下方 teardown.register）。
 因此：接续跑 UI 探针前请用 BONE_E2E_KEEP_RESIDUE=1 启动本脚本保留产物，

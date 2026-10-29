@@ -92,5 +92,5 @@ past/future 计数 SHALL 与实际堆栈恒等，不得出现 phantom 条目或�
 （变异测试：缺陷写法下相关断言必须变红）。
 
 #### Scenario: 全量探针通过
-- **WHEN** 对运行中的全栈执行 `scripts/e2e/ui-designer-ux-probe.cjs`
+- **WHEN** 对运行中的全栈执行 `node scripts/e2e/ui/ui-designer-probe.mjs --scenario ux`
 - **THEN** 全部断言通过（41 项），无新增 console error

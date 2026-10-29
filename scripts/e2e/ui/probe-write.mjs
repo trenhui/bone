@@ -1,9 +1,11 @@
 // BONE 深度交互巡检：模拟人工"点击每一个功能"—— 打开弹窗 / 填表 / 提交 / 取消
 // 目的：v4 已证 44 菜单导航正常、零失败请求；但那只覆盖"读"。
 // 本轮覆盖"写"：每个带新增/编辑按钮的页面，点开弹窗→ 填表→ 提交 → 断言结果。
-/* 共享 client：playwright 加载 / CHROME / UI BASE / 登录凭证（见 e2e_lib/client.cjs） */
+/* 共享 client：playwright 加载 / CHROME / UI BASE（见 e2e_lib/client.cjs）
+ * 共享 UI 登录：uiLogin（凭据由 client.cjs 供给，登录选择器唯一真源见 e2e_lib/ui.cjs） */
 import { mkdirSync } from 'node:fs';
-import { loadPlaywright, CHROME, UI_BASE as BASE, USER, PWD } from '../e2e_lib/client.cjs';
+import { loadPlaywright, CHROME, UI_BASE as BASE } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 const OUT = '/tmp/bone-ui-screens';
 mkdirSync(OUT, { recursive: true });
@@ -37,15 +39,8 @@ const WRITE_TARGETS = [
   page.on('console', m => { if (m.type() === 'error') errors.push({ route: cur, kind: 'console', text: m.text().slice(0, 250) }); });
   page.on('response', r => { if (r.status() >= 400) failedReq.push({ route: cur, url: r.url().replace(BASE, ''), status: r.status() }); });
 
-  await page.goto(`${BASE}/iam#/accounts`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(3500);
-  const u = page.locator('input[placeholder="用户名"], input[placeholder*="用户"], input[placeholder*="账号"]').first();
-  if (await u.count() && await u.isVisible().catch(() => false)) {
-    await u.fill(USER);
-    await page.locator('input[type="password"], input[placeholder="密码"]').first().fill(PWD);
-    await page.locator('button[type="submit"], button:has-text("登")').first().click();
-    await page.waitForTimeout(4000);
-  }
+  // 登录：统一走共享 uiLogin，直达 iam 登录路由（禁止在探针内重抄登录选择器）
+  await uiLogin(page, { route: `${BASE}/iam#/accounts` });
 
   const results = [];
   for (const t of WRITE_TARGETS) {

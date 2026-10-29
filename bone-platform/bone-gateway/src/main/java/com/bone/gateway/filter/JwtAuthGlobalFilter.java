@@ -16,8 +16,9 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * 网关统一 JWT 鉴权：校验签名/过期，失败返 401；通过后解析 tenantId/userId/scopes 注入 X-Tenant-Id / X-User-Id / X-Roles
- * Header，并保留原 Authorization 透传（下游仍各自验签）。 order 高于 TraceId 之后（TraceId=HIGHEST_PRECEDENCE）。
+ * 网关统一 JWT 鉴权：校验签名/过期，失败返 401；通过后解析 tenantId/userId/scopes 注入 X-Tenant-Id / X-User-Id / X-Roles /
+ * X-Operator-Id Header，并保留原 Authorization 透传（下游仍各自验签）。 order 高于 TraceId
+ * 之后（TraceId=HIGHEST_PRECEDENCE）。
  */
 @Component
 public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
@@ -91,6 +92,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     }
     if (p.getUserId() != null) {
       builder.header("X-User-Id", p.getUserId());
+      // X-Operator-Id 必须由网关**重新写入**，不能只剥离不补。
+      // 工作流设计器的写路径（保存草稿 / 发布 / 上下线）用 @RequestHeader("X-Operator-Id")（required）
+      // 取审计操作人：上面剥离掉客户端取值后若不补，下游收到的就是「header 不存在」，
+      // 设计器写接口恒失败（实测：保存草稿 500 / 发布 500，读路径却全正常，极易误判成设计器自身故障）。
+      // 取值取 userId（token claim，稳定且改名不失效），与 X-User-Id 同源——两者是同一主体的不同消费口径。
+      // 安全性质不变：客户端送来的同名头仍被无条件下剥离，下游只可能读到网关派生值。
+      builder.header("X-Operator-Id", p.getUserId());
     }
     List<String> scopes = p.getScopes();
     if (scopes != null && !scopes.isEmpty()) {

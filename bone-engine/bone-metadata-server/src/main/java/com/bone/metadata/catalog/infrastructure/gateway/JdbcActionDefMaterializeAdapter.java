@@ -81,6 +81,12 @@ public class JdbcActionDefMaterializeAdapter
           + "label = VALUES(label), from_status = VALUES(from_status), to_status = VALUES(to_status), "
           + "status_field = VALUES(status_field), is_escape = VALUES(is_escape), "
           + "handler_bean = VALUES(handler_bean), params_schema = VALUES(params_schema), "
+          // permission_code 必须一起刷新（2026-10-28 联调实测漏项）：动作级细码形状是
+          // runtime:{entityCode}:{actionCode}，实体 code 一旦变更（如 0052 的
+          // expense_claim → expense_reimbursement 改名），不刷新就会永久停留在旧码上——
+          // 于是「按新码授权」看起来配了却不生效，而 PLATFORM_ADMIN（admin）会对动作级判定
+          // 早退，任何人用超管都测不出问题。缺这一行 = 静默越权/静默 403 两种事故同时可能。
+          + "permission_code = VALUES(permission_code), "
           + "requires_idempotency = VALUES(requires_idempotency), sort_order = VALUES(sort_order), "
           + "is_entry = VALUES(is_entry), "
           + "updated_at = NOW(3), version = version + 1, deleted = 0";

@@ -5,10 +5,9 @@
  * （规范见 scripts/e2e/README.md §3），供 .mjs/.cjs 探针取代手写测试数据
  * （裸单号、900.00 圆整金额、张三/李四随手名、写死日期等）。
  *
- * 口径真源 = fixtures.py：本文件词表/区间/格式是其**内嵌镜像**，任一侧增删词条或
- * 调整区间必须双向同步。（曾评估抽共享 JSON 由两端同读的真单一真源方案，但 fixtures.py
- * 属本任务禁改文件；只让 .cjs 读 JSON 而 .py 仍写字面量，反而多出一份要对齐的拷贝，
- * 故按内嵌镜像落地，并在此声明同步纪律。）
+ * 词表真源 = scripts/seed/uat/wordlist.json：与 gen.py、fixtures.py 同读这一份共享 JSON
+ * （本文件只取其 e2e 口径键与三侧共用键），增删词条只改 JSON 一处，不再内嵌镜像、
+ * 不再双向同步。
  *
  * 确定性：同 seed ⇒ 同一份名称/金额/拆分。JS 侧自实现可种子化 PRNG
  * （FNV-1a 字符串散列 + mulberry32）；JS 无法复现 Python random 流，故**不要求**
@@ -30,48 +29,26 @@
  */
 'use strict';
 
-// ---- 词表（口径真源 scripts/e2e/e2e_lib/fixtures.py，改动须双向同步）----
-const SURNAMES = ('王李张刘陈杨黄赵周吴徐孙马朱胡林郭何高罗郑梁谢宋唐许韩冯邓曹彭曾肖田董袁潘蒋蔡余杜叶程苏魏吕丁任沈姚卢姜崔钟').split('');
-const GIVEN = ['伟', '芳', '娜', '敏', '静', '丽', '强', '磊', '军', '洋', '勇', '艳', '杰', '娟', '涛',
-  '明', '超', '霞', '平', '建华', '文博', '思远', '嘉怡', '子轩', '浩然', '梓涵', '雨欣',
-  '俊杰', '心怡', '宇航', '佳怡', '泽宇', '诗涵', '一诺', '沐辰', '若曦', '晨曦', '博文',
-  '雅静', '天佑', '瑞泽', '皓轩', '欣妍', '建国', '秀英', '桂兰', '志强', '晓东', '海燕',
-  '雪梅', '春林'];
+// ---- 词表：单一真源 scripts/seed/uat/wordlist.json（gen.py / fixtures.py / fixtures.cjs
+// 同读一份，增删词条只改该 JSON）。require 的相对路径以本模块文件为基准解析（本文件在
+// scripts/e2e/e2e_lib → ../../seed/uat），不依赖运行 cwd。----
+const WL = require('../../seed/uat/wordlist.json');
 
-const CITY_WORD = ['瀚海', '云枢', '恒昇', '启元', '中科', '华创', '锐驰', '博远', '鼎新', '同辉', '安捷',
-  '天工', '汇通', '本源', '灵犀', '长风', '弘远', '智联', '普瑞', '嘉合', '越洋', '沐光',
-  '川流', '青云', '蓝图', '金诚', '立行', '广联', '纳川', '协同', '元启', '德茂', '联创',
-  '万象', '新宇', '恒信', '智源', '致远', '开源'];
-const COMPANY_SUFFIX = ['科技有限公司', '智能装备有限公司', '智能制造有限公司', '电子科技有限公司',
-  '自动化技术有限公司', '精密机械有限公司', '信息技术有限公司', '数字科技有限公司',
-  '供应链管理有限公司', '工业设备有限公司'];
-const SUPPLIER_SUFFIX = ['精密机械有限公司', '电子元件有限公司', '新材料有限公司', '模具制造有限公司',
-  '塑胶制品有限公司', '五金制品有限公司', '包装材料有限公司', '电机有限公司',
-  '传感器有限公司', '线束有限公司'];
-const CITIES = ['上海市浦东新区', '广东省深圳市', '江苏省苏州市', '浙江省杭州市', '北京市海淀区',
-  '山东省青岛市', '四川省成都市', '湖北省武汉市', '福建省厦门市', '陕西省西安市'];
-const DEPTS = ['销售一部', '销售二部', '供应链中心', '制造中心', '质量部', '研发中心', '华东大区', '客服中心'];
+const SURNAMES = WL.surname.map((p) => p[0]);
+const GIVEN = WL.given_e2e.slice();
+const CITY_WORD = WL.city_word_e2e.slice();
+const COMPANY_SUFFIX = WL.company_suffix.slice();
+const SUPPLIER_SUFFIX = WL.supplier_suffix.slice();
+const CITIES = WL.cities.slice();
+const DEPTS = WL.depts.slice();
 
-// 品类 → [系列名, 规格档位, 价格区间]——与 fixtures.py PRODUCTS 同步
-const PRODUCTS = [
-  ['智能扫地机器人', ['X1', 'X2', 'Pro', 'Max', 'S2'], [1299, 4299]],
-  ['无线吸尘器', ['V10', 'V12', 'V15', 'G5'], [699, 2499]],
-  ['边缘计算网关', ['EG-2000', 'EG-3000', 'EG-5000X'], [1899, 6800]],
-  ['伺服驱动器', ['SD-400', 'SD-750', 'SD-1500'], [1280, 5400]],
-  ['工业相机', ['IC-500W', 'IC-1200W', 'IC-2000W'], [2200, 9800]],
-  ['温振传感器', ['VS-100', 'VS-200', 'VS-300H'], [560, 1800]],
-  ['HEPA 滤网', ['标准版', '升级版', '除菌版'], [59, 199]],
-  ['锂电池组', ['3200mAh', '5200mAh', '6400mAh'], [129, 399]],
-];
-const CHANNELS = [['TAOBAO', '淘宝旗舰店'], ['JD', '京东自营店'], ['DOUYIN', '抖音小店'],
-  ['PDD', '拼多多官方店'], ['WECHAT_MINI', '微信小程序商城'], ['OFFICIAL', '官网商城']];
-const WAREHOUSES = [['WH-SH-PD', '上海浦东中心仓'], ['WH-GD-SZ', '深圳华南仓'], ['WH-JS-SZ', '苏州华东仓']];
+// 品类 → [系列名, 规格档位, 价格区间]——取 gen.py product_cat 的 e2e 精简口径
+const PRODUCTS = WL.products_e2e.map(([name, tiers, price]) => [name, tiers.slice(), price.slice()]);
+const CHANNELS = WL.channels.map((c) => c.slice(0, 2));
+const WAREHOUSES = WL.warehouses.map((w) => w.slice());
 
 // 设备资产：类别码用于生成 EQ-SMT-0347 式可读设备编号
-const EQUIPMENT = [['生产设备', 'SMT', '高速贴片机'], ['生产设备', 'CNC', '数控加工中心'],
-  ['生产设备', 'IMM', '立式注塑机'], ['生产设备', 'LSR', '激光切割机'],
-  ['生产设备', 'TEST', '自动化测试台'], ['IT 设备', 'SRV', '机架服务器'],
-  ['IT 设备', 'SW', '核心交换机'], ['运输工具', 'FLT', '电动叉车']];
+const EQUIPMENT = WL.equipment_e2e.map((e) => e.slice());
 
 // 统一社会信用代码假名用的固定主体段（纯虚构、不指向任何真实企业）
 const TAX_BODY = '91310000MA1FL0';

@@ -217,9 +217,16 @@ EXP_TOTAL = ds.amount(lo=300, hi=6000)               # 主表申报金额（非�
 EXP_PARTS = ds.split(EXP_TOTAL, 2)                   # 守恒明细 Σ == EXP_TOTAL（过 submitRules）
 EXP_PARTS_BAD = ds.split(EXP_TOTAL, 2, break_=True)  # 破坏版 Σ == EXP_TOTAL + 1.01（422 负向专用）
 EXP_REMARKS = [f"拜访{EXP_CUSTOMER}住宿费", f"拜访{EXP_CUSTOMER}往返高铁票"]
-EXP_ITEMS = [{"expense_date": EXP_DATE, "amount": p, "remark": r}
-             for p, r in zip(EXP_PARTS, EXP_REMARKS)]
-EXP_ITEMS_BAD = [dict(r, amount=p) for r, p in zip(EXP_ITEMS, EXP_PARTS_BAD)]
+# 共享明细实体 expense_reimbursement_item（协议样例 props.childEntity 固定引用此名，无法加运行后缀）
+# 于 2026-10-28 被迁移种子补了必填「消费说明」note——明细负载必须带 note，否则 400 拦下全部
+# 明细写入、下游 submit 断言级联假红（每个值只生成一次存变量，正负两版共用同一批 note）
+EXP_ITEM_NOTES = [f"拜访{EXP_CUSTOMER}住宿费用说明（{EXP_DATE}）",
+                  f"拜访{EXP_CUSTOMER}往返交通费用说明（{EXP_DATE}）"]
+EXP_ITEMS = [{"expense_date": EXP_DATE, "amount": p, "remark": r, "note": n}
+             for p, r, n in zip(EXP_PARTS, EXP_REMARKS, EXP_ITEM_NOTES)]
+EXP_ITEMS_BAD = [{"expense_date": r["expense_date"], "amount": p,
+                  "remark": r["remark"], "note": n}
+                 for r, p, n in zip(EXP_ITEMS, EXP_PARTS_BAD, EXP_ITEM_NOTES)]
 
 s, d = rec_create(EXP, {"title": EXP_TITLE, "amount": EXP_TOTAL, "currency": "CNY",
                         "applicant": EXP_PERSON, "department": EXP_DEPT,

@@ -15,7 +15,8 @@
  *
  * 用法：node scripts/e2e/ui/delivery-preview-relocation-probe.mjs
  */
-import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker, USER, PWD } from '../e2e_lib/client.cjs';
+import { UI_BASE as BASE, SHOT_DIR, loadPlaywright, makeChecker } from '../e2e_lib/client.cjs';
+import { uiLogin } from '../e2e_lib/ui.cjs';
 const { chromium } = loadPlaywright();
 
 const ENTITY_ID = process.env.BONE_ENTITY_ID || '766546550728949760';
@@ -33,18 +34,8 @@ const shot = async (n) => { await page.screenshot({ path: `${SHOT_DIR}/ui_reloca
 const bodyText = () => page.locator('body').innerText();
 
 try {
-  // 登录
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[type="password"]', { timeout: 20000 });
-  const userSel = 'input[placeholder*="用户名"], input[name="username"], input#username';
-  if (await page.locator(userSel).first().count()) await page.locator(userSel).first().fill(USER);
-  await page.locator('input[type="password"]').first().fill(PWD);
-  await page.locator('input[type="password"]').first().press('Enter');
-  await page.waitForTimeout(1500);
-  if (await page.locator('input[type="password"]').count()) {
-    await page.locator('button').filter({ hasText: /登\s*录/ }).first().click().catch(() => {});
-  }
-  await page.waitForFunction(() => !document.querySelector('input[type="password"]'), { timeout: 30000 });
+  // 登录（统一走共享 uiLogin，禁止在探针内重抄登录选择器；登录不成即中止，与原 waitForFunction 语义一致）
+  if (!(await uiLogin(page))) throw new Error('登录表单未消失');
   check('登录成功', true);
 
   // 1. ?tab=ui 深链 → 应 rewrite 到 uischema，不静默落首页、不挂交付预览

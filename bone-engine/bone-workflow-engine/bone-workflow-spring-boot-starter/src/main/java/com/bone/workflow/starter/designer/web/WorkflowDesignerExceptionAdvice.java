@@ -6,6 +6,8 @@ import com.bone.workflow.starter.designer.WorkflowDefinitionRequestException;
 import com.bone.workflow.starter.designer.WorkflowDesignerAccessDeniedException;
 import java.util.List;
 import java.util.Map;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,8 +30,25 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  *       原文超长）
  *   <li>{@link IllegalStateException} → <b>400</b>（缺租户上下文等宿主装配问题）
  * </ul>
+ *
+ * <p><b>为什么必须显式 {@code @Order(HIGHEST_PRECEDENCE)} 且限定 {@code basePackages}</b>（2026-10-28
+ * 联调实测确诊）：{@code @ControllerAdvice} 缺省顺序是 {@code LOWEST_PRECEDENCE}，且 Spring 解析异常时 <b>按 advice
+ * 顺序逐个找第一个能处理该异常的方法</b>——它不会跨 advice 比较「谁的异常类型更具体」。 宿主（bone-metadata-server）自带一个带
+ * {@code @ExceptionHandler(Exception.class)} 的 {@code GlobalExceptionHandler}，两者同级时按 bean
+ * 名排序，{@code globalExceptionHandler} 在前 ⇒ 本类的 409/422/400 映射<b>一行都没生效</b>，前端看到的是清一色 500： 「覆盖草稿必须携带
+ * revision」被渲染成「系统内部错误」，用户只会去重试而不是刷新版本。
+ *
+ * <p>两个注解缺一不可：
+ *
+ * <ul>
+ *   <li>{@code @Order(HIGHEST_PRECEDENCE)} —— 让本类先于任何宿主 catch-all 被查找；
+ *   <li>{@code basePackages} —— 本类对 {@link IllegalStateException} 的 400 映射是<b>宽口径</b>的，
+ *       若全局生效，宿主任意位置的编程错误（同样是 IllegalStateException）都会被伪装成 400「请求有误」。
+ *       限定到设计器控制器所在包后，该宽口径只覆盖设计器调用链，其他模块的 5xx 语义不受影响。
+ * </ul>
  */
-@ControllerAdvice
+@ControllerAdvice(basePackages = "com.bone.workflow.starter.designer.web")
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class WorkflowDesignerExceptionAdvice {
 
   @ExceptionHandler(WorkflowDesignerAccessDeniedException.class)
